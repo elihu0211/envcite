@@ -1,0 +1,13 @@
+---
+description: Ownership rules when editing AGENTS.md, skills, or Cursor rules
+globs: AGENTS.md,CLAUDE.md,.agents/**/*,.claude/**,.cursor/rules/**
+alwaysApply: false
+---
+
+# Agent config files
+
+- Canonical shared instructions: root `AGENTS.md` only.
+- Shared skills: `.agents/skills/<name>/SKILL.md` (Agent Skills spec).
+- `CLAUDE.md` is an import-only bridge (`@AGENTS.md` + Claude-specific notes). Never add `.cursorrules` or a second copy of AGENTS.md content.
+- Cursor rules stay thin and scoped; put always-on baseline in AGENTS.md, not here.
+- New skills go under `.agents/skills/`; `.claude/skills` is a symlink to it.
