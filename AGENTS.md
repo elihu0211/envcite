@@ -8,8 +8,10 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 
 - **Name:** env-law-platform
 - **Role:** 多租戶 SaaS 平台（control plane）：tenants, accounts, subscriptions/billing, API keys, quotas, public API gateway. Calls `env-law-ontology` (Python, shared non-tenant data) via its OpenAPI contract.
-- **Stack:** C# / .NET 10 (SDK pinned once `global.json` exists) · ASP.NET Core
-- **Status:** early bootstrap (no solution yet)
+- **Stack:** C# / .NET 10 (SDK pinned in `global.json`) · ASP.NET Core · PostgreSQL · xUnit
+- **Auth:** API keys only for now (OIDC later for an admin UI)
+- **Billing:** not integrated yet; plans assigned manually. Note: Stripe does not onboard Taiwan entities — evaluate Paddle / local gateways when needed.
+- **Status:** solution scaffolded (`/health` only), no domain code yet
 - **Remote:** `git@gitlab.com:thuaisse-lab/env-law-platform.git`
 
 Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
@@ -36,14 +38,26 @@ Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
 
 ## Commands
 
-Fill in once the solution exists (see skill `bootstrap-stack`). Prefer exact commands.
+Run from repo root (`EnvLaw.Platform.slnx`).
 
 ```bash
-# dotnet restore
-# dotnet build
-# dotnet test
-# dotnet format --verify-no-changes
+dotnet restore
+dotnet build                         # warnings are errors (Directory.Build.props)
+dotnet test
+dotnet format                        # apply .editorconfig
+dotnet format --verify-no-changes    # CI check
+dotnet run --project src/EnvLaw.Platform.Api
 ```
+
+- Package versions live only in `Directory.Packages.props` (central package management); `dotnet add package` updates it.
+- Shared build settings: `Directory.Build.props`. Don't repeat them in `.csproj` files.
+
+## Layout
+
+- `src/EnvLaw.Platform.Api` — ASP.NET Core host (composition root)
+- `src/EnvLaw.Platform.Modules.*` — feature modules (`Tenancy`, `ApiAccess`); reference only `SharedKernel`, never each other directly
+- `src/EnvLaw.Platform.SharedKernel` — cross-module primitives
+- `tests/EnvLaw.Platform.Tests` — xUnit + `WebApplicationFactory` integration tests
 
 ## Conventions
 
@@ -59,7 +73,7 @@ Fill in once the solution exists (see skill `bootstrap-stack`). Prefer exact com
 
 ## Done when
 
-- `dotnet build` and `dotnet test` pass; `dotnet format --verify-no-changes` is clean (once Commands are real).
+- `dotnet build` and `dotnet test` pass; `dotnet format --verify-no-changes` is clean.
 - Commands and Safety lists stay accurate after tooling changes.
 
 ## Skills in this repo
