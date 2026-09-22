@@ -1,9 +1,9 @@
 ---
 name: maintain-agent-context
 description: >-
-  Maintain vendor-neutral agent instructions for this repo. Use when editing
-  AGENTS.md, CLAUDE.md, .agents/skills, .claude/, .cursor/rules, or when asked
-  to add .cursorrules or duplicate agent config.
+  Maintain vendor-neutral agent instructions in a repo. Use when editing
+  AGENTS.md, CLAUDE.md, .agents/skills, skills-lock.json, .claude/, .gemini/,
+  .cursor/rules, or when asked to add .cursorrules or duplicate agent config.
 ---
 
 # Maintain agent context
@@ -19,10 +19,13 @@ Layer definitions live in **`AGENTS.md` → Layering** — read it first; do not
 3. **Do not copy `AGENTS.md` into rules or skills.** Link or cite; keep one canonical baseline.
 4. **Skills live in `.agents/skills/`.** Claude Code only scans `.claude/skills/`, so that path is a symlink to `../.agents/skills` — never a real directory.
 
+5. **Shared skills are installed, not edited.** Skills listed in `skills-lock.json` come from `agent-config`. Change them there, then run `npx skills update` in the consuming repo. Never hand-edit the installed copy.
+
 ## When to put content where
 
 - Exact install / test / lint commands → `AGENTS.md` Commands
-- Long reusable procedure → new or existing skill under `.agents/skills/`
+- Repo-specific procedure → skill under `.agents/skills/` in that repo
+- Procedure reused across repos → skill in `agent-config`, installed via `npx skills add`
 - File-type or path-scoped Cursor guidance → `.cursor/rules/*.mdc` with `globs:` (prefer `alwaysApply: false`)
 - Package-local overrides → nested `AGENTS.md` next to that package
 
