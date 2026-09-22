@@ -95,7 +95,7 @@ Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; 
 
 ## Done when
 
-- `dotnet build` and `dotnet test` pass; `dotnet format --verify-no-changes` is clean.
+- `dotnet build` and `dotnet test` pass; `dotnet format --verify-no-changes` is clean — enforced by `.gitlab-ci.yml` (Docker-in-Docker for Testcontainers; the submodule is cloned with the CI job token, so this project must stay in env-law-ontology's job token allowlist).
 - Commands and Safety lists stay accurate after tooling changes.
 
 ## Skills in this repo

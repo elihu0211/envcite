@@ -1,0 +1,53 @@
+# CI for env-law-platform. Free tier: 400 compute min/month, so checks run in one job.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+  auto_cancel:
+    on_new_commit: interruptible
+
+default:
+  interruptible: true
+
+variables:
+  # Contract proto comes from the env-law-ontology submodule (relative URL, cloned with the job token;
+  # requires this project in env-law-ontology's CI/CD job token allowlist).
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_DEPTH: 1
+  NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+stages:
+  - check
+
+dotnet:
+  stage: check
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  # Testcontainers (PostgreSQL) via Docker-in-Docker; gitlab.com hosted Linux runners are privileged.
+  services:
+    - name: docker:29.8.1-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    TESTCONTAINERS_HOST_OVERRIDE: docker
+  cache:
+    - key:
+        files: [Directory.Packages.props]
+      paths: [.nuget/packages]
+  script:
+    - dotnet restore
+    - dotnet build --no-restore
+    - dotnet format --verify-no-changes --no-restore
+    - >-
+      dotnet test --no-build
+      --logger "junit;LogFilePath=$CI_PROJECT_DIR/artifacts/{assembly}-test-result.xml;MethodFormat=Class;FailureBodyFormat=Verbose"
+  artifacts:
+    when: always
+    paths:
+      - artifacts/*test-result.xml
+    reports:
+      junit: artifacts/*test-result.xml
