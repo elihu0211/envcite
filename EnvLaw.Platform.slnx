@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EnvLaw.Platform.Api/EnvLaw.Platform.Api.csproj" />
+    <Project Path="src/EnvLaw.Platform.Modules.ApiAccess/EnvLaw.Platform.Modules.ApiAccess.csproj" />
+    <Project Path="src/EnvLaw.Platform.Modules.Tenancy/EnvLaw.Platform.Modules.Tenancy.csproj" />
+    <Project Path="src/EnvLaw.Platform.SharedKernel/EnvLaw.Platform.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EnvLaw.Platform.Tests/EnvLaw.Platform.Tests.csproj" />
+  </Folder>
+</Solution>
