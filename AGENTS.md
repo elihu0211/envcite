@@ -28,11 +28,13 @@ Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
 |-------|------|-------------|
 | Baseline | `AGENTS.md` (this file) | Always (all agents) |
 | Skills | `.agents/skills/<name>/SKILL.md` | On demand ([agentskills.io](https://agentskills.io/specification)) |
+| Shared skills | installed from [`elihu0211/agent-config`](https://github.com/elihu0211/agent-config) (public GitHub), pinned in `skills-lock.json` | Same as Skills; update with `npx skills update -p -y` |
 | Claude bridge | `CLAUDE.md` → `@AGENTS.md`; `.claude/skills` → symlink to `.agents/skills` | Claude Code only |
-| Cursor rules | `.cursor/rules/*.mdc` | Cursor only (globs / intelligent / manual) |
+| Cursor rules | `.cursor/rules/*.mdc` (none yet) | Cursor only, for path-scoped guidance |
 | Gemini bridge | `.gemini/settings.json` → `context.fileName: ["AGENTS.md"]` | Gemini CLI only (default is `GEMINI.md`) |
 
-- Author skills in **`.agents/skills/`** only; `.claude/skills` is a symlink, never a separate tree.
+- Author repo-specific skills in **`.agents/skills/`**; `.claude/skills` is a symlink, never a separate tree.
+- Never hand-edit skills listed in `skills-lock.json`; change them in `agent-config`, then `DISABLE_TELEMETRY=1 npx skills update -p -y`.
 - Prefer **`AGENTS.md`** for always-on ops; use `.cursor/rules` only for Cursor path scoping.
 - Nested `AGENTS.md` in a subdirectory wins for that tree.
 
@@ -78,7 +80,7 @@ dotnet run --project src/EnvLaw.Platform.Api
 
 ## Skills in this repo
 
-| Skill | Use when |
-|-------|----------|
-| `maintain-agent-context` | Editing agent instruction / skill / rule layout |
-| `bootstrap-stack` | Creating the solution and wiring Commands |
+| Skill | Source | Use when |
+|-------|--------|----------|
+| `maintain-agent-context` | `agent-config` | Editing agent instruction / skill / rule layout |
+| `bootstrap-stack` | this repo | Creating the solution and wiring Commands |
