@@ -11,7 +11,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 - **Stack:** C# / .NET 10 (SDK pinned in `global.json`) · ASP.NET Core · PostgreSQL · xUnit
 - **Auth:** API keys only for now (OIDC later for an admin UI)
 - **Billing:** not integrated yet; plans assigned manually. Note: Stripe does not onboard Taiwan entities — evaluate Paddle / local gateways when needed.
-- **Status:** tenants + API keys implemented (Finbuckle.MultiTenant, EF Core + Npgsql, per-tenant rate limiting)
+- **Status:** tenants + API keys, per-tenant rate limiting, usage metering, REST facade over the ontology gRPC service
 - **Remote:** `git@gitlab.com:thuaisse-lab/env-law-platform.git`
 
 Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
@@ -40,7 +40,7 @@ Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
 
 ## Commands
 
-Run from repo root (`EnvLaw.Platform.slnx`).
+Run from repo root (`EnvLaw.Platform.slnx`). Clone with submodules: `git clone --recurse-submodules …` (or `git submodule update --init`).
 
 ```bash
 dotnet restore && dotnet tool restore  # tool: dotnet-ef (dotnet-tools.json)
@@ -54,6 +54,10 @@ dotnet run --project src/EnvLaw.Platform.Api   # Development: local PostgreSQL, 
 dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Modules.<Module> -s src/EnvLaw.Platform.Api -c <Module>DbContext -o Migrations
 ```
 
+Ontology contract: `contracts/env-law-ontology` is a git submodule of the ontology repo; `Modules.Ontology` compiles its `proto/…/ontology.proto` (Grpc.Tools). To adopt a new contract version: `git -C contracts/env-law-ontology fetch && git -C contracts/env-law-ontology checkout <commit on main>`, rebuild, commit the submodule pointer. Never copy the `.proto`.
+
+Config (`Ontology` section): `Address` (e.g. `http://ontology:50051`), `InternalToken` (must equal the service's `ONTOLOGY_INTERNAL_TOKEN`; secret), `Timeout`. Development uses `http://localhost:50051` + token `dev` (`ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology` in the ontology repo).
+
 Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; set via user-secrets/env, never commit), `RateLimit:PermitLimit`/`Window`, `ApplyMigrationsOnStartup` (Development/tests only). Connection string: `ConnectionStrings:Platform`.
 
 - Package versions live only in `Directory.Packages.props` (central package management); `dotnet add package` updates it.
@@ -62,15 +66,16 @@ Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; 
 ## Layout
 
 - `src/EnvLaw.Platform.Api` — ASP.NET Core host (composition root)
-- `src/EnvLaw.Platform.Modules.*` — feature modules (`Tenancy`, `ApiAccess`); reference only `SharedKernel`, never each other directly
+- `src/EnvLaw.Platform.Modules.*` — feature modules (`Tenancy`, `ApiAccess`, `Metering`, `Ontology`); reference only `SharedKernel`, never each other directly (cross-module contracts like `IUsageRecorder` live in `SharedKernel`)
 - `src/EnvLaw.Platform.SharedKernel` — cross-module primitives
-- `tests/EnvLaw.Platform.Tests` — xUnit + `WebApplicationFactory` integration tests (`PlatformFactory`: Testcontainers PostgreSQL + `FakeTimeProvider`)
+- `tests/EnvLaw.Platform.Tests` — xUnit + `WebApplicationFactory` integration tests (`PlatformFactory`: Testcontainers PostgreSQL + `FakeTimeProvider` + `FakeOntologyServer`, an in-process h2c gRPC fake)
 
 ## Auth & tenancy flow
 
 - Tenant API: `Authorization: Bearer sk_live_{prefix}_{secret}` → `ApiKeyAuthenticationHandler` (lookup by prefix, SHA-256 + constant-time compare) → `tenant` claim → Finbuckle resolves tenant → tenant-owned entities (`IsMultiTenant()`) are filtered automatically.
 - Operator API (`/admin`): `X-Admin-Key` header, compared against `Platform:AdminKeySha256`.
 - Middleware order is load-bearing: `UseAuthentication` → `UseMultiTenant` → `UseAuthorization` → `UseRateLimiter`.
+- `/v1/laws/…` calls env-law-ontology over gRPC with `authorization: Bearer <InternalToken>`, `x-tenant-id`, `x-request-id`; gRPC `NotFound` → 404, `Unavailable`/`DeadlineExceeded` → 503. Only successful calls are metered (`IUsageRecorder`, one row per call in `metering.UsageRecords`).
 - A `MultiTenantDbContext` captures the tenant at construction: never resolve it before tenant resolution; for a specific tenant outside a tenant request use `MultiTenantDbContext.Create<TContext, TenantInfo>(tenant, services)`.
 
 ## Conventions
@@ -84,7 +89,8 @@ Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; 
 - Never commit secrets, connection strings, billing keys, or real `.env*` / local appsettings values.
 - Every tenant-scoped query must be filtered by `TenantId`; never disable query filters without review.
 - Bypass only the tenant filter by name (`IgnoreQueryFilters([TenantToken])`), and only in reviewed cross-tenant lookups (currently: API key authentication).
-- Generated: `src/*/Migrations/` (change via `dotnet ef`, never by hand).
+- Generated: `src/*/Migrations/` (change via `dotnet ef`, never by hand; marked `generated_code` in `.editorconfig`), gRPC code under `obj/` (from the submodule proto).
+- The submodule must point at a commit on the ontology repo's `main` before merging (squash-merged branch commits disappear).
 - Ask before: force-push, history rewrite, production deploys, destructive DB ops, applying migrations to shared DBs.
 
 ## Done when
