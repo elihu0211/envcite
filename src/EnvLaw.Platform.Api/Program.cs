@@ -1,4 +1,6 @@
 using EnvLaw.Platform.Modules.ApiAccess;
+using EnvLaw.Platform.Modules.Metering;
+using EnvLaw.Platform.Modules.Ontology;
 using EnvLaw.Platform.Modules.Tenancy;
 using EnvLaw.Platform.SharedKernel;
 
@@ -16,6 +18,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddTenancyModule(connectionString);
 builder.Services.AddApiAccessModule(connectionString, platformConfig);
+builder.Services.AddMeteringModule(connectionString);
+builder.Services.AddOntologyModule(builder.Configuration.GetSection("Ontology"));
 
 var app = builder.Build();
 
@@ -24,6 +28,7 @@ if (platformConfig.GetValue<bool>("ApplyMigrationsOnStartup"))
     await using var scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<TenancyDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<ApiAccessDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<MeteringDbContext>().Database.MigrateAsync();
 }
 
 if (app.Environment.IsDevelopment())
@@ -51,7 +56,9 @@ app.MapGroup("/v1")
     .RequireAuthorization(PlatformAuth.TenantPolicy)
     .RequireRateLimiting(PlatformAuth.PerTenantRateLimit)
     .MapTenancyEndpoints()
-    .MapApiAccessEndpoints();
+    .MapApiAccessEndpoints()
+    .MapMeteringEndpoints()
+    .MapOntologyEndpoints();
 
 await app.RunAsync();
 

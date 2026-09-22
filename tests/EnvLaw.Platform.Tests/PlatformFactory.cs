@@ -26,11 +26,17 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
 
     public FakeTimeProvider Time { get; } = new(DateTimeOffset.UtcNow);
 
-    public async Task InitializeAsync() => await _postgres.StartAsync();
+    public FakeOntologyServer Ontology { get; } = new();
+
+    public async Task InitializeAsync()
+    {
+        await Task.WhenAll(_postgres.StartAsync(), Ontology.StartAsync());
+    }
 
     async Task IAsyncLifetime.DisposeAsync()
     {
         await DisposeAsync();
+        await Ontology.DisposeAsync();
         await _postgres.DisposeAsync();
     }
 
@@ -40,6 +46,8 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.UseSetting("Platform:ApplyMigrationsOnStartup", "true");
         builder.UseSetting("Platform:AdminKeySha256",
             Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(AdminKey))));
+        builder.UseSetting("Ontology:Address", Ontology.Address.ToString());
+        builder.UseSetting("Ontology:InternalToken", FakeOntologyServer.InternalToken);
         builder.UseSetting("Platform:RateLimit:PermitLimit", RateLimitPermits.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.ConfigureServices(services => services.Replace(ServiceDescriptor.Singleton<TimeProvider>(Time)));
     }
