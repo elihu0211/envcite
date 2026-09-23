@@ -56,3 +56,31 @@ def apply_all(conn: Connection[tuple[object, ...]], directory: Path | None = Non
             applied.append(path.name)
     conn.commit()
     return applied
+
+
+def main() -> None:
+    """CLI entrypoint: apply migrations against `ONTOLOGY_DSN`, then exit.
+
+    Separate from the server on purpose. A server that migrates on startup makes
+    every replica a writer and turns a rollout into a race; running it as its own
+    task means the schema change has a beginning and an end that something else
+    can wait on.
+    """
+    import logging
+    import os
+
+    import psycopg
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    dsn = os.environ.get("ONTOLOGY_DSN", "")
+    if not dsn:
+        raise SystemExit("ONTOLOGY_DSN is required")
+
+    with psycopg.connect(dsn) as conn:
+        applied = apply_all(conn)
+
+    log = logging.getLogger(__name__)
+    if applied:
+        log.info("applied %d migration(s): %s", len(applied), ", ".join(applied))
+    else:
+        log.info("schema already current")

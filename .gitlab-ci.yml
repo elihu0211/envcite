@@ -43,6 +43,10 @@ variables:
   - proto/**/*
   - .gitlab-ci.yml
 
+.changes-deploy: &changes-deploy
+  - deploy/**/*
+  - .gitlab-ci.yml
+
 .changes-proto: &changes-proto
   - proto/**/*
   - buf.yaml
@@ -145,6 +149,26 @@ consult:
     when: always
     reports:
       junit: consult-report.xml
+
+deploy:
+  stage: check
+  rules:
+    - changes: *changes-deploy
+  image: alpine:3.22
+  # 無叢集可用，故驗到能驗的極限：kustomize 建得起來，且所有物件（含 CloudNativePG
+  # 的 CRD）通過嚴格綱要驗證。這**不等於** API server 收得下——真正的 --dry-run=server
+  # 要等叢集存在，屆時應改為對它驗證。
+  before_script:
+    - apk add --no-cache curl tar
+    - curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.1/kustomize_v5.8.1_linux_amd64.tar.gz" | tar xz -C /usr/local/bin
+    - curl -fsSL "https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz" | tar xz -C /usr/local/bin kubeconform
+  script:
+    - kustomize build deploy/base > /tmp/manifests.yaml
+    - |
+      kubeconform -strict -summary \
+        -schema-location default \
+        -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+        /tmp/manifests.yaml
 
 proto:
   stage: check

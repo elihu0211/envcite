@@ -16,6 +16,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
 | `services/consult/` | 接地問答：以本體事實為據作答（租戶隔離） | Python 3.14 · uv · gRPC（streaming） |
 | `libs/python/` | 兩個以上服務共用的 Python 套件 | 路徑相依，不發佈 |
+| `deploy/` | Kubernetes 清單（CloudNativePG、服務、遷移 Job） | kustomize · kubeconform |
 | `scripts/` | 跨服務工具鏈（文件、契約產生） | — |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
@@ -64,7 +65,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 | 契約 | `proto/env_law/<service>/v1/` | 該服務有對外 API 時 |
 | 跨服務共用程式碼 | `libs/<lang>/<name>/` | **出現第二個消費端時**，不是「將來可能要用」（已發生一次：`env-law-grpc` 於 consult 成為認證攔截器的第二個消費端時抽出） |
 | 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
-| 跨服務編排 | `deploy/` | 有第二個部署單元要一起編排時 |
+| 跨服務編排 | `deploy/` | 有第二個部署單元要一起編排時（已發生：資料庫與本體服務）。**只放能跑的東西**——沒有 adapter 的服務、尚未存在的匯入器都不放，缺席是狀態不是遺漏 |
 
 **契約維持單一 buf 模組。** `buf.yaml` 現為 `modules: - path: proto`，模組根是 `proto/`，故 import 路徑是 `env_law/<service>/v1/...`。buf v2 支援每個領域一個模組（`- path: proto/<domain>`），但那會改變模組根、進而改變**每一條 import 路徑**。只有當某個領域需要獨立發佈到 schema registry 時才值得付這個代價；同倉共同部署的情況下，單一模組加上 `env_law.<service>.v1` 套件命名已足夠隔離。
 
