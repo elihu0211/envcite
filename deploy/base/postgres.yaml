@@ -28,17 +28,29 @@ spec:
       # Lexical search with CJK tokenisation. Without it there is no BM25 in the
       # database and the hybrid-retrieval design has to be redrawn — see
       # env-law-docs 04-01 §3.
+      #
+      # 0.25.x is the whole published range of this image — there is no 0.20.x. The
+      # query syntax moved with it: index creation is `USING paradedb (...)` with
+      # `pdb.` type casts, not the older `USING bm25 (...)` with a `text_fields`
+      # JSON blob. The retrieval migrations are written against this version.
       - name: pg_search
         image:
-          reference: docker.io/paradedb/paradedb-extension:0.20.1-18-trixie
+          reference: docker.io/paradedb/paradedb-extension:0.25.9-18-trixie
         extension_control_path:
           - /share
         dynamic_library_path:
           - /lib
       # Dense vectors. Community image, versioned per Postgres major.
+      #
+      # No `-minimal-` variant here. That suffix belongs to the Postgres base image
+      # above, where it distinguishes a stripped build; the extension images carry
+      # only the extension and have nothing to strip. Carrying the base image's
+      # naming over to an extension produced a tag that does not exist, and neither
+      # kustomize nor kubeconform contacts a registry to say so — the deploy job
+      # now does (`deploy/scripts/extract-image-refs.py`).
       - name: pgvector
         image:
-          reference: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-minimal-trixie
+          reference: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-trixie
 
   bootstrap:
     initdb:
