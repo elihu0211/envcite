@@ -14,7 +14,6 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `proto/` | gRPC 契約，**唯一真值** | protobuf · buf |
 | `services/platform/` | 多租戶控制平面：tenants、API keys、配額、計量、對外 REST | C# · .NET 10 · ASP.NET Core · PostgreSQL |
 | `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
-| `docs/` | 學術專論庫（`.qmd` → Quarto → xelatex） | Quarto · TikZ |
 | `scripts/` | 跨服務工具鏈（文件、契約產生） | — |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
@@ -52,6 +51,12 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 ./scripts/docs check      # 來源層守門
 ./scripts/docs render     # 產出 PDF 並驗產物層
 ```
+
+## 文件庫在另一個倉庫
+
+技術決策及其論據記於 `env-law-docs`（本倉庫的同層目錄，非子目錄）：`.qmd` → Quarto → xelatex，十卷結構，十一項守門。它與本倉庫的分開理由與服務合併的理由不衝突——合併是為了**契約原子性**，而文件不共用 `proto/`，沒有那個問題要解。
+
+改動設計時，決策的論據寫進該庫，不要寫進本倉庫的 `AGENTS.md`：後者是作業規範，寫進論據必然過期。
 
 ## Contract
 
