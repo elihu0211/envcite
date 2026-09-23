@@ -159,9 +159,10 @@ deploy:
   # 的 CRD）通過嚴格綱要驗證。這**不等於** API server 收得下——真正的 --dry-run=server
   # 要等叢集存在，屆時應改為對它驗證。
   before_script:
-    - apk add --no-cache curl tar
+    - apk add --no-cache curl tar python3 py3-yaml
     - curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.1/kustomize_v5.8.1_linux_amd64.tar.gz" | tar xz -C /usr/local/bin
     - curl -fsSL "https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz" | tar xz -C /usr/local/bin kubeconform
+    - curl -fsSL "https://github.com/google/go-containerregistry/releases/download/v0.22.1/go-containerregistry_Linux_x86_64.tar.gz" | tar xz -C /usr/local/bin crane
   script:
     - kustomize build deploy/base > /tmp/manifests.yaml
     - |
@@ -169,6 +170,29 @@ deploy:
         -schema-location default \
         -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
         /tmp/manifests.yaml
+    # 綱要驗證不碰 registry：清單指名一個不存在的映像，上面兩步全綠。已發生兩次
+    # （paradedb-extension 只發過 0.25.x、pgvector 沒有 -minimal- 變體），兩次都是
+    # 在合併之後才查出來的。第三方映像的 tag 存在與否在這裡就能問，那就在這裡問。
+    - |
+      set -e
+      # 先落檔再讀：`... | while` 會把迴圈放進 subshell，rc 的賦值出不來，
+      # 於是 exit 恆為 0——守門看起來在守，實際全部放行。
+      python3 deploy/scripts/extract-image-refs.py /tmp/manifests.yaml \
+        --own-prefix "$CI_REGISTRY_IMAGE" > /tmp/image-refs.tsv
+      rc=0
+      while IFS="$(printf '\t')" read -r kind ref; do
+        if [ "$kind" = own ]; then
+          # 本倉庫自建的映像由建置 job 產生，而建置 job 尚不存在。在它存在之前，
+          # 這裡查不到不代表清單寫錯——明示跳過並印出理由，不靜默放行。
+          echo "跳過（本倉庫自建，尚無建置 job）：$ref"
+        elif crane manifest "$ref" >/dev/null 2>&1; then
+          echo "存在：$ref"
+        else
+          echo "✗ registry 查無此映像：$ref" >&2
+          rc=1
+        fi
+      done < /tmp/image-refs.tsv
+      exit $rc
 
 proto:
   stage: check
