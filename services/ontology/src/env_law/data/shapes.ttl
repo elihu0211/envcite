@@ -1,0 +1,49 @@
+# SHACL shapes for ingested law data (ELI profile used by this service).
+@prefix sh:  <http://www.w3.org/ns/shacl#> .
+@prefix eli: <http://data.europa.eu/eli/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix shp: <https://env.law/shapes/> .
+
+shp:LegalResourceShape
+    a sh:NodeShape ;
+    sh:targetClass eli:LegalResource ;
+    sh:property [
+        sh:path eli:id_local ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$" ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path eli:is_realized_by ;
+        sh:class eli:LegalExpression ;
+        sh:minCount 1 ;
+    ] ;
+    sh:property [
+        sh:path eli:date_document ;
+        sh:datatype xsd:date ;
+        sh:maxCount 1 ;
+    ] .
+
+shp:LegalExpressionShape
+    a sh:NodeShape ;
+    sh:targetClass eli:LegalExpression ;
+    sh:property [
+        sh:path eli:title ;
+        sh:datatype <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString> ;
+        sh:minCount 1 ;
+    ] .
+
+shp:SubdivisionShape
+    a sh:NodeShape ;
+    sh:targetClass eli:LegalResourceSubdivision ;
+    sh:property [
+        sh:path eli:is_part_of ;
+        sh:class eli:LegalResource ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path eli:number ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[0-9]+(?:-[0-9]+)?$" ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+    ] .

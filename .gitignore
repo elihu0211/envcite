@@ -494,3 +494,25 @@ appsettings.*.local.json
 # Personal agent overrides
 CLAUDE.local.md
 .claude/settings.local.json
+
+# ── Python（services/ontology）─────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.hypothesis/
+.uv-cache/
+.tox/
+.nox/
