@@ -7,7 +7,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 ## Project
 
 - **Name:** env-law-ontology (Python package `env_law`)
-- **Role:** 環境法規本體論服務（shared, non-tenant data）；called by `env-law-platform` (C# SaaS: tenants, billing, API keys)
+- **Role:** 環境法規本體論服務（shared, non-tenant data）；由同倉的 `services/platform`（C# SaaS：租戶、計費、API 金鑰）呼叫
 - **Stack:** Python 3.14 · uv · gRPC (grpcio, sync server) · pyoxigraph (RDF store + SPARQL) · pySHACL · ruff · mypy (strict) · pytest
 - **Data model:** [ELI ontology](http://data.europa.eu/eli/ontology) (RDF/OWL). Titles live on `eli:LegalExpression` (domain of `eli:title`), not on the `LegalResource`.
 - **Status:** gRPC `OntologyService` (GetLaw, ListArticles) over a **sample** fixture; real data import from 全國法規資料庫 not built yet
@@ -53,7 +53,7 @@ ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology      # run server (:50051)
 
 ## Contract
 
-- `proto/env_law/ontology/v1/ontology.proto` is the **single source of truth** for the gRPC API; `env-law-platform` consumes it pinned (git submodule), never copied.
+- 倉庫根的 `proto/env_law/ontology/v1/ontology.proto` 是 gRPC API 的**單一真值**；`services/platform` 由同一份產生程式碼，**不得各自複製**。（子模組共享已於三倉合一時移除。）
 - Breaking changes need a new package version (`v2`); `buf breaking` must pass for `v1`.
 - Data is not tenant-scoped; `x-tenant-id` / `x-request-id` metadata are for logging/audit only.
 - Validate ingested RDF against `src/env_law/data/shapes.ttl` (SHACL).

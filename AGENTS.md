@@ -7,7 +7,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 ## Project
 
 - **Name:** env-law — 環境法規 SaaS，單一倉庫、多個獨立部署的服務
-- **Remote:** `git@gitlab.com:thuaisse-lab/env-law-platform.git`（專案沿用，內容已擴為全倉）
+- **Remote:** `git@gitlab.com:thuaisse-lab/env-law.git`
 
 | 路徑 | 內容 | 技術棧 |
 |------|------|--------|

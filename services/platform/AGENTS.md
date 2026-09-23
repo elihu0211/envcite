@@ -6,13 +6,13 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 
 ## Project
 
-- **Name:** env-law-platform
+- **Name:** platform（`services/platform`；倉庫為 `env-law`）
 - **Role:** 多租戶 SaaS 平台（control plane）：tenants, accounts, subscriptions/billing, API keys, quotas, public API gateway. Calls `env-law-ontology` (Python, shared non-tenant data) via its OpenAPI contract.
 - **Stack:** C# / .NET 10 (SDK pinned in `global.json`) · ASP.NET Core · PostgreSQL · xUnit
 - **Auth:** API keys only for now (OIDC later for an admin UI)
 - **Billing:** not integrated yet; plans assigned manually. Note: Stripe does not onboard Taiwan entities — evaluate Paddle / local gateways when needed.
 - **Status:** tenants + API keys, per-tenant rate limiting, usage metering, REST facade over the ontology gRPC service
-- **Remote:** `git@gitlab.com:thuaisse-lab/env-law-platform.git`
+- **Remote:** `git@gitlab.com:thuaisse-lab/env-law.git`（整個 monorepo；本服務為其中一個目錄）
 
 Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
 
