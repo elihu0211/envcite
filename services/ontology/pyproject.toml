@@ -11,7 +11,8 @@ dependencies = [
     "grpcio>=1.84.0",
     "grpcio-health-checking>=1.84.0",
     "protobuf>=7.35.1,<8",
-    "pyoxigraph>=0.5.11",
+    "psycopg-pool>=3.3.3",
+    "psycopg[binary]>=3.2",
 ]
 
 [project.scripts]
@@ -29,6 +30,7 @@ dev = [
     "pyshacl>=0.40.1",
     "pytest>=9.1.1",
     "ruff>=0.16.8",
+    "testcontainers[postgres]>=4.9",
     "types-grpcio>=1.83.0.20260730",
     "types-grpcio-health-checking>=1.0.0.20260518",
     "types-protobuf>=7.35.1.20260906",

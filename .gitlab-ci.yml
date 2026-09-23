@@ -79,6 +79,18 @@ python:
   rules:
     - changes: *changes-ontology
   image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
+  # 測試需要真實的 PostgreSQL（本服務一半的讀取邏輯在 SQL 裡）。用 job service 直接
+  # 附掛一個，而不是 Docker-in-Docker 再由 testcontainers 起——後者要多跑一個 dind
+  # 服務、多拉一次映像，在每月 400 分鐘的額度下是純損失。testcontainers 仍留在開發
+  # 相依裡，供本機沒有現成資料庫時使用。
+  services:
+    - name: postgres:18-alpine
+      alias: postgres
+  variables:
+    POSTGRES_DB: env_law_test
+    POSTGRES_USER: env_law
+    POSTGRES_PASSWORD: env_law
+    ONTOLOGY_TEST_DSN: "postgresql://env_law:env_law@postgres:5432/env_law_test"
   cache:
     - key:
         files: [services/ontology/uv.lock]

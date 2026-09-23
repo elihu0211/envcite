@@ -1,6 +1,7 @@
 """Server bootstrap.
 
-Config via env: ONTOLOGY_INTERNAL_TOKEN (required), ONTOLOGY_GRPC_PORT, ONTOLOGY_DATA.
+Config via env: ONTOLOGY_INTERNAL_TOKEN (required), ONTOLOGY_DSN (required),
+ONTOLOGY_GRPC_PORT.
 """
 
 from __future__ import annotations
@@ -8,7 +9,6 @@ from __future__ import annotations
 import logging
 import os
 from concurrent import futures
-from pathlib import Path
 
 import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
@@ -45,8 +45,10 @@ def main() -> None:
     if not token:
         raise SystemExit("ONTOLOGY_INTERNAL_TOKEN is required")
 
-    data = os.environ.get("ONTOLOGY_DATA")
-    store = OntologyStore.from_path(Path(data)) if data else OntologyStore.from_sample()
+    dsn = os.environ.get("ONTOLOGY_DSN", "")
+    if not dsn:
+        raise SystemExit("ONTOLOGY_DSN is required")
+    store = OntologyStore.from_dsn(dsn)
     port = os.environ.get("ONTOLOGY_GRPC_PORT", "50051")
 
     server, bound = build_server(store, token, f"[::]:{port}")

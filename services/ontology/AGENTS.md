@@ -8,9 +8,9 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 
 - **Name:** env-law-ontology (Python package `env_law`)
 - **Role:** 環境法規本體論服務（shared, non-tenant data）；由同倉的 `services/platform`（C# SaaS：租戶、計費、API 金鑰）呼叫
-- **Stack:** Python 3.14 · uv · gRPC (grpcio, sync server) · pyoxigraph (RDF store + SPARQL) · pySHACL · ruff · mypy (strict) · pytest
-- **Data model:** [ELI ontology](http://data.europa.eu/eli/ontology) (RDF/OWL). Titles live on `eli:LegalExpression` (domain of `eli:title`), not on the `LegalResource`.
-- **Status:** gRPC `OntologyService` (GetLaw, ListArticles) over a **sample** fixture; real data import from 全國法規資料庫 not built yet
+- **Stack:** Python 3.14 · uv · gRPC（grpcio，同步伺服器）· PostgreSQL（psycopg 3）· pySHACL · ruff · mypy (strict) · pytest
+- **Data model:** [ELI ontology](http://data.europa.eu/eli/ontology)，以**關聯式實表**承載（`legal_resource` / `legal_expression` / `subdivision`）。標題掛在 `legal_expression`——`eli:title` 的定義域是表達層，不是資源層。RDF 是由實表投影的導出視圖，方向不可顛倒；論據見 `env-law-docs` 的 01-01 與 02-02。
+- **Status:** gRPC `OntologyService`（GetLaw、ListArticles）讀 PostgreSQL；資料仍為**樣本 fixture**（`migrations/0002_sample_fixture.sql`），全國法規資料庫的匯入管線尚未建立
 - **Remote:** `git@gitlab.com:thuaisse-lab/env-law-ontology.git`
 
 Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
@@ -33,7 +33,7 @@ Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
 
 ## Commands
 
-Use `uv` only (no pip/venv/poetry). Run from repo root.
+Use `uv` only (no pip/venv/poetry). Run from **this directory** (`services/ontology/`).
 
 ```bash
 uv sync                      # install (creates .venv from uv.lock)
@@ -45,18 +45,21 @@ uv run python -m mypy src tests   # typecheck (strict)
 DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 lint        # proto lint
 DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=main'   # before changing protos
 ./scripts/generate-proto.sh   # regenerate src/env_law/ontology/v1/* after editing protos
-ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology      # run server (:50051)
+ONTOLOGY_TEST_DSN=postgresql://... uv run python -m pytest   # use an existing database
+ONTOLOGY_INTERNAL_TOKEN=dev ONTOLOGY_DSN=postgresql://... uv run env-law-ontology   # run server (:50051)
 ```
 
 - Config lives in `pyproject.toml`. Code in `src/env_law/`, tests in `tests/`.
-- Server env: `ONTOLOGY_INTERNAL_TOKEN` (required; callers send `authorization: Bearer <token>`), `ONTOLOGY_GRPC_PORT` (50051), `ONTOLOGY_DATA` (Turtle file; default: packaged sample).
+- Server env：`ONTOLOGY_INTERNAL_TOKEN`（必填；呼叫端送 `authorization: Bearer <token>`）、`ONTOLOGY_DSN`（必填，PostgreSQL 連線字串）、`ONTOLOGY_GRPC_PORT`（50051）。
+- 測試需要**真實的 PostgreSQL**：設 `ONTOLOGY_TEST_DSN` 指向現成的資料庫，或留空讓 testcontainers 起一個（需要 Docker daemon）。不用替身，因為本服務一半的讀取邏輯在 SQL 裡（整數陣列排序、衍生欄位、CHECK 約束），對替身測試等於不測那一半。
+- 綱要由 `migrations/*.sql` 描述，依檔名順序套用。**已套用的檔案不可修改**——要改就新增一個檔，這條由 `schema_migration` 的雜湊比對強制，不靠記得。
 
 ## Contract
 
 - 倉庫根的 `proto/env_law/ontology/v1/ontology.proto` 是 gRPC API 的**單一真值**；`services/platform` 由同一份產生程式碼，**不得各自複製**。（子模組共享已於三倉合一時移除。）
 - Breaking changes need a new package version (`v2`); `buf breaking` must pass for `v1`.
 - Data is not tenant-scoped; `x-tenant-id` / `x-request-id` metadata are for logging/audit only.
-- Validate ingested RDF against `src/env_law/data/shapes.ttl` (SHACL).
+- `src/env_law/data/shapes.ttl`（SHACL）是 ELI 一致性規格，**目前不套用在任何線上資料上**——本體投影尚未建立。它以負向測試守住不腐壞，投影落地時才接上。
 
 ## Conventions
 
