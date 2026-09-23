@@ -26,12 +26,37 @@ spec:
             - name: grpc
               containerPort: 50051
           env:
-            # CloudNativePG generates this secret from the Cluster's owner role.
-            - name: ONTOLOGY_DSN
+            # Through the pooler, not the rw service directly: the pooler is what
+            # bounds the number of backend connections, and that bound is also the
+            # bound on concurrent search memory (see pooler.yaml).
+            #
+            # The connection is assembled from libpq's own environment variables
+            # rather than from the secret's `uri`, because `uri` points at the rw
+            # service and a URI cannot be repointed without re-encoding the
+            # password — a generated password containing a URI-reserved character
+            # would break in a way that looks like an authentication failure.
+            # ONTOLOGY_DSN carries only what the environment does not.
+            - name: PGHOST
+              value: env-law-pg-pooler
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
               valueFrom:
                 secretKeyRef:
                   name: env-law-pg-app
-                  key: uri
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: env-law-pg-app
+                  key: password
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: env-law-pg-app
+                  key: dbname
+            - name: ONTOLOGY_DSN
+              value: application_name=env-law-ontology
             - name: ONTOLOGY_INTERNAL_TOKEN
               valueFrom:
                 secretKeyRef:

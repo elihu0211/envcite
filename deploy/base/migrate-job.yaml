@@ -31,6 +31,9 @@ spec:
           image: env-law-ontology
           command: ["env-law-migrate"]
           env:
+            # Directly to the rw service, deliberately not through the pooler.
+            # Migrations run DDL in one long-lived connection; transaction pooling
+            # gives no guarantee that consecutive statements reach the same backend.
             - name: ONTOLOGY_DSN
               valueFrom:
                 secretKeyRef:

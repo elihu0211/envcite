@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - postgres.yaml
+  - pooler.yaml
   - migrate-job.yaml
   - ontology.yaml
 
