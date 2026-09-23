@@ -11,6 +11,7 @@ from env_law.store import OntologyStore
 
 log = logging.getLogger(__name__)
 
+
 class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def __init__(self, store: OntologyStore) -> None:
         self._store = store
