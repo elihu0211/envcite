@@ -68,9 +68,11 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 ## Conventions
 
 - 小而聚焦的 diff；有既有程式碼時對齊其風格。
-- 人讀文件 → `README.md` 與 `docs/`；agent 作業 → 本檔與 skills。
+- 人讀文件 → `README.md`；決策論據 → 同層的 `env-law-docs`；agent 作業 → 本檔與 skills。
 - 不要新增 `.cursorrules`、`GEMINI.md` 或其他平行基準檔；`CLAUDE.md` 維持純匯入橋接。
-- 共用 agent 設定（`.agents/`、`.claude/`、`.gemini/`、`skills-lock.json`）只放倉庫根，服務層不重複。
+- 共用 agent 設定（`.agents/`、`.gemini/`、`skills-lock.json`）只放倉庫根，服務層不重複。
+- `.claude/skills/<name>` 是**逐 skill** 的 symlink，指向 `../../.agents/skills/<name>`——官方文件述明可 symlink 的是 `<skill-name>` 項目本身，不是整個 `skills` 目錄。
+- **只服務單一服務的 skill 可放 `services/<name>/.claude/skills/`**：Claude Code 對單一倉庫多服務支援巢狀探索（自起始目錄往上至倉庫根，巢狀子目錄則於實際讀寫該處檔案時動態載入），不必為了共用而把兩個堆疊的內容硬併成一份。
 
 ## Safety
 
