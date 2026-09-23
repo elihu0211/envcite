@@ -8,19 +8,10 @@ failure mode this whole layer is built to prevent.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-
 import psycopg
 import pytest
 
 from env_law.store import OntologyStore, VersionStatus
-
-
-@pytest.fixture
-def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
-    with psycopg.connect(dsn) as c:
-        yield c
-        c.rollback()
 
 
 def _versioned_law(conn: psycopg.Connection[tuple[object, ...]], slug: str) -> None:
@@ -41,9 +32,11 @@ def _versioned_law(conn: psycopg.Connection[tuple[object, ...]], slug: str) -> N
             (f"{base}/{suffix}", slug, title, frm, to),
         )
     conn.execute(
-        "INSERT INTO subdivision (iri, resource_id, number, expression_iri)"
-        " VALUES (%s, %s, '1', %s)",
-        (f"{base}/v2/art_1", slug, f"{base}/v2"),
+        # article_iri is stated, not inferred: a top-level subdivision is its own
+        # article, and 0006 enforces that rather than filling it in silently.
+        "INSERT INTO subdivision (iri, resource_id, number, expression_iri, article_iri)"
+        " VALUES (%s, %s, '1', %s, %s)",
+        (f"{base}/v2/art_1", slug, f"{base}/v2", f"{base}/v2/art_1"),
     )
     conn.commit()
 
@@ -171,10 +164,12 @@ def test_article_may_not_belong_to_another_laws_text(
 
     with pytest.raises(psycopg.errors.ForeignKeyViolation):
         conn.execute(
-            "INSERT INTO subdivision (iri, resource_id, number, expression_iri)"
-            " VALUES (%s, 'one-act', '9', %s)",
+            "INSERT INTO subdivision"
+            " (iri, resource_id, number, expression_iri, article_iri)"
+            " VALUES (%s, 'one-act', '9', %s, %s)",
             (
                 "https://env.law/eli/tw/law/one-act/v2/art_9",
                 "https://env.law/eli/tw/law/other-act/v2",
+                "https://env.law/eli/tw/law/one-act/v2/art_9",
             ),
         )

@@ -40,6 +40,38 @@ def dsn() -> Iterator[str]:
         yield url
 
 
+#: Laws created by migration 0002. They are part of the schema's fixture, not of
+#: any test, so the cleanup below leaves them alone.
+FIXTURE_LAWS = ("air-pollution-control-act", "water-pollution-control-act")
+
+
+@pytest.fixture
+def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
+    """A connection whose writes are undone, including committed ones.
+
+    Rolling back is not enough: a test that commits leaves rows behind, and the
+    next test sees them. That is how `gap-act` collided — two files independently
+    picked the same slug, and the failure surfaced as a primary key violation in
+    an unrelated test. Slug hygiene is not isolation; the next collision would be
+    a count query quietly including another test's rows, with nothing red.
+
+    `norm_relation`, `unresolved_reference` and `subdivision_role` hold no fixture
+    data at all — their tables are created after 0002 — so they are emptied
+    outright. Should a migration ever seed them, this must learn to spare it.
+    """
+    with psycopg.connect(dsn) as c:
+        yield c
+        c.rollback()
+        c.execute("DELETE FROM norm_relation")
+        c.execute("DELETE FROM unresolved_reference")
+        c.execute("DELETE FROM subdivision_role")
+        c.execute(
+            "DELETE FROM legal_resource WHERE id_local <> ALL(%s)",
+            (list(FIXTURE_LAWS),),
+        )
+        c.commit()
+
+
 @pytest.fixture(scope="session")
 def store(dsn: str) -> Iterator[OntologyStore]:
     with OntologyStore.from_dsn(dsn) as s:

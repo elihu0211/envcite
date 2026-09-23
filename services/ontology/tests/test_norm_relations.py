@@ -7,18 +7,8 @@ enforced in application code holds until the second writer appears.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-
 import psycopg
 import pytest
-
-
-@pytest.fixture
-def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
-    """A connection whose writes are rolled back, so cases cannot see each other."""
-    with psycopg.connect(dsn) as c:
-        yield c
-        c.rollback()
 
 
 def _resource(conn: psycopg.Connection[tuple[object, ...]], slug: str, kind: str) -> None:
