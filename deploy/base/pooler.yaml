@@ -1,0 +1,70 @@
+# Connection pooling, and one thing it deliberately does not do.
+#
+# 🚨 `type: rw`, not `ro` — and that is a limitation, not a preference.
+#
+# ParadeDB Community does not support physical replication. Its own documentation
+# is explicit: the index 「does not get physically replicated and won't be
+# available on other nodes in a high availability setup」, and 「HA requires
+# ParadeDB Enterprise because the ParadeDB index must be physically replicated to
+# standby instances」.
+#
+# So the standbys in this cluster can serve ordinary queries and pgvector scans
+# (HNSW is a normal Postgres index and does replicate), but they cannot serve the
+# lexical arm. `search_articles()` uses both arms, so it must reach the primary.
+# Routing it to a replica would not fail loudly — it would return the dense arm's
+# results alone, which is a shorter list that looks like a complete one.
+#
+# Two consequences to keep in view:
+#
+#   1. Read scaling for search is not available on Community. Adding replicas adds
+#      redundancy for the data, not throughput for queries.
+#   2. After a failover the promoted node does not carry a usable ParadeDB index.
+#      It must be rebuilt, and nothing here does that automatically yet — see
+#      deploy/README.md.
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  # Must differ from the Cluster name in this namespace.
+  name: env-law-pg-pooler
+spec:
+  cluster:
+    name: env-law-pg
+  instances: 2
+  type: rw
+  pgbouncer:
+    # Transaction pooling: a backend connection is held only for the duration of a
+    # transaction, so a few backends serve many clients. Session-level state does
+    # not survive between statements, which is why `search_articles()` sets its
+    # HNSW parameters with a function-level SET rather than a session SET — the
+    # latter would leak into whatever client the pool hands the connection to next.
+    poolMode: transaction
+    parameters:
+      # Clients the pooler will accept.
+      max_client_conn: "500"
+      # Backend connections to Postgres. This number is also the bound on how much
+      # memory concurrent searches can take: work_mem is per-operation
+      # per-connection, and hnsw.scan_mem_multiplier multiplies it, so the worst
+      # case is default_pool_size × work_mem × multiplier. Raising this raises that
+      # ceiling too, and the database has no other limit on it.
+      default_pool_size: "20"
+      # psycopg prepares statements after a few executions. Under transaction
+      # pooling those fail with "prepared statement does not exist" unless the
+      # pooler tracks them, which it does only when this is above zero.
+      max_prepared_statements: "100"
+  template:
+    metadata:
+      labels:
+        app: env-law-pg-pooler
+    spec:
+      # Required by the operator when not overriding container settings.
+      containers: []
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - env-law-pg-pooler
+              topologyKey: kubernetes.io/hostname
