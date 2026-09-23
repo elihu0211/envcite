@@ -1,0 +1,73 @@
+# The ontology service. Reads only; the schema is applied by the migration Job.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: env-law-ontology
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: env-law-ontology
+  template:
+    metadata:
+      labels:
+        app: env-law-ontology
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ontology
+          image: env-law-ontology
+          ports:
+            - name: grpc
+              containerPort: 50051
+          env:
+            # CloudNativePG generates this secret from the Cluster's owner role.
+            - name: ONTOLOGY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: env-law-pg-app
+                  key: uri
+            - name: ONTOLOGY_INTERNAL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: env-law-internal-token
+                  key: token
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          # The gRPC health service answers before a token exists: a probe is not
+          # an authenticated caller and must not need to be.
+          readinessProbe:
+            grpc:
+              port: 50051
+              service: env_law.ontology.v1.OntologyService
+            periodSeconds: 10
+          livenessProbe:
+            grpc:
+              port: 50051
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: env-law-ontology
+spec:
+  selector:
+    app: env-law-ontology
+  ports:
+    - name: grpc
+      port: 50051
+      targetPort: grpc

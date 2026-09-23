@@ -1,0 +1,65 @@
+# PostgreSQL by CloudNativePG, with the two extensions the retrieval layer needs
+# mounted as image volumes rather than baked into a custom image.
+#
+# 🚨 Hard requirements — check these before applying:
+#   - PostgreSQL 18+            extension_control_path is what makes image volumes work
+#   - Kubernetes 1.35+          ImageVolume support
+#   - containerd 2.1+ / CRI-O 1.31+
+# On an older cluster these manifests apply but the extensions never mount, and
+# `CREATE EXTENSION` fails at Database reconciliation rather than here.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: env-law-pg
+spec:
+  # Minimal image: extensions come from their own images, so the core stays small
+  # and an extension upgrade does not mean rebuilding Postgres.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-minimal-trixie
+  instances: 3
+
+  storage:
+    size: 20Gi
+
+  postgresql:
+    # pg_search must be preloaded; pgvector must not be (it needs no shared memory).
+    shared_preload_libraries:
+      - pg_search
+    extensions:
+      # Lexical search with CJK tokenisation. Without it there is no BM25 in the
+      # database and the hybrid-retrieval design has to be redrawn — see
+      # env-law-docs 04-01 §3.
+      - name: pg_search
+        image:
+          reference: docker.io/paradedb/paradedb-extension:0.20.1-18-trixie
+        extension_control_path:
+          - /share
+        dynamic_library_path:
+          - /lib
+      # Dense vectors. Community image, versioned per Postgres major.
+      - name: pgvector
+        image:
+          reference: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-minimal-trixie
+
+  bootstrap:
+    initdb:
+      database: env_law
+      owner: env_law
+
+  # Backups are deliberately absent here: a target must be chosen first, and a
+  # backup section that points nowhere reads as "backups are configured".
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: env-law-db
+spec:
+  name: env_law
+  owner: env_law
+  cluster:
+    name: env-law-pg
+  # The operator runs CREATE EXTENSION IF NOT EXISTS for each of these. Note the
+  # extension name is `vector`, not `pgvector` — the image is named after the
+  # project, the extension after what it provides.
+  extensions:
+    - name: vector
+    - name: pg_search
