@@ -6,101 +6,83 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 
 ## Project
 
-- **Name:** env-law-platform
-- **Role:** 多租戶 SaaS 平台（control plane）：tenants, accounts, subscriptions/billing, API keys, quotas, public API gateway. Calls `env-law-ontology` (Python, shared non-tenant data) via its OpenAPI contract.
-- **Stack:** C# / .NET 10 (SDK pinned in `global.json`) · ASP.NET Core · PostgreSQL · xUnit
-- **Auth:** API keys only for now (OIDC later for an admin UI)
-- **Billing:** not integrated yet; plans assigned manually. Note: Stripe does not onboard Taiwan entities — evaluate Paddle / local gateways when needed.
-- **Status:** tenants + API keys, per-tenant rate limiting, usage metering, REST facade over the ontology gRPC service
-- **Remote:** `git@gitlab.com:thuaisse-lab/env-law-platform.git`
+- **Name:** env-law — 環境法規 SaaS，單一倉庫、多個獨立部署的服務
+- **Remote:** `git@gitlab.com:thuaisse-lab/env-law-platform.git`（專案沿用，內容已擴為全倉）
 
-Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
+| 路徑 | 內容 | 技術棧 |
+|------|------|--------|
+| `proto/` | gRPC 契約，**唯一真值** | protobuf · buf |
+| `services/platform/` | 多租戶控制平面：tenants、API keys、配額、計量、對外 REST | C# · .NET 10 · ASP.NET Core · PostgreSQL |
+| `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
+| `scripts/` | 跨服務工具鏈（文件、契約產生） | — |
 
-## Architecture
+各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
 
-- Modular monolith: one solution, one deployable; modules as projects (`Modules.Tenancy`, `Modules.Billing`, `Modules.ApiAccess`, …).
-- Multi-tenancy is runtime isolation (tenant resolution + `TenantId` query filters), never per-tenant code or repos.
-- Billing provider is the source of truth for payment; this service keeps an entitlements table updated via webhooks.
+## 為什麼是單一倉庫（不是單體）
 
-## Layering (canonical)
+合併倉庫**不改變部署邊界**：每個 `services/*` 仍是各自獨立部署的服務。變的只有原始碼位置、契約共享方式與 CI 分流。
 
-| Layer | Path | Loaded when |
-|-------|------|-------------|
-| Baseline | `AGENTS.md` (this file) | Always (all agents) |
-| Skills | `.agents/skills/<name>/SKILL.md` | On demand ([agentskills.io](https://agentskills.io/specification)) |
-| Shared skills | installed from [`elihu0211/agent-config`](https://github.com/elihu0211/agent-config) (public GitHub), pinned in `skills-lock.json` | Same as Skills; update with `npx skills update -p -y` |
-| Claude bridge | `CLAUDE.md` → `@AGENTS.md`; `.claude/skills` → symlink to `.agents/skills` | Claude Code only |
-| Cursor rules | `.cursor/rules/*.mdc` (none yet) | Cursor only, for path-scoped guidance |
-| Gemini bridge | `.gemini/settings.json` → `context.fileName: ["AGENTS.md"]` | Gemini CLI only (default is `GEMINI.md`) |
+改為單一倉庫的理由是契約：proto 先前由 git submodule 共享，為了一個 1.4 KB 的檔案把整棵 Python 樹 vendor 進 C# 倉庫，且契約變更不是原子的——改 proto 要先合一個 MR、再更新 submodule SHA 開第二個 MR，中間有一段兩邊對不上的視窗，而 `buf breaking` 只驗得到自己那一側、看不到消費端跟上沒有。現在 proto 在根、兩個服務同時受同一次變更檢驗。
 
-- Author repo-specific skills in **`.agents/skills/`**; `.claude/skills` is a symlink, never a separate tree.
-- Never hand-edit skills listed in `skills-lock.json`; change them in `agent-config`, then `DISABLE_TELEMETRY=1 npx skills update -p -y`.
-- Prefer **`AGENTS.md`** for always-on ops; use `.cursor/rules` only for Cursor path scoping.
-- Nested `AGENTS.md` in a subdirectory wins for that tree.
+**不要引入 Bazel／Pants／Nx。** 各服務用自己的原生工具（`dotnet`、`uv`），分流靠 GitLab CI 的 `rules:changes`；那些多語言建置系統是規模到了才需要的，現在導入會用一個更大的問題換掉 submodule。
 
 ## Commands
 
-Run from repo root (`EnvLaw.Platform.slnx`). Clone with submodules: `git clone --recurse-submodules …` (or `git submodule update --init`).
+從**倉庫根**執行：
 
 ```bash
-dotnet restore && dotnet tool restore  # tool: dotnet-ef (dotnet-tools.json)
-dotnet build                         # warnings are errors (Directory.Build.props)
-dotnet test                          # needs Docker (Testcontainers PostgreSQL)
-dotnet format                        # apply .editorconfig
-dotnet format --verify-no-changes    # CI check
-dotnet run --project src/EnvLaw.Platform.Api   # Development: local PostgreSQL, auto-migrates
+# ontology（Python）
+cd services/ontology && uv sync
+cd services/ontology && uv run python -m pytest
+cd services/ontology && uv run ruff check . && uv run ruff format .
+cd services/ontology && uv run python -m mypy src tests
+cd services/ontology && ./scripts/generate-proto.sh      # 改完 proto 後重新產生
 
-# Migrations: one DbContext per module, each in its own schema
-dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Modules.<Module> -s src/EnvLaw.Platform.Api -c <Module>DbContext -o Migrations
+# platform（C#）
+cd services/platform && dotnet build
+cd services/platform && dotnet test
+cd services/platform && dotnet format
+
+# 契約
+DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 lint
+DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=main'
+
+# 文件
+./scripts/docs check      # 來源層守門
+./scripts/docs render     # 產出 PDF 並驗產物層
 ```
 
-Ontology contract: `contracts/env-law-ontology` is a git submodule of the ontology repo; `Modules.Ontology` compiles its `proto/…/ontology.proto` (Grpc.Tools). To adopt a new contract version: `git -C contracts/env-law-ontology fetch && git -C contracts/env-law-ontology checkout <commit on main>`, rebuild, commit the submodule pointer. Never copy the `.proto`.
+## 文件庫在另一個倉庫
 
-Config (`Ontology` section): `Address` (e.g. `http://ontology:50051`), `InternalToken` (must equal the service's `ONTOLOGY_INTERNAL_TOKEN`; secret), `Timeout`. Development uses `http://localhost:50051` + token `dev` (`ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology` in the ontology repo).
+技術決策及其論據記於 `env-law-docs`（本倉庫的同層目錄，非子目錄）：`.qmd` → Quarto → xelatex，十卷結構，十一項守門。它與本倉庫的分開理由與服務合併的理由不衝突——合併是為了**契約原子性**，而文件不共用 `proto/`，沒有那個問題要解。
 
-Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; set via user-secrets/env, never commit), `RateLimit:PermitLimit`/`Window`, `ApplyMigrationsOnStartup` (Development/tests only). Connection string: `ConnectionStrings:Platform`.
+改動設計時，決策的論據寫進該庫，不要寫進本倉庫的 `AGENTS.md`：後者是作業規範，寫進論據必然過期。
 
-- Package versions live only in `Directory.Packages.props` (central package management); `dotnet add package` updates it.
-- Shared build settings: `Directory.Build.props`. Don't repeat them in `.csproj` files.
+## Contract
 
-## Layout
-
-- `src/EnvLaw.Platform.Api` — ASP.NET Core host (composition root)
-- `src/EnvLaw.Platform.Modules.*` — feature modules (`Tenancy`, `ApiAccess`, `Metering`, `Ontology`); reference only `SharedKernel`, never each other directly (cross-module contracts like `IUsageRecorder` live in `SharedKernel`)
-- `src/EnvLaw.Platform.SharedKernel` — cross-module primitives
-- `tests/EnvLaw.Platform.Tests` — xUnit + `WebApplicationFactory` integration tests (`PlatformFactory`: Testcontainers PostgreSQL + `FakeTimeProvider` + `FakeOntologyServer`, an in-process h2c gRPC fake)
-
-## Auth & tenancy flow
-
-- Tenant API: `Authorization: Bearer sk_live_{prefix}_{secret}` → `ApiKeyAuthenticationHandler` (lookup by prefix, SHA-256 + constant-time compare) → `tenant` claim → Finbuckle resolves tenant → tenant-owned entities (`IsMultiTenant()`) are filtered automatically.
-- Operator API (`/admin`): `X-Admin-Key` header, compared against `Platform:AdminKeySha256`.
-- Middleware order is load-bearing: `UseAuthentication` → `UseMultiTenant` → `UseAuthorization` → `UseRateLimiter`.
-- `/v1/laws/…` calls env-law-ontology over gRPC with `authorization: Bearer <InternalToken>`, `x-tenant-id`, `x-request-id`; gRPC `NotFound` → 404, `Unavailable`/`DeadlineExceeded` → 503. Only successful calls are metered (`IUsageRecorder`, one row per call in `metering.UsageRecords`).
-- A `MultiTenantDbContext` captures the tenant at construction: never resolve it before tenant resolution; for a specific tenant outside a tenant request use `MultiTenantDbContext.Create<TContext, TenantInfo>(tenant, services)`.
+- `proto/env_law/**` 是 gRPC API 的**單一真值**，兩個服務都由此產生程式碼，**不得各自複製一份**。
+- 破壞性變更要開新套件版本（`v2`）；`v1` 必須通過 `buf breaking`。
+- 本體資料不分租戶；`x-tenant-id` / `x-request-id` 僅供記錄與稽核。
+- 改 proto 的 MR 必須同時更新兩側產生碼——這是單一倉庫換來的性質，別再用兩個 MR 做一件事。
 
 ## Conventions
 
-- Small, focused diffs; match existing style. Formatting rules: `.editorconfig`.
-- Human docs → `README.md`; agent ops → this file + skills.
-- Do not add `.cursorrules`, `GEMINI.md`, or other duplicate baselines; `CLAUDE.md` stays an import-only bridge.
+- 小而聚焦的 diff；有既有程式碼時對齊其風格。
+- 人讀文件 → `README.md`；決策論據 → 同層的 `env-law-docs`；agent 作業 → 本檔與 skills。
+- 不要新增 `.cursorrules`、`GEMINI.md` 或其他平行基準檔；`CLAUDE.md` 維持純匯入橋接。
+- 共用 agent 設定（`.agents/`、`.gemini/`、`skills-lock.json`）只放倉庫根，服務層不重複。
+- `.claude/skills/<name>` 是**逐 skill** 的 symlink，指向 `../../.agents/skills/<name>`——官方文件述明可 symlink 的是 `<skill-name>` 項目本身，不是整個 `skills` 目錄。
+- **只服務單一服務的 skill 可放 `services/<name>/.claude/skills/`**：Claude Code 對單一倉庫多服務支援巢狀探索（自起始目錄往上至倉庫根，巢狀子目錄則於實際讀寫該處檔案時動態載入），不必為了共用而把兩個堆疊的內容硬併成一份。
 
 ## Safety
 
-- Never commit secrets, connection strings, billing keys, or real `.env*` / local appsettings values.
-- Every tenant-scoped query must be filtered by `TenantId`; never disable query filters without review.
-- Bypass only the tenant filter by name (`IgnoreQueryFilters([TenantToken])`), and only in reviewed cross-tenant lookups (currently: API key authentication).
-- Generated: `src/*/Migrations/` (change via `dotnet ef`, never by hand; marked `generated_code` in `.editorconfig`), gRPC code under `obj/` (from the submodule proto).
-- The submodule must point at a commit on the ontology repo's `main` before merging (squash-merged branch commits disappear).
-- Ask before: force-push, history rewrite, production deploys, destructive DB ops, applying migrations to shared DBs.
+- 不提交機密或真實 `.env*` 值。
+- 動手前先問：force-push、改寫歷史、正式環境部署、破壞性資料庫操作。
+- 不要手改產生物：`services/ontology/uv.lock`（用 `uv add/remove/lock`）、`.venv/`、`services/ontology/src/env_law/ontology/v1/*_pb2*`（跑 `generate-proto.sh`）。
+- 樣本資料（`services/ontology/src/env_law/data/laws.ttl`）是占位 fixture，不是權威法條；真實資料須引用全國法規資料庫（政府資料開放授權條款－第1版，需標示出處）。
 
 ## Done when
 
-- `dotnet build` and `dotnet test` pass; `dotnet format --verify-no-changes` is clean — enforced by `.gitlab-ci.yml` (Docker-in-Docker for Testcontainers; the submodule is cloned with the CI job token, so this project must stay in env-law-ontology's job token allowlist).
-- Commands and Safety lists stay accurate after tooling changes.
-
-## Skills in this repo
-
-| Skill | Source | Use when |
-|-------|--------|----------|
-| `maintain-agent-context` | `agent-config` | Editing agent instruction / skill / rule layout |
-| `bootstrap-stack` | this repo | Creating the solution and wiring Commands |
+- 受影響服務的 lint／typecheck／test 與 `buf lint` 通過——由 `.gitlab-ci.yml` 依路徑分流強制。
+- 改了文件則 `./scripts/docs check` 通過。
+- Commands 與 Safety 清單在工具鏈變動後仍然正確。

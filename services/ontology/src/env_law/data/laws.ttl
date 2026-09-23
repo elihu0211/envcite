@@ -1,0 +1,39 @@
+# SAMPLE FIXTURE — structure only, not authoritative legal data.
+# Titles are real Taiwanese statutes; article lists and dates are placeholders.
+# Authoritative source: 全國法規資料庫 (law.moj.gov.tw), 政府資料開放授權條款－第1版.
+@prefix eli:  <http://data.europa.eu/eli/ontology#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix law:  <https://env.law/eli/tw/law/> .
+
+law:air-pollution-control-act
+    a eli:LegalResource ;
+    eli:id_local "air-pollution-control-act" ;
+    eli:date_document "2000-01-01"^^xsd:date ;
+    eli:is_realized_by law:air-pollution-control-act\/zho ;
+    eli:has_part law:air-pollution-control-act\/art_1 ,
+                 law:air-pollution-control-act\/art_2 ,
+                 law:air-pollution-control-act\/art_5-1 ,
+                 law:air-pollution-control-act\/art_10 ;
+    rdfs:comment "Sample fixture" .
+
+law:air-pollution-control-act\/zho
+    a eli:LegalExpression ;
+    eli:realizes law:air-pollution-control-act ;
+    eli:title "空氣污染防制法"@zh-Hant .
+
+law:air-pollution-control-act\/art_1  a eli:LegalResourceSubdivision ; eli:is_part_of law:air-pollution-control-act ; eli:number "1" .
+law:air-pollution-control-act\/art_2  a eli:LegalResourceSubdivision ; eli:is_part_of law:air-pollution-control-act ; eli:number "2" .
+law:air-pollution-control-act\/art_5-1 a eli:LegalResourceSubdivision ; eli:is_part_of law:air-pollution-control-act ; eli:number "5-1" .
+law:air-pollution-control-act\/art_10 a eli:LegalResourceSubdivision ; eli:is_part_of law:air-pollution-control-act ; eli:number "10" .
+
+law:water-pollution-control-act
+    a eli:LegalResource ;
+    eli:id_local "water-pollution-control-act" ;
+    eli:is_realized_by law:water-pollution-control-act\/zho ;
+    rdfs:comment "Sample fixture (no articles, no date)" .
+
+law:water-pollution-control-act\/zho
+    a eli:LegalExpression ;
+    eli:realizes law:water-pollution-control-act ;
+    eli:title "水污染防治法"@zh-Hant .

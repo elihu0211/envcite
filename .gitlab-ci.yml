@@ -1,4 +1,8 @@
-# CI for env-law-platform. Free tier: 400 compute min/month, so checks run in one job.
+# CI for env-law（單一倉庫、多服務）。
+#
+# 免費層每月 400 分鐘，所以 job 用 `rules:changes` 依路徑分流：只改文件不會跑 dotnet
+# 與 python，只改一個服務不會跑另一個。proto 同時是兩個服務的上游，故列入兩者的
+# 觸發路徑——契約一改，兩邊都要重驗，這正是把它們放進同一個倉庫的理由。
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -11,22 +15,38 @@ workflow:
 default:
   interruptible: true
 
-variables:
-  # Contract proto comes from the env-law-ontology submodule (relative URL, cloned with the job token;
-  # requires this project in env-law-ontology's CI/CD job token allowlist).
-  GIT_SUBMODULE_STRATEGY: recursive
-  GIT_SUBMODULE_DEPTH: 1
-  NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
-  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-  DOTNET_NOLOGO: "1"
-
 stages:
   - check
 
+variables:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  UV_VERSION: "0.12.17"
+  PYTHON_VERSION: "3.14"
+  UV_LINK_MODE: copy
+  UV_CACHE_DIR: .uv-cache
+
+.changes-platform: &changes-platform
+  - services/platform/**/*
+  - proto/**/*
+  - .gitlab-ci.yml
+
+.changes-ontology: &changes-ontology
+  - services/ontology/**/*
+  - proto/**/*
+  - .gitlab-ci.yml
+
+.changes-proto: &changes-proto
+  - proto/**/*
+  - buf.yaml
+  - .gitlab-ci.yml
+
 dotnet:
   stage: check
+  rules:
+    - changes: *changes-platform
   image: mcr.microsoft.com/dotnet/sdk:10.0
-  # Testcontainers (PostgreSQL) via Docker-in-Docker; gitlab.com hosted Linux runners are privileged.
+  # Testcontainers（PostgreSQL）走 Docker-in-Docker；gitlab.com 託管 Linux runner 為 privileged。
   services:
     - name: docker:29.8.1-dind
       alias: docker
@@ -34,11 +54,13 @@ dotnet:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     TESTCONTAINERS_HOST_OVERRIDE: docker
+    NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
   cache:
     - key:
-        files: [Directory.Packages.props]
+        files: [services/platform/Directory.Packages.props]
       paths: [.nuget/packages]
   script:
+    - cd services/platform
     - dotnet restore
     - dotnet build --no-restore
     - dotnet format --verify-no-changes --no-restore
@@ -51,3 +73,51 @@ dotnet:
       - artifacts/*test-result.xml
     reports:
       junit: artifacts/*test-result.xml
+
+python:
+  stage: check
+  rules:
+    - changes: *changes-ontology
+  image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
+  cache:
+    - key:
+        files: [services/ontology/uv.lock]
+      paths: [services/ontology/$UV_CACHE_DIR]
+  script:
+    - cd services/ontology
+    - uv sync --locked
+    - uv run --no-sync ruff check .
+    - uv run --no-sync ruff format --check .
+    - uv run --no-sync mypy src tests
+    # 產生碼必須與根 proto/ 一致（重新產生後比對）。
+    - cp -r src/env_law/ontology "$CI_PROJECT_DIR/.generated-before"
+    - ./scripts/generate-proto.sh
+    - diff -r "$CI_PROJECT_DIR/.generated-before" src/env_law/ontology
+    - uv run --no-sync pytest --junitxml="$CI_PROJECT_DIR/report.xml"
+  after_script:
+    - cd services/ontology && uv cache prune --ci
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+
+proto:
+  stage: check
+  rules:
+    - changes: *changes-proto
+  image:
+    name: bufbuild/buf:1.73.0
+    entrypoint: [""]
+  script:
+    - buf lint
+    # 相容性檢查需要一個基準。目標分支尚未含 proto 模組時（例如把契約移進倉庫的
+    # 那一次變更本身），沒有任何既有消費端可被破壞，故明示跳過並印出理由——不要
+    # 靜默通過，也不要因此永久放寬檢查。
+    - |
+      if [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ]; then
+        echo "非 MR pipeline，不執行相容性檢查"
+      elif buf build "${CI_REPOSITORY_URL}#branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}" -o /dev/null >/dev/null 2>&1; then
+        buf breaking --against "${CI_REPOSITORY_URL}#branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+      else
+        echo "目標分支 ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME} 尚無 proto 模組，無基準可比——跳過相容性檢查"
+      fi
