@@ -110,7 +110,14 @@ proto:
     entrypoint: [""]
   script:
     - buf lint
+    # 相容性檢查需要一個基準。目標分支尚未含 proto 模組時（例如把契約移進倉庫的
+    # 那一次變更本身），沒有任何既有消費端可被破壞，故明示跳過並印出理由——不要
+    # 靜默通過，也不要因此永久放寬檢查。
     - |
-      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+      if [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ]; then
+        echo "非 MR pipeline，不執行相容性檢查"
+      elif buf build "${CI_REPOSITORY_URL}#branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}" -o /dev/null >/dev/null 2>&1; then
         buf breaking --against "${CI_REPOSITORY_URL}#branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+      else
+        echo "目標分支 ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME} 尚無 proto 模組，無基準可比——跳過相容性檢查"
       fi
