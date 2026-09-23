@@ -33,6 +33,13 @@ variables:
 
 .changes-ontology: &changes-ontology
   - services/ontology/**/*
+  - libs/python/**/*
+  - proto/**/*
+  - .gitlab-ci.yml
+
+.changes-consult: &changes-consult
+  - services/consult/**/*
+  - libs/python/**/*
   - proto/**/*
   - .gitlab-ci.yml
 
@@ -112,6 +119,32 @@ python:
     when: always
     reports:
       junit: report.xml
+
+consult:
+  stage: check
+  rules:
+    - changes: *changes-consult
+  image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
+  cache:
+    - key:
+        files: [services/consult/uv.lock]
+      paths: [services/consult/$UV_CACHE_DIR]
+  script:
+    - cd services/consult
+    - uv sync --locked
+    - uv run --no-sync ruff check .
+    - uv run --no-sync ruff format --check .
+    - uv run --no-sync mypy src tests
+    - cp -r src/env_law/consult/v1 "$CI_PROJECT_DIR/.generated-before"
+    - ./scripts/generate-proto.sh
+    - diff -r "$CI_PROJECT_DIR/.generated-before" src/env_law/consult/v1
+    - uv run --no-sync pytest --junitxml="$CI_PROJECT_DIR/consult-report.xml"
+  after_script:
+    - cd services/consult && uv cache prune --ci
+  artifacts:
+    when: always
+    reports:
+      junit: consult-report.xml
 
 proto:
   stage: check

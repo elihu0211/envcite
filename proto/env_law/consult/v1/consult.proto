@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package env_law.consult.v1;
+
+option csharp_namespace = "EnvLaw.Consult.V1";
+
+// Grounded question answering over the environmental-law ontology.
+// Internal service: callers must send `authorization: Bearer <internal token>`.
+// Unlike OntologyService this is tenant-scoped: `x-tenant-id` selects the quota
+// and audit trail the call is charged to, and is required.
+service ConsultationService {
+  // Answers one question. The response is a stream because generation is
+  // incremental and a caller must be able to render partial prose; it also means
+  // a call is not safely retryable once events have been emitted.
+  rpc Consult(ConsultRequest) returns (stream ConsultResponse);
+}
+
+message ConsultRequest {
+  // The user's question, verbatim. Never rewritten by the caller.
+  string question = 1;
+  // Optional point in time for which the law should be resolved (ISO 8601 date).
+  // Empty means "as currently in force".
+  string as_of = 2;
+}
+
+// One step of the pipeline finished, or a piece of the answer arrived.
+message ConsultResponse {
+  oneof event {
+    StageStarted stage_started = 1;
+    Grounding grounding = 2;
+    AnswerChunk answer_chunk = 3;
+    Completed completed = 4;
+    Refused refused = 5;
+  }
+}
+
+message StageStarted {
+  // Stable identifier of the pipeline stage, e.g. "retrieve", "generate".
+  string stage = 1;
+}
+
+// The closed set the answer may cite. Emitted once, before any answer chunk:
+// a caller can render the sources before the prose exists, and a citation that
+// is not in this set is a defect the caller may surface.
+message Grounding {
+  repeated Citation citations = 1;
+}
+
+message Citation {
+  // Short code the model may write, e.g. "L1". Values outside this set are stripped.
+  string code = 1;
+  // ELI IRI of the cited subdivision.
+  string iri = 2;
+  // Human-readable label, e.g. "空氣污染防制法 第 20 條".
+  string label = 3;
+}
+
+message AnswerChunk {
+  string text = 1;
+}
+
+message Completed {
+  // Codes actually cited by the finished answer; always a subset of Grounding.
+  repeated string cited_codes = 1;
+  Confidence confidence = 2;
+}
+
+// Why the pipeline declined to answer. Refusal is a first-class outcome, not an
+// error: the caller renders it, it is not retried, and it is not billed as failure.
+message Refused {
+  enum Reason {
+    REASON_UNSPECIFIED = 0;
+    // Nothing retrieved cleared the relevance floor.
+    REASON_NO_EVIDENCE = 1;
+    // Retrieved material does not bear on the question asked.
+    REASON_OUT_OF_SCOPE = 2;
+    // The question needs a fact the user did not supply.
+    REASON_MISSING_INPUT = 3;
+  }
+  Reason reason = 1;
+  string detail = 2;
+}
+
+enum Confidence {
+  CONFIDENCE_UNSPECIFIED = 0;
+  CONFIDENCE_LOW = 1;
+  CONFIDENCE_HIGH = 2;
+}

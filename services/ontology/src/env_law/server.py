@@ -11,10 +11,11 @@ import os
 from concurrent import futures
 
 import grpc
+from env_law_grpc import InternalTokenInterceptor
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
 from env_law.ontology.v1 import ontology_pb2_grpc
-from env_law.service import InternalTokenInterceptor, OntologyServicer
+from env_law.service import OntologyServicer
 from env_law.store import OntologyStore
 
 SERVICE_NAME = "env_law.ontology.v1.OntologyService"

@@ -14,6 +14,8 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `proto/` | gRPC 契約，**唯一真值** | protobuf · buf |
 | `services/platform/` | 多租戶控制平面：tenants、API keys、配額、計量、對外 REST | C# · .NET 10 · ASP.NET Core · PostgreSQL |
 | `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
+| `services/consult/` | 接地問答：以本體事實為據作答（租戶隔離） | Python 3.14 · uv · gRPC（streaming） |
+| `libs/python/` | 兩個以上服務共用的 Python 套件 | 路徑相依，不發佈 |
 | `scripts/` | 跨服務工具鏈（文件、契約產生） | — |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
@@ -60,7 +62,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 |------|------|----------|
 | 可獨立部署的服務 | `services/<name>/` | 新增服務時 |
 | 契約 | `proto/env_law/<service>/v1/` | 該服務有對外 API 時 |
-| 跨服務共用程式碼 | `libs/<lang>/<name>/` | **出現第二個消費端時**，不是「將來可能要用」 |
+| 跨服務共用程式碼 | `libs/<lang>/<name>/` | **出現第二個消費端時**，不是「將來可能要用」（已發生一次：`env-law-grpc` 於 consult 成為認證攔截器的第二個消費端時抽出） |
 | 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
 | 跨服務編排 | `deploy/` | 有第二個部署單元要一起編排時 |
 
