@@ -94,8 +94,12 @@ python:
   # 附掛一個，而不是 Docker-in-Docker 再由 testcontainers 起——後者要多跑一個 dind
   # 服務、多拉一次映像，在每月 400 分鐘的額度下是純損失。testcontainers 仍留在開發
   # 相依裡，供本機沒有現成資料庫時使用。
+  #
+  # ParadeDB 而非 postgres:18-alpine：檢索層需要 pg_search 與 pgvector，而
+  # 這個映像預裝兩者並已配好 shared_preload_libraries。**版本與 deploy 釘的擴充
+  # 相同**——測試環境的擴充版本與正式區不一致時，測到的是另一套語法。
   services:
-    - name: postgres:18-alpine
+    - name: paradedb/paradedb:0.25.9-pg18
       alias: postgres
   variables:
     POSTGRES_DB: env_law_test

@@ -33,7 +33,10 @@ def dsn() -> Iterator[str]:
         yield external
         return
 
-    with PostgresContainer("postgres:18-alpine") as pg:
+    # ParadeDB, not plain postgres: the retrieval layer needs pg_search and
+    # pgvector, and this image ships both with shared_preload_libraries already
+    # set. Same version as the extensions pinned in deploy/.
+    with PostgresContainer("paradedb/paradedb:0.25.9-pg18") as pg:
         url = pg.get_connection_url().replace("postgresql+psycopg2://", "postgresql://")
         with psycopg.connect(url) as conn:
             apply_all(conn)
