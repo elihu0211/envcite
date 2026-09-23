@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"env_law/ontology/v1/ontology.proto\x12\x13\x65nv_law.ontology.v1\"V\n\x03Law\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0b\n\x03iri\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x10\n\x08language\x18\x04 \x01(\t\x12\x15\n\rdate_document\x18\x05 \x01(\t\"&\n\x07\x41rticle\x12\x0b\n\x03iri\x18\x01 \x01(\t\x12\x0e\n\x06number\x18\x02 \x01(\t\"\x1b\n\rGetLawRequest\x12\n\n\x02id\x18\x01 \x01(\t\"7\n\x0eGetLawResponse\x12%\n\x03law\x18\x01 \x01(\x0b\x32\x18.env_law.ontology.v1.Law\"%\n\x13ListArticlesRequest\x12\x0e\n\x06law_id\x18\x01 \x01(\t\"F\n\x14ListArticlesResponse\x12.\n\x08\x61rticles\x18\x01 \x03(\x0b\x32\x1c.env_law.ontology.v1.Article2\xc9\x01\n\x0fOntologyService\x12Q\n\x06GetLaw\x12\".env_law.ontology.v1.GetLawRequest\x1a#.env_law.ontology.v1.GetLawResponse\x12\x63\n\x0cListArticles\x12(.env_law.ontology.v1.ListArticlesRequest\x1a).env_law.ontology.v1.ListArticlesResponseB\x15\xaa\x02\x12\x45nvLaw.Ontology.V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"env_law/ontology/v1/ontology.proto\x12\x13\x65nv_law.ontology.v1\"V\n\x03Law\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0b\n\x03iri\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x10\n\x08language\x18\x04 \x01(\t\x12\x15\n\rdate_document\x18\x05 \x01(\t\"&\n\x07\x41rticle\x12\x0b\n\x03iri\x18\x01 \x01(\t\x12\x0e\n\x06number\x18\x02 \x01(\t\"*\n\rGetLawRequest\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\"7\n\x0eGetLawResponse\x12%\n\x03law\x18\x01 \x01(\x0b\x32\x18.env_law.ontology.v1.Law\"4\n\x13ListArticlesRequest\x12\x0e\n\x06law_id\x18\x01 \x01(\t\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\"F\n\x14ListArticlesResponse\x12.\n\x08\x61rticles\x18\x01 \x03(\x0b\x32\x1c.env_law.ontology.v1.Article2\xc9\x01\n\x0fOntologyService\x12Q\n\x06GetLaw\x12\".env_law.ontology.v1.GetLawRequest\x1a#.env_law.ontology.v1.GetLawResponse\x12\x63\n\x0cListArticles\x12(.env_law.ontology.v1.ListArticlesRequest\x1a).env_law.ontology.v1.ListArticlesResponseB\x15\xaa\x02\x12\x45nvLaw.Ontology.V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -37,13 +37,13 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_ARTICLE']._serialized_start=147
   _globals['_ARTICLE']._serialized_end=185
   _globals['_GETLAWREQUEST']._serialized_start=187
-  _globals['_GETLAWREQUEST']._serialized_end=214
-  _globals['_GETLAWRESPONSE']._serialized_start=216
-  _globals['_GETLAWRESPONSE']._serialized_end=271
-  _globals['_LISTARTICLESREQUEST']._serialized_start=273
-  _globals['_LISTARTICLESREQUEST']._serialized_end=310
-  _globals['_LISTARTICLESRESPONSE']._serialized_start=312
-  _globals['_LISTARTICLESRESPONSE']._serialized_end=382
-  _globals['_ONTOLOGYSERVICE']._serialized_start=385
-  _globals['_ONTOLOGYSERVICE']._serialized_end=586
+  _globals['_GETLAWREQUEST']._serialized_end=229
+  _globals['_GETLAWRESPONSE']._serialized_start=231
+  _globals['_GETLAWRESPONSE']._serialized_end=286
+  _globals['_LISTARTICLESREQUEST']._serialized_start=288
+  _globals['_LISTARTICLESREQUEST']._serialized_end=340
+  _globals['_LISTARTICLESRESPONSE']._serialized_start=342
+  _globals['_LISTARTICLESRESPONSE']._serialized_end=412
+  _globals['_ONTOLOGYSERVICE']._serialized_start=415
+  _globals['_ONTOLOGYSERVICE']._serialized_end=616
 # @@protoc_insertion_point(module_scope)
