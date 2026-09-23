@@ -1,3 +1,12 @@
+"""Regression tests for the SHACL shapes themselves.
+
+The shapes are not applied to any live data: the relational tables are the truth and
+the ontology projection does not exist yet (see env-law-docs 02-02). They are kept,
+under negative tests, so this ELI conformance spec does not rot before the projection
+lands. The positive case went away with the sample Turtle — that data now lives as a
+SQL seed, and keeping both would be two truths.
+"""
+
 from importlib.resources import files
 
 import pyshacl
@@ -15,10 +24,6 @@ def _validate(data: str) -> bool:
         shacl_graph_format="turtle",
     )
     return bool(conforms)
-
-
-def test_sample_data_conforms_to_shapes() -> None:
-    assert _validate(DATA.joinpath("laws.ttl").read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize(
