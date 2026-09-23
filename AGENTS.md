@@ -52,6 +52,24 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 ./scripts/docs render     # 產出 PDF 並驗產物層
 ```
 
+## 目錄配置與擴充判準
+
+現行只有兩個服務。下列判準是**新增第三個服務時照著做的**，不是現在就要建的目錄——**空目錄不先建**，與文件庫「規劃中的卷次不建空殼」同一條理由。
+
+| 內容 | 位置 | 何時才建 |
+|------|------|----------|
+| 可獨立部署的服務 | `services/<name>/` | 新增服務時 |
+| 契約 | `proto/env_law/<service>/v1/` | 該服務有對外 API 時 |
+| 跨服務共用程式碼 | `libs/<lang>/<name>/` | **出現第二個消費端時**，不是「將來可能要用」 |
+| 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
+| 跨服務編排 | `deploy/` | 有第二個部署單元要一起編排時 |
+
+**契約維持單一 buf 模組。** `buf.yaml` 現為 `modules: - path: proto`，模組根是 `proto/`，故 import 路徑是 `env_law/<service>/v1/...`。buf v2 支援每個領域一個模組（`- path: proto/<domain>`），但那會改變模組根、進而改變**每一條 import 路徑**。只有當某個領域需要獨立發佈到 schema registry 時才值得付這個代價；同倉共同部署的情況下，單一模組加上 `env_law.<service>.v1` 套件命名已足夠隔離。
+
+**CI 的擴充點是「新增一個服務要改幾個地方」。** 現在是三處（job、`rules:changes` 錨點、`proto` 觸發路徑），三到四個服務仍可讀；再多就改用 GitLab 子管線（`trigger: include:`），每個服務帶一份自己的 CI 檔。不要在還沒到那個規模時先拆——子管線會讓單一 pipeline 的全貌變得要跨檔案拼。
+
+**服務各自部署就需要知道哪個 commit 在線上。** 標籤用 `<service>/vX.Y.Z`，不要用倉庫層單一版本號——那會讓沒有變更的服務也被迫進版。
+
 ## 文件庫在另一個倉庫
 
 技術決策及其論據記於 `env-law-docs`（本倉庫的同層目錄，非子目錄）：`.qmd` → Quarto → xelatex，十卷結構，十一項守門。它與本倉庫的分開理由與服務合併的理由不衝突——合併是為了**契約原子性**，而文件不共用 `proto/`，沒有那個問題要解。
