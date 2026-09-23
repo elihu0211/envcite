@@ -28,7 +28,10 @@ class Law(_message.Message):
     LANGUAGE_FIELD_NUMBER: _builtins.int
     DATE_DOCUMENT_FIELD_NUMBER: _builtins.int
     id: _builtins.str
-    """Local id, e.g. "air-pollution-control-act" (lowercase letters, digits, hyphens)."""
+    """Note: `title` and `date_document` below describe the resolved version, not the
+    abstract norm — ELI puts the title on the expression, which is version-bearing.
+    Local id, e.g. "air-pollution-control-act" (lowercase letters, digits, hyphens).
+    """
     iri: _builtins.str
     """Canonical IRI of the ELI LegalResource."""
     title: _builtins.str
@@ -82,15 +85,23 @@ class GetLawRequest(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
     ID_FIELD_NUMBER: _builtins.int
+    AS_OF_FIELD_NUMBER: _builtins.int
     id: _builtins.str
+    as_of: _builtins.str
+    """Resolve the law as in force on this date (ISO 8601). Empty means "as
+    currently in force". When the corpus holds no version covering the date the
+    call is NOT_FOUND — never the current text, which would be indistinguishable
+    from a correct answer.
+    """
     def __init__(
         self,
         *,
         id: _builtins.str = ...,
+        as_of: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["id", b"id"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "id", b"id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -121,15 +132,19 @@ class ListArticlesRequest(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
     LAW_ID_FIELD_NUMBER: _builtins.int
+    AS_OF_FIELD_NUMBER: _builtins.int
     law_id: _builtins.str
+    as_of: _builtins.str
+    """See GetLawRequest.as_of."""
     def __init__(
         self,
         *,
         law_id: _builtins.str = ...,
+        as_of: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["law_id", b"law_id"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "law_id", b"law_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

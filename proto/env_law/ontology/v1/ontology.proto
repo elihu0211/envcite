@@ -15,6 +15,8 @@ service OntologyService {
 }
 
 message Law {
+  // Note: `title` and `date_document` below describe the resolved version, not the
+  // abstract norm — ELI puts the title on the expression, which is version-bearing.
   // Local id, e.g. "air-pollution-control-act" (lowercase letters, digits, hyphens).
   string id = 1;
   // Canonical IRI of the ELI LegalResource.
@@ -35,6 +37,11 @@ message Article {
 
 message GetLawRequest {
   string id = 1;
+  // Resolve the law as in force on this date (ISO 8601). Empty means "as
+  // currently in force". When the corpus holds no version covering the date the
+  // call is NOT_FOUND — never the current text, which would be indistinguishable
+  // from a correct answer.
+  string as_of = 2;
 }
 
 message GetLawResponse {
@@ -43,6 +50,8 @@ message GetLawResponse {
 
 message ListArticlesRequest {
   string law_id = 1;
+  // See GetLawRequest.as_of.
+  string as_of = 2;
 }
 
 message ListArticlesResponse {
