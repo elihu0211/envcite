@@ -13,7 +13,11 @@ dependencies = [
     "protobuf>=7.35.1,<8",
     "psycopg-pool>=3.3.3",
     "psycopg[binary]>=3.2",
+    "env-law-grpc",
 ]
+
+[tool.uv.sources]
+env-law-grpc = { path = "../../libs/python/env-law-grpc" }
 
 [project.scripts]
 env-law-ontology = "env_law.server:main"

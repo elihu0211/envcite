@@ -1,11 +1,8 @@
-"""gRPC servicer and internal-auth interceptor."""
+"""gRPC servicer. Internal-token auth is shared (`env_law_grpc.InternalTokenInterceptor`)."""
 
 from __future__ import annotations
 
-import hmac
 import logging
-from collections.abc import Callable
-from typing import Any
 
 import grpc
 
@@ -13,8 +10,6 @@ from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
 from env_law.store import OntologyStore
 
 log = logging.getLogger(__name__)
-
-_UNAUTHENTICATED_PREFIXES = ("/grpc.health.v1.Health/",)
 
 
 class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
@@ -59,31 +54,3 @@ def _log_call(context: grpc.ServicerContext, method: str, subject: str) -> None:
         metadata.get("x-tenant-id", "-"),
         metadata.get("x-request-id", "-"),
     )
-
-
-class InternalTokenInterceptor(grpc.ServerInterceptor):
-    """Rejects calls without `authorization: Bearer <token>` (health checks exempt)."""
-
-    def __init__(self, token: str) -> None:
-        if not token:
-            raise ValueError("internal token must not be empty")
-        self._expected = f"Bearer {token}".encode()
-
-    def intercept_service(
-        self,
-        continuation: Callable[[grpc.HandlerCallDetails], grpc.RpcMethodHandler[Any, Any] | None],
-        handler_call_details: grpc.HandlerCallDetails,
-    ) -> grpc.RpcMethodHandler[Any, Any] | None:
-        if handler_call_details.method.startswith(_UNAUTHENTICATED_PREFIXES):
-            return continuation(handler_call_details)
-
-        metadata = dict(handler_call_details.invocation_metadata or ())
-        provided = str(metadata.get("authorization", "")).encode()
-        if hmac.compare_digest(provided, self._expected):
-            return continuation(handler_call_details)
-
-        return grpc.unary_unary_rpc_method_handler(_deny)
-
-
-def _deny(_request: Any, context: grpc.ServicerContext) -> None:
-    context.abort(grpc.StatusCode.UNAUTHENTICATED, "invalid or missing internal token")

@@ -201,6 +201,7 @@ name = "env-law"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "env-law-grpc" },
     { name = "grpcio" },
     { name = "grpcio-health-checking" },
     { name = "protobuf" },
@@ -224,6 +225,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "env-law-grpc", directory = "../../libs/python/env-law-grpc" },
     { name = "grpcio", specifier = ">=1.84.0" },
     { name = "grpcio-health-checking", specifier = ">=1.84.0" },
     { name = "protobuf", specifier = ">=7.35.1,<8" },
@@ -244,6 +246,17 @@ dev = [
     { name = "types-grpcio-health-checking", specifier = ">=1.0.0.20260518" },
     { name = "types-protobuf", specifier = ">=7.35.1.20260906" },
 ]
+
+[[package]]
+name = "env-law-grpc"
+version = "0.1.0"
+source = { directory = "../../libs/python/env-law-grpc" }
+dependencies = [
+    { name = "grpcio" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "grpcio", specifier = ">=1.84.0" }]
 
 [[package]]
 name = "grpcio"
