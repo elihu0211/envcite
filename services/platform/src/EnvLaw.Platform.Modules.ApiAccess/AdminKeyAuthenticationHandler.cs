@@ -11,11 +11,11 @@ namespace EnvLaw.Platform.Modules.ApiAccess;
 
 public sealed class AdminKeyOptions : AuthenticationSchemeOptions
 {
-    /// <summary>Hex SHA-256 of the admin key (config <c>Platform:AdminKeySha256</c>). Empty disables admin access.</summary>
+    /// <summary>admin key 的十六進位 SHA-256（設定鍵 <c>Platform:AdminKeySha256</c>）。留空即停用 admin 存取。</summary>
     public string AdminKeySha256 { get; set; } = string.Empty;
 }
 
-/// <summary>Authenticates the platform operator via the <c>X-Admin-Key</c> header.</summary>
+/// <summary>以 <c>X-Admin-Key</c> header 驗證平台營運者。</summary>
 public sealed class AdminKeyAuthenticationHandler(
     IOptionsMonitor<AdminKeyOptions> options,
     ILoggerFactory logger,

@@ -1,8 +1,8 @@
 namespace EnvLaw.Platform.Modules.ApiAccess;
 
 /// <summary>
-/// A tenant-owned API key. Only the SHA-256 hash of the secret is stored; the full key is shown once at creation.
-/// <c>TenantId</c> is a Finbuckle shadow property (see <see cref="ApiAccessDbContext"/>).
+/// 租戶擁有的 API key。只儲存 secret 的 SHA-256 雜湊；完整 key 僅在建立時顯示一次。
+/// <c>TenantId</c> 是 Finbuckle 的 shadow property（見 <see cref="ApiAccessDbContext"/>）。
 /// </summary>
 public sealed class ApiKey
 {
@@ -10,7 +10,7 @@ public sealed class ApiKey
 
     public required string Name { get; init; }
 
-    /// <summary>Public lookup handle embedded in the key (<c>sk_live_{Prefix}_{secret}</c>).</summary>
+    /// <summary>嵌在 key 中、可公開的查找 handle（<c>sk_live_{Prefix}_{secret}</c>）。</summary>
     public required string Prefix { get; init; }
 
     public required byte[] SecretHash { get; init; }

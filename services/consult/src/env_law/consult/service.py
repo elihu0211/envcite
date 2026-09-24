@@ -1,9 +1,8 @@
-"""gRPC servicer: turns a pipeline run into the event stream.
+"""gRPC servicer：把一次管線執行轉成事件串流。
 
-Event order is part of the contract, not an implementation detail. `grounding`
-is emitted before the first `answer_chunk` so a caller can render the sources
-before any prose exists — and so that a citation appearing in prose can be
-checked against a set the caller already holds.
+事件順序是契約的一部分，不是實作細節。`grounding` 在第一個 `answer_chunk` 之前
+送出，讓呼叫端能在任何文字出現之前先呈現來源——也讓文字中出現的引用，能與呼叫端
+手上已有的集合比對。
 """
 
 from __future__ import annotations
@@ -36,7 +35,7 @@ class ConsultationServicer(consult_pb2_grpc.ConsultationServiceServicer):
         self._ontology = ontology
         self._llm = llm
 
-    # Method name comes from the proto; gRPC dispatches on it verbatim.
+    # 方法名稱來自 proto；gRPC 依其原樣分派。
     def Consult(
         self, request: consult_pb2.ConsultRequest, context: grpc.ServicerContext
     ) -> Iterator[consult_pb2.ConsultResponse]:
@@ -70,7 +69,7 @@ class ConsultationServicer(consult_pb2_grpc.ConsultationServiceServicer):
             return
 
         yield _stage("generate")
-        # No refusal implies chunks; the pipeline sets exactly one of them.
+        # 沒有拒答即表示有 chunks；管線恰好只會設定其中之一。
         chunks = outcome.chunks or iter(())
         answer: list[str] = []
         for chunk in chunks:

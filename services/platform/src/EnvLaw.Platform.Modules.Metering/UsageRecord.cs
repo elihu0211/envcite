@@ -1,6 +1,6 @@
 namespace EnvLaw.Platform.Modules.Metering;
 
-/// <summary>One metered call. <c>TenantId</c> is a Finbuckle shadow property.</summary>
+/// <summary>一次被計量的呼叫。<c>TenantId</c> 是 Finbuckle 的 shadow property。</summary>
 public sealed class UsageRecord
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();

@@ -14,7 +14,7 @@ using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Modules.ApiAccess;
 
-/// <summary>Authenticates <c>Authorization: Bearer sk_live_…</c> and emits tenant, key and scope claims.</summary>
+/// <summary>驗證 <c>Authorization: Bearer sk_live_…</c>，並發出 tenant、key 與 scope claim。</summary>
 public sealed class ApiKeyAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
@@ -38,11 +38,11 @@ public sealed class ApiKeyAuthenticationHandler(
             return AuthenticateResult.Fail("Malformed API key.");
         }
 
-        // Separate scope: the request-scoped ApiAccessDbContext must be created only after tenant resolution.
+        // 另開 scope：request-scoped 的 ApiAccessDbContext 只能在租戶解析之後建立。
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApiAccessDbContext>();
 
-        // The only cross-tenant query: look up by prefix, bypassing just the tenant filter.
+        // 唯一的跨租戶查詢：以 prefix 查找，只略過租戶 filter。
         var match = await db.ApiKeys
             .IgnoreQueryFilters([Finbuckle.MultiTenant.Abstractions.Constants.TenantToken])
             .AsNoTracking()

@@ -1,4 +1,4 @@
-"""gRPC servicer. Internal-token auth is shared (`env_law_grpc.InternalTokenInterceptor`)."""
+"""gRPC servicer。內部 token 認證為共用元件（`env_law_grpc.InternalTokenInterceptor`）。"""
 
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from env_law.store import OntologyStore
 log = logging.getLogger(__name__)
 
 
-#: Hits returned when the caller leaves `limit` at 0, and the most it may ask for
-#: (`search_articles` draws 50 candidates per arm).
+#: 呼叫端將 `limit` 留為 0 時回傳的命中數，以及可請求的上限
+#: （`search_articles` 每一檢索臂取 50 個候選）。
 DEFAULT_SEARCH_LIMIT = 10
 MAX_SEARCH_LIMIT = 50
 

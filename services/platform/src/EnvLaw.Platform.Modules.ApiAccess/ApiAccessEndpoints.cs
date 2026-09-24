@@ -16,19 +16,19 @@ public sealed record ApiKeySummary(Guid Id, string Name, string Prefix, string[]
     internal static ApiKeySummary From(ApiKey k) => new(k.Id, k.Name, k.Prefix, k.Scopes, k.CreatedAt, k.ExpiresAt, k.RevokedAt);
 }
 
-/// <summary>Returned once at creation; <see cref="Key"/> is never retrievable again.</summary>
+/// <summary>僅於建立時回傳一次；之後再也無法取回 <see cref="Key"/>。</summary>
 public sealed record CreatedApiKey(string Key, ApiKeySummary ApiKey);
 
 public static class ApiAccessEndpoints
 {
-    /// <summary>Operator endpoints under <c>/admin</c>.</summary>
+    /// <summary><c>/admin</c> 之下的營運者端點。</summary>
     public static RouteGroupBuilder MapApiAccessAdminEndpoints(this RouteGroupBuilder admin)
     {
         admin.MapPost("/tenants/{tenantId}/api-keys", IssueKeyAsync);
         return admin;
     }
 
-    /// <summary>Tenant-scoped key management under <c>/v1</c>; queries are tenant-filtered automatically.</summary>
+    /// <summary><c>/v1</c> 之下以租戶為範圍的 key 管理；查詢會自動依租戶篩選。</summary>
     public static RouteGroupBuilder MapApiAccessEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapGet("/api-keys", async (ApiAccessDbContext db, CancellationToken ct) =>
@@ -79,7 +79,7 @@ public static class ApiAccessEndpoints
             ExpiresAt = request.ExpiresAt,
         };
 
-        // Admin requests have no ambient tenant; bind a context to the target tenant explicitly.
+        // Admin 請求沒有 ambient tenant，因此明確地將 context 繫結至目標租戶。
         await using var db = MultiTenantDbContext.Create<ApiAccessDbContext, TenantInfo>(tenant, services);
         db.ApiKeys.Add(apiKey);
         await db.SaveChangesAsync(ct);

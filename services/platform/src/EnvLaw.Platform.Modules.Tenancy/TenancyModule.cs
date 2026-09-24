@@ -13,9 +13,9 @@ namespace EnvLaw.Platform.Modules.Tenancy;
 public static class TenancyModule
 {
     /// <summary>
-    /// Registers the tenant store and resolves the current tenant from the
-    /// <see cref="PlatformClaimTypes.TenantIdentifier"/> claim set by API key authentication.
-    /// Requires <c>UseAuthentication()</c> before <c>UseMultiTenant()</c>.
+    /// 註冊租戶 store，並從 API key 驗證所設定的
+    /// <see cref="PlatformClaimTypes.TenantIdentifier"/> claim 解析目前租戶。
+    /// 必須先 <c>UseAuthentication()</c> 再 <c>UseMultiTenant()</c>。
     /// </summary>
     public static IServiceCollection AddTenancyModule(this IServiceCollection services, string connectionString)
     {

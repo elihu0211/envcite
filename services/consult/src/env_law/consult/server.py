@@ -1,7 +1,7 @@
-"""Server bootstrap.
+"""伺服器啟動。
 
-Config via env: CONSULT_INTERNAL_TOKEN (required), ONTOLOGY_TARGET (required),
-ONTOLOGY_INTERNAL_TOKEN (required), CONSULT_GRPC_PORT.
+以環境變數設定：CONSULT_INTERNAL_TOKEN（必填）、ONTOLOGY_TARGET（必填）、
+ONTOLOGY_INTERNAL_TOKEN（必填）、CONSULT_GRPC_PORT。
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ SERVICE_NAME = "env_law.consult.v1.ConsultationService"
 def build_server(
     ontology: OntologyPort, llm: LlmPort, token: str, address: str = "[::]:0"
 ) -> tuple[grpc.Server, int]:
-    """Creates (not started) a server; returns it with the bound port."""
+    """建立（但不啟動）伺服器；連同綁定的埠號一併回傳。"""
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10),
         interceptors=[InternalTokenInterceptor(token)],
@@ -48,8 +48,7 @@ def main() -> None:
     if not token:
         raise SystemExit("CONSULT_INTERNAL_TOKEN is required")
 
-    # The ontology adapter exists (`adapters.GrpcOntology`); the language-model one
-    # waits on a provider decision. Failing here is deliberate — a server that
-    # starts and then refuses every call would look deployed while being unable to
-    # answer anything.
+    # 本體 adapter 已存在（`adapters.GrpcOntology`）；語言模型的 adapter 則等待
+    # 供應商的決定。在此失敗是刻意的——一個啟動後卻拒絕每一次呼叫的伺服器，看起來
+    # 已經部署，實際上卻什麼都答不了。
     raise SystemExit("no LlmPort adapter yet: choose a language-model provider first")

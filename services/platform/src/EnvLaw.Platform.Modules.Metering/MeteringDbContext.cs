@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EnvLaw.Platform.Modules.Metering;
 
-/// <summary>Usage records, filtered to the current tenant.</summary>
+/// <summary>用量紀錄，篩選至目前租戶。</summary>
 public sealed class MeteringDbContext : MultiTenantDbContext
 {
     internal const string Schema = "metering";

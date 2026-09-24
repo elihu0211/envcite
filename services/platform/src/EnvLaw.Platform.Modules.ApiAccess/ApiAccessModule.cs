@@ -4,7 +4,6 @@ using EnvLaw.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EnvLaw.Platform.Modules.ApiAccess;
 
-/// <summary>What a plan allows. Only the request rate for now; entitlements join it when a feature is gated.</summary>
+/// <summary>方案允許的內容。目前只有請求速率；等有功能需要分級時，功能權限再加入。</summary>
 public sealed class PlanOptions
 {
     public int PermitLimit { get; set; } = 60;
@@ -21,8 +20,8 @@ public sealed class PlanOptions
 }
 
 /// <summary>
-/// Plans and who is on which (<c>Platform:Plans</c>, <c>Platform:TenantPlans</c>). Assigned by hand in
-/// configuration until billing exists; a tenant not listed is on <see cref="DefaultPlan"/>.
+/// 方案與各租戶所屬的方案（<c>Platform:Plans</c>、<c>Platform:TenantPlans</c>）。在計費整合之前
+/// 於設定中手動指派；未列出的租戶屬於 <see cref="DefaultPlan"/>。
 /// </summary>
 public sealed class PlanCatalog
 {
@@ -37,7 +36,7 @@ public sealed class PlanCatalog
         _plans.TryAdd(DefaultPlan, new PlanOptions());
         _tenantPlans = tenantPlans;
 
-        // A typo in a plan name must fail at startup, not quietly put a paying tenant on the free tier.
+        // 方案名稱打錯必須在啟動時失敗，而不是讓付費租戶默默落在免費層。
         if (_tenantPlans.FirstOrDefault(t => !_plans.ContainsKey(t.Value)) is { Key: not null } unknown)
         {
             throw new InvalidOperationException(
@@ -51,7 +50,7 @@ public sealed class PlanCatalog
 
 public static class ApiAccessModule
 {
-    /// <summary>Registers API key storage, the ApiKey/AdminKey schemes, policies and per-tenant rate limiting.</summary>
+    /// <summary>註冊 API key 儲存、ApiKey/AdminKey scheme、policy 與逐租戶的 rate limiting。</summary>
     public static IServiceCollection AddApiAccessModule(
         this IServiceCollection services, string connectionString, IConfiguration platformConfig)
     {
@@ -81,7 +80,7 @@ public static class ApiAccessModule
         services.AddRateLimiter(limiter =>
         {
             limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            // Partition on the verified tenant claim, never on raw request headers.
+            // 以已驗證的租戶 claim 分區，絕不使用原始 request header。
             limiter.AddPolicy(PlatformAuth.PerTenantRateLimit, context =>
             {
                 var tenant = context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value ?? "anonymous";

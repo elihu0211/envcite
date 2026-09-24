@@ -1,10 +1,8 @@
-"""Apply SQL migrations in filename order.
+"""依檔名順序套用 SQL migration。
 
-No migration framework on purpose: this schema is a handful of files, and a
-framework buys a version table, autogeneration and rollback semantics — only the
-version table is needed here, so it is a table. An applied file must never be
-edited; add a new one instead. That rule is enforced by a checksum comparison
-rather than by remembering it.
+刻意不用 migration 框架：這個 schema 只有寥寥幾個檔案，而框架提供的是版本表、
+自動產生與回滾語意——這裡只需要版本表，所以它就只是一張表。已套用的檔案絕不可
+修改；請改為新增一個檔案。這條規則靠 checksum 比對強制執行，而不是靠人記得。
 """
 
 from __future__ import annotations
@@ -26,11 +24,11 @@ CREATE TABLE IF NOT EXISTS schema_migration (
 
 
 class MigrationChanged(RuntimeError):
-    """An applied migration file was edited; add a new file instead."""
+    """已套用的 migration 檔案遭到修改；請改為新增一個檔案。"""
 
 
 def apply_all(conn: Connection[tuple[object, ...]], directory: Path | None = None) -> list[str]:
-    """Applies pending migrations; returns the filenames applied by this call."""
+    """套用尚未執行的 migration；回傳本次呼叫所套用的檔名。"""
     directory = directory or MIGRATIONS_DIR
     applied: list[str] = []
     with conn.cursor() as cur:
@@ -59,12 +57,11 @@ def apply_all(conn: Connection[tuple[object, ...]], directory: Path | None = Non
 
 
 def main() -> None:
-    """CLI entrypoint: apply migrations against `ONTOLOGY_DSN`, then exit.
+    """CLI 進入點：對 `ONTOLOGY_DSN` 套用 migration，然後結束。
 
-    Separate from the server on purpose. A server that migrates on startup makes
-    every replica a writer and turns a rollout into a race; running it as its own
-    task means the schema change has a beginning and an end that something else
-    can wait on.
+    刻意與伺服器分開。啟動時就執行 migration 的伺服器，會讓每個 replica 都成為
+    寫入者，把一次 rollout 變成競態；以獨立的任務執行，則讓 schema 變更有明確的
+    開始與結束，可供其他元件等待。
     """
     import logging
     import os

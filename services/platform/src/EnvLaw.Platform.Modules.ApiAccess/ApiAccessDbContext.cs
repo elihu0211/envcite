@@ -7,9 +7,9 @@ using Microsoft.EntityFrameworkCore;
 namespace EnvLaw.Platform.Modules.ApiAccess;
 
 /// <summary>
-/// API keys, filtered to the current tenant by Finbuckle's named query filter.
-/// The tenant is captured when the context is constructed, so never resolve this
-/// context before tenant resolution in a request (authentication uses its own scope).
+/// API key，由 Finbuckle 的具名 query filter 篩選至目前租戶。
+/// 租戶在建構 context 時即被擷取，因此在請求中完成租戶解析之前，絕不可解析此
+/// context（驗證流程使用自己的 scope）。
 /// </summary>
 public sealed class ApiAccessDbContext : MultiTenantDbContext
 {
