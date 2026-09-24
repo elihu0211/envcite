@@ -49,11 +49,13 @@ extend-exclude = ["src/env_law/ontology/v1/*_pb2*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
-# RUF001 flags full-width punctuation in string literals as ambiguous. Statutory
-# text is Chinese and its punctuation is full-width: 「本法所稱事業，指…」 with a
-# half-width comma is no longer the text of the law. RUF002/RUF003 stay on, so
-# docstrings and comments remain English like the rest of the repo.
-ignore = ["RUF001"]
+# Full-width punctuation is flagged as ambiguous by RUF001 (strings), RUF002
+# (docstrings) and RUF003 (comments). All three are off, for the same reason as
+# env-law-segmenter. Statutory text is Chinese and its punctuation is full-width:
+# 「本法所稱事業，指…」 with a half-width comma is no longer the text of the law.
+# Docstrings and comments are written in Chinese (zh-TW) with full-width
+# punctuation, which is correct there too.
+ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.mypy]
 strict = true

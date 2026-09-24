@@ -1,12 +1,10 @@
-"""Internal-token authentication for service-to-service gRPC.
+"""服務對服務 gRPC 的內部 token 認證。
 
-Extracted from the ontology service when the consultation service became its
-second consumer — not before. An interface designed for one caller is designed
-for an imagined second one, and the imagined one is usually wrong.
+在諮詢服務成為第二個消費端時才從本體服務抽出——不是更早。只為一個呼叫端設計的
+介面，其實是為想像中的第二個呼叫端而設計，而想像出來的那個通常是錯的。
 
-This guards the perimeter between services, not tenants: it answers "is this a
-call from inside the system", and nothing else. Tenant authorisation belongs to
-whichever service owns tenant state.
+它守的是服務之間的邊界，不是租戶之間的：它只回答「這是不是來自系統內部的呼叫」，
+別無其他。租戶授權屬於擁有租戶狀態的那個服務。
 """
 
 from __future__ import annotations
@@ -17,13 +15,13 @@ from typing import Any
 
 import grpc
 
-#: Health checks must answer before a caller can hold a token — an orchestrator
-#: probing readiness is not authenticated and should not need to be.
+#: 健康檢查必須在呼叫端持有 token 之前就能回應——探測 readiness 的 orchestrator
+#: 並未經過認證，也不應該需要。
 UNAUTHENTICATED_PREFIXES = ("/grpc.health.v1.Health/",)
 
 
 class InternalTokenInterceptor(grpc.ServerInterceptor):
-    """Rejects calls without `authorization: Bearer <token>` (health checks exempt)."""
+    """拒絕沒有 `authorization: Bearer <token>` 的呼叫（健康檢查除外）。"""
 
     def __init__(self, token: str) -> None:
         if not token:
@@ -40,7 +38,7 @@ class InternalTokenInterceptor(grpc.ServerInterceptor):
 
         metadata = dict(handler_call_details.invocation_metadata or ())
         provided = str(metadata.get("authorization", "")).encode()
-        # Constant-time: a token check that leaks timing leaks the token.
+        # 常數時間比較：會洩漏時間差的 token 檢查，就會洩漏 token。
         if hmac.compare_digest(provided, self._expected):
             return continuation(handler_call_details)
 

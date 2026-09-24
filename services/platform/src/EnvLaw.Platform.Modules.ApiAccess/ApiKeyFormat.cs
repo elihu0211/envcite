@@ -4,7 +4,7 @@ using System.Text;
 
 namespace EnvLaw.Platform.Modules.ApiAccess;
 
-/// <summary>Key format: <c>sk_live_{prefix:12 hex}_{secret:base64url(32 bytes)}</c>.</summary>
+/// <summary>Key 格式：<c>sk_live_{prefix:12 hex}_{secret:base64url(32 bytes)}</c>。</summary>
 public static class ApiKeyFormat
 {
     public const int PrefixLength = 12;

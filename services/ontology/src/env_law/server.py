@@ -1,7 +1,7 @@
-"""Server bootstrap.
+"""伺服器啟動。
 
-Config via env: ONTOLOGY_INTERNAL_TOKEN (required), ONTOLOGY_DSN (required),
-ONTOLOGY_GRPC_PORT.
+以環境變數設定：ONTOLOGY_INTERNAL_TOKEN（必填）、ONTOLOGY_DSN（必填）、
+ONTOLOGY_GRPC_PORT。
 """
 
 from __future__ import annotations
@@ -22,21 +22,21 @@ from env_law.store import OntologyStore
 
 SERVICE_NAME = "env_law.ontology.v1.OntologyService"
 
-#: Seconds in-flight RPCs get to finish after SIGTERM. Below Kubernetes' default
-#: terminationGracePeriodSeconds (30), so the kubelet's SIGKILL never lands first.
+#: 收到 SIGTERM 後，進行中的 RPC 可用來完成的秒數。低於 Kubernetes 預設的
+#: terminationGracePeriodSeconds（30），因此 kubelet 的 SIGKILL 絕不會先到。
 SHUTDOWN_GRACE_SECONDS = 25
 
 
 def build_server(
     store: OntologyStore, token: str, address: str = "[::]:0"
 ) -> tuple[grpc.Server, int]:
-    """Creates (not started) a server; returns it with the bound port."""
+    """建立（但不啟動）伺服器；連同綁定的埠號一併回傳。"""
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10),
         interceptors=[InternalTokenInterceptor(token)],
     )
-    # The lexicon is read once: terms imported later need a restart to reach
-    # queries, as they need a re-index to reach `content_tsv`.
+    # lexicon 只讀取一次：之後匯入的用語要重新啟動才會進入查詢，正如它們要重新
+    # 建立索引才會進入 `content_tsv`。
     segmenter = Segmenter(store.lexicon())
     ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
         OntologyServicer(store, segmenter), server
@@ -52,11 +52,10 @@ def build_server(
 
 
 def stop_on_sigterm(server: grpc.Server) -> None:
-    """Drains the server on SIGTERM: refuses new RPCs and lets in-flight ones finish.
+    """收到 SIGTERM 時排空伺服器：拒絕新的 RPC，並讓進行中的 RPC 完成。
 
-    Required, not optional: as PID 1 in the container, Python ignores SIGTERM
-    unless a handler is installed, so the kubelet would wait out the grace period
-    and SIGKILL mid-call.
+    這是必要而非選配：作為容器中的 PID 1，Python 除非安裝了 handler，否則會忽略
+    SIGTERM，於是 kubelet 會等完寬限期，然後在呼叫途中 SIGKILL。
     """
     signal.signal(signal.SIGTERM, lambda *_: server.stop(SHUTDOWN_GRACE_SECONDS))
 

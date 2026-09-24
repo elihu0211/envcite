@@ -1,7 +1,5 @@
 using System.Text.RegularExpressions;
 
-using EnvLaw.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.AspNetCore.Extensions;
 
@@ -23,7 +21,7 @@ public static partial class TenancyEndpoints
     [GeneratedRegex("^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$")]
     private static partial Regex IdentifierPattern();
 
-    /// <summary>Operator endpoints under <c>/admin</c>; require the admin key.</summary>
+    /// <summary><c>/admin</c> 之下的營運者端點；需要 admin key。</summary>
     public static RouteGroupBuilder MapTenancyAdminEndpoints(this RouteGroupBuilder admin)
     {
         admin.MapPost("/tenants", CreateTenantAsync);
@@ -32,7 +30,7 @@ public static partial class TenancyEndpoints
         return admin;
     }
 
-    /// <summary>Tenant-scoped endpoints under <c>/v1</c>.</summary>
+    /// <summary><c>/v1</c> 之下以租戶為範圍的端點。</summary>
     public static RouteGroupBuilder MapTenancyEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapGet("/me", (HttpContext context) =>

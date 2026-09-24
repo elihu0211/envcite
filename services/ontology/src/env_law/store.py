@@ -1,13 +1,11 @@
-"""Read model over the ELI law data (PostgreSQL).
+"""ELI 法規資料（PostgreSQL）之上的讀取模型。
 
-The relational tables are the truth; the ontology is a view projected from them.
-That direction must not be reversed — see env-law-docs 02-02. This module reads
-only; writing belongs to the import pipeline, which does not exist yet.
+關聯式資料表才是真值；本體是由它們投影出來的視圖。這個方向不得反轉——見
+env-law-docs 02-02。本模組只讀；寫入屬於匯入管線，而該管線尚未存在。
 
-Ordering is not done in Python. Reading order ("5-1" after "5", before "6") is
-carried by the derived column `subdivision.sort_key` and the query just ORDERs by
-it. Ordering is a property of the data, not a preference of the caller: leave it
-to the caller and a second caller will eventually order it differently.
+排序不在 Python 裡做。閱讀順序（「5-1」在「5」之後、「6」之前）由衍生欄位
+`subdivision.sort_key` 承載，查詢只需依它 ORDER BY。排序是資料的性質，不是呼叫端
+的偏好：交給呼叫端決定，遲早會有第二個呼叫端排出不同的順序。
 """
 
 from __future__ import annotations
@@ -20,20 +18,19 @@ from typing import Self
 
 from psycopg_pool import ConnectionPool
 
-#: Shape of a local id. Mirrors the CHECK on `legal_resource.id_local`; both are
-#: needed. The database one guards writes, this one avoids a round trip for a value
-#: that cannot possibly match. It is not injection defence — the queries are
-#: parameterised — it is a cheap reject.
+#: local id 的形狀。與 `legal_resource.id_local` 上的 CHECK 相互對應；兩者都需要。
+#: 資料庫那一道守住寫入，這一道則讓不可能相符的值省去一次往返。它不是注入防禦——
+#: 查詢都已參數化——而是一道廉價的拒絕。
 _LOCAL_ID = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$")
 
 
 class VersionStatus(Enum):
-    """Why a point-in-time resolution did or did not produce a text."""
+    """某時點的版本解析為何產出（或未產出）條文。"""
 
     RESOLVED = "resolved"
-    #: No such law in the corpus.
+    #: 語料中沒有這部法規。
     UNKNOWN_LAW = "unknown_law"
-    #: The law exists, but no held version covers the requested date.
+    #: 法規存在，但持有的版本中沒有任何一個涵蓋所請求的日期。
     NO_VERSION = "no_version"
 
 
@@ -59,7 +56,7 @@ class SearchHit:
     law_title: str
     number: str
     content: str
-    #: Fused rank score: orders hits, says nothing about relevance (see 0010).
+    #: 融合後的排序分數：只用來排序命中結果，不表示相關性（見 0010）。
     rank_score: float
     lexical_score: float | None
     dense_distance: float | None
@@ -69,9 +66,9 @@ def is_valid_local_id(value: str) -> bool:
     return bool(_LOCAL_ID.fullmatch(value))
 
 
-#: The text in force at a date, or — when `p_on` is NULL — the one with no end.
-#: Resolution happens in SQL so that "which version" has exactly one answer; two
-#: callers each picking a version in Python would eventually pick differently.
+#: 某日期施行中的條文；當 `p_on` 為 NULL 時，則為沒有終止日的那一版。
+#: 解析在 SQL 裡進行，讓「哪一個版本」只有唯一答案；若兩個呼叫端各自在 Python 裡
+#: 挑版本，遲早會挑得不一樣。
 _RESOLVE_EXPRESSION = """
     SELECT e.iri, e.title, e.language
       FROM legal_expression AS e
@@ -84,18 +81,17 @@ _RESOLVE_EXPRESSION = """
      LIMIT 1
 """
 
-#: The segmenter's lexicon: statutory terms and law titles (env-law-docs 04-01 §4).
-#: The importer must build `content_tsv` from this same query — a lexicon that
-#: differs yields a different `tokenizer` id, and the lexical arm then matches
-#: nothing rather than something wrong.
+#: segmenter 的 lexicon：法定用語與法規名稱（env-law-docs 04-01 §4）。
+#: 匯入程式必須用同一個查詢建立 `content_tsv`——lexicon 不同就會得到不同的
+#: `tokenizer` id，此時字面檢索臂會什麼都比對不到，而不是比對到錯的東西。
 _LEXICON = """
     SELECT term FROM term_definition
     UNION
     SELECT title FROM legal_expression
 """
 
-#: The dense arm is off (NULL vector and model) until an embedding model is
-#: chosen and measured; `search_articles` then returns lexical hits only.
+#: 在選定並量測 embedding 模型之前，稠密檢索臂維持關閉（向量與模型皆為 NULL）；
+#: 此時 `search_articles` 只回傳字面檢索的命中結果。
 _SEARCH = """
     SELECT s.iri, s.resource_id, e.title, s.number, s.content,
            s.score, s.lexical_score, s.dense_distance
@@ -142,22 +138,19 @@ class OntologyStore:
         self.close()
 
     def get_law(self, law_id: str, *, as_of: str = "") -> LawRecord | None:
-        """The law as in force at `as_of` (ISO date), or currently when empty.
+        """`as_of`（ISO 日期）當時施行的法規；為空時取現行版本。
 
-        Returns None both when the law is unknown and when no version covers the
-        date. Those are different facts, and `version_status` tells them apart —
-        this method is the convenience path for callers that do not care.
+        法規不存在與沒有版本涵蓋該日期，兩種情況都回傳 None。這是兩個不同的事實，
+        由 `version_status` 加以區分——本方法是給不在意差別的呼叫端的便捷途徑。
         """
         status, record = self.resolve(law_id, as_of=as_of)
         return record if status is VersionStatus.RESOLVED else None
 
     def resolve(self, law_id: str, *, as_of: str = "") -> tuple[VersionStatus, LawRecord | None]:
-        """Resolves a law at a point in time, distinguishing the two ways it fails.
+        """解析法規在某時點的版本，並區分兩種失敗方式。
 
-        `NO_VERSION` is the one that matters: the law exists but the corpus does
-        not hold the text in force on that date. Answering with the current text
-        would be indistinguishable from a correct answer, so the caller has to be
-        able to say it does not know.
+        要緊的是 `NO_VERSION`：法規存在，但語料並未持有該日期施行的條文。若以現行
+        條文作答，將與正確答案無從區分，因此呼叫端必須能夠表明自己不知道。
         """
         if not is_valid_local_id(law_id):
             return VersionStatus.UNKNOWN_LAW, None
@@ -179,17 +172,16 @@ class OntologyStore:
             iri=iri,
             title=title,
             language=language,
-            # An unknown date is NULL in the database; the wire contract is a
-            # string, so "unknown" is the empty string.
+            # 未知的日期在資料庫中為 NULL；線上契約的型別是字串，因此「未知」
+            # 以空字串表示。
             date_document=date_document.isoformat() if date_document is not None else "",
         )
 
     def list_articles(self, law_id: str, *, as_of: str = "") -> list[ArticleRecord] | None:
-        """Articles of the text in force at `as_of`.
+        """`as_of` 當時施行條文的各條。
 
-        None when the law is unknown or no version covers the date; [] when that
-        version genuinely has no articles. The two must stay distinguishable: one
-        means the corpus lacks it, the other is a fact about the law.
+        法規不存在或沒有版本涵蓋該日期時為 None；該版本確實沒有任何條文時為 []。
+        兩者必須保持可區分：前者表示語料缺漏，後者是關於該法規的事實。
         """
         if not is_valid_local_id(law_id):
             return None
@@ -210,7 +202,7 @@ class OntologyStore:
     def search(
         self, terms: str, *, tokenizer: str, as_of: str = "", limit: int = 10
     ) -> list[SearchHit]:
-        """Articles in force at `as_of` (today when empty) matching segmented `terms`."""
+        """`as_of`（為空時為今日）施行中、與已斷詞之 `terms` 相符的條文。"""
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(
                 _SEARCH,

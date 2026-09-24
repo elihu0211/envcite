@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EnvLaw.Platform.Modules.Tenancy;
 
-/// <summary>Finbuckle EF Core tenant store, isolated in the <c>tenancy</c> schema.</summary>
+/// <summary>Finbuckle 的 EF Core 租戶 store，隔離在 <c>tenancy</c> schema 中。</summary>
 public sealed class TenancyDbContext(DbContextOptions<TenancyDbContext> options)
     : EFCoreStoreDbContext<TenantInfo>(options)
 {

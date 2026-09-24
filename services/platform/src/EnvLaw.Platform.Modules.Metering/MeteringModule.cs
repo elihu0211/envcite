@@ -1,7 +1,6 @@
 using EnvLaw.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +21,7 @@ internal sealed class UsageRecorder(MeteringDbContext db, TimeProvider time) : I
 
 public static class MeteringModule
 {
-    /// <summary>Per-tenant usage metering (one row per billable call; aggregate for billing later).</summary>
+    /// <summary>逐租戶的用量計量（每次計費呼叫一列；之後再彙總供計費）。</summary>
     public static IServiceCollection AddMeteringModule(this IServiceCollection services, string connectionString)
     {
         services.TryAddSingleton(TimeProvider.System);
@@ -33,7 +32,7 @@ public static class MeteringModule
         return services;
     }
 
-    /// <summary><c>GET /v1/usage</c>: the current tenant's usage per operation.</summary>
+    /// <summary><c>GET /v1/usage</c>：目前租戶依 operation 分列的用量。</summary>
     public static RouteGroupBuilder MapMeteringEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapGet("/usage", async (MeteringDbContext db, CancellationToken ct) =>

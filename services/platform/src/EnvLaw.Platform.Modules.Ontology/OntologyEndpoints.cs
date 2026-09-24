@@ -18,7 +18,7 @@ public static class OntologyEndpoints
     public const string GetLawOperation = "ontology.get_law";
     public const string ListArticlesOperation = "ontology.list_articles";
 
-    /// <summary>Public REST facade over the internal gRPC service; successful calls are metered.</summary>
+    /// <summary>包在內部 gRPC 服務外的對外 REST facade；成功的呼叫會被計量。</summary>
     public static RouteGroupBuilder MapOntologyEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapGet("/laws/{lawId}", async (string lawId, OntologyService.OntologyServiceClient client,

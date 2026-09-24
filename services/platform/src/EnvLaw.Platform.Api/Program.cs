@@ -38,7 +38,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Order matters: API key auth sets the tenant claim that Finbuckle resolves the tenant from.
+// 順序很重要：API key 驗證會設定租戶 claim，Finbuckle 再據此解析租戶。
 app.UseAuthentication();
 app.UseMultiTenant();
 app.UseAuthorization();
@@ -61,6 +61,3 @@ app.MapGroup("/v1")
     .MapOntologyEndpoints();
 
 await app.RunAsync();
-
-/// <summary>Entry point marker for WebApplicationFactory-based tests.</summary>
-public partial class Program;

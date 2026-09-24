@@ -1,1 +1,1 @@
-"""env-law ontology service: ELI-based RDF/OWL law data served over gRPC."""
+"""env-law 本體服務：以 gRPC 提供基於 ELI 的 RDF/OWL 法規資料。"""

@@ -1,12 +1,11 @@
-"""Chinese segmentation with a lexicon derived from the corpus.
+"""以語料衍生之 lexicon 進行的中文斷詞。
 
-The index side and the query side must use the same segmenter. A mismatch does
-not raise: the query's lexemes differ from the indexed ones, fewer rows match,
-and the result list is shorter rather than wrong — the harder failure to see.
-This package exists so that both sides cannot reach different implementations.
+索引端與查詢端必須使用同一個 segmenter。不一致並不會拋出例外：查詢的 lexeme 與
+索引中的不同，比對到的列變少，結果清單是變短而不是出錯——這是更難察覺的失敗。
+本套件的存在，就是讓兩端無法取用到不同的實作。
 
-Which segmenter, and why, is measured rather than assumed: see README.md and
-`scripts/measure-segmentation.py`.
+用哪一個 segmenter、以及為什麼，是量測出來的而非假設的：見 README.md 與
+`scripts/measure-segmentation.py`。
 """
 
 from __future__ import annotations
@@ -21,32 +20,29 @@ __all__ = ["Segmenter", "lexicon_digest", "tokenizer_id"]
 
 
 def lexicon_digest(terms: Iterable[str]) -> str:
-    """A stable short digest of the lexicon's content.
+    """lexicon 內容的穩定短摘要。
 
-    Sorted and de-duplicated first, so the digest depends on which terms are in
-    the lexicon and not on the order they arrived in — otherwise re-running the
-    importer would appear to change the tokenizer.
+    先排序並去除重複，讓摘要取決於 lexicon 中有哪些用語，而不是它們進來的順序——
+    否則重新執行匯入程式，看起來就像換了 tokenizer。
     """
     joined = "\n".join(sorted({t for t in terms if t}))
     return hashlib.sha256(joined.encode("utf-8")).hexdigest()[:8]
 
 
 def tokenizer_id(terms: Iterable[str]) -> str:
-    """The value that goes into `subdivision.tokenizer`.
+    """寫入 `subdivision.tokenizer` 的值。
 
-    Carries both halves of what determines a segmentation: the implementation
-    and the lexicon. A change in either makes previously indexed tsvectors
-    incomparable with new queries, which is what the column exists to detect.
+    帶有決定斷詞結果的兩半：實作與 lexicon。任一者改變，先前建立索引的 tsvector
+    就無法與新的查詢比較，而偵測這件事正是該欄位存在的目的。
     """
     return f"jieba-{version('jieba')}+dict-{lexicon_digest(terms)}"
 
 
 class Segmenter:
-    """Segments text the same way every time, given the same lexicon.
+    """給定相同的 lexicon，每次都以相同方式斷詞。
 
-    Holds its own `jieba.Tokenizer` rather than using the module-level default:
-    the default is process-global mutable state, and a second component adding a
-    word to it would silently change this one's output.
+    持有自己的 `jieba.Tokenizer`，而不使用模組層級的預設實例：預設實例是
+    process 全域的可變狀態，若有第二個元件往裡面加詞，就會悄悄改變本元件的輸出。
     """
 
     def __init__(self, terms: Sequence[str] = ()) -> None:
@@ -54,23 +50,19 @@ class Segmenter:
         self._tokenizer = jieba.Tokenizer()
         self._tokenizer.initialize()
         for term in self._terms:
-            # A frequency high enough that the term is never split in favour of
-            # its parts. The statute defined it as one thing; the segmenter has
-            # no basis to disagree.
+            # 詞頻設得夠高，讓該用語絕不會被拆成它的組成部分。法規把它定義為
+            # 一個整體；segmenter 沒有理由不同意。
             self._tokenizer.add_word(term, freq=100_000)
 
-        # Known and measured limitation: jieba's `re_han` excludes full-width
-        # brackets, so it cannot emit a token spanning one, whatever the
-        # dictionary says. 「廢（污）水處理設施」 and 「自然保護（育）區」 are
-        # statutory terms written exactly that way, and they are the entire
-        # residual error — 11 occurrences out of 1036, the 1.1% that the 98.9%
-        # leaves. Registering a bracket-free variant does nothing, because the
-        # text being segmented has the brackets; an earlier version of this file
-        # did that and looked like it was handling the case.
+        # 已知且經量測的限制：jieba 的 `re_han` 不包含全形括號，因此無論詞典
+        # 怎麼寫，它都無法產出跨越括號的 token。「廢（污）水處理設施」與
+        # 「自然保護（育）區」正是這樣書寫的法定用語，而它們就是全部的殘餘錯誤——
+        # 1036 次中的 11 次，也就是 98.9% 之外剩下的 1.1%。註冊不含括號的變體
+        # 毫無作用，因為被斷詞的文字本身帶有括號；本檔案的較早版本就這麼做過，
+        # 看起來像是處理了這個情況。
         #
-        # Fixing it means overriding jieba's module-level `re_han_default`, which
-        # is process-global state this class deliberately avoids. Left alone
-        # until the 1.1% is worth that trade.
+        # 修正它意味著覆寫 jieba 模組層級的 `re_han_default`，而那正是本類別
+        # 刻意避開的 process 全域狀態。在這 1.1% 值得那樣取捨之前，暫且不處理。
 
     @property
     def tokenizer_id(self) -> str:
@@ -81,30 +73,26 @@ class Segmenter:
         return self._terms
 
     def tokenize(self, text: str) -> list[tuple[str, int, int]]:
-        """Words with their character offsets: (word, start, end).
+        """詞及其字元位移：(word, start, end)。
 
-        Offsets come from jieba rather than being reconstructed by summing token
-        lengths. Reconstruction breaks the moment any token is filtered out —
-        which `segment()` does to whitespace — and the breakage is silent: every
-        position after the first dropped token is wrong, so a checker comparing
-        positions reports correct segmentations as failures. That happened here,
-        and it moved a headline number by thirty points.
+        位移取自 jieba，而不是把 token 長度加總來重建。只要有任何 token 被濾掉，
+        重建就會出錯——`segment()` 對空白正是這麼做的——而且出錯是無聲的：第一個
+        被丟棄的 token 之後，每個位置都是錯的，於是比對位置的檢查程式會把正確的
+        斷詞回報為失敗。這件事在這裡發生過，讓一個主要數字偏移了三十個百分點。
         """
         return list(self._tokenizer.tokenize(text))
 
     def segment(self, text: str) -> list[str]:
-        """Words, with whitespace dropped.
+        """詞，去除空白。
 
-        Whitespace is dropped rather than kept as tokens because the output is
-        joined by spaces downstream; keeping it would produce empty lexemes. Use
-        `tokenize()` when positions matter.
+        空白之所以丟棄而不保留為 token，是因為輸出在下游會以空格串接；保留它會
+        產生空的 lexeme。需要位置時請用 `tokenize()`。
         """
         return [w for w in self._tokenizer.cut(text) if w.strip()]
 
     def to_tsvector_input(self, text: str) -> str:
-        """Space-separated words, ready for `to_tsvector('simple', …)`.
+        """以空格分隔的詞，可直接交給 `to_tsvector('simple', …)`。
 
-        The database never segments — it receives words. This is the only place
-        that decides what a word is.
+        資料庫從不斷詞——它收到的就是詞。這裡是唯一決定何謂一個詞的地方。
         """
         return " ".join(self.segment(text))

@@ -13,12 +13,12 @@ namespace EnvLaw.Platform.Modules.Ontology;
 public sealed class OntologyOptions
 {
     /// <summary>
-    /// gRPC address of env-law-ontology: <c>dns:///env-law-ontology:50051</c> in the cluster
-    /// (headless Service, one connection per pod), <c>http://localhost:50051</c> locally.
+    /// env-law-ontology 的 gRPC 位址：叢集內為 <c>dns:///env-law-ontology:50051</c>
+    /// （headless Service，每個 pod 一條連線），本機為 <c>http://localhost:50051</c>。
     /// </summary>
     public string Address { get; set; } = string.Empty;
 
-    /// <summary>Shared secret sent as <c>authorization: Bearer …</c> (the service's ONTOLOGY_INTERNAL_TOKEN).</summary>
+    /// <summary>以 <c>authorization: Bearer …</c> 送出的共用密鑰（即該服務的 ONTOLOGY_INTERNAL_TOKEN）。</summary>
     public string InternalToken { get; set; } = string.Empty;
 
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
@@ -26,7 +26,7 @@ public sealed class OntologyOptions
 
 public static class OntologyModule
 {
-    /// <summary>Registers the typed gRPC client for env-law-ontology with internal auth and tenant/request metadata.</summary>
+    /// <summary>註冊 env-law-ontology 的 typed gRPC client，附帶內部驗證與 tenant/request metadata。</summary>
     public static IServiceCollection AddOntologyModule(this IServiceCollection services, IConfiguration section)
     {
         var options = section.Get<OntologyOptions>() ?? new OntologyOptions();
@@ -61,12 +61,12 @@ public static class OntologyModule
             })
             .ConfigureChannel(channel =>
             {
-                // A channel is one long-lived HTTP/2 connection, so a ClusterIP Service pins every
-                // call to one pod. With `dns:///<headless service>:<port>` the resolver returns every
-                // pod and round_robin spreads calls across them; a plain http:// address is one host.
+                // 一個 channel 就是一條長駐的 HTTP/2 連線，因此 ClusterIP Service 會把每次呼叫
+                // 都釘在同一個 pod。使用 `dns:///<headless service>:<port>` 時，resolver 會回傳每個
+                // pod，由 round_robin 將呼叫分散到各 pod；單純的 http:// 位址則只有一台主機。
                 channel.ServiceConfig = new ServiceConfig { LoadBalancingConfigs = { new RoundRobinConfig() } };
 
-                // Plain h2c inside the cluster network; switch Address to https to use TLS.
+                // 叢集網路內使用明文 h2c；要用 TLS 就把 Address 改為 https。
                 if (address.Scheme != Uri.UriSchemeHttps)
                 {
                     channel.Credentials = ChannelCredentials.Insecure;
