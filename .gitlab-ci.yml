@@ -47,6 +47,10 @@ variables:
   - deploy/**/*
   - .gitlab-ci.yml
 
+.changes-segmenter: &changes-segmenter
+  - libs/python/env-law-segmenter/**/*
+  - .gitlab-ci.yml
+
 .changes-proto: &changes-proto
   - proto/**/*
   - buf.yaml
@@ -197,6 +201,33 @@ deploy:
         fi
       done < /tmp/image-refs.tsv
       exit $rc
+
+segmenter:
+  stage: check
+  rules:
+    - changes: *changes-segmenter
+  image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
+  # 無資料庫：這個函式庫不碰資料庫。斷詞品質由
+  # scripts/measure-segmentation.py 對真實法規量測，那需要網路，故不在 CI 跑
+  # ——CI 驗的是契約（同一份詞典得到同一個 tokenizer id 與同一批 token），
+  # 因為索引端與查詢端對不上是這裡唯一會安靜失敗的東西。
+  cache:
+    - key:
+        files: [libs/python/env-law-segmenter/uv.lock]
+      paths: [libs/python/env-law-segmenter/$UV_CACHE_DIR]
+  script:
+    - cd libs/python/env-law-segmenter
+    - uv sync --locked --all-groups
+    - uv run --no-sync ruff check .
+    - uv run --no-sync ruff format --check .
+    - uv run --no-sync mypy src tests
+    - uv run --no-sync pytest --junitxml="$CI_PROJECT_DIR/segmenter-report.xml"
+  after_script:
+    - cd libs/python/env-law-segmenter && uv cache prune --ci
+  artifacts:
+    when: always
+    reports:
+      junit: segmenter-report.xml
 
 proto:
   stage: check
