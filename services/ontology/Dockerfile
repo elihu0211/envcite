@@ -35,7 +35,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH=/app/services/ontology/.venv/bin:$PATH
 COPY --from=build /app /app
 WORKDIR /app/services/ontology
-# Matches runAsUser/runAsGroup in deploy/base/ontology.
+# Matches runAsUser/runAsGroup in env-law-deploy base/ontology.
 USER 1000:1000
 EXPOSE 50051
 CMD ["env-law-ontology"]

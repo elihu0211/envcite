@@ -34,7 +34,7 @@ def dsn() -> Iterator[str]:
         return
 
     # pgvector only: since 0010 the lexical arm is PostgreSQL's own full-text
-    # search, so the sole extension is `vector`. Same version as deploy pins.
+    # search, so the sole extension is `vector`. Same version as env-law-deploy pins.
     with PostgresContainer("pgvector/pgvector:0.8.1-pg18") as pg:
         url = pg.get_connection_url().replace("postgresql+psycopg2://", "postgresql://")
         with psycopg.connect(url) as conn:
