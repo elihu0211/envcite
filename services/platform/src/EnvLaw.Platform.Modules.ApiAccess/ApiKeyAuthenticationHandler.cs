@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Encodings.Web;
 
+using EnvLaw.Platform.Data;
 using EnvLaw.Platform.SharedKernel;
 
 using Finbuckle.MultiTenant.Abstractions;
@@ -38,9 +39,9 @@ public sealed class ApiKeyAuthenticationHandler(
             return AuthenticateResult.Fail("Malformed API key.");
         }
 
-        // 另開 scope：request-scoped 的 ApiAccessDbContext 只能在租戶解析之後建立。
+        // 另開 scope：request-scoped 的 PlatformDbContext 只能在租戶解析之後建立。
         await using var scope = scopeFactory.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApiAccessDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
 
         // 唯一的跨租戶查詢：以 prefix 查找，只略過租戶 filter。
         var match = await db.ApiKeys

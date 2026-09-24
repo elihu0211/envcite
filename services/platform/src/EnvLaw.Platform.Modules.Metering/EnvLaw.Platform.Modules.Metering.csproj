@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EnvLaw.Platform.SharedKernel\EnvLaw.Platform.SharedKernel.csproj" />
+    <ProjectReference Include="..\EnvLaw.Platform.Data\EnvLaw.Platform.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

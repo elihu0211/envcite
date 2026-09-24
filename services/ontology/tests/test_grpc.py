@@ -3,10 +3,11 @@ import signal
 
 import grpc
 import pytest
+from env_law_grpc import stop_on_sigterm
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 
 from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
-from env_law.server import build_server, stop_on_sigterm
+from env_law.server import build_server
 from env_law.store import OntologyStore
 
 from .conftest import TOKEN, auth

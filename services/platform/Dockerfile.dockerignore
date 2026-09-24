@@ -1,0 +1,11 @@
+# The build context is the repo root; send only what the image needs.
+*
+!proto
+!services/platform/global.json
+!services/platform/Directory.Build.props
+!services/platform/Directory.Packages.props
+!services/platform/.editorconfig
+!services/platform/dotnet-tools.json
+!services/platform/src
+**/bin
+**/obj

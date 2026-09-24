@@ -1,0 +1,9 @@
+# The build context is the repo root; send only what the image needs.
+*
+!libs/python/env-law-grpc
+!services/consult/pyproject.toml
+!services/consult/uv.lock
+!services/consult/README.md
+!services/consult/src
+**/__pycache__
+**/.venv

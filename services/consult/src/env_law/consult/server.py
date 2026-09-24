@@ -11,7 +11,7 @@ import os
 from concurrent import futures
 
 import grpc
-from env_law_grpc import InternalTokenInterceptor
+from env_law_grpc import InternalTokenInterceptor, stop_on_sigterm
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
 from env_law.consult.adapters import GrpcOntology
@@ -61,6 +61,7 @@ def main() -> None:
     # 呼叫逐一分散，而非全部黏在第一條連線上。
     channel = grpc.insecure_channel(target, options=[("grpc.lb_policy_name", "round_robin")])
     server, bound = build_server(GrpcOntology(channel, ontology_token), token, f"[::]:{port}")
+    stop_on_sigterm(server)
     server.start()
     logging.getLogger(__name__).info("consult gRPC server listening on :%d", bound)
     server.wait_for_termination()

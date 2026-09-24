@@ -8,11 +8,10 @@ from __future__ import annotations
 
 import logging
 import os
-import signal
 from concurrent import futures
 
 import grpc
-from env_law_grpc import InternalTokenInterceptor
+from env_law_grpc import InternalTokenInterceptor, stop_on_sigterm
 from env_law_segmenter import Segmenter
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
@@ -21,10 +20,6 @@ from env_law.service import OntologyServicer
 from env_law.store import OntologyStore
 
 SERVICE_NAME = "env_law.ontology.v1.OntologyService"
-
-#: 收到 SIGTERM 後，進行中的 RPC 可用來完成的秒數。低於 Kubernetes 預設的
-#: terminationGracePeriodSeconds（30），因此 kubelet 的 SIGKILL 絕不會先到。
-SHUTDOWN_GRACE_SECONDS = 25
 
 
 def build_server(
@@ -49,15 +44,6 @@ def build_server(
 
     port = server.add_insecure_port(address)
     return server, port
-
-
-def stop_on_sigterm(server: grpc.Server) -> None:
-    """收到 SIGTERM 時排空伺服器：拒絕新的 RPC，並讓進行中的 RPC 完成。
-
-    這是必要而非選配：作為容器中的 PID 1，Python 除非安裝了 handler，否則會忽略
-    SIGTERM，於是 kubelet 會等完寬限期，然後在呼叫途中 SIGKILL。
-    """
-    signal.signal(signal.SIGTERM, lambda *_: server.stop(SHUTDOWN_GRACE_SECONDS))
 
 
 def main() -> None:

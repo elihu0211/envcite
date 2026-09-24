@@ -167,10 +167,11 @@ consult:
     reports:
       junit: consult-report.xml
 
-ontology-image:
+# 映像建置。建置在 MR 上也跑：Dockerfile 壞掉要在合併前知道。推送只在預設分支——MR 的
+# 映像沒有人會部署，推上去只是佔 registry。tag 只用 commit SHA，不推 latest：可變的
+# tag 讓「部署的是哪一版」無從回答。env-law-deploy 的 Image Updater 依這個 SHA 上線。
+.image:
   stage: build
-  rules:
-    - changes: *changes-ontology
   image: docker:29.8.1
   services:
     - name: docker:29.8.1-dind
@@ -178,13 +179,11 @@ ontology-image:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-    IMAGE: $CI_REGISTRY_IMAGE/ontology:$CI_COMMIT_SHA
-  # 建置在 MR 上也跑：Dockerfile 壞掉要在合併前知道。推送只在預設分支——MR 的映像
-  # 沒有人會部署，推上去只是佔 registry。tag 只用 commit SHA，不推 latest：
-  # 可變的 tag 讓「部署的是哪一版」無從回答。
+    IMAGE: $CI_REGISTRY_IMAGE/$SERVICE:$CI_COMMIT_SHA
   script:
+    # 未用到的 build-arg 只會警告：platform 的 Dockerfile 不用 uv／Python 版本。
     - >-
-      docker build -f services/ontology/Dockerfile
+      docker build -f services/$SERVICE/Dockerfile
       --build-arg UV_VERSION="$UV_VERSION"
       --build-arg PYTHON_VERSION="$PYTHON_VERSION"
       -t "$IMAGE" .
@@ -195,6 +194,27 @@ ontology-image:
       else
         echo "非預設分支，只驗證建置、不推送：$IMAGE"
       fi
+
+ontology-image:
+  extends: .image
+  rules:
+    - changes: *changes-ontology
+  variables:
+    SERVICE: ontology
+
+consult-image:
+  extends: .image
+  rules:
+    - changes: *changes-consult
+  variables:
+    SERVICE: consult
+
+platform-image:
+  extends: .image
+  rules:
+    - changes: *changes-platform
+  variables:
+    SERVICE: platform
 
 segmenter:
   stage: check

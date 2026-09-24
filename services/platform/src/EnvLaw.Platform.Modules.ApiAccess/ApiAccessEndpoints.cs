@@ -1,3 +1,5 @@
+using EnvLaw.Platform.Data;
+
 using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.EntityFrameworkCore;
 
@@ -31,10 +33,10 @@ public static class ApiAccessEndpoints
     /// <summary><c>/v1</c> 之下以租戶為範圍的 key 管理；查詢會自動依租戶篩選。</summary>
     public static RouteGroupBuilder MapApiAccessEndpoints(this RouteGroupBuilder v1)
     {
-        v1.MapGet("/api-keys", async (ApiAccessDbContext db, CancellationToken ct) =>
+        v1.MapGet("/api-keys", async (PlatformDbContext db, CancellationToken ct) =>
             (await db.ApiKeys.AsNoTracking().OrderBy(k => k.CreatedAt).ToListAsync(ct)).Select(ApiKeySummary.From));
 
-        v1.MapDelete("/api-keys/{id:guid}", async (Guid id, ApiAccessDbContext db, TimeProvider time, CancellationToken ct) =>
+        v1.MapDelete("/api-keys/{id:guid}", async (Guid id, PlatformDbContext db, TimeProvider time, CancellationToken ct) =>
         {
             var key = await db.ApiKeys.SingleOrDefaultAsync(k => k.Id == id, ct);
             if (key is null)
@@ -80,7 +82,7 @@ public static class ApiAccessEndpoints
         };
 
         // Admin 請求沒有 ambient tenant，因此明確地將 context 繫結至目標租戶。
-        await using var db = MultiTenantDbContext.Create<ApiAccessDbContext, TenantInfo>(tenant, services);
+        await using var db = MultiTenantDbContext.Create<PlatformDbContext, TenantInfo>(tenant, services);
         db.ApiKeys.Add(apiKey);
         await db.SaveChangesAsync(ct);
 
