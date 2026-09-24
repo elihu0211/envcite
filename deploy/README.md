@@ -55,7 +55,7 @@ CNPG 1.29 起，正式區的推薦形式是 `ImageCatalog`——由 operator 依
 
 `deploy` job 因此多一步：把 `kustomize build` 的輸出交給 `scripts/extract-image-refs.py` 列出所有映像，再逐一 `crane manifest` 查存在性。
 
-**第三方映像查不到即失敗**；**本倉庫自建的映像明示跳過**並印出理由——它由建置 job 產生，而建置 job 尚不存在，在那之前查不到不代表清單寫錯。建置 job 落地時，這個跳過要一併移除。
+**第三方映像查不到即失敗**；**本倉庫自建的映像明示跳過**並印出理由——建置 job（`ontology-image`）在預設分支推送 `:<commit-sha>`，但清單仍寫 `latest`、尚未釘 tag，沒有可比對的對象。清單改釘 SHA（待 GitOps 部署方式定案）時，這個跳過要一併移除。
 
 腳本列舉鍵名（`image`、`imageName`、`reference`）而不猜測。CRD 新增鍵名時要補，而補的動作在 review 看得見；靠形狀猜測則會在沒人察覺時停止找到東西。
 

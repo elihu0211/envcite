@@ -17,6 +17,7 @@ default:
 
 stages:
   - check
+  - build
 
 variables:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
@@ -190,9 +191,10 @@ deploy:
       rc=0
       while IFS="$(printf '\t')" read -r kind ref; do
         if [ "$kind" = own ]; then
-          # 本倉庫自建的映像由建置 job 產生，而建置 job 尚不存在。在它存在之前，
-          # 這裡查不到不代表清單寫錯——明示跳過並印出理由，不靜默放行。
-          echo "跳過（本倉庫自建，尚無建置 job）：$ref"
+          # 本倉庫自建的映像由 *-image job 推送 :<commit-sha>，但清單尚未釘 tag
+          # （仍是 latest，待 GitOps 部署方式定案）——沒有可比對的 tag，明示跳過並
+          # 印出理由，不靜默放行。清單改釘 SHA 時，這個跳過要一併移除。
+          echo "跳過（本倉庫自建，清單尚未釘 tag）：$ref"
         elif crane manifest "$ref" >/dev/null 2>&1; then
           echo "存在：$ref"
         else
@@ -201,6 +203,35 @@ deploy:
         fi
       done < /tmp/image-refs.tsv
       exit $rc
+
+ontology-image:
+  stage: build
+  rules:
+    - changes: *changes-ontology
+  image: docker:29.8.1
+  services:
+    - name: docker:29.8.1-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    IMAGE: $CI_REGISTRY_IMAGE/ontology:$CI_COMMIT_SHA
+  # 建置在 MR 上也跑：Dockerfile 壞掉要在合併前知道。推送只在預設分支——MR 的映像
+  # 沒有人會部署，推上去只是佔 registry。tag 只用 commit SHA，不推 latest：
+  # 可變的 tag 讓「部署的是哪一版」無從回答。
+  script:
+    - >-
+      docker build -f services/ontology/Dockerfile
+      --build-arg UV_VERSION="$UV_VERSION"
+      --build-arg PYTHON_VERSION="$PYTHON_VERSION"
+      -t "$IMAGE" .
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+        docker push "$IMAGE"
+      else
+        echo "非預設分支，只驗證建置、不推送：$IMAGE"
+      fi
 
 segmenter:
   stage: check
