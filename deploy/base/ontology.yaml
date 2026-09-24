@@ -26,9 +26,9 @@ spec:
             - name: grpc
               containerPort: 50051
           env:
-            # Through the pooler, not the rw service directly: the pooler is what
-            # bounds the number of backend connections, and that bound is also the
-            # bound on concurrent search memory (see pooler.yaml).
+            # Through the read-only pooler: this service never writes, and the
+            # pooler is what bounds the number of backend connections — a bound
+            # that is also the bound on concurrent search memory (see pooler.yaml).
             #
             # The connection is assembled from libpq's own environment variables
             # rather than from the secret's `uri`, because `uri` points at the rw

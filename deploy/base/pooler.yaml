@@ -1,26 +1,13 @@
-# Connection pooling, and one thing it deliberately does not do.
+# Connection pooling for the ontology service, which reads and never writes.
 #
-# 🚨 `type: rw`, not `ro` — and that is a limitation, not a preference.
+# `type: ro` — the standbys, not the primary. This became possible in 0010: the
+# lexical arm used to be a ParadeDB index, which ParadeDB Community does not
+# physically replicate, so a replica could only have served the dense arm and
+# would have returned a shorter list that looks like a complete one. Both arms
+# are now standard Postgres indexes (GIN and HNSW), and both replicate.
 #
-# ParadeDB Community does not support physical replication. Its own documentation
-# is explicit: the index 「does not get physically replicated and won't be
-# available on other nodes in a high availability setup」, and 「HA requires
-# ParadeDB Enterprise because the ParadeDB index must be physically replicated to
-# standby instances」.
-#
-# So the standbys in this cluster can serve ordinary queries and pgvector scans
-# (HNSW is a normal Postgres index and does replicate), but they cannot serve the
-# lexical arm. `search_articles()` uses both arms, so it must reach the primary.
-# Routing it to a replica would not fail loudly — it would return the dense arm's
-# results alone, which is a shorter list that looks like a complete one.
-#
-# Two consequences to keep in view:
-#
-#   1. Read scaling for search is not available on Community. Adding replicas adds
-#      redundancy for the data, not throughput for queries.
-#   2. After a failover the promoted node does not carry a usable ParadeDB index.
-#      It must be rebuilt, and nothing here does that automatically yet — see
-#      deploy/README.md.
+# Writes do not come through here. The migration Job talks to the rw service
+# directly, and nothing else in this deployment writes.
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
@@ -30,7 +17,7 @@ spec:
   cluster:
     name: env-law-pg
   instances: 2
-  type: rw
+  type: ro
   pgbouncer:
     # Transaction pooling: a backend connection is held only for the duration of a
     # transaction, so a few backends serve many clients. Session-level state does

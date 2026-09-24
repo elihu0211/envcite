@@ -21,19 +21,17 @@ Kubernetes 清單。**目前只涵蓋能跑的東西**——`services/consult` �
 | `pooler.yaml` | PgBouncer 連線池（`type: rw`，transaction pooling） |
 | `ontology.yaml` | 本體服務 Deployment 與 Service |
 
-## 🚨 ParadeDB Community 不支援 physical replication
+## 詞彙檢索為什麼不用擴充
 
-官方文件明文：ParadeDB 索引**不會被 physically replicated**，在高可用拓撲的其他節點上不可用；HA 的 ParadeDB 查詢**需要 Enterprise**。
+一度用過 ParadeDB（`pg_search`）做 BM25，因為它內建 CJK 分詞。**查證後換掉了**：ParadeDB Community 的官方文件明文，其索引「does not get physically replicated and won't be available on other nodes in a high availability setup」，而 HA 的 ParadeDB 查詢「requires ParadeDB Enterprise」。
 
-我們用的是 Community（`paradedb/paradedb-extension`）。後果有三，全部都不是理論問題：
+後果不是報錯而是安靜的：被提升的 standby 會只用向量臂作答，回傳一份比較短、卻看起來完整的清單。
 
-**其一，replica 不能服務檢索。** standby 可以跑一般查詢與 pgvector 掃描（HNSW 是標準 Postgres 索引，會複製），但詞彙臂不行。而 `search_articles()` 兩臂都用——**打到 replica 不會報錯，會回傳只有向量臂的結果**，一份比較短、但看起來完整的清單。所以連線池是 `type: rw` 而非 `ro`。
+現在詞彙臂是 **PostgreSQL 內建全文檢索**，分詞在應用層做，索引是標準 GIN——**它會複製、能在 replica 上服務、failover 不必重建**。這也讓連線池回到 `type: ro`。
 
-**其二，加 replica 買不到檢索吞吐。** 它買到的是資料的冗餘副本與 failover，不是查詢的並行度。要讀取擴展只能走 Enterprise。
+順帶兩個收穫：擴充清單只剩 `vector` 一項（每一項都是叢集必須掛載映像、且可能擋住 Postgres 主版本升級的東西），以及分詞詞典可以換成台灣的——ParadeDB 的 Lindera 中文分詞用 CC-CEDICT，是大陸詞庫。
 
-**其三，failover 之後被提升的節點沒有可用的索引。** 必須重建，而**目前沒有任何東西會自動做這件事**。重建在現有語料規模上是秒級（`REINDEX INDEX subdivision_search`），但它需要有人或有東西去觸發。
-
-這是目前最大的未竟事項，而它的解除條件很明確：**Enterprise 授權**，或是把詞彙檢索換成一個會複製的實作。在那之前，`instances: 3` 提供的是資料保護與資料庫層的 failover，**不是檢索層的高可用**。
+代價寫在該寫的地方：**索引時與查詢時的分詞器必須一致**，漂移會讓檢索安靜地變差。處理方式與 `embedding_model` 相同——記在資料列上，查詢時比對，不一致時該列不參與詞彙臂。
 
 ## 兩個刻意的決定
 
@@ -60,4 +58,4 @@ Kubernetes 清單。**目前只涵蓋能跑的東西**——`services/consult` �
 
 - **備份目標未選**，故 `Cluster` 沒有 `backup` 區段——指向不存在之處的備份設定，讀起來像備份已經設好了。
 - **叢集尚未存在**：本目錄的清單**從未套用過**，僅經 `kubectl --dry-run=client` 與 kustomize build 驗證。
-- **failover 後的索引重建未自動化**（見上方 ParadeDB 限制）。手動補救是 `REINDEX INDEX subdivision_search`；自動化要嘛等 Enterprise，要嘛做成一個檢查索引健康的冪等 Job——後者要先確認 ParadeDB 的 `Verify Index Integrity` 能否用來判斷「這個索引在這個節點上是可用的」。
+- **分詞器尚未選定**。0010 只規定「分詞在資料庫之外、結果記在資料列上」，實際用哪一個（jieba、台灣特化詞庫、或其他）還沒決定，也還沒有共用的分詞程式庫——匯入器與查詢端必須用同一個，那是下一步。

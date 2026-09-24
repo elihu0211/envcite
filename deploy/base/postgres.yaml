@@ -21,25 +21,14 @@ spec:
     size: 20Gi
 
   postgresql:
-    # pg_search must be preloaded; pgvector must not be (it needs no shared memory).
-    shared_preload_libraries:
-      - pg_search
+    # No shared_preload_libraries: the one extension left needs no shared memory.
+    #
+    # pg_search was here until 0010. It was removed because ParadeDB Community
+    # does not physically replicate its index — a promoted standby would have
+    # carried no lexical index, and a replica could not serve one. The lexical arm
+    # is now PostgreSQL's own full-text search over externally segmented text, and
+    # a GIN index replicates like anything else.
     extensions:
-      # Lexical search with CJK tokenisation. Without it there is no BM25 in the
-      # database and the hybrid-retrieval design has to be redrawn — see
-      # env-law-docs 04-01 §3.
-      #
-      # 0.25.x is the whole published range of this image — there is no 0.20.x. The
-      # query syntax moved with it: index creation is `USING paradedb (...)` with
-      # `pdb.` type casts, not the older `USING bm25 (...)` with a `text_fields`
-      # JSON blob. The retrieval migrations are written against this version.
-      - name: pg_search
-        image:
-          reference: docker.io/paradedb/paradedb-extension:0.25.9-18-trixie
-        extension_control_path:
-          - /share
-        dynamic_library_path:
-          - /lib
       # Dense vectors. Community image, versioned per Postgres major.
       #
       # No `-minimal-` variant here. That suffix belongs to the Postgres base image
@@ -71,7 +60,8 @@ spec:
     name: env-law-pg
   # The operator runs CREATE EXTENSION IF NOT EXISTS for each of these. Note the
   # extension name is `vector`, not `pgvector` — the image is named after the
-  # project, the extension after what it provides.
+  # project, the extension after what it provides. One entry, and that is the
+  # point: every extension here is something the cluster must mount an image for,
+  # and something that can block a Postgres major upgrade until it catches up.
   extensions:
     - name: vector
-    - name: pg_search
