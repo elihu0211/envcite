@@ -16,7 +16,6 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
 | `services/consult/` | 接地問答：以本體事實為據作答（租戶隔離） | Python 3.14 · uv · gRPC（streaming） |
 | `libs/python/` | 兩個以上服務共用的 Python 套件 | 路徑相依，不發佈 |
-| `deploy/` | Kubernetes 清單，Argo CD 的唯一來源 | kustomize · CloudNativePG · Argo CD Image Updater |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
 
@@ -58,7 +57,7 @@ wt list        # URL 欄是本樹 platform 的位址
 | 契約 | `proto/env_law/<service>/v1/` | 該服務有對外 API 時 |
 | 跨服務共用程式碼 | `libs/<lang>/<name>/` | **出現第二個消費端時**，不是「將來可能要用」（已發生一次：`env-law-grpc` 於 consult 成為認證攔截器的第二個消費端時抽出） |
 | 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
-| 部署清單 | `deploy/`（Argo CD 來源，見 `deploy/AGENTS.md`） | 已存在。`<name>-image` job 推送 `:<commit-sha>`，Argo CD Image Updater 自動上線，無需開 MR；新增服務時在 `deploy/base/<name>/` 加清單 |
+| 部署清單 | 同層的 `env-law-deploy` 倉庫（Argo CD 來源），**不在本倉庫** | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（`<name>-image` job 推送 `:<commit-sha>`），該倉庫的 Argo CD Image Updater 偵測到後把 tag commit 進該倉庫（git write-back），Argo CD 同步上線，無需開 MR。**程式碼與清單要一起改時清單先行**：先在該倉庫合併向後相容的清單變更（如新環境變數給預設值），再合併本倉庫的程式碼——新映像會自動上線，順序反了就是新映像配舊清單 |
 
 - **契約維持單一 buf 模組**（`buf.yaml` 的模組根是 `proto/`，import 路徑為 `env_law/<service>/v1/...`）。拆成每領域一個模組會改變每一條 import 路徑，除非某領域需要獨立發佈到 schema registry，否則不拆。
 - **CI 的擴充點是「新增一個服務要改幾個地方」**：現為三處（job、`rules:changes` 錨點、`proto` 觸發路徑），要部署的服務再加一處（`<name>-image` 建置 job）。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
