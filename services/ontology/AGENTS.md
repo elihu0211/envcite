@@ -5,7 +5,7 @@ Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Cont
 ## Project
 
 - **Name:** env-law-ontology (Python package `env_law`)
-- **Role:** 環境法規本體論服務（shared, non-tenant data）；由同倉的 `services/platform`（C# SaaS：租戶、計費、API 金鑰）呼叫
+- **Role:** 環境法規本體論服務（shared, non-tenant data）；由同倉的 `services/platform`（C# SaaS：租戶、計費、API 金鑰）與 `services/consult` 呼叫
 - **Stack:** Python 3.14 · uv · gRPC（grpcio，同步伺服器）· PostgreSQL（psycopg 3）· pySHACL · ruff · mypy (strict) · pytest
 - **Data model:** [ELI ontology](http://data.europa.eu/eli/ontology)，以**關聯式實表**承載（`legal_resource` / `legal_expression` / `subdivision`）。標題掛在 `legal_expression`——`eli:title` 的定義域是表達層，不是資源層。RDF 是由實表投影的導出視圖，方向不可顛倒；論據見 `env-law-docs` 的 01-01 與 02-02。
 - **Status:** gRPC `OntologyService`（GetLaw、ListArticles、SearchArticles）讀 PostgreSQL；SearchArticles 目前只有字面臂（分詞由本服務以 `env-law-segmenter` 做，詞典於啟動時自資料庫讀取），語意臂待嵌入模型選定；資料仍為**樣本 fixture**（`migrations/0002_sample_fixture.sql`），全國法規資料庫的匯入管線尚未建立

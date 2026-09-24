@@ -1,59 +1,52 @@
+from collections.abc import Iterator
+from concurrent import futures
+
 import grpc
 import pytest
 
-from env_law.consult.v1 import consult_pb2, consult_pb2_grpc
-from tests.conftest import FakeOntology, auth
+from env_law.consult.adapters import GrpcOntology
+from env_law.consult.server import build_server
+from env_law.consult.v2 import consult_pb2, consult_pb2_grpc
+from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
+from tests.conftest import TOKEN, FakeOntology, auth
 
 
-def _events(
+def _ground(
     stub: consult_pb2_grpc.ConsultationServiceStub, question: str = "露天燃燒如何處罰"
-) -> list[consult_pb2.ConsultResponse]:
-    request = consult_pb2.ConsultRequest(question=question)
-    return list(stub.Consult(request, metadata=auth()))
+) -> consult_pb2.GroundResponse:
+    response: consult_pb2.GroundResponse = stub.Ground(
+        consult_pb2.GroundRequest(question=question), metadata=auth()
+    )
+    return response
 
 
-def test_grounding_is_emitted_before_any_answer_chunk(
+def test_evidence_carries_the_closed_set_with_text(
     stub: consult_pb2_grpc.ConsultationServiceStub,
 ) -> None:
-    kinds = [e.WhichOneof("event") for e in _events(stub)]
+    response = _ground(stub)
 
-    assert kinds.index("grounding") < kinds.index("answer_chunk")
+    assert response.WhichOneof("outcome") == "evidence"
+    citations = response.evidence.citations
+    assert [c.code for c in citations] == ["L1", "L2"]
+    assert citations[0].label == "空氣污染防制法 第 1 條"
+    assert citations[0].text == "第 1 條條文內容。"
+    assert response.evidence.confidence == consult_pb2.CONFIDENCE_HIGH
 
 
-def test_completed_codes_are_a_subset_of_grounding(
-    stub: consult_pb2_grpc.ConsultationServiceStub,
+def test_blank_question_is_refused_not_an_error(
+    stub: consult_pb2_grpc.ConsultationServiceStub, ontology: FakeOntology
 ) -> None:
-    events = _events(stub)
-    offered = {
-        c.code
-        for e in events
-        if e.WhichOneof("event") == "grounding"
-        for c in e.grounding.citations
-    }
-    cited = {
-        code
-        for e in events
-        if e.WhichOneof("event") == "completed"
-        for code in e.completed.cited_codes
-    }
+    response = _ground(stub, question="  ")
 
-    assert cited and cited <= offered
-
-
-def test_blank_question_is_refused_not_answered(
-    stub: consult_pb2_grpc.ConsultationServiceStub,
-) -> None:
-    events = _events(stub, question="  ")
-    kinds = [e.WhichOneof("event") for e in events]
-
-    assert "refused" in kinds
-    assert "answer_chunk" not in kinds
+    assert response.WhichOneof("outcome") == "refused"
+    assert response.refused.reason == consult_pb2.Refused.REASON_MISSING_INPUT
+    assert ontology.searches == []
 
 
 def test_missing_tenant_is_rejected(stub: consult_pb2_grpc.ConsultationServiceStub) -> None:
-    metadata = (("authorization", f"Bearer {'test-internal-token'}"),)
+    metadata = (("authorization", f"Bearer {TOKEN}"),)
     with pytest.raises(grpc.RpcError) as err:
-        list(stub.Consult(consult_pb2.ConsultRequest(question="x"), metadata=metadata))
+        stub.Ground(consult_pb2.GroundRequest(question="x"), metadata=metadata)
 
     assert err.value.code() is grpc.StatusCode.INVALID_ARGUMENT
 
@@ -62,15 +55,49 @@ def test_missing_token_is_unauthenticated(
     stub: consult_pb2_grpc.ConsultationServiceStub,
 ) -> None:
     with pytest.raises(grpc.RpcError) as err:
-        list(stub.Consult(consult_pb2.ConsultRequest(question="x"), metadata=()))
+        stub.Ground(consult_pb2.GroundRequest(question="x"), metadata=())
 
     assert err.value.code() is grpc.StatusCode.UNAUTHENTICATED
 
 
-def test_one_consultation_retrieves_once_at_the_requested_date(
+def test_one_call_retrieves_once_at_the_requested_date(
     stub: consult_pb2_grpc.ConsultationServiceStub, ontology: FakeOntology
 ) -> None:
-    request = consult_pb2.ConsultRequest(question="露天燃燒如何處罰", as_of="2020-01-01")
-    list(stub.Consult(request, metadata=auth()))
+    request = consult_pb2.GroundRequest(question="露天燃燒如何處罰", as_of="2020-01-01")
+    stub.Ground(request, metadata=auth())
 
     assert ontology.searches == [("露天燃燒如何處罰", "2020-01-01")]
+
+
+class _RejectingOntology(ontology_pb2_grpc.OntologyServiceServicer):
+    def SearchArticles(
+        self, request: ontology_pb2.SearchArticlesRequest, context: grpc.ServicerContext
+    ) -> ontology_pb2.SearchArticlesResponse:
+        context.abort(grpc.StatusCode.INVALID_ARGUMENT, "as_of must be an ISO 8601 date")
+
+
+@pytest.fixture
+def stub_over_rejecting_ontology() -> Iterator[consult_pb2_grpc.ConsultationServiceStub]:
+    upstream = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+    ontology_pb2_grpc.add_OntologyServiceServicer_to_server(_RejectingOntology(), upstream)  # type: ignore[abstract]
+    upstream_port = upstream.add_insecure_port("127.0.0.1:0")
+    upstream.start()
+    with grpc.insecure_channel(f"127.0.0.1:{upstream_port}") as upstream_channel:
+        server, port = build_server(GrpcOntology(upstream_channel, "x"), TOKEN, "127.0.0.1:0")
+        server.start()
+        with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
+            yield consult_pb2_grpc.ConsultationServiceStub(channel)
+        server.stop(grace=None)
+    upstream.stop(grace=None)
+
+
+def test_ontology_status_passes_through(
+    stub_over_rejecting_ontology: consult_pb2_grpc.ConsultationServiceStub,
+) -> None:
+    with pytest.raises(grpc.RpcError) as err:
+        stub_over_rejecting_ontology.Ground(
+            consult_pb2.GroundRequest(question="排放", as_of="not-a-date"), metadata=auth()
+        )
+
+    assert err.value.code() is grpc.StatusCode.INVALID_ARGUMENT
+    assert err.value.details() == "as_of must be an ISO 8601 date"
