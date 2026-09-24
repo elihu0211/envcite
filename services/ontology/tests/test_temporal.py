@@ -8,10 +8,14 @@ failure mode this whole layer is built to prevent.
 
 from __future__ import annotations
 
+import grpc
 import psycopg
 import pytest
 
+from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
 from env_law.store import OntologyStore, VersionStatus
+
+from .conftest import auth
 
 
 def _versioned_law(conn: psycopg.Connection[tuple[object, ...]], slug: str) -> None:
@@ -173,3 +177,51 @@ def test_article_may_not_belong_to_another_laws_text(
                 "https://env.law/eli/tw/law/one-act/v2/art_9",
             ),
         )
+
+
+def test_grpc_resolves_the_requested_date(
+    conn: psycopg.Connection[tuple[object, ...]], stub: ontology_pb2_grpc.OntologyServiceStub
+) -> None:
+    _versioned_law(conn, "grpc-act")
+
+    old = stub.GetLaw(
+        ontology_pb2.GetLawRequest(id="grpc-act", as_of="2015-06-01"), metadata=auth()
+    )
+    current = stub.GetLaw(ontology_pb2.GetLawRequest(id="grpc-act"), metadata=auth())
+    older_articles = stub.ListArticles(
+        ontology_pb2.ListArticlesRequest(law_id="grpc-act", as_of="2015-06-01"), metadata=auth()
+    )
+
+    assert old.law.title == "舊版標題"
+    assert current.law.title == "新版標題"
+    assert list(older_articles.articles) == []
+
+
+@pytest.mark.parametrize("method", ["GetLaw", "ListArticles"])
+def test_grpc_date_before_any_version_is_not_found(
+    conn: psycopg.Connection[tuple[object, ...]],
+    stub: ontology_pb2_grpc.OntologyServiceStub,
+    method: str,
+) -> None:
+    _versioned_law(conn, f"grpc-gap-{method.lower()}")
+    law_id = f"grpc-gap-{method.lower()}"
+    request = (
+        ontology_pb2.GetLawRequest(id=law_id, as_of="1990-01-01")
+        if method == "GetLaw"
+        else ontology_pb2.ListArticlesRequest(law_id=law_id, as_of="1990-01-01")
+    )
+
+    with pytest.raises(grpc.RpcError) as error:
+        getattr(stub, method)(request, metadata=auth())
+
+    assert error.value.code() == grpc.StatusCode.NOT_FOUND
+
+
+def test_grpc_rejects_a_malformed_date(stub: ontology_pb2_grpc.OntologyServiceStub) -> None:
+    with pytest.raises(grpc.RpcError) as error:
+        stub.GetLaw(
+            ontology_pb2.GetLawRequest(id="air-pollution-control-act", as_of="yesterday"),
+            metadata=auth(),
+        )
+
+    assert error.value.code() == grpc.StatusCode.INVALID_ARGUMENT

@@ -29,9 +29,10 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         self, request: ontology_pb2.GetLawRequest, context: grpc.ServicerContext
     ) -> ontology_pb2.GetLawResponse:
         _log_call(context, "GetLaw", request.id)
-        law = self._store.get_law(request.id)
+        _check_as_of(context, request.as_of)
+        law = self._store.get_law(request.id, as_of=request.as_of)
         if law is None:
-            context.abort(grpc.StatusCode.NOT_FOUND, f"law '{request.id}' not found")
+            context.abort(grpc.StatusCode.NOT_FOUND, _not_found(request.id, request.as_of))
         return ontology_pb2.GetLawResponse(
             law=ontology_pb2.Law(
                 id=law.id,
@@ -46,9 +47,10 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         self, request: ontology_pb2.ListArticlesRequest, context: grpc.ServicerContext
     ) -> ontology_pb2.ListArticlesResponse:
         _log_call(context, "ListArticles", request.law_id)
-        articles = self._store.list_articles(request.law_id)
+        _check_as_of(context, request.as_of)
+        articles = self._store.list_articles(request.law_id, as_of=request.as_of)
         if articles is None:
-            context.abort(grpc.StatusCode.NOT_FOUND, f"law '{request.law_id}' not found")
+            context.abort(grpc.StatusCode.NOT_FOUND, _not_found(request.law_id, request.as_of))
         return ontology_pb2.ListArticlesResponse(
             articles=[ontology_pb2.Article(iri=a.iri, number=a.number) for a in articles]
         )
@@ -65,11 +67,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT, f"limit must be between 1 and {MAX_SEARCH_LIMIT}"
             )
-        if request.as_of:
-            try:
-                date.fromisoformat(request.as_of)
-            except ValueError:
-                context.abort(grpc.StatusCode.INVALID_ARGUMENT, "as_of must be an ISO 8601 date")
+        _check_as_of(context, request.as_of)
 
         hits = self._store.search(
             terms, tokenizer=self._segmenter.tokenizer_id, as_of=request.as_of, limit=limit
@@ -89,6 +87,19 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                 for h in hits
             ]
         )
+
+
+def _check_as_of(context: grpc.ServicerContext, as_of: str) -> None:
+    if as_of:
+        try:
+            date.fromisoformat(as_of)
+        except ValueError:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "as_of must be an ISO 8601 date")
+
+
+def _not_found(law_id: str, as_of: str) -> str:
+    # 法規不存在與該日無施行版本，契約都回 NOT_FOUND；帶上日期，訊息才說得出查的是哪一版。
+    return f"law '{law_id}' not found" + (f" in force on {as_of}" if as_of else "")
 
 
 def _log_call(context: grpc.ServicerContext, method: str, subject: str) -> None:
