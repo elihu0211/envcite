@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Contract source of truth: env-law-ontology, pinned via git submodule. Server stubs are generated too, for test fakes. -->
+    <!-- Contract source of truth: the repo-root proto/. Server stubs are generated too, for test fakes. -->
     <Protobuf Include="../../../../proto/env_law/ontology/v1/ontology.proto"
               ProtoRoot="../../../../proto"
               GrpcServices="Both" />
