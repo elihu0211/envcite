@@ -1,0 +1,134 @@
+# The ontology service. Reads only; the schema is applied by the migration Job.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: env-law-ontology
+  annotations:
+    # After the migration Job (wave 1); see migrate-job.yaml.
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: env-law-ontology
+  template:
+    metadata:
+      labels:
+        app: env-law-ontology
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      # One replica per node, so losing a node never takes both. `pod-template-hash`
+      # keeps a rolling update's old and new ReplicaSets from being counted together.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: env-law-ontology
+          matchLabelKeys:
+            - pod-template-hash
+      # The GitLab registry is private; see README「叢集端前提」.
+      imagePullSecrets:
+        - name: env-law-registry
+      containers:
+        - name: ontology
+          image: env-law-ontology
+          ports:
+            - name: grpc
+              containerPort: 50051
+          env:
+            # Through the read-only pooler: this service never writes, and the
+            # pooler is what bounds the number of backend connections — a bound
+            # that is also the bound on concurrent search memory (see pooler.yaml).
+            #
+            # The connection is assembled from libpq's own environment variables
+            # rather than from the secret's `uri`, because `uri` points at the rw
+            # service and a URI cannot be repointed without re-encoding the
+            # password — a generated password containing a URI-reserved character
+            # would break in a way that looks like an authentication failure.
+            # ONTOLOGY_DSN carries only what the environment does not.
+            - name: PGHOST
+              value: env-law-pg-pooler
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: env-law-pg-app
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: env-law-pg-app
+                  key: password
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: env-law-pg-app
+                  key: dbname
+            - name: ONTOLOGY_DSN
+              value: application_name=env-law-ontology
+            - name: ONTOLOGY_INTERNAL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: env-law-internal-token
+                  key: token
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          # Memory request = limit: a pod using more than it requested is the first
+          # OOM-kill candidate under node pressure. No CPU limit, so no throttling.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 512Mi
+          # The gRPC health service answers before a token exists: a probe is not
+          # an authenticated caller and must not need to be.
+          readinessProbe:
+            grpc:
+              port: 50051
+              service: env_law.ontology.v1.OntologyService
+            periodSeconds: 10
+          livenessProbe:
+            grpc:
+              port: 50051
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: env-law-ontology
+spec:
+  # Headless: DNS returns every pod, and clients (`dns:///env-law-ontology:50051`)
+  # balance per call. A ClusterIP balances per connection, and gRPC keeps one
+  # long-lived HTTP/2 connection — every call would land on the same pod.
+  clusterIP: None
+  selector:
+    app: env-law-ontology
+  ports:
+    - name: grpc
+      port: 50051
+      targetPort: grpc
+---
+# A node drain may evict at most one replica at a time. AlwaysAllow lets a drain
+# evict a pod that is already unhealthy instead of blocking on it.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: env-law-ontology
+spec:
+  maxUnavailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
+  selector:
+    matchLabels:
+      app: env-law-ontology

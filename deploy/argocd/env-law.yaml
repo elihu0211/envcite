@@ -1,0 +1,25 @@
+# env-law 唯一的 Argo CD Application。一次性套用到 Argo CD 的 namespace，之後 Argo CD
+# 拉取 deploy/base/，讓叢集與它保持一致。
+#
+# 自動同步並開啟 prune 與 selfHeal：只有 git（與 Image Updater）能改變線上內容。手動
+# kubectl edit 會被還原；從 git 刪除的資源也會從叢集刪除。
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: env-law
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/thuaisse-lab/env-law.git
+    targetRevision: main
+    path: deploy/base
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: env-law
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
