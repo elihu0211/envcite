@@ -13,6 +13,7 @@ from concurrent import futures
 
 import grpc
 from env_law_grpc import InternalTokenInterceptor
+from env_law_segmenter import Segmenter
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
 from env_law.ontology.v1 import ontology_pb2_grpc
@@ -34,7 +35,12 @@ def build_server(
         futures.ThreadPoolExecutor(max_workers=10),
         interceptors=[InternalTokenInterceptor(token)],
     )
-    ontology_pb2_grpc.add_OntologyServiceServicer_to_server(OntologyServicer(store), server)
+    # The lexicon is read once: terms imported later need a restart to reach
+    # queries, as they need a re-index to reach `content_tsv`.
+    segmenter = Segmenter(store.lexicon())
+    ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
+        OntologyServicer(store, segmenter), server
+    )
 
     health_servicer = health.HealthServicer()
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)

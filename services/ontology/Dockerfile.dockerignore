@@ -1,6 +1,7 @@
 # The build context is the repo root; send only what the image needs.
 *
 !libs/python/env-law-grpc
+!libs/python/env-law-segmenter
 !services/ontology/pyproject.toml
 !services/ontology/uv.lock
 !services/ontology/README.md

@@ -14,10 +14,12 @@ dependencies = [
     "psycopg-pool>=3.3.3",
     "psycopg[binary]>=3.2",
     "env-law-grpc",
+    "env-law-segmenter",
 ]
 
 [tool.uv.sources]
 env-law-grpc = { path = "../../libs/python/env-law-grpc" }
+env-law-segmenter = { path = "../../libs/python/env-law-segmenter" }
 
 [project.scripts]
 env-law-ontology = "env_law.server:main"

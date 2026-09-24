@@ -40,6 +40,11 @@ class OntologyServiceStub:
     """Returns one law (ELI LegalResource) by its local id, or NOT_FOUND."""
     ListArticles: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.ListArticlesRequest, _ontology_pb2.ListArticlesResponse]
     """Lists the articles (ELI LegalResourceSubdivision) of a law in reading order, or NOT_FOUND."""
+    SearchArticles: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.SearchArticlesRequest, _ontology_pb2.SearchArticlesResponse]
+    """Hybrid retrieval over the articles in force on `as_of`, best first. The query
+    is raw text: the service segments it with the segmenter the index was built
+    with, because a caller segmenting on its own would silently match fewer rows.
+    """
 
 @_typing.type_check_only
 class OntologyServiceAsyncStub(OntologyServiceStub):
@@ -53,6 +58,11 @@ class OntologyServiceAsyncStub(OntologyServiceStub):
     """Returns one law (ELI LegalResource) by its local id, or NOT_FOUND."""
     ListArticles: _aio.UnaryUnaryMultiCallable[_ontology_pb2.ListArticlesRequest, _ontology_pb2.ListArticlesResponse]  # type: ignore[assignment]
     """Lists the articles (ELI LegalResourceSubdivision) of a law in reading order, or NOT_FOUND."""
+    SearchArticles: _aio.UnaryUnaryMultiCallable[_ontology_pb2.SearchArticlesRequest, _ontology_pb2.SearchArticlesResponse]  # type: ignore[assignment]
+    """Hybrid retrieval over the articles in force on `as_of`, best first. The query
+    is raw text: the service segments it with the segmenter the index was built
+    with, because a caller segmenting on its own would silently match fewer rows.
+    """
 
 class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
     """Read access to the environmental-law ontology (ELI-based RDF/OWL).
@@ -75,5 +85,16 @@ class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
         context: _ServicerContext,
     ) -> _typing.Union[_ontology_pb2.ListArticlesResponse, _abc.Awaitable[_ontology_pb2.ListArticlesResponse]]:
         """Lists the articles (ELI LegalResourceSubdivision) of a law in reading order, or NOT_FOUND."""
+
+    @_abc_1.abstractmethod
+    def SearchArticles(
+        self,
+        request: _ontology_pb2.SearchArticlesRequest,
+        context: _ServicerContext,
+    ) -> _typing.Union[_ontology_pb2.SearchArticlesResponse, _abc.Awaitable[_ontology_pb2.SearchArticlesResponse]]:
+        """Hybrid retrieval over the articles in force on `as_of`, best first. The query
+        is raw text: the service segments it with the segmenter the index was built
+        with, because a caller segmenting on its own would silently match fewer rows.
+        """
 
 def add_OntologyServiceServicer_to_server(servicer: OntologyServiceServicer, server: _typing.Union[_grpc.Server, _aio.Server]) -> None: ...

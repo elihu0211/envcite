@@ -27,7 +27,8 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 # Both services own disjoint subtrees of the `env_law` namespace; they are never
 # installed together, so the shared top-level name costs nothing and keeps the
-# generated proto paths (`env_law/consult/v1/`) where protoc puts them.
+# generated proto paths (`env_law/consult/v1/`, and the ontology client stubs in
+# `env_law/ontology/v1/`) where protoc puts them.
 module-name = "env_law"
 
 [dependency-groups]
@@ -44,7 +45,7 @@ dev = [
 
 [tool.ruff]
 line-length = 100
-extend-exclude = ["src/env_law/consult/v1/*_pb2*"]
+extend-exclude = ["src/env_law/*/v1/*_pb2*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
@@ -58,7 +59,7 @@ ignore = ["RUF001"]
 strict = true
 
 [[tool.mypy.overrides]]
-module = "env_law.consult.v1.*"
+module = ["env_law.consult.v1.*", "env_law.ontology.v1.*"]
 ignore_errors = true
 
 [tool.pytest]

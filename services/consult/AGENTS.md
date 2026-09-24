@@ -7,7 +7,7 @@ Vendor-neutral instructions for coding agents. 倉庫層規範見根 `AGENTS.md`
 - **Name:** consult（`services/consult`；倉庫為 `env-law`）
 - **Role:** 諮詢服務：以本體服務供給的法規事實為據產出可反查引用的答案。**租戶隔離**——`x-tenant-id` 為必填，決定配額與稽核軌跡。
 - **Stack:** Python 3.14 · uv · gRPC（grpcio，同步伺服器，server-streaming）· ruff · mypy (strict) · pytest
-- **Status:** 管線骨架與契約已定，**無任何 adapter**——本體用戶端需要跑起來的服務，語言模型用戶端需要端點，兩者皆無。`main()` 因此直接失敗退出。
+- **Status:** 管線與契約已定；本體 adapter（`adapters.GrpcOntology`，經 ontology 的 `SearchArticles`）已實作，**語言模型 adapter 尚無**——待選定供應商。`main()` 因此仍直接失敗退出。
 
 ## 管線形狀（本服務存在的理由）
 
@@ -43,7 +43,7 @@ uv run python -m mypy src tests
 
 ## Conventions
 
-- 埠（`ports.py`）是 Protocol，不是用戶端。實作進 `adapters.py`（尚未存在）。
+- 埠（`ports.py`）是 Protocol，不是用戶端。實作進 `adapters.py`。ontology 的 client stubs 由 `scripts/generate-proto.sh` 一併產生於 `src/env_law/ontology/v1/`。
 - 門檻（`RELEVANCE_FLOOR`、`HIGH_CONFIDENCE_FLOOR`）是**模型條件化的常數**，不是領域常數：只在產生它的計分方式之下可比，該方式一改就必須重新量測分數分佈後重訂。
 - 新增管線階段時，同時決定它「在模型之前或之後」——這個問題沒有第三個答案，而它決定該階段能不能被核驗。
 

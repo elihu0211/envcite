@@ -48,10 +48,8 @@ def main() -> None:
     if not token:
         raise SystemExit("CONSULT_INTERNAL_TOKEN is required")
 
-    # No adapters exist yet: the ontology client needs a running service and the
-    # language-model client needs an endpoint, neither of which this repo has.
-    # Failing here is deliberate — a server that starts and then refuses every
-    # call would look deployed while being unable to answer anything.
-    raise SystemExit(
-        "no adapters wired yet: implement OntologyPort/LlmPort before running this service"
-    )
+    # The ontology adapter exists (`adapters.GrpcOntology`); the language-model one
+    # waits on a provider decision. Failing here is deliberate — a server that
+    # starts and then refuses every call would look deployed while being unable to
+    # answer anything.
+    raise SystemExit("no LlmPort adapter yet: choose a language-model provider first")
