@@ -49,7 +49,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 | 跨服務編排 | `deploy/` | 有第二個部署單元要一起編排時（已發生：資料庫與本體服務）。**只放能跑的東西**——沒有 adapter 的服務、尚未存在的匯入器都不放，缺席是狀態不是遺漏 |
 
 - **契約維持單一 buf 模組**（`buf.yaml` 的模組根是 `proto/`，import 路徑為 `env_law/<service>/v1/...`）。拆成每領域一個模組會改變每一條 import 路徑，除非某領域需要獨立發佈到 schema registry，否則不拆。
-- **CI 的擴充點是「新增一個服務要改幾個地方」**：現為三處（job、`rules:changes` 錨點、`proto` 觸發路徑）。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
+- **CI 的擴充點是「新增一個服務要改幾個地方」**：現為三處（job、`rules:changes` 錨點、`proto` 觸發路徑），要部署的服務再加一處（`<name>-image` 建置 job）。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
 - **標籤用 `<service>/vX.Y.Z`**，不用倉庫層單一版本號。
 
 論據見 `env-law-docs` 的 05-02。

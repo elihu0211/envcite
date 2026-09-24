@@ -24,6 +24,7 @@ uv run python -m mypy src tests   # typecheck (strict)
 ./scripts/generate-proto.sh   # regenerate src/env_law/ontology/v1/* after editing protos
 ONTOLOGY_TEST_DSN=postgresql://... uv run python -m pytest   # use an existing database
 ONTOLOGY_INTERNAL_TOKEN=dev ONTOLOGY_DSN=postgresql://... uv run env-law-ontology   # run server (:50051)
+docker build -f Dockerfile ../..   # image (context = repo root; CI job `ontology-image` pushes :<sha> on main)
 ```
 
 - Proto lint／`buf breaking` 從倉庫根執行，見根 `AGENTS.md`。
