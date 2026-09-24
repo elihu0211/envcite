@@ -494,6 +494,7 @@ appsettings.*.local.json
 # Personal agent overrides
 CLAUDE.local.md
 .claude/settings.local.json
+.serena/
 
 # ── Python（services/ontology）─────────────────────────────────────
 __pycache__/
