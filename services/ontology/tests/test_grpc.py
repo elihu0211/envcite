@@ -1,10 +1,15 @@
+import os
+import signal
+
 import grpc
 import pytest
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 
 from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
+from env_law.server import build_server, stop_on_sigterm
+from env_law.store import OntologyStore
 
-from .conftest import auth
+from .conftest import TOKEN, auth
 
 
 def test_get_law(stub: ontology_pb2_grpc.OntologyServiceStub) -> None:
@@ -52,3 +57,16 @@ def test_health_check_needs_no_token(channel: grpc.Channel) -> None:
     )
 
     assert response.status == health_pb2.HealthCheckResponse.SERVING
+
+
+def test_sigterm_stops_the_server(store: OntologyStore) -> None:
+    server, _ = build_server(store, TOKEN, "127.0.0.1:0")
+    previous = signal.getsignal(signal.SIGTERM)
+    try:
+        stop_on_sigterm(server)
+        server.start()
+        os.kill(os.getpid(), signal.SIGTERM)
+
+        assert server.wait_for_termination(timeout=5) is False
+    finally:
+        signal.signal(signal.SIGTERM, previous)

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+import signal
 from concurrent import futures
 
 import grpc
@@ -19,6 +20,10 @@ from env_law.service import OntologyServicer
 from env_law.store import OntologyStore
 
 SERVICE_NAME = "env_law.ontology.v1.OntologyService"
+
+#: Seconds in-flight RPCs get to finish after SIGTERM. Below Kubernetes' default
+#: terminationGracePeriodSeconds (30), so the kubelet's SIGKILL never lands first.
+SHUTDOWN_GRACE_SECONDS = 25
 
 
 def build_server(
@@ -40,6 +45,16 @@ def build_server(
     return server, port
 
 
+def stop_on_sigterm(server: grpc.Server) -> None:
+    """Drains the server on SIGTERM: refuses new RPCs and lets in-flight ones finish.
+
+    Required, not optional: as PID 1 in the container, Python ignores SIGTERM
+    unless a handler is installed, so the kubelet would wait out the grace period
+    and SIGKILL mid-call.
+    """
+    signal.signal(signal.SIGTERM, lambda *_: server.stop(SHUTDOWN_GRACE_SECONDS))
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     token = os.environ.get("ONTOLOGY_INTERNAL_TOKEN", "")
@@ -53,6 +68,7 @@ def main() -> None:
     port = os.environ.get("ONTOLOGY_GRPC_PORT", "50051")
 
     server, bound = build_server(store, token, f"[::]:{port}")
+    stop_on_sigterm(server)
     server.start()
     logging.getLogger(__name__).info("ontology gRPC server listening on :%d", bound)
     server.wait_for_termination()
