@@ -19,9 +19,7 @@ public static class TenancyModule
     /// </summary>
     public static IServiceCollection AddTenancyModule(this IServiceCollection services, string connectionString)
     {
-        services.AddDbContext<TenancyDbContext>(options => options.UseNpgsql(
-            connectionString,
-            npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", TenancyDbContext.Schema)));
+        services.AddDbContext<TenancyDbContext>(options => Configure(options, connectionString));
 
         services.AddMultiTenant<TenantInfo>()
             .WithEFCoreStore<TenancyDbContext, TenantInfo>()
@@ -30,4 +28,10 @@ public static class TenancyModule
 
         return services;
     }
+
+    /// <summary>應用程式與 design-time factory 共用，理由同 <c>PlatformDataModule.Configure</c>。</summary>
+    internal static void Configure(DbContextOptionsBuilder options, string connectionString) =>
+        options.UseNpgsql(
+            connectionString,
+            npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", TenancyDbContext.Schema));
 }

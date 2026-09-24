@@ -2,12 +2,14 @@ using System.Buffers.Text;
 using System.Security.Cryptography;
 using System.Text;
 
+using EnvLaw.Platform.Data;
+
 namespace EnvLaw.Platform.Modules.ApiAccess;
 
 /// <summary>Key 格式：<c>sk_live_{prefix:12 hex}_{secret:base64url(32 bytes)}</c>。</summary>
 public static class ApiKeyFormat
 {
-    public const int PrefixLength = 12;
+    public const int PrefixLength = ApiKey.PrefixLength;
     private const string Marker = "sk_live_";
 
     public static (string FullKey, string Prefix, byte[] SecretHash) Generate()

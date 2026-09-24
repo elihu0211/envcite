@@ -1,10 +1,9 @@
 ﻿using System;
-
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace EnvLaw.Platform.Modules.ApiAccess.Migrations
+namespace EnvLaw.Platform.Data.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration
@@ -13,11 +12,11 @@ namespace EnvLaw.Platform.Modules.ApiAccess.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
-                name: "api_access");
+                name: "platform");
 
             migrationBuilder.CreateTable(
                 name: "ApiKeys",
-                schema: "api_access",
+                schema: "platform",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -35,18 +34,40 @@ namespace EnvLaw.Platform.Modules.ApiAccess.Migrations
                     table.PrimaryKey("PK_ApiKeys", x => x.Id);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "UsageRecords",
+                schema: "platform",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Operation = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Units = table.Column<int>(type: "integer", nullable: false),
+                    OccurredAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    TenantId = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UsageRecords", x => x.Id);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_ApiKeys_Prefix",
-                schema: "api_access",
+                schema: "platform",
                 table: "ApiKeys",
                 column: "Prefix",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ApiKeys_TenantId",
-                schema: "api_access",
+                schema: "platform",
                 table: "ApiKeys",
                 column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UsageRecords_TenantId_OccurredAt",
+                schema: "platform",
+                table: "UsageRecords",
+                columns: new[] { "TenantId", "OccurredAt" });
         }
 
         /// <inheritdoc />
@@ -54,7 +75,11 @@ namespace EnvLaw.Platform.Modules.ApiAccess.Migrations
         {
             migrationBuilder.DropTable(
                 name: "ApiKeys",
-                schema: "api_access");
+                schema: "platform");
+
+            migrationBuilder.DropTable(
+                name: "UsageRecords",
+                schema: "platform");
         }
     }
 }

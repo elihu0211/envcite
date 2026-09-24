@@ -4,7 +4,6 @@ using EnvLaw.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -50,15 +49,10 @@ public sealed class PlanCatalog
 
 public static class ApiAccessModule
 {
-    /// <summary>註冊 API key 儲存、ApiKey/AdminKey scheme、policy 與逐租戶的 rate limiting。</summary>
-    public static IServiceCollection AddApiAccessModule(
-        this IServiceCollection services, string connectionString, IConfiguration platformConfig)
+    /// <summary>註冊 ApiKey/AdminKey scheme、policy 與逐租戶的 rate limiting（API key 存於 <c>PlatformDbContext</c>）。</summary>
+    public static IServiceCollection AddApiAccessModule(this IServiceCollection services, IConfiguration platformConfig)
     {
         services.TryAddSingleton(TimeProvider.System);
-
-        services.AddDbContext<ApiAccessDbContext>(options => options.UseNpgsql(
-            connectionString,
-            npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", ApiAccessDbContext.Schema)));
 
         services.AddAuthentication(PlatformAuth.ApiKeyScheme)
             .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(

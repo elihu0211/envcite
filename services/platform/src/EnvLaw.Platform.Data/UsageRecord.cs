@@ -1,4 +1,4 @@
-namespace EnvLaw.Platform.Modules.Metering;
+namespace EnvLaw.Platform.Data;
 
 /// <summary>一次被計量的呼叫。<c>TenantId</c> 是 Finbuckle 的 shadow property。</summary>
 public sealed class UsageRecord

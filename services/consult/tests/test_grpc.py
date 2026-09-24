@@ -1,8 +1,11 @@
+import os
+import signal
 from collections.abc import Iterator
 from concurrent import futures
 
 import grpc
 import pytest
+from env_law_grpc import stop_on_sigterm
 
 from env_law.consult.adapters import GrpcOntology
 from env_law.consult.server import build_server
@@ -101,3 +104,16 @@ def test_ontology_status_passes_through(
 
     assert err.value.code() is grpc.StatusCode.INVALID_ARGUMENT
     assert err.value.details() == "as_of must be an ISO 8601 date"
+
+
+def test_sigterm_stops_the_server(ontology: FakeOntology) -> None:
+    server, _ = build_server(ontology, TOKEN, "127.0.0.1:0")
+    previous = signal.getsignal(signal.SIGTERM)
+    try:
+        stop_on_sigterm(server)
+        server.start()
+        os.kill(os.getpid(), signal.SIGTERM)
+
+        assert server.wait_for_termination(timeout=5) is False
+    finally:
+        signal.signal(signal.SIGTERM, previous)

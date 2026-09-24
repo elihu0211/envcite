@@ -14,6 +14,7 @@ Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Cont
 ## Architecture
 
 - Modular monolith: one solution, one deployable; modules as projects (`Modules.Tenancy`, `Modules.Billing`, `Modules.ApiAccess`, …).
+- Two DbContexts, no more: `TenancyDbContext` (Finbuckle requires the EFCore tenant store to derive from `EFCoreStoreDbContext`, so it cannot share) and `PlatformDbContext` in `EnvLaw.Platform.Data` for all tenant-owned data (schema `platform`). A new tenant-owned entity goes into `PlatformDbContext`; modules do not get their own contexts — each extra context is another migration set, bundle and Job step, and no cross-module transaction.
 - Multi-tenancy is runtime isolation (tenant resolution + `TenantId` query filters), never per-tenant code or repos.
 - Billing provider is the source of truth for payment; this service keeps an entitlements table updated via webhooks.
 
@@ -29,8 +30,11 @@ dotnet format                        # apply .editorconfig
 dotnet format --verify-no-changes    # CI check
 dotnet run --project src/EnvLaw.Platform.Api   # Development: local PostgreSQL, auto-migrates
 
-# Migrations: one DbContext per module, each in its own schema
-dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Modules.<Module> -s src/EnvLaw.Platform.Api -c <Module>DbContext -o Migrations
+# Migrations: each context's project is its own startup project (design-time factory, not the app host)
+dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Data -s src/EnvLaw.Platform.Data
+dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Modules.Tenancy -s src/EnvLaw.Platform.Modules.Tenancy
+
+docker build -f services/platform/Dockerfile ../..   # image (context = repo root); CI job `platform-image` pushes :<sha> on main
 ```
 
 Contracts: `Modules.Ontology` compiles the repo-root `proto/env_law/ontology/v1/ontology.proto`, `Modules.Consult` compiles `proto/env_law/consult/v2/consult.proto` (Grpc.Tools; see each `.csproj`). Never copy a `.proto`.
@@ -39,7 +43,9 @@ Config (`Ontology` section): `Address` (in-cluster `dns:///env-law-ontology:5005
 
 Config (`Consult` section): same keys (`Address` in-cluster `dns:///env-law-consult:50052`; `InternalToken` = the service's `CONSULT_INTERNAL_TOKEN`; `Timeout`, default 10 s because consult itself calls ontology). Development uses `http://localhost:50052` + token `dev`. Both sections are required at startup. Both clients are registered by `SharedKernel.InternalGrpcClient.AddInternalGrpcClient` (internal token, tenant/request metadata, round-robin, h2c) — a new internal service client goes through it, not a copy.
 
-Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; set via user-secrets/env, never commit), `Plans:<name>:PermitLimit`/`Window` (built-in `free` = 60/min if absent), `TenantPlans:<tenant identifier>` = plan name (unlisted tenants are `free`; an unknown plan name fails startup), `ApplyMigrationsOnStartup` (Development/tests only). Connection string: `ConnectionStrings:Platform`.
+Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; set via user-secrets/env, never commit), `Plans:<name>:PermitLimit`/`Window` (built-in `free` = 60/min if absent), `TenantPlans:<tenant identifier>` = plan name (unlisted tenants are `free`; an unknown plan name fails startup), `ApplyMigrationsOnStartup` (Development/tests only). Connection string: `ConnectionStrings:Platform`; Npgsql also reads `PGUSER`/`PGPASSWORD`, so a deployment keeps the password out of the string.
+
+Production migrations: EF Core migration bundles (the form EF Core's docs recommend for automated deployment), built into the image as `/app/migrate/tenancy` and `/app/migrate/platform` and run in that order by the deployment's migration Job. Each context has an `IDesignTimeDbContextFactory` sharing its `UseNpgsql` configuration with the app (`…Module.Configure`), so a bundle builds the context without running `Program.cs` and targets the same migrations history table.
 
 - Package versions live only in `Directory.Packages.props` (central package management); `dotnet add package` updates it.
 - Shared build settings: `Directory.Build.props`. Don't repeat them in `.csproj` files.
@@ -47,8 +53,9 @@ Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; 
 ## Layout
 
 - `src/EnvLaw.Platform.Api` — ASP.NET Core host (composition root)
-- `src/EnvLaw.Platform.Modules.*` — feature modules (`Tenancy`, `ApiAccess`, `Metering`, `Ontology`, `Consult`); reference only `SharedKernel`, never each other directly (cross-module contracts like `IUsageRecorder` live in `SharedKernel`)
-- `src/EnvLaw.Platform.SharedKernel` — cross-module primitives (auth names, `IUsageRecorder`, internal gRPC client registration)
+- `src/EnvLaw.Platform.Modules.*` — feature modules (`Tenancy`, `ApiAccess`, `Metering`, `Ontology`, `Consult`); reference only `SharedKernel` and `Data`, never each other directly (cross-module contracts like `IUsageRecorder` live in `SharedKernel`)
+- `src/EnvLaw.Platform.Data` — `PlatformDbContext`, its entities (`ApiKey`, `UsageRecord`) and migrations
+- `src/EnvLaw.Platform.SharedKernel` — cross-module primitives (auth names, `IUsageRecorder`, internal gRPC client registration, design-time connection)
 - `tests/EnvLaw.Platform.Tests` — xUnit + `WebApplicationFactory` integration tests (`PlatformFactory`: Testcontainers PostgreSQL + `FakeTimeProvider` + `FakeOntologyServer` / `FakeConsultServer`, in-process h2c gRPC fakes)
 
 ## Auth & tenancy flow

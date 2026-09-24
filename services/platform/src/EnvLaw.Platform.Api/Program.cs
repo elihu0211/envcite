@@ -1,3 +1,4 @@
+using EnvLaw.Platform.Data;
 using EnvLaw.Platform.Modules.ApiAccess;
 using EnvLaw.Platform.Modules.Consult;
 using EnvLaw.Platform.Modules.Metering;
@@ -18,8 +19,9 @@ var platformConfig = builder.Configuration.GetSection("Platform");
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddTenancyModule(connectionString);
-builder.Services.AddApiAccessModule(connectionString, platformConfig);
-builder.Services.AddMeteringModule(connectionString);
+builder.Services.AddPlatformData(connectionString);
+builder.Services.AddApiAccessModule(platformConfig);
+builder.Services.AddMeteringModule();
 builder.Services.AddOntologyModule(builder.Configuration.GetSection("Ontology"));
 builder.Services.AddConsultModule(builder.Configuration.GetSection("Consult"));
 
@@ -29,8 +31,7 @@ if (platformConfig.GetValue<bool>("ApplyMigrationsOnStartup"))
 {
     await using var scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<TenancyDbContext>().Database.MigrateAsync();
-    await scope.ServiceProvider.GetRequiredService<ApiAccessDbContext>().Database.MigrateAsync();
-    await scope.ServiceProvider.GetRequiredService<MeteringDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<PlatformDbContext>().Database.MigrateAsync();
 }
 
 if (app.Environment.IsDevelopment())
