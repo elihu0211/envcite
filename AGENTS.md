@@ -35,6 +35,18 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 
 文件工具鏈（`./scripts/docs check`／`render`）在 `env-law-docs`，從該庫根執行。
 
+### 平行 worktree
+
+每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree；環境由 `.config/wt.toml` 建立，不靠手動：建樹時各服務裝好依賴，刪樹時一併刪掉該樹的開發庫。本機伺服器用別名起，port 與資料庫名由分支推導，平行的樹不相撞：
+
+```bash
+wt platform    # dotnet run；庫 platform_<branch>，自動遷移
+wt ontology    # 建庫（若無）→ env-law-migrate → gRPC 伺服器
+wt list        # URL 欄是本樹 platform 的位址
+```
+
+兩者都假設本機 PostgreSQL 在 `localhost:5432`（`postgres`/`postgres`，同 `appsettings.Development.json`）；ontology 需要 pgvector。測試不經此路——Testcontainers 每次自起一個庫。
+
 ## 目錄配置與擴充判準
 
 下列判準是**新增服務時照著做的**，不是現在就要建的目錄——**空目錄不先建**，與文件庫「規劃中的卷次不建空殼」同一條理由。

@@ -1,0 +1,37 @@
+# 每棵 worktree 的本機環境（Worktrunk 專案設定）。wt 建樹／刪樹時執行；Claude Code 的
+# worktree session 經 worktrunk plugin 的 WorktreeCreate hook 也走 wt，所以同樣適用。
+#
+# 分支即身分：port 與資料庫名都由分支推導，平行的樹互不相撞，同一分支每次拿到同一組。
+# 測試不在此列——兩邊都用 Testcontainers，每次跑本來就是獨立的庫。
+
+# 依賴。各服務用原生工具，快取本來就全域共用（uv cache、NuGet），不複製 `.venv`／`obj/`：
+# 兩者寫死絕對路徑，搬到另一棵樹會指回原處。
+[pre-start]
+ontology = "uv sync --directory services/ontology"
+consult = "uv sync --directory services/consult"
+platform = "cd services/platform && dotnet restore && dotnet tool restore"
+
+# 刪樹時一併刪掉本樹的開發庫；Postgres 沒開時略過，不擋刪樹。
+[pre-remove]
+db = "uv run --directory services/ontology python ../../scripts/worktree-db.py drop platform_{{ branch | sanitize_db }} ontology_{{ branch | sanitize_db }}"
+
+[list]
+url = "http://localhost:{{ ('env-law/platform/' ~ branch) | hash_port }}"
+
+# 本機伺服器：`wt platform`、`wt ontology`。platform 在 Development 會自動遷移——若各樹共用
+# 一個庫，兩條分支的遷移會互相覆寫，所以庫名也掛在分支上。
+[aliases]
+platform = """
+cd '{{ worktree_path }}/services/platform' && \
+ASPNETCORE_ENVIRONMENT=Development \
+ConnectionStrings__Platform='Host=localhost;Port=5432;Database=platform_{{ branch | sanitize_db }};Username=postgres;Password=postgres' \
+Ontology__Address='http://localhost:{{ ('env-law/ontology/' ~ branch) | hash_port }}' \
+exec dotnet run --project src/EnvLaw.Platform.Api --no-launch-profile -- --urls 'http://localhost:{{ ('env-law/platform/' ~ branch) | hash_port }}'
+"""
+ontology = """
+cd '{{ worktree_path }}/services/ontology' && \
+export ONTOLOGY_DSN='postgresql://postgres:postgres@localhost:5432/ontology_{{ branch | sanitize_db }}' && \
+uv run python ../../scripts/worktree-db.py ensure 'ontology_{{ branch | sanitize_db }}' && \
+uv run env-law-migrate && \
+ONTOLOGY_INTERNAL_TOKEN=dev ONTOLOGY_GRPC_PORT='{{ ('env-law/ontology/' ~ branch) | hash_port }}' exec uv run env-law-ontology
+"""
