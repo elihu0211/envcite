@@ -1,4 +1,5 @@
 using EnvLaw.Platform.Modules.ApiAccess;
+using EnvLaw.Platform.Modules.Consult;
 using EnvLaw.Platform.Modules.Metering;
 using EnvLaw.Platform.Modules.Ontology;
 using EnvLaw.Platform.Modules.Tenancy;
@@ -20,6 +21,7 @@ builder.Services.AddTenancyModule(connectionString);
 builder.Services.AddApiAccessModule(connectionString, platformConfig);
 builder.Services.AddMeteringModule(connectionString);
 builder.Services.AddOntologyModule(builder.Configuration.GetSection("Ontology"));
+builder.Services.AddConsultModule(builder.Configuration.GetSection("Consult"));
 
 var app = builder.Build();
 
@@ -58,6 +60,7 @@ app.MapGroup("/v1")
     .MapTenancyEndpoints()
     .MapApiAccessEndpoints()
     .MapMeteringEndpoints()
-    .MapOntologyEndpoints();
+    .MapOntologyEndpoints()
+    .MapConsultEndpoints();
 
 await app.RunAsync();

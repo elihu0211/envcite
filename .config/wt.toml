@@ -18,14 +18,16 @@ db = "uv run --directory services/ontology python ../../scripts/worktree-db.py d
 [list]
 url = "http://localhost:{{ ('env-law/platform/' ~ branch) | hash_port }}"
 
-# 本機伺服器：`wt platform`、`wt ontology`。platform 在 Development 會自動遷移——若各樹共用
-# 一個庫，兩條分支的遷移會互相覆寫，所以庫名也掛在分支上。
+# 本機伺服器：`wt platform`、`wt ontology`、`wt consult`（platform 的 /v1/ground 要後兩者都在）。
+# platform 在 Development 會自動遷移——若各樹共用一個庫，兩條分支的遷移會互相覆寫，所以庫名
+# 也掛在分支上。
 [aliases]
 platform = """
 cd '{{ worktree_path }}/services/platform' && \
 ASPNETCORE_ENVIRONMENT=Development \
 ConnectionStrings__Platform='Host=localhost;Port=5432;Database=platform_{{ branch | sanitize_db }};Username=postgres;Password=postgres' \
 Ontology__Address='http://localhost:{{ ('env-law/ontology/' ~ branch) | hash_port }}' \
+Consult__Address='http://localhost:{{ ('env-law/consult/' ~ branch) | hash_port }}' \
 exec dotnet run --project src/EnvLaw.Platform.Api --no-launch-profile -- --urls 'http://localhost:{{ ('env-law/platform/' ~ branch) | hash_port }}'
 """
 ontology = """
@@ -34,4 +36,10 @@ export ONTOLOGY_DSN='postgresql://postgres:postgres@localhost:5432/ontology_{{ b
 uv run python ../../scripts/worktree-db.py ensure 'ontology_{{ branch | sanitize_db }}' && \
 uv run env-law-migrate && \
 ONTOLOGY_INTERNAL_TOKEN=dev ONTOLOGY_GRPC_PORT='{{ ('env-law/ontology/' ~ branch) | hash_port }}' exec uv run env-law-ontology
+"""
+consult = """
+cd '{{ worktree_path }}/services/consult' && \
+CONSULT_INTERNAL_TOKEN=dev CONSULT_GRPC_PORT='{{ ('env-law/consult/' ~ branch) | hash_port }}' \
+ONTOLOGY_INTERNAL_TOKEN=dev ONTOLOGY_TARGET='dns:///localhost:{{ ('env-law/ontology/' ~ branch) | hash_port }}' \
+exec uv run env-law-consult
 """

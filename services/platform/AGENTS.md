@@ -5,11 +5,11 @@ Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Cont
 ## Project
 
 - **Name:** platform（`services/platform`；倉庫為 `env-law`）
-- **Role:** 多租戶 SaaS 平台（control plane）：tenants, accounts, subscriptions/billing, API keys, quotas, public API gateway. Calls `services/ontology` (Python, shared non-tenant data) over gRPC.
+- **Role:** 多租戶 SaaS 平台（control plane）：tenants, accounts, subscriptions/billing, API keys, quotas, public API gateway. Calls `services/ontology` (Python, shared non-tenant data) and `services/consult` (grounding evidence, tenant-scoped) over gRPC.
 - **Stack:** C# / .NET 10 (SDK pinned in `global.json`) · ASP.NET Core · PostgreSQL · xUnit
 - **Auth:** API keys only for now (OIDC later for an admin UI)
 - **Billing:** not integrated yet; plans assigned manually. Note: Stripe does not onboard Taiwan entities — evaluate Paddle / local gateways when needed.
-- **Status:** tenants + API keys, per-tenant rate limiting, usage metering, REST facade over the ontology gRPC service
+- **Status:** tenants + API keys, per-tenant rate limiting, usage metering, REST facades over the ontology and consult gRPC services
 
 ## Architecture
 
@@ -33,9 +33,11 @@ dotnet run --project src/EnvLaw.Platform.Api   # Development: local PostgreSQL, 
 dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Modules.<Module> -s src/EnvLaw.Platform.Api -c <Module>DbContext -o Migrations
 ```
 
-Ontology contract: `Modules.Ontology` compiles the repo-root `proto/env_law/ontology/v1/ontology.proto` (Grpc.Tools; see its `.csproj`). Never copy the `.proto`.
+Contracts: `Modules.Ontology` compiles the repo-root `proto/env_law/ontology/v1/ontology.proto`, `Modules.Consult` compiles `proto/env_law/consult/v2/consult.proto` (Grpc.Tools; see each `.csproj`). Never copy a `.proto`.
 
 Config (`Ontology` section): `Address` (in-cluster `dns:///env-law-ontology:50051` — headless Service, calls round-robin across pods; a plain `http://` address is a single host), `InternalToken` (must equal the service's `ONTOLOGY_INTERNAL_TOKEN`; secret), `Timeout`. Development uses `http://localhost:50051` + token `dev` (`ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology` in `services/ontology/`).
+
+Config (`Consult` section): same keys (`Address` in-cluster `dns:///env-law-consult:50052`; `InternalToken` = the service's `CONSULT_INTERNAL_TOKEN`; `Timeout`, default 10 s because consult itself calls ontology). Development uses `http://localhost:50052` + token `dev`. Both sections are required at startup. Both clients are registered by `SharedKernel.InternalGrpcClient.AddInternalGrpcClient` (internal token, tenant/request metadata, round-robin, h2c) — a new internal service client goes through it, not a copy.
 
 Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; set via user-secrets/env, never commit), `Plans:<name>:PermitLimit`/`Window` (built-in `free` = 60/min if absent), `TenantPlans:<tenant identifier>` = plan name (unlisted tenants are `free`; an unknown plan name fails startup), `ApplyMigrationsOnStartup` (Development/tests only). Connection string: `ConnectionStrings:Platform`.
 
@@ -45,9 +47,9 @@ Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; 
 ## Layout
 
 - `src/EnvLaw.Platform.Api` — ASP.NET Core host (composition root)
-- `src/EnvLaw.Platform.Modules.*` — feature modules (`Tenancy`, `ApiAccess`, `Metering`, `Ontology`); reference only `SharedKernel`, never each other directly (cross-module contracts like `IUsageRecorder` live in `SharedKernel`)
-- `src/EnvLaw.Platform.SharedKernel` — cross-module primitives
-- `tests/EnvLaw.Platform.Tests` — xUnit + `WebApplicationFactory` integration tests (`PlatformFactory`: Testcontainers PostgreSQL + `FakeTimeProvider` + `FakeOntologyServer`, an in-process h2c gRPC fake)
+- `src/EnvLaw.Platform.Modules.*` — feature modules (`Tenancy`, `ApiAccess`, `Metering`, `Ontology`, `Consult`); reference only `SharedKernel`, never each other directly (cross-module contracts like `IUsageRecorder` live in `SharedKernel`)
+- `src/EnvLaw.Platform.SharedKernel` — cross-module primitives (auth names, `IUsageRecorder`, internal gRPC client registration)
+- `tests/EnvLaw.Platform.Tests` — xUnit + `WebApplicationFactory` integration tests (`PlatformFactory`: Testcontainers PostgreSQL + `FakeTimeProvider` + `FakeOntologyServer` / `FakeConsultServer`, in-process h2c gRPC fakes)
 
 ## Auth & tenancy flow
 
@@ -55,6 +57,7 @@ Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; 
 - Operator API (`/admin`): `X-Admin-Key` header, compared against `Platform:AdminKeySha256`.
 - Middleware order is load-bearing: `UseAuthentication` → `UseMultiTenant` → `UseAuthorization` → `UseRateLimiter`.
 - `/v1/laws/…` calls env-law-ontology over gRPC with `authorization: Bearer <InternalToken>`, `x-tenant-id`, `x-request-id`; gRPC `NotFound` → 404, `Unavailable`/`DeadlineExceeded` → 503. Only successful calls are metered (`IUsageRecorder`, one row per call in `metering.UsageRecords`).
+- `POST /v1/ground` calls env-law-consult `Ground` the same way; a refusal is a 200 result and is metered (`consult.ground`); gRPC `InvalidArgument` → 400, `Unavailable`/`DeadlineExceeded` → 503 (not metered). Tests: `FakeConsultServer`.
 - A `MultiTenantDbContext` captures the tenant at construction: never resolve it before tenant resolution; for a specific tenant outside a tenant request use `MultiTenantDbContext.Create<TContext, TenantInfo>(tenant, services)`.
 
 ## Conventions

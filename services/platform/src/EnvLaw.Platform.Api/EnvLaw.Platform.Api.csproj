@@ -14,6 +14,7 @@
     <ProjectReference Include="..\EnvLaw.Platform.Modules.ApiAccess\EnvLaw.Platform.Modules.ApiAccess.csproj" />
     <ProjectReference Include="..\EnvLaw.Platform.Modules.Ontology\EnvLaw.Platform.Modules.Ontology.csproj" />
     <ProjectReference Include="..\EnvLaw.Platform.Modules.Metering\EnvLaw.Platform.Modules.Metering.csproj" />
+    <ProjectReference Include="..\EnvLaw.Platform.Modules.Consult\EnvLaw.Platform.Modules.Consult.csproj" />
   </ItemGroup>
 
 </Project>
