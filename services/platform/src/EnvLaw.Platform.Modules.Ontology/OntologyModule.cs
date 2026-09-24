@@ -1,6 +1,9 @@
 using EnvLaw.Ontology.V1;
 using EnvLaw.Platform.SharedKernel;
 
+using Grpc.Core;
+using Grpc.Net.Client.Configuration;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +12,10 @@ namespace EnvLaw.Platform.Modules.Ontology;
 
 public sealed class OntologyOptions
 {
-    /// <summary>gRPC address of env-law-ontology, e.g. <c>http://ontology:50051</c>.</summary>
+    /// <summary>
+    /// gRPC address of env-law-ontology: <c>dns:///env-law-ontology:50051</c> in the cluster
+    /// (headless Service, one connection per pod), <c>http://localhost:50051</c> locally.
+    /// </summary>
     public string Address { get; set; } = string.Empty;
 
     /// <summary>Shared secret sent as <c>authorization: Bearer …</c> (the service's ONTOLOGY_INTERNAL_TOKEN).</summary>
@@ -53,8 +59,20 @@ public static class OntologyModule
 
                 return Task.CompletedTask;
             })
-            // Plain h2c inside the cluster network; switch Address to https to use TLS.
-            .ConfigureChannel(channel => channel.UnsafeUseInsecureChannelCallCredentials = address.Scheme == Uri.UriSchemeHttp);
+            .ConfigureChannel(channel =>
+            {
+                // A channel is one long-lived HTTP/2 connection, so a ClusterIP Service pins every
+                // call to one pod. With `dns:///<headless service>:<port>` the resolver returns every
+                // pod and round_robin spreads calls across them; a plain http:// address is one host.
+                channel.ServiceConfig = new ServiceConfig { LoadBalancingConfigs = { new RoundRobinConfig() } };
+
+                // Plain h2c inside the cluster network; switch Address to https to use TLS.
+                if (address.Scheme != Uri.UriSchemeHttps)
+                {
+                    channel.Credentials = ChannelCredentials.Insecure;
+                    channel.UnsafeUseInsecureChannelCallCredentials = true;
+                }
+            });
 
         return services;
     }

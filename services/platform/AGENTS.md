@@ -35,7 +35,7 @@ dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Modules.<Module> -s src/E
 
 Ontology contract: `Modules.Ontology` compiles the repo-root `proto/env_law/ontology/v1/ontology.proto` (Grpc.Tools; see its `.csproj`). Never copy the `.proto`.
 
-Config (`Ontology` section): `Address` (e.g. `http://ontology:50051`), `InternalToken` (must equal the service's `ONTOLOGY_INTERNAL_TOKEN`; secret), `Timeout`. Development uses `http://localhost:50051` + token `dev` (`ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology` in `services/ontology/`).
+Config (`Ontology` section): `Address` (in-cluster `dns:///env-law-ontology:50051` — headless Service, calls round-robin across pods; a plain `http://` address is a single host), `InternalToken` (must equal the service's `ONTOLOGY_INTERNAL_TOKEN`; secret), `Timeout`. Development uses `http://localhost:50051` + token `dev` (`ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology` in `services/ontology/`).
 
 Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; set via user-secrets/env, never commit), `RateLimit:PermitLimit`/`Window`, `ApplyMigrationsOnStartup` (Development/tests only). Connection string: `ConnectionStrings:Platform`.
 
