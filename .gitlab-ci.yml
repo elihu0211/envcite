@@ -53,6 +53,17 @@ variables:
   - buf.yaml
   - .gitlab-ci.yml
 
+# 每條 pipeline 至少有這個 job。專案要求 pipeline 成功才能合併，而只改文件的 MR 沒有任何
+# job 符合上面的 `rules:changes`，GitLab 就不建立 pipeline——MR 會永遠停在「等待 pipeline」。
+# 不 clone、不裝任何東西，只負責讓 pipeline 存在。
+gate:
+  stage: check
+  image: alpine:3.22
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - echo "path-specific jobs below decide what else runs"
+
 dotnet:
   stage: check
   rules:
