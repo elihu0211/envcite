@@ -1,5 +1,5 @@
 # Ontology service image. Build from the repo root — the path dependency on
-# libs/python/env-law-grpc lives outside this directory:
+# libs/python/env-law-{grpc,segmenter} live outside this directory:
 #
 #   docker build -f services/ontology/Dockerfile .
 #
@@ -19,6 +19,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /app/services/ontology
 # Dependencies first, so a source-only change reuses this layer.
 COPY libs/python/env-law-grpc /app/libs/python/env-law-grpc
+COPY libs/python/env-law-segmenter /app/libs/python/env-law-segmenter
 COPY services/ontology/pyproject.toml services/ontology/uv.lock ./
 RUN uv sync --locked --no-dev --no-install-project
 COPY services/ontology/src ./src

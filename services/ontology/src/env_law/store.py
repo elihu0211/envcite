@@ -52,6 +52,19 @@ class ArticleRecord:
     number: str
 
 
+@dataclass(frozen=True, slots=True)
+class SearchHit:
+    iri: str
+    law_id: str
+    law_title: str
+    number: str
+    content: str
+    #: Fused rank score: orders hits, says nothing about relevance (see 0010).
+    rank_score: float
+    lexical_score: float | None
+    dense_distance: float | None
+
+
 def is_valid_local_id(value: str) -> bool:
     return bool(_LOCAL_ID.fullmatch(value))
 
@@ -69,6 +82,31 @@ _RESOLVE_EXPRESSION = """
               AND daterange(e.valid_from, e.valid_to, '[)') @> %(on)s::date)
            )
      LIMIT 1
+"""
+
+#: The segmenter's lexicon: statutory terms and law titles (env-law-docs 04-01 §4).
+#: The importer must build `content_tsv` from this same query — a lexicon that
+#: differs yields a different `tokenizer` id, and the lexical arm then matches
+#: nothing rather than something wrong.
+_LEXICON = """
+    SELECT term FROM term_definition
+    UNION
+    SELECT title FROM legal_expression
+"""
+
+#: The dense arm is off (NULL vector and model) until an embedding model is
+#: chosen and measured; `search_articles` then returns lexical hits only.
+_SEARCH = """
+    SELECT s.iri, s.resource_id, e.title, s.number, s.content,
+           s.score, s.lexical_score, s.dense_distance
+      FROM search_articles(
+               %(terms)s, NULL, NULL, %(tokenizer)s,
+               coalesce(%(on)s::date, current_date),
+               p_limit => %(limit)s
+           ) AS s
+      JOIN subdivision AS d ON d.iri = s.iri
+      JOIN legal_expression AS e ON e.iri = d.expression_iri
+     ORDER BY s.score DESC, s.iri
 """
 
 _GET_RESOURCE = "SELECT iri, date_document FROM legal_resource WHERE id_local = %s"
@@ -163,3 +201,31 @@ class OntologyStore:
                 return None
             cur.execute(_LIST_ARTICLES, (expression[0],))
             return [ArticleRecord(iri=iri, number=number) for iri, number in cur.fetchall()]
+
+    def lexicon(self) -> list[str]:
+        with self._pool.connection() as conn, conn.cursor() as cur:
+            cur.execute(_LEXICON)
+            return [term for (term,) in cur.fetchall()]
+
+    def search(
+        self, terms: str, *, tokenizer: str, as_of: str = "", limit: int = 10
+    ) -> list[SearchHit]:
+        """Articles in force at `as_of` (today when empty) matching segmented `terms`."""
+        with self._pool.connection() as conn, conn.cursor() as cur:
+            cur.execute(
+                _SEARCH,
+                {"terms": terms, "tokenizer": tokenizer, "on": as_of or None, "limit": limit},
+            )
+            return [
+                SearchHit(
+                    iri=iri,
+                    law_id=law_id,
+                    law_title=title,
+                    number=number,
+                    content=content,
+                    rank_score=float(score),
+                    lexical_score=lexical,
+                    dense_distance=dense,
+                )
+                for iri, law_id, title, number, content, score, lexical, dense in cur.fetchall()
+            ]

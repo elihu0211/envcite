@@ -47,6 +47,11 @@ class OntologyServiceStub:
                 request_serializer=env__law_dot_ontology_dot_v1_dot_ontology__pb2.ListArticlesRequest.SerializeToString,
                 response_deserializer=env__law_dot_ontology_dot_v1_dot_ontology__pb2.ListArticlesResponse.FromString,
                 _registered_method=True)
+        self.SearchArticles = channel.unary_unary(
+                '/env_law.ontology.v1.OntologyService/SearchArticles',
+                request_serializer=env__law_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesRequest.SerializeToString,
+                response_deserializer=env__law_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesResponse.FromString,
+                _registered_method=True)
 
 
 class OntologyServiceServicer:
@@ -69,6 +74,15 @@ class OntologyServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SearchArticles(self, request, context):
+        """Hybrid retrieval over the articles in force on `as_of`, best first. The query
+        is raw text: the service segments it with the segmenter the index was built
+        with, because a caller segmenting on its own would silently match fewer rows.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OntologyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -81,6 +95,11 @@ def add_OntologyServiceServicer_to_server(servicer, server):
                     servicer.ListArticles,
                     request_deserializer=env__law_dot_ontology_dot_v1_dot_ontology__pb2.ListArticlesRequest.FromString,
                     response_serializer=env__law_dot_ontology_dot_v1_dot_ontology__pb2.ListArticlesResponse.SerializeToString,
+            ),
+            'SearchArticles': grpc.unary_unary_rpc_method_handler(
+                    servicer.SearchArticles,
+                    request_deserializer=env__law_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesRequest.FromString,
+                    response_serializer=env__law_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -140,6 +159,33 @@ class OntologyService:
             '/env_law.ontology.v1.OntologyService/ListArticles',
             env__law_dot_ontology_dot_v1_dot_ontology__pb2.ListArticlesRequest.SerializeToString,
             env__law_dot_ontology_dot_v1_dot_ontology__pb2.ListArticlesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SearchArticles(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/env_law.ontology.v1.OntologyService/SearchArticles',
+            env__law_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesRequest.SerializeToString,
+            env__law_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+from datetime import date
 
 import grpc
+from env_law_segmenter import Segmenter
 
 from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
 from env_law.store import OntologyStore
@@ -12,9 +14,16 @@ from env_law.store import OntologyStore
 log = logging.getLogger(__name__)
 
 
+#: Hits returned when the caller leaves `limit` at 0, and the most it may ask for
+#: (`search_articles` draws 50 candidates per arm).
+DEFAULT_SEARCH_LIMIT = 10
+MAX_SEARCH_LIMIT = 50
+
+
 class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
-    def __init__(self, store: OntologyStore) -> None:
+    def __init__(self, store: OntologyStore, segmenter: Segmenter) -> None:
         self._store = store
+        self._segmenter = segmenter
 
     def GetLaw(
         self, request: ontology_pb2.GetLawRequest, context: grpc.ServicerContext
@@ -42,6 +51,43 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
             context.abort(grpc.StatusCode.NOT_FOUND, f"law '{request.law_id}' not found")
         return ontology_pb2.ListArticlesResponse(
             articles=[ontology_pb2.Article(iri=a.iri, number=a.number) for a in articles]
+        )
+
+    def SearchArticles(
+        self, request: ontology_pb2.SearchArticlesRequest, context: grpc.ServicerContext
+    ) -> ontology_pb2.SearchArticlesResponse:
+        _log_call(context, "SearchArticles", request.query)
+        terms = self._segmenter.to_tsvector_input(request.query)
+        if not terms:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "query must not be empty")
+        limit = request.limit or DEFAULT_SEARCH_LIMIT
+        if not 0 < limit <= MAX_SEARCH_LIMIT:
+            context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT, f"limit must be between 1 and {MAX_SEARCH_LIMIT}"
+            )
+        if request.as_of:
+            try:
+                date.fromisoformat(request.as_of)
+            except ValueError:
+                context.abort(grpc.StatusCode.INVALID_ARGUMENT, "as_of must be an ISO 8601 date")
+
+        hits = self._store.search(
+            terms, tokenizer=self._segmenter.tokenizer_id, as_of=request.as_of, limit=limit
+        )
+        return ontology_pb2.SearchArticlesResponse(
+            hits=[
+                ontology_pb2.ArticleHit(
+                    iri=h.iri,
+                    law_id=h.law_id,
+                    law_title=h.law_title,
+                    number=h.number,
+                    content=h.content,
+                    rank_score=h.rank_score,
+                    lexical_score=h.lexical_score,
+                    dense_distance=h.dense_distance,
+                )
+                for h in hits
+            ]
         )
 
 

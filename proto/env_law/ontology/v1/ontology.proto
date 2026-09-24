@@ -12,6 +12,10 @@ service OntologyService {
   rpc GetLaw(GetLawRequest) returns (GetLawResponse);
   // Lists the articles (ELI LegalResourceSubdivision) of a law in reading order, or NOT_FOUND.
   rpc ListArticles(ListArticlesRequest) returns (ListArticlesResponse);
+  // Hybrid retrieval over the articles in force on `as_of`, best first. The query
+  // is raw text: the service segments it with the segmenter the index was built
+  // with, because a caller segmenting on its own would silently match fewer rows.
+  rpc SearchArticles(SearchArticlesRequest) returns (SearchArticlesResponse);
 }
 
 message Law {
@@ -56,4 +60,35 @@ message ListArticlesRequest {
 
 message ListArticlesResponse {
   repeated Article articles = 1;
+}
+
+message SearchArticlesRequest {
+  string query = 1;
+  // See GetLawRequest.as_of.
+  string as_of = 2;
+  // Maximum hits; 0 means the service default (10).
+  int32 limit = 3;
+}
+
+message SearchArticlesResponse {
+  repeated ArticleHit hits = 1;
+}
+
+message ArticleHit {
+  string iri = 1;
+  string law_id = 2;
+  // Title of the law's version in force on `as_of`.
+  string law_title = 3;
+  // eli:number as written, e.g. "5-1".
+  string number = 4;
+  string content = 5;
+  // Fused rank score (RRF). Orders hits; it is **not** a relevance measure — the
+  // top hit of a corpus with nothing relevant scores the same as one that does.
+  // Decide "is there an answer here" from the two raw signals below.
+  double rank_score = 6;
+  // Raw lexical relevance (ts_rank_cd); absent when the lexical arm did not match.
+  optional float lexical_score = 7;
+  // Raw cosine distance; absent when the dense arm did not match. No embedding
+  // model is configured yet, so this is currently always absent.
+  optional float dense_distance = 8;
 }
