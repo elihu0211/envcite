@@ -37,7 +37,7 @@ Ontology contract: `Modules.Ontology` compiles the repo-root `proto/env_law/onto
 
 Config (`Ontology` section): `Address` (in-cluster `dns:///env-law-ontology:50051` — headless Service, calls round-robin across pods; a plain `http://` address is a single host), `InternalToken` (must equal the service's `ONTOLOGY_INTERNAL_TOKEN`; secret), `Timeout`. Development uses `http://localhost:50051` + token `dev` (`ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology` in `services/ontology/`).
 
-Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; set via user-secrets/env, never commit), `RateLimit:PermitLimit`/`Window`, `ApplyMigrationsOnStartup` (Development/tests only). Connection string: `ConnectionStrings:Platform`.
+Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; set via user-secrets/env, never commit), `Plans:<name>:PermitLimit`/`Window` (built-in `free` = 60/min if absent), `TenantPlans:<tenant identifier>` = plan name (unlisted tenants are `free`; an unknown plan name fails startup), `ApplyMigrationsOnStartup` (Development/tests only). Connection string: `ConnectionStrings:Platform`.
 
 - Package versions live only in `Directory.Packages.props` (central package management); `dotnet add package` updates it.
 - Shared build settings: `Directory.Build.props`. Don't repeat them in `.csproj` files.

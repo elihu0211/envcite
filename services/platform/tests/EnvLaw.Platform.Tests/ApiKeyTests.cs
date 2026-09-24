@@ -110,4 +110,26 @@ public sealed class ApiKeyTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.TooManyRequests, statuses[^1]);
         Assert.Equal(HttpStatusCode.OK, quietResponse.StatusCode);
     }
+
+    [Fact]
+    public async Task RateLimitFollowsTheTenantsPlan()
+    {
+        // The exact identifier, not CreateTenantWithKeyAsync's randomised one: the plan is assigned by it.
+        using var admin = factory.CreateAdminClient();
+        using var created = await admin.PostAsJsonAsync("/admin/tenants", new CreateTenantRequest(PlatformFactory.ProTenant, "Paying"));
+        created.EnsureSuccessStatusCode();
+        var tenant = (await created.Content.ReadFromJsonAsync<TenantResponse>())!;
+        var paying = await factory.IssueKeyAsync(tenant.Id);
+        using var client = factory.CreateTenantClient(paying.Key);
+
+        var statuses = new List<HttpStatusCode>();
+        for (var i = 0; i <= PlatformFactory.RateLimitPermits; i++)
+        {
+            using var response = await client.GetAsync(new Uri("/v1/me", UriKind.Relative));
+            statuses.Add(response.StatusCode);
+        }
+
+        // One past the free allowance is still within pro's.
+        Assert.All(statuses, s => Assert.Equal(HttpStatusCode.OK, s));
+    }
 }

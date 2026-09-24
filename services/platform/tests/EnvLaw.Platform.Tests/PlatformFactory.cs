@@ -22,6 +22,9 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
     public const string AdminKey = "test-admin-key";
     public const int RateLimitPermits = 5;
 
+    /// <summary>Tenant identifier assigned the <c>pro</c> plan, which allows twice <see cref="RateLimitPermits"/>.</summary>
+    public const string ProTenant = "paying";
+
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
 
     public FakeTimeProvider Time { get; } = new(DateTimeOffset.UtcNow);
@@ -48,7 +51,9 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
             Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(AdminKey))));
         builder.UseSetting("Ontology:Address", Ontology.Address.ToString());
         builder.UseSetting("Ontology:InternalToken", FakeOntologyServer.InternalToken);
-        builder.UseSetting("Platform:RateLimit:PermitLimit", RateLimitPermits.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        builder.UseSetting("Platform:Plans:free:PermitLimit", RateLimitPermits.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        builder.UseSetting("Platform:Plans:pro:PermitLimit", (RateLimitPermits * 2).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        builder.UseSetting($"Platform:TenantPlans:{ProTenant}", "pro");
         builder.ConfigureServices(services => services.Replace(ServiceDescriptor.Singleton<TimeProvider>(Time)));
     }
 
