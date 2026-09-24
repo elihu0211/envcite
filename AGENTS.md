@@ -20,13 +20,9 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
 
-## 為什麼是單一倉庫（不是單體）
+## 單一倉庫，不是單體
 
-合併倉庫**不改變部署邊界**：每個 `services/*` 仍是各自獨立部署的服務。變的只有原始碼位置、契約共享方式與 CI 分流。
-
-改為單一倉庫的理由是契約：proto 先前由 git submodule 共享，為了一個 1.4 KB 的檔案把整棵 Python 樹 vendor 進 C# 倉庫，且契約變更不是原子的——改 proto 要先合一個 MR、再更新 submodule SHA 開第二個 MR，中間有一段兩邊對不上的視窗，而 `buf breaking` 只驗得到自己那一側、看不到消費端跟上沒有。現在 proto 在根、兩個服務同時受同一次變更檢驗。
-
-**不要引入 Bazel／Pants／Nx。** 各服務用自己的原生工具（`dotnet`、`uv`），分流靠 GitLab CI 的 `rules:changes`；那些多語言建置系統是規模到了才需要的，現在導入會用一個更大的問題換掉 submodule。
+合併倉庫**不改變部署邊界**：每個 `services/*` 仍是各自獨立部署的服務；`proto/` 放同一倉庫，是為了契約變更的原子性。**不要引入 Bazel／Pants／Nx**——各服務用自己的原生工具（`dotnet`、`uv`），CI 分流靠 GitLab 的 `rules:changes`。論據見 `env-law-docs` 的 05-01。
 
 ## Commands
 
@@ -42,7 +38,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 
 ## 目錄配置與擴充判準
 
-現行只有兩個服務。下列判準是**新增第三個服務時照著做的**，不是現在就要建的目錄——**空目錄不先建**，與文件庫「規劃中的卷次不建空殼」同一條理由。
+下列判準是**新增服務時照著做的**，不是現在就要建的目錄——**空目錄不先建**，與文件庫「規劃中的卷次不建空殼」同一條理由。
 
 | 內容 | 位置 | 何時才建 |
 |------|------|----------|
@@ -52,21 +48,21 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 | 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
 | 跨服務編排 | `deploy/` | 有第二個部署單元要一起編排時（已發生：資料庫與本體服務）。**只放能跑的東西**——沒有 adapter 的服務、尚未存在的匯入器都不放，缺席是狀態不是遺漏 |
 
-**契約維持單一 buf 模組。** `buf.yaml` 現為 `modules: - path: proto`，模組根是 `proto/`，故 import 路徑是 `env_law/<service>/v1/...`。buf v2 支援每個領域一個模組（`- path: proto/<domain>`），但那會改變模組根、進而改變**每一條 import 路徑**。只有當某個領域需要獨立發佈到 schema registry 時才值得付這個代價；同倉共同部署的情況下，單一模組加上 `env_law.<service>.v1` 套件命名已足夠隔離。
+- **契約維持單一 buf 模組**（`buf.yaml` 的模組根是 `proto/`，import 路徑為 `env_law/<service>/v1/...`）。拆成每領域一個模組會改變每一條 import 路徑，除非某領域需要獨立發佈到 schema registry，否則不拆。
+- **CI 的擴充點是「新增一個服務要改幾個地方」**：現為三處（job、`rules:changes` 錨點、`proto` 觸發路徑）。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
+- **標籤用 `<service>/vX.Y.Z`**，不用倉庫層單一版本號。
 
-**CI 的擴充點是「新增一個服務要改幾個地方」。** 現在是三處（job、`rules:changes` 錨點、`proto` 觸發路徑），三到四個服務仍可讀；再多就改用 GitLab 子管線（`trigger: include:`），每個服務帶一份自己的 CI 檔。不要在還沒到那個規模時先拆——子管線會讓單一 pipeline 的全貌變得要跨檔案拼。
-
-**服務各自部署就需要知道哪個 commit 在線上。** 標籤用 `<service>/vX.Y.Z`，不要用倉庫層單一版本號——那會讓沒有變更的服務也被迫進版。
+論據見 `env-law-docs` 的 05-02。
 
 ## 文件庫在另一個倉庫
 
-技術決策及其論據記於 `env-law-docs`（本倉庫的同層目錄，非子目錄）：`.qmd` → Quarto → xelatex，十卷結構，十一項守門。為什麼與程式碼分倉，見該庫自己的 `AGENTS.md`。
+技術決策及其論據記於 `env-law-docs`（本倉庫的同層目錄，非子目錄）：`.qmd` → Quarto → xelatex。結構、守門與為什麼與程式碼分倉，見該庫自己的 `AGENTS.md`。
 
 改動設計時，決策的論據寫進該庫，不要寫進本倉庫的 `AGENTS.md`：後者是作業規範，寫進論據必然過期。
 
 ## Contract
 
-- `proto/env_law/**` 是 gRPC API 的**單一真值**，兩個服務都由此產生程式碼，**不得各自複製一份**。
+- `proto/env_law/**` 是 gRPC API 的**單一真值**，各服務都由此產生程式碼，**不得各自複製一份**。
 - 破壞性變更要開新套件版本（`v2`）；`v1` 必須通過 `buf breaking`。
 - 改 proto 的 MR 必須同時更新兩側產生碼——這是單一倉庫換來的性質，別再用兩個 MR 做一件事。
 
