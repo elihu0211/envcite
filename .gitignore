@@ -488,15 +488,18 @@ $RECYCLE.BIN/
 *.pem
 appsettings.*.local.json
 
-# Shared agent config (overrides global ignores of .claude/)
+# Shared agent config — tracked: .agents/, .claude/{settings.json,skills/}, .gemini/, skills-lock.json
+# (!.claude/ overrides a global ignore of .claude/)
 !.claude/
 
-# Personal agent overrides
+# Personal agent overrides / per-machine state
 CLAUDE.local.md
 .claude/settings.local.json
+.claude/worktrees/
+.claude/agent-memory-local/
 .serena/
 
-# ── Python（services/ontology）─────────────────────────────────────
+# ── Python（services/*、libs/python/*）──────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
