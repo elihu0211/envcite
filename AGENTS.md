@@ -16,7 +16,6 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
 | `services/consult/` | 接地問答：以本體事實為據作答（租戶隔離） | Python 3.14 · uv · gRPC（streaming） |
 | `libs/python/` | 兩個以上服務共用的 Python 套件 | 路徑相依，不發佈 |
-| `deploy/` | Kubernetes 清單（CloudNativePG、服務、遷移 Job） | kustomize · kubeconform |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
 
@@ -46,7 +45,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 | 契約 | `proto/env_law/<service>/v1/` | 該服務有對外 API 時 |
 | 跨服務共用程式碼 | `libs/<lang>/<name>/` | **出現第二個消費端時**，不是「將來可能要用」（已發生一次：`env-law-grpc` 於 consult 成為認證攔截器的第二個消費端時抽出） |
 | 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
-| 跨服務編排 | `deploy/` | 有第二個部署單元要一起編排時（已發生：資料庫與本體服務）。**只放能跑的東西**——沒有 adapter 的服務、尚未存在的匯入器都不放，缺席是狀態不是遺漏 |
+| 部署清單 | 同層的 `env-law-deploy` 倉庫（Argo CD 來源），**不在本倉庫** | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（`<name>-image` job 推送 `:<commit-sha>`），上線是在該倉庫開改 tag 的 MR |
 
 - **契約維持單一 buf 模組**（`buf.yaml` 的模組根是 `proto/`，import 路徑為 `env_law/<service>/v1/...`）。拆成每領域一個模組會改變每一條 import 路徑，除非某領域需要獨立發佈到 schema registry，否則不拆。
 - **CI 的擴充點是「新增一個服務要改幾個地方」**：現為三處（job、`rules:changes` 錨點、`proto` 觸發路徑），要部署的服務再加一處（`<name>-image` 建置 job）。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
