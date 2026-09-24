@@ -1,8 +1,4 @@
-"""以真實端點實作的 port。
-
-目前只有本體 adapter。語言模型的 adapter 等待供應商的決定；管線不在乎是哪一家，
-這正是 `LlmPort` 存在的目的。
-"""
+"""以真實端點實作的 port。"""
 
 from __future__ import annotations
 

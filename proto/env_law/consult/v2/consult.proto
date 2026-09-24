@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package env_law.consult.v2;
+
+option csharp_namespace = "EnvLaw.Consult.V2";
+
+// Evidence for grounded answers over the environmental-law ontology.
+//
+// The service never runs a language model. It decides what may be cited and
+// whether the question can be answered at all, and hands back a closed citation
+// set. Writing the prose — and checking that it cites only codes from that set —
+// happens on the caller's side (see proto/README.md, "呼叫端的語言模型").
+//
+// Internal service: callers must send `authorization: Bearer <internal token>`.
+// Tenant-scoped: `x-tenant-id` selects the quota and audit trail the call is
+// charged to, and is required. `x-request-id` is optional (logging only).
+service ConsultationService {
+  // Retrieves, grounds and assesses one question. Unary and read-only, so it is
+  // safe to retry; two calls differ only if the corpus changed in between.
+  rpc Ground(GroundRequest) returns (GroundResponse);
+}
+
+message GroundRequest {
+  // The user's question, verbatim. Never rewritten by the caller: retrieval is
+  // tuned to how people ask, and a model's paraphrase is a different query.
+  string question = 1;
+  // Resolve the law as in force on this date (ISO 8601). Empty means "as
+  // currently in force".
+  string as_of = 2;
+}
+
+message GroundResponse {
+  // Exactly one is set. A refusal is a result, not an error.
+  oneof outcome {
+    Evidence evidence = 1;
+    Refused refused = 2;
+  }
+}
+
+// The closed set an answer may cite, best first.
+message Evidence {
+  // At most 8, coded "L1", "L2", … in this order. Never empty.
+  repeated Citation citations = 1;
+  Confidence confidence = 2;
+}
+
+message Citation {
+  // Short code the caller's model writes in square brackets, e.g. "[L1]". A code
+  // outside this set is an invented citation: strip it or reject the answer.
+  string code = 1;
+  // ELI IRI of the cited subdivision.
+  string iri = 2;
+  // Human-readable label, e.g. "空氣污染防制法 第 20 條".
+  string label = 3;
+  // Article text in force on `as_of` — the evidence itself.
+  string text = 4;
+}
+
+// Why the service declined to ground the question. The caller renders it; it is
+// not retried and it is not billed as a failure.
+message Refused {
+  enum Reason {
+    REASON_UNSPECIFIED = 0;
+    // Nothing was retrieved at all: the corpus has no matching article.
+    REASON_NO_EVIDENCE = 1;
+    // Articles were retrieved, but none cleared the relevance floor: the question
+    // is about something else.
+    REASON_OUT_OF_SCOPE = 2;
+    // The question needs input the user did not supply (currently: it is blank).
+    REASON_MISSING_INPUT = 3;
+  }
+  Reason reason = 1;
+  string detail = 2;
+}
+
+// Strength of the best citation. LOW still carries evidence: the caller may
+// answer, but should say the basis is indirect.
+enum Confidence {
+  CONFIDENCE_UNSPECIFIED = 0;
+  CONFIDENCE_LOW = 1;
+  CONFIDENCE_HIGH = 2;
+}

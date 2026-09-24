@@ -1,24 +1,27 @@
-"""諮詢管線：各階段、其順序，以及由誰決定什麼。
+"""接地管線：各階段、其順序，以及由誰決定什麼。
 
-重點在於這個形狀。由上往下讀，應當一目了然：語言模型只決定一件事——如何以交給它
-的證據措辭成答案——其餘每一個決定，不是在它執行前就已做出，就是在它回傳後加以檢查：
+本服務不執行語言模型。完整的問答有五個階段，本服務擁有前三個；後兩個在呼叫端，
+由呼叫端自己的模型執行：
 
     retrieve      由本體決定存在什麼
     ground        由程式碼指派封閉的引用集合
     assess        由規則決定這個問題到底能不能回答
-    generate      由模型撰寫文字，只能以代碼引用
-    verify        由程式碼刪除模型自行捏造的任何代碼
+    ─────────── 以上在本服務；以下在呼叫端 ───────────
+    generate      由呼叫端的模型撰寫文字，只能以代碼引用
+    verify        由呼叫端刪除模型自行捏造的任何代碼
+
+模型因此仍只決定一件事——如何以交給它的證據措辭成答案。可引用什麼、能不能答，
+都在它執行前就已決定，並隨證據一起交給呼叫端。
 
 拒答是一種結果，不是錯誤：`assess` 可以終止管線，呼叫端應將其呈現出來，而非重試。
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
-from env_law.consult.ports import Article, LlmPort, OntologyPort
+from env_law.consult.ports import Article, OntologyPort
 
 #: 低於此值的檢索資料，視為與問題無關。
 #: 這是受模型制約的值，不是領域常數：它只在產生它的評分方式下才可比較，評分方式
@@ -58,16 +61,12 @@ class Refusal:
     detail: str
 
 
-@dataclass
-class Outcome:
-    """一次執行的產出。`refusal` 與 `chunks` 恰有一個有意義。"""
+@dataclass(frozen=True, slots=True)
+class Evidence:
+    """呼叫端的模型可引用的封閉集合，以及其中最強依據的信心度。"""
 
-    grounding: list[Citation] = field(default_factory=list)
-    #: 這次檢索的原始結果。信心度由它與 grounding 算出；不另外再查一次，否則
-    #: 兩次檢索可能不一致（例如漏帶 `as_of`），信心度就不是針對這個答案的。
-    articles: list[Article] = field(default_factory=list)
-    refusal: Refusal | None = None
-    chunks: Iterator[str] | None = None
+    citations: list[Citation]
+    confidence: Confidence
 
 
 def ground(articles: list[Article]) -> list[Citation]:
@@ -83,10 +82,8 @@ def ground(articles: list[Article]) -> list[Citation]:
     ]
 
 
-def assess(question: str, grounding: list[Citation], articles: list[Article]) -> Refusal | None:
-    """決定是否作答。回傳拒答結果，或回傳 None 表示繼續。"""
-    if not question.strip():
-        return Refusal(RefusalReason.MISSING_INPUT, "問句為空")
+def assess(grounding: list[Citation], articles: list[Article]) -> Refusal | None:
+    """依檢索結果決定是否作答。回傳拒答結果，或回傳 None 表示繼續。"""
     if not articles:
         return Refusal(RefusalReason.NO_EVIDENCE, "檢索無任何結果")
     if not grounding:
@@ -102,28 +99,17 @@ def confidence_of(grounding: list[Citation], articles: list[Article]) -> Confide
     return Confidence.HIGH if top >= HIGH_CONFIDENCE_FLOOR else Confidence.LOW
 
 
-def render_evidence(grounding: list[Citation]) -> str:
-    """交給模型的證據區塊。代碼是它唯一能用的把手。"""
-    return "\n\n".join(f"[{c.code}] {c.label}\n{c.text}" for c in grounding)
+def run(question: str, *, as_of: str, ontology: OntologyPort) -> Evidence | Refusal:
+    """為一個問題備妥證據，或拒答。只檢索一次：信心度與 grounding 出自同一次結果。"""
+    # 空白問句在檢索之前就拒答：本體對空查詢回 INVALID_ARGUMENT，而這是使用者少給了
+    # 輸入，不是呼叫端的錯誤。
+    if not question.strip():
+        return Refusal(RefusalReason.MISSING_INPUT, "問句為空")
 
-
-def cited_codes(text: str, grounding: list[Citation]) -> list[str]:
-    """完成的答案中實際出現的代碼，依 grounding 的順序排列。"""
-    return [c.code for c in grounding if f"[{c.code}]" in text]
-
-
-def run(question: str, *, as_of: str, ontology: OntologyPort, llm: LlmPort) -> Outcome:
-    """執行一次諮詢。串流只在 grounding 確定之後才開始。"""
     articles = ontology.search(question, as_of=as_of)
     grounding = ground(articles)
 
-    refusal = assess(question, grounding, articles)
+    refusal = assess(grounding, articles)
     if refusal is not None:
-        return Outcome(grounding=grounding, articles=articles, refusal=refusal)
-
-    chunks = llm.generate(
-        question=question,
-        evidence=render_evidence(grounding),
-        allowed_codes=[c.code for c in grounding],
-    )
-    return Outcome(grounding=grounding, articles=articles, chunks=chunks)
+        return refusal
+    return Evidence(citations=grounding, confidence=confidence_of(grounding, articles))

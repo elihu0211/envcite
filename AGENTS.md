@@ -14,7 +14,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `proto/` | gRPC 契約，**唯一真值** | protobuf · buf |
 | `services/platform/` | 多租戶控制平面：tenants、API keys、配額、計量、對外 REST | C# · .NET 10 · ASP.NET Core · PostgreSQL |
 | `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
-| `services/consult/` | 接地問答：以本體事實為據作答（租戶隔離） | Python 3.14 · uv · gRPC（streaming） |
+| `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；本系統不執行生成模型） | Python 3.14 · uv · gRPC |
 | `libs/python/` | 兩個以上服務共用的 Python 套件 | 路徑相依，不發佈 |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
@@ -74,6 +74,7 @@ wt list        # URL 欄是本樹 platform 的位址
 ## Contract
 
 - `proto/env_law/**` 是 gRPC API 的**單一真值**，各服務都由此產生程式碼，**不得各自複製一份**。
+- API 文件：欄位語意寫在 `.proto` 註解；跨服務的組合與呼叫端接法寫在 `proto/README.md`（buf 模組文件）。改契約時兩者一起改。
 - 破壞性變更要開新套件版本（`v2`）；`v1` 必須通過 `buf breaking`。
 - 改 proto 的 MR 必須同時更新兩側產生碼——這是單一倉庫換來的性質，別再用兩個 MR 做一件事。
 

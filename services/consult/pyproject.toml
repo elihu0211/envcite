@@ -1,7 +1,7 @@
 [project]
 name = "env-law-consult"
 version = "0.1.0"
-description = "env-law consultation service (grounded QA over the ontology, gRPC)"
+description = "env-law consultation service (grounding evidence for callers' own models, gRPC)"
 readme = "README.md"
 authors = [
     { name = "Eli Hu", email = "elihu@go.thu.edu.tw" }
@@ -45,14 +45,14 @@ dev = [
 
 [tool.ruff]
 line-length = 100
-extend-exclude = ["src/env_law/*/v1/*_pb2*"]
+extend-exclude = ["src/env_law/*/v*/*_pb2*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 # Full-width punctuation is flagged as ambiguous by RUF001 (strings), RUF002
 # (docstrings) and RUF003 (comments). All three are off, for the same reason as
-# env-law-segmenter. This service answers in Chinese: prompts, refusal messages and
-# their fixtures are Chinese text, and docstrings and comments are written in
+# env-law-segmenter. Refusal messages, citation labels and their fixtures are
+# Chinese text, and docstrings and comments are written in
 # Chinese (zh-TW) too. Full-width punctuation is correct in all of them.
 ignore = ["RUF001", "RUF002", "RUF003"]
 
@@ -60,7 +60,7 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["env_law.consult.v1.*", "env_law.ontology.v1.*"]
+module = ["env_law.consult.v2.*", "env_law.ontology.v1.*"]
 ignore_errors = true
 
 [tool.pytest]

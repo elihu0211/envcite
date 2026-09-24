@@ -4,11 +4,17 @@ package env_law.consult.v1;
 
 option csharp_namespace = "EnvLaw.Consult.V1";
 
+// Deprecated: superseded by env_law.consult.v2, which leaves generation to the
+// caller's own language model. No server implements this version; the file stays
+// only because `buf breaking` forbids deleting it.
+//
 // Grounded question answering over the environmental-law ontology.
 // Internal service: callers must send `authorization: Bearer <internal token>`.
 // Unlike OntologyService this is tenant-scoped: `x-tenant-id` selects the quota
 // and audit trail the call is charged to, and is required.
 service ConsultationService {
+  option deprecated = true;
+
   // Answers one question. The response is a stream because generation is
   // incremental and a caller must be able to render partial prose; it also means
   // a call is not safely retryable once events have been emitted.
