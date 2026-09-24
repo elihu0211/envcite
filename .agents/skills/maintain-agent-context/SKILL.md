@@ -17,8 +17,7 @@ Layer definitions live in **`AGENTS.md` → Layering** — read it first; do not
 1. **`CLAUDE.md` is import-only.** It starts with `@AGENTS.md` (official Claude Code recommendation; covers sessions that can't read `AGENTS.md` directly) and holds only Claude-specific notes. Never paste AGENTS.md content into it.
 2. **Do not create `.cursorrules`.** Legacy; use `.cursor/rules/*.mdc` only for Cursor-specific scoping.
 3. **Do not copy `AGENTS.md` into rules or skills.** Link or cite; keep one canonical baseline.
-4. **Skills live in `.agents/skills/`.** Claude Code only scans `.claude/skills/`, so that path is a symlink to `../.agents/skills` — never a real directory.
-
+4. **Skills live in `.agents/skills/`.** Claude Code only scans `.claude/skills/`, so link each skill there: `.claude/skills/<name>` → `../../.agents/skills/<name>`. Symlink the `<name>` entries, not the `skills` directory itself (the [docs](https://code.claude.com/docs/en/skills) cover symlinked skill entries only). Never copy a skill into `.claude/skills/`.
 5. **Shared skills are installed, not edited.** Skills listed in `skills-lock.json` come from `agent-config`. Change them there, then run `npx skills update` in the consuming repo. Never hand-edit the installed copy.
 
 ## When to put content where

@@ -1,20 +1,15 @@
 # AGENTS.md
 
-Vendor-neutral instructions for coding agents (Cursor, Codex, Claude Code, Copilot, Gemini CLI, …).
-
-This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude Code docs](https://code.claude.com/docs/en/memory) so sessions that can't read `AGENTS.md` directly still get it. Never duplicate this content into vendor-specific files.
+Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Contract、Safety、buf）見根 `AGENTS.md`；本檔只管 `services/platform/`。
 
 ## Project
 
 - **Name:** platform（`services/platform`；倉庫為 `env-law`）
-- **Role:** 多租戶 SaaS 平台（control plane）：tenants, accounts, subscriptions/billing, API keys, quotas, public API gateway. Calls `env-law-ontology` (Python, shared non-tenant data) via its OpenAPI contract.
+- **Role:** 多租戶 SaaS 平台（control plane）：tenants, accounts, subscriptions/billing, API keys, quotas, public API gateway. Calls `services/ontology` (Python, shared non-tenant data) over gRPC.
 - **Stack:** C# / .NET 10 (SDK pinned in `global.json`) · ASP.NET Core · PostgreSQL · xUnit
 - **Auth:** API keys only for now (OIDC later for an admin UI)
 - **Billing:** not integrated yet; plans assigned manually. Note: Stripe does not onboard Taiwan entities — evaluate Paddle / local gateways when needed.
 - **Status:** tenants + API keys, per-tenant rate limiting, usage metering, REST facade over the ontology gRPC service
-- **Remote:** `git@gitlab.com:thuaisse-lab/env-law.git`（整個 monorepo；本服務為其中一個目錄）
-
-Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
 
 ## Architecture
 
@@ -22,25 +17,9 @@ Keep this file short. Long procedures → `.agents/skills/<name>/SKILL.md`.
 - Multi-tenancy is runtime isolation (tenant resolution + `TenantId` query filters), never per-tenant code or repos.
 - Billing provider is the source of truth for payment; this service keeps an entitlements table updated via webhooks.
 
-## Layering (canonical)
-
-| Layer | Path | Loaded when |
-|-------|------|-------------|
-| Baseline | `AGENTS.md` (this file) | Always (all agents) |
-| Skills | `.agents/skills/<name>/SKILL.md` | On demand ([agentskills.io](https://agentskills.io/specification)) |
-| Shared skills | installed from [`elihu0211/agent-config`](https://github.com/elihu0211/agent-config) (public GitHub), pinned in `skills-lock.json` | Same as Skills; update with `npx skills update -p -y` |
-| Claude bridge | `CLAUDE.md` → `@AGENTS.md`; `.claude/skills` → symlink to `.agents/skills` | Claude Code only |
-| Cursor rules | `.cursor/rules/*.mdc` (none yet) | Cursor only, for path-scoped guidance |
-| Gemini bridge | `.gemini/settings.json` → `context.fileName: ["AGENTS.md"]` | Gemini CLI only (default is `GEMINI.md`) |
-
-- Author repo-specific skills in **`.agents/skills/`**; `.claude/skills` is a symlink, never a separate tree.
-- Never hand-edit skills listed in `skills-lock.json`; change them in `agent-config`, then `DISABLE_TELEMETRY=1 npx skills update -p -y`.
-- Prefer **`AGENTS.md`** for always-on ops; use `.cursor/rules` only for Cursor path scoping.
-- Nested `AGENTS.md` in a subdirectory wins for that tree.
-
 ## Commands
 
-Run from repo root (`EnvLaw.Platform.slnx`). Clone with submodules: `git clone --recurse-submodules …` (or `git submodule update --init`).
+Run from **this directory** (`services/platform/`, where `EnvLaw.Platform.slnx` lives).
 
 ```bash
 dotnet restore && dotnet tool restore  # tool: dotnet-ef (dotnet-tools.json)
@@ -54,9 +33,9 @@ dotnet run --project src/EnvLaw.Platform.Api   # Development: local PostgreSQL, 
 dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Modules.<Module> -s src/EnvLaw.Platform.Api -c <Module>DbContext -o Migrations
 ```
 
-Ontology contract: `contracts/env-law-ontology` is a git submodule of the ontology repo; `Modules.Ontology` compiles its `proto/…/ontology.proto` (Grpc.Tools). To adopt a new contract version: `git -C contracts/env-law-ontology fetch && git -C contracts/env-law-ontology checkout <commit on main>`, rebuild, commit the submodule pointer. Never copy the `.proto`.
+Ontology contract: `Modules.Ontology` compiles the repo-root `proto/env_law/ontology/v1/ontology.proto` (Grpc.Tools; see its `.csproj`). Never copy the `.proto`.
 
-Config (`Ontology` section): `Address` (e.g. `http://ontology:50051`), `InternalToken` (must equal the service's `ONTOLOGY_INTERNAL_TOKEN`; secret), `Timeout`. Development uses `http://localhost:50051` + token `dev` (`ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology` in the ontology repo).
+Config (`Ontology` section): `Address` (e.g. `http://ontology:50051`), `InternalToken` (must equal the service's `ONTOLOGY_INTERNAL_TOKEN`; secret), `Timeout`. Development uses `http://localhost:50051` + token `dev` (`ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology` in `services/ontology/`).
 
 Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; set via user-secrets/env, never commit), `RateLimit:PermitLimit`/`Window`, `ApplyMigrationsOnStartup` (Development/tests only). Connection string: `ConnectionStrings:Platform`.
 
@@ -80,27 +59,16 @@ Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; 
 
 ## Conventions
 
-- Small, focused diffs; match existing style. Formatting rules: `.editorconfig`.
-- Human docs → `README.md`; agent ops → this file + skills.
-- Do not add `.cursorrules`, `GEMINI.md`, or other duplicate baselines; `CLAUDE.md` stays an import-only bridge.
+- Formatting rules: `.editorconfig`.
 
 ## Safety
 
 - Never commit secrets, connection strings, billing keys, or real `.env*` / local appsettings values.
 - Every tenant-scoped query must be filtered by `TenantId`; never disable query filters without review.
 - Bypass only the tenant filter by name (`IgnoreQueryFilters([TenantToken])`), and only in reviewed cross-tenant lookups (currently: API key authentication).
-- Generated: `src/*/Migrations/` (change via `dotnet ef`, never by hand; marked `generated_code` in `.editorconfig`), gRPC code under `obj/` (from the submodule proto).
-- The submodule must point at a commit on the ontology repo's `main` before merging (squash-merged branch commits disappear).
-- Ask before: force-push, history rewrite, production deploys, destructive DB ops, applying migrations to shared DBs.
+- Generated: `src/*/Migrations/` (change via `dotnet ef`, never by hand; marked `generated_code` in `.editorconfig`), gRPC code under `obj/` (from the repo-root proto).
+- Also ask before applying migrations to shared DBs (general ask-before list: root `AGENTS.md`).
 
 ## Done when
 
-- `dotnet build` and `dotnet test` pass; `dotnet format --verify-no-changes` is clean — enforced by `.gitlab-ci.yml` (Docker-in-Docker for Testcontainers; the submodule is cloned with the CI job token, so this project must stay in env-law-ontology's job token allowlist).
-- Commands and Safety lists stay accurate after tooling changes.
-
-## Skills in this repo
-
-| Skill | Source | Use when |
-|-------|--------|----------|
-| `maintain-agent-context` | `agent-config` | Editing agent instruction / skill / rule layout |
-| `bootstrap-stack` | this repo | Creating the solution and wiring Commands |
+- `dotnet build` and `dotnet test` pass; `dotnet format --verify-no-changes` is clean — enforced by `.gitlab-ci.yml` (Docker-in-Docker for Testcontainers).
