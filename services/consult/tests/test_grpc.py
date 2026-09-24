@@ -2,7 +2,7 @@ import grpc
 import pytest
 
 from env_law.consult.v1 import consult_pb2, consult_pb2_grpc
-from tests.conftest import auth
+from tests.conftest import FakeOntology, auth
 
 
 def _events(
@@ -65,3 +65,12 @@ def test_missing_token_is_unauthenticated(
         list(stub.Consult(consult_pb2.ConsultRequest(question="x"), metadata=()))
 
     assert err.value.code() is grpc.StatusCode.UNAUTHENTICATED
+
+
+def test_one_consultation_retrieves_once_at_the_requested_date(
+    stub: consult_pb2_grpc.ConsultationServiceStub, ontology: FakeOntology
+) -> None:
+    request = consult_pb2.ConsultRequest(question="露天燃燒如何處罰", as_of="2020-01-01")
+    list(stub.Consult(request, metadata=auth()))
+
+    assert ontology.searches == [("露天燃燒如何處罰", "2020-01-01")]

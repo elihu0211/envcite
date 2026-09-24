@@ -63,6 +63,9 @@ class Outcome:
     """一次執行的產出。`refusal` 與 `chunks` 恰有一個有意義。"""
 
     grounding: list[Citation] = field(default_factory=list)
+    #: 這次檢索的原始結果。信心度由它與 grounding 算出；不另外再查一次，否則
+    #: 兩次檢索可能不一致（例如漏帶 `as_of`），信心度就不是針對這個答案的。
+    articles: list[Article] = field(default_factory=list)
     refusal: Refusal | None = None
     chunks: Iterator[str] | None = None
 
@@ -116,11 +119,11 @@ def run(question: str, *, as_of: str, ontology: OntologyPort, llm: LlmPort) -> O
 
     refusal = assess(question, grounding, articles)
     if refusal is not None:
-        return Outcome(grounding=grounding, refusal=refusal)
+        return Outcome(grounding=grounding, articles=articles, refusal=refusal)
 
     chunks = llm.generate(
         question=question,
         evidence=render_evidence(grounding),
         allowed_codes=[c.code for c in grounding],
     )
-    return Outcome(grounding=grounding, chunks=chunks)
+    return Outcome(grounding=grounding, articles=articles, chunks=chunks)

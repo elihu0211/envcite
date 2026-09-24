@@ -20,8 +20,10 @@ class FakeOntology:
 
     def __init__(self, articles: list[Article]) -> None:
         self.articles = articles
+        self.searches: list[tuple[str, str]] = []
 
     def search(self, query: str, *, as_of: str = "", limit: int = 10) -> list[Article]:
+        self.searches.append((query, as_of))
         return self.articles[:limit]
 
 
@@ -50,10 +52,13 @@ def article(n: int, score: float) -> Article:
 
 
 @pytest.fixture
-def server_address() -> Iterator[str]:
-    server, port = build_server(
-        FakeOntology([article(1, 0.9), article(2, 0.4)]), EchoLlm(), TOKEN, "127.0.0.1:0"
-    )
+def ontology() -> FakeOntology:
+    return FakeOntology([article(1, 0.9), article(2, 0.4)])
+
+
+@pytest.fixture
+def server_address(ontology: FakeOntology) -> Iterator[str]:
+    server, port = build_server(ontology, EchoLlm(), TOKEN, "127.0.0.1:0")
     server.start()
     yield f"127.0.0.1:{port}"
     server.stop(grace=None)

@@ -80,11 +80,7 @@ class ConsultationServicer(consult_pb2_grpc.ConsultationServiceServicer):
         yield consult_pb2.ConsultResponse(
             completed=consult_pb2.Completed(
                 cited_codes=pipeline.cited_codes("".join(answer), outcome.grounding),
-                confidence=_CONFIDENCE[
-                    pipeline.confidence_of(
-                        outcome.grounding, self._ontology.search(request.question)
-                    )
-                ],
+                confidence=_CONFIDENCE[pipeline.confidence_of(outcome.grounding, outcome.articles)],
             )
         )
 
