@@ -6,9 +6,12 @@ Kubernetes 清單。**目前只涵蓋能跑的東西**——`services/consult` �
 
 | 項目 | 版本 | 為什麼 |
 |------|------|--------|
+| **CloudNativePG** | **1.27+** | `.spec.postgresql.extensions` 自該版引入 |
 | PostgreSQL | **18+** | `extension_control_path` 是 image volume 擴充能運作的前提 |
-| Kubernetes | **1.35+** | ImageVolume 支援 |
+| Kubernetes | **1.35+**，或 1.33+ 開啟 feature gate | ImageVolume 支援 |
 | 容器執行環境 | containerd 2.1+ 或 CRI-O 1.31+ | 同上 |
+
+CNPG 1.29 起，正式區的推薦形式是 `ImageCatalog`——由 operator 依 PostgreSQL 主版本解析映像參照與擴充路徑，而不是寫在清單裡。**那正好消除本檔已經犯過一次的兩類錯誤**（不存在的 tag、手寫的路徑）。目前不採用，理由是 catalog 要另外建立與維護，而在只有一個叢集時等於用兩個字面值換一個要維護正確的物件。有第二個叢集、或映像守門不再夠用時再回頭。
 
 **版本不足時這些清單仍套得上去，但擴充不會掛載**，錯誤會在 `Database` 調和時以 `CREATE EXTENSION` 失敗出現，而不是在套用時。先確認版本，不要靠錯誤訊息回推。
 

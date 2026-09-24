@@ -2,11 +2,21 @@
 # mounted as image volumes rather than baked into a custom image.
 #
 # 🚨 Hard requirements — check these before applying:
+#   - CloudNativePG 1.27+       `.spec.postgresql.extensions` was introduced there
 #   - PostgreSQL 18+            extension_control_path is what makes image volumes work
-#   - Kubernetes 1.35+          ImageVolume support
+#   - Kubernetes 1.35+          ImageVolume support — or 1.33+ with the feature gate
 #   - containerd 2.1+ / CRI-O 1.31+
 # On an older cluster these manifests apply but the extensions never mount, and
 # `CREATE EXTENSION` fails at Database reconciliation rather than here.
+#
+# Since CNPG 1.29 the recommended production form is an ImageCatalog, which lets
+# the operator resolve the image reference and the extension paths from the
+# PostgreSQL major version instead of them being written out here. That would
+# remove exactly the two things this file has already got wrong once (a tag that
+# did not exist, and hand-written paths). It is not used yet because the catalog
+# has to be created and maintained separately, and with one cluster that trades
+# two literals for one more object to keep correct. Revisit when there is a
+# second cluster, or when the registry gate stops being enough.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
