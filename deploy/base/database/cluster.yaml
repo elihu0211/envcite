@@ -1,0 +1,77 @@
+# PostgreSQL by CloudNativePG, with the two extensions the retrieval layer needs
+# mounted as image volumes rather than baked into a custom image.
+#
+# 🚨 Hard requirements — check these before applying:
+#   - CloudNativePG 1.27+       `.spec.postgresql.extensions` was introduced there
+#   - PostgreSQL 18+            extension_control_path is what makes image volumes work
+#   - Kubernetes 1.35+          ImageVolume support — or 1.33+ with the feature gate
+#   - containerd 2.1+ / CRI-O 1.31+
+# On an older cluster these manifests apply but the extensions never mount, and
+# `CREATE EXTENSION` fails at Database reconciliation rather than here.
+#
+# Since CNPG 1.29 the recommended production form is an ImageCatalog, which lets
+# the operator resolve the image reference and the extension paths from the
+# PostgreSQL major version instead of them being written out here. That would
+# remove exactly the two things this file has already got wrong once (a tag that
+# did not exist, and hand-written paths). It is not used yet because the catalog
+# has to be created and maintained separately, and with one cluster that trades
+# two literals for one more object to keep correct. Revisit when there is a
+# second cluster, or when the registry gate stops being enough.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: env-law-pg
+spec:
+  # Minimal image: extensions come from their own images, so the core stays small
+  # and an extension upgrade does not mean rebuilding Postgres.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-minimal-trixie
+  instances: 3
+
+  storage:
+    size: 20Gi
+
+  postgresql:
+    # No shared_preload_libraries: the one extension left needs no shared memory.
+    #
+    # pg_search was here until 0010. It was removed because ParadeDB Community
+    # does not physically replicate its index — a promoted standby would have
+    # carried no lexical index, and a replica could not serve one. The lexical arm
+    # is now PostgreSQL's own full-text search over externally segmented text, and
+    # a GIN index replicates like anything else.
+    extensions:
+      # Dense vectors. Community image, versioned per Postgres major.
+      #
+      # No `-minimal-` variant here. That suffix belongs to the Postgres base image
+      # above, where it distinguishes a stripped build; the extension images carry
+      # only the extension and have nothing to strip. Carrying the base image's
+      # naming over to an extension produced a tag that does not exist, and neither
+      # kustomize nor kubeconform contacts a registry to say so — the deploy job
+      # now does (`deploy/scripts/extract-image-refs.py`).
+      - name: pgvector
+        image:
+          reference: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-trixie
+
+  bootstrap:
+    initdb:
+      database: env_law
+      owner: env_law
+
+  # Backups are deliberately absent here: a target must be chosen first, and a
+  # backup section that points nowhere reads as "backups are configured".
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: env-law-db
+spec:
+  name: env_law
+  owner: env_law
+  cluster:
+    name: env-law-pg
+  # The operator runs CREATE EXTENSION IF NOT EXISTS for each of these. Note the
+  # extension name is `vector`, not `pgvector` — the image is named after the
+  # project, the extension after what it provides. One entry, and that is the
+  # point: every extension here is something the cluster must mount an image for,
+  # and something that can block a Postgres major upgrade until it catches up.
+  extensions:
+    - name: vector

@@ -1,0 +1,57 @@
+# Connection pooling for the ontology service, which reads and never writes.
+#
+# `type: ro` — the standbys, not the primary. This became possible in 0010: the
+# lexical arm used to be a ParadeDB index, which ParadeDB Community does not
+# physically replicate, so a replica could only have served the dense arm and
+# would have returned a shorter list that looks like a complete one. Both arms
+# are now standard Postgres indexes (GIN and HNSW), and both replicate.
+#
+# Writes do not come through here. The migration Job talks to the rw service
+# directly, and nothing else in this deployment writes.
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  # Must differ from the Cluster name in this namespace.
+  name: env-law-pg-pooler
+spec:
+  cluster:
+    name: env-law-pg
+  instances: 2
+  type: ro
+  pgbouncer:
+    # Transaction pooling: a backend connection is held only for the duration of a
+    # transaction, so a few backends serve many clients. Session-level state does
+    # not survive between statements, which is why `search_articles()` sets its
+    # HNSW parameters with a function-level SET rather than a session SET — the
+    # latter would leak into whatever client the pool hands the connection to next.
+    poolMode: transaction
+    parameters:
+      # Clients the pooler will accept.
+      max_client_conn: "500"
+      # Backend connections to Postgres. This number is also the bound on how much
+      # memory concurrent searches can take: work_mem is per-operation
+      # per-connection, and hnsw.scan_mem_multiplier multiplies it, so the worst
+      # case is default_pool_size × work_mem × multiplier. Raising this raises that
+      # ceiling too, and the database has no other limit on it.
+      default_pool_size: "20"
+      # psycopg prepares statements after a few executions. Under transaction
+      # pooling those fail with "prepared statement does not exist" unless the
+      # pooler tracks them, which it does only when this is above zero.
+      max_prepared_statements: "100"
+  template:
+    metadata:
+      labels:
+        app: env-law-pg-pooler
+    spec:
+      # Required by the operator when not overriding container settings.
+      containers: []
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - env-law-pg-pooler
+              topologyKey: kubernetes.io/hostname

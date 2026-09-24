@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - database
+  - ontology
+
+images:
+  - name: env-law-ontology
+    newName: registry.gitlab.com/thuaisse-lab/env-law/ontology
+    # Immutable: the commit SHA env-law's `ontology-image` job pushed. Promotion is
+    # an MR that changes this line (`kustomize edit set image`), never a moving tag.
+    newTag: bac238d1d97d7d4dceef14528e099597a77ccf87
