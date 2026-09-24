@@ -17,7 +17,6 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `services/consult/` | 接地問答：以本體事實為據作答（租戶隔離） | Python 3.14 · uv · gRPC（streaming） |
 | `libs/python/` | 兩個以上服務共用的 Python 套件 | 路徑相依，不發佈 |
 | `deploy/` | Kubernetes 清單（CloudNativePG、服務、遷移 Job） | kustomize · kubeconform |
-| `scripts/` | 跨服務工具鏈（文件、契約產生） | — |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
 
@@ -31,29 +30,15 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 
 ## Commands
 
-從**倉庫根**執行：
+各服務的指令見其 `AGENTS.md`，從**該服務目錄**執行。跨服務的從**倉庫根**執行：
 
 ```bash
-# ontology（Python）
-cd services/ontology && uv sync
-cd services/ontology && uv run python -m pytest
-cd services/ontology && uv run ruff check . && uv run ruff format .
-cd services/ontology && uv run python -m mypy src tests
-cd services/ontology && ./scripts/generate-proto.sh      # 改完 proto 後重新產生
-
-# platform（C#）
-cd services/platform && dotnet build
-cd services/platform && dotnet test
-cd services/platform && dotnet format
-
 # 契約
 DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 lint
 DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=main'
-
-# 文件
-./scripts/docs check      # 來源層守門
-./scripts/docs render     # 產出 PDF 並驗產物層
 ```
+
+文件工具鏈（`./scripts/docs check`／`render`）在 `env-law-docs`，從該庫根執行。
 
 ## 目錄配置與擴充判準
 
@@ -75,7 +60,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 
 ## 文件庫在另一個倉庫
 
-技術決策及其論據記於 `env-law-docs`（本倉庫的同層目錄，非子目錄）：`.qmd` → Quarto → xelatex，十卷結構，十一項守門。它與本倉庫的分開理由與服務合併的理由不衝突——合併是為了**契約原子性**，而文件不共用 `proto/`，沒有那個問題要解。
+技術決策及其論據記於 `env-law-docs`（本倉庫的同層目錄，非子目錄）：`.qmd` → Quarto → xelatex，十卷結構，十一項守門。為什麼與程式碼分倉，見該庫自己的 `AGENTS.md`。
 
 改動設計時，決策的論據寫進該庫，不要寫進本倉庫的 `AGENTS.md`：後者是作業規範，寫進論據必然過期。
 
@@ -83,27 +68,38 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 
 - `proto/env_law/**` 是 gRPC API 的**單一真值**，兩個服務都由此產生程式碼，**不得各自複製一份**。
 - 破壞性變更要開新套件版本（`v2`）；`v1` 必須通過 `buf breaking`。
-- 本體資料不分租戶；`x-tenant-id` / `x-request-id` 僅供記錄與稽核。
 - 改 proto 的 MR 必須同時更新兩側產生碼——這是單一倉庫換來的性質，別再用兩個 MR 做一件事。
 
 ## Conventions
 
 - 小而聚焦的 diff；有既有程式碼時對齊其風格。
 - 人讀文件 → `README.md`；決策論據 → 同層的 `env-law-docs`；agent 作業 → 本檔與 skills。
-- 不要新增 `.cursorrules`、`GEMINI.md` 或其他平行基準檔；`CLAUDE.md` 維持純匯入橋接。
+- 本檔保持簡短；長流程 → `.agents/skills/<name>/SKILL.md`。各服務的 `AGENTS.md` 只寫該服務獨有的，倉庫層規範以本檔為準、不重複。
+
+## Layering
+
+| 層 | 路徑 | 載入時機 |
+|----|------|----------|
+| Baseline | 本檔；各服務巢狀 `AGENTS.md`（該樹之內以它為準） | 一律 |
+| Skills | `.agents/skills/<name>/SKILL.md`（[規格](https://agentskills.io/specification)） | 需要時 |
+| 共用 skills | 自 [`elihu0211/agent-config`](https://github.com/elihu0211/agent-config) 安裝，釘在 `skills-lock.json` | 同上；`DISABLE_TELEMETRY=1 npx skills update -p -y` 更新 |
+| Claude 橋接 | `CLAUDE.md` → `@AGENTS.md`；`.claude/skills/<name>` → **逐 skill** symlink 至 `../../.agents/skills/<name>`（官方文件述明可 symlink 的是 `<skill-name>` 項目本身，不是整個 `skills` 目錄） | 僅 Claude Code |
+| Gemini 橋接 | `.gemini/settings.json` → `context.fileName: ["AGENTS.md"]` | 僅 Gemini CLI（其預設為 `GEMINI.md`） |
+| Cursor rules | `.cursor/rules/*.mdc`（目前沒有） | 僅 Cursor，路徑限定指引 |
+
 - 共用 agent 設定（`.agents/`、`.gemini/`、`skills-lock.json`）只放倉庫根，服務層不重複。
-- `.claude/skills/<name>` 是**逐 skill** 的 symlink，指向 `../../.agents/skills/<name>`——官方文件述明可 symlink 的是 `<skill-name>` 項目本身，不是整個 `skills` 目錄。
+- 倉庫專屬 skill 寫在 `.agents/skills/`；`.claude/skills/` 內只放 symlink，**不要**另立一棵樹。
+- 列在 `skills-lock.json` 的 skill **不要手改**，改在 `agent-config` 再更新。
 - **只服務單一服務的 skill 可放 `services/<name>/.claude/skills/`**：Claude Code 對單一倉庫多服務支援巢狀探索（自起始目錄往上至倉庫根，巢狀子目錄則於實際讀寫該處檔案時動態載入），不必為了共用而把兩個堆疊的內容硬併成一份。
+- 不要新增 `.cursorrules`、`GEMINI.md` 或其他平行基準檔；`CLAUDE.md` 維持純匯入橋接。
 
 ## Safety
 
 - 不提交機密或真實 `.env*` 值。
 - 動手前先問：force-push、改寫歷史、正式環境部署、破壞性資料庫操作。
-- 不要手改產生物：`services/ontology/uv.lock`（用 `uv add/remove/lock`）、`.venv/`、`services/ontology/src/env_law/ontology/v1/*_pb2*`（跑 `generate-proto.sh`）。
-- 樣本資料（`services/ontology/src/env_law/data/laws.ttl`）是占位 fixture，不是權威法條；真實資料須引用全國法規資料庫（政府資料開放授權條款－第1版，需標示出處）。
+- 產生物與各服務專屬的禁改路徑、資料來源標示，見各服務 `AGENTS.md` 的 Safety。
 
 ## Done when
 
 - 受影響服務的 lint／typecheck／test 與 `buf lint` 通過——由 `.gitlab-ci.yml` 依路徑分流強制。
-- 改了文件則 `./scripts/docs check` 通過。
 - Commands 與 Safety 清單在工具鏈變動後仍然正確。
