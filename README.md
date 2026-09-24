@@ -30,6 +30,7 @@ flowchart LR
 
     client -- "REST<br/>API key" --> platform
     platform -- "gRPC<br/>內部 token" --> ontology
+    platform -- "gRPC<br/>Ground" --> consult
     consult -- "gRPC<br/>SearchArticles" --> ontology
     client -.-> llm
     ontology --> pg
@@ -42,9 +43,9 @@ flowchart LR
 
 ## 現況
 
-- **platform**：租戶、API key、依方案的限流、用量計量，以及包裝 ontology 的 REST API（`/v1/laws/…`）。方案目前於設定中手動指派，尚未串接計費。
+- **platform**：租戶、API key、依方案的限流、用量計量，以及包裝內部服務的 REST API：`/v1/laws/…`（ontology）、`POST /v1/ground`（consult）。尚未部署。方案目前於設定中手動指派，尚未串接計費。
 - **ontology**：`GetLaw`、`ListArticles`、`SearchArticles`。檢索目前只有字面比對，語意檢索待嵌入模型選定；資料仍為樣本，全國法規資料庫的匯入管線尚未建立。
-- **consult**：`Ground`（`env_law.consult.v2`）已可運作：檢索、接地、可答性判定，回傳證據或拒答。尚未經 platform 對外開放，也尚無容器映像。
+- **consult**：`Ground`（`env_law.consult.v2`）已可運作：檢索、接地、可答性判定，回傳證據或拒答；外部經 platform 的 `POST /v1/ground` 呼叫。尚無容器映像。
 
 開發指引見 [`AGENTS.md`](AGENTS.md)；各服務另有巢狀 `AGENTS.md`。設計論據在同層的 `env-law-docs` 倉庫；Kubernetes 清單（Argo CD 來源）在同層的 `env-law-deploy` 倉庫。
 

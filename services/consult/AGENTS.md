@@ -7,7 +7,7 @@ Vendor-neutral instructions for coding agents. 倉庫層規範見根 `AGENTS.md`
 - **Name:** consult（`services/consult`；倉庫為 `env-law`）
 - **Role:** 接地服務：以本體服務供給的法規事實，為**呼叫端的語言模型**備妥可引用的封閉證據集，或拒答。**本服務不執行生成模型。** **租戶隔離**——`x-tenant-id` 為必填，決定配額與稽核軌跡。
 - **Stack:** Python 3.14 · uv · gRPC（grpcio，同步伺服器，一元呼叫）· ruff · mypy (strict) · pytest
-- **Status:** `ConsultationService.Ground`（`env_law.consult.v2`）可運作；本體 adapter 為 `adapters.GrpcOntology`（經 ontology 的 `SearchArticles`）。尚未經 platform 對外開放，尚無 Dockerfile。`env_law.consult.v1`（串流、含生成）已棄用，無實作。
+- **Status:** `ConsultationService.Ground`（`env_law.consult.v2`）可運作；本體 adapter 為 `adapters.GrpcOntology`（經 ontology 的 `SearchArticles`）。經 platform 以 `POST /v1/ground` 對外開放。尚無 Dockerfile——platform 尚未部署，consult 與它一起上線時再建。`env_law.consult.v1`（串流、含生成）已棄用，無實作。
 
 ## 管線形狀（本服務存在的理由）
 
@@ -36,7 +36,7 @@ uv run ruff check .          # --fix 可自動修
 uv run ruff format .
 uv run python -m mypy src tests
 ./scripts/generate-proto.sh  # 改完根 proto/ 之後重新產生
-CONSULT_INTERNAL_TOKEN=dev ONTOLOGY_TARGET=dns:///localhost:50051 ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-consult   # :50052
+CONSULT_INTERNAL_TOKEN=dev ONTOLOGY_TARGET=dns:///localhost:50051 ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-consult   # :50052；worktree 內用 `wt consult`
 ```
 
 - 伺服器環境變數：`CONSULT_INTERNAL_TOKEN`（必填；呼叫端送 `authorization: Bearer <token>`）、`ONTOLOGY_TARGET`（必填，gRPC 目標，例如 `dns:///ontology:50051`）、`ONTOLOGY_INTERNAL_TOKEN`（必填）、`CONSULT_GRPC_PORT`（50052）。

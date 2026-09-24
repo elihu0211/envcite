@@ -31,15 +31,18 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
 
     public FakeOntologyServer Ontology { get; } = new();
 
+    public FakeConsultServer Consult { get; } = new();
+
     public async Task InitializeAsync()
     {
-        await Task.WhenAll(_postgres.StartAsync(), Ontology.StartAsync());
+        await Task.WhenAll(_postgres.StartAsync(), Ontology.StartAsync(), Consult.StartAsync());
     }
 
     async Task IAsyncLifetime.DisposeAsync()
     {
         await DisposeAsync();
         await Ontology.DisposeAsync();
+        await Consult.DisposeAsync();
         await _postgres.DisposeAsync();
     }
 
@@ -51,6 +54,8 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
             Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(AdminKey))));
         builder.UseSetting("Ontology:Address", Ontology.Address.ToString());
         builder.UseSetting("Ontology:InternalToken", FakeOntologyServer.InternalToken);
+        builder.UseSetting("Consult:Address", Consult.Address.ToString());
+        builder.UseSetting("Consult:InternalToken", FakeConsultServer.InternalToken);
         builder.UseSetting("Platform:Plans:free:PermitLimit", RateLimitPermits.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting("Platform:Plans:pro:PermitLimit", (RateLimitPermits * 2).ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting($"Platform:TenantPlans:{ProTenant}", "pro");

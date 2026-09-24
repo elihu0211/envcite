@@ -42,6 +42,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 ```bash
 wt platform    # dotnet run；庫 platform_<branch>，自動遷移
 wt ontology    # 建庫（若無）→ env-law-migrate → gRPC 伺服器
+wt consult     # gRPC 伺服器，指向本樹的 ontology（platform 的 /v1/ground 需要它）
 wt list        # URL 欄是本樹 platform 的位址
 ```
 

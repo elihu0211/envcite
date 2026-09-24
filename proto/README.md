@@ -133,6 +133,31 @@ def verify(answer: str, evidence: consult_pb2.Evidence) -> tuple[str, list[str]]
 |------|------|------|
 | GET | `/v1/laws/{lawId}` | 包裝 `GetLaw`（現行版本） |
 | GET | `/v1/laws/{lawId}/articles` | 包裝 `ListArticles`（現行版本） |
+| POST | `/v1/ground` | 包裝 consult 的 `Ground` |
 | GET | `/v1/me`、`/v1/usage`、`/v1/api-keys` | 租戶、用量、API key 管理 |
 
-完整描述由 ASP.NET Core 產生，開發環境在 `/openapi/v1.json`。`SearchArticles` 與 consult 的 `Ground` **尚未**經 REST 對外開放。
+完整描述由 ASP.NET Core 產生，開發環境在 `/openapi/v1.json`。`SearchArticles` 不對外開放：要作答的呼叫端應該用 `/v1/ground`，理由見上文。
+
+**`POST /v1/ground`**
+
+```http
+POST /v1/ground
+Authorization: Bearer sk_live_…
+Content-Type: application/json
+
+{"question": "工廠噪音超過管制標準會怎樣？", "asOf": "2024-01-01"}
+```
+
+`asOf` 可省略。證據與拒答都回 **200**，以 `outcome` 區分：
+
+```json
+{"outcome": "evidence", "confidence": "low",
+ "citations": [{"code": "L1", "iri": "https://env.law/eli/tw/law/…/art_9",
+                "label": "噪音管制法 第 9 條", "text": "工廠不得發出超過管制標準之噪音。"}]}
+```
+
+```json
+{"outcome": "refused", "refusal": {"reason": "no_evidence", "detail": "檢索無任何結果"}}
+```
+
+`reason` 為 `no_evidence`、`out_of_scope`、`missing_input`，語意同上文的拒答原因表。`asOf` 不合法回 400（Problem Details），consult 不可用或逾時回 503。證據與拒答都計量為一次 `consult.ground`，錯誤不計。
