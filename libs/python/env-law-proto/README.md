@@ -6,4 +6,4 @@
 ./scripts/generate.sh
 ```
 
-Renovate 每週的鎖檔維護若升級了 `grpcio-tools`、`mypy-protobuf` 或 `protobuf`，CI 的 `python-proto` 會因產生碼過期而失敗：在該 MR 的分支上執行上面的指令並提交，下界（`pyproject.toml`）跟著產生碼裡的版本調整。
+`uv lock --upgrade` 若升級了 `grpcio-tools`、`mypy-protobuf` 或 `protobuf`，產生碼隨之過期（CI 的 `python-proto` 會擋下）：重新產生並一起提交，下界（`pyproject.toml`）跟著產生碼裡的版本調整。

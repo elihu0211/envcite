@@ -66,6 +66,21 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 lint
 DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=main'
 ```
 
+## 升級版本
+
+版本以手動升級。依賴集中在單一檔案；工具與映像的版本若出現在多處，表中各位置在同一次提交一起改。
+
+| 版本 | 位置 |
+|------|------|
+| Python 套件 | 倉庫根 `uv lock --upgrade`（或 `--upgrade-package <pkg>`）；升到 `grpcio-tools`、`mypy-protobuf`、`protobuf` 時重新產生 `libs/python/env-law-proto` |
+| .NET 套件 | `services/platform/Directory.Packages.props` |
+| .NET SDK 與映像 | `services/platform/global.json`、`services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `dotnet` job |
+| Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG PYTHON_VERSION` |
+| uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
+| PostgreSQL | `compose.yaml`、`.gitlab-ci.yml` 的 `ontology` job、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs`；主版本與 env-law-deploy 的 `Cluster` 相同 |
+| buf | `.gitlab-ci.yml` 的 `proto` job、本檔與 `AGENTS.md` 的指令 |
+| Docker（映像建置） | `.gitlab-ci.yml` 的 `.image` |
+
 ## 從開發到上線
 
 1. **開分支**：`wt switch --create <type>/<簡述>`，type 用 `feat`、`fix`、`docs`、`refactor`、`chore` 等。

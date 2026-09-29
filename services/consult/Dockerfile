@@ -10,9 +10,7 @@
 #
 # CI passes both versions from its own variables; the defaults are for local builds.
 
-# renovate: datasource=docker depName=ghcr.io/astral-sh/uv
 ARG UV_VERSION=0.12.18
-# renovate: datasource=docker depName=python
 ARG PYTHON_VERSION=3.14
 
 FROM ghcr.io/astral-sh/uv:${UV_VERSION}-python${PYTHON_VERSION}-trixie-slim AS build

@@ -22,9 +22,7 @@ stages:
 variables:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
-  # renovate: datasource=docker depName=ghcr.io/astral-sh/uv
   UV_VERSION: "0.12.18"
-  # renovate: datasource=docker depName=python
   PYTHON_VERSION: "3.14"
   UV_LINK_MODE: copy
   # 絕對路徑：Python job 會 cd 進成員目錄，快取仍須落在 `cache:paths` 所指的專案根之下。
