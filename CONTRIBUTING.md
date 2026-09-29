@@ -12,14 +12,14 @@
 
 ## 環境概覽
 
-兩套環境，用途不同，都跑在 [OrbStack](https://orbstack.dev) 的 Docker 上：
+兩套環境，用途不同，都只需要一個 Docker 相容的容器執行環境：
 
 | 環境 | 用途 | 資料庫 |
 |------|------|--------|
 | **主機直跑**（`wt platform`／`wt ontology`／`wt consult`） | 日常開發、除錯 | 容器 `env-law-dev-pg`，`localhost:5432` |
 | **kind 叢集** `env-law`（context `kind-env-law`） | 驗證 `env-law-deploy` 的清單 | 叢集內 CloudNativePG `env-law-pg` |
 
-**OrbStack 內建的 Kubernetes 保持關閉**（`orbctl config set k8s.enable false`）。它以 Docker 引擎為容器執行環境，不支援 ImageVolume，pgvector 掛不上；kind 的節點是 containerd 2.x，清單原樣可用。細節見 `env-law-deploy` 的 README「本機叢集」。
+**本機叢集用 kind。** 節點以 Docker 引擎為容器執行環境的 Kubernetes 不支援 ImageVolume，pgvector 掛不上；kind 的節點是 containerd 2.x，清單原樣可用。細節見 `env-law-deploy` 的 README「本機叢集」。
 
 ## 主機直跑的 PostgreSQL
 
