@@ -3,7 +3,7 @@ name: bootstrap-stack
 description: >-
   Wire a new service into the env-law monorepo and keep agent ops accurate.
   Use when adding a service under services/, picking its framework or package
-  manager, or replacing placeholder install/build/test/lint commands in AGENTS.md.
+  manager, or writing a new service's install/build/test/lint commands into its AGENTS.md.
 ---
 
 # Bootstrap a service in this monorepo
@@ -36,4 +36,3 @@ All consume the **same** contract at the repo root `proto/`. The contract is **g
 - 把服務拆成獨立倉庫，或引入多語言建置系統（Bazel／Pants／Nx）——理由見根 `AGENTS.md`
 - 在服務內另存一份 `proto/`
 - 把根 `AGENTS.md` 的內容複製進 `CLAUDE.md` 或其他廠商檔（`CLAUDE.md` 只匯入）
-- 在堆疊已經是真的之後，還留著佔位指令
