@@ -28,7 +28,7 @@ wt remove feat/<簡述>
 
 全是本機值，不是機密。
 
-### 主機 PostgreSQL（日常開發）
+### PostgreSQL
 
 帳號 `postgres`、密碼 `postgres`，位址 `localhost:5432`。
 
@@ -50,25 +50,12 @@ docker exec -it env-law-dev-pg psql -U postgres -l                     # 列出�
 docker exec -it env-law-dev-pg psql -U postgres -d ontology_main_vfz   # 進入某個資料庫
 ```
 
-### kind 叢集 PostgreSQL（驗證部署清單）
-
-帳號 `env_law`；密碼在建叢集時隨機產生，用下方指令取得。資料庫 `env_law`（ontology）與 `platform`，名稱固定。
-
-```text
-postgresql://env_law:<密碼>@localhost:15432/env_law
-```
-
-```bash
-kubectl --context kind-env-law -n env-law get secret env-law-pg-app -o jsonpath='{.data.password}' | base64 -d   # 密碼
-kubectl --context kind-env-law -n env-law port-forward svc/env-law-pg-rw 15432:5432                             # 保持開著；5432 已被主機的 PostgreSQL 佔用
-```
-
 ### 其他
 
 | 項目 | 值 |
 |------|----|
 | 服務之間的內部 token | `dev` |
-| platform 營運者 key（`X-Admin-Key`） | kind：`admin`；主機：未設定（`/admin` 停用），要用就設環境變數 `Platform__AdminKeySha256`＝key 的 SHA-256 hex |
+| platform 營運者 key（`X-Admin-Key`） | 未設定（`/admin` 停用）；要用就設環境變數 `Platform__AdminKeySha256`＝key 的 SHA-256 hex |
 
 ## 常用指令
 
@@ -120,12 +107,6 @@ CI 依改動路徑分流，只跑受影響的部分：
 
 ## 環境說明
 
-| 環境 | 用途 | 資料庫 |
-|------|------|--------|
-| 主機直跑（`wt`） | 日常開發、除錯 | 容器 `env-law-dev-pg`，`localhost:5432` |
-| kind 叢集 `env-law`（context `kind-env-law`） | 驗證部署清單 | 叢集內 CloudNativePG `env-law-pg` |
-
-- **本機叢集用 kind**：節點以 Docker 引擎為容器執行環境的 Kubernetes 不支援 ImageVolume，pgvector 掛不上；kind 的節點是 containerd 2.x，清單原樣可用。
 - **開發用 PostgreSQL** 與 ontology 測試同一個映像（`services/ontology/tests/conftest.py`），內含 `vector` 與 `btree_gist`。資料在具名 volume `env-law-dev-pg`，刪容器不會刪資料；要從零開始：`docker rm -f env-law-dev-pg && docker volume rm env-law-dev-pg`。只綁 `127.0.0.1`，不對區網開放。
 - **每條分支一棵 worktree**（`.config/wt.toml`）：port 與資料庫名由分支推導，平行的分支不相撞。
 
@@ -139,4 +120,3 @@ CI 依改動路徑分流，只跑受影響的部分：
 | [uv](https://docs.astral.sh/uv/) | CI 用 0.12.18 | ontology、consult、`libs/python`；Python 3.14 由 uv 自動安裝 |
 | [Worktrunk](https://worktrunk.dev)（`wt`） | — | 分支與本機環境 |
 | Node.js | — | 以 `npx` 執行 buf |
-| [kind](https://kind.sigs.k8s.io)、kubectl | — | 只在驗證部署清單時需要 |
