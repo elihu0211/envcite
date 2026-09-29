@@ -11,13 +11,13 @@ import os
 from concurrent import futures
 
 import grpc
-from env_law_grpc import InternalTokenInterceptor, stop_on_sigterm
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
-from env_law.consult.adapters import GrpcOntology
-from env_law.consult.ports import OntologyPort
-from env_law.consult.service import ConsultationServicer
 from env_law.consult.v2 import consult_pb2_grpc
+from env_law_consult.adapters import GrpcOntology
+from env_law_consult.ports import OntologyPort
+from env_law_consult.service import ConsultationServicer
+from env_law_grpc import InternalTokenInterceptor, stop_on_sigterm
 
 SERVICE_NAME = "env_law.consult.v2.ConsultationService"
 

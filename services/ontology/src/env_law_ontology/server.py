@@ -11,13 +11,13 @@ import os
 from concurrent import futures
 
 import grpc
-from env_law_grpc import InternalTokenInterceptor, stop_on_sigterm
-from env_law_segmenter import Segmenter
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
 from env_law.ontology.v1 import ontology_pb2_grpc
-from env_law.service import OntologyServicer
-from env_law.store import OntologyStore
+from env_law_grpc import InternalTokenInterceptor, stop_on_sigterm
+from env_law_ontology.service import OntologyServicer
+from env_law_ontology.store import OntologyStore
+from env_law_segmenter import Segmenter
 
 SERVICE_NAME = "env_law.ontology.v1.OntologyService"
 

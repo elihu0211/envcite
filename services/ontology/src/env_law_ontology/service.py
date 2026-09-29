@@ -6,10 +6,10 @@ import logging
 from datetime import date
 
 import grpc
-from env_law_segmenter import Segmenter
 
 from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
-from env_law.store import OntologyStore
+from env_law_ontology.store import OntologyStore
+from env_law_segmenter import Segmenter
 
 log = logging.getLogger(__name__)
 

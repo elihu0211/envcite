@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import grpc
 
-from env_law.consult.ports import Article
 from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
+from env_law_consult.ports import Article
 
 
 class GrpcOntology:

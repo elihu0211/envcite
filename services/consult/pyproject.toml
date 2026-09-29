@@ -8,63 +8,18 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
-    "grpcio>=1.84.0",
-    "grpcio-health-checking>=1.84.0",
-    "protobuf>=7.35.1,<8",
     "env-law-grpc",
+    "env-law-proto",
+    "grpcio-health-checking",
 ]
 
 [tool.uv.sources]
-env-law-grpc = { path = "../../libs/python/env-law-grpc" }
+env-law-grpc = { workspace = true }
+env-law-proto = { workspace = true }
 
 [project.scripts]
-env-law-consult = "env_law.consult.server:main"
+env-law-consult = "env_law_consult.server:main"
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
 build-backend = "uv_build"
-
-[tool.uv.build-backend]
-# Both services own disjoint subtrees of the `env_law` namespace; they are never
-# installed together, so the shared top-level name costs nothing and keeps the
-# generated proto paths (`env_law/consult/v2/`, and the ontology client stubs in
-# `env_law/ontology/v1/`) where protoc puts them.
-module-name = "env_law"
-
-[dependency-groups]
-dev = [
-    "grpcio-tools>=1.84.0",
-    "mypy>=2.3.1",
-    "mypy-protobuf>=5.1.0",
-    "pytest>=9.1.1",
-    "ruff>=0.16.8",
-    "types-grpcio>=1.83.0.20260730",
-    "types-grpcio-health-checking>=1.0.0.20260518",
-    "types-protobuf>=7.35.1.20260906",
-]
-
-[tool.ruff]
-line-length = 100
-extend-exclude = ["src/env_law/*/v*/*_pb2*"]
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
-# Full-width punctuation is flagged as ambiguous by RUF001 (strings), RUF002
-# (docstrings) and RUF003 (comments). All three are off, for the same reason as
-# env-law-segmenter. Refusal messages, citation labels and their fixtures are
-# Chinese text, and docstrings and comments are written in
-# Chinese (zh-TW) too. Full-width punctuation is correct in all of them.
-ignore = ["RUF001", "RUF002", "RUF003"]
-
-[tool.mypy]
-strict = true
-
-[[tool.mypy.overrides]]
-module = ["env_law.consult.v2.*", "env_law.ontology.v1.*"]
-ignore_errors = true
-
-[tool.pytest]
-minversion = "9.0"
-addopts = ["-ra"]
-testpaths = ["tests"]
-strict = true

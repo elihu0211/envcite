@@ -1,0 +1,51 @@
+# Python 的 uv workspace。依賴版本由這裡的 uv.lock 統一解析：每個套件在整個倉庫只有一個
+# 版本，成員的 pyproject 只列名稱。開發工具與 ruff／mypy／pytest 設定也只寫在這裡。
+# 部署邊界不變：各服務的映像只裝自己的成員（`uv sync --package`）。
+
+[tool.uv.workspace]
+members = ["services/ontology", "services/consult", "libs/python/*"]
+
+[dependency-groups]
+dev = [
+    "grpcio-tools",
+    "mypy",
+    "mypy-protobuf",
+    "pytest",
+    "ruff",
+    "testcontainers[postgres]",
+    "types-grpcio",
+    "types-grpcio-health-checking",
+    "types-protobuf",
+]
+
+[tool.ruff]
+line-length = 100
+# 第一方套件的位置（import 排序據此區分第一方與第三方）。
+src = ["services/*/src", "services/*", "libs/python/*/src", "libs/python/*"]
+extend-exclude = ["libs/python/env-law-proto/src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+# RUF001／RUF002／RUF003 把全形標點當成易混淆字元。法條是中文、標點是全形（「本法所稱
+# 事業，指…」改成半形逗號就不再是法條原文），註解與 docstring 也以中文撰寫，全形在這些
+# 地方都是對的。
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+# grpc_tools 產生的程式碼；型別由一併提交的 .pyi 提供。
+module = ["env_law.ontology.v1.*", "env_law.consult.v2.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+# jieba 沒有型別資訊。
+module = "jieba.*"
+ignore_missing_imports = true
+
+[tool.pytest]
+# 測試逐成員執行（在成員目錄下 `uv run pytest`）：各成員的 tests 同名，不合併成一個 session。
+minversion = "9.0"
+addopts = ["-ra"]
+strict = true

@@ -15,7 +15,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `services/platform/` | 多租戶控制平面：tenants、API keys、配額、計量、對外 REST | C# · .NET 10 · ASP.NET Core · PostgreSQL |
 | `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
 | `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；本系統不執行生成模型） | Python 3.14 · uv · gRPC |
-| `libs/python/` | 服務之外、可獨立測試的 Python 套件 | 路徑相依，不發佈 |
+| `libs/python/` | 服務之外、可獨立測試的 Python 套件（含 `env-law-proto`：`proto/` 的 Python 產生碼） | uv workspace 成員，不發佈 |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
 
@@ -26,6 +26,8 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 ## Commands
 
 各服務的指令見其 `AGENTS.md`，從**該服務目錄**執行。跨服務的從**倉庫根**執行：
+
+- **版本集中管理，不在各處各寫一份**：.NET 套件版本只在 `services/platform/Directory.Packages.props`（Central Package Management）；Python 是倉庫根的 uv workspace（`pyproject.toml` 列成員、開發工具與 ruff／mypy／pytest 設定，`uv.lock` 定版本），成員只列套件名稱，加依賴用 `uv add --raw <pkg>`。唯一例外是有相容性理由的下界（如 `env-law-proto` 的 protobuf 執行期），理由寫在旁邊。
 
 ```bash
 # 契約

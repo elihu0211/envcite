@@ -1,7 +1,7 @@
 import psycopg
 import pytest
 
-from env_law.migrate import MigrationChanged, apply_all
+from env_law_ontology.migrate import MigrationChanged, apply_all
 
 
 def test_a_database_from_another_baseline_is_refused(dsn: str) -> None:

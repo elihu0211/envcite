@@ -25,27 +25,42 @@ variables:
   UV_VERSION: "0.12.18"
   PYTHON_VERSION: "3.14"
   UV_LINK_MODE: copy
-  UV_CACHE_DIR: .uv-cache
+  # 絕對路徑：Python job 會 cd 進成員目錄，快取仍須落在 `cache:paths` 所指的專案根之下。
+  UV_CACHE_DIR: $CI_PROJECT_DIR/.uv-cache
 
 .changes-platform: &changes-platform
   - services/platform/**/*
   - proto/**/*
   - .gitlab-ci.yml
 
+# Python 各成員共用倉庫根的 pyproject.toml 與 uv.lock（uv workspace），兩者一改，全部重驗。
 .changes-ontology: &changes-ontology
   - services/ontology/**/*
   - libs/python/**/*
   - proto/**/*
+  - pyproject.toml
+  - uv.lock
   - .gitlab-ci.yml
 
 .changes-consult: &changes-consult
   - services/consult/**/*
   - libs/python/**/*
   - proto/**/*
+  - pyproject.toml
+  - uv.lock
   - .gitlab-ci.yml
 
 .changes-segmenter: &changes-segmenter
   - libs/python/env-law-segmenter/**/*
+  - pyproject.toml
+  - uv.lock
+  - .gitlab-ci.yml
+
+.changes-python-proto: &changes-python-proto
+  - libs/python/env-law-proto/**/*
+  - proto/**/*
+  - pyproject.toml
+  - uv.lock
   - .gitlab-ci.yml
 
 .changes-proto: &changes-proto
@@ -97,11 +112,37 @@ dotnet:
     reports:
       junit: artifacts/*test-result.xml
 
-python:
+# Python 成員共用。workspace 只有一份 uv.lock：每個 job 同步整個 workspace（`--locked`
+# 同時驗證鎖檔與所有成員一致），再於 `$MEMBER` 目錄執行該成員的檢查。
+.python:
   stage: check
+  image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
+  cache:
+    - key:
+        files: [uv.lock]
+      paths: [.uv-cache]
+  before_script:
+    - uv sync --locked --all-packages
+    - cd "$MEMBER"
+  after_script:
+    - uv cache prune --ci
+
+.python-checks:
+  extends: .python
+  script:
+    - uv run --no-sync ruff check .
+    - uv run --no-sync ruff format --check .
+    - uv run --no-sync mypy src tests
+    - uv run --no-sync pytest --junitxml="$CI_PROJECT_DIR/report.xml"
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+
+ontology:
+  extends: .python-checks
   rules:
     - changes: *changes-ontology
-  image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
   # 測試需要真實的 PostgreSQL（本服務一半的讀取邏輯在 SQL 裡）。用 job service 直接
   # 附掛一個，而不是 Docker-in-Docker 再由 testcontainers 起——後者要多跑一個 dind
   # 服務、多拉一次映像，在每月 400 分鐘的額度下是純損失。testcontainers 仍留在開發
@@ -112,58 +153,31 @@ python:
     - name: postgres:18
       alias: postgres
   variables:
+    MEMBER: services/ontology
     POSTGRES_DB: env_law_test
     POSTGRES_USER: env_law
     POSTGRES_PASSWORD: env_law
     ONTOLOGY_TEST_DSN: "postgresql://env_law:env_law@postgres:5432/env_law_test"
-  cache:
-    - key:
-        files: [services/ontology/uv.lock]
-      paths: [services/ontology/$UV_CACHE_DIR]
-  script:
-    - cd services/ontology
-    - uv sync --locked
-    - uv run --no-sync ruff check .
-    - uv run --no-sync ruff format --check .
-    - uv run --no-sync mypy src tests
-    # 產生碼必須與根 proto/ 一致（重新產生後比對）。
-    - cp -r src/env_law/ontology "$CI_PROJECT_DIR/.generated-before"
-    - ./scripts/generate-proto.sh
-    - diff -r "$CI_PROJECT_DIR/.generated-before" src/env_law/ontology
-    - uv run --no-sync pytest --junitxml="$CI_PROJECT_DIR/report.xml"
-  after_script:
-    - cd services/ontology && uv cache prune --ci
-  artifacts:
-    when: always
-    reports:
-      junit: report.xml
 
 consult:
-  stage: check
+  extends: .python-checks
   rules:
     - changes: *changes-consult
-  image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
-  cache:
-    - key:
-        files: [services/consult/uv.lock]
-      paths: [services/consult/$UV_CACHE_DIR]
+  variables:
+    MEMBER: services/consult
+
+# 產生碼必須與根 proto/ 一致：重新產生後與提交的版本比對。
+python-proto:
+  extends: .python
+  rules:
+    - changes: *changes-python-proto
+  variables:
+    MEMBER: libs/python/env-law-proto
   script:
-    - cd services/consult
-    - uv sync --locked
-    - uv run --no-sync ruff check .
-    - uv run --no-sync ruff format --check .
-    - uv run --no-sync mypy src tests
-    # 產生碼（consult 自己的契約與 ontology 的 client stubs）必須與根 proto/ 一致。
-    - cp -r src/env_law "$CI_PROJECT_DIR/.generated-before"
-    - ./scripts/generate-proto.sh
-    - diff -r -x __pycache__ "$CI_PROJECT_DIR/.generated-before" src/env_law
-    - uv run --no-sync pytest --junitxml="$CI_PROJECT_DIR/consult-report.xml"
-  after_script:
-    - cd services/consult && uv cache prune --ci
-  artifacts:
-    when: always
-    reports:
-      junit: consult-report.xml
+    - cp -r src "$CI_PROJECT_DIR/.generated-before"
+    - ./scripts/generate.sh
+    - diff -r -x __pycache__ "$CI_PROJECT_DIR/.generated-before" src
+    - uv run --no-sync mypy src
 
 # 映像建置。建置在 MR 上也跑：Dockerfile 壞掉要在合併前知道。推送只在預設分支——MR 的
 # 映像沒有人會部署，推上去只是佔 registry。tag 只用 commit SHA，不推 latest：可變的
@@ -215,31 +229,15 @@ platform-image:
     SERVICE: platform
 
 segmenter:
-  stage: check
+  extends: .python-checks
   rules:
     - changes: *changes-segmenter
-  image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
   # 無資料庫：這個函式庫不碰資料庫。斷詞品質由
   # scripts/measure-segmentation.py 對真實法規量測，那需要網路，故不在 CI 跑
   # ——CI 驗的是契約（同一份詞典得到同一個 tokenizer id 與同一批 token），
   # 因為索引端與查詢端對不上是這裡唯一會安靜失敗的東西。
-  cache:
-    - key:
-        files: [libs/python/env-law-segmenter/uv.lock]
-      paths: [libs/python/env-law-segmenter/$UV_CACHE_DIR]
-  script:
-    - cd libs/python/env-law-segmenter
-    - uv sync --locked --all-groups
-    - uv run --no-sync ruff check .
-    - uv run --no-sync ruff format --check .
-    - uv run --no-sync mypy src tests
-    - uv run --no-sync pytest --junitxml="$CI_PROJECT_DIR/segmenter-report.xml"
-  after_script:
-    - cd libs/python/env-law-segmenter && uv cache prune --ci
-  artifacts:
-    when: always
-    reports:
-      junit: segmenter-report.xml
+  variables:
+    MEMBER: libs/python/env-law-segmenter
 
 proto:
   stage: check

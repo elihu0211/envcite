@@ -8,6 +8,6 @@
 - 開發指引：本目錄 `AGENTS.md`；倉庫層規範見根 `AGENTS.md`
 
 ```bash
-uv sync
+uv sync --all-packages   # 整個 workspace（倉庫根的 uv.lock）
 uv run python -m pytest
 ```
