@@ -46,7 +46,7 @@ wt consult     # gRPC 伺服器，指向本樹的 ontology（platform 的 /v1/gr
 wt list        # URL 欄是本樹 platform 的位址
 ```
 
-platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgres`/`postgres`，同 `appsettings.Development.json`）；ontology 需要 pgvector。它是 OrbStack 上的容器 `env-law-dev-pg`，起法與各環境帳密見 `README.md`「本機開發環境」。測試不經此路——Testcontainers 每次自起一個庫。
+platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgres`/`postgres`，同 `appsettings.Development.json`）；ontology 需要 pgvector。它是 OrbStack 上的容器 `env-law-dev-pg`，起法與各環境帳密見 `CONTRIBUTING.md`。測試不經此路——Testcontainers 每次自起一個庫。
 
 ## 目錄配置與擴充判準
 
@@ -82,7 +82,7 @@ platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgre
 ## Conventions
 
 - 小而聚焦的 diff；有既有程式碼時對齊其風格。
-- 人讀文件 → `README.md`；決策論據 → 同層的 `env-law-docs`；agent 作業 → 本檔與 skills。
+- 人讀文件 → `README.md`（本機開發環境在 `CONTRIBUTING.md`）；決策論據 → 同層的 `env-law-docs`；agent 作業 → 本檔與 skills。
 - 本檔保持簡短；長流程 → `.agents/skills/<name>/SKILL.md`。各服務的 `AGENTS.md` 只寫該服務獨有的，倉庫層規範以本檔為準、不重複。
 
 ## Layering
