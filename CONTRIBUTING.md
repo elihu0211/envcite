@@ -1,6 +1,14 @@
 # 參與開發
 
-本檔說明本機開發環境怎麼建立。開發流程與各服務的指令見 [`AGENTS.md`](AGENTS.md) 與各服務的巢狀 `AGENTS.md`；設計論據在同層的 `env-law-docs` 倉庫。
+本檔說明變更怎麼送進 `main`，以及本機開發環境怎麼建立。各服務的建置、測試指令見 [`AGENTS.md`](AGENTS.md) 與各服務的巢狀 `AGENTS.md`；設計論據在同層的 `env-law-docs` 倉庫。
+
+## 貢獻流程
+
+1. **從 `main` 開分支**，命名 `<type>/<簡述>`（如 `feat/…`、`fix/…`、`docs/…`）。平行作業每條分支一棵 worktree，見 `AGENTS.md`「平行 worktree」。
+2. **Commit 採 [Conventional Commits](https://www.conventionalcommits.org)**：`type(scope): 說明`，破壞性變更加 `!`（如 `feat(consult)!: …`）。
+3. **開 MR 到 `main`**。`main` 受保護，不直接推送；pipeline 成功才能合併。MR 以 squash 合併，合併後刪除來源分支。
+4. **合併前的要求**見 `AGENTS.md`：「Done when」（受影響服務的 lint、typecheck、test 與 `buf lint`）、「Contract」（改契約時兩側產生碼同一個 MR 更新），以及與 `env-law-deploy` 一起改時清單先行。
+5. **改動設計時**，決策的論據寫進 `env-law-docs`，不寫進本倉庫。
 
 ## 環境概覽
 
