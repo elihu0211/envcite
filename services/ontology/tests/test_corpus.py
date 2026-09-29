@@ -69,13 +69,21 @@ def _version(
     text: str | None,
     lo: date | None,
     hi: date | None,
+    rule: str = "by_order",
 ) -> None:
     """A version in force over [lo, hi); lo None means promulgated but not yet in force."""
     conn.execute(
         "INSERT INTO corpus.provision_version"
-        " (provision_id, expression_id, resource_id, content, in_force)"
-        " VALUES (%s, %s, %s, %s, %s)",
-        (provision, expression, law, text, Range(lo, hi, "[)") if lo else None),
+        " (provision_id, expression_id, resource_id, content, in_force, commencement)"
+        " VALUES (%s, %s, %s, %s, %s, %s::corpus.commencement_rule)",
+        (
+            provision,
+            expression,
+            law,
+            text,
+            Range(lo, hi, "[)") if lo else None,
+            "promulgation" if lo else rule,
+        ),
     )
 
 

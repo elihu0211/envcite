@@ -1,0 +1,99 @@
+"""沿革解析（env-law-docs 03-03 §5）。
+
+`LawHistories` 是編號的多行文字，長句折行，連編號與文號的數字也可能被折斷。一筆的
+開頭是行首的「（中華）民國…年…月…日」，其餘行是它的續行；折行的換行與縮排直接去掉。
+
+每筆解析出日期、文號與事件種類。認不得的寫法記為 `unknown`、原文保留，不猜。
+管轄變更公告只說明主管機關改由誰管，不影響文字與效力，不是事件。
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from datetime import date
+
+from env_law_ontology.ingest.numerals import DATE_WITH_ERA, roc_date
+
+_ENTRY_START = re.compile(r"^\s*(?:[0-9]+\.\s*)?(?:中華)?民國")
+_NUMBERING = re.compile(r"^[0-9]+\.\s*")
+_WHITESPACE = re.compile(r"\s+")
+
+# 制定、修正、公布、發布之後的「號令」「令」「函」與其文號。
+_DOC_NO = re.compile(r"([^；，：。]*?字第[（(]?[0-9A-Za-z〇]*[)）]?[0-9]*號)")
+
+PROMULGATION_KINDS = ("enactment", "full_amendment", "partial_amendment")
+
+
+@dataclass(frozen=True)
+class Event:
+    kind: str
+    # 只有年月或格式不合者為 None：不以該月一日或任何日期頂替。
+    date: date | None
+    document_no: str | None
+    text: str
+
+
+def entries(histories: str) -> list[str]:
+    """折行還原：回傳每筆沿革的單行文字（已去編號與空白）。"""
+    out: list[str] = []
+    for line in histories.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if _ENTRY_START.match(line) or not out:
+            out.append(line)
+        else:
+            out[-1] += line
+    cleaned = (_WHITESPACE.sub("", _NUMBERING.sub("", e)) for e in out)
+    return [e for e in cleaned if e]
+
+
+def parse(histories: str) -> list[Event]:
+    events: list[Event] = []
+    for entry in entries(histories):
+        kind = classify(entry)
+        if kind is None:
+            continue
+        m = DATE_WITH_ERA.match(entry)
+        # 記載日期是句首那一個；內文裡的其他日期（如施行日）不是事件日期。
+        when = roc_date(*m.groups()) if m else None
+        doc = _DOC_NO.match(entry[m.end() :] if m else entry)
+        events.append(Event(kind, when, doc.group(1) if doc else None, entry))
+    return events
+
+
+_JURISDICTION = re.compile(r"公告.*(?:管轄|權責|改由|移由|職權)")
+_FULL_TEXT = re.compile(r"全文")
+_AMEND = re.compile(r"修正|增訂|刪除")
+_ENACT = re.compile(r"制定|訂定|[公發]布同日施行|公布全文|發布全文")
+_COMMENCEMENT = re.compile(r"[公發]布(?:.*定[自於]|自.*施行)")
+_REPEAL_PART = re.compile(r"廢止第")
+_REPEAL = re.compile(r"廢止")
+_CORRECT = re.compile(r"更正|勘誤")
+
+
+def classify(entry: str) -> str | None:
+    """事件種類；管轄變更公告回 None（不是事件），認不得回 'unknown'。"""
+    m = DATE_WITH_ERA.match(entry)
+    text = entry[m.end() :] if m else entry
+
+    if _JURISDICTION.search(text):
+        return None
+    if "失效" in text:
+        return "sunset"
+    if "停止適用" in text or "停止管理" in text:
+        return "suspension"
+    if _REPEAL.search(text) and not _REPEAL_PART.search(text) and not _AMEND.search(text):
+        return "repeal"
+    if _AMEND.search(text):
+        if _FULL_TEXT.search(text):
+            return "full_amendment"
+        return "partial_amendment"
+    if _ENACT.search(text):
+        return "enactment"
+    if _COMMENCEMENT.search(text):
+        return "commencement"
+    if _CORRECT.search(text):
+        return "correction"
+    return "unknown"

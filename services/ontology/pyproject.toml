@@ -25,6 +25,7 @@ env-law-segmenter = { workspace = true }
 env-law-ontology = "env_law_ontology.server:main"
 env-law-migrate = "env_law_ontology.migrate:main"
 env-law-acquire = "env_law_ontology.acquire.cli:main"
+env-law-import = "env_law_ontology.ingest.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
