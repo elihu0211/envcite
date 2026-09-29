@@ -79,6 +79,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 | uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
 | PostgreSQL | `compose.yaml`、`.gitlab-ci.yml` 的 `ontology` job、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs`；主版本與 env-law-deploy 的 `Cluster` 相同 |
 | buf | `.gitlab-ci.yml` 的 `proto` job、本檔與 `AGENTS.md` 的指令 |
+| oasdiff | `.gitlab-ci.yml` 的 `openapi` job |
 | Docker（映像建置） | `.gitlab-ci.yml` 的 `.image` |
 
 ## 從開發到上線
@@ -97,7 +98,7 @@ CI 依改動路徑分流：
 | 改動 | 跑什麼 |
 |------|--------|
 | 任何改動 | `gate`（讓只改文件的 MR 也有 pipeline 可以合併） |
-| `services/platform/` | `dotnet`、`platform-image` |
+| `services/platform/` | `dotnet`（含對外 REST 規格是否過期）、`openapi`（對外 REST 的破壞性變更）、`platform-image` |
 | `services/ontology/`、`libs/python/` | `ontology`、`ontology-image` |
 | `services/consult/`、`libs/python/` | `consult`、`consult-image` |
 | `libs/python/env-law-segmenter/` | `segmenter` |

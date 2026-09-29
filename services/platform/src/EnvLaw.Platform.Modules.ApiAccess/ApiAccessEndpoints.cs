@@ -34,7 +34,11 @@ public static class ApiAccessEndpoints
     public static RouteGroupBuilder MapApiAccessEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapGet("/api-keys", async (PlatformDbContext db, CancellationToken ct) =>
-            (await db.ApiKeys.AsNoTracking().OrderBy(k => k.CreatedAt).ToListAsync(ct)).Select(ApiKeySummary.From));
+            (await db.ApiKeys.AsNoTracking().OrderBy(k => k.CreatedAt).ToListAsync(ct)).Select(ApiKeySummary.From))
+            .WithName("ListApiKeys")
+            .WithTags("租戶")
+            .WithSummary("列出本租戶的 API key")
+            .WithDescription("依建立時間排序；只回傳前綴，不回傳 key 本身。");
 
         v1.MapDelete("/api-keys/{id:guid}", async (Guid id, PlatformDbContext db, TimeProvider time, CancellationToken ct) =>
         {
@@ -47,7 +51,13 @@ public static class ApiAccessEndpoints
             key.RevokedAt ??= time.GetUtcNow();
             await db.SaveChangesAsync(ct);
             return Results.NoContent();
-        });
+        })
+            .WithName("RevokeApiKey")
+            .WithTags("租戶")
+            .WithSummary("撤銷 API key")
+            .WithDescription("撤銷後立即失效；重複撤銷不改變原撤銷時間。")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status404NotFound);
 
         return v1;
     }

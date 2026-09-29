@@ -31,7 +31,14 @@ public static class OntologyEndpoints
                 var law = response.Law;
                 return Results.Ok(new LawDto(law.Id, law.Iri, law.Title, law.Language,
                     string.IsNullOrEmpty(law.DateDocument) ? null : law.DateDocument));
-            }));
+            }))
+            .WithName("GetLaw")
+            .WithTags("法規")
+            .WithSummary("取得法規")
+            .WithDescription("`lawId` 為全國法規資料庫的 pcode（如 `O0020001`）；標題取自現行版本。成功計量為一次 `ontology.get_law`。")
+            .Produces<LawDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         v1.MapGet("/laws/{lawId}/articles", async (string lawId, OntologyService.OntologyServiceClient client,
             OntologyOptions options, IUsageRecorder usage, CancellationToken ct) =>
@@ -41,7 +48,14 @@ public static class OntologyEndpoints
                     deadline: DateTime.UtcNow.Add(options.Timeout), cancellationToken: ct);
                 await usage.RecordAsync(ListArticlesOperation, 1, ct);
                 return Results.Ok(response.Articles.Select(a => new ArticleDto(a.Iri, a.Number)));
-            }));
+            }))
+            .WithName("ListArticles")
+            .WithTags("法規")
+            .WithSummary("列出法規現行有效的各條")
+            .WithDescription("依條次排序；`number` 照來源寫法（如 `5-1`）。成功計量為一次 `ontology.list_articles`。")
+            .Produces<IEnumerable<ArticleDto>>()
+            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         return v1;
     }

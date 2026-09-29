@@ -101,6 +101,8 @@ dotnet:
     - cd services/platform
     - dotnet restore
     - dotnet build --no-restore
+    # 對外 REST 的規格（openapi/v1.json）由建置產生並提交；與程式碼不一致即失敗——重新建置後提交它。
+    - git diff --exit-code -- openapi/ && test -z "$(git status --porcelain -- openapi/)"
     - dotnet format --verify-no-changes --no-restore
     - >-
       dotnet test --no-build
@@ -238,6 +240,27 @@ segmenter:
   # 因為索引端與查詢端對不上是這裡唯一會安靜失敗的東西。
   variables:
     MEMBER: libs/python/env-law-segmenter
+
+# 對外 REST 的相容性檢查，角色同 proto 的 buf breaking：以 MR 目標分支上已提交的規格為基準。
+# 規格本身是否與程式碼一致，由 dotnet job 檢查。
+openapi:
+  stage: check
+  rules:
+    - changes: *changes-platform
+  image:
+    name: tufin/oasdiff:v1.32.1
+    entrypoint: [""]
+  variables:
+    SPEC: services/platform/openapi/v1.json
+  script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ]; then
+        echo "非 MR pipeline，不執行相容性檢查"
+      elif git fetch -q --depth=1 origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" && git show "FETCH_HEAD:$SPEC" > /tmp/base.json 2>/dev/null; then
+        oasdiff breaking /tmp/base.json "$SPEC" --fail-on ERR
+      else
+        echo "目標分支 ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME} 尚無 $SPEC，無基準可比——跳過相容性檢查"
+      fi
 
 proto:
   stage: check

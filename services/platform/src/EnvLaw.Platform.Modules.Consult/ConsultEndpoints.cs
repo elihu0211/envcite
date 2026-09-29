@@ -13,7 +13,7 @@ namespace EnvLaw.Platform.Modules.Consult;
 
 /// <param name="Question">使用者的原句；不要先讓模型改寫。</param>
 /// <param name="AsOf">ISO 8601 日期；省略表示現行條文。</param>
-public sealed record GroundRequestDto(string Question, string? AsOf);
+public sealed record GroundRequestDto(string Question, string? AsOf = null);
 
 public sealed record CitationDto(string Code, string Iri, string Label, string Text);
 
@@ -25,9 +25,9 @@ public sealed record RefusalDto(string Reason, string Detail);
 /// </summary>
 public sealed record GroundResultDto(
     string Outcome,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<CitationDto>? Citations,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Confidence,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] RefusalDto? Refusal);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<CitationDto>? Citations = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Confidence = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] RefusalDto? Refusal = null);
 
 public static class ConsultEndpoints
 {
@@ -60,7 +60,15 @@ public static class ConsultEndpoints
 
             await usage.RecordAsync(GroundOperation, 1, ct);
             return Results.Ok(ToDto(response));
-        });
+        })
+            .WithName("Ground")
+            .WithTags("接地")
+            .WithSummary("為問句備妥可引用的證據，或拒答")
+            .WithDescription("證據與拒答都回 200，以 `outcome` 區分；拒答是結果、不是錯誤，兩者都計量為一次 "
+                + "`consult.ground`。證據的每一條引用有代號（`L1`、`L2`…），呼叫端的模型只能以代號引用。")
+            .Produces<GroundResultDto>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         return v1;
     }

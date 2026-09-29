@@ -2,6 +2,7 @@ using EnvLaw.Platform.Data;
 using EnvLaw.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,7 +39,11 @@ public static class MeteringModule
                 .GroupBy(r => r.Operation)
                 .OrderBy(g => g.Key)
                 .Select(g => new UsageSummary(g.Key, g.Count(), g.Sum(r => r.Units)))
-                .ToListAsync(ct));
+                .ToListAsync(ct))
+            .WithName("GetUsage")
+            .WithTags("租戶")
+            .WithSummary("本租戶的用量")
+            .WithDescription("依操作分列的呼叫次數與計量單位。成功的呼叫才計量；拒答是成功的呼叫。");
         return v1;
     }
 }
