@@ -40,7 +40,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree；環境由 `.config/wt.toml` 建立，不靠手動：建樹時各服務裝好依賴，刪樹時一併刪掉該樹的開發庫。本機伺服器用別名起，port 與資料庫名由分支推導，平行的樹不相撞：
 
 ```bash
-wt platform    # dotnet run；庫 platform_<branch>，自動遷移
+wt platform    # dotnet run；庫 platform_<分支代號>（sanitize_db，含雜湊尾碼），自動遷移
 wt ontology    # 建庫（若無）→ env-law-migrate → gRPC 伺服器
 wt consult     # gRPC 伺服器，指向本樹的 ontology（platform 的 /v1/ground 需要它）
 wt list        # URL 欄是本樹 platform 的位址
