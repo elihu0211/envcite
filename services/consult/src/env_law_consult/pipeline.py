@@ -21,7 +21,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from env_law.consult.ports import Article, OntologyPort
+from env_law_consult.ports import Article, OntologyPort
 
 #: 低於此值的檢索資料，視為與問題無關。
 #: 這是受模型制約的值，不是領域常數：它只在產生它的評分方式下才可比較，評分方式

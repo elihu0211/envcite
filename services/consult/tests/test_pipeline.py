@@ -1,5 +1,5 @@
-from env_law.consult import pipeline
-from env_law.consult.ports import Article
+from env_law_consult import pipeline
+from env_law_consult.ports import Article
 from tests.conftest import FakeOntology, article
 
 

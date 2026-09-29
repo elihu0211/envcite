@@ -3,8 +3,8 @@
 Called by the aliases and pre-remove hook in `.config/wt.toml`, inside the ontology
 environment because it already carries psycopg:
 
-    uv run --directory services/ontology python ../../scripts/worktree-db.py ensure <name>
-    uv run --directory services/ontology python ../../scripts/worktree-db.py drop <name>...
+    uv run --package env-law-ontology python scripts/worktree-db.py ensure <name>
+    uv run --package env-law-ontology python scripts/worktree-db.py drop <name>...
 
 The admin connection follows the local PostgreSQL convention of
 `appsettings.Development.json`; override it with `WORKTREE_PG_ADMIN_DSN`.

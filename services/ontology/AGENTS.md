@@ -4,7 +4,7 @@ Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Cont
 
 ## Project
 
-- **Name:** env-law-ontology (Python package `env_law`)
+- **Name:** env-law-ontology (Python package `env_law_ontology`)
 - **Role:** 環境法規本體論服務（shared, non-tenant data）；由同倉的 `services/platform`（C# SaaS：租戶、計費、API 金鑰）與 `services/consult` 呼叫
 - **Stack:** Python 3.14 · uv · gRPC（grpcio，同步伺服器）· PostgreSQL 18（psycopg 3）· ruff · mypy (strict) · pytest
 - **Data model:** [ELI ontology](http://data.europa.eu/eli/ontology)，以**關聯式實表**承載，schema `corpus`（`legal_resource`、`legal_expression`、`provision`／`provision_version`、`lifecycle_event`）與 `retrieval`（`article_index`）。法規以（識別碼方案，在地識別碼）為鍵，全國法規資料庫為 pcode；效力逐條文單元記載，查詢逐單元解析（`corpus.provisions_at`）。標題掛在 `legal_expression`——`eli:title` 的定義域是表達層。綱要設計見 `env-law-docs` 的 02-04；其餘表隨其管線加入。RDF 是由實表投影的導出視圖，方向不可顛倒；論據見 `env-law-docs` 的 01-03 與 02-02。
@@ -15,20 +15,20 @@ Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Cont
 Use `uv` only (no pip/venv/poetry). Run from **this directory** (`services/ontology/`).
 
 ```bash
-uv sync                      # install (creates .venv from uv.lock)
-uv add <pkg>                 # runtime dep; uv add --dev <pkg> for dev-only
+uv sync --all-packages       # install the whole workspace (.venv and uv.lock live at the repo root)
+uv add --raw <pkg>           # runtime dep, name only — the version lives in uv.lock
 uv run python -m pytest       # test
 uv run ruff check .           # lint (add --fix to autofix)
 uv run ruff format .          # format
 uv run python -m mypy src tests   # typecheck (strict)
-./scripts/generate-proto.sh   # regenerate src/env_law/ontology/v1/* after editing protos
+../../libs/python/env-law-proto/scripts/generate.sh   # regenerate gRPC code after editing protos
 ONTOLOGY_TEST_DSN=postgresql://... uv run python -m pytest   # use an existing database
 ONTOLOGY_INTERNAL_TOKEN=dev ONTOLOGY_DSN=postgresql://... uv run env-law-ontology   # run server (:50051)
 docker build -f Dockerfile ../..   # image (context = repo root; CI job `ontology-image` pushes :<sha> on main)
 ```
 
 - Proto lint／`buf breaking` 從倉庫根執行，見根 `AGENTS.md`。
-- Config lives in `pyproject.toml`. Code in `src/env_law/`, tests in `tests/`.
+- Tool config (ruff, mypy, pytest) lives in the repo-root `pyproject.toml`. Code in `src/env_law_ontology/`, tests in `tests/`; generated gRPC code is imported from `env-law-proto` (`env_law.ontology.v1`).
 - Server env：`ONTOLOGY_INTERNAL_TOKEN`（必填；呼叫端送 `authorization: Bearer <token>`）、`ONTOLOGY_DSN`（必填，PostgreSQL 連線字串）、`ONTOLOGY_GRPC_PORT`（50051）。
 - 測試需要**真實的 PostgreSQL**：設 `ONTOLOGY_TEST_DSN` 指向現成的資料庫，或留空讓 testcontainers 起一個（需要 Docker daemon）。不用替身，因為本服務一半的讀取邏輯在 SQL 裡（逐單元解析、時態鍵、整數陣列排序），對替身測試等於不測那一半。
 - 綱要由 `migrations/*.sql` 描述，依檔名順序套用。**已套用的檔案不可修改**——要改就新增一個檔，這條由 `schema_migration` 的雜湊比對強制，不靠記得。
@@ -40,10 +40,10 @@ docker build -f Dockerfile ../..   # image (context = repo root; CI job `ontolog
 
 ## Safety
 
-- Do not hand-edit generated paths: `uv.lock` (change via `uv add/remove/lock`), `.venv/`, `src/env_law/ontology/v1/*_pb2*` (run `scripts/generate-proto.sh`).
+- Do not hand-edit generated paths: the repo-root `uv.lock` (change via `uv add/remove/lock`), `.venv/`, `libs/python/env-law-proto/src/**/*_pb2*` (run its `scripts/generate.sh`).
 - Sample data (`migrations/0003_sample_fixture.sql`) excerpts 全國法規資料庫 (2026-09-18) and is not the corpus; all data from that source must cite it (政府資料開放授權條款－第1版, attribution required).
 
 ## Done when
 
-- ruff, mypy, pytest and `buf lint` pass — enforced by `.gitlab-ci.yml` (`python` job also fails if generated gRPC code is stale; `proto` job runs `buf breaking` against the MR target branch).
+- ruff, mypy, pytest and `buf lint` pass — enforced by `.gitlab-ci.yml` (`ontology` job; `python-proto` fails if generated gRPC code is stale; `proto` job runs `buf breaking` against the MR target branch).
 

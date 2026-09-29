@@ -3,9 +3,9 @@ from collections.abc import Iterator
 import grpc
 import pytest
 
-from env_law.consult.ports import Article
-from env_law.consult.server import build_server
 from env_law.consult.v2 import consult_pb2_grpc
+from env_law_consult.ports import Article
+from env_law_consult.server import build_server
 
 TOKEN = "test-internal-token"
 

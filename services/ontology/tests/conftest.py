@@ -6,10 +6,10 @@ import psycopg
 import pytest
 from testcontainers.community.postgres import PostgresContainer
 
-from env_law.migrate import apply_all
 from env_law.ontology.v1 import ontology_pb2_grpc
-from env_law.server import build_server
-from env_law.store import OntologyStore
+from env_law_ontology.migrate import apply_all
+from env_law_ontology.server import build_server
+from env_law_ontology.store import OntologyStore
 
 TOKEN = "test-internal-token"
 

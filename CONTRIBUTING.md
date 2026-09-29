@@ -47,7 +47,7 @@ docker compose exec postgres psql -U postgres -d ontology_main_vfz # 進入某�
 
 ## 常用指令
 
-從**該服務目錄**執行；完整清單與環境變數見各服務的 `AGENTS.md`。
+從**該服務目錄**執行；完整清單與環境變數見各服務的 `AGENTS.md`。Python 各服務與 `libs/python/` 是同一個 uv workspace：依賴在倉庫根一次裝好（`uv sync --all-packages`，`wt` 建樹時已執行）。
 
 | | `services/platform/` | `services/ontology/`、`services/consult/` |
 |---|---|---|
@@ -55,7 +55,7 @@ docker compose exec postgres psql -U postgres -d ontology_main_vfz # 進入某�
 | Lint | `dotnet format --verify-no-changes` | `uv run ruff check .` |
 | 格式化 | `dotnet format` | `uv run ruff format .` |
 | 型別檢查 | `dotnet build`（警告視為錯誤） | `uv run python -m mypy src tests` |
-| 改 proto 後重新產生 | 建置時自動產生 | `./scripts/generate-proto.sh` |
+| 改 proto 後重新產生 | 建置時自動產生 | `libs/python/env-law-proto/scripts/generate.sh` |
 
 測試以 Testcontainers 自起資料庫，不用開發資料庫。
 
@@ -83,9 +83,11 @@ CI 依改動路徑分流：
 |------|--------|
 | 任何改動 | `gate`（讓只改文件的 MR 也有 pipeline 可以合併） |
 | `services/platform/` | `dotnet`、`platform-image` |
-| `services/ontology/`、`libs/python/` | `python`（含產生碼是否過期）、`ontology-image` |
+| `services/ontology/`、`libs/python/` | `ontology`、`ontology-image` |
 | `services/consult/`、`libs/python/` | `consult`、`consult-image` |
 | `libs/python/env-law-segmenter/` | `segmenter` |
+| `libs/python/env-law-proto/` | `python-proto`（產生碼是否與 `proto/` 一致） |
+| 倉庫根 `pyproject.toml`、`uv.lock` | 所有 Python job 與其映像 |
 | `proto/` | `proto`（`buf lint`、`buf breaking`），以及所有消費它的服務 |
 
 非 `main` 分支的映像 job 只驗證能建置，不推送。
@@ -102,6 +104,6 @@ CI 依改動路徑分流：
 | Git | — | |
 | Docker 與 Docker Compose | — | 開發用 PostgreSQL、測試、映像建置 |
 | .NET SDK | 10.0（`services/platform/global.json`） | platform |
-| [uv](https://docs.astral.sh/uv/) | CI 用 0.12.18 | ontology、consult、`libs/python`；Python 3.14 由 uv 自動安裝 |
+| [uv](https://docs.astral.sh/uv/) | CI 用 0.12.18 | Python workspace；Python 版本見倉庫根 `.python-version`，由 uv 自動安裝 |
 | [Worktrunk](https://worktrunk.dev)（`wt`） | — | 分支與本機環境 |
 | Node.js | — | 以 `npx` 執行 buf |

@@ -9,9 +9,9 @@ import logging
 
 import grpc
 
-from env_law.consult import pipeline
-from env_law.consult.ports import OntologyPort
 from env_law.consult.v2 import consult_pb2, consult_pb2_grpc
+from env_law_consult import pipeline
+from env_law_consult.ports import OntologyPort
 
 log = logging.getLogger(__name__)
 
