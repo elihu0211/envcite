@@ -25,7 +25,7 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
     /// <summary>Tenant identifier assigned the <c>pro</c> plan, which allows twice <see cref="RateLimitPermits"/>.</summary>
     public const string ProTenant = "paying";
 
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine").Build();
 
     public FakeTimeProvider Time { get; } = new(DateTimeOffset.UtcNow);
 
