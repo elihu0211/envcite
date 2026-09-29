@@ -34,7 +34,7 @@ dotnet run --project src/EnvLaw.Platform.Api   # Development: local PostgreSQL, 
 dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Data -s src/EnvLaw.Platform.Data
 dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Modules.Tenancy -s src/EnvLaw.Platform.Modules.Tenancy
 
-docker build -f services/platform/Dockerfile ../..   # image (context = repo root); CI job `platform-image` pushes :<sha> on main
+docker build -f Dockerfile ../..   # image (context = repo root); CI job `platform-image` pushes :<sha> on main
 ```
 
 Contracts: `Modules.Ontology` compiles the repo-root `proto/env_law/ontology/v1/ontology.proto`, `Modules.Consult` compiles `proto/env_law/consult/v2/consult.proto` (Grpc.Tools; see each `.csproj`). Never copy a `.proto`.
