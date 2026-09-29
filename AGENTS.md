@@ -15,7 +15,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `services/platform/` | 多租戶控制平面：tenants、API keys、配額、計量、對外 REST | C# · .NET 10 · ASP.NET Core · PostgreSQL |
 | `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
 | `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；本系統不執行生成模型） | Python 3.14 · uv · gRPC |
-| `libs/python/` | 兩個以上服務共用的 Python 套件 | 路徑相依，不發佈 |
+| `libs/python/` | 服務之外、可獨立測試的 Python 套件 | 路徑相依，不發佈 |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
 
@@ -56,7 +56,7 @@ platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgre
 |------|------|----------|
 | 可獨立部署的服務 | `services/<name>/` | 新增服務時 |
 | 契約 | `proto/env_law/<service>/v1/` | 該服務有對外 API 時 |
-| 跨服務共用程式碼 | `libs/<lang>/<name>/` | **出現第二個消費端時**，不是「將來可能要用」（已發生一次：`env-law-grpc` 於 consult 成為認證攔截器的第二個消費端時抽出） |
+| 跨服務共用程式碼 | `libs/<lang>/<name>/` | 服務內的程式碼**出現第二個消費端時**才抽出，不是「將來可能要用」；本身有獨立依賴與測試週期的函式庫（如 `env-law-segmenter`）可一開始就建在這裡 |
 | 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
 | 部署清單 | 同層的 `env-law-deploy` 倉庫（Argo CD 來源），**不在本倉庫** | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（`<name>-image` job 推送 `:<commit-sha>`），該倉庫的 Argo CD Image Updater 偵測到後把 tag commit 進該倉庫（git write-back），Argo CD 同步上線，無需開 MR。**程式碼與清單要一起改時清單先行**：先在該倉庫合併向後相容的清單變更（如新環境變數給預設值），再合併本倉庫的程式碼——新映像會自動上線，順序反了就是新映像配舊清單 |
 

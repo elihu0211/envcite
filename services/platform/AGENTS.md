@@ -13,10 +13,10 @@ Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Cont
 
 ## Architecture
 
-- Modular monolith: one solution, one deployable; modules as projects (`Modules.Tenancy`, `Modules.Billing`, `Modules.ApiAccess`, …).
+- Modular monolith: one solution, one deployable; modules as projects (`Modules.Tenancy`, `Modules.ApiAccess`, `Modules.Metering`, …).
 - Two DbContexts, no more: `TenancyDbContext` (Finbuckle requires the EFCore tenant store to derive from `EFCoreStoreDbContext`, so it cannot share) and `PlatformDbContext` in `EnvLaw.Platform.Data` for all tenant-owned data (schema `platform`). A new tenant-owned entity goes into `PlatformDbContext`; modules do not get their own contexts — each extra context is another migration set, bundle and Job step, and no cross-module transaction.
 - Multi-tenancy is runtime isolation (tenant resolution + `TenantId` query filters), never per-tenant code or repos.
-- Billing provider is the source of truth for payment; this service keeps an entitlements table updated via webhooks.
+- When billing is integrated, the provider is the source of truth for payment; this service will keep an entitlements table updated via its webhooks.
 
 ## Commands
 
@@ -63,7 +63,7 @@ Production migrations: EF Core migration bundles (the form EF Core's docs recomm
 - Tenant API: `Authorization: Bearer sk_live_{prefix}_{secret}` → `ApiKeyAuthenticationHandler` (lookup by prefix, SHA-256 + constant-time compare) → `tenant` claim → Finbuckle resolves tenant → tenant-owned entities (`IsMultiTenant()`) are filtered automatically.
 - Operator API (`/admin`): `X-Admin-Key` header, compared against `Platform:AdminKeySha256`.
 - Middleware order is load-bearing: `UseAuthentication` → `UseMultiTenant` → `UseAuthorization` → `UseRateLimiter`.
-- `/v1/laws/…` calls env-law-ontology over gRPC with `authorization: Bearer <InternalToken>`, `x-tenant-id`, `x-request-id`; gRPC `NotFound` → 404, `Unavailable`/`DeadlineExceeded` → 503. Only successful calls are metered (`IUsageRecorder`, one row per call in `metering.UsageRecords`).
+- `/v1/laws/…` calls env-law-ontology over gRPC with `authorization: Bearer <InternalToken>`, `x-tenant-id`, `x-request-id`; gRPC `NotFound` → 404, `Unavailable`/`DeadlineExceeded` → 503. Only successful calls are metered (`IUsageRecorder`, one row per call in `platform.UsageRecords`).
 - `POST /v1/ground` calls env-law-consult `Ground` the same way; a refusal is a 200 result and is metered (`consult.ground`); gRPC `InvalidArgument` → 400, `Unavailable`/`DeadlineExceeded` → 503 (not metered). Tests: `FakeConsultServer`.
 - A `MultiTenantDbContext` captures the tenant at construction: never resolve it before tenant resolution; for a specific tenant outside a tenant request use `MultiTenantDbContext.Create<TContext, TenantInfo>(tenant, services)`.
 
