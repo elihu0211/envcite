@@ -42,7 +42,7 @@ docker build -f Dockerfile ../..   # image (context = repo root; CI job `ontolog
 ## Safety
 
 - Do not hand-edit generated paths: `uv.lock` (change via `uv add/remove/lock`), `.venv/`, `src/env_law/ontology/v1/*_pb2*` (run `scripts/generate-proto.sh`).
-- Sample data (`src/env_law/data/laws.ttl`) is a placeholder fixture, not authoritative law text; real data must cite 全國法規資料庫 (政府資料開放授權條款－第1版, attribution required).
+- Sample data (`migrations/0002_sample_fixture.sql`) is a placeholder fixture, not authoritative law text; real data must cite 全國法規資料庫 (政府資料開放授權條款－第1版, attribution required).
 
 ## Done when
 
