@@ -1,6 +1,6 @@
 # 參與開發
 
-## 快速開始
+## 快速入門
 
 ```bash
 # 1. 開發用 PostgreSQL（整台機器起一次，各分支共用）
@@ -28,31 +28,47 @@ wt remove feat/<簡述>
 
 全是本機值，不是機密。
 
-| 目標 | 連線字串 | 帳號／密碼 |
-|------|----------|------------|
-| 主機 PostgreSQL | `postgresql://postgres:postgres@localhost:5432/<資料庫>` | `postgres`／`postgres` |
-| kind 叢集 PostgreSQL | `postgresql://env_law:<密碼>@localhost:15432/<資料庫>`（先 port-forward） | `env_law`／隨機，見下方指令 |
+### 主機 PostgreSQL（日常開發）
 
-| 資料庫 | 在哪 | 何時建立 |
-|--------|------|----------|
-| `ontology_<分支>`、`platform_<分支>` | 主機 | `wt ontology`／`wt platform` 時自動建立；`wt remove` 時刪除 |
-| `envlaw_platform` | 主機 | 不經 `wt`、直接 `dotnet run` platform 時 |
-| `env_law`（ontology）、`platform` | kind | 叢集建立時 |
+帳號 `postgres`、密碼 `postgres`，位址 `localhost:5432`。
 
-| 其他 | 值 |
+| 資料庫 | 誰建立、何時刪除 |
+|--------|------------------|
+| `ontology_<分支代號>` | `wt ontology` 時自動建立；`wt remove` 時刪除 |
+| `platform_<分支代號>` | `wt platform` 時自動建立；`wt remove` 時刪除 |
+| `envlaw_platform` | 不經 `wt`、直接 `dotnet run` platform 時 |
+
+**分支代號**由分支名推導（`.config/wt.toml` 的 `sanitize_db`）：轉小寫、非英數字轉底線，再加 3 碼雜湊避免撞名。例如 `main` → `main_vfz`，`feat/import-pipeline` → `feat_import_pipeline_wq5`。所以 `main` 分支的 ontology 資料庫是 `ontology_main_vfz`，連線字串：
+
+```text
+postgresql://postgres:postgres@localhost:5432/ontology_main_vfz
+```
+
+```bash
+wt step eval '{{ branch | sanitize_db }}'                              # 在該分支的 worktree 內執行，印出分支代號
+docker exec -it env-law-dev-pg psql -U postgres -l                     # 列出所有資料庫（不需在本機安裝 psql）
+docker exec -it env-law-dev-pg psql -U postgres -d ontology_main_vfz   # 進入某個資料庫
+```
+
+### kind 叢集 PostgreSQL（驗證部署清單）
+
+帳號 `env_law`；密碼在建叢集時隨機產生，用下方指令取得。資料庫 `env_law`（ontology）與 `platform`，名稱固定，定義在 `env-law-deploy` 的 `base/database/`、`base/platform/database.yaml`。
+
+```text
+postgresql://env_law:<密碼>@localhost:15432/env_law
+```
+
+```bash
+kubectl --context kind-env-law -n env-law get secret env-law-pg-app -o jsonpath='{.data.password}' | base64 -d   # 密碼
+kubectl --context kind-env-law -n env-law port-forward svc/env-law-pg-rw 15432:5432                             # 保持開著；5432 已被主機的 PostgreSQL 佔用
+```
+
+### 其他
+
+| 項目 | 值 |
 |------|----|
 | 服務之間的內部 token | `dev` |
 | platform 營運者 key（`X-Admin-Key`） | kind：`admin`；主機：未設定（`/admin` 停用），要用就設環境變數 `Platform__AdminKeySha256`＝key 的 SHA-256 hex |
-
-```bash
-# 主機：查資料庫（不需在本機安裝 psql）
-docker exec -it env-law-dev-pg psql -U postgres -l                  # 列出所有資料庫
-docker exec -it env-law-dev-pg psql -U postgres -d ontology_main    # 進入某個資料庫
-
-# kind：取密碼並轉發連線（15432 是因為 5432 已被主機的 PostgreSQL 佔用）
-kubectl --context kind-env-law -n env-law get secret env-law-pg-app -o jsonpath='{.data.password}' | base64 -d
-kubectl --context kind-env-law -n env-law port-forward svc/env-law-pg-rw 15432:5432   # 保持開著
-```
 
 ## 常用指令
 
