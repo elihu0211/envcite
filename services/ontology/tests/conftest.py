@@ -4,7 +4,7 @@ from collections.abc import Iterator
 import grpc
 import psycopg
 import pytest
-from testcontainers.postgres import PostgresContainer
+from testcontainers.community.postgres import PostgresContainer
 
 from env_law.migrate import apply_all
 from env_law.ontology.v1 import ontology_pb2_grpc
@@ -42,33 +42,24 @@ def dsn() -> Iterator[str]:
         yield url
 
 
-#: Laws created by migration 0002. They are part of the schema's fixture, not of
-#: any test, so the cleanup below leaves them alone.
-FIXTURE_LAWS = ("air-pollution-control-act", "water-pollution-control-act")
+#: Laws created by migration 0003. They belong to the schema's sample, not to any
+#: test, so the cleanup below leaves them alone.
+FIXTURE_LAWS = ("O0020001", "O0040001")
 
 
 @pytest.fixture
 def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
     """A connection whose writes are undone, including committed ones.
 
-    Rolling back is not enough: a test that commits leaves rows behind, and the
-    next test sees them. That is how `gap-act` collided — two files independently
-    picked the same slug, and the failure surfaced as a primary key violation in
-    an unrelated test. Slug hygiene is not isolation; the next collision would be
-    a count query quietly including another test's rows, with nothing red.
-
-    `norm_relation`, `unresolved_reference` and `subdivision_role` hold no fixture
-    data at all — their tables are created after 0002 — so they are emptied
-    outright. Should a migration ever seed them, this must learn to spare it.
+    Rolling back is not enough: a test that commits leaves rows behind, and the next
+    test sees them. Every corpus table hangs off `corpus.legal_resource` by a
+    cascading foreign key, so deleting a law deletes all of it.
     """
     with psycopg.connect(dsn) as c:
         yield c
         c.rollback()
-        c.execute("DELETE FROM norm_relation")
-        c.execute("DELETE FROM unresolved_reference")
-        c.execute("DELETE FROM subdivision_role")
         c.execute(
-            "DELETE FROM legal_resource WHERE id_local <> ALL(%s)",
+            "DELETE FROM corpus.legal_resource WHERE local_id <> ALL(%s)",
             (list(FIXTURE_LAWS),),
         )
         c.commit()

@@ -29,7 +29,7 @@ class FakeOntology:
 
 def article(n: int, score: float) -> Article:
     return Article(
-        iri=f"https://env.law/eli/tw/law/air-pollution-control-act/art_{n}",
+        iri=f"https://env.law/eli/tw/law/O0020001/2018-08-01/zho/art_{n}",
         label=f"空氣污染防制法 第 {n} 條",
         text=f"第 {n} 條條文內容。",
         score=score,

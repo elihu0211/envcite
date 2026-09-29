@@ -14,8 +14,7 @@ from env_law.store import OntologyStore
 log = logging.getLogger(__name__)
 
 
-#: 呼叫端將 `limit` 留為 0 時回傳的命中數，以及可請求的上限
-#: （`search_articles` 每一檢索臂取 50 個候選）。
+#: 呼叫端將 `limit` 留為 0 時回傳的命中數，以及可請求的上限。
 DEFAULT_SEARCH_LIMIT = 10
 MAX_SEARCH_LIMIT = 50
 
@@ -82,7 +81,6 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                     content=h.content,
                     rank_score=h.rank_score,
                     lexical_score=h.lexical_score,
-                    dense_distance=h.dense_distance,
                 )
                 for h in hits
             ]

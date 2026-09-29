@@ -18,22 +18,24 @@ from env_law.store import OntologyStore
 
 from .conftest import TOKEN, auth
 
-BASE = "https://env.law/eli/tw/law/search-act"
-
 
 @pytest.fixture
 def search_stub(
     conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore
 ) -> Iterator[ontology_pb2_grpc.OntologyServiceStub]:
-    conn.execute(
-        "INSERT INTO legal_resource (id_local, iri, kind) VALUES ('search-act', %s, 'statute')",
-        (BASE,),
-    )
-    conn.execute(
-        "INSERT INTO legal_expression (iri, resource_id, title, language, valid_from)"
-        " VALUES (%s, 'search-act', '噪音管制法', 'zh-hant', DATE '2020-01-01')",
-        (f"{BASE}/v1",),
-    )
+    law = conn.execute(
+        "INSERT INTO corpus.legal_resource (id_scheme, local_id, kind, document_type)"
+        " VALUES ('moj_pcode', 'T0000001', 'statute', '法律') RETURNING id"
+    ).fetchone()
+    assert law is not None
+    expression = conn.execute(
+        "INSERT INTO corpus.legal_expression"
+        " (resource_id, language, version_date, title, text_period, text_status, authority)"
+        " VALUES (%s, 'zho', DATE '2020-01-01', '噪音管制法', daterange(DATE '2020-01-01', NULL),"
+        " 'available', 'official_db') RETURNING id",
+        (law[0],),
+    ).fetchone()
+    assert expression is not None
     conn.commit()
 
     segmenter = Segmenter(store.lexicon())
@@ -41,20 +43,30 @@ def search_stub(
         ("9", "工廠不得發出超過管制標準之噪音。"),
         ("10", "主管機關應定期檢查。"),
     ):
-        iri = f"{BASE}/v1/art_{number}"
         conn.execute(
-            "INSERT INTO subdivision (iri, resource_id, number, expression_iri, article_iri,"
-            " content, content_tsv, tokenizer)"
-            " VALUES (%s, 'search-act', %s, %s, %s, %s, to_tsvector('simple', %s), %s)",
-            (
-                iri,
-                number,
-                f"{BASE}/v1",
-                iri,
-                content,
-                segmenter.to_tsvector_input(content),
-                segmenter.tokenizer_id,
-            ),
+            """
+            WITH p AS (
+                INSERT INTO corpus.provision (resource_id, provision_type, path, sort_key)
+                VALUES (%(law)s, 'article', 'art_' || %(n)s, ARRAY[%(n)s::integer])
+                RETURNING id
+            ), v AS (
+                INSERT INTO corpus.provision_version
+                       (provision_id, expression_id, resource_id, content, in_force)
+                SELECT p.id, %(expr)s, %(law)s, %(content)s, daterange(DATE '2020-01-03', NULL)
+                  FROM p
+                RETURNING id
+            )
+            INSERT INTO retrieval.article_index (provision_version_id, content_tsv, tokenizer)
+            SELECT v.id, to_tsvector('simple', %(terms)s), %(tokenizer)s FROM v
+            """,
+            {
+                "law": law[0],
+                "expr": expression[0],
+                "n": number,
+                "content": content,
+                "terms": segmenter.to_tsvector_input(content),
+                "tokenizer": segmenter.tokenizer_id,
+            },
         )
     conn.commit()
 
@@ -73,9 +85,8 @@ def test_search_finds_the_article_by_raw_text(
     )
 
     top = response.hits[0]
-    assert (top.law_id, top.law_title, top.number) == ("search-act", "噪音管制法", "9")
+    assert (top.law_id, top.law_title, top.number) == ("T0000001", "噪音管制法", "9")
     assert top.HasField("lexical_score")
-    # No embedding model yet: the dense arm contributes nothing.
     assert not top.HasField("dense_distance")
 
 
@@ -105,3 +116,10 @@ def test_bad_search_is_invalid_argument(
         stub.SearchArticles(request_, metadata=auth())
 
     assert error.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+
+
+def test_a_different_tokenizer_matches_nothing(
+    search_stub: ontology_pb2_grpc.OntologyServiceStub, store: OntologyStore
+) -> None:
+    # Lexemes from another segmenter are not the same lexemes: fewer rows, not wrong ones.
+    assert store.search("噪音", tokenizer="another-segmenter", as_of="2021-01-01") == []

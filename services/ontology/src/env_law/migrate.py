@@ -36,7 +36,16 @@ def apply_all(conn: Connection[tuple[object, ...]], directory: Path | None = Non
         cur.execute("SELECT filename, sha256 FROM schema_migration")
         seen: dict[str, str] = {str(f): str(h) for f, h in cur.fetchall()}
 
-        for path in sorted(directory.glob("*.sql")):
+        paths = sorted(directory.glob("*.sql"))
+        orphans = sorted(seen.keys() - {p.name for p in paths})
+        if orphans:
+            # 資料庫由另一套基線建立：在其上套用現行檔案，會讓舊表與新表並存。
+            raise MigrationChanged(
+                f"applied migrations no longer on disk: {', '.join(orphans)}; "
+                "this database predates the current baseline — recreate it"
+            )
+
+        for path in paths:
             body = path.read_text(encoding="utf-8")
             digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
             if path.name in seen:

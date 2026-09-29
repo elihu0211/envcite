@@ -16,7 +16,7 @@ namespace EnvLaw.Platform.Tests;
 public sealed class FakeOntologyServer : IAsyncDisposable
 {
     public const string InternalToken = "test-ontology-token";
-    public const string KnownLawId = "air-pollution-control-act";
+    public const string KnownLawId = "O0020001";
     public const string UnavailableLawId = "trigger-unavailable";
 
     private WebApplication? _app;

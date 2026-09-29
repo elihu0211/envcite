@@ -28,18 +28,20 @@ class Law(_message.Message):
     LANGUAGE_FIELD_NUMBER: _builtins.int
     DATE_DOCUMENT_FIELD_NUMBER: _builtins.int
     id: _builtins.str
-    """Note: `title` and `date_document` below describe the resolved version, not the
-    abstract norm — ELI puts the title on the expression, which is version-bearing.
-    Local id, e.g. "air-pollution-control-act" (lowercase letters, digits, hyphens).
+    """Note: `title` describes the resolved version, not the abstract norm — ELI puts
+    the title on the expression, which is version-bearing.
+    Local id: the 全國法規資料庫 pcode, e.g. "O0020001" (one uppercase letter, seven digits).
     """
     iri: _builtins.str
     """Canonical IRI of the ELI LegalResource."""
     title: _builtins.str
     """Title from the LegalExpression realizing this law."""
     language: _builtins.str
-    """BCP 47 language tag of the title, e.g. "zh-hant"."""
+    """ISO 639-3 language code of the title, e.g. "zho" (the same code appears in IRIs)."""
     date_document: _builtins.str
-    """eli:date_document as ISO 8601 date (YYYY-MM-DD); empty if unknown."""
+    """eli:date_document: the law's enactment date, ISO 8601 (YYYY-MM-DD); empty when
+    the corpus records no enactment.
+    """
     def __init__(
         self,
         *,
