@@ -52,7 +52,7 @@ docker exec -it env-law-dev-pg psql -U postgres -d ontology_main_vfz   # 進入�
 
 ### kind 叢集 PostgreSQL（驗證部署清單）
 
-帳號 `env_law`；密碼在建叢集時隨機產生，用下方指令取得。資料庫 `env_law`（ontology）與 `platform`，名稱固定，定義在 `env-law-deploy` 的 `base/database/`、`base/platform/database.yaml`。
+帳號 `env_law`；密碼在建叢集時隨機產生，用下方指令取得。資料庫 `env_law`（ontology）與 `platform`，名稱固定。
 
 ```text
 postgresql://env_law:<密碼>@localhost:15432/env_law
@@ -96,14 +96,13 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 1. **開分支**：`wt switch --create <type>/<簡述>`，type 用 `feat`、`fix`、`docs`、`refactor`、`chore` 等。
 2. **Commit**：[Conventional Commits](https://www.conventionalcommits.org)，`type(scope): 說明`；破壞性變更加 `!`（如 `feat(consult)!: …`）。
 3. **開 MR 到 `main`**：`main` 受保護，不直接推送。**pipeline 成功才能合併**，以 squash 合併，合併後刪除來源分支。
-4. **自動上線**：合併後 CI 推送映像 `:<commit-sha>`，`env-law-deploy` 的 Image Updater 寫入新 tag，Argo CD 依序同步資料庫 → 遷移 → 服務。不需人工。
+4. **上線**：合併後 CI 把受影響服務的映像推送為 `:<commit-sha>`，之後自動部署，不需人工。
 5. **收尾**：`wt remove <分支>`。
 
-三條規則：
+兩條規則：
 
 - **改契約**：兩側的產生碼在同一個 MR 更新；破壞性變更開新版本（`v2`），不改 `v1`。
-- **程式碼與部署清單一起改**：先合併 `env-law-deploy` 的向後相容清單，再合併本倉庫的程式碼。
-- **回退**：在本倉庫 revert 後照常上線；不要在 `env-law-deploy` 把 tag 改回舊值。
+- **回退**：在本倉庫 revert 有問題的 commit，照常合併上線。
 
 CI 依改動路徑分流，只跑受影響的部分：
 
@@ -118,16 +117,15 @@ CI 依改動路徑分流，只跑受影響的部分：
 
 非 `main` 分支的映像 job 只驗證能建置，不推送。
 
-設計決策的論據寫進同層的 `env-law-docs`，不寫進本倉庫。
 
 ## 環境說明
 
 | 環境 | 用途 | 資料庫 |
 |------|------|--------|
 | 主機直跑（`wt`） | 日常開發、除錯 | 容器 `env-law-dev-pg`，`localhost:5432` |
-| kind 叢集 `env-law`（context `kind-env-law`） | 驗證 `env-law-deploy` 的清單 | 叢集內 CloudNativePG `env-law-pg` |
+| kind 叢集 `env-law`（context `kind-env-law`） | 驗證部署清單 | 叢集內 CloudNativePG `env-law-pg` |
 
-- **本機叢集用 kind**：節點以 Docker 引擎為容器執行環境的 Kubernetes 不支援 ImageVolume，pgvector 掛不上；kind 的節點是 containerd 2.x，清單原樣可用。建立與啟動見 `env-law-deploy` 的 README「本機叢集」。
+- **本機叢集用 kind**：節點以 Docker 引擎為容器執行環境的 Kubernetes 不支援 ImageVolume，pgvector 掛不上；kind 的節點是 containerd 2.x，清單原樣可用。
 - **開發用 PostgreSQL** 與 ontology 測試同一個映像（`services/ontology/tests/conftest.py`），內含 `vector` 與 `btree_gist`。資料在具名 volume `env-law-dev-pg`，刪容器不會刪資料；要從零開始：`docker rm -f env-law-dev-pg && docker volume rm env-law-dev-pg`。只綁 `127.0.0.1`，不對區網開放。
 - **每條分支一棵 worktree**（`.config/wt.toml`）：port 與資料庫名由分支推導，平行的分支不相撞。
 
@@ -142,5 +140,3 @@ CI 依改動路徑分流，只跑受影響的部分：
 | [Worktrunk](https://worktrunk.dev)（`wt`） | — | 分支與本機環境 |
 | Node.js | — | 以 `npx` 執行 buf |
 | [kind](https://kind.sigs.k8s.io)、kubectl | — | 只在驗證部署清單時需要 |
-
-三個倉庫放在同一層目錄：`env-law`（本倉庫）、`env-law-docs`（設計論據）、`env-law-deploy`（部署清單）。
