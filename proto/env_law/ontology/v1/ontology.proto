@@ -83,13 +83,8 @@ message ArticleHit {
   // eli:number as written, e.g. "5-1".
   string number = 4;
   string content = 5;
-  // Fused rank score (RRF). Orders hits; it is **not** a relevance measure — the
-  // top hit of a corpus with nothing relevant scores the same as one that does.
-  // Decide "is there an answer here" from the two raw signals below.
-  double rank_score = 6;
-  // Raw lexical relevance (ts_rank_cd); absent when the lexical arm did not match.
-  optional float lexical_score = 7;
-  // Raw cosine distance; absent when the dense arm did not match. No embedding
-  // model is configured yet, so this is currently always absent.
-  optional float dense_distance = 8;
+  // Raw lexical relevance (ts_rank_cd). Hits are ordered by it, highest first.
+  float lexical_score = 7;
+  reserved 6, 8;
+  reserved "rank_score", "dense_distance";
 }

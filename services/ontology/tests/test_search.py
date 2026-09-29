@@ -86,8 +86,7 @@ def test_search_finds_the_article_by_raw_text(
 
     top = response.hits[0]
     assert (top.law_id, top.law_title, top.number) == ("T0000001", "噪音管制法", "9")
-    assert top.HasField("lexical_score")
-    assert not top.HasField("dense_distance")
+    assert top.lexical_score > 0
 
 
 def test_search_before_the_law_existed_finds_nothing(

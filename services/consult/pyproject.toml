@@ -27,7 +27,7 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 # Both services own disjoint subtrees of the `env_law` namespace; they are never
 # installed together, so the shared top-level name costs nothing and keeps the
-# generated proto paths (`env_law/consult/v1/`, and the ontology client stubs in
+# generated proto paths (`env_law/consult/v2/`, and the ontology client stubs in
 # `env_law/ontology/v1/`) where protoc puts them.
 module-name = "env_law"
 

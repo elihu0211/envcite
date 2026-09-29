@@ -30,7 +30,7 @@ def lexicon_digest(terms: Iterable[str]) -> str:
 
 
 def tokenizer_id(terms: Iterable[str]) -> str:
-    """寫入 `subdivision.tokenizer` 的值。
+    """寫入 `retrieval.article_index.tokenizer` 的值。
 
     帶有決定斷詞結果的兩半：實作與 lexicon。任一者改變，先前建立索引的 tsvector
     就無法與新的查詢比較，而偵測這件事正是該欄位存在的目的。

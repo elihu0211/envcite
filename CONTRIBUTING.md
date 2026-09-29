@@ -92,7 +92,7 @@ CI 依改動路徑分流：
 
 ## 環境說明
 
-- **開發用 PostgreSQL**（`compose.yaml`）：與 ontology 測試同一個映像，內含 `vector` 與 `btree_gist`；只綁 `127.0.0.1`。資料在 volume `env-law_pgdata`，`docker compose down` 不刪資料，從零開始用 `docker compose down -v`。
+- **開發用 PostgreSQL**（`compose.yaml`）：與 ontology 測試同一個映像（綱要只用 PostgreSQL 自帶的 `btree_gist`）；只綁 `127.0.0.1`。資料在 volume `env-law_pgdata`，`docker compose down` 不刪資料，從零開始用 `docker compose down -v`。
 - **每條分支一棵 worktree**（`.config/wt.toml`）：port 與資料庫名由分支推導，平行的分支不相撞。
 
 ## 準備工具

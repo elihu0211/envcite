@@ -21,7 +21,7 @@ flowchart LR
     platform["platform<br/>租戶・API key・方案限流・計量"]
     ontology["ontology<br/>本體與檢索"]
     consult["consult<br/>接地・可答性判定"]
-    pg[(PostgreSQL<br/>pgvector)]
+    pg[(PostgreSQL)]
 
     subgraph caller [呼叫端]
         client

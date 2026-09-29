@@ -12,8 +12,8 @@ comes out as two tokens is not a ranking problem. 「事業廢棄物」 split in
 「事業」+「廢棄物」 makes a query for one match articles about the other, and no
 amount of good ranking recovers from retrieving the wrong article.
 
-Run it against the database once a corpus is loaded (terms come from
-`term_definition`), or against a fetched corpus before then:
+Run it against the database once a corpus is loaded, or against a fetched
+corpus before then:
 
     ./scripts/fetch-corpus.sh /tmp/corpus.json
     uv run scripts/measure-segmentation.py --corpus /tmp/corpus.json
@@ -59,13 +59,13 @@ def load_from_db(dsn: str) -> tuple[list[str], list[str]]:
         bodies = [
             r[0]
             for r in conn.execute(
-                "SELECT content FROM subdivision WHERE is_article AND content IS NOT NULL"
+                "SELECT corpus.article_text(v.id) FROM corpus.provision_version AS v"
+                " JOIN corpus.provision AS p ON p.id = v.provision_id"
+                " WHERE p.provision_type = 'article' AND v.in_force @> CURRENT_DATE"
             ).fetchall()
+            if r[0] is not None
         ]
-        terms = [r[0] for r in conn.execute("SELECT DISTINCT term FROM term_definition")]
-    # Fall back to extracting from text when the term table is not populated yet:
-    # an empty lexicon would silently measure the default dictionary instead.
-    return bodies, terms or terms_from_text(bodies)
+    return bodies, terms_from_text(bodies)
 
 
 def occurrences(text: str, term: str) -> list[int]:

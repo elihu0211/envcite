@@ -79,7 +79,6 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                     law_title=h.law_title,
                     number=h.number,
                     content=h.content,
-                    rank_score=h.rank_score,
                     lexical_score=h.lexical_score,
                 )
                 for h in hits

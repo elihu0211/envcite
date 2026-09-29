@@ -1,7 +1,7 @@
 -- 0002_retrieval — 檢索投影：條的分詞全文索引
 --
 -- 可重建的投影，不是語料的真值（02-04 §8）。分詞在資料庫之外做，索引與查詢須用
--- 同一個分詞器（04-01 §3、§5）。稠密檢索臂待嵌入模型選定後以新遷移加入。
+-- 同一個分詞器（04-01 §3、§5）。
 
 CREATE SCHEMA retrieval;
 
@@ -29,10 +29,7 @@ CREATE FUNCTION retrieval.terms_to_tsquery(terms text) RETURNS tsquery
         ''::tsquery
     );
 
--- 某日有效之條，依字面相關性排序。
---   rank_score：名次倒數融合的分數，只供排序，不表示相關性（04-01 §6）。
---   lexical_score：原始相關性（ts_rank_cd），判斷「有無答案」應看這一欄。
--- 只納入該日效力區間內、文字可得的條；該日無有效版本的法規不以現行文字頂替。
+-- 某日有效之條，依字面相關性（ts_rank_cd）排序。只納入該日效力區間內、文字可得的條；該日無有效版本的法規不以現行文字頂替。
 CREATE FUNCTION retrieval.search_articles(
     p_terms     text,
     p_tokenizer text,
@@ -44,14 +41,11 @@ RETURNS TABLE (
     version_id    bigint,
     resource_id   bigint,
     path          text,
-    rank_score    numeric,
     lexical_score real
 )
 LANGUAGE sql STABLE
 AS $$
-    SELECT v.id, v.resource_id, p.path,
-           1.0 / (60 + RANK() OVER (ORDER BY ts_rank_cd(i.content_tsv, q.query) DESC, v.id)),
-           ts_rank_cd(i.content_tsv, q.query)
+    SELECT v.id, v.resource_id, p.path, ts_rank_cd(i.content_tsv, q.query)
       FROM retrieval.article_index AS i
       JOIN corpus.provision_version AS v ON v.id = i.provision_version_id
       JOIN corpus.provision AS p ON p.id = v.provision_id

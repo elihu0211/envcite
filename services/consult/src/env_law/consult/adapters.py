@@ -27,11 +27,9 @@ class GrpcOntology:
                 iri=h.iri,
                 label=f"{h.law_title} {_article_label(h.number)}",
                 text=h.content,
-                # 用原始的字面分數，絕不用 `rank_score`：RRF 不反映相關性，而 `score`
-                # 會餵給相關性下界（env-law-docs 04-01 §6）。稠密檢索臂關閉期間，這是
-                # 唯一的原始訊號；下界以它為條件校定，它一旦改變，下界就必須重新推導
-                # （§7）。沒有此分數的命中結果，是僅由稠密檢索臂比對到的。
-                score=h.lexical_score if h.HasField("lexical_score") else 0.0,
+                # 相關性下界以這個分數校定（env-law-docs 04-01 §6、§7）；分數的定義
+                # 一旦改變，下界就必須重新推導。
+                score=h.lexical_score,
             )
             for h in response.hits
         ]

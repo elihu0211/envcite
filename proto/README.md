@@ -6,7 +6,6 @@
 |------|------|----------|------|
 | `env_law.ontology.v1` | `OntologyService` | 共享，不分租戶 | 使用中 |
 | `env_law.consult.v2` | `ConsultationService` | 租戶隔離 | 使用中 |
-| `env_law.consult.v1` | `ConsultationService` | 租戶隔離 | **已棄用**，沒有伺服器實作；檔案只因 `buf breaking` 不允許刪除而保留 |
 
 兩者都是**內部服務**。外部用戶端一律經 `platform` 的 REST 呼叫（見文末〈對外 REST〉）。
 
@@ -17,7 +16,7 @@
 ```
  本系統                                        呼叫端
  ──────────────────────────────────────────   ───────────────────────────────
- retrieve  本體檢索（字面，語意臂待定）
+ retrieve  本體檢索（字面）
  ground    程式指派封閉引用集合 L1、L2…
  assess    規則決定能不能答 ── 拒答 ──────────▶ 直接呈現拒答，不呼叫模型
                   │
@@ -29,7 +28,6 @@
 
 - 不必選模型供應商，也不必保管模型的金鑰；模型與提示詞隨呼叫端的節奏更換。
 - **引用可核驗性由呼叫端履行。** 本系統保證交出的集合是封閉、有序、附條文的；呼叫端要保證散文只引用這個集合，做法見下文〈呼叫端的語言模型〉。
-- 語意檢索臂要用**嵌入模型**（把文字轉成向量，不生成文字），這在 `ontology` 內部，且目前尚未啟用。
 
 ## 共通約定
 
@@ -60,11 +58,11 @@ consult 呼叫 ontology 時，ontology 的狀態碼**原樣轉出**：無效的 
 |------|------|
 | `GetLaw(id, as_of)` | 取一部法規（ELI `LegalResource`）；標題取自該日施行的版本 |
 | `ListArticles(law_id, as_of)` | 該日施行版本的各條，依條次排序 |
-| `SearchArticles(query, as_of, limit)` | 混合檢索，最佳者在前。`limit` 為 0 取預設 10，上限 50 |
+| `SearchArticles(query, as_of, limit)` | 字面檢索，最佳者在前。`limit` 為 0 取預設 10，上限 50 |
 
 `SearchArticles` 的 `query` 傳**原文**：斷詞由服務以建立索引時的同一個分詞器執行，呼叫端自行斷詞只會安靜地少命中。
 
-`ArticleHit.rank_score` 只用於排序，**不是相關性**——語料中毫無相關內容時，第一名的分數與有相關內容時一樣高。要判斷「這裡有沒有答案」，看 `lexical_score`（與日後的 `dense_distance`）。這正是 consult 替呼叫端做掉的事，所以要作答的呼叫端應呼叫 consult，而不是自己拿 `SearchArticles` 的結果給模型。
+檢索總會回傳最佳的幾筆，即使語料中毫無相關內容；要判斷「這裡有沒有答案」，須以 `ArticleHit.lexical_score` 對照校定過的下界。這正是 consult 替呼叫端做掉的事，所以要作答的呼叫端應呼叫 consult，而不是自己拿 `SearchArticles` 的結果給模型。
 
 ## ConsultationService（`env_law.consult.v2`）
 
