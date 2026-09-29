@@ -51,7 +51,8 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
 
     Rolling back is not enough: a test that commits leaves rows behind, and the next
     test sees them. Every corpus table hangs off `corpus.legal_resource` by a
-    cascading foreign key, so deleting a law deletes all of it.
+    cascading foreign key, so deleting a law deletes all of it; the acquisition
+    record has no sample rows and is emptied.
     """
     with psycopg.connect(dsn) as c:
         yield c
@@ -60,6 +61,7 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
             "DELETE FROM corpus.legal_resource WHERE local_id <> ALL(%s)",
             (list(FIXTURE_LAWS),),
         )
+        c.execute("TRUNCATE source.item, source.snapshot")
         c.commit()
 
 
