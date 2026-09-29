@@ -12,6 +12,7 @@ from pathlib import Path
 import psycopg
 import pytest
 
+from env_law_ontology.acquire import cli
 from env_law_ontology.acquire.engine import Feed, InvalidSnapshot, Outcome, acquire
 from env_law_ontology.acquire.moj import Moj
 
@@ -120,3 +121,19 @@ def test_an_invalid_file_leaves_nothing_behind(
 
     assert conn.execute("SELECT count(*) FROM source.snapshot").fetchone() == (0,)
     assert not any(p.is_file() for p in (tmp_path / "snapshots").rglob("*"))
+
+
+def test_invalid_data_exits_with_the_code_the_cronjob_does_not_retry(
+    tmp_path: Path, dsn: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """env-law-deploy's podFailurePolicy fails the Job outright on exit code 2."""
+    source = LocalMoj(_publish(tmp_path / "feed.zip", "not a date", [_law("T0000001")]))
+    monkeypatch.setitem(cli.SOURCES, "moj", source)
+    monkeypatch.setenv("ONTOLOGY_DSN", dsn)
+    monkeypatch.setenv("ACQUIRE_SNAPSHOT_DIR", str(tmp_path / "snapshots"))
+    monkeypatch.setattr("sys.argv", ["env-law-acquire", "moj"])
+
+    with pytest.raises(SystemExit) as exit_:
+        cli.main()
+
+    assert exit_.value.code == cli.EXIT_INVALID == 2
