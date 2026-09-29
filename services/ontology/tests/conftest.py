@@ -61,7 +61,7 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
             "DELETE FROM corpus.legal_resource WHERE local_id <> ALL(%s)",
             (list(FIXTURE_LAWS),),
         )
-        c.execute("TRUNCATE source.item, source.snapshot")
+        c.execute("TRUNCATE source.import_problem, source.item, source.snapshot")
         c.commit()
 
 

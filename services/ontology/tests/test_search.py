@@ -51,8 +51,9 @@ def search_stub(
                 RETURNING id
             ), v AS (
                 INSERT INTO corpus.provision_version
-                       (provision_id, expression_id, resource_id, content, in_force)
-                SELECT p.id, %(expr)s, %(law)s, %(content)s, daterange(DATE '2020-01-03', NULL)
+                       (provision_id, expression_id, resource_id, content, in_force, commencement)
+                SELECT p.id, %(expr)s, %(law)s, %(content)s, daterange(DATE '2020-01-03', NULL),
+                       'promulgation'
                   FROM p
                 RETURNING id
             )

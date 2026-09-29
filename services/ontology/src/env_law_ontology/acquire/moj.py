@@ -15,6 +15,7 @@ import zipfile
 from collections.abc import Sequence
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from env_law_ontology.acquire.engine import Contents, Feed, InvalidSnapshot
 
@@ -39,28 +40,33 @@ class Moj:
         return context
 
     def read(self, path: Path) -> Contents:
-        try:
-            with zipfile.ZipFile(path) as z:
-                names = [n for n in z.namelist() if n.endswith(".json")]
-                if len(names) != 1:
-                    raise InvalidSnapshot(f"expected one JSON data file, found {names}")
-                data = json.loads(z.read(names[0]).decode("utf-8-sig"))
-        except (zipfile.BadZipFile, UnicodeDecodeError, json.JSONDecodeError) as e:
-            raise InvalidSnapshot(str(e)) from e
-
-        match = _UPDATE_DATE.match(str(data.get("UpdateDate", "")))
-        if match is None:
-            raise InvalidSnapshot(f"unreadable UpdateDate: {data.get('UpdateDate')!r}")
-        laws = data.get("Laws")
-        if not isinstance(laws, list):
-            raise InvalidSnapshot("missing Laws")
+        data_date, laws = load_laws(path)
         return Contents(
-            data_date=date(*(int(g) for g in match.groups())),
-            items=[(_pcode(law), _content_sha256(law)) for law in laws],
+            data_date=data_date, items=[(pcode(law), content_sha256(law)) for law in laws]
         )
 
 
-def _pcode(law: object) -> str:
+def load_laws(path: Path) -> tuple[date, list[dict[str, Any]]]:
+    """快照檔的資料日期與 `Laws` 陣列。格式不符拋 InvalidSnapshot。"""
+    try:
+        with zipfile.ZipFile(path) as z:
+            names = [n for n in z.namelist() if n.endswith(".json")]
+            if len(names) != 1:
+                raise InvalidSnapshot(f"expected one JSON data file, found {names}")
+            data = json.loads(z.read(names[0]).decode("utf-8-sig"))
+    except (zipfile.BadZipFile, UnicodeDecodeError, json.JSONDecodeError) as e:
+        raise InvalidSnapshot(str(e)) from e
+
+    match = _UPDATE_DATE.match(str(data.get("UpdateDate", "")))
+    if match is None:
+        raise InvalidSnapshot(f"unreadable UpdateDate: {data.get('UpdateDate')!r}")
+    laws = data.get("Laws")
+    if not isinstance(laws, list):
+        raise InvalidSnapshot("missing Laws")
+    return date(*(int(g) for g in match.groups())), laws
+
+
+def pcode(law: object) -> str:
     url = law.get("LawURL", "") if isinstance(law, dict) else ""
     match = _PCODE.search(str(url))
     if match is None:
@@ -68,7 +74,7 @@ def _pcode(law: object) -> str:
     return match.group(1)
 
 
-def _content_sha256(law: object) -> bytes:
+def content_sha256(law: object) -> bytes:
     # 正規化後再雜湊：鍵的順序不同不算內容改變。
     canonical = json.dumps(law, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).digest()
