@@ -46,8 +46,6 @@ class SearchHit:
     law_title: str
     number: str
     content: str
-    #: 只用來排序，不表示相關性（0002）。
-    rank_score: float
     lexical_score: float
 
 
@@ -85,14 +83,14 @@ _LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression"
 _SEARCH = """
     SELECT corpus.version_iri(s.version_id), r.local_id, e.title,
            corpus.article_number(s.path), corpus.article_text(s.version_id),
-           s.rank_score, s.lexical_score
+           s.lexical_score
       FROM retrieval.search_articles(
                %(terms)s, %(tokenizer)s, %(on)s::date, %(language)s, %(limit)s
            ) AS s
       JOIN corpus.legal_resource AS r ON r.id = s.resource_id
       JOIN corpus.provision_version AS v ON v.id = s.version_id
       JOIN corpus.legal_expression AS e ON e.id = v.expression_id
-     ORDER BY s.rank_score DESC, s.version_id
+     ORDER BY s.lexical_score DESC, s.version_id
 """
 
 
@@ -167,10 +165,9 @@ class OntologyStore:
                     law_title=title,
                     number=number,
                     content=content,
-                    rank_score=float(rank),
                     lexical_score=lexical,
                 )
-                for iri, law_id, title, number, content, rank, lexical in cur.fetchall()
+                for iri, law_id, title, number, content, lexical in cur.fetchall()
             ]
 
     def _resolve(self, law_id: str, as_of: str) -> tuple[int, LawRecord] | None:

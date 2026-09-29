@@ -25,7 +25,6 @@ class _Ontology(ontology_pb2_grpc.OntologyServiceServicer):
                     law_title="空氣污染防制法",
                     number="5-1",
                     content="…",
-                    rank_score=0.03,
                     lexical_score=0.4,
                 ),
                 ontology_pb2.ArticleHit(
@@ -33,8 +32,7 @@ class _Ontology(ontology_pb2_grpc.OntologyServiceServicer):
                     law_title="空氣污染防制法",
                     number="20",
                     content="…",
-                    rank_score=0.02,
-                    dense_distance=0.2,
+                    lexical_score=0.1,
                 ),
             ]
         )
@@ -52,18 +50,18 @@ def ontology() -> Iterator[tuple[_Ontology, GrpcOntology]]:
     server.stop(grace=None)
 
 
-def test_hits_become_articles_scored_by_the_raw_lexical_signal(
+def test_hits_become_articles_scored_by_lexical_relevance(
     ontology: tuple[_Ontology, GrpcOntology],
 ) -> None:
     _, adapter = ontology
 
     articles = adapter.search("排放標準")
 
-    assert [(a.iri, a.label, a.score) for a in articles] == [
-        ("a", "空氣污染防制法 第 5 條之 1", pytest.approx(0.4)),
-        # Dense-only hit: no lexical signal, so nothing clears the floor on its behalf.
-        ("b", "空氣污染防制法 第 20 條", 0.0),
+    assert [(a.iri, a.label) for a in articles] == [
+        ("a", "空氣污染防制法 第 5 條之 1"),
+        ("b", "空氣污染防制法 第 20 條"),
     ]
+    assert [a.score for a in articles] == pytest.approx([0.4, 0.1])
 
 
 def test_search_sends_the_internal_token_and_arguments(

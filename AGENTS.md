@@ -46,7 +46,7 @@ wt consult     # gRPC 伺服器，指向本樹的 ontology（platform 的 /v1/gr
 wt list        # URL 欄是本樹 platform 的位址
 ```
 
-platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgres`/`postgres`，同 `appsettings.Development.json`）；ontology 需要 pgvector。由倉庫根的 `compose.yaml` 提供（`docker compose up -d`），帳密見 `CONTRIBUTING.md`。測試不經此路——Testcontainers 每次自起一個庫。
+platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgres`/`postgres`，同 `appsettings.Development.json`），由倉庫根的 `compose.yaml` 提供（`docker compose up -d`），帳密見 `CONTRIBUTING.md`。測試不經此路——Testcontainers 每次自起一個庫。
 
 ## 目錄配置與擴充判準
 
@@ -76,7 +76,7 @@ platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgre
 
 - `proto/env_law/**` 是 gRPC API 的**單一真值**，各服務都由此產生程式碼，**不得各自複製一份**。
 - API 文件：欄位語意寫在 `.proto` 註解；跨服務的組合與呼叫端接法寫在 `proto/README.md`（buf 模組文件）。改契約時兩者一起改。
-- 破壞性變更要開新套件版本（`v2`）；`v1` 必須通過 `buf breaking`。
+- 破壞性變更要開新套件版本（`v2`）；`v1` 必須通過 `buf breaking`（WIRE_JSON：守線路與 JSON 相容）。刪除欄位時以 `reserved` 保留其號碼與名稱。
 - 改 proto 的 MR 必須同時更新兩側產生碼——這是單一倉庫換來的性質，別再用兩個 MR 做一件事。
 
 ## Conventions

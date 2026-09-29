@@ -228,9 +228,7 @@ class ArticleHit(_message.Message):
     LAW_TITLE_FIELD_NUMBER: _builtins.int
     NUMBER_FIELD_NUMBER: _builtins.int
     CONTENT_FIELD_NUMBER: _builtins.int
-    RANK_SCORE_FIELD_NUMBER: _builtins.int
     LEXICAL_SCORE_FIELD_NUMBER: _builtins.int
-    DENSE_DISTANCE_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     law_id: _builtins.str
     law_title: _builtins.str
@@ -238,17 +236,8 @@ class ArticleHit(_message.Message):
     number: _builtins.str
     """eli:number as written, e.g. "5-1"."""
     content: _builtins.str
-    rank_score: _builtins.float
-    """Fused rank score (RRF). Orders hits; it is **not** a relevance measure — the
-    top hit of a corpus with nothing relevant scores the same as one that does.
-    Decide "is there an answer here" from the two raw signals below.
-    """
     lexical_score: _builtins.float
-    """Raw lexical relevance (ts_rank_cd); absent when the lexical arm did not match."""
-    dense_distance: _builtins.float
-    """Raw cosine distance; absent when the dense arm did not match. No embedding
-    model is configured yet, so this is currently always absent.
-    """
+    """Raw lexical relevance (ts_rank_cd). Hits are ordered by it, highest first."""
     def __init__(
         self,
         *,
@@ -257,21 +246,12 @@ class ArticleHit(_message.Message):
         law_title: _builtins.str = ...,
         number: _builtins.str = ...,
         content: _builtins.str = ...,
-        rank_score: _builtins.float = ...,
-        lexical_score: _builtins.float | None = ...,
-        dense_distance: _builtins.float | None = ...,
+        lexical_score: _builtins.float = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["_dense_distance", b"_dense_distance", "_lexical_score", b"_lexical_score", "dense_distance", b"dense_distance", "lexical_score", b"lexical_score"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_dense_distance", b"_dense_distance", "_lexical_score", b"_lexical_score", "content", b"content", "dense_distance", b"dense_distance", "iri", b"iri", "law_id", b"law_id", "law_title", b"law_title", "lexical_score", b"lexical_score", "number", b"number", "rank_score", b"rank_score"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["content", b"content", "iri", b"iri", "law_id", b"law_id", "law_title", b"law_title", "lexical_score", b"lexical_score", "number", b"number"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__dense_distance: _TypeAlias = _typing.Literal["dense_distance"]  # noqa: Y015
-    _WhichOneofArgType__dense_distance: _TypeAlias = _typing.Literal["_dense_distance", b"_dense_distance"]  # noqa: Y015
-    _WhichOneofReturnType__lexical_score: _TypeAlias = _typing.Literal["lexical_score"]  # noqa: Y015
-    _WhichOneofArgType__lexical_score: _TypeAlias = _typing.Literal["_lexical_score", b"_lexical_score"]  # noqa: Y015
-    @_typing.overload
-    def WhichOneof(self, oneof_group: _WhichOneofArgType__dense_distance) -> _WhichOneofReturnType__dense_distance | None: ...
-    @_typing.overload
-    def WhichOneof(self, oneof_group: _WhichOneofArgType__lexical_score) -> _WhichOneofReturnType__lexical_score | None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___ArticleHit: _TypeAlias = ArticleHit  # noqa: Y015

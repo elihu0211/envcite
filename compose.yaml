@@ -3,13 +3,13 @@
 # 專案名固定為 env-law：各 worktree 目錄不同，不固定的話每棵樹會各起一個庫、搶同一個
 # port。一台機器一個庫，各分支以資料庫名區分（.config/wt.toml）。
 #
-# 映像與 ontology 測試相同（services/ontology/tests/conftest.py），內含 vector 與
-# btree_gist。帳密是本機值，與 appsettings.Development.json、scripts/worktree-db.py 一致。
+# 映像與 ontology 測試相同（services/ontology/tests/conftest.py）；綱要只用 PostgreSQL
+# 自帶的擴充。帳密是本機值，與 appsettings.Development.json、scripts/worktree-db.py 一致。
 name: env-law
 
 services:
   postgres:
-    image: pgvector/pgvector:0.8.1-pg18
+    image: postgres:18
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: postgres
