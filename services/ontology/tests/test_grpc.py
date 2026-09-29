@@ -14,25 +14,23 @@ from .conftest import TOKEN, auth
 
 
 def test_get_law(stub: ontology_pb2_grpc.OntologyServiceStub) -> None:
-    response = stub.GetLaw(
-        ontology_pb2.GetLawRequest(id="air-pollution-control-act"), metadata=auth()
-    )
+    response = stub.GetLaw(ontology_pb2.GetLawRequest(id="O0020001"), metadata=auth())
 
     assert response.law.title == "空氣污染防制法"
-    assert response.law.id == "air-pollution-control-act"
+    assert response.law.id == "O0020001"
 
 
 def test_list_articles(stub: ontology_pb2_grpc.OntologyServiceStub) -> None:
     response = stub.ListArticles(
-        ontology_pb2.ListArticlesRequest(law_id="air-pollution-control-act"), metadata=auth()
+        ontology_pb2.ListArticlesRequest(law_id="O0020001"), metadata=auth()
     )
 
-    assert [a.number for a in response.articles] == ["1", "2", "5-1", "10"]
+    assert [a.number for a in response.articles] == ["1", "100"]
 
 
 def test_unknown_law_is_not_found(stub: ontology_pb2_grpc.OntologyServiceStub) -> None:
     with pytest.raises(grpc.RpcError) as error:
-        stub.GetLaw(ontology_pb2.GetLawRequest(id="unknown-act"), metadata=auth())
+        stub.GetLaw(ontology_pb2.GetLawRequest(id="Z9999999"), metadata=auth())
 
     assert error.value.code() == grpc.StatusCode.NOT_FOUND
 
@@ -45,7 +43,7 @@ def test_missing_or_wrong_token_is_unauthenticated(
     stub: ontology_pb2_grpc.OntologyServiceStub, metadata: tuple[tuple[str, str], ...]
 ) -> None:
     with pytest.raises(grpc.RpcError) as error:
-        stub.GetLaw(ontology_pb2.GetLawRequest(id="air-pollution-control-act"), metadata=metadata)
+        stub.GetLaw(ontology_pb2.GetLawRequest(id="O0020001"), metadata=metadata)
 
     assert error.value.code() == grpc.StatusCode.UNAUTHENTICATED
 

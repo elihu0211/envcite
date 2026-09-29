@@ -34,7 +34,6 @@ dev = [
     "grpcio-tools>=1.84.0",
     "mypy>=2.3.1",
     "mypy-protobuf>=5.1.0",
-    "pyshacl>=0.40.1",
     "pytest>=9.1.1",
     "ruff>=0.16.8",
     "testcontainers[postgres]>=4.9",
@@ -70,5 +69,3 @@ minversion = "9.0"
 addopts = ["-ra"]
 testpaths = ["tests"]
 strict = true
-# rdflib internals (used by pySHACL) emit deprecation noise outside our control.
-filterwarnings = ["ignore::DeprecationWarning:rdflib.*"]

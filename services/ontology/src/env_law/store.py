@@ -1,37 +1,26 @@
-"""ELI 法規資料（PostgreSQL）之上的讀取模型。
+"""法規語料（PostgreSQL）之上的讀取模型。
 
-關聯式資料表才是真值；本體是由它們投影出來的視圖。這個方向不得反轉——見
-env-law-docs 02-02。本模組只讀；寫入屬於匯入管線，而該管線尚未存在。
+關聯式資料表才是真值；本體是由它們投影出來的視圖（env-law-docs 02-02）。本模組只讀。
 
-排序不在 Python 裡做。閱讀順序（「5-1」在「5」之後、「6」之前）由衍生欄位
-`subdivision.sort_key` 承載，查詢只需依它 ORDER BY。排序是資料的性質，不是呼叫端
-的偏好：交給呼叫端決定，遲早會有第二個呼叫端排出不同的順序。
+版本解析、閱讀順序、IRI 與條的全文都在 SQL 裡決定，本模組不重做：同一個答案若由
+兩處各自計算，遲早會算得不一樣。
 """
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from enum import Enum
 from types import TracebackType
 from typing import Self
 
 from psycopg_pool import ConnectionPool
 
-#: local id 的形狀。與 `legal_resource.id_local` 上的 CHECK 相互對應；兩者都需要。
-#: 資料庫那一道守住寫入，這一道則讓不可能相符的值省去一次往返。它不是注入防禦——
-#: 查詢都已參數化——而是一道廉價的拒絕。
-_LOCAL_ID = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$")
+#: 全國法規資料庫 pcode 的形狀，與 `corpus.legal_resource` 的 CHECK 相互對應。這一道只讓
+#: 不可能相符的值省去一次往返；查詢皆已參數化，它不是注入防禦。
+_PCODE = re.compile(r"^[A-Z][0-9]{7}$")
 
-
-class VersionStatus(Enum):
-    """某時點的版本解析為何產出（或未產出）條文。"""
-
-    RESOLVED = "resolved"
-    #: 語料中沒有這部法規。
-    UNKNOWN_LAW = "unknown_law"
-    #: 法規存在，但持有的版本中沒有任何一個涵蓋所請求的日期。
-    NO_VERSION = "no_version"
+#: 語料目前只有中文版本。
+LANGUAGE = "zho"
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +29,7 @@ class LawRecord:
     iri: str
     title: str
     language: str
+    #: 制定日（eli:date_document），ISO 8601；語料未記載制定事件時為空字串。
     date_document: str
 
 
@@ -56,62 +46,53 @@ class SearchHit:
     law_title: str
     number: str
     content: str
-    #: 融合後的排序分數：只用來排序命中結果，不表示相關性（見 0010）。
+    #: 只用來排序，不表示相關性（0002）。
     rank_score: float
-    lexical_score: float | None
-    dense_distance: float | None
+    lexical_score: float
 
 
-def is_valid_local_id(value: str) -> bool:
-    return bool(_LOCAL_ID.fullmatch(value))
+def is_valid_law_id(value: str) -> bool:
+    return bool(_PCODE.fullmatch(value))
 
 
-#: 某日期施行中的條文；當 `p_on` 為 NULL 時，則為沒有終止日的那一版。
-#: 解析在 SQL 裡進行，讓「哪一個版本」只有唯一答案；若兩個呼叫端各自在 Python 裡
-#: 挑版本，遲早會挑得不一樣。
-_RESOLVE_EXPRESSION = """
-    SELECT e.iri, e.title, e.language
-      FROM legal_expression AS e
-     WHERE e.resource_id = %(law)s
-       AND (
-             (%(on)s::date IS NULL AND e.valid_to IS NULL)
-          OR (%(on)s::date IS NOT NULL
-              AND daterange(e.valid_from, e.valid_to, '[)') @> %(on)s::date)
-           )
-     LIMIT 1
+#: 某日有效的版本；日期為空時取今日。法規不存在與該日無版本，兩者都查無結果。
+_RESOLVE = """
+    SELECT r.id, corpus.resource_iri(r.kind, r.local_id), e.title, e.language,
+           (SELECT min(le.event_date)
+              FROM corpus.lifecycle_event AS le
+             WHERE le.resource_id = r.id AND le.kind = 'enactment')
+      FROM corpus.legal_resource AS r
+      JOIN corpus.legal_expression AS e ON e.resource_id = r.id
+     WHERE r.id_scheme = 'moj_pcode'
+       AND r.local_id = %(law)s
+       AND e.language = %(language)s
+       AND e.text_period @> %(on)s::date
 """
 
-#: segmenter 的 lexicon：法定用語與法規名稱（env-law-docs 04-01 §4）。
-#: 匯入程式必須用同一個查詢建立 `content_tsv`——lexicon 不同就會得到不同的
-#: `tokenizer` id，此時字面檢索臂會什麼都比對不到，而不是比對到錯的東西。
-_LEXICON = """
-    SELECT term FROM term_definition
-    UNION
-    SELECT title FROM legal_expression
-"""
-
-#: 在選定並量測 embedding 模型之前，稠密檢索臂維持關閉（向量與模型皆為 NULL）；
-#: 此時 `search_articles` 只回傳字面檢索的命中結果。
-_SEARCH = """
-    SELECT s.iri, s.resource_id, e.title, s.number, s.content,
-           s.score, s.lexical_score, s.dense_distance
-      FROM search_articles(
-               %(terms)s, NULL, NULL, %(tokenizer)s,
-               coalesce(%(on)s::date, current_date),
-               p_limit => %(limit)s
-           ) AS s
-      JOIN subdivision AS d ON d.iri = s.iri
-      JOIN legal_expression AS e ON e.iri = d.expression_iri
-     ORDER BY s.score DESC, s.iri
-"""
-
-_GET_RESOURCE = "SELECT iri, date_document FROM legal_resource WHERE id_local = %s"
-
+#: 該日有效的條（含文字無法取得者，它有效，只是本系統沒有其文字）。
 _LIST_ARTICLES = """
-    SELECT s.iri, s.number
-      FROM subdivision AS s
-     WHERE s.expression_iri = %s
+    SELECT corpus.version_iri(s.version_id), corpus.article_number(s.path)
+      FROM corpus.provisions_at(%(resource)s, %(language)s, %(on)s::date) AS s
+     WHERE s.provision_type = 'article'
+       AND s.status IN ('in_force', 'text_unavailable')
      ORDER BY s.sort_key
+"""
+
+#: segmenter 的詞典：法規名稱。匯入時建立索引必須用同一份詞典，否則分詞器識別碼不同，
+#: 字面檢索什麼都比對不到（04-01 §5）。
+_LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression"
+
+_SEARCH = """
+    SELECT corpus.version_iri(s.version_id), r.local_id, e.title,
+           corpus.article_number(s.path), corpus.article_text(s.version_id),
+           s.rank_score, s.lexical_score
+      FROM retrieval.search_articles(
+               %(terms)s, %(tokenizer)s, %(on)s::date, %(language)s, %(limit)s
+           ) AS s
+      JOIN corpus.legal_resource AS r ON r.id = s.resource_id
+      JOIN corpus.provision_version AS v ON v.id = s.version_id
+      JOIN corpus.legal_expression AS e ON e.id = v.expression_id
+     ORDER BY s.rank_score DESC, s.version_id
 """
 
 
@@ -138,75 +119,46 @@ class OntologyStore:
         self.close()
 
     def get_law(self, law_id: str, *, as_of: str = "") -> LawRecord | None:
-        """`as_of`（ISO 日期）當時施行的法規；為空時取現行版本。
-
-        法規不存在與沒有版本涵蓋該日期，兩種情況都回傳 None。這是兩個不同的事實，
-        由 `version_status` 加以區分——本方法是給不在意差別的呼叫端的便捷途徑。
-        """
-        status, record = self.resolve(law_id, as_of=as_of)
-        return record if status is VersionStatus.RESOLVED else None
-
-    def resolve(self, law_id: str, *, as_of: str = "") -> tuple[VersionStatus, LawRecord | None]:
-        """解析法規在某時點的版本，並區分兩種失敗方式。
-
-        要緊的是 `NO_VERSION`：法規存在，但語料並未持有該日期施行的條文。若以現行
-        條文作答，將與正確答案無從區分，因此呼叫端必須能夠表明自己不知道。
-        """
-        if not is_valid_local_id(law_id):
-            return VersionStatus.UNKNOWN_LAW, None
-        on = as_of or None
-        with self._pool.connection() as conn, conn.cursor() as cur:
-            cur.execute(_GET_RESOURCE, (law_id,))
-            resource = cur.fetchone()
-            if resource is None:
-                return VersionStatus.UNKNOWN_LAW, None
-            iri, date_document = resource
-
-            cur.execute(_RESOLVE_EXPRESSION, {"law": law_id, "on": on})
-            expression = cur.fetchone()
-        if expression is None:
-            return VersionStatus.NO_VERSION, None
-        _, title, language = expression
-        return VersionStatus.RESOLVED, LawRecord(
-            id=law_id,
-            iri=iri,
-            title=title,
-            language=language,
-            # 未知的日期在資料庫中為 NULL；線上契約的型別是字串，因此「未知」
-            # 以空字串表示。
-            date_document=date_document.isoformat() if date_document is not None else "",
-        )
+        """`as_of`（ISO 日期，空為今日）有效版本的法規；法規不存在或該日無版本時為 None。"""
+        found = self._resolve(law_id, as_of)
+        return found[1] if found else None
 
     def list_articles(self, law_id: str, *, as_of: str = "") -> list[ArticleRecord] | None:
-        """`as_of` 當時施行條文的各條。
+        """`as_of` 當日有效的各條。
 
-        法規不存在或沒有版本涵蓋該日期時為 None；該版本確實沒有任何條文時為 []。
-        兩者必須保持可區分：前者表示語料缺漏，後者是關於該法規的事實。
+        法規不存在或該日無版本時為 None；版本存在而沒有有效的條時為 []。兩者必須可以
+        區分：前者是語料缺漏，後者是關於該法規的事實。
         """
-        if not is_valid_local_id(law_id):
+        found = self._resolve(law_id, as_of)
+        if found is None:
             return None
-        on = as_of or None
+        resource_id, _ = found
         with self._pool.connection() as conn, conn.cursor() as cur:
-            cur.execute(_RESOLVE_EXPRESSION, {"law": law_id, "on": on})
-            expression = cur.fetchone()
-            if expression is None:
-                return None
-            cur.execute(_LIST_ARTICLES, (expression[0],))
+            cur.execute(
+                _LIST_ARTICLES,
+                {"resource": resource_id, "language": LANGUAGE, "on": _date(as_of)},
+            )
             return [ArticleRecord(iri=iri, number=number) for iri, number in cur.fetchall()]
 
     def lexicon(self) -> list[str]:
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(_LEXICON)
-            return [term for (term,) in cur.fetchall()]
+            return [title for (title,) in cur.fetchall()]
 
     def search(
         self, terms: str, *, tokenizer: str, as_of: str = "", limit: int = 10
     ) -> list[SearchHit]:
-        """`as_of`（為空時為今日）施行中、與已斷詞之 `terms` 相符的條文。"""
+        """`as_of`（空為今日）有效、與已分詞之 `terms` 相符的條。"""
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(
                 _SEARCH,
-                {"terms": terms, "tokenizer": tokenizer, "on": as_of or None, "limit": limit},
+                {
+                    "terms": terms,
+                    "tokenizer": tokenizer,
+                    "on": _date(as_of),
+                    "language": LANGUAGE,
+                    "limit": limit,
+                },
             )
             return [
                 SearchHit(
@@ -215,9 +167,30 @@ class OntologyStore:
                     law_title=title,
                     number=number,
                     content=content,
-                    rank_score=float(score),
+                    rank_score=float(rank),
                     lexical_score=lexical,
-                    dense_distance=dense,
                 )
-                for iri, law_id, title, number, content, score, lexical, dense in cur.fetchall()
+                for iri, law_id, title, number, content, rank, lexical in cur.fetchall()
             ]
+
+    def _resolve(self, law_id: str, as_of: str) -> tuple[int, LawRecord] | None:
+        if not is_valid_law_id(law_id):
+            return None
+        with self._pool.connection() as conn, conn.cursor() as cur:
+            cur.execute(_RESOLVE, {"law": law_id, "language": LANGUAGE, "on": _date(as_of)})
+            row = cur.fetchone()
+        if row is None:
+            return None
+        resource_id, iri, title, language, enacted = row
+        return resource_id, LawRecord(
+            id=law_id,
+            iri=iri,
+            title=title,
+            language=language,
+            date_document=enacted.isoformat() if enacted is not None else "",
+        )
+
+
+def _date(as_of: str) -> str:
+    """空的 `as_of` 表示今日；在資料庫取今日，與查詢同一個時鐘。"""
+    return as_of or "today"

@@ -19,17 +19,18 @@ service OntologyService {
 }
 
 message Law {
-  // Note: `title` and `date_document` below describe the resolved version, not the
-  // abstract norm — ELI puts the title on the expression, which is version-bearing.
-  // Local id, e.g. "air-pollution-control-act" (lowercase letters, digits, hyphens).
+  // Note: `title` describes the resolved version, not the abstract norm — ELI puts
+  // the title on the expression, which is version-bearing.
+  // Local id: the 全國法規資料庫 pcode, e.g. "O0020001" (one uppercase letter, seven digits).
   string id = 1;
   // Canonical IRI of the ELI LegalResource.
   string iri = 2;
   // Title from the LegalExpression realizing this law.
   string title = 3;
-  // BCP 47 language tag of the title, e.g. "zh-hant".
+  // ISO 639-3 language code of the title, e.g. "zho" (the same code appears in IRIs).
   string language = 4;
-  // eli:date_document as ISO 8601 date (YYYY-MM-DD); empty if unknown.
+  // eli:date_document: the law's enactment date, ISO 8601 (YYYY-MM-DD); empty when
+  // the corpus records no enactment.
   string date_document = 5;
 }
 
