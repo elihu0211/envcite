@@ -125,16 +125,7 @@ def verify(answer: str, evidence: consult_pb2.Evidence) -> tuple[str, list[str]]
 
 ## 對外 REST（platform）
 
-外部用戶端以 API key（`Authorization: Bearer sk_live_…`）呼叫 `platform`，由它轉成上述 gRPC 呼叫並計量。現有的 `/v1` 端點：
-
-| 方法 | 路徑 | 說明 |
-|------|------|------|
-| GET | `/v1/laws/{lawId}` | 包裝 `GetLaw`（現行版本） |
-| GET | `/v1/laws/{lawId}/articles` | 包裝 `ListArticles`（現行版本） |
-| POST | `/v1/ground` | 包裝 consult 的 `Ground` |
-| GET | `/v1/me`、`/v1/usage`、`/v1/api-keys` | 租戶、用量、API key 管理 |
-
-完整描述由 ASP.NET Core 產生，開發環境在 `/openapi/v1.json`。`SearchArticles` 不對外開放：要作答的呼叫端應該用 `/v1/ground`，理由見上文。
+外部用戶端以 API key（`Authorization: Bearer sk_live_…`）呼叫 `platform`，由它轉成上述 gRPC 呼叫並計量。**對外 REST 的契約是 `services/platform/openapi/v1.json`**：建置時由程式碼產生並提交，端點、欄位與回應碼以它為準；破壞性變更由 CI 擋下（見 `services/platform/AGENTS.md`）。`/v1/laws/…` 包裝 `GetLaw`、`ListArticles`，`/v1/ground` 包裝 consult 的 `Ground`。`SearchArticles` 不對外開放：要作答的呼叫端應該用 `/v1/ground`，理由見上文。
 
 **`POST /v1/ground`**
 

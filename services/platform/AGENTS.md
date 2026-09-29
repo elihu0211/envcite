@@ -37,6 +37,8 @@ dotnet ef migrations add <Name> -p src/EnvLaw.Platform.Modules.Tenancy -s src/En
 docker build -f Dockerfile ../..   # image (context = repo root); CI job `platform-image` pushes :<sha> on main
 ```
 
+Public REST contract: `openapi/v1.json`, generated on every `dotnet build` (`Microsoft.Extensions.ApiDescription.Server`; `PlatformOpenApi.cs` keeps only `/v1`, declares the API-key scheme and the 401/429 every endpoint shares). Commit it with the code change; CI fails when it is stale (`dotnet` job) and when it breaks the target branch's version (`openapi` job, oasdiff). A new `/v1` endpoint gets `.WithName` / `.WithTags` / `.WithSummary` / `.WithDescription` and a `.Produces…` per status it returns. An incompatible change goes to a new `/v2` group, not into `/v1`. Build-time generation runs `Program.cs` against a mock server; the only branch for it is the placeholder config at the top of `Program.cs`.
+
 Contracts: `Modules.Ontology` compiles the repo-root `proto/env_law/ontology/v1/ontology.proto`, `Modules.Consult` compiles `proto/env_law/consult/v2/consult.proto` (Grpc.Tools; see each `.csproj`). Never copy a `.proto`.
 
 Config (`Ontology` section): `Address` (in-cluster `dns:///env-law-ontology:50051` — headless Service, calls round-robin across pods; a plain `http://` address is a single host), `InternalToken` (must equal the service's `ONTOLOGY_INTERNAL_TOKEN`; secret), `Timeout`. Development uses `http://localhost:50051` + token `dev` (`ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology` in `services/ontology/`).
@@ -76,7 +78,7 @@ Production migrations: EF Core migration bundles (the form EF Core's docs recomm
 - Never commit secrets, connection strings, billing keys, or real `.env*` / local appsettings values.
 - Every tenant-scoped query must be filtered by `TenantId`; never disable query filters without review.
 - Bypass only the tenant filter by name (`IgnoreQueryFilters([TenantToken])`), and only in reviewed cross-tenant lookups (currently: API key authentication).
-- Generated: `src/*/Migrations/` (change via `dotnet ef`, never by hand; marked `generated_code` in `.editorconfig`), gRPC code under `obj/` (from the repo-root proto).
+- Generated: `src/*/Migrations/` (change via `dotnet ef`, never by hand; marked `generated_code` in `.editorconfig`), gRPC code under `obj/` (from the repo-root proto), `openapi/v1.json` (from `dotnet build`; never by hand).
 - Also ask before applying migrations to shared DBs (general ask-before list: root `AGENTS.md`).
 
 ## Done when

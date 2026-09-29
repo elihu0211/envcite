@@ -1,0 +1,599 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "env-law API",
+    "description": "環境法規 API。以租戶的 API key 呼叫（`Authorization: Bearer sk_live_…`）。拒答是結果、不是錯誤：`POST /v1/ground` 的證據與拒答都回 200，以 `outcome` 區分。",
+    "version": "v1"
+  },
+  "paths": {
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "租戶"
+        ],
+        "summary": "目前的租戶",
+        "description": "此 API key 所屬的租戶。",
+        "operationId": "GetCurrentTenant",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key 缺少、無效、已過期或已撤銷。"
+          },
+          "429": {
+            "description": "超過本租戶方案的速率限制。"
+          }
+        }
+      }
+    },
+    "/v1/api-keys": {
+      "get": {
+        "tags": [
+          "租戶"
+        ],
+        "summary": "列出本租戶的 API key",
+        "description": "依建立時間排序；只回傳前綴，不回傳 key 本身。",
+        "operationId": "ListApiKeys",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeySummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key 缺少、無效、已過期或已撤銷。"
+          },
+          "429": {
+            "description": "超過本租戶方案的速率限制。"
+          }
+        }
+      }
+    },
+    "/v1/api-keys/{id}": {
+      "delete": {
+        "tags": [
+          "租戶"
+        ],
+        "summary": "撤銷 API key",
+        "description": "撤銷後立即失效；重複撤銷不改變原撤銷時間。",
+        "operationId": "RevokeApiKey",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "API key 缺少、無效、已過期或已撤銷。"
+          },
+          "429": {
+            "description": "超過本租戶方案的速率限制。"
+          }
+        }
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "tags": [
+          "租戶"
+        ],
+        "summary": "本租戶的用量",
+        "description": "依操作分列的呼叫次數與計量單位。成功的呼叫才計量；拒答是成功的呼叫。",
+        "operationId": "GetUsage",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UsageSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key 缺少、無效、已過期或已撤銷。"
+          },
+          "429": {
+            "description": "超過本租戶方案的速率限制。"
+          }
+        }
+      }
+    },
+    "/v1/laws/{lawId}": {
+      "get": {
+        "tags": [
+          "法規"
+        ],
+        "summary": "取得法規",
+        "description": "`lawId` 為全國法規資料庫的 pcode（如 `O0020001`）；標題取自現行版本。成功計量為一次 `ontology.get_law`。",
+        "operationId": "GetLaw",
+        "parameters": [
+          {
+            "name": "lawId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LawDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key 缺少、無效、已過期或已撤銷。"
+          },
+          "429": {
+            "description": "超過本租戶方案的速率限制。"
+          }
+        }
+      }
+    },
+    "/v1/laws/{lawId}/articles": {
+      "get": {
+        "tags": [
+          "法規"
+        ],
+        "summary": "列出法規現行有效的各條",
+        "description": "依條次排序；`number` 照來源寫法（如 `5-1`）。成功計量為一次 `ontology.list_articles`。",
+        "operationId": "ListArticles",
+        "parameters": [
+          {
+            "name": "lawId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArticleDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key 缺少、無效、已過期或已撤銷。"
+          },
+          "429": {
+            "description": "超過本租戶方案的速率限制。"
+          }
+        }
+      }
+    },
+    "/v1/ground": {
+      "post": {
+        "tags": [
+          "接地"
+        ],
+        "summary": "為問句備妥可引用的證據，或拒答",
+        "description": "證據與拒答都回 200，以 `outcome` 區分；拒答是結果、不是錯誤，兩者都計量為一次 `consult.ground`。證據的每一條引用有代號（`L1`、`L2`…），呼叫端的模型只能以代號引用。",
+        "operationId": "Ground",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroundRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroundResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key 缺少、無效、已過期或已撤銷。"
+          },
+          "429": {
+            "description": "超過本租戶方案的速率限制。"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiKeySummary": {
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "scopes",
+          "createdAt",
+          "expiresAt",
+          "revokedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ArticleDto": {
+        "required": [
+          "iri",
+          "number"
+        ],
+        "type": "object",
+        "properties": {
+          "iri": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          }
+        }
+      },
+      "CitationDto": {
+        "required": [
+          "code",
+          "iri",
+          "label",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "iri": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "GroundRequestDto": {
+        "required": [
+          "question"
+        ],
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "asOf": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "GroundResultDto": {
+        "required": [
+          "outcome"
+        ],
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string"
+          },
+          "citations": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CitationDto"
+            }
+          },
+          "confidence": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "refusal": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RefusalDto"
+              }
+            ]
+          }
+        }
+      },
+      "LawDto": {
+        "required": [
+          "id",
+          "iri",
+          "title",
+          "language",
+          "dateDocument"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "iri": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "dateDocument": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RefusalDto": {
+        "required": [
+          "reason",
+          "detail"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "TenantResponse": {
+        "required": [
+          "id",
+          "identifier",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "UsageSummary": {
+        "required": [
+          "operation",
+          "calls",
+          "units"
+        ],
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string"
+          },
+          "calls": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "units": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKey": {
+        "type": "http",
+        "description": "租戶的 API key，由營運者核發；只在核發時顯示一次。",
+        "scheme": "bearer",
+        "bearerFormat": "API key"
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKey": [ ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "租戶"
+    },
+    {
+      "name": "法規"
+    },
+    {
+      "name": "接地"
+    }
+  ]
+}

@@ -1,3 +1,6 @@
+using System.Reflection;
+
+using EnvLaw.Platform.Api;
 using EnvLaw.Platform.Data;
 using EnvLaw.Platform.Modules.ApiAccess;
 using EnvLaw.Platform.Modules.Consult;
@@ -12,11 +15,23 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 建置時產生 OpenAPI 規格會以模擬伺服器執行本檔（進入組件為 GetDocument.Insider）：只建出端點、
+// 不處理請求也不連線，故以占位值滿足啟動時的設定檢查。
+if (Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider")
+{
+    builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+    {
+        ["ConnectionStrings:Platform"] = "Host=build-time",
+        ["Ontology:InternalToken"] = "build-time",
+        ["Consult:InternalToken"] = "build-time",
+    });
+}
+
 var connectionString = builder.Configuration.GetConnectionString("Platform")
     ?? throw new InvalidOperationException("Connection string 'Platform' is not configured.");
 var platformConfig = builder.Configuration.GetSection("Platform");
 
-builder.Services.AddOpenApi();
+builder.Services.AddPlatformOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddTenancyModule(connectionString);
 builder.Services.AddPlatformData(connectionString);
