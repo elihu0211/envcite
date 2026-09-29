@@ -47,6 +47,6 @@ flowchart LR
 - **ontology**：`GetLaw`、`ListArticles`、`SearchArticles`。檢索目前只有字面比對，語意檢索待嵌入模型選定；資料仍為樣本，全國法規資料庫的匯入管線尚未建立。
 - **consult**：`Ground`（`env_law.consult.v2`）已可運作：檢索、接地、可答性判定，回傳證據或拒答；外部經 platform 的 `POST /v1/ground` 呼叫。
 
-本機開發環境（資料庫、kind 叢集、帳密）見 [`CONTRIBUTING.md`](CONTRIBUTING.md)；開發指引見 [`AGENTS.md`](AGENTS.md)，各服務另有巢狀 `AGENTS.md`。設計論據在同層的 `env-law-docs` 倉庫；Kubernetes 清單（Argo CD 來源）在同層的 `env-law-deploy` 倉庫。
+本機開發環境（資料庫、帳密、常用指令）見 [`CONTRIBUTING.md`](CONTRIBUTING.md)；開發指引見 [`AGENTS.md`](AGENTS.md)，各服務另有巢狀 `AGENTS.md`。設計論據在同層的 `env-law-docs` 倉庫；Kubernetes 清單（Argo CD 來源）在同層的 `env-law-deploy` 倉庫。
 
 資料來源：全國法規資料庫（政府資料開放授權條款－第1版，需標示出處）。
