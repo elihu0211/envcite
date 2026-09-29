@@ -27,7 +27,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 
 各服務的指令見其 `AGENTS.md`，從**該服務目錄**執行。跨服務的從**倉庫根**執行：
 
-- **版本集中管理，不在各處各寫一份**：.NET 套件版本只在 `services/platform/Directory.Packages.props`（Central Package Management）；Python 是倉庫根的 uv workspace（`pyproject.toml` 列成員、開發工具與 ruff／mypy／pytest 設定，`uv.lock` 定版本），成員只列套件名稱，加依賴用 `uv add --raw <pkg>`。唯一例外是有相容性理由的下界（如 `env-law-proto` 的 protobuf 執行期），理由寫在旁邊。
+- **版本集中管理，不在各處各寫一份**：.NET 套件版本只在 `services/platform/Directory.Packages.props`（Central Package Management）；Python 是倉庫根的 uv workspace（`pyproject.toml` 列成員、開發工具與 ruff／mypy／pytest 設定，`uv.lock` 定版本），成員只列套件名稱，加依賴用 `uv add --raw <pkg>`。唯一例外是有相容性理由的下界（如 `env-law-proto` 的 protobuf 執行期），理由寫在旁邊。工具與映像的版本若必須出現在多處（CI 變數、Dockerfile 的 `ARG`、文件中的指令），各處標上 `# renovate:` 註解或由 `renovate.json5` 的規則涵蓋，並歸入同一個 `groupName`，一起升版。
 
 ```bash
 # 契約
