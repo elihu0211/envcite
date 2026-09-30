@@ -13,13 +13,10 @@ from pathlib import Path
 
 import psycopg
 
-from env_law_ontology.acquire.cli import EXIT_INVALID
+from env_law_ontology.acquire.cli import EXIT_INVALID, SOURCES
 from env_law_ontology.acquire.engine import InvalidSnapshot
-from env_law_ontology.acquire.moj import Moj
 from env_law_ontology.ingest.importer import BatchRejected, run
 from env_law_ontology.projection import rebuild
-
-SOURCES = {s.name: s for s in (Moj(),)}
 
 
 def main() -> None:
