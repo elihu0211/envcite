@@ -1,6 +1,7 @@
 # The build context is the repo root; send only what the image needs.
 *
 !proto
+proto/**/*.md
 !services/platform/global.json
 !services/platform/Directory.Build.props
 !services/platform/Directory.Packages.props
