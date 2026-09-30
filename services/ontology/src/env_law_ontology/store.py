@@ -76,10 +76,9 @@ _LIST_ARTICLES = """
      ORDER BY s.sort_key
 """
 
-#: 現用的分詞器識別碼與其詞典（03-04 §5）。詞典存在投影上，不由標題現算：標題在建置與
-#: 讀取之間可能已改變，現算的詞典會與識別碼不符（04-01 §5）。
-_ACTIVE_TOKENIZER = "SELECT tokenizer FROM retrieval.projection WHERE active"
-_PROJECTION_TERMS = "SELECT terms FROM retrieval.projection WHERE tokenizer = %s"
+#: segmenter 的詞典：法規名稱。建索引必須用同一份詞典，否則分詞器識別碼不同，字面檢索
+#: 什麼都比對不到（04-01 §5）。
+_LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression"
 
 _SEARCH = """
     SELECT corpus.version_iri(s.version_id), r.local_id, e.title,
@@ -139,18 +138,10 @@ class OntologyStore:
             )
             return [ArticleRecord(iri=iri, number=number) for iri, number in cur.fetchall()]
 
-    def active_tokenizer(self) -> str | None:
-        """現用的分詞器識別碼；尚未建置投影時為 None。"""
+    def lexicon(self) -> list[str]:
         with self._pool.connection() as conn, conn.cursor() as cur:
-            cur.execute(_ACTIVE_TOKENIZER)
-            row = cur.fetchone()
-            return str(row[0]) if row else None
-
-    def projection_terms(self, tokenizer: str) -> list[str]:
-        with self._pool.connection() as conn, conn.cursor() as cur:
-            cur.execute(_PROJECTION_TERMS, (tokenizer,))
-            row = cur.fetchone()
-            return [str(t) for t in row[0]] if row else []
+            cur.execute(_LEXICON)
+            return [title for (title,) in cur.fetchall()]
 
     def search(
         self, terms: str, *, tokenizer: str, as_of: str = "", limit: int = 10

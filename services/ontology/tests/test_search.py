@@ -1,7 +1,7 @@
 """SearchArticles end to end: the service segments the query itself.
 
 Content is indexed with a segmenter built from the same lexicon the server reads
-from the active projection, so the test exercises the one property the RPC exists for — both
+at startup, so the test exercises the one property the RPC exists for — both
 sides reach the same segmentation — rather than handing the database words.
 """
 
@@ -38,13 +38,7 @@ def search_stub(
     assert expression is not None
     conn.commit()
 
-    segmenter = Segmenter(
-        [str(t) for (t,) in conn.execute("SELECT DISTINCT title FROM corpus.legal_expression")]
-    )
-    conn.execute(
-        "INSERT INTO retrieval.projection (tokenizer, terms, active) VALUES (%s, %s, true)",
-        (segmenter.tokenizer_id, list(segmenter.terms)),
-    )
+    segmenter = Segmenter(store.lexicon())
     for number, content in (
         ("9", "工廠不得發出超過管制標準之噪音。"),
         ("10", "主管機關應定期檢查。"),

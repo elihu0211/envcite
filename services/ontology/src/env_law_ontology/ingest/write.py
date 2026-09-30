@@ -35,21 +35,21 @@ class Applied:
     changed: int = 0
 
 
-def apply(conn: Conn, law: ParsedLaw, *, first_import: bool, run_id: int | None) -> Applied:
+def apply(conn: Conn, law: ParsedLaw, *, first_import: bool) -> Applied:
     assert law.version_date is not None
     resource = _upsert_resource(conn, law)
     latest = _latest_expression(conn, resource)
     if first_import or latest is None:
-        _replace_all(conn, resource, law, run_id)
+        _replace_all(conn, resource, law)
         return Applied("added")
 
     expression, version_date = latest
     if law.version_date < version_date:
         return Applied("regressed")
     if law.version_date > version_date:
-        _add_version(conn, resource, expression, law, run_id)
+        _add_version(conn, resource, expression, law)
         return Applied("versioned")
-    return _sync_current(conn, resource, expression, law, run_id)
+    return _sync_current(conn, resource, expression, law)
 
 
 def _interval(u: ParsedUnit) -> Interval:
@@ -160,48 +160,44 @@ def _ensure_provisions(conn: Conn, resource: int, units: list[ParsedUnit]) -> No
             )
 
 
-def _insert_versions(
-    conn: Conn, resource: int, expression: int, units: list[ParsedUnit], run_id: int | None
-) -> None:
+def _insert_versions(conn: Conn, resource: int, expression: int, units: list[ParsedUnit]) -> None:
     with conn.cursor() as cur:
         cur.executemany(
             "INSERT INTO corpus.provision_version"
-            " (provision_id, expression_id, resource_id, content, in_force, commencement, run_id)"
+            " (provision_id, expression_id, resource_id, content, in_force, commencement)"
             " VALUES ((SELECT id FROM corpus.provision WHERE resource_id = %s AND path = %s),"
-            "         %s, %s, %s, %s, %s::corpus.commencement_rule, %s)",
+            "         %s, %s, %s, %s, %s::corpus.commencement_rule)",
             [
-                (resource, u.path, expression, resource, u.content, _interval(u), u.rule, run_id)
+                (resource, u.path, expression, resource, u.content, _interval(u), u.rule)
                 for u in units
             ],
         )
 
 
-def _replace_all(conn: Conn, resource: int, law: ParsedLaw, run_id: int | None) -> None:
+def _replace_all(conn: Conn, resource: int, law: ParsedLaw) -> None:
     for table in ("provision", "lifecycle_event", "legal_expression"):
         conn.execute(f"DELETE FROM corpus.{table} WHERE resource_id = %s", (resource,))
     expression = _insert_expression(conn, resource, law)
     _replace_events(conn, resource, law)
     _ensure_provisions(conn, resource, law.units)
-    _insert_versions(conn, resource, expression, law.units, run_id)
+    _insert_versions(conn, resource, expression, law.units)
 
 
-def _add_version(
-    conn: Conn, resource: int, previous: int, law: ParsedLaw, run_id: int | None
-) -> None:
+def _add_version(conn: Conn, resource: int, previous: int, law: ParsedLaw) -> None:
     assert law.version_date is not None
     conn.execute(
         "UPDATE corpus.legal_expression SET text_period = daterange(version_date, %s)"
         " WHERE id = %s",
         (law.version_date, previous),
     )
-    _close_previous(conn, previous, law.units, run_id)
+    _close_previous(conn, previous, law.units)
     expression = _insert_expression(conn, resource, law)
     _replace_events(conn, resource, law)
     _ensure_provisions(conn, resource, law.units)
-    _insert_versions(conn, resource, expression, law.units, run_id)
+    _insert_versions(conn, resource, expression, law.units)
 
 
-def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit], run_id: int | None) -> None:
+def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
     """前一版各單元的效力止於新版的起點（表 tbl:actions 的「新增版本」）。
 
     新版同路徑單元的起點已知者止於該起點；新版沒有該路徑者止於新版各單元已知起點的最小
@@ -237,18 +233,15 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit], run_id: 
         if end > in_force.lower:
             conn.execute(
                 "INSERT INTO corpus.provision_version"
-                " (provision_id, expression_id, resource_id, content, in_force, commencement,"
-                "  run_id)"
-                " SELECT provision_id, expression_id, resource_id, content, %s, commencement, %s"
+                " (provision_id, expression_id, resource_id, content, in_force, commencement)"
+                " SELECT provision_id, expression_id, resource_id, content, %s, commencement"
                 "   FROM corpus.provision_version WHERE id = %s",
-                (Range(in_force.lower, end, "[)"), run_id, version_id),
+                (Range(in_force.lower, end, "[)"), version_id),
             )
         # 新版的起點不晚於舊版的起點：舊版從未有效，只結束、不補新列。
 
 
-def _sync_current(
-    conn: Conn, resource: int, expression: int, law: ParsedLaw, run_id: int | None
-) -> Applied:
+def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) -> Applied:
     current: dict[str, tuple[int, bytes, Interval, str]] = {}
     for version_id, path, sha, in_force, rule in conn.execute(
         "SELECT v.id, p.path, v.content_sha256, v.in_force, v.commencement::text"
@@ -284,7 +277,7 @@ def _sync_current(
     ).fetchone()
     if previous is not None:
         assert isinstance(previous[0], int)
-        _close_previous(conn, previous[0], law.units, run_id)
+        _close_previous(conn, previous[0], law.units)
 
     if text_changed or derived_changed:
         replace = [p for p in (*text_changed, *derived_changed) if p in parsed]
@@ -295,7 +288,7 @@ def _sync_current(
                 (ended,),
             )
         _ensure_provisions(conn, resource, [parsed[p] for p in replace])
-        _insert_versions(conn, resource, expression, [parsed[p] for p in replace], run_id)
+        _insert_versions(conn, resource, expression, [parsed[p] for p in replace])
 
     conn.execute(
         "UPDATE corpus.legal_expression SET title = %s WHERE id = %s AND title <> %s",

@@ -1,36 +1,12 @@
--- 0006_incremental — 增量更新與週期執行所需的綱要
+-- 0006_incremental — 增量更新所需的綱要
 --
--- 設計見 env-law-docs 03-04：記錄時間、內容雜湊、運行紀錄、投影的識別碼並存。
-
--- 每次執行一列：串接的三步各自到達哪裡、結果、各動作的法規數與驗收比例。
-CREATE TABLE source.run (
-    id               bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    source           text NOT NULL CHECK (source <> ''),
-    started_at       timestamptz NOT NULL DEFAULT now(),
-    finished_at      timestamptz,
-    step             text NOT NULL DEFAULT 'acquire' CHECK (step IN ('acquire', 'import', 'projection')),
-    outcome          text CHECK (outcome IN ('success', 'unchanged', 'rejected', 'failed')),
-    exit_code        smallint,
-    snapshots_new    integer,
-    laws_added       integer,
-    laws_versioned   integer,
-    laws_corrected   integer,
-    laws_refreshed   integer,
-    laws_rejected    integer,
-    articles_indexed integer,
-    -- 驗收的四個比例（03-03 §7）。
-    ratios           jsonb,
-    CONSTRAINT run_finished_together CHECK ((finished_at IS NULL) = (outcome IS NULL))
-);
-
-CREATE INDEX run_by_source ON source.run (source, started_at DESC);
+-- 設計見 env-law-docs 03-04：記錄時間與內容雜湊。
 
 -- 記錄時間：更正與推導修正是新增一列並結束舊列，不覆寫（03-02 §5）。
 ALTER TABLE corpus.provision_version
     ADD COLUMN recorded_at    timestamptz NOT NULL DEFAULT now(),
     ADD COLUMN superseded_at  timestamptz,
     ADD COLUMN content_sha256 bytea,
-    ADD COLUMN run_id         bigint REFERENCES source.run ON DELETE SET NULL,
     ADD CONSTRAINT provision_version_superseded_after_recorded
         CHECK (superseded_at IS NULL OR superseded_at > recorded_at);
 
@@ -179,20 +155,3 @@ AS $$
      ORDER BY ts_rank_cd(i.content_tsv, q.query) DESC, v.id
      LIMIT p_limit;
 $$;
-
--- 投影的識別碼並存：換版時新舊識別碼的列同時在表中，翻轉現用旗標後才回收舊列（03-04 §5）。
--- 詞典存在此處而不由標題現算：標題在建置與服務端讀取之間可能已改變，現算的詞典會與
--- 識別碼不符。
-ALTER TABLE retrieval.article_index
-    DROP CONSTRAINT article_index_pkey,
-    ADD PRIMARY KEY (provision_version_id, tokenizer);
-
-CREATE TABLE retrieval.projection (
-    tokenizer text PRIMARY KEY CHECK (tokenizer <> ''),
-    terms     text[] NOT NULL,
-    built_at  timestamptz NOT NULL DEFAULT now(),
-    active    boolean NOT NULL DEFAULT false
-);
-
--- 現用的識別碼至多一個。
-CREATE UNIQUE INDEX projection_one_active ON retrieval.projection (active) WHERE active;
