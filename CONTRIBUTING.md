@@ -3,15 +3,15 @@
 ## 快速入門
 
 ```bash
-docker compose up -d              # 開發用 PostgreSQL（compose.yaml；各分支共用）
+docker compose up -d              # 開發用 PostgreSQL（compose.yaml；各分支共用一個庫）
 wt switch --create feat/<簡述>    # 開分支：建 worktree 並裝好依賴
 
-wt ontology                       # 以下各開一個終端機；自動建本分支的資料庫並遷移
+wt ontology                       # 以下各開一個終端機；ontology 啟動前先遷移
 wt consult
 wt platform
 wt list                           # URL 欄＝本分支 platform 的位址
 
-wt remove feat/<簡述>             # 合併後收尾：刪 worktree、分支與本分支的資料庫
+wt remove feat/<簡述>             # 合併後收尾：刪 worktree 與分支
 ```
 
 ## 連線資訊
@@ -20,23 +20,23 @@ wt remove feat/<簡述>             # 合併後收尾：刪 worktree、分支與
 
 帳號 `postgres`、密碼 `postgres`，位址 `localhost:5432`。
 
-| 資料庫 | 建立與刪除 |
-|--------|------------|
-| `ontology_<分支代號>` | `wt ontology` 時建立；`wt remove` 時刪除 |
-| `platform_<分支代號>` | `wt platform` 時建立；`wt remove` 時刪除 |
-| `envlaw_platform` | 不經 `wt`、直接 `dotnet run` platform 時建立 |
+| 資料庫 | 服務 | 建立 |
+|--------|------|------|
+| `ontology_dev` | ontology | 資料目錄第一次初始化時由映像建立（`compose.yaml` 的 `POSTGRES_DB`） |
+| `envlaw_platform` | platform | `wt platform` 或直接 `dotnet run` 啟動時，platform 自己建庫並遷移 |
 
-**分支代號**由分支名推導（`.config/wt.toml` 的 `sanitize_db`）：轉小寫、非英數字轉底線，再加 3 碼雜湊。例如 `main` → `main_vfz`，`feat/import-pipeline` → `feat_import_pipeline_wq5`。`main` 分支的 ontology 資料庫：
+各分支共用這兩個庫：同一時間只跑一條分支的服務，否則兩邊的遷移會互相覆寫。
 
 ```text
-postgresql://postgres:postgres@localhost:5432/ontology_main_vfz
+postgresql://postgres:postgres@localhost:5432/ontology_dev
 ```
 
 ```bash
-wt step eval '{{ branch | sanitize_db }}'                          # 在該分支的 worktree 內執行，印出分支代號
 docker compose exec postgres psql -U postgres -l                   # 列出所有資料庫
-docker compose exec postgres psql -U postgres -d ontology_main_vfz # 進入某個資料庫
+docker compose exec postgres psql -U postgres -d ontology_dev      # 進入某個資料庫
 ```
+
+遷移檔改過（已套用的檔案內容改變）時，庫要重建：`docker compose exec postgres psql -U postgres -c 'DROP DATABASE ontology_dev WITH (FORCE)' -c 'CREATE DATABASE ontology_dev'`，再重新同步資料。
 
 ### 其他
 
@@ -111,7 +111,7 @@ CI 依改動路徑分流：
 ## 環境說明
 
 - **開發用 PostgreSQL**（`compose.yaml`）：與 ontology 測試同一個映像（綱要只用 PostgreSQL 自帶的 `btree_gist`）；只綁 `127.0.0.1`。資料在 volume `env-law_pgdata`，`docker compose down` 不刪資料，從零開始用 `docker compose down -v`。
-- **每條分支一棵 worktree**（`.config/wt.toml`）：port 與資料庫名由分支推導，平行的分支不相撞。
+- **每條分支一棵 worktree**（`.config/wt.toml`）：port 由分支推導，平行的分支不相撞；資料庫各分支共用。
 
 ## 準備工具
 
