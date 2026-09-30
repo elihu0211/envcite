@@ -39,16 +39,16 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 
 ### 平行 worktree
 
-每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree；環境由 `.config/wt.toml` 建立，不靠手動：建樹時各服務裝好依賴。本機伺服器用別名起，port 由分支推導，平行的樹不相撞；資料庫各服務一個固定的庫（`ontology_dev`、`envlaw_platform`），各分支共用，同一時間只跑一條分支的服務：
+每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree；環境由 `.config/wt.toml` 建立，不靠手動：建樹時各服務裝好依賴。本機伺服器用別名起，port 由分支推導，平行的樹不相撞；資料庫是本機叢集裡的 CloudNativePG，各服務一個固定的庫（`env_law`、`platform`），各分支共用，同一時間只跑一條分支的服務：
 
 ```bash
-wt platform    # dotnet run；庫 envlaw_platform，自動建庫並遷移
-wt ontology    # env-law-migrate（庫 ontology_dev）→ gRPC 伺服器
+wt platform    # dotnet run；庫 platform，自動遷移
+wt ontology    # env-law-migrate（庫 env_law）→ gRPC 伺服器
 wt consult     # gRPC 伺服器，指向本樹的 ontology（platform 的 /v1/ground 需要它）
 wt list        # URL 欄是本樹 platform 的位址
 ```
 
-platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgres`/`postgres`，同 `appsettings.Development.json`），由倉庫根的 `compose.yaml` 提供（`docker compose up -d`），帳密見 `CONTRIBUTING.md`。測試不經此路——Testcontainers 每次自起一個庫。
+platform 與 ontology 都假設資料庫在 `localhost:5432`（帳號／密碼 `env_law`／`env_law`，同 `appsettings.Development.json`）：那是 `env-law-deploy` 的 `local/up.sh` 建的本機叢集裡的 CloudNativePG，先跑過它才有庫。測試不經此路——Testcontainers 每次自起一個庫。
 
 ## 目錄配置與擴充判準
 

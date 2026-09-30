@@ -3,7 +3,7 @@
 ## 快速入門
 
 ```bash
-docker compose up -d              # 開發用 PostgreSQL（compose.yaml；各分支共用一個庫）
+../env-law-deploy/local/up.sh     # 本機叢集：內有開發用的 CloudNativePG（見該庫 README）
 wt switch --create feat/<簡述>    # 開分支：建 worktree 並裝好依賴
 
 wt ontology                       # 以下各開一個終端機；ontology 啟動前先遷移
@@ -18,25 +18,30 @@ wt remove feat/<簡述>             # 合併後收尾：刪 worktree 與分支
 
 ### PostgreSQL
 
-帳號 `postgres`、密碼 `postgres`，位址 `localhost:5432`。
+開發用的資料庫就是本機叢集裡的 CloudNativePG（與正式區同一種），由 `env-law-deploy` 的 `local/up.sh` 建立；主機上的程式連 `localhost:5432`（設定與埠對應見該庫 README）。
 
-| 資料庫 | 服務 | 建立 |
-|--------|------|------|
-| `ontology_dev` | ontology | 資料目錄第一次初始化時由映像建立（`compose.yaml` 的 `POSTGRES_DB`） |
-| `envlaw_platform` | platform | `wt platform` 或直接 `dotnet run` 啟動時，platform 自己建庫並遷移 |
+| 項目 | 值 |
+|------|----|
+| 位址 | `localhost:5432` |
+| 帳號／密碼 | `env_law`／`env_law`（本機固定值，非機密） |
+| 資料庫 | `env_law`（ontology）、`platform`（platform） |
+
+```text
+postgresql://env_law:env_law@localhost:5432/env_law
+```
 
 各分支共用這兩個庫：同一時間只跑一條分支的服務，否則兩邊的遷移會互相覆寫。
 
-```text
-postgresql://postgres:postgres@localhost:5432/ontology_dev
+```bash
+kubectl -n env-law exec -it env-law-pg-1 -c postgres -- psql -U postgres -d env_law   # 進入資料庫（主節點的 pod 名稱以 kubectl -n env-law get cluster 為準）
 ```
+
+遷移檔改過（已套用的檔案內容改變）時，清掉 ontology 的綱要後重新遷移，再重新同步資料：
 
 ```bash
-docker compose exec postgres psql -U postgres -l                   # 列出所有資料庫
-docker compose exec postgres psql -U postgres -d ontology_dev      # 進入某個資料庫
+kubectl -n env-law exec env-law-pg-1 -c postgres -- psql -U postgres -d env_law \
+  -c 'DROP SCHEMA corpus, source, retrieval CASCADE' -c 'DROP TABLE schema_migration'
 ```
-
-遷移檔改過（已套用的檔案內容改變）時，庫要重建：`docker compose exec postgres psql -U postgres -c 'DROP DATABASE ontology_dev WITH (FORCE)' -c 'CREATE DATABASE ontology_dev'`，再重新同步資料。
 
 ### 其他
 
@@ -77,7 +82,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 | .NET SDK 與映像 | `services/platform/global.json`、`services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `dotnet` job |
 | Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG PYTHON_VERSION` |
 | uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
-| PostgreSQL | `compose.yaml`、`.gitlab-ci.yml` 的 `ontology` job、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs`；主版本與 env-law-deploy 的 `Cluster` 相同 |
+| PostgreSQL | `.gitlab-ci.yml` 的 `ontology` job、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs`；主版本與 env-law-deploy 的 `Cluster`（本機開發的資料庫也是它）相同 |
 | buf | `.gitlab-ci.yml` 的 `proto` job、本檔與 `AGENTS.md` 的指令 |
 | oasdiff | `.gitlab-ci.yml` 的 `openapi` job |
 | Docker（映像建置） | `.gitlab-ci.yml` 的 `.image` |
@@ -110,7 +115,7 @@ CI 依改動路徑分流：
 
 ## 環境說明
 
-- **開發用 PostgreSQL**（`compose.yaml`）：與 ontology 測試同一個映像（綱要只用 PostgreSQL 自帶的 `btree_gist`）；只綁 `127.0.0.1`。資料在 volume `env-law_pgdata`，`docker compose down` 不刪資料，從零開始用 `docker compose down -v`。
+- **開發用 PostgreSQL**：本機叢集裡的 CloudNativePG（`env-law-deploy`），與正式區同一種；主機上的程式連 `localhost:5432`。測試不經它——Testcontainers 每次自起一個庫。
 - **每條分支一棵 worktree**（`.config/wt.toml`）：port 由分支推導，平行的分支不相撞；資料庫各分支共用。
 
 ## 準備工具
