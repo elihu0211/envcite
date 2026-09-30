@@ -60,6 +60,10 @@ def parse(histories: str) -> list[Event]:
         when = roc_date(*m.groups()) if m else None
         doc = _DOC_NO.match(entry[m.end() :] if m else entry)
         events.append(Event(kind, when, doc.group(1) if doc else None, entry))
+    # 沿革的第一筆就是制定：之前沒有別的公布。動詞不明（「令公布」「公布施行」）也是。
+    if events and events[0].kind == "unknown" and _PROMULGATED.search(events[0].text):
+        first = events[0]
+        events[0] = Event("enactment", first.date, first.document_no, first.text)
     return events
 
 
@@ -67,10 +71,20 @@ _JURISDICTION = re.compile(r"公告.*(?:管轄|權責|改由|移由|職權)")
 _FULL_TEXT = re.compile(r"全文")
 _AMEND = re.compile(r"修正|增訂|刪除")
 _ENACT = re.compile(r"制定|訂定|[公發]布同日施行|公布全文|發布全文")
-_COMMENCEMENT = re.compile(r"[公發]布(?:.*定[自於]|自.*施行)")
+# 施行命令：「令發布定自某日施行」「令定自某日生效」，或只有「施行」「生效」。
+_COMMENCEMENT = re.compile(r"定[自於].*(?:施行|生效)|[公發]布.*自.*(?:施行|生效)")
+_BARE_COMMENCEMENT = re.compile(r"(?:自)?(?:同日|當日)?(?:起)?(?:施行|生效)")
+# 公布或發布了某幾條的條文，沒有寫修正或增訂。
+_PROMULGATED = re.compile(r"公布|發布")
+_ARTICLES_PROMULGATED = re.compile(r"[公發]布.*第[0-9]+(?:-[0-9]+)?.*條條文")
 _REPEAL_PART = re.compile(r"廢止第")
 _REPEAL = re.compile(r"廢止")
 _CORRECT = re.compile(r"更正|勘誤")
+
+
+def _after_issuer(text: str) -> str:
+    """去掉發文機關與文號（到「令」「函」為止），剩下的是動作。"""
+    return re.sub(r"^[^令函]*?[令函]", "", text)
 
 
 def classify(entry: str) -> str | None:
@@ -82,7 +96,7 @@ def classify(entry: str) -> str | None:
         return None
     if "失效" in text:
         return "sunset"
-    if "停止適用" in text or "停止管理" in text:
+    if "停止適用" in text or "停止管理" in text or "停用" in text:
         return "suspension"
     if _REPEAL.search(text) and not _REPEAL_PART.search(text) and not _AMEND.search(text):
         return "repeal"
@@ -92,7 +106,9 @@ def classify(entry: str) -> str | None:
         return "partial_amendment"
     if _ENACT.search(text):
         return "enactment"
-    if _COMMENCEMENT.search(text):
+    if _ARTICLES_PROMULGATED.search(text):
+        return "partial_amendment"
+    if _COMMENCEMENT.search(text) or _BARE_COMMENCEMENT.fullmatch(_after_issuer(text)):
         return "commencement"
     if _CORRECT.search(text):
         return "correction"

@@ -90,8 +90,31 @@ def test_numbering_only_entry_is_dropped() -> None:
         ),
         ("中華民國一百年一月一日司法院院台廳民一字第 1 號函准予備查停止適用", "suspension"),
         ("中華民國九十年六月一日行政院台防字第 1 號函核定", "unknown"),
+        (
+            "中華民國一百一十一年五月十日交通部交航字第 1 號令定自一百十一年七月一日施行",
+            "commencement",
+        ),
+        (
+            "中華民國一百零二年十一月十四日經濟部令發布除第 8 條外，其餘自同日施行",
+            "commencement",
+        ),
+        ("中華民國三十六年十二月二十五日施行", "commencement"),
+        ("中華民國一百零三年一月二十二日生效", "commencement"),
+        (
+            "中華民國一百零五年十二月二十八日交通部令發布第224-1條條文，自一百零六年九月八日施行",
+            "partial_amendment",
+        ),
+        ("中華民國六十五年二月十六日內政部令發布第24～26條條文停用", "suspension"),
         ("中華民國一百零二年七月二十三日公告第 4 條權責事項改由衛生福利部管轄", None),
     ],
 )
 def test_classify(text: str, kind: str | None) -> None:
     assert classify(text) == kind
+
+
+def test_the_first_entry_with_an_unspecified_promulgation_is_the_enactment() -> None:
+    first, later = parse(
+        "1.中華民國二十九年六月二十九日國民政府公布施行\r\n2.中華民國三十年六月二十九日國民政府公布"
+    )
+    # 沿革的第一筆之前沒有別的公布；之後的同樣寫法不能這樣推定。
+    assert first.kind == "enactment" and later.kind == "unknown"
