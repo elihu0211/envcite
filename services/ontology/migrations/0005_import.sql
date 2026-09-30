@@ -11,9 +11,7 @@ ALTER TABLE corpus.lifecycle_event
     ALTER COLUMN event_date DROP NOT NULL,
     ADD COLUMN source_text text CHECK (source_text <> ''),
     ADD CONSTRAINT lifecycle_event_dated_or_sourced
-        CHECK (event_date IS NOT NULL OR source_text IS NOT NULL),
-    ADD CONSTRAINT lifecycle_event_unknown_keeps_source
-        CHECK (kind <> 'unknown' OR source_text IS NOT NULL);
+        CHECK (event_date IS NOT NULL OR source_text IS NOT NULL);
 
 -- 生效日如何得出（03-03 §6）。無法確定者不猜：效力區間為空值，由此欄區分「待確認」與
 -- 「等命令定施行日」。
