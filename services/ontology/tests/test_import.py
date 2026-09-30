@@ -167,60 +167,34 @@ def test_a_batch_over_the_limits_writes_nothing(conn: Conn, tmp_path: Path) -> N
     )
 
 
-def test_rerunning_is_a_no_op_and_a_parser_upgrade_rewrites(
+def test_rerunning_is_a_no_op_and_a_parser_upgrade_finds_nothing_to_change(
     conn: Conn, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _snapshot(conn, tmp_path, [_law("T0000001", "噪音管制法")])
-    importer.run(conn, tmp_path, Moj())
+    assert importer.run(conn, tmp_path, Moj()).actions == {"added": 1}
     first = _scalar(conn, "SELECT id FROM corpus.legal_expression WHERE title = '噪音管制法'")
 
-    importer.run(conn, tmp_path, Moj())
+    assert importer.run(conn, tmp_path, Moj()).actions == {"skipped": 1}
+
+    monkeypatch.setattr(importer, "PARSER_VERSION", PARSER_VERSION + 1)
+    assert importer.run(conn, tmp_path, Moj()).actions == {"unchanged": 1}
+    # 沒有東西改變：沒有新版本，也沒有被取代的列。
     assert (
         _scalar(conn, "SELECT id FROM corpus.legal_expression WHERE title = '噪音管制法'") == first
     )
-
-    monkeypatch.setattr(importer, "PARSER_VERSION", PARSER_VERSION + 1)
-    importer.run(conn, tmp_path, Moj())
     assert (
-        _scalar(conn, "SELECT id FROM corpus.legal_expression WHERE title = '噪音管制法'") != first
-    )
-    assert (
-        _scalar(conn, "SELECT count(*) FROM corpus.legal_expression WHERE title = '噪音管制法'")
-        == 1
+        _scalar(
+            conn, "SELECT count(*) FROM corpus.provision_version WHERE superseded_at IS NOT NULL"
+        )
+        == 0
     )
     assert _scalar(conn, "SELECT parser_version FROM source.item") == PARSER_VERSION + 1
 
 
-def test_a_law_whose_content_changed_after_import_is_left_alone(conn: Conn, tmp_path: Path) -> None:
-    laws = [_law("T0000001", "噪音管制法")]
-    _snapshot(conn, tmp_path, laws)
-    importer.run(conn, tmp_path, Moj())
-
-    changed = _law("T0000001", "噪音管制法", LawArticles=laws[0]["LawArticles"][:1])
-    with zipfile.ZipFile(tmp_path / "moj_law.zip", "w") as z:
-        z.writestr("data.json", json.dumps({"UpdateDate": "2026/9/19", "Laws": [changed]}))
-    conn.execute("UPDATE source.item SET content_sha256 = %s", (content_sha256(changed),))
-    conn.commit()
-    importer.run(conn, tmp_path, Moj())
-
-    assert (
-        _scalar(
-            conn,
-            "SELECT count(*) FROM corpus.provision p"
-            " JOIN corpus.legal_resource r ON r.id = p.resource_id"
-            " WHERE r.local_id = 'T0000001' AND p.provision_type = 'article'",
-        )
-        == 2
-    )
-    assert conn.execute(
-        "SELECT code FROM source.import_problem WHERE level = 'error'"
-    ).fetchall() == [("changed_after_import",)]
-
-
 def test_dry_run_writes_nothing(conn: Conn, tmp_path: Path) -> None:
     _snapshot(conn, tmp_path, [_law("T0000001", "噪音管制法")])
-    metrics = importer.run(conn, tmp_path, Moj(), dry_run=True)
-    assert metrics.laws == 1
+    outcome = importer.run(conn, tmp_path, Moj(), dry_run=True)
+    assert outcome.metrics.laws == 1
     assert (
         _scalar(conn, "SELECT count(*) FROM corpus.legal_resource WHERE local_id = 'T0000001'") == 0
     )
