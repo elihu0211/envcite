@@ -15,7 +15,7 @@ platform = "cd services/platform && dotnet restore && dotnet tool restore"
 [list]
 url = "http://localhost:{{ ('env-law/platform/' ~ branch) | hash_port }}"
 
-# 本機伺服器：`wt platform`、`wt ontology`、`wt consult`（platform 的 /v1/ground 要後兩者都在）。
+# 本機伺服器：`wt platform`、`wt ontology`、`wt consult`（platform 的 /v2/ground 要後兩者都在）。
 [aliases]
 platform = """
 cd '{{ worktree_path }}/services/platform' && \
