@@ -8,8 +8,8 @@ from datetime import date
 import grpc
 
 from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
-from env_law_ontology.segmentation import ActiveSegmenter
 from env_law_ontology.store import OntologyStore
+from env_law_segmenter import Segmenter
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ MAX_SEARCH_LIMIT = 50
 
 
 class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
-    def __init__(self, store: OntologyStore, segmenter: ActiveSegmenter) -> None:
+    def __init__(self, store: OntologyStore, segmenter: Segmenter) -> None:
         self._store = store
         self._segmenter = segmenter
 
@@ -58,8 +58,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         self, request: ontology_pb2.SearchArticlesRequest, context: grpc.ServicerContext
     ) -> ontology_pb2.SearchArticlesResponse:
         _log_call(context, "SearchArticles", request.query)
-        segmenter = self._segmenter.current()
-        terms = segmenter.to_tsvector_input(request.query)
+        terms = self._segmenter.to_tsvector_input(request.query)
         if not terms:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "query must not be empty")
         limit = request.limit or DEFAULT_SEARCH_LIMIT
@@ -70,7 +69,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         _check_as_of(context, request.as_of)
 
         hits = self._store.search(
-            terms, tokenizer=segmenter.tokenizer_id, as_of=request.as_of, limit=limit
+            terms, tokenizer=self._segmenter.tokenizer_id, as_of=request.as_of, limit=limit
         )
         return ontology_pb2.SearchArticlesResponse(
             hits=[

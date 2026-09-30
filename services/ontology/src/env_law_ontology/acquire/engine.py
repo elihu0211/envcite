@@ -20,8 +20,6 @@ from typing import Protocol
 
 from psycopg import Connection
 
-from env_law_ontology.locks import advisory
-
 log = logging.getLogger(__name__)
 
 _CHUNK = 1 << 20
@@ -78,8 +76,7 @@ class Outcome:
 
 
 def acquire(source: Source, root: Path, conn: Connection[tuple[object, ...]]) -> list[Outcome]:
-    with advisory(conn, f"acquire:{source.name}"):
-        return [_acquire_feed(source, feed, root, conn) for feed in source.feeds]
+    return [_acquire_feed(source, feed, root, conn) for feed in source.feeds]
 
 
 def _acquire_feed(

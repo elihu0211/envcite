@@ -62,10 +62,8 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
             (list(FIXTURE_LAWS),),
         )
         c.execute("TRUNCATE source.import_problem, source.item, source.snapshot")
-        c.execute("DELETE FROM source.run")
         # 樣本的條文也會被建索引；索引是衍生物，測試之間不留。
         c.execute("DELETE FROM retrieval.article_index")
-        c.execute("DELETE FROM retrieval.projection")
         c.commit()
 
 

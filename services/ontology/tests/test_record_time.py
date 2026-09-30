@@ -150,34 +150,3 @@ def test_superseded_must_come_after_recorded(conn: Conn) -> None:
             " VALUES (%s, %s, %s, 'x', NULL, 'unconfirmed', now() - interval '1 day')",
             (article, expression, law),
         )
-
-
-def test_projection_rows_of_two_tokenizers_coexist_and_one_is_active(conn: Conn) -> None:
-    law, expression, article = _one(conn)
-    _version(conn, article, expression, law, "甲", D(2020, 1, 3), None)
-    version = _current_version(conn, article)
-    for tokenizer in ("t-old", "t-new"):
-        conn.execute(
-            "INSERT INTO retrieval.article_index (provision_version_id, content_tsv, tokenizer)"
-            " VALUES (%s, to_tsvector('simple', '甲'), %s)",
-            (version, tokenizer),
-        )
-        conn.execute(
-            "INSERT INTO retrieval.projection (tokenizer, terms, active)"
-            " VALUES (%s, ARRAY['甲'], %s)",
-            (tokenizer, tokenizer == "t-old"),
-        )
-    with pytest.raises(psycopg.errors.UniqueViolation):
-        conn.execute("UPDATE retrieval.projection SET active = true WHERE tokenizer = 't-new'")
-    conn.rollback()
-
-
-def test_a_run_is_finished_with_an_outcome_or_not_at_all(conn: Conn) -> None:
-    conn.execute("INSERT INTO source.run (source) VALUES ('moj')")
-    with pytest.raises(psycopg.errors.CheckViolation):
-        conn.execute("INSERT INTO source.run (source, finished_at) VALUES ('moj', now())")
-    conn.rollback()
-    conn.execute(
-        "INSERT INTO source.run (source, finished_at, outcome, exit_code, ratios)"
-        " VALUES ('moj', now(), 'success', 0, '{\"unknown_events\": 0.02}')"
-    )
