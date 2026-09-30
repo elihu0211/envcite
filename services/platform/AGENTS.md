@@ -5,7 +5,7 @@ Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Cont
 ## Project
 
 - **Name:** platform（`services/platform`；倉庫為 `env-law`）
-- **Role:** 多租戶 SaaS 平台（control plane）：tenants, accounts, subscriptions/billing, API keys, quotas, public API gateway. Calls `services/ontology` (Python, shared non-tenant data) and `services/consult` (grounding evidence, tenant-scoped) over gRPC.
+- **Role:** 多租戶控制平面（control plane）：tenants, API keys, rate limiting, usage metering, public REST API. Calls `services/ontology` (Python, shared non-tenant data) and `services/consult` (grounding evidence, tenant-scoped) over gRPC.
 - **Stack:** C# / .NET 10 (SDK pinned in `global.json`) · ASP.NET Core · PostgreSQL · xUnit
 - **Auth:** API keys only for now (OIDC later for an admin UI)
 - **Billing:** not integrated yet; plans assigned manually. Note: Stripe does not onboard Taiwan entities — evaluate Paddle / local gateways when needed.
