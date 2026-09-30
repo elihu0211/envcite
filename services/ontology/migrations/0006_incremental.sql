@@ -41,6 +41,9 @@ ALTER TABLE corpus.provision_version
 CREATE UNIQUE INDEX provision_version_current_per_expression
     ON corpus.provision_version (provision_id, expression_id) WHERE superseded_at IS NULL;
 
+-- 廢止之法規自廢止生效日起，各單元皆已失效，不論其施行日是否可考。
+ALTER TABLE corpus.legal_resource ADD COLUMN repealed_on date;
+
 -- 查詢只看現行列。重現過去某時點的答案，取 recorded_at 不晚於該時點、且 superseded_at
 -- 為空值或晚於該時點的列。
 CREATE OR REPLACE FUNCTION corpus.provisions_at(p_resource bigint, p_language text, p_on date)
@@ -58,6 +61,8 @@ AS $$
            CASE
                WHEN cur.id IS NOT NULL AND cur.text_status = 'unavailable' THEN 'text_unavailable'
                WHEN cur.id IS NOT NULL THEN 'in_force'
+               WHEN (SELECT repealed_on FROM corpus.legal_resource WHERE id = p_resource) <= p_on
+                   THEN 'no_longer_in_force'
                WHEN EXISTS (
                    SELECT 1
                      FROM corpus.provision_version AS v

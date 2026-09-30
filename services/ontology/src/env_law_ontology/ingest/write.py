@@ -62,12 +62,13 @@ def _sha(content: str | None) -> bytes:
 
 def _upsert_resource(conn: Conn, law: ParsedLaw) -> int:
     row = conn.execute(
-        "INSERT INTO corpus.legal_resource (id_scheme, local_id, kind, document_type)"
-        " VALUES ('moj_pcode', %s, %s::corpus.norm_kind, %s)"
+        "INSERT INTO corpus.legal_resource (id_scheme, local_id, kind, document_type, repealed_on)"
+        " VALUES ('moj_pcode', %s, %s::corpus.norm_kind, %s, %s)"
         " ON CONFLICT (id_scheme, local_id) DO UPDATE"
-        "   SET kind = EXCLUDED.kind, document_type = EXCLUDED.document_type"
+        "   SET kind = EXCLUDED.kind, document_type = EXCLUDED.document_type,"
+        "       repealed_on = EXCLUDED.repealed_on"
         " RETURNING id",
-        (law.pcode, law.kind, law.document_type),
+        (law.pcode, law.kind, law.document_type, law.abandoned_on),
     ).fetchone()
     assert row is not None and isinstance(row[0], int)
     return row[0]

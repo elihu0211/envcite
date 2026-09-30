@@ -175,3 +175,28 @@ def test_metrics_gate_on_ratios_not_on_single_laws() -> None:
     m.add(_parse(LawLevel="判例"))
     assert any("不可寫入" in v for v in m.violations())
     assert Metrics().violations() == ["沒有任何法規"]
+
+
+def test_a_note_without_articles_takes_the_date_its_effective_field_confirms() -> None:
+    note = "一百零七年八月一日修正全文 3 條，施行日期定自一百零八年三月一日施行。"
+    p = _parse(
+        LawEffectiveNote=note, LawEffectiveDate="20190301", LawHistories=_law()["LawHistories"]
+    )
+    assert {(u.rule, u.starts) for u in p.units} == {("specified", date(2019, 3, 1))}
+
+    p = _parse(LawEffectiveNote="施行日期，由行政院定之。", LawEffectiveDate="99991231")
+    assert {(u.rule, u.starts) for u in p.units} == {("by_order", None)}
+
+
+def test_a_repealed_laws_unconfirmed_articles_do_not_count_against_the_batch() -> None:
+    histories = (
+        "1.中華民國六十四年五月二十三日總統令制定公布全文 3 條\r\n"
+        "2.中華民國九十年一月十日總統令公布廢止"
+    )
+    repealed = _parse(LawAbandonNote="廢", LawHistories=histories, LawModifiedDate="20010110")
+    live = _parse(LawHistories="1.中華民國六十四年五月二十三日總統令制定公布全文 3 條")
+    m = Metrics()
+    m.add(repealed)
+    assert repealed.abandoned_on is not None and m.unconfirmed_articles == 0
+    m.add(live)
+    assert m.unconfirmed_articles == m.live_articles > 0

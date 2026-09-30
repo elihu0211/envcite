@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from env_law_ontology.ingest.commencement import Commencement, derive, touched_articles
+from env_law_ontology.ingest.commencement import Commencement, derive, from_note, touched_articles
 
 KNOWN = ["art_1", "art_2", "art_2-1", "art_3", "art_39", "art_39-1", "art_39-5", "art_40"]
 
@@ -34,7 +34,7 @@ def d(**kw: object) -> Commencement:
         "version_date": V,
         "entry": "",
         "last_article": "",
-        "has_note": False,
+        "deferred": False,
         "touched": True,
     }
     args.update(kw)
@@ -42,8 +42,8 @@ def d(**kw: object) -> Commencement:
 
 
 def test_a_commencement_note_makes_the_whole_law_unconfirmed() -> None:
-    assert d(has_note=True) == Commencement("unconfirmed", None)
-    assert d(has_note=True, touched=False) == Commencement("unconfirmed", None)
+    assert d(deferred=True) == Commencement("unconfirmed", None)
+    assert d(deferred=True, touched=False) == Commencement("unconfirmed", None)
 
 
 def test_untouched_articles_are_bounded_by_the_version_date() -> None:
@@ -92,3 +92,48 @@ def test_no_statement_is_not_presumed(last_article: str) -> None:
     assert d(entry="修正公布第 5 條條文", last_article=last_article) == Commencement(
         "unconfirmed", None
     )
+
+
+NOTE_V = date(2024, 8, 7)
+
+
+@pytest.mark.parametrize(
+    ("note", "effective", "expected"),
+    [
+        # 施行日欄與說明裡的日期吻合：採用。
+        (
+            "一百十三年八月七日修正全文 79 條，施行日期定自一百十四年八月六日施行。",
+            date(2025, 8, 6),
+            Commencement("specified", date(2025, 8, 6)),
+        ),
+        # 欄位為 9999-12-31：由命令定之。
+        ("施行日期，由行政院定之。", date(9999, 12, 31), Commencement("by_order", None)),
+        # 欄位與說明的日期對不上：不猜。
+        (
+            "一百十二年十二月二十一日修正全文 30 條，自一百十三年一月三十一日施行。",
+            date(2024, 1, 30),
+            Commencement("unconfirmed", None),
+        ),
+        # 相對表達（某法施行之日）：說明沒有日期可印證。
+        ("自陸海空軍懲罰法施行之日施行。", date(2025, 8, 6), Commencement("unconfirmed", None)),
+        # 「除…者外」：其餘條的日期不明。
+        (
+            "修正全文 9 條；除另定施行日期者外，自一百十四年八月六日施行。",
+            date(2025, 8, 6),
+            Commencement("unconfirmed", None),
+        ),
+        # 沒有施行日欄。
+        ("自一百十四年八月六日施行。", None, Commencement("unconfirmed", None)),
+    ],
+)
+def test_a_note_without_articles_is_confirmed_by_the_effective_date_field(
+    note: str, effective: date | None, expected: Commencement
+) -> None:
+    assert from_note(note, effective, NOTE_V) == expected
+
+
+def test_the_note_date_applies_to_touched_articles_only() -> None:
+    note = Commencement("specified", date(2025, 8, 6))
+    assert d(deferred=False, note=note) == note
+    assert d(deferred=False, touched=False, note=note) == Commencement("unchanged", V)
+    assert d(deferred=True, note=note) == Commencement("unconfirmed", None)

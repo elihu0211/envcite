@@ -140,6 +140,7 @@ def parse(law: dict[str, Any], *, pcode: str, data_date: date) -> ParsedLaw:
             version_date,
             last,
             note=str(law.get("LawEffectiveNote") or ""),
+            effective=parse_yyyymmdd(str(law.get("LawEffectiveDate") or "")),
         )
     return parsed
 
@@ -178,6 +179,7 @@ def _articles(
     last: history.Event | None,
     *,
     note: str,
+    effective: date | None,
 ) -> None:
     raw = [a for a in law.get("LawArticles") or [] if isinstance(a, dict)]
 
@@ -211,10 +213,13 @@ def _articles(
         touched = set(seen)
     entry = last.text if last else ""
 
-    # 施行說明所列的條待確認；說明列不出條號時，整部待確認。
+    # 施行說明所列的條待確認；說明沒有列出條號時，由施行日欄判定整次公布的施行日。
     deferred = commencement.touched_articles(note, seen) if note.strip() else set()
-    if note.strip() and not deferred:
-        deferred = set(seen)
+    from_note = (
+        commencement.from_note(note, effective, version_date)
+        if note.strip() and not deferred
+        else None
+    )
 
     # 最後一次公布之後、以命令定施行日者：命令列出條號的只及於那些條，沒有列的及於全部。
     after = [
@@ -233,7 +238,8 @@ def _articles(
             version_date=version_date,
             entry=entry,
             last_article=last_text,
-            has_note=path in deferred,
+            deferred=path in deferred,
+            note=from_note,
             touched=path in touched,
         )
         if rule.rule == "by_order":

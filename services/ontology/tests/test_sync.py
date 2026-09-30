@@ -46,11 +46,14 @@ def test_a_cycle_acquires_imports_and_indexes(tmp_path: Path, conn: Conn) -> Non
 
 
 def test_a_cycle_with_nothing_to_do_changes_nothing(tmp_path: Path, conn: Conn) -> None:
-    laws = [_law("T0000001", "噪音管制法")]
-    _cycle(tmp_path, conn, laws)
+    # 同一個檔案：zip 內記著寫入時間，重新打包同樣的內容位元組不同，會被當成新檔。
+    source = LocalMoj(
+        _publish(tmp_path / "feed.zip", "2026/9/18 上午 12:00:00", [_law("T0000001", "噪音管制法")])
+    )
+    sync.sync(conn, source, tmp_path / "snapshots")
     indexed = _count(conn, "SELECT count(*) FROM retrieval.article_index")
 
-    assert _cycle(tmp_path, conn, laws) == 0
+    assert sync.sync(conn, source, tmp_path / "snapshots") == 0
     assert _count(conn, "SELECT count(*) FROM source.snapshot") == 1
     assert _count(conn, "SELECT count(*) FROM retrieval.article_index") == indexed
 

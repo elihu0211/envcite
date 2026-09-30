@@ -221,3 +221,18 @@ def test_a_change_in_fields_the_corpus_does_not_use_changes_nothing(
         )
         == 0
     )
+
+
+def test_a_repealed_law_is_no_longer_in_force_even_when_its_commencement_is_unknown(
+    conn: Conn, tmp_path: Path
+) -> None:
+    histories = (
+        "1.中華民國八十年五月二十三日總統令制定公布全文 3 條\r\n"
+        "2.中華民國一百十年一月十日總統令公布廢止"
+    )
+    repealed = _law_v1(LawHistories=histories, LawAbandonNote="廢", LawModifiedDate="20210110")
+    _first(conn, tmp_path, repealed)
+
+    # 施行日不可考，但廢止之後的任何一天都已失效；廢止之前只能說待確認。
+    assert _at(conn, date(2020, 1, 1))["art_1"][0] == "commencement_unconfirmed"
+    assert _at(conn, date(2021, 1, 12))["art_1"][0] == "no_longer_in_force"

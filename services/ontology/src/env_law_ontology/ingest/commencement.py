@@ -6,12 +6,15 @@
 
 只有現行全文，所以只判定最後一次公布或發布所生的版本。每一條的判定依序：
 
-1. 全國法規資料庫帶施行說明：說明常只及於部分條項，對不到每一條，整部待確認。
+1. 全國法規資料庫的施行說明列出的條：待確認。
 2. 最後一次公布沒有觸及該條：文字在此版本之前已存在，以版本日為界（unchanged）。
 3. 最後一次公布的沿革語句，或（沒有時）末條，明定自公布或發布日施行：第三日（promulgation）。
 4. 同上，明定特定日期：該日（specified）。
 5. 明定施行日由命令定之：尚未施行（by_order）。
 6. 其餘：待確認，不推定第 13 條（unconfirmed）。
+
+施行說明沒有列出條號時，第 3 至 6 步換成以施行日欄印證後的整次公布施行日（`from_note`）；
+印證不了者，被觸及的條待確認。
 """
 
 from __future__ import annotations
@@ -35,6 +38,9 @@ _BY_ORDER = re.compile(r"施行日(?:期)?.{0,20}(?:命令|令)?定之")
 _ARTICLE_LIST = re.compile(
     r"第([0-9]+(?:-[0-9]+)?(?:(?:[、，,～~及]|條?至)第?[0-9]+(?:-[0-9]+)?)*)條"
 )
+
+#: 來源以此日期表示「施行日期由命令定之」（LawEffectiveDate）。
+BY_ORDER_SENTINEL = date(9999, 12, 31)
 
 PROMULGATION_DAYS = 2  # 「自公布或發布之日起算至第三日」：公布當日為第一日。
 
@@ -65,19 +71,44 @@ def touched_articles(entry: str, known: Iterable[str]) -> set[str]:
     return touched
 
 
+def from_note(note: str, effective: date | None, version_date: date) -> Commencement:
+    """施行說明沒有列出任何條號時，整次公布的施行日。
+
+    說明是自由文字，施行日欄（`LawEffectiveDate`）是結構化的：以說明裡另有的日期印證欄位，
+    兩者吻合才採用；欄位為 9999-12-31 是「由命令定之」。說明有「除…者外」、日期對不上、
+    或以「某法施行之日」相對表達者，不猜。
+    """
+    compact = re.sub(r"\s+", "", note)
+    if _EXCEPTION.search(compact):
+        return Commencement("unconfirmed", None)
+    if effective == BY_ORDER_SENTINEL:
+        return Commencement("by_order", None)
+    dates = {roc_date(m.group(1), m.group(2), m.group(3)) for m in DATE_BARE.finditer(compact)}
+    if effective is not None and effective in dates - {version_date}:
+        return Commencement("specified", effective)
+    return Commencement("unconfirmed", None)
+
+
 def derive(
     *,
     version_date: date,
     entry: str,
     last_article: str,
-    has_note: bool,
+    deferred: bool,
     touched: bool,
+    note: Commencement | None = None,
 ) -> Commencement:
-    """一條在現行版本的生效日。`entry` 是最後一次公布的沿革語句。"""
-    if has_note:
+    """一條在現行版本的生效日。`entry` 是最後一次公布的沿革語句。
+
+    `deferred`：施行說明列出了此條，待確認。`note`：施行說明沒有列出條號時，由它判定的
+    整次公布的施行日（`from_note`）。
+    """
+    if deferred:
         return Commencement("unconfirmed", None)
     if not touched:
         return Commencement("unchanged", version_date)
+    if note is not None:
+        return note
     for source in (entry, last_article):
         found = _from_text(source, version_date)
         if found is not None:
