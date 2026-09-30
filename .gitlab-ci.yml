@@ -150,7 +150,7 @@ ontology:
   # 服務、多拉一次映像，在每月 400 分鐘的額度下是純損失。testcontainers 仍留在開發
   # 相依裡，供本機沒有現成資料庫時使用。
   #
-  # 主版本與 env-law-deploy 的 Cluster 相同；綱要只用 PostgreSQL 自帶的擴充（btree_gist）。
+  # 主版本與正式區相同；綱要只用 PostgreSQL 自帶的擴充（btree_gist）。
   services:
     - name: postgres:18
       alias: postgres
