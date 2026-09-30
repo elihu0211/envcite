@@ -59,8 +59,6 @@ flowchart LR
 
 - **API**：[`proto/README.md`](proto/README.md) 說明服務如何組合、呼叫端如何接上語言模型；欄位語意見各 `.proto` 的註解。
 - **開發指引與各服務現況**：[`AGENTS.md`](AGENTS.md)；各服務另有巢狀 `AGENTS.md`。
-- **設計論據**：同層的 `env-law-docs` 倉庫。
-- **部署清單**：同層的 `env-law-deploy` 倉庫。
 
 ## 貢獻與回報
 
