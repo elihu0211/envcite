@@ -14,12 +14,12 @@ from dataclasses import dataclass, field
 from env_law_ontology.ingest.law import ParsedLaw
 
 #: 名稱 → (分母說明, 上限)。實測：不可寫入 0.01%、切分退回 0.23%、認不得的事件 1.8%、
-#: 待確認 6.4%。
+#: 待確認 4.0%。
 LIMITS = {
     "rejected_laws": ("不可寫入的法規占法規", 0.005),
     "degraded_articles": ("切分退回整條的條占條", 0.01),
     "unknown_events": ("認不得的沿革事件占事件", 0.05),
-    "unconfirmed_articles": ("生效日待確認的條占條", 0.15),
+    "unconfirmed_articles": ("生效日待確認的現行條占現行條", 0.08),
 }
 
 
@@ -28,6 +28,7 @@ class Metrics:
     laws: int = 0
     rejected_laws: int = 0
     articles: int = 0
+    live_articles: int = 0
     degraded_articles: int = 0
     events: int = 0
     unknown_events: int = 0
@@ -44,7 +45,10 @@ class Metrics:
         for u in law.units:
             if u.type == "article":
                 self.articles += 1
-                self.unconfirmed_articles += u.rule == "unconfirmed"
+                # 已廢止的法規各條皆已失效，生效日待不待確認不影響任何答案。
+                if law.abandoned_on is None:
+                    self.live_articles += 1
+                    self.unconfirmed_articles += u.rule == "unconfirmed"
                 self.by_order_articles += u.rule == "by_order"
         self.problems.update((p.level, p.code) for p in law.problems)
 
@@ -53,7 +57,7 @@ class Metrics:
             "rejected_laws": self.laws,
             "degraded_articles": self.articles,
             "unknown_events": self.events,
-            "unconfirmed_articles": self.articles,
+            "unconfirmed_articles": self.live_articles,
         }[name]
         return getattr(self, name) / denominator if denominator else 0.0
 
