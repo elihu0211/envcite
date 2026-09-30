@@ -60,7 +60,7 @@ platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgre
 | 契約 | `proto/env_law/<service>/v1/` | 該服務有對外 API 時 |
 | 跨服務共用程式碼 | `libs/<lang>/<name>/` | 服務內的程式碼**出現第二個消費端時**才抽出，不是「將來可能要用」；本身有獨立依賴與測試週期的函式庫（如 `env-law-segmenter`）可一開始就建在這裡 |
 | 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
-| 部署清單 | 同層的 `env-law-deploy` 倉庫（Argo CD 來源），**不在本倉庫** | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（`<name>-image` job 推送 `:<commit-sha>`），該倉庫的 Argo CD Image Updater 偵測到後把 tag commit 進該倉庫（git write-back），Argo CD 同步上線，無需開 MR。**程式碼與清單要一起改時清單先行**：先在該倉庫合併向後相容的清單變更（如新環境變數給預設值），再合併本倉庫的程式碼——新映像會自動上線，順序反了就是新映像配舊清單 |
+| 部署清單 | `env-law-deploy` 倉庫（GitLab `thuaisse-lab/env-law-deploy`，Argo CD 來源），**不在本倉庫** | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（`<name>-image` job 推送 `:<commit-sha>`），該倉庫的 Argo CD Image Updater 偵測到後把 tag commit 進該倉庫（git write-back），Argo CD 同步上線，無需開 MR。**程式碼與清單要一起改時清單先行**：先在該倉庫合併向後相容的清單變更（如新環境變數給預設值），再合併本倉庫的程式碼——新映像會自動上線，順序反了就是新映像配舊清單 |
 
 - **契約維持單一 buf 模組**（`buf.yaml` 的模組根是 `proto/`，import 路徑為 `env_law/<service>/v1/...`）。拆成每領域一個模組會改變每一條 import 路徑，除非某領域需要獨立發佈到 schema registry，否則不拆。
 - **CI 的擴充點是「新增一個服務要改幾個地方」**：現為三處（job、`rules:changes` 錨點、`proto` 觸發路徑），要部署的服務再加一處（`<name>-image` 建置 job）。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
@@ -70,7 +70,7 @@ platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgre
 
 ## 文件庫在另一個倉庫
 
-技術決策及其論據記於 `env-law-docs`（本倉庫的同層目錄，非子目錄）：`.qmd` → Quarto → xelatex。結構、守門與為什麼與程式碼分倉，見該庫自己的 `AGENTS.md`。
+技術決策及其論據記於 `env-law-docs`（GitHub `elihu0211/env-law-docs`，另一個倉庫，不是本倉庫的子目錄）：`.qmd` → Quarto → xelatex。結構、守門與為什麼與程式碼分倉，見該庫自己的 `AGENTS.md`。
 
 改動設計時，決策的論據寫進該庫，不要寫進本倉庫的 `AGENTS.md`：後者是作業規範，寫進論據必然過期。
 
@@ -84,7 +84,7 @@ platform 與 ontology 都假設本機 PostgreSQL 在 `localhost:5432`（`postgre
 ## Conventions
 
 - 小而聚焦的 diff；有既有程式碼時對齊其風格。
-- 人讀文件 → `README.md`（本機開發環境在 `CONTRIBUTING.md`）；決策論據 → 同層的 `env-law-docs`；agent 作業 → 本檔與 skills。
+- 人讀文件 → `README.md`（本機開發環境在 `CONTRIBUTING.md`）；決策論據 → `env-law-docs`；agent 作業 → 本檔與 skills。
 - 本檔保持簡短；長流程 → `.agents/skills/<name>/SKILL.md`。各服務的 `AGENTS.md` 只寫該服務獨有的，倉庫層規範以本檔為準、不重複。
 
 ## Layering
