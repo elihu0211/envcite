@@ -1,10 +1,13 @@
 # 本機開發用 PostgreSQL：docker compose up -d
 #
 # 專案名固定為 env-law：各 worktree 目錄不同，不固定的話每棵樹會各起一個庫、搶同一個
-# port。一台機器一個庫，各分支以資料庫名區分（.config/wt.toml）。
+# port。一台機器一個庫。
+#
+# 資料庫：每個服務一個固定的庫，各分支共用（`ontology_dev`、`envlaw_platform`）。ontology 的庫由
+# 映像在資料目錄第一次初始化時建立；platform 在 Development 啟動時自己建庫並遷移。
 #
 # 映像與 ontology 測試相同（services/ontology/tests/conftest.py）；綱要只用 PostgreSQL
-# 自帶的擴充。帳密是本機值，與 appsettings.Development.json、scripts/worktree-db.py 一致。
+# 自帶的擴充。帳密是本機值，與 appsettings.Development.json 一致。
 name: env-law
 
 services:
@@ -13,6 +16,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ontology_dev
     ports:
       - "127.0.0.1:5432:5432"   # 只綁本機，不對區網開放
     volumes:
