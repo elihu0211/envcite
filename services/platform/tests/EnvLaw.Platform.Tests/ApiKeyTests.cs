@@ -15,7 +15,7 @@ public sealed class ApiKeyTests(PlatformFactory factory)
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("me");
         using var client = factory.CreateTenantClient(key.Key);
 
-        var me = await client.GetFromJsonAsync<TenantResponse>("/v1/me");
+        var me = await client.GetFromJsonAsync<TenantResponse>("/v2/me");
 
         Assert.Equal(tenant.Identifier, me!.Identifier);
     }
@@ -28,9 +28,9 @@ public sealed class ApiKeyTests(PlatformFactory factory)
         using var clientA = factory.CreateTenantClient(keyA.Key);
         using var clientB = factory.CreateTenantClient(keyB.Key);
 
-        var keysSeenByA = await clientA.GetFromJsonAsync<ApiKeySummary[]>("/v1/api-keys");
-        using var revokeOther = await clientA.DeleteAsync(new Uri($"/v1/api-keys/{keyB.ApiKey.Id}", UriKind.Relative));
-        using var bStillWorks = await clientB.GetAsync(new Uri("/v1/me", UriKind.Relative));
+        var keysSeenByA = await clientA.GetFromJsonAsync<ApiKeySummary[]>("/v2/api-keys");
+        using var revokeOther = await clientA.DeleteAsync(new Uri($"/v2/api-keys/{keyB.ApiKey.Id}", UriKind.Relative));
+        using var bStillWorks = await clientB.GetAsync(new Uri("/v2/me", UriKind.Relative));
 
         Assert.Equal([keyA.ApiKey.Id], keysSeenByA!.Select(k => k.Id));
         Assert.Equal(HttpStatusCode.NotFound, revokeOther.StatusCode);
@@ -45,8 +45,8 @@ public sealed class ApiKeyTests(PlatformFactory factory)
         using var keeper = factory.CreateTenantClient(keep.Key);
         using var doomedClient = factory.CreateTenantClient(doomed.Key);
 
-        using var revoke = await keeper.DeleteAsync(new Uri($"/v1/api-keys/{doomed.ApiKey.Id}", UriKind.Relative));
-        using var afterRevoke = await doomedClient.GetAsync(new Uri("/v1/me", UriKind.Relative));
+        using var revoke = await keeper.DeleteAsync(new Uri($"/v2/api-keys/{doomed.ApiKey.Id}", UriKind.Relative));
+        using var afterRevoke = await doomedClient.GetAsync(new Uri("/v2/me", UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.NoContent, revoke.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, afterRevoke.StatusCode);
@@ -58,9 +58,9 @@ public sealed class ApiKeyTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("expiry", factory.Time.GetUtcNow().AddHours(1));
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var beforeExpiry = await client.GetAsync(new Uri("/v1/me", UriKind.Relative));
+        using var beforeExpiry = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
         factory.Time.Advance(TimeSpan.FromHours(2));
-        using var afterExpiry = await client.GetAsync(new Uri("/v1/me", UriKind.Relative));
+        using var afterExpiry = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.OK, beforeExpiry.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, afterExpiry.StatusCode);
@@ -73,7 +73,7 @@ public sealed class ApiKeyTests(PlatformFactory factory)
     {
         using var client = factory.CreateTenantClient(apiKey);
 
-        using var response = await client.GetAsync(new Uri("/v1/me", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -84,7 +84,7 @@ public sealed class ApiKeyTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("tamper");
         using var client = factory.CreateTenantClient(key.Key[..^4] + "AAAA");
 
-        using var response = await client.GetAsync(new Uri("/v1/me", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -100,11 +100,11 @@ public sealed class ApiKeyTests(PlatformFactory factory)
         var statuses = new List<HttpStatusCode>();
         for (var i = 0; i <= PlatformFactory.RateLimitPermits; i++)
         {
-            using var response = await busyClient.GetAsync(new Uri("/v1/me", UriKind.Relative));
+            using var response = await busyClient.GetAsync(new Uri("/v2/me", UriKind.Relative));
             statuses.Add(response.StatusCode);
         }
 
-        using var quietResponse = await quietClient.GetAsync(new Uri("/v1/me", UriKind.Relative));
+        using var quietResponse = await quietClient.GetAsync(new Uri("/v2/me", UriKind.Relative));
 
         Assert.All(statuses[..^1], s => Assert.Equal(HttpStatusCode.OK, s));
         Assert.Equal(HttpStatusCode.TooManyRequests, statuses[^1]);
@@ -125,7 +125,7 @@ public sealed class ApiKeyTests(PlatformFactory factory)
         var statuses = new List<HttpStatusCode>();
         for (var i = 0; i <= PlatformFactory.RateLimitPermits; i++)
         {
-            using var response = await client.GetAsync(new Uri("/v1/me", UriKind.Relative));
+            using var response = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
             statuses.Add(response.StatusCode);
         }
 

@@ -2,11 +2,11 @@
   "openapi": "3.1.1",
   "info": {
     "title": "env-law API",
-    "description": "環境法規 API。以租戶的 API key 呼叫（`Authorization: Bearer sk_live_…`）。拒答是結果、不是錯誤：`POST /v1/ground` 的證據與拒答都回 200，以 `outcome` 區分。",
-    "version": "v1"
+    "description": "環境法規 API。以租戶的 API key 呼叫（`Authorization: Bearer sk_live_…`）。拒答是結果、不是錯誤：`POST /v2/ground` 有法源與拒答都回 200，以 `outcome` 區分。",
+    "version": "v2"
   },
   "paths": {
-    "/v1/me": {
+    "/v2/me": {
       "get": {
         "tags": [
           "租戶"
@@ -34,7 +34,7 @@
         }
       }
     },
-    "/v1/api-keys": {
+    "/v2/api-keys": {
       "get": {
         "tags": [
           "租戶"
@@ -65,7 +65,7 @@
         }
       }
     },
-    "/v1/api-keys/{id}": {
+    "/v2/api-keys/{id}": {
       "delete": {
         "tags": [
           "租戶"
@@ -100,7 +100,7 @@
         }
       }
     },
-    "/v1/usage": {
+    "/v2/usage": {
       "get": {
         "tags": [
           "租戶"
@@ -131,7 +131,7 @@
         }
       }
     },
-    "/v1/laws/{lawId}": {
+    "/v2/laws/{lawId}": {
       "get": {
         "tags": [
           "法規"
@@ -182,7 +182,7 @@
         }
       }
     },
-    "/v1/laws/{lawId}/articles": {
+    "/v2/laws/{lawId}/articles": {
       "get": {
         "tags": [
           "法規"
@@ -236,13 +236,13 @@
         }
       }
     },
-    "/v1/ground": {
+    "/v2/ground": {
       "post": {
         "tags": [
           "接地"
         ],
-        "summary": "為問句備妥可引用的證據，或拒答",
-        "description": "證據與拒答都回 200，以 `outcome` 區分；拒答是結果、不是錯誤，兩者都計量為一次 `consult.ground`。證據的每一條引用有代號（`L1`、`L2`…），呼叫端的模型只能以代號引用。",
+        "summary": "為問句備妥可引用的法源，或拒答",
+        "description": "有法源（`grounded`）與拒答（`refused`）都回 200，以 `outcome` 區分；拒答是結果、不是錯誤，兩者都計量為一次 `consult.ground`。每一筆法源有代號（`L1`、`L2`…），呼叫端的模型只能以代號引用。",
         "operationId": "Ground",
         "requestBody": {
           "content": {
@@ -347,12 +347,12 @@
       },
       "ArticleDto": {
         "required": [
-          "iri",
+          "uri",
           "number"
         ],
         "type": "object",
         "properties": {
-          "iri": {
+          "uri": {
             "type": "string"
           },
           "number": {
@@ -360,11 +360,11 @@
           }
         }
       },
-      "CitationDto": {
+      "AuthorityDto": {
         "required": [
           "code",
-          "iri",
-          "label",
+          "uri",
+          "citation",
           "text"
         ],
         "type": "object",
@@ -372,10 +372,10 @@
           "code": {
             "type": "string"
           },
-          "iri": {
+          "uri": {
             "type": "string"
           },
-          "label": {
+          "citation": {
             "type": "string"
           },
           "text": {
@@ -392,7 +392,7 @@
           "question": {
             "type": "string"
           },
-          "asOf": {
+          "pointInTime": {
             "type": [
               "null",
               "string"
@@ -409,16 +409,16 @@
           "outcome": {
             "type": "string"
           },
-          "citations": {
+          "authorities": {
             "type": [
               "null",
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/CitationDto"
+              "$ref": "#/components/schemas/AuthorityDto"
             }
           },
-          "confidence": {
+          "basis": {
             "type": [
               "null",
               "string"
@@ -439,7 +439,7 @@
       "LawDto": {
         "required": [
           "id",
-          "iri",
+          "uri",
           "title",
           "language",
           "dateDocument"
@@ -449,7 +449,7 @@
           "id": {
             "type": "string"
           },
-          "iri": {
+          "uri": {
             "type": "string"
           },
           "title": {

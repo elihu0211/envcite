@@ -70,7 +70,7 @@ app.MapGroup("/admin")
     .MapTenancyAdminEndpoints()
     .MapApiAccessAdminEndpoints();
 
-app.MapGroup("/v1")
+app.MapGroup("/v2")
     .RequireAuthorization(PlatformAuth.TenantPolicy)
     .RequireRateLimiting(PlatformAuth.PerTenantRateLimit)
     .MapTenancyEndpoints()
