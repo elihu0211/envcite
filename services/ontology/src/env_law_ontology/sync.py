@@ -37,7 +37,8 @@ class Result:
     snapshots_new: int = 0
     actions: dict[str, int] = field(default_factory=dict)
     articles_indexed: int = 0
-    ratios: dict[str, float] = field(default_factory=dict)
+    # 驗收的比例連同其上限：觀測信號（source.signal）比對兩者，不在 SQL 裡另存一份上限。
+    ratios: dict[str, dict[str, float]] = field(default_factory=dict)
 
     @property
     def unchanged(self) -> bool:
@@ -70,7 +71,10 @@ def sync(conn: Conn, source: Source, root: Path) -> int:
 
         imported = importer.run(conn, root, source, run_id=run_id)
         result.actions = dict(imported.actions)
-        result.ratios = {name: imported.metrics.ratio(name) for name in LIMITS}
+        result.ratios = {
+            name: {"value": imported.metrics.ratio(name), "limit": limit}
+            for name, (_, limit) in LIMITS.items()
+        }
         _step(conn, run_id, "projection")
 
         result.articles_indexed = projection.rebuild(conn)
