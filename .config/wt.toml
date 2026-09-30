@@ -2,7 +2,7 @@
 # worktree session 經 worktrunk plugin 的 WorktreeCreate hook 也走 wt，所以同樣適用。
 #
 # 分支即身分：port 由分支推導，平行的樹互不相撞，同一分支每次拿到同一組。資料庫不分：
-# 各服務一個固定的庫（`ontology_dev`、`envlaw_platform`），各分支共用；同一時間只跑一條分支的
+# 本機叢集裡的 CloudNativePG，各服務一個固定的庫（`env_law`、`platform`），各分支共用；同一時間只跑一條分支的
 # 服務，否則兩邊的遷移會互相覆寫。測試不在此列——兩邊都用 Testcontainers，每次跑本來就是
 # 獨立的庫。
 
@@ -20,14 +20,14 @@ url = "http://localhost:{{ ('env-law/platform/' ~ branch) | hash_port }}"
 platform = """
 cd '{{ worktree_path }}/services/platform' && \
 ASPNETCORE_ENVIRONMENT=Development \
-ConnectionStrings__Platform='Host=localhost;Port=5432;Database=envlaw_platform;Username=postgres;Password=postgres' \
+ConnectionStrings__Platform='Host=localhost;Port=5432;Database=platform;Username=env_law;Password=env_law' \
 Ontology__Address='http://localhost:{{ ('env-law/ontology/' ~ branch) | hash_port }}' \
 Consult__Address='http://localhost:{{ ('env-law/consult/' ~ branch) | hash_port }}' \
 exec dotnet run --project src/EnvLaw.Platform.Api --no-launch-profile -- --urls 'http://localhost:{{ ('env-law/platform/' ~ branch) | hash_port }}'
 """
 ontology = """
 cd '{{ worktree_path }}/services/ontology' && \
-export ONTOLOGY_DSN='postgresql://postgres:postgres@localhost:5432/ontology_dev' && \
+export ONTOLOGY_DSN='postgresql://env_law:env_law@localhost:5432/env_law' && \
 uv run env-law-migrate && \
 ONTOLOGY_INTERNAL_TOKEN=dev ONTOLOGY_GRPC_PORT='{{ ('env-law/ontology/' ~ branch) | hash_port }}' exec uv run env-law-ontology
 """
