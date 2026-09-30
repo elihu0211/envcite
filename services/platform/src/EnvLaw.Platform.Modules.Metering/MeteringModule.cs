@@ -31,7 +31,7 @@ public static class MeteringModule
         return services;
     }
 
-    /// <summary><c>GET /v1/usage</c>：目前租戶依 operation 分列的用量。</summary>
+    /// <summary><c>GET /v2/usage</c>：目前租戶依 operation 分列的用量。</summary>
     public static RouteGroupBuilder MapMeteringEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapGet("/usage", async (PlatformDbContext db, CancellationToken ct) =>

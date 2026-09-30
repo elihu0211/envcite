@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <!-- 對外 REST 的契約：建置時產生 openapi/v1.json 並提交進版控，CI 檢查它與程式碼一致。 -->
+  <!-- 對外 REST 的契約：建置時產生 openapi/openapi_v2.json 並提交進版控，CI 檢查它與程式碼一致。 -->
   <PropertyGroup>
     <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
     <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/../../openapi</OpenApiDocumentsDirectory>
-    <OpenApiGenerateDocumentsOptions>--file-name v1</OpenApiGenerateDocumentsOptions>
+    <OpenApiGenerateDocumentsOptions>--file-name openapi</OpenApiGenerateDocumentsOptions>
   </PropertyGroup>
 
   <ItemGroup>

@@ -96,6 +96,6 @@ public static class ApiAccessEndpoints
         db.ApiKeys.Add(apiKey);
         await db.SaveChangesAsync(ct);
 
-        return Results.Created($"/v1/api-keys/{apiKey.Id}", new CreatedApiKey(fullKey, ApiKeySummary.From(apiKey)));
+        return Results.Created($"/v2/api-keys/{apiKey.Id}", new CreatedApiKey(fullKey, ApiKeySummary.From(apiKey)));
     }
 }

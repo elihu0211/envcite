@@ -9,7 +9,7 @@ namespace EnvLaw.Platform.Tests;
 [Collection(PlatformTestGroup.Name)]
 public sealed class OntologyGatewayTests(PlatformFactory factory)
 {
-    private const string LawPath = $"/v1/laws/{FakeOntologyServer.KnownLawId}";
+    private const string LawPath = $"/v2/laws/{FakeOntologyServer.KnownLawId}";
 
     [Fact]
     public async Task GetLawProxiesWithInternalTokenAndTenantMetadata()
@@ -45,7 +45,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("errors");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.GetAsync(new Uri($"/v1/laws/{lawId}", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri($"/v2/laws/{lawId}", UriKind.Relative));
 
         Assert.Equal(expected, response.StatusCode);
     }
@@ -71,10 +71,10 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         (await meteredClient.GetAsync(new Uri(LawPath, UriKind.Relative))).Dispose();
         (await meteredClient.GetAsync(new Uri(LawPath, UriKind.Relative))).Dispose();
         (await meteredClient.GetAsync(new Uri($"{LawPath}/articles", UriKind.Relative))).Dispose();
-        (await meteredClient.GetAsync(new Uri("/v1/laws/unknown-act", UriKind.Relative))).Dispose(); // not metered
+        (await meteredClient.GetAsync(new Uri("/v2/laws/unknown-act", UriKind.Relative))).Dispose(); // not metered
 
-        var usage = await meteredClient.GetFromJsonAsync<UsageSummary[]>("/v1/usage");
-        var idleUsage = await idleClient.GetFromJsonAsync<UsageSummary[]>("/v1/usage");
+        var usage = await meteredClient.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        var idleUsage = await idleClient.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
 
         Assert.Equal(
             [

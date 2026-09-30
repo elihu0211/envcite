@@ -3,23 +3,23 @@ using Microsoft.OpenApi;
 
 namespace EnvLaw.Platform.Api;
 
-/// <summary>對外 REST 的 OpenAPI 規格：只收租戶可呼叫的 <c>/v1</c>，營運者的 <c>/admin</c> 不列入。</summary>
+/// <summary>對外 REST 的 OpenAPI 規格：只收租戶可呼叫的 <c>/v2</c>，營運者的 <c>/admin</c> 不列入。</summary>
 internal static class PlatformOpenApi
 {
     public const string ApiKeyScheme = "ApiKey";
 
     public static IServiceCollection AddPlatformOpenApi(this IServiceCollection services) =>
-        services.AddOpenApi("v1", options =>
+        services.AddOpenApi("v2", options =>
         {
-            options.ShouldInclude = description => description.RelativePath?.StartsWith("v1/", StringComparison.Ordinal) == true;
+            options.ShouldInclude = description => description.RelativePath?.StartsWith("v2/", StringComparison.Ordinal) == true;
             options.AddDocumentTransformer((document, _, _) =>
             {
                 document.Info = new OpenApiInfo
                 {
                     Title = "env-law API",
-                    Version = "v1",
+                    Version = "v2",
                     Description = "環境法規 API。以租戶的 API key 呼叫（`Authorization: Bearer sk_live_…`）。"
-                        + "拒答是結果、不是錯誤：`POST /v1/ground` 的證據與拒答都回 200，以 `outcome` 區分。",
+                        + "拒答是結果、不是錯誤：`POST /v2/ground` 有法源與拒答都回 200，以 `outcome` 區分。",
                 };
                 document.Components ??= new OpenApiComponents();
                 document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
@@ -35,7 +35,7 @@ internal static class PlatformOpenApi
                 document.Security = [new OpenApiSecurityRequirement { [new OpenApiSecuritySchemeReference(ApiKeyScheme, document)] = [] }];
                 return Task.CompletedTask;
             });
-            // 每個 /v1 端點都經 API key 驗證與逐租戶限流，故兩種回應逐一列出。
+            // 每個 /v2 端點都經 API key 驗證與逐租戶限流，故兩種回應逐一列出。
             options.AddOperationTransformer((operation, _, _) =>
             {
                 operation.Responses ??= [];

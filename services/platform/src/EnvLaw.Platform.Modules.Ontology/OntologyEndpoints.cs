@@ -9,9 +9,14 @@ using Microsoft.AspNetCore.Routing;
 
 namespace EnvLaw.Platform.Modules.Ontology;
 
-public sealed record LawDto(string Id, string Iri, string Title, string Language, string? DateDocument);
+/// <param name="Id">全國法規資料庫的 pcode（如 <c>O0020001</c>）。</param>
+/// <param name="Uri">依 ELI 網址樣板，可反查到該法規。</param>
+/// <param name="DateDocument">制定（首次公布）日；ELI 的 <c>date_document</c>。</param>
+public sealed record LawDto(string Id, string Uri, string Title, string Language, string? DateDocument);
 
-public sealed record ArticleDto(string Iri, string Number);
+/// <param name="Uri">依 ELI 網址樣板，可反查到該條的現行版本。</param>
+/// <param name="Number">條號，照來源寫法（如 <c>5-1</c>）。</param>
+public sealed record ArticleDto(string Uri, string Number);
 
 public static class OntologyEndpoints
 {

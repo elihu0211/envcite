@@ -101,7 +101,7 @@ dotnet:
     - cd services/platform
     - dotnet restore
     - dotnet build --no-restore
-    # 對外 REST 的規格（openapi/v1.json）由建置產生並提交；與程式碼不一致即失敗——重新建置後提交它。
+    # 對外 REST 的規格（openapi/openapi_v2.json）由建置產生並提交；與程式碼不一致即失敗——重新建置後提交它。
     - git diff --exit-code -- openapi/ && test -z "$(git status --porcelain -- openapi/)"
     - dotnet format --verify-no-changes --no-restore
     - >-
@@ -267,7 +267,7 @@ openapi:
     name: tufin/oasdiff:v1.32.1
     entrypoint: [""]
   variables:
-    SPEC: services/platform/openapi/v1.json
+    SPEC: services/platform/openapi/openapi_v2.json
   script:
     - |
       if [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ]; then

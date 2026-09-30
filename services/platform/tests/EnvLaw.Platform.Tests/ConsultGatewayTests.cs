@@ -10,10 +10,10 @@ namespace EnvLaw.Platform.Tests;
 [Collection(PlatformTestGroup.Name)]
 public sealed class ConsultGatewayTests(PlatformFactory factory)
 {
-    private static readonly Uri GroundPath = new("/v1/ground", UriKind.Relative);
+    private static readonly Uri GroundPath = new("/v2/ground", UriKind.Relative);
 
     [Fact]
-    public async Task EvidenceIsReturnedWithTextAndProxiedWithTenantMetadata()
+    public async Task AuthoritiesAreReturnedWithTextAndProxiedWithTenantMetadata()
     {
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("ground");
         using var client = factory.CreateTenantClient(key.Key);
@@ -23,11 +23,12 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
         var result = await response.Content.ReadFromJsonAsync<GroundResultDto>();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("evidence", result!.Outcome);
-        Assert.Equal("high", result.Confidence);
-        var citation = Assert.Single(result.Citations!);
-        Assert.Equal(("L1", "空氣污染防制法 第 32 條"), (citation.Code, citation.Label));
-        Assert.False(string.IsNullOrEmpty(citation.Text));
+        Assert.Equal("grounded", result!.Outcome);
+        Assert.Equal("direct", result.Basis);
+        var authority = Assert.Single(result.Authorities!);
+        Assert.Equal(("L1", "空氣污染防制法 第 32 條"), (authority.Code, authority.Citation));
+        Assert.StartsWith("https://env.law/eli/", authority.Uri);
+        Assert.False(string.IsNullOrEmpty(authority.Text));
         Assert.Contains(factory.Consult.Received, r =>
             r.Request.AsOf == "2020-01-01"
             && r.Headers.GetValue("x-tenant-id") == tenant.Identifier
@@ -47,18 +48,18 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("refused", json.RootElement.GetProperty("outcome").GetString());
         Assert.Equal("out_of_scope", json.RootElement.GetProperty("refusal").GetProperty("reason").GetString());
-        Assert.False(json.RootElement.TryGetProperty("citations", out _));
+        Assert.False(json.RootElement.TryGetProperty("authorities", out _));
     }
 
     [Theory]
     [InlineData(FakeConsultServer.AnswerableQuestion, "yesterday", HttpStatusCode.BadRequest)]
     [InlineData(FakeConsultServer.UnavailableQuestion, null, HttpStatusCode.ServiceUnavailable)]
-    public async Task GrpcErrorsMapToHttpStatus(string question, string? asOf, HttpStatusCode expected)
+    public async Task GrpcErrorsMapToHttpStatus(string question, string? pointInTime, HttpStatusCode expected)
     {
         var (_, key) = await factory.CreateTenantWithKeyAsync("ground-errors");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(question, asOf));
+        using var response = await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(question, pointInTime));
 
         Assert.Equal(expected, response.StatusCode);
     }
@@ -75,12 +76,12 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
     }
 
     [Fact]
-    public async Task EvidenceAndRefusalsAreMeteredButErrorsAreNot()
+    public async Task GroundedAnswersAndRefusalsAreMeteredButErrorsAreNot()
     {
         var (_, key) = await factory.CreateTenantWithKeyAsync("ground-metered");
         using var client = factory.CreateTenantClient(key.Key);
 
-        foreach (var (question, asOf) in new[]
+        foreach (var (question, pointInTime) in new[]
         {
             (FakeConsultServer.AnswerableQuestion, (string?)null),
             (FakeConsultServer.UnrelatedQuestion, null),
@@ -88,10 +89,10 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
             (FakeConsultServer.AnswerableQuestion, "yesterday"), // not metered
         })
         {
-            (await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(question, asOf))).Dispose();
+            (await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(question, pointInTime))).Dispose();
         }
 
-        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v1/usage");
+        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
 
         Assert.Equal([new UsageSummary(ConsultEndpoints.GroundOperation, 2, 2)], usage!);
     }
