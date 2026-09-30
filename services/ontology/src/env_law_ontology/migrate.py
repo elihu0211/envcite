@@ -61,7 +61,10 @@ def apply_all(conn: Connection[tuple[object, ...]], directory: Path | None = Non
                 (path.name, digest),
             )
             applied.append(path.name)
-    conn.commit()
+            # 逐檔提交：新加的列舉值要先提交才能使用，既有資料庫在升級時，後面的檔案才
+            # 用得到前面的檔案加的值。全部放同一個交易，升級這條路徑在全新資料庫上測
+            # 不到（型別是同一個交易建立時，新值可立即使用）。
+            conn.commit()
     return applied
 
 
