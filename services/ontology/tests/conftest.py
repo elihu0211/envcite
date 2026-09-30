@@ -1,5 +1,6 @@
 import os
 from collections.abc import Iterator
+from pathlib import Path
 
 import grpc
 import psycopg
@@ -7,9 +8,12 @@ import pytest
 from testcontainers.community.postgres import PostgresContainer
 
 from env_law.ontology.v1 import ontology_pb2_grpc
+from env_law_ontology.acquire.moj import Moj
+from env_law_ontology.ingest import importer
 from env_law_ontology.migrate import apply_all
 from env_law_ontology.server import build_server
 from env_law_ontology.store import OntologyStore
+from tests.sample import sample_laws, stored_snapshot
 
 TOKEN = "test-internal-token"
 
@@ -40,11 +44,6 @@ def dsn() -> Iterator[str]:
         yield url
 
 
-#: Laws created by migration 0003. They belong to the schema's sample, not to any
-#: test, so the cleanup below leaves them alone.
-FIXTURE_LAWS = ("O0020001", "O0040001")
-
-
 @pytest.fixture
 def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
     """A connection whose writes are undone, including committed ones.
@@ -52,19 +51,23 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
     Rolling back is not enough: a test that commits leaves rows behind, and the next
     test sees them. Every corpus table hangs off `corpus.legal_resource` by a
     cascading foreign key, so deleting a law deletes all of it; the acquisition
-    record has no sample rows and is emptied.
+    record is emptied.
     """
     with psycopg.connect(dsn) as c:
         yield c
         c.rollback()
-        c.execute(
-            "DELETE FROM corpus.legal_resource WHERE local_id <> ALL(%s)",
-            (list(FIXTURE_LAWS),),
-        )
+        c.execute("DELETE FROM corpus.legal_resource")
         c.execute("TRUNCATE source.import_problem, source.item, source.snapshot")
-        # 樣本的條文也會被建索引；索引是衍生物，測試之間不留。
+        # 索引是衍生物，測試之間不留。
         c.execute("DELETE FROM retrieval.article_index")
         c.commit()
+
+
+@pytest.fixture
+def sample(conn: psycopg.Connection[tuple[object, ...]], tmp_path: Path) -> None:
+    """Two real-shaped laws (`tests/sample.py`), imported the way production imports them."""
+    stored_snapshot(conn, tmp_path, sample_laws())
+    importer.run(conn, tmp_path, Moj())
 
 
 @pytest.fixture(scope="session")

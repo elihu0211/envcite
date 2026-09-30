@@ -7,13 +7,14 @@ from env_law_ontology.acquire.moj import Moj
 from env_law_ontology.ingest import importer
 from env_law_ontology.store import OntologyStore
 from env_law_segmenter import Segmenter
-from tests.test_import import _law, _snapshot
+from tests.sample import stored_snapshot
+from tests.test_import import _law
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
 
 def _imported(conn: Conn, tmp_path: Path, *laws: dict[str, object]) -> None:
-    _snapshot(conn, tmp_path, list(laws))
+    stored_snapshot(conn, tmp_path, list(laws))
     importer.run(conn, tmp_path, Moj())
 
 

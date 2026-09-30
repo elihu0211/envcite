@@ -2,6 +2,8 @@ import pytest
 
 from env_law_ontology.store import OntologyStore
 
+pytestmark = pytest.mark.usefixtures("sample")
+
 
 def test_get_law_reads_title_from_expression(store: OntologyStore) -> None:
     law = store.get_law("O0020001")

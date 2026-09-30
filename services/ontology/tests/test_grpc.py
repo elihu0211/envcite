@@ -12,6 +12,8 @@ from env_law_ontology.store import OntologyStore
 
 from .conftest import TOKEN, auth
 
+pytestmark = pytest.mark.usefixtures("sample")
+
 
 def test_get_law(stub: ontology_pb2_grpc.OntologyServiceStub) -> None:
     response = stub.GetLaw(ontology_pb2.GetLawRequest(id="O0020001"), metadata=auth())

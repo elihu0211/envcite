@@ -33,17 +33,23 @@ def test_a_database_at_the_first_baseline_upgrades_to_the_current_files(
     try:
         baseline = tmp_path / "baseline"
         baseline.mkdir()
-        for path in sorted(MIGRATIONS_DIR.glob("*.sql"))[:4]:
+        for path in sorted(MIGRATIONS_DIR.glob("*.sql")):
+            if path.name >= "0005":
+                break
             (baseline / path.name).write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
 
         with psycopg.connect(make_conninfo(dsn, dbname=name)) as conn:
-            assert len(apply_all(conn, baseline)) == 4
+            assert apply_all(conn, baseline)[-1].startswith("0004")
             upgraded = apply_all(conn)
             assert upgraded[0].startswith("0005") and len(upgraded) >= 3
+            conn.execute(
+                "INSERT INTO corpus.legal_resource (id_scheme, local_id, kind, document_type)"
+                " VALUES ('moj_pcode', 'T0000001', 'statute', '法律')"
+            )
             with pytest.raises(psycopg.errors.CheckViolation):
                 conn.execute(
                     "INSERT INTO corpus.lifecycle_event (resource_id, kind, event_date)"
-                    " SELECT id, 'unknown', NULL FROM corpus.legal_resource LIMIT 1"
+                    " SELECT id, 'unknown', NULL FROM corpus.legal_resource"
                 )
     finally:
         with psycopg.connect(dsn, autocommit=True) as admin:
