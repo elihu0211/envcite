@@ -15,9 +15,9 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
 from env_law.ontology.v1 import ontology_pb2_grpc
 from env_law_grpc import InternalTokenInterceptor, stop_on_sigterm
+from env_law_ontology.segmentation import ActiveSegmenter
 from env_law_ontology.service import OntologyServicer
 from env_law_ontology.store import OntologyStore
-from env_law_segmenter import Segmenter
 
 SERVICE_NAME = "env_law.ontology.v1.OntologyService"
 
@@ -30,9 +30,7 @@ def build_server(
         futures.ThreadPoolExecutor(max_workers=10),
         interceptors=[InternalTokenInterceptor(token)],
     )
-    # lexicon 只讀取一次：之後匯入的用語要重新啟動才會進入查詢，正如它們要重新
-    # 建立索引才會進入 `content_tsv`。
-    segmenter = Segmenter(store.lexicon())
+    segmenter = ActiveSegmenter(store)
     ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
         OntologyServicer(store, segmenter), server
     )
