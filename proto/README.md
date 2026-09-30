@@ -7,7 +7,7 @@ gRPC 契約，`buf` 單一模組（根為本目錄）。欄位與方法的語意
 | `env_law.ontology.v1` | `OntologyService` | 共享 | 內部 |
 | `env_law.consult.v2` | `ConsultationService` | 隔離 | 內部 |
 
-外部用戶端只經 `platform` 的 REST：契約是 [`services/platform/openapi/v1.json`](../services/platform/openapi/v1.json)。
+外部用戶端只經 `platform` 的 REST：契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。
 
 ```bash
 buf lint
