@@ -13,7 +13,7 @@ from psycopg.types.range import Range
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
-#: The sample law 水污染防治法 (0003), resolved on a date its current version covers.
+#: The sample law 水污染防治法 (`tests/sample.py`), resolved on a date its current version covers.
 SAMPLE_AT_2020 = (
     "SELECT {} FROM corpus.legal_resource AS r,"
     " corpus.provisions_at(r.id, 'zho', DATE '2020-01-01') AS s"
@@ -172,7 +172,7 @@ def test_a_deleted_article_is_no_longer_in_force(conn: Conn) -> None:
     assert _at(conn, law, date(2024, 1, 1)) == [("art_1", "no_longer_in_force", None)]
 
 
-def test_article_text_joins_paragraphs_in_reading_order(conn: Conn) -> None:
+def test_article_text_joins_paragraphs_in_reading_order(conn: Conn, sample: None) -> None:
     text = conn.execute(
         SAMPLE_AT_2020.format("corpus.article_text(s.version_id)"), ("art_7",)
     ).fetchone()
@@ -183,7 +183,7 @@ def test_article_text_joins_paragraphs_in_reading_order(conn: Conn) -> None:
     assert second.startswith("前項放流水標準")
 
 
-def test_version_iri_follows_the_eli_template(conn: Conn) -> None:
+def test_version_iri_follows_the_eli_template(conn: Conn, sample: None) -> None:
     iri = conn.execute(
         SAMPLE_AT_2020.format("corpus.version_iri(s.version_id)"), ("art_7/para_2",)
     ).fetchone()

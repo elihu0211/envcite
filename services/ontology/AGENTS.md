@@ -8,7 +8,7 @@ Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Cont
 - **Role:** 環境法規本體論服務（shared, non-tenant data）；由同倉的 `services/platform`（C# SaaS：租戶、計費、API 金鑰）與 `services/consult` 呼叫
 - **Stack:** Python 3.14 · uv · gRPC（grpcio，同步伺服器）· PostgreSQL 18（psycopg 3）· ruff · mypy (strict) · pytest
 - **Data model:** [ELI ontology](http://data.europa.eu/eli/ontology)，以**關聯式實表**承載，schema `corpus`（`legal_resource`、`legal_expression`、`provision`／`provision_version`、`lifecycle_event`）與 `retrieval`（`article_index`）。法規以（識別碼方案，在地識別碼）為鍵，全國法規資料庫為 pcode；效力逐條文單元記載，查詢逐單元解析（`corpus.provisions_at`）。標題掛在 `legal_expression`——`eli:title` 的定義域是表達層。綱要設計見 `env-law-docs` 的 02-04；其餘表隨其管線加入。RDF 是由實表投影的導出視圖，方向不可顛倒；論據見 `env-law-docs` 的 01-03 與 02-02。
-- **Status:** gRPC `OntologyService`（GetLaw、ListArticles、SearchArticles）讀 PostgreSQL；SearchArticles 為字面檢索（分詞由本服務以 `env-law-segmenter` 做，詞典於啟動時自資料庫讀取）；資料庫預設只有**樣本**（`migrations/0003_sample_fixture.sql`）；全國法規資料庫的現行版本由 `env-law-import` 寫入（之後由 `projection.rebuild` 補齊檢索投影 `retrieval.article_index`），尚未排程
+- **Status:** gRPC `OntologyService`（GetLaw、ListArticles、SearchArticles）讀 PostgreSQL；SearchArticles 為字面檢索（分詞由本服務以 `env-law-segmenter` 做，詞典於啟動時自資料庫讀取）；資料庫預設是空的；全國法規資料庫的現行版本由 `env-law-sync moj`（或分步的 `env-law-acquire`、`env-law-import`）寫入，並補齊檢索投影 `retrieval.article_index`
 
 ## Commands
 
@@ -47,7 +47,7 @@ docker build -f Dockerfile ../..   # image (context = repo root; CI job `ontolog
 ## Safety
 
 - Do not hand-edit generated paths: the repo-root `uv.lock` (change via `uv add/remove/lock`), `.venv/`, `libs/python/env-law-proto/src/**/*_pb2*` (run its `scripts/generate.sh`).
-- Sample data (`migrations/0003_sample_fixture.sql`) excerpts 全國法規資料庫 (2026-09-18) and is not the corpus; all data from that source must cite it (政府資料開放授權條款－第1版, attribution required).
+- All data from 全國法規資料庫 must cite it (政府資料開放授權條款－第1版, attribution required). Test data (`tests/sample.py`) excerpts it (2026-09-18) and is imported through the real importer.
 
 ## Done when
 

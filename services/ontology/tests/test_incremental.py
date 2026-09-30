@@ -13,7 +13,8 @@ import pytest
 from env_law_ontology.acquire.moj import Moj, content_sha256, pcode
 from env_law_ontology.ingest import audit, importer
 from env_law_ontology.ingest.importer import Outcome
-from tests.test_import import _law, _scalar, _snapshot
+from tests.sample import stored_snapshot
+from tests.test_import import _law, _scalar
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -74,7 +75,7 @@ def _next(conn: Conn, root: Path, law: dict[str, Any]) -> Outcome:
 
 
 def _first(conn: Conn, root: Path, law: dict[str, Any]) -> None:
-    _snapshot(conn, root, [law])
+    stored_snapshot(conn, root, [law])
     assert importer.run(conn, root, Moj()).actions == {"added": 1}
 
 
