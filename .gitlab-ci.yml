@@ -194,20 +194,36 @@ python-proto:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     IMAGE: $CI_REGISTRY_IMAGE/$SERVICE:$CI_COMMIT_SHA
+    # 層快取放在 registry，因為每個 job 的 dind 都是全新的：不放，就每次重抓所有套件
+    # （NuGet、PyPI）。路徑與映像分開（cache/<服務>），Image Updater 看的是 $SERVICE
+    # 那一條，快取的 tag 不會被當成新版本上線。
+    CACHE: $CI_REGISTRY_IMAGE/cache/$SERVICE
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    # 預設的 docker driver 不支援匯出 registry 快取，要 docker-container driver。
+    # 建置網路要用 host（builder 本身與每個 RUN 都是）：runner 的 job 容器網路 MTU 是
+    # 1360，dind 內的橋接網路預設 1500，超過 1360 的封包被靜默丟掉，於是 TLS 大回應
+    # 逾時——`dotnet restore` 連不上 api.nuget.org、卡到 10 分鐘失敗，就是這個症狀。
+    # host 網路沿用 dind 容器的網路，MTU 與 job 容器一致。dind 是一次性的，不牽涉隔離。
+    - docker buildx create --use --driver docker-container --driver-opt network=host --buildkitd-flags '--oci-worker-net=host'
   script:
+    # 先讀自己分支的快取，沒有再讀預設分支的；每個分支各寫各的，互不覆蓋。快取只是加速：
+    # 讀不到、寫不進（ignore-error）都不該讓建置失敗。
     # 未用到的 build-arg 只會警告：platform 的 Dockerfile 不用 uv／Python 版本。
-    - >-
-      docker build -f services/$SERVICE/Dockerfile
-      --build-arg UV_VERSION="$UV_VERSION"
-      --build-arg PYTHON_VERSION="$PYTHON_VERSION"
-      -t "$IMAGE" .
     - |
       if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
-        echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
-        docker push "$IMAGE"
+        output="--push"
       else
         echo "非預設分支，只驗證建置、不推送：$IMAGE"
+        output="--output type=cacheonly"
       fi
+      docker buildx build -f services/$SERVICE/Dockerfile \
+        --build-arg UV_VERSION="$UV_VERSION" \
+        --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
+        --cache-from "type=registry,ref=$CACHE:$CI_COMMIT_REF_SLUG" \
+        --cache-from "type=registry,ref=$CACHE:$CI_DEFAULT_BRANCH" \
+        --cache-to "type=registry,ref=$CACHE:$CI_COMMIT_REF_SLUG,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true" \
+        -t "$IMAGE" $output .
 
 ontology-image:
   extends: .image

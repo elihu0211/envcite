@@ -19,9 +19,15 @@ ARG TARGETARCH
 WORKDIR /repo/services/platform
 COPY proto /repo/proto
 COPY services/platform/global.json services/platform/Directory.Build.props services/platform/Directory.Packages.props services/platform/.editorconfig services/platform/dotnet-tools.json ./
-COPY services/platform/src ./src
+# Restore from the project files alone, so a source-only change reuses this layer
+# instead of downloading every package again. --parents keeps each project's path;
+# the glob covers every project the Api project references. Restore and publish must
+# agree on -a, or publish restores again.
+COPY --parents services/platform/src/*/*.csproj /repo/
 RUN dotnet tool restore \
- && dotnet publish src/EnvLaw.Platform.Api/EnvLaw.Platform.Api.csproj -c Release -a "$TARGETARCH" -o /app
+ && dotnet restore src/EnvLaw.Platform.Api/EnvLaw.Platform.Api.csproj -a "$TARGETARCH"
+COPY services/platform/src ./src
+RUN dotnet publish src/EnvLaw.Platform.Api/EnvLaw.Platform.Api.csproj -c Release -a "$TARGETARCH" --no-restore -o /app
 # Bundles take a runtime identifier, not a Docker architecture name.
 RUN rid="linux-$([ "$TARGETARCH" = amd64 ] && echo x64 || echo "$TARGETARCH")" \
  && dotnet ef migrations bundle -p src/EnvLaw.Platform.Modules.Tenancy -s src/EnvLaw.Platform.Modules.Tenancy \

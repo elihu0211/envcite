@@ -1,0 +1,11 @@
+# Build context for services/*/Dockerfile (built from the repo root). Keep host build
+# output out: a host obj/ would overwrite the image's restore results, and .venv is the
+# host's interpreter, not the image's.
+.git
+.venv
+**/bin/
+**/obj/
+**/__pycache__/
+.pytest_cache
+.ruff_cache
+.mypy_cache
