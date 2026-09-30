@@ -15,6 +15,7 @@ import logging
 
 import psycopg
 
+from env_law_ontology.locks import advisory
 from env_law_segmenter import Segmenter
 
 log = logging.getLogger(__name__)
@@ -60,7 +61,15 @@ _PAGE_SQL = """
 
 
 def rebuild(conn: Conn) -> int:
-    """補齊索引並在完成後翻轉現用識別碼；回傳新建的列數。詞典取自現有的標題。"""
+    """補齊索引並在完成後翻轉現用識別碼；回傳新建的列數。詞典取自現有的標題。
+
+    投影一次只有一個建置者：各來源匯入完都要補索引。
+    """
+    with advisory(conn, "projection"):
+        return _rebuild(conn)
+
+
+def _rebuild(conn: Conn) -> int:
     segmenter = Segmenter(
         [str(t) for (t,) in conn.execute("SELECT DISTINCT title FROM corpus.legal_expression")]
     )

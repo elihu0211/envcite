@@ -17,7 +17,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from env_law_ontology.acquire.engine import Contents, Feed, InvalidSnapshot
+from env_law_ontology.acquire.engine import Contents, Feed, InvalidSnapshot, NotAnArchive
 
 _BASE = "https://law.moj.gov.tw/api/ch"
 _PCODE = re.compile(r"[?&]pcode=([A-Z][0-9]{7})(?:&|$)")
@@ -54,7 +54,11 @@ def load_laws(path: Path) -> tuple[date, list[dict[str, Any]]]:
             if len(names) != 1:
                 raise InvalidSnapshot(f"expected one JSON data file, found {names}")
             data = json.loads(z.read(names[0]).decode("utf-8-sig"))
-    except (zipfile.BadZipFile, UnicodeDecodeError, json.JSONDecodeError) as e:
+    except zipfile.BadZipFile as e:
+        raise NotAnArchive(str(e)) from e
+    except FileNotFoundError as e:
+        raise InvalidSnapshot(f"snapshot file missing: {e.filename}") from e
+    except (UnicodeDecodeError, json.JSONDecodeError) as e:
         raise InvalidSnapshot(str(e)) from e
 
     match = _UPDATE_DATE.match(str(data.get("UpdateDate", "")))

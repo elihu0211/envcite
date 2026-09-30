@@ -12,4 +12,5 @@ uv run python -m pytest
 ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-ontology   # :50051
 ONTOLOGY_DSN=postgresql://... ACQUIRE_SNAPSHOT_DIR=/tmp/snapshots uv run env-law-acquire moj   # 取得全國法規資料庫快照
 ONTOLOGY_DSN=postgresql://... ACQUIRE_SNAPSHOT_DIR=/tmp/snapshots uv run env-law-import moj --dry-run   # 解析與驗收；去掉 --dry-run 即寫入語料
+ONTOLOGY_DSN=postgresql://... ACQUIRE_SNAPSHOT_DIR=/tmp/snapshots uv run env-law-sync moj   # 排程執行的整個週期：取得、匯入、檢索投影
 ```

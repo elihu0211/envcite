@@ -15,11 +15,13 @@ from pathlib import Path
 
 import psycopg
 
-from env_law_ontology.acquire.moj import Moj, content_sha256, load_laws, pcode
+from env_law_ontology.acquire.engine import Source
+from env_law_ontology.acquire.moj import content_sha256, load_laws, pcode
 from env_law_ontology.ingest import law as parsing
 from env_law_ontology.ingest.audit import Metrics
 from env_law_ontology.ingest.law import PARSER_VERSION, ParsedLaw, Problem
 from env_law_ontology.ingest.write import apply
+from env_law_ontology.locks import advisory
 
 log = logging.getLogger(__name__)
 
@@ -48,10 +50,20 @@ class Outcome:
 def run(
     conn: Conn,
     snapshot_dir: Path,
-    source: Moj,
+    source: Source,
     *,
     dry_run: bool = False,
     run_id: int | None = None,
+) -> Outcome:
+    """匯入是寫入者，同一來源一次只有一個；`dry_run` 不寫入，不必等鎖。"""
+    if dry_run:
+        return _run(conn, snapshot_dir, source, dry_run=True, run_id=run_id)
+    with advisory(conn, f"import:{source.name}"):
+        return _run(conn, snapshot_dir, source, dry_run=False, run_id=run_id)
+
+
+def _run(
+    conn: Conn, snapshot_dir: Path, source: Source, *, dry_run: bool, run_id: int | None
 ) -> Outcome:
     metrics = Metrics()
     actions: Counter[str] = Counter()
@@ -67,7 +79,7 @@ def run(
             continue
         snapshot_id, data_date, location = row
         assert isinstance(snapshot_id, int) and isinstance(data_date, date)
-        _, laws = load_laws(snapshot_dir / str(location))
+        _, laws = load_laws(snapshot_dir / str(location))  # 檔案不存在：InvalidSnapshot
         parsed = [
             Parsed(
                 pcode(raw),

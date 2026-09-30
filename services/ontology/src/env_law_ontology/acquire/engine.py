@@ -20,6 +20,8 @@ from typing import Protocol
 
 from psycopg import Connection
 
+from env_law_ontology.locks import advisory
+
 log = logging.getLogger(__name__)
 
 _CHUNK = 1 << 20
@@ -27,6 +29,17 @@ _CHUNK = 1 << 20
 
 class InvalidSnapshot(ValueError):
     """檔案下載完整，內容卻不合預期。重試不會改變結果。"""
+
+
+class NotAnArchive(InvalidSnapshot):
+    """檔案不是預期的容器格式（zip）。"""
+
+
+class DownloadFailed(OSError):
+    """下載到的不是預期的容器：來源的錯誤頁或中斷的回應，重試可能就好（03-04 §3）。
+
+    與 `InvalidSnapshot` 分開：容器完好而資料形狀不合，才是重試無益的情形。
+    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,7 +78,8 @@ class Outcome:
 
 
 def acquire(source: Source, root: Path, conn: Connection[tuple[object, ...]]) -> list[Outcome]:
-    return [_acquire_feed(source, feed, root, conn) for feed in source.feeds]
+    with advisory(conn, f"acquire:{source.name}"):
+        return [_acquire_feed(source, feed, root, conn) for feed in source.feeds]
 
 
 def _acquire_feed(
@@ -79,7 +93,10 @@ def _acquire_feed(
             log.info("%s: unchanged (%s)", feed.name, digest.hex()[:12])
             return Outcome(feed.name, None)
 
-        contents = source.read(partial)
+        try:
+            contents = source.read(partial)
+        except NotAnArchive as e:
+            raise DownloadFailed(f"{feed.name}: {e}") from e
         keys = [key for key, _ in contents.items]
         if not keys:
             raise InvalidSnapshot(f"{feed.name}: no items")

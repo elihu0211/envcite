@@ -26,6 +26,7 @@ ONTOLOGY_TEST_DSN=postgresql://... uv run python -m pytest   # use an existing d
 ONTOLOGY_INTERNAL_TOKEN=dev ONTOLOGY_DSN=postgresql://... uv run env-law-ontology   # run server (:50051)
 ONTOLOGY_DSN=postgresql://... ACQUIRE_SNAPSHOT_DIR=/tmp/snapshots uv run env-law-acquire moj   # acquire one source (CronJob entrypoint)
 ONTOLOGY_DSN=postgresql://... ACQUIRE_SNAPSHOT_DIR=/tmp/snapshots uv run env-law-import moj [--dry-run]   # snapshot → corpus; --dry-run parses and gates only
+ONTOLOGY_DSN=postgresql://... ACQUIRE_SNAPSHOT_DIR=/tmp/snapshots uv run env-law-sync moj   # the scheduled cycle: acquire → import → projection (CronJob entrypoint)
 docker build -f Dockerfile ../..   # image (context = repo root; CI job `ontology-image` pushes :<sha> on main)
 ```
 
@@ -34,6 +35,7 @@ docker build -f Dockerfile ../..   # image (context = repo root; CI job `ontolog
 - Server env：`ONTOLOGY_INTERNAL_TOKEN`（必填；呼叫端送 `authorization: Bearer <token>`）、`ONTOLOGY_DSN`（必填，PostgreSQL 連線字串）、`ONTOLOGY_GRPC_PORT`（50051）。
 - 取得（`env-law-acquire <來源>`，`src/env_law_ontology/acquire/`）：引擎負責下載、SHA-256、冪等判斷、以雜湊為名存檔與寫入 `source.*`；來源只實作 `Source`（`feeds`、`tls()`、`read()`），在 `cli.SOURCES` 登記。環境變數 `ONTOLOGY_DSN`（可寫端點）、`ACQUIRE_SNAPSHOT_DIR`。結束碼 0 成功或未變、1 暫時性失敗（可重試）、2 資料不合預期（重試無益）。
 - 匯入（`env-law-import <來源> [--dry-run]`，`src/env_law_ontology/ingest/`）：每個來源取最新快照，`law.parse` 為純函式（條文切分 `articles`、沿革 `history`、生效日 `commencement`）；整批比例過 `audit.LIMITS` 才寫入，否則結束碼 2。單一法規的問題記入 `source.import_problem`，error 使該部不寫入。**改變解析輸出的修改必須遞增 `law.PARSER_VERSION`**，已匯入的法規才會以新版重寫；已匯入的法規內容改變是增量（`ingest/write.py` 的 `apply`）：新增版本、更正、更新推導、拒絕（`version_regressed`）；更正與推導修正以新增列取代舊列（`superseded_at`），查詢只看現行列。匯入成功後 `projection.rebuild` 補齊索引並換版：新識別碼（含標題詞典雜湊）的列補建完成才翻轉 `retrieval.projection.active`，舊識別碼的列延後一個週期回收；服務端 `ActiveSegmenter` 每次查詢讀現用識別碼，不需重啟。
+- 週期（`env-law-sync <來源>`，`src/env_law_ontology/sync.py`）：三步依序執行，每步冪等，每個週期都全跑；每次執行寫一列 `source.run`（到達的步驟、結果、各動作的法規數、驗收比例）。結束碼：0 成功（含無事可做）；1 暫時性（連線、資料庫、鎖逾時、下載到的不是 zip）；2 重試無益（`InvalidSnapshot`：資料形狀不合、快照檔不存在；`BatchRejected`：整批比例越線）。寫入者以資料庫諮詢鎖互斥（`locks.advisory`，鍵：`acquire:<來源>`、`import:<來源>`、`projection`），拿不到即等待、逾時失敗。設計見 env-law-docs 03-04。
 - 測試需要**真實的 PostgreSQL**：設 `ONTOLOGY_TEST_DSN` 指向現成的資料庫，或留空讓 testcontainers 起一個（需要 Docker daemon）。不用替身，因為本服務一半的讀取邏輯在 SQL 裡（逐單元解析、時態鍵、整數陣列排序），對替身測試等於不測那一半。
 - 綱要由 `migrations/*.sql` 描述，依檔名順序套用。**已套用的檔案不可修改**——要改就新增一個檔，這條由 `schema_migration` 的雜湊比對強制，不靠記得。
 
