@@ -293,7 +293,7 @@ def test_a_correction_below_the_article_reaches_the_search_index(
 def test_a_correction_below_the_article_replaces_the_articles_row(
     conn: Conn, tmp_path: Path
 ) -> None:
-    """更正只動款，條仍換成新列：索引以條的列為鍵，新列才會被投影補建。"""
+    """更正只動款，條仍換成新列（原為舊索引以條的列為鍵而設；現行索引內容定址，不依賴它）。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", WITH_ITEMS)))
     _next(
         conn,
