@@ -231,6 +231,9 @@ def test_references_gate_requires_the_punished_provision_to_be_the_cited_one(
 ) -> None:
     ids = _water(conn, sample).ids
     gate = ReferencesGate()
+    conn.execute(
+        "UPDATE annotation.statement SET review = 'confirmed' WHERE id = %s", (ids["w7_1"],)
+    )
 
     ok = gate.check(conn, ids["p40_1_fine"])
     assert ok is not None and ok.verdict == "pass"
@@ -597,3 +600,22 @@ def test_an_exception_to_a_dropped_penalty_is_dropped_with_it(conn: Conn, tmp_pa
         "e1: excepts nothing in this unit",
         "p1: sanction punishes nothing in this unit",
     ]
+
+
+def test_a_penalty_waits_for_the_statement_it_punishes_to_be_confirmed(
+    conn: Conn, sample: None
+) -> None:
+    ids = _water(conn, sample).ids
+    gate = ReferencesGate()
+    fine, duty = ids["p40_1_fine"], ids["w7_1"]
+
+    waiting = gate.check(conn, fine)
+    assert waiting is not None and waiting.verdict == "inconclusive"
+
+    conn.execute("UPDATE annotation.statement SET review = 'rejected' WHERE id = %s", (duty,))
+    refused = gate.check(conn, fine)
+    assert refused is not None and refused.verdict == "fail"
+
+    conn.execute("UPDATE annotation.statement SET review = 'confirmed' WHERE id = %s", (duty,))
+    accepted = gate.check(conn, fine)
+    assert accepted is not None and accepted.verdict == "pass"
