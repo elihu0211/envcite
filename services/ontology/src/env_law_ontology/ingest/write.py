@@ -5,7 +5,8 @@
 - `added`：首次寫入，先前的內容（舊版解析器的產出）整部取代。
 - `versioned`：版本日晚於既有最新，新增一個版本；前一版的區間止於新版。
 - `corrected`、`refreshed`：同一版本日。單元文字不同是更正，只有推導值（生效日、廢止日）
-  不同是更新；兩者都是新增列並結束舊列，不覆寫。
+  不同是更新；兩者都是新增列並結束舊列，不覆寫。下層單元的文字更正連帶換掉所屬條的列：
+  條的全文由下層組成、條的列本身沒有文字，檢索索引以條的列為鍵。
 - `regressed`：版本日早於既有最新，不動語料。
 - `unchanged`：解析結果與已存的一致（來源改的是本系統不用的欄位）。
 """
@@ -280,9 +281,17 @@ def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) ->
         assert isinstance(previous[0], int)
         _close_previous(conn, previous[0], law.units)
 
+    # 條的全文由下層單元組成，條自己的內容是空值，雜湊不會因下層更正而變；檢索投影又以條的列
+    # 為鍵判斷要不要重建。所以下層文字改變時，條的列也換成新列（內容、效力與舊列相同），投影
+    # 才補得到。
+    article_refreshed = sorted(
+        {p.split("/", 1)[0] for p in text_changed if "/" in p} - {*text_changed, *derived_changed}
+    )
+
     if text_changed or derived_changed:
-        replace = [p for p in (*text_changed, *derived_changed) if p in parsed]
-        ended = [current[p][0] for p in (*text_changed, *derived_changed) if p in current]
+        touched = (*text_changed, *derived_changed, *article_refreshed)
+        replace = [p for p in touched if p in parsed]
+        ended = [current[p][0] for p in touched if p in current]
         if ended:
             conn.execute(
                 "UPDATE corpus.provision_version SET superseded_at = now() WHERE id = ANY(%s)",
