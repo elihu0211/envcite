@@ -10,9 +10,12 @@ from typing import Any
 import psycopg
 import pytest
 
+from env_law_ontology import projection
 from env_law_ontology.acquire.moj import Moj, content_sha256, pcode
 from env_law_ontology.ingest import audit, importer
 from env_law_ontology.ingest.importer import Outcome
+from env_law_ontology.store import OntologyStore
+from env_law_segmenter import Segmenter
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
 
@@ -236,3 +239,83 @@ def test_a_repealed_law_is_no_longer_in_force_even_when_its_commencement_is_unkn
     # 施行日不可考，但廢止之後的任何一天都已失效；廢止之前只能說待確認。
     assert _at(conn, date(2020, 1, 1))["art_1"][0] == "commencement_unconfirmed"
     assert _at(conn, date(2021, 1, 12))["art_1"][0] == "no_longer_in_force"
+
+
+WITH_ITEMS = "本法用詞如下：\r\n一、噪音。\r\n二、振動。"
+
+
+@pytest.mark.parametrize(
+    ("corrected", "gained", "lost"),
+    [
+        # 款的文字更正。
+        ("本法用詞如下：\r\n一、噪音。\r\n二、地震。", "地震", "振動"),
+        # 增訂一款。
+        (WITH_ITEMS + "\r\n三、地震。", "地震", None),
+        # 刪去一款。
+        ("本法用詞如下：\r\n一、噪音。", None, "振動"),
+    ],
+    ids=["item-corrected", "item-added", "item-removed"],
+)
+def test_a_correction_below_the_article_reaches_the_search_index(
+    conn: Conn,
+    tmp_path: Path,
+    dsn: str,
+    corrected: str,
+    gained: str | None,
+    lost: str | None,
+) -> None:
+    """條自己沒有文字（內容為空值，雜湊不變），全文由下層組成；下層更正後索引要跟著換。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", WITH_ITEMS)))
+    projection.rebuild(conn)
+
+    changed = _next(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", corrected)))
+    assert changed.actions == {"corrected": 1}
+    projection.rebuild(conn)
+
+    with OntologyStore.from_dsn(dsn) as store:
+        segmenter = Segmenter(store.lexicon())
+
+        def found(query: str) -> bool:
+            hits = store.search(
+                segmenter.to_tsvector_input(query),
+                tokenizer=segmenter.tokenizer_id,
+                as_of="2020-01-01",
+            )
+            return ("T0000001", "2") in {(h.law_id, h.number) for h in hits}
+
+        assert found("噪音")
+        if gained:
+            assert found(gained)
+        if lost:
+            assert not found(lost)
+
+
+def test_a_correction_below_the_article_replaces_the_articles_row(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """更正只動款，條仍換成新列：索引以條的列為鍵，新列才會被投影補建。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", WITH_ITEMS)))
+    _next(
+        conn,
+        tmp_path,
+        _law_v1(LawArticles=_articles("甲一", "本法用詞如下：\r\n一、噪音。\r\n二、地震。")),
+    )
+
+    # 被取代的是款與它所屬的條；第 1 條與未改的款不動。
+    assert conn.execute(
+        "SELECT p.path FROM corpus.provision_version AS v"
+        " JOIN corpus.provision AS p ON p.id = v.provision_id"
+        " WHERE v.superseded_at IS NOT NULL AND v.resource_id = %s ORDER BY p.path",
+        (_law_id(conn),),
+    ).fetchall() == [("art_2",), ("art_2/para_1/pt_2",)]
+    # 現行的條仍恰有一列。
+    assert (
+        _scalar(
+            conn,
+            "SELECT count(*) FROM corpus.provision_version AS v"
+            " JOIN corpus.provision AS p ON p.id = v.provision_id"
+            " WHERE v.superseded_at IS NULL AND p.path = 'art_2' AND v.resource_id = %s",
+            _law_id(conn),
+        )
+        == 1
+    )
