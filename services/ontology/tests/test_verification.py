@@ -357,6 +357,9 @@ def test_a_tampered_statement_is_rejected_by_the_pipeline(conn: Conn, sample: No
 
 
 class FakeModel:
+    name = "fake:model"
+    family = "fake"
+
     def __init__(self, answer: Any) -> None:
         self.answer = answer
         self.prompts: list[str] = []

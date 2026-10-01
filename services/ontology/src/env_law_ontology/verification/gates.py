@@ -272,6 +272,18 @@ class ReferencesGate:
         return GateResult("pass" if covers else "fail", evidence)
 
 
+def statement_as_of(conn: Conn, statement_id: int) -> date | None:
+    """評估一個陳述用的日期：它所錨定的文字現行版本的最近一個生效起日；沒有則 None。"""
+    row = conn.execute(
+        "SELECT max(lower(v.in_force)) FROM annotation.statement AS s"
+        "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
+        "   AND v.content_sha256 = s.content_sha256 AND v.superseded_at IS NULL"
+        " WHERE s.id = %s",
+        (statement_id,),
+    ).fetchone()
+    return None if row is None or row[0] is None else cast(date, row[0])
+
+
 # ---- 閘門三：可執行 ----------------------------------------------------------------------------
 
 _RAW_TRUE = {"le": 0, "lt": -1, "ge": 0, "gt": 1, "eq": 0, "ne": 1}
@@ -376,14 +388,7 @@ class ExecutableGate:
         )
 
     def _as_of(self, conn: Conn, u: _Unit) -> date | None:
-        row = conn.execute(
-            "SELECT max(lower(v.in_force)) FROM annotation.statement AS s"
-            "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
-            "   AND v.content_sha256 = s.content_sha256 AND v.superseded_at IS NULL"
-            " WHERE s.id = %s",
-            (u.statement_id,),
-        ).fetchone()
-        return None if row is None or row[0] is None else cast(date, row[0])
+        return statement_as_of(conn, u.statement_id)
 
     @staticmethod
     def _conditions(conn: Conn, statement_id: int) -> list[_Cond]:
