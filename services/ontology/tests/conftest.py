@@ -58,8 +58,8 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
         c.rollback()
         c.execute("DELETE FROM corpus.legal_resource")
         c.execute("TRUNCATE source.import_problem, source.item, source.snapshot")
-        # 索引是衍生物，測試之間不留。
-        c.execute("DELETE FROM retrieval.article_index")
+        # 索引是內容定址的衍生物：不隨法規連鎖刪除，測試之間要自己清。
+        c.execute("DELETE FROM retrieval.lexical_index")
         c.commit()
 
 

@@ -57,8 +57,10 @@ def search_stub(
                   FROM p
                 RETURNING id
             )
-            INSERT INTO retrieval.article_index (provision_version_id, content_tsv, tokenizer)
-            SELECT v.id, to_tsvector('simple', %(terms)s), %(tokenizer)s FROM v
+            INSERT INTO retrieval.lexical_index (content_sha256, tokenizer, tsv)
+            SELECT sha256(convert_to(%(content)s, 'UTF8')), %(tokenizer)s,
+                   to_tsvector('simple', %(terms)s)
+              FROM v
             """,
             {
                 "law": law[0],
