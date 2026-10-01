@@ -47,7 +47,7 @@ import json
 import logging
 import os
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
@@ -72,6 +72,7 @@ class Loaded:
     exceptions: int
     overrides: int
     sanctions: int
+    ids: Mapping[str, int] = field(default_factory=dict)  # 文件裡的陳述 id → 資料庫的陳述編號
 
 
 def load(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
@@ -158,7 +159,7 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
             (ref(str(o["winner"])), ref(str(o["loser"])), o["basis"]),
         )
         overrides += 1
-    return Loaded(len(ids), conditions, exceptions, overrides, sanctions)
+    return Loaded(len(ids), conditions, exceptions, overrides, sanctions, ids)
 
 
 def _one(conn: Conn, sql: str, *args: object) -> int:

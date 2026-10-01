@@ -37,6 +37,14 @@
     {
       "code": "improvement_overdue",
       "label": "屆期仍未完成改善"
+    },
+    {
+      "code": "actor_is_business_or_sewer_system",
+      "label": "行為人是事業或污水下水道系統"
+    },
+    {
+      "code": "actor_is_livestock_business",
+      "label": "行為人是畜牧業"
     }
   ],
   "statements": [
@@ -155,6 +163,15 @@
           "literal": "事業或污水下水道系統"
         }
       },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "actor_is_business_or_sewer_system",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ],
       "sanction": {
         "punishes": "w7_1",
         "effect": "fine",
@@ -178,6 +195,15 @@
           "literal": "事業或污水下水道系統"
         }
       },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "actor_is_business_or_sewer_system",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ],
       "sanction": {
         "punishes": "w7_1",
         "effect": "order"
@@ -199,6 +225,13 @@
         }
       },
       "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "actor_is_business_or_sewer_system",
+          "comparator": "eq",
+          "threshold": 1
+        },
         {
           "role": "scope",
           "clause": 1,
@@ -233,6 +266,13 @@
         {
           "role": "scope",
           "clause": 1,
+          "concept": "actor_is_business_or_sewer_system",
+          "comparator": "eq",
+          "threshold": 1
+        },
+        {
+          "role": "scope",
+          "clause": 1,
           "concept": "circumstances_serious",
           "comparator": "eq",
           "threshold": 1,
@@ -263,6 +303,13 @@
         {
           "role": "scope",
           "clause": 1,
+          "concept": "actor_is_business_or_sewer_system",
+          "comparator": "eq",
+          "threshold": 1
+        },
+        {
+          "role": "scope",
+          "clause": 1,
           "concept": "revocation_necessary",
           "comparator": "eq",
           "threshold": 1,
@@ -289,6 +336,15 @@
           "literal": "畜牧業"
         }
       },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "actor_is_livestock_business",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ],
       "sanction": {
         "punishes": "w7_1",
         "effect": "fine",
@@ -312,6 +368,15 @@
           "literal": "畜牧業"
         }
       },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "actor_is_livestock_business",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ],
       "sanction": {
         "punishes": "w7_1",
         "effect": "order"
@@ -333,6 +398,13 @@
         }
       },
       "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "actor_is_livestock_business",
+          "comparator": "eq",
+          "threshold": 1
+        },
         {
           "role": "scope",
           "clause": 1,
@@ -367,6 +439,13 @@
         {
           "role": "scope",
           "clause": 1,
+          "concept": "actor_is_livestock_business",
+          "comparator": "eq",
+          "threshold": 1
+        },
+        {
+          "role": "scope",
+          "clause": 1,
           "concept": "circumstances_serious",
           "comparator": "eq",
           "threshold": 1,
@@ -394,6 +473,13 @@
         }
       },
       "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "actor_is_livestock_business",
+          "comparator": "eq",
+          "threshold": 1
+        },
         {
           "role": "scope",
           "clause": 1,

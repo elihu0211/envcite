@@ -48,7 +48,7 @@ def loaded(conn: Conn, sample: None) -> Loaded:
 
 
 def test_the_draft_loads_against_the_real_wording(loaded: Loaded) -> None:
-    assert (loaded.statements, loaded.conditions, loaded.sanctions) == (13, 10, 10)
+    assert (loaded.statements, loaded.conditions, loaded.sanctions) == (13, 20, 10)
     assert (loaded.exceptions, loaded.overrides) == (0, 0)
 
 
@@ -114,7 +114,7 @@ def test_uncertain_legal_concepts_are_marked_as_needing_judgement(
     # 要件的其餘部分（適用範圍、義務內容）不是判斷。
     assert (
         _scalar(conn, "SELECT count(*) FROM annotation.statement_condition WHERE NOT judgement")
-        == 5
+        == 15
     )
 
 
