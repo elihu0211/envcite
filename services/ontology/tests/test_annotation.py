@@ -340,3 +340,28 @@ def test_a_law_another_law_delegates_to_cannot_be_deleted(conn: Conn, tmp_path: 
     conn.execute("DELETE FROM corpus.legal_resource WHERE local_id = 'T0000001'")
     conn.execute("DELETE FROM corpus.legal_resource WHERE local_id = 'T0000002'")
     conn.commit()
+
+
+def test_a_limit_cannot_be_marked_as_needing_judgement(conn: Conn, tmp_path: Path) -> None:
+    """限值是數值，不是判斷：資料庫擋下。"""
+    _first(conn, tmp_path, _law_v1())
+    doc = _doc(_limit("乙一", 100))
+    doc["statements"][0]["conditions"][0]["judgement"] = True
+
+    with pytest.raises(AnnotationError, match="違反資料庫約束"):
+        load(conn, doc)
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0
+
+
+def test_the_judgement_marker_defaults_to_false_and_is_loaded_when_given(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1())
+    doc = _doc(_duty())
+    doc["statements"][0]["conditions"][0]["judgement"] = True
+    load(conn, doc)
+
+    rows = conn.execute(
+        "SELECT role, judgement FROM annotation.statement_condition ORDER BY role"
+    ).fetchall()
+    assert rows == [("scope", True), ("duty", False)] or rows == [("duty", False), ("scope", True)]

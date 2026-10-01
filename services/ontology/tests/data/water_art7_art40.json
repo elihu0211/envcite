@@ -131,7 +131,8 @@
           "clause": 1,
           "concept": "jurisdiction_special_environment",
           "comparator": "eq",
-          "threshold": 1
+          "threshold": 1,
+          "judgement": true
         }
       ]
     },
@@ -179,7 +180,8 @@
           "clause": 1,
           "concept": "circumstances_serious",
           "comparator": "eq",
-          "threshold": 1
+          "threshold": 1,
+          "judgement": true
         }
       ],
       "sanction": {
@@ -208,7 +210,8 @@
           "clause": 1,
           "concept": "revocation_necessary",
           "comparator": "eq",
-          "threshold": 1
+          "threshold": 1,
+          "judgement": true
         }
       ],
       "sanction": {
@@ -260,7 +263,8 @@
           "clause": 1,
           "concept": "circumstances_serious",
           "comparator": "eq",
-          "threshold": 1
+          "threshold": 1,
+          "judgement": true
         }
       ],
       "sanction": {
@@ -289,7 +293,8 @@
           "clause": 1,
           "concept": "revocation_necessary",
           "comparator": "eq",
-          "threshold": 1
+          "threshold": 1,
+          "judgement": true
         }
       ],
       "sanction": {
@@ -307,7 +312,7 @@
     ],
     "questions_for_reviewer": [
       "art_7/para_2 前半句是義務還是授權？暫標為構成性。",
-      "情節重大、必要時、環境特殊或需特予保護之水體是不確定法律概念或裁量，這裡暫以布林事實表示，綱要沒有「需判斷」的標記。",
+      "情節重大、必要時、環境特殊或需特予保護之水體是不確定法律概念或裁量，已標為需判斷（judgement）；它們是否真屬需判斷、哪些其他要件也該標，待審。",
       "art_40 兩項的主體不含建築物污水處理設施，而第七條第一項含；是否有意，未查。",
       "art_40 第二項（畜牧業）與第一項（事業）是否為特別規定與一般規定的關係：未標註優先。"
     ]
