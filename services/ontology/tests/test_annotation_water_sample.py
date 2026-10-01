@@ -48,7 +48,7 @@ def loaded(conn: Conn, sample: None) -> Loaded:
 
 
 def test_the_draft_loads_against_the_real_wording(loaded: Loaded) -> None:
-    assert (loaded.statements, loaded.conditions, loaded.sanctions) == (9, 8, 6)
+    assert (loaded.statements, loaded.conditions, loaded.sanctions) == (13, 10, 10)
     assert (loaded.exceptions, loaded.overrides) == (0, 0)
 
 
@@ -74,12 +74,13 @@ def test_once_confirmed_every_statement_is_a_fact_on_the_day(conn: Conn, loaded:
     conn.execute("UPDATE annotation.statement SET review = 'confirmed'")
     conn.commit()
 
-    assert _facts(conn) == 9
+    assert _facts(conn) == 13
 
 
 def test_the_penalties_punish_the_duty_and_carry_the_amounts(conn: Conn, loaded: Loaded) -> None:
     fines = conn.execute(
-        "SELECT min_amount, max_amount FROM annotation.sanction WHERE effect = 'fine' ORDER BY 1"
+        "SELECT min_amount, max_amount FROM annotation.sanction"
+        " WHERE effect = 'fine' AND NOT repeating ORDER BY 1"
     ).fetchall()
 
     assert fines == [(6000, 600000), (60000, 20000000)]
@@ -113,5 +114,23 @@ def test_uncertain_legal_concepts_are_marked_as_needing_judgement(
     # 要件的其餘部分（適用範圍、義務內容）不是判斷。
     assert (
         _scalar(conn, "SELECT count(*) FROM annotation.statement_condition WHERE NOT judgement")
-        == 3
+        == 5
     )
+
+
+def test_the_improvement_order_and_the_repeated_fine_are_their_own_effects(
+    conn: Conn, loaded: Loaded
+) -> None:
+    """一個罰則陳述一個效果：改善命令不是處罰種類，按次處罰是同一個罰鍰的反覆裁處。"""
+    effects = conn.execute(
+        "SELECT effect::text, repeating, count(*) FROM annotation.sanction"
+        " GROUP BY 1, 2 ORDER BY 1, 2"
+    ).fetchall()
+
+    assert effects == [
+        ("deprivation", False, 2),
+        ("fine", False, 2),
+        ("fine", True, 2),
+        ("order", False, 2),
+        ("restriction", False, 2),
+    ]
