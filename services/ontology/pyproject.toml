@@ -30,6 +30,12 @@ env-law-import = "env_law_ontology.ingest.cli:main"
 env-law-sync = "env_law_ontology.sync:main"
 env-law-annotate = "env_law_ontology.annotate:main"
 env-law-verify = "env_law_ontology.verification.cli:main"
+env-law-pipeline = "env_law_ontology.verification.run:main"
+
+[project.optional-dependencies]
+llm = [
+    "anthropic",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]

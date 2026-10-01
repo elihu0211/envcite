@@ -8,16 +8,24 @@ from env_law_ontology.verification.gates import (
     NumbersGate,
     ReferencesGate,
 )
+from env_law_ontology.verification.model_gates import IndependentTestGate, PanelGate, RoundtripGate
+from env_law_ontology.verification.models import AnthropicModel, Model, build_model
 from env_law_ontology.verification.pipeline import Settled, settle, verify
 
 __all__ = [
     "DEFAULT_GATES",
+    "AnthropicModel",
     "ExecutableGate",
     "Gate",
     "GateResult",
+    "IndependentTestGate",
+    "Model",
     "NumbersGate",
+    "PanelGate",
     "ReferencesGate",
+    "RoundtripGate",
     "Settled",
+    "build_model",
     "settle",
     "verify",
 ]

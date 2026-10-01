@@ -11,11 +11,12 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any
 
 import psycopg
 
 from env_law_ontology.annotate import Loaded, load
+from env_law_ontology.verification.models import Model
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -35,10 +36,6 @@ PROMPT = """你是法規標註器。下面是一個條文單元的原文。請�
 原文（{law} {path}）：
 {text}
 """
-
-
-class Model(Protocol):
-    def complete(self, prompt: str) -> str: ...
 
 
 @dataclass(frozen=True)
@@ -67,11 +64,11 @@ def extract_unit(
     law: str,
     path: str,
     *,
-    agent: str,
+    agent: str | None = None,
     agent_version: str,
     scheme: tuple[str, str] = ("env", "環境法概念"),
 ) -> Extracted:
-    """抽取一個條文單元。`agent` 記為推導者；驗證者不得與它相同（資料庫強制）。"""
+    """抽取一個條文單元。`agent` 記為推導者（預設為模型的名字）；驗證者不得與它相同。"""
     text = _unit_text(conn, law, path)
     raw = model.complete(PROMPT.format(law=law, path=path, text=text))
     try:
@@ -94,7 +91,11 @@ def extract_unit(
     if not statements:
         return Extracted(None, tuple(dropped))
     doc = {
-        "derivation": {"method": "llm", "agent": agent, "agent_version": agent_version},
+        "derivation": {
+            "method": "llm",
+            "agent": agent or model.name,
+            "agent_version": agent_version,
+        },
         "review": "extracted",
         "scheme": {"code": scheme[0], "title": scheme[1]},
         "concepts": answer.get("concepts", []),
