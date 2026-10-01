@@ -77,6 +77,11 @@ class ChatCompletionsModel:
     `CHAT_API_KEY`（自架的伺服器可以沒有）。gpt-oss 一類的推理模型會把思考也算進輸出長度，所以
     `max_tokens` 預設較大；只取 `message.content`，思考欄位不採用。slug 沒有斜線時家族記為
     `unknown`：兩個這樣的模型會被當成同一家族，只會讓閘門更保守，不會更寬鬆。
+
+    送出的模型識別預設是整個 slug（OpenRouter 這類閘道的寫法）；自架或自訂的端點常只認斜線後的
+    名字（`gpt-oss-120b`），設環境變數 `CHAT_MODEL_FORMAT=bare` 就只送斜線後的部分。家族與名字
+    仍取自 slug，所以 `chat:openai/gpt-oss-120b` 與 `chat:google/gemma-4-31b` 在只認名字的端點上
+    也記成不同家族。
     """
 
     def __init__(self, slug: str, max_tokens: int = 8192, timeout: float = 300.0) -> None:
@@ -93,6 +98,11 @@ class ChatCompletionsModel:
     def name(self) -> str:
         return f"{self.family}:{self.slug.partition('/')[2] or self.slug}"
 
+    @property
+    def request_model(self) -> str:
+        bare = os.environ.get("CHAT_MODEL_FORMAT", "slug") == "bare"
+        return self.slug.partition("/")[2] if bare and "/" in self.slug else self.slug
+
     def complete(self, prompt: str) -> str:
         base = os.environ.get("CHAT_BASE_URL", "").rstrip("/")
         if not base:
@@ -104,7 +114,7 @@ class ChatCompletionsModel:
             headers["Authorization"] = f"Bearer {key}"
         body = json.dumps(
             {
-                "model": self.slug,
+                "model": self.request_model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": self.max_tokens,
                 "temperature": 0,

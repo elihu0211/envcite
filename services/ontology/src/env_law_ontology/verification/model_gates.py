@@ -13,13 +13,13 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, cast
 
 from env_law_ontology.reasoning import evaluate
 from env_law_ontology.verification.gates import Conn, GateResult, _unit, statement_as_of
+from env_law_ontology.verification.jsonutil import object_from
 from env_law_ontology.verification.models import Model, family_of
 
 _CMP = {"le": "不大於", "lt": "小於", "ge": "不小於", "gt": "大於", "eq": "等於", "ne": "不等於"}
@@ -47,18 +47,6 @@ _VERDICTS = {
     "conditional_violation",
     "conditional_compliant",
 }
-
-
-def _json(text: str) -> dict[str, Any] | None:
-    """從模型的回答取出第一個 JSON 物件；取不出為 None。"""
-    start, end = text.find("{"), text.rfind("}")
-    if start < 0 or end <= start:
-        return None
-    try:
-        value = json.loads(text[start : end + 1])
-    except json.JSONDecodeError:
-        return None
-    return value if isinstance(value, dict) else None
 
 
 def _extractor(conn: Conn, statement_id: int) -> str:
@@ -248,7 +236,7 @@ class RoundtripGate:
             return GateResult(
                 "inconclusive", {"reason": "no eligible verifier", "skipped": skipped}
             )
-        answer = _json(
+        answer = object_from(
             ok[0].complete(REFORMALIZE.format(description=render_annotation(conn, statement_id)))
         )
         if answer is None:
@@ -320,7 +308,7 @@ class IndependentTestGate:
                 (statement_id,),
             )
         )
-        answer = _json(ok[0].complete(WRITE_TESTS.format(text=u.quoted, concepts=concepts)))
+        answer = object_from(ok[0].complete(WRITE_TESTS.format(text=u.quoted, concepts=concepts)))
         cases = [
             c
             for c in (answer or {}).get("cases") or []
@@ -396,7 +384,7 @@ class PanelGate:
         prompt = JUDGE.format(text=u.quoted, description=render_annotation(conn, statement_id))
         votes: list[dict[str, Any]] = []
         for judge in ok:
-            answer = _json(judge.complete(prompt))
+            answer = object_from(judge.complete(prompt))
             if answer is not None and isinstance(answer.get("faithful"), bool):
                 votes.append(
                     {

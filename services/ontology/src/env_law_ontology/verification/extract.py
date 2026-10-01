@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -16,6 +15,7 @@ from typing import Any
 import psycopg
 
 from env_law_ontology.annotate import Loaded, load
+from env_law_ontology.verification.jsonutil import object_from
 from env_law_ontology.verification.models import Model
 
 Conn = psycopg.Connection[tuple[object, ...]]
@@ -71,9 +71,8 @@ def extract_unit(
     """抽取一個條文單元。`agent` 記為推導者（預設為模型的名字）；驗證者不得與它相同。"""
     text = _unit_text(conn, law, path)
     raw = model.complete(PROMPT.format(law=law, path=path, text=text))
-    try:
-        answer: Mapping[str, Any] = json.loads(raw)
-    except json.JSONDecodeError:
+    answer: Mapping[str, Any] | None = object_from(raw)
+    if answer is None:
         return Extracted(None, ("<unparseable model output>",))
     statements: list[dict[str, Any]] = []
     dropped: list[str] = []

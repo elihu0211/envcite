@@ -473,3 +473,19 @@ def test_ppi_needs_enough_samples() -> None:
         ppi_mean([1.0], [1.0], [1.0, 0.0])
     with pytest.raises(ValueError):
         ppi_mean([1.0, 0.0], [1.0], [1.0, 0.0])
+
+
+def test_the_extractor_reads_json_that_the_model_wrapped_in_a_code_fence(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """真實的模型常把 JSON 包在 ```json 圍欄裡，前後還有說明。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    fenced = (
+        "好的，以下是標註：\n```json\n"
+        + json.dumps(EXTRACTED, ensure_ascii=False)
+        + "\n```\n以上。"
+    )
+
+    out = extract_unit(conn, FakeModel(fenced), LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert out.loaded is not None and out.loaded.statements == 1

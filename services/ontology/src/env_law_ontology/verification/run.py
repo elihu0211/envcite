@@ -25,6 +25,30 @@ Conn = psycopg.Connection[tuple[object, ...]]
 ALL_METHODS = ("numbers", "references", "executable", "roundtrip", "independent_test", "panel")
 
 
+#: 兩個「不同」的模型對這些開放式問題在溫度 0 下逐字相同，幾乎必定是同一個模型的兩個名字。
+PROBES = ("用兩句話說明什麼是法律的位階，要有你自己的措辭。", "寫一首四句的詩，主題是河川。")
+
+
+class SameModel(ValueError):
+    """兩個名字背後是同一個模型：它們不獨立，不能互相驗證。"""
+
+
+def assert_distinct(models: Sequence[Model]) -> None:
+    """託管服務的模型名稱不保證是它所指的模型（同一個模型常有幾個別名），名字不同不等於家族不同。
+
+    對每個模型問同樣的開放式問題，逐字相同的就是同一個模型。這只抓得到完全相同的別名，抓不到
+    同一個基礎模型的不同微調；而且只有在溫度為 0 的轉接器上有效（`chat` 轉接器送溫度 0）。
+    """
+    answers = {m.name: tuple(m.complete(p) for p in PROBES) for m in models}
+    names = list(answers)
+    for i, a in enumerate(names):
+        for b in names[i + 1 :]:
+            if answers[a] == answers[b]:
+                raise SameModel(
+                    f"{a} and {b} answered every probe identically: same model under two names"
+                )
+
+
 @dataclass(frozen=True)
 class Run:
     units: int
@@ -85,7 +109,10 @@ def run(
     agent_version: str,
     required: Sequence[str] = ALL_METHODS,
     allow_same_family: bool = False,
+    check_distinct: bool = False,
 ) -> Run:
+    if check_distinct:
+        assert_distinct([extractor, *verifiers])
     units = skipped = extracted = dropped = 0
     for law in laws:
         for path in units_of(conn, law):
@@ -120,6 +147,9 @@ def main() -> None:
     parser.add_argument(
         "--allow-same-family", action="store_true", help="採計與抽取者同一家族的驗證者（不建議）"
     )
+    parser.add_argument(
+        "--no-distinct-check", action="store_true", help="略過「同一個模型的別名」檢查"
+    )
     args = parser.parse_args()
     dsn = os.environ.get("ONTOLOGY_DSN", "")
     if not dsn:
@@ -136,6 +166,7 @@ def main() -> None:
             agent_version=args.agent_version,
             required=required,
             allow_same_family=args.allow_same_family,
+            check_distinct=not args.no_distinct_check,
         )
     logging.getLogger(__name__).info(
         "單元 %d（略過 %d），抽取 %d 個陳述（丟掉 %d）；%d 個確認、%d 個駁回，%d 輪",

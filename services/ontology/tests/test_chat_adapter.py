@@ -141,3 +141,25 @@ def test_build_model_accepts_the_chat_spec() -> None:
     assert model.name == "openai:gpt-oss-120b"
     with pytest.raises(ValueError):
         build_model("chat:")
+
+
+def test_bare_format_sends_only_the_name_but_keeps_the_vendor_as_the_family(
+    endpoint: Endpoint, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """只認名字的端點：請求送 gpt-oss-120b，家族仍是 openai；另一個模型記成別的家族。"""
+    monkeypatch.setenv("CHAT_MODEL_FORMAT", "bare")
+
+    ChatCompletionsModel("openai/gpt-oss-120b").complete("x")
+
+    assert endpoint.requests[0]["body"]["model"] == "gpt-oss-120b"
+    assert ChatCompletionsModel("google/gemma-4-31b").family == "google"
+    assert (
+        ChatCompletionsModel("openai/gpt-oss-120b").family
+        != ChatCompletionsModel("google/gemma-4-31b").family
+    )
+
+
+def test_the_slug_is_sent_whole_by_default(endpoint: Endpoint) -> None:
+    ChatCompletionsModel("openai/gpt-oss-120b").complete("x")
+
+    assert endpoint.requests[0]["body"]["model"] == "openai/gpt-oss-120b"

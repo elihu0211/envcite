@@ -24,7 +24,14 @@ from env_law_ontology.verification import (
 )
 from env_law_ontology.verification.extract import extract_unit
 from env_law_ontology.verification.model_gates import render_annotation
-from env_law_ontology.verification.run import ALL_METHODS, run, units_of
+from env_law_ontology.verification.run import (
+    ALL_METHODS,
+    PROBES,
+    SameModel,
+    assert_distinct,
+    run,
+    units_of,
+)
 from tests.test_annotation import BEFORE, LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
@@ -410,3 +417,38 @@ def test_the_anthropic_adapter_refuses_to_run_without_a_key(
 
     with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
         AnthropicModel("claude-sonnet-5-5").complete("x")
+
+
+# ---- one model under two names ----
+
+
+def test_two_names_that_answer_every_probe_identically_are_one_model() -> None:
+    """託管服務常把同一個模型掛在幾個名字下：名字不同不等於家族不同。"""
+    twin = {p: f"答：{i}" for i, p in enumerate(PROBES)}
+    a = Scripted("openai:gpt-oss-120b", lambda prompt: twin[prompt])
+    b = Scripted("mistral:mistral-small-4", lambda prompt: twin[prompt])
+
+    with pytest.raises(SameModel, match="same model under two names"):
+        assert_distinct([a, b])
+
+
+def test_models_that_answer_differently_are_distinct() -> None:
+    a = Scripted("google:gemma", lambda prompt: "甲" + prompt[:3])
+    b = Scripted("meta:llama", lambda prompt: "乙" + prompt[:3])
+
+    assert_distinct([a, b])
+
+
+def test_the_pipeline_can_refuse_to_start_when_two_of_its_models_are_one(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(TEXT, "乙一")))
+
+    def same(prompt: str) -> str:
+        return "同一個答案"
+
+    models = [Scripted("fake-a:x", same), Scripted("fake-b:y", same)]
+
+    with pytest.raises(SameModel):
+        run(conn, models[0], models[1:], [LAW], agent_version="1", check_distinct=True)
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0  # 一個單元都沒抽
