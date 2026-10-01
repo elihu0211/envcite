@@ -30,15 +30,16 @@ PROMPT = """你是法規標註器。下面是一個條文單元的原文。請�
   "judgement": false}}],
   "sanction": {{"effect": "fine|order|restriction|deprivation|reputation|warning|confiscation",
   "min": 數字或省略, "max": 數字或省略, "amount_text": "原文或省略", "repeating": false,
-  "punishes": "受罰的那個陳述的 id"}}}}]}}
+  "punishes": "同一個單元裡受罰的那個陳述的 id，沒有就省略"}}}}]}}
 規則：
 1. 引文必須逐字出現在原文；不要輸出原文沒有的內容。
 2. 只有 kind 為 prescriptive 的陳述才有 deontic；constitutive（定義、適用範圍、授權）與
    penalty（罰則）不要寫 deontic。
 3. 義務（應…、不得…）的要件分兩種：scope 是誰、在什麼情形下適用；duty 是義務本身的內容，例如
    「應符合放流水標準」要有一個 duty 要件（概念「符合放流水標準」），沒有 duty 的義務無法被評估。
-4. 罰則（penalty）要有 sanction，effect 只能選一個值，punishes 必須是同一個單元裡另一個陳述的
-   id；受罰的陳述不在這個單元裡時，不要輸出那個罰則陳述。
+4. 罰則（penalty）要有 sanction，effect 只能選一個值。受罰的陳述就在這個單元裡時，punishes 填它的
+   id；受罰的是原文引用的別條（例如「違反第七條規定者」）時省略 punishes，程式會連到被引用條文
+   的陳述。
 5. 每個要件都要有 threshold：成立與否的要件（是否排放、是否符合標準）寫 comparator "eq"、
    threshold 1；「非」「不」用 negated: true 表示；原文有數值門檻時才寫它的數字與單位。
 6. 不確定法律概念或裁量（情節重大、必要時）的要件 judgement 設為 true。
@@ -53,6 +54,8 @@ PROMPT = """你是法規標註器。下面是一個條文單元的原文。請�
 class Extracted:
     loaded: Loaded | None
     dropped: tuple[str, ...]  # 被丟掉的輸出：引文不在原文裡的陳述，或整份違反資料庫約束的文件
+    # 受罰的陳述在別的單元的罰則：還不能寫入，等所有單元抽完再由 `link.link_penalties` 連結
+    pending: tuple[Mapping[str, Any], ...] = ()
 
 
 def _unit_text(conn: Conn, law: str, path: str) -> str:
@@ -69,10 +72,16 @@ def _unit_text(conn: Conn, law: str, path: str) -> str:
     return str(row[0])
 
 
+def _held(s: Mapping[str, Any]) -> bool:
+    """罰則沒有指明同單元裡受罰的陳述：它處罰的是原文引用的別條。"""
+    sanction = s.get("sanction")
+    return isinstance(sanction, Mapping) and sanction.get("punishes") is None
+
+
 def _linkable(statements: list[dict[str, Any]], dropped: list[str]) -> list[dict[str, Any]]:
     """丟掉指向文件外的罰則與例外，連帶丟掉指向被丟掉者的陳述，直到不再變動。
 
-    罰則與例外只能指向同一份文件裡的陳述；受罰的條文在別的單元時，這個單元連不上它。
+    罰則與例外只能指向同一份文件裡的陳述；指明了同單元的陳述卻不在其中的，是模型寫錯。
     """
     while True:
         ids = {str(s.get("id")) for s in statements}
@@ -88,6 +97,19 @@ def _linkable(statements: list[dict[str, Any]], dropped: list[str]) -> list[dict
         if len(kept) == len(statements):
             return kept
         statements = kept
+
+
+def _linkable_held(held: list[dict[str, Any]], dropped: list[str]) -> list[dict[str, Any]]:
+    """等待連結的罰則之間的例外必須指向同批的陳述；指向別處的丟掉。"""
+    while True:
+        ids = {str(s.get("id")) for s in held}
+        kept = [s for s in held if s.get("exception_of") is None or str(s["exception_of"]) in ids]
+        for s in held:
+            if s not in kept:
+                dropped.append(f"{s.get('id', '?')}: excepts nothing in this unit")
+        if len(kept) == len(held):
+            return kept
+        held = kept
 
 
 def extract_unit(
@@ -119,10 +141,10 @@ def extract_unit(
         if quote != text:
             item["span"] = [start, start + len(quote)]
         statements.append(item)
-    statements = _linkable(statements, dropped)
-    if not statements:
-        return Extracted(None, tuple(dropped))
-    doc = {
+    held = [s for s in statements if _held(s)]
+    held = _linkable_held(held, dropped)
+    statements = _linkable([s for s in statements if not _held(s)], dropped)
+    base = {
         "derivation": {
             "method": "llm",
             "agent": agent or model.name,
@@ -131,11 +153,14 @@ def extract_unit(
         "review": "extracted",
         "scheme": {"code": scheme[0], "title": scheme[1]},
         "concepts": answer.get("concepts", []),
-        "statements": statements,
     }
+    pending = (base | {"statements": held},) if held else ()
+    if not statements:
+        return Extracted(None, tuple(dropped), pending)
+    doc = base | {"statements": statements}
     try:
         loaded = load(conn, doc)
     except AnnotationError as e:
         # 模型的輸出不受我們控制：違反約束的文件整份不寫（`load` 已回滾），記下來，不拖垮整條管線。
-        return Extracted(None, (*dropped, f"<invalid document: {e}>"))
-    return Extracted(loaded, tuple(dropped))
+        return Extracted(None, (*dropped, f"<invalid document: {e}>"), pending)
+    return Extracted(loaded, tuple(dropped), pending)

@@ -9,13 +9,15 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import psycopg
 
 from env_law_ontology.verification.extract import extract_unit
 from env_law_ontology.verification.gates import DEFAULT_GATES, Gate
+from env_law_ontology.verification.link import link_penalties
 from env_law_ontology.verification.model_gates import IndependentTestGate, PanelGate, RoundtripGate
 from env_law_ontology.verification.models import Model, build_model
 from env_law_ontology.verification.pipeline import Settled, settle
@@ -58,6 +60,7 @@ class Run:
     extracted: int
     dropped: int
     settled: Settled
+    linked: int = 0  # 事後連到被引用條文的罰則陳述數（已含在 extracted）
 
 
 def units_of(conn: Conn, law: str) -> list[str]:
@@ -116,6 +119,7 @@ def run(
     if check_distinct:
         assert_distinct([extractor, *verifiers])
     units = skipped = extracted = dropped = 0
+    pending: list[Mapping[str, Any]] = []
     for law in laws:
         for path in units_of(conn, law):
             units += 1
@@ -125,10 +129,16 @@ def run(
             out = extract_unit(conn, extractor, law, path, agent_version=agent_version)
             extracted += out.loaded.statements if out.loaded else 0
             dropped += len(out.dropped)
+            pending += out.pending
             for reason in out.dropped:
                 log.warning("丟掉 %s %s：%s", law, path, reason[:300])
+    linked = link_penalties(conn, extractor, pending)
+    extracted += linked.statements
+    dropped += len(linked.dropped)
+    for reason in linked.dropped:
+        log.warning("丟掉待連結的罰則：%s", reason[:300])
     settled = settle(conn, list(required), gates_for(verifiers, allow_same_family))
-    return Run(units, skipped, extracted, dropped, settled)
+    return Run(units, skipped, extracted, dropped, settled, linked.statements)
 
 
 def main() -> None:
@@ -173,10 +183,12 @@ def main() -> None:
             check_distinct=not args.no_distinct_check,
         )
     logging.getLogger(__name__).info(
-        "單元 %d（略過 %d），抽取 %d 個陳述（丟掉 %d）；%d 個確認、%d 個駁回，%d 輪",
+        "單元 %d（略過 %d），抽取 %d 個陳述（含連結的罰則 %d 個；丟掉 %d）；"
+        "%d 個確認、%d 個駁回，%d 輪",
         result.units,
         result.skipped,
         result.extracted,
+        result.linked,
         result.dropped,
         result.settled.confirmed,
         result.settled.rejected,

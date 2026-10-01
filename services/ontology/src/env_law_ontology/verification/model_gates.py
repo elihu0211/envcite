@@ -91,8 +91,17 @@ def render_annotation(conn: Conn, statement_id: int) -> str:
         " WHERE c.statement_id = %s ORDER BY c.id",
         (statement_id,),
     ):
-        value = "門檻值由授權命令供給" if delegated else f"{threshold:g}{unit or ''}"
-        text = f"[{code}] {label} {_CMP[str(cmp)]} {value}"
+        if cmp == "eq" and threshold == 1 and not unit and not delegated:
+            text = f"[{code}] {label} 成立"  # 成立與否的要件；不寫成原文沒有的數值
+        else:
+            value = (
+                "門檻值由授權命令供給"
+                if delegated
+                else "（另一個概念）"
+                if threshold is None
+                else f"{threshold:g}{unit or ''}"
+            )
+            text = f"[{code}] {label} {_CMP[str(cmp)]} {value}"
         by_role.setdefault(str(role), []).append(
             ("非：" if negated else "") + text + ("（需判斷）" if judgement else "")
         )
@@ -112,7 +121,7 @@ def render_annotation(conn: Conn, statement_id: int) -> str:
             if low is None and high is None
             else f"；額度 {low or '無下限'} 至 {high or '無上限'}"
         )
-        lines.append(f"罰則效果：{effect}{amount}；按次處罰：{'是' if repeating else '否'}")
+        lines.append(f"罰則效果：{effect}{amount}" + ("；按次處罰" if repeating else ""))
     return "\n".join(lines)
 
 
@@ -203,8 +212,9 @@ REFORMALIZE = """下面是對一個法規陳述的結構化描述（不是法規
     "negated": true|false, "judgement": true|false}}],
   "sanction": {{"effect": "效果", "min": 數字或 null, "max": 數字或 null,
     "repeating": true|false}} 或 null}}
-門檻值由授權命令供給時 threshold 為 null；「（需判斷）」表示 judgement 為 true；「非：」表示 negated
-為 true；沒有罰則則 sanction 為 null。只輸出 JSON。
+門檻值由授權命令供給時 threshold 為 null；「成立」表示 comparator 為 eq、threshold 為 1；
+「（需判斷）」表示 judgement 為 true；「非：」表示 negated 為 true；沒有提到按次處罰則 repeating
+為 false；沒有罰則則 sanction 為 null。只輸出 JSON。
 
 描述：
 {description}
@@ -344,7 +354,8 @@ class IndependentTestGate:
 
 JUDGE = """你是法規標註的審查者。下面是一段法規原文，與一份對它的結構化標註描述。
 請判斷這份標註是否忠於原文：種類、義務方向、要件（含門檻值與「非」）、罰則的效果與額度，是否都有
-原文依據，沒有遺漏或添加。輸出 JSON：{{"faithful": true|false, "issues": ["具體問題"]}}。
+原文依據，沒有遺漏或添加。描述裡的「成立」是要件成立之意，不是數值；沒有寫出的預設（例如沒有
+「按次處罰」字樣）不算添加。輸出 JSON：{{"faithful": true|false, "issues": ["具體問題"]}}。
 只輸出 JSON。
 
 原文：

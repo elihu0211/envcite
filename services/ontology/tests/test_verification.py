@@ -513,12 +513,8 @@ def test_a_model_answer_that_breaks_a_constraint_is_dropped_not_fatal(
     assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0
 
 
-def test_a_penalty_that_punishes_nothing_in_the_unit_is_dropped_but_the_rest_is_kept(
-    conn: Conn, tmp_path: Path
-) -> None:
-    """罰則所處罰的陳述在別的單元時，單元內連不上：只丟那一條，其餘照常寫入。"""
-    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
-    doc = json.loads(json.dumps(EXTRACTED))
+def _duty_and_cited_penalty() -> dict[str, Any]:
+    doc: dict[str, Any] = json.loads(json.dumps(EXTRACTED))
     doc["statements"] = [
         doc["statements"][0],
         {
@@ -528,6 +524,36 @@ def test_a_penalty_that_punishes_nothing_in_the_unit_is_dropped_but_the_rest_is_
             "sanction": {"effect": "fine", "min": 1, "max": 2},
         },
     ]
+    return doc
+
+
+def test_a_penalty_without_a_target_in_the_unit_is_held_for_linking(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """罰則處罰的是原文引用的別條：這個單元寫不進去，留到所有單元抽完再連結，其餘照常寫入。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(_duty_and_cited_penalty(), ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.dropped == ()
+    assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1"]
+    assert _scalar(conn, "SELECT count(*) FROM annotation.sanction") == 0
+
+
+def test_a_penalty_that_names_a_statement_missing_from_the_unit_is_dropped(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = _duty_and_cited_penalty()
+    doc["statements"][1]["sanction"]["punishes"] = "elsewhere"
 
     out = extract_unit(
         conn,
@@ -540,6 +566,7 @@ def test_a_penalty_that_punishes_nothing_in_the_unit_is_dropped_but_the_rest_is_
 
     assert out.loaded is not None and out.loaded.statements == 1
     assert out.dropped == ("p1: sanction punishes nothing in this unit",)
+    assert out.pending == ()
 
 
 def test_an_exception_to_a_dropped_penalty_is_dropped_with_it(conn: Conn, tmp_path: Path) -> None:

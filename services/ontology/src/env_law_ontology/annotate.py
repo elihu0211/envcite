@@ -144,7 +144,9 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
                 " VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 (
                     ids[str(s["id"])],
-                    ref(str(sanction["punishes"])),
+                    int(sanction["punishes_id"])
+                    if sanction.get("punishes_id") is not None
+                    else ref(str(sanction["punishes"])),
                     sanction["effect"],
                     sanction.get("amount_text"),
                     sanction.get("min"),
