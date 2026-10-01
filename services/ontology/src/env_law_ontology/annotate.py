@@ -1,14 +1,15 @@
-"""人工標註的匯入（env-law-docs 02-04 §6、02-05 §5）。
+"""標註文件的載入（env-law-docs 02-04 §6、02-05 §5）。
 
-規範陳述、要件、但書、優先與罰則由人讀條文後寫成一份 JSON 文件，這裡把它寫進 `annotation`
-與 `vocab`。這是設計中 `derivation.method = human` 的生產者；語言模型抽取與審核介面另建。
+規範陳述、要件、但書、優先與罰則寫成一份 JSON 文件（由抽取器產生，見 `verification/extract.py`），
+這裡把它寫進 `annotation` 與 `vocab`。載入只負責寫入與錨定，不負責接受：陳述是否成為推論用的
+事實，由 `verification` 的閘門與政策決定。
 
 **錨點是文字，不是版本列。** 每個陳述要附上它所讀的那段條文原文 `text`：載入時算出雜湊，
 並要求該單元現行的某個版本列確有這個雜湊，否則拒絕——標註的是不存在於語料的文字，
 等於憑空標註。之後效力列更替而文字沒變，陳述沿用；文字改了，雜湊對不上，陳述自動不在
 該日的事實裡（`annotation.statements_at`），須重新標註。
 
-**載入不替人審核。** 陳述的審核狀態取文件的 `review`（預設 `extracted`）；下游只取已確認的
+**載入不接受任何陳述。** 陳述的狀態取文件的 `review`（預設 `extracted`）；下游只取已確認的
 陳述（或規則推導者），所以沒寫 `confirmed` 的文件載入後不影響任何推論。
 
 一次載入記為一個推導活動，在同一個交易內完成：任何一處不合，整份不寫入。載入不是冪等的：
@@ -16,7 +17,7 @@
 
 文件格式：
 
-    {"derivation": {"method": "human", "agent": "…", "agent_version": "…"},
+    {"derivation": {"method": "llm", "agent": "…", "agent_version": "…"},
      "review": "confirmed",
      "scheme": {"code": "env", "title": "…"},
      "concepts": [{"code": "cod", "label": "…", "broader": "<code>", "alt": ["…"]}],

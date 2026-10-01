@@ -32,7 +32,7 @@ def milli(value: Decimal | float | int) -> int:
 _STATEMENTS = """
     SELECT s.id, s.kind::text, s.deontic::text, corpus.version_iri(r.version_id)
       FROM corpus.legal_resource AS lr
-     CROSS JOIN LATERAL annotation.statement_versions_at(lr.id, %(lang)s, %(on)s) AS r
+     CROSS JOIN LATERAL annotation.{resolver}(lr.id, %(lang)s, %(on)s) AS r
       JOIN annotation.statement AS s ON s.id = r.statement_id
      ORDER BY s.id
 """
@@ -73,11 +73,18 @@ _SANCTIONS = """
 """
 
 
-def statement_facts(conn: Conn, as_of: date, language: str = "zho") -> str:
-    """某日有效、已確認（或規則推導）的陳述及其要件、但書、優先、罰則，寫成 ASP 事實。"""
+def statement_facts(
+    conn: Conn, as_of: date, language: str = "zho", *, include_unsettled: bool = False
+) -> str:
+    """某日有效、已確認（或規則推導）的陳述及其要件、但書、優先、罰則，寫成 ASP 事實。
+
+    `include_unsettled` 只給驗證閘門用：連尚未被接受的陳述也納入，才能在接受之前評估它
+    （可執行性檢查）。推論的輸入一律不含。
+    """
     out: list[str] = []
     params = {"lang": language, "on": as_of}
-    statements = conn.execute(_STATEMENTS, params).fetchall()
+    resolver = "anchored_statements_at" if include_unsettled else "statement_versions_at"
+    statements = conn.execute(_STATEMENTS.format(resolver=resolver), params).fetchall()
     ids = [cast(int, row[0]) for row in statements]
     for sid, kind, deontic, iri in statements:
         out.append(f"statement({sid},{kind},{deontic or 'none'}).")
