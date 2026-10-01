@@ -27,6 +27,7 @@ env-law-migrate = "env_law_ontology.migrate:main"
 env-law-acquire = "env_law_ontology.acquire.cli:main"
 env-law-import = "env_law_ontology.ingest.cli:main"
 env-law-sync = "env_law_ontology.sync:main"
+env-law-annotate = "env_law_ontology.annotate:main"
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
