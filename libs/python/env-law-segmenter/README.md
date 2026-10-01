@@ -27,6 +27,6 @@
 
 ## tokenizer id
 
-`jieba-<版本>+dict-<詞典雜湊前8碼>`，寫進 `retrieval.article_index.tokenizer`。
+`jieba-<版本>+dict-<詞典雜湊前8碼>`，寫進 `retrieval.lexical_index.tokenizer`。
 
 詞典變動會改變雜湊，於是既有的 `content_tsv` 與新的查詢對不上——這是刻意的。**偵測到不符時該做的是重建全部 tsvector**，在現有語料規模上是秒級，由匯入器負責；過渡期間識別碼不符的列不參與檢索。
