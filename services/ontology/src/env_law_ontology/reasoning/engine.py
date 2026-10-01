@@ -78,9 +78,15 @@ def evaluate(
     as_of: date,
     case: Mapping[str, float | Sequence[float]],
     language: str = "zho",
+    *,
+    include_unsettled: bool = False,
 ) -> Result:
-    """對 `as_of` 當日有效的陳述與給定的案件事實推論。"""
-    program = "\n".join([facts.statement_facts(conn, as_of, language), facts.case_facts(case)])
+    """對 `as_of` 當日有效的陳述與給定的案件事實推論。
+
+    `include_unsettled` 只給驗證閘門用（在陳述被接受之前評估它）；推論的呼叫端不該用。
+    """
+    statements = facts.statement_facts(conn, as_of, language, include_unsettled=include_unsettled)
+    program = "\n".join([statements, facts.case_facts(case)])
     ctl = clingo.Control(["--warn=none"])
     ctl.add("base", [], _RULES)
     ctl.add("base", [], program)
