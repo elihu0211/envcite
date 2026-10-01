@@ -365,3 +365,33 @@ def test_the_judgement_marker_defaults_to_false_and_is_loaded_when_given(
         "SELECT role, judgement FROM annotation.statement_condition ORDER BY role"
     ).fetchall()
     assert rows == [("scope", True), ("duty", False)] or rows == [("duty", False), ("scope", True)]
+
+
+def test_a_sanction_can_be_an_order_and_can_repeat(conn: Conn, tmp_path: Path) -> None:
+    """改善命令（非處罰）與按次處罰：效果值與旗標都存得進去，旗標預設為否。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", "乙一", "丙一")))
+    doc = _doc(
+        _duty(),
+        {
+            "id": "order",
+            "law": LAW,
+            "path": "art_2",
+            "text": "乙一",
+            "kind": "penalty",
+            "sanction": {"punishes": "duty", "effect": "order"},
+        },
+        {
+            "id": "again",
+            "law": LAW,
+            "path": "art_3",
+            "text": "丙一",
+            "kind": "penalty",
+            "sanction": {"punishes": "duty", "effect": "fine", "repeating": True},
+        },
+    )
+    load(conn, doc)
+
+    rows = conn.execute(
+        "SELECT effect::text, repeating FROM annotation.sanction ORDER BY effect"
+    ).fetchall()
+    assert rows == [("fine", True), ("order", False)]

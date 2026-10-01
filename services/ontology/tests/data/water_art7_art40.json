@@ -33,6 +33,10 @@
     {
       "code": "revocation_necessary",
       "label": "必要時（廢止許可證或勒令歇業）"
+    },
+    {
+      "code": "improvement_overdue",
+      "label": "屆期仍未完成改善"
     }
   ],
   "statements": [
@@ -160,6 +164,57 @@
       }
     },
     {
+      "id": "p40_1_order",
+      "law": "O0040001",
+      "path": "art_40/para_1",
+      "text": "事業或污水下水道系統排放廢（污）水，違反第七條第一項或第八條規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停工或停業；必要時，並得廢止其水污染防治許可證（文件）或勒令歇業。",
+      "kind": "penalty",
+      "span": [
+        52,
+        59
+      ],
+      "slots": {
+        "subject": {
+          "literal": "事業或污水下水道系統"
+        }
+      },
+      "sanction": {
+        "punishes": "w7_1",
+        "effect": "order"
+      }
+    },
+    {
+      "id": "p40_1_repeat",
+      "law": "O0040001",
+      "path": "art_40/para_1",
+      "text": "事業或污水下水道系統排放廢（污）水，違反第七條第一項或第八條規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停工或停業；必要時，並得廢止其水污染防治許可證（文件）或勒令歇業。",
+      "kind": "penalty",
+      "span": [
+        60,
+        74
+      ],
+      "slots": {
+        "subject": {
+          "literal": "事業或污水下水道系統"
+        }
+      },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "improvement_overdue",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ],
+      "sanction": {
+        "punishes": "w7_1",
+        "effect": "fine",
+        "amount_text": "按次處罰",
+        "repeating": true
+      }
+    },
+    {
       "id": "p40_1_suspend",
       "law": "O0040001",
       "path": "art_40/para_1",
@@ -243,6 +298,57 @@
       }
     },
     {
+      "id": "p40_2_order",
+      "law": "O0040001",
+      "path": "art_40/para_2",
+      "text": "畜牧業違反第七條第一項或第八條之規定者，處新臺幣六千元以上六十萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停工或停業；必要時，並得廢止其水污染防治許可證（文件）或勒令歇業。",
+      "kind": "penalty",
+      "span": [
+        38,
+        45
+      ],
+      "slots": {
+        "subject": {
+          "literal": "畜牧業"
+        }
+      },
+      "sanction": {
+        "punishes": "w7_1",
+        "effect": "order"
+      }
+    },
+    {
+      "id": "p40_2_repeat",
+      "law": "O0040001",
+      "path": "art_40/para_2",
+      "text": "畜牧業違反第七條第一項或第八條之規定者，處新臺幣六千元以上六十萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停工或停業；必要時，並得廢止其水污染防治許可證（文件）或勒令歇業。",
+      "kind": "penalty",
+      "span": [
+        46,
+        60
+      ],
+      "slots": {
+        "subject": {
+          "literal": "畜牧業"
+        }
+      },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "improvement_overdue",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ],
+      "sanction": {
+        "punishes": "w7_1",
+        "effect": "fine",
+        "amount_text": "按次處罰",
+        "repeating": true
+      }
+    },
+    {
       "id": "p40_2_suspend",
       "law": "O0040001",
       "path": "art_40/para_2",
@@ -305,10 +411,10 @@
   ],
   "notes": {
     "not_modelled": [
-      "通知限期改善",
-      "屆期仍未完成改善者按次處罰",
       "違反第八條（第八條不在節錄內）",
-      "報請中央主管機關核定的程序要件"
+      "報請中央主管機關核定的程序要件",
+      "改善期限的長短（由主管機關定，不在條文裡）",
+      "按次處罰的額度是否同第一次（條文未明載，amount_text 只存原文）"
     ],
     "questions_for_reviewer": [
       "art_7/para_2 前半句是義務還是授權？暫標為構成性。",

@@ -28,10 +28,13 @@
                         "threshold": 100, "unit": "mg/L", "negated": false, "judgement": false,
                         "delegate": {"law": "<pcode>", "path": "art_2"}}],
         "exception_of": "s0",
-        "sanction": {"punishes": "s1", "effect": "fine", "min": 60000, "max": 20000000}}],
+        "sanction": {"punishes": "s1", "effect": "fine", "min": 60000, "max": 20000000,
+                     "repeating": false}}],
      "overrides": [{"winner": "s2", "loser": "s1", "basis": "lex_specialis"}]}
 
 `conditions` 的門檻值恰給一個：`threshold`、`delegate`（委由授權命令的單元）或 `value_concept`。
+罰則的 `effect` 除處罰種類外有 `order`（改善命令等非處罰的行政命令）；
+`repeating: true` 標出按次處罰。
 `judgement: true` 標出不確定法律概念或裁量（情節重大、必要時）：系統不從事實判定它，呼叫端提供
 的值視為其判斷，沒有提供則列為需判斷；限值不得標記。
 """
@@ -134,8 +137,9 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
         if (sanction := s.get("sanction")) is not None:
             conn.execute(
                 "INSERT INTO annotation.sanction"
-                " (statement_id, punishes_id, effect, amount_text, min_amount, max_amount)"
-                " VALUES (%s, %s, %s, %s, %s, %s)",
+                " (statement_id, punishes_id, effect, amount_text, min_amount, max_amount,"
+                "  repeating)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 (
                     ids[str(s["id"])],
                     ref(str(sanction["punishes"])),
@@ -143,6 +147,7 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
                     sanction.get("amount_text"),
                     sanction.get("min"),
                     sanction.get("max"),
+                    bool(sanction.get("repeating", False)),
                 ),
             )
             sanctions += 1
