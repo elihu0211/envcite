@@ -20,6 +20,8 @@ from env_law_ontology.verification.model_gates import IndependentTestGate, Panel
 from env_law_ontology.verification.models import Model, build_model
 from env_law_ontology.verification.pipeline import Settled, settle
 
+log = logging.getLogger(__name__)
+
 Conn = psycopg.Connection[tuple[object, ...]]
 
 ALL_METHODS = ("numbers", "references", "executable", "roundtrip", "independent_test", "panel")
@@ -123,6 +125,8 @@ def run(
             out = extract_unit(conn, extractor, law, path, agent_version=agent_version)
             extracted += out.loaded.statements if out.loaded else 0
             dropped += len(out.dropped)
+            for reason in out.dropped:
+                log.warning("丟掉 %s %s：%s", law, path, reason[:300])
     settled = settle(conn, list(required), gates_for(verifiers, allow_same_family))
     return Run(units, skipped, extracted, dropped, settled)
 
@@ -140,7 +144,7 @@ def main() -> None:
         "--verifier",
         action="append",
         default=[],
-        help="驗證者，可重複；與抽取者不同家族才算數，例如 chat:openai/gpt-oss-120b",
+        help="驗證者，可重複；與抽取者不同家族才算數，例如 chat:google/gemma-4-31b",
     )
     parser.add_argument("--agent-version", default="pipeline-1")
     parser.add_argument("--require", default=",".join(ALL_METHODS), help="必要的驗證方法，逗號分隔")

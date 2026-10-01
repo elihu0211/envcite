@@ -415,7 +415,7 @@ def test_the_extractor_anchors_what_the_model_quotes_and_drops_what_it_invents(
     out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
 
     assert out.loaded is not None and out.loaded.statements == 1
-    assert out.dropped == ("invented",)
+    assert out.dropped == ("invented: quote is not in the text",)
     assert "排放廢水者應符合標準" in model.prompts[0]
     assert _scalar(conn, "SELECT review::text FROM annotation.statement") == "extracted"
     assert _scalar(conn, "SELECT method::text FROM annotation.derivation") == "llm"
@@ -489,3 +489,84 @@ def test_the_extractor_reads_json_that_the_model_wrapped_in_a_code_fence(
     out = extract_unit(conn, FakeModel(fenced), LAW, "art_1", agent="fake-model", agent_version="1")
 
     assert out.loaded is not None and out.loaded.statements == 1
+
+
+def test_a_model_answer_that_breaks_a_constraint_is_dropped_not_fatal(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """真實模型寫出過「constitutive 卻帶義務」這種違反約束的陳述：丟掉整份，記下，管線繼續。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    bad = json.loads(json.dumps(EXTRACTED))
+    bad["statements"][0] |= {"kind": "constitutive", "deontic": "obligation"}
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(bad, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is None
+    assert any(d.startswith("<invalid document:") for d in out.dropped)
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0
+
+
+def test_a_penalty_that_punishes_nothing_in_the_unit_is_dropped_but_the_rest_is_kept(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """罰則所處罰的陳述在別的單元時，單元內連不上：只丟那一條，其餘照常寫入。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = json.loads(json.dumps(EXTRACTED))
+    doc["statements"] = [
+        doc["statements"][0],
+        {
+            "id": "p1",
+            "quote": "排放廢水者應符合標準",
+            "kind": "penalty",
+            "sanction": {"effect": "fine", "min": 1, "max": 2},
+        },
+    ]
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(doc, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.dropped == ("p1: sanction punishes nothing in this unit",)
+
+
+def test_an_exception_to_a_dropped_penalty_is_dropped_with_it(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = json.loads(json.dumps(EXTRACTED))
+    doc["statements"] = [
+        doc["statements"][0],
+        {
+            "id": "p1",
+            "quote": "排放廢水者應符合標準",
+            "kind": "penalty",
+            "sanction": {"effect": "fine", "punishes": "elsewhere"},
+        },
+        {"id": "e1", "quote": "排放廢水者", "kind": "constitutive", "exception_of": "p1"},
+    ]
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(doc, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert sorted(out.dropped) == [
+        "e1: excepts nothing in this unit",
+        "p1: sanction punishes nothing in this unit",
+    ]

@@ -14,7 +14,7 @@ from typing import Any
 
 import psycopg
 
-from env_law_ontology.annotate import Loaded, load
+from env_law_ontology.annotate import AnnotationError, Loaded, load
 from env_law_ontology.verification.jsonutil import object_from
 from env_law_ontology.verification.models import Model
 
@@ -29,9 +29,20 @@ PROMPT = """你是法規標註器。下面是一個條文單元的原文。請�
   "le|lt|ge|gt|eq|ne", "threshold": 數字, "unit": "單位或省略", "negated": false,
   "judgement": false}}],
   "sanction": {{"effect": "fine|order|restriction|deprivation|reputation|warning|confiscation",
-  "min": 數字或省略, "max": 數字或省略, "amount_text": "原文或省略", "repeating": false}}}}]}}
-規則：引文必須逐字出現在原文；不確定法律概念或裁量（情節重大、必要時）的要件 judgement 設為 true；
-不要輸出原文沒有的內容。只輸出 JSON。
+  "min": 數字或省略, "max": 數字或省略, "amount_text": "原文或省略", "repeating": false,
+  "punishes": "受罰的那個陳述的 id"}}}}]}}
+規則：
+1. 引文必須逐字出現在原文；不要輸出原文沒有的內容。
+2. 只有 kind 為 prescriptive 的陳述才有 deontic；constitutive（定義、適用範圍、授權）與
+   penalty（罰則）不要寫 deontic。
+3. 義務（應…、不得…）的要件分兩種：scope 是誰、在什麼情形下適用；duty 是義務本身的內容，例如
+   「應符合放流水標準」要有一個 duty 要件（概念「符合放流水標準」），沒有 duty 的義務無法被評估。
+4. 罰則（penalty）要有 sanction，effect 只能選一個值，punishes 必須是同一個單元裡另一個陳述的
+   id；受罰的陳述不在這個單元裡時，不要輸出那個罰則陳述。
+5. 每個要件都要有 threshold：成立與否的要件（是否排放、是否符合標準）寫 comparator "eq"、
+   threshold 1；「非」「不」用 negated: true 表示；原文有數值門檻時才寫它的數字與單位。
+6. 不確定法律概念或裁量（情節重大、必要時）的要件 judgement 設為 true。
+只輸出 JSON。
 
 原文（{law} {path}）：
 {text}
@@ -41,7 +52,7 @@ PROMPT = """你是法規標註器。下面是一個條文單元的原文。請�
 @dataclass(frozen=True)
 class Extracted:
     loaded: Loaded | None
-    dropped: tuple[str, ...]  # 引文不在原文裡而被丟掉的陳述
+    dropped: tuple[str, ...]  # 被丟掉的輸出：引文不在原文裡的陳述，或整份違反資料庫約束的文件
 
 
 def _unit_text(conn: Conn, law: str, path: str) -> str:
@@ -56,6 +67,27 @@ def _unit_text(conn: Conn, law: str, path: str) -> str:
     if row is None:
         raise LookupError(f"no current text for {law} {path}")
     return str(row[0])
+
+
+def _linkable(statements: list[dict[str, Any]], dropped: list[str]) -> list[dict[str, Any]]:
+    """丟掉指向文件外的罰則與例外，連帶丟掉指向被丟掉者的陳述，直到不再變動。
+
+    罰則與例外只能指向同一份文件裡的陳述；受罰的條文在別的單元時，這個單元連不上它。
+    """
+    while True:
+        ids = {str(s.get("id")) for s in statements}
+        kept: list[dict[str, Any]] = []
+        for s in statements:
+            sanction = s.get("sanction")
+            if isinstance(sanction, Mapping) and str(sanction.get("punishes")) not in ids:
+                dropped.append(f"{s.get('id', '?')}: sanction punishes nothing in this unit")
+            elif s.get("exception_of") is not None and str(s["exception_of"]) not in ids:
+                dropped.append(f"{s.get('id', '?')}: excepts nothing in this unit")
+            else:
+                kept.append(s)
+        if len(kept) == len(statements):
+            return kept
+        statements = kept
 
 
 def extract_unit(
@@ -80,13 +112,14 @@ def extract_unit(
         quote = str(s.get("quote", ""))
         start = text.find(quote) if quote else -1
         if start < 0:
-            dropped.append(str(s.get("id", "?")))
+            dropped.append(f"{s.get('id', '?')}: quote is not in the text")
             continue
         item = {k: v for k, v in s.items() if k != "quote"}
         item |= {"law": law, "path": path, "text": text}
         if quote != text:
             item["span"] = [start, start + len(quote)]
         statements.append(item)
+    statements = _linkable(statements, dropped)
     if not statements:
         return Extracted(None, tuple(dropped))
     doc = {
@@ -100,4 +133,9 @@ def extract_unit(
         "concepts": answer.get("concepts", []),
         "statements": statements,
     }
-    return Extracted(load(conn, doc), tuple(dropped))
+    try:
+        loaded = load(conn, doc)
+    except AnnotationError as e:
+        # 模型的輸出不受我們控制：違反約束的文件整份不寫（`load` 已回滾），記下來，不拖垮整條管線。
+        return Extracted(None, (*dropped, f"<invalid document: {e}>"))
+    return Extracted(loaded, tuple(dropped))
