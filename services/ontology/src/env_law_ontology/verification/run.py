@@ -105,10 +105,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="env-law-pipeline")
     parser.add_argument("--law", action="append", required=True, help="法規的 pcode，可重複")
     parser.add_argument(
-        "--extractor", required=True, help="供應商:模型，例如 anthropic:claude-sonnet-5-5"
+        "--extractor",
+        required=True,
+        help="anthropic:<模型> 或 chat:<供應商/模型>，例如 anthropic:claude-sonnet-5-5",
     )
     parser.add_argument(
-        "--verifier", action="append", default=[], help="驗證者，可重複；不同家族才算數"
+        "--verifier",
+        action="append",
+        default=[],
+        help="驗證者，可重複；與抽取者不同家族才算數，例如 chat:openai/gpt-oss-120b",
     )
     parser.add_argument("--agent-version", default="pipeline-1")
     parser.add_argument("--require", default=",".join(ALL_METHODS), help="必要的驗證方法，逗號分隔")
