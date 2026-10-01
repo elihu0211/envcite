@@ -1,0 +1,315 @@
+{
+  "derivation": {
+    "method": "llm",
+    "agent": "claude-sonnet-5-5",
+    "agent_version": "water-art7-art40-draft-1"
+  },
+  "review": "extracted",
+  "scheme": {
+    "code": "env",
+    "title": "環境法概念（草稿）"
+  },
+  "concepts": [
+    {
+      "code": "actor_is_regulated_entity",
+      "label": "行為人是事業、污水下水道系統或建築物污水處理設施"
+    },
+    {
+      "code": "discharges_to_surface_water",
+      "label": "排放廢（污）水於地面水體"
+    },
+    {
+      "code": "effluent_meets_standard",
+      "label": "放流水符合放流水標準"
+    },
+    {
+      "code": "jurisdiction_special_environment",
+      "label": "轄區內環境特殊或有需特予保護之水體"
+    },
+    {
+      "code": "circumstances_serious",
+      "label": "情節重大"
+    },
+    {
+      "code": "revocation_necessary",
+      "label": "必要時（廢止許可證或勒令歇業）"
+    }
+  ],
+  "statements": [
+    {
+      "id": "w7_1",
+      "law": "O0040001",
+      "path": "art_7/para_1",
+      "text": "事業、污水下水道系統或建築物污水處理設施，排放廢（污）水於地面水體者，應符合放流水標準。",
+      "kind": "prescriptive",
+      "deontic": "obligation",
+      "slots": {
+        "subject": {
+          "literal": "事業、污水下水道系統或建築物污水處理設施"
+        },
+        "action": {
+          "literal": "排放廢（污）水"
+        },
+        "medium": {
+          "literal": "地面水體"
+        },
+        "object": {
+          "literal": "放流水標準"
+        }
+      },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "actor_is_regulated_entity",
+          "comparator": "eq",
+          "threshold": 1
+        },
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "discharges_to_surface_water",
+          "comparator": "eq",
+          "threshold": 1
+        },
+        {
+          "role": "duty",
+          "clause": 1,
+          "concept": "effluent_meets_standard",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ]
+    },
+    {
+      "id": "w7_2a",
+      "law": "O0040001",
+      "path": "art_7/para_2",
+      "text": "前項放流水標準，由中央主管機關會商相關目的事業主管機關定之，其內容應包括適用範圍、管制方式、項目、濃度或總量限值、研訂基準及其他應遵行之事項。直轄市、縣（市）主管機關得視轄區內環境特殊或需特予保護之水體，就排放總量或濃度、管制項目或方式，增訂或加嚴轄內之放流水標準，報請中央主管機關會商相關目的事業主管機關後核定之。",
+      "kind": "constitutive",
+      "span": [
+        8,
+        71
+      ],
+      "slots": {
+        "subject": {
+          "literal": "中央主管機關"
+        },
+        "action": {
+          "literal": "會商相關目的事業主管機關訂定"
+        },
+        "object": {
+          "literal": "放流水標準"
+        }
+      }
+    },
+    {
+      "id": "w7_2b",
+      "law": "O0040001",
+      "path": "art_7/para_2",
+      "text": "前項放流水標準，由中央主管機關會商相關目的事業主管機關定之，其內容應包括適用範圍、管制方式、項目、濃度或總量限值、研訂基準及其他應遵行之事項。直轄市、縣（市）主管機關得視轄區內環境特殊或需特予保護之水體，就排放總量或濃度、管制項目或方式，增訂或加嚴轄內之放流水標準，報請中央主管機關會商相關目的事業主管機關後核定之。",
+      "kind": "prescriptive",
+      "span": [
+        71,
+        158
+      ],
+      "deontic": "permission",
+      "slots": {
+        "subject": {
+          "literal": "直轄市、縣（市）主管機關"
+        },
+        "action": {
+          "literal": "增訂或加嚴轄內之放流水標準"
+        },
+        "object": {
+          "literal": "放流水標準"
+        }
+      },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "jurisdiction_special_environment",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ]
+    },
+    {
+      "id": "p40_1_fine",
+      "law": "O0040001",
+      "path": "art_40/para_1",
+      "text": "事業或污水下水道系統排放廢（污）水，違反第七條第一項或第八條規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停工或停業；必要時，並得廢止其水污染防治許可證（文件）或勒令歇業。",
+      "kind": "penalty",
+      "span": [
+        34,
+        51
+      ],
+      "slots": {
+        "subject": {
+          "literal": "事業或污水下水道系統"
+        }
+      },
+      "sanction": {
+        "punishes": "w7_1",
+        "effect": "fine",
+        "amount_text": "新臺幣六萬元以上二千萬元以下罰鍰",
+        "min": 60000,
+        "max": 20000000
+      }
+    },
+    {
+      "id": "p40_1_suspend",
+      "law": "O0040001",
+      "path": "art_40/para_1",
+      "text": "事業或污水下水道系統排放廢（污）水，違反第七條第一項或第八條規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停工或停業；必要時，並得廢止其水污染防治許可證（文件）或勒令歇業。",
+      "kind": "penalty",
+      "span": [
+        75,
+        89
+      ],
+      "slots": {
+        "subject": {
+          "literal": "事業或污水下水道系統"
+        }
+      },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "circumstances_serious",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ],
+      "sanction": {
+        "punishes": "w7_1",
+        "effect": "restriction"
+      }
+    },
+    {
+      "id": "p40_1_revoke",
+      "law": "O0040001",
+      "path": "art_40/para_1",
+      "text": "事業或污水下水道系統排放廢（污）水，違反第七條第一項或第八條規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停工或停業；必要時，並得廢止其水污染防治許可證（文件）或勒令歇業。",
+      "kind": "penalty",
+      "span": [
+        90,
+        116
+      ],
+      "slots": {
+        "subject": {
+          "literal": "事業或污水下水道系統"
+        }
+      },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "revocation_necessary",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ],
+      "sanction": {
+        "punishes": "w7_1",
+        "effect": "deprivation"
+      }
+    },
+    {
+      "id": "p40_2_fine",
+      "law": "O0040001",
+      "path": "art_40/para_2",
+      "text": "畜牧業違反第七條第一項或第八條之規定者，處新臺幣六千元以上六十萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停工或停業；必要時，並得廢止其水污染防治許可證（文件）或勒令歇業。",
+      "kind": "penalty",
+      "span": [
+        20,
+        37
+      ],
+      "slots": {
+        "subject": {
+          "literal": "畜牧業"
+        }
+      },
+      "sanction": {
+        "punishes": "w7_1",
+        "effect": "fine",
+        "amount_text": "新臺幣六千元以上六十萬元以下罰鍰",
+        "min": 6000,
+        "max": 600000
+      }
+    },
+    {
+      "id": "p40_2_suspend",
+      "law": "O0040001",
+      "path": "art_40/para_2",
+      "text": "畜牧業違反第七條第一項或第八條之規定者，處新臺幣六千元以上六十萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停工或停業；必要時，並得廢止其水污染防治許可證（文件）或勒令歇業。",
+      "kind": "penalty",
+      "span": [
+        61,
+        75
+      ],
+      "slots": {
+        "subject": {
+          "literal": "畜牧業"
+        }
+      },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "circumstances_serious",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ],
+      "sanction": {
+        "punishes": "w7_1",
+        "effect": "restriction"
+      }
+    },
+    {
+      "id": "p40_2_revoke",
+      "law": "O0040001",
+      "path": "art_40/para_2",
+      "text": "畜牧業違反第七條第一項或第八條之規定者，處新臺幣六千元以上六十萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停工或停業；必要時，並得廢止其水污染防治許可證（文件）或勒令歇業。",
+      "kind": "penalty",
+      "span": [
+        76,
+        102
+      ],
+      "slots": {
+        "subject": {
+          "literal": "畜牧業"
+        }
+      },
+      "conditions": [
+        {
+          "role": "scope",
+          "clause": 1,
+          "concept": "revocation_necessary",
+          "comparator": "eq",
+          "threshold": 1
+        }
+      ],
+      "sanction": {
+        "punishes": "w7_1",
+        "effect": "deprivation"
+      }
+    }
+  ],
+  "notes": {
+    "not_modelled": [
+      "通知限期改善",
+      "屆期仍未完成改善者按次處罰",
+      "違反第八條（第八條不在節錄內）",
+      "報請中央主管機關核定的程序要件"
+    ],
+    "questions_for_reviewer": [
+      "art_7/para_2 前半句是義務還是授權？暫標為構成性。",
+      "情節重大、必要時、環境特殊或需特予保護之水體是不確定法律概念或裁量，這裡暫以布林事實表示，綱要沒有「需判斷」的標記。",
+      "art_40 兩項的主體不含建築物污水處理設施，而第七條第一項含；是否有意，未查。",
+      "art_40 第二項（畜牧業）與第一項（事業）是否為特別規定與一般規定的關係：未標註優先。"
+    ]
+  }
+}

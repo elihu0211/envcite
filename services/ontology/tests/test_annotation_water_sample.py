@@ -1,0 +1,94 @@
+"""A draft annotation of real text (水污染防治法第 7、40 條，`tests/sample.py` 的節錄).
+
+This is a fixture, not a corpus annotation: it covers two articles of the excerpt, was drafted
+by a language model (`derivation.method = llm`), and no human has reviewed it. What it tests is
+that real wording fits the schema and the loader, and that nothing unreviewed becomes a fact.
+"""
+
+import json
+from datetime import date
+from pathlib import Path
+from typing import Any
+
+import psycopg
+import pytest
+
+from env_law_ontology.annotate import Loaded, load
+from tests.sample import WATER
+from tests.test_import import _scalar
+
+Conn = psycopg.Connection[tuple[object, ...]]
+
+DATA = Path(__file__).parent / "data" / "water_art7_art40.json"
+ON = date(2019, 1, 1)  # after the 2018-06-13 amendment, "並自公布日施行"
+
+
+def _doc() -> dict[str, Any]:
+    return json.loads(DATA.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
+
+
+def _resource(conn: Conn) -> int:
+    return int(_scalar(conn, "SELECT id FROM corpus.legal_resource WHERE local_id = %s", WATER))
+
+
+def _facts(conn: Conn) -> int:
+    return int(
+        _scalar(
+            conn,
+            "SELECT count(*) FROM annotation.statements_at(%s, 'zho', %s)",
+            _resource(conn),
+            ON,
+        )
+    )
+
+
+@pytest.fixture
+def loaded(conn: Conn, sample: None) -> Loaded:
+    return load(conn, _doc())
+
+
+def test_the_draft_loads_against_the_real_wording(loaded: Loaded) -> None:
+    assert (loaded.statements, loaded.conditions, loaded.sanctions) == (9, 8, 6)
+    assert (loaded.exceptions, loaded.overrides) == (0, 0)
+
+
+def test_spans_select_the_sentence_each_statement_is_about(conn: Conn, loaded: Loaded) -> None:
+    rows = conn.execute(
+        "SELECT lower(s.span), upper(s.span), v.content FROM annotation.statement AS s"
+        "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
+        "   AND v.content_sha256 = s.content_sha256 AND v.superseded_at IS NULL"
+        " WHERE s.span IS NOT NULL"
+    ).fetchall()
+    quoted = {str(text)[int(lo) : int(hi)] for lo, hi, text in rows}  # type: ignore[call-overload]
+
+    assert "處新臺幣六萬元以上二千萬元以下罰鍰" in quoted
+    assert "情節重大者，得令其停工或停業" in quoted
+    assert any(q.startswith("直轄市、縣（市）主管機關得視") for q in quoted)
+
+
+def test_a_draft_nobody_reviewed_contributes_no_facts(conn: Conn, loaded: Loaded) -> None:
+    assert _facts(conn) == 0
+
+
+def test_once_confirmed_every_statement_is_a_fact_on_the_day(conn: Conn, loaded: Loaded) -> None:
+    conn.execute("UPDATE annotation.statement SET review = 'confirmed'")
+    conn.commit()
+
+    assert _facts(conn) == 9
+
+
+def test_the_penalties_punish_the_duty_and_carry_the_amounts(conn: Conn, loaded: Loaded) -> None:
+    fines = conn.execute(
+        "SELECT min_amount, max_amount FROM annotation.sanction WHERE effect = 'fine' ORDER BY 1"
+    ).fetchall()
+
+    assert fines == [(6000, 600000), (60000, 20000000)]
+    assert (
+        _scalar(
+            conn,
+            "SELECT count(DISTINCT sn.punishes_id) FROM annotation.sanction AS sn"
+            "  JOIN annotation.statement AS d ON d.id = sn.punishes_id"
+            "   AND d.deontic = 'obligation'",
+        )
+        == 1
+    )
