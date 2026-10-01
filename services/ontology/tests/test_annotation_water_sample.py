@@ -92,3 +92,26 @@ def test_the_penalties_punish_the_duty_and_carry_the_amounts(conn: Conn, loaded:
         )
         == 1
     )
+
+
+def test_uncertain_legal_concepts_are_marked_as_needing_judgement(
+    conn: Conn, loaded: Loaded
+) -> None:
+    marked = {
+        str(code)
+        for (code,) in conn.execute(
+            "SELECT c.code FROM annotation.statement_condition AS sc"
+            "  JOIN vocab.concept AS c ON c.id = sc.concept_id WHERE sc.judgement"
+        )
+    }
+
+    assert marked == {
+        "circumstances_serious",
+        "revocation_necessary",
+        "jurisdiction_special_environment",
+    }
+    # 要件的其餘部分（適用範圍、義務內容）不是判斷。
+    assert (
+        _scalar(conn, "SELECT count(*) FROM annotation.statement_condition WHERE NOT judgement")
+        == 3
+    )

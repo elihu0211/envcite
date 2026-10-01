@@ -25,13 +25,15 @@
         "kind": "prescriptive", "deontic": "obligation",
         "slots": {"action": {"concept": "discharging"}, "object": {"literal": "…"}},
         "conditions": [{"role": "duty", "clause": 1, "concept": "cod", "comparator": "le",
-                        "threshold": 100, "unit": "mg/L", "negated": false,
+                        "threshold": 100, "unit": "mg/L", "negated": false, "judgement": false,
                         "delegate": {"law": "<pcode>", "path": "art_2"}}],
         "exception_of": "s0",
         "sanction": {"punishes": "s1", "effect": "fine", "min": 60000, "max": 20000000}}],
      "overrides": [{"winner": "s2", "loser": "s1", "basis": "lex_specialis"}]}
 
 `conditions` 的門檻值恰給一個：`threshold`、`delegate`（委由授權命令的單元）或 `value_concept`。
+`judgement: true` 標出不確定法律概念或裁量（情節重大、必要時）：系統不從事實判定它，呼叫端提供
+的值視為其判斷，沒有提供則列為需判斷；限值不得標記。
 """
 
 from __future__ import annotations
@@ -283,8 +285,8 @@ def _conditions(
         conn.execute(
             "INSERT INTO annotation.statement_condition"
             " (statement_id, role, clause, concept_id, comparator, threshold, unit,"
-            "  value_concept_id, negated, delegate_provision_id)"
-            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "  value_concept_id, negated, delegate_provision_id, judgement)"
+            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
                 statement_id,
                 c["role"],
@@ -296,6 +298,7 @@ def _conditions(
                 _concept(concepts, c["value_concept"]) if c.get("value_concept") else None,
                 bool(c.get("negated", False)),
                 _provision(conn, delegate["law"], delegate["path"]) if delegate else None,
+                bool(c.get("judgement", False)),
             ),
         )
     return len(conditions)
