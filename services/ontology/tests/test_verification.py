@@ -619,3 +619,48 @@ def test_a_penalty_waits_for_the_statement_it_punishes_to_be_confirmed(
     conn.execute("UPDATE annotation.statement SET review = 'confirmed' WHERE id = %s", (duty,))
     accepted = gate.check(conn, fine)
     assert accepted is not None and accepted.verdict == "pass"
+
+
+def test_an_empty_sanction_template_on_a_duty_is_ignored(conn: Conn, tmp_path: Path) -> None:
+    """真實模型把罰則欄位照樣板填成空值：義務陳述照常寫入，不被當成待連結的罰則。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = json.loads(json.dumps(EXTRACTED))
+    doc["statements"][0]["sanction"] = {
+        "effect": None,
+        "min": None,
+        "max": None,
+        "repeating": False,
+        "punishes": None,
+    }
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(doc, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.pending == ()
+    assert _scalar(conn, "SELECT count(*) FROM annotation.sanction") == 0
+
+
+def test_a_penalty_without_an_effect_is_dropped(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = _duty_and_cited_penalty()
+    doc["statements"][1]["sanction"] = {"effect": None, "punishes": None}
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(doc, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.dropped == ("p1: penalty without a sanction effect",)
+    assert out.pending == ()

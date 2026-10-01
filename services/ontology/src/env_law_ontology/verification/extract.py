@@ -39,7 +39,7 @@ PROMPT = """你是法規標註器。下面是一個條文單元的原文。請�
    「應符合放流水標準」要有一個 duty 要件（概念「符合放流水標準」），沒有 duty 的義務無法被評估。
 4. 罰則（penalty）要有 sanction，effect 只能選一個值。受罰的陳述就在這個單元裡時，punishes 填它的
    id；受罰的是原文引用的別條（例如「違反第七條規定者」）時省略 punishes，程式會連到被引用條文
-   的陳述。
+   的陳述。非 penalty 的陳述不要寫 sanction。
 5. 每個要件都要有 threshold：成立與否的要件（是否排放、是否符合標準）寫 comparator "eq"、
    threshold 1；「非」「不」用 negated: true 表示；原文有數值門檻時才寫它的數字與單位。
 6. 不確定法律概念或裁量（情節重大、必要時）的要件 judgement 設為 true。
@@ -137,6 +137,15 @@ def extract_unit(
             dropped.append(f"{s.get('id', '?')}: quote is not in the text")
             continue
         item = {k: v for k, v in s.items() if k != "quote"}
+        sanction = item.get("sanction")
+        if not (isinstance(sanction, Mapping) and sanction.get("effect")):
+            # 模型常把罰則欄位照樣板填成空值：沒有效果就不是罰則。
+            item.pop("sanction", None)
+            if item.get("kind") == "penalty":
+                dropped.append(f"{s.get('id', '?')}: penalty without a sanction effect")
+                continue
+        elif item.get("kind") != "penalty":
+            del item["sanction"]  # 罰則只屬於罰則陳述
         item |= {"law": law, "path": path, "text": text}
         if quote != text:
             item["span"] = [start, start + len(quote)]
