@@ -91,20 +91,13 @@ def test_text_no_longer_current_loses_its_index_row(conn: Conn, tmp_path: Path) 
 def test_a_correction_inside_an_article_is_searched_after_the_rebuild(
     conn: Conn, tmp_path: Path, dsn: str
 ) -> None:
-    """F2：條下單元更正後，條本身的列不變，舊設計的索引仍比對更正前的文字。"""
+    """F2：條下單元更正後，搜尋比對新文字、不比對舊文字。索引逐段落、以文字雜湊為鍵，不論條的列有沒有換。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("噪音管制\n振動標準", "乙一")))
     projection.rebuild(conn)
     assert ("T0000001", "1") in _found(dsn, "標準")
 
     corrected = _law_v1(LawArticles=_articles("噪音管制\n振動基準", "乙一"))
     assert _next(conn, tmp_path, corrected).actions == {"corrected": 1}
-    # 條層級的列沒有改變：這正是舊設計把它判為新鮮的原因。
-    assert (
-        _scalar(
-            conn, "SELECT count(*) FROM corpus.provision_version WHERE superseded_at IS NOT NULL"
-        )
-        == 1
-    )
     projection.rebuild(conn)
 
     assert ("T0000001", "1") in _found(dsn, "基準")
