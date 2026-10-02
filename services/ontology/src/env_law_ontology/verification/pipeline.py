@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import cast
@@ -18,6 +19,8 @@ from env_law_ontology.verification.gates import DEFAULT_GATES, Gate, GateResult
 from env_law_ontology.verification.models import ModelError
 
 Conn = psycopg.Connection[tuple[object, ...]]
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -31,6 +34,8 @@ def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
     """對每個 extracted 的陳述，把還沒有定論的閘門跑一遍並記錄；回傳新寫入的驗證列數。
 
     「定論」是這個方法最近一次為 pass、fail 或 not_applicable；inconclusive 與沒跑過的會（再）跑。
+    每個陳述的結果跑完就 commit：模型呼叫是這條線上最貴的東西，中途崩潰不該丟掉已經問到的答案，
+    長時間的跑也要在資料庫裡看得見進度。
     """
     written = 0
     ids = [
@@ -39,7 +44,7 @@ def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
             "SELECT id FROM annotation.statement WHERE review = 'extracted' ORDER BY id"
         )
     ]
-    for sid in ids:
+    for done, sid in enumerate(ids, 1):
         for gate in gates:
             latest = conn.execute(
                 "SELECT verdict::text FROM annotation.verification"
@@ -62,7 +67,9 @@ def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
                 (sid, gate.method, gate.verifier, verdict, Jsonb(evidence)),
             )
             written += 1
-    conn.commit()
+        conn.commit()
+        if done % 10 == 0 or done == len(ids):
+            log.info("驗證 %d/%d", done, len(ids))
     return written
 
 

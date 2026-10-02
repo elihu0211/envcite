@@ -26,7 +26,7 @@ from env_law_ontology.verification.extract import (
     completeness_issues,
     extract_unit,
 )
-from env_law_ontology.verification.gates import amounts, citations, cn_number
+from env_law_ontology.verification.gates import GateResult, amounts, citations, cn_number
 from tests.test_annotation import BEFORE, LAW, _doc, _limit
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
@@ -315,6 +315,33 @@ def test_verify_writes_one_row_per_gate_and_reruns_only_the_inconclusive(
     assert first == 13 * 3  # 每個陳述、每個閘門一列（不適用也記）
     assert second <= first
     assert _latest(conn, ids["w7_2a"], "executable") == "not_applicable"
+
+
+class _DiesOnTheThird:
+    """A gate whose process is killed while checking the third statement."""
+
+    method = "dies"
+    verifier = "gate:dies@1"
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def check(self, conn: Conn, statement_id: int) -> GateResult | None:
+        self.calls += 1
+        if self.calls == 3:
+            raise RuntimeError("the process died")
+        return GateResult("pass", {})
+
+
+def test_a_crash_keeps_the_verdicts_already_recorded(conn: Conn, sample: None) -> None:
+    """模型呼叫是最貴的：中途崩潰不能丟掉已經問到的答案，長時間的跑在資料庫裡也要看得見進度。"""
+    _water(conn, sample)
+
+    with pytest.raises(RuntimeError, match="died"):
+        verify(conn, [_DiesOnTheThird()])
+    conn.rollback()  # 崩潰的程序沒有機會 commit 任何東西
+
+    assert _scalar(conn, "SELECT count(*) FROM annotation.verification WHERE method = 'dies'") == 2
 
 
 def test_the_water_draft_is_accepted_without_a_human_where_the_gates_can_decide(
