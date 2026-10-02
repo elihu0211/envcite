@@ -84,33 +84,56 @@ class ChatCompletionsModel:
     也記成不同家族。
     """
 
-    def __init__(self, slug: str, max_tokens: int = 8192, timeout: float = 300.0) -> None:
+    def __init__(
+        self,
+        slug: str,
+        max_tokens: int = 8192,
+        timeout: float = 300.0,
+        *,
+        declared_family: str | None = None,
+        base_url: str | None = None,
+        api_key: str | None = None,
+    ) -> None:
+        """`declared_family`、`base_url`、`api_key` 由設定檔給（`config.py`）：此時 `slug` 就是送給
+        端點的模型識別、家族是明示的；不給時（命令列的 `chat:` 規格）退回 slug 與環境變數的寫法。"""
         self.slug = slug
         self.max_tokens = max_tokens
         self.timeout = timeout
+        self._declared_family = declared_family
+        self._base_url = base_url
+        self._api_key = api_key
+
+    def __repr__(self) -> str:
+        return f"ChatCompletionsModel({self.name!r})"  # 不印金鑰
 
     @property
     def family(self) -> str:
+        if self._declared_family is not None:
+            return self._declared_family
         vendor, sep, _ = self.slug.partition("/")
         return vendor if sep and vendor else "unknown"
 
     @property
     def name(self) -> str:
+        if self._declared_family is not None:
+            return f"{self._declared_family}:{self.slug}"
         return f"{self.family}:{self.slug.partition('/')[2] or self.slug}"
 
     @property
     def request_model(self) -> str:
+        if self._declared_family is not None:
+            return self.slug
         bare = os.environ.get("CHAT_MODEL_FORMAT", "slug") == "bare"
         return self.slug.partition("/")[2] if bare and "/" in self.slug else self.slug
 
     def complete(self, prompt: str) -> str:
-        base = os.environ.get("CHAT_BASE_URL", "").rstrip("/")
+        base = (self._base_url or os.environ.get("CHAT_BASE_URL", "")).rstrip("/")
         if not base:
             raise RuntimeError(
                 "CHAT_BASE_URL is required (an OpenAI-compatible endpoint, e.g. .../v1)"
             )
         headers = {"Content-Type": "application/json"}
-        if key := os.environ.get("CHAT_API_KEY"):
+        if key := (self._api_key or os.environ.get("CHAT_API_KEY")):
             headers["Authorization"] = f"Bearer {key}"
         body = json.dumps(
             {

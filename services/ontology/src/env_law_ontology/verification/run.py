@@ -11,10 +11,13 @@ import logging
 import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import psycopg
 
+from env_law_ontology.verification.config import ConfigError, ModelSet
+from env_law_ontology.verification.config import load as load_models
 from env_law_ontology.verification.extract import extract_unit
 from env_law_ontology.verification.gates import DEFAULT_GATES, Gate
 from env_law_ontology.verification.link import link_penalties
@@ -105,6 +108,16 @@ def gates_for(verifiers: Sequence[Model], allow_same_family: bool = False) -> tu
     )
 
 
+def gates_from(models: ModelSet, allow_same_family: bool = False) -> tuple[Gate, ...]:
+    """確定性閘門，加上設定檔指定角色的模型閘門：誰重抽、誰設計測試、誰組成評審團都明寫。"""
+    return (
+        *DEFAULT_GATES,
+        RoundtripGate(models.roundtrip, allow_same_family),
+        IndependentTestGate(models.independent_test, allow_same_family),
+        PanelGate(models.panel, allow_same_family=allow_same_family),
+    )
+
+
 def run(
     conn: Conn,
     extractor: Model,
@@ -115,6 +128,7 @@ def run(
     required: Sequence[str] = ALL_METHODS,
     allow_same_family: bool = False,
     check_distinct: bool = False,
+    gates: Sequence[Gate] | None = None,
 ) -> Run:
     if check_distinct:
         assert_distinct([extractor, *verifiers])
@@ -137,7 +151,8 @@ def run(
     dropped += len(linked.dropped)
     for reason in linked.dropped:
         log.warning("丟掉待連結的罰則：%s", reason[:300])
-    settled = settle(conn, list(required), gates_for(verifiers, allow_same_family))
+    chosen = gates if gates is not None else gates_for(verifiers, allow_same_family)
+    settled = settle(conn, list(required), chosen)
     return Run(units, skipped, extracted, dropped, settled, linked.statements)
 
 
@@ -146,8 +161,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="env-law-pipeline")
     parser.add_argument("--law", action="append", required=True, help="法規的 pcode，可重複")
     parser.add_argument(
+        "--models",
+        type=Path,
+        help="模型配置檔（TOML，範本 models.example.toml）；與 --extractor／--verifier 擇一",
+    )
+    parser.add_argument(
         "--extractor",
-        required=True,
         help="anthropic:<模型> 或 chat:<供應商/模型>，例如 anthropic:claude-sonnet-5-5",
     )
     parser.add_argument(
@@ -168,8 +187,26 @@ def main() -> None:
     dsn = os.environ.get("ONTOLOGY_DSN", "")
     if not dsn:
         raise SystemExit("ONTOLOGY_DSN is required")
-    extractor = build_model(args.extractor)
-    verifiers = [build_model(v) for v in args.verifier]
+    gates: Sequence[Gate] | None = None
+    if args.models is not None:
+        if args.extractor or args.verifier:
+            raise SystemExit("--models replaces --extractor and --verifier; give one or the other")
+        try:
+            models = load_models(args.models)
+        except ConfigError as e:
+            raise SystemExit(f"{args.models}: {e}") from e
+        extractor, verifiers = models.extractor, list(models.verifiers)
+        gates = gates_from(models, args.allow_same_family)
+    elif args.extractor:
+        extractor = build_model(args.extractor)
+        verifiers = [build_model(v) for v in args.verifier]
+    else:
+        raise SystemExit("give --models, or --extractor with --verifier")
+    log.info(
+        "模型：抽取 %s；驗證 %s",
+        extractor.name,
+        "、".join(m.name for m in verifiers) or "（沒有）",
+    )
     required = [m.strip() for m in args.require.split(",") if m.strip()]
     with psycopg.connect(dsn) as conn:
         result = run(
@@ -181,6 +218,7 @@ def main() -> None:
             required=required,
             allow_same_family=args.allow_same_family,
             check_distinct=not args.no_distinct_check,
+            gates=gates,
         )
     logging.getLogger(__name__).info(
         "單元 %d（略過 %d），抽取 %d 個陳述（含連結的罰則 %d 個；丟掉 %d）；"

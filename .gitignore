@@ -520,3 +520,6 @@ coverage.xml
 .uv-cache/
 .tox/
 .nox/
+
+# 本機的模型配置（範本是 models.example.toml）
+services/ontology/models.toml
