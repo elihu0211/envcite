@@ -576,3 +576,34 @@ def test_a_penalty_citing_an_article_with_no_statements_is_dropped(
 
     assert result.linked == 0 and result.dropped == 1
     assert _sanction_target(conn) == []
+
+
+def test_the_panel_sees_the_whole_unit_the_quote_and_the_effect_in_chinese(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """評審看得到整個單元（其餘條件在別的陳述裡），也看得懂罰則效果；往返驗證仍給列舉值。"""
+    unit = TEXT + "，處新臺幣一萬元罰鍰"
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(unit, "乙一")))
+    doc = _duty_doc()
+    doc["statements"].append(
+        {
+            "id": "p1",
+            "quote": "處新臺幣一萬元罰鍰",
+            "kind": "penalty",
+            "sanction": {"effect": "fine", "min": 10000, "punishes": "s1"},
+        }
+    )
+    out = extract_unit(
+        conn, Scripted(EXTRACTOR, doc), LAW, "art_1", agent="fake-model", agent_version="1"
+    )
+    assert out.loaded is not None
+    penalty = out.loaded.ids["p1"]
+    judge = Scripted("fake-b:judge", {"faithful": True, "issues": []})
+
+    PanelGate((judge,), min_families=1).check(conn, penalty)
+
+    prompt = judge.prompts[0]
+    assert unit in prompt and "標註對應的引文：\n處新臺幣一萬元罰鍰" in prompt
+    assert "罰則效果：fine（罰鍰）" in prompt
+    assert "罰鍰）" not in render_annotation(conn, penalty)
+    assert "罰則效果：fine" in render_annotation(conn, penalty)
