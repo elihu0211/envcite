@@ -96,6 +96,12 @@ def completeness_issues(statements: Sequence[Mapping[str, Any]]) -> list[str]:
     return issues
 
 
+def _statements_of(answer: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """模型回答裡的陳述；不是清單、或清單裡不是物件的項目，當作沒有（輸出是外來的，形狀不可信）。"""
+    items = answer.get("statements")
+    return [x for x in items if isinstance(x, Mapping)] if isinstance(items, list) else []
+
+
 def unusable(statements: Sequence[Mapping[str, Any]]) -> dict[str, str]:
     """修復後仍然無法使用的陳述（id → 原因）：規範性陳述沒有方向，或義務、禁止沒有 duty 要件。
 
@@ -214,7 +220,7 @@ def extract_unit(
         if answer is None:
             break
         issues = completeness_issues(
-            [x for x in answer.get("statements") or [] if str(x.get("quote", "")) in text]
+            [x for x in _statements_of(answer) if str(x.get("quote", "")) in text]
         )
         if not issues:
             break
@@ -228,8 +234,8 @@ def extract_unit(
         return Extracted(None, ("<unparseable model output>",))
     statements: list[dict[str, Any]] = []
     dropped: list[str] = []
-    broken = unusable([x for x in answer.get("statements", []) if str(x.get("quote", "")) in text])
-    for s in answer.get("statements", []):
+    broken = unusable([x for x in _statements_of(answer) if str(x.get("quote", "")) in text])
+    for s in _statements_of(answer):
         quote = str(s.get("quote", ""))
         start = text.find(quote) if quote else -1
         if start < 0:

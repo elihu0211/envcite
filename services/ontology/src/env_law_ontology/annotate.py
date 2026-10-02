@@ -91,7 +91,10 @@ def load(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
 def _load(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
     try:
         return _write(conn, doc)
-    except (KeyError, TypeError) as e:
+    except AnnotationError:
+        raise
+    except (KeyError, TypeError, AttributeError, ValueError, IndexError) as e:
+        # 型別不合包括把物件寫成字串（`.get` 呼叫在字串上）等：文件是外來的，形狀不可信。
         raise AnnotationError(f"文件欄位缺漏或型別不合：{e!r}") from e
     except psycopg.errors.IntegrityError as e:
         raise AnnotationError(f"違反資料庫約束：{e}") from e
