@@ -17,6 +17,7 @@ from typing import Any
 import psycopg
 
 from env_law_ontology.annotate import AnnotationError, Loaded, load
+from env_law_ontology.verification.context import ancestors_text, context_block
 from env_law_ontology.verification.jsonutil import object_from
 from env_law_ontology.verification.models import Model, ModelError
 
@@ -49,9 +50,11 @@ PROMPT = """你是法規標註器。下面是一個條文單元的原文。請�
 7. conditions 是一個平面清單，義務本身也是其中 role 為 duty 的一項；不要另外寫 duty 欄位。clause
    是「或」的分組：同一個 clause 裡的要件必須全部成立，不同 clause 之間是「或」，一般都用 1。
 8. 主體的列舉（甲、乙或丙）寫在 slots.subject，不要把每一個主體各寫成一個要件。
+9. 原文是款或目（半句話）時，主體與處罰的種類、額度常寫在「上層條文」：罰則照上層條文寫
+   sanction（amount_text 逐字取自上層條文），quote 仍取自原文。沒有上層條文的單元不適用。
 只輸出 JSON。
 
-原文（{law} {path}）：
+{context}原文（{law} {path}）：
 {text}
 """
 
@@ -128,9 +131,10 @@ class Extracted:
     pending: tuple[Mapping[str, Any], ...] = ()
 
 
-def _unit_text(conn: Conn, law: str, path: str) -> str:
+def _unit_text(conn: Conn, law: str, path: str) -> tuple[int, str]:
+    """單元的 provision id 與現行文字。"""
     row = conn.execute(
-        "SELECT v.content FROM corpus.provision AS p"
+        "SELECT p.id, v.content FROM corpus.provision AS p"
         "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
         "  JOIN corpus.provision_version AS v ON v.provision_id = p.id AND v.superseded_at IS NULL"
         " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND p.path = %s"
@@ -139,7 +143,7 @@ def _unit_text(conn: Conn, law: str, path: str) -> str:
     ).fetchone()
     if row is None:
         raise LookupError(f"no current text for {law} {path}")
-    return str(row[0])
+    return int(str(row[0])), str(row[1])
 
 
 def _held(s: Mapping[str, Any], ids: set[str]) -> bool:
@@ -212,8 +216,10 @@ def extract_unit(
     scheme: tuple[str, str] = ("env", "環境法概念"),
 ) -> Extracted:
     """抽取一個條文單元。`agent` 記為推導者（預設為模型的名字）；驗證者不得與它相同。"""
-    text = _unit_text(conn, law, path)
-    prompt = PROMPT.format(law=law, path=path, text=text)
+    provision_id, text = _unit_text(conn, law, path)
+    prompt = PROMPT.format(
+        law=law, path=path, text=text, context=context_block(ancestors_text(conn, provision_id))
+    )
     try:
         raw = model.complete(prompt)
     except ModelError as e:

@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 from env_law_ontology.reasoning import evaluate
+from env_law_ontology.verification.context import context_block
 from env_law_ontology.verification.gates import Conn, GateResult, _unit, statement_as_of
 from env_law_ontology.verification.jsonutil import object_from
 from env_law_ontology.verification.models import Model, family_of
@@ -214,7 +215,12 @@ def _answered_signature(answer: Mapping[str, Any]) -> dict[str, Any]:
             None if high is None else float(high),
             bool(s.get("repeating", False)),
         )
-    return _signature(answer.get("kind"), answer.get("deontic"), conds, sanction)
+    # 只有規範性陳述有義務方向（資料庫也這樣限制，載入時也這樣丟掉多餘的方向）。重抽者在授權、
+    # 定義上寫了 permission，是把「得」讀成許可，不是另一種結構；比對前與載入同樣處理，
+    # 否則整類授權條款會因為這個不對稱被擋下。
+    kind = answer.get("kind")
+    deontic = answer.get("deontic") if kind == "prescriptive" else None
+    return _signature(kind, deontic, conds, sanction)
 
 
 # ---- 閘門一：往返驗證 --------------------------------------------------------------------------
@@ -228,7 +234,8 @@ REFORMALIZE = """下面是對一個法規陳述的結構化描述（不是法規
     "negated": true|false, "judgement": true|false}}],
   "sanction": {{"effect": "效果", "min": 數字或 null, "max": 數字或 null,
     "repeating": true|false}} 或 null}}
-門檻值由授權命令供給時 threshold 為 null；「成立」表示 comparator 為 eq、threshold 為 1；
+只有 kind 為 prescriptive 才有 deontic，constitutive（定義、適用範圍、授權）與 penalty 的 deontic
+為 null。門檻值由授權命令供給時 threshold 為 null；「成立」表示 comparator 為 eq、threshold 為 1；
 「（需判斷）」表示 judgement 為 true；「非：」表示 negated 為 true；沒有提到按次處罰則 repeating
 為 false；沒有罰則則 sanction 為 null。只輸出 JSON。
 
@@ -395,7 +402,7 @@ JUDGE = """你是法規標註的審查者。下面是一個條文單元的原文
 「按次處罰」字樣）不算添加。輸出 JSON：{{"faithful": true|false, "issues": ["具體問題"]}}。
 只輸出 JSON。
 
-整個單元的原文：
+{context}整個單元的原文：
 {text}
 
 標註對應的引文：
@@ -433,6 +440,7 @@ class PanelGate:
             )
         u = _unit(conn, statement_id)
         prompt = JUDGE.format(
+            context=context_block(u.context),
             text=u.text,
             quote=u.quoted,
             description=render_annotation(conn, statement_id, for_reader=True),

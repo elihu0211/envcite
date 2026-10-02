@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
@@ -22,6 +23,7 @@ from typing import Any, Literal, Protocol, cast
 import psycopg
 
 from env_law_ontology.reasoning import evaluate
+from env_law_ontology.verification.context import ancestors_text
 
 Conn = psycopg.Connection[tuple[object, ...]]
 Verdict = Literal["pass", "fail", "inconclusive"]
@@ -55,10 +57,16 @@ class _Unit:
     span: tuple[int, int] | None
     kind: str
     deontic: str | None
+    context: str = ""  # 上層條文：只供讀，錨點與引文都在 text 上
 
     @property
     def quoted(self) -> str:
         return self.text if self.span is None else self.text[self.span[0] : self.span[1]]
+
+    @property
+    def with_context(self) -> str:
+        """罰則的額度可能寫在上層的項裡，款自己的引文裡沒有。"""
+        return f"{self.context}\n{self.quoted}" if self.context else self.quoted
 
 
 def _unit(conn: Conn, statement_id: int) -> _Unit:
@@ -85,6 +93,7 @@ def _unit(conn: Conn, statement_id: int) -> _Unit:
         span,
         cast(str, kind),
         cast("str | None", deontic),
+        ancestors_text(conn, cast(int, pid)),
     )
 
 
@@ -129,6 +138,23 @@ def amounts(text: str) -> list[tuple[int, str | None]]:
             out.append((cn_number(m.group(1)), m.group(2)))
         except ValueError:
             continue
+    return out
+
+
+def _ranges(found: Sequence[tuple[int, str | None]]) -> list[tuple[int | None, int | None]]:
+    """把「以上」「以下」配成額度的組：（下限, 上限）；只有一邊的，另一邊是 None。"""
+    out: list[tuple[int | None, int | None]] = []
+    low: int | None = None
+    for value, qualifier in found:
+        if qualifier == "以上":
+            if low is not None:
+                out.append((low, None))
+            low = value
+        elif qualifier == "以下":
+            out.append((low, value))
+            low = None
+    if low is not None:
+        out.append((low, None))
     return out
 
 
@@ -192,25 +218,29 @@ class NumbersGate:
         out: list[dict[str, Any]] = []
         if amount_text is not None:
             out.append(
-                {"what": "amount_text", "value": amount_text, "ok": str(amount_text) in u.text}
+                {
+                    "what": "amount_text",
+                    "value": amount_text,
+                    "ok": str(amount_text) in f"{u.context}\n{u.text}",
+                }
             )
-        found = amounts(u.quoted)
-        want_low = next((v for v, q in found if q == "以上"), None)
-        want_high = next((v for v, q in found if q == "以下"), None)
+        found = amounts(u.with_context)
         if not found and (low is not None or high is not None):
-            stored = [None if v is None else int(v) for v in (low, high)]
-            out.append({"what": "amounts", "stored": stored, "text": [], "ok": False})
-        for name, stored, want in (("min", low, want_low), ("max", high, want_high)):
-            if stored is None and want is None:
+            stored_amounts = [None if v is None else int(v) for v in (low, high)]
+            out.append({"what": "amounts", "stored": stored_amounts, "text": [], "ok": False})
+        stored = (None if low is None else int(low), None if high is None else int(high))
+        # 原文可能分級（一般與工商廠、場各有一組額度）：標註的下限與上限要是原文同一組。
+        tiers = _ranges(found)
+        want = next((t for t in tiers if t == stored), tiers[0] if tiers else (None, None))
+        for name, have, wanted in (("min", stored[0], want[0]), ("max", stored[1], want[1])):
+            if have is None and wanted is None:
                 continue
-            if stored is None:
+            if have is None:
                 out.append(
-                    {"what": name, "stored": None, "text": want, "ok": None}
+                    {"what": name, "stored": None, "text": wanted, "ok": None}
                 )  # 原文有、標註沒有
             else:
-                out.append(
-                    {"what": name, "stored": int(stored), "text": want, "ok": want == int(stored)}
-                )
+                out.append({"what": name, "stored": have, "text": wanted, "ok": wanted == have})
         return out
 
 
