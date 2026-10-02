@@ -13,9 +13,21 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import random
+import time
 import urllib.error
 import urllib.request
+from collections.abc import Callable
+from http.client import HTTPException
 from typing import Any, Protocol
+
+#: 值得重試的 HTTP 狀態：逾時、衝突、過早、限流與伺服器端的暫時性錯誤。其餘的 4xx（金鑰錯、模型
+#: 不存在、請求不合）重試也不會好，直接報。
+RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
+
+
+class ModelError(RuntimeError):
+    """呼叫模型失敗（含重試用盡）。抽取與閘門把它當成這一次沒有答案，不讓整條管線中斷。"""
 
 
 class Model(Protocol):
@@ -93,6 +105,9 @@ class ChatCompletionsModel:
         declared_family: str | None = None,
         base_url: str | None = None,
         api_key: str | None = None,
+        max_retries: int = 3,
+        backoff: float = 1.0,
+        sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         """`declared_family`、`base_url`、`api_key` 由設定檔給（`config.py`）：此時 `slug` 就是送給
         端點的模型識別、家族是明示的；不給時（命令列的 `chat:` 規格）退回 slug 與環境變數的寫法。"""
@@ -102,6 +117,9 @@ class ChatCompletionsModel:
         self._declared_family = declared_family
         self._base_url = base_url
         self._api_key = api_key
+        self.max_retries = max_retries
+        self.backoff = backoff
+        self._sleep = sleep
 
     def __repr__(self) -> str:
         return f"ChatCompletionsModel({self.name!r})"  # 不印金鑰
@@ -144,17 +162,46 @@ class ChatCompletionsModel:
             }
         ).encode()
         request = urllib.request.Request(f"{base}/chat/completions", body, headers, method="POST")
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                payload = json.loads(response.read())
-        except urllib.error.HTTPError as e:
-            raise RuntimeError(f"{self.name}: HTTP {e.code}: {e.read()[:200]!r}") from e
+        payload = self._post(request)
         content = ((payload.get("choices") or [{}])[0].get("message") or {}).get("content")
         if not isinstance(content, str) or not content:
-            raise RuntimeError(
+            raise ModelError(
                 f"{self.name}: empty content (a reasoning model may have used all max_tokens)"
             )
         return content
+
+    def _post(self, request: urllib.request.Request) -> dict[str, Any]:
+        """送出請求；暫時性的失敗（逾時、斷線、限流、5xx）以指數退避重試，其餘直接報。"""
+        for attempt in range(self.max_retries + 1):
+            try:
+                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                    payload = json.loads(response.read())
+                if not isinstance(payload, dict):
+                    raise ModelError(f"{self.name}: the reply is not a JSON object")
+                return payload
+            except urllib.error.HTTPError as e:
+                detail = f"{self.name}: HTTP {e.code}: {e.read()[:200]!r}"
+                if e.code not in RETRYABLE_STATUS or attempt == self.max_retries:
+                    raise ModelError(detail) from e
+                wait = self._wait(attempt, e.headers.get("Retry-After"))
+            except (
+                urllib.error.URLError,
+                TimeoutError,
+                ConnectionError,
+                HTTPException,
+                json.JSONDecodeError,
+            ) as e:
+                if attempt == self.max_retries:
+                    raise ModelError(f"{self.name}: {type(e).__name__}: {e}") from e
+                wait = self._wait(attempt, None)
+            self._sleep(wait)
+        raise AssertionError("unreachable")  # pragma: no cover
+
+    def _wait(self, attempt: int, retry_after: str | None) -> float:
+        """退避秒數：伺服器給了整數的 Retry-After 就照它（上限一分鐘），否則指數加抖動。"""
+        if retry_after is not None and retry_after.strip().isdigit():
+            return float(min(int(retry_after), 60))
+        return float(self.backoff * 2**attempt * (0.5 + random.random() / 2))
 
 
 def build_model(spec: str) -> Model:

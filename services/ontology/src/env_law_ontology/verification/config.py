@@ -83,7 +83,7 @@ def _model(
     endpoints: Mapping[str, tuple[str, str | None]],
 ) -> Model:
     where = f"model.{name}"
-    _only(table, {"provider", "endpoint", "name", "family", "max_tokens"}, where)
+    _only(table, {"provider", "endpoint", "name", "family", "max_tokens", "max_retries"}, where)
     remote = table.get("name")
     if not isinstance(remote, str) or not remote:
         raise ConfigError(f"{where}: name is required")
@@ -101,7 +101,7 @@ def _model(
     if not isinstance(family, str) or not family:
         raise ConfigError(f"{where}: family is required (it is what independence is judged on)")
     base, key = endpoints[endpoint]
-    extra = {"max_tokens": int(table["max_tokens"])} if "max_tokens" in table else {}
+    extra: dict[str, Any] = {k: int(table[k]) for k in ("max_tokens", "max_retries") if k in table}
     return ChatCompletionsModel(remote, declared_family=family, base_url=base, api_key=key, **extra)
 
 

@@ -18,7 +18,7 @@ from typing import Any
 from env_law_ontology.annotate import AnnotationError, load
 from env_law_ontology.verification.gates import Conn, _unit, citations
 from env_law_ontology.verification.jsonutil import object_from
-from env_law_ontology.verification.models import Model
+from env_law_ontology.verification.models import Model, ModelError
 
 CHOOSE = """下面是一則罰則條文，與它引用的條文裡的陳述（編號、所在條文與原文）。
 請判斷這則罰則處罰的是違反哪一個陳述。輸出 JSON：{{"punishes": 編號}}；
@@ -63,7 +63,11 @@ def _choose(
 ) -> int | None:
     """多個候選時請模型挑一個；挑出的必須是候選之一。"""
     listed = "\n".join(f"[{sid}] {path}：{_unit(conn, sid).quoted}" for sid, path in candidates)
-    answer = object_from(model.complete(CHOOSE.format(text=text, candidates=listed)))
+    try:
+        reply = model.complete(CHOOSE.format(text=text, candidates=listed))
+    except ModelError:
+        return None
+    answer = object_from(reply)
     chosen = (answer or {}).get("punishes")
     return chosen if isinstance(chosen, int) and chosen in {sid for sid, _ in candidates} else None
 
