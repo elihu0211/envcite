@@ -198,7 +198,8 @@ class NumbersGate:
         want_low = next((v for v, q in found if q == "以上"), None)
         want_high = next((v for v, q in found if q == "以下"), None)
         if not found and (low is not None or high is not None):
-            out.append({"what": "amounts", "stored": [low, high], "text": [], "ok": False})
+            stored = [None if v is None else int(v) for v in (low, high)]
+            out.append({"what": "amounts", "stored": stored, "text": [], "ok": False})
         for name, stored, want in (("min", low, want_low), ("max", high, want_high)):
             if stored is None and want is None:
                 continue

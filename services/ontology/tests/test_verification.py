@@ -783,3 +783,21 @@ def test_a_penalty_that_punishes_a_held_penalty_is_held_with_it(conn: Conn, tmp_
     assert out.loaded is not None and out.loaded.statements == 1
     assert out.dropped == ()
     assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1", "p2"]
+
+
+def test_numbers_gate_evidence_can_be_stored_when_the_model_invented_an_amount(
+    conn: Conn, sample: None
+) -> None:
+    """真實模型給一個原文沒有金額的罰則填了額度：閘門判失敗，證據要能寫成 JSON。"""
+    ids = _water(conn, sample).ids
+    conn.execute(
+        "UPDATE annotation.sanction SET min_amount = 100, max_amount = 2000"
+        " WHERE statement_id = %s",
+        (ids["p40_1_order"],),
+    )
+
+    result = NumbersGate().check(conn, ids["p40_1_order"])
+
+    assert result is not None and result.verdict == "fail"
+    json.dumps(result.evidence)  # 不得含 Decimal
+    verify(conn, [NumbersGate()])  # 寫進 annotation.verification 也不得崩潰
