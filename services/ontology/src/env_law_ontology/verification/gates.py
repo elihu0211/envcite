@@ -236,14 +236,17 @@ def citations(text: str) -> list[str]:
 
 @dataclass(frozen=True)
 class ReferencesGate:
-    """罰則所處罰的陳述所在的條（項），必須是原文引用的。"""
+    """罰則所處罰的陳述所在的條（項），必須是原文引用的；而且那個陳述要先被接受。
+
+    處罰一個沒被接受的義務沒有意義：它還在 `extracted` 時罰則無法判定，等下一輪；被駁回則罰則失敗。
+    """
 
     method: str = "references"
     verifier: str = "gate:references@1"
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
         row = conn.execute(
-            "SELECT pp.path FROM annotation.sanction AS sn"
+            "SELECT pp.path, t.review::text FROM annotation.sanction AS sn"
             "  JOIN annotation.statement AS t ON t.id = sn.punishes_id"
             "  JOIN corpus.provision AS pp ON pp.id = t.provision_id"
             " WHERE sn.statement_id = %s",
@@ -269,7 +272,16 @@ class ReferencesGate:
                 c for c in cited if c not in in_corpus
             ],  # 原文引用、語料沒有的：只記，不算錯
         }
-        return GateResult("pass" if covers else "fail", evidence)
+        if not covers:
+            return GateResult("fail", evidence)
+        if row[1] == "rejected":
+            return GateResult("fail", {**evidence, "reason": "the punished statement was rejected"})
+        if row[1] == "extracted":
+            return GateResult(
+                "inconclusive",
+                {**evidence, "reason": "the punished statement is not yet confirmed"},
+            )
+        return GateResult("pass", evidence)
 
 
 def statement_as_of(conn: Conn, statement_id: int) -> date | None:

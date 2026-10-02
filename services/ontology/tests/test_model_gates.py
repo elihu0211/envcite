@@ -6,10 +6,11 @@ know about them. What is real: the schema, the SQL functions, the engine, the po
 rules that decide which verifier counts."""
 
 import json
+import re
 import types
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import psycopg
 import pytest
@@ -23,8 +24,16 @@ from env_law_ontology.verification import (
     build_model,
 )
 from env_law_ontology.verification.extract import extract_unit
+from env_law_ontology.verification.gates import GateResult, ReferencesGate
 from env_law_ontology.verification.model_gates import render_annotation
-from env_law_ontology.verification.run import ALL_METHODS, run, units_of
+from env_law_ontology.verification.run import (
+    ALL_METHODS,
+    PROBES,
+    SameModel,
+    assert_distinct,
+    run,
+    units_of,
+)
 from tests.test_annotation import BEFORE, LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
@@ -110,7 +119,7 @@ def test_the_description_is_deterministic_and_carries_the_concept_codes(
 
     assert text == render_annotation(conn, sid)
     assert "規範性陳述・義務" in text
-    assert "[discharging] 排放廢水 等於 1" in text and "[compliant] 符合標準 等於 1" in text
+    assert "[discharging] 排放廢水 成立" in text and "[compliant] 符合標準 成立" in text
 
 
 # ---- round trip ----
@@ -410,3 +419,147 @@ def test_the_anthropic_adapter_refuses_to_run_without_a_key(
 
     with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
         AnthropicModel("claude-sonnet-5-5").complete("x")
+
+
+# ---- one model under two names ----
+
+
+def test_two_names_that_answer_every_probe_identically_are_one_model() -> None:
+    """託管服務常把同一個模型掛在幾個名字下：名字不同不等於家族不同。"""
+    twin = {p: f"答：{i}" for i, p in enumerate(PROBES)}
+    a = Scripted("openai:gpt-oss-120b", lambda prompt: twin[prompt])
+    b = Scripted("mistral:mistral-small-4", lambda prompt: twin[prompt])
+
+    with pytest.raises(SameModel, match="same model under two names"):
+        assert_distinct([a, b])
+
+
+def test_models_that_answer_differently_are_distinct() -> None:
+    a = Scripted("google:gemma", lambda prompt: "甲" + prompt[:3])
+    b = Scripted("meta:llama", lambda prompt: "乙" + prompt[:3])
+
+    assert_distinct([a, b])
+
+
+def test_the_pipeline_can_refuse_to_start_when_two_of_its_models_are_one(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(TEXT, "乙一")))
+
+    def same(prompt: str) -> str:
+        return "同一個答案"
+
+    models = [Scripted("fake-a:x", same), Scripted("fake-b:y", same)]
+
+    with pytest.raises(SameModel):
+        run(conn, models[0], models[1:], [LAW], agent_version="1", check_distinct=True)
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0  # 一個單元都沒抽
+
+
+# ---- penalties that punish a statement in the article they cite ----
+
+PENALTY_TEXT = "違反第一條規定者，處新臺幣一萬元以上十萬元以下罰鍰"
+
+
+def _penalty_doc() -> dict[str, Any]:
+    return {
+        "concepts": [],
+        "statements": [
+            {
+                "id": "p1",
+                "quote": PENALTY_TEXT,
+                "kind": "penalty",
+                "sanction": {"effect": "fine", "min": 10000, "max": 100000},
+            }
+        ],
+    }
+
+
+def _duty_doc(count: int = 1) -> dict[str, Any]:
+    duty: dict[str, Any] = cast(Any, EXTRACTED["statements"])[0]
+    return {
+        "concepts": EXTRACTED["concepts"],
+        "statements": [{**duty, "id": f"s{i}"} for i in range(1, count + 1)],
+    }
+
+
+def _extractor_for(duties: int, choose: Callable[[list[int]], object]) -> Scripted:
+    def reply(prompt: str) -> str:
+        if "候選陳述" in prompt:
+            return json.dumps(
+                {"punishes": choose([int(i) for i in re.findall(r"^\[(\d+)\]", prompt, re.M)])}
+            )
+        return json.dumps(
+            _duty_doc(duties) if "art_1）" in prompt else _penalty_doc(), ensure_ascii=False
+        )
+
+    return Scripted(EXTRACTOR, reply)
+
+
+def _sanction_target(conn: Conn) -> list[tuple[int, int]]:
+    return [
+        (int(a), int(b))  # type: ignore[call-overload]
+        for a, b in conn.execute("SELECT statement_id, punishes_id FROM annotation.sanction")
+    ]
+
+
+def test_a_penalty_is_linked_to_the_only_statement_of_the_article_it_cites(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(TEXT, PENALTY_TEXT)))
+    model = _extractor_for(1, lambda ids: ids[0])
+
+    result = run(conn, model, [], [LAW], agent_version="1")
+
+    ((penalty, target),) = _sanction_target(conn)
+    assert result.linked == 1 and result.extracted == 2 and result.dropped == 0
+    assert (
+        _scalar(
+            conn,
+            "SELECT p.path FROM annotation.statement s JOIN corpus.provision p"
+            " ON p.id = s.provision_id WHERE s.id = %s",
+            target,
+        )
+        == "art_1"
+    )
+    conn.execute("UPDATE annotation.statement SET review = 'confirmed' WHERE id = %s", (target,))
+    assert ReferencesGate().check(conn, penalty) == GateResult(
+        "pass", {"target": "art_1", "cited": ["art_1"], "unresolved": []}
+    )
+    assert not any("候選陳述" in p for p in model.prompts)  # 只有一個候選，不問模型
+
+
+def test_a_model_chooses_among_several_candidates(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(TEXT, PENALTY_TEXT)))
+    model = _extractor_for(2, lambda ids: ids[-1])
+
+    run(conn, model, [], [LAW], agent_version="1")
+
+    ((_, target),) = _sanction_target(conn)
+    assert target == _scalar(
+        conn, "SELECT max(id) FROM annotation.statement WHERE kind = 'prescriptive'"
+    )
+
+
+def test_a_choice_that_is_not_a_candidate_links_nothing(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(TEXT, PENALTY_TEXT)))
+    model = _extractor_for(2, lambda ids: 10**6)
+
+    result = run(conn, model, [], [LAW], agent_version="1")
+
+    assert result.linked == 0 and result.dropped == 1
+    assert _sanction_target(conn) == []
+
+
+def test_a_penalty_citing_an_article_with_no_statements_is_dropped(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("與排放無關的條文", PENALTY_TEXT)))
+
+    def reply(prompt: str) -> str:
+        return json.dumps(_penalty_doc() if "art_2）" in prompt else {"statements": []})
+
+    result = run(conn, Scripted(EXTRACTOR, reply), [], [LAW], agent_version="1")
+
+    assert result.linked == 0 and result.dropped == 1
+    assert _sanction_target(conn) == []

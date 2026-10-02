@@ -231,6 +231,9 @@ def test_references_gate_requires_the_punished_provision_to_be_the_cited_one(
 ) -> None:
     ids = _water(conn, sample).ids
     gate = ReferencesGate()
+    conn.execute(
+        "UPDATE annotation.statement SET review = 'confirmed' WHERE id = %s", (ids["w7_1"],)
+    )
 
     ok = gate.check(conn, ids["p40_1_fine"])
     assert ok is not None and ok.verdict == "pass"
@@ -415,7 +418,7 @@ def test_the_extractor_anchors_what_the_model_quotes_and_drops_what_it_invents(
     out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
 
     assert out.loaded is not None and out.loaded.statements == 1
-    assert out.dropped == ("invented",)
+    assert out.dropped == ("invented: quote is not in the text",)
     assert "排放廢水者應符合標準" in model.prompts[0]
     assert _scalar(conn, "SELECT review::text FROM annotation.statement") == "extracted"
     assert _scalar(conn, "SELECT method::text FROM annotation.derivation") == "llm"
@@ -473,3 +476,191 @@ def test_ppi_needs_enough_samples() -> None:
         ppi_mean([1.0], [1.0], [1.0, 0.0])
     with pytest.raises(ValueError):
         ppi_mean([1.0, 0.0], [1.0], [1.0, 0.0])
+
+
+def test_the_extractor_reads_json_that_the_model_wrapped_in_a_code_fence(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """真實的模型常把 JSON 包在 ```json 圍欄裡，前後還有說明。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    fenced = (
+        "好的，以下是標註：\n```json\n"
+        + json.dumps(EXTRACTED, ensure_ascii=False)
+        + "\n```\n以上。"
+    )
+
+    out = extract_unit(conn, FakeModel(fenced), LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert out.loaded is not None and out.loaded.statements == 1
+
+
+def test_a_model_answer_that_breaks_a_constraint_is_dropped_not_fatal(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """真實模型寫出過「constitutive 卻帶義務」這種違反約束的陳述：丟掉整份，記下，管線繼續。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    bad = json.loads(json.dumps(EXTRACTED))
+    bad["statements"][0] |= {"kind": "constitutive", "deontic": "obligation"}
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(bad, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is None
+    assert any(d.startswith("<invalid document:") for d in out.dropped)
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0
+
+
+def _duty_and_cited_penalty() -> dict[str, Any]:
+    doc: dict[str, Any] = json.loads(json.dumps(EXTRACTED))
+    doc["statements"] = [
+        doc["statements"][0],
+        {
+            "id": "p1",
+            "quote": "排放廢水者應符合標準",
+            "kind": "penalty",
+            "sanction": {"effect": "fine", "min": 1, "max": 2},
+        },
+    ]
+    return doc
+
+
+def test_a_penalty_without_a_target_in_the_unit_is_held_for_linking(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """罰則處罰的是原文引用的別條：這個單元寫不進去，留到所有單元抽完再連結，其餘照常寫入。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(_duty_and_cited_penalty(), ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.dropped == ()
+    assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1"]
+    assert _scalar(conn, "SELECT count(*) FROM annotation.sanction") == 0
+
+
+def test_a_penalty_that_names_a_statement_missing_from_the_unit_is_dropped(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = _duty_and_cited_penalty()
+    doc["statements"][1]["sanction"]["punishes"] = "elsewhere"
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(doc, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.dropped == ("p1: sanction punishes nothing in this unit",)
+    assert out.pending == ()
+
+
+def test_an_exception_to_a_dropped_penalty_is_dropped_with_it(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = json.loads(json.dumps(EXTRACTED))
+    doc["statements"] = [
+        doc["statements"][0],
+        {
+            "id": "p1",
+            "quote": "排放廢水者應符合標準",
+            "kind": "penalty",
+            "sanction": {"effect": "fine", "punishes": "elsewhere"},
+        },
+        {"id": "e1", "quote": "排放廢水者", "kind": "constitutive", "exception_of": "p1"},
+    ]
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(doc, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert sorted(out.dropped) == [
+        "e1: excepts nothing in this unit",
+        "p1: sanction punishes nothing in this unit",
+    ]
+
+
+def test_a_penalty_waits_for_the_statement_it_punishes_to_be_confirmed(
+    conn: Conn, sample: None
+) -> None:
+    ids = _water(conn, sample).ids
+    gate = ReferencesGate()
+    fine, duty = ids["p40_1_fine"], ids["w7_1"]
+
+    waiting = gate.check(conn, fine)
+    assert waiting is not None and waiting.verdict == "inconclusive"
+
+    conn.execute("UPDATE annotation.statement SET review = 'rejected' WHERE id = %s", (duty,))
+    refused = gate.check(conn, fine)
+    assert refused is not None and refused.verdict == "fail"
+
+    conn.execute("UPDATE annotation.statement SET review = 'confirmed' WHERE id = %s", (duty,))
+    accepted = gate.check(conn, fine)
+    assert accepted is not None and accepted.verdict == "pass"
+
+
+def test_an_empty_sanction_template_on_a_duty_is_ignored(conn: Conn, tmp_path: Path) -> None:
+    """真實模型把罰則欄位照樣板填成空值：義務陳述照常寫入，不被當成待連結的罰則。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = json.loads(json.dumps(EXTRACTED))
+    doc["statements"][0]["sanction"] = {
+        "effect": None,
+        "min": None,
+        "max": None,
+        "repeating": False,
+        "punishes": None,
+    }
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(doc, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.pending == ()
+    assert _scalar(conn, "SELECT count(*) FROM annotation.sanction") == 0
+
+
+def test_a_penalty_without_an_effect_is_dropped(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = _duty_and_cited_penalty()
+    doc["statements"][1]["sanction"] = {"effect": None, "punishes": None}
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(doc, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.dropped == ("p1: penalty without a sanction effect",)
+    assert out.pending == ()
