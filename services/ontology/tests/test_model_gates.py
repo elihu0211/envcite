@@ -25,7 +25,7 @@ from env_law_ontology.verification import (
 )
 from env_law_ontology.verification.extract import extract_unit
 from env_law_ontology.verification.gates import GateResult, ReferencesGate
-from env_law_ontology.verification.model_gates import render_annotation
+from env_law_ontology.verification.model_gates import REFORMALIZE, render_annotation
 from env_law_ontology.verification.run import (
     ALL_METHODS,
     PROBES,
@@ -147,6 +147,30 @@ def test_the_roundtrip_fails_and_names_what_differs(conn: Conn, tmp_path: Path) 
 
     assert result is not None and result.verdict == "fail"
     assert set(result.evidence["differences"]) == {"deontic", "conditions"}
+
+
+def test_a_direction_the_reader_adds_to_a_constitutive_statement_is_ignored(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(TEXT, "乙一")))
+    answer = {"concepts": [], "statements": [{"id": "d", "quote": TEXT, "kind": "constitutive"}]}
+    out = extract_unit(conn, Scripted(EXTRACTOR, answer), LAW, "art_1", agent_version="1")
+    assert out.loaded is not None
+    reads_authority_as_permission = {
+        "kind": "constitutive",
+        "deontic": "permission",
+        "conditions": [],
+    }
+
+    result = RoundtripGate(Scripted("fake-b:reader", reads_authority_as_permission)).check(
+        conn, out.loaded.ids["d"]
+    )
+
+    assert result is not None and result.verdict == "pass"
+
+
+def test_the_reader_is_told_only_prescriptive_statements_have_a_direction() -> None:
+    assert "只有 kind 為 prescriptive 才有 deontic" in REFORMALIZE
 
 
 @pytest.mark.parametrize("answer", ["not json", {"kind": None}])
