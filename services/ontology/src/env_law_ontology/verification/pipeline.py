@@ -14,7 +14,8 @@ from typing import cast
 import psycopg
 from psycopg.types.json import Jsonb
 
-from env_law_ontology.verification.gates import DEFAULT_GATES, Gate
+from env_law_ontology.verification.gates import DEFAULT_GATES, Gate, GateResult
+from env_law_ontology.verification.models import ModelError
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -47,7 +48,11 @@ def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
             ).fetchone()
             if latest is not None and latest[0] != "inconclusive":
                 continue
-            result = gate.check(conn, sid)
+            try:
+                result = gate.check(conn, sid)
+            except ModelError as e:
+                # 模型沒回答不是標註的錯：記為無法判定，下一輪（或下次跑）再試，不駁回也不中斷。
+                result = GateResult("inconclusive", {"error": str(e)[:300]})
             verdict, evidence = (
                 ("not_applicable", {}) if result is None else (result.verdict, result.evidence)
             )

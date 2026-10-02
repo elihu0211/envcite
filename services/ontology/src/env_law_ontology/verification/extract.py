@@ -18,7 +18,7 @@ import psycopg
 
 from env_law_ontology.annotate import AnnotationError, Loaded, load
 from env_law_ontology.verification.jsonutil import object_from
-from env_law_ontology.verification.models import Model
+from env_law_ontology.verification.models import Model, ModelError
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -214,7 +214,11 @@ def extract_unit(
     """抽取一個條文單元。`agent` 記為推導者（預設為模型的名字）；驗證者不得與它相同。"""
     text = _unit_text(conn, law, path)
     prompt = PROMPT.format(law=law, path=path, text=text)
-    raw = model.complete(prompt)
+    try:
+        raw = model.complete(prompt)
+    except ModelError as e:
+        # 重試用盡：這個單元這次沒有答案，不寫入；下次跑它仍是「還沒抽」，會再試。
+        return Extracted(None, (f"<model error: {e}>"[:300],))
     answer: Mapping[str, Any] | None = object_from(raw)
     for _ in range(MAX_REPAIRS):
         if answer is None:
@@ -224,9 +228,13 @@ def extract_unit(
         )
         if not issues:
             break
-        again = object_from(
-            model.complete(REPAIR.format(prompt=prompt, previous=raw, issues="\n".join(issues)))
-        )
+        try:
+            reply = model.complete(
+                REPAIR.format(prompt=prompt, previous=raw, issues="\n".join(issues))
+            )
+        except ModelError:
+            break  # 修復要不到答案：用手上這一版，缺的由後面的丟棄與驗證處理
+        again = object_from(reply)
         if again is None:
             break
         raw, answer = json.dumps(again, ensure_ascii=False), again
