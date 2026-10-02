@@ -21,7 +21,11 @@ from env_law_ontology.verification import (
     verify,
 )
 from env_law_ontology.verification.calibration import ppi_mean
-from env_law_ontology.verification.extract import MAX_REPAIRS, completeness_issues, extract_unit
+from env_law_ontology.verification.extract import (
+    MAX_REPAIRS,
+    completeness_issues,
+    extract_unit,
+)
 from env_law_ontology.verification.gates import amounts, citations, cn_number
 from tests.test_annotation import BEFORE, LAW, _doc, _limit
 from tests.test_import import _scalar
@@ -497,7 +501,28 @@ def test_the_extractor_reads_json_that_the_model_wrapped_in_a_code_fence(
 def test_a_model_answer_that_breaks_a_constraint_is_dropped_not_fatal(
     conn: Conn, tmp_path: Path
 ) -> None:
-    """真實模型寫出過「規範性卻沒有義務方向」：修不好就丟掉整份，記下，管線繼續。"""
+    """真實模型引用過自己沒定義的概念：整份丟掉，記下，管線繼續。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    bad = json.loads(json.dumps(EXTRACTED))
+    bad["concepts"] = []
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(bad, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is None
+    assert any(d.startswith("<invalid document:") for d in out.dropped)
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0
+
+
+def test_a_prescriptive_statement_that_stays_without_a_direction_is_not_written(
+    conn: Conn, tmp_path: Path
+) -> None:
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
     bad = json.loads(json.dumps(EXTRACTED))
     bad["statements"][0].pop("deontic")
@@ -512,8 +537,7 @@ def test_a_model_answer_that_breaks_a_constraint_is_dropped_not_fatal(
     )
 
     assert out.loaded is None
-    assert any(d.startswith("<invalid document:") for d in out.dropped)
-    assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0
+    assert "s1: prescriptive without a direction after repair" in out.dropped
 
 
 def test_a_deontic_on_a_statement_that_is_not_prescriptive_is_removed(
@@ -755,7 +779,8 @@ def test_repair_stops_after_the_allowed_rounds(conn: Conn, tmp_path: Path) -> No
     out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
 
     assert len(model.prompts) == 1 + MAX_REPAIRS
-    assert out.loaded is not None  # 修不好的照樣寫入，由驗證閘門去擋
+    assert out.loaded is None  # 修不好的、沒有 duty 的義務不寫入
+    assert out.dropped == ("s1: obligation or prohibition without a duty condition after repair",)
 
 
 def test_a_penalty_that_punishes_a_held_penalty_is_held_with_it(conn: Conn, tmp_path: Path) -> None:
@@ -801,3 +826,24 @@ def test_numbers_gate_evidence_can_be_stored_when_the_model_invented_an_amount(
     assert result is not None and result.verdict == "fail"
     json.dumps(result.evidence)  # 不得含 Decimal
     verify(conn, [NumbersGate()])  # 寫進 annotation.verification 也不得崩潰
+
+
+def test_a_prohibition_without_a_duty_is_not_written_even_though_it_could_pass_the_model_gates(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """executable 只管義務：沒有 duty 的禁止若寫入，只靠模型閘門就可能被確認。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = _without_duty()
+    doc["statements"][0]["deontic"] = "prohibition"
+
+    out = extract_unit(
+        conn,
+        Sequence_(doc),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is None
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0

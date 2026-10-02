@@ -96,6 +96,24 @@ def completeness_issues(statements: Sequence[Mapping[str, Any]]) -> list[str]:
     return issues
 
 
+def unusable(statements: Sequence[Mapping[str, Any]]) -> dict[str, str]:
+    """修復後仍然無法使用的陳述（id → 原因）：規範性陳述沒有方向，或義務、禁止沒有 duty 要件。
+
+    這兩種連推論程式都評估不了，而且 `executable` 閘門只管義務，一個沒有 duty 的禁止會只靠模型閘門
+    通過，所以不寫入。沒有 scope 的義務可以評估（只是對任何人適用），留給獨立測試去抓。
+    """
+    out: dict[str, str] = {}
+    for s in statements:
+        if s.get("kind") != "prescriptive":
+            continue
+        roles = {c.get("role") for c in s.get("conditions") or [] if isinstance(c, Mapping)}
+        if not s.get("deontic"):
+            out[str(s.get("id", "?"))] = "prescriptive without a direction"
+        elif s["deontic"] in ("obligation", "prohibition") and "duty" not in roles:
+            out[str(s.get("id", "?"))] = "obligation or prohibition without a duty condition"
+    return out
+
+
 @dataclass(frozen=True)
 class Extracted:
     loaded: Loaded | None
@@ -210,11 +228,15 @@ def extract_unit(
         return Extracted(None, ("<unparseable model output>",))
     statements: list[dict[str, Any]] = []
     dropped: list[str] = []
+    broken = unusable([x for x in answer.get("statements", []) if str(x.get("quote", "")) in text])
     for s in answer.get("statements", []):
         quote = str(s.get("quote", ""))
         start = text.find(quote) if quote else -1
         if start < 0:
             dropped.append(f"{s.get('id', '?')}: quote is not in the text")
+            continue
+        if str(s.get("id", "?")) in broken:
+            dropped.append(f"{s.get('id', '?')}: {broken[str(s.get('id', '?'))]} after repair")
             continue
         item = {k: v for k, v in s.items() if k != "quote"}
         if item.get("kind") != "prescriptive":
