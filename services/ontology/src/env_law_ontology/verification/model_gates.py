@@ -72,8 +72,23 @@ def eligible(
 # ---- 把標註描述成人話（確定性，不呼叫模型） ----------------------------------------------------
 
 
-def render_annotation(conn: Conn, statement_id: int) -> str:
-    """標註的結構化描述：種類、行為槽、要件（帶代碼）、罰則。同一個標註永遠得到同一段文字。"""
+_EFFECT = {
+    "fine": "罰鍰",
+    "order": "命令（例如限期改善）",
+    "restriction": "限制（例如停工、停業）",
+    "deprivation": "剝奪（例如廢止許可、勒令歇業）",
+    "reputation": "公布名稱等聲譽處分",
+    "warning": "警告",
+    "confiscation": "沒入",
+}
+
+
+def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False) -> str:
+    """標註的結構化描述：種類、行為槽、要件（帶代碼）、罰則。同一個標註永遠得到同一段文字。
+
+    `for_reader` 給評審團看：罰則效果附上中文（原本是資料庫的列舉值，評審看不懂 `fine`）。往返驗證的
+    重抽者要把效果寫回列舉值，所以它看到的描述不附中文。
+    """
     u = _unit(conn, statement_id)
     lines = [f"陳述種類：{_KIND.get((u.kind, u.deontic), u.kind)}"]
     for slot, value in conn.execute(
@@ -121,7 +136,8 @@ def render_annotation(conn: Conn, statement_id: int) -> str:
             if low is None and high is None
             else f"；額度 {low or '無下限'} 至 {high or '無上限'}"
         )
-        lines.append(f"罰則效果：{effect}{amount}" + ("；按次處罰" if repeating else ""))
+        shown = f"{effect}（{_EFFECT.get(str(effect), effect)}）" if for_reader else effect
+        lines.append(f"罰則效果：{shown}{amount}" + ("；按次處罰" if repeating else ""))
     return "\n".join(lines)
 
 
@@ -263,8 +279,8 @@ class RoundtripGate:
 # ---- 閘門二：獨立測試 --------------------------------------------------------------------------
 
 WRITE_TESTS = """你是法規測試設計者。下面是一段法規原文，與一組可用的概念（代碼與名稱）。
-請只依原文，設計 4 至 8 個案例：每個案例給一組事實（代碼對應數值；成立為 1、不成立為 0，
-數值概念給具體數值）與依原文你預期的結論。結論限於：violation（違反）、compliant（合規）、
+請只依原文，設計 4 至 8 個案例：每個案例給一組事實（代碼對應數值；成立與否的概念給 1 或 0，
+數值概念給具體數值，型別見概念清單）與依原文你預期的結論。結論限於：violation（違反）、compliant（合規）、
 not_applicable（本條不適用）、undetermined（事實不足以判定）。涵蓋合規、違反、適用範圍不成立各
 至少一個。輸出 JSON：
 {{"cases": [{{"facts": {{"代碼": 數值}},
@@ -277,6 +293,33 @@ not_applicable（本條不適用）、undetermined（事實不足以判定）。
 可用的概念：
 {concepts}
 """
+
+
+def _concept_line(conn: Conn, statement_id: int) -> list[str]:
+    """給測試設計者的概念清單，附上型別：成立與否的給 1／0，數值的給具體數值與單位。
+
+    型別取自標註的要件（沒有單位的 eq 1 是成立與否）；不說，設計者會對成立與否的概念編出數值，
+    那是設計者與標註對型別的歧義，不是標註錯。
+    """
+    rows = conn.execute(
+        "SELECT k.code, k.pref_label, c.comparator::text, c.threshold, c.unit"
+        "  FROM annotation.statement_condition AS c"
+        "  JOIN vocab.concept AS k ON k.id = c.concept_id"
+        " WHERE c.statement_id = %s ORDER BY k.code, c.id",
+        (statement_id,),
+    )
+    lines: dict[str, tuple[str, set[str]]] = {}
+    for code, label, cmp, threshold, unit in rows:
+        presence = cmp == "eq" and threshold == 1 and not unit
+        kind = lines.setdefault(str(code), (str(label), set()))[1]
+        kind.add(
+            "成立與否，成立為 1、不成立為 0"
+            if presence
+            else f"數值{f'，單位 {unit}' if unit else ''}"
+        )
+    return [
+        f"{code}：{label}（{'；'.join(sorted(kinds))}）" for code, (label, kinds) in lines.items()
+    ]
 
 
 @dataclass(frozen=True)
@@ -309,15 +352,7 @@ class IndependentTestGate:
         as_of = statement_as_of(conn, statement_id)
         if as_of is None:
             return GateResult("inconclusive", {"reason": "no start date for the text"})
-        concepts = "\n".join(
-            f"{code}：{label}"
-            for code, label in conn.execute(
-                "SELECT DISTINCT k.code, k.pref_label FROM annotation.statement_condition AS c"
-                "  JOIN vocab.concept AS k ON k.id = c.concept_id"
-                " WHERE c.statement_id = %s ORDER BY 1",
-                (statement_id,),
-            )
-        )
+        concepts = "\n".join(_concept_line(conn, statement_id))
         answer = object_from(ok[0].complete(WRITE_TESTS.format(text=u.quoted, concepts=concepts)))
         cases = [
             c
@@ -352,14 +387,19 @@ class IndependentTestGate:
 
 # ---- 閘門三：跨家族評審團 ----------------------------------------------------------------------
 
-JUDGE = """你是法規標註的審查者。下面是一段法規原文，與一份對它的結構化標註描述。
-請判斷這份標註是否忠於原文：種類、義務方向、要件（含門檻值與「非」）、罰則的效果與額度，是否都有
+JUDGE = """你是法規標註的審查者。下面是一個條文單元的原文，與一份對其中「標註對應的引文」的結構化
+標註描述。一個單元常被拆成幾個陳述，每個陳述只對應其中一段引文，其餘條件在別的陳述裡；請就這一段
+引文判斷，需要前後文時看整個單元，不要要求這個陳述涵蓋引文以外的內容。
+請判斷這份標註是否忠於引文（與它所在的單元）：種類、義務方向、要件（含門檻值與「非」）、罰則的效果與額度，是否都有
 原文依據，沒有遺漏或添加。描述裡的「成立」是要件成立之意，不是數值；沒有寫出的預設（例如沒有
 「按次處罰」字樣）不算添加。輸出 JSON：{{"faithful": true|false, "issues": ["具體問題"]}}。
 只輸出 JSON。
 
-原文：
+整個單元的原文：
 {text}
+
+標註對應的引文：
+{quote}
 
 標註描述：
 {description}
@@ -392,7 +432,11 @@ class PanelGate:
                 {"reason": "fewer than the required model families", "skipped": skipped},
             )
         u = _unit(conn, statement_id)
-        prompt = JUDGE.format(text=u.quoted, description=render_annotation(conn, statement_id))
+        prompt = JUDGE.format(
+            text=u.text,
+            quote=u.quoted,
+            description=render_annotation(conn, statement_id, for_reader=True),
+        )
         votes: list[dict[str, Any]] = []
         for judge in ok:
             answer = object_from(judge.complete(prompt))

@@ -8,7 +8,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import json
+import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -35,19 +37,81 @@ PROMPT = """你是法規標註器。下面是一個條文單元的原文。請�
 1. 引文必須逐字出現在原文；不要輸出原文沒有的內容。
 2. 只有 kind 為 prescriptive 的陳述才有 deontic；constitutive（定義、適用範圍、授權）與
    penalty（罰則）不要寫 deontic。
-3. 義務（應…、不得…）的要件分兩種：scope 是誰、在什麼情形下適用；duty 是義務本身的內容，例如
-   「應符合放流水標準」要有一個 duty 要件（概念「符合放流水標準」），沒有 duty 的義務無法被評估。
+3. 義務（應…、不得…）的要件分兩種：scope 是誰、在什麼情形下適用；duty 是義務本身的內容。
+   「…者，應…」的句型：「者」之前的條件（誰、做什麼事、在哪裡）每個子條件各一個 scope 要件，
+   「應」之後是 duty 要件；沒有 scope 的義務會被判成對任何人都適用，沒有 duty 的義務無法被評估。
 4. 罰則（penalty）要有 sanction，effect 只能選一個值。受罰的陳述就在這個單元裡時，punishes 填它的
    id；受罰的是原文引用的別條（例如「違反第七條規定者」）時省略 punishes，程式會連到被引用條文
    的陳述。非 penalty 的陳述不要寫 sanction。
 5. 每個要件都要有 threshold：成立與否的要件（是否排放、是否符合標準）寫 comparator "eq"、
    threshold 1；「非」「不」用 negated: true 表示；原文有數值門檻時才寫它的數字與單位。
 6. 不確定法律概念或裁量（情節重大、必要時）的要件 judgement 設為 true。
+7. conditions 是一個平面清單，義務本身也是其中 role 為 duty 的一項；不要另外寫 duty 欄位。clause
+   是「或」的分組：同一個 clause 裡的要件必須全部成立，不同 clause 之間是「或」，一般都用 1。
+8. 主體的列舉（甲、乙或丙）寫在 slots.subject，不要把每一個主體各寫成一個要件。
 只輸出 JSON。
 
 原文（{law} {path}）：
 {text}
 """
+
+
+REPAIR = """{prompt}
+
+你上一次的輸出：
+{previous}
+
+它有下列問題。請修正後重新輸出完整的 JSON，只輸出 JSON：
+{issues}
+"""
+
+MAX_REPAIRS = 2
+
+_CONDITIONAL = re.compile(r"者[，,]\s*(應|不得)")
+
+
+def completeness_issues(statements: Sequence[Mapping[str, Any]]) -> list[str]:
+    """確定性的完整性檢查：義務要有 duty 要件；「…者，應…」句型要有 scope 要件。
+
+    這只檢查結構有沒有寫，不檢查寫得對不對（那是驗證閘門的事）。
+    """
+    issues: list[str] = []
+    for s in statements:
+        if s.get("kind") == "prescriptive" and not s.get("deontic"):
+            issues.append(
+                f"陳述 {s.get('id', '?')} 是 prescriptive 卻沒有 deontic（義務、禁止或許可）。"
+            )
+        if s.get("kind") != "prescriptive" or s.get("deontic") not in ("obligation", "prohibition"):
+            continue
+        roles = {c.get("role") for c in s.get("conditions") or [] if isinstance(c, Mapping)}
+        ident = s.get("id", "?")
+        if "duty" not in roles:
+            issues.append(
+                f"陳述 {ident} 是義務或禁止卻沒有 duty 要件：「應」「不得」之後的內容要寫成 duty。"
+            )
+        if _CONDITIONAL.search(str(s.get("quote", ""))) and "scope" not in roles:
+            issues.append(
+                f"陳述 {ident} 是「…者，應…」句型卻沒有 scope 要件：「者」之前的條件要寫成 scope。"
+            )
+    return issues
+
+
+def unusable(statements: Sequence[Mapping[str, Any]]) -> dict[str, str]:
+    """修復後仍然無法使用的陳述（id → 原因）：規範性陳述沒有方向，或義務、禁止沒有 duty 要件。
+
+    這兩種連推論程式都評估不了，而且 `executable` 閘門只管義務，一個沒有 duty 的禁止會只靠模型閘門
+    通過，所以不寫入。沒有 scope 的義務可以評估（只是對任何人適用），留給獨立測試去抓。
+    """
+    out: dict[str, str] = {}
+    for s in statements:
+        if s.get("kind") != "prescriptive":
+            continue
+        roles = {c.get("role") for c in s.get("conditions") or [] if isinstance(c, Mapping)}
+        if not s.get("deontic"):
+            out[str(s.get("id", "?"))] = "prescriptive without a direction"
+        elif s["deontic"] in ("obligation", "prohibition") and "duty" not in roles:
+            out[str(s.get("id", "?"))] = "obligation or prohibition without a duty condition"
+    return out
 
 
 @dataclass(frozen=True)
@@ -72,16 +136,35 @@ def _unit_text(conn: Conn, law: str, path: str) -> str:
     return str(row[0])
 
 
-def _held(s: Mapping[str, Any]) -> bool:
-    """罰則沒有指明同單元裡受罰的陳述：它處罰的是原文引用的別條。"""
+def _held(s: Mapping[str, Any], ids: set[str]) -> bool:
+    """罰則沒有指明同單元裡受罰的陳述（或指的 id 不在這個單元）：它處罰的是原文引用的別條。
+
+    模型不知道別條的陳述 id，指向不存在的 id 與沒有指明是同一回事。
+    """
     sanction = s.get("sanction")
-    return isinstance(sanction, Mapping) and sanction.get("punishes") is None
+    return isinstance(sanction, Mapping) and str(sanction.get("punishes")) not in ids
+
+
+def _waiting(statements: Sequence[Mapping[str, Any]], ids: set[str]) -> set[str]:
+    """留待連結的罰則的 id：等著連結的，加上處罰它們的罰則（同一條原文引用的是同一批條文）。"""
+    waiting = {str(s.get("id")) for s in statements if _held(s, ids)}
+    while True:
+        more = {
+            str(s.get("id"))
+            for s in statements
+            if isinstance(s.get("sanction"), Mapping)
+            and str(s["sanction"].get("punishes")) in waiting
+            and str(s.get("id")) not in waiting
+        }
+        if not more:
+            return waiting
+        waiting |= more
 
 
 def _linkable(statements: list[dict[str, Any]], dropped: list[str]) -> list[dict[str, Any]]:
     """丟掉指向文件外的罰則與例外，連帶丟掉指向被丟掉者的陳述，直到不再變動。
 
-    罰則與例外只能指向同一份文件裡的陳述；指明了同單元的陳述卻不在其中的，是模型寫錯。
+    例外只能指向同一份文件裡的陳述；罰則指向被丟掉或留待連結的陳述時也一併丟掉。
     """
     while True:
         ids = {str(s.get("id")) for s in statements}
@@ -124,19 +207,40 @@ def extract_unit(
 ) -> Extracted:
     """抽取一個條文單元。`agent` 記為推導者（預設為模型的名字）；驗證者不得與它相同。"""
     text = _unit_text(conn, law, path)
-    raw = model.complete(PROMPT.format(law=law, path=path, text=text))
+    prompt = PROMPT.format(law=law, path=path, text=text)
+    raw = model.complete(prompt)
     answer: Mapping[str, Any] | None = object_from(raw)
+    for _ in range(MAX_REPAIRS):
+        if answer is None:
+            break
+        issues = completeness_issues(
+            [x for x in answer.get("statements") or [] if str(x.get("quote", "")) in text]
+        )
+        if not issues:
+            break
+        again = object_from(
+            model.complete(REPAIR.format(prompt=prompt, previous=raw, issues="\n".join(issues)))
+        )
+        if again is None:
+            break
+        raw, answer = json.dumps(again, ensure_ascii=False), again
     if answer is None:
         return Extracted(None, ("<unparseable model output>",))
     statements: list[dict[str, Any]] = []
     dropped: list[str] = []
+    broken = unusable([x for x in answer.get("statements", []) if str(x.get("quote", "")) in text])
     for s in answer.get("statements", []):
         quote = str(s.get("quote", ""))
         start = text.find(quote) if quote else -1
         if start < 0:
             dropped.append(f"{s.get('id', '?')}: quote is not in the text")
             continue
+        if str(s.get("id", "?")) in broken:
+            dropped.append(f"{s.get('id', '?')}: {broken[str(s.get('id', '?'))]} after repair")
+            continue
         item = {k: v for k, v in s.items() if k != "quote"}
+        if item.get("kind") != "prescriptive":
+            item.pop("deontic", None)  # 只有規範性陳述有義務方向（提示規則 2）；其餘的直接去掉
         sanction = item.get("sanction")
         if not (isinstance(sanction, Mapping) and sanction.get("effect")):
             # 模型常把罰則欄位照樣板填成空值：沒有效果就不是罰則。
@@ -150,9 +254,10 @@ def extract_unit(
         if quote != text:
             item["span"] = [start, start + len(quote)]
         statements.append(item)
-    held = [s for s in statements if _held(s)]
-    held = _linkable_held(held, dropped)
-    statements = _linkable([s for s in statements if not _held(s)], dropped)
+    ids = {str(s.get("id")) for s in statements}
+    waiting = _waiting(statements, ids)
+    held = _linkable_held([s for s in statements if str(s.get("id")) in waiting], dropped)
+    statements = _linkable([s for s in statements if str(s.get("id")) not in waiting], dropped)
     base = {
         "derivation": {
             "method": "llm",
