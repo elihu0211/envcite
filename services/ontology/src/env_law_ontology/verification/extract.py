@@ -18,12 +18,14 @@ import psycopg
 
 from env_law_ontology.annotate import AnnotationError, Loaded, load
 from env_law_ontology.verification.context import ancestors_text, context_block
+from env_law_ontology.verification.conventions import apply as with_conventions
 from env_law_ontology.verification.jsonutil import object_from
 from env_law_ontology.verification.models import Model, ModelError
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
-PROMPT = """你是法規標註器。下面是一個條文單元的原文。請只依原文，輸出一個 JSON 物件：
+PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元的原文。
+請只依原文，輸出一個 JSON 物件：
 {{"concepts": [{{"code": "英文小寫底線的代碼", "label": "中文名稱"}}],
   "statements": [{{"id": "短識別", "quote": "原文中的一段，逐字複製", "kind":
   "prescriptive|constitutive|penalty", "deontic": "obligation|prohibition|permission 或省略",
@@ -34,7 +36,7 @@ PROMPT = """你是法規標註器。下面是一個條文單元的原文。請�
   "sanction": {{"effect": "fine|order|restriction|deprivation|reputation|warning|confiscation",
   "min": 數字或省略, "max": 數字或省略, "amount_text": "原文或省略", "repeating": false,
   "punishes": "同一個單元裡受罰的那個陳述的 id，沒有就省略"}}}}]}}
-規則：
+{conventions}規則：
 1. 引文必須逐字出現在原文；不要輸出原文沒有的內容。
 2. 只有 kind 為 prescriptive 的陳述才有 deontic；constitutive（定義、適用範圍、授權）與
    penalty（罰則）不要寫 deontic。
@@ -56,7 +58,7 @@ PROMPT = """你是法規標註器。下面是一個條文單元的原文。請�
 
 {context}原文（{law} {path}）：
 {text}
-"""
+""")
 
 
 REPAIR = """{prompt}

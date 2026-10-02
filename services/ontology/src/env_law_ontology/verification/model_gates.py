@@ -19,6 +19,7 @@ from typing import Any, cast
 
 from env_law_ontology.reasoning import evaluate
 from env_law_ontology.verification.context import context_block
+from env_law_ontology.verification.conventions import apply as with_conventions
 from env_law_ontology.verification.gates import Conn, GateResult, _unit, statement_as_of
 from env_law_ontology.verification.jsonutil import object_from
 from env_law_ontology.verification.models import Model, family_of
@@ -225,7 +226,7 @@ def _answered_signature(answer: Mapping[str, Any]) -> dict[str, Any]:
 
 # ---- 閘門一：往返驗證 --------------------------------------------------------------------------
 
-REFORMALIZE = """下面是對一個法規陳述的結構化描述（不是法規原文）。
+REFORMALIZE = with_conventions("""下面是對一個法規陳述的結構化描述（不是法規原文）。
 請只依這份描述，輸出一個 JSON 物件：
 {{"kind": "prescriptive|constitutive|penalty",
   "deontic": "obligation|prohibition|permission 或 null",
@@ -234,14 +235,14 @@ REFORMALIZE = """下面是對一個法規陳述的結構化描述（不是法規
     "negated": true|false, "judgement": true|false}}],
   "sanction": {{"effect": "效果", "min": 數字或 null, "max": 數字或 null,
     "repeating": true|false}} 或 null}}
-只有 kind 為 prescriptive 才有 deontic，constitutive（定義、適用範圍、授權）與 penalty 的 deontic
-為 null。門檻值由授權命令供給時 threshold 為 null；「成立」表示 comparator 為 eq、threshold 為 1；
+門檻值由授權命令供給時 threshold 為 null；「成立」表示 comparator 為 eq、threshold 為 1；
 「（需判斷）」表示 judgement 為 true；「非：」表示 negated 為 true；沒有提到按次處罰則 repeating
 為 false；沒有罰則則 sanction 為 null。只輸出 JSON。
 
+{conventions}
 描述：
 {description}
-"""
+""")
 
 
 @dataclass(frozen=True)
@@ -394,7 +395,8 @@ class IndependentTestGate:
 
 # ---- 閘門三：跨家族評審團 ----------------------------------------------------------------------
 
-JUDGE = """你是法規標註的審查者。下面是一個條文單元的原文，與一份對其中「標註對應的引文」的結構化
+JUDGE = with_conventions("""你是法規標註的審查者。
+下面是一個條文單元的原文，與一份對其中「標註對應的引文」的結構化
 標註描述。一個單元常被拆成幾個陳述，每個陳述只對應其中一段引文，其餘條件在別的陳述裡；請就這一段
 引文判斷，需要前後文時看整個單元，不要要求這個陳述涵蓋引文以外的內容。
 請判斷這份標註是否忠於引文（與它所在的單元）：種類、義務方向、要件（含門檻值與「非」）、罰則的效果與額度，是否都有
@@ -402,6 +404,7 @@ JUDGE = """你是法規標註的審查者。下面是一個條文單元的原文
 「按次處罰」字樣）不算添加。輸出 JSON：{{"faithful": true|false, "issues": ["具體問題"]}}。
 只輸出 JSON。
 
+{conventions}
 {context}整個單元的原文：
 {text}
 
@@ -410,7 +413,7 @@ JUDGE = """你是法規標註的審查者。下面是一個條文單元的原文
 
 標註描述：
 {description}
-"""
+""")
 
 
 @dataclass(frozen=True)
