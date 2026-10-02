@@ -263,8 +263,8 @@ class RoundtripGate:
 # ---- 閘門二：獨立測試 --------------------------------------------------------------------------
 
 WRITE_TESTS = """你是法規測試設計者。下面是一段法規原文，與一組可用的概念（代碼與名稱）。
-請只依原文，設計 4 至 8 個案例：每個案例給一組事實（代碼對應數值；成立為 1、不成立為 0，
-數值概念給具體數值）與依原文你預期的結論。結論限於：violation（違反）、compliant（合規）、
+請只依原文，設計 4 至 8 個案例：每個案例給一組事實（代碼對應數值；成立與否的概念給 1 或 0，
+數值概念給具體數值，型別見概念清單）與依原文你預期的結論。結論限於：violation（違反）、compliant（合規）、
 not_applicable（本條不適用）、undetermined（事實不足以判定）。涵蓋合規、違反、適用範圍不成立各
 至少一個。輸出 JSON：
 {{"cases": [{{"facts": {{"代碼": 數值}},
@@ -277,6 +277,33 @@ not_applicable（本條不適用）、undetermined（事實不足以判定）。
 可用的概念：
 {concepts}
 """
+
+
+def _concept_line(conn: Conn, statement_id: int) -> list[str]:
+    """給測試設計者的概念清單，附上型別：成立與否的給 1／0，數值的給具體數值與單位。
+
+    型別取自標註的要件（沒有單位的 eq 1 是成立與否）；不說，設計者會對成立與否的概念編出數值，
+    那是設計者與標註對型別的歧義，不是標註錯。
+    """
+    rows = conn.execute(
+        "SELECT k.code, k.pref_label, c.comparator::text, c.threshold, c.unit"
+        "  FROM annotation.statement_condition AS c"
+        "  JOIN vocab.concept AS k ON k.id = c.concept_id"
+        " WHERE c.statement_id = %s ORDER BY k.code, c.id",
+        (statement_id,),
+    )
+    lines: dict[str, tuple[str, set[str]]] = {}
+    for code, label, cmp, threshold, unit in rows:
+        presence = cmp == "eq" and threshold == 1 and not unit
+        kind = lines.setdefault(str(code), (str(label), set()))[1]
+        kind.add(
+            "成立與否，成立為 1、不成立為 0"
+            if presence
+            else f"數值{f'，單位 {unit}' if unit else ''}"
+        )
+    return [
+        f"{code}：{label}（{'；'.join(sorted(kinds))}）" for code, (label, kinds) in lines.items()
+    ]
 
 
 @dataclass(frozen=True)
@@ -309,15 +336,7 @@ class IndependentTestGate:
         as_of = statement_as_of(conn, statement_id)
         if as_of is None:
             return GateResult("inconclusive", {"reason": "no start date for the text"})
-        concepts = "\n".join(
-            f"{code}：{label}"
-            for code, label in conn.execute(
-                "SELECT DISTINCT k.code, k.pref_label FROM annotation.statement_condition AS c"
-                "  JOIN vocab.concept AS k ON k.id = c.concept_id"
-                " WHERE c.statement_id = %s ORDER BY 1",
-                (statement_id,),
-            )
-        )
+        concepts = "\n".join(_concept_line(conn, statement_id))
         answer = object_from(ok[0].complete(WRITE_TESTS.format(text=u.quoted, concepts=concepts)))
         cases = [
             c

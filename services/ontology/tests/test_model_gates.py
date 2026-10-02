@@ -195,6 +195,19 @@ def test_independent_cases_run_through_the_engine_and_must_agree(
     )  # 只給原文與概念，不給標註
 
 
+def test_the_tester_is_told_which_concepts_are_yes_or_no_and_which_are_numbers(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """不說型別，測試設計者會對成立與否的概念編出數值，與標註對不上。"""
+    sid = _extracted(conn, tmp_path)
+    tester = Scripted("fake-b:tester", CASES)
+
+    IndependentTestGate(tester).check(conn, sid)
+
+    assert "discharging：排放廢水（成立與否，成立為 1、不成立為 0）" in tester.prompts[0]
+    assert "compliant：符合標準（成立與否，成立為 1、不成立為 0）" in tester.prompts[0]
+
+
 def test_independent_cases_that_all_disagree_fail_and_a_mix_is_inconclusive(
     conn: Conn, tmp_path: Path
 ) -> None:
