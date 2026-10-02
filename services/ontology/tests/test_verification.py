@@ -21,7 +21,7 @@ from env_law_ontology.verification import (
     verify,
 )
 from env_law_ontology.verification.calibration import ppi_mean
-from env_law_ontology.verification.extract import extract_unit
+from env_law_ontology.verification.extract import MAX_REPAIRS, completeness_issues, extract_unit
 from env_law_ontology.verification.gates import amounts, citations, cn_number
 from tests.test_annotation import BEFORE, LAW, _doc, _limit
 from tests.test_import import _scalar
@@ -497,10 +497,10 @@ def test_the_extractor_reads_json_that_the_model_wrapped_in_a_code_fence(
 def test_a_model_answer_that_breaks_a_constraint_is_dropped_not_fatal(
     conn: Conn, tmp_path: Path
 ) -> None:
-    """真實模型寫出過「constitutive 卻帶義務」這種違反約束的陳述：丟掉整份，記下，管線繼續。"""
+    """真實模型寫出過「規範性卻沒有義務方向」：修不好就丟掉整份，記下，管線繼續。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
     bad = json.loads(json.dumps(EXTRACTED))
-    bad["statements"][0] |= {"kind": "constitutive", "deontic": "obligation"}
+    bad["statements"][0].pop("deontic")
 
     out = extract_unit(
         conn,
@@ -514,6 +514,30 @@ def test_a_model_answer_that_breaks_a_constraint_is_dropped_not_fatal(
     assert out.loaded is None
     assert any(d.startswith("<invalid document:") for d in out.dropped)
     assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0
+
+
+def test_a_deontic_on_a_statement_that_is_not_prescriptive_is_removed(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    odd = json.loads(json.dumps(EXTRACTED))
+    odd["statements"][0] |= {"kind": "constitutive"}
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(odd, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement WHERE deontic IS NOT NULL") == 0
+
+
+def test_a_prescriptive_statement_without_a_direction_is_incomplete() -> None:
+    assert completeness_issues([{"id": "a", "kind": "prescriptive"}]) != []
 
 
 def _duty_and_cited_penalty() -> dict[str, Any]:
@@ -551,9 +575,10 @@ def test_a_penalty_without_a_target_in_the_unit_is_held_for_linking(
     assert _scalar(conn, "SELECT count(*) FROM annotation.sanction") == 0
 
 
-def test_a_penalty_that_names_a_statement_missing_from_the_unit_is_dropped(
+def test_a_penalty_that_names_a_statement_missing_from_the_unit_is_held_like_one_that_names_none(
     conn: Conn, tmp_path: Path
 ) -> None:
+    """模型不知道別條的陳述 id：指向不存在的 id 與沒有指明是同一回事，留待連結。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
     doc = _duty_and_cited_penalty()
     doc["statements"][1]["sanction"]["punishes"] = "elsewhere"
@@ -568,11 +593,12 @@ def test_a_penalty_that_names_a_statement_missing_from_the_unit_is_dropped(
     )
 
     assert out.loaded is not None and out.loaded.statements == 1
-    assert out.dropped == ("p1: sanction punishes nothing in this unit",)
-    assert out.pending == ()
+    assert out.dropped == ()
+    assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1"]
 
 
-def test_an_exception_to_a_dropped_penalty_is_dropped_with_it(conn: Conn, tmp_path: Path) -> None:
+def test_an_exception_to_a_held_penalty_is_dropped(conn: Conn, tmp_path: Path) -> None:
+    """例外只能指向同一份文件裡寫入的陳述；它例外的罰則還在等連結，所以連它一起丟。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
     doc = json.loads(json.dumps(EXTRACTED))
     doc["statements"] = [
@@ -596,29 +622,8 @@ def test_an_exception_to_a_dropped_penalty_is_dropped_with_it(conn: Conn, tmp_pa
     )
 
     assert out.loaded is not None and out.loaded.statements == 1
-    assert sorted(out.dropped) == [
-        "e1: excepts nothing in this unit",
-        "p1: sanction punishes nothing in this unit",
-    ]
-
-
-def test_a_penalty_waits_for_the_statement_it_punishes_to_be_confirmed(
-    conn: Conn, sample: None
-) -> None:
-    ids = _water(conn, sample).ids
-    gate = ReferencesGate()
-    fine, duty = ids["p40_1_fine"], ids["w7_1"]
-
-    waiting = gate.check(conn, fine)
-    assert waiting is not None and waiting.verdict == "inconclusive"
-
-    conn.execute("UPDATE annotation.statement SET review = 'rejected' WHERE id = %s", (duty,))
-    refused = gate.check(conn, fine)
-    assert refused is not None and refused.verdict == "fail"
-
-    conn.execute("UPDATE annotation.statement SET review = 'confirmed' WHERE id = %s", (duty,))
-    accepted = gate.check(conn, fine)
-    assert accepted is not None and accepted.verdict == "pass"
+    assert out.dropped == ("e1: excepts nothing in this unit",)
+    assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1"]
 
 
 def test_an_empty_sanction_template_on_a_duty_is_ignored(conn: Conn, tmp_path: Path) -> None:
@@ -664,3 +669,117 @@ def test_a_penalty_without_an_effect_is_dropped(conn: Conn, tmp_path: Path) -> N
     assert out.loaded is not None and out.loaded.statements == 1
     assert out.dropped == ("p1: penalty without a sanction effect",)
     assert out.pending == ()
+
+
+# ---- completeness check and repair ----
+
+
+def _duty_without_scope() -> dict[str, Any]:
+    doc: dict[str, Any] = json.loads(json.dumps(EXTRACTED))
+    doc["statements"] = [doc["statements"][0]]
+    return doc
+
+
+def test_a_duty_without_a_duty_condition_is_incomplete() -> None:
+    statement = {"id": "s1", "kind": "prescriptive", "deontic": "obligation", "quote": "應符合標準"}
+
+    issues = completeness_issues([{**statement, "conditions": [{"role": "scope"}]}])
+
+    assert len(issues) == 1 and "duty" in issues[0]
+    assert completeness_issues([{**statement, "conditions": [{"role": "duty"}]}]) == []
+
+
+def test_the_conditional_pattern_needs_a_scope_condition() -> None:
+    statement = {
+        "id": "s1",
+        "kind": "prescriptive",
+        "deontic": "obligation",
+        "quote": "排放廢水者，應符合標準",
+        "conditions": [{"role": "duty"}],
+    }
+
+    issues = completeness_issues([statement])
+
+    assert len(issues) == 1 and "scope" in issues[0]
+    complete = {**statement, "conditions": [{"role": "scope"}, {"role": "duty"}]}
+    assert completeness_issues([complete]) == []
+
+
+def test_permissions_and_other_kinds_need_no_duty() -> None:
+    assert completeness_issues([{"id": "a", "kind": "prescriptive", "deontic": "permission"}]) == []
+    assert completeness_issues([{"id": "b", "kind": "constitutive", "quote": "甲者，應乙"}]) == []
+
+
+class Sequence_:
+    """A model that gives its answers in turn (the last one repeats)."""
+
+    name = "fake:sequence"
+    family = "fake"
+
+    def __init__(self, *answers: dict[str, Any]) -> None:
+        self.answers = answers
+        self.prompts: list[str] = []
+
+    def complete(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+        answer = self.answers[min(len(self.prompts), len(self.answers)) - 1]
+        return json.dumps(answer, ensure_ascii=False)
+
+
+def _without_duty() -> dict[str, Any]:
+    doc = _duty_without_scope()
+    doc["statements"][0]["conditions"] = [doc["statements"][0]["conditions"][0]]  # 只剩 scope
+    return doc
+
+
+def test_an_incomplete_answer_is_sent_back_with_the_problem_and_the_fix_is_used(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    model = Sequence_(_without_duty(), _duty_without_scope())
+
+    out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert len(model.prompts) == 2 and "沒有 duty 要件" in model.prompts[1]
+    assert out.loaded is not None
+    assert (
+        _scalar(conn, "SELECT count(*) FROM annotation.statement_condition WHERE role = 'duty'")
+        == 1
+    )
+
+
+def test_repair_stops_after_the_allowed_rounds(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    model = Sequence_(_without_duty())
+
+    out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert len(model.prompts) == 1 + MAX_REPAIRS
+    assert out.loaded is not None  # 修不好的照樣寫入，由驗證閘門去擋
+
+
+def test_a_penalty_that_punishes_a_held_penalty_is_held_with_it(conn: Conn, tmp_path: Path) -> None:
+    """同一條原文裡的附加處罰（按次處罰、停工）常被模型標成處罰第一個罰則：一起留待連結。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = _duty_and_cited_penalty()
+    doc["statements"].append(
+        {
+            "id": "p2",
+            "quote": "排放廢水者應符合標準",
+            "kind": "penalty",
+            "sanction": {"effect": "order", "punishes": "p1"},
+        }
+    )
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(doc, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.dropped == ()
+    assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1", "p2"]
