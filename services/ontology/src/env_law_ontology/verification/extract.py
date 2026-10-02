@@ -105,6 +105,61 @@ def _statements_of(answer: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     return [x for x in items if isinstance(x, Mapping)] if isinstance(items, list) else []
 
 
+def _concepts_of(answer: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """宣告完整（有 code 與 label）的概念；別的項目當作沒宣告。"""
+    items = answer.get("concepts")
+    return [
+        c
+        for c in (items if isinstance(items, list) else [])
+        if isinstance(c, Mapping) and c.get("code") and c.get("label")
+    ]
+
+
+def tidy(answer: Mapping[str, Any]) -> dict[str, Any]:
+    """不改變意思的形狀修正：槽位直接寫成字串（`"subject": "甲"`）就是它的字面。"""
+    out = dict(answer)
+    out["statements"] = [
+        {
+            **s,
+            "slots": {k: {"literal": v} if isinstance(v, str) else v for k, v in slots.items()},
+        }
+        if isinstance(slots := s.get("slots"), Mapping)
+        else dict(s)
+        for s in _statements_of(answer)
+    ]
+    return out
+
+
+def shape_issues(answer: Mapping[str, Any]) -> dict[str, list[str]]:
+    """載入器必然拒絕的形狀（id → 問題）：要件不是物件、沒有 concept、或用了沒宣告的 concept。
+
+    載入器遇到任何一個就整份文件不寫，同一單元裡其餘正確的陳述一起丟掉；先指出來請模型修，
+    修不好才只丟這一個陳述。
+    """
+    declared = {str(c["code"]) for c in _concepts_of(answer)}
+    out: dict[str, list[str]] = {}
+    for s in _statements_of(answer):
+        problems: list[str] = []
+        for c in s.get("conditions") or []:
+            if not isinstance(c, Mapping):
+                problems.append("要件必須是物件（role、concept、comparator、threshold…）。")
+                continue
+            for field in ("concept", "value_concept"):
+                code = c.get(field)
+                if field == "concept" and not code:
+                    problems.append(
+                        f"有一個要件沒有 concept（role={c.get('role')}）：每個要件都要指名一個"
+                        "在 concepts 裡宣告過的代碼。"
+                    )
+                elif code and str(code) not in declared:
+                    problems.append(
+                        f"要件的 {field}「{code}」沒有在 concepts 裡宣告（code 與 label 都要寫）。"
+                    )
+        if problems:
+            out[str(s.get("id", "?"))] = problems
+    return out
+
+
 def unusable(statements: Sequence[Mapping[str, Any]]) -> dict[str, str]:
     """修復後仍然無法使用的陳述（id → 原因）：規範性陳述沒有方向，或義務、禁止沒有 duty 要件。
 
@@ -226,12 +281,18 @@ def extract_unit(
         # 重試用盡：這個單元這次沒有答案，不寫入；下次跑它仍是「還沒抽」，會再試。
         return Extracted(None, (f"<model error: {e}>"[:300],))
     answer: Mapping[str, Any] | None = object_from(raw)
+    answer = None if answer is None else tidy(answer)
     for _ in range(MAX_REPAIRS):
         if answer is None:
             break
-        issues = completeness_issues(
-            [x for x in _statements_of(answer) if str(x.get("quote", "")) in text]
-        )
+        here = [x for x in _statements_of(answer) if str(x.get("quote", "")) in text]
+        shape = shape_issues(answer)
+        issues = completeness_issues(here) + [
+            f"陳述 {ident}：{problem}"
+            for x in here
+            for ident in [str(x.get("id", "?"))]
+            for problem in shape.get(ident, [])
+        ]
         if not issues:
             break
         try:
@@ -243,12 +304,14 @@ def extract_unit(
         again = object_from(reply)
         if again is None:
             break
-        raw, answer = json.dumps(again, ensure_ascii=False), again
+        raw, answer = json.dumps(again, ensure_ascii=False), tidy(again)
     if answer is None:
         return Extracted(None, ("<unparseable model output>",))
     statements: list[dict[str, Any]] = []
     dropped: list[str] = []
     broken = unusable([x for x in _statements_of(answer) if str(x.get("quote", "")) in text])
+    for ident in shape_issues(answer):
+        broken.setdefault(ident, "malformed conditions")
     for s in _statements_of(answer):
         quote = str(s.get("quote", ""))
         start = text.find(quote) if quote else -1
@@ -286,7 +349,7 @@ def extract_unit(
         },
         "review": "extracted",
         "scheme": {"code": scheme[0], "title": scheme[1]},
-        "concepts": answer.get("concepts", []),
+        "concepts": _concepts_of(answer),
     }
     pending = (base | {"statements": held},) if held else ()
     if not statements:
