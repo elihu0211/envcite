@@ -847,3 +847,58 @@ def test_a_prohibition_without_a_duty_is_not_written_even_though_it_could_pass_t
 
     assert out.loaded is None
     assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        pytest.param(lambda s: s.update(slots={"subject": "事業"}), id="slot-is-a-string"),
+        pytest.param(lambda s: s.update(conditions=["符合標準"]), id="condition-is-a-string"),
+        pytest.param(lambda s: s.update(conditions="符合標準"), id="conditions-not-a-list"),
+        pytest.param(lambda s: s.update(slots=["事業"]), id="slots-not-an-object"),
+    ],
+)
+def test_a_statement_with_the_wrong_shape_is_dropped_not_fatal(
+    conn: Conn, tmp_path: Path, damage: Any
+) -> None:
+    """真實模型把物件寫成字串過：原本整條管線因 AttributeError 中斷，現在丟掉整份並記下。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    doc = json.loads(json.dumps(EXTRACTED))
+    damage(doc["statements"][0])
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(doc, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is None
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 0
+
+
+@pytest.mark.parametrize(
+    "statements",
+    [
+        pytest.param("一個字串", id="a-string"),
+        pytest.param(["字串", 3, None], id="items-not-objects"),
+        pytest.param({"id": "s1"}, id="an-object"),
+    ],
+)
+def test_statements_that_are_not_a_list_of_objects_count_as_none(
+    conn: Conn, tmp_path: Path, statements: Any
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps({"concepts": [], "statements": statements}, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is None and out.pending == ()
