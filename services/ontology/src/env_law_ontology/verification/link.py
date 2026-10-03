@@ -46,8 +46,8 @@ def _candidates(conn: Conn, law: str, cited: Sequence[str]) -> list[tuple[int, s
         "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
         "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
         "   AND v.content_sha256 = s.content_sha256 AND v.superseded_at IS NULL"
-        " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND s.kind = 'prescriptive'"
-        "   AND s.deontic IN ('obligation', 'prohibition') AND s.review <> 'rejected'"
+        " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND s.statement_kind = 'prescriptive'"
+        "   AND s.norm_modality IN ('obligation', 'prohibition') AND s.confirm_state <> 'rejected'"
         " ORDER BY s.id",
         (law,),
     )

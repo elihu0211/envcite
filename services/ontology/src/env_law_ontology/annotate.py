@@ -107,7 +107,7 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
     review = doc.get("review", "extracted")
     d_id = _one(
         conn,
-        "INSERT INTO annotation.derivation (method, agent, agent_version)"
+        "INSERT INTO annotation.derivation (method, producer, producer_version)"
         " VALUES (%s, %s, %s) RETURNING id",
         derivation["method"],
         derivation["agent"],
@@ -142,8 +142,8 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
         if (sanction := s.get("sanction")) is not None:
             conn.execute(
                 "INSERT INTO annotation.sanction"
-                " (statement_id, punishes_id, effect, amount_text, min_amount, max_amount,"
-                "  repeating)"
+                " (statement_id, punishes_id, legal_effect, amount_text, min_amount, max_amount,"
+                "  per_occasion)"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 (
                     ids[str(s["id"])],
@@ -160,7 +160,8 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
             sanctions += 1
     for o in doc.get("overrides", []):
         conn.execute(
-            "INSERT INTO annotation.statement_override (winner_id, loser_id, basis)"
+            "INSERT INTO annotation.statement_override"
+            " (prevailing_id, subordinate_id, priority_basis)"
             " VALUES (%s, %s, %s)",
             (ref(str(o["winner"])), ref(str(o["loser"])), o["basis"]),
         )
@@ -201,7 +202,7 @@ def _concepts(
         )
         for alt in c.get("alt", []):
             conn.execute(
-                "INSERT INTO vocab.concept_label (concept_id, label, kind)"
+                "INSERT INTO vocab.concept_label (concept_id, label, label_kind)"
                 " VALUES (%s, %s, 'alt') ON CONFLICT DO NOTHING",
                 (cid, alt),
             )
@@ -255,7 +256,8 @@ def _statement(conn: Conn, s: Mapping[str, Any], derivation_id: int, review: str
     return _one(
         conn,
         "INSERT INTO annotation.statement"
-        " (provision_id, content_sha256, span, kind, deontic, derivation_id, review)"
+        " (provision_id, content_sha256, span, statement_kind, norm_modality,"
+        "  derivation_id, confirm_state)"
         " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
         provision_id,
         digest,
@@ -296,8 +298,9 @@ def _conditions(
         delegate = c.get("delegate")
         conn.execute(
             "INSERT INTO annotation.statement_condition"
-            " (statement_id, role, clause, concept_id, comparator, threshold, unit,"
-            "  value_concept_id, negated, delegate_provision_id, judgement)"
+            " (statement_id, cond_role, disjunct_no, concept_id, comparator,"
+            "  threshold, measure_unit,"
+            "  value_concept_id, negated, delegate_provision_id, needs_assessment)"
             " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
                 statement_id,

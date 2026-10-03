@@ -30,7 +30,7 @@ def milli(value: Decimal | float | int) -> int:
 
 
 _STATEMENTS = """
-    SELECT s.id, s.kind::text, s.deontic::text, corpus.version_iri(r.version_id)
+    SELECT s.id, s.statement_kind::text, s.norm_modality::text, corpus.version_iri(r.version_id)
       FROM corpus.legal_resource AS lr
      CROSS JOIN LATERAL annotation.{resolver}(lr.id, %(lang)s, %(on)s) AS r
       JOIN annotation.statement AS s ON s.id = r.statement_id
@@ -38,12 +38,13 @@ _STATEMENTS = """
 """
 
 _CONDITIONS = """
-    SELECT c.id, c.statement_id, c.role::text, c.clause, k.code, c.comparator::text, c.negated,
-           c.judgement, c.threshold, c.delegate_provision_id IS NOT NULL,
+    SELECT c.id, c.statement_id, c.cond_role::text, c.disjunct_no, k.code,
+           c.comparator::text, c.negated,
+           c.needs_assessment, c.threshold, c.delegate_provision_id IS NOT NULL,
            c.value_concept_id IS NOT NULL
       FROM annotation.statement_condition AS c
       JOIN vocab.concept AS k ON k.id = c.concept_id
-     WHERE c.statement_id = ANY(%(ids)s) AND c.role <> 'limit'
+     WHERE c.statement_id = ANY(%(ids)s) AND c.cond_role <> 'limit'
      ORDER BY c.id
 """
 
@@ -62,12 +63,12 @@ _EXCEPTIONS = """
 """
 
 _OVERRIDES = """
-    SELECT winner_id, loser_id, basis::text FROM annotation.statement_override
-     WHERE winner_id = ANY(%(ids)s) AND loser_id = ANY(%(ids)s)
+    SELECT prevailing_id, subordinate_id, priority_basis::text FROM annotation.statement_override
+     WHERE prevailing_id = ANY(%(ids)s) AND subordinate_id = ANY(%(ids)s)
 """
 
 _SANCTIONS = """
-    SELECT statement_id, punishes_id, effect::text, min_amount, max_amount, repeating
+    SELECT statement_id, punishes_id, legal_effect::text, min_amount, max_amount, per_occasion
       FROM annotation.sanction
      WHERE statement_id = ANY(%(ids)s) AND punishes_id = ANY(%(ids)s)
 """

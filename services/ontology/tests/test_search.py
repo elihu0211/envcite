@@ -24,13 +24,13 @@ def search_stub(
     conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore
 ) -> Iterator[ontology_pb2_grpc.OntologyServiceStub]:
     law = conn.execute(
-        "INSERT INTO corpus.legal_resource (id_scheme, local_id, kind, document_type)"
+        "INSERT INTO corpus.legal_resource (id_scheme, local_id, norm_kind, document_type)"
         " VALUES ('moj_pcode', 'T0000001', 'statute', '法律') RETURNING id"
     ).fetchone()
     assert law is not None
     expression = conn.execute(
         "INSERT INTO corpus.legal_expression"
-        " (resource_id, language, version_date, title, text_period, text_status, authority)"
+        " (resource_id, language, version_date, title, text_period, text_status, legal_value)"
         " VALUES (%s, 'zho', DATE '2020-01-01', '噪音管制法', daterange(DATE '2020-01-01', NULL),"
         " 'available', 'official_db') RETURNING id",
         (law[0],),
@@ -51,7 +51,8 @@ def search_stub(
                 RETURNING id
             ), v AS (
                 INSERT INTO corpus.provision_version
-                       (provision_id, expression_id, resource_id, content, in_force, commencement)
+                        (provision_id, expression_id, resource_id, content,
+                         force_period, commence_rule)
                 SELECT p.id, %(expr)s, %(law)s, %(content)s, daterange(DATE '2020-01-03', NULL),
                        'promulgation'
                   FROM p

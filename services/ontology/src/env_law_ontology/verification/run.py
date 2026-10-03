@@ -90,7 +90,8 @@ def _already_extracted(conn: Conn, law: str, path: str, agent: str, version: str
         "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
         "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
         "   AND v.content_sha256 = s.content_sha256 AND v.superseded_at IS NULL"
-        " WHERE r.local_id = %s AND p.path = %s AND d.agent = %s AND d.agent_version = %s LIMIT 1",
+        " WHERE r.local_id = %s AND p.path = %s"
+        "   AND d.producer = %s AND d.producer_version = %s LIMIT 1",
         (law, path, agent, version),
     ).fetchone()
     return row is not None

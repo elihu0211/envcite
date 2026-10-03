@@ -114,8 +114,8 @@ def test_the_same_text_in_a_new_row_needs_no_rebuild(conn: Conn, tmp_path: Path)
     )
     conn.execute(
         "INSERT INTO corpus.provision_version"
-        " (provision_id, expression_id, resource_id, content, in_force, commencement)"
-        " SELECT provision_id, expression_id, resource_id, content, in_force, commencement"
+        " (provision_id, expression_id, resource_id, content, force_period, commence_rule)"
+        " SELECT provision_id, expression_id, resource_id, content, force_period, commence_rule"
         "   FROM corpus.provision_version WHERE content LIKE '為防制噪音%'"
     )
     conn.commit()

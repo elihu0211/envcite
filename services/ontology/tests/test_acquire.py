@@ -47,7 +47,7 @@ def _run(tmp_path: Path, conn: Conn, update: str, laws: list[dict[str, object]])
 
 def _items(conn: Conn) -> dict[str, tuple[object, object]]:
     """Key → (content hash, withdrawal date)."""
-    rows = conn.execute("SELECT key, content_sha256, withdrawn_on FROM source.item").fetchall()
+    rows = conn.execute("SELECT key, content_sha256, dropped_on FROM source.item").fetchall()
     conn.rollback()
     return {str(k): (h, w) for k, h, w in rows}
 
@@ -57,7 +57,7 @@ def test_a_new_file_is_stored_and_its_items_recorded(tmp_path: Path, conn: Conn)
 
     assert outcome.snapshot_id is not None
     row = conn.execute(
-        "SELECT data_date, location, attribution FROM source.snapshot WHERE id = %s",
+        "SELECT data_date, location, license_notice FROM source.snapshot WHERE id = %s",
         (outcome.snapshot_id,),
     ).fetchone()
     assert row is not None

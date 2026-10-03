@@ -55,10 +55,10 @@ def is_valid_law_id(value: str) -> bool:
 
 #: 某日有效的版本；日期為空時取今日。法規不存在與該日無版本，兩者都查無結果。
 _RESOLVE = """
-    SELECT r.id, corpus.resource_iri(r.kind, r.local_id), e.title, e.language,
+    SELECT r.id, corpus.resource_iri(r.norm_kind, r.local_id), e.title, e.language,
            (SELECT min(le.event_date)
               FROM corpus.lifecycle_event AS le
-             WHERE le.resource_id = r.id AND le.kind = 'enactment')
+             WHERE le.resource_id = r.id AND le.event_kind = 'enactment')
       FROM corpus.legal_resource AS r
       JOIN corpus.legal_expression AS e ON e.resource_id = r.id
      WHERE r.id_scheme = 'moj_pcode'

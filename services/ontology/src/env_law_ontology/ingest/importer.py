@@ -131,7 +131,8 @@ def _replace_problems(
     conn.execute("DELETE FROM source.import_problem WHERE item_id = %s", (item_id,))
     with conn.cursor() as cur:
         cur.executemany(
-            "INSERT INTO source.import_problem (item_id, snapshot_id, level, code, detail)"
+            "INSERT INTO source.import_problem"
+            " (item_id, snapshot_id, severity, problem_code, detail)"
             " VALUES (%s, %s, %s, %s, %s)",
             [(item_id, snapshot_id, p.level, p.code, p.detail) for p in problems],
         )

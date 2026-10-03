@@ -72,7 +72,7 @@ class _Unit:
 def _unit(conn: Conn, statement_id: int) -> _Unit:
     row = conn.execute(
         "SELECT s.provision_id, p.path, p.resource_id, v.content, lower(s.span), upper(s.span),"
-        "       s.kind::text, s.deontic::text"
+        "       s.statement_kind::text, s.norm_modality::text"
         "  FROM annotation.statement AS s"
         "  JOIN corpus.provision AS p ON p.id = s.provision_id"
         "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
@@ -192,7 +192,7 @@ class NumbersGate:
         for (value,) in conn.execute(
             "SELECT threshold FROM annotation.statement_condition"
             " WHERE statement_id = %s AND threshold IS NOT NULL"
-            " AND (role = 'limit' OR unit IS NOT NULL)",
+            " AND (cond_role = 'limit' OR measure_unit IS NOT NULL)",
             (statement_id,),
         ):
             have = numbers_in(u.quoted)
@@ -277,7 +277,7 @@ class ReferencesGate:
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
         row = conn.execute(
-            "SELECT pp.path, t.review::text FROM annotation.sanction AS sn"
+            "SELECT pp.path, t.confirm_state::text FROM annotation.sanction AS sn"
             "  JOIN annotation.statement AS t ON t.id = sn.punishes_id"
             "  JOIN corpus.provision AS pp ON pp.id = t.provision_id"
             " WHERE sn.statement_id = %s",
@@ -318,7 +318,7 @@ class ReferencesGate:
 def statement_as_of(conn: Conn, statement_id: int) -> date | None:
     """評估一個陳述用的日期：它所錨定的文字現行版本的最近一個生效起日；沒有則 None。"""
     row = conn.execute(
-        "SELECT max(lower(v.in_force)) FROM annotation.statement AS s"
+        "SELECT max(lower(v.force_period)) FROM annotation.statement AS s"
         "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
         "   AND v.content_sha256 = s.content_sha256 AND v.superseded_at IS NULL"
         " WHERE s.id = %s",
@@ -436,12 +436,12 @@ class ExecutableGate:
     @staticmethod
     def _conditions(conn: Conn, statement_id: int) -> list[_Cond]:
         rows = conn.execute(
-            "SELECT c.id, c.role::text, c.clause, k.code, c.comparator::text, c.negated,"
+            "SELECT c.id, c.cond_role::text, c.disjunct_no, k.code, c.comparator::text, c.negated,"
             "       c.threshold, c.delegate_provision_id IS NOT NULL,"
             "       c.value_concept_id IS NOT NULL"
             "  FROM annotation.statement_condition AS c"
             "  JOIN vocab.concept AS k ON k.id = c.concept_id"
-            " WHERE c.statement_id = %s AND c.role <> 'limit' ORDER BY c.id",
+            " WHERE c.statement_id = %s AND c.cond_role <> 'limit' ORDER BY c.id",
             (statement_id,),
         ).fetchall()
         return [
@@ -479,7 +479,7 @@ class ExecutableGate:
             "SELECT c.comparator::text, c.negated, c.threshold, k.code"
             "  FROM annotation.statement_exception AS e"
             "  JOIN annotation.statement_condition AS c"
-            "    ON c.statement_id = e.exception_id AND c.role = 'scope'"
+            "    ON c.statement_id = e.exception_id AND c.cond_role = 'scope'"
             "  JOIN vocab.concept AS k ON k.id = c.concept_id"
             " WHERE e.excluded_id = %s",
             (statement_id,),

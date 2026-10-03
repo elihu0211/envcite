@@ -43,12 +43,12 @@ def test_a_database_at_the_first_baseline_upgrades_to_the_current_files(
             upgraded = apply_all(conn)
             assert upgraded[0].startswith("0005") and len(upgraded) >= 3
             conn.execute(
-                "INSERT INTO corpus.legal_resource (id_scheme, local_id, kind, document_type)"
+                "INSERT INTO corpus.legal_resource (id_scheme, local_id, norm_kind, document_type)"
                 " VALUES ('moj_pcode', 'T0000001', 'statute', '法律')"
             )
             with pytest.raises(psycopg.errors.CheckViolation):
                 conn.execute(
-                    "INSERT INTO corpus.lifecycle_event (resource_id, kind, event_date)"
+                    "INSERT INTO corpus.lifecycle_event (resource_id, event_kind, event_date)"
                     " SELECT id, 'unknown', NULL FROM corpus.legal_resource"
                 )
     finally:

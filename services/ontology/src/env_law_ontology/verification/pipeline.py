@@ -41,7 +41,7 @@ def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
     ids = [
         cast(int, row[0])
         for row in conn.execute(
-            "SELECT id FROM annotation.statement WHERE review = 'extracted' ORDER BY id"
+            "SELECT id FROM annotation.statement WHERE confirm_state = 'extracted' ORDER BY id"
         )
     ]
     for done, sid in enumerate(ids, 1):

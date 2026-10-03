@@ -53,7 +53,7 @@ _VERDICTS = {
 
 def _extractor(conn: Conn, statement_id: int) -> str:
     row = conn.execute(
-        "SELECT d.agent FROM annotation.statement AS s"
+        "SELECT d.producer FROM annotation.statement AS s"
         "  JOIN annotation.derivation AS d ON d.id = s.derivation_id WHERE s.id = %s",
         (statement_id,),
     ).fetchone()
@@ -102,8 +102,9 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
         lines.append(f"{_SLOT.get(str(slot), slot)}：{value}")
     by_role: dict[str, list[str]] = {}
     for role, code, label, cmp, threshold, unit, negated, judgement, delegated in conn.execute(
-        "SELECT c.role::text, k.code, k.pref_label, c.comparator::text, c.threshold, c.unit,"
-        "       c.negated, c.judgement, c.delegate_provision_id IS NOT NULL"
+        "SELECT c.cond_role::text, k.code, k.pref_label, c.comparator::text,"
+        "       c.threshold, c.measure_unit,"
+        "       c.negated, c.needs_assessment, c.delegate_provision_id IS NOT NULL"
         "  FROM annotation.statement_condition AS c JOIN vocab.concept AS k ON k.id = c.concept_id"
         " WHERE c.statement_id = %s ORDER BY c.id",
         (statement_id,),
@@ -127,7 +128,7 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
         if role in by_role:
             lines.append(f"{names[role]}：" + "；".join(by_role[role]))
     row = conn.execute(
-        "SELECT effect::text, min_amount, max_amount, repeating FROM annotation.sanction"
+        "SELECT legal_effect::text, min_amount, max_amount, per_occasion FROM annotation.sanction"
         " WHERE statement_id = %s",
         (statement_id,),
     ).fetchone()
@@ -169,7 +170,8 @@ def _stored_signature(conn: Conn, statement_id: int) -> dict[str, Any]:
             bool(r[5]),
         )
         for r in conn.execute(
-            "SELECT c.role::text, k.code, c.comparator::text, c.threshold, c.negated, c.judgement"
+            "SELECT c.cond_role::text, k.code, c.comparator::text, c.threshold,"
+            "       c.negated, c.needs_assessment"
             "  FROM annotation.statement_condition AS c"
             "  JOIN vocab.concept AS k ON k.id = c.concept_id"
             " WHERE c.statement_id = %s",
@@ -177,7 +179,7 @@ def _stored_signature(conn: Conn, statement_id: int) -> dict[str, Any]:
         )
     ]
     row = conn.execute(
-        "SELECT effect::text, min_amount, max_amount, repeating FROM annotation.sanction"
+        "SELECT legal_effect::text, min_amount, max_amount, per_occasion FROM annotation.sanction"
         " WHERE statement_id = %s",
         (statement_id,),
     ).fetchone()
@@ -310,7 +312,7 @@ def _concept_line(conn: Conn, statement_id: int) -> list[str]:
     那是設計者與標註對型別的歧義，不是標註錯。
     """
     rows = conn.execute(
-        "SELECT k.code, k.pref_label, c.comparator::text, c.threshold, c.unit"
+        "SELECT k.code, k.pref_label, c.comparator::text, c.threshold, c.measure_unit"
         "  FROM annotation.statement_condition AS c"
         "  JOIN vocab.concept AS k ON k.id = c.concept_id"
         " WHERE c.statement_id = %s ORDER BY k.code, c.id",
