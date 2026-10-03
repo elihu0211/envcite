@@ -101,9 +101,9 @@ def test_an_article_text_is_built_from_current_units(conn: Conn) -> None:
         child = _id(
             conn.execute(
                 "INSERT INTO corpus.provision"
-                " (resource_id, parent_id, provision_type, path, sort_key)"
-                " VALUES (%s, %s, 'paragraph', %s, ARRAY[1, 0, %s]) RETURNING id",
-                (law, parent, f"art_1/para_{n}", n),
+                " (resource_id, parent_id, provision_type, path)"
+                " VALUES (%s, %s, 'paragraph', %s) RETURNING id",
+                (law, parent, f"art_1/para_{n}"),
             ).fetchone()
         )
         ids.append(child)

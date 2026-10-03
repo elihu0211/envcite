@@ -54,9 +54,9 @@ def _law(conn: Conn, pcode: str, *versions: tuple[date, str]) -> tuple[int, list
 def _article(conn: Conn, law: int, number: str) -> int:
     return _id(
         conn.execute(
-            "INSERT INTO corpus.provision (resource_id, provision_type, path, sort_key)"
-            " VALUES (%s, 'article', %s, string_to_array(%s, '-')::integer[]) RETURNING id",
-            (law, f"art_{number}", number),
+            "INSERT INTO corpus.provision (resource_id, provision_type, path)"
+            " VALUES (%s, 'article', %s) RETURNING id",
+            (law, f"art_{number}"),
         ).fetchone()
     )
 
@@ -189,3 +189,57 @@ def test_version_iri_follows_the_eli_template(conn: Conn, sample: None) -> None:
     ).fetchone()
 
     assert iri == ("https://env.law/eli/tw/law/O0040001/2018-06-13/zho/art_7/para_2",)
+
+
+def test_sort_key_language_and_article_path_are_derived(conn: Conn) -> None:
+    law, (expression,) = _law(conn, "A0000191", (date(2020, 1, 1), "available"))
+    article = _article(conn, law, "2")
+    paragraph = _id(
+        conn.execute(
+            "INSERT INTO corpus.provision (resource_id, parent_id, provision_type, path)"
+            " VALUES (%s, %s, 'paragraph', 'art_2/para_1') RETURNING id",
+            (law, article),
+        ).fetchone()
+    )
+    _version(conn, paragraph, expression, law, "甲", date(2020, 1, 3), None)
+    row = conn.execute(
+        "SELECT p.sort_key, p.article_path, v.language"
+        "  FROM corpus.provision AS p"
+        "  JOIN corpus.provision_version AS v ON v.provision_id = p.id"
+        " WHERE p.id = %s",
+        (paragraph,),
+    ).fetchone()
+    assert row == ([2, 0, 1], "art_2", "zho")
+
+
+def test_a_child_must_sit_under_its_path_prefix(conn: Conn) -> None:
+    law, _ = _law(conn, "A0000192", (date(2020, 1, 1), "available"))
+    article = _article(conn, law, "1")
+    with pytest.raises(psycopg.errors.CheckViolation):
+        conn.execute(
+            "INSERT INTO corpus.provision (resource_id, parent_id, provision_type, path)"
+            " VALUES (%s, %s, 'paragraph', 'art_9/para_1')",
+            (law, article),
+        )
+
+
+def test_a_current_version_cannot_outlast_repeal(conn: Conn) -> None:
+    law, (expression,) = _law(conn, "A0000193", (date(2020, 1, 1), "available"))
+    article = _article(conn, law, "1")
+    _version(conn, article, expression, law, "甲", date(2020, 1, 3), None)
+    with pytest.raises(psycopg.errors.CheckViolation):
+        conn.execute(
+            "UPDATE corpus.legal_resource SET repealed_on = DATE '2021-01-01' WHERE id = %s",
+            (law,),
+        )
+
+
+def test_an_event_date_must_be_the_expression_version_date(conn: Conn) -> None:
+    law, (expression,) = _law(conn, "A0000194", (date(2020, 1, 1), "available"))
+    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+        conn.execute(
+            "INSERT INTO corpus.lifecycle_event"
+            " (resource_id, event_kind, event_date, expression_id)"
+            " VALUES (%s, 'enactment', DATE '1999-01-01', %s)",
+            (law, expression),
+        )

@@ -42,19 +42,36 @@ def apply(conn: Conn, law: ParsedLaw, *, first_import: bool) -> Applied:
     latest = _latest_expression(conn, resource)
     if first_import or latest is None:
         _replace_all(conn, resource, law)
-        return Applied("added")
+        result = Applied("added")
+    else:
+        expression, version_date = latest
+        if law.version_date < version_date:
+            return Applied("regressed")
+        if law.version_date > version_date:
+            _add_version(conn, resource, expression, law)
+            result = Applied("versioned")
+        else:
+            result = _sync_current(conn, resource, expression, law)
+    _set_repeal(conn, resource, law.abandoned_on)
+    return result
 
-    expression, version_date = latest
-    if law.version_date < version_date:
-        return Applied("regressed")
-    if law.version_date > version_date:
-        _add_version(conn, resource, expression, law)
-        return Applied("versioned")
-    return _sync_current(conn, resource, expression, law)
+
+def _interval(u: ParsedUnit, *, repeal: date | None = None) -> Interval:
+    if u.starts is None:
+        return None
+    end = u.ends
+    # 廢止生效日是各單元效力上界的來源。先收到這個上界，資源列的觸發器才放得過。
+    if repeal is not None and u.starts < repeal and (end is None or end > repeal):
+        end = repeal
+    return Range(u.starts, end, "[)")
 
 
-def _interval(u: ParsedUnit) -> Interval:
-    return Range(u.starts, u.ends, "[)") if u.starts else None
+def _set_repeal(conn: Conn, resource: int, repeal: date | None) -> None:
+    conn.execute(
+        "UPDATE corpus.legal_resource SET repealed_on = %s"
+        " WHERE id = %s AND repealed_on IS DISTINCT FROM %s",
+        (repeal, resource, repeal),
+    )
 
 
 def _sha(content: str | None) -> bytes:
@@ -67,10 +84,9 @@ def _upsert_resource(conn: Conn, law: ParsedLaw) -> int:
         " (id_scheme, local_id, norm_kind, document_type, repealed_on)"
         " VALUES ('moj_pcode', %s, %s::corpus.norm_kind, %s, %s)"
         " ON CONFLICT (id_scheme, local_id) DO UPDATE"
-        "   SET norm_kind = EXCLUDED.norm_kind, document_type = EXCLUDED.document_type,"
-        "       repealed_on = EXCLUDED.repealed_on"
+        "   SET norm_kind = EXCLUDED.norm_kind, document_type = EXCLUDED.document_type"
         " RETURNING id",
-        (law.pcode, law.kind, law.document_type, law.abandoned_on),
+        (law.pcode, law.kind, law.document_type, None),
     ).fetchone()
     assert row is not None and isinstance(row[0], int)
     return row[0]
@@ -144,10 +160,10 @@ def _ensure_provisions(conn: Conn, resource: int, units: list[ParsedUnit]) -> No
         for depth in sorted(by_depth):
             cur.executemany(
                 "INSERT INTO corpus.provision"
-                " (resource_id, parent_id, provision_type, path, sort_key)"
+                " (resource_id, parent_id, provision_type, path)"
                 " VALUES (%s,"
                 "         (SELECT id FROM corpus.provision WHERE resource_id = %s AND path = %s),"
-                "         %s::corpus.provision_type, %s, %s)"
+                "         %s::corpus.provision_type, %s)"
                 " ON CONFLICT (resource_id, path) DO NOTHING",
                 [
                     (
@@ -156,14 +172,20 @@ def _ensure_provisions(conn: Conn, resource: int, units: list[ParsedUnit]) -> No
                         u.path.rsplit("/", 1)[0] if depth else None,
                         u.type,
                         u.path,
-                        u.sort_key,
                     )
                     for u in by_depth[depth]
                 ],
             )
 
 
-def _insert_versions(conn: Conn, resource: int, expression: int, units: list[ParsedUnit]) -> None:
+def _insert_versions(
+    conn: Conn,
+    resource: int,
+    expression: int,
+    units: list[ParsedUnit],
+    *,
+    repeal: date | None,
+) -> None:
     with conn.cursor() as cur:
         cur.executemany(
             "INSERT INTO corpus.provision_version"
@@ -171,7 +193,15 @@ def _insert_versions(conn: Conn, resource: int, expression: int, units: list[Par
             " VALUES ((SELECT id FROM corpus.provision WHERE resource_id = %s AND path = %s),"
             "         %s, %s, %s, %s, %s::corpus.commencement_rule)",
             [
-                (resource, u.path, expression, resource, u.content, _interval(u), u.rule)
+                (
+                    resource,
+                    u.path,
+                    expression,
+                    resource,
+                    u.content,
+                    _interval(u, repeal=repeal),
+                    u.rule,
+                )
                 for u in units
             ],
         )
@@ -183,7 +213,7 @@ def _replace_all(conn: Conn, resource: int, law: ParsedLaw) -> None:
     expression = _insert_expression(conn, resource, law)
     _replace_events(conn, resource, law)
     _ensure_provisions(conn, resource, law.units)
-    _insert_versions(conn, resource, expression, law.units)
+    _insert_versions(conn, resource, expression, law.units, repeal=law.abandoned_on)
 
 
 def _add_version(conn: Conn, resource: int, previous: int, law: ParsedLaw) -> None:
@@ -197,7 +227,7 @@ def _add_version(conn: Conn, resource: int, previous: int, law: ParsedLaw) -> No
     expression = _insert_expression(conn, resource, law)
     _replace_events(conn, resource, law)
     _ensure_provisions(conn, resource, law.units)
-    _insert_versions(conn, resource, expression, law.units)
+    _insert_versions(conn, resource, expression, law.units, repeal=law.abandoned_on)
 
 
 def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
@@ -269,7 +299,7 @@ def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) ->
         for p, u in parsed.items()
         if p in current
         and p not in text_changed
-        and (current[p][2] != _interval(u) or current[p][3] != u.rule)
+        and (current[p][2] != _interval(u, repeal=law.abandoned_on) or current[p][3] != u.rule)
     ]
 
     previous = conn.execute(
@@ -299,7 +329,9 @@ def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) ->
                 (ended,),
             )
         _ensure_provisions(conn, resource, [parsed[p] for p in replace])
-        _insert_versions(conn, resource, expression, [parsed[p] for p in replace])
+        _insert_versions(
+            conn, resource, expression, [parsed[p] for p in replace], repeal=law.abandoned_on
+        )
 
     conn.execute(
         "UPDATE corpus.legal_expression SET title = %s WHERE id = %s AND title <> %s",
