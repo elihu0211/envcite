@@ -46,8 +46,8 @@ def search_stub(
         conn.execute(
             """
             WITH p AS (
-                INSERT INTO corpus.provision (resource_id, provision_type, path, sort_key)
-                VALUES (%(law)s, 'article', 'art_' || %(n)s, ARRAY[%(n)s::integer])
+                INSERT INTO corpus.provision (resource_id, provision_type, path)
+                VALUES (%(law)s, 'article', 'art_' || %(n)s)
                 RETURNING id
             ), v AS (
                 INSERT INTO corpus.provision_version
