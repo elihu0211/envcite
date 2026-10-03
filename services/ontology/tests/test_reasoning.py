@@ -188,7 +188,7 @@ def test_opposite_rules_on_the_same_action_conflict_unless_a_priority_is_annotat
     assert evaluate(conn, BEFORE, case).unresolved_conflicts == ((ban, permit),)
 
     conn.execute(
-        "INSERT INTO annotation.statement_override (winner_id, loser_id, basis)"
+        "INSERT INTO annotation.statement_override (prevailing_id, subordinate_id, priority_basis)"
         " VALUES (%s, %s, 'lex_specialis')",
         (permit, ban),
     )
@@ -237,7 +237,7 @@ def test_a_condition_on_a_concept_value_is_reported_not_silently_skipped(
 @pytest.fixture
 def water(conn: Conn, sample: None) -> Loaded:
     loaded = load(conn, json.loads(WATER.read_text(encoding="utf-8")))
-    conn.execute("UPDATE annotation.statement SET review = 'confirmed'")
+    conn.execute("UPDATE annotation.statement SET confirm_state = 'confirmed'")
     conn.commit()
     return loaded
 
@@ -340,7 +340,7 @@ def test_a_livestock_farm_matches_two_fines_and_the_priority_is_left_to_a_human(
     assert (general, water.ids["p40_1_repeat"]) not in undecided.unresolved_penalty_overlaps
 
     conn.execute(
-        "INSERT INTO annotation.statement_override (winner_id, loser_id, basis)"
+        "INSERT INTO annotation.statement_override (prevailing_id, subordinate_id, priority_basis)"
         " VALUES (%s, %s, 'lex_specialis')",
         (special, general),
     )

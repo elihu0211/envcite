@@ -118,7 +118,7 @@ def evaluate(
         int(row[0])  # type: ignore[call-overload]
         for row in conn.execute(
             "SELECT statement_id FROM annotation.sanction"
-            " WHERE repeating AND statement_id = ANY(%s)",
+            " WHERE per_occasion AND statement_id = ANY(%s)",
             ([c[0] for c in candidates],),
         )
     }

@@ -328,7 +328,9 @@ def _by_role() -> list[Scripted]:
 
 
 def _review(conn: Conn, sid: int) -> str:
-    return str(_scalar(conn, "SELECT review::text FROM annotation.statement WHERE id = %s", sid))
+    return str(
+        _scalar(conn, "SELECT confirm_state::text FROM annotation.statement WHERE id = %s", sid)
+    )
 
 
 def test_units_of_lists_the_units_that_have_text(conn: Conn, tmp_path: Path) -> None:
@@ -559,7 +561,9 @@ def test_a_penalty_is_linked_to_the_only_statement_of_the_article_it_cites(
         )
         == "art_1"
     )
-    conn.execute("UPDATE annotation.statement SET review = 'confirmed' WHERE id = %s", (target,))
+    conn.execute(
+        "UPDATE annotation.statement SET confirm_state = 'confirmed' WHERE id = %s", (target,)
+    )
     assert ReferencesGate().check(conn, penalty) == GateResult(
         "pass", {"target": "art_1", "cited": ["art_1"], "unresolved": []}
     )
@@ -574,7 +578,7 @@ def test_a_model_chooses_among_several_candidates(conn: Conn, tmp_path: Path) ->
 
     ((_, target),) = _sanction_target(conn)
     assert target == _scalar(
-        conn, "SELECT max(id) FROM annotation.statement WHERE kind = 'prescriptive'"
+        conn, "SELECT max(id) FROM annotation.statement WHERE statement_kind = 'prescriptive'"
     )
 
 

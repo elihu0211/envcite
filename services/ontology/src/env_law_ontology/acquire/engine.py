@@ -151,7 +151,7 @@ def _record(
 ) -> int:
     with conn.transaction():
         row = conn.execute(
-            "INSERT INTO source.snapshot (feed, data_date, sha256, size, location, attribution)"
+            "INSERT INTO source.snapshot (feed, data_date, sha256, size, location, license_notice)"
             " VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
             (feed, contents.data_date, digest, size, location, source.attribution),
         ).fetchone()
@@ -161,8 +161,8 @@ def _record(
         # 連續兩份全量快照都未出現：前一份快照之前就再也沒見過。
         conn.execute(
             """
-            UPDATE source.item SET withdrawn_on = %(on)s
-             WHERE feed = %(feed)s AND withdrawn_on IS NULL
+            UPDATE source.item SET dropped_on = %(on)s
+             WHERE feed = %(feed)s AND dropped_on IS NULL
                AND last_snapshot_id < (SELECT max(id) FROM source.snapshot
                                         WHERE feed = %(feed)s AND id < %(id)s)
             """,
@@ -188,7 +188,7 @@ def _record_items(
         ON CONFLICT (feed, key) DO UPDATE
            SET content_sha256 = excluded.content_sha256,
                last_snapshot_id = excluded.last_snapshot_id,
-               withdrawn_on = NULL
+               dropped_on = NULL
         """,
         {"feed": feed, "id": snapshot_id},
     )

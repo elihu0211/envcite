@@ -255,4 +255,7 @@ def test_a_gate_whose_model_does_not_answer_is_inconclusive_not_fatal(
         )
         == written
     )
-    assert _scalar(conn, "SELECT count(*) FROM annotation.statement WHERE review = 'rejected'") == 0
+    assert (
+        _scalar(conn, "SELECT count(*) FROM annotation.statement WHERE confirm_state = 'rejected'")
+        == 0
+    )

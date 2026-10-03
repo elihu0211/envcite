@@ -63,10 +63,11 @@ def _sha(content: str | None) -> bytes:
 
 def _upsert_resource(conn: Conn, law: ParsedLaw) -> int:
     row = conn.execute(
-        "INSERT INTO corpus.legal_resource (id_scheme, local_id, kind, document_type, repealed_on)"
+        "INSERT INTO corpus.legal_resource"
+        " (id_scheme, local_id, norm_kind, document_type, repealed_on)"
         " VALUES ('moj_pcode', %s, %s::corpus.norm_kind, %s, %s)"
         " ON CONFLICT (id_scheme, local_id) DO UPDATE"
-        "   SET kind = EXCLUDED.kind, document_type = EXCLUDED.document_type,"
+        "   SET norm_kind = EXCLUDED.norm_kind, document_type = EXCLUDED.document_type,"
         "       repealed_on = EXCLUDED.repealed_on"
         " RETURNING id",
         (law.pcode, law.kind, law.document_type, law.abandoned_on),
@@ -90,7 +91,7 @@ def _latest_expression(conn: Conn, resource: int) -> tuple[int, date] | None:
 def _insert_expression(conn: Conn, resource: int, law: ParsedLaw) -> int:
     row = conn.execute(
         "INSERT INTO corpus.legal_expression"
-        " (resource_id, language, version_date, title, text_period, text_status, authority)"
+        " (resource_id, language, version_date, title, text_period, text_status, legal_value)"
         " VALUES (%s, 'zho', %s, %s, daterange(%s, NULL), %s::corpus.text_status, 'official_db')"
         " RETURNING id",
         (
@@ -119,7 +120,7 @@ def _replace_events(conn: Conn, resource: int, law: ParsedLaw) -> None:
     with conn.cursor() as cur:
         cur.executemany(
             "INSERT INTO corpus.lifecycle_event"
-            " (resource_id, kind, event_date, document_no, expression_id, source_text)"
+            " (resource_id, event_kind, event_date, document_no, expression_id, source_text)"
             " VALUES (%s, %s::corpus.event_kind, %s, %s, %s, %s)",
             [
                 (
@@ -166,7 +167,7 @@ def _insert_versions(conn: Conn, resource: int, expression: int, units: list[Par
     with conn.cursor() as cur:
         cur.executemany(
             "INSERT INTO corpus.provision_version"
-            " (provision_id, expression_id, resource_id, content, in_force, commencement)"
+            " (provision_id, expression_id, resource_id, content, force_period, commence_rule)"
             " VALUES ((SELECT id FROM corpus.provision WHERE resource_id = %s AND path = %s),"
             "         %s, %s, %s, %s, %s::corpus.commencement_rule)",
             [
@@ -210,9 +211,9 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
     law_start = min(starts) if starts else None
 
     rows = conn.execute(
-        "SELECT v.id, p.path, v.in_force FROM corpus.provision_version AS v"
+        "SELECT v.id, p.path, v.force_period FROM corpus.provision_version AS v"
         " JOIN corpus.provision AS p ON p.id = v.provision_id"
-        " WHERE v.expression_id = %s AND v.superseded_at IS NULL AND v.in_force IS NOT NULL",
+        " WHERE v.expression_id = %s AND v.superseded_at IS NULL AND v.force_period IS NOT NULL",
         (previous,),
     ).fetchall()
     for version_id, path, in_force in rows:
@@ -235,8 +236,8 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
         if end > in_force.lower:
             conn.execute(
                 "INSERT INTO corpus.provision_version"
-                " (provision_id, expression_id, resource_id, content, in_force, commencement)"
-                " SELECT provision_id, expression_id, resource_id, content, %s, commencement"
+                " (provision_id, expression_id, resource_id, content, force_period, commence_rule)"
+                " SELECT provision_id, expression_id, resource_id, content, %s, commence_rule"
                 "   FROM corpus.provision_version WHERE id = %s",
                 (Range(in_force.lower, end, "[)"), version_id),
             )
@@ -245,8 +246,8 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
 
 def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) -> Applied:
     current: dict[str, tuple[int, bytes, Interval, str]] = {}
-    for version_id, path, sha, in_force, rule in conn.execute(
-        "SELECT v.id, p.path, v.content_sha256, v.in_force, v.commencement::text"
+    for version_id, path, sha, force_period, rule in conn.execute(
+        "SELECT v.id, p.path, v.content_sha256, v.force_period, v.commence_rule::text"
         "  FROM corpus.provision_version AS v"
         "  JOIN corpus.provision AS p ON p.id = v.provision_id"
         " WHERE v.expression_id = %s AND v.superseded_at IS NULL",
@@ -255,7 +256,7 @@ def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) ->
         current[cast(str, path)] = (
             cast(int, version_id),
             cast(bytes, sha),
-            cast(Interval, in_force),
+            cast(Interval, force_period),
             cast(str, rule),
         )
     parsed = {u.path: u for u in law.units}

@@ -64,7 +64,7 @@ def _next(conn: Conn, root: Path, law: dict[str, Any]) -> Outcome:
     with zipfile.ZipFile(root / name, "w") as z:
         z.writestr("data.json", json.dumps({"UpdateDate": "2026/9/19", "Laws": [law]}))
     row = conn.execute(
-        "INSERT INTO source.snapshot (feed, data_date, sha256, size, location, attribution)"
+        "INSERT INTO source.snapshot (feed, data_date, sha256, size, location, license_notice)"
         " VALUES ('moj_law', '2026-09-19', %s, 1, %s, 'x') RETURNING id",
         (hashlib.sha256(name.encode()).digest(), name),
     ).fetchone()
@@ -148,7 +148,7 @@ def test_a_correction_adds_rows_and_ends_the_old_ones(conn: Conn, tmp_path: Path
         == 1
     )
     assert conn.execute(
-        "SELECT code, detail FROM source.import_problem WHERE code = 'corrected'"
+        "SELECT problem_code, detail FROM source.import_problem WHERE problem_code = 'corrected'"
     ).fetchall() == [("corrected", "1 個單元的文字改變")]
     # 過去的認知仍在：被取代的列保有舊文。
     assert conn.execute(
@@ -193,7 +193,7 @@ def test_a_version_older_than_the_latest_is_refused_and_leaves_the_corpus_alone(
         == 2
     )
     assert conn.execute(
-        "SELECT code FROM source.import_problem WHERE level = 'error'"
+        "SELECT problem_code FROM source.import_problem WHERE severity = 'error'"
     ).fetchall() == [("version_regressed",)]
 
 

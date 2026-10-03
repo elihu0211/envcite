@@ -95,7 +95,9 @@ def _facts(conn: Conn, on: date) -> int:
 
 
 def _duty_condition(conn: Conn) -> int:
-    return int(_scalar(conn, "SELECT id FROM annotation.statement_condition WHERE role = 'duty'"))
+    return int(
+        _scalar(conn, "SELECT id FROM annotation.statement_condition WHERE cond_role = 'duty'")
+    )
 
 
 def test_a_loaded_statement_is_a_fact_on_the_day_its_text_is_in_force(
@@ -119,8 +121,8 @@ def test_a_statement_survives_the_version_row_being_replaced(conn: Conn, tmp_pat
     )
     conn.execute(
         "INSERT INTO corpus.provision_version"
-        " (provision_id, expression_id, resource_id, content, in_force, commencement)"
-        " SELECT provision_id, expression_id, resource_id, content, in_force, commencement"
+        " (provision_id, expression_id, resource_id, content, force_period, commence_rule)"
+        " SELECT provision_id, expression_id, resource_id, content, force_period, commence_rule"
         "   FROM corpus.provision_version WHERE content = '甲一'"
     )
     conn.commit()
@@ -179,7 +181,7 @@ def test_a_threshold_from_an_unconfirmed_limit_is_not_used(conn: Conn, tmp_path:
     _first(conn, tmp_path, _law_v1())
     load(conn, _doc(_duty(), _limit("乙一", 100)))
     conn.execute(
-        "UPDATE annotation.statement SET review = 'extracted' WHERE provision_id ="
+        "UPDATE annotation.statement SET confirm_state = 'extracted' WHERE provision_id ="
         " (SELECT id FROM corpus.provision WHERE path = 'art_2')"
     )
     conn.commit()
@@ -257,7 +259,7 @@ def test_statement_constraints(
     with pytest.raises(psycopg.errors.CheckViolation):
         conn.execute(
             "INSERT INTO annotation.statement"
-            " (provision_id, content_sha256, kind, deontic, derivation_id)"
+            " (provision_id, content_sha256, statement_kind, norm_modality, derivation_id)"
             " VALUES (%s, %s, %s, %s, %s)",
             (provision, digest, kind, deontic, derivation),
         )
@@ -272,7 +274,8 @@ def test_a_condition_has_exactly_one_threshold_source_and_a_limit_has_a_value(
     concept = _scalar(conn, "SELECT id FROM vocab.concept WHERE code = 'cod'")
     insert = (
         "INSERT INTO annotation.statement_condition"
-        " (statement_id, role, clause, concept_id, comparator, threshold, value_concept_id)"
+        " (statement_id, cond_role, disjunct_no, concept_id, comparator,"
+        "  threshold, value_concept_id)"
         " VALUES (%s, 'duty', 1, %s, 'le', %s, %s)"
     )
 
@@ -285,7 +288,7 @@ def test_a_condition_has_exactly_one_threshold_source_and_a_limit_has_a_value(
     with pytest.raises(psycopg.errors.CheckViolation):
         conn.execute(
             "INSERT INTO annotation.statement_condition"
-            " (statement_id, role, clause, concept_id, comparator, value_concept_id)"
+            " (statement_id, cond_role, disjunct_no, concept_id, comparator, value_concept_id)"
             " VALUES (%s, 'limit', 1, %s, 'le', %s)",
             (statement, concept, concept),
         )  # 限值必須是數值
@@ -362,7 +365,7 @@ def test_the_judgement_marker_defaults_to_false_and_is_loaded_when_given(
     load(conn, doc)
 
     rows = conn.execute(
-        "SELECT role, judgement FROM annotation.statement_condition ORDER BY role"
+        "SELECT cond_role, needs_assessment FROM annotation.statement_condition ORDER BY cond_role"
     ).fetchall()
     assert rows == [("scope", True), ("duty", False)] or rows == [("duty", False), ("scope", True)]
 
@@ -392,6 +395,6 @@ def test_a_sanction_can_be_an_order_and_can_repeat(conn: Conn, tmp_path: Path) -
     load(conn, doc)
 
     rows = conn.execute(
-        "SELECT effect::text, repeating FROM annotation.sanction ORDER BY effect"
+        "SELECT legal_effect::text, per_occasion FROM annotation.sanction ORDER BY legal_effect"
     ).fetchall()
     assert rows == [("fine", True), ("order", False)]

@@ -30,7 +30,7 @@ def _law(conn: Conn, pcode: str, *versions: tuple[date, str]) -> tuple[int, list
     """A statute and its expressions, one per (version date, text status), in order."""
     law = _id(
         conn.execute(
-            "INSERT INTO corpus.legal_resource (id_scheme, local_id, kind, document_type)"
+            "INSERT INTO corpus.legal_resource (id_scheme, local_id, norm_kind, document_type)"
             " VALUES ('moj_pcode', %s, 'statute', '法律') RETURNING id",
             (pcode,),
         ).fetchone()
@@ -42,7 +42,7 @@ def _law(conn: Conn, pcode: str, *versions: tuple[date, str]) -> tuple[int, list
             _id(
                 conn.execute(
                     "INSERT INTO corpus.legal_expression (resource_id, language,"
-                    " version_date, title, text_period, text_status, authority)"
+                    " version_date, title, text_period, text_status, legal_value)"
                     " VALUES (%s, 'zho', %s, '甲法', %s, %s, 'official_db') RETURNING id",
                     (law, on, Range(on, end, "[)"), status),
                 ).fetchone()
@@ -74,7 +74,7 @@ def _version(
     """A version in force over [lo, hi); lo None means promulgated but not yet in force."""
     conn.execute(
         "INSERT INTO corpus.provision_version"
-        " (provision_id, expression_id, resource_id, content, in_force, commencement)"
+        " (provision_id, expression_id, resource_id, content, force_period, commence_rule)"
         " VALUES (%s, %s, %s, %s, %s, %s::corpus.commencement_rule)",
         (
             provision,
@@ -101,7 +101,7 @@ def _at(conn: Conn, law: int, on: date) -> list[tuple[str, str, str | None]]:
 def test_pcode_shape_is_enforced(conn: Conn) -> None:
     with pytest.raises(psycopg.errors.CheckViolation):
         conn.execute(
-            "INSERT INTO corpus.legal_resource (id_scheme, local_id, kind, document_type)"
+            "INSERT INTO corpus.legal_resource (id_scheme, local_id, norm_kind, document_type)"
             " VALUES ('moj_pcode', 'air-pollution-control-act', 'statute', '法律')"
         )
 

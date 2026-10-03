@@ -58,12 +58,12 @@ def test_a_law_is_written_with_its_version_events_and_provisions(
 
     resource = _scalar(conn, "SELECT id FROM corpus.legal_resource WHERE local_id = 'T0000001'")
     assert conn.execute(
-        "SELECT version_date, title, text_status, authority"
+        "SELECT version_date, title, text_status, legal_value"
         " FROM corpus.legal_expression WHERE resource_id = %s",
         (resource,),
     ).fetchall() == [(date(2018, 8, 1), "噪音管制法", "available", "official_db")]
     assert conn.execute(
-        "SELECT kind, event_date, expression_id IS NOT NULL FROM corpus.lifecycle_event"
+        "SELECT event_kind, event_date, expression_id IS NOT NULL FROM corpus.lifecycle_event"
         " WHERE resource_id = %s ORDER BY event_date",
         (resource,),
     ).fetchall() == [
@@ -127,7 +127,7 @@ def test_a_law_that_cannot_be_written_is_reported_and_the_rest_goes_in(
         _scalar(conn, "SELECT count(*) FROM corpus.legal_resource WHERE local_id LIKE 'T%'") == 300
     )
     assert conn.execute(
-        "SELECT level, code FROM source.import_problem WHERE level = 'error'"
+        "SELECT severity, problem_code FROM source.import_problem WHERE severity = 'error'"
     ).fetchall() == [("error", "law_level")]
     assert _scalar(conn, "SELECT count(*) FROM source.item WHERE imported_sha256 IS NULL") == 1
 

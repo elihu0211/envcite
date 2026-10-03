@@ -61,7 +61,7 @@ def load_from_db(dsn: str) -> tuple[list[str], list[str]]:
             for r in conn.execute(
                 "SELECT corpus.article_text(v.id) FROM corpus.provision_version AS v"
                 " JOIN corpus.provision AS p ON p.id = v.provision_id"
-                " WHERE p.provision_type = 'article' AND v.in_force @> CURRENT_DATE"
+                " WHERE p.provision_type = 'article' AND v.force_period @> CURRENT_DATE"
             ).fetchall()
             if r[0] is not None
         ]

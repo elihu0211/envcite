@@ -39,7 +39,9 @@ DETERMINISTIC = ["numbers", "references", "executable"]
 
 def _review(conn: Conn, statement_id: int) -> str:
     return str(
-        _scalar(conn, "SELECT review::text FROM annotation.statement WHERE id = %s", statement_id)
+        _scalar(
+            conn, "SELECT confirm_state::text FROM annotation.statement WHERE id = %s", statement_id
+        )
     )
 
 
@@ -236,7 +238,7 @@ def test_references_gate_requires_the_punished_provision_to_be_the_cited_one(
     ids = _water(conn, sample).ids
     gate = ReferencesGate()
     conn.execute(
-        "UPDATE annotation.statement SET review = 'confirmed' WHERE id = %s", (ids["w7_1"],)
+        "UPDATE annotation.statement SET confirm_state = 'confirmed' WHERE id = %s", (ids["w7_1"],)
     )
 
     ok = gate.check(conn, ids["p40_1_fine"])
@@ -451,7 +453,7 @@ def test_the_extractor_anchors_what_the_model_quotes_and_drops_what_it_invents(
     assert out.loaded is not None and out.loaded.statements == 1
     assert out.dropped == ("invented: quote is not in the text",)
     assert "排放廢水者應符合標準" in model.prompts[0]
-    assert _scalar(conn, "SELECT review::text FROM annotation.statement") == "extracted"
+    assert _scalar(conn, "SELECT confirm_state::text FROM annotation.statement") == "extracted"
     assert _scalar(conn, "SELECT method::text FROM annotation.derivation") == "llm"
 
 
@@ -640,7 +642,10 @@ def test_a_deontic_on_a_statement_that_is_not_prescriptive_is_removed(
     )
 
     assert out.loaded is not None and out.loaded.statements == 1
-    assert _scalar(conn, "SELECT count(*) FROM annotation.statement WHERE deontic IS NOT NULL") == 0
+    assert (
+        _scalar(conn, "SELECT count(*) FROM annotation.statement WHERE norm_modality IS NOT NULL")
+        == 0
+    )
 
 
 def test_a_prescriptive_statement_without_a_direction_is_incomplete() -> None:
@@ -850,7 +855,9 @@ def test_an_incomplete_answer_is_sent_back_with_the_problem_and_the_fix_is_used(
     assert len(model.prompts) == 2 and "沒有 duty 要件" in model.prompts[1]
     assert out.loaded is not None
     assert (
-        _scalar(conn, "SELECT count(*) FROM annotation.statement_condition WHERE role = 'duty'")
+        _scalar(
+            conn, "SELECT count(*) FROM annotation.statement_condition WHERE cond_role = 'duty'"
+        )
         == 1
     )
 

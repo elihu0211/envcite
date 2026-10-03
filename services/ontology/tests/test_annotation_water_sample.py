@@ -71,7 +71,7 @@ def test_a_draft_nobody_reviewed_contributes_no_facts(conn: Conn, loaded: Loaded
 
 
 def test_once_confirmed_every_statement_is_a_fact_on_the_day(conn: Conn, loaded: Loaded) -> None:
-    conn.execute("UPDATE annotation.statement SET review = 'confirmed'")
+    conn.execute("UPDATE annotation.statement SET confirm_state = 'confirmed'")
     conn.commit()
 
     assert _facts(conn) == 13
@@ -80,7 +80,7 @@ def test_once_confirmed_every_statement_is_a_fact_on_the_day(conn: Conn, loaded:
 def test_the_penalties_punish_the_duty_and_carry_the_amounts(conn: Conn, loaded: Loaded) -> None:
     fines = conn.execute(
         "SELECT min_amount, max_amount FROM annotation.sanction"
-        " WHERE effect = 'fine' AND NOT repeating ORDER BY 1"
+        " WHERE legal_effect = 'fine' AND NOT per_occasion ORDER BY 1"
     ).fetchall()
 
     assert fines == [(6000, 600000), (60000, 20000000)]
@@ -89,7 +89,7 @@ def test_the_penalties_punish_the_duty_and_carry_the_amounts(conn: Conn, loaded:
             conn,
             "SELECT count(DISTINCT sn.punishes_id) FROM annotation.sanction AS sn"
             "  JOIN annotation.statement AS d ON d.id = sn.punishes_id"
-            "   AND d.deontic = 'obligation'",
+            "   AND d.norm_modality = 'obligation'",
         )
         == 1
     )
@@ -102,7 +102,7 @@ def test_uncertain_legal_concepts_are_marked_as_needing_judgement(
         str(code)
         for (code,) in conn.execute(
             "SELECT c.code FROM annotation.statement_condition AS sc"
-            "  JOIN vocab.concept AS c ON c.id = sc.concept_id WHERE sc.judgement"
+            "  JOIN vocab.concept AS c ON c.id = sc.concept_id WHERE sc.needs_assessment"
         )
     }
 
@@ -113,7 +113,9 @@ def test_uncertain_legal_concepts_are_marked_as_needing_judgement(
     }
     # 要件的其餘部分（適用範圍、義務內容）不是判斷。
     assert (
-        _scalar(conn, "SELECT count(*) FROM annotation.statement_condition WHERE NOT judgement")
+        _scalar(
+            conn, "SELECT count(*) FROM annotation.statement_condition WHERE NOT needs_assessment"
+        )
         == 15
     )
 
@@ -123,7 +125,7 @@ def test_the_improvement_order_and_the_repeated_fine_are_their_own_effects(
 ) -> None:
     """一個罰則陳述一個效果：改善命令不是處罰種類，按次處罰是同一個罰鍰的反覆裁處。"""
     effects = conn.execute(
-        "SELECT effect::text, repeating, count(*) FROM annotation.sanction"
+        "SELECT legal_effect::text, per_occasion, count(*) FROM annotation.sanction"
         " GROUP BY 1, 2 ORDER BY 1, 2"
     ).fetchall()
 
