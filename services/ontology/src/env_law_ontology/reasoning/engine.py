@@ -3,7 +3,9 @@
 設計見 env-law-docs 02-05 §5。
 
 推論程式（`rules.lp`）不含任何法條，陳述是資料。結論都是**候選**：違反、合規、附條件、被排除、
-不適用、無法判定；罰則只列候選，不裁量；優先關係只在有明文標註時消解，否則列為未決。
+不適用、無法判定；罰則只列候選，不裁量。行政罰法總則排除的是處罰：事由成立則不列，
+有責性未知則附條件，義務陳述的結論不變。罰鍰同時列出兩種法定區間：各則自己的額度是數行為，
+確定且上下限都有的罰鍰另合併成一行為的一個區間；不選哪一種。優先關係只在有明文標註時消解，否則列為未決。
 """
 
 from __future__ import annotations
@@ -38,6 +40,16 @@ class Penalty:
 
 
 @dataclass(frozen=True)
+class General:
+    """行政罰法總則在這一則罰則上的標記。事由成立則該罰則不在 `penalties`。"""
+
+    unpunished: tuple[tuple[int, str], ...]
+    mitigation: tuple[tuple[int, str], ...]
+    presumed: tuple[tuple[int, str], ...]
+    time_barred: tuple[int, ...]
+
+
+@dataclass(frozen=True)
 class Trace:
     """某個要件原子的取值：用了哪個事實值、哪個門檻值（千分位）。"""
 
@@ -53,6 +65,7 @@ class Trace:
 class Result:
     verdicts: Mapping[int, str]
     penalties: tuple[Penalty, ...]
+    one_act: tuple[int, int] | None
     missing: tuple[tuple[int, str], ...]
     needs_judgement: tuple[tuple[int, str], ...]
     judgement_used: tuple[tuple[int, str], ...]
@@ -63,6 +76,7 @@ class Result:
     penalty_defeated: tuple[tuple[int, int, str], ...]
     trace: tuple[Trace, ...]
     limit_sources: Mapping[int, int]
+    general: General
 
 
 def _py(symbol: clingo.Symbol) -> Any:
@@ -86,7 +100,7 @@ def evaluate(
     `include_unsettled` 只給驗證閘門用（在陳述被接受之前評估它）；推論的呼叫端不該用。
     """
     statements = facts.statement_facts(conn, as_of, language, include_unsettled=include_unsettled)
-    program = "\n".join([statements, facts.case_facts(case)])
+    program = "\n".join([statements, facts.case_facts(case), facts.limitation(as_of, case)])
     ctl = clingo.Control(["--warn=none"])
     ctl.add("base", [], _RULES)
     ctl.add("base", [], program)
@@ -123,9 +137,14 @@ def evaluate(
         )
     }
     penalties = [Penalty(*c, repeating=c[0] in repeating) for c in candidates]
+    shown = get("one_act")
+    if len(shown) > 1:
+        raise RuntimeError(f"expected one fine interval, got {len(shown)}")
+    one_act = None if not shown else (int(shown[0][0]), int(shown[0][1]))
     return Result(
         verdicts={s: v for s, v in get("verdict")},
         penalties=tuple(sorted(penalties, key=lambda x: (x.statement_id, x.punishes_id))),
+        one_act=one_act,
         missing=tuple((s, m) for s, m in get("missing")),
         needs_judgement=tuple((s, m) for s, m in get("needs_judgement")),
         judgement_used=tuple((s, m) for s, m in get("judgement_used")),
@@ -136,4 +155,10 @@ def evaluate(
         penalty_defeated=tuple((a, b, c) for a, b, c in get("penalty_defeated")),
         trace=tuple(Trace(*t) for t in get("trace")),
         limit_sources={c: s for c, s in get("trace_src")},
+        general=General(
+            unpunished=tuple((int(p), str(g)) for p, g in get("barred")),
+            mitigation=tuple((int(p), str(g)) for p, g in get("mitigation")),
+            presumed=tuple((int(p), str(g)) for p, g in get("presumed")),
+            time_barred=tuple(int(p) for (p,) in get("time_barred")),
+        ),
     )

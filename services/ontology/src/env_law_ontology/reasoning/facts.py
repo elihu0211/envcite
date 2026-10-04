@@ -11,7 +11,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import cast
 
@@ -139,10 +139,75 @@ def statement_facts(
     return "\n".join(out)
 
 
+# 裁處權時效的起算日。不走千分位：值是 YYYYMMDD。
+_ACCRUAL = ("ap_conduct_ended", "ap_result_on")
+
+
 def case_facts(case: Mapping[str, float | Sequence[float]]) -> str:
     """案件事實：概念代碼 → 值（同一概念可有多個值，矛盾由推論程式檢出）。"""
     out: list[str] = []
     for code, value in case.items():
+        if code in _ACCRUAL:
+            continue
         values = [value] if isinstance(value, int | float) else list(value)
         out.extend(f"fact_in({q(code)},{milli(v)})." for v in values)
     return "\n".join(out)
+
+
+def limitation(as_of: date, case: Mapping[str, float | Sequence[float]]) -> str:
+    """裁處日與三年期間的末日。末日由日曆算出；起算日不明或日期無效則不給末日，推論程式就不標已逾。
+
+    始日不算入，末日是起算日三年後相當日的前一日；該月沒有相當日則以該月最後一日為末日
+    （民法第 120 條第 2 項、第 121 條）。休息日不展延。
+    只有結果日、沒有行為終了日，不算已確定起算日。
+    """
+    lines = [f"decision({_stamp(as_of)})."]
+    parsed: dict[str, date] = {}
+    for code in _ACCRUAL:
+        if code not in case:
+            continue
+        raw = case[code]
+        day = None if isinstance(raw, Sequence) else _calendar(raw)
+        if day is None:
+            lines.append(f"problem(bad_date,{q(code)}).")
+        else:
+            parsed[code] = day
+    accrual = _accrual(parsed)
+    if accrual is not None:
+        lines.append(f"deadline({_stamp(_period_end(accrual))}).")
+    return "\n".join(lines)
+
+
+def _stamp(day: date) -> int:
+    return day.year * 10000 + day.month * 100 + day.day
+
+
+def _calendar(value: float) -> date | None:
+    number = int(value)
+    if number != value:
+        return None
+    year, month_day = divmod(number, 10000)
+    month, day = divmod(month_day, 100)
+    try:
+        return date(year, month, day)
+    except ValueError:
+        return None
+
+
+def _accrual(parsed: Mapping[str, date]) -> date | None:
+    conduct = parsed.get("ap_conduct_ended")
+    if conduct is None:
+        return None
+    result = parsed.get("ap_result_on")
+    if result is not None and result > conduct:
+        return result
+    return conduct
+
+
+def _period_end(accrual: date) -> date:
+    start = accrual + timedelta(days=1)
+    try:
+        corresponding = start.replace(year=start.year + 3)
+    except ValueError:
+        return date(start.year + 3, 2, 28)
+    return corresponding - timedelta(days=1)
