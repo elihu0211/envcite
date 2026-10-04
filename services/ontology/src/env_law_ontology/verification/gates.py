@@ -5,7 +5,8 @@
 
 - `numbers`：罰則的額度與帶單位的門檻值，必須與原文的數字一致（中文數字與阿拉伯數字都讀）。
 - `references`：罰則所處罰的陳述，必須是原文引用的那一條（項）。
-- `executable`：標註可被推論程式評估，而且在門檻值兩側、適用範圍的兩側，結論如條件所預期地翻轉。
+- `executable`：規範性陳述的結論隨義務方向翻轉；罰則只在所處罰的陳述已違反、
+  且自己的適用範圍成立時成為候選。
 
 它們互相獨立，也獨立於抽取者；但沒有一個能證明要件的語意、陳述的種類或義務方向忠於原文——那需要
 往返驗證、獨立測試或跨家族評審（設計見 02-05 §5.9），它們要呼叫模型，不在這裡。
@@ -22,7 +23,7 @@ from typing import Any, Literal, Protocol, cast
 
 import psycopg
 
-from env_law_ontology.reasoning import evaluate
+from env_law_ontology.reasoning import Result, evaluate
 from env_law_ontology.verification.context import ancestors_text
 
 Conn = psycopg.Connection[tuple[object, ...]]
@@ -352,23 +353,133 @@ class _Cond:
         return resolved + delta
 
 
+# 義務內容成立、不成立時的結論。與 rules.lp 的 complies/2 同一張表：
+# 禁止是義務的對極；許可兩邊都合規，不做所許可之事不是違反。
+_POLARITY: dict[str, tuple[str, str]] = {
+    "obligation": ("compliant", "violation"),
+    "prohibition": ("violation", "compliant"),
+    "permission": ("compliant", "compliant"),
+}
+
+
 @dataclass(frozen=True)
 class ExecutableGate:
-    """義務陳述可被推論程式評估，且結論如要件所預期地翻轉：兩個門檻值之內合規、之外違反，
-    適用範圍的任一要件不成立則不適用。只檢查標註與推論程式之間，不檢查標註與原文之間。"""
+    """規範性陳述與罰則可被推論程式評估。規範性陳述的結論隨義務方向翻轉，適用範圍任一要件
+    不成立則不適用。罰則在所處罰的陳述違反時：自己的適用範圍成立才列為候選，未知則附條件，
+    不成立則不列。只檢查標註與推論程式之間，不檢查標註與原文之間。"""
 
     method: str = "executable"
-    verifier: str = "gate:executable@1"
+    verifier: str = "gate:executable@2"
     language: str = "zho"
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
         u = _unit(conn, statement_id)
-        if not (u.kind == "prescriptive" and u.deontic == "obligation"):
+        if u.kind == "penalty":
+            return self._penalty(conn, u)
+        pair = _POLARITY.get(u.deontic or "")
+        if u.kind != "prescriptive" or pair is None:
             return None
+        ready = self._ready(conn, u)
+        if isinstance(ready, GateResult):
+            return ready
+        as_of, conds, resolved, base = ready
+        holds, fails = pair
+        scope = [c for c in conds if c.role == "scope"]
+        duty = [c for c in conds if c.role == "duty"]
+        if not duty and holds != fails:
+            return GateResult("inconclusive", {"reason": "no duty condition"})
+        if not duty and not scope:
+            return GateResult("inconclusive", {"reason": "no condition"})
+        sat = self._vals(scope, True, resolved)
+        cases: list[tuple[str, dict[str, float], str]] = []
+        if duty:
+            cases.append(("duty holds", base | sat | self._vals(duty, True, resolved), holds))
+            cases.append(("duty broken", base | sat | self._vals(duty, False, resolved), fails))
+        else:
+            cases.append(("scope holds", base | sat, holds))
+        duty_ok = self._vals(duty, holds == "compliant", resolved)
+        for broken in scope:
+            facts = (
+                base
+                | sat
+                | duty_ok
+                | {broken.code: float(broken.value(False, resolved[broken.id]))}
+            )
+            cases.append((f"{broken.code} not met", facts, "not_applicable"))
+        return self._verdicts(conn, as_of, u.statement_id, cases)
+
+    def _penalty(self, conn: Conn, u: _Unit) -> GateResult:
+        row = conn.execute(
+            "SELECT punishes_id FROM annotation.sanction WHERE statement_id = %s",
+            (u.statement_id,),
+        ).fetchone()
+        if row is None or row[0] is None:
+            return GateResult("inconclusive", {"reason": "penalty punishes nothing"})
+        punished = _unit(conn, cast(int, row[0]))
+        pair = _POLARITY.get(punished.deontic or "")
+        if punished.kind != "prescriptive" or pair is None or pair[0] == pair[1]:
+            return GateResult("inconclusive", {"reason": "punished statement cannot be a breach"})
+        breach_ready = self._ready(conn, punished)
+        if isinstance(breach_ready, GateResult):
+            return breach_ready
+        _, pconds, presolved, pbase = breach_ready
+        if not any(c.role == "duty" for c in pconds):
+            return GateResult(
+                "inconclusive", {"reason": "punished statement has no duty condition"}
+            )
+        pen_ready = self._ready(conn, u)
+        if isinstance(pen_ready, GateResult):
+            return pen_ready
+        as_of, conds, resolved, base = pen_ready
+        scope = [c for c in conds if c.role == "scope"]
+        breach = (
+            pbase
+            | self._vals([c for c in pconds if c.role == "scope"], True, presolved)
+            | self._vals([c for c in pconds if c.role == "duty"], pair[0] == "violation", presolved)
+            | {"ap_intent": 1.0}
+        )
+        sat = self._vals(scope, True, resolved)
+        held = base | breach | sat
+        probe = evaluate(conn, as_of, held, self.language, include_unsettled=True)
+        if probe.verdicts.get(punished.statement_id) != "violation":
+            return GateResult(
+                "inconclusive", {"reason": "breach facts did not violate the punished statement"}
+            )
+        cases: list[tuple[str, dict[str, float], str]] = [("scope holds", held, "candidate")]
+        for broken in scope:
+            facts = (
+                base | breach | sat | {broken.code: float(broken.value(False, resolved[broken.id]))}
+            )
+            cases.append((f"{broken.code} not met", facts, "absent"))
+        owned = next((c for c in scope if c.code not in breach), None)
+        if owned is not None:
+            unknown = {k: v for k, v in held.items() if k != owned.code}
+            cases.append(("scope unknown", unknown, "conditional"))
+        results: list[dict[str, Any]] = [
+            {
+                "case": "scope holds",
+                "expected": "candidate",
+                "got": self._penalty_state(probe, u.statement_id),
+            }
+        ]
+        for name, facts, expected in cases[1:]:
+            got = self._penalty_state(
+                evaluate(conn, as_of, facts, self.language, include_unsettled=True),
+                u.statement_id,
+            )
+            results.append({"case": name, "expected": expected, "got": got})
+        failed = [x for x in results if x["got"] != x["expected"]]
+        return GateResult(
+            "fail" if failed else "pass", {"as_of": as_of.isoformat(), "cases": results}
+        )
+
+    def _ready(
+        self, conn: Conn, u: _Unit
+    ) -> GateResult | tuple[date, list[_Cond], dict[int, Decimal], dict[str, float]]:
         as_of = self._as_of(conn, u)
         if as_of is None:
             return GateResult("inconclusive", {"reason": "no start date for the text"})
-        conds = self._conditions(conn, statement_id)
+        conds = self._conditions(conn, u.statement_id)
         problem = self._unsupported(conds)
         if problem:
             return GateResult("inconclusive", {"reason": problem})
@@ -383,52 +494,44 @@ class ExecutableGate:
             if value is None:
                 return GateResult("inconclusive", {"reason": f"threshold of {c.code} unresolved"})
             resolved[c.id] = value
-        scope = [c for c in conds if c.role == "scope"]
-        duty = [c for c in conds if c.role == "duty"]
-        if not duty:
-            return GateResult("inconclusive", {"reason": "no duty condition"})
-        base = self._exception_facts(conn, statement_id)
-        cases: list[tuple[str, dict[str, float], str]] = []
-        sat = {c.code: float(c.value(True, resolved[c.id])) for c in scope}
-        cases.append(
-            (
-                "duty holds",
-                base | sat | {c.code: float(c.value(True, resolved[c.id])) for c in duty},
-                "compliant",
-            )
-        )
-        cases.append(
-            (
-                "duty broken",
-                base | sat | {c.code: float(c.value(False, resolved[c.id])) for c in duty},
-                "violation",
-            )
-        )
-        duty_ok = {c.code: float(c.value(True, resolved[c.id])) for c in duty}
-        for broken in scope:
-            facts = (
-                base
-                | sat
-                | duty_ok
-                | {broken.code: float(broken.value(False, resolved[broken.id]))}
-            )
-            cases.append((f"{broken.code} not met", facts, "not_applicable"))
+        return as_of, conds, resolved, self._exception_facts(conn, u.statement_id)
+
+    def _verdicts(
+        self,
+        conn: Conn,
+        as_of: date,
+        statement_id: int,
+        cases: list[tuple[str, dict[str, float], str]],
+    ) -> GateResult:
         results: list[dict[str, Any]] = []
         for name, facts, expected in cases:
-            r = evaluate(conn, as_of, facts, self.language, include_unsettled=True)
-            got = r.verdicts.get(statement_id)
+            result = evaluate(conn, as_of, facts, self.language, include_unsettled=True)
             results.append(
                 {
                     "case": name,
                     "expected": expected,
-                    "got": got,
-                    "problems": [list(p) for p in r.problems],
+                    "got": result.verdicts.get(statement_id),
+                    "problems": [list(p) for p in result.problems],
                 }
             )
         failed = [x for x in results if x["got"] != x["expected"]]
         return GateResult(
             "fail" if failed else "pass", {"as_of": as_of.isoformat(), "cases": results}
         )
+
+    @staticmethod
+    def _vals(conds: list[_Cond], truth: bool, resolved: dict[int, Decimal]) -> dict[str, float]:
+        return {c.code: float(c.value(truth, resolved[c.id])) for c in conds}
+
+    @staticmethod
+    def _penalty_state(result: Result, statement_id: int) -> str:
+        hit = [p for p in result.penalties if p.statement_id == statement_id]
+        if not hit:
+            return "absent"
+        conditional = {p.conditional for p in hit}
+        if len(conditional) != 1:
+            return "both"
+        return "conditional" if hit[0].conditional else "candidate"
 
     def _as_of(self, conn: Conn, u: _Unit) -> date | None:
         return statement_as_of(conn, u.statement_id)

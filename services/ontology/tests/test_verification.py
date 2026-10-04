@@ -30,7 +30,7 @@ from env_law_ontology.verification.gates import GateResult, amounts, citations, 
 from tests.test_annotation import BEFORE, LAW, _doc, _limit
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.test_reasoning import WATER, WATER_DAY, _plain_duty
+from tests.test_reasoning import WATER, WATER_DAY, _plain_duty, _scope, _with
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -254,15 +254,44 @@ def test_references_gate_requires_the_punished_provision_to_be_the_cited_one(
     assert gate.check(conn, ids["w7_1"]) is None
 
 
-def test_executable_gate_passes_a_duty_whose_verdicts_flip_where_the_conditions_say(
-    conn: Conn, tmp_path: Path
+@pytest.mark.parametrize("deontic", ["obligation", "prohibition", "permission"])
+def test_executable_gate_follows_the_deontic_polarity(
+    conn: Conn, tmp_path: Path, deontic: str
 ) -> None:
-    loaded = _two_statements(conn, tmp_path)
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", "乙一")))
+    duty = _plain_duty()
+    duty["deontic"] = deontic
+    loaded = load(conn, _doc(duty, review="extracted"))
 
     result = ExecutableGate().check(conn, loaded.ids["duty"])
 
     assert result is not None and result.verdict == "pass"
     assert {c["case"] for c in result.evidence["cases"]} >= {"duty holds", "duty broken"}
+
+
+def test_executable_gate_checks_a_penalty_only_while_the_breach_stands(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", "乙一")))
+    penalty = {
+        "id": "fine",
+        "law": LAW,
+        "path": "art_2",
+        "text": "乙一",
+        "kind": "penalty",
+        "conditions": [_scope("serious")],
+        "sanction": {"punishes": "duty", "effect": "fine", "min": 1, "max": 2},
+    }
+    loaded = load(conn, _with(_doc(_plain_duty(), penalty), "serious"))
+
+    result = ExecutableGate().check(conn, loaded.ids["fine"])
+
+    assert result is not None and result.verdict == "pass"
+    assert {c["case"] for c in result.evidence["cases"]} == {
+        "scope holds",
+        "serious not met",
+        "scope unknown",
+    }
 
 
 def test_executable_gate_is_not_applicable_outside_obligations(conn: Conn, tmp_path: Path) -> None:
@@ -353,12 +382,12 @@ def test_the_water_draft_is_accepted_without_a_human_where_the_gates_can_decide(
 
     result = settle(conn, DETERMINISTIC)
 
-    # 義務陳述與十個罰則通過；兩個沒有任何閘門能檢查的陳述（授權、許可）維持 extracted。
-    assert (result.confirmed, result.rejected) == (11, 0)
+    # 義務、許可與十個罰則通過。授權是構成性，三個閘門都不適用，維持 extracted。
+    assert (result.confirmed, result.rejected) == (12, 0)
     assert _review(conn, ids["w7_1"]) == "confirmed"
     assert _review(conn, ids["p40_1_fine"]) == "confirmed"
+    assert _review(conn, ids["w7_2b"]) == "confirmed"
     assert _review(conn, ids["w7_2a"]) == "extracted"
-    assert _review(conn, ids["w7_2b"]) == "extracted"
 
     case = {
         "actor_is_regulated_entity": 1,
@@ -921,7 +950,7 @@ def test_numbers_gate_evidence_can_be_stored_when_the_model_invented_an_amount(
 def test_a_prohibition_without_a_duty_is_not_written_even_though_it_could_pass_the_model_gates(
     conn: Conn, tmp_path: Path
 ) -> None:
-    """executable 只管義務：沒有 duty 的禁止若寫入，只靠模型閘門就可能被確認。"""
+    """禁止沒有 duty 時可執行閘門無法翻轉結論，所以不寫入，避免只靠模型閘門就被確認。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
     doc = _without_duty()
     doc["statements"][0]["deontic"] = "prohibition"
