@@ -1,11 +1,16 @@
 # 模型配置範本（`env-law-pipeline --models models.toml`）。複製成 models.toml 再改；
-# 金鑰不寫在這裡，只寫存放它的環境變數名稱。
+# 金鑰不寫在這裡，只寫它放在哪裡：環境變數的名稱，或專案內一個不進版控的檔案的路徑。
 #
 # 家族（family）是獨立性規則所依：驗證者不得與抽取者同一家族，評審團至少要兩個不同家族。
 # 由人宣告，不從名字推測。託管端點上的模型名稱可能是別名（同一個模型掛在幾個名字下），
 # 宣告前先查清楚；管線開跑前還會對所有模型問兩個固定問題，答案逐字相同就拒絕開跑。
 
 # 一個 OpenAI 相容的端點。base_url 與 base_url_env 二選一：後者從環境變數讀，檔案裡不出現網址。
+# 金鑰二選一：api_key_env 是環境變數的名稱；api_key_file 是檔案的路徑（相對於這個設定檔），
+# 檔案只放金鑰、放在被 .gitignore 忽略的地方（services/ontology/.secrets/），
+# 在 git 工作樹裡又沒被忽略的金鑰檔會被拒絕載入。不想用環境變數時，改成：
+#   base_url = "https://…/v1"
+#   api_key_file = ".secrets/chat_key"
 [endpoint.hosted]
 base_url_env = "CHAT_BASE_URL"
 api_key_env = "CHAT_API_KEY"

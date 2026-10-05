@@ -213,3 +213,67 @@ def test_a_bad_file_stops_the_command_line_with_its_path(
 
     with pytest.raises(SystemExit, match=r"models\.toml"):
         main()
+
+
+# ---- the key can live in a file inside the project, never in the config itself ----
+
+
+def _with_key_file(name: str = ".secrets/key") -> str:
+    return MINIMAL.replace(
+        'base_url_env = "CHAT_BASE_URL"',
+        f'base_url = "https://x.invalid/v1"\napi_key_file = "{name}"',
+    )
+
+
+def _key_file(root: Path, text: str) -> None:
+    (root / ".secrets").mkdir(exist_ok=True)
+    (root / ".secrets" / "key").write_text(text, encoding="utf-8")
+
+
+def test_a_key_file_is_read_relative_to_the_config_and_trimmed(tmp_path: Path) -> None:
+    _key_file(tmp_path, "  file-secret \n")
+    (tmp_path / "models.toml").write_text(_with_key_file(), encoding="utf-8")
+
+    models = load(tmp_path / "models.toml", {})
+
+    assert models.extractor._api_key == "file-secret"  # type: ignore[attr-defined]
+    assert "file-secret" not in repr(models.extractor)
+
+
+@pytest.mark.parametrize(
+    ("setup", "message"),
+    [
+        pytest.param("empty", "is empty", id="empty"),
+        pytest.param("missing", "cannot read the key file", id="missing"),
+    ],
+)
+def test_an_empty_or_missing_key_file_is_refused(tmp_path: Path, setup: str, message: str) -> None:
+    if setup == "empty":
+        _key_file(tmp_path, "  \n")
+    (tmp_path / "models.toml").write_text(_with_key_file(), encoding="utf-8")
+
+    with pytest.raises(ConfigError, match=message):
+        load(tmp_path / "models.toml", {})
+
+
+def test_a_key_file_and_a_key_variable_together_are_refused(tmp_path: Path) -> None:
+    _key_file(tmp_path, "k")
+    text = _with_key_file().replace("api_key_file", 'api_key_env = "CHAT_API_KEY"\napi_key_file')
+
+    with pytest.raises(ConfigError, match="at most one"):
+        parse(text, ENV, tmp_path)
+
+
+def test_a_key_file_inside_a_git_repository_must_be_ignored(tmp_path: Path) -> None:
+    """A key that `git add` would pick up is a leaked key: refuse to load it."""
+    import subprocess
+
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    _key_file(tmp_path, "file-secret")
+    (tmp_path / "models.toml").write_text(_with_key_file(), encoding="utf-8")
+
+    with pytest.raises(ConfigError, match="not ignored"):
+        load(tmp_path / "models.toml", {})
+
+    (tmp_path / ".gitignore").write_text(".secrets/\n", encoding="utf-8")
+    assert load(tmp_path / "models.toml", {}).extractor._api_key == "file-secret"  # type: ignore[attr-defined]
