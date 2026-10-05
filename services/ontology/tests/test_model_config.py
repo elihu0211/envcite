@@ -266,8 +266,11 @@ def test_a_key_file_and_a_key_variable_together_are_refused(tmp_path: Path) -> N
 
 def test_a_key_file_inside_a_git_repository_must_be_ignored(tmp_path: Path) -> None:
     """A key that `git add` would pick up is a leaked key: refuse to load it."""
+    import shutil
     import subprocess
 
+    if shutil.which("git") is None:
+        pytest.skip("git is not installed (the guard is a no-op without it)")
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     _key_file(tmp_path, "file-secret")
     (tmp_path / "models.toml").write_text(_with_key_file(), encoding="utf-8")
