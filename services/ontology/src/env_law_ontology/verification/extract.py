@@ -19,6 +19,7 @@ import psycopg
 from env_law_ontology.annotate import AnnotationError, Loaded, load
 from env_law_ontology.verification.context import ancestors_text, context_block
 from env_law_ontology.verification.conventions import apply as with_conventions
+from env_law_ontology.verification.gates import citations
 from env_law_ontology.verification.jsonutil import object_from
 from env_law_ontology.verification.models import Model, ModelError
 
@@ -203,18 +204,27 @@ def _unit_text(conn: Conn, law: str, path: str) -> tuple[int, str]:
     return int(str(row[0])), str(row[1])
 
 
-def _held(s: Mapping[str, Any], ids: set[str]) -> bool:
-    """罰則沒有指明同單元裡受罰的陳述（或指的 id 不在這個單元）：它處罰的是原文引用的別條。
+def _cites_elsewhere(path: str, text: str) -> bool:
+    """單元的原文引用了別的條文，而沒有引用自己：它處罰的是被引用的那條，不是單元裡別的陳述。"""
+    cited = citations(text)
+    return bool(cited) and not any(path == c or path.startswith(c + "/") for c in cited)
 
-    模型不知道別條的陳述 id，指向不存在的 id 與沒有指明是同一回事。
+
+def _held(s: Mapping[str, Any], ids: set[str], elsewhere: bool) -> bool:
+    """罰則處罰的是原文引用的別條：沒有指明同單元裡受罰的陳述（或指的 id 不在這個單元），
+    或單元的原文引用了別條。
+
+    模型不知道別條的陳述 id，指向不存在的 id 與沒有指明是同一回事。模型也會把罰則連到同一單元裡
+    重述義務的陳述，而不是原文引用的那一條（「違反第三十八條第三項規定，…者，處…」）；引用閘門
+    會擋下，但那是白白丟掉一個連得上的罰則，所以原文引了別條就一律交給連結。
     """
     sanction = s.get("sanction")
-    return isinstance(sanction, Mapping) and str(sanction.get("punishes")) not in ids
+    return isinstance(sanction, Mapping) and (str(sanction.get("punishes")) not in ids or elsewhere)
 
 
-def _waiting(statements: Sequence[Mapping[str, Any]], ids: set[str]) -> set[str]:
+def _waiting(statements: Sequence[Mapping[str, Any]], ids: set[str], elsewhere: bool) -> set[str]:
     """留待連結的罰則的 id：等著連結的，加上處罰它們的罰則（同一條原文引用的是同一批條文）。"""
-    waiting = {str(s.get("id")) for s in statements if _held(s, ids)}
+    waiting = {str(s.get("id")) for s in statements if _held(s, ids, elsewhere)}
     while True:
         more = {
             str(s.get("id"))
@@ -340,7 +350,7 @@ def extract_unit(
             item["span"] = [start, start + len(quote)]
         statements.append(item)
     ids = {str(s.get("id")) for s in statements}
-    waiting = _waiting(statements, ids)
+    waiting = _waiting(statements, ids, _cites_elsewhere(path, text))
     held = _linkable_held([s for s in statements if str(s.get("id")) in waiting], dropped)
     statements = _linkable([s for s in statements if str(s.get("id")) not in waiting], dropped)
     base = {
