@@ -6,7 +6,9 @@
 - **角色明寫**：抽取者、往返驗證的重抽者、獨立測試的設計者、評審團，各自指名一個模型。
 - **家族明寫**：獨立性規則（驗證者不得與抽取者同一家族）所依的家族由人宣告，不從模型名字推測；
   託管端點的名稱可能是別名（`gpt-oss-120b` 與 `mistral-small-4` 是同一個模型），宣告時要查清楚。
-- **金鑰不入檔**：只寫存放金鑰的環境變數名稱（`api_key_env`），檔案本身可以進版控與審閱。
+- **金鑰不入設定檔**：設定檔只寫金鑰在哪裡——環境變數的名稱（`api_key_env`），或專案內一個不進版控的
+  檔案的路徑（`api_key_file`，相對於設定檔所在的目錄）；設定檔本身可以進版控與審閱。金鑰檔若在
+  git 工作樹裡又沒被忽略就拒絕載入，免得它被提交。
 
 只用標準函式庫（`tomllib`）；不認得的鍵與指向不存在者的參照一律報錯，不靜默忽略。
 """
@@ -14,6 +16,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -56,11 +59,37 @@ def _only(table: Mapping[str, Any], allowed: set[str], where: str) -> None:
         raise ConfigError(f"{where}: unknown keys {sorted(extra)}")
 
 
+def _key_from_file(where: str, name: Any, base: Path) -> str:
+    path = (base / str(name)).resolve()
+    try:
+        key = path.read_text(encoding="utf-8").strip()
+    except OSError as e:
+        raise ConfigError(f"{where}: cannot read the key file {path}: {e.strerror}") from e
+    if not key:
+        raise ConfigError(f"{where}: the key file {path} is empty")
+    # 在 git 工作樹裡又沒被忽略（check-ignore 回 1）就拒絕：金鑰檔一旦被 `git add` 就洩漏了。
+    # 不在工作樹裡（128）或沒有 git 就不管。
+    try:
+        ignored = subprocess.run(
+            ["git", "-C", str(path.parent), "check-ignore", "-q", str(path)],
+            capture_output=True,
+        ).returncode
+    except OSError:
+        ignored = 128
+    if ignored == 1:
+        raise ConfigError(
+            f"{where}: the key file {path} is inside a git repository and not ignored"
+        )
+    return key
+
+
 def _endpoint(
-    name: str, table: Mapping[str, Any], env: Mapping[str, str]
+    name: str, table: Mapping[str, Any], env: Mapping[str, str], base_dir: Path
 ) -> tuple[str, str | None]:
     where = f"endpoint.{name}"
-    _only(table, {"base_url", "base_url_env", "api_key_env"}, where)
+    _only(table, {"base_url", "base_url_env", "api_key_env", "api_key_file"}, where)
+    if "api_key_env" in table and "api_key_file" in table:
+        raise ConfigError(f"{where}: give at most one of api_key_env and api_key_file")
     if ("base_url" in table) == ("base_url_env" in table):
         raise ConfigError(f"{where}: give exactly one of base_url and base_url_env")
     base = table.get("base_url")
@@ -70,7 +99,9 @@ def _endpoint(
         if not base:
             raise ConfigError(f"{where}: environment variable {var} is not set")
     key: str | None = None
-    if (key_var := table.get("api_key_env")) is not None:
+    if "api_key_file" in table:
+        key = _key_from_file(where, table["api_key_file"], base_dir)
+    elif (key_var := table.get("api_key_env")) is not None:
         key = env.get(str(key_var))
         if not key:
             raise ConfigError(f"{where}: environment variable {key_var} is not set")
@@ -105,14 +136,19 @@ def _model(
     return ChatCompletionsModel(remote, declared_family=family, base_url=base, api_key=key, **extra)
 
 
-def parse(text: str, env: Mapping[str, str] | None = None) -> ModelSet:
+def parse(
+    text: str, env: Mapping[str, str] | None = None, base_dir: Path | None = None
+) -> ModelSet:
     env = os.environ if env is None else env
+    base_dir = Path.cwd() if base_dir is None else base_dir
     try:
         doc = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"not valid TOML: {e}") from e
     _only(doc, {"endpoint", "model", "roles"}, "top level")
-    endpoints = {str(n): _endpoint(str(n), t, env) for n, t in (doc.get("endpoint") or {}).items()}
+    endpoints = {
+        str(n): _endpoint(str(n), t, env, base_dir) for n, t in (doc.get("endpoint") or {}).items()
+    }
     models = {str(n): _model(str(n), t, endpoints) for n, t in (doc.get("model") or {}).items()}
     roles = doc.get("roles") or {}
     _only(roles, set(ROLES), "roles")
@@ -137,4 +173,4 @@ def parse(text: str, env: Mapping[str, str] | None = None) -> ModelSet:
 
 
 def load(path: Path, env: Mapping[str, str] | None = None) -> ModelSet:
-    return parse(path.read_text(encoding="utf-8"), env)
+    return parse(path.read_text(encoding="utf-8"), env, path.resolve().parent)

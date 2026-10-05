@@ -8,8 +8,8 @@ re-split are left out (the stored text has lost its indentation). The slice is r
 development database (read-only) into a throwaway postgres container, loaded through the real
 importer, and the pipeline runs on it with `models.toml`. Run it twice for run-to-run stability.
 
-The model endpoint and key come from the environment variables `models.toml` names
-(`CHAT_BASE_URL`, `CHAT_API_KEY` in the example); this script never reads or writes a key file.
+The endpoint and key come from `models.toml` (a key in the environment or in a git-ignored
+file in the project, as it declares); this script never reads or writes a key itself.
 A slice the importer rejects stops here, before any model is called. A law that has been looked at
 is spent: report first-look counts only, never accuracy, and pick another for the next measurement.
 """

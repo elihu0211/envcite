@@ -523,3 +523,5 @@ coverage.xml
 
 # 本機的模型配置（範本是 models.example.toml）
 services/ontology/models.toml
+# 本機的金鑰檔（models.toml 的 api_key_file 指向這裡）
+services/ontology/.secrets/
