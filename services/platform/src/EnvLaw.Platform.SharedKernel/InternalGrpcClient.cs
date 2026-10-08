@@ -3,12 +3,12 @@ using Grpc.Net.Client.Configuration;
 using Grpc.Net.ClientFactory;
 
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.SharedKernel;
 
-/// <summary>內部 gRPC 服務的連線設定；各模組以子類別區分，讓 DI 能同時持有多份。</summary>
+/// <summary>內部 gRPC 服務的連線設定；各模組以子類別區分（並宣告自己的區段名稱），讓 DI 能同時持有多份。</summary>
 public abstract class InternalGrpcClientOptions
 {
     /// <summary>
@@ -23,32 +23,51 @@ public abstract class InternalGrpcClientOptions
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 }
 
-public static class InternalGrpcClient
+/// <summary>位址要是絕對 URI、密鑰不可空、逾時要為正；錯誤訊息指出是哪個設定鍵。</summary>
+public sealed class InternalGrpcClientOptionsValidator<TOptions> : IValidateOptions<TOptions>
+    where TOptions : InternalGrpcClientOptions, IPlatformOptions
 {
-    /// <summary>註冊一個內部服務的 typed gRPC client，附帶內部驗證與 tenant/request metadata。</summary>
-    /// <param name="section">設定區段，其名稱用於錯誤訊息，例如 <c>Ontology</c>。</param>
-    public static TOptions AddInternalGrpcClient<TClient, TOptions>(this IServiceCollection services, IConfigurationSection section)
-        where TClient : class
-        where TOptions : InternalGrpcClientOptions, new()
+    public ValidateOptionsResult Validate(string? name, TOptions options)
     {
-        var options = section.Get<TOptions>() ?? new TOptions();
-        if (!Uri.TryCreate(options.Address, UriKind.Absolute, out var address))
+        var failures = new List<string>();
+        if (!Uri.TryCreate(options.Address, UriKind.Absolute, out _))
         {
-            throw new InvalidOperationException($"{section.Key}:Address must be an absolute URI.");
+            failures.Add($"{TOptions.SectionName}:Address must be an absolute URI.");
         }
 
         if (string.IsNullOrEmpty(options.InternalToken))
         {
-            throw new InvalidOperationException($"{section.Key}:InternalToken is not configured.");
+            failures.Add($"{TOptions.SectionName}:InternalToken is not configured.");
         }
 
-        services.AddHttpContextAccessor();
-        services.AddSingleton(options);
+        if (options.Timeout <= TimeSpan.Zero)
+        {
+            failures.Add($"{TOptions.SectionName}:Timeout must be positive.");
+        }
 
-        services.AddGrpcClient<TClient>(o => o.Address = address)
+        return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+    }
+}
+
+public static class InternalGrpcClient
+{
+    /// <summary>
+    /// 註冊一個內部服務的 typed gRPC client，附帶內部驗證與 tenant/request metadata。
+    /// 位址與密鑰在用到時才自 <see cref="IOptions{TOptions}"/> 取得，驗證在主機啟動時做。
+    /// </summary>
+    public static IServiceCollection AddInternalGrpcClient<TClient, TOptions>(this IServiceCollection services)
+        where TClient : class
+        where TOptions : InternalGrpcClientOptions, IPlatformOptions
+    {
+        services.AddPlatformOptions<TOptions>();
+        services.AddSingleton<IValidateOptions<TOptions>, InternalGrpcClientOptionsValidator<TOptions>>();
+        services.AddHttpContextAccessor();
+
+        services.AddGrpcClient<TClient>((provider, o) =>
+                o.Address = new Uri(provider.GetRequiredService<IOptions<TOptions>>().Value.Address))
             .AddCallCredentials((_, metadata, provider) =>
             {
-                metadata.Add("authorization", $"Bearer {options.InternalToken}");
+                metadata.Add("authorization", $"Bearer {provider.GetRequiredService<IOptions<TOptions>>().Value.InternalToken}");
                 var httpContext = provider.GetRequiredService<IHttpContextAccessor>().HttpContext;
                 if (httpContext is not null)
                 {
@@ -61,7 +80,7 @@ public static class InternalGrpcClient
 
                 return Task.CompletedTask;
             })
-            .ConfigureChannel(channel =>
+            .ConfigureChannel((provider, channel) =>
             {
                 // 一個 channel 就是一條長駐的 HTTP/2 連線，因此 ClusterIP Service 會把每次呼叫
                 // 都釘在同一個 pod。使用 `dns:///<headless service>:<port>` 時，resolver 會回傳每個
@@ -69,6 +88,7 @@ public static class InternalGrpcClient
                 channel.ServiceConfig = new ServiceConfig { LoadBalancingConfigs = { new RoundRobinConfig() } };
 
                 // 叢集網路內使用明文 h2c；要用 TLS 就把 Address 改為 https。
+                var address = new Uri(provider.GetRequiredService<IOptions<TOptions>>().Value.Address);
                 if (address.Scheme != Uri.UriSchemeHttps)
                 {
                     channel.Credentials = ChannelCredentials.Insecure;
@@ -76,6 +96,6 @@ public static class InternalGrpcClient
                 }
             });
 
-        return options;
+        return services;
     }
 }

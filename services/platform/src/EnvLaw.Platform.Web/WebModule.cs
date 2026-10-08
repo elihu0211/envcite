@@ -4,9 +4,7 @@ using EnvLaw.Platform.Web.Components;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 using MudBlazor.Services;
 
@@ -15,10 +13,9 @@ namespace EnvLaw.Platform.Web;
 public static class WebModule
 {
     /// <summary>營運者後台（Blazor Web App，全站 Interactive Server）。登入的設定見 <see cref="WebAuthModule"/>。</summary>
-    public static IServiceCollection AddPlatformWeb(
-        this IServiceCollection services, IConfiguration uiConfig, IHostEnvironment environment)
+    public static IServiceCollection AddPlatformWeb(this IServiceCollection services)
     {
-        services.AddWebAuth(uiConfig, environment);
+        services.AddWebAuth();
         services.AddRazorComponents().AddInteractiveServerComponents();
         services.AddCascadingAuthenticationState();
         services.AddMudServices();

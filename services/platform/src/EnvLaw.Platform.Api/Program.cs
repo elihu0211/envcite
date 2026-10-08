@@ -13,6 +13,7 @@ using EnvLaw.Platform.Web;
 using Finbuckle.MultiTenant.AspNetCore.Extensions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,30 +32,28 @@ if (generatingOpenApi)
     });
 }
 
-var connectionString = builder.Configuration.GetConnectionString("Platform")
-    ?? throw new InvalidOperationException("Connection string 'Platform' is not configured.");
-var platformConfig = builder.Configuration.GetSection("Platform");
-
+// 設定只在各模組自己的 Options 類別裡讀（IPlatformOptions，啟動時驗證）；這裡不碰 IConfiguration。
+builder.Services.AddPlatformOptions<PlatformHostOptions>();
 builder.AddPlatformObservability();
 builder.Services.AddPlatformOpenApi();
 builder.Services.AddProblemDetails();
-builder.Services.AddTenancyModule(connectionString);
+builder.Services.AddTenancyModule();
 if (!generatingOpenApi)
 {
     // Data Protection 啟動時就會預載金鑰環；模擬伺服器沒有資料庫，改用預設的暫時金鑰。
     builder.Services.AddPlatformDataProtection();
 }
 
-builder.Services.AddPlatformData(connectionString);
-builder.Services.AddApiAccessModule(platformConfig);
+builder.Services.AddPlatformData();
+builder.Services.AddApiAccessModule();
 builder.Services.AddMeteringModule();
-builder.Services.AddOntologyModule(builder.Configuration.GetSection("Ontology"));
-builder.Services.AddConsultModule(builder.Configuration.GetSection("Consult"));
-builder.Services.AddPlatformWeb(platformConfig.GetSection("Ui"), builder.Environment);
+builder.Services.AddOntologyModule();
+builder.Services.AddConsultModule();
+builder.Services.AddPlatformWeb();
 
 var app = builder.Build();
 
-if (platformConfig.GetValue<bool>("ApplyMigrationsOnStartup"))
+if (app.Services.GetRequiredService<IOptions<PlatformHostOptions>>().Value.ApplyMigrationsOnStartup)
 {
     await using var scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<TenancyDbContext>().Database.MigrateAsync();

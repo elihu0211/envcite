@@ -1,14 +1,19 @@
+using EnvLaw.Platform.SharedKernel;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Data;
 
 public static class PlatformDataModule
 {
     /// <summary>註冊 <see cref="PlatformDbContext"/>。</summary>
-    public static IServiceCollection AddPlatformData(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddPlatformData(this IServiceCollection services)
     {
-        services.AddDbContext<PlatformDbContext>(options => Configure(options, connectionString));
+        services.AddPlatformDatabaseOptions();
+        services.AddDbContext<PlatformDbContext>((provider, options) =>
+            Configure(options, provider.GetRequiredService<IOptions<DatabaseOptions>>().Value.Platform));
         return services;
     }
 
