@@ -189,6 +189,9 @@ else
                                 <td>
                                     <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
                                                aria-label="@($"重設 {member.Email} 的密碼")" OnClick="() => ResetPasswordAsync(member)">重設密碼</MudButton>
+                                    <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
+                                               aria-label="@($"{(member.Disabled ? "重新啟用" : "停用")} {member.Email}")"
+                                               OnClick="() => SetDisabledAsync(member, !member.Disabled)">@(member.Disabled ? "重新啟用" : "停用")</MudButton>
                                     @if (member.TwoFactorEnabled)
                                     {
                                         <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"

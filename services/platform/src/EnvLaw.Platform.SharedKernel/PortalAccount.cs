@@ -102,6 +102,13 @@ public interface IMemberAdmin
         ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 停用或重新啟用。客戶自己的管理員做得到時不需要營運者；但最後一位擁有者離開、或兩位擁有者同時互相停用，
+    /// 客戶就沒有人能做了，這時由營運者做。停用會讓對方所有 session 立刻失效。
+    /// </summary>
+    Task<AdminOutcome<MemberInfo>> SetDisabledAsync(
+        ClaimsPrincipal actor, string tenantId, string userId, bool disabled, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 成員弄丟了驗證器也沒有復原碼：關掉他的兩步驟驗證、丟掉金鑰與復原碼、讓既有 session 失效。
     /// 他下次用密碼登入後可以重新註冊。這是繞過第二步的唯一人工途徑，所以必須留稽核，並且要先確認對方是本人。
     /// </summary>

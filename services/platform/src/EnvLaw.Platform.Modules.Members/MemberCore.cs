@@ -96,6 +96,28 @@ internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog a
         return AdminOutcome.Ok(new IssuedPassword(Info(user), password));
     }
 
+    /// <summary>停用或重新啟用（冪等）。換安全戳記讓所有 session 立刻失效，留稽核。</summary>
+    public async Task<MemberInfo> SetDisabledAsync(
+        ClaimsPrincipal actor, TenantInfo tenant, ApplicationUser target, bool disabled, CancellationToken cancellationToken)
+    {
+        if (target.Disabled == disabled)
+        {
+            return Info(target); // 已經是那個狀態：不重複記錄
+        }
+
+        target.Disabled = disabled;
+        await users.UpdateAsync(target);
+
+        // 停用要讓對方所有 session 立刻失效；重新啟用也換一次，確保是乾淨的狀態。
+        await users.UpdateSecurityStampAsync(target);
+        await audit.AppendAsync(
+            actor,
+            new AuditEntry(disabled ? AuditActions.MemberDisabled : AuditActions.MemberEnabled, tenant.Id, "member", target.Id,
+                new Dictionary<string, object?> { ["email"] = target.Email }),
+            cancellationToken);
+        return Info(target);
+    }
+
     public MemberInfo Info(ApplicationUser u) =>
         new(u.Id, u.Email ?? string.Empty, u.DisplayName, u.Role, u.MustChangePassword,
             u.LockoutEnd is { } end && end > time.GetUtcNow(), u.TwoFactorEnabled, u.Disabled);

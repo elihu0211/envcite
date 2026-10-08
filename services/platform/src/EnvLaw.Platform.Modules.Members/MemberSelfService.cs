@@ -77,22 +77,7 @@ internal sealed class MemberSelfService(
             return refusal;
         }
 
-        if (target!.Disabled == disabled)
-        {
-            return AdminOutcome.Ok(core.Info(target)); // 冪等：已經是那個狀態，不重複記錄
-        }
-
-        target.Disabled = disabled;
-        await users.UpdateAsync(target);
-
-        // 停用要讓對方所有 session 立刻失效；重新啟用也換一次，確保是乾淨的狀態。
-        await users.UpdateSecurityStampAsync(target);
-        await audit.AppendAsync(
-            ActorOf(me!),
-            new AuditEntry(disabled ? AuditActions.MemberDisabled : AuditActions.MemberEnabled, Tenant().Id, "member", target.Id,
-                new Dictionary<string, object?> { ["email"] = target.Email }),
-            cancellationToken);
-        return AdminOutcome.Ok(core.Info(target));
+        return AdminOutcome.Ok(await core.SetDisabledAsync(ActorOf(me!), Tenant(), target!, disabled, cancellationToken));
     }
 
     public async Task<AdminOutcome<MemberInfo>> ChangeRoleAsync(

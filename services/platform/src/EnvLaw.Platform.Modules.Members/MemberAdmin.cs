@@ -71,6 +71,22 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
             : await scope.ServiceProvider.GetRequiredService<MemberCore>().ResetPasswordAsync(actor, tenant, user, cancellationToken);
     }
 
+    public async Task<AdminOutcome<MemberInfo>> SetDisabledAsync(
+        ClaimsPrincipal actor, string tenantId, string userId, bool disabled, CancellationToken cancellationToken)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        if (await FindTenantAsync(scope, tenantId) is not { } tenant)
+        {
+            return AdminOutcome.NotFound<MemberInfo>("Tenant not found.");
+        }
+
+        Bind(scope, tenant);
+        var user = await scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>().FindByIdAsync(userId);
+        return user is null
+            ? AdminOutcome.NotFound<MemberInfo>("Member not found.")
+            : AdminOutcome.Ok(await scope.ServiceProvider.GetRequiredService<MemberCore>().SetDisabledAsync(actor, tenant, user, disabled, cancellationToken));
+    }
+
     public async Task<AdminOutcome<MemberInfo>> ResetTwoFactorAsync(
         ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken)
     {
