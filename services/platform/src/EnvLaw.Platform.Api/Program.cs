@@ -18,7 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 建置時產生 OpenAPI 規格會以模擬伺服器執行本檔（進入組件為 GetDocument.Insider）：只建出端點、
 // 不處理請求也不連線，故以占位值滿足啟動時的設定檢查。
-if (Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider")
+var generatingOpenApi = Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
+if (generatingOpenApi)
 {
     builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
     {
@@ -37,6 +38,12 @@ var platformConfig = builder.Configuration.GetSection("Platform");
 builder.Services.AddPlatformOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddTenancyModule(connectionString);
+if (!generatingOpenApi)
+{
+    // Data Protection 啟動時就會預載金鑰環；模擬伺服器沒有資料庫，改用預設的暫時金鑰。
+    builder.Services.AddPlatformDataProtection();
+}
+
 builder.Services.AddPlatformData(connectionString);
 builder.Services.AddApiAccessModule(platformConfig);
 builder.Services.AddMeteringModule();

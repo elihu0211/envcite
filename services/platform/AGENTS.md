@@ -15,6 +15,8 @@ Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Cont
 
 - Modular monolith: one solution, one deployable; modules as projects (`Modules.Tenancy`, `Modules.ApiAccess`, `Modules.Metering`, …).
 - Two DbContexts, no more: `TenancyDbContext` (Finbuckle requires the EFCore tenant store to derive from `EFCoreStoreDbContext`, so it cannot share) and `PlatformDbContext` in `EnvLaw.Platform.Data` for all tenant-owned data (schema `platform`). A new tenant-owned entity goes into `PlatformDbContext`; modules do not get their own contexts — each extra context is another migration set, bundle and Job step, and no cross-module transaction.
+- Data Protection keys (cookie and antiforgery protection) are stored in `TenancyDbContext` (`tenancy."DataProtectionKeys"`, `AddPlatformDataProtection`, fixed ApplicationName `env-law-platform`), not in `PlatformDbContext`: they belong to no tenant, and `PlatformDbContext` cannot be built before tenant resolution while the key ring loads at host start. Without shared keys a cookie signed by one replica is rejected by another. The keys are plaintext XML in the database; add `ProtectKeysWith…` if at-rest encryption is required. Not registered while generating the OpenAPI document (no database there).
+- Blazor Server circuits are stateful SignalR connections: running more than one replica needs session affinity on the ingress (deploy repo) or an external backplane. Not configured yet.
 - Multi-tenancy is runtime isolation (tenant resolution + `TenantId` query filters), never per-tenant code or repos.
 - When billing is integrated, the provider is the source of truth for payment; this service will keep an entitlements table updated via its webhooks.
 
