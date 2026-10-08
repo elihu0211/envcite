@@ -21,6 +21,9 @@ public sealed record ColorTokens
     /// <summary>放在 <see cref="Primary"/> 上的文字。</summary>
     public required string OnPrimary { get; init; }
 
+    /// <summary>文字連結的顏色。與 <see cref="Primary"/>（按鈕等填色）分開：深色背景上，填色的藍當文字太暗，要用較亮的藍。</summary>
+    public required string Link { get; init; }
+
     public required string Success { get; init; }
 
     public required string Warning { get; init; }
@@ -41,40 +44,44 @@ public sealed record ColorTokens
 
 public static class DesignTokens
 {
+    // 配色取自蘋果的網站與系統色：中性灰階 + 單一藍色作為強調色，不用漸層、不用深藍底。
+    // 蘋果自己的 systemBlue、systemGreen 當文字並不都過 WCAG AA，所以文字用的語意色取蘋果「提高對比」的變體。
     public static ColorTokens Light { get; } = new()
     {
-        Background = "#F4F6F9",
+        Background = "#F5F5F7",
         Surface = "#FFFFFF",
         SurfaceRaised = "#FFFFFF",
-        Text = "#1A2230",
-        TextSecondary = "#475467",
-        Primary = "#0B57B7",
+        Text = "#1D1D1F",
+        TextSecondary = "#6E6E73",
+        Primary = "#0071E3",
         OnPrimary = "#FFFFFF",
-        Success = "#1B7A43",
-        Warning = "#8A5300",
-        Error = "#B3261E",
-        Info = "#0A6A93",
-        BorderSubtle = "#CBD2DC",
-        BorderControl = "#7A8594",
-        Focus = "#0B57B7",
+        Link = "#0066CC",
+        Success = "#217A37",
+        Warning = "#B25000",
+        Error = "#D70015",
+        Info = "#0066CC",
+        BorderSubtle = "#D2D2D7",
+        BorderControl = "#86868B",
+        Focus = "#0071E3",
     };
 
     public static ColorTokens Dark { get; } = new()
     {
-        Background = "#0E131A",
-        Surface = "#161D27",
-        SurfaceRaised = "#1D2631",
-        Text = "#E7EBF1",
-        TextSecondary = "#A8B3C2",
-        Primary = "#7CB0FF",
-        OnPrimary = "#0A1220",
-        Success = "#5CCB8B",
-        Warning = "#F0B14A",
-        Error = "#FF8A80",
-        Info = "#62C4EE",
-        BorderSubtle = "#2B3644",
-        BorderControl = "#6A7686",
-        Focus = "#7CB0FF",
+        Background = "#000000",
+        Surface = "#1D1D1F",
+        SurfaceRaised = "#2C2C2E",
+        Text = "#F5F5F7",
+        TextSecondary = "#A1A1A6",
+        Primary = "#0071E3",
+        OnPrimary = "#FFFFFF",
+        Link = "#2997FF",
+        Success = "#30D158",
+        Warning = "#FF9F0A",
+        Error = "#FF453A",
+        Info = "#64D2FF",
+        BorderSubtle = "#424245",
+        BorderControl = "#86868B",
+        Focus = "#2997FF",
     };
 
     // ---- 字型 ----------------------------------------------------------------------------------
