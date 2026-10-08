@@ -1,0 +1,170 @@
+/*
+ * 營運後台的共用樣式。只引用 TokenCss 輸出的 --ep-* 變數，不寫死色碼、字級或間距；
+ * 要改外觀，改 Design/DesignTokens.cs。
+ */
+
+html {
+    font-family: var(--ep-font);
+    font-size: 100%; /* 跟隨使用者的瀏覽器字級；間距用 rem，字級放大時版面一起放大 */
+    -webkit-text-size-adjust: 100%;
+    font-optical-sizing: auto;
+}
+
+body {
+    background: var(--ep-bg);
+    color: var(--ep-text);
+    font-size: var(--ep-body-size);
+    line-height: var(--ep-body-leading);
+}
+
+code, kbd, pre {
+    font-family: var(--ep-font-mono);
+}
+
+/* 鍵盤焦點一律可見，且不依賴顏色以外的線索（外框 + 偏移）。 */
+:focus-visible {
+    outline: 2px solid var(--ep-focus);
+    outline-offset: 2px;
+}
+
+/* 略過導覽：鍵盤使用者第一個 Tab 就能跳到主要內容。 */
+.ep-skip-link {
+    position: absolute;
+    inset-inline-start: var(--ep-space-4);
+    inset-block-start: calc(var(--ep-space-12) * -2);
+    z-index: 2000;
+    padding: var(--ep-space-2) var(--ep-space-4);
+    background: var(--ep-primary);
+    color: var(--ep-on-primary);
+    border-radius: var(--ep-radius-control);
+}
+
+.ep-skip-link:focus {
+    inset-block-start: var(--ep-space-4);
+}
+
+/* 頂欄是半透明的功能層，內容從底下捲過；材質的輕重表達層級，而不是一條不透明的色帶。 */
+.ep-appbar.mud-appbar {
+    background: color-mix(in srgb, var(--ep-surface) 72%, transparent);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-block-end: 1px solid var(--ep-border-subtle);
+    color: var(--ep-text);
+    box-shadow: none;
+}
+
+.ep-brand {
+    font-weight: 700;
+    letter-spacing: var(--ep-h3-tracking);
+}
+
+.ep-card {
+    background: var(--ep-surface);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    box-shadow: var(--ep-elevation-1);
+    padding: var(--ep-space-6);
+}
+
+/* 頁首：標題、說明、右側動作。大字收緊字距、小字略放寬——見 DesignTokens 的字級階層。 */
+.ep-page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--ep-space-4);
+    margin-block-end: var(--ep-space-6);
+}
+
+.ep-page-title {
+    margin: 0;
+    font-size: var(--ep-h1-size);
+    line-height: var(--ep-h1-leading);
+    letter-spacing: var(--ep-h1-tracking);
+    font-weight: var(--ep-h1-weight);
+}
+
+.ep-page-description {
+    margin: var(--ep-space-1) 0 0;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-body-sm-size);
+    line-height: var(--ep-body-sm-leading);
+    letter-spacing: var(--ep-body-sm-tracking);
+}
+
+.ep-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ep-space-3);
+    padding-block: var(--ep-space-12);
+    text-align: center;
+    color: var(--ep-text-secondary);
+}
+
+.ep-empty-title {
+    margin: 0;
+    color: var(--ep-text);
+    font-size: var(--ep-h3-size);
+    line-height: var(--ep-h3-leading);
+    letter-spacing: var(--ep-h3-tracking);
+    font-weight: var(--ep-h3-weight);
+}
+
+/* 匿名頁（已登出、無權限）：置中的單張卡片，不顯示導覽。 */
+.ep-anon {
+    min-block-size: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: var(--ep-space-4);
+}
+
+.ep-anon .ep-card {
+    inline-size: min(100%, 28rem);
+}
+
+/* 互動回饋在按下的當下（不是放開）。 */
+.mud-button-root:active {
+    transform: scale(0.98);
+}
+
+.mud-button-root {
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease);
+}
+
+/* 使用者要求減少動態：改成不位移的淡入淡出，不留彈跳或縮放。 */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .mud-button-root:active {
+        transform: none;
+    }
+}
+
+/* 使用者要求減少透明：實心表面，不模糊。 */
+@media (prefers-reduced-transparency: reduce) {
+    .ep-appbar.mud-appbar {
+        background: var(--ep-surface);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
+/* 使用者要求較高對比：實心表面與明確的邊框。 */
+@media (prefers-contrast: more) {
+    .ep-appbar.mud-appbar {
+        background: var(--ep-surface);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        border-block-end-color: var(--ep-border-control);
+    }
+
+    .ep-card {
+        border-color: var(--ep-border-control);
+    }
+}

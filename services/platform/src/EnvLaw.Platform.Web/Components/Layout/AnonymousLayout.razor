@@ -1,0 +1,11 @@
+@inherits LayoutComponentBase
+
+@* 還沒登入（或已登出、無權限）的頁面：置中的單張卡片，沒有導覽。 *@
+<PlatformProviders />
+
+<main class="ep-anon" id="main">
+    <div class="ep-card">
+        <p class="ep-brand">env-law platform</p>
+        @Body
+    </div>
+</main>

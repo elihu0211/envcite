@@ -1,0 +1,22 @@
+@* 主題與 MudBlazor 的各個 provider。全站互動，所以放在版面裡；MudBlazor 要求它們與使用者元件在同一個 render mode。
+   深色模式跟隨系統，系統切換時即時跟著變。 *@
+<MudThemeProvider @ref="_provider" Theme="Theme" @bind-IsDarkMode="_dark" ObserveSystemDarkModeChange="true" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@code {
+    private static readonly MudTheme Theme = PlatformTheme.Create();
+
+    private MudThemeProvider? _provider;
+    private bool _dark;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _provider is not null)
+        {
+            _dark = await _provider.GetSystemDarkModeAsync();
+            StateHasChanged();
+        }
+    }
+}

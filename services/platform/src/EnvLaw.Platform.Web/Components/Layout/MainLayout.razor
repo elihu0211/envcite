@@ -1,14 +1,15 @@
 @inherits LayoutComponentBase
 
-@* 全站互動，provider 放在這裡；MudBlazor 要求它們與使用者元件在同一個 render mode。 *@
-<MudThemeProvider />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
+@* 營運者後台的外殼：頂欄（半透明、內容從底下捲過）、左側導覽、主要內容。 *@
+<PlatformProviders />
+
+<a class="ep-skip-link" href="#main">跳到主要內容</a>
 
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudText Typo="Typo.h6">env-law platform</MudText>
+    <MudAppBar Class="ep-appbar" Elevation="0">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       aria-label="開關導覽選單" OnClick="() => _drawerOpen = !_drawerOpen" />
+        <span class="ep-brand">env-law platform</span>
         <MudSpacer />
         <AuthorizeView>
             <Authorized>
@@ -20,9 +21,18 @@
             </Authorized>
         </AuthorizeView>
     </MudAppBar>
-    <MudMainContent>
+
+    <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" Elevation="0">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent id="main" tabindex="-1">
         <MudContainer MaxWidth="MaxWidth.Large" Class="my-6">
             @Body
         </MudContainer>
     </MudMainContent>
 </MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+}

@@ -1,0 +1,25 @@
+@* 每個頁面的頁首：標題（h1）、一句說明、右側動作。頁面不自己排標題，外觀才會一致。 *@
+<header class="ep-page-header">
+    <div>
+        <h1 class="ep-page-title">@Title</h1>
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <p class="ep-page-description">@Description</p>
+        }
+    </div>
+    @if (Actions is not null)
+    {
+        <div>@Actions</div>
+    }
+</header>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+}

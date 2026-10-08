@@ -1,0 +1,28 @@
+@* 沒有資料時的畫面：說明現在是什麼狀態、下一步可以做什麼，而不是一片空白。 *@
+<div class="ep-empty">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <MudIcon Icon="@Icon" Size="Size.Large" Color="Color.Default" aria-hidden="true" />
+    }
+    <h2 class="ep-empty-title">@Title</h2>
+    @if (!string.IsNullOrEmpty(Description))
+    {
+        <p>@Description</p>
+    }
+    @ChildContent
+</div>
+
+@code {
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    /// <summary>下一步的動作（按鈕或連結）。</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}
