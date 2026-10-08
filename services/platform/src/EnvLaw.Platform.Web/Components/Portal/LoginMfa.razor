@@ -1,0 +1,46 @@
+@page "/portal/{Tenant}/login/mfa"
+@layout PortalLayout
+@attribute [ExcludeFromInteractiveRouting]
+@attribute [EnableRateLimiting(PlatformAuth.PortalSignInRateLimit)]
+@attribute [AllowAnonymous]
+
+<PageTitle>第二步驗證 · env-law</PageTitle>
+
+<section class="ep-card ep-portal-card" aria-labelledby="mfa-title">
+    <h1 id="mfa-title" class="ep-page-title">第二步驗證</h1>
+    @if (Recovery)
+    {
+        <p class="ep-page-description">輸入一組復原碼。每一組只能用一次。</p>
+    }
+    else
+    {
+        <p class="ep-page-description">打開手機上的驗證器 App，輸入現在顯示的六位數。</p>
+    }
+
+    @if (_error is not null)
+    {
+        @* 與登入同一個原則：不說是碼錯、過期還是帳號被鎖。 *@
+        <p class="ep-alert ep-alert-error" role="alert">@_error</p>
+    }
+
+    <EditForm Model="Input" FormName="portal-mfa" OnValidSubmit="VerifyAsync" method="post" class="ep-form">
+        <div class="ep-field-row">
+            <label for="code" class="ep-label">@(Recovery ? "復原碼" : "驗證碼")</label>
+            <InputText id="code" @bind-Value="Input.Code" class="ep-input" required autofocus autocomplete="one-time-code"
+                       inputmode="@(Recovery ? "text" : "numeric")" maxlength="@(Recovery ? 40 : 10)" />
+        </div>
+        <button type="submit" class="ep-btn ep-btn-primary">驗證</button>
+    </EditForm>
+
+    <p class="ep-note">
+        @if (Recovery)
+        {
+            <a href="@Link(recovery: false)">改用驗證器的六位數</a>
+        }
+        else
+        {
+            <a href="@Link(recovery: true)">手機不在身邊？用復原碼</a>
+        }
+        　·　<a href="@PortalPaths.Login(Tenant)">重新輸入密碼</a>
+    </p>
+</section>

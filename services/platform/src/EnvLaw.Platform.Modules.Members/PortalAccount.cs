@@ -16,6 +16,7 @@ namespace EnvLaw.Platform.Modules.Members;
 internal sealed class PortalAccount(
     UserManager<ApplicationUser> users,
     SignInManager<ApplicationUser> signIn,
+    MfaPendingCookie pending,
     IMultiTenantContextAccessor<TenantInfo> tenant,
     IAuditLog audit) : IPortalAccount
 {
@@ -41,19 +42,37 @@ internal sealed class PortalAccount(
             return PortalSignInStatus.Failed;
         }
 
-        var result = await signIn.PasswordSignInAsync(user, password ?? string.Empty, isPersistent: false, lockoutOnFailure: true);
-        if (!result.Succeeded)
+        // 自己做鎖定的記帳，不用 PasswordSignInAsync：它在密碼對的時候把失敗計數歸零，
+        // 而有兩步驟驗證的帳號，密碼對之後還要過第二步——歸零了，知道密碼的人就能每輪重新輸入密碼，
+        // 無限次猜六位數。所以這裡密碼對不歸零，要等第二步也過了才歸零。
+        if (await users.IsLockedOutAsync(user) || !await users.CheckPasswordAsync(user, password ?? string.Empty))
         {
+            var locked = await users.IsLockedOutAsync(user);
+            if (!locked)
+            {
+                await users.AccessFailedAsync(user);
+                locked = await users.IsLockedOutAsync(user);
+            }
+
             await audit.AppendAsync(
                 new ClaimsPrincipal(),
                 new AuditEntry(AuditActions.PortalSignInFailed, info.Id, "member", user.Id, new Dictionary<string, object?>
                 {
-                    ["reason"] = result.IsLockedOut ? "locked_out" : "bad_password",
+                    ["reason"] = locked ? "locked_out" : "bad_password",
                 }),
                 cancellationToken);
             return PortalSignInStatus.Failed;
         }
 
+        if (user.TwoFactorEnabled)
+        {
+            // 還不簽發登入 cookie：只給一張只能用來輸入第二步驗證碼的暫存憑證。
+            await pending.IssueAsync(user);
+            return PortalSignInStatus.RequiresTwoFactor;
+        }
+
+        await users.ResetAccessFailedCountAsync(user);
+        await signIn.SignInAsync(user, isPersistent: false);
         await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalSignedIn, info.Id, "member", user.Id), cancellationToken);
         return user.MustChangePassword ? PortalSignInStatus.MustChangePassword : PortalSignInStatus.Succeeded;
     }

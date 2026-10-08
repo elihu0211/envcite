@@ -34,6 +34,17 @@
             </dd>
             <dt>電子郵件</dt><dd>@Email</dd>
             <dt>角色</dt><dd>@RoleLabel</dd>
+            <dt>兩步驟驗證</dt>
+            <dd>
+                @if (_twoFactor)
+                {
+                    <span>已啟用</span>
+                }
+                else
+                {
+                    <span>尚未啟用。</span> <a href="@($"{PortalPaths.Home(Tenant)}/security")">設定</a>
+                }
+            </dd>
         </dl>
     </section>
 

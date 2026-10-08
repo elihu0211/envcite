@@ -18,4 +18,11 @@ public sealed class ApplicationUser : IdentityUser
     /// 為 true 時入口只開放改密碼頁。
     /// </summary>
     public bool MustChangePassword { get; set; }
+
+    /// <summary>
+    /// 最近一次被接受的 TOTP 時間步（RFC 6238 §5.2）：只接受比它更新的步，所以同一組六位數碼不能用第二次
+    /// （旁觀者在三十秒內看到的碼不能重放）。以 <c>UPDATE … WHERE LastTotpStep &lt; @step</c> 原子更新，
+    /// 同時送出的兩個相同請求只有一個會成功。
+    /// </summary>
+    public long LastTotpStep { get; set; }
 }

@@ -18,10 +18,13 @@ public partial class Home
 
     [Inject] private IApiKeyAdmin Keys { get; set; } = default!;
 
+    [Inject] private IPortalTwoFactor TwoFactor { get; set; } = default!;
+
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
     private TenantSummary? _tenant;
     private IReadOnlyList<ApiKeyInfo> _keys = [];
+    private bool _twoFactor;
 
     private ClaimsPrincipal User => HttpContext.User;
 
@@ -42,6 +45,7 @@ public partial class Home
             return;
         }
 
+        _twoFactor = await TwoFactor.IsEnabledAsync(User, HttpContext.RequestAborted);
         _tenant = await Directory.FindAsync(current.Id, HttpContext.RequestAborted);
         if (CanSeeKeys)
         {

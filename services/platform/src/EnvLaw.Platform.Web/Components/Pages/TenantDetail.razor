@@ -160,6 +160,11 @@ else
                                 <td class="ep-keep">@member.Email@(member.DisplayName is null ? "" : $"（{member.DisplayName}）")</td>
                                 <td data-label="角色">@PortalLabels.Role(member.Role)</td>
                                 <td data-label="狀態">
+                                    @if (member.TwoFactorEnabled)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                                                 Icon="@Icons.Material.Filled.Security">兩步驟</MudChip>
+                                    }
                                     @if (member.LockedOut)
                                     {
                                         <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
@@ -179,6 +184,11 @@ else
                                 <td>
                                     <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
                                                aria-label="@($"重設 {member.Email} 的密碼")" OnClick="() => ResetPasswordAsync(member)">重設密碼</MudButton>
+                                    @if (member.TwoFactorEnabled)
+                                    {
+                                        <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
+                                                   aria-label="@($"重設 {member.Email} 的兩步驟驗證")" OnClick="() => ResetTwoFactorAsync(member)">重設兩步驟</MudButton>
+                                    }
                                 </td>
                             </tr>
                         }

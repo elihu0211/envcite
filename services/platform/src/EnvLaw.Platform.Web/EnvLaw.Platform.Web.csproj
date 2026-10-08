@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
     <PackageReference Include="MudBlazor" />
+    <PackageReference Include="Net.Codecrete.QrCodeGenerator" />
   </ItemGroup>
 
 </Project>

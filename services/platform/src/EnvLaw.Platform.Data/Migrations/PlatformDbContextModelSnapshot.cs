@@ -95,6 +95,9 @@ namespace EnvLaw.Platform.Data.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<long>("LastTotpStep")
+                        .HasColumnType("bigint");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 

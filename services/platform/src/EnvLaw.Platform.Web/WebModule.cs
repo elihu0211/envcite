@@ -70,6 +70,8 @@ public static class WebModule
         {
             if (context.Request.Path.StartsWithSegments(PortalPaths.Prefix))
             {
+                // 入口的頁面含個人資料、驗證器金鑰與復原碼：瀏覽器與中間的快取都不能留。
+                context.Response.Headers.CacheControl = "no-store";
                 var result = await context.AuthenticateAsync(PlatformAuth.PortalCookieScheme);
                 if (result.Principal is not null)
                 {

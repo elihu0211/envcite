@@ -47,6 +47,16 @@ public static class MembersModule
             .AddClaimsPrincipalFactory<PortalClaimsPrincipalFactory>();
 
         services.AddAuthentication()
+            .AddCookie(MfaPendingCookie.Scheme, cookie =>
+            {
+                // 「密碼已通過、等第二步」：五分鐘、不滑動，不是登入 cookie（入口的授權不認這個 scheme）。
+                cookie.Cookie.Name = "EnvLaw.PortalMfa";
+                cookie.Cookie.HttpOnly = true;
+                cookie.Cookie.SameSite = SameSiteMode.Lax;
+                cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                cookie.ExpireTimeSpan = MfaPendingCookie.Lifetime;
+                cookie.SlidingExpiration = false;
+            })
             .AddCookie(PlatformAuth.PortalCookieScheme, cookie =>
             {
                 cookie.Cookie.Name = "EnvLaw.Portal";
@@ -71,7 +81,11 @@ public static class MembersModule
                 .RequireAuthenticatedUser()
                 .AddRequirements(new PortalMemberRequirement(AllowPasswordChangePending: false)));
 
+        services.AddHttpContextAccessor();
+        services.AddScoped<MfaPendingCookie>();
+        services.AddScoped<TotpVerifier>();
         services.AddScoped<IPortalAccount, PortalAccount>();
+        services.AddScoped<IPortalTwoFactor, PortalTwoFactor>();
         services.AddSingleton<IMemberAdmin, MemberAdmin>();
 
         return services;

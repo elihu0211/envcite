@@ -23,6 +23,11 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes, TimeProvider time
     private const string PasswordAlphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private const int InitialPasswordLength = 16;
 
+    // Identity 把驗證器金鑰與復原碼存成使用者的 token（固定的提供者名稱與 token 名稱）。
+    private const string TwoFactorTokenProvider = "[AspNetUserStore]";
+    private const string AuthenticatorKeyToken = "AuthenticatorKey";
+    private const string RecoveryCodesToken = "RecoveryCodes";
+
     public async Task<AdminOutcome<IReadOnlyList<MemberInfo>>> ListAsync(string tenantId, CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
@@ -138,6 +143,44 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes, TimeProvider time
         return AdminOutcome.Ok(new IssuedPassword(Info(user, time.GetUtcNow()), password));
     }
 
+    public async Task<AdminOutcome<MemberInfo>> ResetTwoFactorAsync(
+        ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        if (await FindTenantAsync(scope, tenantId) is not { } tenant)
+        {
+            return AdminOutcome.NotFound<MemberInfo>("Tenant not found.");
+        }
+
+        Bind(scope, tenant);
+
+        // 租戶的查詢濾鏡讓別的租戶的人在這裡找不到。
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await users.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return AdminOutcome.NotFound<MemberInfo>("Member not found.");
+        }
+
+        await users.SetTwoFactorEnabledAsync(user, false);
+        await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokenProvider, AuthenticatorKeyToken);
+        await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokenProvider, RecoveryCodesToken);
+        user.LastTotpStep = 0;
+        user.AccessFailedCount = 0;
+        user.LockoutEnd = null;
+        await users.UpdateAsync(user);
+
+        // 讓既有的 session 失效：會需要重設通常是因為裝置遺失，可能已落入他人手中。
+        await users.UpdateSecurityStampAsync(user);
+
+        await scope.ServiceProvider.GetRequiredService<IAuditLog>().AppendAsync(
+            actor,
+            new AuditEntry(AuditActions.MemberMfaReset, tenant.Id, "member", user.Id, new Dictionary<string, object?> { ["email"] = user.Email }),
+            cancellationToken);
+
+        return AdminOutcome.Ok(Info(user, time.GetUtcNow()));
+    }
+
     private static async Task<TenantInfo?> FindTenantAsync(AsyncServiceScope scope, string tenantId) =>
         await scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>().GetAsync(tenantId);
 
@@ -158,5 +201,5 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes, TimeProvider time
         && parsed.Address == email.Trim();
 
     private static MemberInfo Info(ApplicationUser u, DateTimeOffset now) =>
-        new(u.Id, u.Email ?? string.Empty, u.DisplayName, u.Role, u.MustChangePassword, u.LockoutEnd is { } end && end > now);
+        new(u.Id, u.Email ?? string.Empty, u.DisplayName, u.Role, u.MustChangePassword, u.LockoutEnd is { } end && end > now, u.TwoFactorEnabled);
 }
