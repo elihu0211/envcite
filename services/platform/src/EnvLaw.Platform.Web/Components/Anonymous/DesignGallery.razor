@@ -6,8 +6,33 @@
    所有顏色、字級都取自 token（--ep-*），這裡不寫任何值。 *@
 <PageTitle>元件展示 · env-law</PageTitle>
 
-<PortalShell TenantName="展示租戶" UserEmail="owner@example.test" ShowNav="true" Items="@_nav">
-    <PageHeader Title="元件展示" Description="只在 Development 看得到。改 DesignTokens.cs 之後，在這裡看每個元件在手機、平板、桌機的樣子。" />
+<PortalShell TenantName="展示租戶" HomeHref="/design" UserEmail="owner@example.test" RoleLabel="擁有者" AvatarText="O" ShowMenu="true" MenuItems="@_menu">
+    <PageHeader Title="元件展示" Description="只在 Development 看得到。改 DesignTokens.cs 之後，在這裡看每個元件在手機、平板、桌機的樣子；右上角的頭像是帳號選單。" />
+
+    <section class="ep-card" aria-labelledby="g-ask">
+        <h2 id="g-ask" class="ep-section-title">問答</h2>
+        <div class="ep-thread">
+            <p class="ep-bubble">噪音管制標準 <span class="ep-bubble-meta">現行</span></p>
+            <div class="ep-answer">
+                <p class="ep-status">找到 1 條（相關度高的在前）。</p>
+                <article class="ep-card ep-hit">
+                    <h2 class="ep-section-title">《噪音管制法》第 8 條</h2>
+                    <p class="ep-hit-body">條文內文保留原本的換行（項、款、目），引用可以直接複製。</p>
+                    <p class="ep-hint">引用：《噪音管制法》第 8 條（現行）</p>
+                </article>
+            </div>
+        </div>
+        <div class="ep-composer-form">
+            <div class="ep-composer">
+                <input class="ep-composer-input" type="search" placeholder="輸入關鍵字，例如：噪音管制標準" aria-label="關鍵字" />
+                <button type="button" class="ep-send" aria-label="搜尋"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
+            </div>
+            <div class="ep-examples">
+                <button type="button" class="ep-chip">固定污染源</button>
+                <button type="button" class="ep-chip">廢棄物清理</button>
+            </div>
+        </div>
+    </section>
 
     <section class="ep-card" aria-labelledby="g-color">
         <h2 id="g-color" class="ep-section-title">色彩</h2>
@@ -112,11 +137,12 @@
         ("body-sm", "小字：說明與表格"), ("caption", "註記"), ("micro", "最小字級"),
     ];
 
-    private static readonly IReadOnlyList<PortalShell.NavItem> _nav =
+    private static readonly IReadOnlyList<PortalShell.MenuItem> _menu =
     [
-        new("/design", "總覽", Icons.Material.Outlined.Dashboard, NavLinkMatch.All),
-        new("#search", "搜尋法規", Icons.Material.Outlined.Search),
-        new("#members", "成員", Icons.Material.Outlined.Group),
-        new("#security", "兩步驟驗證", Icons.Material.Outlined.Security),
+        new("/design", "查詢法規"),
+        new("#account", "帳號與組織"),
+        new("#members", "成員"),
+        new("#security", "兩步驟驗證"),
+        new("#password", "改密碼"),
     ];
 }

@@ -136,14 +136,63 @@ public sealed class PortalSearchTests(PlatformFactory factory)
         Assert.DoesNotContain(logs.Messages, m => m.Contains("排放爭議", StringComparison.Ordinal));
     }
 
+    private static string Html(string html) => WebUtility.HtmlDecode(html);
+
+    // 問答為主：首頁就是輸入框（置中的招呼、輸入框、範例），不再是一頁總覽。
     [Fact]
-    public async Task TheHomePageLinksToSearch()
+    public async Task TheHomePageIsTheAskPageWithAComposerAndExamples()
     {
         using var browser = new PortalBrowser(factory);
         var (tenant, _, _) = await SignedUpAsync("ps-g", browser);
 
         var home = await browser.GetAsync(Home(tenant.Identifier));
+        var search = await browser.GetAsync(SearchPage(tenant.Identifier));
 
-        Assert.Contains($"href=\"{SearchPage(tenant.Identifier)}\"", home.Html, StringComparison.Ordinal);
+        foreach (var page in new[] { home, search }) // 兩個網址是同一個頁面
+        {
+            Assert.Equal(HttpStatusCode.OK, page.Status);
+            var html = Html(page.Html);
+            Assert.Contains("data-state=\"empty\"", html, StringComparison.Ordinal);
+            Assert.Contains("class=\"ep-composer\"", html, StringComparison.Ordinal);
+            Assert.Contains("想查哪一條法規", html, StringComparison.Ordinal);
+            Assert.Contains("name=\"Input.Example\" value=\"噪音管制標準\"", html, StringComparison.Ordinal);
+        }
+    }
+
+    // 範例鈕不需要先打字：直接送出那個詞。
+    [Fact]
+    public async Task AnExampleButtonSearchesWithoutTyping()
+    {
+        using var browser = new PortalBrowser(factory);
+        var (tenant, _, _) = await SignedUpAsync("ps-h", browser);
+
+        var results = await browser.SubmitAsync(Home(tenant.Identifier), new Dictionary<string, string>
+        {
+            ["Input.Query"] = string.Empty,
+            ["Input.Example"] = "噪音管制標準",
+            ["Input.AsOf"] = string.Empty,
+        });
+
+        Assert.Equal(HttpStatusCode.OK, results.Status);
+        Assert.Equal("噪音管制標準", factory.Ontology.LastSearch!.Query);
+        Assert.Contains("找到 1 條", results.Html, StringComparison.Ordinal);
+    }
+
+    // 像聊天：你的問題成了一個氣泡，答案在下面，輸入框清空（範例鈕不再出現）、日期留著接著問。
+    [Fact]
+    public async Task AskingShowsYourQuestionThenTheAnswerAndAClearedComposerThatKeepsTheDate()
+    {
+        using var browser = new PortalBrowser(factory);
+        var (tenant, _, _) = await SignedUpAsync("ps-i", browser);
+
+        var results = await browser.SubmitAsync(Home(tenant.Identifier), Query("噪音管制標準", "2021-01-01"));
+
+        var html = Html(results.Html);
+        Assert.Contains("data-state=\"result\"", html, StringComparison.Ordinal);
+        Assert.Matches("<p class=\"ep-bubble\">\\s*噪音管制標準", html);
+        Assert.Contains("《空氣污染防制法》第 5-1 條", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("value=\"噪音管制標準\"", html, StringComparison.Ordinal); // 輸入框清空了
+        Assert.DoesNotContain("ep-examples", html, StringComparison.Ordinal);
+        Assert.Contains("value=\"2021-01-01\"", html, StringComparison.Ordinal);
     }
 }

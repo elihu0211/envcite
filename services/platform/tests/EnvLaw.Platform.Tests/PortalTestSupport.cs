@@ -16,6 +16,8 @@ internal static class PortalTestSupport
 
     public static string PasswordPage(string tenant) => $"/portal/{tenant}/password";
 
+    public static string AccountPage(string tenant) => $"/portal/{tenant}/account";
+
     public static Dictionary<string, string> Credentials(string email, string password) =>
         new() { ["Input.Email"] = email, ["Input.Password"] = password };
 

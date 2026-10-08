@@ -385,10 +385,6 @@ a:where(:not([class*="mud-"])) {
     padding-block-end: env(safe-area-inset-bottom);
 }
 
-.mud-drawer {
-    padding-block-start: env(safe-area-inset-top);
-}
-
 /* 窄的卡片（約手機寬）：表格改成一列一張小卡片，不橫向捲動。
    每一列直排，最後一格（操作、展開）靠右、與第一行對齊；欄位標籤用 data-label 補上。 */
 @container ep-table (max-width: 36rem) {
@@ -503,24 +499,16 @@ a:where(:not([class*="mud-"])) {
  * 只引用 token；表單控制項的外觀（高度、邊框、焦點）集中在這裡。 */
 
 /* ---- 客戶入口的外殼 ---------------------------------------------------------------------------
- * 同一個 <nav> 三種版面（由 CSS 決定，沒有 JavaScript）：
- *   手機（< 48rem）  底部分頁列：圖示在上、文字在下，平均分寬，避開手機底部的安全區。
- *   平板（48rem 起） 左側窄欄：圖示在上、文字在下。
- *   桌機（80rem 起） 左側完整側欄：圖示與文字並排。
- * 頂欄是半透明的功能層（材質的輕重表達層級）；導覽是較實的一層。
+ * 一條頂欄加主要內容，沒有側欄也沒有分頁列：問答是主要的事，其他功能收在右上角的帳號選單（原生 popover）。
+ * 頂欄是半透明的功能層（材質的輕重表達層級），內容從底下捲過。
  */
 .ep-shell {
     min-block-size: 100dvh;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
-    grid-template-areas:
-        "top"
-        "main";
+    display: flex;
+    flex-direction: column;
 }
 
 .ep-shell-top {
-    grid-area: top;
     position: sticky;
     inset-block-start: 0;
     z-index: 10;
@@ -539,13 +527,15 @@ a:where(:not([class*="mud-"])) {
 }
 
 .ep-shell-main {
-    grid-area: main;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     min-inline-size: 0;
     inline-size: 100%;
     max-inline-size: 60rem;
     margin-inline: auto;
     box-sizing: border-box;
-    padding: var(--ep-space-6) max(var(--ep-space-4), env(safe-area-inset-left)) var(--ep-space-8) max(var(--ep-space-4), env(safe-area-inset-right));
+    padding: var(--ep-space-6) max(var(--ep-space-4), env(safe-area-inset-left)) max(var(--ep-space-8), env(safe-area-inset-bottom)) max(var(--ep-space-4), env(safe-area-inset-right));
 }
 
 /* 頁面的直接子區塊（卡片、提示）之間統一的垂直節奏；頁首自己有下邊距。 */
@@ -553,62 +543,12 @@ a:where(:not([class*="mud-"])) {
     margin-block-start: var(--ep-space-4);
 }
 
-/* 手機：導覽固定在底部，內容底部留出它的高度。 */
-.ep-nav {
-    grid-area: nav;
-    position: fixed;
-    inset-inline: 0;
-    inset-block-end: 0;
-    z-index: 10;
-    display: flex;
-    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
-    padding-block-end: env(safe-area-inset-bottom);
-    background: var(--ep-surface);
-    border-block-start: 1px solid var(--ep-border-subtle);
-}
-
-.ep-shell[data-nav="on"] .ep-shell-main {
-    padding-block-end: calc(var(--ep-space-8) + var(--ep-nav-height) + env(safe-area-inset-bottom));
-}
-
-.ep-nav-link {
-    flex: 1 1 0;
-    min-inline-size: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--ep-space-1);
-    min-block-size: var(--ep-nav-height);
-    box-sizing: border-box;
-    padding: var(--ep-space-2) var(--ep-space-1);
-    color: var(--ep-text-secondary);
-    font-size: var(--ep-micro-size);
-    line-height: var(--ep-micro-leading);
-    letter-spacing: var(--ep-micro-tracking);
-    font-weight: 600;
-    text-align: center;
+a.ep-brand {
+    color: inherit;
     text-decoration: none;
-    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
-.ep-nav-link:active {
-    transform: scale(var(--ep-press-scale));
-    transition-duration: 0s;
-}
-
-.ep-nav-link.active {
-    color: var(--ep-primary);
-    background: color-mix(in srgb, var(--ep-primary) 10%, transparent);
-}
-
-@media (hover: hover) {
-    .ep-nav-link:hover:not(.active) {
-        background: var(--ep-surface-muted);
-        color: var(--ep-text);
-    }
-}
-
+/* 圖示：純裝飾的 SVG，顏色跟著文字（currentColor）。 */
 .ep-icon {
     flex: none;
     inline-size: 1.5rem;
@@ -616,61 +556,337 @@ a:where(:not([class*="mud-"])) {
     fill: currentColor;
 }
 
-/* 平板：左側窄欄。 */
-@media (width >= 48rem) {
-    .ep-shell[data-nav="on"] {
-        grid-template-columns: var(--ep-nav-rail-width) minmax(0, 1fr);
-        grid-template-areas:
-            "top top"
-            "nav main";
-    }
+/* 帳號選單：頭像圓鈕開一個原生 popover（點外面或按 Esc 就關）。 */
+.ep-avatar {
+    flex: none;
+    inline-size: var(--ep-touch-target);
+    block-size: var(--ep-touch-target);
+    padding: 0;
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--ep-primary) 10%, var(--ep-surface));
+    color: var(--ep-primary);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
 
-    .ep-shell[data-nav="on"] .ep-shell-main {
-        padding-block-end: var(--ep-space-8);
-    }
+.ep-avatar:active {
+    transform: scale(var(--ep-press-scale));
+    transition-duration: 0s;
+}
 
-    .ep-nav {
-        position: sticky;
-        inset: auto;
-        inset-block-start: var(--ep-appbar-height);
-        align-self: start;
-        flex-direction: column;
-        gap: var(--ep-space-1);
-        block-size: calc(100dvh - var(--ep-appbar-height));
-        box-sizing: border-box;
-        padding: var(--ep-space-2);
-        padding-inline-start: max(var(--ep-space-2), env(safe-area-inset-left));
-        background: var(--ep-bg);
-        border-block-start: 0;
-        border-inline-end: 1px solid var(--ep-border-subtle);
-    }
+.ep-menu {
+    position: fixed;
+    inset: auto;
+    inset-block-start: calc(var(--ep-appbar-height) - var(--ep-space-1));
+    inset-inline: var(--ep-space-3);
+    margin: 0;
+    box-sizing: border-box;
+    padding: var(--ep-space-2);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-sheet);
+    background: var(--ep-surface);
+    color: var(--ep-text);
+    box-shadow: var(--ep-elevation-3);
+    /* 進場：快起慢收；popover 開關是 display 的離散切換，所以也轉 display 與 overlay。 */
+    opacity: 0;
+    translate: 0 calc(var(--ep-space-1) * -1);
+    transition:
+        opacity var(--ep-motion-fast) var(--ep-motion-ease-enter),
+        translate var(--ep-motion-fast) var(--ep-motion-ease-enter),
+        display var(--ep-motion-fast) allow-discrete,
+        overlay var(--ep-motion-fast) allow-discrete;
+}
 
-    .ep-nav-link {
-        flex: none;
-        border-radius: var(--ep-radius-control);
+.ep-menu:popover-open {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+    opacity: 1;
+    translate: 0 0;
+}
+
+@starting-style {
+    .ep-menu:popover-open {
+        opacity: 0;
+        translate: 0 calc(var(--ep-space-1) * -1);
     }
 }
 
-/* 桌機：左側完整側欄，圖示與文字並排。 */
+.ep-menu-who {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: var(--ep-space-2) var(--ep-space-3);
+    overflow-wrap: anywhere;
+    font-size: var(--ep-body-sm-size);
+    border-block-end: 1px solid var(--ep-border-subtle);
+}
+
+.ep-menu nav {
+    display: flex;
+    flex-direction: column;
+}
+
+.ep-menu form {
+    margin: 0;
+}
+
+.ep-menu-item {
+    display: flex;
+    align-items: center;
+    inline-size: 100%;
+    box-sizing: border-box;
+    min-block-size: var(--ep-touch-target);
+    padding: var(--ep-space-2) var(--ep-space-3);
+    border: 0;
+    border-radius: var(--ep-radius-control);
+    background: transparent;
+    color: var(--ep-text);
+    font: inherit;
+    justify-content: flex-start; /* <button> 預設置中，和連結對齊 */
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .ep-menu-item:hover {
+        background: var(--ep-surface-muted);
+    }
+}
+
+@media (width >= 48rem) {
+    .ep-menu {
+        inset-inline: auto max(var(--ep-space-4), env(safe-area-inset-right));
+        min-inline-size: 16rem;
+    }
+}
+
+/* ---- 問答 --------------------------------------------------------------------------------------
+ * 還沒問：招呼加輸入框，垂直置中。問了之後：你的問題 → 找到的條文，輸入框黏在底部接著問。
+ */
+.ep-ask {
+    --ep-ask-width: 40rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    inline-size: 100%;
+    max-inline-size: var(--ep-ask-width);
+    margin-inline: auto;
+}
+
+.ep-ask[data-state="empty"] {
+    justify-content: center;
+    gap: var(--ep-space-6);
+    padding-block-end: var(--ep-space-12);
+}
+
+.ep-ask-hero {
+    text-align: center;
+}
+
+.ep-ask-title {
+    margin: 0;
+    font-size: var(--ep-display-size);
+    line-height: var(--ep-display-leading);
+    letter-spacing: var(--ep-display-tracking);
+    font-weight: var(--ep-display-weight);
+}
+
+.ep-ask-lead {
+    margin: var(--ep-space-2) 0 0;
+    color: var(--ep-text-secondary);
+}
+
+.ep-thread {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-4);
+    padding-block-end: var(--ep-space-4);
+}
+
+/* 你的問題：靠右的氣泡，主色一成的淡底，文字仍是主要文字色。 */
+.ep-bubble {
+    align-self: flex-end;
+    max-inline-size: 85%;
+    margin: 0;
+    padding: var(--ep-space-3) var(--ep-space-4);
+    border-radius: var(--ep-radius-sheet) var(--ep-radius-sheet) var(--ep-radius-control) var(--ep-radius-sheet);
+    background: color-mix(in srgb, var(--ep-primary) 10%, var(--ep-surface));
+    overflow-wrap: anywhere;
+}
+
+.ep-bubble-meta {
+    display: block;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-caption-size);
+    letter-spacing: var(--ep-caption-tracking);
+}
+
+.ep-answer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-3);
+}
+
+.ep-answer > .ep-alert,
+.ep-answer > .ep-status {
+    margin: 0;
+}
+
+/* 輸入框：一個大圓角的容器，右側圓形送出鈕。問了之後黏在底部，內容從底下捲過。 */
+.ep-composer-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-2);
+}
+
+.ep-ask[data-state="result"] .ep-composer-form {
+    position: sticky;
+    inset-block-end: 0;
+    padding-block: var(--ep-space-3) max(var(--ep-space-3), env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--ep-bg) 85%, transparent);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+}
+
+.ep-composer {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    padding: var(--ep-space-2) var(--ep-space-2) var(--ep-space-2) var(--ep-space-4);
+    border: 1px solid var(--ep-border-control);
+    border-radius: var(--ep-radius-sheet);
+    background: var(--ep-surface);
+    box-shadow: var(--ep-elevation-1);
+}
+
+.ep-composer:focus-within {
+    outline: 2px solid var(--ep-focus);
+    outline-offset: 2px;
+}
+
+.ep-composer-input {
+    flex: 1;
+    min-inline-size: 0;
+    min-block-size: var(--ep-touch-target);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ep-text);
+    font: inherit;
+}
+
+.ep-composer-input:focus,
+.ep-composer-input:focus-visible {
+    outline: none; /* 焦點環畫在整個輸入框容器上（:focus-within） */
+}
+
+.ep-send {
+    flex: none;
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-touch-target);
+    block-size: var(--ep-touch-target);
+    padding: 0;
+    border: 0;
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-primary);
+    color: var(--ep-on-primary);
+    cursor: pointer;
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-send:active {
+    transform: scale(var(--ep-press-scale));
+    transition-duration: 0s;
+}
+
+@media (hover: hover) {
+    .ep-send:hover {
+        background: color-mix(in srgb, var(--ep-primary) 88%, var(--ep-text));
+    }
+}
+
+.ep-composer-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2) var(--ep-space-3);
+}
+
+.ep-ask-note {
+    margin: 0;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-caption-size);
+    line-height: var(--ep-caption-leading);
+    letter-spacing: var(--ep-caption-tracking);
+    text-align: center;
+}
+
+.ep-date-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    padding-inline: var(--ep-space-3);
+    min-block-size: var(--ep-touch-target);
+    border: 1px solid var(--ep-border-control);
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-surface);
+    font-size: var(--ep-body-sm-size);
+}
+
+.ep-date-chip input {
+    border: 0;
+    background: transparent;
+    color: var(--ep-text);
+    font: inherit;
+}
+
+.ep-examples {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--ep-space-2);
+    margin-block-start: var(--ep-space-2);
+}
+
+.ep-chip {
+    min-block-size: var(--ep-touch-target);
+    padding-inline: var(--ep-space-4);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-surface);
+    color: var(--ep-text);
+    font: inherit;
+    font-size: var(--ep-body-sm-size);
+    cursor: pointer;
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-chip:active {
+    transform: scale(var(--ep-press-scale));
+    transition-duration: 0s;
+}
+
+@media (hover: hover) {
+    .ep-chip:hover {
+        border-color: var(--ep-primary);
+    }
+}
+
+/* 桌機：問答區再寬一階，招呼與輸入框之間多一點呼吸。 */
 @media (width >= 80rem) {
-    .ep-shell[data-nav="on"] {
-        grid-template-columns: var(--ep-drawer-width) minmax(0, 1fr);
+    .ep-ask {
+        --ep-ask-width: 46rem;
     }
 
-    .ep-nav {
-        padding: var(--ep-space-4) var(--ep-space-3);
-    }
-
-    .ep-nav-link {
-        flex-direction: row;
-        justify-content: flex-start;
-        gap: var(--ep-space-3);
-        min-block-size: var(--ep-touch-target);
-        padding-inline: var(--ep-space-3);
-        font-size: var(--ep-body-sm-size);
-        line-height: var(--ep-body-sm-leading);
-        letter-spacing: var(--ep-body-sm-tracking);
-        text-align: start;
+    .ep-ask[data-state="empty"] {
+        gap: var(--ep-space-8);
     }
 }
 
@@ -863,6 +1079,12 @@ a:where(:not([class*="mud-"])) {
 }
 
 @media (prefers-reduced-transparency: reduce) {
+    .ep-ask[data-state="result"] .ep-composer-form {
+        background: var(--ep-bg);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
     .ep-shell-top {
         background: var(--ep-surface);
         -webkit-backdrop-filter: none;
@@ -973,4 +1195,38 @@ a:where(:not([class*="mud-"])) {
 
 .ep-type-row {
     margin: var(--ep-space-3) 0 0;
+}
+
+/* ---- 營運後台的導覽：頂欄下方一條分頁列（取代側欄），目前頁底線標示 -------------------------------- */
+.ep-tabs {
+    display: flex;
+    gap: var(--ep-space-1);
+    overflow-x: auto;
+    padding-inline: max(var(--ep-space-4), env(safe-area-inset-left));
+    border-block-end: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface);
+}
+
+.ep-tab {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--ep-touch-target);
+    padding-inline: var(--ep-space-3);
+    border-block-end: 2px solid transparent;
+    color: var(--ep-text-secondary);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-tab.active {
+    color: var(--ep-primary);
+    border-block-end-color: var(--ep-primary);
+}
+
+@media (hover: hover) {
+    .ep-tab:hover:not(.active) {
+        color: var(--ep-text);
+    }
 }

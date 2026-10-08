@@ -1,0 +1,90 @@
+@page "/portal/{Tenant}"
+@page "/portal/{Tenant}/search"
+@layout PortalLayout
+@attribute [ExcludeFromInteractiveRouting]
+@attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+
+<PageTitle>查詢法規 · env-law</PageTitle>
+
+@* 問答為主的首頁：一個輸入框。還沒問時是置中的招呼加輸入框；問了之後是「你的問題 → 找到的條文」，輸入框留在底部接著問。
+   這個系統不執行生成模型：回答是有出處的條文（法規名、條號、查的是哪一天、ELI 網址），不是改寫過的文字。 *@
+<div class="ep-ask" data-state="@(_asked ? "result" : "empty")">
+    @if (!_hasPlan)
+    {
+        <p class="ep-alert ep-alert-info" role="status">
+            你的組織目前沒有方案，不能使用搜尋。請洽我們的業務啟用。
+        </p>
+    }
+    else
+    {
+        @if (!_asked)
+        {
+            <header class="ep-ask-hero">
+                <h1 class="ep-ask-title">@(Name is null ? "你好" : $"你好，{Name}")</h1>
+                <p class="ep-ask-lead">想查哪一條法規？</p>
+            </header>
+        }
+        else
+        {
+            <h1 class="ep-visually-hidden">查詢結果</h1>
+            <div class="ep-thread">
+                <p class="ep-bubble">
+                    @_question
+                    <span class="ep-bubble-meta">@_asOfLabel</span>
+                </p>
+
+                <div class="ep-answer" aria-live="polite">
+                    @if (_error is not null)
+                    {
+                        <p class="ep-alert ep-alert-error" role="alert">@_error</p>
+                    }
+                    else if (_hits is not null)
+                    {
+                        <p class="ep-status" role="status">
+                            @(_hits.Count == 0 ? "沒有符合的條文。試試其他說法，或換一天。" : $"找到 {_hits.Count} 條（相關度高的在前）。")
+                        </p>
+
+                        @foreach (var hit in _hits)
+                        {
+                            <article class="ep-card ep-hit" aria-label="@($"《{hit.LawTitle}》第 {hit.Number} 條")">
+                                <h2 class="ep-section-title">《@hit.LawTitle》第 @hit.Number 條</h2>
+                                <p class="ep-hit-body">@hit.Content</p>
+                                @* 可直接複製的引用：法規名、條號、查的是哪一天、ELI 網址。 *@
+                                <p class="ep-hint">引用：《@hit.LawTitle》第 @hit.Number 條（@_asOfLabel）<code class="ep-mono">@hit.Uri</code></p>
+                            </article>
+                        }
+                    }
+                </div>
+            </div>
+        }
+
+        @* POST：查詢全文是案件內容，不放進網址（網址會被各種日誌記下來）。 *@
+        <EditForm Model="Input" FormName="portal-search" OnValidSubmit="SearchAsync" method="post" class="ep-composer-form">
+            <div class="ep-composer">
+                <label for="query" class="ep-visually-hidden">關鍵字</label>
+                <InputText id="query" @bind-Value="Input.Query" type="search" class="ep-composer-input" maxlength="500" required
+                           autofocus="@(!_asked)" autocomplete="off" enterkeyhint="search"
+                           placeholder="輸入關鍵字，例如：噪音管制標準" aria-describedby="query-hint" />
+                <button type="submit" class="ep-send" aria-label="搜尋"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
+            </div>
+            <div class="ep-composer-options">
+                <label class="ep-date-chip" for="asof">
+                    <span>哪一天有效</span>
+                    <InputText id="asof" @bind-Value="Input.AsOf" type="date" aria-describedby="query-hint" />
+                </label>
+            </div>
+
+            @if (!_asked)
+            {
+                <div class="ep-examples" aria-label="範例">
+                    @foreach (var example in Examples)
+                    {
+                        <button type="submit" name="Input.Example" value="@example" formnovalidate class="ep-chip">@example</button>
+                    }
+                </div>
+            }
+
+            <p id="query-hint" class="ep-ask-note">用條文裡會出現的詞，空白分隔。不填日期就是現行；查行為發生當時適用的條文，請填那一天。查詢文字不會被記錄，只記一次搜尋的次數。</p>
+        </EditForm>
+    }
+</div>

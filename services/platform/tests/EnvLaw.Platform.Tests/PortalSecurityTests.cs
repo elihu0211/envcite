@@ -222,14 +222,14 @@ public sealed class PortalSecurityTests(PlatformFactory factory)
 
         using var viewer = new PortalBrowser(factory);
         await SignInFullyAsync(viewer, tenant.Identifier, viewerEmail, viewerInitial);
-        var viewerHome = await viewer.GetAsync(Home(tenant.Identifier));
+        var viewerHome = await viewer.GetAsync(AccountPage(tenant.Identifier));
         Assert.Contains("唯讀", viewerHome.Html, StringComparison.Ordinal);
         Assert.Contains("不能查看 API key", viewerHome.Html, StringComparison.Ordinal);
         Assert.DoesNotContain(key.ApiKey.Prefix, viewerHome.Html, StringComparison.Ordinal);
 
         using var developer = new PortalBrowser(factory);
         await SignInFullyAsync(developer, tenant.Identifier, developerEmail, developerInitial);
-        var developerHome = await developer.GetAsync(Home(tenant.Identifier));
+        var developerHome = await developer.GetAsync(AccountPage(tenant.Identifier));
         Assert.Contains(key.ApiKey.Prefix, developerHome.Html, StringComparison.Ordinal);
         Assert.DoesNotContain(key.Key, developerHome.Html, StringComparison.Ordinal); // 完整的 key 只在簽發當下出現
     }

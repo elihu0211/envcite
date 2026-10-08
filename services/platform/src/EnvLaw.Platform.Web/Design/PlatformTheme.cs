@@ -14,7 +14,6 @@ public static class PlatformTheme
         LayoutProperties = new LayoutProperties
         {
             DefaultBorderRadius = DesignTokens.Radius["control"],
-            DrawerWidthLeft = DesignTokens.DrawerWidth,
             AppbarHeight = DesignTokens.AppBarHeight,
         },
     };
@@ -26,9 +25,6 @@ public static class PlatformTheme
         palette.Surface = c.Surface;
         palette.AppbarBackground = c.Surface;
         palette.AppbarText = c.Text;
-        palette.DrawerBackground = c.Background;
-        palette.DrawerText = c.Text;
-        palette.DrawerIcon = c.TextSecondary;
         palette.TextPrimary = c.Text;
         palette.TextSecondary = c.TextSecondary;
         palette.Primary = c.Primary;

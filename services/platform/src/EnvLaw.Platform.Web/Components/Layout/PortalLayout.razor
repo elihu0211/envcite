@@ -3,10 +3,13 @@
 
 @* 客戶入口的外殼：靜態渲染（沒有 circuit、沒有互動元件），所以不用 MudBlazor 的元件。外觀與版面見 PortalShell。 *@
 <PortalShell TenantName="@(Account.CurrentTenant is { } tenant ? tenant.Name ?? tenant.Identifier : null)"
-             UserEmail="@_user?.FindFirst(ClaimTypes.Email)?.Value"
-             LogoutAction="@(_user?.Identity?.IsAuthenticated == true && Account.CurrentTenant is { } current ? $"{PortalPaths.Home(current.Identifier)}/logout" : null)"
-             ShowNav="@ShowNav"
-             Items="@Items">
+             HomeHref="@(Account.CurrentTenant is { } home && Authenticated ? PortalPaths.Home(home.Identifier) : null)"
+             UserEmail="@Email"
+             RoleLabel="@(PortalLabels.Role(_user?.FindFirst(ClaimTypes.Role)?.Value))"
+             AvatarText="@AvatarText"
+             LogoutAction="@(Authenticated && Account.CurrentTenant is { } current ? $"{PortalPaths.Home(current.Identifier)}/logout" : null)"
+             ShowMenu="@ShowMenu"
+             MenuItems="@MenuItems">
     @Body
 </PortalShell>
 
@@ -16,16 +19,28 @@
 
     private ClaimsPrincipal? _user;
 
-    /// <summary>已登入、而且沒有待辦的強制步驟（改初始密碼、註冊驗證器）才有導覽：那兩步只開一頁，其他連結點了也會被導回去。</summary>
-    private bool ShowNav =>
-        _user?.Identity?.IsAuthenticated == true
-        && Account.CurrentTenant is not null
-        && _user.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is null
+    private bool Authenticated => _user?.Identity?.IsAuthenticated == true && Account.CurrentTenant is not null;
+
+    private string? Email => _user?.FindFirst(ClaimTypes.Email)?.Value;
+
+    private string AvatarText
+    {
+        get
+        {
+            var name = _user?.FindFirst(ClaimTypes.GivenName)?.Value ?? Email;
+            return string.IsNullOrEmpty(name) ? string.Empty : char.ConvertFromUtf32(char.ConvertToUtf32(name, 0)).ToUpperInvariant();
+        }
+    }
+
+    /// <summary>已登入、而且沒有待辦的強制步驟（改初始密碼、註冊驗證器）才有選單：那兩步只開一頁，其他連結點了也會被導回去。</summary>
+    private bool ShowMenu =>
+        Authenticated
+        && _user!.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is null
         && _user.FindFirst(PlatformClaimTypes.MfaEnrollmentRequired) is null;
 
     private bool CanManageMembers => _user is not null && (_user.IsInRole(CustomerRoles.Owner) || _user.IsInRole(CustomerRoles.Admin));
 
-    private IReadOnlyList<PortalShell.NavItem> Items
+    private IReadOnlyList<PortalShell.MenuItem> MenuItems
     {
         get
         {
@@ -35,17 +50,14 @@
             }
 
             var home = PortalPaths.Home(tenant.Identifier);
-            var items = new List<PortalShell.NavItem>
-            {
-                new(home, "總覽", Icons.Material.Outlined.Dashboard, NavLinkMatch.All),
-                new($"{home}/search", "搜尋法規", Icons.Material.Outlined.Search),
-            };
+            var items = new List<PortalShell.MenuItem> { new(home, "查詢法規"), new($"{home}/account", "帳號與組織") };
             if (CanManageMembers)
             {
-                items.Add(new($"{home}/members", "成員", Icons.Material.Outlined.Group));
+                items.Add(new($"{home}/members", "成員"));
             }
 
-            items.Add(new($"{home}/security", "兩步驟驗證", Icons.Material.Outlined.Security));
+            items.Add(new($"{home}/security", "兩步驟驗證"));
+            items.Add(new(PortalPaths.Password(tenant.Identifier), "改密碼"));
             return items;
         }
     }

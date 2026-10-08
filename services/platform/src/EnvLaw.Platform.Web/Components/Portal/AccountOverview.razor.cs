@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvLaw.Platform.Web.Components.Portal;
 
-public partial class Home
+public partial class AccountOverview
 {
     [Parameter] public string Tenant { get; set; } = string.Empty;
 
@@ -28,7 +28,7 @@ public partial class Home
 
     private ClaimsPrincipal User => HttpContext.User;
 
-    private string? DisplayName => User.FindFirst(ClaimTypes.GivenName)?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value;
+    private string? GivenName => User.FindFirst(ClaimTypes.GivenName)?.Value;
 
     private string? Email => User.FindFirst(ClaimTypes.Email)?.Value;
 

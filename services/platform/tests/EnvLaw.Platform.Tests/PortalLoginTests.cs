@@ -61,8 +61,9 @@ public sealed class PortalLoginTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.Redirect, changed.Status);
         Assert.Equal(Home(tenant.Identifier), changed.Location);
 
-        // 現在進得了首頁，看得到自己的組織、帳號與角色。
-        var home = await browser.GetAsync(Home(tenant.Identifier));
+        // 現在進得了入口；「帳號與組織」頁看得到自己的組織、帳號與角色。
+        Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(Home(tenant.Identifier))).Status);
+        var home = await browser.GetAsync(AccountPage(tenant.Identifier));
         Assert.Equal(HttpStatusCode.OK, home.Status);
         Assert.Contains(email, home.Html, StringComparison.Ordinal);
         Assert.Contains("擁有者", home.Html, StringComparison.Ordinal);

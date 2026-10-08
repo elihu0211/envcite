@@ -51,9 +51,10 @@ public sealed record ColorTokens
 
 public static class DesignTokens
 {
-    // 品牌主色與 chepb 同源：深綠 #006030，中性灰階用 slate。狀態色全在 sRGB 色域內、彩度有上限
-    // （狀態要比品牌色顯眼，但不能搶過它），而且是文字級：對白底與一成淡底（徽章、提示框的字）都 ≥ 4.5:1。
-    // 警示與危險兩色在這個明度本來就近，所以永遠搭配圖示與文字，不靠色相分辨。
+    // 模板 B（靛藍 SaaS）：單一靛藍強調色（Tailwind indigo-600／700），其餘是 slate 中性灰階；平的表面、不用漸層。
+    // 狀態色全在 sRGB 色域內、彩度有上限（狀態要比品牌色顯眼，但不能搶過它），而且是文字級：
+    // 對白底與一成淡底（徽章、提示框的字）都 ≥ 4.5:1。警示與危險兩色在這個明度本來就近，所以永遠搭配圖示與文字，不靠色相分辨。
+    // 換主題只換這張表：語意名稱不變，DesignTokenTests 會重新驗證每一組對比。
     public static ColorTokens Light { get; } = new()
     {
         Background = "#F8FAFC",
@@ -62,16 +63,16 @@ public static class DesignTokens
         SurfaceMuted = "#F1F5F9",
         Text = "#0F172A",
         TextSecondary = "#475569",
-        Primary = "#006030",
+        Primary = "#4F46E5",
         OnPrimary = "#FFFFFF",
-        Link = "#006030",
+        Link = "#4338CA",
         Success = "#0B7857",
         Warning = "#AC5107",
         Error = "#AC312C",
         Info = "#1D52AF",
         BorderSubtle = "#E2E8F0",
         BorderControl = "#7D8CA3",
-        Focus = "#006030",
+        Focus = "#4F46E5",
         Scrim = "rgb(15 23 42 / 0.5)",
     };
 
@@ -179,14 +180,6 @@ public static class DesignTokens
 
         public const string Desktop = "80rem";
     }
-
-    public const string DrawerWidth = "260px";
-
-    /// <summary>平板的左側窄欄寬度（圖示在上、文字在下）。</summary>
-    public const string NavRailWidth = "5.5rem";
-
-    /// <summary>手機底部分頁列、平板窄欄每一項的最小高度（至少 44px 觸控目標）。</summary>
-    public const string NavItemHeight = "3.5rem";
 
     public const string AppBarHeight = "64px";
 }
