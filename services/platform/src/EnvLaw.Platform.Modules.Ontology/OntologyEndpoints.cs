@@ -40,11 +40,11 @@ public static class OntologyEndpoints
     /// <summary>包在內部 gRPC 服務外的對外 REST facade；成功的呼叫會被計量。</summary>
     public static RouteGroupBuilder MapOntologyEndpoints(this RouteGroupBuilder v1)
     {
-        v1.MapGet("/laws/{lawId}", async (string lawId, OntologyService.OntologyServiceClient client,
+        v1.MapGet("/laws/{lawId}", async (string lawId, string? asOf, OntologyService.OntologyServiceClient client,
             IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
             await CallAsync(async () =>
             {
-                var response = await client.GetLawAsync(new GetLawRequest { Id = lawId },
+                var response = await client.GetLawAsync(new GetLawRequest { Id = lawId, AsOf = asOf ?? string.Empty },
                     deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
                 await usage.RecordAsync(GetLawOperation, 1, ct);
                 var law = response.Law;
@@ -54,25 +54,29 @@ public static class OntologyEndpoints
             .WithName("GetLaw")
             .WithTags("法規")
             .WithSummary("取得法規")
-            .WithDescription("`lawId` 為全國法規資料庫的 pcode（如 `O0020001`）；標題取自現行版本。成功計量為一次 `ontology.get_law`。")
+            .WithDescription("`lawId` 為全國法規資料庫的 pcode（如 `O0020001`）；標題取自 `asOf` 當日有效的版本，省略 `asOf`（`YYYY-MM-DD`）表示現行。"
+                + "該日沒有有效的版本回 404，不會退回現行版本。成功計量為一次 `ontology.get_law`。")
             .Produces<LawDto>()
+            .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
-        v1.MapGet("/laws/{lawId}/articles", async (string lawId, OntologyService.OntologyServiceClient client,
+        v1.MapGet("/laws/{lawId}/articles", async (string lawId, string? asOf, OntologyService.OntologyServiceClient client,
             IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
             await CallAsync(async () =>
             {
-                var response = await client.ListArticlesAsync(new ListArticlesRequest { LawId = lawId },
+                var response = await client.ListArticlesAsync(new ListArticlesRequest { LawId = lawId, AsOf = asOf ?? string.Empty },
                     deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
                 await usage.RecordAsync(ListArticlesOperation, 1, ct);
                 return Results.Ok(response.Articles.Select(a => new ArticleDto(a.Iri, a.Number)));
             }))
             .WithName("ListArticles")
             .WithTags("法規")
-            .WithSummary("列出法規現行有效的各條")
-            .WithDescription("依條次排序；`number` 照來源寫法（如 `5-1`）。成功計量為一次 `ontology.list_articles`。")
+            .WithSummary("列出法規某日有效的各條")
+            .WithDescription("依條次排序；`number` 照來源寫法（如 `5-1`）。省略 `asOf`（`YYYY-MM-DD`）表示現行；該日沒有有效的版本回 404，不會退回現行版本。"
+                + "成功計量為一次 `ontology.list_articles`。")
             .Produces<IEnumerable<ArticleDto>>()
+            .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
