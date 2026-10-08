@@ -57,7 +57,8 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def SearchArticles(
         self, request: ontology_pb2.SearchArticlesRequest, context: grpc.ServicerContext
     ) -> ontology_pb2.SearchArticlesResponse:
-        _log_call(context, "SearchArticles", request.query)
+        # 查詢全文是客戶的案件內容（顧問查的往往是客戶的案子）：日誌只記長度，不記文字。
+        _log_call(context, "SearchArticles", f"query_chars={len(request.query)}")
         terms = self._segmenter.to_tsvector_input(request.query)
         if not terms:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "query must not be empty")

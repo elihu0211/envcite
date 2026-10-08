@@ -25,6 +25,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
 
     public ConcurrentQueue<Metadata> ReceivedMetadata { get; } = new();
 
+    /// <summary>最近一次 SearchArticles 收到的請求（測試用，驗證參數有原樣傳到內部服務）。</summary>
+    public SearchArticlesRequest? LastSearch { get; private set; }
+
     public async Task StartAsync()
     {
         var builder = WebApplication.CreateSlimBuilder();
@@ -69,6 +72,33 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             return Task.FromResult(new ListArticlesResponse
             {
                 Articles = { new Article { Iri = "a1", Number = "1" }, new Article { Iri = "a5-1", Number = "5-1" } },
+            });
+        }
+
+        public override Task<SearchArticlesResponse> SearchArticles(SearchArticlesRequest request, ServerCallContext context)
+        {
+            Authorize(context, KnownLawId);
+            server.LastSearch = request;
+            if (string.IsNullOrWhiteSpace(request.Query))
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "query must not be empty"));
+            }
+
+            if (request.AsOf == "yesterday")
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));
+            }
+
+            return Task.FromResult(new SearchArticlesResponse
+            {
+                Hits =
+                {
+                    new ArticleHit
+                    {
+                        Iri = "a5-1", LawId = KnownLawId, LawTitle = "空氣污染防制法", Number = "5-1",
+                        Content = "（條文內容）", LexicalScore = 0.42f,
+                    },
+                },
             });
         }
 
