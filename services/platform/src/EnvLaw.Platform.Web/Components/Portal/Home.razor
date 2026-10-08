@@ -1,0 +1,75 @@
+@page "/portal/{Tenant}"
+@layout PortalLayout
+@attribute [ExcludeFromInteractiveRouting]
+@attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+
+<PageTitle>總覽 · env-law</PageTitle>
+
+<header class="ep-page-header">
+    <div>
+        <h1 class="ep-page-title">@(DisplayName is null ? "你好" : $"你好，{DisplayName}")</h1>
+        <p class="ep-page-description">@(_tenant?.Name ?? Tenant)</p>
+    </div>
+    <a class="ep-btn ep-btn-quiet" href="@PortalPaths.Password(Tenant)">改密碼</a>
+</header>
+
+<div class="ep-stack">
+    <section class="ep-card" aria-labelledby="org-title">
+        <h2 id="org-title" class="ep-section-title">你的組織與帳號</h2>
+        <dl class="ep-detail">
+            <dt>組織</dt><dd>@(_tenant?.Name ?? Tenant)（<code class="ep-mono">@Tenant</code>）</dd>
+            <dt>方案</dt>
+            <dd>
+                @if (_tenant?.Plan is { } plan)
+                {
+                    <strong>@plan</strong>
+                }
+                else
+                {
+                    <span>目前沒有方案：資料端點會回 402。請洽我們的業務啟用。</span>
+                }
+            </dd>
+            <dt>電子郵件</dt><dd>@Email</dd>
+            <dt>角色</dt><dd>@RoleLabel</dd>
+        </dl>
+    </section>
+
+    <section class="ep-card" aria-labelledby="keys-title">
+        <h2 id="keys-title" class="ep-section-title">API keys</h2>
+        @if (!CanSeeKeys)
+        {
+            <p class="ep-page-description">你的角色不能查看 API key。</p>
+        }
+        else if (_keys.Count == 0)
+        {
+            <p class="ep-page-description">還沒有 API key。請洽我們的營運人員簽發。</p>
+        }
+        else
+        {
+            <div class="ep-table-wrap">
+                <table class="ep-plain-table" aria-label="API keys">
+                    <thead>
+                        <tr>
+                            <th scope="col">名稱</th>
+                            <th scope="col">前綴</th>
+                            <th scope="col">建立（台北）</th>
+                            <th scope="col">狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var key in _keys)
+                        {
+                            <tr>
+                                <td>@key.Name</td>
+                                <td data-label="前綴"><code class="ep-mono">@key.Prefix</code></td>
+                                <td data-label="建立"><time datetime="@TaipeiTime.Full(key.CreatedAt)">@TaipeiTime.Format(key.CreatedAt)</time></td>
+                                <td data-label="狀態">@Status(key)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="ep-hint">完整的 key 只在簽發當下出現一次，這裡只顯示前綴。</p>
+        }
+    </section>
+</div>

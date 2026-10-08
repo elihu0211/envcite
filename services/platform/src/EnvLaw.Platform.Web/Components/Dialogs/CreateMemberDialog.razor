@@ -1,0 +1,75 @@
+@* 新增客戶入口的成員。建立後由頁面接著顯示一次性的初始密碼（PasswordRevealDialog）。 *@
+@inject IMemberAdmin Members
+@inject AuthenticationStateProvider Auth
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="_email" Label="電子郵件" InputType="InputType.Email" Variant="Variant.Outlined" Required="true"
+                      Immediate="true" MaxLength="254" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp"
+                      HelperText="同一個租戶內不能重複；同一個 email 在不同租戶是不同帳號。" />
+        <MudTextField @bind-Value="_displayName" Label="顯示名稱（選填）" Variant="Variant.Outlined" Immediate="true" MaxLength="200"
+                      Class="mb-3" OnKeyUp="OnKeyUp" />
+        <MudSelect T="string" @bind-Value="_role" Label="角色" Variant="Variant.Outlined">
+            @foreach (var role in CustomerRoles.All)
+            {
+                <MudSelectItem T="string" Value="@role">@PortalLabels.RoleWithAbilities(role)</MudSelectItem>
+            }
+        </MudSelect>
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-3" role="alert">@_error</MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()">取消</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_busy">
+            @(_busy ? "建立中…" : "建立成員")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter, EditorRequired] public string TenantId { get; set; } = string.Empty;
+
+    private string? _email;
+    private string? _displayName;
+    private string _role = CustomerRoles.Viewer;
+    private string? _error;
+    private bool _busy;
+
+    private async Task OnKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !_busy)
+        {
+            await SubmitAsync();
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var actor = (await Auth.GetAuthenticationStateAsync()).User;
+            var created = await Members.CreateAsync(actor, TenantId, _email ?? string.Empty, _displayName, _role, CancellationToken.None);
+            if (created.IsOk)
+            {
+                MudDialog.Close(DialogResult.Ok(created.Value!));
+                return;
+            }
+
+            _error = created.Message;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _error = "建立失敗，請稍後再試。" + " (" + exception.GetType().Name + ")";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

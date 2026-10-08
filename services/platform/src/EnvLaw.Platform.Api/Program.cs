@@ -5,6 +5,7 @@ using EnvLaw.Platform.Data;
 using EnvLaw.Platform.Modules.ApiAccess;
 using EnvLaw.Platform.Modules.Audit;
 using EnvLaw.Platform.Modules.Consult;
+using EnvLaw.Platform.Modules.Members;
 using EnvLaw.Platform.Modules.Metering;
 using EnvLaw.Platform.Modules.Ontology;
 using EnvLaw.Platform.Modules.Tenancy;
@@ -49,6 +50,7 @@ if (!generatingOpenApi)
 builder.Services.AddPlatformData();
 builder.Services.AddApiAccessModule();
 builder.Services.AddAuditModule();
+builder.Services.AddMembersModule();
 builder.Services.AddSingleton<ITenantDirectory, TenantDirectory>();
 builder.Services.AddMeteringModule();
 builder.Services.AddOntologyModule();
@@ -77,6 +79,7 @@ app.UseAuthentication();
 app.UsePlatformWebAuthentication();
 app.UseTenantTrace();
 app.UseMultiTenant();
+app.UsePlatformPortalAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.UseAntiforgery();
@@ -103,6 +106,7 @@ v2.MapGroup(string.Empty)
     .RequireAuthorization(PlatformAuth.PaidPolicy)
     .MapOntologyEndpoints()
     .MapConsultEndpoints();
+
 
 
 app.MapPlatformWeb();

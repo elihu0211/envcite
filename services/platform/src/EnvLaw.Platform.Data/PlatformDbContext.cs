@@ -1,6 +1,7 @@
 using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.EntityFrameworkCore;
 using Finbuckle.MultiTenant.EntityFrameworkCore.Extensions;
+using Finbuckle.MultiTenant.Identity.EntityFrameworkCore;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +16,7 @@ namespace EnvLaw.Platform.Data;
 /// 租戶 store 不在這裡：Finbuckle 要求它的 context 衍生自 <c>EFCoreStoreDbContext</c>，
 /// 故留在 Tenancy 模組（<c>TenancyDbContext</c>）。除此之外只有這一個 context。
 /// </remarks>
-public sealed class PlatformDbContext : MultiTenantDbContext
+public sealed class PlatformDbContext : MultiTenantIdentityDbContext<ApplicationUser>
 {
     internal const string Schema = "platform";
 
@@ -28,12 +29,18 @@ public sealed class PlatformDbContext : MultiTenantDbContext
 
     public DbSet<UsageRecord> UsageRecords => Set<UsageRecord>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        base.OnModelCreating(modelBuilder);
-        modelBuilder.HasDefaultSchema(Schema);
+        base.OnModelCreating(builder);
+        builder.HasDefaultSchema(Schema);
 
-        modelBuilder.Entity<ApiKey>(key =>
+        builder.Entity<ApplicationUser>(user =>
+        {
+            user.Property(u => u.DisplayName).HasMaxLength(200);
+            user.Property(u => u.Role).HasMaxLength(32).IsRequired();
+        });
+
+        builder.Entity<ApiKey>(key =>
         {
             key.IsMultiTenant();
             key.Property(k => k.Name).HasMaxLength(100);
@@ -44,7 +51,7 @@ public sealed class PlatformDbContext : MultiTenantDbContext
 
         // 沒有 IsMultiTenant()：稽核對營運者跨租戶，租戶是 SubjectTenantId 這個一般欄位。
         // 只能新增由遷移裡的觸發器強制。
-        modelBuilder.Entity<AuditEvent>(audit =>
+        builder.Entity<AuditEvent>(audit =>
         {
             audit.ToTable("AuditEvents");
             audit.Property(a => a.ActorType).HasMaxLength(30);
@@ -61,7 +68,7 @@ public sealed class PlatformDbContext : MultiTenantDbContext
         });
 
         // 沒有 IsMultiTenant()：理由同 AuditEvent（營運者跨租戶管理）。
-        modelBuilder.Entity<TenantEntitlement>(entitlement =>
+        builder.Entity<TenantEntitlement>(entitlement =>
         {
             entitlement.ToTable("TenantEntitlements");
             entitlement.HasKey(e => e.TenantId);
@@ -71,7 +78,7 @@ public sealed class PlatformDbContext : MultiTenantDbContext
             entitlement.HasIndex(e => e.TenantIdentifier).IsUnique();
         });
 
-        modelBuilder.Entity<UsageRecord>(record =>
+        builder.Entity<UsageRecord>(record =>
         {
             record.IsMultiTenant();
             record.Property(r => r.Operation).HasMaxLength(100);

@@ -9,6 +9,12 @@ public static class PlatformClaimTypes
     /// <summary>驗證此請求所用之 API key 的 Id。</summary>
     public const string ApiKeyId = "api_key_id";
 
+    /// <summary>客戶入口使用者的 Id（<c>ApplicationUser.Id</c>）。有這個 claim 的是入口的人，不是機器。</summary>
+    public const string PortalUserId = "portal_user_id";
+
+    /// <summary>存在（值為 true）表示這個 session 還必須先改密碼。</summary>
+    public const string PasswordChangeRequired = "pwd_change_required";
+
     /// <summary>每個授予的 scope 各一個 claim。</summary>
     public const string Scope = "scope";
 }

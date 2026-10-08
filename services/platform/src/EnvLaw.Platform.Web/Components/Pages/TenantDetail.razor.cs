@@ -23,6 +23,10 @@ public partial class TenantDetail
 
     [Inject] private IPlanAdmin Plans { get; set; } = default!;
 
+    [Inject] private IMemberAdmin Members { get; set; } = default!;
+
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
     [Inject] private IAuditQuery Audit { get; set; } = default!;
 
     [Inject] private IDialogService Dialogs { get; set; } = default!;
@@ -31,6 +35,7 @@ public partial class TenantDetail
 
     private TenantSummary? _tenant;
     private IReadOnlyList<ApiKeyInfo> _keys = [];
+    private IReadOnlyList<MemberInfo> _members = [];
     private IReadOnlyList<AuditRecord> _recent = [];
     private IReadOnlyList<PlanInfo> _plans = [];
     private string? _selectedPlan;
@@ -83,6 +88,9 @@ public partial class TenantDetail
         var keys = await Keys.ListAsync(TenantId, CancellationToken.None);
         _keys = keys.IsOk ? keys.Value!.OrderByDescending(k => k.CreatedAt).ToList() : [];
 
+        var members = await Members.ListAsync(TenantId, CancellationToken.None);
+        _members = members.IsOk ? members.Value! : [];
+
         var page = await Audit.QueryAsync(new AuditFilter(Tenant: TenantId, Limit: 10), CancellationToken.None);
         _recent = page.Items;
     }
@@ -92,6 +100,61 @@ public partial class TenantDetail
         _tenant = (await Directory.ListAsync(CancellationToken.None)).FirstOrDefault(t => t.Id == TenantId);
         _selectedPlan = _tenant?.Plan;
         await LoadDetailsAsync();
+    }
+
+    /// <summary>給客戶的完整登入網址（用目前後台的主機位址組出來）。</summary>
+    private string PortalLoginUrl => new Uri(new Uri(Navigation.BaseUri), PortalPaths.Login(_tenant?.Identifier ?? string.Empty)).ToString();
+
+    private async Task AddMemberAsync()
+    {
+        var dialog = await Dialogs.ShowAsync<CreateMemberDialog>(
+            "新增成員", new DialogParameters<CreateMemberDialog> { { x => x.TenantId, TenantId } }, Narrow);
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: IssuedPassword issued })
+        {
+            await RevealAsync(issued, "新增成員");
+            await RunAsync(async () =>
+            {
+                await RefreshAsync();
+                Succeed($"已新增 {issued.Member.Email}。");
+            });
+        }
+    }
+
+    private async Task ResetPasswordAsync(MemberInfo member)
+    {
+        var confirmed = await Dialogs.ShowMessageBoxAsync(
+            "重設密碼", $"重設 {member.Email} 的密碼後，這位成員在所有裝置上會立刻登出，要用新的一次性密碼登入並自己改掉。確定？",
+            yesText: "重設密碼", cancelText: "取消");
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            var reset = await Members.ResetPasswordAsync(await ActorAsync(), TenantId, member.Id, CancellationToken.None);
+            if (!reset.IsOk)
+            {
+                Fail(reset.Message ?? "重設失敗。");
+                return;
+            }
+
+            await RevealAsync(reset.Value!, "重設密碼");
+            await RefreshAsync();
+            Succeed($"已重設 {member.Email} 的密碼。");
+        });
+    }
+
+    private async Task RevealAsync(IssuedPassword issued, string title)
+    {
+        var reveal = await Dialogs.ShowAsync<PasswordRevealDialog>(title, new DialogParameters<PasswordRevealDialog>
+        {
+            { x => x.Member, issued.Member },
+            { x => x.Password, issued.Password },
+            { x => x.LoginPath, PortalLoginUrl },
+        }, Narrow);
+        await reveal.Result;
     }
 
     private async Task<ClaimsPrincipal> ActorAsync() => (await Auth.GetAuthenticationStateAsync()).User;

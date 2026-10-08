@@ -1,0 +1,64 @@
+using EnvLaw.Platform.SharedKernel;
+using EnvLaw.Platform.Web.Auth;
+
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Http;
+
+namespace EnvLaw.Platform.Web.Components.Portal;
+
+public partial class Login
+{
+    [Parameter] public string Tenant { get; set; } = string.Empty;
+
+    [Inject] private IPortalAccount Account { get; set; } = default!;
+
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromForm] private LoginForm Input { get; set; } = default!;
+
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        Input ??= new();
+
+        // 路徑上的租戶不存在：這個頁面就不存在。
+        if (Account.CurrentTenant is null)
+        {
+            Navigation.NotFound();
+        }
+    }
+
+    private async Task SignInAsync()
+    {
+        var tenant = Account.CurrentTenant!;
+        var status = await Account.SignInAsync(Input.Email, Input.Password, HttpContext.RequestAborted);
+
+        switch (status)
+        {
+            case PortalSignInStatus.Succeeded:
+                Navigation.NavigateTo(PortalEndpoints.SafeReturnUrl(ReturnUrl, tenant.Identifier));
+                break;
+            case PortalSignInStatus.MustChangePassword:
+                Navigation.NavigateTo(PortalPaths.Password(tenant.Identifier));
+                break;
+            default:
+                // 密碼不寫回表單：重新渲染的 HTML 會帶著輸入框的值，等於把密碼又傳回瀏覽器（與任何中間的快取）一次。
+                Input.Password = string.Empty;
+                // 帳號不存在、密碼錯、被鎖定都是同一句：說得出差別，就是在告訴攻擊者哪些 email 有帳號。
+                _error = "電子郵件或密碼不正確，或登入已被暫時停用。多次失敗會暫時鎖定帳號，請稍後再試。";
+                break;
+        }
+    }
+
+    public sealed class LoginForm
+    {
+        public string Email { get; set; } = string.Empty;
+
+        public string Password { get; set; } = string.Empty;
+    }
+}

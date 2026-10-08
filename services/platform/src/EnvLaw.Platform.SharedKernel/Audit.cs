@@ -31,6 +31,7 @@ public static class AuditActors
     public const string OperatorKey = "operator-key";
     public const string OperatorUser = "operator-user";
     public const string TenantKey = "tenant-key";
+    public const string TenantUser = "tenant-user";
     public const string Anonymous = "anonymous";
     public const string System = "system";
 
@@ -45,6 +46,12 @@ public static class AuditActors
         if (user.IsInRole("platform-admin"))
         {
             return (OperatorKey, "admin-key");
+        }
+
+        // 客戶入口的人：記使用者 Id（email 可以改，Id 不會）；租戶記在事件的 TenantId。
+        if (user.FindFirst(PlatformClaimTypes.PortalUserId)?.Value is { } portalUserId)
+        {
+            return (TenantUser, portalUserId);
         }
 
         if (user.FindFirst(PlatformClaimTypes.ApiKeyId)?.Value is { } apiKeyId)

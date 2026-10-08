@@ -5,6 +5,7 @@
   <ItemGroup>
     <PackageVersion Include="Finbuckle.MultiTenant.AspNetCore" Version="10.1.4" />
     <PackageVersion Include="Finbuckle.MultiTenant.EntityFrameworkCore" Version="10.1.4" />
+    <PackageVersion Include="Finbuckle.MultiTenant.Identity.EntityFrameworkCore" Version="10.1.4" />
     <PackageVersion Include="Google.Protobuf" Version="3.36.2" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.84.0" />
     <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.84.0" />
@@ -12,6 +13,7 @@
     <PackageVersion Include="JunitXml.TestLogger" Version="8.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.12" />
     <PackageVersion Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
