@@ -62,7 +62,7 @@ Production migrations: EF Core migration bundles (the form EF Core's docs recomm
 
 - `src/EnvLaw.Platform.Api` — ASP.NET Core host (composition root)
 - `src/EnvLaw.Platform.Modules.*` — feature modules (`Tenancy`, `ApiAccess`, `Metering`, `Ontology`, `Consult`); reference only `SharedKernel` and `Data`, never each other directly (cross-module contracts like `IUsageRecorder` live in `SharedKernel`)
-- `src/EnvLaw.Platform.Web` — 營運者後台（Blazor Web App，全站 Interactive Server，MudBlazor；頁面在 `/ui`）。Razor 元件函式庫，只參考 `SharedKernel` 和 `Data`，由 `Api` 以 `AddPlatformWeb()` / `MapPlatformWeb()` 掛上；不在 `/v2` 的速率限制與計量群組內
+- `src/EnvLaw.Platform.Web` — 營運者後台（Blazor Web App，全站 Interactive Server，MudBlazor；頁面在 `/ui`）。Razor 元件函式庫，目前只參考 `SharedKernel`（要讀資料時才加 `Data`），由 `Api` 以 `AddPlatformWeb()` / `MapPlatformWeb()` 掛上；不在 `/v2` 的速率限制與計量群組內
 - `src/EnvLaw.Platform.Data` — `PlatformDbContext`, its entities (`ApiKey`, `UsageRecord`) and migrations
 - `src/EnvLaw.Platform.SharedKernel` — cross-module primitives (auth names, `IUsageRecorder`, internal gRPC client registration, design-time connection)
 - `tests/EnvLaw.Platform.Tests` — xUnit + `WebApplicationFactory` integration tests (`PlatformFactory`: Testcontainers PostgreSQL + `FakeTimeProvider` + `FakeOntologyServer` / `FakeConsultServer`, in-process h2c gRPC fakes)

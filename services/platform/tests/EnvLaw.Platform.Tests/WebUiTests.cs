@@ -133,15 +133,18 @@ public sealed class WebUiTests(PlatformFactory factory)
         Assert.Equal(expected, UiEndpoints.SafeReturnUrl(input));
 
     [Theory]
-    [InlineData("operator@example.com", "true", null, true)]
-    [InlineData("OPERATOR@Example.com", "true", null, true)]
-    [InlineData("operator@example.com", "false", null, false)]
-    [InlineData("operator@example.com", null, null, false)]
-    [InlineData("other@example.com", "true", null, false)]
-    [InlineData(null, "true", null, false)]
-    [InlineData("operator@example.com", "true", "example.com", true)]
-    [InlineData("operator@example.com", "true", "other.com", false)]
-    public void AllowlistRequiresVerifiedEmailOnList(string? email, string? verified, string? domain, bool allowed)
+    // email, email_verified, 帳號的 hd claim, 設定的 AllowedHostedDomain, 預期
+    [InlineData("operator@example.com", "true", null, null, true)]
+    [InlineData("OPERATOR@Example.com", "true", null, null, true)]
+    [InlineData("operator@example.com", "false", null, null, false)]
+    [InlineData("operator@example.com", null, null, null, false)]
+    [InlineData("other@example.com", "true", null, null, false)]
+    [InlineData(null, "true", null, null, false)]
+    [InlineData("operator@example.com", "true", "example.com", "example.com", true)]
+    [InlineData("operator@example.com", "true", "other.com", "example.com", false)]
+    [InlineData("operator@example.com", "true", null, "example.com", false)]
+    public void AllowlistRequiresVerifiedEmailOnList(
+        string? email, string? verified, string? hostedDomain, string? requiredDomain, bool allowed)
     {
         var claims = new List<Claim>();
         if (email is not null)
@@ -154,15 +157,15 @@ public sealed class WebUiTests(PlatformFactory factory)
             claims.Add(new Claim(OperatorAllowlist.EmailVerifiedClaim, verified));
         }
 
-        if (domain is not null && domain == "example.com")
+        if (hostedDomain is not null)
         {
-            claims.Add(new Claim(OperatorAllowlist.HostedDomainClaim, domain));
+            claims.Add(new Claim(OperatorAllowlist.HostedDomainClaim, hostedDomain));
         }
 
         var options = new UiOptions
         {
             OperatorEmails = ["operator@example.com"],
-            AllowedHostedDomain = domain,
+            AllowedHostedDomain = requiredDomain,
         };
 
         Assert.Equal(allowed, OperatorAllowlist.IsAllowed(new ClaimsPrincipal(new ClaimsIdentity(claims, "test")), options));
