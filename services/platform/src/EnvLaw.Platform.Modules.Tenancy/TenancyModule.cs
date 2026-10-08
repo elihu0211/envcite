@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Modules.Tenancy;
 
@@ -18,9 +19,11 @@ public static class TenancyModule
     /// <see cref="PlatformClaimTypes.TenantIdentifier"/> claim 解析目前租戶。
     /// 必須先 <c>UseAuthentication()</c> 再 <c>UseMultiTenant()</c>。
     /// </summary>
-    public static IServiceCollection AddTenancyModule(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddTenancyModule(this IServiceCollection services)
     {
-        services.AddDbContext<TenancyDbContext>(options => Configure(options, connectionString));
+        services.AddPlatformDatabaseOptions();
+        services.AddDbContext<TenancyDbContext>((provider, options) =>
+            Configure(options, provider.GetRequiredService<IOptions<DatabaseOptions>>().Value.Platform));
 
         services.AddMultiTenant<TenantInfo>()
             .WithEFCoreStore<TenancyDbContext, TenantInfo>()

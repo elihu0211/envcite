@@ -8,6 +8,7 @@ using Grpc.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Modules.Consult;
 
@@ -46,14 +47,14 @@ public static class ConsultEndpoints
     public static RouteGroupBuilder MapConsultEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapPost("/ground", async (GroundRequestDto body, ConsultationService.ConsultationServiceClient client,
-            ConsultOptions options, IUsageRecorder usage, CancellationToken ct) =>
+            IOptions<ConsultOptions> options, IUsageRecorder usage, CancellationToken ct) =>
         {
             GroundResponse response;
             try
             {
                 response = await client.GroundAsync(
                     new GroundRequest { Question = body.Question ?? string.Empty, AsOf = body.PointInTime ?? string.Empty },
-                    deadline: DateTime.UtcNow.Add(options.Timeout), cancellationToken: ct);
+                    deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
             }
             catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
             {

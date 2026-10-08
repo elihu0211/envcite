@@ -6,6 +6,7 @@ using Grpc.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Modules.Ontology;
 
@@ -27,11 +28,11 @@ public static class OntologyEndpoints
     public static RouteGroupBuilder MapOntologyEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapGet("/laws/{lawId}", async (string lawId, OntologyService.OntologyServiceClient client,
-            OntologyOptions options, IUsageRecorder usage, CancellationToken ct) =>
+            IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
             await CallAsync(async () =>
             {
                 var response = await client.GetLawAsync(new GetLawRequest { Id = lawId },
-                    deadline: DateTime.UtcNow.Add(options.Timeout), cancellationToken: ct);
+                    deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
                 await usage.RecordAsync(GetLawOperation, 1, ct);
                 var law = response.Law;
                 return Results.Ok(new LawDto(law.Id, law.Iri, law.Title, law.Language,
@@ -46,11 +47,11 @@ public static class OntologyEndpoints
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         v1.MapGet("/laws/{lawId}/articles", async (string lawId, OntologyService.OntologyServiceClient client,
-            OntologyOptions options, IUsageRecorder usage, CancellationToken ct) =>
+            IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
             await CallAsync(async () =>
             {
                 var response = await client.ListArticlesAsync(new ListArticlesRequest { LawId = lawId },
-                    deadline: DateTime.UtcNow.Add(options.Timeout), cancellationToken: ct);
+                    deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
                 await usage.RecordAsync(ListArticlesOperation, 1, ct);
                 return Results.Ok(response.Articles.Select(a => new ArticleDto(a.Iri, a.Number)));
             }))

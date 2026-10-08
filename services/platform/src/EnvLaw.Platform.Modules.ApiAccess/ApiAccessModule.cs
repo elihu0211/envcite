@@ -4,9 +4,9 @@ using EnvLaw.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Modules.ApiAccess;
 
@@ -19,9 +19,49 @@ public sealed class PlanOptions
 }
 
 /// <summary>
-/// 方案與各租戶所屬的方案（<c>Platform:Plans</c>、<c>Platform:TenantPlans</c>）。在計費整合之前
-/// 於設定中手動指派；未列出的租戶屬於 <see cref="DefaultPlan"/>。
+/// <c>Platform</c> 區段中，存取控制的部分：營運者 key、方案、各租戶所屬的方案。
+/// 區段名稱沿用 <c>Platform</c>，所以既有的環境變數（<c>Platform__AdminKeySha256</c> 等）不變。
 /// </summary>
+public sealed class ApiAccessOptions : IPlatformOptions
+{
+    public static string SectionName => "Platform";
+
+    /// <summary>admin key 的十六進位 SHA-256（<c>Platform:AdminKeySha256</c>）。留空即停用 admin 存取。</summary>
+    public string AdminKeySha256 { get; set; } = string.Empty;
+
+    public Dictionary<string, PlanOptions> Plans { get; set; } = [];
+
+    /// <summary>租戶識別碼 → 方案名稱。在計費整合之前於設定中手動指派；未列出的租戶屬於 <see cref="PlanCatalog.DefaultPlan"/>。</summary>
+    public Dictionary<string, string> TenantPlans { get; set; } = [];
+}
+
+/// <summary>
+/// 方案名稱打錯必須在啟動時失敗，而不是讓付費租戶默默落在免費層；admin key 不是 SHA-256 十六進位也一樣。
+/// </summary>
+public sealed class ApiAccessOptionsValidator : IValidateOptions<ApiAccessOptions>
+{
+    public ValidateOptionsResult Validate(string? name, ApiAccessOptions options)
+    {
+        var failures = new List<string>();
+        if (options.AdminKeySha256.Length != 0
+            && (options.AdminKeySha256.Length != 64 || !options.AdminKeySha256.All(Uri.IsHexDigit)))
+        {
+            failures.Add("Platform:AdminKeySha256 must be 64 hexadecimal characters (a SHA-256), or empty to disable admin access.");
+        }
+
+        var known = new HashSet<string>(options.Plans.Keys, StringComparer.Ordinal) { PlanCatalog.DefaultPlan };
+        failures.AddRange(options.TenantPlans
+            .Where(t => !known.Contains(t.Value))
+            .Select(t => $"Platform:TenantPlans:{t.Key} names unknown plan '{t.Value}'."));
+        failures.AddRange(options.Plans
+            .Where(p => p.Value.PermitLimit < 1 || p.Value.Window <= TimeSpan.Zero)
+            .Select(p => $"Platform:Plans:{p.Key} needs a positive PermitLimit and Window."));
+
+        return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+    }
+}
+
+/// <summary>方案目錄，由已驗證的 <see cref="ApiAccessOptions"/> 建立。</summary>
 public sealed class PlanCatalog
 {
     public const string DefaultPlan = "free";
@@ -29,18 +69,11 @@ public sealed class PlanCatalog
     private readonly Dictionary<string, PlanOptions> _plans;
     private readonly Dictionary<string, string> _tenantPlans;
 
-    public PlanCatalog(Dictionary<string, PlanOptions> plans, Dictionary<string, string> tenantPlans)
+    public PlanCatalog(IOptions<ApiAccessOptions> options)
     {
-        _plans = new(plans, StringComparer.Ordinal);
+        _plans = new(options.Value.Plans, StringComparer.Ordinal);
         _plans.TryAdd(DefaultPlan, new PlanOptions());
-        _tenantPlans = tenantPlans;
-
-        // 方案名稱打錯必須在啟動時失敗，而不是讓付費租戶默默落在免費層。
-        if (_tenantPlans.FirstOrDefault(t => !_plans.ContainsKey(t.Value)) is { Key: not null } unknown)
-        {
-            throw new InvalidOperationException(
-                $"Platform:TenantPlans:{unknown.Key} names unknown plan '{unknown.Value}'.");
-        }
+        _tenantPlans = options.Value.TenantPlans;
     }
 
     public PlanOptions For(string tenantIdentifier) =>
@@ -50,15 +83,19 @@ public sealed class PlanCatalog
 public static class ApiAccessModule
 {
     /// <summary>註冊 ApiKey/AdminKey scheme、policy 與逐租戶的 rate limiting（API key 存於 <c>PlatformDbContext</c>）。</summary>
-    public static IServiceCollection AddApiAccessModule(this IServiceCollection services, IConfiguration platformConfig)
+    public static IServiceCollection AddApiAccessModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.AddPlatformOptions<ApiAccessOptions>();
+        services.AddSingleton<IValidateOptions<ApiAccessOptions>, ApiAccessOptionsValidator>();
+        services.AddSingleton<PlanCatalog>();
 
         services.AddAuthentication(PlatformAuth.ApiKeyScheme)
             .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(
                 PlatformAuth.ApiKeyScheme, _ => { })
-            .AddScheme<AdminKeyOptions, AdminKeyAuthenticationHandler>(
-                PlatformAuth.AdminKeyScheme, o => o.AdminKeySha256 = platformConfig["AdminKeySha256"] ?? string.Empty);
+            .AddScheme<AdminKeyOptions, AdminKeyAuthenticationHandler>(PlatformAuth.AdminKeyScheme, null);
+        services.AddOptions<AdminKeyOptions>(PlatformAuth.AdminKeyScheme)
+            .Configure<IOptions<ApiAccessOptions>>((scheme, api) => scheme.AdminKeySha256 = api.Value.AdminKeySha256);
 
         services.AddAuthorizationBuilder()
             .AddPolicy(PlatformAuth.TenantPolicy, p => p
@@ -68,9 +105,6 @@ public static class ApiAccessModule
                 .AddAuthenticationSchemes(PlatformAuth.AdminKeyScheme)
                 .RequireRole("platform-admin"));
 
-        var plans = new PlanCatalog(
-            platformConfig.GetSection("Plans").Get<Dictionary<string, PlanOptions>>() ?? [],
-            platformConfig.GetSection("TenantPlans").Get<Dictionary<string, string>>() ?? []);
         services.AddRateLimiter(limiter =>
         {
             limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -78,6 +112,7 @@ public static class ApiAccessModule
             limiter.AddPolicy(PlatformAuth.PerTenantRateLimit, context =>
             {
                 var tenant = context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value ?? "anonymous";
+                var plans = context.RequestServices.GetRequiredService<PlanCatalog>();
                 return RateLimitPartition.GetFixedWindowLimiter(tenant, _ =>
                 {
                     var plan = plans.For(tenant);

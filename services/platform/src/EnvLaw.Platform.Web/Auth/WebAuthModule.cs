@@ -1,11 +1,11 @@
 using EnvLaw.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Web.Auth;
 
@@ -14,20 +14,12 @@ internal static class WebAuthModule
 {
     /// <summary>
     /// 預設 scheme 仍是 ApiKey，後台走自己的 cookie（見 <c>UsePlatformWebAuthentication</c>）。
-    /// <paramref name="uiConfig"/> 是 <c>Platform:Ui</c>；Google 憑證缺少時，非 Development 直接啟動失敗。
+    /// 設定來自 <see cref="UiOptions"/>（<c>Platform:Ui</c>），啟動時驗證。
     /// </summary>
-    public static IServiceCollection AddWebAuth(
-        this IServiceCollection services, IConfiguration uiConfig, IHostEnvironment environment)
+    public static IServiceCollection AddWebAuth(this IServiceCollection services)
     {
-        var clientId = uiConfig["Google:ClientId"];
-        var clientSecret = uiConfig["Google:ClientSecret"];
-        if ((string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret)) && !environment.IsDevelopment())
-        {
-            throw new InvalidOperationException(
-                "Platform:Ui:Google:ClientId and Platform:Ui:Google:ClientSecret are not configured.");
-        }
-
-        services.Configure<UiOptions>(uiConfig);
+        services.AddPlatformOptions<UiOptions>();
+        services.AddSingleton<IValidateOptions<UiOptions>, UiOptionsValidator>();
         services.AddSingleton<OperatorAllowlist>();
         services.AddSingleton<IAuthorizationHandler, OperatorHandler>();
 
@@ -45,9 +37,6 @@ internal static class WebAuthModule
             })
             .AddGoogle(PlatformAuth.UiGoogleScheme, google =>
             {
-                // Development 缺憑證時用占位值，讓不碰後台的本機開發照常啟動；真的登入時會被 Google 拒絕。
-                google.ClientId = string.IsNullOrEmpty(clientId) ? "unset" : clientId;
-                google.ClientSecret = string.IsNullOrEmpty(clientSecret) ? "unset" : clientSecret;
                 google.SignInScheme = PlatformAuth.UiCookieScheme;
                 google.SaveTokens = false;
                 google.ClaimActions.MapJsonKey(OperatorAllowlist.EmailVerifiedClaim, "email_verified");
@@ -64,6 +53,14 @@ internal static class WebAuthModule
 
                     return Task.CompletedTask;
                 };
+            });
+
+        // 憑證在用到時才自選項取得。Development 缺憑證用占位值，讓不碰後台的本機開發照常啟動。
+        services.AddOptions<GoogleOptions>(PlatformAuth.UiGoogleScheme)
+            .Configure<IOptions<UiOptions>>((google, ui) =>
+            {
+                google.ClientId = string.IsNullOrEmpty(ui.Value.Google.ClientId) ? "unset" : ui.Value.Google.ClientId;
+                google.ClientSecret = string.IsNullOrEmpty(ui.Value.Google.ClientSecret) ? "unset" : ui.Value.Google.ClientSecret;
             });
 
         services.AddAuthorizationBuilder()
