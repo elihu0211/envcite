@@ -1,6 +1,7 @@
 @page "/portal/{Tenant}/login"
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
+@attribute [EnableRateLimiting(PlatformAuth.PortalSignInRateLimit)]
 @attribute [AllowAnonymous]
 
 <PageTitle>登入 · env-law</PageTitle>
