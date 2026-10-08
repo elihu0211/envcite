@@ -12,6 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 
+using Npgsql;
+
 using Testcontainers.PostgreSql;
 
 namespace EnvLaw.Platform.Tests;
@@ -53,6 +55,8 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
     {
         builder.UseSetting("ConnectionStrings:Platform", _postgres.GetConnectionString());
         builder.UseSetting("Platform:ApplyMigrationsOnStartup", "true");
+        // appsettings.Development.json 開著本機的種子資料；共用資料庫不要多出一個 dev 租戶。種子由 DevelopmentSeedTests 以全新的資料庫測。
+        builder.UseSetting("Platform:SeedDevelopmentData", "false");
         builder.UseSetting("Platform:AdminKeySha256",
             Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(AdminKey))));
         builder.UseSetting("Platform:Ui:Google:ClientId", "test-client-id");
@@ -73,6 +77,15 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         // 測試動態建立大量租戶，無法逐一指派方案，所以給預設方案。正式環境不設（完全付費制），見 PaidOnlyTests。
         builder.UseSetting("Platform:DefaultPlan", "standard");
         builder.ConfigureServices(services => services.Replace(ServiceDescriptor.Singleton<TimeProvider>(Time)));
+    }
+
+    /// <summary>同一個容器裡的全新資料庫，回傳它的連線字串。要從空的開始時用（共用的庫已經有別的測試的資料）。</summary>
+    public async Task<string> CreateDatabaseAsync()
+    {
+        var name = $"fresh_{Guid.NewGuid():N}";
+        var created = await _postgres.ExecScriptAsync($"CREATE DATABASE {name};");
+        Assert.Equal(0, created.ExitCode);
+        return new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString()) { Database = name }.ConnectionString;
     }
 
     public HttpClient CreateAdminClient()

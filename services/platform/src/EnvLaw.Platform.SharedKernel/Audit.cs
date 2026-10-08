@@ -48,6 +48,12 @@ public static class AuditActors
             return (OperatorKey, "admin-key");
         }
 
+        // 程式自己做的事（例如本機開發的種子資料）：只有行程內的程式碼造得出這個角色，外部請求的身分都不會帶它。
+        if (user.IsInRole(System))
+        {
+            return (System, null);
+        }
+
         // 客戶入口的人：記使用者 Id（email 可以改，Id 不會）；租戶記在事件的 TenantId。
         if (user.FindFirst(PlatformClaimTypes.PortalUserId)?.Value is { } portalUserId)
         {

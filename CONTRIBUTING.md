@@ -28,6 +28,10 @@ wt remove feat/<簡述>             # 合併後收尾：刪 worktree 與分支
 
 各分支共用這兩個庫：同一時間只跑一條分支的服務，否則兩邊的遷移會互相覆寫。
 
+### 第一組資料（platform）
+
+`wt platform` 在空的庫第一次啟動時，會自己建租戶 `dev` 與擁有者 `owner@example.test`，並把**一次性密碼只印在那個終端機一次**（不進日誌；程式裡沒有預設密碼）。到 `http://localhost:<port>/portal/dev/login` 登入，第一次必須改密碼。之後再啟動不會再印；忘了密碼就清掉 `platform` 庫重來，或用營運後台重設。已經有成員的 `dev` 租戶不會被動。只在 Development 有效（`Platform:SeedDevelopmentData`）。
+
 以 Docker 起一個拋棄式的庫，符合預設值：
 
 ```bash
