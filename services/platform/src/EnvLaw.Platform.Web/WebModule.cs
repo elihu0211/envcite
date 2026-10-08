@@ -35,12 +35,15 @@ public static class WebModule
     public static IApplicationBuilder UsePlatformWebAuthentication(this IApplicationBuilder app)
     {
         var (operatorUi, portal) = Surfaces(app.ApplicationServices);
+        var development = app.ApplicationServices.GetRequiredService<IHostEnvironment>().IsDevelopment();
         return app.Use(async (context, next) =>
         {
             var path = context.Request.Path;
             var isUi = path.StartsWithSegments("/ui");
 
-            if ((isUi && !operatorUi) || (path.StartsWithSegments(PortalPaths.Prefix) && !portal))
+            // /design 是元件展示頁：只在 Development，其他環境不存在。
+            if ((isUi && !operatorUi) || (path.StartsWithSegments(PortalPaths.Prefix) && !portal)
+                || (path.StartsWithSegments(DesignGalleryPath) && !development))
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
                 return;
@@ -108,6 +111,9 @@ public static class WebModule
         app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
         return app;
     }
+
+    /// <summary>元件展示頁（只在 Development）。</summary>
+    public const string DesignGalleryPath = "/design";
 
     private static (bool OperatorUi, bool Portal) Surfaces(IServiceProvider services)
     {

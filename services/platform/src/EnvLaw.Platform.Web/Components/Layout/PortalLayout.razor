@@ -1,30 +1,55 @@
 @inherits LayoutComponentBase
 @inject IPortalAccount Account
 
-@* 客戶入口的外殼：靜態渲染（沒有 circuit、沒有互動元件），所以只有簡單的頂欄與內容，不用 MudBlazor 的元件。 *@
-<a class="ep-skip-link" href="#main">跳到主要內容</a>
-
-<header class="ep-portal-bar">
-    <span class="ep-brand">env-law</span>
-    @if (Account.CurrentTenant is { } tenant)
-    {
-        <span class="ep-portal-tenant">@(tenant.Name ?? tenant.Identifier)</span>
-    }
-    <span class="ep-spacer"></span>
-    <AuthorizeView>
-        <Authorized>
-            <span class="ep-user">@context.User.FindFirst(ClaimTypes.Email)?.Value</span>
-            @if (Account.CurrentTenant is { } current)
-            {
-                <form method="post" action="@($"{PortalPaths.Home(current.Identifier)}/logout")">
-                    <AntiforgeryToken />
-                    <button type="submit" class="ep-btn ep-btn-quiet">登出</button>
-                </form>
-            }
-        </Authorized>
-    </AuthorizeView>
-</header>
-
-<main class="ep-portal" id="main" tabindex="-1">
+@* 客戶入口的外殼：靜態渲染（沒有 circuit、沒有互動元件），所以不用 MudBlazor 的元件。外觀與版面見 PortalShell。 *@
+<PortalShell TenantName="@(Account.CurrentTenant is { } tenant ? tenant.Name ?? tenant.Identifier : null)"
+             UserEmail="@_user?.FindFirst(ClaimTypes.Email)?.Value"
+             LogoutAction="@(_user?.Identity?.IsAuthenticated == true && Account.CurrentTenant is { } current ? $"{PortalPaths.Home(current.Identifier)}/logout" : null)"
+             ShowNav="@ShowNav"
+             Items="@Items">
     @Body
-</main>
+</PortalShell>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private ClaimsPrincipal? _user;
+
+    /// <summary>已登入、而且沒有待辦的強制步驟（改初始密碼、註冊驗證器）才有導覽：那兩步只開一頁，其他連結點了也會被導回去。</summary>
+    private bool ShowNav =>
+        _user?.Identity?.IsAuthenticated == true
+        && Account.CurrentTenant is not null
+        && _user.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is null
+        && _user.FindFirst(PlatformClaimTypes.MfaEnrollmentRequired) is null;
+
+    private bool CanManageMembers => _user is not null && (_user.IsInRole(CustomerRoles.Owner) || _user.IsInRole(CustomerRoles.Admin));
+
+    private IReadOnlyList<PortalShell.NavItem> Items
+    {
+        get
+        {
+            if (Account.CurrentTenant is not { } tenant)
+            {
+                return [];
+            }
+
+            var home = PortalPaths.Home(tenant.Identifier);
+            var items = new List<PortalShell.NavItem>
+            {
+                new(home, "總覽", Icons.Material.Outlined.Dashboard, NavLinkMatch.All),
+                new($"{home}/search", "搜尋法規", Icons.Material.Outlined.Search),
+            };
+            if (CanManageMembers)
+            {
+                items.Add(new($"{home}/members", "成員", Icons.Material.Outlined.Group));
+            }
+
+            items.Add(new($"{home}/security", "兩步驟驗證", Icons.Material.Outlined.Security));
+            return items;
+        }
+    }
+
+    protected override async Task OnInitializedAsync() =>
+        _user = AuthenticationState is null ? null : (await AuthenticationState).User;
+}

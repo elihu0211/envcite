@@ -1,0 +1,8 @@
+@* 靜態渲染也能用的圖示：MudBlazor 的 Material 圖示常數是 SVG 內容（<path …/>），直接畫進 <svg>，不經 MudBlazor 的元件（那需要互動連線）。
+   內容只來自圖示常數、不是使用者輸入。純裝飾，文字標籤才是名稱。 *@
+<svg class="ep-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">@((MarkupString)Path)</svg>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Path { get; set; } = string.Empty;
+}

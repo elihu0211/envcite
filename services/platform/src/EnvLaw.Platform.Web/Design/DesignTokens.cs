@@ -182,5 +182,11 @@ public static class DesignTokens
 
     public const string DrawerWidth = "260px";
 
+    /// <summary>平板的左側窄欄寬度（圖示在上、文字在下）。</summary>
+    public const string NavRailWidth = "5.5rem";
+
+    /// <summary>手機底部分頁列、平板窄欄每一項的最小高度（至少 44px 觸控目標）。</summary>
+    public const string NavItemHeight = "3.5rem";
+
     public const string AppBarHeight = "64px";
 }

@@ -5,21 +5,7 @@
 
 <PageTitle>總覽 · env-law</PageTitle>
 
-<header class="ep-page-header">
-    <div>
-        <h1 class="ep-page-title">@(DisplayName is null ? "你好" : $"你好，{DisplayName}")</h1>
-        <p class="ep-page-description">@(_tenant?.Name ?? Tenant)</p>
-    </div>
-    <div class="ep-actions">
-        <a class="ep-btn ep-btn-primary" href="@($"{PortalPaths.Home(Tenant)}/search")">搜尋法規</a>
-        @if (CanManageMembers)
-        {
-            <a class="ep-btn ep-btn-quiet" href="@($"{PortalPaths.Home(Tenant)}/members")">成員</a>
-        }
-        <a class="ep-btn ep-btn-quiet" href="@($"{PortalPaths.Home(Tenant)}/security")">兩步驟驗證</a>
-        <a class="ep-btn ep-btn-quiet" href="@PortalPaths.Password(Tenant)">改密碼</a>
-    </div>
-</header>
+<PageHeader Title="@(DisplayName is null ? "你好" : $"你好，{DisplayName}")" Description="@(_tenant?.Name ?? Tenant)" />
 
 <div class="ep-stack">
     <section class="ep-card" aria-labelledby="org-title">
@@ -43,13 +29,14 @@
             <dd>
                 @if (_twoFactor)
                 {
-                    <span>已啟用</span>
+                    <StatusBadge Tone="success">已啟用</StatusBadge>
                 }
                 else
                 {
-                    <span>尚未啟用。</span> <a href="@($"{PortalPaths.Home(Tenant)}/security")">設定</a>
+                    <StatusBadge Tone="warning">尚未啟用</StatusBadge> <a href="@($"{PortalPaths.Home(Tenant)}/security")">設定</a>
                 }
             </dd>
+            <dt>密碼</dt><dd><a href="@PortalPaths.Password(Tenant)">改密碼</a></dd>
         </dl>
     </section>
 
@@ -82,7 +69,7 @@
                                 <td>@key.Name</td>
                                 <td data-label="前綴"><code class="ep-mono">@key.Prefix</code></td>
                                 <td data-label="建立"><time datetime="@TaipeiTime.Full(key.CreatedAt)">@TaipeiTime.Format(key.CreatedAt)</time></td>
-                                <td data-label="狀態">@Status(key)</td>
+                                <td data-label="狀態"><StatusBadge Tone="@StatusTone(key)">@Status(key)</StatusBadge></td>
                             </tr>
                         }
                     </tbody>

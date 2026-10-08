@@ -1,0 +1,68 @@
+@* 客戶入口的外殼，純呈現（不讀登入狀態）：頂欄＋導覽＋主要內容。
+   同一個 <nav> 在三種寬度有三種版面，全由 CSS 決定，沒有 JavaScript（入口是靜態渲染）：
+   手機（< 48rem）底部分頁列；平板（48rem 起）左側窄欄，圖示在上、文字在下；桌機（80rem 起）左側完整側欄。
+   PortalLayout 依登入狀態填入；元件展示頁用假資料填入，才看得到每一種寬度。 *@
+<a class="ep-skip-link" href="#main">跳到主要內容</a>
+
+<div class="ep-shell" data-nav="@(ShowNav ? "on" : "off")">
+    <header class="ep-shell-top">
+        <span class="ep-brand">env-law</span>
+        @if (!string.IsNullOrEmpty(TenantName))
+        {
+            <span class="ep-portal-tenant">@TenantName</span>
+        }
+        <span class="ep-spacer"></span>
+        @if (!string.IsNullOrEmpty(UserEmail))
+        {
+            <span class="ep-user">@UserEmail</span>
+        }
+        @if (!string.IsNullOrEmpty(LogoutAction))
+        {
+            <form method="post" action="@LogoutAction">
+                <AntiforgeryToken />
+                <button type="submit" class="ep-btn ep-btn-quiet">登出</button>
+            </form>
+        }
+    </header>
+
+    @if (ShowNav)
+    {
+        <nav class="ep-nav" aria-label="主要導覽">
+            @foreach (var item in Items)
+            {
+                <NavLink class="ep-nav-link" href="@item.Href" Match="@item.Match">
+                    <NavIcon Path="@item.Icon" />
+                    <span>@item.Label</span>
+                </NavLink>
+            }
+        </nav>
+    }
+
+    <main class="ep-shell-main" id="main" tabindex="-1">
+        @ChildContent
+    </main>
+</div>
+
+@code {
+    public sealed record NavItem(string Href, string Label, string Icon, NavLinkMatch Match = NavLinkMatch.Prefix);
+
+    [Parameter]
+    public string? TenantName { get; set; }
+
+    [Parameter]
+    public string? UserEmail { get; set; }
+
+    /// <summary>登出表單的 action；沒有就不畫登出鈕（尚未登入、或展示頁）。</summary>
+    [Parameter]
+    public string? LogoutAction { get; set; }
+
+    /// <summary>登入後才有導覽；還在改初始密碼、註冊驗證器時只開那一頁，所以不顯示導覽。</summary>
+    [Parameter]
+    public bool ShowNav { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<NavItem> Items { get; set; } = [];
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

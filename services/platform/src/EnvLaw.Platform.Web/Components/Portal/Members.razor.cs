@@ -115,12 +115,11 @@ public partial class Members
         _ => outcome.Message ?? "操作失敗。",
     };
 
-    private static string StatusText(MemberInfo m) =>
-        string.Join("、", new[]
-        {
-            m.Disabled ? "已停用" : m.LockedOut ? "已鎖定" : m.MustChangePassword ? "待改密碼" : "正常",
-            m.TwoFactorEnabled ? "兩步驟" : null,
-        }.Where(x => x is not null));
+    private static string State(MemberInfo m) =>
+        m.Disabled ? "已停用" : m.LockedOut ? "已鎖定" : m.MustChangePassword ? "待改密碼" : "正常";
+
+    private static string StateTone(MemberInfo m) =>
+        m.Disabled ? "neutral" : m.LockedOut ? "error" : m.MustChangePassword ? "warning" : "success";
 
     public sealed class AddForm
     {

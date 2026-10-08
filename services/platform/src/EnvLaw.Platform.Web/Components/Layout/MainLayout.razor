@@ -22,7 +22,8 @@
         </AuthorizeView>
     </MudAppBar>
 
-    <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" Elevation="0">
+    @* Breakpoint.Lg 是 1280px，就是我們的桌機斷點（DesignTokens.Breakpoints.Desktop）：桌機常駐側欄，更窄時收成按鈕開的抽屜。 *@
+    <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Lg" Elevation="0">
         <NavMenu />
     </MudDrawer>
 

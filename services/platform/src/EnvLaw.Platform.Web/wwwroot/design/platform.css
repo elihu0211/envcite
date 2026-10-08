@@ -502,16 +502,176 @@ a:where(:not([class*="mud-"])) {
 /* ---- 客戶入口（靜態渲染，不用 MudBlazor 的元件）-------------------------------------------------
  * 只引用 token；表單控制項的外觀（高度、邊框、焦點）集中在這裡。 */
 
-.ep-portal-bar {
+/* ---- 客戶入口的外殼 ---------------------------------------------------------------------------
+ * 同一個 <nav> 三種版面（由 CSS 決定，沒有 JavaScript）：
+ *   手機（< 48rem）  底部分頁列：圖示在上、文字在下，平均分寬，避開手機底部的安全區。
+ *   平板（48rem 起） 左側窄欄：圖示在上、文字在下。
+ *   桌機（80rem 起） 左側完整側欄：圖示與文字並排。
+ * 頂欄是半透明的功能層（材質的輕重表達層級）；導覽是較實的一層。
+ */
+.ep-shell {
+    min-block-size: 100dvh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+        "top"
+        "main";
+}
+
+.ep-shell-top {
+    grid-area: top;
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
     display: flex;
     align-items: center;
     gap: var(--ep-space-3);
-    padding: var(--ep-space-3) max(var(--ep-space-4), env(safe-area-inset-left)) var(--ep-space-3) max(var(--ep-space-4), env(safe-area-inset-right));
-    padding-block-start: max(var(--ep-space-3), env(safe-area-inset-top));
+    min-block-size: var(--ep-appbar-height);
+    box-sizing: border-box;
+    padding-block: var(--ep-space-2);
+    padding-block-start: max(var(--ep-space-2), env(safe-area-inset-top));
+    padding-inline: max(var(--ep-space-4), env(safe-area-inset-left)) max(var(--ep-space-4), env(safe-area-inset-right));
     background: color-mix(in srgb, var(--ep-surface) 72%, transparent);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     backdrop-filter: blur(20px) saturate(180%);
     border-block-end: 1px solid var(--ep-border-subtle);
+}
+
+.ep-shell-main {
+    grid-area: main;
+    min-inline-size: 0;
+    inline-size: 100%;
+    max-inline-size: 60rem;
+    margin-inline: auto;
+    box-sizing: border-box;
+    padding: var(--ep-space-6) max(var(--ep-space-4), env(safe-area-inset-left)) var(--ep-space-8) max(var(--ep-space-4), env(safe-area-inset-right));
+}
+
+/* 頁面的直接子區塊（卡片、提示）之間統一的垂直節奏；頁首自己有下邊距。 */
+.ep-shell-main > :not(.ep-page-header) + * {
+    margin-block-start: var(--ep-space-4);
+}
+
+/* 手機：導覽固定在底部，內容底部留出它的高度。 */
+.ep-nav {
+    grid-area: nav;
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: 10;
+    display: flex;
+    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+    padding-block-end: env(safe-area-inset-bottom);
+    background: var(--ep-surface);
+    border-block-start: 1px solid var(--ep-border-subtle);
+}
+
+.ep-shell[data-nav="on"] .ep-shell-main {
+    padding-block-end: calc(var(--ep-space-8) + var(--ep-nav-height) + env(safe-area-inset-bottom));
+}
+
+.ep-nav-link {
+    flex: 1 1 0;
+    min-inline-size: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ep-space-1);
+    min-block-size: var(--ep-nav-height);
+    box-sizing: border-box;
+    padding: var(--ep-space-2) var(--ep-space-1);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-micro-size);
+    line-height: var(--ep-micro-leading);
+    letter-spacing: var(--ep-micro-tracking);
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-nav-link:active {
+    transform: scale(var(--ep-press-scale));
+    transition-duration: 0s;
+}
+
+.ep-nav-link.active {
+    color: var(--ep-primary);
+    background: color-mix(in srgb, var(--ep-primary) 10%, transparent);
+}
+
+@media (hover: hover) {
+    .ep-nav-link:hover:not(.active) {
+        background: var(--ep-surface-muted);
+        color: var(--ep-text);
+    }
+}
+
+.ep-icon {
+    flex: none;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    fill: currentColor;
+}
+
+/* 平板：左側窄欄。 */
+@media (width >= 48rem) {
+    .ep-shell[data-nav="on"] {
+        grid-template-columns: var(--ep-nav-rail-width) minmax(0, 1fr);
+        grid-template-areas:
+            "top top"
+            "nav main";
+    }
+
+    .ep-shell[data-nav="on"] .ep-shell-main {
+        padding-block-end: var(--ep-space-8);
+    }
+
+    .ep-nav {
+        position: sticky;
+        inset: auto;
+        inset-block-start: var(--ep-appbar-height);
+        align-self: start;
+        flex-direction: column;
+        gap: var(--ep-space-1);
+        block-size: calc(100dvh - var(--ep-appbar-height));
+        box-sizing: border-box;
+        padding: var(--ep-space-2);
+        padding-inline-start: max(var(--ep-space-2), env(safe-area-inset-left));
+        background: var(--ep-bg);
+        border-block-start: 0;
+        border-inline-end: 1px solid var(--ep-border-subtle);
+    }
+
+    .ep-nav-link {
+        flex: none;
+        border-radius: var(--ep-radius-control);
+    }
+}
+
+/* 桌機：左側完整側欄，圖示與文字並排。 */
+@media (width >= 80rem) {
+    .ep-shell[data-nav="on"] {
+        grid-template-columns: var(--ep-drawer-width) minmax(0, 1fr);
+    }
+
+    .ep-nav {
+        padding: var(--ep-space-4) var(--ep-space-3);
+    }
+
+    .ep-nav-link {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: var(--ep-space-3);
+        min-block-size: var(--ep-touch-target);
+        padding-inline: var(--ep-space-3);
+        font-size: var(--ep-body-sm-size);
+        line-height: var(--ep-body-sm-leading);
+        letter-spacing: var(--ep-body-sm-tracking);
+        text-align: start;
+    }
 }
 
 .ep-portal-tenant {
@@ -521,12 +681,6 @@ a:where(:not([class*="mud-"])) {
 
 .ep-spacer {
     flex: 1;
-}
-
-.ep-portal {
-    max-inline-size: 60rem;
-    margin-inline: auto;
-    padding: var(--ep-space-6) max(var(--ep-space-4), env(safe-area-inset-left)) max(var(--ep-space-8), env(safe-area-inset-bottom)) max(var(--ep-space-4), env(safe-area-inset-right));
 }
 
 .ep-portal-card {
@@ -618,22 +772,64 @@ a:where(:not([class*="mud-"])) {
     border-color: var(--ep-border-control);
 }
 
-/* 提示：邊框與文字說明承擔語意，顏色只是輔助。 */
+/* 提示：邊框與文字說明承擔語意，顏色只是輔助。一個語氣一個色（--tone）：淡底與邊框由它疊透明度得到。 */
 .ep-alert {
+    --tone: var(--ep-border-control);
     margin: var(--ep-space-4) 0 0;
     padding: var(--ep-space-3) var(--ep-space-4);
-    border: 1px solid var(--ep-border-control);
-    border-inline-start-width: 4px;
+    border: 1px solid color-mix(in srgb, var(--tone) 40%, var(--ep-surface));
+    border-inline-start: 4px solid var(--tone);
     border-radius: var(--ep-radius-control);
+    background: color-mix(in srgb, var(--tone) 8%, var(--ep-surface));
     font-size: var(--ep-body-sm-size);
 }
 
 .ep-alert-error {
-    border-color: var(--ep-error);
+    --tone: var(--ep-error);
 }
 
 .ep-alert-info {
-    border-color: var(--ep-info);
+    --tone: var(--ep-info);
+}
+
+.ep-alert-success {
+    --tone: var(--ep-success);
+}
+
+.ep-alert-warning {
+    --tone: var(--ep-warning);
+}
+
+/* 狀態徽章：小、有文字、圓角到底。字色是語氣色，底是它的一成（對比由 DesignTokenTests 驗證）。 */
+.ep-badge {
+    --tone: var(--ep-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    padding: 0 var(--ep-space-2);
+    border-radius: var(--ep-radius-pill);
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 10%, var(--ep-surface));
+    font-size: var(--ep-micro-size);
+    line-height: var(--ep-micro-leading);
+    letter-spacing: var(--ep-micro-tracking);
+    font-weight: var(--ep-micro-weight);
+    white-space: nowrap;
+}
+
+.ep-badge[data-tone="success"] {
+    --tone: var(--ep-success);
+}
+
+.ep-badge[data-tone="warning"] {
+    --tone: var(--ep-warning);
+}
+
+.ep-badge[data-tone="error"] {
+    --tone: var(--ep-error);
+}
+
+.ep-badge[data-tone="info"] {
+    --tone: var(--ep-info);
 }
 
 .ep-plain-table {
@@ -667,7 +863,7 @@ a:where(:not([class*="mud-"])) {
 }
 
 @media (prefers-reduced-transparency: reduce) {
-    .ep-portal-bar {
+    .ep-shell-top {
         background: var(--ep-surface);
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
@@ -752,4 +948,29 @@ a:where(:not([class*="mud-"])) {
         grid-row: auto;
         padding-block-start: var(--ep-space-2);
     }
+}
+
+/* ---- 元件展示頁（只在 Development）--------------------------------------------------------------- */
+.ep-swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: var(--ep-space-4);
+    margin-block-start: var(--ep-space-4);
+}
+
+.ep-swatch {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+    min-inline-size: 0;
+}
+
+.ep-swatch-chip {
+    block-size: 3rem;
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-control);
+}
+
+.ep-type-row {
+    margin: var(--ep-space-3) 0 0;
 }

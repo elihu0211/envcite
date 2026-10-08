@@ -1,0 +1,122 @@
+@page "/design"
+@layout BareLayout
+@attribute [ExcludeFromInteractiveRouting]
+
+@* 元件展示：只在 Development（其他環境是 404，見 WebModule），不需要登入，讓改完 token 能直接看每個元件在三種寬度的樣子。
+   所有顏色、字級都取自 token（--ep-*），這裡不寫任何值。 *@
+<PageTitle>元件展示 · env-law</PageTitle>
+
+<PortalShell TenantName="展示租戶" UserEmail="owner@example.test" ShowNav="true" Items="@_nav">
+    <PageHeader Title="元件展示" Description="只在 Development 看得到。改 DesignTokens.cs 之後，在這裡看每個元件在手機、平板、桌機的樣子。" />
+
+    <section class="ep-card" aria-labelledby="g-color">
+        <h2 id="g-color" class="ep-section-title">色彩</h2>
+        <div class="ep-swatches">
+            @foreach (var (name, label) in _colors)
+            {
+                <div class="ep-swatch">
+                    <span class="ep-swatch-chip" style="background: var(--ep-@name)"></span>
+                    <code class="ep-mono">--ep-@name</code>
+                    <span class="ep-secondary">@label</span>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="ep-card" aria-labelledby="g-type">
+        <h2 id="g-type" class="ep-section-title">字級</h2>
+        @foreach (var (name, sample) in _types)
+        {
+            <p class="ep-type-row" style="font-size: var(--ep-@(name)-size); line-height: var(--ep-@(name)-leading); letter-spacing: var(--ep-@(name)-tracking); font-weight: var(--ep-@(name)-weight)">
+                @sample <code class="ep-mono">@name</code>
+            </p>
+        }
+    </section>
+
+    <section class="ep-card" aria-labelledby="g-btn">
+        <h2 id="g-btn" class="ep-section-title">按鈕與表單</h2>
+        <div class="ep-actions">
+            <button type="button" class="ep-btn ep-btn-primary">主要動作</button>
+            <button type="button" class="ep-btn ep-btn-quiet">次要動作</button>
+        </div>
+        <div class="ep-form">
+            <div class="ep-field-row">
+                <label class="ep-label" for="g-email">電子郵件</label>
+                <input id="g-email" class="ep-input" type="email" placeholder="name@example.com" />
+                <p class="ep-hint">說明文字用次要色。</p>
+            </div>
+            <div class="ep-field-row">
+                <label class="ep-label" for="g-role">角色</label>
+                <select id="g-role" class="ep-input"><option>唯讀</option><option>開發者</option></select>
+            </div>
+        </div>
+    </section>
+
+    <section class="ep-card" aria-labelledby="g-badge">
+        <h2 id="g-badge" class="ep-section-title">徽章與提示</h2>
+        <p>
+            <StatusBadge>中性</StatusBadge>
+            <StatusBadge Tone="success">正常</StatusBadge>
+            <StatusBadge Tone="warning">待改密碼</StatusBadge>
+            <StatusBadge Tone="error">已鎖定</StatusBadge>
+            <StatusBadge Tone="info">兩步驟</StatusBadge>
+        </p>
+        <p class="ep-alert" role="status">中性提示：邊框與文字說明承擔語意。</p>
+        <p class="ep-alert ep-alert-success" role="status">成功：操作已完成。</p>
+        <p class="ep-alert ep-alert-warning" role="status">注意：這個操作無法復原。</p>
+        <p class="ep-alert ep-alert-error" role="alert">錯誤：請稍後再試。</p>
+        <p class="ep-alert ep-alert-info" role="status">資訊：系統將於今晚進行維護。</p>
+    </section>
+
+    <section class="ep-card ep-table-card ep-cards" aria-labelledby="g-table">
+        <h2 id="g-table" class="ep-section-title ep-card-title">表格（窄卡片時變成一列一張小卡）</h2>
+        <div class="ep-table-wrap">
+            <table class="ep-plain-table" aria-label="範例">
+                <thead>
+                    <tr><th scope="col">電子郵件</th><th scope="col">角色</th><th scope="col">狀態</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>owner@example.test</td>
+                        <td data-label="角色">擁有者</td>
+                        <td data-label="狀態"><StatusBadge Tone="success">正常</StatusBadge> <StatusBadge Tone="info">兩步驟</StatusBadge></td>
+                    </tr>
+                    <tr>
+                        <td>viewer@example.test</td>
+                        <td data-label="角色">唯讀</td>
+                        <td data-label="狀態"><StatusBadge Tone="neutral">已停用</StatusBadge></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="ep-card" aria-labelledby="g-empty">
+        <EmptyState Title="還沒有資料" Description="現在是什麼狀態、下一步可以做什麼。">
+            <button type="button" class="ep-btn ep-btn-primary">新增</button>
+        </EmptyState>
+    </section>
+</PortalShell>
+
+@code {
+    private static readonly (string Name, string Label)[] _colors =
+    [
+        ("bg", "頁面底"), ("surface", "卡片"), ("surface-muted", "欄標題、展開列"), ("text", "主要文字"), ("text-secondary", "次要文字"),
+        ("primary", "主色"), ("link", "連結"), ("success", "成功"), ("warning", "警示"), ("error", "錯誤"), ("info", "資訊"),
+        ("border-subtle", "髮絲線"), ("border-control", "控制項外框"),
+    ];
+
+    private static readonly (string Name, string Sample)[] _types =
+    [
+        ("display", "顯示"), ("h1", "頁面標題"), ("h2", "區塊標題"), ("h3", "小節標題"), ("body", "內文：臺灣環境法規的檢索與引用"),
+        ("body-sm", "小字：說明與表格"), ("caption", "註記"), ("micro", "最小字級"),
+    ];
+
+    private static readonly IReadOnlyList<PortalShell.NavItem> _nav =
+    [
+        new("/design", "總覽", Icons.Material.Outlined.Dashboard, NavLinkMatch.All),
+        new("#search", "搜尋法規", Icons.Material.Outlined.Search),
+        new("#members", "成員", Icons.Material.Outlined.Group),
+        new("#security", "兩步驟驗證", Icons.Material.Outlined.Security),
+    ];
+}

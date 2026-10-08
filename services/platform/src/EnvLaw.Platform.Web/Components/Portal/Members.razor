@@ -5,13 +5,7 @@
 
 <PageTitle>成員 · env-law</PageTitle>
 
-<header class="ep-page-header">
-    <div>
-        <h1 class="ep-page-title">成員</h1>
-        <p class="ep-page-description">新增、停用成員，改角色，或為忘記密碼的人重設。每個動作都會留下紀錄。</p>
-    </div>
-    <a class="ep-btn ep-btn-quiet" href="@PortalPaths.Home(Tenant)">回總覽</a>
-</header>
+<PageHeader Title="成員" Description="新增、停用成員，改角色，或為忘記密碼的人重設。每個動作都會留下紀錄。" />
 
 @if (_team is null)
 {
@@ -88,7 +82,13 @@ else
                             <tr>
                                 <td>@member.Email@(member.DisplayName is null ? "" : $"（{member.DisplayName}）")@(row.IsYou ? "　· 你" : "")</td>
                                 <td data-label="角色">@PortalLabels.Role(member.Role)</td>
-                                <td data-label="狀態">@StatusText(member)</td>
+                                <td data-label="狀態">
+                                    <StatusBadge Tone="@StateTone(member)">@State(member)</StatusBadge>
+                                    @if (member.TwoFactorEnabled)
+                                    {
+                                        <StatusBadge Tone="info">兩步驟</StatusBadge>
+                                    }
+                                </td>
                                 <td class="ep-row-actions">
                                     @if (row.CanManage)
                                     {
