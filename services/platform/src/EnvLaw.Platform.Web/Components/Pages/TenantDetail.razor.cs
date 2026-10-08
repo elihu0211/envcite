@@ -146,6 +146,33 @@ public partial class TenantDetail
         });
     }
 
+    private async Task SetDisabledAsync(MemberInfo member, bool disabled)
+    {
+        if (disabled)
+        {
+            var confirmed = await Dialogs.ShowMessageBoxAsync(
+                "停用成員", $"停用 {member.Email} 後，他在所有裝置上立刻登出、也不能再登入；帳號與稽核紀錄都保留，之後可以重新啟用。確定？",
+                yesText: "停用", cancelText: "取消");
+            if (confirmed != true)
+            {
+                return;
+            }
+        }
+
+        await RunAsync(async () =>
+        {
+            var changed = await Members.SetDisabledAsync(await ActorAsync(), TenantId, member.Id, disabled, CancellationToken.None);
+            if (!changed.IsOk)
+            {
+                Fail(changed.Message ?? "操作失敗。");
+                return;
+            }
+
+            await RefreshAsync();
+            Succeed(disabled ? $"已停用 {member.Email}。" : $"已重新啟用 {member.Email}。");
+        });
+    }
+
     private async Task ResetTwoFactorAsync(MemberInfo member)
     {
         var confirmed = await Dialogs.ShowMessageBoxAsync(

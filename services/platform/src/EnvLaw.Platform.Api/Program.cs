@@ -90,7 +90,8 @@ app.MapGroup("/admin")
     .RequireAuthorization(PlatformAuth.AdminPolicy)
     .MapTenancyAdminEndpoints()
     .MapApiAccessAdminEndpoints()
-    .MapAuditAdminEndpoints();
+    .MapAuditAdminEndpoints()
+    .MapMembersAdminEndpoints();
 
 var v2 = app.MapGroup("/v2")
     .RequireAuthorization(PlatformAuth.TenantPolicy)
