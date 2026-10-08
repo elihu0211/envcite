@@ -1,3 +1,6 @@
+using EnvLaw.Platform.SharedKernel;
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -36,11 +39,18 @@ internal static class PlatformOpenApi
                 return Task.CompletedTask;
             });
             // 每個 /v2 端點都經 API key 驗證與逐租戶限流，故兩種回應逐一列出。
-            options.AddOperationTransformer((operation, _, _) =>
+            options.AddOperationTransformer((operation, context, _) =>
             {
                 operation.Responses ??= [];
                 operation.Responses["401"] = new OpenApiResponse { Description = "API key 缺少、無效、已過期或已撤銷。" };
                 operation.Responses["429"] = new OpenApiResponse { Description = "超過本租戶方案的速率限制。" };
+                // 資料端點（PaidPolicy）另外要求租戶有方案；管理端點不要求，所以不列 402。
+                if (context.Description.ActionDescriptor.EndpointMetadata
+                    .OfType<IAuthorizeData>().Any(a => a.Policy == PlatformAuth.PaidPolicy))
+                {
+                    operation.Responses["402"] = new OpenApiResponse { Description = "本租戶目前沒有有效的方案（完全付費制）。請聯絡業務啟用。" };
+                }
+
                 return Task.CompletedTask;
             });
         });

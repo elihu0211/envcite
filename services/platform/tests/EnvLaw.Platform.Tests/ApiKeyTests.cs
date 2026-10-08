@@ -129,7 +129,7 @@ public sealed class ApiKeyTests(PlatformFactory factory)
             statuses.Add(response.StatusCode);
         }
 
-        // One past the free allowance is still within pro's.
+        // One past the standard allowance is still within pro's.
         Assert.All(statuses, s => Assert.Equal(HttpStatusCode.OK, s));
     }
 }

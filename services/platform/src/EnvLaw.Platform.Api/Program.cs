@@ -83,12 +83,18 @@ app.MapGroup("/admin")
     .MapTenancyAdminEndpoints()
     .MapApiAccessAdminEndpoints();
 
-app.MapGroup("/v2")
+var v2 = app.MapGroup("/v2")
     .RequireAuthorization(PlatformAuth.TenantPolicy)
-    .RequireRateLimiting(PlatformAuth.PerTenantRateLimit)
-    .MapTenancyEndpoints()
+    .RequireRateLimiting(PlatformAuth.PerTenantRateLimit);
+
+// 管理端點：沒有方案的租戶也要能看自己是誰、看用量、撤銷被盜的 key。
+v2.MapTenancyEndpoints()
     .MapApiAccessEndpoints()
-    .MapMeteringEndpoints()
+    .MapMeteringEndpoints();
+
+// 資料端點：完全付費制，租戶要有方案，否則 402。
+v2.MapGroup(string.Empty)
+    .RequireAuthorization(PlatformAuth.PaidPolicy)
     .MapOntologyEndpoints()
     .MapConsultEndpoints();
 

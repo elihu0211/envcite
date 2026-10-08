@@ -12,6 +12,9 @@ public static class PlatformAuth
     /// <summary>需要已驗證的租戶 API key。</summary>
     public const string TenantPolicy = "Tenant";
 
+    /// <summary>資料端點（本體、接地）：除了 <see cref="TenantPolicy"/>，租戶還要有方案；沒有方案回 402。</summary>
+    public const string PaidPolicy = "Paid";
+
     /// <summary>需要平台 admin key。</summary>
     public const string AdminPolicy = "Admin";
 

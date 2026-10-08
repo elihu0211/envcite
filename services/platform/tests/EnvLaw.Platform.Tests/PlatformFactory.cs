@@ -62,9 +62,11 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.UseSetting("Ontology:InternalToken", FakeOntologyServer.InternalToken);
         builder.UseSetting("Consult:Address", Consult.Address.ToString());
         builder.UseSetting("Consult:InternalToken", FakeConsultServer.InternalToken);
-        builder.UseSetting("Platform:Plans:free:PermitLimit", RateLimitPermits.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        builder.UseSetting("Platform:Plans:standard:PermitLimit", RateLimitPermits.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting("Platform:Plans:pro:PermitLimit", (RateLimitPermits * 2).ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting($"Platform:TenantPlans:{ProTenant}", "pro");
+        // 測試動態建立大量租戶，無法逐一指派方案，所以給預設方案。正式環境不設（完全付費制），見 PaidOnlyTests。
+        builder.UseSetting("Platform:DefaultPlan", "standard");
         builder.ConfigureServices(services => services.Replace(ServiceDescriptor.Singleton<TimeProvider>(Time)));
     }
 
