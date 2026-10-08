@@ -5,6 +5,7 @@ using EnvLaw.Platform.Data;
 using EnvLaw.Platform.Modules.ApiAccess;
 using EnvLaw.Platform.Modules.Audit;
 using EnvLaw.Platform.Modules.Consult;
+using EnvLaw.Platform.Modules.Conversations;
 using EnvLaw.Platform.Modules.Members;
 using EnvLaw.Platform.Modules.Metering;
 using EnvLaw.Platform.Modules.Ontology;
@@ -45,12 +46,14 @@ if (!generatingOpenApi)
     // Data Protection 啟動時就會預載金鑰環；模擬伺服器沒有資料庫，改用預設的暫時金鑰。
     builder.Services.AddPlatformDataProtection();
     builder.Services.AddEntitlementRefresh();
+    builder.Services.AddConversationRetention();
 }
 
 builder.Services.AddPlatformData();
 builder.Services.AddApiAccessModule();
 builder.Services.AddAuditModule();
 builder.Services.AddMembersModule();
+builder.Services.AddConversationsModule();
 builder.Services.AddSingleton<ITenantDirectory, TenantDirectory>();
 builder.Services.AddMeteringModule();
 builder.Services.AddOntologyModule();

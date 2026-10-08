@@ -43,6 +43,7 @@
     <ProjectReference Include="..\EnvLaw.Platform.Modules.Ontology\EnvLaw.Platform.Modules.Ontology.csproj" />
     <ProjectReference Include="..\EnvLaw.Platform.Modules.Metering\EnvLaw.Platform.Modules.Metering.csproj" />
     <ProjectReference Include="..\EnvLaw.Platform.Modules.Consult\EnvLaw.Platform.Modules.Consult.csproj" />
+    <ProjectReference Include="..\EnvLaw.Platform.Modules.Conversations\EnvLaw.Platform.Modules.Conversations.csproj" />
     <ProjectReference Include="..\EnvLaw.Platform.Modules.Members\EnvLaw.Platform.Modules.Members.csproj" />
     <ProjectReference Include="..\EnvLaw.Platform.Data\EnvLaw.Platform.Data.csproj" />
     <ProjectReference Include="..\EnvLaw.Platform.Web\EnvLaw.Platform.Web.csproj" />

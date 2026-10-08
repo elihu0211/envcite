@@ -60,6 +60,10 @@
 
         @* POST：查詢全文是案件內容，不放進網址（網址會被各種日誌記下來）。 *@
         <EditForm Model="Input" FormName="portal-search" OnValidSubmit="SearchAsync" method="post" class="ep-composer-form">
+            @if (_conversationId is { } conversation)
+            {
+                <input type="hidden" name="Input.ConversationId" value="@conversation" />
+            }
             <div class="ep-composer">
                 <label for="query" class="ep-visually-hidden">關鍵字</label>
                 <InputText id="query" @bind-Value="Input.Query" type="search" class="ep-composer-input" maxlength="500" required
@@ -84,7 +88,14 @@
                 </div>
             }
 
-            <p id="query-hint" class="ep-ask-note">用條文裡會出現的詞，空白分隔。不填日期就是現行；查行為發生當時適用的條文，請填那一天。查詢文字不會被記錄，只記一次搜尋的次數。</p>
+            <p id="query-hint" class="ep-ask-note">用條文裡會出現的詞，空白分隔。不填日期就是現行；查行為發生當時適用的條文，請填那一天。@if (History.Enabled)
+            {
+                <text>你的提問會存在<a href="@($"{PortalPaths.Home(Tenant)}/history")">對話紀錄</a>，只有你看得到，@History.RetentionDays 天後自動刪除，也可以隨時自己刪。</text>
+            }
+            else
+            {
+                <text>查詢文字不會被記錄，只記一次搜尋的次數。</text>
+            }</p>
         </EditForm>
     }
 </div>

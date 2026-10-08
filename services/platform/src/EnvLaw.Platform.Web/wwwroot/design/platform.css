@@ -1230,3 +1230,33 @@ a.ep-brand {
         color: var(--ep-text);
     }
 }
+
+/* 對話紀錄：一串對話一張卡，標題與時間是連結，刪除在右邊。 */
+.ep-history {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--ep-space-3);
+}
+
+.ep-history-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
+    padding: var(--ep-space-3) var(--ep-space-4);
+}
+
+.ep-history-link {
+    flex: 1;
+    min-inline-size: 0;
+    display: grid;
+    gap: var(--ep-space-1);
+    color: inherit;
+    text-decoration: none;
+}
+
+.ep-history-title {
+    overflow-wrap: anywhere;
+    color: var(--ep-link);
+}

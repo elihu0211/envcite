@@ -34,6 +34,7 @@ public static class AuditLabels
         AuditActions.MemberDisabled => "停用成員",
         AuditActions.MemberEnabled => "重新啟用成員",
         AuditActions.MemberRoleChanged => "變更成員角色",
+        AuditActions.ConversationDeleted => "刪除對話",
         _ => action,
     };
 
