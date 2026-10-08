@@ -20,7 +20,7 @@ from typing import Any, cast
 from env_law_ontology.reasoning import evaluate
 from env_law_ontology.verification.context import context_block
 from env_law_ontology.verification.conventions import apply as with_conventions
-from env_law_ontology.verification.gates import Conn, GateResult, _unit, statement_as_of
+from env_law_ontology.verification.gates import Conn, GateResult, statement_as_of, unit_of
 from env_law_ontology.verification.jsonutil import object_from
 from env_law_ontology.verification.models import Model, family_of
 
@@ -91,7 +91,7 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
     `for_reader` 給評審團看：罰則效果附上中文（原本是資料庫的列舉值，評審看不懂 `fine`）。往返驗證的
     重抽者要把效果寫回列舉值，所以它看到的描述不附中文。
     """
-    u = _unit(conn, statement_id)
+    u = unit_of(conn, statement_id)
     lines = [f"陳述種類：{_KIND.get((u.kind, u.deontic), u.kind)}"]
     for slot, value in conn.execute(
         "SELECT sl.slot::text, coalesce(k.code, sl.literal) FROM annotation.statement_slot AS sl"
@@ -159,7 +159,7 @@ def _signature(
 
 
 def _stored_signature(conn: Conn, statement_id: int) -> dict[str, Any]:
-    u = _unit(conn, statement_id)
+    u = unit_of(conn, statement_id)
     conds = [
         (
             str(r[0]),
@@ -349,7 +349,7 @@ class IndependentTestGate:
         return f"gate:independent_test@1:{self.tester.name}"
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
-        u = _unit(conn, statement_id)
+        u = unit_of(conn, statement_id)
         if not (u.kind == "prescriptive" and u.deontic == "obligation"):
             return None
         ok, skipped = eligible(
@@ -443,7 +443,7 @@ class PanelGate:
                 "inconclusive",
                 {"reason": "fewer than the required model families", "skipped": skipped},
             )
-        u = _unit(conn, statement_id)
+        u = unit_of(conn, statement_id)
         prompt = JUDGE.format(
             context=context_block(u.context),
             text=u.text,

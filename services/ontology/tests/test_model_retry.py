@@ -20,7 +20,7 @@ from env_law_ontology.verification.gates import GateResult
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.test_verification import EXTRACTED, _two_statements
+from tests.verification_support import EXTRACTED, _two_statements
 
 Conn = psycopg.Connection[tuple[object, ...]]
 GOOD = {"choices": [{"message": {"content": "答"}}]}

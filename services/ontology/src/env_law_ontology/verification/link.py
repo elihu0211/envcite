@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from env_law_ontology.annotate import AnnotationError, load
-from env_law_ontology.verification.gates import Conn, _unit, citations
+from env_law_ontology.verification.gates import Conn, citations, unit_of
 from env_law_ontology.verification.jsonutil import object_from
 from env_law_ontology.verification.models import Model, ModelError
 
@@ -62,7 +62,7 @@ def _choose(
     conn: Conn, model: Model, text: str, candidates: Sequence[tuple[int, str]]
 ) -> int | None:
     """多個候選時請模型挑一個；挑出的必須是候選之一。"""
-    listed = "\n".join(f"[{sid}] {path}：{_unit(conn, sid).quoted}" for sid, path in candidates)
+    listed = "\n".join(f"[{sid}] {path}：{unit_of(conn, sid).quoted}" for sid, path in candidates)
     try:
         reply = model.complete(CHOOSE.format(text=text, candidates=listed))
     except ModelError:
