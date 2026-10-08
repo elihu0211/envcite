@@ -22,6 +22,8 @@ public static class AuditActions
     public const string PortalMfaEnabled = "portal.mfa_enabled";
     public const string PortalRecoveryCodeUsed = "portal.recovery_code_used";
     public const string MemberMfaReset = "member.mfa_reset";
+    public const string PortalMfaDisabled = "portal.mfa_disabled";
+    public const string PortalRecoveryCodesRegenerated = "portal.recovery_codes_regenerated";
 
     /// <summary>目前會寫入的所有事件，供篩選選單使用。</summary>
     public static IReadOnlyList<string> All { get; } =
@@ -29,6 +31,7 @@ public static class AuditActions
         TenantCreated, TenantPlanAssigned, TenantPlanRemoved, ApiKeyIssued, ApiKeyRevoked, OperatorSignedIn, OperatorSignInDenied, OperatorSignedOut,
         MemberCreated, MemberPasswordReset, PortalSignedIn, PortalSignInFailed, PortalPasswordChanged, PortalSignedOut,
         PortalMfaEnabled, PortalRecoveryCodeUsed, MemberMfaReset,
+        PortalMfaDisabled, PortalRecoveryCodesRegenerated,
     ];
 }
 

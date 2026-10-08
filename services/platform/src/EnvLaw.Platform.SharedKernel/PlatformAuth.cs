@@ -36,7 +36,13 @@ public static class PlatformAuth
     /// <summary>客戶入口的有效 session（已登入、cookie 的租戶就是目前路徑的租戶）；改密碼頁用這個。</summary>
     public const string PortalSessionPolicy = "PortalSession";
 
-    /// <summary>在 <see cref="PortalSessionPolicy"/> 之上，還要已改過營運者經手的初始密碼；入口其餘頁面用這個。</summary>
+    /// <summary>
+    /// 在 <see cref="PortalSessionPolicy"/> 之上，已改過營運者經手的初始密碼，但<b>允許還沒註冊兩步驟驗證</b>：
+    /// 註冊頁用這個（被要求註冊的人，唯一能進的地方）。
+    /// </summary>
+    public const string PortalEnrollmentPolicy = "PortalEnrollment";
+
+    /// <summary>在 <see cref="PortalSessionPolicy"/> 之上，還要已改過營運者經手的初始密碼、也已完成角色要求的兩步驟驗證；入口其餘頁面用這個。</summary>
     public const string PortalPolicy = "Portal";
 
     /// <summary>客戶入口登入與改密碼的 rate limiting policy：依來源位址分區，只限制 POST。</summary>
