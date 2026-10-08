@@ -65,25 +65,6 @@ public static class DesignTokens
         Focus = "#0071E3",
     };
 
-    public static ColorTokens Dark { get; } = new()
-    {
-        Background = "#000000",
-        Surface = "#1D1D1F",
-        SurfaceRaised = "#2C2C2E",
-        Text = "#F5F5F7",
-        TextSecondary = "#A1A1A6",
-        Primary = "#0071E3",
-        OnPrimary = "#FFFFFF",
-        Link = "#2997FF",
-        Success = "#30D158",
-        Warning = "#FF9F0A",
-        Error = "#FF453A",
-        Info = "#64D2FF",
-        BorderSubtle = "#424245",
-        BorderControl = "#86868B",
-        Focus = "#2997FF",
-    };
-
     // ---- 字型 ----------------------------------------------------------------------------------
     // 預設用平台系統字型：已內建光學尺寸與字距調校，也不對第三方發請求。繁中字型依平台列出，
     // 最後退到 sans-serif。

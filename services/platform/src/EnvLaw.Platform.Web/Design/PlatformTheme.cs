@@ -9,8 +9,7 @@ public static class PlatformTheme
 {
     public static MudTheme Create() => new()
     {
-        PaletteLight = Palette(DesignTokens.Light, new PaletteLight()),
-        PaletteDark = Palette(DesignTokens.Dark, new PaletteDark()),
+        PaletteLight = Palette(DesignTokens.Light),
         Typography = Typography(),
         LayoutProperties = new LayoutProperties
         {
@@ -20,9 +19,9 @@ public static class PlatformTheme
         },
     };
 
-    private static T Palette<T>(ColorTokens c, T palette)
-        where T : Palette
+    private static PaletteLight Palette(ColorTokens c)
     {
+        var palette = new PaletteLight();
         palette.Background = c.Background;
         palette.Surface = c.Surface;
         palette.AppbarBackground = c.Surface;

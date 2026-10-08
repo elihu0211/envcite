@@ -33,7 +33,7 @@ public static partial class DesignTokenTests
     public static TheoryData<string, string, string, double> TextPairs()
     {
         var data = new TheoryData<string, string, string, double>();
-        foreach (var (name, c) in new[] { ("light", DesignTokens.Light), ("dark", DesignTokens.Dark) })
+        foreach (var (name, c) in new[] { ("light", DesignTokens.Light) })
         {
             // 一般文字 4.5:1。
             data.Add(name, "text on background", $"{c.Text}|{c.Background}", 4.5);
@@ -79,11 +79,14 @@ public static partial class DesignTokenTests
             "--ep-focus",
         })
         {
-            // 淺色（:root）與深色（媒體查詢 + data-theme）各一次。
-            Assert.Equal(3, Regex.Count(css, Regex.Escape(variable + ":")));
+            // 只有淺色：每個變數只定義一次（:root）。
+            Assert.Equal(1, Regex.Count(css, Regex.Escape(variable + ":")));
         }
 
-        Assert.Contains("prefers-color-scheme: dark", css, StringComparison.Ordinal);
+        // 產品決定只做淺色：不得出現任何深色的規則，系統設成深色時頁面也維持淺色。
+        Assert.DoesNotContain("prefers-color-scheme", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("data-theme", css, StringComparison.Ordinal);
+        Assert.Contains("color-scheme:light", css, StringComparison.Ordinal);
         Assert.Contains("--ep-font:system-ui", css, StringComparison.Ordinal);
         Assert.Contains("\"PingFang TC\"", css, StringComparison.Ordinal);
     }
@@ -109,10 +112,6 @@ public static partial class DesignTokenTests
         Assert.Equal(
             DesignTokens.Light.Primary,
             theme.PaletteLight.Primary.ToString(MudBlazor.Utilities.MudColorOutputFormats.Hex)[..7],
-            ignoreCase: true);
-        Assert.Equal(
-            DesignTokens.Dark.Primary,
-            theme.PaletteDark.Primary.ToString(MudBlazor.Utilities.MudColorOutputFormats.Hex)[..7],
             ignoreCase: true);
         Assert.Equal("none", theme.Typography.Button.TextTransform);
     }
@@ -194,8 +193,9 @@ public sealed class DesignPageTests(PlatformFactory factory)
         Assert.Contains("viewport-fit=cover", html, StringComparison.Ordinal);
         Assert.DoesNotContain("user-scalable", html, StringComparison.Ordinal);
         Assert.DoesNotContain("maximum-scale", html, StringComparison.Ordinal);
-        Assert.Contains($"<meta name=\"theme-color\" content=\"{DesignTokens.Light.Background}\" media=\"(prefers-color-scheme: light)\"", html, StringComparison.Ordinal);
-        Assert.Contains($"<meta name=\"theme-color\" content=\"{DesignTokens.Dark.Background}\" media=\"(prefers-color-scheme: dark)\"", html, StringComparison.Ordinal);
+        Assert.Contains($"<meta name=\"theme-color\" content=\"{DesignTokens.Light.Background}\"", html, StringComparison.Ordinal);
+        Assert.Contains("<meta name=\"color-scheme\" content=\"light\"", html, StringComparison.Ordinal); // 只有淺色
+        Assert.DoesNotContain("prefers-color-scheme", html, StringComparison.Ordinal);
         Assert.DoesNotContain("fonts.googleapis.com", html, StringComparison.Ordinal);
         Assert.Contains("<h1", html, StringComparison.Ordinal);
     }
