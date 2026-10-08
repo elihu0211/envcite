@@ -58,7 +58,7 @@ public static class ApiAccessEndpoints
             {
                 key.RevokedAt = time.GetUtcNow();
                 db.StageAudit(user, new AuditEntry(
-                    "api_key.revoked", context.GetMultiTenantContext<TenantInfo>().TenantInfo?.Id, "api_key", key.Id.ToString(),
+                    AuditActions.ApiKeyRevoked, context.GetMultiTenantContext<TenantInfo>().TenantInfo?.Id, "api_key", key.Id.ToString(),
                     new Dictionary<string, object?> { ["name"] = key.Name, ["prefix"] = key.Prefix }), time);
             }
 
@@ -110,7 +110,7 @@ public static class ApiAccessEndpoints
         // 與 key 同一個 SaveChanges（同交易）：沒有簽發就沒有紀錄，有簽發就一定有紀錄。
         // Detail 只放前綴與屬性，絕不放 key 本身或雜湊。
         db.StageAudit(user, new AuditEntry(
-            "api_key.issued", tenant.Id, "api_key", apiKey.Id.ToString(),
+            AuditActions.ApiKeyIssued, tenant.Id, "api_key", apiKey.Id.ToString(),
             new Dictionary<string, object?>
             {
                 ["name"] = apiKey.Name,

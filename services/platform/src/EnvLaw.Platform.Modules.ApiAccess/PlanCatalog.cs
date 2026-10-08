@@ -24,10 +24,9 @@ public sealed class PlanCatalog
         _defaultPlan = string.IsNullOrEmpty(options.Value.DefaultPlan) ? null : options.Value.DefaultPlan;
     }
 
-    /// <summary>租戶的方案；沒有則 null。方案名稱在啟動時已驗證存在。</summary>
-    public PlanOptions? For(string tenantIdentifier)
-    {
-        var name = _tenantPlans.GetValueOrDefault(tenantIdentifier) ?? _defaultPlan;
-        return name is null ? null : _plans[name];
-    }
+    /// <summary>租戶的方案名稱；沒有則 null。方案名稱在啟動時已驗證存在。</summary>
+    public string? NameFor(string tenantIdentifier) => _tenantPlans.GetValueOrDefault(tenantIdentifier) ?? _defaultPlan;
+
+    /// <summary>租戶的方案；沒有則 null。</summary>
+    public PlanOptions? For(string tenantIdentifier) => NameFor(tenantIdentifier) is { } name ? _plans[name] : null;
 }
