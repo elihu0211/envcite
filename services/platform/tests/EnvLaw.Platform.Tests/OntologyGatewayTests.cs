@@ -50,6 +50,39 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         Assert.Equal(expected, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData(LawPath)]
+    [InlineData($"{LawPath}/articles")]
+    public async Task AsOfIsPassedToTheOntologyService(string path)
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync("asof-a");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        using var current = await client.GetAsync(new Uri(path, UriKind.Relative));
+        Assert.Equal(string.Empty, factory.Ontology.LastAsOf); // 省略 = 現行
+
+        using var dated = await client.GetAsync(new Uri($"{path}?asOf=2021-01-01", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, dated.StatusCode);
+        Assert.Equal("2021-01-01", factory.Ontology.LastAsOf);
+    }
+
+    [Theory]
+    [InlineData(LawPath, "yesterday", HttpStatusCode.BadRequest)]
+    [InlineData(LawPath, FakeOntologyServer.NotInForceDate, HttpStatusCode.NotFound)] // 該日沒有有效版本，不退回現行
+    [InlineData($"{LawPath}/articles", "yesterday", HttpStatusCode.BadRequest)]
+    [InlineData($"{LawPath}/articles", FakeOntologyServer.NotInForceDate, HttpStatusCode.NotFound)]
+    public async Task ABadOrNotInForceDateIsAnErrorAndIsNotMetered(string path, string asOf, HttpStatusCode expected)
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync("asof-b");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        using var response = await client.GetAsync(new Uri($"{path}?asOf={asOf}", UriKind.Relative));
+        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+
+        Assert.Equal(expected, response.StatusCode);
+        Assert.Empty(usage!);
+    }
+
     [Fact]
     public async Task OntologyEndpointsRequireApiKey()
     {

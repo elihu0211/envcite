@@ -19,6 +19,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     public const string KnownLawId = "O0020001";
     public const string UnavailableLawId = "trigger-unavailable";
 
+    /// <summary>假服務認為「這一天沒有有效版本」的日期（法規制定之前）。</summary>
+    public const string NotInForceDate = "1900-01-01";
+
     private WebApplication? _app;
 
     public Uri Address { get; private set; } = null!;
@@ -27,6 +30,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
 
     /// <summary>最近一次 SearchArticles 收到的請求（測試用，驗證參數有原樣傳到內部服務）。</summary>
     public SearchArticlesRequest? LastSearch { get; private set; }
+
+    /// <summary>最近一次 GetLaw／ListArticles 收到的 as_of（測試用）。</summary>
+    public string? LastAsOf { get; private set; }
 
     public async Task StartAsync()
     {
@@ -53,6 +59,8 @@ public sealed class FakeOntologyServer : IAsyncDisposable
         public override Task<GetLawResponse> GetLaw(GetLawRequest request, ServerCallContext context)
         {
             Authorize(context, request.Id);
+            server.LastAsOf = request.AsOf;
+            CheckAsOf(request.AsOf);
             return Task.FromResult(new GetLawResponse
             {
                 Law = new Law
@@ -69,6 +77,8 @@ public sealed class FakeOntologyServer : IAsyncDisposable
         public override Task<ListArticlesResponse> ListArticles(ListArticlesRequest request, ServerCallContext context)
         {
             Authorize(context, request.LawId);
+            server.LastAsOf = request.AsOf;
+            CheckAsOf(request.AsOf);
             return Task.FromResult(new ListArticlesResponse
             {
                 Articles = { new Article { Iri = "a1", Number = "1" }, new Article { Iri = "a5-1", Number = "5-1" } },
@@ -100,6 +110,20 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                     },
                 },
             });
+        }
+
+        // 與真實服務同契約：不是日期 → INVALID_ARGUMENT；該日沒有有效版本 → NOT_FOUND（不退回現行）。
+        private static void CheckAsOf(string asOf)
+        {
+            if (asOf == "yesterday")
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));
+            }
+
+            if (asOf == NotInForceDate)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, "no version in force"));
+            }
         }
 
         private void Authorize(ServerCallContext context, string lawId)
