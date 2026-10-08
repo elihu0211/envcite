@@ -1,16 +1,10 @@
 using System.Net;
-using System.Security.Claims;
 
 using EnvLaw.Platform.SharedKernel;
-using EnvLaw.Platform.Web.Auth;
 using EnvLaw.Platform.Web.Presentation;
 
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Tests;
 
@@ -54,26 +48,9 @@ public static class OperatorPresentationTests
 [Collection(PlatformTestGroup.Name)]
 public sealed class OperatorPagesTests(PlatformFactory factory)
 {
-    private HttpClient SignedInClient(WebApplicationFactory<Program>? host = null, string email = PlatformFactory.OperatorEmail)
-    {
-        var app = host ?? factory;
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(
-            [new Claim(ClaimTypes.Email, email), new Claim(OperatorAllowlist.EmailVerifiedClaim, "true")],
-            PlatformAuth.UiCookieScheme));
-        var cookie = app.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>().Get(PlatformAuth.UiCookieScheme);
-        var ticket = cookie.TicketDataFormat.Protect(new AuthenticationTicket(principal, PlatformAuth.UiCookieScheme));
-        var client = app.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-        client.DefaultRequestHeaders.Add("Cookie", $"{cookie.Cookie.Name}={ticket}");
-        return client;
-    }
+    private HttpClient SignedInClient(WebApplicationFactory<Program>? host = null) => (host ?? factory).SignedInClient();
 
-    // Blazor 會把元件參數裡的中文輸出成數字實體；瀏覽器解碼後一樣，測試也先解碼。
-    private static async Task<string> PageAsync(HttpClient client, string path)
-    {
-        using var response = await client.GetAsync(new Uri(path, UriKind.Relative));
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        return WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
-    }
+    private static Task<string> PageAsync(HttpClient client, string path) => client.PageAsync(path);
 
     [Theory]
     [InlineData("/ui/tenants")]

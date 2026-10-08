@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 
 using EnvLaw.Platform.SharedKernel;
 
@@ -19,11 +18,8 @@ public sealed record TenantResponse(string Id, string Identifier, string? Name)
     internal static TenantResponse From(TenantInfo tenant) => new(tenant.Id, tenant.Identifier, tenant.Name);
 }
 
-public static partial class TenancyEndpoints
+public static class TenancyEndpoints
 {
-    [GeneratedRegex("^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$")]
-    private static partial Regex IdentifierPattern();
-
     /// <summary><c>/admin</c> 之下的營運者端點；需要 admin key。</summary>
     public static RouteGroupBuilder MapTenancyAdminEndpoints(this RouteGroupBuilder admin)
     {
@@ -49,40 +45,15 @@ public static partial class TenancyEndpoints
     }
 
     private static async Task<IResult> CreateTenantAsync(
-        CreateTenantRequest request, IMultiTenantStore<TenantInfo> store,
-        ClaimsPrincipal user, IAuditLog audit, CancellationToken ct)
+        CreateTenantRequest request, ITenantProvisioner tenants, ClaimsPrincipal user, CancellationToken ct)
     {
-        if (!IdentifierPattern().IsMatch(request.Identifier) || string.IsNullOrWhiteSpace(request.Name))
+        var created = await tenants.CreateAsync(user, request.Identifier, request.Name, ct);
+        return created.Status switch
         {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["identifier"] = ["3-63 chars: lowercase letters, digits, hyphens; must start/end alphanumeric."],
-            });
-        }
-
-        if (await store.GetByIdentifierAsync(request.Identifier) is not null)
-        {
-            return Results.Conflict();
-        }
-
-        var tenant = new TenantInfo
-        {
-            Id = Guid.CreateVersion7().ToString(),
-            Identifier = request.Identifier,
-            Name = request.Name.Trim(),
+            AdminStatus.Ok => Results.Created(
+                $"/admin/tenants/{created.Value!.Id}", new TenantResponse(created.Value.Id, created.Value.Identifier, created.Value.Name)),
+            AdminStatus.Conflict => Results.Conflict(),
+            _ => Results.ValidationProblem(new Dictionary<string, string[]> { ["identifier"] = [created.Message ?? "Invalid request."] }),
         };
-
-        if (!await store.AddAsync(tenant))
-        {
-            return Results.Conflict();
-        }
-
-        // 租戶 store 是另一個 DbContext，無法與稽核同交易；建立成功後立刻記錄。
-        // 記錄失敗會讓這個請求回 500（不靜默吞掉）：租戶已建立，重送會得到 409，營運者需查稽核是否缺這筆。
-        await audit.AppendAsync(user, new AuditEntry(
-            AuditActions.TenantCreated, tenant.Id, "tenant", tenant.Id,
-            new Dictionary<string, object?> { ["identifier"] = tenant.Identifier, ["name"] = tenant.Name }), ct);
-
-        return Results.Created($"/admin/tenants/{tenant.Id}", TenantResponse.From(tenant));
     }
 }

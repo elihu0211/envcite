@@ -1,0 +1,182 @@
+using System.Net;
+
+using EnvLaw.Platform.SharedKernel;
+
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace EnvLaw.Platform.Tests;
+
+/// <summary>
+/// 營運後台的動作：建立租戶、簽發／撤銷 key、指派方案。動作的邏輯在共用服務裡（<c>/admin</c> 端點用同一份），
+/// 所以這裡直接測服務，並確認「誰做的」來自已登入的營運者；頁面測的是伺服器端渲染出的內容與語意。
+/// 對話框的點擊流程沒有自動化測試（這個專案沒有瀏覽器測試），改以手動在瀏覽器驗證。
+/// </summary>
+[Collection(PlatformTestGroup.Name)]
+public sealed class OperatorActionsTests(PlatformFactory factory)
+{
+    private static string Unique(string prefix) => $"{prefix}-{Guid.NewGuid().ToString("N")[..8]}";
+
+    private static async Task<List<AuditRecord>> EventsAsync(WebApplicationFactory<Program> host, string tenantId, string action) =>
+        [.. (await host.Services.GetRequiredService<IAuditQuery>()
+            .QueryAsync(new AuditFilter(Tenant: tenantId, Action: action), CancellationToken.None)).Items];
+
+    private WebApplicationFactory<Program> NoDefaultPlan() =>
+        factory.WithWebHostBuilder(b => b.UseSetting("Platform:DefaultPlan", string.Empty));
+
+    [Fact]
+    public async Task CreatingATenantIsAuditedWithTheSignedInOperator()
+    {
+        var provisioner = factory.Services.GetRequiredService<ITenantProvisioner>();
+        var identifier = Unique("created");
+
+        var created = await provisioner.CreateAsync(OperatorSession.Principal(), identifier, "  某某顧問  ", CancellationToken.None);
+
+        Assert.True(created.IsOk);
+        Assert.Equal("某某顧問", created.Value!.Name); // 名稱去除前後空白
+        var events = await EventsAsync(factory, created.Value.Id, AuditActions.TenantCreated);
+        var only = Assert.Single(events);
+        Assert.Equal(AuditActors.OperatorUser, only.ActorType);
+        Assert.Equal(PlatformFactory.OperatorEmail, only.ActorId);
+    }
+
+    [Theory]
+    [InlineData("", "名稱")]
+    [InlineData("ab", "名稱")] // 太短
+    [InlineData("Has-Upper", "名稱")]
+    [InlineData("-leading", "名稱")]
+    [InlineData("trailing-", "名稱")]
+    [InlineData("under_score", "名稱")]
+    [InlineData("valid-id", "")] // 名稱空白
+    [InlineData("valid-id", "   ")]
+    public async Task InvalidInputIsRejectedWithAReasonAndLeavesNothingBehind(string identifier, string name)
+    {
+        var provisioner = factory.Services.GetRequiredService<ITenantProvisioner>();
+
+        var created = await provisioner.CreateAsync(OperatorSession.Principal(), identifier, name, CancellationToken.None);
+
+        Assert.Equal(AdminStatus.Invalid, created.Status);
+        Assert.False(string.IsNullOrWhiteSpace(created.Message));
+    }
+
+    [Fact]
+    public async Task ADuplicateIdentifierIsAConflictNotASecondTenant()
+    {
+        var provisioner = factory.Services.GetRequiredService<ITenantProvisioner>();
+        var identifier = Unique("dup");
+        var first = await provisioner.CreateAsync(OperatorSession.Principal(), identifier, "First", CancellationToken.None);
+        Assert.True(first.IsOk);
+
+        var again = await provisioner.CreateAsync(OperatorSession.Principal(), identifier, "Second", CancellationToken.None);
+
+        Assert.Equal(AdminStatus.Conflict, again.Status);
+        var tenants = await factory.Services.GetRequiredService<ITenantDirectory>().ListAsync(CancellationToken.None);
+        Assert.Single(tenants, t => t.Identifier == identifier);
+    }
+
+    [Fact]
+    public async Task KeyAndPlanChangesRecordTheOperatorWhoMadeThem()
+    {
+        var created = await factory.Services.GetRequiredService<ITenantProvisioner>()
+            .CreateAsync(OperatorSession.Principal(), Unique("who"), "Who", CancellationToken.None);
+        var tenantId = created.Value!.Id;
+        var keys = factory.Services.GetRequiredService<IApiKeyAdmin>();
+        var plans = factory.Services.GetRequiredService<IPlanAdmin>();
+        var operatorUser = OperatorSession.Principal("second-operator@example.com");
+
+        var issued = await keys.IssueAsync(operatorUser, tenantId, "prod", null, null, CancellationToken.None);
+        await plans.SetAsync(operatorUser, tenantId, "standard", CancellationToken.None);
+        await keys.RevokeAsync(operatorUser, tenantId, issued.Value!.ApiKey.Id, CancellationToken.None);
+
+        foreach (var action in new[] { AuditActions.ApiKeyIssued, AuditActions.TenantPlanAssigned, AuditActions.ApiKeyRevoked })
+        {
+            var only = Assert.Single(await EventsAsync(factory, tenantId, action));
+            Assert.Equal(AuditActors.OperatorUser, only.ActorType);
+            Assert.Equal("second-operator@example.com", only.ActorId);
+        }
+    }
+
+    [Fact]
+    public async Task TheDetailPageShowsPlanKeysAndRecentEventsWithoutEverShowingASecret()
+    {
+        var (tenant, key) = await factory.CreateTenantWithKeyAsync("detail-a");
+        using var client = factory.SignedInClient();
+
+        var html = await client.PageAsync($"/ui/tenants/{tenant.Id}");
+
+        Assert.Contains(tenant.Identifier, html, StringComparison.Ordinal);
+        Assert.Contains("<h1", html, StringComparison.Ordinal);
+        Assert.Contains("standard", html, StringComparison.Ordinal); // 方案選單與目前的方案
+        Assert.Contains(key.ApiKey.Prefix, html, StringComparison.Ordinal);
+        Assert.DoesNotContain(key.Key, html, StringComparison.Ordinal); // 完整的 key 只在簽發當下出現
+        Assert.Contains($"aria-label=\"撤銷 {key.ApiKey.Name}\"", html, StringComparison.Ordinal);
+        Assert.Contains("簽發新 key", html, StringComparison.Ordinal);
+        Assert.Contains("最近的稽核事件", html, StringComparison.Ordinal);
+        Assert.Contains("建立租戶", html, StringComparison.Ordinal);
+        Assert.Contains($"/ui/audit?tenant={tenant.Id}", html, StringComparison.Ordinal);
+        Assert.Contains("<th scope=\"col\">", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ARevokedKeyIsMarkedAndCannotBeRevokedAgain()
+    {
+        var (tenant, key) = await factory.CreateTenantWithKeyAsync("detail-b");
+        await factory.Services.GetRequiredService<IApiKeyAdmin>()
+            .RevokeAsync(OperatorSession.Principal(), tenant.Id, key.ApiKey.Id, CancellationToken.None);
+        using var client = factory.SignedInClient();
+
+        var html = await client.PageAsync($"/ui/tenants/{tenant.Id}");
+
+        Assert.Contains("已撤銷", html, StringComparison.Ordinal);
+        Assert.DoesNotContain($"aria-label=\"撤銷 {key.ApiKey.Name}\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ATenantWithoutAPlanSaysSoAndOffersToAssignOne()
+    {
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("detail-c");
+        await using var host = NoDefaultPlan();
+        using var client = host.SignedInClient();
+
+        var html = await client.PageAsync($"/ui/tenants/{tenant.Id}");
+
+        Assert.Contains("目前沒有方案", html, StringComparison.Ordinal);
+        Assert.Contains("指派方案", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("移除方案", html, StringComparison.Ordinal); // 沒有可移除的
+    }
+
+    [Fact]
+    public async Task AnUnknownTenantSaysSoInsteadOfFailing()
+    {
+        using var client = factory.SignedInClient();
+
+        var html = await client.PageAsync("/ui/tenants/no-such-tenant");
+
+        Assert.Contains("找不到這個租戶", html, StringComparison.Ordinal);
+        Assert.Contains("/ui/tenants", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheDetailPageNeedsAnOperator()
+    {
+        using var anonymous = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        using var response = await anonymous.GetAsync(new Uri("/ui/tenants/anything", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/ui/login", response.Headers.Location?.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task TheTenantListOffersCreatingATenantAndLinksToEachDetailPage()
+    {
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("list-link");
+        using var client = factory.SignedInClient();
+
+        var html = await client.PageAsync("/ui/tenants");
+
+        Assert.Contains("新增租戶", html, StringComparison.Ordinal);
+        Assert.Contains($"href=\"/ui/tenants/{tenant.Id}\"", html, StringComparison.Ordinal);
+    }
+}

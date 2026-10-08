@@ -30,6 +30,8 @@ public static class TenancyModule
             .WithDelegateStrategy<HttpContext, TenantInfo>(context =>
                 Task.FromResult(context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value));
 
+        services.AddSingleton<ITenantProvisioner, TenantProvisioner>();
+
         return services;
     }
 
