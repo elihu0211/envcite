@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="Finbuckle.MultiTenant.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
     <PackageReference Include="Finbuckle.MultiTenant.EntityFrameworkCore" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <!-- Design-time factory and migration bundles (dotnet ef ... -s <this project>). -->
