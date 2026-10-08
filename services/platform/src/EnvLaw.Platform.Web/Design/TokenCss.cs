@@ -17,15 +17,21 @@ public static class TokenCss
         // 系統設成深色時頁面也維持淺色。
         css.Append(":root{").Append(Shared()).Append(Colors(DesignTokens.Light)).Append("color-scheme:light;}");
 
+        // 使用者偏好集中在 token 這一層，不在每個元件各寫一份：要較高對比，髮絲線與次要文字加深到控制項與正文的程度；
+        // 要減少動態，按下不縮放（其餘動效的退化在樣式表）。
+        var c = DesignTokens.Light;
+        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more){{:root{{--ep-border-subtle:{c.BorderControl};--ep-text-secondary:{c.Text};}}}}");
+        css.Append("@media (prefers-reduced-motion:reduce){:root{--ep-press-scale:1;}}");
+
         return css.ToString();
     }
 
     private static string Colors(ColorTokens c) =>
-        $"--ep-bg:{c.Background};--ep-surface:{c.Surface};--ep-surface-raised:{c.SurfaceRaised};" +
+        $"--ep-bg:{c.Background};--ep-surface:{c.Surface};--ep-surface-raised:{c.SurfaceRaised};--ep-surface-muted:{c.SurfaceMuted};" +
         $"--ep-text:{c.Text};--ep-text-secondary:{c.TextSecondary};" +
         $"--ep-primary:{c.Primary};--ep-on-primary:{c.OnPrimary};--ep-link:{c.Link};" +
         $"--ep-success:{c.Success};--ep-warning:{c.Warning};--ep-error:{c.Error};--ep-info:{c.Info};" +
-        $"--ep-border-subtle:{c.BorderSubtle};--ep-border-control:{c.BorderControl};--ep-focus:{c.Focus};";
+        $"--ep-border-subtle:{c.BorderSubtle};--ep-border-control:{c.BorderControl};--ep-focus:{c.Focus};--ep-scrim:{c.Scrim};";
 
     private static string Shared()
     {
@@ -36,7 +42,7 @@ public static class TokenCss
         {
             ("display", DesignTokens.Display), ("h1", DesignTokens.H1), ("h2", DesignTokens.H2), ("h3", DesignTokens.H3),
             ("body", DesignTokens.Body), ("body-sm", DesignTokens.BodySmall), ("caption", DesignTokens.Caption),
-            ("button", DesignTokens.Button),
+            ("micro", DesignTokens.Micro), ("button", DesignTokens.Button),
         })
         {
             css.Append(CultureInfo.InvariantCulture, $"--ep-{name}-size:{style.Size};--ep-{name}-leading:{style.LineHeight};")
@@ -63,6 +69,7 @@ public static class TokenCss
             css.Append(CultureInfo.InvariantCulture, $"--ep-motion-{key}:{value};");
         }
 
+        css.Append(CultureInfo.InvariantCulture, $"--ep-press-scale:{DesignTokens.PressScale};--ep-touch-target:{DesignTokens.TouchTarget};");
         css.Append(CultureInfo.InvariantCulture, $"--ep-drawer-width:{DesignTokens.DrawerWidth};--ep-appbar-height:{DesignTokens.AppBarHeight};");
         return css.ToString();
     }

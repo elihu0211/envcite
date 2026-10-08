@@ -26,7 +26,7 @@ public static class PlatformTheme
         palette.Surface = c.Surface;
         palette.AppbarBackground = c.Surface;
         palette.AppbarText = c.Text;
-        palette.DrawerBackground = c.Surface;
+        palette.DrawerBackground = c.Background;
         palette.DrawerText = c.Text;
         palette.DrawerIcon = c.TextSecondary;
         palette.TextPrimary = c.Text;
@@ -41,6 +41,7 @@ public static class PlatformTheme
         palette.LinesInputs = c.BorderControl;
         palette.Divider = c.BorderSubtle;
         palette.TableLines = c.BorderSubtle;
+        palette.OverlayDark = c.Scrim;
         return palette;
     }
 

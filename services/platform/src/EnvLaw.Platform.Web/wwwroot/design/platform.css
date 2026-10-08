@@ -128,13 +128,14 @@ a:where(:not([class*="mud-"])) {
     inline-size: min(100%, 28rem);
 }
 
-/* 互動回饋在按下的當下（不是放開）。 */
-.mud-button-root:active {
-    transform: scale(0.98);
+/* 互動回饋在按下的當下（不是放開）：按下即縮（0 時長），放開依 fast 階回彈。縮放量是 token，減少動態時為 1。 */
+.mud-button-root {
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
-.mud-button-root {
-    transition: transform var(--ep-motion-fast) var(--ep-motion-ease);
+.mud-button-root:active {
+    transform: scale(var(--ep-press-scale));
+    transition-duration: 0s;
 }
 
 /* 使用者要求減少動態：改成不位移的淡入淡出，不留彈跳或縮放。 */
@@ -144,10 +145,6 @@ a:where(:not([class*="mud-"])) {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
-    }
-
-    .mud-button-root:active {
-        transform: none;
     }
 }
 
@@ -166,11 +163,6 @@ a:where(:not([class*="mud-"])) {
         background: var(--ep-surface);
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
-        border-block-end-color: var(--ep-border-control);
-    }
-
-    .ep-card {
-        border-color: var(--ep-border-control);
     }
 }
 
@@ -216,6 +208,7 @@ a:where(:not([class*="mud-"])) {
 
 /* 欄標題小一級、次要色；數字與代碼用等寬字型。 */
 .ep-table th {
+    background: var(--ep-surface-muted);
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-sm-size);
     font-weight: 600;
@@ -256,7 +249,7 @@ a:where(:not([class*="mud-"])) {
 
 /* 展開列：漸進揭露事件細節。 */
 .ep-detail-row > td {
-    background: var(--ep-bg);
+    background: var(--ep-surface-muted);
     padding: var(--ep-space-3) var(--ep-space-6);
 }
 
@@ -335,7 +328,7 @@ a:where(:not([class*="mud-"])) {
     display: block;
     text-decoration: none;
     color: var(--ep-text);
-    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease);
+    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 /* 只有真的能 hover 的裝置（滑鼠）才有 hover 樣式；觸控裝置按下後不會卡在 hover 狀態。 */
@@ -363,6 +356,8 @@ a:where(:not([class*="mud-"])) {
 /* ---- 響應式 ----------------------------------------------------------------------------------
  * 原生 CSS：容器查詢、邏輯屬性、rem 單位的斷點、pointer/hover 媒體查詢、安全區、dvh。
  * 斷點用 rem（不是 px）：使用者把瀏覽器字級調大時，版面比螢幕寬度更早切換成窄版，內容才不擠。
+ * 視窗寬度的斷點只有兩個（DesignTokens.Breakpoints，由測試守住）：平板 48rem、桌機 80rem，
+ * 用範圍語法寫：(width < 48rem) 是手機、(width >= 48rem) 平板起、(width >= 80rem) 桌機起。
  */
 
 /* 品牌字不換行；頂欄放不下時，email 先讓位（登出一定留著）。 */
@@ -370,7 +365,7 @@ a:where(:not([class*="mud-"])) {
     white-space: nowrap;
 }
 
-@media (max-width: 40rem) {
+@media (width < 48rem) {
     .ep-user {
         display: none;
     }
@@ -488,18 +483,18 @@ a:where(:not([class*="mud-"])) {
     .mud-nav-link,
     .mud-switch,
     .mud-input-control {
-        min-block-size: 2.75rem;
+        min-block-size: var(--ep-touch-target);
     }
 
     .mud-icon-button {
-        min-inline-size: 2.75rem;
+        min-inline-size: var(--ep-touch-target);
     }
 
     .mud-table-cell a,
     .ep-cards td a {
         display: inline-flex;
         align-items: center;
-        min-block-size: 2.75rem;
+        min-block-size: var(--ep-touch-target);
     }
 }
 
@@ -560,7 +555,7 @@ a:where(:not([class*="mud-"])) {
 .ep-input {
     box-sizing: border-box;
     inline-size: 100%;
-    min-block-size: 2.75rem; /* 觸控目標至少 44px */
+    min-block-size: var(--ep-touch-target); /* 觸控目標至少 44px */
     padding: var(--ep-space-2) var(--ep-space-3);
     font: inherit;
     color: var(--ep-text);
@@ -590,7 +585,7 @@ a:where(:not([class*="mud-"])) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-block-size: 2.75rem;
+    min-block-size: var(--ep-touch-target);
     padding: var(--ep-space-2) var(--ep-space-6);
     font: inherit;
     font-weight: 600;
@@ -598,16 +593,23 @@ a:where(:not([class*="mud-"])) {
     cursor: pointer;
     border: 1px solid transparent;
     border-radius: var(--ep-radius-control);
-    transition: transform var(--ep-motion-fast) var(--ep-motion-ease);
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 .ep-btn:active {
-    transform: scale(0.98);
+    transform: scale(var(--ep-press-scale));
+    transition-duration: 0s;
 }
 
 .ep-btn-primary {
     background: var(--ep-primary);
     color: var(--ep-on-primary);
+}
+
+@media (hover: hover) {
+    .ep-btn-primary:hover {
+        background: color-mix(in srgb, var(--ep-primary) 88%, var(--ep-text));
+    }
 }
 
 .ep-btn-quiet {
@@ -647,6 +649,7 @@ a:where(:not([class*="mud-"])) {
 }
 
 .ep-plain-table th {
+    background: var(--ep-surface-muted);
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-sm-size);
     font-weight: 600;
@@ -660,12 +663,6 @@ a:where(:not([class*="mud-"])) {
 @media (hover: hover) {
     .ep-btn-quiet:hover {
         border-color: var(--ep-text-secondary);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .ep-btn:active {
-        transform: none;
     }
 }
 
