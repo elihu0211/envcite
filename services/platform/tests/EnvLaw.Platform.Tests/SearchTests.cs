@@ -95,28 +95,4 @@ public sealed class SearchTests(PlatformFactory factory)
         Assert.NotEmpty(logs.Messages); // 捕捉器確實收得到東西，否則下面的斷言沒有意義
         Assert.DoesNotContain(logs.Messages, m => m.Contains("排放爭議", StringComparison.Ordinal));
     }
-
-    private sealed class CapturingLoggerProvider : ILoggerProvider
-    {
-        private readonly ConcurrentQueue<string> _messages = new();
-
-        public IReadOnlyCollection<string> Messages => _messages;
-
-        public ILogger CreateLogger(string categoryName) => new Logger(_messages);
-
-        public void Dispose()
-        {
-        }
-
-        private sealed class Logger(ConcurrentQueue<string> sink) : ILogger
-        {
-            public IDisposable? BeginScope<TState>(TState state)
-                where TState : notnull => null;
-
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-                sink.Enqueue(formatter(state, exception));
-        }
-    }
 }

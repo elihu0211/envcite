@@ -12,6 +12,9 @@ public enum AdminStatus
 
     /// <summary>與既有資料衝突（例如識別碼已被使用）。</summary>
     Conflict,
+
+    /// <summary>依賴的內部服務暫時不可用（可稍後重試）。</summary>
+    Unavailable,
 }
 
 /// <summary>營運者操作的結果。輸入錯誤與找不到是預期的結果，不是例外。</summary>
@@ -30,6 +33,8 @@ public static class AdminOutcome
     public static AdminOutcome<T> Invalid<T>(string message) => new(AdminStatus.Invalid, default, message);
 
     public static AdminOutcome<T> Conflict<T>(string message) => new(AdminStatus.Conflict, default, message);
+
+    public static AdminOutcome<T> Unavailable<T>(string message) => new(AdminStatus.Unavailable, default, message);
 }
 
 /// <summary>建立租戶的結果；<see cref="Id"/> 是租戶的穩定識別（稽核與其他表都用它）。</summary>
