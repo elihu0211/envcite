@@ -42,6 +42,24 @@ public sealed class PlatformDbContext : MultiTenantDbContext
             key.HasIndex("TenantId");
         });
 
+        // 沒有 IsMultiTenant()：稽核對營運者跨租戶，租戶是 SubjectTenantId 這個一般欄位。
+        // 只能新增由遷移裡的觸發器強制。
+        modelBuilder.Entity<AuditEvent>(audit =>
+        {
+            audit.ToTable("AuditEvents");
+            audit.Property(a => a.ActorType).HasMaxLength(30);
+            audit.Property(a => a.ActorId).HasMaxLength(320);
+            audit.Property(a => a.Action).HasMaxLength(100);
+            audit.Property(a => a.SubjectTenantId).HasMaxLength(100);
+            audit.Property(a => a.TargetType).HasMaxLength(50);
+            audit.Property(a => a.TargetId).HasMaxLength(100);
+            audit.Property(a => a.TraceId).HasMaxLength(32);
+            audit.Property(a => a.Detail).HasColumnType("jsonb");
+            // 依 Id（UUIDv7，時間序）翻頁；各篩選條件都帶 Id 才能走索引。
+            audit.HasIndex(a => new { a.SubjectTenantId, a.Id });
+            audit.HasIndex(a => new { a.Action, a.Id });
+        });
+
         modelBuilder.Entity<UsageRecord>(record =>
         {
             record.IsMultiTenant();

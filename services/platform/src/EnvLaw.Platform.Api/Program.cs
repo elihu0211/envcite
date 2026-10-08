@@ -3,6 +3,7 @@ using System.Reflection;
 using EnvLaw.Platform.Api;
 using EnvLaw.Platform.Data;
 using EnvLaw.Platform.Modules.ApiAccess;
+using EnvLaw.Platform.Modules.Audit;
 using EnvLaw.Platform.Modules.Consult;
 using EnvLaw.Platform.Modules.Metering;
 using EnvLaw.Platform.Modules.Ontology;
@@ -46,6 +47,7 @@ if (!generatingOpenApi)
 
 builder.Services.AddPlatformData();
 builder.Services.AddApiAccessModule();
+builder.Services.AddAuditModule();
 builder.Services.AddMeteringModule();
 builder.Services.AddOntologyModule();
 builder.Services.AddConsultModule();
@@ -81,7 +83,8 @@ app.MapPlatformHealth();
 app.MapGroup("/admin")
     .RequireAuthorization(PlatformAuth.AdminPolicy)
     .MapTenancyAdminEndpoints()
-    .MapApiAccessAdminEndpoints();
+    .MapApiAccessAdminEndpoints()
+    .MapAuditAdminEndpoints();
 
 var v2 = app.MapGroup("/v2")
     .RequireAuthorization(PlatformAuth.TenantPolicy)
