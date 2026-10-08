@@ -8,6 +8,7 @@
     <Project Path="src/EnvLaw.Platform.Modules.Ontology/EnvLaw.Platform.Modules.Ontology.csproj" />
     <Project Path="src/EnvLaw.Platform.Modules.Tenancy/EnvLaw.Platform.Modules.Tenancy.csproj" />
     <Project Path="src/EnvLaw.Platform.SharedKernel/EnvLaw.Platform.SharedKernel.csproj" />
+    <Project Path="src/EnvLaw.Platform.Web/EnvLaw.Platform.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EnvLaw.Platform.Tests/EnvLaw.Platform.Tests.csproj" />

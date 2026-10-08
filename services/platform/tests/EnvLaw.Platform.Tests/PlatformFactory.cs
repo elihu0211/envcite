@@ -22,6 +22,9 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
     public const string AdminKey = "test-admin-key";
     public const int RateLimitPermits = 5;
 
+    /// <summary>白名單內的營運者 email（<c>Platform:Ui:OperatorEmails</c>）。</summary>
+    public const string OperatorEmail = "operator@example.com";
+
     /// <summary>Tenant identifier assigned the <c>pro</c> plan, which allows twice <see cref="RateLimitPermits"/>.</summary>
     public const string ProTenant = "paying";
 
@@ -52,6 +55,9 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.UseSetting("Platform:ApplyMigrationsOnStartup", "true");
         builder.UseSetting("Platform:AdminKeySha256",
             Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(AdminKey))));
+        builder.UseSetting("Platform:Ui:Google:ClientId", "test-client-id");
+        builder.UseSetting("Platform:Ui:Google:ClientSecret", "test-client-secret");
+        builder.UseSetting("Platform:Ui:OperatorEmails:0", OperatorEmail);
         builder.UseSetting("Ontology:Address", Ontology.Address.ToString());
         builder.UseSetting("Ontology:InternalToken", FakeOntologyServer.InternalToken);
         builder.UseSetting("Consult:Address", Consult.Address.ToString());

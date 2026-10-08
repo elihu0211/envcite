@@ -49,6 +49,8 @@ Config (`Consult` section): same keys (`Address` in-cluster `dns:///env-law-cons
 
 Config (`Platform` section): `AdminKeySha256` (hex SHA-256 of the operator key; set via environment variable `Platform__AdminKeySha256`, never commit; the Api project has no `UserSecretsId`), `Plans:<name>:PermitLimit`/`Window` (built-in `free` = 60/min if absent), `TenantPlans:<tenant identifier>` = plan name (unlisted tenants are `free`; an unknown plan name fails startup), `ApplyMigrationsOnStartup` (Development/tests only). Connection string: `ConnectionStrings:Platform`; Npgsql also reads `PGUSER`/`PGPASSWORD`, so a deployment keeps the password out of the string.
 
+Config (`Platform:Ui` section): `Google:ClientId` / `Google:ClientSecret` (env `Platform__Ui__Google__ClientSecret`, never commit; required at startup outside Development), `OperatorEmails` (list; empty = nobody can sign in), `AllowedHostedDomain` (optional Workspace domain). Register `https://<host>/signin-google` as an authorized redirect URI in the Google Cloud OAuth client (local: `http://localhost:<port>/signin-google`). Behind a TLS-terminating proxy set `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` on the container, otherwise the redirect URI is built as `http://` and Google rejects it.
+
 Production migrations: EF Core migration bundles (the form EF Core's docs recommend for automated deployment), built into the image as `/app/migrate/tenancy` and `/app/migrate/platform` and run in that order by the deployment's migration Job. Each context has an `IDesignTimeDbContextFactory` sharing its `UseNpgsql` configuration with the app (`…Module.Configure`), so a bundle builds the context without running `Program.cs` and targets the same migrations history table.
 
 - Package versions live only in `Directory.Packages.props` (central package management); `dotnet add package` updates it.
@@ -58,6 +60,7 @@ Production migrations: EF Core migration bundles (the form EF Core's docs recomm
 
 - `src/EnvLaw.Platform.Api` — ASP.NET Core host (composition root)
 - `src/EnvLaw.Platform.Modules.*` — feature modules (`Tenancy`, `ApiAccess`, `Metering`, `Ontology`, `Consult`); reference only `SharedKernel` and `Data`, never each other directly (cross-module contracts like `IUsageRecorder` live in `SharedKernel`)
+- `src/EnvLaw.Platform.Web` — 營運者後台（Blazor Web App，全站 Interactive Server，MudBlazor；頁面在 `/ui`）。Razor 元件函式庫，只參考 `SharedKernel` 和 `Data`，由 `Api` 以 `AddPlatformWeb()` / `MapPlatformWeb()` 掛上；不在 `/v2` 的速率限制與計量群組內
 - `src/EnvLaw.Platform.Data` — `PlatformDbContext`, its entities (`ApiKey`, `UsageRecord`) and migrations
 - `src/EnvLaw.Platform.SharedKernel` — cross-module primitives (auth names, `IUsageRecorder`, internal gRPC client registration, design-time connection)
 - `tests/EnvLaw.Platform.Tests` — xUnit + `WebApplicationFactory` integration tests (`PlatformFactory`: Testcontainers PostgreSQL + `FakeTimeProvider` + `FakeOntologyServer` / `FakeConsultServer`, in-process h2c gRPC fakes)
@@ -66,6 +69,7 @@ Production migrations: EF Core migration bundles (the form EF Core's docs recomm
 
 - Tenant API: `Authorization: Bearer sk_live_{prefix}_{secret}` → `ApiKeyAuthenticationHandler` (lookup by prefix, SHA-256 + constant-time compare) → `tenant` claim → Finbuckle resolves tenant → tenant-owned entities (`IsMultiTenant()`) are filtered automatically.
 - Operator API (`/admin`): `X-Admin-Key` header, compared against `Platform:AdminKeySha256`.
+- Operator UI (`/ui`): Google SSO (`AddGoogle`, PKCE) → `UiCookie` cookie. Google only proves identity; `OperatorAllowlist` decides access (`email_verified` + `Platform:Ui:OperatorEmails`, optional `AllowedHostedDomain`) both at sign-in (`OnTicketReceived`: not allowed → no cookie, `/ui/denied`) and on every request (`OperatorHandler`, so removing an email takes effect immediately). The default scheme stays ApiKey, so `UsePlatformWebAuthentication` authenticates `/ui` and `/_blazor` (SignalR, no policy) with the cookie itself. Pages in `Components/Pages/` are `[Authorize(Policy = UiPolicy)]` by default via `_Imports.razor`; public pages go in `Components/Anonymous/`. Logout is a POST with an antiforgery check done in the handler (endpoint metadata did not enforce it). The cookie never authenticates `/v2` or `/admin`.
 - Middleware order is load-bearing: `UseAuthentication` → `UseMultiTenant` → `UseAuthorization` → `UseRateLimiter`.
 - `/v2/laws/…` calls env-law-ontology over gRPC with `authorization: Bearer <InternalToken>`, `x-tenant-id`, `x-request-id`; gRPC `NotFound` → 404, `Unavailable`/`DeadlineExceeded` → 503. Only successful calls are metered (`IUsageRecorder`, one row per call in `platform.UsageRecords`).
 - `POST /v2/ground` calls env-law-consult `Ground` the same way; a refusal is a 200 result and is metered (`consult.ground`); gRPC `InvalidArgument` → 400, `Unavailable`/`DeadlineExceeded` → 503 (not metered). Tests: `FakeConsultServer`.

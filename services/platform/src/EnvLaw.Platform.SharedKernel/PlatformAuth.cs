@@ -15,6 +15,15 @@ public static class PlatformAuth
     /// <summary>需要平台 admin key。</summary>
     public const string AdminPolicy = "Admin";
 
+    /// <summary>營運者後台的登入 cookie。</summary>
+    public const string UiCookieScheme = "UiCookie";
+
+    /// <summary>營運者後台的 Google 單點登入（只負責證明身分，授權由白名單決定）。</summary>
+    public const string UiGoogleScheme = "UiGoogle";
+
+    /// <summary>需要已登入、且在營運者白名單內的後台使用者。</summary>
+    public const string UiPolicy = "UiOperator";
+
     /// <summary>依租戶分區的 rate limiting policy。</summary>
     public const string PerTenantRateLimit = "per-tenant";
 }

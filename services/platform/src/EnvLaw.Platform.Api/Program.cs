@@ -8,6 +8,7 @@ using EnvLaw.Platform.Modules.Metering;
 using EnvLaw.Platform.Modules.Ontology;
 using EnvLaw.Platform.Modules.Tenancy;
 using EnvLaw.Platform.SharedKernel;
+using EnvLaw.Platform.Web;
 
 using Finbuckle.MultiTenant.AspNetCore.Extensions;
 
@@ -24,6 +25,8 @@ if (Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider")
         ["ConnectionStrings:Platform"] = "Host=build-time",
         ["Ontology:InternalToken"] = "build-time",
         ["Consult:InternalToken"] = "build-time",
+        ["Platform:Ui:Google:ClientId"] = "build-time",
+        ["Platform:Ui:Google:ClientSecret"] = "build-time",
     });
 }
 
@@ -39,6 +42,7 @@ builder.Services.AddApiAccessModule(platformConfig);
 builder.Services.AddMeteringModule();
 builder.Services.AddOntologyModule(builder.Configuration.GetSection("Ontology"));
 builder.Services.AddConsultModule(builder.Configuration.GetSection("Consult"));
+builder.Services.AddPlatformWeb(platformConfig.GetSection("Ui"), builder.Environment);
 
 var app = builder.Build();
 
@@ -58,9 +62,11 @@ app.UseHttpsRedirection();
 
 // 順序很重要：API key 驗證會設定租戶 claim，Finbuckle 再據此解析租戶。
 app.UseAuthentication();
+app.UsePlatformWebAuthentication();
 app.UseMultiTenant();
 app.UseAuthorization();
 app.UseRateLimiter();
+app.UseAntiforgery();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("Health");
@@ -78,5 +84,7 @@ app.MapGroup("/v2")
     .MapMeteringEndpoints()
     .MapOntologyEndpoints()
     .MapConsultEndpoints();
+
+app.MapPlatformWeb();
 
 await app.RunAsync();

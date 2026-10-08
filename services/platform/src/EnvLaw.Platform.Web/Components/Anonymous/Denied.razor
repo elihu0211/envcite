@@ -1,0 +1,8 @@
+@page "/ui/denied"
+@attribute [AllowAnonymous]
+
+<PageTitle>沒有權限</PageTitle>
+
+<MudText Typo="Typo.h5" GutterBottom="true">沒有權限</MudText>
+<MudText Class="mb-4">這個 Google 帳號不在營運者名單內，或 email 尚未驗證。</MudText>
+<MudButton Href="@UiEndpoints.LoginPath" Variant="Variant.Filled" Color="Color.Primary">換一個帳號登入</MudButton>
