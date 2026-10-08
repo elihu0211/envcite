@@ -27,7 +27,8 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     [InlineData("Consult:Timeout", "00:00:00", "Consult:Timeout must be positive")]
     [InlineData("Platform:AdminKeySha256", "not-hex", "Platform:AdminKeySha256 must be 64 hexadecimal")]
     [InlineData("Platform:TenantPlans:acme", "gold", "Platform:TenantPlans:acme names unknown plan 'gold'")]
-    [InlineData("Platform:Plans:free:PermitLimit", "0", "Platform:Plans:free needs a positive PermitLimit")]
+    [InlineData("Platform:DefaultPlan", "gold", "Platform:DefaultPlan names unknown plan 'gold'")]
+    [InlineData("Platform:Plans:standard:PermitLimit", "0", "Platform:Plans:standard needs a positive PermitLimit")]
     public void InvalidSettingFailsAtStartupAndNamesTheKey(string key, string value, string expected)
     {
         var message = StartFailure(factory.WithWebHostBuilder(b => b.UseSetting(key, value)));
@@ -58,7 +59,7 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     {
         var plans = factory.Services.GetRequiredService<IOptions<Modules.ApiAccess.ApiAccessOptions>>().Value;
 
-        Assert.Equal(PlatformFactory.RateLimitPermits, plans.Plans["free"].PermitLimit);
+        Assert.Equal(PlatformFactory.RateLimitPermits, plans.Plans["standard"].PermitLimit);
         Assert.Equal("pro", plans.TenantPlans[PlatformFactory.ProTenant]);
     }
 }
