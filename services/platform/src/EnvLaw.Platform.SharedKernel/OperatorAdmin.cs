@@ -9,6 +9,9 @@ public enum AdminStatus
 
     /// <summary>輸入不合法（例如名稱空白、方案不存在）；<see cref="AdminOutcome{T}.Message"/> 說明原因。</summary>
     Invalid,
+
+    /// <summary>與既有資料衝突（例如識別碼已被使用）。</summary>
+    Conflict,
 }
 
 /// <summary>營運者操作的結果。輸入錯誤與找不到是預期的結果，不是例外。</summary>
@@ -25,6 +28,21 @@ public static class AdminOutcome
     public static AdminOutcome<T> NotFound<T>(string? message = null) => new(AdminStatus.NotFound, default, message);
 
     public static AdminOutcome<T> Invalid<T>(string message) => new(AdminStatus.Invalid, default, message);
+
+    public static AdminOutcome<T> Conflict<T>(string message) => new(AdminStatus.Conflict, default, message);
+}
+
+/// <summary>建立租戶的結果；<see cref="Id"/> 是租戶的穩定識別（稽核與其他表都用它）。</summary>
+public sealed record CreatedTenant(string Id, string Identifier, string? Name);
+
+/// <summary>
+/// 營運者建立租戶。營運後台與 <c>POST /admin/tenants</c> 共用這個實作。租戶 store 是另一個 DbContext，
+/// 無法與稽核同交易：建立成功後立刻記錄，記錄失敗就讓呼叫失敗（不靜默吞掉）。
+/// </summary>
+public interface ITenantProvisioner
+{
+    Task<AdminOutcome<CreatedTenant>> CreateAsync(
+        ClaimsPrincipal actor, string identifier, string name, CancellationToken cancellationToken);
 }
 
 public sealed record ApiKeyInfo(

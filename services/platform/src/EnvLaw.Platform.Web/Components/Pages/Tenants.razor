@@ -1,9 +1,16 @@
 @page "/ui/tenants"
+@using EnvLaw.Platform.Web.Components.Dialogs
 @inject ITenantDirectory Directory
+@inject IDialogService Dialogs
+@inject NavigationManager Navigation
 
 <PageTitle>租戶 · env-law platform</PageTitle>
 
-<PageHeader Title="租戶" Description="平台上的客戶與他們的方案。沒有方案的租戶不能呼叫資料端點（回 402）。" />
+<PageHeader Title="租戶" Description="平台上的客戶與他們的方案。沒有方案的租戶不能呼叫資料端點（回 402）。">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">新增租戶</MudButton>
+    </Actions>
+</PageHeader>
 
 @if (_error is not null)
 {
@@ -36,7 +43,7 @@ else
                 <MudTh>操作</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="名稱">@(context.Name ?? "—")</MudTd>
+                <MudTd DataLabel="名稱"><MudLink Href="@($"/ui/tenants/{Uri.EscapeDataString(context.Id)}")">@(context.Name ?? context.Identifier)</MudLink></MudTd>
                 <MudTd DataLabel="識別碼"><code class="ep-mono">@context.Identifier</code></MudTd>
                 <MudTd DataLabel="方案">
                     @if (context.Plan is { } plan)
@@ -51,14 +58,17 @@ else
                     }
                 </MudTd>
                 <MudTd DataLabel="操作">
-                    <MudLink Href="@($"/ui/audit?tenant={Uri.EscapeDataString(context.Id)}")">稽核紀錄</MudLink>
+                    <MudLink Href="@($"/ui/tenants/{Uri.EscapeDataString(context.Id)}")">管理</MudLink>
+                    <MudLink Href="@($"/ui/audit?tenant={Uri.EscapeDataString(context.Id)}")" Class="ml-3">稽核紀錄</MudLink>
                 </MudTd>
             </RowTemplate>
             <NoRecordsContent>
                 @if (string.IsNullOrWhiteSpace(_search))
                 {
                     <EmptyState Icon="@Icons.Material.Filled.Apartment" Title="還沒有任何租戶"
-                                Description="用營運者 API 建立第一個租戶（POST /admin/tenants）。" />
+                                Description="建立第一個租戶，再為它簽發 API key 並指派方案。">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">新增租戶</MudButton>
+                    </EmptyState>
                 }
                 else
                 {
@@ -94,6 +104,17 @@ else
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             _error = exception.GetType().Name;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        var dialog = await Dialogs.ShowAsync<CreateTenantDialog>(
+            "新增租戶", new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: CreatedTenant created })
+        {
+            Navigation.NavigateTo($"/ui/tenants/{Uri.EscapeDataString(created.Id)}");
         }
     }
 

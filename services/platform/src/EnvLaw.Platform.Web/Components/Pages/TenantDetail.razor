@@ -1,0 +1,169 @@
+@page "/ui/tenants/{TenantId}"
+
+<PageTitle>@(_tenant?.Identifier ?? "租戶") · env-law platform</PageTitle>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">
+        載入租戶失敗。
+        <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="LoadAsync">重試</MudButton>
+    </MudAlert>
+}
+else if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" aria-label="載入租戶中" />
+}
+else if (_tenant is null)
+{
+    <EmptyState Icon="@Icons.Material.Filled.SearchOff" Title="找不到這個租戶" Description="它可能不存在，或識別有誤。">
+        <MudButton Variant="Variant.Text" Href="/ui/tenants">回到租戶清單</MudButton>
+    </EmptyState>
+}
+else
+{
+    <PageHeader Title="@(_tenant.Name ?? _tenant.Identifier)" Description="@($"識別碼 {_tenant.Identifier}")">
+        <Actions>
+            <MudButton Variant="Variant.Text" Href="/ui/tenants" StartIcon="@Icons.Material.Filled.ArrowBack">租戶清單</MudButton>
+        </Actions>
+    </PageHeader>
+
+    <div class="ep-stack">
+        @if (_notice is not null)
+        {
+            <MudAlert Severity="@_noticeSeverity" role="status" ShowCloseIcon="true" CloseIconClicked="() => _notice = null">@_notice</MudAlert>
+        }
+
+        <section class="ep-card" aria-labelledby="plan-heading">
+            <h2 id="plan-heading" class="ep-section-title">方案</h2>
+            <p class="ep-page-description">
+                沒有方案的租戶不能呼叫資料端點（回 402）。變更立即生效，並寫入稽核。
+            </p>
+            <div class="ep-inline-form">
+                <MudSelect T="string" @bind-Value="_selectedPlan" Label="方案" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           Placeholder="@(_tenant.Plan is null ? "尚未指派" : null)" Class="ep-field">
+                    @foreach (var plan in _plans)
+                    {
+                        <MudSelectItem T="string" Value="@plan.Name">@PlanLabel(plan)</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SavePlanAsync"
+                           Disabled="@(_busy || _selectedPlan is null || _selectedPlan == _tenant.Plan)">
+                    @(_tenant.Plan is null ? "指派方案" : "變更方案")
+                </MudButton>
+                @if (_tenant.Plan is not null)
+                {
+                    <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="RemovePlanAsync" Disabled="_busy">移除方案</MudButton>
+                }
+            </div>
+            <p class="ep-status" role="status">
+                @if (_tenant.Plan is { } current)
+                {
+                    <span>目前：<strong>@current</strong></span>
+                }
+                else
+                {
+                    <span>目前沒有方案。</span>
+                }
+            </p>
+        </section>
+
+        <section class="ep-card ep-table-card" aria-labelledby="keys-heading">
+            <div class="ep-toolbar">
+                <h2 id="keys-heading" class="ep-section-title">API keys</h2>
+                <MudSpacer />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="IssueKeyAsync"
+                           StartIcon="@Icons.Material.Filled.Add">簽發新 key</MudButton>
+            </div>
+            @if (_keys.Count == 0)
+            {
+                <EmptyState Icon="@Icons.Material.Filled.VpnKey" Title="還沒有 API key"
+                            Description="簽發第一把 key 給客戶，他們才能呼叫 /v2。" />
+            }
+            else
+            {
+                <MudSimpleTable Dense="true" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="API keys">
+                    <thead>
+                        <tr>
+                            <th scope="col">名稱</th>
+                            <th scope="col">前綴</th>
+                            <th scope="col">建立（台北）</th>
+                            <th scope="col">狀態</th>
+                            <th scope="col"><span class="ep-visually-hidden">操作</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var key in _keys)
+                        {
+                            <tr>
+                                <td class="ep-keep">@key.Name</td>
+                                <td data-label="前綴"><code class="ep-mono">@key.Prefix</code></td>
+                                <td data-label="建立"><time datetime="@TaipeiTime.Full(key.CreatedAt)">@TaipeiTime.Format(key.CreatedAt)</time></td>
+                                <td data-label="狀態">
+                                    @if (key.RevokedAt is not null)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default"
+                                                 Icon="@Icons.Material.Filled.Block">已撤銷</MudChip>
+                                    }
+                                    else if (key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning"
+                                                 Icon="@Icons.Material.Filled.Schedule">已過期</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success"
+                                                 Icon="@Icons.Material.Filled.CheckCircle">有效</MudChip>
+                                    }
+                                </td>
+                                <td>
+                                    @if (key.RevokedAt is null)
+                                    {
+                                        <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" Disabled="_busy"
+                                                   aria-label="@($"撤銷 {key.Name}")" OnClick="() => RevokeKeyAsync(key)">撤銷</MudButton>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+        </section>
+
+        <section class="ep-card ep-table-card" aria-labelledby="audit-heading">
+            <div class="ep-toolbar">
+                <h2 id="audit-heading" class="ep-section-title">最近的稽核事件</h2>
+                <MudSpacer />
+                <MudLink Href="@($"/ui/audit?tenant={Uri.EscapeDataString(_tenant.Id)}")">全部稽核紀錄</MudLink>
+            </div>
+            @if (_recent.Count == 0)
+            {
+                <EmptyState Icon="@Icons.Material.Filled.History" Title="還沒有事件" Description="對這個租戶的操作會出現在這裡。" />
+            }
+            else
+            {
+                <MudSimpleTable Dense="true" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="最近的稽核事件，新到舊">
+                    <thead>
+                        <tr>
+                            <th scope="col">時間（台北）</th>
+                            <th scope="col">事件</th>
+                            <th scope="col">操作者</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _recent)
+                        {
+                            <tr>
+                                <td><time datetime="@TaipeiTime.Full(item.OccurredAt)">@TaipeiTime.Format(item.OccurredAt)</time></td>
+                                <td>
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@AuditLabels.ActionColor(item.Action)"
+                                             Icon="@AuditLabels.ActionIcon(item.Action)">@AuditLabels.Action(item.Action)</MudChip>
+                                </td>
+                                <td class="ep-keep" data-label="操作者">@AuditLabels.Actor(item.ActorType, item.ActorId)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+        </section>
+    </div>
+}

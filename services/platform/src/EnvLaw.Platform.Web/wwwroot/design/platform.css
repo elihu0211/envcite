@@ -290,6 +290,30 @@ a:where(:not([class*="mud-"])) {
     border-block-start: 1px solid var(--ep-border-subtle);
 }
 
+/* 詳細頁：區塊垂直排列；區塊標題比頁標題小一級。 */
+.ep-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-4);
+}
+
+.ep-section-title {
+    margin: 0;
+    font-size: var(--ep-h3-size);
+    line-height: var(--ep-h3-leading);
+    letter-spacing: var(--ep-h3-tracking);
+    font-weight: var(--ep-h3-weight);
+}
+
+/* 一列的小表單（欄位 + 按鈕）；窄螢幕自然換行。 */
+.ep-inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-3);
+    margin-block-start: var(--ep-space-3);
+}
+
 /* 只給螢幕閱讀器看。 */
 .ep-visually-hidden {
     position: absolute;

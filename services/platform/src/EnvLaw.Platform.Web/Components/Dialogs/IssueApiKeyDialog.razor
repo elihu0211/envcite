@@ -1,0 +1,107 @@
+@* 簽發 API key，兩個階段：填名稱 → 顯示完整 key（只此一次）。第二階段不能用外點或 Esc 關掉，避免還沒複製就不見。 *@
+@using Microsoft.JSInterop
+@inject IApiKeyAdmin Keys
+@inject AuthenticationStateProvider Auth
+@inject IJSRuntime Js
+
+<MudDialog>
+    <DialogContent>
+        @if (_issued is null)
+        {
+            <MudTextField @bind-Value="_name" Label="名稱" Placeholder="例如：正式環境" Variant="Variant.Outlined"
+                          Required="true" Immediate="true" MaxLength="100" AutoFocus="true" OnKeyUp="OnKeyUp"
+                          HelperText="給客戶辨認用途；之後在清單裡以名稱和前綴區分。" />
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-3" role="alert">@_error</MudAlert>
+            }
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Warning" Class="mb-3" role="status">
+                這是唯一一次能看到完整的 key。關閉後只剩前綴，無法再取回；弄丟只能撤銷後重發。
+            </MudAlert>
+            <MudTextField T="string" Value="@_issued.Key" ReadOnly="true" Label="API key" Variant="Variant.Outlined"
+                          Class="ep-mono" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.ContentCopy"
+                          AdornmentAriaLabel="複製 API key" OnAdornmentClick="CopyAsync" />
+            <p class="ep-status" role="status" aria-live="polite">@(_copied ? "已複製到剪貼簿" : string.Empty)</p>
+        }
+    </DialogContent>
+    <DialogActions>
+        @if (_issued is null)
+        {
+            <MudButton OnClick="() => MudDialog.Cancel()">取消</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_busy">
+                @(_busy ? "簽發中…" : "簽發")
+            </MudButton>
+        }
+        else
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="() => MudDialog.Close(DialogResult.Ok(_issued.ApiKey))">
+                我已保存
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter, EditorRequired] public string TenantId { get; set; } = string.Empty;
+
+    private string? _name;
+    private string? _error;
+    private bool _busy;
+    private bool _copied;
+    private IssuedApiKey? _issued;
+
+    private async Task OnKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !_busy)
+        {
+            await SubmitAsync();
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var actor = (await Auth.GetAuthenticationStateAsync()).User;
+            var issued = await Keys.IssueAsync(actor, TenantId, _name ?? string.Empty, null, null, CancellationToken.None);
+            if (issued.IsOk)
+            {
+                _issued = issued.Value;
+                // 完整的 key 只在這個階段存在：不能再被外點或 Esc 關掉。
+                await MudDialog.SetOptionsAsync(MudDialog.Options with { BackdropClick = false, CloseOnEscapeKey = false, CloseButton = false });
+            }
+            else
+            {
+                _error = issued.Message ?? "簽發失敗。";
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _error = "簽發失敗，請稍後再試。" + " (" + exception.GetType().Name + ")";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CopyAsync()
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", _issued!.Key);
+            _copied = true;
+        }
+        catch (JSException)
+        {
+            _copied = false; // 剪貼簿被瀏覽器擋住（非安全環境）：使用者仍可手動選取文字。
+        }
+    }
+}
