@@ -143,7 +143,9 @@ internal static class PortalSessionValidator
         }
 
         var signIn = context.HttpContext.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>();
-        if (await signIn.ValidateSecurityStampAsync(context.Principal) is null)
+
+        // 停用也直接檢查旗標，不只靠安全戳記：停用的人，每一個請求都被當作沒登入。
+        if (await signIn.ValidateSecurityStampAsync(context.Principal) is not { Disabled: false })
         {
             context.RejectPrincipal();
             await context.HttpContext.SignOutAsync(PlatformAuth.PortalCookieScheme);

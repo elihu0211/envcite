@@ -45,6 +45,17 @@ internal sealed class PortalAccount(
         // 自己做鎖定的記帳，不用 PasswordSignInAsync：它在密碼對的時候把失敗計數歸零，
         // 而有兩步驟驗證的帳號，密碼對之後還要過第二步——歸零了，知道密碼的人就能每輪重新輸入密碼，
         // 無限次猜六位數。所以這裡密碼對不歸零，要等第二步也過了才歸零。
+        if (user.Disabled)
+        {
+            // 停用的人：仍然算一次密碼雜湊（別讓回應時間洩漏「這個帳號存在而且被停用」），訊息與密碼錯相同。
+            _ = users.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash ?? DummyHash.Value, password ?? string.Empty);
+            await audit.AppendAsync(
+                new ClaimsPrincipal(),
+                new AuditEntry(AuditActions.PortalSignInFailed, info.Id, "member", user.Id, new Dictionary<string, object?> { ["reason"] = "disabled" }),
+                cancellationToken);
+            return PortalSignInStatus.Failed;
+        }
+
         if (await users.IsLockedOutAsync(user) || !await users.CheckPasswordAsync(user, password ?? string.Empty))
         {
             var locked = await users.IsLockedOutAsync(user);

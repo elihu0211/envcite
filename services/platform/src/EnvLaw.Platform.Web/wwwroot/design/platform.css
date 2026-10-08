@@ -719,3 +719,40 @@ a:where(:not([class*="mud-"])) {
     margin: var(--ep-space-3) 0;
     padding-inline-start: var(--ep-space-6);
 }
+
+/* 成員管理：一次性密碼用大一點的等寬字、可整段選取；表格每列的操作按鈕可以換行。 */
+.ep-secret {
+    display: inline-block;
+    padding: var(--ep-space-2) var(--ep-space-3);
+    font-size: var(--ep-h3-size);
+    background: var(--ep-bg);
+    border: 1px solid var(--ep-border-control);
+    border-radius: var(--ep-radius-control);
+    user-select: all;
+    overflow-wrap: anywhere;
+}
+
+.ep-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+}
+
+.ep-input-inline {
+    inline-size: auto;
+    min-inline-size: 6rem;
+}
+
+.ep-card-title {
+    padding: var(--ep-space-4) var(--ep-space-4) var(--ep-space-2);
+}
+
+/* 窄的卡片：每位成員一張卡，操作按鈕整列顯示（不擠在右邊一欄、也不橫向捲動到看不到）。 */
+@container ep-table (max-width: 36rem) {
+    .ep-cards table tbody tr td.ep-row-actions {
+        grid-column: 1;
+        grid-row: auto;
+        padding-block-start: var(--ep-space-2);
+    }
+}

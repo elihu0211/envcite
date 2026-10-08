@@ -84,6 +84,9 @@ namespace EnvLaw.Platform.Data.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
+                    b.Property<bool>("Disabled")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("DisplayName")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");

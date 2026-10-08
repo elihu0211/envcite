@@ -105,6 +105,8 @@ public static class MembersModule
         services.AddScoped<TotpVerifier>();
         services.AddScoped<IPortalAccount, PortalAccount>();
         services.AddScoped<IPortalTwoFactor, PortalTwoFactor>();
+        services.AddScoped<MemberCore>();
+        services.AddScoped<IMemberSelfService, MemberSelfService>();
         services.AddSingleton<IMemberAdmin, MemberAdmin>();
 
         return services;

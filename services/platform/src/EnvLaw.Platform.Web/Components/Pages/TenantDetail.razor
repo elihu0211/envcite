@@ -165,7 +165,12 @@ else
                                         <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
                                                  Icon="@Icons.Material.Filled.Security">兩步驟</MudChip>
                                     }
-                                    @if (member.LockedOut)
+                                    @if (member.Disabled)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default"
+                                                 Icon="@Icons.Material.Filled.PersonOff">已停用</MudChip>
+                                    }
+                                    else if (member.LockedOut)
                                     {
                                         <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
                                                  Icon="@Icons.Material.Filled.Lock">已鎖定</MudChip>

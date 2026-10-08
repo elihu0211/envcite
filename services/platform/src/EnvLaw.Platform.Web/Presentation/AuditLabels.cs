@@ -31,6 +31,9 @@ public static class AuditLabels
         AuditActions.MemberMfaReset => "重設成員的兩步驟驗證",
         AuditActions.PortalMfaDisabled => "成員關閉兩步驟驗證",
         AuditActions.PortalRecoveryCodesRegenerated => "成員重新產生復原碼",
+        AuditActions.MemberDisabled => "停用成員",
+        AuditActions.MemberEnabled => "重新啟用成員",
+        AuditActions.MemberRoleChanged => "變更成員角色",
         _ => action,
     };
 
@@ -39,7 +42,7 @@ public static class AuditLabels
     {
         AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned or AuditActions.MemberCreated => Color.Success,
         AuditActions.ApiKeyRevoked or AuditActions.TenantPlanRemoved or AuditActions.MemberPasswordReset
-            or AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled => Color.Warning,
+            or AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled or AuditActions.MemberDisabled or AuditActions.MemberRoleChanged => Color.Warning,
         AuditActions.OperatorSignInDenied or AuditActions.PortalSignInFailed => Color.Error,
         _ => Color.Default,
     };
@@ -54,7 +57,9 @@ public static class AuditLabels
         AuditActions.OperatorSignInDenied => Icons.Material.Filled.GppBad,
         AuditActions.OperatorSignedIn or AuditActions.PortalSignedIn => Icons.Material.Filled.Login,
         AuditActions.OperatorSignedOut or AuditActions.PortalSignedOut => Icons.Material.Filled.Logout,
-        AuditActions.MemberCreated => Icons.Material.Filled.PersonAdd,
+        AuditActions.MemberCreated or AuditActions.MemberEnabled => Icons.Material.Filled.PersonAdd,
+        AuditActions.MemberDisabled => Icons.Material.Filled.PersonOff,
+        AuditActions.MemberRoleChanged => Icons.Material.Filled.ManageAccounts,
         AuditActions.MemberPasswordReset or AuditActions.PortalPasswordChanged => Icons.Material.Filled.LockReset,
         AuditActions.PortalSignInFailed => Icons.Material.Filled.GppBad,
         AuditActions.PortalMfaEnabled => Icons.Material.Filled.Security,
