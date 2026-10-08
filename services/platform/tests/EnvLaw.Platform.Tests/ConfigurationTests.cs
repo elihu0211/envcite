@@ -30,6 +30,7 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     [InlineData("Platform:DefaultPlan", "gold", "Platform:DefaultPlan names unknown plan 'gold'")]
     [InlineData("Platform:EntitlementRefresh", "00:00:00", "Platform:EntitlementRefresh must be at least one second")]
     [InlineData("Platform:Plans:standard:PermitLimit", "0", "Platform:Plans:standard needs a positive PermitLimit")]
+    [InlineData("Platform:Portal:SignInAttemptsPerMinute", "0", "Platform:Portal:SignInAttemptsPerMinute must be between 1 and 1000")]
     public void InvalidSettingFailsAtStartupAndNamesTheKey(string key, string value, string expected)
     {
         var message = StartFailure(factory.WithWebHostBuilder(b => b.UseSetting(key, value)));

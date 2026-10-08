@@ -1,5 +1,7 @@
 using EnvLaw.Platform.SharedKernel;
 
+using Microsoft.Extensions.Options;
+
 namespace EnvLaw.Platform.Web.Auth;
 
 /// <summary>
@@ -12,4 +14,18 @@ public sealed class PortalOptions : IPlatformOptions
     public static string SectionName => "Platform:Portal";
 
     public bool Enabled { get; set; }
+
+    /// <summary>
+    /// 同一個來源位址每分鐘最多送幾次登入或改密碼（成功與失敗都算）。帳號鎖定只擋「同一個帳號被猜」，
+    /// 擋不了一個來源在試很多帳號（撞庫），這個限制才是。
+    /// </summary>
+    public int SignInAttemptsPerMinute { get; set; } = 10;
+}
+
+internal sealed class PortalOptionsValidator : IValidateOptions<PortalOptions>
+{
+    public ValidateOptionsResult Validate(string? name, PortalOptions options) =>
+        options.SignInAttemptsPerMinute is < 1 or > 1000
+            ? ValidateOptionsResult.Fail("Platform:Portal:SignInAttemptsPerMinute must be between 1 and 1000.")
+            : ValidateOptionsResult.Success;
 }

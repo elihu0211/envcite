@@ -39,6 +39,9 @@ public static class PlatformAuth
     /// <summary>在 <see cref="PortalSessionPolicy"/> 之上，還要已改過營運者經手的初始密碼；入口其餘頁面用這個。</summary>
     public const string PortalPolicy = "Portal";
 
+    /// <summary>客戶入口登入與改密碼的 rate limiting policy：依來源位址分區，只限制 POST。</summary>
+    public const string PortalSignInRateLimit = "portal-sign-in";
+
     /// <summary>依租戶分區的 rate limiting policy。</summary>
     public const string PerTenantRateLimit = "per-tenant";
 }

@@ -3,7 +3,9 @@ using EnvLaw.Platform.SharedKernel;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -20,6 +22,8 @@ internal static class WebAuthModule
     {
         services.AddPlatformOptions<UiOptions>();
         services.AddPlatformOptions<PortalOptions>();
+        services.AddSingleton<IValidateOptions<PortalOptions>, PortalOptionsValidator>();
+        services.AddRateLimiter(PortalRateLimit.Configure);
         services.AddSingleton<OperatorAllowlist>();
         services.AddSingleton<IAuthorizationHandler, OperatorHandler>();
 
