@@ -70,8 +70,7 @@ public static class TokenCss
         }
 
         css.Append(CultureInfo.InvariantCulture, $"--ep-press-scale:{DesignTokens.PressScale};--ep-touch-target:{DesignTokens.TouchTarget};");
-        css.Append(CultureInfo.InvariantCulture, $"--ep-drawer-width:{DesignTokens.DrawerWidth};--ep-appbar-height:{DesignTokens.AppBarHeight};");
-        css.Append(CultureInfo.InvariantCulture, $"--ep-nav-rail-width:{DesignTokens.NavRailWidth};--ep-nav-height:{DesignTokens.NavItemHeight};");
+        css.Append(CultureInfo.InvariantCulture, $"--ep-appbar-height:{DesignTokens.AppBarHeight};");
         return css.ToString();
     }
 

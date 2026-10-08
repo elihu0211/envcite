@@ -14,19 +14,22 @@ using static EnvLaw.Platform.Tests.PortalTestSupport;
 
 namespace EnvLaw.Platform.Tests;
 
-/// <summary>客戶入口的外殼：導覽依角色與狀態出現、目前頁有標示；版面（手機／平板／桌機）由樣式表與 token 決定。</summary>
+/// <summary>
+/// 客戶入口的外殼：沒有側欄與分頁列，只有頂欄與右上角的帳號選單（依角色與狀態出現）；
+/// 版面（手機／平板／桌機）由樣式表與 token 決定。
+/// </summary>
 [Collection(PlatformTestGroup.Name)]
 public sealed partial class PortalShellTests(PlatformFactory factory)
 {
-    private static string Nav(string html)
+    private static string Menu(string html)
     {
-        var match = NavElement().Match(html);
-        Assert.True(match.Success, "the page has no <nav class=\"ep-nav\">");
+        var match = MenuElement().Match(html);
+        Assert.True(match.Success, "the page has no account menu");
         return match.Value;
     }
 
-    private static List<string> NavHrefs(string html) =>
-        [.. NavLinkHref().Matches(Nav(html)).Select(m => m.Groups[1].Value)];
+    private static List<string> MenuHrefs(string html) =>
+        [.. LinkHref().Matches(Menu(html)).Select(m => m.Groups[1].Value)];
 
     [Theory]
     [InlineData(CustomerRoles.Owner, true)]
@@ -34,7 +37,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
     [InlineData(CustomerRoles.Developer, false)]
     [InlineData(CustomerRoles.Billing, false)]
     [InlineData(CustomerRoles.Viewer, false)]
-    public async Task TheNavListsMembersOnlyForOwnersAndAdmins(string role, bool seesMembers)
+    public async Task TheMenuListsMembersOnlyForOwnersAndAdmins(string role, bool seesMembers)
     {
         var (tenant, email, initial) = await MemberAsync(factory, "sh-a", role);
         using var browser = new PortalBrowser(factory);
@@ -42,16 +45,17 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
 
         var home = await browser.GetAsync(Home(tenant.Identifier));
 
-        var links = NavHrefs(home.Html);
+        var links = MenuHrefs(home.Html);
         var prefix = Home(tenant.Identifier);
         Assert.Equal(seesMembers, links.Contains($"{prefix}/members"));
-        Assert.Contains(prefix, links);
-        Assert.Contains($"{prefix}/search", links);
-        Assert.Contains($"{prefix}/security", links);
+        Assert.Equal(
+            [prefix, $"{prefix}/account", $"{prefix}/security", PasswordPage(tenant.Identifier)],
+            links.Where(l => l != $"{prefix}/members"));
+        Assert.Contains(email, Menu(home.Html), StringComparison.Ordinal); // 選單顯示目前是誰
     }
 
     [Fact]
-    public async Task TheCurrentPageIsMarkedAndTheSkipLinkHasATarget()
+    public async Task ThereIsNoSidebarAndTheBrandLinksHome()
     {
         var (tenant, email, initial) = await MemberAsync(factory, "sh-b");
         using var browser = new PortalBrowser(factory);
@@ -59,31 +63,34 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var prefix = Home(tenant.Identifier);
 
         var home = await browser.GetAsync(prefix);
-        var search = await browser.GetAsync($"{prefix}/search");
+        var account = await browser.GetAsync($"{prefix}/account");
 
-        // 總覽是完整比對：在搜尋頁它不能也亮著。
-        Assert.Equal([prefix], ActiveHrefs(home.Html));
-        Assert.Equal([$"{prefix}/search"], ActiveHrefs(search.Html));
-        Assert.Contains("<a class=\"ep-skip-link\" href=\"#main\"", home.Html, StringComparison.Ordinal);
-        Assert.Single(Regex.Matches(home.Html, "id=\"main\""));
-        // 導覽取代了每頁各自的「回總覽」按鈕。
-        Assert.DoesNotContain("回總覽", search.Html, StringComparison.Ordinal);
+        foreach (var page in new[] { home.Html, account.Html })
+        {
+            Assert.DoesNotContain("class=\"ep-nav", page, StringComparison.Ordinal); // 沒有側欄、分頁列
+            Assert.DoesNotContain("mud-drawer", page, StringComparison.Ordinal);
+            Assert.Contains($"<a class=\"ep-brand\" href=\"{prefix}\">", page, StringComparison.Ordinal);
+            Assert.Contains("<a class=\"ep-skip-link\" href=\"#main\"", page, StringComparison.Ordinal);
+            Assert.Single(Regex.Matches(page, "id=\"main\""));
+        }
+
+        Assert.DoesNotContain("回總覽", account.Html, StringComparison.Ordinal);
     }
 
-    // 還在改初始密碼、註冊驗證器時只開那一頁：其他連結點了也會被導回去，所以不顯示。
+    // 還在改初始密碼、註冊驗證器時只開那一頁：其他連結點了也會被導回去，所以沒有選單，只留登出。
     [Fact]
-    public async Task ThereIsNoNavWhileAMandatoryStepIsPendingOrBeforeSignIn()
+    public async Task ThereIsNoMenuWhileAMandatoryStepIsPendingOrBeforeSignIn()
     {
         var (tenant, email, initial) = await MemberAsync(factory, "sh-c");
         using var browser = new PortalBrowser(factory);
         var login = await browser.GetAsync(Login(tenant.Identifier));
-        Assert.DoesNotContain("class=\"ep-nav\"", login.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-account-menu", login.Html, StringComparison.Ordinal);
 
         await browser.SubmitAsync(Login(tenant.Identifier), Credentials(email, initial));
         var password = await browser.GetAsync(PasswordPage(tenant.Identifier));
 
         Assert.Equal(HttpStatusCode.OK, password.Status);
-        Assert.DoesNotContain("class=\"ep-nav\"", password.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-account-menu", password.Html, StringComparison.Ordinal);
         Assert.Contains("登出", password.Html, StringComparison.Ordinal); // 但登出一直在
     }
 
@@ -104,6 +111,21 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Contains("<span class=\"ep-badge\" data-tone=\"neutral\">已停用</span>", members.Html, StringComparison.Ordinal);
     }
 
+    // 營運後台也沒有側欄：頂欄下方一條分頁列，目前頁標示。
+    [Fact]
+    public async Task TheOperatorUiHasATabStripInsteadOfADrawer()
+    {
+        using var operatorClient = factory.SignedInClient();
+
+        var page = await operatorClient.PageAsync("/ui/tenants");
+
+        Assert.DoesNotContain("class=\"mud-drawer", page, StringComparison.Ordinal); // 主題的 CSS 變數裡有 mud-drawer-*，認元件本身
+        var tabs = Regex.Match(page, "<nav class=\"ep-tabs\".*?</nav>", RegexOptions.Singleline).Value;
+        Assert.Equal(["/ui", "/ui/tenants", "/ui/audit"], LinkHref().Matches(tabs).Select(m => m.Groups[1].Value));
+        Assert.Contains("href=\"/ui/tenants\" class=\"ep-tab active\"", tabs, StringComparison.Ordinal);
+        Assert.Single(Regex.Matches(tabs, "ep-tab active"));
+    }
+
     // 元件展示頁：只在 Development；不需要登入，三種寬度都看得到每個元件。
     [Fact]
     public async Task TheDesignGalleryExistsInDevelopmentAndIsGoneElsewhere()
@@ -117,7 +139,8 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var hidden = await prod.GetAsync(new Uri(WebModule.DesignGalleryPath, UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.OK, shown.StatusCode);
-        Assert.Contains("class=\"ep-nav\"", html, StringComparison.Ordinal);
+        Assert.Contains("ep-account-menu", html, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-composer\"", html, StringComparison.Ordinal);
         foreach (var tone in new[] { "neutral", "success", "warning", "error", "info" })
         {
             Assert.Contains($"data-tone=\"{tone}\"", html, StringComparison.Ordinal);
@@ -131,38 +154,23 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Contains("@page \"/design\"", File.ReadAllText(GalleryPath()), StringComparison.Ordinal); // 路由與常數同步
     }
 
-    // 版面是 CSS 的事：三種版面都在，用的是兩個斷點，導覽項高度符合觸控目標。
+    // 版面是 CSS 的事：帳號選單是原生 popover（手機滿版、平板起靠右）；問答區的輸入框黏在底部；沒有舊的側欄樣式。
     [Fact]
-    public void TheStylesheetLaysTheNavOutForPhoneTabletAndDesktop()
+    public void TheStylesheetLaysOutTheMenuAndTheAskPage()
     {
         var css = File.ReadAllText(StylesheetPath());
 
-        Assert.Matches(@"\.ep-nav\s*\{[^}]*position:\s*fixed", css); // 手機：底部分頁列
-        Assert.Matches(@"@media \(width >= " + DesignTokens.Breakpoints.Tablet + @"\)\s*\{[^@]*\.ep-nav\s*\{[^}]*position:\s*sticky", css); // 平板：側邊窄欄
-        Assert.Matches(@"@media \(width >= " + DesignTokens.Breakpoints.Desktop + @"\)\s*\{[^@]*\.ep-nav-link\s*\{[^}]*flex-direction:\s*row", css); // 桌機：圖示與文字並排
-        Assert.Contains("env(safe-area-inset-bottom)", css, StringComparison.Ordinal); // 手機底部的安全區
-        Assert.True(Rem(DesignTokens.NavItemHeight) >= Rem(DesignTokens.TouchTarget), "nav items must be at least a touch target tall");
-        Assert.Contains($"--ep-nav-rail-width:{DesignTokens.NavRailWidth}", TokenCss.Render(), StringComparison.Ordinal);
+        Assert.Contains(".ep-menu:popover-open", css, StringComparison.Ordinal);
+        Assert.Matches(@"@media \(width >= " + DesignTokens.Breakpoints.Tablet + @"\)\s*\{[^@]*\.ep-menu\s*\{", css); // 平板起：靠右的面板
+        Assert.Matches(@"\.ep-ask\[data-state=""result""\] \.ep-composer-form\s*\{[^}]*position:\s*sticky", css); // 問了之後輸入框黏在底部
+        Assert.Matches(@"@media \(width >= " + DesignTokens.Breakpoints.Desktop + @"\)\s*\{[^@]*\.ep-ask\s*\{", css); // 桌機：問答區再寬一階
+        Assert.Contains("env(safe-area-inset-bottom)", css, StringComparison.Ordinal);
+        Assert.DoesNotContain(".ep-nav", css, StringComparison.Ordinal); // 舊的側欄、分頁列樣式不留
+        Assert.DoesNotContain("mud-drawer", css, StringComparison.Ordinal);
+        Assert.Matches(@"\.ep-menu-item\s*\{[^}]*min-block-size:\s*var\(--ep-touch-target\)", css);
+        // 圖示有尺寸、顏色跟著文字：少了這條，SVG 的寬度是 0、送出鈕是一顆沒有箭頭的圓。
+        Assert.Matches(@"\.ep-icon\s*\{[^}]*inline-size:[^}]*fill:\s*currentColor", css);
     }
-
-    // 營運後台的側欄用 MudBlazor 的 Breakpoint.Lg（1280px），也就是我們的桌機斷點。
-    [Fact]
-    public void TheOperatorDrawerSwitchesAtTheDesktopBreakpoint()
-    {
-        var layout = File.ReadAllText(Path.Combine(Path.GetDirectoryName(GalleryPath())!, "..", "Layout", "MainLayout.razor"));
-
-        Assert.Contains("Breakpoint=\"Breakpoint.Lg\"", layout, StringComparison.Ordinal);
-        Assert.Equal("80rem", DesignTokens.Breakpoints.Desktop); // 1280px；MudBlazor 的 Lg 預設也是 1280px（它的文件值，這裡沒有量測）
-    }
-
-    private static double Rem(string value) =>
-        double.Parse(value.Replace("rem", string.Empty, StringComparison.Ordinal), System.Globalization.CultureInfo.InvariantCulture);
-
-    private static List<string> ActiveHrefs(string html) =>
-        [.. Anchor().Matches(Nav(html))
-            .Select(m => m.Value)
-            .Where(a => a.Contains("ep-nav-link active", StringComparison.Ordinal))
-            .Select(a => NavLinkHref().Match(a).Groups[1].Value)];
 
     private static string GalleryPath([CallerFilePath] string here = "") =>
         Path.GetFullPath(Path.Combine(
@@ -172,12 +180,9 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(here)!, "..", "..", "src", "EnvLaw.Platform.Web", "wwwroot", "design", "platform.css"));
 
-    [GeneratedRegex("<nav class=\"ep-nav\".*?</nav>", RegexOptions.Singleline)]
-    private static partial Regex NavElement();
+    [GeneratedRegex("<div id=\"ep-account-menu\".*?</div>", RegexOptions.Singleline)]
+    private static partial Regex MenuElement();
 
-    [GeneratedRegex("<a [^>]*href=\"([^\"]+)\"")]
-    private static partial Regex NavLinkHref();
-
-    [GeneratedRegex("<a [^>]*>")]
-    private static partial Regex Anchor();
+    [GeneratedRegex("<a [^>]*?href=\"([^\"]+)\"")]
+    private static partial Regex LinkHref();
 }

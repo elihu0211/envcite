@@ -1,11 +1,11 @@
-@page "/portal/{Tenant}"
+@page "/portal/{Tenant}/account"
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 
-<PageTitle>總覽 · env-law</PageTitle>
+<PageTitle>帳號與組織 · env-law</PageTitle>
 
-<PageHeader Title="@(DisplayName is null ? "你好" : $"你好，{DisplayName}")" Description="@(_tenant?.Name ?? Tenant)" />
+<PageHeader Title="帳號與組織" Description="@(_tenant?.Name ?? Tenant)" />
 
 <div class="ep-stack">
     <section class="ep-card" aria-labelledby="org-title">
@@ -23,6 +23,10 @@
                     <span>目前沒有方案：資料端點會回 402。請洽我們的業務啟用。</span>
                 }
             </dd>
+            @if (GivenName is not null)
+            {
+                <dt>名稱</dt><dd>@GivenName</dd>
+            }
             <dt>電子郵件</dt><dd>@Email</dd>
             <dt>角色</dt><dd>@RoleLabel</dd>
             <dt>兩步驟驗證</dt>

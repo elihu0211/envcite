@@ -1,23 +1,54 @@
-@* 客戶入口的外殼，純呈現（不讀登入狀態）：頂欄＋導覽＋主要內容。
-   同一個 <nav> 在三種寬度有三種版面，全由 CSS 決定，沒有 JavaScript（入口是靜態渲染）：
-   手機（< 48rem）底部分頁列；平板（48rem 起）左側窄欄，圖示在上、文字在下；桌機（80rem 起）左側完整側欄。
-   PortalLayout 依登入狀態填入；元件展示頁用假資料填入，才看得到每一種寬度。 *@
+@* 客戶入口的外殼，純呈現（不讀登入狀態）：一條頂欄加主要內容，沒有側欄也沒有分頁列。
+   問答是主要的事：首頁就是輸入框；其他功能（帳號、成員、兩步驟驗證、改密碼、登出）收在右上角的帳號選單。
+   選單用瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript，入口是靜態渲染）。
+   PortalLayout 依登入狀態填入；元件展示頁用假資料填入。 *@
 <a class="ep-skip-link" href="#main">跳到主要內容</a>
 
-<div class="ep-shell" data-nav="@(ShowNav ? "on" : "off")">
+<div class="ep-shell">
     <header class="ep-shell-top">
-        <span class="ep-brand">env-law</span>
+        @if (!string.IsNullOrEmpty(HomeHref))
+        {
+            <a class="ep-brand" href="@HomeHref">env-law</a>
+        }
+        else
+        {
+            <span class="ep-brand">env-law</span>
+        }
         @if (!string.IsNullOrEmpty(TenantName))
         {
             <span class="ep-portal-tenant">@TenantName</span>
         }
         <span class="ep-spacer"></span>
-        @if (!string.IsNullOrEmpty(UserEmail))
+
+        @if (ShowMenu)
         {
-            <span class="ep-user">@UserEmail</span>
+            <button type="button" class="ep-avatar" popovertarget="ep-account-menu" aria-label="帳號選單">@AvatarText</button>
+            <div id="ep-account-menu" class="ep-menu" popover>
+                <p class="ep-menu-who">
+                    <span>@UserEmail</span>
+                    @if (!string.IsNullOrEmpty(RoleLabel))
+                    {
+                        <span class="ep-secondary">@RoleLabel</span>
+                    }
+                </p>
+                <nav aria-label="帳號選單">
+                    @foreach (var item in MenuItems)
+                    {
+                        <a class="ep-menu-item" href="@item.Href">@item.Label</a>
+                    }
+                </nav>
+                @if (!string.IsNullOrEmpty(LogoutAction))
+                {
+                    <form method="post" action="@LogoutAction">
+                        <AntiforgeryToken />
+                        <button type="submit" class="ep-menu-item">登出</button>
+                    </form>
+                }
+            </div>
         }
-        @if (!string.IsNullOrEmpty(LogoutAction))
+        else if (!string.IsNullOrEmpty(LogoutAction))
         {
+            @* 還在改初始密碼、註冊驗證器：只開那一頁，所以沒有選單，只留登出。 *@
             <form method="post" action="@LogoutAction">
                 <AntiforgeryToken />
                 <button type="submit" class="ep-btn ep-btn-quiet">登出</button>
@@ -25,43 +56,41 @@
         }
     </header>
 
-    @if (ShowNav)
-    {
-        <nav class="ep-nav" aria-label="主要導覽">
-            @foreach (var item in Items)
-            {
-                <NavLink class="ep-nav-link" href="@item.Href" Match="@item.Match">
-                    <NavIcon Path="@item.Icon" />
-                    <span>@item.Label</span>
-                </NavLink>
-            }
-        </nav>
-    }
-
     <main class="ep-shell-main" id="main" tabindex="-1">
         @ChildContent
     </main>
 </div>
 
 @code {
-    public sealed record NavItem(string Href, string Label, string Icon, NavLinkMatch Match = NavLinkMatch.Prefix);
+    public sealed record MenuItem(string Href, string Label);
 
     [Parameter]
     public string? TenantName { get; set; }
 
+    /// <summary>品牌字的連結：回到問答首頁。尚未登入時沒有。</summary>
+    [Parameter]
+    public string? HomeHref { get; set; }
+
     [Parameter]
     public string? UserEmail { get; set; }
 
-    /// <summary>登出表單的 action；沒有就不畫登出鈕（尚未登入、或展示頁）。</summary>
+    [Parameter]
+    public string? RoleLabel { get; set; }
+
+    /// <summary>頭像圓鈕上的一個字（名字或 email 的第一個字）。</summary>
+    [Parameter]
+    public string AvatarText { get; set; } = string.Empty;
+
+    /// <summary>登出表單的 action；沒有就不畫登出（尚未登入、或展示頁）。</summary>
     [Parameter]
     public string? LogoutAction { get; set; }
 
-    /// <summary>登入後才有導覽；還在改初始密碼、註冊驗證器時只開那一頁，所以不顯示導覽。</summary>
+    /// <summary>已登入、而且沒有待辦的強制步驟才有帳號選單。</summary>
     [Parameter]
-    public bool ShowNav { get; set; }
+    public bool ShowMenu { get; set; }
 
     [Parameter]
-    public IReadOnlyList<NavItem> Items { get; set; } = [];
+    public IReadOnlyList<MenuItem> MenuItems { get; set; } = [];
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
