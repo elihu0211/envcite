@@ -4,10 +4,9 @@
     <meta charset="utf-8" />
     @* viewport-fit=cover：瀏海與圓角螢幕上讓內容延伸到邊緣，再用安全區內縮（見 platform.css）。不禁用縮放。 *@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="color-scheme" content="light dark" />
-    @* 瀏覽器的工具列顏色跟著主題；顏色來自 token，不另寫。 *@
-    <meta name="theme-color" content="@DesignTokens.Light.Background" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="@DesignTokens.Dark.Background" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light" />
+    @* 瀏覽器的工具列顏色；顏色來自 token，不另寫。 *@
+    <meta name="theme-color" content="@DesignTokens.Light.Background" />
     <base href="/" />
     <style>@((MarkupString)TokenCss.Render())</style>
     <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />

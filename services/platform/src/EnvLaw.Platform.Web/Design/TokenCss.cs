@@ -13,11 +13,9 @@ public static class TokenCss
     {
         var css = new StringBuilder();
 
+        // 只有淺色：產品決定不做深色模式。color-scheme 宣告 light，瀏覽器就不會替表單控制項、捲軸套深色，
+        // 系統設成深色時頁面也維持淺色。
         css.Append(":root{").Append(Shared()).Append(Colors(DesignTokens.Light)).Append("color-scheme:light;}");
-        // 跟隨系統的深色模式；沒有明確指定 data-theme="light" 時才套用。
-        css.Append("@media (prefers-color-scheme: dark){:root:not([data-theme=\"light\"]){")
-            .Append(Colors(DesignTokens.Dark)).Append("color-scheme:dark;}}");
-        css.Append(":root[data-theme=\"dark\"]{").Append(Colors(DesignTokens.Dark)).Append("color-scheme:dark;}");
 
         return css.ToString();
     }
