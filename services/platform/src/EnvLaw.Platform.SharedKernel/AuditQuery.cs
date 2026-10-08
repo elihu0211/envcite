@@ -13,11 +13,18 @@ public static class AuditActions
     public const string OperatorSignedIn = "operator.signed_in";
     public const string OperatorSignInDenied = "operator.sign_in_denied";
     public const string OperatorSignedOut = "operator.signed_out";
+    public const string MemberCreated = "member.created";
+    public const string MemberPasswordReset = "member.password_reset";
+    public const string PortalSignedIn = "portal.signed_in";
+    public const string PortalSignInFailed = "portal.sign_in_failed";
+    public const string PortalPasswordChanged = "portal.password_changed";
+    public const string PortalSignedOut = "portal.signed_out";
 
     /// <summary>目前會寫入的所有事件，供篩選選單使用。</summary>
     public static IReadOnlyList<string> All { get; } =
     [
         TenantCreated, TenantPlanAssigned, TenantPlanRemoved, ApiKeyIssued, ApiKeyRevoked, OperatorSignedIn, OperatorSignInDenied, OperatorSignedOut,
+        MemberCreated, MemberPasswordReset, PortalSignedIn, PortalSignInFailed, PortalPasswordChanged, PortalSignedOut,
     ];
 }
 

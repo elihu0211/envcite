@@ -1,0 +1,34 @@
+@page "/portal/{Tenant}/login"
+@layout PortalLayout
+@attribute [ExcludeFromInteractiveRouting]
+@attribute [AllowAnonymous]
+
+<PageTitle>登入 · env-law</PageTitle>
+
+@if (Account.CurrentTenant is { } tenant)
+{
+    <section class="ep-card ep-portal-card" aria-labelledby="login-title">
+        <h1 id="login-title" class="ep-page-title">登入</h1>
+        <p class="ep-page-description">@(tenant.Name ?? tenant.Identifier)</p>
+
+        @if (_error is not null)
+        {
+            @* role=alert：螢幕閱讀器立刻念出來；訊息不說是帳號還是密碼錯，也不說帳號有沒有被鎖。 *@
+            <p class="ep-alert ep-alert-error" role="alert">@_error</p>
+        }
+
+        <EditForm Model="Input" FormName="portal-login" OnValidSubmit="SignInAsync" method="post" class="ep-form">
+            <div class="ep-field-row">
+                <label for="email" class="ep-label">電子郵件</label>
+                <InputText id="email" @bind-Value="Input.Email" type="email" class="ep-input" autocomplete="username" required autofocus />
+            </div>
+            <div class="ep-field-row">
+                <label for="password" class="ep-label">密碼</label>
+                <InputText id="password" @bind-Value="Input.Password" type="password" class="ep-input" autocomplete="current-password" required />
+            </div>
+            <button type="submit" class="ep-btn ep-btn-primary">登入</button>
+        </EditForm>
+
+        <p class="ep-note">沒有帳號或忘記密碼，請洽貴組織的管理員或我們的營運人員。</p>
+    </section>
+}

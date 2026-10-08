@@ -5,6 +5,7 @@
     <Project Path="src/EnvLaw.Platform.Modules.ApiAccess/EnvLaw.Platform.Modules.ApiAccess.csproj" />
     <Project Path="src/EnvLaw.Platform.Modules.Audit/EnvLaw.Platform.Modules.Audit.csproj" />
     <Project Path="src/EnvLaw.Platform.Modules.Consult/EnvLaw.Platform.Modules.Consult.csproj" />
+    <Project Path="src/EnvLaw.Platform.Modules.Members/EnvLaw.Platform.Modules.Members.csproj" />
     <Project Path="src/EnvLaw.Platform.Modules.Metering/EnvLaw.Platform.Modules.Metering.csproj" />
     <Project Path="src/EnvLaw.Platform.Modules.Ontology/EnvLaw.Platform.Modules.Ontology.csproj" />
     <Project Path="src/EnvLaw.Platform.Modules.Tenancy/EnvLaw.Platform.Modules.Tenancy.csproj" />

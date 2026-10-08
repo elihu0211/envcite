@@ -129,6 +129,64 @@ else
             }
         </section>
 
+        <section class="ep-card ep-table-card" aria-labelledby="members-heading">
+            <div class="ep-toolbar">
+                <h2 id="members-heading" class="ep-section-title">成員（客戶入口）</h2>
+                <MudSpacer />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddMemberAsync"
+                           StartIcon="@Icons.Material.Filled.PersonAdd">新增成員</MudButton>
+            </div>
+            <p class="ep-status">入口登入網址：<code class="ep-mono">@PortalLoginUrl</code>。新成員拿到的是一次性的初始密碼，第一次登入必須自己改掉。</p>
+            @if (_members.Count == 0)
+            {
+                <EmptyState Icon="@Icons.Material.Filled.Group" Title="還沒有成員"
+                            Description="新增第一位成員，客戶才能用帳號密碼登入入口。" />
+            }
+            else
+            {
+                <MudSimpleTable Dense="true" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="成員">
+                    <thead>
+                        <tr>
+                            <th scope="col">電子郵件</th>
+                            <th scope="col">角色</th>
+                            <th scope="col">狀態</th>
+                            <th scope="col"><span class="ep-visually-hidden">操作</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var member in _members)
+                        {
+                            <tr>
+                                <td class="ep-keep">@member.Email@(member.DisplayName is null ? "" : $"（{member.DisplayName}）")</td>
+                                <td data-label="角色">@PortalLabels.Role(member.Role)</td>
+                                <td data-label="狀態">
+                                    @if (member.LockedOut)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                                                 Icon="@Icons.Material.Filled.Lock">已鎖定</MudChip>
+                                    }
+                                    else if (member.MustChangePassword)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning"
+                                                 Icon="@Icons.Material.Filled.HourglassTop">待改密碼</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success"
+                                                 Icon="@Icons.Material.Filled.CheckCircle">正常</MudChip>
+                                    }
+                                </td>
+                                <td>
+                                    <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
+                                               aria-label="@($"重設 {member.Email} 的密碼")" OnClick="() => ResetPasswordAsync(member)">重設密碼</MudButton>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+        </section>
+
         <section class="ep-card ep-table-card" aria-labelledby="audit-heading">
             <div class="ep-toolbar">
                 <h2 id="audit-heading" class="ep-section-title">最近的稽核事件</h2>

@@ -179,4 +179,22 @@ public sealed class OperatorActionsTests(PlatformFactory factory)
         Assert.Contains("新增租戶", html, StringComparison.Ordinal);
         Assert.Contains($"href=\"/ui/tenants/{tenant.Id}\"", html, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task TheDetailPageListsMembersWithTheirStateAndNeverAPassword()
+    {
+        var (tenant, email, initial) = await PortalTestSupport.MemberAsync(factory, "ops-members");
+        using var client = factory.SignedInClient();
+
+        var html = await client.PageAsync($"/ui/tenants/{tenant.Id}");
+
+        Assert.Contains("成員（客戶入口）", html, StringComparison.Ordinal);
+        Assert.Contains("新增成員", html, StringComparison.Ordinal);
+        Assert.Contains(email, html, StringComparison.Ordinal);
+        Assert.Contains("擁有者", html, StringComparison.Ordinal); // 角色顯示中文名稱，不是 TenantOwner
+        Assert.Contains("待改密碼", html, StringComparison.Ordinal); // 初始密碼還沒被成員改掉
+        Assert.Contains($"/portal/{tenant.Identifier}/login", html, StringComparison.Ordinal); // 給客戶的登入網址
+        Assert.Contains($"aria-label=\"重設 {email} 的密碼\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain(initial, html, StringComparison.Ordinal); // 初始密碼只在建立當下顯示一次
+    }
 }

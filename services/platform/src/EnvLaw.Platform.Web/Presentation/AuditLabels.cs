@@ -20,15 +20,21 @@ public static class AuditLabels
         AuditActions.OperatorSignedIn => "營運者登入",
         AuditActions.OperatorSignInDenied => "拒絕登入",
         AuditActions.OperatorSignedOut => "營運者登出",
+        AuditActions.MemberCreated => "新增成員",
+        AuditActions.MemberPasswordReset => "重設成員密碼",
+        AuditActions.PortalSignedIn => "成員登入",
+        AuditActions.PortalSignInFailed => "成員登入失敗",
+        AuditActions.PortalPasswordChanged => "成員改密碼",
+        AuditActions.PortalSignedOut => "成員登出",
         _ => action,
     };
 
     /// <summary>建立與簽發是成功的新增、撤銷要留意、被拒絕是異常；登入登出是中性資訊。</summary>
     public static Color ActionColor(string action) => action switch
     {
-        AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned => Color.Success,
-        AuditActions.ApiKeyRevoked or AuditActions.TenantPlanRemoved => Color.Warning,
-        AuditActions.OperatorSignInDenied => Color.Error,
+        AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned or AuditActions.MemberCreated => Color.Success,
+        AuditActions.ApiKeyRevoked or AuditActions.TenantPlanRemoved or AuditActions.MemberPasswordReset => Color.Warning,
+        AuditActions.OperatorSignInDenied or AuditActions.PortalSignInFailed => Color.Error,
         _ => Color.Default,
     };
 
@@ -40,8 +46,11 @@ public static class AuditLabels
         AuditActions.ApiKeyIssued => Icons.Material.Filled.VpnKey,
         AuditActions.ApiKeyRevoked => Icons.Material.Filled.KeyOff,
         AuditActions.OperatorSignInDenied => Icons.Material.Filled.GppBad,
-        AuditActions.OperatorSignedIn => Icons.Material.Filled.Login,
-        AuditActions.OperatorSignedOut => Icons.Material.Filled.Logout,
+        AuditActions.OperatorSignedIn or AuditActions.PortalSignedIn => Icons.Material.Filled.Login,
+        AuditActions.OperatorSignedOut or AuditActions.PortalSignedOut => Icons.Material.Filled.Logout,
+        AuditActions.MemberCreated => Icons.Material.Filled.PersonAdd,
+        AuditActions.MemberPasswordReset or AuditActions.PortalPasswordChanged => Icons.Material.Filled.LockReset,
+        AuditActions.PortalSignInFailed => Icons.Material.Filled.GppBad,
         _ => Icons.Material.Filled.History,
     };
 
@@ -50,6 +59,7 @@ public static class AuditLabels
         AuditActors.OperatorKey => "營運者金鑰",
         AuditActors.OperatorUser => id ?? "營運者",
         AuditActors.TenantKey => id is null ? "租戶 API key" : $"租戶 API key {Shorten(id)}",
+        AuditActors.TenantUser => id is null ? "租戶成員" : $"租戶成員 {Shorten(id)}",
         AuditActors.System => "系統",
         _ => "匿名",
     };

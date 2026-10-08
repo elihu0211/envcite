@@ -15,8 +15,8 @@ namespace EnvLaw.Platform.Modules.Tenancy;
 public static class TenancyModule
 {
     /// <summary>
-    /// 註冊租戶 store，並從 API key 驗證所設定的
-    /// <see cref="PlatformClaimTypes.TenantIdentifier"/> claim 解析目前租戶。
+    /// 註冊租戶 store，並解析目前租戶：客戶入口取自路徑（<c>/portal/{租戶}/…</c>），其餘從 API key 驗證所設定的
+    /// <see cref="PlatformClaimTypes.TenantIdentifier"/> claim。
     /// 必須先 <c>UseAuthentication()</c> 再 <c>UseMultiTenant()</c>。
     /// </summary>
     public static IServiceCollection AddTenancyModule(this IServiceCollection services)
@@ -28,7 +28,10 @@ public static class TenancyModule
         services.AddMultiTenant<TenantInfo>()
             .WithEFCoreStore<TenancyDbContext, TenantInfo>()
             .WithDelegateStrategy<HttpContext, TenantInfo>(context =>
-                Task.FromResult(context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value));
+                // 客戶入口的租戶在路徑裡（登入前就要知道），而且路徑優先於 cookie 的 claim：
+                // 別的租戶的 cookie 帶到這個路徑，租戶仍是這個路徑的租戶，授權再發現不符。
+                Task.FromResult(PortalPaths.TenantFrom(context.Request.Path)
+                    ?? context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value));
 
         services.AddSingleton<ITenantProvisioner, TenantProvisioner>();
 

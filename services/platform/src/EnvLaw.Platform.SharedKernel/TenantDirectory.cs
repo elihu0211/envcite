@@ -10,4 +10,7 @@ public sealed record TenantSummary(string Id, string Identifier, string? Name, s
 public interface ITenantDirectory
 {
     Task<IReadOnlyList<TenantSummary>> ListAsync(CancellationToken cancellationToken);
+
+    /// <summary>以租戶 Id 取一個租戶；不存在則 null。</summary>
+    Task<TenantSummary?> FindAsync(string tenantId, CancellationToken cancellationToken);
 }

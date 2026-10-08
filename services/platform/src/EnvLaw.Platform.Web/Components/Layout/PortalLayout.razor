@@ -1,0 +1,30 @@
+@inherits LayoutComponentBase
+@inject IPortalAccount Account
+
+@* 客戶入口的外殼：靜態渲染（沒有 circuit、沒有互動元件），所以只有簡單的頂欄與內容，不用 MudBlazor 的元件。 *@
+<a class="ep-skip-link" href="#main">跳到主要內容</a>
+
+<header class="ep-portal-bar">
+    <span class="ep-brand">env-law</span>
+    @if (Account.CurrentTenant is { } tenant)
+    {
+        <span class="ep-portal-tenant">@(tenant.Name ?? tenant.Identifier)</span>
+    }
+    <span class="ep-spacer"></span>
+    <AuthorizeView>
+        <Authorized>
+            <span class="ep-user">@context.User.FindFirst(ClaimTypes.Email)?.Value</span>
+            @if (Account.CurrentTenant is { } current)
+            {
+                <form method="post" action="@($"{PortalPaths.Home(current.Identifier)}/logout")">
+                    <AntiforgeryToken />
+                    <button type="submit" class="ep-btn ep-btn-quiet">登出</button>
+                </form>
+            }
+        </Authorized>
+    </AuthorizeView>
+</header>
+
+<main class="ep-portal" id="main" tabindex="-1">
+    @Body
+</main>

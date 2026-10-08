@@ -502,3 +502,177 @@ a:where(:not([class*="mud-"])) {
         min-block-size: 2.75rem;
     }
 }
+
+
+/* ---- 客戶入口（靜態渲染，不用 MudBlazor 的元件）-------------------------------------------------
+ * 只引用 token；表單控制項的外觀（高度、邊框、焦點）集中在這裡。 */
+
+.ep-portal-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
+    padding: var(--ep-space-3) max(var(--ep-space-4), env(safe-area-inset-left)) var(--ep-space-3) max(var(--ep-space-4), env(safe-area-inset-right));
+    padding-block-start: max(var(--ep-space-3), env(safe-area-inset-top));
+    background: color-mix(in srgb, var(--ep-surface) 72%, transparent);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-block-end: 1px solid var(--ep-border-subtle);
+}
+
+.ep-portal-tenant {
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-body-sm-size);
+}
+
+.ep-spacer {
+    flex: 1;
+}
+
+.ep-portal {
+    max-inline-size: 60rem;
+    margin-inline: auto;
+    padding: var(--ep-space-6) max(var(--ep-space-4), env(safe-area-inset-left)) max(var(--ep-space-8), env(safe-area-inset-bottom)) max(var(--ep-space-4), env(safe-area-inset-right));
+}
+
+.ep-portal-card {
+    max-inline-size: 28rem;
+    margin-inline: auto;
+}
+
+.ep-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-4);
+    margin-block-start: var(--ep-space-4);
+}
+
+.ep-field-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+}
+
+.ep-label {
+    font-size: var(--ep-body-sm-size);
+    font-weight: 600;
+}
+
+.ep-input {
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-block-size: 2.75rem; /* 觸控目標至少 44px */
+    padding: var(--ep-space-2) var(--ep-space-3);
+    font: inherit;
+    color: var(--ep-text);
+    background: var(--ep-surface);
+    border: 1px solid var(--ep-border-control);
+    border-radius: var(--ep-radius-control);
+}
+
+.ep-input:focus-visible {
+    outline: 2px solid var(--ep-focus);
+    outline-offset: 1px;
+}
+
+.ep-hint,
+.ep-note {
+    margin: 0;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-caption-size);
+    letter-spacing: var(--ep-caption-tracking);
+}
+
+.ep-note {
+    margin-block-start: var(--ep-space-4);
+}
+
+.ep-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 2.75rem;
+    padding: var(--ep-space-2) var(--ep-space-6);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: var(--ep-radius-control);
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease);
+}
+
+.ep-btn:active {
+    transform: scale(0.98);
+}
+
+.ep-btn-primary {
+    background: var(--ep-primary);
+    color: var(--ep-on-primary);
+}
+
+.ep-btn-quiet {
+    background: transparent;
+    color: var(--ep-link);
+    border-color: var(--ep-border-control);
+}
+
+/* 提示：邊框與文字說明承擔語意，顏色只是輔助。 */
+.ep-alert {
+    margin: var(--ep-space-4) 0 0;
+    padding: var(--ep-space-3) var(--ep-space-4);
+    border: 1px solid var(--ep-border-control);
+    border-inline-start-width: 4px;
+    border-radius: var(--ep-radius-control);
+    font-size: var(--ep-body-sm-size);
+}
+
+.ep-alert-error {
+    border-color: var(--ep-error);
+}
+
+.ep-alert-info {
+    border-color: var(--ep-info);
+}
+
+.ep-plain-table {
+    inline-size: 100%;
+    border-collapse: collapse;
+}
+
+.ep-plain-table th,
+.ep-plain-table td {
+    padding: var(--ep-space-2) var(--ep-space-3);
+    text-align: start;
+    border-block-end: 1px solid var(--ep-border-subtle);
+}
+
+.ep-plain-table th {
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-body-sm-size);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ep-table-wrap {
+    overflow-x: auto;
+}
+
+@media (hover: hover) {
+    .ep-btn-quiet:hover {
+        border-color: var(--ep-text-secondary);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ep-btn:active {
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .ep-portal-bar {
+        background: var(--ep-surface);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}

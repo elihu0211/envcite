@@ -16,8 +16,20 @@ internal sealed class TenantDirectory(IServiceScopeFactory scopes) : ITenantDire
 
         var tenants = await store.GetAllAsync();
         return tenants
-            .Select(t => new TenantSummary(t.Id ?? string.Empty, t.Identifier ?? string.Empty, t.Name, plans.NameFor(t.Identifier ?? string.Empty)))
+            .Select(t => Summary(t, plans))
             .OrderBy(t => t.Identifier, StringComparer.Ordinal)
             .ToList();
     }
+
+    public async Task<TenantSummary?> FindAsync(string tenantId, CancellationToken cancellationToken)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
+        var plans = scope.ServiceProvider.GetRequiredService<PlanCatalog>();
+
+        return await store.GetAsync(tenantId) is { } tenant ? Summary(tenant, plans) : null;
+    }
+
+    private static TenantSummary Summary(TenantInfo t, PlanCatalog plans) =>
+        new(t.Id ?? string.Empty, t.Identifier ?? string.Empty, t.Name, plans.NameFor(t.Identifier ?? string.Empty));
 }
