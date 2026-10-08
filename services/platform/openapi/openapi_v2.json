@@ -242,6 +242,70 @@
         }
       }
     },
+    "/v2/search": {
+      "post": {
+        "tags": [
+          "法規"
+        ],
+        "summary": "搜尋條文",
+        "description": "以字面檢索查詢某日有效的條文，相關度高的在前。`query` 必填，為原始文字（服務端自行分詞）；`asOf` 為 ISO 8601 日期（`YYYY-MM-DD`），省略表示現行；`limit` 為 1–50，省略為 10。用 POST 是為了讓查詢文字不出現在網址裡；查詢文字不寫入日誌。成功計量為一次 `ontology.search`（0 筆命中也計一次）。",
+        "operationId": "SearchArticles",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SearchHitDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key 缺少、無效、已過期或已撤銷。"
+          },
+          "429": {
+            "description": "超過本租戶方案的速率限制。"
+          },
+          "402": {
+            "description": "本租戶目前沒有有效的方案（完全付費制）。請聯絡業務啟用。"
+          }
+        }
+      }
+    },
     "/v2/ground": {
       "post": {
         "tags": [
@@ -445,6 +509,53 @@
           }
         }
       },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
       "LawDto": {
         "required": [
           "id",
@@ -525,6 +636,73 @@
           },
           "detail": {
             "type": "string"
+          }
+        }
+      },
+      "SearchHitDto": {
+        "required": [
+          "uri",
+          "lawId",
+          "lawTitle",
+          "number",
+          "content",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "uri": {
+            "type": "string"
+          },
+          "lawId": {
+            "type": "string"
+          },
+          "lawTitle": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "score": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "float"
+          }
+        }
+      },
+      "SearchRequest": {
+        "required": [
+          "query",
+          "asOf",
+          "limit"
+        ],
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "asOf": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },

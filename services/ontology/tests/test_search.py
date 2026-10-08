@@ -93,6 +93,19 @@ def test_search_finds_the_article_by_raw_text(
     assert top.lexical_score > 0
 
 
+def test_the_query_text_is_not_written_to_the_log(
+    search_stub: ontology_pb2_grpc.OntologyServiceStub, caplog: pytest.LogCaptureFixture
+) -> None:
+    # 查詢是客戶的案件內容；日誌只該有它的長度。
+    with caplog.at_level("INFO", logger="env_law_ontology.service"):
+        search_stub.SearchArticles(
+            ontology_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=auth()
+        )
+
+    assert "噪音管制標準" not in caplog.text
+    assert "query_chars=6" in caplog.text
+
+
 def test_search_before_the_law_existed_finds_nothing(
     search_stub: ontology_pb2_grpc.OntologyServiceStub,
 ) -> None:
