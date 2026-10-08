@@ -60,6 +60,9 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.UseSetting("Platform:Ui:OperatorEmails:0", OperatorEmail);
         // 所有測試共用同一個來源位址：預設的每分鐘 10 次會被別的測試用完。限流本身由 PortalRateLimitTests 以自己的主機（小額度）測。
         builder.UseSetting("Platform:Portal:SignInAttemptsPerMinute", "1000");
+        // 多數入口測試的成員是 Owner，而且不是在測兩步驟驗證：共用主機不強制（正式預設是強制）。
+        // 強制本身由 PortalMfaRequiredTests 以自己的主機（設成 true）測。
+        builder.UseSetting("Platform:Portal:RequireMfaForAdmins", "false");
         builder.UseSetting("Ontology:Address", Ontology.Address.ToString());
         builder.UseSetting("Ontology:InternalToken", FakeOntologyServer.InternalToken);
         builder.UseSetting("Consult:Address", Consult.Address.ToString());

@@ -11,6 +11,20 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EnvLaw.Platform.Modules.Members;
 
+/// <summary>
+/// <c>Platform:Portal</c> 區段中屬於成員模型的部分（<c>Enabled</c> 與限流屬於 Web）。
+/// </summary>
+public sealed class MembersOptions : IPlatformOptions
+{
+    public static string SectionName => "Platform:Portal";
+
+    /// <summary>
+    /// Owner 與 Admin 必須啟用兩步驟驗證（07-01 §5：這兩個角色能管成員與金鑰，被冒用的後果最大）。預設 true；
+    /// 沒啟用的人登入後只進得了註冊頁。要關掉得明說，而且只該在展示環境。
+    /// </summary>
+    public bool RequireMfaForAdmins { get; set; } = true;
+}
+
 public static class MembersModule
 {
     /// <summary>密碼最短長度。依 NIST SP 800-63B：長度比組成規則（大小寫、符號）重要，不強制組成。</summary>
@@ -29,6 +43,7 @@ public static class MembersModule
     public static IServiceCollection AddMembersModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.AddPlatformOptions<MembersOptions>();
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {
@@ -75,11 +90,15 @@ public static class MembersModule
             .AddPolicy(PlatformAuth.PortalSessionPolicy, policy => policy
                 .AddAuthenticationSchemes(PlatformAuth.PortalCookieScheme)
                 .RequireAuthenticatedUser()
-                .AddRequirements(new PortalMemberRequirement(AllowPasswordChangePending: true)))
+                .AddRequirements(new PortalMemberRequirement(AllowPasswordChangePending: true, AllowMfaEnrollmentPending: true)))
+            .AddPolicy(PlatformAuth.PortalEnrollmentPolicy, policy => policy
+                .AddAuthenticationSchemes(PlatformAuth.PortalCookieScheme)
+                .RequireAuthenticatedUser()
+                .AddRequirements(new PortalMemberRequirement(AllowPasswordChangePending: false, AllowMfaEnrollmentPending: true)))
             .AddPolicy(PlatformAuth.PortalPolicy, policy => policy
                 .AddAuthenticationSchemes(PlatformAuth.PortalCookieScheme)
                 .RequireAuthenticatedUser()
-                .AddRequirements(new PortalMemberRequirement(AllowPasswordChangePending: false)));
+                .AddRequirements(new PortalMemberRequirement(AllowPasswordChangePending: false, AllowMfaEnrollmentPending: false)));
 
         services.AddHttpContextAccessor();
         services.AddScoped<MfaPendingCookie>();

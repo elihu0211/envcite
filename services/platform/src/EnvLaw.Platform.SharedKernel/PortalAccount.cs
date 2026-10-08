@@ -128,6 +128,18 @@ public interface IPortalTwoFactor
     /// <summary>用驗證器上的碼確認註冊；成功才啟用，回傳十組復原碼（只此一次，之後只存在資料庫）。</summary>
     Task<AdminOutcome<IReadOnlyList<string>>> EnableAsync(ClaimsPrincipal user, string code, CancellationToken cancellationToken);
 
+    /// <summary>這個成員的角色是否被要求使用兩步驟驗證（Owner、Admin，且設定要求）。被要求的人不能自己關閉。</summary>
+    bool IsRequired(ClaimsPrincipal user);
+
+    /// <summary>
+    /// 自己關閉：要目前的密碼<b>與</b>驗證器的碼（只知道其中一個的人，例如借到手機或看到密碼，不能關掉）。
+    /// 被要求的角色回 <see cref="AdminStatus.Invalid"/>。成功會丟掉金鑰與復原碼。
+    /// </summary>
+    Task<AdminOutcome<bool>> DisableAsync(ClaimsPrincipal user, string password, string code, CancellationToken cancellationToken);
+
+    /// <summary>用驗證器的碼確認後，產生一組新的十個復原碼（舊的全部作廢），只此一次顯示。</summary>
+    Task<AdminOutcome<IReadOnlyList<string>>> RegenerateRecoveryCodesAsync(ClaimsPrincipal user, string code, CancellationToken cancellationToken);
+
     /// <summary>目前這個請求是否帶著這個租戶、五分鐘內有效的「密碼已通過、等第二步」憑證。</summary>
     Task<bool> HasPendingSignInAsync();
 

@@ -20,7 +20,8 @@ namespace EnvLaw.Platform.Modules.Members;
 /// 不再回頭問 Identity。租戶取自目前請求解析出的租戶（登入前由路徑決定）。
 /// </summary>
 internal sealed class PortalClaimsPrincipalFactory(
-    UserManager<ApplicationUser> users, IOptions<IdentityOptions> options, IMultiTenantContextAccessor<TenantInfo> tenant)
+    UserManager<ApplicationUser> users, IOptions<IdentityOptions> options, IMultiTenantContextAccessor<TenantInfo> tenant,
+    IOptions<MembersOptions> members)
     : UserClaimsPrincipalFactory<ApplicationUser>(users, options)
 {
     protected override async Task<ClaimsIdentity> GenerateClaimsAsync(ApplicationUser user)
@@ -48,11 +49,16 @@ internal sealed class PortalClaimsPrincipalFactory(
             identity.AddClaim(new Claim(PlatformClaimTypes.PasswordChangeRequired, "true"));
         }
 
+        if (PortalTwoFactor.RequiresTwoFactor(user.Role, members.Value) && !user.TwoFactorEnabled)
+        {
+            identity.AddClaim(new Claim(PlatformClaimTypes.MfaEnrollmentRequired, "true"));
+        }
+
         return identity;
     }
 }
 
-internal sealed record PortalMemberRequirement(bool AllowPasswordChangePending) : IAuthorizationRequirement;
+internal sealed record PortalMemberRequirement(bool AllowPasswordChangePending, bool AllowMfaEnrollmentPending) : IAuthorizationRequirement;
 
 /// <summary>
 /// 一個入口 session 只對它簽發時的那個租戶有效：cookie 的 tenant claim 必須等於這個請求路徑解析出的租戶。
@@ -69,7 +75,8 @@ internal sealed class PortalMemberHandler(IMultiTenantContextAccessor<TenantInfo
         var valid = user.FindFirst(PlatformClaimTypes.PortalUserId) is not null
             && current is not null
             && string.Equals(current, sessionTenant, StringComparison.Ordinal)
-            && (requirement.AllowPasswordChangePending || user.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is null);
+            && (requirement.AllowPasswordChangePending || user.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is null)
+            && (requirement.AllowMfaEnrollmentPending || user.FindFirst(PlatformClaimTypes.MfaEnrollmentRequired) is null);
 
         if (valid)
         {
@@ -97,7 +104,10 @@ internal static class PortalRedirects
         return Task.CompletedTask;
     }
 
-    /// <summary>已登入但不符：還必須先改密碼 → 改密碼頁；否則（例如別的租戶的 cookie）→ 這個租戶的登入頁。</summary>
+    /// <summary>
+    /// 已登入但不符：還必須先改密碼 → 改密碼頁；密碼改過了、但角色要求的兩步驟驗證還沒註冊 → 註冊頁；
+    /// 否則（例如別的租戶的 cookie）→ 這個租戶的登入頁。先改密碼再註冊：註冊前要先是一個只有本人知道的密碼。
+    /// </summary>
     public static Task ToAccessDenied(RedirectContext<CookieAuthenticationOptions> context)
     {
         if (PortalPaths.TenantFrom(context.Request.Path) is not { } tenant)
@@ -106,9 +116,13 @@ internal static class PortalRedirects
             return Task.CompletedTask;
         }
 
-        var pendingHere = context.HttpContext.User.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is not null
-            && string.Equals(context.HttpContext.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value, tenant, StringComparison.Ordinal);
-        context.Response.Redirect(pendingHere ? PortalPaths.Password(tenant) : PortalPaths.Login(tenant));
+        var user = context.HttpContext.User;
+        var sessionIsHere = string.Equals(user.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value, tenant, StringComparison.Ordinal);
+        var target = !sessionIsHere ? PortalPaths.Login(tenant)
+            : user.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is not null ? PortalPaths.Password(tenant)
+            : user.FindFirst(PlatformClaimTypes.MfaEnrollmentRequired) is not null ? $"{PortalPaths.Home(tenant)}/security"
+            : PortalPaths.Login(tenant);
+        context.Response.Redirect(target);
         return Task.CompletedTask;
     }
 }

@@ -6,6 +6,7 @@ using EnvLaw.Platform.SharedKernel;
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 using OtpNet;
 
@@ -18,6 +19,7 @@ internal sealed class PortalTwoFactor(
     TotpVerifier totp,
     MfaPendingCookie pending,
     IMultiTenantContextAccessor<TenantInfo> tenant,
+    IOptions<MembersOptions> options,
     IAuditLog audit) : IPortalTwoFactor
 {
     private const int RecoveryCodeCount = 10;
@@ -26,6 +28,14 @@ internal sealed class PortalTwoFactor(
     // Identity 存驗證器金鑰的固定位置（與 GetAuthenticatorKeyAsync 讀的是同一格）。
     private const string AuthenticatorKeyProvider = "[AspNetUserStore]";
     private const string AuthenticatorKeyName = "AuthenticatorKey";
+    private const string RecoveryCodesName = "RecoveryCodes";
+
+    /// <summary>Owner 與 Admin 被要求使用兩步驟驗證（設定可關閉，預設要求）。</summary>
+    internal static bool RequiresTwoFactor(string role, MembersOptions options) =>
+        options.RequireMfaForAdmins && role is CustomerRoles.Owner or CustomerRoles.Admin;
+
+    public bool IsRequired(ClaimsPrincipal principal) =>
+        principal.FindFirst(ClaimTypes.Role)?.Value is { } role && RequiresTwoFactor(role, options.Value);
 
     public async Task<bool> IsEnabledAsync(ClaimsPrincipal principal, CancellationToken cancellationToken) =>
         await UserOfAsync(principal) is { TwoFactorEnabled: true };
@@ -83,6 +93,80 @@ internal sealed class PortalTwoFactor(
         await signIn.RefreshSignInAsync(user);
         await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalMfaEnabled, info.Id, "member", user.Id), cancellationToken);
         return AdminOutcome.Ok<IReadOnlyList<string>>([.. codes]);
+    }
+
+    public async Task<AdminOutcome<bool>> DisableAsync(ClaimsPrincipal principal, string password, string code, CancellationToken cancellationToken)
+    {
+        var info = Tenant();
+        if (await UserOfAsync(principal) is not { } user)
+        {
+            return AdminOutcome.NotFound<bool>();
+        }
+
+        if (!user.TwoFactorEnabled)
+        {
+            return AdminOutcome.Invalid<bool>("目前沒有啟用兩步驟驗證。");
+        }
+
+        // 角色要求的就不能關：能關，等於這個要求只是個建議。要關得由營運者改角色或設定。
+        if (RequiresTwoFactor(user.Role, options.Value))
+        {
+            return AdminOutcome.Invalid<bool>("你的角色必須使用兩步驟驗證，不能關閉。");
+        }
+
+        // 密碼與驗證碼都要對：只知道其中一個（看到密碼、或借到沒鎖的手機）的人，不能把保護關掉。
+        // 兩者的失敗都計入鎖定，所以這裡不能成為猜測的後門。
+        if (!await ConfirmAsync(user, password, code))
+        {
+            return AdminOutcome.Invalid<bool>("密碼或驗證碼不正確。");
+        }
+
+        await users.SetTwoFactorEnabledAsync(user, false);
+        await users.RemoveAuthenticationTokenAsync(user, AuthenticatorKeyProvider, AuthenticatorKeyName);
+        await users.RemoveAuthenticationTokenAsync(user, AuthenticatorKeyProvider, RecoveryCodesName);
+        await users.UpdateSecurityStampAsync(user);
+        await signIn.RefreshSignInAsync(user);
+        await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalMfaDisabled, info.Id, "member", user.Id), cancellationToken);
+        return AdminOutcome.Ok(true);
+    }
+
+    public async Task<AdminOutcome<IReadOnlyList<string>>> RegenerateRecoveryCodesAsync(
+        ClaimsPrincipal principal, string code, CancellationToken cancellationToken)
+    {
+        var info = Tenant();
+        if (await UserOfAsync(principal) is not { TwoFactorEnabled: true } user)
+        {
+            return AdminOutcome.Invalid<IReadOnlyList<string>>("目前沒有啟用兩步驟驗證。");
+        }
+
+        if (!await ConfirmAsync(user, password: null, code))
+        {
+            return AdminOutcome.Invalid<IReadOnlyList<string>>("驗證碼不正確。");
+        }
+
+        var codes = await users.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount) ?? [];
+        await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalRecoveryCodesRegenerated, info.Id, "member", user.Id), cancellationToken);
+        return AdminOutcome.Ok<IReadOnlyList<string>>([.. codes]);
+    }
+
+    /// <summary>
+    /// 敏感動作前再確認一次本人：驗證碼（與密碼，若有給）。任何一項錯都記一次失敗並檢查鎖定，
+    /// 鎖定中就一律不過。這裡不歸零計數：歸零只在完整登入成功時。
+    /// </summary>
+    private async Task<bool> ConfirmAsync(ApplicationUser user, string? password, string code)
+    {
+        if (await users.IsLockedOutAsync(user))
+        {
+            return false;
+        }
+
+        var ok = (password is null || await users.CheckPasswordAsync(user, password)) && await totp.VerifyAsync(user, code);
+        if (!ok)
+        {
+            await users.AccessFailedAsync(user);
+        }
+
+        return ok;
     }
 
     public async Task<bool> HasPendingSignInAsync() => await pending.ReadAsync() is not null;

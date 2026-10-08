@@ -15,6 +15,9 @@ public static class PlatformClaimTypes
     /// <summary>存在（值為 true）表示這個 session 還必須先改密碼。</summary>
     public const string PasswordChangeRequired = "pwd_change_required";
 
+    /// <summary>存在（值為 true）表示這個 session 還必須先註冊兩步驟驗證（角色要求，但還沒啟用）。</summary>
+    public const string MfaEnrollmentRequired = "mfa_enrollment_required";
+
     /// <summary>每個授予的 scope 各一個 claim。</summary>
     public const string Scope = "scope";
 }

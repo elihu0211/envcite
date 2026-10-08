@@ -23,7 +23,7 @@ public sealed class PortalMemberHandlerTests
         return accessor;
     }
 
-    private static ClaimsPrincipal Member(string? tenant, bool passwordChangePending = false, bool withUserId = true)
+    private static ClaimsPrincipal Member(string? tenant, bool passwordChangePending = false, bool withUserId = true, bool mfaEnrollmentPending = false)
     {
         var claims = new List<Claim>();
         if (withUserId)
@@ -41,12 +41,17 @@ public sealed class PortalMemberHandlerTests
             claims.Add(new Claim(PlatformClaimTypes.PasswordChangeRequired, "true"));
         }
 
+        if (mfaEnrollmentPending)
+        {
+            claims.Add(new Claim(PlatformClaimTypes.MfaEnrollmentRequired, "true"));
+        }
+
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
     }
 
-    private static async Task<bool> SucceedsAsync(string? resolvedTenant, ClaimsPrincipal user, bool allowPending)
+    private static async Task<bool> SucceedsAsync(string? resolvedTenant, ClaimsPrincipal user, bool allowPending, bool allowMfaEnrollment = false)
     {
-        var requirement = new PortalMemberRequirement(allowPending);
+        var requirement = new PortalMemberRequirement(allowPending, allowMfaEnrollment);
         var context = new AuthorizationHandlerContext([requirement], user, null);
         await new PortalMemberHandler(Accessor(resolvedTenant)).HandleAsync(context);
         return context.HasSucceeded;
@@ -81,5 +86,23 @@ public sealed class PortalMemberHandlerTests
     {
         Assert.False(await SucceedsAsync("acme", Member("acme", passwordChangePending: true), allowPending: false));
         Assert.True(await SucceedsAsync("acme", Member("acme", passwordChangePending: true), allowPending: true));
+    }
+
+    [Fact]
+    public async Task ARequiredButNotYetEnrolledSessionOnlyOpensTheEnrollmentPage()
+    {
+        var notEnrolled = Member("acme", mfaEnrollmentPending: true);
+
+        Assert.False(await SucceedsAsync("acme", notEnrolled, allowPending: false, allowMfaEnrollment: false)); // 入口其餘頁面
+        Assert.True(await SucceedsAsync("acme", notEnrolled, allowPending: false, allowMfaEnrollment: true)); // 註冊頁
+    }
+
+    [Fact]
+    public async Task EnrollmentDoesNotComeBeforeChangingTheOperatorIssuedPassword()
+    {
+        // 註冊前先要有一個只有本人知道的密碼：兩者都還沒做的人，註冊頁也不開。
+        var both = Member("acme", passwordChangePending: true, mfaEnrollmentPending: true);
+
+        Assert.False(await SucceedsAsync("acme", both, allowPending: false, allowMfaEnrollment: true));
     }
 }

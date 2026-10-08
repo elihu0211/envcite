@@ -29,6 +29,8 @@ public static class AuditLabels
         AuditActions.PortalMfaEnabled => "成員啟用兩步驟驗證",
         AuditActions.PortalRecoveryCodeUsed => "成員使用復原碼",
         AuditActions.MemberMfaReset => "重設成員的兩步驟驗證",
+        AuditActions.PortalMfaDisabled => "成員關閉兩步驟驗證",
+        AuditActions.PortalRecoveryCodesRegenerated => "成員重新產生復原碼",
         _ => action,
     };
 
@@ -37,7 +39,7 @@ public static class AuditLabels
     {
         AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned or AuditActions.MemberCreated => Color.Success,
         AuditActions.ApiKeyRevoked or AuditActions.TenantPlanRemoved or AuditActions.MemberPasswordReset
-            or AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset => Color.Warning,
+            or AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled => Color.Warning,
         AuditActions.OperatorSignInDenied or AuditActions.PortalSignInFailed => Color.Error,
         _ => Color.Default,
     };
@@ -56,7 +58,8 @@ public static class AuditLabels
         AuditActions.MemberPasswordReset or AuditActions.PortalPasswordChanged => Icons.Material.Filled.LockReset,
         AuditActions.PortalSignInFailed => Icons.Material.Filled.GppBad,
         AuditActions.PortalMfaEnabled => Icons.Material.Filled.Security,
-        AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset => Icons.Material.Filled.PhonelinkLock,
+        AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled
+            or AuditActions.PortalRecoveryCodesRegenerated => Icons.Material.Filled.PhonelinkLock,
         _ => Icons.Material.Filled.History,
     };
 

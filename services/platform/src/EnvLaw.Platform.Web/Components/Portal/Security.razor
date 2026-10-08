@@ -2,7 +2,7 @@
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.PortalSignInRateLimit)]
-@attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+@attribute [Authorize(Policy = PlatformAuth.PortalEnrollmentPolicy)]
 
 <PageTitle>兩步驟驗證 · env-law</PageTitle>
 
@@ -14,11 +14,23 @@
     <a class="ep-btn ep-btn-quiet" href="@PortalPaths.Home(Tenant)">回總覽</a>
 </header>
 
+@if (!_enabled && _required)
+{
+    <p class="ep-alert ep-alert-info" role="status">
+        你的角色必須使用兩步驟驗證。請先完成下面的設定，才能使用入口的其他功能。
+    </p>
+}
+
+@if (_notice is not null)
+{
+    <p class="ep-alert ep-alert-info" role="status">@_notice</p>
+}
+
 @if (_recoveryCodes is not null)
 {
     @* 只在啟用的這一個回應裡出現，之後不會再顯示（頁面重新整理就沒了）。 *@
     <section class="ep-card" aria-labelledby="codes-title">
-        <h2 id="codes-title" class="ep-section-title">兩步驟驗證已啟用</h2>
+        <h2 id="codes-title" class="ep-section-title">@_codesTitle</h2>
         <p class="ep-alert ep-alert-info" role="status">
             這是你的復原碼。<strong>只會顯示這一次</strong>：請現在抄下或存進密碼管理員。
             手機遺失時，每一組復原碼可以代替一次驗證碼，用過就失效。
@@ -39,6 +51,46 @@ else if (_enabled)
         <p class="ep-page-description">
             之後登入都會要求驗證碼。手機遺失、也沒有復原碼時，請洽貴組織的管理員或我們的營運人員為你重設。
         </p>
+    </section>
+
+    @if (_error is not null)
+    {
+        <p class="ep-alert ep-alert-error" role="alert">@_error</p>
+    }
+
+    <section class="ep-card" aria-labelledby="regen-title">
+        <h2 id="regen-title" class="ep-section-title">重新產生復原碼</h2>
+        <p class="ep-page-description">舊的復原碼會全部作廢。輸入驗證器上現在的六位數確認是你本人。</p>
+        <EditForm Model="Regenerate" FormName="portal-mfa-regenerate" OnValidSubmit="RegenerateAsync" method="post" class="ep-form">
+            <div class="ep-field-row">
+                <label for="regen-code" class="ep-label">驗證碼</label>
+                <InputText id="regen-code" @bind-Value="Regenerate.Code" class="ep-input" required autocomplete="one-time-code" inputmode="numeric" maxlength="10" />
+            </div>
+            <button type="submit" class="ep-btn ep-btn-quiet">重新產生</button>
+        </EditForm>
+    </section>
+
+    <section class="ep-card" aria-labelledby="off-title">
+        <h2 id="off-title" class="ep-section-title">關閉兩步驟驗證</h2>
+        @if (_required)
+        {
+            <p class="ep-page-description">你的角色必須使用兩步驟驗證，不能關閉。</p>
+        }
+        else
+        {
+            <p class="ep-page-description">關閉後只靠密碼登入。需要目前的密碼<strong>和</strong>驗證碼。</p>
+            <EditForm Model="Disable" FormName="portal-mfa-disable" OnValidSubmit="DisableAsync" method="post" class="ep-form">
+                <div class="ep-field-row">
+                    <label for="off-password" class="ep-label">目前的密碼</label>
+                    <InputText id="off-password" @bind-Value="Disable.Password" type="password" class="ep-input" required autocomplete="current-password" />
+                </div>
+                <div class="ep-field-row">
+                    <label for="off-code" class="ep-label">驗證碼</label>
+                    <InputText id="off-code" @bind-Value="Disable.Code" class="ep-input" required autocomplete="one-time-code" inputmode="numeric" maxlength="10" />
+                </div>
+                <button type="submit" class="ep-btn ep-btn-quiet">關閉</button>
+            </EditForm>
+        }
     </section>
 }
 else if (_setup is not null)
