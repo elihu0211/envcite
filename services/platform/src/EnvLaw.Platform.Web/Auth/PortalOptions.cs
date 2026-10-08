@@ -17,9 +17,10 @@ public sealed class PortalOptions : IPlatformOptions
 
     /// <summary>
     /// 同一個來源位址每分鐘最多送幾次登入或改密碼（成功與失敗都算）。帳號鎖定只擋「同一個帳號被猜」，
-    /// 擋不了一個來源在試很多帳號（撞庫），這個限制才是。
+    /// 擋不了一個來源在試很多帳號（撞庫），這個限制才是。預設 60：機關、顧問公司常是整個辦公室共用一個出口位址，
+    /// 早上同時上班登入的人不該被擋；它擋的是自動化的猜測，不是正常使用。
     /// </summary>
-    public int SignInAttemptsPerMinute { get; set; } = 10;
+    public int SignInAttemptsPerMinute { get; set; } = 60;
 }
 
 internal sealed class PortalOptionsValidator : IValidateOptions<PortalOptions>
