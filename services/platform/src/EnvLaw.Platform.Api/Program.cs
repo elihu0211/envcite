@@ -35,6 +35,7 @@ var connectionString = builder.Configuration.GetConnectionString("Platform")
     ?? throw new InvalidOperationException("Connection string 'Platform' is not configured.");
 var platformConfig = builder.Configuration.GetSection("Platform");
 
+builder.AddPlatformObservability();
 builder.Services.AddPlatformOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddTenancyModule(connectionString);
@@ -70,13 +71,13 @@ app.UseHttpsRedirection();
 // 順序很重要：API key 驗證會設定租戶 claim，Finbuckle 再據此解析租戶。
 app.UseAuthentication();
 app.UsePlatformWebAuthentication();
+app.UseTenantTrace();
 app.UseMultiTenant();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.UseAntiforgery();
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
-    .WithName("Health");
+app.MapPlatformHealth();
 
 app.MapGroup("/admin")
     .RequireAuthorization(PlatformAuth.AdminPolicy)
