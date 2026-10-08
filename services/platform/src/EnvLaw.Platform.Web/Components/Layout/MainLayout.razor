@@ -13,7 +13,7 @@
         <MudSpacer />
         <AuthorizeView>
             <Authorized>
-                <MudText Typo="Typo.body2" Class="mr-3">@context.User.FindFirst(ClaimTypes.Email)?.Value</MudText>
+                <MudText Typo="Typo.body2" Class="mr-3 ep-user">@context.User.FindFirst(ClaimTypes.Email)?.Value</MudText>
                 <form method="post" action="/ui/logout">
                     <AntiforgeryToken />
                     <MudButton ButtonType="ButtonType.Submit" Color="Color.Inherit">登出</MudButton>
