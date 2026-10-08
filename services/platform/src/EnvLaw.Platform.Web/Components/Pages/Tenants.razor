@@ -27,8 +27,8 @@ else
             <MudSwitch T="bool" @bind-Value="_dense" Color="Color.Primary" Label="緊湊" aria-label="緊湊列高" />
         </div>
 
-        <MudTable Items="_tenants" Filter="Matches" Dense="_dense" Hover="true" Elevation="0" Breakpoint="Breakpoint.Sm"
-                  RowsPerPage="25" Class="ep-table">
+        <MudTable Items="_tenants" Filter="Matches" Dense="_dense" Hover="true" Elevation="0" Breakpoint="Breakpoint.None"
+                  RowsPerPage="25" Class="ep-table ep-cards">
             <HeaderContent>
                 <MudTh><MudTableSortLabel SortBy="new Func<TenantSummary, object>(t => t.Name ?? string.Empty)">名稱</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortBy="new Func<TenantSummary, object>(t => t.Identifier)" InitialDirection="SortDirection.Ascending">識別碼</MudTableSortLabel></MudTh>

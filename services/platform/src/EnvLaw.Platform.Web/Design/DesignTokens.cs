@@ -102,9 +102,9 @@ public static class DesignTokens
     /// </summary>
     public sealed record TypeStyle(string Size, string LineHeight, string LetterSpacing, int Weight);
 
-    public static TypeStyle Display { get; } = new("2.5rem", "1.1", "-0.02em", 700);
+    public static TypeStyle Display { get; } = new("clamp(2rem, 1.4rem + 2vw, 2.5rem)", "1.1", "-0.02em", 700);
 
-    public static TypeStyle H1 { get; } = new("2rem", "1.2", "-0.015em", 700);
+    public static TypeStyle H1 { get; } = new("clamp(1.625rem, 1.3rem + 1vw, 2rem)", "1.2", "-0.015em", 700);
 
     public static TypeStyle H2 { get; } = new("1.5rem", "1.25", "-0.01em", 600);
 

@@ -176,10 +176,19 @@ a:where(:not([class*="mud-"])) {
 
 /* ---- 資料表頁面 ------------------------------------------------------------------------------ */
 
-/* 卡片裡放表格：邊到邊，不再內縮；圓角由卡片裁切。 */
+/*
+ * 卡片裡放表格：邊到邊，不再內縮。卡片本身是容器查詢的容器：版面依「卡片有多寬」而不是「螢幕有多寬」
+ * 改變，所以放進側欄、分割視窗或不同的頁面寬度都對。比較寬的表格在卡片內自己橫向捲動，不撐開整頁，
+ * 也不被裁掉（overflow: hidden 會讓右邊的欄位看不到也捲不到）。
+ */
 .ep-table-card {
     padding: 0;
-    overflow: hidden;
+    container: ep-table / inline-size;
+    overflow: clip;
+}
+
+.ep-table-card .mud-table-container {
+    overflow-x: auto;
 }
 
 /* 控制項（搜尋、篩選、密度）在表格正上方。 */
@@ -305,8 +314,11 @@ a:where(:not([class*="mud-"])) {
     transition: border-color var(--ep-motion-fast) var(--ep-motion-ease);
 }
 
-.ep-home-card:hover {
-    border-color: var(--ep-border-control);
+/* 只有真的能 hover 的裝置（滑鼠）才有 hover 樣式；觸控裝置按下後不會卡在 hover 狀態。 */
+@media (hover: hover) {
+    .ep-home-card:hover {
+        border-color: var(--ep-border-control);
+    }
 }
 
 .ep-home-card h2 {
@@ -321,4 +333,148 @@ a:where(:not([class*="mud-"])) {
     margin: 0;
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-sm-size);
+}
+
+
+/* ---- 響應式 ----------------------------------------------------------------------------------
+ * 原生 CSS：容器查詢、邏輯屬性、rem 單位的斷點、pointer/hover 媒體查詢、安全區、dvh。
+ * 斷點用 rem（不是 px）：使用者把瀏覽器字級調大時，版面比螢幕寬度更早切換成窄版，內容才不擠。
+ */
+
+/* 品牌字不換行；頂欄放不下時，email 先讓位（登出一定留著）。 */
+.ep-brand {
+    white-space: nowrap;
+}
+
+@media (max-width: 40rem) {
+    .ep-user {
+        display: none;
+    }
+}
+
+/* 瀏海與圓角螢幕：內容往安全區內縮（viewport-fit=cover 時才有值，其他情況是 0）。 */
+.ep-appbar.mud-appbar,
+.mud-main-content {
+    padding-inline: max(var(--ep-space-2), env(safe-area-inset-left)) max(var(--ep-space-2), env(safe-area-inset-right));
+}
+
+.ep-appbar.mud-appbar {
+    padding-block-start: env(safe-area-inset-top);
+}
+
+.mud-main-content {
+    padding-block-end: env(safe-area-inset-bottom);
+}
+
+.mud-drawer {
+    padding-block-start: env(safe-area-inset-top);
+}
+
+/* 窄的卡片（約手機寬）：表格改成一列一張小卡片，不橫向捲動。
+   每一列直排，最後一格（操作、展開）靠右、與第一行對齊；欄位標籤用 data-label 補上。 */
+@container ep-table (max-width: 36rem) {
+    /* class 套在 MudBlazor 的外層 div；真正的 <table> 在裡面，也要改成區塊。 */
+    .ep-cards table,
+    .ep-cards tbody {
+        display: block;
+        inline-size: 100%;
+    }
+
+    /* 欄標題視覺上隱藏，但保留給輔助技術。 */
+    .ep-cards table thead {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+
+    .ep-cards table tbody tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: var(--ep-space-1) var(--ep-space-3);
+        padding: var(--ep-space-3) var(--ep-space-4);
+        border-block-end: 1px solid var(--ep-border-subtle);
+    }
+
+    .ep-cards table tbody tr td {
+        display: block;
+        grid-column: 1;
+        padding: 0;
+        border: 0;
+        min-inline-size: 0;
+    }
+
+    .ep-cards table tbody tr td[data-label]:not(:first-child)::before {
+        content: attr(data-label) "：";
+        color: var(--ep-text-secondary);
+        font-size: var(--ep-body-sm-size);
+    }
+
+    /* Mud 的表格在窄螢幕會自己插入標籤，這裡統一由我們控制。 */
+    .ep-cards table tbody tr td:last-child::before {
+        content: none;
+    }
+
+    .ep-cards table tbody tr td.mud-table-cell::before {
+        float: none;
+    }
+
+    .ep-cards table tbody tr td:last-child {
+        grid-column: 2;
+        grid-row: 1 / span 5;
+        align-self: start;
+    }
+
+    /* 卡片裡「目標：api_key …id」同一行。 */
+    .ep-cards .ep-secondary {
+        display: inline;
+    }
+
+    /* 展開的細節列維持整列寬。 */
+    .ep-cards table tbody tr.ep-detail-row {
+        display: block;
+        padding: 0;
+    }
+
+    .ep-cards table tbody tr.ep-detail-row > td {
+        padding: var(--ep-space-3) var(--ep-space-4);
+    }
+
+    .ep-detail {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .ep-detail dd {
+        margin-block-end: var(--ep-space-2);
+    }
+
+    /* 窄卡片裡，篩選控制項各占一整列。 */
+    .ep-field {
+        max-inline-size: none;
+        flex-basis: 100%;
+    }
+}
+
+/* 觸控裝置（粗略指標）：可點的東西至少 44×44，指尖才點得準。滑鼠不受影響，桌面維持緊湊。 */
+@media (pointer: coarse) {
+    .mud-button-root,
+    .mud-icon-button,
+    .mud-nav-link,
+    .mud-switch,
+    .mud-input-control {
+        min-block-size: 2.75rem;
+    }
+
+    .mud-icon-button {
+        min-inline-size: 2.75rem;
+    }
+
+    .mud-table-cell a,
+    .ep-cards td a {
+        display: inline-flex;
+        align-items: center;
+        min-block-size: 2.75rem;
+    }
 }

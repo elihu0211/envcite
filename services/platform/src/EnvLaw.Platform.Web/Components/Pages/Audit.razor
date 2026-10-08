@@ -57,7 +57,7 @@
     }
     else
     {
-        <MudSimpleTable Dense="_dense" Hover="true" Elevation="0" Class="ep-table" aria-label="稽核事件，新到舊">
+        <MudSimpleTable Dense="_dense" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="稽核事件，新到舊">
             <thead>
                 <tr>
                     <th scope="col">時間（台北）</th>
@@ -78,9 +78,9 @@
                             <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@AuditLabels.ActionColor(item.Action)"
                                      Icon="@AuditLabels.ActionIcon(item.Action)">@AuditLabels.Action(item.Action)</MudChip>
                         </td>
-                        <td class="ep-keep">@AuditLabels.Actor(item.ActorType, item.ActorId)</td>
-                        <td>@TenantLabel(item.TenantId)</td>
-                        <td>
+                        <td class="ep-keep" data-label="操作者">@AuditLabels.Actor(item.ActorType, item.ActorId)</td>
+                        <td data-label="租戶">@TenantLabel(item.TenantId)</td>
+                        <td data-label="目標">
                             @if (item.TargetId is null)
                             {
                                 <span>—</span>

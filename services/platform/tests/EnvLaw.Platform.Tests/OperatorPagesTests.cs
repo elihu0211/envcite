@@ -174,6 +174,10 @@ public sealed class OperatorPagesTests(PlatformFactory factory)
         Assert.Contains("role=\"status\"", html, StringComparison.Ordinal);
         Assert.Contains("aria-expanded=\"false\"", html, StringComparison.Ordinal);
         Assert.Contains("<time datetime=", html, StringComparison.Ordinal);
+        // 窄螢幕時表格變成卡片，欄位標籤靠 data-label 補上。
+        Assert.Contains("data-label=\"操作者\"", html, StringComparison.Ordinal);
+        Assert.Contains("data-label=\"租戶\"", html, StringComparison.Ordinal);
+        Assert.Contains("ep-cards", html, StringComparison.Ordinal);
     }
 
     [Fact]

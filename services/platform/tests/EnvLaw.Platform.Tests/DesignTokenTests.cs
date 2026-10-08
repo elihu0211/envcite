@@ -133,6 +133,31 @@ public static partial class DesignTokenTests
         Assert.Contains("prefers-contrast", css, StringComparison.Ordinal);
     }
 
+    // 響應式用原生 CSS：容器查詢、觸控目標、hover 只給能 hover 的裝置、安全區；斷點用 rem，不用 px。
+    [Fact]
+    public static void TheStylesheetIsResponsiveWithNativeCss()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        Assert.Contains("container: ep-table / inline-size", css, StringComparison.Ordinal);
+        Assert.Contains("@container ep-table", css, StringComparison.Ordinal);
+        Assert.Contains("@media (pointer: coarse)", css, StringComparison.Ordinal);
+        Assert.Contains("@media (hover: hover)", css, StringComparison.Ordinal);
+        Assert.Contains("env(safe-area-inset-left)", css, StringComparison.Ordinal);
+        Assert.Contains("2.75rem", css, StringComparison.Ordinal); // 觸控目標至少 44px
+        Assert.DoesNotMatch(PixelBreakpoint(), css);
+        // 表格卡片不能是 overflow: hidden：會把寬表格的右半邊裁掉，看不到也捲不到。
+        Assert.DoesNotMatch(HiddenOverflowOnCard(), css);
+    }
+
+    [Fact]
+    public static void TheLargestTypeSizesAreFluid()
+    {
+        Assert.Contains("clamp(", DesignTokens.Display.Size, StringComparison.Ordinal);
+        Assert.Contains("clamp(", DesignTokens.H1.Size, StringComparison.Ordinal);
+        Assert.Contains("clamp(", TokenCss.Render(), StringComparison.Ordinal);
+    }
+
     private static string StylesheetPath([CallerFilePath] string here = "") =>
         Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(here)!, "..", "..", "src", "EnvLaw.Platform.Web", "wwwroot", "design", "platform.css"));
@@ -142,6 +167,12 @@ public static partial class DesignTokenTests
 
     [GeneratedRegex(@"\brgba?\(")]
     private static partial Regex RgbColor();
+
+    [GeneratedRegex(@"@(media|container)[^{]*\d+px")]
+    private static partial Regex PixelBreakpoint();
+
+    [GeneratedRegex(@"\.ep-table-card\s*\{[^}]*overflow:\s*hidden")]
+    private static partial Regex HiddenOverflowOnCard();
 }
 
 [Collection(PlatformTestGroup.Name)]
@@ -159,6 +190,12 @@ public sealed class DesignPageTests(PlatformFactory factory)
         Assert.Contains("--ep-primary:", html, StringComparison.Ordinal);
         Assert.Contains("design/platform", html, StringComparison.Ordinal);
         Assert.Contains("lang=\"zh-TW\"", html, StringComparison.Ordinal);
+        // 手機：延伸到瀏海下（再用安全區內縮）、不禁用縮放、瀏覽器工具列顏色跟著主題（顏色來自 token）。
+        Assert.Contains("viewport-fit=cover", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("user-scalable", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("maximum-scale", html, StringComparison.Ordinal);
+        Assert.Contains($"<meta name=\"theme-color\" content=\"{DesignTokens.Light.Background}\" media=\"(prefers-color-scheme: light)\"", html, StringComparison.Ordinal);
+        Assert.Contains($"<meta name=\"theme-color\" content=\"{DesignTokens.Dark.Background}\" media=\"(prefers-color-scheme: dark)\"", html, StringComparison.Ordinal);
         Assert.DoesNotContain("fonts.googleapis.com", html, StringComparison.Ordinal);
         Assert.Contains("<h1", html, StringComparison.Ordinal);
     }
