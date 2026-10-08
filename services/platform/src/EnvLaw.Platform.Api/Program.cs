@@ -59,12 +59,21 @@ builder.Services.AddPlatformWeb();
 
 var app = builder.Build();
 
+var hostOptions = app.Services.GetRequiredService<IOptions<PlatformHostOptions>>().Value;
+
 // 產生 OpenAPI 規格的模擬 host 沒有資料庫；在 Development 環境下重建（wt platform 每次改程式後）也會走到這裡。
-if (!generatingOpenApi && app.Services.GetRequiredService<IOptions<PlatformHostOptions>>().Value.ApplyMigrationsOnStartup)
+if (!generatingOpenApi && hostOptions.ApplyMigrationsOnStartup)
 {
     await using var scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<TenancyDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<PlatformDbContext>().Database.MigrateAsync();
+}
+
+// 本機的第一組資料：只在 Development（設定開著時）；一次性密碼只印在終端機，不進日誌。
+if (!generatingOpenApi && app.Environment.IsDevelopment() && hostOptions.SeedDevelopmentData
+    && await DevelopmentSeed.RunAsync(app.Services, CancellationToken.None) is { } seeded)
+{
+    Console.WriteLine(DevelopmentSeed.Describe(seeded));
 }
 
 if (app.Environment.IsDevelopment())
