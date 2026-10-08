@@ -44,14 +44,25 @@ public sealed class ConfigurationTests(PlatformFactory factory)
         Assert.Contains("The DatabaseOptions.Platform field is required", message, StringComparison.Ordinal);
     }
 
+    // 後台是可選功能：Secret 常晚於程式碼上線，缺 Google 憑證不能讓整個 API 起不來。
     [Fact]
-    public void ProductionWithoutGoogleCredentialsFailsAtStartup()
+    public async Task ProductionWithoutGoogleCredentialsDisablesTheUiButTheApiRuns()
     {
-        var message = StartFailure(factory.WithWebHostBuilder(b => b
+        await using var host = factory.WithWebHostBuilder(b => b
             .UseEnvironment("Production")
-            .UseSetting("Platform:Ui:Google:ClientId", "")));
+            .UseSetting("Platform:Ui:Google:ClientId", string.Empty)
+            .UseSetting("Platform:Ui:Google:ClientSecret", string.Empty));
+        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        Assert.Contains("Platform:Ui:Google:ClientId and Platform:Ui:Google:ClientSecret are not configured", message, StringComparison.Ordinal);
+        using var health = await client.GetAsync(new Uri("/health/ready", UriKind.Relative));
+        using var api = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
+        using var ui = await client.GetAsync(new Uri("/ui", UriKind.Relative));
+        using var login = await client.GetAsync(new Uri("/ui/login", UriKind.Relative));
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, health.StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, api.StatusCode); // API 在，只是沒帶 key
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, ui.StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, login.StatusCode);
     }
 
     [Fact]
