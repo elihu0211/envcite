@@ -60,6 +60,17 @@ public sealed class PlatformDbContext : MultiTenantDbContext
             audit.HasIndex(a => new { a.Action, a.Id });
         });
 
+        // 沒有 IsMultiTenant()：理由同 AuditEvent（營運者跨租戶管理）。
+        modelBuilder.Entity<TenantEntitlement>(entitlement =>
+        {
+            entitlement.ToTable("TenantEntitlements");
+            entitlement.HasKey(e => e.TenantId);
+            entitlement.Property(e => e.TenantId).HasMaxLength(100);
+            entitlement.Property(e => e.TenantIdentifier).HasMaxLength(100);
+            entitlement.Property(e => e.Plan).HasMaxLength(50);
+            entitlement.HasIndex(e => e.TenantIdentifier).IsUnique();
+        });
+
         modelBuilder.Entity<UsageRecord>(record =>
         {
             record.IsMultiTenant();

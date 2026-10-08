@@ -43,6 +43,7 @@ if (!generatingOpenApi)
 {
     // Data Protection 啟動時就會預載金鑰環；模擬伺服器沒有資料庫，改用預設的暫時金鑰。
     builder.Services.AddPlatformDataProtection();
+    builder.Services.AddEntitlementRefresh();
 }
 
 builder.Services.AddPlatformData();

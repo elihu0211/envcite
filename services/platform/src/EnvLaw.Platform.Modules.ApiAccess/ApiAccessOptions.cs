@@ -33,6 +33,12 @@ public sealed class ApiAccessOptions : IPlatformOptions
     /// 不能呼叫資料端點（回 402）。只有本機開發與測試才設這個值，正式環境不要設。
     /// </summary>
     public string? DefaultPlan { get; set; }
+
+    /// <summary>
+    /// 每個副本多久從資料庫重新載入一次方案指派。營運者在某個副本改了方案，本機立即生效，
+    /// 其他副本最多晚這麼久才看到。
+    /// </summary>
+    public TimeSpan EntitlementRefresh { get; set; } = TimeSpan.FromSeconds(10);
 }
 
 /// <summary>
@@ -56,6 +62,11 @@ public sealed class ApiAccessOptionsValidator : IValidateOptions<ApiAccessOption
         if (!string.IsNullOrEmpty(options.DefaultPlan) && !known.Contains(options.DefaultPlan))
         {
             failures.Add($"Platform:DefaultPlan names unknown plan '{options.DefaultPlan}'.");
+        }
+
+        if (options.EntitlementRefresh < TimeSpan.FromSeconds(1))
+        {
+            failures.Add("Platform:EntitlementRefresh must be at least one second.");
         }
 
         failures.AddRange(options.Plans
