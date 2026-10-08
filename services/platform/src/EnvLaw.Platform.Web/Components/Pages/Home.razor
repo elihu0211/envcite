@@ -4,7 +4,13 @@
 
 <PageHeader Title="總覽" Description="平台營運用的管理介面。" />
 
-<section class="ep-card" aria-label="租戶">
-    <EmptyState Icon="@Icons.Material.Filled.Apartment" Title="租戶清單即將提供"
-                Description="目前可透過營運者 API 建立租戶與簽發 API key；管理畫面會在之後加入。" />
-</section>
+<div class="ep-home-grid">
+    <a class="ep-card ep-home-card" href="/ui/tenants">
+        <h2>租戶</h2>
+        <p>客戶與他們的方案；沒有方案的租戶不能呼叫資料端點。</p>
+    </a>
+    <a class="ep-card ep-home-card" href="/ui/audit">
+        <h2>稽核紀錄</h2>
+        <p>誰、何時、對哪個租戶做了什麼。只能新增，無法修改。</p>
+    </a>
+</div>

@@ -1,0 +1,133 @@
+@page "/ui/audit"
+
+<PageTitle>稽核紀錄 · env-law platform</PageTitle>
+
+<PageHeader Title="稽核紀錄" Description="誰、何時、對哪個租戶做了什麼。只能新增，無法修改或刪除。" />
+
+<section class="ep-card ep-table-card" aria-label="稽核事件">
+    @* 篩選在表格正上方；條件存在網址裡，所以可以分享連結，重新整理也不會丟。 *@
+    <div class="ep-toolbar ep-toolbar-wrap" role="search">
+        <MudSelect T="string" @bind-Value="_tenant" Label="租戶" Placeholder="全部租戶" Clearable="true"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Class="ep-field">
+            @foreach (var tenant in _tenantsById.Values.OrderBy(t => t.Identifier, StringComparer.Ordinal))
+            {
+                <MudSelectItem T="string" Value="@tenant.Id">@tenant.Identifier</MudSelectItem>
+            }
+        </MudSelect>
+        <MudSelect T="string" @bind-Value="_action" Label="事件" Placeholder="全部事件" Clearable="true"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Class="ep-field">
+            @foreach (var action in AuditActions.All)
+            {
+                <MudSelectItem T="string" Value="@action">@AuditLabels.Action(action)</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField @bind-Value="_actor" Label="操作者" Placeholder="email 或 API key id" Clearable="true"
+                      Variant="Variant.Outlined" Margin="Margin.Dense" Class="ep-field"
+                      OnKeyUp="@(e => { if (e.Key == "Enter") Apply(); })" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Apply">套用</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="@(!HasFilter)">重設</MudButton>
+        <MudSpacer />
+        <MudSwitch T="bool" @bind-Value="_dense" Color="Color.Primary" Label="緊湊" aria-label="緊湊列高" />
+    </div>
+
+    @* 讓螢幕閱讀器知道載入了多少筆，不搶走焦點。 *@
+    <p class="ep-status" role="status" aria-live="polite">@Status</p>
+
+    @if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error" Class="ma-4">
+            載入稽核紀錄失敗。
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="() => LoadAsync(append: false)">重試</MudButton>
+        </MudAlert>
+    }
+    else if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" aria-label="載入稽核紀錄中" />
+    }
+    else if (_items.Count == 0)
+    {
+        <EmptyState Icon="@Icons.Material.Filled.History"
+                    Title="@(HasFilter ? "沒有符合條件的稽核事件" : "還沒有稽核事件")"
+                    Description="@(HasFilter ? "試試放寬條件，或重設篩選。" : "建立租戶、簽發或撤銷 API key、營運者登入時，會留下紀錄。")">
+            @if (HasFilter)
+            {
+                <MudButton Variant="Variant.Text" OnClick="Reset">重設篩選</MudButton>
+            }
+        </EmptyState>
+    }
+    else
+    {
+        <MudSimpleTable Dense="_dense" Hover="true" Elevation="0" Class="ep-table" aria-label="稽核事件，新到舊">
+            <thead>
+                <tr>
+                    <th scope="col">時間（台北）</th>
+                    <th scope="col">事件</th>
+                    <th scope="col">操作者</th>
+                    <th scope="col">租戶</th>
+                    <th scope="col">目標</th>
+                    <th scope="col"><span class="ep-visually-hidden">展開細節</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _items)
+                {
+                    var open = _expanded.Contains(item.Id);
+                    <tr>
+                        <td><time datetime="@TaipeiTime.Full(item.OccurredAt)" title="@TaipeiTime.Full(item.OccurredAt)">@TaipeiTime.Format(item.OccurredAt)</time></td>
+                        <td>
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@AuditLabels.ActionColor(item.Action)"
+                                     Icon="@AuditLabels.ActionIcon(item.Action)">@AuditLabels.Action(item.Action)</MudChip>
+                        </td>
+                        <td class="ep-keep">@AuditLabels.Actor(item.ActorType, item.ActorId)</td>
+                        <td>@TenantLabel(item.TenantId)</td>
+                        <td>
+                            @if (item.TargetId is null)
+                            {
+                                <span>—</span>
+                            }
+                            else
+                            {
+                                <span class="ep-secondary">@item.TargetType</span>
+                                <code class="ep-mono ep-nowrap">@AuditLabels.Shorten(item.TargetId)</code>
+                            }
+                        </td>
+                        <td>
+                            <MudIconButton Icon="@(open ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Size="Size.Small"
+                                           aria-expanded="@(open ? "true" : "false")" aria-controls="@($"detail-{item.Id}")"
+                                           aria-label="@((open ? "收合" : "展開") + "事件細節")"
+                                           OnClick="() => Toggle(item.Id)" />
+                        </td>
+                    </tr>
+                    @if (open)
+                    {
+                        <tr id="@($"detail-{item.Id}")" class="ep-detail-row">
+                            <td colspan="6">
+                                <dl class="ep-detail">
+                                    <dt>事件 Id</dt><dd><code class="ep-mono">@item.Id</code></dd>
+                                    <dt>事件鍵</dt><dd><code class="ep-mono">@item.Action</code></dd>
+                                    <dt>操作者類型</dt><dd>@item.ActorType</dd>
+                                    <dt>Trace</dt><dd><code class="ep-mono">@(item.TraceId ?? "—")</code></dd>
+                                    <dt>內容</dt><dd><pre class="ep-mono">@Pretty(item.Detail)</pre></dd>
+                                </dl>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </MudSimpleTable>
+
+        <div class="ep-load-more">
+            @if (_next is not null)
+            {
+                @* 「載入更多」而不是無限捲動：使用者決定要不要看更多，也不會把頁尾推走（無障礙）。 *@
+                <MudButton Variant="Variant.Outlined" OnClick="LoadMoreAsync" Disabled="_loadingMore">
+                    @(_loadingMore ? "載入中…" : "載入更多")
+                </MudButton>
+            }
+            else
+            {
+                <p class="ep-page-description">已顯示全部。</p>
+            }
+        </div>
+    }
+</section>

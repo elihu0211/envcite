@@ -42,7 +42,7 @@ public static class UiEndpoints
             {
                 await audit.AppendAsync(
                     context.User,
-                    new AuditEntry(OperatorSignIn.SignedOut, TargetType: "operator", TargetId: context.User.FindFirst(ClaimTypes.Email)?.Value),
+                    new AuditEntry(AuditActions.OperatorSignedOut, TargetType: "operator", TargetId: context.User.FindFirst(ClaimTypes.Email)?.Value),
                     context.RequestAborted);
             }
 

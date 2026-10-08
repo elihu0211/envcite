@@ -173,3 +173,152 @@ a:where(:not([class*="mud-"])) {
         border-color: var(--ep-border-control);
     }
 }
+
+/* ---- 資料表頁面 ------------------------------------------------------------------------------ */
+
+/* 卡片裡放表格：邊到邊，不再內縮；圓角由卡片裁切。 */
+.ep-table-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+/* 控制項（搜尋、篩選、密度）在表格正上方。 */
+.ep-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
+    padding: var(--ep-space-3) var(--ep-space-4);
+    border-block-end: 1px solid var(--ep-border-subtle);
+}
+
+.ep-toolbar-wrap {
+    flex-wrap: wrap;
+}
+
+.ep-field {
+    min-inline-size: 12rem;
+    flex: 1 1 12rem;
+    max-inline-size: 18rem;
+}
+
+.ep-table {
+    background: transparent;
+}
+
+/* 欄標題小一級、次要色；數字與代碼用等寬字型。 */
+.ep-table th {
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-body-sm-size);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ep-mono {
+    font-family: var(--ep-font-mono);
+    font-size: var(--ep-body-sm-size);
+}
+
+.ep-secondary {
+    display: block;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-caption-size);
+    letter-spacing: var(--ep-caption-tracking);
+}
+
+.ep-keep {
+    /* 中文詞不要在字中間斷行；真的放不下（很長的 email）才硬斷。 */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+}
+
+.ep-nowrap,
+.ep-table td time {
+    white-space: nowrap;
+}
+
+.ep-status {
+    margin: 0;
+    padding: var(--ep-space-2) var(--ep-space-4);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-caption-size);
+    letter-spacing: var(--ep-caption-tracking);
+    min-block-size: calc(var(--ep-space-4) + var(--ep-space-4));
+}
+
+/* 展開列：漸進揭露事件細節。 */
+.ep-detail-row > td {
+    background: var(--ep-bg);
+    padding: var(--ep-space-3) var(--ep-space-6);
+}
+
+.ep-detail {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--ep-space-1) var(--ep-space-4);
+    margin: 0;
+}
+
+.ep-detail dt {
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-body-sm-size);
+}
+
+.ep-detail dd {
+    margin: 0;
+    min-inline-size: 0;
+}
+
+.ep-detail pre {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.ep-load-more {
+    display: flex;
+    justify-content: center;
+    padding: var(--ep-space-4);
+    border-block-start: 1px solid var(--ep-border-subtle);
+}
+
+/* 只給螢幕閱讀器看。 */
+.ep-visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* 首頁的入口卡片。 */
+.ep-home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: var(--ep-space-4);
+}
+
+.ep-home-card {
+    display: block;
+    text-decoration: none;
+    color: var(--ep-text);
+    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease);
+}
+
+.ep-home-card:hover {
+    border-color: var(--ep-border-control);
+}
+
+.ep-home-card h2 {
+    margin: 0 0 var(--ep-space-1);
+    font-size: var(--ep-h3-size);
+    line-height: var(--ep-h3-leading);
+    letter-spacing: var(--ep-h3-tracking);
+    font-weight: var(--ep-h3-weight);
+}
+
+.ep-home-card p {
+    margin: 0;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-body-sm-size);
+}

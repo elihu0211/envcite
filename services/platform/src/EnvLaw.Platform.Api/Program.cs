@@ -48,6 +48,7 @@ if (!generatingOpenApi)
 builder.Services.AddPlatformData();
 builder.Services.AddApiAccessModule();
 builder.Services.AddAuditModule();
+builder.Services.AddSingleton<ITenantDirectory, TenantDirectory>();
 builder.Services.AddMeteringModule();
 builder.Services.AddOntologyModule();
 builder.Services.AddConsultModule();
@@ -55,7 +56,8 @@ builder.Services.AddPlatformWeb();
 
 var app = builder.Build();
 
-if (app.Services.GetRequiredService<IOptions<PlatformHostOptions>>().Value.ApplyMigrationsOnStartup)
+// 產生 OpenAPI 規格的模擬 host 沒有資料庫；在 Development 環境下重建（wt platform 每次改程式後）也會走到這裡。
+if (!generatingOpenApi && app.Services.GetRequiredService<IOptions<PlatformHostOptions>>().Value.ApplyMigrationsOnStartup)
 {
     await using var scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<TenancyDbContext>().Database.MigrateAsync();
@@ -100,6 +102,7 @@ v2.MapGroup(string.Empty)
     .RequireAuthorization(PlatformAuth.PaidPolicy)
     .MapOntologyEndpoints()
     .MapConsultEndpoints();
+
 
 app.MapPlatformWeb();
 

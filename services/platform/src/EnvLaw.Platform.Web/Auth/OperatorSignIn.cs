@@ -13,10 +13,6 @@ namespace EnvLaw.Platform.Web.Auth;
 /// </summary>
 internal static class OperatorSignIn
 {
-    public const string SignedIn = "operator.signed_in";
-    public const string SignInDenied = "operator.sign_in_denied";
-    public const string SignedOut = "operator.signed_out";
-
     public static async Task HandleAsync(TicketReceivedContext context)
     {
         var services = context.HttpContext.RequestServices;
@@ -32,7 +28,7 @@ internal static class OperatorSignIn
             // 被拒絕的人不是營運者：以匿名身分記錄，嘗試登入的 email 放在事件裡。
             await audit.AppendAsync(
                 new ClaimsPrincipal(),
-                new AuditEntry(SignInDenied, TargetType: "operator", TargetId: email, Detail: new Dictionary<string, object?>
+                new AuditEntry(AuditActions.OperatorSignInDenied, TargetType: "operator", TargetId: email, Detail: new Dictionary<string, object?>
                 {
                     ["email"] = email,
                     ["emailVerified"] = principal?.FindFirst(OperatorAllowlist.EmailVerifiedClaim)?.Value,
@@ -43,6 +39,6 @@ internal static class OperatorSignIn
             return;
         }
 
-        await audit.AppendAsync(principal, new AuditEntry(SignedIn, TargetType: "operator", TargetId: email), ct);
+        await audit.AppendAsync(principal, new AuditEntry(AuditActions.OperatorSignedIn, TargetType: "operator", TargetId: email), ct);
     }
 }
