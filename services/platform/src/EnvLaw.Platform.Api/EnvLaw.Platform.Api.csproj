@@ -27,6 +27,7 @@
     <ProjectReference Include="..\EnvLaw.Platform.Modules.Metering\EnvLaw.Platform.Modules.Metering.csproj" />
     <ProjectReference Include="..\EnvLaw.Platform.Modules.Consult\EnvLaw.Platform.Modules.Consult.csproj" />
     <ProjectReference Include="..\EnvLaw.Platform.Data\EnvLaw.Platform.Data.csproj" />
+    <ProjectReference Include="..\EnvLaw.Platform.Web\EnvLaw.Platform.Web.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,18 @@
+<Router AppAssembly="typeof(Routes).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)">
+            <NotAuthorized Context="auth">
+                @if (auth.User.Identity?.IsAuthenticated == true)
+                {
+                    @* 已登入但不在白名單（例如剛被移除）：不能再導去登入，會繞圈。 *@
+                    <MudAlert Severity="Severity.Warning">這個帳號沒有後台權限。</MudAlert>
+                }
+                else
+                {
+                    <RedirectToLogin />
+                }
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>

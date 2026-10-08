@@ -1,0 +1,28 @@
+@inherits LayoutComponentBase
+
+@* 全站互動，provider 放在這裡；MudBlazor 要求它們與使用者元件在同一個 render mode。 *@
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h6">env-law platform</MudText>
+        <MudSpacer />
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.body2" Class="mr-3">@context.User.FindFirst(ClaimTypes.Email)?.Value</MudText>
+                <form method="post" action="/ui/logout">
+                    <AntiforgeryToken />
+                    <MudButton ButtonType="ButtonType.Submit" Color="Color.Inherit">登出</MudButton>
+                </form>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-6">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
