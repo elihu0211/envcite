@@ -27,6 +27,7 @@ public static class AuditActions
     public const string MemberDisabled = "member.disabled";
     public const string MemberEnabled = "member.enabled";
     public const string MemberRoleChanged = "member.role_changed";
+    public const string ConversationDeleted = "conversation.deleted";
 
     /// <summary>目前會寫入的所有事件，供篩選選單使用。</summary>
     public static IReadOnlyList<string> All { get; } =
@@ -35,6 +36,7 @@ public static class AuditActions
         MemberCreated, MemberPasswordReset, PortalSignedIn, PortalSignInFailed, PortalPasswordChanged, PortalSignedOut,
         PortalMfaEnabled, PortalRecoveryCodeUsed, MemberMfaReset,
         PortalMfaDisabled, PortalRecoveryCodesRegenerated, MemberDisabled, MemberEnabled, MemberRoleChanged,
+        ConversationDeleted,
     ];
 }
 

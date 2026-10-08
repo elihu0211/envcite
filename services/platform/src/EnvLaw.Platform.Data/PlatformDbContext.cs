@@ -29,6 +29,10 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
 
     public DbSet<UsageRecord> UsageRecords => Set<UsageRecord>();
 
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+
+    public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -76,6 +80,24 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
             entitlement.Property(e => e.TenantIdentifier).HasMaxLength(100);
             entitlement.Property(e => e.Plan).HasMaxLength(50);
             entitlement.HasIndex(e => e.TenantIdentifier).IsUnique();
+        });
+
+        builder.Entity<Conversation>(conversation =>
+        {
+            conversation.IsMultiTenant();
+            conversation.Property(c => c.UserId).HasMaxLength(450);
+            conversation.Property(c => c.Title).HasMaxLength(Conversation.TitleLength);
+            // 清單：某位成員最近更新的在前。
+            conversation.HasIndex(c => new { c.UserId, c.UpdatedAt });
+            conversation.HasIndex(c => c.UpdatedAt);
+            conversation.HasMany(c => c.Messages).WithOne().HasForeignKey(m => m.ConversationId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ConversationMessage>(message =>
+        {
+            message.IsMultiTenant();
+            message.Property(m => m.Role).HasMaxLength(16);
+            message.HasIndex(m => new { m.ConversationId, m.CreatedAt });
         });
 
         builder.Entity<UsageRecord>(record =>

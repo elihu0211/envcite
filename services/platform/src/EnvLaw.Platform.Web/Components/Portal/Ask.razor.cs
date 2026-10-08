@@ -19,6 +19,8 @@ public partial class Ask
 
     [Inject] private ILawSearch Laws { get; set; } = default!;
 
+    [Inject] private IConversationHistory History { get; set; } = default!;
+
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm] private SearchForm Input { get; set; } = default!;
@@ -29,6 +31,7 @@ public partial class Ask
     private string? _error;
     private string _asOfLabel = "現行";
     private IReadOnlyList<LawHit>? _hits;
+    private Guid? _conversationId;
 
     private string? Name => HttpContext.User.FindFirst(ClaimTypes.GivenName)?.Value ?? HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
 
@@ -70,6 +73,8 @@ public partial class Ask
         {
             case AdminStatus.Ok:
                 _hits = result.Value;
+                _conversationId = await History.AppendTurnAsync(
+                    HttpContext.User, Guid.TryParse(Input.ConversationId, out var id) ? id : null, _question, AnswerText(_hits!), HttpContext.RequestAborted);
                 break;
             case AdminStatus.Invalid:
                 _hits = null;
@@ -82,8 +87,20 @@ public partial class Ask
         }
     }
 
+    /// <summary>
+    /// 記進歷史的答案：只有出處（法規名、條號、ELI 網址），不存條文全文——全文隨時可以由出處再查，
+    /// 而且查的是哪一天的版本已經寫在問題的日期裡。
+    /// </summary>
+    private string AnswerText(IReadOnlyList<LawHit> hits) =>
+        hits.Count == 0
+            ? "沒有符合的條文。"
+            : string.Join('\n', hits.Select(hit => $"《{hit.LawTitle}》第 {hit.Number} 條（{_asOfLabel}） {hit.Uri}"));
+
     public sealed class SearchForm
     {
+        /// <summary>接續哪一串對話；空 = 另開一串。內容不可信，由歷史服務確認它屬於目前的成員。</summary>
+        public string ConversationId { get; set; } = string.Empty;
+
         public string Query { get; set; } = string.Empty;
 
         public string Example { get; set; } = string.Empty;
