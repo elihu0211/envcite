@@ -146,6 +146,32 @@ public partial class TenantDetail
         });
     }
 
+    private async Task ResetTwoFactorAsync(MemberInfo member)
+    {
+        var confirmed = await Dialogs.ShowMessageBoxAsync(
+            "重設兩步驟驗證",
+            $"這會關掉 {member.Email} 的兩步驟驗證、丟掉他的驗證器金鑰與復原碼，並讓他在所有裝置上登出；之後只靠密碼就能登入，直到他重新設定。"
+            + "請先用你們原本的管道確認對方是本人（不是別人冒名來要求重設）。確定？",
+            yesText: "重設兩步驟", cancelText: "取消");
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            var reset = await Members.ResetTwoFactorAsync(await ActorAsync(), TenantId, member.Id, CancellationToken.None);
+            if (!reset.IsOk)
+            {
+                Fail(reset.Message ?? "重設失敗。");
+                return;
+            }
+
+            await RefreshAsync();
+            Succeed($"已重設 {member.Email} 的兩步驟驗證。");
+        });
+    }
+
     private async Task RevealAsync(IssuedPassword issued, string title)
     {
         var reveal = await Dialogs.ShowAsync<PasswordRevealDialog>(title, new DialogParameters<PasswordRevealDialog>

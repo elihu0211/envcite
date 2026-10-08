@@ -46,6 +46,11 @@ public partial class Login
             case PortalSignInStatus.MustChangePassword:
                 Navigation.NavigateTo(PortalPaths.Password(tenant.Identifier));
                 break;
+            case PortalSignInStatus.RequiresTwoFactor:
+                // 還沒有登入 cookie，只有一張五分鐘的暫存憑證；returnUrl 帶到第二步，通過後才用它。
+                var next = $"{PortalPaths.Login(tenant.Identifier)}/mfa";
+                Navigation.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? next : $"{next}?returnUrl={Uri.EscapeDataString(ReturnUrl)}");
+                break;
             default:
                 // 密碼不寫回表單：重新渲染的 HTML 會帶著輸入框的值，等於把密碼又傳回瀏覽器（與任何中間的快取）一次。
                 Input.Password = string.Empty;

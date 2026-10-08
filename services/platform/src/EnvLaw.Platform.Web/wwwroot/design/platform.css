@@ -689,3 +689,33 @@ a:where(:not([class*="mud-"])) {
     flex-wrap: wrap;
     gap: var(--ep-space-2);
 }
+
+/* 兩步驟驗證：QR 在白底黑碼（驗證器 App 掃得到；產品只有淺色，不必處理反白），復原碼用等寬字、兩欄。 */
+.ep-qr {
+    inline-size: min(100%, 14rem);
+    margin-block: var(--ep-space-3);
+    background: var(--ep-surface); /* 要是白底：驗證器 App 掃的是黑碼白底；表面色改成深色時這裡必須另外處理 */
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-control);
+    padding: var(--ep-space-2);
+}
+
+.ep-qr svg {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+}
+
+.ep-codes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: var(--ep-space-2);
+    margin: var(--ep-space-3) 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ep-steps {
+    margin: var(--ep-space-3) 0;
+    padding-inline-start: var(--ep-space-6);
+}
