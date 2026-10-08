@@ -21,6 +21,11 @@ code, kbd, pre {
     font-family: var(--ep-font-mono);
 }
 
+/* 文字連結用較亮的 link 色（深色背景上，填色的藍當文字太暗）；按鈕與導覽由元件自己著色。 */
+a:where(:not([class*="mud-"])) {
+    color: var(--ep-link);
+}
+
 /* 鍵盤焦點一律可見，且不依賴顏色以外的線索（外框 + 偏移）。 */
 :focus-visible {
     outline: 2px solid var(--ep-focus);

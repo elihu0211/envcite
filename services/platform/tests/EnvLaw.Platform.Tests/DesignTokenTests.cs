@@ -41,7 +41,8 @@ public static partial class DesignTokenTests
             data.Add(name, "secondary text on background", $"{c.TextSecondary}|{c.Background}", 4.5);
             data.Add(name, "secondary text on surface", $"{c.TextSecondary}|{c.Surface}", 4.5);
             data.Add(name, "on-primary on primary", $"{c.OnPrimary}|{c.Primary}", 4.5);
-            data.Add(name, "primary link on surface", $"{c.Primary}|{c.Surface}", 4.5);
+            data.Add(name, "link on surface", $"{c.Link}|{c.Surface}", 4.5);
+            data.Add(name, "link on background", $"{c.Link}|{c.Background}", 4.5);
             data.Add(name, "success on surface", $"{c.Success}|{c.Surface}", 4.5);
             data.Add(name, "warning on surface", $"{c.Warning}|{c.Surface}", 4.5);
             data.Add(name, "error on surface", $"{c.Error}|{c.Surface}", 4.5);
@@ -49,6 +50,7 @@ public static partial class DesignTokenTests
             // 控制項外框與焦點環是非文字元件，3:1。
             data.Add(name, "control border on surface", $"{c.BorderControl}|{c.Surface}", 3.0);
             data.Add(name, "focus ring on surface", $"{c.Focus}|{c.Surface}", 3.0);
+            data.Add(name, "primary button against surface", $"{c.Primary}|{c.Surface}", 3.0);
         }
 
         return data;
@@ -72,7 +74,7 @@ public static partial class DesignTokenTests
 
         foreach (var variable in new[]
         {
-            "--ep-bg", "--ep-surface", "--ep-text", "--ep-text-secondary", "--ep-primary", "--ep-on-primary",
+            "--ep-bg", "--ep-surface", "--ep-text", "--ep-text-secondary", "--ep-primary", "--ep-on-primary", "--ep-link",
             "--ep-success", "--ep-warning", "--ep-error", "--ep-info", "--ep-border-subtle", "--ep-border-control",
             "--ep-focus",
         })
@@ -123,6 +125,9 @@ public static partial class DesignTokenTests
 
         Assert.DoesNotMatch(HexColor(), css);
         Assert.DoesNotMatch(RgbColor(), css);
+        // 不用漸層：平的表面、中性灰階加一個強調色。
+        Assert.DoesNotContain("gradient", css, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("gradient", TokenCss.Render(), StringComparison.OrdinalIgnoreCase);
         Assert.Contains("prefers-reduced-motion", css, StringComparison.Ordinal);
         Assert.Contains("prefers-reduced-transparency", css, StringComparison.Ordinal);
         Assert.Contains("prefers-contrast", css, StringComparison.Ordinal);

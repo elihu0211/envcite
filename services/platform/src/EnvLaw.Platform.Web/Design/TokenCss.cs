@@ -25,7 +25,7 @@ public static class TokenCss
     private static string Colors(ColorTokens c) =>
         $"--ep-bg:{c.Background};--ep-surface:{c.Surface};--ep-surface-raised:{c.SurfaceRaised};" +
         $"--ep-text:{c.Text};--ep-text-secondary:{c.TextSecondary};" +
-        $"--ep-primary:{c.Primary};--ep-on-primary:{c.OnPrimary};" +
+        $"--ep-primary:{c.Primary};--ep-on-primary:{c.OnPrimary};--ep-link:{c.Link};" +
         $"--ep-success:{c.Success};--ep-warning:{c.Warning};--ep-error:{c.Error};--ep-info:{c.Info};" +
         $"--ep-border-subtle:{c.BorderSubtle};--ep-border-control:{c.BorderControl};--ep-focus:{c.Focus};";
 
