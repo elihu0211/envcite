@@ -115,4 +115,25 @@ public sealed class PortalRateLimitTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.TooManyRequests, statuses[^1]); // 登入占了 1 次，所以第 3 次改密碼就超額
         Assert.DoesNotContain(HttpStatusCode.TooManyRequests, statuses[..^1]);
     }
+
+    // 不過分限流：機關與顧問公司常整個辦公室共用一個出口位址，早上同時上班登入的人不該被擋。
+    // 限流擋的是自動化的猜測，不是正常使用。預設值是這個決定的記錄，要降低它得有理由。
+    [Fact]
+    public void TheDefaultAllowanceIsGenerousEnoughForAnOfficeBehindOneAddress() =>
+        Assert.True(new Web.Auth.PortalOptions().SignInAttemptsPerMinute >= 60);
+
+    [Fact]
+    public async Task AnOfficeSigningInAtNineIsNotBlocked()
+    {
+        var (tenant, email, _) = await MemberAsync(factory, "rl-f");
+        await using var host = factory.WithWebHostBuilder(b => b.UseSetting("Platform:Portal:SignInAttemptsPerMinute", "60"));
+        using var browser = new PortalBrowser(host);
+
+        // 50 次提交（多數人輸入錯誤一兩次是常態）都在額度內；全部正常回應，沒有 429。
+        for (var i = 0; i < 50; i++)
+        {
+            var attempt = await browser.SubmitAsync(Login(tenant.Identifier), Credentials(email, $"honest-typo-{i}-abc"));
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, attempt.Status);
+        }
+    }
 }
