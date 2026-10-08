@@ -19,7 +19,6 @@ internal static class WebAuthModule
     public static IServiceCollection AddWebAuth(this IServiceCollection services)
     {
         services.AddPlatformOptions<UiOptions>();
-        services.AddSingleton<IValidateOptions<UiOptions>, UiOptionsValidator>();
         services.AddSingleton<OperatorAllowlist>();
         services.AddSingleton<IAuthorizationHandler, OperatorHandler>();
 

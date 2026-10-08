@@ -5,6 +5,9 @@ using EnvLaw.Platform.Web.Components;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using MudBlazor.Services;
 
@@ -47,6 +50,15 @@ public static class WebModule
     /// </summary>
     public static WebApplication MapPlatformWeb(this WebApplication app)
     {
+        // 後台是可選功能：沒有 Google 憑證就整個不掛（/ui 回 404、靜態資產也不公開），API 照常。
+        // Development 缺憑證時仍掛著，本機能看到畫面（真的登入會被 Google 拒絕）。
+        var ui = app.Services.GetRequiredService<IOptions<UiOptions>>().Value;
+        if (!ui.HasGoogleCredentials && !app.Environment.IsDevelopment())
+        {
+            WebLog.UiDisabled(app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("EnvLaw.Platform.Web"));
+            return app;
+        }
+
         app.MapStaticAssets();
         app.MapUiAuthEndpoints();
         app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
