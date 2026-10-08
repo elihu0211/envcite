@@ -81,7 +81,7 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
 
         var page = await browser.GetAsync(Security(tenant.Identifier));
         Assert.Equal(HttpStatusCode.OK, page.Status);
-        Assert.Contains("<svg", page.Html, StringComparison.Ordinal); // QR 在伺服器上畫好
+        Assert.Contains("class=\"ep-qr\"", page.Html, StringComparison.Ordinal); // QR 在伺服器上畫好
         var key = SharedKey().Match(page.Html).Groups[1].Value.Replace(" ", string.Empty, StringComparison.Ordinal);
         Assert.True(key.Length >= 16);
 
@@ -101,7 +101,7 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
         // 復原碼只在這一個回應裡：再開頁面只剩「已啟用」，沒有金鑰、沒有 QR、沒有復原碼。
         var after = await browser.GetAsync(Security(tenant.Identifier));
         Assert.Contains("已啟用", after.Html, StringComparison.Ordinal);
-        Assert.DoesNotContain("<svg", after.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("class=\"ep-qr\"", after.Html, StringComparison.Ordinal); // 導覽的圖示也是 <svg>，所以認 QR 的容器
         Assert.DoesNotContain(codes[0], after.Html, StringComparison.Ordinal);
         Assert.DoesNotContain(key, after.Html.Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
     }
@@ -252,7 +252,7 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
         var signedIn = await fresh.SubmitAsync(Login(member.Tenant.Identifier), Credentials(member.Email, member.Password));
         Assert.Equal(Home(member.Tenant.Identifier), signedIn.Location); // 只靠密碼
         // 舊的復原碼與金鑰都已丟掉，不能再用；要能重新註冊。
-        Assert.Contains("<svg", (await fresh.GetAsync(Security(member.Tenant.Identifier))).Html, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-qr\"", (await fresh.GetAsync(Security(member.Tenant.Identifier))).Html, StringComparison.Ordinal);
 
         var audit = await host.Services.GetRequiredService<IAuditQuery>()
             .QueryAsync(new AuditFilter(Tenant: member.Tenant.Id, Action: AuditActions.MemberMfaReset), CancellationToken.None);

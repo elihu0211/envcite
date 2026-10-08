@@ -1,0 +1,11 @@
+@* 狀態徽章：一個小的、有文字的狀態。顏色只是輔助，文字說明狀態（不靠色相分辨）。語氣取自 token，見 platform.css 的 .ep-badge。 *@
+<span class="ep-badge" data-tone="@Tone">@ChildContent</span>
+
+@code {
+    /// <summary><c>neutral</c>（預設）、<c>success</c>、<c>warning</c>、<c>error</c>、<c>info</c>。</summary>
+    [Parameter]
+    public string Tone { get; set; } = "neutral";
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

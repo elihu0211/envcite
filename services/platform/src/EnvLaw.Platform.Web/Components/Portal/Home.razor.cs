@@ -56,6 +56,11 @@ public partial class Home
         }
     }
 
+    private static string StatusTone(ApiKeyInfo key) =>
+        key.RevokedAt is not null ? "neutral"
+        : key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow ? "warning"
+        : "success";
+
     private static string Status(ApiKeyInfo key) =>
         key.RevokedAt is not null ? "已撤銷"
         : key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow ? "已過期"
