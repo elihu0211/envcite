@@ -13,6 +13,8 @@ public static class AuditLabels
     public static string Action(string action) => action switch
     {
         AuditActions.TenantCreated => "建立租戶",
+        AuditActions.TenantPlanAssigned => "指派方案",
+        AuditActions.TenantPlanRemoved => "移除方案",
         AuditActions.ApiKeyIssued => "簽發 API key",
         AuditActions.ApiKeyRevoked => "撤銷 API key",
         AuditActions.OperatorSignedIn => "營運者登入",
@@ -24,8 +26,8 @@ public static class AuditLabels
     /// <summary>建立與簽發是成功的新增、撤銷要留意、被拒絕是異常；登入登出是中性資訊。</summary>
     public static Color ActionColor(string action) => action switch
     {
-        AuditActions.TenantCreated or AuditActions.ApiKeyIssued => Color.Success,
-        AuditActions.ApiKeyRevoked => Color.Warning,
+        AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned => Color.Success,
+        AuditActions.ApiKeyRevoked or AuditActions.TenantPlanRemoved => Color.Warning,
         AuditActions.OperatorSignInDenied => Color.Error,
         _ => Color.Default,
     };
@@ -33,6 +35,8 @@ public static class AuditLabels
     public static string ActionIcon(string action) => action switch
     {
         AuditActions.TenantCreated => Icons.Material.Filled.AddBusiness,
+        AuditActions.TenantPlanAssigned => Icons.Material.Filled.WorkspacePremium,
+        AuditActions.TenantPlanRemoved => Icons.Material.Filled.RemoveCircleOutline,
         AuditActions.ApiKeyIssued => Icons.Material.Filled.VpnKey,
         AuditActions.ApiKeyRevoked => Icons.Material.Filled.KeyOff,
         AuditActions.OperatorSignInDenied => Icons.Material.Filled.GppBad,

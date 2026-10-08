@@ -124,6 +124,33 @@ namespace EnvLaw.Platform.Data.Migrations
                     b.ToTable("AuditEvents", "platform");
                 });
 
+            modelBuilder.Entity("EnvLaw.Platform.Data.TenantEntitlement", b =>
+                {
+                    b.Property<string>("TenantId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("TenantIdentifier")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("TenantId");
+
+                    b.HasIndex("TenantIdentifier")
+                        .IsUnique();
+
+                    b.ToTable("TenantEntitlements", "platform");
+                });
+
             modelBuilder.Entity("EnvLaw.Platform.Data.UsageRecord", b =>
                 {
                     b.Property<Guid>("Id")

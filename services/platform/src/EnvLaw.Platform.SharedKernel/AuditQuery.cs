@@ -8,6 +8,8 @@ public static class AuditActions
     public const string TenantCreated = "tenant.created";
     public const string ApiKeyIssued = "api_key.issued";
     public const string ApiKeyRevoked = "api_key.revoked";
+    public const string TenantPlanAssigned = "tenant.plan_assigned";
+    public const string TenantPlanRemoved = "tenant.plan_removed";
     public const string OperatorSignedIn = "operator.signed_in";
     public const string OperatorSignInDenied = "operator.sign_in_denied";
     public const string OperatorSignedOut = "operator.signed_out";
@@ -15,7 +17,7 @@ public static class AuditActions
     /// <summary>目前會寫入的所有事件，供篩選選單使用。</summary>
     public static IReadOnlyList<string> All { get; } =
     [
-        TenantCreated, ApiKeyIssued, ApiKeyRevoked, OperatorSignedIn, OperatorSignInDenied, OperatorSignedOut,
+        TenantCreated, TenantPlanAssigned, TenantPlanRemoved, ApiKeyIssued, ApiKeyRevoked, OperatorSignedIn, OperatorSignInDenied, OperatorSignedOut,
     ];
 }
 
