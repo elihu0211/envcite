@@ -12,6 +12,11 @@
     </div>
     <div class="ep-actions">
         <a class="ep-btn ep-btn-primary" href="@($"{PortalPaths.Home(Tenant)}/search")">搜尋法規</a>
+        @if (CanManageMembers)
+        {
+            <a class="ep-btn ep-btn-quiet" href="@($"{PortalPaths.Home(Tenant)}/members")">成員</a>
+        }
+        <a class="ep-btn ep-btn-quiet" href="@($"{PortalPaths.Home(Tenant)}/security")">兩步驟驗證</a>
         <a class="ep-btn ep-btn-quiet" href="@PortalPaths.Password(Tenant)">改密碼</a>
     </div>
 </header>

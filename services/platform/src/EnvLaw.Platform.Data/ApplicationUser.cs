@@ -25,4 +25,10 @@ public sealed class ApplicationUser : IdentityUser
     /// 同時送出的兩個相同請求只有一個會成功。
     /// </summary>
     public long LastTotpStep { get; set; }
+
+    /// <summary>
+    /// 停用：不能登入，既有的 session 也立刻失效（停用時會換安全戳記，session 驗證也直接檢查這個旗標）。
+    /// 帳號與稽核紀錄都保留：離職的人不是被刪掉，只是進不來。
+    /// </summary>
+    public bool Disabled { get; set; }
 }

@@ -15,6 +15,9 @@ public enum AdminStatus
 
     /// <summary>依賴的內部服務暫時不可用（可稍後重試）。</summary>
     Unavailable,
+
+    /// <summary>身分是對的，但這個人沒有權限做這件事（例如管理員想動擁有者）。</summary>
+    Forbidden,
 }
 
 /// <summary>營運者操作的結果。輸入錯誤與找不到是預期的結果，不是例外。</summary>
@@ -35,6 +38,8 @@ public static class AdminOutcome
     public static AdminOutcome<T> Conflict<T>(string message) => new(AdminStatus.Conflict, default, message);
 
     public static AdminOutcome<T> Unavailable<T>(string message) => new(AdminStatus.Unavailable, default, message);
+
+    public static AdminOutcome<T> Forbidden<T>(string message) => new(AdminStatus.Forbidden, default, message);
 }
 
 /// <summary>建立租戶的結果；<see cref="Id"/> 是租戶的穩定識別（稽核與其他表都用它）。</summary>

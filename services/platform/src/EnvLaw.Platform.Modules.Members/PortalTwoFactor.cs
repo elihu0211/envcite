@@ -179,6 +179,13 @@ internal sealed class PortalTwoFactor(
             return PortalSignInStatus.Failed;
         }
 
+        // 在第一步之後、第二步之前被停用：不再給任何機會，暫存憑證收回。
+        if (user.Disabled)
+        {
+            await pending.ClearAsync();
+            return PortalSignInStatus.Failed;
+        }
+
         // 第二步的失敗與密碼失敗共用鎖定計數；已鎖定就不再給猜的機會，並丟掉暫存憑證，要從密碼重來。
         if (await users.IsLockedOutAsync(user))
         {

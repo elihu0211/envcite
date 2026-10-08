@@ -34,6 +34,8 @@ public partial class Home
 
     private string RoleLabel => PortalLabels.Role(User.FindFirst(ClaimTypes.Role)?.Value);
 
+    private bool CanManageMembers => User.IsInRole(CustomerRoles.Owner) || User.IsInRole(CustomerRoles.Admin);
+
     /// <summary>Owner、Admin、Developer 能看 API key；Billing 與 Viewer 不能（07-01 表「角色與權限」是草案，未與客戶確認）。</summary>
     private bool CanSeeKeys => User.IsInRole(CustomerRoles.Owner) || User.IsInRole(CustomerRoles.Admin) || User.IsInRole(CustomerRoles.Developer);
 
