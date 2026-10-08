@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using System.Text.RegularExpressions;
+
+using EnvLaw.Platform.SharedKernel;
 
 using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.AspNetCore.Extensions;
@@ -45,7 +48,9 @@ public static partial class TenancyEndpoints
         return v1;
     }
 
-    private static async Task<IResult> CreateTenantAsync(CreateTenantRequest request, IMultiTenantStore<TenantInfo> store)
+    private static async Task<IResult> CreateTenantAsync(
+        CreateTenantRequest request, IMultiTenantStore<TenantInfo> store,
+        ClaimsPrincipal user, IAuditLog audit, CancellationToken ct)
     {
         if (!IdentifierPattern().IsMatch(request.Identifier) || string.IsNullOrWhiteSpace(request.Name))
         {
@@ -71,6 +76,12 @@ public static partial class TenancyEndpoints
         {
             return Results.Conflict();
         }
+
+        // 租戶 store 是另一個 DbContext，無法與稽核同交易；建立成功後立刻記錄。
+        // 記錄失敗會讓這個請求回 500（不靜默吞掉）：租戶已建立，重送會得到 409，營運者需查稽核是否缺這筆。
+        await audit.AppendAsync(user, new AuditEntry(
+            "tenant.created", tenant.Id, "tenant", tenant.Id,
+            new Dictionary<string, object?> { ["identifier"] = tenant.Identifier, ["name"] = tenant.Name }), ct);
 
         return Results.Created($"/admin/tenants/{tenant.Id}", TenantResponse.From(tenant));
     }

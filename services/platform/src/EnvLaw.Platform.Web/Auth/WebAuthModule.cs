@@ -41,18 +41,8 @@ internal static class WebAuthModule
                 google.SaveTokens = false;
                 google.ClaimActions.MapJsonKey(OperatorAllowlist.EmailVerifiedClaim, "email_verified");
                 google.ClaimActions.MapJsonKey(OperatorAllowlist.HostedDomainClaim, "hd");
-                google.Events.OnTicketReceived = context =>
-                {
-                    // 不在白名單就不簽發 cookie。
-                    var allowlist = context.HttpContext.RequestServices.GetRequiredService<OperatorAllowlist>();
-                    if (context.Principal is null || !allowlist.IsAllowed(context.Principal))
-                    {
-                        context.HandleResponse();
-                        context.Response.Redirect(UiEndpoints.DeniedPath);
-                    }
-
-                    return Task.CompletedTask;
-                };
+                // 不在白名單就不簽發 cookie；登入與被拒絕都留稽核（見 OperatorSignIn）。
+                google.Events.OnTicketReceived = OperatorSignIn.HandleAsync;
             });
 
         // 憑證在用到時才自選項取得。Development 缺憑證用占位值，讓不碰後台的本機開發照常啟動。

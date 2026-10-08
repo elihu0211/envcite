@@ -3,6 +3,7 @@ using System.Reflection;
 using EnvLaw.Platform.Api;
 using EnvLaw.Platform.Data;
 using EnvLaw.Platform.Modules.ApiAccess;
+using EnvLaw.Platform.Modules.Audit;
 using EnvLaw.Platform.Modules.Consult;
 using EnvLaw.Platform.Modules.Metering;
 using EnvLaw.Platform.Modules.Ontology;
@@ -46,6 +47,7 @@ if (!generatingOpenApi)
 
 builder.Services.AddPlatformData();
 builder.Services.AddApiAccessModule();
+builder.Services.AddAuditModule();
 builder.Services.AddMeteringModule();
 builder.Services.AddOntologyModule();
 builder.Services.AddConsultModule();
@@ -81,14 +83,21 @@ app.MapPlatformHealth();
 app.MapGroup("/admin")
     .RequireAuthorization(PlatformAuth.AdminPolicy)
     .MapTenancyAdminEndpoints()
-    .MapApiAccessAdminEndpoints();
+    .MapApiAccessAdminEndpoints()
+    .MapAuditAdminEndpoints();
 
-app.MapGroup("/v2")
+var v2 = app.MapGroup("/v2")
     .RequireAuthorization(PlatformAuth.TenantPolicy)
-    .RequireRateLimiting(PlatformAuth.PerTenantRateLimit)
-    .MapTenancyEndpoints()
+    .RequireRateLimiting(PlatformAuth.PerTenantRateLimit);
+
+// 管理端點：沒有方案的租戶也要能看自己是誰、看用量、撤銷被盜的 key。
+v2.MapTenancyEndpoints()
     .MapApiAccessEndpoints()
-    .MapMeteringEndpoints()
+    .MapMeteringEndpoints();
+
+// 資料端點：完全付費制，租戶要有方案，否則 402。
+v2.MapGroup(string.Empty)
+    .RequireAuthorization(PlatformAuth.PaidPolicy)
     .MapOntologyEndpoints()
     .MapConsultEndpoints();
 

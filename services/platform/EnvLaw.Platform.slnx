@@ -3,6 +3,7 @@
     <Project Path="src/EnvLaw.Platform.Api/EnvLaw.Platform.Api.csproj" />
     <Project Path="src/EnvLaw.Platform.Data/EnvLaw.Platform.Data.csproj" />
     <Project Path="src/EnvLaw.Platform.Modules.ApiAccess/EnvLaw.Platform.Modules.ApiAccess.csproj" />
+    <Project Path="src/EnvLaw.Platform.Modules.Audit/EnvLaw.Platform.Modules.Audit.csproj" />
     <Project Path="src/EnvLaw.Platform.Modules.Consult/EnvLaw.Platform.Modules.Consult.csproj" />
     <Project Path="src/EnvLaw.Platform.Modules.Metering/EnvLaw.Platform.Modules.Metering.csproj" />
     <Project Path="src/EnvLaw.Platform.Modules.Ontology/EnvLaw.Platform.Modules.Ontology.csproj" />

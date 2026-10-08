@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 using EnvLaw.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Antiforgery;
@@ -25,7 +27,7 @@ public static class UiEndpoints
 
         // POST + antiforgery：不能被別的網站用連結或圖片誘導登出。沒有表單參數可綁，所以自己驗證，
         // 不依賴 endpoint metadata。
-        app.MapPost("/ui/logout", async (HttpContext context, IAntiforgery antiforgery) =>
+        app.MapPost("/ui/logout", async (HttpContext context, IAntiforgery antiforgery, IAuditLog audit) =>
         {
             try
             {
@@ -34,6 +36,14 @@ public static class UiEndpoints
             catch (AntiforgeryValidationException)
             {
                 return Results.BadRequest();
+            }
+
+            if (context.User.Identity?.IsAuthenticated == true)
+            {
+                await audit.AppendAsync(
+                    context.User,
+                    new AuditEntry(OperatorSignIn.SignedOut, TargetType: "operator", TargetId: context.User.FindFirst(ClaimTypes.Email)?.Value),
+                    context.RequestAborted);
             }
 
             await context.SignOutAsync(PlatformAuth.UiCookieScheme);
