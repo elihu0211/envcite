@@ -16,6 +16,7 @@ public static class OntologyModule
     public static IServiceCollection AddOntologyModule(this IServiceCollection services)
     {
         services.AddInternalGrpcClient<OntologyService.OntologyServiceClient, OntologyOptions>();
+        services.AddScoped<ILawSearch, LawSearch>();
         return services;
     }
 }

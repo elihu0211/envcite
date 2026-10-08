@@ -80,19 +80,18 @@ public static class OntologyEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
-        // POST 而不是 GET：查詢全文是客戶的案件內容，放在網址裡會被請求日誌與追蹤記下來。
-        v1.MapPost("/search", async (SearchRequest request, OntologyService.OntologyServiceClient client,
-            IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
-            await CallAsync(async () =>
+        // POST 而不是 GET：查詢全文是客戶案件的內容，放在網址裡會被請求日誌與追蹤記下來。
+        v1.MapPost("/search", async (SearchRequest request, ILawSearch search, CancellationToken ct) =>
             {
-                // 查詢全文不寫日誌、不放進計量；計量只記次數。
-                var response = await client.SearchArticlesAsync(
-                    new SearchArticlesRequest { Query = request.Query ?? string.Empty, AsOf = request.AsOf ?? string.Empty, Limit = request.Limit ?? 0 },
-                    deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
-                await usage.RecordAsync(SearchOperation, 1, ct);
-                return Results.Ok(response.Hits.Select(h =>
-                    new SearchHitDto(h.Iri, h.LawId, h.LawTitle, h.Number, h.Content, h.LexicalScore)));
-            }))
+                var result = await search.SearchAsync(request.Query, request.AsOf, request.Limit, ct);
+                return result.Status switch
+                {
+                    AdminStatus.Ok => Results.Ok(result.Value!.Select(h =>
+                        new SearchHitDto(h.Uri, h.LawId, h.LawTitle, h.Number, h.Content, h.Score))),
+                    AdminStatus.Invalid => Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [result.Message ?? "Invalid request."] }),
+                    _ => Results.Problem("Ontology service unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable),
+                };
+            })
             .WithName("SearchArticles")
             .WithTags("法規")
             .WithSummary("搜尋條文")

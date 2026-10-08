@@ -10,7 +10,10 @@
         <h1 class="ep-page-title">@(DisplayName is null ? "你好" : $"你好，{DisplayName}")</h1>
         <p class="ep-page-description">@(_tenant?.Name ?? Tenant)</p>
     </div>
-    <a class="ep-btn ep-btn-quiet" href="@PortalPaths.Password(Tenant)">改密碼</a>
+    <div class="ep-actions">
+        <a class="ep-btn ep-btn-primary" href="@($"{PortalPaths.Home(Tenant)}/search")">搜尋法規</a>
+        <a class="ep-btn ep-btn-quiet" href="@PortalPaths.Password(Tenant)">改密碼</a>
+    </div>
 </header>
 
 <div class="ep-stack">

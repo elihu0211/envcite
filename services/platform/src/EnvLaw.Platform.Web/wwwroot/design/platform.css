@@ -676,3 +676,16 @@ a:where(:not([class*="mud-"])) {
         backdrop-filter: none;
     }
 }
+
+/* 搜尋結果：條文內文保留原本的換行（項、款、目），很長的字串（網址）在容器內斷行，不撐開版面。 */
+.ep-hit-body {
+    margin: var(--ep-space-2) 0 var(--ep-space-3);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.ep-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ep-space-2);
+}
