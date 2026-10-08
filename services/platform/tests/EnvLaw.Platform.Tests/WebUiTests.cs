@@ -67,10 +67,13 @@ public sealed class WebUiTests(PlatformFactory factory)
         using var client = CreateSignedInClient(PlatformFactory.OperatorEmail);
 
         using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative));
-        var html = await response.Content.ReadAsStringAsync();
+        // Blazor 會把元件參數裡的中文輸出成數字實體；瀏覽器解碼後一樣，測試也先解碼。
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("營運者後台", html, StringComparison.Ordinal);
+        Assert.Contains("<h1 class=\"ep-page-title\">總覽</h1>", html, StringComparison.Ordinal);
+        Assert.Contains("跳到主要內容", html, StringComparison.Ordinal);
+        Assert.Contains("aria-label=\"主要導覽\"", html, StringComparison.Ordinal);
         Assert.Contains(PlatformFactory.OperatorEmail, html, StringComparison.Ordinal);
     }
 

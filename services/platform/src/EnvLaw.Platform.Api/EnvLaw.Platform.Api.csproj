@@ -7,6 +7,15 @@
     <OpenApiGenerateDocumentsOptions>--file-name openapi</OpenApiGenerateDocumentsOptions>
   </PropertyGroup>
 
+  <!--
+    Razor 元件在 EnvLaw.Platform.Web（RCL）裡，這個主機專案自己沒有 .razor 檔，SDK 不會自動判定
+    它是 Blazor 應用，也就不會附上 _framework/blazor.web.js。明確要求，否則瀏覽器拿到 404，
+    互動連線（circuit）建不起來。
+  -->
+  <PropertyGroup>
+    <RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Finbuckle.MultiTenant.AspNetCore" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />

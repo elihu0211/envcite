@@ -1,7 +1,8 @@
 @page "/ui/signed-out"
+@layout AnonymousLayout
 @attribute [AllowAnonymous]
 
-<PageTitle>已登出</PageTitle>
+<PageTitle>已登出 · env-law platform</PageTitle>
 
-<MudText Typo="Typo.h5" GutterBottom="true">已登出</MudText>
-<MudButton Href="@UiEndpoints.LoginPath" Variant="Variant.Filled" Color="Color.Primary">重新登入</MudButton>
+<h1 class="ep-page-title">已登出</h1>
+<MudButton Href="@UiEndpoints.LoginPath" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">重新登入</MudButton>
