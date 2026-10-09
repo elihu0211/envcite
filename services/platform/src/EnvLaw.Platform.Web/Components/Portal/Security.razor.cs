@@ -1,9 +1,8 @@
 using EnvLaw.Platform.SharedKernel;
+using EnvLaw.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
-
-using QrCodeGenerator = Net.Codecrete.QrCodeGenerator.QrCode;
 
 namespace EnvLaw.Platform.Web.Components.Portal;
 
@@ -49,7 +48,7 @@ public partial class Security
         if (setup.IsOk)
         {
             _setup = setup.Value;
-            _qrSvg = QrSvg(_setup!.OtpauthUri);
+            _qrSvg = QrSvg.Render(_setup!.OtpauthUri);
         }
     }
 
@@ -97,17 +96,6 @@ public partial class Security
         _enabled = false;
         _notice = "已關閉兩步驟驗證。之後只靠密碼登入；舊的復原碼已作廢。";
         await LoadSetupAsync();
-    }
-
-    /// <summary>
-    /// 在伺服器上把 otpauth 網址畫成 SVG：QR 的內容含金鑰，不交給第三方的 QR 服務，也不經過瀏覽器以外的任何地方。
-    /// 去掉 XML 宣告與 DOCTYPE，才能直接嵌進 HTML。內容只來自我們自己組的網址。
-    /// </summary>
-    private static string QrSvg(string uri)
-    {
-        var svg = QrCodeGenerator.EncodeText(uri, QrCodeGenerator.Ecc.Medium).ToSvgString(border: 2);
-        var start = svg.IndexOf("<svg", StringComparison.Ordinal);
-        return start < 0 ? string.Empty : svg[start..];
     }
 
     public sealed class CodeForm

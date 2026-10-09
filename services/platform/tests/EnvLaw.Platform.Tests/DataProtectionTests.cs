@@ -1,9 +1,7 @@
 using System.Net;
-using System.Security.Claims;
 
 using EnvLaw.Platform.Modules.Tenancy;
 using EnvLaw.Platform.SharedKernel;
-using EnvLaw.Platform.Web.Auth;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -17,14 +15,9 @@ namespace EnvLaw.Platform.Tests;
 [Collection(PlatformTestGroup.Name)]
 public sealed class DataProtectionTests(PlatformFactory factory)
 {
-    private static (string Name, string Value) SignInCookie(IServiceProvider services)
+    private (string Name, string Value) SignInCookie(IServiceProvider services)
     {
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(
-            [
-                new Claim(ClaimTypes.Email, PlatformFactory.OperatorEmail),
-                new Claim(OperatorAllowlist.EmailVerifiedClaim, "true"),
-            ],
-            PlatformAuth.UiCookieScheme));
+        var principal = factory.SessionOf(factory.EnsureOperatorAsync().GetAwaiter().GetResult());
         var cookie = services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
             .Get(PlatformAuth.UiCookieScheme);
         return (cookie.Cookie.Name!, cookie.TicketDataFormat.Protect(new AuthenticationTicket(principal, PlatformAuth.UiCookieScheme)));

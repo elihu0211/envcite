@@ -4,11 +4,7 @@ using System.Security.Claims;
 using EnvLaw.Platform.SharedKernel;
 using EnvLaw.Platform.Web.Auth;
 
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Tests;
 
@@ -17,24 +13,6 @@ public sealed class WebUiTests(PlatformFactory factory)
 {
     private HttpClient CreateUiClient() =>
         factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-
-    /// <summary>不走真的 Google：用應用程式自己的 cookie 格式簽一張登入票。</summary>
-    private HttpClient CreateSignedInClient(string email, bool emailVerified = true)
-    {
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(
-            [
-                new Claim(ClaimTypes.Email, email),
-                new Claim(OperatorAllowlist.EmailVerifiedClaim, emailVerified ? "true" : "false"),
-            ],
-            PlatformAuth.UiCookieScheme));
-        var cookie = factory.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
-            .Get(PlatformAuth.UiCookieScheme);
-        var ticket = cookie.TicketDataFormat.Protect(new AuthenticationTicket(principal, PlatformAuth.UiCookieScheme));
-
-        var client = CreateUiClient();
-        client.DefaultRequestHeaders.Add("Cookie", $"{cookie.Cookie.Name}={ticket}");
-        return client;
-    }
 
     [Fact]
     public async Task UnauthenticatedUiRedirectsToLogin()
@@ -48,23 +26,23 @@ public sealed class WebUiTests(PlatformFactory factory)
     }
 
     [Fact]
-    public async Task LoginChallengesGoogle()
+    public async Task LoginIsAFormWithEmailAndPasswordAndNothingElse()
     {
         using var client = CreateUiClient();
 
-        using var response = await client.GetAsync(new Uri("/ui/login", UriKind.Relative));
+        var html = await client.PageAsync("/ui/login");
 
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        var location = response.Headers.Location!.ToString();
-        Assert.StartsWith("https://accounts.google.com/", location, StringComparison.Ordinal);
-        Assert.Contains("client_id=test-client-id", location, StringComparison.Ordinal);
-        Assert.Contains("code_challenge=", location, StringComparison.Ordinal);
+        Assert.Contains("name=\"Input.Email\"", html, StringComparison.Ordinal);
+        Assert.Contains("name=\"Input.Password\"", html, StringComparison.Ordinal);
+        Assert.Contains("method=\"post\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Google", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("註冊帳號", html, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task OperatorOnAllowlistSeesHome()
+    public async Task AnOperatorWithAFullSessionSeesHome()
     {
-        using var client = CreateSignedInClient(PlatformFactory.OperatorEmail);
+        using var client = factory.SignedInClient(PlatformFactory.OperatorEmail);
 
         using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative));
         // Blazor 會把元件參數裡的中文輸出成數字實體；瀏覽器解碼後一樣，測試也先解碼。
@@ -75,17 +53,35 @@ public sealed class WebUiTests(PlatformFactory factory)
         Assert.Contains("跳到主要內容", html, StringComparison.Ordinal);
         Assert.Contains("aria-label=\"主要導覽\"", html, StringComparison.Ordinal);
         Assert.Contains(PlatformFactory.OperatorEmail, html, StringComparison.Ordinal);
+        Assert.True(response.Headers.CacheControl?.NoStore);
     }
 
+    // 簽章正確的 cookie，但裡面的營運者帳號不存在（例如帳號被刪、或資料庫是另一份）：不是營運者。
     [Fact]
-    public async Task SignedInUserNotOnAllowlistIsDenied()
+    public async Task ASignedSessionForAnOperatorThatDoesNotExistIsDenied()
     {
-        using var client = CreateSignedInClient("stranger@example.com");
+        var ghost = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(PlatformClaimTypes.OperatorId, Guid.NewGuid().ToString()), new Claim(ClaimTypes.Email, "ghost@example.com")],
+            "ghost"));
+        using var client = factory.ClientFor(ghost);
 
         using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.Equal("/ui/denied", response.Headers.Location?.AbsolutePath);
+        Assert.Equal("/ui/denied", response.Headers.Location?.OriginalString);
+    }
+
+    // 只有 email、沒有營運者 Id 的 cookie（舊的 Google 登入簽的就是這種）進不來。
+    [Fact]
+    public async Task ASessionWithOnlyAnEmailClaimIsDenied()
+    {
+        using var client = factory.ClientFor(new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.Email, PlatformFactory.OperatorEmail)], "legacy")));
+
+        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/ui/denied", response.Headers.Location?.OriginalString);
     }
 
     [Fact]
@@ -101,7 +97,7 @@ public sealed class WebUiTests(PlatformFactory factory)
     [Fact]
     public async Task LogoutWithoutAntiforgeryTokenIsRejected()
     {
-        using var client = CreateSignedInClient(PlatformFactory.OperatorEmail);
+        using var client = factory.SignedInClient(PlatformFactory.OperatorEmail);
 
         using var response = await client.PostAsync(new Uri("/ui/logout", UriKind.Relative), content: null);
 
@@ -112,13 +108,15 @@ public sealed class WebUiTests(PlatformFactory factory)
     [Fact]
     public async Task UiCookieDoesNotAuthenticateApi()
     {
-        using var client = CreateSignedInClient(PlatformFactory.OperatorEmail);
+        using var client = factory.SignedInClient(PlatformFactory.OperatorEmail);
 
         using var tenantApi = await client.GetAsync(new Uri("/v2/usage", UriKind.Relative));
         using var adminApi = await client.GetAsync(new Uri("/admin/tenants/any", UriKind.Relative));
+        using var operatorsApi = await client.GetAsync(new Uri("/admin/operators", UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.Unauthorized, tenantApi.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, adminApi.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, operatorsApi.StatusCode);
     }
 
     [Theory]
@@ -134,43 +132,4 @@ public sealed class WebUiTests(PlatformFactory factory)
     [InlineData("/ui\\evil", "/ui")]
     public void ReturnUrlStaysUnderUi(string? input, string expected) =>
         Assert.Equal(expected, UiEndpoints.SafeReturnUrl(input));
-
-    [Theory]
-    // email, email_verified, 帳號的 hd claim, 設定的 AllowedHostedDomain, 預期
-    [InlineData("operator@example.com", "true", null, null, true)]
-    [InlineData("OPERATOR@Example.com", "true", null, null, true)]
-    [InlineData("operator@example.com", "false", null, null, false)]
-    [InlineData("operator@example.com", null, null, null, false)]
-    [InlineData("other@example.com", "true", null, null, false)]
-    [InlineData(null, "true", null, null, false)]
-    [InlineData("operator@example.com", "true", "example.com", "example.com", true)]
-    [InlineData("operator@example.com", "true", "other.com", "example.com", false)]
-    [InlineData("operator@example.com", "true", null, "example.com", false)]
-    public void AllowlistRequiresVerifiedEmailOnList(
-        string? email, string? verified, string? hostedDomain, string? requiredDomain, bool allowed)
-    {
-        var claims = new List<Claim>();
-        if (email is not null)
-        {
-            claims.Add(new Claim(ClaimTypes.Email, email));
-        }
-
-        if (verified is not null)
-        {
-            claims.Add(new Claim(OperatorAllowlist.EmailVerifiedClaim, verified));
-        }
-
-        if (hostedDomain is not null)
-        {
-            claims.Add(new Claim(OperatorAllowlist.HostedDomainClaim, hostedDomain));
-        }
-
-        var options = new UiOptions
-        {
-            OperatorEmails = ["operator@example.com"],
-            AllowedHostedDomain = requiredDomain,
-        };
-
-        Assert.Equal(allowed, OperatorAllowlist.IsAllowed(new ClaimsPrincipal(new ClaimsIdentity(claims, "test")), options));
-    }
 }

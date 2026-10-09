@@ -1,0 +1,5 @@
+@* 只開一頁的 session（待改密碼、待註冊驗證器）沒有導覽，至少要能登出。登出是 POST + antiforgery（見 UiEndpoints）。 *@
+<form method="post" action="/ui/logout" class="ep-signout">
+    <AntiforgeryToken />
+    <button type="submit" class="ep-btn ep-btn-quiet">登出</button>
+</form>

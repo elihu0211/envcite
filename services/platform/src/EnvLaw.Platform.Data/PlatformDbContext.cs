@@ -3,6 +3,7 @@ using Finbuckle.MultiTenant.EntityFrameworkCore;
 using Finbuckle.MultiTenant.EntityFrameworkCore.Extensions;
 using Finbuckle.MultiTenant.Identity.EntityFrameworkCore;
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnvLaw.Platform.Data;
@@ -32,6 +33,8 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
     public DbSet<Conversation> Conversations => Set<Conversation>();
 
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
+
+    public DbSet<OperatorUser> Operators => Set<OperatorUser>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -105,6 +108,51 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
             record.IsMultiTenant();
             record.Property(r => r.Operation).HasMaxLength(100);
             record.HasIndex("TenantId", nameof(UsageRecord.OccurredAt));
+        });
+
+        ConfigureOperators(builder);
+    }
+
+    /// <summary>
+    /// 營運者的 Identity 資料表（<c>Operators</c>、<c>OperatorClaims</c>、<c>OperatorLogins</c>、<c>OperatorTokens</c>）。
+    /// 照 <c>IdentityUserContext</c> 的對應來，只換型別與表名，所以 Identity 的 store 不必知道有兩套使用者。
+    /// 沒有 <c>IsMultiTenant()</c>：營運者不屬於任何租戶（理由同 <see cref="AuditEvent"/>）。
+    /// </summary>
+    private static void ConfigureOperators(ModelBuilder builder)
+    {
+        builder.Entity<OperatorUser>(user =>
+        {
+            user.ToTable("Operators");
+            user.HasKey(u => u.Id);
+            user.HasIndex(u => u.NormalizedUserName).HasDatabaseName("OperatorUserNameIndex").IsUnique();
+            user.HasIndex(u => u.NormalizedEmail).HasDatabaseName("OperatorEmailIndex").IsUnique();
+            user.Property(u => u.ConcurrencyStamp).IsConcurrencyToken();
+            user.Property(u => u.UserName).HasMaxLength(256);
+            user.Property(u => u.NormalizedUserName).HasMaxLength(256);
+            user.Property(u => u.Email).HasMaxLength(256);
+            user.Property(u => u.NormalizedEmail).HasMaxLength(256);
+            user.Property(u => u.DisplayName).HasMaxLength(200);
+            user.HasMany<IdentityUserClaim<Guid>>().WithOne().HasForeignKey(c => c.UserId).IsRequired();
+            user.HasMany<IdentityUserLogin<Guid>>().WithOne().HasForeignKey(l => l.UserId).IsRequired();
+            user.HasMany<IdentityUserToken<Guid>>().WithOne().HasForeignKey(t => t.UserId).IsRequired();
+        });
+
+        builder.Entity<IdentityUserClaim<Guid>>(claim =>
+        {
+            claim.ToTable("OperatorClaims");
+            claim.HasKey(c => c.Id);
+        });
+
+        builder.Entity<IdentityUserLogin<Guid>>(login =>
+        {
+            login.ToTable("OperatorLogins");
+            login.HasKey(l => new { l.LoginProvider, l.ProviderKey });
+        });
+
+        builder.Entity<IdentityUserToken<Guid>>(token =>
+        {
+            token.ToTable("OperatorTokens");
+            token.HasKey(t => new { t.UserId, t.LoginProvider, t.Name });
         });
     }
 }

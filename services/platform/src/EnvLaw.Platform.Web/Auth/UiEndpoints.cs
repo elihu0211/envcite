@@ -1,9 +1,6 @@
-using System.Security.Claims;
-
 using EnvLaw.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -13,21 +10,19 @@ namespace EnvLaw.Platform.Web.Auth;
 public static class UiEndpoints
 {
     public const string LoginPath = "/ui/login";
+    public const string MfaPath = "/ui/login/mfa";
+    public const string PasswordPath = "/ui/password";
+    public const string SecurityPath = "/ui/security";
     public const string DeniedPath = "/ui/denied";
     public const string SignedOutPath = "/ui/signed-out";
     public const string HomePath = "/ui";
 
+    /// <summary>登入、第二步驗證、改密碼、註冊驗證器都是頁面（靜態渲染的 POST 表單，見 <c>Components/Account</c>）；這裡只剩登出。</summary>
     public static IEndpointRouteBuilder MapUiAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet(LoginPath, (string? returnUrl) =>
-            TypedResults.Challenge(
-                new AuthenticationProperties { RedirectUri = SafeReturnUrl(returnUrl) },
-                [PlatformAuth.UiGoogleScheme]))
-            .AllowAnonymous();
-
         // POST + antiforgery：不能被別的網站用連結或圖片誘導登出。沒有表單參數可綁，所以自己驗證，
         // 不依賴 endpoint metadata。
-        app.MapPost("/ui/logout", async (HttpContext context, IAntiforgery antiforgery, IAuditLog audit) =>
+        app.MapPost("/ui/logout", async (HttpContext context, IAntiforgery antiforgery, IOperatorAccount account) =>
         {
             try
             {
@@ -38,15 +33,7 @@ public static class UiEndpoints
                 return Results.BadRequest();
             }
 
-            if (context.User.Identity?.IsAuthenticated == true)
-            {
-                await audit.AppendAsync(
-                    context.User,
-                    new AuditEntry(AuditActions.OperatorSignedOut, TargetType: "operator", TargetId: context.User.FindFirst(ClaimTypes.Email)?.Value),
-                    context.RequestAborted);
-            }
-
-            await context.SignOutAsync(PlatformAuth.UiCookieScheme);
+            await account.SignOutAsync(context.User, context.RequestAborted);
             return Results.Redirect(SignedOutPath);
         });
 

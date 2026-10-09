@@ -59,11 +59,22 @@ internal sealed class MfaPendingCookie(IHttpContextAccessor http, IMultiTenantCo
 /// <summary>
 /// 驗證 TOTP（RFC 6238）：允許前後各一個時間步的時鐘誤差，且只接受比上一次成功更新的時間步，
 /// 所以同一組碼不能用第二次。更新是原子的（<c>UPDATE … WHERE LastTotpStep &lt; @step</c>），
-/// 同時送出同一組碼的兩個請求只有一個會成功。
+/// 同時送出同一組碼的兩個請求只有一個會成功。客戶入口的成員與後台的營運者共用，各有自己的使用者表與更新語句。
 /// </summary>
-internal sealed class TotpVerifier(UserManager<ApplicationUser> users, PlatformDbContext db, TimeProvider time)
+internal sealed class TotpVerifier(PlatformDbContext db, TimeProvider time)
 {
-    public async Task<bool> VerifyAsync(ApplicationUser user, string? code)
+    public Task<bool> VerifyAsync(UserManager<ApplicationUser> users, ApplicationUser user, string? code) =>
+        VerifyAsync(users, user, code, step => db.Users
+            .Where(u => u.Id == user.Id && u.LastTotpStep < step)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.LastTotpStep, step)));
+
+    public Task<bool> VerifyAsync(UserManager<OperatorUser> users, OperatorUser user, string? code) =>
+        VerifyAsync(users, user, code, step => db.Operators
+            .Where(u => u.Id == user.Id && u.LastTotpStep < step)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.LastTotpStep, step)));
+
+    private async Task<bool> VerifyAsync<TUser>(UserManager<TUser> users, TUser user, string? code, Func<long, Task<int>> advanceStep)
+        where TUser : class
     {
         var digits = Normalize(code);
         if (digits is null || await users.GetAuthenticatorKeyAsync(user) is not { } key)
@@ -78,10 +89,7 @@ internal sealed class TotpVerifier(UserManager<ApplicationUser> users, PlatformD
             return false;
         }
 
-        var updated = await db.Users
-            .Where(u => u.Id == user.Id && u.LastTotpStep < step)
-            .ExecuteUpdateAsync(s => s.SetProperty(u => u.LastTotpStep, step));
-        return updated == 1;
+        return await advanceStep(step) == 1;
     }
 
     /// <summary>六位數字；容許使用者從驗證器複製時帶的空白與連字號。</summary>

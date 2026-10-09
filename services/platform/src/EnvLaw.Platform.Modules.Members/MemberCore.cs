@@ -1,6 +1,4 @@
-using System.Net.Mail;
 using System.Security.Claims;
-using System.Security.Cryptography;
 
 using EnvLaw.Platform.Data;
 using EnvLaw.Platform.SharedKernel;
@@ -18,14 +16,10 @@ namespace EnvLaw.Platform.Modules.Members;
 /// </summary>
 internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog audit, TimeProvider time)
 {
-    // 去掉容易看錯的字元（0/O、1/l/I）。16 個字元約 92 位元，遠高於需求；成員第一次登入就要改掉。
-    private const string PasswordAlphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    private const int InitialPasswordLength = 16;
-
     public async Task<AdminOutcome<IssuedPassword>> CreateAsync(
         ClaimsPrincipal actor, TenantInfo tenant, string email, string? displayName, string role, CancellationToken cancellationToken)
     {
-        if (!IsValidEmail(email))
+        if (!EmailAddresses.IsValid(email))
         {
             return AdminOutcome.Invalid<IssuedPassword>("Email 格式不正確。");
         }
@@ -49,7 +43,7 @@ internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog a
             MustChangePassword = true,
         };
 
-        var password = NewPassword();
+        var password = OneTimePassword.New();
         var created = await users.CreateAsync(user, password);
         if (!created.Succeeded)
         {
@@ -74,7 +68,7 @@ internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog a
     public async Task<AdminOutcome<IssuedPassword>> ResetPasswordAsync(
         ClaimsPrincipal actor, TenantInfo tenant, ApplicationUser user, CancellationToken cancellationToken)
     {
-        var password = NewPassword();
+        var password = OneTimePassword.New();
         user.PasswordHash = users.PasswordHasher.HashPassword(user, password);
         user.MustChangePassword = true;
         user.AccessFailedCount = 0;
@@ -121,12 +115,4 @@ internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog a
     public MemberInfo Info(ApplicationUser u) =>
         new(u.Id, u.Email ?? string.Empty, u.DisplayName, u.Role, u.MustChangePassword,
             u.LockoutEnd is { } end && end > time.GetUtcNow(), u.TwoFactorEnabled, u.Disabled);
-
-    private static string NewPassword() => RandomNumberGenerator.GetString(PasswordAlphabet, InitialPasswordLength);
-
-    private static bool IsValidEmail(string? email) =>
-        !string.IsNullOrWhiteSpace(email)
-        && email.Length <= 254
-        && MailAddress.TryCreate(email.Trim(), out var parsed)
-        && parsed.Address == email.Trim();
 }

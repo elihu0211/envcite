@@ -30,6 +30,15 @@ public static class AuditActions
     public const string ConversationDeleted = "conversation.deleted";
     public const string TenantAiAnswerEnabled = "tenant.ai_answer_enabled";
     public const string TenantAiAnswerDisabled = "tenant.ai_answer_disabled";
+    public const string OperatorCreated = "operator.created";
+    public const string OperatorPasswordReset = "operator.password_reset";
+    public const string OperatorMfaReset = "operator.mfa_reset";
+    public const string OperatorDisabled = "operator.disabled";
+    public const string OperatorEnabled = "operator.enabled";
+    public const string OperatorPasswordChanged = "operator.password_changed";
+    public const string OperatorMfaEnabled = "operator.mfa_enabled";
+    public const string OperatorRecoveryCodeUsed = "operator.recovery_code_used";
+    public const string OperatorRecoveryCodesRegenerated = "operator.recovery_codes_regenerated";
 
     /// <summary>目前會寫入的所有事件，供篩選選單使用。</summary>
     public static IReadOnlyList<string> All { get; } =
@@ -39,6 +48,8 @@ public static class AuditActions
         PortalMfaEnabled, PortalRecoveryCodeUsed, MemberMfaReset,
         PortalMfaDisabled, PortalRecoveryCodesRegenerated, MemberDisabled, MemberEnabled, MemberRoleChanged,
         ConversationDeleted, TenantAiAnswerEnabled, TenantAiAnswerDisabled,
+        OperatorCreated, OperatorPasswordReset, OperatorMfaReset, OperatorDisabled, OperatorEnabled, OperatorPasswordChanged,
+        OperatorMfaEnabled, OperatorRecoveryCodeUsed, OperatorRecoveryCodesRegenerated,
     ];
 }
 

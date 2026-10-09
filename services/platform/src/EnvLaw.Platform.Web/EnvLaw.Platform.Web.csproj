@@ -9,7 +9,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
+    <InternalsVisibleTo Include="EnvLaw.Platform.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MudBlazor" />
     <PackageReference Include="Net.Codecrete.QrCodeGenerator" />
   </ItemGroup>

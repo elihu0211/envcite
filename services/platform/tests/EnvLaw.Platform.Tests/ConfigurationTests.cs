@@ -31,6 +31,7 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     [InlineData("Platform:EntitlementRefresh", "00:00:00", "Platform:EntitlementRefresh must be at least one second")]
     [InlineData("Platform:Plans:standard:PermitLimit", "0", "Platform:Plans:standard needs a positive PermitLimit")]
     [InlineData("Platform:Portal:SignInAttemptsPerMinute", "0", "Platform:Portal:SignInAttemptsPerMinute must be between 1 and 1000")]
+    [InlineData("Platform:Ui:SignInAttemptsPerMinute", "0", "Platform:Ui:SignInAttemptsPerMinute must be between 1 and 1000")]
     public void InvalidSettingFailsAtStartupAndNamesTheKey(string key, string value, string expected)
     {
         var message = StartFailure(factory.WithWebHostBuilder(b => b.UseSetting(key, value)));
@@ -46,14 +47,13 @@ public sealed class ConfigurationTests(PlatformFactory factory)
         Assert.Contains("The DatabaseOptions.Platform field is required", message, StringComparison.Ordinal);
     }
 
-    // 後台是可選功能：Secret 常晚於程式碼上線，缺 Google 憑證不能讓整個 API 起不來。
+    // 後台是可選功能，預設關閉：沒開就不掛 /ui，API 照常。
     [Fact]
-    public async Task ProductionWithoutGoogleCredentialsDisablesTheUiButTheApiRuns()
+    public async Task ProductionWithTheUiNotEnabledDisablesItButTheApiRuns()
     {
         await using var host = factory.WithWebHostBuilder(b => b
             .UseEnvironment("Production")
-            .UseSetting("Platform:Ui:Google:ClientId", string.Empty)
-            .UseSetting("Platform:Ui:Google:ClientSecret", string.Empty));
+            .UseSetting("Platform:Ui:Enabled", "false"));
         using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
         using var health = await client.GetAsync(new Uri("/health/ready", UriKind.Relative));
@@ -65,6 +65,30 @@ public sealed class ConfigurationTests(PlatformFactory factory)
         Assert.Equal(System.Net.HttpStatusCode.Unauthorized, api.StatusCode); // API 在，只是沒帶 key
         Assert.Equal(System.Net.HttpStatusCode.NotFound, ui.StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.NotFound, login.StatusCode);
+    }
+
+    // 與入口對稱：什麼都不設就是關。
+    [Fact]
+    public void TheUiAndThePortalAreOffUnlessEnabled()
+    {
+        Assert.False(new Web.Auth.UiOptions().Enabled);
+        Assert.False(new Web.Auth.PortalOptions().Enabled);
+    }
+
+    // 要明確開：Production 設了 Platform:Ui:Enabled 才掛 /ui（登入頁在，而且是公開的）。
+    [Fact]
+    public async Task ProductionWithTheUiEnabledServesTheLoginPage()
+    {
+        await using var host = factory.WithWebHostBuilder(b => b
+            .UseEnvironment("Production")
+            .UseSetting("Platform:Ui:Enabled", "true"));
+        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        using var login = await client.GetAsync(new Uri("/ui/login", UriKind.Relative));
+        using var ui = await client.GetAsync(new Uri("/ui", UriKind.Relative));
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, login.StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, ui.StatusCode); // 沒登入 → 導去登入，不是 404
     }
 
     [Fact]

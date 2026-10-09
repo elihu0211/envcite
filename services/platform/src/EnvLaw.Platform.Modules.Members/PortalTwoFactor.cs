@@ -8,8 +8,6 @@ using Finbuckle.MultiTenant.Abstractions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
-using OtpNet;
-
 namespace EnvLaw.Platform.Modules.Members;
 
 /// <inheritdoc cref="IPortalTwoFactor"/>
@@ -23,12 +21,6 @@ internal sealed class PortalTwoFactor(
     IAuditLog audit) : IPortalTwoFactor
 {
     private const int RecoveryCodeCount = 10;
-    private const string Issuer = "env-law";
-
-    // Identity 存驗證器金鑰的固定位置（與 GetAuthenticatorKeyAsync 讀的是同一格）。
-    private const string AuthenticatorKeyProvider = "[AspNetUserStore]";
-    private const string AuthenticatorKeyName = "AuthenticatorKey";
-    private const string RecoveryCodesName = "RecoveryCodes";
 
     /// <summary>Owner 與 Admin 被要求使用兩步驟驗證（設定可關閉，預設要求）。</summary>
     internal static bool RequiresTwoFactor(string role, MembersOptions options) =>
@@ -56,15 +48,12 @@ internal sealed class PortalTwoFactor(
         var key = await users.GetAuthenticatorKeyAsync(user);
         if (string.IsNullOrEmpty(key))
         {
-            // 自己產生並直接寫入，不用 ResetAuthenticatorKeyAsync：它會順手更新安全戳記，
-            // 使用者一打開設定頁，自己目前的 session 就失效了（測試抓到的）。20 位元組 = RFC 4226 建議的長度。
-            key = Base32Encoding.ToString(KeyGeneration.GenerateRandomKey(20));
-            await users.SetAuthenticationTokenAsync(user, AuthenticatorKeyProvider, AuthenticatorKeyName, key);
+            // 自己產生並直接寫入（理由見 TotpSetup.NewKey：ResetAuthenticatorKeyAsync 會讓自己目前的 session 失效，測試抓到的）。
+            key = TotpSetup.NewKey();
+            await users.SetAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey, key);
         }
 
-        var label = Uri.EscapeDataString($"{Issuer}:{user.Email}");
-        var uri = $"otpauth://totp/{label}?secret={key}&issuer={Uri.EscapeDataString(Issuer)}&digits=6&period=30";
-        return AdminOutcome.Ok(new TwoFactorSetup(Grouped(key!), uri));
+        return AdminOutcome.Ok(TotpSetup.Create(user.Email, key!));
     }
 
     public async Task<AdminOutcome<IReadOnlyList<string>>> EnableAsync(ClaimsPrincipal principal, string code, CancellationToken cancellationToken)
@@ -80,7 +69,7 @@ internal sealed class PortalTwoFactor(
             return AdminOutcome.Invalid<IReadOnlyList<string>>("已經啟用了兩步驟驗證。");
         }
 
-        if (!await totp.VerifyAsync(user, code))
+        if (!await totp.VerifyAsync(users, user, code))
         {
             return AdminOutcome.Invalid<IReadOnlyList<string>>("驗證碼不正確。請確認手機的時間是自動校正的，再輸入驗證器上現在顯示的六位數。");
         }
@@ -122,8 +111,8 @@ internal sealed class PortalTwoFactor(
         }
 
         await users.SetTwoFactorEnabledAsync(user, false);
-        await users.RemoveAuthenticationTokenAsync(user, AuthenticatorKeyProvider, AuthenticatorKeyName);
-        await users.RemoveAuthenticationTokenAsync(user, AuthenticatorKeyProvider, RecoveryCodesName);
+        await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey);
+        await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.RecoveryCodes);
         await users.UpdateSecurityStampAsync(user);
         await signIn.RefreshSignInAsync(user);
         await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalMfaDisabled, info.Id, "member", user.Id), cancellationToken);
@@ -160,7 +149,7 @@ internal sealed class PortalTwoFactor(
             return false;
         }
 
-        var ok = (password is null || await users.CheckPasswordAsync(user, password)) && await totp.VerifyAsync(user, code);
+        var ok = (password is null || await users.CheckPasswordAsync(user, password)) && await totp.VerifyAsync(users, user, code);
         if (!ok)
         {
             await users.AccessFailedAsync(user);
@@ -195,7 +184,7 @@ internal sealed class PortalTwoFactor(
 
         var ok = isRecoveryCode
             ? (await users.RedeemTwoFactorRecoveryCodeAsync(user, (code ?? string.Empty).Trim())).Succeeded
-            : await totp.VerifyAsync(user, code);
+            : await totp.VerifyAsync(users, user, code);
         if (!ok)
         {
             await users.AccessFailedAsync(user);
@@ -240,8 +229,4 @@ internal sealed class PortalTwoFactor(
 
     private static ClaimsPrincipal ActorOf(ApplicationUser user) =>
         new(new ClaimsIdentity([new Claim(PlatformClaimTypes.PortalUserId, user.Id)], "portal"));
-
-    /// <summary>四個字元一組，方便手動輸入時核對。</summary>
-    private static string Grouped(string key) =>
-        string.Join(' ', Enumerable.Range(0, (key.Length + 3) / 4).Select(i => key.Substring(i * 4, Math.Min(4, key.Length - (i * 4)))));
 }

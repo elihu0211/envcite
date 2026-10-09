@@ -128,6 +128,10 @@ a:where(:not([class*="mud-"])) {
     inline-size: min(100%, 28rem);
 }
 
+.ep-signout {
+    margin-block-start: var(--ep-space-4);
+}
+
 /* 互動回饋在按下的當下（不是放開）：按下即縮（0 時長），放開依 fast 階回彈。縮放量是 token，減少動態時為 1。 */
 .mud-button-root {
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);

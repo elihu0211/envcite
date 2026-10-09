@@ -30,7 +30,7 @@ wt remove feat/<簡述>             # 合併後收尾：刪 worktree 與分支
 
 ### 第一組資料（platform）
 
-`wt platform` 在空的庫第一次啟動時，會自己建租戶 `dev` 與擁有者 `owner@example.test`，並把**一次性密碼只印在那個終端機一次**（不進日誌；程式裡沒有預設密碼）。到 `http://localhost:<port>/portal/dev/login` 登入，第一次必須改密碼。之後再啟動不會再印；忘了密碼就清掉 `platform` 庫重來，或用營運後台重設。已經有成員的 `dev` 租戶不會被動。只在 Development 有效（`Platform:SeedDevelopmentData`）。
+`wt platform` 在空的庫第一次啟動時，會自己建租戶 `dev` 與擁有者 `owner@example.test`，另建營運後台的示範營運者 `operator@example.test`（沒有任何營運者時才建），並把**一次性密碼只印在那個終端機一次**（不進日誌；程式裡沒有預設密碼）。擁有者到 `http://localhost:<port>/portal/dev/login` 登入，營運者到 `http://localhost:<port>/ui/login`；兩者第一次都必須改密碼，營運者還必須用任何 TOTP 驗證器註冊兩步驟驗證（營運者沒有本機例外）。之後再啟動不會再印；忘了密碼就清掉 `platform` 庫重來，或用營運者 key 重設（營運者：`POST /admin/operators/{id}/password-reset`）。已經有成員的 `dev` 租戶、已經有營運者的庫都不會被動。只在 Development 有效（`Platform:SeedDevelopmentData`）。
 
 以 Docker 起一個拋棄式的庫，符合預設值：
 
@@ -53,6 +53,7 @@ psql "${ONTOLOGY_DSN:-postgresql://env_law:env_law@localhost:5432/env_law}" \
 |------|----|
 | 服務之間的內部 token | `dev` |
 | platform 營運者 key（`X-Admin-Key`） | 未設定（`/admin` 停用）；要用就設環境變數 `Platform__AdminKeySha256`＝key 的 SHA-256 hex |
+| platform 營運後台（`/ui`） | Development 一律開；其他環境設 `Platform__Ui__Enabled=true`。帳號用營運者 key 建（`POST /admin/operators`），沒有自助註冊 |
 
 ## 常用指令
 

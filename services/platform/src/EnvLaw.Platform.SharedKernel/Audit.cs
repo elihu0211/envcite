@@ -65,6 +65,7 @@ public static class AuditActors
             return (TenantKey, apiKeyId);
         }
 
+        // 後台的營運者：記 email（營運者帳號不能改 email，而且稽核頁要看得出是誰）。
         if (user.FindFirst(ClaimTypes.Email)?.Value is { } email)
         {
             return (OperatorUser, email);
