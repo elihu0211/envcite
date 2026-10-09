@@ -192,6 +192,33 @@ public static partial class DesignTokenTests
         Assert.Equal("none", theme.Typography.Button.TextTransform);
     }
 
+    // 企業色只寫一次：主色與焦點環是同一個 Brand，連結是文字級的 BrandText。
+    [Fact]
+    public static void TheEnterpriseColorIsWrittenOnce()
+    {
+        var c = DesignTokens.Light;
+
+        Assert.Equal(DesignTokens.Brand, c.Primary);
+        Assert.Equal(DesignTokens.Brand, c.Focus);
+        Assert.Equal(DesignTokens.BrandText, c.Link);
+        Assert.NotEqual(c.Primary, c.Link);
+    }
+
+    // 字重與置中欄寬都從 token 取。字重沿用既有字級（標題、按鈕），不另開一組字重表。
+    [Fact]
+    public static void TheStylesheetTakesWeightAndMeasureFromTheTokens()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        Assert.DoesNotMatch(LiteralFontWeight(), css);
+        foreach (var (key, value) in DesignTokens.Measure)
+        {
+            Assert.Contains($"var(--ep-measure-{key})", css, StringComparison.Ordinal);
+            Assert.DoesNotContain(value, css, StringComparison.Ordinal);
+            Assert.Contains($"--ep-measure-{key}:{value}", TokenCss.Render(), StringComparison.Ordinal);
+        }
+    }
+
     // token 只有 DesignTokens.cs 一個來源：靜態樣式表不得自己寫色碼。
     [Fact]
     public static void TheStylesheetHardCodesNoColors()
@@ -247,6 +274,9 @@ public static partial class DesignTokenTests
     // 視窗寬度的條件，兩種寫法：(min-width: 48rem) 與範圍語法 (width < 48rem)、(width >= 48rem)。
     [GeneratedRegex(@"@media[^{]*?(?:width\s*[<>]=?|(?:min|max)-width\s*:)\s*([\d.]+rem)")]
     private static partial Regex ViewportWidthQuery();
+
+    [GeneratedRegex(@"font-weight:\s*\d")]
+    private static partial Regex LiteralFontWeight();
 
     [GeneratedRegex(@"\b\d+(?:\.\d+)?ms\b")]
     private static partial Regex LiteralDuration();

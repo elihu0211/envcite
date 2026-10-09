@@ -55,6 +55,11 @@ public static class DesignTokens
     // 狀態色全在 sRGB 色域內、彩度有上限（狀態要比品牌色顯眼，但不能搶過它），而且是文字級：
     // 對白底與一成淡底（徽章、提示框的字）都 ≥ 4.5:1。警示與危險兩色在這個明度本來就近，所以永遠搭配圖示與文字，不靠色相分辨。
     // 換主題只換這張表：語意名稱不變，DesignTokenTests 會重新驗證每一組對比。
+    // 企業色只寫一次。主色與焦點環指向它；連結是同一色的文字級（填色按鈕太亮，長文要深一階才過 4.5:1）。
+    public const string Brand = "#4F46E5";
+
+    public const string BrandText = "#4338CA";
+
     public static ColorTokens Light { get; } = new()
     {
         Background = "#F8FAFC",
@@ -63,16 +68,16 @@ public static class DesignTokens
         SurfaceMuted = "#F1F5F9",
         Text = "#0F172A",
         TextSecondary = "#475569",
-        Primary = "#4F46E5",
+        Primary = Brand,
         OnPrimary = "#FFFFFF",
-        Link = "#4338CA",
+        Link = BrandText,
         Success = "#0B7857",
         Warning = "#AC5107",
         Error = "#AC312C",
         Info = "#1D52AF",
         BorderSubtle = "#E2E8F0",
         BorderControl = "#7D8CA3",
-        Focus = "#4F46E5",
+        Focus = Brand,
         Scrim = "rgb(15 23 42 / 0.5)",
     };
 
@@ -126,6 +131,18 @@ public static class DesignTokens
         ["6"] = "1.5rem",
         ["8"] = "2rem",
         ["12"] = "3rem",
+    };
+
+    /// <summary>
+    /// 置中欄寬，不是間距階。窄欄是登入與表單，問答欄在桌機再寬一階，頁面主欄是入口內容。
+    /// 單位 rem，字級放大時欄一起變寬。置中用樣式表的 <c>margin-inline: auto</c> 或 <c>place-items: center</c>，不另寫置中函式。
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> Measure { get; } = new Dictionary<string, string>
+    {
+        ["narrow"] = "28rem",
+        ["ask"] = "40rem",
+        ["ask-desktop"] = "46rem",
+        ["page"] = "60rem",
     };
 
     public static IReadOnlyDictionary<string, string> Radius { get; } = new Dictionary<string, string>

@@ -1,6 +1,6 @@
 /*
- * 營運後台的共用樣式。只引用 TokenCss 輸出的 --ep-* 變數，不寫死色碼、字級或間距；
- * 要改外觀，改 Design/DesignTokens.cs。
+ * 營運後台的共用樣式。只引用 TokenCss 輸出的 --ep-* 變數，不寫死色碼、字級、字重、欄寬或間距；
+ * 要改外觀，改 Design/DesignTokens.cs。置中用 margin-inline: auto 或 place-items: center。
  */
 
 html {
@@ -59,7 +59,7 @@ a:where(:not([class*="mud-"])) {
 }
 
 .ep-brand {
-    font-weight: 700;
+    font-weight: var(--ep-h1-weight);
     letter-spacing: var(--ep-h3-tracking);
 }
 
@@ -125,7 +125,7 @@ a:where(:not([class*="mud-"])) {
 }
 
 .ep-anon .ep-card {
-    inline-size: min(100%, 28rem);
+    inline-size: min(100%, var(--ep-measure-narrow));
 }
 
 .ep-signout {
@@ -215,7 +215,7 @@ a:where(:not([class*="mud-"])) {
     background: var(--ep-surface-muted);
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-sm-size);
-    font-weight: 600;
+    font-weight: var(--ep-button-weight);
     white-space: nowrap;
 }
 
@@ -536,7 +536,7 @@ a:where(:not([class*="mud-"])) {
     flex-direction: column;
     min-inline-size: 0;
     inline-size: 100%;
-    max-inline-size: 60rem;
+    max-inline-size: var(--ep-measure-page);
     margin-inline: auto;
     box-sizing: border-box;
     padding: var(--ep-space-6) max(var(--ep-space-4), env(safe-area-inset-left)) max(var(--ep-space-8), env(safe-area-inset-bottom)) max(var(--ep-space-4), env(safe-area-inset-right));
@@ -571,7 +571,7 @@ a.ep-brand {
     background: color-mix(in srgb, var(--ep-primary) 10%, var(--ep-surface));
     color: var(--ep-primary);
     font: inherit;
-    font-weight: 600;
+    font-weight: var(--ep-button-weight);
     cursor: pointer;
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
@@ -673,7 +673,7 @@ a.ep-brand {
  * 還沒問：招呼加輸入框，垂直置中。問了之後：你的問題 → 找到的條文，輸入框黏在底部接著問。
  */
 .ep-ask {
-    --ep-ask-width: 40rem;
+    --ep-ask-width: var(--ep-measure-ask);
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -886,7 +886,7 @@ a.ep-brand {
 /* 桌機：問答區再寬一階，招呼與輸入框之間多一點呼吸。 */
 @media (width >= 80rem) {
     .ep-ask {
-        --ep-ask-width: 46rem;
+        --ep-ask-width: var(--ep-measure-ask-desktop);
     }
 
     .ep-ask[data-state="empty"] {
@@ -904,7 +904,7 @@ a.ep-brand {
 }
 
 .ep-portal-card {
-    max-inline-size: 28rem;
+    max-inline-size: var(--ep-measure-narrow);
     margin-inline: auto;
 }
 
@@ -923,7 +923,7 @@ a.ep-brand {
 
 .ep-label {
     font-size: var(--ep-body-sm-size);
-    font-weight: 600;
+    font-weight: var(--ep-button-weight);
 }
 
 .ep-input {
@@ -962,7 +962,7 @@ a.ep-brand {
     min-block-size: var(--ep-touch-target);
     padding: var(--ep-space-2) var(--ep-space-6);
     font: inherit;
-    font-weight: 600;
+    font-weight: var(--ep-button-weight);
     text-decoration: none;
     cursor: pointer;
     border: 1px solid transparent;
@@ -1068,7 +1068,7 @@ a.ep-brand {
     background: var(--ep-surface-muted);
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-sm-size);
-    font-weight: 600;
+    font-weight: var(--ep-button-weight);
     white-space: nowrap;
 }
 
@@ -1219,7 +1219,7 @@ a.ep-brand {
     padding-inline: var(--ep-space-3);
     border-block-end: 2px solid transparent;
     color: var(--ep-text-secondary);
-    font-weight: 600;
+    font-weight: var(--ep-button-weight);
     text-decoration: none;
     transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }

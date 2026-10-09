@@ -1,10 +1,8 @@
 @* 主題與 MudBlazor 的各個 provider。全站互動，所以放在版面裡；MudBlazor 要求它們與使用者元件在同一個 render mode。
-   只有淺色（產品決定）：不讀系統的深色設定，也不觀察它的變化。 *@
+   主題由 AddPlatformWeb 註冊（來源是 DesignTokens），這裡注入。只有淺色：不讀系統的深色設定，也不觀察它的變化。 *@
+@inject MudTheme Theme
+
 <MudThemeProvider Theme="Theme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
-
-@code {
-    private static readonly MudTheme Theme = PlatformTheme.Create();
-}

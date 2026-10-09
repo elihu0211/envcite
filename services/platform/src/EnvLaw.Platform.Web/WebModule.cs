@@ -1,6 +1,7 @@
 using EnvLaw.Platform.SharedKernel;
 using EnvLaw.Platform.Web.Auth;
 using EnvLaw.Platform.Web.Components;
+using EnvLaw.Platform.Web.Design;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
@@ -26,6 +27,8 @@ public static class WebModule
         services.AddScoped<AuthenticationStateProvider, OperatorAuthenticationStateProvider>();
         services.AddCascadingAuthenticationState();
         services.AddMudServices();
+        // 外觀只有 DesignTokens 一個來源。這裡把它裝成 MudBlazor 的主題，註冊一次，元件注入，不在元件裡再建一次。
+        services.AddSingleton(PlatformTheme.Create());
         return services;
     }
 
