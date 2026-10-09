@@ -23,6 +23,8 @@ public partial class TenantDetail
 
     [Inject] private IPlanAdmin Plans { get; set; } = default!;
 
+    [Inject] private IGroundedAnswerer Answerer { get; set; } = default!;
+
     [Inject] private IMemberAdmin Members { get; set; } = default!;
 
     [Inject] private NavigationManager Navigation { get; set; } = default!;
@@ -228,6 +230,35 @@ public partial class TenantDetail
         {
             await ChangePlanAsync(null);
         }
+    }
+
+    private async Task ToggleAiAnswerAsync()
+    {
+        var enable = !_tenant!.AiAnswer;
+        if (enable)
+        {
+            // 開啟會讓這個租戶的問題離開我們的系統，所以要確認（關閉不用：它只會讓資料少流出去）。
+            var confirmed = await Dialogs.ShowMessageBoxAsync(
+                "開啟 AI 回答", $"{_tenant.Identifier} 成員提的問題與相關條文會送到外部的模型服務。請確認租戶已同意。確定開啟？",
+                yesText: "開啟", cancelText: "取消");
+            if (confirmed != true)
+            {
+                return;
+            }
+        }
+
+        await RunAsync(async () =>
+        {
+            var result = await Plans.SetAiAnswerAsync(await ActorAsync(), TenantId, enable, CancellationToken.None);
+            if (!result.IsOk)
+            {
+                Fail(result.Message ?? "變更失敗。");
+                return;
+            }
+
+            await RefreshAsync();
+            Succeed(enable ? "已開啟 AI 回答。" : "已關閉 AI 回答。");
+        });
     }
 
     private async Task ChangePlanAsync(string? plan)

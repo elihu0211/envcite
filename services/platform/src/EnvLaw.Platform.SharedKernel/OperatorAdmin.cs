@@ -98,4 +98,12 @@ public interface IPlanAdmin
     /// <param name="plan">方案名稱；null 表示移除（之後該租戶沒有方案，資料端點回 402）。</param>
     Task<AdminOutcome<PlanChange>> SetAsync(
         ClaimsPrincipal actor, string tenantId, string? plan, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 開關這個租戶的 AI 回答（問題與相關條文會送到外部模型服務，所以是要同意才開）。與稽核同一個交易；
+    /// 設成已經是的值不改資料也不留紀錄。租戶沒有方案（資料庫裡沒有權益那一列）時是 <see cref="AdminStatus.Invalid"/>：
+    /// 同意跟著方案走，先指派方案。
+    /// </summary>
+    Task<AdminOutcome<bool>> SetAiAnswerAsync(
+        ClaimsPrincipal actor, string tenantId, bool enabled, CancellationToken cancellationToken);
 }

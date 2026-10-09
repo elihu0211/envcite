@@ -14,5 +14,11 @@ public sealed class TenantEntitlement
 
     public required string Plan { get; set; }
 
+    /// <summary>
+    /// 這個租戶同意讓入口的問題與相關條文送到外部的模型服務產生回答（<c>Platform:Answer</c>）。
+    /// 預設關閉（要同意才開）；開關跟著方案那一列，所以移除方案也一併清掉同意。
+    /// </summary>
+    public bool AiAnswerEnabled { get; set; }
+
     public DateTimeOffset UpdatedAt { get; set; }
 }

@@ -28,6 +28,11 @@ internal sealed partial class GroundedAnswerer(
 {
     public const string AnswerOperation = "consult.answer";
 
+    /// <summary>模型實際用掉的 token（端點回報的）；計價的依據，與次數分開記。</summary>
+    public const string InputTokensOperation = "llm.tokens.input";
+
+    public const string OutputTokensOperation = "llm.tokens.output";
+
     internal const string Insufficient = "證據不足";
 
     internal const string SystemPrompt =
@@ -82,9 +87,10 @@ internal sealed partial class GroundedAnswerer(
 
         var sources = grounded.Evidence.Citations.Select(c => new AnswerSource(c.Code, c.Iri, c.Label, c.Text)).ToList();
         string? text;
+        UsageDetails? tokens;
         try
         {
-            text = await GenerateAsync(question.Trim(), sources, cancellationToken);
+            (text, tokens) = await GenerateAsync(question.Trim(), sources, cancellationToken);
         }
         catch (Exception ex) when (ex is ClientResultException or HttpRequestException or OperationCanceledException && !cancellationToken.IsCancellationRequested)
         {
@@ -93,10 +99,21 @@ internal sealed partial class GroundedAnswerer(
         }
 
         await usage.RecordAsync(AnswerOperation, 1, cancellationToken);
+        // 端點沒回報用量就不記（不猜）。
+        if (tokens?.InputTokenCount is > 0 and var input)
+        {
+            await usage.RecordAsync(InputTokensOperation, (int)Math.Min(input, int.MaxValue), cancellationToken);
+        }
+
+        if (tokens?.OutputTokenCount is > 0 and var output)
+        {
+            await usage.RecordAsync(OutputTokensOperation, (int)Math.Min(output, int.MaxValue), cancellationToken);
+        }
+
         return AdminOutcome.Ok(Verify(text, sources));
     }
 
-    private async Task<string?> GenerateAsync(string question, IReadOnlyList<AnswerSource> sources, CancellationToken cancellationToken)
+    private async Task<(string? Text, UsageDetails? Usage)> GenerateAsync(string question, IReadOnlyList<AnswerSource> sources, CancellationToken cancellationToken)
     {
         var evidence = new StringBuilder();
         foreach (var source in sources)
@@ -113,7 +130,7 @@ internal sealed partial class GroundedAnswerer(
             ],
             new ChatOptions { Temperature = 0, MaxOutputTokens = options.Value.MaxOutputTokens },
             timeout.Token);
-        return response.Text;
+        return (response.Text, response.Usage);
     }
 
     /// <summary>

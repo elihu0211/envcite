@@ -1,7 +1,9 @@
+using System.Net;
 using System.Net.Http.Json;
 
 using EnvLaw.Platform.Modules.Metering;
 using EnvLaw.Platform.Modules.Tenancy;
+using EnvLaw.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -25,7 +27,7 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
 
     private static Dictionary<string, string> Ask(string text) => new() { ["Input.Query"] = text };
 
-    private sealed class FakeChat(Func<IReadOnlyList<ChatMessage>, string> reply) : IChatClient
+    private sealed class FakeChat(Func<IReadOnlyList<ChatMessage>, string> reply, UsageDetails? usage = null) : IChatClient
     {
         public List<IReadOnlyList<ChatMessage>> Calls { get; } = [];
 
@@ -37,7 +39,7 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
             var list = messages.ToList();
             Calls.Add(list);
             LastOptions = options;
-            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, reply(list))));
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, reply(list))) { Usage = usage });
         }
 
         public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
@@ -51,9 +53,10 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
         }
     }
 
-    private (WebApplicationFactory<Program> Host, FakeChat Chat) Host(Func<IReadOnlyList<ChatMessage>, string> reply, ILoggerProvider? logs = null)
+    private (WebApplicationFactory<Program> Host, FakeChat Chat) Host(
+        Func<IReadOnlyList<ChatMessage>, string> reply, ILoggerProvider? logs = null, UsageDetails? usage = null)
     {
-        var chat = new FakeChat(reply);
+        var chat = new FakeChat(reply, usage);
         var host = factory.WithWebHostBuilder(b => b
             .UseSetting("Platform:Answer:Enabled", "true")
             .UseSetting("Platform:Answer:Endpoint", "https://models.example.test/v1")
@@ -69,13 +72,30 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
         return (host, chat);
     }
 
-    private async Task<(PortalBrowser Browser, TenantResponse Tenant)> SignedInAsync(WebApplicationFactory<Program> host)
+    private async Task<(PortalBrowser Browser, TenantResponse Tenant)> SignedInAsync(WebApplicationFactory<Program> host, bool consent = true)
     {
         var (tenant, email, initial) = await MemberAsync(factory, "ans");
+        if (consent)
+        {
+            await ConsentAsync(tenant.Id);
+        }
+
         var browser = new PortalBrowser(host);
         await SignInFullyAsync(browser, tenant.Identifier, email, initial);
         return (browser, tenant);
     }
+
+    // 同意跟著資料庫裡的方案那一列：先指派方案，再開。
+    private async Task ConsentAsync(string tenantId)
+    {
+        var plans = factory.Services.GetRequiredService<IPlanAdmin>();
+        Assert.True((await plans.SetAsync(OperatorSession.Principal(), tenantId, "standard", CancellationToken.None)).IsOk);
+        Assert.True((await plans.SetAiAnswerAsync(OperatorSession.Principal(), tenantId, true, CancellationToken.None)).IsOk);
+    }
+
+    private async Task<List<AuditRecord>> EventsAsync(string tenantId, string action) =>
+        [.. (await factory.Services.GetRequiredService<IAuditQuery>()
+            .QueryAsync(new AuditFilter(Tenant: tenantId, Action: action), CancellationToken.None)).Items];
 
     [Fact]
     public async Task AGroundedQuestionIsAnsweredFromTheEvidenceAndCitesIt()
@@ -195,5 +215,83 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
 
         Assert.Contains("Platform:Answer:Endpoint", ex.ToString(), StringComparison.Ordinal);
         Assert.Contains("Platform:Answer:ApiKey", ex.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ATenantThatHasNotConsentedNeverReachesTheModelEvenWhenTheServiceIsOn()
+    {
+        var (host, chat) = Host(_ => "不該被呼叫 [L1]");
+        using var h = host;
+        var (browser, tenant) = await SignedInAsync(host, consent: false);
+        using var b = browser;
+
+        var page = await browser.SubmitAsync(SearchPage(tenant.Identifier), Ask("噪音管制標準"));
+
+        Assert.Empty(chat.Calls);
+        Assert.Contains("找到 1 條", page.Html, StringComparison.Ordinal); // 退回只列條文
+        Assert.DoesNotContain("會送到模型服務", page.Html, StringComparison.Ordinal); // 沒送出去，就不說會送
+    }
+
+    [Fact]
+    public async Task ConsentIsAnOperatorActionThatIsAuditedIdempotentAndNeedsAPlan()
+    {
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ans-c");
+        using var admin = factory.CreateAdminClient();
+
+        var noPlan = await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true });
+        Assert.Equal(HttpStatusCode.BadRequest, noPlan.StatusCode); // 同意跟著方案走
+        Assert.Equal(HttpStatusCode.NotFound, (await admin.PutAsJsonAsync("/admin/tenants/no-such/ai-answer", new { enabled = true })).StatusCode);
+
+        var plans = factory.Services.GetRequiredService<IPlanAdmin>();
+        Assert.True((await plans.SetAsync(OperatorSession.Principal(), tenant.Id, "standard", CancellationToken.None)).IsOk);
+        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true })).StatusCode);
+
+        Assert.Single(await EventsAsync(tenant.Id, AuditActions.TenantAiAnswerEnabled)); // 重複開不重複記
+        Assert.True((await factory.Services.GetRequiredService<ITenantDirectory>().FindAsync(tenant.Id, CancellationToken.None))!.AiAnswer);
+
+        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = false })).StatusCode);
+        Assert.Single(await EventsAsync(tenant.Id, AuditActions.TenantAiAnswerDisabled));
+
+        // 再開一次，然後移除方案：同意跟著那一列一起消失，不會殘留到下一個方案。
+        await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true });
+        Assert.True((await plans.SetAsync(OperatorSession.Principal(), tenant.Id, null, CancellationToken.None)).IsOk);
+        Assert.True((await plans.SetAsync(OperatorSession.Principal(), tenant.Id, "standard", CancellationToken.None)).IsOk);
+        Assert.False((await factory.Services.GetRequiredService<ITenantDirectory>().FindAsync(tenant.Id, CancellationToken.None))!.AiAnswer);
+    }
+
+    [Fact]
+    public async Task TheTokensTheEndpointReportsAreMeteredSeparatelyFromTheCalls()
+    {
+        var (host, _) = Host(_ => "在指定清除地區內不得燃燒 [L1]。", usage: new UsageDetails { InputTokenCount = 321, OutputTokenCount = 45 });
+        using var h = host;
+        var (browser, tenant) = await SignedInAsync(host);
+        using var b = browser;
+
+        await browser.SubmitAsync(SearchPage(tenant.Identifier), Ask(FakeConsultServer.AnswerableQuestion));
+
+        var (_, key) = (tenant, await factory.IssueKeyAsync(tenant.Id));
+        using var api = factory.CreateTenantClient(key.Key);
+        var usage = (await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage"))!.ToDictionary(u => u.Operation);
+        Assert.Equal(321, usage["llm.tokens.input"].Units);
+        Assert.Equal(45, usage["llm.tokens.output"].Units);
+        Assert.Equal(1, usage["consult.answer"].Units);
+    }
+
+    [Fact]
+    public async Task AnEndpointThatReportsNoUsageIsNotGuessedAt()
+    {
+        var (host, _) = Host(_ => "在指定清除地區內不得燃燒 [L1]。");
+        using var h = host;
+        var (browser, tenant) = await SignedInAsync(host);
+        using var b = browser;
+
+        await browser.SubmitAsync(SearchPage(tenant.Identifier), Ask(FakeConsultServer.AnswerableQuestion));
+
+        var (_, key) = (tenant, await factory.IssueKeyAsync(tenant.Id));
+        using var api = factory.CreateTenantClient(key.Key);
+        var operations = (await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage"))!.Select(u => u.Operation).ToList();
+        Assert.DoesNotContain("llm.tokens.input", operations);
+        Assert.DoesNotContain("llm.tokens.output", operations);
     }
 }
