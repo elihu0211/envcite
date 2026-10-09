@@ -1,26 +1,17 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Security.Claims;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 using EnvLaw.Platform.Data;
 using EnvLaw.Platform.SharedKernel;
-using EnvLaw.Platform.Web.Auth;
 
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Tests;
 
 [Collection(PlatformTestGroup.Name)]
-public sealed partial class AuditTests(PlatformFactory factory)
+public sealed class AuditTests(PlatformFactory factory)
 {
     private async Task<JsonElement> EventsAsync(string query)
     {
@@ -141,93 +132,4 @@ public sealed partial class AuditTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.Unauthorized, none.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, asTenant.StatusCode);
     }
-
-    // ---- 營運者登入 ----------------------------------------------------------------------------
-
-    private async Task<TicketReceivedContext> ReceiveGoogleTicketAsync(string email, bool verified)
-    {
-        await using var scope = factory.Services.CreateAsyncScope();
-        var http = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
-        var options = factory.Services.GetRequiredService<IOptionsMonitor<GoogleOptions>>().Get(PlatformAuth.UiGoogleScheme);
-        var scheme = new AuthenticationScheme(PlatformAuth.UiGoogleScheme, null, typeof(GoogleHandler));
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(
-            [
-                new Claim(ClaimTypes.Email, email),
-                new Claim(OperatorAllowlist.EmailVerifiedClaim, verified ? "true" : "false"),
-            ],
-            "Google"));
-        var context = new TicketReceivedContext(http, scheme, options, new AuthenticationTicket(principal, scheme.Name));
-
-        await options.Events.OnTicketReceived(context);
-        return context;
-    }
-
-    [Fact]
-    public async Task AnAllowedOperatorSigningInIsAudited()
-    {
-        var context = await ReceiveGoogleTicketAsync(PlatformFactory.OperatorEmail, verified: true);
-
-        Assert.False(context.Result?.Handled ?? false);
-        var events = await ItemsAsync($"action={OperatorSignInActions.SignedIn}&actor={Uri.EscapeDataString(PlatformFactory.OperatorEmail)}");
-        Assert.NotEmpty(events);
-        Assert.Equal("operator-user", events[0].GetProperty("actorType").GetString());
-    }
-
-    [Fact]
-    public async Task ADeniedSignInIsAuditedAsAnonymousWithTheEmailAndNoCookieIsIssued()
-    {
-        const string stranger = "stranger-audit@example.com";
-
-        var context = await ReceiveGoogleTicketAsync(stranger, verified: true);
-
-        Assert.True(context.Result?.Handled);
-        Assert.Equal(UiEndpoints.DeniedPath, context.Response.Headers.Location.ToString());
-        var denied = (await ItemsAsync($"action={OperatorSignInActions.SignInDenied}"))
-            .Single(e => e.GetProperty("detail").GetProperty("email").GetString() == stranger);
-        Assert.Equal("anonymous", denied.GetProperty("actorType").GetString());
-    }
-
-    [Fact]
-    public async Task SigningOutIsAudited()
-    {
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(
-            [
-                new Claim(ClaimTypes.Email, PlatformFactory.OperatorEmail),
-                new Claim(OperatorAllowlist.EmailVerifiedClaim, "true"),
-            ],
-            PlatformAuth.UiCookieScheme));
-        var cookie = factory.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>().Get(PlatformAuth.UiCookieScheme);
-        var ticket = cookie.TicketDataFormat.Protect(new AuthenticationTicket(principal, PlatformAuth.UiCookieScheme));
-        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = false });
-
-        // 先取一個有效的 antiforgery token（頁面的表單裡有，cookie 在回應的 Set-Cookie）。
-        using var page = new HttpRequestMessage(HttpMethod.Get, "/ui");
-        page.Headers.Add("Cookie", $"{cookie.Cookie.Name}={ticket}");
-        using var pageResponse = await client.SendAsync(page);
-        var html = await pageResponse.Content.ReadAsStringAsync();
-        var token = AntiforgeryToken().Match(html).Groups[1].Value;
-        var antiforgeryCookie = pageResponse.Headers.GetValues("Set-Cookie")
-            .Select(c => c.Split(';')[0]).First(c => c.StartsWith(".AspNetCore.Antiforgery", StringComparison.Ordinal));
-
-        using var logout = new HttpRequestMessage(HttpMethod.Post, "/ui/logout")
-        {
-            Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = token }),
-        };
-        logout.Headers.Add("Cookie", $"{cookie.Cookie.Name}={ticket}; {antiforgeryCookie}");
-        using var response = await client.SendAsync(logout);
-
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.NotEmpty(await ItemsAsync($"action={OperatorSignInActions.SignedOut}&actor={Uri.EscapeDataString(PlatformFactory.OperatorEmail)}"));
-    }
-
-    [GeneratedRegex("name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"")]
-    private static partial Regex AntiforgeryToken();
-}
-
-/// <summary>事件鍵與 <c>OperatorSignIn</c> 的常數相同；測試不依賴內部型別，所以在這裡重述一次，改名時測試會提醒。</summary>
-internal static class OperatorSignInActions
-{
-    public const string SignedIn = "operator.signed_in";
-    public const string SignInDenied = "operator.sign_in_denied";
-    public const string SignedOut = "operator.signed_out";
 }

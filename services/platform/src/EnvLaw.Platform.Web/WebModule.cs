@@ -4,6 +4,7 @@ using EnvLaw.Platform.Web.Components;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,6 +22,8 @@ public static class WebModule
     {
         services.AddWebAuth();
         services.AddRazorComponents().AddInteractiveServerComponents();
+        // 取代預設的 AuthenticationStateProvider：circuit 每分鐘重驗營運者帳號（見 OperatorAuthenticationStateProvider）。
+        services.AddScoped<AuthenticationStateProvider, OperatorAuthenticationStateProvider>();
         services.AddCascadingAuthenticationState();
         services.AddMudServices();
         return services;
@@ -47,6 +50,12 @@ public static class WebModule
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
                 return;
+            }
+
+            if (isUi)
+            {
+                // 後台的登入頁與註冊頁含驗證器金鑰與復原碼：瀏覽器與中間的快取都不能留（客戶入口同理）。
+                context.Response.Headers.CacheControl = "no-store";
             }
 
             if (isUi || path.StartsWithSegments("/_blazor"))
@@ -91,8 +100,8 @@ public static class WebModule
     /// </summary>
     public static WebApplication MapPlatformWeb(this WebApplication app)
     {
-        // 兩個面都是可選功能，API 照常：後台沒有 Google 憑證就不開（/ui 回 404），入口要明確開
-        // （Platform:Portal:Enabled）。Development 缺憑證時仍開著，本機能看到畫面（真的後台登入會被 Google 拒絕）。
+        // 兩個面都是可選功能，API 照常：要明確開（Platform:Ui:Enabled、Platform:Portal:Enabled），沒開就不掛（回 404）。
+        // Development 一律開著，本機能看到畫面。
         var (operatorUi, portal) = Surfaces(app.Services);
         var log = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("EnvLaw.Platform.Web");
         if (!operatorUi)
@@ -119,7 +128,7 @@ public static class WebModule
     {
         var development = services.GetRequiredService<IHostEnvironment>().IsDevelopment();
         return (
-            services.GetRequiredService<IOptions<UiOptions>>().Value.HasGoogleCredentials || development,
+            services.GetRequiredService<IOptions<UiOptions>>().Value.Enabled || development,
             services.GetRequiredService<IOptions<PortalOptions>>().Value.Enabled || development);
     }
 }

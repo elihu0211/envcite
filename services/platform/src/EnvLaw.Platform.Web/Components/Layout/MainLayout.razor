@@ -13,6 +13,8 @@
         <AuthorizeView>
             <Authorized>
                 <MudText Typo="Typo.body2" Class="mr-3 ep-user">@context.User.FindFirst(ClaimTypes.Email)?.Value</MudText>
+                <MudButton Href="@UiEndpoints.PasswordPath" Color="Color.Inherit">改密碼</MudButton>
+                <MudButton Href="@UiEndpoints.SecurityPath" Color="Color.Inherit">兩步驟驗證</MudButton>
                 <form method="post" action="/ui/logout">
                     <AntiforgeryToken />
                     <MudButton ButtonType="ButtonType.Submit" Color="Color.Inherit">登出</MudButton>

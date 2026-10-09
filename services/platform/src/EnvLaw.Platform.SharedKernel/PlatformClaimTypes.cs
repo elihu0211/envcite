@@ -12,6 +12,9 @@ public static class PlatformClaimTypes
     /// <summary>客戶入口使用者的 Id（<c>ApplicationUser.Id</c>）。有這個 claim 的是入口的人，不是機器。</summary>
     public const string PortalUserId = "portal_user_id";
 
+    /// <summary>營運者帳號的 Id（<c>OperatorUser.Id</c>）。有這個 claim 的是後台的人。</summary>
+    public const string OperatorId = "operator_id";
+
     /// <summary>存在（值為 true）表示這個 session 還必須先改密碼。</summary>
     public const string PasswordChangeRequired = "pwd_change_required";
 

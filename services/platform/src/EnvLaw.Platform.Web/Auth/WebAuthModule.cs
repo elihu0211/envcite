@@ -1,7 +1,7 @@
 using EnvLaw.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace EnvLaw.Platform.Web.Auth;
 
-/// <summary>後台的登入：Google 單點登入簽發 cookie，白名單決定誰能進。</summary>
+/// <summary>後台的登入：營運者帳號（Identity，見 Members 模組）簽發 cookie，每個請求都向資料庫重查帳號。</summary>
 internal static class WebAuthModule
 {
     /// <summary>
@@ -21,10 +21,10 @@ internal static class WebAuthModule
     public static IServiceCollection AddWebAuth(this IServiceCollection services)
     {
         services.AddPlatformOptions<UiOptions>();
+        services.AddSingleton<IValidateOptions<UiOptions>, UiOptionsValidator>();
         services.AddPlatformOptions<PortalOptions>();
         services.AddSingleton<IValidateOptions<PortalOptions>, PortalOptionsValidator>();
         services.AddRateLimiter(PortalRateLimit.Configure);
-        services.AddSingleton<OperatorAllowlist>();
         services.AddSingleton<IAuthorizationHandler, OperatorHandler>();
 
         services.AddAuthentication()
@@ -35,34 +35,49 @@ internal static class WebAuthModule
                 cookie.Cookie.SameSite = SameSiteMode.Lax;
                 cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 cookie.LoginPath = UiEndpoints.LoginPath;
-                cookie.AccessDeniedPath = UiEndpoints.DeniedPath;
                 cookie.ExpireTimeSpan = TimeSpan.FromHours(8);
                 cookie.SlidingExpiration = true;
-            })
-            .AddGoogle(PlatformAuth.UiGoogleScheme, google =>
-            {
-                google.SignInScheme = PlatformAuth.UiCookieScheme;
-                google.SaveTokens = false;
-                google.ClaimActions.MapJsonKey(OperatorAllowlist.EmailVerifiedClaim, "email_verified");
-                google.ClaimActions.MapJsonKey(OperatorAllowlist.HostedDomainClaim, "hd");
-                // 不在白名單就不簽發 cookie；登入與被拒絕都留稽核（見 OperatorSignIn）。
-                google.Events.OnTicketReceived = OperatorSignIn.HandleAsync;
+                cookie.Events.OnRedirectToAccessDenied = UiRedirects.ToAccessDenied;
             });
 
-        // 憑證在用到時才自選項取得。Development 缺憑證用占位值，讓不碰後台的本機開發照常啟動。
-        services.AddOptions<GoogleOptions>(PlatformAuth.UiGoogleScheme)
-            .Configure<IOptions<UiOptions>>((google, ui) =>
-            {
-                google.ClientId = string.IsNullOrEmpty(ui.Value.Google.ClientId) ? "unset" : ui.Value.Google.ClientId;
-                google.ClientSecret = string.IsNullOrEmpty(ui.Value.Google.ClientSecret) ? "unset" : ui.Value.Google.ClientSecret;
-            });
-
+        // 三層，由寬到嚴；每一層都以 OperatorHandler 重查資料庫。
         services.AddAuthorizationBuilder()
+            .AddPolicy(PlatformAuth.UiSessionPolicy, policy => policy
+                .AddAuthenticationSchemes(PlatformAuth.UiCookieScheme)
+                .RequireAuthenticatedUser()
+                .AddRequirements(new OperatorRequirement(AllowPasswordChangePending: true, AllowEnrollmentPending: true)))
+            .AddPolicy(PlatformAuth.UiEnrollmentPolicy, policy => policy
+                .AddAuthenticationSchemes(PlatformAuth.UiCookieScheme)
+                .RequireAuthenticatedUser()
+                .AddRequirements(new OperatorRequirement(AllowPasswordChangePending: false, AllowEnrollmentPending: true)))
             .AddPolicy(PlatformAuth.UiPolicy, policy => policy
                 .AddAuthenticationSchemes(PlatformAuth.UiCookieScheme)
                 .RequireAuthenticatedUser()
-                .AddRequirements(new OperatorRequirement()));
+                .AddRequirements(new OperatorRequirement(AllowPasswordChangePending: false, AllowEnrollmentPending: false)));
 
         return services;
+    }
+}
+
+/// <summary>
+/// 已登入但不符時導去哪一頁：還必須先改密碼 → 改密碼頁；密碼改過了、但還沒註冊驗證器 → 註冊頁（先改密碼再註冊，
+/// 驗證器才不會綁在一個營運者金鑰持有人知道的密碼後面）；否則（帳號被停用、被刪、密碼或驗證器被重設）→ 說明頁。
+/// 導向看 cookie 裡的 claim，但<b>不能導到自己</b>：被拒的就是那一頁（例如帳號在改密碼途中被停用），
+/// 再導一次只會無限轉址，所以那種情況落到說明頁。
+/// </summary>
+internal static class UiRedirects
+{
+    public static Task ToAccessDenied(RedirectContext<CookieAuthenticationOptions> context)
+    {
+        var user = context.HttpContext.User;
+        var here = context.Request.Path;
+        var passwordPending = user.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is not null;
+        var enrollmentPending = user.FindFirst(PlatformClaimTypes.MfaEnrollmentRequired) is not null;
+
+        context.Response.Redirect(
+            passwordPending && !here.StartsWithSegments(UiEndpoints.PasswordPath) ? UiEndpoints.PasswordPath
+            : !passwordPending && enrollmentPending && !here.StartsWithSegments(UiEndpoints.SecurityPath) ? UiEndpoints.SecurityPath
+            : UiEndpoints.DeniedPath);
+        return Task.CompletedTask;
     }
 }

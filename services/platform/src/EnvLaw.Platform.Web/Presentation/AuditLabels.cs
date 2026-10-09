@@ -37,15 +37,25 @@ public static class AuditLabels
         AuditActions.ConversationDeleted => "刪除對話",
         AuditActions.TenantAiAnswerEnabled => "開啟租戶的 AI 回答",
         AuditActions.TenantAiAnswerDisabled => "關閉租戶的 AI 回答",
+        AuditActions.OperatorCreated => "新增營運者",
+        AuditActions.OperatorPasswordReset => "重設營運者密碼",
+        AuditActions.OperatorMfaReset => "重設營運者的兩步驟驗證",
+        AuditActions.OperatorDisabled => "停用營運者",
+        AuditActions.OperatorEnabled => "重新啟用營運者",
+        AuditActions.OperatorPasswordChanged => "營運者改密碼",
+        AuditActions.OperatorMfaEnabled => "營運者啟用兩步驟驗證",
+        AuditActions.OperatorRecoveryCodeUsed => "營運者使用復原碼",
+        AuditActions.OperatorRecoveryCodesRegenerated => "營運者重新產生復原碼",
         _ => action,
     };
 
     /// <summary>建立與簽發是成功的新增、撤銷要留意、被拒絕是異常；登入登出是中性資訊。</summary>
     public static Color ActionColor(string action) => action switch
     {
-        AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned or AuditActions.MemberCreated => Color.Success,
+        AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned or AuditActions.MemberCreated or AuditActions.OperatorCreated => Color.Success,
         AuditActions.ApiKeyRevoked or AuditActions.TenantPlanRemoved or AuditActions.MemberPasswordReset
-            or AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled or AuditActions.MemberDisabled or AuditActions.MemberRoleChanged or AuditActions.TenantAiAnswerEnabled => Color.Warning,
+            or AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled or AuditActions.MemberDisabled or AuditActions.MemberRoleChanged or AuditActions.TenantAiAnswerEnabled
+            or AuditActions.OperatorPasswordReset or AuditActions.OperatorMfaReset or AuditActions.OperatorDisabled or AuditActions.OperatorRecoveryCodeUsed => Color.Warning,
         AuditActions.OperatorSignInDenied or AuditActions.PortalSignInFailed => Color.Error,
         _ => Color.Default,
     };
@@ -60,14 +70,15 @@ public static class AuditLabels
         AuditActions.OperatorSignInDenied => Icons.Material.Filled.GppBad,
         AuditActions.OperatorSignedIn or AuditActions.PortalSignedIn => Icons.Material.Filled.Login,
         AuditActions.OperatorSignedOut or AuditActions.PortalSignedOut => Icons.Material.Filled.Logout,
-        AuditActions.MemberCreated or AuditActions.MemberEnabled => Icons.Material.Filled.PersonAdd,
-        AuditActions.MemberDisabled => Icons.Material.Filled.PersonOff,
+        AuditActions.MemberCreated or AuditActions.MemberEnabled or AuditActions.OperatorCreated or AuditActions.OperatorEnabled => Icons.Material.Filled.PersonAdd,
+        AuditActions.MemberDisabled or AuditActions.OperatorDisabled => Icons.Material.Filled.PersonOff,
         AuditActions.MemberRoleChanged => Icons.Material.Filled.ManageAccounts,
-        AuditActions.MemberPasswordReset or AuditActions.PortalPasswordChanged => Icons.Material.Filled.LockReset,
+        AuditActions.MemberPasswordReset or AuditActions.PortalPasswordChanged or AuditActions.OperatorPasswordReset or AuditActions.OperatorPasswordChanged => Icons.Material.Filled.LockReset,
         AuditActions.PortalSignInFailed => Icons.Material.Filled.GppBad,
-        AuditActions.PortalMfaEnabled => Icons.Material.Filled.Security,
+        AuditActions.PortalMfaEnabled or AuditActions.OperatorMfaEnabled => Icons.Material.Filled.Security,
         AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled
-            or AuditActions.PortalRecoveryCodesRegenerated => Icons.Material.Filled.PhonelinkLock,
+            or AuditActions.PortalRecoveryCodesRegenerated or AuditActions.OperatorMfaReset or AuditActions.OperatorRecoveryCodeUsed
+            or AuditActions.OperatorRecoveryCodesRegenerated => Icons.Material.Filled.PhonelinkLock,
         _ => Icons.Material.Filled.History,
     };
 

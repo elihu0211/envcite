@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -45,18 +46,7 @@ public static class MembersModule
         services.TryAddSingleton(TimeProvider.System);
         services.AddPlatformOptions<MembersOptions>();
 
-        services.AddIdentityCore<ApplicationUser>(options =>
-            {
-                options.User.RequireUniqueEmail = true;
-                options.Password.RequiredLength = MinimumPasswordLength;
-                options.Password.RequireDigit = false;
-                options.Password.RequireLowercase = false;
-                options.Password.RequireUppercase = false;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Lockout.AllowedForNewUsers = true;
-                options.Lockout.MaxFailedAccessAttempts = MaxFailedAccessAttempts;
-                options.Lockout.DefaultLockoutTimeSpan = LockoutDuration;
-            })
+        services.AddIdentityCore<ApplicationUser>(ConfigureIdentity)
             .AddEntityFrameworkStores<PlatformDbContext>()
             .AddSignInManager()
             .AddClaimsPrincipalFactory<PortalClaimsPrincipalFactory>();
@@ -109,6 +99,57 @@ public static class MembersModule
         services.AddScoped<IMemberSelfService, MemberSelfService>();
         services.AddSingleton<IMemberAdmin, MemberAdmin>();
 
+        services.AddOperatorAccounts();
+
         return services;
+    }
+
+    /// <summary>
+    /// 密碼與鎖定規則。<c>IdentityOptions</c> 是全域的一份，客戶入口的成員與後台的營運者本來就適用同一套
+    /// （最短 12 字元、不強制組成、5 次失敗鎖 15 分鐘），所以兩邊共用這個方法。
+    /// </summary>
+    internal static void ConfigureIdentity(IdentityOptions options)
+    {
+        options.User.RequireUniqueEmail = true;
+        options.Password.RequiredLength = MinimumPasswordLength;
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = MaxFailedAccessAttempts;
+        options.Lockout.DefaultLockoutTimeSpan = LockoutDuration;
+    }
+
+    /// <summary>
+    /// 後台的營運者：同一套 Identity，<b>另一個 user store</b>（<c>OperatorUser</c>，表 <c>Operators</c>，不隨租戶）。
+    /// <c>AddEntityFrameworkStores</c> 會從 <c>PlatformDbContext</c> 的基底推出成員的 claim／login／token 型別，
+    /// 套給營運者就會讀寫成員的表，所以 store 自己指定型別。登入 cookie 與暫存憑證的 scheme 在 Web／這裡各自註冊。
+    /// </summary>
+    private static void AddOperatorAccounts(this IServiceCollection services)
+    {
+        services.AddIdentityCore<OperatorUser>(ConfigureIdentity);
+        services.AddScoped<IUserStore<OperatorUser>,
+            UserOnlyStore<OperatorUser, PlatformDbContext, Guid, IdentityUserClaim<Guid>, IdentityUserLogin<Guid>, IdentityUserToken<Guid>>>();
+        services.AddScoped<IUserClaimsPrincipalFactory<OperatorUser>, OperatorClaimsPrincipalFactory>();
+
+        services.AddAuthentication()
+            .AddCookie(OperatorMfaPendingCookie.Scheme, cookie =>
+            {
+                // 「密碼已通過、等第二步」：五分鐘、不滑動，不是登入 cookie（後台的授權不認這個 scheme）。
+                cookie.Cookie.Name = "EnvLaw.UiMfa";
+                cookie.Cookie.HttpOnly = true;
+                cookie.Cookie.SameSite = SameSiteMode.Lax;
+                cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                cookie.ExpireTimeSpan = OperatorMfaPendingCookie.Lifetime;
+                cookie.SlidingExpiration = false;
+            });
+
+        services.AddScoped<OperatorMfaPendingCookie>();
+        services.AddScoped<OperatorAccount>();
+        services.AddScoped<IOperatorAccount>(provider => provider.GetRequiredService<OperatorAccount>());
+        services.AddScoped<IOperatorTwoFactor, OperatorTwoFactor>();
+        services.AddSingleton<IOperatorSessions, OperatorSessions>();
+        services.AddSingleton<IOperatorAdmin, OperatorAdmin>();
     }
 }

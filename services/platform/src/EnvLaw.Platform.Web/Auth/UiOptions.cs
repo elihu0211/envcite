@@ -1,32 +1,31 @@
 using EnvLaw.Platform.SharedKernel;
 
+using Microsoft.Extensions.Options;
+
 namespace EnvLaw.Platform.Web.Auth;
 
-/// <summary><c>Platform:Ui</c> 區段。Google 憑證只走環境變數（k8s 的 Secret），不進版控。</summary>
+/// <summary>
+/// <c>Platform:Ui</c> 區段。營運者後台是可選功能，預設關閉（與 <c>Platform:Portal:Enabled</c> 對稱）；Development 一律開著。
+/// 沒開就不掛 <c>/ui</c>（回 404），API 照常啟動。後台的帳號存在資料庫（營運者金鑰的 <c>/admin/operators</c> 管理），
+/// 不需要任何外部憑證，所以開關只是產品決定，不是 Secret 到位與否。
+/// </summary>
 public sealed class UiOptions : IPlatformOptions
 {
     public static string SectionName => "Platform:Ui";
 
-    public GoogleCredentials Google { get; set; } = new();
-
-    /// <summary>可登入後台的營運者 email（不分大小寫）。空清單 = 沒有人能登入。</summary>
-    public IReadOnlyList<string> OperatorEmails { get; set; } = [];
-
-    /// <summary>非空時，另要求 Google Workspace 網域（<c>hd</c> claim）相符。</summary>
-    public string? AllowedHostedDomain { get; set; }
+    public bool Enabled { get; set; }
 
     /// <summary>
-    /// 後台是可選功能：Google 憑證沒設，就不掛 <c>/ui</c>（見 <c>MapPlatformWeb</c>），API 照常啟動。
-    /// 憑證是 Secret，上線順序上常晚於程式碼；缺憑證不該讓整個服務起不來。
+    /// 同一個來源位址每分鐘最多送幾次登入、第二步驗證或改密碼（成功與失敗都算）。帳號鎖定只擋「同一個帳號被猜」，
+    /// 擋不了一個來源在試很多帳號，這個限制才是。營運者只有少數幾位，預設比客戶入口低。
     /// </summary>
-    public bool HasGoogleCredentials =>
-        !string.IsNullOrEmpty(Google.ClientId) && !string.IsNullOrEmpty(Google.ClientSecret);
+    public int SignInAttemptsPerMinute { get; set; } = 20;
 }
 
-/// <summary>Google OAuth client 的憑證（<c>Platform:Ui:Google</c>）。</summary>
-public sealed class GoogleCredentials
+internal sealed class UiOptionsValidator : IValidateOptions<UiOptions>
 {
-    public string ClientId { get; set; } = string.Empty;
-
-    public string ClientSecret { get; set; } = string.Empty;
+    public ValidateOptionsResult Validate(string? name, UiOptions options) =>
+        options.SignInAttemptsPerMinute is < 1 or > 1000
+            ? ValidateOptionsResult.Fail("Platform:Ui:SignInAttemptsPerMinute must be between 1 and 1000.")
+            : ValidateOptionsResult.Success;
 }

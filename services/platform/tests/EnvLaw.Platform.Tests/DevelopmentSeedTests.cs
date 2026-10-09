@@ -4,6 +4,7 @@ using EnvLaw.Platform.SharedKernel;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 using static EnvLaw.Platform.Tests.PortalTestSupport;
 
@@ -50,6 +51,20 @@ public sealed class DevelopmentSeedTests(PlatformFactory factory)
         }
     }
 
+    [Fact]
+    public async Task StartingInDevelopmentSeedsADemoOperatorAsTheSystem()
+    {
+        await using var host = await HostAsync("Development", seed: true);
+
+        var operators = (await host.Services.GetRequiredService<IOperatorAdmin>().ListAsync(CancellationToken.None)).Value!;
+        var demo = Assert.Single(operators);
+        Assert.Equal((DevelopmentSeed.OperatorEmail, true, false, false), (demo.Email, demo.MustChangePassword, demo.TwoFactorEnabled, demo.Disabled));
+
+        var created = Assert.Single((await host.Services.GetRequiredService<IAuditQuery>()
+            .QueryAsync(new AuditFilter(Action: AuditActions.OperatorCreated), CancellationToken.None)).Items);
+        Assert.Equal((AuditActors.System, demo.Id), (created.ActorType, created.TargetId));
+    }
+
     // 只有 Development 而且設定開著才種：正式環境即使誤開設定也不會有預設租戶。
     [Theory]
     [InlineData("Production", true)]
@@ -60,6 +75,67 @@ public sealed class DevelopmentSeedTests(PlatformFactory factory)
         await using var host = await HostAsync(environment, seed);
 
         Assert.Empty(await host.Services.GetRequiredService<ITenantDirectory>().ListAsync(CancellationToken.None));
+        Assert.Empty((await host.Services.GetRequiredService<IOperatorAdmin>().ListAsync(CancellationToken.None)).Value!);
+    }
+
+    [Fact]
+    public async Task TheDemoOperatorSignsInWithTheShownPasswordThenMustChangeItAndEnrolAnAuthenticator()
+    {
+        await using var host = await HostAsync("Development", seed: false);
+
+        var seeded = await DevelopmentSeed.RunOperatorAsync(host.Services, CancellationToken.None);
+
+        Assert.NotNull(seeded);
+        Assert.True(seeded.Password.Length >= 16);
+        Assert.Contains(seeded.Password, DevelopmentSeed.Describe(seeded), StringComparison.Ordinal);
+        Assert.Contains("/ui/login", DevelopmentSeed.Describe(seeded), StringComparison.Ordinal);
+        using var browser = new PortalBrowser(host);
+        Assert.Equal(OperatorTestSupport.UiPassword, (await browser.SubmitAsync(OperatorTestSupport.UiLogin, Credentials(seeded.Email, seeded.Password))).Location);
+        Assert.Equal(OperatorTestSupport.UiHome, (await browser.SubmitAsync(OperatorTestSupport.UiPassword, PasswordChange(seeded.Password, NewPassword))).Location);
+        // 營運者沒有本機的例外：還要註冊驗證器才進得了後台。
+        Assert.Equal(OperatorTestSupport.UiSecurity, (await browser.GetAsync(OperatorTestSupport.UiHome)).Location);
+    }
+
+    // 與擁有者相同的規則：一次性密碼只回傳給呼叫端（它印在終端機），不進日誌，也不進稽核。
+    [Fact]
+    public async Task TheDemoOperatorPasswordReachesNeitherTheLogsNorTheAuditTrail()
+    {
+        var logs = new CapturingLoggerProvider();
+        await using var host = (await HostAsync("Development", seed: false)).WithWebHostBuilder(b => b.ConfigureLogging(l => l.AddProvider(logs)));
+
+        var seeded = await DevelopmentSeed.RunOperatorAsync(host.Services, CancellationToken.None);
+
+        Assert.NotNull(seeded);
+        var audit = await host.Services.GetRequiredService<IAuditQuery>().QueryAsync(new AuditFilter(Action: AuditActions.OperatorCreated), CancellationToken.None);
+        var dump = System.Text.Json.JsonSerializer.Serialize(audit) + string.Join('\n', logs.Messages);
+        Assert.DoesNotContain(seeded.Password, dump, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunningTheOperatorSeedAgainChangesNothingAndShowsNoPassword()
+    {
+        await using var host = await HostAsync("Development", seed: false);
+        var first = await DevelopmentSeed.RunOperatorAsync(host.Services, CancellationToken.None);
+
+        var second = await DevelopmentSeed.RunOperatorAsync(host.Services, CancellationToken.None);
+
+        Assert.NotNull(first);
+        Assert.Null(second);
+        Assert.Single((await host.Services.GetRequiredService<IOperatorAdmin>().ListAsync(CancellationToken.None)).Value!);
+    }
+
+    // 已經有營運者的環境（例如開發者自己建過）不會被硬塞一位示範營運者進去。
+    [Fact]
+    public async Task AnEnvironmentThatAlreadyHasOperatorsIsLeftAlone()
+    {
+        await using var host = await HostAsync("Development", seed: false);
+        var admin = host.Services.GetRequiredService<IOperatorAdmin>();
+        Assert.True((await admin.CreateAsync(OperatorSession.Principal(), "mine@example.com", null, CancellationToken.None)).IsOk);
+
+        var seeded = await DevelopmentSeed.RunOperatorAsync(host.Services, CancellationToken.None);
+
+        Assert.Null(seeded);
+        Assert.Equal("mine@example.com", Assert.Single((await admin.ListAsync(CancellationToken.None)).Value!).Email);
     }
 
     [Fact]

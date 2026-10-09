@@ -30,8 +30,6 @@ if (generatingOpenApi)
         ["ConnectionStrings:Platform"] = "Host=build-time",
         ["Ontology:InternalToken"] = "build-time",
         ["Consult:InternalToken"] = "build-time",
-        ["Platform:Ui:Google:ClientId"] = "build-time",
-        ["Platform:Ui:Google:ClientSecret"] = "build-time",
     });
 }
 
@@ -73,10 +71,17 @@ if (!generatingOpenApi && hostOptions.ApplyMigrationsOnStartup)
 }
 
 // 本機的第一組資料：只在 Development（設定開著時）；一次性密碼只印在終端機，不進日誌。
-if (!generatingOpenApi && app.Environment.IsDevelopment() && hostOptions.SeedDevelopmentData
-    && await DevelopmentSeed.RunAsync(app.Services, CancellationToken.None) is { } seeded)
+if (!generatingOpenApi && app.Environment.IsDevelopment() && hostOptions.SeedDevelopmentData)
 {
-    Console.WriteLine(DevelopmentSeed.Describe(seeded));
+    if (await DevelopmentSeed.RunAsync(app.Services, CancellationToken.None) is { } seeded)
+    {
+        Console.WriteLine(DevelopmentSeed.Describe(seeded));
+    }
+
+    if (await DevelopmentSeed.RunOperatorAsync(app.Services, CancellationToken.None) is { } seededOperator)
+    {
+        Console.WriteLine(DevelopmentSeed.Describe(seededOperator));
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -103,7 +108,8 @@ app.MapGroup("/admin")
     .MapTenancyAdminEndpoints()
     .MapApiAccessAdminEndpoints()
     .MapAuditAdminEndpoints()
-    .MapMembersAdminEndpoints();
+    .MapMembersAdminEndpoints()
+    .MapOperatorsAdminEndpoints();
 
 var v2 = app.MapGroup("/v2")
     .RequireAuthorization(PlatformAuth.TenantPolicy)

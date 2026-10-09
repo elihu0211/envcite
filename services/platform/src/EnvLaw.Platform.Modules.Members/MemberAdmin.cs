@@ -18,11 +18,6 @@ namespace EnvLaw.Platform.Modules.Members;
 /// </summary>
 internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
 {
-    // Identity 把驗證器金鑰與復原碼存成使用者的 token（固定的提供者名稱與 token 名稱）。
-    private const string TwoFactorTokenProvider = "[AspNetUserStore]";
-    private const string AuthenticatorKeyToken = "AuthenticatorKey";
-    private const string RecoveryCodesToken = "RecoveryCodes";
-
     public async Task<AdminOutcome<IReadOnlyList<MemberInfo>>> ListAsync(string tenantId, CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
@@ -107,8 +102,8 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
         }
 
         await users.SetTwoFactorEnabledAsync(user, false);
-        await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokenProvider, AuthenticatorKeyToken);
-        await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokenProvider, RecoveryCodesToken);
+        await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey);
+        await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.RecoveryCodes);
         user.LastTotpStep = 0;
         user.AccessFailedCount = 0;
         user.LockoutEnd = null;
