@@ -7,7 +7,8 @@
 <PageTitle>查詢法規 · env-law</PageTitle>
 
 @* 問答為主的首頁：一個輸入框。還沒問時是置中的招呼加輸入框；問了之後是「你的問題 → 找到的條文」，輸入框留在底部接著問。
-   這個系統不執行生成模型：回答是有出處的條文（法規名、條號、查的是哪一天、ELI 網址），不是改寫過的文字。 *@
+   有設定模型端點（Platform:Answer）時，回答是模型只根據 consult 的封閉證據寫的、每個論點附出處代號，加上對應的條文卡片；
+   沒有設定時只列有出處的條文（法規名、條號、查的是哪一天、ELI 網址）。 *@
 <div class="ep-ask" data-state="@(_asked ? "result" : "empty")">
     @if (!_hasPlan)
     {
@@ -37,6 +38,27 @@
                     @if (_error is not null)
                     {
                         <p class="ep-alert ep-alert-error" role="alert">@_error</p>
+                    }
+                    else if (_answer is not null)
+                    {
+                        @if (_answer.Refused)
+                        {
+                            <p class="ep-alert ep-alert-info" role="status">@RefusalLabel(_answer.RefusalReason)</p>
+                        }
+                        else
+                        {
+                            <p class="ep-answer-text">@_answer.Text</p>
+                            <p class="ep-hint">這段回答由 AI 只根據下列法條產生，請核對出處再引用。</p>
+
+                            @foreach (var source in _answer.Sources)
+                            {
+                                <article class="ep-card ep-hit" aria-label="@source.Citation">
+                                    <h2 class="ep-section-title">[@source.Code] @source.Citation</h2>
+                                    <p class="ep-hit-body">@source.Text</p>
+                                    <p class="ep-hint">引用：@source.Citation（@_asOfLabel）<code class="ep-mono">@source.Uri</code></p>
+                                </article>
+                            }
+                        }
                     }
                     else if (_hits is not null)
                     {
@@ -95,6 +117,10 @@
             else
             {
                 <text>查詢文字不會被記錄，只記一次搜尋的次數。</text>
+            }
+            @if (Answerer.Available)
+            {
+                <text> 回答由 AI 產生：你的問題與相關條文會送到模型服務。</text>
             }</p>
         </EditForm>
     }
