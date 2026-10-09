@@ -54,6 +54,11 @@ public static class TokenCss
             css.Append(CultureInfo.InvariantCulture, $"--ep-space-{key}:{value};");
         }
 
+        foreach (var (key, value) in DesignTokens.Measure)
+        {
+            css.Append(CultureInfo.InvariantCulture, $"--ep-measure-{key}:{value};");
+        }
+
         foreach (var (key, value) in DesignTokens.Radius)
         {
             css.Append(CultureInfo.InvariantCulture, $"--ep-radius-{key}:{value};");
