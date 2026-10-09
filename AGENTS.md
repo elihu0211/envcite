@@ -14,7 +14,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `proto/` | gRPC 契約，**唯一真值** | protobuf · buf |
 | `services/platform/` | 多租戶控制平面：tenants、API keys、配額、計量、對外 REST | C# · .NET 10 · ASP.NET Core · PostgreSQL |
 | `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
-| `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；本系統不執行生成模型） | Python 3.14 · uv · gRPC |
+| `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；consult 本身不執行生成模型。入口的回答由 platform 呼叫模型端點、只根據 consult 的證據，見 `services/platform/AGENTS.md`） | Python 3.14 · uv · gRPC |
 | `libs/python/` | 服務之外、可獨立測試的 Python 套件（含 `env-law-proto`：`proto/` 的 Python 產生碼） | uv workspace 成員，不發佈 |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。

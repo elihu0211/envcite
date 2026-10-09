@@ -1260,3 +1260,9 @@ a.ep-brand {
     overflow-wrap: anywhere;
     color: var(--ep-link);
 }
+
+/* 模型的回答：保留換行，代號（[L1]）原樣顯示，對應下面的條文卡片。 */
+.ep-answer-text {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
