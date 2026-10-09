@@ -28,6 +28,7 @@ public partial class Ask
     [SupplyParameterFromForm] private SearchForm Input { get; set; } = default!;
 
     private bool _hasPlan;
+    private bool _aiAnswer;
     private bool _asked;
     private string _question = string.Empty;
     private string? _error;
@@ -48,9 +49,17 @@ public partial class Ask
     /// 完全付費制：沒有方案不能用資料功能。這裡再擋一次（不只是不顯示表單），因為表單可以被直接 POST。
     /// 租戶取自請求路徑解析出的租戶（授權已確認 cookie 的租戶就是它），不取自使用者輸入。
     /// </summary>
-    private async Task<bool> HasPlanAsync() =>
-        Account.CurrentTenant is { } tenant
-        && (await Directory.FindAsync(tenant.Id, HttpContext.RequestAborted))?.Plan is not null;
+    private async Task<bool> HasPlanAsync()
+    {
+        if (Account.CurrentTenant is not { } tenant || await Directory.FindAsync(tenant.Id, HttpContext.RequestAborted) is not { } summary)
+        {
+            return false;
+        }
+
+        // AI 回答要兩個條件：部署者設定了模型端點，而且這個租戶同意（問題會送到外部的模型服務）。
+        _aiAnswer = summary.Plan is not null && summary.AiAnswer && Answerer.Available;
+        return summary.Plan is not null;
+    }
 
     private async Task SearchAsync()
     {
@@ -74,7 +83,7 @@ public partial class Ask
         Input.Example = string.Empty;
 
         // 有設定模型端點就回答（只根據封閉證據、附出處，不然拒答）；沒有就只列條文。
-        var answerText = Answerer.Available ? await AnswerAsync(query, asOf) : await ListAsync(query, asOf);
+        var answerText = _aiAnswer ? await AnswerAsync(query, asOf) : await ListAsync(query, asOf);
         if (answerText is not null)
         {
             _conversationId = await History.AppendTurnAsync(

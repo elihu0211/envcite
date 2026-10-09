@@ -78,6 +78,39 @@ internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog
         return AdminOutcome.Ok(new PlanChange(tenant.Id!, previous, catalog.NameFor(identifier)));
     }
 
+    public async Task<AdminOutcome<bool>> SetAiAnswerAsync(
+        ClaimsPrincipal actor, string tenantId, bool enabled, CancellationToken cancellationToken)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
+        if (await store.GetAsync(tenantId) is not { Identifier: { } identifier } tenant)
+        {
+            return AdminOutcome.NotFound<bool>("Tenant not found.");
+        }
+
+        var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+        var existing = await db.Set<TenantEntitlement>().SingleOrDefaultAsync(e => e.TenantId == tenant.Id, cancellationToken);
+        if (existing is null)
+        {
+            return AdminOutcome.Invalid<bool>("The tenant has no plan assigned in the database; assign one first (consent follows the plan).");
+        }
+
+        if (existing.AiAnswerEnabled != enabled)
+        {
+            existing.AiAnswerEnabled = enabled;
+            existing.UpdatedAt = time.GetUtcNow();
+            db.StageAudit(
+                actor,
+                new AuditEntry(
+                    enabled ? AuditActions.TenantAiAnswerEnabled : AuditActions.TenantAiAnswerDisabled,
+                    tenant.Id, "tenant", tenant.Id, new Dictionary<string, object?> { ["identifier"] = identifier }),
+                time);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return AdminOutcome.Ok(enabled);
+    }
+
     private static AuditEntry Audit(string action, TenantInfo tenant, string? previous, string? current) =>
         new(action, tenant.Id, "tenant", tenant.Id,
             new Dictionary<string, object?> { ["identifier"] = tenant.Identifier, ["previous"] = previous, ["plan"] = current });

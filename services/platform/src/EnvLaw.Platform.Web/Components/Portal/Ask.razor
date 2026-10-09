@@ -118,7 +118,7 @@
             {
                 <text>查詢文字不會被記錄，只記一次搜尋的次數。</text>
             }
-            @if (Answerer.Available)
+            @if (_aiAnswer)
             {
                 <text> 回答由 AI 產生：你的問題與相關條文會送到模型服務。</text>
             }</p>

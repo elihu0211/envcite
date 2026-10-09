@@ -10,6 +10,8 @@ namespace EnvLaw.Platform.Modules.ApiAccess;
 
 public sealed record SetPlanRequest(string? Plan);
 
+public sealed record SetAiAnswerRequest(bool Enabled);
+
 /// <summary>
 /// <c>/admin</c> 之下，營運者管理 API key 與方案的端點。營運後台用的是同一組服務
 /// （<see cref="IApiKeyAdmin"/>、<see cref="IPlanAdmin"/>），所以兩邊的行為與稽核一致。
@@ -52,6 +54,18 @@ public static class ApiAccessAdminEndpoints
 
             var change = await plans.SetAsync(user, tenantId, request.Plan, ct);
             return change.IsOk ? Results.Ok(change.Value) : Problem(change);
+        });
+
+        admin.MapPut("/tenants/{tenantId}/ai-answer", async (
+            string tenantId, SetAiAnswerRequest request, IPlanAdmin plans, ClaimsPrincipal user, CancellationToken ct) =>
+        {
+            var result = await plans.SetAiAnswerAsync(user, tenantId, request.Enabled, ct);
+            return result.Status switch
+            {
+                AdminStatus.Ok => Results.Ok(new { enabled = result.Value }),
+                AdminStatus.NotFound => Results.NotFound(),
+                _ => Results.Problem(result.Message, statusCode: StatusCodes.Status400BadRequest),
+            };
         });
 
         admin.MapDelete("/tenants/{tenantId}/plan", async (

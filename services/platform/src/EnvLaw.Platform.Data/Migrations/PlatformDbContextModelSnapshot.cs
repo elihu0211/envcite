@@ -289,6 +289,9 @@ namespace EnvLaw.Platform.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<bool>("AiAnswerEnabled")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Plan")
                         .IsRequired()
                         .HasMaxLength(50)

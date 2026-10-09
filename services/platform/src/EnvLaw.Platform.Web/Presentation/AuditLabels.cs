@@ -35,6 +35,8 @@ public static class AuditLabels
         AuditActions.MemberEnabled => "重新啟用成員",
         AuditActions.MemberRoleChanged => "變更成員角色",
         AuditActions.ConversationDeleted => "刪除對話",
+        AuditActions.TenantAiAnswerEnabled => "開啟租戶的 AI 回答",
+        AuditActions.TenantAiAnswerDisabled => "關閉租戶的 AI 回答",
         _ => action,
     };
 
@@ -43,7 +45,7 @@ public static class AuditLabels
     {
         AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned or AuditActions.MemberCreated => Color.Success,
         AuditActions.ApiKeyRevoked or AuditActions.TenantPlanRemoved or AuditActions.MemberPasswordReset
-            or AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled or AuditActions.MemberDisabled or AuditActions.MemberRoleChanged => Color.Warning,
+            or AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled or AuditActions.MemberDisabled or AuditActions.MemberRoleChanged or AuditActions.TenantAiAnswerEnabled => Color.Warning,
         AuditActions.OperatorSignInDenied or AuditActions.PortalSignInFailed => Color.Error,
         _ => Color.Default,
     };

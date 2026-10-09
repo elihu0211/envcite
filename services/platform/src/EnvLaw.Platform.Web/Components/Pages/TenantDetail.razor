@@ -67,6 +67,30 @@ else
             </p>
         </section>
 
+        <section class="ep-card" aria-labelledby="ai-heading">
+            <h2 id="ai-heading" class="ep-section-title">AI 回答</h2>
+            <p class="ep-page-description">
+                開啟後，這個租戶的成員在入口提的問題與相關條文會送到外部的模型服務產生回答。要租戶同意才開；同意跟著方案，方案被拿掉時一併清除。變更立即生效，並寫入稽核。
+            </p>
+            <div class="ep-inline-form">
+                <MudButton Variant="Variant.Filled" Color="@(_tenant.AiAnswer ? Color.Default : Color.Primary)" OnClick="ToggleAiAnswerAsync"
+                           Disabled="@(_busy || _tenant.Plan is null)">
+                    @(_tenant.AiAnswer ? "關閉 AI 回答" : "開啟 AI 回答")
+                </MudButton>
+            </div>
+            <p class="ep-status" role="status">
+                <span>目前：<strong>@(_tenant.AiAnswer ? "已開啟" : "未開啟")</strong></span>
+                @if (_tenant.Plan is null)
+                {
+                    <span>（沒有方案，先指派方案。）</span>
+                }
+                else if (!Answerer.Available)
+                {
+                    <span>（這個環境沒有設定模型端點，開啟也不會回答。）</span>
+                }
+            </p>
+        </section>
+
         <section class="ep-card ep-table-card" aria-labelledby="keys-heading">
             <div class="ep-toolbar">
                 <h2 id="keys-heading" class="ep-section-title">API keys</h2>
