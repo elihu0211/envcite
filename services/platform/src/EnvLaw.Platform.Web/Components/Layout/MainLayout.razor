@@ -1,7 +1,7 @@
 @inherits LayoutComponentBase
 
-@* 營運者後台的外殼：頂欄（半透明、內容從底下捲過）、頂欄下方的分頁列、主要內容。沒有側欄：只有三個頁面，分頁列就夠，
-   手機上也不必再開抽屜。導覽只列已經存在的頁面；新頁面做好時再加一行，不放會 404 的連結。 *@
+@* 營運者後台的外殼：頂欄只留品牌與帳號（選單從帳號鈕長出，點外面或 Esc 收回），下方是分頁列。沒有側欄。
+   導覽只列已經存在的頁面。 *@
 <PlatformProviders />
 
 <a class="ep-skip-link" href="#main">跳到主要內容</a>
@@ -12,13 +12,20 @@
         <MudSpacer />
         <AuthorizeView>
             <Authorized>
-                <MudText Typo="Typo.body2" Class="mr-3 ep-user">@context.User.FindFirst(ClaimTypes.Email)?.Value</MudText>
-                <MudButton Href="@UiEndpoints.PasswordPath" Color="Color.Inherit">改密碼</MudButton>
-                <MudButton Href="@UiEndpoints.SecurityPath" Color="Color.Inherit">兩步驟驗證</MudButton>
-                <form method="post" action="/ui/logout">
-                    <AntiforgeryToken />
-                    <MudButton ButtonType="ButtonType.Submit" Color="Color.Inherit">登出</MudButton>
-                </form>
+                <button type="button" class="ep-avatar" popovertarget="ep-ui-account-menu" aria-label="帳號選單">@Avatar(context.User)</button>
+                <div id="ep-ui-account-menu" class="ep-menu" popover>
+                    <p class="ep-menu-who">
+                        <span>@context.User.FindFirst(ClaimTypes.Email)?.Value</span>
+                    </p>
+                    <nav aria-label="帳號選單">
+                        <a class="ep-menu-item" href="@UiEndpoints.PasswordPath">改密碼</a>
+                        <a class="ep-menu-item" href="@UiEndpoints.SecurityPath">兩步驟驗證</a>
+                    </nav>
+                    <form method="post" action="/ui/logout">
+                        <AntiforgeryToken />
+                        <button type="submit" class="ep-menu-item">登出</button>
+                    </form>
+                </div>
             </Authorized>
         </AuthorizeView>
     </MudAppBar>
@@ -27,6 +34,7 @@
         <nav class="ep-tabs" aria-label="主要導覽">
             <NavLink class="ep-tab" href="/ui" Match="NavLinkMatch.All">總覽</NavLink>
             <NavLink class="ep-tab" href="/ui/tenants">租戶</NavLink>
+            <NavLink class="ep-tab" href="/ui/operators">營運者</NavLink>
             <NavLink class="ep-tab" href="/ui/audit">稽核紀錄</NavLink>
         </nav>
         <MudContainer MaxWidth="MaxWidth.Large" Class="my-6">
@@ -34,3 +42,11 @@
         </MudContainer>
     </MudMainContent>
 </MudLayout>
+
+@code {
+    private static string Avatar(ClaimsPrincipal user)
+    {
+        var email = user.FindFirst(ClaimTypes.Email)?.Value;
+        return string.IsNullOrEmpty(email) ? "?" : email[..1].ToUpperInvariant();
+    }
+}

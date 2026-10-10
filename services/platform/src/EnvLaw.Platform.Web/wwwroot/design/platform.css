@@ -1168,7 +1168,7 @@ a.ep-brand {
     padding-inline: var(--ep-space-3);
     border-block-end: 2px solid transparent;
     color: var(--ep-text-secondary);
-    transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+    transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-slow) var(--ep-motion-ease-move);
 }
 
 .ep-tab.active {

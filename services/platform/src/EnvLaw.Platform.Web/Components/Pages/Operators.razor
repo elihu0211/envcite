@@ -1,0 +1,289 @@
+@page "/ui/operators"
+@using EnvLaw.Platform.Web.Components.Dialogs
+@inject IOperatorAdmin Admin
+@inject IDialogService Dialogs
+@inject AuthenticationStateProvider Auth
+
+<PageTitle>營運者 · env-law platform</PageTitle>
+
+<PageHeader Title="營運者" Description="誰能進這個後台。狀態寫在文字上。不能停用或重設自己。">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">新增營運者</MudButton>
+    </Actions>
+</PageHeader>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">
+        載入營運者失敗。
+        <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="LoadAsync">重試</MudButton>
+    </MudAlert>
+}
+else if (_operators is null)
+{
+    <MudProgressLinear Indeterminate="true" aria-label="載入營運者中" />
+}
+else
+{
+    @if (_notice is not null)
+    {
+        <MudAlert Severity="@_noticeSeverity" Class="mb-4" role="status">@_notice</MudAlert>
+    }
+
+    <section class="ep-card ep-table-card" aria-label="營運者清單">
+        <div class="ep-toolbar" role="search">
+            <MudTextField @bind-Value="_search" Immediate="true" Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense"
+                          Placeholder="搜尋電子郵件" aria-label="搜尋營運者"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+        </div>
+
+        <MudTable Items="_operators" Filter="Matches" Hover="true" Elevation="0" Breakpoint="Breakpoint.None" Class="ep-table ep-cards">
+            <HeaderContent>
+                <MudTh>電子郵件</MudTh>
+                <MudTh>狀態</MudTh>
+                <MudTh>操作</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="電子郵件">@context.Email</MudTd>
+                <MudTd DataLabel="狀態"><StatusBadge Tone="@Tone(context)">@Label(context)</StatusBadge></MudTd>
+                <MudTd DataLabel="操作">
+                    @if (IsSelf(context))
+                    {
+                        <span class="ep-secondary">你</span>
+                    }
+                    else if (context.Disabled)
+                    {
+                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => EnableAsync(context)">啟用</MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResetPasswordAsync(context)">重設密碼</MudButton>
+                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResetTwoFactorAsync(context)">重設驗證器</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Error" Disabled="_busy" OnClick="() => DisableAsync(context)">停用</MudButton>
+                    }
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                @if (string.IsNullOrWhiteSpace(_search))
+                {
+                    <EmptyState Icon="@Icons.Material.Filled.Badge" Title="還沒有任何營運者"
+                                Description="建立第一個帳號，把一次性密碼交給對方。">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">新增營運者</MudButton>
+                    </EmptyState>
+                }
+                else
+                {
+                    <EmptyState Icon="@Icons.Material.Filled.SearchOff" Title="@($"沒有符合「{_search}」的營運者")"
+                                Description="試試其他關鍵字，或清除搜尋。">
+                        <MudButton Variant="Variant.Text" OnClick="() => _search = null">清除搜尋</MudButton>
+                    </EmptyState>
+                }
+            </NoRecordsContent>
+        </MudTable>
+    </section>
+}
+
+@code {
+    private static readonly DialogOptions Narrow = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+
+    private IReadOnlyList<OperatorInfo>? _operators;
+    private string? _selfId;
+    private string? _search;
+    private string? _error;
+    private string? _notice;
+    private Severity _noticeSeverity = Severity.Success;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await Auth.GetAuthenticationStateAsync()).User;
+        _selfId = user.FindFirst(PlatformClaimTypes.OperatorId)?.Value;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        _operators = null;
+        try
+        {
+            var listed = await Admin.ListAsync(CancellationToken.None);
+            if (!listed.IsOk)
+            {
+                _error = listed.Message ?? "載入失敗。";
+                _operators = [];
+                return;
+            }
+
+            _operators = listed.Value;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _error = exception.GetType().Name;
+            _operators = [];
+        }
+    }
+
+    private bool IsSelf(OperatorInfo op) => string.Equals(op.Id, _selfId, StringComparison.OrdinalIgnoreCase);
+
+    private bool Matches(OperatorInfo op) =>
+        string.IsNullOrWhiteSpace(_search) || op.Email.Contains(_search, StringComparison.OrdinalIgnoreCase);
+
+    private static string Label(OperatorInfo op) =>
+        op.Disabled ? "已停用"
+        : op.LockedOut ? "已鎖定"
+        : op.MustChangePassword ? "須改密碼"
+        : op.TwoFactorEnabled ? "使用中"
+        : "須綁定驗證器";
+
+    private static string Tone(OperatorInfo op) =>
+        op.Disabled || op.LockedOut ? "error"
+        : op.MustChangePassword || !op.TwoFactorEnabled ? "warning"
+        : "success";
+
+    private async Task<ClaimsPrincipal> ActorAsync() => (await Auth.GetAuthenticationStateAsync()).User;
+
+    private async Task CreateAsync()
+    {
+        var dialog = await Dialogs.ShowAsync<CreateOperatorDialog>("新增營運者", Narrow);
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: IssuedOperatorPassword issued })
+        {
+            await RevealAsync(issued);
+            await ReloadQuietlyAsync();
+        }
+    }
+
+    private async Task ResetPasswordAsync(OperatorInfo op)
+    {
+        var confirmed = await Dialogs.ShowMessageBoxAsync(
+            "重設密碼",
+            $"這會作廢 {op.Email} 現在的密碼，並讓他在所有裝置上登出。新的一次性密碼只顯示一次。確定？",
+            yesText: "重設密碼", cancelText: "取消");
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            var reset = await Admin.ResetPasswordAsync(await ActorAsync(), op.Id, CancellationToken.None);
+            if (!reset.IsOk)
+            {
+                Fail(reset.Message ?? "重設失敗。");
+                return;
+            }
+
+            await RevealAsync(reset.Value!);
+            await ReloadQuietlyAsync();
+        });
+    }
+
+    private async Task ResetTwoFactorAsync(OperatorInfo op)
+    {
+        var confirmed = await Dialogs.ShowMessageBoxAsync(
+            "重設驗證器",
+            $"這會關掉 {op.Email} 的兩步驟驗證、丟掉驗證器金鑰與復原碼，並讓他在所有裝置上登出。請先確認對方是本人。確定？",
+            yesText: "重設驗證器", cancelText: "取消");
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            var reset = await Admin.ResetTwoFactorAsync(await ActorAsync(), op.Id, CancellationToken.None);
+            if (!reset.IsOk)
+            {
+                Fail(reset.Message ?? "重設失敗。");
+                return;
+            }
+
+            await ReloadQuietlyAsync();
+            Succeed($"已重設 {op.Email} 的驗證器。");
+        });
+    }
+
+    private async Task DisableAsync(OperatorInfo op)
+    {
+        var confirmed = await Dialogs.ShowMessageBoxAsync(
+            "停用營運者",
+            $"{op.Email} 的下一個請求就進不去。已經開著的頁面最多還能用一分鐘。確定停用？",
+            yesText: "停用", cancelText: "取消");
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        await SetDisabledAsync(op, true);
+    }
+
+    private Task EnableAsync(OperatorInfo op) => SetDisabledAsync(op, false);
+
+    private async Task SetDisabledAsync(OperatorInfo op, bool disabled)
+    {
+        await RunAsync(async () =>
+        {
+            var changed = await Admin.SetDisabledAsync(await ActorAsync(), op.Id, disabled, CancellationToken.None);
+            if (!changed.IsOk)
+            {
+                Fail(changed.Message ?? "操作失敗。");
+                return;
+            }
+
+            await ReloadQuietlyAsync();
+            Succeed(disabled ? $"已停用 {op.Email}。" : $"已重新啟用 {op.Email}。");
+        });
+    }
+
+    private async Task RevealAsync(IssuedOperatorPassword issued)
+    {
+        var reveal = await Dialogs.ShowAsync<OperatorPasswordDialog>("一次性密碼", new DialogParameters<OperatorPasswordDialog>
+        {
+            { x => x.Operator, issued.Operator },
+            { x => x.Password, issued.Password },
+            { x => x.LoginPath, UiEndpoints.LoginPath },
+        }, Narrow);
+        await reveal.Result;
+    }
+
+    private async Task ReloadQuietlyAsync()
+    {
+        var listed = await Admin.ListAsync(CancellationToken.None);
+        if (listed.IsOk)
+        {
+            _operators = listed.Value;
+        }
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _notice = null;
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void Succeed(string message)
+    {
+        _noticeSeverity = Severity.Success;
+        _notice = message;
+    }
+
+    private void Fail(string message)
+    {
+        _noticeSeverity = Severity.Error;
+        _notice = message;
+    }
+}

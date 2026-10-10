@@ -1,0 +1,66 @@
+@* 建立營運者。沒有自助註冊：這裡是後台建立帳號的途徑，初始密碼在下一個對話框只顯示一次。 *@
+@inject IOperatorAdmin Operators
+@inject AuthenticationStateProvider Auth
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="_email" Label="電子郵件" Variant="Variant.Outlined" Required="true" Immediate="true"
+                      InputType="InputType.Email" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp" />
+        <MudTextField @bind-Value="_displayName" Label="顯示名稱" Variant="Variant.Outlined" Immediate="true"
+                      MaxLength="200" HelperText="可以不填。最長 200 字元。" OnKeyUp="OnKeyUp" />
+        @if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-3" role="alert">@_error</MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Cancel()">取消</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_busy">
+            @(_busy ? "建立中…" : "建立")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private string? _email;
+    private string? _displayName;
+    private string? _error;
+    private bool _busy;
+
+    private async Task OnKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !_busy)
+        {
+            await SubmitAsync();
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var actor = (await Auth.GetAuthenticationStateAsync()).User;
+            var created = await Operators.CreateAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None);
+            if (!created.IsOk)
+            {
+                _error = created.Message ?? "建立失敗。";
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(created.Value));
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}
