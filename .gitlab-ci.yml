@@ -1,7 +1,10 @@
 # CI for env-law（單一倉庫、多服務）。
 #
-# 免費層每月 400 分鐘，所以 job 用 `rules:changes` 依路徑分流：只改文件不會跑 dotnet
-# 與 python，只改一個服務不會跑另一個。proto 同時是兩個服務的上游，故列入兩者的
+# gate 以外的 job 標 `windows-docker-thin`，跑在 thuaisse-lab 的 group runner 上，
+# 不計入 GitLab.com 的 CI/CD 分鐘數。gate 不標 tag：它只讓「只改文件」的 MR 仍有一條
+# pipeline，繼續走 shared runner，不佔自建 runner 的槽。
+#
+# job 用 `rules:changes` 依路徑分流：只改一個服務不會跑另一個。proto 同時是兩個服務的上游，故列入兩者的
 # 觸發路徑——契約一改，兩邊都要重驗，這正是把它們放進同一個倉庫的理由。
 workflow:
   rules:
@@ -81,10 +84,12 @@ gate:
 
 dotnet:
   stage: check
+  tags: [windows-docker-thin]
   rules:
     - changes: *changes-platform
   image: mcr.microsoft.com/dotnet/sdk:10.0
-  # Testcontainers（PostgreSQL）走 Docker-in-Docker；gitlab.com 託管 Linux runner 為 privileged。
+  # Testcontainers（PostgreSQL）走 Docker-in-Docker。thin runner 的 privileged 必須開著，
+  # 否則 dind 服務起不來。
   services:
     - name: docker:29.8.1-dind
       alias: docker
@@ -94,7 +99,9 @@ dotnet:
     TESTCONTAINERS_HOST_OVERRIDE: docker
     NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
   cache:
+    # prefix：這台 runner 的 S3 cache 開了 Shared，同 key 會跨專案共用。
     - key:
+        prefix: "$CI_PROJECT_PATH"
         files: [services/platform/Directory.Packages.props]
       paths: [.nuget/packages]
   script:
@@ -118,9 +125,12 @@ dotnet:
 # 同時驗證鎖檔與所有成員一致），再於 `$MEMBER` 目錄執行該成員的檢查。
 .python:
   stage: check
+  tags: [windows-docker-thin]
   image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
   cache:
+    # prefix：這台 runner 的 S3 cache 開了 Shared，同 key 會跨專案共用。
     - key:
+        prefix: "$CI_PROJECT_PATH"
         files: [uv.lock]
       paths: [.uv-cache]
   before_script:
@@ -147,8 +157,7 @@ ontology:
     - changes: *changes-ontology
   # 測試需要真實的 PostgreSQL（本服務一半的讀取邏輯在 SQL 裡）。用 job service 直接
   # 附掛一個，而不是 Docker-in-Docker 再由 testcontainers 起——後者要多跑一個 dind
-  # 服務、多拉一次映像，在每月 400 分鐘的額度下是純損失。testcontainers 仍留在開發
-  # 相依裡，供本機沒有現成資料庫時使用。
+  # 服務、多拉一次映像。testcontainers 仍留在開發相依裡，供本機沒有現成資料庫時使用。
   #
   # 主版本與正式區相同；綱要只用 PostgreSQL 自帶的擴充（btree_gist）。
   services:
@@ -186,6 +195,7 @@ python-proto:
 # tag 讓「部署的是哪一版」無從回答。env-law-deploy 的 Image Updater 依這個 SHA 上線。
 .image:
   stage: build
+  tags: [windows-docker-thin]
   image: docker:29.8.1
   services:
     - name: docker:29.8.1-dind
@@ -261,6 +271,7 @@ segmenter:
 # 規格本身是否與程式碼一致，由 dotnet job 檢查。
 openapi:
   stage: check
+  tags: [windows-docker-thin]
   rules:
     - changes: *changes-platform
   image:
@@ -280,6 +291,7 @@ openapi:
 
 proto:
   stage: check
+  tags: [windows-docker-thin]
   rules:
     - changes: *changes-proto
   image:
