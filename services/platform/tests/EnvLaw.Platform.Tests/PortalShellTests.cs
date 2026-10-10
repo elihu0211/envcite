@@ -167,7 +167,10 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Contains("env(safe-area-inset-bottom)", css, StringComparison.Ordinal);
         Assert.DoesNotContain(".ep-nav", css, StringComparison.Ordinal); // 舊的側欄、分頁列樣式不留
         Assert.DoesNotContain("mud-drawer", css, StringComparison.Ordinal);
-        Assert.Matches(@"\.ep-menu-item\s*\{[^}]*min-block-size:\s*var\(--ep-touch-target\)", css);
+        // 觸控高度與輸入框共用一條規則，選單項可以是群組選擇器的第一個。
+        Assert.Matches(
+            @"\.ep-menu-item(?:\s*,[^{]*)?\s*\{[^}]*min-block-size:\s*var\(--ep-touch-target\)",
+            css);
         // 圖示有尺寸、顏色跟著文字：少了這條，SVG 的寬度是 0、送出鈕是一顆沒有箭頭的圓。
         Assert.Matches(@"\.ep-icon\s*\{[^}]*inline-size:[^}]*fill:\s*currentColor", css);
     }
