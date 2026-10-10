@@ -54,6 +54,7 @@ public sealed class OperatorPagesTests(PlatformFactory factory)
 
     [Theory]
     [InlineData("/ui/tenants")]
+    [InlineData("/ui/operators")]
     [InlineData("/ui/audit")]
     public async Task ThePagesNeedAnOperator(string path)
     {
@@ -158,13 +159,30 @@ public sealed class OperatorPagesTests(PlatformFactory factory)
     }
 
     [Fact]
-    public async Task TheNavigationLinksToBothPages()
+    public async Task TheNavigationLinksToTheOperatorPages()
     {
         using var client = SignedInClient();
 
         var html = await PageAsync(client, "/ui");
 
         Assert.Contains("href=\"/ui/tenants\"", html, StringComparison.Ordinal);
+        Assert.Contains("href=\"/ui/operators\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/ui/audit\"", html, StringComparison.Ordinal);
+        Assert.Contains("popovertarget=\"ep-ui-account-menu\"", html, StringComparison.Ordinal);
+        Assert.Contains("id=\"ep-ui-account-menu\"", html, StringComparison.Ordinal);
+        Assert.Contains("href=\"/ui/password\"", html, StringComparison.Ordinal);
+        Assert.Contains("href=\"/ui/security\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheOperatorListNamesStatusInWordsAndDoesNotManageTheSignedInOperator()
+    {
+        using var client = SignedInClient();
+
+        var html = await PageAsync(client, "/ui/operators");
+
+        Assert.Contains(PlatformFactory.OperatorEmail, html, StringComparison.Ordinal);
+        Assert.Contains("使用中", html, StringComparison.Ordinal);
+        Assert.Contains(">你<", html, StringComparison.Ordinal);
     }
 }

@@ -121,7 +121,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
 
         Assert.DoesNotContain("class=\"mud-drawer", page, StringComparison.Ordinal); // 主題的 CSS 變數裡有 mud-drawer-*，認元件本身
         var tabs = Regex.Match(page, "<nav class=\"ep-tabs\".*?</nav>", RegexOptions.Singleline).Value;
-        Assert.Equal(["/ui", "/ui/tenants", "/ui/audit"], LinkHref().Matches(tabs).Select(m => m.Groups[1].Value));
+        Assert.Equal(["/ui", "/ui/tenants", "/ui/operators", "/ui/audit"], LinkHref().Matches(tabs).Select(m => m.Groups[1].Value));
         Assert.Contains("href=\"/ui/tenants\" class=\"ep-tab active\"", tabs, StringComparison.Ordinal);
         Assert.Single(Regex.Matches(tabs, "ep-tab active"));
     }
