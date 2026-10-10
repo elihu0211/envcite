@@ -211,6 +211,17 @@ public static partial class DesignTokenTests
         var css = File.ReadAllText(StylesheetPath());
 
         Assert.DoesNotMatch(LiteralFontWeight(), css);
+        // 半透明材質與小標字級各只寫一次。圖示與色票的尺寸走既有間距階。
+        Assert.Equal(1, Regex.Count(css, @"(?<!-)backdrop-filter:\s*blur\("));
+        Assert.Equal(1, Regex.Count(css, @"(?<!-)backdrop-filter:\s*none"));
+        Assert.Equal(1, Regex.Count(css, "--ep-h3-leading"));
+        Assert.Contains("var(--ep-space-6)", css, StringComparison.Ordinal);
+        Assert.Contains("var(--ep-space-12)", css, StringComparison.Ordinal);
+        Assert.Equal(1, Regex.Count(css, @"scale\(var\(--ep-press-scale\)\)"));
+        Assert.Equal(1, Regex.Count(css, @"var\(--ep-primary\) 10%"));
+        Assert.Equal(1, Regex.Count(css, @"var\(--ep-primary\) 88%"));
+        Assert.Equal(1, Regex.Count(css, "--ep-caption-size"));
+        Assert.Equal(1, Regex.Count(css, @"outline: 2px solid var\(--ep-focus\)"));
         foreach (var (key, value) in DesignTokens.Measure)
         {
             Assert.Contains($"var(--ep-measure-{key})", css, StringComparison.Ordinal);

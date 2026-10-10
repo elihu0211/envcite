@@ -26,8 +26,10 @@ a:where(:not([class*="mud-"])) {
     color: var(--ep-link);
 }
 
-/* 鍵盤焦點一律可見，且不依賴顏色以外的線索（外框 + 偏移）。 */
-:focus-visible {
+/* 鍵盤焦點一律可見，且不依賴顏色以外的線索（外框 + 偏移）。
+   問答輸入框的環畫在容器上（子元件聚焦時），數值與這裡相同。 */
+:focus-visible,
+.ep-composer:focus-within {
     outline: 2px solid var(--ep-focus);
     outline-offset: 2px;
 }
@@ -51,8 +53,6 @@ a:where(:not([class*="mud-"])) {
 /* 頂欄是半透明的功能層，內容從底下捲過；材質的輕重表達層級，而不是一條不透明的色帶。 */
 .ep-appbar.mud-appbar {
     background: color-mix(in srgb, var(--ep-surface) 72%, transparent);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
     border-block-end: 1px solid var(--ep-border-subtle);
     color: var(--ep-text);
     box-shadow: none;
@@ -97,23 +97,33 @@ a:where(:not([class*="mud-"])) {
     letter-spacing: var(--ep-body-sm-tracking);
 }
 
-.ep-empty {
+/* 直向、間距三階：空狀態置中，回答靠左。 */
+.ep-empty,
+.ep-answer {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: var(--ep-space-3);
+}
+
+.ep-empty {
+    align-items: center;
     padding-block: var(--ep-space-12);
     text-align: center;
     color: var(--ep-text-secondary);
 }
 
-.ep-empty-title {
-    margin: 0;
-    color: var(--ep-text);
+.ep-empty-title,
+.ep-section-title,
+.ep-home-card h2 {
     font-size: var(--ep-h3-size);
     line-height: var(--ep-h3-leading);
     letter-spacing: var(--ep-h3-tracking);
     font-weight: var(--ep-h3-weight);
+}
+
+.ep-empty-title {
+    margin: 0;
+    color: var(--ep-text);
 }
 
 /* 匿名頁（已登出、無權限）：置中的單張卡片，不顯示導覽。 */
@@ -132,14 +142,35 @@ a:where(:not([class*="mud-"])) {
     margin-block-start: var(--ep-space-4);
 }
 
-/* 互動回饋在按下的當下（不是放開）：按下即縮（0 時長），放開依 fast 階回彈。縮放量是 token，減少動態時為 1。 */
-.mud-button-root {
+/* 互動回饋在按下的當下（不是放開）：按下即縮（0 時長），放開依 fast 階回彈。縮放量是 token，減少動態時為 1。
+   範例 chip 另外過渡邊框色，所以不進這條 transition。 */
+.mud-button-root,
+.ep-avatar,
+.ep-send,
+.ep-btn {
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
-.mud-button-root:active {
+.mud-button-root:active,
+.ep-avatar:active,
+.ep-send:active,
+.ep-chip:active,
+.ep-btn:active {
     transform: scale(var(--ep-press-scale));
     transition-duration: 0s;
+}
+
+@media (hover: hover) {
+    .ep-send:hover,
+    .ep-btn-primary:hover {
+        background: color-mix(in srgb, var(--ep-primary) 88%, var(--ep-text));
+    }
+}
+
+/* 主色的一成淡底：頭像與問句氣泡。文字不跟著變淡。 */
+.ep-avatar,
+.ep-bubble {
+    background: color-mix(in srgb, var(--ep-primary) 10%, var(--ep-surface));
 }
 
 /* 使用者要求減少動態：改成不位移的淡入淡出，不留彈跳或縮放。 */
@@ -149,24 +180,6 @@ a:where(:not([class*="mud-"])) {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
-    }
-}
-
-/* 使用者要求減少透明：實心表面，不模糊。 */
-@media (prefers-reduced-transparency: reduce) {
-    .ep-appbar.mud-appbar {
-        background: var(--ep-surface);
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-    }
-}
-
-/* 使用者要求較高對比：實心表面與明確的邊框。 */
-@media (prefers-contrast: more) {
-    .ep-appbar.mud-appbar {
-        background: var(--ep-surface);
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
     }
 }
 
@@ -188,11 +201,22 @@ a:where(:not([class*="mud-"])) {
 }
 
 /* 控制項（搜尋、篩選、密度）在表格正上方。 */
-.ep-toolbar {
+/* 橫列：置中對齊、間距三階。工具列與歷史列再共用內距；工具列多一條底線。 */
+.ep-toolbar,
+.ep-history-item,
+.ep-inline-form,
+.ep-shell-top {
     display: flex;
     align-items: center;
     gap: var(--ep-space-3);
+}
+
+.ep-toolbar,
+.ep-history-item {
     padding: var(--ep-space-3) var(--ep-space-4);
+}
+
+.ep-toolbar {
     border-block-end: 1px solid var(--ep-border-subtle);
 }
 
@@ -211,7 +235,8 @@ a:where(:not([class*="mud-"])) {
 }
 
 /* 欄標題小一級、次要色；數字與代碼用等寬字型。 */
-.ep-table th {
+.ep-table th,
+.ep-plain-table th {
     background: var(--ep-surface-muted);
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-sm-size);
@@ -224,11 +249,20 @@ a:where(:not([class*="mud-"])) {
     font-size: var(--ep-body-sm-size);
 }
 
-.ep-secondary {
-    display: block;
+.ep-secondary,
+.ep-bubble-meta,
+.ep-status,
+.ep-hint,
+.ep-note,
+.ep-ask-note {
     color: var(--ep-text-secondary);
     font-size: var(--ep-caption-size);
     letter-spacing: var(--ep-caption-tracking);
+}
+
+.ep-secondary,
+.ep-bubble-meta {
+    display: block;
 }
 
 .ep-keep {
@@ -245,9 +279,6 @@ a:where(:not([class*="mud-"])) {
 .ep-status {
     margin: 0;
     padding: var(--ep-space-2) var(--ep-space-4);
-    color: var(--ep-text-secondary);
-    font-size: var(--ep-caption-size);
-    letter-spacing: var(--ep-caption-tracking);
     min-block-size: calc(var(--ep-space-4) + var(--ep-space-4));
 }
 
@@ -264,7 +295,8 @@ a:where(:not([class*="mud-"])) {
     margin: 0;
 }
 
-.ep-detail dt {
+.ep-detail dt,
+.ep-portal-tenant {
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-sm-size);
 }
@@ -287,27 +319,23 @@ a:where(:not([class*="mud-"])) {
     border-block-start: 1px solid var(--ep-border-subtle);
 }
 
-/* 詳細頁：區塊垂直排列；區塊標題比頁標題小一級。 */
-.ep-stack {
+/* 直向堆疊，間距四階：詳細頁區塊、對話串、表單。 */
+.ep-stack,
+.ep-thread,
+.ep-form {
     display: flex;
     flex-direction: column;
     gap: var(--ep-space-4);
 }
 
+/* 區塊標題比頁標題小一級；字級在上方的 h3 群組。 */
 .ep-section-title {
     margin: 0;
-    font-size: var(--ep-h3-size);
-    line-height: var(--ep-h3-leading);
-    letter-spacing: var(--ep-h3-tracking);
-    font-weight: var(--ep-h3-weight);
 }
 
-/* 一列的小表單（欄位 + 按鈕）；窄螢幕自然換行。 */
+/* 一列的小表單（欄位 + 按鈕）；窄螢幕自然換行。對齊與間距跟橫列同一條。 */
 .ep-inline-form {
-    display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: var(--ep-space-3);
     margin-block-start: var(--ep-space-3);
 }
 
@@ -344,10 +372,6 @@ a:where(:not([class*="mud-"])) {
 
 .ep-home-card h2 {
     margin: 0 0 var(--ep-space-1);
-    font-size: var(--ep-h3-size);
-    line-height: var(--ep-h3-leading);
-    letter-spacing: var(--ep-h3-tracking);
-    font-weight: var(--ep-h3-weight);
 }
 
 .ep-home-card p {
@@ -516,28 +540,28 @@ a:where(:not([class*="mud-"])) {
     position: sticky;
     inset-block-start: 0;
     z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: var(--ep-space-3);
     min-block-size: var(--ep-appbar-height);
     box-sizing: border-box;
     padding-block: var(--ep-space-2);
     padding-block-start: max(var(--ep-space-2), env(safe-area-inset-top));
     padding-inline: max(var(--ep-space-4), env(safe-area-inset-left)) max(var(--ep-space-4), env(safe-area-inset-right));
     background: color-mix(in srgb, var(--ep-surface) 72%, transparent);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
     border-block-end: 1px solid var(--ep-border-subtle);
 }
 
-.ep-shell-main {
+/* 置中的直向欄：入口主內容與問答。寬度各走自己的 measure。 */
+.ep-shell-main,
+.ep-ask {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-inline-size: 0;
     inline-size: 100%;
-    max-inline-size: var(--ep-measure-page);
     margin-inline: auto;
+}
+
+.ep-shell-main {
+    min-inline-size: 0;
+    max-inline-size: var(--ep-measure-page);
     box-sizing: border-box;
     padding: var(--ep-space-6) max(var(--ep-space-4), env(safe-area-inset-left)) max(var(--ep-space-8), env(safe-area-inset-bottom)) max(var(--ep-space-4), env(safe-area-inset-right));
 }
@@ -555,30 +579,28 @@ a.ep-brand {
 /* 圖示：純裝飾的 SVG，顏色跟著文字（currentColor）。 */
 .ep-icon {
     flex: none;
-    inline-size: 1.5rem;
-    block-size: 1.5rem;
+    inline-size: var(--ep-space-6);
+    block-size: var(--ep-space-6);
     fill: currentColor;
 }
 
-/* 帳號選單：頭像圓鈕開一個原生 popover（點外面或按 Esc 就關）。 */
-.ep-avatar {
+/* 圓形、觸控尺寸的圖示鈕：頭像與送出。 */
+.ep-avatar,
+.ep-send {
     flex: none;
     inline-size: var(--ep-touch-target);
     block-size: var(--ep-touch-target);
     padding: 0;
-    border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-pill);
-    background: color-mix(in srgb, var(--ep-primary) 10%, var(--ep-surface));
+    cursor: pointer;
+}
+
+/* 帳號選單：頭像圓鈕開一個原生 popover（點外面或按 Esc 就關）。 */
+.ep-avatar {
+    border: 1px solid var(--ep-border-subtle);
     color: var(--ep-primary);
     font: inherit;
     font-weight: var(--ep-button-weight);
-    cursor: pointer;
-    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
-}
-
-.ep-avatar:active {
-    transform: scale(var(--ep-press-scale));
-    transition-duration: 0s;
 }
 
 .ep-menu {
@@ -605,9 +627,6 @@ a.ep-brand {
 }
 
 .ep-menu:popover-open {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ep-space-1);
     opacity: 1;
     translate: 0 0;
 }
@@ -638,18 +657,23 @@ a.ep-brand {
     margin: 0;
 }
 
+/* 滿寬、觸控高度的文字控制：選單項與輸入框。外框各走各的。 */
+.ep-menu-item,
+.ep-input {
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-block-size: var(--ep-touch-target);
+    padding: var(--ep-space-2) var(--ep-space-3);
+    border-radius: var(--ep-radius-control);
+    color: var(--ep-text);
+    font: inherit;
+}
+
 .ep-menu-item {
     display: flex;
     align-items: center;
-    inline-size: 100%;
-    box-sizing: border-box;
-    min-block-size: var(--ep-touch-target);
-    padding: var(--ep-space-2) var(--ep-space-3);
     border: 0;
-    border-radius: var(--ep-radius-control);
     background: transparent;
-    color: var(--ep-text);
-    font: inherit;
     justify-content: flex-start; /* <button> 預設置中，和連結對齊 */
     text-align: start;
     text-decoration: none;
@@ -674,12 +698,7 @@ a.ep-brand {
  */
 .ep-ask {
     --ep-ask-width: var(--ep-measure-ask);
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    inline-size: 100%;
     max-inline-size: var(--ep-ask-width);
-    margin-inline: auto;
 }
 
 .ep-ask[data-state="empty"] {
@@ -707,9 +726,6 @@ a.ep-brand {
 
 .ep-thread {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: var(--ep-space-4);
     padding-block-end: var(--ep-space-4);
 }
 
@@ -720,21 +736,7 @@ a.ep-brand {
     margin: 0;
     padding: var(--ep-space-3) var(--ep-space-4);
     border-radius: var(--ep-radius-sheet) var(--ep-radius-sheet) var(--ep-radius-control) var(--ep-radius-sheet);
-    background: color-mix(in srgb, var(--ep-primary) 10%, var(--ep-surface));
     overflow-wrap: anywhere;
-}
-
-.ep-bubble-meta {
-    display: block;
-    color: var(--ep-text-secondary);
-    font-size: var(--ep-caption-size);
-    letter-spacing: var(--ep-caption-tracking);
-}
-
-.ep-answer {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ep-space-3);
 }
 
 .ep-answer > .ep-alert,
@@ -754,24 +756,31 @@ a.ep-brand {
     inset-block-end: 0;
     padding-block: var(--ep-space-3) max(var(--ep-space-3), env(safe-area-inset-bottom));
     background: color-mix(in srgb, var(--ep-bg) 85%, transparent);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* 控制項外框的橫列：問答框是一張卡片，日期芯片是藥丸。 */
+.ep-composer,
+.ep-date-chip {
+    align-items: center;
+    gap: var(--ep-space-2);
+    border: 1px solid var(--ep-border-control);
 }
 
 .ep-composer {
     display: flex;
-    align-items: center;
-    gap: var(--ep-space-2);
     padding: var(--ep-space-2) var(--ep-space-2) var(--ep-space-2) var(--ep-space-4);
-    border: 1px solid var(--ep-border-control);
     border-radius: var(--ep-radius-sheet);
     background: var(--ep-surface);
     box-shadow: var(--ep-elevation-1);
 }
 
-.ep-composer:focus-within {
-    outline: 2px solid var(--ep-focus);
-    outline-offset: 2px;
+/* 外框裡的裸輸入：問答框與日期芯片。環畫在外框上，這裡不畫。 */
+.ep-composer-input,
+.ep-date-chip input {
+    border: 0;
+    background: transparent;
+    color: var(--ep-text);
+    font: inherit;
 }
 
 .ep-composer-input {
@@ -779,10 +788,6 @@ a.ep-brand {
     min-inline-size: 0;
     min-block-size: var(--ep-touch-target);
     padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--ep-text);
-    font: inherit;
 }
 
 .ep-composer-input:focus,
@@ -791,29 +796,11 @@ a.ep-brand {
 }
 
 .ep-send {
-    flex: none;
     display: grid;
     place-items: center;
-    inline-size: var(--ep-touch-target);
-    block-size: var(--ep-touch-target);
-    padding: 0;
     border: 0;
-    border-radius: var(--ep-radius-pill);
     background: var(--ep-primary);
     color: var(--ep-on-primary);
-    cursor: pointer;
-    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
-}
-
-.ep-send:active {
-    transform: scale(var(--ep-press-scale));
-    transition-duration: 0s;
-}
-
-@media (hover: hover) {
-    .ep-send:hover {
-        background: color-mix(in srgb, var(--ep-primary) 88%, var(--ep-text));
-    }
 }
 
 .ep-composer-options {
@@ -825,56 +812,45 @@ a.ep-brand {
 
 .ep-ask-note {
     margin: 0;
-    color: var(--ep-text-secondary);
-    font-size: var(--ep-caption-size);
     line-height: var(--ep-caption-leading);
-    letter-spacing: var(--ep-caption-tracking);
     text-align: center;
 }
 
 .ep-date-chip {
     display: inline-flex;
-    align-items: center;
-    gap: var(--ep-space-2);
     padding-inline: var(--ep-space-3);
-    min-block-size: var(--ep-touch-target);
-    border: 1px solid var(--ep-border-control);
-    border-radius: var(--ep-radius-pill);
-    background: var(--ep-surface);
-    font-size: var(--ep-body-sm-size);
 }
 
-.ep-date-chip input {
-    border: 0;
-    background: transparent;
-    color: var(--ep-text);
-    font: inherit;
+/* 可換行的動作列，間距二階：範例芯片置中，其餘靠左。 */
+.ep-examples,
+.ep-actions,
+.ep-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ep-space-2);
 }
 
 .ep-examples {
-    display: flex;
-    flex-wrap: wrap;
     justify-content: center;
-    gap: var(--ep-space-2);
     margin-block-start: var(--ep-space-2);
 }
 
 .ep-chip {
-    min-block-size: var(--ep-touch-target);
     padding-inline: var(--ep-space-4);
     border: 1px solid var(--ep-border-subtle);
-    border-radius: var(--ep-radius-pill);
-    background: var(--ep-surface);
     color: var(--ep-text);
     font: inherit;
-    font-size: var(--ep-body-sm-size);
     cursor: pointer;
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
-.ep-chip:active {
-    transform: scale(var(--ep-press-scale));
-    transition-duration: 0s;
+/* 字級寫在 font 簡寫之後，藥丸才不會被繼承字型蓋掉。 */
+.ep-date-chip,
+.ep-chip {
+    min-block-size: var(--ep-touch-target);
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-surface);
+    font-size: var(--ep-body-sm-size);
 }
 
 @media (hover: hover) {
@@ -894,11 +870,6 @@ a.ep-brand {
     }
 }
 
-.ep-portal-tenant {
-    color: var(--ep-text-secondary);
-    font-size: var(--ep-body-sm-size);
-}
-
 .ep-spacer {
     flex: 1;
 }
@@ -909,13 +880,13 @@ a.ep-brand {
 }
 
 .ep-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ep-space-4);
     margin-block-start: var(--ep-space-4);
 }
 
-.ep-field-row {
+/* 直向、間距一階：欄位、色票、打開的帳號選單。 */
+.ep-field-row,
+.ep-swatch,
+.ep-menu:popover-open {
     display: flex;
     flex-direction: column;
     gap: var(--ep-space-1);
@@ -927,52 +898,40 @@ a.ep-brand {
 }
 
 .ep-input {
-    box-sizing: border-box;
-    inline-size: 100%;
-    min-block-size: var(--ep-touch-target); /* 觸控目標至少 44px */
-    padding: var(--ep-space-2) var(--ep-space-3);
-    font: inherit;
-    color: var(--ep-text);
     background: var(--ep-surface);
     border: 1px solid var(--ep-border-control);
-    border-radius: var(--ep-radius-control);
 }
 
 .ep-input:focus-visible {
-    outline: 2px solid var(--ep-focus);
-    outline-offset: 1px;
+    outline-offset: 1px; /* 外框色與寬度用上面的 :focus-visible；輸入框貼著邊，偏移少 1px */
 }
 
 .ep-hint,
 .ep-note {
     margin: 0;
-    color: var(--ep-text-secondary);
-    font-size: var(--ep-caption-size);
-    letter-spacing: var(--ep-caption-tracking);
 }
 
 .ep-note {
     margin-block-start: var(--ep-space-4);
 }
 
-.ep-btn {
+/* 橫排、觸控高度的動作：按鈕與分頁。font 先繼承，字重寫在後面才不會被簡寫蓋掉。 */
+.ep-btn,
+.ep-tab {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
     min-block-size: var(--ep-touch-target);
-    padding: var(--ep-space-2) var(--ep-space-6);
     font: inherit;
     font-weight: var(--ep-button-weight);
     text-decoration: none;
+}
+
+.ep-btn {
+    justify-content: center;
+    padding: var(--ep-space-2) var(--ep-space-6);
     cursor: pointer;
     border: 1px solid transparent;
     border-radius: var(--ep-radius-control);
-    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
-}
-
-.ep-btn:active {
-    transform: scale(var(--ep-press-scale));
-    transition-duration: 0s;
 }
 
 .ep-btn-primary {
@@ -980,11 +939,6 @@ a.ep-brand {
     color: var(--ep-on-primary);
 }
 
-@media (hover: hover) {
-    .ep-btn-primary:hover {
-        background: color-mix(in srgb, var(--ep-primary) 88%, var(--ep-text));
-    }
-}
 
 .ep-btn-quiet {
     background: transparent;
@@ -1064,14 +1018,6 @@ a.ep-brand {
     border-block-end: 1px solid var(--ep-border-subtle);
 }
 
-.ep-plain-table th {
-    background: var(--ep-surface-muted);
-    color: var(--ep-text-secondary);
-    font-size: var(--ep-body-sm-size);
-    font-weight: var(--ep-button-weight);
-    white-space: nowrap;
-}
-
 .ep-table-wrap {
     overflow-x: auto;
 }
@@ -1082,15 +1028,28 @@ a.ep-brand {
     }
 }
 
-@media (prefers-reduced-transparency: reduce) {
-    .ep-ask[data-state="result"] .ep-composer-form {
-        background: var(--ep-bg);
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-    }
+/* 半透明功能層的材質只寫一次：營運頂欄、入口頂欄、問答輸入框黏底。各層自己決定底色怎麼混。 */
+.ep-appbar.mud-appbar,
+.ep-shell-top,
+.ep-ask[data-state="result"] .ep-composer-form {
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+}
 
+/* 減少透明或要求較高對比：實心表面，不模糊。覆蓋必須寫在上面那條材質之後，否則後來的模糊會蓋掉它。 */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    .ep-appbar.mud-appbar,
     .ep-shell-top {
         background: var(--ep-surface);
+    }
+
+    .ep-ask[data-state="result"] .ep-composer-form {
+        background: var(--ep-bg);
+    }
+
+    .ep-appbar.mud-appbar,
+    .ep-shell-top,
+    .ep-ask[data-state="result"] .ep-composer-form {
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
     }
@@ -1101,12 +1060,6 @@ a.ep-brand {
     margin: var(--ep-space-2) 0 var(--ep-space-3);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-}
-
-.ep-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--ep-space-2);
 }
 
 /* 兩步驟驗證：QR 在白底黑碼（驗證器 App 掃得到；產品只有淺色，不必處理反白），復原碼用等寬字、兩欄。 */
@@ -1125,13 +1078,18 @@ a.ep-brand {
     block-size: auto;
 }
 
-.ep-codes {
+/* 清單改成格子：復原碼與對話紀錄。間距各自不同。 */
+.ep-codes,
+.ep-history {
     display: grid;
+    padding: 0;
+    list-style: none;
+}
+
+.ep-codes {
     grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
     gap: var(--ep-space-2);
     margin: var(--ep-space-3) 0;
-    padding: 0;
-    list-style: none;
 }
 
 .ep-steps {
@@ -1152,10 +1110,7 @@ a.ep-brand {
 }
 
 .ep-row-actions {
-    display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: var(--ep-space-2);
 }
 
 .ep-input-inline {
@@ -1185,14 +1140,11 @@ a.ep-brand {
 }
 
 .ep-swatch {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ep-space-1);
     min-inline-size: 0;
 }
 
 .ep-swatch-chip {
-    block-size: 3rem;
+    block-size: var(--ep-space-12);
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-control);
 }
@@ -1213,14 +1165,9 @@ a.ep-brand {
 
 .ep-tab {
     flex: none;
-    display: inline-flex;
-    align-items: center;
-    min-block-size: var(--ep-touch-target);
     padding-inline: var(--ep-space-3);
     border-block-end: 2px solid transparent;
     color: var(--ep-text-secondary);
-    font-weight: var(--ep-button-weight);
-    text-decoration: none;
     transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
@@ -1237,18 +1184,8 @@ a.ep-brand {
 
 /* 對話紀錄：一串對話一張卡，標題與時間是連結，刪除在右邊。 */
 .ep-history {
-    list-style: none;
     margin: 0;
-    padding: 0;
-    display: grid;
     gap: var(--ep-space-3);
-}
-
-.ep-history-item {
-    display: flex;
-    align-items: center;
-    gap: var(--ep-space-3);
-    padding: var(--ep-space-3) var(--ep-space-4);
 }
 
 .ep-history-link {
