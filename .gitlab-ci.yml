@@ -34,6 +34,7 @@ default:
   timeout: 30m
 
 stages:
+  - prepare
   - check
   - build
 
@@ -63,6 +64,22 @@ variables:
   UV_LINK_MODE: copy
   # 絕對路徑：job 會 cd 進成員目錄，快取仍須在專案根之下。
   UV_CACHE_DIR: $CI_PROJECT_DIR/.uv-cache
+
+# 依賴只在 prepare 階段由 deps-* 下載一次並寫入快取；其餘 job 一律 `policy: pull`，且在
+# 離線模式下執行（見各 job），任何獨立下載都會立刻失敗，而不是各自連外網、卡在網路上。
+# NuGet 的 key 綁套件清單的雜湊：清單沒變，所有分支與 main 共用同一份，不必各自冷啟動（冷啟動的
+# dotnet restore 要近 10 分鐘，超過 deps-dotnet 的 timeout 就永遠存不下快取）。key 帶專案路徑：
+# 這台 runner 的 S3 cache 開了 Shared，同 key 會跨專案共用。
+.cache-nuget: &cache-nuget
+  key:
+    prefix: "$CI_PROJECT_PATH"
+    files: [services/platform/Directory.Packages.props]
+  paths: [.nuget/packages]
+
+.cache-uv: &cache-uv
+  key: "$CI_PROJECT_PATH-uv-$CI_COMMIT_REF_SLUG"
+  fallback_keys: ["$CI_PROJECT_PATH-uv-$CI_DEFAULT_BRANCH"]
+  paths: [.uv-cache]
 
 .changes-platform: &changes-platform
   - services/platform/**/*
@@ -94,6 +111,16 @@ variables:
 
 .changes-python-proto: &changes-python-proto
   - libs/python/env-law-proto/**/*
+  - proto/**/*
+  - pyproject.toml
+  - uv.lock
+  - .gitlab-ci.yml
+
+# 所有 Python job 的觸發路徑聯集：deps-python 在其中任何一個 job 要跑時就要跑。
+.changes-python: &changes-python
+  - services/ontology/**/*
+  - services/consult/**/*
+  - libs/python/**/*
   - proto/**/*
   - pyproject.toml
   - uv.lock
@@ -131,6 +158,24 @@ gate:
   script:
     - echo "path-specific jobs below decide what else runs"
 
+deps-dotnet:
+  stage: prepare
+  tags: [windows-docker-thin]
+  # 下載是唯一會碰外網的步驟，卡住時要早點失敗重試，不佔一小時。套件清單變動後的冷啟動
+  # restore 實測約 9 分鐘；逾時的 job 不會上傳快取（cache:when: always 也一樣），所以 timeout
+  # 必須讓冷啟動跑得完，否則快取永遠存不下來、每次重跑都從零開始。
+  timeout: 15m
+  rules:
+    - changes: *changes-platform
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  variables:
+    NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
+  cache:
+    - <<: *cache-nuget
+  script:
+    - cd services/platform
+    - dotnet restore
+
 dotnet:
   extends: [.runner, .dind]
   stage: check
@@ -140,15 +185,15 @@ dotnet:
   variables:
     TESTCONTAINERS_HOST_OVERRIDE: docker
     NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
+  needs: [deps-dotnet]
   cache:
-    # prefix：runner 的 S3 cache 為 Shared，避免同 key 跨專案共用。
-    - key:
-        prefix: "$CI_PROJECT_PATH"
-        files: [services/platform/Directory.Packages.props]
-      paths: [.nuget/packages]
+    - <<: *cache-nuget
+      policy: pull
   script:
     - cd services/platform
-    - dotnet restore
+    # 套件已由 deps-dotnet 備妥；來源指向空目錄，缺任何套件即失敗，不會連外網。
+    - mkdir -p "$CI_PROJECT_DIR/.nuget/no-source"
+    - dotnet restore --source "$CI_PROJECT_DIR/.nuget/no-source"
     - dotnet build --no-restore
     # openapi/ 由建置產生並提交；與程式碼不一致即失敗，重新建置後提交。
     - test -z "$(git status --porcelain -- openapi/)"
@@ -168,22 +213,36 @@ dotnet:
         coverage_format: cobertura
         path: artifacts/**/coverage.cobertura.xml
 
-# Python 成員共用：同步整個 workspace（`--locked` 驗證鎖檔），再於 `$MEMBER` 執行檢查。
+# Python 依賴：整個 workspace 只有一份 uv.lock，下載一次供所有 Python job 使用。
+deps-python:
+  stage: prepare
+  tags: [windows-docker-thin]
+  rules:
+    - changes: *changes-python
+  image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
+  cache:
+    - <<: *cache-uv
+  script:
+    - uv sync --locked --all-packages
+  after_script:
+    # 不用 `--ci`：它會刪掉下載的 wheel，而消費端是離線的，需要這些 wheel。
+    - uv cache prune
+
+# Python 成員共用。workspace 只有一份 uv.lock：每個 job 同步整個 workspace（`--locked`
+# 同時驗證鎖檔與所有成員一致），再於 `$MEMBER` 目錄執行該成員的檢查。
 .python:
   extends: .runner
   stage: check
   image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
+  needs: [deps-python]
+  variables:
+    UV_OFFLINE: "1"
   cache:
-    # prefix：runner 的 S3 cache 為 Shared，避免同 key 跨專案共用。
-    - key:
-        prefix: "$CI_PROJECT_PATH"
-        files: [uv.lock]
-      paths: [.uv-cache]
+    - <<: *cache-uv
+      policy: pull
   before_script:
     - uv sync --locked --all-packages
     - cd "$MEMBER"
-  after_script:
-    - uv cache prune --ci
 
 .python-checks:
   extends: .python
