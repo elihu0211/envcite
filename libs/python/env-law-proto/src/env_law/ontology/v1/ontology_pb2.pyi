@@ -28,18 +28,18 @@ class Law(_message.Message):
     LANGUAGE_FIELD_NUMBER: _builtins.int
     DATE_DOCUMENT_FIELD_NUMBER: _builtins.int
     id: _builtins.str
-    """Note: `title` describes the resolved version, not the abstract norm — ELI puts
-    the title on the expression, which is version-bearing.
+    """Note: `title` describes the resolved version, not the law itself: an amendment
+    can rename a law, so the title belongs to the promulgated version.
     Local id: the 全國法規資料庫 pcode, e.g. "O0020001" (one uppercase letter, seven digits).
     """
     iri: _builtins.str
-    """Canonical IRI of the ELI LegalResource."""
+    """Canonical IRI of the law."""
     title: _builtins.str
-    """Title from the LegalExpression realizing this law."""
+    """Title from the version of this law resolved for `as_of`."""
     language: _builtins.str
     """ISO 639-3 language code of the title, e.g. "zho" (the same code appears in IRIs)."""
     date_document: _builtins.str
-    """eli:date_document: the law's enactment date, ISO 8601 (YYYY-MM-DD); empty when
+    """The law's enactment date (制定日), ISO 8601 (YYYY-MM-DD); empty when
     the corpus records no enactment.
     """
     def __init__(
@@ -67,7 +67,7 @@ class Article(_message.Message):
     NUMBER_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     number: _builtins.str
-    """eli:number as written, e.g. "1", "5-1" (第5條之1)."""
+    """Article number as written, e.g. "1", "5-1" (第5條之1)."""
     def __init__(
         self,
         *,
@@ -234,7 +234,7 @@ class ArticleHit(_message.Message):
     law_title: _builtins.str
     """Title of the law's version in force on `as_of`."""
     number: _builtins.str
-    """eli:number as written, e.g. "5-1"."""
+    """Article number as written, e.g. "5-1"."""
     content: _builtins.str
     lexical_score: _builtins.float
     """Raw lexical relevance (ts_rank_cd). Hits are ordered by it, highest first."""

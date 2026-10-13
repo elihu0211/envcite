@@ -48,7 +48,7 @@ message Citation {
   // Short code the caller's model writes in square brackets, e.g. "[L1]". A code
   // outside this set is an invented citation: strip it or reject the answer.
   string code = 1;
-  // ELI IRI of the cited subdivision.
+  // IRI of the cited provision version.
   string iri = 2;
   // Human-readable label, e.g. "空氣污染防制法 第 20 條".
   string label = 3;

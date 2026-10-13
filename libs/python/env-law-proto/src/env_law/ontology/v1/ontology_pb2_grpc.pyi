@@ -27,7 +27,7 @@ GRPC_GENERATED_VERSION: str
 GRPC_VERSION: str
 
 class OntologyServiceStub:
-    """Read access to the environmental-law ontology (ELI-based RDF/OWL).
+    """Read access to the environmental-law ontology (relational, PostgreSQL).
     Internal service: callers must send `authorization: Bearer <internal token>`.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
@@ -37,9 +37,9 @@ class OntologyServiceStub:
     @_typing.overload
     def __new__(cls, channel: _aio.Channel) -> OntologyServiceAsyncStub: ...
     GetLaw: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.GetLawRequest, _ontology_pb2.GetLawResponse]
-    """Returns one law (ELI LegalResource) by its local id, or NOT_FOUND."""
+    """Returns one law by its local id, or NOT_FOUND."""
     ListArticles: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.ListArticlesRequest, _ontology_pb2.ListArticlesResponse]
-    """Lists the articles (ELI LegalResourceSubdivision) of a law in reading order, or NOT_FOUND."""
+    """Lists the articles of a law in reading order, or NOT_FOUND."""
     SearchArticles: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.SearchArticlesRequest, _ontology_pb2.SearchArticlesResponse]
     """Hybrid retrieval over the articles in force on `as_of`, best first. The query
     is raw text: the service segments it with the segmenter the index was built
@@ -48,16 +48,16 @@ class OntologyServiceStub:
 
 @_typing.type_check_only
 class OntologyServiceAsyncStub(OntologyServiceStub):
-    """Read access to the environmental-law ontology (ELI-based RDF/OWL).
+    """Read access to the environmental-law ontology (relational, PostgreSQL).
     Internal service: callers must send `authorization: Bearer <internal token>`.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
 
     def __init__(self, channel: _aio.Channel) -> None: ...
     GetLaw: _aio.UnaryUnaryMultiCallable[_ontology_pb2.GetLawRequest, _ontology_pb2.GetLawResponse]  # type: ignore[assignment]
-    """Returns one law (ELI LegalResource) by its local id, or NOT_FOUND."""
+    """Returns one law by its local id, or NOT_FOUND."""
     ListArticles: _aio.UnaryUnaryMultiCallable[_ontology_pb2.ListArticlesRequest, _ontology_pb2.ListArticlesResponse]  # type: ignore[assignment]
-    """Lists the articles (ELI LegalResourceSubdivision) of a law in reading order, or NOT_FOUND."""
+    """Lists the articles of a law in reading order, or NOT_FOUND."""
     SearchArticles: _aio.UnaryUnaryMultiCallable[_ontology_pb2.SearchArticlesRequest, _ontology_pb2.SearchArticlesResponse]  # type: ignore[assignment]
     """Hybrid retrieval over the articles in force on `as_of`, best first. The query
     is raw text: the service segments it with the segmenter the index was built
@@ -65,7 +65,7 @@ class OntologyServiceAsyncStub(OntologyServiceStub):
     """
 
 class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
-    """Read access to the environmental-law ontology (ELI-based RDF/OWL).
+    """Read access to the environmental-law ontology (relational, PostgreSQL).
     Internal service: callers must send `authorization: Bearer <internal token>`.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
@@ -76,7 +76,7 @@ class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
         request: _ontology_pb2.GetLawRequest,
         context: _ServicerContext,
     ) -> _typing.Union[_ontology_pb2.GetLawResponse, _abc.Awaitable[_ontology_pb2.GetLawResponse]]:
-        """Returns one law (ELI LegalResource) by its local id, or NOT_FOUND."""
+        """Returns one law by its local id, or NOT_FOUND."""
 
     @_abc_1.abstractmethod
     def ListArticles(
@@ -84,7 +84,7 @@ class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
         request: _ontology_pb2.ListArticlesRequest,
         context: _ServicerContext,
     ) -> _typing.Union[_ontology_pb2.ListArticlesResponse, _abc.Awaitable[_ontology_pb2.ListArticlesResponse]]:
-        """Lists the articles (ELI LegalResourceSubdivision) of a law in reading order, or NOT_FOUND."""
+        """Lists the articles of a law in reading order, or NOT_FOUND."""
 
     @_abc_1.abstractmethod
     def SearchArticles(

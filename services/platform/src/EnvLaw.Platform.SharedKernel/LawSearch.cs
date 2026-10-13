@@ -1,6 +1,6 @@
 namespace EnvLaw.Platform.SharedKernel;
 
-/// <param name="Uri">依 ELI 網址樣板，可反查到該條。</param>
+/// <param name="Uri">由法規的 pcode 與條號組成，可反查到該條。</param>
 /// <param name="LawId">所屬法規的 pcode。</param>
 /// <param name="LawTitle">查詢日有效版本的法規標題。</param>
 /// <param name="Number">條號，照來源寫法（如 <c>5-1</c>）。</param>

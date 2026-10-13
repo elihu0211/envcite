@@ -4,13 +4,13 @@ package env_law.ontology.v1;
 
 option csharp_namespace = "EnvLaw.Ontology.V1";
 
-// Read access to the environmental-law ontology (ELI-based RDF/OWL).
+// Read access to the environmental-law ontology (relational, PostgreSQL).
 // Internal service: callers must send `authorization: Bearer <internal token>`.
 // Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
 service OntologyService {
-  // Returns one law (ELI LegalResource) by its local id, or NOT_FOUND.
+  // Returns one law by its local id, or NOT_FOUND.
   rpc GetLaw(GetLawRequest) returns (GetLawResponse);
-  // Lists the articles (ELI LegalResourceSubdivision) of a law in reading order, or NOT_FOUND.
+  // Lists the articles of a law in reading order, or NOT_FOUND.
   rpc ListArticles(ListArticlesRequest) returns (ListArticlesResponse);
   // Hybrid retrieval over the articles in force on `as_of`, best first. The query
   // is raw text: the service segments it with the segmenter the index was built
@@ -19,24 +19,24 @@ service OntologyService {
 }
 
 message Law {
-  // Note: `title` describes the resolved version, not the abstract norm — ELI puts
-  // the title on the expression, which is version-bearing.
+  // Note: `title` describes the resolved version, not the law itself: an amendment
+  // can rename a law, so the title belongs to the promulgated version.
   // Local id: the 全國法規資料庫 pcode, e.g. "O0020001" (one uppercase letter, seven digits).
   string id = 1;
-  // Canonical IRI of the ELI LegalResource.
+  // Canonical IRI of the law.
   string iri = 2;
-  // Title from the LegalExpression realizing this law.
+  // Title from the version of this law resolved for `as_of`.
   string title = 3;
   // ISO 639-3 language code of the title, e.g. "zho" (the same code appears in IRIs).
   string language = 4;
-  // eli:date_document: the law's enactment date, ISO 8601 (YYYY-MM-DD); empty when
+  // The law's enactment date (制定日), ISO 8601 (YYYY-MM-DD); empty when
   // the corpus records no enactment.
   string date_document = 5;
 }
 
 message Article {
   string iri = 1;
-  // eli:number as written, e.g. "1", "5-1" (第5條之1).
+  // Article number as written, e.g. "1", "5-1" (第5條之1).
   string number = 2;
 }
 
@@ -80,7 +80,7 @@ message ArticleHit {
   string law_id = 2;
   // Title of the law's version in force on `as_of`.
   string law_title = 3;
-  // eli:number as written, e.g. "5-1".
+  // Article number as written, e.g. "5-1".
   string number = 4;
   string content = 5;
   // Raw lexical relevance (ts_rank_cd). Hits are ordered by it, highest first.

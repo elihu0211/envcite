@@ -26,7 +26,7 @@ if _version_not_supported:
 
 
 class OntologyServiceStub:
-    """Read access to the environmental-law ontology (ELI-based RDF/OWL).
+    """Read access to the environmental-law ontology (relational, PostgreSQL).
     Internal service: callers must send `authorization: Bearer <internal token>`.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
@@ -55,20 +55,20 @@ class OntologyServiceStub:
 
 
 class OntologyServiceServicer:
-    """Read access to the environmental-law ontology (ELI-based RDF/OWL).
+    """Read access to the environmental-law ontology (relational, PostgreSQL).
     Internal service: callers must send `authorization: Bearer <internal token>`.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
 
     def GetLaw(self, request, context):
-        """Returns one law (ELI LegalResource) by its local id, or NOT_FOUND.
+        """Returns one law by its local id, or NOT_FOUND.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ListArticles(self, request, context):
-        """Lists the articles (ELI LegalResourceSubdivision) of a law in reading order, or NOT_FOUND.
+        """Lists the articles of a law in reading order, or NOT_FOUND.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -110,7 +110,7 @@ def add_OntologyServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class OntologyService:
-    """Read access to the environmental-law ontology (ELI-based RDF/OWL).
+    """Read access to the environmental-law ontology (relational, PostgreSQL).
     Internal service: callers must send `authorization: Bearer <internal token>`.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """

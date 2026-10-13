@@ -32,7 +32,7 @@ class LawRecord:
     iri: str
     title: str
     language: str
-    #: 制定日（eli:date_document），ISO 8601；無制定事件時為空字串。
+    #: 制定日，ISO 8601；無制定事件時為空字串。
     date_document: str
 
 

@@ -1,7 +1,7 @@
 [project]
 name = "env-law-ontology"
 version = "0.1.0"
-description = "env-law ontology service (ELI over gRPC)"
+description = "env-law ontology service (gRPC)"
 readme = "README.md"
 authors = [
     { name = "Eli Hu", email = "elihu@go.thu.edu.tw" }

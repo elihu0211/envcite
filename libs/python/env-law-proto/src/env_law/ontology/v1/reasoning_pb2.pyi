@@ -407,7 +407,7 @@ class Statement(_message.Message):
     modality: Global___NormModality.ValueType
     """Set exactly when kind is PRESCRIPTIVE."""
     version_iri: _builtins.str
-    """ELI IRI of the provision version the statement was read from."""
+    """IRI of the provision version the statement was read from."""
     @_builtins.property
     def slots(self) -> _containers.RepeatedCompositeFieldContainer[Global___Slot]: ...
     @_builtins.property
@@ -971,7 +971,7 @@ class StatementSource(_message.Message):
     VERSION_IRI_FIELD_NUMBER: _builtins.int
     statement_id: _builtins.int
     version_iri: _builtins.str
-    """ELI IRI of the provision version the statement was read from."""
+    """IRI of the provision version the statement was read from."""
     def __init__(
         self,
         *,

@@ -73,7 +73,7 @@ public sealed class FakeConsultServer : IAsyncDisposable
                             new Citation
                             {
                                 Code = "L1",
-                                Iri = "https://env.law/eli/tw/law/O0020001/2018-08-01/zho/art_32",
+                                Iri = "https://env.law/tw/law/O0020001/2018-08-01/zho/art_32",
                                 Label = "空氣污染防制法 第 32 條",
                                 Text = "在指定清除地區內，不得從事燃燒行為。",
                             },
