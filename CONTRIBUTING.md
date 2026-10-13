@@ -1,38 +1,48 @@
 # 參與開發
 
+## 先決條件
+
+| 工具 | 版本 | 用途 |
+|------|------|------|
+| Git | — | |
+| [Worktrunk](https://worktrunk.dev)（`wt`） | — | 分支與本機環境 |
+| Docker | — | 測試（Testcontainers）、映像建置；可用來起開發用資料庫 |
+| PostgreSQL | 18 | 開發用資料庫 |
+| .NET SDK | 10.0（`services/platform/global.json`） | platform |
+| [uv](https://docs.astral.sh/uv/) | CI 用 0.12.18 | Python workspace；Python 版本見 `.python-version`，由 uv 自動安裝 |
+| Node.js | — | 以 `npx` 執行 buf |
+
 ## 快速入門
 
-先備妥[開發用資料庫](#開發用資料庫)。
+1. 備妥[開發用資料庫](#開發用資料庫)。
+2. 開分支：`wt switch --create feat/<簡述>`（建 worktree 並裝好依賴）。
+3. 各開一個終端機啟動服務：
 
-```bash
-wt switch --create feat/<簡述>    # 開分支：建 worktree 並裝好依賴
+   ```bash
+   wt ontology    # 先遷移，再啟動 gRPC 伺服器
+   wt consult
+   wt platform
+   ```
 
-wt ontology                       # 以下各開一個終端機；ontology 啟動前先遷移
-wt consult
-wt platform
-wt list                           # URL 欄＝本分支 platform 的位址
+4. 匯入法規資料（首次；ontology 的庫預設是空的）：
 
-wt remove feat/<簡述>             # 合併後收尾：刪 worktree 與分支
-```
+   ```bash
+   cd services/ontology
+   ONTOLOGY_DSN=postgresql://env_law:env_law@localhost:5432/env_law \
+   ACQUIRE_SNAPSHOT_DIR=/tmp/snapshots \
+   uv run env-law-sync moj
+   ```
+
+   完成後重啟 `wt ontology`（詞典只在啟動時讀取）。
+5. `wt list` 的 URL 欄是本分支 platform 的位址；登入見[第一組資料](#第一組資料platform)。
+
+合併後以 `wt remove feat/<簡述>` 刪除 worktree 與分支。
 
 ## 開發用資料庫
 
 需要 PostgreSQL 18，內含兩個資料庫：`env_law`（ontology）、`platform`（platform）。連線的帳號要能在 `env_law` 建立 `btree_gist` 擴充。
 
-連線由環境變數指定；未設定時 `wt` 別名與 `appsettings.Development.json` 用下表的預設值：
-
-| 服務 | 環境變數 | 預設值 |
-|------|----------|--------|
-| ontology | `ONTOLOGY_DSN` | `postgresql://env_law:env_law@localhost:5432/env_law` |
-| platform | `ConnectionStrings__Platform` | `Host=localhost;Port=5432;Database=platform;Username=env_law;Password=env_law` |
-
-各分支共用這兩個庫：同一時間只跑一條分支的服務，否則兩邊的遷移會互相覆寫。
-
-### 第一組資料（platform）
-
-`wt platform` 在空的庫第一次啟動時，會自己建租戶 `dev` 與擁有者 `owner@example.test`，另建營運後台的示範營運者 `operator@example.test`（沒有任何營運者時才建），並把**一次性密碼只印在那個終端機一次**（不進日誌；程式裡沒有預設密碼）。擁有者到 `http://localhost:<port>/portal/dev/login` 登入，營運者到 `http://localhost:<port>/ui/login`；兩者第一次都必須改密碼，營運者還必須用任何 TOTP 驗證器註冊兩步驟驗證（營運者沒有本機例外）。之後再啟動不會再印；忘了密碼就清掉 `platform` 庫重來，或用營運者 key 重設（營運者：`POST /admin/operators/{id}/password-reset`）。已經有成員的 `dev` 租戶、已經有營運者的庫都不會被動。只在 Development 有效（`Platform:SeedDevelopmentData`）。
-
-以 Docker 起一個拋棄式的庫，符合預設值：
+用 Docker 起一個拋棄式的庫（符合預設值）：
 
 ```bash
 docker run -d --name env-law-pg -p 127.0.0.1:5432:5432 \
@@ -40,24 +50,49 @@ docker run -d --name env-law-pg -p 127.0.0.1:5432:5432 \
 docker exec env-law-pg createdb -U env_law platform
 ```
 
-遷移檔改過（已套用的檔案內容改變）時，清掉 ontology 的綱要後重新遷移，再重新同步資料：
+連線由環境變數指定，未設定時 `wt` 別名與 `appsettings.Development.json` 用預設值：
+
+| 服務 | 環境變數 | 預設值 |
+|------|----------|--------|
+| ontology | `ONTOLOGY_DSN` | `postgresql://env_law:env_law@localhost:5432/env_law` |
+| platform | `ConnectionStrings__Platform` | `Host=localhost;Port=5432;Database=platform;Username=env_law;Password=env_law` |
+
+各分支共用這兩個庫：同一時間只跑一條分支的服務，否則兩邊的遷移會互相覆寫。測試不使用它們——Testcontainers 每次自起資料庫。
+
+ontology 遷移檔改過（已套用的檔案內容改變）時，清掉綱要後重新遷移並重新匯入資料：
 
 ```bash
 psql "${ONTOLOGY_DSN:-postgresql://env_law:env_law@localhost:5432/env_law}" \
   -c 'DROP SCHEMA corpus, source, retrieval CASCADE' -c 'DROP TABLE schema_migration'
 ```
 
-### 其他
+### 第一組資料（platform）
+
+`wt platform` 在空的庫第一次啟動時（僅 Development，`Platform:SeedDevelopmentData`）會建立：
+
+- 租戶 `dev` 與擁有者 `owner@example.test`；
+- 營運者 `operator@example.test`（庫內沒有任何營運者時才建）。
+
+一次性密碼**只印在該終端機一次**，不進日誌，程式裡沒有預設密碼。
+
+| 角色 | 登入位址 | 第一次登入 |
+|------|----------|-----------|
+| 擁有者 | `http://localhost:<port>/portal/dev/login` | 改密碼 |
+| 營運者 | `http://localhost:<port>/ui/login` | 改密碼，並以任何 TOTP 驗證器註冊兩步驟驗證（無本機例外） |
+
+之後再啟動不會再印。忘記密碼：清掉 `platform` 庫重來，或以營運者 key 重設（`POST /admin/operators/{id}/password-reset`）。已有成員的 `dev` 租戶、已有營運者的庫不會被改動。
+
+### 其他本機設定
 
 | 項目 | 值 |
 |------|----|
-| 服務之間的內部 token | `dev` |
-| platform 營運者 key（`X-Admin-Key`） | 未設定（`/admin` 停用）；要用就設環境變數 `Platform__AdminKeySha256`＝key 的 SHA-256 hex |
-| platform 營運後台（`/ui`） | Development 一律開；其他環境設 `Platform__Ui__Enabled=true`。帳號用營運者 key 建（`POST /admin/operators`），沒有自助註冊 |
+| 服務間內部 token | `dev` |
+| 營運者 key（`X-Admin-Key`） | 未設定時 `/admin` 停用；要用就設 `Platform__AdminKeySha256`＝key 的 SHA-256 hex |
+| 營運後台（`/ui`） | Development 一律開；其他環境設 `Platform__Ui__Enabled=true`。帳號以營運者 key 建（`POST /admin/operators`），無自助註冊 |
 
 ## 常用指令
 
-從**該服務目錄**執行；完整清單與環境變數見各服務的 `AGENTS.md`。Python 各服務與 `libs/python/` 是同一個 uv workspace：依賴在倉庫根一次裝好（`uv sync --all-packages`，`wt` 建樹時已執行）。
+從**該服務目錄**執行；完整清單與環境變數見各服務的 `AGENTS.md`。Python 服務與 `libs/python/` 是同一個 uv workspace，依賴在倉庫根一次裝好（`uv sync --all-packages`，`wt` 建樹時已執行）。
 
 | | `services/platform/` | `services/ontology/`、`services/consult/` |
 |---|---|---|
@@ -67,8 +102,6 @@ psql "${ONTOLOGY_DSN:-postgresql://env_law:env_law@localhost:5432/env_law}" \
 | 型別檢查 | `dotnet build`（警告視為錯誤） | `uv run python -m mypy src tests` |
 | 改 proto 後重新產生 | 建置時自動產生 | `libs/python/env-law-proto/scripts/generate.sh` |
 
-測試以 Testcontainers 自起資料庫，不用開發資料庫。
-
 契約，從倉庫根執行：
 
 ```bash
@@ -76,27 +109,11 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 lint
 DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=main'
 ```
 
-## 升級版本
-
-版本以手動升級。依賴集中在單一檔案；工具與映像的版本若出現在多處，表中各位置在同一次提交一起改。
-
-| 版本 | 位置 |
-|------|------|
-| Python 套件 | 倉庫根 `uv lock --upgrade`（或 `--upgrade-package <pkg>`）；升到 `grpcio-tools`、`mypy-protobuf`、`protobuf` 時重新產生 `libs/python/env-law-proto` |
-| .NET 套件 | `services/platform/Directory.Packages.props` |
-| .NET SDK 與映像 | `services/platform/global.json`、`services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `dotnet` job |
-| Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG PYTHON_VERSION` |
-| uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
-| PostgreSQL | `.gitlab-ci.yml` 的 `ontology` job、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs`、本檔的開發用資料庫；主版本與正式區相同 |
-| buf | `.gitlab-ci.yml` 的 `proto` job、本檔與 `AGENTS.md` 的指令 |
-| oasdiff | `.gitlab-ci.yml` 的 `openapi` job |
-| Docker（映像建置） | `.gitlab-ci.yml` 的 `.image` |
-
 ## 從開發到上線
 
 1. **開分支**：`wt switch --create <type>/<簡述>`，type 用 `feat`、`fix`、`docs`、`refactor`、`chore` 等。
 2. **Commit**：[Conventional Commits](https://www.conventionalcommits.org)，`type(scope): 說明`；破壞性變更加 `!`（如 `feat(consult)!: …`）。
-3. **開 MR 到 `main`**：`main` 受保護，不直接推送。**pipeline 成功才能合併**，以 squash 合併，合併後刪除來源分支。
+3. **開 MR 到 `main`**：`main` 受保護，不直接推送；本機的 `.githooks/pre-commit` 也擋下 main 上的 commit（`wt` 建樹時啟用，既有 clone 執行 `git config core.hooksPath .githooks`）。pipeline 成功才能合併，以 squash 合併，合併後刪除來源分支。
 4. **上線**：合併後 CI 把受影響服務的映像推送為 `:<commit-sha>`，之後自動部署。
 5. **收尾**：`wt remove <分支>`。
 
@@ -107,7 +124,7 @@ CI 依改動路徑分流：
 
 | 改動 | 跑什麼 |
 |------|--------|
-| 任何改動 | `gate`（讓只改文件的 MR 也有 pipeline 可以合併） |
+| 任何改動 | `gate`（讓只改文件的 MR 也有 pipeline 可合併） |
 | `services/platform/` | `dotnet`（含對外 REST 規格是否過期）、`openapi`（對外 REST 的破壞性變更）、`platform-image` |
 | `services/ontology/`、`libs/python/` | `ontology`、`ontology-image` |
 | `services/consult/`、`libs/python/` | `consult`、`consult-image` |
@@ -118,18 +135,18 @@ CI 依改動路徑分流：
 
 非 `main` 分支的映像 job 只驗證能建置，不推送。
 
-## 環境說明
+## 升級版本
 
-- **每條分支一棵 worktree**（`.config/wt.toml`）：port 由分支推導，平行的分支不相撞；資料庫各分支共用。
+版本手動升級。依賴集中在單一檔案；工具與映像的版本若出現在多處，表中各位置在同一次提交一起改。
 
-## 準備工具
-
-| 工具 | 版本 | 用途 |
-|------|------|------|
-| Git | — | |
-| PostgreSQL | 18 | 開發用資料庫（[連線](#開發用資料庫)） |
-| Docker | — | 測試（Testcontainers）、映像建置；也可用來起開發用資料庫 |
-| .NET SDK | 10.0（`services/platform/global.json`） | platform |
-| [uv](https://docs.astral.sh/uv/) | CI 用 0.12.18 | Python workspace；Python 版本見倉庫根 `.python-version`，由 uv 自動安裝 |
-| [Worktrunk](https://worktrunk.dev)（`wt`） | — | 分支與本機環境 |
-| Node.js | — | 以 `npx` 執行 buf |
+| 版本 | 位置 |
+|------|------|
+| Python 套件 | 倉庫根 `uv lock --upgrade`（或 `--upgrade-package <pkg>`）；升 `grpcio-tools`、`mypy-protobuf`、`protobuf` 時重新產生 `libs/python/env-law-proto` |
+| .NET 套件 | `services/platform/Directory.Packages.props` |
+| .NET SDK 與映像 | `services/platform/global.json`、`services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `dotnet` job |
+| Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG PYTHON_VERSION` |
+| uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
+| PostgreSQL | `.gitlab-ci.yml` 的 `ontology` job、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs`、本檔的先決條件與開發用資料庫；主版本與正式區相同 |
+| buf | `.gitlab-ci.yml` 的 `proto` job、本檔與 `AGENTS.md` 的指令 |
+| oasdiff | `.gitlab-ci.yml` 的 `openapi` job |
+| Docker（映像建置） | `.gitlab-ci.yml` 的 `.image` |

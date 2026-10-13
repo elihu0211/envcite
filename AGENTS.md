@@ -107,6 +107,7 @@ wt list        # URL 欄是本樹 platform 的位址
 ## Safety
 
 - 不提交機密或真實 `.env*` 值。
+- 不在 `main` 上改動或 commit：先開分支，走 MR（`.githooks/pre-commit` 擋下 main 上的 commit；`wt` 建樹時啟用，既有 clone 執行 `git config core.hooksPath .githooks`）。
 - 動手前先問：force-push、改寫歷史、正式環境部署、破壞性資料庫操作。
 - 產生物與各服務專屬的禁改路徑、資料來源標示，見各服務 `AGENTS.md` 的 Safety。
 
