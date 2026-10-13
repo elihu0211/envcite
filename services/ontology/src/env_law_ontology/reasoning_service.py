@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from datetime import date
 
 import grpc
 import psycopg.errors
+from opentelemetry.metrics import Meter
 
 from env_law.ontology.v1 import reasoning_pb2 as pb
 from env_law.ontology.v1 import reasoning_pb2_grpc
@@ -20,8 +22,16 @@ from env_law_ontology import annotation_read, errors
 from env_law_ontology import reasoning_codec as codec
 from env_law_ontology.reasoning import Result, evaluate_across
 from env_law_ontology.store import LANGUAGE, OntologyStore
+from env_law_ontology.telemetry import ReasoningMetrics
 
 log = logging.getLogger(__name__)
+
+#: 錯誤原因對指標的 outcome 標籤；不在表內的都記為 error。
+_OUTCOMES = {
+    errors.INVALID_REQUEST: "invalid",
+    errors.BUSY: "busy",
+    errors.EVALUATION_TIMEOUT: "deadline",
+}
 
 #: 同時進行的 `Evaluate` 數。
 EVALUATE_SLOTS = 2
@@ -38,8 +48,14 @@ def _budget(context: grpc.ServicerContext) -> float | None:
 
 
 class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
-    def __init__(self, store: OntologyStore, evaluate_slots: int = EVALUATE_SLOTS) -> None:
+    def __init__(
+        self,
+        store: OntologyStore,
+        evaluate_slots: int = EVALUATE_SLOTS,
+        meter: Meter | None = None,
+    ) -> None:
         self._store = store
+        self._metrics = ReasoningMetrics(meter)
         self._slots = threading.BoundedSemaphore(evaluate_slots)
 
     @errors.maps_errors
@@ -60,6 +76,21 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
     def Evaluate(
         self, request: pb.EvaluateRequest, context: grpc.ServicerContext
     ) -> pb.EvaluateResponse:
+        started = time.monotonic()
+        outcome = "error"
+        try:
+            response = self._evaluate_call(request, context)
+            outcome = "ok"
+            return response
+        except errors.ServiceError as error:
+            outcome = _OUTCOMES.get(error.reason, "error")
+            raise
+        finally:
+            self._metrics.duration.record(time.monotonic() - started, {"outcome": outcome})
+
+    def _evaluate_call(
+        self, request: pb.EvaluateRequest, context: grpc.ServicerContext
+    ) -> pb.EvaluateResponse:
         # 案件事實是客戶的案件內容：日誌只記數量。
         _log_call(context, "Evaluate", f"facts={len(request.facts)}")
         v = errors.Validator()
@@ -78,6 +109,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
             raise errors.ServiceError(
                 grpc.StatusCode.RESOURCE_EXHAUSTED, errors.BUSY, "evaluation capacity is in use"
             )
+        self._metrics.in_flight.add(1)
         try:
             if not context.is_active():  # 等名額的時候呼叫端已經走了
                 raise errors.ServiceError(
@@ -85,6 +117,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                 )
             return self._evaluate(context, conduct_on, decided_on, case)
         finally:
+            self._metrics.in_flight.add(-1)
             self._slots.release()
 
     def _evaluate(
