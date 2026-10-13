@@ -62,6 +62,10 @@ variables:
   # Renovate 版本），兩邊版本各自升級；驗證通過但執行端版本較舊時，以執行端的 log 為準。
   # renovate: datasource=docker depName=renovate/renovate
   RENOVATE_VERSION: "43.272.4"
+  # NuGet Audit 在每次 restore 向 api.nuget.org 查弱點資料：Nexus 的來源索引把這個資源指回上游，
+  # 不經快取，是還原步驟裡唯一一個繞過鏡像的獨立下載，逾時就讓整個 restore 失敗（NU1900，
+  # 在 TreatWarningsAsErrors 下是錯誤）。CI 一律關閉；弱點由 Renovate 的 osvVulnerabilityAlerts 監控。
+  NuGetAudit: "false"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
   COVERAGE_RCFILE: $CI_PROJECT_DIR/pyproject.toml
