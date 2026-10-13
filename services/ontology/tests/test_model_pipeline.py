@@ -71,8 +71,8 @@ def test_a_second_run_does_not_extract_the_same_unit_again(conn: Conn, tmp_path:
 
     again = run(conn, extractor, _by_role(), [LAW], agent_version="1")
 
-    assert again.skipped == 1
-    assert len(extractor.prompts) == calls + 1  # 只有沒抽出東西的 art_2 再試一次
+    assert again.skipped == 2  # 沒抽出東西的 art_2 也有抽取紀錄，不再問第二次
+    assert len(extractor.prompts) == calls
     assert _scalar(conn, "SELECT count(*) FROM annotation.statement") == 1
 
 
