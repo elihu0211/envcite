@@ -108,6 +108,19 @@
       "groupName": ".NET SDK and images"
     },
     {
+      "description": "global.json 的 sdk.version 是下限（搭配 rollForward: latestFeature），不是釘死的版本：升它不改變任何人實際用的 SDK，卻會讓 Renovate 自己的執行環境（鎖檔更新要在那裡跑 dotnet restore）因 SDK 版本不足而失敗。實際用的 SDK 由 CI／Dockerfile 的映像決定，那兩處照常更新",
+      "matchManagers": [
+        "nuget"
+      ],
+      "matchFileNames": [
+        "services/platform/global.json"
+      ],
+      "matchDepNames": [
+        "dotnet-sdk"
+      ],
+      "enabled": false
+    },
+    {
       "description": "PostgreSQL 主版本須與正式區相同，不自動升主版本",
       "matchDepNames": [
         "postgres"
