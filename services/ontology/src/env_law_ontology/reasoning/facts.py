@@ -1,4 +1,4 @@
-"""從資料庫產生推論程式的輸入事實（env-law-docs 02-05 §5.1、§5.3）。
+"""從資料庫產生推論程式的輸入事實（env-law-docs 02-06 §4）。
 
 時點錨定與授權解析在 SQL（`annotation.statement_versions_at`、`annotation.threshold_source_at`）；
 本模組只把結果寫成已解析的 ASP 事實，不重算。

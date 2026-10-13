@@ -1,4 +1,4 @@
-"""The description every verifier reads, and the round-trip gate (env-law-docs 02-05 §5.9)."""
+"""The description every verifier reads, and the round-trip gate (env-law-docs 02-06 §3.3)."""
 
 import json
 from pathlib import Path

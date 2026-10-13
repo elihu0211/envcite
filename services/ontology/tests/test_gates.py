@@ -1,5 +1,5 @@
 """The three deterministic gates, and reading numbers and citations out of the text (env-law-
-docs 02-05 §5.9)."""
+docs 02-06 §3.3)."""
 
 from pathlib import Path
 

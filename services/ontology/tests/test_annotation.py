@@ -1,4 +1,4 @@
-"""Annotation (env-law-docs 02-04, 02-05 §5): statements anchored to text, not to a version row."""
+"""Annotation (env-law-docs 02-04, 02-06 §3.2): statements anchored to text, not a version row."""
 
 from datetime import date
 from decimal import Decimal

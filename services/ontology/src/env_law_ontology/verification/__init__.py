@@ -1,4 +1,4 @@
-"""標註的自動驗證（env-law-docs 02-05 §5.9、01-09 §6）：閘門、驗證與接受流程、統計校準。"""
+"""標註的自動驗證（env-law-docs 02-06 §3.3、01-09 §6）：閘門、驗證與接受流程、統計校準。"""
 
 from env_law_ontology.verification.gates import (
     DEFAULT_GATES,

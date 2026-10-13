@@ -1,4 +1,4 @@
-"""標註文件的載入（env-law-docs 02-04 §6、02-05 §5）。
+"""標註文件的載入（env-law-docs 02-04 §6、02-06 §3.2）。
 
 抽取器（`verification/extract.py`）產生的 JSON 文件，寫進 `annotation` 與 `vocab`。只寫入與錨定，
 不接受：陳述是否成為推論事實，由 `verification` 的閘門與政策決定。

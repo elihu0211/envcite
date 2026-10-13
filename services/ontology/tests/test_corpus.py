@@ -183,7 +183,7 @@ def test_article_text_joins_paragraphs_in_reading_order(conn: Conn, sample: None
     assert second.startswith("前項放流水標準")
 
 
-def test_version_iri_follows_the_eli_template(conn: Conn, sample: None) -> None:
+def test_version_iri_follows_the_template(conn: Conn, sample: None) -> None:
     iri = conn.execute(
         SAMPLE_AT_2020.format("corpus.version_iri(s.version_id)"), ("art_7/para_2",)
     ).fetchone()
