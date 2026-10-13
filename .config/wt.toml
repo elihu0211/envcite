@@ -9,6 +9,7 @@
 # 依賴。各服務用原生工具，快取本來就全域共用（uv cache、NuGet），不複製 `.venv`／`obj/`：
 # 兩者寫死絕對路徑，搬到另一棵樹會指回原處。
 [pre-start]
+hooks = "git config core.hooksPath .githooks"
 python = "uv sync --all-packages"
 platform = "cd services/platform && dotnet restore && dotnet tool restore"
 
