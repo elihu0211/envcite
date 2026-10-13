@@ -153,7 +153,7 @@ def load(dsn: str, law: dict[str, Any], pcode: str) -> int:
             except importer.BatchRejected as e:
                 sys.exit(f"the importer rejected the slice, nothing was run: {e}")
         conn.commit()
-        return len(units_of(conn, pcode))  # type: ignore[arg-type]
+        return len(units_of(conn, pcode))
 
 
 def main() -> None:
