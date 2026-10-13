@@ -19,6 +19,12 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     public const string KnownLawId = "O0020001";
     public const string UnavailableLawId = "trigger-unavailable";
 
+    /// <summary>每個新的請求頭一次呼叫回 UNAVAILABLE、之後成功的法規（驗證客戶端的重試）。</summary>
+    public const string FlakyLawId = "trigger-flaky";
+
+    /// <summary>GetLaw 被呼叫的次數，依法規代碼。</summary>
+    public ConcurrentDictionary<string, int> GetLawCalls { get; } = new();
+
     /// <summary>假服務認為「這一天沒有有效版本」的日期（法規制定之前）。</summary>
     public const string NotInForceDate = "1900-01-01";
 
@@ -61,6 +67,12 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             Authorize(context, request.Id);
             server.LastAsOf = request.AsOf;
             CheckAsOf(request.AsOf);
+            var calls = server.GetLawCalls.AddOrUpdate(request.Id, 1, (_, n) => n + 1);
+            if (request.Id == FlakyLawId && calls == 1)
+            {
+                throw new RpcException(new Status(StatusCode.Unavailable, "restarting"));
+            }
+
             return Task.FromResult(new GetLawResponse
             {
                 Law = new Law
@@ -139,7 +151,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                 throw new RpcException(new Status(StatusCode.Unavailable, "down"));
             }
 
-            if (lawId != KnownLawId)
+            if (lawId is not (KnownLawId or FlakyLawId))
             {
                 throw new RpcException(new Status(StatusCode.NotFound, "no such law"));
             }

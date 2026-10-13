@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Sequence
 from concurrent import futures
 
 import grpc
@@ -17,18 +18,22 @@ from env_law.consult.v2 import consult_pb2_grpc
 from env_law_consult.adapters import GrpcOntology
 from env_law_consult.ports import OntologyPort
 from env_law_consult.service import ConsultationServicer
-from env_law_grpc import InternalTokenInterceptor, stop_on_sigterm
+from env_law_grpc import SERVER_OPTIONS, InternalTokenInterceptor, client_options, stop_on_sigterm
 
 SERVICE_NAME = "env_law.consult.v2.ConsultationService"
 
 
 def build_server(
-    ontology: OntologyPort, token: str, address: str = "[::]:0"
+    ontology: OntologyPort,
+    token: str,
+    address: str = "[::]:0",
+    options: Sequence[tuple[str, int]] = SERVER_OPTIONS,
 ) -> tuple[grpc.Server, int]:
     """建立（但不啟動）伺服器；連同綁定的埠號一併回傳。"""
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10),
         interceptors=[InternalTokenInterceptor(token)],
+        options=options,
     )
     consult_pb2_grpc.add_ConsultationServiceServicer_to_server(
         ConsultationServicer(ontology), server
@@ -58,8 +63,14 @@ def main() -> None:
     port = os.environ.get("CONSULT_GRPC_PORT", "50052")
 
     # round_robin 與 platform 相同：`dns:///` 目標解析出 ontology 的每一個 pod，
-    # 呼叫逐一分散，而非全部黏在第一條連線上。
-    channel = grpc.insecure_channel(target, options=[("grpc.lb_policy_name", "round_robin")])
+    # 呼叫逐一分散，而非全部黏在第一條連線上。ontology 的兩個服務都是唯讀、確定性的，
+    # 可以對 UNAVAILABLE 重試；keepalive 與連線壽命見 env_law_grpc.connection。
+    channel = grpc.insecure_channel(
+        target,
+        options=client_options(
+            ["env_law.ontology.v1.OntologyService", "env_law.ontology.v1.ReasoningService"]
+        ),
+    )
     server, bound = build_server(GrpcOntology(channel, ontology_token), token, f"[::]:{port}")
     stop_on_sigterm(server)
     server.start()

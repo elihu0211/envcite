@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Sequence
 from concurrent import futures
 
 import grpc
@@ -11,7 +12,7 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
 from env_law.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
-from env_law_grpc import InternalTokenInterceptor, stop_on_sigterm
+from env_law_grpc import SERVER_OPTIONS, InternalTokenInterceptor, stop_on_sigterm
 from env_law_ontology.reasoning_service import ReasoningServicer
 from env_law_ontology.service import OntologyServicer
 from env_law_ontology.store import OntologyStore
@@ -27,13 +28,17 @@ MAX_CONCURRENT_RPCS = 2 * WORKERS
 
 
 def build_server(
-    store: OntologyStore, token: str, address: str = "[::]:0"
+    store: OntologyStore,
+    token: str,
+    address: str = "[::]:0",
+    options: Sequence[tuple[str, int]] = SERVER_OPTIONS,
 ) -> tuple[grpc.Server, int]:
     """建立但不啟動；回傳伺服器與實際綁定的埠號。"""
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=WORKERS),
         interceptors=[InternalTokenInterceptor(token)],
         maximum_concurrent_rpcs=MAX_CONCURRENT_RPCS,
+        options=options,
     )
     # lexicon 啟動時只讀一次：新匯入的用語須重啟才進入查詢。
     segmenter = Segmenter(store.lexicon())
