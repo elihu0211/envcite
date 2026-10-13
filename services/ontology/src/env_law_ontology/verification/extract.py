@@ -36,6 +36,7 @@ PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元
   "judgement": false}}],
   "sanction": {{"effect": "fine|order|restriction|deprivation|reputation|warning|confiscation",
   "min": 數字或省略, "max": 數字或省略, "amount_text": "原文或省略", "repeating": false,
+  "discretionary": false,
   "punishes": "同一個單元裡受罰的那個陳述的 id，沒有就省略"}}}}]}}
 {conventions}規則：
 1. 引文必須逐字出現在原文；不要輸出原文沒有的內容。
@@ -49,7 +50,8 @@ PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元
    的陳述。非 penalty 的陳述不要寫 sanction。
 5. 每個要件都要有 threshold：成立與否的要件（是否排放、是否符合標準）寫 comparator "eq"、
    threshold 1；「非」「不」用 negated: true 表示；原文有數值門檻時才寫它的數字與單位。
-6. 不確定法律概念或裁量（情節重大、必要時）的要件 judgement 設為 true。
+6. 構成要件的不確定法律概念（情節重大、必要時）的要件 judgement 設為 true。效果面的「得」
+   （得處、得命）不是要件：sanction 的 discretionary 設為 true，「應」為 false。
 7. conditions 是一個平面清單，義務本身也是其中 role 為 duty 的一項；不要另外寫 duty 欄位。clause
    是「或」的分組：同一個 clause 裡的要件必須全部成立，不同 clause 之間是「或」，一般都用 1。
 8. 主體的列舉（甲、乙或丙）寫在 slots.subject，不要把每一個主體各寫成一個要件。

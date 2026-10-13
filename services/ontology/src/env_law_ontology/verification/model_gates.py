@@ -128,19 +128,24 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
         if role in by_role:
             lines.append(f"{names[role]}：" + "；".join(by_role[role]))
     row = conn.execute(
-        "SELECT legal_effect::text, min_amount, max_amount, per_occasion FROM annotation.sanction"
+        "SELECT legal_effect::text, min_amount, max_amount, per_occasion, discretionary"
+        " FROM annotation.sanction"
         " WHERE statement_id = %s",
         (statement_id,),
     ).fetchone()
     if row is not None:
-        effect, low, high, repeating = row
+        effect, low, high, repeating, discretionary = row
         amount = (
             ""
             if low is None and high is None
             else f"；額度 {low or '無下限'} 至 {high or '無上限'}"
         )
         shown = f"{effect}（{_EFFECT.get(str(effect), effect)}）" if for_reader else effect
-        lines.append(f"罰則效果：{shown}{amount}" + ("；按次處罰" if repeating else ""))
+        lines.append(
+            f"罰則效果：{shown}{amount}"
+            + ("；按次處罰" if repeating else "")
+            + ("；得（裁量）" if discretionary else "")
+        )
     return "\n".join(lines)
 
 
@@ -148,7 +153,7 @@ def _signature(
     kind: str | None,
     deontic: str | None,
     conditions: Sequence[tuple[str, str, str, float | None, bool, bool]],
-    sanction: tuple[str, float | None, float | None, bool] | None,
+    sanction: tuple[str, float | None, float | None, bool, bool] | None,
 ) -> dict[str, Any]:
     return {
         "kind": kind,
@@ -179,7 +184,8 @@ def _stored_signature(conn: Conn, statement_id: int) -> dict[str, Any]:
         )
     ]
     row = conn.execute(
-        "SELECT legal_effect::text, min_amount, max_amount, per_occasion FROM annotation.sanction"
+        "SELECT legal_effect::text, min_amount, max_amount, per_occasion, discretionary"
+        " FROM annotation.sanction"
         " WHERE statement_id = %s",
         (statement_id,),
     ).fetchone()
@@ -190,6 +196,7 @@ def _stored_signature(conn: Conn, statement_id: int) -> dict[str, Any]:
             None if row[1] is None else float(cast(float, row[1])),
             None if row[2] is None else float(cast(float, row[2])),
             bool(row[3]),
+            bool(row[4]),
         )
     return _signature(u.kind, u.deontic, conds, sanction)
 
@@ -217,6 +224,7 @@ def _answered_signature(answer: Mapping[str, Any]) -> dict[str, Any]:
             None if low is None else float(low),
             None if high is None else float(high),
             bool(s.get("repeating", False)),
+            bool(s.get("discretionary", False)),
         )
     # 只有規範性陳述有義務方向（資料庫也這樣限制，載入時也這樣丟掉多餘的方向）。重抽者在授權、
     # 定義上寫了 permission，是把「得」讀成許可，不是另一種結構；比對前與載入同樣處理，
@@ -236,10 +244,11 @@ REFORMALIZE = with_conventions("""下面是對一個法規陳述的結構化描�
     "comparator": "le|lt|ge|gt|eq|ne", "threshold": 數字或 null,
     "negated": true|false, "judgement": true|false}}],
   "sanction": {{"effect": "效果", "min": 數字或 null, "max": 數字或 null,
-    "repeating": true|false}} 或 null}}
+    "repeating": true|false, "discretionary": true|false}} 或 null}}
 門檻值由授權命令供給時 threshold 為 null；「成立」表示 comparator 為 eq、threshold 為 1；
 「（需判斷）」表示 judgement 為 true；「非：」表示 negated 為 true；沒有提到按次處罰則 repeating
-為 false；沒有罰則則 sanction 為 null。只輸出 JSON。
+為 false；「得（裁量）」表示 discretionary 為 true，沒有提到則為 false；
+沒有罰則則 sanction 為 null。只輸出 JSON。
 
 {conventions}
 描述：

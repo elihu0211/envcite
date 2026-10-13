@@ -150,11 +150,14 @@ withheld :- excuse(_).
 % 有責性未知，或職務命令而已知與否未知：罰則改為附條件，不當成可罰。
 soften :- not culpable, not excuse(no_fault).
 soften :- yes("ap_superior_order"), not yes("ap_knew_illegal"), not no("ap_knew_illegal").
-listed(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), culpable, not withheld, not soften.
-listed_cond(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), not withheld, soften.
-listed_cond(P,S,E,Min,Max) :- candidate_penalty_cond(P,S,E,Min,Max), not withheld.
-open(P) :- candidate_penalty(P,_,_,_,_).
-open(P) :- candidate_penalty_cond(P,_,_,_,_).
+% order（改善命令等預防性處分）不是行政罰：不要有責性，不受總則的排除、減輕、時效與一行為約束。
+listed(P,S,order,Min,Max)      :- candidate_penalty(P,S,order,Min,Max).
+listed_cond(P,S,order,Min,Max) :- candidate_penalty_cond(P,S,order,Min,Max).
+listed(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), E != order, culpable, not withheld, not soften.
+listed_cond(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), E != order, not withheld, soften.
+listed_cond(P,S,E,Min,Max) :- candidate_penalty_cond(P,S,E,Min,Max), E != order, not withheld.
+open(P) :- candidate_penalty(P,_,E,_,_), E != order.
+open(P) :- candidate_penalty_cond(P,_,E,_,_), E != order.
 barred(P,G) :- open(P), excuse(G).
 mitigation(P,youth) :- open(P), fact("ap_age",V), V >= 14000, V < 18000, not withheld.
 mitigation(P,reduced_capacity) :- open(P), yes("ap_capacity_reduced"), no("ap_self_induced"), not withheld.
@@ -165,13 +168,13 @@ presumed(P,agent_fault) :- open(P), yes("ap_agent_fault"), not yes("ap_intent"),
 
 % 裁處權時效（行政罰法第 27 條）：只標記仍列出的罰則。三年的末日由日曆算出後傳入；
 % 沒有 deadline 就是起算日不明，不標已逾。罰則留在候選裡。
-time_barred(P) :- listed(P,_,_,_,_), decision(D), deadline(T), D > T.
-time_barred(P) :- listed_cond(P,_,_,_,_), decision(D), deadline(T), D > T.
+time_barred(P) :- listed(P,_,E,_,_), E != order, decision(D), deadline(T), D > T.
+time_barred(P) :- listed_cond(P,_,E,_,_), E != order, decision(D), deadline(T), D > T.
 
 % ---- 罰則的競合：同一被處罰的陳述、同一效果，兩個仍列出的罰則才競合 ----
 % 哪一個優先是解釋（特別規定的「同一事項」），只在有明文標註的優先關係時消解，否則列為未決。
-live_pen(P,S,Eff) :- listed(P,S,Eff,_,_).
-live_pen(P,S,Eff) :- listed_cond(P,S,Eff,_,_).
+live_pen(P,S,Eff) :- listed(P,S,Eff,_,_), Eff != order.
+live_pen(P,S,Eff) :- listed_cond(P,S,Eff,_,_), Eff != order.
 % 按次處罰是同一個罰鍰之後的反覆裁處，不與第一次的罰鍰互為替代：只有同為首次、或同為按次者才競合。
 pkind(P,again) :- repeating(P).
 pkind(P,once)  :- sanction(P,_,_,_,_), not repeating(P).

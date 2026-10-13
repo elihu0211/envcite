@@ -6,6 +6,9 @@
 不適用、無法判定；罰則只列候選，不裁量。行政罰法總則排除的是處罰：事由成立則不列，
 有責性未知則附條件，義務陳述的結論不變。罰鍰同時列出兩種法定區間：各則自己的額度是數行為，
 確定且上下限都有的罰鍰另合併成一行為的一個區間；不選哪一種。優先關係只在有明文標註時消解，否則列為未決。
+
+`order`（改善命令等預防性處分）不是行政罰：行政罰法總則的排除、減輕、時效與一行為都不適用，
+有候選就列出。罰則的 `discretionary` 是效果裁量（條文寫「得」），與要件的需判斷是兩個層次。
 """
 
 from __future__ import annotations
@@ -37,6 +40,7 @@ class Penalty:
     max_amount: int | None
     conditional: bool
     repeating: bool
+    discretionary: bool
 
 
 @dataclass(frozen=True)
@@ -94,13 +98,19 @@ def evaluate(
     language: str = "zho",
     *,
     include_unsettled: bool = False,
+    decided_on: date | None = None,
 ) -> Result:
     """對 `as_of` 當日有效的陳述與給定的案件事實推論。
+
+    `decided_on` 是裁處日，只用於裁處權時效；預設與 `as_of` 同日。依行政罰法第 5 條要比對
+    行為時與裁處時的法律，見 `transition.evaluate_across`。
 
     `include_unsettled` 只給驗證閘門用（在陳述被接受之前評估它）；推論的呼叫端不該用。
     """
     statements = facts.statement_facts(conn, as_of, language, include_unsettled=include_unsettled)
-    program = "\n".join([statements, facts.case_facts(case), facts.limitation(as_of, case)])
+    program = "\n".join(
+        [statements, facts.case_facts(case), facts.limitation(decided_on or as_of, case)]
+    )
     ctl = clingo.Control(["--warn=none"])
     ctl.add("base", [], _RULES)
     ctl.add("base", [], program)
@@ -128,15 +138,17 @@ def evaluate(
         for name, conditional in (("candidate_penalty", False), ("candidate_penalty_cond", True))
         for p, s, e, lo, hi in get(name)
     ]
-    repeating = {
-        int(row[0])  # type: ignore[call-overload]
+    flags = {
+        int(row[0]): (bool(row[1]), bool(row[2]))  # type: ignore[call-overload]
         for row in conn.execute(
-            "SELECT statement_id FROM annotation.sanction"
-            " WHERE per_occasion AND statement_id = ANY(%s)",
+            "SELECT statement_id, per_occasion, discretionary FROM annotation.sanction"
+            " WHERE statement_id = ANY(%s)",
             ([c[0] for c in candidates],),
         )
     }
-    penalties = [Penalty(*c, repeating=c[0] in repeating) for c in candidates]
+    penalties = [
+        Penalty(*c, repeating=flags[c[0]][0], discretionary=flags[c[0]][1]) for c in candidates
+    ]
     shown = get("one_act")
     if len(shown) > 1:
         raise RuntimeError(f"expected one fine interval, got {len(shown)}")
