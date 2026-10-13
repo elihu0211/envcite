@@ -67,9 +67,10 @@ variables:
 
 # 依賴只在 prepare 階段由 deps-* 下載一次並寫入快取；其餘 job 一律 `policy: pull`，且在
 # 離線模式下執行（見各 job），任何獨立下載都會立刻失敗，而不是各自連外網、卡在網路上。
-# NuGet 的 key 綁套件清單的雜湊：清單沒變，所有分支與 main 共用同一份，不必各自冷啟動（冷啟動的
-# dotnet restore 要近 10 分鐘，超過 deps-dotnet 的 timeout 就永遠存不下快取）。key 帶專案路徑：
-# 這台 runner 的 S3 cache 開了 Shared，同 key 會跨專案共用。
+# NuGet 的 key 綁套件清單的雜湊：清單沒變，所有分支與 main 共用同一份，不必各自冷啟動。冷啟動
+# 是下載 153 個套件、約 170 MB（2026-10-13 讀 project.assets.json 加總），所需時間由頻寬決定：
+# 實測從約 500 KB/s（4 分鐘）掉到約 190 KB/s（超過 15 分鐘）。key 帶專案路徑：這台 runner 的
+# S3 cache 開了 Shared，同 key 會跨專案共用。
 .cache-nuget: &cache-nuget
   key:
     prefix: "$CI_PROJECT_PATH"
@@ -163,10 +164,17 @@ gate:
 deps-dotnet:
   stage: prepare
   tags: [windows-docker-thin]
-  # 下載是唯一會碰外網的步驟，卡住時要早點失敗重試，不佔一小時。套件清單變動後的冷啟動
-  # restore 實測約 9 分鐘；逾時的 job 不會上傳快取（cache:when: always 也一樣），所以 timeout
-  # 必須讓冷啟動跑得完，否則快取永遠存不下來、每次重跑都從零開始。
-  timeout: 15m
+  # 下載是唯一會碰外網的步驟，它的時間由頻寬決定，不由我們決定。job 逾時會被整個砍掉，連快取
+  # 都不上傳（cache:when: always 也一樣），於是每次重試都從零開始，頻寬不夠時永遠跑不完。
+  # 所以逾時要發生在 script 之內：`timeout` 先砍掉 restore，job 失敗但快取照存（when: always），
+  # 重試從已下載的部分接著跑，每一輪都有進展，頻寬再低也會收斂。已下載完成的套件在
+  # NUGET_PACKAGES 裡以 .nupkg.metadata 為完成記號，被砍斷的那個會重下。
+  timeout: 30m
+  retry:
+    max: 2
+    when:
+      - script_failure
+      - runner_system_failure
   rules:
     - changes: *changes-platform
   image: mcr.microsoft.com/dotnet/sdk:10.0
@@ -174,9 +182,10 @@ deps-dotnet:
     NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
   cache:
     - <<: *cache-nuget
+      when: always
   script:
     - cd services/platform
-    - dotnet restore
+    - timeout 20m dotnet restore
 
 dotnet:
   extends: [.runner, .dind]
