@@ -185,17 +185,9 @@ renovate-config:
 deps-dotnet:
   stage: prepare
   tags: [windows-docker-thin]
-  # 下載是唯一會碰外網的步驟，它的時間由頻寬決定，不由我們決定。job 逾時會被整個砍掉，連快取
-  # 都不上傳（cache:when: always 也一樣），於是每次重試都從零開始，頻寬不夠時永遠跑不完。
-  # 所以逾時要發生在 script 之內：`timeout` 先砍掉 restore，job 失敗但快取照存（when: always），
-  # 重試從已下載的部分接著跑，每一輪都有進展，頻寬再低也會收斂。已下載完成的套件在
-  # NUGET_PACKAGES 裡以 .nupkg.metadata 為完成記號，被砍斷的那個會重下。
-  timeout: 30m
-  retry:
-    max: 2
-    when:
-      - script_failure
-      - runner_system_failure
+  # 套件由 Nexus 提供：命中時是區網速度。Nexus 每下載完一個套件就存一個，所以連它自己的
+  # 冷啟動逾時，重跑也是接著已快取的部分，不需要在這裡另做續傳。
+  timeout: 20m
   rules:
     - changes: *changes-platform
   image: mcr.microsoft.com/dotnet/sdk:10.0
@@ -203,10 +195,14 @@ deps-dotnet:
     NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
   cache:
     - <<: *cache-nuget
-      when: always
   script:
+    # 套件走 runner 主機的 Nexus 快取（ci/nuget.mirror.config）。鏡像不可用時直接說明，
+    # 不退回直連上游：失敗的請求也計入 Nexus 的每日額度。
+    - timeout 10 bash -c '</dev/tcp/host.docker.internal/8081' || { echo "Nexus 鏡像（host.docker.internal:8081）不可用；請檢查 runner 主機上的 Nexus。" >&2; exit 1; }
+    - mkdir -p ~/.nuget/NuGet && cp ci/nuget.mirror.config ~/.nuget/NuGet/NuGet.Config
     - cd services/platform
-    - timeout 20m dotnet restore
+    # 鎖檔（packages.lock.json）釘住完整依賴圖含間接依賴；與清單不一致即失敗，快取內容因此只由清單決定。
+    - dotnet restore --locked-mode
 
 dotnet:
   extends: [.runner, .dind]
@@ -225,7 +221,7 @@ dotnet:
     - cd services/platform
     # 套件已由 deps-dotnet 備妥；來源指向空目錄，缺任何套件即失敗，不會連外網。
     - mkdir -p "$CI_PROJECT_DIR/.nuget/no-source"
-    - dotnet restore --source "$CI_PROJECT_DIR/.nuget/no-source"
+    - dotnet restore --locked-mode --source "$CI_PROJECT_DIR/.nuget/no-source"
     - dotnet build --no-restore
     # openapi/ 由建置產生並提交；與程式碼不一致即失敗，重新建置後提交。
     - test -z "$(git status --porcelain -- openapi/)"
@@ -355,9 +351,15 @@ python-proto:
         echo "非預設分支，只驗證建置、不推送：$IMAGE"
         output="--output type=cacheonly"
       fi
+      # buildkit（host 網路）看不到 job 容器的 /etc/hosts，解析不到 host.docker.internal：
+      # 把 job 容器解析到的位址（runner 設定的 host-gateway）明示給建置。
+      nexus_ip=$(awk '/host\.docker\.internal/ {print $1; exit}' /etc/hosts)
+      [ -n "$nexus_ip" ] || { echo "解析不到 host.docker.internal，無法使用 Nexus 鏡像" >&2; exit 1; }
       docker buildx build -f services/$SERVICE/Dockerfile \
+        --add-host "host.docker.internal:$nexus_ip" \
         --build-arg UV_VERSION="$UV_VERSION" \
         --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
+        --build-arg NUGET_MIRROR=1 \
         --cache-from "type=registry,ref=$CACHE:$CI_COMMIT_REF_SLUG" \
         --cache-from "type=registry,ref=$CACHE:$CI_DEFAULT_BRANCH" \
         --cache-to "type=registry,ref=$CACHE:$CI_COMMIT_REF_SLUG,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true" \

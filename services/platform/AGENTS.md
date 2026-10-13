@@ -26,6 +26,8 @@ Run from **this directory** (`services/platform/`, where `EnvLaw.Platform.slnx` 
 
 ```bash
 dotnet restore && dotnet tool restore  # tool: dotnet-ef (dotnet-tools.json)
+# Dependencies are pinned by committed packages.lock.json files (CI restores with --locked-mode).
+# After changing Directory.Packages.props or a csproj: dotnet restore --force-evaluate, commit the lock files.
 dotnet build                         # warnings are errors (Directory.Build.props)
 dotnet test                          # needs Docker (Testcontainers PostgreSQL)
 dotnet format                        # apply .editorconfig
