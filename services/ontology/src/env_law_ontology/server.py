@@ -12,10 +12,16 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
 from env_law.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
-from env_law_grpc import SERVER_OPTIONS, InternalTokenInterceptor, stop_on_sigterm
+from env_law_grpc import (
+    SERVER_OPTIONS,
+    InternalTokenInterceptor,
+    configure_telemetry,
+    stop_on_sigterm,
+)
 from env_law_ontology.reasoning_service import ReasoningServicer
 from env_law_ontology.service import OntologyServicer
 from env_law_ontology.store import OntologyStore
+from env_law_ontology.telemetry import register_annotation_health
 from env_law_segmenter import Segmenter
 
 SERVICE_NAME = "env_law.ontology.v1.OntologyService"
@@ -32,11 +38,13 @@ def build_server(
     token: str,
     address: str = "[::]:0",
     options: Sequence[tuple[str, int]] = SERVER_OPTIONS,
+    interceptors: Sequence[grpc.ServerInterceptor] = (),
 ) -> tuple[grpc.Server, int]:
     """建立但不啟動；回傳伺服器與實際綁定的埠號。"""
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=WORKERS),
-        interceptors=[InternalTokenInterceptor(token)],
+        # 追蹤攔截器在最外層：認證失敗的呼叫也要看得到。
+        interceptors=[*interceptors, InternalTokenInterceptor(token)],
         maximum_concurrent_rpcs=MAX_CONCURRENT_RPCS,
         options=options,
     )
@@ -73,7 +81,10 @@ def main() -> None:
     store = OntologyStore.from_dsn(dsn)
     port = os.environ.get("ONTOLOGY_GRPC_PORT", "50051")
 
-    server, bound = build_server(store, token, f"[::]:{port}")
+    # 沒設 OTEL_EXPORTER_OTLP_ENDPOINT 時什麼都不做（見 env_law_grpc.telemetry）。
+    interceptors = configure_telemetry("env-law-ontology")
+    register_annotation_health(store)
+    server, bound = build_server(store, token, f"[::]:{port}", interceptors=interceptors)
     stop_on_sigterm(server)
     server.start()
     logging.getLogger(__name__).info("ontology gRPC server listening on :%d", bound)

@@ -1,5 +1,6 @@
 """The pipeline as a scheduled job: it finds its own work, converges, and runs one at a time."""
 
+import time
 from pathlib import Path
 
 import psycopg
@@ -89,5 +90,8 @@ def test_only_one_run_holds_the_lock(dsn: str) -> None:
     with psycopg.connect(dsn) as first, psycopg.connect(dsn) as second:
         assert try_lock(first) is True
         assert try_lock(second) is False
-        first.close()  # 鎖隨連線結束釋放
-        assert try_lock(second) is True
+        first.close()  # 鎖隨連線結束釋放；伺服器處理斷線是非同步的，所以輪詢到取得為止
+        deadline = time.monotonic() + 5
+        while not try_lock(second) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert try_lock(second) is True  # advisory lock 可重入：已持有時再取仍成功
