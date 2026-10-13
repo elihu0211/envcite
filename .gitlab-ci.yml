@@ -356,23 +356,18 @@ python-proto:
     # 匯出 registry 快取需要 docker-container driver。
     # 用 host 網路：job 容器 MTU 為 1360，dind 橋接網路預設 1500，大封包被靜默丟棄，
     # 症狀是 `dotnet restore` 連 api.nuget.org 逾時。
-    # 基底映像與 buildkit 映像本身都不直連上游：走 runner 主機上既有的 pull-through 快取
-    # （5000 docker.io、5002 ghcr.io、5004 mcr.microsoft.com），以 BuildKit 官方的 registry mirror
-    # 設定導向；快取沒有時 BuildKit 退回原 registry。位址取 job 容器解析到的 host-gateway
-    # （buildkit 在 dind 的 host 網路裡看不到 job 容器的 /etc/hosts，不能用名稱）。
+    # 基底映像與 buildkit 映像都不直連上游，也沒有退回上游的路：Dockerfile 的 FROM 以 build-arg
+    # 直接指向 runner 主機上既有的 pull-through 快取（5000 docker.io、5002 ghcr.io、5004
+    # mcr.microsoft.com），快取沒有就建置失敗。BuildKit 的 registry mirror 設定不用，因為它找不到
+    # 時會退回原 registry。位址取 job 容器解析到的 host-gateway（buildkit 在 dind 的 host 網路裡
+    # 看不到 job 容器的 /etc/hosts，不能用名稱）；buildkitd.toml 只用來放行這幾個 http 位址。
+    # before_script 與 script 在同一個 shell，host_ip 留給下面的建置用。
     - |
       host_ip=$(awk '/host\.docker\.internal/ {print $1; exit}' /etc/hosts)
       [ -n "$host_ip" ] || { echo "解析不到 host.docker.internal，無法使用 runner 主機的 registry 快取" >&2; exit 1; }
-      {
-        for m in docker.io:5000 ghcr.io:5002 mcr.microsoft.com:5004; do
-          echo "[registry.\"${m%%:*}\"]"
-          echo "  mirrors = [\"$host_ip:${m##*:}\"]"
-          echo "[registry.\"$host_ip:${m##*:}\"]"
-          echo "  http = true"
-          echo "  insecure = true"
-        done
-      } > buildkitd.toml
-      cat buildkitd.toml
+      for port in 5000 5002 5004; do
+        printf '[registry."%s:%s"]\n  http = true\n  insecure = true\n' "$host_ip" "$port"
+      done > buildkitd.toml
       docker buildx create --use --driver docker-container \
         --driver-opt "network=host,image=$host_ip:5000/moby/buildkit:buildx-stable-1" \
         --buildkitd-flags '--oci-worker-net=host' --buildkitd-config buildkitd.toml
@@ -389,6 +384,9 @@ python-proto:
         output="--output type=cacheonly"
       fi
       docker buildx build -f services/$SERVICE/Dockerfile $CONTEXTS \
+        --build-arg DOCKER_HUB="$host_ip:5000" \
+        --build-arg GHCR="$host_ip:5002" \
+        --build-arg MCR="$host_ip:5004" \
         --build-arg UV_VERSION="$UV_VERSION" \
         --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
         --build-arg DOTNET_VERSION="$DOTNET_VERSION" \

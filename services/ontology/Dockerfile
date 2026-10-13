@@ -24,8 +24,13 @@
 
 ARG UV_VERSION=0.12.18
 ARG PYTHON_VERSION=3.14
+# Registries are parameters so CI can point every base image at the runner host's
+# pull-through caches (and nowhere else: a missing image fails the build instead of falling
+# back to upstream). The defaults are the real registries, for local builds.
+ARG DOCKER_HUB=docker.io
+ARG GHCR=ghcr.io
 
-FROM ghcr.io/astral-sh/uv:${UV_VERSION}-python${PYTHON_VERSION}-trixie-slim AS build
+FROM ${GHCR}/astral-sh/uv:${UV_VERSION}-python${PYTHON_VERSION}-trixie-slim AS build
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=0 \
@@ -47,7 +52,7 @@ RUN --network=none --mount=type=bind,from=uv-cache,target=/uv-cache,rw \
  && .venv/bin/python -m compileall -q services/ontology/src libs/python
 
 # Same base as the uv image above, so the venv's interpreter path resolves.
-FROM python:${PYTHON_VERSION}-slim-trixie
+FROM ${DOCKER_HUB}/library/python:${PYTHON_VERSION}-slim-trixie
 # The pod runs with a read-only root filesystem; bytecode is compiled at build.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
