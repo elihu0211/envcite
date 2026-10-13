@@ -1,4 +1,4 @@
-"""可執行閘門讀的東西：陳述的要件、讓要件成立或不成立的事實值、但書、評估日期。"""
+"""可執行閘門讀取的要件、使要件成立或不成立的事實值、但書與評估日期。"""
 
 from __future__ import annotations
 
@@ -26,14 +26,14 @@ class Cond:
     by_concept: bool
 
     def value(self, truth: bool, resolved: Decimal) -> Decimal:
-        """讓這個要件原子（含「非」）成立或不成立的事實值。"""
+        """使此要件（含「非」）成立或不成立的事實值。"""
         raw_true = truth != self.negated
         delta = (_RAW_TRUE if raw_true else _RAW_FALSE)[self.comparator]
         return resolved + delta
 
 
 def statement_as_of(conn: Conn, statement_id: int) -> date | None:
-    """評估一個陳述用的日期：它所錨定的文字現行版本的最近一個生效起日；沒有則 None。"""
+    """評估日期：陳述所錨定現行版本的最近生效起日；沒有則 None。"""
     row = conn.execute(
         "SELECT max(lower(v.force_period)) FROM annotation.statement AS s"
         "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
@@ -71,7 +71,7 @@ def load_conditions(conn: Conn, statement_id: int) -> list[Cond]:
 
 
 def unsupported(conds: list[Cond]) -> str | None:
-    """推論程式還評估不了的要件形狀；回原因，能評估則 None。"""
+    """推論程式評估不了的要件形狀；回原因，可評估則 None。"""
     if any(c.by_concept for c in conds):
         return "a condition compares concept values"
     for role in ("scope", "duty"):
@@ -84,7 +84,7 @@ def unsupported(conds: list[Cond]) -> str | None:
 
 
 def exception_facts(conn: Conn, statement_id: int) -> dict[str, float]:
-    """這個陳述的但書：讓它們的要件不成立，才不會被排除。"""
+    """但書的事實值：令其要件不成立，陳述才不被排除。"""
     facts: dict[str, float] = {}
     rows = conn.execute(
         "SELECT c.comparator::text, c.negated, c.threshold, k.code"

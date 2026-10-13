@@ -1,11 +1,9 @@
 """從資料庫產生推論程式的輸入事實（env-law-docs 02-05 §5.1、§5.3）。
 
-時點錨定與授權解析留在 SQL（`annotation.statement_versions_at`、`annotation.threshold_source_at`）：
-本模組只把它們的結果寫成 ASP 事實，不再用另一套連接重算。輸出的是**已解析**的事實，推論程式不知道
-任何法條。
+時點錨定與授權解析在 SQL（`annotation.statement_versions_at`、`annotation.threshold_source_at`）；
+本模組只把結果寫成已解析的 ASP 事實，不重算。
 
-數值一律為千分位整數（clingo 沒有浮點數）：`numeric(18,3)` 乘以一千取整，三位小數內不損失。
-字串（概念代碼、行為）以引號輸出，所以代碼可以是任何文字。
+數值一律為千分位整數（clingo 無浮點數，`numeric(18,3)` 乘一千不損失）；字串以引號輸出。
 """
 
 from __future__ import annotations
@@ -79,8 +77,7 @@ def statement_facts(
 ) -> str:
     """某日有效、已確認（或規則推導）的陳述及其要件、但書、優先、罰則，寫成 ASP 事實。
 
-    `include_unsettled` 只給驗證閘門用：連尚未被接受的陳述也納入，才能在接受之前評估它
-    （可執行性檢查）。推論的輸入一律不含。
+    `include_unsettled` 僅供驗證閘門（接受前的可執行性檢查）納入未接受的陳述。
     """
     out: list[str] = []
     params = {"lang": language, "on": as_of}
@@ -114,13 +111,13 @@ def statement_facts(
         if judgement:
             out.append(f"judgement({cid}).")
         if by_concept:
-            out.append(f"unsupported({cid}).")  # 概念值的比較：推論程式不做
+            out.append(f"unsupported({cid}).")  # 推論程式不比較概念值
         elif threshold is not None:
             out.append(f"thr({cid},{milli(cast(Decimal, threshold))}).")
         elif delegated:
             out.append(f"delegated({cid}).")
             source = conn.execute(_SOURCES, (cid, language, as_of)).fetchone()
-            if source is not None:  # 解析不到就沒有 thr 事實：推論程式會列為問題，不冒充缺事實
+            if source is not None:  # 解析不到則不給 thr，推論程式列為問題而非缺事實
                 out.append(f"thr({cid},{milli(cast(Decimal, source[0]))}).")
                 out.append(f"thr_src({cid},{source[1]}).")
 
@@ -139,7 +136,7 @@ def statement_facts(
     return "\n".join(out)
 
 
-# 裁處權時效的起算日。不走千分位：值是 YYYYMMDD。
+# 裁處權時效的起算日；值為 YYYYMMDD，不走千分位。
 _ACCRUAL = ("ap_conduct_ended", "ap_result_on")
 
 
@@ -155,11 +152,10 @@ def case_facts(case: Mapping[str, float | Sequence[float]]) -> str:
 
 
 def limitation(as_of: date, case: Mapping[str, float | Sequence[float]]) -> str:
-    """裁處日與三年期間的末日。末日由日曆算出；起算日不明或日期無效則不給末日，推論程式就不標已逾。
+    """裁處日與三年期間末日；起算日不明或無效則不給末日（推論程式不標已逾）。
 
-    始日不算入，末日是起算日三年後相當日的前一日；該月沒有相當日則以該月最後一日為末日
-    （民法第 120 條第 2 項、第 121 條）。休息日不展延。
-    只有結果日、沒有行為終了日，不算已確定起算日。
+    始日不算入，末日為三年後相當日的前一日，無相當日則為該月末日（民法第 120 條第 2 項、
+    第 121 條）；休息日不展延。只有結果日而無行為終了日，不算起算日確定。
     """
     lines = [f"decision({_stamp(as_of)})."]
     parsed: dict[str, date] = {}

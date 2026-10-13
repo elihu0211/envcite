@@ -17,8 +17,7 @@ from env_law_ontology.verification.gates.conditions import (
     unsupported,
 )
 
-# 義務內容成立、不成立時的結論。與 rules.lp 的 complies/2 同一張表：
-# 禁止是義務的對極；許可兩邊都合規，不做所許可之事不是違反。
+# 義務內容成立、不成立時的結論，與 rules.lp 的 complies/2 同表；許可兩邊皆合規。
 _POLARITY: dict[str, tuple[str, str]] = {
     "obligation": ("compliant", "violation"),
     "prohibition": ("violation", "compliant"),
@@ -28,9 +27,11 @@ _POLARITY: dict[str, tuple[str, str]] = {
 
 @dataclass(frozen=True)
 class ExecutableGate:
-    """規範性陳述與罰則可被推論程式評估。規範性陳述的結論隨義務方向翻轉，適用範圍任一要件
-    不成立則不適用。罰則在所處罰的陳述違反時：自己的適用範圍成立才列為候選，未知則附條件，
-    不成立則不列。只檢查標註與推論程式之間，不檢查標註與原文之間。"""
+    """標註可被推論程式評估且結論如預期翻轉；只檢查標註與推論程式，不對照原文。
+
+    規範性陳述：適用範圍任一要件不成立即不適用。
+    罰則：所處罰陳述違反時，自身適用範圍成立列為候選、未知附條件、不成立不列。
+    """
 
     method: str = "executable"
     verifier: str = "gate:executable@2"

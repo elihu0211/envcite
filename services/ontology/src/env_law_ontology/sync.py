@@ -1,10 +1,7 @@
-"""`env-law-sync <來源>`：取得、匯入、檢索投影依序做完（env-law-docs 03-04 §3）。
+"""`env-law-sync <來源>`：取得、匯入、檢索投影依序執行（env-law-docs 03-04 §3）。
 
-三步各自冪等：沒有事可做時只花數秒，所以每次都全部執行，不以「取得有新檔」為條件——
-映像升級之後解析器版本改變，沒有新檔也必須重匯。任一步失敗，後面的不執行。
-
-結束碼決定 Job 是否重試：0 成功（含無事可做）；1 暫時性失敗（連線、資料庫、下載到的
-不是 zip），可重試；2 重試不會改變結果（資料不合預期、整批比例越線）。
+三步冪等，每次全跑（映像升級後解析器版本改變，沒有新檔也須重匯）；任一步失敗即停。
+結束碼：0 成功（含無事可做）；1 暫時性失敗，可重試；2 重試無益（資料不合預期、整批比例越線）。
 """
 
 from __future__ import annotations
@@ -30,12 +27,12 @@ EXIT_TRANSIENT = 1
 
 
 def exit_code(error: BaseException) -> int:
-    """重試無益者是 2：資料不合預期，或整批比例越線。其餘是 1。"""
+    """資料不合預期或整批越線為 2（重試無益），其餘為 1。"""
     return EXIT_INVALID if isinstance(error, InvalidSnapshot | BatchRejected) else EXIT_TRANSIENT
 
 
 def sync(conn: Conn, source: Source, root: Path) -> int:
-    """執行一個週期；回傳結束碼。"""
+    """跑一個週期；失敗時 rollback 並回傳結束碼。"""
     try:
         acquire(source, root, conn)
         importer.run(conn, root, source)

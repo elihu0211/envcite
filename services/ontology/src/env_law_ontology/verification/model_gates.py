@@ -1,14 +1,13 @@
 """要呼叫模型的閘門（env-law-docs 02-05 §5.9）：往返驗證、獨立測試、跨家族評審。
 
-確定性閘門證明不了語意忠於原文；這三個用模型去檢查，但每一個都被設計成**不信任單一模型**：
+確定性閘門證明不了語意忠於原文；這三個用模型檢查，但都不信任單一模型：
 
-- 驗證者不得是抽取者，也預設不得與抽取者同一家族（共同偏誤擋不住，一致不等於正確）。同家族的
-  驗證者不採計；沒有任何合格的驗證者，閘門的結論是 `inconclusive`，不是 `pass`。
-- 驗證者看不到它要檢查的東西的答案：往返驗證的重抽者只看標註的描述，不看原文；獨立測試的產生者
-  只看原文，不看標註。它們的結論與標註不一致，才有意義。
-- 模型的輸出不直接成為結論：獨立測試的案例丟進推論程式比對；評審團取多數，不採單一票。
+- 驗證者不得是抽取者，預設也不得同家族（共同偏誤擋不住）；
+  無合格驗證者時結論是 `inconclusive`，不是 `pass`。
+- 驗證者看不到被檢查物的答案：重抽者只看描述不看原文，測試產生者只看原文不看標註。
+- 模型輸出不直接成為結論：測試案例丟進推論程式比對，評審團取多數。
 
-模型閘門與確定性閘門並用，政策要求多個互相獨立的方法同時通過。沒有任何一個閘門單獨構成接受。
+任何閘門都不單獨構成接受；政策要求多個獨立方法同時通過。
 """
 
 from __future__ import annotations
@@ -65,14 +64,13 @@ def _extractor(conn: Conn, statement_id: int) -> str:
 def eligible(
     models: Sequence[Model], extractor: str, allow_same_family: bool
 ) -> tuple[list[Model], list[str]]:
-    """合格的驗證者：不是抽取者；預設也不與抽取者同一家族。回傳（合格者，被略過者的名字）。"""
+    """合格的驗證者：非抽取者，預設也非同家族。回傳（合格者，被略過者的名字）。"""
     home = family_of(extractor)
     ok = [m for m in models if m.name != extractor and (allow_same_family or m.family != home)]
     return ok, [m.name for m in models if m not in ok]
 
 
-# ---- 把標註描述成人話（確定性，不呼叫模型） ----------------------------------------------------
-
+# 標註描述（確定性，不呼叫模型）
 
 _EFFECT = {
     "fine": "罰鍰",
@@ -86,10 +84,9 @@ _EFFECT = {
 
 
 def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False) -> str:
-    """標註的結構化描述：種類、行為槽、要件（帶代碼）、罰則。同一個標註永遠得到同一段文字。
+    """標註的結構化描述（種類、行為槽、要件、罰則）；同一標註永遠得到同一段文字。
 
-    `for_reader` 給評審團看：罰則效果附上中文（原本是資料庫的列舉值，評審看不懂 `fine`）。往返驗證的
-    重抽者要把效果寫回列舉值，所以它看到的描述不附中文。
+    `for_reader` 給評審團：罰則效果附中文。往返驗證的重抽者要寫回列舉值，故不附。
     """
     u = unit_of(conn, statement_id)
     lines = [f"陳述種類：{_KIND.get((u.kind, u.deontic), u.kind)}"]
@@ -110,7 +107,7 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
         (statement_id,),
     ):
         if cmp == "eq" and threshold == 1 and not unit and not delegated:
-            text = f"[{code}] {label} 成立"  # 成立與否的要件；不寫成原文沒有的數值
+            text = f"[{code}] {label} 成立"  # 不寫成原文沒有的數值
         else:
             value = (
                 "門檻值由授權命令供給"
@@ -226,15 +223,14 @@ def _answered_signature(answer: Mapping[str, Any]) -> dict[str, Any]:
             bool(s.get("repeating", False)),
             bool(s.get("discretionary", False)),
         )
-    # 只有規範性陳述有義務方向（資料庫也這樣限制，載入時也這樣丟掉多餘的方向）。重抽者在授權、
-    # 定義上寫了 permission，是把「得」讀成許可，不是另一種結構；比對前與載入同樣處理，
-    # 否則整類授權條款會因為這個不對稱被擋下。
+    # 只有規範性陳述有義務方向（同資料庫限制與載入處理）。重抽者在授權、定義上寫 permission 是把
+    # 「得」讀成許可，不是另一種結構；不在此丟掉，整類授權條款會因不對稱被擋下。
     kind = answer.get("kind")
     deontic = answer.get("deontic") if kind == "prescriptive" else None
     return _signature(kind, deontic, conds, sanction)
 
 
-# ---- 閘門一：往返驗證 --------------------------------------------------------------------------
+# 閘門一：往返驗證
 
 REFORMALIZE = with_conventions("""下面是對一個法規陳述的結構化描述（不是法規原文）。
 請只依這份描述，輸出一個 JSON 物件：
@@ -258,11 +254,10 @@ REFORMALIZE = with_conventions("""下面是對一個法規陳述的結構化描�
 
 @dataclass(frozen=True)
 class RoundtripGate:
-    """標註 → 確定性的描述 → 另一個家族的模型重抽 → 比對結構。重抽者看不到原文，也看不到原標註。
+    """標註 → 確定性描述 → 另一家族模型重抽 → 比對結構；重抽者看不到原文與原標註。
 
-    描述是確定性的（`render_annotation`），所以這一輪沒有第二個模型的誤差；重抽結果與原標註的
-    種類、義務方向、要件、罰則逐項相同才通過。它檢查標註是否自我一致、可被另一個讀者還原，
-    不直接檢查它與原文的距離（那是獨立測試與評審團的事）。
+    種類、義務方向、要件、罰則逐項相同才通過。檢查的是標註可被還原，不是它與原文的距離
+    （那是獨立測試與評審團的事）。
     """
 
     reformalizer: Model
@@ -295,7 +290,7 @@ class RoundtripGate:
         return GateResult("fail", {"verifier": ok[0].name, "differences": diff})
 
 
-# ---- 閘門二：獨立測試 --------------------------------------------------------------------------
+# 閘門二：獨立測試
 
 WRITE_TESTS = """你是法規測試設計者。下面是一段法規原文，與一組可用的概念（代碼與名稱）。
 請只依原文，設計 4 至 8 個案例：每個案例給一組事實（代碼對應數值；成立與否的概念給 1 或 0，
@@ -315,10 +310,9 @@ not_applicable（本條不適用）、undetermined（事實不足以判定）。
 
 
 def _concept_line(conn: Conn, statement_id: int) -> list[str]:
-    """給測試設計者的概念清單，附上型別：成立與否的給 1／0，數值的給具體數值與單位。
+    """給測試設計者的概念清單，附型別（取自標註的要件；無單位的 eq 1 是成立與否）。
 
-    型別取自標註的要件（沒有單位的 eq 1 是成立與否）；不說，設計者會對成立與否的概念編出數值，
-    那是設計者與標註對型別的歧義，不是標註錯。
+    不說明型別，設計者會對成立與否的概念編出數值，那是型別歧義，不是標註錯。
     """
     rows = conn.execute(
         "SELECT k.code, k.pref_label, c.comparator::text, c.threshold, c.measure_unit"
@@ -343,10 +337,10 @@ def _concept_line(conn: Conn, statement_id: int) -> list[str]:
 
 @dataclass(frozen=True)
 class IndependentTestGate:
-    """另一個模型只讀原文、不看標註，設計案例與預期結論；案例丟進推論程式，比對結論。
+    """另一個模型只讀原文設計案例與預期結論，案例丟進推論程式比對。
 
-    全部一致才通過；全不一致為失敗；其餘無法判定（產生者與標註各有可能錯，不武斷）。
-    只對義務陳述適用：其他種類的結論不在推論程式的 verdict 裡。
+    全部一致才通過、全不一致為失敗，其餘無法判定（產生者與標註都可能錯）。
+    只適用義務陳述：其他種類的結論不在推論程式的 verdict 裡。
     """
 
     tester: Model
@@ -404,7 +398,7 @@ class IndependentTestGate:
         )
 
 
-# ---- 閘門三：跨家族評審團 ----------------------------------------------------------------------
+# 閘門三：跨家族評審團
 
 JUDGE = with_conventions("""你是法規標註的審查者。
 下面是一個條文單元的原文，與一份對其中「標註對應的引文」的結構化
@@ -429,10 +423,9 @@ JUDGE = with_conventions("""你是法規標註的審查者。
 
 @dataclass(frozen=True)
 class PanelGate:
-    """不同家族的模型各自判斷標註是否忠於原文，取多數。同家族與抽取者的評審不採計。
+    """不同家族的模型各自判斷標註是否忠於原文，取多數；與抽取者同家族的評審不採計。
 
-    有效票數不足兩票為無法判定；贊成與反對各自達到 `quorum` 才有結論，否則無法判定。
-    評審的一致不構成接受：一致不等於正確，所以這只是政策要求的多個方法之一。
+    有效票不足兩票、或贊成與反對都未達 `quorum`，為無法判定。評審一致不等於正確，只是多個方法之一。
     """
 
     judges: tuple[Model, ...]

@@ -1,19 +1,17 @@
 """標註文件的載入（env-law-docs 02-04 §6、02-05 §5）。
 
-規範陳述、要件、但書、優先與罰則寫成一份 JSON 文件（由抽取器產生，見 `verification/extract.py`），
-這裡把它寫進 `annotation` 與 `vocab`。載入只負責寫入與錨定，不負責接受：陳述是否成為推論用的
-事實，由 `verification` 的閘門與政策決定。
+抽取器（`verification/extract.py`）產生的 JSON 文件，寫進 `annotation` 與 `vocab`。只寫入與錨定，
+不接受：陳述是否成為推論事實，由 `verification` 的閘門與政策決定。
 
-**錨點是文字，不是版本列。** 每個陳述要附上它所讀的那段條文原文 `text`：載入時算出雜湊，
-並要求該單元現行的某個版本列確有這個雜湊，否則拒絕——標註的是不存在於語料的文字，
-等於憑空標註。之後效力列更替而文字沒變，陳述沿用；文字改了，雜湊對不上，陳述自動不在
-該日的事實裡（`annotation.statements_at`），須重新標註。
+**錨點是文字，不是版本列。** 陳述附原文 `text`，載入時算雜湊，且該單元現行某版本列
+須有同一雜湊，否則拒絕。效力列更替而文字沒變則沿用；文字改了則自動退出該日的事實
+（`annotation.statements_at`），須重新標註。
 
-**載入不接受任何陳述。** 陳述的狀態取文件的 `review`（預設 `extracted`）；下游只取已確認的
-陳述（或規則推導者），所以沒寫 `confirmed` 的文件載入後不影響任何推論。
+**載入不接受任何陳述。** 狀態取文件的 `review`（預設 `extracted`）；下游只取 `confirmed`
+（或規則推導）者。
 
-一次載入記為一個推導活動，在同一個交易內完成：任何一處不合，整份不寫入。載入不是冪等的：
-同一份文件載入兩次得到兩組陳述；要修正，把舊陳述的 `review` 改為 `rejected` 再載入新的。
+一次載入是一個推導活動、一個交易：任一處不合，整份不寫入。非冪等：同一份載入兩次得兩組陳述；
+修正時先把舊陳述的 `review` 改為 `rejected` 再載入新的。
 
 文件格式：
 
@@ -34,11 +32,10 @@
      "overrides": [{"winner": "s2", "loser": "s1", "basis": "lex_specialis"}]}
 
 `conditions` 的門檻值恰給一個：`threshold`、`delegate`（委由授權命令的單元）或 `value_concept`。
-罰則的 `effect` 除處罰種類外有 `order`（改善命令等非處罰的行政命令）；
-`repeating: true` 標出按次處罰；`discretionary: true` 標出條文寫「得」的效果裁量（「應」為 false）。
-`judgement: true` 標出構成要件的不確定法律概念（情節重大、必要時）：系統不從事實判定它，呼叫端
-提供的值視為其判斷，沒有提供則列為需判斷；限值不得標記。效果面的裁量不是要件，用罰則的
-`discretionary`。
+罰則 `effect` 除處罰種類外有 `order`（改善命令等非處罰的行政命令）；`repeating` 標按次處罰；
+`discretionary` 標條文寫「得」的效果裁量。
+`judgement` 標要件中的不確定法律概念（情節重大、必要時）：系統不判定，呼叫端給的值視為其判斷，
+未給則列為需判斷；限值不得標記。效果面裁量不是要件，用罰則的 `discretionary`。
 """
 
 from __future__ import annotations
@@ -95,7 +92,7 @@ def _load(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
     except AnnotationError:
         raise
     except (KeyError, TypeError, AttributeError, ValueError, IndexError) as e:
-        # 型別不合包括把物件寫成字串（`.get` 呼叫在字串上）等：文件是外來的，形狀不可信。
+        # 文件來自外部，形狀不可信（例如物件寫成字串）。
         raise AnnotationError(f"文件欄位缺漏或型別不合：{e!r}") from e
     except psycopg.errors.IntegrityError as e:
         raise AnnotationError(f"違反資料庫約束：{e}") from e
@@ -180,7 +177,7 @@ def _one(conn: Conn, sql: str, *args: object) -> int:
 def _concepts(
     conn: Conn, scheme: Mapping[str, Any] | None, concepts: Sequence[Mapping[str, Any]]
 ) -> dict[str, int]:
-    """文件的概念與資料庫裡該詞彙方案已有的概念；以代碼為鍵。"""
+    """該詞彙方案下文件與資料庫既有的全部概念，代碼 → id。"""
     if scheme is None:
         if concepts:
             raise AnnotationError("有概念但沒有 scheme")
@@ -208,7 +205,7 @@ def _concepts(
                 " VALUES (%s, %s, 'alt') ON CONFLICT DO NOTHING",
                 (cid, alt),
             )
-    for c in concepts:  # 上位概念可以引用同一份文件稍後才列出的概念
+    for c in concepts:  # 上位概念可能在文件稍後才列出
         if c.get("broader") is not None:
             conn.execute(
                 "UPDATE vocab.concept SET broader_id ="

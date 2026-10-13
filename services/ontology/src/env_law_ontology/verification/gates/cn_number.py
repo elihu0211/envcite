@@ -1,4 +1,4 @@
-"""讀原文裡的中文與阿拉伯數字、金額與其限定詞（以上、以下）。數字閘門與引用閘門共用。"""
+"""讀中文與阿拉伯數字、金額及其限定詞（以上、以下）；數字與引用閘門共用。"""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ _MONEY = re.compile(rf"([{NUMBER}]+)元(以上|以下)?")
 
 
 def amounts(text: str) -> list[tuple[int, str | None]]:
-    """原文中的金額及其限定詞（以上、以下），依出現順序。讀不出的略過。"""
+    """金額及其限定詞，依出現順序；讀不出的略過。"""
     out: list[tuple[int, str | None]] = []
     for m in _MONEY.finditer(text):
         try:
@@ -47,13 +47,13 @@ def amounts(text: str) -> list[tuple[int, str | None]]:
     return out
 
 
-#: 帶比較詞的數值：「五十毫克以下」「十八歲以上」「三十日以內」，以及前置的「未滿十八歲」「未達…」。
-#: 數字與詞之間容許一段單位（不含數字與標點）。
+#: 帶比較詞的數值：「十八歲以上」「三十日以內」，與前置的「未滿」「未達」；
+#: 數字與詞之間容許一段單位。
 _AFTER = re.compile(rf"([{NUMBER}]+)[^{NUMBER}，。；：、（）()\s]{{0,6}}?(以上|以下|以內)")
 _BEFORE = re.compile(rf"(未滿|未達)([{NUMBER}]+)")
 
-#: 含本數與否：以上、以下、以內連本數計算（刑法第 10 條第 1 項，其他法規無統一規定而慣例從之）；
-#: 未滿、未達不含本數。「逾」「超過」沒有查到明文的含本數規則，不在這裡判定。
+#: 以上、以下、以內含本數（刑法第 10 條第 1 項，他法從之），未滿、未達不含；
+#: 「逾」「超過」無明文，不判定。
 QUALIFIER_COMPARATOR = {"以上": "ge", "以下": "le", "以內": "le", "未滿": "lt", "未達": "lt"}
 
 
@@ -74,7 +74,7 @@ def qualified_numbers(text: str) -> list[tuple[int, str]]:
 
 
 def ranges(found: Sequence[tuple[int, str | None]]) -> list[tuple[int | None, int | None]]:
-    """把「以上」「以下」配成額度的組：（下限, 上限）；只有一邊的，另一邊是 None。"""
+    """把「以上」「以下」配成（下限, 上限）；只有一邊的另一邊為 None。"""
     out: list[tuple[int | None, int | None]] = []
     low: int | None = None
     for value, qualifier in found:
@@ -91,7 +91,7 @@ def ranges(found: Sequence[tuple[int, str | None]]) -> list[tuple[int | None, in
 
 
 def numbers_in(text: str) -> set[int]:
-    """原文中所有讀得出的整數（中文或阿拉伯數字）。"""
+    """所有讀得出的整數。"""
     found: set[int] = set()
     for m in re.finditer(rf"[{NUMBER}]+", text):
         try:

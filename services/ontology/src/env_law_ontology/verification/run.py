@@ -1,7 +1,6 @@
-"""從條文到被接受的標註，整條線：抽取 → 驗證 → 接受（env-law-docs 02-05 §5.9）。
+"""從條文到被接受的標註：抽取 → 驗證 → 接受（env-law-docs 02-05 §5.9）。
 
-線上沒有人。抽取器與驗證者都是 `Model`；準確度由驗證與校準負責，不由這裡保證。重跑是冪等的：
-同一個抽取者與版本已經抽過的單元（以現行文字為準）不再抽；已有定論的閘門不再跑。
+全程無人。重跑冪等：同抽取者與版本已抽過的單元（以現行文字為準）不再抽，已有定論的閘門不再跑。
 """
 
 from __future__ import annotations
@@ -40,19 +39,18 @@ ALL_METHODS = (
 )
 
 
-#: 兩個「不同」的模型對這些開放式問題在溫度 0 下逐字相同，幾乎必定是同一個模型的兩個名字。
+#: 溫度 0 下逐字相同的回答，幾乎必定是同一個模型的兩個名字。
 PROBES = ("用兩句話說明什麼是法律的位階，要有你自己的措辭。", "寫一首四句的詩，主題是河川。")
 
 
 class SameModel(ValueError):
-    """兩個名字背後是同一個模型：它們不獨立，不能互相驗證。"""
+    """兩個名字背後是同一個模型，不獨立，不能互相驗證。"""
 
 
 def assert_distinct(models: Sequence[Model]) -> None:
-    """託管服務的模型名稱不保證是它所指的模型（同一個模型常有幾個別名），名字不同不等於家族不同。
+    """對每個模型問同樣的開放式問題，逐字相同即同一模型（託管服務常有別名）。
 
-    對每個模型問同樣的開放式問題，逐字相同的就是同一個模型。這只抓得到完全相同的別名，抓不到
-    同一個基礎模型的不同微調；而且只有在溫度為 0 的轉接器上有效（`chat` 轉接器送溫度 0）。
+    只抓得到完全相同的別名，抓不到同基礎模型的微調；僅在溫度為 0 的轉接器上有效。
     """
     answers = {m.name: tuple(m.complete(p) for p in PROBES) for m in models}
     names = list(answers)
@@ -71,7 +69,7 @@ class Run:
     extracted: int
     dropped: int
     settled: Settled
-    linked: int = 0  # 事後連到被引用條文的罰則陳述數（已含在 extracted）
+    linked: int = 0  # 事後連到被引用條文的罰則數（已含在 extracted）
 
 
 def units_of(conn: Conn, law: str) -> list[str]:
@@ -106,7 +104,7 @@ def _already_extracted(conn: Conn, law: str, path: str, agent: str, version: str
 
 
 def gates_for(verifiers: Sequence[Model], allow_same_family: bool = False) -> tuple[Gate, ...]:
-    """確定性閘門，加上以驗證者組成的模型閘門：往返用第一個，獨立測試用最後一個，評審團用全部。"""
+    """確定性閘門加模型閘門：往返用第一個驗證者，獨立測試用最後一個，評審團用全部。"""
     if not verifiers:
         return DEFAULT_GATES
     return (
@@ -118,7 +116,7 @@ def gates_for(verifiers: Sequence[Model], allow_same_family: bool = False) -> tu
 
 
 def gates_from(models: ModelSet, allow_same_family: bool = False) -> tuple[Gate, ...]:
-    """確定性閘門，加上設定檔指定角色的模型閘門：誰重抽、誰設計測試、誰組成評審團都明寫。"""
+    """確定性閘門加模型閘門，角色（重抽、設計測試、評審團）由設定檔明定。"""
     return (
         *DEFAULT_GATES,
         RoundtripGate(models.roundtrip, allow_same_family),
