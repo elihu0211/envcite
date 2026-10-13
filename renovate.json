@@ -23,7 +23,8 @@
       "security",
       "renovate"
     ],
-    "minimumReleaseAge": null
+    "minimumReleaseAge": null,
+    "dependencyDashboardApproval": false
   },
   "lockFileMaintenance": {
     "enabled": true,
@@ -45,6 +46,27 @@
     }
   ],
   "packageRules": [
+    {
+      "description": "大版本升級先在 Dependency Dashboard 勾選才開 MR：多半需要程式碼遷移，照排程自動開只會是紅燈（chepb 2026-10-13 的 lock file maintenance 一次帶進多個大版本的前科）",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "語言執行環境與其基底映像的 minor 也是行為變更（python 3.14→3.15、.NET 10→11 的映像與 SDK）：升版要連同 requires-python／TargetFramework 與依賴的相容性一起評估，先勾選才開 MR。三處（.python-version、CI 變數、Dockerfile）已歸為同一個 MR",
+      "matchDepNames": [
+        "python",
+        "dotnet-sdk",
+        "mcr.microsoft.com/dotnet/sdk",
+        "mcr.microsoft.com/dotnet/aspnet"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "dependencyDashboardApproval": true
+    },
     {
       "description": "CI 變數的版本值會被拼進映像名稱或指令（如 postgres:$POSTGRES_MAJOR），不能附 digest；digest 釘選只用於 Dockerfile 與字面 image",
       "matchManagers": [
