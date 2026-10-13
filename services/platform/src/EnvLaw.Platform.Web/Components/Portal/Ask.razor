@@ -8,7 +8,7 @@
 
 @* 問答為主的首頁：一個輸入框。還沒問時是置中的招呼加輸入框；問了之後是「你的問題 → 找到的條文」，輸入框留在底部接著問。
    有設定模型端點（Platform:Answer）時，回答是模型只根據 consult 的封閉證據寫的、每個論點附出處代號，加上對應的條文卡片；
-   沒有設定時只列有出處的條文（法規名、條號、查的是哪一天、ELI 網址）。 *@
+   沒有設定時只列有出處的條文（法規名、條號、查的是哪一天、條文網址）。 *@
 <div class="ep-ask" data-state="@(_asked ? "result" : "empty")">
     @if (!_hasPlan)
     {
@@ -71,7 +71,7 @@
                             <article class="ep-card ep-hit" aria-label="@($"《{hit.LawTitle}》第 {hit.Number} 條")">
                                 <h2 class="ep-section-title">《@hit.LawTitle》第 @hit.Number 條</h2>
                                 <p class="ep-hit-body">@hit.Content</p>
-                                @* 可直接複製的引用：法規名、條號、查的是哪一天、ELI 網址。 *@
+                                @* 可直接複製的引用：法規名、條號、查的是哪一天、條文網址。 *@
                                 <p class="ep-hint">引用：《@hit.LawTitle》第 @hit.Number 條（@_asOfLabel）<code class="ep-mono">@hit.Uri</code></p>
                             </article>
                         }

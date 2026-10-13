@@ -11,11 +11,11 @@ using Microsoft.Extensions.Options;
 namespace EnvLaw.Platform.Modules.Ontology;
 
 /// <param name="Id">全國法規資料庫的 pcode（如 <c>O0020001</c>）。</param>
-/// <param name="Uri">依 ELI 網址樣板，可反查到該法規。</param>
-/// <param name="DateDocument">制定（首次公布）日；ELI 的 <c>date_document</c>。</param>
+/// <param name="Uri">由法規的 pcode 組成，可反查到該法規。</param>
+/// <param name="DateDocument">制定（首次公布）日。</param>
 public sealed record LawDto(string Id, string Uri, string Title, string Language, string? DateDocument);
 
-/// <param name="Uri">依 ELI 網址樣板，可反查到該條的現行版本。</param>
+/// <param name="Uri">由法規的 pcode 與條號組成，可反查到該條的現行版本。</param>
 /// <param name="Number">條號，照來源寫法（如 <c>5-1</c>）。</param>
 public sealed record ArticleDto(string Uri, string Number);
 
@@ -24,7 +24,7 @@ public sealed record ArticleDto(string Uri, string Number);
 /// <param name="Limit">最多幾筆，1–50；省略為 10。</param>
 public sealed record SearchRequest(string? Query, string? AsOf, int? Limit);
 
-/// <param name="Uri">依 ELI 網址樣板，可反查到該條。</param>
+/// <param name="Uri">由法規的 pcode 與條號組成，可反查到該條。</param>
 /// <param name="LawId">所屬法規的 pcode。</param>
 /// <param name="LawTitle">查詢日有效版本的法規標題。</param>
 /// <param name="Number">條號，照來源寫法（如 <c>5-1</c>）。</param>

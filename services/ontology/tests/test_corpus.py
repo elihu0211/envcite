@@ -188,7 +188,7 @@ def test_version_iri_follows_the_eli_template(conn: Conn, sample: None) -> None:
         SAMPLE_AT_2020.format("corpus.version_iri(s.version_id)"), ("art_7/para_2",)
     ).fetchone()
 
-    assert iri == ("https://env.law/eli/tw/law/O0040001/2018-06-13/zho/art_7/para_2",)
+    assert iri == ("https://env.law/tw/law/O0040001/2018-06-13/zho/art_7/para_2",)
 
 
 def test_sort_key_language_and_article_path_are_derived(conn: Conn) -> None:

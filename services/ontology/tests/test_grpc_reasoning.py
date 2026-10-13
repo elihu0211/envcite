@@ -74,7 +74,7 @@ def test_statements_come_back_typed(conn: Conn, tmp_path: Path, reasoning_stub: 
     duty, limit = by_id[duty_id], by_id[limit_id]
     assert duty.kind == reasoning_pb2.STATEMENT_KIND_PRESCRIPTIVE
     assert duty.modality == reasoning_pb2.NORM_MODALITY_OBLIGATION
-    assert duty.version_iri.startswith("https://env.law/eli/tw/law/")
+    assert duty.version_iri.startswith("https://env.law/tw/law/")
     scope = duty.scope.any_of[0].all_of[0]
     assert (scope.concept, scope.comparator) == ("discharging", reasoning_pb2.COMPARATOR_EQ)
     assert scope.value.value == "1"
@@ -101,7 +101,7 @@ def test_a_violation_is_a_candidate_with_its_source(
     ]
     assert not response.earlier
     sources = {s.statement_id: s.version_iri for s in response.at_decision.sources}
-    assert sources[duty_id].startswith("https://env.law/eli/tw/law/")
+    assert sources[duty_id].startswith("https://env.law/tw/law/")
     (cod,) = [t for t in response.at_decision.trace if t.concept == "cod"]
     assert (cod.fact.value, cod.threshold.value) == ("150", "100")
     assert cod.role == reasoning_pb2.CONDITION_ROLE_DUTY

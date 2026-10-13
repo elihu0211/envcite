@@ -138,7 +138,7 @@ public partial class Ask
     };
 
     /// <summary>
-    /// 記進歷史的答案（只列條文時）：只有出處（法規名、條號、ELI 網址），不存條文全文——全文隨時可以由出處再查，
+    /// 記進歷史的答案（只列條文時）：只有出處（法規名、條號、條文網址），不存條文全文——全文隨時可以由出處再查，
     /// 而且查的是哪一天的版本已經寫在問題的日期裡。
     /// </summary>
     private string AnswerText(IReadOnlyList<LawHit> hits) =>

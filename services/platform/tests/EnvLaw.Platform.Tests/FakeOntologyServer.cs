@@ -66,7 +66,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                 Law = new Law
                 {
                     Id = request.Id,
-                    Iri = $"https://env.law/eli/tw/law/{request.Id}",
+                    Iri = $"https://env.law/tw/law/{request.Id}",
                     Title = "空氣污染防制法",
                     Language = "zh-hant",
                     DateDocument = "2000-01-01",

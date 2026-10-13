@@ -130,7 +130,7 @@ message Statement {
   StatementKind kind = 2;
   // Set exactly when kind is PRESCRIPTIVE.
   optional NormModality modality = 3;
-  // ELI IRI of the provision version the statement was read from.
+  // IRI of the provision version the statement was read from.
   string version_iri = 4;
   repeated Slot slots = 5;
   // When the norm applies. No disjuncts means it always does.
@@ -278,7 +278,7 @@ message EarlierLaw {
 
 message StatementSource {
   int64 statement_id = 1;
-  // ELI IRI of the provision version the statement was read from.
+  // IRI of the provision version the statement was read from.
   string version_iri = 2;
 }
 

@@ -27,7 +27,7 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
         Assert.Equal("direct", result.Basis);
         var authority = Assert.Single(result.Authorities!);
         Assert.Equal(("L1", "空氣污染防制法 第 32 條"), (authority.Code, authority.Citation));
-        Assert.StartsWith("https://env.law/eli/", authority.Uri);
+        Assert.StartsWith("https://env.law/tw/", authority.Uri);
         Assert.False(string.IsNullOrEmpty(authority.Text));
         Assert.Contains(factory.Consult.Received, r =>
             r.Request.AsOf == "2020-01-01"

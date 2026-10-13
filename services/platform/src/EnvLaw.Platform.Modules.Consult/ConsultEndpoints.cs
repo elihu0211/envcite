@@ -18,7 +18,7 @@ public sealed record GroundRequestDto(string Question, string? PointInTime = nul
 
 /// <summary>一筆法源：代號、可反查到該條文版本的網址、正式引用格式與條文全文。</summary>
 /// <param name="Code">單次回應內的代號（<c>L1</c>…）；呼叫端的模型只能以代號引用，不要儲存。</param>
-/// <param name="Uri">依 ELI 網址樣板，可反查到該條文版本。</param>
+/// <param name="Uri">由法規的 pcode、版本日與條號組成，可反查到該條文版本。</param>
 /// <param name="Citation">正式引用格式，如「噪音管制法 第 9 條」。</param>
 /// <param name="Text">該日施行的條文全文。</param>
 public sealed record AuthorityDto(string Code, string Uri, string Citation, string Text);

@@ -133,7 +133,7 @@ class Citation(_message.Message):
     outside this set is an invented citation: strip it or reject the answer.
     """
     iri: _builtins.str
-    """ELI IRI of the cited subdivision."""
+    """IRI of the cited provision version."""
     label: _builtins.str
     """Human-readable label, e.g. "空氣污染防制法 第 20 條"."""
     text: _builtins.str
