@@ -2,13 +2,13 @@
 
 設計見 env-law-docs 02-05 §5。
 
-推論程式（`rules.lp`）不含任何法條，陳述是資料。結論都是**候選**：違反、合規、附條件、被排除、
-不適用、無法判定；罰則只列候選，不裁量。行政罰法總則排除的是處罰：事由成立則不列，
-有責性未知則附條件，義務陳述的結論不變。罰鍰同時列出兩種法定區間：各則自己的額度是數行為，
-確定且上下限都有的罰鍰另合併成一行為的一個區間；不選哪一種。優先關係只在有明文標註時消解，否則列為未決。
+推論程式（`rules.lp`）不含法條，陳述是資料。結論皆為**候選**（違反、合規、附條件、被排除、
+不適用、無法判定），罰則只列不裁量。行政罰法總則排除的是處罰：事由成立則不列，有責性未知則
+附條件，義務陳述的結論不變。罰鍰同列兩種區間（各則自己的額度；確定且上下限皆有者另合併為
+一行為的區間），不選其一。優先關係僅在明文標註時消解，否則列為未決。
 
-`order`（改善命令等預防性處分）不是行政罰：行政罰法總則的排除、減輕、時效與一行為都不適用，
-有候選就列出。罰則的 `discretionary` 是效果裁量（條文寫「得」），與要件的需判斷是兩個層次。
+`order`（改善命令等預防性處分）不是行政罰：總則的排除、減輕、時效與一行為皆不適用。
+罰則 `discretionary` 是效果裁量（條文寫「得」），與要件的需判斷分屬兩層。
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ _RULES = resources.files(__package__).joinpath("rules.lp").read_text(encoding="u
 
 @dataclass(frozen=True)
 class Penalty:
-    """候選罰則。`conditional`：罰則自己的要件未知（或被處罰的陳述只是附條件違反）。"""
+    """候選罰則；`conditional` 為罰則要件未知，或被處罰的陳述僅附條件違反。"""
 
     statement_id: int
     punishes_id: int
@@ -45,7 +45,7 @@ class Penalty:
 
 @dataclass(frozen=True)
 class General:
-    """行政罰法總則在這一則罰則上的標記。事由成立則該罰則不在 `penalties`。"""
+    """行政罰法總則對罰則的標記；排除事由成立者不在 `penalties`。"""
 
     unpunished: tuple[tuple[int, str], ...]
     mitigation: tuple[tuple[int, str], ...]
@@ -55,7 +55,7 @@ class General:
 
 @dataclass(frozen=True)
 class Trace:
-    """某個要件原子的取值：用了哪個事實值、哪個門檻值（千分位）。"""
+    """要件原子實際比較的事實值與門檻值（千分位）。"""
 
     condition_id: int
     statement_id: int
@@ -100,12 +100,10 @@ def evaluate(
     include_unsettled: bool = False,
     decided_on: date | None = None,
 ) -> Result:
-    """對 `as_of` 當日有效的陳述與給定的案件事實推論。
+    """對 `as_of` 當日有效的陳述與案件事實推論。
 
-    `decided_on` 是裁處日，只用於裁處權時效；預設與 `as_of` 同日。依行政罰法第 5 條要比對
-    行為時與裁處時的法律，見 `transition.evaluate_across`。
-
-    `include_unsettled` 只給驗證閘門用（在陳述被接受之前評估它）；推論的呼叫端不該用。
+    `decided_on` 只用於裁處權時效，預設同 `as_of`；跨法律變更見 `transition.evaluate_across`。
+    `include_unsettled` 僅供驗證閘門在接受前評估陳述，推論呼叫端不可用。
     """
     statements = facts.statement_facts(conn, as_of, language, include_unsettled=include_unsettled)
     program = "\n".join(
@@ -121,7 +119,7 @@ def evaluate(
             [(s.name, tuple(_py(a) for a in s.arguments)) for s in m.symbols(shown=True)]
         )
     )
-    if len(models) != 1:  # 規則是確定的：不是一個答案集就是規則或事實有誤
+    if len(models) != 1:  # 規則確定，非單一答案集即規則或事實有誤
         raise RuntimeError(f"expected exactly one answer set, got {len(models)}")
     atoms: dict[str, list[tuple[Any, ...]]] = {}
     for name, args in models[0]:

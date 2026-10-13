@@ -1,4 +1,4 @@
-"""閘門共用的型別，與「一個陳述所在的條文單元」的讀取。"""
+"""閘門共用型別與陳述所在條文單元的讀取。"""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ class GateResult:
 
 
 class Gate(Protocol):
-    """一個閘門。`check` 回 None 表示對這個陳述不適用。`verifier` 記入紀錄，且不得等於抽取者。"""
+    """`check` 回 None 為不適用；`verifier` 記入紀錄，不得等於抽取者。"""
 
     @property
     def method(self) -> str: ...
@@ -41,7 +41,7 @@ class Unit:
     span: tuple[int, int] | None
     kind: str
     deontic: str | None
-    context: str = ""  # 上層條文：只供讀，錨點與引文都在 text 上
+    context: str = ""  # 上層條文，只供讀；錨點與引文在 text
 
     @property
     def quoted(self) -> str:
@@ -49,7 +49,7 @@ class Unit:
 
     @property
     def with_context(self) -> str:
-        """罰則的額度可能寫在上層的項裡，款自己的引文裡沒有。"""
+        """含上層的引文：罰則額度可能寫在上層的項，款自己的引文沒有。"""
         return f"{self.context}\n{self.quoted}" if self.context else self.quoted
 
 

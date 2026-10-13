@@ -14,7 +14,7 @@ from env_law_segmenter import Segmenter
 log = logging.getLogger(__name__)
 
 
-#: 呼叫端將 `limit` 留為 0 時回傳的命中數，以及可請求的上限。
+#: `limit` 為 0 時的預設命中數，與可請求的上限。
 DEFAULT_SEARCH_LIMIT = 10
 MAX_SEARCH_LIMIT = 50
 
@@ -57,7 +57,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def SearchArticles(
         self, request: ontology_pb2.SearchArticlesRequest, context: grpc.ServicerContext
     ) -> ontology_pb2.SearchArticlesResponse:
-        # 查詢全文是客戶的案件內容（顧問查的往往是客戶的案子）：日誌只記長度，不記文字。
+        # 查詢文字可能是客戶案件內容：日誌只記長度。
         _log_call(context, "SearchArticles", f"query_chars={len(request.query)}")
         terms = self._segmenter.to_tsvector_input(request.query)
         if not terms:
@@ -96,7 +96,7 @@ def _check_as_of(context: grpc.ServicerContext, as_of: str) -> None:
 
 
 def _not_found(law_id: str, as_of: str) -> str:
-    # 法規不存在與該日無施行版本，契約都回 NOT_FOUND；帶上日期，訊息才說得出查的是哪一版。
+    # 法規不存在與該日無施行版本同為 NOT_FOUND；帶日期以區分查的是哪一版。
     return f"law '{law_id}' not found" + (f" in force on {as_of}" if as_of else "")
 
 

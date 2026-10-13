@@ -1,8 +1,4 @@
-"""伺服器啟動。
-
-以環境變數設定：ONTOLOGY_INTERNAL_TOKEN（必填）、ONTOLOGY_DSN（必填）、
-ONTOLOGY_GRPC_PORT。
-"""
+"""gRPC 伺服器啟動；環境變數：ONTOLOGY_INTERNAL_TOKEN、ONTOLOGY_DSN（必填）、ONTOLOGY_GRPC_PORT。"""
 
 from __future__ import annotations
 
@@ -25,13 +21,12 @@ SERVICE_NAME = "env_law.ontology.v1.OntologyService"
 def build_server(
     store: OntologyStore, token: str, address: str = "[::]:0"
 ) -> tuple[grpc.Server, int]:
-    """建立（但不啟動）伺服器；連同綁定的埠號一併回傳。"""
+    """建立但不啟動；回傳伺服器與實際綁定的埠號。"""
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10),
         interceptors=[InternalTokenInterceptor(token)],
     )
-    # lexicon 只讀取一次：之後匯入的用語要重新啟動才會進入查詢，正如它們要重新
-    # 建立索引才會進入 `content_tsv`。
+    # lexicon 啟動時只讀一次：新匯入的用語須重啟才進入查詢。
     segmenter = Segmenter(store.lexicon())
     ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
         OntologyServicer(store, segmenter), server

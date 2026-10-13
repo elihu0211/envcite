@@ -1,9 +1,6 @@
-"""法規語料（PostgreSQL）之上的讀取模型。
+"""法規語料（PostgreSQL）之上的唯讀模型；資料表為真值，本體是投影（env-law-docs 02-02）。
 
-關聯式資料表才是真值；本體是由它們投影出來的視圖（env-law-docs 02-02）。本模組只讀。
-
-版本解析、閱讀順序、IRI 與條的全文都在 SQL 裡決定，本模組不重做：同一個答案若由
-兩處各自計算，遲早會算得不一樣。
+版本解析、閱讀順序、IRI、條文全文都由 SQL 決定，本模組不重算，以免兩處答案分岔。
 """
 
 from __future__ import annotations
@@ -15,8 +12,8 @@ from typing import Self
 
 from psycopg_pool import ConnectionPool
 
-#: 全國法規資料庫 pcode 的形狀，與 `corpus.legal_resource` 的 CHECK 相互對應。這一道只讓
-#: 不可能相符的值省去一次往返；查詢皆已參數化，它不是注入防禦。
+#: 全國法規資料庫 pcode 的形狀，對應 `corpus.legal_resource` 的 CHECK；只省一次往返，
+#: 不是注入防禦（查詢皆已參數化）。
 _PCODE = re.compile(r"^[A-Z][0-9]{7}$")
 
 #: 語料目前只有中文版本。
@@ -29,7 +26,7 @@ class LawRecord:
     iri: str
     title: str
     language: str
-    #: 制定日（eli:date_document），ISO 8601；語料未記載制定事件時為空字串。
+    #: 制定日（eli:date_document），ISO 8601；無制定事件時為空字串。
     date_document: str
 
 
@@ -53,7 +50,7 @@ def is_valid_law_id(value: str) -> bool:
     return bool(_PCODE.fullmatch(value))
 
 
-#: 某日有效的版本；日期為空時取今日。法規不存在與該日無版本，兩者都查無結果。
+#: 某日有效的版本；法規不存在與該日無版本皆查無結果。
 _RESOLVE = """
     SELECT r.id, corpus.resource_iri(r.norm_kind, r.local_id), e.title, e.language,
            (SELECT min(le.event_date)
@@ -67,7 +64,7 @@ _RESOLVE = """
        AND e.text_period @> %(on)s::date
 """
 
-#: 該日有效的條（含文字無法取得者，它有效，只是本系統沒有其文字）。
+#: 該日有效的條，含 `text_unavailable`（有效，只是無文字）。
 _LIST_ARTICLES = """
     SELECT corpus.version_iri(s.version_id), corpus.article_number(s.path)
       FROM corpus.provisions_at(%(resource)s, %(language)s, %(on)s::date) AS s
@@ -76,8 +73,7 @@ _LIST_ARTICLES = """
      ORDER BY s.sort_key
 """
 
-#: segmenter 的詞典：法規名稱。建索引必須用同一份詞典，否則分詞器識別碼不同，字面檢索
-#: 什麼都比對不到（04-01 §5）。
+#: segmenter 詞典（法規名稱）；須與建索引同源，否則分詞器識別碼不符、字面檢索全落空（04-01 §5）。
 _LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression"
 
 _SEARCH = """
@@ -122,11 +118,7 @@ class OntologyStore:
         return found[1] if found else None
 
     def list_articles(self, law_id: str, *, as_of: str = "") -> list[ArticleRecord] | None:
-        """`as_of` 當日有效的各條。
-
-        法規不存在或該日無版本時為 None；版本存在而沒有有效的條時為 []。兩者必須可以
-        區分：前者是語料缺漏，後者是關於該法規的事實。
-        """
+        """`as_of` 當日有效的各條；法規或版本不存在為 None，有版本而無有效條為 []，兩者語意不同。"""
         found = self._resolve(law_id, as_of)
         if found is None:
             return None
@@ -189,5 +181,5 @@ class OntologyStore:
 
 
 def _date(as_of: str) -> str:
-    """空的 `as_of` 表示今日；在資料庫取今日，與查詢同一個時鐘。"""
+    """空 `as_of` 為今日，由資料庫解析以與查詢同一時鐘。"""
     return as_of or "today"

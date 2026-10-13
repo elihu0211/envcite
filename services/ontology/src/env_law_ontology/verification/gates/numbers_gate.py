@@ -65,12 +65,7 @@ class NumbersGate:
 
     @staticmethod
     def _bound(u: Unit, value: int, comparator: str, negated: bool) -> dict[str, Any] | None:
-        """比較符號含不含本數，與原文數字後的比較詞一致。
-
-        原文寫「十八歲以上」，標註的比較是 ge（或它的補集 lt，當要件描述的是違反的那一側）才對；
-        標成 gt 就把本數排除了。同一個數字在原文有幾個比較詞時，只要一個一致就算。原文沒有比較詞
-        （例如「逾」「超過」，沒有查到明文的含本數規則）則不檢查。
-        """
+        """比較符號含不含本數，與原文數字後的比較詞一致；任一比較詞相符即可，原文沒有比較詞則不檢查。"""
         words = [w for v, w in qualified_numbers(u.quoted) if v == value]
         if not words:
             return None
@@ -104,7 +99,7 @@ class NumbersGate:
             stored_amounts = [None if v is None else int(v) for v in (low, high)]
             out.append({"what": "amounts", "stored": stored_amounts, "text": [], "ok": False})
         stored = (None if low is None else int(low), None if high is None else int(high))
-        # 原文可能分級（一般與工商廠、場各有一組額度）：標註的下限與上限要是原文同一組。
+        # 原文可能分級（各有一組額度）：標註的下限與上限須取自同一組。
         tiers = ranges(found)
         want = next((t for t in tiers if t == stored), tiers[0] if tiers else (None, None))
         for name, have, wanted in (("min", stored[0], want[0]), ("max", stored[1], want[1])):
@@ -113,7 +108,7 @@ class NumbersGate:
             if have is None:
                 out.append(
                     {"what": name, "stored": None, "text": wanted, "ok": None}
-                )  # 原文有、標註沒有
+                )  # 原文有、標註無
             else:
                 out.append({"what": name, "stored": have, "text": wanted, "ok": wanted == have})
         return out

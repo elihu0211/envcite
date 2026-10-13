@@ -74,9 +74,8 @@ def touched_articles(entry: str, known: Iterable[str]) -> set[str]:
 def from_note(note: str, effective: date | None, version_date: date) -> Commencement:
     """施行說明沒有列出任何條號時，整次公布的施行日。
 
-    說明是自由文字，施行日欄（`LawEffectiveDate`）是結構化的：以說明裡另有的日期印證欄位，
-    兩者吻合才採用；欄位為 9999-12-31 是「由命令定之」。說明有「除…者外」、日期對不上、
-    或以「某法施行之日」相對表達者，不猜。
+    以說明內的日期印證施行日欄（`LawEffectiveDate`），吻合才採用；欄位 9999-12-31 為由命令
+    定之。有「除…者外」、日期對不上、或相對表達（「某法施行之日」）者不猜。
     """
     compact = re.sub(r"\s+", "", note)
     if _EXCEPTION.search(compact):
@@ -98,11 +97,7 @@ def derive(
     touched: bool,
     note: Commencement | None = None,
 ) -> Commencement:
-    """一條在現行版本的生效日。`entry` 是最後一次公布的沿革語句。
-
-    `deferred`：施行說明列出了此條，待確認。`note`：施行說明沒有列出條號時，由它判定的
-    整次公布的施行日（`from_note`）。
-    """
+    """一條在現行版本的生效日；`entry` 是最後一次公布的沿革語句，`note` 見 `from_note`。"""
     if deferred:
         return Commencement("unconfirmed", None)
     if not touched:

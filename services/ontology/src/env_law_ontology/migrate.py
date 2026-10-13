@@ -1,8 +1,6 @@
 """依檔名順序套用 SQL migration。
 
-刻意不用 migration 框架：這個 schema 只有寥寥幾個檔案，而框架提供的是版本表、
-自動產生與回滾語意——這裡只需要版本表，所以它就只是一張表。已套用的檔案絕不可
-修改；請改為新增一個檔案。這條規則靠 checksum 比對強制執行，而不是靠人記得。
+不用框架：只需要版本表。已套用的檔案不可修改，由 checksum 比對強制。
 """
 
 from __future__ import annotations
@@ -39,7 +37,7 @@ def apply_all(conn: Connection[tuple[object, ...]], directory: Path | None = Non
         paths = sorted(directory.glob("*.sql"))
         orphans = sorted(seen.keys() - {p.name for p in paths})
         if orphans:
-            # 資料庫由另一套基線建立：在其上套用現行檔案，會讓舊表與新表並存。
+            # 資料庫來自另一套基線；硬套會讓新舊表並存。
             raise MigrationChanged(
                 f"applied migrations no longer on disk: {', '.join(orphans)}; "
                 "this database predates the current baseline — recreate it"
@@ -61,19 +59,15 @@ def apply_all(conn: Connection[tuple[object, ...]], directory: Path | None = Non
                 (path.name, digest),
             )
             applied.append(path.name)
-            # 逐檔提交：新加的列舉值要先提交才能使用，既有資料庫在升級時，後面的檔案才
-            # 用得到前面的檔案加的值。全部放同一個交易，升級這條路徑在全新資料庫上測
-            # 不到（型別是同一個交易建立時，新值可立即使用）。
+            # 逐檔提交：新增的列舉值須先提交，後面的檔案才能用；單一交易在全新資料庫測不出此問題。
             conn.commit()
     return applied
 
 
 def main() -> None:
-    """CLI 進入點：對 `ONTOLOGY_DSN` 套用 migration，然後結束。
+    """對 `ONTOLOGY_DSN` 套用 migration 後結束。
 
-    刻意與伺服器分開。啟動時就執行 migration 的伺服器，會讓每個 replica 都成為
-    寫入者，把一次 rollout 變成競態；以獨立的任務執行，則讓 schema 變更有明確的
-    開始與結束，可供其他元件等待。
+    與伺服器分開：避免每個 replica 啟動時都寫入而使 rollout 競態，並讓 schema 變更有可等待的終點。
     """
     import logging
     import os

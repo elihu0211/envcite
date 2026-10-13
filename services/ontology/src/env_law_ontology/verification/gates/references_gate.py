@@ -12,7 +12,7 @@ _CITE = re.compile(rf"第([{NUMBER}]+)條(?:之([{NUMBER}]+))?(?:第([{NUMBER}]+
 
 
 def citations(text: str) -> list[str]:
-    """原文引用的條（項）的路徑：「第七條第一項」→ art_7/para_1、「第五條之一」→ art_5-1。"""
+    """原文引用的條（項）路徑：「第七條第一項」→ art_7/para_1、「第五條之一」→ art_5-1。"""
     out: list[str] = []
     for m in _CITE.finditer(text):
         try:
@@ -29,9 +29,9 @@ def citations(text: str) -> list[str]:
 
 @dataclass(frozen=True)
 class ReferencesGate:
-    """罰則所處罰的陳述所在的條（項），必須是原文引用的；而且那個陳述要先被接受。
+    """所處罰陳述的條（項）須為原文引用，且該陳述須已接受。
 
-    處罰一個沒被接受的義務沒有意義：它還在 `extracted` 時罰則無法判定，等下一輪；被駁回則罰則失敗。
+    處罰對象仍 `extracted` 時無法判定、留待下一輪；已 rejected 則失敗。
     """
 
     method: str = "references"
@@ -61,9 +61,8 @@ class ReferencesGate:
         evidence = {
             "target": target,
             "cited": cited,
-            "unresolved": [
-                c for c in cited if c not in in_corpus
-            ],  # 原文引用、語料沒有的：只記，不算錯
+            # 語料沒有的引用只記錄，不算錯
+            "unresolved": [c for c in cited if c not in in_corpus],
         }
         if not covers:
             return GateResult("fail", evidence)

@@ -1,11 +1,8 @@
-"""語言模型的介面與轉接器。
+"""語言模型的介面 `Model`（名字、家族、prompt → 字串）與轉接器。
 
-系統只知道 `Model`：有名字、有家族、給 prompt 回字串。名字記入推導與驗證紀錄；家族用來強制獨立性——
-驗證者與抽取者同一家族，共同偏誤就擋不住（一致不等於正確），所以預設不採計同家族驗證者的結果。
-轉接器只是把一個供應商的 API 包成 `Model`。有兩個：Anthropic 的 Messages API，與 OpenAI 相容的
-Chat Completions（OpenRouter、Together、Fireworks、Groq、DeepInfra 等託管服務，或自架的 vLLM、
-llama.cpp server、Ollama）——後者讓 gpt-oss-120b 這類開放權重模型，以及 Qwen、DeepSeek、Llama 等
-其他家族都能當驗證者，這正是跨家族驗證要的。
+名字記入推導與驗證紀錄；家族用來強制獨立性，同家族驗證者預設不採計。
+轉接器有兩個：Anthropic Messages API，與 OpenAI 相容的 Chat Completions（託管服務或自架），
+後者讓開放權重的其他家族也能當驗證者。
 """
 
 from __future__ import annotations
@@ -21,36 +18,35 @@ from collections.abc import Callable
 from http.client import HTTPException
 from typing import Any, Protocol
 
-#: 值得重試的 HTTP 狀態：逾時、衝突、過早、限流與伺服器端的暫時性錯誤。其餘的 4xx（金鑰錯、模型
-#: 不存在、請求不合）重試也不會好，直接報。
+#: 值得重試的 HTTP 狀態（暫時性錯誤）；其餘 4xx 重試不會好，直接報。
 RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
 
 
 class ModelError(RuntimeError):
-    """呼叫模型失敗（含重試用盡）。抽取與閘門把它當成這一次沒有答案，不讓整條管線中斷。"""
+    """呼叫模型失敗（含重試用盡）；抽取與閘門視為這次沒有答案，不中斷管線。"""
 
 
 class Model(Protocol):
     @property
     def name(self) -> str:
-        """記入紀錄的識別：`家族:模型`，例如 `anthropic:claude-sonnet-5-5`。"""
+        """記入紀錄的識別 `家族:模型`，例如 `anthropic:claude-sonnet-5-5`。"""
         ...
 
     @property
     def family(self) -> str:
-        """模型家族：同一家族的模型共享訓練資料與偏誤，不算互相獨立。"""
+        """同家族的模型共享訓練資料與偏誤，不算互相獨立。"""
         ...
 
     def complete(self, prompt: str) -> str: ...
 
 
 def family_of(agent: str) -> str:
-    """推導者或驗證者的家族：名稱 `家族:模型` 的前綴；沒有冒號的整個名稱當家族。"""
+    """名稱 `家族:模型` 的前綴；沒有冒號則整個名稱當家族。"""
     return agent.split(":", 1)[0]
 
 
 class AnthropicModel:
-    """Anthropic 的 Messages API。金鑰取自環境變數 `ANTHROPIC_API_KEY`。需要 `llm` 選用依賴。"""
+    """Anthropic Messages API；金鑰取自 `ANTHROPIC_API_KEY`，需 `llm` 選用依賴。"""
 
     family = "anthropic"
 
@@ -83,17 +79,12 @@ class AnthropicModel:
 class ChatCompletionsModel:
     """OpenAI 相容的 Chat Completions 端點，只用標準函式庫。
 
-    模型以 `供應商/模型` 的 slug 指定，例如 `openai/gpt-oss-120b`、`qwen/qwen3-235b-a22b`：斜線前的
-    供應商就是家族（`family`），所以不同家族的開放權重模型能以同一個轉接器當驗證者。端點取自環境
-    變數 `CHAT_BASE_URL`（必填，沒有預設：不把法規文字悄悄送到沒指定的第三方）、金鑰取自
-    `CHAT_API_KEY`（自架的伺服器可以沒有）。gpt-oss 一類的推理模型會把思考也算進輸出長度，所以
-    `max_tokens` 預設較大；只取 `message.content`，思考欄位不採用。slug 沒有斜線時家族記為
-    `unknown`：兩個這樣的模型會被當成同一家族，只會讓閘門更保守，不會更寬鬆。
-
-    送出的模型識別預設是整個 slug（OpenRouter 這類閘道的寫法）；自架或自訂的端點常只認斜線後的
-    名字（`gpt-oss-120b`），設環境變數 `CHAT_MODEL_FORMAT=bare` 就只送斜線後的部分。家族與名字
-    仍取自 slug，所以 `chat:openai/gpt-oss-120b` 與 `chat:google/gemma-4-31b` 在只認名字的端點上
-    也記成不同家族。
+    模型以 `供應商/模型` slug 指定（`openai/gpt-oss-120b`），斜線前的供應商即家族；無斜線時家族為
+    `unknown`，多個這樣的模型視為同家族，只會更保守。
+    端點取自 `CHAT_BASE_URL`（必填、無預設：不把法規文字悄悄送到未指定的第三方），金鑰取自
+    `CHAT_API_KEY`（自架可無）。推理模型的思考計入輸出長度，故 `max_tokens` 預設較大；
+    只取 `message.content`。
+    預設送整個 slug；端點只認斜線後的名字時設 `CHAT_MODEL_FORMAT=bare`，家族與名字仍取自 slug。
     """
 
     def __init__(
@@ -109,8 +100,8 @@ class ChatCompletionsModel:
         backoff: float = 1.0,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
-        """`declared_family`、`base_url`、`api_key` 由設定檔給（`config.py`）：此時 `slug` 就是送給
-        端點的模型識別、家族是明示的；不給時（命令列的 `chat:` 規格）退回 slug 與環境變數的寫法。"""
+        """`declared_family`、`base_url`、`api_key` 由設定檔（`config.py`）給時，`slug` 原樣送出；
+        不給（命令列 `chat:` 規格）則退回 slug 與環境變數。"""
         self.slug = slug
         self.max_tokens = max_tokens
         self.timeout = timeout
@@ -171,7 +162,7 @@ class ChatCompletionsModel:
         return content
 
     def _post(self, request: urllib.request.Request) -> dict[str, Any]:
-        """送出請求；暫時性的失敗（逾時、斷線、限流、5xx）以指數退避重試，其餘直接報。"""
+        """送出請求；暫時性失敗以指數退避重試，其餘直接報。"""
         for attempt in range(self.max_retries + 1):
             try:
                 with urllib.request.urlopen(request, timeout=self.timeout) as response:
@@ -198,14 +189,14 @@ class ChatCompletionsModel:
         raise AssertionError("unreachable")  # pragma: no cover
 
     def _wait(self, attempt: int, retry_after: str | None) -> float:
-        """退避秒數：伺服器給了整數的 Retry-After 就照它（上限一分鐘），否則指數加抖動。"""
+        """退避秒數：整數的 Retry-After 優先（上限一分鐘），否則指數加抖動。"""
         if retry_after is not None and retry_after.strip().isdigit():
             return float(min(int(retry_after), 60))
         return float(self.backoff * 2**attempt * (0.5 + random.random() / 2))
 
 
 def build_model(spec: str) -> Model:
-    """`anthropic:<模型>` 或 `chat:<供應商/模型>` → Model。其餘明說，不靜默換成別家。"""
+    """`anthropic:<模型>` 或 `chat:<供應商/模型>` → Model；其餘報錯，不靜默換成別家。"""
     vendor, _, model_id = spec.partition(":")
     if vendor == "anthropic" and model_id:
         return AnthropicModel(model_id)

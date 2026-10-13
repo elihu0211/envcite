@@ -1,16 +1,11 @@
-"""模型配置：哪個角色用哪個模型、連到哪個端點，寫在一個 TOML 檔裡（`models.example.toml`）。
+"""模型配置：角色對模型、模型對端點，寫在一個 TOML 檔（`models.example.toml`）。
 
-為什麼不再靠命令列旗標與位置：驗證者的順序決定誰擔任往返驗證、誰設計獨立測試（`gates_for`），
-那是隱含的；環境變數只有一組 `CHAT_*`，同一次跑不能連兩個端點。設定檔把兩件事說明白：
+- 角色明寫：抽取者、往返重抽者、獨立測試設計者、評審團各指名模型，不靠驗證者順序隱含。
+- 家族由人宣告，不從模型名推測：託管端點的名稱可能是別名，獨立性規則依家族判定。
+- 設定檔只寫金鑰位置（`api_key_env` 或相對於設定檔的 `api_key_file`）；
+  金鑰檔在未忽略的 git 工作樹內則拒絕載入。
 
-- **角色明寫**：抽取者、往返驗證的重抽者、獨立測試的設計者、評審團，各自指名一個模型。
-- **家族明寫**：獨立性規則（驗證者不得與抽取者同一家族）所依的家族由人宣告，不從模型名字推測；
-  託管端點的名稱可能是別名（`gpt-oss-120b` 與 `mistral-small-4` 是同一個模型），宣告時要查清楚。
-- **金鑰不入設定檔**：設定檔只寫金鑰在哪裡——環境變數的名稱（`api_key_env`），或專案內一個不進版控的
-  檔案的路徑（`api_key_file`，相對於設定檔所在的目錄）；設定檔本身可以進版控與審閱。金鑰檔若在
-  git 工作樹裡又沒被忽略就拒絕載入，免得它被提交。
-
-只用標準函式庫（`tomllib`）；不認得的鍵與指向不存在者的參照一律報錯，不靜默忽略。
+不認得的鍵與指向不存在者的參照一律報錯。
 """
 
 from __future__ import annotations
@@ -67,8 +62,7 @@ def _key_from_file(where: str, name: Any, base: Path) -> str:
         raise ConfigError(f"{where}: cannot read the key file {path}: {e.strerror}") from e
     if not key:
         raise ConfigError(f"{where}: the key file {path} is empty")
-    # 在 git 工作樹裡又沒被忽略（check-ignore 回 1）就拒絕：金鑰檔一旦被 `git add` 就洩漏了。
-    # 不在工作樹裡（128）或沒有 git 就不管。
+    # check-ignore 回 1＝在工作樹內且未忽略，拒絕以免被提交；128（不在工作樹）或無 git 則放行。
     try:
         ignored = subprocess.run(
             ["git", "-C", str(path.parent), "check-ignore", "-q", str(path)],

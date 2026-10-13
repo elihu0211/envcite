@@ -1,8 +1,7 @@
-"""驗證與接受：對尚未被接受的陳述跑閘門、記錄結果，再依政策升為 confirmed 或 rejected。
+"""驗證與接受：對未接受的陳述跑閘門並記錄，再依政策升為 confirmed 或 rejected。
 
-沒有人在這條線上。陳述是否成為推論用的事實，只看紀錄：必要的方法最近一次都通過、沒有任何方法最近
-一次失敗（`annotation.settle`）。無法判定的閘門（例如委任的限值所依的陳述尚未被接受）會在下一輪
-再跑：接受一批陳述可能讓另一批陳述的閘門變得可判定，所以流程重複到沒有進展為止。
+接受只看紀錄（`annotation.settle`）：必要方法最近一次皆通過、無方法最近一次失敗。
+接受一批可能讓另一批的無法判定閘門變得可判定，故重複到沒有進展。
 """
 
 from __future__ import annotations
@@ -31,11 +30,9 @@ class Settled:
 
 
 def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
-    """對每個 extracted 的陳述，把還沒有定論的閘門跑一遍並記錄；回傳新寫入的驗證列數。
+    """對每個 extracted 陳述跑尚無定論的閘門並記錄；回傳新寫入的驗證列數。
 
-    「定論」是這個方法最近一次為 pass、fail 或 not_applicable；inconclusive 與沒跑過的會（再）跑。
-    每個陳述的結果跑完就 commit：模型呼叫是這條線上最貴的東西，中途崩潰不該丟掉已經問到的答案，
-    長時間的跑也要在資料庫裡看得見進度。
+    最近一次非 inconclusive 即有定論。每個陳述跑完就 commit：模型呼叫昂貴，崩潰不丟答案且進度可見。
     """
     written = 0
     ids = [
@@ -56,7 +53,7 @@ def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
             try:
                 result = gate.check(conn, sid)
             except ModelError as e:
-                # 模型沒回答不是標註的錯：記為無法判定，下一輪（或下次跑）再試，不駁回也不中斷。
+                # 模型沒回答不是標註的錯：記為無法判定，留待下次，不駁回也不中斷。
                 result = GateResult("inconclusive", {"error": str(e)[:300]})
             verdict, evidence = (
                 ("not_applicable", {}) if result is None else (result.verdict, result.evidence)
