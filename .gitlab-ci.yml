@@ -1,11 +1,19 @@
-# CI for env-law（單一倉庫、多服務）。
+# env-law 單一倉庫、多服務的 CI。
 #
-# gate 以外的 job 標 `windows-docker-thin`，跑在 thuaisse-lab 的 group runner 上，
-# 不計入 GitLab.com 的 CI/CD 分鐘數。gate 不標 tag：它只讓「只改文件」的 MR 仍有一條
-# pipeline，繼續走 shared runner，不佔自建 runner 的槽。
+# gate 以外的 job 都標 `windows-docker-thin`（thuaisse-lab group runner，不計 GitLab.com 分鐘數）；
+# gate 走 shared runner，不佔自建 runner。
 #
-# job 用 `rules:changes` 依路徑分流：只改一個服務不會跑另一個。proto 同時是兩個服務的上游，故列入兩者的
-# 觸發路徑——契約一改，兩邊都要重驗，這正是把它們放進同一個倉庫的理由。
+# 以 `rules:changes` 依路徑分流。proto 是各服務的上游，列入其觸發路徑：契約一改，相關服務都重驗。
+include:
+  - component: $CI_SERVER_FQDN/components/secret-detection/secret-detection@2.4.0
+    inputs:
+      stage: check
+      enable_mr_pipelines: true
+  - component: $CI_SERVER_FQDN/components/sast/sast@3.5.0
+    inputs:
+      stage: check
+      enable_mr_pipelines: true
+
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -17,7 +25,7 @@ workflow:
 
 default:
   interruptible: true
-  # 自建 runner 的暫時性失敗（job 起不來、卡在 pending）重試一次；測試失敗不重試。
+  # 只重試 runner 的暫時性失敗；測試失敗不重試。
   retry:
     max: 1
     when:
@@ -30,12 +38,30 @@ stages:
   - build
 
 variables:
+  # 工具與映像版本集中於此，`# renovate:` 註記供 Renovate 更新。
+  # renovate: datasource=docker depName=docker
+  DOCKER_VERSION: "29.8.1"
+  # renovate: datasource=docker depName=bufbuild/buf
+  BUF_VERSION: "1.73.0"
+  # renovate: datasource=docker depName=tufin/oasdiff
+  OASDIFF_VERSION: "v1.32.1"
+  # renovate: datasource=docker depName=hadolint/hadolint
+  HADOLINT_VERSION: "v2.15.1"
+  # renovate: datasource=docker depName=alpine
+  ALPINE_VERSION: "3.22"
+  # renovate: datasource=docker depName=postgres
+  POSTGRES_MAJOR: "18"
+  # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
+  DOTNET_VERSION: "10.0"
+  # renovate: datasource=pypi depName=uv
+  UV_VERSION: "0.12.18"
+  # renovate: datasource=python-version depName=python
+  PYTHON_VERSION: "3.14"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
-  UV_VERSION: "0.12.18"
-  PYTHON_VERSION: "3.14"
+  COVERAGE_RCFILE: $CI_PROJECT_DIR/pyproject.toml
   UV_LINK_MODE: copy
-  # 絕對路徑：Python job 會 cd 進成員目錄，快取仍須落在 `cache:paths` 所指的專案根之下。
+  # 絕對路徑：job 會 cd 進成員目錄，快取仍須在專案根之下。
   UV_CACHE_DIR: $CI_PROJECT_DIR/.uv-cache
 
 .changes-platform: &changes-platform
@@ -43,7 +69,7 @@ variables:
   - proto/**/*
   - .gitlab-ci.yml
 
-# Python 各成員共用倉庫根的 pyproject.toml 與 uv.lock（uv workspace），兩者一改，全部重驗。
+# uv workspace 共用根目錄的 pyproject.toml 與 uv.lock，兩者一改，全部重驗。
 .changes-ontology: &changes-ontology
   - services/ontology/**/*
   - libs/python/**/*
@@ -73,40 +99,49 @@ variables:
   - uv.lock
   - .gitlab-ci.yml
 
+.changes-dockerfile: &changes-dockerfile
+  - services/*/Dockerfile
+  - .gitlab-ci.yml
+
 .changes-proto: &changes-proto
   - proto/**/*
   - buf.yaml
   - .gitlab-ci.yml
 
-# 每條 pipeline 至少有這個 job。專案要求 pipeline 成功才能合併，而只改文件的 MR 沒有任何
-# job 符合上面的 `rules:changes`，GitLab 就不建立 pipeline——MR 會永遠停在「等待 pipeline」。
-# 不 clone、不裝任何東西，只負責讓 pipeline 存在。
+# 自建 runner 的 tag 只在這裡定義。
+.runner:
+  tags: [windows-docker-thin]
+
+# Docker-in-Docker：dotnet 的 Testcontainers 與映像建置共用。
+.dind:
+  services:
+    - name: docker:${DOCKER_VERSION}-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+
+# 只改文件的 MR 不符合任何 `rules:changes`，不會有 pipeline，而合併要求 pipeline 成功。
+# 此 job 讓 pipeline 永遠存在。
 gate:
   stage: check
-  image: alpine:3.22
+  image: alpine:$ALPINE_VERSION
   variables:
     GIT_STRATEGY: none
   script:
     - echo "path-specific jobs below decide what else runs"
 
 dotnet:
+  extends: [.runner, .dind]
   stage: check
-  tags: [windows-docker-thin]
   rules:
     - changes: *changes-platform
-  image: mcr.microsoft.com/dotnet/sdk:10.0
-  # Testcontainers（PostgreSQL）走 Docker-in-Docker。thin runner 的 privileged 必須開著，
-  # 否則 dind 服務起不來。
-  services:
-    - name: docker:29.8.1-dind
-      alias: docker
+  image: mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
     TESTCONTAINERS_HOST_OVERRIDE: docker
     NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
   cache:
-    # prefix：這台 runner 的 S3 cache 開了 Shared，同 key 會跨專案共用。
+    # prefix：runner 的 S3 cache 為 Shared，避免同 key 跨專案共用。
     - key:
         prefix: "$CI_PROJECT_PATH"
         files: [services/platform/Directory.Packages.props]
@@ -115,27 +150,31 @@ dotnet:
     - cd services/platform
     - dotnet restore
     - dotnet build --no-restore
-    # 對外 REST 的規格（openapi/openapi_v2.json）由建置產生並提交；與程式碼不一致即失敗——重新建置後提交它。
-    - git diff --exit-code -- openapi/ && test -z "$(git status --porcelain -- openapi/)"
+    # openapi/ 由建置產生並提交；與程式碼不一致即失敗，重新建置後提交。
+    - test -z "$(git status --porcelain -- openapi/)"
     - dotnet format --verify-no-changes --no-restore
     - >-
       dotnet test --no-build
+      --collect:"XPlat Code Coverage" --results-directory "$CI_PROJECT_DIR/artifacts"
       --logger "junit;LogFilePath=$CI_PROJECT_DIR/artifacts/{assembly}-test-result.xml;MethodFormat=Class;FailureBodyFormat=Verbose"
   artifacts:
     when: always
+    expire_in: 1 week
     paths:
       - artifacts/*test-result.xml
     reports:
       junit: artifacts/*test-result.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: artifacts/**/coverage.cobertura.xml
 
-# Python 成員共用。workspace 只有一份 uv.lock：每個 job 同步整個 workspace（`--locked`
-# 同時驗證鎖檔與所有成員一致），再於 `$MEMBER` 目錄執行該成員的檢查。
+# Python 成員共用：同步整個 workspace（`--locked` 驗證鎖檔），再於 `$MEMBER` 執行檢查。
 .python:
+  extends: .runner
   stage: check
-  tags: [windows-docker-thin]
   image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
   cache:
-    # prefix：這台 runner 的 S3 cache 開了 Shared，同 key 會跨專案共用。
+    # prefix：runner 的 S3 cache 為 Shared，避免同 key 跨專案共用。
     - key:
         prefix: "$CI_PROJECT_PATH"
         files: [uv.lock]
@@ -152,23 +191,25 @@ dotnet:
     - uv run --no-sync ruff check .
     - uv run --no-sync ruff format --check .
     - uv run --no-sync mypy src tests
-    - uv run --no-sync pytest --junitxml="$CI_PROJECT_DIR/report.xml"
+    - uv run --no-sync pytest --cov --cov-report=term --cov-report=xml:$CI_PROJECT_DIR/coverage.xml --junitxml="$CI_PROJECT_DIR/report.xml"
+  coverage: '/^TOTAL\s.*\s(\d+(?:\.\d+)?)%$/'
   artifacts:
     when: always
+    expire_in: 1 week
     reports:
       junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 ontology:
   extends: .python-checks
   rules:
     - changes: *changes-ontology
-  # 測試需要真實的 PostgreSQL（本服務一半的讀取邏輯在 SQL 裡）。用 job service 直接
-  # 附掛一個，而不是 Docker-in-Docker 再由 testcontainers 起——後者要多跑一個 dind
-  # 服務、多拉一次映像。testcontainers 仍留在開發相依裡，供本機沒有現成資料庫時使用。
-  #
-  # 主版本與正式區相同；綱要只用 PostgreSQL 自帶的擴充（btree_gist）。
+  # 測試需要真實 PostgreSQL：以 job service 附掛，省掉 dind 與一次映像拉取。
+  # 主版本與正式區相同。
   services:
-    - name: postgres:18
+    - name: postgres:$POSTGRES_MAJOR
       alias: postgres
   variables:
     MEMBER: services/ontology
@@ -184,7 +225,7 @@ consult:
   variables:
     MEMBER: services/consult
 
-# 產生碼必須與根 proto/ 一致：重新產生後與提交的版本比對。
+# 重新產生後須與提交的產生碼一致。
 python-proto:
   extends: .python
   rules:
@@ -197,36 +238,25 @@ python-proto:
     - diff -r -x __pycache__ "$CI_PROJECT_DIR/.generated-before" src
     - uv run --no-sync mypy src
 
-# 映像建置。`needs` 只等同服務的檢查，不等其他服務。建置在 MR 上也跑：Dockerfile 壞掉要在合併前知道。推送只在預設分支——MR 的
-# 映像沒有人會部署，推上去只是佔 registry。tag 只用 commit SHA，不推 latest：可變的
-# tag 讓「部署的是哪一版」無從回答。env-law-deploy 的 Image Updater 依這個 SHA 上線。
+# 映像建置：MR 只驗證建置，預設分支才推送。tag 只用 commit SHA（不推 latest），
+# env-law-deploy 的 Image Updater 依此上線。
 .image:
+  extends: [.runner, .dind]
   stage: build
-  tags: [windows-docker-thin]
-  image: docker:29.8.1
-  services:
-    - name: docker:29.8.1-dind
-      alias: docker
+  image: docker:$DOCKER_VERSION
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
     IMAGE: $CI_REGISTRY_IMAGE/$SERVICE:$CI_COMMIT_SHA
-    # 層快取放在 registry，因為每個 job 的 dind 都是全新的：不放，就每次重抓所有套件
-    # （NuGet、PyPI）。路徑與映像分開（cache/<服務>），Image Updater 看的是 $SERVICE
-    # 那一條，快取的 tag 不會被當成新版本上線。
+    # 層快取放 registry（dind 每次全新）。路徑與映像分開，快取 tag 不會被 Image Updater 當成新版本。
     CACHE: $CI_REGISTRY_IMAGE/cache/$SERVICE
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
-    # 預設的 docker driver 不支援匯出 registry 快取，要 docker-container driver。
-    # 建置網路要用 host（builder 本身與每個 RUN 都是）：runner 的 job 容器網路 MTU 是
-    # 1360，dind 內的橋接網路預設 1500，超過 1360 的封包被靜默丟掉，於是 TLS 大回應
-    # 逾時——`dotnet restore` 連不上 api.nuget.org、卡到 10 分鐘失敗，就是這個症狀。
-    # host 網路沿用 dind 容器的網路，MTU 與 job 容器一致。dind 是一次性的，不牽涉隔離。
+    # 匯出 registry 快取需要 docker-container driver。
+    # 用 host 網路：job 容器 MTU 為 1360，dind 橋接網路預設 1500，大封包被靜默丟棄，
+    # 症狀是 `dotnet restore` 連 api.nuget.org 逾時。
     - docker buildx create --use --driver docker-container --driver-opt network=host --buildkitd-flags '--oci-worker-net=host'
   script:
-    # 先讀自己分支的快取，沒有再讀預設分支的；每個分支各寫各的，互不覆蓋。快取只是加速：
-    # 讀不到、寫不進（ignore-error）都不該讓建置失敗。
-    # 未用到的 build-arg 只會警告：platform 的 Dockerfile 不用 uv／Python 版本。
+    # 快取先讀本分支、再讀預設分支，各分支各寫各的；讀寫失敗不該讓建置失敗。
+    # platform 的 Dockerfile 不用 uv／Python 版本，多餘的 build-arg 只會警告。
     - |
       if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
         output="--push"
@@ -270,22 +300,19 @@ segmenter:
   extends: .python-checks
   rules:
     - changes: *changes-segmenter
-  # 無資料庫：這個函式庫不碰資料庫。斷詞品質由
-  # scripts/measure-segmentation.py 對真實法規量測，那需要網路，故不在 CI 跑
-  # ——CI 驗的是契約（同一份詞典得到同一個 tokenizer id 與同一批 token），
-  # 因為索引端與查詢端對不上是這裡唯一會安靜失敗的東西。
+  # 不需資料庫。CI 只驗契約（同一份詞典得到同一個 tokenizer id 與同一批 token）；
+  # 斷詞品質由 scripts/measure-segmentation.py 量測，需要網路，不在 CI 跑。
   variables:
     MEMBER: libs/python/env-law-segmenter
 
-# 對外 REST 的相容性檢查，角色同 proto 的 buf breaking：以 MR 目標分支上已提交的規格為基準。
-# 規格本身是否與程式碼一致，由 dotnet job 檢查。
+# 對外 REST 的相容性檢查（同 proto 的 buf breaking），以目標分支已提交的規格為基準；規格與程式碼是否一致由 dotnet job 檢查。
 openapi:
+  extends: .runner
   stage: check
-  tags: [windows-docker-thin]
   rules:
     - changes: *changes-platform
   image:
-    name: tufin/oasdiff:v1.32.1
+    name: tufin/oasdiff:$OASDIFF_VERSION
     entrypoint: [""]
   variables:
     SPEC: services/platform/openapi/openapi_v2.json
@@ -300,18 +327,16 @@ openapi:
       fi
 
 proto:
+  extends: .runner
   stage: check
-  tags: [windows-docker-thin]
   rules:
     - changes: *changes-proto
   image:
-    name: bufbuild/buf:1.73.0
+    name: bufbuild/buf:$BUF_VERSION
     entrypoint: [""]
   script:
     - buf lint
-    # 相容性檢查需要一個基準。目標分支尚未含 proto 模組時（例如把契約移進倉庫的
-    # 那一次變更本身），沒有任何既有消費端可被破壞，故明示跳過並印出理由——不要
-    # 靜默通過，也不要因此永久放寬檢查。
+    # 目標分支尚無 proto 模組時沒有基準可比，明示跳過，不靜默通過。
     - |
       if [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ]; then
         echo "非 MR pipeline，不執行相容性檢查"
@@ -320,3 +345,14 @@ proto:
       else
         echo "目標分支 ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME} 尚無 proto 模組，無基準可比——跳過相容性檢查"
       fi
+
+dockerfile:
+  extends: .runner
+  stage: check
+  rules:
+    - changes: *changes-dockerfile
+  image:
+    name: hadolint/hadolint:$HADOLINT_VERSION-alpine
+    entrypoint: [""]
+  script:
+    - hadolint services/*/Dockerfile

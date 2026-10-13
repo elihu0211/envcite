@@ -137,16 +137,17 @@ CI 依改動路徑分流：
 
 ## 升級版本
 
-版本手動升級。依賴集中在單一檔案；工具與映像的版本若出現在多處，表中各位置在同一次提交一起改。
+依賴集中在單一檔案，由 Renovate（`renovate.json`）提 MR 更新；`.gitlab-ci.yml` 的 `variables:` 與 Dockerfile `ARG` 上方的 `# renovate:` 註記是它辨識版本的依據，新增版本變數時一併加上。手動升級時，表中各位置在同一次提交一起改。
 
 | 版本 | 位置 |
 |------|------|
 | Python 套件 | 倉庫根 `uv lock --upgrade`（或 `--upgrade-package <pkg>`）；升 `grpcio-tools`、`mypy-protobuf`、`protobuf` 時重新產生 `libs/python/env-law-proto` |
 | .NET 套件 | `services/platform/Directory.Packages.props` |
-| .NET SDK 與映像 | `services/platform/global.json`、`services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `dotnet` job |
+| .NET SDK 與映像 | `services/platform/global.json`、`services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `DOTNET_VERSION` |
 | Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG PYTHON_VERSION` |
 | uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
-| PostgreSQL | `.gitlab-ci.yml` 的 `ontology` job、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs`、本檔的先決條件與開發用資料庫；主版本與正式區相同 |
-| buf | `.gitlab-ci.yml` 的 `proto` job、本檔與 `AGENTS.md` 的指令 |
-| oasdiff | `.gitlab-ci.yml` 的 `openapi` job |
-| Docker（映像建置） | `.gitlab-ci.yml` 的 `.image` |
+| PostgreSQL | `.gitlab-ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs`、本檔的先決條件與開發用資料庫；主版本與正式區相同 |
+| buf | `.gitlab-ci.yml` 的 `BUF_VERSION`、本檔與 `AGENTS.md` 的指令 |
+| oasdiff | `.gitlab-ci.yml` 的 `OASDIFF_VERSION` |
+| Docker（映像建置） | `.gitlab-ci.yml` 的 `DOCKER_VERSION` |
+| hadolint | `.gitlab-ci.yml` 的 `HADOLINT_VERSION` |
