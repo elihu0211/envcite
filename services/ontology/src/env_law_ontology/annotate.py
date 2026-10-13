@@ -30,14 +30,15 @@
                         "delegate": {"law": "<pcode>", "path": "art_2"}}],
         "exception_of": "s0",
         "sanction": {"punishes": "s1", "effect": "fine", "min": 60000, "max": 20000000,
-                     "repeating": false}}],
+                     "repeating": false, "discretionary": false}}],
      "overrides": [{"winner": "s2", "loser": "s1", "basis": "lex_specialis"}]}
 
 `conditions` 的門檻值恰給一個：`threshold`、`delegate`（委由授權命令的單元）或 `value_concept`。
 罰則的 `effect` 除處罰種類外有 `order`（改善命令等非處罰的行政命令）；
-`repeating: true` 標出按次處罰。
-`judgement: true` 標出不確定法律概念或裁量（情節重大、必要時）：系統不從事實判定它，呼叫端提供
-的值視為其判斷，沒有提供則列為需判斷；限值不得標記。
+`repeating: true` 標出按次處罰；`discretionary: true` 標出條文寫「得」的效果裁量（「應」為 false）。
+`judgement: true` 標出構成要件的不確定法律概念（情節重大、必要時）：系統不從事實判定它，呼叫端
+提供的值視為其判斷，沒有提供則列為需判斷；限值不得標記。效果面的裁量不是要件，用罰則的
+`discretionary`。
 """
 
 from __future__ import annotations
@@ -143,8 +144,8 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
             conn.execute(
                 "INSERT INTO annotation.sanction"
                 " (statement_id, punishes_id, legal_effect, amount_text, min_amount, max_amount,"
-                "  per_occasion)"
-                " VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                "  per_occasion, discretionary)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                 (
                     ids[str(s["id"])],
                     int(sanction["punishes_id"])
@@ -155,6 +156,7 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
                     sanction.get("min"),
                     sanction.get("max"),
                     bool(sanction.get("repeating", False)),
+                    bool(sanction.get("discretionary", False)),
                 ),
             )
             sanctions += 1

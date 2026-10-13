@@ -195,3 +195,53 @@ def test_one_act_and_several_acts_are_both_reported(conn: Conn, tmp_path: Path) 
 
     clear = evaluate(conn, BEFORE, base | {"cod": 50})
     assert clear.penalties == () and clear.one_act is None
+
+
+def _penalty(name: str, effect: str, **sanction: Any) -> dict[str, Any]:
+    return {
+        "id": name,
+        "law": LAW,
+        "path": "art_2",
+        "text": "乙一",
+        "kind": "penalty",
+        "conditions": [_scope("serious")],
+        "sanction": {"punishes": "duty", "effect": effect, **sanction},
+    }
+
+
+def test_an_improvement_order_is_not_a_punishment_and_the_general_part_does_not_reach_it(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """改善命令是預防性處分：無故意過失、裁處權時效已過，罰鍰不列，命令照列。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", "乙一")))
+    loaded = load(
+        conn,
+        _with(
+            _doc(
+                _plain_duty(),
+                _penalty("fine", "fine", min=1, max=2),
+                _penalty("order", "order", discretionary=True),
+            ),
+            "serious",
+        ),
+    )
+    fine, order = loaded.ids["fine"], loaded.ids["order"]
+    case: dict[str, float] = {
+        "discharging": 1,
+        "cod": 150,
+        "serious": 1,
+        "ap_intent": 0,
+        "ap_negligence": 0,
+        "ap_conduct_ended": 20150115,
+    }
+
+    result = evaluate(conn, date(2021, 1, 16), case)
+
+    assert [p.statement_id for p in result.penalties] == [order]
+    assert result.penalties[0].discretionary
+    assert result.general.unpunished == ((fine, "no_fault"),)
+    assert result.general.time_barred == ()
+
+    barred = evaluate(conn, date(2021, 1, 16), case | {"ap_intent": 1})
+    assert {p.statement_id for p in barred.penalties} == {fine, order}
+    assert barred.general.time_barred == (fine,)  # 命令不受裁處權時效約束
