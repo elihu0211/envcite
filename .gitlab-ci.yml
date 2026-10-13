@@ -17,6 +17,13 @@ workflow:
 
 default:
   interruptible: true
+  # 自建 runner 的暫時性失敗（job 起不來、卡在 pending）重試一次；測試失敗不重試。
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+  timeout: 30m
 
 stages:
   - check
@@ -190,7 +197,7 @@ python-proto:
     - diff -r -x __pycache__ "$CI_PROJECT_DIR/.generated-before" src
     - uv run --no-sync mypy src
 
-# 映像建置。建置在 MR 上也跑：Dockerfile 壞掉要在合併前知道。推送只在預設分支——MR 的
+# 映像建置。`needs` 只等同服務的檢查，不等其他服務。建置在 MR 上也跑：Dockerfile 壞掉要在合併前知道。推送只在預設分支——MR 的
 # 映像沒有人會部署，推上去只是佔 registry。tag 只用 commit SHA，不推 latest：可變的
 # tag 讓「部署的是哪一版」無從回答。env-law-deploy 的 Image Updater 依這個 SHA 上線。
 .image:
@@ -237,6 +244,7 @@ python-proto:
 
 ontology-image:
   extends: .image
+  needs: [ontology]
   rules:
     - changes: *changes-ontology
   variables:
@@ -244,6 +252,7 @@ ontology-image:
 
 consult-image:
   extends: .image
+  needs: [consult]
   rules:
     - changes: *changes-consult
   variables:
@@ -251,6 +260,7 @@ consult-image:
 
 platform-image:
   extends: .image
+  needs: [dotnet, openapi]
   rules:
     - changes: *changes-platform
   variables:
