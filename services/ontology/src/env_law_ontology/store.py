@@ -6,10 +6,13 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from types import TracebackType
 from typing import Self
 
+import psycopg
 from psycopg_pool import ConnectionPool
 
 #: 全國法規資料庫 pcode 的形狀，對應 `corpus.legal_resource` 的 CHECK；只省一次往返，
@@ -18,6 +21,9 @@ _PCODE = re.compile(r"^[A-Z][0-9]{7}$")
 
 #: 語料目前只有中文版本。
 LANGUAGE = "zho"
+
+
+Conn = psycopg.Connection[tuple[object, ...]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +135,38 @@ class OntologyStore:
                 {"resource": resource_id, "language": LANGUAGE, "on": _date(as_of)},
             )
             return [ArticleRecord(iri=iri, number=number) for iri, number in cur.fetchall()]
+
+    def law_exists(self, law_id: str) -> bool:
+        """法規在語料裡有沒有，不論哪一天。區分「查無此法」與「該日無版本」。"""
+        if not is_valid_law_id(law_id):
+            return False
+        with self._pool.connection() as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM corpus.legal_resource"
+                " WHERE id_scheme = 'moj_pcode' AND local_id = %s",
+                (law_id,),
+            )
+            return cur.fetchone() is not None
+
+    def resource_id(self, law_id: str, *, as_of: str = "") -> int | None:
+        """`as_of` 有效版本的法規之內部編號；法規不存在或該日無版本時為 None。"""
+        found = self._resolve(law_id, as_of)
+        return found[0] if found else None
+
+    @contextmanager
+    def read_connection(self, *, timeout: float | None = None) -> Iterator[Conn]:
+        """唯讀連線，在一個交易內（結束時一律回滾）。
+
+        `timeout`（秒）成為這個交易的 `statement_timeout`：呼叫的期限用完，資料庫端的查詢跟著被
+        取消，不佔著連線跑完。
+        """
+        with self._pool.connection() as conn, conn.transaction(force_rollback=True):
+            if timeout is not None:
+                conn.execute(
+                    "SELECT set_config('statement_timeout', %s, true)",
+                    (str(max(1, int(timeout * 1000))),),
+                )
+            yield conn
 
     def lexicon(self) -> list[str]:
         with self._pool.connection() as conn, conn.cursor() as cur:

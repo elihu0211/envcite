@@ -7,7 +7,7 @@ import psycopg
 import pytest
 from testcontainers.community.postgres import PostgresContainer
 
-from env_law.ontology.v1 import ontology_pb2_grpc
+from env_law.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
 from env_law_ontology.acquire.moj import Moj
 from env_law_ontology.ingest import importer
 from env_law_ontology.migrate import apply_all
@@ -97,6 +97,11 @@ def channel(server_address: str) -> Iterator[grpc.Channel]:
 @pytest.fixture
 def stub(channel: grpc.Channel) -> ontology_pb2_grpc.OntologyServiceStub:
     return ontology_pb2_grpc.OntologyServiceStub(channel)
+
+
+@pytest.fixture
+def reasoning_stub(channel: grpc.Channel) -> reasoning_pb2_grpc.ReasoningServiceStub:
+    return reasoning_pb2_grpc.ReasoningServiceStub(channel)
 
 
 def auth() -> tuple[tuple[str, str], ...]:

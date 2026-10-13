@@ -26,6 +26,8 @@ dev = [
     "testcontainers[postgres]",
     "types-grpcio",
     "types-grpcio-health-checking",
+    "types-grpcio-reflection",
+    "types-grpcio-status",
     "types-protobuf",
 ]
 
@@ -53,6 +55,11 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 # jieba 沒有型別資訊。
 module = "jieba.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# googleapis-common-protos（google.rpc 的 ErrorInfo、BadRequest）不帶型別資訊，也沒有 types- 套件。
+module = "google.rpc.*"
 ignore_missing_imports = true
 
 [tool.coverage.run]
