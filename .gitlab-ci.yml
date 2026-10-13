@@ -76,9 +76,11 @@ variables:
     files: [services/platform/Directory.Packages.props]
   paths: [.nuget/packages]
 
+# uv 的 key 綁 uv.lock 的雜湊，理由同 NuGet：鎖檔沒變，所有分支與 main 共用同一份。
 .cache-uv: &cache-uv
-  key: "$CI_PROJECT_PATH-uv-$CI_COMMIT_REF_SLUG"
-  fallback_keys: ["$CI_PROJECT_PATH-uv-$CI_DEFAULT_BRANCH"]
+  key:
+    prefix: "$CI_PROJECT_PATH"
+    files: [uv.lock]
   paths: [.uv-cache]
 
 .changes-platform: &changes-platform
