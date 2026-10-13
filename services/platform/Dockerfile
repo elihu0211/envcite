@@ -23,6 +23,12 @@ COPY services/platform/global.json services/platform/Directory.Build.props servi
 # the glob covers every project the Api project references. Restore and publish must
 # agree on -a, or publish restores again.
 COPY --parents services/platform/src/*/*.csproj /repo/
+# CI sets NUGET_MIRROR=1 and the runner's Nexus replaces nuget.org as the only source, for
+# every restore below (tool, project, and the bundles' own). It is the user-level config,
+# so it needs no flag per command. Local builds leave it unset.
+ARG NUGET_MIRROR=
+COPY ci/nuget.mirror.config /ci/nuget.mirror.config
+RUN if [ -n "$NUGET_MIRROR" ]; then mkdir -p ~/.nuget/NuGet && cp /ci/nuget.mirror.config ~/.nuget/NuGet/NuGet.Config; fi
 RUN dotnet tool restore \
  && dotnet restore src/EnvLaw.Platform.Api/EnvLaw.Platform.Api.csproj -a "$TARGETARCH"
 # proto/ is compiled at build, not at restore, so it comes after the restore layer: a
