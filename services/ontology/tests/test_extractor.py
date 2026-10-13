@@ -1,4 +1,4 @@
-"""The extractor, with a fake standing where a language model would (env-law-docs 02-05 §5.9)."""
+"""The extractor, with a fake standing where a language model would (env-law-docs 02-06 §3.3)."""
 
 from pathlib import Path
 

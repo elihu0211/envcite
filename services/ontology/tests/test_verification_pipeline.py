@@ -1,5 +1,5 @@
 """The verification pipeline end to end: one row per gate, crash safety, tampering (env-law-
-docs 02-05 §5.9)."""
+docs 02-06 §3.3)."""
 
 import pytest
 
