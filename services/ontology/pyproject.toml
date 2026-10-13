@@ -13,6 +13,8 @@ dependencies = [
     "env-law-proto",
     "env-law-segmenter",
     "grpcio-health-checking",
+    "grpcio-reflection",
+    "grpcio-status",
     "psycopg-pool",
     "psycopg[binary]",
 ]

@@ -8,7 +8,7 @@ import pytest
 from env_law_ontology.annotate import load
 from env_law_ontology.reasoning import evaluate_across
 from tests.reasoning_support import Conn
-from tests.test_annotation import _doc, _duty, _limit
+from tests.test_annotation import LAW, _doc, _duty, _limit
 from tests.test_incremental import _first, _law_v1, _law_v2, _next
 
 CASE: dict[str, float] = {"discharging": 1, "cod": 90}
@@ -65,3 +65,28 @@ def test_a_change_that_is_back_to_the_same_statements_is_not_a_second_law(
     same = evaluate_across(conn, CONDUCT, CONDUCT, CASE)
 
     assert not same.changed
+
+
+def test_a_conduct_before_the_corpus_history_is_marked_uncovered(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """語料只有現行全文：行為日早於持有的第一個版本，那天的陳述組是空的，但不代表當時沒有規定。"""
+    _amended(conn, tmp_path)
+
+    moved = evaluate_across(conn, date(2010, 1, 1), DECIDED, CASE)
+
+    first, second = moved.earlier
+    assert first.as_of == date(2010, 1, 1)
+    assert first.result.verdicts == {}
+    assert first.uncovered_laws == (LAW,)  # 1991 年已制定，語料從 2018 年的版本才有
+    assert second.uncovered_laws == ()
+    assert moved.at_decision_uncovered_laws == ()
+
+
+def test_a_conduct_before_the_enactment_is_not_uncovered(conn: Conn, tmp_path: Path) -> None:
+    """法規還沒制定的日子是真的沒有規定，不是語料缺。"""
+    _amended(conn, tmp_path)
+
+    moved = evaluate_across(conn, date(1980, 1, 1), DECIDED, CASE)
+
+    assert moved.earlier[0].uncovered_laws == ()

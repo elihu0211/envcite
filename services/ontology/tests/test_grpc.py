@@ -50,11 +50,14 @@ def test_missing_or_wrong_token_is_unauthenticated(
     assert error.value.code() == grpc.StatusCode.UNAUTHENTICATED
 
 
-def test_health_check_needs_no_token(channel: grpc.Channel) -> None:
+@pytest.mark.parametrize(
+    "service", ["env_law.ontology.v1.OntologyService", "env_law.ontology.v1.ReasoningService"]
+)
+def test_health_check_needs_no_token(channel: grpc.Channel, service: str) -> None:
     health_stub = health_pb2_grpc.HealthStub(channel)
 
     response = health_stub.Check(  # type: ignore[attr-defined]
-        health_pb2.HealthCheckRequest(service="env_law.ontology.v1.OntologyService")
+        health_pb2.HealthCheckRequest(service=service)
     )
 
     assert response.status == health_pb2.HealthCheckResponse.SERVING

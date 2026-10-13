@@ -8,14 +8,22 @@ from concurrent import futures
 
 import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
+from grpc_reflection.v1alpha import reflection
 
-from env_law.ontology.v1 import ontology_pb2_grpc
+from env_law.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
 from env_law_grpc import InternalTokenInterceptor, stop_on_sigterm
+from env_law_ontology.reasoning_service import ReasoningServicer
 from env_law_ontology.service import OntologyServicer
 from env_law_ontology.store import OntologyStore
 from env_law_segmenter import Segmenter
 
 SERVICE_NAME = "env_law.ontology.v1.OntologyService"
+REASONING_SERVICE_NAME = "env_law.ontology.v1.ReasoningService"
+
+WORKERS = 10
+#: 同時進行的 RPC 上限。固定大小的執行緒池之外，超過的請求排隊；上限讓排隊有界，超過就
+#: 以 RESOURCE_EXHAUSTED 立即失敗，而不是無限等下去。
+MAX_CONCURRENT_RPCS = 2 * WORKERS
 
 
 def build_server(
@@ -23,8 +31,9 @@ def build_server(
 ) -> tuple[grpc.Server, int]:
     """建立但不啟動；回傳伺服器與實際綁定的埠號。"""
     server = grpc.server(
-        futures.ThreadPoolExecutor(max_workers=10),
+        futures.ThreadPoolExecutor(max_workers=WORKERS),
         interceptors=[InternalTokenInterceptor(token)],
+        maximum_concurrent_rpcs=MAX_CONCURRENT_RPCS,
     )
     # lexicon 啟動時只讀一次：新匯入的用語須重啟才進入查詢。
     segmenter = Segmenter(store.lexicon())
@@ -32,9 +41,15 @@ def build_server(
         OntologyServicer(store, segmenter), server
     )
 
+    reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(ReasoningServicer(store), server)
+    # 反射走同一個 token 攔截器（只有健康檢查豁免），grpcurl 等工具要帶 authorization。
+    reflection.enable_server_reflection(
+        (SERVICE_NAME, REASONING_SERVICE_NAME, health.SERVICE_NAME, reflection.SERVICE_NAME), server
+    )
+
     health_servicer = health.HealthServicer()
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
-    for name in ("", SERVICE_NAME):
+    for name in ("", SERVICE_NAME, REASONING_SERVICE_NAME):
         health_servicer.set(name, health_pb2.HealthCheckResponse.SERVING)
 
     port = server.add_insecure_port(address)
