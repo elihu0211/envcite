@@ -31,11 +31,18 @@ def _law(pcode: str, name: str = "甲法") -> dict[str, object]:
 
 
 def _publish(path: Path, update: str, laws: list[dict[str, object]]) -> Path:
+    # A fixed entry time: `writestr(name, ...)` stamps the current time, so publishing the
+    # same content twice gives different bytes (and a different hash) whenever the two
+    # calls straddle a two-second boundary — and the engine dedupes by file hash.
+    def entry(name: str) -> zipfile.ZipInfo:
+        return zipfile.ZipInfo(name, date_time=(2026, 9, 18, 0, 0, 0))
+
     with zipfile.ZipFile(path, "w") as z:
         z.writestr(
-            "ChLaw.json", json.dumps({"UpdateDate": update, "Laws": laws}, ensure_ascii=False)
+            entry("ChLaw.json"),
+            json.dumps({"UpdateDate": update, "Laws": laws}, ensure_ascii=False),
         )
-        z.writestr("manifest.csv", "name,schema,description\n")
+        z.writestr(entry("manifest.csv"), "name,schema,description\n")
     return path
 
 
