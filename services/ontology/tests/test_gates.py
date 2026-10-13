@@ -13,6 +13,8 @@ from env_law_ontology.verification import (
     settle,
 )
 from env_law_ontology.verification.gates import amounts, citations, cn_number
+from env_law_ontology.verification.gates.cn_number import qualified_numbers
+from env_law_ontology.verification.gates.proviso_gate import ProvisoGate, provisos
 from tests.reasoning_support import _plain_duty, _scope, _with
 from tests.test_annotation import LAW, _doc, _limit
 from tests.test_incremental import _articles, _first, _law_v1
@@ -179,3 +181,122 @@ def test_executable_gate_does_not_guess_when_it_cannot_run_the_conditions(
 
     result = ExecutableGate().check(conn, loaded.ids["duty"])
     assert result is not None and result.verdict == "inconclusive"
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("年滿十八歲以上者", [(18, "以上")]),
+        ("排放水量五十立方公尺以下", [(50, "以下")]),
+        ("三十日以內改善", [(30, "以內")]),
+        ("未滿十四歲人之行為不罰", [(14, "未滿")]),
+        ("未達二百立方公尺", [(200, "未達")]),
+        ("超過三十日者", []),  # 「超過」「逾」沒有查到明文的含本數規則，不判定
+        ("處六萬元以上二千萬元以下罰鍰", [(60000, "以上"), (20000000, "以下")]),
+    ],
+)
+def test_comparison_words_are_read_with_their_numbers(
+    text: str, expected: list[tuple[int, str]]
+) -> None:
+    assert qualified_numbers(text) == expected
+
+
+def _age_rule(conn: Conn, tmp_path: Path, comparator: str, *, negated: bool = False) -> int:
+    """原文「甲一十八歲以上者」，標註一個年齡要件。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一十八歲以上者", "乙一")))
+    duty = _plain_duty("甲一十八歲以上者")
+    duty["conditions"] = [
+        _scope("discharging"),
+        {
+            "role": "duty",
+            "clause": 1,
+            "concept": "age",
+            "comparator": comparator,
+            "threshold": 18,
+            "unit": "歲",
+            "negated": negated,
+        },
+    ]
+    return load(conn, _with(_doc(duty), "age")).ids["duty"]
+
+
+@pytest.mark.parametrize(
+    ("comparator", "negated", "verdict"),
+    [
+        ("ge", False, "pass"),  # 以上：連本數
+        ("lt", False, "pass"),  # 要件描述違反的那一側：補集
+        ("gt", False, "fail"),  # 把本數排除了
+        ("le", False, "fail"),  # 方向反了
+        ("lt", True, "pass"),  # 非（小於）即大於等於
+        ("ge", True, "pass"),  # 非（大於等於）即小於，是補集
+        ("gt", True, "fail"),  # 非（大於）即小於等於：方向反了
+    ],
+)
+def test_numbers_gate_checks_whether_the_boundary_is_included(
+    conn: Conn, tmp_path: Path, comparator: str, negated: bool, verdict: str
+) -> None:
+    sid = _age_rule(conn, tmp_path, comparator, negated=negated)
+
+    result = NumbersGate().check(conn, sid)
+
+    assert result is not None and result.verdict == verdict
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("違反者處罰鍰。但情節輕微者，得免罰。", ["但情節輕微者，得免罰。"]),
+        ("事業應申報；但經核准者，不在此限。", ["但經核准者，不在此限。"]),
+        ("未滿十八歲者，不在此限。", ["未滿十八歲者，不在此限"]),
+        ("事業應申報。但法律另有規定者，從其規定。", []),  # 保留規定，不是例外
+        ("事業應申報，違反者處罰鍰。", []),
+    ],
+)
+def test_provisos_are_read_from_the_text(text: str, expected: list[str]) -> None:
+    assert provisos(text) == expected
+
+
+PROVISO_TEXT = "甲一。但乙者，不在此限。"
+
+
+def _with_proviso_text(conn: Conn, tmp_path: Path, *, with_exception: bool) -> int:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(PROVISO_TEXT, "乙一")))
+    statements = [_plain_duty(PROVISO_TEXT)]
+    if with_exception:
+        statements.append(
+            {
+                "id": "proviso",
+                "law": LAW,
+                "path": "art_1",
+                "text": PROVISO_TEXT,
+                "kind": "constitutive",
+                "exception_of": "duty",
+                "conditions": [_scope("excused")],
+            }
+        )
+    return load(conn, _with(_doc(*statements), "excused")).ids["duty"]
+
+
+def test_a_proviso_in_the_text_needs_an_exception_statement(conn: Conn, tmp_path: Path) -> None:
+    """往返驗證看不到原文：漏掉的但書在描述裡一起消失。這個閘門直接讀原文。"""
+    sid = _with_proviso_text(conn, tmp_path, with_exception=False)
+
+    result = ProvisoGate().check(conn, sid)
+
+    assert result is not None and result.verdict == "inconclusive"
+    assert result.evidence["provisos"] == ["但乙者，不在此限。"]
+
+
+def test_a_proviso_with_its_exception_statement_passes(conn: Conn, tmp_path: Path) -> None:
+    sid = _with_proviso_text(conn, tmp_path, with_exception=True)
+
+    result = ProvisoGate().check(conn, sid)
+
+    assert result is not None and result.verdict == "pass"
+
+
+def test_text_without_a_proviso_does_not_apply(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", "乙一")))
+    sid = load(conn, _doc(_plain_duty())).ids["duty"]
+
+    assert ProvisoGate().check(conn, sid) is None

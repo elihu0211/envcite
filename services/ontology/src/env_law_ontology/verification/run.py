@@ -29,7 +29,15 @@ log = logging.getLogger(__name__)
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
-ALL_METHODS = ("numbers", "references", "executable", "roundtrip", "independent_test", "panel")
+ALL_METHODS = (
+    "numbers",
+    "references",
+    "executable",
+    "provisos",
+    "roundtrip",
+    "independent_test",
+    "panel",
+)
 
 
 #: 兩個「不同」的模型對這些開放式問題在溫度 0 下逐字相同，幾乎必定是同一個模型的兩個名字。
