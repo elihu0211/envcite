@@ -340,6 +340,67 @@
         }
       }
     },
+    "/v2/reasoning/evaluate": {
+      "post": {
+        "tags": [
+          "推論"
+        ],
+        "summary": "對案件事實推論",
+        "description": "依行為日與裁處日當天有效、已通過驗證的規範陳述，對案件事實推論，回傳**候選**結論與依據；系統不裁量、不判決。`atDecision` 是裁處時之法律（行政罰法第 5 條的預設），`earlier` 是行為日到裁處日之間陳述組與裁處時不同的法律，「最有利於受處罰者」由呼叫端依第 5 條但書選擇。沒有通過驗證的陳述就沒有結論：`verdicts` 為空不表示合規。`uncoveredLawIds` 列出語料沒有當時版本的法規，其規定缺席不代表當時沒有規定。`administrativePenalty` 省略的欄位是「未知」，不是「否」。推論是唯讀、確定性的，重試安全。成功計量為一次 `reasoning.evaluate`；推論容量用盡回 503（`retryable`）。",
+        "operationId": "EvaluateReasoning",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateReasoningRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReasoningResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key 缺少、無效、已過期或已撤銷。"
+          },
+          "429": {
+            "description": "超過本租戶方案的速率限制。"
+          },
+          "402": {
+            "description": "本租戶目前沒有有效的方案（完全付費制）。請聯絡業務啟用。"
+          }
+        }
+      }
+    },
     "/v2/ground": {
       "post": {
         "tags": [
@@ -404,6 +465,128 @@
   },
   "components": {
     "schemas": {
+      "AdministrativePenaltyFactsDto": {
+        "required": [
+          "intent",
+          "negligence",
+          "agentFault",
+          "age",
+          "incapable",
+          "selfInduced",
+          "pursuantToLaw",
+          "superiorOrder",
+          "knewIllegal",
+          "statedOpinion",
+          "selfDefense",
+          "defenseExcessive",
+          "necessity",
+          "necessityExcessive",
+          "capacityReduced",
+          "ignoranceOfLaw"
+        ],
+        "type": "object",
+        "properties": {
+          "intent": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "negligence": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "agentFault": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "age": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "incapable": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "selfInduced": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "pursuantToLaw": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "superiorOrder": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "knewIllegal": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "statedOpinion": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "selfDefense": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "defenseExcessive": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "necessity": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "necessityExcessive": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "capacityReduced": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "ignoranceOfLaw": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
       "ApiKeySummary": {
         "required": [
           "id",
@@ -487,6 +670,245 @@
           },
           "text": {
             "type": "string"
+          }
+        }
+      },
+      "ConditionRoleDto": {
+        "enum": [
+          "Scope",
+          "Duty",
+          "Limit"
+        ]
+      },
+      "DefeatDto": {
+        "required": [
+          "loser",
+          "winner",
+          "basis"
+        ],
+        "type": "object",
+        "properties": {
+          "loser": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "winner": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/OverrideBasisDto"
+          }
+        }
+      },
+      "EarlierOutcomeDto": {
+        "required": [
+          "firstDay",
+          "outcome"
+        ],
+        "type": "object",
+        "properties": {
+          "firstDay": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/OutcomeDto"
+          }
+        }
+      },
+      "EvaluateReasoningRequest": {
+        "required": [
+          "conductOn",
+          "decidedOn",
+          "facts",
+          "administrativePenalty",
+          "conductEndedOn",
+          "resultOn"
+        ],
+        "type": "object",
+        "properties": {
+          "conductOn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "decidedOn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "facts": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/FactDto"
+            }
+          },
+          "administrativePenalty": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AdministrativePenaltyFactsDto"
+              }
+            ]
+          },
+          "conductEndedOn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "resultOn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ExcuseDto": {
+        "enum": [
+          "NoFault",
+          "UnderFourteen",
+          "Incapable",
+          "PursuantToLaw",
+          "SuperiorOrder",
+          "SelfDefense",
+          "Necessity"
+        ]
+      },
+      "FactDto": {
+        "required": [
+          "concept",
+          "numbers",
+          "flags"
+        ],
+        "type": "object",
+        "properties": {
+          "concept": {
+            "type": "string"
+          },
+          "numbers": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "flags": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "FineIntervalDto": {
+        "required": [
+          "minAmount",
+          "maxAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "minAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "maxAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "GapDto": {
+        "required": [
+          "statementId",
+          "concept"
+        ],
+        "type": "object",
+        "properties": {
+          "statementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "concept": {
+            "type": "string"
+          }
+        }
+      },
+      "GeneralPartDto": {
+        "required": [
+          "unpunished",
+          "mitigation",
+          "presumedAgentFault",
+          "timeBarred"
+        ],
+        "type": "object",
+        "properties": {
+          "unpunished": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PenaltyExcuseDto"
+            }
+          },
+          "mitigation": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PenaltyMitigationDto"
+            }
+          },
+          "presumedAgentFault": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
+          },
+          "timeBarred": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
           }
         }
       },
@@ -620,6 +1042,280 @@
           }
         }
       },
+      "LegalEffectDto": {
+        "enum": [
+          "Fine",
+          "Confiscation",
+          "Restriction",
+          "Deprivation",
+          "Reputation",
+          "Warning",
+          "Order"
+        ]
+      },
+      "LimitSourceDto": {
+        "required": [
+          "conditionId",
+          "statementId"
+        ],
+        "type": "object",
+        "properties": {
+          "conditionId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "statementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "MitigationDto": {
+        "enum": [
+          "Youth",
+          "ReducedCapacity",
+          "Ignorance",
+          "ExcessiveDefense",
+          "ExcessiveNecessity"
+        ]
+      },
+      "OutcomeDto": {
+        "required": [
+          "verdicts",
+          "penalties",
+          "oneAct",
+          "missing",
+          "needsAssessment",
+          "assessmentUsed",
+          "problems",
+          "unresolvedConflicts",
+          "defeated",
+          "unresolvedPenaltyOverlaps",
+          "penaltyDefeated",
+          "trace",
+          "limitSources",
+          "general",
+          "sources",
+          "uncoveredLawIds"
+        ],
+        "type": "object",
+        "properties": {
+          "verdicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementVerdictDto"
+            }
+          },
+          "penalties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PenaltyCandidateDto"
+            }
+          },
+          "oneAct": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FineIntervalDto"
+              }
+            ]
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GapDto"
+            }
+          },
+          "needsAssessment": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GapDto"
+            }
+          },
+          "assessmentUsed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GapDto"
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProblemDto"
+            }
+          },
+          "unresolvedConflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementPairDto"
+            }
+          },
+          "defeated": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DefeatDto"
+            }
+          },
+          "unresolvedPenaltyOverlaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementPairDto"
+            }
+          },
+          "penaltyDefeated": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DefeatDto"
+            }
+          },
+          "trace": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TraceEntryDto"
+            }
+          },
+          "limitSources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LimitSourceDto"
+            }
+          },
+          "general": {
+            "$ref": "#/components/schemas/GeneralPartDto"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementSourceDto"
+            }
+          },
+          "uncoveredLawIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "OverrideBasisDto": {
+        "enum": [
+          "Hierarchy",
+          "LexSpecialis",
+          "LexPosterior",
+          "Exception"
+        ]
+      },
+      "PenaltyCandidateDto": {
+        "required": [
+          "statementId",
+          "punishes",
+          "effect",
+          "minAmount",
+          "maxAmount",
+          "conditional",
+          "perOccasion",
+          "discretionary"
+        ],
+        "type": "object",
+        "properties": {
+          "statementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "punishes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "effect": {
+            "$ref": "#/components/schemas/LegalEffectDto"
+          },
+          "minAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "maxAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "conditional": {
+            "type": "boolean"
+          },
+          "perOccasion": {
+            "type": "boolean"
+          },
+          "discretionary": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PenaltyExcuseDto": {
+        "required": [
+          "penaltyStatementId",
+          "excuse"
+        ],
+        "type": "object",
+        "properties": {
+          "penaltyStatementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "excuse": {
+            "$ref": "#/components/schemas/ExcuseDto"
+          }
+        }
+      },
+      "PenaltyMitigationDto": {
+        "required": [
+          "penaltyStatementId",
+          "mitigation"
+        ],
+        "type": "object",
+        "properties": {
+          "penaltyStatementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "mitigation": {
+            "$ref": "#/components/schemas/MitigationDto"
+          }
+        }
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -655,6 +1351,60 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "ProblemDto": {
+        "required": [
+          "kind",
+          "concept",
+          "conditionId"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ProblemKindDto"
+          },
+          "concept": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "conditionId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "ProblemKindDto": {
+        "enum": [
+          "ContradictoryFact",
+          "UnresolvedDelegation",
+          "UnsupportedCondition",
+          "BadDate"
+        ]
+      },
+      "ReasoningResultDto": {
+        "required": [
+          "atDecision",
+          "earlier"
+        ],
+        "type": "object",
+        "properties": {
+          "atDecision": {
+            "$ref": "#/components/schemas/OutcomeDto"
+          },
+          "earlier": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EarlierOutcomeDto"
+            }
           }
         }
       },
@@ -740,6 +1490,71 @@
           }
         }
       },
+      "StatementPairDto": {
+        "required": [
+          "first",
+          "second"
+        ],
+        "type": "object",
+        "properties": {
+          "first": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "second": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "StatementSourceDto": {
+        "required": [
+          "statementId",
+          "uri"
+        ],
+        "type": "object",
+        "properties": {
+          "statementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "uri": {
+            "type": "string"
+          }
+        }
+      },
+      "StatementVerdictDto": {
+        "required": [
+          "statementId",
+          "verdict"
+        ],
+        "type": "object",
+        "properties": {
+          "statementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/VerdictDto"
+          }
+        }
+      },
       "TenantResponse": {
         "required": [
           "id",
@@ -759,6 +1574,47 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "TraceEntryDto": {
+        "required": [
+          "conditionId",
+          "statementId",
+          "concept",
+          "fact",
+          "threshold",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "conditionId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "statementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "concept": {
+            "type": "string"
+          },
+          "fact": {
+            "type": "string"
+          },
+          "threshold": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ConditionRoleDto"
           }
         }
       },
@@ -790,6 +1646,17 @@
             "format": "int32"
           }
         }
+      },
+      "VerdictDto": {
+        "enum": [
+          "Violation",
+          "Compliant",
+          "ConditionalViolation",
+          "ConditionalCompliant",
+          "Undetermined",
+          "Excluded",
+          "NotApplicable"
+        ]
       }
     },
     "securitySchemes": {
@@ -812,6 +1679,9 @@
     },
     {
       "name": "法規"
+    },
+    {
+      "name": "推論"
     },
     {
       "name": "接地"

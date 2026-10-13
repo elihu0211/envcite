@@ -43,8 +43,9 @@ public sealed class PaidOnlyTests(PlatformFactory factory)
 
         using var law = await client.GetAsync(LawUri);
         using var ground = await client.PostAsJsonAsync("/v2/ground", new { question = "x" });
+        using var reasoning = await client.PostAsJsonAsync("/v2/reasoning/evaluate", new { conductOn = "2020-01-01", decidedOn = "2020-06-01" });
 
-        foreach (var response in new[] { law, ground })
+        foreach (var response in new[] { law, ground, reasoning })
         {
             Assert.Equal(HttpStatusCode.PaymentRequired, response.StatusCode);
             Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);

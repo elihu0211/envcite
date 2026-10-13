@@ -22,6 +22,9 @@
     <Protobuf Include="../../../../proto/env_law/ontology/v1/ontology.proto"
               ProtoRoot="../../../../proto"
               GrpcServices="Both" />
+    <Protobuf Include="../../../../proto/env_law/ontology/v1/reasoning.proto"
+              ProtoRoot="../../../../proto"
+              GrpcServices="Both" />
   </ItemGroup>
 
 </Project>

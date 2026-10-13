@@ -31,6 +31,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     /// <summary>最近一次 SearchArticles 收到的請求（測試用，驗證參數有原樣傳到內部服務）。</summary>
     public SearchArticlesRequest? LastSearch { get; private set; }
 
+    /// <summary>最近一次 Evaluate 收到的請求（測試用，驗證公開契約原樣對映到內部契約）。</summary>
+    public EvaluateRequest? LastEvaluate { get; private set; }
+
     /// <summary>最近一次 GetLaw／ListArticles 收到的 as_of（測試用）。</summary>
     public string? LastAsOf { get; private set; }
 
@@ -42,6 +45,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
         builder.Services.AddSingleton(this);
         _app = builder.Build();
         _app.MapGrpcService<Service>();
+        _app.MapGrpcService<Reasoning>();
         await _app.StartAsync();
         Address = new Uri(_app.Urls.First());
     }
@@ -143,6 +147,78 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             {
                 throw new RpcException(new Status(StatusCode.NotFound, "no such law"));
             }
+        }
+    }
+
+    /// <summary>`conduct_on` 為此值時假服務回 RESOURCE_EXHAUSTED（推論容量用盡）。</summary>
+    public const string BusyDate = "2000-01-02";
+
+    private sealed class Reasoning(FakeOntologyServer server) : ReasoningService.ReasoningServiceBase
+    {
+        public override Task<EvaluateResponse> Evaluate(EvaluateRequest request, ServerCallContext context)
+        {
+            server.ReceivedMetadata.Enqueue(context.RequestHeaders);
+            if (context.RequestHeaders.GetValue("authorization") != $"Bearer {InternalToken}")
+            {
+                throw new RpcException(new Status(StatusCode.Unauthenticated, "bad token"));
+            }
+
+            server.LastEvaluate = request;
+            if (request.ConductOn == "yesterday")
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "conduct_on must be an ISO 8601 date"));
+            }
+
+            if (request.ConductOn == BusyDate)
+            {
+                throw new RpcException(new Status(StatusCode.ResourceExhausted, "evaluation capacity is in use"));
+            }
+
+            var outcome = new Outcome
+            {
+                Verdicts = { new StatementVerdict { StatementId = 7, Verdict = Verdict.Violation } },
+                Penalties =
+                {
+                    new PenaltyCandidate
+                    {
+                        StatementId = 8, Punishes = 7, Effect = LegalEffect.Fine, MinAmount = 60000, MaxAmount = 1000000,
+                        Conditional = true, Discretionary = false,
+                    },
+                    new PenaltyCandidate { StatementId = 9, Punishes = 7, Effect = LegalEffect.Order },
+                },
+                OneAct = new FineInterval { MinAmount = 60000, MaxAmount = 1000000 },
+                Missing = { new Gap { StatementId = 7, Concept = "effluent_cod" } },
+                Problems =
+                {
+                    new Problem { Kind = ProblemKind.ContradictoryFact, Concept = "ph" },
+                    new Problem { Kind = ProblemKind.UnresolvedDelegation, ConditionId = 31 },
+                },
+                Defeated = { new Defeat { Loser = 1, Winner = 2, Basis = OverrideBasis.LexSpecialis } },
+                Trace =
+                {
+                    new TraceEntry
+                    {
+                        ConditionId = 31, StatementId = 7, Concept = "effluent_cod", Role = ConditionRole.Duty,
+                        Fact = new EnvLaw.Ontology.V1.Decimal { Value = "120" },
+                        Threshold = new EnvLaw.Ontology.V1.Decimal { Value = "100" },
+                    },
+                },
+                LimitSources = { { 31, 52 } },
+                General = new GeneralPart
+                {
+                    Unpunished = { new PenaltyExcuse { PenaltyStatementId = 10, Excuse = Excuse.UnderFourteen } },
+                    Mitigation = { new PenaltyMitigation { PenaltyStatementId = 8, Mitigation = Mitigation.Youth } },
+                    PresumedAgentFault = { 8 },
+                    TimeBarred = { 8 },
+                },
+                Sources = { new StatementSource { StatementId = 7, VersionIri = "https://env.law/tw/law/O0020001/2018-08-01/zho/art_32" } },
+                UncoveredLawIds = { "O0040001" },
+            };
+            return Task.FromResult(new EvaluateResponse
+            {
+                AtDecision = outcome,
+                Earlier = { new EarlierLaw { FirstDay = request.ConductOn, Outcome = new Outcome() } },
+            });
         }
     }
 }

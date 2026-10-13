@@ -124,6 +124,7 @@ v2.MapTenancyEndpoints()
 v2.MapGroup(string.Empty)
     .RequireAuthorization(PlatformAuth.PaidPolicy)
     .MapOntologyEndpoints()
+    .MapReasoningEndpoints()
     .MapConsultEndpoints();
 
 
