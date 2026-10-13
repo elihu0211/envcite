@@ -5,6 +5,16 @@
 [tool.uv.workspace]
 members = ["services/ontology", "services/consult", "libs/python/*"]
 
+[tool.uv]
+# 已知與現行程式碼不相容的上界；`uv lock --upgrade`（Renovate 的 lock file maintenance）不看
+# Renovate 的規則，只看這裡。2026-10-13 以 Renovate 同一個映像的 uv 模擬整包升級，只有這一項會讓 CI 失敗：
+# - ruff<0.17：0.17 把 tomllib 歸到標準庫區塊，services/ontology 的
+#   src/env_law_ontology/verification/config.py 出現 I001（import 排序）。新舊版 ruff 對該檔案的排序
+#   互相矛盾，無法預先修在 main 上，要在升 ruff 的同一個 MR 一併改（`ruff check --fix` 即可），再放寬此上界。
+constraint-dependencies = [
+    "ruff<0.17",
+]
+
 [dependency-groups]
 dev = [
     "grpcio-tools",

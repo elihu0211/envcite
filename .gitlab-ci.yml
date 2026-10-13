@@ -58,6 +58,10 @@ variables:
   UV_VERSION: "0.12.18"
   # renovate: datasource=python-version depName=python
   PYTHON_VERSION: "3.14"
+  # renovate.json 的驗證用。更新本身由 thuaisse-lab/chepb-1150011621 的每週排程集中執行（用它自己的
+  # Renovate 版本），兩邊版本各自升級；驗證通過但執行端版本較舊時，以執行端的 log 為準。
+  # renovate: datasource=docker depName=renovate/renovate
+  RENOVATE_VERSION: "43.272.4"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
   COVERAGE_RCFILE: $CI_PROJECT_DIR/pyproject.toml
@@ -159,6 +163,23 @@ gate:
     GIT_STRATEGY: none
   script:
     - echo "path-specific jobs below decide what else runs"
+
+# renovate.json 改壞時 Renovate 只會開一個 issue，更新靜默停擺、沒有任何紅燈：在 MR 先擋下。
+# 映像首次拉取（約 0.4 GB）也算在 timeout 內，給寬一點。
+renovate-config:
+  extends: .runner
+  stage: check
+  image:
+    name: renovate/renovate:$RENOVATE_VERSION
+    # image 的 ENTRYPOINT 是 renovate 本身，清空才能跑 script。
+    entrypoint: [""]
+  needs: []
+  timeout: 10m
+  rules:
+    - changes:
+        - renovate.json
+  script:
+    - renovate-config-validator --strict renovate.json
 
 deps-dotnet:
   stage: prepare
