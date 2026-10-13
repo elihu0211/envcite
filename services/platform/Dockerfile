@@ -26,8 +26,12 @@
 # build and the cache disagree.
 # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
 ARG DOTNET_VERSION=10.0.401
+# The registry is a parameter so CI can point the base images at the runner host's
+# pull-through cache and nowhere else (a missing image fails the build instead of falling
+# back to upstream). The default is the real registry, for local builds.
+ARG MCR=mcr.microsoft.com
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}-noble AS build
+FROM --platform=$BUILDPLATFORM ${MCR}/dotnet/sdk:${DOTNET_VERSION}-noble AS build
 ARG TARGETARCH
 ENV NUGET_PACKAGES=/nuget
 # NuGet Audit queries nuget.org's vulnerability feed at restore (NU1900, an error under
@@ -64,7 +68,7 @@ RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
 # Chiseled: no shell, no package manager, non-root ($APP_UID) by default. The
 # -extra variant carries ICU and tzdata, which the default invariant mode lacks.
 # The bundles are framework-dependent and run on this image's .NET runtime.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra
+FROM ${MCR}/dotnet/aspnet:10.0-noble-chiseled-extra
 WORKDIR /app
 COPY --from=build /app .
 EXPOSE 8080
