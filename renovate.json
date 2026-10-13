@@ -1,11 +1,44 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:best-practices"
+  ],
+  "timezone": "Asia/Taipei",
+  "schedule": [
+    "before 6am on Monday"
+  ],
+  "labels": [
+    "renovate",
+    "dependencies"
+  ],
+  "minimumReleaseAge": "3 days",
+  "prConcurrentLimit": 2,
+  "prHourlyLimit": 2,
+  "branchConcurrentLimit": 2,
+  "rebaseWhen": "conflicted",
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": [
+      "security",
+      "renovate"
+    ],
+    "minimumReleaseAge": null
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "before 6am on Monday"
+    ]
+  },
   "customManagers": [
     {
       "description": "`# renovate: datasource=… depName=…` 註記之後的變數或 ARG",
       "customType": "regex",
-      "managerFilePatterns": ["/(^|/)\\.gitlab-ci\\.yml$/", "/(^|/)Dockerfile$/"],
+      "managerFilePatterns": [
+        "/(^|/)\\.gitlab-ci\\.yml$/",
+        "/(^|/)Dockerfile$/"
+      ],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+(?:ARG\\s+)?\\w+[:=]\\s*\"?(?<currentValue>[^\"\\s]+)\"?"
       ]
@@ -13,9 +46,53 @@
   ],
   "packageRules": [
     {
+      "description": "CI 變數的版本值會被拼進映像名稱或指令（如 postgres:$POSTGRES_MAJOR），不能附 digest；digest 釘選只用於 Dockerfile 與字面 image",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "pinDigests": false
+    },
+    {
+      "description": "ontology／consult 的 FROM 以 ARG 組 tag（python:${PYTHON_VERSION}-slim-trixie），digest 無處可寫，不釘",
+      "matchFileNames": [
+        "services/ontology/Dockerfile",
+        "services/consult/Dockerfile"
+      ],
+      "pinDigests": false
+    },
+    {
+      "description": "python 在 .python-version、CI 變數與兩個 Dockerfile 各有一處，升版時同一個 MR 一起改",
+      "matchDepNames": [
+        "python"
+      ],
+      "groupName": "python"
+    },
+    {
+      "description": "uv 在 CI 變數、兩個 Dockerfile 的映像 tag 與各 pyproject 的 uv_build 範圍各有一處，升版時同一個 MR 一起改",
+      "matchDepNames": [
+        "uv",
+        "ghcr.io/astral-sh/uv",
+        "uv_build"
+      ],
+      "groupName": "uv"
+    },
+    {
+      "description": ".NET SDK 在 global.json、CI 變數與 platform Dockerfile，執行期映像（aspnet）須同版",
+      "matchDepNames": [
+        "dotnet-sdk",
+        "mcr.microsoft.com/dotnet/sdk",
+        "mcr.microsoft.com/dotnet/aspnet"
+      ],
+      "groupName": ".NET SDK and images"
+    },
+    {
       "description": "PostgreSQL 主版本須與正式區相同，不自動升主版本",
-      "matchDepNames": ["postgres"],
-      "matchUpdateTypes": ["major"],
+      "matchDepNames": [
+        "postgres"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "enabled": false
     }
   ]
