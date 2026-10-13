@@ -80,12 +80,43 @@ public static class InternalGrpcClient
 
                 return Task.CompletedTask;
             })
+            // 長壽命的 HTTP/2 連線：keepalive 偵測 NAT 或負載平衡器的靜默斷線（間隔須大於伺服器容許的
+            // 最短 ping 間隔，見 env_law_grpc.connection）；閒置不回收，連線的壽命由伺服器的 GOAWAY 決定。
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan,
+                KeepAlivePingDelay = TimeSpan.FromSeconds(60),
+                KeepAlivePingTimeout = TimeSpan.FromSeconds(20),
+                KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always,
+                ConnectTimeout = TimeSpan.FromSeconds(10),
+                EnableMultipleHttp2Connections = true,
+            })
             .ConfigureChannel((provider, channel) =>
             {
                 // 一個 channel 就是一條長駐的 HTTP/2 連線，因此 ClusterIP Service 會把每次呼叫
                 // 都釘在同一個 pod。使用 `dns:///<headless service>:<port>` 時，resolver 會回傳每個
                 // pod，由 round_robin 將呼叫分散到各 pod；單純的 http:// 位址則只有一台主機。
-                channel.ServiceConfig = new ServiceConfig { LoadBalancingConfigs = { new RoundRobinConfig() } };
+                channel.ServiceConfig = new ServiceConfig
+                {
+                    LoadBalancingConfigs = { new RoundRobinConfig() },
+                    // 內部服務的方法都是唯讀、確定性的一元呼叫（生成不在其中），UNAVAILABLE 重試安全；
+                    // 不重試 DEADLINE_EXCEEDED（期限已用盡）與 RESOURCE_EXHAUSTED（容量用盡要立即失敗）。
+                    MethodConfigs =
+                    {
+                        new MethodConfig
+                        {
+                            Names = { MethodName.Default },
+                            RetryPolicy = new RetryPolicy
+                            {
+                                MaxAttempts = 3,
+                                InitialBackoff = TimeSpan.FromMilliseconds(100),
+                                MaxBackoff = TimeSpan.FromSeconds(1),
+                                BackoffMultiplier = 2,
+                                RetryableStatusCodes = { StatusCode.Unavailable },
+                            },
+                        },
+                    },
+                };
 
                 // 叢集網路內使用明文 h2c；要用 TLS 就把 Address 改為 https。
                 var address = new Uri(provider.GetRequiredService<IOptions<TOptions>>().Value.Address);

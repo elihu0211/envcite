@@ -37,6 +37,18 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         Assert.Equal(["1", "5-1"], articles!.Select(a => a.Number));
     }
 
+    [Fact]
+    public async Task ATransientUnavailableIsRetriedAndTheCallerNeverSeesIt()
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync("retry");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        using var response = await client.GetAsync(new Uri($"/v2/laws/{FakeOntologyServer.FlakyLawId}", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, factory.Ontology.GetLawCalls[FakeOntologyServer.FlakyLawId]);
+    }
+
     [Theory]
     [InlineData("unknown-act", HttpStatusCode.NotFound)]
     [InlineData(FakeOntologyServer.UnavailableLawId, HttpStatusCode.ServiceUnavailable)]
