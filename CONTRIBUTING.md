@@ -137,7 +137,9 @@ CI 依改動路徑分流：
 
 ## 升級版本
 
-依賴集中在單一檔案，由 Renovate（`renovate.json`）提 MR 更新；`.gitlab-ci.yml` 的 `variables:` 與 Dockerfile `ARG` 上方的 `# renovate:` 註記是它辨識版本的依據，新增版本變數時一併加上。手動升級時，表中各位置在同一次提交一起改。
+依賴集中在單一檔案，由 Renovate（`renovate.json`）提 MR 更新；`.gitlab-ci.yml` 的 `variables:` 上方的 `# renovate:` 註記是它辨識版本的依據，新增版本變數時一併加上（Dockerfile 的 `ARG` 由 Renovate 內建的 Dockerfile 解析讀取，不需註記）。手動升級時，表中各位置在同一次提交一起改。
+
+執行端：`thuaisse-lab/chepb-1150011621` 的每週排程集中執行（週一台北時間 06:00 前），本倉庫不放令牌也不跑 job。同一工具出現在多處者（python、uv、.NET SDK 與映像）已設為同一個 MR。**不自動合併**：合併進 `main` 會建置映像並由 Argo CD Image Updater 自動上線，依賴更新須先看過 MR。
 
 | 版本 | 位置 |
 |------|------|
