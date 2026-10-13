@@ -19,6 +19,10 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
+    # 預設分支不自動取消：它的 pipeline 會推映像，中途取消會少掉該 commit 的 SHA tag。
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      auto_cancel:
+        on_new_commit: none
     - if: $CI_COMMIT_BRANCH
   auto_cancel:
     on_new_commit: interruptible
