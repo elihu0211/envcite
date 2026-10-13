@@ -1,4 +1,4 @@
-"""閘門一：罰則的額度與帶單位的門檻值，與原文的數字一致。"""
+"""閘門一：罰則的額度與帶單位的門檻值，與原文的數字一致，且比較符號含不含本數與原文的詞一致。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,15 @@ from decimal import Decimal
 from typing import Any
 
 from env_law_ontology.verification.gates.base import Conn, GateResult, Unit, Verdict, unit_of
-from env_law_ontology.verification.gates.cn_number import amounts, numbers_in, ranges
+from env_law_ontology.verification.gates.cn_number import (
+    QUALIFIER_COMPARATOR,
+    amounts,
+    numbers_in,
+    qualified_numbers,
+    ranges,
+)
+
+_COMPLEMENT = {"ge": "lt", "lt": "ge", "le": "gt", "gt": "le", "eq": "ne", "ne": "eq"}
 
 
 @dataclass(frozen=True)
@@ -27,8 +35,8 @@ class NumbersGate:
         ).fetchone()
         if sanction is not None and any(v is not None for v in sanction):
             checks.extend(self._sanction(u, *sanction))
-        for (value,) in conn.execute(
-            "SELECT threshold FROM annotation.statement_condition"
+        for value, comparator, negated in conn.execute(
+            "SELECT threshold, comparator::text, negated FROM annotation.statement_condition"
             " WHERE statement_id = %s AND threshold IS NOT NULL"
             " AND (cond_role = 'limit' OR measure_unit IS NOT NULL)",
             (statement_id,),
@@ -42,6 +50,10 @@ class NumbersGate:
             checks.append(
                 {"what": "threshold", "value": str(value), "in_text": sorted(have), "ok": ok}
             )
+            if ok:
+                bound = self._bound(u, int(Decimal(str(value))), str(comparator), bool(negated))
+                if bound is not None:
+                    checks.append(bound)
         if not checks:
             return None
         verdict: Verdict = (
@@ -50,6 +62,31 @@ class NumbersGate:
             else ("fail" if any(c["ok"] is False for c in checks) else "inconclusive")
         )
         return GateResult(verdict, {"checks": checks})
+
+    @staticmethod
+    def _bound(u: Unit, value: int, comparator: str, negated: bool) -> dict[str, Any] | None:
+        """比較符號含不含本數，與原文數字後的比較詞一致。
+
+        原文寫「十八歲以上」，標註的比較是 ge（或它的補集 lt，當要件描述的是違反的那一側）才對；
+        標成 gt 就把本數排除了。同一個數字在原文有幾個比較詞時，只要一個一致就算。原文沒有比較詞
+        （例如「逾」「超過」，沒有查到明文的含本數規則）則不檢查。
+        """
+        words = [w for v, w in qualified_numbers(u.quoted) if v == value]
+        if not words:
+            return None
+        effective = _COMPLEMENT[comparator] if negated else comparator
+        allowed = {
+            c
+            for w in words
+            for c in (QUALIFIER_COMPARATOR[w], _COMPLEMENT[QUALIFIER_COMPARATOR[w]])
+        }
+        return {
+            "what": "bound",
+            "value": str(value),
+            "words": words,
+            "comparator": effective,
+            "ok": effective in allowed,
+        }
 
     @staticmethod
     def _sanction(u: Unit, amount_text: Any, low: Any, high: Any) -> list[dict[str, Any]]:

@@ -5,6 +5,7 @@ import pytest
 
 from env_law_ontology.reasoning import evaluate
 from env_law_ontology.verification import (
+    DEFAULT_GATES,
     settle,
     verify,
 )
@@ -28,7 +29,7 @@ def test_verify_writes_one_row_per_gate_and_reruns_only_the_inconclusive(
     first = verify(conn)
     second = verify(conn)
 
-    assert first == 13 * 3  # 每個陳述、每個閘門一列（不適用也記）
+    assert first == 13 * len(DEFAULT_GATES)  # 每個陳述、每個閘門一列（不適用也記）
     assert second <= first
     assert _latest(conn, ids["w7_2a"], "executable") == "not_applicable"
 

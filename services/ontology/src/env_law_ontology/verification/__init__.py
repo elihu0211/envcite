@@ -6,6 +6,7 @@ from env_law_ontology.verification.gates import (
     Gate,
     GateResult,
     NumbersGate,
+    ProvisoGate,
     ReferencesGate,
 )
 from env_law_ontology.verification.model_gates import IndependentTestGate, PanelGate, RoundtripGate
@@ -30,6 +31,7 @@ __all__ = [
     "ModelError",
     "NumbersGate",
     "PanelGate",
+    "ProvisoGate",
     "ReferencesGate",
     "RoundtripGate",
     "Settled",

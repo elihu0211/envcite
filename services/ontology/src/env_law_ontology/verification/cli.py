@@ -16,7 +16,7 @@ import psycopg
 
 from env_law_ontology.verification.pipeline import settle
 
-DEFAULT_REQUIRED = "numbers,references,executable,roundtrip,independent_test,panel"
+DEFAULT_REQUIRED = "numbers,references,executable,provisos,roundtrip,independent_test,panel"
 
 
 def main() -> None:

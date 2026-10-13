@@ -47,6 +47,32 @@ def amounts(text: str) -> list[tuple[int, str | None]]:
     return out
 
 
+#: 帶比較詞的數值：「五十毫克以下」「十八歲以上」「三十日以內」，以及前置的「未滿十八歲」「未達…」。
+#: 數字與詞之間容許一段單位（不含數字與標點）。
+_AFTER = re.compile(rf"([{NUMBER}]+)[^{NUMBER}，。；：、（）()\s]{{0,6}}?(以上|以下|以內)")
+_BEFORE = re.compile(rf"(未滿|未達)([{NUMBER}]+)")
+
+#: 含本數與否：以上、以下、以內連本數計算（刑法第 10 條第 1 項，其他法規無統一規定而慣例從之）；
+#: 未滿、未達不含本數。「逾」「超過」沒有查到明文的含本數規則，不在這裡判定。
+QUALIFIER_COMPARATOR = {"以上": "ge", "以下": "le", "以內": "le", "未滿": "lt", "未達": "lt"}
+
+
+def qualified_numbers(text: str) -> list[tuple[int, str]]:
+    """原文中帶比較詞（以上、以下、以內、未滿、未達）的整數及其詞，依出現順序。"""
+    found: list[tuple[int, int, str]] = []
+    for m in _AFTER.finditer(text):
+        try:
+            found.append((m.start(), cn_number(m.group(1)), m.group(2)))
+        except ValueError:
+            continue
+    for m in _BEFORE.finditer(text):
+        try:
+            found.append((m.start(), cn_number(m.group(2)), m.group(1)))
+        except ValueError:
+            continue
+    return [(value, word) for _, value, word in sorted(found)]
+
+
 def ranges(found: Sequence[tuple[int, str | None]]) -> list[tuple[int | None, int | None]]:
     """把「以上」「以下」配成額度的組：（下限, 上限）；只有一邊的，另一邊是 None。"""
     out: list[tuple[int | None, int | None]] = []
