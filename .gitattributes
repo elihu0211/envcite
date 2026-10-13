@@ -1,0 +1,7 @@
+* text=auto eol=lf
+
+# 產生物：MR 的 diff 預設收合
+uv.lock linguist-generated
+services/platform/openapi/openapi_v2.json linguist-generated
+libs/python/env-law-proto/src/**/*_pb2*.py linguist-generated
+libs/python/env-law-proto/src/**/*_pb2*.pyi linguist-generated

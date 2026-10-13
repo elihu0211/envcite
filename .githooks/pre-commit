@@ -1,6 +1,2 @@
 #!/bin/sh
-# 擋下 main 上的 commit：改動走分支與 MR（見 CONTRIBUTING.md「從開發到上線」）。
-if [ "$(git symbolic-ref --short -q HEAD)" = main ]; then
-  echo "拒絕在 main 上 commit：先開分支（wt switch --create <type>/<簡述>）。" >&2
-  exit 1
-fi
+exec "$(dirname "$0")/block-main.sh" commit

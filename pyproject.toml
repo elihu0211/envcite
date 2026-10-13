@@ -11,6 +11,7 @@ dev = [
     "mypy",
     "mypy-protobuf",
     "pytest",
+    "pytest-cov",
     "ruff",
     "testcontainers[postgres]",
     "types-grpcio",
@@ -43,6 +44,11 @@ ignore_errors = true
 # jieba 沒有型別資訊。
 module = "jieba.*"
 ignore_missing_imports = true
+
+[tool.coverage.run]
+# 在成員目錄執行，CI 以 COVERAGE_RCFILE 指向本檔。
+source = ["src"]
+branch = true
 
 [tool.pytest]
 # 測試逐成員執行（在成員目錄下 `uv run pytest`）：各成員的 tests 同名，不合併成一個 session。
