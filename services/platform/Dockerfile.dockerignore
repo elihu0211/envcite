@@ -1,7 +1,6 @@
 # The build context is the repo root; send only what the image needs.
 *
 !proto
-!ci/nuget.mirror.config
 proto/**/*.md
 !services/platform/global.json
 !services/platform/Directory.Build.props

@@ -9,6 +9,14 @@
 # `uv sync --locked` in CI.
 #
 # CI passes both versions from its own variables; the defaults are for local builds.
+#
+# Nothing is downloaded here. Wheels come from the uv cache that CI's `deps-python` job
+# filled, passed as the build context `uv-cache`, and every uv step runs with
+# `--network=none` and UV_OFFLINE: a package missing from that cache fails the build
+# instead of reaching PyPI. The cache is bind-mounted, so it never becomes an image layer.
+#
+#   UV_CACHE_DIR=$PWD/.uv-cache uv sync --locked --all-packages
+#   docker buildx build -f services/consult/Dockerfile --build-context uv-cache=.uv-cache .
 
 ARG UV_VERSION=0.12.18
 ARG PYTHON_VERSION=3.14
@@ -16,16 +24,20 @@ ARG PYTHON_VERSION=3.14
 FROM ghcr.io/astral-sh/uv:${UV_VERSION}-python${PYTHON_VERSION}-trixie-slim AS build
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    UV_PYTHON_DOWNLOADS=0
+    UV_PYTHON_DOWNLOADS=0 \
+    UV_OFFLINE=1 \
+    UV_CACHE_DIR=/uv-cache
 WORKDIR /app
 # Dependencies first, so a source-only change reuses this layer.
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --package env-law-consult --no-install-workspace
+RUN --network=none --mount=type=bind,from=uv-cache,target=/uv-cache,rw \
+    uv sync --frozen --no-dev --package env-law-consult --no-install-workspace
 COPY libs/python/env-law-grpc libs/python/env-law-grpc
 COPY libs/python/env-law-proto libs/python/env-law-proto
 COPY services/consult/pyproject.toml services/consult/README.md services/consult/
 COPY services/consult/src services/consult/src
-RUN uv sync --frozen --no-dev --package env-law-consult \
+RUN --network=none --mount=type=bind,from=uv-cache,target=/uv-cache,rw \
+    uv sync --frozen --no-dev --package env-law-consult \
  && .venv/bin/python -m compileall -q services/consult/src libs/python
 
 # Same base as the uv image above, so the venv's interpreter path resolves.

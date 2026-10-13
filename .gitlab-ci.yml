@@ -56,8 +56,10 @@ variables:
   ALPINE_VERSION: "3.22"
   # renovate: datasource=docker depName=postgres
   POSTGRES_MAJOR: "18"
+  # 完整版本，不用浮動的 "10.0"：套件快取（含 bundle 需要的 runtime pack、ILLink tasks）隨 SDK 版本，
+  # 快取鍵帶這個值；Dockerfile 的 ARG 與此同步（Renovate 兩處都追蹤，同一個 MR 升）。
   # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
-  DOTNET_VERSION: "10.0"
+  DOTNET_VERSION: "10.0.401"
   # renovate: datasource=pypi depName=uv
   UV_VERSION: "0.12.18"
   # renovate: datasource=python-version depName=python
@@ -85,7 +87,7 @@ variables:
 # S3 cache 開了 Shared，同 key 會跨專案共用。
 .cache-nuget: &cache-nuget
   key:
-    prefix: "$CI_PROJECT_PATH"
+    prefix: "$CI_PROJECT_PATH-sdk$DOTNET_VERSION"
     files: [services/platform/Directory.Packages.props]
   paths: [.nuget/packages]
 
@@ -159,6 +161,11 @@ variables:
   services:
     - name: docker:${DOCKER_VERSION}-dind
       alias: docker
+      # buildkit 映像從 runner 主機的 registry 快取（http）拉取，dockerd 要放行私網位址。
+      command:
+        - --insecure-registry=10.0.0.0/8
+        - --insecure-registry=172.16.0.0/12
+        - --insecure-registry=192.168.0.0/16
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
@@ -198,7 +205,7 @@ deps-dotnet:
   timeout: 20m
   rules:
     - changes: *changes-platform
-  image: mcr.microsoft.com/dotnet/sdk:10.0
+  image: mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION
   variables:
     NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
   cache:
@@ -208,9 +215,10 @@ deps-dotnet:
     # 不退回直連上游：失敗的請求也計入 Nexus 的每日額度。
     - timeout 10 bash -c '</dev/tcp/host.docker.internal/8081' || { echo "Nexus 鏡像（host.docker.internal:8081）不可用；請檢查 runner 主機上的 Nexus。" >&2; exit 1; }
     - mkdir -p ~/.nuget/NuGet && cp ci/nuget.mirror.config ~/.nuget/NuGet/NuGet.Config
-    - cd services/platform
     # 鎖檔（packages.lock.json）釘住完整依賴圖含間接依賴；與清單不一致即失敗，快取內容因此只由清單決定。
-    - dotnet restore --locked-mode
+    - (cd services/platform && dotnet restore --locked-mode)
+    # 映像建置要的另一份：它離線執行，只讀這個快取。內容與 Dockerfile 的指令同源，見腳本。
+    - ci/prime-dotnet-image-cache.sh
 
 dotnet:
   extends: [.runner, .dind]
@@ -348,10 +356,31 @@ python-proto:
     # 匯出 registry 快取需要 docker-container driver。
     # 用 host 網路：job 容器 MTU 為 1360，dind 橋接網路預設 1500，大封包被靜默丟棄，
     # 症狀是 `dotnet restore` 連 api.nuget.org 逾時。
-    - docker buildx create --use --driver docker-container --driver-opt network=host --buildkitd-flags '--oci-worker-net=host'
+    # 基底映像與 buildkit 映像本身都不直連上游：走 runner 主機上既有的 pull-through 快取
+    # （5000 docker.io、5002 ghcr.io、5004 mcr.microsoft.com），以 BuildKit 官方的 registry mirror
+    # 設定導向；快取沒有時 BuildKit 退回原 registry。位址取 job 容器解析到的 host-gateway
+    # （buildkit 在 dind 的 host 網路裡看不到 job 容器的 /etc/hosts，不能用名稱）。
+    - |
+      host_ip=$(awk '/host\.docker\.internal/ {print $1; exit}' /etc/hosts)
+      [ -n "$host_ip" ] || { echo "解析不到 host.docker.internal，無法使用 runner 主機的 registry 快取" >&2; exit 1; }
+      {
+        for m in docker.io:5000 ghcr.io:5002 mcr.microsoft.com:5004; do
+          echo "[registry.\"${m%%:*}\"]"
+          echo "  mirrors = [\"$host_ip:${m##*:}\"]"
+          echo "[registry.\"$host_ip:${m##*:}\"]"
+          echo "  http = true"
+          echo "  insecure = true"
+        done
+      } > buildkitd.toml
+      cat buildkitd.toml
+      docker buildx create --use --driver docker-container \
+        --driver-opt "network=host,image=$host_ip:5000/moby/buildkit:buildx-stable-1" \
+        --buildkitd-flags '--oci-worker-net=host' --buildkitd-config buildkitd.toml
   script:
-    # 快取先讀本分支、再讀預設分支，各分支各寫各的；讀寫失敗不該讓建置失敗。
-    # platform 的 Dockerfile 不用 uv／Python 版本，多餘的 build-arg 只會警告。
+    # 套件不在這裡下載：Dockerfile 的套件步驟以 `--network=none` 執行，只讀 prepare 階段備好的
+    # 快取（deps-*），經 $CONTEXTS 以 build context 傳入。缺套件就建置失敗，不會連外網。
+    # 層快取先讀本分支、再讀預設分支，各分支各寫各的；讀寫失敗不該讓建置失敗。
+    # 各 Dockerfile 只用其中一部分 build-arg，多餘的只會警告。
     - |
       if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
         output="--push"
@@ -359,15 +388,10 @@ python-proto:
         echo "非預設分支，只驗證建置、不推送：$IMAGE"
         output="--output type=cacheonly"
       fi
-      # buildkit（host 網路）看不到 job 容器的 /etc/hosts，解析不到 host.docker.internal：
-      # 把 job 容器解析到的位址（runner 設定的 host-gateway）明示給建置。
-      nexus_ip=$(awk '/host\.docker\.internal/ {print $1; exit}' /etc/hosts)
-      [ -n "$nexus_ip" ] || { echo "解析不到 host.docker.internal，無法使用 Nexus 鏡像" >&2; exit 1; }
-      docker buildx build -f services/$SERVICE/Dockerfile \
-        --add-host "host.docker.internal:$nexus_ip" \
+      docker buildx build -f services/$SERVICE/Dockerfile $CONTEXTS \
         --build-arg UV_VERSION="$UV_VERSION" \
         --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
-        --build-arg NUGET_MIRROR=1 \
+        --build-arg DOTNET_VERSION="$DOTNET_VERSION" \
         --cache-from "type=registry,ref=$CACHE:$CI_COMMIT_REF_SLUG" \
         --cache-from "type=registry,ref=$CACHE:$CI_DEFAULT_BRANCH" \
         --cache-to "type=registry,ref=$CACHE:$CI_COMMIT_REF_SLUG,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true" \
@@ -375,27 +399,39 @@ python-proto:
 
 ontology-image:
   extends: .image
-  needs: [ontology]
+  needs: [ontology, deps-python]
   rules:
     - changes: *changes-ontology
+  cache:
+    - <<: *cache-uv
+      policy: pull
   variables:
     SERVICE: ontology
+    CONTEXTS: --build-context uv-cache=.uv-cache
 
 consult-image:
   extends: .image
-  needs: [consult]
+  needs: [consult, deps-python]
   rules:
     - changes: *changes-consult
+  cache:
+    - <<: *cache-uv
+      policy: pull
   variables:
     SERVICE: consult
+    CONTEXTS: --build-context uv-cache=.uv-cache
 
 platform-image:
   extends: .image
-  needs: [dotnet, openapi]
+  needs: [dotnet, openapi, deps-dotnet]
   rules:
     - changes: *changes-platform
+  cache:
+    - <<: *cache-nuget
+      policy: pull
   variables:
     SERVICE: platform
+    CONTEXTS: --build-context nuget=.nuget/packages
 
 segmenter:
   extends: .python-checks
