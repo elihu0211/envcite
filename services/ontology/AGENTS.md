@@ -18,6 +18,7 @@ Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Cont
 
 - **Name:** envcite-ontology（Python 套件 `envcite_ontology`）
 - **Role:** 本體服務（shared, non-tenant data）：各來源的知識集中在本服務，一種來源一個本體，各有自己的 schema 與引用代號字母（法規本體 `law` 為 `L`）。新增來源是新增一個本體，不另立服務。由同倉的 `services/platform` 與 `services/consult` 呼叫。
+- **Layout:** 共用機制（取得引擎、投影、驗證管線、gRPC 伺服器）在套件頂層；本體專屬的程式（來源、解析、規則）放進以本體 id 命名的子套件，資料表歸該本體自己的 schema。新增第二個本體時，把法規專屬的程式移進 `law/`，介面不變。拆成獨立服務只在：該本體需要獨立擴縮或發版、資料不能與共享資料同庫、或需要不同的執行環境。
 - **Stack:** Python · uv · gRPC（grpcio，同步伺服器）· PostgreSQL（psycopg 3）· ruff · mypy (strict) · pytest；版本以根 `.python-version`、`pyproject.toml`、`uv.lock` 為準。
 - **Data model:** **關聯式實表，PostgreSQL 是唯一真值**。以法規本體為例，schema 依職責分：`corpus`（語料）、`retrieval`（檢索投影）、`vocab`（受控詞彙）、`annotation`（規範陳述）。法規以（識別碼方案，在地識別碼）為鍵；效力逐條文單元記載，查詢逐單元解析（`corpus.provisions_at`）；標題掛在 `legal_expression`（法規名稱可因修正而變，屬公布版本）；標註錨定（單元，內容雜湊），不錨定版本列。表結構以 `migrations/*.sql` 為準。
 
