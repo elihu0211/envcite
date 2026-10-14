@@ -40,11 +40,11 @@ def test_the_example_file_loads_and_assigns_every_role() -> None:
 
     assert models.extractor.name == "mistral:mistral-small-4"
     assert models.roundtrip.name == "google:gemma-4-31b"
-    assert models.independent_test.name == "inkling:vibe"
+    assert models.independent_test.name == "inkling:coder"
     assert [m.name for m in models.panel] == [
         "google:gemma-4-31b",
         "meta:llama4scout",
-        "inkling:vibe",
+        "inkling:coder",
     ]
 
 
@@ -53,7 +53,7 @@ def test_verifiers_are_listed_once_in_the_order_their_roles_come() -> None:
 
     assert [m.name for m in models.verifiers] == [
         "google:gemma-4-31b",
-        "inkling:vibe",
+        "inkling:coder",
         "meta:llama4scout",
     ]
     assert models.everyone[0] is models.extractor
@@ -72,7 +72,7 @@ def test_the_gates_follow_the_roles_not_the_order() -> None:
     by_method = {g.method: g for g in gates_from(models)}
 
     assert by_method["roundtrip"].reformalizer.name == "google:gemma-4-31b"  # type: ignore[attr-defined]
-    assert by_method["independent_test"].tester.name == "inkling:vibe"  # type: ignore[attr-defined]
+    assert by_method["independent_test"].tester.name == "inkling:coder"  # type: ignore[attr-defined]
     assert len(by_method["panel"].judges) == 3  # type: ignore[attr-defined]
 
 
