@@ -1,0 +1,3 @@
+{
+  "dotnet.defaultSolution": "services/platform/EnvCite.Platform.slnx"
+}
