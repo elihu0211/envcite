@@ -13,9 +13,9 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 |------|------|--------|------|
 | `proto/` | gRPC 契約，**唯一真值** | protobuf · buf | [README](proto/README.md) |
 | `services/platform/` | 多租戶控制平面與對外 REST | C# · ASP.NET Core · PostgreSQL | [README](services/platform/README.md) · [AGENTS](services/platform/AGENTS.md) |
-| `services/ontology/` | 法規本體與檢索（shared, non-tenant） | Python · uv · gRPC · PostgreSQL | [README](services/ontology/README.md) · [AGENTS](services/ontology/AGENTS.md) |
+| `services/ontology/` | 本體：各來源知識的集中處、檢索與推論（shared, non-tenant） | Python · uv · gRPC · PostgreSQL | [README](services/ontology/README.md) · [AGENTS](services/ontology/AGENTS.md) |
 | `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；本身不執行生成模型） | Python · uv · gRPC | [README](services/consult/README.md) · [AGENTS](services/consult/AGENTS.md) |
-| `libs/python/` | 服務之外、可獨立測試的 Python 套件（含 `envcite-proto`：`proto/` 的 Python 產生碼） | uv workspace 成員，不發佈 | 各套件的 `README.md` |
+| `libs/python/` | 服務之外、可獨立測試的 Python 套件（含 `envcite-proto`：`proto/` 的 Python 產生碼） | uv workspace 成員，不發佈 | [AGENTS](libs/python/AGENTS.md) · 各套件的 `README.md` |
 
 總覽與目錄見根 [`README.md`](README.md)；本機開發環境見 [`CONTRIBUTING.md`](CONTRIBUTING.md)。工具與執行期的版本不寫在文件裡，以 `global.json`、`.python-version`、`pyproject.toml` 與 `uv.lock` 為準。
 

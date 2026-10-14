@@ -10,9 +10,9 @@
 
 - [`proto/`](proto/README.md)：gRPC 契約
 - [`services/platform/`](services/platform/README.md)：控制平面與對外 REST API
-- [`services/ontology/`](services/ontology/README.md)：本體與檢索
+- [`services/ontology/`](services/ontology/README.md)：本體，各來源知識的集中處
 - [`services/consult/`](services/consult/README.md)：接地
-- `libs/python/`：共用套件
+- [`libs/python/`](libs/python/AGENTS.md)：共用套件
 
 ## 文件
 
