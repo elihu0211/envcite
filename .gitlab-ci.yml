@@ -293,7 +293,6 @@ dotnet:
     - dotnet build --no-restore
     # openapi/ 由建置產生並提交；與程式碼不一致即失敗，重新建置後提交。
     - test -z "$(git status --porcelain -- openapi/)"
-    - dotnet format --verify-no-changes --no-restore
     - >-
       dotnet test --no-build
       --collect:"XPlat Code Coverage" --results-directory "$CI_PROJECT_DIR/artifacts"
@@ -308,6 +307,26 @@ dotnet:
       coverage_report:
         coverage_format: cobertura
         path: artifacts/**/coverage.cobertura.xml
+
+# 格式檢查與測試互不依賴，拆成兩個 job 平行跑（原先串在 dotnet 之後多花約 70 秒）。
+dotnet-format:
+  extends: [.runner]
+  stage: check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-platform
+  image: mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION
+  variables:
+    NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
+  needs: [deps-dotnet]
+  cache:
+    - <<: *cache-nuget
+      policy: pull
+  script:
+    - cd services/platform
+    - mkdir -p "$CI_PROJECT_DIR/.nuget/no-source"
+    - dotnet restore --locked-mode --source "$CI_PROJECT_DIR/.nuget/no-source"
+    - dotnet format --verify-no-changes --no-restore
 
 # Python 依賴：整個 workspace 只有一份 uv.lock，下載一次供所有 Python job 使用。
 deps-python:
@@ -486,6 +505,7 @@ platform-image:
   extends: .image
   needs:
     - {job: dotnet, optional: true}
+    - {job: dotnet-format, optional: true}
     - {job: openapi, optional: true}
     - deps-dotnet
   rules:

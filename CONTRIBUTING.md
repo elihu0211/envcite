@@ -140,7 +140,7 @@ CI 依改動路徑分流：
 | 改動 | 跑什麼 |
 |------|--------|
 | 任何改動 | `gate`（讓只改文件的 MR 也有 pipeline 可合併） |
-| `services/platform/` | `dotnet`（含對外 REST 規格是否過期）、`openapi`（對外 REST 的破壞性變更）、`platform-image` |
+| `services/platform/` | `dotnet`（測試，含對外 REST 規格是否過期）、`dotnet-format`、`openapi`（對外 REST 的破壞性變更）、`platform-image` |
 | `services/ontology/`、`libs/python/` | `ontology`、`ontology-image` |
 | `services/consult/`、`libs/python/` | `consult`、`consult-image` |
 | `libs/python/envcite-segmenter/` | `segmenter` |

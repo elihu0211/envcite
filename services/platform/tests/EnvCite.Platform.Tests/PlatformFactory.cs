@@ -7,6 +7,7 @@ using EnvCite.Platform.Modules.ApiAccess;
 using EnvCite.Platform.Modules.Tenancy;
 
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -75,7 +76,13 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.UseSetting($"Platform:TenantPlans:{ProTenant}", "pro");
         // 測試動態建立大量租戶，無法逐一指派方案，所以給預設方案。正式環境不設（完全付費制），見 PaidOnlyTests。
         builder.UseSetting("Platform:DefaultPlan", "standard");
-        builder.ConfigureServices(services => services.Replace(ServiceDescriptor.Singleton<TimeProvider>(Time)));
+        builder.ConfigureServices(services =>
+        {
+            services.Replace(ServiceDescriptor.Singleton<TimeProvider>(Time));
+            // Identity 預設 PBKDF2 十萬次，每次登入、建帳號都要算；測試驗的是流程不是雜湊強度，降低迭代數
+            // 以省下大半 CPU（CI 的 runner 只有 1 核）。雜湊字串自帶迭代數，正式設定不受影響。
+            services.Configure<PasswordHasherOptions>(o => o.IterationCount = 1_000);
+        });
     }
 
     /// <summary>同一個容器裡的全新資料庫，回傳它的連線字串。要從空的開始時用（共用的庫已經有別的測試的資料）。</summary>
