@@ -6,10 +6,7 @@ from typing import Any
 
 import pytest
 
-from env_law_ontology.verification import (
-    AnthropicModel,
-    build_model,
-)
+from env_law_ontology.verification import AnthropicModel
 from env_law_ontology.verification.run import (
     PROBES,
     SameModel,
@@ -26,15 +23,10 @@ from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
 
 
-def test_build_model_names_the_family_and_refuses_vendors_it_has_no_adapter_for() -> None:
-    model = build_model("anthropic:claude-sonnet-5-5")
+def test_the_anthropic_model_names_its_family() -> None:
+    model = AnthropicModel("claude-sonnet-5-5")
 
-    assert isinstance(model, AnthropicModel)
     assert (model.name, model.family) == ("anthropic:claude-sonnet-5-5", "anthropic")
-    with pytest.raises(ValueError, match="no adapter"):
-        build_model("openai:gpt")
-    with pytest.raises(ValueError):
-        build_model("anthropic")
 
 
 def test_the_anthropic_adapter_sends_one_user_message_and_joins_the_text_blocks(

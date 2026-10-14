@@ -64,7 +64,7 @@ def waits() -> list[float]:
 
 def model(url: str, waits: list[float], **kw: Any) -> ChatCompletionsModel:
     return ChatCompletionsModel(
-        "m", declared_family="f", base_url=url, sleep=waits.append, backoff=1.0, **kw
+        "m", family="f", base_url=url, sleep=waits.append, backoff=1.0, **kw
     )
 
 

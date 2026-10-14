@@ -127,7 +127,7 @@ def _model(
         raise ConfigError(f"{where}: family is required (it is what independence is judged on)")
     base, key = endpoints[endpoint]
     extra: dict[str, Any] = {k: int(table[k]) for k in ("max_tokens", "max_retries") if k in table}
-    return ChatCompletionsModel(remote, declared_family=family, base_url=base, api_key=key, **extra)
+    return ChatCompletionsModel(remote, family=family, base_url=base, api_key=key, **extra)
 
 
 def parse(
