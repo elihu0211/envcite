@@ -33,7 +33,32 @@ def test_evidence_carries_the_closed_set_with_text(
     assert [c.code for c in citations] == ["L1", "L2"]
     assert citations[0].label == "空氣污染防制法 第 1 條"
     assert citations[0].text == "第 1 條條文內容。"
+    assert {c.ontology for c in citations} == {"law"}
     assert response.evidence.confidence == consult_pb2.CONFIDENCE_HIGH
+
+
+def test_law_ontology_may_be_requested_explicitly(
+    stub: consult_pb2_grpc.ConsultationServiceStub,
+) -> None:
+    response = stub.Ground(
+        consult_pb2.GroundRequest(question="露天燃燒如何處罰", ontologies=["law"]),
+        metadata=auth(),
+    )
+
+    assert response.WhichOneof("outcome") == "evidence"
+
+
+def test_unknown_ontology_is_rejected(
+    stub: consult_pb2_grpc.ConsultationServiceStub, ontology: FakeOntology
+) -> None:
+    with pytest.raises(grpc.RpcError) as err:
+        stub.Ground(
+            consult_pb2.GroundRequest(question="x", ontologies=["law", "case"]), metadata=auth()
+        )
+
+    assert err.value.code() is grpc.StatusCode.INVALID_ARGUMENT
+    assert "case" in (err.value.details() or "")
+    assert ontology.searches == []
 
 
 def test_blank_question_is_refused_not_an_error(

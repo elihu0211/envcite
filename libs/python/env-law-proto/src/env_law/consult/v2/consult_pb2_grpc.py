@@ -26,7 +26,12 @@ if _version_not_supported:
 
 
 class ConsultationServiceStub:
-    """Evidence for grounded answers over the environmental-law ontology.
+    """Evidence for grounded answers over the environmental-knowledge ontologies.
+
+    An ontology is one kind of source with its own schema, named by a lowercase
+    id. Today there is one: "law" (法規本體, article-level statutes and
+    regulations). Each ontology owns one letter that prefixes its citation codes
+    ("law" → "L"), so a code never collides across ontologies.
 
     The service never runs a language model. It decides what may be cited and
     whether the question can be answered at all, and hands back a closed citation
@@ -52,7 +57,12 @@ class ConsultationServiceStub:
 
 
 class ConsultationServiceServicer:
-    """Evidence for grounded answers over the environmental-law ontology.
+    """Evidence for grounded answers over the environmental-knowledge ontologies.
+
+    An ontology is one kind of source with its own schema, named by a lowercase
+    id. Today there is one: "law" (法規本體, article-level statutes and
+    regulations). Each ontology owns one letter that prefixes its citation codes
+    ("law" → "L"), so a code never collides across ontologies.
 
     The service never runs a language model. It decides what may be cited and
     whether the question can be answered at all, and hands back a closed citation
@@ -89,7 +99,12 @@ def add_ConsultationServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class ConsultationService:
-    """Evidence for grounded answers over the environmental-law ontology.
+    """Evidence for grounded answers over the environmental-knowledge ontologies.
+
+    An ontology is one kind of source with its own schema, named by a lowercase
+    id. Today there is one: "law" (法規本體, article-level statutes and
+    regulations). Each ontology owns one letter that prefixes its citation codes
+    ("law" → "L"), so a code never collides across ontologies.
 
     The service never runs a language model. It decides what may be cited and
     whether the question can be answered at all, and hands back a closed citation

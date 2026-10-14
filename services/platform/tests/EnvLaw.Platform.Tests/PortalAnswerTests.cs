@@ -136,7 +136,7 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
         var page = await browser.SubmitAsync(SearchPage(tenant.Identifier), Ask(FakeConsultServer.UnrelatedQuestion));
 
         Assert.Empty(chat.Calls);
-        Assert.Contains("超出環境法規的範圍", page.Html, StringComparison.Ordinal);
+        Assert.Contains("超出目前涵蓋的知識範圍", page.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("不該被呼叫", page.Html, StringComparison.Ordinal);
     }
 

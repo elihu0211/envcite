@@ -36,7 +36,7 @@ internal sealed partial class GroundedAnswerer(
     internal const string Insufficient = "證據不足";
 
     internal const string SystemPrompt =
-        "你是臺灣環境法規助理，使用繁體中文，簡短、直接。\n"
+        "你是臺灣環境知識助理，使用繁體中文，簡短、直接。\n"
         + "規則：\n"
         + "1. 只能根據使用者提供的「證據」回答，不得使用證據以外的知識，不得推測。\n"
         + "2. 每個論點後面用證據的代號標明出處，例如 [L1]；只能引用證據裡有的代號。\n"
