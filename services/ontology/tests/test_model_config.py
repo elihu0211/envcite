@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from env_law_ontology.verification.config import ConfigError, load, parse
-from env_law_ontology.verification.run import gates_from, main
+from env_law_ontology.verification.run import SameModel, gates_from, main
 from tests.test_chat_adapter import Endpoint
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "models.example.toml"
@@ -268,3 +268,19 @@ def test_a_key_file_inside_a_git_repository_must_be_ignored(tmp_path: Path) -> N
 
     (tmp_path / ".gitignore").write_text(".secrets/\n", encoding="utf-8")
     assert load(tmp_path / "models.toml", {}).extractor._api_key == "file-secret"  # type: ignore[attr-defined]
+
+
+def test_check_asks_every_model_and_needs_no_database(monkeypatch: pytest.MonkeyPatch) -> None:
+    """替身端點對每個問題都答同一句，所以別名檢查會擋下；擋下就表示每個模型都被問到了。"""
+    served = Endpoint()
+    monkeypatch.delenv("ONTOLOGY_DSN", raising=False)
+    monkeypatch.setenv("CHAT_BASE_URL", served.url)
+    monkeypatch.setenv("CHAT_API_KEY", "k")
+    monkeypatch.setattr("sys.argv", ["env-law-pipeline", "--models", str(EXAMPLE), "--check"])
+    try:
+        with pytest.raises(SameModel):
+            main()
+    finally:
+        served.server.shutdown()
+
+    assert len(served.requests) == 2 * len(load(EXAMPLE).everyone)

@@ -244,6 +244,11 @@ def main() -> None:
     parser.add_argument(
         "--models", type=Path, required=True, help="模型配置檔（TOML，範本 models.example.toml）"
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="只確認設定檔、端點、金鑰與每個模型都通（開跑前的同一個別名檢查），不連資料庫",
+    )
     parser.add_argument("--agent-version", default="pipeline-1")
     parser.add_argument("--require", default=",".join(ALL_METHODS), help="必要的驗證方法，逗號分隔")
     parser.add_argument(
@@ -253,17 +258,22 @@ def main() -> None:
         "--no-distinct-check", action="store_true", help="略過「同一個模型的別名」檢查"
     )
     args = parser.parse_args()
-    if bool(args.law) == args.pending:
-        raise SystemExit("give --law (one or more) or --pending, not both and not neither")
-    if args.limit is not None and (not args.pending or args.limit < 1):
-        raise SystemExit("--limit is a positive number and goes with --pending")
+    if not args.check:
+        if bool(args.law) == args.pending:
+            raise SystemExit("give --law (one or more) or --pending, not both and not neither")
+        if args.limit is not None and (not args.pending or args.limit < 1):
+            raise SystemExit("--limit is a positive number and goes with --pending")
     dsn = os.environ.get("ONTOLOGY_DSN", "")
-    if not dsn:
+    if not dsn and not args.check:
         raise SystemExit("ONTOLOGY_DSN is required")
     try:
         models = load_models(args.models)
     except ConfigError as e:
         raise SystemExit(f"{args.models}: {e}") from e
+    if args.check:
+        assert_distinct(models.everyone)
+        log.info("通過：%s", "、".join(m.name for m in models.everyone))
+        return
     extractor, verifiers = models.extractor, list(models.verifiers)
     gates = gates_from(models, args.allow_same_family)
     log.info(
