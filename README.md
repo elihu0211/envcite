@@ -7,18 +7,13 @@
 ## 架構
 
 ```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 50, "rankSpacing": 70, "padding": 20}}}%%
 flowchart LR
+    client(["用戶端應用程式"])
+    llm{{"自己的語言模型"}}
     src[("全國法規資料庫")]
 
-    subgraph caller["呼叫端"]
-        direction TB
-        client(["用戶端應用程式"])
-        llm{{"自己的語言模型"}}
-    end
-
     subgraph envcite["EnvCite"]
-        direction LR
         platform["<b>platform</b><br/>租戶 · 限流 · 計量 · REST"]
         consult["<b>consult</b><br/>接地 · 可答性判定"]
         ontology["<b>ontology</b><br/>本體 · 檢索 · 推論"]
@@ -26,28 +21,31 @@ flowchart LR
 
     client ==>|"REST · API key"| platform
     platform -->|gRPC| consult
-    platform -->|gRPC| ontology
     consult -->|gRPC| ontology
+    platform -->|gRPC| ontology
     src -->|"取得 · 匯入"| ontology
     client -.->|"證據集 + 提示詞"| llm
 
-    classDef svc fill:#eef2ff,stroke:#6366f1,stroke-width:1.5px,color:#1e1b4b
-    classDef store fill:#ecfdf5,stroke:#10b981,color:#064e3b
-    classDef ext fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:4 3,color:#334155
+    classDef svc fill:#6366f120,stroke:#818cf8,stroke-width:2px
+    classDef ext fill:#94a3b814,stroke:#94a3b8,stroke-dasharray:4 3
+    classDef store fill:#10b98120,stroke:#34d399,stroke-width:2px
     class platform,consult,ontology svc
-    class src store
     class client,llm ext
+    class src store
+    style envcite fill:#6366f10d,stroke:#818cf8
 ```
 
 單一倉庫，各服務獨立建置、獨立部署；服務之間的契約是 [`proto/`](proto/README.md)。
 
 ## 目錄
 
-- [`proto/`](proto/README.md)：gRPC 契約
-- [`services/platform/`](services/platform/README.md)：控制平面與對外 REST API
-- [`services/ontology/`](services/ontology/README.md)：本體，各來源知識的集中處
-- [`services/consult/`](services/consult/README.md)：接地
-- [`libs/python/`](libs/python/AGENTS.md)：共用套件
+| 路徑 | 內容 | 文件 |
+|------|------|------|
+| `proto/` | gRPC 契約 | [README](proto/README.md) |
+| `services/platform/` | 控制平面與對外 REST API | [README](services/platform/README.md) · [AGENTS](services/platform/AGENTS.md) |
+| `services/ontology/` | 本體，各來源知識的集中處 | [README](services/ontology/README.md) · [AGENTS](services/ontology/AGENTS.md) |
+| `services/consult/` | 接地 | [README](services/consult/README.md) · [AGENTS](services/consult/AGENTS.md) |
+| `libs/python/` | 共用套件 | [AGENTS](libs/python/AGENTS.md) |
 
 ## 文件
 
