@@ -1,6 +1,6 @@
 # 環境知識 EnvCite
 
-[![pipeline status](https://gitlab.com/thuaisse-lab/env-law/badges/main/pipeline.svg)](https://gitlab.com/thuaisse-lab/env-law/-/pipelines)
+[![pipeline status](https://gitlab.com/thuaisse-lab/envcite/badges/main/pipeline.svg)](https://gitlab.com/thuaisse-lab/envcite/-/pipelines)
 
 臺灣環境知識的檢索與引用接地（grounding）服務：把知識組織成可檢索的本體，並為呼叫端的語言模型備妥可核驗的封閉證據集；證據不足時，明確拒答。
 

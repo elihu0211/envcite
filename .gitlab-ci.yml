@@ -397,7 +397,7 @@ python-proto:
     - uv run --no-sync mypy src
 
 # 映像建置：MR 只驗證建置，預設分支才推送。tag 只用 commit SHA（不推 latest），
-# env-law-deploy 的 Image Updater 依此上線。
+# envcite-deploy 的 Image Updater 依此上線。
 .image:
   extends: [.runner, .dind]
   stage: build
