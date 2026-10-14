@@ -16,16 +16,10 @@
 
 ## 文件
 
-- **本機開發環境**：[`CONTRIBUTING.md`](CONTRIBUTING.md)
+- **參與開發**（本機環境、分支、MR 與合併流程）：[`CONTRIBUTING.md`](CONTRIBUTING.md)
 - **API 與服務如何組合**：[`proto/README.md`](proto/README.md)
 - **開發指引**：[`AGENTS.md`](AGENTS.md)；各服務另有巢狀 `AGENTS.md`
 
-## 貢獻與回報
-
-分支、MR 與合併流程見 [`CONTRIBUTING.md`](CONTRIBUTING.md)；問題與需求請開 GitLab issue。
-
 ## 授權
 
-本倉庫為組織內部專案，不對外開源；程式碼與文件僅供組織內部使用。
-
-法規資料取自[全國法規資料庫](https://law.moj.gov.tw)，依政府資料開放授權條款－第 1 版使用，須標示出處。
+內部專案，不對外開源。法規資料取自[全國法規資料庫](https://law.moj.gov.tw)，依政府資料開放授權條款－第 1 版使用，須標示出處。
