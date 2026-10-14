@@ -42,7 +42,7 @@ def test_law_ontology_may_be_requested_explicitly(
 ) -> None:
     response = stub.Ground(
         consult_pb2.GroundRequest(question="露天燃燒如何處罰", ontologies=["law"]),
-        metadata=auth(),
+        metadata=call_metadata(),
     )
 
     assert response.WhichOneof("outcome") == "evidence"
@@ -53,7 +53,8 @@ def test_unknown_ontology_is_rejected(
 ) -> None:
     with pytest.raises(grpc.RpcError) as err:
         stub.Ground(
-            consult_pb2.GroundRequest(question="x", ontologies=["law", "case"]), metadata=auth()
+            consult_pb2.GroundRequest(question="x", ontologies=["law", "case"]),
+            metadata=call_metadata(),
         )
 
     assert err.value.code() is grpc.StatusCode.INVALID_ARGUMENT
