@@ -1,8 +1,6 @@
 # AGENTS.md
 
-Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Contract、Safety、buf）見根 `AGENTS.md`；本檔只管 `services/ontology/`。
-
-本檔只寫**不會隨實作變動的規範與不變式**。清單、預設值、閾值、閘門細節、遷移編號以程式碼與測試為準，這裡不重抄。
+倉庫層規範（Layering、Contract、Safety、buf）見根 `AGENTS.md`；本檔只管 `services/ontology/`。
 
 ## 索引
 

@@ -1,9 +1,5 @@
 # AGENTS.md
 
-Vendor-neutral instructions for coding agents (Cursor, Codex, Claude Code, Copilot, Gemini CLI, …).
-
-This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude Code docs](https://code.claude.com/docs/en/memory) so sessions that can't read `AGENTS.md` directly still get it. Never duplicate this content into vendor-specific files.
-
 ## Project
 
 - **Name:** envcite（環境知識 EnvCite）— 臺灣環境知識的檢索與引用接地服務，單一倉庫、多個獨立部署的服務

@@ -1,8 +1,6 @@
 # AGENTS.md
 
-Vendor-neutral instructions for coding agents. 倉庫層規範（Layering、Contract、Safety、buf）見根 `AGENTS.md`；本檔只管 `libs/python/`。
-
-本檔只寫不會隨實作變動的規範與不變式；套件的用法在各自的 `README.md`。
+倉庫層規範（Layering、Contract、Safety、buf）見根 `AGENTS.md`；本檔只管 `libs/python/`。
 
 ## 索引
 

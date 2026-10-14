@@ -1,8 +1,6 @@
 # AGENTS.md
 
-Vendor-neutral instructions for coding agents. 倉庫層規範見根 `AGENTS.md`；本檔只管 `services/consult/`。
-
-本檔只寫不會隨實作變動的規範與不變式；版本、預設值與清單以程式碼為準。
+倉庫層規範見根 `AGENTS.md`；本檔只管 `services/consult/`。
 
 ## 索引
 
