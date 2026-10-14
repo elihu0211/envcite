@@ -15,15 +15,17 @@ include:
       enable_mr_pipelines: true
 
 workflow:
+  # 只跑 MR pipeline 與預設分支 pipeline；沒有開 MR 的功能分支不跑 CI。
+  # 不保留 branch pipeline：先 push 再開 MR 時，同一個 SHA 會同時跑 push 與 merge_request_event
+  # 兩條 pipeline，搶唯一的 `windows-docker-thin` runner，排隊白白拉長。
+  # 要驗證就開 MR（`git push -o merge_request.create`）。
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
-      when: never
     # 預設分支不自動取消：它的 pipeline 會推映像，中途取消會少掉該 commit 的 SHA tag。
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       auto_cancel:
         on_new_commit: none
-    - if: $CI_COMMIT_BRANCH
+  # 同一 MR 的新 commit 會取消尚在跑的舊 pipeline（job 須為 interruptible，見 default）。
   auto_cancel:
     on_new_commit: interruptible
 
