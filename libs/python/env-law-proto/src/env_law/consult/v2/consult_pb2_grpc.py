@@ -33,7 +33,7 @@ class ConsultationServiceStub:
     set. Writing the prose — and checking that it cites only codes from that set —
     happens on the caller's side (see proto/README.md, "呼叫端的語言模型").
 
-    Internal service: callers must send `authorization: Bearer <internal token>`.
+    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
     Tenant-scoped: `x-tenant-id` selects the quota and audit trail the call is
     charged to, and is required. `x-request-id` is optional (logging only).
     """
@@ -59,7 +59,7 @@ class ConsultationServiceServicer:
     set. Writing the prose — and checking that it cites only codes from that set —
     happens on the caller's side (see proto/README.md, "呼叫端的語言模型").
 
-    Internal service: callers must send `authorization: Bearer <internal token>`.
+    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
     Tenant-scoped: `x-tenant-id` selects the quota and audit trail the call is
     charged to, and is required. `x-request-id` is optional (logging only).
     """
@@ -96,7 +96,7 @@ class ConsultationService:
     set. Writing the prose — and checking that it cites only codes from that set —
     happens on the caller's side (see proto/README.md, "呼叫端的語言模型").
 
-    Internal service: callers must send `authorization: Bearer <internal token>`.
+    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
     Tenant-scoped: `x-tenant-id` selects the quota and audit trail the call is
     charged to, and is required. `x-request-id` is optional (logging only).
     """

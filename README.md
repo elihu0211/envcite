@@ -39,15 +39,15 @@ flowchart LR
     end
 
     client -- "REST<br/>API key" --> platform
-    platform -- "gRPC<br/>內部 token" --> ontology
-    platform -- "gRPC<br/>內部 token" --> consult
-    consult -- "gRPC<br/>內部 token" --> ontology
+    platform -- "gRPC" --> ontology
+    platform -- "gRPC" --> consult
+    consult -- "gRPC" --> ontology
     client -.-> llm
     ontology --> pg
     platform --> pg
 ```
 
-外部用戶端只經 platform 的 REST API 進入；服務之間走 gRPC，以內部 token 認證。
+外部用戶端只經 platform 的 REST API 進入；服務之間走 gRPC，認證由叢集的服務網格（mTLS 加授權政策）負責，服務本身不驗證呼叫端。
 
 **語言模型不在本系統之內。** consult 決定可以引用什麼、能不能答，並交出附條文的封閉引用集合；把它寫成答案、並核驗答案只引用該集合，是呼叫端自己的模型與程式的責任。整合方式見 [`proto/README.md`](proto/README.md)。
 

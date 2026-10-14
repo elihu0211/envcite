@@ -65,7 +65,6 @@ uv sync --all-packages        # 整個 workspace；標註管線用 Anthropic 模
 | 變數 | 用於 |
 |------|------|
 | `ONTOLOGY_DSN` | 所有入口 |
-| `ONTOLOGY_INTERNAL_TOKEN` | `env-law-ontology`（必填） |
 | `ONTOLOGY_GRPC_PORT` | `env-law-ontology`（選用） |
 | `ACQUIRE_SNAPSHOT_DIR` | `env-law-sync`、`env-law-acquire`、`env-law-import` |
 | `CHAT_API_KEY` | `env-law-pipeline`，由 `models.toml` 引用 |
@@ -79,7 +78,7 @@ uv sync --all-packages        # 整個 workspace；標註管線用 Anthropic 模
 本機用 `uv run --env-file .env <入口>` 執行同一個入口；環境裡已有的同名變數優先於 `.env`。
 
 ```bash
-cp .env.example .env                       # 資料庫連線、快照目錄、內部 token；依需要修改
+cp .env.example .env                       # 資料庫連線、快照目錄；依需要修改
 uv run --env-file .env env-law-migrate
 uv run --env-file .env env-law-sync moj
 uv run --env-file .env env-law-ontology    # 重建索引後要重啟服務

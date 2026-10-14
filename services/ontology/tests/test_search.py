@@ -16,7 +16,7 @@ from env_law_ontology.server import build_server
 from env_law_ontology.store import OntologyStore
 from env_law_segmenter import Segmenter
 
-from .conftest import TOKEN, auth
+from .conftest import call_metadata
 
 
 @pytest.fixture
@@ -74,7 +74,7 @@ def search_stub(
         )
     conn.commit()
 
-    server, port = build_server(store, TOKEN, "127.0.0.1:0")
+    server, port = build_server(store, "127.0.0.1:0")
     server.start()
     with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
         yield ontology_pb2_grpc.OntologyServiceStub(channel)
@@ -85,7 +85,7 @@ def test_search_finds_the_article_by_raw_text(
     search_stub: ontology_pb2_grpc.OntologyServiceStub,
 ) -> None:
     response = search_stub.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=auth()
+        ontology_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=call_metadata()
     )
 
     top = response.hits[0]
@@ -99,7 +99,7 @@ def test_the_query_text_is_not_written_to_the_log(
     # 查詢是客戶的案件內容；日誌只該有它的長度。
     with caplog.at_level("INFO", logger="env_law_ontology.service"):
         search_stub.SearchArticles(
-            ontology_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=auth()
+            ontology_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=call_metadata()
         )
 
     assert "噪音管制標準" not in caplog.text
@@ -110,7 +110,8 @@ def test_search_before_the_law_existed_finds_nothing(
     search_stub: ontology_pb2_grpc.OntologyServiceStub,
 ) -> None:
     response = search_stub.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="噪音", as_of="2019-12-31"), metadata=auth()
+        ontology_pb2.SearchArticlesRequest(query="噪音", as_of="2019-12-31"),
+        metadata=call_metadata(),
     )
 
     assert list(response.hits) == []
@@ -129,7 +130,7 @@ def test_bad_search_is_invalid_argument(
     stub: ontology_pb2_grpc.OntologyServiceStub, request_: ontology_pb2.SearchArticlesRequest
 ) -> None:
     with pytest.raises(grpc.RpcError) as error:
-        stub.SearchArticles(request_, metadata=auth())
+        stub.SearchArticles(request_, metadata=call_metadata())
 
     assert error.value.code() == grpc.StatusCode.INVALID_ARGUMENT
 

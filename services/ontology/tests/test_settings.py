@@ -19,7 +19,6 @@ NON_SETTINGS_KEYS = {"CHAT_API_KEY"}
 ALL_NAMES = (
     "ONTOLOGY_DSN",
     "ACQUIRE_SNAPSHOT_DIR",
-    "ONTOLOGY_INTERNAL_TOKEN",
     "ONTOLOGY_GRPC_PORT",
 )
 
@@ -35,8 +34,7 @@ def test_missing_variables_are_all_reported_in_one_message() -> None:
         load(ServerSettings)
     message = str(raised.value)
     assert message.startswith("invalid environment: ")
-    for name in ("ONTOLOGY_DSN", "ONTOLOGY_INTERNAL_TOKEN"):
-        assert name in message
+    assert "ONTOLOGY_DSN" in message
     assert "ONTOLOGY_GRPC_PORT" not in message  # 有預設值，不算缺
 
 
@@ -57,7 +55,6 @@ def test_empty_values_are_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.parametrize("port", ["0", "65536", "-1", "http", ""])
 def test_invalid_port_is_rejected(monkeypatch: pytest.MonkeyPatch, port: str) -> None:
     monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://u:p@h/db")
-    monkeypatch.setenv("ONTOLOGY_INTERNAL_TOKEN", "t")
     monkeypatch.setenv("ONTOLOGY_GRPC_PORT", port)
     with pytest.raises(SystemExit, match="ONTOLOGY_GRPC_PORT"):
         load(ServerSettings)
@@ -65,7 +62,6 @@ def test_invalid_port_is_rejected(monkeypatch: pytest.MonkeyPatch, port: str) ->
 
 def test_defaults_and_names_are_case_insensitive(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ontology_dsn", "postgresql://u:p@h/db")
-    monkeypatch.setenv("ONTOLOGY_INTERNAL_TOKEN", "t")
     settings = load(ServerSettings)
     assert settings.ontology_dsn == "postgresql://u:p@h/db"
     assert settings.ontology_grpc_port == 50051
@@ -77,20 +73,12 @@ def test_unrelated_variables_are_ignored(monkeypatch: pytest.MonkeyPatch) -> Non
     assert load(DatabaseSettings).ontology_dsn == "postgresql://u:p@h/db"
 
 
-def test_secret_is_not_leaked(monkeypatch: pytest.MonkeyPatch) -> None:
-    secret = "s3cret-token-value"
+def test_error_message_has_no_values(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://u:p@h/db")
-    monkeypatch.setenv("ONTOLOGY_INTERNAL_TOKEN", secret)
-    settings = load(ServerSettings)
-    assert settings.ontology_internal_token.get_secret_value() == secret
-    assert secret not in repr(settings)
-    assert secret not in str(settings)
-
-    # 其他變數出錯時，錯誤訊息也不帶出任何值
     monkeypatch.setenv("ONTOLOGY_GRPC_PORT", "not-a-port")
     with pytest.raises(SystemExit) as raised:
         load(ServerSettings)
-    assert secret not in str(raised.value)
+    assert "ONTOLOGY_GRPC_PORT" in str(raised.value)
     assert "not-a-port" not in str(raised.value)
 
 

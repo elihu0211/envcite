@@ -17,8 +17,6 @@ from env_law_ontology.telemetry import register_annotation_health
 from tests.test_import import _scalar
 from tests.verification_support import Conn, _water
 
-from .conftest import TOKEN, auth  # noqa: F401  (TOKEN keeps the fixture module imported)
-
 
 def test_without_an_otlp_endpoint_telemetry_does_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)

@@ -30,11 +30,11 @@ ontology = """
 cd '{{ worktree_path }}/services/ontology' && \
 export ONTOLOGY_DSN="${ONTOLOGY_DSN:-postgresql://env_law:env_law@localhost:5432/env_law}" && \
 uv run env-law-migrate && \
-ONTOLOGY_INTERNAL_TOKEN=dev ONTOLOGY_GRPC_PORT='{{ ('env-law/ontology/' ~ branch) | hash_port }}' exec uv run env-law-ontology
+ONTOLOGY_GRPC_PORT='{{ ('env-law/ontology/' ~ branch) | hash_port }}' exec uv run env-law-ontology
 """
 consult = """
 cd '{{ worktree_path }}/services/consult' && \
-CONSULT_INTERNAL_TOKEN=dev CONSULT_GRPC_PORT='{{ ('env-law/consult/' ~ branch) | hash_port }}' \
-ONTOLOGY_INTERNAL_TOKEN=dev ONTOLOGY_TARGET='dns:///localhost:{{ ('env-law/ontology/' ~ branch) | hash_port }}' \
+CONSULT_GRPC_PORT='{{ ('env-law/consult/' ~ branch) | hash_port }}' \
+ONTOLOGY_TARGET='dns:///localhost:{{ ('env-law/ontology/' ~ branch) | hash_port }}' \
 exec uv run env-law-consult
 """

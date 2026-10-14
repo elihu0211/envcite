@@ -86,7 +86,6 @@ psql "${ONTOLOGY_DSN:-postgresql://env_law:env_law@localhost:5432/env_law}" \
 
 | 項目 | 值 |
 |------|----|
-| 服務間內部 token | `dev` |
 | 營運者 key（`X-Admin-Key`） | 未設定時 `/admin` 停用；要用就設 `Platform__AdminKeySha256`＝key 的 SHA-256 hex |
 | 營運後台（`/ui`） | Development 一律開；其他環境設 `Platform__Ui__Enabled=true`。帳號以營運者 key 建（`POST /admin/operators`），無自助註冊 |
 

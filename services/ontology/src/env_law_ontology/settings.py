@@ -6,7 +6,7 @@
 
 from pathlib import Path
 
-from pydantic import Field, SecretStr, ValidationError
+from pydantic import Field, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,9 +27,6 @@ class SnapshotSettings(DatabaseSettings):
 class ServerSettings(DatabaseSettings):
     """gRPC 伺服器（env-law-ontology）。"""
 
-    ontology_internal_token: SecretStr = Field(
-        min_length=1, description="內部呼叫的共用權杖（platform 與 consult 帶上）"
-    )
     ontology_grpc_port: int = Field(default=50051, ge=1, le=65535, description="gRPC 監聽埠")
 
 
