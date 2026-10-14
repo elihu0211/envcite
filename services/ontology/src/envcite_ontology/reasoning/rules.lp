@@ -1,5 +1,5 @@
 % 通用推論程式：法條不寫成程式，陳述是資料（事實輸入）。數值一律為千分位整數。
-% 設計見 envcite-docs 01-02 §4、02-06 §5；事實由 facts.py 自資料庫產生，案件事實由呼叫端提供。
+% 事實由 facts.py 自資料庫產生，案件事實由呼叫端提供。
 % 輸入：statement/3 cond/7 thr/2 thr_src/2 delegated/1 exception/2 override/3 sanction/5 action/2 src/2（由 PG 依 as-of 日期產生）
 %       judgement/1（需判斷的要件原子）  unsupported/1（本程式不會比較的要件原子）  repeating/1（按次處罰的罰則）
 %       fact_in/2（案件事實，由呼叫端提供；同一概念可帶多個值，矛盾由下方檢出）

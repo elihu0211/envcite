@@ -1,4 +1,4 @@
-"""全國法規資料庫 Open API（envcite-docs 03-01 §4）。
+"""全國法規資料庫 Open API。
 
 `/api/ch/law/json` 與 `/api/ch/order/json` 各回傳一個 ZIP，內含一個 JSON 資料檔：
 `{"UpdateDate": "2026/9/18 上午 12:00:00", "Laws": [...]}`。只能整批下載；網站頁面的

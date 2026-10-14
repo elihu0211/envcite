@@ -2,12 +2,24 @@
 
 Vendor-neutral instructions for coding agents. 倉庫層規範見根 `AGENTS.md`；本檔只管 `services/consult/`。
 
+本檔只寫不會隨實作變動的規範與不變式；版本、預設值與清單以程式碼為準。
+
+## 索引
+
+| 文件 | 內容 |
+|------|------|
+| [`../../README.md`](../../README.md) | 倉庫總覽與目錄 |
+| [`../../AGENTS.md`](../../AGENTS.md) | 倉庫層規範 |
+| [`README.md`](README.md) | 本服務：介面、管線、啟動、開發指令 |
+| [`../../proto/README.md`](../../proto/README.md) | 契約與呼叫端接法 |
+| [`../ontology/`](../ontology/README.md)、[`../platform/`](../platform/README.md) | 上游與呼叫端，各有 README 與 `AGENTS.md` |
+
 ## Project
 
 - **Name:** consult（`services/consult`；倉庫為 `envcite`）
-- **Role:** 接地服務：以本體服務供給的法規事實，為**呼叫端的語言模型**備妥可引用的封閉證據集，或拒答。**本服務不執行生成模型。** **租戶隔離**——`x-tenant-id` 為必填，決定配額與稽核軌跡。
-- **Stack:** Python 3.14 · uv · gRPC（grpcio，同步伺服器，一元呼叫）· ruff · mypy (strict) · pytest
-- **Status:** `ConsultationService.Ground`（`envcite.consult.v2`）可運作；本體 adapter 為 `adapters.GrpcOntology`（經 ontology 的 `SearchArticles`）。經 platform 以 `POST /v2/ground` 對外開放。映像：`Dockerfile`（context 為倉庫根；CI `consult-image` 在 main 推送 `:<sha>`）。`envcite.consult.v1`（串流、含生成）已棄用，無實作。
+- **Role:** 接地服務：以本體服務供給的內容，為**呼叫端的語言模型**備妥可引用的封閉證據集，或拒答。**本服務不執行生成模型。** **租戶隔離**——`x-tenant-id` 為必填，決定配額與稽核軌跡。
+- **Stack:** Python · uv · gRPC（grpcio，同步伺服器，一元呼叫）· ruff · mypy (strict) · pytest（Python 版本見根 `.python-version`）
+- **Interface:** `ConsultationService.Ground`（`envcite.consult.v2`）；本體 adapter 為 `adapters.GrpcOntology`（經 ontology 的 `SearchArticles`）；經 platform 的 `POST /v2/ground` 對外。映像：`Dockerfile`（context 為倉庫根；CI `consult-image` 在 main 推送 `:<sha>`）。
 
 ## 管線形狀（本服務存在的理由）
 
@@ -58,10 +70,10 @@ uv run ruff check .          # --fix 可自動修
 uv run ruff format .
 uv run python -m mypy src tests
 ../../libs/python/envcite-proto/scripts/generate.sh   # 改完根 proto/ 之後重新產生
-ONTOLOGY_TARGET=dns:///localhost:50051 uv run envcite-consult   # :50052；worktree 內用 `wt consult`
+ONTOLOGY_TARGET=dns:///localhost:<ontology 埠> uv run envcite-consult   # worktree 內用 `wt consult`
 ```
 
-- 伺服器環境變數：`ONTOLOGY_TARGET`（必填，gRPC 目標，例如 `dns:///ontology:50051`）、`CONSULT_GRPC_PORT`（50052）。服務間認證由叢集的服務網格（mTLS 加授權政策）負責，服務本身不驗證呼叫端。
+- 伺服器環境變數：`ONTOLOGY_TARGET`（必填，gRPC 目標）、`CONSULT_GRPC_PORT`（選用，預設值見 `server.py`）。服務間認證由叢集的服務網格（mTLS 加授權政策）負責，服務本身不驗證呼叫端。
 - 測試不需要外部服務：本體以 fake 實作。**fake 不是次等實作**——管線的職責是決定拿到證據之後怎麼做，所以檢索本身正是測試該控制的部分。
 - `ruff` 的 `RUF001`–`RUF003` 關閉：拒答訊息與 docstring 以中文書寫，全形標點是對的（理由見倉庫根 `pyproject.toml`）。
 
@@ -76,7 +88,7 @@ ONTOLOGY_TARGET=dns:///localhost:50051 uv run envcite-consult   # :50052；workt
 
 - 不提交機密；設定一律由環境變數供給。
 - 不要手改 `libs/python/envcite-proto/src/**/*_pb2*`（跑其 `scripts/generate.sh`）。
-- 不要在本服務加入生成模型的呼叫：那會把模型選型、金鑰與按語彙單元計費帶回本服務，而它們已明確劃給呼叫端（論據見 `envcite-docs` 的 00-01）。
+- 不要在本服務加入生成模型的呼叫：那會把模型選型、金鑰與按語彙單元計費帶回本服務，而它們已明確劃給呼叫端。
 
 ## Done when
 

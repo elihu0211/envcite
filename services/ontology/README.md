@@ -1,10 +1,11 @@
 # envcite-ontology
 
-臺灣環境法規的語料、檢索與推論服務。
+法規本體（`law`）的語料、檢索與推論服務；資料為臺灣環境法規。回[倉庫總覽](../../README.md)。
 
 | 項目 | 內容 |
 |------|------|
 | 介面 | gRPC：`OntologyService`（法規與檢索）、`ReasoningService`（標註與推論） |
+| 技術棧 | Python · uv · gRPC · PostgreSQL；Python 版本見根 `.python-version` |
 | 呼叫端 | `services/platform`、`services/consult` |
 | 資料 | 全域共用，不分租戶；PostgreSQL 為唯一真值 |
 | 契約 | `proto/envcite/ontology/v1/ontology.proto`、`reasoning.proto` |
@@ -18,22 +19,25 @@
 flowchart LR
     src[("全國法規資料庫")]
 
-    subgraph sync["envcite-sync（排程）"]
+    subgraph sync["envcite-sync（排程，每步冪等）"]
         direction LR
-        acquire["acquire<br/>取得"] --> snap["快照檔"]
+        acquire["acquire<br/>取得"] --> snap[("快照檔")]
         snap --> import["import<br/>匯入"]
         import --> proj["projection<br/>檢索索引"]
     end
 
-    corpus[("語料與<br/>檢索索引")]
-    pipeline["envcite-pipeline<br/>語言模型抽取 · 閘門驗證"]
+    corpus[("語料與檢索索引")]
+    llm{{"語言模型<br/>抽取 · 驗證"}}
+    pipeline["envcite-pipeline<br/>抽取 → 閘門驗證 → 接受"]
     ann[("標註")]
-    api{{"gRPC 伺服器<br/>Ontology · Reasoning"}}
+    api["gRPC 伺服器<br/>Ontology · Reasoning"]
     callers(["platform · consult"])
 
     src --> acquire
     proj --> corpus
-    corpus --> pipeline --> ann
+    corpus --> pipeline
+    pipeline <--> llm
+    pipeline --> ann
     corpus --> api
     ann -->|"僅 confirmed"| api
     api --> callers
@@ -43,7 +47,7 @@ flowchart LR
     classDef ext fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:4 3,color:#334155
     class acquire,import,proj,pipeline,api job
     class src,snap,corpus,ann store
-    class callers ext
+    class callers,llm ext
 ```
 
 - **語料與檢索**：`envcite-sync` 依序取得、匯入、投影檢索索引。

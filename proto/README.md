@@ -1,6 +1,6 @@
 # envcite API
 
-gRPC 契約，`buf` 單一模組（根為本目錄）。欄位與方法的語意寫在 `.proto` 的註解裡，本檔只寫註解放不下的：約定與呼叫端的接法。
+gRPC 契約，`buf` 單一模組（根為本目錄）。欄位與方法的語意寫在 `.proto` 的註解裡，本檔只寫註解放不下的：約定與呼叫端的接法。回[倉庫總覽](../README.md)。
 
 | 套件 | 服務 | 租戶 | 對象 |
 |------|------|------|------|
@@ -15,6 +15,68 @@ buf breaking --against '.git#branch=main'
 ```
 
 產生碼與破壞性變更的規則見倉庫根 `AGENTS.md` 的 Contract。
+
+## 服務如何組合
+
+```mermaid
+%%{init: {"flowchart": {"curve": "basis"}}}%%
+flowchart LR
+    subgraph caller["呼叫端（系統之外）"]
+        direction TB
+        client(["用戶端應用程式"])
+        llm{{"自己的語言模型"}}
+    end
+
+    subgraph envcite["EnvCite"]
+        direction LR
+        platform["<b>platform</b><br/>租戶 · 限流 · 計量 · REST"]
+        consult["<b>consult</b><br/>接地 · 可答性判定"]
+        ontology["<b>ontology</b><br/>本體 · 檢索 · 推論"]
+    end
+
+    pg1[("platform<br/>PostgreSQL")]
+    pg2[("envcite<br/>PostgreSQL")]
+
+    client ==>|"REST · API key"| platform
+    platform -->|"Ground"| consult
+    platform -->|"法規 · 檢索 · 推論"| ontology
+    consult -->|"SearchArticles"| ontology
+    platform --- pg1
+    ontology --- pg2
+    client -.->|"證據集 + 提示詞"| llm
+
+    classDef svc fill:#eef2ff,stroke:#6366f1,stroke-width:1.5px,color:#1e1b4b
+    classDef store fill:#ecfdf5,stroke:#10b981,color:#064e3b
+    classDef ext fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:4 3,color:#334155
+    class platform,consult,ontology svc
+    class pg1,pg2 store
+    class client,llm ext
+```
+
+外部用戶端只經 platform 的 REST API 進入；服務之間走 gRPC，認證由叢集的服務網格（mTLS 加授權政策）負責，服務本身不驗證呼叫端。
+
+### 一次接地請求
+
+```mermaid
+%%{init: {"sequence": {"mirrorActors": false, "showSequenceNumbers": true}}}%%
+sequenceDiagram
+    autonumber
+    actor C as 用戶端
+    participant P as platform
+    participant K as consult
+    participant O as ontology
+
+    C->>+P: POST /v2/ground（API key）
+    P->>P: 驗證租戶 · 限流 · 計量
+    P->>+K: Ground（x-tenant-id）
+    K->>+O: SearchArticles
+    O-->>-K: 候選條文
+    K->>K: 指派代號 L1…Ln · 判定可答性
+    K-->>-P: evidence 或 refused
+    P-->>-C: 回應
+```
+
+拿到回應之後的事——把證據交給模型、核驗它的輸出——是呼叫端的責任，見〈呼叫端的語言模型〉。
 
 ## 約定
 
@@ -56,8 +118,8 @@ flowchart TD
     out -->|evidence| ev["1–8 筆引用<br/>代號 L1…，依相關程度排序"]
     out -->|refused| rf(["呈現給使用者<br/>不重試 · 不呼叫模型"])
     ev --> llm["呼叫端的模型<br/>只能以 [L1] 引用"]
-    llm --> chk{"代號 ∈ 證據集？"}
-    chk -->|"剝除自創代號"| fin{"仍有引用？"}
+    llm --> strip["剝除不在證據集內的代號"]
+    strip --> fin{"仍有引用？"}
     fin -->|是| ans(["答案 + Citation.iri 出處"])
     fin -->|否| rf
 
@@ -66,13 +128,13 @@ flowchart TD
     classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
     class ans,ev ok
     class rf stop
-    class ground,llm step
+    class ground,llm,strip step
 ```
 
 - `question` 傳使用者原句，不要先改寫；`SearchArticles` 的 `query` 同樣傳原文，斷詞由服務做。
 - 回應的 `outcome` 恰有一個：`evidence`（1 至 8 筆引用，依相關程度排序）或 `refused`（拒答）。拒答是結果，不是錯誤：呈現給使用者，不重試、不呼叫模型。
-- 交給模型時，證據以代號（`L1`…）開頭，限定模型只能以 `[L1]` 引用。代號的字母是來源本體的：目前只有法規本體（`law`，字母 `L`），每筆 `Citation.ontology` 標明出處；日後新增本體各領一個字母，序號在整份證據內連續。
-- `GroundRequest.ontologies` 指定要查哪些本體，留空為全部（目前只有 `law`）；不認得的代號回 `INVALID_ARGUMENT`。
+- 交給模型時，證據以代號（`L1`…）開頭，限定模型只能以 `[L1]` 引用。代號的字母是來源本體的（法規本體 `law` 為 `L`），每筆 `Citation.ontology` 標明出處；每個本體各領一個字母，序號在整份證據內連續。
+- `GroundRequest.ontologies` 指定要查哪些本體，留空為全部；不認得的代號回 `INVALID_ARGUMENT`。
 - 模型輸出要核驗：代號集合是封閉的，比對字串即可，剝除不在集合內的代號；剝除後沒有任何引用，視同拒答。
 - 以 `Citation.iri`（條文版本的 IRI）呈現出處；代號只在單次回應內有意義，不要儲存。
 

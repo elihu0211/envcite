@@ -1,4 +1,4 @@
-"""Annotation (envcite-docs 02-04, 02-06 §3.2): statements anchored to text, not a version row."""
+"""Annotation: statements anchored to text, not a version row."""
 
 from datetime import date
 from decimal import Decimal

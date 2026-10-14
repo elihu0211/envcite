@@ -1,5 +1,7 @@
 # 參與開發
 
+本機環境、分支與上線流程。回[倉庫總覽](README.md)；agent 規範見 [`AGENTS.md`](AGENTS.md)。
+
 ## 先決條件
 
 | 工具 | 版本 | 用途 |
@@ -9,7 +11,7 @@
 | Docker | — | 測試（Testcontainers）、映像建置；可用來起開發用資料庫 |
 | PostgreSQL | 18 | 開發用資料庫 |
 | .NET SDK | 10.0（`services/platform/global.json`） | platform |
-| [uv](https://docs.astral.sh/uv/) | CI 用 0.12.18 | Python workspace；Python 版本見 `.python-version`，由 uv 自動安裝 |
+| [uv](https://docs.astral.sh/uv/) | 版本見 `.gitlab-ci.yml` 的 `UV_VERSION` | Python workspace；Python 版本見 `.python-version`，由 uv 自動安裝 |
 | Node.js | — | 以 `npx` 執行 buf |
 
 ## 快速入門

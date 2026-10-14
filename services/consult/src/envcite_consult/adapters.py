@@ -25,7 +25,7 @@ class GrpcOntology:
                 iri=h.iri,
                 label=f"{h.law_title} {_article_label(h.number)}",
                 text=h.content,
-                # 相關性下界以這個分數校定（envcite-docs 04-01 §6、§7）；分數的定義
+                # 相關性下界以這個分數校定；分數的定義
                 # 一旦改變，下界就必須重新推導。
                 score=h.lexical_score,
             )

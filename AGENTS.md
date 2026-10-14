@@ -9,19 +9,21 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 - **Name:** envcite（環境知識 EnvCite）— 臺灣環境知識的檢索與引用接地服務，單一倉庫、多個獨立部署的服務
 - **Remote:** `git@gitlab.com:thuaisse-lab/envcite.git`
 
-| 路徑 | 內容 | 技術棧 |
-|------|------|--------|
-| `proto/` | gRPC 契約，**唯一真值** | protobuf · buf |
-| `services/platform/` | 多租戶控制平面：tenants、API keys、配額、計量、對外 REST | C# · .NET 10 · ASP.NET Core · PostgreSQL |
-| `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
-| `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；consult 本身不執行生成模型。入口的回答由 platform 呼叫模型端點、只根據 consult 的證據，見 `services/platform/AGENTS.md`） | Python 3.14 · uv · gRPC |
-| `libs/python/` | 服務之外、可獨立測試的 Python 套件（含 `envcite-proto`：`proto/` 的 Python 產生碼） | uv workspace 成員，不發佈 |
+| 路徑 | 內容 | 技術棧 | 文件 |
+|------|------|--------|------|
+| `proto/` | gRPC 契約，**唯一真值** | protobuf · buf | [README](proto/README.md) |
+| `services/platform/` | 多租戶控制平面與對外 REST | C# · ASP.NET Core · PostgreSQL | [README](services/platform/README.md) · [AGENTS](services/platform/AGENTS.md) |
+| `services/ontology/` | 法規本體與檢索（shared, non-tenant） | Python · uv · gRPC · PostgreSQL | [README](services/ontology/README.md) · [AGENTS](services/ontology/AGENTS.md) |
+| `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；本身不執行生成模型） | Python · uv · gRPC | [README](services/consult/README.md) · [AGENTS](services/consult/AGENTS.md) |
+| `libs/python/` | 服務之外、可獨立測試的 Python 套件（含 `envcite-proto`：`proto/` 的 Python 產生碼） | uv workspace 成員，不發佈 | 各套件的 `README.md` |
+
+總覽與目錄見根 [`README.md`](README.md)；本機開發環境見 [`CONTRIBUTING.md`](CONTRIBUTING.md)。工具與執行期的版本不寫在文件裡，以 `global.json`、`.python-version`、`pyproject.toml` 與 `uv.lock` 為準。
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
 
 ## 單一倉庫，不是單體
 
-合併倉庫**不改變部署邊界**：每個 `services/*` 仍是各自獨立部署的服務；`proto/` 放同一倉庫，是為了契約變更的原子性。**不要引入 Bazel／Pants／Nx**——各服務用自己的原生工具（`dotnet`、`uv`），CI 分流靠 GitLab 的 `rules:changes`。論據見 `envcite-docs` 的 05-01。
+合併倉庫**不改變部署邊界**：每個 `services/*` 仍是各自獨立部署的服務；`proto/` 放同一倉庫，是為了契約變更的原子性。**不要引入 Bazel／Pants／Nx**——各服務用自己的原生工具（`dotnet`、`uv`），CI 分流靠 GitLab 的 `rules:changes`。
 
 ## Commands
 
@@ -35,8 +37,6 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 lint
 DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=main'
 ```
 
-文件工具鏈（`./scripts/docs check`／`render`）在 `envcite-docs`，從該庫根執行。
-
 ### 平行 worktree
 
 每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree；環境由 `.config/wt.toml` 建立，不靠手動：建樹時各服務裝好依賴。本機伺服器用別名起，port 由分支推導，平行的樹不相撞；資料庫各服務一個固定的庫（`envcite`、`platform`），各分支共用，同一時間只跑一條分支的服務：
@@ -48,11 +48,11 @@ wt consult     # gRPC 伺服器，指向本樹的 ontology（platform 的 /v2/gr
 wt list        # URL 欄是本樹 platform 的位址
 ```
 
-資料庫要先備妥（PostgreSQL 18）。連線取 `ONTOLOGY_DSN`、`ConnectionStrings__Platform`，未設定時預設 `localhost:5432`、帳號／密碼 `envcite`／`envcite`（同 `appsettings.Development.json`）；建法見 `CONTRIBUTING.md`。測試不經此路——Testcontainers 每次自起一個庫。
+資料庫要先備妥（版本見 `CONTRIBUTING.md`）。連線取 `ONTOLOGY_DSN`、`ConnectionStrings__Platform`，未設定時預設 `localhost:5432`、帳號／密碼 `envcite`／`envcite`（同 `appsettings.Development.json`）；建法見 `CONTRIBUTING.md`。測試不經此路——Testcontainers 每次自起一個庫。
 
 ## 目錄配置與擴充判準
 
-下列判準是**新增服務時照著做的**，不是現在就要建的目錄——**空目錄不先建**，與文件庫「規劃中的卷次不建空殼」同一條理由。
+下列判準是**新增服務時照著做的**，不是現在就要建的目錄——**空目錄不先建**。
 
 | 內容 | 位置 | 何時才建 |
 |------|------|----------|
@@ -63,16 +63,8 @@ wt list        # URL 欄是本樹 platform 的位址
 | 部署清單 | `envcite-deploy` 倉庫（GitLab `thuaisse-lab/envcite-deploy`，Argo CD 來源），**不在本倉庫** | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（`<name>-image` job 推送 `:<commit-sha>`），該倉庫的 Argo CD Image Updater 偵測到後把 tag commit 進該倉庫（git write-back），Argo CD 同步上線，無需開 MR。**程式碼與清單要一起改時清單先行**：先在該倉庫合併向後相容的清單變更（如新環境變數給預設值），再合併本倉庫的程式碼——新映像會自動上線，順序反了就是新映像配舊清單 |
 
 - **契約維持單一 buf 模組**（`buf.yaml` 的模組根是 `proto/`，import 路徑為 `envcite/<service>/v1/...`）。拆成每領域一個模組會改變每一條 import 路徑，除非某領域需要獨立發佈到 schema registry，否則不拆。
-- **CI 的擴充點是「新增一個服務要改幾個地方」**：現為三處（job、`rules:changes` 錨點、`proto` 觸發路徑），要部署的服務再加一處（`<name>-image` 建置 job）。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
+- **CI 的擴充點是「新增一個服務要改幾個地方」**：要改的是 job、`rules:changes` 錨點與 `proto` 觸發路徑；要部署的服務再加 `<name>-image` 建置 job。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
 - **標籤用 `<service>/vX.Y.Z`**，不用倉庫層單一版本號。
-
-論據見 `envcite-docs` 的 05-02。
-
-## 文件庫在另一個倉庫
-
-技術決策及其論據記於 `envcite-docs`（GitHub `elihu0211/envcite-docs`，另一個倉庫，不是本倉庫的子目錄）：`.qmd` → Quarto → xelatex。結構、守門與為什麼與程式碼分倉，見該庫自己的 `AGENTS.md`。
-
-改動設計時，決策的論據寫進該庫，不要寫進本倉庫的 `AGENTS.md`：後者是作業規範，寫進論據必然過期。
 
 ## Contract
 
@@ -84,7 +76,9 @@ wt list        # URL 欄是本樹 platform 的位址
 ## Conventions
 
 - 小而聚焦的 diff；有既有程式碼時對齊其風格。
-- 人讀文件 → `README.md`（本機開發環境在 `CONTRIBUTING.md`）；決策論據 → `envcite-docs`；agent 作業 → 本檔與 skills。
+- 人讀文件 → `README.md`（每個目錄一份，總覽在根；本機開發環境在 `CONTRIBUTING.md`）；agent 作業 → 本檔與 skills。
+- **文件只寫不會過時的**：規範、不變式與指向真值的指標。版本、清單、預設值、端點與事件名稱、日期、「目前／尚未」這類現況，以程式碼與測試為準，不寫進文件；決策論據寫在 MR 說明，不寫進 `AGENTS.md`（作業規範寫進論據必然過期）。
+- 新增或搬動目錄、服務時，同一次提交更新根 `README.md` 的目錄與本檔的索引表，以及各 `AGENTS.md` 的索引。
 - 本檔保持簡短；長流程 → `.agents/skills/<name>/SKILL.md`。各服務的 `AGENTS.md` 只寫該服務獨有的，倉庫層規範以本檔為準、不重複。
 
 ## Layering
@@ -96,7 +90,7 @@ wt list        # URL 欄是本樹 platform 的位址
 | 共用 skills | 自 [`elihu0211/agent-config`](https://github.com/elihu0211/agent-config) 安裝，釘在 `skills-lock.json` | 同上；`DISABLE_TELEMETRY=1 npx skills update -p -y` 更新 |
 | Claude 橋接 | `CLAUDE.md` → `@AGENTS.md`；`.claude/skills/<name>` → **逐 skill** symlink 至 `../../.agents/skills/<name>`（官方文件述明可 symlink 的是 `<skill-name>` 項目本身，不是整個 `skills` 目錄） | 僅 Claude Code |
 | Gemini 橋接 | `.gemini/settings.json` → `context.fileName: ["AGENTS.md"]` | 僅 Gemini CLI（其預設為 `GEMINI.md`） |
-| Cursor rules | `.cursor/rules/*.mdc`（目前沒有） | 僅 Cursor，路徑限定指引 |
+| Cursor rules | `.cursor/rules/*.mdc` | 僅 Cursor，路徑限定指引 |
 
 - 共用 agent 設定（`.agents/`、`.gemini/`、`skills-lock.json`）只放倉庫根，服務層不重複。
 - 倉庫專屬 skill 寫在 `.agents/skills/`；`.claude/skills/` 內只放 symlink，**不要**另立一棵樹。

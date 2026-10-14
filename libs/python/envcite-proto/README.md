@@ -1,6 +1,6 @@
 # envcite-proto
 
-倉庫根 `proto/` 的 Python 產生碼（`envcite.ontology.v1`、`envcite.consult.v2`），由各服務共用。產生碼提交進版控，不手改；改完 `proto/` 後重新產生：
+倉庫根 `proto/` 的 Python 產生碼（`envcite.ontology.v1`、`envcite.consult.v2`），由各服務共用。回[倉庫總覽](../../../README.md)。產生碼提交進版控，不手改；改完 `proto/` 後重新產生：
 
 ```bash
 ./scripts/generate.sh
