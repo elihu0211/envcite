@@ -2,9 +2,44 @@
 
 [![pipeline status](https://gitlab.com/thuaisse-lab/envcite/badges/main/pipeline.svg)](https://gitlab.com/thuaisse-lab/envcite/-/pipelines)
 
-臺灣環境知識的檢索與引用接地（grounding）服務：把知識組織成可檢索的本體，並為呼叫端的語言模型備妥可核驗的封閉證據集；證據不足時，明確拒答。
+臺灣環境知識的檢索與引用接地服務：提供可核驗的封閉證據集，證據不足時明確拒答。
 
-本倉庫是單一倉庫（monorepo），各服務獨立建置、獨立部署。
+## 架構
+
+```mermaid
+%%{init: {"flowchart": {"curve": "basis"}}}%%
+flowchart LR
+    src[("全國法規資料庫")]
+
+    subgraph caller["呼叫端"]
+        direction TB
+        client(["用戶端應用程式"])
+        llm{{"自己的語言模型"}}
+    end
+
+    subgraph envcite["EnvCite"]
+        direction LR
+        platform["<b>platform</b><br/>租戶 · 限流 · 計量 · REST"]
+        consult["<b>consult</b><br/>接地 · 可答性判定"]
+        ontology["<b>ontology</b><br/>本體 · 檢索 · 推論"]
+    end
+
+    client ==>|"REST · API key"| platform
+    platform -->|gRPC| consult
+    platform -->|gRPC| ontology
+    consult -->|gRPC| ontology
+    src -->|"取得 · 匯入"| ontology
+    client -.->|"證據集 + 提示詞"| llm
+
+    classDef svc fill:#eef2ff,stroke:#6366f1,stroke-width:1.5px,color:#1e1b4b
+    classDef store fill:#ecfdf5,stroke:#10b981,color:#064e3b
+    classDef ext fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:4 3,color:#334155
+    class platform,consult,ontology svc
+    class src store
+    class client,llm ext
+```
+
+單一倉庫，各服務獨立建置、獨立部署；服務之間的契約是 [`proto/`](proto/README.md)。
 
 ## 目錄
 
