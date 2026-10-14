@@ -10,12 +10,12 @@ from typing import Any
 import psycopg
 import pytest
 
-from env_law_ontology import projection
-from env_law_ontology.acquire.moj import Moj, content_sha256, pcode
-from env_law_ontology.ingest import audit, importer
-from env_law_ontology.ingest.importer import Outcome
-from env_law_ontology.store import OntologyStore
-from env_law_segmenter import Segmenter
+from envcite_ontology import projection
+from envcite_ontology.acquire.moj import Moj, content_sha256, pcode
+from envcite_ontology.ingest import audit, importer
+from envcite_ontology.ingest.importer import Outcome
+from envcite_ontology.store import OntologyStore
+from envcite_segmenter import Segmenter
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
 

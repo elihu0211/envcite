@@ -1,0 +1,125 @@
+@page "/ui/tenants"
+@using EnvCite.Platform.Web.Components.Dialogs
+@inject ITenantDirectory Directory
+@inject IDialogService Dialogs
+@inject NavigationManager Navigation
+
+<PageTitle>租戶 · 環境知識</PageTitle>
+
+<PageHeader Title="租戶" Description="平台上的客戶與他們的方案。沒有方案的租戶不能呼叫資料端點（回 402）。">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">新增租戶</MudButton>
+    </Actions>
+</PageHeader>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">
+        載入租戶失敗。
+        <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="LoadAsync">重試</MudButton>
+    </MudAlert>
+}
+else if (_tenants is null)
+{
+    <MudProgressLinear Indeterminate="true" aria-label="載入租戶中" />
+}
+else
+{
+    <section class="ep-card ep-table-card" aria-label="租戶清單">
+        <div class="ep-toolbar" role="search">
+            <MudTextField @bind-Value="_search" Immediate="true" Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense"
+                          Placeholder="搜尋名稱或識別碼" aria-label="搜尋租戶"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+            <MudSpacer />
+            <MudSwitch T="bool" @bind-Value="_dense" Color="Color.Primary" Label="緊湊" aria-label="緊湊列高" />
+        </div>
+
+        <MudTable Items="_tenants" Filter="Matches" Dense="_dense" Hover="true" Elevation="0" Breakpoint="Breakpoint.None"
+                  RowsPerPage="25" Class="ep-table ep-cards">
+            <HeaderContent>
+                <MudTh><MudTableSortLabel SortBy="new Func<TenantSummary, object>(t => t.Name ?? string.Empty)">名稱</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<TenantSummary, object>(t => t.Identifier)" InitialDirection="SortDirection.Ascending">識別碼</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<TenantSummary, object>(t => t.Plan ?? string.Empty)">方案</MudTableSortLabel></MudTh>
+                <MudTh>操作</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="名稱"><MudLink Href="@($"/ui/tenants/{Uri.EscapeDataString(context.Id)}")">@(context.Name ?? context.Identifier)</MudLink></MudTd>
+                <MudTd DataLabel="識別碼"><code class="ep-mono">@context.Identifier</code></MudTd>
+                <MudTd DataLabel="方案">
+                    @if (context.Plan is { } plan)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success"
+                                 Icon="@Icons.Material.Filled.CheckCircle">@plan</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning"
+                                 Icon="@Icons.Material.Filled.PauseCircle">沒有方案</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="操作">
+                    <MudLink Href="@($"/ui/tenants/{Uri.EscapeDataString(context.Id)}")">管理</MudLink>
+                    <MudLink Href="@($"/ui/audit?tenant={Uri.EscapeDataString(context.Id)}")" Class="ml-3">稽核紀錄</MudLink>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                @if (string.IsNullOrWhiteSpace(_search))
+                {
+                    <EmptyState Icon="@Icons.Material.Filled.Apartment" Title="還沒有任何租戶"
+                                Description="建立第一個租戶，再為它簽發 API key 並指派方案。">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">新增租戶</MudButton>
+                    </EmptyState>
+                }
+                else
+                {
+                    <EmptyState Icon="@Icons.Material.Filled.SearchOff" Title="@($"沒有符合「{_search}」的租戶")"
+                                Description="試試其他關鍵字，或清除搜尋。">
+                        <MudButton Variant="Variant.Text" OnClick="() => _search = null">清除搜尋</MudButton>
+                    </EmptyState>
+                }
+            </NoRecordsContent>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new[] { 25, 50, 100 }" RowsPerPageString="每頁筆數" InfoFormat="{first_item}–{last_item}／{all_items}" />
+            </PagerContent>
+        </MudTable>
+    </section>
+}
+
+@code {
+    private IReadOnlyList<TenantSummary>? _tenants;
+    private string? _error;
+    private string? _search;
+    private bool _dense;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        _tenants = null;
+        try
+        {
+            _tenants = await Directory.ListAsync(CancellationToken.None);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _error = exception.GetType().Name;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        var dialog = await Dialogs.ShowAsync<CreateTenantDialog>(
+            "新增租戶", new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: CreatedTenant created })
+        {
+            Navigation.NavigateTo($"/ui/tenants/{Uri.EscapeDataString(created.Id)}");
+        }
+    }
+
+    private bool Matches(TenantSummary tenant) =>
+        string.IsNullOrWhiteSpace(_search)
+        || tenant.Identifier.Contains(_search, StringComparison.OrdinalIgnoreCase)
+        || (tenant.Name?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false);
+}

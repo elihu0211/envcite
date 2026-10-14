@@ -7,11 +7,11 @@ from typing import Any
 
 import pytest
 
-from env_law_ontology.verification import (
+from envcite_ontology.verification import (
     NumbersGate,
     verify,
 )
-from env_law_ontology.verification.extract import (
+from envcite_ontology.verification.extract import (
     MAX_REPAIRS,
     completeness_issues,
     extract_unit,

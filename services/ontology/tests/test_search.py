@@ -11,10 +11,10 @@ import grpc
 import psycopg
 import pytest
 
-from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
-from env_law_ontology.server import build_server
-from env_law_ontology.store import OntologyStore
-from env_law_segmenter import Segmenter
+from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
+from envcite_ontology.server import build_server
+from envcite_ontology.store import OntologyStore
+from envcite_segmenter import Segmenter
 
 from .conftest import call_metadata
 
@@ -97,7 +97,7 @@ def test_the_query_text_is_not_written_to_the_log(
     search_stub: ontology_pb2_grpc.OntologyServiceStub, caplog: pytest.LogCaptureFixture
 ) -> None:
     # 查詢是客戶的案件內容；日誌只該有它的長度。
-    with caplog.at_level("INFO", logger="env_law_ontology.service"):
+    with caplog.at_level("INFO", logger="envcite_ontology.service"):
         search_stub.SearchArticles(
             ontology_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=call_metadata()
         )

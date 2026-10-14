@@ -6,7 +6,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 
 ## Project
 
-- **Name:** envcite（環境知識 EnvCite）— 臺灣環境知識的檢索與引用接地服務；Python 套件與 .NET namespace 仍沿用 `env_law`／`EnvLaw`，不隨倉庫改名；單一倉庫、多個獨立部署的服務
+- **Name:** envcite（環境知識 EnvCite）— 臺灣環境知識的檢索與引用接地服務，單一倉庫、多個獨立部署的服務
 - **Remote:** `git@gitlab.com:thuaisse-lab/envcite.git`
 
 | 路徑 | 內容 | 技術棧 |
@@ -15,7 +15,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 | `services/platform/` | 多租戶控制平面：tenants、API keys、配額、計量、對外 REST | C# · .NET 10 · ASP.NET Core · PostgreSQL |
 | `services/ontology/` | 法規範本體與檢索（shared, non-tenant） | Python 3.14 · uv · gRPC · PostgreSQL |
 | `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；consult 本身不執行生成模型。入口的回答由 platform 呼叫模型端點、只根據 consult 的證據，見 `services/platform/AGENTS.md`） | Python 3.14 · uv · gRPC |
-| `libs/python/` | 服務之外、可獨立測試的 Python 套件（含 `env-law-proto`：`proto/` 的 Python 產生碼） | uv workspace 成員，不發佈 |
+| `libs/python/` | 服務之外、可獨立測試的 Python 套件（含 `envcite-proto`：`proto/` 的 Python 產生碼） | uv workspace 成員，不發佈 |
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
 
@@ -27,7 +27,7 @@ This file is canonical. `CLAUDE.md` only imports it (`@AGENTS.md`) per [Claude C
 
 各服務的指令見其 `AGENTS.md`，從**該服務目錄**執行。跨服務的從**倉庫根**執行：
 
-- **版本集中管理，不在各處各寫一份**：.NET 套件版本只在 `services/platform/Directory.Packages.props`（Central Package Management）；Python 是倉庫根的 uv workspace（`pyproject.toml` 列成員、開發工具與 ruff／mypy／pytest 設定，`uv.lock` 定版本），成員只列套件名稱，加依賴用 `uv add --raw <pkg>`。唯一例外是有相容性理由的下界（如 `env-law-proto` 的 protobuf 執行期），理由寫在旁邊。工具與映像的版本無法收成單一來源時，升版依 `CONTRIBUTING.md`「升級版本」的表，所列位置在同一次提交一起改。
+- **版本集中管理，不在各處各寫一份**：.NET 套件版本只在 `services/platform/Directory.Packages.props`（Central Package Management）；Python 是倉庫根的 uv workspace（`pyproject.toml` 列成員、開發工具與 ruff／mypy／pytest 設定，`uv.lock` 定版本），成員只列套件名稱，加依賴用 `uv add --raw <pkg>`。唯一例外是有相容性理由的下界（如 `envcite-proto` 的 protobuf 執行期），理由寫在旁邊。工具與映像的版本無法收成單一來源時，升版依 `CONTRIBUTING.md`「升級版本」的表，所列位置在同一次提交一起改。
 
 ```bash
 # 契約
@@ -39,16 +39,16 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=mai
 
 ### 平行 worktree
 
-每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree；環境由 `.config/wt.toml` 建立，不靠手動：建樹時各服務裝好依賴。本機伺服器用別名起，port 由分支推導，平行的樹不相撞；資料庫各服務一個固定的庫（`env_law`、`platform`），各分支共用，同一時間只跑一條分支的服務：
+每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree；環境由 `.config/wt.toml` 建立，不靠手動：建樹時各服務裝好依賴。本機伺服器用別名起，port 由分支推導，平行的樹不相撞；資料庫各服務一個固定的庫（`envcite`、`platform`），各分支共用，同一時間只跑一條分支的服務：
 
 ```bash
 wt platform    # dotnet run；庫 platform，自動遷移；空庫第一次啟動會種 dev 租戶與擁有者（登入資訊印在終端機）
-wt ontology    # env-law-migrate（庫 env_law）→ gRPC 伺服器
+wt ontology    # envcite-migrate（庫 envcite）→ gRPC 伺服器
 wt consult     # gRPC 伺服器，指向本樹的 ontology（platform 的 /v2/ground 需要它）
 wt list        # URL 欄是本樹 platform 的位址
 ```
 
-資料庫要先備妥（PostgreSQL 18）。連線取 `ONTOLOGY_DSN`、`ConnectionStrings__Platform`，未設定時預設 `localhost:5432`、帳號／密碼 `env_law`／`env_law`（同 `appsettings.Development.json`）；建法見 `CONTRIBUTING.md`。測試不經此路——Testcontainers 每次自起一個庫。
+資料庫要先備妥（PostgreSQL 18）。連線取 `ONTOLOGY_DSN`、`ConnectionStrings__Platform`，未設定時預設 `localhost:5432`、帳號／密碼 `envcite`／`envcite`（同 `appsettings.Development.json`）；建法見 `CONTRIBUTING.md`。測試不經此路——Testcontainers 每次自起一個庫。
 
 ## 目錄配置與擴充判準
 
@@ -57,12 +57,12 @@ wt list        # URL 欄是本樹 platform 的位址
 | 內容 | 位置 | 何時才建 |
 |------|------|----------|
 | 可獨立部署的服務 | `services/<name>/` | 新增服務時 |
-| 契約 | `proto/env_law/<service>/v1/` | 該服務有對外 API 時 |
-| 跨服務共用程式碼 | `libs/<lang>/<name>/` | 服務內的程式碼**出現第二個消費端時**才抽出，不是「將來可能要用」；本身有獨立依賴與測試週期的函式庫（如 `env-law-segmenter`）可一開始就建在這裡 |
+| 契約 | `proto/envcite/<service>/v1/` | 該服務有對外 API 時 |
+| 跨服務共用程式碼 | `libs/<lang>/<name>/` | 服務內的程式碼**出現第二個消費端時**才抽出，不是「將來可能要用」；本身有獨立依賴與測試週期的函式庫（如 `envcite-segmenter`）可一開始就建在這裡 |
 | 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
 | 部署清單 | `envcite-deploy` 倉庫（GitLab `thuaisse-lab/envcite-deploy`，Argo CD 來源），**不在本倉庫** | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（`<name>-image` job 推送 `:<commit-sha>`），該倉庫的 Argo CD Image Updater 偵測到後把 tag commit 進該倉庫（git write-back），Argo CD 同步上線，無需開 MR。**程式碼與清單要一起改時清單先行**：先在該倉庫合併向後相容的清單變更（如新環境變數給預設值），再合併本倉庫的程式碼——新映像會自動上線，順序反了就是新映像配舊清單 |
 
-- **契約維持單一 buf 模組**（`buf.yaml` 的模組根是 `proto/`，import 路徑為 `env_law/<service>/v1/...`）。拆成每領域一個模組會改變每一條 import 路徑，除非某領域需要獨立發佈到 schema registry，否則不拆。
+- **契約維持單一 buf 模組**（`buf.yaml` 的模組根是 `proto/`，import 路徑為 `envcite/<service>/v1/...`）。拆成每領域一個模組會改變每一條 import 路徑，除非某領域需要獨立發佈到 schema registry，否則不拆。
 - **CI 的擴充點是「新增一個服務要改幾個地方」**：現為三處（job、`rules:changes` 錨點、`proto` 觸發路徑），要部署的服務再加一處（`<name>-image` 建置 job）。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
 - **標籤用 `<service>/vX.Y.Z`**，不用倉庫層單一版本號。
 
@@ -76,7 +76,7 @@ wt list        # URL 欄是本樹 platform 的位址
 
 ## Contract
 
-- `proto/env_law/**` 是 gRPC API 的**單一真值**，各服務都由此產生程式碼，**不得各自複製一份**。
+- `proto/envcite/**` 是 gRPC API 的**單一真值**，各服務都由此產生程式碼，**不得各自複製一份**。
 - API 文件：欄位語意寫在 `.proto` 註解；跨服務的組合與呼叫端接法寫在 `proto/README.md`（buf 模組文件）。改契約時兩者一起改。
 - 破壞性變更要開新套件版本（`v2`）；`v1` 必須通過 `buf breaking`（WIRE_JSON：守線路與 JSON 相容）。刪除欄位時以 `reserved` 保留其號碼與名稱。
 - 改 proto 的 MR 必須同時更新兩側產生碼——這是單一倉庫換來的性質，別再用兩個 MR 做一件事。

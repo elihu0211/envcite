@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from env_law_ontology.settings import (
+from envcite_ontology.settings import (
     DatabaseSettings,
     ServerSettings,
     SnapshotSettings,

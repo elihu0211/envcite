@@ -7,10 +7,10 @@ from typing import Any
 import psycopg
 import pytest
 
-from env_law_ontology import sync
-from env_law_ontology.acquire.engine import DownloadFailed, Feed, InvalidSnapshot, acquire
-from env_law_ontology.acquire.moj import Moj
-from env_law_ontology.ingest.importer import BatchRejected
+from envcite_ontology import sync
+from envcite_ontology.acquire.engine import DownloadFailed, Feed, InvalidSnapshot, acquire
+from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.ingest.importer import BatchRejected
 from tests.test_acquire import _publish
 from tests.test_import import _law
 

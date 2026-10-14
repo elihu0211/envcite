@@ -2,7 +2,7 @@
 
 import pytest
 
-from env_law_ontology.verification.calibration import ppi_mean
+from envcite_ontology.verification.calibration import ppi_mean
 
 
 def test_ppi_corrects_a_biased_proxy_and_widens_where_it_knows_less() -> None:

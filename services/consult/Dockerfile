@@ -36,13 +36,13 @@ WORKDIR /app
 # Dependencies first, so a source-only change reuses this layer.
 COPY pyproject.toml uv.lock ./
 RUN --network=none --mount=type=bind,from=uv-cache,target=/uv-cache,rw \
-    uv sync --frozen --no-dev --package env-law-consult --no-install-workspace
-COPY libs/python/env-law-grpc libs/python/env-law-grpc
-COPY libs/python/env-law-proto libs/python/env-law-proto
+    uv sync --frozen --no-dev --package envcite-consult --no-install-workspace
+COPY libs/python/envcite-grpc libs/python/envcite-grpc
+COPY libs/python/envcite-proto libs/python/envcite-proto
 COPY services/consult/pyproject.toml services/consult/README.md services/consult/
 COPY services/consult/src services/consult/src
 RUN --network=none --mount=type=bind,from=uv-cache,target=/uv-cache,rw \
-    uv sync --frozen --no-dev --package env-law-consult \
+    uv sync --frozen --no-dev --package envcite-consult \
  && .venv/bin/python -m compileall -q services/consult/src libs/python
 
 # Same base as the uv image above, so the venv's interpreter path resolves.
@@ -53,7 +53,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH=/app/.venv/bin:$PATH
 COPY --from=build /app /app
 WORKDIR /app/services/consult
-# Matches runAsUser/runAsGroup in env-law-deploy base/consult.
+# Matches runAsUser/runAsGroup in envcite-deploy base/consult.
 USER 1000:1000
 EXPOSE 50052
-CMD ["env-law-consult"]
+CMD ["envcite-consult"]

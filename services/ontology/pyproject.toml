@@ -1,7 +1,7 @@
 [project]
-name = "env-law-ontology"
+name = "envcite-ontology"
 version = "0.1.0"
-description = "env-law ontology service (gRPC)"
+description = "envcite ontology service (gRPC)"
 readme = "README.md"
 authors = [
     { name = "Eli Hu", email = "elihu@go.thu.edu.tw" }
@@ -9,9 +9,9 @@ authors = [
 requires-python = ">=3.14"
 dependencies = [
     "clingo",
-    "env-law-grpc",
-    "env-law-proto",
-    "env-law-segmenter",
+    "envcite-grpc",
+    "envcite-proto",
+    "envcite-segmenter",
     "grpcio-health-checking",
     "grpcio-reflection",
     "grpcio-status",
@@ -21,19 +21,19 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-env-law-grpc = { workspace = true }
-env-law-proto = { workspace = true }
-env-law-segmenter = { workspace = true }
+envcite-grpc = { workspace = true }
+envcite-proto = { workspace = true }
+envcite-segmenter = { workspace = true }
 
 [project.scripts]
-env-law-ontology = "env_law_ontology.server:main"
-env-law-migrate = "env_law_ontology.migrate:main"
-env-law-acquire = "env_law_ontology.acquire.cli:main"
-env-law-import = "env_law_ontology.ingest.cli:main"
-env-law-sync = "env_law_ontology.sync:main"
-env-law-annotate = "env_law_ontology.annotate:main"
-env-law-verify = "env_law_ontology.verification.cli:main"
-env-law-pipeline = "env_law_ontology.verification.run:main"
+envcite-ontology = "envcite_ontology.server:main"
+envcite-migrate = "envcite_ontology.migrate:main"
+envcite-acquire = "envcite_ontology.acquire.cli:main"
+envcite-import = "envcite_ontology.ingest.cli:main"
+envcite-sync = "envcite_ontology.sync:main"
+envcite-annotate = "envcite_ontology.annotate:main"
+envcite-verify = "envcite_ontology.verification.cli:main"
+envcite-pipeline = "envcite_ontology.verification.run:main"
 
 [project.optional-dependencies]
 llm = [

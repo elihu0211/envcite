@@ -7,7 +7,7 @@ from typing import Any
 
 import psycopg
 
-from env_law_ontology.annotate import Loaded, load
+from envcite_ontology.annotate import Loaded, load
 from tests.reasoning_support import WATER, _plain_duty
 from tests.test_annotation import _doc
 from tests.test_import import _scalar

@@ -8,11 +8,11 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "env-law-consult",
-    "env-law-grpc",
-    "env-law-ontology",
-    "env-law-proto",
-    "env-law-segmenter",
+    "envcite-consult",
+    "envcite-grpc",
+    "envcite-ontology",
+    "envcite-proto",
+    "envcite-segmenter",
 ]
 constraints = [{ name = "ruff", specifier = "<0.17" }]
 
@@ -431,26 +431,26 @@ wheels = [
 ]
 
 [[package]]
-name = "env-law-consult"
+name = "envcite-consult"
 version = "0.1.0"
 source = { editable = "services/consult" }
 dependencies = [
-    { name = "env-law-grpc" },
-    { name = "env-law-proto" },
+    { name = "envcite-grpc" },
+    { name = "envcite-proto" },
     { name = "grpcio-health-checking" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "env-law-grpc", editable = "libs/python/env-law-grpc" },
-    { name = "env-law-proto", editable = "libs/python/env-law-proto" },
+    { name = "envcite-grpc", editable = "libs/python/envcite-grpc" },
+    { name = "envcite-proto", editable = "libs/python/envcite-proto" },
     { name = "grpcio-health-checking" },
 ]
 
 [[package]]
-name = "env-law-grpc"
+name = "envcite-grpc"
 version = "0.1.0"
-source = { editable = "libs/python/env-law-grpc" }
+source = { editable = "libs/python/envcite-grpc" }
 dependencies = [
     { name = "grpcio" },
     { name = "opentelemetry-api" },
@@ -469,14 +469,14 @@ requires-dist = [
 ]
 
 [[package]]
-name = "env-law-ontology"
+name = "envcite-ontology"
 version = "0.1.0"
 source = { editable = "services/ontology" }
 dependencies = [
     { name = "clingo" },
-    { name = "env-law-grpc" },
-    { name = "env-law-proto" },
-    { name = "env-law-segmenter" },
+    { name = "envcite-grpc" },
+    { name = "envcite-proto" },
+    { name = "envcite-segmenter" },
     { name = "grpcio-health-checking" },
     { name = "grpcio-reflection" },
     { name = "grpcio-status" },
@@ -494,9 +494,9 @@ llm = [
 requires-dist = [
     { name = "anthropic", marker = "extra == 'llm'" },
     { name = "clingo" },
-    { name = "env-law-grpc", editable = "libs/python/env-law-grpc" },
-    { name = "env-law-proto", editable = "libs/python/env-law-proto" },
-    { name = "env-law-segmenter", editable = "libs/python/env-law-segmenter" },
+    { name = "envcite-grpc", editable = "libs/python/envcite-grpc" },
+    { name = "envcite-proto", editable = "libs/python/envcite-proto" },
+    { name = "envcite-segmenter", editable = "libs/python/envcite-segmenter" },
     { name = "grpcio-health-checking" },
     { name = "grpcio-reflection" },
     { name = "grpcio-status" },
@@ -507,9 +507,9 @@ requires-dist = [
 provides-extras = ["llm"]
 
 [[package]]
-name = "env-law-proto"
+name = "envcite-proto"
 version = "0.1.0"
-source = { editable = "libs/python/env-law-proto" }
+source = { editable = "libs/python/envcite-proto" }
 dependencies = [
     { name = "grpcio" },
     { name = "protobuf" },
@@ -522,9 +522,9 @@ requires-dist = [
 ]
 
 [[package]]
-name = "env-law-segmenter"
+name = "envcite-segmenter"
 version = "0.1.0"
-source = { editable = "libs/python/env-law-segmenter" }
+source = { editable = "libs/python/envcite-segmenter" }
 dependencies = [
     { name = "jieba" },
 ]

@@ -19,9 +19,9 @@ scratch="$(mktemp -d)"
 cd "$(dirname "$0")/../services/platform"
 
 dotnet tool restore
-dotnet restore src/EnvLaw.Platform.Api/EnvLaw.Platform.Api.csproj -a "$arch"
-dotnet ef migrations bundle -p src/EnvLaw.Platform.Modules.Tenancy -s src/EnvLaw.Platform.Modules.Tenancy \
+dotnet restore src/EnvCite.Platform.Api/EnvCite.Platform.Api.csproj -a "$arch"
+dotnet ef migrations bundle -p src/EnvCite.Platform.Modules.Tenancy -s src/EnvCite.Platform.Modules.Tenancy \
   -r "$rid" -o "$scratch/tenancy"
-dotnet ef migrations bundle -p src/EnvLaw.Platform.Data -s src/EnvLaw.Platform.Data \
+dotnet ef migrations bundle -p src/EnvCite.Platform.Data -s src/EnvCite.Platform.Data \
   -r "$rid" -o "$scratch/platform"
 rm -rf "$scratch"

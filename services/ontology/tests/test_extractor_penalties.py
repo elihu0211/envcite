@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from env_law_ontology.verification.extract import (
+from envcite_ontology.verification.extract import (
     extract_unit,
 )
 from tests.test_annotation import LAW

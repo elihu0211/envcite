@@ -1,4 +1,4 @@
-# env-law-ontology
+# envcite-ontology
 
 臺灣環境法規的語料、檢索與推論服務。
 
@@ -7,7 +7,7 @@
 | 介面 | gRPC：`OntologyService`（法規與檢索）、`ReasoningService`（標註與推論） |
 | 呼叫端 | `services/platform`、`services/consult` |
 | 資料 | 全域共用，不分租戶；PostgreSQL 為唯一真值 |
-| 契約 | `proto/env_law/ontology/v1/ontology.proto`、`reasoning.proto` |
+| 契約 | `proto/envcite/ontology/v1/ontology.proto`、`reasoning.proto` |
 | 資料來源 | 全國法規資料庫（政府資料開放授權條款－第1版，須標示出處） |
 | 開發指引 | 本目錄 `AGENTS.md`；倉庫規範見根 `AGENTS.md` |
 
@@ -16,19 +16,19 @@
 ```mermaid
 flowchart LR
     src[(全國法規資料庫)]
-    subgraph sync["env-law-sync（排程）"]
+    subgraph sync["envcite-sync（排程）"]
         direction LR
         snap[快照檔] --> corpus[(語料與檢索索引)]
     end
     src -->|acquire| snap
-    corpus -->|"env-law-pipeline<br/>語言模型抽取 · 閘門驗證"| ann[(標註)]
+    corpus -->|"envcite-pipeline<br/>語言模型抽取 · 閘門驗證"| ann[(標註)]
     corpus --> api{{gRPC 伺服器}}
     ann -->|僅 confirmed| api
     api --> callers([platform · consult])
 ```
 
-- **語料與檢索**：`env-law-sync` 依序取得、匯入、投影檢索索引。
-- **標註**：`env-law-pipeline` 是語言模型的唯一使用處；推論（clingo）不用模型。
+- **語料與檢索**：`envcite-sync` 依序取得、匯入、投影檢索索引。
+- **標註**：`envcite-pipeline` 是語言模型的唯一使用處；推論（clingo）不用模型。
 - **推論**：只取已確認的標註；結論都是候選，不替呼叫端做最後認定。
 
 ## 先決條件
@@ -49,29 +49,29 @@ uv sync --all-packages        # 整個 workspace；標註管線用 Anthropic 模
 
 | 入口 | 型態 | 做什麼 |
 |------|------|--------|
-| `env-law-ontology` | 長駐 | gRPC 伺服器 |
-| `env-law-migrate` | 一次性 | 套用 `migrations/*.sql`；已套用的檔案不可修改，要改就新增一個 |
-| `env-law-sync <來源>` | 排程 | 取得、匯入、檢索投影，三步冪等 |
-| `env-law-acquire <來源>` | 一次性 | 只取得快照 |
-| `env-law-import <來源>` | 一次性 | 快照寫入語料；`--dry-run` 只解析與驗收 |
-| `env-law-pipeline` | 排程 | 標註：抽取、驗證、接受（見下節） |
-| `env-law-annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
-| `env-law-verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |
+| `envcite-ontology` | 長駐 | gRPC 伺服器 |
+| `envcite-migrate` | 一次性 | 套用 `migrations/*.sql`；已套用的檔案不可修改，要改就新增一個 |
+| `envcite-sync <來源>` | 排程 | 取得、匯入、檢索投影，三步冪等 |
+| `envcite-acquire <來源>` | 一次性 | 只取得快照 |
+| `envcite-import <來源>` | 一次性 | 快照寫入語料；`--dry-run` 只解析與驗收 |
+| `envcite-pipeline` | 排程 | 標註：抽取、驗證、接受（見下節） |
+| `envcite-annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
+| `envcite-verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |
 
-`<來源>` 登記在 `src/env_law_ontology/acquire/cli.py` 的 `SOURCES`；`moj` 是全國法規資料庫。
+`<來源>` 登記在 `src/envcite_ontology/acquire/cli.py` 的 `SOURCES`；`moj` 是全國法規資料庫。
 
 **環境變數**
 
 | 變數 | 用於 |
 |------|------|
 | `ONTOLOGY_DSN` | 所有入口 |
-| `ONTOLOGY_GRPC_PORT` | `env-law-ontology`（選用） |
-| `ACQUIRE_SNAPSHOT_DIR` | `env-law-sync`、`env-law-acquire`、`env-law-import` |
-| `CHAT_API_KEY` | `env-law-pipeline`，由 `models.toml` 引用 |
+| `ONTOLOGY_GRPC_PORT` | `envcite-ontology`（選用） |
+| `ACQUIRE_SNAPSHOT_DIR` | `envcite-sync`、`envcite-acquire`、`envcite-import` |
+| `CHAT_API_KEY` | `envcite-pipeline`，由 `models.toml` 引用 |
 
-名稱、必填與預設值以 `src/env_law_ontology/settings.py` 為準。
+名稱、必填與預設值以 `src/envcite_ontology/settings.py` 為準。
 
-`env-law-sync`、`acquire`、`import` 的結束碼：`0` 成功或無事可做，`1` 暫時性失敗（可重試），`2` 資料不合預期（重試無益）。
+`envcite-sync`、`acquire`、`import` 的結束碼：`0` 成功或無事可做，`1` 暫時性失敗（可重試），`2` 資料不合預期（重試無益）。
 
 ### 在本機跑起來
 
@@ -79,18 +79,18 @@ uv sync --all-packages        # 整個 workspace；標註管線用 Anthropic 模
 
 ```bash
 cp .env.example .env                       # 資料庫連線、快照目錄；依需要修改
-uv run --env-file .env env-law-migrate
-uv run --env-file .env env-law-sync moj
-uv run --env-file .env env-law-ontology    # 重建索引後要重啟服務
+uv run --env-file .env envcite-migrate
+uv run --env-file .env envcite-sync moj
+uv run --env-file .env envcite-ontology    # 重建索引後要重啟服務
 ```
 
 ## 標註管線
 
-`env-law-pipeline` 讀現行條文，由語言模型抽取成結構化陳述，再經閘門驗證，通過才升為 `confirmed`。
+`envcite-pipeline` 讀現行條文，由語言模型抽取成結構化陳述，再經閘門驗證，通過才升為 `confirmed`。
 
 ```bash
-uv run --env-file .env env-law-pipeline --law <pcode> --models models.toml          # 指定法規
-uv run --env-file .env env-law-pipeline --pending --limit <N> --models models.toml   # 自找待辦，最多 N 部
+uv run --env-file .env envcite-pipeline --law <pcode> --models models.toml          # 指定法規
+uv run --env-file .env envcite-pipeline --pending --limit <N> --models models.toml   # 自找待辦，最多 N 部
 ```
 
 - `--pending` 找「現行文字還沒被此抽取者與版本答過」的法規；答過的單元會留紀錄，重跑會收斂。`--limit` 是每次的模型費用上限。
@@ -107,7 +107,7 @@ uv run --env-file .env env-law-pipeline --pending --limit <N> --models models.to
 cd services/ontology
 cp models.example.toml models.toml   # 改端點網址與要用的模型
 cp .env.example .env                 # 用編輯器填入 CHAT_API_KEY，不要貼到對話或提交
-uv run --env-file .env env-law-pipeline --models models.toml --check   # 確認端點、金鑰與每個模型都通
+uv run --env-file .env envcite-pipeline --models models.toml --check   # 確認端點、金鑰與每個模型都通
 ```
 
 `--check` 對每個模型送固定的探測問題，不連資料庫；通過後才用 `--law` 或 `--pending` 開跑。
@@ -159,7 +159,7 @@ uv run --env-file .env env-law-pipeline --models models.toml --check   # 確認�
 uv run python -m pytest        # 測試用真實 PostgreSQL，不用替身
 uv run ruff check .            # lint；ruff format . 格式化
 uv run python -m mypy src tests
-../../libs/python/env-law-proto/scripts/generate.sh   # 改了 proto 之後重新產生程式碼
+../../libs/python/envcite-proto/scripts/generate.sh   # 改了 proto 之後重新產生程式碼
 docker build -f Dockerfile ../..                      # 映像；建置內容為倉庫根
 ```
 

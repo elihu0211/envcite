@@ -1,20 +1,20 @@
-"""The three deterministic gates, and reading numbers and citations out of the text (env-law-
+"""The three deterministic gates, and reading numbers and citations out of the text (envcite-
 docs 02-06 §3.3)."""
 
 from pathlib import Path
 
 import pytest
 
-from env_law_ontology.annotate import load
-from env_law_ontology.verification import (
+from envcite_ontology.annotate import load
+from envcite_ontology.verification import (
     ExecutableGate,
     NumbersGate,
     ReferencesGate,
     settle,
 )
-from env_law_ontology.verification.gates import amounts, citations, cn_number
-from env_law_ontology.verification.gates.cn_number import qualified_numbers
-from env_law_ontology.verification.gates.proviso_gate import ProvisoGate, provisos
+from envcite_ontology.verification.gates import amounts, citations, cn_number
+from envcite_ontology.verification.gates.cn_number import qualified_numbers
+from envcite_ontology.verification.gates.proviso_gate import ProvisoGate, provisos
 from tests.reasoning_support import _plain_duty, _scope, _with
 from tests.test_annotation import LAW, _doc, _limit
 from tests.test_incremental import _articles, _first, _law_v1

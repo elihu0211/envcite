@@ -1,12 +1,12 @@
-"""The extractor, with a fake standing where a language model would (env-law-docs 02-06 §3.3)."""
+"""The extractor, with a fake standing where a language model would (envcite-docs 02-06 §3.3)."""
 
 from pathlib import Path
 
-from env_law_ontology.reasoning import evaluate
-from env_law_ontology.verification import (
+from envcite_ontology.reasoning import evaluate
+from envcite_ontology.verification import (
     settle,
 )
-from env_law_ontology.verification.extract import (
+from envcite_ontology.verification.extract import (
     extract_unit,
 )
 from tests.test_annotation import BEFORE, LAW

@@ -48,21 +48,21 @@ COPY services/platform/global.json services/platform/Directory.Build.props servi
 COPY --parents services/platform/src/*/*.csproj /repo/
 RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
     dotnet tool restore \
- && dotnet restore src/EnvLaw.Platform.Api/EnvLaw.Platform.Api.csproj -a "$TARGETARCH"
+ && dotnet restore src/EnvCite.Platform.Api/EnvCite.Platform.Api.csproj -a "$TARGETARCH"
 # proto/ is compiled at build, not at restore, so it comes after the restore layer.
 COPY proto /repo/proto
 COPY services/platform/src ./src
 RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
-    dotnet publish src/EnvLaw.Platform.Api/EnvLaw.Platform.Api.csproj -c Release -a "$TARGETARCH" --no-restore -o /app
+    dotnet publish src/EnvCite.Platform.Api/EnvCite.Platform.Api.csproj -c Release -a "$TARGETARCH" --no-restore -o /app
 # Bundles take a runtime identifier, not a Docker architecture name. Generating a bundle
 # restores its own project and needs the runtime packs and ILLink tasks, which the prime
 # script fetches by running these same two commands.
 RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
     rid="linux-$([ "$TARGETARCH" = amd64 ] && echo x64 || echo "$TARGETARCH")" \
  && dotnet tool restore \
- && dotnet ef migrations bundle -p src/EnvLaw.Platform.Modules.Tenancy -s src/EnvLaw.Platform.Modules.Tenancy \
+ && dotnet ef migrations bundle -p src/EnvCite.Platform.Modules.Tenancy -s src/EnvCite.Platform.Modules.Tenancy \
       -r "$rid" -o /app/migrate/tenancy \
- && dotnet ef migrations bundle -p src/EnvLaw.Platform.Data -s src/EnvLaw.Platform.Data \
+ && dotnet ef migrations bundle -p src/EnvCite.Platform.Data -s src/EnvCite.Platform.Data \
       -r "$rid" -o /app/migrate/platform
 
 # Chiseled: no shell, no package manager, non-root ($APP_UID) by default. The
@@ -72,4 +72,4 @@ FROM ${MCR}/dotnet/aspnet:10.0-noble-chiseled-extra
 WORKDIR /app
 COPY --from=build /app .
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "EnvLaw.Platform.Api.dll"]
+ENTRYPOINT ["dotnet", "EnvCite.Platform.Api.dll"]

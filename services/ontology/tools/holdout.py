@@ -1,4 +1,4 @@
-"""Hold-out evaluation of `env-law-pipeline` on a law it has not been tuned on.
+"""Hold-out evaluation of `envcite-pipeline` on a law it has not been tuned on.
 
     uv run python tools/holdout.py O0030001 noise-a 55481 --log noise-a.txt
 
@@ -31,15 +31,15 @@ import psycopg
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from env_law_ontology.acquire.moj import Moj
-from env_law_ontology.ingest import articles as art_mod
-from env_law_ontology.ingest import importer
-from env_law_ontology.migrate import apply_all
-from env_law_ontology.verification.gates import citations
-from env_law_ontology.verification.run import units_of
+from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.ingest import articles as art_mod
+from envcite_ontology.ingest import importer
+from envcite_ontology.migrate import apply_all
+from envcite_ontology.verification.gates import citations
+from envcite_ontology.verification.run import units_of
 from tests.sample import stored_snapshot
 
-DEV_DSN = os.environ.get("ONTOLOGY_DEV_DSN", "postgresql://env_law:env_law@localhost:5432/env_law")
+DEV_DSN = os.environ.get("ONTOLOGY_DEV_DSN", "postgresql://envcite:envcite@localhost:5432/envcite")
 FINE = re.compile(r"處新臺幣.{0,40}罰鍰")
 
 
@@ -181,7 +181,7 @@ def main() -> None:
             [
                 "uv",
                 "run",
-                "env-law-pipeline",
+                "envcite-pipeline",
                 "--law",
                 args.pcode,
                 "--models",

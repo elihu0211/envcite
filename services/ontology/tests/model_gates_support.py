@@ -8,7 +8,7 @@ from typing import Any
 
 import psycopg
 
-from env_law_ontology.verification.extract import extract_unit
+from envcite_ontology.verification.extract import extract_unit
 from tests.test_annotation import LAW
 from tests.test_incremental import _articles, _first, _law_v1
 from tests.verification_support import EXTRACTED

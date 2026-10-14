@@ -6,9 +6,9 @@ fine (按次處罰) is represented. A prompt that forgets the shared text is the
 
 import pytest
 
-from env_law_ontology.verification.conventions import CONVENTIONS, apply
-from env_law_ontology.verification.extract import PROMPT
-from env_law_ontology.verification.model_gates import JUDGE, REFORMALIZE
+from envcite_ontology.verification.conventions import CONVENTIONS, apply
+from envcite_ontology.verification.extract import PROMPT
+from envcite_ontology.verification.model_gates import JUDGE, REFORMALIZE
 
 
 @pytest.mark.parametrize(

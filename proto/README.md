@@ -1,11 +1,11 @@
-# env-law API
+# envcite API
 
 gRPC 契約，`buf` 單一模組（根為本目錄）。欄位與方法的語意寫在 `.proto` 的註解裡，本檔只寫註解放不下的：約定與呼叫端的接法。
 
 | 套件 | 服務 | 租戶 | 對象 |
 |------|------|------|------|
-| `env_law.ontology.v1` | `OntologyService`、`ReasoningService` | 共享 | 內部 |
-| `env_law.consult.v2` | `ConsultationService` | 隔離 | 內部 |
+| `envcite.ontology.v1` | `OntologyService`、`ReasoningService` | 共享 | 內部 |
+| `envcite.consult.v2` | `ConsultationService` | 隔離 | 內部 |
 
 外部用戶端只經 `platform` 的 REST：契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。
 
@@ -29,7 +29,7 @@ buf breaking --against '.git#branch=main'
 
 **狀態碼與錯誤原因**
 
-每個錯誤是標準狀態碼加一個 `google.rpc.ErrorInfo`（`domain` 為 `ontology.env.law`，`reason` 為 UPPER_SNAKE_CASE）。呼叫端依 `reason` 分流，不解析訊息文字。`INVALID_ARGUMENT` 另帶 `google.rpc.BadRequest`，每個違規欄位一列（`field` 為欄位路徑，如 `facts[2].values[0].number.value`），全部一次回報。細節在 trailing metadata：用 `grpcio-status`（Python）或 `Google.Api.CommonProtos` 的 `Status` 解開；不解開也不影響狀態碼的語意。
+每個錯誤是標準狀態碼加一個 `google.rpc.ErrorInfo`（`domain` 為 `ontology.envcite`，`reason` 為 UPPER_SNAKE_CASE）。呼叫端依 `reason` 分流，不解析訊息文字。`INVALID_ARGUMENT` 另帶 `google.rpc.BadRequest`，每個違規欄位一列（`field` 為欄位路徑，如 `facts[2].values[0].number.value`），全部一次回報。細節在 trailing metadata：用 `grpcio-status`（Python）或 `Google.Api.CommonProtos` 的 `Status` 解開；不解開也不影響狀態碼的語意。
 
 | 狀態碼 | `reason` | 何時 | 重試 |
 |--------|----------|------|------|
@@ -57,7 +57,7 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 
 ## 標註與推論
 
-`ReasoningService`（`env_law.ontology.v1`）唯讀地提供規範標註與由它推出的**候選**結論。它不判決：沒有通過驗證閘門的陳述不產生任何結論，沒有確認的標註時 `verdicts` 為空。
+`ReasoningService`（`envcite.ontology.v1`）唯讀地提供規範標註與由它推出的**候選**結論。它不判決：沒有通過驗證閘門的陳述不產生任何結論，沒有確認的標註時 `verdicts` 為空。
 
 - **`ListStatements(law_id, as_of)`**：某日有效、已確認的陳述。`Statement` 的要件是析取範式（`Requirement.any_of` 是「或」，`Disjunct.all_of` 是「且」）；委由授權命令的門檻值以 `Delegation` 表示，不在這裡解析。
 - **`Evaluate`**：給 `conduct_on`（行為日）、`decided_on`（裁處日）與案件事實。回傳 `at_decision`（裁處時之法律，行政罰法第 5 條的預設），`earlier` 是行為日到裁處日之間陳述組與裁處時不同的法律，**不替呼叫端選「最有利」**。

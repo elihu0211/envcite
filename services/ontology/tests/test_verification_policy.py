@@ -1,4 +1,4 @@
-"""Verification records and the settle policy: when a statement becomes a fact (env-law-docs
+"""Verification records and the settle policy: when a statement becomes a fact (envcite-docs
 02-06 §3.3)."""
 
 from pathlib import Path

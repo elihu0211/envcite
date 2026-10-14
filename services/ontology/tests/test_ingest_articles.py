@@ -1,6 +1,6 @@
 import pytest
 
-from env_law_ontology.ingest.articles import (
+from envcite_ontology.ingest.articles import (
     Unit,
     article_path,
     is_deleted,

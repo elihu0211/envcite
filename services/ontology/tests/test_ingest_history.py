@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from env_law_ontology.ingest.history import classify, entries, parse
+from envcite_ontology.ingest.history import classify, entries, parse
 
 WASTE = (
     "1.中華民國六十三年七月二十六日總統（63）台統（一）義字第 3300 號\r\n"

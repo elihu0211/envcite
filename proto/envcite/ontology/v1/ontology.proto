@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package envcite.ontology.v1;
+
+option csharp_namespace = "EnvCite.Ontology.V1";
+
+// Read access to the environmental-law ontology (relational, PostgreSQL).
+// Internal service: the callee does not authenticate callers; the cluster's service mesh does.
+// Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
+service OntologyService {
+  // Returns one law by its local id, or NOT_FOUND.
+  rpc GetLaw(GetLawRequest) returns (GetLawResponse);
+  // Lists the articles of a law in reading order, or NOT_FOUND.
+  rpc ListArticles(ListArticlesRequest) returns (ListArticlesResponse);
+  // Hybrid retrieval over the articles in force on `as_of`, best first. The query
+  // is raw text: the service segments it with the segmenter the index was built
+  // with, because a caller segmenting on its own would silently match fewer rows.
+  rpc SearchArticles(SearchArticlesRequest) returns (SearchArticlesResponse);
+}
+
+message Law {
+  // Note: `title` describes the resolved version, not the law itself: an amendment
+  // can rename a law, so the title belongs to the promulgated version.
+  // Local id: the 全國法規資料庫 pcode, e.g. "O0020001" (one uppercase letter, seven digits).
+  string id = 1;
+  // Canonical IRI of the law.
+  string iri = 2;
+  // Title from the version of this law resolved for `as_of`.
+  string title = 3;
+  // ISO 639-3 language code of the title, e.g. "zho" (the same code appears in IRIs).
+  string language = 4;
+  // The law's enactment date (制定日), ISO 8601 (YYYY-MM-DD); empty when
+  // the corpus records no enactment.
+  string date_document = 5;
+}
+
+message Article {
+  string iri = 1;
+  // Article number as written, e.g. "1", "5-1" (第5條之1).
+  string number = 2;
+}
+
+message GetLawRequest {
+  string id = 1;
+  // Resolve the law as in force on this date (ISO 8601). Empty means "as
+  // currently in force". When the corpus holds no version covering the date the
+  // call is NOT_FOUND — never the current text, which would be indistinguishable
+  // from a correct answer.
+  string as_of = 2;
+}
+
+message GetLawResponse {
+  Law law = 1;
+}
+
+message ListArticlesRequest {
+  string law_id = 1;
+  // See GetLawRequest.as_of.
+  string as_of = 2;
+}
+
+message ListArticlesResponse {
+  repeated Article articles = 1;
+}
+
+message SearchArticlesRequest {
+  string query = 1;
+  // See GetLawRequest.as_of.
+  string as_of = 2;
+  // Maximum hits; 0 means the service default (10).
+  int32 limit = 3;
+}
+
+message SearchArticlesResponse {
+  repeated ArticleHit hits = 1;
+}
+
+message ArticleHit {
+  string iri = 1;
+  string law_id = 2;
+  // Title of the law's version in force on `as_of`.
+  string law_title = 3;
+  // Article number as written, e.g. "5-1".
+  string number = 4;
+  string content = 5;
+  // Raw lexical relevance (ts_rank_cd). Hits are ordered by it, highest first.
+  float lexical_score = 7;
+  reserved 6, 8;
+  reserved "rank_score", "dense_distance";
+}

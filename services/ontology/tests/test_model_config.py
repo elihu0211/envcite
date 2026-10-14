@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from env_law_ontology.verification.config import ConfigError, load, parse
-from env_law_ontology.verification.run import SameModel, gates_from, main
+from envcite_ontology.verification.config import ConfigError, load, parse
+from envcite_ontology.verification.run import SameModel, gates_from, main
 from tests.test_chat_adapter import Endpoint
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "models.example.toml"
@@ -184,7 +184,7 @@ def test_text_that_is_not_toml_is_refused() -> None:
 
 def test_the_command_line_names_what_is_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://unused")
-    monkeypatch.setattr("sys.argv", ["env-law-pipeline", "--law", "X"])
+    monkeypatch.setattr("sys.argv", ["envcite-pipeline", "--law", "X"])
 
     with pytest.raises(SystemExit) as raised:
         main()
@@ -197,7 +197,7 @@ def test_a_bad_file_stops_the_command_line_with_its_path(
     bad = tmp_path / "models.toml"
     bad.write_text("[roles]\n", encoding="utf-8")
     monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://unused")
-    monkeypatch.setattr("sys.argv", ["env-law-pipeline", "--law", "X", "--models", str(bad)])
+    monkeypatch.setattr("sys.argv", ["envcite-pipeline", "--law", "X", "--models", str(bad)])
 
     with pytest.raises(SystemExit, match=r"models\.toml"):
         main()
@@ -276,7 +276,7 @@ def test_check_asks_every_model_and_needs_no_database(monkeypatch: pytest.Monkey
     monkeypatch.delenv("ONTOLOGY_DSN", raising=False)
     monkeypatch.setenv("CHAT_BASE_URL", served.url)
     monkeypatch.setenv("CHAT_API_KEY", "k")
-    monkeypatch.setattr("sys.argv", ["env-law-pipeline", "--models", str(EXAMPLE), "--check"])
+    monkeypatch.setattr("sys.argv", ["envcite-pipeline", "--models", str(EXAMPLE), "--check"])
     try:
         with pytest.raises(SameModel):
             main()

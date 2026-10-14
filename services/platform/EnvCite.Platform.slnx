@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EnvCite.Platform.Api/EnvCite.Platform.Api.csproj" />
+    <Project Path="src/EnvCite.Platform.Data/EnvCite.Platform.Data.csproj" />
+    <Project Path="src/EnvCite.Platform.Modules.ApiAccess/EnvCite.Platform.Modules.ApiAccess.csproj" />
+    <Project Path="src/EnvCite.Platform.Modules.Audit/EnvCite.Platform.Modules.Audit.csproj" />
+    <Project Path="src/EnvCite.Platform.Modules.Conversations/EnvCite.Platform.Modules.Conversations.csproj" />
+    <Project Path="src/EnvCite.Platform.Modules.Consult/EnvCite.Platform.Modules.Consult.csproj" />
+    <Project Path="src/EnvCite.Platform.Modules.Members/EnvCite.Platform.Modules.Members.csproj" />
+    <Project Path="src/EnvCite.Platform.Modules.Metering/EnvCite.Platform.Modules.Metering.csproj" />
+    <Project Path="src/EnvCite.Platform.Modules.Ontology/EnvCite.Platform.Modules.Ontology.csproj" />
+    <Project Path="src/EnvCite.Platform.Modules.Tenancy/EnvCite.Platform.Modules.Tenancy.csproj" />
+    <Project Path="src/EnvCite.Platform.SharedKernel/EnvCite.Platform.SharedKernel.csproj" />
+    <Project Path="src/EnvCite.Platform.Web/EnvCite.Platform.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EnvCite.Platform.Tests/EnvCite.Platform.Tests.csproj" />
+  </Folder>
+</Solution>

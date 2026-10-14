@@ -2,7 +2,7 @@
 # worktree session 經 worktrunk plugin 的 WorktreeCreate hook 也走 wt，所以同樣適用。
 #
 # 分支即身分：port 由分支推導，平行的樹互不相撞，同一分支每次拿到同一組。資料庫不分：
-# 各服務一個固定的庫（`env_law`、`platform`），各分支共用；連線取環境變數，未設定時用
+# 各服務一個固定的庫（`envcite`、`platform`），各分支共用；連線取環境變數，未設定時用
 # `localhost:5432` 的預設值。同一時間只跑一條分支的服務，否則兩邊的遷移會互相覆寫。
 # 測試不在此列——兩邊都用 Testcontainers，每次跑本來就是獨立的庫。
 
@@ -14,27 +14,27 @@ python = "uv sync --all-packages"
 platform = "cd services/platform && dotnet restore && dotnet tool restore"
 
 [list]
-url = "http://localhost:{{ ('env-law/platform/' ~ branch) | hash_port }}"
+url = "http://localhost:{{ ('envcite/platform/' ~ branch) | hash_port }}"
 
 # 本機伺服器：`wt platform`、`wt ontology`、`wt consult`（platform 的 /v2/ground 要後兩者都在）。
 [aliases]
 platform = """
 cd '{{ worktree_path }}/services/platform' && \
 ASPNETCORE_ENVIRONMENT=Development \
-ConnectionStrings__Platform="${ConnectionStrings__Platform:-Host=localhost;Port=5432;Database=platform;Username=env_law;Password=env_law}" \
-Ontology__Address='http://localhost:{{ ('env-law/ontology/' ~ branch) | hash_port }}' \
-Consult__Address='http://localhost:{{ ('env-law/consult/' ~ branch) | hash_port }}' \
-exec dotnet run --project src/EnvLaw.Platform.Api --no-launch-profile -- --urls 'http://localhost:{{ ('env-law/platform/' ~ branch) | hash_port }}'
+ConnectionStrings__Platform="${ConnectionStrings__Platform:-Host=localhost;Port=5432;Database=platform;Username=envcite;Password=envcite}" \
+Ontology__Address='http://localhost:{{ ('envcite/ontology/' ~ branch) | hash_port }}' \
+Consult__Address='http://localhost:{{ ('envcite/consult/' ~ branch) | hash_port }}' \
+exec dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- --urls 'http://localhost:{{ ('envcite/platform/' ~ branch) | hash_port }}'
 """
 ontology = """
 cd '{{ worktree_path }}/services/ontology' && \
-export ONTOLOGY_DSN="${ONTOLOGY_DSN:-postgresql://env_law:env_law@localhost:5432/env_law}" && \
-uv run env-law-migrate && \
-ONTOLOGY_GRPC_PORT='{{ ('env-law/ontology/' ~ branch) | hash_port }}' exec uv run env-law-ontology
+export ONTOLOGY_DSN="${ONTOLOGY_DSN:-postgresql://envcite:envcite@localhost:5432/envcite}" && \
+uv run envcite-migrate && \
+ONTOLOGY_GRPC_PORT='{{ ('envcite/ontology/' ~ branch) | hash_port }}' exec uv run envcite-ontology
 """
 consult = """
 cd '{{ worktree_path }}/services/consult' && \
-CONSULT_GRPC_PORT='{{ ('env-law/consult/' ~ branch) | hash_port }}' \
-ONTOLOGY_TARGET='dns:///localhost:{{ ('env-law/ontology/' ~ branch) | hash_port }}' \
-exec uv run env-law-consult
+CONSULT_GRPC_PORT='{{ ('envcite/consult/' ~ branch) | hash_port }}' \
+ONTOLOGY_TARGET='dns:///localhost:{{ ('envcite/ontology/' ~ branch) | hash_port }}' \
+exec uv run envcite-consult
 """

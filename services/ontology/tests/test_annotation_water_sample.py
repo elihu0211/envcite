@@ -13,7 +13,7 @@ from typing import Any
 import psycopg
 import pytest
 
-from env_law_ontology.annotate import Loaded, load
+from envcite_ontology.annotate import Loaded, load
 from tests.sample import WATER
 from tests.test_import import _scalar
 

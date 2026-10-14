@@ -1,0 +1,16 @@
+[project]
+name = "envcite-proto"
+version = "0.1.0"
+description = "Python code generated from the repo-root proto/"
+readme = "README.md"
+requires-python = ">=3.14"
+# 下界不是偏好而是產生碼的要求：grpc_tools 產生的程式碼在匯入時檢查執行期版本不低於
+# 產生時的版本。重新產生後，這兩個下界跟著 uv.lock 裡的 grpcio-tools 走。
+dependencies = ["grpcio>=1.84.0", "protobuf>=7.35.1,<8"]
+
+[tool.uv.build-backend]
+module-name = "envcite"
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"

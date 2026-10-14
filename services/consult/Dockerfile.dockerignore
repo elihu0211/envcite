@@ -2,8 +2,8 @@
 *
 !pyproject.toml
 !uv.lock
-!libs/python/env-law-grpc
-!libs/python/env-law-proto
+!libs/python/envcite-grpc
+!libs/python/envcite-proto
 !services/consult/pyproject.toml
 !services/consult/README.md
 !services/consult/src

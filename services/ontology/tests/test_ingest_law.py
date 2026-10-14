@@ -1,8 +1,8 @@
 from datetime import date
 from typing import Any
 
-from env_law_ontology.ingest import law as parsing
-from env_law_ontology.ingest.audit import Metrics
+from envcite_ontology.ingest import law as parsing
+from envcite_ontology.ingest.audit import Metrics
 
 DATA_DATE = date(2026, 9, 18)
 

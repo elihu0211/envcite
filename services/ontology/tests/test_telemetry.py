@@ -8,12 +8,12 @@ import pytest
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
-from env_law.ontology.v1 import reasoning_pb2 as pb
-from env_law.ontology.v1 import reasoning_pb2_grpc
-from env_law_grpc import configure_telemetry
-from env_law_ontology.reasoning_service import ReasoningServicer
-from env_law_ontology.store import OntologyStore
-from env_law_ontology.telemetry import register_annotation_health
+from envcite.ontology.v1 import reasoning_pb2 as pb
+from envcite.ontology.v1 import reasoning_pb2_grpc
+from envcite_grpc import configure_telemetry
+from envcite_ontology.reasoning_service import ReasoningServicer
+from envcite_ontology.store import OntologyStore
+from envcite_ontology.telemetry import register_annotation_health
 from tests.test_import import _scalar
 from tests.verification_support import Conn, _water
 
@@ -21,7 +21,7 @@ from tests.verification_support import Conn, _water
 def test_without_an_otlp_endpoint_telemetry_does_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
 
-    assert configure_telemetry("env-law-ontology") == []
+    assert configure_telemetry("envcite-ontology") == []
 
 
 def _points(reader: InMemoryMetricReader, name: str) -> list[tuple[dict[str, Any], Any]]:
@@ -66,10 +66,10 @@ def test_evaluate_records_its_duration_by_outcome_and_leaves_no_one_in_flight(
     with pytest.raises(grpc.RpcError):
         stub.Evaluate(pb.EvaluateRequest(conduct_on="yesterday", decided_on="2020-06-01"))
 
-    durations = _points(reader, "env_law.reasoning.evaluate.duration")
+    durations = _points(reader, "envcite.reasoning.evaluate.duration")
     assert sorted(a["outcome"] for a, _ in durations) == ["invalid", "ok"]
     assert all(count == 1 for _, count in durations)
-    in_flight = _points(reader, "env_law.reasoning.evaluate.in_flight")
+    in_flight = _points(reader, "envcite.reasoning.evaluate.in_flight")
     assert [value for _, value in in_flight] == [0]  # 進來一個、出去一個
 
 
@@ -77,7 +77,7 @@ def test_an_evaluation_that_cannot_get_a_slot_in_time_is_counted_as_busy(
     store: OntologyStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # 沒有期限時等名額的上限縮短，否則要等 5 秒；用期限會與客戶端的期限賽跑。
-    monkeypatch.setattr("env_law_ontology.reasoning_service.SLOT_WAIT_SECONDS", 0.1)
+    monkeypatch.setattr("envcite_ontology.reasoning_service.SLOT_WAIT_SECONDS", 0.1)
     from concurrent import futures
 
     reader = InMemoryMetricReader()
@@ -99,14 +99,14 @@ def test_an_evaluation_that_cannot_get_a_slot_in_time_is_counted_as_busy(
         server.stop(0)
 
     assert error.value.code() == grpc.StatusCode.RESOURCE_EXHAUSTED
-    outcomes = [a["outcome"] for a, _ in _points(reader, "env_law.reasoning.evaluate.duration")]
+    outcomes = [a["outcome"] for a, _ in _points(reader, "envcite.reasoning.evaluate.duration")]
     assert outcomes == ["busy"]
 
 
 def test_the_annotation_health_views_count_states_and_latest_gate_results(
     conn: Conn, sample: None, store: OntologyStore
 ) -> None:
-    from env_law_ontology.verification import verify
+    from envcite_ontology.verification import verify
 
     _water(conn, sample)
     verify(conn)
@@ -128,6 +128,6 @@ def test_the_health_gauges_report_what_the_views_hold(
     reader = InMemoryMetricReader()
     register_annotation_health(store, MeterProvider(metric_readers=[reader]).get_meter("test"))
 
-    points = _points(reader, "env_law.annotation.statements")
+    points = _points(reader, "envcite.annotation.statements")
 
     assert ({"state": "extracted"}, 13) in points

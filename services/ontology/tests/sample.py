@@ -11,7 +11,7 @@ from typing import Any
 
 import psycopg
 
-from env_law_ontology.acquire.moj import content_sha256, pcode
+from envcite_ontology.acquire.moj import content_sha256, pcode
 
 Conn = psycopg.Connection[tuple[object, ...]]
 

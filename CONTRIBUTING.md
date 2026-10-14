@@ -28,9 +28,9 @@
 
    ```bash
    cd services/ontology
-   ONTOLOGY_DSN=postgresql://env_law:env_law@localhost:5432/env_law \
+   ONTOLOGY_DSN=postgresql://envcite:envcite@localhost:5432/envcite \
    ACQUIRE_SNAPSHOT_DIR=/tmp/snapshots \
-   uv run env-law-sync moj
+   uv run envcite-sync moj
    ```
 
    完成後重啟 `wt ontology`（詞典只在啟動時讀取）。
@@ -40,29 +40,29 @@
 
 ## 開發用資料庫
 
-需要 PostgreSQL 18，內含兩個資料庫：`env_law`（ontology）、`platform`（platform）。連線的帳號要能在 `env_law` 建立 `btree_gist` 擴充。
+需要 PostgreSQL 18，內含兩個資料庫：`envcite`（ontology）、`platform`（platform）。連線的帳號要能在 `envcite` 建立 `btree_gist` 擴充。
 
 用 Docker 起一個拋棄式的庫（符合預設值）：
 
 ```bash
-docker run -d --name env-law-pg -p 127.0.0.1:5432:5432 \
-  -e POSTGRES_USER=env_law -e POSTGRES_PASSWORD=env_law -e POSTGRES_DB=env_law postgres:18
-docker exec env-law-pg createdb -U env_law platform
+docker run -d --name envcite-pg -p 127.0.0.1:5432:5432 \
+  -e POSTGRES_USER=envcite -e POSTGRES_PASSWORD=envcite -e POSTGRES_DB=envcite postgres:18
+docker exec envcite-pg createdb -U envcite platform
 ```
 
 連線由環境變數指定，未設定時 `wt` 別名與 `appsettings.Development.json` 用預設值：
 
 | 服務 | 環境變數 | 預設值 |
 |------|----------|--------|
-| ontology | `ONTOLOGY_DSN` | `postgresql://env_law:env_law@localhost:5432/env_law` |
-| platform | `ConnectionStrings__Platform` | `Host=localhost;Port=5432;Database=platform;Username=env_law;Password=env_law` |
+| ontology | `ONTOLOGY_DSN` | `postgresql://envcite:envcite@localhost:5432/envcite` |
+| platform | `ConnectionStrings__Platform` | `Host=localhost;Port=5432;Database=platform;Username=envcite;Password=envcite` |
 
 各分支共用這兩個庫：同一時間只跑一條分支的服務，否則兩邊的遷移會互相覆寫。測試不使用它們——Testcontainers 每次自起資料庫。
 
 ontology 遷移檔改過（已套用的檔案內容改變）時，清掉綱要後重新遷移並重新匯入資料：
 
 ```bash
-psql "${ONTOLOGY_DSN:-postgresql://env_law:env_law@localhost:5432/env_law}" \
+psql "${ONTOLOGY_DSN:-postgresql://envcite:envcite@localhost:5432/envcite}" \
   -c 'DROP SCHEMA corpus, source, retrieval CASCADE' -c 'DROP TABLE schema_migration'
 ```
 
@@ -99,7 +99,7 @@ psql "${ONTOLOGY_DSN:-postgresql://env_law:env_law@localhost:5432/env_law}" \
 | Lint | `dotnet format --verify-no-changes` | `uv run ruff check .` |
 | 格式化 | `dotnet format` | `uv run ruff format .` |
 | 型別檢查 | `dotnet build`（警告視為錯誤） | `uv run python -m mypy src tests` |
-| 改 proto 後重新產生 | 建置時自動產生 | `libs/python/env-law-proto/scripts/generate.sh` |
+| 改 proto 後重新產生 | 建置時自動產生 | `libs/python/envcite-proto/scripts/generate.sh` |
 
 契約，從倉庫根執行：
 
@@ -127,8 +127,8 @@ CI 依改動路徑分流：
 | `services/platform/` | `dotnet`（含對外 REST 規格是否過期）、`openapi`（對外 REST 的破壞性變更）、`platform-image` |
 | `services/ontology/`、`libs/python/` | `ontology`、`ontology-image` |
 | `services/consult/`、`libs/python/` | `consult`、`consult-image` |
-| `libs/python/env-law-segmenter/` | `segmenter` |
-| `libs/python/env-law-proto/` | `python-proto`（產生碼是否與 `proto/` 一致） |
+| `libs/python/envcite-segmenter/` | `segmenter` |
+| `libs/python/envcite-proto/` | `python-proto`（產生碼是否與 `proto/` 一致） |
 | 倉庫根 `pyproject.toml`、`uv.lock` | 所有 Python job 與其映像 |
 | `proto/` | `proto`（`buf lint`、`buf breaking`），以及所有消費它的服務 |
 
@@ -142,7 +142,7 @@ CI 依改動路徑分流：
 
 | 版本 | 位置 |
 |------|------|
-| Python 套件 | 倉庫根 `uv lock --upgrade`（或 `--upgrade-package <pkg>`）；升 `grpcio-tools`、`mypy-protobuf`、`protobuf` 時重新產生 `libs/python/env-law-proto` |
+| Python 套件 | 倉庫根 `uv lock --upgrade`（或 `--upgrade-package <pkg>`）；升 `grpcio-tools`、`mypy-protobuf`、`protobuf` 時重新產生 `libs/python/envcite-proto` |
 | .NET 套件 | `services/platform/Directory.Packages.props` |
 | .NET SDK 與映像 | `services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `DOTNET_VERSION`（`global.json` 的 `sdk.version` 只是下限，Renovate 不動它） |
 | Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG PYTHON_VERSION` |

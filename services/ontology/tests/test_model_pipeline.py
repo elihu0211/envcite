@@ -3,8 +3,8 @@
 import json
 from pathlib import Path
 
-from env_law_ontology.reasoning import evaluate
-from env_law_ontology.verification.run import (
+from envcite_ontology.reasoning import evaluate
+from envcite_ontology.verification.run import (
     ALL_METHODS,
     run,
     units_of,

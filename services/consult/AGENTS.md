@@ -4,10 +4,10 @@ Vendor-neutral instructions for coding agents. 倉庫層規範見根 `AGENTS.md`
 
 ## Project
 
-- **Name:** consult（`services/consult`；倉庫為 `env-law`）
+- **Name:** consult（`services/consult`；倉庫為 `envcite`）
 - **Role:** 接地服務：以本體服務供給的法規事實，為**呼叫端的語言模型**備妥可引用的封閉證據集，或拒答。**本服務不執行生成模型。** **租戶隔離**——`x-tenant-id` 為必填，決定配額與稽核軌跡。
 - **Stack:** Python 3.14 · uv · gRPC（grpcio，同步伺服器，一元呼叫）· ruff · mypy (strict) · pytest
-- **Status:** `ConsultationService.Ground`（`env_law.consult.v2`）可運作；本體 adapter 為 `adapters.GrpcOntology`（經 ontology 的 `SearchArticles`）。經 platform 以 `POST /v2/ground` 對外開放。映像：`Dockerfile`（context 為倉庫根；CI `consult-image` 在 main 推送 `:<sha>`）。`env_law.consult.v1`（串流、含生成）已棄用，無實作。
+- **Status:** `ConsultationService.Ground`（`envcite.consult.v2`）可運作；本體 adapter 為 `adapters.GrpcOntology`（經 ontology 的 `SearchArticles`）。經 platform 以 `POST /v2/ground` 對外開放。映像：`Dockerfile`（context 為倉庫根；CI `consult-image` 在 main 推送 `:<sha>`）。`envcite.consult.v1`（串流、含生成）已棄用，無實作。
 
 ## 管線形狀（本服務存在的理由）
 
@@ -35,8 +35,8 @@ uv run python -m pytest
 uv run ruff check .          # --fix 可自動修
 uv run ruff format .
 uv run python -m mypy src tests
-../../libs/python/env-law-proto/scripts/generate.sh   # 改完根 proto/ 之後重新產生
-ONTOLOGY_TARGET=dns:///localhost:50051 uv run env-law-consult   # :50052；worktree 內用 `wt consult`
+../../libs/python/envcite-proto/scripts/generate.sh   # 改完根 proto/ 之後重新產生
+ONTOLOGY_TARGET=dns:///localhost:50051 uv run envcite-consult   # :50052；worktree 內用 `wt consult`
 ```
 
 - 伺服器環境變數：`ONTOLOGY_TARGET`（必填，gRPC 目標，例如 `dns:///ontology:50051`）、`CONSULT_GRPC_PORT`（50052）。服務間認證由叢集的服務網格（mTLS 加授權政策）負責，服務本身不驗證呼叫端。
@@ -45,7 +45,7 @@ ONTOLOGY_TARGET=dns:///localhost:50051 uv run env-law-consult   # :50052；workt
 
 ## Conventions
 
-- 埠（`ports.py`）是 Protocol，不是用戶端。實作進 `adapters.py`。gRPC 產生碼（本服務的 `env_law.consult.v2` 與 ontology 的 client stubs）來自 `env-law-proto`。
+- 埠（`ports.py`）是 Protocol，不是用戶端。實作進 `adapters.py`。gRPC 產生碼（本服務的 `envcite.consult.v2` 與 ontology 的 client stubs）來自 `envcite-proto`。
 - 門檻（`RELEVANCE_FLOOR`、`HIGH_CONFIDENCE_FLOOR`）是**模型條件化的常數**，不是領域常數：只在產生它的計分方式之下可比，該方式一改就必須重新量測分數分佈後重訂。
 - 新增管線階段時，同時決定它「在模型之前或之後」——這個問題沒有第三個答案。在模型之前的屬本服務；在模型之後的屬呼叫端，本服務只能在契約與 `proto/README.md` 裡規定它。
 - ontology 的 gRPC 狀態碼原樣轉出（`service.py`），不要吞成 `UNKNOWN`：呼叫端靠它分辨參數錯誤與可重試的不可用。
@@ -53,8 +53,8 @@ ONTOLOGY_TARGET=dns:///localhost:50051 uv run env-law-consult   # :50052；workt
 ## Safety
 
 - 不提交機密；設定一律由環境變數供給。
-- 不要手改 `libs/python/env-law-proto/src/**/*_pb2*`（跑其 `scripts/generate.sh`）。
-- 不要在本服務加入生成模型的呼叫：那會把模型選型、金鑰與按語彙單元計費帶回本服務，而它們已明確劃給呼叫端（論據見 `env-law-docs` 的 00-01）。
+- 不要手改 `libs/python/envcite-proto/src/**/*_pb2*`（跑其 `scripts/generate.sh`）。
+- 不要在本服務加入生成模型的呼叫：那會把模型選型、金鑰與按語彙單元計費帶回本服務，而它們已明確劃給呼叫端（論據見 `envcite-docs` 的 00-01）。
 
 ## Done when
 

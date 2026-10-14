@@ -7,13 +7,13 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
 
-from env_law_ontology.verification import (
+from envcite_ontology.verification import (
     PanelGate,
 )
-from env_law_ontology.verification.extract import extract_unit
-from env_law_ontology.verification.gates import GateResult, ReferencesGate
-from env_law_ontology.verification.model_gates import render_annotation
-from env_law_ontology.verification.run import (
+from envcite_ontology.verification.extract import extract_unit
+from envcite_ontology.verification.gates import GateResult, ReferencesGate
+from envcite_ontology.verification.model_gates import render_annotation
+from envcite_ontology.verification.run import (
     run,
 )
 from tests.model_gates_support import (

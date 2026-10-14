@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from env_law_ontology.verification import ChatCompletionsModel
+from envcite_ontology.verification import ChatCompletionsModel
 
 
 class Endpoint:

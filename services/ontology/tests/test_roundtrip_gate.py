@@ -1,4 +1,4 @@
-"""The description every verifier reads, and the round-trip gate (env-law-docs 02-06 §3.3)."""
+"""The description every verifier reads, and the round-trip gate (envcite-docs 02-06 §3.3)."""
 
 import json
 from pathlib import Path
@@ -6,11 +6,11 @@ from typing import Any
 
 import pytest
 
-from env_law_ontology.verification import (
+from envcite_ontology.verification import (
     RoundtripGate,
 )
-from env_law_ontology.verification.extract import extract_unit
-from env_law_ontology.verification.model_gates import REFORMALIZE, render_annotation
+from envcite_ontology.verification.extract import extract_unit
+from envcite_ontology.verification.model_gates import REFORMALIZE, render_annotation
 from tests.model_gates_support import (
     EXTRACTOR,
     SAME_AS_ANNOTATION,

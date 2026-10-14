@@ -1,6 +1,6 @@
 -- 0001_corpus — 法規語料：法規、版本、條文單元、生命週期事件
 --
--- 設計見 env-law-docs 02-04 §5 與 03-02。本檔只建立現在有生產者與使用者的部分；
+-- 設計見 envcite-docs 02-04 §5 與 03-02。本檔只建立現在有生產者與使用者的部分；
 -- 標註、規範關係、受控詞彙、取得紀錄等，隨其管線落地時各以新遷移加入。
 
 -- 時態鍵（WITHOUT OVERLAPS）以 GiST 實作，bigint 的等值比較需要 btree_gist。
@@ -124,7 +124,7 @@ CREATE INDEX lifecycle_event_by_resource ON corpus.lifecycle_event (resource_id,
 -- IRI 由自然鍵導出，不存：樣板見 03-02 §3。
 CREATE FUNCTION corpus.resource_iri(kind corpus.norm_kind, local_id text) RETURNS text
     LANGUAGE sql IMMUTABLE STRICT
-    RETURN 'https://env.law/eli/tw/'
+    RETURN 'https://envcite/eli/tw/'
         || CASE WHEN kind IN ('constitution', 'statute') THEN 'law' ELSE 'order' END
         || '/' || local_id;
 

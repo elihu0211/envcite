@@ -1,6 +1,6 @@
 [Contract]
 /proto/ @elihu
-/libs/python/env-law-proto/ @elihu
+/libs/python/envcite-proto/ @elihu
 
 [CI and agent config]
 /.gitlab-ci.yml @elihu

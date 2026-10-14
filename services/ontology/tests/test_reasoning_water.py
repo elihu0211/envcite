@@ -5,8 +5,8 @@ import json
 
 import pytest
 
-from env_law_ontology.annotate import Loaded, load
-from env_law_ontology.reasoning import Result, evaluate
+from envcite_ontology.annotate import Loaded, load
+from envcite_ontology.reasoning import Result, evaluate
 from tests.reasoning_support import (
     WATER,
     WATER_DAY,

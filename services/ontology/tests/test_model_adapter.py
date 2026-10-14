@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from env_law_ontology.verification import AnthropicModel
-from env_law_ontology.verification.run import (
+from envcite_ontology.verification import AnthropicModel
+from envcite_ontology.verification.run import (
     PROBES,
     SameModel,
     assert_distinct,
@@ -48,7 +48,7 @@ def test_the_anthropic_adapter_sends_one_user_message_and_joins_the_text_blocks(
 
     fake_sdk = types.SimpleNamespace(Anthropic=lambda: types.SimpleNamespace(messages=Messages()))
     monkeypatch.setattr(
-        "env_law_ontology.verification.models.importlib",
+        "envcite_ontology.verification.models.importlib",
         types.SimpleNamespace(import_module=lambda name: fake_sdk),
     )
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
@@ -68,7 +68,7 @@ def test_the_anthropic_adapter_refuses_to_run_without_a_key(
 ) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setattr(
-        "env_law_ontology.verification.models.importlib",
+        "envcite_ontology.verification.models.importlib",
         types.SimpleNamespace(import_module=lambda name: types.SimpleNamespace()),
     )
 

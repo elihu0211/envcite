@@ -1,24 +1,24 @@
 [project]
-name = "env-law-consult"
+name = "envcite-consult"
 version = "0.1.0"
-description = "env-law consultation service (grounding evidence for callers' own models, gRPC)"
+description = "envcite consultation service (grounding evidence for callers' own models, gRPC)"
 readme = "README.md"
 authors = [
     { name = "Eli Hu", email = "elihu@go.thu.edu.tw" }
 ]
 requires-python = ">=3.14"
 dependencies = [
-    "env-law-grpc",
-    "env-law-proto",
+    "envcite-grpc",
+    "envcite-proto",
     "grpcio-health-checking",
 ]
 
 [tool.uv.sources]
-env-law-grpc = { workspace = true }
-env-law-proto = { workspace = true }
+envcite-grpc = { workspace = true }
+envcite-proto = { workspace = true }
 
 [project.scripts]
-env-law-consult = "env_law_consult.server:main"
+envcite-consult = "envcite_consult.server:main"
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]

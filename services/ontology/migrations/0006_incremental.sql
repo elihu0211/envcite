@@ -1,6 +1,6 @@
 -- 0006_incremental — 增量更新所需的綱要
 --
--- 設計見 env-law-docs 03-04：記錄時間與內容雜湊。
+-- 設計見 envcite-docs 03-04：記錄時間與內容雜湊。
 
 -- 記錄時間：更正與推導修正是新增一列並結束舊列，不覆寫（03-02 §5）。
 ALTER TABLE corpus.provision_version

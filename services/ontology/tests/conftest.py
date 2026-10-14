@@ -7,12 +7,12 @@ import psycopg
 import pytest
 from testcontainers.community.postgres import PostgresContainer
 
-from env_law.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
-from env_law_ontology.acquire.moj import Moj
-from env_law_ontology.ingest import importer
-from env_law_ontology.migrate import apply_all
-from env_law_ontology.server import build_server
-from env_law_ontology.store import OntologyStore
+from envcite.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
+from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.ingest import importer
+from envcite_ontology.migrate import apply_all
+from envcite_ontology.server import build_server
+from envcite_ontology.store import OntologyStore
 from tests.sample import sample_laws, stored_snapshot
 
 

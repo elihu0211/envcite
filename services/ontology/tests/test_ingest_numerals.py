@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from env_law_ontology.ingest.numerals import first_date, parse_int, parse_yyyymmdd, roc_date
+from envcite_ontology.ingest.numerals import first_date, parse_int, parse_yyyymmdd, roc_date
 
 
 @pytest.mark.parametrize(

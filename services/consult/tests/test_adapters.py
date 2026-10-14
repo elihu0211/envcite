@@ -4,8 +4,8 @@ from concurrent import futures
 import grpc
 import pytest
 
-from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
-from env_law_consult.adapters import GrpcOntology
+from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
+from envcite_consult.adapters import GrpcOntology
 
 
 class _Ontology(ontology_pb2_grpc.OntologyServiceServicer):

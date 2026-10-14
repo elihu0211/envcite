@@ -3,10 +3,10 @@ them."""
 
 from pathlib import Path
 
-from env_law_ontology.verification import (
+from envcite_ontology.verification import (
     IndependentTestGate,
 )
-from env_law_ontology.verification.extract import extract_unit
+from envcite_ontology.verification.extract import extract_unit
 from tests.model_gates_support import (
     CASES,
     EXTRACTOR,

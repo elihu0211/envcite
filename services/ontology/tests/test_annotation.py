@@ -1,4 +1,4 @@
-"""Annotation (env-law-docs 02-04, 02-06 §3.2): statements anchored to text, not a version row."""
+"""Annotation (envcite-docs 02-04, 02-06 §3.2): statements anchored to text, not a version row."""
 
 from datetime import date
 from decimal import Decimal
@@ -8,9 +8,9 @@ from typing import Any
 import psycopg
 import pytest
 
-from env_law_ontology.acquire.moj import Moj
-from env_law_ontology.annotate import AnnotationError, load
-from env_law_ontology.ingest import importer
+from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.annotate import AnnotationError, load
+from envcite_ontology.ingest import importer
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
 from tests.test_incremental import (

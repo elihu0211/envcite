@@ -1,6 +1,6 @@
 import pytest
 
-from env_law_ontology.store import OntologyStore
+from envcite_ontology.store import OntologyStore
 
 pytestmark = pytest.mark.usefixtures("sample")
 
@@ -12,7 +12,7 @@ def test_get_law_reads_title_from_expression(store: OntologyStore) -> None:
     assert law.title == "空氣污染防制法"
     assert law.language == "zho"
     assert law.date_document == "1975-05-23"
-    assert law.iri == "https://env.law/tw/law/O0020001"
+    assert law.iri == "https://envcite/tw/law/O0020001"
 
 
 @pytest.mark.parametrize("law_id", ["Z9999999", "", "o0020001", 'x" } ?s ?p ?o { "'])
@@ -26,7 +26,7 @@ def test_articles_in_reading_order(store: OntologyStore) -> None:
 
     assert articles is not None
     assert [a.number for a in articles] == ["7", "40"]
-    assert articles[0].iri == "https://env.law/tw/law/O0040001/2018-06-13/zho/art_7"
+    assert articles[0].iri == "https://envcite/tw/law/O0040001/2018-06-13/zho/art_7"
 
 
 def test_promulgated_but_not_yet_in_force_has_no_articles(store: OntologyStore) -> None:

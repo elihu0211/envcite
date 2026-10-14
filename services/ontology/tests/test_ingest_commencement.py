@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from env_law_ontology.ingest.commencement import Commencement, derive, from_note, touched_articles
+from envcite_ontology.ingest.commencement import Commencement, derive, from_note, touched_articles
 
 KNOWN = ["art_1", "art_2", "art_2-1", "art_3", "art_39", "art_39-1", "art_39-5", "art_40"]
 

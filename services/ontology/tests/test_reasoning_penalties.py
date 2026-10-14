@@ -5,8 +5,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from env_law_ontology.annotate import load
-from env_law_ontology.reasoning import Result, evaluate
+from envcite_ontology.annotate import load
+from envcite_ontology.reasoning import Result, evaluate
 from tests.reasoning_support import (
     Conn,
     _plain_duty,

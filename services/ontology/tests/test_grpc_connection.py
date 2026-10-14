@@ -1,4 +1,4 @@
-"""Long-lived connection hygiene (env_law_grpc.connection): max age, keepalive, retries."""
+"""Long-lived connection hygiene (envcite_grpc.connection): max age, keepalive, retries."""
 
 import time
 from collections.abc import Iterator
@@ -8,14 +8,14 @@ import grpc
 import pytest
 from grpc_health.v1 import health_pb2
 
-from env_law_grpc.connection import (
+from envcite_grpc.connection import (
     CLIENT_KEEPALIVE_MS,
     SERVER_MIN_PING_INTERVAL_MS,
     SERVER_OPTIONS,
     client_options,
 )
-from env_law_ontology.server import build_server
-from env_law_ontology.store import OntologyStore
+from envcite_ontology.server import build_server
+from envcite_ontology.store import OntologyStore
 
 
 def test_the_servers_ping_floor_is_below_the_clients_ping_interval() -> None:
@@ -78,7 +78,7 @@ def flaky_server() -> Iterator[tuple[str, grpc.GenericRpcHandler]]:
 def _call(target: str, options: list[tuple[str, int | str]]) -> bytes:
     with grpc.insecure_channel(target, options=options) as channel:
         method: grpc.UnaryUnaryMultiCallable[bytes, bytes] = channel.unary_unary(
-            "/env_law.ontology.v1.OntologyService/GetLaw"
+            "/envcite.ontology.v1.OntologyService/GetLaw"
         )
         reply: bytes = method(b"", timeout=5)
         return reply
@@ -90,7 +90,7 @@ def test_unavailable_is_retried_for_read_only_services(
     target, handler = flaky_server
     handler.code, handler.fail = grpc.StatusCode.UNAVAILABLE, 2
 
-    reply = _call(target, client_options(["env_law.ontology.v1.OntologyService"]))
+    reply = _call(target, client_options(["envcite.ontology.v1.OntologyService"]))
 
     assert reply == b"ok"
     assert handler.calls == 3
@@ -107,7 +107,7 @@ def test_capacity_and_bad_requests_are_not_retried(
     handler.code, handler.fail = code, 5
 
     with pytest.raises(grpc.RpcError) as error:
-        _call(target, client_options(["env_law.ontology.v1.OntologyService"]))
+        _call(target, client_options(["envcite.ontology.v1.OntologyService"]))
 
     assert error.value.code() == code
     assert handler.calls == 1
@@ -120,6 +120,6 @@ def test_a_service_not_listed_as_read_only_is_not_retried(
     handler.code, handler.fail = grpc.StatusCode.UNAVAILABLE, 2
 
     with pytest.raises(grpc.RpcError):
-        _call(target, client_options(["env_law.some.other.Service"]))
+        _call(target, client_options(["envcite.some.other.Service"]))
 
     assert handler.calls == 1

@@ -1,7 +1,7 @@
 ---
 name: bootstrap-stack
 description: >-
-  Wire a new service into the env-law monorepo and keep agent ops accurate.
+  Wire a new service into the envcite monorepo and keep agent ops accurate.
   Use when adding a service under services/, picking its framework or package
   manager, or writing a new service's install/build/test/lint commands into its AGENTS.md.
 ---

@@ -4,7 +4,7 @@ conditions, missing directions."""
 import json
 from pathlib import Path
 
-from env_law_ontology.verification.extract import (
+from envcite_ontology.verification.extract import (
     completeness_issues,
     extract_unit,
 )

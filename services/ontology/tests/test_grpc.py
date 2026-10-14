@@ -5,10 +5,10 @@ import grpc
 import pytest
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 
-from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
-from env_law_grpc import stop_on_sigterm
-from env_law_ontology.server import build_server
-from env_law_ontology.store import OntologyStore
+from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
+from envcite_grpc import stop_on_sigterm
+from envcite_ontology.server import build_server
+from envcite_ontology.store import OntologyStore
 
 from .conftest import call_metadata
 
@@ -38,7 +38,7 @@ def test_unknown_law_is_not_found(stub: ontology_pb2_grpc.OntologyServiceStub) -
 
 
 @pytest.mark.parametrize(
-    "service", ["env_law.ontology.v1.OntologyService", "env_law.ontology.v1.ReasoningService"]
+    "service", ["envcite.ontology.v1.OntologyService", "envcite.ontology.v1.ReasoningService"]
 )
 def test_health_check_reports_serving(channel: grpc.Channel, service: str) -> None:
     health_stub = health_pb2_grpc.HealthStub(channel)

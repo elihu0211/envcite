@@ -2,7 +2,7 @@
 #
 #   docker build -f services/ontology/Dockerfile .
 #
-# One image, two entrypoints: the server (default) and `env-law-migrate`, which
+# One image, two entrypoints: the server (default) and `envcite-migrate`, which
 # the migration Job runs. The layout under /app mirrors the repo because the
 # migrator finds migrations/ relative to its own source file.
 #
@@ -40,15 +40,15 @@ WORKDIR /app
 # Dependencies first, so a source-only change reuses this layer.
 COPY pyproject.toml uv.lock ./
 RUN --network=none --mount=type=bind,from=uv-cache,target=/uv-cache,rw \
-    uv sync --frozen --no-dev --package env-law-ontology --no-install-workspace
-COPY libs/python/env-law-grpc libs/python/env-law-grpc
-COPY libs/python/env-law-proto libs/python/env-law-proto
-COPY libs/python/env-law-segmenter libs/python/env-law-segmenter
+    uv sync --frozen --no-dev --package envcite-ontology --no-install-workspace
+COPY libs/python/envcite-grpc libs/python/envcite-grpc
+COPY libs/python/envcite-proto libs/python/envcite-proto
+COPY libs/python/envcite-segmenter libs/python/envcite-segmenter
 COPY services/ontology/pyproject.toml services/ontology/README.md services/ontology/
 COPY services/ontology/src services/ontology/src
 COPY services/ontology/migrations services/ontology/migrations
 RUN --network=none --mount=type=bind,from=uv-cache,target=/uv-cache,rw \
-    uv sync --frozen --no-dev --package env-law-ontology \
+    uv sync --frozen --no-dev --package envcite-ontology \
  && .venv/bin/python -m compileall -q services/ontology/src libs/python
 
 # Same base as the uv image above, so the venv's interpreter path resolves.
@@ -59,7 +59,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH=/app/.venv/bin:$PATH
 COPY --from=build /app /app
 WORKDIR /app/services/ontology
-# Matches runAsUser/runAsGroup in env-law-deploy base/ontology.
+# Matches runAsUser/runAsGroup in envcite-deploy base/ontology.
 USER 1000:1000
 EXPOSE 50051
-CMD ["env-law-ontology"]
+CMD ["envcite-ontology"]

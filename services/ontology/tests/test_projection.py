@@ -2,11 +2,11 @@ from pathlib import Path
 
 import psycopg
 
-from env_law_ontology import projection
-from env_law_ontology.acquire.moj import Moj
-from env_law_ontology.ingest import importer
-from env_law_ontology.store import OntologyStore
-from env_law_segmenter import Segmenter
+from envcite_ontology import projection
+from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.ingest import importer
+from envcite_ontology.store import OntologyStore
+from envcite_segmenter import Segmenter
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
 from tests.test_incremental import _articles, _first, _law_v1, _next

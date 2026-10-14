@@ -4,7 +4,7 @@ import psycopg
 import pytest
 from psycopg.conninfo import make_conninfo
 
-from env_law_ontology.migrate import MIGRATIONS_DIR, MigrationChanged, apply_all
+from envcite_ontology.migrate import MIGRATIONS_DIR, MigrationChanged, apply_all
 
 
 def test_a_database_from_another_baseline_is_refused(dsn: str) -> None:

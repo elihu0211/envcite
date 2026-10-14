@@ -6,11 +6,11 @@ from concurrent import futures
 import grpc
 import pytest
 
-from env_law.consult.v2 import consult_pb2, consult_pb2_grpc
-from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
-from env_law_consult.adapters import GrpcOntology
-from env_law_consult.server import build_server
-from env_law_grpc import stop_on_sigterm
+from envcite.consult.v2 import consult_pb2, consult_pb2_grpc
+from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
+from envcite_consult.adapters import GrpcOntology
+from envcite_consult.server import build_server
+from envcite_grpc import stop_on_sigterm
 from tests.conftest import FakeOntology, call_metadata
 
 

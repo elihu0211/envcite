@@ -5,9 +5,9 @@ from typing import Any
 import psycopg
 import pytest
 
-from env_law_ontology.acquire.moj import Moj
-from env_law_ontology.ingest import importer
-from env_law_ontology.ingest.law import PARSER_VERSION
+from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.ingest import importer
+from envcite_ontology.ingest.law import PARSER_VERSION
 from tests.sample import stored_snapshot
 
 Conn = psycopg.Connection[tuple[object, ...]]

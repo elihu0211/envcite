@@ -1,15 +1,15 @@
-"""The verification pipeline end to end: one row per gate, crash safety, tampering (env-law-
+"""The verification pipeline end to end: one row per gate, crash safety, tampering (envcite-
 docs 02-06 §3.3)."""
 
 import pytest
 
-from env_law_ontology.reasoning import evaluate
-from env_law_ontology.verification import (
+from envcite_ontology.reasoning import evaluate
+from envcite_ontology.verification import (
     DEFAULT_GATES,
     settle,
     verify,
 )
-from env_law_ontology.verification.gates import GateResult
+from envcite_ontology.verification.gates import GateResult
 from tests.reasoning_support import WATER_DAY
 from tests.test_import import _scalar
 from tests.verification_support import (

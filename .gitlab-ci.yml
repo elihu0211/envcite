@@ -1,4 +1,4 @@
-# env-law 單一倉庫、多服務的 CI。
+# envcite 單一倉庫、多服務的 CI。
 #
 # gate 以外的 job 都標 `windows-docker-thin`（thuaisse-lab group runner，不計 GitLab.com 分鐘數）；
 # gate 走 shared runner，不佔自建 runner。
@@ -115,7 +115,7 @@ variables:
   - services/platform/.editorconfig
   - services/platform/Directory.*
   - services/platform/Dockerfile*
-  - services/platform/EnvLaw.Platform.slnx
+  - services/platform/EnvCite.Platform.slnx
   - services/platform/dotnet-tools.json
   - services/platform/global.json
   - proto/**/*
@@ -154,18 +154,18 @@ variables:
   - .gitlab-ci.yml
 
 .changes-segmenter: &changes-segmenter
-  - libs/python/env-law-segmenter/src/**/*
-  - libs/python/env-law-segmenter/tests/**/*
-  - libs/python/env-law-segmenter/scripts/**/*
-  - libs/python/env-law-segmenter/pyproject.toml
+  - libs/python/envcite-segmenter/src/**/*
+  - libs/python/envcite-segmenter/tests/**/*
+  - libs/python/envcite-segmenter/scripts/**/*
+  - libs/python/envcite-segmenter/pyproject.toml
   - pyproject.toml
   - uv.lock
   - .gitlab-ci.yml
 
 .changes-python-proto: &changes-python-proto
-  - libs/python/env-law-proto/src/**/*
-  - libs/python/env-law-proto/scripts/**/*
-  - libs/python/env-law-proto/pyproject.toml
+  - libs/python/envcite-proto/src/**/*
+  - libs/python/envcite-proto/scripts/**/*
+  - libs/python/envcite-proto/pyproject.toml
   - proto/**/*
   - pyproject.toml
   - uv.lock
@@ -369,10 +369,10 @@ ontology:
       alias: postgres
   variables:
     MEMBER: services/ontology
-    POSTGRES_DB: env_law_test
-    POSTGRES_USER: env_law
-    POSTGRES_PASSWORD: env_law
-    ONTOLOGY_TEST_DSN: "postgresql://env_law:env_law@postgres:5432/env_law_test"
+    POSTGRES_DB: envcite_test
+    POSTGRES_USER: envcite
+    POSTGRES_PASSWORD: envcite
+    ONTOLOGY_TEST_DSN: "postgresql://envcite:envcite@postgres:5432/envcite_test"
 
 consult:
   extends: .python-checks
@@ -389,7 +389,7 @@ python-proto:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-python-proto
   variables:
-    MEMBER: libs/python/env-law-proto
+    MEMBER: libs/python/envcite-proto
   script:
     - cp -r src "$CI_PROJECT_DIR/.generated-before"
     - ./scripts/generate.sh
@@ -505,7 +505,7 @@ segmenter:
   # 不需資料庫。CI 只驗契約（同一份詞典得到同一個 tokenizer id 與同一批 token）；
   # 斷詞品質由 scripts/measure-segmentation.py 量測，需要網路，不在 CI 跑。
   variables:
-    MEMBER: libs/python/env-law-segmenter
+    MEMBER: libs/python/envcite-segmenter
 
 # 對外 REST 的相容性檢查（同 proto 的 buf breaking），以目標分支已提交的規格為基準；規格與程式碼是否一致由 dotnet job 檢查。
 openapi:

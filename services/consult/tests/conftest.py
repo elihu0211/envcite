@@ -3,9 +3,9 @@ from collections.abc import Iterator
 import grpc
 import pytest
 
-from env_law.consult.v2 import consult_pb2_grpc
-from env_law_consult.ports import Article
-from env_law_consult.server import build_server
+from envcite.consult.v2 import consult_pb2_grpc
+from envcite_consult.ports import Article
+from envcite_consult.server import build_server
 
 
 class FakeOntology:
@@ -27,7 +27,7 @@ class FakeOntology:
 
 def article(n: int, score: float) -> Article:
     return Article(
-        iri=f"https://env.law/tw/law/O0020001/2018-08-01/zho/art_{n}",
+        iri=f"https://envcite/tw/law/O0020001/2018-08-01/zho/art_{n}",
         label=f"空氣污染防制法 第 {n} 條",
         text=f"第 {n} 條條文內容。",
         score=score,

@@ -13,10 +13,10 @@ from typing import Any
 import psycopg
 import pytest
 
-from env_law_ontology.verification import ChatCompletionsModel, ModelError, verify
-from env_law_ontology.verification.config import parse
-from env_law_ontology.verification.extract import extract_unit
-from env_law_ontology.verification.gates import GateResult
+from envcite_ontology.verification import ChatCompletionsModel, ModelError, verify
+from envcite_ontology.verification.config import parse
+from envcite_ontology.verification.extract import extract_unit
+from envcite_ontology.verification.gates import GateResult
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
