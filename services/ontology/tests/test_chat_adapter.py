@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from env_law_ontology.verification import ChatCompletionsModel, build_model
+from env_law_ontology.verification import ChatCompletionsModel
 
 
 class Endpoint:
@@ -49,26 +49,19 @@ class Endpoint:
 
 
 @pytest.fixture
-def endpoint(monkeypatch: pytest.MonkeyPatch) -> Iterator[Endpoint]:
+def endpoint() -> Iterator[Endpoint]:
     e = Endpoint()
-    monkeypatch.setenv("CHAT_BASE_URL", e.url)
-    monkeypatch.setenv("CHAT_API_KEY", "k")
     yield e
     e.server.shutdown()
 
 
-def test_the_slug_names_the_model_and_the_vendor_is_its_family() -> None:
-    model = ChatCompletionsModel("openai/gpt-oss-120b")
-
-    assert (model.name, model.family) == ("openai:gpt-oss-120b", "openai")
-    assert ChatCompletionsModel("qwen/qwen3-235b-a22b").family == "qwen"
-    assert (
-        ChatCompletionsModel("gpt-oss:120b").family == "unknown"
-    )  # 沒有供應商前綴：保守地算同一家族
+def chat(e: Endpoint, **kw: Any) -> ChatCompletionsModel:
+    kw.setdefault("api_key", "k")
+    return ChatCompletionsModel("openai/gpt-oss-120b", family="openai", base_url=e.url, **kw)
 
 
 def test_one_user_message_goes_to_the_chat_completions_route(endpoint: Endpoint) -> None:
-    text = ChatCompletionsModel("openai/gpt-oss-120b", max_tokens=100).complete("問題")
+    text = chat(endpoint, max_tokens=100).complete("問題")
 
     assert text == "答"
     (sent,) = endpoint.requests
@@ -87,15 +80,11 @@ def test_a_reasoning_models_thinking_is_not_taken_for_the_answer(endpoint: Endpo
         "choices": [{"message": {"content": '{"faithful": true}', "reasoning": "先想一想"}}]
     }
 
-    assert ChatCompletionsModel("openai/gpt-oss-120b").complete("x") == '{"faithful": true}'
+    assert chat(endpoint).complete("x") == '{"faithful": true}'
 
 
-def test_a_local_server_without_a_key_gets_no_authorization_header(
-    endpoint: Endpoint, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.delenv("CHAT_API_KEY")
-
-    ChatCompletionsModel("openai/gpt-oss-120b").complete("x")
+def test_a_local_server_without_a_key_gets_no_authorization_header(endpoint: Endpoint) -> None:
+    chat(endpoint, api_key=None).complete("x")
 
     assert endpoint.requests[0]["auth"] is None
 
@@ -114,7 +103,7 @@ def test_an_answer_without_content_is_an_error_not_an_empty_pass(
     endpoint.reply = reply
 
     with pytest.raises(RuntimeError, match="empty content"):
-        ChatCompletionsModel("openai/gpt-oss-120b").complete("x")
+        chat(endpoint).complete("x")
 
 
 def test_an_http_error_names_the_status_and_not_the_key(endpoint: Endpoint) -> None:
@@ -122,44 +111,16 @@ def test_an_http_error_names_the_status_and_not_the_key(endpoint: Endpoint) -> N
     endpoint.reply = {"error": "rate limited"}
 
     with pytest.raises(RuntimeError) as raised:
-        ChatCompletionsModel("openai/gpt-oss-120b").complete("x")
+        chat(endpoint).complete("x")
 
     assert "429" in str(raised.value) and "Bearer" not in str(raised.value)
 
 
-def test_the_endpoint_must_be_named_explicitly(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("CHAT_BASE_URL", raising=False)
-
-    with pytest.raises(RuntimeError, match="CHAT_BASE_URL"):
-        ChatCompletionsModel("openai/gpt-oss-120b").complete("x")
-
-
-def test_build_model_accepts_the_chat_spec() -> None:
-    model = build_model("chat:openai/gpt-oss-120b")
-
-    assert isinstance(model, ChatCompletionsModel)
-    assert model.name == "openai:gpt-oss-120b"
-    with pytest.raises(ValueError):
-        build_model("chat:")
-
-
-def test_bare_format_sends_only_the_name_but_keeps_the_vendor_as_the_family(
-    endpoint: Endpoint, monkeypatch: pytest.MonkeyPatch
+def test_the_name_is_family_and_model_id_and_the_model_id_goes_out_verbatim(
+    endpoint: Endpoint,
 ) -> None:
-    """只認名字的端點：請求送 gpt-oss-120b，家族仍是 openai；另一個模型記成別的家族。"""
-    monkeypatch.setenv("CHAT_MODEL_FORMAT", "bare")
+    model = chat(endpoint)
+    model.complete("x")
 
-    ChatCompletionsModel("openai/gpt-oss-120b").complete("x")
-
-    assert endpoint.requests[0]["body"]["model"] == "gpt-oss-120b"
-    assert ChatCompletionsModel("google/gemma-4-31b").family == "google"
-    assert (
-        ChatCompletionsModel("openai/gpt-oss-120b").family
-        != ChatCompletionsModel("google/gemma-4-31b").family
-    )
-
-
-def test_the_slug_is_sent_whole_by_default(endpoint: Endpoint) -> None:
-    ChatCompletionsModel("openai/gpt-oss-120b").complete("x")
-
+    assert (model.name, model.family) == ("openai:openai/gpt-oss-120b", "openai")
     assert endpoint.requests[0]["body"]["model"] == "openai/gpt-oss-120b"

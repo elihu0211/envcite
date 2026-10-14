@@ -15,7 +15,6 @@ from env_law_ontology.verification.models import (
     ChatCompletionsModel,
     Model,
     ModelError,
-    build_model,
 )
 from env_law_ontology.verification.pipeline import Settled, settle, verify
 
@@ -35,7 +34,6 @@ __all__ = [
     "ReferencesGate",
     "RoundtripGate",
     "Settled",
-    "build_model",
     "settle",
     "verify",
 ]

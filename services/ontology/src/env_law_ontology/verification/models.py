@@ -79,33 +79,29 @@ class AnthropicModel:
 class ChatCompletionsModel:
     """OpenAI 相容的 Chat Completions 端點，只用標準函式庫。
 
-    模型以 `供應商/模型` slug 指定（`openai/gpt-oss-120b`），斜線前的供應商即家族；無斜線時家族為
-    `unknown`，多個這樣的模型視為同家族，只會更保守。
-    端點取自 `CHAT_BASE_URL`（必填、無預設：不把法規文字悄悄送到未指定的第三方），金鑰取自
-    `CHAT_API_KEY`（自架可無）。推理模型的思考計入輸出長度，故 `max_tokens` 預設較大；
+    `model_id` 是送給端點的模型識別，原樣送出；`family` 由人宣告（獨立性規則所依），
+    `base_url` 必填、無預設：不把法規文字悄悄送到未指定的第三方；`api_key` 自架可無。
+    名字是 `家族:模型識別`。推理模型的思考計入輸出長度，故 `max_tokens` 預設較大；
     只取 `message.content`。
-    預設送整個 slug；端點只認斜線後的名字時設 `CHAT_MODEL_FORMAT=bare`，家族與名字仍取自 slug。
     """
 
     def __init__(
         self,
-        slug: str,
+        model_id: str,
         max_tokens: int = 8192,
         timeout: float = 300.0,
         *,
-        declared_family: str | None = None,
-        base_url: str | None = None,
+        family: str,
+        base_url: str,
         api_key: str | None = None,
         max_retries: int = 3,
         backoff: float = 1.0,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
-        """`declared_family`、`base_url`、`api_key` 由設定檔（`config.py`）給時，`slug` 原樣送出；
-        不給（命令列 `chat:` 規格）則退回 slug 與環境變數。"""
-        self.slug = slug
+        self.model_id = model_id
+        self.family = family
         self.max_tokens = max_tokens
         self.timeout = timeout
-        self._declared_family = declared_family
         self._base_url = base_url
         self._api_key = api_key
         self.max_retries = max_retries
@@ -116,37 +112,17 @@ class ChatCompletionsModel:
         return f"ChatCompletionsModel({self.name!r})"  # 不印金鑰
 
     @property
-    def family(self) -> str:
-        if self._declared_family is not None:
-            return self._declared_family
-        vendor, sep, _ = self.slug.partition("/")
-        return vendor if sep and vendor else "unknown"
-
-    @property
     def name(self) -> str:
-        if self._declared_family is not None:
-            return f"{self._declared_family}:{self.slug}"
-        return f"{self.family}:{self.slug.partition('/')[2] or self.slug}"
-
-    @property
-    def request_model(self) -> str:
-        if self._declared_family is not None:
-            return self.slug
-        bare = os.environ.get("CHAT_MODEL_FORMAT", "slug") == "bare"
-        return self.slug.partition("/")[2] if bare and "/" in self.slug else self.slug
+        return f"{self.family}:{self.model_id}"
 
     def complete(self, prompt: str) -> str:
-        base = (self._base_url or os.environ.get("CHAT_BASE_URL", "")).rstrip("/")
-        if not base:
-            raise RuntimeError(
-                "CHAT_BASE_URL is required (an OpenAI-compatible endpoint, e.g. .../v1)"
-            )
+        base = self._base_url.rstrip("/")
         headers = {"Content-Type": "application/json"}
-        if key := (self._api_key or os.environ.get("CHAT_API_KEY")):
-            headers["Authorization"] = f"Bearer {key}"
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
         body = json.dumps(
             {
-                "model": self.request_model,
+                "model": self.model_id,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": self.max_tokens,
                 "temperature": 0,
@@ -193,13 +169,3 @@ class ChatCompletionsModel:
         if retry_after is not None and retry_after.strip().isdigit():
             return float(min(int(retry_after), 60))
         return float(self.backoff * 2**attempt * (0.5 + random.random() / 2))
-
-
-def build_model(spec: str) -> Model:
-    """`anthropic:<模型>` 或 `chat:<供應商/模型>` → Model；其餘報錯，不靜默換成別家。"""
-    vendor, _, model_id = spec.partition(":")
-    if vendor == "anthropic" and model_id:
-        return AnthropicModel(model_id)
-    if vendor == "chat" and model_id:
-        return ChatCompletionsModel(model_id)
-    raise ValueError(f"no adapter for {vendor!r}: implement Model for it (spec {spec!r})")

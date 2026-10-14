@@ -21,7 +21,7 @@ from env_law_ontology.verification.extract import Extracted, extract_unit
 from env_law_ontology.verification.gates import DEFAULT_GATES, Gate
 from env_law_ontology.verification.link import link_penalties
 from env_law_ontology.verification.model_gates import IndependentTestGate, PanelGate, RoundtripGate
-from env_law_ontology.verification.models import Model, build_model
+from env_law_ontology.verification.models import Model
 from env_law_ontology.verification.pipeline import Settled, settle
 
 log = logging.getLogger(__name__)
@@ -242,19 +242,7 @@ def main() -> None:
         "--limit", type=int, help="與 --pending 併用：一次最多處理幾部法規（控制模型費用）"
     )
     parser.add_argument(
-        "--models",
-        type=Path,
-        help="模型配置檔（TOML，範本 models.example.toml）；與 --extractor／--verifier 擇一",
-    )
-    parser.add_argument(
-        "--extractor",
-        help="anthropic:<模型> 或 chat:<供應商/模型>，例如 anthropic:claude-sonnet-5-5",
-    )
-    parser.add_argument(
-        "--verifier",
-        action="append",
-        default=[],
-        help="驗證者，可重複；與抽取者不同家族才算數，例如 chat:google/gemma-4-31b",
+        "--models", type=Path, required=True, help="模型配置檔（TOML，範本 models.example.toml）"
     )
     parser.add_argument("--agent-version", default="pipeline-1")
     parser.add_argument("--require", default=",".join(ALL_METHODS), help="必要的驗證方法，逗號分隔")
@@ -272,21 +260,12 @@ def main() -> None:
     dsn = os.environ.get("ONTOLOGY_DSN", "")
     if not dsn:
         raise SystemExit("ONTOLOGY_DSN is required")
-    gates: Sequence[Gate] | None = None
-    if args.models is not None:
-        if args.extractor or args.verifier:
-            raise SystemExit("--models replaces --extractor and --verifier; give one or the other")
-        try:
-            models = load_models(args.models)
-        except ConfigError as e:
-            raise SystemExit(f"{args.models}: {e}") from e
-        extractor, verifiers = models.extractor, list(models.verifiers)
-        gates = gates_from(models, args.allow_same_family)
-    elif args.extractor:
-        extractor = build_model(args.extractor)
-        verifiers = [build_model(v) for v in args.verifier]
-    else:
-        raise SystemExit("give --models, or --extractor with --verifier")
+    try:
+        models = load_models(args.models)
+    except ConfigError as e:
+        raise SystemExit(f"{args.models}: {e}") from e
+    extractor, verifiers = models.extractor, list(models.verifiers)
+    gates = gates_from(models, args.allow_same_family)
     log.info(
         "模型：抽取 %s；驗證 %s",
         extractor.name,

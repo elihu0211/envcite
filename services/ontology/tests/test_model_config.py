@@ -182,25 +182,13 @@ def test_text_that_is_not_toml_is_refused() -> None:
         parse("[[[", ENV)
 
 
-def test_the_command_line_takes_the_file_or_the_flags_not_both(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://unused")
-    monkeypatch.setattr(
-        "sys.argv",
-        ["env-law-pipeline", "--law", "X", "--models", str(EXAMPLE), "--extractor", "chat:a/b"],
-    )
-
-    with pytest.raises(SystemExit, match="replaces"):
-        main()
-
-
 def test_the_command_line_names_what_is_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://unused")
     monkeypatch.setattr("sys.argv", ["env-law-pipeline", "--law", "X"])
 
-    with pytest.raises(SystemExit, match="--models"):
+    with pytest.raises(SystemExit) as raised:
         main()
+    assert raised.value.code == 2  # argparse: --models is required
 
 
 def test_a_bad_file_stops_the_command_line_with_its_path(
