@@ -24,4 +24,8 @@ class Article:
 class OntologyPort(Protocol):
     """法規的讀取途徑。本服務中法律事實的唯一來源。"""
 
-    def search(self, query: str, *, as_of: str = "", limit: int = 10) -> list[Article]: ...
+    def search(
+        self, query: str, *, as_of: str = "", limit: int = 10, timeout: float | None = None
+    ) -> list[Article]:
+        """`timeout` 是呼叫端剩下的秒數上限；None 為只受實作自己的上限約束。"""
+        ...

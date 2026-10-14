@@ -1,16 +1,18 @@
 import os
 import signal
+import time
 from collections.abc import Iterator
 from concurrent import futures
 
 import grpc
 import pytest
+from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
 from envcite.consult.v2 import consult_pb2, consult_pb2_grpc
 from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
 from envcite_consult.adapters import GrpcOntology
 from envcite_consult.server import build_server
-from envcite_grpc import stop_on_sigterm
+from envcite_grpc import downstream_timeout, shutdown, stop_on_sigterm
 from tests.conftest import FakeOntology, call_metadata
 
 
@@ -131,5 +133,51 @@ def test_sigterm_stops_the_server(ontology: FakeOntology) -> None:
         os.kill(os.getpid(), signal.SIGTERM)
 
         assert server.wait_for_termination(timeout=5) is False
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+
+def test_the_callers_remaining_deadline_is_passed_downstream(
+    stub: consult_pb2_grpc.ConsultationServiceStub, ontology: FakeOntology
+) -> None:
+    stub.Ground(consult_pb2.GroundRequest(question="排放"), metadata=call_metadata(), timeout=3)
+    stub.Ground(consult_pb2.GroundRequest(question="排放"), metadata=call_metadata())
+
+    with_deadline, without = ontology.timeouts
+    assert with_deadline is not None and 0 < with_deadline <= 3
+    assert without is None
+
+
+def test_downstream_timeout_never_exceeds_the_callers_remaining_time() -> None:
+    assert downstream_timeout(5.0, None) == 5.0
+    assert downstream_timeout(5.0, 2.0) == 2.0
+    assert downstream_timeout(5.0, 30.0) == 5.0
+
+
+def test_sigterm_reports_not_serving_before_the_server_stops(
+    ontology: FakeOntology, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(shutdown, "DRAIN_SECONDS", 0.3)
+    health_servicer = health.HealthServicer()
+    server, port = build_server(ontology, "127.0.0.1:0", health_servicer=health_servicer)
+    previous = signal.getsignal(signal.SIGTERM)
+    try:
+        stop_on_sigterm(server, health_servicer)
+        server.start()
+        with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
+            health_stub = health_pb2_grpc.HealthStub(channel)
+            os.kill(os.getpid(), signal.SIGTERM)
+
+            # 排空期間伺服器仍在接受呼叫，但已回報 NOT_SERVING。
+            deadline = time.monotonic() + 2
+            status = health_pb2.HealthCheckResponse.SERVING
+            while status == health_pb2.HealthCheckResponse.SERVING and time.monotonic() < deadline:
+                status = health_stub.Check(  # type: ignore[attr-defined]
+                    health_pb2.HealthCheckRequest()
+                ).status
+                time.sleep(0.02)
+
+            assert status == health_pb2.HealthCheckResponse.NOT_SERVING
+            assert server.wait_for_termination(timeout=5) is False
     finally:
         signal.signal(signal.SIGTERM, previous)

@@ -18,6 +18,7 @@ from opentelemetry.metrics import Meter
 
 from envcite.ontology.v1 import reasoning_pb2 as pb
 from envcite.ontology.v1 import reasoning_pb2_grpc
+from envcite_grpc import remaining_seconds
 from envcite_ontology import annotation_read, errors
 from envcite_ontology import reasoning_codec as codec
 from envcite_ontology.reasoning import Result, evaluate_across
@@ -37,14 +38,6 @@ _OUTCOMES = {
 EVALUATE_SLOTS = 2
 #: 呼叫沒有期限時，等名額的上限（秒）。
 SLOT_WAIT_SECONDS = 5.0
-#: grpc 在呼叫沒有期限時，`time_remaining()` 回的是一個極大的數而不是 None；超過一天都當作沒有。
-NO_DEADLINE_SECONDS = 86400.0
-
-
-def _budget(context: grpc.ServicerContext) -> float | None:
-    """呼叫剩下的秒數；沒有期限為 None。"""
-    remaining = context.time_remaining()
-    return None if remaining is None or remaining > NO_DEADLINE_SECONDS else remaining
 
 
 class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
@@ -69,7 +62,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         resource_id = self._store.resource_id(request.law_id, as_of=request.as_of)
         if resource_id is None:
             raise self._not_found(request.law_id, request.as_of)
-        with self._store.read_connection(timeout=_budget(context)) as conn:
+        with self._store.read_connection(timeout=remaining_seconds(context)) as conn:
             return annotation_read.list_statements(conn, resource_id, on)
 
     @errors.maps_errors
@@ -104,7 +97,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         v.check()
         assert conduct_on is not None and decided_on is not None  # check() 已擋下
 
-        budget = _budget(context)
+        budget = remaining_seconds(context)
         if not self._slots.acquire(timeout=SLOT_WAIT_SECONDS if budget is None else budget):
             raise errors.ServiceError(
                 grpc.StatusCode.RESOURCE_EXHAUSTED, errors.BUSY, "evaluation capacity is in use"
@@ -128,7 +121,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         case: dict[str, float | list[float]],
     ) -> pb.EvaluateResponse:
         try:
-            with self._store.read_connection(timeout=_budget(context)) as conn:
+            with self._store.read_connection(timeout=remaining_seconds(context)) as conn:
                 moved = evaluate_across(conn, conduct_on, decided_on, case, LANGUAGE)
 
                 def outcome(result: Result, on: date, uncovered: tuple[str, ...]) -> pb.Outcome:

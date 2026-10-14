@@ -27,11 +27,9 @@ class _StatementKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Stateme
     DESCRIPTOR: _descriptor.EnumDescriptor
     STATEMENT_KIND_UNSPECIFIED: _StatementKind.ValueType  # 0
     STATEMENT_KIND_PRESCRIPTIVE: _StatementKind.ValueType  # 1
-    """Prescribes conduct: has a NormModality."""
+    """規定行為，帶有 NormModality。"""
     STATEMENT_KIND_CONSTITUTIVE: _StatementKind.ValueType  # 2
-    """Defines, delimits scope, or delegates (a "得" that authorises an authority is
-    constitutive, not a permission).
-    """
+    """定義、劃定範圍或授權（授權主管機關的「得」屬於此類，不是許可）。"""
     STATEMENT_KIND_PENALTY: _StatementKind.ValueType  # 3
     STATEMENT_KIND_REPARATION: _StatementKind.ValueType  # 4
 
@@ -39,11 +37,9 @@ class StatementKind(_StatementKind, metaclass=_StatementKindEnumTypeWrapper): ..
 
 STATEMENT_KIND_UNSPECIFIED: StatementKind.ValueType  # 0
 STATEMENT_KIND_PRESCRIPTIVE: StatementKind.ValueType  # 1
-"""Prescribes conduct: has a NormModality."""
+"""規定行為，帶有 NormModality。"""
 STATEMENT_KIND_CONSTITUTIVE: StatementKind.ValueType  # 2
-"""Defines, delimits scope, or delegates (a "得" that authorises an authority is
-constitutive, not a permission).
-"""
+"""定義、劃定範圍或授權（授權主管機關的「得」屬於此類，不是許可）。"""
 STATEMENT_KIND_PENALTY: StatementKind.ValueType  # 3
 STATEMENT_KIND_REPARATION: StatementKind.ValueType  # 4
 Global___StatementKind: _TypeAlias = StatementKind  # noqa: Y015
@@ -78,6 +74,7 @@ class _SlotRoleEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_SlotRole.Val
     SLOT_ROLE_ACTION: _SlotRole.ValueType  # 2
     SLOT_ROLE_OBJECT: _SlotRole.ValueType  # 3
     SLOT_ROLE_MEDIUM: _SlotRole.ValueType  # 4
+    """行為所經由的介質，如水、空氣、土壤。"""
     SLOT_ROLE_TIME: _SlotRole.ValueType  # 5
     SLOT_ROLE_PLACE: _SlotRole.ValueType  # 6
 
@@ -88,6 +85,7 @@ SLOT_ROLE_SUBJECT: SlotRole.ValueType  # 1
 SLOT_ROLE_ACTION: SlotRole.ValueType  # 2
 SLOT_ROLE_OBJECT: SlotRole.ValueType  # 3
 SLOT_ROLE_MEDIUM: SlotRole.ValueType  # 4
+"""行為所經由的介質，如水、空氣、土壤。"""
 SLOT_ROLE_TIME: SlotRole.ValueType  # 5
 SLOT_ROLE_PLACE: SlotRole.ValueType  # 6
 Global___SlotRole: _TypeAlias = SlotRole  # noqa: Y015
@@ -106,7 +104,8 @@ class _ComparatorEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Comparator
     COMPARATOR_EQ: _Comparator.ValueType  # 5
     COMPARATOR_NE: _Comparator.ValueType  # 6
 
-class Comparator(_Comparator, metaclass=_ComparatorEnumTypeWrapper): ...
+class Comparator(_Comparator, metaclass=_ComparatorEnumTypeWrapper):
+    """事實與門檻的比較，讀作「事實 〈運算子〉 門檻」。"""
 
 COMPARATOR_UNSPECIFIED: Comparator.ValueType  # 0
 COMPARATOR_LE: Comparator.ValueType  # 1
@@ -125,21 +124,21 @@ class _ConditionRoleEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Conditi
     DESCRIPTOR: _descriptor.EnumDescriptor
     CONDITION_ROLE_UNSPECIFIED: _ConditionRole.ValueType  # 0
     CONDITION_ROLE_SCOPE: _ConditionRole.ValueType  # 1
-    """Whether the norm reaches the facts at all."""
+    """規範是否觸及這些事實。"""
     CONDITION_ROLE_DUTY: _ConditionRole.ValueType  # 2
-    """What compliance consists of."""
+    """遵守規範的內容。"""
     CONDITION_ROLE_LIMIT: _ConditionRole.ValueType  # 3
-    """A limit value set by a delegated regulation."""
+    """授權命令訂定的限值。"""
 
 class ConditionRole(_ConditionRole, metaclass=_ConditionRoleEnumTypeWrapper): ...
 
 CONDITION_ROLE_UNSPECIFIED: ConditionRole.ValueType  # 0
 CONDITION_ROLE_SCOPE: ConditionRole.ValueType  # 1
-"""Whether the norm reaches the facts at all."""
+"""規範是否觸及這些事實。"""
 CONDITION_ROLE_DUTY: ConditionRole.ValueType  # 2
-"""What compliance consists of."""
+"""遵守規範的內容。"""
 CONDITION_ROLE_LIMIT: ConditionRole.ValueType  # 3
-"""A limit value set by a delegated regulation."""
+"""授權命令訂定的限值。"""
 Global___ConditionRole: _TypeAlias = ConditionRole  # noqa: Y015
 
 class _LegalEffect:
@@ -158,11 +157,10 @@ class _LegalEffectEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_LegalEffe
     LEGAL_EFFECT_ORDER: _LegalEffect.ValueType  # 7
 
 class LegalEffect(_LegalEffect, metaclass=_LegalEffectEnumTypeWrapper):
-    """Kinds of legal consequence. FINE and CONFISCATION are administrative penalties
-    under the first article of 行政罰法; RESTRICTION, DEPRIVATION, REPUTATION and
-    WARNING are the four "other kinds" of its second article. ORDER (an improvement
-    order and the like) is a preventive measure, NOT a penalty: the general part of
-    行政罰法 does not apply to it.
+    """法律效果的種類。FINE（罰鍰）與 CONFISCATION（沒入）是行政罰法第 1 條的裁罰性
+    不利處分；RESTRICTION、DEPRIVATION、REPUTATION、WARNING 是其第 2 條的四種
+    「其他種類行政罰」。ORDER（改善命令等）是預防性措施，**不是**行政罰：行政罰法
+    總則不適用於它。
     """
 
 LEGAL_EFFECT_UNSPECIFIED: LegalEffect.ValueType  # 0
@@ -183,22 +181,23 @@ class _OverrideBasisEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Overrid
     DESCRIPTOR: _descriptor.EnumDescriptor
     OVERRIDE_BASIS_UNSPECIFIED: _OverrideBasis.ValueType  # 0
     OVERRIDE_BASIS_HIERARCHY: _OverrideBasis.ValueType  # 1
-    """中央法規標準法 art. 11."""
+    """中央法規標準法第 11 條。"""
     OVERRIDE_BASIS_LEX_SPECIALIS: _OverrideBasis.ValueType  # 2
-    """中央法規標準法 art. 16."""
+    """中央法規標準法第 16 條。"""
     OVERRIDE_BASIS_LEX_POSTERIOR: _OverrideBasis.ValueType  # 3
-    """Doctrine, not statute; used only when the annotation says so."""
+    """學說而非成文法，僅在標註如此記載時使用。"""
     OVERRIDE_BASIS_EXCEPTION: _OverrideBasis.ValueType  # 4
 
-class OverrideBasis(_OverrideBasis, metaclass=_OverrideBasisEnumTypeWrapper): ...
+class OverrideBasis(_OverrideBasis, metaclass=_OverrideBasisEnumTypeWrapper):
+    """兩則陳述衝突時，其一勝出的依據。"""
 
 OVERRIDE_BASIS_UNSPECIFIED: OverrideBasis.ValueType  # 0
 OVERRIDE_BASIS_HIERARCHY: OverrideBasis.ValueType  # 1
-"""中央法規標準法 art. 11."""
+"""中央法規標準法第 11 條。"""
 OVERRIDE_BASIS_LEX_SPECIALIS: OverrideBasis.ValueType  # 2
-"""中央法規標準法 art. 16."""
+"""中央法規標準法第 16 條。"""
 OVERRIDE_BASIS_LEX_POSTERIOR: OverrideBasis.ValueType  # 3
-"""Doctrine, not statute; used only when the annotation says so."""
+"""學說而非成文法，僅在標註如此記載時使用。"""
 OVERRIDE_BASIS_EXCEPTION: OverrideBasis.ValueType  # 4
 Global___OverrideBasis: _TypeAlias = OverrideBasis  # noqa: Y015
 
@@ -212,12 +211,12 @@ class _VerdictEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Verdict.Value
     VERDICT_VIOLATION: _Verdict.ValueType  # 1
     VERDICT_COMPLIANT: _Verdict.ValueType  # 2
     VERDICT_CONDITIONAL_VIOLATION: _Verdict.ValueType  # 3
-    """Holds only if an exception that is not decided does not apply."""
+    """成立與否取決於一個尚未決定的例外是否不適用。"""
     VERDICT_CONDITIONAL_COMPLIANT: _Verdict.ValueType  # 4
     VERDICT_UNDETERMINED: _Verdict.ValueType  # 5
-    """Cannot be decided from the facts given: see missing and needs_assessment."""
+    """無法由所給事實決定：見 missing 與 needs_assessment。"""
     VERDICT_EXCLUDED: _Verdict.ValueType  # 6
-    """Excluded by a proviso that holds."""
+    """被成立的但書排除。"""
     VERDICT_NOT_APPLICABLE: _Verdict.ValueType  # 7
 
 class Verdict(_Verdict, metaclass=_VerdictEnumTypeWrapper): ...
@@ -226,12 +225,12 @@ VERDICT_UNSPECIFIED: Verdict.ValueType  # 0
 VERDICT_VIOLATION: Verdict.ValueType  # 1
 VERDICT_COMPLIANT: Verdict.ValueType  # 2
 VERDICT_CONDITIONAL_VIOLATION: Verdict.ValueType  # 3
-"""Holds only if an exception that is not decided does not apply."""
+"""成立與否取決於一個尚未決定的例外是否不適用。"""
 VERDICT_CONDITIONAL_COMPLIANT: Verdict.ValueType  # 4
 VERDICT_UNDETERMINED: Verdict.ValueType  # 5
-"""Cannot be decided from the facts given: see missing and needs_assessment."""
+"""無法由所給事實決定：見 missing 與 needs_assessment。"""
 VERDICT_EXCLUDED: Verdict.ValueType  # 6
-"""Excluded by a proviso that holds."""
+"""被成立的但書排除。"""
 VERDICT_NOT_APPLICABLE: Verdict.ValueType  # 7
 Global___Verdict: _TypeAlias = Verdict  # noqa: Y015
 
@@ -243,22 +242,22 @@ class _ProblemKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_ProblemKi
     DESCRIPTOR: _descriptor.EnumDescriptor
     PROBLEM_KIND_UNSPECIFIED: _ProblemKind.ValueType  # 0
     PROBLEM_KIND_CONTRADICTORY_FACT: _ProblemKind.ValueType  # 1
-    """Two different values for one concept: the concept is treated as unknown."""
+    """同一概念有兩個不同的值：該概念視為未知。"""
     PROBLEM_KIND_UNRESOLVED_DELEGATION: _ProblemKind.ValueType  # 2
-    """A delegated limit that could not be resolved on the day."""
+    """授權的限值在該日無法解析。"""
     PROBLEM_KIND_UNSUPPORTED_CONDITION: _ProblemKind.ValueType  # 3
-    """A requirement the evaluation does not compare."""
+    """評估不比較的要件。"""
     PROBLEM_KIND_BAD_DATE: _ProblemKind.ValueType  # 4
 
 class ProblemKind(_ProblemKind, metaclass=_ProblemKindEnumTypeWrapper): ...
 
 PROBLEM_KIND_UNSPECIFIED: ProblemKind.ValueType  # 0
 PROBLEM_KIND_CONTRADICTORY_FACT: ProblemKind.ValueType  # 1
-"""Two different values for one concept: the concept is treated as unknown."""
+"""同一概念有兩個不同的值：該概念視為未知。"""
 PROBLEM_KIND_UNRESOLVED_DELEGATION: ProblemKind.ValueType  # 2
-"""A delegated limit that could not be resolved on the day."""
+"""授權的限值在該日無法解析。"""
 PROBLEM_KIND_UNSUPPORTED_CONDITION: ProblemKind.ValueType  # 3
-"""A requirement the evaluation does not compare."""
+"""評估不比較的要件。"""
 PROBLEM_KIND_BAD_DATE: ProblemKind.ValueType  # 4
 Global___ProblemKind: _TypeAlias = ProblemKind  # noqa: Y015
 
@@ -277,7 +276,8 @@ class _ExcuseEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Excuse.ValueTy
     EXCUSE_SELF_DEFENSE: _Excuse.ValueType  # 6
     EXCUSE_NECESSITY: _Excuse.ValueType  # 7
 
-class Excuse(_Excuse, metaclass=_ExcuseEnumTypeWrapper): ...
+class Excuse(_Excuse, metaclass=_ExcuseEnumTypeWrapper):
+    """行政罰法總則下不予處罰的理由。"""
 
 EXCUSE_UNSPECIFIED: Excuse.ValueType  # 0
 EXCUSE_NO_FAULT: Excuse.ValueType  # 1
@@ -297,15 +297,18 @@ class _MitigationEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Mitigation
     DESCRIPTOR: _descriptor.EnumDescriptor
     MITIGATION_UNSPECIFIED: _Mitigation.ValueType  # 0
     MITIGATION_YOUTH: _Mitigation.ValueType  # 1
+    """已滿十四歲而未滿十八歲。"""
     MITIGATION_REDUCED_CAPACITY: _Mitigation.ValueType  # 2
     MITIGATION_IGNORANCE: _Mitigation.ValueType  # 3
     MITIGATION_EXCESSIVE_DEFENSE: _Mitigation.ValueType  # 4
     MITIGATION_EXCESSIVE_NECESSITY: _Mitigation.ValueType  # 5
 
-class Mitigation(_Mitigation, metaclass=_MitigationEnumTypeWrapper): ...
+class Mitigation(_Mitigation, metaclass=_MitigationEnumTypeWrapper):
+    """行政罰法總則下得減輕處罰的理由。"""
 
 MITIGATION_UNSPECIFIED: Mitigation.ValueType  # 0
 MITIGATION_YOUTH: Mitigation.ValueType  # 1
+"""已滿十四歲而未滿十八歲。"""
 MITIGATION_REDUCED_CAPACITY: Mitigation.ValueType  # 2
 MITIGATION_IGNORANCE: Mitigation.ValueType  # 3
 MITIGATION_EXCESSIVE_DEFENSE: Mitigation.ValueType  # 4
@@ -314,8 +317,8 @@ Global___Mitigation: _TypeAlias = Mitigation  # noqa: Y015
 
 @_typing.final
 class Decimal(_message.Message):
-    """A decimal number as text ("100", "0.5"), never a float: thresholds are
-    numeric(18,3) in the corpus and a double would not round-trip them.
+    """十進位數，以文字表示（"100"、"0.5"），不用浮點數：語料的門檻是
+    numeric(18,3)，double 無法無損往返。
     """
 
     DESCRIPTOR: _descriptor.Descriptor
@@ -344,9 +347,9 @@ class ListStatementsRequest(_message.Message):
     LAW_ID_FIELD_NUMBER: _builtins.int
     AS_OF_FIELD_NUMBER: _builtins.int
     law_id: _builtins.str
-    """全國法規資料庫 pcode, e.g. "O0020001"."""
+    """全國法規資料庫 pcode，例如 "O0020001"。"""
     as_of: _builtins.str
-    """ISO 8601 date; empty means today. See GetLawRequest.as_of."""
+    """ISO 8601 日期；留空為今日。見 GetLawRequest.as_of。"""
     def __init__(
         self,
         *,
@@ -400,31 +403,31 @@ class Statement(_message.Message):
     EXCEPTION_OF_FIELD_NUMBER: _builtins.int
     SANCTION_FIELD_NUMBER: _builtins.int
     id: _builtins.int
-    """Identifier of the statement; meaningful within one corpus state, not a stable
-    key (a rejected and re-extracted statement gets a new one).
+    """只在同一個語料狀態內有意義，不是穩定的鍵（被駁回後重新抽取的陳述會得到
+    新的識別碼）。
     """
     kind: Global___StatementKind.ValueType
     modality: Global___NormModality.ValueType
-    """Set exactly when kind is PRESCRIPTIVE."""
+    """恰在 kind 為 PRESCRIPTIVE 時設定。"""
     version_iri: _builtins.str
-    """IRI of the provision version the statement was read from."""
+    """陳述所讀自的條文版本之 IRI。"""
     @_builtins.property
     def slots(self) -> _containers.RepeatedCompositeFieldContainer[Global___Slot]: ...
     @_builtins.property
     def scope(self) -> Global___Requirement:
-        """When the norm applies. No disjuncts means it always does."""
+        """規範何時適用。沒有析取項表示恆適用。"""
 
     @_builtins.property
     def duty(self) -> Global___Requirement:
-        """What compliance consists of. No disjuncts means nothing beyond scope."""
+        """遵守規範的內容。沒有析取項表示除 scope 外別無要求。"""
 
     @_builtins.property
     def limits(self) -> _containers.RepeatedCompositeFieldContainer[Global___Condition]:
-        """Limit values this statement sets (a statement that is a delegated limit)."""
+        """此陳述訂定的限值（當它本身是授權命令所訂的限值）。"""
 
     @_builtins.property
     def exception_of(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]:
-        """Statements this one is an exception (a proviso) to."""
+        """此陳述作為其例外（但書）的那些陳述之識別碼。"""
 
     @_builtins.property
     def sanction(self) -> Global___Sanction: ...
@@ -466,7 +469,7 @@ class Slot(_message.Message):
     LITERAL_FIELD_NUMBER: _builtins.int
     role: Global___SlotRole.ValueType
     concept: _builtins.str
-    """Code of a controlled concept."""
+    """受控概念的代碼。"""
     literal: _builtins.str
     def __init__(
         self,
@@ -487,7 +490,7 @@ Global___Slot: _TypeAlias = Slot  # noqa: Y015
 
 @_typing.final
 class Requirement(_message.Message):
-    """Disjunctive normal form: an OR over disjuncts, each an AND over its conditions."""
+    """析取範式：各析取項之間取「或」，項內的要件取「且」。"""
 
     DESCRIPTOR: _descriptor.Descriptor
 
@@ -542,21 +545,22 @@ class Condition(_message.Message):
     NEEDS_ASSESSMENT_FIELD_NUMBER: _builtins.int
     id: _builtins.int
     concept: _builtins.str
-    """Code of the controlled concept the condition is about."""
+    """要件所涉受控概念的代碼。"""
     comparator: Global___Comparator.ValueType
     value_concept: _builtins.str
-    """Compared with a concept, not a number."""
+    """與概念而非數字比較。"""
     unit: _builtins.str
     negated: _builtins.bool
+    """比較結果取反。"""
     needs_assessment: _builtins.bool
-    """An indeterminate legal concept ("情節重大", "必要時"): the service does not
-    decide it from facts. A caller-supplied value counts as the caller's judgement.
+    """不確定法律概念（「情節重大」、「必要時」）：服務不從事實推斷它，呼叫端
+    提供的值視為呼叫端自己的判斷。
     """
     @_builtins.property
     def value(self) -> Global___Decimal: ...
     @_builtins.property
     def delegate(self) -> Global___Delegation:
-        """The threshold is set by another provision, resolved on the day asked."""
+        """門檻由另一條文訂定，於查詢當日解析。"""
 
     def __init__(
         self,
@@ -588,9 +592,9 @@ class Delegation(_message.Message):
     LAW_ID_FIELD_NUMBER: _builtins.int
     PROVISION_PATH_FIELD_NUMBER: _builtins.int
     law_id: _builtins.str
-    """全國法規資料庫 pcode of the delegated law."""
+    """被授權法規的全國法規資料庫 pcode。"""
     provision_path: _builtins.str
-    """Path of the delegated provision, e.g. "art_2"."""
+    """被授權條文的路徑，例如 "art_2"。"""
     def __init__(
         self,
         *,
@@ -617,16 +621,17 @@ class Sanction(_message.Message):
     PER_OCCASION_FIELD_NUMBER: _builtins.int
     DISCRETIONARY_FIELD_NUMBER: _builtins.int
     punishes: _builtins.int
-    """The statement this sanction punishes (or, for ORDER, enforces)."""
+    """此制裁所處罰的陳述（ORDER 則是它所強制履行的陳述）。"""
     effect: Global___LegalEffect.ValueType
     min_amount: _builtins.int
     max_amount: _builtins.int
     amount_text: _builtins.str
+    """條文中金額的原文。"""
     per_occasion: _builtins.bool
-    """Repeated imposition for continued non-compliance (按次處罰)."""
+    """持續不遵守時重複處罰（按次處罰）。"""
     discretionary: _builtins.bool
-    """The text says "得" (the authority may), not "應" (shall): an effect-level
-    discretion, distinct from Condition.needs_assessment.
+    """條文寫「得」（主管機關得為）而非「應」：效果層次的裁量，與
+    Condition.needs_assessment 是不同層次。
     """
     def __init__(
         self,
@@ -692,20 +697,19 @@ class EvaluateRequest(_message.Message):
     CONDUCT_ENDED_ON_FIELD_NUMBER: _builtins.int
     RESULT_ON_FIELD_NUMBER: _builtins.int
     conduct_on: _builtins.str
-    """ISO 8601 date of the conduct. Required."""
+    """行為日（ISO 8601）。必填。"""
     decided_on: _builtins.str
-    """ISO 8601 date the disposition is made. Required; not before conduct_on."""
+    """作成處分之日（ISO 8601）。必填，不得早於 conduct_on。"""
     conduct_ended_on: _builtins.str
-    """ISO 8601 date the conduct ended; starts the three-year limitation period of
-    行政罰法 art. 27. Without it the period is not applied.
+    """行為終了日（ISO 8601），行政罰法第 27 條三年時效由此起算。未提供則不適用
+    時效。
     """
     result_on: _builtins.str
-    """ISO 8601 date the result occurred, when later than the conduct's end."""
+    """結果發生日（ISO 8601），結果晚於行為終了時才提供。"""
     @_builtins.property
     def facts(self) -> _containers.RepeatedCompositeFieldContainer[Global___Fact]:
-        """Facts about the case, by concept code. A concept may carry several values; a
-        contradiction is reported, not resolved. Codes beginning "ap_" are reserved for
-        administrative_penalty_facts.
+        """案件事實，以概念代碼表示。一個概念可帶多個值；矛盾會被回報，不被消解。
+        以 "ap_" 開頭的代碼保留給 administrative_penalty_facts。
         """
 
     @_builtins.property
@@ -778,9 +782,8 @@ Global___FactValue: _TypeAlias = FactValue  # noqa: Y015
 
 @_typing.final
 class AdministrativePenaltyFacts(_message.Message):
-    """Facts the general part of 行政罰法 turns on. Absent means unknown, which is not
-    the same as false: the text applies some rules only on a known false and others
-    only on a known true.
+    """行政罰法總則所依據的事實。欄位缺席表示未知，與「否」不同：條文有些規則只在
+    已知為否時適用，有些只在已知為是時適用。
     """
 
     DESCRIPTOR: _descriptor.Descriptor
@@ -804,18 +807,26 @@ class AdministrativePenaltyFacts(_message.Message):
     intent: _builtins.bool
     negligence: _builtins.bool
     agent_fault: _builtins.bool
+    """代表人、代理人、受僱人等有故意或過失（推定為本人之故意過失）。"""
     age: _builtins.int
+    """行為時的年齡。"""
     incapable: _builtins.bool
+    """行為時不能辨識行為違法，或欠缺依其辨識而行為的能力。"""
     self_induced: _builtins.bool
+    """上述狀態是行為人因故意或過失自行招致。"""
     pursuant_to_law: _builtins.bool
     superior_order: _builtins.bool
+    """依所屬上級公務員職務上命令之行為。"""
     knew_illegal: _builtins.bool
+    """明知該命令違法。"""
     stated_opinion: _builtins.bool
+    """已依法陳述意見。"""
     self_defense: _builtins.bool
     defense_excessive: _builtins.bool
     necessity: _builtins.bool
     necessity_excessive: _builtins.bool
     capacity_reduced: _builtins.bool
+    """辨識能力顯著減低。"""
     ignorance_of_law: _builtins.bool
     def __init__(
         self,
@@ -916,13 +927,12 @@ class EvaluateResponse(_message.Message):
     EARLIER_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def at_decision(self) -> Global___Outcome:
-        """The law at the time of the disposition (行政罰法 art. 5: the default)."""
+        """處分時之法律（行政罰法第 5 條的預設）。"""
 
     @_builtins.property
     def earlier(self) -> _containers.RepeatedCompositeFieldContainer[Global___EarlierLaw]:
-        """Laws in force between the conduct and the disposition whose statements differ
-        from those at_decision, earliest first. The one "most favourable" under art. 5
-        is not chosen here: the sets cannot be ranked mechanically.
+        """行為日至處分日之間有效、且陳述與 at_decision 不同的法律，由早到晚。
+        第 5 條所稱「最有利」者不在此選定：陳述組無法機械地比較優劣。
         """
 
     def __init__(
@@ -946,7 +956,7 @@ class EarlierLaw(_message.Message):
     FIRST_DAY_FIELD_NUMBER: _builtins.int
     OUTCOME_FIELD_NUMBER: _builtins.int
     first_day: _builtins.str
-    """First day this set of statements applied (ISO 8601)."""
+    """這組陳述開始適用的第一天（ISO 8601）。"""
     @_builtins.property
     def outcome(self) -> Global___Outcome: ...
     def __init__(
@@ -971,7 +981,7 @@ class StatementSource(_message.Message):
     VERSION_IRI_FIELD_NUMBER: _builtins.int
     statement_id: _builtins.int
     version_iri: _builtins.str
-    """IRI of the provision version the statement was read from."""
+    """陳述所讀自的條文版本之 IRI。"""
     def __init__(
         self,
         *,
@@ -1032,52 +1042,59 @@ class Outcome(_message.Message):
     def penalties(self) -> _containers.RepeatedCompositeFieldContainer[Global___PenaltyCandidate]: ...
     @_builtins.property
     def one_act(self) -> Global___FineInterval:
-        """If the fines are one act (行政罰法 art. 24), the single interval they merge
-        into. The several-acts reading (art. 25) is each penalty's own amounts. Neither
-        is chosen.
+        """若這些罰鍰屬一行為（行政罰法第 24 條），為它們合併成的單一區間。數行為說
+        （第 25 條）則是各處罰自己的金額。兩者都不在此選定。
         """
 
     @_builtins.property
     def missing(self) -> _containers.RepeatedCompositeFieldContainer[Global___Gap]:
-        """Facts the verdicts need and the case does not give."""
+        """結論所需、但案件沒有提供的事實。"""
 
     @_builtins.property
     def needs_assessment(self) -> _containers.RepeatedCompositeFieldContainer[Global___Gap]:
-        """Indeterminate concepts the caller has to judge."""
+        """需由呼叫端判斷的不確定概念。"""
 
     @_builtins.property
     def assessment_used(self) -> _containers.RepeatedCompositeFieldContainer[Global___Gap]:
-        """Judgements the caller supplied that a conclusion rests on."""
+        """結論所依據的、呼叫端提供的判斷。"""
 
     @_builtins.property
     def problems(self) -> _containers.RepeatedCompositeFieldContainer[Global___Problem]: ...
     @_builtins.property
-    def unresolved_conflicts(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementPair]: ...
+    def unresolved_conflicts(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementPair]:
+        """無法排解的陳述衝突。"""
+
     @_builtins.property
-    def defeated(self) -> _containers.RepeatedCompositeFieldContainer[Global___Defeat]: ...
+    def defeated(self) -> _containers.RepeatedCompositeFieldContainer[Global___Defeat]:
+        """已排解的衝突。"""
+
     @_builtins.property
-    def unresolved_penalty_overlaps(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementPair]: ...
+    def unresolved_penalty_overlaps(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementPair]:
+        """無法排解的處罰重疊。"""
+
     @_builtins.property
-    def penalty_defeated(self) -> _containers.RepeatedCompositeFieldContainer[Global___Defeat]: ...
+    def penalty_defeated(self) -> _containers.RepeatedCompositeFieldContainer[Global___Defeat]:
+        """已排解的處罰重疊。"""
+
     @_builtins.property
     def trace(self) -> _containers.RepeatedCompositeFieldContainer[Global___TraceEntry]: ...
     @_builtins.property
     def limit_sources(self) -> _containers.ScalarMap[_builtins.int, _builtins.int]:
-        """Condition id to the statement that supplied its delegated limit."""
+        """要件識別碼 → 提供其授權限值的陳述識別碼。"""
 
     @_builtins.property
-    def general(self) -> Global___GeneralPart: ...
+    def general(self) -> Global___GeneralPart:
+        """行政罰法總則對這些處罰的處理。"""
+
     @_builtins.property
     def sources(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementSource]:
-        """Where each statement mentioned in this outcome was read from."""
+        """本結果提及的每則陳述是從哪裡讀來的。"""
 
     @_builtins.property
     def uncovered_law_ids(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
-        """Laws (pcode) that were already enacted on the day this outcome concerns but of
-        which the corpus holds no version from that day: it has only the current
-        consolidated text and what the history says, not earlier texts. Their rules are
-        missing from this outcome, which is NOT the same as the law having had no such
-        rule. Empty for a day the corpus covers.
+        """本結果所指那一天已制定、但語料沒有當日版本的法規（pcode）：語料只有現行
+        整合文字與沿革，沒有更早的文字。它們的規定不在本結果裡，這與「該法規當時
+        沒有這樣的規定」**不同**。語料涵蓋該日時為空。
         """
 
     def __init__(
@@ -1146,13 +1163,12 @@ class PenaltyCandidate(_message.Message):
     DISCRETIONARY_FIELD_NUMBER: _builtins.int
     statement_id: _builtins.int
     punishes: _builtins.int
+    """被處罰的陳述。"""
     effect: Global___LegalEffect.ValueType
     min_amount: _builtins.int
     max_amount: _builtins.int
     conditional: _builtins.bool
-    """The penalty's own requirements, or the punished statement's verdict, are not
-    yet decided.
-    """
+    """處罰本身的要件，或被處罰陳述的結論，尚未決定。"""
     per_occasion: _builtins.bool
     discretionary: _builtins.bool
     def __init__(
@@ -1206,7 +1222,7 @@ Global___FineInterval: _TypeAlias = FineInterval  # noqa: Y015
 
 @_typing.final
 class Gap(_message.Message):
-    """A concept a statement needs."""
+    """陳述所需的一個概念。"""
 
     DESCRIPTOR: _descriptor.Descriptor
 
@@ -1340,8 +1356,8 @@ Global___TraceEntry: _TypeAlias = TraceEntry  # noqa: Y015
 
 @_typing.final
 class GeneralPart(_message.Message):
-    """The general part of 行政罰法 on the penalties of an outcome. A penalty that is not
-    punishable on the facts given is absent from `penalties` and appears here.
+    """行政罰法總則對一份結果中各處罰的處理。依所給事實不予處罰的處罰不在
+    `penalties` 之中，而列在這裡。
     """
 
     DESCRIPTOR: _descriptor.Descriptor
@@ -1356,12 +1372,12 @@ class GeneralPart(_message.Message):
     def mitigation(self) -> _containers.RepeatedCompositeFieldContainer[Global___PenaltyMitigation]: ...
     @_builtins.property
     def presumed_agent_fault(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]:
-        """Penalties presumed on the agent's fault."""
+        """因代表人、代理人等的過失而推定有過失的處罰（處罰陳述的識別碼）。"""
 
     @_builtins.property
     def time_barred(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]:
-        """Penalties listed whose three-year limitation period (art. 27) has run by
-        decided_on. The penalty stays a candidate; applying the bar is the caller's.
+        """三年時效（第 27 條）在 decided_on 已完成的處罰（處罰陳述的識別碼）。處罰仍
+        是候選；是否適用時效，由呼叫端決定。
         """
 
     def __init__(

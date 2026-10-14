@@ -12,6 +12,7 @@ import grpc
 from envcite.consult.v2 import consult_pb2, consult_pb2_grpc
 from envcite_consult import pipeline
 from envcite_consult.ports import OntologyPort
+from envcite_grpc import remaining_seconds
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +48,12 @@ class ConsultationServicer(consult_pb2_grpc.ConsultationServiceServicer):
             )
 
         try:
-            outcome = pipeline.run(request.question, as_of=request.as_of, ontology=self._ontology)
+            outcome = pipeline.run(
+                request.question,
+                as_of=request.as_of,
+                ontology=self._ontology,
+                timeout=remaining_seconds(context),
+            )
         except grpc.RpcError as err:
             # 本體的狀態碼原樣轉出：無效的 `as_of` 仍是 INVALID_ARGUMENT，本體不可用仍是
             # UNAVAILABLE（可重試）。否則兩者都會變成 UNKNOWN，呼叫端無從區分。

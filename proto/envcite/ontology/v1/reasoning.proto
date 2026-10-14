@@ -4,42 +4,41 @@ package envcite.ontology.v1;
 
 option csharp_namespace = "EnvCite.Ontology.V1";
 
-// Read access to the normative annotations of the ontology and the candidate
-// conclusions drawn from them.
+// 規範標註的唯讀存取，以及由標註推出的候選結論。
 //
-// Same transport rules as OntologyService (see proto/README.md): internal service,
-// optional `x-tenant-id` / `x-request-id` for logging only. Errors carry a
-// google.rpc.ErrorInfo (reason in UPPER_SNAKE_CASE, domain "ontology.envcite") and, for INVALID_ARGUMENT, a google.rpc.BadRequest.
+// 傳輸規則同 OntologyService（見 proto/README.md）。錯誤帶 google.rpc.ErrorInfo
+// （reason 為 UPPER_SNAKE_CASE，domain 為 "ontology.envcite"）；INVALID_ARGUMENT
+// 另帶 google.rpc.BadRequest。
 //
-// Every conclusion here is a CANDIDATE. Nothing is concluded from a statement that
-// has not been confirmed by the verification gates; with no confirmed annotations
-// every verdict list is empty. The service never decides what a court or an
-// authority would decide: it reports what follows from the confirmed statements,
-// what is missing, and what needs a human judgement.
+// 這裡的每個結論都只是「候選」。未通過驗證閘門確認的陳述不產生任何結論，沒有
+// 已確認的標註時，所有 verdict 清單皆為空。本服務不替法院或主管機關下判斷：
+// 只回報已確認的陳述推得什麼、缺了什麼、哪些需要人來判斷。
 service ReasoningService {
-  // The confirmed statements (with the requirements, exceptions and sanctions
-  // attached to them) of one law, as in force on `as_of`. NOT_FOUND when the law is
-  // unknown (LAW_NOT_FOUND) or no version covers the date (AS_OF_NOT_COVERED).
+  // 一部法規在 `as_of` 當日有效、已確認的陳述（含附屬的要件、例外與制裁）。
+  // 法規不存在回 NOT_FOUND（LAW_NOT_FOUND）；沒有版本涵蓋該日也回 NOT_FOUND
+  // （AS_OF_NOT_COVERED）。
   rpc ListStatements(ListStatementsRequest) returns (ListStatementsResponse);
-  // Evaluates a case against the statements in force. Unary, read-only, safe to
-  // retry. The deadline is a budget: the evaluation is bounded by it, and a call
-  // that cannot get a slot within it fails with RESOURCE_EXHAUSTED (BUSY).
+
+  // 依有效的陳述評估一個案件。唯讀，可安全重試。期限是預算：評估受其約束，
+  // 期限內拿不到執行名額則回 RESOURCE_EXHAUSTED（BUSY）。
   rpc Evaluate(EvaluateRequest) returns (EvaluateResponse);
 }
 
-// A decimal number as text ("100", "0.5"), never a float: thresholds are
-// numeric(18,3) in the corpus and a double would not round-trip them.
+// 十進位數，以文字表示（"100"、"0.5"），不用浮點數：語料的門檻是
+// numeric(18,3)，double 無法無損往返。
 message Decimal {
   string value = 1;
 }
 
 enum StatementKind {
   STATEMENT_KIND_UNSPECIFIED = 0;
-  // Prescribes conduct: has a NormModality.
+
+  // 規定行為，帶有 NormModality。
   STATEMENT_KIND_PRESCRIPTIVE = 1;
-  // Defines, delimits scope, or delegates (a "得" that authorises an authority is
-  // constitutive, not a permission).
+
+  // 定義、劃定範圍或授權（授權主管機關的「得」屬於此類，不是許可）。
   STATEMENT_KIND_CONSTITUTIVE = 2;
+
   STATEMENT_KIND_PENALTY = 3;
   STATEMENT_KIND_REPARATION = 4;
 }
@@ -56,11 +55,15 @@ enum SlotRole {
   SLOT_ROLE_SUBJECT = 1;
   SLOT_ROLE_ACTION = 2;
   SLOT_ROLE_OBJECT = 3;
+
+  // 行為所經由的介質，如水、空氣、土壤。
   SLOT_ROLE_MEDIUM = 4;
+
   SLOT_ROLE_TIME = 5;
   SLOT_ROLE_PLACE = 6;
 }
 
+// 事實與門檻的比較，讀作「事實 〈運算子〉 門檻」。
 enum Comparator {
   COMPARATOR_UNSPECIFIED = 0;
   COMPARATOR_LE = 1;
@@ -73,19 +76,21 @@ enum Comparator {
 
 enum ConditionRole {
   CONDITION_ROLE_UNSPECIFIED = 0;
-  // Whether the norm reaches the facts at all.
+
+  // 規範是否觸及這些事實。
   CONDITION_ROLE_SCOPE = 1;
-  // What compliance consists of.
+
+  // 遵守規範的內容。
   CONDITION_ROLE_DUTY = 2;
-  // A limit value set by a delegated regulation.
+
+  // 授權命令訂定的限值。
   CONDITION_ROLE_LIMIT = 3;
 }
 
-// Kinds of legal consequence. FINE and CONFISCATION are administrative penalties
-// under the first article of 行政罰法; RESTRICTION, DEPRIVATION, REPUTATION and
-// WARNING are the four "other kinds" of its second article. ORDER (an improvement
-// order and the like) is a preventive measure, NOT a penalty: the general part of
-// 行政罰法 does not apply to it.
+// 法律效果的種類。FINE（罰鍰）與 CONFISCATION（沒入）是行政罰法第 1 條的裁罰性
+// 不利處分；RESTRICTION、DEPRIVATION、REPUTATION、WARNING 是其第 2 條的四種
+// 「其他種類行政罰」。ORDER（改善命令等）是預防性措施，**不是**行政罰：行政罰法
+// 總則不適用於它。
 enum LegalEffect {
   LEGAL_EFFECT_UNSPECIFIED = 0;
   LEGAL_EFFECT_FINE = 1;
@@ -97,23 +102,29 @@ enum LegalEffect {
   LEGAL_EFFECT_ORDER = 7;
 }
 
+// 兩則陳述衝突時，其一勝出的依據。
 enum OverrideBasis {
   OVERRIDE_BASIS_UNSPECIFIED = 0;
-  // 中央法規標準法 art. 11.
+
+  // 中央法規標準法第 11 條。
   OVERRIDE_BASIS_HIERARCHY = 1;
-  // 中央法規標準法 art. 16.
+
+  // 中央法規標準法第 16 條。
   OVERRIDE_BASIS_LEX_SPECIALIS = 2;
-  // Doctrine, not statute; used only when the annotation says so.
+
+  // 學說而非成文法，僅在標註如此記載時使用。
   OVERRIDE_BASIS_LEX_POSTERIOR = 3;
+
   OVERRIDE_BASIS_EXCEPTION = 4;
 }
 
 // ---- ListStatements ------------------------------------------------------------
 
 message ListStatementsRequest {
-  // 全國法規資料庫 pcode, e.g. "O0020001".
+  // 全國法規資料庫 pcode，例如 "O0020001"。
   string law_id = 1;
-  // ISO 8601 date; empty means today. See GetLawRequest.as_of.
+
+  // ISO 8601 日期；留空為今日。見 GetLawRequest.as_of。
   string as_of = 2;
 }
 
@@ -123,36 +134,47 @@ message ListStatementsResponse {
 }
 
 message Statement {
-  // Identifier of the statement; meaningful within one corpus state, not a stable
-  // key (a rejected and re-extracted statement gets a new one).
+  // 只在同一個語料狀態內有意義，不是穩定的鍵（被駁回後重新抽取的陳述會得到
+  // 新的識別碼）。
   int64 id = 1;
+
   StatementKind kind = 2;
-  // Set exactly when kind is PRESCRIPTIVE.
+
+  // 恰在 kind 為 PRESCRIPTIVE 時設定。
   optional NormModality modality = 3;
-  // IRI of the provision version the statement was read from.
+
+  // 陳述所讀自的條文版本之 IRI。
   string version_iri = 4;
+
   repeated Slot slots = 5;
-  // When the norm applies. No disjuncts means it always does.
+
+  // 規範何時適用。沒有析取項表示恆適用。
   Requirement scope = 6;
-  // What compliance consists of. No disjuncts means nothing beyond scope.
+
+  // 遵守規範的內容。沒有析取項表示除 scope 外別無要求。
   Requirement duty = 7;
-  // Limit values this statement sets (a statement that is a delegated limit).
+
+  // 此陳述訂定的限值（當它本身是授權命令所訂的限值）。
   repeated Condition limits = 8;
-  // Statements this one is an exception (a proviso) to.
+
+  // 此陳述作為其例外（但書）的那些陳述之識別碼。
   repeated int64 exception_of = 9;
+
   optional Sanction sanction = 10;
 }
 
 message Slot {
   SlotRole role = 1;
+
   oneof value {
-    // Code of a controlled concept.
+    // 受控概念的代碼。
     string concept = 2;
+
     string literal = 3;
   }
 }
 
-// Disjunctive normal form: an OR over disjuncts, each an AND over its conditions.
+// 析取範式：各析取項之間取「或」，項內的要件取「且」。
 message Requirement {
   repeated Disjunct any_of = 1;
 }
@@ -163,41 +185,57 @@ message Disjunct {
 
 message Condition {
   int64 id = 1;
-  // Code of the controlled concept the condition is about.
+
+  // 要件所涉受控概念的代碼。
   string concept = 2;
+
   Comparator comparator = 3;
+
   oneof threshold {
     Decimal value = 4;
-    // The threshold is set by another provision, resolved on the day asked.
+
+    // 門檻由另一條文訂定，於查詢當日解析。
     Delegation delegate = 5;
-    // Compared with a concept, not a number.
+
+    // 與概念而非數字比較。
     string value_concept = 6;
   }
+
   string unit = 7;
+
+  // 比較結果取反。
   bool negated = 8;
-  // An indeterminate legal concept ("情節重大", "必要時"): the service does not
-  // decide it from facts. A caller-supplied value counts as the caller's judgement.
+
+  // 不確定法律概念（「情節重大」、「必要時」）：服務不從事實推斷它，呼叫端
+  // 提供的值視為呼叫端自己的判斷。
   bool needs_assessment = 9;
 }
 
 message Delegation {
-  // 全國法規資料庫 pcode of the delegated law.
+  // 被授權法規的全國法規資料庫 pcode。
   string law_id = 1;
-  // Path of the delegated provision, e.g. "art_2".
+
+  // 被授權條文的路徑，例如 "art_2"。
   string provision_path = 2;
 }
 
 message Sanction {
-  // The statement this sanction punishes (or, for ORDER, enforces).
+  // 此制裁所處罰的陳述（ORDER 則是它所強制履行的陳述）。
   int64 punishes = 1;
+
   LegalEffect effect = 2;
+
   optional int64 min_amount = 3;
   optional int64 max_amount = 4;
+
+  // 條文中金額的原文。
   string amount_text = 5;
-  // Repeated imposition for continued non-compliance (按次處罰).
+
+  // 持續不遵守時重複處罰（按次處罰）。
   bool per_occasion = 6;
-  // The text says "得" (the authority may), not "應" (shall): an effect-level
-  // discretion, distinct from Condition.needs_assessment.
+
+  // 條文寫「得」（主管機關得為）而非「應」：效果層次的裁量，與
+  // Condition.needs_assessment 是不同層次。
   bool discretionary = 7;
 }
 
@@ -210,19 +248,23 @@ message Override {
 // ---- Evaluate ------------------------------------------------------------------
 
 message EvaluateRequest {
-  // ISO 8601 date of the conduct. Required.
+  // 行為日（ISO 8601）。必填。
   string conduct_on = 1;
-  // ISO 8601 date the disposition is made. Required; not before conduct_on.
+
+  // 作成處分之日（ISO 8601）。必填，不得早於 conduct_on。
   string decided_on = 2;
-  // Facts about the case, by concept code. A concept may carry several values; a
-  // contradiction is reported, not resolved. Codes beginning "ap_" are reserved for
-  // administrative_penalty_facts.
+
+  // 案件事實，以概念代碼表示。一個概念可帶多個值；矛盾會被回報，不被消解。
+  // 以 "ap_" 開頭的代碼保留給 administrative_penalty_facts。
   repeated Fact facts = 3;
+
   AdministrativePenaltyFacts administrative_penalty_facts = 4;
-  // ISO 8601 date the conduct ended; starts the three-year limitation period of
-  // 行政罰法 art. 27. Without it the period is not applied.
+
+  // 行為終了日（ISO 8601），行政罰法第 27 條三年時效由此起算。未提供則不適用
+  // 時效。
   string conduct_ended_on = 5;
-  // ISO 8601 date the result occurred, when later than the conduct's end.
+
+  // 結果發生日（ISO 8601），結果晚於行為終了時才提供。
   string result_on = 6;
 }
 
@@ -238,46 +280,66 @@ message FactValue {
   }
 }
 
-// Facts the general part of 行政罰法 turns on. Absent means unknown, which is not
-// the same as false: the text applies some rules only on a known false and others
-// only on a known true.
+// 行政罰法總則所依據的事實。欄位缺席表示未知，與「否」不同：條文有些規則只在
+// 已知為否時適用，有些只在已知為是時適用。
 message AdministrativePenaltyFacts {
   optional bool intent = 1;
   optional bool negligence = 2;
+
+  // 代表人、代理人、受僱人等有故意或過失（推定為本人之故意過失）。
   optional bool agent_fault = 3;
+
+  // 行為時的年齡。
   optional int32 age = 4;
+
+  // 行為時不能辨識行為違法，或欠缺依其辨識而行為的能力。
   optional bool incapable = 5;
+
+  // 上述狀態是行為人因故意或過失自行招致。
   optional bool self_induced = 6;
+
   optional bool pursuant_to_law = 7;
+
+  // 依所屬上級公務員職務上命令之行為。
   optional bool superior_order = 8;
+
+  // 明知該命令違法。
   optional bool knew_illegal = 9;
+
+  // 已依法陳述意見。
   optional bool stated_opinion = 10;
+
   optional bool self_defense = 11;
   optional bool defense_excessive = 12;
   optional bool necessity = 13;
   optional bool necessity_excessive = 14;
+
+  // 辨識能力顯著減低。
   optional bool capacity_reduced = 15;
+
   optional bool ignorance_of_law = 16;
 }
 
 message EvaluateResponse {
-  // The law at the time of the disposition (行政罰法 art. 5: the default).
+  // 處分時之法律（行政罰法第 5 條的預設）。
   Outcome at_decision = 1;
-  // Laws in force between the conduct and the disposition whose statements differ
-  // from those at_decision, earliest first. The one "most favourable" under art. 5
-  // is not chosen here: the sets cannot be ranked mechanically.
+
+  // 行為日至處分日之間有效、且陳述與 at_decision 不同的法律，由早到晚。
+  // 第 5 條所稱「最有利」者不在此選定：陳述組無法機械地比較優劣。
   repeated EarlierLaw earlier = 2;
 }
 
 message EarlierLaw {
-  // First day this set of statements applied (ISO 8601).
+  // 這組陳述開始適用的第一天（ISO 8601）。
   string first_day = 1;
+
   Outcome outcome = 2;
 }
 
 message StatementSource {
   int64 statement_id = 1;
-  // IRI of the provision version the statement was read from.
+
+  // 陳述所讀自的條文版本之 IRI。
   string version_iri = 2;
 }
 
@@ -285,45 +347,65 @@ enum Verdict {
   VERDICT_UNSPECIFIED = 0;
   VERDICT_VIOLATION = 1;
   VERDICT_COMPLIANT = 2;
-  // Holds only if an exception that is not decided does not apply.
+
+  // 成立與否取決於一個尚未決定的例外是否不適用。
   VERDICT_CONDITIONAL_VIOLATION = 3;
   VERDICT_CONDITIONAL_COMPLIANT = 4;
-  // Cannot be decided from the facts given: see missing and needs_assessment.
+
+  // 無法由所給事實決定：見 missing 與 needs_assessment。
   VERDICT_UNDETERMINED = 5;
-  // Excluded by a proviso that holds.
+
+  // 被成立的但書排除。
   VERDICT_EXCLUDED = 6;
+
   VERDICT_NOT_APPLICABLE = 7;
 }
 
 message Outcome {
   repeated StatementVerdict verdicts = 1;
   repeated PenaltyCandidate penalties = 2;
-  // If the fines are one act (行政罰法 art. 24), the single interval they merge
-  // into. The several-acts reading (art. 25) is each penalty's own amounts. Neither
-  // is chosen.
+
+  // 若這些罰鍰屬一行為（行政罰法第 24 條），為它們合併成的單一區間。數行為說
+  // （第 25 條）則是各處罰自己的金額。兩者都不在此選定。
   optional FineInterval one_act = 3;
-  // Facts the verdicts need and the case does not give.
+
+  // 結論所需、但案件沒有提供的事實。
   repeated Gap missing = 4;
-  // Indeterminate concepts the caller has to judge.
+
+  // 需由呼叫端判斷的不確定概念。
   repeated Gap needs_assessment = 5;
-  // Judgements the caller supplied that a conclusion rests on.
+
+  // 結論所依據的、呼叫端提供的判斷。
   repeated Gap assessment_used = 6;
+
   repeated Problem problems = 7;
+
+  // 無法排解的陳述衝突。
   repeated StatementPair unresolved_conflicts = 8;
+
+  // 已排解的衝突。
   repeated Defeat defeated = 9;
+
+  // 無法排解的處罰重疊。
   repeated StatementPair unresolved_penalty_overlaps = 10;
+
+  // 已排解的處罰重疊。
   repeated Defeat penalty_defeated = 11;
+
   repeated TraceEntry trace = 12;
-  // Condition id to the statement that supplied its delegated limit.
+
+  // 要件識別碼 → 提供其授權限值的陳述識別碼。
   map<int64, int64> limit_sources = 13;
+
+  // 行政罰法總則對這些處罰的處理。
   GeneralPart general = 14;
-  // Where each statement mentioned in this outcome was read from.
+
+  // 本結果提及的每則陳述是從哪裡讀來的。
   repeated StatementSource sources = 15;
-  // Laws (pcode) that were already enacted on the day this outcome concerns but of
-  // which the corpus holds no version from that day: it has only the current
-  // consolidated text and what the history says, not earlier texts. Their rules are
-  // missing from this outcome, which is NOT the same as the law having had no such
-  // rule. Empty for a day the corpus covers.
+
+  // 本結果所指那一天已制定、但語料沒有當日版本的法規（pcode）：語料只有現行
+  // 整合文字與沿革，沒有更早的文字。它們的規定不在本結果裡，這與「該法規當時
+  // 沒有這樣的規定」**不同**。語料涵蓋該日時為空。
   repeated string uncovered_law_ids = 16;
 }
 
@@ -334,13 +416,18 @@ message StatementVerdict {
 
 message PenaltyCandidate {
   int64 statement_id = 1;
+
+  // 被處罰的陳述。
   int64 punishes = 2;
+
   LegalEffect effect = 3;
+
   optional int64 min_amount = 4;
   optional int64 max_amount = 5;
-  // The penalty's own requirements, or the punished statement's verdict, are not
-  // yet decided.
+
+  // 處罰本身的要件，或被處罰陳述的結論，尚未決定。
   bool conditional = 6;
+
   bool per_occasion = 7;
   bool discretionary = 8;
 }
@@ -350,7 +437,7 @@ message FineInterval {
   int64 max_amount = 2;
 }
 
-// A concept a statement needs.
+// 陳述所需的一個概念。
 message Gap {
   int64 statement_id = 1;
   string concept = 2;
@@ -358,17 +445,22 @@ message Gap {
 
 enum ProblemKind {
   PROBLEM_KIND_UNSPECIFIED = 0;
-  // Two different values for one concept: the concept is treated as unknown.
+
+  // 同一概念有兩個不同的值：該概念視為未知。
   PROBLEM_KIND_CONTRADICTORY_FACT = 1;
-  // A delegated limit that could not be resolved on the day.
+
+  // 授權的限值在該日無法解析。
   PROBLEM_KIND_UNRESOLVED_DELEGATION = 2;
-  // A requirement the evaluation does not compare.
+
+  // 評估不比較的要件。
   PROBLEM_KIND_UNSUPPORTED_CONDITION = 3;
+
   PROBLEM_KIND_BAD_DATE = 4;
 }
 
 message Problem {
   ProblemKind kind = 1;
+
   oneof subject {
     string concept = 2;
     int64 condition_id = 3;
@@ -395,6 +487,7 @@ message TraceEntry {
   ConditionRole role = 6;
 }
 
+// 行政罰法總則下不予處罰的理由。
 enum Excuse {
   EXCUSE_UNSPECIFIED = 0;
   EXCUSE_NO_FAULT = 1;
@@ -406,24 +499,30 @@ enum Excuse {
   EXCUSE_NECESSITY = 7;
 }
 
+// 行政罰法總則下得減輕處罰的理由。
 enum Mitigation {
   MITIGATION_UNSPECIFIED = 0;
+
+  // 已滿十四歲而未滿十八歲。
   MITIGATION_YOUTH = 1;
+
   MITIGATION_REDUCED_CAPACITY = 2;
   MITIGATION_IGNORANCE = 3;
   MITIGATION_EXCESSIVE_DEFENSE = 4;
   MITIGATION_EXCESSIVE_NECESSITY = 5;
 }
 
-// The general part of 行政罰法 on the penalties of an outcome. A penalty that is not
-// punishable on the facts given is absent from `penalties` and appears here.
+// 行政罰法總則對一份結果中各處罰的處理。依所給事實不予處罰的處罰不在
+// `penalties` 之中，而列在這裡。
 message GeneralPart {
   repeated PenaltyExcuse unpunished = 1;
   repeated PenaltyMitigation mitigation = 2;
-  // Penalties presumed on the agent's fault.
+
+  // 因代表人、代理人等的過失而推定有過失的處罰（處罰陳述的識別碼）。
   repeated int64 presumed_agent_fault = 3;
-  // Penalties listed whose three-year limitation period (art. 27) has run by
-  // decided_on. The penalty stays a candidate; applying the bar is the caller's.
+
+  // 三年時效（第 27 條）在 decided_on 已完成的處罰（處罰陳述的識別碼）。處罰仍
+  // 是候選；是否適用時效，由呼叫端決定。
   repeated int64 time_barred = 4;
 }
 

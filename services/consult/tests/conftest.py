@@ -19,9 +19,13 @@ class FakeOntology:
     def __init__(self, articles: list[Article]) -> None:
         self.articles = articles
         self.searches: list[tuple[str, str]] = []
+        self.timeouts: list[float | None] = []
 
-    def search(self, query: str, *, as_of: str = "", limit: int = 10) -> list[Article]:
+    def search(
+        self, query: str, *, as_of: str = "", limit: int = 10, timeout: float | None = None
+    ) -> list[Article]:
         self.searches.append((query, as_of))
+        self.timeouts.append(timeout)
         return self.articles[:limit]
 
 

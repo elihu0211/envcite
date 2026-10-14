@@ -99,6 +99,9 @@ public static class InternalGrpcClient
                 channel.ServiceConfig = new ServiceConfig
                 {
                     LoadBalancingConfigs = { new RoundRobinConfig() },
+                    // 重試節流：失敗耗一枚代幣、成功補回 0.1 枚，代幣降到一半以下就不再重試，
+                    // 下游整體失靈時重試自己收斂而不是放大流量（數值與 envcite_grpc.connection 一致）。
+                    RetryThrottling = new RetryThrottlingPolicy { MaxTokens = 10, TokenRatio = 0.1 },
                     // 內部服務的方法都是唯讀、確定性的一元呼叫（生成不在其中），UNAVAILABLE 重試安全；
                     // 不重試 DEADLINE_EXCEEDED（期限已用盡）與 RESOURCE_EXHAUSTED（容量用盡要立即失敗）。
                     MethodConfigs =

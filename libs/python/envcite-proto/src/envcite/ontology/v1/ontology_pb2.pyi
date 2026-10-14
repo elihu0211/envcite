@@ -28,20 +28,15 @@ class Law(_message.Message):
     LANGUAGE_FIELD_NUMBER: _builtins.int
     DATE_DOCUMENT_FIELD_NUMBER: _builtins.int
     id: _builtins.str
-    """Note: `title` describes the resolved version, not the law itself: an amendment
-    can rename a law, so the title belongs to the promulgated version.
-    Local id: the 全國法規資料庫 pcode, e.g. "O0020001" (one uppercase letter, seven digits).
-    """
+    """本地代號：全國法規資料庫 pcode，例如 "O0020001"。"""
     iri: _builtins.str
-    """Canonical IRI of the law."""
+    """法規的標準 IRI。"""
     title: _builtins.str
-    """Title from the version of this law resolved for `as_of`."""
+    """`as_of` 所解析版本的標題。標題屬於公布的版本而非法規本身：修正可能改名。"""
     language: _builtins.str
-    """ISO 639-3 language code of the title, e.g. "zho" (the same code appears in IRIs)."""
+    """標題的 ISO 639-3 語言代碼，例如 "zho"（IRI 中也用同一代碼）。"""
     date_document: _builtins.str
-    """The law's enactment date (制定日), ISO 8601 (YYYY-MM-DD); empty when
-    the corpus records no enactment.
-    """
+    """制定日（ISO 8601）；語料沒有制定紀錄時為空。"""
     def __init__(
         self,
         *,
@@ -67,7 +62,7 @@ class Article(_message.Message):
     NUMBER_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     number: _builtins.str
-    """Article number as written, e.g. "1", "5-1" (第5條之1)."""
+    """條號，依原文書寫，例如 "1"、"5-1"（第 5 條之 1）。"""
     def __init__(
         self,
         *,
@@ -90,10 +85,8 @@ class GetLawRequest(_message.Message):
     AS_OF_FIELD_NUMBER: _builtins.int
     id: _builtins.str
     as_of: _builtins.str
-    """Resolve the law as in force on this date (ISO 8601). Empty means "as
-    currently in force". When the corpus holds no version covering the date the
-    call is NOT_FOUND — never the current text, which would be indistinguishable
-    from a correct answer.
+    """依哪一天施行的版本解析（ISO 8601）。留空為現行。語料沒有版本涵蓋該日時
+    回 NOT_FOUND，絕不回現行文字：那會與正確答案無從分辨。
     """
     def __init__(
         self,
@@ -137,7 +130,7 @@ class ListArticlesRequest(_message.Message):
     AS_OF_FIELD_NUMBER: _builtins.int
     law_id: _builtins.str
     as_of: _builtins.str
-    """See GetLawRequest.as_of."""
+    """見 GetLawRequest.as_of。"""
     def __init__(
         self,
         *,
@@ -180,10 +173,11 @@ class SearchArticlesRequest(_message.Message):
     AS_OF_FIELD_NUMBER: _builtins.int
     LIMIT_FIELD_NUMBER: _builtins.int
     query: _builtins.str
+    """查詢原文，不要自行斷詞或改寫。"""
     as_of: _builtins.str
-    """See GetLawRequest.as_of."""
+    """見 GetLawRequest.as_of。"""
     limit: _builtins.int
-    """Maximum hits; 0 means the service default (10)."""
+    """最多回傳幾筆；0 為服務預設值。"""
     def __init__(
         self,
         *,
@@ -205,7 +199,9 @@ class SearchArticlesResponse(_message.Message):
 
     HITS_FIELD_NUMBER: _builtins.int
     @_builtins.property
-    def hits(self) -> _containers.RepeatedCompositeFieldContainer[Global___ArticleHit]: ...
+    def hits(self) -> _containers.RepeatedCompositeFieldContainer[Global___ArticleHit]:
+        """相關度由高到低。"""
+
     def __init__(
         self,
         *,
@@ -232,12 +228,12 @@ class ArticleHit(_message.Message):
     iri: _builtins.str
     law_id: _builtins.str
     law_title: _builtins.str
-    """Title of the law's version in force on `as_of`."""
+    """`as_of` 當日有效版本的法規標題。"""
     number: _builtins.str
-    """Article number as written, e.g. "5-1"."""
+    """條號，依原文書寫，例如 "5-1"。"""
     content: _builtins.str
     lexical_score: _builtins.float
-    """Raw lexical relevance (ts_rank_cd). Hits are ordered by it, highest first."""
+    """詞彙相關度原始分數（ts_rank_cd）；命中依此由高到低排序。"""
     def __init__(
         self,
         *,

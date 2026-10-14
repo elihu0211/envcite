@@ -27,21 +27,18 @@ GRPC_GENERATED_VERSION: str
 GRPC_VERSION: str
 
 class ConsultationServiceStub:
-    """Evidence for grounded answers over the environmental-knowledge ontologies.
+    """接地服務：為呼叫端的語言模型備妥可引用的封閉證據集，或明確拒答。
 
-    An ontology is one kind of source with its own schema, named by a lowercase
-    id. Today there is one: "law" (法規本體, article-level statutes and
-    regulations). Each ontology owns one letter that prefixes its citation codes
-    ("law" → "L"), so a code never collides across ontologies.
+    本體（ontology）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
+    （法規本體）。每個本體領一個字母作為引用代號的前綴（"law" → "L"），代號因此
+    不會跨本體相撞。
 
-    The service never runs a language model. It decides what may be cited and
-    whether the question can be answered at all, and hands back a closed citation
-    set. Writing the prose — and checking that it cites only codes from that set —
-    happens on the caller's side (see proto/README.md, "呼叫端的語言模型").
+    本服務不執行語言模型：它只決定什麼可以引用、能不能回答。寫成散文，以及核驗輸出
+    只引用集合內的代號，是呼叫端的責任（見 proto/README.md〈呼叫端的語言模型〉）。
 
-    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-    Tenant-scoped: `x-tenant-id` selects the quota and audit trail the call is
-    charged to, and is required. `x-request-id` is optional (logging only).
+    內部服務，認證由叢集的服務網格負責。
+    租戶隔離：必帶 metadata `x-tenant-id`（決定配額與稽核歸屬）；
+    `x-request-id` 選填，只用於日誌。
     """
 
     @_typing.overload
@@ -49,51 +46,41 @@ class ConsultationServiceStub:
     @_typing.overload
     def __new__(cls, channel: _aio.Channel) -> ConsultationServiceAsyncStub: ...
     Ground: _grpc.UnaryUnaryMultiCallable[_consult_pb2.GroundRequest, _consult_pb2.GroundResponse]
-    """Retrieves, grounds and assesses one question. Unary and read-only, so it is
-    safe to retry; two calls differ only if the corpus changed in between.
-    """
+    """檢索、接地並評估一個問題。唯讀，可安全重試。"""
 
 @_typing.type_check_only
 class ConsultationServiceAsyncStub(ConsultationServiceStub):
-    """Evidence for grounded answers over the environmental-knowledge ontologies.
+    """接地服務：為呼叫端的語言模型備妥可引用的封閉證據集，或明確拒答。
 
-    An ontology is one kind of source with its own schema, named by a lowercase
-    id. Today there is one: "law" (法規本體, article-level statutes and
-    regulations). Each ontology owns one letter that prefixes its citation codes
-    ("law" → "L"), so a code never collides across ontologies.
+    本體（ontology）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
+    （法規本體）。每個本體領一個字母作為引用代號的前綴（"law" → "L"），代號因此
+    不會跨本體相撞。
 
-    The service never runs a language model. It decides what may be cited and
-    whether the question can be answered at all, and hands back a closed citation
-    set. Writing the prose — and checking that it cites only codes from that set —
-    happens on the caller's side (see proto/README.md, "呼叫端的語言模型").
+    本服務不執行語言模型：它只決定什麼可以引用、能不能回答。寫成散文，以及核驗輸出
+    只引用集合內的代號，是呼叫端的責任（見 proto/README.md〈呼叫端的語言模型〉）。
 
-    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-    Tenant-scoped: `x-tenant-id` selects the quota and audit trail the call is
-    charged to, and is required. `x-request-id` is optional (logging only).
+    內部服務，認證由叢集的服務網格負責。
+    租戶隔離：必帶 metadata `x-tenant-id`（決定配額與稽核歸屬）；
+    `x-request-id` 選填，只用於日誌。
     """
 
     def __init__(self, channel: _aio.Channel) -> None: ...
     Ground: _aio.UnaryUnaryMultiCallable[_consult_pb2.GroundRequest, _consult_pb2.GroundResponse]  # type: ignore[assignment]
-    """Retrieves, grounds and assesses one question. Unary and read-only, so it is
-    safe to retry; two calls differ only if the corpus changed in between.
-    """
+    """檢索、接地並評估一個問題。唯讀，可安全重試。"""
 
 class ConsultationServiceServicer(metaclass=_abc_1.ABCMeta):
-    """Evidence for grounded answers over the environmental-knowledge ontologies.
+    """接地服務：為呼叫端的語言模型備妥可引用的封閉證據集，或明確拒答。
 
-    An ontology is one kind of source with its own schema, named by a lowercase
-    id. Today there is one: "law" (法規本體, article-level statutes and
-    regulations). Each ontology owns one letter that prefixes its citation codes
-    ("law" → "L"), so a code never collides across ontologies.
+    本體（ontology）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
+    （法規本體）。每個本體領一個字母作為引用代號的前綴（"law" → "L"），代號因此
+    不會跨本體相撞。
 
-    The service never runs a language model. It decides what may be cited and
-    whether the question can be answered at all, and hands back a closed citation
-    set. Writing the prose — and checking that it cites only codes from that set —
-    happens on the caller's side (see proto/README.md, "呼叫端的語言模型").
+    本服務不執行語言模型：它只決定什麼可以引用、能不能回答。寫成散文，以及核驗輸出
+    只引用集合內的代號，是呼叫端的責任（見 proto/README.md〈呼叫端的語言模型〉）。
 
-    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-    Tenant-scoped: `x-tenant-id` selects the quota and audit trail the call is
-    charged to, and is required. `x-request-id` is optional (logging only).
+    內部服務，認證由叢集的服務網格負責。
+    租戶隔離：必帶 metadata `x-tenant-id`（決定配額與稽核歸屬）；
+    `x-request-id` 選填，只用於日誌。
     """
 
     @_abc_1.abstractmethod
@@ -102,8 +89,6 @@ class ConsultationServiceServicer(metaclass=_abc_1.ABCMeta):
         request: _consult_pb2.GroundRequest,
         context: _ServicerContext,
     ) -> _typing.Union[_consult_pb2.GroundResponse, _abc.Awaitable[_consult_pb2.GroundResponse]]:
-        """Retrieves, grounds and assesses one question. Unary and read-only, so it is
-        safe to retry; two calls differ only if the corpus changed in between.
-        """
+        """檢索、接地並評估一個問題。唯讀，可安全重試。"""
 
 def add_ConsultationServiceServicer_to_server(servicer: ConsultationServiceServicer, server: _typing.Union[_grpc.Server, _aio.Server]) -> None: ...

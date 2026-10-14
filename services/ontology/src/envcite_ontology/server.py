@@ -33,8 +33,9 @@ def build_server(
     address: str = "[::]:0",
     options: Sequence[tuple[str, int]] = SERVER_OPTIONS,
     interceptors: Sequence[grpc.ServerInterceptor] = (),
+    health_servicer: health.HealthServicer | None = None,
 ) -> tuple[grpc.Server, int]:
-    """建立但不啟動；回傳伺服器與實際綁定的埠號。"""
+    """建立但不啟動；回傳伺服器與實際綁定的埠號。`health_servicer` 讓呼叫端在關閉時切換狀態。"""
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=WORKERS),
         interceptors=list(interceptors),
@@ -52,7 +53,7 @@ def build_server(
         (SERVICE_NAME, REASONING_SERVICE_NAME, health.SERVICE_NAME, reflection.SERVICE_NAME), server
     )
 
-    health_servicer = health.HealthServicer()
+    health_servicer = health_servicer or health.HealthServicer()
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
     for name in ("", SERVICE_NAME, REASONING_SERVICE_NAME):
         health_servicer.set(name, health_pb2.HealthCheckResponse.SERVING)
@@ -69,12 +70,14 @@ def main() -> None:
     # 沒設 OTEL_EXPORTER_OTLP_ENDPOINT 時什麼都不做（見 envcite_grpc.telemetry）。
     interceptors = configure_telemetry("envcite-ontology")
     register_annotation_health(store)
+    health_servicer = health.HealthServicer()
     server, bound = build_server(
         store,
         f"[::]:{settings.ontology_grpc_port}",
         interceptors=interceptors,
+        health_servicer=health_servicer,
     )
-    stop_on_sigterm(server)
+    stop_on_sigterm(server, health_servicer)
     server.start()
     logging.getLogger(__name__).info("ontology gRPC server listening on :%d", bound)
     server.wait_for_termination()

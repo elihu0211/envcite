@@ -27,18 +27,15 @@ GRPC_GENERATED_VERSION: str
 GRPC_VERSION: str
 
 class ReasoningServiceStub:
-    """Read access to the normative annotations of the ontology and the candidate
-    conclusions drawn from them.
+    """規範標註的唯讀存取，以及由標註推出的候選結論。
 
-    Same transport rules as OntologyService (see proto/README.md): internal service,
-    optional `x-tenant-id` / `x-request-id` for logging only. Errors carry a
-    google.rpc.ErrorInfo (reason in UPPER_SNAKE_CASE, domain "ontology.envcite") and, for INVALID_ARGUMENT, a google.rpc.BadRequest.
+    傳輸規則同 OntologyService（見 proto/README.md）。錯誤帶 google.rpc.ErrorInfo
+    （reason 為 UPPER_SNAKE_CASE，domain 為 "ontology.envcite"）；INVALID_ARGUMENT
+    另帶 google.rpc.BadRequest。
 
-    Every conclusion here is a CANDIDATE. Nothing is concluded from a statement that
-    has not been confirmed by the verification gates; with no confirmed annotations
-    every verdict list is empty. The service never decides what a court or an
-    authority would decide: it reports what follows from the confirmed statements,
-    what is missing, and what needs a human judgement.
+    這裡的每個結論都只是「候選」。未通過驗證閘門確認的陳述不產生任何結論，沒有
+    已確認的標註時，所有 verdict 清單皆為空。本服務不替法院或主管機關下判斷：
+    只回報已確認的陳述推得什麼、缺了什麼、哪些需要人來判斷。
     """
 
     @_typing.overload
@@ -46,57 +43,49 @@ class ReasoningServiceStub:
     @_typing.overload
     def __new__(cls, channel: _aio.Channel) -> ReasoningServiceAsyncStub: ...
     ListStatements: _grpc.UnaryUnaryMultiCallable[_reasoning_pb2.ListStatementsRequest, _reasoning_pb2.ListStatementsResponse]
-    """The confirmed statements (with the requirements, exceptions and sanctions
-    attached to them) of one law, as in force on `as_of`. NOT_FOUND when the law is
-    unknown (LAW_NOT_FOUND) or no version covers the date (AS_OF_NOT_COVERED).
+    """一部法規在 `as_of` 當日有效、已確認的陳述（含附屬的要件、例外與制裁）。
+    法規不存在回 NOT_FOUND（LAW_NOT_FOUND）；沒有版本涵蓋該日也回 NOT_FOUND
+    （AS_OF_NOT_COVERED）。
     """
     Evaluate: _grpc.UnaryUnaryMultiCallable[_reasoning_pb2.EvaluateRequest, _reasoning_pb2.EvaluateResponse]
-    """Evaluates a case against the statements in force. Unary, read-only, safe to
-    retry. The deadline is a budget: the evaluation is bounded by it, and a call
-    that cannot get a slot within it fails with RESOURCE_EXHAUSTED (BUSY).
+    """依有效的陳述評估一個案件。唯讀，可安全重試。期限是預算：評估受其約束，
+    期限內拿不到執行名額則回 RESOURCE_EXHAUSTED（BUSY）。
     """
 
 @_typing.type_check_only
 class ReasoningServiceAsyncStub(ReasoningServiceStub):
-    """Read access to the normative annotations of the ontology and the candidate
-    conclusions drawn from them.
+    """規範標註的唯讀存取，以及由標註推出的候選結論。
 
-    Same transport rules as OntologyService (see proto/README.md): internal service,
-    optional `x-tenant-id` / `x-request-id` for logging only. Errors carry a
-    google.rpc.ErrorInfo (reason in UPPER_SNAKE_CASE, domain "ontology.envcite") and, for INVALID_ARGUMENT, a google.rpc.BadRequest.
+    傳輸規則同 OntologyService（見 proto/README.md）。錯誤帶 google.rpc.ErrorInfo
+    （reason 為 UPPER_SNAKE_CASE，domain 為 "ontology.envcite"）；INVALID_ARGUMENT
+    另帶 google.rpc.BadRequest。
 
-    Every conclusion here is a CANDIDATE. Nothing is concluded from a statement that
-    has not been confirmed by the verification gates; with no confirmed annotations
-    every verdict list is empty. The service never decides what a court or an
-    authority would decide: it reports what follows from the confirmed statements,
-    what is missing, and what needs a human judgement.
+    這裡的每個結論都只是「候選」。未通過驗證閘門確認的陳述不產生任何結論，沒有
+    已確認的標註時，所有 verdict 清單皆為空。本服務不替法院或主管機關下判斷：
+    只回報已確認的陳述推得什麼、缺了什麼、哪些需要人來判斷。
     """
 
     def __init__(self, channel: _aio.Channel) -> None: ...
     ListStatements: _aio.UnaryUnaryMultiCallable[_reasoning_pb2.ListStatementsRequest, _reasoning_pb2.ListStatementsResponse]  # type: ignore[assignment]
-    """The confirmed statements (with the requirements, exceptions and sanctions
-    attached to them) of one law, as in force on `as_of`. NOT_FOUND when the law is
-    unknown (LAW_NOT_FOUND) or no version covers the date (AS_OF_NOT_COVERED).
+    """一部法規在 `as_of` 當日有效、已確認的陳述（含附屬的要件、例外與制裁）。
+    法規不存在回 NOT_FOUND（LAW_NOT_FOUND）；沒有版本涵蓋該日也回 NOT_FOUND
+    （AS_OF_NOT_COVERED）。
     """
     Evaluate: _aio.UnaryUnaryMultiCallable[_reasoning_pb2.EvaluateRequest, _reasoning_pb2.EvaluateResponse]  # type: ignore[assignment]
-    """Evaluates a case against the statements in force. Unary, read-only, safe to
-    retry. The deadline is a budget: the evaluation is bounded by it, and a call
-    that cannot get a slot within it fails with RESOURCE_EXHAUSTED (BUSY).
+    """依有效的陳述評估一個案件。唯讀，可安全重試。期限是預算：評估受其約束，
+    期限內拿不到執行名額則回 RESOURCE_EXHAUSTED（BUSY）。
     """
 
 class ReasoningServiceServicer(metaclass=_abc_1.ABCMeta):
-    """Read access to the normative annotations of the ontology and the candidate
-    conclusions drawn from them.
+    """規範標註的唯讀存取，以及由標註推出的候選結論。
 
-    Same transport rules as OntologyService (see proto/README.md): internal service,
-    optional `x-tenant-id` / `x-request-id` for logging only. Errors carry a
-    google.rpc.ErrorInfo (reason in UPPER_SNAKE_CASE, domain "ontology.envcite") and, for INVALID_ARGUMENT, a google.rpc.BadRequest.
+    傳輸規則同 OntologyService（見 proto/README.md）。錯誤帶 google.rpc.ErrorInfo
+    （reason 為 UPPER_SNAKE_CASE，domain 為 "ontology.envcite"）；INVALID_ARGUMENT
+    另帶 google.rpc.BadRequest。
 
-    Every conclusion here is a CANDIDATE. Nothing is concluded from a statement that
-    has not been confirmed by the verification gates; with no confirmed annotations
-    every verdict list is empty. The service never decides what a court or an
-    authority would decide: it reports what follows from the confirmed statements,
-    what is missing, and what needs a human judgement.
+    這裡的每個結論都只是「候選」。未通過驗證閘門確認的陳述不產生任何結論，沒有
+    已確認的標註時，所有 verdict 清單皆為空。本服務不替法院或主管機關下判斷：
+    只回報已確認的陳述推得什麼、缺了什麼、哪些需要人來判斷。
     """
 
     @_abc_1.abstractmethod
@@ -105,9 +94,9 @@ class ReasoningServiceServicer(metaclass=_abc_1.ABCMeta):
         request: _reasoning_pb2.ListStatementsRequest,
         context: _ServicerContext,
     ) -> _typing.Union[_reasoning_pb2.ListStatementsResponse, _abc.Awaitable[_reasoning_pb2.ListStatementsResponse]]:
-        """The confirmed statements (with the requirements, exceptions and sanctions
-        attached to them) of one law, as in force on `as_of`. NOT_FOUND when the law is
-        unknown (LAW_NOT_FOUND) or no version covers the date (AS_OF_NOT_COVERED).
+        """一部法規在 `as_of` 當日有效、已確認的陳述（含附屬的要件、例外與制裁）。
+        法規不存在回 NOT_FOUND（LAW_NOT_FOUND）；沒有版本涵蓋該日也回 NOT_FOUND
+        （AS_OF_NOT_COVERED）。
         """
 
     @_abc_1.abstractmethod
@@ -116,9 +105,8 @@ class ReasoningServiceServicer(metaclass=_abc_1.ABCMeta):
         request: _reasoning_pb2.EvaluateRequest,
         context: _ServicerContext,
     ) -> _typing.Union[_reasoning_pb2.EvaluateResponse, _abc.Awaitable[_reasoning_pb2.EvaluateResponse]]:
-        """Evaluates a case against the statements in force. Unary, read-only, safe to
-        retry. The deadline is a budget: the evaluation is bounded by it, and a call
-        that cannot get a slot within it fails with RESOURCE_EXHAUSTED (BUSY).
+        """依有效的陳述評估一個案件。唯讀，可安全重試。期限是預算：評估受其約束，
+        期限內拿不到執行名額則回 RESOURCE_EXHAUSTED（BUSY）。
         """
 
 def add_ReasoningServiceServicer_to_server(servicer: ReasoningServiceServicer, server: _typing.Union[_grpc.Server, _aio.Server]) -> None: ...

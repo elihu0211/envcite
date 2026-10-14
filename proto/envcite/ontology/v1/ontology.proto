@@ -4,48 +4,51 @@ package envcite.ontology.v1;
 
 option csharp_namespace = "EnvCite.Ontology.V1";
 
-// Read access to the environmental-law ontology (relational, PostgreSQL).
-// Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-// Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
+// 環境法規本體的唯讀存取（關聯式，PostgreSQL）。
+//
+// 內部服務，認證由叢集的服務網格負責。
+// 選填 metadata：`x-tenant-id`、`x-request-id`，只用於日誌與稽核；資料不分租戶。
 service OntologyService {
-  // Returns one law by its local id, or NOT_FOUND.
+  // 依本地代號取得一部法規；不存在回 NOT_FOUND。
   rpc GetLaw(GetLawRequest) returns (GetLawResponse);
-  // Lists the articles of a law in reading order, or NOT_FOUND.
+
+  // 依閱讀順序列出一部法規的條文；法規不存在回 NOT_FOUND。
   rpc ListArticles(ListArticlesRequest) returns (ListArticlesResponse);
-  // Hybrid retrieval over the articles in force on `as_of`, best first. The query
-  // is raw text: the service segments it with the segmenter the index was built
-  // with, because a caller segmenting on its own would silently match fewer rows.
+
+  // 在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。查詢是原始文字，
+  // 由服務以建索引時的斷詞器自行斷詞：呼叫端若自行斷詞，會悄悄比對到較少的列。
   rpc SearchArticles(SearchArticlesRequest) returns (SearchArticlesResponse);
 }
 
 message Law {
-  // Note: `title` describes the resolved version, not the law itself: an amendment
-  // can rename a law, so the title belongs to the promulgated version.
-  // Local id: the 全國法規資料庫 pcode, e.g. "O0020001" (one uppercase letter, seven digits).
+  // 本地代號：全國法規資料庫 pcode，例如 "O0020001"。
   string id = 1;
-  // Canonical IRI of the law.
+
+  // 法規的標準 IRI。
   string iri = 2;
-  // Title from the version of this law resolved for `as_of`.
+
+  // `as_of` 所解析版本的標題。標題屬於公布的版本而非法規本身：修正可能改名。
   string title = 3;
-  // ISO 639-3 language code of the title, e.g. "zho" (the same code appears in IRIs).
+
+  // 標題的 ISO 639-3 語言代碼，例如 "zho"（IRI 中也用同一代碼）。
   string language = 4;
-  // The law's enactment date (制定日), ISO 8601 (YYYY-MM-DD); empty when
-  // the corpus records no enactment.
+
+  // 制定日（ISO 8601）；語料沒有制定紀錄時為空。
   string date_document = 5;
 }
 
 message Article {
   string iri = 1;
-  // Article number as written, e.g. "1", "5-1" (第5條之1).
+
+  // 條號，依原文書寫，例如 "1"、"5-1"（第 5 條之 1）。
   string number = 2;
 }
 
 message GetLawRequest {
   string id = 1;
-  // Resolve the law as in force on this date (ISO 8601). Empty means "as
-  // currently in force". When the corpus holds no version covering the date the
-  // call is NOT_FOUND — never the current text, which would be indistinguishable
-  // from a correct answer.
+
+  // 依哪一天施行的版本解析（ISO 8601）。留空為現行。語料沒有版本涵蓋該日時
+  // 回 NOT_FOUND，絕不回現行文字：那會與正確答案無從分辨。
   string as_of = 2;
 }
 
@@ -55,7 +58,8 @@ message GetLawResponse {
 
 message ListArticlesRequest {
   string law_id = 1;
-  // See GetLawRequest.as_of.
+
+  // 見 GetLawRequest.as_of。
   string as_of = 2;
 }
 
@@ -64,27 +68,36 @@ message ListArticlesResponse {
 }
 
 message SearchArticlesRequest {
+  // 查詢原文，不要自行斷詞或改寫。
   string query = 1;
-  // See GetLawRequest.as_of.
+
+  // 見 GetLawRequest.as_of。
   string as_of = 2;
-  // Maximum hits; 0 means the service default (10).
+
+  // 最多回傳幾筆；0 為服務預設值。
   int32 limit = 3;
 }
 
 message SearchArticlesResponse {
+  // 相關度由高到低。
   repeated ArticleHit hits = 1;
 }
 
 message ArticleHit {
   string iri = 1;
   string law_id = 2;
-  // Title of the law's version in force on `as_of`.
+
+  // `as_of` 當日有效版本的法規標題。
   string law_title = 3;
-  // Article number as written, e.g. "5-1".
+
+  // 條號，依原文書寫，例如 "5-1"。
   string number = 4;
+
   string content = 5;
-  // Raw lexical relevance (ts_rank_cd). Hits are ordered by it, highest first.
+
+  // 詞彙相關度原始分數（ts_rank_cd）；命中依此由高到低排序。
   float lexical_score = 7;
+
   reserved 6, 8;
   reserved "rank_score", "dense_distance";
 }

@@ -27,9 +27,10 @@ GRPC_GENERATED_VERSION: str
 GRPC_VERSION: str
 
 class OntologyServiceStub:
-    """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-    Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
+    """環境法規本體的唯讀存取（關聯式，PostgreSQL）。
+
+    內部服務，認證由叢集的服務網格負責。
+    選填 metadata：`x-tenant-id`、`x-request-id`，只用於日誌與稽核；資料不分租戶。
     """
 
     @_typing.overload
@@ -37,37 +38,37 @@ class OntologyServiceStub:
     @_typing.overload
     def __new__(cls, channel: _aio.Channel) -> OntologyServiceAsyncStub: ...
     GetLaw: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.GetLawRequest, _ontology_pb2.GetLawResponse]
-    """Returns one law by its local id, or NOT_FOUND."""
+    """依本地代號取得一部法規；不存在回 NOT_FOUND。"""
     ListArticles: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.ListArticlesRequest, _ontology_pb2.ListArticlesResponse]
-    """Lists the articles of a law in reading order, or NOT_FOUND."""
+    """依閱讀順序列出一部法規的條文；法規不存在回 NOT_FOUND。"""
     SearchArticles: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.SearchArticlesRequest, _ontology_pb2.SearchArticlesResponse]
-    """Hybrid retrieval over the articles in force on `as_of`, best first. The query
-    is raw text: the service segments it with the segmenter the index was built
-    with, because a caller segmenting on its own would silently match fewer rows.
+    """在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。查詢是原始文字，
+    由服務以建索引時的斷詞器自行斷詞：呼叫端若自行斷詞，會悄悄比對到較少的列。
     """
 
 @_typing.type_check_only
 class OntologyServiceAsyncStub(OntologyServiceStub):
-    """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-    Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
+    """環境法規本體的唯讀存取（關聯式，PostgreSQL）。
+
+    內部服務，認證由叢集的服務網格負責。
+    選填 metadata：`x-tenant-id`、`x-request-id`，只用於日誌與稽核；資料不分租戶。
     """
 
     def __init__(self, channel: _aio.Channel) -> None: ...
     GetLaw: _aio.UnaryUnaryMultiCallable[_ontology_pb2.GetLawRequest, _ontology_pb2.GetLawResponse]  # type: ignore[assignment]
-    """Returns one law by its local id, or NOT_FOUND."""
+    """依本地代號取得一部法規；不存在回 NOT_FOUND。"""
     ListArticles: _aio.UnaryUnaryMultiCallable[_ontology_pb2.ListArticlesRequest, _ontology_pb2.ListArticlesResponse]  # type: ignore[assignment]
-    """Lists the articles of a law in reading order, or NOT_FOUND."""
+    """依閱讀順序列出一部法規的條文；法規不存在回 NOT_FOUND。"""
     SearchArticles: _aio.UnaryUnaryMultiCallable[_ontology_pb2.SearchArticlesRequest, _ontology_pb2.SearchArticlesResponse]  # type: ignore[assignment]
-    """Hybrid retrieval over the articles in force on `as_of`, best first. The query
-    is raw text: the service segments it with the segmenter the index was built
-    with, because a caller segmenting on its own would silently match fewer rows.
+    """在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。查詢是原始文字，
+    由服務以建索引時的斷詞器自行斷詞：呼叫端若自行斷詞，會悄悄比對到較少的列。
     """
 
 class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
-    """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-    Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
+    """環境法規本體的唯讀存取（關聯式，PostgreSQL）。
+
+    內部服務，認證由叢集的服務網格負責。
+    選填 metadata：`x-tenant-id`、`x-request-id`，只用於日誌與稽核；資料不分租戶。
     """
 
     @_abc_1.abstractmethod
@@ -76,7 +77,7 @@ class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
         request: _ontology_pb2.GetLawRequest,
         context: _ServicerContext,
     ) -> _typing.Union[_ontology_pb2.GetLawResponse, _abc.Awaitable[_ontology_pb2.GetLawResponse]]:
-        """Returns one law by its local id, or NOT_FOUND."""
+        """依本地代號取得一部法規；不存在回 NOT_FOUND。"""
 
     @_abc_1.abstractmethod
     def ListArticles(
@@ -84,7 +85,7 @@ class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
         request: _ontology_pb2.ListArticlesRequest,
         context: _ServicerContext,
     ) -> _typing.Union[_ontology_pb2.ListArticlesResponse, _abc.Awaitable[_ontology_pb2.ListArticlesResponse]]:
-        """Lists the articles of a law in reading order, or NOT_FOUND."""
+        """依閱讀順序列出一部法規的條文；法規不存在回 NOT_FOUND。"""
 
     @_abc_1.abstractmethod
     def SearchArticles(
@@ -92,9 +93,8 @@ class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
         request: _ontology_pb2.SearchArticlesRequest,
         context: _ServicerContext,
     ) -> _typing.Union[_ontology_pb2.SearchArticlesResponse, _abc.Awaitable[_ontology_pb2.SearchArticlesResponse]]:
-        """Hybrid retrieval over the articles in force on `as_of`, best first. The query
-        is raw text: the service segments it with the segmenter the index was built
-        with, because a caller segmenting on its own would silently match fewer rows.
+        """在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。查詢是原始文字，
+        由服務以建索引時的斷詞器自行斷詞：呼叫端若自行斷詞，會悄悄比對到較少的列。
         """
 
 def add_OntologyServiceServicer_to_server(servicer: OntologyServiceServicer, server: _typing.Union[_grpc.Server, _aio.Server]) -> None: ...

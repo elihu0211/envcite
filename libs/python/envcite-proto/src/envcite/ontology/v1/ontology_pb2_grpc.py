@@ -26,9 +26,10 @@ if _version_not_supported:
 
 
 class OntologyServiceStub:
-    """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-    Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
+    """環境法規本體的唯讀存取（關聯式，PostgreSQL）。
+
+    內部服務，認證由叢集的服務網格負責。
+    選填 metadata：`x-tenant-id`、`x-request-id`，只用於日誌與稽核；資料不分租戶。
     """
 
     def __init__(self, channel):
@@ -55,29 +56,29 @@ class OntologyServiceStub:
 
 
 class OntologyServiceServicer:
-    """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-    Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
+    """環境法規本體的唯讀存取（關聯式，PostgreSQL）。
+
+    內部服務，認證由叢集的服務網格負責。
+    選填 metadata：`x-tenant-id`、`x-request-id`，只用於日誌與稽核；資料不分租戶。
     """
 
     def GetLaw(self, request, context):
-        """Returns one law by its local id, or NOT_FOUND.
+        """依本地代號取得一部法規；不存在回 NOT_FOUND。
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ListArticles(self, request, context):
-        """Lists the articles of a law in reading order, or NOT_FOUND.
+        """依閱讀順序列出一部法規的條文；法規不存在回 NOT_FOUND。
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SearchArticles(self, request, context):
-        """Hybrid retrieval over the articles in force on `as_of`, best first. The query
-        is raw text: the service segments it with the segmenter the index was built
-        with, because a caller segmenting on its own would silently match fewer rows.
+        """在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。查詢是原始文字，
+        由服務以建索引時的斷詞器自行斷詞：呼叫端若自行斷詞，會悄悄比對到較少的列。
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -110,9 +111,10 @@ def add_OntologyServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class OntologyService:
-    """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-    Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
+    """環境法規本體的唯讀存取（關聯式，PostgreSQL）。
+
+    內部服務，認證由叢集的服務網格負責。
+    選填 metadata：`x-tenant-id`、`x-request-id`，只用於日誌與稽核；資料不分租戶。
     """
 
     @staticmethod

@@ -9,6 +9,7 @@
   所以伺服器把最短間隔放寬到 30 秒，須小於客戶端的 ping 間隔。
 - **重試**：只對唯讀、確定性的服務開 `UNAVAILABLE` 的重試（退避 0.1 至 1 秒、最多 3 次）。
   不重試 `DEADLINE_EXCEEDED`（期限已用盡）與 `RESOURCE_EXHAUSTED`（容量用盡是要立即失敗的訊號）。
+  重試節流（`retryThrottling`）讓下游整體失靈時，重試自己收斂而不是放大流量。
 """
 
 from __future__ import annotations
@@ -18,6 +19,9 @@ from collections.abc import Sequence
 
 CLIENT_KEEPALIVE_MS = 60_000
 SERVER_MIN_PING_INTERVAL_MS = 30_000  # 必須小於 CLIENT_KEEPALIVE_MS
+
+#: 失敗消耗一枚代幣、成功補回 `tokenRatio` 枚；代幣降到一半以下就不再重試。
+RETRY_THROTTLING = {"maxTokens": 10, "tokenRatio": 0.1}
 
 SERVER_OPTIONS: tuple[tuple[str, int], ...] = (
     ("grpc.max_connection_age_ms", 300_000),
@@ -39,6 +43,7 @@ def client_options(read_only_services: Sequence[str] = ()) -> list[tuple[str, in
     ]
     if read_only_services:
         config = {
+            "retryThrottling": RETRY_THROTTLING,
             "methodConfig": [
                 {
                     "name": [{"service": name} for name in read_only_services],
@@ -50,7 +55,7 @@ def client_options(read_only_services: Sequence[str] = ()) -> list[tuple[str, in
                         "retryableStatusCodes": ["UNAVAILABLE"],
                     },
                 }
-            ]
+            ],
         }
         options += [("grpc.enable_retries", 1), ("grpc.service_config", json.dumps(config))]
     return options

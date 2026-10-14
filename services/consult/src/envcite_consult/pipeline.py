@@ -107,14 +107,19 @@ def confidence_of(grounding: list[Citation], articles: list[Article]) -> Confide
     return Confidence.HIGH if top >= HIGH_CONFIDENCE_FLOOR else Confidence.LOW
 
 
-def run(question: str, *, as_of: str, ontology: OntologyPort) -> Evidence | Refusal:
-    """為一個問題備妥證據，或拒答。只檢索一次：信心度與 grounding 出自同一次結果。"""
+def run(
+    question: str, *, as_of: str, ontology: OntologyPort, timeout: float | None = None
+) -> Evidence | Refusal:
+    """為一個問題備妥證據，或拒答。只檢索一次：信心度與 grounding 出自同一次結果。
+
+    `timeout` 是呼叫端剩下的秒數，往下游傳，讓下游不超過上游的期限。
+    """
     # 空白問句在檢索之前就拒答：本體對空查詢回 INVALID_ARGUMENT，而這是使用者少給了
     # 輸入，不是呼叫端的錯誤。
     if not question.strip():
         return Refusal(RefusalReason.MISSING_INPUT, "問句為空")
 
-    articles = ontology.search(question, as_of=as_of)
+    articles = ontology.search(question, as_of=as_of, timeout=timeout)
     grounding = ground(articles)
 
     refusal = assess(grounding, articles)

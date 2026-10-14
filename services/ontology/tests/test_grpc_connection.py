@@ -1,5 +1,6 @@
 """Long-lived connection hygiene (envcite_grpc.connection): max age, keepalive, retries."""
 
+import json
 import time
 from collections.abc import Iterator
 from concurrent import futures
@@ -123,3 +124,11 @@ def test_a_service_not_listed_as_read_only_is_not_retried(
         _call(target, client_options(["envcite.some.other.Service"]))
 
     assert handler.calls == 1
+
+
+def test_retries_are_throttled_so_a_failing_downstream_is_not_amplified() -> None:
+    options = dict(client_options(["envcite.ontology.v1.OntologyService"]))
+
+    config = json.loads(str(options["grpc.service_config"]))
+
+    assert config["retryThrottling"] == {"maxTokens": 10, "tokenRatio": 0.1}

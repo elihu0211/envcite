@@ -30,9 +30,7 @@ class _ConfidenceEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Confidence
     CONFIDENCE_HIGH: _Confidence.ValueType  # 2
 
 class Confidence(_Confidence, metaclass=_ConfidenceEnumTypeWrapper):
-    """Strength of the best citation. LOW still carries evidence: the caller may
-    answer, but should say the basis is indirect.
-    """
+    """最佳一筆引用的強度。LOW 仍帶有證據：可以作答，但應說明依據是間接的。"""
 
 CONFIDENCE_UNSPECIFIED: Confidence.ValueType  # 0
 CONFIDENCE_LOW: Confidence.ValueType  # 1
@@ -47,18 +45,14 @@ class GroundRequest(_message.Message):
     AS_OF_FIELD_NUMBER: _builtins.int
     ONTOLOGIES_FIELD_NUMBER: _builtins.int
     question: _builtins.str
-    """The user's question, verbatim. Never rewritten by the caller: retrieval is
-    tuned to how people ask, and a model's paraphrase is a different query.
+    """使用者的問題原句。呼叫端不得改寫：檢索是針對人們實際的問法調校的，
+    模型改寫後的句子是另一個查詢。
     """
     as_of: _builtins.str
-    """Resolve the law as in force on this date (ISO 8601). Empty means "as
-    currently in force".
-    """
+    """依哪一天施行的條文作答（ISO 8601）。留空為現行。"""
     @_builtins.property
     def ontologies(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
-        """Ontology ids to ground against. Empty means every ontology the service
-        offers (today only "law"). An unknown id is INVALID_ARGUMENT.
-        """
+        """要接地的本體代號。留空為服務提供的全部；不認得的回 INVALID_ARGUMENT。"""
 
     def __init__(
         self,
@@ -103,7 +97,7 @@ Global___GroundResponse: _TypeAlias = GroundResponse  # noqa: Y015
 
 @_typing.final
 class Evidence(_message.Message):
-    """The closed set an answer may cite, best first."""
+    """作答時可引用的封閉集合，依相關程度由高到低。"""
 
     DESCRIPTOR: _descriptor.Descriptor
 
@@ -112,8 +106,8 @@ class Evidence(_message.Message):
     confidence: Global___Confidence.ValueType
     @_builtins.property
     def citations(self) -> _containers.RepeatedCompositeFieldContainer[Global___Citation]:
-        """At most 8, coded "L1", "L2", … in this order (the letter is the source
-        ontology's, the number runs across the whole set). Never empty.
+        """最多 8 筆，依序編碼為 "L1"、"L2"……（字母屬於來源本體，序號在整份證據內
+        連續）。永不為空。
         """
 
     def __init__(
@@ -140,17 +134,17 @@ class Citation(_message.Message):
     TEXT_FIELD_NUMBER: _builtins.int
     ONTOLOGY_FIELD_NUMBER: _builtins.int
     code: _builtins.str
-    """Short code the caller's model writes in square brackets, e.g. "[L1]". A code
-    outside this set is an invented citation: strip it or reject the answer.
+    """模型以方括號寫出的短代號，例如 "[L1]"。不在證據集內的代號是捏造的引用：
+    剝除它，或退回整個答案。
     """
     iri: _builtins.str
-    """IRI of the cited provision version."""
+    """被引用的條文版本之 IRI。"""
     label: _builtins.str
-    """Human-readable label, e.g. "空氣污染防制法 第 20 條"."""
+    """供人閱讀的標示，例如 "空氣污染防制法 第 20 條"。"""
     text: _builtins.str
-    """Article text in force on `as_of` — the evidence itself."""
+    """`as_of` 當日有效的條文全文，即證據本身。"""
     ontology: _builtins.str
-    """Id of the ontology this citation comes from, e.g. "law"."""
+    """所屬本體的代號，例如 "law"。"""
     def __init__(
         self,
         *,
@@ -170,9 +164,7 @@ Global___Citation: _TypeAlias = Citation  # noqa: Y015
 
 @_typing.final
 class Refused(_message.Message):
-    """Why the service declined to ground the question. The caller renders it; it is
-    not retried and it is not billed as a failure.
-    """
+    """服務為何不接地。由呼叫端呈現給使用者；不重試，也不計為失敗。"""
 
     DESCRIPTOR: _descriptor.Descriptor
 
@@ -184,29 +176,26 @@ class Refused(_message.Message):
         DESCRIPTOR: _descriptor.EnumDescriptor
         REASON_UNSPECIFIED: Refused._Reason.ValueType  # 0
         REASON_NO_EVIDENCE: Refused._Reason.ValueType  # 1
-        """Nothing was retrieved at all: the corpus has no matching article."""
+        """語料裡沒有相符的條文。"""
         REASON_OUT_OF_SCOPE: Refused._Reason.ValueType  # 2
-        """Articles were retrieved, but none cleared the relevance floor: the question
-        is about something else.
-        """
+        """有檢索到條文，但沒有一筆達到相關度門檻：問的是別的事。"""
         REASON_MISSING_INPUT: Refused._Reason.ValueType  # 3
-        """The question needs input the user did not supply (currently: it is blank)."""
+        """缺少使用者未提供的必要輸入（例如問題是空白）。"""
 
     class Reason(_Reason, metaclass=_ReasonEnumTypeWrapper): ...
     REASON_UNSPECIFIED: Refused.Reason.ValueType  # 0
     REASON_NO_EVIDENCE: Refused.Reason.ValueType  # 1
-    """Nothing was retrieved at all: the corpus has no matching article."""
+    """語料裡沒有相符的條文。"""
     REASON_OUT_OF_SCOPE: Refused.Reason.ValueType  # 2
-    """Articles were retrieved, but none cleared the relevance floor: the question
-    is about something else.
-    """
+    """有檢索到條文，但沒有一筆達到相關度門檻：問的是別的事。"""
     REASON_MISSING_INPUT: Refused.Reason.ValueType  # 3
-    """The question needs input the user did not supply (currently: it is blank)."""
+    """缺少使用者未提供的必要輸入（例如問題是空白）。"""
 
     REASON_FIELD_NUMBER: _builtins.int
     DETAIL_FIELD_NUMBER: _builtins.int
     reason: Global___Refused.Reason.ValueType
     detail: _builtins.str
+    """供人閱讀的補充說明。"""
     def __init__(
         self,
         *,

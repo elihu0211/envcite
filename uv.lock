@@ -453,6 +453,7 @@ version = "0.1.0"
 source = { editable = "libs/python/envcite-grpc" }
 dependencies = [
     { name = "grpcio" },
+    { name = "grpcio-health-checking" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
     { name = "opentelemetry-instrumentation-grpc" },
@@ -462,6 +463,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "grpcio" },
+    { name = "grpcio-health-checking" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
     { name = "opentelemetry-instrumentation-grpc" },

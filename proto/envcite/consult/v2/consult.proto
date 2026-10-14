@@ -4,88 +4,92 @@ package envcite.consult.v2;
 
 option csharp_namespace = "EnvCite.Consult.V2";
 
-// Evidence for grounded answers over the environmental-knowledge ontologies.
+// 接地服務：為呼叫端的語言模型備妥可引用的封閉證據集，或明確拒答。
 //
-// An ontology is one kind of source with its own schema, named by a lowercase
-// id. Today there is one: "law" (法規本體, article-level statutes and
-// regulations). Each ontology owns one letter that prefixes its citation codes
-// ("law" → "L"), so a code never collides across ontologies.
+// 本體（ontology）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
+// （法規本體）。每個本體領一個字母作為引用代號的前綴（"law" → "L"），代號因此
+// 不會跨本體相撞。
 //
-// The service never runs a language model. It decides what may be cited and
-// whether the question can be answered at all, and hands back a closed citation
-// set. Writing the prose — and checking that it cites only codes from that set —
-// happens on the caller's side (see proto/README.md, "呼叫端的語言模型").
+// 本服務不執行語言模型：它只決定什麼可以引用、能不能回答。寫成散文，以及核驗輸出
+// 只引用集合內的代號，是呼叫端的責任（見 proto/README.md〈呼叫端的語言模型〉）。
 //
-// Internal service: the callee does not authenticate callers; the cluster's service mesh does.
-// Tenant-scoped: `x-tenant-id` selects the quota and audit trail the call is
-// charged to, and is required. `x-request-id` is optional (logging only).
+// 內部服務，認證由叢集的服務網格負責。
+// 租戶隔離：必帶 metadata `x-tenant-id`（決定配額與稽核歸屬）；
+// `x-request-id` 選填，只用於日誌。
 service ConsultationService {
-  // Retrieves, grounds and assesses one question. Unary and read-only, so it is
-  // safe to retry; two calls differ only if the corpus changed in between.
+  // 檢索、接地並評估一個問題。唯讀，可安全重試。
   rpc Ground(GroundRequest) returns (GroundResponse);
 }
 
 message GroundRequest {
-  // The user's question, verbatim. Never rewritten by the caller: retrieval is
-  // tuned to how people ask, and a model's paraphrase is a different query.
+  // 使用者的問題原句。呼叫端不得改寫：檢索是針對人們實際的問法調校的，
+  // 模型改寫後的句子是另一個查詢。
   string question = 1;
-  // Resolve the law as in force on this date (ISO 8601). Empty means "as
-  // currently in force".
+
+  // 依哪一天施行的條文作答（ISO 8601）。留空為現行。
   string as_of = 2;
-  // Ontology ids to ground against. Empty means every ontology the service
-  // offers (today only "law"). An unknown id is INVALID_ARGUMENT.
+
+  // 要接地的本體代號。留空為服務提供的全部；不認得的回 INVALID_ARGUMENT。
   repeated string ontologies = 3;
 }
 
 message GroundResponse {
-  // Exactly one is set. A refusal is a result, not an error.
+  // 恰設定其一。拒答是結果，不是錯誤。
   oneof outcome {
     Evidence evidence = 1;
     Refused refused = 2;
   }
 }
 
-// The closed set an answer may cite, best first.
+// 作答時可引用的封閉集合，依相關程度由高到低。
 message Evidence {
-  // At most 8, coded "L1", "L2", … in this order (the letter is the source
-  // ontology's, the number runs across the whole set). Never empty.
+  // 最多 8 筆，依序編碼為 "L1"、"L2"……（字母屬於來源本體，序號在整份證據內
+  // 連續）。永不為空。
   repeated Citation citations = 1;
+
   Confidence confidence = 2;
 }
 
 message Citation {
-  // Short code the caller's model writes in square brackets, e.g. "[L1]". A code
-  // outside this set is an invented citation: strip it or reject the answer.
+  // 模型以方括號寫出的短代號，例如 "[L1]"。不在證據集內的代號是捏造的引用：
+  // 剝除它，或退回整個答案。
   string code = 1;
-  // IRI of the cited provision version.
+
+  // 被引用的條文版本之 IRI。
   string iri = 2;
-  // Human-readable label, e.g. "空氣污染防制法 第 20 條".
+
+  // 供人閱讀的標示，例如 "空氣污染防制法 第 20 條"。
   string label = 3;
-  // Article text in force on `as_of` — the evidence itself.
+
+  // `as_of` 當日有效的條文全文，即證據本身。
   string text = 4;
-  // Id of the ontology this citation comes from, e.g. "law".
+
+  // 所屬本體的代號，例如 "law"。
   string ontology = 5;
 }
 
-// Why the service declined to ground the question. The caller renders it; it is
-// not retried and it is not billed as a failure.
+// 服務為何不接地。由呼叫端呈現給使用者；不重試，也不計為失敗。
 message Refused {
   enum Reason {
     REASON_UNSPECIFIED = 0;
-    // Nothing was retrieved at all: the corpus has no matching article.
+
+    // 語料裡沒有相符的條文。
     REASON_NO_EVIDENCE = 1;
-    // Articles were retrieved, but none cleared the relevance floor: the question
-    // is about something else.
+
+    // 有檢索到條文，但沒有一筆達到相關度門檻：問的是別的事。
     REASON_OUT_OF_SCOPE = 2;
-    // The question needs input the user did not supply (currently: it is blank).
+
+    // 缺少使用者未提供的必要輸入（例如問題是空白）。
     REASON_MISSING_INPUT = 3;
   }
+
   Reason reason = 1;
+
+  // 供人閱讀的補充說明。
   string detail = 2;
 }
 
-// Strength of the best citation. LOW still carries evidence: the caller may
-// answer, but should say the basis is indirect.
+// 最佳一筆引用的強度。LOW 仍帶有證據：可以作答，但應說明依據是間接的。
 enum Confidence {
   CONFIDENCE_UNSPECIFIED = 0;
   CONFIDENCE_LOW = 1;

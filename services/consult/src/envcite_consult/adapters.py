@@ -6,6 +6,7 @@ import grpc
 
 from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
 from envcite_consult.ports import Article
+from envcite_grpc import downstream_timeout
 
 
 class GrpcOntology:
@@ -15,10 +16,12 @@ class GrpcOntology:
         self._stub = ontology_pb2_grpc.OntologyServiceStub(channel)
         self._timeout = timeout
 
-    def search(self, query: str, *, as_of: str = "", limit: int = 10) -> list[Article]:
+    def search(
+        self, query: str, *, as_of: str = "", limit: int = 10, timeout: float | None = None
+    ) -> list[Article]:
         response = self._stub.SearchArticles(
             ontology_pb2.SearchArticlesRequest(query=query, as_of=as_of, limit=limit),
-            timeout=self._timeout,
+            timeout=downstream_timeout(self._timeout, timeout),
         )
         return [
             Article(

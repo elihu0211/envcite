@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "grpcio",
+    "grpcio-health-checking",
     "opentelemetry-api",
     "opentelemetry-exporter-otlp-proto-grpc",
     "opentelemetry-instrumentation-grpc",
