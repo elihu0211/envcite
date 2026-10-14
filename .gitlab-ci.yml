@@ -98,36 +98,67 @@ variables:
     files: [uv.lock]
   paths: [.uv-cache]
 
+# `rules:changes` 沒有排除語法，所以列「會影響建置與測試的路徑」，不列整個服務目錄：只改 Markdown
+# （README、AGENTS.md）或 `.env.example` 的 MR 不啟動測試與映像建置。服務新增頂層的程式或設定檔時，
+# 要補進對應的清單，否則該檔的改動不會觸發 CI。
 .changes-platform: &changes-platform
-  - services/platform/**/*
+  - services/platform/src/**/*
+  - services/platform/tests/**/*
+  - services/platform/openapi/**/*
+  - services/platform/.editorconfig
+  - services/platform/Directory.*
+  - services/platform/Dockerfile*
+  - services/platform/EnvLaw.Platform.slnx
+  - services/platform/dotnet-tools.json
+  - services/platform/global.json
   - proto/**/*
   - .gitlab-ci.yml
 
 # uv workspace 共用根目錄的 pyproject.toml 與 uv.lock，兩者一改，全部重驗。
 .changes-ontology: &changes-ontology
-  - services/ontology/**/*
-  - libs/python/**/*
+  - services/ontology/src/**/*
+  - services/ontology/tests/**/*
+  - services/ontology/migrations/**/*
+  - services/ontology/tools/**/*
+  - services/ontology/Dockerfile*
+  - services/ontology/models.example.toml
+  - services/ontology/pyproject.toml
+  - libs/python/*/src/**/*
+  - libs/python/*/tests/**/*
+  - libs/python/*/scripts/**/*
+  - libs/python/*/pyproject.toml
   - proto/**/*
   - pyproject.toml
   - uv.lock
   - .gitlab-ci.yml
 
 .changes-consult: &changes-consult
-  - services/consult/**/*
-  - libs/python/**/*
+  - services/consult/src/**/*
+  - services/consult/tests/**/*
+  - services/consult/Dockerfile*
+  - services/consult/pyproject.toml
+  - libs/python/*/src/**/*
+  - libs/python/*/tests/**/*
+  - libs/python/*/scripts/**/*
+  - libs/python/*/pyproject.toml
   - proto/**/*
   - pyproject.toml
   - uv.lock
   - .gitlab-ci.yml
 
 .changes-segmenter: &changes-segmenter
-  - libs/python/env-law-segmenter/**/*
+  - libs/python/env-law-segmenter/src/**/*
+  - libs/python/env-law-segmenter/tests/**/*
+  - libs/python/env-law-segmenter/scripts/**/*
+  - libs/python/env-law-segmenter/pyproject.toml
   - pyproject.toml
   - uv.lock
   - .gitlab-ci.yml
 
 .changes-python-proto: &changes-python-proto
-  - libs/python/env-law-proto/**/*
+  - libs/python/env-law-proto/src/**/*
+  - libs/python/env-law-proto/scripts/**/*
+  - libs/python/env-law-proto/pyproject.toml
   - proto/**/*
   - pyproject.toml
   - uv.lock
@@ -135,9 +166,21 @@ variables:
 
 # 所有 Python job 的觸發路徑聯集：deps-python 在其中任何一個 job 要跑時就要跑。
 .changes-python: &changes-python
-  - services/ontology/**/*
-  - services/consult/**/*
-  - libs/python/**/*
+  - services/ontology/src/**/*
+  - services/ontology/tests/**/*
+  - services/ontology/migrations/**/*
+  - services/ontology/tools/**/*
+  - services/ontology/Dockerfile*
+  - services/ontology/models.example.toml
+  - services/ontology/pyproject.toml
+  - services/consult/src/**/*
+  - services/consult/tests/**/*
+  - services/consult/Dockerfile*
+  - services/consult/pyproject.toml
+  - libs/python/*/src/**/*
+  - libs/python/*/tests/**/*
+  - libs/python/*/scripts/**/*
+  - libs/python/*/pyproject.toml
   - proto/**/*
   - pyproject.toml
   - uv.lock
