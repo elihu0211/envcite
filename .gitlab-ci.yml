@@ -407,7 +407,9 @@ python-proto:
     # 層快取放 registry（dind 每次全新）。路徑與映像分開，快取 tag 不會被 Image Updater 當成新版本。
     CACHE: $CI_REGISTRY_IMAGE/cache/$SERVICE
   before_script:
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    # registry.gitlab.com 偶發逾時（`Client.Timeout`／`context deadline exceeded`）：只對暫時性錯誤重試，
+    # 見 ci/retry-transient.sh。
+    - sh ci/retry-transient.sh sh -c 'echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"'
     # 匯出 registry 快取需要 docker-container driver。
     # 用 host 網路：job 容器 MTU 為 1360，dind 橋接網路預設 1500，大封包被靜默丟棄，
     # 症狀是 `dotnet restore` 連 api.nuget.org 逾時。
@@ -438,7 +440,9 @@ python-proto:
         echo "非預設分支，只驗證建置、不推送：$IMAGE"
         output="--output type=cacheonly"
       fi
-      docker buildx build -f services/$SERVICE/Dockerfile $CONTEXTS \
+      # 拉基底層（cloudfront）、ghcr token、推送時的暫時性逾時才重試；真正的建置失敗照舊立刻紅。
+      # 重試時層快取已在 registry，第二次很快。
+      sh ci/retry-transient.sh docker buildx build -f services/$SERVICE/Dockerfile $CONTEXTS \
         --build-arg DOCKER_HUB="$host_ip:5000" \
         --build-arg GHCR="$host_ip:5002" \
         --build-arg MCR="$host_ip:5004" \
@@ -545,6 +549,21 @@ proto:
       else
         echo "目標分支 ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME} 尚無 proto 模組，無基準可比——跳過相容性檢查"
       fi
+
+# retry-transient.sh 的離線測試（假指令，不連網）。映像 job 的重試靠它，壞了就等於沒有守門。
+ci-scripts:
+  extends: .runner
+  stage: check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - ci/*.sh
+        - .gitlab-ci.yml
+  image: alpine:$ALPINE_VERSION
+  variables:
+    GIT_DEPTH: "1"
+  script:
+    - sh ci/test-retry-transient.sh
 
 dockerfile:
   extends: .runner
