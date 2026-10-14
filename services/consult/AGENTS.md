@@ -11,12 +11,34 @@ Vendor-neutral instructions for coding agents. 倉庫層規範見根 `AGENTS.md`
 
 ## 管線形狀（本服務存在的理由）
 
-```
-retrieve   本體決定有什麼                    ┐
-ground     程式指派封閉引用集合（L1、L2…）   ├ 本服務
-assess     規則決定這題能不能答              ┘
-generate   模型寫散文，只能以代號引用        ┐ 呼叫端
-verify     程式剝除模型自創的代號            ┘
+```mermaid
+%%{init: {"flowchart": {"curve": "basis"}}}%%
+flowchart LR
+    subgraph here["consult（本服務）"]
+        direction LR
+        retrieve["<b>retrieve</b><br/>本體決定有什麼"]
+        ground["<b>ground</b><br/>程式指派封閉引用集合<br/>L1、L2…"]
+        assess{"<b>assess</b><br/>規則決定能不能答"}
+        retrieve --> ground --> assess
+    end
+
+    subgraph caller["呼叫端"]
+        direction LR
+        generate["<b>generate</b><br/>模型寫散文<br/>只能以代號引用"]
+        verify["<b>verify</b><br/>程式剝除模型自創的代號"]
+        generate --> verify
+    end
+
+    refused(["refused<br/>拒答：是結果，不是錯誤"])
+    assess -->|evidence| generate
+    assess -->|證據不足| refused
+
+    classDef own fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
+    classDef theirs fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:4 3,color:#334155
+    classDef stop fill:#fef2f2,stroke:#ef4444,color:#7f1d1d
+    class retrieve,ground,assess own
+    class generate,verify theirs
+    class refused stop
 ```
 
 **模型只決定一件事：如何把手上的證據寫成散文。** 其餘每個決定都在它跑之前由本服務做完，或在它回來之後由呼叫端核驗。這個形狀是契約的一部分，不是實作細節：

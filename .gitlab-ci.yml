@@ -66,7 +66,7 @@ variables:
   # 完整版本，不用浮動的 "10.0"：套件快取（含 bundle 需要的 runtime pack、ILLink tasks）隨 SDK 版本，
   # 快取鍵帶這個值；Dockerfile 的 ARG 與此同步（Renovate 兩處都追蹤，同一個 MR 升）。
   # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
-  DOTNET_VERSION: "10.0.401"
+  DOTNET_VERSION: "10.0.402"
   # renovate: datasource=pypi depName=uv
   UV_VERSION: "0.12.18"
   # renovate: datasource=python-version depName=python

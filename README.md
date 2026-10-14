@@ -28,28 +28,71 @@
 | `libs/` | 服務間共用的程式庫 |
 
 ```mermaid
+%%{init: {"flowchart": {"curve": "basis", "htmlLabels": true}}}%%
 flowchart LR
-    client([外部用戶端])
-    platform["platform<br/>租戶・API key・限流・計量"]
-    ontology["ontology<br/>本體與檢索"]
-    consult["consult<br/>接地・可答性判定"]
-    pg[(PostgreSQL)]
-
-    subgraph caller [呼叫端]
-        client
-        llm[(自己的語言模型)]
+    subgraph caller["呼叫端（系統之外）"]
+        direction TB
+        client(["用戶端<br/>應用程式"])
+        llm{{"自己的語言模型"}}
     end
 
-    client -- "REST<br/>API key" --> platform
-    platform -- "gRPC" --> ontology
-    platform -- "gRPC" --> consult
-    consult -- "gRPC" --> ontology
-    client -.-> llm
-    ontology --> pg
-    platform --> pg
+    subgraph envcite["EnvCite"]
+        direction LR
+        platform["<b>platform</b><br/>租戶 · API key<br/>限流 · 計量 · REST"]
+        consult["<b>consult</b><br/>接地 · 可答性判定"]
+        ontology["<b>ontology</b><br/>本體 · 檢索 · 推論"]
+    end
+
+    pg1[("platform<br/>PostgreSQL")]
+    pg2[("envcite<br/>PostgreSQL")]
+
+    client ==>|"REST · API key"| platform
+    platform -->|gRPC| consult
+    platform -->|gRPC| ontology
+    consult -->|gRPC| ontology
+    platform --- pg1
+    ontology --- pg2
+    client -.->|"證據集 + 提示詞"| llm
+
+    classDef svc fill:#eef2ff,stroke:#6366f1,stroke-width:1.5px,color:#1e1b4b
+    classDef store fill:#ecfdf5,stroke:#10b981,color:#064e3b
+    classDef ext fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:4 3,color:#334155
+    class platform,consult,ontology svc
+    class pg1,pg2 store
+    class client,llm ext
 ```
 
 外部用戶端只經 platform 的 REST API 進入；服務之間走 gRPC，認證由叢集的服務網格（mTLS 加授權政策）負責，服務本身不驗證呼叫端。
+
+### 一次接地請求
+
+```mermaid
+%%{init: {"sequence": {"mirrorActors": false, "showSequenceNumbers": true}}}%%
+sequenceDiagram
+    autonumber
+    actor C as 用戶端
+    participant P as platform
+    participant K as consult
+    participant O as ontology
+    participant M as 自己的語言模型
+
+    C->>+P: POST /v2/ground（API key）
+    P->>P: 驗證租戶 · 限流 · 計量
+    P->>+K: Ground（x-tenant-id）
+    K->>+O: SearchArticles
+    O-->>-K: 候選條文
+    K->>K: 指派代號 L1…Ln · 判定可答性
+    K-->>-P: evidence 或 refused
+    P-->>-C: 回應
+
+    alt outcome = evidence
+        C->>M: 證據（附代號）+ 提示詞
+        M-->>C: 散文答案
+        C->>C: 剝除不在集合內的代號
+    else outcome = refused
+        C->>C: 呈現拒答，不重試、不呼叫模型
+    end
+```
 
 **語言模型不在本系統之內。** consult 決定可以引用什麼、能不能答，並交出附條文的封閉引用集合；把它寫成答案、並核驗答案只引用該集合，是呼叫端自己的模型與程式的責任。整合方式見 [`proto/README.md`](proto/README.md)。
 

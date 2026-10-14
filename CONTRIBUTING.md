@@ -14,6 +14,22 @@
 
 ## 快速入門
 
+```mermaid
+%%{init: {"flowchart": {"curve": "basis"}}}%%
+flowchart LR
+    db["① 備妥資料庫<br/>PostgreSQL 18"] --> br["② wt switch --create<br/>建樹 · 裝依賴"]
+    br --> svc["③ wt ontology · consult · platform<br/>各一個終端機"]
+    svc --> imp["④ envcite-sync moj<br/>首次匯入法規"]
+    imp --> restart["重啟 wt ontology"]
+    restart --> list["⑤ wt list<br/>取得 platform URL"]
+    list --> done(["合併後 wt remove"])
+
+    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
+    classDef end_ fill:#ecfdf5,stroke:#10b981,color:#064e3b
+    class db,br,svc,imp,restart,list step
+    class done end_
+```
+
 1. 備妥[開發用資料庫](#開發用資料庫)。
 2. 開分支：`wt switch --create feat/<簡述>`（建 worktree 並裝好依賴）。
 3. 各開一個終端機啟動服務：

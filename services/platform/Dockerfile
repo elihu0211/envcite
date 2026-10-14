@@ -25,7 +25,7 @@
 # (runtime packs, ILLink tasks) follow the SDK, so a floating tag would let the image
 # build and the cache disagree.
 # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
-ARG DOTNET_VERSION=10.0.401
+ARG DOTNET_VERSION=10.0.402
 # The registry is a parameter so CI can point the base images at the runner host's
 # pull-through cache and nowhere else (a missing image fails the build instead of falling
 # back to upstream). The default is the real registry, for local builds.

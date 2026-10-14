@@ -48,6 +48,27 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 
 要作答，呼叫 **`Ground`**，不要自己拿 `SearchArticles` 的結果給模型：檢索永遠回最佳的幾筆，即使語料裡毫無相關內容，「有沒有答案」的判斷由 consult 做掉。
 
+```mermaid
+%%{init: {"flowchart": {"curve": "basis"}}}%%
+flowchart TD
+    q(["使用者問題（原句）"]) --> ground["Ground"]
+    ground --> out{"outcome"}
+    out -->|evidence| ev["1–8 筆引用<br/>代號 L1…，依相關程度排序"]
+    out -->|refused| rf(["呈現給使用者<br/>不重試 · 不呼叫模型"])
+    ev --> llm["呼叫端的模型<br/>只能以 [L1] 引用"]
+    llm --> chk{"代號 ∈ 證據集？"}
+    chk -->|"剝除自創代號"| fin{"仍有引用？"}
+    fin -->|是| ans(["答案 + Citation.iri 出處"])
+    fin -->|否| rf
+
+    classDef ok fill:#ecfdf5,stroke:#10b981,color:#064e3b
+    classDef stop fill:#fef2f2,stroke:#ef4444,color:#7f1d1d
+    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
+    class ans,ev ok
+    class rf stop
+    class ground,llm step
+```
+
 - `question` 傳使用者原句，不要先改寫；`SearchArticles` 的 `query` 同樣傳原文，斷詞由服務做。
 - 回應的 `outcome` 恰有一個：`evidence`（1 至 8 筆引用，依相關程度排序）或 `refused`（拒答）。拒答是結果，不是錯誤：呈現給使用者，不重試、不呼叫模型。
 - 交給模型時，證據以代號（`L1`…）開頭，限定模型只能以 `[L1]` 引用。代號的字母是來源本體的：目前只有法規本體（`law`，字母 `L`），每筆 `Citation.ontology` 標明出處；日後新增本體各領一個字母，序號在整份證據內連續。

@@ -14,17 +14,36 @@
 ## 資料流
 
 ```mermaid
+%%{init: {"flowchart": {"curve": "basis"}}}%%
 flowchart LR
-    src[(全國法規資料庫)]
+    src[("全國法規資料庫")]
+
     subgraph sync["envcite-sync（排程）"]
         direction LR
-        snap[快照檔] --> corpus[(語料與檢索索引)]
+        acquire["acquire<br/>取得"] --> snap["快照檔"]
+        snap --> import["import<br/>匯入"]
+        import --> proj["projection<br/>檢索索引"]
     end
-    src -->|acquire| snap
-    corpus -->|"envcite-pipeline<br/>語言模型抽取 · 閘門驗證"| ann[(標註)]
-    corpus --> api{{gRPC 伺服器}}
-    ann -->|僅 confirmed| api
-    api --> callers([platform · consult])
+
+    corpus[("語料與<br/>檢索索引")]
+    pipeline["envcite-pipeline<br/>語言模型抽取 · 閘門驗證"]
+    ann[("標註")]
+    api{{"gRPC 伺服器<br/>Ontology · Reasoning"}}
+    callers(["platform · consult"])
+
+    src --> acquire
+    proj --> corpus
+    corpus --> pipeline --> ann
+    corpus --> api
+    ann -->|"僅 confirmed"| api
+    api --> callers
+
+    classDef job fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
+    classDef store fill:#ecfdf5,stroke:#10b981,color:#064e3b
+    classDef ext fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:4 3,color:#334155
+    class acquire,import,proj,pipeline,api job
+    class src,snap,corpus,ann store
+    class callers ext
 ```
 
 - **語料與檢索**：`envcite-sync` 依序取得、匯入、投影檢索索引。
