@@ -68,9 +68,7 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         // 強制本身由 PortalMfaRequiredTests 以自己的主機（設成 true）測。
         builder.UseSetting("Platform:Portal:RequireMfaForAdmins", "false");
         builder.UseSetting("Ontology:Address", Ontology.Address.ToString());
-        builder.UseSetting("Ontology:InternalToken", FakeOntologyServer.InternalToken);
         builder.UseSetting("Consult:Address", Consult.Address.ToString());
-        builder.UseSetting("Consult:InternalToken", FakeConsultServer.InternalToken);
         builder.UseSetting("Platform:Plans:standard:PermitLimit", RateLimitPermits.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting("Platform:Plans:pro:PermitLimit", (RateLimitPermits * 2).ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting($"Platform:TenantPlans:{ProTenant}", "pro");

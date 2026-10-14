@@ -15,7 +15,6 @@ namespace EnvCite.Platform.Tests;
 /// <summary>In-process h2c gRPC server standing in for envcite-ontology; records call metadata.</summary>
 public sealed class FakeOntologyServer : IAsyncDisposable
 {
-    public const string InternalToken = "test-ontology-token";
     public const string KnownLawId = "O0020001";
     public const string UnavailableLawId = "trigger-unavailable";
 
@@ -145,11 +144,6 @@ public sealed class FakeOntologyServer : IAsyncDisposable
         private void Authorize(ServerCallContext context, string lawId)
         {
             server.ReceivedMetadata.Enqueue(context.RequestHeaders);
-            if (context.RequestHeaders.GetValue("authorization") != $"Bearer {InternalToken}")
-            {
-                throw new RpcException(new Status(StatusCode.Unauthenticated, "bad token"));
-            }
-
             if (lawId == UnavailableLawId)
             {
                 throw new RpcException(new Status(StatusCode.Unavailable, "down"));
@@ -170,11 +164,6 @@ public sealed class FakeOntologyServer : IAsyncDisposable
         public override Task<EvaluateResponse> Evaluate(EvaluateRequest request, ServerCallContext context)
         {
             server.ReceivedMetadata.Enqueue(context.RequestHeaders);
-            if (context.RequestHeaders.GetValue("authorization") != $"Bearer {InternalToken}")
-            {
-                throw new RpcException(new Status(StatusCode.Unauthenticated, "bad token"));
-            }
-
             server.LastEvaluate = request;
             if (request.ConductOn == "yesterday")
             {

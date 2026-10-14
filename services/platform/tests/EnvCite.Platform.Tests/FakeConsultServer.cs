@@ -15,7 +15,6 @@ namespace EnvCite.Platform.Tests;
 /// <summary>In-process h2c gRPC server standing in for envcite-consult; records call metadata.</summary>
 public sealed class FakeConsultServer : IAsyncDisposable
 {
-    public const string InternalToken = "test-consult-token";
     public const string AnswerableQuestion = "露天燃燒如何處罰";
     public const string UnrelatedQuestion = "量子電腦";
     public const string UnavailableQuestion = "trigger-unavailable";
@@ -51,11 +50,6 @@ public sealed class FakeConsultServer : IAsyncDisposable
         public override Task<GroundResponse> Ground(GroundRequest request, ServerCallContext context)
         {
             server.Received.Enqueue((request, context.RequestHeaders));
-            if (context.RequestHeaders.GetValue("authorization") != $"Bearer {InternalToken}")
-            {
-                throw new RpcException(new Status(StatusCode.Unauthenticated, "bad token"));
-            }
-
             if (request.AsOf is { Length: > 0 } && !DateOnly.TryParseExact(request.AsOf, "yyyy-MM-dd", out _))
             {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));

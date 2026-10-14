@@ -28,8 +28,6 @@ if (generatingOpenApi)
     builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
     {
         ["ConnectionStrings:Platform"] = "Host=build-time",
-        ["Ontology:InternalToken"] = "build-time",
-        ["Consult:InternalToken"] = "build-time",
     });
 }
 

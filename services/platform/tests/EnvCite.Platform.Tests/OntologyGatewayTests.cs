@@ -12,7 +12,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
     private const string LawPath = $"/v2/laws/{FakeOntologyServer.KnownLawId}";
 
     [Fact]
-    public async Task GetLawProxiesWithInternalTokenAndTenantMetadata()
+    public async Task GetLawProxiesWithTenantMetadata()
     {
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("gw");
         using var client = factory.CreateTenantClient(key.Key);
@@ -22,7 +22,6 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         Assert.Equal("空氣污染防制法", law!.Title);
         Assert.Contains(factory.Ontology.ReceivedMetadata, m =>
             m.GetValue("x-tenant-id") == tenant.Identifier
-            && m.GetValue("authorization") == $"Bearer {FakeOntologyServer.InternalToken}"
             && !string.IsNullOrEmpty(m.GetValue("x-request-id")));
     }
 

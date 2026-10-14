@@ -52,8 +52,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal(["O0040001"], outcome.UncoveredLawIds);
         Assert.Equal("2020-01-01", result.Earlier[0].FirstDay);
         Assert.Contains(factory.Ontology.ReceivedMetadata, m =>
-            m.GetValue("x-tenant-id") == tenant.Identifier
-            && m.GetValue("authorization") == $"Bearer {FakeOntologyServer.InternalToken}");
+            m.GetValue("x-tenant-id") == tenant.Identifier);
     }
 
     [Fact]

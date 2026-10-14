@@ -17,13 +17,10 @@ public abstract class InternalGrpcClientOptions
     /// </summary>
     public string Address { get; set; } = string.Empty;
 
-    /// <summary>以 <c>authorization: Bearer …</c> 送出的共用密鑰（即該服務的 internal token）。</summary>
-    public string InternalToken { get; set; } = string.Empty;
-
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 }
 
-/// <summary>位址要是絕對 URI、密鑰不可空、逾時要為正；錯誤訊息指出是哪個設定鍵。</summary>
+/// <summary>位址要是絕對 URI、逾時要為正；錯誤訊息指出是哪個設定鍵。</summary>
 public sealed class InternalGrpcClientOptionsValidator<TOptions> : IValidateOptions<TOptions>
     where TOptions : InternalGrpcClientOptions, IPlatformOptions
 {
@@ -33,11 +30,6 @@ public sealed class InternalGrpcClientOptionsValidator<TOptions> : IValidateOpti
         if (!Uri.TryCreate(options.Address, UriKind.Absolute, out _))
         {
             failures.Add($"{TOptions.SectionName}:Address must be an absolute URI.");
-        }
-
-        if (string.IsNullOrEmpty(options.InternalToken))
-        {
-            failures.Add($"{TOptions.SectionName}:InternalToken is not configured.");
         }
 
         if (options.Timeout <= TimeSpan.Zero)
@@ -52,8 +44,8 @@ public sealed class InternalGrpcClientOptionsValidator<TOptions> : IValidateOpti
 public static class InternalGrpcClient
 {
     /// <summary>
-    /// 註冊一個內部服務的 typed gRPC client，附帶內部驗證與 tenant/request metadata。
-    /// 位址與密鑰在用到時才自 <see cref="IOptions{TOptions}"/> 取得，驗證在主機啟動時做。
+    /// 註冊一個內部服務的 typed gRPC client，附帶 tenant/request metadata；服務間的認證與授權由網格負責，
+    /// 這裡不帶應用層密鑰。位址在用到時才自 <see cref="IOptions{TOptions}"/> 取得，驗證在主機啟動時做。
     /// </summary>
     public static IServiceCollection AddInternalGrpcClient<TClient, TOptions>(this IServiceCollection services)
         where TClient : class
@@ -67,7 +59,6 @@ public static class InternalGrpcClient
                 o.Address = new Uri(provider.GetRequiredService<IOptions<TOptions>>().Value.Address))
             .AddCallCredentials((_, metadata, provider) =>
             {
-                metadata.Add("authorization", $"Bearer {provider.GetRequiredService<IOptions<TOptions>>().Value.InternalToken}");
                 var httpContext = provider.GetRequiredService<IHttpContextAccessor>().HttpContext;
                 if (httpContext is not null)
                 {

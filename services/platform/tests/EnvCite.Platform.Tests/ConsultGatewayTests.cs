@@ -31,8 +31,7 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
         Assert.False(string.IsNullOrEmpty(authority.Text));
         Assert.Contains(factory.Consult.Received, r =>
             r.Request.AsOf == "2020-01-01"
-            && r.Headers.GetValue("x-tenant-id") == tenant.Identifier
-            && r.Headers.GetValue("authorization") == $"Bearer {FakeConsultServer.InternalToken}");
+            && r.Headers.GetValue("x-tenant-id") == tenant.Identifier);
     }
 
     [Fact]
