@@ -15,8 +15,6 @@ from env_law_ontology.server import build_server
 from env_law_ontology.store import OntologyStore
 from tests.sample import sample_laws, stored_snapshot
 
-TOKEN = "test-internal-token"
-
 
 @pytest.fixture(scope="session")
 def dsn() -> Iterator[str]:
@@ -82,7 +80,7 @@ def store(dsn: str) -> Iterator[OntologyStore]:
 
 @pytest.fixture(scope="session")
 def server_address(store: OntologyStore) -> Iterator[str]:
-    server, port = build_server(store, TOKEN, "127.0.0.1:0")
+    server, port = build_server(store, "127.0.0.1:0")
     server.start()
     yield f"127.0.0.1:{port}"
     server.stop(grace=None)
@@ -104,9 +102,8 @@ def reasoning_stub(channel: grpc.Channel) -> reasoning_pb2_grpc.ReasoningService
     return reasoning_pb2_grpc.ReasoningServiceStub(channel)
 
 
-def auth() -> tuple[tuple[str, str], ...]:
+def call_metadata() -> tuple[tuple[str, str], ...]:
     return (
-        ("authorization", f"Bearer {TOKEN}"),
         ("x-tenant-id", "acme"),
         ("x-request-id", "req-1"),
     )

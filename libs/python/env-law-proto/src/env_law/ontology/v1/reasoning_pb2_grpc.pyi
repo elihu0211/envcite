@@ -31,9 +31,8 @@ class ReasoningServiceStub:
     conclusions drawn from them.
 
     Same transport rules as OntologyService (see proto/README.md): internal service,
-    `authorization: Bearer <internal token>`, optional `x-tenant-id` / `x-request-id`
-    for logging only. Errors carry a google.rpc.ErrorInfo (reason in UPPER_SNAKE_CASE,
-    domain "ontology.env.law") and, for INVALID_ARGUMENT, a google.rpc.BadRequest.
+    optional `x-tenant-id` / `x-request-id` for logging only. Errors carry a
+    google.rpc.ErrorInfo (reason in UPPER_SNAKE_CASE, domain "ontology.env.law") and, for INVALID_ARGUMENT, a google.rpc.BadRequest.
 
     Every conclusion here is a CANDIDATE. Nothing is concluded from a statement that
     has not been confirmed by the verification gates; with no confirmed annotations
@@ -63,9 +62,8 @@ class ReasoningServiceAsyncStub(ReasoningServiceStub):
     conclusions drawn from them.
 
     Same transport rules as OntologyService (see proto/README.md): internal service,
-    `authorization: Bearer <internal token>`, optional `x-tenant-id` / `x-request-id`
-    for logging only. Errors carry a google.rpc.ErrorInfo (reason in UPPER_SNAKE_CASE,
-    domain "ontology.env.law") and, for INVALID_ARGUMENT, a google.rpc.BadRequest.
+    optional `x-tenant-id` / `x-request-id` for logging only. Errors carry a
+    google.rpc.ErrorInfo (reason in UPPER_SNAKE_CASE, domain "ontology.env.law") and, for INVALID_ARGUMENT, a google.rpc.BadRequest.
 
     Every conclusion here is a CANDIDATE. Nothing is concluded from a statement that
     has not been confirmed by the verification gates; with no confirmed annotations
@@ -91,9 +89,8 @@ class ReasoningServiceServicer(metaclass=_abc_1.ABCMeta):
     conclusions drawn from them.
 
     Same transport rules as OntologyService (see proto/README.md): internal service,
-    `authorization: Bearer <internal token>`, optional `x-tenant-id` / `x-request-id`
-    for logging only. Errors carry a google.rpc.ErrorInfo (reason in UPPER_SNAKE_CASE,
-    domain "ontology.env.law") and, for INVALID_ARGUMENT, a google.rpc.BadRequest.
+    optional `x-tenant-id` / `x-request-id` for logging only. Errors carry a
+    google.rpc.ErrorInfo (reason in UPPER_SNAKE_CASE, domain "ontology.env.law") and, for INVALID_ARGUMENT, a google.rpc.BadRequest.
 
     Every conclusion here is a CANDIDATE. Nothing is concluded from a statement that
     has not been confirmed by the verification gates; with no confirmed annotations

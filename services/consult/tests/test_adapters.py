@@ -12,12 +12,12 @@ class _Ontology(ontology_pb2_grpc.OntologyServiceServicer):
     """Answers SearchArticles with fixed hits and records what it was sent."""
 
     def __init__(self) -> None:
-        self.requests: list[tuple[ontology_pb2.SearchArticlesRequest, dict[str, str]]] = []
+        self.requests: list[ontology_pb2.SearchArticlesRequest] = []
 
     def SearchArticles(
         self, request: ontology_pb2.SearchArticlesRequest, context: grpc.ServicerContext
     ) -> ontology_pb2.SearchArticlesResponse:
-        self.requests.append((request, dict(context.invocation_metadata())))  # type: ignore[arg-type]
+        self.requests.append(request)
         return ontology_pb2.SearchArticlesResponse(
             hits=[
                 ontology_pb2.ArticleHit(
@@ -46,7 +46,7 @@ def ontology() -> Iterator[tuple[_Ontology, GrpcOntology]]:
     port = server.add_insecure_port("127.0.0.1:0")
     server.start()
     with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
-        yield fake, GrpcOntology(channel, "secret")
+        yield fake, GrpcOntology(channel)
     server.stop(grace=None)
 
 
@@ -64,13 +64,12 @@ def test_hits_become_articles_scored_by_lexical_relevance(
     assert [a.score for a in articles] == pytest.approx([0.4, 0.1])
 
 
-def test_search_sends_the_internal_token_and_arguments(
+def test_search_sends_the_arguments(
     ontology: tuple[_Ontology, GrpcOntology],
 ) -> None:
     fake, adapter = ontology
 
     adapter.search("排放", as_of="2024-01-01", limit=3)
 
-    request, metadata = fake.requests[0]
+    request = fake.requests[0]
     assert (request.query, request.as_of, request.limit) == ("排放", "2024-01-01", 3)
-    assert metadata["authorization"] == "Bearer secret"

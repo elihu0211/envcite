@@ -1,4 +1,4 @@
-"""gRPC servicer。內部 token 認證為共用元件（`env_law_grpc.InternalTokenInterceptor`）。
+"""gRPC servicer。
 
 錯誤一律丟 `errors.ServiceError`，由 `errors.maps_errors` 轉成帶 ErrorInfo 的狀態。
 """

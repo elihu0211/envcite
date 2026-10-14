@@ -7,8 +7,6 @@ from env_law.consult.v2 import consult_pb2_grpc
 from env_law_consult.ports import Article
 from env_law_consult.server import build_server
 
-TOKEN = "test-internal-token"
-
 
 class FakeOntology:
     """An OntologyPort that returns what a test hands it.
@@ -43,7 +41,7 @@ def ontology() -> FakeOntology:
 
 @pytest.fixture
 def server_address(ontology: FakeOntology) -> Iterator[str]:
-    server, port = build_server(ontology, TOKEN, "127.0.0.1:0")
+    server, port = build_server(ontology, "127.0.0.1:0")
     server.start()
     yield f"127.0.0.1:{port}"
     server.stop(grace=None)
@@ -55,9 +53,8 @@ def stub(server_address: str) -> Iterator[consult_pb2_grpc.ConsultationServiceSt
         yield consult_pb2_grpc.ConsultationServiceStub(ch)
 
 
-def auth() -> tuple[tuple[str, str], ...]:
+def call_metadata() -> tuple[tuple[str, str], ...]:
     return (
-        ("authorization", f"Bearer {TOKEN}"),
         ("x-tenant-id", "acme"),
         ("x-request-id", "req-1"),
     )

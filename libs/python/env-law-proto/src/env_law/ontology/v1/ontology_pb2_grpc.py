@@ -27,7 +27,7 @@ if _version_not_supported:
 
 class OntologyServiceStub:
     """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: callers must send `authorization: Bearer <internal token>`.
+    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
 
@@ -56,7 +56,7 @@ class OntologyServiceStub:
 
 class OntologyServiceServicer:
     """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: callers must send `authorization: Bearer <internal token>`.
+    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
 
@@ -111,7 +111,7 @@ def add_OntologyServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class OntologyService:
     """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: callers must send `authorization: Bearer <internal token>`.
+    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
 

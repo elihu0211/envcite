@@ -17,8 +17,6 @@ from env_law_grpc.connection import (
 from env_law_ontology.server import build_server
 from env_law_ontology.store import OntologyStore
 
-from .conftest import TOKEN
-
 
 def test_the_servers_ping_floor_is_below_the_clients_ping_interval() -> None:
     """客戶端 ping 得比伺服器容許的更密，伺服器會以 too_many_pings 關連線。"""
@@ -32,7 +30,7 @@ def test_a_client_survives_the_server_ending_a_connection_that_reached_its_max_a
 ) -> None:
     """GOAWAY 之後客戶端重連，後續呼叫照常成功，不是失敗一次。"""
     short = (("grpc.max_connection_age_ms", 400), ("grpc.max_connection_age_grace_ms", 200))
-    server, port = build_server(store, TOKEN, "127.0.0.1:0", options=short)
+    server, port = build_server(store, "127.0.0.1:0", options=short)
     server.start()
     try:
         with grpc.insecure_channel(f"127.0.0.1:{port}", options=client_options()) as channel:

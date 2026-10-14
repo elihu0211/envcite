@@ -18,11 +18,10 @@ buf breaking --against '.git#branch=main'
 
 ## 約定
 
-**Metadata**
+**Metadata**（服務間認證由叢集的服務網格〔mTLS 加授權政策〕負責，服務本身不驗證呼叫端）
 
 | key | 必填 | 說明 |
 |-----|------|------|
-| `authorization` | 是 | `Bearer <內部 token>`，缺少或不符 → `UNAUTHENTICATED` |
 | `x-tenant-id` | consult 必填 | 配額與稽核；ontology 只用於日誌。consult 缺少 → `INVALID_ARGUMENT` |
 | `x-request-id` | 否 | 只用於日誌 |
 
@@ -35,7 +34,6 @@ buf breaking --against '.git#branch=main'
 | 狀態碼 | `reason` | 何時 | 重試 |
 |--------|----------|------|------|
 | `INVALID_ARGUMENT` | `INVALID_REQUEST` | 參數不合法、缺 `x-tenant-id`；欄位原因在 `BadRequest`：`EMPTY`、`INVALID_DATE`、`OUT_OF_RANGE`、`DATE_ORDER`、`RESERVED_CONCEPT`、`INVALID_NUMBER`、`UNSET` | 否 |
-| `UNAUTHENTICATED` | — | 內部 token 缺少或錯誤 | 否 |
 | `NOT_FOUND` | `LAW_NOT_FOUND` | 語料沒有這部法規 | 否 |
 | `NOT_FOUND` | `AS_OF_NOT_COVERED` | 法規存在，但沒有版本涵蓋 `as_of` | 否 |
 | `RESOURCE_EXHAUSTED` | `BUSY` | `Evaluate` 在呼叫的期限內等不到名額 | 是，退避 |

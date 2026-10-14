@@ -11,14 +11,14 @@ from env_law.ontology.v1 import ontology_pb2, ontology_pb2_grpc
 from env_law_consult.adapters import GrpcOntology
 from env_law_consult.server import build_server
 from env_law_grpc import stop_on_sigterm
-from tests.conftest import TOKEN, FakeOntology, auth
+from tests.conftest import FakeOntology, call_metadata
 
 
 def _ground(
     stub: consult_pb2_grpc.ConsultationServiceStub, question: str = "露天燃燒如何處罰"
 ) -> consult_pb2.GroundResponse:
     response: consult_pb2.GroundResponse = stub.Ground(
-        consult_pb2.GroundRequest(question=question), metadata=auth()
+        consult_pb2.GroundRequest(question=question), metadata=call_metadata()
     )
     return response
 
@@ -47,27 +47,17 @@ def test_blank_question_is_refused_not_an_error(
 
 
 def test_missing_tenant_is_rejected(stub: consult_pb2_grpc.ConsultationServiceStub) -> None:
-    metadata = (("authorization", f"Bearer {TOKEN}"),)
-    with pytest.raises(grpc.RpcError) as err:
-        stub.Ground(consult_pb2.GroundRequest(question="x"), metadata=metadata)
-
-    assert err.value.code() is grpc.StatusCode.INVALID_ARGUMENT
-
-
-def test_missing_token_is_unauthenticated(
-    stub: consult_pb2_grpc.ConsultationServiceStub,
-) -> None:
     with pytest.raises(grpc.RpcError) as err:
         stub.Ground(consult_pb2.GroundRequest(question="x"), metadata=())
 
-    assert err.value.code() is grpc.StatusCode.UNAUTHENTICATED
+    assert err.value.code() is grpc.StatusCode.INVALID_ARGUMENT
 
 
 def test_one_call_retrieves_once_at_the_requested_date(
     stub: consult_pb2_grpc.ConsultationServiceStub, ontology: FakeOntology
 ) -> None:
     request = consult_pb2.GroundRequest(question="露天燃燒如何處罰", as_of="2020-01-01")
-    stub.Ground(request, metadata=auth())
+    stub.Ground(request, metadata=call_metadata())
 
     assert ontology.searches == [("露天燃燒如何處罰", "2020-01-01")]
 
@@ -86,7 +76,7 @@ def stub_over_rejecting_ontology() -> Iterator[consult_pb2_grpc.ConsultationServ
     upstream_port = upstream.add_insecure_port("127.0.0.1:0")
     upstream.start()
     with grpc.insecure_channel(f"127.0.0.1:{upstream_port}") as upstream_channel:
-        server, port = build_server(GrpcOntology(upstream_channel, "x"), TOKEN, "127.0.0.1:0")
+        server, port = build_server(GrpcOntology(upstream_channel), "127.0.0.1:0")
         server.start()
         with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
             yield consult_pb2_grpc.ConsultationServiceStub(channel)
@@ -99,7 +89,7 @@ def test_ontology_status_passes_through(
 ) -> None:
     with pytest.raises(grpc.RpcError) as err:
         stub_over_rejecting_ontology.Ground(
-            consult_pb2.GroundRequest(question="排放", as_of="not-a-date"), metadata=auth()
+            consult_pb2.GroundRequest(question="排放", as_of="not-a-date"), metadata=call_metadata()
         )
 
     assert err.value.code() is grpc.StatusCode.INVALID_ARGUMENT
@@ -107,7 +97,7 @@ def test_ontology_status_passes_through(
 
 
 def test_sigterm_stops_the_server(ontology: FakeOntology) -> None:
-    server, _ = build_server(ontology, TOKEN, "127.0.0.1:0")
+    server, _ = build_server(ontology, "127.0.0.1:0")
     previous = signal.getsignal(signal.SIGTERM)
     try:
         stop_on_sigterm(server)

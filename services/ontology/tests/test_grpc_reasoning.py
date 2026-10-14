@@ -13,7 +13,7 @@ from env_law_ontology import errors
 from env_law_ontology.annotate import load
 from env_law_ontology.reasoning_service import ReasoningServicer
 from env_law_ontology.store import OntologyStore
-from tests.conftest import auth
+from tests.conftest import call_metadata
 from tests.reasoning_support import Conn
 from tests.test_annotation import LAW, _doc, _duty, _limit
 from tests.test_incremental import _first, _law_v1
@@ -67,7 +67,7 @@ def test_statements_come_back_typed(conn: Conn, tmp_path: Path, reasoning_stub: 
     duty_id, limit_id = _committed(conn, tmp_path)
 
     response = reasoning_stub.ListStatements(
-        reasoning_pb2.ListStatementsRequest(law_id=LAW), metadata=auth()
+        reasoning_pb2.ListStatementsRequest(law_id=LAW), metadata=call_metadata()
     )
 
     by_id = {s.id: s for s in response.statements}
@@ -94,7 +94,7 @@ def test_a_violation_is_a_candidate_with_its_source(
 ) -> None:
     duty_id, _ = _committed(conn, tmp_path)
 
-    response = reasoning_stub.Evaluate(_case(), metadata=auth())
+    response = reasoning_stub.Evaluate(_case(), metadata=call_metadata())
 
     assert [(v.statement_id, v.verdict) for v in response.at_decision.verdicts] == [
         (duty_id, reasoning_pb2.VERDICT_VIOLATION)
@@ -115,7 +115,7 @@ def test_a_law_changed_after_the_conduct_is_reported_for_both_times(
     request = _case(conduct_on="2019-01-01", decided_on="2020-06-01")
     request.facts[1].values[0].number.value = "90"
 
-    response = reasoning_stub.Evaluate(request, metadata=auth())
+    response = reasoning_stub.Evaluate(request, metadata=call_metadata())
 
     assert response.at_decision.verdicts[0].verdict == reasoning_pb2.VERDICT_VIOLATION
     (before,) = response.earlier
@@ -130,7 +130,7 @@ def test_a_day_the_corpus_does_not_cover_is_named_not_silently_empty(
     conn.commit()
     request = _case(conduct_on="2010-01-01", decided_on="2020-06-01")
 
-    response = reasoning_stub.Evaluate(request, metadata=auth())
+    response = reasoning_stub.Evaluate(request, metadata=call_metadata())
 
     assert not response.earlier[0].outcome.verdicts
     assert list(response.earlier[0].outcome.uncovered_law_ids) == [LAW]
@@ -143,7 +143,7 @@ def test_no_annotation_means_no_conclusion(
     _first(conn, tmp_path, _law_v1())
     conn.commit()
 
-    response = reasoning_stub.Evaluate(_case(), metadata=auth())
+    response = reasoning_stub.Evaluate(_case(), metadata=call_metadata())
 
     assert not response.at_decision.verdicts
     assert not response.at_decision.penalties
@@ -156,11 +156,12 @@ def test_an_unknown_law_and_an_uncovered_date_are_different_reasons(
 
     with pytest.raises(grpc.RpcError) as unknown:
         reasoning_stub.ListStatements(
-            reasoning_pb2.ListStatementsRequest(law_id="Z9999999"), metadata=auth()
+            reasoning_pb2.ListStatementsRequest(law_id="Z9999999"), metadata=call_metadata()
         )
     with pytest.raises(grpc.RpcError) as early:
         reasoning_stub.ListStatements(
-            reasoning_pb2.ListStatementsRequest(law_id=LAW, as_of="1900-01-01"), metadata=auth()
+            reasoning_pb2.ListStatementsRequest(law_id=LAW, as_of="1900-01-01"),
+            metadata=call_metadata(),
         )
 
     assert unknown.value.code() == grpc.StatusCode.NOT_FOUND
@@ -183,7 +184,7 @@ def test_every_invalid_field_is_reported_at_once(reasoning_stub: Stub) -> None:
     )
 
     with pytest.raises(grpc.RpcError) as error:
-        reasoning_stub.Evaluate(request, metadata=auth())
+        reasoning_stub.Evaluate(request, metadata=call_metadata())
 
     assert error.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     info, fields = _details(error.value)
@@ -198,7 +199,7 @@ def test_every_invalid_field_is_reported_at_once(reasoning_stub: Stub) -> None:
 def test_conduct_after_decision_is_a_date_order_violation(reasoning_stub: Stub) -> None:
     with pytest.raises(grpc.RpcError) as error:
         reasoning_stub.Evaluate(
-            _case(conduct_on="2020-01-02", decided_on="2020-01-01"), metadata=auth()
+            _case(conduct_on="2020-01-02", decided_on="2020-01-01"), metadata=call_metadata()
         )
 
     assert error.value.code() == grpc.StatusCode.INVALID_ARGUMENT
@@ -209,7 +210,9 @@ def test_the_existing_service_uses_the_same_error_model(
     stub: ontology_pb2_grpc.OntologyServiceStub,
 ) -> None:
     with pytest.raises(grpc.RpcError) as error:
-        stub.GetLaw(ontology_pb2.GetLawRequest(id="O0020001", as_of="yesterday"), metadata=auth())
+        stub.GetLaw(
+            ontology_pb2.GetLawRequest(id="O0020001", as_of="yesterday"), metadata=call_metadata()
+        )
 
     assert error.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     assert _details(error.value) == (

@@ -1,4 +1,4 @@
-"""gRPC 伺服器啟動；環境變數：ONTOLOGY_INTERNAL_TOKEN、ONTOLOGY_DSN（必填）、ONTOLOGY_GRPC_PORT。"""
+"""gRPC 伺服器啟動；環境變數：ONTOLOGY_DSN（必填）、ONTOLOGY_GRPC_PORT。"""
 
 from __future__ import annotations
 
@@ -11,12 +11,7 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
 from env_law.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
-from env_law_grpc import (
-    SERVER_OPTIONS,
-    InternalTokenInterceptor,
-    configure_telemetry,
-    stop_on_sigterm,
-)
+from env_law_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
 from env_law_ontology.reasoning_service import ReasoningServicer
 from env_law_ontology.service import OntologyServicer
 from env_law_ontology.settings import ServerSettings, load
@@ -35,7 +30,6 @@ MAX_CONCURRENT_RPCS = 2 * WORKERS
 
 def build_server(
     store: OntologyStore,
-    token: str,
     address: str = "[::]:0",
     options: Sequence[tuple[str, int]] = SERVER_OPTIONS,
     interceptors: Sequence[grpc.ServerInterceptor] = (),
@@ -43,8 +37,7 @@ def build_server(
     """建立但不啟動；回傳伺服器與實際綁定的埠號。"""
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=WORKERS),
-        # 追蹤攔截器在最外層：認證失敗的呼叫也要看得到。
-        interceptors=[*interceptors, InternalTokenInterceptor(token)],
+        interceptors=list(interceptors),
         maximum_concurrent_rpcs=MAX_CONCURRENT_RPCS,
         options=options,
     )
@@ -55,7 +48,6 @@ def build_server(
     )
 
     reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(ReasoningServicer(store), server)
-    # 反射走同一個 token 攔截器（只有健康檢查豁免），grpcurl 等工具要帶 authorization。
     reflection.enable_server_reflection(
         (SERVICE_NAME, REASONING_SERVICE_NAME, health.SERVICE_NAME, reflection.SERVICE_NAME), server
     )
@@ -79,7 +71,6 @@ def main() -> None:
     register_annotation_health(store)
     server, bound = build_server(
         store,
-        settings.ontology_internal_token.get_secret_value(),
         f"[::]:{settings.ontology_grpc_port}",
         interceptors=interceptors,
     )

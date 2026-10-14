@@ -11,15 +11,13 @@ from env_law_consult.ports import Article
 class GrpcOntology:
     """以 env-law-ontology 的 `SearchArticles` 實作的 `OntologyPort`。"""
 
-    def __init__(self, channel: grpc.Channel, token: str, *, timeout: float = 5.0) -> None:
+    def __init__(self, channel: grpc.Channel, *, timeout: float = 5.0) -> None:
         self._stub = ontology_pb2_grpc.OntologyServiceStub(channel)
-        self._metadata = (("authorization", f"Bearer {token}"),)
         self._timeout = timeout
 
     def search(self, query: str, *, as_of: str = "", limit: int = 10) -> list[Article]:
         response = self._stub.SearchArticles(
             ontology_pb2.SearchArticlesRequest(query=query, as_of=as_of, limit=limit),
-            metadata=self._metadata,
             timeout=self._timeout,
         )
         return [

@@ -5,7 +5,7 @@ package env_law.ontology.v1;
 option csharp_namespace = "EnvLaw.Ontology.V1";
 
 // Read access to the environmental-law ontology (relational, PostgreSQL).
-// Internal service: callers must send `authorization: Bearer <internal token>`.
+// Internal service: the callee does not authenticate callers; the cluster's service mesh does.
 // Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
 service OntologyService {
   // Returns one law by its local id, or NOT_FOUND.

@@ -36,10 +36,10 @@ uv run ruff check .          # --fix 可自動修
 uv run ruff format .
 uv run python -m mypy src tests
 ../../libs/python/env-law-proto/scripts/generate.sh   # 改完根 proto/ 之後重新產生
-CONSULT_INTERNAL_TOKEN=dev ONTOLOGY_TARGET=dns:///localhost:50051 ONTOLOGY_INTERNAL_TOKEN=dev uv run env-law-consult   # :50052；worktree 內用 `wt consult`
+ONTOLOGY_TARGET=dns:///localhost:50051 uv run env-law-consult   # :50052；worktree 內用 `wt consult`
 ```
 
-- 伺服器環境變數：`CONSULT_INTERNAL_TOKEN`（必填；呼叫端送 `authorization: Bearer <token>`）、`ONTOLOGY_TARGET`（必填，gRPC 目標，例如 `dns:///ontology:50051`）、`ONTOLOGY_INTERNAL_TOKEN`（必填）、`CONSULT_GRPC_PORT`（50052）。
+- 伺服器環境變數：`ONTOLOGY_TARGET`（必填，gRPC 目標，例如 `dns:///ontology:50051`）、`CONSULT_GRPC_PORT`（50052）。服務間認證由叢集的服務網格（mTLS 加授權政策）負責，服務本身不驗證呼叫端。
 - 測試不需要外部服務：本體以 fake 實作。**fake 不是次等實作**——管線的職責是決定拿到證據之後怎麼做，所以檢索本身正是測試該控制的部分。
 - `ruff` 的 `RUF001`–`RUF003` 關閉：拒答訊息與 docstring 以中文書寫，全形標點是對的（理由見倉庫根 `pyproject.toml`）。
 
@@ -52,7 +52,7 @@ CONSULT_INTERNAL_TOKEN=dev ONTOLOGY_TARGET=dns:///localhost:50051 ONTOLOGY_INTER
 
 ## Safety
 
-- 不提交機密。`CONSULT_INTERNAL_TOKEN`、`ONTOLOGY_INTERNAL_TOKEN` 一律由環境變數供給。
+- 不提交機密；設定一律由環境變數供給。
 - 不要手改 `libs/python/env-law-proto/src/**/*_pb2*`（跑其 `scripts/generate.sh`）。
 - 不要在本服務加入生成模型的呼叫：那會把模型選型、金鑰與按語彙單元計費帶回本服務，而它們已明確劃給呼叫端（論據見 `env-law-docs` 的 00-01）。
 

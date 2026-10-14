@@ -28,7 +28,7 @@ GRPC_VERSION: str
 
 class OntologyServiceStub:
     """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: callers must send `authorization: Bearer <internal token>`.
+    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
 
@@ -49,7 +49,7 @@ class OntologyServiceStub:
 @_typing.type_check_only
 class OntologyServiceAsyncStub(OntologyServiceStub):
     """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: callers must send `authorization: Bearer <internal token>`.
+    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
 
@@ -66,7 +66,7 @@ class OntologyServiceAsyncStub(OntologyServiceStub):
 
 class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
     """Read access to the environmental-law ontology (relational, PostgreSQL).
-    Internal service: callers must send `authorization: Bearer <internal token>`.
+    Internal service: the callee does not authenticate callers; the cluster's service mesh does.
     Optional metadata: `x-tenant-id`, `x-request-id` (logging/audit only; data is not tenant-scoped).
     """
 
