@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,6 +14,8 @@ from typing import Any
 
 import psycopg
 
+from env_law_ontology.settings import DatabaseSettings
+from env_law_ontology.settings import load as load_settings
 from env_law_ontology.verification.config import ConfigError, ModelSet
 from env_law_ontology.verification.config import load as load_models
 from env_law_ontology.verification.extract import Extracted, extract_unit
@@ -263,9 +264,6 @@ def main() -> None:
             raise SystemExit("give --law (one or more) or --pending, not both and not neither")
         if args.limit is not None and (not args.pending or args.limit < 1):
             raise SystemExit("--limit is a positive number and goes with --pending")
-    dsn = os.environ.get("ONTOLOGY_DSN", "")
-    if not dsn and not args.check:
-        raise SystemExit("ONTOLOGY_DSN is required")
     try:
         models = load_models(args.models)
     except ConfigError as e:
@@ -274,6 +272,7 @@ def main() -> None:
         assert_distinct(models.everyone)
         log.info("通過：%s", "、".join(m.name for m in models.everyone))
         return
+    settings = load_settings(DatabaseSettings)
     extractor, verifiers = models.extractor, list(models.verifiers)
     gates = gates_from(models, args.allow_same_family)
     log.info(
@@ -282,7 +281,7 @@ def main() -> None:
         "、".join(m.name for m in verifiers) or "（沒有）",
     )
     required = [m.strip() for m in args.require.split(",") if m.strip()]
-    with psycopg.connect(dsn) as conn:
+    with psycopg.connect(settings.ontology_dsn) as conn:
         if not try_lock(conn):
             log.info("另一個流程正在跑，這次不處理")
             return

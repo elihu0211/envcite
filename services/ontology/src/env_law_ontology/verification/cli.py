@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
 
 import psycopg
 
+from env_law_ontology.settings import DatabaseSettings, load
 from env_law_ontology.verification.pipeline import settle
 
 DEFAULT_REQUIRED = "numbers,references,executable,provisos,roundtrip,independent_test,panel"
@@ -22,11 +22,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="env-law-verify")
     parser.add_argument("--require", default=DEFAULT_REQUIRED, help="必要的驗證方法，逗號分隔")
     args = parser.parse_args()
-    dsn = os.environ.get("ONTOLOGY_DSN", "")
-    if not dsn:
-        raise SystemExit("ONTOLOGY_DSN is required")
+    settings = load(DatabaseSettings)
     required = [m.strip() for m in args.require.split(",") if m.strip()]
-    with psycopg.connect(dsn) as conn:
+    with psycopg.connect(settings.ontology_dsn) as conn:
         result = settle(conn, required)
     logging.getLogger(__name__).info(
         "驗證完成：%d 個升為 confirmed，%d 個 rejected，%d 輪（政策：%s）",

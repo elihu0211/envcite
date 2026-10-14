@@ -70,6 +70,8 @@ uv sync --all-packages        # 整個 workspace；標註管線用 Anthropic 模
 | `ACQUIRE_SNAPSHOT_DIR` | `env-law-sync`、`env-law-acquire`、`env-law-import` |
 | `CHAT_API_KEY` | `env-law-pipeline`，由 `models.toml` 引用 |
 
+名稱、必填與預設值以 `src/env_law_ontology/settings.py` 為準。
+
 `env-law-sync`、`acquire`、`import` 的結束碼：`0` 成功或無事可做，`1` 暫時性失敗（可重試），`2` 資料不合預期（重試無益）。
 
 ### 在本機跑起來

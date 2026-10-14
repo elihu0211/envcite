@@ -8,13 +8,12 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
-from pathlib import Path
 
 import psycopg
 
 from env_law_ontology.acquire.engine import InvalidSnapshot, Source, acquire
 from env_law_ontology.acquire.moj import Moj
+from env_law_ontology.settings import SnapshotSettings, load
 
 #: 新來源在此登記。
 SOURCES: dict[str, Source] = {s.name: s for s in (Moj(),)}
@@ -28,14 +27,11 @@ def main() -> None:
     parser.add_argument("source", choices=sorted(SOURCES))
     args = parser.parse_args()
 
-    dsn = os.environ.get("ONTOLOGY_DSN", "")
-    root = os.environ.get("ACQUIRE_SNAPSHOT_DIR", "")
-    if not dsn or not root:
-        raise SystemExit("ONTOLOGY_DSN and ACQUIRE_SNAPSHOT_DIR are required")
+    settings = load(SnapshotSettings)
 
     try:
-        with psycopg.connect(dsn) as conn:
-            acquire(SOURCES[args.source], Path(root), conn)
+        with psycopg.connect(settings.ontology_dsn) as conn:
+            acquire(SOURCES[args.source], settings.acquire_snapshot_dir, conn)
     except InvalidSnapshot as e:
         logging.getLogger(__name__).error("invalid snapshot: %s", e)
         raise SystemExit(EXIT_INVALID) from e
