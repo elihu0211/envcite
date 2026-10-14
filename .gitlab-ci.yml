@@ -4,6 +4,11 @@
 # gate 走 shared runner，不佔自建 runner。
 #
 # 以 `rules:changes` 依路徑分流。proto 是各服務的上游，列入其觸發路徑：契約一改，相關服務都重驗。
+#
+# 檢查（測試、lint、契約相容性）只在 MR pipeline 跑；預設分支的 pipeline 只建置映像（與 gate、
+# 掃描）。前提是專案合併方式為 Fast-forward 並開啟「合併前自動 rebase」：合併時分支必然是 main
+# 的最新狀態，MR pipeline 測的就是合併後的結果，main 上不需要再驗一次。這個前提若被改掉（改回
+# merge commit、或允許直接推 main），要把檢查加回預設分支。映像 job 的 `needs` 因此標 optional。
 include:
   - component: $CI_SERVER_FQDN/components/secret-detection/secret-detection@2.4.0
     inputs:
@@ -237,7 +242,8 @@ renovate-config:
   needs: []
   timeout: 10m
   rules:
-    - changes:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
         - renovate.json
   script:
     - renovate-config-validator --strict renovate.json
@@ -269,7 +275,8 @@ dotnet:
   extends: [.runner, .dind]
   stage: check
   rules:
-    - changes: *changes-platform
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-platform
   image: mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION
   variables:
     TESTCONTAINERS_HOST_OVERRIDE: docker
@@ -353,7 +360,8 @@ deps-python:
 ontology:
   extends: .python-checks
   rules:
-    - changes: *changes-ontology
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-ontology
   # 測試需要真實 PostgreSQL：以 job service 附掛，省掉 dind 與一次映像拉取。
   # 主版本與正式區相同。
   services:
@@ -369,7 +377,8 @@ ontology:
 consult:
   extends: .python-checks
   rules:
-    - changes: *changes-consult
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-consult
   variables:
     MEMBER: services/consult
 
@@ -377,7 +386,8 @@ consult:
 python-proto:
   extends: .python
   rules:
-    - changes: *changes-python-proto
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-python-proto
   variables:
     MEMBER: libs/python/env-law-proto
   script:
@@ -442,7 +452,9 @@ python-proto:
 
 ontology-image:
   extends: .image
-  needs: [ontology, deps-python]
+  needs:
+    - {job: ontology, optional: true}
+    - deps-python
   rules:
     - changes: *changes-ontology
   cache:
@@ -454,7 +466,9 @@ ontology-image:
 
 consult-image:
   extends: .image
-  needs: [consult, deps-python]
+  needs:
+    - {job: consult, optional: true}
+    - deps-python
   rules:
     - changes: *changes-consult
   cache:
@@ -466,7 +480,10 @@ consult-image:
 
 platform-image:
   extends: .image
-  needs: [dotnet, openapi, deps-dotnet]
+  needs:
+    - {job: dotnet, optional: true}
+    - {job: openapi, optional: true}
+    - deps-dotnet
   rules:
     - changes: *changes-platform
   cache:
@@ -479,7 +496,8 @@ platform-image:
 segmenter:
   extends: .python-checks
   rules:
-    - changes: *changes-segmenter
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-segmenter
   # 不需資料庫。CI 只驗契約（同一份詞典得到同一個 tokenizer id 與同一批 token）；
   # 斷詞品質由 scripts/measure-segmentation.py 量測，需要網路，不在 CI 跑。
   variables:
@@ -490,7 +508,8 @@ openapi:
   extends: .runner
   stage: check
   rules:
-    - changes: *changes-platform
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-platform
   image:
     name: tufin/oasdiff:$OASDIFF_VERSION
     entrypoint: [""]
@@ -510,7 +529,8 @@ proto:
   extends: .runner
   stage: check
   rules:
-    - changes: *changes-proto
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-proto
   image:
     name: bufbuild/buf:$BUF_VERSION
     entrypoint: [""]
@@ -530,7 +550,8 @@ dockerfile:
   extends: .runner
   stage: check
   rules:
-    - changes: *changes-dockerfile
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-dockerfile
   image:
     name: hadolint/hadolint:$HADOLINT_VERSION-alpine
     entrypoint: [""]
