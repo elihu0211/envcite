@@ -3,6 +3,7 @@
 環境法規本體論服務：法規範資料與檢索，以 gRPC 供 `services/platform` 呼叫。資料不分租戶。
 
 - 契約：倉庫根 `proto/env_law/ontology/v1/ontology.proto`（法規與檢索）與 `reasoning.proto`（標註與推論）（唯一真值）
+- 標註管線的模型配置（`models.toml`）與金鑰檔：本目錄 `MODELS.md`
 - 開發指引：本目錄 `AGENTS.md`；倉庫層規範見根 `AGENTS.md`
 - 資料來源：全國法規資料庫（政府資料開放授權條款－第1版，需標示出處）
 
