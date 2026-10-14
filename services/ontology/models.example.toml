@@ -37,7 +37,11 @@ family = "inkling"
 # provider = "anthropic"
 # name = "claude-sonnet-5-5"
 
-# 抽取者、往返驗證的重抽者、獨立測試的設計者、評審團。四個角色都要指名。
+# 四個角色都要指名：
+#   抽取者：mistral-small-4（mistral）。
+#   往返重抽者：gemma-4-31b（google）。
+#   獨立測試設計者：coder（inkling）。
+#   評審團：gemma-4-31b、llama4scout（meta）、coder（inkling）。
 [roles]
 extractor = "extractor"
 roundtrip = "gemma"
