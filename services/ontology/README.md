@@ -100,13 +100,16 @@ uv run --env-file .env env-law-pipeline --pending --limit <N> --models models.to
 
 模型與角色全部寫在一個 TOML 檔，由 `--models` 指定，沒有別的設定途徑。範本是 `models.example.toml`；`models.toml` 不進版控。
 
-1. `cp models.example.toml models.toml`，改端點網址。
-2. 在 `.env` 填入 `CHAT_API_KEY`（見下方「金鑰」）。
-3. 確認端點、金鑰與每個模型都通（對每個模型送固定的探測問題，不連資料庫）：
+從倉庫根開始：
 
-   ```bash
-   uv run --env-file .env env-law-pipeline --models models.toml --check
-   ```
+```bash
+cd services/ontology
+cp models.example.toml models.toml   # 改端點網址與要用的模型
+cp .env.example .env                 # 用編輯器填入 CHAT_API_KEY，不要貼到對話或提交
+uv run --env-file .env env-law-pipeline --models models.toml --check   # 確認端點、金鑰與每個模型都通
+```
+
+`--check` 對每個模型送固定的探測問題，不連資料庫；通過後才用 `--law` 或 `--pending` 開跑。
 
 ```toml
 [endpoint.<名>]   # OpenAI 相容的服務：網址與金鑰的位置
