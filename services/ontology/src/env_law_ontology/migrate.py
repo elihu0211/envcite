@@ -70,16 +70,15 @@ def main() -> None:
     與伺服器分開：避免每個 replica 啟動時都寫入而使 rollout 競態，並讓 schema 變更有可等待的終點。
     """
     import logging
-    import os
 
     import psycopg
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    dsn = os.environ.get("ONTOLOGY_DSN", "")
-    if not dsn:
-        raise SystemExit("ONTOLOGY_DSN is required")
+    from env_law_ontology.settings import DatabaseSettings, load
 
-    with psycopg.connect(dsn) as conn:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    settings = load(DatabaseSettings)
+
+    with psycopg.connect(settings.ontology_dsn) as conn:
         applied = apply_all(conn)
 
     log = logging.getLogger(__name__)

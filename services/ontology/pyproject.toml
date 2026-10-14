@@ -17,6 +17,7 @@ dependencies = [
     "grpcio-status",
     "psycopg-pool",
     "psycopg[binary]",
+    "pydantic-settings",
 ]
 
 [tool.uv.sources]

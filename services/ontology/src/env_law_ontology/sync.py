@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
 from pathlib import Path
 
 import psycopg
@@ -18,6 +17,7 @@ from env_law_ontology.acquire.cli import EXIT_INVALID, SOURCES
 from env_law_ontology.acquire.engine import InvalidSnapshot, Source, acquire
 from env_law_ontology.ingest import importer
 from env_law_ontology.ingest.importer import BatchRejected
+from env_law_ontology.settings import SnapshotSettings, load
 
 log = logging.getLogger(__name__)
 
@@ -51,10 +51,7 @@ def main() -> None:
     parser.add_argument("source", choices=sorted(SOURCES))
     args = parser.parse_args()
 
-    dsn = os.environ.get("ONTOLOGY_DSN", "")
-    root = os.environ.get("ACQUIRE_SNAPSHOT_DIR", "")
-    if not dsn or not root:
-        raise SystemExit("ONTOLOGY_DSN and ACQUIRE_SNAPSHOT_DIR are required")
+    settings = load(SnapshotSettings)
 
-    with psycopg.connect(dsn) as conn:
-        raise SystemExit(sync(conn, SOURCES[args.source], Path(root)))
+    with psycopg.connect(settings.ontology_dsn) as conn:
+        raise SystemExit(sync(conn, SOURCES[args.source], settings.acquire_snapshot_dir))

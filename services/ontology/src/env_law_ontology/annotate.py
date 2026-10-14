@@ -44,7 +44,6 @@ import argparse
 import hashlib
 import json
 import logging
-import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -52,6 +51,9 @@ from typing import Any, cast
 
 import psycopg
 from psycopg.types.range import Range
+
+from env_law_ontology.settings import DatabaseSettings
+from env_law_ontology.settings import load as load_settings
 
 log = logging.getLogger(__name__)
 
@@ -324,12 +326,10 @@ def main() -> None:
     parser.add_argument("file", type=Path, help="標註文件（JSON）")
     args = parser.parse_args()
 
-    dsn = os.environ.get("ONTOLOGY_DSN", "")
-    if not dsn:
-        raise SystemExit("ONTOLOGY_DSN is required")
+    settings = load_settings(DatabaseSettings)
     try:
         doc = json.loads(args.file.read_text(encoding="utf-8"))
-        with psycopg.connect(dsn) as conn:
+        with psycopg.connect(settings.ontology_dsn) as conn:
             load(conn, doc)
     except (AnnotationError, json.JSONDecodeError) as e:
         logging.getLogger(__name__).error("annotation rejected: %s", e)

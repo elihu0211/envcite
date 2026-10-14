@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from collections.abc import Sequence
 from concurrent import futures
 
@@ -20,6 +19,7 @@ from env_law_grpc import (
 )
 from env_law_ontology.reasoning_service import ReasoningServicer
 from env_law_ontology.service import OntologyServicer
+from env_law_ontology.settings import ServerSettings, load
 from env_law_ontology.store import OntologyStore
 from env_law_ontology.telemetry import register_annotation_health
 from env_law_segmenter import Segmenter
@@ -71,20 +71,18 @@ def build_server(
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
-    token = os.environ.get("ONTOLOGY_INTERNAL_TOKEN", "")
-    if not token:
-        raise SystemExit("ONTOLOGY_INTERNAL_TOKEN is required")
-
-    dsn = os.environ.get("ONTOLOGY_DSN", "")
-    if not dsn:
-        raise SystemExit("ONTOLOGY_DSN is required")
-    store = OntologyStore.from_dsn(dsn)
-    port = os.environ.get("ONTOLOGY_GRPC_PORT", "50051")
+    settings = load(ServerSettings)
+    store = OntologyStore.from_dsn(settings.ontology_dsn)
 
     # 沒設 OTEL_EXPORTER_OTLP_ENDPOINT 時什麼都不做（見 env_law_grpc.telemetry）。
     interceptors = configure_telemetry("env-law-ontology")
     register_annotation_health(store)
-    server, bound = build_server(store, token, f"[::]:{port}", interceptors=interceptors)
+    server, bound = build_server(
+        store,
+        settings.ontology_internal_token.get_secret_value(),
+        f"[::]:{settings.ontology_grpc_port}",
+        interceptors=interceptors,
+    )
     stop_on_sigterm(server)
     server.start()
     logging.getLogger(__name__).info("ontology gRPC server listening on :%d", bound)

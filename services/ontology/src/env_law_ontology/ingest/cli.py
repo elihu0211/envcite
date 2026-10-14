@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
-from pathlib import Path
 
 import psycopg
 
@@ -17,6 +15,7 @@ from env_law_ontology.acquire.cli import EXIT_INVALID, SOURCES
 from env_law_ontology.acquire.engine import InvalidSnapshot
 from env_law_ontology.ingest.importer import BatchRejected, run
 from env_law_ontology.projection import rebuild
+from env_law_ontology.settings import SnapshotSettings, load
 
 
 def main() -> None:
@@ -26,14 +25,11 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    dsn = os.environ.get("ONTOLOGY_DSN", "")
-    root = os.environ.get("ACQUIRE_SNAPSHOT_DIR", "")
-    if not dsn or not root:
-        raise SystemExit("ONTOLOGY_DSN and ACQUIRE_SNAPSHOT_DIR are required")
+    settings = load(SnapshotSettings)
 
     try:
-        with psycopg.connect(dsn) as conn:
-            run(conn, Path(root), SOURCES[args.source], dry_run=args.dry_run)
+        with psycopg.connect(settings.ontology_dsn) as conn:
+            run(conn, settings.acquire_snapshot_dir, SOURCES[args.source], dry_run=args.dry_run)
             if not args.dry_run:
                 rebuild(conn)
     except (BatchRejected, InvalidSnapshot) as e:

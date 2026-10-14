@@ -32,7 +32,7 @@ docker build -f Dockerfile ../..   # image (context = repo root; CI job `ontolog
 
 - Proto lint／`buf breaking` 從倉庫根執行，見根 `AGENTS.md`。
 - Tool config (ruff, mypy, pytest) lives in the repo-root `pyproject.toml`. Code in `src/env_law_ontology/`, tests in `tests/`; generated gRPC code is imported from `env-law-proto` (`env_law.ontology.v1`).
-- Server env：`ONTOLOGY_INTERNAL_TOKEN`（必填；呼叫端送 `authorization: Bearer <token>`）、`ONTOLOGY_DSN`（必填，PostgreSQL 連線字串）、`ONTOLOGY_GRPC_PORT`（50051）。
+- 環境變數以 `src/env_law_ontology/settings.py` 為唯一來源（名稱、必填、預設值）；入口不直接讀 `os.environ`，加變數時同步 `.env.example`（`tests/test_settings.py` 守門）。伺服器的呼叫端送 `authorization: Bearer <token>`。
 - 取得（`env-law-acquire <來源>`，`src/env_law_ontology/acquire/`）：引擎負責下載、SHA-256、冪等判斷、以雜湊為名存檔與寫入 `source.*`；來源只實作 `Source`（`feeds`、`tls()`、`read()`），在 `cli.SOURCES` 登記。環境變數 `ONTOLOGY_DSN`（可寫端點）、`ACQUIRE_SNAPSHOT_DIR`。結束碼 0 成功或未變、1 暫時性失敗（可重試）、2 資料不合預期（重試無益）。
 - 匯入（`env-law-import <來源> [--dry-run]`，`src/env_law_ontology/ingest/`）：每個來源取最新快照，`law.parse` 為純函式（條文切分 `articles`、沿革 `history`、生效日 `commencement`）；整批比例過 `audit.LIMITS` 才寫入，否則結束碼 2。單一法規的問題記入 `source.import_problem`，error 使該部不寫入。**改變解析輸出的修改必須遞增 `law.PARSER_VERSION`**，已匯入的法規才會以新版重寫；已匯入的法規內容改變是增量（`ingest/write.py` 的 `apply`）：新增版本、更正、更新推導、拒絕（`version_regressed`）；更正與推導修正以新增列取代舊列（`superseded_at`），查詢只看現行列；下層單元的文字改變時，所屬條的列也換新（原為舊索引以條的列為鍵而設；索引現已內容定址，不再依賴，行為暫時保留）。匯入成功後 `projection.rebuild` 補齊索引：分詞器識別碼（含標題詞典雜湊）不符的列與被取代版本的列先刪，再補缺的條；服務端的詞典啟動時讀一次，重建之後要重啟服務。
 - 標註（`env-law-annotate <檔>`，環境變數 `ONTOLOGY_DSN`）：每個陳述附它所讀的條文原文，載入時算雜湊並要求該單元現行的某個版本列確有這個雜湊，否則整份拒絕（結束碼 2）；狀態取文件的 `review`，預設 `extracted`，載入不接受任何陳述；不確定法律概念或裁量的要件標 `judgement: true`（系統不從事實判定它，限值不得標）；一個罰則陳述一個效果：改善命令等非處罰的行政命令用效果 `order`，按次處罰用 `repeating: true`；一次載入是一個交易，不冪等（要修正，把舊陳述改為 `rejected` 再載入）。
