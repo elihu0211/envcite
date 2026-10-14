@@ -10,7 +10,7 @@
 base_url_env = "CHAT_BASE_URL"
 api_key_env = "CHAT_API_KEY"
 
-# name 原樣送給端點。選用：max_tokens（預設 8192）、max_retries（預設 3，0 為不重試）。
+# name 原樣送給端點。選用：max_tokens（回答長度上限）、max_retries（暫時性失敗的重試次數，0 為不重試）。
 # 推理模型的思考計入輸出長度，max_tokens 要留足。
 [model.extractor]
 endpoint = "hosted"
