@@ -45,6 +45,7 @@ class GroundRequest(_message.Message):
 
     QUESTION_FIELD_NUMBER: _builtins.int
     AS_OF_FIELD_NUMBER: _builtins.int
+    ONTOLOGIES_FIELD_NUMBER: _builtins.int
     question: _builtins.str
     """The user's question, verbatim. Never rewritten by the caller: retrieval is
     tuned to how people ask, and a model's paraphrase is a different query.
@@ -53,15 +54,22 @@ class GroundRequest(_message.Message):
     """Resolve the law as in force on this date (ISO 8601). Empty means "as
     currently in force".
     """
+    @_builtins.property
+    def ontologies(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
+        """Ontology ids to ground against. Empty means every ontology the service
+        offers (today only "law"). An unknown id is INVALID_ARGUMENT.
+        """
+
     def __init__(
         self,
         *,
         question: _builtins.str = ...,
         as_of: _builtins.str = ...,
+        ontologies: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "question", b"question"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "ontologies", b"ontologies", "question", b"question"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -104,7 +112,9 @@ class Evidence(_message.Message):
     confidence: Global___Confidence.ValueType
     @_builtins.property
     def citations(self) -> _containers.RepeatedCompositeFieldContainer[Global___Citation]:
-        """At most 8, coded "L1", "L2", … in this order. Never empty."""
+        """At most 8, coded "L1", "L2", … in this order (the letter is the source
+        ontology's, the number runs across the whole set). Never empty.
+        """
 
     def __init__(
         self,
@@ -128,6 +138,7 @@ class Citation(_message.Message):
     IRI_FIELD_NUMBER: _builtins.int
     LABEL_FIELD_NUMBER: _builtins.int
     TEXT_FIELD_NUMBER: _builtins.int
+    ONTOLOGY_FIELD_NUMBER: _builtins.int
     code: _builtins.str
     """Short code the caller's model writes in square brackets, e.g. "[L1]". A code
     outside this set is an invented citation: strip it or reject the answer.
@@ -138,6 +149,8 @@ class Citation(_message.Message):
     """Human-readable label, e.g. "空氣污染防制法 第 20 條"."""
     text: _builtins.str
     """Article text in force on `as_of` — the evidence itself."""
+    ontology: _builtins.str
+    """Id of the ontology this citation comes from, e.g. "law"."""
     def __init__(
         self,
         *,
@@ -145,10 +158,11 @@ class Citation(_message.Message):
         iri: _builtins.str = ...,
         label: _builtins.str = ...,
         text: _builtins.str = ...,
+        ontology: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["code", b"code", "iri", b"iri", "label", b"label", "text", b"text"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["code", b"code", "iri", b"iri", "label", b"label", "ontology", b"ontology", "text", b"text"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

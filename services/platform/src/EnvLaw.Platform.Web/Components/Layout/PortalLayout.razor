@@ -51,7 +51,7 @@
             }
 
             var home = PortalPaths.Home(tenant.Identifier);
-            var items = new List<PortalShell.MenuItem> { new(home, "查詢法規"), new($"{home}/account", "帳號與組織") };
+            var items = new List<PortalShell.MenuItem> { new(home, "查詢"), new($"{home}/account", "帳號與組織") };
             if (CanManageMembers)
             {
                 items.Add(new($"{home}/members", "成員"));

@@ -1,8 +1,10 @@
-# env-law
+# 環境知識 EnvCite
 
 [![pipeline status](https://gitlab.com/thuaisse-lab/env-law/badges/main/pipeline.svg)](https://gitlab.com/thuaisse-lab/env-law/-/pipelines)
 
-臺灣環境法規的檢索與引用接地（grounding）服務：把法規條文組織成可檢索的本體，並為呼叫端的語言模型備妥可核驗的封閉證據集；證據不足時，明確拒答。
+臺灣環境知識的檢索與引用接地（grounding）服務：把知識組織成可檢索的本體，並為呼叫端的語言模型備妥可核驗的封閉證據集；證據不足時，明確拒答。
+
+知識以**本體**為單位：一種來源一個本體，各有自己的綱要與引用代號字母。目前只有**法規本體**（`law`，代號 `L`），把法規條文組織成可檢索的本體；其他本體規劃中。
 
 本倉庫是單一倉庫（monorepo），收納多個服務；各服務仍獨立建置、獨立部署。
 

@@ -131,7 +131,7 @@ public partial class Ask
     internal static string RefusalLabel(string? reason) => reason switch
     {
         "no_authority" => "找不到足以回答這個問題的法條，所以沒有回答。試試換個說法，或換一天。",
-        "out_of_scope" => "這個問題超出環境法規的範圍，所以沒有回答。",
+        "out_of_scope" => "這個問題超出目前涵蓋的知識範圍，所以沒有回答。",
         "missing_input" => "問題不夠具體，請補充後再問。",
         "unverified_citation" => "系統產生的回答無法對應到法條出處，已捨棄，沒有顯示。請換個說法再問一次。",
         _ => "這次沒有產生可以對應到法條出處的回答。請換個說法再問一次。",

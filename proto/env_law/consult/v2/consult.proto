@@ -4,7 +4,12 @@ package env_law.consult.v2;
 
 option csharp_namespace = "EnvLaw.Consult.V2";
 
-// Evidence for grounded answers over the environmental-law ontology.
+// Evidence for grounded answers over the environmental-knowledge ontologies.
+//
+// An ontology is one kind of source with its own schema, named by a lowercase
+// id. Today there is one: "law" (法規本體, article-level statutes and
+// regulations). Each ontology owns one letter that prefixes its citation codes
+// ("law" → "L"), so a code never collides across ontologies.
 //
 // The service never runs a language model. It decides what may be cited and
 // whether the question can be answered at all, and hands back a closed citation
@@ -27,6 +32,9 @@ message GroundRequest {
   // Resolve the law as in force on this date (ISO 8601). Empty means "as
   // currently in force".
   string as_of = 2;
+  // Ontology ids to ground against. Empty means every ontology the service
+  // offers (today only "law"). An unknown id is INVALID_ARGUMENT.
+  repeated string ontologies = 3;
 }
 
 message GroundResponse {
@@ -39,7 +47,8 @@ message GroundResponse {
 
 // The closed set an answer may cite, best first.
 message Evidence {
-  // At most 8, coded "L1", "L2", … in this order. Never empty.
+  // At most 8, coded "L1", "L2", … in this order (the letter is the source
+  // ontology's, the number runs across the whole set). Never empty.
   repeated Citation citations = 1;
   Confidence confidence = 2;
 }
@@ -54,6 +63,8 @@ message Citation {
   string label = 3;
   // Article text in force on `as_of` — the evidence itself.
   string text = 4;
+  // Id of the ontology this citation comes from, e.g. "law".
+  string ontology = 5;
 }
 
 // Why the service declined to ground the question. The caller renders it; it is

@@ -21,7 +21,7 @@ internal static class PlatformOpenApi
                 {
                     Title = "env-law API",
                     Version = "v2",
-                    Description = "環境法規 API。以租戶的 API key 呼叫（`Authorization: Bearer sk_live_…`）。"
+                    Description = "環境知識 API。以租戶的 API key 呼叫（`Authorization: Bearer sk_live_…`）。"
                         + "拒答是結果、不是錯誤：`POST /v2/ground` 有法源與拒答都回 200，以 `outcome` 區分。",
                 };
                 document.Components ??= new OpenApiComponents();

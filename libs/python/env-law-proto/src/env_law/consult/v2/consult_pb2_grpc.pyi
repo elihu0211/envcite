@@ -27,7 +27,12 @@ GRPC_GENERATED_VERSION: str
 GRPC_VERSION: str
 
 class ConsultationServiceStub:
-    """Evidence for grounded answers over the environmental-law ontology.
+    """Evidence for grounded answers over the environmental-knowledge ontologies.
+
+    An ontology is one kind of source with its own schema, named by a lowercase
+    id. Today there is one: "law" (法規本體, article-level statutes and
+    regulations). Each ontology owns one letter that prefixes its citation codes
+    ("law" → "L"), so a code never collides across ontologies.
 
     The service never runs a language model. It decides what may be cited and
     whether the question can be answered at all, and hands back a closed citation
@@ -50,7 +55,12 @@ class ConsultationServiceStub:
 
 @_typing.type_check_only
 class ConsultationServiceAsyncStub(ConsultationServiceStub):
-    """Evidence for grounded answers over the environmental-law ontology.
+    """Evidence for grounded answers over the environmental-knowledge ontologies.
+
+    An ontology is one kind of source with its own schema, named by a lowercase
+    id. Today there is one: "law" (法規本體, article-level statutes and
+    regulations). Each ontology owns one letter that prefixes its citation codes
+    ("law" → "L"), so a code never collides across ontologies.
 
     The service never runs a language model. It decides what may be cited and
     whether the question can be answered at all, and hands back a closed citation
@@ -69,7 +79,12 @@ class ConsultationServiceAsyncStub(ConsultationServiceStub):
     """
 
 class ConsultationServiceServicer(metaclass=_abc_1.ABCMeta):
-    """Evidence for grounded answers over the environmental-law ontology.
+    """Evidence for grounded answers over the environmental-knowledge ontologies.
+
+    An ontology is one kind of source with its own schema, named by a lowercase
+    id. Today there is one: "law" (法規本體, article-level statutes and
+    regulations). Each ontology owns one letter that prefixes its citation codes
+    ("law" → "L"), so a code never collides across ontologies.
 
     The service never runs a language model. It decides what may be cited and
     whether the question can be answered at all, and hands back a closed citation

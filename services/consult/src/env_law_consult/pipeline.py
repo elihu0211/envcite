@@ -47,12 +47,20 @@ class RefusalReason(Enum):
     MISSING_INPUT = "missing_input"
 
 
+LAW = "law"
+
+# 本體代號 → 引用代號的字母前綴。一個本體一個字母，新增本體時在此登記，
+# 跨本體的代號才不會相撞。
+CODE_PREFIX = {LAW: "L"}
+
+
 @dataclass(frozen=True, slots=True)
 class Citation:
     code: str
     iri: str
     label: str
     text: str
+    ontology: str = LAW
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,7 +85,7 @@ def ground(articles: list[Article]) -> list[Citation]:
     """
     kept = [a for a in articles if a.score >= RELEVANCE_FLOOR][:MAX_CITATIONS]
     return [
-        Citation(code=f"L{i}", iri=a.iri, label=a.label, text=a.text)
+        Citation(code=f"{CODE_PREFIX[LAW]}{i}", iri=a.iri, label=a.label, text=a.text, ontology=LAW)
         for i, a in enumerate(kept, start=1)
     ]
 

@@ -40,6 +40,11 @@ class ConsultationServicer(consult_pb2_grpc.ConsultationServiceServicer):
         if not tenant:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "x-tenant-id is required")
         log.info("Ground tenant=%s request_id=%s", tenant, metadata.get("x-request-id", "-"))
+        unknown = sorted(set(request.ontologies) - pipeline.CODE_PREFIX.keys())
+        if unknown:
+            context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT, f"unknown ontology: {', '.join(unknown)}"
+            )
 
         try:
             outcome = pipeline.run(request.question, as_of=request.as_of, ontology=self._ontology)
@@ -57,7 +62,9 @@ class ConsultationServicer(consult_pb2_grpc.ConsultationServiceServicer):
         return consult_pb2.GroundResponse(
             evidence=consult_pb2.Evidence(
                 citations=[
-                    consult_pb2.Citation(code=c.code, iri=c.iri, label=c.label, text=c.text)
+                    consult_pb2.Citation(
+                        code=c.code, iri=c.iri, label=c.label, text=c.text, ontology=c.ontology
+                    )
                     for c in outcome.citations
                 ],
                 confidence=_CONFIDENCE[outcome.confidence],
