@@ -59,7 +59,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH=/app/.venv/bin:$PATH
 COPY --from=build /app /app
 WORKDIR /app/services/ontology
-# Matches runAsUser/runAsGroup in envcite-deploy base/ontology.
+# Matches runAsUser/runAsGroup in the deploy repo's base/ontology.
 USER 1000:1000
 EXPOSE 50051
 CMD ["envcite-ontology"]

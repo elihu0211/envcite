@@ -50,4 +50,4 @@ flowchart LR
 - **參與開發**（本機環境、分支、MR 與合併流程）：[`CONTRIBUTING.md`](CONTRIBUTING.md)
 - **API 與服務如何組合**：[`proto/README.md`](proto/README.md)
 - **開發指引**：[`AGENTS.md`](AGENTS.md)；各服務與 `libs/python/` 另有巢狀 `AGENTS.md`
-- **部署與上線**：[`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy)（Kubernetes 清單，Argo CD 的唯一來源）
+- **部署與上線**：獨立的部署庫（Kubernetes 清單，Argo CD 的唯一來源），位置見容器層 `core-env-saas/AGENTS.md`

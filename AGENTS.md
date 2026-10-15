@@ -58,7 +58,7 @@ wt list        # URL 欄是本樹 platform 的位址
 | 契約 | `proto/envcite/<service>/v1/` | 該服務有對外 API 時 |
 | 跨服務共用程式碼 | `libs/<lang>/<name>/` | 服務內的程式碼**出現第二個消費端時**才抽出，不是「將來可能要用」；本身有獨立依賴與測試週期的函式庫（如 `envcite-segmenter`）可一開始就建在這裡 |
 | 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
-| 部署清單 | [`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy) 倉庫（Argo CD 來源），**不在本倉庫** | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（CI 推送 `:<commit-sha>`），該倉庫的 Argo CD Image Updater 偵測到後把 tag commit 進該倉庫（git write-back），Argo CD 同步上線，無需開 MR。**程式碼與清單要一起改時清單先行**：先在該倉庫合併向後相容的清單變更（如新環境變數給預設值），再合併本倉庫的程式碼——新映像會自動上線，順序反了就是新映像配舊清單 |
+| 部署清單 | 獨立的部署庫（Argo CD 來源），**不在本倉庫**；位置與跨庫規則見容器層 `core-env-saas/AGENTS.md` | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（CI 推送 `:<commit-sha>`），部署庫的 Argo CD Image Updater 偵測到後把 tag commit 進部署庫（git write-back），Argo CD 同步上線，無需開 MR。**程式碼與清單要一起改時清單先行**：先在部署庫合併向後相容的清單變更（如新環境變數給預設值），再合併本倉庫的程式碼——新映像會自動上線，順序反了就是新映像配舊清單 |
 
 - **契約維持單一 buf 模組**（`buf.yaml` 的模組根是 `proto/`，import 路徑為 `envcite/<service>/v1/...`）。拆成每領域一個模組會改變每一條 import 路徑，除非某領域需要獨立發佈到 schema registry，否則不拆。
 - **CI 的擴充點是「新增一個服務要改幾個地方」**：要改的是 job、`rules:changes` 錨點與 `proto` 觸發路徑；要部署的服務再加映像建置 job。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。

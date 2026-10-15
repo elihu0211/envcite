@@ -11,7 +11,7 @@
 | 資料 | PostgreSQL，schema `platform`；租戶隔離是執行期機制（租戶解析加查詢過濾） |
 | 契約 | [`openapi/openapi_v2.json`](openapi/openapi_v2.json)，每次 `dotnet build` 產生，隨程式碼一起提交；上游 gRPC 契約見 [`proto/README.md`](../../proto/README.md) |
 | 開發指引 | [本目錄 `AGENTS.md`](AGENTS.md)；倉庫層規範見根 [`AGENTS.md`](../../AGENTS.md) |
-| 部署 | [`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy)（`base/platform/`） |
+| 部署 | 部署庫的 `base/platform/` |
 
 外部呼叫端的接法見 [`proto/README.md`](../../proto/README.md) 與 [`openapi/openapi_v2.json`](openapi/openapi_v2.json)。
 

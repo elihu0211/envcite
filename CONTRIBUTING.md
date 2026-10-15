@@ -112,7 +112,7 @@ ontology 遷移檔改過（已套用的檔案內容改變）時，清掉 ontolog
 1. **開分支**：`wt switch --create <type>/<簡述>`，type 用 `feat`、`fix`、`docs`、`refactor`、`chore` 等。
 2. **Commit**：[Conventional Commits](https://www.conventionalcommits.org)，`type(scope): 說明`；破壞性變更加 `!`（如 `feat(consult)!: …`）。
 3. **開 MR 到 `main`**：`main` 受保護，不直接推送；本機的 `.githooks/pre-commit` 也擋下 main 上的 commit（`wt` 建樹時啟用，既有 clone 執行 `git config core.hooksPath .githooks`）。pipeline 成功才能合併，以 squash 合併，合併後刪除來源分支。
-4. **上線**：合併後 CI 把受影響服務的映像推送為 `:<commit-sha>`，之後自動部署；流程與回退見 [`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy)。
+4. **上線**：合併後 CI 把受影響服務的映像推送為 `:<commit-sha>`，之後自動部署；流程與回退見部署庫（位置見容器層 `core-env-saas/AGENTS.md`）。
 5. **收尾**：`wt remove <分支>`。
 
 - **改契約**：兩側的產生碼在同一個 MR 更新；破壞性變更開新版本（`v2`），不改 `v1`。

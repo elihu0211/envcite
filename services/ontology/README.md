@@ -12,7 +12,7 @@
 | 資料來源 | 全國法規資料庫（政府資料開放授權條款－第1版，須標示出處） |
 | 共用套件 | [`envcite-segmenter`](../../libs/python/envcite-segmenter/README.md)（斷詞）、[`envcite-grpc`](../../libs/python/envcite-grpc/README.md)（連線與可觀測性）、[`envcite-proto`](../../libs/python/envcite-proto/README.md)（產生碼） |
 | 開發指引 | [本目錄 `AGENTS.md`](AGENTS.md)；倉庫規範見根 [`AGENTS.md`](../../AGENTS.md) |
-| 部署 | [`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy)（`base/ontology/`） |
+| 部署 | 部署庫的 `base/ontology/` |
 
 ## 資料流
 

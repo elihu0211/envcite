@@ -53,7 +53,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH=/app/.venv/bin:$PATH
 COPY --from=build /app /app
 WORKDIR /app/services/consult
-# Matches runAsUser/runAsGroup in envcite-deploy base/consult.
+# Matches runAsUser/runAsGroup in the deploy repo's base/consult.
 USER 1000:1000
 EXPOSE 50052
 CMD ["envcite-consult"]

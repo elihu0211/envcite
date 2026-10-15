@@ -133,7 +133,7 @@ def test_an_invalid_file_leaves_nothing_behind(
 def test_invalid_data_exits_with_the_code_the_cronjob_does_not_retry(
     tmp_path: Path, dsn: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """envcite-deploy's podFailurePolicy fails the Job outright on exit code 2."""
+    """The deploy repo's podFailurePolicy fails the Job outright on exit code 2."""
     source = LocalMoj(_publish(tmp_path / "feed.zip", "not a date", [_law("T0000001")]))
     monkeypatch.setitem(cli.SOURCES, "moj", source)
     monkeypatch.setenv("ONTOLOGY_DSN", dsn)

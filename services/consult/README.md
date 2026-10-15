@@ -11,7 +11,7 @@
 | 資料 | 租戶隔離，`x-tenant-id` 必填；本服務自己不存資料 |
 | 契約 | [`proto/envcite/consult/v2/consult.proto`](../../proto/envcite/consult/v2/consult.proto)；約定見 [`proto/README.md`](../../proto/README.md) |
 | 開發指引 | [本目錄 `AGENTS.md`](AGENTS.md)；倉庫層規範見根 [`AGENTS.md`](../../AGENTS.md) |
-| 部署 | [`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy)（`base/consult/`） |
+| 部署 | 部署庫的 `base/consult/` |
 
 呼叫端怎麼用證據集、怎麼核驗模型的輸出，見 [`proto/README.md`](../../proto/README.md)。
 
