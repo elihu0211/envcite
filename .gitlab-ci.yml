@@ -107,7 +107,6 @@ variables:
   - services/platform/dotnet-tools.json
   - services/platform/global.json
   - proto/**/*
-  - .gitlab-ci.yml
 
 # uv workspace 共用根目錄的 pyproject.toml 與 uv.lock，一改就全部重驗。
 .changes-ontology: &changes-ontology
@@ -125,7 +124,6 @@ variables:
   - proto/**/*
   - pyproject.toml
   - uv.lock
-  - .gitlab-ci.yml
 
 .changes-consult: &changes-consult
   - services/consult/src/**/*
@@ -139,7 +137,6 @@ variables:
   - proto/**/*
   - pyproject.toml
   - uv.lock
-  - .gitlab-ci.yml
 
 .changes-segmenter: &changes-segmenter
   - libs/python/envcite-segmenter/src/**/*
@@ -148,7 +145,6 @@ variables:
   - libs/python/envcite-segmenter/pyproject.toml
   - pyproject.toml
   - uv.lock
-  - .gitlab-ci.yml
 
 .changes-python-proto: &changes-python-proto
   - libs/python/envcite-proto/src/**/*
@@ -157,7 +153,6 @@ variables:
   - proto/**/*
   - pyproject.toml
   - uv.lock
-  - .gitlab-ci.yml
 
 # 所有 Python job 的觸發路徑聯集：deps-python 在其中任何一個 job 要跑時就要跑。
 .changes-python: &changes-python
@@ -179,16 +174,19 @@ variables:
   - proto/**/*
   - pyproject.toml
   - uv.lock
-  - .gitlab-ci.yml
 
 .changes-dockerfile: &changes-dockerfile
   - services/*/Dockerfile
-  - .gitlab-ci.yml
 
 .changes-proto: &changes-proto
   - proto/**/*
   - buf.yaml
-  - .gitlab-ci.yml
+
+# `.gitlab-ci.yml` 不在上面任何清單：它只在 MR 觸發驗證（見各 job 的 `*mr-ci-change`），預設分支不因它
+# 重跑依賴與映像建置，否則只改註解也會推出新 SHA 的映像並觸發 Image Updater。
+.mr-ci-change: &mr-ci-change
+  if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  changes: [.gitlab-ci.yml]
 
 # 自建 runner 的 tag 只在這裡定義。
 .runner:
@@ -240,7 +238,11 @@ deps-dotnet:
   # 套件由 Nexus 提供；冷啟動逾時後重跑會接著已快取的部分，不必另做續傳。
   timeout: 20m
   rules:
-    - changes: *changes-platform
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-platform
+    - *mr-ci-change
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: *changes-platform
   image: mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION
   variables:
     NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
@@ -262,6 +264,7 @@ dotnet:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-platform
+    - *mr-ci-change
   image: mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION
   variables:
     TESTCONTAINERS_HOST_OVERRIDE: docker
@@ -300,6 +303,7 @@ dotnet-format:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-platform
+    - *mr-ci-change
   image: mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION
   variables:
     NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
@@ -318,7 +322,11 @@ deps-python:
   stage: prepare
   tags: [windows-docker-thin]
   rules:
-    - changes: *changes-python
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-python
+    - *mr-ci-change
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: *changes-python
   image: ghcr.io/astral-sh/uv:$UV_VERSION-python$PYTHON_VERSION-trixie-slim
   cache:
     - <<: *cache-uv
@@ -365,6 +373,7 @@ ontology:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-ontology
+    - *mr-ci-change
   # 測試需要真實 PostgreSQL：以 job service 附掛（省掉 dind），主版本同正式區。
   services:
     - name: postgres:$POSTGRES_MAJOR
@@ -381,6 +390,7 @@ consult:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-consult
+    - *mr-ci-change
   variables:
     MEMBER: services/consult
 
@@ -390,6 +400,7 @@ python-proto:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-python-proto
+    - *mr-ci-change
   variables:
     MEMBER: libs/python/envcite-proto
   script:
@@ -456,7 +467,11 @@ ontology-image:
     - {job: ontology, optional: true}
     - deps-python
   rules:
-    - changes: *changes-ontology
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-ontology
+    - *mr-ci-change
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: *changes-ontology
   cache:
     - <<: *cache-uv
       policy: pull
@@ -470,7 +485,11 @@ consult-image:
     - {job: consult, optional: true}
     - deps-python
   rules:
-    - changes: *changes-consult
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-consult
+    - *mr-ci-change
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: *changes-consult
   cache:
     - <<: *cache-uv
       policy: pull
@@ -486,7 +505,11 @@ platform-image:
     - {job: openapi, optional: true}
     - deps-dotnet
   rules:
-    - changes: *changes-platform
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-platform
+    - *mr-ci-change
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: *changes-platform
   cache:
     - <<: *cache-nuget
       policy: pull
@@ -499,6 +522,7 @@ segmenter:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-segmenter
+    - *mr-ci-change
   # 不需資料庫。CI 只驗契約（同詞典得到同 tokenizer id 與同批 token）；斷詞品質由
   # scripts/measure-segmentation.py 量測（需網路，不在 CI）。
   variables:
@@ -511,6 +535,7 @@ openapi:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-platform
+    - *mr-ci-change
   image:
     name: tufin/oasdiff:$OASDIFF_VERSION
     entrypoint: [""]
@@ -532,6 +557,7 @@ proto:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-proto
+    - *mr-ci-change
   image:
     name: bufbuild/buf:$BUF_VERSION
     entrypoint: [""]
@@ -568,6 +594,7 @@ dockerfile:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-dockerfile
+    - *mr-ci-change
   image:
     name: hadolint/hadolint:$HADOLINT_VERSION-alpine
     entrypoint: [""]
