@@ -1,14 +1,9 @@
-# envcite 單一倉庫、多服務的 CI。
+# envcite 單一倉庫的 CI，以 `rules:changes` 依路徑分流。proto 是各服務的上游，列入其觸發路徑。
+# 除 gate 走 shared runner 外，job 都用自建 runner `windows-docker-thin`（不計 GitLab.com 分鐘數）。
 #
-# gate 以外的 job 都標 `windows-docker-thin`（thuaisse-lab group runner，不計 GitLab.com 分鐘數）；
-# gate 走 shared runner，不佔自建 runner。
-#
-# 以 `rules:changes` 依路徑分流。proto 是各服務的上游，列入其觸發路徑：契約一改，相關服務都重驗。
-#
-# 檢查（測試、lint、契約相容性）只在 MR pipeline 跑；預設分支的 pipeline 只建置映像（與 gate、
-# 掃描）。前提是專案合併方式為 Fast-forward 並開啟「合併前自動 rebase」：合併時分支必然是 main
-# 的最新狀態，MR pipeline 測的就是合併後的結果，main 上不需要再驗一次。這個前提若被改掉（改回
-# merge commit、或允許直接推 main），要把檢查加回預設分支。映像 job 的 `needs` 因此標 optional。
+# 檢查只在 MR pipeline 跑，預設分支只建置映像（與 gate、掃描）。前提：合併方式為 Fast-forward 並開啟
+# 「合併前自動 rebase」，MR pipeline 測的就是合併後的結果。前提若被改掉，要把檢查加回預設分支。
+# 映像 job 的 `needs` 因此標 optional。
 include:
   - component: $CI_SERVER_FQDN/components/secret-detection/secret-detection@2.4.0
     inputs:
@@ -20,17 +15,15 @@ include:
       enable_mr_pipelines: true
 
 workflow:
-  # 只跑 MR pipeline 與預設分支 pipeline；沒有開 MR 的功能分支不跑 CI。
-  # 不保留 branch pipeline：先 push 再開 MR 時，同一個 SHA 會同時跑 push 與 merge_request_event
-  # 兩條 pipeline，搶唯一的 `windows-docker-thin` runner，排隊白白拉長。
-  # 要驗證就開 MR（`git push -o merge_request.create`）。
+  # 沒開 MR 的功能分支不跑 CI；不留 branch pipeline，否則先 push 再開 MR 會同一 SHA 跑兩條，
+  # 搶唯一的 runner。要驗證就開 MR（`git push -o merge_request.create`）。
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    # 預設分支不自動取消：它的 pipeline 會推映像，中途取消會少掉該 commit 的 SHA tag。
+    # 預設分支不自動取消：中途取消會少掉該 commit 的映像 tag。
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       auto_cancel:
         on_new_commit: none
-  # 同一 MR 的新 commit 會取消尚在跑的舊 pipeline（job 須為 interruptible，見 default）。
+  # 同一 MR 的新 commit 取消舊 pipeline（job 須 interruptible，見 default）。
   auto_cancel:
     on_new_commit: interruptible
 
@@ -63,51 +56,46 @@ variables:
   ALPINE_VERSION: "3.22"
   # renovate: datasource=docker depName=postgres
   POSTGRES_MAJOR: "18"
-  # 完整版本，不用浮動的 "10.0"：套件快取（含 bundle 需要的 runtime pack、ILLink tasks）隨 SDK 版本，
-  # 快取鍵帶這個值；Dockerfile 的 ARG 與此同步（Renovate 兩處都追蹤，同一個 MR 升）。
+  # 用完整版本：套件快取隨 SDK 版本，快取鍵帶這個值；Dockerfile 的 ARG 與此同步（Renovate 兩處都追蹤）。
   # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
   DOTNET_VERSION: "10.0.402"
   # renovate: datasource=pypi depName=uv
   UV_VERSION: "0.12.18"
   # renovate: datasource=python-version depName=python
   PYTHON_VERSION: "3.14"
-  # renovate.json 的驗證用。更新本身由 thuaisse-lab/chepb-1150011621 的每週排程集中執行（用它自己的
-  # Renovate 版本），兩邊版本各自升級；驗證通過但執行端版本較舊時，以執行端的 log 為準。
+  # 只用來驗證 renovate.json；更新由 thuaisse-lab/chepb-1150011621 的排程執行（版本各自升），
+  # 驗證通過但執行端較舊時，以執行端的 log 為準。
   # renovate: datasource=docker depName=renovate/renovate
   RENOVATE_VERSION: "43.272.4"
-  # NuGet Audit 在每次 restore 向 api.nuget.org 查弱點資料：Nexus 的來源索引把這個資源指回上游，
-  # 不經快取，是還原步驟裡唯一一個繞過鏡像的獨立下載，逾時就讓整個 restore 失敗（NU1900，
-  # 在 TreatWarningsAsErrors 下是錯誤）。CI 一律關閉；弱點由 Renovate 的 osvVulnerabilityAlerts 監控。
+  # NuGet Audit 的弱點查詢繞過 Nexus 直連 api.nuget.org，逾時會讓 restore 失敗（NU1900，
+  # TreatWarningsAsErrors 下是錯誤）。CI 關閉；弱點由 Renovate 的 osvVulnerabilityAlerts 監控。
   NuGetAudit: "false"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
   COVERAGE_RCFILE: $CI_PROJECT_DIR/pyproject.toml
   UV_LINK_MODE: copy
-  # 絕對路徑：job 會 cd 進成員目錄，快取仍須在專案根之下。
+  # 絕對路徑：job 會 cd 進成員目錄。
   UV_CACHE_DIR: $CI_PROJECT_DIR/.uv-cache
 
-# 依賴只在 prepare 階段由 deps-* 下載一次並寫入快取；其餘 job 一律 `policy: pull`，且在
-# 離線模式下執行（見各 job），任何獨立下載都會立刻失敗，而不是各自連外網、卡在網路上。
-# NuGet 的 key 綁套件清單的雜湊：清單沒變，所有分支與 main 共用同一份，不必各自冷啟動。冷啟動
-# 是下載 153 個套件、約 170 MB（2026-10-13 讀 project.assets.json 加總），所需時間由頻寬決定：
-# 實測從約 500 KB/s（4 分鐘）掉到約 190 KB/s（超過 15 分鐘）。key 帶專案路徑：這台 runner 的
-# S3 cache 開了 Shared，同 key 會跨專案共用。
+# 依賴只在 prepare 階段由 deps-* 下載一次，其餘 job 以 `policy: pull` 離線執行：缺套件立刻失敗，
+# 不各自連外網。
+# NuGet 的 key 綁套件清單的雜湊，清單沒變則所有分支共用；冷啟動要下載約 170 MB，時間隨頻寬而定。
+# key 帶專案路徑：runner 的 S3 cache 為 Shared，同 key 會跨專案共用。
 .cache-nuget: &cache-nuget
   key:
     prefix: "$CI_PROJECT_PATH-sdk$DOTNET_VERSION"
     files: [services/platform/Directory.Packages.props]
   paths: [.nuget/packages]
 
-# uv 的 key 綁 uv.lock 的雜湊，理由同 NuGet：鎖檔沒變，所有分支與 main 共用同一份。
+# uv 的 key 綁 uv.lock 的雜湊，理由同 NuGet。
 .cache-uv: &cache-uv
   key:
     prefix: "$CI_PROJECT_PATH"
     files: [uv.lock]
   paths: [.uv-cache]
 
-# `rules:changes` 沒有排除語法，所以列「會影響建置與測試的路徑」，不列整個服務目錄：只改 Markdown
-# （README、AGENTS.md）或 `.env.example` 的 MR 不啟動測試與映像建置。服務新增頂層的程式或設定檔時，
-# 要補進對應的清單，否則該檔的改動不會觸發 CI。
+# `rules:changes` 沒有排除語法，故列「影響建置與測試的路徑」而非整個服務目錄，只改 Markdown 或
+# `.env.example` 不啟動 CI。服務新增頂層程式或設定檔時要補進對應清單，否則不會觸發。
 .changes-platform: &changes-platform
   - services/platform/src/**/*
   - services/platform/tests/**/*
@@ -121,7 +109,7 @@ variables:
   - proto/**/*
   - .gitlab-ci.yml
 
-# uv workspace 共用根目錄的 pyproject.toml 與 uv.lock，兩者一改，全部重驗。
+# uv workspace 共用根目錄的 pyproject.toml 與 uv.lock，一改就全部重驗。
 .changes-ontology: &changes-ontology
   - services/ontology/src/**/*
   - services/ontology/tests/**/*
@@ -211,7 +199,7 @@ variables:
   services:
     - name: docker:${DOCKER_VERSION}-dind
       alias: docker
-      # buildkit 映像從 runner 主機的 registry 快取（http）拉取，dockerd 要放行私網位址。
+      # buildkit 從 runner 主機的 registry 快取（http）拉取，dockerd 須放行私網位址。
       command:
         - --insecure-registry=10.0.0.0/8
         - --insecure-registry=172.16.0.0/12
@@ -220,8 +208,7 @@ variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
 
-# 只改文件的 MR 不符合任何 `rules:changes`，不會有 pipeline，而合併要求 pipeline 成功。
-# 此 job 讓 pipeline 永遠存在。
+# 只改文件的 MR 不符合任何 `rules:changes`，而合併要求 pipeline 成功：此 job 讓 pipeline 永遠存在。
 gate:
   stage: check
   image: alpine:$ALPINE_VERSION
@@ -230,14 +217,13 @@ gate:
   script:
     - echo "path-specific jobs below decide what else runs"
 
-# renovate.json 改壞時 Renovate 只會開一個 issue，更新靜默停擺、沒有任何紅燈：在 MR 先擋下。
-# 映像首次拉取（約 0.4 GB）也算在 timeout 內，給寬一點。
+# renovate.json 壞了只會開 issue、更新靜默停擺：在 MR 擋下。映像首次拉取約 0.4 GB，timeout 放寬。
 renovate-config:
   extends: .runner
   stage: check
   image:
     name: renovate/renovate:$RENOVATE_VERSION
-    # image 的 ENTRYPOINT 是 renovate 本身，清空才能跑 script。
+    # 清空 ENTRYPOINT 才能跑 script。
     entrypoint: [""]
   needs: []
   timeout: 10m
@@ -251,8 +237,7 @@ renovate-config:
 deps-dotnet:
   stage: prepare
   tags: [windows-docker-thin]
-  # 套件由 Nexus 提供：命中時是區網速度。Nexus 每下載完一個套件就存一個，所以連它自己的
-  # 冷啟動逾時，重跑也是接著已快取的部分，不需要在這裡另做續傳。
+  # 套件由 Nexus 提供；冷啟動逾時後重跑會接著已快取的部分，不必另做續傳。
   timeout: 20m
   rules:
     - changes: *changes-platform
@@ -262,13 +247,13 @@ deps-dotnet:
   cache:
     - <<: *cache-nuget
   script:
-    # 套件走 runner 主機的 Nexus 快取（ci/nuget.mirror.config）。鏡像不可用時直接說明，
-    # 不退回直連上游：失敗的請求也計入 Nexus 的每日額度。
+    # 套件走 runner 主機的 Nexus（ci/nuget.mirror.config）；鏡像不可用就直接失敗，不退回上游
+    # （失敗的請求也計入 Nexus 每日額度）。
     - timeout 10 bash -c '</dev/tcp/host.docker.internal/8081' || { echo "Nexus 鏡像（host.docker.internal:8081）不可用；請檢查 runner 主機上的 Nexus。" >&2; exit 1; }
     - mkdir -p ~/.nuget/NuGet && cp ci/nuget.mirror.config ~/.nuget/NuGet/NuGet.Config
-    # 鎖檔（packages.lock.json）釘住完整依賴圖含間接依賴；與清單不一致即失敗，快取內容因此只由清單決定。
+    # 鎖檔釘住含間接依賴的完整依賴圖；與清單不一致即失敗。
     - (cd services/platform && dotnet restore --locked-mode)
-    # 映像建置要的另一份：它離線執行，只讀這個快取。內容與 Dockerfile 的指令同源，見腳本。
+    # 映像建置要的另一份（離線執行，只讀此快取），內容與 Dockerfile 同源，見腳本。
     - ci/prime-dotnet-image-cache.sh
 
 dotnet:
@@ -287,7 +272,7 @@ dotnet:
       policy: pull
   script:
     - cd services/platform
-    # 套件已由 deps-dotnet 備妥；來源指向空目錄，缺任何套件即失敗，不會連外網。
+    # 套件已備妥；來源指向空目錄，缺套件即失敗，不連外網。
     - mkdir -p "$CI_PROJECT_DIR/.nuget/no-source"
     - dotnet restore --locked-mode --source "$CI_PROJECT_DIR/.nuget/no-source"
     - dotnet build --no-restore
@@ -308,7 +293,7 @@ dotnet:
         coverage_format: cobertura
         path: artifacts/**/coverage.cobertura.xml
 
-# 格式檢查與測試互不依賴，拆成兩個 job 平行跑（原先串在 dotnet 之後多花約 70 秒）。
+# 與測試互不依賴，拆開平行跑。
 dotnet-format:
   extends: [.runner]
   stage: check
@@ -328,7 +313,7 @@ dotnet-format:
     - dotnet restore --locked-mode --source "$CI_PROJECT_DIR/.nuget/no-source"
     - dotnet format --verify-no-changes --no-restore
 
-# Python 依賴：整個 workspace 只有一份 uv.lock，下載一次供所有 Python job 使用。
+# Python 依賴：整個 workspace 一份 uv.lock，下載一次供所有 Python job 使用。
 deps-python:
   stage: prepare
   tags: [windows-docker-thin]
@@ -340,11 +325,10 @@ deps-python:
   script:
     - uv sync --locked --all-packages
   after_script:
-    # 不用 `--ci`：它會刪掉下載的 wheel，而消費端是離線的，需要這些 wheel。
+    # 不用 `--ci`：它會刪掉 wheel，而消費端離線需要它們。
     - uv cache prune
 
-# Python 成員共用。workspace 只有一份 uv.lock：每個 job 同步整個 workspace（`--locked`
-# 同時驗證鎖檔與所有成員一致），再於 `$MEMBER` 目錄執行該成員的檢查。
+# Python 成員共用：同步整個 workspace（`--locked` 同時驗鎖檔與成員一致），再在 `$MEMBER` 目錄跑檢查。
 .python:
   extends: .runner
   stage: check
@@ -381,8 +365,7 @@ ontology:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-ontology
-  # 測試需要真實 PostgreSQL：以 job service 附掛，省掉 dind 與一次映像拉取。
-  # 主版本與正式區相同。
+  # 測試需要真實 PostgreSQL：以 job service 附掛（省掉 dind），主版本同正式區。
   services:
     - name: postgres:$POSTGRES_MAJOR
       alias: postgres
@@ -415,29 +398,25 @@ python-proto:
     - diff -r -x __pycache__ "$CI_PROJECT_DIR/.generated-before" src
     - uv run --no-sync mypy src
 
-# 映像建置：MR 只驗證建置，預設分支才推送。tag 只用 commit SHA（不推 latest），
-# 部署庫的 Image Updater 依此上線。
+# 映像建置：MR 只驗證建置，預設分支才推送。tag 只用 commit SHA（不推 latest），部署庫的 Image Updater 依此上線。
 .image:
   extends: [.runner, .dind]
   stage: build
   image: docker:$DOCKER_VERSION
   variables:
     IMAGE: $CI_REGISTRY_IMAGE/$SERVICE:$CI_COMMIT_SHA
-    # 層快取放 registry（dind 每次全新）。路徑與映像分開，快取 tag 不會被 Image Updater 當成新版本。
+    # 層快取放 registry（dind 每次全新）；路徑與映像分開，避免被 Image Updater 當成新版本。
     CACHE: $CI_REGISTRY_IMAGE/cache/$SERVICE
   before_script:
-    # registry.gitlab.com 偶發逾時（`Client.Timeout`／`context deadline exceeded`）：只對暫時性錯誤重試，
-    # 見 ci/retry-transient.sh。
+    # registry.gitlab.com 偶發逾時：只對暫時性錯誤重試，見 ci/retry-transient.sh。
     - sh ci/retry-transient.sh sh -c 'echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"'
-    # 匯出 registry 快取需要 docker-container driver。
-    # 用 host 網路：job 容器 MTU 為 1360，dind 橋接網路預設 1500，大封包被靜默丟棄，
-    # 症狀是 `dotnet restore` 連 api.nuget.org 逾時。
-    # 基底映像與 buildkit 映像都不直連上游，也沒有退回上游的路：Dockerfile 的 FROM 以 build-arg
-    # 直接指向 runner 主機上既有的 pull-through 快取（5000 docker.io、5002 ghcr.io、5004
-    # mcr.microsoft.com），快取沒有就建置失敗。BuildKit 的 registry mirror 設定不用，因為它找不到
-    # 時會退回原 registry。位址取 job 容器解析到的 host-gateway（buildkit 在 dind 的 host 網路裡
-    # 看不到 job 容器的 /etc/hosts，不能用名稱）；buildkitd.toml 只用來放行這幾個 http 位址。
-    # before_script 與 script 在同一個 shell，host_ip 留給下面的建置用。
+    # 匯出 registry 快取需要 docker-container driver，並用 host 網路：job 容器 MTU 1360、dind 橋接
+    # 網路 1500，大封包被靜默丟棄（症狀：`dotnet restore` 連 api.nuget.org 逾時）。
+    # 基底映像與 buildkit 映像都不直連上游：Dockerfile 的 FROM 以 build-arg 指向 runner 主機的
+    # pull-through 快取（5000 docker.io、5002 ghcr.io、5004 mcr.microsoft.com），沒有就失敗。
+    # 不用 BuildKit 的 mirror 設定，它找不到時會退回原 registry。位址取 host-gateway（buildkit 在
+    # host 網路裡看不到 job 容器的 /etc/hosts）；buildkitd.toml 只用來放行這幾個 http 位址。
+    # host_ip 留給下面的 script 用（同一個 shell）。
     - |
       host_ip=$(awk '/host\.docker\.internal/ {print $1; exit}' /etc/hosts)
       [ -n "$host_ip" ] || { echo "解析不到 host.docker.internal，無法使用 runner 主機的 registry 快取" >&2; exit 1; }
@@ -448,10 +427,9 @@ python-proto:
         --driver-opt "network=host,image=$host_ip:5000/moby/buildkit:buildx-stable-1" \
         --buildkitd-flags '--oci-worker-net=host' --buildkitd-config buildkitd.toml
   script:
-    # 套件不在這裡下載：Dockerfile 的套件步驟以 `--network=none` 執行，只讀 prepare 階段備好的
-    # 快取（deps-*），經 $CONTEXTS 以 build context 傳入。缺套件就建置失敗，不會連外網。
-    # 層快取先讀本分支、再讀預設分支，各分支各寫各的；讀寫失敗不該讓建置失敗。
-    # 各 Dockerfile 只用其中一部分 build-arg，多餘的只會警告。
+    # 套件不在這裡下載：Dockerfile 的套件步驟以 `--network=none` 執行，只讀 deps-* 備好的快取
+    # （經 $CONTEXTS 傳入），缺套件即失敗。層快取先讀本分支、再讀預設分支，各分支各寫各的，
+    # 讀寫失敗不讓建置失敗。各 Dockerfile 只用部分 build-arg，多餘的只會警告。
     - |
       if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
         output="--push"
@@ -459,8 +437,7 @@ python-proto:
         echo "非預設分支，只驗證建置、不推送：$IMAGE"
         output="--output type=cacheonly"
       fi
-      # 拉基底層（cloudfront）、ghcr token、推送時的暫時性逾時才重試；真正的建置失敗照舊立刻紅。
-      # 重試時層快取已在 registry，第二次很快。
+      # 只對暫時性逾時（拉基底層、ghcr token、推送）重試，建置失敗照舊立刻紅；重試時層快取已在 registry。
       sh ci/retry-transient.sh docker buildx build -f services/$SERVICE/Dockerfile $CONTEXTS \
         --build-arg DOCKER_HUB="$host_ip:5000" \
         --build-arg GHCR="$host_ip:5002" \
@@ -522,8 +499,8 @@ segmenter:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-segmenter
-  # 不需資料庫。CI 只驗契約（同一份詞典得到同一個 tokenizer id 與同一批 token）；
-  # 斷詞品質由 scripts/measure-segmentation.py 量測，需要網路，不在 CI 跑。
+  # 不需資料庫。CI 只驗契約（同詞典得到同 tokenizer id 與同批 token）；斷詞品質由
+  # scripts/measure-segmentation.py 量測（需網路，不在 CI）。
   variables:
     MEMBER: libs/python/envcite-segmenter
 
@@ -570,7 +547,7 @@ proto:
         echo "目標分支 ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME} 尚無 proto 模組，無基準可比——跳過相容性檢查"
       fi
 
-# retry-transient.sh 的離線測試（假指令，不連網）。映像 job 的重試靠它，壞了就等於沒有守門。
+# retry-transient.sh 的離線測試（假指令，不連網）：映像 job 的重試靠它，壞了等於沒守門。
 ci-scripts:
   extends: .runner
   stage: check
