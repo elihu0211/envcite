@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-# Downloads, into $NUGET_PACKAGES, everything services/platform/Dockerfile restores
-# and builds with — and nothing else is ever downloaded for the image.
+# 把 services/platform/Dockerfile restore 與建置會用到的套件全部下載進 $NUGET_PACKAGES，
+# 映像建置不會再下載任何東西。
 #
-# The image build runs with `--network=none` and reads this folder as a build context,
-# so a package missing here fails the build instead of reaching the network. The commands
-# below are the Dockerfile's own (tool restore, project restore, the two migration
-# bundles), so the set cannot drift from what the Dockerfile needs: the bundles are what
-# pull the runtime packs and Microsoft.NET.ILLink.Tasks, which no plain restore fetches.
+# 映像建置以 `--network=none` 執行並把這個資料夾當 build context，缺套件即失敗，不會連外網。
+# 下面的指令與 Dockerfile 的相同（tool restore、專案 restore、兩個 migration bundle），所以套件集
+# 不會與 Dockerfile 脫節：bundle 會帶進 runtime pack 與 Microsoft.NET.ILLink.Tasks，一般 restore 不會取。
 #
-# Run from the repo root with NUGET_PACKAGES set. RID defaults to the CI runner's
+# 從倉庫根執行並設定 NUGET_PACKAGES。RID 預設為 CI runner 的 linux-x64，Docker 的架構名由它推導。
 # (linux-x64); the Docker architecture name is derived from it.
 set -euo pipefail
 

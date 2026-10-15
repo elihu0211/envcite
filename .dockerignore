@@ -1,6 +1,5 @@
-# Build context for services/*/Dockerfile (built from the repo root). Keep host build
-# output out: a host obj/ would overwrite the image's restore results, and .venv is the
-# host's interpreter, not the image's.
+# services/*/Dockerfile 以倉庫根為建置情境。主機的建置產物不進來：
+# obj/ 會蓋掉映像內的 restore 結果，.venv 是主機的直譯器，不是映像的。
 .git
 .venv
 **/bin/

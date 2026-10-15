@@ -8,8 +8,13 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
 
-[*.{yml,yaml,json,proto}]
+[*.{yml,yaml,json,proto,sh,xml,props,targets,csproj,slnx}]
 indent_size = 2
 
+# ruff 的行寬（pyproject.toml）
+[*.py]
+max_line_length = 100
+
+# Markdown 行尾兩個空白是換行語法
 [*.md]
 trim_trailing_whitespace = false

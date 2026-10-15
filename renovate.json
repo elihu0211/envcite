@@ -47,14 +47,14 @@
   ],
   "packageRules": [
     {
-      "description": "大版本升級先在 Dependency Dashboard 勾選才開 MR：多半需要程式碼遷移，照排程自動開只會是紅燈（chepb 2026-10-13 的 lock file maintenance 一次帶進多個大版本的前科）",
+      "description": "大版本升級先在 Dependency Dashboard 勾選才開 MR：多半需要程式碼遷移，照排程自動開只會是紅燈",
       "matchUpdateTypes": [
         "major"
       ],
       "dependencyDashboardApproval": true
     },
     {
-      "description": "語言執行環境與其基底映像的 minor 也是行為變更（python 3.14→3.15、.NET 10→11 的映像與 SDK）：升版要連同 requires-python／TargetFramework 與依賴的相容性一起評估，先勾選才開 MR。三處（.python-version、CI 變數、Dockerfile）已歸為同一個 MR",
+      "description": "語言執行環境與其基底映像的 minor 也是行為變更（python 3.14→3.15、.NET 10→11）：要連同 requires-python／TargetFramework 一起評估，先勾選才開 MR",
       "matchDepNames": [
         "python",
         "dotnet-sdk",
@@ -75,7 +75,7 @@
       "pinDigests": false
     },
     {
-      "description": "ontology／consult 的 FROM 以 ARG 組 tag（python:${PYTHON_VERSION}-slim-trixie），digest 無處可寫，不釘",
+      "description": "ontology／consult 的 FROM 以 ARG 組 tag，digest 無處可寫，不釘",
       "matchFileNames": [
         "services/ontology/Dockerfile",
         "services/consult/Dockerfile"
@@ -83,14 +83,14 @@
       "pinDigests": false
     },
     {
-      "description": "python 在 .python-version、CI 變數與兩個 Dockerfile 各有一處，升版時同一個 MR 一起改",
+      "description": "python 在 .python-version、CI 變數與兩個 Dockerfile 各有一處，同一個 MR 一起升",
       "matchDepNames": [
         "python"
       ],
       "groupName": "python"
     },
     {
-      "description": "uv 在 CI 變數、兩個 Dockerfile 的映像 tag 與各 pyproject 的 uv_build 範圍各有一處，升版時同一個 MR 一起改",
+      "description": "uv 在 CI 變數、兩個 Dockerfile 的映像 tag 與各 pyproject 的 uv_build 範圍各有一處，同一個 MR 一起升",
       "matchDepNames": [
         "uv",
         "ghcr.io/astral-sh/uv",
@@ -108,7 +108,7 @@
       "groupName": ".NET SDK and images"
     },
     {
-      "description": "global.json 的 sdk.version 是下限（搭配 rollForward: latestFeature），不是釘死的版本：升它不改變任何人實際用的 SDK，卻會讓 Renovate 自己的執行環境（鎖檔更新要在那裡跑 dotnet restore）因 SDK 版本不足而失敗。實際用的 SDK 由 CI／Dockerfile 的映像決定，那兩處照常更新",
+      "description": "global.json 的 sdk.version 是下限（搭配 rollForward: latestFeature），不是釘死的版本：升它不改變實際用的 SDK，卻會讓 Renovate 的執行環境因 SDK 不足而無法 restore；實際用的 SDK 由 CI／Dockerfile 的映像決定",
       "matchManagers": [
         "nuget"
       ],

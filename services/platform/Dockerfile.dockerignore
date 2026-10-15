@@ -1,4 +1,4 @@
-# The build context is the repo root; send only what the image needs.
+# 建置情境是倉庫根：只送映像需要的。
 *
 !proto
 proto/**/*.md

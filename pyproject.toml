@@ -7,10 +7,10 @@ members = ["services/ontology", "services/consult", "libs/python/*"]
 
 [tool.uv]
 # 已知與現行程式碼不相容的上界；`uv lock --upgrade`（Renovate 的 lock file maintenance）不看
-# Renovate 的規則，只看這裡。2026-10-13 以 Renovate 同一個映像的 uv 模擬整包升級，只有這一項會讓 CI 失敗：
+# Renovate 的規則，只看這裡。
 # - ruff<0.17：0.17 把 tomllib 歸到標準庫區塊，services/ontology 的
-#   src/envcite_ontology/verification/config.py 出現 I001（import 排序）。新舊版 ruff 對該檔案的排序
-#   互相矛盾，無法預先修在 main 上，要在升 ruff 的同一個 MR 一併改（`ruff check --fix` 即可），再放寬此上界。
+#   verification/config.py 出現 I001（import 排序），新舊版對該檔的排序互相矛盾，無法預先修在 main。
+#   升 ruff 的同一個 MR 以 `ruff check --fix` 一併改，再放寬此上界。
 constraint-dependencies = [
     "ruff<0.17",
 ]
@@ -33,15 +33,13 @@ dev = [
 
 [tool.ruff]
 line-length = 100
-# 第一方套件的位置（import 排序據此區分第一方與第三方）。
+# 第一方套件的位置，import 排序據此區分第一方與第三方
 src = ["services/*/src", "services/*", "libs/python/*/src", "libs/python/*"]
 extend-exclude = ["libs/python/envcite-proto/src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
-# RUF001／RUF002／RUF003 把全形標點當成易混淆字元。法條是中文、標點是全形（「本法所稱
-# 事業，指…」改成半形逗號就不再是法條原文），註解與 docstring 也以中文撰寫，全形在這些
-# 地方都是對的。
+# RUF001／RUF002／RUF003 把全形標點當成易混淆字元；法條與註解都是中文，全形標點是對的。
 ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.mypy]
@@ -51,11 +49,6 @@ strict = true
 # grpc_tools 產生的程式碼；型別由一併提交的 .pyi 提供。
 module = ["envcite.ontology.v1.*", "envcite.consult.v2.*"]
 ignore_errors = true
-
-[[tool.mypy.overrides]]
-# jieba 沒有型別資訊。
-module = "jieba.*"
-ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # googleapis-common-protos（google.rpc 的 ErrorInfo、BadRequest）不帶型別資訊，也沒有 types- 套件。

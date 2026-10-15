@@ -1,64 +1,64 @@
 root = true
 
-# All files
+# 全部檔案
 [*]
 indent_style = space
 
-# Xml files
+# XML 檔
 [*.xml]
 indent_size = 2
 
-# Xml project files
+# XML 專案檔
 [*.{csproj,fsproj,vbproj,proj,slnx}]
 indent_size = 2
 
-# Xml config files
+# XML 設定檔
 [*.{props,targets,config,nuspec}]
 indent_size = 2
 
 [*.json]
 indent_size = 2
 
-# C# files
+# C# 檔案
 [*.cs]
 
-#### Core EditorConfig Options ####
+# 核心選項
 
-# Indentation and spacing
+# 縮排與空白
 indent_size = 4
 tab_width = 4
 
-# New line preferences
+# 換行
 insert_final_newline = false
 
-#### .NET Coding Conventions ####
+# .NET 程式碼慣例
 [*.{cs,vb}]
 
-# Organize usings
+# using 排序
 dotnet_separate_import_directive_groups = true
 dotnet_sort_system_directives_first = true
 file_header_template = unset
 
-# this. and Me. preferences
+# this.／Me. 限定
 dotnet_style_qualification_for_event = false:silent
 dotnet_style_qualification_for_field = false:silent
 dotnet_style_qualification_for_method = false:silent
 dotnet_style_qualification_for_property = false:silent
 
-# Language keywords vs BCL types preferences
+# 語言關鍵字或 BCL 型別
 dotnet_style_predefined_type_for_locals_parameters_members = true:silent
 dotnet_style_predefined_type_for_member_access = true:silent
 
-# Parentheses preferences
+# 括號
 dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:silent
 dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:silent
 dotnet_style_parentheses_in_other_operators = never_if_unnecessary:silent
 dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:silent
 
-# Modifier preferences
+# 修飾詞
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:silent
 
-# Expression-level preferences
+# 運算式
 dotnet_style_coalesce_expression = true:suggestion
 dotnet_style_collection_initializer = true:suggestion
 dotnet_style_explicit_tuple_names = true:suggestion
@@ -78,24 +78,24 @@ dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggesti
 dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
 dotnet_style_prefer_simplified_interpolation = true:suggestion
 
-# Field preferences
+# 欄位
 dotnet_style_readonly_field = true:warning
 
-# Parameter preferences
+# 參數
 dotnet_code_quality_unused_parameters = all:suggestion
 
-# Suppression preferences
+# 抑制
 dotnet_remove_unnecessary_suppression_exclusions = none
 
-#### C# Coding Conventions ####
+# C# 程式碼慣例
 [*.cs]
 
-# var preferences
+# var
 csharp_style_var_elsewhere = false:silent
 csharp_style_var_for_built_in_types = false:silent
 csharp_style_var_when_type_is_apparent = false:silent
 
-# Expression-bodied members
+# expression-bodied 成員
 csharp_style_expression_bodied_accessors = true:silent
 csharp_style_expression_bodied_constructors = false:silent
 csharp_style_expression_bodied_indexers = true:silent
@@ -105,7 +105,7 @@ csharp_style_expression_bodied_methods = false:silent
 csharp_style_expression_bodied_operators = false:silent
 csharp_style_expression_bodied_properties = true:silent
 
-# Pattern matching preferences
+# 模式比對
 csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
 csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
 csharp_style_prefer_extended_property_pattern = true:suggestion
@@ -113,17 +113,17 @@ csharp_style_prefer_not_pattern = true:suggestion
 csharp_style_prefer_pattern_matching = true:silent
 csharp_style_prefer_switch_expression = true:suggestion
 
-# Null-checking preferences
+# null 檢查
 csharp_style_conditional_delegate_call = true:suggestion
 
-# Modifier preferences
+# 修飾詞
 csharp_prefer_static_anonymous_function = true:suggestion
 csharp_prefer_static_local_function = true:warning
 csharp_preferred_modifier_order = public,private,protected,internal,file,const,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:suggestion
 csharp_style_prefer_readonly_struct = true:suggestion
 csharp_style_prefer_readonly_struct_member = true:suggestion
 
-# Code-block preferences
+# 程式區塊
 csharp_prefer_braces = true:silent
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_style_namespace_declarations = file_scoped:suggestion
@@ -131,7 +131,7 @@ csharp_style_prefer_method_group_conversion = true:silent
 csharp_style_prefer_primary_constructors = true:suggestion
 csharp_style_prefer_top_level_statements = true:silent
 
-# Expression-level preferences
+# 運算式
 csharp_prefer_simple_default_expression = true:suggestion
 csharp_style_deconstructed_variable_declaration = true:suggestion
 csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
@@ -146,12 +146,12 @@ csharp_style_throw_expression = true:suggestion
 csharp_style_unused_value_assignment_preference = discard_variable:suggestion
 csharp_style_unused_value_expression_statement_preference = discard_variable:silent
 
-# 'using' directive preferences
+# using 指示詞位置
 csharp_using_directive_placement = outside_namespace:silent
 
-#### C# Formatting Rules ####
+# C# 格式
 
-# New line preferences
+# 換行
 csharp_new_line_before_catch = true
 csharp_new_line_before_else = true
 csharp_new_line_before_finally = true
@@ -160,7 +160,7 @@ csharp_new_line_before_members_in_object_initializers = true
 csharp_new_line_before_open_brace = all
 csharp_new_line_between_query_expression_clauses = true
 
-# Indentation preferences
+# 縮排
 csharp_indent_block_contents = true
 csharp_indent_braces = false
 csharp_indent_case_contents = true
@@ -168,7 +168,7 @@ csharp_indent_case_contents_when_block = true
 csharp_indent_labels = one_less_than_current
 csharp_indent_switch_labels = true
 
-# Space preferences
+# 空格
 csharp_space_after_cast = false
 csharp_space_after_colon_in_inheritance_clause = true
 csharp_space_after_comma = true
@@ -192,14 +192,14 @@ csharp_space_between_method_declaration_parameter_list_parentheses = false
 csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
 
-# Wrapping preferences
+# 換行保留
 csharp_preserve_single_line_blocks = true
 csharp_preserve_single_line_statements = true
 
-#### Naming styles ####
+# 命名
 [*.{cs,vb}]
 
-# Naming rules
+# 命名規則
 
 dotnet_naming_rule.types_and_namespaces_should_be_pascalcase.severity = suggestion
 dotnet_naming_rule.types_and_namespaces_should_be_pascalcase.symbols = types_and_namespaces
@@ -277,7 +277,7 @@ dotnet_naming_rule.non_field_members_should_be_pascalcase.severity = suggestion
 dotnet_naming_rule.non_field_members_should_be_pascalcase.symbols = non_field_members
 dotnet_naming_rule.non_field_members_should_be_pascalcase.style = pascalcase
 
-# Symbol specifications
+# 符號規格
 
 dotnet_naming_symbols.interfaces.applicable_kinds = interface
 dotnet_naming_symbols.interfaces.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
@@ -355,7 +355,7 @@ dotnet_naming_symbols.local_functions.applicable_kinds = local_function
 dotnet_naming_symbols.local_functions.applicable_accessibilities = *
 dotnet_naming_symbols.local_functions.required_modifiers = 
 
-# Naming styles
+# 命名樣式
 
 dotnet_naming_style.pascalcase.required_prefix = 
 dotnet_naming_style.pascalcase.required_suffix = 
@@ -388,6 +388,6 @@ dotnet_naming_style.s_camelcase.word_separator =
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 
 
-# EF Core migrations are generated; exclude from analyzers
+# EF Core migrations 是產生碼，不進分析器
 [**/Migrations/*.cs]
 generated_code = true

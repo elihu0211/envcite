@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-# Fetch a few environmental statutes as an evaluation corpus.
+# 抓幾部環境法規當評估語料（政府公開資料）。
 #
-# Public government data. Fetched with curl rather than from Python because
-# law.moj.gov.tw presents a certificate Python's verifier rejects (「Missing
-# Subject Key Identifier」) while curl accepts it — and turning verification off
-# is not a fix, it is a different problem.
+# 用 curl 而不是 Python：law.moj.gov.tw 的憑證缺 Subject Key Identifier，Python 的驗證器拒絕、
+# curl 接受；關掉驗證不是解法，是另一個問題。
 set -euo pipefail
 
 out="${1:?usage: fetch-corpus.sh <output.json>}"

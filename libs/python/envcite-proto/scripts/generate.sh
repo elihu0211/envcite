@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerate the Python code for every .proto under the repo-root proto/. Output is committed.
+# 重新產生倉庫根 proto/ 下每個 .proto 的 Python 程式碼，產出一併提交。
 set -euo pipefail
 cd "$(dirname "$0")/.."
 protos=$(cd ../../../proto && find envcite -name '*.proto' | sort)
