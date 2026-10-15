@@ -43,6 +43,7 @@ if (!generatingOpenApi)
     builder.Services.AddPlatformDataProtection();
     builder.Services.AddEntitlementRefresh();
     builder.Services.AddConversationRetention();
+    builder.Services.AddIdempotencyRetention();
 }
 
 builder.Services.AddPlatformData();

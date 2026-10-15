@@ -30,6 +30,8 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
 
     public DbSet<UsageRecord> UsageRecords => Set<UsageRecord>();
 
+    public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+
     public DbSet<Conversation> Conversations => Set<Conversation>();
 
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
@@ -108,6 +110,17 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
             record.IsMultiTenant();
             record.Property(r => r.Operation).HasMaxLength(100);
             record.HasIndex("TenantId", nameof(UsageRecord.OccurredAt));
+        });
+
+        builder.Entity<IdempotencyRecord>(record =>
+        {
+            record.IsMultiTenant();
+            record.Property(r => r.Operation).HasMaxLength(100);
+            record.Property(r => r.Key).HasMaxLength(EnvCite.Platform.SharedKernel.IIdempotencyStore.KeyLength);
+            record.Property(r => r.Fingerprint).HasMaxLength(32);
+            record.HasIndex("TenantId", nameof(IdempotencyRecord.Operation), nameof(IdempotencyRecord.Key)).IsUnique();
+            // 過期清理依此掃描。
+            record.HasIndex(r => r.ExpiresAt);
         });
 
         ConfigureOperators(builder);

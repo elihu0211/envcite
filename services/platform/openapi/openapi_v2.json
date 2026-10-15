@@ -407,8 +407,17 @@
           "接地"
         ],
         "summary": "為問句備妥可引用的法源，或拒答",
-        "description": "有法源（`grounded`）與拒答（`refused`）都回 200，以 `outcome` 區分；拒答是結果、不是錯誤，兩者都計量為一次 `consult.ground`。每一筆法源有代號（`L1`、`L2`…），呼叫端的模型只能以代號引用。",
+        "description": "有法源（`grounded`）與拒答（`refused`）都回 200，以 `outcome` 區分；拒答是結果、不是錯誤，兩者都計量為一次 `consult.ground`。每一筆法源有代號（`L1`、`L2`…），呼叫端的模型只能以代號引用。\n\n可帶 `Idempotency-Key`（1–255 個字元，限英數與 `-_.:~`）讓重送安全：同一租戶、同一 key 在視窗內重送，回放第一次的回應（加 `Idempotent-Replayed: true`）且不再計量；同一個 key 帶不同的請求內容回 422。只有成功的回應會被記住，錯誤（4xx／5xx）不會，重送會重新處理。",
         "operationId": "Ground",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -432,6 +441,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
             "content": {
               "application/problem+json": {
                 "schema": {

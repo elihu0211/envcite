@@ -72,6 +72,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）；CI �
 - 內部 gRPC 用戶端只經 `SharedKernel.InternalGrpcClient.AddInternalGrpcClient` 註冊，新增上游也走這裡，不複製一份。連線選項與 Python 伺服器成套（`envcite_grpc.connection`）：用戶端 keepalive 間隔必須大於伺服器允許的最短 ping 間隔；只重試 `UNAVAILABLE`（內部方法都是唯讀、確定性的一元呼叫），`DEADLINE_EXCEEDED` 與 `RESOURCE_EXHAUSTED` 不重試。改一邊要看另一邊。
 - 錯誤對映：gRPC `InvalidArgument` → 400，`NotFound` → 404，`Unavailable`／`DeadlineExceeded` → 503。
 - 計量只記成功的呼叫（consult 的拒答是成功的結果，要計）；用量不得猜測（端點沒回報用量就不記）。
+- **`Idempotency-Key`（`POST /v2/ground`）**：鍵是（租戶、操作、key）；請求內容只存雜湊，不存原文（問題文字是客戶案情）；只存成功的回應，錯誤不存。回應與用量**在同一次儲存**（`IIdempotencyStore.CompleteAsync`），並行的重複請求只有一個存得進去、另一個的用量隨之回滾，所以重送不重複計量。同 key 不同內容回 422。新的可重送端點照此接上，不另寫一套。
 
 ## Configuration
 
@@ -87,6 +88,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）；CI �
 
 - OpenTelemetry 追蹤、指標與日誌；設定全是標準 `OTEL_*` 鍵，**沒設 `OTEL_EXPORTER_OTLP_ENDPOINT` 就什麼都不匯出**。
 - 已認證的租戶只標在請求追蹤的 `tenant.id`，**不進指標**（基數無界）。
+- **RED 指標**：HTTP 用 ASP.NET Core 標準的伺服器請求指標（探針以 `DisableHttpMetrics()` 排除，否則稀釋 rate 與延遲）；對 ontology／consult 的 gRPC 用戶端由 `SharedKernel.GrpcClientMetrics` 量，隨 `AddInternalGrpcClient` 掛上，新增上游不必另接。HttpClient 的指標看不出 gRPC 失敗（失敗仍是 HTTP 200），所以不能只靠它。標籤維持有限集合；與 Python 伺服器端的標籤對齊（見 `proto/README.md`）。
 - 探針：`/health/live` 不檢查任何東西（依賴故障不該重啟 pod）；`/health/ready` 檢查資料庫（`TenancyDbContext`，它早於租戶解析存在），故障回 503。探針請求不追蹤。
 
 ## Auth & tenancy
@@ -94,7 +96,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）；CI �
 - **租戶 API**：`Authorization: Bearer <key>` → 以前綴查詢、SHA-256 加定時間比對 → `tenant` 宣告 → Finbuckle 解析租戶 → 租戶實體（`IsMultiTenant()`）自動過濾。
 - **營運者 API**（`/admin`）：`X-Admin-Key` 對 `Platform:AdminKeySha256`。
 - **cookie 永遠不認證 `/v2` 或 `/admin`**；每個 `/ui` 與 `/portal` 回應都是 `Cache-Control: no-store`。預設認證方案維持 ApiKey。
-- 每個租戶範圍的查詢都必須以 `TenantId` 過濾；不經審查不得停用查詢過濾。只能**按名稱**繞過租戶過濾（`IgnoreQueryFilters([TenantToken])`），且只在審查過的跨租戶查詢（API key 認證、對話紀錄的保存期限清理）。
+- 每個租戶範圍的查詢都必須以 `TenantId` 過濾；不經審查不得停用查詢過濾。只能**按名稱**繞過租戶過濾（`IgnoreQueryFilters([TenantToken])`），且只在審查過的跨租戶查詢（API key 認證、對話紀錄與冪等紀錄的保存期限清理）。
 - **一次性密碼**：隨機產生、只顯示一次、只存雜湊；不得進任何日誌或稽核。
 - 登入失敗**永遠不透露**帳號是否存在、是否鎖定或停用（一個訊息；不存在的帳號仍付一次雜湊的成本）；失敗的表單**不回填**密碼或驗證碼；稽核與日誌**不記輸入的內容**（人會把密碼貼進 email 欄；稽核表只增不改），只有形如 email 的輸入才記。
 - 密碼規則：最小長度、無組成規則（NIST SP 800-63B）；連續失敗鎖定帳號。營運者與客戶兩邊規則相同。

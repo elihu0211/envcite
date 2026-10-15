@@ -75,7 +75,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）；CI 在 ma
 
 ## 可觀測性與連線
 
-- OpenTelemetry，與 platform 同一個約定：只認標準 `OTEL_*` 鍵，**沒設 `OTEL_EXPORTER_OTLP_ENDPOINT` 就什麼都不做**（`libs/python/envcite-grpc` 的 `telemetry.py`）。設了之後匯出 gRPC 追蹤（接續 platform 帶來的 traceparent）與指標；標籤只用有限集合，租戶與案件內容不進指標。
+- OpenTelemetry，與 platform 同一個約定：只認標準 `OTEL_*` 鍵，**沒設 `OTEL_EXPORTER_OTLP_ENDPOINT` 就什麼都不做**（`libs/python/envcite-grpc` 的 `telemetry.py`）。設了之後匯出 gRPC 追蹤（接續 platform 帶來的 traceparent）與指標；標籤只用有限集合，租戶與案件內容不進指標。每個一元呼叫的 RED 指標（rate、errors、duration）由 `envcite-grpc` 的 `metrics.py` 的攔截器提供，隨 telemetry 啟用，服務本身不必另接；名稱與標籤見 `proto/README.md`。
 - 連線：伺服器與客戶端選項成套放在 `libs/python/envcite-grpc` 的 `connection.py`。**伺服器的最短 ping 間隔必須小於客戶端的 keepalive 間隔**，改一邊要看另一邊（測試守著這個不等式）；platform 的對應設定在 `InternalGrpcClient`。
 
 ## Contract

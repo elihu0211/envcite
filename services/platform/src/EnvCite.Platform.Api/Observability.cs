@@ -34,8 +34,13 @@ internal static class Observability
                 .AddHttpClientInstrumentation()
                 .AddNpgsql())
             .WithMetrics(metrics => metrics
+                // RED：http.server.request.duration 一個直方圖，次數是 rate、http.response.status_code 的 5xx 是 errors、
+                // 分布是 duration；標籤只有方法、路由模板、狀態碼，租戶不在其中（見 UseTenantTrace）。
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
+                // 對 ontology／consult 的 gRPC 用戶端：rpc.client.call.duration 以 rpc.response.status_code 區分結果。
+                // 走 HttpClient 的 http.client.request.duration 看不出 gRPC 錯誤（gRPC 失敗仍是 HTTP 200）。
+                .AddMeter(GrpcClientMetrics.MeterName)
                 .AddRuntimeInstrumentation())
             .WithLogging();
 
@@ -75,9 +80,10 @@ internal static class Observability
     /// </summary>
     public static WebApplication MapPlatformHealth(this WebApplication app)
     {
-        app.MapGet("/health", () => Results.Ok(new { status = "ok" })).WithName("Health");
-        app.MapHealthChecks("/health/live", new() { Predicate = _ => false });
-        app.MapHealthChecks("/health/ready", new() { Predicate = check => check.Tags.Contains(ReadyTag) });
+        // 探針每幾秒打一次：不進請求指標，否則 rate 與延遲分布被它們稀釋（與追蹤一致，見上）。
+        app.MapGet("/health", () => Results.Ok(new { status = "ok" })).WithName("Health").DisableHttpMetrics();
+        app.MapHealthChecks("/health/live", new() { Predicate = _ => false }).DisableHttpMetrics();
+        app.MapHealthChecks("/health/ready", new() { Predicate = check => check.Tags.Contains(ReadyTag) }).DisableHttpMetrics();
         return app;
     }
 }

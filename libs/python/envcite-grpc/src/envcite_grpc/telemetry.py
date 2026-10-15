@@ -6,6 +6,9 @@ OTLP 匯出；資源屬性（服務名、pod、namespace）走標準的 `OTEL_SE
 `OTEL_RESOURCE_ATTRIBUTES`。自訂指標用 `opentelemetry.metrics.get_meter(...)`，沒設端點時
 是無操作的實作，呼叫的成本可以忽略。
 
+gRPC 伺服器的 RED 指標（rate、errors、duration）由 `envcite_grpc.metrics` 提供，
+隨 `configure` 啟用。
+
 租戶與案件內容不放進指標標籤：標籤的基數不受控；租戶只在追蹤上（platform 已記）。
 """
 
@@ -14,6 +17,8 @@ from __future__ import annotations
 import os
 
 import grpc
+
+from envcite_grpc.metrics import RedMetricsInterceptor
 
 
 def configure(service_name: str) -> list[grpc.ServerInterceptor]:
@@ -45,7 +50,8 @@ def configure(service_name: str) -> list[grpc.ServerInterceptor]:
             resource=resource, metric_readers=[PeriodicExportingMetricReader(OTLPMetricExporter())]
         )
     )
-    return [server_interceptor()]
+    # RED 指標在最外層，量到的耗時含其他攔截器；追蹤的攔截器在其內。
+    return [RedMetricsInterceptor(), server_interceptor()]
 
 
 def client_interceptors() -> list[grpc.UnaryUnaryClientInterceptor]:

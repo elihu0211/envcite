@@ -4,6 +4,7 @@ using Grpc.Net.ClientFactory;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.SharedKernel;
@@ -54,9 +55,11 @@ public static class InternalGrpcClient
         services.AddPlatformOptions<TOptions>();
         services.AddSingleton<IValidateOptions<TOptions>, InternalGrpcClientOptionsValidator<TOptions>>();
         services.AddHttpContextAccessor();
+        services.TryAddTransient<GrpcClientMetrics>();
 
         services.AddGrpcClient<TClient>((provider, o) =>
                 o.Address = new Uri(provider.GetRequiredService<IOptions<TOptions>>().Value.Address))
+            .AddInterceptor<GrpcClientMetrics>()
             .AddCallCredentials((_, metadata, provider) =>
             {
                 var httpContext = provider.GetRequiredService<IHttpContextAccessor>().HttpContext;

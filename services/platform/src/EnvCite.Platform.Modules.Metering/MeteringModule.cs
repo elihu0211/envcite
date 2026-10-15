@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Metering;
 
@@ -16,9 +17,12 @@ internal sealed class UsageRecorder(PlatformDbContext db, TimeProvider time) : I
 {
     public async Task RecordAsync(string operation, int units, CancellationToken cancellationToken)
     {
-        db.UsageRecords.Add(new UsageRecord { Operation = operation, Units = units, OccurredAt = time.GetUtcNow() });
+        Stage(operation, units);
         await db.SaveChangesAsync(cancellationToken);
     }
+
+    public void Stage(string operation, int units) =>
+        db.UsageRecords.Add(new UsageRecord { Operation = operation, Units = units, OccurredAt = time.GetUtcNow() });
 }
 
 public static class MeteringModule
@@ -28,6 +32,19 @@ public static class MeteringModule
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IUsageRecorder, UsageRecorder>();
+        services.AddPlatformOptions<IdempotencyOptions>();
+        services.AddSingleton<IValidateOptions<IdempotencyOptions>, IdempotencyOptionsValidator>();
+        services.AddScoped<IIdempotencyStore, IdempotencyStore>();
+        return services;
+    }
+
+    /// <summary>
+    /// 定期刪除過期的冪等紀錄。需要資料庫，所以和對話保存期限清理一樣不在產生 OpenAPI 的模擬 host 註冊。
+    /// </summary>
+    public static IServiceCollection AddIdempotencyRetention(this IServiceCollection services)
+    {
+        services.AddSingleton<IdempotencyRetention>();
+        services.AddHostedService(provider => provider.GetRequiredService<IdempotencyRetention>());
         return services;
     }
 

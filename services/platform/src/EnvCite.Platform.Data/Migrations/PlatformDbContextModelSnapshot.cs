@@ -18,7 +18,7 @@ namespace EnvCite.Platform.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("platform")
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -279,6 +279,53 @@ namespace EnvCite.Platform.Data.Migrations
                     b.HasIndex("ConversationId", "CreatedAt");
 
                     b.ToTable("ConversationMessages", "platform");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("EnvCite.Platform.Data.IdempotencyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Response")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("TenantId", "Operation", "Key")
+                        .IsUnique();
+
+                    b.ToTable("IdempotencyRecords", "platform");
 
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });

@@ -29,6 +29,7 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     [InlineData("Platform:DefaultPlan", "gold", "Platform:DefaultPlan names unknown plan 'gold'")]
     [InlineData("Platform:EntitlementRefresh", "00:00:00", "Platform:EntitlementRefresh must be at least one second")]
     [InlineData("Platform:Plans:standard:PermitLimit", "0", "Platform:Plans:standard needs a positive PermitLimit")]
+    [InlineData("Platform:Idempotency:Window", "00:00:00", "Platform:Idempotency:Window must be between 1 minute and 7 days")]
     [InlineData("Platform:Portal:SignInAttemptsPerMinute", "0", "Platform:Portal:SignInAttemptsPerMinute must be between 1 and 1000")]
     [InlineData("Platform:Ui:SignInAttemptsPerMinute", "0", "Platform:Ui:SignInAttemptsPerMinute must be between 1 and 1000")]
     public void InvalidSettingFailsAtStartupAndNamesTheKey(string key, string value, string expected)
