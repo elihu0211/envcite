@@ -10,7 +10,7 @@
 | [`../../AGENTS.md`](../../AGENTS.md) | 倉庫層規範（含「何時才抽出共用套件」的判準） |
 | [`envcite-grpc/`](envcite-grpc/README.md) | 兩個以上服務共用的 gRPC 管線零件 |
 | [`envcite-proto/`](envcite-proto/README.md) | `proto/` 的 Python 產生碼 |
-| [`envcite-segmenter/`](envcite-segmenter/README.md) | 中文斷詞，詞典由語料產生 |
+| [`envcite-segmenter/`](envcite-segmenter/README.md) | 中文斷詞，lexicon 由語料產生（無第三方依賴） |
 
 ## Project
 

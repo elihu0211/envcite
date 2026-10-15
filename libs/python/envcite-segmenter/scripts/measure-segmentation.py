@@ -147,10 +147,11 @@ def main() -> int:
     print(f"語料 {len(bodies)} 條、{sum(len(b) for b in bodies):,} 字；法定用語 {len(terms)} 個")
 
     plain = Segmenter()
-    evaluate("jieba（預設詞典）", plain.tokenize, bodies, terms)
+    evaluate("二字組（沒有 lexicon）", plain.tokenize, bodies, terms)
 
     withdict = Segmenter(terms)
-    evaluate(f"jieba + 語料自產詞典（{withdict.tokenizer_id}）", withdict.tokenize, bodies, terms)
+    name = f"lexicon 最長比對 + 二字組（{withdict.tokenizer_id}）"
+    evaluate(name, withdict.tokenize, bodies, terms)
     return 0
 
 

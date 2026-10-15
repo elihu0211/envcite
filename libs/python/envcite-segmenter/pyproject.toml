@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Chinese segmentation for envcite, with a lexicon derived from the corpus"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = ["jieba"]
+dependencies = []
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
