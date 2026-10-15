@@ -1,12 +1,16 @@
 # envcite-segmenter
 
-中文斷詞，詞典由語料自己產生。回[倉庫總覽](../../../README.md)。
+中文斷詞，詞典由語料自己產生。
+
+| 往上 | 往旁 |
+|------|------|
+| [倉庫總覽](../../../README.md) · [`libs/python/AGENTS.md`](../AGENTS.md)（同一分詞器的約束） | 使用端：[`services/ontology`](../../../services/ontology/README.md)（檢索投影與查詢）；量測：[`docs/segmentation-measurement.md`](docs/segmentation-measurement.md) |
 
 **索引端與查詢端必須用同一個分詞器**，否則詞彙臂會安靜地變差——查詢的詞素與索引的詞素不同，命中變少而不是變錯。這個函式庫存在就是為了讓兩端不可能用到不同的東西。
 
 ## 為什麼是 jieba 加語料自產詞典
 
-法定用語（如「事業廢棄物」）是立法者定義的一個概念，通用分詞器會把它切開，查它的人就配到講別的概念的條文。判準是「法定用語出現時是否被切成完整一個 token」，真值取自法條自己的定義條。量測方法、各分詞器的比較與重跑方式見 [`docs/segmentation-measurement.md`](docs/segmentation-measurement.md)；結論是**詞典的影響遠大於分詞器本身的選擇**，而 CKIP 不接受自訂詞典。
+法定用語（如「事業廢棄物」）是立法者定義的一個概念，通用分詞器會把它切開，查它的人就配到講別的概念的條文。判準是「法定用語出現時是否被切成完整一個 token」，真值取自法條自己的定義條。量測方法與重跑方式見 [`docs/segmentation-measurement.md`](docs/segmentation-measurement.md)；結論是**詞典的影響遠大於分詞器本身的選擇**，而 CKIP 不接受自訂詞典。
 
 ## 詞典來自哪裡
 
@@ -14,6 +18,6 @@
 
 ## tokenizer id
 
-`jieba-<版本>+dict-<詞典雜湊前8碼>`，寫進 `retrieval.lexical_index.tokenizer`。
+`jieba-<版本>+dict-<詞典雜湊前綴>`，寫進 `retrieval.lexical_index.tokenizer`。
 
 詞典變動會改變雜湊，於是既有的 `content_tsv` 與新的查詢對不上——這是刻意的。**偵測到不符時該做的是重建全部 tsvector**，由匯入器負責；過渡期間識別碼不符的列不參與檢索。

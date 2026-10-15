@@ -6,11 +6,13 @@
 |------|------|
 | 介面 | gRPC：`OntologyService`（法規與檢索）、`ReasoningService`（標註與推論） |
 | 技術棧 | Python · uv · gRPC · PostgreSQL；Python 版本見根 `.python-version` |
-| 呼叫端 | `services/platform`、`services/consult` |
+| 呼叫端 | [`services/platform`](../platform/README.md)、[`services/consult`](../consult/README.md) |
 | 資料 | 全域共用，不分租戶；PostgreSQL 為唯一真值 |
-| 契約 | `proto/envcite/ontology/v1/ontology.proto`、`reasoning.proto` |
+| 契約 | [`ontology.proto`](../../proto/envcite/ontology/v1/ontology.proto)、[`reasoning.proto`](../../proto/envcite/ontology/v1/reasoning.proto)；約定與錯誤原因見 [`proto/README.md`](../../proto/README.md) |
 | 資料來源 | 全國法規資料庫（政府資料開放授權條款－第1版，須標示出處） |
-| 開發指引 | 本目錄 `AGENTS.md`；倉庫規範見根 `AGENTS.md` |
+| 共用套件 | [`envcite-segmenter`](../../libs/python/envcite-segmenter/README.md)（斷詞）、[`envcite-grpc`](../../libs/python/envcite-grpc/README.md)（連線與可觀測性）、[`envcite-proto`](../../libs/python/envcite-proto/README.md)（產生碼） |
+| 開發指引 | [本目錄 `AGENTS.md`](AGENTS.md)；倉庫規範見根 [`AGENTS.md`](../../AGENTS.md) |
+| 部署 | [`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy)（`base/ontology/`） |
 
 ## 資料流
 
@@ -59,7 +61,7 @@ flowchart LR
 | 項目 | 說明 |
 |------|------|
 | [uv](https://docs.astral.sh/uv/) | Python 版本見根 `.python-version`，由 uv 安裝 |
-| PostgreSQL | 版本與建法見根 `CONTRIBUTING.md`；連線字串放 `ONTOLOGY_DSN` |
+| PostgreSQL | 版本與建法見根 [`CONTRIBUTING.md`](../../CONTRIBUTING.md)；連線字串放 `ONTOLOGY_DSN` |
 | Docker | 測試的 Testcontainers 用；已有資料庫則設 `ONTOLOGY_TEST_DSN` |
 
 ```bash
@@ -81,18 +83,9 @@ uv sync --all-packages        # 整個 workspace；標註管線用 Anthropic 模
 | `envcite-annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
 | `envcite-verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |
 
-`<來源>` 登記在 `src/envcite_ontology/acquire/cli.py` 的 `SOURCES`；`moj` 是全國法規資料庫。
+`<來源>` 登記在 [`src/envcite_ontology/acquire/cli.py`](src/envcite_ontology/acquire/cli.py) 的 `SOURCES`；`moj` 是全國法規資料庫。
 
-**環境變數**
-
-| 變數 | 用於 |
-|------|------|
-| `ONTOLOGY_DSN` | 所有入口 |
-| `ONTOLOGY_GRPC_PORT` | `envcite-ontology`（選用） |
-| `ACQUIRE_SNAPSHOT_DIR` | `envcite-sync`、`envcite-acquire`、`envcite-import` |
-| `CHAT_API_KEY` | `envcite-pipeline`，由 `models.toml` 引用 |
-
-名稱、必填與預設值以 `src/envcite_ontology/settings.py` 為準。
+**環境變數**：名稱、必填、預設值與各入口用到哪些，以 [`src/envcite_ontology/settings.py`](src/envcite_ontology/settings.py) 為準，範本是 `.env.example`；標註管線的金鑰由 `models.toml` 引用，見〈模型配置〉與〈金鑰〉。
 
 `envcite-sync`、`acquire`、`import` 的結束碼：`0` 成功或無事可做，`1` 暫時性失敗（可重試），`2` 資料不合預期（重試無益）。
 
@@ -133,7 +126,7 @@ cp .env.example .env                 # 用編輯器填入 CHAT_API_KEY，不要�
 uv run --env-file .env envcite-pipeline --models models.toml --check   # 確認端點、金鑰與每個模型都通
 ```
 
-`--check` 對每個模型送固定的探測問題，不連資料庫；通過後才用 `--law` 或 `--pending` 開跑。
+`--check` 對每個模型送固定的探測問題，不連資料庫；通過後才用 `--law` 或 `--pending` 開跑。管線的驗證與推論細節見 [`AGENTS.md`](AGENTS.md)；推論結果的呼叫端用法見 [`proto/README.md`](../../proto/README.md) 的〈標註與推論〉。
 
 ```toml
 [endpoint.<名>]   # OpenAI 相容的服務：網址與金鑰的位置

@@ -58,7 +58,7 @@ dotnet run --project src/EnvCite.Platform.Api   # Development：連本機 Postgr
 dotnet ef migrations add <Name> -p src/EnvCite.Platform.Data -s src/EnvCite.Platform.Data
 dotnet ef migrations add <Name> -p src/EnvCite.Platform.Modules.Tenancy -s src/EnvCite.Platform.Modules.Tenancy
 
-docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）；CI 的 `platform-image` 在 main 推送 :<sha>
+docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）；CI 在 main 推送 :<sha>
 ```
 
 - 套件版本只在 `Directory.Packages.props`（Central Package Management）；共用建置設定在 `Directory.Build.props`，不在 `.csproj` 重複。格式規則在 `.editorconfig`。
@@ -66,7 +66,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）；CI �
 
 ## Contract
 
-- **對外 REST 契約是 `openapi/openapi_v2.json`**，每次 `dotnet build` 產生，與程式碼變更一起提交；過期（`dotnet` job）或破壞目標分支版本（`openapi` job，oasdiff）CI 都會失敗。新的 `/v2` 端點要有 `.WithName`／`.WithTags`／`.WithSummary`／`.WithDescription`，以及它會回的每個狀態的 `.Produces…`。不相容的變更進新版本群組（`/v3`），不進 `/v2`。
+- **對外 REST 契約是 `openapi/openapi_v2.json`**，每次 `dotnet build` 產生，與程式碼變更一起提交；規格過期或破壞目標分支版本，CI 都會失敗。新的 `/v2` 端點要有 `.WithName`／`.WithTags`／`.WithSummary`／`.WithDescription`，以及它會回的每個狀態的 `.Produces…`。不相容的變更進新版本群組（`/v3`），不進 `/v2`。
 - **對外用語獨立於內部 gRPC**（端點在兩者間對映），用法律詞彙；新的公開欄位先取法律用語，內部 proto 不必跟著（例：`pointInTime` 對 gRPC 的 `as_of`）。
 - `.proto` 一律來自倉庫根 `proto/`（Grpc.Tools 於各模組 `.csproj` 編譯），**不得複製**。
 - 內部 gRPC 用戶端只經 `SharedKernel.InternalGrpcClient.AddInternalGrpcClient` 註冊，新增上游也走這裡，不複製一份。連線選項與 Python 伺服器成套（`envcite_grpc.connection`）：用戶端 keepalive 間隔必須大於伺服器允許的最短 ping 間隔；只重試 `UNAVAILABLE`（內部方法都是唯讀、確定性的一元呼叫），`DEADLINE_EXCEEDED` 與 `RESOURCE_EXHAUSTED` 不重試。改一邊要看另一邊。

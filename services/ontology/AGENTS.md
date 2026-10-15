@@ -35,7 +35,7 @@ uv run python -m mypy src tests   # 型別檢查（strict）
 ONTOLOGY_TEST_DSN=postgresql://... uv run python -m pytest   # 用現成的資料庫測試
 ONTOLOGY_DSN=postgresql://... uv run envcite-ontology       # 起伺服器
 ONTOLOGY_DSN=postgresql://... ACQUIRE_SNAPSHOT_DIR=<目錄> uv run envcite-sync moj   # 排程週期：取得 → 匯入 → 投影
-docker build -f Dockerfile ../..   # 映像（context = 倉庫根）；CI 的 `ontology-image` 在 main 推送 :<sha>
+docker build -f Dockerfile ../..   # 映像（context = 倉庫根）；CI 在 main 推送 :<sha>
 ```
 
 - Proto lint／`buf breaking` 從倉庫根執行，見根 `AGENTS.md`。全部入口見 `pyproject.toml` 的 `[project.scripts]` 與 `README.md`。

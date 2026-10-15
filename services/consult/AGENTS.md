@@ -17,7 +17,7 @@
 - **Name:** consult（`services/consult`；倉庫為 `envcite`）
 - **Role:** 接地服務：以本體服務供給的內容，為**呼叫端的語言模型**備妥可引用的封閉證據集，或拒答。**本服務不執行生成模型。** **租戶隔離**——`x-tenant-id` 為必填，決定配額與稽核軌跡。
 - **Stack:** Python · uv · gRPC（grpcio，同步伺服器，一元呼叫）· ruff · mypy (strict) · pytest（Python 版本見根 `.python-version`）
-- **Interface:** `ConsultationService.Ground`（`envcite.consult.v2`）；本體 adapter 為 `adapters.GrpcOntology`（經 ontology 的 `SearchArticles`）；經 platform 的 `POST /v2/ground` 對外。映像：`Dockerfile`（context 為倉庫根；CI `consult-image` 在 main 推送 `:<sha>`）。
+- **Interface:** `ConsultationService.Ground`（`envcite.consult.v2`）；本體 adapter 為 `adapters.GrpcOntology`（經 ontology 的 `SearchArticles`）；經 platform 的 `POST /v2/ground` 對外。映像：`Dockerfile`（context 為倉庫根；CI 在 main 推送 `:<sha>`，部署見 [`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy)）。
 
 ## 管線形狀（本服務存在的理由）
 

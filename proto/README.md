@@ -2,19 +2,19 @@
 
 gRPC 契約，`buf` 單一模組（根為本目錄）。欄位與方法的語意寫在 `.proto` 的註解裡，本檔只寫註解放不下的：約定與呼叫端的接法。回[倉庫總覽](../README.md)。
 
-| 套件 | 服務 | 租戶 | 對象 |
-|------|------|------|------|
-| `envcite.ontology.v1` | `OntologyService`、`ReasoningService` | 共享 | 內部 |
-| `envcite.consult.v2` | `ConsultationService` | 隔離 | 內部 |
+| 套件 | 服務 | 租戶 | 對象 | 實作 |
+|------|------|------|------|------|
+| `envcite.ontology.v1` | `OntologyService`、`ReasoningService` | 共享 | 內部 | [`services/ontology`](../services/ontology/README.md) |
+| `envcite.consult.v2` | `ConsultationService` | 隔離 | 內部 | [`services/consult`](../services/consult/README.md) |
 
-外部用戶端只經 `platform` 的 REST：契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。
+外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST：契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
 
 ```bash
 buf lint
 buf breaking --against '.git#branch=main'
 ```
 
-產生碼與破壞性變更的規則見倉庫根 `AGENTS.md` 的 Contract。
+產生碼與破壞性變更的規則見倉庫根 [`AGENTS.md`](../AGENTS.md) 的 Contract。
 
 ## 服務如何組合
 
@@ -115,7 +115,7 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 flowchart TD
     q(["使用者問題（原句）"]) --> ground["Ground"]
     ground --> out{"outcome"}
-    out -->|evidence| ev["1–8 筆引用<br/>代號 L1…，依相關程度排序"]
+    out -->|evidence| ev["有上限的引用<br/>代號 L1…，依相關程度排序"]
     out -->|refused| rf(["呈現給使用者<br/>不重試 · 不呼叫模型"])
     ev --> llm["呼叫端的模型<br/>只能以 [L1] 引用"]
     llm --> strip["剝除不在證據集內的代號"]
@@ -132,7 +132,7 @@ flowchart TD
 ```
 
 - `question` 傳使用者原句，不要先改寫；`SearchArticles` 的 `query` 同樣傳原文，斷詞由服務做。
-- 回應的 `outcome` 恰有一個：`evidence`（1 至 8 筆引用，依相關程度排序）或 `refused`（拒答）。拒答是結果，不是錯誤：呈現給使用者，不重試、不呼叫模型。
+- 回應的 `outcome` 恰有一個：`evidence`（有筆數上限的引用，依相關程度排序）或 `refused`（拒答）。拒答是結果，不是錯誤：呈現給使用者，不重試、不呼叫模型。
 - 交給模型時，證據以代號（`L1`…）開頭，限定模型只能以 `[L1]` 引用。代號的字母是來源本體的（法規本體 `law` 為 `L`），每筆 `Citation.ontology` 標明出處；每個本體各領一個字母，序號在整份證據內連續。
 - `GroundRequest.ontologies` 指定要查哪些本體，留空為全部；不認得的代號回 `INVALID_ARGUMENT`。
 - 模型輸出要核驗：代號集合是封閉的，比對字串即可，剝除不在集合內的代號；剝除後沒有任何引用，視同拒答。

@@ -11,7 +11,7 @@
 | `services/platform/` | 多租戶控制平面與對外 REST | C# · ASP.NET Core · PostgreSQL | [README](services/platform/README.md) · [AGENTS](services/platform/AGENTS.md) |
 | `services/ontology/` | 本體：各來源知識的集中處、檢索與推論（shared, non-tenant） | Python · uv · gRPC · PostgreSQL | [README](services/ontology/README.md) · [AGENTS](services/ontology/AGENTS.md) |
 | `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；本身不執行生成模型） | Python · uv · gRPC | [README](services/consult/README.md) · [AGENTS](services/consult/AGENTS.md) |
-| `libs/python/` | 服務之外、可獨立測試的 Python 套件（含 `envcite-proto`：`proto/` 的 Python 產生碼） | uv workspace 成員，不發佈 | [AGENTS](libs/python/AGENTS.md) · 各套件的 `README.md` |
+| `libs/python/` | 服務之外、可獨立測試的 Python 套件（含 `envcite-proto`：`proto/` 的 Python 產生碼） | uv workspace 成員，不發佈 | [AGENTS](libs/python/AGENTS.md) · [envcite-grpc](libs/python/envcite-grpc/README.md) · [envcite-proto](libs/python/envcite-proto/README.md) · [envcite-segmenter](libs/python/envcite-segmenter/README.md) |
 
 總覽與目錄見根 [`README.md`](README.md)；本機開發環境見 [`CONTRIBUTING.md`](CONTRIBUTING.md)。工具與執行期的版本不寫在文件裡，以 `global.json`、`.python-version`、`pyproject.toml` 與 `uv.lock` 為準。
 
@@ -29,9 +29,11 @@
 
 ```bash
 # 契約
-DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 lint
-DISABLE_TELEMETRY=1 npx @bufbuild/buf@1.73.0 breaking --against '.git#branch=main'
+DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> lint
+DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#branch=main'
 ```
+
+`<BUF_VERSION>` 取 `.gitlab-ci.yml` 的 `BUF_VERSION`。
 
 ### 平行 worktree
 
@@ -56,10 +58,10 @@ wt list        # URL 欄是本樹 platform 的位址
 | 契約 | `proto/envcite/<service>/v1/` | 該服務有對外 API 時 |
 | 跨服務共用程式碼 | `libs/<lang>/<name>/` | 服務內的程式碼**出現第二個消費端時**才抽出，不是「將來可能要用」；本身有獨立依賴與測試週期的函式庫（如 `envcite-segmenter`）可一開始就建在這裡 |
 | 服務映像 | `services/<name>/Dockerfile` | 該服務要部署時 |
-| 部署清單 | `envcite-deploy` 倉庫（GitLab `thuaisse-lab/envcite-deploy`，Argo CD 來源），**不在本倉庫** | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（`<name>-image` job 推送 `:<commit-sha>`），該倉庫的 Argo CD Image Updater 偵測到後把 tag commit 進該倉庫（git write-back），Argo CD 同步上線，無需開 MR。**程式碼與清單要一起改時清單先行**：先在該倉庫合併向後相容的清單變更（如新環境變數給預設值），再合併本倉庫的程式碼——新映像會自動上線，順序反了就是新映像配舊清單 |
+| 部署清單 | [`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy) 倉庫（Argo CD 來源），**不在本倉庫** | 依 Argo CD 官方最佳實踐與程式碼分庫：本倉庫產出映像（CI 推送 `:<commit-sha>`），該倉庫的 Argo CD Image Updater 偵測到後把 tag commit 進該倉庫（git write-back），Argo CD 同步上線，無需開 MR。**程式碼與清單要一起改時清單先行**：先在該倉庫合併向後相容的清單變更（如新環境變數給預設值），再合併本倉庫的程式碼——新映像會自動上線，順序反了就是新映像配舊清單 |
 
 - **契約維持單一 buf 模組**（`buf.yaml` 的模組根是 `proto/`，import 路徑為 `envcite/<service>/v1/...`）。拆成每領域一個模組會改變每一條 import 路徑，除非某領域需要獨立發佈到 schema registry，否則不拆。
-- **CI 的擴充點是「新增一個服務要改幾個地方」**：要改的是 job、`rules:changes` 錨點與 `proto` 觸發路徑；要部署的服務再加 `<name>-image` 建置 job。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
+- **CI 的擴充點是「新增一個服務要改幾個地方」**：要改的是 job、`rules:changes` 錨點與 `proto` 觸發路徑；要部署的服務再加映像建置 job。三到四個服務內維持單檔，再多才改用子管線（`trigger: include:`），不要提早拆。
 - **標籤用 `<service>/vX.Y.Z`**，不用倉庫層單一版本號。
 
 ## Contract

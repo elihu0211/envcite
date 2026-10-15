@@ -5,14 +5,15 @@
 | 項目 | 內容 |
 |------|------|
 | 介面 | `/v2` 租戶 REST API（API key）；`/admin` 營運者 API；`/ui` 營運者後台；`/portal` 客戶入口（以設定開關） |
-| 技術棧 | C# · .NET 10（SDK 版本見 `global.json`）· ASP.NET Core · PostgreSQL |
+| 技術棧 | C# · .NET（SDK 版本見 `global.json`）· ASP.NET Core · PostgreSQL |
 | 呼叫端 | 外部用戶端，只經本服務進入系統 |
-| 上游 | `services/ontology`、`services/consult`（gRPC） |
+| 上游 | [`services/ontology`](../ontology/README.md)、[`services/consult`](../consult/README.md)（gRPC） |
 | 資料 | PostgreSQL，schema `platform`；租戶隔離是執行期機制（租戶解析加查詢過濾） |
-| 契約 | `openapi/openapi_v2.json`，每次 `dotnet build` 產生，隨程式碼一起提交 |
-| 開發指引 | 本目錄 `AGENTS.md`；倉庫層規範見根 `AGENTS.md` |
+| 契約 | [`openapi/openapi_v2.json`](openapi/openapi_v2.json)，每次 `dotnet build` 產生，隨程式碼一起提交；上游 gRPC 契約見 [`proto/README.md`](../../proto/README.md) |
+| 開發指引 | [本目錄 `AGENTS.md`](AGENTS.md)；倉庫層規範見根 [`AGENTS.md`](../../AGENTS.md) |
+| 部署 | [`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy)（`base/platform/`） |
 
-外部呼叫端的接法見 [`proto/README.md`](../../proto/README.md) 與 `openapi/openapi_v2.json`。
+外部呼叫端的接法見 [`proto/README.md`](../../proto/README.md) 與 [`openapi/openapi_v2.json`](openapi/openapi_v2.json)。
 
 ## 一次 `/v2` 請求
 
@@ -40,7 +41,7 @@ flowchart LR
     class e401,e402,e429,e503 stop
 ```
 
-用量與租戶管理端點（如 `/v2/me`、`/v2/usage`）不經方案檢查；細節見 `AGENTS.md`。
+管理端點（自己是誰、用量、API key）不經方案檢查；細節見 [`AGENTS.md`](AGENTS.md) 的 Plans & access。
 
 ## 先決條件
 
@@ -49,7 +50,7 @@ flowchart LR
 | .NET SDK | 版本見 `global.json` |
 | PostgreSQL | 版本與建法見根 [`CONTRIBUTING.md`](../../CONTRIBUTING.md) |
 | Docker | 測試的 Testcontainers 用 |
-| ontology、consult | 啟動時必須設定位址；實際呼叫時才需要在線 |
+| [ontology](../ontology/README.md)、[consult](../consult/README.md) | 啟動時必須設定位址；實際呼叫時才需要在線 |
 
 ```bash
 dotnet restore && dotnet tool restore
@@ -61,15 +62,7 @@ dotnet restore && dotnet tool restore
 |------|------|--------|
 | `src/EnvCite.Platform.Api` | 長駐 | ASP.NET Core 主機：REST、後台與入口頁；Development 啟動時自動遷移 |
 
-**設定**（環境變數用 `__` 分層）
-
-| 鍵 | 說明 |
-|----|------|
-| `ConnectionStrings__Platform` | PostgreSQL 連線字串 |
-| `Ontology__*`、`Consult__*` | 兩個上游的位址與逾時；必填 |
-| `Platform__AdminKeySha256` | 營運者金鑰的 SHA-256；機密，不提交 |
-
-選項類別在啟動時驗證，缺值或錯值會讓主機啟動失敗。完整設定鍵與預設值以 `AGENTS.md` 與 `appsettings.json` 為準。
+**設定**：環境變數用 `__` 分層。鍵名、必填與預設值以各設定群組的選項類別與 `appsettings.json` 為準，規則見 [`AGENTS.md`](AGENTS.md) 的 Configuration；選項類別在啟動時驗證，缺值或錯值會讓主機啟動失敗。機密（如營運者金鑰雜湊）只經環境變數，不提交。
 
 ### 在本機跑起來
 
@@ -91,5 +84,5 @@ docker build -f Dockerfile ../..     # 映像；建置內容為倉庫根
 ```
 
 - 套件版本集中在 `Directory.Packages.props`，以 `packages.lock.json` 鎖定；改了之後執行 `dotnet restore --force-evaluate` 並提交鎖檔。
-- 遷移指令與模組配置見 `AGENTS.md`。
+- 遷移指令與模組配置見 [`AGENTS.md`](AGENTS.md)。
 - 可觀測性：設了 `OTEL_EXPORTER_OTLP_ENDPOINT` 才匯出追蹤與指標。

@@ -6,11 +6,12 @@
 |------|------|
 | 介面 | gRPC：`ConsultationService.Ground` |
 | 技術棧 | Python · uv · gRPC（同步伺服器）；Python 版本見根 `.python-version` |
-| 呼叫端 | `services/platform`（對外為 `POST /v2/ground`） |
-| 上游 | `services/ontology`（本體內容的唯一來源） |
+| 呼叫端 | [`services/platform`](../platform/README.md)（對外為 `POST /v2/ground`） |
+| 上游 | [`services/ontology`](../ontology/README.md)（本體內容的唯一來源） |
 | 資料 | 租戶隔離，`x-tenant-id` 必填；本服務自己不存資料 |
-| 契約 | `proto/envcite/consult/v2/consult.proto` |
-| 開發指引 | 本目錄 `AGENTS.md`；倉庫層規範見根 `AGENTS.md` |
+| 契約 | [`proto/envcite/consult/v2/consult.proto`](../../proto/envcite/consult/v2/consult.proto)；約定見 [`proto/README.md`](../../proto/README.md) |
+| 開發指引 | [本目錄 `AGENTS.md`](AGENTS.md)；倉庫層規範見根 [`AGENTS.md`](../../AGENTS.md) |
+| 部署 | [`envcite-deploy`](https://gitlab.com/thuaisse-lab/envcite-deploy)（`base/consult/`） |
 
 呼叫端怎麼用證據集、怎麼核驗模型的輸出，見 [`proto/README.md`](../../proto/README.md)。
 
@@ -52,7 +53,7 @@ flowchart LR
 | 項目 | 說明 |
 |------|------|
 | [uv](https://docs.astral.sh/uv/) | Python 版本由 uv 安裝 |
-| ontology | 本服務唯一的上游；位址放 `ONTOLOGY_TARGET`。測試不需要它（以 fake 代替） |
+| [ontology](../ontology/README.md) | 本服務唯一的上游；位址放 `ONTOLOGY_TARGET`。測試不需要它（以 fake 代替） |
 
 ```bash
 uv sync --all-packages        # 整個 workspace（.venv 與 uv.lock 在倉庫根）
@@ -64,12 +65,7 @@ uv sync --all-packages        # 整個 workspace（.venv 與 uv.lock 在倉庫�
 |------|------|--------|
 | `envcite-consult` | 長駐 | gRPC 伺服器 |
 
-**環境變數**
-
-| 變數 | 說明 |
-|------|------|
-| `ONTOLOGY_TARGET` | 必填。ontology 的 gRPC 目標，例如 `dns:///localhost:<ontology 埠>` |
-| `CONSULT_GRPC_PORT` | 選用，預設值見 `src/envcite_consult/server.py` |
+**環境變數**：名稱、必填與預設值以 [`src/envcite_consult/server.py`](src/envcite_consult/server.py) 為準；至少要給 `ONTOLOGY_TARGET`（ontology 的 gRPC 目標）。
 
 ### 在本機跑起來
 
@@ -77,7 +73,7 @@ uv sync --all-packages        # 整個 workspace（.venv 與 uv.lock 在倉庫�
 ONTOLOGY_TARGET=dns:///localhost:<ontology 埠> uv run envcite-consult
 ```
 
-平行 worktree 用 `wt consult`，會指向本樹的 ontology，見 [`CONTRIBUTING.md`](../../CONTRIBUTING.md)。
+平行 worktree 用 `wt consult`，會指向本樹的 ontology，見 [`CONTRIBUTING.md`](../../CONTRIBUTING.md)。呼叫端怎麼用本服務的輸出見 [`proto/README.md`](../../proto/README.md)；實作約束見 [`AGENTS.md`](AGENTS.md)。
 
 ## 開發
 
