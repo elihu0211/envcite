@@ -144,7 +144,9 @@ def test_the_callers_remaining_deadline_is_passed_downstream(
     stub.Ground(consult_pb2.GroundRequest(question="排放"), metadata=call_metadata())
 
     with_deadline, without = ontology.timeouts
-    assert with_deadline is not None and 0 < with_deadline <= 3
+    # 剩餘秒數由 gRPC 以牆鐘換算，繁忙的 runner 上會比呼叫端的 3 秒多出幾毫秒；要驗的是
+    # 它隨呼叫端的期限傳遞（遠小於轉接器預設的 5 秒），不是精確等於。
+    assert with_deadline is not None and 0 < with_deadline < 3.5
     assert without is None
 
 
