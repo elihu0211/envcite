@@ -45,7 +45,7 @@ public sealed class AdminMembersTests(PlatformFactory factory)
         var signedIn = await browser.SubmitAsync(Login(tenant.Identifier), Credentials(email, password));
         Assert.Equal(PasswordPage(tenant.Identifier), signedIn.Location); // 與營運後台建立的一樣：第一次必須改密碼
 
-        var list = await admin.GetFromJsonAsync<JsonElement>(Url(tenant.Id));
+        var list = await admin.GetFromJsonAsync<JsonElement>(Url(tenant.Id), cancellationToken: TestContext.Current.CancellationToken);
         var member = Assert.Single(list.EnumerateArray());
         Assert.Equal((id, email, CustomerRoles.Owner), (member.GetProperty("id").GetString(), member.GetProperty("email").GetString(), member.GetProperty("role").GetString()));
         Assert.False(member.TryGetProperty("password", out _)); // 清單裡沒有任何密碼
@@ -61,10 +61,10 @@ public sealed class AdminMembersTests(PlatformFactory factory)
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("am-b");
         using var admin = factory.CreateAdminClient();
 
-        using var response = await admin.PostAsJsonAsync(Url(tenant.Id), new CreateMemberRequest(email, null, role));
+        using var response = await admin.PostAsJsonAsync(Url(tenant.Id), new CreateMemberRequest(email, null, role), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Empty((await admin.GetFromJsonAsync<JsonElement>(Url(tenant.Id))).EnumerateArray());
+        Assert.Empty((await admin.GetFromJsonAsync<JsonElement>(Url(tenant.Id), cancellationToken: TestContext.Current.CancellationToken)).EnumerateArray());
     }
 
     [Fact]
@@ -75,10 +75,10 @@ public sealed class AdminMembersTests(PlatformFactory factory)
         var email = NewEmail();
         var (id, _) = await CreateAsync(admin, tenant.Id, email, CustomerRoles.Viewer);
 
-        using var duplicate = await admin.PostAsJsonAsync(Url(tenant.Id), new CreateMemberRequest(email, null, CustomerRoles.Viewer));
-        using var noTenant = await admin.PostAsJsonAsync(Url("no-such-tenant"), new CreateMemberRequest(NewEmail(), null, CustomerRoles.Viewer));
-        using var noMember = await admin.PostAsync(new Uri(Url(tenant.Id, "/no-such-member/password-reset"), UriKind.Relative), content: null);
-        using var noList = await admin.GetAsync(new Uri(Url("no-such-tenant"), UriKind.Relative));
+        using var duplicate = await admin.PostAsJsonAsync(Url(tenant.Id), new CreateMemberRequest(email, null, CustomerRoles.Viewer), cancellationToken: TestContext.Current.CancellationToken);
+        using var noTenant = await admin.PostAsJsonAsync(Url("no-such-tenant"), new CreateMemberRequest(NewEmail(), null, CustomerRoles.Viewer), cancellationToken: TestContext.Current.CancellationToken);
+        using var noMember = await admin.PostAsync(new Uri(Url(tenant.Id, "/no-such-member/password-reset"), UriKind.Relative), content: null, cancellationToken: TestContext.Current.CancellationToken);
+        using var noList = await admin.GetAsync(new Uri(Url("no-such-tenant"), UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, noTenant.StatusCode);
@@ -102,23 +102,23 @@ public sealed class AdminMembersTests(PlatformFactory factory)
         Assert.Equal(Home(tenant.Identifier), (await untouched.SubmitAsync(Login(tenant.Identifier), Credentials(email, NewPassword))).Location);
 
         // 停用：既有 session 立刻失效，不能登入。
-        using var disabled = await admin.PostAsync(new Uri(Url(tenant.Id, $"/{id}/disable"), UriKind.Relative), content: null);
+        using var disabled = await admin.PostAsync(new Uri(Url(tenant.Id, $"/{id}/disable"), UriKind.Relative), content: null, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, disabled.StatusCode);
-        Assert.True((await disabled.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("disabled").GetBoolean());
+        Assert.True((await disabled.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken)).GetProperty("disabled").GetBoolean());
         Assert.Equal(HttpStatusCode.Redirect, (await browser.GetAsync(Home(tenant.Identifier))).Status);
 
         // 再停用一次是冪等的：不重複記錄。
-        (await admin.PostAsync(new Uri(Url(tenant.Id, $"/{id}/disable"), UriKind.Relative), content: null)).Dispose();
+        (await admin.PostAsync(new Uri(Url(tenant.Id, $"/{id}/disable"), UriKind.Relative), content: null, cancellationToken: TestContext.Current.CancellationToken)).Dispose();
 
-        using var enabled = await admin.PostAsync(new Uri(Url(tenant.Id, $"/{id}/enable"), UriKind.Relative), content: null);
-        Assert.False((await enabled.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("disabled").GetBoolean());
+        using var enabled = await admin.PostAsync(new Uri(Url(tenant.Id, $"/{id}/enable"), UriKind.Relative), content: null, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.False((await enabled.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken)).GetProperty("disabled").GetBoolean());
 
         // 重新啟用不能讓停用之前發出的 cookie 復活：停用期間它被旗標擋住，旗標一拿掉，只有換過的安全戳記還擋得住它。
         Assert.Equal(HttpStatusCode.Redirect, (await untouched.GetAsync(Home(tenant.Identifier))).Status);
 
         // 重設密碼：新的一次性密碼可用，舊的不行。
-        using var reset = await admin.PostAsync(new Uri(Url(tenant.Id, $"/{id}/password-reset"), UriKind.Relative), content: null);
-        var newPassword = (await reset.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("password").GetString()!;
+        using var reset = await admin.PostAsync(new Uri(Url(tenant.Id, $"/{id}/password-reset"), UriKind.Relative), content: null, cancellationToken: TestContext.Current.CancellationToken);
+        var newPassword = (await reset.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken)).GetProperty("password").GetString()!;
         using var fresh = new PortalBrowser(factory);
         Assert.Contains("電子郵件或密碼不正確", (await fresh.SubmitAsync(Login(tenant.Identifier), Credentials(email, NewPassword))).Html, StringComparison.Ordinal);
         Assert.Equal(PasswordPage(tenant.Identifier), (await fresh.SubmitAsync(Login(tenant.Identifier), Credentials(email, newPassword))).Location);
@@ -139,8 +139,8 @@ public sealed class AdminMembersTests(PlatformFactory factory)
         using var anonymous = factory.CreateClient();
         using var tenantClient = factory.CreateTenantClient(key.Key);
 
-        using var noKey = await anonymous.GetAsync(new Uri(Url(tenant.Id), UriKind.Relative));
-        using var asTenant = await tenantClient.PostAsJsonAsync(Url(tenant.Id), new CreateMemberRequest(NewEmail(), null, CustomerRoles.Owner));
+        using var noKey = await anonymous.GetAsync(new Uri(Url(tenant.Id), UriKind.Relative), TestContext.Current.CancellationToken);
+        using var asTenant = await tenantClient.PostAsJsonAsync(Url(tenant.Id), new CreateMemberRequest(NewEmail(), null, CustomerRoles.Owner), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, noKey.StatusCode);
         Assert.True(asTenant.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden);
@@ -157,8 +157,8 @@ public sealed class AdminMembersTests(PlatformFactory factory)
         admin.DefaultRequestHeaders.Add(AdminKeyAuthenticationHandler.HeaderName, PlatformFactory.AdminKey);
 
         var (id, password) = await CreateAsync(admin, tenant.Id, NewEmail(), CustomerRoles.Owner);
-        using var reset = await admin.PostAsync(new Uri(Url(tenant.Id, $"/{id}/password-reset"), UriKind.Relative), content: null);
-        var second = (await reset.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("password").GetString()!;
+        using var reset = await admin.PostAsync(new Uri(Url(tenant.Id, $"/{id}/password-reset"), UriKind.Relative), content: null, cancellationToken: TestContext.Current.CancellationToken);
+        var second = (await reset.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken)).GetProperty("password").GetString()!;
 
         var events = new List<AuditRecord>();
         foreach (var action in AuditActions.All)

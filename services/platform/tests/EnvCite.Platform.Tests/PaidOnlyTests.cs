@@ -41,15 +41,15 @@ public sealed class PaidOnlyTests(PlatformFactory factory)
         await using var host = HostWithoutDefaultPlan();
         using var client = ClientFor(host, key.Key);
 
-        using var law = await client.GetAsync(LawUri);
-        using var ground = await client.PostAsJsonAsync("/v2/ground", new { question = "x" });
-        using var reasoning = await client.PostAsJsonAsync("/v2/reasoning/evaluate", new { conductOn = "2020-01-01", decidedOn = "2020-06-01" });
+        using var law = await client.GetAsync(LawUri, TestContext.Current.CancellationToken);
+        using var ground = await client.PostAsJsonAsync("/v2/ground", new { question = "x" }, cancellationToken: TestContext.Current.CancellationToken);
+        using var reasoning = await client.PostAsJsonAsync("/v2/reasoning/evaluate", new { conductOn = "2020-01-01", decidedOn = "2020-06-01" }, cancellationToken: TestContext.Current.CancellationToken);
 
         foreach (var response in new[] { law, ground, reasoning })
         {
             Assert.Equal(HttpStatusCode.PaymentRequired, response.StatusCode);
             Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-            var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var problem = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
             Assert.Equal(402, problem.GetProperty("status").GetInt32());
         }
     }
@@ -62,11 +62,11 @@ public sealed class PaidOnlyTests(PlatformFactory factory)
         await using var host = HostWithoutDefaultPlan();
         using var client = ClientFor(host, key.Key);
 
-        using var me = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
-        using var usage = await client.GetAsync(new Uri("/v2/usage", UriKind.Relative));
-        using var keys = await client.GetAsync(new Uri("/v2/api-keys", UriKind.Relative));
+        using var me = await client.GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var usage = await client.GetAsync(new Uri("/v2/usage", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var keys = await client.GetAsync(new Uri("/v2/api-keys", UriKind.Relative), TestContext.Current.CancellationToken);
         // 被盜的 key 要能撤銷，不管有沒有方案。
-        using var revoke = await client.DeleteAsync(new Uri($"/v2/api-keys/{spare.ApiKey.Id}", UriKind.Relative));
+        using var revoke = await client.DeleteAsync(new Uri($"/v2/api-keys/{spare.ApiKey.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, me.StatusCode);
         Assert.Equal(HttpStatusCode.OK, usage.StatusCode);
@@ -80,7 +80,7 @@ public sealed class PaidOnlyTests(PlatformFactory factory)
         await using var host = HostWithoutDefaultPlan();
         using var client = host.CreateClient();
 
-        using var response = await client.GetAsync(LawUri);
+        using var response = await client.GetAsync(LawUri, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -91,18 +91,18 @@ public sealed class PaidOnlyTests(PlatformFactory factory)
     {
         using var admin = factory.CreateAdminClient();
         var identifier = $"paid-{Guid.NewGuid():N}"[..20];
-        using var created = await admin.PostAsJsonAsync("/admin/tenants", new CreateTenantRequest(identifier, "Paid"));
-        var tenant = (await created.Content.ReadFromJsonAsync<TenantResponse>())!;
+        using var created = await admin.PostAsJsonAsync("/admin/tenants", new CreateTenantRequest(identifier, "Paid"), cancellationToken: TestContext.Current.CancellationToken);
+        var tenant = (await created.Content.ReadFromJsonAsync<TenantResponse>(cancellationToken: TestContext.Current.CancellationToken))!;
         var key = await factory.IssueKeyAsync(tenant.Id);
 
         await using (var without = HostWithoutDefaultPlan())
         {
-            using var before = await ClientFor(without, key.Key).GetAsync(LawUri);
+            using var before = await ClientFor(without, key.Key).GetAsync(LawUri, TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.PaymentRequired, before.StatusCode);
         }
 
         await using var withPlan = HostWithoutDefaultPlan(b => b.UseSetting($"Platform:TenantPlans:{identifier}", "standard"));
-        using var after = await ClientFor(withPlan, key.Key).GetAsync(LawUri);
+        using var after = await ClientFor(withPlan, key.Key).GetAsync(LawUri, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, after.StatusCode);
     }
 
@@ -116,11 +116,11 @@ public sealed class PaidOnlyTests(PlatformFactory factory)
 
         for (var i = 0; i < PlanCatalog.UnplannedFloor.PermitLimit; i++)
         {
-            using var ok = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
+            using var ok = await client.GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
         }
 
-        using var over = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
+        using var over = await client.GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.TooManyRequests, over.StatusCode);
     }
 }

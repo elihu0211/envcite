@@ -24,7 +24,7 @@ public sealed class ObservabilityTests(PlatformFactory factory)
     {
         using var client = factory.CreateClient();
 
-        using var response = await client.GetAsync(new Uri(path, UriKind.Relative));
+        using var response = await client.GetAsync(new Uri(path, UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -65,15 +65,15 @@ public sealed class ObservabilityTests(PlatformFactory factory)
         ActivitySource.AddActivityListener(listener);
 
         using var client = factory.CreateTenantClient(key.Key);
-        using var probe = await client.GetAsync(new Uri("/health/live", UriKind.Relative));
-        using var me = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
+        using var probe = await client.GetAsync(new Uri("/health/live", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var me = await client.GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, probe.StatusCode);
         Assert.Equal(HttpStatusCode.OK, me.StatusCode);
 
         var deadline = DateTime.UtcNow.AddSeconds(5);
         while (DateTime.UtcNow < deadline && !HasTenantTrace(seen, tenant.Identifier))
         {
-            await Task.Delay(20);
+            await Task.Delay(20, TestContext.Current.CancellationToken);
         }
 
         lock (seen)

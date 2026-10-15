@@ -58,9 +58,7 @@ public sealed class OperatorRateLimitTests(PlatformFactory factory)
         for (var i = 0; i <= Limit; i++)
         {
             last?.Dispose();
-            last = await client.PostAsync(
-                new Uri(UiLogin, UriKind.Relative),
-                new FormUrlEncodedContent(new Dictionary<string, string> { ["Input.Email"] = email, ["Input.Password"] = "x" }));
+            last = await client.PostAsync(new Uri(UiLogin, UriKind.Relative), new FormUrlEncodedContent(new Dictionary<string, string> { ["Input.Email"] = email, ["Input.Password"] = "x" }), TestContext.Current.CancellationToken);
         }
 
         Assert.Equal(HttpStatusCode.TooManyRequests, last!.StatusCode);
@@ -87,7 +85,7 @@ public sealed class OperatorRateLimitTests(PlatformFactory factory)
             HttpStatusCode last = default;
             for (var i = 0; i <= Limit; i++)
             {
-                using var response = await client.PostAsync(new Uri(path, UriKind.Relative), new FormUrlEncodedContent(form));
+                using var response = await client.PostAsync(new Uri(path, UriKind.Relative), new FormUrlEncodedContent(form), TestContext.Current.CancellationToken);
                 last = response.StatusCode;
             }
 

@@ -64,7 +64,7 @@ public sealed class RedMetricsTests(PlatformFactory factory)
         (await GroundAsync(client, FakeConsultServer.AnswerableQuestion)).Dispose();
         (await GroundAsync(client, FakeConsultServer.AnswerableQuestion, "yesterday")).Dispose(); // 400
         (await GroundAsync(client, FakeConsultServer.UnavailableQuestion)).Dispose(); // 503
-        using var probe = await client.GetAsync(new Uri("/health/live", UriKind.Relative));
+        using var probe = await client.GetAsync(new Uri("/health/live", UriKind.Relative), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, probe.StatusCode);
         reader.Collect();
 

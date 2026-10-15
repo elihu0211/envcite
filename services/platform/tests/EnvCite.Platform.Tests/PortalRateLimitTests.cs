@@ -56,9 +56,7 @@ public sealed class PortalRateLimitTests(PlatformFactory factory)
         for (var i = 0; i <= Limit; i++)
         {
             last?.Dispose();
-            last = await client.PostAsync(
-                new Uri(Login(tenant.Identifier), UriKind.Relative),
-                new FormUrlEncodedContent(new Dictionary<string, string> { ["Input.Email"] = email, ["Input.Password"] = "x" }));
+            last = await client.PostAsync(new Uri(Login(tenant.Identifier), UriKind.Relative), new FormUrlEncodedContent(new Dictionary<string, string> { ["Input.Email"] = email, ["Input.Password"] = "x" }), TestContext.Current.CancellationToken);
         }
 
         Assert.Equal(HttpStatusCode.TooManyRequests, last!.StatusCode);
@@ -92,7 +90,7 @@ public sealed class PortalRateLimitTests(PlatformFactory factory)
 
         for (var i = 0; i < Limit + 2; i++)
         {
-            using var response = await tenantClient.GetAsync(new Uri("/v2/me", UriKind.Relative));
+            using var response = await tenantClient.GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
     }

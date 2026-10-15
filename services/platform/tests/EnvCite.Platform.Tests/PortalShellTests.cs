@@ -134,9 +134,9 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         await using var production = factory.WithWebHostBuilder(b => b.UseEnvironment("Production"));
         using var prod = production.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        var shown = await development.GetAsync(new Uri(WebModule.DesignGalleryPath, UriKind.Relative));
-        var html = await shown.Content.ReadAsStringAsync();
-        var hidden = await prod.GetAsync(new Uri(WebModule.DesignGalleryPath, UriKind.Relative));
+        var shown = await development.GetAsync(new Uri(WebModule.DesignGalleryPath, UriKind.Relative), TestContext.Current.CancellationToken);
+        var html = await shown.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var hidden = await prod.GetAsync(new Uri(WebModule.DesignGalleryPath, UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, shown.StatusCode);
         Assert.Contains("ep-account-menu", html, StringComparison.Ordinal);

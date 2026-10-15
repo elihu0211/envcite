@@ -56,10 +56,10 @@ public sealed class ConfigurationTests(PlatformFactory factory)
             .UseSetting("Platform:Ui:Enabled", "false"));
         using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        using var health = await client.GetAsync(new Uri("/health/ready", UriKind.Relative));
-        using var api = await client.GetAsync(new Uri("/v2/me", UriKind.Relative));
-        using var ui = await client.GetAsync(new Uri("/ui", UriKind.Relative));
-        using var login = await client.GetAsync(new Uri("/ui/login", UriKind.Relative));
+        using var health = await client.GetAsync(new Uri("/health/ready", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var api = await client.GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var ui = await client.GetAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var login = await client.GetAsync(new Uri("/ui/login", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(System.Net.HttpStatusCode.OK, health.StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.Unauthorized, api.StatusCode); // API 在，只是沒帶 key
@@ -84,8 +84,8 @@ public sealed class ConfigurationTests(PlatformFactory factory)
             .UseSetting("Platform:Ui:Enabled", "true"));
         using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        using var login = await client.GetAsync(new Uri("/ui/login", UriKind.Relative));
-        using var ui = await client.GetAsync(new Uri("/ui", UriKind.Relative));
+        using var login = await client.GetAsync(new Uri("/ui/login", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var ui = await client.GetAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(System.Net.HttpStatusCode.OK, login.StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.Redirect, ui.StatusCode); // 沒登入 → 導去登入，不是 404

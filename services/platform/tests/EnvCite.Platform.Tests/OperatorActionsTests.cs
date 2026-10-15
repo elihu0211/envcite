@@ -162,7 +162,7 @@ public sealed class OperatorActionsTests(PlatformFactory factory)
     {
         using var anonymous = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        using var response = await anonymous.GetAsync(new Uri("/ui/tenants/anything", UriKind.Relative));
+        using var response = await anonymous.GetAsync(new Uri("/ui/tenants/anything", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal("/ui/login", response.Headers.Location?.AbsolutePath);
@@ -171,7 +171,8 @@ public sealed class OperatorActionsTests(PlatformFactory factory)
     [Fact]
     public async Task TheTenantListOffersCreatingATenantAndLinksToEachDetailPage()
     {
-        var (tenant, _) = await factory.CreateTenantWithKeyAsync("list-link");
+        // 租戶清單一頁 25 列、依識別碼排序；共用資料庫裡的租戶會越來越多，識別碼以 0 開頭才保證排在第一頁。
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("0list-link");
         using var client = factory.SignedInClient();
 
         var html = await client.PageAsync("/ui/tenants");

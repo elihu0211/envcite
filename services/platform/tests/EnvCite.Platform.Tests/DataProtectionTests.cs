@@ -32,7 +32,7 @@ public sealed class DataProtectionTests(PlatformFactory factory)
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TenancyDbContext>();
 
-        Assert.True(await db.DataProtectionKeys.AnyAsync());
+        Assert.True(await db.DataProtectionKeys.AnyAsync(cancellationToken: TestContext.Current.CancellationToken));
     }
 
     // 另一個副本（獨立的 host，連同一個資料庫）必須解得開這個副本簽的登入 cookie。
@@ -47,7 +47,7 @@ public sealed class DataProtectionTests(PlatformFactory factory)
         using var client = otherReplica.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         client.DefaultRequestHeaders.Add("Cookie", $"{name}={value}");
 
-        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

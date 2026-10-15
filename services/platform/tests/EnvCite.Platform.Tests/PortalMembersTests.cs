@@ -216,10 +216,10 @@ public sealed partial class PortalMembersTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(Home(tenant.Identifier))).Status);
 
         await using var connection = new NpgsqlConnection(factory.Services.GetRequiredService<IOptions<DatabaseOptions>>().Value.Platform);
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
         await using var command = new NpgsqlCommand("""update platform."AspNetUsers" set "Disabled" = true where "Email" = @email""", connection);
         command.Parameters.AddWithValue("email", email);
-        Assert.Equal(1, await command.ExecuteNonQueryAsync());
+        Assert.Equal(1, await command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken));
 
         Assert.Equal(HttpStatusCode.Redirect, (await browser.GetAsync(Home(tenant.Identifier))).Status);
     }

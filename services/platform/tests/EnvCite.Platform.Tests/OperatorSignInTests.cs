@@ -508,9 +508,9 @@ public sealed class OperatorSignInTests(PlatformFactory factory)
         using var anonymous = factory.CreateClient();
         var body = new { email = NewOperatorEmail() };
 
-        using var bySession = await session.PostAsJsonAsync("/admin/operators", body);
-        using var byTenantKey = await tenant.PostAsJsonAsync("/admin/operators", body);
-        using var byNobody = await anonymous.PostAsJsonAsync("/admin/operators", body);
+        using var bySession = await session.PostAsJsonAsync("/admin/operators", body, cancellationToken: TestContext.Current.CancellationToken);
+        using var byTenantKey = await tenant.PostAsJsonAsync("/admin/operators", body, cancellationToken: TestContext.Current.CancellationToken);
+        using var byNobody = await anonymous.PostAsJsonAsync("/admin/operators", body, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.All(new[] { bySession, byTenantKey, byNobody }, r => Assert.Equal(HttpStatusCode.Unauthorized, r.StatusCode));
     }

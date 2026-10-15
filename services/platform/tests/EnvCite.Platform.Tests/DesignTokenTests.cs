@@ -310,8 +310,8 @@ public sealed class DesignPageTests(PlatformFactory factory)
     {
         using var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        using var response = await client.GetAsync(new Uri("/ui/denied", UriKind.Relative));
-        var html = await response.Content.ReadAsStringAsync();
+        using var response = await client.GetAsync(new Uri("/ui/denied", UriKind.Relative), TestContext.Current.CancellationToken);
+        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("--ep-primary:", html, StringComparison.Ordinal);
@@ -335,7 +335,7 @@ public sealed class DesignPageTests(PlatformFactory factory)
     public async Task TheScriptsThePageReferencesAreServed()
     {
         using var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-        var html = await client.GetStringAsync(new Uri("/ui/denied", UriKind.Relative));
+        var html = await client.GetStringAsync(new Uri("/ui/denied", UriKind.Relative), TestContext.Current.CancellationToken);
 
         var sources = Regex.Matches(html, "<script src=\"([^\"]+)\"")
             .Select(m => m.Groups[1].Value)
@@ -344,7 +344,7 @@ public sealed class DesignPageTests(PlatformFactory factory)
         Assert.Contains(sources, s => s.Contains("blazor.web", StringComparison.Ordinal));
         foreach (var source in sources)
         {
-            using var response = await client.GetAsync(new Uri(source, UriKind.RelativeOrAbsolute));
+            using var response = await client.GetAsync(new Uri(source, UriKind.RelativeOrAbsolute), TestContext.Current.CancellationToken);
             Assert.True(response.StatusCode == HttpStatusCode.OK, $"{source} -> {(int)response.StatusCode}");
         }
     }

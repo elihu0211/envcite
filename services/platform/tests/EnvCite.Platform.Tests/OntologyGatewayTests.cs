@@ -17,7 +17,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("gw");
         using var client = factory.CreateTenantClient(key.Key);
 
-        var law = await client.GetFromJsonAsync<LawDto>(LawPath);
+        var law = await client.GetFromJsonAsync<LawDto>(LawPath, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("空氣污染防制法", law!.Title);
         Assert.Contains(factory.Ontology.ReceivedMetadata, m =>
@@ -31,7 +31,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("articles");
         using var client = factory.CreateTenantClient(key.Key);
 
-        var articles = await client.GetFromJsonAsync<ArticleDto[]>($"{LawPath}/articles");
+        var articles = await client.GetFromJsonAsync<ArticleDto[]>($"{LawPath}/articles", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(["1", "5-1"], articles!.Select(a => a.Number));
     }
@@ -42,7 +42,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("retry");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.GetAsync(new Uri($"/v2/laws/{FakeOntologyServer.FlakyLawId}", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri($"/v2/laws/{FakeOntologyServer.FlakyLawId}", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(2, factory.Ontology.GetLawCalls[FakeOntologyServer.FlakyLawId]);
@@ -56,7 +56,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("errors");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.GetAsync(new Uri($"/v2/laws/{lawId}", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri($"/v2/laws/{lawId}", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(expected, response.StatusCode);
     }
@@ -69,10 +69,10 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("asof-a");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var current = await client.GetAsync(new Uri(path, UriKind.Relative));
+        using var current = await client.GetAsync(new Uri(path, UriKind.Relative), TestContext.Current.CancellationToken);
         Assert.Equal(string.Empty, factory.Ontology.LastAsOf); // 省略 = 現行
 
-        using var dated = await client.GetAsync(new Uri($"{path}?asOf=2021-01-01", UriKind.Relative));
+        using var dated = await client.GetAsync(new Uri($"{path}?asOf=2021-01-01", UriKind.Relative), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, dated.StatusCode);
         Assert.Equal("2021-01-01", factory.Ontology.LastAsOf);
     }
@@ -87,8 +87,8 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("asof-b");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.GetAsync(new Uri($"{path}?asOf={asOf}", UriKind.Relative));
-        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        using var response = await client.GetAsync(new Uri($"{path}?asOf={asOf}", UriKind.Relative), TestContext.Current.CancellationToken);
+        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(expected, response.StatusCode);
         Assert.Empty(usage!);
@@ -99,7 +99,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
     {
         using var client = factory.CreateClient();
 
-        using var response = await client.GetAsync(new Uri(LawPath, UriKind.Relative));
+        using var response = await client.GetAsync(new Uri(LawPath, UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -112,13 +112,13 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         using var meteredClient = factory.CreateTenantClient(metered.Key);
         using var idleClient = factory.CreateTenantClient(idle.Key);
 
-        (await meteredClient.GetAsync(new Uri(LawPath, UriKind.Relative))).Dispose();
-        (await meteredClient.GetAsync(new Uri(LawPath, UriKind.Relative))).Dispose();
-        (await meteredClient.GetAsync(new Uri($"{LawPath}/articles", UriKind.Relative))).Dispose();
-        (await meteredClient.GetAsync(new Uri("/v2/laws/unknown-act", UriKind.Relative))).Dispose(); // not metered
+        (await meteredClient.GetAsync(new Uri(LawPath, UriKind.Relative), TestContext.Current.CancellationToken)).Dispose();
+        (await meteredClient.GetAsync(new Uri(LawPath, UriKind.Relative), TestContext.Current.CancellationToken)).Dispose();
+        (await meteredClient.GetAsync(new Uri($"{LawPath}/articles", UriKind.Relative), TestContext.Current.CancellationToken)).Dispose();
+        (await meteredClient.GetAsync(new Uri("/v2/laws/unknown-act", UriKind.Relative), TestContext.Current.CancellationToken)).Dispose(); // not metered
 
-        var usage = await meteredClient.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
-        var idleUsage = await idleClient.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        var usage = await meteredClient.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
+        var idleUsage = await idleClient.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(
             [

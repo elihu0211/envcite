@@ -43,8 +43,8 @@ public sealed class AuditTests(PlatformFactory factory)
         using var admin = factory.CreateAdminClient();
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("audit-k");
 
-        using var response = await admin.GetAsync(new Uri($"/admin/audit-events?tenant={tenant.Id}&action=api_key.issued", UriKind.Relative));
-        var body = await response.Content.ReadAsStringAsync();
+        using var response = await admin.GetAsync(new Uri($"/admin/audit-events?tenant={tenant.Id}&action=api_key.issued", UriKind.Relative), TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var issued = JsonDocument.Parse(body).RootElement.GetProperty("items").EnumerateArray().Single();
 
         Assert.Equal(key.ApiKey.Id.ToString(), issued.GetProperty("targetId").GetString());
@@ -60,8 +60,8 @@ public sealed class AuditTests(PlatformFactory factory)
         using var tenantClient = factory.CreateTenantClient(key.Key);
         var other = await factory.IssueKeyAsync(tenant.Id); // 撤銷的是另一把，這把還要用來呼叫
 
-        using var first = await tenantClient.DeleteAsync(new Uri($"/v2/api-keys/{other.ApiKey.Id}", UriKind.Relative));
-        using var again = await tenantClient.DeleteAsync(new Uri($"/v2/api-keys/{other.ApiKey.Id}", UriKind.Relative));
+        using var first = await tenantClient.DeleteAsync(new Uri($"/v2/api-keys/{other.ApiKey.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var again = await tenantClient.DeleteAsync(new Uri($"/v2/api-keys/{other.ApiKey.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NoContent, first.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, again.StatusCode);
@@ -77,7 +77,7 @@ public sealed class AuditTests(PlatformFactory factory)
         using var admin = factory.CreateAdminClient();
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("audit-n");
 
-        using var bad = await admin.PostAsJsonAsync($"/admin/tenants/{tenant.Id}/api-keys", new { name = "" });
+        using var bad = await admin.PostAsJsonAsync($"/admin/tenants/{tenant.Id}/api-keys", new { name = "" }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
         Assert.Single(await ItemsAsync($"tenant={tenant.Id}&action=api_key.issued")); // 只有建立租戶時簽的那一把
@@ -94,7 +94,7 @@ public sealed class AuditTests(PlatformFactory factory)
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
 
-        var failure = await Assert.ThrowsAnyAsync<Exception>(() => db.Database.ExecuteSqlRawAsync(sql));
+        var failure = await Assert.ThrowsAnyAsync<Exception>(() => db.Database.ExecuteSqlRawAsync(sql, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Contains("append-only", failure.ToString(), StringComparison.Ordinal);
     }
@@ -126,8 +126,8 @@ public sealed class AuditTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("audit-x");
         using var tenant = factory.CreateTenantClient(key.Key);
 
-        using var none = await anonymous.GetAsync(new Uri("/admin/audit-events", UriKind.Relative));
-        using var asTenant = await tenant.GetAsync(new Uri("/admin/audit-events", UriKind.Relative));
+        using var none = await anonymous.GetAsync(new Uri("/admin/audit-events", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var asTenant = await tenant.GetAsync(new Uri("/admin/audit-events", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, none.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, asTenant.StatusCode);

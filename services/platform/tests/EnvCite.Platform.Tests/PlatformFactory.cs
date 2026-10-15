@@ -39,14 +39,14 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
 
     public FakeConsultServer Consult { get; } = new();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await Task.WhenAll(_postgres.StartAsync(), Ontology.StartAsync(), Consult.StartAsync());
     }
 
-    async Task IAsyncLifetime.DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
-        await DisposeAsync();
+        await base.DisposeAsync();
         await Ontology.DisposeAsync();
         await Consult.DisposeAsync();
         await _postgres.DisposeAsync();

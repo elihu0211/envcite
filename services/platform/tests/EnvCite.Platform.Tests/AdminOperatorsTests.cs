@@ -52,7 +52,7 @@ public sealed class AdminOperatorsTests(PlatformFactory factory)
         var signedIn = await browser.SubmitAsync(UiLogin, Credentials(email, password));
         Assert.Equal(UiPassword, signedIn.Location); // 第一次必須改密碼
 
-        var list = await admin.GetFromJsonAsync<JsonElement>(Operators);
+        var list = await admin.GetFromJsonAsync<JsonElement>(Operators, cancellationToken: TestContext.Current.CancellationToken);
         var created = list.EnumerateArray().Single(o => o.GetProperty("id").GetString() == id);
         Assert.Equal(email, created.GetProperty("email").GetString());
         Assert.True(created.GetProperty("mustChangePassword").GetBoolean());
@@ -68,12 +68,12 @@ public sealed class AdminOperatorsTests(PlatformFactory factory)
     public async Task BadInputIs400AndCreatesNothing(string? email)
     {
         using var admin = factory.CreateAdminClient();
-        var before = (await admin.GetFromJsonAsync<JsonElement>(Operators)).GetArrayLength();
+        var before = (await admin.GetFromJsonAsync<JsonElement>(Operators, cancellationToken: TestContext.Current.CancellationToken)).GetArrayLength();
 
-        using var response = await admin.PostAsJsonAsync(Operators, new CreateOperatorRequest(email, null));
+        using var response = await admin.PostAsJsonAsync(Operators, new CreateOperatorRequest(email, null), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal(before, (await admin.GetFromJsonAsync<JsonElement>(Operators)).GetArrayLength());
+        Assert.Equal(before, (await admin.GetFromJsonAsync<JsonElement>(Operators, cancellationToken: TestContext.Current.CancellationToken)).GetArrayLength());
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public sealed class AdminOperatorsTests(PlatformFactory factory)
         var email = NewOperatorEmail();
         _ = await CreateAsync(admin, email);
 
-        using var duplicate = await admin.PostAsJsonAsync(Operators, new CreateOperatorRequest(email.ToUpperInvariant(), null));
+        using var duplicate = await admin.PostAsJsonAsync(Operators, new CreateOperatorRequest(email.ToUpperInvariant(), null), cancellationToken: TestContext.Current.CancellationToken);
         var missing = Guid.NewGuid().ToString();
 
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
@@ -105,8 +105,8 @@ public sealed class AdminOperatorsTests(PlatformFactory factory)
 
         var responses = new List<HttpResponseMessage>
         {
-            await anonymous.GetAsync(new Uri(Operators, UriKind.Relative)),
-            await anonymous.PostAsJsonAsync(Operators, new CreateOperatorRequest(NewOperatorEmail(), null)),
+            await anonymous.GetAsync(new Uri(Operators, UriKind.Relative), TestContext.Current.CancellationToken),
+            await anonymous.PostAsJsonAsync(Operators, new CreateOperatorRequest(NewOperatorEmail(), null), cancellationToken: TestContext.Current.CancellationToken),
         };
         foreach (var action in new[] { "password-reset", "two-factor-reset", "disable", "enable" })
         {
@@ -127,7 +127,7 @@ public sealed class AdminOperatorsTests(PlatformFactory factory)
         // 重設密碼：新的一次性密碼，舊的不能用，要求再改密碼。
         using var reset = await PostAsync(admin, id, "password-reset");
         Assert.Equal(HttpStatusCode.OK, reset.StatusCode);
-        var second = (await reset.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("password").GetString()!;
+        var second = (await reset.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken)).GetProperty("password").GetString()!;
         Assert.NotEqual(initial, second);
         using var browser = new PortalBrowser(factory);
         Assert.Contains("電子郵件或密碼不正確", (await browser.SubmitAsync(UiLogin, Credentials(email, initial))).Html, StringComparison.Ordinal);
@@ -135,7 +135,7 @@ public sealed class AdminOperatorsTests(PlatformFactory factory)
 
         // 停用：不能登入；再停用一次是冪等的，不重複記錄。
         using var disabled = await PostAsync(admin, id, "disable");
-        Assert.True((await disabled.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("disabled").GetBoolean());
+        Assert.True((await disabled.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken)).GetProperty("disabled").GetBoolean());
         using var again = await PostAsync(admin, id, "disable");
         Assert.Equal(HttpStatusCode.OK, again.StatusCode);
         using var blocked = new PortalBrowser(factory);
@@ -144,7 +144,7 @@ public sealed class AdminOperatorsTests(PlatformFactory factory)
 
         // 重新啟用後可以再登入。
         using var enabled = await PostAsync(admin, id, "enable");
-        Assert.False((await enabled.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("disabled").GetBoolean());
+        Assert.False((await enabled.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken)).GetProperty("disabled").GetBoolean());
         using var back = new PortalBrowser(factory);
         Assert.Equal(UiPassword, (await back.SubmitAsync(UiLogin, Credentials(email, second))).Location);
 
@@ -165,7 +165,7 @@ public sealed class AdminOperatorsTests(PlatformFactory factory)
         using var reset = await PostAsync(admin, op.Id.ToString(), "two-factor-reset");
 
         Assert.Equal(HttpStatusCode.OK, reset.StatusCode);
-        Assert.False((await reset.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("twoFactorEnabled").GetBoolean());
+        Assert.False((await reset.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken)).GetProperty("twoFactorEnabled").GetBoolean());
         var evt = Assert.Single(await EventsAsync(AuditActions.OperatorMfaReset, op.Id.ToString()));
         Assert.Equal(AuditActors.OperatorKey, evt.ActorType);
     }
@@ -180,7 +180,7 @@ public sealed class AdminOperatorsTests(PlatformFactory factory)
 
         var (id, password) = await CreateAsync(admin, NewOperatorEmail());
         using var reset = await PostAsync(admin, id, "password-reset");
-        var second = (await reset.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("password").GetString()!;
+        var second = (await reset.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken)).GetProperty("password").GetString()!;
 
         var events = new List<AuditRecord>();
         foreach (var action in AuditActions.All)

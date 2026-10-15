@@ -18,9 +18,8 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("ground");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(GroundPath,
-            new GroundRequestDto(FakeConsultServer.AnswerableQuestion, "2020-01-01"));
-        var result = await response.Content.ReadFromJsonAsync<GroundResultDto>();
+        using var response = await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(FakeConsultServer.AnswerableQuestion, "2020-01-01"), cancellationToken: TestContext.Current.CancellationToken);
+        var result = await response.Content.ReadFromJsonAsync<GroundResultDto>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("grounded", result!.Outcome);
@@ -40,9 +39,8 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("refused");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(GroundPath,
-            new GroundRequestDto(FakeConsultServer.UnrelatedQuestion, null));
-        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var response = await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(FakeConsultServer.UnrelatedQuestion, null), cancellationToken: TestContext.Current.CancellationToken);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("refused", json.RootElement.GetProperty("outcome").GetString());
@@ -58,7 +56,7 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("ground-errors");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(question, pointInTime));
+        using var response = await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(question, pointInTime), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(expected, response.StatusCode);
     }
@@ -68,8 +66,7 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
     {
         using var client = factory.CreateClient();
 
-        using var response = await client.PostAsJsonAsync(GroundPath,
-            new GroundRequestDto(FakeConsultServer.AnswerableQuestion, null));
+        using var response = await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(FakeConsultServer.AnswerableQuestion, null), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -88,10 +85,10 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
             (FakeConsultServer.AnswerableQuestion, "yesterday"), // not metered
         })
         {
-            (await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(question, pointInTime))).Dispose();
+            (await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(question, pointInTime), cancellationToken: TestContext.Current.CancellationToken)).Dispose();
         }
 
-        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal([new UsageSummary(ConsultEndpoints.GroundOperation, 2, 2)], usage!);
     }

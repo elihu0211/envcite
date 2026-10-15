@@ -17,7 +17,7 @@
 
 - **Name:** platform（`services/platform`；倉庫為 `envcite`）
 - **Role:** 多租戶控制平面：租戶、API key、限流、計量、對外 REST API；經 gRPC 呼叫 `services/ontology`（共享、不分租戶）與 `services/consult`（接地、租戶隔離）。
-- **Stack:** C# · .NET（SDK 版本在 `global.json`）· ASP.NET Core · PostgreSQL · xUnit
+- **Stack:** C# · .NET（SDK 版本在 `global.json`）· ASP.NET Core · PostgreSQL · xUnit v3（Microsoft.Testing.Platform，`global.json` 開啟）
 - **Auth surfaces:** 租戶 API key（`/v2`）；共用營運者金鑰（`/admin`）；營運者帳號加強制 TOTP（營運者後台 `/ui`）；客戶入口帳號（`/portal`，以設定開關）。
 - **Plans:** 方案指派是營運者寫入的資料；接上付款供應商後，付款是真值，由其 webhook 寫入 entitlements。
 

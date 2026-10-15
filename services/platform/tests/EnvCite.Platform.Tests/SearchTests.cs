@@ -23,8 +23,8 @@ public sealed class SearchTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("search-a");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(SearchPath, new SearchRequest("噪音管制標準", "2021-01-01", 5));
-        var hits = await response.Content.ReadFromJsonAsync<SearchHitDto[]>();
+        using var response = await client.PostAsJsonAsync(SearchPath, new SearchRequest("噪音管制標準", "2021-01-01", 5), cancellationToken: TestContext.Current.CancellationToken);
+        var hits = await response.Content.ReadFromJsonAsync<SearchHitDto[]>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var hit = Assert.Single(hits!);
@@ -43,9 +43,9 @@ public sealed class SearchTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("search-b");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(SearchPath, new SearchRequest(query, asOf, limit));
-        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
-        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        using var response = await client.PostAsJsonAsync(SearchPath, new SearchRequest(query, asOf, limit), cancellationToken: TestContext.Current.CancellationToken);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
+        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal(400, problem.GetProperty("status").GetInt32());
@@ -58,8 +58,8 @@ public sealed class SearchTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("search-c");
         using var client = factory.CreateTenantClient(key.Key);
 
-        (await client.PostAsJsonAsync(SearchPath, new SearchRequest("噪音", null, null))).Dispose();
-        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        (await client.PostAsJsonAsync(SearchPath, new SearchRequest("噪音", null, null), cancellationToken: TestContext.Current.CancellationToken)).Dispose();
+        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal([new UsageSummary(OntologyEndpoints.SearchOperation, 1, 1)], usage!);
     }
@@ -68,14 +68,14 @@ public sealed class SearchTests(PlatformFactory factory)
     public async Task SearchRequiresAKeyAndAPlan()
     {
         using var anonymous = factory.CreateClient();
-        using var unauthenticated = await anonymous.PostAsJsonAsync(SearchPath, new SearchRequest("噪音", null, null));
+        using var unauthenticated = await anonymous.PostAsJsonAsync(SearchPath, new SearchRequest("噪音", null, null), cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, unauthenticated.StatusCode);
 
         var (_, key) = await factory.CreateTenantWithKeyAsync("search-d");
         await using var host = factory.WithWebHostBuilder(b => b.UseSetting("Platform:DefaultPlan", string.Empty));
         using var unplanned = host.CreateClient();
         unplanned.DefaultRequestHeaders.Authorization = new("Bearer", key.Key);
-        using var response = await unplanned.PostAsJsonAsync(SearchPath, new SearchRequest("噪音", null, null));
+        using var response = await unplanned.PostAsJsonAsync(SearchPath, new SearchRequest("噪音", null, null), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.PaymentRequired, response.StatusCode);
     }
@@ -90,7 +90,7 @@ public sealed class SearchTests(PlatformFactory factory)
         using var client = host.CreateClient();
         client.DefaultRequestHeaders.Authorization = new("Bearer", key.Key);
 
-        (await client.PostAsJsonAsync(SearchPath, new SearchRequest(Secret, null, null))).Dispose();
+        (await client.PostAsJsonAsync(SearchPath, new SearchRequest(Secret, null, null), cancellationToken: TestContext.Current.CancellationToken)).Dispose();
 
         Assert.NotEmpty(logs.Messages); // 捕捉器確實收得到東西，否則下面的斷言沒有意義
         Assert.DoesNotContain(logs.Messages, m => m.Contains("排放爭議", StringComparison.Ordinal));

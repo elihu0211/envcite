@@ -34,10 +34,10 @@ public sealed class MemberAdminTests(PlatformFactory factory)
 
         // 資料庫裡只有雜湊（Identity 的 v3 格式），沒有密碼本身。
         await using var connection = new NpgsqlConnection(factory.Services.GetRequiredService<IOptions<DatabaseOptions>>().Value.Platform);
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
         await using var command = new NpgsqlCommand("""select "PasswordHash" from platform."AspNetUsers" where "Id" = @id""", connection);
         command.Parameters.AddWithValue("id", created.Value.Member.Id);
-        var hash = (string)(await command.ExecuteScalarAsync())!;
+        var hash = (string)(await command.ExecuteScalarAsync(TestContext.Current.CancellationToken))!;
         Assert.StartsWith("AQAAAA", hash, StringComparison.Ordinal);
         Assert.DoesNotContain(password, hash, StringComparison.Ordinal);
 

@@ -121,7 +121,7 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
         // 取證據與模型呼叫各計一次。
         var (_, key) = (tenant, await factory.IssueKeyAsync(tenant.Id));
         using var api = factory.CreateTenantClient(key.Key);
-        var usage = await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        var usage = await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(["consult.answer", "consult.ground"], usage!.Select(u => u.Operation).Order());
     }
 
@@ -238,23 +238,23 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ans-c");
         using var admin = factory.CreateAdminClient();
 
-        var noPlan = await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true });
+        var noPlan = await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true }, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, noPlan.StatusCode); // 同意跟著方案走
-        Assert.Equal(HttpStatusCode.NotFound, (await admin.PutAsJsonAsync("/admin/tenants/no-such/ai-answer", new { enabled = true })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await admin.PutAsJsonAsync("/admin/tenants/no-such/ai-answer", new { enabled = true }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
 
         var plans = factory.Services.GetRequiredService<IPlanAdmin>();
         Assert.True((await plans.SetAsync(OperatorSession.Principal(), tenant.Id, "standard", CancellationToken.None)).IsOk);
-        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true })).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
 
         Assert.Single(await EventsAsync(tenant.Id, AuditActions.TenantAiAnswerEnabled)); // 重複開不重複記
         Assert.True((await factory.Services.GetRequiredService<ITenantDirectory>().FindAsync(tenant.Id, CancellationToken.None))!.AiAnswer);
 
-        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = false })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = false }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
         Assert.Single(await EventsAsync(tenant.Id, AuditActions.TenantAiAnswerDisabled));
 
         // 再開一次，然後移除方案：同意跟著那一列一起消失，不會殘留到下一個方案。
-        await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true });
+        await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true }, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True((await plans.SetAsync(OperatorSession.Principal(), tenant.Id, null, CancellationToken.None)).IsOk);
         Assert.True((await plans.SetAsync(OperatorSession.Principal(), tenant.Id, "standard", CancellationToken.None)).IsOk);
         Assert.False((await factory.Services.GetRequiredService<ITenantDirectory>().FindAsync(tenant.Id, CancellationToken.None))!.AiAnswer);
@@ -272,7 +272,7 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
 
         var (_, key) = (tenant, await factory.IssueKeyAsync(tenant.Id));
         using var api = factory.CreateTenantClient(key.Key);
-        var usage = (await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage"))!.ToDictionary(u => u.Operation);
+        var usage = (await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken))!.ToDictionary(u => u.Operation);
         Assert.Equal(321, usage["llm.tokens.input"].Units);
         Assert.Equal(45, usage["llm.tokens.output"].Units);
         Assert.Equal(1, usage["consult.answer"].Units);
@@ -290,7 +290,7 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
 
         var (_, key) = (tenant, await factory.IssueKeyAsync(tenant.Id));
         using var api = factory.CreateTenantClient(key.Key);
-        var operations = (await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage"))!.Select(u => u.Operation).ToList();
+        var operations = (await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken))!.Select(u => u.Operation).ToList();
         Assert.DoesNotContain("llm.tokens.input", operations);
         Assert.DoesNotContain("llm.tokens.output", operations);
     }

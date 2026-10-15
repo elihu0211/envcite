@@ -132,7 +132,7 @@ public sealed class PortalSecurityTests(PlatformFactory factory)
         Assert.StartsWith("/ui/login", ui.Location, StringComparison.Ordinal);
 
         using var operatorClient = factory.SignedInClient();
-        using var response = await operatorClient.GetAsync(new Uri(Home(tenant.Identifier), UriKind.Relative));
+        using var response = await operatorClient.GetAsync(new Uri(Home(tenant.Identifier), UriKind.Relative), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.StartsWith(Login(tenant.Identifier), response.Headers.Location?.OriginalString, StringComparison.Ordinal);
     }

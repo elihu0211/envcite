@@ -24,8 +24,8 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("reason");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(Path, Request());
-        var result = await response.Content.ReadFromJsonAsync<ReasoningResultDto>();
+        using var response = await client.PostAsJsonAsync(Path, Request(), cancellationToken: TestContext.Current.CancellationToken);
+        var result = await response.Content.ReadFromJsonAsync<ReasoningResultDto>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var sent = factory.Ontology.LastEvaluate!;
@@ -61,8 +61,8 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("reason-enum");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(Path, Request());
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        using var response = await client.PostAsJsonAsync(Path, Request(), cancellationToken: TestContext.Current.CancellationToken);
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("Violation", json.GetProperty("atDecision").GetProperty("verdicts")[0].GetProperty("verdict").GetString());
         Assert.Equal("Fine", json.GetProperty("atDecision").GetProperty("penalties")[0].GetProperty("effect").GetString());
@@ -74,8 +74,8 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("reason-usage");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(Path, Request());
-        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        using var response = await client.PostAsJsonAsync(Path, Request(), cancellationToken: TestContext.Current.CancellationToken);
+        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal([new UsageSummary(ReasoningEndpoints.EvaluateOperation, 1, 1)], usage!);
@@ -89,8 +89,8 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("reason-required");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(Path, new EvaluateReasoningRequest(conductOn, decidedOn, null, null, null, null));
-        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        using var response = await client.PostAsJsonAsync(Path, new EvaluateReasoningRequest(conductOn, decidedOn, null, null, null, null), cancellationToken: TestContext.Current.CancellationToken);
+        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Empty(usage!);
@@ -102,8 +102,8 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("reason-date");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(Path, Request(conductOn: "yesterday"));
-        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        using var response = await client.PostAsJsonAsync(Path, Request(conductOn: "yesterday"), cancellationToken: TestContext.Current.CancellationToken);
+        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Empty(usage!);
@@ -118,7 +118,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         using var client = factory.CreateTenantClient(key.Key);
         var request = Request() with { Facts = [new FactDto("effluent_cod", [number], null)] };
 
-        using var response = await client.PostAsJsonAsync(Path, request);
+        using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -130,7 +130,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         using var client = factory.CreateTenantClient(key.Key);
         var request = Request() with { Facts = [new FactDto("effluent_cod", null, null)] };
 
-        using var response = await client.PostAsJsonAsync(Path, request);
+        using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -141,9 +141,9 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("reason-busy");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(Path, Request(conductOn: FakeOntologyServer.BusyDate));
-        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
-        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        using var response = await client.PostAsJsonAsync(Path, Request(conductOn: FakeOntologyServer.BusyDate), cancellationToken: TestContext.Current.CancellationToken);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
+        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.True(problem.GetProperty("retryable").GetBoolean());

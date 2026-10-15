@@ -63,7 +63,7 @@ public sealed class PortalSearchTests(PlatformFactory factory)
         // 與 API 同一個計量：同一個租戶的用量裡看得到一次 ontology.search。
         var (_, key) = (tenant, await factory.IssueKeyAsync(tenant.Id));
         using var api = factory.CreateTenantClient(key.Key);
-        var usage = await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage");
+        var usage = await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal([new UsageSummary(OntologyEndpoints.SearchOperation, 1, 1)], usage!);
     }
 
@@ -101,7 +101,7 @@ public sealed class PortalSearchTests(PlatformFactory factory)
         Assert.DoesNotContain("找到", results.Html, StringComparison.Ordinal);
         var key = await factory.IssueKeyAsync(tenant.Id);
         using var api = factory.CreateTenantClient(key.Key);
-        Assert.Empty((await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage"))!);
+        Assert.Empty((await api.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken))!);
     }
 
     [Fact]

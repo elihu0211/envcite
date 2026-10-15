@@ -19,7 +19,7 @@ public sealed class WebUiTests(PlatformFactory factory)
     {
         using var client = CreateUiClient();
 
-        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal("/ui/login", response.Headers.Location?.AbsolutePath);
@@ -44,9 +44,9 @@ public sealed class WebUiTests(PlatformFactory factory)
     {
         using var client = factory.SignedInClient(PlatformFactory.OperatorEmail);
 
-        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken);
         // Blazor 會把元件參數裡的中文輸出成數字實體；瀏覽器解碼後一樣，測試也先解碼。
-        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("<h1 class=\"ep-page-title\">總覽</h1>", html, StringComparison.Ordinal);
@@ -65,7 +65,7 @@ public sealed class WebUiTests(PlatformFactory factory)
             "ghost"));
         using var client = factory.ClientFor(ghost);
 
-        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal("/ui/denied", response.Headers.Location?.OriginalString);
@@ -78,7 +78,7 @@ public sealed class WebUiTests(PlatformFactory factory)
         using var client = factory.ClientFor(new ClaimsPrincipal(new ClaimsIdentity(
             [new Claim(ClaimTypes.Email, PlatformFactory.OperatorEmail)], "legacy")));
 
-        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal("/ui/denied", response.Headers.Location?.OriginalString);
@@ -89,7 +89,7 @@ public sealed class WebUiTests(PlatformFactory factory)
     {
         using var client = CreateUiClient();
 
-        using var response = await client.GetAsync(new Uri("/ui/denied", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri("/ui/denied", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -99,7 +99,7 @@ public sealed class WebUiTests(PlatformFactory factory)
     {
         using var client = factory.SignedInClient(PlatformFactory.OperatorEmail);
 
-        using var response = await client.PostAsync(new Uri("/ui/logout", UriKind.Relative), content: null);
+        using var response = await client.PostAsync(new Uri("/ui/logout", UriKind.Relative), content: null, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -110,9 +110,9 @@ public sealed class WebUiTests(PlatformFactory factory)
     {
         using var client = factory.SignedInClient(PlatformFactory.OperatorEmail);
 
-        using var tenantApi = await client.GetAsync(new Uri("/v2/usage", UriKind.Relative));
-        using var adminApi = await client.GetAsync(new Uri("/admin/tenants/any", UriKind.Relative));
-        using var operatorsApi = await client.GetAsync(new Uri("/admin/operators", UriKind.Relative));
+        using var tenantApi = await client.GetAsync(new Uri("/v2/usage", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var adminApi = await client.GetAsync(new Uri("/admin/tenants/any", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var operatorsApi = await client.GetAsync(new Uri("/admin/operators", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, tenantApi.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, adminApi.StatusCode);

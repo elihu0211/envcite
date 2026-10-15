@@ -319,8 +319,8 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("mfa-k");
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        using var login = await client.GetAsync(new Uri(Login(tenant.Identifier), UriKind.Relative));
-        using var protectedPage = await client.GetAsync(new Uri(Security(tenant.Identifier), UriKind.Relative));
+        using var login = await client.GetAsync(new Uri(Login(tenant.Identifier), UriKind.Relative), TestContext.Current.CancellationToken);
+        using var protectedPage = await client.GetAsync(new Uri(Security(tenant.Identifier), UriKind.Relative), TestContext.Current.CancellationToken);
 
         foreach (var response in new[] { login, protectedPage })
         {

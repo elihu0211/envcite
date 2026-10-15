@@ -16,7 +16,7 @@ public sealed class AdminAuthTests(PlatformFactory factory)
     {
         using var client = factory.CreateClient();
 
-        using var response = await client.PostAsJsonAsync("/admin/tenants", Request);
+        using var response = await client.PostAsJsonAsync("/admin/tenants", Request, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -27,7 +27,7 @@ public sealed class AdminAuthTests(PlatformFactory factory)
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add(AdminKeyAuthenticationHandler.HeaderName, "wrong");
 
-        using var response = await client.PostAsJsonAsync("/admin/tenants", Request);
+        using var response = await client.PostAsJsonAsync("/admin/tenants", Request, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -38,7 +38,7 @@ public sealed class AdminAuthTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("notadmin");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync("/admin/tenants", Request);
+        using var response = await client.PostAsJsonAsync("/admin/tenants", Request, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -49,7 +49,7 @@ public sealed class AdminAuthTests(PlatformFactory factory)
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("dup");
         using var admin = factory.CreateAdminClient();
 
-        using var response = await admin.PostAsJsonAsync("/admin/tenants", new CreateTenantRequest(tenant.Identifier, "Again"));
+        using var response = await admin.PostAsJsonAsync("/admin/tenants", new CreateTenantRequest(tenant.Identifier, "Again"), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }

@@ -10,7 +10,7 @@ public sealed class HealthEndpointTests(PlatformFactory factory)
     {
         using var client = factory.CreateClient();
 
-        using var response = await client.GetAsync(new Uri("/health", UriKind.Relative));
+        using var response = await client.GetAsync(new Uri("/health", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

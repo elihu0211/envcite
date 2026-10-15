@@ -48,7 +48,7 @@ public sealed class IdempotencyTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.OK, second.StatusCode);
         Assert.False(first.Headers.Contains(ConsultEndpoints.ReplayedHeader));
         Assert.Equal("true", Assert.Single(second.Headers.GetValues(ConsultEndpoints.ReplayedHeader)));
-        Assert.Equal(await first.Content.ReadAsStringAsync(), await second.Content.ReadAsStringAsync());
+        Assert.Equal(await first.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), await second.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         Assert.Equal(1, ConsultCalls(tenant.Identifier));
         Assert.Equal([new UsageSummary(ConsultEndpoints.GroundOperation, 1, 1)], await UsageAsync(client));
     }
@@ -62,7 +62,7 @@ public sealed class IdempotencyTests(PlatformFactory factory)
         using var first = await GroundAsync(client, "r-1", FakeConsultServer.UnrelatedQuestion);
         using var second = await GroundAsync(client, "r-1", FakeConsultServer.UnrelatedQuestion);
 
-        Assert.Equal(await first.Content.ReadAsStringAsync(), await second.Content.ReadAsStringAsync());
+        Assert.Equal(await first.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), await second.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         Assert.Equal([new UsageSummary(ConsultEndpoints.GroundOperation, 1, 1)], await UsageAsync(client));
     }
 
