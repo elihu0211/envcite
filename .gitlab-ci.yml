@@ -13,6 +13,12 @@ include:
     inputs:
       stage: check
       enable_mr_pipelines: true
+  # 鎖檔（uv.lock、packages.lock.json）已存在，不需要解析依賴的 job；深度要夠到 services/platform/src/<專案>/。
+  - component: $CI_SERVER_FQDN/components/dependency-scanning/main@2.1.1
+    inputs:
+      stage: check
+      max_scan_depth: 6
+      disabled_resolution_jobs: "maven,gradle,python"
 
 workflow:
   # 沒開 MR 的功能分支不跑 CI；不留 branch pipeline，否則先 push 再開 MR 會同一 SHA 跑兩條，
