@@ -56,6 +56,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）；CI 在 ma
 ## 標註、驗證與推論
 
 - 標註由抽取器（語言模型）寫成 JSON，經 `envcite-annotate <檔>` 載入，或由 `envcite-pipeline` 整條線完成。**沒有人審核標註**：陳述以 `extracted` 進入，經驗證閘門後依政策升為 `confirmed`，**只有已確認（或規則推導）的陳述參與推論**。
+- **詞彙與用語定義**：`vocab.concept.broader_id` 只供導覽，**不進推論**——「甲屬於乙」的法律依據是立法定義或授權命令，不是詞彙的階層。立法定義用 `annotation.term_definition`（錨定單元與內容雜湊，與陳述同一組確認狀態；`annotation.definitions_at` 逐日解析），其詞彙方案以文件的 `scheme.law` 限定在一部法規；限值概念留在跨法共用方案，授權命令與被授權的法律才解析得到同一個概念（`threshold_at` 以概念 id 比對）。
 - 載入規則：每個陳述附它所讀的條文原文，載入時算雜湊並要求該單元現行的某個版本列確有這個雜湊，否則整份拒絕（結束碼 2）；狀態取文件的 `review`，預設 `extracted`，載入不接受任何陳述；不確定法律概念或裁量的要件標 `judgement: true`（系統不從事實判定它，限值不得標）；一個罰則陳述一個效果（改善命令等非處罰的行政命令用效果 `order`，按次處罰用 `repeating: true`）；一次載入是一個交易，不冪等（要修正，把舊陳述改為 `rejected` 再載入）。
 - **驗證**（`verification/`）：確定性閘門一個閘門一個模組，在 `verification/gates/`；模型閘門在 `model_gates.py`。每次結果寫一列 `annotation.verification`；`annotation.settle(必要方法)` 在必要方法最近一次都 pass 或 not_applicable、至少一個 pass、且沒有任何 fail 時升為 `confirmed`，有 fail 則 `rejected`，每次升降也記一列。
   - **抽取者不得驗證自己的陳述**（資料庫強制）；驗證者**預設也不得與抽取者同一家族**，合格者不足則 `inconclusive`。

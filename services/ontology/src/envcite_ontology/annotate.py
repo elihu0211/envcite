@@ -17,8 +17,10 @@
 
     {"derivation": {"method": "llm", "agent": "…", "agent_version": "…"},
      "review": "confirmed",
-     "scheme": {"code": "env", "title": "…"},
+     "scheme": {"code": "env", "title": "…", "law": "<pcode，選填：方案只及於這部法規>"},
      "concepts": [{"code": "cod", "label": "…", "broader": "<code>", "alt": ["…"]}],
+     "definitions": [{"id": "d1", "law": "<pcode>", "path": "art_2", "text": "<原文>",
+                      "term": "<code>", "definition": "…", "members": ["<code>"]}],
      "statements": [
        {"id": "s1", "law": "<pcode>", "path": "art_7/para_1", "text": "<原文>",
         "kind": "prescriptive", "deontic": "obligation",
@@ -74,6 +76,7 @@ class Loaded:
     overrides: int
     sanctions: int
     ids: Mapping[str, int] = field(default_factory=dict)  # 文件裡的陳述 id → 資料庫的陳述編號
+    definitions: int = 0
 
 
 def load(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
@@ -167,7 +170,8 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
             (ref(str(o["winner"])), ref(str(o["loser"])), o["basis"]),
         )
         overrides += 1
-    return Loaded(len(ids), conditions, exceptions, overrides, sanctions, ids)
+    defined = _definitions(conn, doc.get("definitions", []), concepts, d_id, review)
+    return Loaded(len(ids), conditions, exceptions, overrides, sanctions, ids, defined)
 
 
 def _one(conn: Conn, sql: str, *args: object) -> int:
@@ -184,13 +188,29 @@ def _concepts(
         if concepts:
             raise AnnotationError("有概念但沒有 scheme")
         return {}
+    # 方案可限定在一部法規（立法定義的用語只及於本法）；沒有 law 則是跨法共用。
+    scope: int | None = None
+    if scheme.get("law") is not None:
+        row = conn.execute(
+            "SELECT id FROM corpus.legal_resource WHERE id_scheme = 'moj_pcode' AND local_id = %s",
+            (scheme["law"],),
+        ).fetchone()
+        if row is None:
+            raise AnnotationError(f"語料裡沒有法規 {scheme['law']}")
+        scope = cast(int, row[0])
     scheme_id = _one(
         conn,
-        "INSERT INTO vocab.concept_scheme (code, title) VALUES (%s, %s)"
+        "INSERT INTO vocab.concept_scheme (code, title, scope_resource_id) VALUES (%s, %s, %s)"
         " ON CONFLICT (code) DO UPDATE SET title = EXCLUDED.title RETURNING id",
         scheme["code"],
         scheme["title"],
+        scope,
     )
+    existing = conn.execute(
+        "SELECT scope_resource_id FROM vocab.concept_scheme WHERE id = %s", (scheme_id,)
+    ).fetchone()
+    if existing is not None and existing[0] != scope:
+        raise AnnotationError(f"詞彙方案「{scheme['code']}」已存在，且適用範圍與文件不同")
     for c in concepts:
         cid = _one(
             conn,
@@ -209,12 +229,16 @@ def _concepts(
             )
     for c in concepts:  # 上位概念可能在文件稍後才列出
         if c.get("broader") is not None:
-            conn.execute(
-                "UPDATE vocab.concept SET broader_id ="
-                " (SELECT id FROM vocab.concept WHERE scheme_id = %s AND code = %s)"
-                " WHERE scheme_id = %s AND code = %s",
+            # 指向不存在的代碼時，子查詢為空值，會把既有的上位概念靜默清掉：先確認它存在。
+            updated = conn.execute(
+                "UPDATE vocab.concept SET broader_id = b.id"
+                "  FROM vocab.concept AS b"
+                " WHERE b.scheme_id = %s AND b.code = %s"
+                "   AND vocab.concept.scheme_id = %s AND vocab.concept.code = %s",
                 (scheme_id, c["broader"], scheme_id, c["code"]),
-            )
+            ).rowcount
+            if updated == 0:
+                raise AnnotationError(f"概念「{c['code']}」的上位概念「{c['broader']}」不存在")
     return {
         str(code): int(cid)  # type: ignore[call-overload]
         for code, cid in conn.execute(
@@ -241,7 +265,8 @@ def _provision(conn: Conn, law: object, path: object) -> int:
     return cast(int, row[0])
 
 
-def _statement(conn: Conn, s: Mapping[str, Any], derivation_id: int, review: str) -> int:
+def _anchor(conn: Conn, what: str, s: Mapping[str, Any]) -> tuple[int, bytes]:
+    """（單元，內容雜湊）：附的原文雜湊必須是該單元現行某版本列的雜湊。"""
     provision_id = _provision(conn, s["law"], s["path"])
     digest = hashlib.sha256(str(s["text"]).encode()).digest()
     current = conn.execute(
@@ -251,8 +276,52 @@ def _statement(conn: Conn, s: Mapping[str, Any], derivation_id: int, review: str
     ).fetchone()
     if current is None:
         raise AnnotationError(
-            f"陳述 {s['id']} 錨定的文字不是 {s['law']} {s['path']} 現行任何版本的文字"
+            f"{what} {s['id']} 錨定的文字不是 {s['law']} {s['path']} 現行任何版本的文字"
         )
+    return provision_id, digest
+
+
+def _definitions(
+    conn: Conn,
+    definitions: Sequence[Mapping[str, Any]],
+    concepts: Mapping[str, int],
+    derivation_id: int,
+    review: str,
+) -> int:
+    """用語定義：錨在定義條文上；成員概念是該定義明文涵蓋的用語。"""
+    seen: set[str] = set()
+    for t in definitions:
+        ident = str(t["id"])
+        if ident in seen:
+            raise AnnotationError(f"用語定義 id 重複：{ident}")
+        seen.add(ident)
+        provision_id, digest = _anchor(conn, "用語定義", t)
+        span = t.get("span")
+        did = _one(
+            conn,
+            "INSERT INTO annotation.term_definition"
+            " (provision_id, content_sha256, span, term_id, definition_text,"
+            "  derivation_id, confirm_state)"
+            " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            provision_id,
+            digest,
+            Range(span[0], span[1]) if span else None,
+            _concept(concepts, t["term"]),
+            t["definition"],
+            derivation_id,
+            review,
+        )
+        for member in t.get("members", []):
+            conn.execute(
+                "INSERT INTO annotation.term_definition_member (definition_id, member_id)"
+                " VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                (did, _concept(concepts, member)),
+            )
+    return len(seen)
+
+
+def _statement(conn: Conn, s: Mapping[str, Any], derivation_id: int, review: str) -> int:
+    provision_id, digest = _anchor(conn, "陳述", s)
     span = s.get("span")
     return _one(
         conn,

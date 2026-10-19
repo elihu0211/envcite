@@ -398,3 +398,92 @@ def test_a_sanction_can_be_an_order_and_can_repeat(conn: Conn, tmp_path: Path) -
         "SELECT legal_effect::text, per_occasion FROM annotation.sanction ORDER BY legal_effect"
     ).fetchall()
     assert rows == [("fine", True), ("order", False)]
+
+
+def _with_broader(conn: Conn) -> int:
+    return int(
+        _scalar(
+            conn,
+            "SELECT count(*) FROM vocab.concept WHERE code = 'cod' AND broader_id IS NOT NULL",
+        )
+    )
+
+
+def test_a_broader_concept_is_loaded_and_a_missing_one_is_rejected(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1())
+    doc = _doc(_duty())
+    doc["concepts"] = [
+        {"code": "discharging", "label": "排放廢水"},
+        {"code": "cod", "label": "化學需氧量", "broader": "discharging"},
+    ]
+    load(conn, doc)
+    assert _with_broader(conn) == 1
+
+    # 指向不存在的代碼：整份拒絕，既有的上位概念不被清掉。
+    bad = _doc(_duty())
+    bad["concepts"] = [{"code": "cod", "label": "化學需氧量", "broader": "nowhere"}]
+    with pytest.raises(AnnotationError, match="nowhere"):
+        load(conn, bad)
+    assert _with_broader(conn) == 1
+
+
+def _definition_doc(text: str = "甲一") -> dict[str, Any]:
+    doc = _doc()
+    doc["scheme"] = {"code": f"def.{LAW}", "title": "本法用語", "law": LAW}
+    doc["concepts"] = [
+        {"code": "business", "label": "事業"},
+        {"code": "factory", "label": "工廠"},
+    ]
+    doc["definitions"] = [
+        {
+            "id": "d1",
+            "law": LAW,
+            "path": "art_1",
+            "text": text,
+            "term": "business",
+            "definition": "指工廠",
+            "members": ["factory"],
+        }
+    ]
+    return doc
+
+
+def _defined(conn: Conn, on: date) -> int:
+    return int(
+        _scalar(
+            conn, "SELECT count(*) FROM annotation.definitions_at(%s, 'zho', %s)", _law_id(conn), on
+        )
+    )
+
+
+def test_a_definition_is_scoped_to_its_law_and_follows_the_text(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1())
+    loaded = load(conn, _definition_doc())
+
+    assert loaded.definitions == 1
+    assert _scalar(conn, "SELECT count(*) FROM annotation.term_definition_member") == 1
+    assert (
+        _scalar(
+            conn,
+            "SELECT count(*) FROM vocab.concept_scheme WHERE scope_resource_id IS NOT NULL",
+        )
+        == 1
+    )
+    assert _defined(conn, BEFORE) == 1
+
+
+def test_a_definition_is_anchored_to_current_text(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1())
+    with pytest.raises(AnnotationError, match="用語定義"):
+        load(conn, _definition_doc(text="不在語料裡的文字"))
+
+
+def test_a_scheme_cannot_change_its_scope(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1())
+    load(conn, _definition_doc())
+    unscoped = _definition_doc()
+    unscoped["scheme"] = {"code": f"def.{LAW}", "title": "本法用語"}
+    with pytest.raises(AnnotationError, match="適用範圍"):
+        load(conn, unscoped)
