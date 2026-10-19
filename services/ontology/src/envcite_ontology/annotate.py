@@ -18,7 +18,7 @@
     {"derivation": {"method": "llm", "agent": "…", "agent_version": "…"},
      "review": "confirmed",
      "scheme": {"code": "env", "title": "…", "law": "<pcode，選填：方案只及於這部法規>"},
-     "concepts": [{"code": "cod", "label": "…", "broader": "<code>", "alt": ["…"]}],
+     "concepts": [{"code": "cod", "label": "…", "alt": ["…"]}],
      "definitions": [{"id": "d1", "law": "<pcode>", "path": "art_2", "text": "<原文>",
                       "term": "<code>", "definition": "…", "members": ["<code>"]}],
      "statements": [
@@ -212,6 +212,9 @@ def _concepts(
     if existing is not None and existing[0] != scope:
         raise AnnotationError(f"詞彙方案「{scheme['code']}」已存在，且適用範圍與文件不同")
     for c in concepts:
+        if "broader" in c:
+            # 詞彙沒有上下位：「甲屬於乙」寫成用語定義（`definitions`），不寫在概念上。
+            raise AnnotationError(f"概念「{c['code']}」帶了 broader；上下位請寫成用語定義")
         cid = _one(
             conn,
             "INSERT INTO vocab.concept (scheme_id, code, pref_label) VALUES (%s, %s, %s)"
@@ -227,18 +230,6 @@ def _concepts(
                 " VALUES (%s, %s, 'alt') ON CONFLICT DO NOTHING",
                 (cid, alt),
             )
-    for c in concepts:  # 上位概念可能在文件稍後才列出
-        if c.get("broader") is not None:
-            # 指向不存在的代碼時，子查詢為空值，會把既有的上位概念靜默清掉：先確認它存在。
-            updated = conn.execute(
-                "UPDATE vocab.concept SET broader_id = b.id"
-                "  FROM vocab.concept AS b"
-                " WHERE b.scheme_id = %s AND b.code = %s"
-                "   AND vocab.concept.scheme_id = %s AND vocab.concept.code = %s",
-                (scheme_id, c["broader"], scheme_id, c["code"]),
-            ).rowcount
-            if updated == 0:
-                raise AnnotationError(f"概念「{c['code']}」的上位概念「{c['broader']}」不存在")
     return {
         str(code): int(cid)  # type: ignore[call-overload]
         for code, cid in conn.execute(

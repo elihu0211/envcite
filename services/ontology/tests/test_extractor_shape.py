@@ -35,6 +35,25 @@ def test_the_extractor_reads_json_that_the_model_wrapped_in_a_code_fence(
     assert out.loaded is not None and out.loaded.statements == 1
 
 
+def test_a_broader_the_model_adds_to_a_concept_is_ignored(conn: Conn, tmp_path: Path) -> None:
+    """提示沒要 broader；模型多寫了也不該讓載入器拒絕整份。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    answer = json.loads(json.dumps(EXTRACTED))
+    for c in answer["concepts"]:
+        c["broader"] = "anything"
+
+    out = extract_unit(
+        conn,
+        FakeModel(json.dumps(answer, ensure_ascii=False)),
+        LAW,
+        "art_1",
+        agent="fake-model",
+        agent_version="1",
+    )
+
+    assert out.loaded is not None and out.loaded.statements == 1
+
+
 def test_a_model_answer_that_breaks_a_constraint_is_dropped_not_fatal(
     conn: Conn, tmp_path: Path
 ) -> None:

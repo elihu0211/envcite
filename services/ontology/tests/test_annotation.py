@@ -400,33 +400,17 @@ def test_a_sanction_can_be_an_order_and_can_repeat(conn: Conn, tmp_path: Path) -
     assert rows == [("fine", True), ("order", False)]
 
 
-def _with_broader(conn: Conn) -> int:
-    return int(
-        _scalar(
-            conn,
-            "SELECT count(*) FROM vocab.concept WHERE code = 'cod' AND broader_id IS NOT NULL",
-        )
-    )
-
-
-def test_a_broader_concept_is_loaded_and_a_missing_one_is_rejected(
-    conn: Conn, tmp_path: Path
-) -> None:
+def test_a_concept_with_a_broader_is_rejected(conn: Conn, tmp_path: Path) -> None:
+    """詞彙沒有上下位：「甲屬於乙」的依據是用語定義，寫在概念上的 broader 整份拒絕。"""
     _first(conn, tmp_path, _law_v1())
     doc = _doc(_duty())
     doc["concepts"] = [
         {"code": "discharging", "label": "排放廢水"},
         {"code": "cod", "label": "化學需氧量", "broader": "discharging"},
     ]
-    load(conn, doc)
-    assert _with_broader(conn) == 1
-
-    # 指向不存在的代碼：整份拒絕，既有的上位概念不被清掉。
-    bad = _doc(_duty())
-    bad["concepts"] = [{"code": "cod", "label": "化學需氧量", "broader": "nowhere"}]
-    with pytest.raises(AnnotationError, match="nowhere"):
-        load(conn, bad)
-    assert _with_broader(conn) == 1
+    with pytest.raises(AnnotationError, match="broader"):
+        load(conn, doc)
+    assert _scalar(conn, "SELECT count(*) FROM vocab.concept") == 0
 
 
 def _definition_doc(text: str = "甲一") -> dict[str, Any]:

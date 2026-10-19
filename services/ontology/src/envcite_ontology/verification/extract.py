@@ -105,10 +105,13 @@ def _statements_of(answer: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 
 def _concepts_of(answer: Mapping[str, Any]) -> list[Mapping[str, Any]]:
-    """宣告完整（有 code 與 label）的概念；別的項目當作沒宣告。"""
+    """宣告完整（有 code 與 label）的概念；別的項目當作沒宣告。
+
+    只留提示要的欄位：模型自己多寫的鍵（例如 broader）不可信，載入器會因它拒絕整份文件。
+    """
     items = answer.get("concepts")
     return [
-        c
+        {"code": c["code"], "label": c["label"]}
         for c in (items if isinstance(items, list) else [])
         if isinstance(c, Mapping) and c.get("code") and c.get("label")
     ]
