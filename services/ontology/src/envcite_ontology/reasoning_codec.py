@@ -19,7 +19,7 @@ from envcite_ontology.reasoning.engine import Penalty
 STATEMENT_KIND = {
     "prescriptive": pb.STATEMENT_KIND_PRESCRIPTIVE,
     "constitutive": pb.STATEMENT_KIND_CONSTITUTIVE,
-    "penalty": pb.STATEMENT_KIND_PENALTY,
+    "sanction": pb.STATEMENT_KIND_PENALTY,
     "reparation": pb.STATEMENT_KIND_REPARATION,
 }
 NORM_MODALITY = {

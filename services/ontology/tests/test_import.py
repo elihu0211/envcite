@@ -58,7 +58,7 @@ def test_a_law_is_written_with_its_version_events_and_provisions(
 
     resource = _scalar(conn, "SELECT id FROM corpus.legal_resource WHERE local_id = 'T0000001'")
     assert conn.execute(
-        "SELECT version_date, title, text_status, legal_value"
+        "SELECT version_date, title, text_status, text_authority"
         " FROM corpus.legal_expression WHERE resource_id = %s",
         (resource,),
     ).fetchall() == [(date(2018, 8, 1), "噪音管制法", "available", "official_db")]

@@ -64,7 +64,8 @@ def _next(conn: Conn, root: Path, law: dict[str, Any]) -> Outcome:
     with zipfile.ZipFile(root / name, "w") as z:
         z.writestr("data.json", json.dumps({"UpdateDate": "2026/9/19", "Laws": [law]}))
     row = conn.execute(
-        "INSERT INTO source.snapshot (feed, data_date, sha256, size, location, license_notice)"
+        "INSERT INTO source.snapshot"
+        " (feed, data_date, sha256, size_bytes, location, license_notice)"
         " VALUES ('moj_law', '2026-09-19', %s, 1, %s, 'x') RETURNING id",
         (hashlib.sha256(name.encode()).digest(), name),
     ).fetchone()

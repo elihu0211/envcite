@@ -18,7 +18,7 @@
     {"derivation": {"method": "llm", "agent": "…", "agent_version": "…"},
      "review": "confirmed",
      "scheme": {"code": "env", "title": "…", "law": "<pcode，選填：方案只及於這部法規>"},
-     "concepts": [{"code": "cod", "label": "…", "alt": ["…"]}],
+     "concepts": [{"code": "cod", "label": "…", "aliases": ["…"]}],
      "definitions": [{"id": "d1", "law": "<pcode>", "path": "art_2", "text": "<原文>",
                       "term": "<code>", "definition": "…", "members": ["<code>"]}],
      "statements": [
@@ -145,8 +145,8 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
         if (sanction := s.get("sanction")) is not None:
             conn.execute(
                 "INSERT INTO annotation.sanction"
-                " (statement_id, punishes_id, legal_effect, amount_text, min_amount, max_amount,"
-                "  per_occasion, discretionary)"
+                " (statement_id, punished_statement_id, legal_effect, amount_text,"
+                "  min_amount, max_amount, per_occasion, discretionary)"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                 (
                     ids[str(s["id"])],
@@ -217,17 +217,17 @@ def _concepts(
             raise AnnotationError(f"概念「{c['code']}」帶了 broader；上下位請寫成用語定義")
         cid = _one(
             conn,
-            "INSERT INTO vocab.concept (scheme_id, code, pref_label) VALUES (%s, %s, %s)"
-            " ON CONFLICT (scheme_id, code) DO UPDATE SET pref_label = EXCLUDED.pref_label"
+            "INSERT INTO vocab.concept (scheme_id, code, name) VALUES (%s, %s, %s)"
+            " ON CONFLICT (scheme_id, code) DO UPDATE SET name = EXCLUDED.name"
             " RETURNING id",
             scheme_id,
             c["code"],
             c["label"],
         )
-        for alt in c.get("alt", []):
+        for alt in c.get("aliases", []):
             conn.execute(
                 "INSERT INTO vocab.concept_label (concept_id, label, label_kind)"
-                " VALUES (%s, %s, 'alt') ON CONFLICT DO NOTHING",
+                " VALUES (%s, %s, 'alias') ON CONFLICT DO NOTHING",
                 (cid, alt),
             )
     return {
@@ -291,7 +291,7 @@ def _definitions(
         did = _one(
             conn,
             "INSERT INTO annotation.term_definition"
-            " (provision_id, content_sha256, span, term_id, definition_text,"
+            " (provision_id, content_sha256, span, term_concept_id, definition_text,"
             "  derivation_id, confirm_state)"
             " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
             provision_id,
@@ -304,7 +304,7 @@ def _definitions(
         )
         for member in t.get("members", []):
             conn.execute(
-                "INSERT INTO annotation.term_definition_member (definition_id, member_id)"
+                "INSERT INTO annotation.term_definition_member (definition_id, member_concept_id)"
                 " VALUES (%s, %s) ON CONFLICT DO NOTHING",
                 (did, _concept(concepts, member)),
             )
@@ -338,7 +338,7 @@ def _slots(
 ) -> None:
     for slot, v in slots.items():
         conn.execute(
-            "INSERT INTO annotation.statement_slot (statement_id, slot, concept_id, literal)"
+            "INSERT INTO annotation.statement_slot (statement_id, slot_role, concept_id, literal)"
             " VALUES (%s, %s, %s, %s)",
             (
                 statement_id,
@@ -359,7 +359,7 @@ def _conditions(
         delegate = c.get("delegate")
         conn.execute(
             "INSERT INTO annotation.statement_condition"
-            " (statement_id, cond_role, disjunct_no, concept_id, comparator,"
+            " (statement_id, condition_role, disjunct_no, concept_id, comparator,"
             "  threshold, measure_unit,"
             "  value_concept_id, negated, delegate_provision_id, needs_assessment)"
             " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",

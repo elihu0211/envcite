@@ -145,7 +145,7 @@ def test_superseded_must_come_after_recorded(conn: Conn) -> None:
     with pytest.raises(psycopg.errors.CheckViolation):
         conn.execute(
             "INSERT INTO corpus.provision_version"
-            " (provision_id, expression_id, resource_id, content, force_period, commence_rule,"
+            " (provision_id, expression_id, resource_id, content, force_period, commencement_rule,"
             " superseded_at)"
             " VALUES (%s, %s, %s, 'x', NULL, 'unconfirmed', now() - interval '1 day')",
             (article, expression, law),

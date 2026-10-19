@@ -30,7 +30,7 @@ def search_stub(
     assert law is not None
     expression = conn.execute(
         "INSERT INTO corpus.legal_expression"
-        " (resource_id, language, version_date, title, text_period, text_status, legal_value)"
+        " (resource_id, language, version_date, title, text_period, text_status, text_authority)"
         " VALUES (%s, 'zho', DATE '2020-01-01', '噪音管制法', daterange(DATE '2020-01-01', NULL),"
         " 'available', 'official_db') RETURNING id",
         (law[0],),
@@ -52,7 +52,7 @@ def search_stub(
             ), v AS (
                 INSERT INTO corpus.provision_version
                         (provision_id, expression_id, resource_id, content,
-                         force_period, commence_rule)
+                         force_period, commencement_rule)
                 SELECT p.id, %(expr)s, %(law)s, %(content)s, daterange(DATE '2020-01-03', NULL),
                        'promulgation'
                   FROM p

@@ -38,7 +38,7 @@ def _doc(
         "scheme": {"code": "env", "title": "環境法概念"},
         "concepts": [
             {"code": "discharging", "label": "排放廢水"},
-            {"code": "cod", "label": "化學需氧量", "alt": ["COD"]},
+            {"code": "cod", "label": "化學需氧量", "aliases": ["COD"]},
         ],
         "statements": list(statements),
     }
@@ -96,7 +96,7 @@ def _facts(conn: Conn, on: date) -> int:
 
 def _duty_condition(conn: Conn) -> int:
     return int(
-        _scalar(conn, "SELECT id FROM annotation.statement_condition WHERE cond_role = 'duty'")
+        _scalar(conn, "SELECT id FROM annotation.statement_condition WHERE condition_role = 'duty'")
     )
 
 
@@ -121,8 +121,8 @@ def test_a_statement_survives_the_version_row_being_replaced(conn: Conn, tmp_pat
     )
     conn.execute(
         "INSERT INTO corpus.provision_version"
-        " (provision_id, expression_id, resource_id, content, force_period, commence_rule)"
-        " SELECT provision_id, expression_id, resource_id, content, force_period, commence_rule"
+        " (provision_id, expression_id, resource_id, content, force_period, commencement_rule)"
+        " SELECT provision_id, expression_id, resource_id, content, force_period, commencement_rule"
         "   FROM corpus.provision_version WHERE content = '甲一'"
     )
     conn.commit()
@@ -202,7 +202,7 @@ def test_exceptions_overrides_and_sanctions_are_loaded(conn: Conn, tmp_path: Pat
             "law": LAW,
             "path": "art_3",
             "text": "丙一",
-            "kind": "penalty",
+            "kind": "sanction",
             "sanction": {"punishes": "duty", "effect": "fine", "min": 60000, "max": 20000000},
         },
     )
@@ -274,7 +274,7 @@ def test_a_condition_has_exactly_one_threshold_source_and_a_limit_has_a_value(
     concept = _scalar(conn, "SELECT id FROM vocab.concept WHERE code = 'cod'")
     insert = (
         "INSERT INTO annotation.statement_condition"
-        " (statement_id, cond_role, disjunct_no, concept_id, comparator,"
+        " (statement_id, condition_role, disjunct_no, concept_id, comparator,"
         "  threshold, value_concept_id)"
         " VALUES (%s, 'duty', 1, %s, 'le', %s, %s)"
     )
@@ -288,7 +288,7 @@ def test_a_condition_has_exactly_one_threshold_source_and_a_limit_has_a_value(
     with pytest.raises(psycopg.errors.CheckViolation):
         conn.execute(
             "INSERT INTO annotation.statement_condition"
-            " (statement_id, cond_role, disjunct_no, concept_id, comparator, value_concept_id)"
+            " (statement_id, condition_role, disjunct_no, concept_id, comparator, value_concept_id)"
             " VALUES (%s, 'limit', 1, %s, 'le', %s)",
             (statement, concept, concept),
         )  # 限值必須是數值
@@ -365,7 +365,8 @@ def test_the_judgement_marker_defaults_to_false_and_is_loaded_when_given(
     load(conn, doc)
 
     rows = conn.execute(
-        "SELECT cond_role, needs_assessment FROM annotation.statement_condition ORDER BY cond_role"
+        "SELECT condition_role, needs_assessment FROM annotation.statement_condition"
+        " ORDER BY condition_role"
     ).fetchall()
     assert rows == [("scope", True), ("duty", False)] or rows == [("duty", False), ("scope", True)]
 
@@ -380,7 +381,7 @@ def test_a_sanction_can_be_an_order_and_can_repeat(conn: Conn, tmp_path: Path) -
             "law": LAW,
             "path": "art_2",
             "text": "乙一",
-            "kind": "penalty",
+            "kind": "sanction",
             "sanction": {"punishes": "duty", "effect": "order"},
         },
         {
@@ -388,7 +389,7 @@ def test_a_sanction_can_be_an_order_and_can_repeat(conn: Conn, tmp_path: Path) -
             "law": LAW,
             "path": "art_3",
             "text": "丙一",
-            "kind": "penalty",
+            "kind": "sanction",
             "sanction": {"punishes": "duty", "effect": "fine", "repeating": True},
         },
     )

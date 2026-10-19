@@ -24,15 +24,15 @@ _STATEMENTS = """
 """
 
 _SLOTS = """
-    SELECT sl.statement_id, sl.slot::text, k.code, sl.literal
+    SELECT sl.statement_id, sl.slot_role::text, k.code, sl.literal
       FROM annotation.statement_slot AS sl
       LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id
      WHERE sl.statement_id = ANY(%(ids)s)
-     ORDER BY sl.statement_id, sl.slot
+     ORDER BY sl.statement_id, sl.slot_role
 """
 
 _CONDITIONS = """
-    SELECT c.id, c.statement_id, c.cond_role::text, c.disjunct_no, k.code, c.comparator::text,
+    SELECT c.id, c.statement_id, c.condition_role::text, c.disjunct_no, k.code, c.comparator::text,
            c.threshold, c.measure_unit, c.negated, c.needs_assessment,
            vk.code, dl.local_id, dp.path
       FROM annotation.statement_condition AS c
@@ -41,7 +41,7 @@ _CONDITIONS = """
       LEFT JOIN corpus.provision AS dp ON dp.id = c.delegate_provision_id
       LEFT JOIN corpus.legal_resource AS dl ON dl.id = dp.resource_id
      WHERE c.statement_id = ANY(%(ids)s)
-     ORDER BY c.statement_id, c.cond_role, c.disjunct_no, c.id
+     ORDER BY c.statement_id, c.condition_role, c.disjunct_no, c.id
 """
 
 _EXCEPTIONS = """
@@ -57,8 +57,8 @@ _OVERRIDES = """
 """
 
 _SANCTIONS = """
-    SELECT statement_id, punishes_id, legal_effect::text, amount_text, min_amount, max_amount,
-           per_occasion, discretionary
+    SELECT statement_id, punished_statement_id, legal_effect::text, amount_text,
+           min_amount, max_amount, per_occasion, discretionary
       FROM annotation.sanction
      WHERE statement_id = ANY(%(ids)s)
 """

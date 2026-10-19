@@ -42,7 +42,7 @@ def _law(conn: Conn, pcode: str, *versions: tuple[date, str]) -> tuple[int, list
             _id(
                 conn.execute(
                     "INSERT INTO corpus.legal_expression (resource_id, language,"
-                    " version_date, title, text_period, text_status, legal_value)"
+                    " version_date, title, text_period, text_status, text_authority)"
                     " VALUES (%s, 'zho', %s, '甲法', %s, %s, 'official_db') RETURNING id",
                     (law, on, Range(on, end, "[)"), status),
                 ).fetchone()
@@ -74,7 +74,7 @@ def _version(
     """A version in force over [lo, hi); lo None means promulgated but not yet in force."""
     conn.execute(
         "INSERT INTO corpus.provision_version"
-        " (provision_id, expression_id, resource_id, content, force_period, commence_rule)"
+        " (provision_id, expression_id, resource_id, content, force_period, commencement_rule)"
         " VALUES (%s, %s, %s, %s, %s, %s::corpus.commencement_rule)",
         (
             provision,

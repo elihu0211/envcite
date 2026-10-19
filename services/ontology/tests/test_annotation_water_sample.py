@@ -87,8 +87,8 @@ def test_the_penalties_punish_the_duty_and_carry_the_amounts(conn: Conn, loaded:
     assert (
         _scalar(
             conn,
-            "SELECT count(DISTINCT sn.punishes_id) FROM annotation.sanction AS sn"
-            "  JOIN annotation.statement AS d ON d.id = sn.punishes_id"
+            "SELECT count(DISTINCT sn.punished_statement_id) FROM annotation.sanction AS sn"
+            "  JOIN annotation.statement AS d ON d.id = sn.punished_statement_id"
             "   AND d.norm_modality = 'obligation'",
         )
         == 1

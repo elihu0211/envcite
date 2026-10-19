@@ -40,7 +40,7 @@ class ReferencesGate:
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
         row = conn.execute(
             "SELECT pp.path, t.confirm_state::text FROM annotation.sanction AS sn"
-            "  JOIN annotation.statement AS t ON t.id = sn.punishes_id"
+            "  JOIN annotation.statement AS t ON t.id = sn.punished_statement_id"
             "  JOIN corpus.provision AS pp ON pp.id = t.provision_id"
             " WHERE sn.statement_id = %s",
             (statement_id,),

@@ -113,7 +113,7 @@ def _duty_and_cited_penalty() -> dict[str, Any]:
         {
             "id": "p1",
             "quote": "排放廢水者應符合標準",
-            "kind": "penalty",
+            "kind": "sanction",
             "sanction": {"effect": "fine", "min": 1, "max": 2},
         },
     ]

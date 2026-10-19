@@ -84,7 +84,8 @@ def stored_snapshot(
     conn.execute("DELETE FROM source.item WHERE feed = %s", (feed,))
     conn.execute("DELETE FROM source.snapshot WHERE feed = %s", (feed,))
     row = conn.execute(
-        "INSERT INTO source.snapshot (feed, data_date, sha256, size, location, license_notice)"
+        "INSERT INTO source.snapshot"
+        " (feed, data_date, sha256, size_bytes, location, license_notice)"
         " VALUES (%s, '2026-09-18', %s, 1, %s, 'x') RETURNING id",
         (feed, bytes(32), name),
     ).fetchone()

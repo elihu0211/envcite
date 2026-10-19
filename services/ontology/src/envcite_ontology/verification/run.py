@@ -157,7 +157,8 @@ def _record_attempt(
         return
     conn.execute(
         "INSERT INTO annotation.extraction_attempt"
-        "  (provision_id, content_sha256, producer, producer_version, statements, dropped)"
+        "  (provision_id, content_sha256, producer, producer_version,"
+        "   statement_count, dropped_count)"
         " SELECT p.id, v.content_sha256, %s, %s, %s, %s"
         "   FROM corpus.provision AS p"
         "   JOIN corpus.legal_resource AS r ON r.id = p.resource_id"

@@ -97,7 +97,7 @@ def test_references_gate_requires_the_punished_provision_to_be_the_cited_one(
     assert ok.evidence["unresolved"] == ["art_8"]  # 第八條不在語料裡：只記，不算錯
 
     conn.execute(
-        "UPDATE annotation.sanction SET punishes_id = %s WHERE statement_id = %s",
+        "UPDATE annotation.sanction SET punished_statement_id = %s WHERE statement_id = %s",
         (ids["w7_2b"], ids["p40_1_fine"]),  # 第七條第二項：原文引用的是第一項
     )
     bad = gate.check(conn, ids["p40_1_fine"])
@@ -129,7 +129,7 @@ def test_executable_gate_checks_a_penalty_only_while_the_breach_stands(
         "law": LAW,
         "path": "art_2",
         "text": "乙一",
-        "kind": "penalty",
+        "kind": "sanction",
         "conditions": [_scope("serious")],
         "sanction": {"punishes": "duty", "effect": "fine", "min": 1, "max": 2},
     }

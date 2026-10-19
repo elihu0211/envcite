@@ -83,7 +83,8 @@ def test_an_incomplete_answer_is_sent_back_with_the_problem_and_the_fix_is_used(
     assert out.loaded is not None
     assert (
         _scalar(
-            conn, "SELECT count(*) FROM annotation.statement_condition WHERE cond_role = 'duty'"
+            conn,
+            "SELECT count(*) FROM annotation.statement_condition WHERE condition_role = 'duty'",
         )
         == 1
     )
@@ -108,7 +109,7 @@ def test_a_penalty_that_punishes_a_held_penalty_is_held_with_it(conn: Conn, tmp_
         {
             "id": "p2",
             "quote": "排放廢水者應符合標準",
-            "kind": "penalty",
+            "kind": "sanction",
             "sanction": {"effect": "order", "punishes": "p1"},
         }
     )

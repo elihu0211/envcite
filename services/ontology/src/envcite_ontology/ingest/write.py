@@ -106,7 +106,7 @@ def _latest_expression(conn: Conn, resource: int) -> tuple[int, date] | None:
 def _insert_expression(conn: Conn, resource: int, law: ParsedLaw) -> int:
     row = conn.execute(
         "INSERT INTO corpus.legal_expression"
-        " (resource_id, language, version_date, title, text_period, text_status, legal_value)"
+        " (resource_id, language, version_date, title, text_period, text_status, text_authority)"
         " VALUES (%s, 'zho', %s, %s, daterange(%s, NULL), %s::corpus.text_status, 'official_db')"
         " RETURNING id",
         (
@@ -188,7 +188,7 @@ def _insert_versions(
     with conn.cursor() as cur:
         cur.executemany(
             "INSERT INTO corpus.provision_version"
-            " (provision_id, expression_id, resource_id, content, force_period, commence_rule)"
+            " (provision_id, expression_id, resource_id, content, force_period, commencement_rule)"
             " VALUES ((SELECT id FROM corpus.provision WHERE resource_id = %s AND path = %s),"
             "         %s, %s, %s, %s, %s::corpus.commencement_rule)",
             [
@@ -265,8 +265,9 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
         if end > in_force.lower:
             conn.execute(
                 "INSERT INTO corpus.provision_version"
-                " (provision_id, expression_id, resource_id, content, force_period, commence_rule)"
-                " SELECT provision_id, expression_id, resource_id, content, %s, commence_rule"
+                " (provision_id, expression_id, resource_id, content, force_period,"
+                "  commencement_rule)"
+                " SELECT provision_id, expression_id, resource_id, content, %s, commencement_rule"
                 "   FROM corpus.provision_version WHERE id = %s",
                 (Range(in_force.lower, end, "[)"), version_id),
             )
@@ -276,7 +277,7 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
 def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) -> Applied:
     current: dict[str, tuple[int, bytes, Interval, str]] = {}
     for version_id, path, sha, force_period, rule in conn.execute(
-        "SELECT v.id, p.path, v.content_sha256, v.force_period, v.commence_rule::text"
+        "SELECT v.id, p.path, v.content_sha256, v.force_period, v.commencement_rule::text"
         "  FROM corpus.provision_version AS v"
         "  JOIN corpus.provision AS p ON p.id = v.provision_id"
         " WHERE v.expression_id = %s AND v.superseded_at IS NULL",

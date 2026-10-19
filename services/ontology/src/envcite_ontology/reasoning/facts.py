@@ -36,13 +36,13 @@ _STATEMENTS = """
 """
 
 _CONDITIONS = """
-    SELECT c.id, c.statement_id, c.cond_role::text, c.disjunct_no, k.code,
+    SELECT c.id, c.statement_id, c.condition_role::text, c.disjunct_no, k.code,
            c.comparator::text, c.negated,
            c.needs_assessment, c.threshold, c.delegate_provision_id IS NOT NULL,
            c.value_concept_id IS NOT NULL
       FROM annotation.statement_condition AS c
       JOIN vocab.concept AS k ON k.id = c.concept_id
-     WHERE c.statement_id = ANY(%(ids)s) AND c.cond_role <> 'limit'
+     WHERE c.statement_id = ANY(%(ids)s) AND c.condition_role <> 'limit'
      ORDER BY c.id
 """
 
@@ -52,7 +52,7 @@ _ACTIONS = """
     SELECT sl.statement_id, coalesce(k.code, sl.literal)
       FROM annotation.statement_slot AS sl
       LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id
-     WHERE sl.slot = 'action' AND sl.statement_id = ANY(%(ids)s)
+     WHERE sl.slot_role = 'action' AND sl.statement_id = ANY(%(ids)s)
 """
 
 _EXCEPTIONS = """
@@ -66,9 +66,10 @@ _OVERRIDES = """
 """
 
 _SANCTIONS = """
-    SELECT statement_id, punishes_id, legal_effect::text, min_amount, max_amount, per_occasion
+    SELECT statement_id, punished_statement_id, legal_effect::text, min_amount, max_amount,
+           per_occasion
       FROM annotation.sanction
-     WHERE statement_id = ANY(%(ids)s) AND punishes_id = ANY(%(ids)s)
+     WHERE statement_id = ANY(%(ids)s) AND punished_statement_id = ANY(%(ids)s)
 """
 
 

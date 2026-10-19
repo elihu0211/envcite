@@ -71,7 +71,7 @@ def _duty_and_penalty_citing(article: str) -> tuple[str, dict[str, Any]]:
         {
             "id": "p1",
             "quote": f"違反{article}規定者處罰鍰",
-            "kind": "penalty",
+            "kind": "sanction",
             "sanction": {"punishes": "s1", "effect": "fine", "min": 1, "max": 2},
         },
     ]
@@ -126,7 +126,7 @@ def test_an_exception_to_a_held_penalty_is_dropped(conn: Conn, tmp_path: Path) -
         {
             "id": "p1",
             "quote": "排放廢水者應符合標準",
-            "kind": "penalty",
+            "kind": "sanction",
             "sanction": {"effect": "fine", "punishes": "elsewhere"},
         },
         {"id": "e1", "quote": "排放廢水者", "kind": "constitutive", "exception_of": "p1"},

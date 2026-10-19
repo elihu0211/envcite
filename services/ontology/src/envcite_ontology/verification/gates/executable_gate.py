@@ -39,7 +39,7 @@ class ExecutableGate:
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
         u = unit_of(conn, statement_id)
-        if u.kind == "penalty":
+        if u.kind == "sanction":
             return self._penalty(conn, u)
         pair = _POLARITY.get(u.deontic or "")
         if u.kind != "prescriptive" or pair is None:
@@ -75,7 +75,7 @@ class ExecutableGate:
 
     def _penalty(self, conn: Conn, u: Unit) -> GateResult:
         row = conn.execute(
-            "SELECT punishes_id FROM annotation.sanction WHERE statement_id = %s",
+            "SELECT punished_statement_id FROM annotation.sanction WHERE statement_id = %s",
             (u.statement_id,),
         ).fetchone()
         if row is None or row[0] is None:

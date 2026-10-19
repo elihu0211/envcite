@@ -34,7 +34,7 @@ def _fine(min_: int, max_: int, amount_text: str) -> dict[str, object]:
         "law": LAW,
         "path": ITEM_PATH,
         "text": ITEM,
-        "kind": "penalty",
+        "kind": "sanction",
         "sanction": {
             "punishes": "duty",
             "effect": "fine",

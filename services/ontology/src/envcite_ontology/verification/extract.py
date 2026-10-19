@@ -26,7 +26,7 @@ PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元
 請只依原文，輸出一個 JSON 物件：
 {{"concepts": [{{"code": "英文小寫底線的代碼", "label": "中文名稱"}}],
   "statements": [{{"id": "短識別", "quote": "原文中的一段，逐字複製", "kind":
-  "prescriptive|constitutive|penalty", "deontic": "obligation|prohibition|permission 或省略",
+  "prescriptive|constitutive|sanction", "deontic": "obligation|prohibition|permission 或省略",
   "slots": {{"subject|action|object|medium": {{"literal": "…"}}}},
   "conditions": [{{"role": "scope|duty", "clause": 1, "concept": "代碼", "comparator":
   "le|lt|ge|gt|eq|ne", "threshold": 數字, "unit": "單位或省略", "negated": false,
@@ -38,13 +38,13 @@ PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元
 {conventions}規則：
 1. 引文必須逐字出現在原文；不要輸出原文沒有的內容。
 2. 只有 kind 為 prescriptive 的陳述才有 deontic；constitutive（定義、適用範圍、授權）與
-   penalty（罰則）不要寫 deontic。
+   sanction（罰則與其他不利效果）不要寫 deontic。
 3. 義務（應…、不得…）的要件分兩種：scope 是誰、在什麼情形下適用；duty 是義務本身的內容。
    「…者，應…」的句型：「者」之前的條件（誰、做什麼事、在哪裡）每個子條件各一個 scope 要件，
    「應」之後是 duty 要件；沒有 scope 的義務會被判成對任何人都適用，沒有 duty 的義務無法被評估。
-4. 罰則（penalty）要有 sanction，effect 只能選一個值。受罰的陳述就在這個單元裡時，punishes 填它的
-   id；受罰的是原文引用的別條（例如「違反第七條規定者」）時省略 punishes，程式會連到被引用條文
-   的陳述。非 penalty 的陳述不要寫 sanction。
+4. 罰則（sanction）要有 sanction 物件，effect 只能選一個值。受罰的陳述就在這個單元裡時，
+   punishes 填它的 id；受罰的是原文引用的別條（例如「違反第七條規定者」）時省略 punishes，
+   程式會連到被引用條文的陳述。非 sanction 的陳述不要寫 sanction 物件。
 5. 每個要件都要有 threshold：成立與否的要件（是否排放、是否符合標準）寫 comparator "eq"、
    threshold 1；「非」「不」用 negated: true 表示；原文有數值門檻時才寫它的數字與單位。
 6. 構成要件的不確定法律概念（情節重大、必要時）的要件 judgement 設為 true。效果面的「得」
@@ -334,11 +334,11 @@ def extract_unit(
         if not (isinstance(sanction, Mapping) and sanction.get("effect")):
             # 模型常把罰則欄位照樣板填成空值：沒有效果就不是罰則
             item.pop("sanction", None)
-            if item.get("kind") == "penalty":
+            if item.get("kind") == "sanction":
                 dropped.append(f"{s.get('id', '?')}: penalty without a sanction effect")
                 continue
-        elif item.get("kind") != "penalty":
-            del item["sanction"]  # 罰則只屬於 penalty
+        elif item.get("kind") != "sanction":
+            del item["sanction"]  # 罰則只屬於 sanction
         item |= {"law": law, "path": path, "text": text}
         if quote != text:
             item["span"] = [start, start + len(quote)]

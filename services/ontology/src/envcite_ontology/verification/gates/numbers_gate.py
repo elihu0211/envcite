@@ -38,7 +38,7 @@ class NumbersGate:
         for value, comparator, negated in conn.execute(
             "SELECT threshold, comparator::text, negated FROM annotation.statement_condition"
             " WHERE statement_id = %s AND threshold IS NOT NULL"
-            " AND (cond_role = 'limit' OR measure_unit IS NOT NULL)",
+            " AND (condition_role = 'limit' OR measure_unit IS NOT NULL)",
             (statement_id,),
         ):
             have = numbers_in(u.quoted)

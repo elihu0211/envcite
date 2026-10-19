@@ -37,7 +37,7 @@ _KIND = {
     ("prescriptive", "prohibition"): "規範性陳述・禁止",
     ("prescriptive", "permission"): "規範性陳述・許可",
     ("constitutive", None): "構成性陳述（授權、定義、限值）",
-    ("penalty", None): "罰則陳述",
+    ("sanction", None): "罰則陳述",
 }
 _VERDICTS = {
     "violation",
@@ -91,15 +91,16 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
     u = unit_of(conn, statement_id)
     lines = [f"陳述種類：{_KIND.get((u.kind, u.deontic), u.kind)}"]
     for slot, value in conn.execute(
-        "SELECT sl.slot::text, coalesce(k.code, sl.literal) FROM annotation.statement_slot AS sl"
+        "SELECT sl.slot_role::text, coalesce(k.code, sl.literal)"
+        "  FROM annotation.statement_slot AS sl"
         "  LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id"
-        " WHERE sl.statement_id = %s ORDER BY sl.slot",
+        " WHERE sl.statement_id = %s ORDER BY sl.slot_role",
         (statement_id,),
     ):
         lines.append(f"{_SLOT.get(str(slot), slot)}：{value}")
     by_role: dict[str, list[str]] = {}
     for role, code, label, cmp, threshold, unit, negated, judgement, delegated in conn.execute(
-        "SELECT c.cond_role::text, k.code, k.pref_label, c.comparator::text,"
+        "SELECT c.condition_role::text, k.code, k.name, c.comparator::text,"
         "       c.threshold, c.measure_unit,"
         "       c.negated, c.needs_assessment, c.delegate_provision_id IS NOT NULL"
         "  FROM annotation.statement_condition AS c JOIN vocab.concept AS k ON k.id = c.concept_id"
@@ -172,7 +173,7 @@ def _stored_signature(conn: Conn, statement_id: int) -> dict[str, Any]:
             bool(r[5]),
         )
         for r in conn.execute(
-            "SELECT c.cond_role::text, k.code, c.comparator::text, c.threshold,"
+            "SELECT c.condition_role::text, k.code, c.comparator::text, c.threshold,"
             "       c.negated, c.needs_assessment"
             "  FROM annotation.statement_condition AS c"
             "  JOIN vocab.concept AS k ON k.id = c.concept_id"
@@ -234,7 +235,7 @@ def _answered_signature(answer: Mapping[str, Any]) -> dict[str, Any]:
 
 REFORMALIZE = with_conventions("""下面是對一個法規陳述的結構化描述（不是法規原文）。
 請只依這份描述，輸出一個 JSON 物件：
-{{"kind": "prescriptive|constitutive|penalty",
+{{"kind": "prescriptive|constitutive|sanction",
   "deontic": "obligation|prohibition|permission 或 null",
   "conditions": [{{"role": "scope|duty|limit", "code": "方括號內的代碼",
     "comparator": "le|lt|ge|gt|eq|ne", "threshold": 數字或 null,
@@ -315,7 +316,7 @@ def _concept_line(conn: Conn, statement_id: int) -> list[str]:
     不說明型別，設計者會對成立與否的概念編出數值，那是型別歧義，不是標註錯。
     """
     rows = conn.execute(
-        "SELECT k.code, k.pref_label, c.comparator::text, c.threshold, c.measure_unit"
+        "SELECT k.code, k.name, c.comparator::text, c.threshold, c.measure_unit"
         "  FROM annotation.statement_condition AS c"
         "  JOIN vocab.concept AS k ON k.id = c.concept_id"
         " WHERE c.statement_id = %s ORDER BY k.code, c.id",

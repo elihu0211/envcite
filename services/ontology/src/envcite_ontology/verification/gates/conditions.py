@@ -46,12 +46,12 @@ def statement_as_of(conn: Conn, statement_id: int) -> date | None:
 
 def load_conditions(conn: Conn, statement_id: int) -> list[Cond]:
     rows = conn.execute(
-        "SELECT c.id, c.cond_role::text, c.disjunct_no, k.code, c.comparator::text, c.negated,"
+        "SELECT c.id, c.condition_role::text, c.disjunct_no, k.code, c.comparator::text, c.negated,"
         "       c.threshold, c.delegate_provision_id IS NOT NULL,"
         "       c.value_concept_id IS NOT NULL"
         "  FROM annotation.statement_condition AS c"
         "  JOIN vocab.concept AS k ON k.id = c.concept_id"
-        " WHERE c.statement_id = %s AND c.cond_role <> 'limit' ORDER BY c.id",
+        " WHERE c.statement_id = %s AND c.condition_role <> 'limit' ORDER BY c.id",
         (statement_id,),
     ).fetchall()
     return [
@@ -90,7 +90,7 @@ def exception_facts(conn: Conn, statement_id: int) -> dict[str, float]:
         "SELECT c.comparator::text, c.negated, c.threshold, k.code"
         "  FROM annotation.statement_exception AS e"
         "  JOIN annotation.statement_condition AS c"
-        "    ON c.statement_id = e.exception_id AND c.cond_role = 'scope'"
+        "    ON c.statement_id = e.exception_id AND c.condition_role = 'scope'"
         "  JOIN vocab.concept AS k ON k.id = c.concept_id"
         " WHERE e.excluded_id = %s",
         (statement_id,),

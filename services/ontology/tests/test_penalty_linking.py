@@ -37,7 +37,7 @@ def _penalty_doc() -> dict[str, Any]:
             {
                 "id": "p1",
                 "quote": PENALTY_TEXT,
-                "kind": "penalty",
+                "kind": "sanction",
                 "sanction": {"effect": "fine", "min": 10000, "max": 100000},
             }
         ],
@@ -68,7 +68,9 @@ def _extractor_for(duties: int, choose: Callable[[list[int]], object]) -> Script
 def _sanction_target(conn: Conn) -> list[tuple[int, int]]:
     return [
         (int(a), int(b))  # type: ignore[call-overload]
-        for a, b in conn.execute("SELECT statement_id, punishes_id FROM annotation.sanction")
+        for a, b in conn.execute(
+            "SELECT statement_id, punished_statement_id FROM annotation.sanction"
+        )
     ]
 
 
@@ -147,7 +149,7 @@ def test_the_panel_sees_the_whole_unit_the_quote_and_the_effect_in_chinese(
         {
             "id": "p1",
             "quote": "處新臺幣一萬元罰鍰",
-            "kind": "penalty",
+            "kind": "sanction",
             "sanction": {"effect": "fine", "min": 10000, "punishes": "s1"},
         }
     )

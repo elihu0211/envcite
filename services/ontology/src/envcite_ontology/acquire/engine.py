@@ -151,7 +151,8 @@ def _record(
 ) -> int:
     with conn.transaction():
         row = conn.execute(
-            "INSERT INTO source.snapshot (feed, data_date, sha256, size, location, license_notice)"
+            "INSERT INTO source.snapshot"
+            " (feed, data_date, sha256, size_bytes, location, license_notice)"
             " VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
             (feed, contents.data_date, digest, size, location, source.attribution),
         ).fetchone()

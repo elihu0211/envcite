@@ -25,7 +25,7 @@ def test_the_general_part_blocks_punishment_and_leaves_the_duty(conn: Conn, tmp_
         "law": LAW,
         "path": "art_2",
         "text": "乙一",
-        "kind": "penalty",
+        "kind": "sanction",
         "conditions": [_scope("serious")],
         "sanction": {"punishes": "duty", "effect": "fine", "min": 1, "max": 2},
     }
@@ -91,7 +91,7 @@ def test_limitation_marks_a_listed_penalty_and_leaves_it_there(conn: Conn, tmp_p
         "law": LAW,
         "path": "art_2",
         "text": "乙一",
-        "kind": "penalty",
+        "kind": "sanction",
         "conditions": [_scope("serious")],
         "sanction": {"punishes": "duty", "effect": "fine", "min": 1, "max": 2},
     }
@@ -140,7 +140,7 @@ def test_one_act_and_several_acts_are_both_reported(conn: Conn, tmp_path: Path) 
             "law": LAW,
             "path": "art_2",
             "text": "乙一",
-            "kind": "penalty",
+            "kind": "sanction",
             "conditions": [_scope(scope)],
             "sanction": {"punishes": "duty", **sanction},
         }
@@ -203,7 +203,7 @@ def _penalty(name: str, effect: str, **sanction: Any) -> dict[str, Any]:
         "law": LAW,
         "path": "art_2",
         "text": "乙一",
-        "kind": "penalty",
+        "kind": "sanction",
         "conditions": [_scope("serious")],
         "sanction": {"punishes": "duty", "effect": effect, **sanction},
     }
