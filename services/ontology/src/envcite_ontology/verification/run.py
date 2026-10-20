@@ -16,8 +16,10 @@ import psycopg
 
 from envcite_ontology.settings import DatabaseSettings
 from envcite_ontology.settings import load as load_settings
+from envcite_ontology.verification import definition_gates
 from envcite_ontology.verification.config import ConfigError, ModelSet
 from envcite_ontology.verification.config import load as load_models
+from envcite_ontology.verification.definition_gates import DefinitionGate
 from envcite_ontology.verification.definitions import (
     ExtractedDefinitions,
     defined_terms,
@@ -78,6 +80,8 @@ class Run:
     settled: Settled
     linked: int = 0  # 事後連到被引用條文的罰則數（已含在 extracted）
     definitions: int = 0  # 抽到的用語定義數（不含在 extracted）
+    definitions_confirmed: int = 0
+    definitions_rejected: int = 0
 
 
 def units_of(conn: Conn, law: str) -> list[str]:
@@ -221,6 +225,7 @@ def run(
     allow_same_family: bool = False,
     check_distinct: bool = False,
     gates: Sequence[Gate] | None = None,
+    definition_gates_: Sequence[DefinitionGate] | None = None,
 ) -> Run:
     if check_distinct:
         assert_distinct([extractor, *verifiers])
@@ -267,7 +272,24 @@ def run(
         log.warning("丟掉待連結的罰則：%s", reason[:300])
     chosen = gates if gates is not None else gates_for(verifiers, allow_same_family)
     settled = settle(conn, list(required), chosen)
-    return Run(units, skipped, extracted, dropped, settled, linked.statements, definitions)
+    # 定義與陳述各自接受：必要方法固定是 literal 加往返，沒有往返的重讀者就不確認任何定義。
+    chosen_defs = (
+        definition_gates_
+        if definition_gates_ is not None
+        else definition_gates.gates_for(verifiers[0] if verifiers else None, allow_same_family)
+    )
+    defs = definition_gates.settle(conn, chosen_defs)
+    return Run(
+        units,
+        skipped,
+        extracted,
+        dropped,
+        settled,
+        linked.statements,
+        definitions,
+        defs.confirmed,
+        defs.rejected,
+    )
 
 
 def main() -> None:
@@ -315,6 +337,7 @@ def main() -> None:
     settings = load_settings(DatabaseSettings)
     extractor, verifiers = models.extractor, list(models.verifiers)
     gates = gates_from(models, args.allow_same_family)
+    definition_gates_ = definition_gates.gates_for(models.roundtrip, args.allow_same_family)
     log.info(
         "模型：抽取 %s；驗證 %s",
         extractor.name,
@@ -341,6 +364,7 @@ def main() -> None:
             allow_same_family=args.allow_same_family,
             check_distinct=not args.no_distinct_check,
             gates=gates,
+            definition_gates_=definition_gates_,
         )
     logging.getLogger(__name__).info(
         "單元 %d（略過 %d），抽取 %d 個陳述（含連結的罰則 %d 個；丟掉 %d）；"
