@@ -126,7 +126,10 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
 
                 def outcome(result: Result, on: date, uncovered: tuple[str, ...]) -> pb.Outcome:
                     where = annotation_read.sources(conn, codec.statement_ids(result), on)
-                    return codec.outcome(result, where, uncovered)
+                    used = annotation_read.definition_sources(
+                        conn, {d for _, d in result.definitions_used}, on
+                    )
+                    return codec.outcome(result, where, uncovered, used)
 
                 return pb.EvaluateResponse(
                     at_decision=outcome(

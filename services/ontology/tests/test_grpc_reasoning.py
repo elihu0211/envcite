@@ -89,6 +89,34 @@ def test_statements_come_back_typed(conn: Conn, tmp_path: Path, reasoning_stub: 
     )
 
 
+def test_a_belonging_comes_back_with_the_definition_it_rests_on(
+    conn: Conn, tmp_path: Path, reasoning_stub: Stub
+) -> None:
+    from tests.test_reasoning import _load_belonging
+
+    _first(conn, tmp_path, _law_v1())
+    _load_belonging(conn)
+    conn.commit()
+    request = reasoning_pb2.EvaluateRequest(
+        conduct_on="2019-01-01",
+        decided_on="2019-06-01",
+        facts=[
+            reasoning_pb2.Fact(concept="discharging", values=[reasoning_pb2.FactValue(flag=True)]),
+            reasoning_pb2.Fact(
+                concept="industry", values=[reasoning_pb2.FactValue(concept="factory")]
+            ),
+        ],
+    )
+
+    response = reasoning_stub.Evaluate(request, metadata=call_metadata())
+
+    (used,) = response.at_decision.definitions_used
+    assert used.term == "受管制事業"
+    assert list(used.members) == ["工廠"]
+    assert used.version_iri.startswith("https://envcite/tw/law/")
+    assert used.version_iri.endswith("/art_1")  # 定義所讀自的條文版本
+
+
 def test_a_violation_is_a_candidate_with_its_source(
     conn: Conn, tmp_path: Path, reasoning_stub: Stub
 ) -> None:

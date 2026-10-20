@@ -214,6 +214,17 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                 },
                 Sources = { new StatementSource { StatementId = 7, VersionIri = "https://envcite/tw/law/O0020001/2018-08-01/zho/art_32" } },
                 UncoveredLawIds = { "O0040001" },
+                DefinitionsUsed =
+                {
+                    new DefinitionUse
+                    {
+                        ConditionId = 31,
+                        DefinitionId = 5,
+                        VersionIri = "https://envcite/tw/law/O0020001/2018-08-01/zho/art_2/para_1/pt_1",
+                        Term = "事業",
+                        Members = { "工廠", "礦場" },
+                    },
+                },
             };
             return Task.FromResult(new EvaluateResponse
             {

@@ -279,3 +279,48 @@ def test_a_missing_concept_value_is_listed_and_contradictory_ones_are_reported(
     assert both.verdicts == {duty: "undetermined"}
     assert ("contradictory_fact", "industry") in both.problems
     assert both.missing == ()
+
+
+def _definition_ids(conn: Conn) -> dict[str, int]:
+    return {
+        str(code): int(str(did))
+        for code, did in conn.execute(
+            "SELECT k.code, t.id FROM annotation.term_definition AS t"
+            "  JOIN vocab.concept AS k ON k.id = t.term_concept_id"
+        )
+    }
+
+
+def test_the_trace_names_every_definition_a_belonging_went_through(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """「甲屬於乙」可經好幾則定義遞移成立：依據軌跡列出全部，沒被定義涵蓋的沒有可指的定義。"""
+    _first(conn, tmp_path, _law_v1())
+    duty = _load_belonging(conn)
+    chain = _doc()
+    chain["scheme"] = {"code": f"def.{LAW}", "title": "本法用語", "law": LAW}
+    chain["concepts"] = [
+        {"code": "factory", "label": "工廠"},
+        {"code": "steel_mill", "label": "鋼鐵廠"},
+    ]
+    chain["definitions"] = [
+        {"id": "d2", "law": LAW, "path": "art_1", "text": "甲一", "term": "factory",
+         "definition": "指鋼鐵廠", "members": ["steel_mill"]}
+    ]  # fmt: skip
+    load(conn, chain)
+    ids = _definition_ids(conn)
+    row = conn.execute(
+        "SELECT c.id FROM annotation.statement_condition AS c"
+        "  JOIN vocab.concept AS k ON k.id = c.concept_id WHERE k.code = 'industry'"
+    ).fetchone()
+    assert row is not None
+    cond = int(str(row[0]))
+
+    direct = evaluate(conn, BEFORE, {"discharging": 1, "industry": "factory"})
+    chained = evaluate(conn, BEFORE, {"discharging": 1, "industry": "steel_mill"})
+    outside = evaluate(conn, BEFORE, {"discharging": 1, "industry": "school"})
+
+    assert chained.verdicts == {duty: "compliant"}
+    assert direct.definitions_used == ((cond, ids["regulated"]),)
+    assert set(chained.definitions_used) == {(cond, ids["regulated"]), (cond, ids["factory"])}
+    assert outside.definitions_used == ()

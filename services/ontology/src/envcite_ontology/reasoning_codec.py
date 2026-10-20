@@ -191,7 +191,10 @@ def _problem(kind: str, subject: int | str) -> pb.Problem:
 
 
 def outcome(
-    result: Result, sources: Mapping[int, str], uncovered: Iterable[str] = ()
+    result: Result,
+    sources: Mapping[int, str],
+    uncovered: Iterable[str] = (),
+    definitions: Mapping[int, tuple[str, str, list[str]]] | None = None,
 ) -> pb.Outcome:
     out = pb.Outcome(
         verdicts=[
@@ -246,6 +249,17 @@ def outcome(
             if i in sources
         ],
         uncovered_law_ids=list(uncovered),
+        definitions_used=[
+            pb.DefinitionUse(
+                condition_id=c,
+                definition_id=d,
+                version_iri=known[0],
+                term=known[1],
+                members=known[2],
+            )
+            for c, d in sorted(result.definitions_used)
+            if (known := (definitions or {}).get(d)) is not None
+        ],
     )
     if result.one_act is not None:
         out.one_act.CopyFrom(

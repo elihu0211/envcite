@@ -53,7 +53,7 @@ _CONDITIONS = """
 """
 
 _DEFINITIONS = """
-    SELECT lr.id, tk.code, mk.code
+    SELECT lr.id, tk.code, mk.code, t.id
       FROM corpus.legal_resource AS lr
      CROSS JOIN LATERAL annotation.definitions_at(lr.id, %(lang)s, %(on)s) AS d
       JOIN annotation.term_definition AS t ON t.id = d.definition_id
@@ -144,8 +144,9 @@ def statement_facts(
                 out.append(f"thr_src({cid},{source[1]}).")
 
     # 用語定義只及於本法：成員關係帶法規編號，推論只在要件所屬的法規內使用。
-    for law_id, term, member in conn.execute(_DEFINITIONS, params):
+    for law_id, term, member, definition_id in conn.execute(_DEFINITIONS, params):
         out.append(f"defmember({law_id},{q(str(term))},{q(str(member))}).")
+        out.append(f"defsrc({law_id},{q(str(term))},{q(str(member))},{definition_id}).")
     for sid, action in conn.execute(_ACTIONS, ids_param):
         out.append(f"action({sid},{q(str(action))}).")
     for exception, excluded in conn.execute(_EXCEPTIONS, ids_param):

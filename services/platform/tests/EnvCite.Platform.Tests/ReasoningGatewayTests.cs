@@ -14,7 +14,10 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
 
     private static EvaluateReasoningRequest Request(string conductOn = "2020-01-01", string decidedOn = "2020-06-01") =>
         new(conductOn, decidedOn,
-            [new FactDto("effluent_cod", ["120"], null), new FactDto("discharging", null, [true])],
+            [
+                new FactDto("effluent_cod", ["120"], null), new FactDto("discharging", null, [true]),
+                new FactDto("industry", null, null, ["factory"]),
+            ],
             new AdministrativePenaltyFactsDto(null, true, null, 15, null, null, null, null, null, null, null, null, null, null, null, null),
             "2020-01-05", null);
 
@@ -32,6 +35,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal(("2020-01-01", "2020-06-01", "2020-01-05"), (sent.ConductOn, sent.DecidedOn, sent.ConductEndedOn));
         Assert.Equal("120", sent.Facts[0].Values[0].Number.Value);
         Assert.True(sent.Facts[1].Values[0].Flag);
+        Assert.Equal("factory", sent.Facts[2].Values[0].Concept); // 概念值事實原樣對映
         Assert.True(sent.AdministrativePenaltyFacts.HasNegligence);
         Assert.False(sent.AdministrativePenaltyFacts.HasIntent); // 省略 = 未知，不是「否」
         Assert.Equal(15, sent.AdministrativePenaltyFacts.Age);
@@ -50,6 +54,10 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal(ExcuseDto.UnderFourteen, outcome.General.Unpunished[0].Excuse);
         Assert.Equal([8L], outcome.General.TimeBarred);
         Assert.Equal(["O0040001"], outcome.UncoveredLawIds);
+        var used = Assert.Single(outcome.DefinitionsUsed);
+        Assert.Equal((31L, 5L, "事業"), (used.ConditionId, used.DefinitionId, used.Term));
+        Assert.EndsWith("/art_2/para_1/pt_1", used.Uri);
+        Assert.Equal(["工廠", "礦場"], used.Members);
         Assert.Equal("2020-01-01", result.Earlier[0].FirstDay);
         Assert.Contains(factory.Ontology.ReceivedMetadata, m =>
             m.GetValue("x-tenant-id") == tenant.Identifier);
@@ -117,6 +125,18 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("reason-number");
         using var client = factory.CreateTenantClient(key.Key);
         var request = Request() with { Facts = [new FactDto("effluent_cod", [number], null)] };
+
+        using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ABlankConceptValueIs400BeforeTheInternalServiceIsCalled()
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync("reason-blankconcept");
+        using var client = factory.CreateTenantClient(key.Key);
+        var request = Request() with { Facts = [new FactDto("industry", null, null, [" "])] };
 
         using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
 

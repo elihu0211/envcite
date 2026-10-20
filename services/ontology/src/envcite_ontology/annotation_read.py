@@ -76,6 +76,35 @@ _SOURCES = """
 """
 
 
+_DEFINITION_SOURCES = """
+    SELECT t.id, corpus.version_iri(r.version_id), tk.name,
+           coalesce((SELECT array_agg(mk.name ORDER BY mk.name)
+                       FROM annotation.term_definition_member AS m
+                       JOIN vocab.concept AS mk ON mk.id = m.member_concept_id
+                      WHERE m.definition_id = t.id), '{}')
+      FROM corpus.legal_resource AS lr
+     CROSS JOIN LATERAL annotation.definitions_at(lr.id, %(language)s, %(on)s) AS r
+      JOIN annotation.term_definition AS t ON t.id = r.definition_id
+      JOIN vocab.concept AS tk ON tk.id = t.term_concept_id
+     WHERE t.id = ANY(%(ids)s)
+"""
+
+
+def definition_sources(
+    conn: Conn, definition_ids: Collection[int], on: date
+) -> dict[int, tuple[str, str, list[str]]]:
+    """定義於 `on` 的出處：（版本 IRI，用語，成員），與推論讀的是同一個 `definitions_at`。"""
+    if not definition_ids:
+        return {}
+    rows = conn.execute(
+        _DEFINITION_SOURCES, {"language": LANGUAGE, "on": on, "ids": sorted(definition_ids)}
+    ).fetchall()
+    return {
+        cast(int, did): (str(iri), str(term), [str(m) for m in cast("list[str]", members)])
+        for did, iri, term, members in rows
+    }
+
+
 def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListStatementsResponse:
     """資源 `resource_id` 在 `on`（None 為今日）有效、已確認的陳述。"""
     params = {"resource": resource_id, "language": LANGUAGE, "on": on or date.today()}

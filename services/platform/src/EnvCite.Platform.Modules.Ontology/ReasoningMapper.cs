@@ -39,6 +39,16 @@ internal static class ReasoningMapper
                 f.Values.Add(new FactValue { Flag = flag });
             }
 
+            foreach (var concept in fact.Concepts ?? [])
+            {
+                if (string.IsNullOrWhiteSpace(concept))
+                {
+                    throw new ArgumentException($"a concept value of fact '{fact.Concept}' is blank.");
+                }
+
+                f.Values.Add(new FactValue { Concept = concept });
+            }
+
             if (f.Values.Count == 0)
             {
                 throw new ArgumentException($"fact '{fact.Concept}' has no values.");
@@ -105,7 +115,9 @@ internal static class ReasoningMapper
             [.. general.PresumedAgentFault],
             [.. general.TimeBarred]),
         [.. o.Sources.Select(s => new StatementSourceDto(s.StatementId, s.VersionIri))],
-        [.. o.UncoveredLawIds]);
+        [.. o.UncoveredLawIds],
+        [.. o.DefinitionsUsed.Select(d => new DefinitionUseDto(
+            d.ConditionId, d.DefinitionId, d.VersionIri, d.Term, [.. d.Members]))]);
 
     private static VerdictDto Map(Verdict v) => v switch
     {

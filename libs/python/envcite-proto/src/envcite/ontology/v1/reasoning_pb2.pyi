@@ -1043,6 +1043,7 @@ class Outcome(_message.Message):
     GENERAL_FIELD_NUMBER: _builtins.int
     SOURCES_FIELD_NUMBER: _builtins.int
     UNCOVERED_LAW_IDS_FIELD_NUMBER: _builtins.int
+    DEFINITIONS_USED_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def verdicts(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementVerdict]: ...
     @_builtins.property
@@ -1104,6 +1105,12 @@ class Outcome(_message.Message):
         沒有這樣的規定」**不同**。語料涵蓋該日時為空。
         """
 
+    @_builtins.property
+    def definitions_used(self) -> _containers.RepeatedCompositeFieldContainer[Global___DefinitionUse]:
+        """概念值要件（與用語比較的要件）之所以成立或不成立，所依的用語定義：
+        「甲屬於乙」的依據。沒有定義涵蓋而判為不屬於的要件，不在此（沒有定義可指）。
+        """
+
     def __init__(
         self,
         *,
@@ -1123,16 +1130,52 @@ class Outcome(_message.Message):
         general: Global___GeneralPart | None = ...,
         sources: _abc.Iterable[Global___StatementSource] | None = ...,
         uncovered_law_ids: _abc.Iterable[_builtins.str] | None = ...,
+        definitions_used: _abc.Iterable[Global___DefinitionUse] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "general", b"general", "one_act", b"one_act"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "assessment_used", b"assessment_used", "defeated", b"defeated", "general", b"general", "limit_sources", b"limit_sources", "missing", b"missing", "needs_assessment", b"needs_assessment", "one_act", b"one_act", "penalties", b"penalties", "penalty_defeated", b"penalty_defeated", "problems", b"problems", "sources", b"sources", "trace", b"trace", "uncovered_law_ids", b"uncovered_law_ids", "unresolved_conflicts", b"unresolved_conflicts", "unresolved_penalty_overlaps", b"unresolved_penalty_overlaps", "verdicts", b"verdicts"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "assessment_used", b"assessment_used", "defeated", b"defeated", "definitions_used", b"definitions_used", "general", b"general", "limit_sources", b"limit_sources", "missing", b"missing", "needs_assessment", b"needs_assessment", "one_act", b"one_act", "penalties", b"penalties", "penalty_defeated", b"penalty_defeated", "problems", b"problems", "sources", b"sources", "trace", b"trace", "uncovered_law_ids", b"uncovered_law_ids", "unresolved_conflicts", b"unresolved_conflicts", "unresolved_penalty_overlaps", b"unresolved_penalty_overlaps", "verdicts", b"verdicts"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     _WhichOneofReturnType__one_act: _TypeAlias = _typing.Literal["one_act"]  # noqa: Y015
     _WhichOneofArgType__one_act: _TypeAlias = _typing.Literal["_one_act", b"_one_act"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType__one_act) -> _WhichOneofReturnType__one_act | None: ...
 
 Global___Outcome: _TypeAlias = Outcome  # noqa: Y015
+
+@_typing.final
+class DefinitionUse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    CONDITION_ID_FIELD_NUMBER: _builtins.int
+    DEFINITION_ID_FIELD_NUMBER: _builtins.int
+    VERSION_IRI_FIELD_NUMBER: _builtins.int
+    TERM_FIELD_NUMBER: _builtins.int
+    MEMBERS_FIELD_NUMBER: _builtins.int
+    condition_id: _builtins.int
+    """要件識別碼。"""
+    definition_id: _builtins.int
+    version_iri: _builtins.str
+    """定義所讀自的條文版本之 IRI。"""
+    term: _builtins.str
+    """被定義的用語與它明文涵蓋的成員（受控概念的名稱）。"""
+    @_builtins.property
+    def members(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    def __init__(
+        self,
+        *,
+        condition_id: _builtins.int = ...,
+        definition_id: _builtins.int = ...,
+        version_iri: _builtins.str = ...,
+        term: _builtins.str = ...,
+        members: _abc.Iterable[_builtins.str] | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["condition_id", b"condition_id", "definition_id", b"definition_id", "members", b"members", "term", b"term", "version_iri", b"version_iri"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___DefinitionUse: _TypeAlias = DefinitionUse  # noqa: Y015
 
 @_typing.final
 class StatementVerdict(_message.Message):

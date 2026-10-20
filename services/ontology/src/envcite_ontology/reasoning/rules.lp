@@ -2,6 +2,7 @@
 % 事實由 facts.py 自資料庫產生，案件事實由呼叫端提供。
 % 輸入：statement/3 cond/7 thr/2 thr_src/2 delegated/1 exception/2 override/3 sanction/5 action/2 src/2（由 PG 依 as-of 日期產生）
 %       vcond/2（與概念值比較的要件原子）  stmt_law/2（陳述所屬法規）  defmember/3（法規內用語定義涵蓋的成員）
+%       defsrc/4（同上，另帶定義編號，供依據軌跡）
 %       cfact_in/2（案件的概念值事實：概念代碼 → 值概念代碼）
 %       judgement/1（需判斷的要件原子）  unsupported/1（本程式不會比較的要件原子）  repeating/1（按次處罰的罰則）
 %       fact_in/2（案件事實，由呼叫端提供；同一概念可帶多個值，矛盾由下方檢出）
@@ -23,6 +24,12 @@ given(M) :- cfact_in(M,_).
 % 「甲屬於乙」的依據只有該法現行的用語定義（定義只及於本法）；詞彙沒有上下位可用。
 isa(L,X,X) :- stmt_law(_,L), cfact_in(_,X).
 isa(L,X,T) :- defmember(L,T,Y), isa(L,X,Y).
+
+% 依據軌跡：某個值之所以屬於比較的用語，所經過的每一則定義（可能是遞移的）。
+contrib(L,X,T,D) :- defsrc(L,T,Y,D), isa(L,X,Y).
+contrib(L,X,T,D) :- defsrc(L,T,Y,_), isa(L,X,Y), contrib(L,X,Y,D).
+used_def(C,D)    :- vcond(C,V), cond(C,S,_,_,M,_,_), cfact(M,X), stmt_law(S,L),
+                    isa(L,X,V), contrib(L,X,V,D).
 
 prescriptive(S) :- statement(S,prescriptive,_).
 deontic(S,D)    :- statement(S,prescriptive,D).
@@ -234,6 +241,7 @@ problem(unsupported_condition, C) :- unsupported(C).
 #show problem/2.
 #show trace/6.
 #show trace_src/2.
+#show used_def/2.
 #show penalty_defeated/3.
 #show unresolved_penalty_overlap/2.
 #show one_act/2.

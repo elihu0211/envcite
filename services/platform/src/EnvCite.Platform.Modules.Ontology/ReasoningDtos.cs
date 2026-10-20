@@ -8,7 +8,11 @@ namespace EnvCite.Platform.Modules.Ontology;
 /// <param name="Concept">概念代碼（受控詞彙），不可以 <c>ap_</c> 開頭；行政罰法總則的事實放在 <c>administrativePenalty</c>。</param>
 /// <param name="Numbers">數值，十進位文字（如 <c>"100"</c>、<c>"0.5"</c>），不用浮點數。</param>
 /// <param name="Flags">是／否的事實。</param>
-public sealed record FactDto(string Concept, IReadOnlyList<string>? Numbers, IReadOnlyList<bool>? Flags);
+/// <param name="Concepts">概念取某個值概念（例如行業屬於某一類），值為受控概念的代碼；只與以概念比較的要件對得上，
+/// 「屬於」只依該法現行已確認的用語定義判定，沒有定義涵蓋視為不屬於。</param>
+public sealed record FactDto(
+    string Concept, IReadOnlyList<string>? Numbers, IReadOnlyList<bool>? Flags,
+    IReadOnlyList<string>? Concepts = null);
 
 /// <summary>
 /// 行政罰法總則所依的事實。<b>省略欄位是「未知」，不是「否」</b>：條文有些規定只在已知為否時才適用，
@@ -179,6 +183,13 @@ public sealed record GeneralPartDto(
 /// <param name="Uri">條文版本的網址。</param>
 public sealed record StatementSourceDto(long StatementId, string Uri);
 
+/// <summary>概念值要件之所以成立或不成立所依的一則用語定義：「甲屬於乙」的依據。</summary>
+/// <param name="Uri">定義所讀自的條文版本的網址。</param>
+/// <param name="Term">被定義的用語。</param>
+/// <param name="Members">定義明文涵蓋的成員。</param>
+public sealed record DefinitionUseDto(
+    long ConditionId, long DefinitionId, string Uri, string Term, IReadOnlyList<string> Members);
+
 /// <summary>
 /// 某一組法律的推論結果。全部是<b>候選</b>與依據：系統不裁量、不選「最有利」、不在沒有明文優先時消解衝突。
 /// </summary>
@@ -186,6 +197,7 @@ public sealed record StatementSourceDto(long StatementId, string Uri);
 /// <param name="AssessmentUsed">結論倚賴了呼叫端對不確定法律概念的判斷。</param>
 /// <param name="UncoveredLawIds">當日已制定、但語料沒有當時版本的法規（pcode）；其規定不在結果裡，
 /// 不代表當時沒有這些規定。</param>
+/// <param name="DefinitionsUsed">概念值要件所依的用語定義；沒有定義涵蓋而判為不屬於的，沒有定義可指，不在此。</param>
 public sealed record OutcomeDto(
     IReadOnlyList<StatementVerdictDto> Verdicts, IReadOnlyList<PenaltyCandidateDto> Penalties,
     FineIntervalDto? OneAct, IReadOnlyList<GapDto> Missing, IReadOnlyList<GapDto> NeedsAssessment,
@@ -193,7 +205,8 @@ public sealed record OutcomeDto(
     IReadOnlyList<StatementPairDto> UnresolvedConflicts, IReadOnlyList<DefeatDto> Defeated,
     IReadOnlyList<StatementPairDto> UnresolvedPenaltyOverlaps, IReadOnlyList<DefeatDto> PenaltyDefeated,
     IReadOnlyList<TraceEntryDto> Trace, IReadOnlyList<LimitSourceDto> LimitSources, GeneralPartDto General,
-    IReadOnlyList<StatementSourceDto> Sources, IReadOnlyList<string> UncoveredLawIds);
+    IReadOnlyList<StatementSourceDto> Sources, IReadOnlyList<string> UncoveredLawIds,
+    IReadOnlyList<DefinitionUseDto> DefinitionsUsed);
 
 /// <param name="FirstDay">這一組陳述開始適用的第一天（<c>YYYY-MM-DD</c>）。</param>
 public sealed record EarlierOutcomeDto(string FirstDay, OutcomeDto Outcome);

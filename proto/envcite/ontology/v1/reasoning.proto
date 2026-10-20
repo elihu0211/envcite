@@ -412,6 +412,24 @@ message Outcome {
   // 整合文字與沿革，沒有更早的文字。它們的規定不在本結果裡，這與「該法規當時
   // 沒有這樣的規定」**不同**。語料涵蓋該日時為空。
   repeated string uncovered_law_ids = 16;
+
+  // 概念值要件（與用語比較的要件）之所以成立或不成立，所依的用語定義：
+  // 「甲屬於乙」的依據。沒有定義涵蓋而判為不屬於的要件，不在此（沒有定義可指）。
+  repeated DefinitionUse definitions_used = 17;
+}
+
+message DefinitionUse {
+  // 要件識別碼。
+  int64 condition_id = 1;
+
+  int64 definition_id = 2;
+
+  // 定義所讀自的條文版本之 IRI。
+  string version_iri = 3;
+
+  // 被定義的用語與它明文涵蓋的成員（受控概念的名稱）。
+  string term = 4;
+  repeated string members = 5;
 }
 
 message StatementVerdict {

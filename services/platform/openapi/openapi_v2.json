@@ -728,6 +728,46 @@
           }
         }
       },
+      "DefinitionUseDto": {
+        "required": [
+          "conditionId",
+          "definitionId",
+          "uri",
+          "term",
+          "members"
+        ],
+        "type": "object",
+        "properties": {
+          "conditionId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "definitionId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "term": {
+            "type": "string"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "EarlierOutcomeDto": {
         "required": [
           "firstDay",
@@ -837,6 +877,15 @@
             ],
             "items": {
               "type": "boolean"
+            }
+          },
+          "concepts": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
             }
           }
         }
@@ -1123,7 +1172,8 @@
           "limitSources",
           "general",
           "sources",
-          "uncoveredLawIds"
+          "uncoveredLawIds",
+          "definitionsUsed"
         ],
         "type": "object",
         "properties": {
@@ -1222,6 +1272,12 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "definitionsUsed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DefinitionUseDto"
             }
           }
         }

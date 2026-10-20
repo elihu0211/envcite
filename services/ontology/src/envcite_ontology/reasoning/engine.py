@@ -79,6 +79,8 @@ class Result:
     trace: tuple[Trace, ...]
     limit_sources: Mapping[int, int]
     general: General
+    #: （要件編號，定義編號）：概念值要件所依的用語定義
+    definitions_used: tuple[tuple[int, int], ...] = ()
 
 
 def _py(symbol: clingo.Symbol) -> Any:
@@ -169,4 +171,5 @@ def evaluate(
             presumed=tuple((int(p), str(g)) for p, g in get("presumed")),
             time_barred=tuple(int(p) for (p,) in get("time_barred")),
         ),
+        definitions_used=tuple((int(c), int(d)) for c, d in get("used_def")),
     )
