@@ -277,6 +277,11 @@ message FactValue {
   oneof value {
     bool flag = 1;
     Decimal number = 2;
+
+    // 概念取某個值概念（例如行業屬於某一類），值為受控概念的代碼。只與以
+    // value_concept 比較的要件對得上；「屬於」只依該法現行的用語定義判定，
+    // 沒有定義涵蓋的值視為不屬於。
+    string concept = 3;
   }
 }
 

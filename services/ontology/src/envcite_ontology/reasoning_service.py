@@ -118,7 +118,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         context: grpc.ServicerContext,
         conduct_on: date,
         decided_on: date,
-        case: dict[str, float | list[float]],
+        case: dict[str, float | list[float | str]],
     ) -> pb.EvaluateResponse:
         try:
             with self._store.read_connection(timeout=remaining_seconds(context)) as conn:

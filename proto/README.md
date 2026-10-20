@@ -146,7 +146,7 @@ flowchart TD
 
 - **`ListStatements(law_id, as_of)`**：某日有效、已確認的陳述。`Statement` 的要件是析取範式（`Requirement.any_of` 是「或」，`Disjunct.all_of` 是「且」）；委由授權命令的門檻值以 `Delegation` 表示，不在這裡解析。
 - **`Evaluate`**：給 `conduct_on`（行為日）、`decided_on`（裁處日）與案件事實。回傳 `at_decision`（裁處時之法律，行政罰法第 5 條的預設），`earlier` 是行為日到裁處日之間陳述組與裁處時不同的法律，**不替呼叫端選「最有利」**。
-  - 案件事實：一般概念用 `Fact`（一個概念可有多個值，矛盾會被回報，不被消解）；行政罰法總則的事實用 `AdministrativePenaltyFacts`，欄位缺席是「未知」，不是「否」。代碼以 `ap_` 開頭的 `Fact` 被拒絕（`RESERVED_CONCEPT`）。
+  - 案件事實：一般概念用 `Fact`（一個概念可有多個值，矛盾會被回報，不被消解）；值是數字、布林，或 `concept`（概念取某個值概念，與以 `value_concept` 比較的要件對應，只有 `eq`／`ne`；「屬於」只依該法現行的用語定義判定，沒有定義涵蓋視為不屬於）；行政罰法總則的事實用 `AdministrativePenaltyFacts`，欄位缺席是「未知」，不是「否」。代碼以 `ap_` 開頭的 `Fact` 被拒絕（`RESERVED_CONCEPT`）。
   - 結論：`Verdict`、`PenaltyCandidate`、缺的事實（`missing`）、需判斷的要件（`needs_assessment`）、矛盾與未決的衝突都分開列；`sources` 給每個陳述所讀的條文版本 IRI。
   - `LEGAL_EFFECT_ORDER`（改善命令等）不是行政罰，行政罰法總則的排除、減輕、時效與一行為不適用於它；`PenaltyCandidate.discretionary` 是條文寫「得」的效果裁量，與要件的 `needs_assessment` 是兩個層次。
   - **語料的歷史有起點。** 全國法規資料庫只有現行全文，早於語料持有的第一個版本的日子，該法規的規定不在結果裡。`Outcome.uncovered_law_ids` 列出「那天已制定、但語料沒有當時版本」的法規：它們的規定缺席，不代表當時沒有規定。`earlier` 裡出現空的 `verdicts` 時先看這個欄位，不要解讀成行為時合規。

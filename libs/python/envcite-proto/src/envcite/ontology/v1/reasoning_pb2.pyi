@@ -761,7 +761,13 @@ class FactValue(_message.Message):
 
     FLAG_FIELD_NUMBER: _builtins.int
     NUMBER_FIELD_NUMBER: _builtins.int
+    CONCEPT_FIELD_NUMBER: _builtins.int
     flag: _builtins.bool
+    concept: _builtins.str
+    """概念取某個值概念（例如行業屬於某一類），值為受控概念的代碼。只與以
+    value_concept 比較的要件對得上；「屬於」只依該法現行的用語定義判定，
+    沒有定義涵蓋的值視為不屬於。
+    """
     @_builtins.property
     def number(self) -> Global___Decimal: ...
     def __init__(
@@ -769,12 +775,13 @@ class FactValue(_message.Message):
         *,
         flag: _builtins.bool = ...,
         number: Global___Decimal | None = ...,
+        concept: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["flag", b"flag", "number", b"number", "value", b"value"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["concept", b"concept", "flag", b"flag", "number", b"number", "value", b"value"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["flag", b"flag", "number", b"number", "value", b"value"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["concept", b"concept", "flag", b"flag", "number", b"number", "value", b"value"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_value: _TypeAlias = _typing.Literal["flag", "number"]  # noqa: Y015
+    _WhichOneofReturnType_value: _TypeAlias = _typing.Literal["flag", "number", "concept"]  # noqa: Y015
     _WhichOneofArgType_value: _TypeAlias = _typing.Literal["value", b"value"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_value) -> _WhichOneofReturnType_value | None: ...
 

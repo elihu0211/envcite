@@ -15,13 +15,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 
 import psycopg
 
 from envcite_ontology.reasoning.engine import Result, evaluate
+from envcite_ontology.reasoning.facts import Case
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -114,7 +114,7 @@ def evaluate_across(
     conn: Conn,
     conduct_on: date,
     decided_on: date,
-    case: Mapping[str, float | Sequence[float]],
+    case: Case,
     language: str = "zho",
 ) -> Transition:
     """裁處時之法律，加行為日到裁處日之間每組不同的陳述；裁處權時效一律對裁處日。"""

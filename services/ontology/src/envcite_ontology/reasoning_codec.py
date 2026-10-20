@@ -263,9 +263,9 @@ def case_facts(
     validator: errors.Validator,
     conduct_ended: date | None,
     result_on: date | None,
-) -> dict[str, float | list[float]]:
+) -> dict[str, float | list[float | str]]:
     """請求的案件事實轉成推論程式的輸入。欄位錯誤記在 `validator`，不丟例外。"""
-    several: dict[str, list[float]] = {}
+    several: dict[str, list[float | str]] = {}
     for i, fact in enumerate(request.facts):
         where = f"facts[{i}]"
         if not fact.concept:
@@ -282,11 +282,18 @@ def case_facts(
         if not fact.values:
             validator.add(f"{where}.values", errors.EMPTY, "at least one value is required")
             continue
-        values: list[float] = []
+        values: list[float | str] = []
         for j, v in enumerate(fact.values):
             kind = v.WhichOneof("value")
             if kind == "flag":
                 values.append(1.0 if v.flag else 0.0)
+            elif kind == "concept":
+                if not v.concept:
+                    validator.add(
+                        f"{where}.values[{j}].concept", errors.EMPTY, "concept is required"
+                    )
+                    continue
+                values.append(v.concept)
             elif kind == "number":
                 try:
                     number = Decimal(v.number.value)
@@ -301,10 +308,12 @@ def case_facts(
                     continue
                 values.append(float(number))
             else:
-                validator.add(f"{where}.values[{j}]", errors.UNSET, "flag or number is required")
+                validator.add(
+                    f"{where}.values[{j}]", errors.UNSET, "flag, number or concept is required"
+                )
         if values:
             several.setdefault(fact.concept, []).extend(values)
-    case: dict[str, float | list[float]] = dict(several)
+    case: dict[str, float | list[float | str]] = dict(several)
     penalty = request.administrative_penalty_facts
     for name in _BOOLEAN_FACTS:
         if penalty.HasField(name):

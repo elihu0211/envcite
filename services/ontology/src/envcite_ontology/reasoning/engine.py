@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from importlib import resources
@@ -92,7 +92,7 @@ def _py(symbol: clingo.Symbol) -> Any:
 def evaluate(
     conn: Conn,
     as_of: date,
-    case: Mapping[str, float | Sequence[float]],
+    case: facts.Case,
     language: str = "zho",
     *,
     include_unsettled: bool = False,

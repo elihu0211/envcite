@@ -17,6 +17,10 @@ import psycopg
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
+# 案件事實的值：數字，或概念代碼（概念取某個值概念）；同一概念可帶多個值。
+CaseValue = float | str
+Case = Mapping[str, CaseValue | Sequence[CaseValue]]
+
 
 def q(text: str) -> str:
     """ASP 字串常數。"""
@@ -28,7 +32,8 @@ def milli(value: Decimal | float | int) -> int:
 
 
 _STATEMENTS = """
-    SELECT s.id, s.statement_kind::text, s.norm_modality::text, corpus.version_iri(r.version_id)
+    SELECT s.id, s.statement_kind::text, s.norm_modality::text, corpus.version_iri(r.version_id),
+           lr.id
       FROM corpus.legal_resource AS lr
      CROSS JOIN LATERAL annotation.{resolver}(lr.id, %(lang)s, %(on)s) AS r
       JOIN annotation.statement AS s ON s.id = r.statement_id
@@ -39,11 +44,23 @@ _CONDITIONS = """
     SELECT c.id, c.statement_id, c.condition_role::text, c.disjunct_no, k.code,
            c.comparator::text, c.negated,
            c.needs_assessment, c.threshold, c.delegate_provision_id IS NOT NULL,
-           c.value_concept_id IS NOT NULL
+           vk.code
       FROM annotation.statement_condition AS c
       JOIN vocab.concept AS k ON k.id = c.concept_id
+      LEFT JOIN vocab.concept AS vk ON vk.id = c.value_concept_id
      WHERE c.statement_id = ANY(%(ids)s) AND c.condition_role <> 'limit'
      ORDER BY c.id
+"""
+
+_DEFINITIONS = """
+    SELECT lr.id, tk.code, mk.code
+      FROM corpus.legal_resource AS lr
+     CROSS JOIN LATERAL annotation.definitions_at(lr.id, %(lang)s, %(on)s) AS d
+      JOIN annotation.term_definition AS t ON t.id = d.definition_id
+      JOIN vocab.concept AS tk ON tk.id = t.term_concept_id
+      JOIN annotation.term_definition_member AS m ON m.definition_id = t.id
+      JOIN vocab.concept AS mk ON mk.id = m.member_concept_id
+     ORDER BY lr.id, tk.code, mk.code
 """
 
 _SOURCES = "SELECT threshold, statement_id FROM annotation.threshold_source_at(%s, %s, %s)"
@@ -85,9 +102,10 @@ def statement_facts(
     resolver = "anchored_statements_at" if include_unsettled else "statement_versions_at"
     statements = conn.execute(_STATEMENTS.format(resolver=resolver), params).fetchall()
     ids = [cast(int, row[0]) for row in statements]
-    for sid, kind, deontic, iri in statements:
+    for sid, kind, deontic, iri, law_id in statements:
         out.append(f"statement({sid},{kind},{deontic or 'none'}).")
         out.append(f"src({sid},{q(str(iri))}).")
+        out.append(f"stmt_law({sid},{law_id}).")
     if not ids:
         return "\n".join(out)
     ids_param = {"ids": ids}
@@ -104,15 +122,18 @@ def statement_facts(
             judgement,
             threshold,
             delegated,
-            by_concept,
+            value_concept,
         ) = row
         out.append(
             f"cond({cid},{sid},{role},{clause},{q(str(code))},{comparator},{int(bool(negated))})."
         )
         if judgement:
             out.append(f"judgement({cid}).")
-        if by_concept:
-            out.append(f"unsupported({cid}).")  # 推論程式不比較概念值
+        if value_concept is not None:
+            if comparator in ("eq", "ne"):
+                out.append(f"vcond({cid},{q(str(value_concept))}).")
+            else:
+                out.append(f"unsupported({cid}).")  # 概念值只有屬於與否，沒有大小
         elif threshold is not None:
             out.append(f"thr({cid},{milli(cast(Decimal, threshold))}).")
         elif delegated:
@@ -122,6 +143,9 @@ def statement_facts(
                 out.append(f"thr({cid},{milli(cast(Decimal, source[0]))}).")
                 out.append(f"thr_src({cid},{source[1]}).")
 
+    # 用語定義只及於本法：成員關係帶法規編號，推論只在要件所屬的法規內使用。
+    for law_id, term, member in conn.execute(_DEFINITIONS, params):
+        out.append(f"defmember({law_id},{q(str(term))},{q(str(member))}).")
     for sid, action in conn.execute(_ACTIONS, ids_param):
         out.append(f"action({sid},{q(str(action))}).")
     for exception, excluded in conn.execute(_EXCEPTIONS, ids_param):
@@ -141,18 +165,25 @@ def statement_facts(
 _ACCRUAL = ("ap_conduct_ended", "ap_result_on")
 
 
-def case_facts(case: Mapping[str, float | Sequence[float]]) -> str:
-    """案件事實：概念代碼 → 值（同一概念可有多個值，矛盾由推論程式檢出）。"""
+def case_facts(case: Case) -> str:
+    """案件事實：概念代碼 → 值（同一概念可有多個值，矛盾由推論程式檢出）。
+
+    數字是千分位的 `fact_in`；字串是概念值（行業屬某行業），寫成 `cfact_in`。
+    """
     out: list[str] = []
     for code, value in case.items():
         if code in _ACCRUAL:
             continue
-        values = [value] if isinstance(value, int | float) else list(value)
-        out.extend(f"fact_in({q(code)},{milli(v)})." for v in values)
+        values = [value] if isinstance(value, int | float | str) else list(value)
+        for v in values:
+            if isinstance(v, str):
+                out.append(f"cfact_in({q(code)},{q(v)}).")
+            else:
+                out.append(f"fact_in({q(code)},{milli(v)}).")
     return "\n".join(out)
 
 
-def limitation(as_of: date, case: Mapping[str, float | Sequence[float]]) -> str:
+def limitation(as_of: date, case: Case) -> str:
     """裁處日與三年期間末日；起算日不明或無效則不給末日（推論程式不標已逾）。
 
     始日不算入，末日為三年後相當日的前一日，無相當日則為該月末日（民法第 120 條第 2 項、
@@ -164,7 +195,7 @@ def limitation(as_of: date, case: Mapping[str, float | Sequence[float]]) -> str:
         if code not in case:
             continue
         raw = case[code]
-        day = None if isinstance(raw, Sequence) else _calendar(raw)
+        day = None if isinstance(raw, str | Sequence) else _calendar(raw)
         if day is None:
             lines.append(f"problem(bad_date,{q(code)}).")
         else:

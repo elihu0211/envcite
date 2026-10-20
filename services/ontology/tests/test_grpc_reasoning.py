@@ -196,6 +196,28 @@ def test_every_invalid_field_is_reported_at_once(reasoning_stub: Stub) -> None:
     ]
 
 
+def test_a_concept_value_fact_is_accepted_and_an_empty_one_is_reported(
+    conn: Conn, tmp_path: Path, reasoning_stub: Stub
+) -> None:
+    _committed(conn, tmp_path)
+    ok = _case()
+    ok.facts.append(
+        reasoning_pb2.Fact(concept="industry", values=[reasoning_pb2.FactValue(concept="factory")])
+    )
+    reasoning_stub.Evaluate(ok, metadata=call_metadata())
+
+    bad = _case()
+    bad.facts.append(
+        reasoning_pb2.Fact(concept="industry", values=[reasoning_pb2.FactValue(concept="")])
+    )
+    with pytest.raises(grpc.RpcError) as error:
+        reasoning_stub.Evaluate(bad, metadata=call_metadata())
+
+    assert error.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    _, fields = _details(error.value)
+    assert any(f.endswith(".concept") for f in fields)
+
+
 def test_conduct_after_decision_is_a_date_order_violation(reasoning_stub: Stub) -> None:
     with pytest.raises(grpc.RpcError) as error:
         reasoning_stub.Evaluate(

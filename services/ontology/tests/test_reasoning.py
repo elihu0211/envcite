@@ -163,16 +163,17 @@ def test_unreviewed_statements_conclude_nothing(conn: Conn, tmp_path: Path) -> N
     assert evaluate(conn, BEFORE, {"discharging": 1, "cod": 150}).verdicts == {}
 
 
-def test_a_condition_on_a_concept_value_is_reported_not_silently_skipped(
+def test_an_ordering_comparison_on_a_concept_value_is_reported_not_silently_skipped(
     conn: Conn, tmp_path: Path
 ) -> None:
+    """概念值只有屬於與否（eq、ne），沒有大小。"""
     _first(conn, tmp_path, _law_v1())
     by_concept = _plain_duty()
     by_concept["conditions"][1] = {
         "role": "duty",
         "clause": 1,
         "concept": "cod",
-        "comparator": "eq",
+        "comparator": "le",
         "value_concept": "discharging",
     }
     load(conn, _doc(by_concept))
@@ -180,3 +181,101 @@ def test_a_condition_on_a_concept_value_is_reported_not_silently_skipped(
     result = evaluate(conn, BEFORE, {"discharging": 1, "cod": 1})
 
     assert any(kind == "unsupported_condition" for kind, _ in result.problems)
+
+
+def _belonging_rule() -> dict[str, Any]:
+    """義務：排放者的行業須屬於「受管制事業」。"""
+    return {
+        "id": "duty",
+        "law": LAW,
+        "path": "art_1",
+        "text": "甲一",
+        "kind": "prescriptive",
+        "deontic": "obligation",
+        "conditions": [
+            {
+                "role": "scope",
+                "clause": 1,
+                "concept": "discharging",
+                "comparator": "eq",
+                "threshold": 1,
+            },
+            {
+                "role": "duty",
+                "clause": 1,
+                "concept": "industry",
+                "comparator": "eq",
+                "value_concept": "regulated",
+            },
+        ],
+    }
+
+
+def _load_belonging(conn: Conn, *, definition_review: str = "confirmed") -> int:
+    rule = _doc(_belonging_rule())
+    rule["concepts"] = [
+        {"code": "discharging", "label": "排放廢水"},
+        {"code": "industry", "label": "行業"},
+        {"code": "regulated", "label": "受管制事業"},
+    ]
+    duty = load(conn, rule).ids["duty"]
+    # 立法定義：限定在本法的方案，「受管制事業」涵蓋「工廠」。
+    definition = _doc(review=definition_review)
+    definition["scheme"] = {"code": f"def.{LAW}", "title": "本法用語", "law": LAW}
+    definition["concepts"] = [
+        {"code": "regulated", "label": "受管制事業"},
+        {"code": "factory", "label": "工廠"},
+    ]
+    definition["definitions"] = [
+        {
+            "id": "d1",
+            "law": LAW,
+            "path": "art_1",
+            "text": "甲一",
+            "term": "regulated",
+            "definition": "指工廠",
+            "members": ["factory"],
+        }
+    ]
+    load(conn, definition)
+    return duty
+
+
+def test_belonging_follows_the_statutory_definition(conn: Conn, tmp_path: Path) -> None:
+    """「甲屬於乙」只依該法現行的用語定義：被定義涵蓋則屬於，否則不屬於。"""
+    _first(conn, tmp_path, _law_v1())
+    duty = _load_belonging(conn)
+
+    covered = evaluate(conn, BEFORE, {"discharging": 1, "industry": "factory"})
+    outside = evaluate(conn, BEFORE, {"discharging": 1, "industry": "school"})
+
+    assert covered.verdicts == {duty: "compliant"}
+    assert outside.verdicts == {duty: "violation"}
+    assert covered.problems == ()
+
+
+def test_belonging_without_a_confirmed_definition_is_not_assumed(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1())
+    duty = _load_belonging(conn, definition_review="extracted")
+
+    result = evaluate(conn, BEFORE, {"discharging": 1, "industry": "factory"})
+
+    assert result.verdicts == {duty: "violation"}  # 沒有已確認的定義涵蓋，不屬於
+
+
+def test_a_missing_concept_value_is_listed_and_contradictory_ones_are_reported(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1())
+    duty = _load_belonging(conn)
+
+    unknown = evaluate(conn, BEFORE, {"discharging": 1})
+    both = evaluate(conn, BEFORE, {"discharging": 1, "industry": ["factory", "school"]})
+
+    assert unknown.verdicts == {duty: "undetermined"}
+    assert unknown.missing == ((duty, "industry"),)
+    assert both.verdicts == {duty: "undetermined"}
+    assert ("contradictory_fact", "industry") in both.problems
+    assert both.missing == ()

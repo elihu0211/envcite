@@ -1,6 +1,8 @@
 % 通用推論程式：法條不寫成程式，陳述是資料（事實輸入）。數值一律為千分位整數。
 % 事實由 facts.py 自資料庫產生，案件事實由呼叫端提供。
 % 輸入：statement/3 cond/7 thr/2 thr_src/2 delegated/1 exception/2 override/3 sanction/5 action/2 src/2（由 PG 依 as-of 日期產生）
+%       vcond/2（與概念值比較的要件原子）  stmt_law/2（陳述所屬法規）  defmember/3（法規內用語定義涵蓋的成員）
+%       cfact_in/2（案件的概念值事實：概念代碼 → 值概念代碼）
 %       judgement/1（需判斷的要件原子）  unsupported/1（本程式不會比較的要件原子）  repeating/1（按次處罰的罰則）
 %       fact_in/2（案件事實，由呼叫端提供；同一概念可帶多個值，矛盾由下方檢出）
 role(scope;duty).
@@ -11,6 +13,17 @@ role(scope;duty).
 conflicting(M) :- fact_in(M,V1), fact_in(M,V2), V1 < V2.
 fact(M,V)      :- fact_in(M,V), not conflicting(M).
 problem(contradictory_fact, M) :- conflicting(M).
+% ---- 概念值事實：概念取某個值概念（行業屬某行業）；矛盾同樣不擇一 ----
+conflicting_c(M) :- cfact_in(M,V1), cfact_in(M,V2), V1 < V2.
+cfact(M,V)       :- cfact_in(M,V), not conflicting_c(M).
+problem(contradictory_fact, M) :- conflicting_c(M).
+given(M) :- fact_in(M,_).
+given(M) :- cfact_in(M,_).
+
+% 「甲屬於乙」的依據只有該法現行的用語定義（定義只及於本法）；詞彙沒有上下位可用。
+isa(L,X,X) :- stmt_law(_,L), cfact_in(_,X).
+isa(L,X,T) :- defmember(L,T,Y), isa(L,X,Y).
+
 prescriptive(S) :- statement(S,prescriptive,_).
 deontic(S,D)    :- statement(S,prescriptive,D).
 
@@ -28,6 +41,10 @@ raw(C,t) :- cond(C,_,_,_,M,eq,_), thr(C,T), fact(M,V), V == T.
 raw(C,f) :- cond(C,_,_,_,M,eq,_), thr(C,T), fact(M,V), V != T.
 raw(C,t) :- cond(C,_,_,_,M,ne,_), thr(C,T), fact(M,V), V != T.
 raw(C,f) :- cond(C,_,_,_,M,ne,_), thr(C,T), fact(M,V), V == T.
+raw(C,t) :- cond(C,S,_,_,M,eq,_), vcond(C,V), cfact(M,X), stmt_law(S,L), isa(L,X,V).
+raw(C,f) :- cond(C,S,_,_,M,eq,_), vcond(C,V), cfact(M,X), stmt_law(S,L), not isa(L,X,V).
+raw(C,t) :- cond(C,S,_,_,M,ne,_), vcond(C,V), cfact(M,X), stmt_law(S,L), not isa(L,X,V).
+raw(C,f) :- cond(C,S,_,_,M,ne,_), vcond(C,V), cfact(M,X), stmt_law(S,L), isa(L,X,V).
 v(C,t) :- raw(C,t), cond(C,_,_,_,_,_,0).
 v(C,f) :- raw(C,f), cond(C,_,_,_,_,_,0).
 v(C,t) :- raw(C,f), cond(C,_,_,_,_,_,1).
@@ -84,8 +101,8 @@ outcome(S,not_applicable) :- status(S,not_applicable).
 
 
 % 候選規範：案件事實觸及該陳述（或其但書）的任一概念者才輸出，否則整份時點內的陳述都會被列為「無法判定」。
-relevant(S) :- cond(_,S,_,_,M,_,_), fact_in(M,_).
-relevant(S) :- exception(E,S), cond(_,E,_,_,M,_,_), fact_in(M,_).
+relevant(S) :- cond(_,S,_,_,M,_,_), given(M).
+relevant(S) :- exception(E,S), cond(_,E,_,_,M,_,_), given(M).
 verdict(S,V) :- outcome(S,V), relevant(S).
 
 % ---- 連到罰則：只列候選，額度原文由 PG 提供 ----
@@ -113,14 +130,14 @@ unresolved_conflict(S1,S2) :- conflict(S1,S2), not resolved(S1,S2).
 % ---- 缺少的事實與問題 ----
 unk_concept(S,M,C) :- cond(C,S,R,K,M,_,_), unk(C), not clause_f(S,R,K).
 % 缺的是「事實」：只在結論因它而未定時列出；授權解析失敗另列 problem，不冒充缺事實。
-missing(S,M) :- verdict(S,undetermined), unk_concept(S,M,C), not judgement(C), not fact_in(M,_).
-needs_judgement(S,M) :- verdict(S,undetermined), unk_concept(S,M,C), judgement(C), not fact_in(M,_).
-missing(S,M) :- verdict(S,undetermined), exception(E,S), unk_concept(E,M,C), not judgement(C), not fact_in(M,_).
-needs_judgement(S,M) :- verdict(S,undetermined), exception(E,S), unk_concept(E,M,C), judgement(C), not fact_in(M,_).
-missing(S,M) :- verdict(S,conditional_violation), exception(E,S), unk_concept(E,M,C), not judgement(C), not fact_in(M,_).
-needs_judgement(S,M) :- verdict(S,conditional_violation), exception(E,S), unk_concept(E,M,C), judgement(C), not fact_in(M,_).
-missing(P,M)          :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), not judgement(C), not fact_in(M,_).
-needs_judgement(P,M)  :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), judgement(C), not fact_in(M,_).
+missing(S,M) :- verdict(S,undetermined), unk_concept(S,M,C), not judgement(C), not given(M).
+needs_judgement(S,M) :- verdict(S,undetermined), unk_concept(S,M,C), judgement(C), not given(M).
+missing(S,M) :- verdict(S,undetermined), exception(E,S), unk_concept(E,M,C), not judgement(C), not given(M).
+needs_judgement(S,M) :- verdict(S,undetermined), exception(E,S), unk_concept(E,M,C), judgement(C), not given(M).
+missing(S,M) :- verdict(S,conditional_violation), exception(E,S), unk_concept(E,M,C), not judgement(C), not given(M).
+needs_judgement(S,M) :- verdict(S,conditional_violation), exception(E,S), unk_concept(E,M,C), judgement(C), not given(M).
+missing(P,M)          :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), not judgement(C), not given(M).
+needs_judgement(P,M)  :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), judgement(C), not given(M).
 problem(unresolved_delegation, C) :- delegated(C), not thr(C,_).
 
 % ---- 依據軌跡：每個原子的取值、所用門檻值與其來源 ----
@@ -128,7 +145,9 @@ trace(C,S,M,V,T,R) :- cond(C,S,R,_,M,_,_), fact(M,V), thr(C,T), v(C,_).
 trace_src(C,L)     :- thr_src(C,L).
 % 結論用到了呼叫端對需判斷要件的判斷：依據軌跡要標出來，審核者才知道結論倚賴一個判斷。
 judgement_used(S,M) :- cond(C,S,_,_,M,_,_), judgement(C), fact(M,_), v(C,_).
+judgement_used(S,M) :- cond(C,S,_,_,M,_,_), judgement(C), cfact(M,_), v(C,_).
 judgement_used(S,M) :- exception(E,S), cond(C,E,_,_,M,_,_), judgement(C), fact(M,_), v(C,_).
+judgement_used(S,M) :- exception(E,S), cond(C,E,_,_,M,_,_), judgement(C), cfact(M,_), v(C,_).
 
 % ---- 行政罰法總則：排除的是處罰，不是義務（01-02 §4.7） ----
 % 案件事實用保留代碼。布林以正值為是、0 為否；年齡是歲。未提供不等於否定，
