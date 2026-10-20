@@ -18,6 +18,12 @@ from envcite_ontology.settings import DatabaseSettings
 from envcite_ontology.settings import load as load_settings
 from envcite_ontology.verification.config import ConfigError, ModelSet
 from envcite_ontology.verification.config import load as load_models
+from envcite_ontology.verification.definitions import (
+    ExtractedDefinitions,
+    defined_terms,
+    definition_paths,
+    extract_definitions,
+)
 from envcite_ontology.verification.extract import Extracted, extract_unit
 from envcite_ontology.verification.gates import DEFAULT_GATES, Gate
 from envcite_ontology.verification.link import link_penalties
@@ -71,6 +77,7 @@ class Run:
     dropped: int
     settled: Settled
     linked: int = 0  # 事後連到被引用條文的罰則數（已含在 extracted）
+    definitions: int = 0  # 抽到的用語定義數（不含在 extracted）
 
 
 def units_of(conn: Conn, law: str) -> list[str]:
@@ -151,7 +158,12 @@ _NO_ANSWER = ("<model error", "<unparseable model output>")
 
 
 def _record_attempt(
-    conn: Conn, law: str, path: str, agent: str, version: str, out: Extracted
+    conn: Conn,
+    law: str,
+    path: str,
+    agent: str,
+    version: str,
+    out: Extracted | ExtractedDefinitions,
 ) -> None:
     if any(reason.startswith(_NO_ANSWER) for reason in out.dropped):
         return
@@ -165,9 +177,15 @@ def _record_attempt(
         "   JOIN corpus.provision_version AS v ON v.provision_id = p.id AND v.superseded_at IS NULL"
         "  WHERE r.local_id = %s AND p.path = %s"
         " ON CONFLICT DO NOTHING",
-        (agent, version, out.loaded.statements if out.loaded else 0, len(out.dropped), law, path),
+        (agent, version, _count(out), len(out.dropped), law, path),
     )
     conn.commit()
+
+
+def _count(out: Extracted | ExtractedDefinitions) -> int:
+    if out.loaded is None:
+        return 0
+    return out.loaded.statements if isinstance(out, Extracted) else out.loaded.definitions
 
 
 def gates_for(verifiers: Sequence[Model], allow_same_family: bool = False) -> tuple[Gate, ...]:
@@ -206,15 +224,36 @@ def run(
 ) -> Run:
     if check_distinct:
         assert_distinct([extractor, *verifiers])
-    units = skipped = extracted = dropped = 0
+    units = skipped = extracted = dropped = definitions = 0
     pending: list[Mapping[str, Any]] = []
     for law in laws:
+        # 先抽用語定義：陳述的要件要指名本法已定義的用語，兩邊代碼從源頭一致。
+        # 定義項（「本法用語，定義如下」之下的款）不當規範抽取，只抽定義。
+        in_definitions = set(definition_paths(conn, law))
         for path in units_of(conn, law):
+            if path not in in_definitions:
+                continue
             units += 1
             if _already_extracted(conn, law, path, extractor.name, agent_version):
                 skipped += 1
                 continue
-            out = extract_unit(conn, extractor, law, path, agent_version=agent_version)
+            found = extract_definitions(conn, extractor, law, path, agent_version=agent_version)
+            _record_attempt(conn, law, path, extractor.name, agent_version, found)
+            definitions += found.loaded.definitions if found.loaded else 0
+            dropped += len(found.dropped)
+            for reason in found.dropped:
+                log.warning("丟掉定義 %s %s：%s", law, path, reason[:300])
+        terms = defined_terms(conn, law)
+        for path in units_of(conn, law):
+            if path in in_definitions:
+                continue
+            units += 1
+            if _already_extracted(conn, law, path, extractor.name, agent_version):
+                skipped += 1
+                continue
+            out = extract_unit(
+                conn, extractor, law, path, agent_version=agent_version, defined=terms
+            )
             _record_attempt(conn, law, path, extractor.name, agent_version, out)
             extracted += out.loaded.statements if out.loaded else 0
             dropped += len(out.dropped)
@@ -228,7 +267,7 @@ def run(
         log.warning("丟掉待連結的罰則：%s", reason[:300])
     chosen = gates if gates is not None else gates_for(verifiers, allow_same_family)
     settled = settle(conn, list(required), chosen)
-    return Run(units, skipped, extracted, dropped, settled, linked.statements)
+    return Run(units, skipped, extracted, dropped, settled, linked.statements, definitions)
 
 
 def main() -> None:

@@ -2,6 +2,7 @@
 docs 02-06 §3.3)."""
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -143,6 +144,55 @@ def test_executable_gate_checks_a_penalty_only_while_the_breach_stands(
         "serious not met",
         "scope unknown",
     }
+
+
+def _belonging_duty() -> dict[str, Any]:
+    """義務：排放者的行業須屬於「受管制事業」（概念值要件）。"""
+    duty = _plain_duty()
+    duty["conditions"][1] = {
+        "role": "duty",
+        "clause": 1,
+        "concept": "industry",
+        "comparator": "eq",
+        "value_concept": "regulated",
+    }
+    return duty
+
+
+def test_executable_gate_runs_a_condition_on_a_concept_value(conn: Conn, tmp_path: Path) -> None:
+    """概念值要件成立取該概念本身、不成立取不屬於任何用語的值，不靠任何定義就能翻轉結論。"""
+    _first(conn, tmp_path, _law_v1())
+    doc = _doc(_belonging_duty(), review="extracted")
+    doc["concepts"] = [
+        {"code": "discharging", "label": "排放廢水"},
+        {"code": "industry", "label": "行業"},
+        {"code": "regulated", "label": "受管制事業"},
+    ]
+    loaded = load(conn, doc)
+
+    result = ExecutableGate().check(conn, loaded.ids["duty"])
+
+    assert result is not None and result.verdict == "pass"
+    assert {c["case"] for c in result.evidence["cases"]} >= {"duty holds", "duty broken"}
+
+
+def test_executable_gate_still_refuses_an_ordering_on_concept_values(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1())
+    duty = _belonging_duty()
+    duty["conditions"][1]["comparator"] = "le"
+    doc = _doc(duty, review="extracted")
+    doc["concepts"] = [
+        {"code": "discharging", "label": "排放廢水"},
+        {"code": "industry", "label": "行業"},
+        {"code": "regulated", "label": "受管制事業"},
+    ]
+    loaded = load(conn, doc)
+
+    result = ExecutableGate().check(conn, loaded.ids["duty"])
+
+    assert result is not None and result.verdict == "inconclusive"
 
 
 def test_executable_gate_is_not_applicable_outside_obligations(conn: Conn, tmp_path: Path) -> None:

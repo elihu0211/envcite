@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Any, cast
 
 from envcite_ontology.reasoning import Result, evaluate
+from envcite_ontology.reasoning.facts import CaseValue
 from envcite_ontology.verification.gates.base import Conn, GateResult, Unit, unit_of
 from envcite_ontology.verification.gates.conditions import (
     Cond,
@@ -56,7 +57,7 @@ class ExecutableGate:
         if not duty and not scope:
             return GateResult("inconclusive", {"reason": "no condition"})
         sat = self._vals(scope, True, resolved)
-        cases: list[tuple[str, dict[str, float], str]] = []
+        cases: list[tuple[str, dict[str, CaseValue], str]] = []
         if duty:
             cases.append(("duty holds", base | sat | self._vals(duty, True, resolved), holds))
             cases.append(("duty broken", base | sat | self._vals(duty, False, resolved), fails))
@@ -64,12 +65,7 @@ class ExecutableGate:
             cases.append(("scope holds", base | sat, holds))
         duty_ok = self._vals(duty, holds == "compliant", resolved)
         for broken in scope:
-            facts = (
-                base
-                | sat
-                | duty_ok
-                | {broken.code: float(broken.value(False, resolved[broken.id]))}
-            )
+            facts = base | sat | duty_ok | {broken.code: broken.fact(False, resolved[broken.id])}
             cases.append((f"{broken.code} not met", facts, "not_applicable"))
         return self._verdicts(conn, as_of, u.statement_id, cases)
 
@@ -110,11 +106,9 @@ class ExecutableGate:
             return GateResult(
                 "inconclusive", {"reason": "breach facts did not violate the punished statement"}
             )
-        cases: list[tuple[str, dict[str, float], str]] = [("scope holds", held, "candidate")]
+        cases: list[tuple[str, dict[str, CaseValue], str]] = [("scope holds", held, "candidate")]
         for broken in scope:
-            facts = (
-                base | breach | sat | {broken.code: float(broken.value(False, resolved[broken.id]))}
-            )
+            facts = base | breach | sat | {broken.code: broken.fact(False, resolved[broken.id])}
             cases.append((f"{broken.code} not met", facts, "absent"))
         owned = next((c for c in scope if c.code not in breach), None)
         if owned is not None:
@@ -140,7 +134,7 @@ class ExecutableGate:
 
     def _ready(
         self, conn: Conn, u: Unit
-    ) -> GateResult | tuple[date, list[Cond], dict[int, Decimal], dict[str, float]]:
+    ) -> GateResult | tuple[date, list[Cond], dict[int, Decimal], dict[str, CaseValue]]:
         as_of = statement_as_of(conn, u.statement_id)
         if as_of is None:
             return GateResult("inconclusive", {"reason": "no start date for the text"})
@@ -150,6 +144,9 @@ class ExecutableGate:
             return GateResult("inconclusive", {"reason": problem})
         resolved: dict[int, Decimal] = {}
         for c in conds:
+            if c.by_concept:
+                resolved[c.id] = Decimal(0)  # 概念值要件沒有門檻值，事實值由概念代碼決定
+                continue
             value = c.threshold
             if value is None and c.delegated:
                 row = conn.execute(
@@ -166,7 +163,7 @@ class ExecutableGate:
         conn: Conn,
         as_of: date,
         statement_id: int,
-        cases: list[tuple[str, dict[str, float], str]],
+        cases: list[tuple[str, dict[str, CaseValue], str]],
     ) -> GateResult:
         results: list[dict[str, Any]] = []
         for name, facts, expected in cases:
@@ -185,8 +182,8 @@ class ExecutableGate:
         )
 
     @staticmethod
-    def _vals(conds: list[Cond], truth: bool, resolved: dict[int, Decimal]) -> dict[str, float]:
-        return {c.code: float(c.value(truth, resolved[c.id])) for c in conds}
+    def _vals(conds: list[Cond], truth: bool, resolved: dict[int, Decimal]) -> dict[str, CaseValue]:
+        return {c.code: c.fact(truth, resolved[c.id]) for c in conds}
 
     @staticmethod
     def _penalty_state(result: Result, statement_id: int) -> str:

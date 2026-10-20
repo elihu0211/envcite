@@ -7,10 +7,14 @@ from datetime import date
 from decimal import Decimal
 from typing import cast
 
+from envcite_ontology.reasoning.facts import CaseValue
 from envcite_ontology.verification.gates.base import Conn
 
 _RAW_TRUE = {"le": 0, "lt": -1, "ge": 0, "gt": 1, "eq": 0, "ne": 1}
 _RAW_FALSE = {"le": 1, "lt": 0, "ge": -1, "gt": 0, "eq": 1, "ne": 0}
+
+# 不屬於任何用語的概念值：與概念比較的要件取它時，「屬於」不成立（沒有定義會涵蓋它）。
+NOT_A_MEMBER = "__not_a_member__"
 
 
 @dataclass(frozen=True)
@@ -23,13 +27,29 @@ class Cond:
     negated: bool
     threshold: Decimal | None
     delegated: bool
-    by_concept: bool
+    #: 與概念值比較的要件所比較的概念代碼；數值要件為 None
+    value_code: str | None
+
+    @property
+    def by_concept(self) -> bool:
+        return self.value_code is not None
 
     def value(self, truth: bool, resolved: Decimal) -> Decimal:
         """使此要件（含「非」）成立或不成立的事實值。"""
         raw_true = truth != self.negated
         delta = (_RAW_TRUE if raw_true else _RAW_FALSE)[self.comparator]
         return resolved + delta
+
+    def fact(self, truth: bool, resolved: Decimal) -> CaseValue:
+        """使此要件成立或不成立的案件事實：數值要件給數字，概念值要件給概念代碼。
+
+        eq 的「屬於」成立取比較的概念本身（概念屬於自己，不需定義），不成立取不屬於任何用語的值；
+        ne 相反。含「非」時再翻轉。
+        """
+        if self.value_code is None:
+            return float(self.value(truth, resolved))
+        member = (truth != self.negated) == (self.comparator == "eq")
+        return self.value_code if member else NOT_A_MEMBER
 
 
 def statement_as_of(conn: Conn, statement_id: int) -> date | None:
@@ -48,9 +68,10 @@ def load_conditions(conn: Conn, statement_id: int) -> list[Cond]:
     rows = conn.execute(
         "SELECT c.id, c.condition_role::text, c.disjunct_no, k.code, c.comparator::text, c.negated,"
         "       c.threshold, c.delegate_provision_id IS NOT NULL,"
-        "       c.value_concept_id IS NOT NULL"
+        "       vk.code"
         "  FROM annotation.statement_condition AS c"
         "  JOIN vocab.concept AS k ON k.id = c.concept_id"
+        "  LEFT JOIN vocab.concept AS vk ON vk.id = c.value_concept_id"
         " WHERE c.statement_id = %s AND c.condition_role <> 'limit' ORDER BY c.id",
         (statement_id,),
     ).fetchall()
@@ -64,7 +85,7 @@ def load_conditions(conn: Conn, statement_id: int) -> list[Cond]:
             bool(r[5]),
             None if r[6] is None else Decimal(str(r[6])),
             bool(r[7]),
-            bool(r[8]),
+            None if r[8] is None else cast(str, r[8]),
         )
         for r in rows
     ]
@@ -72,8 +93,8 @@ def load_conditions(conn: Conn, statement_id: int) -> list[Cond]:
 
 def unsupported(conds: list[Cond]) -> str | None:
     """推論程式評估不了的要件形狀；回原因，可評估則 None。"""
-    if any(c.by_concept for c in conds):
-        return "a condition compares concept values"
+    if any(c.by_concept and c.comparator not in ("eq", "ne") for c in conds):
+        return "a condition orders concept values"
     for role in ("scope", "duty"):
         if len({c.clause for c in conds if c.role == role}) > 1:
             return f"{role} has several clauses (disjunction)"
@@ -83,9 +104,9 @@ def unsupported(conds: list[Cond]) -> str | None:
     return None
 
 
-def exception_facts(conn: Conn, statement_id: int) -> dict[str, float]:
+def exception_facts(conn: Conn, statement_id: int) -> dict[str, CaseValue]:
     """但書的事實值：令其要件不成立，陳述才不被排除。"""
-    facts: dict[str, float] = {}
+    facts: dict[str, CaseValue] = {}
     rows = conn.execute(
         "SELECT c.comparator::text, c.negated, c.threshold, k.code"
         "  FROM annotation.statement_exception AS e"
@@ -107,7 +128,7 @@ def exception_facts(conn: Conn, statement_id: int) -> dict[str, float]:
             bool(negated),
             None,
             False,
-            False,
+            None,
         )
         facts[c.code] = float(c.value(False, Decimal(str(threshold))))
     return facts

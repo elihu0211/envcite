@@ -30,7 +30,7 @@ PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元
   "slots": {{"subject|action|object|medium": {{"literal": "…"}}}},
   "conditions": [{{"role": "scope|duty", "clause": 1, "concept": "代碼", "comparator":
   "le|lt|ge|gt|eq|ne", "threshold": 數字, "unit": "單位或省略", "negated": false,
-  "judgement": false}}],
+  "judgement": false, "value_concept": "本法用語的代碼（見下方清單），沒有就省略"}}],
   "sanction": {{"effect": "fine|order|restriction|deprivation|reputation|warning|confiscation",
   "min": 數字或省略, "max": 數字或省略, "amount_text": "原文或省略", "repeating": false,
   "discretionary": false,
@@ -54,9 +54,12 @@ PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元
 8. 主體的列舉（甲、乙或丙）寫在 slots.subject，不要把每一個主體各寫成一個要件。
 9. 原文是款或目（半句話）時，主體與處罰的種類、額度常寫在「上層條文」：罰則照上層條文寫
    sanction（amount_text 逐字取自上層條文），quote 仍取自原文。沒有上層條文的單元不適用。
+10. 要件在判斷「主體或對象是否屬於本法定義的某個用語」時，concept 寫該主體或對象的類別概念，
+   comparator 用 eq，value_concept 填下方清單裡那個用語的代碼，且不要寫 threshold。只能用清單裡的
+   代碼；清單沒有的就不要寫 value_concept（用原本的 threshold 寫法）。
 只輸出 JSON。
 
-{context}原文（{law} {path}）：
+{terms}{context}原文（{law} {path}）：
 {text}
 """)
 
@@ -79,6 +82,16 @@ def completeness_issues(statements: Sequence[Mapping[str, Any]]) -> list[str]:
     """義務要有 duty 要件、「…者，應…」要有 scope 要件；只查結構有沒有寫，不查對錯。"""
     issues: list[str] = []
     for s in statements:
+        for c in s.get("conditions") or []:
+            if (
+                isinstance(c, Mapping)
+                and c.get("value_concept")
+                and c.get("comparator") not in ("eq", "ne")
+            ):
+                issues.append(
+                    f"陳述 {s.get('id', '?')} 的要件以 value_concept 比較，"
+                    "comparator 只能是 eq 或 ne（屬於或不屬於）。"
+                )
         if s.get("kind") == "prescriptive" and not s.get("deontic"):
             issues.append(
                 f"陳述 {s.get('id', '?')} 是 prescriptive 卻沒有 deontic（義務、禁止或許可）。"
@@ -117,8 +130,20 @@ def _concepts_of(answer: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     ]
 
 
-def tidy(answer: Mapping[str, Any]) -> dict[str, Any]:
-    """不改變意思的形狀修正：槽位直接寫成字串（`"subject": "甲"`）就是它的字面。"""
+def terms_block(defined: Mapping[str, str] | None) -> str:
+    """放進提示的本法用語清單；沒有已定義的用語就什麼都不放。"""
+    if not defined:
+        return ""
+    lines = "\n".join(f"- {code}：{name}" for code, name in defined.items())
+    return f"本法已定義的用語（代碼：名稱）：\n{lines}\n\n"
+
+
+def tidy(answer: Mapping[str, Any], defined: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """不改變意思的形狀修正。
+
+    槽位直接寫成字串（`"subject": "甲"`）就是它的字面；與概念值比較的要件沒有門檻值，模型多寫
+    的 threshold 去掉；要件指名的本法用語代碼，補進宣告的概念（名稱取自該法的定義）。
+    """
     out = dict(answer)
     out["statements"] = [
         {
@@ -129,15 +154,39 @@ def tidy(answer: Mapping[str, Any]) -> dict[str, Any]:
         else dict(s)
         for s in _statements_of(answer)
     ]
+    for s in out["statements"]:
+        conditions = s.get("conditions")
+        if not isinstance(conditions, list):
+            continue
+        s["conditions"] = [
+            {k: v for k, v in c.items() if k != "threshold"}
+            if isinstance(c, Mapping) and c.get("value_concept")
+            else c
+            for c in conditions
+        ]
+    if defined:
+        declared = {str(c["code"]) for c in _concepts_of(answer)}
+        used = {
+            str(c["value_concept"])
+            for s in out["statements"]
+            for c in s.get("conditions") or []
+            if isinstance(c, Mapping) and str(c.get("value_concept")) in defined
+        }
+        out["concepts"] = [
+            *_concepts_of(answer),
+            *({"code": code, "label": defined[code]} for code in sorted(used - declared)),
+        ]
     return out
 
 
-def shape_issues(answer: Mapping[str, Any]) -> dict[str, list[str]]:
+def shape_issues(
+    answer: Mapping[str, Any], defined: Mapping[str, str] | None = None
+) -> dict[str, list[str]]:
     """載入器必然拒絕的形狀（id → 問題）：要件非物件、無 concept、或 concept 未宣告。
 
     載入器一遇到就整份不寫、連帶丟掉正確的陳述；故先請模型修，修不好才只丟該陳述。
     """
-    declared = {str(c["code"]) for c in _concepts_of(answer)}
+    declared = {str(c["code"]) for c in _concepts_of(answer)} | set(defined or {})
     out: dict[str, list[str]] = {}
     for s in _statements_of(answer):
         problems: list[str] = []
@@ -151,6 +200,11 @@ def shape_issues(answer: Mapping[str, Any]) -> dict[str, list[str]]:
                     problems.append(
                         f"有一個要件沒有 concept（role={c.get('role')}）：每個要件都要指名一個"
                         "在 concepts 裡宣告過的代碼。"
+                    )
+                elif field == "value_concept" and code and str(code) not in (defined or {}):
+                    problems.append(
+                        f"要件的 value_concept「{code}」不在本法已定義的用語清單裡；"
+                        "清單沒有的不要寫 value_concept。"
                     )
                 elif code and str(code) not in declared:
                     problems.append(
@@ -275,11 +329,17 @@ def extract_unit(
     agent: str | None = None,
     agent_version: str,
     scheme: tuple[str, str] = ("env", "環境法概念"),
+    defined: Mapping[str, str] | None = None,
 ) -> Extracted:
     """抽取一個條文單元。`agent` 記為推導者（預設為模型的名字）；驗證者不得與它相同。"""
     provision_id, text = _unit_text(conn, law, path)
+    terms = terms_block(defined)
     prompt = PROMPT.format(
-        law=law, path=path, text=text, context=context_block(ancestors_text(conn, provision_id))
+        law=law,
+        path=path,
+        text=text,
+        terms=terms,
+        context=context_block(ancestors_text(conn, provision_id)),
     )
     try:
         raw = model.complete(prompt)
@@ -287,12 +347,12 @@ def extract_unit(
         # 重試用盡：不寫入，下次仍是「還沒抽」
         return Extracted(None, (f"<model error: {e}>"[:300],))
     answer: Mapping[str, Any] | None = object_from(raw)
-    answer = None if answer is None else tidy(answer)
+    answer = None if answer is None else tidy(answer, defined)
     for _ in range(MAX_REPAIRS):
         if answer is None:
             break
         here = [x for x in _statements_of(answer) if str(x.get("quote", "")) in text]
-        shape = shape_issues(answer)
+        shape = shape_issues(answer, defined)
         issues = completeness_issues(here) + [
             f"陳述 {ident}：{problem}"
             for x in here
@@ -310,13 +370,13 @@ def extract_unit(
         again = object_from(reply)
         if again is None:
             break
-        raw, answer = json.dumps(again, ensure_ascii=False), tidy(again)
+        raw, answer = json.dumps(again, ensure_ascii=False), tidy(again, defined)
     if answer is None:
         return Extracted(None, ("<unparseable model output>",))
     statements: list[dict[str, Any]] = []
     dropped: list[str] = []
     broken = unusable([x for x in _statements_of(answer) if str(x.get("quote", "")) in text])
-    for ident in shape_issues(answer):
+    for ident in shape_issues(answer, defined):
         broken.setdefault(ident, "malformed conditions")
     for s in _statements_of(answer):
         quote = str(s.get("quote", ""))
