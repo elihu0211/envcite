@@ -56,6 +56,14 @@ def _water(conn: Conn, sample: None) -> Loaded:
     return load(conn, json.loads(WATER.read_text(encoding="utf-8")))
 
 
+def _water_with(conn: Conn, sid: str, **sanction: Any) -> Loaded:
+    """水污法樣本，其中一個罰則改成模型寫錯的樣子再載入：主張封存後內容不能改，錯要錯在載入前。"""
+    doc = json.loads(WATER.read_text(encoding="utf-8"))
+    s = next(x for x in doc["statements"] if x["id"] == sid)
+    s["sanction"] = {**s["sanction"], **sanction}
+    return load(conn, doc)
+
+
 class FakeModel:
     name = "fake:model"
     family = "fake"

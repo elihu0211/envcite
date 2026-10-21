@@ -28,7 +28,7 @@ _SLOTS = """
       FROM annotation.statement_slot AS sl
       LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id
      WHERE sl.statement_id = ANY(%(ids)s)
-     ORDER BY sl.statement_id, sl.slot_role
+     ORDER BY sl.statement_id, sl.slot_role, sl.alternative
 """
 
 _CONDITIONS = """

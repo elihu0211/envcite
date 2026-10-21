@@ -95,7 +95,7 @@ INSERT INTO annotation.statement
     (id, provision_id, content_sha256, statement_kind, norm_modality, derivation_id, confirm_state)
 OVERRIDING SYSTEM VALUE
 VALUES (1, 1, sha256('甲一'::bytea), 'constitutive', NULL, 1, 'confirmed'),
-       (2, 1, sha256('甲一'::bytea), 'constitutive', NULL, 1, 'extracted');
+       (2, 1, sha256('甲一'::bytea), 'prescriptive', 'obligation', 1, 'extracted');
 INSERT INTO vocab.concept_scheme (id, code, title, scope_resource_id)
 OVERRIDING SYSTEM VALUE VALUES (1, 'def.T0000001', '本法用語', 1);
 INSERT INTO vocab.concept (id, scheme_id, code, name)
@@ -146,5 +146,53 @@ def test_statements_and_definitions_become_claims_with_their_records(
             conn.execute("DELETE FROM corpus.provision")
             assert conn.execute("SELECT count(*) FROM annotation.claim").fetchone() == (0,)
             conn.rollback()
+    finally:
+        _drop(dsn, name)
+
+
+_DUPLICATES = """
+INSERT INTO corpus.legal_resource (id, id_scheme, local_id, norm_kind, document_type)
+OVERRIDING SYSTEM VALUE VALUES (1, 'moj_pcode', 'T0000001', 'statute', '法律');
+INSERT INTO corpus.legal_expression
+    (id, resource_id, language, version_date, title, text_period, text_status, text_authority)
+OVERRIDING SYSTEM VALUE
+VALUES (1, 1, 'zho', '2020-01-01', '測試法', '[2020-01-01,)', 'available', 'official_db');
+INSERT INTO corpus.provision (id, resource_id, provision_type, path)
+OVERRIDING SYSTEM VALUE VALUES (1, 1, 'article', 'art_1');
+INSERT INTO corpus.provision_version
+    (provision_id, expression_id, resource_id, content, force_period, commencement_rule)
+VALUES (1, 1, 1, '甲一', '[2020-01-01,)', 'specified');
+INSERT INTO annotation.derivation (id, method, producer, producer_version)
+OVERRIDING SYSTEM VALUE VALUES (1, 'llm', 'model-a', '1');
+INSERT INTO annotation.claim (id, claim_kind, derivation_id, confirm_state)
+OVERRIDING SYSTEM VALUE
+VALUES (1, 'statement', 1, 'confirmed'), (2, 'statement', 1, 'extracted'),
+       (3, 'statement', 1, 'rejected');
+INSERT INTO annotation.statement (id, provision_id, content_sha256, statement_kind)
+VALUES (1, 1, sha256('甲一'::bytea), 'constitutive'), (2, 1, sha256('甲一'::bytea), 'constitutive'),
+       (3, 1, sha256('甲一'::bytea), 'constitutive');
+"""
+
+
+def test_existing_duplicates_keep_the_earliest_and_reject_the_rest(
+    dsn: str, tmp_path: Path
+) -> None:
+    name = "seal_upgrade"
+    try:
+        with _at(dsn, name, tmp_path, "0028") as conn:
+            conn.execute(_DUPLICATES)
+            conn.commit()
+            assert apply_all(conn)[0] == "0028_claim_shape.sql"
+
+            assert conn.execute(
+                "SELECT id, confirm_state::text, fingerprint IS NOT NULL"
+                " FROM annotation.claim ORDER BY id"
+            ).fetchall() == [(1, "confirmed", True), (2, "rejected", True), (3, "rejected", True)]
+            assert conn.execute(
+                "SELECT claim_id, verifier, evidence FROM annotation.verification"
+                " WHERE method = 'policy' AND claim_id = 2"
+            ).fetchall() == [
+                (2, "migration:0028", {"action": "rejected", "reason": "duplicate", "kept": 1})
+            ]
     finally:
         _drop(dsn, name)

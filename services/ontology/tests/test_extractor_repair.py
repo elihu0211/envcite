@@ -25,7 +25,7 @@ from tests.verification_support import (
     FakeModel,
     Sequence_,
     _duty_and_cited_penalty,
-    _water,
+    _water_with,
 )
 
 
@@ -132,12 +132,7 @@ def test_numbers_gate_evidence_can_be_stored_when_the_model_invented_an_amount(
     conn: Conn, sample: None
 ) -> None:
     """真實模型給一個原文沒有金額的罰則填了額度：閘門判失敗，證據要能寫成 JSON。"""
-    ids = _water(conn, sample).ids
-    conn.execute(
-        "UPDATE annotation.sanction SET min_amount = 100, max_amount = 2000"
-        " WHERE statement_id = %s",
-        (ids["p40_1_order"],),
-    )
+    ids = _water_with(conn, "p40_1_order", min=100, max=2000).ids
 
     result = NumbersGate().check(conn, ids["p40_1_order"])
 

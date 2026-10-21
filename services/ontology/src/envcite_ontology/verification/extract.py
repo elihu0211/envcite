@@ -27,7 +27,7 @@ PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元
 {{"concepts": [{{"code": "英文小寫底線的代碼", "label": "中文名稱"}}],
   "statements": [{{"id": "短識別", "quote": "原文中的一段，逐字複製", "kind":
   "prescriptive|constitutive|sanction", "deontic": "obligation|prohibition|permission 或省略",
-  "slots": {{"subject|action|object|medium": {{"literal": "…"}}}},
+  "slots": {{"subject|action|object|medium": {{"literal": "…"}} 或 [{{"literal": "…"}}, …]}},
   "conditions": [{{"role": "scope|duty", "clause": 1, "concept": "代碼", "comparator":
   "le|lt|ge|gt|eq|ne", "threshold": 數字, "unit": "單位或省略", "negated": false,
   "judgement": false, "value_concept": "本法用語的代碼（見下方清單），沒有就省略"}}],
@@ -51,7 +51,8 @@ PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元
    （得處、得命）不是要件：sanction 的 discretionary 設為 true，「應」為 false。
 7. conditions 是一個平面清單，義務本身也是其中 role 為 duty 的一項；不要另外寫 duty 欄位。clause
    是「或」的分組：同一個 clause 裡的要件必須全部成立，不同 clause 之間是「或」，一般都用 1。
-8. 主體的列舉（甲、乙或丙）寫在 slots.subject，不要把每一個主體各寫成一個要件。
+8. 主體的列舉（甲、乙或丙）寫成 slots.subject 的清單，每個主體一項（彼此是「或」），不要把每一個
+   主體各寫成一個要件；客體等其他槽位的列舉同理。
 9. 原文是款或目（半句話）時，主體與處罰的種類、額度常寫在「上層條文」：罰則照上層條文寫
    sanction（amount_text 逐字取自上層條文），quote 仍取自原文。沒有上層條文的單元不適用。
 10. 要件在判斷「主體或對象是否屬於本法定義的某個用語」時，concept 寫該主體或對象的類別概念，
@@ -138,17 +139,27 @@ def terms_block(defined: Mapping[str, str] | None) -> str:
     return f"本法已定義的用語（代碼：名稱）：\n{lines}\n\n"
 
 
+def _literal(value: Any) -> Any:
+    """槽位值裡的字串是字面；清單逐項處理。"""
+    if isinstance(value, str):
+        return {"literal": value}
+    if isinstance(value, list):
+        return [_literal(v) for v in value]
+    return value
+
+
 def tidy(answer: Mapping[str, Any], defined: Mapping[str, str] | None = None) -> dict[str, Any]:
     """不改變意思的形狀修正。
 
-    槽位直接寫成字串（`"subject": "甲"`）就是它的字面；與概念值比較的要件沒有門檻值，模型多寫
-    的 threshold 去掉；要件指名的本法用語代碼，補進宣告的概念（名稱取自該法的定義）。
+    槽位直接寫成字串（`"subject": "甲"`，或清單裡的字串）就是它的字面；與概念值比較的要件
+    沒有門檻值，模型多寫的 threshold 去掉；要件指名的本法用語代碼，補進宣告的概念（名稱取自
+    該法的定義）。
     """
     out = dict(answer)
     out["statements"] = [
         {
             **s,
-            "slots": {k: {"literal": v} if isinstance(v, str) else v for k, v in slots.items()},
+            "slots": {k: _literal(v) for k, v in slots.items()},
         }
         if isinstance(slots := s.get("slots"), Mapping)
         else dict(s)

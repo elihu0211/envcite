@@ -146,6 +146,7 @@ message Statement {
   // 陳述所讀自的條文版本之 IRI。
   string version_iri = 4;
 
+  // 同一角色出現多次時彼此擇一（「事業或其負責人」），順序不具意義。
   repeated Slot slots = 5;
 
   // 規範何時適用。沒有析取項表示恆適用。

@@ -412,7 +412,9 @@ class Statement(_message.Message):
     version_iri: _builtins.str
     """陳述所讀自的條文版本之 IRI。"""
     @_builtins.property
-    def slots(self) -> _containers.RepeatedCompositeFieldContainer[Global___Slot]: ...
+    def slots(self) -> _containers.RepeatedCompositeFieldContainer[Global___Slot]:
+        """同一角色出現多次時彼此擇一（「事業或其負責人」），順序不具意義。"""
+
     @_builtins.property
     def scope(self) -> Global___Requirement:
         """規範何時適用。沒有析取項表示恆適用。"""

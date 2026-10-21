@@ -49,7 +49,7 @@ def test_only_a_sanction_statement_carries_a_sanction(conn: Conn, tmp_path: Path
 def test_a_punished_statement_cannot_change_its_kind(conn: Conn, tmp_path: Path) -> None:
     _three(conn, tmp_path)
     duty = load(conn, _doc(_duty(), _penalty("p", "duty"))).ids["duty"]
-    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+    with pytest.raises(psycopg.errors.IntegrityError):  # 已封存；未封存時由複合外鍵擋
         conn.execute(
             "UPDATE annotation.statement SET statement_kind = 'constitutive', norm_modality = NULL"
             " WHERE id = %s",

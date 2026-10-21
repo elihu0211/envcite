@@ -95,7 +95,7 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
         "SELECT sl.slot_role::text, coalesce(k.code, sl.literal)"
         "  FROM annotation.statement_slot AS sl"
         "  LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id"
-        " WHERE sl.statement_id = %s ORDER BY sl.slot_role",
+        " WHERE sl.statement_id = %s ORDER BY sl.slot_role, sl.alternative",
         (statement_id,),
     ):
         lines.append(f"{_SLOT.get(str(slot), slot)}：{value}")

@@ -24,6 +24,7 @@ from tests.verification_support import (
     Conn,
     _review,
     _water,
+    _water_with,
 )
 
 
@@ -65,20 +66,13 @@ def test_numbers_gate_checks_the_amounts_against_the_text(conn: Conn, sample: No
     assert gate.check(conn, ids["p40_2_fine"]).verdict == "pass"  # type: ignore[union-attr]
     assert gate.check(conn, ids["w7_1"]) is None  # 沒有罰則、沒有帶單位的門檻值
 
-    conn.execute(
-        "UPDATE annotation.sanction SET max_amount = 2000000 WHERE statement_id = %s",
-        (ids["p40_1_fine"],),
-    )
-    result = gate.check(conn, ids["p40_1_fine"])
+    wrong = _water_with(conn, "p40_1_fine", max=2000000).ids["p40_1_fine"]
+    result = gate.check(conn, wrong)
     assert result is not None and result.verdict == "fail"
 
 
 def test_numbers_gate_fails_an_amount_the_text_does_not_have(conn: Conn, sample: None) -> None:
-    ids = _water(conn, sample).ids
-    conn.execute(
-        "UPDATE annotation.sanction SET amount_text = '新臺幣一萬元罰鍰' WHERE statement_id = %s",
-        (ids["p40_1_fine"],),
-    )
+    ids = _water_with(conn, "p40_1_fine", amount_text="新臺幣一萬元罰鍰").ids
 
     result = NumbersGate().check(conn, ids["p40_1_fine"])
     assert result is not None and result.verdict == "fail"
@@ -97,11 +91,9 @@ def test_references_gate_requires_the_punished_provision_to_be_the_cited_one(
     assert ok is not None and ok.verdict == "pass"
     assert ok.evidence["unresolved"] == ["art_8"]  # 第八條不在語料裡：只記，不算錯
 
-    conn.execute(
-        "UPDATE annotation.sanction SET punished_statement_id = %s WHERE statement_id = %s",
-        (ids["w7_2b"], ids["p40_1_fine"]),  # 第七條第二項：原文引用的是第一項
-    )
-    bad = gate.check(conn, ids["p40_1_fine"])
+    # 第七條第二項：原文引用的是第一項
+    wrong = _water_with(conn, "p40_1_fine", punishes="w7_2b").ids["p40_1_fine"]
+    bad = gate.check(conn, wrong)
     assert bad is not None and bad.verdict == "fail"
     assert gate.check(conn, ids["w7_1"]) is None
 

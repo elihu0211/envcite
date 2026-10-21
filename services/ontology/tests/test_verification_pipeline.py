@@ -18,6 +18,7 @@ from tests.verification_support import (
     _latest,
     _review,
     _water,
+    _water_with,
 )
 
 
@@ -90,12 +91,7 @@ def test_the_water_draft_is_accepted_without_a_human_where_the_gates_can_decide(
 
 
 def test_a_tampered_statement_is_rejected_by_the_pipeline(conn: Conn, sample: None) -> None:
-    ids = _water(conn, sample).ids
-    conn.execute(
-        "UPDATE annotation.sanction SET min_amount = 600000 WHERE statement_id = %s",
-        (ids["p40_1_fine"],),
-    )
-    conn.commit()
+    ids = _water_with(conn, "p40_1_fine", min=600000).ids
 
     result = settle(conn, DETERMINISTIC)
 

@@ -48,7 +48,11 @@ def _duty_doc(count: int = 1) -> dict[str, Any]:
     duty: dict[str, Any] = cast(Any, EXTRACTED["statements"])[0]
     return {
         "concepts": EXTRACTED["concepts"],
-        "statements": [{**duty, "id": f"s{i}"} for i in range(1, count + 1)],
+        # 內容要不同：相同的陳述載入時會併成一個，就沒有候選可選
+        "statements": [
+            {**duty, "id": f"s{i}", "slots": {"object": {"literal": f"第{i}類"}}}
+            for i in range(1, count + 1)
+        ],
     }
 
 
