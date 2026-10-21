@@ -181,7 +181,7 @@ def test_a_threshold_from_an_unconfirmed_limit_is_not_used(conn: Conn, tmp_path:
     _first(conn, tmp_path, _law_v1())
     load(conn, _doc(_duty(), _limit("乙一", 100)))
     conn.execute(
-        "UPDATE annotation.claim SET confirm_state = 'extracted' WHERE id IN"
+        "UPDATE annotation.assertion SET confirm_state = 'extracted' WHERE id IN"
         " (SELECT s.id FROM annotation.statement AS s"
         "    JOIN corpus.provision AS p ON p.id = s.provision_id WHERE p.path = 'art_2')"
     )
@@ -257,7 +257,7 @@ def test_statement_constraints(
     provision = _scalar(conn, "SELECT provision_id FROM annotation.statement")
     claim = _scalar(
         conn,
-        "INSERT INTO annotation.claim (claim_kind, derivation_id)"
+        "INSERT INTO annotation.assertion (assertion_kind, derivation_id)"
         " SELECT 'statement', id FROM annotation.derivation RETURNING id",
     )
 
@@ -485,11 +485,11 @@ def test_a_forced_first_import_keeps_the_annotations_on_unchanged_text(
     """首次寫入的路徑整部取代版本與事件，但不刪條文單元：文字沒變的標註重新錨上，不連帶刪除。"""
     _first(conn, tmp_path, _law_v1())
     load(conn, _doc(_duty(), _limit("乙一", 100)))
-    claims = _scalar(conn, "SELECT count(*) FROM annotation.claim")
+    claims = _scalar(conn, "SELECT count(*) FROM annotation.assertion")
     conn.execute("UPDATE source.item SET imported_sha256 = NULL, parser_version = NULL")
     conn.commit()
 
     assert importer.run(conn, tmp_path, Moj()).actions == {"added": 1}
 
-    assert _scalar(conn, "SELECT count(*) FROM annotation.claim") == claims
+    assert _scalar(conn, "SELECT count(*) FROM annotation.assertion") == claims
     assert _facts(conn, BEFORE) == 2

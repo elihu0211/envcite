@@ -107,8 +107,8 @@ public enum OverrideBasisDto
     Hierarchy,
     /// <summary>特別規定（同法第 16 條）。</summary>
     LexSpecialis,
+    /// <summary>後法優於前法（學說，只在有明文標註時採用）。但書不是優先依據，見陳述的例外。</summary>
     LexPosterior,
-    Exception,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<ConditionRoleDto>))]

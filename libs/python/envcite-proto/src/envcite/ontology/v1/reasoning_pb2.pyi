@@ -17,6 +17,11 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
+if sys.version_info >= (3, 13):
+    from warnings import deprecated as _deprecated
+else:
+    from typing_extensions import deprecated as _deprecated
+
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class _StatementKind:
@@ -186,7 +191,10 @@ class _OverrideBasisEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Overrid
     """中央法規標準法第 16 條。"""
     OVERRIDE_BASIS_LEX_POSTERIOR: _OverrideBasis.ValueType  # 3
     """學說而非成文法，僅在標註如此記載時使用。"""
-    OVERRIDE_BASIS_EXCEPTION: _OverrideBasis.ValueType  # 4
+    @_builtins.property
+    @_deprecated("""This enum value has been marked as deprecated using proto enum value options.""")
+    def OVERRIDE_BASIS_EXCEPTION(self) -> _OverrideBasis.ValueType:   # 4
+        """不再產生：但書是規則與例外的結構，見 Statement.exception_of，不是優先依據。"""
 
 class OverrideBasis(_OverrideBasis, metaclass=_OverrideBasisEnumTypeWrapper):
     """兩則陳述衝突時，其一勝出的依據。"""
@@ -199,6 +207,7 @@ OVERRIDE_BASIS_LEX_SPECIALIS: OverrideBasis.ValueType  # 2
 OVERRIDE_BASIS_LEX_POSTERIOR: OverrideBasis.ValueType  # 3
 """學說而非成文法，僅在標註如此記載時使用。"""
 OVERRIDE_BASIS_EXCEPTION: OverrideBasis.ValueType  # 4
+"""不再產生：但書是規則與例外的結構，見 Statement.exception_of，不是優先依據。"""
 Global___OverrideBasis: _TypeAlias = OverrideBasis  # noqa: Y015
 
 class _Verdict:

@@ -41,7 +41,7 @@ class ReferencesGate:
         row = conn.execute(
             "SELECT pp.path, tc.confirm_state::text FROM annotation.sanction AS sn"
             "  JOIN annotation.statement AS t ON t.id = sn.punished_statement_id"
-            "  JOIN annotation.claim AS tc ON tc.id = t.id"
+            "  JOIN annotation.assertion AS tc ON tc.id = t.id"
             "  JOIN corpus.provision AS pp ON pp.id = t.provision_id"
             " WHERE sn.statement_id = %s",
             (statement_id,),

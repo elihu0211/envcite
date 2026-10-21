@@ -58,9 +58,9 @@ def test_a_writer_runs_the_pipeline_without_touching_states_directly(
 def test_a_writer_cannot_change_a_state_or_write_a_record(conn: Conn, tmp_path: Path) -> None:
     duty = _two_statements(conn, tmp_path).ids["duty"]
     attempts = [
-        ("UPDATE annotation.claim SET confirm_state = 'confirmed' WHERE id = %s", (duty,)),
+        ("UPDATE annotation.assertion SET confirm_state = 'confirmed' WHERE id = %s", (duty,)),
         (
-            "INSERT INTO annotation.verification (claim_id, method, verifier, verdict)"
+            "INSERT INTO annotation.verification (assertion_id, method, verifier, result)"
             " VALUES (%s, 'policy', 'settle', 'pass')",
             (duty,),
         ),
@@ -78,7 +78,7 @@ def test_a_claim_cannot_be_edited_or_deleted_once_written(conn: Conn, tmp_path: 
         "UPDATE annotation.statement_condition SET threshold = 1 WHERE statement_id = %s",
         "DELETE FROM annotation.statement_condition WHERE statement_id = %s",
         "DELETE FROM annotation.statement WHERE id = %s",
-        "DELETE FROM annotation.claim WHERE id = %s",
+        "DELETE FROM annotation.assertion WHERE id = %s",
     ]
     for sql in attempts:
         with _as(conn, WRITER), pytest.raises(psycopg.errors.InsufficientPrivilege):
@@ -95,7 +95,7 @@ def test_only_a_reviewer_loads_reviewed_claims_or_reviews_by_hand(
         duty = load(conn, _doc(_duty())).ids["duty"]
         conn.execute("SELECT annotation.set_confirm_state(%s, 'rejected', '重新標註')", (duty,))
         conn.commit()
-    assert _scalar(conn, "SELECT confirm_state::text FROM annotation.claim") == "rejected"
+    assert _scalar(conn, "SELECT confirm_state::text FROM annotation.assertion") == "rejected"
 
 
 def test_a_removed_provision_still_takes_its_claims_along(conn: Conn, tmp_path: Path) -> None:
@@ -103,4 +103,4 @@ def test_a_removed_provision_still_takes_its_claims_along(conn: Conn, tmp_path: 
     _two_statements(conn, tmp_path)
     with _as(conn, WRITER):
         conn.execute("DELETE FROM corpus.provision")
-        assert _scalar(conn, "SELECT count(*) FROM annotation.claim") == 0
+        assert _scalar(conn, "SELECT count(*) FROM annotation.assertion") == 0

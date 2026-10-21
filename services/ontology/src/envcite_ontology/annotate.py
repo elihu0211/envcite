@@ -362,7 +362,7 @@ def _claim(conn: Conn, kind: str, derivation_id: int, review: str) -> int:
     """主張本身（來源推導與審核狀態）；子型別的列以同一個 id 寫入。"""
     return _one(
         conn,
-        "INSERT INTO annotation.claim (claim_kind, derivation_id, confirm_state)"
+        "INSERT INTO annotation.assertion (assertion_kind, derivation_id, confirm_state)"
         " VALUES (%s, %s, %s) RETURNING id",
         kind,
         derivation_id,

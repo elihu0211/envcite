@@ -115,7 +115,8 @@ enum OverrideBasis {
   // 學說而非成文法，僅在標註如此記載時使用。
   OVERRIDE_BASIS_LEX_POSTERIOR = 3;
 
-  OVERRIDE_BASIS_EXCEPTION = 4;
+  // 不再產生：但書是規則與例外的結構，見 Statement.exception_of，不是優先依據。
+  OVERRIDE_BASIS_EXCEPTION = 4 [deprecated = true];
 }
 
 // ---- ListStatements ------------------------------------------------------------

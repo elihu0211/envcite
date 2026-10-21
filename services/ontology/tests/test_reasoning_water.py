@@ -19,7 +19,8 @@ from tests.test_import import _scalar
 def water(conn: Conn, sample: None) -> Loaded:
     loaded = load(conn, json.loads(WATER.read_text(encoding="utf-8")))
     conn.execute(
-        "UPDATE annotation.claim SET confirm_state = 'confirmed' WHERE claim_kind = 'statement'"
+        "UPDATE annotation.assertion SET confirm_state = 'confirmed'"
+        " WHERE assertion_kind = 'statement'"
     )
     conn.commit()
     return loaded

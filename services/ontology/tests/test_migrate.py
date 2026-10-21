@@ -123,7 +123,8 @@ def test_statements_and_definitions_become_claims_with_their_records(
             assert apply_all(conn)[0] == "0026_claim.sql"
 
             claims = conn.execute(
-                "SELECT id, claim_kind::text, confirm_state::text FROM annotation.claim ORDER BY id"
+                "SELECT id, assertion_kind::text, confirm_state::text"
+                " FROM annotation.assertion ORDER BY id"
             ).fetchall()
             assert claims == [
                 (1, "statement", "confirmed"),
@@ -138,13 +139,13 @@ def test_statements_and_definitions_become_claims_with_their_records(
                 "SELECT definition_id FROM annotation.term_definition_member"
             ).fetchall() == [(3,)]
             records = conn.execute(
-                "SELECT claim_id, method, verdict::text FROM annotation.verification"
+                "SELECT assertion_id, method, result::text FROM annotation.verification"
                 " WHERE method <> 'policy' ORDER BY id"
             ).fetchall()
             assert records == [(2, "a", "pass"), (4, "literal", "fail")]
 
             conn.execute("DELETE FROM corpus.provision")
-            assert conn.execute("SELECT count(*) FROM annotation.claim").fetchone() == (0,)
+            assert conn.execute("SELECT count(*) FROM annotation.assertion").fetchone() == (0,)
             conn.rollback()
     finally:
         _drop(dsn, name)
@@ -186,11 +187,11 @@ def test_existing_duplicates_keep_the_earliest_and_reject_the_rest(
 
             assert conn.execute(
                 "SELECT id, confirm_state::text, fingerprint IS NOT NULL"
-                " FROM annotation.claim ORDER BY id"
+                " FROM annotation.assertion ORDER BY id"
             ).fetchall() == [(1, "confirmed", True), (2, "rejected", True), (3, "rejected", True)]
             assert conn.execute(
-                "SELECT claim_id, verifier, evidence FROM annotation.verification"
-                " WHERE method = 'policy' AND claim_id = 2"
+                "SELECT assertion_id, verifier, evidence FROM annotation.verification"
+                " WHERE method = 'policy' AND assertion_id = 2"
             ).fetchall() == [
                 (2, "migration:0028", {"action": "rejected", "reason": "duplicate", "kept": 1})
             ]

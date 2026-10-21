@@ -88,7 +88,7 @@ def test_the_extractor_cannot_verify_itself_even_by_a_direct_insert(
     duty = _two_statements(conn, tmp_path).ids["duty"]
     with pytest.raises(psycopg.errors.CheckViolation, match="extractor cannot verify"):
         conn.execute(
-            "INSERT INTO annotation.verification (claim_id, method, verifier, verdict)"
+            "INSERT INTO annotation.verification (assertion_id, method, verifier, result)"
             " VALUES (%s, 'x', 'test', 'pass')",
             (duty,),
         )
@@ -96,13 +96,13 @@ def test_the_extractor_cannot_verify_itself_even_by_a_direct_insert(
 
 
 def _set_state(conn: Conn, sid: int, state: str) -> None:
-    conn.execute("UPDATE annotation.claim SET confirm_state = %s WHERE id = %s", (state, sid))
+    conn.execute("UPDATE annotation.assertion SET confirm_state = %s WHERE id = %s", (state, sid))
 
 
 def _policy(conn: Conn, sid: int) -> list[tuple[object, ...]]:
     return conn.execute(
         "SELECT verifier, evidence FROM annotation.verification"
-        " WHERE claim_id = %s AND method = 'policy' ORDER BY id",
+        " WHERE assertion_id = %s AND method = 'policy' ORDER BY id",
         (sid,),
     ).fetchall()
 

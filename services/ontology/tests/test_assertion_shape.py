@@ -15,7 +15,7 @@ from tests.test_incremental import _articles, _first, _law_v1
 
 
 def _claims(conn: psycopg.Connection[tuple[object, ...]]) -> int:
-    return int(_scalar(conn, "SELECT count(*) FROM annotation.claim"))
+    return int(_scalar(conn, "SELECT count(*) FROM annotation.assertion"))
 
 
 def _with_slots(slots: dict[str, Any], span: list[int] | None = None) -> dict[str, Any]:
@@ -120,7 +120,7 @@ def test_a_claim_must_be_sealed_before_commit(conn: Conn, tmp_path: Path) -> Non
     ).fetchone()  # type: ignore[misc]
     claim = _scalar(
         conn,
-        "INSERT INTO annotation.claim (claim_kind, derivation_id)"
+        "INSERT INTO annotation.assertion (assertion_kind, derivation_id)"
         " SELECT 'statement', id FROM annotation.derivation RETURNING id",
     )
     conn.execute(

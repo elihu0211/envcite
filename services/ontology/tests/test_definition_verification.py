@@ -44,7 +44,7 @@ def _extracted(conn: Conn, tmp_path: Path, members: list[str] | None = None) -> 
 
 
 def _state(conn: Conn) -> str:
-    return str(_scalar(conn, "SELECT confirm_state::text FROM annotation.claim"))
+    return str(_scalar(conn, "SELECT confirm_state::text FROM annotation.assertion"))
 
 
 def test_the_literal_gate_passes_words_that_are_in_the_text(conn: Conn, tmp_path: Path) -> None:

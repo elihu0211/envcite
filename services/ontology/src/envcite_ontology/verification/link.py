@@ -37,7 +37,7 @@ def _candidates(conn: Conn, law: str, cited: Sequence[str]) -> list[tuple[int, s
     """原文引用的條文裡、現行文字上、還沒被駁回的義務與禁止陳述。"""
     rows = conn.execute(
         "SELECT s.id, p.path FROM annotation.statement AS s"
-        "  JOIN annotation.claim AS sc ON sc.id = s.id"
+        "  JOIN annotation.assertion AS sc ON sc.id = s.id"
         "  JOIN corpus.provision AS p ON p.id = s.provision_id"
         "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
         "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"

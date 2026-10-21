@@ -38,15 +38,15 @@ def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
     ids = [
         cast(int, row[0])
         for row in conn.execute(
-            "SELECT id FROM annotation.claim"
-            " WHERE claim_kind = 'statement' AND confirm_state = 'extracted' ORDER BY id"
+            "SELECT id FROM annotation.assertion"
+            " WHERE assertion_kind = 'statement' AND confirm_state = 'extracted' ORDER BY id"
         )
     ]
     for done, sid in enumerate(ids, 1):
         for gate in gates:
             latest = conn.execute(
-                "SELECT verdict::text FROM annotation.verification"
-                " WHERE claim_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
+                "SELECT result::text FROM annotation.verification"
+                " WHERE assertion_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
                 (sid, gate.method),
             ).fetchone()
             if latest is not None and latest[0] != "inconclusive":
@@ -61,7 +61,7 @@ def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
             )
             conn.execute(
                 "SELECT annotation.record_verification("
-                "%s, %s, %s, %s::annotation.verdict, %s::jsonb)",
+                "%s, %s, %s, %s::annotation.gate_result, %s::jsonb)",
                 (sid, gate.method, gate.verifier, verdict, Jsonb(evidence)),
             )
             written += 1

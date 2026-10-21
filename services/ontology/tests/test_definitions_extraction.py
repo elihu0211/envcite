@@ -73,7 +73,7 @@ def test_a_definition_is_loaded_into_the_laws_own_scheme_as_extracted(
         )
         == 1
     )
-    assert _scalar(conn, "SELECT confirm_state::text FROM annotation.claim") == ("extracted")
+    assert _scalar(conn, "SELECT confirm_state::text FROM annotation.assertion") == ("extracted")
     assert _scalar(conn, "SELECT count(*) FROM annotation.term_definition_member") == 2
     assert defined_terms(conn, LAW) == {"business": "事業"}
 

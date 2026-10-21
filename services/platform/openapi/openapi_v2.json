@@ -1353,8 +1353,7 @@
         "enum": [
           "Hierarchy",
           "LexSpecialis",
-          "LexPosterior",
-          "Exception"
+          "LexPosterior"
         ]
       },
       "PenaltyCandidateDto": {

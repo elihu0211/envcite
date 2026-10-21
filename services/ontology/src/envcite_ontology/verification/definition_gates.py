@@ -59,7 +59,7 @@ def definition_of(conn: Conn, definition_id: int) -> Definition:
         "  JOIN corpus.provision_version AS v ON v.provision_id = t.provision_id"
         "   AND v.content_sha256 = t.content_sha256 AND v.superseded_at IS NULL"
         "  JOIN vocab.concept AS tk ON tk.id = t.term_concept_id"
-        "  JOIN annotation.claim AS tc ON tc.id = t.id"
+        "  JOIN annotation.assertion AS tc ON tc.id = t.id"
         "  JOIN annotation.derivation AS d ON d.id = tc.derivation_id"
         " WHERE t.id = %s LIMIT 1",
         (definition_id,),
@@ -168,15 +168,15 @@ def verify(conn: Conn, gates: Sequence[DefinitionGate]) -> int:
     ids = [
         cast(int, row[0])
         for row in conn.execute(
-            "SELECT id FROM annotation.claim"
-            " WHERE claim_kind = 'definition' AND confirm_state = 'extracted' ORDER BY id"
+            "SELECT id FROM annotation.assertion"
+            " WHERE assertion_kind = 'definition' AND confirm_state = 'extracted' ORDER BY id"
         )
     ]
     for did in ids:
         for gate in gates:
             latest = conn.execute(
-                "SELECT verdict::text FROM annotation.verification"
-                " WHERE claim_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
+                "SELECT result::text FROM annotation.verification"
+                " WHERE assertion_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
                 (did, gate.method),
             ).fetchone()
             if latest is not None and latest[0] != "inconclusive":
@@ -187,7 +187,7 @@ def verify(conn: Conn, gates: Sequence[DefinitionGate]) -> int:
                 result = GateResult("inconclusive", {"error": str(e)[:300]})
             conn.execute(
                 "SELECT annotation.record_verification("
-                "%s, %s, %s, %s::annotation.verdict, %s::jsonb)",
+                "%s, %s, %s, %s::annotation.gate_result, %s::jsonb)",
                 (did, gate.method, gate.verifier, result.verdict, Jsonb(result.evidence)),
             )
             written += 1

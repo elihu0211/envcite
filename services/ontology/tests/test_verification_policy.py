@@ -99,8 +99,8 @@ def test_every_settlement_is_recorded_with_its_policy(conn: Conn, tmp_path: Path
     conn.commit()
 
     row = conn.execute(
-        "SELECT verifier, verdict::text, evidence FROM annotation.verification"
-        " WHERE claim_id = %s AND method = 'policy'",
+        "SELECT verifier, result::text, evidence FROM annotation.verification"
+        " WHERE assertion_id = %s AND method = 'policy'",
         (duty,),
     ).fetchone()
     assert row == ("settle", "pass", {"action": "confirmed", "required": ["a"]})

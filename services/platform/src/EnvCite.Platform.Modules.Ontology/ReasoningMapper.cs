@@ -168,7 +168,6 @@ internal static class ReasoningMapper
         OverrideBasis.Hierarchy => OverrideBasisDto.Hierarchy,
         OverrideBasis.LexSpecialis => OverrideBasisDto.LexSpecialis,
         OverrideBasis.LexPosterior => OverrideBasisDto.LexPosterior,
-        OverrideBasis.Exception => OverrideBasisDto.Exception,
         _ => throw Unknown(b),
     };
 

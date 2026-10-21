@@ -50,7 +50,7 @@ class ProvisoGate:
             "SELECT 1"
             "  FROM annotation.statement_exception AS e"
             "  JOIN annotation.statement AS ex ON ex.id = e.exception_id"
-            "  JOIN annotation.claim AS exc ON exc.id = ex.id"
+            "  JOIN annotation.assertion AS exc ON exc.id = ex.id"
             "  JOIN corpus.provision AS pe ON pe.id = ex.provision_id"
             "  JOIN corpus.provision AS ps ON ps.id = %s"
             " WHERE pe.resource_id = ps.resource_id AND pe.article_path = ps.article_path"
