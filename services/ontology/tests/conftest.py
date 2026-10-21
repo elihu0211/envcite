@@ -54,6 +54,7 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
     with psycopg.connect(dsn) as c:
         yield c
         c.rollback()
+        c.execute("RESET ROLE")
         c.execute("DELETE FROM corpus.legal_resource")
         c.execute("TRUNCATE source.import_problem, source.item, source.snapshot")
         # 索引是內容定址的衍生物：不隨法規連鎖刪除，測試之間要自己清。

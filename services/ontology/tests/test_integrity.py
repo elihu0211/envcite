@@ -108,25 +108,30 @@ def _policy(conn: Conn, sid: int) -> list[tuple[object, ...]]:
 
 
 def test_a_direct_state_change_is_recorded(conn: Conn, tmp_path: Path) -> None:
-    loaded = _two_statements(conn, tmp_path)
-    duty = loaded.ids["duty"]
+    duty = _two_statements(conn, tmp_path).ids["duty"]
     _set_state(conn, duty, "rejected")
-    conn.execute("SET LOCAL envcite.actor = 'reviewer:a'")
-    _set_state(conn, duty, "extracted")
 
-    (manual, first), (named, second) = _policy(conn, duty)
-    assert str(manual).startswith("manual:") and first == {"action": "rejected"}
-    assert (named, second) == ("reviewer:a", {"action": "extracted"})
+    assert _policy(conn, duty) == [("direct", {"action": "rejected"})]
+
+
+def test_a_manual_review_records_its_reason(conn: Conn, tmp_path: Path) -> None:
+    duty = _two_statements(conn, tmp_path).ids["duty"]
+    conn.execute("SELECT annotation.set_confirm_state(%s, 'rejected', '引文錯置')", (duty,))
+
+    assert _policy(conn, duty) == [("review", {"action": "rejected", "reason": "引文錯置"})]
+    with pytest.raises(psycopg.errors.CheckViolation, match="reason"):
+        conn.execute("SELECT annotation.set_confirm_state(%s, 'confirmed', ' ')", (duty,))
+    conn.rollback()
 
 
 def test_a_statement_loaded_as_reviewed_is_recorded(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1())
     duty = load(conn, _doc(_duty())).ids["duty"]  # review: confirmed
 
-    assert [e for _, e in _policy(conn, duty)] == [{"action": "confirmed"}]
+    assert _policy(conn, duty) == [("loaded", {"action": "confirmed"})]
 
 
-def test_settle_does_not_lend_its_name_to_later_changes(conn: Conn, tmp_path: Path) -> None:
+def test_settle_records_once_and_does_not_lend_its_name(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", "乙一")))
     ids = load(conn, _doc(_plain_duty(), _limit("乙一", 100), review="extracted")).ids
     duty, other = ids["duty"], ids["limit100"]
@@ -135,8 +140,14 @@ def test_settle_does_not_lend_its_name_to_later_changes(conn: Conn, tmp_path: Pa
     _set_state(conn, other, "rejected")
 
     assert [v for v, _ in _policy(conn, duty)] == ["settle"]
-    assert str(_policy(conn, other)[0][0]).startswith("manual:")
-    assert _scalar(conn, "SELECT current_setting('envcite.policy', true)") == ""
+    assert [v for v, _ in _policy(conn, other)] == ["direct"]
+
+
+def test_every_record_names_the_login_that_wrote_it(conn: Conn, tmp_path: Path) -> None:
+    duty = _two_statements(conn, tmp_path).ids["duty"]
+    _record(conn, duty, "a", "pass")
+
+    assert _scalar(conn, "SELECT recorded_by = session_user FROM annotation.verification")
 
 
 def test_the_extractor_is_asked_to_repair_what_the_database_would_refuse() -> None:
