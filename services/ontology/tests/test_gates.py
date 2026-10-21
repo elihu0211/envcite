@@ -90,7 +90,7 @@ def test_references_gate_requires_the_punished_provision_to_be_the_cited_one(
     ids = _water(conn, sample).ids
     gate = ReferencesGate()
     conn.execute(
-        "UPDATE annotation.statement SET confirm_state = 'confirmed' WHERE id = %s", (ids["w7_1"],)
+        "UPDATE annotation.claim SET confirm_state = 'confirmed' WHERE id = %s", (ids["w7_1"],)
     )
 
     ok = gate.check(conn, ids["p40_1_fine"])

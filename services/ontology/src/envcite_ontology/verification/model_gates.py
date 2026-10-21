@@ -53,7 +53,8 @@ _VERDICTS = {
 def _extractor(conn: Conn, statement_id: int) -> str:
     row = conn.execute(
         "SELECT d.producer FROM annotation.statement AS s"
-        "  JOIN annotation.derivation AS d ON d.id = s.derivation_id WHERE s.id = %s",
+        "  JOIN annotation.claim AS sc ON sc.id = s.id"
+        "  JOIN annotation.derivation AS d ON d.id = sc.derivation_id WHERE s.id = %s",
         (statement_id,),
     ).fetchone()
     if row is None:

@@ -38,14 +38,15 @@ def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
     ids = [
         cast(int, row[0])
         for row in conn.execute(
-            "SELECT id FROM annotation.statement WHERE confirm_state = 'extracted' ORDER BY id"
+            "SELECT id FROM annotation.claim"
+            " WHERE claim_kind = 'statement' AND confirm_state = 'extracted' ORDER BY id"
         )
     ]
     for done, sid in enumerate(ids, 1):
         for gate in gates:
             latest = conn.execute(
                 "SELECT verdict::text FROM annotation.verification"
-                " WHERE statement_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
+                " WHERE claim_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
                 (sid, gate.method),
             ).fetchone()
             if latest is not None and latest[0] != "inconclusive":
@@ -79,7 +80,7 @@ def settle(
         rounds += 1
         verify(conn, gates)
         row = conn.execute(
-            "SELECT confirmed, rejected FROM annotation.settle(%s)", (list(required),)
+            "SELECT confirmed, rejected FROM annotation.settle('statement', %s)", (list(required),)
         ).fetchone()
         conn.commit()
         assert row is not None

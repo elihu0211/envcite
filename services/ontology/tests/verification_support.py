@@ -22,7 +22,7 @@ DETERMINISTIC = ["numbers", "references", "executable"]
 def _review(conn: Conn, statement_id: int) -> str:
     return str(
         _scalar(
-            conn, "SELECT confirm_state::text FROM annotation.statement WHERE id = %s", statement_id
+            conn, "SELECT confirm_state::text FROM annotation.claim WHERE id = %s", statement_id
         )
     )
 
@@ -32,7 +32,7 @@ def _latest(conn: Conn, statement_id: int, method: str) -> str:
         _scalar(
             conn,
             "SELECT verdict::text FROM annotation.verification"
-            " WHERE statement_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
+            " WHERE claim_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
             statement_id,
             method,
         )

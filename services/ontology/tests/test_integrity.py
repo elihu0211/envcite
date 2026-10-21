@@ -88,7 +88,7 @@ def test_the_extractor_cannot_verify_itself_even_by_a_direct_insert(
     duty = _two_statements(conn, tmp_path).ids["duty"]
     with pytest.raises(psycopg.errors.CheckViolation, match="extractor cannot verify"):
         conn.execute(
-            "INSERT INTO annotation.verification (statement_id, method, verifier, verdict)"
+            "INSERT INTO annotation.verification (claim_id, method, verifier, verdict)"
             " VALUES (%s, 'x', 'test', 'pass')",
             (duty,),
         )
@@ -96,13 +96,13 @@ def test_the_extractor_cannot_verify_itself_even_by_a_direct_insert(
 
 
 def _set_state(conn: Conn, sid: int, state: str) -> None:
-    conn.execute("UPDATE annotation.statement SET confirm_state = %s WHERE id = %s", (state, sid))
+    conn.execute("UPDATE annotation.claim SET confirm_state = %s WHERE id = %s", (state, sid))
 
 
 def _policy(conn: Conn, sid: int) -> list[tuple[object, ...]]:
     return conn.execute(
         "SELECT verifier, evidence FROM annotation.verification"
-        " WHERE statement_id = %s AND method = 'policy' ORDER BY id",
+        " WHERE claim_id = %s AND method = 'policy' ORDER BY id",
         (sid,),
     ).fetchall()
 
@@ -131,7 +131,7 @@ def test_settle_does_not_lend_its_name_to_later_changes(conn: Conn, tmp_path: Pa
     ids = load(conn, _doc(_plain_duty(), _limit("乙一", 100), review="extracted")).ids
     duty, other = ids["duty"], ids["limit100"]
     _record(conn, duty, "a", "pass")
-    conn.execute("SELECT * FROM annotation.settle(ARRAY['a'])")
+    conn.execute("SELECT * FROM annotation.settle('statement', ARRAY['a'])")
     _set_state(conn, other, "rejected")
 
     assert [v for v, _ in _policy(conn, duty)] == ["settle"]

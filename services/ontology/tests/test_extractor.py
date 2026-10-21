@@ -31,7 +31,7 @@ def test_the_extractor_anchors_what_the_model_quotes_and_drops_what_it_invents(
     assert out.loaded is not None and out.loaded.statements == 1
     assert out.dropped == ("invented: quote is not in the text",)
     assert "排放廢水者應符合標準" in model.prompts[0]
-    assert _scalar(conn, "SELECT confirm_state::text FROM annotation.statement") == "extracted"
+    assert _scalar(conn, "SELECT confirm_state::text FROM annotation.claim") == "extracted"
     assert _scalar(conn, "SELECT method::text FROM annotation.derivation") == "llm"
 
 

@@ -181,8 +181,9 @@ def test_a_threshold_from_an_unconfirmed_limit_is_not_used(conn: Conn, tmp_path:
     _first(conn, tmp_path, _law_v1())
     load(conn, _doc(_duty(), _limit("乙一", 100)))
     conn.execute(
-        "UPDATE annotation.statement SET confirm_state = 'extracted' WHERE provision_id ="
-        " (SELECT id FROM corpus.provision WHERE path = 'art_2')"
+        "UPDATE annotation.claim SET confirm_state = 'extracted' WHERE id IN"
+        " (SELECT s.id FROM annotation.statement AS s"
+        "    JOIN corpus.provision AS p ON p.id = s.provision_id WHERE p.path = 'art_2')"
     )
     conn.commit()
 
@@ -254,14 +255,18 @@ def test_statement_constraints(
     _first(conn, tmp_path, _law_v1())
     load(conn, _doc(_duty()))
     provision = _scalar(conn, "SELECT provision_id FROM annotation.statement")
-    derivation = _scalar(conn, "SELECT id FROM annotation.derivation")
+    claim = _scalar(
+        conn,
+        "INSERT INTO annotation.claim (claim_kind, derivation_id)"
+        " SELECT 'statement', id FROM annotation.derivation RETURNING id",
+    )
 
     with pytest.raises(psycopg.errors.CheckViolation):
         conn.execute(
             "INSERT INTO annotation.statement"
-            " (provision_id, content_sha256, statement_kind, norm_modality, derivation_id)"
+            " (id, provision_id, content_sha256, statement_kind, norm_modality)"
             " VALUES (%s, %s, %s, %s, %s)",
-            (provision, digest, kind, deontic, derivation),
+            (claim, provision, digest, kind, deontic),
         )
 
 

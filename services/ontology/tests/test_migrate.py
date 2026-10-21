@@ -54,3 +54,97 @@ def test_a_database_at_the_first_baseline_upgrades_to_the_current_files(
     finally:
         with psycopg.connect(dsn, autocommit=True) as admin:
             admin.execute(f"DROP DATABASE IF EXISTS {name} WITH (FORCE)")
+
+
+def _at(dsn: str, name: str, tmp_path: Path, before: str) -> psycopg.Connection[tuple[object, ...]]:
+    """A fresh database with the migrations before `before` applied."""
+    with psycopg.connect(dsn, autocommit=True) as admin:
+        admin.execute(f"DROP DATABASE IF EXISTS {name} WITH (FORCE)")
+        admin.execute(f"CREATE DATABASE {name}")
+    baseline = tmp_path / name
+    baseline.mkdir()
+    for path in sorted(MIGRATIONS_DIR.glob("*.sql")):
+        if path.name >= before:
+            break
+        (baseline / path.name).write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    conn = psycopg.connect(make_conninfo(dsn, dbname=name))
+    apply_all(conn, baseline)
+    return conn
+
+
+def _drop(dsn: str, name: str) -> None:
+    with psycopg.connect(dsn, autocommit=True) as admin:
+        admin.execute(f"DROP DATABASE IF EXISTS {name} WITH (FORCE)")
+
+
+_BEFORE_CLAIM = """
+INSERT INTO corpus.legal_resource (id, id_scheme, local_id, norm_kind, document_type)
+OVERRIDING SYSTEM VALUE VALUES (1, 'moj_pcode', 'T0000001', 'statute', '法律');
+INSERT INTO corpus.legal_expression
+    (id, resource_id, language, version_date, title, text_period, text_status, text_authority)
+OVERRIDING SYSTEM VALUE
+VALUES (1, 1, 'zho', '2020-01-01', '測試法', '[2020-01-01,)', 'available', 'official_db');
+INSERT INTO corpus.provision (id, resource_id, provision_type, path)
+OVERRIDING SYSTEM VALUE VALUES (1, 1, 'article', 'art_1');
+INSERT INTO corpus.provision_version
+    (provision_id, expression_id, resource_id, content, force_period, commencement_rule)
+VALUES (1, 1, 1, '甲一', '[2020-01-01,)', 'specified');
+INSERT INTO annotation.derivation (id, method, producer, producer_version)
+OVERRIDING SYSTEM VALUE VALUES (1, 'llm', 'model-a', '1');
+INSERT INTO annotation.statement
+    (id, provision_id, content_sha256, statement_kind, norm_modality, derivation_id, confirm_state)
+OVERRIDING SYSTEM VALUE
+VALUES (1, 1, sha256('甲一'::bytea), 'constitutive', NULL, 1, 'confirmed'),
+       (2, 1, sha256('甲一'::bytea), 'constitutive', NULL, 1, 'extracted');
+INSERT INTO vocab.concept_scheme (id, code, title, scope_resource_id)
+OVERRIDING SYSTEM VALUE VALUES (1, 'def.T0000001', '本法用語', 1);
+INSERT INTO vocab.concept (id, scheme_id, code, name)
+OVERRIDING SYSTEM VALUE VALUES (1, 1, 'business', '事業'), (2, 1, 'factory', '工廠');
+INSERT INTO annotation.term_definition (id, provision_id, content_sha256, term_concept_id,
+                                       definition_text, derivation_id, confirm_state)
+OVERRIDING SYSTEM VALUE
+VALUES (4, 1, sha256('甲一'::bytea), 1, '指工廠', 1, 'extracted'),
+       (5, 1, sha256('甲一'::bytea), 2, '指工廠', 1, 'rejected');
+INSERT INTO annotation.term_definition_member (definition_id, member_concept_id) VALUES (4, 2);
+SELECT annotation.record_verification(2, 'a', 'tool', 'pass');
+SELECT annotation.record_definition_verification(5, 'literal', 'tool', 'fail');
+"""
+
+
+def test_statements_and_definitions_become_claims_with_their_records(
+    dsn: str, tmp_path: Path
+) -> None:
+    """陳述保留 id；定義改發的 id 與舊 id 範圍重疊（舊 4、5 → 新 3、4），成員與驗證紀錄跟著走。"""
+    name = "claim_upgrade"
+    try:
+        with _at(dsn, name, tmp_path, "0026") as conn:
+            conn.execute(_BEFORE_CLAIM)
+            conn.commit()
+            assert apply_all(conn)[0] == "0026_claim.sql"
+
+            claims = conn.execute(
+                "SELECT id, claim_kind::text, confirm_state::text FROM annotation.claim ORDER BY id"
+            ).fetchall()
+            assert claims == [
+                (1, "statement", "confirmed"),
+                (2, "statement", "extracted"),
+                (3, "definition", "extracted"),
+                (4, "definition", "rejected"),
+            ]
+            assert conn.execute(
+                "SELECT id, term_concept_id FROM annotation.term_definition ORDER BY id"
+            ).fetchall() == [(3, 1), (4, 2)]
+            assert conn.execute(
+                "SELECT definition_id FROM annotation.term_definition_member"
+            ).fetchall() == [(3,)]
+            records = conn.execute(
+                "SELECT claim_id, method, verdict::text FROM annotation.verification"
+                " WHERE method <> 'policy' ORDER BY id"
+            ).fetchall()
+            assert records == [(2, "a", "pass"), (4, "literal", "fail")]
+
+            conn.execute("DELETE FROM corpus.provision")
+            assert conn.execute("SELECT count(*) FROM annotation.claim").fetchone() == (0,)
+            conn.rollback()
+    finally:
+        _drop(dsn, name)

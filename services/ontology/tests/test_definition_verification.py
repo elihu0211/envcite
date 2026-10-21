@@ -44,7 +44,7 @@ def _extracted(conn: Conn, tmp_path: Path, members: list[str] | None = None) -> 
 
 
 def _state(conn: Conn) -> str:
-    return str(_scalar(conn, "SELECT confirm_state::text FROM annotation.term_definition"))
+    return str(_scalar(conn, "SELECT confirm_state::text FROM annotation.claim"))
 
 
 def test_the_literal_gate_passes_words_that_are_in_the_text(conn: Conn, tmp_path: Path) -> None:
@@ -114,7 +114,7 @@ def test_the_extractor_cannot_verify_its_own_definition(conn: Conn, tmp_path: Pa
 
     with pytest.raises(psycopg.errors.CheckViolation):
         conn.execute(
-            "SELECT annotation.record_definition_verification(%s, 'literal', %s, 'pass')",
+            "SELECT annotation.record_verification(%s, 'literal', %s, 'pass')",
             (did, EXTRACTOR),
         )
 

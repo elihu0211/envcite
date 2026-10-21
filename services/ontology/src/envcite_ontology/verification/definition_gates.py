@@ -3,7 +3,7 @@
 - `literal`（確定性）：引文、用語與每個成員的名稱逐字在款的現行原文，且至少一個成員。
 - `roundtrip`（另一家族的模型）：重讀者只看原文，說出被定義的用語與明文列舉的成員，與標註逐項相同。
 
-與規範陳述同一套接受政策（`annotation.settle_definitions`）：必要方法最近一次都通過、沒有任何
+與規範陳述同一套接受政策（`annotation.settle('definition', …)`）：必要方法最近一次都通過、沒有任何
 方法最近一次失敗才確認；有失敗就駁回。成員漏列與多列都算不同——漏列的成員會被推論當成「不屬於」。
 """
 
@@ -59,7 +59,8 @@ def definition_of(conn: Conn, definition_id: int) -> Definition:
         "  JOIN corpus.provision_version AS v ON v.provision_id = t.provision_id"
         "   AND v.content_sha256 = t.content_sha256 AND v.superseded_at IS NULL"
         "  JOIN vocab.concept AS tk ON tk.id = t.term_concept_id"
-        "  JOIN annotation.derivation AS d ON d.id = t.derivation_id"
+        "  JOIN annotation.claim AS tc ON tc.id = t.id"
+        "  JOIN annotation.derivation AS d ON d.id = tc.derivation_id"
         " WHERE t.id = %s LIMIT 1",
         (definition_id,),
     ).fetchone()
@@ -167,15 +168,15 @@ def verify(conn: Conn, gates: Sequence[DefinitionGate]) -> int:
     ids = [
         cast(int, row[0])
         for row in conn.execute(
-            "SELECT id FROM annotation.term_definition"
-            " WHERE confirm_state = 'extracted' ORDER BY id"
+            "SELECT id FROM annotation.claim"
+            " WHERE claim_kind = 'definition' AND confirm_state = 'extracted' ORDER BY id"
         )
     ]
     for did in ids:
         for gate in gates:
             latest = conn.execute(
-                "SELECT verdict::text FROM annotation.definition_verification"
-                " WHERE definition_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
+                "SELECT verdict::text FROM annotation.verification"
+                " WHERE claim_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
                 (did, gate.method),
             ).fetchone()
             if latest is not None and latest[0] != "inconclusive":
@@ -185,7 +186,7 @@ def verify(conn: Conn, gates: Sequence[DefinitionGate]) -> int:
             except ModelError as e:
                 result = GateResult("inconclusive", {"error": str(e)[:300]})
             conn.execute(
-                "SELECT annotation.record_definition_verification("
+                "SELECT annotation.record_verification("
                 "%s, %s, %s, %s::annotation.verdict, %s::jsonb)",
                 (did, gate.method, gate.verifier, result.verdict, Jsonb(result.evidence)),
             )
@@ -206,7 +207,7 @@ def settle(
     """驗證、接受。定義之間沒有相依，一輪就夠。"""
     verify(conn, gates)
     row = conn.execute(
-        "SELECT confirmed, rejected FROM annotation.settle_definitions(%s)", (list(required),)
+        "SELECT confirmed, rejected FROM annotation.settle('definition', %s)", (list(required),)
     ).fetchone()
     conn.commit()
     assert row is not None

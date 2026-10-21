@@ -94,9 +94,10 @@ def defined_terms(conn: Conn, law: str) -> dict[str, str]:
     """該法已有定義的用語：代碼 → 名稱，供陳述抽取指名。"""
     rows = conn.execute(
         "SELECT DISTINCT k.code, k.name FROM annotation.term_definition AS t"
+        "  JOIN annotation.claim AS tc ON tc.id = t.id"
         "  JOIN vocab.concept AS k ON k.id = t.term_concept_id"
         "  JOIN vocab.concept_scheme AS s ON s.id = k.scheme_id"
-        " WHERE s.code = %s AND t.confirm_state <> 'rejected' ORDER BY k.code",
+        " WHERE s.code = %s AND tc.confirm_state <> 'rejected' ORDER BY k.code",
         (scheme_code(law),),
     )
     return {str(code): str(name) for code, name in rows}

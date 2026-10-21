@@ -18,7 +18,9 @@ from tests.test_import import _scalar
 @pytest.fixture
 def water(conn: Conn, sample: None) -> Loaded:
     loaded = load(conn, json.loads(WATER.read_text(encoding="utf-8")))
-    conn.execute("UPDATE annotation.statement SET confirm_state = 'confirmed'")
+    conn.execute(
+        "UPDATE annotation.claim SET confirm_state = 'confirmed' WHERE claim_kind = 'statement'"
+    )
     conn.commit()
     return loaded
 

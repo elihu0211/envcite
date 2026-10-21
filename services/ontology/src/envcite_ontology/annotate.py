@@ -288,19 +288,19 @@ def _definitions(
         seen.add(ident)
         provision_id, digest = _anchor(conn, "用語定義", t)
         span = t.get("span")
-        did = _one(
-            conn,
+        did = _claim(conn, "definition", derivation_id, review)
+        conn.execute(
             "INSERT INTO annotation.term_definition"
-            " (provision_id, content_sha256, span, term_concept_id, definition_text,"
-            "  derivation_id, confirm_state)"
-            " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
-            provision_id,
-            digest,
-            Range(span[0], span[1]) if span else None,
-            _concept(concepts, t["term"]),
-            t["definition"],
-            derivation_id,
-            review,
+            " (id, provision_id, content_sha256, span, term_concept_id, definition_text)"
+            " VALUES (%s, %s, %s, %s, %s, %s)",
+            (
+                did,
+                provision_id,
+                digest,
+                Range(span[0], span[1]) if span else None,
+                _concept(concepts, t["term"]),
+                t["definition"],
+            ),
         )
         for member in t.get("members", []):
             conn.execute(
@@ -314,17 +314,30 @@ def _definitions(
 def _statement(conn: Conn, s: Mapping[str, Any], derivation_id: int, review: str) -> int:
     provision_id, digest = _anchor(conn, "陳述", s)
     span = s.get("span")
+    sid = _claim(conn, "statement", derivation_id, review)
+    conn.execute(
+        "INSERT INTO annotation.statement"
+        " (id, provision_id, content_sha256, span, statement_kind, norm_modality)"
+        " VALUES (%s, %s, %s, %s, %s, %s)",
+        (
+            sid,
+            provision_id,
+            digest,
+            Range(span[0], span[1]) if span else None,
+            s["kind"],
+            s.get("deontic"),
+        ),
+    )
+    return sid
+
+
+def _claim(conn: Conn, kind: str, derivation_id: int, review: str) -> int:
+    """主張本身（來源推導與審核狀態）；子型別的列以同一個 id 寫入。"""
     return _one(
         conn,
-        "INSERT INTO annotation.statement"
-        " (provision_id, content_sha256, span, statement_kind, norm_modality,"
-        "  derivation_id, confirm_state)"
-        " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
-        provision_id,
-        digest,
-        Range(span[0], span[1]) if span else None,
-        s["kind"],
-        s.get("deontic"),
+        "INSERT INTO annotation.claim (claim_kind, derivation_id, confirm_state)"
+        " VALUES (%s, %s, %s) RETURNING id",
+        kind,
         derivation_id,
         review,
     )

@@ -71,7 +71,9 @@ def test_a_draft_nobody_reviewed_contributes_no_facts(conn: Conn, loaded: Loaded
 
 
 def test_once_confirmed_every_statement_is_a_fact_on_the_day(conn: Conn, loaded: Loaded) -> None:
-    conn.execute("UPDATE annotation.statement SET confirm_state = 'confirmed'")
+    conn.execute(
+        "UPDATE annotation.claim SET confirm_state = 'confirmed' WHERE claim_kind = 'statement'"
+    )
     conn.commit()
 
     assert _facts(conn) == 13

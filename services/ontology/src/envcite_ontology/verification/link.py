@@ -37,12 +37,13 @@ def _candidates(conn: Conn, law: str, cited: Sequence[str]) -> list[tuple[int, s
     """原文引用的條文裡、現行文字上、還沒被駁回的義務與禁止陳述。"""
     rows = conn.execute(
         "SELECT s.id, p.path FROM annotation.statement AS s"
+        "  JOIN annotation.claim AS sc ON sc.id = s.id"
         "  JOIN corpus.provision AS p ON p.id = s.provision_id"
         "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
         "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
         "   AND v.content_sha256 = s.content_sha256 AND v.superseded_at IS NULL"
         " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND s.statement_kind = 'prescriptive'"
-        "   AND s.norm_modality IN ('obligation', 'prohibition') AND s.confirm_state <> 'rejected'"
+        "   AND s.norm_modality IN ('obligation', 'prohibition') AND sc.confirm_state <> 'rejected'"
         " ORDER BY s.id",
         (law,),
     )

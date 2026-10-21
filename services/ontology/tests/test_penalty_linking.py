@@ -93,9 +93,7 @@ def test_a_penalty_is_linked_to_the_only_statement_of_the_article_it_cites(
         )
         == "art_1"
     )
-    conn.execute(
-        "UPDATE annotation.statement SET confirm_state = 'confirmed' WHERE id = %s", (target,)
-    )
+    conn.execute("UPDATE annotation.claim SET confirm_state = 'confirmed' WHERE id = %s", (target,))
     assert ReferencesGate().check(conn, penalty) == GateResult(
         "pass", {"target": "art_1", "cited": ["art_1"], "unresolved": []}
     )
