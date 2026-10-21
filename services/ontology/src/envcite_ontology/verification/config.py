@@ -4,6 +4,8 @@
 - 家族由人宣告，不從模型名推測：託管端點的名稱可能是別名，獨立性規則依家族判定。
 - 設定檔只寫金鑰位置（`api_key_env` 或相對於設定檔的 `api_key_file`）；
   金鑰檔在未忽略的 git 工作樹內則拒絕載入。
+- 語意檢索的嵌入模型也在這裡宣告（`[embedding]`），沿用同一組端點；伺服器與同步排程只讀這一段，
+  不需要標註管線的角色（`load_embedder`）。
 
 不認得的鍵與指向不存在者的參照一律報錯。
 """
@@ -19,6 +21,7 @@ from typing import Any
 
 import tomllib
 
+from envcite_ontology.embedding import Embedder
 from envcite_ontology.verification.models import AnthropicModel, ChatCompletionsModel, Model
 
 ROLES = ("extractor", "roundtrip", "independent_test", "panel")
@@ -139,7 +142,7 @@ def parse(
         doc = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"not valid TOML: {e}") from e
-    _only(doc, {"endpoint", "model", "roles"}, "top level")
+    _only(doc, {"endpoint", "model", "roles", "embedding"}, "top level")
     endpoints = {
         str(n): _endpoint(str(n), t, env, base_dir) for n, t in (doc.get("endpoint") or {}).items()
     }
@@ -168,3 +171,46 @@ def parse(
 
 def load(path: Path, env: Mapping[str, str] | None = None) -> ModelSet:
     return parse(path.read_text(encoding="utf-8"), env, path.resolve().parent)
+
+
+def parse_embedder(
+    text: str,
+    env: Mapping[str, str] | None = None,
+    base_dir: Path | None = None,
+    *,
+    timeout: float,
+    max_retries: int,
+) -> Embedder | None:
+    """`[embedding]` 宣告的嵌入模型；沒有這一段為 None（語意臂關閉）。只解析它指到的端點。"""
+    env = os.environ if env is None else env
+    base_dir = Path.cwd() if base_dir is None else base_dir
+    try:
+        doc = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigError(f"not valid TOML: {e}") from e
+    _only(doc, {"endpoint", "model", "roles", "embedding"}, "top level")
+    table = doc.get("embedding")
+    if table is None:
+        return None
+    _only(table, {"endpoint", "name"}, "embedding")
+    name = table.get("name")
+    if not isinstance(name, str) or not name:
+        raise ConfigError("embedding: name is required")
+    endpoint = str(table.get("endpoint"))
+    endpoints = doc.get("endpoint") or {}
+    if endpoint not in endpoints:
+        raise ConfigError(f"embedding: endpoint {endpoint!r} is not defined")
+    base, key = _endpoint(endpoint, endpoints[endpoint], env, base_dir)
+    return Embedder(name, base_url=base, api_key=key, timeout=timeout, max_retries=max_retries)
+
+
+def load_embedder(
+    path: Path, env: Mapping[str, str] | None = None, *, timeout: float, max_retries: int
+) -> Embedder | None:
+    return parse_embedder(
+        path.read_text(encoding="utf-8"),
+        env,
+        path.resolve().parent,
+        timeout=timeout,
+        max_retries=max_retries,
+    )

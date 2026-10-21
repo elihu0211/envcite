@@ -32,6 +32,12 @@ endpoint = "hosted"
 name = "coder"
 family = "inkling"
 
+# 語意檢索臂的嵌入模型（envcite-ontology、envcite-sync 經 ONTOLOGY_MODELS 讀這一段）。
+# 沿用上面的端點；沒有這一段時只用字面臂。換維度不是 1024 的模型要配一支遷移。
+[embedding]
+endpoint = "hosted"
+name = "bge-m3-embedding"
+
 # Anthropic 的模型不經端點，金鑰取自 ANTHROPIC_API_KEY（需要 `uv sync --extra llm`）。
 # [model.claude]
 # provider = "anthropic"

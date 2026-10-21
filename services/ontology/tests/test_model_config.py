@@ -6,7 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from envcite_ontology.verification.config import ConfigError, load, parse
+from envcite_ontology.verification.config import (
+    ConfigError,
+    load,
+    load_embedder,
+    parse,
+    parse_embedder,
+)
 from envcite_ontology.verification.run import SameModel, gates_from, main
 from tests.test_chat_adapter import Endpoint
 
@@ -284,3 +290,42 @@ def test_check_asks_every_model_and_needs_no_database(monkeypatch: pytest.Monkey
         served.server.shutdown()
 
     assert len(served.requests) == 2 * len(load(EXAMPLE).everyone)
+
+
+def test_the_embedder_is_declared_in_the_same_file_and_reuses_an_endpoint() -> None:
+    embedder = load_embedder(EXAMPLE, ENV, timeout=5.0, max_retries=0)
+
+    assert embedder is not None and embedder.model == "bge-m3-embedding"
+    assert "secret-value" not in repr(embedder)
+    assert load(EXAMPLE, ENV).extractor.name == "mistral:mistral-small-4"  # 管線照常讀同一份
+
+
+def test_no_embedding_section_means_no_semantic_arm() -> None:
+    assert parse_embedder(MINIMAL, ENV, timeout=5.0, max_retries=0) is None
+
+
+def test_the_embedder_needs_only_its_own_endpoint() -> None:
+    """伺服器只拿得到嵌入端點的金鑰時，別的端點缺環境變數不影響它。"""
+    text = (
+        MINIMAL
+        + '\n[endpoint.other]\nbase_url_env = "MISSING"\n'
+        + '\n[embedding]\nendpoint = "e"\nname = "m3"\n'
+    )
+
+    embedder = parse_embedder(text, ENV, timeout=5.0, max_retries=0)
+
+    assert embedder is not None and embedder.model == "m3"
+    with pytest.raises(ConfigError, match="endpoint 'nope'"):
+        parse_embedder(
+            MINIMAL + '\n[embedding]\nendpoint = "nope"\nname = "m3"\n',
+            ENV,
+            timeout=5.0,
+            max_retries=0,
+        )
+    with pytest.raises(ConfigError, match="unknown keys"):
+        parse_embedder(
+            MINIMAL + '\n[embedding]\nendpoint = "e"\nname = "m3"\ndim = 1024\n',
+            ENV,
+            timeout=5.0,
+            max_retries=0,
+        )

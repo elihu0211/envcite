@@ -15,7 +15,7 @@ answerable ones. For each score it also reports the floor that best separates an
 out-of-scope questions (by each question's top score): that is what consult's relevance floor is
 calibrated from, and it holds only for the score it was derived from.
 
-Database and embedder come from the environment (ONTOLOGY_DSN, EMBEDDING_*); the question writer
+Database and embedder come from the environment (ONTOLOGY_DSN, ONTOLOGY_MODELS); the question writer
 from `models.toml`. This script never reads or writes a key itself.
 """
 
@@ -35,7 +35,7 @@ import psycopg
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from envcite_ontology import embedding
-from envcite_ontology.settings import DatabaseSettings, EmbeddingSettings, load
+from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
 from envcite_ontology.store import OntologyStore
 from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
@@ -274,7 +274,7 @@ def main() -> None:
     items = [
         json.loads(line) for line in args.dataset.read_text(encoding="utf-8").splitlines() if line
     ]
-    embedder = embedding.from_settings(load(EmbeddingSettings), timeout=30.0, max_retries=3)
+    embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0, max_retries=3)
     with OntologyStore.from_dsn(db.ontology_dsn) as store:
         segmenter = Segmenter(store.lexicon())
         lexical = search_all(store, segmenter, items, None, k=args.k, on=on.isoformat())

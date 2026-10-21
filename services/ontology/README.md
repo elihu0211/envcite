@@ -118,7 +118,7 @@ uv run --env-file .env envcite-pipeline --pending --limit <N> --models models.to
 
 ### 模型配置（`models.toml`）
 
-模型與角色全部寫在一個 TOML 檔，由 `--models` 指定，沒有別的設定途徑。範本是 `models.example.toml`；`models.toml` 不進版控。
+模型、角色與檢索用的嵌入模型全部寫在一個 TOML 檔，沒有別的設定途徑：標註管線由 `--models` 指定，伺服器與同步由環境變數 `ONTOLOGY_MODELS` 指向它。範本是 `models.example.toml`；`models.toml` 不進版控。
 
 從倉庫根開始：
 
@@ -135,9 +135,10 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 確認�
 [endpoint.<名>]   # OpenAI 相容的服務：網址與金鑰的位置
 [model.<別名>]    # 用哪個端點、送出什麼名稱、屬於哪個家族
 [roles]           # 四個角色各指名模型別名
+[embedding]       # 選填：語意檢索臂用哪個端點與模型名稱；沒有這一段只用字面臂
 ```
 
-缺角色、不認得的鍵、參照不存在的名稱，載入時一律報錯。
+`[embedding]` 只需要它指名的端點備妥金鑰，伺服器不因標註管線的端點缺金鑰而起不來。缺角色、不認得的鍵、參照不存在的名稱，載入時一律報錯。
 
 **端點**
 

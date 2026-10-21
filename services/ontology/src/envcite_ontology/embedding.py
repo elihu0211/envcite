@@ -1,7 +1,8 @@
 """嵌入模型：OpenAI 相容的 `/embeddings` 端點，只用標準函式庫（同 `verification.models`）。
 
 語意臂在兩處用它：投影時為段落補嵌入（可重試、批次），查詢時為問題取向量（逾時短、不重試，
-取不到就只用字面臂）。端點網址沒有預設值：不把法規文字或客戶的問題悄悄送到未指定的第三方。
+取不到就只用字面臂）。端點與模型宣告在 `models.toml` 的 `[embedding]`（`verification.config`），
+沒有預設值：不把法規文字或客戶的問題悄悄送到未指定的第三方。
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ import urllib.request
 from collections.abc import Sequence
 from http.client import HTTPException
 
-from envcite_ontology.settings import EmbeddingSettings
+from envcite_ontology.settings import ModelsSettings
 
 log = logging.getLogger(__name__)
 
@@ -91,19 +92,13 @@ class Embedder:
         raise AssertionError("unreachable")  # pragma: no cover
 
 
-def from_settings(
-    settings: EmbeddingSettings, *, timeout: float, max_retries: int
-) -> Embedder | None:
-    """沒有設定端點時為 None：語意臂關閉，檢索只用字面臂。"""
-    if not settings.embedding_base_url:
+def from_settings(settings: ModelsSettings, *, timeout: float, max_retries: int) -> Embedder | None:
+    """`models.toml` 的 `[embedding]`；沒有設定檔或沒有這一段時為 None，檢索只用字面臂。"""
+    if settings.ontology_models is None:
         return None
-    return Embedder(
-        settings.embedding_model,
-        base_url=settings.embedding_base_url,
-        api_key=settings.embedding_api_key or None,
-        timeout=timeout,
-        max_retries=max_retries,
-    )
+    from envcite_ontology.verification import config  # 延後匯入：verification 套件會回頭用到 store
+
+    return config.load_embedder(settings.ontology_models, timeout=timeout, max_retries=max_retries)
 
 
 def to_sql(vector: Sequence[float]) -> str:
