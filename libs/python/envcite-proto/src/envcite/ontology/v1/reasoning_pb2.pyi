@@ -234,6 +234,31 @@ VERDICT_EXCLUDED: Verdict.ValueType  # 6
 VERDICT_NOT_APPLICABLE: Verdict.ValueType  # 7
 Global___Verdict: _TypeAlias = Verdict  # noqa: Y015
 
+class _GuidanceKind:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _GuidanceKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_GuidanceKind.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    GUIDANCE_KIND_UNSPECIFIED: _GuidanceKind.ValueType  # 0
+    GUIDANCE_KIND_INTERPRETATION: _GuidanceKind.ValueType  # 1
+    """解釋性規定（行政程序法第 159 條第 2 項第 2 款）。"""
+    GUIDANCE_KIND_DISCRETION_STANDARD: _GuidanceKind.ValueType  # 2
+    """裁量基準（同款）。"""
+    GUIDANCE_KIND_OPERATIONAL: _GuidanceKind.ValueType  # 3
+    """組織性、作業性規定（同項第 1 款）。"""
+
+class GuidanceKind(_GuidanceKind, metaclass=_GuidanceKindEnumTypeWrapper): ...
+
+GUIDANCE_KIND_UNSPECIFIED: GuidanceKind.ValueType  # 0
+GUIDANCE_KIND_INTERPRETATION: GuidanceKind.ValueType  # 1
+"""解釋性規定（行政程序法第 159 條第 2 項第 2 款）。"""
+GUIDANCE_KIND_DISCRETION_STANDARD: GuidanceKind.ValueType  # 2
+"""裁量基準（同款）。"""
+GUIDANCE_KIND_OPERATIONAL: GuidanceKind.ValueType  # 3
+"""組織性、作業性規定（同項第 1 款）。"""
+Global___GuidanceKind: _TypeAlias = GuidanceKind  # noqa: Y015
+
 class _ProblemKind:
     ValueType = _typing.NewType("ValueType", _builtins.int)
     V: _TypeAlias = ValueType  # noqa: Y015
@@ -1046,6 +1071,7 @@ class Outcome(_message.Message):
     SOURCES_FIELD_NUMBER: _builtins.int
     UNCOVERED_LAW_IDS_FIELD_NUMBER: _builtins.int
     DEFINITIONS_USED_FIELD_NUMBER: _builtins.int
+    GUIDANCE_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def verdicts(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementVerdict]: ...
     @_builtins.property
@@ -1113,6 +1139,14 @@ class Outcome(_message.Message):
         「甲屬於乙」的依據。沒有定義涵蓋而判為不屬於的要件，不在此（沒有定義可指）。
         """
 
+    @_builtins.property
+    def guidance(self) -> _containers.RepeatedCompositeFieldContainer[Global___Guidance]:
+        """主管機關對本結果所依條文的行政規則（行政程序法第 159 條：函釋、裁量基準等）。行政規則
+        拘束機關內部，不直接拘束人民與法院，所以不參與推論，只附在結果旁。以處分日判斷是否已發布、
+        尚未停止適用（釋字第 287 號：解釋性規定自所解釋的法規生效日起有效，未確定的案件即可適用），
+        且所解釋的須正是陳述所讀的那段文字；條文修正後文字改了，舊的解釋就不再附上。
+        """
+
     def __init__(
         self,
         *,
@@ -1133,16 +1167,66 @@ class Outcome(_message.Message):
         sources: _abc.Iterable[Global___StatementSource] | None = ...,
         uncovered_law_ids: _abc.Iterable[_builtins.str] | None = ...,
         definitions_used: _abc.Iterable[Global___DefinitionUse] | None = ...,
+        guidance: _abc.Iterable[Global___Guidance] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "general", b"general", "one_act", b"one_act"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "assessment_used", b"assessment_used", "defeated", b"defeated", "definitions_used", b"definitions_used", "general", b"general", "limit_sources", b"limit_sources", "missing", b"missing", "needs_assessment", b"needs_assessment", "one_act", b"one_act", "penalties", b"penalties", "penalty_defeated", b"penalty_defeated", "problems", b"problems", "sources", b"sources", "trace", b"trace", "uncovered_law_ids", b"uncovered_law_ids", "unresolved_conflicts", b"unresolved_conflicts", "unresolved_penalty_overlaps", b"unresolved_penalty_overlaps", "verdicts", b"verdicts"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "assessment_used", b"assessment_used", "defeated", b"defeated", "definitions_used", b"definitions_used", "general", b"general", "guidance", b"guidance", "limit_sources", b"limit_sources", "missing", b"missing", "needs_assessment", b"needs_assessment", "one_act", b"one_act", "penalties", b"penalties", "penalty_defeated", b"penalty_defeated", "problems", b"problems", "sources", b"sources", "trace", b"trace", "uncovered_law_ids", b"uncovered_law_ids", "unresolved_conflicts", b"unresolved_conflicts", "unresolved_penalty_overlaps", b"unresolved_penalty_overlaps", "verdicts", b"verdicts"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     _WhichOneofReturnType__one_act: _TypeAlias = _typing.Literal["one_act"]  # noqa: Y015
     _WhichOneofArgType__one_act: _TypeAlias = _typing.Literal["_one_act", b"_one_act"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType__one_act) -> _WhichOneofReturnType__one_act | None: ...
 
 Global___Outcome: _TypeAlias = Outcome  # noqa: Y015
+
+@_typing.final
+class Guidance(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ISSUER_FIELD_NUMBER: _builtins.int
+    DOCUMENT_NO_FIELD_NUMBER: _builtins.int
+    ISSUED_ON_FIELD_NUMBER: _builtins.int
+    KIND_FIELD_NUMBER: _builtins.int
+    SUBJECT_FIELD_NUMBER: _builtins.int
+    STATEMENT_IDS_FIELD_NUMBER: _builtins.int
+    PUBLISHED_IN_FIELD_NUMBER: _builtins.int
+    SOURCE_URL_FIELD_NUMBER: _builtins.int
+    issuer: _builtins.str
+    """發文機關。"""
+    document_no: _builtins.str
+    """發文字號。"""
+    issued_on: _builtins.str
+    """發文日（ISO 8601）。"""
+    kind: Global___GuidanceKind.ValueType
+    subject: _builtins.str
+    """主旨。"""
+    published_in: _builtins.str
+    """公報出處（行政程序法第 160 條第 2 項），可能為空。"""
+    source_url: _builtins.str
+    """原文的網址，可能為空。"""
+    @_builtins.property
+    def statement_ids(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]:
+        """本則所解釋、出現在本結果裡的陳述。"""
+
+    def __init__(
+        self,
+        *,
+        issuer: _builtins.str = ...,
+        document_no: _builtins.str = ...,
+        issued_on: _builtins.str = ...,
+        kind: Global___GuidanceKind.ValueType = ...,
+        subject: _builtins.str = ...,
+        statement_ids: _abc.Iterable[_builtins.int] | None = ...,
+        published_in: _builtins.str = ...,
+        source_url: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["document_no", b"document_no", "issued_on", b"issued_on", "issuer", b"issuer", "kind", b"kind", "published_in", b"published_in", "source_url", b"source_url", "statement_ids", b"statement_ids", "subject", b"subject"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___Guidance: _TypeAlias = Guidance  # noqa: Y015
 
 @_typing.final
 class DefinitionUse(_message.Message):

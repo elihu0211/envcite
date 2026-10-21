@@ -117,7 +117,10 @@ internal static class ReasoningMapper
         [.. o.Sources.Select(s => new StatementSourceDto(s.StatementId, s.VersionIri))],
         [.. o.UncoveredLawIds],
         [.. o.DefinitionsUsed.Select(d => new DefinitionUseDto(
-            d.ConditionId, d.DefinitionId, d.VersionIri, d.Term, [.. d.Members]))]);
+            d.ConditionId, d.DefinitionId, d.VersionIri, d.Term, [.. d.Members]))],
+        [.. o.Guidance.Select(g => new GuidanceDto(
+            g.Issuer, g.DocumentNo, g.IssuedOn, Map(g.Kind), g.Subject, [.. g.StatementIds],
+            g.PublishedIn.Length > 0 ? g.PublishedIn : null, g.SourceUrl.Length > 0 ? g.SourceUrl : null))]);
 
     private static VerdictDto Map(Verdict v) => v switch
     {
@@ -149,6 +152,14 @@ internal static class ReasoningMapper
         ProblemKind.UnresolvedDelegation => ProblemKindDto.UnresolvedDelegation,
         ProblemKind.UnsupportedCondition => ProblemKindDto.UnsupportedCondition,
         ProblemKind.BadDate => ProblemKindDto.BadDate,
+        _ => throw Unknown(k),
+    };
+
+    private static GuidanceKindDto Map(GuidanceKind k) => k switch
+    {
+        GuidanceKind.Interpretation => GuidanceKindDto.Interpretation,
+        GuidanceKind.DiscretionStandard => GuidanceKindDto.DiscretionStandard,
+        GuidanceKind.Operational => GuidanceKindDto.Operational,
         _ => throw Unknown(k),
     };
 

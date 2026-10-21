@@ -89,6 +89,17 @@ public enum ProblemKindDto
     BadDate,
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter<GuidanceKindDto>))]
+public enum GuidanceKindDto
+{
+    /// <summary>解釋性規定（行政程序法第 159 條第 2 項第 2 款）。</summary>
+    Interpretation,
+    /// <summary>裁量基準（同款）。</summary>
+    DiscretionStandard,
+    /// <summary>組織性、作業性規定（同項第 1 款）。</summary>
+    Operational,
+}
+
 [JsonConverter(typeof(JsonStringEnumConverter<OverrideBasisDto>))]
 public enum OverrideBasisDto
 {
@@ -191,6 +202,20 @@ public sealed record DefinitionUseDto(
     long ConditionId, long DefinitionId, string Uri, string Term, IReadOnlyList<string> Members);
 
 /// <summary>
+/// 主管機關對結論所依條文的一則行政規則（函釋、裁量基準等）。拘束機關內部、不直接拘束人民與法院，
+/// 所以不參與推論，只附在結果旁；以處分日判斷是否已發布、尚未停止適用（釋字第 287 號）。
+/// </summary>
+/// <param name="DocumentNo">發文字號。</param>
+/// <param name="IssuedOn">發文日（<c>YYYY-MM-DD</c>）。</param>
+/// <param name="Subject">主旨。</param>
+/// <param name="StatementIds">本則所解釋、出現在結果裡的陳述。</param>
+/// <param name="PublishedIn">公報出處；沒有時為 null。</param>
+/// <param name="SourceUrl">原文的網址；沒有時為 null。</param>
+public sealed record GuidanceDto(
+    string Issuer, string DocumentNo, string IssuedOn, GuidanceKindDto Kind, string Subject,
+    IReadOnlyList<long> StatementIds, string? PublishedIn, string? SourceUrl);
+
+/// <summary>
 /// 某一組法律的推論結果。全部是<b>候選</b>與依據：系統不裁量、不選「最有利」、不在沒有明文優先時消解衝突。
 /// </summary>
 /// <param name="NeedsAssessment">要件是不確定法律概念，須呼叫端判斷；不算缺事實。</param>
@@ -198,6 +223,7 @@ public sealed record DefinitionUseDto(
 /// <param name="UncoveredLawIds">當日已制定、但語料沒有當時版本的法規（pcode）；其規定不在結果裡，
 /// 不代表當時沒有這些規定。</param>
 /// <param name="DefinitionsUsed">概念值要件所依的用語定義；沒有定義涵蓋而判為不屬於的，沒有定義可指，不在此。</param>
+/// <param name="Guidance">附在結果旁的行政規則；不是推論的前提。</param>
 public sealed record OutcomeDto(
     IReadOnlyList<StatementVerdictDto> Verdicts, IReadOnlyList<PenaltyCandidateDto> Penalties,
     FineIntervalDto? OneAct, IReadOnlyList<GapDto> Missing, IReadOnlyList<GapDto> NeedsAssessment,
@@ -206,7 +232,7 @@ public sealed record OutcomeDto(
     IReadOnlyList<StatementPairDto> UnresolvedPenaltyOverlaps, IReadOnlyList<DefeatDto> PenaltyDefeated,
     IReadOnlyList<TraceEntryDto> Trace, IReadOnlyList<LimitSourceDto> LimitSources, GeneralPartDto General,
     IReadOnlyList<StatementSourceDto> Sources, IReadOnlyList<string> UncoveredLawIds,
-    IReadOnlyList<DefinitionUseDto> DefinitionsUsed);
+    IReadOnlyList<DefinitionUseDto> DefinitionsUsed, IReadOnlyList<GuidanceDto> Guidance);
 
 /// <param name="FirstDay">這一組陳述開始適用的第一天（<c>YYYY-MM-DD</c>）。</param>
 public sealed record EarlierOutcomeDto(string FirstDay, OutcomeDto Outcome);

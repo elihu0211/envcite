@@ -58,6 +58,12 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal((31L, 5L, "事業"), (used.ConditionId, used.DefinitionId, used.Term));
         Assert.EndsWith("/art_2/para_1/pt_1", used.Uri);
         Assert.Equal(["工廠", "礦場"], used.Members);
+        var guidance = Assert.Single(outcome.Guidance);
+        Assert.Equal(("環署水字第1090000001號", "2020-02-01", GuidanceKindDto.Interpretation),
+            (guidance.DocumentNo, guidance.IssuedOn, guidance.Kind));
+        Assert.Equal([7L], guidance.StatementIds);
+        Assert.Equal("行政院公報第26卷", guidance.PublishedIn);
+        Assert.Null(guidance.SourceUrl); // 空字串 = 沒有，不是空網址
         Assert.Equal("2020-01-01", result.Earlier[0].FirstDay);
         Assert.Contains(factory.Ontology.ReceivedMetadata, m =>
             m.GetValue("x-tenant-id") == tenant.Identifier);

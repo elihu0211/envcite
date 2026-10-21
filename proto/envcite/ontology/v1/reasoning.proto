@@ -417,6 +417,50 @@ message Outcome {
   // 概念值要件（與用語比較的要件）之所以成立或不成立，所依的用語定義：
   // 「甲屬於乙」的依據。沒有定義涵蓋而判為不屬於的要件，不在此（沒有定義可指）。
   repeated DefinitionUse definitions_used = 17;
+
+  // 主管機關對本結果所依條文的行政規則（行政程序法第 159 條：函釋、裁量基準等）。行政規則
+  // 拘束機關內部，不直接拘束人民與法院，所以不參與推論，只附在結果旁。以處分日判斷是否已發布、
+  // 尚未停止適用（釋字第 287 號：解釋性規定自所解釋的法規生效日起有效，未確定的案件即可適用），
+  // 且所解釋的須正是陳述所讀的那段文字；條文修正後文字改了，舊的解釋就不再附上。
+  repeated Guidance guidance = 18;
+}
+
+enum GuidanceKind {
+  GUIDANCE_KIND_UNSPECIFIED = 0;
+
+  // 解釋性規定（行政程序法第 159 條第 2 項第 2 款）。
+  GUIDANCE_KIND_INTERPRETATION = 1;
+
+  // 裁量基準（同款）。
+  GUIDANCE_KIND_DISCRETION_STANDARD = 2;
+
+  // 組織性、作業性規定（同項第 1 款）。
+  GUIDANCE_KIND_OPERATIONAL = 3;
+}
+
+message Guidance {
+  // 發文機關。
+  string issuer = 1;
+
+  // 發文字號。
+  string document_no = 2;
+
+  // 發文日（ISO 8601）。
+  string issued_on = 3;
+
+  GuidanceKind kind = 4;
+
+  // 主旨。
+  string subject = 5;
+
+  // 本則所解釋、出現在本結果裡的陳述。
+  repeated int64 statement_ids = 6;
+
+  // 公報出處（行政程序法第 160 條第 2 項），可能為空。
+  string published_in = 7;
+
+  // 原文的網址，可能為空。
+  string source_url = 8;
 }
 
 message DefinitionUse {

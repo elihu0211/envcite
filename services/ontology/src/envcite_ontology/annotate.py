@@ -280,7 +280,7 @@ def _provision(conn: Conn, law: object, path: object) -> int:
     return cast(int, row[0])
 
 
-def _anchor(conn: Conn, what: str, s: Mapping[str, Any]) -> tuple[int, bytes]:
+def anchor(conn: Conn, what: str, s: Mapping[str, Any]) -> tuple[int, bytes]:
     """（單元，內容雜湊）：附的原文雜湊必須是該單元現行某版本列的雜湊。"""
     provision_id = _provision(conn, s["law"], s["path"])
     digest = hashlib.sha256(str(s["text"]).encode()).digest()
@@ -311,7 +311,7 @@ def _definitions(
         if ident in seen:
             raise AnnotationError(f"用語定義 id 重複：{ident}")
         seen.add(ident)
-        provision_id, digest = _anchor(conn, "用語定義", t)
+        provision_id, digest = anchor(conn, "用語定義", t)
         span = t.get("span")
         did = _claim(conn, "definition", derivation_id, review)
         conn.execute(
@@ -339,7 +339,7 @@ def _definitions(
 
 
 def _statement(conn: Conn, s: Mapping[str, Any], derivation_id: int, review: str) -> int:
-    provision_id, digest = _anchor(conn, "陳述", s)
+    provision_id, digest = anchor(conn, "陳述", s)
     span = s.get("span")
     sid = _claim(conn, "statement", derivation_id, review)
     conn.execute(

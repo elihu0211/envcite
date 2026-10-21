@@ -125,11 +125,14 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                 moved = evaluate_across(conn, conduct_on, decided_on, case, LANGUAGE)
 
                 def outcome(result: Result, on: date, uncovered: tuple[str, ...]) -> pb.Outcome:
-                    where = annotation_read.sources(conn, codec.statement_ids(result), on)
+                    ids = codec.statement_ids(result)
+                    where = annotation_read.sources(conn, ids, on)
                     used = annotation_read.definition_sources(
                         conn, {d for _, d in result.definitions_used}, on
                     )
-                    return codec.outcome(result, where, uncovered, used)
+                    # 行政規則以處分日判斷是否已發布、尚未停止（釋字第 287 號），各組陳述皆同
+                    guidance = annotation_read.guidance_for(conn, ids, decided_on)
+                    return codec.outcome(result, where, uncovered, used, guidance)
 
                 return pb.EvaluateResponse(
                     at_decision=outcome(

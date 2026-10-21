@@ -225,6 +225,19 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                         Members = { "工廠", "礦場" },
                     },
                 },
+                Guidance =
+                {
+                    new Guidance
+                    {
+                        Issuer = "環境部",
+                        DocumentNo = "環署水字第1090000001號",
+                        IssuedOn = "2020-02-01",
+                        Kind = GuidanceKind.Interpretation,
+                        Subject = "排放之認定",
+                        StatementIds = { 7 },
+                        PublishedIn = "行政院公報第26卷",
+                    },
+                },
             };
             return Task.FromResult(new EvaluateResponse
             {

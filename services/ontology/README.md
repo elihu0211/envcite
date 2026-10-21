@@ -81,6 +81,7 @@ uv sync --all-packages        # 整個 workspace；標註管線用 Anthropic 模
 | `envcite-import <來源>` | 一次性 | 快照寫入語料；`--dry-run` 只解析與驗收 |
 | `envcite-pipeline` | 排程 | 標註：抽取、驗證、接受（見下節） |
 | `envcite-annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
+| `envcite-guidance <檔>` | 一次性 | 載入行政規則（函釋、裁量基準）JSON；格式見 [`guidance.py`](src/envcite_ontology/guidance.py) |
 | `envcite-verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |
 
 `<來源>` 登記在 [`src/envcite_ontology/acquire/cli.py`](src/envcite_ontology/acquire/cli.py) 的 `SOURCES`；`moj` 是全國法規資料庫。

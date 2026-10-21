@@ -18,7 +18,7 @@
 - **Role:** 本體服務（shared, non-tenant data）：各來源的知識集中在本服務，一種來源一個本體，各有自己的 schema 與引用代號字母（法規本體 `law` 為 `L`）。新增來源是新增一個本體，不另立服務。由同倉的 `services/platform` 與 `services/consult` 呼叫。
 - **Layout:** 共用機制（取得引擎、投影、驗證管線、gRPC 伺服器）在套件頂層；本體專屬的程式（來源、解析、規則）放進以本體 id 命名的子套件，資料表歸該本體自己的 schema。新增第二個本體時，把法規專屬的程式移進 `law/`，介面不變。拆成獨立服務只在：該本體需要獨立擴縮或發版、資料不能與共享資料同庫、或需要不同的執行環境。
 - **Stack:** Python · uv · gRPC（grpcio，同步伺服器）· PostgreSQL（psycopg 3）· ruff · mypy (strict) · pytest；版本以根 `.python-version`、`pyproject.toml`、`uv.lock` 為準。
-- **Data model:** **關聯式實表，PostgreSQL 是唯一真值**。以法規本體為例，schema 依職責分：`corpus`（語料）、`retrieval`（檢索投影）、`vocab`（受控詞彙）、`annotation`（規範陳述）。法規以（識別碼方案，在地識別碼）為鍵；效力逐條文單元記載，查詢逐單元解析（`corpus.provisions_at`）；標題掛在 `legal_expression`（法規名稱可因修正而變，屬公布版本）；標註錨定（單元，內容雜湊），不錨定版本列。表結構以 `migrations/*.sql` 為準。
+- **Data model:** **關聯式實表，PostgreSQL 是唯一真值**。以法規本體為例，schema 依職責分：`corpus`（語料）、`retrieval`（檢索投影）、`vocab`（受控詞彙）、`annotation`（規範陳述與用語定義）、`guidance`（行政規則）。法規以（識別碼方案，在地識別碼）為鍵；效力逐條文單元記載，查詢逐單元解析（`corpus.provisions_at`）；標題掛在 `legal_expression`（法規名稱可因修正而變，屬公布版本）；標註錨定（單元，內容雜湊），不錨定版本列。表結構以 `migrations/*.sql` 為準。
 
 ## Commands
 
@@ -69,6 +69,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）；CI 在 ma
 - 抽取者輸出的形狀不可信：槽位直接寫成字串就是它的字面（`tidy`）；形狀問題請模型修有限輪（`shape_issues`），修不好只丟那個陳述，不連累同單元其餘的陳述。罰則處罰的是它引用的別條，逐單元抽取連不上，由所有單元抽完後的 `link.py` 連結；連好的罰則仍要過引用閘門與評審團。
 - 本體的約定（只有規範性陳述有義務方向、授權不是許可、罰則一個效果一個陳述、按次處罰是另一個帶「屆期仍未改善」要件的陳述）寫在 `conventions.py` 一處，抽取者、往返重抽者與評審團的提示都由它組成，不各寫各的。
 - **管線**可重跑、每個陳述 commit；`--pending` 的待辦由資料推得（`annotation.extraction_attempt` 記下模型答過的單元，包括沒有產出陳述者，所以重跑收斂）；同一時間只跑一個（PostgreSQL 諮詢鎖）。保留樣本評估看過的法就用掉了，只報第一次看的計數，不報準確度。
+- **行政規則**（`guidance` schema，`envcite-guidance <檔>`）：函釋、裁量基準與作業性規定另立一軸，**不進語料的位階、不是推論的前提**（行政程序法第 159 條：拘束機關內部，不直接拘束人民與法院），只附在推論結果旁（`Outcome.guidance`）。公文不可改（同一件再載入內容須相同），由人或規則載入（`derivation.method` 不得為 `llm`）；「解釋」錨定（單元，內容雜湊），條文文字改了就不再附上；後函變更前釋示時前函自後函發文日起停止（釋字第 287 號），以處分日判斷是否已發布、尚未停止（`guidance.for_statements`）。`corpus.norm_kind` 的 `administrative_rule` 不使用：行政規則沒有條項款，裝不進 `corpus.provision`。
 - **推論**（`reasoning/`，`evaluate(conn, as_of, case)`）：通用推論程式 `rules.lp`（clingo）**不含任何法條**，也不用模型；`facts.py` 把某日有效、已確認的陳述解析後寫成事實，案件事實由呼叫端給。結論都是**候選**（違反、合規、附條件、被排除、不適用、無法判定）；缺的事實、需判斷的要件、矛盾的事實、未決的衝突與罰則競合分開回報。
   - `order`（預防性處分）不是行政罰，行政罰法總則的排除、減輕、時效與一行為都不適用；罰則的 `discretionary`（效果裁量）與要件的 `judgement`（構成要件的不確定法律概念）是兩個層次。
   - 行為後法律有變更時，`evaluate_across` 依行政罰法第 5 條列出裁處時之法律與期間內每一組不同的陳述，各自推論，**不替呼叫端選「最有利」者**。

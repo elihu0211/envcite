@@ -1033,6 +1033,66 @@
           }
         }
       },
+      "GuidanceDto": {
+        "required": [
+          "issuer",
+          "documentNo",
+          "issuedOn",
+          "kind",
+          "subject",
+          "statementIds",
+          "publishedIn",
+          "sourceUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "issuer": {
+            "type": "string"
+          },
+          "documentNo": {
+            "type": "string"
+          },
+          "issuedOn": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/GuidanceKindDto"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "statementIds": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
+          },
+          "publishedIn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "GuidanceKindDto": {
+        "enum": [
+          "Interpretation",
+          "DiscretionStandard",
+          "Operational"
+        ]
+      },
       "HttpValidationProblemDetails": {
         "type": "object",
         "properties": {
@@ -1173,7 +1233,8 @@
           "general",
           "sources",
           "uncoveredLawIds",
-          "definitionsUsed"
+          "definitionsUsed",
+          "guidance"
         ],
         "type": "object",
         "properties": {
@@ -1278,6 +1339,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DefinitionUseDto"
+            }
+          },
+          "guidance": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuidanceDto"
             }
           }
         }

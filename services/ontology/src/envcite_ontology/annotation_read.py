@@ -199,6 +199,38 @@ def _conditions(
             requirement.any_of.add(all_of=conditions)
 
 
+_GUIDANCE = """
+    SELECT d.issuer, d.document_no, d.issued_on, d.rule_kind::text, d.subject,
+           coalesce(d.published_in, ''), coalesce(d.source_url, ''), array_agg(g.statement_id)
+      FROM guidance.for_statements(%(ids)s, %(decided)s) AS g
+      JOIN guidance.document AS d ON d.id = g.document_id
+     GROUP BY d.id
+     ORDER BY d.issued_on, d.id
+"""
+
+
+def guidance_for(
+    conn: Conn, statement_ids: Collection[int], decided: date
+) -> list[codec.GuidanceRef]:
+    """處分日 `decided` 可附在這些陳述旁的行政規則（`guidance.for_statements`）。"""
+    if not statement_ids:
+        return []
+    rows = conn.execute(_GUIDANCE, {"ids": sorted(statement_ids), "decided": decided}).fetchall()
+    return [
+        codec.GuidanceRef(
+            str(issuer),
+            str(no),
+            cast(date, on),
+            str(kind),
+            str(subject),
+            str(gazette),
+            str(url),
+            tuple(sorted(cast("list[int]", ids))),
+        )
+        for issuer, no, on, kind, subject, gazette, url, ids in rows
+    ]
+
+
 def sources(conn: Conn, statement_ids: Collection[int], on: date) -> dict[int, str]:
     """陳述於 `on` 的出處（版本 IRI）。"""
     if not statement_ids:

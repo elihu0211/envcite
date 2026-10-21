@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Literal
@@ -56,6 +57,27 @@ LEGAL_EFFECT = {
     "reputation": pb.LEGAL_EFFECT_REPUTATION,
     "warning": pb.LEGAL_EFFECT_WARNING,
     "order": pb.LEGAL_EFFECT_ORDER,
+}
+
+
+@dataclass(frozen=True)
+class GuidanceRef:
+    """附在結果旁的一則行政規則（`annotation_read.guidance_for`）。"""
+
+    issuer: str
+    document_no: str
+    issued_on: date
+    kind: str
+    subject: str
+    published_in: str
+    source_url: str
+    statement_ids: tuple[int, ...]
+
+
+GUIDANCE_KIND = {
+    "interpretation": pb.GUIDANCE_KIND_INTERPRETATION,
+    "discretion_standard": pb.GUIDANCE_KIND_DISCRETION_STANDARD,
+    "operational": pb.GUIDANCE_KIND_OPERATIONAL,
 }
 OVERRIDE_BASIS = {
     "hierarchy": pb.OVERRIDE_BASIS_HIERARCHY,
@@ -195,6 +217,7 @@ def outcome(
     sources: Mapping[int, str],
     uncovered: Iterable[str] = (),
     definitions: Mapping[int, tuple[str, str, list[str]]] | None = None,
+    guidance: Iterable[GuidanceRef] = (),
 ) -> pb.Outcome:
     out = pb.Outcome(
         verdicts=[
@@ -259,6 +282,19 @@ def outcome(
             )
             for c, d in sorted(result.definitions_used)
             if (known := (definitions or {}).get(d)) is not None
+        ],
+        guidance=[
+            pb.Guidance(
+                issuer=g.issuer,
+                document_no=g.document_no,
+                issued_on=g.issued_on.isoformat(),
+                kind=GUIDANCE_KIND[g.kind],
+                subject=g.subject,
+                statement_ids=list(g.statement_ids),
+                published_in=g.published_in,
+                source_url=g.source_url,
+            )
+            for g in guidance
         ],
     )
     if result.one_act is not None:

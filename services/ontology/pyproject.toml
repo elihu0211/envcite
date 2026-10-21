@@ -32,6 +32,7 @@ envcite-acquire = "envcite_ontology.acquire.cli:main"
 envcite-import = "envcite_ontology.ingest.cli:main"
 envcite-sync = "envcite_ontology.sync:main"
 envcite-annotate = "envcite_ontology.annotate:main"
+envcite-guidance = "envcite_ontology.guidance:main"
 envcite-verify = "envcite_ontology.verification.cli:main"
 envcite-pipeline = "envcite_ontology.verification.run:main"
 
