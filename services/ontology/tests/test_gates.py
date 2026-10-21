@@ -176,25 +176,6 @@ def test_executable_gate_runs_a_condition_on_a_concept_value(conn: Conn, tmp_pat
     assert {c["case"] for c in result.evidence["cases"]} >= {"duty holds", "duty broken"}
 
 
-def test_executable_gate_still_refuses_an_ordering_on_concept_values(
-    conn: Conn, tmp_path: Path
-) -> None:
-    _first(conn, tmp_path, _law_v1())
-    duty = _belonging_duty()
-    duty["conditions"][1]["comparator"] = "le"
-    doc = _doc(duty, review="extracted")
-    doc["concepts"] = [
-        {"code": "discharging", "label": "排放廢水"},
-        {"code": "industry", "label": "行業"},
-        {"code": "regulated", "label": "受管制事業"},
-    ]
-    loaded = load(conn, doc)
-
-    result = ExecutableGate().check(conn, loaded.ids["duty"])
-
-    assert result is not None and result.verdict == "inconclusive"
-
-
 def test_executable_gate_is_not_applicable_outside_obligations(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1())
     loaded = load(conn, _doc(_limit("乙一", 100), review="extracted"))

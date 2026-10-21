@@ -182,7 +182,8 @@ def tidy(answer: Mapping[str, Any], defined: Mapping[str, str] | None = None) ->
 def shape_issues(
     answer: Mapping[str, Any], defined: Mapping[str, str] | None = None
 ) -> dict[str, list[str]]:
-    """載入器必然拒絕的形狀（id → 問題）：要件非物件、無 concept、或 concept 未宣告。
+    """載入器必然拒絕的形狀（id → 問題）：要件非物件、無 concept、concept 未宣告、
+    概念值要件比大小，或罰則陳述的種類不是 sanction。
 
     載入器一遇到就整份不寫、連帶丟掉正確的陳述；故先請模型修，修不好才只丟該陳述。
     """
@@ -210,6 +211,15 @@ def shape_issues(
                     problems.append(
                         f"要件的 {field}「{code}」沒有在 concepts 裡宣告（code 與 label 都要寫）。"
                     )
+            if c.get("value_concept") and c.get("comparator") not in ("eq", "ne"):
+                problems.append(
+                    f"要件的 value_concept「{c.get('value_concept')}」只能用 eq 或 ne："
+                    "用語只有屬於與否，沒有大小。"
+                )
+        # 只看填了效果的罰則：照樣板填成空值的會被忽略；處罰別的罰則者留待連結，不在這裡判
+        sanction = s.get("sanction")
+        if isinstance(sanction, Mapping) and sanction.get("effect") and s.get("kind") != "sanction":
+            problems.append("帶 sanction 的陳述 kind 必須是 sanction。")
         if problems:
             out[str(s.get("id", "?"))] = problems
     return out

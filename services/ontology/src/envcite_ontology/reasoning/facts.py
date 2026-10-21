@@ -130,10 +130,7 @@ def statement_facts(
         if judgement:
             out.append(f"judgement({cid}).")
         if value_concept is not None:
-            if comparator in ("eq", "ne"):
-                out.append(f"vcond({cid},{q(str(value_concept))}).")
-            else:
-                out.append(f"unsupported({cid}).")  # 概念值只有屬於與否，沒有大小
+            out.append(f"vcond({cid},{q(str(value_concept))}).")  # 比較子只有 eq、ne（資料庫約束）
         elif threshold is not None:
             out.append(f"thr({cid},{milli(cast(Decimal, threshold))}).")
         elif delegated:

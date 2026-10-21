@@ -93,8 +93,6 @@ def load_conditions(conn: Conn, statement_id: int) -> list[Cond]:
 
 def unsupported(conds: list[Cond]) -> str | None:
     """推論程式評估不了的要件形狀；回原因，可評估則 None。"""
-    if any(c.by_concept and c.comparator not in ("eq", "ne") for c in conds):
-        return "a condition orders concept values"
     for role in ("scope", "duty"):
         if len({c.clause for c in conds if c.role == role}) > 1:
             return f"{role} has several clauses (disjunction)"

@@ -163,26 +163,6 @@ def test_unreviewed_statements_conclude_nothing(conn: Conn, tmp_path: Path) -> N
     assert evaluate(conn, BEFORE, {"discharging": 1, "cod": 150}).verdicts == {}
 
 
-def test_an_ordering_comparison_on_a_concept_value_is_reported_not_silently_skipped(
-    conn: Conn, tmp_path: Path
-) -> None:
-    """概念值只有屬於與否（eq、ne），沒有大小。"""
-    _first(conn, tmp_path, _law_v1())
-    by_concept = _plain_duty()
-    by_concept["conditions"][1] = {
-        "role": "duty",
-        "clause": 1,
-        "concept": "cod",
-        "comparator": "le",
-        "value_concept": "discharging",
-    }
-    load(conn, _doc(by_concept))
-
-    result = evaluate(conn, BEFORE, {"discharging": 1, "cod": 1})
-
-    assert any(kind == "unsupported_condition" for kind, _ in result.problems)
-
-
 def _belonging_rule() -> dict[str, Any]:
     """義務：排放者的行業須屬於「受管制事業」。"""
     return {
