@@ -197,3 +197,25 @@ def test_existing_duplicates_keep_the_earliest_and_reject_the_rest(
             ]
     finally:
         _drop(dsn, name)
+
+
+def test_the_lexical_index_becomes_one_row_per_passage(dsn: str, tmp_path: Path) -> None:
+    """0032：既有的字面索引保留；同一段文字若有並存的分詞器列，併成一列（下次重建就地更正）。"""
+    name = "passage_upgrade"
+    try:
+        with _at(dsn, name, tmp_path, "0032") as conn:
+            conn.execute(
+                "INSERT INTO retrieval.lexical_index (content_sha256, tokenizer, tsv) VALUES"
+                " (sha256('甲'::bytea), 'tok-a', to_tsvector('simple', '甲')),"
+                " (sha256('甲'::bytea), 'tok-b', to_tsvector('simple', '甲')),"
+                " (sha256('乙'::bytea), 'tok-a', to_tsvector('simple', '乙'))"
+            )
+            conn.commit()
+            assert apply_all(conn)[0] == "0032_passage.sql"
+
+            assert conn.execute(
+                "SELECT count(*), count(DISTINCT content_sha256), count(embedding)"
+                " FROM retrieval.passage"
+            ).fetchone() == (2, 2, 0)
+    finally:
+        _drop(dsn, name)

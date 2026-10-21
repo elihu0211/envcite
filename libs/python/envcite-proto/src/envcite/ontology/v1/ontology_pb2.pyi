@@ -200,7 +200,7 @@ class SearchArticlesResponse(_message.Message):
     HITS_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def hits(self) -> _containers.RepeatedCompositeFieldContainer[Global___ArticleHit]:
-        """相關度由高到低。"""
+        """相關度由高到低：字面臂與語意臂以名次倒數融合。"""
 
     def __init__(
         self,
@@ -225,6 +225,7 @@ class ArticleHit(_message.Message):
     NUMBER_FIELD_NUMBER: _builtins.int
     CONTENT_FIELD_NUMBER: _builtins.int
     LEXICAL_SCORE_FIELD_NUMBER: _builtins.int
+    SEMANTIC_SIMILARITY_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     law_id: _builtins.str
     law_title: _builtins.str
@@ -233,7 +234,11 @@ class ArticleHit(_message.Message):
     """條號，依原文書寫，例如 "5-1"。"""
     content: _builtins.str
     lexical_score: _builtins.float
-    """詞彙相關度原始分數（ts_rank_cd）；命中依此由高到低排序。"""
+    """字面臂的原始分數（ts_rank_cd）；字面臂沒有命中這一條時為 0。只在同一次查詢之內可比較。"""
+    semantic_similarity: _builtins.float
+    """語意臂的餘弦相似度（-1 至 1）；語意臂沒有命中這一條、或服務沒有啟用語意臂時不設。
+    命中的順序是兩臂名次倒數融合的結果，不是任何一個分數。
+    """
     def __init__(
         self,
         *,
@@ -243,11 +248,14 @@ class ArticleHit(_message.Message):
         number: _builtins.str = ...,
         content: _builtins.str = ...,
         lexical_score: _builtins.float = ...,
+        semantic_similarity: _builtins.float | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity", "semantic_similarity", b"semantic_similarity"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["content", b"content", "iri", b"iri", "law_id", b"law_id", "law_title", b"law_title", "lexical_score", b"lexical_score", "number", b"number"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity", "content", b"content", "iri", b"iri", "law_id", b"law_id", "law_title", b"law_title", "lexical_score", b"lexical_score", "number", b"number", "semantic_similarity", b"semantic_similarity"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    def WhichOneof(self, oneof_group: _Never) -> None: ...
+    _WhichOneofReturnType__semantic_similarity: _TypeAlias = _typing.Literal["semantic_similarity"]  # noqa: Y015
+    _WhichOneofArgType__semantic_similarity: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__semantic_similarity) -> _WhichOneofReturnType__semantic_similarity | None: ...
 
 Global___ArticleHit: _TypeAlias = ArticleHit  # noqa: Y015

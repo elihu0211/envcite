@@ -12,9 +12,10 @@ from pathlib import Path
 
 import psycopg
 
-from envcite_ontology import projection
+from envcite_ontology import embedding, projection
 from envcite_ontology.acquire.cli import EXIT_INVALID, SOURCES
 from envcite_ontology.acquire.engine import InvalidSnapshot, Source, acquire
+from envcite_ontology.embedding import Embedder
 from envcite_ontology.ingest import importer
 from envcite_ontology.ingest.importer import BatchRejected
 from envcite_ontology.settings import SnapshotSettings, load
@@ -31,12 +32,12 @@ def exit_code(error: BaseException) -> int:
     return EXIT_INVALID if isinstance(error, InvalidSnapshot | BatchRejected) else EXIT_TRANSIENT
 
 
-def sync(conn: Conn, source: Source, root: Path) -> int:
+def sync(conn: Conn, source: Source, root: Path, embedder: Embedder | None = None) -> int:
     """跑一個週期；失敗時 rollback 並回傳結束碼。"""
     try:
         acquire(source, root, conn)
         importer.run(conn, root, source)
-        projection.rebuild(conn)
+        projection.rebuild(conn, embedder)
     except Exception as e:
         conn.rollback()
         code = exit_code(e)
@@ -54,4 +55,5 @@ def main() -> None:
     settings = load(SnapshotSettings)
 
     with psycopg.connect(settings.ontology_dsn) as conn:
-        raise SystemExit(sync(conn, SOURCES[args.source], settings.acquire_snapshot_dir))
+        embedder = embedding.from_settings(settings, timeout=60.0, max_retries=3)
+        raise SystemExit(sync(conn, SOURCES[args.source], settings.acquire_snapshot_dir, embedder))

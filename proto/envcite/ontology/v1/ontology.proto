@@ -79,7 +79,7 @@ message SearchArticlesRequest {
 }
 
 message SearchArticlesResponse {
-  // 相關度由高到低。
+  // 相關度由高到低：字面臂與語意臂以名次倒數融合。
   repeated ArticleHit hits = 1;
 }
 
@@ -95,8 +95,12 @@ message ArticleHit {
 
   string content = 5;
 
-  // 詞彙相關度原始分數（ts_rank_cd）；命中依此由高到低排序。
+  // 字面臂的原始分數（ts_rank_cd）；字面臂沒有命中這一條時為 0。只在同一次查詢之內可比較。
   float lexical_score = 7;
+
+  // 語意臂的餘弦相似度（-1 至 1）；語意臂沒有命中這一條、或服務沒有啟用語意臂時不設。
+  // 命中的順序是兩臂名次倒數融合的結果，不是任何一個分數。
+  optional float semantic_similarity = 9;
 
   reserved 6, 8;
   reserved "rank_score", "dense_distance";

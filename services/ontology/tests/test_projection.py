@@ -20,9 +20,7 @@ def _imported(conn: Conn, tmp_path: Path, *laws: dict[str, object]) -> None:
 
 
 def _tokenizers(conn: Conn) -> set[str]:
-    return {
-        str(t) for (t,) in conn.execute("SELECT DISTINCT tokenizer FROM retrieval.lexical_index")
-    }
+    return {str(t) for (t,) in conn.execute("SELECT DISTINCT tokenizer FROM retrieval.passage")}
 
 
 def _found(dsn: str, query: str) -> set[tuple[str, str]]:
@@ -81,7 +79,7 @@ def test_text_no_longer_current_loses_its_index_row(conn: Conn, tmp_path: Path) 
     conn.commit()
     projection.rebuild(conn)
     row = conn.execute(
-        "SELECT count(*) FROM retrieval.lexical_index"
+        "SELECT count(*) FROM retrieval.passage"
         " WHERE content_sha256 = sha256(convert_to(%s, 'UTF8'))",
         (content,),
     ).fetchone()
@@ -125,4 +123,4 @@ def test_the_same_text_in_a_new_row_needs_no_rebuild(conn: Conn, tmp_path: Path)
 def test_identical_passages_share_one_index_row(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("同文", "同文")))
     projection.rebuild(conn)
-    assert _scalar(conn, "SELECT count(*) FROM retrieval.lexical_index") == 1
+    assert _scalar(conn, "SELECT count(*) FROM retrieval.passage") == 1

@@ -12,6 +12,8 @@ from grpc_reflection.v1alpha import reflection
 
 from envcite.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
 from envcite_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
+from envcite_ontology import embedding
+from envcite_ontology.embedding import Embedder
 from envcite_ontology.reasoning_service import ReasoningServicer
 from envcite_ontology.service import OntologyServicer
 from envcite_ontology.settings import ServerSettings, load
@@ -34,6 +36,7 @@ def build_server(
     options: Sequence[tuple[str, int]] = SERVER_OPTIONS,
     interceptors: Sequence[grpc.ServerInterceptor] = (),
     health_servicer: health.HealthServicer | None = None,
+    embedder: Embedder | None = None,
 ) -> tuple[grpc.Server, int]:
     """建立但不啟動；回傳伺服器與實際綁定的埠號。`health_servicer` 讓呼叫端在關閉時切換狀態。"""
     server = grpc.server(
@@ -45,7 +48,7 @@ def build_server(
     # lexicon 啟動時只讀一次：新匯入的用語須重啟才進入查詢。
     segmenter = Segmenter(store.lexicon())
     ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
-        OntologyServicer(store, segmenter), server
+        OntologyServicer(store, segmenter, embedder), server
     )
 
     reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(ReasoningServicer(store), server)
@@ -76,6 +79,8 @@ def main() -> None:
         f"[::]:{settings.ontology_grpc_port}",
         interceptors=interceptors,
         health_servicer=health_servicer,
+        # 查詢路徑上不重試、逾時短：取不到向量就只用字面臂，不拖慢查詢
+        embedder=embedding.from_settings(settings, timeout=5.0, max_retries=0),
     )
     stop_on_sigterm(server, health_servicer)
     server.start()

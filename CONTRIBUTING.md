@@ -144,7 +144,7 @@ Renovate 由外部排程集中執行，本倉庫不放令牌也不跑 job。同�
 | .NET SDK 與映像 | `services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `DOTNET_VERSION`（`global.json` 的 `sdk.version` 只是下限，Renovate 不動它） |
 | Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG PYTHON_VERSION` |
 | uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
-| PostgreSQL | `.gitlab-ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs`；主版本與正式區相同 |
+| PostgreSQL | `.gitlab-ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/ontology/tools/holdout.py`、`services/platform/tests/…/PlatformFactory.cs`；主版本與正式區相同。ontology 要 pgvector，用 `pgvector/pgvector:pg<主版本>` |
 | buf | `.gitlab-ci.yml` 的 `BUF_VERSION` |
 | oasdiff | `.gitlab-ci.yml` 的 `OASDIFF_VERSION` |
 | Docker（映像建置） | `.gitlab-ci.yml` 的 `DOCKER_VERSION` |

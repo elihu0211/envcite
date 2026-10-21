@@ -125,7 +125,7 @@ def start_database(name: str, port: int) -> str:
             "POSTGRES_DB=d",
             "-p",
             f"{port}:5432",
-            "postgres:18",
+            "pgvector/pgvector:pg18",
         ],
         check=True,
         capture_output=True,

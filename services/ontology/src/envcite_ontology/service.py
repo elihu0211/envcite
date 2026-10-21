@@ -11,6 +11,7 @@ import grpc
 
 from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
 from envcite_ontology import errors
+from envcite_ontology.embedding import Embedder, EmbeddingError
 from envcite_ontology.store import OntologyStore
 from envcite_segmenter import Segmenter
 
@@ -23,9 +24,12 @@ MAX_SEARCH_LIMIT = 50
 
 
 class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
-    def __init__(self, store: OntologyStore, segmenter: Segmenter) -> None:
+    def __init__(
+        self, store: OntologyStore, segmenter: Segmenter, embedder: Embedder | None = None
+    ) -> None:
         self._store = store
         self._segmenter = segmenter
+        self._embedder = embedder
 
     def _not_found(self, law_id: str, as_of: str) -> errors.ServiceError:
         # 法規不存在與該日無施行版本，契約都回 NOT_FOUND，reason 分開：呼叫端要能分辨語料缺漏
@@ -86,7 +90,12 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         v.check()
 
         hits = self._store.search(
-            terms, tokenizer=self._segmenter.tokenizer_id, as_of=request.as_of, limit=limit
+            terms,
+            tokenizer=self._segmenter.tokenizer_id,
+            as_of=request.as_of,
+            limit=limit,
+            embedding=self._query_embedding(request.query),
+            model=self._embedder.model if self._embedder else "",
         )
         return ontology_pb2.SearchArticlesResponse(
             hits=[
@@ -97,10 +106,21 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                     number=h.number,
                     content=h.content,
                     lexical_score=h.lexical_score,
+                    semantic_similarity=h.semantic_similarity,
                 )
                 for h in hits
             ]
         )
+
+    def _query_embedding(self, query: str) -> list[float] | None:
+        """問題的向量；沒有嵌入模型或取不到時為 None，檢索退回只用字面臂，不讓查詢失敗。"""
+        if self._embedder is None:
+            return None
+        try:
+            return self._embedder.embed([query])[0]
+        except EmbeddingError as e:
+            log.warning("semantic arm skipped: %s", e)
+            return None
 
 
 def _check_as_of(as_of: str) -> None:

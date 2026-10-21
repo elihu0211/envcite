@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from types import TracebackType
@@ -14,6 +14,8 @@ from typing import Self
 
 import psycopg
 from psycopg_pool import ConnectionPool
+
+from envcite_ontology.embedding import to_sql
 
 #: 全國法規資料庫 pcode 的形狀，對應 `corpus.legal_resource` 的 CHECK；只省一次往返，
 #: 不是注入防禦（查詢皆已參數化）。
@@ -50,6 +52,8 @@ class SearchHit:
     number: str
     content: str
     lexical_score: float
+    #: 語意臂的餘弦相似度；語意臂沒有命中這一條（或沒有查詢向量）時為 None
+    semantic_similarity: float | None = None
 
 
 def is_valid_law_id(value: str) -> bool:
@@ -85,15 +89,19 @@ _LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression"
 _SEARCH = """
     SELECT corpus.version_iri(s.version_id), r.local_id, e.title,
            corpus.article_number(s.path), corpus.article_text(s.version_id),
-           s.lexical_score
-      FROM retrieval.search_articles(
-               %(terms)s, %(tokenizer)s, %(on)s::date, %(language)s, %(limit)s
+           s.lexical_score, s.semantic_similarity
+      FROM retrieval.search_hybrid(
+               %(terms)s, %(tokenizer)s, %(embedding)s::vector, %(model)s,
+               %(on)s::date, %(language)s, %(limit)s, %(pool)s
            ) AS s
       JOIN corpus.legal_resource AS r ON r.id = s.resource_id
       JOIN corpus.provision_version AS v ON v.id = s.version_id
       JOIN corpus.legal_expression AS e ON e.id = v.expression_id
-     ORDER BY s.lexical_score DESC, s.version_id
+     ORDER BY s.rank_score DESC, s.version_id
 """
+
+#: 每一臂的候選池（條數）。融合前各取這麼多；尚未以題庫量測，取 limit 上限的數倍。
+SEARCH_POOL = 50
 
 
 class OntologyStore:
@@ -174,9 +182,19 @@ class OntologyStore:
             return [title for (title,) in cur.fetchall()]
 
     def search(
-        self, terms: str, *, tokenizer: str, as_of: str = "", limit: int = 10
+        self,
+        terms: str,
+        *,
+        tokenizer: str,
+        as_of: str = "",
+        limit: int = 10,
+        embedding: Sequence[float] | None = None,
+        model: str = "",
     ) -> list[SearchHit]:
-        """`as_of`（空為今日）有效、與已分詞之 `terms` 相符的條。"""
+        """`as_of`（空為今日）有效的條，字面臂比對已分詞的 `terms`，語意臂比對 `embedding`。
+
+        沒有 `embedding` 時只用字面臂。兩臂以名次倒數融合排序（`retrieval.search_hybrid`）。
+        """
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(
                 _SEARCH,
@@ -186,6 +204,9 @@ class OntologyStore:
                     "on": _date(as_of),
                     "language": LANGUAGE,
                     "limit": limit,
+                    "embedding": None if embedding is None else to_sql(embedding),
+                    "model": model,
+                    "pool": SEARCH_POOL,
                 },
             )
             return [
@@ -196,8 +217,9 @@ class OntologyStore:
                     number=number,
                     content=content,
                     lexical_score=lexical,
+                    semantic_similarity=semantic,
                 )
-                for iri, law_id, title, number, content, lexical in cur.fetchall()
+                for iri, law_id, title, number, content, lexical, semantic in cur.fetchall()
             ]
 
     def _resolve(self, law_id: str, as_of: str) -> tuple[int, LawRecord] | None:

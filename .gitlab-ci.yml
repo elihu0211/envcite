@@ -386,7 +386,7 @@ ontology:
     - *mr-ci-change
   # 測試需要真實 PostgreSQL：以 job service 附掛（省掉 dind），主版本同正式區。
   services:
-    - name: postgres:$POSTGRES_MAJOR
+    - name: pgvector/pgvector:pg$POSTGRES_MAJOR
       alias: postgres
   variables:
     MEMBER: services/ontology

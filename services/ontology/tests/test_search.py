@@ -58,7 +58,7 @@ def search_stub(
                   FROM p
                 RETURNING id
             )
-            INSERT INTO retrieval.lexical_index (content_sha256, tokenizer, tsv)
+            INSERT INTO retrieval.passage (content_sha256, tokenizer, tsv)
             SELECT sha256(convert_to(%(content)s, 'UTF8')), %(tokenizer)s,
                    to_tsvector('simple', %(terms)s)
               FROM v

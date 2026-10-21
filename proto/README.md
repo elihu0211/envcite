@@ -112,6 +112,8 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 
 要作答，呼叫 **`Ground`**，不要自己拿 `SearchArticles` 的結果給模型：檢索永遠回最佳的幾筆，即使語料裡毫無相關內容，「有沒有答案」的判斷由 consult 做掉。
 
+`SearchArticles` 是混合檢索：字面臂與語意臂以名次倒數融合排序。`lexical_score` 是字面臂的原始分數（沒命中為 0），`semantic_similarity` 是語意臂的餘弦相似度（沒命中或未啟用語意臂則不設）；兩者都只在同一次查詢之內可比較，順序不由任一分數決定。consult 的相關性下界只以 `lexical_score` 校準：只由語意臂召回的條不進入接地證據，要等語意分數也校準過。
+
 ```mermaid
 %%{init: {"flowchart": {"curve": "basis"}}}%%
 flowchart TD
