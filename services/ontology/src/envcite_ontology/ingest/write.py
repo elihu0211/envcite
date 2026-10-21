@@ -2,7 +2,8 @@
 
 動作由已存的版本與剛解析的版本比較決定：
 
-- `added`：首次寫入，先前的內容（舊版解析器的產出）整部取代。
+- `added`：首次寫入，先前的版本與事件（舊版解析器的產出）整部取代；條文單元保留，
+  錨在上面的標註不受影響。
 - `versioned`：版本日晚於既有最新，新增一個版本；前一版的區間止於新版。
 - `corrected`、`refreshed`：同一版本日。單元文字不同是更正，只有推導值（生效日、廢止日）
   不同是更新；皆新增列並結束舊列，不覆寫。下層單元更正連帶換掉所屬條的列（見 `_sync_current`）。
@@ -207,7 +208,13 @@ def _insert_versions(
 
 
 def _replace_all(conn: Conn, resource: int, law: ParsedLaw) -> None:
-    for table in ("provision", "lifecycle_event", "legal_expression"):
+    """版本與事件整部取代；條文單元保留。
+
+    單元的身分是路徑，重建出來的是同一批路徑；刪掉它會連帶刪掉錨在上面的主張、驗證紀錄與
+    行政規則的解釋，即使文字沒變。保留單元，文字相同的標註就重新錨上；新版沒有的路徑留著
+    不礙事：沒有版本列的單元不出現在任何時點。
+    """
+    for table in ("lifecycle_event", "legal_expression"):  # 版本連帶刪除條文版本
         conn.execute(f"DELETE FROM corpus.{table} WHERE resource_id = %s", (resource,))
     expression = _insert_expression(conn, resource, law)
     _replace_events(conn, resource, law)

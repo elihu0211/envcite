@@ -477,3 +477,19 @@ def test_a_scheme_cannot_change_its_scope(conn: Conn, tmp_path: Path) -> None:
     unscoped["scheme"] = {"code": f"def.{LAW}", "title": "本法用語"}
     with pytest.raises(AnnotationError, match="適用範圍"):
         load(conn, unscoped)
+
+
+def test_a_forced_first_import_keeps_the_annotations_on_unchanged_text(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """首次寫入的路徑整部取代版本與事件，但不刪條文單元：文字沒變的標註重新錨上，不連帶刪除。"""
+    _first(conn, tmp_path, _law_v1())
+    load(conn, _doc(_duty(), _limit("乙一", 100)))
+    claims = _scalar(conn, "SELECT count(*) FROM annotation.claim")
+    conn.execute("UPDATE source.item SET imported_sha256 = NULL, parser_version = NULL")
+    conn.commit()
+
+    assert importer.run(conn, tmp_path, Moj()).actions == {"added": 1}
+
+    assert _scalar(conn, "SELECT count(*) FROM annotation.claim") == claims
+    assert _facts(conn, BEFORE) == 2
