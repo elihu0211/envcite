@@ -291,10 +291,8 @@ def test_a_correction_below_the_article_reaches_the_search_index(
             assert not found(lost)
 
 
-def test_a_correction_below_the_article_replaces_the_articles_row(
-    conn: Conn, tmp_path: Path
-) -> None:
-    """更正只動款，條仍換成新列（原為舊索引以條的列為鍵而設；現行索引內容定址，不依賴它）。"""
+def test_a_correction_below_the_article_replaces_only_that_unit(conn: Conn, tmp_path: Path) -> None:
+    """更正只動款：只換那一款的列，條的列不動；條的全文由現行的下層組成。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", WITH_ITEMS)))
     _next(
         conn,
@@ -302,13 +300,13 @@ def test_a_correction_below_the_article_replaces_the_articles_row(
         _law_v1(LawArticles=_articles("甲一", "本法用詞如下：\r\n一、噪音。\r\n二、地震。")),
     )
 
-    # 被取代的是款與它所屬的條；第 1 條與未改的款不動。
+    # 被取代的只有那一款；條、第 1 條與未改的款都不動。
     assert conn.execute(
         "SELECT p.path FROM corpus.provision_version AS v"
         " JOIN corpus.provision AS p ON p.id = v.provision_id"
         " WHERE v.superseded_at IS NOT NULL AND v.resource_id = %s ORDER BY p.path",
         (_law_id(conn),),
-    ).fetchall() == [("art_2",), ("art_2/para_1/pt_2",)]
+    ).fetchall() == [("art_2/para_1/pt_2",)]
     # 現行的條仍恰有一列。
     assert (
         _scalar(
@@ -320,3 +318,4 @@ def test_a_correction_below_the_article_replaces_the_articles_row(
         )
         == 1
     )
+    assert "地震" in (_at(conn, date.today())["art_2"][1] or "")  # 條的全文由現行的下層組成

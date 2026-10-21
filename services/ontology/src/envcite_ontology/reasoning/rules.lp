@@ -4,7 +4,7 @@
 %       vcond/2（與概念值比較的要件原子）  stmt_law/2（陳述所屬法規）  defmember/3（法規內用語定義涵蓋的成員）
 %       defsrc/4（同上，另帶定義編號，供依據軌跡）
 %       cfact_in/2（案件的概念值事實：概念代碼 → 值概念代碼）
-%       judgement/1（需判斷的要件原子）  unsupported/1（本程式不會比較的要件原子）  repeating/1（按次處罰的罰則）
+%       judgement/1（需判斷的要件原子）  repeating/1（按次處罰的罰則）
 %       fact_in/2（案件事實，由呼叫端提供；同一概念可帶多個值，矛盾由下方檢出）
 role(scope;duty).
 
@@ -223,7 +223,6 @@ one_cap(M) :- some_fine, M = #max{ Max,P : bounded_fine(P,_,Max) }.
 one_act(Lo,Hi) :- one_floor(Lo), one_cap(Hi), not open_fine.
 
 % 概念值的比較（行業屬某行業）本程式不做：誠實列為問題，不讓結論悄悄停在未知。
-problem(unsupported_condition, C) :- unsupported(C).
 
 % ---- 輸出 ----
 #show verdict/2.
