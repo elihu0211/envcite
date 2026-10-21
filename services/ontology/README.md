@@ -84,6 +84,8 @@ uv sync --all-packages        # 整個 workspace；標註管線用 Anthropic 模
 | `envcite-guidance <檔>` | 一次性 | 載入行政規則（函釋、裁量基準）JSON；格式見 [`guidance.py`](src/envcite_ontology/guidance.py) |
 | `envcite-verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |
 
+開發用的工具在 [`tools/`](tools)，不進映像：`holdout.py`（標註管線的保留樣本評估）、`retrieval_eval.py`（以模型出題評估混合檢索，並推出 consult 相關性下界的校準值）；用法見各檔開頭。
+
 `<來源>` 登記在 [`src/envcite_ontology/acquire/cli.py`](src/envcite_ontology/acquire/cli.py) 的 `SOURCES`；`moj` 是全國法規資料庫。
 
 **環境變數**：名稱、必填、預設值與各入口用到哪些，以 [`src/envcite_ontology/settings.py`](src/envcite_ontology/settings.py) 為準，範本是 `.env.example`；標註管線的金鑰由 `models.toml` 引用，見〈模型配置〉與〈金鑰〉。
