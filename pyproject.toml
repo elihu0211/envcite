@@ -22,6 +22,7 @@ dev = [
     "mypy-protobuf",
     "pytest",
     "pytest-cov",
+    "pyyaml",
     "ruff",
     "testcontainers[postgres]",
     "types-grpcio",
@@ -29,6 +30,7 @@ dev = [
     "types-grpcio-reflection",
     "types-grpcio-status",
     "types-protobuf",
+    "types-pyyaml",
 ]
 
 [tool.ruff]
