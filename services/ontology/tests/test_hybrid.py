@@ -194,3 +194,18 @@ def test_the_client_reads_openai_embeddings_and_checks_the_dimension(
     )
     with pytest.raises(EmbeddingError, match="1024"):
         client.embed(["甲"])
+
+
+def test_embedding_a_scope_leaves_other_laws_without_vectors(conn: Conn, tmp_path: Path) -> None:
+    _corpus(conn, tmp_path)
+    projection.rebuild(conn)
+    (pcode,) = conn.execute("SELECT local_id FROM corpus.legal_resource").fetchone()  # type: ignore[misc]
+    embedder = FakeEmbedder()
+
+    assert projection.embed_scope(conn, embedder, ["Z9999999"]) == 0  # type: ignore[arg-type]
+    assert embedder.calls == 0
+    assert _scalar(conn, "SELECT count(embedding) FROM retrieval.passage") == 0
+
+    assert projection.embed_scope(conn, embedder, [str(pcode)]) == 3  # type: ignore[arg-type]
+    assert _scalar(conn, "SELECT count(embedding) FROM retrieval.passage") == 3
+    assert projection.embed_scope(conn, embedder, [str(pcode)]) == 0  # type: ignore[arg-type]

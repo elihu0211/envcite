@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from typing import cast
 
 import psycopg
@@ -54,6 +55,9 @@ _EMBED_PAGE = """
      WHERE i.content_sha256 > %(after)s
        AND i.model IS DISTINCT FROM %(model)s
        AND v.content IS NOT NULL
+       AND (%(pcodes)s::text[] IS NULL OR v.resource_id IN (
+            SELECT r.id FROM corpus.legal_resource AS r
+             WHERE r.id_scheme = 'moj_pcode' AND r.local_id = ANY(%(pcodes)s)))
      ORDER BY i.content_sha256
      LIMIT %(limit)s
 """
@@ -105,13 +109,23 @@ def _lexical(conn: Conn, segmenter: Segmenter) -> int:
         after = cast(bytes, rows[-1][0])
 
 
-def _embed(conn: Conn, embedder: Embedder) -> int:
-    """每批 commit：全量第一次要很久，中斷後重跑只補沒做完的。"""
+def embed_scope(conn: Conn, embedder: Embedder, pcodes: Sequence[str]) -> int:
+    """只為這些法規（moj_pcode）現行版本的段落補嵌入，其餘不動；其餘同 `rebuild` 的嵌入步驟。
+
+    供範圍限定的量測用；字面向量須已建好（列要先在）。同一段文字也出現在範圍外的法規時，
+    它的列只有一列，嵌入隨之而有。
+    """
+    return _embed(conn, embedder, pcodes=list(pcodes))
+
+
+def _embed(conn: Conn, embedder: Embedder, *, pcodes: list[str] | None = None) -> int:
+    """每批 commit：全量第一次要很久，中斷後重跑只補沒做完的。`pcodes` 為空值時不限範圍。"""
     embedded = 0
     after = b""
     while True:
         rows = conn.execute(
-            _EMBED_PAGE, {"after": after, "model": embedder.model, "limit": _EMBED_BATCH}
+            _EMBED_PAGE,
+            {"after": after, "model": embedder.model, "limit": _EMBED_BATCH, "pcodes": pcodes},
         ).fetchall()
         if not rows:
             return embedded
@@ -127,4 +141,6 @@ def _embed(conn: Conn, embedder: Embedder) -> int:
             )
         conn.commit()
         embedded += len(rows)
+        if embedded % (_EMBED_BATCH * 50) < len(rows):
+            log.info("檢索投影：已嵌入 %d 段", embedded)
         after = cast(bytes, rows[-1][0])

@@ -1,0 +1,1477 @@
+{
+ "rule": {
+  "cited": "題庫 citation_allowlist 所引法規（article_id 的 pcode，否則完全相同的標題）",
+  "authorized": "regulation，現行版第 1 條第一句符合 authorized_by_regex，且法規名稱等於範圍內法規的完整標題；逐輪至不動點",
+  "general": "完全相同標題：行政罰法、行政程序法",
+  "authorized_by_regex": "依(?P<name>[^，。；：（]{2,40})(?:（[^）]*）)?(?:第[^，。；規]{1,20})?規定(?:訂定|授權|制定|訂之|辦理)"
+ },
+ "authorized_rounds": 1,
+ "pcodes_sha256": "f2fd285da3b8008bd793d374aeb6310945b117e55ba3324bbef49aac96ec1df8",
+ "counts": {
+  "cited": 20,
+  "authorized": 225,
+  "general": 1,
+  "laws": 246
+ },
+ "not_current": [],
+ "laws": [
+  {
+   "pcode": "A0020168",
+   "title": "中央研究院運作毒性及關注化學物質管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "A0030055",
+   "title": "行政程序法",
+   "part": "general"
+  },
+  {
+   "pcode": "A0030210",
+   "title": "行政罰法",
+   "part": "cited"
+  },
+  {
+   "pcode": "D0070077",
+   "title": "營建廢棄物共同清除處理機構管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "D0070237",
+   "title": "公共下水道污水處理廠事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "D0120001",
+   "title": "消防法",
+   "part": "cited"
+  },
+  {
+   "pcode": "D0120002",
+   "title": "消防法施行細則",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120025",
+   "title": "公共危險物品及可燃性高壓氣體製造儲存處理場所設置標準暨安全管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120029",
+   "title": "各類場所消防安全設備設置標準",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120046",
+   "title": "住宅用火災警報器設置辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120048",
+   "title": "明火表演安全管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120050",
+   "title": "消防機具器材及設備認可實施辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120054",
+   "title": "消防安全設備檢修及申報辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120055",
+   "title": "消防安全設備檢修專業機構管理辦法（108.11.18 訂定）",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120056",
+   "title": "危險性救災行動認定標準",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120058",
+   "title": "液化石油氣容器檢驗機構登錄及管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120063",
+   "title": "液化石油氣容器認可實施辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120072",
+   "title": "經營家用液化石油氣零售事業者資料申報作業辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120073",
+   "title": "防焰性能認證實施辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120074",
+   "title": "防焰物品或其材料防焰性能試驗標準",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120076",
+   "title": "液體公共危險物品儲槽檢查實施辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120079",
+   "title": "防火管理人訓練與專業機構登錄及管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120081",
+   "title": "防焰性能認證專業機構登錄及管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120083",
+   "title": "防焰性能試驗機構登錄及管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120087",
+   "title": "液體公共危險物品儲槽檢查專業機構許可及管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120089",
+   "title": "服勤人員訓練與專業機構登錄及管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120091",
+   "title": "液化石油氣零售業安全技術人員訓練專業機構登錄及管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120093",
+   "title": "保安監督人與保安檢查員訓練專業機構登錄及管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "D0120095",
+   "title": "消防人員安全衛生教育訓練實施規則",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "F0010040",
+   "title": "軍事秘密及緊急性國防工程環境影響評估作業辦法",
+   "part": "authorized",
+   "under": "O0090001"
+  },
+  {
+   "pcode": "G0330030",
+   "title": "菸酒事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "H0160035",
+   "title": "科學園區事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "I0020029",
+   "title": "行政機關與司法機關辦理行政罰及刑事罰競合案件業務聯繫辦法",
+   "part": "authorized",
+   "under": "A0030210"
+  },
+  {
+   "pcode": "J0030047",
+   "title": "經濟部事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "J0030058",
+   "title": "經濟部輔導設置事業廢棄物清除處理設施管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "J0030146",
+   "title": "經濟部事業廢棄物再利用產品環境監測管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "J0130028",
+   "title": "燃氣熱水器及其配管承裝業管理辦法",
+   "part": "authorized",
+   "under": "D0120001"
+  },
+  {
+   "pcode": "K0040035",
+   "title": "機車車型排氣審驗合格證明核發撤銷及廢止辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "K0060090",
+   "title": "通訊傳播事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "L0020069",
+   "title": "醫療廢棄物共同清除處理機構管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "L0020072",
+   "title": "衛生主管機關輔導設置醫療廢棄物清除處理設施管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "L0040136",
+   "title": "餐館業事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "M0060032",
+   "title": "農業事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0000006",
+   "title": "環境部公害糾紛督導處理小組組織規程",
+   "part": "authorized",
+   "under": "O0080001"
+  },
+  {
+   "pcode": "O0000007",
+   "title": "行政院環境保護署公害糾紛裁決委員會組織規程",
+   "part": "authorized",
+   "under": "O0080001"
+  },
+  {
+   "pcode": "O0000013",
+   "title": "環境部資源回收費率審議委員會設置辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0000015",
+   "title": "水污染防治費費率審議委員會設置辦法",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0020001",
+   "title": "空氣污染防制法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0020002",
+   "title": "空氣污染防制法施行細則",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020003",
+   "title": "移動污染源空氣污染物排放標準",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020005",
+   "title": "交通工具排放空氣污染物檢驗處理及委託辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020012",
+   "title": "固定污染源設置操作及燃料使用許可證管理辦法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0020015",
+   "title": "空氣品質嚴重惡化警告發布及緊急防制辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020022",
+   "title": "特殊性工業區緩衝地帶及空氣品質監測設施設置標準",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020027",
+   "title": "空氣污染防制費收費辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020036",
+   "title": "空氣污染行為管制執行準則",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020038",
+   "title": "公私場所固定污染源違反空氣污染防制法應處罰鍰額度裁罰準則",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020043",
+   "title": "移動污染源違反空氣污染防制法裁罰準則",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020046",
+   "title": "汽油及替代清潔燃料引擎汽車車型排氣審驗合格證明核發撤銷及廢止辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020048",
+   "title": "柴油及替代清潔燃料引擎汽車車型排氣審驗合格證明核發撤銷及廢止辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020052",
+   "title": "氟氯烴管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020053",
+   "title": "使用中汽車召回改正辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020054",
+   "title": "固定污染源自行或委託檢測及申報管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020056",
+   "title": "機車排放空氣污染物檢驗站設置及管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020057",
+   "title": "溴化甲烷管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020058",
+   "title": "營建工程空氣污染防制設施管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020059",
+   "title": "易致空氣污染之物質使用許可證管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020060",
+   "title": "汽車空氣污染物驗證核章辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020061",
+   "title": "公私場所固定污染源申請改善排放空氣污染物總量及濃度管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020062",
+   "title": "違反空氣污染防制法按次處罰通知限期改善補正或申報執行準則",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020063",
+   "title": "公私場所固定污染源復工試車評鑑及管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020064",
+   "title": "既存固定污染源污染物排放量認可準則",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020065",
+   "title": "移動污染源燃料販賣進口許可及管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020066",
+   "title": "公私場所固定污染源空氣污染物排放量申報管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020067",
+   "title": "使用中移動污染源排放空氣污染物不定期檢驗辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020068",
+   "title": "固定污染源空氣污染物連續自動監測設施管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020074",
+   "title": "蒙特婁議定書列管化學物質管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020076",
+   "title": "公私場所固定污染源空氣污染防制設備空氣污染防制費減免辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020078",
+   "title": "固定污染源逸散性粒狀污染物空氣污染防制設施管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020080",
+   "title": "使用中機動車輛噪音妨害安寧檢舉辦法",
+   "part": "authorized",
+   "under": "O0030001"
+  },
+  {
+   "pcode": "O0020083",
+   "title": "固定污染源空氣污染物實際削減量差額認可保留抵換及交易辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020098",
+   "title": "氣候變遷因應法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0020102",
+   "title": "溫室氣體排放量盤查登錄及查驗管理辦法",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0020103",
+   "title": "氣候變遷因應法施行細則",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0020104",
+   "title": "溫室氣體認證機構及查驗機構管理辦法",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0020106",
+   "title": "空氣污染防制專責單位或專責人員設置及管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020111",
+   "title": "大型柴油車調修燃油控制系統或加裝空氣污染防制設備補助辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020113",
+   "title": "鍋爐空氣污染物排放標準",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020117",
+   "title": "公私場所違反空氣污染防制法行為揭弊者法律扶助辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020118",
+   "title": "違反空氣污染防制法義務所得利益核算及推估辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020120",
+   "title": "空氣污染突發事故緊急應變措施計畫及警告通知作業辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020121",
+   "title": "空氣品質監測站設置及監測準則",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020122",
+   "title": "固定污染源管理資訊公開及工商機密審查辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020124",
+   "title": "公私場所固定污染源燃料混燒比例成分及防制設施管制標準",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020125",
+   "title": "空氣品質嚴重惡化採取緊急防制措施期間電業調整燃氣用量核可程序辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020131",
+   "title": "總量管制區空氣污染物抵換來源拍賣作業辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020134",
+   "title": "老舊車輛汰舊換新空氣污染物減量補助辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020135",
+   "title": "汽油及替代清潔燃料引擎汽車排放空氣污染物檢驗站設置及管理辦法",
+   "part": "authorized",
+   "under": "O0020001"
+  },
+  {
+   "pcode": "O0020136",
+   "title": "溫室氣體排放量增量抵換管理辦法",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0020137",
+   "title": "溫室氣體自願減量專案管理辦法",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0020138",
+   "title": "溫室氣體減量額度交易拍賣及移轉管理辦法",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0020140",
+   "title": "自主減量計畫管理辦法",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0020141",
+   "title": "氫氟碳化物管理辦法",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0020142",
+   "title": "自願性產品碳足跡核定標示及管理辦法",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0020144",
+   "title": "溫室氣體減量技術及氣候變遷調適補助辦法",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0020145",
+   "title": "二氧化碳捕捉後封存管理辦法",
+   "part": "authorized",
+   "under": "O0020098"
+  },
+  {
+   "pcode": "O0030001",
+   "title": "噪音管制法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0030002",
+   "title": "噪音管制法施行細則",
+   "part": "authorized",
+   "under": "O0030001"
+  },
+  {
+   "pcode": "O0030005",
+   "title": "使用中機動車輛噪音管制辦法",
+   "part": "authorized",
+   "under": "O0030001"
+  },
+  {
+   "pcode": "O0030007",
+   "title": "易發生噪音設施設置及操作許可辦法",
+   "part": "authorized",
+   "under": "O0030001"
+  },
+  {
+   "pcode": "O0030009",
+   "title": "軍事機關及其所屬單位之場所工程設施及機動車輛航空器等裝備噪音管制辦法",
+   "part": "authorized",
+   "under": "O0030001"
+  },
+  {
+   "pcode": "O0030010",
+   "title": "機場周圍地區航空噪音防制辦法",
+   "part": "authorized",
+   "under": "O0030001"
+  },
+  {
+   "pcode": "O0030012",
+   "title": "機動車輛車型噪音審驗合格證明核發廢止及噪音抽驗檢驗處理辦法",
+   "part": "authorized",
+   "under": "O0030001"
+  },
+  {
+   "pcode": "O0030013",
+   "title": "機動車輛噪音管制標準",
+   "part": "authorized",
+   "under": "O0030001"
+  },
+  {
+   "pcode": "O0030017",
+   "title": "噪音管制法規費收費標準",
+   "part": "authorized",
+   "under": "O0030001"
+  },
+  {
+   "pcode": "O0030019",
+   "title": "違反噪音管制法按日連續處罰執行準則",
+   "part": "authorized",
+   "under": "O0030001"
+  },
+  {
+   "pcode": "O0040001",
+   "title": "水污染防治法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0040002",
+   "title": "水污染防治法施行細則",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040004",
+   "title": "放流水標準",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040010",
+   "title": "飲用水管理條例",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0040011",
+   "title": "水污染防治各項許可申請收費標準",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040014",
+   "title": "飲用水連續供水固定設備使用及維護管理辦法",
+   "part": "authorized",
+   "under": "O0040010"
+  },
+  {
+   "pcode": "O0040016",
+   "title": "飲用水管理條例施行細則",
+   "part": "authorized",
+   "under": "O0040010"
+  },
+  {
+   "pcode": "O0040018",
+   "title": "飲用水水源水質標準",
+   "part": "authorized",
+   "under": "O0040010"
+  },
+  {
+   "pcode": "O0040019",
+   "title": "飲用水水質標準",
+   "part": "authorized",
+   "under": "O0040010"
+  },
+  {
+   "pcode": "O0040031",
+   "title": "土壤處理標準",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040049",
+   "title": "事業或污水下水道系統排放廢（污）水緊急應變辦法",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040052",
+   "title": "違反飲用水管理條例按日連續處罰執行準則",
+   "part": "authorized",
+   "under": "O0040010"
+  },
+  {
+   "pcode": "O0040053",
+   "title": "事業及污水下水道系統水污染防治費收費辦法",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040055",
+   "title": "水污染防治措施計畫及許可申請審查管理辦法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0040056",
+   "title": "違反水污染防治法罰鍰額度裁罰準則",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040064",
+   "title": "水污染防治費中央與地方分配辦法",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040065",
+   "title": "違反水污染防治法按次處罰通知限期改善或補正執行準則",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040066",
+   "title": "違反水污染防治法義務所得利益核算及推估辦法",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040067",
+   "title": "水體水質監測站設置及監測準則（104.12.16訂定）",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040069",
+   "title": "廢（污）水處理專責人員違反水污染防治法罰鍰額度裁罰準則",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0040070",
+   "title": "廢（污）水處理專責單位或人員設置及管理辦法",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0050001",
+   "title": "廢棄物清理法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0050005",
+   "title": "事業廢棄物貯存清除處理方法及設施標準",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050014",
+   "title": "一般廢棄物清除處理費徵收辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050016",
+   "title": "事業廢棄物輸入輸出管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050023",
+   "title": "有害事業廢棄物認定標準",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050024",
+   "title": "一般廢棄物回收清除處理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050030",
+   "title": "資源回收管理基金信託基金部分收支保管及運用辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050034",
+   "title": "經濟部事業廢棄物共同清除處理機構管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050036",
+   "title": "廢棄物清理法施行細則",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050039",
+   "title": "公民營廢棄物清除處理機構許可管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050041",
+   "title": "廢棄物及剩餘土石方清除機具處理設施或設備扣留作業辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050043",
+   "title": "違反廢棄物清理法按日連續處罰執行準則",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050044",
+   "title": "醫療事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050045",
+   "title": "事業廢棄物處理設施餘裕處理容量許可管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050047",
+   "title": "依促進民間參與公共建設法設置之廢棄物清除處理設施管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050049",
+   "title": "資源循環推動法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0050050",
+   "title": "指定公營事業設置廢棄物清除處理設施管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050051",
+   "title": "應回收廢棄物回收處理業管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050052",
+   "title": "營建事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050053",
+   "title": "廢棄物清理專業技術人員管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050058",
+   "title": "應回收廢棄物稽核認證作業辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050062",
+   "title": "應回收廢棄物責任業者管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050068",
+   "title": "回收廢棄物變賣所得款項提撥比例及運用辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050069",
+   "title": "事業自行清除處理事業廢棄物許可管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050070",
+   "title": "教育部事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050071",
+   "title": "交通事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050082",
+   "title": "環境部事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050084",
+   "title": "事業廢棄物清理計畫書審查管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050085",
+   "title": "事業委託清理之相當注意義務認定準則",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050086",
+   "title": "共通性事業廢棄物再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050087",
+   "title": "現有大型焚化廠統一調度辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050089",
+   "title": "違反廢棄物清理法所得利益認定及核算辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050090",
+   "title": "違反廢棄物清理法罰鍰額度裁罰準則",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0050091",
+   "title": "共通性事業廢棄物作為固體再生燃料原料再利用管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0060001",
+   "title": "環境用藥管理法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0060005",
+   "title": "軍事機關運作毒性及關注化學物質管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060006",
+   "title": "環境用藥管理法施行細則",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060007",
+   "title": "環境用藥專業技術人員設置管理辦法",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060008",
+   "title": "環境用藥各項許可申請及檢驗收費標準",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060010",
+   "title": "環境用藥工廠設廠標準",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060012",
+   "title": "毒性及關注化學物質管理法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0060013",
+   "title": "毒性及關注化學物質管理法施行細則",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060015",
+   "title": "毒性及關注化學物質運送管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060016",
+   "title": "毒性及關注化學物質運作獎勵辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060018",
+   "title": "學術機構運作毒性及關注化學物質管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060021",
+   "title": "環境用藥貯存置放使用管理辦法",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060022",
+   "title": "環境用藥歇業停業撤銷廢止許可證照藥品處理辦法",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060026",
+   "title": "環境用藥專供輸出申請作業準則",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060027",
+   "title": "環境用藥專供試驗研究教育示範專案防治或登記用申請作業準則",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060028",
+   "title": "環境用藥許可證申請核發作業準則",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060030",
+   "title": "環境用藥標示準則",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060032",
+   "title": "環境用藥販賣業及病媒防治業許可執照申請核發作業準則",
+   "part": "authorized",
+   "under": "O0060001"
+  },
+  {
+   "pcode": "O0060033",
+   "title": "毒性及關注化學物質運作人投保責任保險辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060034",
+   "title": "毒性及關注化學物質事故調查處理報告作業準則",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060035",
+   "title": "毒性及關注化學物質危害預防及應變計畫作業辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060036",
+   "title": "毒性及關注化學物質應變器材與偵測警報設備管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060037",
+   "title": "毒性及關注化學物質標示與安全資料表管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060038",
+   "title": "毒性及關注化學物質許可登記核可管理辦法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0060039",
+   "title": "毒性及關注化學物質運作與釋放量紀錄管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060040",
+   "title": "申請解除毒性化學物質限制或禁止事項審核辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060043",
+   "title": "新化學物質及既有化學物質資料登錄辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060044",
+   "title": "新化學物質及既有化學物質資料登錄審查業務委託辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060045",
+   "title": "毒性及關注化學物質災害事故應變車輛管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060046",
+   "title": "毒性及關注化學物質專業技術管理人員設置及管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060048",
+   "title": "違反毒性及關注化學物質管理法行為揭弊者法律扶助辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060049",
+   "title": "違反毒性及關注化學物質管理法所得利益核算及推估辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060050",
+   "title": "違反毒性及關注化學物質管理法罰鍰額度裁罰準則",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060051",
+   "title": "毒性及關注化學物質環境事故專業應變諮詢機關（構）認證及管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060052",
+   "title": "毒性及關注化學物質聯防組織設立計畫作業辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0060053",
+   "title": "毒性及關注化學物質專業應變人員管理辦法",
+   "part": "authorized",
+   "under": "O0060012"
+  },
+  {
+   "pcode": "O0070006",
+   "title": "有害事業廢棄物檢測及紀錄管理辦法",
+   "part": "authorized",
+   "under": "O0050001"
+  },
+  {
+   "pcode": "O0080001",
+   "title": "公害糾紛處理法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0080002",
+   "title": "公害糾紛處理法施行細則",
+   "part": "authorized",
+   "under": "O0080001"
+  },
+  {
+   "pcode": "O0080003",
+   "title": "公害糾紛處理收費辦法",
+   "part": "authorized",
+   "under": "O0080001"
+  },
+  {
+   "pcode": "O0090001",
+   "title": "環境影響評估法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0090002",
+   "title": "環境影響評估法施行細則",
+   "part": "authorized",
+   "under": "O0090001"
+  },
+  {
+   "pcode": "O0090003",
+   "title": "開發行為環境影響評估作業準則",
+   "part": "authorized",
+   "under": "O0090001"
+  },
+  {
+   "pcode": "O0090012",
+   "title": "開發行為應實施環境影響評估細目及範圍認定標準",
+   "part": "authorized",
+   "under": "O0090001"
+  },
+  {
+   "pcode": "O0090029",
+   "title": "政府政策環境影響評估作業辦法",
+   "part": "authorized",
+   "under": "O0090001"
+  },
+  {
+   "pcode": "O0090030",
+   "title": "違反環境影響評估法按日連續處罰執行準則",
+   "part": "authorized",
+   "under": "O0090001"
+  },
+  {
+   "pcode": "O0100001",
+   "title": "環境基本法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0110001",
+   "title": "土壤及地下水污染整治法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0110002",
+   "title": "土壤及地下水污染整治法施行細則",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110004",
+   "title": "土壤及地下水污染整治費收費辦法",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110010",
+   "title": "防止貯存系統污染地下水體設施及監測設備設置管理辦法",
+   "part": "authorized",
+   "under": "O0040001"
+  },
+  {
+   "pcode": "O0110011",
+   "title": "目的事業主管機關檢測土壤及地下水備查作業辦法",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110014",
+   "title": "土壤污染評估調查人員管理辦法",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110015",
+   "title": "土壤污染評估調查及檢測資料審查收費標準",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110017",
+   "title": "土壤污染評估調查及檢測作業管理辦法",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110018",
+   "title": "底泥品質指標之分類管理及用途限制辦法",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110019",
+   "title": "辦理土壤及地下水污染場址整治目標公聽會作業準則",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110021",
+   "title": "污染土地關係人之善良管理人注意義務認定準則",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110022",
+   "title": "土壤及地下水污染場址初步評估暨處理等級評定辦法",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110023",
+   "title": "目的事業主管機關檢測底泥品質備查作業辦法",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0110024",
+   "title": "土壤及地下水污染整治場址環境影響與健康風險評估辦法",
+   "part": "authorized",
+   "under": "O0110001"
+  },
+  {
+   "pcode": "O0120001",
+   "title": "環境教育法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0120002",
+   "title": "環境教育法施行細則",
+   "part": "authorized",
+   "under": "O0120001"
+  },
+  {
+   "pcode": "O0120004",
+   "title": "環境教育設施場所認證及管理辦法",
+   "part": "authorized",
+   "under": "O0120001"
+  },
+  {
+   "pcode": "O0120005",
+   "title": "環境教育機構認證及管理辦法",
+   "part": "authorized",
+   "under": "O0120001"
+  },
+  {
+   "pcode": "O0120007",
+   "title": "環境教育設施場所輔導獎勵辦法",
+   "part": "authorized",
+   "under": "O0120001"
+  },
+  {
+   "pcode": "O0120008",
+   "title": "國家環境教育獎獎勵辦法",
+   "part": "authorized",
+   "under": "O0120001"
+  },
+  {
+   "pcode": "O0120009",
+   "title": "環境教育計畫與成果提報執行辦法",
+   "part": "authorized",
+   "under": "O0120001"
+  },
+  {
+   "pcode": "O0120010",
+   "title": "環境講習執行辦法",
+   "part": "authorized",
+   "under": "O0120001"
+  },
+  {
+   "pcode": "O0130001",
+   "title": "室內空氣品質管理法",
+   "part": "cited"
+  },
+  {
+   "pcode": "O0130002",
+   "title": "室內空氣品質管理法施行細則",
+   "part": "authorized",
+   "under": "O0130001"
+  },
+  {
+   "pcode": "O0130003",
+   "title": "室內空氣品質維護管理專責人員設置管理辦法",
+   "part": "authorized",
+   "under": "O0130001"
+  },
+  {
+   "pcode": "O0130004",
+   "title": "違反室內空氣品質管理法罰鍰額度裁罰準則",
+   "part": "authorized",
+   "under": "O0130001"
+  },
+  {
+   "pcode": "O0130005",
+   "title": "室內空氣品質標準",
+   "part": "authorized",
+   "under": "O0130001"
+  },
+  {
+   "pcode": "O0130006",
+   "title": "公告場所室內空氣品質檢驗測定管理辦法",
+   "part": "authorized",
+   "under": "O0130001"
+  }
+ ],
+ "passages": 20634,
+ "golden_sha256": "b6ab24712269a48d111eb41ac8b38f354d97848a2947303d3ca03fde7b8c897f",
+ "built_on": "2026-10-24"
+}
