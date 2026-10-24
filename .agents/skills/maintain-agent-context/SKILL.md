@@ -18,13 +18,14 @@ Layer definitions live in **`AGENTS.md` → Layering** — read it first; do not
 2. **Do not create `.cursorrules`.** Legacy; use `.cursor/rules/*.mdc` only for Cursor-specific scoping.
 3. **Do not copy `AGENTS.md` into rules or skills.** Link or cite; keep one canonical baseline.
 4. **Skills live in `.agents/skills/`.** Claude Code only scans `.claude/skills/`, so link each skill there: `.claude/skills/<name>` → `../../.agents/skills/<name>`. Symlink the `<name>` entries, not the `skills` directory itself (the [docs](https://code.claude.com/docs/en/skills) cover symlinked skill entries only). Never copy a skill into `.claude/skills/`.
-5. **Shared skills are installed, not edited.** Skills listed in `skills-lock.json` come from `agent-config`. Change them there, then run `npx skills update` in the consuming repo. Never hand-edit the installed copy.
+5. **Shared skills are installed, not edited.** Skills listed in `skills-lock.json` come from the repo named in their `source` field. Change them there; consuming repos pick the change up through their scheduled skills-update pipeline (or `npx skills update -p -y` by hand). Never hand-edit the installed copy.
+6. **Review skill updates before merging.** Skills run with the agent's full permissions; an update pipeline opens a merge request, it does not push to the default branch.
 
 ## When to put content where
 
 - Exact install / test / lint commands → `AGENTS.md` Commands
 - Repo-specific procedure → skill under `.agents/skills/` in that repo
-- Procedure reused across repos → skill in `agent-config`, installed via `npx skills add`
+- Procedure reused across repos → skill in the shared skills repo, installed via `npx skills add`
 - File-type or path-scoped Cursor guidance → `.cursor/rules/*.mdc` with `globs:` (prefer `alwaysApply: false`)
 - Package-local overrides → nested `AGENTS.md` next to that package
 

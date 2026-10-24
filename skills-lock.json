@@ -2,10 +2,10 @@
   "version": 1,
   "skills": {
     "maintain-agent-context": {
-      "source": "elihu0211/agent-config",
+      "source": "elihu0211/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/maintain-agent-context/SKILL.md",
-      "computedHash": "5a925f919b64d93819a46c2fdc32165616e169a3a9305e562955933cde5ed02c"
+      "computedHash": "a6aeef1957913f9ba8e1494ed308ddd50d95858f4b8a62aaa5727f17184ded89"
     }
   }
 }

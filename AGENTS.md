@@ -86,14 +86,14 @@ wt list        # URL 欄是本樹 platform 的位址
 |----|------|----------|
 | Baseline | 本檔；各服務巢狀 `AGENTS.md`（該樹之內以它為準） | 一律 |
 | Skills | `.agents/skills/<name>/SKILL.md`（[規格](https://agentskills.io/specification)） | 需要時 |
-| 共用 skills | 自 [`elihu0211/agent-config`](https://github.com/elihu0211/agent-config) 安裝，釘在 `skills-lock.json` | 同上；`DISABLE_TELEMETRY=1 npx skills update -p -y` 更新 |
+| 共用 skills | 由 skills CLI 安裝，來源與版本釘在 `skills-lock.json` | 同上；`DISABLE_TELEMETRY=1 npx skills update -p -y` 更新 |
 | Claude 橋接 | `CLAUDE.md` → `@AGENTS.md`；`.claude/skills/<name>` → **逐 skill** symlink 至 `../../.agents/skills/<name>`（官方文件述明可 symlink 的是 `<skill-name>` 項目本身，不是整個 `skills` 目錄） | 僅 Claude Code |
 | Gemini 橋接 | `.gemini/settings.json` → `context.fileName: ["AGENTS.md"]` | 僅 Gemini CLI（其預設為 `GEMINI.md`） |
 | Cursor rules | `.cursor/rules/*.mdc` | 僅 Cursor，路徑限定指引 |
 
 - 共用 agent 設定（`.agents/`、`.gemini/`、`skills-lock.json`）只放倉庫根，服務層不重複。
 - 倉庫專屬 skill 寫在 `.agents/skills/`；`.claude/skills/` 內只放 symlink，**不要**另立一棵樹。
-- 列在 `skills-lock.json` 的 skill **不要手改**，改在 `agent-config` 再更新。
+- 列在 `skills-lock.json` 的 skill **不要手改**，改在 lock 檔所列的來源 repo，再用 `npx skills update` 更新。
 - **只服務單一服務的 skill 可放 `services/<name>/.claude/skills/`**：Claude Code 對單一倉庫多服務支援巢狀探索（自起始目錄往上至倉庫根，巢狀子目錄則於實際讀寫該處檔案時動態載入），不必為了共用而把兩個堆疊的內容硬併成一份。
 - 不要新增 `.cursorrules`、`GEMINI.md` 或其他平行基準檔；`CLAUDE.md` 維持純匯入橋接。
 
