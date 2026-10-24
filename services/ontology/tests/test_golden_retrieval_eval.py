@@ -178,3 +178,26 @@ def test_a_hit_is_any_expected_article_in_the_top_k_and_summaries_split_by_bucke
     assert s["overall"]["n"] == 3  # negative 不計分
     assert s["overall"]["recall@5"] == round(2 / 3, 4)
     assert s["negative"]["n"] == 1 and s["negative"]["top_semantic"] is None
+
+
+def test_a_scope_drops_hits_of_other_laws_before_the_first_k_are_taken() -> None:
+    tool = _tool()
+    by_title, provisions = _corpus(tool)
+    items = [
+        {
+            "id": "q",
+            "bucket": "exact_id",
+            "question": "q",
+            "citation_allowlist": [{"statute": "空氣污染防制法", "article": "第68條"}],
+        }
+    ]
+    store = FakeStore([("Z", str(i)) for i in range(1, 6)] + [("O0020001", "68")])
+    resolved = tool.resolve(items, by_title, provisions)
+
+    plain = tool.search_all(store, FakeSegmenter(), resolved, None, k=3, on="2026-10-23")
+    scoped = tool.search_all(
+        store, FakeSegmenter(), resolved, None, k=3, on="2026-10-23", scope=frozenset({"O0020001"})
+    )
+
+    assert plain[0].rank is None and plain[0].out_of_scope_dropped is None
+    assert scoped[0].rank == 1 and scoped[0].out_of_scope_dropped == 5

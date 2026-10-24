@@ -16,6 +16,13 @@ commit, the corpus snapshots, the question file's sha256 and the retrieval setti
 
 Database and embedder come from the environment (ONTOLOGY_DSN, ONTOLOGY_MODELS); with no embedding
 declared only the lexical arm runs and the result says so.
+
+`--scope <golden_scope.py output>` limits the search to that set of laws without touching the
+retrieval function: the service's `search` is asked for every candidate it can return and the hits
+of laws outside the scope are dropped before the first k are taken. Each arm's candidate pool is
+chosen before the filter, so a lexical pool crowded by out-of-scope laws yields fewer than k
+in-scope hits; the number dropped per question is recorded. The embedding completion of the
+scope is part of the meta.
 """
 
 from __future__ import annotations
@@ -43,7 +50,7 @@ from retrieval_eval import Embeds, Outcome, mrr, recall
 
 from envcite_ontology import embedding
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store import SEARCH_POOL, OntologyStore
 from envcite_segmenter import Segmenter
 
 KS = (1, 5, 10, 20, 50)
@@ -82,6 +89,7 @@ class Result:
     hit_article: str | None = None
     top_lexical: float | None = None
     top_semantic: float | None = None
+    out_of_scope_dropped: int | None = None
 
 
 def article_number(text: str | None) -> str | None:
@@ -230,8 +238,12 @@ def search_all(
     *,
     k: int,
     on: str,
+    scope: frozenset[str] | None = None,
 ) -> list[Result]:
-    """逐題檢索前 k 條，回傳填了名次與最高分的新 Result；negative 只記最高分。"""
+    """逐題檢索前 k 條，回傳填了名次與最高分的新 Result；negative 只記最高分。
+
+    有 `scope`（pcode 集合）時向檢索要它能給的全部候選，丟掉範圍外法規的命中後再取前 k 條。
+    """
     out = []
     for r in results:
         if r.status == "unmapped":
@@ -242,10 +254,15 @@ def search_all(
             segmenter.to_tsvector_input(r.question),
             tokenizer=segmenter.tokenizer_id,
             as_of=on,
-            limit=k,
+            limit=2 * SEARCH_POOL if scope is not None else k,
             embedding=vector,
             model=embedder.model if embedder else "",
         )
+        dropped = None
+        if scope is not None:
+            kept = [h for h in hits if h.law_id in scope]
+            dropped = len(hits) - len(kept)
+            hits = kept[:k]
         semantic = [h.semantic_similarity for h in hits if h.semantic_similarity is not None]
         rank, hit_article = None, None
         if r.status == "scored":
@@ -261,6 +278,7 @@ def search_all(
                 hit_article=hit_article,
                 top_lexical=max((h.lexical_score for h in hits), default=0.0),
                 top_semantic=max(semantic, default=None),
+                out_of_scope_dropped=dropped,
             )
         )
     return out
@@ -356,6 +374,17 @@ def markdown(meta: dict[str, Any], arm: str, s: dict[str, Any]) -> str:
         f"- 語料：{c['legal_resources']} 部法規、{c['provisions']} 個條文單元、"
         f"{c['passages']} 筆 passage（其中有嵌入 {c['passages_with_embedding']}）",
         f"- 檢索：{r['arms']}；分詞器 `{r['tokenizer']}`；k = {r['k']}",
+        *(
+            [
+                f"- 範圍：{s['counts']['laws']} 部法規（題庫所引 {s['counts']['cited']}、授權命令 "
+                f"{s['counts']['authorized']}、總則法 {s['counts']['general']}），"
+                f"{s['passages']} 段落，清單 sha256 `{s['pcodes_sha256']}`（`{s['path']}`）",
+                f"- 嵌入：模型 `{s['embedding_model']}`，完成 {s['embedded']}/{s['passages']}"
+                f"（{s['embedded'] / s['passages']:.1%}）；方法：{s['method']}",
+            ]
+            if (s := meta.get("scope"))
+            else []
+        ),
         "- 命中：任一期望條文在前 k 條；unmapped 不計入分母，原因逐題列在 JSON；"
         "部分對應的題只以對得到的條文計。僅檢索層，不含答對率。",
         "",
@@ -392,11 +421,34 @@ def corpus_counts(conn: psycopg.Connection[Any]) -> dict[str, int]:
     return dict(zip(keys, (int(x) for x in row), strict=True))
 
 
+def load_scope(path: Path) -> dict[str, Any]:
+    scope: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    pcodes = sorted(e["pcode"] for e in scope["laws"])
+    if hashlib.sha256("\n".join(pcodes).encode()).hexdigest() != scope["pcodes_sha256"]:
+        raise SystemExit(f"{path}: pcodes_sha256 與清單不符")
+    return scope
+
+
+def scope_completion(conn: psycopg.Connection[Any], embedder: Embeds, scope: frozenset[str]) -> int:
+    """範圍內不同段落文字中，已有這個模型嵌入的數量。"""
+    row = conn.execute(
+        "SELECT count(DISTINCT v.content_sha256) FROM corpus.provision_version AS v"
+        "  JOIN corpus.legal_resource AS r ON r.id = v.resource_id"
+        "  JOIN retrieval.passage AS i ON i.content_sha256 = v.content_sha256"
+        " WHERE v.superseded_at IS NULL AND r.local_id = ANY(%s)"
+        "   AND i.embedding IS NOT NULL AND i.model = %s",
+        (sorted(scope), embedder.model),
+    ).fetchone()
+    assert row is not None
+    return int(row[0])
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="golden_retrieval_eval")
     parser.add_argument("golden", type=Path)
     parser.add_argument("--out", type=Path, required=True, help="輸出檔前綴（寫 .json 與 .md）")
     parser.add_argument("--k", type=int, default=max(KS))
+    parser.add_argument("--scope", type=Path, help="golden_scope.py 的輸出；限定檢索範圍")
     args = parser.parse_args()
     if args.k < max(KS):
         parser.error(f"--k 至少 {max(KS)}（recall@{max(KS)} 需要）")
@@ -406,16 +458,23 @@ def main() -> None:
     db = load(DatabaseSettings)
     embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0, max_retries=3)
     on = date.today().isoformat()
+    scope_doc = load_scope(args.scope) if args.scope else None
+    scope = frozenset(e["pcode"] for e in scope_doc["laws"]) if scope_doc else None
     with psycopg.connect(db.ontology_dsn) as conn:
         by_title, provisions = load_corpus(conn)
         snaps = snapshots(conn)
         counts = corpus_counts(conn)
+        scope_embedded = scope_completion(conn, embedder, scope) if scope and embedder else None
     resolved = resolve(items, by_title, provisions)
     with OntologyStore.from_dsn(db.ontology_dsn) as store:
         segmenter = Segmenter(store.lexicon())
-        arms = {"lexical": search_all(store, segmenter, resolved, None, k=args.k, on=on)}
+        arms = {
+            "lexical": search_all(store, segmenter, resolved, None, k=args.k, on=on, scope=scope)
+        }
         if embedder:
-            arms["hybrid"] = search_all(store, segmenter, resolved, embedder, k=args.k, on=on)
+            arms["hybrid"] = search_all(
+                store, segmenter, resolved, embedder, k=args.k, on=on, scope=scope
+            )
         tokenizer = segmenter.tokenizer_id
 
     meta = {
@@ -438,6 +497,18 @@ def main() -> None:
             "embedding_model": embedder.model if embedder else None,
         },
     }
+    if scope_doc and scope:
+        meta["scope"] = {
+            "path": str(args.scope),
+            "counts": scope_doc["counts"],
+            "passages": scope_doc["passages"],
+            "pcodes_sha256": scope_doc["pcodes_sha256"],
+            "rule": scope_doc["rule"],
+            "embedding_model": embedder.model if embedder else None,
+            "embedded": scope_embedded,
+            "method": "檢索函式不變；取 2×候選池的候選，丟掉範圍外法規的命中後取前 k 條"
+            "（lexical 臂的候選池在過濾前以全庫決定）",
+        }
     summaries = {name: summarize(rs) for name, rs in arms.items()}
     doc = {
         "meta": meta,
