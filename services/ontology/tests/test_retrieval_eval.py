@@ -51,12 +51,13 @@ def test_a_question_that_copies_its_article_is_dropped(conn: Conn, tmp_path: Pat
     tool = _tool()
     _first(conn, tmp_path, _law_v1(LawArticles=_articles(NOISE, WATER)))
 
-    items = tool.generate(conn, Writer(), count=5, negatives=2, seed="s", on=date(2019, 6, 1))
-
-    answerable = [i for i in items if i["kind"] == "answerable"]
-    assert [(i["article"], i["question"]) for i in answerable] == [
-        ("1", "晚上鄰居一直很吵可以檢舉嗎？")
-    ]
+    # 取樣依（種子，法規 id，條）的雜湊，法規 id 是序號、隨前面的測試而變：每個種子只抽到一條，
+    # 所以跨種子看——被抽中的照抄條文永遠被丟，被抽中的另一條留下。
+    seen = set()
+    for seed in "abcdefgh":
+        items = tool.generate(conn, Writer(), count=5, negatives=2, seed=seed, on=date(2019, 6, 1))
+        seen |= {(i["article"], i["question"]) for i in items if i["kind"] == "answerable"}
+    assert seen == {("1", "晚上鄰居一直很吵可以檢舉嗎？")}
     assert [i["question"] for i in items if i["kind"] == "out_of_scope"] == [
         "紅燒肉要燉多久？",
         "怎麼練習倒立？",
