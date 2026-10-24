@@ -82,6 +82,11 @@ class Run:
     definitions: int = 0  # 抽到的用語定義數（不含在 extracted）
     definitions_confirmed: int = 0
     definitions_rejected: int = 0
+    #: 陳述抽取的過程計數（不含用語定義與連結罰則的呼叫）
+    calls: int = 0
+    repairs: int = 0
+    syntax_failures: int = 0
+    shape_failures: int = 0
 
 
 def units_of(conn: Conn, law: str) -> list[str]:
@@ -232,6 +237,7 @@ def run(
     if check_distinct:
         assert_distinct([extractor, *verifiers])
     units = skipped = extracted = dropped = definitions = 0
+    calls = repairs = syntax_failures = shape_failures = 0
     pending: list[Mapping[str, Any]] = []
     for law in laws:
         # 先抽用語定義：陳述的要件要指名本法已定義的用語，兩邊代碼從源頭一致。
@@ -263,6 +269,10 @@ def run(
             )
             _record_attempt(conn, law, path, extractor.name, agent_version, out)
             extracted += out.loaded.statements if out.loaded else 0
+            calls += out.counts.calls
+            repairs += out.counts.repairs
+            syntax_failures += out.counts.syntax_failures
+            shape_failures += out.counts.shape_failures
             dropped += len(out.dropped)
             pending += out.pending
             for reason in out.dropped:
@@ -291,6 +301,10 @@ def run(
         definitions,
         defs.confirmed,
         defs.rejected,
+        calls,
+        repairs,
+        syntax_failures,
+        shape_failures,
     )
 
 
@@ -379,4 +393,13 @@ def main() -> None:
         result.settled.confirmed,
         result.settled.rejected,
         result.settled.rounds,
+    )
+    tokens = getattr(extractor, "tokens", None)
+    logging.getLogger(__name__).info(
+        "抽取計數：呼叫 %d，修復 %d，語法失敗 %d，形狀問題 %d；詞元 %s",
+        result.calls,
+        result.repairs,
+        result.syntax_failures,
+        result.shape_failures,
+        tokens,
     )

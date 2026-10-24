@@ -111,7 +111,19 @@ def _model(
     endpoints: Mapping[str, tuple[str, str | None]],
 ) -> Model:
     where = f"model.{name}"
-    _only(table, {"provider", "endpoint", "name", "family", "max_tokens", "max_retries"}, where)
+    _only(
+        table,
+        {
+            "provider",
+            "endpoint",
+            "name",
+            "family",
+            "max_tokens",
+            "max_retries",
+            "constrained_extraction",
+        },
+        where,
+    )
     remote = table.get("name")
     if not isinstance(remote, str) or not remote:
         raise ConfigError(f"{where}: name is required")
@@ -130,7 +142,17 @@ def _model(
         raise ConfigError(f"{where}: family is required (it is what independence is judged on)")
     base, key = endpoints[endpoint]
     extra: dict[str, Any] = {k: int(table[k]) for k in ("max_tokens", "max_retries") if k in table}
-    return ChatCompletionsModel(remote, family=family, base_url=base, api_key=key, **extra)
+    constrained = table.get("constrained_extraction", False)
+    if not isinstance(constrained, bool):
+        raise ConfigError(f"{where}: constrained_extraction must be true or false")
+    return ChatCompletionsModel(
+        remote,
+        family=family,
+        base_url=base,
+        api_key=key,
+        constrained_extraction=constrained,
+        **extra,
+    )
 
 
 def parse(

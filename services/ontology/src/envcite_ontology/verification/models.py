@@ -14,7 +14,7 @@ import random
 import time
 import urllib.error
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from http.client import HTTPException
 from typing import Any, Protocol
 
@@ -97,8 +97,14 @@ class ChatCompletionsModel:
         max_retries: int = 3,
         backoff: float = 1.0,
         sleep: Callable[[float], None] = time.sleep,
+        constrained_extraction: bool = False,
     ) -> None:
         self.model_id = model_id
+        #: 陳述抽取是否對端點加解碼期約束（JSON Schema）；預設關，即現行行為。只影響抽取陳述的
+        #: 呼叫，驗證者與用語定義抽取不受影響。
+        self.constrained_extraction = constrained_extraction
+        #: 累計的詞元用量，取自回應的 `usage`；端點不回報則維持 0
+        self.tokens = {"prompt": 0, "completion": 0}
         self.family = family
         self.max_tokens = max_tokens
         self.timeout = timeout
@@ -115,21 +121,26 @@ class ChatCompletionsModel:
     def name(self) -> str:
         return f"{self.family}:{self.model_id}"
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, *, response_format: Mapping[str, Any] | None = None) -> str:
         base = self._base_url.rstrip("/")
         headers = {"Content-Type": "application/json"}
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
-        body = json.dumps(
-            {
-                "model": self.model_id,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": self.max_tokens,
-                "temperature": 0,
-            }
-        ).encode()
+        request_body: dict[str, Any] = {
+            "model": self.model_id,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": self.max_tokens,
+            "temperature": 0,
+        }
+        if response_format is not None:
+            request_body["response_format"] = dict(response_format)
+        body = json.dumps(request_body).encode()
         request = urllib.request.Request(f"{base}/chat/completions", body, headers, method="POST")
         payload = self._post(request)
+        usage = payload.get("usage")
+        if isinstance(usage, dict):
+            self.tokens["prompt"] += int(usage.get("prompt_tokens") or 0)
+            self.tokens["completion"] += int(usage.get("completion_tokens") or 0)
         content = ((payload.get("choices") or [{}])[0].get("message") or {}).get("content")
         if not isinstance(content, str) or not content:
             raise ModelError(

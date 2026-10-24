@@ -9,7 +9,7 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import psycopg
 
@@ -75,6 +75,113 @@ REPAIR = """{prompt}
 """
 
 MAX_REPAIRS = 2
+
+
+def _nullable(inner: dict[str, Any]) -> dict[str, Any]:
+    """模型常把選填欄位照樣板填成空值：Schema 容許 null，由後面的整形與驗證處理。"""
+    return {"anyOf": [inner, {"type": "null"}]}
+
+
+_STR: dict[str, Any] = {"type": "string"}
+_NUM: dict[str, Any] = {"type": "number"}
+_BOOL: dict[str, Any] = {"type": "boolean"}
+_SLOT: dict[str, Any] = {
+    "anyOf": [
+        {"type": "object", "properties": {"literal": _STR}},
+        {"type": "array", "items": {"type": "object", "properties": {"literal": _STR}}},
+        _STR,
+    ]
+}
+
+#: 解碼期約束只管形狀：結構、型別與列舉值。引文逐字在原文、概念已宣告、duty 與 scope 完備等
+#: 語意性質不在此，仍由事後檢查負責（見 01-11 受約束的條文抽取）。
+STATEMENTS_FORMAT: dict[str, Any] = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "statements",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "concepts": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {"code": _STR, "label": _STR},
+                        "required": ["code", "label"],
+                    },
+                },
+                "statements": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": _STR,
+                            "quote": _STR,
+                            "kind": {"enum": ["prescriptive", "constitutive", "sanction"]},
+                            "deontic": {"enum": ["obligation", "prohibition", "permission", None]},
+                            "slots": {"type": "object", "additionalProperties": _SLOT},
+                            "conditions": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "role": {"enum": ["scope", "duty"]},
+                                        "clause": {"type": "integer"},
+                                        "concept": _STR,
+                                        "comparator": {
+                                            "enum": ["le", "lt", "ge", "gt", "eq", "ne"]
+                                        },
+                                        "threshold": _nullable(_NUM),
+                                        "unit": _nullable(_STR),
+                                        "negated": _BOOL,
+                                        "judgement": _BOOL,
+                                        "value_concept": _nullable(_STR),
+                                    },
+                                },
+                            },
+                            "sanction": _nullable(
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "effect": {
+                                            "enum": [
+                                                "fine",
+                                                "order",
+                                                "restriction",
+                                                "deprivation",
+                                                "reputation",
+                                                "warning",
+                                                "confiscation",
+                                                None,
+                                            ]
+                                        },
+                                        "min": _nullable(_NUM),
+                                        "max": _nullable(_NUM),
+                                        "amount_text": _nullable(_STR),
+                                        "repeating": _BOOL,
+                                        "discretionary": _BOOL,
+                                        "punishes": _nullable(_STR),
+                                    },
+                                }
+                            ),
+                        },
+                        "required": ["id", "quote", "kind"],
+                    },
+                },
+            },
+            "required": ["statements"],
+        },
+    },
+}
+
+
+def _complete(model: Model, prompt: str) -> str:
+    """送出一次抽取呼叫；模型宣告要解碼期約束時才帶 Schema，其餘與原本相同。"""
+    if getattr(model, "constrained_extraction", False):
+        complete = cast(Any, model).complete
+        return str(complete(prompt, response_format=STATEMENTS_FORMAT))
+    return model.complete(prompt)
+
 
 _CONDITIONAL = re.compile(r"者[，,]\s*(應|不得)")
 
@@ -255,12 +362,27 @@ def unusable(statements: Sequence[Mapping[str, Any]]) -> dict[str, str]:
 
 
 @dataclass(frozen=True)
+class Counts:
+    """一個單元的抽取過程計數，供比較不同抽取路徑（`verification` 的 A/B 量測）。"""
+
+    #: 呼叫模型的次數（首次加修復）
+    calls: int = 0
+    #: 用掉的修復次數（0 至 `MAX_REPAIRS`）
+    repairs: int = 0
+    #: 語法失敗：首次輸出取不出 JSON（0 或 1）
+    syntax_failures: int = 0
+    #: 形狀問題：首次輸出被 `shape_issues` 指出的問題數（概念未宣告等，多為語意，不是語法）
+    shape_failures: int = 0
+
+
+@dataclass(frozen=True)
 class Extracted:
     loaded: Loaded | None
     #: 丟掉的輸出：引文不在原文的陳述，或違反資料庫約束的整份文件
     dropped: tuple[str, ...]
     #: 受罰陳述在別的單元的罰則：等所有單元抽完，由 `link.link_penalties` 連結
     pending: tuple[Mapping[str, Any], ...] = ()
+    counts: Counts = Counts()
 
 
 def _unit_text(conn: Conn, law: str, path: str) -> tuple[int, str]:
@@ -363,12 +485,17 @@ def extract_unit(
         context=context_block(ancestors_text(conn, provision_id)),
     )
     try:
-        raw = model.complete(prompt)
+        raw = _complete(model, prompt)
     except ModelError as e:
         # 重試用盡：不寫入，下次仍是「還沒抽」
-        return Extracted(None, (f"<model error: {e}>"[:300],))
+        return Extracted(None, (f"<model error: {e}>"[:300],), counts=Counts(calls=1))
+    calls, repairs = 1, 0
     answer: Mapping[str, Any] | None = object_from(raw)
     answer = None if answer is None else tidy(answer, defined)
+    syntax_failures = 1 if answer is None else 0
+    shape_failures = (
+        0 if answer is None else sum(len(v) for v in shape_issues(answer, defined).values())
+    )
     for _ in range(MAX_REPAIRS):
         if answer is None:
             break
@@ -382,9 +509,11 @@ def extract_unit(
         ]
         if not issues:
             break
+        calls += 1
+        repairs += 1
         try:
-            reply = model.complete(
-                REPAIR.format(prompt=prompt, previous=raw, issues="\n".join(issues))
+            reply = _complete(
+                model, REPAIR.format(prompt=prompt, previous=raw, issues="\n".join(issues))
             )
         except ModelError:
             break  # 修復失敗：沿用現有版本，缺的由後面的丟棄與驗證處理
@@ -392,8 +521,14 @@ def extract_unit(
         if again is None:
             break
         raw, answer = json.dumps(again, ensure_ascii=False), tidy(again, defined)
+    counts = Counts(
+        calls=calls,
+        repairs=repairs,
+        syntax_failures=syntax_failures,
+        shape_failures=shape_failures,
+    )
     if answer is None:
-        return Extracted(None, ("<unparseable model output>",))
+        return Extracted(None, ("<unparseable model output>",), counts=counts)
     statements: list[dict[str, Any]] = []
     dropped: list[str] = []
     broken = unusable([x for x in _statements_of(answer) if str(x.get("quote", "")) in text])
@@ -440,11 +575,11 @@ def extract_unit(
     }
     pending = (base | {"statements": held},) if held else ()
     if not statements:
-        return Extracted(None, tuple(dropped), pending)
+        return Extracted(None, tuple(dropped), pending, counts)
     doc = base | {"statements": statements}
     try:
         loaded = load(conn, doc)
     except AnnotationError as e:
         # 違反約束的文件整份不寫（`load` 已回滾），記下來，不拖垮管線
-        return Extracted(None, (*dropped, f"<invalid document: {e}>"), pending)
-    return Extracted(loaded, tuple(dropped), pending)
+        return Extracted(None, (*dropped, f"<invalid document: {e}>"), pending, counts)
+    return Extracted(loaded, tuple(dropped), pending, counts)

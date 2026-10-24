@@ -10,9 +10,13 @@ from types import ModuleType
 import psycopg
 
 from envcite_ontology import projection
+from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.ingest import importer
 from envcite_ontology.store import OntologyStore
 from envcite_segmenter import Segmenter
+from tests.sample import stored_snapshot
 from tests.test_hybrid import FakeEmbedder
+from tests.test_import import _law
 from tests.test_incremental import _articles, _first, _law_v1
 
 Conn = psycopg.Connection[tuple[object, ...]]
@@ -49,7 +53,15 @@ def test_overlap_counts_the_question_pairs_found_in_the_article() -> None:
 
 def test_a_question_that_copies_its_article_is_dropped(conn: Conn, tmp_path: Path) -> None:
     tool = _tool()
-    _first(conn, tmp_path, _law_v1(LawArticles=_articles(NOISE, WATER)))
+    stored_snapshot(
+        conn,
+        tmp_path,
+        [
+            _law("T0000001", "噪音管制法", LawArticles=_articles(NOISE)),
+            _law("T0000002", "水污染防治法", LawArticles=_articles(WATER)),
+        ],
+    )
+    assert importer.run(conn, tmp_path, Moj()).actions == {"added": 2}
 
     items = tool.generate(conn, Writer(), count=5, negatives=2, seed="s", on=date(2019, 6, 1))
 

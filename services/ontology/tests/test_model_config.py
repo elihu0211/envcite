@@ -329,3 +329,25 @@ def test_the_embedder_needs_only_its_own_endpoint() -> None:
             timeout=5.0,
             max_retries=0,
         )
+
+
+def test_a_model_can_declare_constrained_extraction() -> None:
+    text = MINIMAL.replace(
+        'name = "model-a"\nfamily = "fam-a"',
+        'name = "model-a"\nfamily = "fam-a"\nconstrained_extraction = true',
+    )
+
+    models = parse(text, ENV)
+
+    assert models.extractor.constrained_extraction is True  # type: ignore[attr-defined]
+    assert models.roundtrip.constrained_extraction is False  # type: ignore[attr-defined]
+
+
+def test_constrained_extraction_must_be_a_boolean() -> None:
+    text = MINIMAL.replace(
+        'name = "model-a"\nfamily = "fam-a"',
+        'name = "model-a"\nfamily = "fam-a"\nconstrained_extraction = "yes"',
+    )
+
+    with pytest.raises(ConfigError, match="constrained_extraction must be true or false"):
+        parse(text, ENV)

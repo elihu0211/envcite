@@ -13,6 +13,7 @@ from envcite_ontology.verification import (
 )
 from envcite_ontology.verification.extract import (
     MAX_REPAIRS,
+    STATEMENTS_FORMAT,
     completeness_issues,
     extract_unit,
 )
@@ -214,3 +215,66 @@ def test_statements_that_are_not_a_list_of_objects_count_as_none(
     )
 
     assert out.loaded is None and out.pending == ()
+
+
+def test_counts_record_the_calls_and_repairs_of_a_unit(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    model = Sequence_(_without_duty(), _duty_without_scope())
+
+    out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert out.counts.calls == 2 and out.counts.repairs == 1
+    assert out.counts.shape_failures == 0  # 缺 duty 是完備性問題，不是形狀問題
+
+
+def test_counts_stop_at_the_repair_cap(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    model = Sequence_(_without_duty())
+
+    out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert out.counts.calls == 1 + MAX_REPAIRS and out.counts.repairs == MAX_REPAIRS
+
+
+def test_an_unparseable_first_answer_counts_as_a_syntax_failure(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+
+    out = extract_unit(
+        conn, FakeModel("不是 JSON"), LAW, "art_1", agent="fake-model", agent_version="1"
+    )
+
+    assert out.loaded is None
+    assert out.counts.syntax_failures == 1 and out.counts.shape_failures == 0
+    assert out.counts.calls == 1 and out.counts.repairs == 0
+
+
+class _ConstrainedModel(FakeModel):
+    constrained_extraction = True
+
+    def __init__(self, answer: Any) -> None:
+        super().__init__(answer)
+        self.formats: list[Any] = []
+
+    def complete(self, prompt: str, *, response_format: Any = None) -> str:
+        self.formats.append(response_format)
+        return super().complete(prompt)
+
+
+def test_a_constrained_model_gets_the_statements_schema_on_every_call(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    model = _ConstrainedModel(_without_duty())
+
+    extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert model.formats == [STATEMENTS_FORMAT] * (1 + MAX_REPAIRS)
+
+
+def test_an_unconstrained_model_is_called_exactly_as_before(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
+    model = FakeModel(_duty_without_scope())
+
+    out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert out.loaded is not None and len(model.prompts) == 1

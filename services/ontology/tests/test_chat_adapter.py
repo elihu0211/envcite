@@ -124,3 +124,38 @@ def test_the_name_is_family_and_model_id_and_the_model_id_goes_out_verbatim(
 
     assert (model.name, model.family) == ("openai:openai/gpt-oss-120b", "openai")
     assert endpoint.requests[0]["body"]["model"] == "openai/gpt-oss-120b"
+
+
+def test_no_response_format_is_sent_unless_asked(endpoint: Endpoint) -> None:
+    chat(endpoint).complete("x")
+
+    assert "response_format" not in endpoint.requests[0]["body"]
+
+
+def test_a_response_format_goes_into_the_request_as_given(endpoint: Endpoint) -> None:
+    fmt = {"type": "json_schema", "json_schema": {"name": "a", "schema": {"type": "object"}}}
+
+    chat(endpoint).complete("x", response_format=fmt)
+
+    assert endpoint.requests[0]["body"]["response_format"] == fmt
+
+
+def test_token_usage_accumulates_when_the_endpoint_reports_it(endpoint: Endpoint) -> None:
+    endpoint.reply = {
+        "choices": [{"message": {"content": "答"}}],
+        "usage": {"prompt_tokens": 10, "completion_tokens": 3},
+    }
+    model = chat(endpoint)
+
+    model.complete("x")
+    model.complete("y")
+
+    assert model.tokens == {"prompt": 20, "completion": 6}
+
+
+def test_usage_stays_zero_when_the_endpoint_does_not_report_it(endpoint: Endpoint) -> None:
+    model = chat(endpoint)
+
+    model.complete("x")
+
+    assert model.tokens == {"prompt": 0, "completion": 0}
