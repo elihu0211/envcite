@@ -26,6 +26,7 @@ class _Ontology(ontology_pb2_grpc.OntologyServiceServicer):
                     number="5-1",
                     content="…",
                     lexical_score=0.4,
+                    semantic_similarity=0.85,
                 ),
                 ontology_pb2.ArticleHit(
                     iri="b",
@@ -62,6 +63,8 @@ def test_hits_become_articles_scored_by_lexical_relevance(
         ("b", "空氣污染防制法 第 20 條"),
     ]
     assert [a.score for a in articles] == pytest.approx([0.4, 0.1])
+    assert articles[0].semantic_similarity == pytest.approx(0.85)
+    assert articles[1].semantic_similarity is None
 
 
 def test_search_sends_the_arguments(

@@ -28,8 +28,14 @@ from envcite_consult.ports import Article, OntologyPort
 #: 一旦改變就必須重新推導。
 RELEVANCE_FLOOR = 0.30
 
+#: 語意臂的餘弦相似度下界（由 golden-eval / calibration 推得，超過此值視為相關）。
+SEMANTIC_RELEVANCE_FLOOR = 0.65
+
 #: 至少有一個來源達到此強度，即表示答案建立在直接的依據上。
 HIGH_CONFIDENCE_FLOOR = 0.50
+
+#: 語意臂達到此強度表示高度語意對齊。
+HIGH_CONFIDENCE_SEMANTIC_FLOOR = 0.75
 
 #: 封閉引用集合設有上限，讓證據區塊維持在模型能可靠關注的範圍內。超出的來源
 #: 直接捨棄，而非加以摘要。
@@ -77,13 +83,33 @@ class Evidence:
     confidence: Confidence
 
 
+def is_relevant(article: Article) -> bool:
+    """判定單一條文是否通過相關性下界（字面臂或語意臂任一臂達標）。"""
+    if (
+        article.semantic_similarity is not None
+        and article.semantic_similarity >= SEMANTIC_RELEVANCE_FLOOR
+    ):
+        return True
+    return article.score >= RELEVANCE_FLOOR
+
+
+def is_high_confidence(article: Article) -> bool:
+    """判定單一條文是否達到高信心強度。"""
+    if (
+        article.semantic_similarity is not None
+        and article.semantic_similarity >= HIGH_CONFIDENCE_SEMANTIC_FLOOR
+    ):
+        return True
+    return article.score >= HIGH_CONFIDENCE_FLOOR
+
+
 def ground(articles: list[Article]) -> list[Citation]:
     """指派封閉的引用集合：依檢索順序編為 L1、L2、…。
 
     代碼由程式碼指派，絕不由模型指派，而這個對應關係正是引用得以查核的原因：
     `L3` 要嘛在這份清單裡，要嘛不在。
     """
-    kept = [a for a in articles if a.score >= RELEVANCE_FLOOR][:MAX_CITATIONS]
+    kept = [a for a in articles if is_relevant(a)][:MAX_CITATIONS]
     return [
         Citation(code=f"{CODE_PREFIX[LAW]}{i}", iri=a.iri, label=a.label, text=a.text, ontology=LAW)
         for i, a in enumerate(kept, start=1)
@@ -102,9 +128,9 @@ def assess(grounding: list[Citation], articles: list[Article]) -> Refusal | None
 
 
 def confidence_of(grounding: list[Citation], articles: list[Article]) -> Confidence:
-    by_iri = {a.iri: a.score for a in articles}
-    top = max((by_iri.get(c.iri, 0.0) for c in grounding), default=0.0)
-    return Confidence.HIGH if top >= HIGH_CONFIDENCE_FLOOR else Confidence.LOW
+    by_iri = {a.iri: a for a in articles}
+    has_high = any(is_high_confidence(a) for c in grounding if (a := by_iri.get(c.iri)) is not None)
+    return Confidence.HIGH if has_high else Confidence.LOW
 
 
 def run(

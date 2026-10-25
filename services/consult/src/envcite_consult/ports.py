@@ -19,6 +19,8 @@ class Article:
     label: str
     text: str
     score: float
+    lexical_score: float = 0.0
+    semantic_similarity: float | None = None
 
 
 class OntologyPort(Protocol):

@@ -72,3 +72,43 @@ def test_search_result_order_is_preserved_by_grounding() -> None:
         "空氣污染防制法 第 10 條",
         "空氣污染防制法 第 2 條",
     ]
+
+
+def test_ground_keeps_articles_qualifying_via_semantic_similarity() -> None:
+    # 純字面分數未達 0.30，但語意相似度達 0.80（>= 0.65）之條文應被保留
+    semantic_hit = Article(
+        iri="https://law.example.org/a1",
+        label="空氣污染防制法 第 5 條",
+        text="條文內容",
+        score=0.05,
+        lexical_score=0.05,
+        semantic_similarity=0.80,
+    )
+    irrelevant_hit = Article(
+        iri="https://law.example.org/a2",
+        label="空氣污染防制法 第 6 條",
+        text="條文內容",
+        score=0.10,
+        lexical_score=0.10,
+        semantic_similarity=0.45,
+    )
+
+    grounding = pipeline.ground([semantic_hit, irrelevant_hit])
+
+    assert len(grounding) == 1
+    assert grounding[0].code == "L1"
+    assert grounding[0].iri == "https://law.example.org/a1"
+
+
+def test_confidence_high_when_top_semantic_similarity_reaches_high_floor() -> None:
+    semantic_hit = Article(
+        iri="https://law.example.org/a1",
+        label="空氣污染防制法 第 5 條",
+        text="條文內容",
+        score=0.35,
+        lexical_score=0.35,
+        semantic_similarity=0.78,
+    )
+    grounding = pipeline.ground([semantic_hit])
+
+    assert pipeline.confidence_of(grounding, [semantic_hit]) is pipeline.Confidence.HIGH
