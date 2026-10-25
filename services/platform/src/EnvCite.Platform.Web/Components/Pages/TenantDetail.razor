@@ -91,6 +91,82 @@ else
             </p>
         </section>
 
+        <section class="ep-card ep-table-card" aria-labelledby="usage-heading">
+            <div class="ep-toolbar">
+                <h2 id="usage-heading" class="ep-section-title">用量與計量</h2>
+                <MudSpacer />
+                <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Class="ep-usage-filter">
+                    <MudButton Color="@(_usageDays == 0 ? Color.Primary : Color.Default)"
+                               OnClick="() => SetUsageFilterAsync(0)">全部</MudButton>
+                    <MudButton Color="@(_usageDays == 30 ? Color.Primary : Color.Default)"
+                               OnClick="() => SetUsageFilterAsync(30)">近 30 天</MudButton>
+                    <MudButton Color="@(_usageDays == 7 ? Color.Primary : Color.Default)"
+                               OnClick="() => SetUsageFilterAsync(7)">近 7 天</MudButton>
+                </MudButtonGroup>
+            </div>
+            <p class="ep-page-description">
+                成功的請求才會計量；依操作分列統計呼叫次數與計量單位。
+                @if (TotalUsageCalls > 0)
+                {
+                    <span class="ml-2">
+                        累計 <strong>@TotalUsageCalls</strong> 次呼叫，消耗 <strong>@TotalUsageUnits</strong> 個計量單位。
+                    </span>
+                }
+            </p>
+            @if (_usage.Count == 0)
+            {
+                <EmptyState Icon="@Icons.Material.Filled.BarChart" Title="還沒有使用紀錄"
+                            Description="租戶透過 API key 呼叫 /v2 資料端點後，各操作的用量統計會即時出現在這裡。" />
+            }
+            else
+            {
+                <MudSimpleTable Dense="true" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="用量與計量">
+                    <thead>
+                        <tr>
+                            <th scope="col">操作項目</th>
+                            <th scope="col">分類</th>
+                            <th scope="col">呼叫次數</th>
+                            <th scope="col">計量單位</th>
+                            <th scope="col">最近呼叫（台北）</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _usage)
+                        {
+                            <tr>
+                                <td class="ep-keep">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@UsageLabels.Icon(item.Operation)" Size="Size.Small" Color="@UsageLabels.CategoryColor(item.Operation)" />
+                                        <div>
+                                            <div>@UsageLabels.Operation(item.Operation)</div>
+                                            <code class="ep-mono ep-field-hint">@item.Operation</code>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td data-label="分類">
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@UsageLabels.CategoryColor(item.Operation)">
+                                        @UsageLabels.Category(item.Operation)
+                                    </MudChip>
+                                </td>
+                                <td data-label="呼叫次數"><strong>@item.Calls.ToString("N0")</strong> 次</td>
+                                <td data-label="計量單位">@item.Units.ToString("N0") @UsageLabels.UnitName(item.Operation)</td>
+                                <td data-label="最近呼叫">
+                                    @if (item.LastOccurredAt is { } last)
+                                    {
+                                        <time datetime="@TaipeiTime.Full(last)">@TaipeiTime.Format(last)</time>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+        </section>
+
         <section class="ep-card ep-table-card" aria-labelledby="keys-heading">
             <div class="ep-toolbar">
                 <h2 id="keys-heading" class="ep-section-title">API keys</h2>

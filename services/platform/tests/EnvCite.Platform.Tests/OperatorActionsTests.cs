@@ -116,6 +116,34 @@ public sealed class OperatorActionsTests(PlatformFactory factory)
         Assert.Contains("建立租戶", html, StringComparison.Ordinal);
         Assert.Contains($"/ui/audit?tenant={tenant.Id}", html, StringComparison.Ordinal);
         Assert.Contains("<th scope=\"col\">", html, StringComparison.Ordinal);
+        Assert.Contains("用量與計量", html, StringComparison.Ordinal);
+        Assert.Contains("還沒有使用紀錄", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheDetailPageShowsTenantUsageSummaryWhenRecordsExist()
+    {
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("detail-usage");
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var store = scope.ServiceProvider.GetRequiredService<Finbuckle.MultiTenant.Abstractions.IMultiTenantStore<Finbuckle.MultiTenant.Abstractions.TenantInfo>>();
+            var tenantInfo = await store.GetAsync(tenant.Id);
+            await using var db = Finbuckle.MultiTenant.EntityFrameworkCore.MultiTenantDbContext.Create<EnvCite.Platform.Data.PlatformDbContext, Finbuckle.MultiTenant.Abstractions.TenantInfo>(tenantInfo!, scope.ServiceProvider);
+            db.UsageRecords.Add(new EnvCite.Platform.Data.UsageRecord { Operation = "ontology.search", Units = 1, OccurredAt = DateTimeOffset.UtcNow });
+            db.UsageRecords.Add(new EnvCite.Platform.Data.UsageRecord { Operation = "consult.ground", Units = 5, OccurredAt = DateTimeOffset.UtcNow });
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        using var client = factory.SignedInClient();
+        var html = await client.PageAsync($"/ui/tenants/{tenant.Id}");
+
+        Assert.Contains("用量與計量", html, StringComparison.Ordinal);
+        Assert.Contains("本體條文檢索", html, StringComparison.Ordinal);
+        Assert.Contains("諮詢接地證據集", html, StringComparison.Ordinal);
+        Assert.Contains("ontology.search", html, StringComparison.Ordinal);
+        Assert.Contains("consult.ground", html, StringComparison.Ordinal);
+        Assert.Contains("法規本體", html, StringComparison.Ordinal);
+        Assert.Contains("諮詢接地", html, StringComparison.Ordinal);
     }
 
     [Fact]

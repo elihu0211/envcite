@@ -107,3 +107,22 @@ public interface IPlanAdmin
     Task<AdminOutcome<bool>> SetAiAnswerAsync(
         ClaimsPrincipal actor, string tenantId, bool enabled, CancellationToken cancellationToken);
 }
+
+/// <summary>單一操作的彙總用量資訊。</summary>
+public sealed record TenantUsageSummary(
+    string Operation,
+    int Calls,
+    int Units,
+    DateTimeOffset? FirstOccurredAt,
+    DateTimeOffset? LastOccurredAt);
+
+/// <summary>
+/// 營運者查詢租戶用量。跨租戶查詢，依租戶識別碼向該租戶的資料表彙總。
+/// </summary>
+public interface IUsageAdmin
+{
+    Task<AdminOutcome<IReadOnlyList<TenantUsageSummary>>> GetTenantUsageAsync(
+        string tenantId,
+        DateTimeOffset? since,
+        CancellationToken cancellationToken);
+}

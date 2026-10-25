@@ -35,11 +35,15 @@ public partial class TenantDetail
 
     [Inject] private AuthenticationStateProvider Auth { get; set; } = default!;
 
+    [Inject] private IUsageAdmin Usage { get; set; } = default!;
+
     private TenantSummary? _tenant;
     private IReadOnlyList<ApiKeyInfo> _keys = [];
     private IReadOnlyList<MemberInfo> _members = [];
     private IReadOnlyList<AuditRecord> _recent = [];
     private IReadOnlyList<PlanInfo> _plans = [];
+    private IReadOnlyList<TenantUsageSummary> _usage = [];
+    private int _usageDays;
     private string? _selectedPlan;
     private bool _loading = true;
     private bool _busy;
@@ -95,7 +99,36 @@ public partial class TenantDetail
 
         var page = await Audit.QueryAsync(new AuditFilter(Tenant: TenantId, Limit: 10), CancellationToken.None);
         _recent = page.Items;
+
+        await LoadUsageAsync();
     }
+
+    private async Task LoadUsageAsync()
+    {
+        DateTimeOffset? since = _usageDays switch
+        {
+            7 => DateTimeOffset.UtcNow.AddDays(-7),
+            30 => DateTimeOffset.UtcNow.AddDays(-30),
+            _ => null,
+        };
+        var usageResult = await Usage.GetTenantUsageAsync(TenantId, since, CancellationToken.None);
+        _usage = usageResult.IsOk ? usageResult.Value! : [];
+    }
+
+    private async Task SetUsageFilterAsync(int days)
+    {
+        if (_usageDays == days)
+        {
+            return;
+        }
+
+        _usageDays = days;
+        await LoadUsageAsync();
+    }
+
+    private int TotalUsageCalls => _usage.Sum(u => u.Calls);
+
+    private int TotalUsageUnits => _usage.Sum(u => u.Units);
 
     private async Task RefreshAsync()
     {
