@@ -1,11 +1,13 @@
 @inherits LayoutComponentBase
 
-@* 還沒登入（或已登出、無權限）的頁面：置中的單張卡片，沒有導覽。 *@
+@* 還沒登入（或已登出、無權限）的頁面：與登入頁同一個分割式版面，沒有導覽。 *@
 <PlatformProviders />
 
-<main class="ep-anon" id="main">
-    <div class="ep-card">
-        <p class="ep-brand">環境知識</p>
-        @Body
-    </div>
-</main>
+<div class="ep-auth">
+    <AuthAside />
+    <main class="ep-auth-main" id="main">
+        <div class="ep-auth-body">
+            @Body
+        </div>
+    </main>
+</div>

@@ -1,10 +1,13 @@
 @inherits LayoutComponentBase
 
 @* 營運者的登入與帳號頁（登入、第二步驗證、改密碼、註冊驗證器）：靜態渲染（沒有 circuit），所以不放 MudBlazor 的 provider。
-   還沒完成強制步驟的 session 只開一頁，所以不放導覽。 *@
-<main class="ep-anon" id="main">
-    <div class="ep-card">
-        <p class="ep-brand">環境知識</p>
-        @Body
-    </div>
-</main>
+   還沒完成強制步驟的 session 只開一頁，所以不放導覽。
+   版面是分割式：左側品牌面板、右側表單靠起點對齊，不是螢幕正中央的一張卡片；窄螢幕上品牌收成頂端一條。 *@
+<div class="ep-auth">
+    <AuthAside />
+    <main class="ep-auth-main" id="main">
+        <div class="ep-auth-body">
+            @Body
+        </div>
+    </main>
+</div>

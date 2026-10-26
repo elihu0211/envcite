@@ -22,6 +22,15 @@ public sealed record ColorTokens
 
     public required string Primary { get; init; }
 
+    /// <summary>深色層次：品牌面板、營運頂欄與漸層的暗端。不是深色主題，只是淺色頁面裡的深色區塊。</summary>
+    public required string Ink { get; init; }
+
+    /// <summary>放在 <see cref="Ink"/> 上的文字。</summary>
+    public required string OnInk { get; init; }
+
+    /// <summary>第二個強調色，只做裝飾（漸層、插圖、光暈），不承載文字，所以不受文字對比限制。</summary>
+    public required string Accent { get; init; }
+
     /// <summary>放在 <see cref="Primary"/> 上的文字。</summary>
     public required string OnPrimary { get; init; }
 
@@ -51,7 +60,7 @@ public sealed record ColorTokens
 
 public static class DesignTokens
 {
-    // 模板 B（靛藍 SaaS）：單一靛藍強調色（Tailwind indigo-600／700），其餘是 slate 中性灰階；平的表面、不用漸層。
+    // 模板 B（靛藍 SaaS）：單一靛藍強調色（Tailwind indigo-600／700），其餘是 slate 中性灰階；表面以平面為主；漸層全站只有品牌面板一條（由 TokenCss 的 --ep-gradient-brand 組成，樣式表不直接寫）。
     // 狀態色全在 sRGB 色域內、彩度有上限（狀態要比品牌色顯眼，但不能搶過它），而且是文字級：
     // 對白底與一成淡底（徽章、提示框的字）都 ≥ 4.5:1。警示與危險兩色在這個明度本來就近，所以永遠搭配圖示與文字，不靠色相分辨。
     // 換主題只換這張表：語意名稱不變，DesignTokenTests 會重新驗證每一組對比。
@@ -69,6 +78,9 @@ public static class DesignTokens
         Text = "#0F172A",
         TextSecondary = "#475569",
         Primary = Brand,
+        Ink = "#131A4F",
+        OnInk = "#FFFFFF",
+        Accent = "#14B8A6",
         OnPrimary = "#FFFFFF",
         Link = BrandText,
         Success = "#0B7857",
@@ -177,6 +189,12 @@ public static class DesignTokens
         ["ease-enter"] = "cubic-bezier(0, 0.4, 0, 1)",
         ["ease-exit"] = "cubic-bezier(0.6, 0, 0.8, 0.6)",
         ["ease-move"] = "cubic-bezier(0.4, 0, 0, 1)",
+        // 進場的落定曲線：臨界阻尼的彈簧近似（阻尼比 1、無回彈），起步快、尾端長而柔，用在頁面與卡片的進場。
+        ["ease-settle"] = "cubic-bezier(0.16, 1, 0.3, 1)",
+        // 同一組進場的相鄰元素錯開多久；錯開讓視線順著版面走，不是同時彈出。
+        ["stagger"] = "60ms",
+        // 進場的位移量：只有一小段，方向與離場相反（從哪來、回哪去）。
+        ["travel"] = "0.75rem",
     };
 
     /// <summary>按下當下的縮放（回饋在按下，不是放開）。使用者要求減少動態時為 1。</summary>

@@ -1,0 +1,33 @@
+@* 登入與匿名頁左側（窄螢幕是頂端）的品牌面板：深色漸層面、等高線與知識節點的插圖（純裝飾，螢幕閱讀器略過）、三個重點。
+   文字用 on-ink 色；插圖只用 currentColor 與 token 變數，不寫死色碼。 *@
+<aside class="ep-auth-aside">
+    <p class="ep-brand">環境知識</p>
+
+    <svg class="ep-auth-art" viewBox="0 0 480 520" aria-hidden="true" focusable="false">
+        <g class="ep-art-contours" fill="none" stroke="currentColor" stroke-width="1.25">
+            <path pathLength="1" d="M-20 410 C 70 350, 130 430, 220 380 S 380 300, 500 350" />
+            <path pathLength="1" d="M-20 360 C 80 300, 150 380, 230 330 S 390 250, 500 300" />
+            <path pathLength="1" d="M-20 310 C 90 250, 160 330, 240 280 S 400 200, 500 250" />
+            <path pathLength="1" d="M-20 260 C 100 200, 170 280, 250 230 S 410 150, 500 200" />
+            <path pathLength="1" d="M-20 210 C 110 150, 180 230, 260 180 S 420 100, 500 150" />
+            <path pathLength="1" d="M-20 160 C 120 100, 190 180, 270 130 S 430 50, 500 100" />
+        </g>
+        <g class="ep-art-graph">
+            <path class="ep-art-edge" pathLength="1" d="M110 330 L210 250 L330 290 L390 190 M210 250 L250 150 L390 190" />
+            <circle class="ep-art-node" cx="110" cy="330" r="6" />
+            <circle class="ep-art-node" cx="210" cy="250" r="8" />
+            <circle class="ep-art-node" cx="330" cy="290" r="6" />
+            <circle class="ep-art-node" cx="250" cy="150" r="6" />
+            <circle class="ep-art-node ep-art-node-lead" cx="390" cy="190" r="10" />
+        </g>
+    </svg>
+
+    <div class="ep-auth-copy">
+        <p class="ep-auth-tagline">臺灣環境知識的檢索與引用接地</p>
+        <ul class="ep-auth-points">
+            <li>每個論點都附出處</li>
+            <li>各租戶的資料彼此隔離</li>
+            <li>證據不足時，寧可拒答</li>
+        </ul>
+    </div>
+</aside>

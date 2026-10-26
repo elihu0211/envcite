@@ -126,16 +126,233 @@ a:where(:not([class*="mud-"])) {
     color: var(--ep-text);
 }
 
-/* 匿名頁（已登出、無權限）：置中的單張卡片，不顯示導覽。 */
-.ep-anon {
+/* 登入與匿名頁：分割式版面。窄螢幕上品牌是頂端一條，桌機是左側的品牌面板、表單靠起點對齊在右欄上段——
+   不把一張卡片放在螢幕正中央。品牌面板是平的主色面，裝飾只用細線圓環。 */
+.ep-auth {
     min-block-size: 100dvh;
     display: grid;
-    place-items: center;
-    padding: var(--ep-space-4);
+    grid-template-rows: auto 1fr;
 }
 
-.ep-anon .ep-card {
-    inline-size: min(100%, var(--ep-measure-narrow));
+.ep-auth-aside {
+    position: relative;
+    overflow: clip;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--ep-space-8);
+    padding-block: max(var(--ep-space-4), env(safe-area-inset-top)) var(--ep-space-4);
+    padding-inline: max(var(--ep-space-4), env(safe-area-inset-left)) max(var(--ep-space-4), env(safe-area-inset-right));
+    background: var(--ep-gradient-brand);
+    color: var(--ep-on-ink);
+}
+
+.ep-auth-aside > * {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+}
+
+/* 光暈：第二強調色在右上角的一抹，讓深色面有深度；只在寬螢幕有插圖時才有意義，窄條上保持乾淨。 */
+.ep-auth-aside::before {
+    content: "";
+    position: absolute;
+    inline-size: calc(var(--ep-space-12) * 6);
+    aspect-ratio: 1;
+    inset-block-start: calc(var(--ep-space-12) * -3);
+    inset-inline-end: calc(var(--ep-space-12) * -2);
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--ep-accent) 30%, transparent);
+    filter: blur(var(--ep-space-12));
+    animation: ep-grow var(--ep-motion-reveal) var(--ep-motion-ease-settle) both;
+}
+
+.ep-auth-aside .ep-brand {
+    color: inherit;
+    font-size: var(--ep-h3-size);
+}
+
+/* 插圖：窄螢幕不顯示；寬螢幕上鋪滿面板中段，文字壓在上面。 */
+.ep-auth-art,
+.ep-auth-points {
+    display: none;
+}
+
+.ep-auth-art {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 50%;
+    translate: 0 -50%;
+    inline-size: 100%;
+    block-size: auto;
+    z-index: 0;
+    color: color-mix(in srgb, var(--ep-on-ink) 22%, transparent);
+}
+
+.ep-art-contours path,
+.ep-art-edge {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: ep-draw calc(var(--ep-motion-reveal) * 3) var(--ep-motion-ease-settle) forwards;
+}
+
+.ep-art-contours path:nth-child(2) { animation-delay: var(--ep-motion-stagger); }
+.ep-art-contours path:nth-child(3) { animation-delay: calc(var(--ep-motion-stagger) * 2); }
+.ep-art-contours path:nth-child(4) { animation-delay: calc(var(--ep-motion-stagger) * 3); }
+.ep-art-contours path:nth-child(5) { animation-delay: calc(var(--ep-motion-stagger) * 4); }
+.ep-art-contours path:nth-child(6) { animation-delay: calc(var(--ep-motion-stagger) * 5); }
+
+.ep-art-edge {
+    fill: none;
+    stroke: var(--ep-accent);
+    stroke-width: 1.5;
+    animation-delay: calc(var(--ep-motion-stagger) * 6);
+}
+
+.ep-art-node {
+    fill: var(--ep-accent);
+    stroke: var(--ep-on-ink);
+    stroke-width: 2;
+    animation: ep-grow var(--ep-motion-slow) var(--ep-motion-ease-settle) both;
+    animation-delay: calc(var(--ep-motion-stagger) * 8);
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.ep-art-node-lead {
+    animation-delay: calc(var(--ep-motion-stagger) * 10);
+}
+
+.ep-auth-points {
+    margin: var(--ep-space-6) 0 0;
+    padding: 0;
+    list-style: none;
+    gap: var(--ep-space-2);
+    color: color-mix(in srgb, var(--ep-on-ink) 82%, transparent);
+    font-size: var(--ep-body-sm-size);
+}
+
+.ep-auth-points li {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
+}
+
+.ep-auth-points li::before {
+    content: "";
+    flex: none;
+    inline-size: var(--ep-space-2);
+    aspect-ratio: 1;
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-accent);
+}
+
+.ep-auth-tagline {
+    display: none;
+    font-size: var(--ep-h2-size);
+    line-height: var(--ep-h2-leading);
+    letter-spacing: var(--ep-h2-tracking);
+    font-weight: var(--ep-h2-weight);
+    text-wrap: balance;
+    max-inline-size: 14em;
+}
+
+.ep-auth-main {
+    min-inline-size: 0;
+    padding-block: var(--ep-space-8) max(var(--ep-space-8), env(safe-area-inset-bottom));
+    padding-inline: max(var(--ep-space-6), env(safe-area-inset-left)) max(var(--ep-space-6), env(safe-area-inset-right));
+}
+
+.ep-auth-body {
+    max-inline-size: var(--ep-measure-narrow);
+}
+
+.ep-auth-body > .ep-page-title,
+.ep-display {
+    margin: 0;
+    font-size: var(--ep-display-size);
+    line-height: var(--ep-display-leading);
+    letter-spacing: var(--ep-display-tracking);
+    font-weight: var(--ep-display-weight);
+}
+
+.ep-auth-body .ep-form {
+    margin-block-start: var(--ep-space-6);
+}
+
+@media (width >= 48rem) {
+    .ep-auth {
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        grid-template-rows: none;
+    }
+
+    .ep-auth-aside {
+        position: sticky;
+        inset-block-start: 0;
+        block-size: 100dvh;
+        padding-block: calc(var(--ep-space-12) * 1.25);
+        padding-inline: var(--ep-space-12);
+    }
+
+    .ep-auth-aside .ep-brand {
+        font-size: var(--ep-h2-size);
+    }
+
+    .ep-auth-tagline {
+        display: block;
+    }
+
+    .ep-auth-art {
+        display: block;
+    }
+
+    .ep-auth-points {
+        display: grid;
+    }
+
+    .ep-auth-copy {
+        position: relative;
+        z-index: 1;
+    }
+
+    .ep-auth-main {
+        padding-block-start: calc(var(--ep-space-12) * 2.5);
+        padding-inline: var(--ep-space-12);
+    }
+}
+
+@media (width >= 80rem) {
+    .ep-auth-main {
+        padding-inline: calc(var(--ep-space-12) * 2);
+    }
+}
+
+/* 客戶入口登入：頁首區在左、表單在右；窄螢幕上堆疊。表單不裝在卡片裡，只用一條細線和標題區分開。 */
+.ep-login {
+    display: grid;
+    gap: var(--ep-space-6);
+    align-items: start;
+    padding-block-start: var(--ep-space-6);
+}
+
+.ep-login-tenant {
+    margin: var(--ep-space-2) 0 0;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-h3-size);
+    line-height: var(--ep-body-leading);
+}
+
+@media (width >= 48rem) {
+    .ep-login {
+        grid-template-columns: minmax(0, 1fr) minmax(0, var(--ep-measure-narrow));
+        gap: var(--ep-space-12);
+        padding-block-start: calc(var(--ep-space-12) * 1.5);
+    }
+
+    .ep-login-form {
+        padding-inline-start: var(--ep-space-8);
+        border-inline-start: 1px solid var(--ep-border-subtle);
+    }
 }
 
 .ep-signout {
@@ -177,6 +394,7 @@ a:where(:not([class*="mud-"])) {
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
+        animation-delay: 0s !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
@@ -360,13 +578,18 @@ a:where(:not([class*="mud-"])) {
     display: block;
     text-decoration: none;
     color: var(--ep-text);
-    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+    transition:
+        border-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        box-shadow var(--ep-motion-normal) var(--ep-motion-ease-standard),
+        translate var(--ep-motion-normal) var(--ep-motion-ease-settle);
 }
 
 /* 只有真的能 hover 的裝置（滑鼠）才有 hover 樣式；觸控裝置按下後不會卡在 hover 狀態。 */
 @media (hover: hover) {
     .ep-home-card:hover {
         border-color: var(--ep-border-control);
+        box-shadow: var(--ep-elevation-2);
+        translate: 0 calc(var(--ep-space-1) * -1);
     }
 }
 
@@ -876,7 +1099,7 @@ a.ep-brand {
 
 .ep-portal-card {
     max-inline-size: var(--ep-measure-narrow);
-    margin-inline: auto;
+    padding-block-start: var(--ep-space-6);
 }
 
 .ep-form {
@@ -900,6 +1123,15 @@ a.ep-brand {
 .ep-input {
     background: var(--ep-surface);
     border: 1px solid var(--ep-border-control);
+    transition:
+        border-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        box-shadow var(--ep-motion-normal) var(--ep-motion-ease-standard);
+}
+
+/* 聚焦時外圈柔光：焦點環（outline）仍在，這只是附加的視覺回饋。 */
+.ep-input:focus {
+    border-color: var(--ep-focus);
+    box-shadow: 0 0 0 var(--ep-space-1) color-mix(in srgb, var(--ep-focus) 16%, transparent);
 }
 
 .ep-input:focus-visible {
@@ -937,6 +1169,17 @@ a.ep-brand {
 .ep-btn-primary {
     background: var(--ep-primary);
     color: var(--ep-on-primary);
+    box-shadow: var(--ep-elevation-1);
+    transition:
+        transform var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        box-shadow var(--ep-motion-normal) var(--ep-motion-ease-standard);
+}
+
+@media (hover: hover) {
+    .ep-btn-primary:hover {
+        box-shadow: var(--ep-elevation-2);
+    }
 }
 
 
@@ -944,6 +1187,9 @@ a.ep-brand {
     background: transparent;
     color: var(--ep-link);
     border-color: var(--ep-border-control);
+    transition:
+        transform var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 /* 提示：邊框與文字說明承擔語意，顏色只是輔助。一個語氣一個色（--tone）：淡底與邊框由它疊透明度得到。 */
@@ -956,6 +1202,7 @@ a.ep-brand {
     border-radius: var(--ep-radius-control);
     background: color-mix(in srgb, var(--tone) 8%, var(--ep-surface));
     font-size: var(--ep-body-sm-size);
+    animation: ep-rise var(--ep-motion-slow) var(--ep-motion-ease-settle) both;
 }
 
 .ep-alert-error {
@@ -1206,4 +1453,151 @@ a.ep-brand {
 .ep-answer-text {
     white-space: pre-line;
     overflow-wrap: anywhere;
+}
+
+
+/* ---- 動態 ---------------------------------------------------------------------------------------
+ * 進場是臨界阻尼（落定曲線、無回彈）：位移只有一小段，同一組的元素依序錯開。
+ * 時長、曲線、錯開、位移量都來自 token；使用者要求減少動態時，上面的規則把動畫收成瞬間（含錯開的延遲）。
+ * 跨頁（登入 → 入口）用瀏覽器原生的 view transition：兩頁淡入淡出，不需要 JavaScript。
+ */
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: var(--ep-motion-normal);
+    animation-timing-function: var(--ep-motion-ease-standard);
+}
+
+@keyframes ep-rise {
+    from {
+        opacity: 0;
+        translate: 0 var(--ep-motion-travel);
+    }
+
+    to {
+        opacity: 1;
+        translate: 0 0;
+    }
+}
+
+@keyframes ep-grow {
+    from {
+        opacity: 0;
+        scale: 0.9;
+    }
+
+    to {
+        opacity: 1;
+        scale: 1;
+    }
+}
+
+.ep-auth-body > *,
+.ep-login-intro,
+.ep-login-form,
+.ep-shell-main > *,
+.mud-main-content .ep-page-header,
+.mud-main-content .ep-home-card,
+.mud-main-content .ep-table-card {
+    animation: ep-rise var(--ep-motion-reveal) var(--ep-motion-ease-settle) both;
+    animation-delay: calc(var(--ep-motion-stagger) * var(--i, 0));
+}
+
+.ep-login-form {
+    --i: 1;
+}
+
+/* 登入版面自己不進場：它的兩個子區塊各自錯開進場，疊兩層會讓透明度相乘。 */
+.ep-shell-main > .ep-login {
+    animation: none;
+}
+
+.ep-auth-body > :nth-child(2),
+.ep-shell-main > :nth-child(2),
+.mud-main-content .ep-home-card:nth-of-type(2) {
+    --i: 1;
+}
+
+.ep-auth-body > :nth-child(3),
+.ep-shell-main > :nth-child(3),
+.mud-main-content .ep-home-card:nth-of-type(3) {
+    --i: 2;
+}
+
+.ep-auth-body > :nth-child(n + 4),
+.ep-shell-main > :nth-child(n + 4) {
+    --i: 3;
+}
+
+/* 彈出層：從觸發它的位置長出來（右上角的帳號選單），而不是從中心。 */
+.ep-menu {
+    transform-origin: top right;
+}
+
+.mud-dialog {
+    border-radius: var(--ep-radius-sheet);
+    box-shadow: var(--ep-elevation-3);
+}
+
+.mud-table-row {
+    transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+
+/* ---- 品牌面與深色層次 ----------------------------------------------------------------------------
+ * 深色只是局部的層次（Ink）：營運頂欄與登入的品牌面板。頁面本身仍是淺色，不是深色主題。 */
+.ep-appbar.mud-appbar {
+    background: var(--ep-ink);
+    border-block-end: 0;
+    color: var(--ep-on-ink);
+}
+
+.ep-appbar .ep-brand {
+    color: inherit;
+}
+
+.ep-appbar .ep-avatar {
+    background: color-mix(in srgb, var(--ep-on-ink) 14%, transparent);
+    border-color: color-mix(in srgb, var(--ep-on-ink) 26%, transparent);
+    color: var(--ep-on-ink);
+}
+
+/* 入口卡片：滑過時頂緣的主色線從左長出來。 */
+.ep-home-card {
+    position: relative;
+    overflow: clip;
+}
+
+.ep-home-card::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 0;
+    block-size: 3px;
+    background: var(--ep-primary);
+    scale: 0 1;
+    transform-origin: left;
+    transition: scale var(--ep-motion-slow) var(--ep-motion-ease-settle);
+}
+
+@media (hover: hover) {
+    .ep-home-card:hover::before {
+        scale: 1 1;
+    }
+}
+
+@keyframes ep-draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ep-art-contours path,
+    .ep-art-edge {
+        stroke-dashoffset: 0;
+    }
 }

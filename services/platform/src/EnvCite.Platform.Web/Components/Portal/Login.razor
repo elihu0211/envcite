@@ -8,9 +8,12 @@
 
 @if (Account.CurrentTenant is { } tenant)
 {
-    <section class="ep-card ep-portal-card" aria-labelledby="login-title">
-        <h1 id="login-title" class="ep-page-title">登入</h1>
-        <p class="ep-page-description">@(tenant.Name ?? tenant.Identifier)</p>
+    <section class="ep-login" aria-labelledby="login-title">
+      <header class="ep-login-intro">
+        <h1 id="login-title" class="ep-display">登入</h1>
+        <p class="ep-login-tenant">@(tenant.Name ?? tenant.Identifier)</p>
+      </header>
+      <div class="ep-login-form">
 
         @if (_error is not null)
         {
@@ -31,5 +34,6 @@
         </EditForm>
 
         <p class="ep-note">沒有帳號或忘記密碼，請洽貴組織的管理員或我們的營運人員。</p>
+      </div>
     </section>
 }

@@ -61,6 +61,7 @@ public static partial class DesignTokenTests
             data.Add(name, "control border on muted surface", $"{c.BorderControl}|{c.SurfaceMuted}", 3.0);
             data.Add(name, "control border on background", $"{c.BorderControl}|{c.Background}", 3.0);
             data.Add(name, "on-primary on primary", $"{c.OnPrimary}|{c.Primary}", 4.5);
+            data.Add(name, "on-ink on ink", $"{c.OnInk}|{c.Ink}", 4.5);
             data.Add(name, "link on surface", $"{c.Link}|{c.Surface}", 4.5);
             data.Add(name, "link on background", $"{c.Link}|{c.Background}", 4.5);
             data.Add(name, "success on surface", $"{c.Success}|{c.Surface}", 4.5);
@@ -238,9 +239,12 @@ public static partial class DesignTokenTests
 
         Assert.DoesNotMatch(HexColor(), css);
         Assert.DoesNotMatch(RgbColor(), css);
-        // 不用漸層：平的表面、中性灰階加一個強調色。
-        Assert.DoesNotContain("gradient", css, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("gradient", TokenCss.Render(), StringComparison.OrdinalIgnoreCase);
+        // 漸層只准出現在 token（TokenCss 由色票組成）；樣式表只引用 --ep-gradient-*，不自己寫 gradient()。
+        Assert.DoesNotContain("gradient(", css, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("var(--ep-gradient-brand)", css, StringComparison.Ordinal);
+        // 漸層節制：全站只有品牌面板這一條。
+        Assert.Equal(1, Regex.Count(TokenCss.Render(), "linear-gradient|radial-gradient|conic-gradient"));
+        Assert.Contains("--ep-gradient-brand:", TokenCss.Render(), StringComparison.Ordinal);
         Assert.Contains("prefers-reduced-motion", css, StringComparison.Ordinal);
         Assert.Contains("prefers-reduced-transparency", css, StringComparison.Ordinal);
         Assert.Contains("prefers-contrast", css, StringComparison.Ordinal);
