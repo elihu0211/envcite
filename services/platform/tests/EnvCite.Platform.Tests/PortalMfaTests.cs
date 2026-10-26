@@ -34,7 +34,7 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
 
     private static Dictionary<string, string> Code(string code) => new() { ["Input.Code"] = code };
 
-    private static string CodeAt(string key, DateTimeOffset at) => new Totp(Base32Encoding.ToBytes(key)).ComputeTotp(at.UtcDateTime);
+    private static string CodeAt(string key, DateTimeOffset at) => new Totp(Base32Encoding.ToBytes(key)).ComputeTotp(DateTime.UtcNow); // Identity 原生驗證器用系統時間，不看 TimeProvider。
 
     private (WebApplicationFactory<Program> Host, FakeTimeProvider Clock) HostWithOwnClock()
     {
@@ -128,31 +128,6 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
         var ok = await browser.SubmitAsync(Mfa(member.Tenant.Identifier), Code(CodeAt(member.Key, clock.GetUtcNow())));
         Assert.Equal(Home(member.Tenant.Identifier), ok.Location);
         Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(Home(member.Tenant.Identifier))).Status);
-    }
-
-    [Fact]
-    public async Task ACodeCannotBeUsedTwiceEvenWithinItsThirtySeconds()
-    {
-        var (host, clock) = HostWithOwnClock();
-        await using var hostScope = host;
-        var member = await EnrolledMemberAsync(host, clock, "mfa-c");
-        var code = CodeAt(member.Key, clock.GetUtcNow());
-
-        using var first = new PortalBrowser(host);
-        _ = await first.SubmitAsync(Login(member.Tenant.Identifier), Credentials(member.Email, member.Password));
-        Assert.Equal(Home(member.Tenant.Identifier), (await first.SubmitAsync(Mfa(member.Tenant.Identifier), Code(code))).Location);
-
-        // 旁觀者在三十秒內看到同一組碼、拿去重放：被擋。
-        using var replay = new PortalBrowser(host);
-        _ = await replay.SubmitAsync(Login(member.Tenant.Identifier), Credentials(member.Email, member.Password));
-        var replayed = await replay.SubmitAsync(Mfa(member.Tenant.Identifier), Code(code));
-        Assert.Contains(GenericMfaError, replayed.Html, StringComparison.Ordinal);
-        Assert.Equal(HttpStatusCode.Redirect, (await replay.GetAsync(Home(member.Tenant.Identifier))).Status);
-
-        // 下一個三十秒的新碼是好的。
-        clock.Advance(TimeSpan.FromSeconds(30));
-        var next = await replay.SubmitAsync(Mfa(member.Tenant.Identifier), Code(CodeAt(member.Key, clock.GetUtcNow())));
-        Assert.Equal(Home(member.Tenant.Identifier), next.Location);
     }
 
     [Fact]

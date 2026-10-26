@@ -120,10 +120,11 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 ### 入口的 MFA（TOTP，RFC 6238）
 
-- 登入分兩步：密碼成功只簽發短期、不續期、授權不接受的待驗證 cookie，第二頁把驗證碼（或復原碼）換成真正的 session。
-- 必須保持且有測試的規則：(1) **密碼與驗證碼共用一個失敗計數器**，且密碼正確**不**重設它（`PortalAccount` 自己做鎖定記帳，不用 `PasswordSignInAsync`）；(2) **重放防護**：只接受比 `LastTotpStep` 新的時間步，原子更新；容許 ±1 步，時間取自 `TimeProvider`；(3) 金鑰由我們產生並存放（`SetAuthenticationTokenAsync`），**不用** `ResetAuthenticatorKeyAsync`——它會旋轉 stamp，結束開啟該頁的那個 session；(4) 待驗證 ticket 綁定簽發它的租戶；(5) 沒有金鑰、驗證碼、復原碼或 `otpauth` URI 進稽核或日誌（測試同時捕捉兩者）。
+- 登入走 Identity 原生的兩步驟流程：`PasswordSignInAsync`（`lockoutOnFailure: true`）回報 `RequiresTwoFactor` 並簽發 `IdentityConstants.TwoFactorUserIdScheme` 待驗證 cookie（五分鐘、不滑動、授權不認它），第二頁用 `TwoFactorAuthenticatorSignInAsync` 或 `TwoFactorRecoveryCodeSignInAsync` 換成真正的 session。
+- **預設關閉，由使用者在安全頁自行開啟**；驗證與復原碼全用 Identity 原生，不自製 TOTP 驗證與重放防護（Otp.NET 僅營運者後台使用）。
+- 必須保持且有測試的規則：(1) 密碼與驗證碼共用一個失敗計數器，密碼正確不歸零，要第二步也過才歸零（原生行為，測試守住）；(2) 金鑰以 `GenerateNewAuthenticatorKey` 產生、`SetAuthenticationTokenAsync` 存放，**不用** `ResetAuthenticatorKeyAsync`——設定頁在渲染中執行，它旋轉 stamp 後無法刷新 cookie，會結束該 session；(3) 待驗證 cookie 不能跨租戶使用；(4) 沒有金鑰、驗證碼、復原碼或 `otpauth` URI 進稽核或日誌（測試同時捕捉兩者）。
 - QR 碼在伺服器端繪製，金鑰不交給第三方 QR 服務。復原碼只在那一次回應顯示。
-- 擁有者與管理員強制 MFA（`Platform:Portal:RequireMfaForAdmins`）；被要求的角色不能自己關閉，營運者重設會把他送回綁定流程，而不是留下無保護的帳號。順序同樣是先改一次性密碼、再綁定。
+- 要對擁有者與管理員強制 MFA 須明確開啟 `Platform:Portal:RequireMfaForAdmins`（預設 false）；被要求的角色不能自己關閉，營運者重設會把他送回綁定流程，而不是留下無保護的帳號。順序同樣是先改一次性密碼、再綁定。
 
 ### 成員管理（客戶自助與營運者）
 

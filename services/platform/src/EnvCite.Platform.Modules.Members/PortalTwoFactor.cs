@@ -5,6 +5,8 @@ using EnvCite.Platform.SharedKernel;
 
 using Finbuckle.MultiTenant.Abstractions;
 
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
@@ -14,8 +16,7 @@ namespace EnvCite.Platform.Modules.Members;
 internal sealed class PortalTwoFactor(
     UserManager<ApplicationUser> users,
     SignInManager<ApplicationUser> signIn,
-    TotpVerifier totp,
-    MfaPendingCookie pending,
+    IHttpContextAccessor http,
     IMultiTenantContextAccessor<TenantInfo> tenant,
     IOptions<MembersOptions> options,
     IAuditLog audit) : IPortalTwoFactor
@@ -48,8 +49,9 @@ internal sealed class PortalTwoFactor(
         var key = await users.GetAuthenticatorKeyAsync(user);
         if (string.IsNullOrEmpty(key))
         {
-            // 自己產生並直接寫入（理由見 TotpSetup.NewKey：ResetAuthenticatorKeyAsync 會讓自己目前的 session 失效，測試抓到的）。
-            key = TotpSetup.NewKey();
+            // Identity 原生的金鑰產生與存放。不用 ResetAuthenticatorKeyAsync：它會換安全戳記，
+            // 而這裡在頁面渲染中執行，無法再刷新 cookie，使用者一打開設定頁自己的 session 就失效了。
+            key = users.GenerateNewAuthenticatorKey();
             await users.SetAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey, key);
         }
 
@@ -69,7 +71,7 @@ internal sealed class PortalTwoFactor(
             return AdminOutcome.Invalid<IReadOnlyList<string>>("已經啟用了兩步驟驗證。");
         }
 
-        if (!await totp.VerifyAsync(users, user, code))
+        if (!await VerifyCodeAsync(user, code))
         {
             return AdminOutcome.Invalid<IReadOnlyList<string>>("驗證碼不正確。請確認手機的時間是自動校正的，再輸入驗證器上現在顯示的六位數。");
         }
@@ -149,7 +151,7 @@ internal sealed class PortalTwoFactor(
             return false;
         }
 
-        var ok = (password is null || await users.CheckPasswordAsync(user, password)) && await totp.VerifyAsync(users, user, code);
+        var ok = (password is null || await users.CheckPasswordAsync(user, password)) && await VerifyCodeAsync(user, code);
         if (!ok)
         {
             await users.AccessFailedAsync(user);
@@ -158,55 +160,48 @@ internal sealed class PortalTwoFactor(
         return ok;
     }
 
-    public async Task<bool> HasPendingSignInAsync() => await pending.ReadAsync() is not null;
+    /// <summary>Identity 原生的驗證器 provider（RFC 6238，內建時間容許範圍）。</summary>
+    private Task<bool> VerifyCodeAsync(ApplicationUser user, string? code) =>
+        users.VerifyTwoFactorTokenAsync(user, users.Options.Tokens.AuthenticatorTokenProvider, (code ?? string.Empty).Replace(" ", string.Empty).Replace("-", string.Empty));
+
+    public async Task<bool> HasPendingSignInAsync() => await signIn.GetTwoFactorAuthenticationUserAsync() is not null;
 
     public async Task<PortalSignInStatus> CompleteSignInAsync(string code, bool isRecoveryCode, CancellationToken cancellationToken)
     {
         var info = Tenant();
-        if (await pending.ReadAsync() is not { } id || await users.FindByIdAsync(id) is not { } user)
+        if (await signIn.GetTwoFactorAuthenticationUserAsync() is not { } user)
         {
             return PortalSignInStatus.Failed;
         }
 
-        // 在第一步之後、第二步之前被停用：不再給任何機會，暫存憑證收回。
+        // 在第一步之後、第二步之前被停用：不再給任何機會，待驗證 cookie 收回。
         if (user.Disabled)
         {
-            await pending.ClearAsync();
+            await ClearPendingAsync();
             return PortalSignInStatus.Failed;
         }
 
-        // 第二步的失敗與密碼失敗共用鎖定計數；已鎖定就不再給猜的機會，並丟掉暫存憑證，要從密碼重來。
-        if (await users.IsLockedOutAsync(user))
+        // Identity 原生：驗證、失敗計數與鎖定、成功後歸零並簽發登入 cookie。
+        var result = isRecoveryCode
+            ? await signIn.TwoFactorRecoveryCodeSignInAsync((code ?? string.Empty).Trim())
+            : await signIn.TwoFactorAuthenticatorSignInAsync(code ?? string.Empty, isPersistent: false, rememberClient: false);
+        if (!result.Succeeded)
         {
-            await pending.ClearAsync();
-            return PortalSignInStatus.Failed;
-        }
-
-        var ok = isRecoveryCode
-            ? (await users.RedeemTwoFactorRecoveryCodeAsync(user, (code ?? string.Empty).Trim())).Succeeded
-            : await totp.VerifyAsync(users, user, code);
-        if (!ok)
-        {
-            await users.AccessFailedAsync(user);
-            var lockedNow = await users.IsLockedOutAsync(user);
-            if (lockedNow)
+            // 鎖定後不再給猜的機會，收回待驗證 cookie，要從密碼重來。
+            if (result.IsLockedOut)
             {
-                await pending.ClearAsync();
+                await ClearPendingAsync();
             }
 
             await audit.AppendAsync(
                 new ClaimsPrincipal(),
                 new AuditEntry(AuditActions.PortalSignInFailed, info.Id, "member", user.Id, new Dictionary<string, object?>
                 {
-                    ["reason"] = lockedNow ? "locked_out" : isRecoveryCode ? "bad_recovery_code" : "bad_totp",
+                    ["reason"] = result.IsLockedOut ? "locked_out" : isRecoveryCode ? "bad_recovery_code" : "bad_totp",
                 }),
                 cancellationToken);
             return PortalSignInStatus.Failed;
         }
-
-        await users.ResetAccessFailedCountAsync(user);
-        await pending.ClearAsync();
-        await signIn.SignInAsync(user, isPersistent: false);
 
         // 稽核裡只記用了哪一種方式，絕不記碼本身。
         await audit.AppendAsync(
@@ -220,6 +215,9 @@ internal sealed class PortalTwoFactor(
 
         return user.MustChangePassword ? PortalSignInStatus.MustChangePassword : PortalSignInStatus.Succeeded;
     }
+
+    private Task ClearPendingAsync() =>
+        (http.HttpContext ?? throw new InvalidOperationException("No HTTP request.")).SignOutAsync(IdentityConstants.TwoFactorUserIdScheme);
 
     private async Task<ApplicationUser?> UserOfAsync(ClaimsPrincipal principal) =>
         principal.FindFirst(PlatformClaimTypes.PortalUserId)?.Value is { } id ? await users.FindByIdAsync(id) : null;

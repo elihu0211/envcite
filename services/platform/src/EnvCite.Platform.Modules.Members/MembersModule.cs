@@ -20,10 +20,10 @@ public sealed class MembersOptions : IPlatformOptions
     public static string SectionName => "Platform:Portal";
 
     /// <summary>
-    /// Owner 與 Admin 必須啟用兩步驟驗證（07-01 §5：這兩個角色能管成員與金鑰，被冒用的後果最大）。預設 true；
-    /// 沒啟用的人登入後只進得了註冊頁。要關掉得明說，而且只該在展示環境。
+    /// 是否強制 Owner 與 Admin 啟用兩步驟驗證。預設 false：兩步驟驗證由使用者自己決定是否開啟；
+    /// 設為 true 時，沒啟用的人登入後只進得了註冊頁。
     /// </summary>
-    public bool RequireMfaForAdmins { get; set; } = true;
+    public bool RequireMfaForAdmins { get; set; }
 }
 
 public static class MembersModule
@@ -49,17 +49,18 @@ public static class MembersModule
         services.AddIdentityCore<ApplicationUser>(ConfigureIdentity)
             .AddEntityFrameworkStores<PlatformDbContext>()
             .AddSignInManager()
+            .AddTokenProvider<AuthenticatorTokenProvider<ApplicationUser>>(TokenOptions.DefaultAuthenticatorProvider)
             .AddClaimsPrincipalFactory<PortalClaimsPrincipalFactory>();
 
         services.AddAuthentication()
-            .AddCookie(MfaPendingCookie.Scheme, cookie =>
+            .AddCookie(IdentityConstants.TwoFactorUserIdScheme, cookie =>
             {
-                // 「密碼已通過、等第二步」：五分鐘、不滑動，不是登入 cookie（入口的授權不認這個 scheme）。
+                // Identity 原生的「密碼已通過、等第二步」cookie：五分鐘、不滑動，不是登入 cookie（入口的授權不認這個 scheme）。
                 cookie.Cookie.Name = "EnvCite.PortalMfa";
                 cookie.Cookie.HttpOnly = true;
                 cookie.Cookie.SameSite = SameSiteMode.Lax;
                 cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                cookie.ExpireTimeSpan = MfaPendingCookie.Lifetime;
+                cookie.ExpireTimeSpan = TimeSpan.FromMinutes(5);
                 cookie.SlidingExpiration = false;
             })
             .AddCookie(PlatformAuth.PortalCookieScheme, cookie =>
@@ -91,7 +92,6 @@ public static class MembersModule
                 .AddRequirements(new PortalMemberRequirement(AllowPasswordChangePending: false, AllowMfaEnrollmentPending: false)));
 
         services.AddHttpContextAccessor();
-        services.AddScoped<MfaPendingCookie>();
         services.AddScoped<TotpVerifier>();
         services.AddScoped<IPortalAccount, PortalAccount>();
         services.AddScoped<IPortalTwoFactor, PortalTwoFactor>();

@@ -27,7 +27,7 @@ public sealed partial class PortalMfaRequiredTests(PlatformFactory factory)
 {
     private static string Security(string tenant) => $"/portal/{tenant}/security";
 
-    private static string CodeAt(string key, DateTimeOffset at) => new Totp(Base32Encoding.ToBytes(key)).ComputeTotp(at.UtcDateTime);
+    private static string CodeAt(string key, DateTimeOffset at) => new Totp(Base32Encoding.ToBytes(key)).ComputeTotp(DateTime.UtcNow); // Identity 原生驗證器用系統時間，不看 TimeProvider。
 
     // 這一頁有好幾個表單，隱藏欄位裡的 _handler 會是最後一個：要送哪一個得明說。
     private static Dictionary<string, string> Regenerate(string code) => new() { ["_handler"] = "portal-mfa-regenerate", ["Regenerate.Code"] = code };
