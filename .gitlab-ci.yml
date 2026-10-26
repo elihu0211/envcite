@@ -67,7 +67,7 @@ variables:
   POSTGRES_MAJOR: "18"
   # 用完整版本：套件快取隨 SDK 版本，快取鍵帶這個值；Dockerfile 的 ARG 與此同步（Renovate 兩處都追蹤）。
   # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
-  DOTNET_VERSION: "10.0.402"
+  DOTNET_VERSION: "10.0.403"
   # renovate: datasource=pypi depName=uv
   UV_VERSION: "0.12.18"
   # renovate: datasource=python-version depName=python

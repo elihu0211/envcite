@@ -141,7 +141,7 @@ Renovate 由外部排程集中執行，本倉庫不放令牌也不跑 job。同�
 |------|------|
 | Python 套件 | 倉庫根 `uv lock --upgrade`（或 `--upgrade-package <pkg>`）；升 `grpcio-tools`、`mypy-protobuf`、`protobuf` 時重新產生 `libs/python/envcite-proto` |
 | .NET 套件 | `services/platform/Directory.Packages.props` |
-| .NET SDK 與映像 | `services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `DOTNET_VERSION`（`global.json` 的 `sdk.version` 只是下限，Renovate 不動它） |
+| .NET SDK 與映像 | `services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `DOTNET_VERSION`（`global.json` 的 `sdk.version` 只是下限，Renovate 不動它）；SDK 的 patch 決定隱含套件 `Microsoft.AspNetCore.App.Internal.Assets` 的版本，升級時以新 SDK 執行 `dotnet restore --force-evaluate` 一併更新 `packages.lock.json`，否則 CI 的 `--locked-mode` 失敗；本機 SDK 與 `DOTNET_VERSION` 同版，restore 才不會改動 lock 檔 |
 | Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG PYTHON_VERSION` |
 | uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
 | PostgreSQL | `.gitlab-ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/ontology/tools/holdout.py`、`services/platform/tests/…/PlatformFactory.cs`；主版本與正式區相同。ontology 要 pgvector，用 `pgvector/pgvector:pg<主版本>` |
