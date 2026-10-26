@@ -1,13 +1,12 @@
 # AGENTS.md
 
-倉庫層規範（Layering、Contract、Safety、buf）見根 `AGENTS.md`；本檔只管 `services/platform/`。
+倉庫層規範見根 `AGENTS.md`；本檔只管 `services/platform/`。
 
 ## 索引
 
 | 文件 | 內容 |
 |------|------|
 | [`../../README.md`](../../README.md) | 倉庫總覽與目錄 |
-| [`../../AGENTS.md`](../../AGENTS.md) | 倉庫層規範 |
 | [`README.md`](README.md) | 本服務：介面、請求流程、啟動、開發指令 |
 | [`../../proto/README.md`](../../proto/README.md) | gRPC 契約與服務如何組合 |
 | `openapi/openapi_v2.json` | 對外 REST 契約（建置產生） |
@@ -58,7 +57,7 @@ dotnet run --project src/EnvCite.Platform.Api   # Development：連本機 Postgr
 dotnet ef migrations add <Name> -p src/EnvCite.Platform.Data -s src/EnvCite.Platform.Data
 dotnet ef migrations add <Name> -p src/EnvCite.Platform.Modules.Tenancy -s src/EnvCite.Platform.Modules.Tenancy
 
-docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）；CI 在 main 推送 :<sha>
+docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 ```
 
 - 套件版本只在 `Directory.Packages.props`（Central Package Management）；共用建置設定在 `Directory.Build.props`，不在 `.csproj` 重複。格式規則在 `.editorconfig`。
@@ -69,7 +68,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）；CI �
 - **對外 REST 契約是 `openapi/openapi_v2.json`**，每次 `dotnet build` 產生，與程式碼變更一起提交；規格過期或破壞目標分支版本，CI 都會失敗。新的 `/v2` 端點要有 `.WithName`／`.WithTags`／`.WithSummary`／`.WithDescription`，以及它會回的每個狀態的 `.Produces…`。不相容的變更進新版本群組（`/v3`），不進 `/v2`。
 - **對外用語獨立於內部 gRPC**（端點在兩者間對映），用法律詞彙；新的公開欄位先取法律用語，內部 proto 不必跟著（例：`pointInTime` 對 gRPC 的 `as_of`）。
 - `.proto` 一律來自倉庫根 `proto/`（Grpc.Tools 於各模組 `.csproj` 編譯），**不得複製**。
-- 內部 gRPC 用戶端只經 `SharedKernel.InternalGrpcClient.AddInternalGrpcClient` 註冊，新增上游也走這裡，不複製一份。連線選項與 Python 伺服器成套（`envcite_grpc.connection`）：用戶端 keepalive 間隔必須大於伺服器允許的最短 ping 間隔；只重試 `UNAVAILABLE`（內部方法都是唯讀、確定性的一元呼叫），`DEADLINE_EXCEEDED` 與 `RESOURCE_EXHAUSTED` 不重試。改一邊要看另一邊。
+- 內部 gRPC 用戶端只經 `SharedKernel.InternalGrpcClient.AddInternalGrpcClient` 註冊，新增上游也走這裡，不複製一份。連線選項與 Python 伺服器成套（`envcite_grpc.connection`；不等式見 `libs/python/AGENTS.md`），改一邊要看另一邊。只重試 `UNAVAILABLE`（內部方法都是唯讀、確定性的一元呼叫），`DEADLINE_EXCEEDED` 與 `RESOURCE_EXHAUSTED` 不重試。
 - 錯誤對映：gRPC `InvalidArgument` → 400，`NotFound` → 404，`Unavailable`／`DeadlineExceeded` → 503。
 - 計量只記成功的呼叫（consult 的拒答是成功的結果，要計）；用量不得猜測（端點沒回報用量就不記）。
 - **`Idempotency-Key`（`POST /v2/ground`）**：鍵是（租戶、操作、key）；請求內容只存雜湊，不存原文（問題文字是客戶案情）；只存成功的回應，錯誤不存。回應與用量**在同一次儲存**（`IIdempotencyStore.CompleteAsync`），並行的重複請求只有一個存得進去、另一個的用量隨之回滾，所以重送不重複計量。同 key 不同內容回 422。新的可重送端點照此接上，不另寫一套。
@@ -86,9 +85,8 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）；CI �
 
 ## Observability
 
-- OpenTelemetry 追蹤、指標與日誌；設定全是標準 `OTEL_*` 鍵，**沒設 `OTEL_EXPORTER_OTLP_ENDPOINT` 就什麼都不匯出**。
-- 已認證的租戶只標在請求追蹤的 `tenant.id`，**不進指標**（基數無界）。
-- **RED 指標**：HTTP 用 ASP.NET Core 標準的伺服器請求指標（探針以 `DisableHttpMetrics()` 排除，否則稀釋 rate 與延遲）；對 ontology／consult 的 gRPC 用戶端由 `SharedKernel.GrpcClientMetrics` 量，隨 `AddInternalGrpcClient` 掛上，新增上游不必另接。HttpClient 的指標看不出 gRPC 失敗（失敗仍是 HTTP 200），所以不能只靠它。標籤維持有限集合；與 Python 伺服器端的標籤對齊（見 `proto/README.md`）。
+- OpenTelemetry 追蹤、指標與日誌，依根 `AGENTS.md` 的約定。已認證的租戶只標在請求追蹤的 `tenant.id`，不進指標（基數無界）。
+- **RED 指標**：HTTP 用 ASP.NET Core 標準的伺服器請求指標（探針以 `DisableHttpMetrics()` 排除，否則稀釋 rate 與延遲）；對 ontology／consult 的 gRPC 用戶端由 `SharedKernel.GrpcClientMetrics` 量，隨 `AddInternalGrpcClient` 掛上，新增上游不必另接。HttpClient 的指標看不出 gRPC 失敗（失敗仍是 HTTP 200），所以不能只靠它。標籤與 Python 伺服器端對齊（見 `proto/README.md`）。
 - 探針：`/health/live` 不檢查任何東西（依賴故障不該重啟 pod）；`/health/ready` 檢查資料庫（`TenancyDbContext`，它早於租戶解析存在），故障回 503。探針請求不追蹤。
 
 ## Auth & tenancy
@@ -167,14 +165,12 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）；CI �
 
 ## Conventions
 
-- 格式規則：`.editorconfig`。
 - 新增 `/v2` 端點、公開欄位或可選功能面時，同一次提交更新 OpenAPI、測試，以及（行為改變時）本檔的對應不變式。
 
 ## Safety
 
-- 不提交機密、連線字串、計費金鑰或真實的 `.env*`／本機 appsettings 值。
+- 連線字串、計費金鑰與本機 appsettings（`appsettings.*.local.json`）的值同樣是機密，不提交。
 - 產生物不手改：`src/*/Migrations/`（用 `dotnet ef`；`.editorconfig` 標為 `generated_code`；唯一例外是 `AuditEventsAppendOnly`，EF 無法表達觸發器，其 `Sql` 呼叫是手寫的）、`obj/` 下的 gRPC 程式碼（來自倉庫根 proto）、`openapi/openapi_v2.json`（來自 `dotnet build`）。
-- 對共用資料庫套用遷移前先問（總清單見根 `AGENTS.md`）。
 
 ## Done when
 
