@@ -73,14 +73,16 @@ docker exec envcite-pg createdb -U <帳號> platform
 
 ontology 遷移檔改過（已套用的檔案內容改變）時，清掉 ontology 的綱要後重新遷移並重新匯入資料；綱要的劃分見 [ontology 的 `AGENTS.md`](services/ontology/AGENTS.md)。
 
-### 第一組資料（platform）
+### 第一組資料（platform，僅本機）
+
+**以下只適用本機 Development**；其他環境沒有種子帳號，營運者的建立見 [platform README 的「營運者帳號」](services/platform/README.md#營運者帳號)。
 
 `wt platform` 在空的庫第一次啟動時（僅 Development，`Platform:SeedDevelopmentData`）會建立一個種子租戶與擁有者，以及一個營運者（庫內沒有任何營運者時才建）。帳號與一次性密碼**只印在該終端機一次**，不進日誌，程式裡沒有預設密碼。
 
 | 角色 | 登入位址 | 第一次登入 |
 |------|----------|-----------|
 | 擁有者 | `http://localhost:<port>/portal/<租戶>/login` | 改密碼 |
-| 營運者 | `http://localhost:<port>/ui/login` | 改密碼，並以任何 TOTP 驗證器註冊兩步驟驗證（無本機例外） |
+| 營運者 | `http://localhost:<port>/ui/login` | 改密碼並綁定 TOTP（流程見 [營運者帳號](services/platform/README.md#營運者帳號)，無本機例外） |
 
 之後再啟動不會再印。忘記密碼：清掉 `platform` 庫重來，或以營運者 key 重設。種子規則與認證面的細節見 [`services/platform/AGENTS.md`](services/platform/AGENTS.md)。
 
@@ -89,7 +91,7 @@ ontology 遷移檔改過（已套用的檔案內容改變）時，清掉 ontolog
 | 項目 | 值 |
 |------|----|
 | 營運者 key（`X-Admin-Key`） | 未設定時 `/admin` 停用；要用就設 `Platform__AdminKeySha256`＝key 的 SHA-256 hex |
-| 營運後台（`/ui`） | Development 一律開；其他環境以設定開關。帳號以營運者 key 建，無自助註冊 |
+| 營運後台（`/ui`） | Development 一律開；其他環境以設定開關。帳號以營運者 key 建（見 [營運者帳號](services/platform/README.md#營運者帳號)），無自助註冊 |
 
 設定鍵與規則以 [platform 的 README](services/platform/README.md) 與 [`AGENTS.md`](services/platform/AGENTS.md) 為準。
 
