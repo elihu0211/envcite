@@ -3,6 +3,7 @@ using System.Security.Claims;
 
 using EnvCite.Platform.Data;
 using EnvCite.Platform.SharedKernel;
+using EnvCite.Platform.Web.Auth;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -55,10 +56,25 @@ internal static class OperatorSession
         return scope.ServiceProvider.GetRequiredService<IUserClaimsPrincipalFactory<OperatorUser>>().CreateAsync(user).GetAwaiter().GetResult();
     }
 
-    public static HttpClient ClientFor(this WebApplicationFactory<Program> app, ClaimsPrincipal session)
+    /// <summary>簽發一張跟真的登入一樣的票：帶絕對期限用的起點（預設就是現在，依主機的 <see cref="TimeProvider"/>）。</summary>
+    public static AuthenticationProperties SessionProperties(this WebApplicationFactory<Program> app, TimeSpan? age = null)
+    {
+        var properties = new AuthenticationProperties();
+        properties.Items[OperatorSessionLimit.StartedAtKey] = OperatorSessionLimit.Format(
+            app.Services.GetRequiredService<TimeProvider>().GetUtcNow() - (age ?? TimeSpan.Zero));
+        return properties;
+    }
+
+    public static string CookieFor(this WebApplicationFactory<Program> app, ClaimsPrincipal session, AuthenticationProperties? properties = null)
     {
         var cookie = app.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>().Get(PlatformAuth.UiCookieScheme);
-        var ticket = cookie.TicketDataFormat.Protect(new AuthenticationTicket(session, PlatformAuth.UiCookieScheme));
+        return cookie.TicketDataFormat.Protect(new AuthenticationTicket(session, properties ?? app.SessionProperties(), PlatformAuth.UiCookieScheme));
+    }
+
+    public static HttpClient ClientFor(this WebApplicationFactory<Program> app, ClaimsPrincipal session, AuthenticationProperties? properties = null)
+    {
+        var cookie = app.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>().Get(PlatformAuth.UiCookieScheme);
+        var ticket = app.CookieFor(session, properties);
         var client = app.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         client.DefaultRequestHeaders.Add("Cookie", $"{cookie.Cookie.Name}={ticket}");
         return client;

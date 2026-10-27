@@ -32,6 +32,8 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     [InlineData("Platform:Idempotency:Window", "00:00:00", "Platform:Idempotency:Window must be between 1 minute and 7 days")]
     [InlineData("Platform:Portal:SignInAttemptsPerMinute", "0", "Platform:Portal:SignInAttemptsPerMinute must be between 1 and 1000")]
     [InlineData("Platform:Ui:SignInAttemptsPerMinute", "0", "Platform:Ui:SignInAttemptsPerMinute must be between 1 and 1000")]
+    [InlineData("Platform:Ui:SessionMaxAge", "00:00:00", "Platform:Ui:SessionMaxAge must be between 1 minute and 7 days")]
+    [InlineData("Platform:Ui:SessionMaxAge", "8.00:00:00", "Platform:Ui:SessionMaxAge must be between 1 minute and 7 days")]
     public void InvalidSettingFailsAtStartupAndNamesTheKey(string key, string value, string expected)
     {
         var message = StartFailure(factory.WithWebHostBuilder(b => b.UseSetting(key, value)));

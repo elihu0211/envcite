@@ -37,6 +37,9 @@ internal static class WebAuthModule
                 cookie.LoginPath = UiEndpoints.LoginPath;
                 cookie.ExpireTimeSpan = TimeSpan.FromHours(8);
                 cookie.SlidingExpiration = true;
+                // 滑動續期之外的絕對上限：起點登入時寫入，每個請求檢查（OperatorSessionLimit）。
+                cookie.Events.OnSigningIn = OperatorSessionLimit.StampAsync;
+                cookie.Events.OnValidatePrincipal = OperatorSessionLimit.EnforceAsync;
                 cookie.Events.OnRedirectToAccessDenied = UiRedirects.ToAccessDenied;
             });
 

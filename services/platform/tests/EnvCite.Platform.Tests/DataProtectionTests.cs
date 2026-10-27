@@ -20,7 +20,7 @@ public sealed class DataProtectionTests(PlatformFactory factory)
         var principal = factory.SessionOf(factory.EnsureOperatorAsync().GetAwaiter().GetResult());
         var cookie = services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
             .Get(PlatformAuth.UiCookieScheme);
-        return (cookie.Cookie.Name!, cookie.TicketDataFormat.Protect(new AuthenticationTicket(principal, PlatformAuth.UiCookieScheme)));
+        return (cookie.Cookie.Name!, factory.CookieFor(principal));
     }
 
     // 多副本的前提：金鑰存在共用的資料庫，而不是每個副本各自的記憶體或本機檔案。

@@ -20,12 +20,25 @@ public sealed class UiOptions : IPlatformOptions
     /// 擋不了一個來源在試很多帳號，這個限制才是。營運者只有少數幾位，預設比客戶入口低。
     /// </summary>
     public int SignInAttemptsPerMinute { get; set; } = 20;
+
+    /// <summary>
+    /// 後台 session 從登入起算的絕對上限。cookie 本身會滑動續期（閒置 8 小時才過期），沒有這個上限，
+    /// 被竊的 cookie 只要持續使用就永遠有效；超過上限一律要重新登入，續期也延不了它。
+    /// </summary>
+    public TimeSpan SessionMaxAge { get; set; } = TimeSpan.FromHours(12);
 }
 
 internal sealed class UiOptionsValidator : IValidateOptions<UiOptions>
 {
-    public ValidateOptionsResult Validate(string? name, UiOptions options) =>
-        options.SignInAttemptsPerMinute is < 1 or > 1000
-            ? ValidateOptionsResult.Fail("Platform:Ui:SignInAttemptsPerMinute must be between 1 and 1000.")
+    public ValidateOptionsResult Validate(string? name, UiOptions options)
+    {
+        if (options.SignInAttemptsPerMinute is < 1 or > 1000)
+        {
+            return ValidateOptionsResult.Fail("Platform:Ui:SignInAttemptsPerMinute must be between 1 and 1000.");
+        }
+
+        return options.SessionMaxAge < TimeSpan.FromMinutes(1) || options.SessionMaxAge > TimeSpan.FromDays(7)
+            ? ValidateOptionsResult.Fail("Platform:Ui:SessionMaxAge must be between 1 minute and 7 days.")
             : ValidateOptionsResult.Success;
+    }
 }

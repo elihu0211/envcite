@@ -87,6 +87,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **不開放自助註冊**：帳號由 `/ui` 的營運者頁或營運者金鑰建立（欄位與端點見 [README](README.md) 的「營運者帳號」）。
 - **首次登入：強制改密碼，再綁驗證器**，順序固定（驗證因子不會設在金鑰持有者知道的密碼後面）。**TOTP 對每位營運者強制**，沒有角色豁免、不能關。
 - **授權每個請求都重查資料庫**：帳號存在、未停用、security stamp 仍有效；是否還要改密碼、是否已綁驗證器，由**資料庫**決定，不看 cookie 宣告。所以停用、重設密碼、重設驗證器在**下一個請求**生效；重新啟用也旋轉 stamp，舊 cookie 不復活。已開著的互動式電路不是 HTTP 請求，由 `RevalidatingServerAuthenticationStateProvider` 模式定期重驗。
+- **session 有絕對期限**（`Platform:Ui:SessionMaxAge`）：cookie 雖滑動續期，從登入起算超過上限一律拒絕並清掉 cookie。起點存在票的屬性（`OperatorSessionLimit.StartedAtKey`），不用 `IssuedUtc`（續期會重寫它）；沒有起點的票視為無效。時間走 `TimeProvider`。
 - 登入、第二步、改密碼與安全設定頁是靜態 SSR 的 POST 表單（`[ExcludeFromInteractiveRouting]`、antiforgery），受依來源位址的限流政策約束。
 - **登入的稽核是 fail closed**：事件先於 session cookie 寫入，寫入失敗就沒有 session。
 - 營運者不能對自己的那一列操作。

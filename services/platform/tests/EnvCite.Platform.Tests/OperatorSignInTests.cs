@@ -76,6 +76,25 @@ public sealed class OperatorSignInTests(PlatformFactory factory)
 
     private static string Reason(AuditRecord record) => record.Detail.GetProperty("reason").GetString()!;
 
+    // 絕對期限的起點由登入簽發（OnSigningIn），不是測試手工塞的：真的走完登入，超過上限就被拒，期限內仍可用。
+    [Fact]
+    public async Task ARealSignInIsEndedByTheAbsoluteLimitEvenWhenItKeepsBeingUsed()
+    {
+        var (host, clock) = HostWithOwnClock();
+        await using var hostScope = host;
+        var op = await EnrolledAsync(host, clock);
+        using var browser = await SignedInAsync(host, clock, op);
+
+        // 每次間隔都在閒置期限（8 小時）內，滑動續期讓 cookie 一直有效；累計超過 12 小時才被絕對期限擋下。
+        clock.Advance(TimeSpan.FromHours(6));
+        Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(UiHome)).Status);
+        clock.Advance(TimeSpan.FromHours(5));
+        Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(UiHome)).Status);
+
+        clock.Advance(TimeSpan.FromHours(2));
+        Assert.Contains(UiLogin, (await browser.GetAsync(UiHome)).Location, StringComparison.Ordinal);
+    }
+
     // ---- 第一次登入 -------------------------------------------------------------------------------
 
     [Fact]
