@@ -3,6 +3,8 @@ recalls what the words miss, and searching never fails because the embedder does
 
 import json
 import math
+import time
+import urllib.error
 import urllib.request
 from collections.abc import Sequence
 from pathlib import Path
@@ -12,7 +14,7 @@ import psycopg
 import pytest
 
 from envcite_ontology import projection
-from envcite_ontology.embedding import DIMENSION, Embedder, EmbeddingError
+from envcite_ontology.embedding import DIMENSION, Embedder, EmbeddingError, PayloadTooLarge
 from envcite_ontology.endpoint import USER_AGENT
 from envcite_ontology.store import OntologyStore
 from envcite_segmenter import Segmenter
@@ -200,6 +202,101 @@ def test_the_client_reads_openai_embeddings_and_checks_the_dimension(
     )
     with pytest.raises(EmbeddingError, match="1024"):
         client.embed(["甲"])
+
+
+class _Reply:
+    def __init__(self, count: int) -> None:
+        self.body = json.dumps(
+            {"data": [{"index": i, "embedding": [float(i)] * DIMENSION} for i in range(count)]}
+        ).encode()
+
+    def __enter__(self) -> "_Reply":
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self.body
+
+
+def _http_error(code: int) -> urllib.error.HTTPError:
+    return urllib.error.HTTPError("https://e.example/v1/embeddings", code, "x", None, None)  # type: ignore[arg-type]
+
+
+def test_a_413_batch_is_split_until_the_endpoint_accepts_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sizes: list[int] = []
+
+    def reply(request: Any, timeout: float) -> _Reply:
+        inputs = json.loads(request.data)["input"]
+        sizes.append(len(inputs))
+        if len(inputs) > 2:
+            raise _http_error(413)
+        return _Reply(len(inputs))
+
+    monkeypatch.setattr(urllib.request, "urlopen", reply)
+    client = Embedder("m", base_url="https://e.example/v1")
+
+    vectors = client.embed(list("abcde"))
+
+    assert len(vectors) == 5
+    assert sizes == [5, 2, 3, 1, 2]  # 5 -> (2, 3 -> (1, 2))
+
+
+def test_a_single_text_over_the_model_limit_is_truncated_with_a_warning(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    lengths: list[int] = []
+
+    def reply(request: Any, timeout: float) -> _Reply:
+        (text,) = json.loads(request.data)["input"]
+        lengths.append(len(text))
+        if len(text) > 1000:
+            raise _http_error(413)
+        return _Reply(1)
+
+    monkeypatch.setattr(urllib.request, "urlopen", reply)
+    client = Embedder("m", base_url="https://e.example/v1")
+
+    with caplog.at_level("WARNING"):
+        (vector,) = client.embed(["長" * 2000])
+
+    assert len(vector) == DIMENSION
+    assert lengths == [2000, 1500, 1125, 843]
+    assert "2000" in caplog.text and "843" in caplog.text
+
+
+def test_only_413_is_split_other_errors_keep_their_behaviour(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[int] = []
+
+    def reply(request: Any, timeout: float) -> _Reply:
+        calls.append(len(json.loads(request.data)["input"]))
+        raise _http_error(400)
+
+    monkeypatch.setattr(urllib.request, "urlopen", reply)
+    client = Embedder("m", base_url="https://e.example/v1", max_retries=2)
+
+    with pytest.raises(EmbeddingError, match="HTTP 400") as raised:
+        client.embed(["甲", "乙"])
+
+    assert not isinstance(raised.value, PayloadTooLarge)
+    assert calls == [2]  # 400 不重試也不拆批
+
+    calls.clear()
+    monkeypatch.setattr(time, "sleep", lambda s: None)
+
+    def unavailable(request: Any, timeout: float) -> _Reply:
+        calls.append(1)
+        raise _http_error(503)
+
+    monkeypatch.setattr(urllib.request, "urlopen", unavailable)
+    with pytest.raises(EmbeddingError, match="HTTP 503"):
+        client.embed(["甲", "乙"])
+    assert len(calls) == 3  # 503 仍照舊重試 max_retries 次
 
 
 def test_embedding_a_scope_leaves_other_laws_without_vectors(conn: Conn, tmp_path: Path) -> None:

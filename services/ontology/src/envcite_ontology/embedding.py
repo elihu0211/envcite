@@ -28,6 +28,10 @@ class EmbeddingError(RuntimeError):
     """端點沒有給出可用的向量：連不上、逾時、回應形狀不對、維度不符。"""
 
 
+class PayloadTooLarge(EmbeddingError):
+    """HTTP 413：端點的輸入驗證拒收（模型的輸入上限是逐段的 token 數，不是整批大小）。"""
+
+
 class Embedder:
     def __init__(
         self,
@@ -48,9 +52,41 @@ class Embedder:
         return f"Embedder({self.model!r})"  # 不印金鑰
 
     def embed(self, texts: Sequence[str]) -> list[list[float]]:
-        """依序回傳每段文字的向量。"""
+        """依序回傳每段文字的向量。
+
+        413 是確定性的，重試無益：整批 413 就對半拆開各自重送；單段仍 413（超過模型輸入上限）
+        才截短，並警告，不讓一段過長的文字使整個同步失敗。
+        """
         if not texts:
             return []
+        try:
+            return self._request(texts)
+        except PayloadTooLarge:
+            if len(texts) > 1:
+                mid = len(texts) // 2
+                return [*self.embed(texts[:mid]), *self.embed(texts[mid:])]
+            return [self._embed_truncated(texts[0])]
+
+    def _embed_truncated(self, text: str) -> list[float]:
+        """單段超過模型輸入上限：每次留 3/4 重送，直到端點收下。"""
+        kept = len(text)
+        while kept > 1:
+            kept = kept * 3 // 4
+            try:
+                vector = self._request([text[:kept]])[0]
+            except PayloadTooLarge:
+                continue
+            log.warning(
+                "%s: 一段文字超過模型輸入上限，已自 %d 字截至 %d 字再嵌入（開頭：%r）",
+                self.model,
+                len(text),
+                kept,
+                text[:30],
+            )
+            return vector
+        raise PayloadTooLarge(f"{self.model}: HTTP 413 even for a single character")
+
+    def _request(self, texts: Sequence[str]) -> list[list[float]]:
         headers = json_headers(self._api_key)
         body = json.dumps({"model": self.model, "input": list(texts)}).encode()
         request = urllib.request.Request(
@@ -76,6 +112,8 @@ class Embedder:
                     raise EmbeddingError(f"{self.model}: the reply is not a JSON object")
                 return payload
             except urllib.error.HTTPError as e:
+                if e.code == 413:
+                    raise PayloadTooLarge(f"{self.model}: HTTP 413") from e
                 if e.code not in (408, 429, 500, 502, 503, 504) or attempt == self.max_retries:
                     raise EmbeddingError(f"{self.model}: HTTP {e.code}") from e
             except (
