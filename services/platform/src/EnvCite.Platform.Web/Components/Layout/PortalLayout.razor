@@ -11,7 +11,8 @@
              LogoutAction="@(Authenticated && Account.CurrentTenant is { } current ? $"{PortalPaths.Home(current.Identifier)}/logout" : null)"
              ShowMenu="@ShowMenu"
              MenuItems="@MenuItems"
-             NavItems="@NavItems">
+             NavItems="@NavItems"
+             LanguageAction="@(Account.CurrentTenant is { } languageTenant ? $"{PortalPaths.Home(languageTenant.Identifier)}/language" : null)">
     @Body
 </PortalShell>
 

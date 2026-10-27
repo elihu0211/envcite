@@ -56,6 +56,7 @@ builder.Services.AddMeteringModule();
 builder.Services.AddOntologyModule();
 builder.Services.AddConsultModule();
 builder.Services.AddPlatformWeb();
+builder.Services.AddPlatformLocalization();
 
 var app = builder.Build();
 
@@ -91,6 +92,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // 順序很重要：API key 驗證會設定租戶 claim，Finbuckle 再據此解析租戶。
+app.UsePlatformLocalization();
 app.UseAuthentication();
 app.UsePlatformWebAuthentication();
 app.UseTenantTrace();

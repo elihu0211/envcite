@@ -33,6 +33,12 @@ public static class PortalEndpoints
             return Results.Redirect(PortalPaths.Login(tenant.Identifier));
         }).AllowAnonymous();
 
+        // 換介面語言：登入前後都要能用；導回的位置只限這個租戶的入口之下。
+        app.MapPost($"{PortalPaths.Prefix}/{{tenant}}/language", (HttpContext context, IAntiforgery antiforgery, IPortalAccount account) =>
+            account.CurrentTenant is not { } tenant
+                ? Task.FromResult(Results.NotFound())
+                : Localization.SwitchAsync(context, antiforgery, returnUrl => SafeReturnUrl(returnUrl, tenant.Identifier))).AllowAnonymous();
+
         return app;
     }
 

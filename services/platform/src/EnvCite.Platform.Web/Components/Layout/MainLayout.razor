@@ -23,6 +23,7 @@
                         <a class="ep-menu-item" href="@UiEndpoints.PasswordPath">改密碼</a>
                         <a class="ep-menu-item" href="@UiEndpoints.SecurityPath">兩步驟驗證</a>
                     </nav>
+                    <LanguageSwitch Action="@UiEndpoints.LanguagePath" />
                     <form method="post" action="/ui/logout">
                         <AntiforgeryToken />
                         <button type="submit" class="ep-menu-item">登出</button>

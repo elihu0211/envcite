@@ -1,16 +1,19 @@
 using EnvCite.Platform.SharedKernel;
+using EnvCite.Platform.Web.Resources;
 
 namespace EnvCite.Platform.Web.Presentation;
 
 /// <summary>營運者帳號的狀態在畫面上的樣子。狀態寫成文字，色彩只是輔助；營運者清單與總覽共用。</summary>
 public static class OperatorLabels
 {
-    public static string Status(OperatorInfo op) =>
-        op.Disabled ? "已停用"
-        : op.LockedOut ? "已鎖定"
-        : op.MustChangePassword ? "須改密碼"
-        : op.TwoFactorEnabled ? "使用中"
-        : "須綁定驗證器";
+    public static string Status(OperatorInfo op) => Text.Find($"Operator.Status.{StatusKey(op)}")!;
+
+    private static string StatusKey(OperatorInfo op) =>
+        op.Disabled ? "disabled"
+        : op.LockedOut ? "locked"
+        : op.MustChangePassword ? "must_change_password"
+        : op.TwoFactorEnabled ? "active"
+        : "needs_enrollment";
 
     /// <summary><c>StatusBadge</c> 的 tone。</summary>
     public static string Tone(OperatorInfo op) =>

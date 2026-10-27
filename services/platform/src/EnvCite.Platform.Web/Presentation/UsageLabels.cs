@@ -1,34 +1,25 @@
+using EnvCite.Platform.Web.Resources;
+
 namespace EnvCite.Platform.Web.Presentation;
 
 /// <summary>
-/// 租戶用量操作在畫面上的呈現：繁體中文名稱、分類與計量單位。
+/// 租戶用量操作在畫面上的呈現：名稱、分類與計量單位，依目前的介面語言（見 Resources/Labels）。
+/// 操作的鍵（<c>ontology.search</c> 這類）是契約，永遠不翻譯；未知的操作直接顯示它的鍵。
 /// </summary>
 public static class UsageLabels
 {
-    public static string Operation(string operation) => operation switch
+    public static string Operation(string operation) => Text.Find($"Usage.Operation.{operation}") ?? operation;
+
+    public static string Category(string operation) => Text.Find($"Usage.Category.{CategoryKey(operation)}")!;
+
+    private static string CategoryKey(string operation) => operation switch
     {
-        "ontology.search" => "本體條文檢索",
-        "ontology.get_law" => "取得單部法規",
-        "ontology.list_articles" => "條文清單",
-        "ontology.evaluate" => "法規論理推論",
-        "consult.ground" => "諮詢接地證據集",
-        "consult.answer" => "模型生成回答",
-        "consult.tokens.input" => "模型輸入 Tokens",
-        "consult.tokens.output" => "模型輸出 Tokens",
-        _ => operation,
+        var op when op.StartsWith("ontology.", StringComparison.Ordinal) => "ontology",
+        var op when op.StartsWith("consult.tokens.", StringComparison.Ordinal) => "tokens",
+        var op when op.StartsWith("consult.", StringComparison.Ordinal) => "consult",
+        _ => "other",
     };
 
-    public static string Category(string operation) => operation switch
-    {
-        var op when op.StartsWith("ontology.", StringComparison.Ordinal) => "法規本體",
-        var op when op.StartsWith("consult.tokens.", StringComparison.Ordinal) => "Token 計量",
-        var op when op.StartsWith("consult.", StringComparison.Ordinal) => "諮詢接地",
-        _ => "其他操作",
-    };
-
-    public static string UnitName(string operation) => operation switch
-    {
-        var op when op.Contains("tokens", StringComparison.OrdinalIgnoreCase) => "tokens",
-        _ => "次",
-    };
+    public static string UnitName(string operation) =>
+        Text.Find(operation.Contains("tokens", StringComparison.OrdinalIgnoreCase) ? "Usage.Unit.tokens" : "Usage.Unit.calls")!;
 }

@@ -158,6 +158,48 @@ a:where(:not([class*="mud-"])) {
     font-weight: var(--ep-h1-weight);
 }
 
+/* 語言選項：每個語言一個文字鈕，目前的語言用主色與字重標示（不只靠顏色，還有 aria-current）。
+   在帳號選單裡靠上緣的細線隔開；在頂欄與登入頁是一列小字。 */
+.ep-lang {
+    display: flex;
+    gap: var(--ep-space-1);
+}
+
+.ep-lang-option {
+    flex: none;
+    white-space: nowrap;
+    min-block-size: var(--ep-touch-target);
+    padding-inline: var(--ep-space-3);
+    border: 0;
+    border-radius: var(--ep-radius-control);
+    background: transparent;
+    color: var(--ep-text-secondary);
+    font: inherit;
+    font-size: var(--ep-body-sm-size);
+    cursor: pointer;
+}
+
+.ep-lang-option[aria-current="true"] {
+    color: var(--ep-link);
+    font-weight: var(--ep-button-weight);
+}
+
+@media (hover: hover) {
+    .ep-lang-option:hover {
+        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+    }
+}
+
+.ep-menu .ep-lang {
+    margin-block: var(--ep-space-2) 0;
+    padding-block-start: var(--ep-space-2);
+    border-block-start: 1px solid var(--ep-border-subtle);
+}
+
+.ep-menu .ep-lang-option {
+    flex: 1;
+}
+
 .ep-auth > .ep-brand {
     margin: 0;
     font-size: var(--ep-h3-size);

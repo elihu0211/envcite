@@ -37,6 +37,10 @@
                         <a class="ep-menu-item" href="@item.Href">@item.Label</a>
                     }
                 </nav>
+                @if (!string.IsNullOrEmpty(LanguageAction))
+                {
+                    <LanguageSwitch Action="@LanguageAction" />
+                }
                 @if (!string.IsNullOrEmpty(LogoutAction))
                 {
                     <form method="post" action="@LogoutAction">
@@ -46,13 +50,20 @@
                 }
             </div>
         }
-        else if (!string.IsNullOrEmpty(LogoutAction))
+        else
         {
-            @* 還在改初始密碼、註冊驗證器：只開那一頁，所以沒有選單，只留登出。 *@
-            <form method="post" action="@LogoutAction">
-                <AntiforgeryToken />
-                <button type="submit" class="ep-btn ep-btn-quiet">登出</button>
-            </form>
+            @* 還沒登入，或還在改初始密碼、註冊驗證器（只開那一頁，沒有選單）：頂欄只留語言與登出。 *@
+            @if (!string.IsNullOrEmpty(LanguageAction))
+            {
+                <LanguageSwitch Action="@LanguageAction" />
+            }
+            @if (!string.IsNullOrEmpty(LogoutAction))
+            {
+                <form method="post" action="@LogoutAction">
+                    <AntiforgeryToken />
+                    <button type="submit" class="ep-btn ep-btn-quiet">登出</button>
+                </form>
+            }
         }
     </header>
 
@@ -115,6 +126,10 @@
     /// <summary>已登入、而且沒有待辦的強制步驟才有帳號選單。</summary>
     [Parameter]
     public bool ShowMenu { get; set; }
+
+    /// <summary>換介面語言的端點；沒有就不畫語言選項（展示頁）。</summary>
+    [Parameter]
+    public string? LanguageAction { get; set; }
 
     [Parameter]
     public IReadOnlyList<MenuItem> MenuItems { get; set; } = [];

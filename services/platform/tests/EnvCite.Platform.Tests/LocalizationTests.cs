@@ -1,0 +1,280 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
+
+using EnvCite.Platform.SharedKernel;
+using EnvCite.Platform.Web;
+using EnvCite.Platform.Web.Presentation;
+
+using Microsoft.AspNetCore.Mvc.Testing;
+
+using static EnvCite.Platform.Tests.PortalTestSupport;
+
+namespace EnvCite.Platform.Tests;
+
+/// <summary>資源檔：兩個語言的鍵一致，標籤依介面語言取用。</summary>
+public static partial class LabelResourceTests
+{
+    private static string ResourcePath(string file, [CallerFilePath] string here = "") =>
+        Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.Web", "Resources", file));
+
+    private static Dictionary<string, string> Load(string file) =>
+        XDocument.Load(ResourcePath(file)).Root!.Elements("data")
+            .ToDictionary(e => (string)e.Attribute("name")!, e => (string)e.Element("value")!, StringComparer.Ordinal);
+
+    // 少了一個鍵，那個語言的畫面就會悄悄顯示鍵名或退回預設語言；這裡讓它在 CI 就失敗。
+    [Fact]
+    public static void BothLanguagesDefineTheSameKeys()
+    {
+        var zh = Load("Labels.resx");
+        var en = Load("Labels.en.resx");
+
+        Assert.Empty(zh.Keys.Except(en.Keys));
+        Assert.Empty(en.Keys.Except(zh.Keys));
+        Assert.All(zh.Concat(en), pair => Assert.False(string.IsNullOrWhiteSpace(pair.Value), pair.Key));
+    }
+
+    // 格式字串的參數個數兩邊要一樣，否則一個語言會少填、另一個會例外。
+    [Fact]
+    public static void TheSamePlaceholdersAppearInBothLanguages()
+    {
+        var zh = Load("Labels.resx");
+        var en = Load("Labels.en.resx");
+
+        foreach (var (key, value) in zh)
+        {
+            Assert.Equal(
+                [.. Placeholder().Matches(value).Select(m => m.Value).Order()],
+                [.. Placeholder().Matches(en[key]).Select(m => m.Value).Order()]);
+        }
+    }
+
+    [Fact]
+    public static void EveryAuditEventHasAnEnglishNameThatIsNotItsKey()
+    {
+        using var _ = TestCulture.Use("en");
+
+        Assert.All(AuditActions.All, action =>
+        {
+            var label = AuditLabels.Action(action);
+            Assert.NotEqual(action, label);
+            Assert.DoesNotContain("，", label, StringComparison.Ordinal); // 英文名稱裡沒有殘留的中文標點
+        });
+    }
+
+    [Theory]
+    [InlineData("zh-TW", "簽發 API key", "法規本體", "擁有者", "使用中")]
+    [InlineData("en", "API key issued", "Legal ontology", "Owner", "Active")]
+    public static void LabelsFollowTheCurrentUiCulture(string culture, string action, string category, string role, string status)
+    {
+        using var _ = TestCulture.Use(culture);
+
+        Assert.Equal(action, AuditLabels.Action(AuditActions.ApiKeyIssued));
+        Assert.Equal(category, UsageLabels.Category("ontology.search"));
+        Assert.Equal(role, PortalLabels.Role(CustomerRoles.Owner));
+        Assert.Equal(status, OperatorLabels.Status(new OperatorInfo("1", "a@example.com", null, false, false, true, false)));
+    }
+
+    [Fact]
+    public static void EnglishActorsAndUnitsReadNaturally()
+    {
+        using var _ = TestCulture.Use("en");
+
+        Assert.Equal("Tenant API key …0a1b2c3d", AuditLabels.Actor(AuditActors.TenantKey, "0192-0a1b2c3d"));
+        Assert.Equal("Tenant member", AuditLabels.Actor(AuditActors.TenantUser, null));
+        Assert.Equal("System", AuditLabels.Actor(AuditActors.System, null));
+        Assert.Equal("calls", UsageLabels.UnitName("ontology.search"));
+        Assert.Equal("tokens", UsageLabels.UnitName("consult.tokens.input"));
+    }
+
+    // 契約的鍵（事件鍵、操作鍵、角色鍵）不翻譯：不認得的值原樣顯示，而不是隱藏或出錯。
+    [Fact]
+    public static void UnknownKeysAreShownAsTheyAreInEveryLanguage()
+    {
+        foreach (var culture in new[] { "zh-TW", "en" })
+        {
+            using var _ = TestCulture.Use(culture);
+            Assert.Equal("some.future_event", AuditLabels.Action("some.future_event"));
+            Assert.Equal("some.future_op", UsageLabels.Operation("some.future_op"));
+            Assert.Equal("FutureRole", PortalLabels.Role("FutureRole"));
+        }
+    }
+
+    [GeneratedRegex(@"\{\d+\}", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Placeholder();
+}
+
+/// <summary>決定語言、換語言的端點、<c>&lt;html lang&gt;</c>。</summary>
+[Collection(PlatformTestGroup.Name)]
+public sealed partial class LanguageSwitchTests(PlatformFactory factory)
+{
+    private const string CultureCookie = ".AspNetCore.Culture";
+
+    private async Task<string> LangOfAsync(string path, string? acceptLanguage = null, string? cookie = null)
+    {
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(path, UriKind.Relative));
+        if (acceptLanguage is not null)
+        {
+            request.Headers.AcceptLanguage.ParseAdd(acceptLanguage);
+        }
+
+        if (cookie is not null)
+        {
+            request.Headers.Add("Cookie", $"{CultureCookie}={cookie}");
+        }
+
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        return HtmlLang().Match(html) is { Success: true } match ? match.Groups[1].Value : $"no lang ({(int)response.StatusCode})";
+    }
+
+    [Theory]
+    [InlineData(null, "zh-TW")] // 沒有偏好：預設語言
+    [InlineData("en-US,en;q=0.9", "en")]
+    [InlineData("zh-TW,zh;q=0.9,en;q=0.8", "zh-TW")]
+    [InlineData("zh-Hant-TW", "zh-TW")] // 內建的比對認不得這個寫法
+    [InlineData("zh-HK", "zh-TW")]
+    [InlineData("fr-FR,en;q=0.5", "en")] // 不支援的略過，取下一個
+    [InlineData("en;q=0.4,zh-TW;q=0.9", "zh-TW")] // 依品質值，不是依出現順序
+    [InlineData("fr,de;q=0.9", "zh-TW")] // 都不支援：預設語言
+    public async Task TheLanguageFollowsTheBrowserWhenThereIsNoChoice(string? acceptLanguage, string expected) =>
+        Assert.Equal(expected, await LangOfAsync("/ui/login", acceptLanguage));
+
+    [Fact]
+    public async Task TheChoiceInTheCookieBeatsTheBrowser()
+    {
+        Assert.Equal("en", await LangOfAsync("/ui/login", "zh-TW", "c%3Den%7Cuic%3Den"));
+        Assert.Equal("zh-TW", await LangOfAsync("/ui/login", "en", "c%3Dzh-TW%7Cuic%3Dzh-TW"));
+        // cookie 裡是不支援的語言：當作沒選，回到瀏覽器的偏好。
+        Assert.Equal("en", await LangOfAsync("/ui/login", "en", "c%3Dfr%7Cuic%3Dfr"));
+    }
+
+    // 網址上的 ?culture= 不換語言：連結不能替人換語言，換語言只經過有 antiforgery 的 POST。
+    [Fact]
+    public async Task TheQueryStringDoesNotChangeTheLanguage() =>
+        Assert.Equal("zh-TW", await LangOfAsync("/ui/login?culture=en&ui-culture=en"));
+
+    [Fact]
+    public async Task EveryEntrancePageOffersBothLanguagesAndMarksTheCurrentOne()
+    {
+        var (tenant, _, _) = await MemberAsync(factory, "i18n-a");
+        using var browser = new PortalBrowser(factory);
+
+        foreach (var path in new[] { "/ui/login", Login(tenant.Identifier) })
+        {
+            var page = await browser.GetAsync(path);
+
+            Assert.Contains("value=\"zh-TW\" lang=\"zh-TW\" class=\"ep-lang-option\" aria-current=\"true\"", page.Html, StringComparison.Ordinal);
+            Assert.Contains("value=\"en\" lang=\"en\" class=\"ep-lang-option\">English", page.Html, StringComparison.Ordinal);
+            Assert.Contains("繁體中文", page.Html, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public async Task SwitchingInThePortalSetsTheCookieAndReturnsToThePage()
+    {
+        var (tenant, _, _) = await MemberAsync(factory, "i18n-b");
+        var login = Login(tenant.Identifier);
+        using var browser = new PortalBrowser(factory);
+
+        var switched = await browser.SubmitAsync(login, new() { ["culture"] = "en", ["returnUrl"] = login }, $"{Home(tenant.Identifier)}/language");
+
+        Assert.Equal(HttpStatusCode.Redirect, switched.Status);
+        Assert.Equal(login, switched.Location);
+        var after = await browser.GetAsync(login);
+        Assert.Contains("<html lang=\"en\">", after.Html, StringComparison.Ordinal);
+        Assert.Contains("value=\"en\" lang=\"en\" class=\"ep-lang-option\" aria-current=\"true\"", after.Html, StringComparison.Ordinal);
+
+        // 換回來。
+        await browser.SubmitAsync(login, new() { ["culture"] = "zh-TW", ["returnUrl"] = login }, $"{Home(tenant.Identifier)}/language");
+        Assert.Contains("<html lang=\"zh-TW\">", (await browser.GetAsync(login)).Html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SwitchingInTheOperatorUiSetsTheCookieToo()
+    {
+        using var browser = new PortalBrowser(factory);
+
+        var switched = await browser.SubmitAsync("/ui/login", new() { ["culture"] = "en", ["returnUrl"] = "/ui/login" }, "/ui/language");
+
+        Assert.Equal(HttpStatusCode.Redirect, switched.Status);
+        Assert.Equal("/ui/login", switched.Location);
+        Assert.Contains("<html lang=\"en\">", (await browser.GetAsync("/ui/login")).Html, StringComparison.Ordinal);
+    }
+
+    // 導回只准留在那個面之下：外部網址、別的面、協定相對網址都回到該面的首頁。
+    [Theory]
+    [InlineData("https://evil.example/")]
+    [InlineData("//evil.example/")]
+    [InlineData("/v2/tenants")]
+    [InlineData("/ui//evil.example")]
+    [InlineData("/ui\\evil")]
+    public async Task TheReturnAddressCannotLeaveTheSurface(string returnUrl)
+    {
+        using var browser = new PortalBrowser(factory);
+
+        var switched = await browser.SubmitAsync("/ui/login", new() { ["culture"] = "en", ["returnUrl"] = returnUrl }, "/ui/language");
+
+        Assert.Equal("/ui", switched.Location);
+    }
+
+    [Fact]
+    public async Task AnUnsupportedLanguageIsRejectedAndSetsNothing()
+    {
+        using var browser = new PortalBrowser(factory);
+
+        var switched = await browser.SubmitAsync("/ui/login", new() { ["culture"] = "fr", ["returnUrl"] = "/ui/login" }, "/ui/language");
+
+        Assert.Equal(HttpStatusCode.BadRequest, switched.Status);
+        Assert.Contains("<html lang=\"zh-TW\">", (await browser.GetAsync("/ui/login")).Html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SwitchingNeedsAnAntiforgeryTokenSoALinkCannotDoIt()
+    {
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var form = new FormUrlEncodedContent(new Dictionary<string, string> { ["culture"] = "en", ["returnUrl"] = "/ui/login" });
+
+        using var response = await client.PostAsync(new Uri("/ui/language", UriKind.Relative), form, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.False(response.Headers.Contains("Set-Cookie"));
+    }
+
+    [Fact]
+    public async Task AnUnknownTenantHasNoLanguageEndpoint()
+    {
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var form = new FormUrlEncodedContent(new Dictionary<string, string> { ["culture"] = "en" });
+
+        using var response = await client.PostAsync(new Uri("/portal/no-such-tenant-xyz/language", UriKind.Relative), form, TestContext.Current.CancellationToken);
+
+        Assert.True(response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest);
+    }
+
+    // 語言只影響後台與入口：資料 API 的回應不隨 Accept-Language 變（用真的端點與租戶 key，確認拿到的是 200 而不是兩邊都 404）。
+    [Fact]
+    public async Task TheDataApiIgnoresTheLanguage()
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync("i18n-api");
+        using var client = factory.CreateTenantClient(key.Key);
+        using var withEnglish = new HttpRequestMessage(HttpMethod.Get, new Uri("/v2/me", UriKind.Relative));
+        withEnglish.Headers.AcceptLanguage.Add(new StringWithQualityHeaderValue("en"));
+        using var plain = new HttpRequestMessage(HttpMethod.Get, new Uri("/v2/me", UriKind.Relative));
+
+        using var a = await client.SendAsync(withEnglish, TestContext.Current.CancellationToken);
+        using var b = await client.SendAsync(plain, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, a.StatusCode);
+        Assert.Equal(
+            await b.Content.ReadAsStringAsync(TestContext.Current.CancellationToken),
+            await a.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+    }
+
+    [GeneratedRegex("""<html lang="([^"]*)">""", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex HtmlLang();
+}

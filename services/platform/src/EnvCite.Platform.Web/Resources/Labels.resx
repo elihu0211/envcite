@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Audit.Action.tenant.created" xml:space="preserve"><value>建立租戶</value></data>
+  <data name="Audit.Action.tenant.plan_assigned" xml:space="preserve"><value>指派方案</value></data>
+  <data name="Audit.Action.tenant.plan_removed" xml:space="preserve"><value>移除方案</value></data>
+  <data name="Audit.Action.api_key.issued" xml:space="preserve"><value>簽發 API key</value></data>
+  <data name="Audit.Action.api_key.revoked" xml:space="preserve"><value>撤銷 API key</value></data>
+  <data name="Audit.Action.operator.signed_in" xml:space="preserve"><value>營運者登入</value></data>
+  <data name="Audit.Action.operator.sign_in_denied" xml:space="preserve"><value>拒絕登入</value></data>
+  <data name="Audit.Action.operator.signed_out" xml:space="preserve"><value>營運者登出</value></data>
+  <data name="Audit.Action.member.created" xml:space="preserve"><value>新增成員</value></data>
+  <data name="Audit.Action.member.password_reset" xml:space="preserve"><value>重設成員密碼</value></data>
+  <data name="Audit.Action.portal.signed_in" xml:space="preserve"><value>成員登入</value></data>
+  <data name="Audit.Action.portal.sign_in_failed" xml:space="preserve"><value>成員登入失敗</value></data>
+  <data name="Audit.Action.portal.password_changed" xml:space="preserve"><value>成員改密碼</value></data>
+  <data name="Audit.Action.portal.signed_out" xml:space="preserve"><value>成員登出</value></data>
+  <data name="Audit.Action.portal.mfa_enabled" xml:space="preserve"><value>成員啟用兩步驟驗證</value></data>
+  <data name="Audit.Action.portal.recovery_code_used" xml:space="preserve"><value>成員使用復原碼</value></data>
+  <data name="Audit.Action.member.mfa_reset" xml:space="preserve"><value>重設成員的兩步驟驗證</value></data>
+  <data name="Audit.Action.portal.mfa_disabled" xml:space="preserve"><value>成員關閉兩步驟驗證</value></data>
+  <data name="Audit.Action.portal.recovery_codes_regenerated" xml:space="preserve"><value>成員重新產生復原碼</value></data>
+  <data name="Audit.Action.member.disabled" xml:space="preserve"><value>停用成員</value></data>
+  <data name="Audit.Action.member.enabled" xml:space="preserve"><value>重新啟用成員</value></data>
+  <data name="Audit.Action.member.role_changed" xml:space="preserve"><value>變更成員角色</value></data>
+  <data name="Audit.Action.conversation.deleted" xml:space="preserve"><value>刪除對話</value></data>
+  <data name="Audit.Action.tenant.ai_answer_enabled" xml:space="preserve"><value>開啟租戶的 AI 回答</value></data>
+  <data name="Audit.Action.tenant.ai_answer_disabled" xml:space="preserve"><value>關閉租戶的 AI 回答</value></data>
+  <data name="Audit.Action.operator.created" xml:space="preserve"><value>新增營運者</value></data>
+  <data name="Audit.Action.operator.password_reset" xml:space="preserve"><value>重設營運者密碼</value></data>
+  <data name="Audit.Action.operator.mfa_reset" xml:space="preserve"><value>重設營運者的兩步驟驗證</value></data>
+  <data name="Audit.Action.operator.disabled" xml:space="preserve"><value>停用營運者</value></data>
+  <data name="Audit.Action.operator.enabled" xml:space="preserve"><value>重新啟用營運者</value></data>
+  <data name="Audit.Action.operator.password_changed" xml:space="preserve"><value>營運者改密碼</value></data>
+  <data name="Audit.Action.operator.mfa_enabled" xml:space="preserve"><value>營運者啟用兩步驟驗證</value></data>
+  <data name="Audit.Action.operator.recovery_code_used" xml:space="preserve"><value>營運者使用復原碼</value></data>
+  <data name="Audit.Action.operator.recovery_codes_regenerated" xml:space="preserve"><value>營運者重新產生復原碼</value></data>
+  <data name="Audit.Actor.operator-key" xml:space="preserve"><value>營運者金鑰</value></data>
+  <data name="Audit.Actor.operator-user" xml:space="preserve"><value>營運者</value></data>
+  <data name="Audit.Actor.tenant-key" xml:space="preserve"><value>租戶 API key</value></data>
+  <data name="Audit.Actor.tenant-key.id" xml:space="preserve"><value>租戶 API key {0}</value></data>
+  <data name="Audit.Actor.tenant-user" xml:space="preserve"><value>租戶成員</value></data>
+  <data name="Audit.Actor.tenant-user.id" xml:space="preserve"><value>租戶成員 {0}</value></data>
+  <data name="Audit.Actor.system" xml:space="preserve"><value>系統</value></data>
+  <data name="Audit.Actor.anonymous" xml:space="preserve"><value>匿名</value></data>
+  <data name="Usage.Operation.ontology.search" xml:space="preserve"><value>本體條文檢索</value></data>
+  <data name="Usage.Operation.ontology.get_law" xml:space="preserve"><value>取得單部法規</value></data>
+  <data name="Usage.Operation.ontology.list_articles" xml:space="preserve"><value>條文清單</value></data>
+  <data name="Usage.Operation.ontology.evaluate" xml:space="preserve"><value>法規論理推論</value></data>
+  <data name="Usage.Operation.consult.ground" xml:space="preserve"><value>諮詢接地證據集</value></data>
+  <data name="Usage.Operation.consult.answer" xml:space="preserve"><value>模型生成回答</value></data>
+  <data name="Usage.Operation.consult.tokens.input" xml:space="preserve"><value>模型輸入 Tokens</value></data>
+  <data name="Usage.Operation.consult.tokens.output" xml:space="preserve"><value>模型輸出 Tokens</value></data>
+  <data name="Usage.Category.ontology" xml:space="preserve"><value>法規本體</value></data>
+  <data name="Usage.Category.tokens" xml:space="preserve"><value>Token 計量</value></data>
+  <data name="Usage.Category.consult" xml:space="preserve"><value>諮詢接地</value></data>
+  <data name="Usage.Category.other" xml:space="preserve"><value>其他操作</value></data>
+  <data name="Usage.Unit.tokens" xml:space="preserve"><value>tokens</value></data>
+  <data name="Usage.Unit.calls" xml:space="preserve"><value>次</value></data>
+  <data name="Role.TenantOwner" xml:space="preserve"><value>擁有者</value></data>
+  <data name="Role.TenantAdmin" xml:space="preserve"><value>管理員</value></data>
+  <data name="Role.Developer" xml:space="preserve"><value>開發者</value></data>
+  <data name="Role.Billing" xml:space="preserve"><value>帳務</value></data>
+  <data name="Role.Viewer" xml:space="preserve"><value>唯讀</value></data>
+  <data name="Role.TenantOwner.abilities" xml:space="preserve"><value>擁有者（管理成員與帳務）</value></data>
+  <data name="Role.TenantAdmin.abilities" xml:space="preserve"><value>管理員（管理成員與 API key）</value></data>
+  <data name="Role.Developer.abilities" xml:space="preserve"><value>開發者（管理 API key、看用量）</value></data>
+  <data name="Role.Billing.abilities" xml:space="preserve"><value>帳務（看發票）</value></data>
+  <data name="Role.Viewer.abilities" xml:space="preserve"><value>唯讀</value></data>
+  <data name="Operator.Status.disabled" xml:space="preserve"><value>已停用</value></data>
+  <data name="Operator.Status.locked" xml:space="preserve"><value>已鎖定</value></data>
+  <data name="Operator.Status.must_change_password" xml:space="preserve"><value>須改密碼</value></data>
+  <data name="Operator.Status.active" xml:space="preserve"><value>使用中</value></data>
+  <data name="Operator.Status.needs_enrollment" xml:space="preserve"><value>須綁定驗證器</value></data>
+  <data name="Language.Switch" xml:space="preserve"><value>語言 / Language</value></data>
+</root>

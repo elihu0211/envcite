@@ -16,6 +16,7 @@ public static class UiEndpoints
     public const string DeniedPath = "/ui/denied";
     public const string SignedOutPath = "/ui/signed-out";
     public const string HomePath = "/ui";
+    public const string LanguagePath = "/ui/language";
 
     /// <summary>登入、第二步驗證、改密碼、註冊驗證器都是頁面（靜態渲染的 POST 表單，見 <c>Components/Account</c>）；這裡只剩登出。</summary>
     public static IEndpointRouteBuilder MapUiAuthEndpoints(this IEndpointRouteBuilder app)
@@ -36,6 +37,10 @@ public static class UiEndpoints
             await account.SignOutAsync(context.User, context.RequestAborted);
             return Results.Redirect(SignedOutPath);
         });
+
+        // 換介面語言：登入前後都要能用（登入頁也有語言選項），所以不需要登入。
+        app.MapPost(LanguagePath, (HttpContext context, IAntiforgery antiforgery) =>
+            Localization.SwitchAsync(context, antiforgery, SafeReturnUrl));
 
         return app;
     }

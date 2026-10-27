@@ -1,0 +1,25 @@
+@* 介面語言選項：每個語言一個送出鈕，POST 到該面的換語言端點（antiforgery），伺服器寫 cookie 後導回原頁。
+   語言名稱用各語言的自稱，不翻譯。靜態渲染也能用（沒有 JavaScript）；互動電路的語言在連線建立時就定了，所以換語言一律整頁重新載入。 *@
+@inject NavigationManager Navigation
+
+<form method="post" action="@Action" class="ep-lang" aria-label="@Label">
+    <AntiforgeryToken />
+    <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+    @foreach (var (tag, name) in Localization.Languages)
+    {
+        <button type="submit" name="culture" value="@tag" lang="@tag" class="ep-lang-option"
+                aria-current="@(tag == CurrentTag ? "true" : null)">@name</button>
+    }
+</form>
+
+@code {
+    /// <summary>該面的換語言端點。</summary>
+    [Parameter, EditorRequired]
+    public string Action { get; set; } = string.Empty;
+
+    private static string? Label => Text.Find("Language.Switch");
+
+    private string ReturnUrl => "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+
+    private static string CurrentTag => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "en" : Localization.Default;
+}
