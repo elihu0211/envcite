@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 
+from envcite_ontology.endpoint import USER_AGENT
 from envcite_ontology.verification import ChatCompletionsModel
 
 
@@ -30,6 +31,7 @@ class Endpoint:
                     {
                         "path": self.path,
                         "auth": self.headers.get("Authorization"),
+                        "user_agent": self.headers.get("User-Agent"),
                         "body": json.loads(self.rfile.read(size)),
                     }
                 )
@@ -67,6 +69,7 @@ def test_one_user_message_goes_to_the_chat_completions_route(endpoint: Endpoint)
     (sent,) = endpoint.requests
     assert sent["path"] == "/v1/chat/completions"
     assert sent["auth"] == "Bearer k"
+    assert sent["user_agent"] == USER_AGENT
     assert sent["body"] == {
         "model": "openai/gpt-oss-120b",
         "messages": [{"role": "user", "content": "問題"}],

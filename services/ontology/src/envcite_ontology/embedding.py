@@ -15,6 +15,7 @@ import urllib.request
 from collections.abc import Sequence
 from http.client import HTTPException
 
+from envcite_ontology.endpoint import json_headers
 from envcite_ontology.settings import ModelsSettings
 
 log = logging.getLogger(__name__)
@@ -50,9 +51,7 @@ class Embedder:
         """依序回傳每段文字的向量。"""
         if not texts:
             return []
-        headers = {"Content-Type": "application/json"}
-        if self._api_key:
-            headers["Authorization"] = f"Bearer {self._api_key}"
+        headers = json_headers(self._api_key)
         body = json.dumps({"model": self.model, "input": list(texts)}).encode()
         request = urllib.request.Request(
             f"{self._base_url}/embeddings", body, headers, method="POST"

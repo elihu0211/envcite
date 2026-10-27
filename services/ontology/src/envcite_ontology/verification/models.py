@@ -18,6 +18,8 @@ from collections.abc import Callable, Mapping
 from http.client import HTTPException
 from typing import Any, Protocol
 
+from envcite_ontology.endpoint import json_headers
+
 #: 值得重試的 HTTP 狀態（暫時性錯誤）；其餘 4xx 重試不會好，直接報。
 RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
 
@@ -123,9 +125,7 @@ class ChatCompletionsModel:
 
     def complete(self, prompt: str, *, response_format: Mapping[str, Any] | None = None) -> str:
         base = self._base_url.rstrip("/")
-        headers = {"Content-Type": "application/json"}
-        if self._api_key:
-            headers["Authorization"] = f"Bearer {self._api_key}"
+        headers = json_headers(self._api_key)
         request_body: dict[str, Any] = {
             "model": self.model_id,
             "messages": [{"role": "user", "content": prompt}],

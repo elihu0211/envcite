@@ -13,6 +13,7 @@ import pytest
 
 from envcite_ontology import projection
 from envcite_ontology.embedding import DIMENSION, Embedder, EmbeddingError
+from envcite_ontology.endpoint import USER_AGENT
 from envcite_ontology.store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.test_import import _scalar
@@ -168,7 +169,11 @@ def test_the_client_reads_openai_embeddings_and_checks_the_dimension(
             return self.body
 
     def ok(request: Any, timeout: float) -> Reply:
-        sent.update(url=request.full_url, auth=request.get_header("Authorization"))
+        sent.update(
+            url=request.full_url,
+            auth=request.get_header("Authorization"),
+            user_agent=request.get_header("User-agent"),
+        )
         sent["body"] = json.loads(request.data)
         return Reply(
             {
@@ -186,6 +191,7 @@ def test_the_client_reads_openai_embeddings_and_checks_the_dimension(
 
     assert (first[0], second[0]) == (1.0, 0.0)  # 依 index 排回輸入順序
     assert sent["url"] == "https://e.example/v1/embeddings" and sent["auth"] == "Bearer k"
+    assert sent["user_agent"] == USER_AGENT  # 預設的 Python-urllib 會被端點前的 WAF 擋下
     assert sent["body"] == {"model": "bge-m3-embedding", "input": ["甲", "乙"]}
     monkeypatch.setattr(
         urllib.request,
