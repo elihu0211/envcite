@@ -143,10 +143,11 @@ a:where(:not([class*="mud-"])) {
     box-shadow: var(--ep-elevation-2);
 }
 
-/* 客戶入口裡的卡片與頂欄之間留白。 */
+/* 入口的頂欄底下（登入、改密碼、第二步驗證這類只有一張卡的頁面）：卡片在剩下的空間裡上下置中，
+   與營運者登入頁的位置一致。flex 欄裡的 auto 邊距把多出來的空間平均分給上下。 */
 .ep-shell-main > .ep-login,
 .ep-shell-main > .ep-portal-card {
-    margin-block-start: var(--ep-space-8);
+    margin-block: auto;
 }
 
 .ep-auth-body > .ep-page-title,
