@@ -30,16 +30,9 @@ public static class TokenCss
         $"--ep-bg:{c.Background};--ep-surface:{c.Surface};--ep-surface-raised:{c.SurfaceRaised};--ep-surface-muted:{c.SurfaceMuted};" +
         $"--ep-text:{c.Text};--ep-text-secondary:{c.TextSecondary};" +
         $"--ep-primary:{c.Primary};--ep-on-primary:{c.OnPrimary};--ep-link:{c.Link};" +
-        $"--ep-ink:{c.Ink};--ep-on-ink:{c.OnInk};--ep-accent:{c.Accent};" + Gradients() +
+        $"--ep-ink:{c.Ink};--ep-on-ink:{c.OnInk};--ep-accent:{c.Accent};" +
         $"--ep-success:{c.Success};--ep-warning:{c.Warning};--ep-error:{c.Error};--ep-info:{c.Info};" +
         $"--ep-border-subtle:{c.BorderSubtle};--ep-border-control:{c.BorderControl};--ep-focus:{c.Focus};--ep-scrim:{c.Scrim};";
-
-    /// <summary>
-    /// 漸層的唯一來源，而且只有一條：品牌面板（深色到主色）。其他地方一律平面——主流做法是漸層節制，
-    /// 只留給一個品牌面；多了就變成裝飾疲勞。要新增，先證明它承載資訊，並在這裡命名。
-    /// </summary>
-    private static string Gradients() =>
-        "--ep-gradient-brand:linear-gradient(150deg,var(--ep-ink) 0%,color-mix(in srgb,var(--ep-ink) 45%,var(--ep-primary)) 55%,var(--ep-primary) 100%);";
 
     private static string Shared()
     {

@@ -6,8 +6,8 @@
    所有顏色、字級都取自 token（--ep-*），這裡不寫任何值。 *@
 <PageTitle>元件展示 · 環境知識</PageTitle>
 
-<PortalShell TenantName="展示租戶" HomeHref="/design" UserEmail="owner@example.test" RoleLabel="擁有者" AvatarText="O" ShowMenu="true" MenuItems="@_menu">
-    <PageHeader Title="元件展示" Description="只在 Development 看得到。改 DesignTokens.cs 之後，在這裡看每個元件在手機、平板、桌機的樣子；右上角的頭像是帳號選單。" />
+<PortalShell TenantName="展示租戶" HomeHref="/design" UserEmail="owner@example.test" RoleLabel="擁有者" AvatarText="O" ShowMenu="true" MenuItems="@_menu" NavItems="@_nav">
+    <PageHeader Title="元件展示" Description="只在 Development 看得到。改 DesignTokens.cs 之後，在這裡看每個元件在手機、平板、桌機的樣子；左側是工作區，右上角的頭像是帳號選單。" />
 
     <section class="ep-card" aria-labelledby="g-ask">
         <h2 id="g-ask" class="ep-section-title">問答</h2>
@@ -137,11 +137,16 @@
         ("body-sm", "小字：說明與表格"), ("caption", "註記"), ("micro", "最小字級"),
     ];
 
+    private static readonly IReadOnlyList<PortalShell.NavItem> _nav =
+    [
+        new("/design", "查詢", "服務", Exact: true),
+        new("#history", "對話紀錄", "服務"),
+        new("#members", "成員", "組織"),
+        new("#account", "帳號與組織", "組織"),
+    ];
+
     private static readonly IReadOnlyList<PortalShell.MenuItem> _menu =
     [
-        new("/design", "查詢"),
-        new("#account", "帳號與組織"),
-        new("#members", "成員"),
         new("#security", "兩步驟驗證"),
         new("#password", "改密碼"),
     ];

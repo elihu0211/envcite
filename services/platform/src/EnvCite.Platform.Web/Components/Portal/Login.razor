@@ -9,11 +9,11 @@
 @if (Account.CurrentTenant is { } tenant)
 {
     <section class="ep-login" aria-labelledby="login-title">
-      <header class="ep-login-intro">
+      <header>
         <h1 id="login-title" class="ep-display">登入</h1>
         <p class="ep-login-tenant">@(tenant.Name ?? tenant.Identifier)</p>
       </header>
-      <div class="ep-login-form">
+      <div>
 
         @if (_error is not null)
         {

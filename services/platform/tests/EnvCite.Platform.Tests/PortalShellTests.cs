@@ -15,7 +15,7 @@ using static EnvCite.Platform.Tests.PortalTestSupport;
 namespace EnvCite.Platform.Tests;
 
 /// <summary>
-/// 客戶入口的外殼：沒有側欄與分頁列，只有頂欄與右上角的帳號選單（依角色與狀態出現）；
+/// 客戶入口的外殼：頂欄加左側欄（工作區），個人設定在右上角的帳號選單，兩者都依角色與狀態出現；
 /// 版面（手機／平板／桌機）由樣式表與 token 決定。
 /// </summary>
 [Collection(PlatformTestGroup.Name)]
@@ -31,13 +31,17 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
     private static List<string> MenuHrefs(string html) =>
         [.. LinkHref().Matches(Menu(html)).Select(m => m.Groups[1].Value)];
 
+    private static List<string> SideNavHrefs(string html) =>
+        [.. Regex.Matches(html, "<nav class=\"ep-side-nav\".*?</nav>", RegexOptions.Singleline)
+            .SelectMany(nav => LinkHref().Matches(nav.Value)).Select(m => m.Groups[1].Value)];
+
     [Theory]
     [InlineData(CustomerRoles.Owner, true)]
     [InlineData(CustomerRoles.Admin, true)]
     [InlineData(CustomerRoles.Developer, false)]
     [InlineData(CustomerRoles.Billing, false)]
     [InlineData(CustomerRoles.Viewer, false)]
-    public async Task TheMenuListsMembersOnlyForOwnersAndAdmins(string role, bool seesMembers)
+    public async Task TheSideNavigationListsMembersOnlyForOwnersAndAdmins(string role, bool seesMembers)
     {
         var (tenant, email, initial) = await MemberAsync(factory, "sh-a", role);
         using var browser = new PortalBrowser(factory);
@@ -45,17 +49,17 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
 
         var home = await browser.GetAsync(Home(tenant.Identifier));
 
-        var links = MenuHrefs(home.Html);
         var prefix = Home(tenant.Identifier);
+        var links = SideNavHrefs(home.Html);
         Assert.Equal(seesMembers, links.Contains($"{prefix}/members"));
-        Assert.Equal(
-            [prefix, $"{prefix}/account", $"{prefix}/security", PasswordPage(tenant.Identifier)],
-            links.Where(l => l != $"{prefix}/members"));
-        Assert.Contains(email, Menu(home.Html), StringComparison.Ordinal); // 選單顯示目前是誰
+        Assert.Equal([prefix, $"{prefix}/account"], links.Where(l => l != $"{prefix}/members" && l != $"{prefix}/history"));
+        // 個人的安全設定在帳號選單；選單也顯示目前是誰。
+        Assert.Equal([$"{prefix}/security", PasswordPage(tenant.Identifier)], MenuHrefs(home.Html));
+        Assert.Contains(email, Menu(home.Html), StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task ThereIsNoSidebarAndTheBrandLinksHome()
+    public async Task TheShellHasASideNavigationAndTheBrandLinksHome()
     {
         var (tenant, email, initial) = await MemberAsync(factory, "sh-b");
         using var browser = new PortalBrowser(factory);
@@ -67,13 +71,15 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
 
         foreach (var page in new[] { home.Html, account.Html })
         {
-            Assert.DoesNotContain("class=\"ep-nav", page, StringComparison.Ordinal); // 沒有側欄、分頁列
             Assert.DoesNotContain("mud-drawer", page, StringComparison.Ordinal);
             Assert.Contains($"<a class=\"ep-brand\" href=\"{prefix}\">", page, StringComparison.Ordinal);
             Assert.Contains("<a class=\"ep-skip-link\" href=\"#main\"", page, StringComparison.Ordinal);
             Assert.Single(Regex.Matches(page, "id=\"main\""));
         }
 
+        // 目前頁標示：首頁只在首頁算數，不因為其他頁都在它底下就一直亮著。
+        Assert.Single(Regex.Matches(account.Html, "ep-side-link active"));
+        Assert.Contains($"href=\"{prefix}/account\" class=\"ep-side-link active\"", account.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("回總覽", account.Html, StringComparison.Ordinal);
     }
 
@@ -111,19 +117,19 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Contains("<span class=\"ep-badge\" data-tone=\"neutral\">已停用</span>", members.Html, StringComparison.Ordinal);
     }
 
-    // 營運後台也沒有側欄：頂欄下方一條分頁列，目前頁標示。
+    // 營運後台是頂欄加自己的側欄（不是 MudBlazor 的抽屜）：只列存在的頁面，目前頁標示。
     [Fact]
-    public async Task TheOperatorUiHasATabStripInsteadOfADrawer()
+    public async Task TheOperatorUiHasASideNavigationOfExistingPages()
     {
         using var operatorClient = factory.SignedInClient();
 
         var page = await operatorClient.PageAsync("/ui/tenants");
 
         Assert.DoesNotContain("class=\"mud-drawer", page, StringComparison.Ordinal); // 主題的 CSS 變數裡有 mud-drawer-*，認元件本身
-        var tabs = Regex.Match(page, "<nav class=\"ep-tabs\".*?</nav>", RegexOptions.Singleline).Value;
-        Assert.Equal(["/ui", "/ui/tenants", "/ui/operators", "/ui/audit"], LinkHref().Matches(tabs).Select(m => m.Groups[1].Value));
-        Assert.Contains("href=\"/ui/tenants\" class=\"ep-tab active\"", tabs, StringComparison.Ordinal);
-        Assert.Single(Regex.Matches(tabs, "ep-tab active"));
+        var nav = Regex.Match(page, "<nav class=\"ep-side-nav\".*?</nav>", RegexOptions.Singleline).Value;
+        Assert.Equal(["/ui", "/ui/tenants", "/ui/operators", "/ui/audit"], LinkHref().Matches(nav).Select(m => m.Groups[1].Value));
+        Assert.Contains("href=\"/ui/tenants\" class=\"ep-side-link active\"", nav, StringComparison.Ordinal);
+        Assert.Single(Regex.Matches(nav, "ep-side-link active"));
     }
 
     // 元件展示頁：只在 Development；不需要登入，三種寬度都看得到每個元件。

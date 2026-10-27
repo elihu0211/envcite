@@ -6,9 +6,9 @@
 
 <PageTitle>營運者 · 環境知識</PageTitle>
 
-<PageHeader Title="營運者" Description="誰能進這個後台。狀態寫在文字上。不能停用或重設自己。">
+<PageHeader Title="營運者">
     <Actions>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">新增營運者</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">新增營運者</MudButton>
     </Actions>
 </PageHeader>
 
@@ -45,7 +45,7 @@ else
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="電子郵件">@context.Email</MudTd>
-                <MudTd DataLabel="狀態"><StatusBadge Tone="@Tone(context)">@Label(context)</StatusBadge></MudTd>
+                <MudTd DataLabel="狀態"><StatusBadge Tone="@OperatorLabels.Tone(context)">@OperatorLabels.Status(context)</StatusBadge></MudTd>
                 <MudTd DataLabel="操作">
                     @if (IsSelf(context))
                     {
@@ -66,14 +66,14 @@ else
             <NoRecordsContent>
                 @if (string.IsNullOrWhiteSpace(_search))
                 {
-                    <EmptyState Icon="@Icons.Material.Filled.Badge" Title="還沒有任何營運者"
+                    <EmptyState Title="還沒有任何營運者"
                                 Description="建立第一個帳號，把一次性密碼交給對方。">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">新增營運者</MudButton>
                     </EmptyState>
                 }
                 else
                 {
-                    <EmptyState Icon="@Icons.Material.Filled.SearchOff" Title="@($"沒有符合「{_search}」的營運者")"
+                    <EmptyState Title="@($"沒有符合「{_search}」的營運者")"
                                 Description="試試其他關鍵字，或清除搜尋。">
                         <MudButton Variant="Variant.Text" OnClick="() => _search = null">清除搜尋</MudButton>
                     </EmptyState>
@@ -129,17 +129,6 @@ else
     private bool Matches(OperatorInfo op) =>
         string.IsNullOrWhiteSpace(_search) || op.Email.Contains(_search, StringComparison.OrdinalIgnoreCase);
 
-    private static string Label(OperatorInfo op) =>
-        op.Disabled ? "已停用"
-        : op.LockedOut ? "已鎖定"
-        : op.MustChangePassword ? "須改密碼"
-        : op.TwoFactorEnabled ? "使用中"
-        : "須綁定驗證器";
-
-    private static string Tone(OperatorInfo op) =>
-        op.Disabled || op.LockedOut ? "error"
-        : op.MustChangePassword || !op.TwoFactorEnabled ? "warning"
-        : "success";
 
     private async Task<ClaimsPrincipal> ActorAsync() => (await Auth.GetAuthenticationStateAsync()).User;
 

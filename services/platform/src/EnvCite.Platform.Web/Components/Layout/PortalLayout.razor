@@ -10,7 +10,8 @@
              AvatarText="@AvatarText"
              LogoutAction="@(Authenticated && Account.CurrentTenant is { } current ? $"{PortalPaths.Home(current.Identifier)}/logout" : null)"
              ShowMenu="@ShowMenu"
-             MenuItems="@MenuItems">
+             MenuItems="@MenuItems"
+             NavItems="@NavItems">
     @Body
 </PortalShell>
 
@@ -41,7 +42,7 @@
 
     private bool CanManageMembers => _user is not null && (_user.IsInRole(CustomerRoles.Owner) || _user.IsInRole(CustomerRoles.Admin));
 
-    private IReadOnlyList<PortalShell.MenuItem> MenuItems
+    private IReadOnlyList<PortalShell.NavItem> NavItems
     {
         get
         {
@@ -51,22 +52,26 @@
             }
 
             var home = PortalPaths.Home(tenant.Identifier);
-            var items = new List<PortalShell.MenuItem> { new(home, "查詢"), new($"{home}/account", "帳號與組織") };
-            if (CanManageMembers)
-            {
-                items.Add(new($"{home}/members", "成員"));
-            }
-
+            var items = new List<PortalShell.NavItem> { new(home, "查詢", "服務", Exact: true) };
             if (History.Enabled)
             {
-                items.Add(new($"{home}/history", "對話紀錄"));
+                items.Add(new($"{home}/history", "對話紀錄", "服務"));
             }
 
-            items.Add(new($"{home}/security", "兩步驟驗證"));
-            items.Add(new(PortalPaths.Password(tenant.Identifier), "改密碼"));
+            if (CanManageMembers)
+            {
+                items.Add(new($"{home}/members", "成員", "組織"));
+            }
+
+            items.Add(new($"{home}/account", "帳號與組織", "組織"));
             return items;
         }
     }
+
+    private IReadOnlyList<PortalShell.MenuItem> MenuItems =>
+        Account.CurrentTenant is { } tenant
+            ? [new($"{PortalPaths.Home(tenant.Identifier)}/security", "兩步驟驗證"), new(PortalPaths.Password(tenant.Identifier), "改密碼")]
+            : [];
 
     protected override async Task OnInitializedAsync() =>
         _user = AuthenticationState is null ? null : (await AuthenticationState).User;

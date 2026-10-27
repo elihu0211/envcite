@@ -5,7 +5,7 @@
 
 <PageTitle>對話紀錄 · 環境知識</PageTitle>
 
-<PageHeader Title="對話紀錄" Description="你問過的問題與找到的出處。只有你看得到，同組織的其他人（包括擁有者）都看不到。" />
+<PageHeader Title="對話紀錄" Description="只有你看得到。" />
 
 @if (!Store.Enabled)
 {
@@ -22,7 +22,7 @@ else
 
     @if (_items.Count == 0)
     {
-        <EmptyState Icon="@Icons.Material.Filled.History" Title="還沒有對話" Description="在首頁問一個問題，它就會出現在這裡。">
+        <EmptyState Title="還沒有對話" Description="在首頁問一個問題，它就會出現在這裡。">
             <a class="ep-btn ep-btn-primary" href="@PortalPaths.Home(Tenant)">查詢</a>
         </EmptyState>
     }

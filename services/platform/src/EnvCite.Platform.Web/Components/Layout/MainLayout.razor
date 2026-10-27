@@ -1,15 +1,17 @@
 @inherits LayoutComponentBase
 
-@* 營運者後台的外殼：頂欄只留品牌與帳號（選單從帳號鈕長出，點外面或 Esc 收回），下方是分頁列。沒有側欄。
-   導覽只列已經存在的頁面。 *@
+@* 營運者後台的外殼：頂欄放品牌與帳號（選單從帳號鈕長出，點外面或 Esc 收回），左側欄是導覽。
+   側欄依群組排：目前只有「平台」；服務有自己的頁面時，以同一個樣式加一組「服務」。導覽只列已經存在的頁面。
+   窄螢幕上側欄收成頂欄下方一條可橫捲的列。 *@
 <PlatformProviders />
 
 <a class="ep-skip-link" href="#main">跳到主要內容</a>
 
-<MudLayout>
-    <MudAppBar Class="ep-appbar" Elevation="0">
+<div class="ep-console">
+    <header class="ep-shell-top">
         <span class="ep-brand">環境知識</span>
-        <MudSpacer />
+        <span class="ep-console-product">營運後台</span>
+        <span class="ep-spacer"></span>
         <AuthorizeView>
             <Authorized>
                 <button type="button" class="ep-avatar" popovertarget="ep-ui-account-menu" aria-label="帳號選單">@Avatar(context.User)</button>
@@ -28,20 +30,24 @@
                 </div>
             </Authorized>
         </AuthorizeView>
-    </MudAppBar>
+    </header>
 
-    <MudMainContent id="main" tabindex="-1">
-        <nav class="ep-tabs" aria-label="主要導覽">
-            <NavLink class="ep-tab" href="/ui" Match="NavLinkMatch.All">總覽</NavLink>
-            <NavLink class="ep-tab" href="/ui/tenants">租戶</NavLink>
-            <NavLink class="ep-tab" href="/ui/operators">營運者</NavLink>
-            <NavLink class="ep-tab" href="/ui/audit">稽核紀錄</NavLink>
-        </nav>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="my-6">
+    <div class="ep-console-body">
+        <aside class="ep-side">
+            <p class="ep-side-group" aria-hidden="true">平台</p>
+            <nav class="ep-side-nav" aria-label="主要導覽">
+                <NavLink class="ep-side-link" href="/ui" Match="NavLinkMatch.All">總覽</NavLink>
+                <NavLink class="ep-side-link" href="/ui/tenants">租戶</NavLink>
+                <NavLink class="ep-side-link" href="/ui/operators">營運者</NavLink>
+                <NavLink class="ep-side-link" href="/ui/audit">稽核紀錄</NavLink>
+            </nav>
+        </aside>
+
+        <main class="ep-console-main" id="main" tabindex="-1">
             @Body
-        </MudContainer>
-    </MudMainContent>
-</MudLayout>
+        </main>
+    </div>
+</div>
 
 @code {
     private static string Avatar(ClaimsPrincipal user)

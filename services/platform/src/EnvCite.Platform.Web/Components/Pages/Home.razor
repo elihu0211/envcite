@@ -1,20 +1,138 @@
 @page "/ui"
+@inject ITenantDirectory Directory
+@inject IOperatorAdmin Operators
+@inject IAuditQuery AuditQuery
 
 <PageTitle>總覽 · 環境知識</PageTitle>
 
-<PageHeader Title="總覽" Description="平台營運用的管理介面。" />
+<PageHeader Title="總覽" />
 
-<div class="ep-home-grid">
-    <a class="ep-card ep-home-card" href="/ui/tenants">
-        <h2>租戶</h2>
-        <p>客戶與他們的方案；沒有方案的租戶不能呼叫資料端點。</p>
-    </a>
-    <a class="ep-card ep-home-card" href="/ui/operators">
-        <h2>營運者</h2>
-        <p>誰能進這個後台。停用後，下一個請求就進不去。</p>
-    </a>
-    <a class="ep-card ep-home-card" href="/ui/audit">
-        <h2>稽核紀錄</h2>
-        <p>誰、何時、對哪個租戶做了什麼。只能新增，無法修改。</p>
-    </a>
-</div>
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error">
+        載入總覽失敗。
+        <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="LoadAsync">重試</MudButton>
+    </MudAlert>
+}
+else if (_tenants is null || _operators is null)
+{
+    <MudProgressLinear Indeterminate="true" aria-label="載入總覽中" />
+}
+else
+{
+    <section class="ep-stats" aria-label="摘要">
+        <a class="ep-stat" href="/ui/tenants">
+            <span class="ep-stat-label">租戶</span>
+            <span class="ep-stat-value">@_tenants.Count</span>
+            <span class="ep-stat-note">@(_withoutPlan.Count == 0 ? "都有方案" : $"{_withoutPlan.Count} 個沒有方案")</span>
+        </a>
+        <a class="ep-stat" href="/ui/operators">
+            <span class="ep-stat-label">營運者</span>
+            <span class="ep-stat-value">@_operators.Count(o => !o.Disabled)</span>
+            <span class="ep-stat-note">@(_pendingOperators.Count == 0 ? "都已完成設定" : $"{_pendingOperators.Count} 位需要處理")</span>
+        </a>
+        <a class="ep-stat" href="/ui/audit">
+            <span class="ep-stat-label">最近的登入失敗</span>
+            <span class="ep-stat-value">@_recent.Count(r => AuditLabels.ActionTone(r.Action) == "error")</span>
+            <span class="ep-stat-note">最近 @_recent.Count 筆事件中</span>
+        </a>
+    </section>
+
+    <div class="ep-columns">
+        <section class="ep-card" aria-labelledby="todo-heading">
+            <h2 id="todo-heading" class="ep-section-title">需要處理</h2>
+            @if (_withoutPlan.Count == 0 && _pendingOperators.Count == 0)
+            {
+                <p class="ep-page-description">沒有待辦。</p>
+            }
+            else
+            {
+                <ul class="ep-list">
+                    @foreach (var tenant in _withoutPlan)
+                    {
+                        <li>
+                            <StatusBadge Tone="warning">沒有方案</StatusBadge>
+                            <span>@(tenant.Name ?? tenant.Identifier) <code class="ep-mono ep-secondary">@tenant.Identifier</code></span>
+                            <a href="@($"/ui/tenants/{Uri.EscapeDataString(tenant.Id)}")">指派方案</a>
+                        </li>
+                    }
+                    @foreach (var op in _pendingOperators)
+                    {
+                        <li>
+                            <StatusBadge Tone="@(op.LockedOut ? "error" : "warning")">@OperatorLabels.Status(op)</StatusBadge>
+                            <span>@op.Email</span>
+                            <a href="/ui/operators">營運者</a>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="ep-card" aria-labelledby="recent-heading">
+            <div class="ep-toolbar">
+                <h2 id="recent-heading" class="ep-section-title">最近活動</h2>
+                <span class="ep-spacer"></span>
+                <a href="/ui/audit">稽核紀錄</a>
+            </div>
+            @if (_recent.Count == 0)
+            {
+                <p class="ep-page-description">還沒有事件。</p>
+            }
+            else
+            {
+                <ul class="ep-list">
+                    @foreach (var item in _recent)
+                    {
+                        <li>
+                            <StatusBadge Tone="@AuditLabels.ActionTone(item.Action)">@AuditLabels.Action(item.Action)</StatusBadge>
+                            <span class="ep-keep">@AuditLabels.Actor(item.ActorType, item.ActorId)</span>
+                            <time class="ep-secondary" datetime="@TaipeiTime.Full(item.OccurredAt)">@TaipeiTime.Format(item.OccurredAt)</time>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    private const int RecentCount = 8;
+
+    private IReadOnlyList<TenantSummary>? _tenants;
+    private IReadOnlyList<OperatorInfo>? _operators;
+    private IReadOnlyList<TenantSummary> _withoutPlan = [];
+    private IReadOnlyList<OperatorInfo> _pendingOperators = [];
+    private IReadOnlyList<AuditRecord> _recent = [];
+    private string? _error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        _tenants = null;
+        _operators = null;
+        try
+        {
+            var tenants = await Directory.ListAsync(CancellationToken.None);
+            var operators = await Operators.ListAsync(CancellationToken.None);
+            if (!operators.IsOk)
+            {
+                _error = operators.Message ?? "載入失敗。";
+                return;
+            }
+
+            var recent = await AuditQuery.QueryAsync(new AuditFilter(Limit: RecentCount), CancellationToken.None);
+
+            _tenants = tenants;
+            _operators = operators.Value!;
+            _withoutPlan = [.. tenants.Where(t => t.Plan is null).OrderBy(t => t.Identifier, StringComparer.Ordinal)];
+            _pendingOperators = [.. _operators.Where(o => !o.Disabled && OperatorLabels.Tone(o) != "success")];
+            _recent = recent.Items;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _error = exception.GetType().Name;
+        }
+    }
+}

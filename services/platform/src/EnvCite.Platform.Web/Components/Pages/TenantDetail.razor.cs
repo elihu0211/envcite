@@ -130,6 +130,8 @@ public partial class TenantDetail
 
     private int TotalUsageUnits => _usage.Sum(u => u.Units);
 
+    private string UsageRangeLabel => _usageDays == 0 ? "全部期間" : $"近 {_usageDays} 天";
+
     private async Task RefreshAsync()
     {
         _tenant = (await Directory.ListAsync(CancellationToken.None)).FirstOrDefault(t => t.Id == TenantId);

@@ -1,9 +1,7 @@
-using MudBlazor;
-
 namespace EnvCite.Platform.Web.Presentation;
 
 /// <summary>
-/// 租戶用量操作在畫面上的呈現：繁體中文名稱、分類、計量單位與圖示。
+/// 租戶用量操作在畫面上的呈現：繁體中文名稱、分類與計量單位。
 /// </summary>
 public static class UsageLabels
 {
@@ -28,29 +26,9 @@ public static class UsageLabels
         _ => "其他操作",
     };
 
-    public static Color CategoryColor(string operation) => operation switch
-    {
-        var op when op.StartsWith("ontology.", StringComparison.Ordinal) => Color.Primary,
-        var op when op.StartsWith("consult.tokens.", StringComparison.Ordinal) => Color.Tertiary,
-        var op when op.StartsWith("consult.", StringComparison.Ordinal) => Color.Info,
-        _ => Color.Default,
-    };
-
     public static string UnitName(string operation) => operation switch
     {
         var op when op.Contains("tokens", StringComparison.OrdinalIgnoreCase) => "tokens",
         _ => "次",
-    };
-
-    public static string Icon(string operation) => operation switch
-    {
-        "ontology.search" => Icons.Material.Filled.Search,
-        "ontology.get_law" => Icons.Material.Filled.MenuBook,
-        "ontology.list_articles" => Icons.Material.Filled.FormatListBulleted,
-        "ontology.evaluate" => Icons.Material.Filled.Psychology,
-        "consult.ground" => Icons.Material.Filled.Gavel,
-        "consult.answer" => Icons.Material.Filled.AutoAwesome,
-        var op when op.Contains("tokens", StringComparison.OrdinalIgnoreCase) => Icons.Material.Filled.DataUsage,
-        _ => Icons.Material.Filled.BarChart,
     };
 }

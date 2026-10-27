@@ -239,12 +239,9 @@ public static partial class DesignTokenTests
 
         Assert.DoesNotMatch(HexColor(), css);
         Assert.DoesNotMatch(RgbColor(), css);
-        // 漸層只准出現在 token（TokenCss 由色票組成）；樣式表只引用 --ep-gradient-*，不自己寫 gradient()。
+        // 表面全是平面：樣式表與 token 都沒有漸層。
         Assert.DoesNotContain("gradient(", css, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("var(--ep-gradient-brand)", css, StringComparison.Ordinal);
-        // 漸層節制：全站只有品牌面板這一條。
-        Assert.Equal(1, Regex.Count(TokenCss.Render(), "linear-gradient|radial-gradient|conic-gradient"));
-        Assert.Contains("--ep-gradient-brand:", TokenCss.Render(), StringComparison.Ordinal);
+        Assert.DoesNotContain("gradient", TokenCss.Render(), StringComparison.OrdinalIgnoreCase);
         Assert.Contains("prefers-reduced-motion", css, StringComparison.Ordinal);
         Assert.Contains("prefers-reduced-transparency", css, StringComparison.Ordinal);
         Assert.Contains("prefers-contrast", css, StringComparison.Ordinal);

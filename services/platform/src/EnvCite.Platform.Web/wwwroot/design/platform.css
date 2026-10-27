@@ -50,24 +50,16 @@ a:where(:not([class*="mud-"])) {
     inset-block-start: var(--ep-space-4);
 }
 
-/* 頂欄是半透明的功能層，內容從底下捲過；材質的輕重表達層級，而不是一條不透明的色帶。 */
-.ep-appbar.mud-appbar {
-    background: color-mix(in srgb, var(--ep-surface) 72%, transparent);
-    border-block-end: 1px solid var(--ep-border-subtle);
-    color: var(--ep-text);
-    box-shadow: none;
-}
-
 .ep-brand {
     font-weight: var(--ep-h1-weight);
     letter-spacing: var(--ep-h3-tracking);
 }
 
+/* 分組面：白底、髮絲線、圓角，沒有陰影。層次靠背景與分隔線，不靠浮起來的卡片。 */
 .ep-card {
     background: var(--ep-surface);
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-card);
-    box-shadow: var(--ep-elevation-1);
     padding: var(--ep-space-6);
 }
 
@@ -113,8 +105,7 @@ a:where(:not([class*="mud-"])) {
 }
 
 .ep-empty-title,
-.ep-section-title,
-.ep-home-card h2 {
+.ep-section-title {
     font-size: var(--ep-h3-size);
     line-height: var(--ep-h3-leading);
     letter-spacing: var(--ep-h3-tracking);
@@ -126,233 +117,68 @@ a:where(:not([class*="mud-"])) {
     color: var(--ep-text);
 }
 
-/* 登入與匿名頁：分割式版面。窄螢幕上品牌是頂端一條，桌機是左側的品牌面板、表單靠起點對齊在右欄上段——
-   不把一張卡片放在螢幕正中央。品牌面板是平的主色面，裝飾只用細線圓環。 */
+/* 登入、帳號與匿名頁：品牌字在上，下面置中一張卡。客戶入口的登入、改密碼與第二步驗證共用同一張卡。 */
 .ep-auth {
     min-block-size: 100dvh;
-    display: grid;
-    grid-template-rows: auto 1fr;
-}
-
-.ep-auth-aside {
-    position: relative;
-    overflow: clip;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: var(--ep-space-8);
-    padding-block: max(var(--ep-space-4), env(safe-area-inset-top)) var(--ep-space-4);
-    padding-inline: max(var(--ep-space-4), env(safe-area-inset-left)) max(var(--ep-space-4), env(safe-area-inset-right));
-    background: var(--ep-gradient-brand);
-    color: var(--ep-on-ink);
-}
-
-.ep-auth-aside > * {
-    position: relative;
-    z-index: 1;
-    margin: 0;
-}
-
-/* 光暈：第二強調色在右上角的一抹，讓深色面有深度；只在寬螢幕有插圖時才有意義，窄條上保持乾淨。 */
-.ep-auth-aside::before {
-    content: "";
-    position: absolute;
-    inline-size: calc(var(--ep-space-12) * 6);
-    aspect-ratio: 1;
-    inset-block-start: calc(var(--ep-space-12) * -3);
-    inset-inline-end: calc(var(--ep-space-12) * -2);
-    border-radius: var(--ep-radius-pill);
-    background: color-mix(in srgb, var(--ep-accent) 30%, transparent);
-    filter: blur(var(--ep-space-12));
-    animation: ep-grow var(--ep-motion-reveal) var(--ep-motion-ease-settle) both;
-}
-
-.ep-auth-aside .ep-brand {
-    color: inherit;
-    font-size: var(--ep-h3-size);
-}
-
-/* 插圖：窄螢幕不顯示；寬螢幕上鋪滿面板中段，文字壓在上面。 */
-.ep-auth-art,
-.ep-auth-points {
-    display: none;
-}
-
-.ep-auth-art {
-    position: absolute;
-    inset-inline: 0;
-    inset-block-start: 50%;
-    translate: 0 -50%;
-    inline-size: 100%;
-    block-size: auto;
-    z-index: 0;
-    color: color-mix(in srgb, var(--ep-on-ink) 22%, transparent);
-}
-
-.ep-art-contours path,
-.ep-art-edge {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    animation: ep-draw calc(var(--ep-motion-reveal) * 3) var(--ep-motion-ease-settle) forwards;
-}
-
-.ep-art-contours path:nth-child(2) { animation-delay: var(--ep-motion-stagger); }
-.ep-art-contours path:nth-child(3) { animation-delay: calc(var(--ep-motion-stagger) * 2); }
-.ep-art-contours path:nth-child(4) { animation-delay: calc(var(--ep-motion-stagger) * 3); }
-.ep-art-contours path:nth-child(5) { animation-delay: calc(var(--ep-motion-stagger) * 4); }
-.ep-art-contours path:nth-child(6) { animation-delay: calc(var(--ep-motion-stagger) * 5); }
-
-.ep-art-edge {
-    fill: none;
-    stroke: var(--ep-accent);
-    stroke-width: 1.5;
-    animation-delay: calc(var(--ep-motion-stagger) * 6);
-}
-
-.ep-art-node {
-    fill: var(--ep-accent);
-    stroke: var(--ep-on-ink);
-    stroke-width: 2;
-    animation: ep-grow var(--ep-motion-slow) var(--ep-motion-ease-settle) both;
-    animation-delay: calc(var(--ep-motion-stagger) * 8);
-    transform-box: fill-box;
-    transform-origin: center;
-}
-
-.ep-art-node-lead {
-    animation-delay: calc(var(--ep-motion-stagger) * 10);
-}
-
-.ep-auth-points {
-    margin: var(--ep-space-6) 0 0;
-    padding: 0;
-    list-style: none;
-    gap: var(--ep-space-2);
-    color: color-mix(in srgb, var(--ep-on-ink) 82%, transparent);
-    font-size: var(--ep-body-sm-size);
-}
-
-.ep-auth-points li {
-    display: flex;
     align-items: center;
-    gap: var(--ep-space-3);
+    justify-content: center;
+    gap: var(--ep-space-6);
+    box-sizing: border-box;
+    padding: max(var(--ep-space-8), env(safe-area-inset-top)) max(var(--ep-space-4), env(safe-area-inset-right)) max(var(--ep-space-8), env(safe-area-inset-bottom)) max(var(--ep-space-4), env(safe-area-inset-left));
 }
 
-.ep-auth-points li::before {
-    content: "";
-    flex: none;
-    inline-size: var(--ep-space-2);
-    aspect-ratio: 1;
-    border-radius: var(--ep-radius-pill);
-    background: var(--ep-accent);
-}
-
-.ep-auth-tagline {
-    display: none;
-    font-size: var(--ep-h2-size);
-    line-height: var(--ep-h2-leading);
-    letter-spacing: var(--ep-h2-tracking);
-    font-weight: var(--ep-h2-weight);
-    text-wrap: balance;
-    max-inline-size: 14em;
-}
-
-.ep-auth-main {
-    min-inline-size: 0;
-    padding-block: var(--ep-space-8) max(var(--ep-space-8), env(safe-area-inset-bottom));
-    padding-inline: max(var(--ep-space-6), env(safe-area-inset-left)) max(var(--ep-space-6), env(safe-area-inset-right));
-}
-
-.ep-auth-body {
+.ep-auth-main,
+.ep-login,
+.ep-portal-card {
+    inline-size: 100%;
     max-inline-size: var(--ep-measure-narrow);
+    box-sizing: border-box;
+    margin-inline: auto;
+    padding: var(--ep-space-8) var(--ep-space-6);
+    background: var(--ep-surface);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-sheet);
+    box-shadow: var(--ep-elevation-2);
+}
+
+/* 客戶入口裡的卡片與頂欄之間留白。 */
+.ep-shell-main > .ep-login,
+.ep-shell-main > .ep-portal-card {
+    margin-block-start: var(--ep-space-8);
 }
 
 .ep-auth-body > .ep-page-title,
 .ep-display {
     margin: 0;
-    font-size: var(--ep-display-size);
-    line-height: var(--ep-display-leading);
-    letter-spacing: var(--ep-display-tracking);
-    font-weight: var(--ep-display-weight);
+    font-size: var(--ep-h1-size);
+    line-height: var(--ep-h1-leading);
+    letter-spacing: var(--ep-h1-tracking);
+    font-weight: var(--ep-h1-weight);
+}
+
+.ep-auth > .ep-brand {
+    margin: 0;
+    font-size: var(--ep-h3-size);
+}
+
+/* 後台與入口內頁的表單：欄位維持窄欄、送出鈕依內容寬，不撐滿整張卡。 */
+.ep-console-main .ep-form {
+    max-inline-size: var(--ep-measure-narrow);
+}
+
+.ep-console-main .ep-form > .ep-btn {
+    align-self: flex-start;
 }
 
 .ep-auth-body .ep-form {
     margin-block-start: var(--ep-space-6);
 }
 
-@media (width >= 48rem) {
-    .ep-auth {
-        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-        grid-template-rows: none;
-    }
-
-    .ep-auth-aside {
-        position: sticky;
-        inset-block-start: 0;
-        block-size: 100dvh;
-        padding-block: calc(var(--ep-space-12) * 1.25);
-        padding-inline: var(--ep-space-12);
-    }
-
-    .ep-auth-aside .ep-brand {
-        font-size: var(--ep-h2-size);
-    }
-
-    .ep-auth-tagline {
-        display: block;
-    }
-
-    .ep-auth-art {
-        display: block;
-    }
-
-    .ep-auth-points {
-        display: grid;
-    }
-
-    .ep-auth-copy {
-        position: relative;
-        z-index: 1;
-    }
-
-    .ep-auth-main {
-        padding-block-start: calc(var(--ep-space-12) * 2.5);
-        padding-inline: var(--ep-space-12);
-    }
-}
-
-@media (width >= 80rem) {
-    .ep-auth-main {
-        padding-inline: calc(var(--ep-space-12) * 2);
-    }
-}
-
-/* 客戶入口登入：頁首區在左、表單在右；窄螢幕上堆疊。表單不裝在卡片裡，只用一條細線和標題區分開。 */
-.ep-login {
-    display: grid;
-    gap: var(--ep-space-6);
-    align-items: start;
-    padding-block-start: var(--ep-space-6);
-}
-
 .ep-login-tenant {
-    margin: var(--ep-space-2) 0 0;
+    margin: var(--ep-space-1) 0 0;
     color: var(--ep-text-secondary);
-    font-size: var(--ep-h3-size);
-    line-height: var(--ep-body-leading);
-}
-
-@media (width >= 48rem) {
-    .ep-login {
-        grid-template-columns: minmax(0, 1fr) minmax(0, var(--ep-measure-narrow));
-        gap: var(--ep-space-12);
-        padding-block-start: calc(var(--ep-space-12) * 1.5);
-    }
-
-    .ep-login-form {
-        padding-inline-start: var(--ep-space-8);
-        border-inline-start: 1px solid var(--ep-border-subtle);
-    }
 }
 
 .ep-signout {
@@ -567,42 +393,110 @@ a:where(:not([class*="mud-"])) {
     white-space: nowrap;
 }
 
-/* 首頁的入口卡片。 */
-.ep-home-grid {
+/* 總覽：一排數字卡，下面是需要處理的清單。數字卡可點時整張是連結。 */
+.ep-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-    gap: var(--ep-space-4);
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 1px;
+    overflow: clip;
+    background: var(--ep-border-subtle);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
 }
 
-.ep-home-card {
-    display: block;
-    text-decoration: none;
+.ep-stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+    padding: var(--ep-space-4) var(--ep-space-6);
+    background: var(--ep-surface);
     color: var(--ep-text);
-    transition:
-        border-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
-        box-shadow var(--ep-motion-normal) var(--ep-motion-ease-standard),
-        translate var(--ep-motion-normal) var(--ep-motion-ease-settle);
+    text-decoration: none;
+    transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
-/* 只有真的能 hover 的裝置（滑鼠）才有 hover 樣式；觸控裝置按下後不會卡在 hover 狀態。 */
 @media (hover: hover) {
-    .ep-home-card:hover {
-        border-color: var(--ep-border-control);
-        box-shadow: var(--ep-elevation-2);
-        translate: 0 calc(var(--ep-space-1) * -1);
+    a.ep-stat:hover {
+        background: var(--ep-surface-muted);
     }
 }
 
-.ep-home-card h2 {
-    margin: 0 0 var(--ep-space-1);
-}
-
-.ep-home-card p {
-    margin: 0;
+.ep-stat-label {
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-sm-size);
 }
 
+.ep-stat-value {
+    font-size: var(--ep-h1-size);
+    line-height: var(--ep-h1-leading);
+    letter-spacing: var(--ep-h1-tracking);
+    font-weight: var(--ep-h1-weight);
+    font-variant-numeric: tabular-nums;
+}
+
+.ep-stat-note {
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-body-sm-size);
+}
+
+.ep-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ep-list > li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-3);
+    padding: var(--ep-space-3) 0;
+    border-block-start: 1px solid var(--ep-border-subtle);
+}
+
+.ep-list > li > :nth-child(2) {
+    flex: 1 1 10rem;
+    min-inline-size: 0;
+}
+
+/* 頁首上方的位置連結，與頁首下方的一行屬性（識別碼、狀態徽章）。 */
+.ep-breadcrumb {
+    margin-block-end: var(--ep-space-2);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-body-sm-size);
+}
+
+.ep-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+    margin: calc(var(--ep-space-4) * -1) 0 0;
+}
+
+/* 數字欄靠右、等寬數字，上下列才對得齊。 */
+.ep-num {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 兩欄：主欄放表格，側欄放設定；窄的時候疊成一欄。 */
+.ep-columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ep-space-6);
+    align-items: flex-start;
+}
+
+.ep-columns > :first-child {
+    flex: 2 1 36rem;
+    min-inline-size: 0;
+}
+
+.ep-columns > :last-child {
+    flex: 1 1 18rem;
+    min-inline-size: 0;
+}
 
 /* ---- 響應式 ----------------------------------------------------------------------------------
  * 原生 CSS：容器查詢、邏輯屬性、rem 單位的斷點、pointer/hover 媒體查詢、安全區、dvh。
@@ -616,24 +510,116 @@ a:where(:not([class*="mud-"])) {
     white-space: nowrap;
 }
 
-@media (width < 48rem) {
-    .ep-user {
-        display: none;
+/* ---- 營運後台的外殼：頂欄（與入口共用 .ep-shell-top）＋左側欄 -------------------------------------
+ * 側欄依群組排，群組標題是小字；手機上收成頂欄下方一條可橫捲的列，平板起是固定寬的左欄。
+ * 內容走 console 欄寬置中；瀏海與圓角螢幕往安全區內縮。 */
+.ep-console {
+    min-block-size: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+.ep-console-product {
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-body-sm-size);
+}
+
+.ep-console-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ep-side {
+    display: flex;
+    gap: var(--ep-space-1);
+    overflow-x: auto;
+    padding: var(--ep-space-2) max(var(--ep-space-3), env(safe-area-inset-left));
+    border-block-end: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface-muted);
+}
+
+.ep-side-group {
+    display: none; /* 手機上側欄是一條橫列，群組標題只在直欄時顯示 */
+    margin: var(--ep-space-2) var(--ep-space-3) var(--ep-space-1);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-micro-size);
+    letter-spacing: var(--ep-micro-tracking);
+    font-weight: var(--ep-micro-weight);
+}
+
+.ep-side-nav {
+    display: flex;
+    gap: var(--ep-space-1);
+    overflow-x: auto;
+}
+
+.ep-side-link {
+    flex: none;
+    display: flex;
+    align-items: center;
+    min-block-size: var(--ep-touch-target);
+    padding-inline: var(--ep-space-3);
+    border-radius: var(--ep-radius-control);
+    color: var(--ep-text);
+    text-decoration: none;
+    transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-side-link.active {
+    background: color-mix(in srgb, var(--ep-primary) 12%, transparent);
+    color: var(--ep-link);
+    font-weight: var(--ep-button-weight);
+}
+
+@media (hover: hover) {
+    .ep-side-link:hover:not(.active) {
+        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
     }
 }
 
-/* 瀏海與圓角螢幕：內容往安全區內縮（viewport-fit=cover 時才有值，其他情況是 0）。 */
-.ep-appbar.mud-appbar,
-.mud-main-content {
-    padding-inline: max(var(--ep-space-2), env(safe-area-inset-left)) max(var(--ep-space-2), env(safe-area-inset-right));
+.ep-console-main {
+    flex: 1;
+    min-inline-size: 0;
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: var(--ep-measure-console);
+    margin-inline: auto;
+    padding: var(--ep-space-6) max(var(--ep-space-4), env(safe-area-inset-right)) calc(var(--ep-space-12) + env(safe-area-inset-bottom)) max(var(--ep-space-4), env(safe-area-inset-left));
 }
 
-.ep-appbar.mud-appbar {
-    padding-block-start: env(safe-area-inset-top);
+/* 頁面的直接子區塊之間統一的垂直節奏；頁首自己有下邊距。 */
+.ep-console-main > :not(.ep-page-header) + * {
+    margin-block-start: var(--ep-space-6);
 }
 
-.mud-main-content {
-    padding-block-end: env(safe-area-inset-bottom);
+@media (width >= 48rem) {
+    .ep-console-body {
+        flex-direction: row;
+    }
+
+    .ep-side {
+        display: block;
+        overflow: visible;
+        flex: none;
+        inline-size: var(--ep-measure-sidebar);
+        padding: var(--ep-space-4) var(--ep-space-3);
+        border-block-end: 0;
+        border-inline-end: 1px solid var(--ep-border-subtle);
+    }
+
+    .ep-side-group {
+        display: block;
+    }
+
+    .ep-side-nav {
+        flex-direction: column;
+        overflow: visible;
+    }
+
+    .ep-console-main {
+        padding-inline: var(--ep-space-8);
+    }
 }
 
 /* 窄的卡片（約手機寬）：表格改成一列一張小卡片，不橫向捲動。
@@ -1097,11 +1083,6 @@ a.ep-brand {
     flex: 1;
 }
 
-.ep-portal-card {
-    max-inline-size: var(--ep-measure-narrow);
-    padding-block-start: var(--ep-space-6);
-}
-
 .ep-form {
     margin-block-start: var(--ep-space-4);
 }
@@ -1148,8 +1129,7 @@ a.ep-brand {
 }
 
 /* 橫排、觸控高度的動作：按鈕與分頁。font 先繼承，字重寫在後面才不會被簡寫蓋掉。 */
-.ep-btn,
-.ep-tab {
+.ep-btn {
     display: inline-flex;
     align-items: center;
     min-block-size: var(--ep-touch-target);
@@ -1276,7 +1256,6 @@ a.ep-brand {
 }
 
 /* 半透明功能層的材質只寫一次：營運頂欄、入口頂欄、問答輸入框黏底。各層自己決定底色怎麼混。 */
-.ep-appbar.mud-appbar,
 .ep-shell-top,
 .ep-ask[data-state="result"] .ep-composer-form {
     -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -1285,7 +1264,6 @@ a.ep-brand {
 
 /* 減少透明或要求較高對比：實心表面，不模糊。覆蓋必須寫在上面那條材質之後，否則後來的模糊會蓋掉它。 */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-    .ep-appbar.mud-appbar,
     .ep-shell-top {
         background: var(--ep-surface);
     }
@@ -1294,7 +1272,6 @@ a.ep-brand {
         background: var(--ep-bg);
     }
 
-    .ep-appbar.mud-appbar,
     .ep-shell-top,
     .ep-ask[data-state="result"] .ep-composer-form {
         -webkit-backdrop-filter: none;
@@ -1400,36 +1377,7 @@ a.ep-brand {
     margin: var(--ep-space-3) 0 0;
 }
 
-/* ---- 營運後台的導覽：頂欄下方一條分頁列（取代側欄），目前頁底線標示 -------------------------------- */
-.ep-tabs {
-    display: flex;
-    gap: var(--ep-space-1);
-    overflow-x: auto;
-    padding-inline: max(var(--ep-space-4), env(safe-area-inset-left));
-    border-block-end: 1px solid var(--ep-border-subtle);
-    background: var(--ep-surface);
-}
 
-.ep-tab {
-    flex: none;
-    padding-inline: var(--ep-space-3);
-    border-block-end: 2px solid transparent;
-    color: var(--ep-text-secondary);
-    transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-slow) var(--ep-motion-ease-move);
-}
-
-.ep-tab.active {
-    color: var(--ep-primary);
-    border-block-end-color: var(--ep-primary);
-}
-
-@media (hover: hover) {
-    .ep-tab:hover:not(.active) {
-        color: var(--ep-text);
-    }
-}
-
-/* 對話紀錄：一串對話一張卡，標題與時間是連結，刪除在右邊。 */
 .ep-history {
     margin: 0;
     gap: var(--ep-space-3);
@@ -1457,9 +1405,9 @@ a.ep-brand {
 
 
 /* ---- 動態 ---------------------------------------------------------------------------------------
- * 進場是臨界阻尼（落定曲線、無回彈）：位移只有一小段，同一組的元素依序錯開。
- * 時長、曲線、錯開、位移量都來自 token；使用者要求減少動態時，上面的規則把動畫收成瞬間（含錯開的延遲）。
- * 跨頁（登入 → 入口）用瀏覽器原生的 view transition：兩頁淡入淡出，不需要 JavaScript。
+ * 動畫只回應操作：按下、選單開合、操作後出現的提示。頁面載入不做進場動畫——內容一到就在原位，不讓人等。
+ * 提示的進場是臨界阻尼（落定曲線、無回彈），位移只有一小段。時長、曲線、位移量都來自 token；
+ * 使用者要求減少動態時，上面的規則把動畫收成瞬間。跨頁用瀏覽器原生的 view transition 淡入淡出。
  */
 @view-transition {
     navigation: auto;
@@ -1483,55 +1431,6 @@ a.ep-brand {
     }
 }
 
-@keyframes ep-grow {
-    from {
-        opacity: 0;
-        scale: 0.9;
-    }
-
-    to {
-        opacity: 1;
-        scale: 1;
-    }
-}
-
-.ep-auth-body > *,
-.ep-login-intro,
-.ep-login-form,
-.ep-shell-main > *,
-.mud-main-content .ep-page-header,
-.mud-main-content .ep-home-card,
-.mud-main-content .ep-table-card {
-    animation: ep-rise var(--ep-motion-reveal) var(--ep-motion-ease-settle) both;
-    animation-delay: calc(var(--ep-motion-stagger) * var(--i, 0));
-}
-
-.ep-login-form {
-    --i: 1;
-}
-
-/* 登入版面自己不進場：它的兩個子區塊各自錯開進場，疊兩層會讓透明度相乘。 */
-.ep-shell-main > .ep-login {
-    animation: none;
-}
-
-.ep-auth-body > :nth-child(2),
-.ep-shell-main > :nth-child(2),
-.mud-main-content .ep-home-card:nth-of-type(2) {
-    --i: 1;
-}
-
-.ep-auth-body > :nth-child(3),
-.ep-shell-main > :nth-child(3),
-.mud-main-content .ep-home-card:nth-of-type(3) {
-    --i: 2;
-}
-
-.ep-auth-body > :nth-child(n + 4),
-.ep-shell-main > :nth-child(n + 4) {
-    --i: 3;
-}
-
 /* 彈出層：從觸發它的位置長出來（右上角的帳號選單），而不是從中心。 */
 .ep-menu {
     transform-origin: top right;
@@ -1549,55 +1448,9 @@ a.ep-brand {
 
 /* ---- 品牌面與深色層次 ----------------------------------------------------------------------------
  * 深色只是局部的層次（Ink）：營運頂欄與登入的品牌面板。頁面本身仍是淺色，不是深色主題。 */
-.ep-appbar.mud-appbar {
+.ep-console .ep-avatar {
     background: var(--ep-ink);
-    border-block-end: 0;
+    border-color: transparent;
     color: var(--ep-on-ink);
 }
 
-.ep-appbar .ep-brand {
-    color: inherit;
-}
-
-.ep-appbar .ep-avatar {
-    background: color-mix(in srgb, var(--ep-on-ink) 14%, transparent);
-    border-color: color-mix(in srgb, var(--ep-on-ink) 26%, transparent);
-    color: var(--ep-on-ink);
-}
-
-/* 入口卡片：滑過時頂緣的主色線從左長出來。 */
-.ep-home-card {
-    position: relative;
-    overflow: clip;
-}
-
-.ep-home-card::before {
-    content: "";
-    position: absolute;
-    inset-inline: 0;
-    inset-block-start: 0;
-    block-size: 3px;
-    background: var(--ep-primary);
-    scale: 0 1;
-    transform-origin: left;
-    transition: scale var(--ep-motion-slow) var(--ep-motion-ease-settle);
-}
-
-@media (hover: hover) {
-    .ep-home-card:hover::before {
-        scale: 1 1;
-    }
-}
-
-@keyframes ep-draw {
-    to {
-        stroke-dashoffset: 0;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .ep-art-contours path,
-    .ep-art-edge {
-        stroke-dashoffset: 0;
-    }
-}

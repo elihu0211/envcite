@@ -2,7 +2,7 @@
 
 <PageTitle>稽核紀錄 · 環境知識</PageTitle>
 
-<PageHeader Title="稽核紀錄" Description="誰、何時、對哪個租戶做了什麼。只能新增，無法修改或刪除。" />
+<PageHeader Title="稽核紀錄" />
 
 <section class="ep-card ep-table-card" aria-label="稽核事件">
     @* 篩選在表格正上方；條件存在網址裡，所以可以分享連結，重新整理也不會丟。 *@
@@ -46,8 +46,7 @@
     }
     else if (_items.Count == 0)
     {
-        <EmptyState Icon="@Icons.Material.Filled.History"
-                    Title="@(HasFilter ? "沒有符合條件的稽核事件" : "還沒有稽核事件")"
+        <EmptyState Title="@(HasFilter ? "沒有符合條件的稽核事件" : "還沒有稽核事件")"
                     Description="@(HasFilter ? "試試放寬條件，或重設篩選。" : "建立租戶、簽發或撤銷 API key、營運者登入時，會留下紀錄。")">
             @if (HasFilter)
             {
@@ -75,8 +74,7 @@
                     <tr>
                         <td><time datetime="@TaipeiTime.Full(item.OccurredAt)" title="@TaipeiTime.Full(item.OccurredAt)">@TaipeiTime.Format(item.OccurredAt)</time></td>
                         <td>
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@AuditLabels.ActionColor(item.Action)"
-                                     Icon="@AuditLabels.ActionIcon(item.Action)">@AuditLabels.Action(item.Action)</MudChip>
+                            <StatusBadge Tone="@AuditLabels.ActionTone(item.Action)">@AuditLabels.Action(item.Action)</StatusBadge>
                         </td>
                         <td class="ep-keep" data-label="操作者">@AuditLabels.Actor(item.ActorType, item.ActorId)</td>
                         <td data-label="租戶">@TenantLabel(item.TenantId)</td>
