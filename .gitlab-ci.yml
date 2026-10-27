@@ -30,8 +30,10 @@ workflow:
       auto_cancel:
         on_new_commit: none
   # 同一 MR 的新 commit 取消舊 pipeline（job 須 interruptible，見 default）。
+  # 一個 job 失敗就取消同 pipeline 其餘 job：唯一的 runner 不該把時間花在已注定紅的 pipeline。
   auto_cancel:
     on_new_commit: interruptible
+    on_job_failure: all
 
 default:
   interruptible: true
@@ -431,6 +433,8 @@ python-proto:
   extends: [.runner, .dind]
   stage: build
   image: docker:$DOCKER_VERSION
+  # 預設分支連續合併時同一服務的建置排隊、不同時跑；以分支 slug 區分，各 MR 的驗證建置互不排隊。
+  resource_group: image-$SERVICE-$CI_COMMIT_REF_SLUG
   variables:
     IMAGE: $CI_REGISTRY_IMAGE/$SERVICE:$CI_COMMIT_SHA
     # 層快取放 registry（dind 每次全新）；路徑與映像分開，避免被 Image Updater 當成新版本。
@@ -489,6 +493,8 @@ ontology-image:
     - *mr-ci-change
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes: *changes-ontology
+      # 推映像的建置不可被中斷，作為 on_new_commit: none 之外的保險。
+      interruptible: false
   cache:
     - <<: *cache-uv
       policy: pull
@@ -507,6 +513,8 @@ consult-image:
     - *mr-ci-change
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes: *changes-consult
+      # 推映像的建置不可被中斷，作為 on_new_commit: none 之外的保險。
+      interruptible: false
   cache:
     - <<: *cache-uv
       policy: pull
@@ -527,6 +535,8 @@ platform-image:
     - *mr-ci-change
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes: *changes-platform
+      # 推映像的建置不可被中斷，作為 on_new_commit: none 之外的保險。
+      interruptible: false
   cache:
     - <<: *cache-nuget
       policy: pull
