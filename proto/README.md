@@ -2,12 +2,7 @@
 
 gRPC 契約，`buf` 單一模組（根為本目錄）；欄位與方法的語意見 `.proto` 註解。回[倉庫總覽](../README.md)。
 
-| 套件 | 服務 | 租戶 | 對象 | 實作 |
-|------|------|------|------|------|
-| `envcite.ontology.v1` | `OntologyService`、`ReasoningService` | 共享 | 內部 | [`services/ontology`](../services/ontology/README.md) |
-| `envcite.consult.v2` | `ConsultationService` | 隔離 | 內部 | [`services/consult`](../services/consult/README.md) |
-
-外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST：契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
+套件 `envcite.ontology.v1`（共享，實作在 [`services/ontology`](../services/ontology/README.md)）與 `envcite.consult.v2`（租戶隔離，實作在 [`services/consult`](../services/consult/README.md)）皆為內部介面。外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST，契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
 
 ```bash
 buf lint
@@ -80,7 +75,7 @@ sequenceDiagram
 
 ## 約定
 
-**Metadata**（服務間認證由叢集的服務網格〔mTLS 加授權政策〕負責，服務本身不驗證呼叫端）
+**Metadata**
 
 | key | 必填 | 說明 |
 |-----|------|------|
@@ -112,28 +107,7 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 
 要作答，呼叫 **`Ground`**，不要自己拿 `SearchArticles` 的結果給模型：檢索永遠回最佳的幾筆，即使語料裡毫無相關內容，「有沒有答案」的判斷由 consult 做掉。
 
-`SearchArticles` 是混合檢索：字面臂與語意臂以名次倒數融合排序。`lexical_score` 是字面臂的原始分數（沒命中為 0），`semantic_similarity` 是語意臂的餘弦相似度（沒命中或未啟用語意臂則不設）；兩者都只在同一次查詢之內可比較，順序不由任一分數決定。consult 的相關性下界只以 `lexical_score` 校準：只由語意臂召回的條不進入接地證據，要等語意分數也校準過。
-
-```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart TD
-    q(["使用者問題（原句）"]) --> ground["Ground"]
-    ground --> out{"outcome"}
-    out -->|evidence| ev["有上限的引用<br/>代號 L1…，依相關程度排序"]
-    out -->|refused| rf(["呈現給使用者<br/>不重試 · 不呼叫模型"])
-    ev --> llm["呼叫端的模型<br/>只能以 [L1] 引用"]
-    llm --> strip["剝除不在證據集內的代號"]
-    strip --> fin{"仍有引用？"}
-    fin -->|是| ans(["答案 + Citation.iri 出處"])
-    fin -->|否| rf
-
-    classDef ok fill:#ecfdf5,stroke:#10b981,color:#064e3b
-    classDef stop fill:#fef2f2,stroke:#ef4444,color:#7f1d1d
-    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    class ans,ev ok
-    class rf stop
-    class ground,llm,strip step
-```
+`SearchArticles` 是混合檢索，順序由字面臂與語意臂融合決定；`lexical_score`、`semantic_similarity` 只在同一次查詢之內可比較。
 
 - `question` 傳使用者原句，不要先改寫；`SearchArticles` 的 `query` 同樣傳原文，斷詞由服務做。
 - 回應的 `outcome` 恰有一個：`evidence`（有筆數上限的引用，依相關程度排序）或 `refused`（拒答）。拒答是結果，不是錯誤：呈現給使用者，不重試、不呼叫模型。
@@ -147,11 +121,11 @@ flowchart TD
 `ReasoningService`（`envcite.ontology.v1`）唯讀地提供規範標註與由它推出的**候選**結論。它不判決：沒有通過驗證閘門的陳述不產生任何結論，沒有確認的標註時 `verdicts` 為空。
 
 - **`ListStatements(law_id, as_of)`**：某日有效、已確認的陳述。`Statement` 的要件是析取範式（`Requirement.any_of` 是「或」，`Disjunct.all_of` 是「且」）；委由授權命令的門檻值以 `Delegation` 表示，不在這裡解析。
-- **`Evaluate`**：給 `conduct_on`（行為日）、`decided_on`（裁處日）與案件事實。回傳 `at_decision`（裁處時之法律，行政罰法第 5 條的預設），`earlier` 是行為日到裁處日之間陳述組與裁處時不同的法律，**不替呼叫端選「最有利」**。
-  - 案件事實：一般概念用 `Fact`（一個概念可有多個值，矛盾會被回報，不被消解）；值是數字、布林，或 `concept`（概念取某個值概念，與以 `value_concept` 比較的要件對應，只有 `eq`／`ne`；「屬於」只依該法現行的用語定義判定，沒有定義涵蓋視為不屬於）；行政罰法總則的事實用 `AdministrativePenaltyFacts`，欄位缺席是「未知」，不是「否」。代碼以 `ap_` 開頭的 `Fact` 被拒絕（`RESERVED_CONCEPT`）。
-  - 結論：`Verdict`、`PenaltyCandidate`、缺的事實（`missing`）、需判斷的要件（`needs_assessment`）、矛盾與未決的衝突都分開列；`sources` 給每個陳述所讀的條文版本 IRI。
-  - `LEGAL_EFFECT_ORDER`（改善命令等）不是行政罰，行政罰法總則的排除、減輕、時效與一行為不適用於它；`PenaltyCandidate.discretionary` 是條文寫「得」的效果裁量，與要件的 `needs_assessment` 是兩個層次。
-  - **語料的歷史有起點。** 全國法規資料庫只有現行全文，早於語料持有的第一個版本的日子，該法規的規定不在結果裡。`Outcome.uncovered_law_ids` 列出「那天已制定、但語料沒有當時版本」的法規：它們的規定缺席，不代表當時沒有規定。`earlier` 裡出現空的 `verdicts` 時先看這個欄位，不要解讀成行為時合規。
-  - **行政規則附在結果旁，不是推論的前提。** `Outcome.guidance` 是主管機關對結論所依條文的函釋、裁量基準等（行政程序法第 159 條）：拘束機關內部、不直接拘束人民與法院。以 `decided_on` 判斷是否已發布、尚未停止適用（釋字第 287 號：解釋性規定闡明法規原意，行為早於發文的未確定案件也附上），且所解釋的須正是陳述所讀的那段文字；`earlier` 各組同樣以裁處日判斷。
-  - 預算：期限同時是資料庫查詢的上限；同一時間只有少數 `Evaluate` 能執行，等不到名額回 `BUSY`。
+- **`Evaluate`**：給 `conduct_on`（行為日）、`decided_on`（裁處日）與案件事實。回傳 `at_decision`（裁處時之法律，行政罰法第 5 條的預設）與 `earlier`。
+  - 結果的結構與各欄位語意見 `.proto` 註解；呼叫端須知：
+    - `AdministrativePenaltyFacts` 欄位缺席是「未知」，不是「否」；代碼以 `ap_` 開頭的 `Fact` 被拒絕（`RESERVED_CONCEPT`）。
+    - `earlier` 是行為日到裁處日之間陳述組與裁處時不同的法律，不替呼叫端選「最有利」。
+    - 語料的歷史有起點：`Outcome.uncovered_law_ids` 列出「那天已制定、但語料沒有當時版本」的法規，其規定缺席不代表當時沒有規定；`earlier` 出現空的 `verdicts` 時先看此欄位，不要解讀成行為時合規。
+    - `Outcome.guidance`（行政規則）附在結果旁，不是推論的前提。
+    - 期限同時是資料庫查詢的上限；等不到名額回 `BUSY`。
 - **數值**用 `Decimal`（十進位文字），**日期**維持 ISO 8601 字串；列舉的零值一律是 `*_UNSPECIFIED`，收到就是契約之外的值。
