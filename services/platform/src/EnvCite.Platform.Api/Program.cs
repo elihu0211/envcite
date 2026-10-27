@@ -40,7 +40,7 @@ builder.Services.AddTenancyModule();
 if (!generatingOpenApi)
 {
     // Data Protection 啟動時就會預載金鑰環；模擬伺服器沒有資料庫，改用預設的暫時金鑰。
-    builder.Services.AddPlatformDataProtection();
+    builder.Services.AddPlatformDataProtection(builder.Configuration);
     builder.Services.AddEntitlementRefresh();
     builder.Services.AddConversationRetention();
     builder.Services.AddIdempotencyRetention();

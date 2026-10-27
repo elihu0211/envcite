@@ -1,3 +1,5 @@
+using System.Security.Cryptography.X509Certificates;
+
 using EnvCite.Platform.SharedKernel;
 
 using Finbuckle.MultiTenant.Abstractions;
@@ -7,6 +9,7 @@ using Finbuckle.MultiTenant.Extensions;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -43,12 +46,30 @@ public static class TenancyModule
     /// A 副本簽的登入 cookie 與 antiforgery token，B 副本解不開（登入失效、表單被拒）。
     /// 固定 ApplicationName，金鑰環才不會因安裝路徑不同而分開。
     /// </summary>
-    /// <remarks>金鑰在資料庫裡是明文 XML；保護資料庫就是保護金鑰。需要靜態加密時加 <c>ProtectKeysWith…</c>。</remarks>
-    public static IServiceCollection AddPlatformDataProtection(this IServiceCollection services)
+    /// <remarks>
+    /// 預設金鑰在資料庫裡是明文 XML；保護資料庫就是保護金鑰。設了 <c>Platform:DataProtection:CertificatePath</c> 與
+    /// <c>CertificatePassword</c>（見 <see cref="DataProtectionCertificateOptions"/>）則新產生的金鑰以該憑證加密，
+    /// 之前寫入的明文金鑰照常可讀（不改寫）。
+    /// </remarks>
+    public static IServiceCollection AddPlatformDataProtection(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDataProtection()
+        // 校驗（成對、檔案存在）走一般的選項，啟動時失敗並指名鍵。
+        services.AddPlatformOptions<DataProtectionCertificateOptions>();
+        services.AddSingleton<IValidateOptions<DataProtectionCertificateOptions>, DataProtectionCertificateOptionsValidator>();
+
+        var protection = services.AddDataProtection()
             .SetApplicationName("envcite-platform")
             .PersistKeysToDbContext<TenancyDbContext>();
+
+        // 這是唯一在註冊時就要讀設定的地方：框架登記「解密用憑證」的選項是內部型別，只有
+        // ProtectKeysWithCertificate(憑證物件) 能設，所以憑證必須在這裡載入。不合格的設定留給上面的校驗報錯。
+        var options = configuration.GetSection(DataProtectionCertificateOptions.SectionName).Get<DataProtectionCertificateOptions>();
+        if (options is { IsConfigured: true } && File.Exists(options.CertificatePath))
+        {
+            protection.ProtectKeysWithCertificate(
+                X509CertificateLoader.LoadPkcs12FromFile(options.CertificatePath, options.CertificatePassword));
+        }
+
         return services;
     }
 

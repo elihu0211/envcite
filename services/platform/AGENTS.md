@@ -13,7 +13,7 @@
 
 - Modular monolith：一個 solution、一個可部署單位。模組是專案，只參考 `SharedKernel` 與 `Data`，彼此不直接參考；跨模組契約放 `SharedKernel`。
 - **兩個 DbContext，不再增加**：`TenancyDbContext`（Finbuckle 的 EFCore 租戶儲存必須繼承 `EFCoreStoreDbContext`，無法合併）與 `PlatformDbContext`（所有租戶資料，schema `platform`）。新的租戶實體進 `PlatformDbContext`；模組不另立 context——每多一個就多一套遷移、bundle 與 Job 步驟，且失去跨模組交易。
-- Data Protection 金鑰存在 `TenancyDbContext`，不在 `PlatformDbContext`：它不屬於任何租戶，且金鑰環在主機啟動時載入、早於租戶解析。沒有共用金鑰，一個副本簽的 cookie 會被另一個副本拒絕。產生 OpenAPI 文件時不註冊（沒有資料庫）。
+- Data Protection 金鑰存在 `TenancyDbContext`，不在 `PlatformDbContext`：它不屬於任何租戶，且金鑰環在主機啟動時載入、早於租戶解析。沒有共用金鑰，一個副本簽的 cookie 會被另一個副本拒絕。產生 OpenAPI 文件時不註冊（沒有資料庫）。金鑰預設以明文 XML 存放；`Platform:DataProtection:CertificatePath` 與 `CertificatePassword` 是成對的可選設定（只設一個啟動即失敗，密碼只經環境變數），設了則**新**金鑰以該憑證加密，既有明文金鑰照常可讀、不改寫；所有副本須用同一張憑證。
 - Blazor Server 電路是有狀態的 SignalR 連線：多副本需要入口的 session affinity（部署倉庫）或外部 backplane。
 - 多租戶是執行期隔離（租戶解析加 `TenantId` 查詢過濾），不是每租戶一份程式碼或倉庫。
 - **中介層順序是承重的**：`UseAuthentication` → `UseMultiTenant` → `UseAuthorization` → `UseRateLimiter`。
@@ -57,7 +57,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 ## Configuration
 
-- 設定只有一條讀法：每個設定群組是一個 `IPlatformOptions` 類別，自己指名區段，以 `AddPlatformOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `Observability.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，沒有別處碰 `IConfiguration`。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
+- 設定只有一條讀法：每個設定群組是一個 `IPlatformOptions` 類別，自己指名區段，以 `AddPlatformOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `Observability.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
 - 新增群組：實作 `IPlatformOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
 - **鍵名是與部署倉庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`Section__Key`）。機密（營運者金鑰雜湊、模型端點金鑰）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
 - 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
