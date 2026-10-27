@@ -23,7 +23,7 @@ public partial class Security
     private bool _enabled;
     private bool _required;
     private string? _notice;
-    private string _codesTitle = "兩步驟驗證已啟用";
+    private string _codesTitle = string.Empty;
     private TwoFactorSetup? _setup;
     private string _qrSvg = string.Empty;
     private string? _error;
@@ -31,6 +31,7 @@ public partial class Security
 
     protected override async Task OnInitializedAsync()
     {
+        _codesTitle = L["兩步驟驗證已啟用"];
         Input ??= new();
         Regenerate ??= new();
         Disable ??= new();
@@ -64,7 +65,7 @@ public partial class Security
             return;
         }
 
-        _error = enabled.Message ?? "啟用失敗。";
+        _error = enabled.Message ?? L["啟用失敗。"];
     }
 
     private async Task RegenerateAsync()
@@ -75,11 +76,11 @@ public partial class Security
         if (regenerated.IsOk)
         {
             _recoveryCodes = regenerated.Value;
-            _codesTitle = "新的復原碼";
+            _codesTitle = L["新的復原碼"];
             return;
         }
 
-        _error = regenerated.Message ?? "重新產生失敗。";
+        _error = regenerated.Message ?? L["重新產生失敗。"];
     }
 
     private async Task DisableAsync()
@@ -89,12 +90,12 @@ public partial class Security
         var disabled = await TwoFactor.DisableAsync(HttpContext.User, password, code, HttpContext.RequestAborted);
         if (!disabled.IsOk)
         {
-            _error = disabled.Message ?? "關閉失敗。";
+            _error = disabled.Message ?? L["關閉失敗。"];
             return;
         }
 
         _enabled = false;
-        _notice = "已關閉兩步驟驗證。之後只靠密碼登入；舊的復原碼已作廢。";
+        _notice = L["已關閉兩步驟驗證。之後只靠密碼登入；舊的復原碼已作廢。"];
         await LoadSetupAsync();
     }
 

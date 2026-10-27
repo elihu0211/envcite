@@ -305,6 +305,36 @@ public sealed partial class LanguageSwitchTests(PlatformFactory factory)
         Assert.Equal(string.Empty, LeftoverChinese(html));
     }
 
+    // 搜尋範例是臺灣法規裡的詞（資料是中文），英文介面也維持中文，所以不算殘留。
+    private static readonly string[] SearchExamples = ["噪音管制標準", "固定污染源", "廢棄物清理", "水污染防治"];
+
+    // 英文版的客戶入口（登入前後）：用真的流程切換語言，之後每一頁都沒有中文殘留。
+    [Fact]
+    public async Task TheEnglishPortalHasNoChineseLeft()
+    {
+        var (tenant, email, initial) = await MemberAsync(factory, "i18n-portal", name: "Alice");
+        var home = Home(tenant.Identifier);
+        using var browser = new PortalBrowser(factory);
+        var login = Login(tenant.Identifier);
+        await browser.SubmitAsync(login, new() { ["culture"] = "en", ["returnUrl"] = login }, $"{home}/language");
+
+        var pages = new Dictionary<string, string> { [login] = (await browser.GetAsync(login)).Html };
+        await SignInFullyAsync(browser, tenant.Identifier, email, initial);
+        foreach (var path in new[] { home, $"{home}/account", $"{home}/members", $"{home}/security", $"{home}/history", PasswordPage(tenant.Identifier) })
+        {
+            var page = await browser.GetAsync(path);
+            Assert.Equal(HttpStatusCode.OK, page.Status);
+            pages[path] = page.Html;
+        }
+
+        foreach (var (path, html) in pages)
+        {
+            var text = SearchExamples.Aggregate(html, (current, example) => current.Replace(example, string.Empty, StringComparison.Ordinal));
+            Assert.True(text.Contains("<html lang=\"en\">", StringComparison.Ordinal), path);
+            Assert.True(LeftoverChinese(text).Length == 0, $"{path}: {LeftoverChinese(text)}");
+        }
+    }
+
     [Fact]
     public async Task TheEnglishTenantDetailHasNoChineseLeft()
     {

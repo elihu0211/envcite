@@ -9,6 +9,7 @@ namespace EnvCite.Platform.Web.Components.Portal;
 
 public partial class Ask
 {
+    // 範例是臺灣法規裡會出現的詞（資料庫是中文），所以英文介面也維持中文：翻成英文就搜不到。
     private static readonly string[] Examples = ["噪音管制標準", "固定污染源", "廢棄物清理", "水污染防治"];
 
     [Parameter] public string Tenant { get; set; } = string.Empty;
@@ -32,7 +33,7 @@ public partial class Ask
     private bool _asked;
     private string _question = string.Empty;
     private string? _error;
-    private string _asOfLabel = "現行";
+    private string _asOfLabel = string.Empty;
     private IReadOnlyList<LawHit>? _hits;
     private GroundedAnswer? _answer;
     private Guid? _conversationId;
@@ -41,6 +42,7 @@ public partial class Ask
 
     protected override async Task OnInitializedAsync()
     {
+        _asOfLabel = L["現行"];
         Input ??= new();
         _hasPlan = await HasPlanAsync();
     }
@@ -75,7 +77,7 @@ public partial class Ask
 
         _asked = true;
         _question = query.Trim();
-        _asOfLabel = asOf is null ? "現行" : $"{asOf} 有效";
+        _asOfLabel = asOf is null ? L["現行"] : L["{0} 有效", asOf];
         _hits = null;
         _answer = null;
         // 像聊天一樣：問完輸入框清空，接著問下一個（日期留著，常常是同一天的一串問題）。
@@ -99,13 +101,13 @@ public partial class Ask
             case AdminStatus.Ok:
                 _answer = result.Value;
                 return _answer!.Refused
-                    ? $"（拒答）{RefusalLabel(_answer.RefusalReason)}"
+                    ? L["（拒答）{0}", RefusalLabel(_answer.RefusalReason)]
                     : $"{_answer.Text}\n{string.Join('\n', _answer.Sources.Select(s => $"[{s.Code}] {s.Citation}（{_asOfLabel}） {s.Uri}"))}";
             case AdminStatus.Invalid:
-                _error = "查詢條件不正確：請輸入問題；日期要是有效的日期。";
+                _error = L["查詢條件不正確：請輸入問題；日期要是有效的日期。"];
                 return null;
             default:
-                _error = "回答服務暫時無法使用，請稍後再試。";
+                _error = L["回答服務暫時無法使用，請稍後再試。"];
                 return null;
         }
     }
@@ -119,22 +121,22 @@ public partial class Ask
                 _hits = result.Value;
                 return AnswerText(_hits!);
             case AdminStatus.Invalid:
-                _error = "查詢條件不正確：請輸入關鍵字；日期要是有效的日期。";
+                _error = L["查詢條件不正確：請輸入關鍵字；日期要是有效的日期。"];
                 return null;
             default:
-                _error = "搜尋服務暫時無法使用，請稍後再試。";
+                _error = L["搜尋服務暫時無法使用，請稍後再試。"];
                 return null;
         }
     }
 
     /// <summary>拒答對使用者說的話：說明為什麼沒有答案，而不是只說「不能回答」。</summary>
-    internal static string RefusalLabel(string? reason) => reason switch
+    internal string RefusalLabel(string? reason) => reason switch
     {
-        "no_authority" => "找不到足以回答這個問題的法條，所以沒有回答。試試換個說法，或換一天。",
-        "out_of_scope" => "這個問題超出目前涵蓋的知識範圍，所以沒有回答。",
-        "missing_input" => "問題不夠具體，請補充後再問。",
-        "unverified_citation" => "系統產生的回答無法對應到法條出處，已捨棄，沒有顯示。請換個說法再問一次。",
-        _ => "這次沒有產生可以對應到法條出處的回答。請換個說法再問一次。",
+        "no_authority" => L["找不到足以回答這個問題的法條，所以沒有回答。試試換個說法，或換一天。"],
+        "out_of_scope" => L["這個問題超出目前涵蓋的知識範圍，所以沒有回答。"],
+        "missing_input" => L["問題不夠具體，請補充後再問。"],
+        "unverified_citation" => L["系統產生的回答無法對應到法條出處，已捨棄，沒有顯示。請換個說法再問一次。"],
+        _ => L["這次沒有產生可以對應到法條出處的回答。請換個說法再問一次。"],
     };
 
     /// <summary>
@@ -143,8 +145,8 @@ public partial class Ask
     /// </summary>
     private string AnswerText(IReadOnlyList<LawHit> hits) =>
         hits.Count == 0
-            ? "沒有符合的條文。"
-            : string.Join('\n', hits.Select(hit => $"《{hit.LawTitle}》第 {hit.Number} 條（{_asOfLabel}） {hit.Uri}"));
+            ? L["沒有符合的條文。"]
+            : string.Join('\n', hits.Select(hit => L["《{0}》第 {1} 條（{2}） {3}", hit.LawTitle, hit.Number, _asOfLabel, hit.Uri]));
 
     public sealed class SearchForm
     {

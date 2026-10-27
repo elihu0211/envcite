@@ -12,19 +12,35 @@
   <data name="{0} 個沒有方案" xml:space="preserve"><value>{0} without a plan</value></data>
   <data name="{0} 分鐘" xml:space="preserve"><value>{0} min</value></data>
   <data name="{0} 成員提的問題與相關條文會送到外部的模型服務。請確認租戶已同意。確定開啟？" xml:space="preserve"><value>Questions and related articles from {0} members will be sent to an external model service. Make sure the tenant has agreed. Turn on?</value></data>
+  <data name="{0} 有效" xml:space="preserve"><value>Valid on {0}</value></data>
   <data name="{0} 的下一個請求就進不去。已經開著的頁面最多還能用一分鐘。確定停用？" xml:space="preserve"><value>{0} will be locked out on their next request. Pages that are already open keep working for up to a minute. Disable?</value></data>
+  <data name="{0} 的角色" xml:space="preserve"><value>Role of {0}</value></data>
   <data name="{0} 秒" xml:space="preserve"><value>{0} s</value></data>
   <data name="{0}（每 {1} {2} 次）" xml:space="preserve"><value>{0} ({2} per {1})</value></data>
+  <data name="　· 你" xml:space="preserve"><value> · You</value></data>
   <data name="。對方第一次登入必須自己改掉，再綁定驗證器。" xml:space="preserve"><value>. They must change it at first sign-in, then set up an authenticator.</value></data>
+  <data name="。請親手交給" xml:space="preserve"><value>. Hand it over in person to</value></data>
+  <data name="《{0}》第 {1} 條" xml:space="preserve"><value>{0}, Article {1}</value></data>
+  <data name="《{0}》第 {1} 條（{2}） {3}" xml:space="preserve"><value>{0}, Article {1} ({2}) {3}</value></data>
   <data name="一次性密碼" xml:space="preserve"><value>One-time password</value></data>
+  <data name="不認得這個動作。" xml:space="preserve"><value>Unknown action.</value></data>
   <data name="主要導覽" xml:space="preserve"><value>Main navigation</value></data>
   <data name="之後登入都會要求驗證碼。手機遺失、也沒有復原碼時，請洽持有營運者金鑰的人為你重設。" xml:space="preserve"><value>From now on, sign-in asks for a verification code. If you lose your phone and have no recovery codes, contact whoever holds the operator key to reset it.</value></data>
+  <data name="之後登入都會要求驗證碼。手機遺失、也沒有復原碼時，請洽貴組織的管理員或我們的營運人員為你重設。" xml:space="preserve"><value>From now on, sign-in asks for a verification code. If you lose your phone and have no recovery codes, contact your organisation's admin or our operations staff to reset it.</value></data>
   <data name="事件" xml:space="preserve"><value>Event</value></data>
   <data name="事件 Id" xml:space="preserve"><value>Event Id</value></data>
   <data name="事件細節" xml:space="preserve"><value>event details</value></data>
   <data name="事件鍵" xml:space="preserve"><value>Event key</value></data>
   <data name="位置" xml:space="preserve"><value>Breadcrumb</value></data>
   <data name="你" xml:space="preserve"><value>You</value></data>
+  <data name="你好" xml:space="preserve"><value>Hello</value></data>
+  <data name="你好，{0}" xml:space="preserve"><value>Hello, {0}</value></data>
+  <data name="你的提問會存在" xml:space="preserve"><value>Your questions are saved in </value></data>
+  <data name="你的組織目前沒有方案，不能使用搜尋。請洽我們的業務啟用。" xml:space="preserve"><value>Your organisation has no plan at the moment, so search is unavailable. Contact our sales team to enable it.</value></data>
+  <data name="你的組織與帳號" xml:space="preserve"><value>Your organisation and account</value></data>
+  <data name="你的角色不能查看 API key。" xml:space="preserve"><value>Your role cannot view API keys.</value></data>
+  <data name="你的角色必須使用兩步驟驗證。請先完成下面的設定，才能使用入口的其他功能。" xml:space="preserve"><value>Your role must use two-step verification. Complete the set-up below before you can use the rest of the portal.</value></data>
+  <data name="你的角色必須使用兩步驟驗證，不能關閉。" xml:space="preserve"><value>Your role must use two-step verification, so it cannot be turned off.</value></data>
   <data name="例如：某某環境顧問公司" xml:space="preserve"><value>e.g. Acme Environmental Consulting</value></data>
   <data name="例如：正式環境" xml:space="preserve"><value>e.g. Production</value></data>
   <data name="停用" xml:space="preserve"><value>Disable</value></data>
@@ -38,35 +54,59 @@
   <data name="全部事件" xml:space="preserve"><value>All events</value></data>
   <data name="全部期間" xml:space="preserve"><value>All time</value></data>
   <data name="全部租戶" xml:space="preserve"><value>All tenants</value></data>
+  <data name="兩次輸入的新密碼不一樣。" xml:space="preserve"><value>The two new passwords do not match.</value></data>
   <data name="兩步驟" xml:space="preserve"><value>Two-step</value></data>
   <data name="兩步驟驗證" xml:space="preserve"><value>Two-step verification</value></data>
   <data name="兩步驟驗證 · 環境知識" xml:space="preserve"><value>Two-step verification · EnvCite</value></data>
+  <data name="兩步驟驗證已啟用" xml:space="preserve"><value>Two-step verification enabled</value></data>
   <data name="共 {0} 把" xml:space="preserve"><value>{0} in total</value></data>
   <data name="共 {0} 筆" xml:space="preserve"><value>{0} in total</value></data>
   <data name="再輸入一次新密碼" xml:space="preserve"><value>Re-enter the new password</value></data>
   <data name="分類" xml:space="preserve"><value>Category</value></data>
   <data name="初始密碼" xml:space="preserve"><value>Initial password</value></data>
+  <data name="刪除" xml:space="preserve"><value>Delete</value></data>
+  <data name="刪除對話：{0}" xml:space="preserve"><value>Delete conversation: {0}</value></data>
   <data name="前綴" xml:space="preserve"><value>Prefix</value></data>
   <data name="取消" xml:space="preserve"><value>Cancel</value></data>
   <data name="只會顯示這一次" xml:space="preserve"><value>Shown only once</value></data>
+  <data name="只有你看得到。" xml:space="preserve"><value>Only you can see this.</value></data>
+  <data name="只有擁有者與管理員能管理成員。" xml:space="preserve"><value>Only owners and admins can manage members.</value></data>
   <data name="可以不填。最長 200 字元。" xml:space="preserve"><value>Optional. Up to 200 characters.</value></data>
   <data name="同一個租戶內不能重複；同一個 email 在不同租戶是不同帳號。" xml:space="preserve"><value>Must be unique within a tenant; the same email in different tenants is a different account.</value></data>
   <data name="名稱" xml:space="preserve"><value>Name</value></data>
   <data name="呼叫次數" xml:space="preserve"><value>Calls</value></data>
+  <data name="和" xml:space="preserve"><value>and</value></data>
+  <data name="哪一天有效" xml:space="preserve"><value>Valid on</value></data>
+  <data name="問題不夠具體，請補充後再問。" xml:space="preserve"><value>The question is not specific enough. Add detail and ask again.</value></data>
   <data name="啟用" xml:space="preserve"><value>Enable</value></data>
+  <data name="啟用失敗。" xml:space="preserve"><value>Could not enable.</value></data>
   <data name="啟用步驟" xml:space="preserve"><value>Set-up steps</value></data>
+  <data name="回到對話紀錄" xml:space="preserve"><value>Back to conversation history</value></data>
   <data name="回到租戶清單" xml:space="preserve"><value>Back to tenants</value></data>
   <data name="回後台" xml:space="preserve"><value>Back to console</value></data>
+  <data name="回答服務暫時無法使用，請稍後再試。" xml:space="preserve"><value>The answer service is temporarily unavailable. Please try again later.</value></data>
+  <data name="回答由 AI 產生：你的問題與相關條文會送到模型服務。" xml:space="preserve"><value>Answers are generated by AI: your question and the related articles are sent to a model service.</value></data>
   <data name="在手機安裝驗證器 App（例如 Google Authenticator、Microsoft Authenticator、1Password 或 Authy）。" xml:space="preserve"><value>Install an authenticator app on your phone (for example Google Authenticator, Microsoft Authenticator, 1Password or Authy).</value></data>
+  <data name="在首頁問一個問題，它就會出現在這裡。" xml:space="preserve"><value>Ask a question on the home page and it will appear here.</value></data>
   <data name="套用" xml:space="preserve"><value>Apply</value></data>
   <data name="它可能不存在，或識別有誤。" xml:space="preserve"><value>It may not exist, or the identifier is wrong.</value></data>
+  <data name="它可能已經被刪除，或已超過保留期限。" xml:space="preserve"><value>It may have been deleted, or its retention period has passed.</value></data>
+  <data name="完整的 key 只在簽發當下出現一次，這裡只顯示前綴。" xml:space="preserve"><value>The full key is shown only once when it is issued; only the prefix is shown here.</value></data>
   <data name="密碼" xml:space="preserve"><value>Password</value></data>
+  <data name="對方第一次登入時必須自己改掉，之後連你也不會知道他的密碼。" xml:space="preserve"><value>They must change it at first sign-in; after that not even you will know their password.</value></data>
   <data name="對方第一次登入時必須自己改掉；營運人員之後不會知道他的密碼。" xml:space="preserve"><value>They must change it at first sign-in; operators will not know their password afterwards.</value></data>
+  <data name="對話" xml:space="preserve"><value>Conversation</value></data>
+  <data name="對話 · 環境知識" xml:space="preserve"><value>Conversation · EnvCite</value></data>
+  <data name="對話紀錄" xml:space="preserve"><value>Conversation history</value></data>
+  <data name="對話紀錄 · 環境知識" xml:space="preserve"><value>Conversation history · EnvCite</value></data>
+  <data name="尚未啟用" xml:space="preserve"><value>Not enabled yet</value></data>
   <data name="尚未指派" xml:space="preserve"><value>Not assigned</value></data>
   <data name="展開" xml:space="preserve"><value>Expand</value></data>
   <data name="展開細節" xml:space="preserve"><value>Expand details</value></data>
   <data name="已停用" xml:space="preserve"><value>Disabled</value></data>
   <data name="已停用 {0}。" xml:space="preserve"><value>{0} disabled.</value></data>
+  <data name="已停用，對方所有登入立刻失效。" xml:space="preserve"><value>Disabled; all of their sign-ins stop working immediately.</value></data>
+  <data name="已刪除。" xml:space="preserve"><value>Deleted.</value></data>
   <data name="已啟用" xml:space="preserve"><value>Enabled</value></data>
   <data name="已指派方案 {0}。" xml:space="preserve"><value>Plan {0} assigned.</value></data>
   <data name="已撤銷" xml:space="preserve"><value>Revoked</value></data>
@@ -77,9 +117,11 @@
   <data name="已移除方案。" xml:space="preserve"><value>Plan removed.</value></data>
   <data name="已簽發新的 API key。" xml:space="preserve"><value>New API key issued.</value></data>
   <data name="已複製到剪貼簿" xml:space="preserve"><value>Copied to clipboard</value></data>
+  <data name="已變更角色。對方的舊登入已失效，下次登入才會套用新角色。" xml:space="preserve"><value>Role changed. Their old sign-ins are no longer valid; the new role applies the next time they sign in.</value></data>
   <data name="已載入 {0} 筆，還有更多" xml:space="preserve"><value>{0} loaded, more available</value></data>
   <data name="已過期" xml:space="preserve"><value>Expired</value></data>
   <data name="已重新啟用 {0}。" xml:space="preserve"><value>{0} re-enabled.</value></data>
+  <data name="已重新啟用。" xml:space="preserve"><value>Re-enabled.</value></data>
   <data name="已重設 {0} 的兩步驟驗證。" xml:space="preserve"><value>Two-step verification reset for {0}.</value></data>
   <data name="已重設 {0} 的密碼。" xml:space="preserve"><value>Password reset for {0}.</value></data>
   <data name="已重設 {0} 的驗證器。" xml:space="preserve"><value>Authenticator reset for {0}.</value></data>
@@ -87,7 +129,10 @@
   <data name="已開啟" xml:space="preserve"><value>On</value></data>
   <data name="已開啟 AI 回答。" xml:space="preserve"><value>AI answers turned on.</value></data>
   <data name="已關閉 AI 回答。" xml:space="preserve"><value>AI answers turned off.</value></data>
+  <data name="已關閉兩步驟驗證。之後只靠密碼登入；舊的復原碼已作廢。" xml:space="preserve"><value>Two-step verification turned off. From now on you sign in with a password only; old recovery codes are no longer valid.</value></data>
   <data name="已顯示全部。" xml:space="preserve"><value>Showing everything.</value></data>
+  <data name="帳號與組織" xml:space="preserve"><value>Account and organisation</value></data>
+  <data name="帳號與組織 · 環境知識" xml:space="preserve"><value>Account and organisation · EnvCite</value></data>
   <data name="帳號選單" xml:space="preserve"><value>Account menu</value></data>
   <data name="平台" xml:space="preserve"><value>Platform</value></data>
   <data name="建立" xml:space="preserve"><value>Create</value></data>
@@ -100,10 +145,15 @@
   <data name="建立第一個帳號，把一次性密碼交給對方。" xml:space="preserve"><value>Create the first account and hand the one-time password to them.</value></data>
   <data name="建立第一個租戶，再為它簽發 API key 並指派方案。" xml:space="preserve"><value>Create the first tenant, then issue it an API key and assign a plan.</value></data>
   <data name="建立（台北）" xml:space="preserve"><value>Created (Taipei)</value></data>
+  <data name="引用：{0}（{1}）" xml:space="preserve"><value>Citation: {0} ({1})</value></data>
+  <data name="引用：《{0}》第 {1} 條（{2}）" xml:space="preserve"><value>Citation: {0}, Article {1} ({2})</value></data>
   <data name="待改密碼" xml:space="preserve"><value>Password change pending</value></data>
   <data name="後台登入：" xml:space="preserve"><value>Console sign-in: </value></data>
   <data name="復原碼" xml:space="preserve"><value>Recovery code</value></data>
+  <data name="復原碼不正確，或已經用過。多次失敗會暫時鎖定帳號。" xml:space="preserve"><value>The recovery code is wrong or already used. Repeated failures temporarily lock the account.</value></data>
+  <data name="想查哪一條法規？" xml:space="preserve"><value>Which regulation would you like to look up?</value></data>
   <data name="成員" xml:space="preserve"><value>Members</value></data>
+  <data name="成員 · 環境知識" xml:space="preserve"><value>Members · EnvCite</value></data>
   <data name="成員的提問與相關條文會送到外部模型服務。需租戶同意；方案移除時一併關閉。" xml:space="preserve"><value>Members' questions and related articles are sent to an external model service. Requires tenant consent; turned off when the plan is removed.</value></data>
   <data name="成員（客戶入口）" xml:space="preserve"><value>Members (customer portal)</value></data>
   <data name="我已交給對方" xml:space="preserve"><value>I have handed it over</value></data>
@@ -111,9 +161,16 @@
   <data name="手機不在身邊？用復原碼" xml:space="preserve"><value>Phone not with you? Use a recovery code</value></data>
   <data name="手機遺失時，每一組復原碼可以代替一次驗證碼，用過就失效。" xml:space="preserve"><value>If you lose your phone, each recovery code can replace one verification code and expires once used.</value></data>
   <data name="打開手機上的驗證器 App，輸入現在顯示的六位數。" xml:space="preserve"><value>Open the authenticator app on your phone and enter the six digits it shows now.</value></data>
+  <data name="找不到足以回答這個問題的法條，所以沒有回答。試試換個說法，或換一天。" xml:space="preserve"><value>No article was found that is sufficient to answer this question, so no answer was given. Try rephrasing, or pick another date.</value></data>
+  <data name="找不到這位成員。" xml:space="preserve"><value>Member not found.</value></data>
+  <data name="找不到這個對話" xml:space="preserve"><value>Conversation not found</value></data>
+  <data name="找不到這個對話。" xml:space="preserve"><value>Conversation not found.</value></data>
   <data name="找不到這個租戶" xml:space="preserve"><value>Tenant not found</value></data>
+  <data name="找到 {0} 條（相關度高的在前）。" xml:space="preserve"><value>Found {0} articles (most relevant first).</value></data>
   <data name="指派方案" xml:space="preserve"><value>Assign plan</value></data>
+  <data name="搜尋" xml:space="preserve"><value>Search</value></data>
   <data name="搜尋名稱或識別碼" xml:space="preserve"><value>Search by name or identifier</value></data>
+  <data name="搜尋服務暫時無法使用，請稍後再試。" xml:space="preserve"><value>The search service is temporarily unavailable. Please try again later.</value></data>
   <data name="搜尋營運者" xml:space="preserve"><value>Search operators</value></data>
   <data name="搜尋租戶" xml:space="preserve"><value>Search tenants</value></data>
   <data name="搜尋電子郵件" xml:space="preserve"><value>Search email</value></data>
@@ -132,14 +189,19 @@
   <data name="改完後，其他裝置上的登入會失效。" xml:space="preserve"><value>After you change it, sign-ins on other devices stop working.</value></data>
   <data name="改密碼" xml:space="preserve"><value>Change password</value></data>
   <data name="改密碼 · 環境知識" xml:space="preserve"><value>Change password · EnvCite</value></data>
+  <data name="改密碼失敗。" xml:space="preserve"><value>Could not change the password.</value></data>
   <data name="改用驗證器的六位數" xml:space="preserve"><value>Use the six digits from the authenticator</value></data>
   <data name="新增成員" xml:space="preserve"><value>Add member</value></data>
   <data name="新增營運者" xml:space="preserve"><value>Add operator</value></data>
   <data name="新增租戶" xml:space="preserve"><value>Add tenant</value></data>
   <data name="新增第一位成員，客戶才能登入入口。" xml:space="preserve"><value>Add the first member so the customer can sign in to the portal.</value></data>
   <data name="新密碼" xml:space="preserve"><value>New password</value></data>
+  <data name="新成員已建立" xml:space="preserve"><value>New member created</value></data>
+  <data name="新的一次性密碼" xml:space="preserve"><value>New one-time password</value></data>
+  <data name="新的復原碼" xml:space="preserve"><value>New recovery codes</value></data>
   <data name="方案" xml:space="preserve"><value>Plan</value></data>
   <data name="時間（台北）" xml:space="preserve"><value>Time (Taipei)</value></data>
+  <data name="最後更新 {0}" xml:space="preserve"><value>Last updated {0}</value></data>
   <data name="最近 {0} 筆事件中" xml:space="preserve"><value>In the latest {0} events</value></data>
   <data name="最近呼叫" xml:space="preserve"><value>Last call</value></data>
   <data name="最近呼叫（台北）" xml:space="preserve"><value>Last call (Taipei)</value></data>
@@ -149,10 +211,18 @@
   <data name="最近的稽核事件，新到舊" xml:space="preserve"><value>Recent audit events, newest first</value></data>
   <data name="有效" xml:space="preserve"><value>Active</value></data>
   <data name="有效 API keys" xml:space="preserve"><value>Active API keys</value></data>
+  <data name="服務" xml:space="preserve"><value>Services</value></data>
   <data name="未開啟" xml:space="preserve"><value>Off</value></data>
+  <data name="查詢" xml:space="preserve"><value>Search</value></data>
+  <data name="查詢 · 環境知識" xml:space="preserve"><value>Search · EnvCite</value></data>
+  <data name="查詢文字不會被記錄，只記一次搜尋的次數。" xml:space="preserve"><value>Search text is not recorded, only the number of searches.</value></data>
+  <data name="查詢條件不正確：請輸入問題；日期要是有效的日期。" xml:space="preserve"><value>Invalid search: enter a question, and make sure the date is a valid date.</value></data>
+  <data name="查詢條件不正確：請輸入關鍵字；日期要是有效的日期。" xml:space="preserve"><value>Invalid search: enter keywords, and make sure the date is a valid date.</value></data>
+  <data name="查詢結果" xml:space="preserve"><value>Search results</value></data>
   <data name="正常" xml:space="preserve"><value>Normal</value></data>
   <data name="每頁筆數" xml:space="preserve"><value>Rows per page</value></data>
   <data name="沒有帳號、忘記密碼或弄丟了驗證器，請洽持有營運者金鑰的人。" xml:space="preserve"><value>No account, forgot your password or lost your authenticator? Contact whoever holds the operator key.</value></data>
+  <data name="沒有帳號或忘記密碼，請洽貴組織的管理員或我們的營運人員。" xml:space="preserve"><value>No account or forgot your password? Contact your organisation's admin or our operations staff.</value></data>
   <data name="沒有待辦。" xml:space="preserve"><value>Nothing to do.</value></data>
   <data name="沒有方案" xml:space="preserve"><value>No plan</value></data>
   <data name="沒有方案時資料端點回 402。變更立即生效並寫入稽核。" xml:space="preserve"><value>Without a plan, data endpoints return 402. Changes take effect immediately and are audited.</value></data>
@@ -162,6 +232,8 @@
   <data name="沒有符合「{0}」的租戶" xml:space="preserve"><value>No tenants match “{0}”</value></data>
   <data name="沒有符合條件的稽核事件" xml:space="preserve"><value>No audit events match</value></data>
   <data name="沒有符合的事件" xml:space="preserve"><value>No matching events</value></data>
+  <data name="沒有符合的條文。" xml:space="preserve"><value>No matching articles.</value></data>
+  <data name="沒有符合的條文。試試其他說法，或換一天。" xml:space="preserve"><value>No matching articles. Try other wording, or pick another date.</value></data>
   <data name="清除搜尋" xml:space="preserve"><value>Clear search</value></data>
   <data name="營運後台" xml:space="preserve"><value>Operator console</value></data>
   <data name="營運者" xml:space="preserve"><value>Operators</value></data>
@@ -169,8 +241,10 @@
   <data name="營運者清單" xml:space="preserve"><value>Operator list</value></data>
   <data name="營運者登入" xml:space="preserve"><value>Operator sign-in</value></data>
   <data name="狀態" xml:space="preserve"><value>Status</value></data>
+  <data name="現行" xml:space="preserve"><value>Current</value></data>
   <data name="環境知識" xml:space="preserve"><value>EnvCite</value></data>
   <data name="用 App 掃描下面的 QR；掃不了就選「手動輸入」，輸入下面的金鑰。" xml:space="preserve"><value>Scan the QR code below with the app. If you cannot scan it, choose “enter manually” and type the key below.</value></data>
+  <data name="用條文裡會出現的詞，空白分隔。不填日期就是現行；查行為發生當時適用的條文，請填那一天。" xml:space="preserve"><value>Use words that appear in the articles, separated by spaces. Without a date you get the current text; to look up the article that applied when something happened, enter that date. </value></data>
   <data name="用量與計量" xml:space="preserve"><value>Usage and metering</value></data>
   <data name="登入" xml:space="preserve"><value>Sign in</value></data>
   <data name="登入 · 環境知識" xml:space="preserve"><value>Sign in · EnvCite</value></data>
@@ -178,7 +252,9 @@
   <data name="登入網址" xml:space="preserve"><value>Sign-in URL</value></data>
   <data name="登出" xml:space="preserve"><value>Sign out</value></data>
   <data name="目前沒有方案。" xml:space="preserve"><value>No plan at the moment.</value></data>
+  <data name="目前沒有方案：資料端點會回 402。請洽我們的業務啟用。" xml:space="preserve"><value>No plan at the moment: data endpoints return 402. Contact our sales team to enable one.</value></data>
   <data name="目前的密碼" xml:space="preserve"><value>Current password</value></data>
+  <data name="目前的成員（{0}）" xml:space="preserve"><value>Current members ({0})</value></data>
   <data name="目前：" xml:space="preserve"><value>Current: </value></data>
   <data name="目標" xml:space="preserve"><value>Target</value></data>
   <data name="租戶" xml:space="preserve"><value>Tenants</value></data>
@@ -194,6 +270,7 @@
   <data name="第二步驗證" xml:space="preserve"><value>Second step</value></data>
   <data name="第二步驗證 · 環境知識" xml:space="preserve"><value>Second step · EnvCite</value></data>
   <data name="管理" xml:space="preserve"><value>Manage</value></data>
+  <data name="範例" xml:space="preserve"><value>Examples</value></data>
   <data name="簽發" xml:space="preserve"><value>Issue</value></data>
   <data name="簽發 API key" xml:space="preserve"><value>Issue API key</value></data>
   <data name="簽發中…" xml:space="preserve"><value>Issuing…</value></data>
@@ -201,6 +278,8 @@
   <data name="簽發失敗，請稍後再試。" xml:space="preserve"><value>Could not issue. Please try again later.</value></data>
   <data name="簽發新 key" xml:space="preserve"><value>Issue new key</value></data>
   <data name="簽發第一把 key 給客戶，他們才能呼叫 /v2。" xml:space="preserve"><value>Issue the first key to the customer so they can call /v2.</value></data>
+  <data name="系統產生的回答無法對應到法條出處，已捨棄，沒有顯示。請換個說法再問一次。" xml:space="preserve"><value>The generated answer could not be matched to an article source, so it was discarded and not shown. Please rephrase and ask again.</value></data>
+  <data name="組織" xml:space="preserve"><value>Organisation</value></data>
   <data name="給客戶辨認用途；之後在清單裡以名稱和前綴區分。" xml:space="preserve"><value>Helps the customer recognise its purpose; later the list tells keys apart by name and prefix.</value></data>
   <data name="緊湊" xml:space="preserve"><value>Compact</value></data>
   <data name="緊湊列高" xml:space="preserve"><value>Compact row height</value></data>
@@ -213,14 +292,18 @@
   <data name="複製初始密碼" xml:space="preserve"><value>Copy initial password</value></data>
   <data name="角色" xml:space="preserve"><value>Role</value></data>
   <data name="計量單位" xml:space="preserve"><value>Metered units</value></data>
+  <data name="設定" xml:space="preserve"><value>Settings</value></data>
   <data name="試試其他關鍵字，或清除搜尋。" xml:space="preserve"><value>Try other keywords, or clear the search.</value></data>
   <data name="試試放寬條件，或重設篩選。" xml:space="preserve"><value>Try loosening the criteria, or reset the filters.</value></data>
   <data name="請先完成下面的設定，才能使用後台。" xml:space="preserve"><value>Complete the set-up below before you can use the console.</value></data>
   <data name="請先用你們原本的管道確認對方是本人（不是別人冒名來要求重設）。確定？" xml:space="preserve"><value>First confirm through your usual channel that it is really them, not someone impersonating them. Reset?</value></data>
   <data name="識別碼" xml:space="preserve"><value>Identifier</value></data>
+  <data name="變更 {0} 的角色" xml:space="preserve"><value>Change role of {0}</value></data>
   <data name="變更失敗。" xml:space="preserve"><value>Could not change.</value></data>
   <data name="變更方案" xml:space="preserve"><value>Change plan</value></data>
   <data name="變更方案失敗。" xml:space="preserve"><value>Could not change the plan.</value></data>
+  <data name="變更角色" xml:space="preserve"><value>Change role</value></data>
+  <data name="超過 {0} 天沒有更新的對話會自動刪除。" xml:space="preserve"><value>Conversations not updated for over {0} days are deleted automatically.</value></data>
   <data name="跳到主要內容" xml:space="preserve"><value>Skip to main content</value></data>
   <data name="載入中…" xml:space="preserve"><value>Loading…</value></data>
   <data name="載入失敗。" xml:space="preserve"><value>Could not load.</value></data>
@@ -235,23 +318,33 @@
   <data name="載入總覽失敗。" xml:space="preserve"><value>Could not load the overview.</value></data>
   <data name="輸入 App 上現在顯示的六位數，按「啟用」。" xml:space="preserve"><value>Enter the six digits the app shows now, then press “Enable”.</value></data>
   <data name="輸入一組復原碼。每一組只能用一次。" xml:space="preserve"><value>Enter a recovery code. Each code works only once.</value></data>
+  <data name="輸入關鍵字，例如：噪音管制標準" xml:space="preserve"><value>Enter keywords, e.g. 噪音管制標準</value></data>
   <data name="近 30 天" xml:space="preserve"><value>Last 30 days</value></data>
   <data name="近 7 天" xml:space="preserve"><value>Last 7 days</value></data>
   <data name="近 {0} 天" xml:space="preserve"><value>Last {0} days</value></data>
+  <data name="這個問題超出目前涵蓋的知識範圍，所以沒有回答。" xml:space="preserve"><value>This question is outside the knowledge currently covered, so no answer was given.</value></data>
   <data name="這個帳號已被停用，或登入已失效（例如密碼或兩步驟驗證被重設）。請重新登入；仍然不行，請洽持有營運者金鑰的人。" xml:space="preserve"><value>This account has been disabled, or the session is no longer valid (for example the password or two-step verification was reset). Sign in again; if that still fails, contact whoever holds the operator key.</value></data>
+  <data name="這個帳號目前沒有後台權限（可能已被停用，或登入已失效）。" xml:space="preserve"><value>This account currently has no console access (it may have been disabled, or the session is no longer valid). </value></data>
+  <data name="這個環境沒有開啟對話紀錄。" xml:space="preserve"><value>Conversation history is not enabled in this environment.</value></data>
   <data name="這是你的復原碼。" xml:space="preserve"><value>These are your recovery codes. </value></data>
   <data name="這是唯一一次能看到完整的 key。關閉後只剩前綴，無法再取回；弄丟只能撤銷後重發。" xml:space="preserve"><value>This is the only time you can see the full key. After closing, only the prefix remains and it cannot be retrieved; if lost, revoke it and issue a new one.</value></data>
   <data name="這是持有營運者金鑰的人給你的初始密碼，其他人可能看過。請先設定只有你知道的新密碼，再註冊驗證器，才能使用後台。" xml:space="preserve"><value>This initial password came from whoever holds the operator key, and others may have seen it. Set a new password only you know, then register an authenticator, before you can use the console.</value></data>
+  <data name="這是營運人員給你的初始密碼，其他人可能看過。請先設定只有你知道的新密碼，才能使用入口。" xml:space="preserve"><value>This initial password came from operations staff, and others may have seen it. Set a new password only you know before you can use the portal.</value></data>
   <data name="這會作廢 {0} 現在的密碼，並讓他在所有裝置上登出。新的一次性密碼只顯示一次。確定？" xml:space="preserve"><value>This invalidates {0}'s current password and signs them out of all devices. The new one-time password is shown only once. Reset?</value></data>
   <data name="這會關掉 {0} 的兩步驟驗證、丟掉他的驗證器金鑰與復原碼，並讓他在所有裝置上登出；之後只靠密碼就能登入，直到他重新設定。" xml:space="preserve"><value>This turns off two-step verification for {0}, discards their authenticator key and recovery codes, and signs them out of all devices; afterwards a password alone is enough to sign in until they set it up again. </value></data>
   <data name="這會關掉 {0} 的兩步驟驗證、丟掉驗證器金鑰與復原碼，並讓他在所有裝置上登出。請先確認對方是本人。確定？" xml:space="preserve"><value>This turns off two-step verification for {0}, discards the authenticator key and recovery codes, and signs them out of all devices. First make sure it is really them. Reset?</value></data>
+  <data name="這次沒有產生可以對應到法條出處的回答。請換個說法再問一次。" xml:space="preserve"><value>No answer that can be matched to an article source was produced this time. Please rephrase and ask again.</value></data>
+  <data name="這段回答由 AI 只根據下列法條產生，請核對出處再引用。" xml:space="preserve"><value>This answer was generated by AI based only on the articles below. Check the sources before citing it.</value></data>
+  <data name="這組密碼" xml:space="preserve"><value>This password is </value></data>
   <data name="這組密碼只會顯示這一次。請交給 " xml:space="preserve"><value>This password is shown only once. Give it to </value></data>
   <data name="這組密碼只會顯示這一次，關閉後無法再取回。請安全地交給 " xml:space="preserve"><value>This password is shown only once and cannot be retrieved after closing. Hand it securely to </value></data>
   <data name="還沒有 API key" xml:space="preserve"><value>No API keys yet</value></data>
+  <data name="還沒有 API key。請洽我們的營運人員簽發。" xml:space="preserve"><value>No API keys yet. Ask our operations staff to issue one.</value></data>
   <data name="還沒有事件。" xml:space="preserve"><value>No events yet.</value></data>
   <data name="還沒有任何營運者" xml:space="preserve"><value>No operators yet</value></data>
   <data name="還沒有任何租戶" xml:space="preserve"><value>No tenants yet</value></data>
   <data name="還沒有使用紀錄" xml:space="preserve"><value>No usage yet</value></data>
+  <data name="還沒有對話" xml:space="preserve"><value>No conversations yet</value></data>
   <data name="還沒有成員" xml:space="preserve"><value>No members yet</value></data>
   <data name="還沒有稽核事件" xml:space="preserve"><value>No audit events yet</value></data>
   <data name="都已啟用" xml:space="preserve"><value>All active</value></data>
@@ -260,6 +353,7 @@
   <data name="重新啟用" xml:space="preserve"><value>Re-enable</value></data>
   <data name="重新啟用 {0}" xml:space="preserve"><value>Re-enable {0}</value></data>
   <data name="重新產生" xml:space="preserve"><value>Regenerate</value></data>
+  <data name="重新產生失敗。" xml:space="preserve"><value>Could not regenerate.</value></data>
   <data name="重新產生復原碼" xml:space="preserve"><value>Regenerate recovery codes</value></data>
   <data name="重新登入" xml:space="preserve"><value>Sign in again</value></data>
   <data name="重新輸入密碼" xml:space="preserve"><value>Re-enter password</value></data>
@@ -277,17 +371,29 @@
   <data name="金鑰（手動輸入用）：" xml:space="preserve"><value>Key (for manual entry): </value></data>
   <data name="開啟" xml:space="preserve"><value>Turn on</value></data>
   <data name="開啟 AI 回答" xml:space="preserve"><value>Turn on AI answers</value></data>
+  <data name="關鍵字" xml:space="preserve"><value>Keywords</value></data>
+  <data name="關閉" xml:space="preserve"><value>Turn off</value></data>
   <data name="關閉 AI 回答" xml:space="preserve"><value>Turn off AI answers</value></data>
+  <data name="關閉兩步驟驗證" xml:space="preserve"><value>Turn off two-step verification</value></data>
+  <data name="關閉失敗。" xml:space="preserve"><value>Could not turn off.</value></data>
+  <data name="關閉後只靠密碼登入。需要目前的密碼" xml:space="preserve"><value>Turning it off means signing in with a password only. It requires your current password </value></data>
   <data name="電子郵件" xml:space="preserve"><value>Email</value></data>
+  <data name="電子郵件或密碼不正確，或登入已被暫時停用。多次失敗會暫時鎖定帳號，請稍後再試。" xml:space="preserve"><value>The email or password is wrong, or sign-in is temporarily disabled. Repeated failures temporarily lock the account; please try again later.</value></data>
   <data name="需要處理" xml:space="preserve"><value>Needs attention</value></data>
   <data name="顯示名稱" xml:space="preserve"><value>Display name</value></data>
   <data name="顯示名稱（選填）" xml:space="preserve"><value>Display name (optional)</value></data>
   <data name="驗證" xml:space="preserve"><value>Verify</value></data>
   <data name="驗證器 QR" xml:space="preserve"><value>Authenticator QR code</value></data>
   <data name="驗證碼" xml:space="preserve"><value>Verification code</value></data>
+  <data name="驗證碼。" xml:space="preserve"><value> verification code.</value></data>
+  <data name="驗證碼不正確，或已經用過。請輸入驗證器上現在顯示的六位數；多次失敗會暫時鎖定帳號。" xml:space="preserve"><value>The verification code is wrong or already used. Enter the six digits the authenticator shows now; repeated failures temporarily lock the account.</value></data>
+  <data name="（{0}）" xml:space="preserve"><value> ({0})</value></data>
   <data name="（不要貼在公開的聊天室或工單裡）。" xml:space="preserve"><value> (do not paste it in public chat rooms or tickets).</value></data>
+  <data name="（不要貼在公開的聊天室或工單裡）；" xml:space="preserve"><value> (do not paste it in public chat rooms or tickets); </value></data>
   <data name="（先指派方案。）" xml:space="preserve"><value>(Assign a plan first.)</value></data>
+  <data name="（拒答）{0}" xml:space="preserve"><value>(Declined) {0}</value></data>
   <data name="（沒有額外內容）" xml:space="preserve"><value>(no additional details)</value></data>
   <data name="（這個環境沒有設定模型端點。）" xml:space="preserve"><value>(No model endpoint is configured in this environment.)</value></data>
+  <data name="，只有你看得到，{0} 天後自動刪除，也可以隨時自己刪。" xml:space="preserve"><value>, visible only to you; deleted automatically after {0} days, and you can delete it yourself at any time.</value></data>
   <data name="：請現在抄下或存進密碼管理員。" xml:space="preserve"><value>: write them down now or save them in a password manager.</value></data>
 </root>

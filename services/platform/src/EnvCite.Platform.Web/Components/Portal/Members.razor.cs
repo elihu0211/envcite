@@ -45,7 +45,7 @@ public partial class Members
         var created = await Team.CreateAsync(HttpContext.User, Add.Email, Add.DisplayName, Add.Role, HttpContext.RequestAborted);
         if (created.IsOk)
         {
-            Reveal("新成員已建立", created.Value!);
+            Reveal(L["新成員已建立"], created.Value!);
             Add = new() { Role = Add.Role };
             await LoadAsync();
             return;
@@ -65,18 +65,18 @@ public partial class Members
             case "disable":
             case "enable":
                 var toggled = await Team.SetDisabledAsync(HttpContext.User, id, verb == "disable", HttpContext.RequestAborted);
-                Report(toggled, verb == "disable" ? "已停用，對方所有登入立刻失效。" : "已重新啟用。");
+                Report(toggled, verb == "disable" ? L["已停用，對方所有登入立刻失效。"] : L["已重新啟用。"]);
                 break;
             case "role":
                 var role = HttpContext.Request.HasFormContentType ? HttpContext.Request.Form[$"role-{id}"].ToString() : string.Empty;
                 var changed = await Team.ChangeRoleAsync(HttpContext.User, id, role, HttpContext.RequestAborted);
-                Report(changed, "已變更角色。對方的舊登入已失效，下次登入才會套用新角色。");
+                Report(changed, L["已變更角色。對方的舊登入已失效，下次登入才會套用新角色。"]);
                 break;
             case "reset":
                 var reset = await Team.ResetPasswordAsync(HttpContext.User, id, HttpContext.RequestAborted);
                 if (reset.IsOk)
                 {
-                    Reveal("新的一次性密碼", reset.Value!);
+                    Reveal(L["新的一次性密碼"], reset.Value!);
                 }
                 else
                 {
@@ -85,7 +85,7 @@ public partial class Members
 
                 break;
             default:
-                _error = "不認得這個動作。";
+                _error = L["不認得這個動作。"];
                 break;
         }
 
@@ -109,14 +109,14 @@ public partial class Members
         }
     }
 
-    private static string Describe<T>(AdminOutcome<T> outcome) => outcome.Status switch
+    private string Describe<T>(AdminOutcome<T> outcome) => outcome.Status switch
     {
-        AdminStatus.NotFound => "找不到這位成員。",
-        _ => outcome.Message ?? "操作失敗。",
+        AdminStatus.NotFound => L["找不到這位成員。"],
+        _ => outcome.Message ?? L["操作失敗。"],
     };
 
-    private static string State(MemberInfo m) =>
-        m.Disabled ? "已停用" : m.LockedOut ? "已鎖定" : m.MustChangePassword ? "待改密碼" : "正常";
+    private string State(MemberInfo m) =>
+        m.Disabled ? L["已停用"] : m.LockedOut ? L["已鎖定"] : m.MustChangePassword ? L["待改密碼"] : L["正常"];
 
     private static string StateTone(MemberInfo m) =>
         m.Disabled ? "neutral" : m.LockedOut ? "error" : m.MustChangePassword ? "warning" : "success";

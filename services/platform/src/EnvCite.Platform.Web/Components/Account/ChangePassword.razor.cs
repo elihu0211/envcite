@@ -31,7 +31,7 @@ public partial class ChangePassword
 
         if (!string.Equals(next, confirm, StringComparison.Ordinal))
         {
-            _error = "兩次輸入的新密碼不一樣。";
+            _error = L["兩次輸入的新密碼不一樣。"];
             return;
         }
 
@@ -43,7 +43,7 @@ public partial class ChangePassword
             return;
         }
 
-        _error = changed.Message ?? "改密碼失敗。";
+        _error = changed.Message ?? L["改密碼失敗。"];
     }
 
     public sealed class PasswordForm

@@ -33,7 +33,7 @@ public partial class History
     {
         // 不是自己的（或不存在、已刪過）都一樣：只說沒找到，不洩漏它存不存在。
         var deleted = Guid.TryParse(Input.Delete, out var id) && await Store.DeleteAsync(HttpContext.User, id, HttpContext.RequestAborted);
-        _message = deleted ? "已刪除。" : "找不到這個對話。";
+        _message = deleted ? L["已刪除。"] : L["找不到這個對話。"];
         await LoadAsync();
     }
 

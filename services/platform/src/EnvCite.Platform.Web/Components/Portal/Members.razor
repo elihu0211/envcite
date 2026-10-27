@@ -3,13 +3,13 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 
-<PageTitle>成員 · 環境知識</PageTitle>
+<PageTitle>@L["成員 · 環境知識"]</PageTitle>
 
-<PageHeader Title="成員" />
+<PageHeader Title="@L["成員"]" />
 
 @if (_team is null)
 {
-    <p class="ep-alert ep-alert-info" role="status">只有擁有者與管理員能管理成員。</p>
+    <p class="ep-alert ep-alert-info" role="status">@L["只有擁有者與管理員能管理成員。"]</p>
 }
 else
 {
@@ -19,8 +19,8 @@ else
         <section class="ep-card" aria-labelledby="issued-title">
             <h2 id="issued-title" class="ep-section-title">@_issuedTitle</h2>
             <p class="ep-alert ep-alert-info" role="status">
-                這組密碼<strong>只會顯示這一次</strong>。請親手交給 <strong>@_issued.Member.Email</strong>（不要貼在公開的聊天室或工單裡）；
-                對方第一次登入時必須自己改掉，之後連你也不會知道他的密碼。
+                @L["這組密碼"]<strong>@L["只會顯示這一次"]</strong>@L["。請親手交給"] <strong>@_issued.Member.Email</strong>@L["（不要貼在公開的聊天室或工單裡）；"]
+                @L["對方第一次登入時必須自己改掉，之後連你也不會知道他的密碼。"]
             </p>
             <p><code class="ep-mono ep-secret" id="issued-password">@_issuedPassword</code></p>
         </section>
@@ -37,18 +37,18 @@ else
     }
 
     <section class="ep-card" aria-labelledby="add-title">
-        <h2 id="add-title" class="ep-section-title">新增成員</h2>
+        <h2 id="add-title" class="ep-section-title">@L["新增成員"]</h2>
         <EditForm Model="Add" FormName="portal-member-add" OnValidSubmit="AddAsync" method="post" class="ep-form">
             <div class="ep-field-row">
-                <label for="add-email" class="ep-label">電子郵件</label>
+                <label for="add-email" class="ep-label">@L["電子郵件"]</label>
                 <InputText id="add-email" @bind-Value="Add.Email" type="email" class="ep-input" required maxlength="254" autocomplete="off" />
             </div>
             <div class="ep-field-row">
-                <label for="add-name" class="ep-label">顯示名稱（選填）</label>
+                <label for="add-name" class="ep-label">@L["顯示名稱（選填）"]</label>
                 <InputText id="add-name" @bind-Value="Add.DisplayName" class="ep-input" maxlength="200" autocomplete="off" />
             </div>
             <div class="ep-field-row">
-                <label for="add-role" class="ep-label">角色</label>
+                <label for="add-role" class="ep-label">@L["角色"]</label>
                 <InputSelect id="add-role" @bind-Value="Add.Role" class="ep-input">
                     @foreach (var role in _grantable)
                     {
@@ -56,23 +56,23 @@ else
                     }
                 </InputSelect>
             </div>
-            <button type="submit" class="ep-btn ep-btn-primary">新增成員</button>
+            <button type="submit" class="ep-btn ep-btn-primary">@L["新增成員"]</button>
         </EditForm>
     </section>
 
     <section class="ep-card ep-table-card ep-cards" aria-labelledby="list-title">
-        <h2 id="list-title" class="ep-section-title ep-card-title">目前的成員（@_team.Count）</h2>
+        <h2 id="list-title" class="ep-section-title ep-card-title">@L["目前的成員（{0}）", _team.Count]</h2>
         @* 一個表單包住整個表：每個按鈕的 value 說明「對誰做什麼」，角色的下拉選單以 role-{id} 命名。 *@
         <form method="post" @onsubmit="ActAsync" @formname="portal-member-action">
             <AntiforgeryToken />
             <div class="ep-table-wrap">
-                <table class="ep-plain-table" aria-label="成員">
+                <table class="ep-plain-table" aria-label="@L["成員"]">
                     <thead>
                         <tr>
-                            <th scope="col">電子郵件</th>
-                            <th scope="col">角色</th>
-                            <th scope="col">狀態</th>
-                            <th scope="col"><span class="ep-visually-hidden">操作</span></th>
+                            <th scope="col">@L["電子郵件"]</th>
+                            <th scope="col">@L["角色"]</th>
+                            <th scope="col">@L["狀態"]</th>
+                            <th scope="col"><span class="ep-visually-hidden">@L["操作"]</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -80,13 +80,13 @@ else
                         {
                             var member = row.Member;
                             <tr>
-                                <td>@member.Email@(member.DisplayName is null ? "" : $"（{member.DisplayName}）")@(row.IsYou ? "　· 你" : "")</td>
-                                <td data-label="角色">@PortalLabels.Role(member.Role)</td>
-                                <td data-label="狀態">
+                                <td>@member.Email@(member.DisplayName is null ? "" : L["（{0}）", member.DisplayName].Value)@(row.IsYou ? L["　· 你"].Value : "")</td>
+                                <td data-label="@L["角色"]">@PortalLabels.Role(member.Role)</td>
+                                <td data-label="@L["狀態"]">
                                     <StatusBadge Tone="@StateTone(member)">@State(member)</StatusBadge>
                                     @if (member.TwoFactorEnabled)
                                     {
-                                        <StatusBadge Tone="info">兩步驟</StatusBadge>
+                                        <StatusBadge Tone="info">@L["兩步驟"]</StatusBadge>
                                     }
                                 </td>
                                 <td class="ep-row-actions">
@@ -95,24 +95,24 @@ else
                                         @if (member.Disabled)
                                         {
                                             <button type="submit" name="Input.Action" value="@($"enable:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                                    aria-label="@($"重新啟用 {member.Email}")">重新啟用</button>
+                                                    aria-label="@L["重新啟用 {0}", member.Email]">@L["重新啟用"]</button>
                                         }
                                         else
                                         {
                                             <button type="submit" name="Input.Action" value="@($"disable:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                                    aria-label="@($"停用 {member.Email}")">停用</button>
+                                                    aria-label="@L["停用 {0}", member.Email]">@L["停用"]</button>
                                             <button type="submit" name="Input.Action" value="@($"reset:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                                    aria-label="@($"重設 {member.Email} 的密碼")">重設密碼</button>
+                                                    aria-label="@L["重設 {0} 的密碼", member.Email]">@L["重設密碼"]</button>
                                         }
 
-                                        <select name="@($"role-{member.Id}")" class="ep-input ep-input-inline" aria-label="@($"{member.Email} 的角色")">
+                                        <select name="@($"role-{member.Id}")" class="ep-input ep-input-inline" aria-label="@L["{0} 的角色", member.Email]">
                                             @foreach (var role in _grantable)
                                             {
                                                 <option value="@role" selected="@(role == member.Role)">@PortalLabels.Role(role)</option>
                                             }
                                         </select>
                                         <button type="submit" name="Input.Action" value="@($"role:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                                aria-label="@($"變更 {member.Email} 的角色")">變更角色</button>
+                                                aria-label="@L["變更 {0} 的角色", member.Email]">@L["變更角色"]</button>
                                     }
                                 </td>
                             </tr>

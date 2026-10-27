@@ -3,16 +3,16 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 
-<PageTitle>帳號與組織 · 環境知識</PageTitle>
+<PageTitle>@L["帳號與組織 · 環境知識"]</PageTitle>
 
-<PageHeader Title="帳號與組織" Description="@(_tenant?.Name ?? Tenant)" />
+<PageHeader Title="@L["帳號與組織"]" Description="@(_tenant?.Name ?? Tenant)" />
 
 <div class="ep-stack">
     <section class="ep-card" aria-labelledby="org-title">
-        <h2 id="org-title" class="ep-section-title">你的組織與帳號</h2>
+        <h2 id="org-title" class="ep-section-title">@L["你的組織與帳號"]</h2>
         <dl class="ep-detail">
-            <dt>組織</dt><dd>@(_tenant?.Name ?? Tenant)（<code class="ep-mono">@Tenant</code>）</dd>
-            <dt>方案</dt>
+            <dt>@L["組織"]</dt><dd>@(_tenant?.Name ?? Tenant)（<code class="ep-mono">@Tenant</code>）</dd>
+            <dt>@L["方案"]</dt>
             <dd>
                 @if (_tenant?.Plan is { } plan)
                 {
@@ -20,27 +20,27 @@
                 }
                 else
                 {
-                    <span>目前沒有方案：資料端點會回 402。請洽我們的業務啟用。</span>
+                    <span>@L["目前沒有方案：資料端點會回 402。請洽我們的業務啟用。"]</span>
                 }
             </dd>
             @if (GivenName is not null)
             {
-                <dt>名稱</dt><dd>@GivenName</dd>
+                <dt>@L["名稱"]</dt><dd>@GivenName</dd>
             }
-            <dt>電子郵件</dt><dd>@Email</dd>
-            <dt>角色</dt><dd>@RoleLabel</dd>
-            <dt>兩步驟驗證</dt>
+            <dt>@L["電子郵件"]</dt><dd>@Email</dd>
+            <dt>@L["角色"]</dt><dd>@RoleLabel</dd>
+            <dt>@L["兩步驟驗證"]</dt>
             <dd>
                 @if (_twoFactor)
                 {
-                    <StatusBadge Tone="success">已啟用</StatusBadge>
+                    <StatusBadge Tone="success">@L["已啟用"]</StatusBadge>
                 }
                 else
                 {
-                    <StatusBadge Tone="warning">尚未啟用</StatusBadge> <a href="@($"{PortalPaths.Home(Tenant)}/security")">設定</a>
+                    <StatusBadge Tone="warning">@L["尚未啟用"]</StatusBadge> <a href="@($"{PortalPaths.Home(Tenant)}/security")">@L["設定"]</a>
                 }
             </dd>
-            <dt>密碼</dt><dd><a href="@PortalPaths.Password(Tenant)">改密碼</a></dd>
+            <dt>@L["密碼"]</dt><dd><a href="@PortalPaths.Password(Tenant)">@L["改密碼"]</a></dd>
         </dl>
     </section>
 
@@ -48,11 +48,11 @@
         <h2 id="keys-title" class="ep-section-title">API keys</h2>
         @if (!CanSeeKeys)
         {
-            <p class="ep-page-description">你的角色不能查看 API key。</p>
+            <p class="ep-page-description">@L["你的角色不能查看 API key。"]</p>
         }
         else if (_keys.Count == 0)
         {
-            <p class="ep-page-description">還沒有 API key。請洽我們的營運人員簽發。</p>
+            <p class="ep-page-description">@L["還沒有 API key。請洽我們的營運人員簽發。"]</p>
         }
         else
         {
@@ -60,10 +60,10 @@
                 <table class="ep-plain-table" aria-label="API keys">
                     <thead>
                         <tr>
-                            <th scope="col">名稱</th>
-                            <th scope="col">前綴</th>
-                            <th scope="col">建立（台北）</th>
-                            <th scope="col">狀態</th>
+                            <th scope="col">@L["名稱"]</th>
+                            <th scope="col">@L["前綴"]</th>
+                            <th scope="col">@L["建立（台北）"]</th>
+                            <th scope="col">@L["狀態"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -71,15 +71,15 @@
                         {
                             <tr>
                                 <td>@key.Name</td>
-                                <td data-label="前綴"><code class="ep-mono">@key.Prefix</code></td>
-                                <td data-label="建立"><time datetime="@TaipeiTime.Full(key.CreatedAt)">@TaipeiTime.Format(key.CreatedAt)</time></td>
-                                <td data-label="狀態"><StatusBadge Tone="@StatusTone(key)">@Status(key)</StatusBadge></td>
+                                <td data-label="@L["前綴"]"><code class="ep-mono">@key.Prefix</code></td>
+                                <td data-label="@L["建立"]"><time datetime="@TaipeiTime.Full(key.CreatedAt)">@TaipeiTime.Format(key.CreatedAt)</time></td>
+                                <td data-label="@L["狀態"]"><StatusBadge Tone="@StatusTone(key)">@Status(key)</StatusBadge></td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
-            <p class="ep-hint">完整的 key 只在簽發當下出現一次，這裡只顯示前綴。</p>
+            <p class="ep-hint">@L["完整的 key 只在簽發當下出現一次，這裡只顯示前綴。"]</p>
         }
     </section>
 </div>

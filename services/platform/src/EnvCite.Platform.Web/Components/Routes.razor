@@ -6,7 +6,7 @@
                 {
                     @* 已登入但帳號被停用或登入已失效（在已開著的頁面裡切換頁面時才會走到這裡；重新載入會由授權導去說明頁）：
                        不能再導去登入，會繞圈。 *@
-                    <MudAlert Severity="Severity.Warning">這個帳號目前沒有後台權限（可能已被停用，或登入已失效）。<MudLink Href="@UiEndpoints.LoginPath">重新登入</MudLink></MudAlert>
+                    <MudAlert Severity="Severity.Warning">@L["這個帳號目前沒有後台權限（可能已被停用，或登入已失效）。"]<MudLink Href="@UiEndpoints.LoginPath">@L["重新登入"]</MudLink></MudAlert>
                 }
                 else
                 {

@@ -3,17 +3,17 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 
-<PageTitle>對話紀錄 · 環境知識</PageTitle>
+<PageTitle>@L["對話紀錄 · 環境知識"]</PageTitle>
 
-<PageHeader Title="對話紀錄" Description="只有你看得到。" />
+<PageHeader Title="@L["對話紀錄"]" Description="@L["只有你看得到。"]" />
 
 @if (!Store.Enabled)
 {
-    <p class="ep-alert ep-alert-info" role="status">這個環境沒有開啟對話紀錄。</p>
+    <p class="ep-alert ep-alert-info" role="status">@L["這個環境沒有開啟對話紀錄。"]</p>
 }
 else
 {
-    <p class="ep-hint">超過 @Store.RetentionDays 天沒有更新的對話會自動刪除。</p>
+    <p class="ep-hint">@L["超過 {0} 天沒有更新的對話會自動刪除。", Store.RetentionDays]</p>
 
     @if (_message is not null)
     {
@@ -22,14 +22,14 @@ else
 
     @if (_items.Count == 0)
     {
-        <EmptyState Title="還沒有對話" Description="在首頁問一個問題，它就會出現在這裡。">
-            <a class="ep-btn ep-btn-primary" href="@PortalPaths.Home(Tenant)">查詢</a>
+        <EmptyState Title="@L["還沒有對話"]" Description="@L["在首頁問一個問題，它就會出現在這裡。"]">
+            <a class="ep-btn ep-btn-primary" href="@PortalPaths.Home(Tenant)">@L["查詢"]</a>
         </EmptyState>
     }
     else
     {
         <EditForm Model="Input" FormName="portal-history-delete" OnValidSubmit="DeleteAsync" method="post">
-            <ul class="ep-history" aria-label="對話">
+            <ul class="ep-history" aria-label="@L["對話"]">
                 @foreach (var item in _items)
                 {
                     <li class="ep-card ep-history-item">
@@ -38,7 +38,7 @@ else
                             <time class="ep-secondary" datetime="@TaipeiTime.Full(item.UpdatedAt)">@TaipeiTime.Format(item.UpdatedAt)</time>
                         </a>
                         <button type="submit" name="Input.Delete" value="@item.Id" formnovalidate class="ep-btn ep-btn-quiet"
-                                aria-label="@($"刪除對話：{item.Title}")">刪除</button>
+                                aria-label="@L["刪除對話：{0}", item.Title]">@L["刪除"]</button>
                     </li>
                 }
             </ul>

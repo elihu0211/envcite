@@ -53,25 +53,25 @@
             }
 
             var home = PortalPaths.Home(tenant.Identifier);
-            var items = new List<PortalShell.NavItem> { new(home, "查詢", "服務", Exact: true) };
+            var items = new List<PortalShell.NavItem> { new(home, L["查詢"], L["服務"], Exact: true) };
             if (History.Enabled)
             {
-                items.Add(new($"{home}/history", "對話紀錄", "服務"));
+                items.Add(new($"{home}/history", L["對話紀錄"], L["服務"]));
             }
 
             if (CanManageMembers)
             {
-                items.Add(new($"{home}/members", "成員", "組織"));
+                items.Add(new($"{home}/members", L["成員"], L["組織"]));
             }
 
-            items.Add(new($"{home}/account", "帳號與組織", "組織"));
+            items.Add(new($"{home}/account", L["帳號與組織"], L["組織"]));
             return items;
         }
     }
 
     private IReadOnlyList<PortalShell.MenuItem> MenuItems =>
         Account.CurrentTenant is { } tenant
-            ? [new($"{PortalPaths.Home(tenant.Identifier)}/security", "兩步驟驗證"), new(PortalPaths.Password(tenant.Identifier), "改密碼")]
+            ? [new($"{PortalPaths.Home(tenant.Identifier)}/security", L["兩步驟驗證"]), new(PortalPaths.Password(tenant.Identifier), L["改密碼"])]
             : [];
 
     protected override async Task OnInitializedAsync() =>

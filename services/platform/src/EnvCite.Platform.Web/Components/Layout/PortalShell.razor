@@ -2,17 +2,17 @@
    依群組排；個人的安全設定（兩步驟驗證、改密碼、登出）收在右上角的帳號選單。還沒登入或還有強制步驟時，只有頂欄。
    選單用瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript，入口是靜態渲染）。
    PortalLayout 依登入狀態填入；元件展示頁用假資料填入。 *@
-<a class="ep-skip-link" href="#main">跳到主要內容</a>
+<a class="ep-skip-link" href="#main">@L["跳到主要內容"]</a>
 
 <div class="@(HasSideNav ? "ep-console" : "ep-shell")">
     <header class="ep-shell-top">
         @if (!string.IsNullOrEmpty(HomeHref))
         {
-            <a class="ep-brand" href="@HomeHref">環境知識</a>
+            <a class="ep-brand" href="@HomeHref">@L["環境知識"]</a>
         }
         else
         {
-            <span class="ep-brand">環境知識</span>
+            <span class="ep-brand">@L["環境知識"]</span>
         }
         @if (!string.IsNullOrEmpty(TenantName))
         {
@@ -22,7 +22,7 @@
 
         @if (ShowMenu)
         {
-            <button type="button" class="ep-avatar" popovertarget="ep-account-menu" aria-label="帳號選單">@AvatarText</button>
+            <button type="button" class="ep-avatar" popovertarget="ep-account-menu" aria-label="@L["帳號選單"]">@AvatarText</button>
             <div id="ep-account-menu" class="ep-menu" popover>
                 <p class="ep-menu-who">
                     <span>@UserEmail</span>
@@ -31,7 +31,7 @@
                         <span class="ep-secondary">@RoleLabel</span>
                     }
                 </p>
-                <nav aria-label="帳號選單">
+                <nav aria-label="@L["帳號選單"]">
                     @foreach (var item in MenuItems)
                     {
                         <a class="ep-menu-item" href="@item.Href">@item.Label</a>
@@ -45,7 +45,7 @@
                 {
                     <form method="post" action="@LogoutAction">
                         <AntiforgeryToken />
-                        <button type="submit" class="ep-menu-item">登出</button>
+                        <button type="submit" class="ep-menu-item">@L["登出"]</button>
                     </form>
                 }
             </div>
@@ -61,7 +61,7 @@
             {
                 <form method="post" action="@LogoutAction">
                     <AntiforgeryToken />
-                    <button type="submit" class="ep-btn ep-btn-quiet">登出</button>
+                    <button type="submit" class="ep-btn ep-btn-quiet">@L["登出"]</button>
                 </form>
             }
         }

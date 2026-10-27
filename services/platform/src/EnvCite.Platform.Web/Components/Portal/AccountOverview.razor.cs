@@ -61,8 +61,8 @@ public partial class AccountOverview
         : key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow ? "warning"
         : "success";
 
-    private static string Status(ApiKeyInfo key) =>
-        key.RevokedAt is not null ? "已撤銷"
-        : key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow ? "已過期"
-        : "有效";
+    private string Status(ApiKeyInfo key) =>
+        key.RevokedAt is not null ? L["已撤銷"]
+        : key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow ? L["已過期"]
+        : L["有效"];
 }

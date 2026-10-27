@@ -4,13 +4,13 @@
 @attribute [EnableRateLimiting(PlatformAuth.PortalSignInRateLimit)]
 @attribute [AllowAnonymous]
 
-<PageTitle>登入 · 環境知識</PageTitle>
+<PageTitle>@L["登入 · 環境知識"]</PageTitle>
 
 @if (Account.CurrentTenant is { } tenant)
 {
     <section class="ep-login" aria-labelledby="login-title">
       <header>
-        <h1 id="login-title" class="ep-display">登入</h1>
+        <h1 id="login-title" class="ep-display">@L["登入"]</h1>
         <p class="ep-login-tenant">@(tenant.Name ?? tenant.Identifier)</p>
       </header>
       <div>
@@ -23,17 +23,17 @@
 
         <EditForm Model="Input" FormName="portal-login" OnValidSubmit="SignInAsync" method="post" class="ep-form">
             <div class="ep-field-row">
-                <label for="email" class="ep-label">電子郵件</label>
+                <label for="email" class="ep-label">@L["電子郵件"]</label>
                 <InputText id="email" @bind-Value="Input.Email" type="email" class="ep-input" autocomplete="username" required autofocus />
             </div>
             <div class="ep-field-row">
-                <label for="password" class="ep-label">密碼</label>
+                <label for="password" class="ep-label">@L["密碼"]</label>
                 <InputText id="password" @bind-Value="Input.Password" type="password" class="ep-input" autocomplete="current-password" required />
             </div>
-            <button type="submit" class="ep-btn ep-btn-primary">登入</button>
+            <button type="submit" class="ep-btn ep-btn-primary">@L["登入"]</button>
         </EditForm>
 
-        <p class="ep-note">沒有帳號或忘記密碼，請洽貴組織的管理員或我們的營運人員。</p>
+        <p class="ep-note">@L["沒有帳號或忘記密碼，請洽貴組織的管理員或我們的營運人員。"]</p>
       </div>
     </section>
 }

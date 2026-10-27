@@ -17,7 +17,7 @@ public partial class Security
     [SupplyParameterFromForm(FormName = "ui-mfa-regenerate")] private CodeForm Regenerate { get; set; } = default!;
 
     private bool _enabled;
-    private string _codesTitle = "兩步驟驗證已啟用";
+    private string _codesTitle = string.Empty;
     private TwoFactorSetup? _setup;
     private string _qrSvg = string.Empty;
     private string? _error;
@@ -25,6 +25,7 @@ public partial class Security
 
     protected override async Task OnInitializedAsync()
     {
+        _codesTitle = L["兩步驟驗證已啟用"];
         Input ??= new();
         Regenerate ??= new();
         _enabled = await TwoFactor.IsEnabledAsync(HttpContext.User, HttpContext.RequestAborted);
@@ -51,7 +52,7 @@ public partial class Security
             return;
         }
 
-        _error = enabled.Message ?? "啟用失敗。";
+        _error = enabled.Message ?? L["啟用失敗。"];
     }
 
     private async Task RegenerateAsync()
@@ -62,11 +63,11 @@ public partial class Security
         if (regenerated.IsOk)
         {
             _recoveryCodes = regenerated.Value;
-            _codesTitle = "新的復原碼";
+            _codesTitle = L["新的復原碼"];
             return;
         }
 
-        _error = regenerated.Message ?? "重新產生失敗。";
+        _error = regenerated.Message ?? L["重新產生失敗。"];
     }
 
     public sealed class CodeForm

@@ -3,18 +3,18 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 
-<PageTitle>對話 · 環境知識</PageTitle>
+<PageTitle>@L["對話 · 環境知識"]</PageTitle>
 
 @if (_conversation is null)
 {
     @* 不是自己的、已刪除、已過期、沒開啟：都是同一個畫面，不洩漏它存不存在。 *@
-    <EmptyState Title="找不到這個對話" Description="它可能已經被刪除，或已超過保留期限。">
-        <a class="ep-btn ep-btn-primary" href="@($"{PortalPaths.Home(Tenant)}/history")">回到對話紀錄</a>
+    <EmptyState Title="@L["找不到這個對話"]" Description="@L["它可能已經被刪除，或已超過保留期限。"]">
+        <a class="ep-btn ep-btn-primary" href="@($"{PortalPaths.Home(Tenant)}/history")">@L["回到對話紀錄"]</a>
     </EmptyState>
 }
 else
 {
-    <PageHeader Title="@_conversation.Title" Description="@($"最後更新 {TaipeiTime.Format(_conversation.UpdatedAt)}")" />
+    <PageHeader Title="@_conversation.Title" Description="@L["最後更新 {0}", TaipeiTime.Format(_conversation.UpdatedAt)]" />
 
     <div class="ep-thread">
         @foreach (var message in _conversation.Messages)
@@ -35,5 +35,5 @@ else
         }
     </div>
 
-    <p><a class="ep-btn ep-btn-quiet" href="@($"{PortalPaths.Home(Tenant)}/history")">回到對話紀錄</a></p>
+    <p><a class="ep-btn ep-btn-quiet" href="@($"{PortalPaths.Home(Tenant)}/history")">@L["回到對話紀錄"]</a></p>
 }
