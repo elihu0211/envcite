@@ -438,3 +438,46 @@ public sealed class MudBlazorTextTests(PlatformFactory factory)
         Assert.Contains("First page", english, StringComparison.Ordinal);
     }
 }
+
+/// <summary>後台的切換器：頂欄的按鈕、鍵盤捷徑的腳本，按鈕文字依語言。</summary>
+[Collection(PlatformTestGroup.Name)]
+public sealed class CommandPaletteTests(PlatformFactory factory)
+{
+    private async Task<string> HomeAsync(string? language)
+    {
+        using var client = factory.SignedInClient();
+        if (language is not null)
+        {
+            client.DefaultRequestHeaders.AcceptLanguage.ParseAdd(language);
+        }
+
+        return WebUtility.HtmlDecode(await client.GetStringAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task TheConsoleHeaderHasTheButtonInBothLanguages()
+    {
+        var chinese = await HomeAsync(null);
+        var english = await HomeAsync("en");
+
+        Assert.Contains("id=\"ep-palette-open\"", chinese, StringComparison.Ordinal);
+        Assert.Contains("搜尋頁面與租戶", chinese, StringComparison.Ordinal);
+        Assert.Contains("aria-keyshortcuts=\"Control+K Meta+K\"", chinese, StringComparison.Ordinal);
+        Assert.Contains("Search pages and tenants", english, StringComparison.Ordinal);
+    }
+
+    // 捷徑腳本有被引用、抓得到，而且只對按鈕按一下（不自己開任何東西）。
+    [Fact]
+    public async Task TheShortcutScriptIsServedAndOnlyClicksTheButton()
+    {
+        var html = await HomeAsync(null);
+        var src = Regex.Match(html, "<script src=\"([^\"]*shortcuts[^\"]*\\.js)\"").Groups[1].Value;
+        Assert.NotEmpty(src);
+
+        using var client = factory.SignedInClient();
+        var script = await client.GetStringAsync(new Uri("/" + src.TrimStart('/'), UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Contains("ep-palette-open", script, StringComparison.Ordinal);
+        Assert.Contains(".click()", script, StringComparison.Ordinal);
+    }
+}

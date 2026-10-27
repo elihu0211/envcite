@@ -396,4 +396,7 @@
   <data name="（這個環境沒有設定模型端點。）" xml:space="preserve"><value>(No model endpoint is configured in this environment.)</value></data>
   <data name="，只有你看得到，{0} 天後自動刪除，也可以隨時自己刪。" xml:space="preserve"><value>, visible only to you; deleted automatically after {0} days, and you can delete it yourself at any time.</value></data>
   <data name="：請現在抄下或存進密碼管理員。" xml:space="preserve"><value>: write them down now or save them in a password manager.</value></data>
+  <data name="搜尋頁面與租戶" xml:space="preserve"><value>Search pages and tenants</value></data>
+  <data name="頁面" xml:space="preserve"><value>Pages</value></data>
+  <data name="沒有符合「{0}」的頁面或租戶" xml:space="preserve"><value>No pages or tenants match “{0}”</value></data>
 </root>

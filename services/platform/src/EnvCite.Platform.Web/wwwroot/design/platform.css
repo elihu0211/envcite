@@ -562,6 +562,98 @@ a:where(:not([class*="mud-"])) {
     flex-direction: column;
 }
 
+/* 頂欄中間的切換器按鈕：看起來像搜尋框，點下去（或 ⌘K）開切換器。 */
+.ep-palette-open {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    flex: 0 1 var(--ep-measure-narrow);
+    min-inline-size: 0;
+    margin-inline: auto;
+    min-block-size: 2.25rem;
+    padding-inline: var(--ep-space-3);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface-muted);
+    color: var(--ep-text-secondary);
+    font: inherit;
+    font-size: var(--ep-body-sm-size);
+    cursor: pointer;
+}
+
+.ep-palette-open > span {
+    flex: 1;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-align: start;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ep-kbd {
+    padding: 0 var(--ep-space-2);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface);
+    font-family: var(--ep-font);
+    font-size: var(--ep-micro-size);
+}
+
+@media (hover: hover) {
+    .ep-palette-open:hover {
+        border-color: var(--ep-border-control);
+    }
+}
+
+@media (pointer: coarse) {
+    .ep-palette-open {
+        min-block-size: var(--ep-touch-target);
+    }
+}
+
+@media (width < 48rem) {
+    .ep-kbd {
+        display: none;
+    }
+}
+
+/* 切換器裡的結果：群組標題加一列一列的連結。 */
+.ep-palette-group {
+    margin: var(--ep-space-4) 0 var(--ep-space-1);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-micro-size);
+    letter-spacing: var(--ep-micro-tracking);
+    font-weight: var(--ep-micro-weight);
+}
+
+.ep-palette-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ep-palette-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ep-space-3);
+    min-block-size: var(--ep-touch-target);
+    padding-inline: var(--ep-space-3);
+    border-radius: var(--ep-radius-control);
+    color: var(--ep-text);
+    text-decoration: none;
+    align-items: center;
+}
+
+.ep-palette-item:hover,
+.ep-palette-item:focus-visible {
+    background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+}
+
+.ep-palette-empty {
+    margin-block: var(--ep-space-4) 0;
+}
+
 .ep-console-product {
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-sm-size);

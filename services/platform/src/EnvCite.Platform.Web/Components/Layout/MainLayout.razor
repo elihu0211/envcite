@@ -11,9 +11,11 @@
     <header class="ep-shell-top">
         <span class="ep-brand">@L["環境知識"]</span>
         <span class="ep-console-product">@L["營運後台"]</span>
-        <span class="ep-spacer"></span>
         <AuthorizeView>
             <Authorized>
+                <button type="button" id="ep-palette-open" class="ep-palette-open" @onclick="OpenPaletteAsync" aria-keyshortcuts="Control+K Meta+K">
+                    <span>@L["搜尋頁面與租戶"]</span><kbd class="ep-kbd" data-shortcut-hint>Ctrl K</kbd>
+                </button>
                 <button type="button" class="ep-avatar" popovertarget="ep-ui-account-menu" aria-label="@L["帳號選單"]">@Avatar(context.User)</button>
                 <div id="ep-ui-account-menu" class="ep-menu" popover>
                     <p class="ep-menu-who">
@@ -51,6 +53,13 @@
 </div>
 
 @code {
+    [Inject] private IDialogService Dialogs { get; set; } = default!;
+
+    private Task OpenPaletteAsync() =>
+        Dialogs.ShowAsync<CommandPalette>(
+            L["搜尋頁面與租戶"],
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, NoHeader = true, Position = DialogPosition.TopCenter });
+
     private static string Avatar(ClaimsPrincipal user)
     {
         var email = user.FindFirst(ClaimTypes.Email)?.Value;
