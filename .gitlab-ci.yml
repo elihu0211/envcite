@@ -163,6 +163,13 @@ variables:
   - pyproject.toml
   - uv.lock
 
+.changes-jobkit: &changes-jobkit
+  - libs/python/envcite-jobkit/src/**/*
+  - libs/python/envcite-jobkit/tests/**/*
+  - libs/python/envcite-jobkit/pyproject.toml
+  - pyproject.toml
+  - uv.lock
+
 # 所有 Python job 的觸發路徑聯集：deps-python 在其中任何一個 job 要跑時就要跑。
 .changes-python: &changes-python
   - services/ontology/src/**/*
@@ -537,6 +544,16 @@ segmenter:
   # scripts/measure-segmentation.py 量測（需網路，不在 CI）。
   variables:
     MEMBER: libs/python/envcite-segmenter
+
+jobkit:
+  extends: .python-checks
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *changes-jobkit
+    - *mr-ci-change
+  # 純標準庫、不需資料庫與網路；時鐘可注入，測試不真的等待。
+  variables:
+    MEMBER: libs/python/envcite-jobkit
 
 # 對外 REST 的相容性檢查（同 proto 的 buf breaking），以目標分支已提交的規格為基準；規格與程式碼是否一致由 dotnet job 檢查。
 openapi:

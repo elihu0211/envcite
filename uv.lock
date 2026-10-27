@@ -10,6 +10,7 @@ resolution-markers = [
 members = [
     "envcite-consult",
     "envcite-grpc",
+    "envcite-jobkit",
     "envcite-ontology",
     "envcite-proto",
     "envcite-segmenter",
@@ -471,6 +472,11 @@ requires-dist = [
     { name = "opentelemetry-instrumentation-grpc" },
     { name = "opentelemetry-sdk" },
 ]
+
+[[package]]
+name = "envcite-jobkit"
+version = "0.1.0"
+source = { editable = "libs/python/envcite-jobkit" }
 
 [[package]]
 name = "envcite-ontology"
