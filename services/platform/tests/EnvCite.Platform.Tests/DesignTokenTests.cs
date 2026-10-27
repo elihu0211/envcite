@@ -273,6 +273,20 @@ public static partial class DesignTokenTests
         Assert.Contains("clamp(", TokenCss.Render(), StringComparison.Ordinal);
     }
 
+    // 檔案版品牌圖示（favicon、app icon）是靜態檔，引用不到 CSS 變數；用測試守住它的藍色就是 Brand，
+    // 否則改了品牌色，分頁圖示會悄悄不一致。
+    [Theory]
+    [InlineData("icon.svg")]
+    [InlineData("icon-small.svg")]
+    public static void BrandIconFilesUseTheBrandColor(string file)
+    {
+        var path = Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(StylesheetPath())!, "..", "brand", file));
+        var colors = HexColor().Matches(File.ReadAllText(path)).Select(m => m.Value.ToUpperInvariant()).ToHashSet();
+
+        Assert.Contains(DesignTokens.Brand.ToUpperInvariant(), colors);
+    }
+
     private static string StylesheetPath([CallerFilePath] string here = "") =>
         Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.Web", "wwwroot", "design", "platform.css"));

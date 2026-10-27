@@ -51,8 +51,22 @@ a:where(:not([class*="mud-"])) {
 }
 
 .ep-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-2);
     font-weight: var(--ep-h1-weight);
     letter-spacing: var(--ep-h3-tracking);
+}
+
+/* 品牌圖形跟字同高；顏色跟文字（currentColor），在頂欄上是主色、其他底色上跟文字。 */
+.ep-brand-mark {
+    inline-size: 1.25em;
+    block-size: 1.25em;
+    flex: none;
+}
+
+.ep-shell-top .ep-brand-mark {
+    color: var(--ep-primary);
 }
 
 /* 分組面：白底、髮絲線、圓角，沒有陰影。層次靠背景與分隔線，不靠浮起來的卡片。 */

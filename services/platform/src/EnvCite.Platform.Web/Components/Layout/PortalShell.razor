@@ -8,11 +8,11 @@
     <header class="ep-shell-top">
         @if (!string.IsNullOrEmpty(HomeHref))
         {
-            <a class="ep-brand" href="@HomeHref">@L["環境知識"]</a>
+            <a class="ep-brand" href="@HomeHref"><BrandMark />@L["環境知識"]</a>
         }
         else
         {
-            <span class="ep-brand">@L["環境知識"]</span>
+            <span class="ep-brand"><BrandMark />@L["環境知識"]</span>
         }
         @if (!string.IsNullOrEmpty(TenantName))
         {

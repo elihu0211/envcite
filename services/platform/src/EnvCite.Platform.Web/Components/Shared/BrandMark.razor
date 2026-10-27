@@ -1,0 +1,6 @@
+@* 品牌圖形（葉片加葉脈），內嵌 SVG：靜態渲染也能用，顏色跟著文字（currentColor），葉脈用遮罩挖空，放在任何底色上都成立。
+   純裝飾，旁邊的文字「環境知識」才是名稱。檔案版（favicon、app icon）在 wwwroot/brand/，色碼由 DesignTokenTests 對齊 Brand。 *@
+<svg class="ep-brand-mark" viewBox="22 20 28 34" aria-hidden="true" focusable="false">
+    <mask id="ep-brand-vein"><rect x="0" y="0" width="72" height="72" fill="#fff" /><path d="M36 52c0-10 3-18 10-24" stroke="#000" stroke-width="2.5" fill="none" stroke-linecap="round" /></mask>
+    <path d="M36 52C24 48 20 36 24 24c12 0 20 6 20 16 0 6-3 10-8 12z" fill="currentColor" mask="url(#ep-brand-vein)" />
+</svg>

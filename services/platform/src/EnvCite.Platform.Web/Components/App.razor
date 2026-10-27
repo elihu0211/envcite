@@ -7,6 +7,10 @@
     <meta name="color-scheme" content="light" />
     @* 瀏覽器的工具列顏色；顏色來自 token，不另寫。 *@
     <meta name="theme-color" content="@DesignTokens.Light.Background" />
+    @* 品牌圖示：favicon 用簡化版（小尺寸只留葉片），完整版給 iOS 主畫面；色碼與 DesignTokens.Brand 由測試對齊。 *@
+    <link rel="icon" href="@Assets["_content/EnvCite.Platform.Web/brand/favicon.ico"]" sizes="32x32" />
+    <link rel="icon" href="@Assets["_content/EnvCite.Platform.Web/brand/icon-small.svg"]" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="@Assets["_content/EnvCite.Platform.Web/brand/apple-touch-icon.png"]" />
     <base href="/" />
     <style>@((MarkupString)TokenCss.Render())</style>
     <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
