@@ -401,3 +401,40 @@ public static partial class UiTextTests
     [GeneratedRegex(@"\{\d+\}", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Placeholder();
 }
+/// <summary>MudBlazor 內建文字：中文介面用繁體中文，英文介面用它內建的英文。</summary>
+[Collection(PlatformTestGroup.Name)]
+public sealed class MudBlazorTextTests(PlatformFactory factory)
+{
+    [Fact]
+    public static void TheLocalizerAnswersInChineseAndStepsAsideForEnglish()
+    {
+        var localizer = new EnvCite.Platform.Web.Presentation.PlatformMudLocalizer();
+
+        using (TestCulture.Use("zh-TW"))
+        {
+            Assert.Equal("第一頁", localizer["MudTablePager_FirstPage"].Value);
+            Assert.False(localizer["MudTablePager_FirstPage"].ResourceNotFound);
+            Assert.True(localizer["Mud_Not_A_Key"].ResourceNotFound);
+        }
+
+        using (TestCulture.Use("en"))
+        {
+            Assert.True(localizer["MudTablePager_FirstPage"].ResourceNotFound);
+        }
+    }
+
+    [Fact]
+    public async Task ThePagerOfTheTenantListSpeaksTheUsersLanguage()
+    {
+        using var zh = factory.SignedInClient();
+        using var en = factory.SignedInClient();
+        en.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en");
+
+        var chinese = WebUtility.HtmlDecode(await zh.GetStringAsync(new Uri("/ui/tenants", UriKind.Relative), TestContext.Current.CancellationToken));
+        var english = WebUtility.HtmlDecode(await en.GetStringAsync(new Uri("/ui/tenants", UriKind.Relative), TestContext.Current.CancellationToken));
+
+        Assert.Contains("第一頁", chinese, StringComparison.Ordinal);
+        Assert.DoesNotContain("First page", chinese, StringComparison.Ordinal);
+        Assert.Contains("First page", english, StringComparison.Ordinal);
+    }
+}

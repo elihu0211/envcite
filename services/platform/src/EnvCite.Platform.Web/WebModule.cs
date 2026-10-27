@@ -2,6 +2,7 @@ using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Auth;
 using EnvCite.Platform.Web.Components;
 using EnvCite.Platform.Web.Design;
+using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using MudBlazor;
 using MudBlazor.Services;
 
 namespace EnvCite.Platform.Web;
@@ -27,6 +29,8 @@ public static class WebModule
         services.AddScoped<AuthenticationStateProvider, OperatorAuthenticationStateProvider>();
         services.AddCascadingAuthenticationState();
         services.AddMudServices();
+        // MudBlazor 內建文字的繁體中文；英文退回它內建的英文。
+        services.AddTransient<MudLocalizer, PlatformMudLocalizer>();
         // 外觀只有 DesignTokens 一個來源。這裡把它裝成 MudBlazor 的主題，註冊一次，元件注入，不在元件裡再建一次。
         services.AddSingleton(PlatformTheme.Create());
         return services;
