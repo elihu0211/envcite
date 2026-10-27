@@ -1,4 +1,5 @@
 using EnvCite.Platform.SharedKernel;
+using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
@@ -112,7 +113,7 @@ public partial class Members
     private string Describe<T>(AdminOutcome<T> outcome) => outcome.Status switch
     {
         AdminStatus.NotFound => L["找不到這位成員。"],
-        _ => outcome.Message ?? L["操作失敗。"],
+        _ => outcome.Localized() ?? L["操作失敗。"],
     };
 
     private string State(MemberInfo m) =>

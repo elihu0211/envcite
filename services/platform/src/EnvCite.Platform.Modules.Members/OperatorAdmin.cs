@@ -29,12 +29,12 @@ internal sealed class OperatorAdmin(IServiceScopeFactory scopes, TimeProvider ti
     {
         if (!EmailAddresses.IsValid(email))
         {
-            return AdminOutcome.Invalid<IssuedOperatorPassword>("Email 格式不正確。");
+            return AdminOutcome.Invalid<IssuedOperatorPassword>(OutcomeCodes.EmailInvalid);
         }
 
         if (displayName is { Length: > 200 })
         {
-            return AdminOutcome.Invalid<IssuedOperatorPassword>("顯示名稱最長 200 字元。");
+            return AdminOutcome.Invalid<IssuedOperatorPassword>(OutcomeCodes.DisplayNameTooLong);
         }
 
         await using var scope = scopes.CreateAsyncScope();
@@ -52,8 +52,8 @@ internal sealed class OperatorAdmin(IServiceScopeFactory scopes, TimeProvider ti
         if (!created.Succeeded)
         {
             return created.Errors.Any(e => e.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.DuplicateEmail))
-                ? AdminOutcome.Conflict<IssuedOperatorPassword>("已經有這個 email 的營運者。")
-                : AdminOutcome.Invalid<IssuedOperatorPassword>(created.Errors.First().Description);
+                ? AdminOutcome.Conflict<IssuedOperatorPassword>(OutcomeCodes.OperatorEmailTaken)
+                : IdentityOutcomes.Rejected<IssuedOperatorPassword>(created.Errors.First());
         }
 
         // 稽核的 Detail 只有 email，絕不放密碼（也沒有雜湊）。
@@ -72,7 +72,7 @@ internal sealed class OperatorAdmin(IServiceScopeFactory scopes, TimeProvider ti
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
         {
-            return AdminOutcome.NotFound<IssuedOperatorPassword>("Operator not found.");
+            return AdminOutcome.NotFound<IssuedOperatorPassword>(OutcomeCodes.OperatorNotFound);
         }
 
         var password = OneTimePassword.New();
@@ -83,7 +83,7 @@ internal sealed class OperatorAdmin(IServiceScopeFactory scopes, TimeProvider ti
         var updated = await users.UpdateAsync(user);
         if (!updated.Succeeded)
         {
-            return AdminOutcome.Invalid<IssuedOperatorPassword>(updated.Errors.First().Description);
+            return IdentityOutcomes.Rejected<IssuedOperatorPassword>(updated.Errors.First());
         }
 
         // 讓既有的 session 失效：被重設通常是因為帳號可能已經不安全。
@@ -103,7 +103,7 @@ internal sealed class OperatorAdmin(IServiceScopeFactory scopes, TimeProvider ti
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
         {
-            return AdminOutcome.NotFound<OperatorInfo>("Operator not found.");
+            return AdminOutcome.NotFound<OperatorInfo>(OutcomeCodes.OperatorNotFound);
         }
 
         await users.SetTwoFactorEnabledAsync(user, false);
@@ -131,7 +131,7 @@ internal sealed class OperatorAdmin(IServiceScopeFactory scopes, TimeProvider ti
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
         {
-            return AdminOutcome.NotFound<OperatorInfo>("Operator not found.");
+            return AdminOutcome.NotFound<OperatorInfo>(OutcomeCodes.OperatorNotFound);
         }
 
         if (user.Disabled == disabled)

@@ -53,7 +53,7 @@ public static class TenancyEndpoints
             AdminStatus.Ok => Results.Created(
                 $"/admin/tenants/{created.Value!.Id}", new TenantResponse(created.Value.Id, created.Value.Identifier, created.Value.Name)),
             AdminStatus.Conflict => Results.Conflict(),
-            _ => Results.ValidationProblem(new Dictionary<string, string[]> { ["identifier"] = [created.Message ?? "Invalid request."] }),
+            _ => created.ValidationProblem("identifier"),
         };
     }
 }

@@ -65,7 +65,7 @@ public partial class Security
             return;
         }
 
-        _error = enabled.Message ?? L["啟用失敗。"];
+        _error = enabled.Localized() ?? L["啟用失敗。"];
     }
 
     private async Task RegenerateAsync()
@@ -80,7 +80,7 @@ public partial class Security
             return;
         }
 
-        _error = regenerated.Message ?? L["重新產生失敗。"];
+        _error = regenerated.Localized() ?? L["重新產生失敗。"];
     }
 
     private async Task DisableAsync()
@@ -90,7 +90,7 @@ public partial class Security
         var disabled = await TwoFactor.DisableAsync(HttpContext.User, password, code, HttpContext.RequestAborted);
         if (!disabled.IsOk)
         {
-            _error = disabled.Message ?? L["關閉失敗。"];
+            _error = disabled.Localized() ?? L["關閉失敗。"];
             return;
         }
 

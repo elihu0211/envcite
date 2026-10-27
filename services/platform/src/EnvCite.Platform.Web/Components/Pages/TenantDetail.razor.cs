@@ -173,7 +173,7 @@ public partial class TenantDetail
             var reset = await Members.ResetPasswordAsync(await ActorAsync(), TenantId, member.Id, CancellationToken.None);
             if (!reset.IsOk)
             {
-                Fail(reset.Message ?? L["重設失敗。"]);
+                Fail(reset.Localized() ?? L["重設失敗。"]);
                 return;
             }
 
@@ -201,7 +201,7 @@ public partial class TenantDetail
             var changed = await Members.SetDisabledAsync(await ActorAsync(), TenantId, member.Id, disabled, CancellationToken.None);
             if (!changed.IsOk)
             {
-                Fail(changed.Message ?? L["操作失敗。"]);
+                Fail(changed.Localized() ?? L["操作失敗。"]);
                 return;
             }
 
@@ -227,7 +227,7 @@ public partial class TenantDetail
             var reset = await Members.ResetTwoFactorAsync(await ActorAsync(), TenantId, member.Id, CancellationToken.None);
             if (!reset.IsOk)
             {
-                Fail(reset.Message ?? L["重設失敗。"]);
+                Fail(reset.Localized() ?? L["重設失敗。"]);
                 return;
             }
 
@@ -287,7 +287,7 @@ public partial class TenantDetail
             var result = await Plans.SetAiAnswerAsync(await ActorAsync(), TenantId, enable, CancellationToken.None);
             if (!result.IsOk)
             {
-                Fail(result.Message ?? L["變更失敗。"]);
+                Fail(result.Localized() ?? L["變更失敗。"]);
                 return;
             }
 
@@ -303,7 +303,7 @@ public partial class TenantDetail
             var change = await Plans.SetAsync(await ActorAsync(), TenantId, plan, CancellationToken.None);
             if (!change.IsOk)
             {
-                Fail(change.Message ?? L["變更方案失敗。"]);
+                Fail(change.Localized() ?? L["變更方案失敗。"]);
                 return;
             }
 
@@ -342,7 +342,7 @@ public partial class TenantDetail
             var revoked = await Keys.RevokeAsync(await ActorAsync(), TenantId, key.Id, CancellationToken.None);
             if (!revoked.IsOk)
             {
-                Fail(revoked.Message ?? L["撤銷失敗。"]);
+                Fail(revoked.Localized() ?? L["撤銷失敗。"]);
                 return;
             }
 

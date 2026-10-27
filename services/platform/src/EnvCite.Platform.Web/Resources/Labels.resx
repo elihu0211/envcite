@@ -76,4 +76,43 @@
   <data name="Operator.Status.active" xml:space="preserve"><value>使用中</value></data>
   <data name="Operator.Status.needs_enrollment" xml:space="preserve"><value>須綁定驗證器</value></data>
   <data name="Language.Switch" xml:space="preserve"><value>語言</value></data>
+  <data name="Outcome.tenant.not_found" xml:space="preserve"><value>找不到這個租戶。</value></data>
+  <data name="Outcome.member.not_found" xml:space="preserve"><value>找不到這位成員。</value></data>
+  <data name="Outcome.operator.not_found" xml:space="preserve"><value>找不到這位營運者。</value></data>
+  <data name="Outcome.api_key.not_found" xml:space="preserve"><value>找不到這把 API key。</value></data>
+  <data name="Outcome.account.not_found" xml:space="preserve"><value>找不到這個帳號。</value></data>
+  <data name="Outcome.api_key.invalid" xml:space="preserve"><value>名稱必填（最長 100 字元），到期時間必須在未來。</value></data>
+  <data name="Outcome.plan.unknown" xml:space="preserve"><value>不認得方案「{0}」。已定義的方案：{1}。</value></data>
+  <data name="Outcome.plan.required_for_consent" xml:space="preserve"><value>這個租戶還沒有指派方案，請先指派方案（同意跟著方案）。</value></data>
+  <data name="Outcome.question.required" xml:space="preserve"><value>請輸入問題。</value></data>
+  <data name="Outcome.upstream.invalid_request" xml:space="preserve"><value>{0}</value></data>
+  <data name="Outcome.email.invalid" xml:space="preserve"><value>Email 格式不正確。</value></data>
+  <data name="Outcome.role.invalid" xml:space="preserve"><value>角色不在允許的範圍內。</value></data>
+  <data name="Outcome.display_name.too_long" xml:space="preserve"><value>顯示名稱最長 200 字元。</value></data>
+  <data name="Outcome.password.same_as_current" xml:space="preserve"><value>新密碼不能與目前的密碼相同。</value></data>
+  <data name="Outcome.password.current_incorrect" xml:space="preserve"><value>目前的密碼不正確。</value></data>
+  <data name="Outcome.password.too_short" xml:space="preserve"><value>新密碼至少要 {0} 個字元。</value></data>
+  <data name="Outcome.password.not_acceptable" xml:space="preserve"><value>新密碼不符合規則。</value></data>
+  <data name="Outcome.identity.rejected" xml:space="preserve"><value>{0}</value></data>
+  <data name="Outcome.two_factor.already_enabled" xml:space="preserve"><value>已經啟用了兩步驟驗證。</value></data>
+  <data name="Outcome.two_factor.not_enabled" xml:space="preserve"><value>目前沒有啟用兩步驟驗證。</value></data>
+  <data name="Outcome.two_factor.required_for_role" xml:space="preserve"><value>你的角色必須使用兩步驟驗證，不能關閉。</value></data>
+  <data name="Outcome.credentials.incorrect" xml:space="preserve"><value>密碼或驗證碼不正確。</value></data>
+  <data name="Outcome.tenant.identifier_invalid" xml:space="preserve"><value>識別碼 3–63 字元：小寫英文、數字、連字號，且須以英數字開頭與結尾。</value></data>
+  <data name="Outcome.tenant.name_required" xml:space="preserve"><value>名稱不可空白。</value></data>
+  <data name="Outcome.member.email_taken" xml:space="preserve"><value>這個租戶已經有這個 email 的成員。</value></data>
+  <data name="Outcome.operator.email_taken" xml:space="preserve"><value>已經有這個 email 的營運者。</value></data>
+  <data name="Outcome.tenant.identifier_taken" xml:space="preserve"><value>這個識別碼已被使用。</value></data>
+  <data name="Outcome.member.add_forbidden" xml:space="preserve"><value>只有擁有者與管理員能新增成員。</value></data>
+  <data name="Outcome.member.add_role_forbidden" xml:space="preserve"><value>你不能新增這個角色的成員。</value></data>
+  <data name="Outcome.member.assign_role_forbidden" xml:space="preserve"><value>你不能指派這個角色。</value></data>
+  <data name="Outcome.member.manage_forbidden" xml:space="preserve"><value>只有擁有者與管理員能管理成員。</value></data>
+  <data name="Outcome.member.manage_self_forbidden" xml:space="preserve"><value>不能對自己做這件事。改密碼請用「改密碼」。</value></data>
+  <data name="Outcome.member.manage_target_forbidden" xml:space="preserve"><value>你的角色不能管理這位成員。</value></data>
+  <data name="Outcome.answer.not_configured" xml:space="preserve"><value>回答服務尚未設定。</value></data>
+  <data name="Outcome.consult.unavailable" xml:space="preserve"><value>搜尋服務暫時無法使用，請稍後再試。</value></data>
+  <data name="Outcome.model.unavailable" xml:space="preserve"><value>回答服務暫時無法使用，請稍後再試。</value></data>
+  <data name="Outcome.ontology.unavailable" xml:space="preserve"><value>搜尋服務暫時無法使用，請稍後再試。</value></data>
+  <data name="Outcome.verification_code.incorrect" xml:space="preserve"><value>驗證碼不正確。</value></data>
+  <data name="Outcome.verification_code.incorrect_hint" xml:space="preserve"><value>驗證碼不正確。請確認手機的時間是自動校正的，再輸入驗證器上現在顯示的六位數。</value></data>
 </root>

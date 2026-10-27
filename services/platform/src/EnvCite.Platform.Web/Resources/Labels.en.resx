@@ -76,4 +76,43 @@
   <data name="Operator.Status.active" xml:space="preserve"><value>Active</value></data>
   <data name="Operator.Status.needs_enrollment" xml:space="preserve"><value>Authenticator required</value></data>
   <data name="Language.Switch" xml:space="preserve"><value>Language</value></data>
+  <data name="Outcome.tenant.not_found" xml:space="preserve"><value>Tenant not found.</value></data>
+  <data name="Outcome.member.not_found" xml:space="preserve"><value>Member not found.</value></data>
+  <data name="Outcome.operator.not_found" xml:space="preserve"><value>Operator not found.</value></data>
+  <data name="Outcome.api_key.not_found" xml:space="preserve"><value>API key not found.</value></data>
+  <data name="Outcome.account.not_found" xml:space="preserve"><value>Account not found.</value></data>
+  <data name="Outcome.api_key.invalid" xml:space="preserve"><value>Name is required (max 100 chars); ExpiresAt must be in the future.</value></data>
+  <data name="Outcome.plan.unknown" xml:space="preserve"><value>Unknown plan '{0}'. Defined plans: {1}.</value></data>
+  <data name="Outcome.plan.required_for_consent" xml:space="preserve"><value>The tenant has no plan assigned in the database; assign one first (consent follows the plan).</value></data>
+  <data name="Outcome.question.required" xml:space="preserve"><value>question is required</value></data>
+  <data name="Outcome.upstream.invalid_request" xml:space="preserve"><value>{0}</value></data>
+  <data name="Outcome.email.invalid" xml:space="preserve"><value>Email address is not valid.</value></data>
+  <data name="Outcome.role.invalid" xml:space="preserve"><value>Role is not allowed.</value></data>
+  <data name="Outcome.display_name.too_long" xml:space="preserve"><value>Display name is limited to 200 characters.</value></data>
+  <data name="Outcome.password.same_as_current" xml:space="preserve"><value>The new password must differ from the current one.</value></data>
+  <data name="Outcome.password.current_incorrect" xml:space="preserve"><value>The current password is incorrect.</value></data>
+  <data name="Outcome.password.too_short" xml:space="preserve"><value>The new password must be at least {0} characters.</value></data>
+  <data name="Outcome.password.not_acceptable" xml:space="preserve"><value>The new password does not meet the rules.</value></data>
+  <data name="Outcome.identity.rejected" xml:space="preserve"><value>{0}</value></data>
+  <data name="Outcome.two_factor.already_enabled" xml:space="preserve"><value>Two-step verification is already enabled.</value></data>
+  <data name="Outcome.two_factor.not_enabled" xml:space="preserve"><value>Two-step verification is not enabled.</value></data>
+  <data name="Outcome.two_factor.required_for_role" xml:space="preserve"><value>Your role must use two-step verification, so it cannot be turned off.</value></data>
+  <data name="Outcome.credentials.incorrect" xml:space="preserve"><value>The password or verification code is incorrect.</value></data>
+  <data name="Outcome.tenant.identifier_invalid" xml:space="preserve"><value>Identifier must be 3–63 characters: lowercase letters, digits and hyphens, starting and ending with a letter or digit.</value></data>
+  <data name="Outcome.tenant.name_required" xml:space="preserve"><value>Name must not be empty.</value></data>
+  <data name="Outcome.member.email_taken" xml:space="preserve"><value>This tenant already has a member with this email.</value></data>
+  <data name="Outcome.operator.email_taken" xml:space="preserve"><value>An operator with this email already exists.</value></data>
+  <data name="Outcome.tenant.identifier_taken" xml:space="preserve"><value>This identifier is already in use.</value></data>
+  <data name="Outcome.member.add_forbidden" xml:space="preserve"><value>Only owners and admins can add members.</value></data>
+  <data name="Outcome.member.add_role_forbidden" xml:space="preserve"><value>You cannot add members with this role.</value></data>
+  <data name="Outcome.member.assign_role_forbidden" xml:space="preserve"><value>You cannot assign this role.</value></data>
+  <data name="Outcome.member.manage_forbidden" xml:space="preserve"><value>Only owners and admins can manage members.</value></data>
+  <data name="Outcome.member.manage_self_forbidden" xml:space="preserve"><value>You cannot do this to yourself. To change your own password, use “Change password”.</value></data>
+  <data name="Outcome.member.manage_target_forbidden" xml:space="preserve"><value>Your role cannot manage this member.</value></data>
+  <data name="Outcome.answer.not_configured" xml:space="preserve"><value>Answer service is not configured.</value></data>
+  <data name="Outcome.consult.unavailable" xml:space="preserve"><value>Consult service unavailable.</value></data>
+  <data name="Outcome.model.unavailable" xml:space="preserve"><value>Model unavailable.</value></data>
+  <data name="Outcome.ontology.unavailable" xml:space="preserve"><value>Ontology service unavailable.</value></data>
+  <data name="Outcome.verification_code.incorrect" xml:space="preserve"><value>The verification code is incorrect.</value></data>
+  <data name="Outcome.verification_code.incorrect_hint" xml:space="preserve"><value>The verification code is incorrect. Make sure your phone's time is set automatically, then enter the six digits the authenticator shows now.</value></data>
 </root>

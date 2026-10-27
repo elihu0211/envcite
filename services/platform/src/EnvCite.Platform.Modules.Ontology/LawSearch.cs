@@ -25,11 +25,11 @@ internal sealed class LawSearch(
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
         {
-            return AdminOutcome.Invalid<IReadOnlyList<LawHit>>(ex.Status.Detail);
+            return AdminOutcome.Invalid<IReadOnlyList<LawHit>>(OutcomeCodes.UpstreamInvalidRequest, ex.Status.Detail);
         }
         catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable or StatusCode.DeadlineExceeded)
         {
-            return AdminOutcome.Unavailable<IReadOnlyList<LawHit>>("Ontology service unavailable.");
+            return AdminOutcome.Unavailable<IReadOnlyList<LawHit>>(OutcomeCodes.OntologyUnavailable);
         }
     }
 }

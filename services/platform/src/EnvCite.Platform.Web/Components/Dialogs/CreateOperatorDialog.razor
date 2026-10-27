@@ -52,7 +52,7 @@
             var created = await Operators.CreateAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None);
             if (!created.IsOk)
             {
-                _error = created.Message ?? L["建立失敗。"];
+                _error = created.Localized() ?? L["建立失敗。"];
                 return;
             }
 

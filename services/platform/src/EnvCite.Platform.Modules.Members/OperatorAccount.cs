@@ -90,18 +90,18 @@ internal sealed class OperatorAccount(
         var user = await users.FindOperatorAsync(principal.FindFirst(PlatformClaimTypes.OperatorId)?.Value);
         if (user is null)
         {
-            return AdminOutcome.NotFound<bool>();
+            return AdminOutcome.NotFound<bool>(OutcomeCodes.AccountNotFound);
         }
 
         if (string.Equals(currentPassword, newPassword, StringComparison.Ordinal))
         {
-            return AdminOutcome.Invalid<bool>("新密碼不能與目前的密碼相同。");
+            return AdminOutcome.Invalid<bool>(OutcomeCodes.PasswordSameAsCurrent);
         }
 
         var changed = await users.ChangePasswordAsync(user, currentPassword ?? string.Empty, newPassword ?? string.Empty);
         if (!changed.Succeeded)
         {
-            return AdminOutcome.Invalid<bool>(Describe(changed.Errors.First()));
+            return IdentityOutcomes.PasswordRejected<bool>(changed.Errors.First());
         }
 
         user.MustChangePassword = false;
@@ -142,10 +142,4 @@ internal sealed class OperatorAccount(
 
     private HttpContext Context() => http.HttpContext ?? throw new InvalidOperationException("No HTTP request.");
 
-    private static string Describe(IdentityError error) => error.Code switch
-    {
-        nameof(IdentityErrorDescriber.PasswordMismatch) => "目前的密碼不正確。",
-        nameof(IdentityErrorDescriber.PasswordTooShort) => $"新密碼至少要 {MembersModule.MinimumPasswordLength} 個字元。",
-        _ => "新密碼不符合規則。",
-    };
 }

@@ -52,12 +52,12 @@ internal sealed partial class GroundedAnswerer(
     {
         if (!Available)
         {
-            return AdminOutcome.Unavailable<GroundedAnswer>("Answer service is not configured.");
+            return AdminOutcome.Unavailable<GroundedAnswer>(OutcomeCodes.AnswerNotConfigured);
         }
 
         if (string.IsNullOrWhiteSpace(question))
         {
-            return AdminOutcome.Invalid<GroundedAnswer>("question is required");
+            return AdminOutcome.Invalid<GroundedAnswer>(OutcomeCodes.QuestionRequired);
         }
 
         GroundResponse grounded;
@@ -69,11 +69,11 @@ internal sealed partial class GroundedAnswerer(
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
         {
-            return AdminOutcome.Invalid<GroundedAnswer>(ex.Status.Detail);
+            return AdminOutcome.Invalid<GroundedAnswer>(OutcomeCodes.UpstreamInvalidRequest, ex.Status.Detail);
         }
         catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable or StatusCode.DeadlineExceeded)
         {
-            return AdminOutcome.Unavailable<GroundedAnswer>("Consult service unavailable.");
+            return AdminOutcome.Unavailable<GroundedAnswer>(OutcomeCodes.ConsultUnavailable);
         }
 
         await usage.RecordAsync(ConsultEndpoints.GroundOperation, 1, cancellationToken);
@@ -95,7 +95,7 @@ internal sealed partial class GroundedAnswerer(
         catch (Exception ex) when (ex is ClientResultException or HttpRequestException or OperationCanceledException && !cancellationToken.IsCancellationRequested)
         {
             ModelFailed(logger, ex.GetType().Name, (ex as ClientResultException)?.Status);
-            return AdminOutcome.Unavailable<GroundedAnswer>("Model unavailable.");
+            return AdminOutcome.Unavailable<GroundedAnswer>(OutcomeCodes.ModelUnavailable);
         }
 
         await usage.RecordAsync(AnswerOperation, 1, cancellationToken);

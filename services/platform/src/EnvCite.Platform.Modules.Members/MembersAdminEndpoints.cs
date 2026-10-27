@@ -67,7 +67,7 @@ public static class MembersAdminEndpoints
     {
         AdminStatus.NotFound => Results.NotFound(),
         AdminStatus.Conflict => Results.Conflict(),
-        AdminStatus.Invalid => Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [outcome.Message ?? "Invalid request."] }),
+        AdminStatus.Invalid => outcome.ValidationProblem(),
         _ => Results.StatusCode(StatusCodes.Status500InternalServerError),
     };
 }

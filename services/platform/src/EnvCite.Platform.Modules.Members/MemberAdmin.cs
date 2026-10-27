@@ -23,7 +23,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } found)
         {
-            return AdminOutcome.NotFound<IReadOnlyList<MemberInfo>>("Tenant not found.");
+            return AdminOutcome.NotFound<IReadOnlyList<MemberInfo>>(OutcomeCodes.TenantNotFound);
         }
 
         Bind(scope, found);
@@ -40,7 +40,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } tenant)
         {
-            return AdminOutcome.NotFound<IssuedPassword>("Tenant not found.");
+            return AdminOutcome.NotFound<IssuedPassword>(OutcomeCodes.TenantNotFound);
         }
 
         Bind(scope, tenant);
@@ -54,7 +54,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } tenant)
         {
-            return AdminOutcome.NotFound<IssuedPassword>("Tenant not found.");
+            return AdminOutcome.NotFound<IssuedPassword>(OutcomeCodes.TenantNotFound);
         }
 
         Bind(scope, tenant);
@@ -62,7 +62,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
         // 租戶的查詢濾鏡讓別的租戶的人在這裡找不到：不能用 A 租戶的 id 重設 B 租戶的人。
         var user = await scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>().FindByIdAsync(userId);
         return user is null
-            ? AdminOutcome.NotFound<IssuedPassword>("Member not found.")
+            ? AdminOutcome.NotFound<IssuedPassword>(OutcomeCodes.MemberNotFound)
             : await scope.ServiceProvider.GetRequiredService<MemberCore>().ResetPasswordAsync(actor, tenant, user, cancellationToken);
     }
 
@@ -72,13 +72,13 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } tenant)
         {
-            return AdminOutcome.NotFound<MemberInfo>("Tenant not found.");
+            return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.TenantNotFound);
         }
 
         Bind(scope, tenant);
         var user = await scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>().FindByIdAsync(userId);
         return user is null
-            ? AdminOutcome.NotFound<MemberInfo>("Member not found.")
+            ? AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound)
             : AdminOutcome.Ok(await scope.ServiceProvider.GetRequiredService<MemberCore>().SetDisabledAsync(actor, tenant, user, disabled, cancellationToken));
     }
 
@@ -88,7 +88,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } tenant)
         {
-            return AdminOutcome.NotFound<MemberInfo>("Tenant not found.");
+            return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.TenantNotFound);
         }
 
         Bind(scope, tenant);
@@ -98,7 +98,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
         var user = await users.FindByIdAsync(userId);
         if (user is null)
         {
-            return AdminOutcome.NotFound<MemberInfo>("Member not found.");
+            return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound);
         }
 
         await users.SetTwoFactorEnabledAsync(user, false);

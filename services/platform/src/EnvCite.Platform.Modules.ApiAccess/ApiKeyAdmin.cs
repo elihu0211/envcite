@@ -22,7 +22,7 @@ internal sealed class ApiKeyAdmin(IServiceScopeFactory scopes, TimeProvider time
         await using var scope = scopes.CreateAsyncScope();
         if (await TenantAsync(scope, tenantId) is not { } tenant)
         {
-            return AdminOutcome.NotFound<IReadOnlyList<ApiKeyInfo>>("Tenant not found.");
+            return AdminOutcome.NotFound<IReadOnlyList<ApiKeyInfo>>(OutcomeCodes.TenantNotFound);
         }
 
         await using var db = MultiTenantDbContext.Create<PlatformDbContext, TenantInfo>(tenant, scope.ServiceProvider);
@@ -37,13 +37,13 @@ internal sealed class ApiKeyAdmin(IServiceScopeFactory scopes, TimeProvider time
         await using var scope = scopes.CreateAsyncScope();
         if (await TenantAsync(scope, tenantId) is not { } tenant)
         {
-            return AdminOutcome.NotFound<IssuedApiKey>("Tenant not found.");
+            return AdminOutcome.NotFound<IssuedApiKey>(OutcomeCodes.TenantNotFound);
         }
 
         var now = time.GetUtcNow();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 100 || expiresAt <= now)
         {
-            return AdminOutcome.Invalid<IssuedApiKey>("Name is required (max 100 chars); ExpiresAt must be in the future.");
+            return AdminOutcome.Invalid<IssuedApiKey>(OutcomeCodes.ApiKeyInvalid);
         }
 
         var (fullKey, prefix, hash) = ApiKeyFormat.Generate();
@@ -80,7 +80,7 @@ internal sealed class ApiKeyAdmin(IServiceScopeFactory scopes, TimeProvider time
         await using var scope = scopes.CreateAsyncScope();
         if (await TenantAsync(scope, tenantId) is not { } tenant)
         {
-            return AdminOutcome.NotFound<ApiKeyInfo>("Tenant not found.");
+            return AdminOutcome.NotFound<ApiKeyInfo>(OutcomeCodes.TenantNotFound);
         }
 
         // 租戶的查詢濾鏡讓別的租戶的 key 在這裡找不到：不能用 A 租戶的 id 撤銷 B 租戶的 key。
@@ -88,7 +88,7 @@ internal sealed class ApiKeyAdmin(IServiceScopeFactory scopes, TimeProvider time
         var key = await db.ApiKeys.SingleOrDefaultAsync(k => k.Id == keyId, cancellationToken);
         if (key is null)
         {
-            return AdminOutcome.NotFound<ApiKeyInfo>("API key not found.");
+            return AdminOutcome.NotFound<ApiKeyInfo>(OutcomeCodes.ApiKeyNotFound);
         }
 
         if (key.RevokedAt is null)

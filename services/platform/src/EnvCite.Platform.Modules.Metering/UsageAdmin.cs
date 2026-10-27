@@ -20,7 +20,7 @@ internal sealed class UsageAdmin(IServiceScopeFactory scopes) : IUsageAdmin
         await using var scope = scopes.CreateAsyncScope();
         if (await TenantAsync(scope, tenantId) is not { } tenant)
         {
-            return AdminOutcome.NotFound<IReadOnlyList<TenantUsageSummary>>("Tenant not found.");
+            return AdminOutcome.NotFound<IReadOnlyList<TenantUsageSummary>>(OutcomeCodes.TenantNotFound);
         }
 
         await using var db = MultiTenantDbContext.Create<PlatformDbContext, TenantInfo>(tenant, scope.ServiceProvider);

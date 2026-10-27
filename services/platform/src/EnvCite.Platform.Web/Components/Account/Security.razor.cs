@@ -52,7 +52,7 @@ public partial class Security
             return;
         }
 
-        _error = enabled.Message ?? L["啟用失敗。"];
+        _error = enabled.Localized() ?? L["啟用失敗。"];
     }
 
     private async Task RegenerateAsync()
@@ -67,7 +67,7 @@ public partial class Security
             return;
         }
 
-        _error = regenerated.Message ?? L["重新產生失敗。"];
+        _error = regenerated.Localized() ?? L["重新產生失敗。"];
     }
 
     public sealed class CodeForm

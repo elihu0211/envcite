@@ -118,7 +118,7 @@ else
             var operators = await Operators.ListAsync(CancellationToken.None);
             if (!operators.IsOk)
             {
-                _error = operators.Message ?? L["載入失敗。"];
+                _error = operators.Localized() ?? L["載入失敗。"];
                 return;
             }
 

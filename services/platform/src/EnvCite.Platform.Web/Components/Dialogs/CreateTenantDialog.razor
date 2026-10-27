@@ -51,7 +51,7 @@
                 return;
             }
 
-            _error = created.Message;
+            _error = created.Localized();
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

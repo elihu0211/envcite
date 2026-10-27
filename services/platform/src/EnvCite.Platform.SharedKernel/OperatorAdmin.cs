@@ -20,26 +20,36 @@ public enum AdminStatus
     Forbidden,
 }
 
-/// <summary>營運者操作的結果。輸入錯誤與找不到是預期的結果，不是例外。</summary>
-public sealed record AdminOutcome<T>(AdminStatus Status, T? Value = default, string? Message = null)
+/// <summary>
+/// 營運者操作的結果。輸入錯誤與找不到是預期的結果，不是例外。失敗時 <see cref="Code"/> 是穩定的代碼（見 <see cref="OutcomeCodes"/>），
+/// <see cref="Args"/> 是代碼的參數；<see cref="Message"/> 是英文說明，只供 API 與日誌。
+/// </summary>
+public sealed record AdminOutcome<T>(
+    AdminStatus Status, T? Value = default, string? Message = null, string? Code = null, IReadOnlyList<string>? Args = null)
 {
     public bool IsOk => Status == AdminStatus.Ok;
 }
 
-/// <summary><see cref="AdminOutcome{T}"/> 的工廠（泛型型別上不放靜態成員）。</summary>
+/// <summary><see cref="AdminOutcome{T}"/> 的工廠（泛型型別上不放靜態成員）。失敗一律帶代碼，文字由代碼決定。</summary>
 public static class AdminOutcome
 {
     public static AdminOutcome<T> Ok<T>(T value) => new(AdminStatus.Ok, value);
 
-    public static AdminOutcome<T> NotFound<T>(string? message = null) => new(AdminStatus.NotFound, default, message);
+    public static AdminOutcome<T> NotFound<T>(string code, params object[] args) => Fail<T>(AdminStatus.NotFound, code, args);
 
-    public static AdminOutcome<T> Invalid<T>(string message) => new(AdminStatus.Invalid, default, message);
+    public static AdminOutcome<T> Invalid<T>(string code, params object[] args) => Fail<T>(AdminStatus.Invalid, code, args);
 
-    public static AdminOutcome<T> Conflict<T>(string message) => new(AdminStatus.Conflict, default, message);
+    public static AdminOutcome<T> Conflict<T>(string code, params object[] args) => Fail<T>(AdminStatus.Conflict, code, args);
 
-    public static AdminOutcome<T> Unavailable<T>(string message) => new(AdminStatus.Unavailable, default, message);
+    public static AdminOutcome<T> Unavailable<T>(string code, params object[] args) => Fail<T>(AdminStatus.Unavailable, code, args);
 
-    public static AdminOutcome<T> Forbidden<T>(string message) => new(AdminStatus.Forbidden, default, message);
+    public static AdminOutcome<T> Forbidden<T>(string code, params object[] args) => Fail<T>(AdminStatus.Forbidden, code, args);
+
+    private static AdminOutcome<T> Fail<T>(AdminStatus status, string code, object[] args)
+    {
+        string[] text = [.. args.Select(a => Convert.ToString(a, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)];
+        return new(status, default, OutcomeCodes.Describe(code, text), code, text);
+    }
 }
 
 /// <summary>建立租戶的結果；<see cref="Id"/> 是租戶的穩定識別（稽核與其他表都用它）。</summary>

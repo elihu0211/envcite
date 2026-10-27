@@ -64,7 +64,7 @@ public static class ApiAccessAdminEndpoints
             {
                 AdminStatus.Ok => Results.Ok(new { enabled = result.Value }),
                 AdminStatus.NotFound => Results.NotFound(),
-                _ => Results.Problem(result.Message, statusCode: StatusCodes.Status400BadRequest),
+                _ => result.Problem(StatusCodes.Status400BadRequest),
             };
         });
 
@@ -83,7 +83,7 @@ public static class ApiAccessAdminEndpoints
     private static IResult Problem<T>(AdminOutcome<T> outcome) => outcome.Status switch
     {
         AdminStatus.NotFound => Results.NotFound(),
-        AdminStatus.Invalid => Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [outcome.Message ?? "Invalid request."] }),
+        AdminStatus.Invalid => outcome.ValidationProblem(),
         _ => Results.StatusCode(StatusCodes.Status500InternalServerError),
     };
 }

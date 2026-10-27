@@ -79,7 +79,7 @@
             }
             else
             {
-                _error = issued.Message ?? L["簽發失敗。"];
+                _error = issued.Localized() ?? L["簽發失敗。"];
             }
         }
         catch (Exception exception) when (exception is not OperationCanceledException)

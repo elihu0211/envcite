@@ -88,8 +88,8 @@ public static class OntologyEndpoints
                 {
                     AdminStatus.Ok => Results.Ok(result.Value!.Select(h =>
                         new SearchHitDto(h.Uri, h.LawId, h.LawTitle, h.Number, h.Content, h.Score))),
-                    AdminStatus.Invalid => Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [result.Message ?? "Invalid request."] }),
-                    _ => Results.Problem("Ontology service unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable),
+                    AdminStatus.Invalid => result.ValidationProblem(),
+                    _ => result.Problem(StatusCodes.Status503ServiceUnavailable, "Ontology service unavailable."),
                 };
             })
             .WithName("SearchArticles")

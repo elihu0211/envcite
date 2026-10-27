@@ -29,12 +29,12 @@ internal sealed class OperatorTwoFactor(
     {
         if (await UserOfAsync(principal) is not { } user)
         {
-            return AdminOutcome.NotFound<TwoFactorSetup>();
+            return AdminOutcome.NotFound<TwoFactorSetup>(OutcomeCodes.AccountNotFound);
         }
 
         if (user.TwoFactorEnabled)
         {
-            return AdminOutcome.Invalid<TwoFactorSetup>("已經啟用了兩步驟驗證。");
+            return AdminOutcome.Invalid<TwoFactorSetup>(OutcomeCodes.TwoFactorAlreadyEnabled);
         }
 
         // 沒有金鑰才產生；有就沿用，重新整理頁面不會讓已經掃進手機的 QR 失效。
@@ -52,17 +52,17 @@ internal sealed class OperatorTwoFactor(
     {
         if (await UserOfAsync(principal) is not { } user)
         {
-            return AdminOutcome.NotFound<IReadOnlyList<string>>();
+            return AdminOutcome.NotFound<IReadOnlyList<string>>(OutcomeCodes.AccountNotFound);
         }
 
         if (user.TwoFactorEnabled)
         {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>("已經啟用了兩步驟驗證。");
+            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorAlreadyEnabled);
         }
 
         if (!await totp.VerifyAsync(users, user, code))
         {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>("驗證碼不正確。請確認手機的時間是自動校正的，再輸入驗證器上現在顯示的六位數。");
+            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrectHint);
         }
 
         await users.SetTwoFactorEnabledAsync(user, true);
@@ -80,7 +80,7 @@ internal sealed class OperatorTwoFactor(
     {
         if (await UserOfAsync(principal) is not { TwoFactorEnabled: true } user)
         {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>("目前沒有啟用兩步驟驗證。");
+            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorNotEnabled);
         }
 
         // 驗證碼錯記一次失敗並檢查鎖定，鎖定中就一律不過；這裡不歸零計數（歸零只在完整登入成功時）。
@@ -91,7 +91,7 @@ internal sealed class OperatorTwoFactor(
                 await users.AccessFailedAsync(user);
             }
 
-            return AdminOutcome.Invalid<IReadOnlyList<string>>("驗證碼不正確。");
+            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrect);
         }
 
         var codes = await users.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount) ?? [];

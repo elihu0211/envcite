@@ -21,17 +21,17 @@ internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog a
     {
         if (!EmailAddresses.IsValid(email))
         {
-            return AdminOutcome.Invalid<IssuedPassword>("Email 格式不正確。");
+            return AdminOutcome.Invalid<IssuedPassword>(OutcomeCodes.EmailInvalid);
         }
 
         if (!CustomerRoles.All.Contains(role))
         {
-            return AdminOutcome.Invalid<IssuedPassword>("角色不在允許的範圍內。");
+            return AdminOutcome.Invalid<IssuedPassword>(OutcomeCodes.RoleInvalid);
         }
 
         if (displayName is { Length: > 200 })
         {
-            return AdminOutcome.Invalid<IssuedPassword>("顯示名稱最長 200 字元。");
+            return AdminOutcome.Invalid<IssuedPassword>(OutcomeCodes.DisplayNameTooLong);
         }
 
         var user = new ApplicationUser
@@ -48,8 +48,8 @@ internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog a
         if (!created.Succeeded)
         {
             return created.Errors.Any(e => e.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.DuplicateEmail))
-                ? AdminOutcome.Conflict<IssuedPassword>("這個租戶已經有這個 email 的成員。")
-                : AdminOutcome.Invalid<IssuedPassword>(created.Errors.First().Description);
+                ? AdminOutcome.Conflict<IssuedPassword>(OutcomeCodes.MemberEmailTaken)
+                : IdentityOutcomes.Rejected<IssuedPassword>(created.Errors.First());
         }
 
         // 稽核的 Detail 只有 email 與角色，絕不放密碼（也沒有雜湊）。
@@ -76,7 +76,7 @@ internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog a
         var updated = await users.UpdateAsync(user);
         if (!updated.Succeeded)
         {
-            return AdminOutcome.Invalid<IssuedPassword>(updated.Errors.First().Description);
+            return IdentityOutcomes.Rejected<IssuedPassword>(updated.Errors.First());
         }
 
         // 讓既有的 session 失效：被重設通常是因為帳號可能已經不安全。

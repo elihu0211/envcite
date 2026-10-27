@@ -1,6 +1,7 @@
 using System.Security.Claims;
 
 using EnvCite.Platform.SharedKernel;
+using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
@@ -45,7 +46,7 @@ public partial class ChangePassword
             return;
         }
 
-        _error = changed.Message ?? L["改密碼失敗。"];
+        _error = changed.Localized() ?? L["改密碼失敗。"];
     }
 
     public sealed class PasswordForm

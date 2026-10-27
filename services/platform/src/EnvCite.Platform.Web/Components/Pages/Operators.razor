@@ -110,7 +110,7 @@ else
             var listed = await Admin.ListAsync(CancellationToken.None);
             if (!listed.IsOk)
             {
-                _error = listed.Message ?? L["載入失敗。"];
+                _error = listed.Localized() ?? L["載入失敗。"];
                 _operators = [];
                 return;
             }
@@ -159,7 +159,7 @@ else
             var reset = await Admin.ResetPasswordAsync(await ActorAsync(), op.Id, CancellationToken.None);
             if (!reset.IsOk)
             {
-                Fail(reset.Message ?? L["重設失敗。"]);
+                Fail(reset.Localized() ?? L["重設失敗。"]);
                 return;
             }
 
@@ -184,7 +184,7 @@ else
             var reset = await Admin.ResetTwoFactorAsync(await ActorAsync(), op.Id, CancellationToken.None);
             if (!reset.IsOk)
             {
-                Fail(reset.Message ?? L["重設失敗。"]);
+                Fail(reset.Localized() ?? L["重設失敗。"]);
                 return;
             }
 
@@ -216,7 +216,7 @@ else
             var changed = await Admin.SetDisabledAsync(await ActorAsync(), op.Id, disabled, CancellationToken.None);
             if (!changed.IsOk)
             {
-                Fail(changed.Message ?? L["操作失敗。"]);
+                Fail(changed.Localized() ?? L["操作失敗。"]);
                 return;
             }
 

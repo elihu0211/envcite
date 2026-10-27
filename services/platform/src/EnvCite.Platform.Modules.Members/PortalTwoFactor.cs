@@ -37,12 +37,12 @@ internal sealed class PortalTwoFactor(
     {
         if (await UserOfAsync(principal) is not { } user)
         {
-            return AdminOutcome.NotFound<TwoFactorSetup>();
+            return AdminOutcome.NotFound<TwoFactorSetup>(OutcomeCodes.AccountNotFound);
         }
 
         if (user.TwoFactorEnabled)
         {
-            return AdminOutcome.Invalid<TwoFactorSetup>("已經啟用了兩步驟驗證。");
+            return AdminOutcome.Invalid<TwoFactorSetup>(OutcomeCodes.TwoFactorAlreadyEnabled);
         }
 
         // 沒有金鑰才產生；有就沿用，重新整理頁面不會讓已經掃進手機的 QR 失效。
@@ -63,17 +63,17 @@ internal sealed class PortalTwoFactor(
         var info = Tenant();
         if (await UserOfAsync(principal) is not { } user)
         {
-            return AdminOutcome.NotFound<IReadOnlyList<string>>();
+            return AdminOutcome.NotFound<IReadOnlyList<string>>(OutcomeCodes.AccountNotFound);
         }
 
         if (user.TwoFactorEnabled)
         {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>("已經啟用了兩步驟驗證。");
+            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorAlreadyEnabled);
         }
 
         if (!await VerifyCodeAsync(user, code))
         {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>("驗證碼不正確。請確認手機的時間是自動校正的，再輸入驗證器上現在顯示的六位數。");
+            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrectHint);
         }
 
         await users.SetTwoFactorEnabledAsync(user, true);
@@ -91,25 +91,25 @@ internal sealed class PortalTwoFactor(
         var info = Tenant();
         if (await UserOfAsync(principal) is not { } user)
         {
-            return AdminOutcome.NotFound<bool>();
+            return AdminOutcome.NotFound<bool>(OutcomeCodes.AccountNotFound);
         }
 
         if (!user.TwoFactorEnabled)
         {
-            return AdminOutcome.Invalid<bool>("目前沒有啟用兩步驟驗證。");
+            return AdminOutcome.Invalid<bool>(OutcomeCodes.TwoFactorNotEnabled);
         }
 
         // 角色要求的就不能關：能關，等於這個要求只是個建議。要關得由營運者改角色或設定。
         if (RequiresTwoFactor(user.Role, options.Value))
         {
-            return AdminOutcome.Invalid<bool>("你的角色必須使用兩步驟驗證，不能關閉。");
+            return AdminOutcome.Invalid<bool>(OutcomeCodes.TwoFactorRequiredForRole);
         }
 
         // 密碼與驗證碼都要對：只知道其中一個（看到密碼、或借到沒鎖的手機）的人，不能把保護關掉。
         // 兩者的失敗都計入鎖定，所以這裡不能成為猜測的後門。
         if (!await ConfirmAsync(user, password, code))
         {
-            return AdminOutcome.Invalid<bool>("密碼或驗證碼不正確。");
+            return AdminOutcome.Invalid<bool>(OutcomeCodes.CredentialsIncorrect);
         }
 
         await users.SetTwoFactorEnabledAsync(user, false);
@@ -127,12 +127,12 @@ internal sealed class PortalTwoFactor(
         var info = Tenant();
         if (await UserOfAsync(principal) is not { TwoFactorEnabled: true } user)
         {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>("目前沒有啟用兩步驟驗證。");
+            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorNotEnabled);
         }
 
         if (!await ConfirmAsync(user, password: null, code))
         {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>("驗證碼不正確。");
+            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrect);
         }
 
         var codes = await users.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount) ?? [];

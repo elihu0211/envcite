@@ -44,7 +44,7 @@ internal sealed class MemberSelfService(
     {
         if (await ActorAsync(actor) is not { } me || !MemberPolicy.IsManager(me.Role))
         {
-            return AdminOutcome.Forbidden<IReadOnlyList<TeamMember>>("只有擁有者與管理員能管理成員。");
+            return AdminOutcome.Forbidden<IReadOnlyList<TeamMember>>(OutcomeCodes.MemberManageForbidden);
         }
 
         var list = await users.Users.AsNoTracking().OrderBy(u => u.Email).ToListAsync(cancellationToken);
@@ -57,12 +57,12 @@ internal sealed class MemberSelfService(
     {
         if (await ActorAsync(actor) is not { } me || !MemberPolicy.IsManager(me.Role))
         {
-            return AdminOutcome.Forbidden<IssuedPassword>("只有擁有者與管理員能新增成員。");
+            return AdminOutcome.Forbidden<IssuedPassword>(OutcomeCodes.MemberAddForbidden);
         }
 
         if (!MemberPolicy.Grantable(me.Role).Contains(role))
         {
-            return AdminOutcome.Forbidden<IssuedPassword>("你不能新增這個角色的成員。");
+            return AdminOutcome.Forbidden<IssuedPassword>(OutcomeCodes.MemberAddRoleForbidden);
         }
 
         return await core.CreateAsync(ActorOf(me), Tenant(), email, displayName, role, cancellationToken);
@@ -91,13 +91,13 @@ internal sealed class MemberSelfService(
 
         if (!CustomerRoles.All.Contains(role))
         {
-            return AdminOutcome.Invalid<MemberInfo>("角色不在允許的範圍內。");
+            return AdminOutcome.Invalid<MemberInfo>(OutcomeCodes.RoleInvalid);
         }
 
         // 能管理對方現在的角色，也只能放到自己能指派的角色：管理員不能把人升成管理員或擁有者。
         if (!MemberPolicy.Grantable(me!.Role).Contains(role))
         {
-            return AdminOutcome.Forbidden<MemberInfo>("你不能指派這個角色。");
+            return AdminOutcome.Forbidden<MemberInfo>(OutcomeCodes.MemberAssignRoleForbidden);
         }
 
         if (target!.Role == role)
@@ -130,23 +130,23 @@ internal sealed class MemberSelfService(
     {
         if (await ActorAsync(actor) is not { } me || !MemberPolicy.IsManager(me.Role))
         {
-            return (null, null, AdminOutcome.Forbidden<T>("只有擁有者與管理員能管理成員。"));
+            return (null, null, AdminOutcome.Forbidden<T>(OutcomeCodes.MemberManageForbidden));
         }
 
         // 租戶的查詢濾鏡讓別的租戶的人在這裡找不到。
         if (await users.FindByIdAsync(userId) is not { } target)
         {
-            return (me, null, AdminOutcome.NotFound<T>("Member not found."));
+            return (me, null, AdminOutcome.NotFound<T>(OutcomeCodes.MemberNotFound));
         }
 
         if (target.Id == me.Id)
         {
-            return (me, target, AdminOutcome.Forbidden<T>("不能對自己做這件事。改密碼請用「改密碼」。"));
+            return (me, target, AdminOutcome.Forbidden<T>(OutcomeCodes.MemberManageSelfForbidden));
         }
 
         if (!MemberPolicy.CanManage(me.Role, target.Role))
         {
-            return (me, target, AdminOutcome.Forbidden<T>("你的角色不能管理這位成員。"));
+            return (me, target, AdminOutcome.Forbidden<T>(OutcomeCodes.MemberManageTargetForbidden));
         }
 
         return (me, target, null);

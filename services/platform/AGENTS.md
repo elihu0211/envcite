@@ -48,6 +48,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 ## Contract
 
 - **對外 REST 契約是 `openapi/openapi_v2.json`**，每次 `dotnet build` 產生，與程式碼變更一起提交；規格過期或破壞目標分支版本，CI 都會失敗。新的 `/v2` 端點要有 `.WithName`／`.WithTags`／`.WithSummary`／`.WithDescription`，以及它會回的每個狀態的 `.Produces…`。不相容的變更進新版本群組（`/v3`），不進 `/v2`。
+- **營運操作的失敗帶穩定代碼**（`AdminOutcome.Code`，常數在 `SharedKernel/OutcomeCodes.cs`）：呼叫端與介面依代碼判斷，不依賴文字。`Message` 與 API 的 `detail` 永遠是英文（來自 `OutcomeCodes.English`），服務層不放中文；API 的驗證與一般錯誤回應多一個 `code` 欄位。介面依代碼取使用者的語言（`Labels` 資源檔的 `Outcome.{代碼}`，`OutcomeText.Localized()`）。新增代碼要同時加英文、中文、英文資源檔，測試守住三者一致；Identity 的錯誤經 `IdentityOutcomes` 轉成代碼，不直接傳出。
 - **對外用語獨立於內部 gRPC**（端點在兩者間對映），用法律詞彙；新的公開欄位先取法律用語，內部 proto 不必跟著（例：`pointInTime` 對 gRPC 的 `as_of`）。
 - `.proto` 一律來自倉庫根 `proto/`（Grpc.Tools 於各模組 `.csproj` 編譯），**不得複製**。
 - 內部 gRPC 用戶端只經 `SharedKernel.InternalGrpcClient.AddInternalGrpcClient` 註冊，新增上游也走這裡，不複製一份。連線選項與 Python 伺服器成套（`envcite_grpc.connection`；不等式見 `libs/python/AGENTS.md`），改一邊要看另一邊。只重試 `UNAVAILABLE`（內部方法都是唯讀、確定性的一元呼叫），`DEADLINE_EXCEEDED` 與 `RESOURCE_EXHAUSTED` 不重試。
