@@ -2,23 +2,12 @@
 
 倉庫層規範見根 `AGENTS.md`；本檔只管 `services/platform/`。
 
-## 索引
-
-| 文件 | 內容 |
-|------|------|
-| [`../../README.md`](../../README.md) | 倉庫總覽與目錄 |
-| [`README.md`](README.md) | 本服務：介面、請求流程、啟動、開發指令 |
-| [`../../proto/README.md`](../../proto/README.md) | gRPC 契約與服務如何組合 |
-| `openapi/openapi_v2.json` | 對外 REST 契約（建置產生） |
-| [`../ontology/`](../ontology/README.md)、[`../consult/`](../consult/README.md) | 本服務呼叫的上游，各有 README 與 `AGENTS.md` |
-
 ## Project
 
 - **Name:** platform（`services/platform`；倉庫為 `envcite`）
 - **Role:** 多租戶控制平面：租戶、API key、限流、計量、對外 REST API；經 gRPC 呼叫 `services/ontology`（共享、不分租戶）與 `services/consult`（接地、租戶隔離）。
-- **Stack:** C# · .NET（SDK 版本在 `global.json`）· ASP.NET Core · PostgreSQL · xUnit v3（Microsoft.Testing.Platform，`global.json` 開啟）
+- **Stack:** C# · .NET（SDK 版本在 `global.json`）· ASP.NET Core · PostgreSQL
 - **Auth surfaces:** 租戶 API key（`/v2`）；共用營運者金鑰（`/admin`）；營運者帳號加強制 TOTP（營運者後台 `/ui`）；客戶入口帳號（`/portal`，以設定開關）。
-- **Plans:** 方案指派是營運者寫入的資料；接上付款供應商後，付款是真值，由其 webhook 寫入 entitlements。
 
 ## Architecture
 
@@ -32,26 +21,19 @@
 
 ## Layout
 
-- `src/EnvCite.Platform.Api`：ASP.NET Core 主機（composition root）。
-- `src/EnvCite.Platform.Modules.*`：功能模組。
-- `src/EnvCite.Platform.Web`：營運者後台與客戶入口的 Razor 元件函式庫（Blazor；頁面在 `/ui`、`/portal`），由 `Api` 掛上；不在 `/v2` 的限流與計量群組內。
-- `src/EnvCite.Platform.Data`：`PlatformDbContext`、實體與遷移。
-- `src/EnvCite.Platform.SharedKernel`：跨模組基元（認證名稱、計量介面、內部 gRPC 用戶端註冊、設計時連線）。
-- `tests/EnvCite.Platform.Tests`：xUnit 加 `WebApplicationFactory` 整合測試；Testcontainers PostgreSQL，上游以行程內 h2c gRPC fake 取代。
+- `src/EnvCite.Platform.Web` 是 Razor 元件函式庫（營運者後台 `/ui`、客戶入口 `/portal`），由 `Api` 掛上；不在 `/v2` 的限流與計量群組內。
+- 測試：xUnit 加 `WebApplicationFactory` 整合測試；Testcontainers PostgreSQL，上游以行程內 h2c gRPC fake 取代。
 
 ## Commands
 
 從**本目錄**執行（`EnvCite.Platform.slnx` 所在處）。
 
 ```bash
-dotnet restore && dotnet tool restore  # 工具：dotnet-ef（dotnet-tools.json）
-# 依賴由提交的 packages.lock.json 鎖定（CI 用 --locked-mode restore）。
-# 改了 Directory.Packages.props 或 csproj 之後：dotnet restore --force-evaluate，並提交鎖檔。
-dotnet build                         # 警告即錯誤（Directory.Build.props）；同時產生 openapi_v2.json
-dotnet test                          # 需要 Docker（Testcontainers PostgreSQL）
-dotnet format                        # 套用 .editorconfig
-dotnet format --verify-no-changes    # CI 檢查
-dotnet run --project src/EnvCite.Platform.Api   # Development：連本機 PostgreSQL，自動遷移
+dotnet restore && dotnet tool restore  # 改了 Directory.Packages.props 或 csproj 之後加 --force-evaluate 並提交 packages.lock.json（CI 用 --locked-mode）
+dotnet build                         # 警告即錯誤；同時產生 openapi_v2.json
+dotnet test                          # 需要 Docker
+dotnet format --verify-no-changes    # CI 檢查；去掉旗標即套用
+dotnet run --project src/EnvCite.Platform.Api   # Development：連本機 PostgreSQL，自動遷移；worktree 內用 `wt platform`
 
 # 遷移：每個 context 所在專案自己就是啟動專案（design-time factory，不是應用程式主機）
 dotnet ef migrations add <Name> -p src/EnvCite.Platform.Data -s src/EnvCite.Platform.Data
@@ -60,7 +42,7 @@ dotnet ef migrations add <Name> -p src/EnvCite.Platform.Modules.Tenancy -s src/E
 docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 ```
 
-- 套件版本只在 `Directory.Packages.props`（Central Package Management）；共用建置設定在 `Directory.Build.props`，不在 `.csproj` 重複。格式規則在 `.editorconfig`。
+- 共用建置設定在 `Directory.Build.props`，不在 `.csproj` 重複。
 - 正式環境的遷移用 EF Core migration bundle，建進映像，由部署的遷移 Job 依序執行（tenancy 先、platform 後）。每個 context 的 `IDesignTimeDbContextFactory` 與應用程式共用 `UseNpgsql` 設定，所以 bundle 不必執行 `Program.cs`，也指向同一張遷移歷史表。
 
 ## Contract
@@ -114,30 +96,28 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 租戶在路徑裡，於登入前由委派策略解析（路徑優先，API key 宣告其次）。頁面是**靜態 SSR**（無電路）：每個請求自行解析租戶並認證，表單是附 antiforgery 的普通 POST。
 - 使用者是租戶實體（`MultiTenantIdentityDbContext`）：同一個 email 在兩個租戶是兩個帳號；角色是欄位，不是 Identity 角色。
 - session cookie 的授權只讀宣告；**cookie 的租戶必須等於請求路徑解析出的租戶**（此檢查被使用者表的租戶過濾端到端遮蔽，所以有獨立的單元測試，每個檢查都做過突變測試）。每個入口請求檢查 security stamp，所以改密碼或重設會立即結束成員的其他 session。
-- 三條建置時踩過的規則：(1) 入口 cookie 由 `UsePlatformPortalAuthentication` 認證，必須在 `UseMultiTenant` **之後**，否則 scoped 的 `PlatformDbContext` 在租戶已知前就被解析，整個請求都帶著沒有租戶的 context；(2) 租戶 context 是 `AsyncLocal`，`MemberAdmin` 在呼叫它的方法內綁定，不在 async 輔助方法裡（輔助方法返回時值會被丟棄）；(3) 營運者建立的成員要先改一次性密碼才能用，之後才綁驗證器。
+- 三條規則：(1) 入口 cookie 由 `UsePlatformPortalAuthentication` 認證，必須在 `UseMultiTenant` **之後**，否則 scoped 的 `PlatformDbContext` 在租戶已知前就被解析，整個請求都帶著沒有租戶的 context；(2) 租戶 context 是 `AsyncLocal`，`MemberAdmin` 在呼叫它的方法內綁定，不在 async 輔助方法裡（輔助方法返回時值會被丟棄）；(3) 營運者建立的成員要先改一次性密碼才能用，之後才綁驗證器。
 - 依來源位址的限流刻意寬鬆（機關或顧問公司常共用一個對外位址），它擋的是自動化猜測，不是正常使用。
-- 這是**示範等級**的入口：沒有外部或 SSO 登入、沒有 email、沒有 CAPTCHA，不是給真實客戶用的；要改變這點，先補齊這些。
 
 ### 入口的 MFA（TOTP，RFC 6238）
 
-- 登入走 Identity 原生的兩步驟流程：`PasswordSignInAsync`（`lockoutOnFailure: true`）回報 `RequiresTwoFactor` 並簽發 `IdentityConstants.TwoFactorUserIdScheme` 待驗證 cookie（五分鐘、不滑動、授權不認它），第二頁用 `TwoFactorAuthenticatorSignInAsync` 或 `TwoFactorRecoveryCodeSignInAsync` 換成真正的 session。
-- **預設關閉，由使用者在安全頁自行開啟**；驗證與復原碼全用 Identity 原生，不自製 TOTP 驗證與重放防護（Otp.NET 僅營運者後台使用）。
+- 登入走 Identity 原生的兩步驟流程（待驗證 cookie 五分鐘、不滑動、授權不認它）。**預設關閉，由使用者在安全頁自行開啟**；驗證與復原碼全用 Identity 原生，不自製 TOTP 驗證與重放防護（Otp.NET 僅營運者後台使用）。
 - 必須保持且有測試的規則：(1) 密碼與驗證碼共用一個失敗計數器，密碼正確不歸零，要第二步也過才歸零（原生行為，測試守住）；(2) 金鑰以 `GenerateNewAuthenticatorKey` 產生、`SetAuthenticationTokenAsync` 存放，**不用** `ResetAuthenticatorKeyAsync`——設定頁在渲染中執行，它旋轉 stamp 後無法刷新 cookie，會結束該 session；(3) 待驗證 cookie 不能跨租戶使用；(4) 沒有金鑰、驗證碼、復原碼或 `otpauth` URI 進稽核或日誌（測試同時捕捉兩者）。
-- QR 碼在伺服器端繪製，金鑰不交給第三方 QR 服務。復原碼只在那一次回應顯示。
+- QR 碼在伺服器端繪製，金鑰不交給第三方 QR 服務；復原碼只顯示一次。
 - 要對擁有者與管理員強制 MFA 須明確開啟 `Platform:Portal:RequireMfaForAdmins`（預設 false）；被要求的角色不能自己關閉，營運者重設會把他送回綁定流程，而不是留下無保護的帳號。順序同樣是先改一次性密碼、再綁定。
 
 ### 成員管理（客戶自助與營運者）
 
-- 營運者路徑與客戶自助路徑共用 `MemberCore`（驗證、一次性密碼、稽核），不會漂移。
+- 營運者路徑與客戶自助路徑共用 `MemberCore`。
 - 規則（每條都有測試）：**階層**——擁有者管理所有人；管理員只管理較低的角色，且只能授予那些角色（能管理的就是能授予的，沒有人被升到管理者之上）；**沒有人對自己操作**（停用、改角色、重設）；**操作者的角色讀資料庫，不讀 cookie 宣告**；別的租戶的成員就是找不到。
-- 停用的成員無法登入（與密碼錯誤相同的泛用失敗）、所有開著的 session 立即失效（stamp 旋轉**且** session 檢查看旗標本身）、不能完成停用前已開始的第二步；帳號與稽核紀錄保留。啟用與停用都旋轉 stamp，舊 cookie 不復活。
+- 停用的成員無法登入（與密碼錯誤相同的泛用失敗）、所有開著的 session 立即失效（stamp 旋轉**且** session 檢查看旗標本身）；帳號與稽核紀錄保留。啟用與停用都旋轉 stamp，舊 cookie 不復活。
 
 ## Plans & access
 
-- **方案指派是資料，不是設定**：`TenantEntitlements`（租戶 id → 方案名稱；不是 Finbuckle 租戶實體）。方案**定義**（限額）在 `Platform:Plans`——產品決策，很少變；**誰在哪個方案**隨每位客戶變動，由營運者在執行期設定，立即生效並寫入稽核，不必為每位客戶重新部署。查找順序：資料庫指派 → 設定的 `TenantPlans` → `DefaultPlan`。
+- **方案指派是資料，不是設定**：`TenantEntitlements`（不是 Finbuckle 租戶實體）。方案**定義**（限額）在 `Platform:Plans`；**誰在哪個方案**由營運者在執行期設定，立即生效並寫入稽核。查找順序：資料庫指派 → 設定的 `TenantPlans` → `DefaultPlan`。
 - 指派到已從設定移除的方案，視為**沒有方案**（fail closed，記警告），不讓每個請求都失敗。限流分區鍵含方案名稱，所以換方案立即換限流器。
 - **全付費、無免費層**：資料端點需要方案，沒有則回 `402`（problem+json），在授權階段決定、**早於限流**，所以沒方案的租戶不耗用任何額度。管理端點（自己是誰、用量、API key）對任何已認證租戶開放——沒方案的客戶仍要能看到自己、看用量、撤銷被偷的 key——並以一個底限約束，那是濫用防護，不是服務額度。
-- 查詢語意：`asOf` 省略為現行；沒有任何版本涵蓋該日是 `404`，**永遠不回現行條文**（會與正確答案無從區分）；不是日期是 `400`。
+- 查詢語意：`asOf` 省略為現行；沒有任何版本涵蓋該日是 `404`，**永遠不回現行條文**；不是日期是 `400`。
 - 搜尋與其他可能含客戶案情的輸入用 **POST**：查詢字串會被請求日誌與追蹤的 `url.query` 寫下。**查詢文字不得進任何日誌或指標**（有測試捕捉所有日誌），計量只記次數。REST 搜尋與入口搜尋共用同一個 `ILawSearch`，所以不會漂移。
 - 推論端點只回**候選**結論；`verdicts` 為空代表沒有任何已確認的標註，不代表合規。案件事實放請求本文，不放 URL。公開 DTO 不暴露內部 proto。
 
@@ -153,15 +133,14 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 - `AuditEvents` 是**只增不改**，由資料庫觸發器強制（UPDATE、DELETE、TRUNCATE 會報錯），不靠慣例；應用程式的資料庫角色不得是該表的擁有者。
 - 「誰」從已認證身分推得，**絕不取自請求本文**。針對租戶的事件帶 `SubjectTenantId`；此實體刻意不是 Finbuckle 租戶實體（營運者跨租戶讀取），所以每次讀取都要明確過濾。
-- 兩種寫法：`db.StageAudit(...)` 加進呼叫端的 `PlatformDbContext`，與變更同一交易儲存（無變更無事件、無事件無變更）；`IAuditLog.AppendAsync` 獨立寫入，用於沒有變更可依附的事件。`Detail` 不放機密、雜湊或完整 API key（有測試）。每個事件保存 OpenTelemetry trace id。
+- 有變更可依附的事件用 `db.StageAudit(...)`，與變更同一交易儲存；沒有的用 `IAuditLog.AppendAsync`。`Detail` 不放機密、雜湊或完整 API key（有測試）。
 
 ## 設計系統與營運者後台
 
-- 外觀只有一個來源：`Web/Design/DesignTokens.cs`（顏色、字級、間距、圓角、陰影、動態）。要改顏色或尺寸只改那裡；`platform.css` 只引用變數，**不得寫死**顏色、字重、時長、緩動、縮放或觸控尺寸（測試會失敗）。`DesignTokenTests` 驗證每組文字配色符合 WCAG AA 對比。
-- 產品決策：**只有淺色**，不做深色主題（測試擋 `prefers-color-scheme`）；深色只是局部層次（Ink：品牌面板、營運頂欄）；漸層節制：全站只有品牌面板一條，來自 `TokenCss` 的 `--ep-gradient-brand`，樣式表不直接寫 `gradient()`；入口**沒有側邊欄**；視口斷點只有兩個，寫在 `DesignTokens.Breakpoints`，其他視口寬度會讓測試失敗；表格卡片用 container query，**不得**對卡片加 `overflow: hidden`。禁止停用縮放。
+- 外觀只有一個來源：`Web/Design/DesignTokens.cs`。`platform.css` 只引用變數，**不得寫死**顏色、字重、時長、緩動、縮放或觸控尺寸；文字配色須符合 WCAG AA 對比；**只有淺色**，不做深色主題；視口斷點只寫在 `DesignTokens.Breakpoints`；表格卡片**不得**加 `overflow: hidden`；禁止停用縮放。以上由 `DesignTokenTests` 等測試守門。
 - 營運者頁面**不呼叫 `/admin` HTTP API**，改讀 `IAuditQuery`、`ITenantDirectory` 這類在 `SharedKernel` 的契約（與 `/admin` 端點用同一份實作）；每次呼叫開自己的 scope，因為 Blazor Server 電路的壽命遠長於一個請求，不能持有過期的 `DbContext`。
 - 新發出的 API key 或一次性密碼只在不可由 Esc 或點背景關閉的對話框顯示一次，UI 不再重繪它；不可逆的動作（撤銷、移除方案）要確認。
-- 時間以臺北時間（固定 UTC+8）顯示，ISO 時間放 `title`；長 id 縮短時留**尾端**（UUIDv7 的開頭是時間戳）。
+- 時間以臺北時間（固定 UTC+8）顯示；長 id 縮短時留**尾端**（UUIDv7 的開頭是時間戳）。
 - `Api.csproj` 設 `RequiresAspNetWebAssets`，因為 Razor 元件在類別庫裡、主機自己沒有 `.razor`；少了它 SDK 不會提供 `_framework/blazor.web.js`，電路不會連線，而伺服器渲染的 HTML 看不出任何問題。`DesignPageTests` 會抓取頁面引用的每個腳本以守住這點。
 
 ## Conventions

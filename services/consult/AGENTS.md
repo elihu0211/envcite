@@ -2,21 +2,11 @@
 
 倉庫層規範見根 `AGENTS.md`；本檔只管 `services/consult/`。
 
-## 索引
-
-| 文件 | 內容 |
-|------|------|
-| [`../../README.md`](../../README.md) | 倉庫總覽與目錄 |
-| [`README.md`](README.md) | 本服務：介面、管線、啟動、開發指令 |
-| [`../../proto/README.md`](../../proto/README.md) | 契約與呼叫端接法 |
-| [`../ontology/`](../ontology/README.md)、[`../platform/`](../platform/README.md) | 上游與呼叫端，各有 README 與 `AGENTS.md` |
-
 ## Project
 
 - **Name:** consult（`services/consult`；倉庫為 `envcite`）
 - **Role:** 接地服務：以本體服務供給的內容，為**呼叫端的語言模型**備妥可引用的封閉證據集，或拒答。**本服務不執行生成模型。** **租戶隔離**——`x-tenant-id` 為必填，決定配額與稽核軌跡。
 - **Stack:** Python · uv · gRPC（grpcio，同步伺服器，一元呼叫）· ruff · mypy (strict) · pytest
-- **Interface:** `ConsultationService.Ground`（`envcite.consult.v2`）；本體 adapter 為 `adapters.GrpcOntology`（經 ontology 的 `SearchArticles`）；經 platform 的 `POST /v2/ground` 對外。映像：`Dockerfile`（context 為倉庫根）。
 
 ## 管線形狀（本服務存在的理由）
 
@@ -50,7 +40,7 @@ flowchart LR
     class refused stop
 ```
 
-**模型只決定一件事：如何把手上的證據寫成散文。** 其餘每個決定都在它跑之前由本服務做完，或在它回來之後由呼叫端核驗。這個形狀是契約的一部分，不是實作細節：
+**模型只決定一件事：如何把手上的證據寫成散文。** 其餘每個決定都在它跑之前由本服務做完，或在它回來之後由呼叫端核驗。形狀的不變式：
 
 - **拒答是結果，不是錯誤。** `assess` 可以終止管線；呼叫端渲染它，不重試、不呼叫模型、不計為失敗。
 - 代號由程式指派，永不由模型指派。`L3` 要嘛在清單裡，要嘛不在——這是引用可核驗的全部理由。
@@ -70,8 +60,8 @@ uv run python -m mypy src tests
 ONTOLOGY_TARGET=dns:///localhost:<ontology 埠> uv run envcite-consult   # worktree 內用 `wt consult`
 ```
 
-- 伺服器環境變數：`ONTOLOGY_TARGET`（必填，gRPC 目標）、`CONSULT_GRPC_PORT`（選用，預設值見 `server.py`）。
-- 測試不需要外部服務：本體以 fake 實作。**fake 不是次等實作**——管線的職責是決定拿到證據之後怎麼做，所以檢索本身正是測試該控制的部分。
+- 環境變數以 `server.py` 為準（至少要 `ONTOLOGY_TARGET`）。
+- 測試不需要外部服務：本體以 fake 實作。
 
 ## Conventions
 
@@ -83,7 +73,7 @@ ONTOLOGY_TARGET=dns:///localhost:<ontology 埠> uv run envcite-consult   # workt
 ## Safety
 
 - 設定一律由環境變數供給。
-- 生成模型只在呼叫端：本服務不呼叫它，否則模型選型、金鑰與按語彙單元計費會被帶回本服務，而它們已明確劃給呼叫端。
+- 生成模型只在呼叫端：本服務不呼叫它，模型選型、金鑰與計費不進本服務。
 
 ## Done when
 
