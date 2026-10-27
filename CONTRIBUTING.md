@@ -1,3 +1,8 @@
+---
+type: tutorial
+applies-to: local
+---
+
 # 參與開發
 
 本機環境、分支與上線流程。回[倉庫總覽](README.md)；agent 規範見 [`AGENTS.md`](AGENTS.md)。
@@ -82,7 +87,7 @@ ontology 遷移檔改過（已套用的檔案內容改變）時，清掉 ontolog
 | 角色 | 登入位址 | 第一次登入 |
 |------|----------|-----------|
 | 擁有者 | `http://localhost:<port>/portal/<租戶>/login` | 改密碼 |
-| 營運者 | `http://localhost:<port>/ui/login` | 改密碼並綁定 TOTP（流程見 [營運者帳號](services/platform/README.md#營運者帳號)，無本機例外） |
+| 營運者 | `http://localhost:<port>/ui/login` | 改密碼並綁定 TOTP（順序固定，無本機例外；規則見 [營運者帳號](services/platform/README.md#營運者帳號)） |
 
 之後再啟動不會再印。忘記密碼：清掉 `platform` 庫重來，或以營運者 key 重設。種子規則與認證面的細節見 [`services/platform/AGENTS.md`](services/platform/AGENTS.md)。
 

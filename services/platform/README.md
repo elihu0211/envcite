@@ -1,3 +1,9 @@
+---
+type: reference
+applies-to: all
+owns: [operator-accounts]
+---
+
 # envcite-platform
 
 多租戶控制平面：租戶、API key、限流、計量，以及對外 REST API（`/v2`）。法規與接地請求經 gRPC 轉給 `services/ontology` 與 `services/consult`。回[倉庫總覽](../../README.md)。
@@ -76,25 +82,27 @@ dotnet run --project src/EnvCite.Platform.Api   # Development：連本機 Postgr
 
 ## 營運者帳號
 
-營運者後台（`/ui`）的帳號不開放自助註冊，也沒有種子帳號（僅本機 Development 有，見 [`CONTRIBUTING.md`](../../CONTRIBUTING.md)）；其他環境一律以營運者金鑰建立。前提：該環境已設定 `Platform__AdminKeySha256`（未設定時 `/admin` 停用），且 `/ui` 已開啟。
+營運者後台（`/ui`）的帳號不開放自助註冊；除本機 Development 的種子帳號（見 [`CONTRIBUTING.md`](../../CONTRIBUTING.md)）外，一律以營運者金鑰經 `/admin` 建立。
 
-**建立第一位營運者**：
+**前提**：該環境已設定 `Platform__AdminKeySha256`（未設定時 `/admin` 停用），且 `/ui` 已開啟。所有 `/admin` 請求帶 `X-Admin-Key`。
 
-```bash
-curl -X POST "$PLATFORM_URL/admin/operators" \
-  -H "X-Admin-Key: $ADMIN_KEY" -H "Content-Type: application/json" \
-  -d '{"email":"<email>","displayName":"<顯示名稱>"}'
-```
+**建立**：`POST /admin/operators`，JSON 本文欄位：
 
-回應含該帳號資料與**一次性初始密碼**；密碼只回這一次（資料庫只存雜湊，也不進日誌或稽核），要當場安全地交給本人。
+| 欄位 | 說明 |
+|------|------|
+| `email` | 登入帳號 |
+| `displayName` | 顯示名稱 |
 
-**首次登入**（`$PLATFORM_URL/ui/login`，帳號為 email）：先改密碼，再以任何 TOTP 驗證器綁定兩步驟驗證；順序固定，TOTP 對每位營運者強制。
+回應含該帳號資料與**一次性初始密碼**；密碼只回這一次（資料庫只存雜湊，也不進日誌或稽核）。
 
-**重設與停用**：同組端點，皆需 `X-Admin-Key`；`{operatorId}` 取自列表。
+**規則**：首次登入（`/ui/login`，帳號為 email）先改密碼，再綁定 TOTP 驗證器；順序固定，TOTP 對每位營運者強制。
+
+**端點**：`{operatorId}` 取自列表。
 
 | 端點 | 用途 |
 |------|------|
 | `GET /admin/operators` | 列出營運者與狀態 |
+| `POST /admin/operators` | 建立營運者 |
 | `POST /admin/operators/{operatorId}/password-reset` | 重設密碼；回應含新的一次性密碼，之後須再走首次登入 |
 | `POST /admin/operators/{operatorId}/two-factor-reset` | 清除驗證器；該營運者下次登入重新綁定 |
 | `POST /admin/operators/{operatorId}/disable`、`/enable` | 停用／啟用；下一個請求生效 |
