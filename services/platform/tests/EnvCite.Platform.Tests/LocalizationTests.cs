@@ -275,6 +275,99 @@ public sealed partial class LanguageSwitchTests(PlatformFactory factory)
             await a.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
     }
 
+    private static readonly Regex Cjk = new(@"[\u4e00-\u9fff]", RegexOptions.None, TimeSpan.FromSeconds(1));
+
+    /// <summary>頁面文字去掉語言選項（各語言的自稱本來就是原文）之後，還剩的中文。</summary>
+    private static string LeftoverChinese(string html) =>
+        string.Concat(Cjk.Matches(Regex.Replace(html, @"<button[^>]*class=""ep-lang-option""[^>]*>[^<]*</button>", string.Empty, RegexOptions.None, TimeSpan.FromSeconds(1))).Select(m => m.Value));
+
+    // 英文版的後台頁面（含登入、被拒、已登出）：沒有任何中文殘留。
+    [Theory]
+    [InlineData("/ui")]
+    [InlineData("/ui/tenants")]
+    [InlineData("/ui/operators")]
+    [InlineData("/ui/audit")]
+    [InlineData("/ui/login")]
+    [InlineData("/ui/denied")]
+    [InlineData("/ui/signed-out")]
+    public async Task TheEnglishOperatorPagesHaveNoChineseLeft(string path)
+    {
+        using var client = path is "/ui/login" or "/ui/denied" or "/ui/signed-out"
+            ? factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false })
+            : factory.SignedInClient();
+        client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en");
+
+        using var response = await client.GetAsync(new Uri(path, UriKind.Relative), TestContext.Current.CancellationToken);
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("<html lang=\"en\">", html, StringComparison.Ordinal);
+        Assert.Equal(string.Empty, LeftoverChinese(html));
+    }
+
+    [Fact]
+    public async Task TheEnglishTenantDetailHasNoChineseLeft()
+    {
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("i18n-detail");
+        using var client = factory.SignedInClient();
+        client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en");
+
+        using var response = await client.GetAsync(new Uri($"/ui/tenants/{tenant.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(string.Empty, LeftoverChinese(html));
+    }
+
     [GeneratedRegex("""<html lang="([^"]*)">""", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex HtmlLang();
+}
+/// <summary>頁面文字的資源檔（<c>Ui.en.resx</c>）：以中文文字當鍵，來源裡的每個鍵都要有英文。</summary>
+public static partial class UiTextTests
+{
+    private static string WebPath([CallerFilePath] string here = "") =>
+        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.Web"));
+
+    private static Dictionary<string, string> English() =>
+        XDocument.Load(Path.Combine(WebPath(), "Resources", "Ui.en.resx")).Root!.Elements("data")
+            .ToDictionary(e => (string)e.Attribute("name")!, e => (string)e.Element("value")!, StringComparer.Ordinal);
+
+    /// <summary>來源裡所有 <c>L["…"]</c> 的鍵（含逸出還原）。</summary>
+    private static HashSet<string> KeysInSource() =>
+        [.. Directory.EnumerateFiles(Path.Combine(WebPath(), "Components"), "*.*", SearchOption.AllDirectories)
+            .Where(f => f.EndsWith(".razor", StringComparison.Ordinal) || f.EndsWith(".cs", StringComparison.Ordinal))
+            .SelectMany(f => LocalizerKey().Matches(File.ReadAllText(f)).Select(m => m.Groups[1].Value
+                .Replace("\\\"", "\"", StringComparison.Ordinal).Replace("\\\\", "\\", StringComparison.Ordinal)))];
+
+    // 少了英文，英文介面就悄悄顯示中文；多了沒用的鍵，改了中文之後留下一堆孤兒。兩個方向都在 CI 擋下。
+    [Fact]
+    public static void EveryKeyInTheSourceHasAnEnglishText()
+    {
+        var english = English();
+
+        Assert.Empty(KeysInSource().Except(english.Keys));
+        Assert.All(english, pair => Assert.False(string.IsNullOrWhiteSpace(pair.Value), pair.Key));
+    }
+
+    [Fact]
+    public static void NoEnglishTextIsLeftOverWithoutAKeyInTheSource() =>
+        Assert.Empty(English().Keys.Except(KeysInSource()));
+
+    // 格式字串的參數：中文與英文用到同一組 {n}（英文可以換順序，但不能少填或多填）。
+    [Fact]
+    public static void TheSamePlaceholdersAppearInTheKeyAndItsEnglish()
+    {
+        foreach (var (key, value) in English())
+        {
+            Assert.Equal(
+                [.. Placeholder().Matches(key).Select(m => m.Value).Order()],
+                [.. Placeholder().Matches(value).Select(m => m.Value).Order()]);
+        }
+    }
+
+    [GeneratedRegex(@"\bL\[""((?:[^""\\]|\\.)*)""", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex LocalizerKey();
+
+    [GeneratedRegex(@"\{\d+\}", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Placeholder();
 }

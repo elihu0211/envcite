@@ -4,19 +4,19 @@
 
 <MudDialog>
     <DialogContent>
-        <MudTextField @bind-Value="_name" Label="名稱" Placeholder="例如：某某環境顧問公司" Variant="Variant.Outlined"
+        <MudTextField @bind-Value="_name" Label="@L["名稱"]" Placeholder="@L["例如：某某環境顧問公司"]" Variant="Variant.Outlined"
                       Required="true" Immediate="true" MaxLength="200" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp" />
-        <MudTextField @bind-Value="_identifier" Label="識別碼" Variant="Variant.Outlined" Required="true" Immediate="true"
-                      MaxLength="63" HelperText="3–63 字元：小寫英文、數字、連字號。建立後不能修改。" OnKeyUp="OnKeyUp" />
+        <MudTextField @bind-Value="_identifier" Label="@L["識別碼"]" Variant="Variant.Outlined" Required="true" Immediate="true"
+                      MaxLength="63" HelperText="@L["3–63 字元：小寫英文、數字、連字號。建立後不能修改。"]" OnKeyUp="OnKeyUp" />
         @if (_error is not null)
         {
             <MudAlert Severity="Severity.Error" Class="mt-3" role="alert">@_error</MudAlert>
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="() => MudDialog.Cancel()">取消</MudButton>
+        <MudButton OnClick="() => MudDialog.Cancel()">@L["取消"]</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_busy">
-            @(_busy ? "建立中…" : "建立租戶")
+            @(_busy ? L["建立中…"] : L["建立租戶"])
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -55,7 +55,7 @@
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            _error = "建立失敗，請稍後再試。" + " (" + exception.GetType().Name + ")";
+            _error = L["建立失敗，請稍後再試。"] + " (" + exception.GetType().Name + ")";
         }
         finally
         {

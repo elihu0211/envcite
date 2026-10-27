@@ -8,9 +8,9 @@
     <DialogContent>
         @if (_issued is null)
         {
-            <MudTextField @bind-Value="_name" Label="名稱" Placeholder="例如：正式環境" Variant="Variant.Outlined"
+            <MudTextField @bind-Value="_name" Label="@L["名稱"]" Placeholder="@L["例如：正式環境"]" Variant="Variant.Outlined"
                           Required="true" Immediate="true" MaxLength="100" AutoFocus="true" OnKeyUp="OnKeyUp"
-                          HelperText="給客戶辨認用途；之後在清單裡以名稱和前綴區分。" />
+                          HelperText="@L["給客戶辨認用途；之後在清單裡以名稱和前綴區分。"]" />
             @if (_error is not null)
             {
                 <MudAlert Severity="Severity.Error" Class="mt-3" role="alert">@_error</MudAlert>
@@ -19,26 +19,26 @@
         else
         {
             <MudAlert Severity="Severity.Warning" Class="mb-3" role="status">
-                這是唯一一次能看到完整的 key。關閉後只剩前綴，無法再取回；弄丟只能撤銷後重發。
+                @L["這是唯一一次能看到完整的 key。關閉後只剩前綴，無法再取回；弄丟只能撤銷後重發。"]
             </MudAlert>
             <MudTextField T="string" Value="@_issued.Key" ReadOnly="true" Label="API key" Variant="Variant.Outlined"
                           Class="ep-mono" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.ContentCopy"
-                          AdornmentAriaLabel="複製 API key" OnAdornmentClick="CopyAsync" />
-            <p class="ep-status" role="status" aria-live="polite">@(_copied ? "已複製到剪貼簿" : string.Empty)</p>
+                          AdornmentAriaLabel="@L["複製 API key"]" OnAdornmentClick="CopyAsync" />
+            <p class="ep-status" role="status" aria-live="polite">@(_copied ? L["已複製到剪貼簿"] : string.Empty)</p>
         }
     </DialogContent>
     <DialogActions>
         @if (_issued is null)
         {
-            <MudButton OnClick="() => MudDialog.Cancel()">取消</MudButton>
+            <MudButton OnClick="() => MudDialog.Cancel()">@L["取消"]</MudButton>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_busy">
-                @(_busy ? "簽發中…" : "簽發")
+                @(_busy ? L["簽發中…"] : L["簽發"])
             </MudButton>
         }
         else
         {
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="() => MudDialog.Close(DialogResult.Ok(_issued.ApiKey))">
-                我已保存
+                @L["我已保存"]
             </MudButton>
         }
     </DialogActions>
@@ -79,12 +79,12 @@
             }
             else
             {
-                _error = issued.Message ?? "簽發失敗。";
+                _error = issued.Message ?? L["簽發失敗。"];
             }
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            _error = "簽發失敗，請稍後再試。" + " (" + exception.GetType().Name + ")";
+            _error = L["簽發失敗，請稍後再試。"] + " (" + exception.GetType().Name + ")";
         }
         finally
         {

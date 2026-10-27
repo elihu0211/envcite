@@ -1,4 +1,5 @@
 @using System.Globalization
+@using Microsoft.Extensions.Localization
 @using System.Net.Http
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Authorization
@@ -19,3 +20,4 @@
 @using EnvCite.Platform.Web.Design
 @using EnvCite.Platform.Web.Presentation
 @using EnvCite.Platform.Web.Resources
+@inject IStringLocalizer<Ui> L

@@ -42,8 +42,8 @@ public partial class Audit
     private bool HasFilter => !string.IsNullOrEmpty(TenantParam) || !string.IsNullOrEmpty(ActionParam) || !string.IsNullOrEmpty(ActorParam);
 
     private string Status => _error is not null || _loading ? string.Empty
-        : _items.Count == 0 ? "沒有符合的事件"
-        : _next is null ? $"共 {_items.Count} 筆" : $"已載入 {_items.Count} 筆，還有更多";
+        : _items.Count == 0 ? L["沒有符合的事件"]
+        : _next is null ? L["共 {0} 筆", _items.Count] : L["已載入 {0} 筆，還有更多", _items.Count];
 
     protected override async Task OnInitializedAsync()
     {
@@ -133,10 +133,10 @@ public partial class Audit
         : _tenantsById.TryGetValue(tenantId, out var tenant) ? tenant.Identifier
         : AuditLabels.Shorten(tenantId);
 
-    private static string Pretty(JsonElement detail) =>
+    private string Pretty(JsonElement detail) =>
         detail.ValueKind == JsonValueKind.Object && detail.EnumerateObject().Any()
             ? JsonSerializer.Serialize(detail, Indented)
-            : "（沒有額外內容）";
+            : L["（沒有額外內容）"];
 
     private static string? Nullable(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

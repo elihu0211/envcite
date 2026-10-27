@@ -4,24 +4,24 @@
 @inject IDialogService Dialogs
 @inject AuthenticationStateProvider Auth
 
-<PageTitle>營運者 · 環境知識</PageTitle>
+<PageTitle>@L["營運者 · 環境知識"]</PageTitle>
 
-<PageHeader Title="營運者">
+<PageHeader Title="@L["營運者"]">
     <Actions>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">新增營運者</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">@L["新增營運者"]</MudButton>
     </Actions>
 </PageHeader>
 
 @if (_error is not null)
 {
     <MudAlert Severity="Severity.Error" Class="mb-4">
-        載入營運者失敗。
-        <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="LoadAsync">重試</MudButton>
+        @L["載入營運者失敗。"]
+        <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="LoadAsync">@L["重試"]</MudButton>
     </MudAlert>
 }
 else if (_operators is null)
 {
-    <MudProgressLinear Indeterminate="true" aria-label="載入營運者中" />
+    <MudProgressLinear Indeterminate="true" aria-label="@L["載入營運者中"]" />
 }
 else
 {
@@ -30,52 +30,52 @@ else
         <MudAlert Severity="@_noticeSeverity" Class="mb-4" role="status">@_notice</MudAlert>
     }
 
-    <section class="ep-card ep-table-card" aria-label="營運者清單">
+    <section class="ep-card ep-table-card" aria-label="@L["營運者清單"]">
         <div class="ep-toolbar" role="search">
             <MudTextField @bind-Value="_search" Immediate="true" Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense"
-                          Placeholder="搜尋電子郵件" aria-label="搜尋營運者"
+                          Placeholder="@L["搜尋電子郵件"]" aria-label="@L["搜尋營運者"]"
                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
         </div>
 
         <MudTable Items="_operators" Filter="Matches" Hover="true" Elevation="0" Breakpoint="Breakpoint.None" Class="ep-table ep-cards">
             <HeaderContent>
-                <MudTh>電子郵件</MudTh>
-                <MudTh>狀態</MudTh>
-                <MudTh>操作</MudTh>
+                <MudTh>@L["電子郵件"]</MudTh>
+                <MudTh>@L["狀態"]</MudTh>
+                <MudTh>@L["操作"]</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="電子郵件">@context.Email</MudTd>
-                <MudTd DataLabel="狀態"><StatusBadge Tone="@OperatorLabels.Tone(context)">@OperatorLabels.Status(context)</StatusBadge></MudTd>
-                <MudTd DataLabel="操作">
+                <MudTd DataLabel="@L["電子郵件"]">@context.Email</MudTd>
+                <MudTd DataLabel="@L["狀態"]"><StatusBadge Tone="@OperatorLabels.Tone(context)">@OperatorLabels.Status(context)</StatusBadge></MudTd>
+                <MudTd DataLabel="@L["操作"]">
                     @if (IsSelf(context))
                     {
-                        <span class="ep-secondary">你</span>
+                        <span class="ep-secondary">@L["你"]</span>
                     }
                     else if (context.Disabled)
                     {
-                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => EnableAsync(context)">啟用</MudButton>
+                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => EnableAsync(context)">@L["啟用"]</MudButton>
                     }
                     else
                     {
-                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResetPasswordAsync(context)">重設密碼</MudButton>
-                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResetTwoFactorAsync(context)">重設驗證器</MudButton>
-                        <MudButton Variant="Variant.Text" Color="Color.Error" Disabled="_busy" OnClick="() => DisableAsync(context)">停用</MudButton>
+                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResetPasswordAsync(context)">@L["重設密碼"]</MudButton>
+                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResetTwoFactorAsync(context)">@L["重設驗證器"]</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Error" Disabled="_busy" OnClick="() => DisableAsync(context)">@L["停用"]</MudButton>
                     }
                 </MudTd>
             </RowTemplate>
             <NoRecordsContent>
                 @if (string.IsNullOrWhiteSpace(_search))
                 {
-                    <EmptyState Title="還沒有任何營運者"
-                                Description="建立第一個帳號，把一次性密碼交給對方。">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">新增營運者</MudButton>
+                    <EmptyState Title="@L["還沒有任何營運者"]"
+                                Description="@L["建立第一個帳號，把一次性密碼交給對方。"]">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">@L["新增營運者"]</MudButton>
                     </EmptyState>
                 }
                 else
                 {
-                    <EmptyState Title="@($"沒有符合「{_search}」的營運者")"
-                                Description="試試其他關鍵字，或清除搜尋。">
-                        <MudButton Variant="Variant.Text" OnClick="() => _search = null">清除搜尋</MudButton>
+                    <EmptyState Title="@L["沒有符合「{0}」的營運者", _search!]"
+                                Description="@L["試試其他關鍵字，或清除搜尋。"]">
+                        <MudButton Variant="Variant.Text" OnClick="() => _search = null">@L["清除搜尋"]</MudButton>
                     </EmptyState>
                 }
             </NoRecordsContent>
@@ -110,7 +110,7 @@ else
             var listed = await Admin.ListAsync(CancellationToken.None);
             if (!listed.IsOk)
             {
-                _error = listed.Message ?? "載入失敗。";
+                _error = listed.Message ?? L["載入失敗。"];
                 _operators = [];
                 return;
             }
@@ -134,7 +134,7 @@ else
 
     private async Task CreateAsync()
     {
-        var dialog = await Dialogs.ShowAsync<CreateOperatorDialog>("新增營運者", Narrow);
+        var dialog = await Dialogs.ShowAsync<CreateOperatorDialog>(L["新增營運者"], Narrow);
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: IssuedOperatorPassword issued })
         {
@@ -146,9 +146,9 @@ else
     private async Task ResetPasswordAsync(OperatorInfo op)
     {
         var confirmed = await Dialogs.ShowMessageBoxAsync(
-            "重設密碼",
-            $"這會作廢 {op.Email} 現在的密碼，並讓他在所有裝置上登出。新的一次性密碼只顯示一次。確定？",
-            yesText: "重設密碼", cancelText: "取消");
+            L["重設密碼"],
+            L["這會作廢 {0} 現在的密碼，並讓他在所有裝置上登出。新的一次性密碼只顯示一次。確定？", op.Email],
+            yesText: L["重設密碼"], cancelText: L["取消"]);
         if (confirmed != true)
         {
             return;
@@ -159,7 +159,7 @@ else
             var reset = await Admin.ResetPasswordAsync(await ActorAsync(), op.Id, CancellationToken.None);
             if (!reset.IsOk)
             {
-                Fail(reset.Message ?? "重設失敗。");
+                Fail(reset.Message ?? L["重設失敗。"]);
                 return;
             }
 
@@ -171,9 +171,9 @@ else
     private async Task ResetTwoFactorAsync(OperatorInfo op)
     {
         var confirmed = await Dialogs.ShowMessageBoxAsync(
-            "重設驗證器",
-            $"這會關掉 {op.Email} 的兩步驟驗證、丟掉驗證器金鑰與復原碼，並讓他在所有裝置上登出。請先確認對方是本人。確定？",
-            yesText: "重設驗證器", cancelText: "取消");
+            L["重設驗證器"],
+            L["這會關掉 {0} 的兩步驟驗證、丟掉驗證器金鑰與復原碼，並讓他在所有裝置上登出。請先確認對方是本人。確定？", op.Email],
+            yesText: L["重設驗證器"], cancelText: L["取消"]);
         if (confirmed != true)
         {
             return;
@@ -184,21 +184,21 @@ else
             var reset = await Admin.ResetTwoFactorAsync(await ActorAsync(), op.Id, CancellationToken.None);
             if (!reset.IsOk)
             {
-                Fail(reset.Message ?? "重設失敗。");
+                Fail(reset.Message ?? L["重設失敗。"]);
                 return;
             }
 
             await ReloadQuietlyAsync();
-            Succeed($"已重設 {op.Email} 的驗證器。");
+            Succeed(L["已重設 {0} 的驗證器。", op.Email]);
         });
     }
 
     private async Task DisableAsync(OperatorInfo op)
     {
         var confirmed = await Dialogs.ShowMessageBoxAsync(
-            "停用營運者",
-            $"{op.Email} 的下一個請求就進不去。已經開著的頁面最多還能用一分鐘。確定停用？",
-            yesText: "停用", cancelText: "取消");
+            L["停用營運者"],
+            L["{0} 的下一個請求就進不去。已經開著的頁面最多還能用一分鐘。確定停用？", op.Email],
+            yesText: L["停用"], cancelText: L["取消"]);
         if (confirmed != true)
         {
             return;
@@ -216,18 +216,18 @@ else
             var changed = await Admin.SetDisabledAsync(await ActorAsync(), op.Id, disabled, CancellationToken.None);
             if (!changed.IsOk)
             {
-                Fail(changed.Message ?? "操作失敗。");
+                Fail(changed.Message ?? L["操作失敗。"]);
                 return;
             }
 
             await ReloadQuietlyAsync();
-            Succeed(disabled ? $"已停用 {op.Email}。" : $"已重新啟用 {op.Email}。");
+            Succeed(disabled ? L["已停用 {0}。", op.Email] : L["已重新啟用 {0}。", op.Email]);
         });
     }
 
     private async Task RevealAsync(IssuedOperatorPassword issued)
     {
-        var reveal = await Dialogs.ShowAsync<OperatorPasswordDialog>("一次性密碼", new DialogParameters<OperatorPasswordDialog>
+        var reveal = await Dialogs.ShowAsync<OperatorPasswordDialog>(L["一次性密碼"], new DialogParameters<OperatorPasswordDialog>
         {
             { x => x.Operator, issued.Operator },
             { x => x.Password, issued.Password },

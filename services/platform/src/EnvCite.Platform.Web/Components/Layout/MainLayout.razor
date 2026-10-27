@@ -5,28 +5,28 @@
    窄螢幕上側欄收成頂欄下方一條可橫捲的列。 *@
 <PlatformProviders />
 
-<a class="ep-skip-link" href="#main">跳到主要內容</a>
+<a class="ep-skip-link" href="#main">@L["跳到主要內容"]</a>
 
 <div class="ep-console">
     <header class="ep-shell-top">
-        <span class="ep-brand">環境知識</span>
-        <span class="ep-console-product">營運後台</span>
+        <span class="ep-brand">@L["環境知識"]</span>
+        <span class="ep-console-product">@L["營運後台"]</span>
         <span class="ep-spacer"></span>
         <AuthorizeView>
             <Authorized>
-                <button type="button" class="ep-avatar" popovertarget="ep-ui-account-menu" aria-label="帳號選單">@Avatar(context.User)</button>
+                <button type="button" class="ep-avatar" popovertarget="ep-ui-account-menu" aria-label="@L["帳號選單"]">@Avatar(context.User)</button>
                 <div id="ep-ui-account-menu" class="ep-menu" popover>
                     <p class="ep-menu-who">
                         <span>@context.User.FindFirst(ClaimTypes.Email)?.Value</span>
                     </p>
-                    <nav aria-label="帳號選單">
-                        <a class="ep-menu-item" href="@UiEndpoints.PasswordPath">改密碼</a>
-                        <a class="ep-menu-item" href="@UiEndpoints.SecurityPath">兩步驟驗證</a>
+                    <nav aria-label="@L["帳號選單"]">
+                        <a class="ep-menu-item" href="@UiEndpoints.PasswordPath">@L["改密碼"]</a>
+                        <a class="ep-menu-item" href="@UiEndpoints.SecurityPath">@L["兩步驟驗證"]</a>
                     </nav>
                     <LanguageSwitch Action="@UiEndpoints.LanguagePath" />
                     <form method="post" action="/ui/logout">
                         <AntiforgeryToken />
-                        <button type="submit" class="ep-menu-item">登出</button>
+                        <button type="submit" class="ep-menu-item">@L["登出"]</button>
                     </form>
                 </div>
             </Authorized>
@@ -35,12 +35,12 @@
 
     <div class="ep-console-body">
         <aside class="ep-side">
-            <p class="ep-side-group" aria-hidden="true">平台</p>
-            <nav class="ep-side-nav" aria-label="主要導覽">
-                <NavLink class="ep-side-link" href="/ui" Match="NavLinkMatch.All">總覽</NavLink>
-                <NavLink class="ep-side-link" href="/ui/tenants">租戶</NavLink>
-                <NavLink class="ep-side-link" href="/ui/operators">營運者</NavLink>
-                <NavLink class="ep-side-link" href="/ui/audit">稽核紀錄</NavLink>
+            <p class="ep-side-group" aria-hidden="true">@L["平台"]</p>
+            <nav class="ep-side-nav" aria-label="@L["主要導覽"]">
+                <NavLink class="ep-side-link" href="/ui" Match="NavLinkMatch.All">@L["總覽"]</NavLink>
+                <NavLink class="ep-side-link" href="/ui/tenants">@L["租戶"]</NavLink>
+                <NavLink class="ep-side-link" href="/ui/operators">@L["營運者"]</NavLink>
+                <NavLink class="ep-side-link" href="/ui/audit">@L["稽核紀錄"]</NavLink>
             </nav>
         </aside>
 

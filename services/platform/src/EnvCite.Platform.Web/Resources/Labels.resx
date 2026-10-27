@@ -75,5 +75,5 @@
   <data name="Operator.Status.must_change_password" xml:space="preserve"><value>須改密碼</value></data>
   <data name="Operator.Status.active" xml:space="preserve"><value>使用中</value></data>
   <data name="Operator.Status.needs_enrollment" xml:space="preserve"><value>須綁定驗證器</value></data>
-  <data name="Language.Switch" xml:space="preserve"><value>語言 / Language</value></data>
+  <data name="Language.Switch" xml:space="preserve"><value>語言</value></data>
 </root>

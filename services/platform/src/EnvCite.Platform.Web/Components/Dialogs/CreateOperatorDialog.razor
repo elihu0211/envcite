@@ -4,19 +4,19 @@
 
 <MudDialog>
     <DialogContent>
-        <MudTextField @bind-Value="_email" Label="電子郵件" Variant="Variant.Outlined" Required="true" Immediate="true"
+        <MudTextField @bind-Value="_email" Label="@L["電子郵件"]" Variant="Variant.Outlined" Required="true" Immediate="true"
                       InputType="InputType.Email" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp" />
-        <MudTextField @bind-Value="_displayName" Label="顯示名稱" Variant="Variant.Outlined" Immediate="true"
-                      MaxLength="200" HelperText="可以不填。最長 200 字元。" OnKeyUp="OnKeyUp" />
+        <MudTextField @bind-Value="_displayName" Label="@L["顯示名稱"]" Variant="Variant.Outlined" Immediate="true"
+                      MaxLength="200" HelperText="@L["可以不填。最長 200 字元。"]" OnKeyUp="OnKeyUp" />
         @if (_error is not null)
         {
             <MudAlert Severity="Severity.Error" Class="mt-3" role="alert">@_error</MudAlert>
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="() => MudDialog.Cancel()">取消</MudButton>
+        <MudButton OnClick="() => MudDialog.Cancel()">@L["取消"]</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_busy">
-            @(_busy ? "建立中…" : "建立")
+            @(_busy ? L["建立中…"] : L["建立"])
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -52,7 +52,7 @@
             var created = await Operators.CreateAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None);
             if (!created.IsOk)
             {
-                _error = created.Message ?? "建立失敗。";
+                _error = created.Message ?? L["建立失敗。"];
                 return;
             }
 
