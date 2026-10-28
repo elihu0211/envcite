@@ -12,4 +12,4 @@
 |------|------|--------|
 | `envcite-consult` | 長駐 | gRPC 伺服器；環境變數以 [`server.py`](src/envcite_consult/server.py) 為準 |
 
-開發指令與實作規範見 [`AGENTS.md`](AGENTS.md)；本機環境見 [`CONTRIBUTING.md`](../../CONTRIBUTING.md)。
+開發指令與實作規範見 [`AGENTS.md`](AGENTS.md)。

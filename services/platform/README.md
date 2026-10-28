@@ -42,13 +42,19 @@ flowchart LR
 
 ## 入口
 
-`src/EnvCite.Platform.Api`（長駐）：ASP.NET Core 主機，REST、後台與入口頁；Development 啟動時自動遷移。設定的鍵名、必填與預設值以各設定群組的選項類別與 `appsettings.json` 為準，規則見 [`AGENTS.md`](AGENTS.md) 的 Configuration。開發指令見 [`AGENTS.md`](AGENTS.md)，本機環境見 [`CONTRIBUTING.md`](../../CONTRIBUTING.md)。
+`src/EnvCite.Platform.Api`（長駐）：ASP.NET Core 主機，REST、後台與入口頁；Development 啟動時自動遷移。設定的鍵名、必填與預設值以各設定群組的選項類別與 `appsettings.json` 為準，規則見 [`AGENTS.md`](AGENTS.md) 的 Configuration。開發指令見 [`AGENTS.md`](AGENTS.md)。
 
 ## 營運者帳號
 
-營運者後台（`/ui`）的帳號不開放自助註冊；除本機 Development 的種子帳號（見 [`CONTRIBUTING.md`](../../CONTRIBUTING.md)）外，一律以營運者金鑰經 `/admin` 建立。
+營運者後台（`/ui`）的帳號不開放自助註冊；除本機 Development 的種子帳號外，一律以營運者金鑰經 `/admin` 建立。
 
-**前提**：該環境已設定 `Platform__AdminKeySha256`（未設定時 `/admin` 停用），且 `/ui` 已開啟。所有 `/admin` 請求帶 `X-Admin-Key`。
+**營運者金鑰**：任意字串，呼叫 `/admin` 時放在 `X-Admin-Key`。服務只持有它的雜湊：
+
+| 設定鍵 | 格式 |
+|--------|------|
+| `Platform__AdminKeySha256` | 金鑰 UTF-8 位元組的 SHA-256，64 個十六進位字元（大小寫皆可）；空字串即停用 `/admin`，格式不符則啟動失敗 |
+
+**前提**：該環境已設定上述雜湊，且 `/ui` 已開啟。
 
 **建立**：`POST /admin/operators`，JSON 本文欄位：
 

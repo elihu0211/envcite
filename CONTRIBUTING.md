@@ -1,6 +1,7 @@
 ---
 type: tutorial
 applies-to: local
+owns: [dev-seed-accounts, shared-dev-db]
 ---
 
 # 參與開發
@@ -56,7 +57,7 @@ flowchart LR
    ```
 
    入口與環境變數見 [`services/ontology/README.md`](services/ontology/README.md)。完成後重啟 `wt ontology`（詞典只在啟動時讀取）。
-5. `wt list` 的 URL 欄是本分支 platform 的位址；登入見[第一組資料](#第一組資料platform)。
+5. `wt list` 的 URL 欄是本分支 platform 的位址；登入見[第一組資料](#第一組資料platform僅本機)。
 
 合併後以 `wt remove feat/<簡述>` 刪除 worktree 與分支。
 
@@ -87,18 +88,21 @@ ontology 遷移檔改過（已套用的檔案內容改變）時，清掉 ontolog
 | 角色 | 登入位址 | 第一次登入 |
 |------|----------|-----------|
 | 擁有者 | `http://localhost:<port>/portal/<租戶>/login` | 改密碼 |
-| 營運者 | `http://localhost:<port>/ui/login` | 改密碼並綁定 TOTP（順序固定，無本機例外；規則見 [營運者帳號](services/platform/README.md#營運者帳號)） |
+| 營運者 | `http://localhost:<port>/ui/login` | 依畫面改密碼並綁定 TOTP（本機沒有例外） |
 
-之後再啟動不會再印。忘記密碼：清掉 `platform` 庫重來，或以營運者 key 重設。種子規則與認證面的細節見 [`services/platform/AGENTS.md`](services/platform/AGENTS.md)。
+之後再啟動不會再印。忘記密碼：清掉 `platform` 庫重來，或用下一節的營運者 key 重設。
 
-### 其他本機設定
+### 本機使用營運者 key
 
-| 項目 | 值 |
-|------|----|
-| 營運者 key（`X-Admin-Key`） | 未設定時 `/admin` 停用；要用就設 `Platform__AdminKeySha256`＝key 的 SHA-256 hex |
-| 營運後台（`/ui`） | Development 一律開；其他環境以設定開關。帳號以營運者 key 建（見 [營運者帳號](services/platform/README.md#營運者帳號)），無自助註冊 |
+要在本機呼叫 `/admin`（建第二個營運者、重設），先給 platform 一把 key：
 
-設定鍵與規則以 [platform 的 README](services/platform/README.md) 與 [`AGENTS.md`](services/platform/AGENTS.md) 為準。
+```bash
+read -rsp '自訂一把本機用的 key: ' ADMIN_KEY; echo
+export Platform__AdminKeySha256="$(printf %s "$ADMIN_KEY" | shasum -a 256 | cut -d' ' -f1)"
+wt platform   # 同一個終端機啟動，才讀得到上面的環境變數
+```
+
+之後帶 `X-Admin-Key: $ADMIN_KEY` 呼叫 `http://localhost:<port>/admin/...`；端點、欄位與帳號規則見 [platform README「營運者帳號」](services/platform/README.md#營運者帳號)。
 
 ## 常用指令
 
