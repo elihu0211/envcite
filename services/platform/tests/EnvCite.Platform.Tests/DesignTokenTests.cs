@@ -233,7 +233,9 @@ public static partial class DesignTokenTests
             Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(FontsPath())!, url.Groups[1].Value)), url.Value);
         }
 
-        Assert.All(FontFamilyDeclaration().Matches(css), m => Assert.StartsWith("var(--ep-font", m.Groups[1].Value, StringComparison.Ordinal));
+        // 字型只從變數來；代碼、金鑰沿用外層的字型（inherit），不另開等寬字型。
+        Assert.All(FontFamilyDeclaration().Matches(css), m => Assert.True(
+            m.Groups[1].Value.StartsWith("var(--ep-font", StringComparison.Ordinal) || m.Groups[1].Value == "inherit", m.Value));
     }
 
     // Inter 排在中文字型前面，所以它要讓出中文排版的標點：引號、破折號、刪節號、間隔號落到 Noto Sans TC，排成全形。
@@ -453,5 +455,27 @@ public sealed class DesignPageTests(PlatformFactory factory)
             using var response = await client.GetAsync(new Uri(source, UriKind.RelativeOrAbsolute), TestContext.Current.CancellationToken);
             Assert.True(response.StatusCode == HttpStatusCode.OK, $"{source} -> {(int)response.StatusCode}");
         }
+    }
+
+    // 靜態頁（登入、入口）沒有 MudBlazor 的元件，就不下載它的樣式與腳本；互動的後台頁才載入。
+    // 每一頁都預載拉丁字型，路徑要與 fonts.css 引用的同一個檔（不加指紋），否則瀏覽器會再抓一次。
+    [Fact]
+    public async Task OnlyInteractivePagesLoadMudBlazorAndEveryPagePreloadsTheLatinFont()
+    {
+        using var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var staticPage = await client.GetStringAsync(new Uri("/ui/login", UriKind.Relative), TestContext.Current.CancellationToken);
+        var interactivePage = await client.GetStringAsync(new Uri("/ui/denied", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain("MudBlazor", staticPage, StringComparison.Ordinal);
+        Assert.Matches(@"_content/MudBlazor/MudBlazor\.min\.[\w.]*css", interactivePage);
+        Assert.Matches(@"_content/MudBlazor/MudBlazor\.min\.[\w.]*js", interactivePage);
+
+        var preload = $"<link rel=\"preload\" href=\"{EnvCite.Platform.Web.Components.App.InterLatin}\" as=\"font\" type=\"font/woff2\" crossorigin";
+        Assert.Contains(preload, staticPage, StringComparison.Ordinal);
+        Assert.Contains(preload, interactivePage, StringComparison.Ordinal);
+        var fonts = await client.GetStringAsync(new Uri("_content/EnvCite.Platform.Web/fonts/fonts.css", UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Contains($"url({EnvCite.Platform.Web.Components.App.InterLatin["_content/EnvCite.Platform.Web/fonts/".Length..]})", fonts, StringComparison.Ordinal);
+        using var font = await client.GetAsync(new Uri(EnvCite.Platform.Web.Components.App.InterLatin, UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, font.StatusCode);
     }
 }

@@ -100,8 +100,11 @@ public static class DesignTokens
 
     public static string[] FontFamily { get; } = ["Inter Variable", "Noto Sans TC Variable", "sans-serif"];
 
-    public static string[] FontFamilyMono { get; } =
-        ["ui-monospace", "SF Mono", "Menlo", "Consolas", "monospace"];
+    /// <summary>
+    /// 代碼、金鑰、識別碼不另用等寬字型：同一套 Inter 開消歧義字形（ss02：I、l、1 分得開；zero：0 帶斜線）與等寬數字。
+    /// 這些字串要逐字核對，不必縱向對齊。
+    /// </summary>
+    public const string CodeFeatures = "\"ss02\", \"zero\", \"tnum\"";
 
     /// <summary>
     /// 字級階層沿用 Material 3 的十五個角色（display、headline、title、body、label 各分 l、m、s），名稱是業界共通的，

@@ -1,5 +1,4 @@
 @inherits LayoutComponentBase
-@inject IDialogService Dialogs
 
 @* 營運者後台的外殼：頂欄放品牌與帳號（選單從帳號鈕長出，點外面或 Esc 收回），左側欄是導覽。
    側欄依群組排：目前只有「平台」；服務有自己的頁面時，以同一個樣式加一組「服務」。導覽只列已經存在的頁面。
@@ -14,9 +13,12 @@
         <span class="ep-console-product">@L["營運後台"]</span>
         <AuthorizeView>
             <Authorized>
-                <button type="button" id="ep-palette-open" class="ep-palette-open" @onclick="OpenPaletteAsync" aria-keyshortcuts="Control+K Meta+K">
+                <button type="button" id="ep-palette-open" class="ep-palette-open" popovertarget="ep-palette" aria-keyshortcuts="Control+K Meta+K">
                     <span>@L["搜尋頁面與租戶"]</span><kbd class="ep-kbd" data-shortcut-hint>Ctrl K</kbd>
                 </button>
+                <div id="ep-palette" class="ep-menu ep-palette" popover aria-label="@L["搜尋頁面與租戶"]">
+                    <CommandPalette />
+                </div>
                 <button type="button" class="ep-avatar" popovertarget="ep-ui-account-menu" aria-label="@L["帳號選單"]">@Avatar(context.User)</button>
                 <div id="ep-ui-account-menu" class="ep-menu" popover>
                     <p class="ep-menu-who">
@@ -54,11 +56,6 @@
 </div>
 
 @code {
-    private Task OpenPaletteAsync() =>
-        Dialogs.ShowAsync<CommandPalette>(
-            L["搜尋頁面與租戶"],
-            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, NoHeader = true, Position = DialogPosition.TopCenter });
-
     private static string Avatar(ClaimsPrincipal user)
     {
         var email = user.FindFirst(ClaimTypes.Email)?.Value;

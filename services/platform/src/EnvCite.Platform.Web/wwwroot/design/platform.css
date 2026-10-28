@@ -17,8 +17,10 @@ body {
     line-height: var(--ep-body-l-leading);
 }
 
+/* 代碼、金鑰、識別碼不換等寬字，同一套 Inter 開消歧義字形（0 有斜線、I／l／1 分得開）與等寬數字。 */
 code, kbd, pre {
-    font-family: var(--ep-font-mono);
+    font-family: inherit;
+    font-feature-settings: var(--ep-code-features);
 }
 
 /* 文字連結用較亮的 link 色（深色背景上，填色的藍當文字太暗）；按鈕與導覽由元件自己著色。 */
@@ -369,7 +371,6 @@ a:where(:not([class*="mud-"])) {
 }
 
 .ep-mono {
-    font-family: var(--ep-font-mono);
     font-size: var(--ep-body-m-size);
 }
 
@@ -652,6 +653,16 @@ a:where(:not([class*="mud-"])) {
     .ep-kbd {
         display: none;
     }
+}
+
+/* 切換器：與帳號選單同一種彈出層（同樣的面、進出場與減少動態的退化），從頂欄中間的搜尋鈕往下長出來。 */
+.ep-menu.ep-palette {
+    inset-inline: var(--ep-space-3);
+    inline-size: auto; /* popover 預設 fit-content；這裡撐滿兩側內縮之間，再由 max-inline-size 收窄置中 */
+    margin-inline: auto;
+    max-inline-size: var(--ep-measure-ask);
+    padding: var(--ep-space-3);
+    transform-origin: top center;
 }
 
 /* 切換器裡的結果：群組標題加一列一列的連結。 */
@@ -1367,7 +1378,6 @@ a.ep-brand {
     margin: var(--ep-space-4) 0 0;
     padding: var(--ep-space-3) var(--ep-space-4);
     border: 1px solid color-mix(in srgb, var(--tone) 40%, var(--ep-surface));
-    border-inline-start: 4px solid var(--tone);
     border-radius: var(--ep-radius-control);
     background: color-mix(in srgb, var(--tone) 8%, var(--ep-surface));
     font-size: var(--ep-body-m-size);

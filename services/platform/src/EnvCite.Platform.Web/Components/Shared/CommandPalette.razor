@@ -1,60 +1,54 @@
-@* 切換器：搜尋後台的頁面與租戶，Enter 開啟第一筆，Esc 關閉。頂欄的按鈕或 ⌘K／Ctrl+K 開啟（見 wwwroot/design/shortcuts.js）。
-   只用現有的資料（頁面清單與租戶目錄），沒有動作與假資料。 *@
+@* 切換器：搜尋後台的頁面與租戶，Enter 開啟第一筆，Esc 或點外面關閉。外層是 MainLayout 裡的原生 popover，
+   頂欄的按鈕或 ⌘K／Ctrl+K 開啟；點了結果就收起、Enter 等於點第一筆（見 wwwroot/design/shortcuts.js）。
+   租戶在每次打開（搜尋框取得焦點）時重讀。只用現有的資料（頁面清單與租戶目錄），沒有動作與假資料。 *@
 @inject ITenantDirectory Directory
-@inject NavigationManager Navigation
 
-<MudDialog>
-    <DialogContent>
-        <MudTextField @bind-Value="_query" Immediate="true" AutoFocus="true" Variant="Variant.Outlined" Margin="Margin.Dense"
-                      Placeholder="@L["搜尋頁面與租戶"]" aria-label="@L["搜尋頁面與租戶"]" Clearable="true" OnKeyUp="OnKeyUp" />
+<input class="ep-input" type="search" autofocus @bind="_query" @bind:event="oninput" @onfocus="LoadAsync"
+       placeholder="@L["搜尋頁面與租戶"]" aria-label="@L["搜尋頁面與租戶"]" />
 
-        @if (Pages.Count == 0 && Tenants.Count == 0)
-        {
-            <p class="ep-page-description ep-palette-empty" role="status">@L["沒有符合「{0}」的頁面或租戶", _query!]</p>
-        }
-        else
-        {
-            @if (Pages.Count > 0)
+@if (Pages.Count == 0 && Tenants.Count == 0)
+{
+    <p class="ep-page-description ep-palette-empty" role="status">@L["沒有符合「{0}」的頁面或租戶", _query!]</p>
+}
+else
+{
+    @if (Pages.Count > 0)
+    {
+        <p class="ep-palette-group">@L["頁面"]</p>
+        <ul class="ep-palette-list" aria-label="@L["頁面"]">
+            @foreach (var entry in Pages)
             {
-                <p class="ep-palette-group">@L["頁面"]</p>
-                <ul class="ep-palette-list" aria-label="@L["頁面"]">
-                    @foreach (var entry in Pages)
-                    {
-                        <li><a class="ep-palette-item" href="@entry.Href" @onclick="() => MudDialog.Close()">@entry.Label</a></li>
-                    }
-                </ul>
+                <li><a class="ep-palette-item" href="@entry.Href">@entry.Label</a></li>
             }
+        </ul>
+    }
 
-            @if (Tenants.Count > 0)
+    @if (Tenants.Count > 0)
+    {
+        <p class="ep-palette-group">@L["租戶"]</p>
+        <ul class="ep-palette-list" aria-label="@L["租戶"]">
+            @foreach (var tenant in Tenants)
             {
-                <p class="ep-palette-group">@L["租戶"]</p>
-                <ul class="ep-palette-list" aria-label="@L["租戶"]">
-                    @foreach (var tenant in Tenants)
-                    {
-                        <li>
-                            <a class="ep-palette-item" href="@TenantHref(tenant)" @onclick="() => MudDialog.Close()">
-                                <span>@(tenant.Name ?? tenant.Identifier)</span>
-                                <code class="ep-mono ep-secondary">@tenant.Identifier</code>
-                            </a>
-                        </li>
-                    }
-                </ul>
+                <li>
+                    <a class="ep-palette-item" href="@TenantHref(tenant)">
+                        <span>@(tenant.Name ?? tenant.Identifier)</span>
+                        <code class="ep-mono ep-secondary">@tenant.Identifier</code>
+                    </a>
+                </li>
             }
-        }
-    </DialogContent>
-</MudDialog>
+        </ul>
+    }
+}
 
 @code {
     private const int MaxTenants = 8;
 
     private sealed record PageLink(string Href, string Label);
 
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
-
     private IReadOnlyList<TenantSummary> _all = [];
     private string? _query;
 
-    protected override async Task OnInitializedAsync()
+    private async Task LoadAsync()
     {
         try
         {
@@ -81,19 +75,4 @@
         [.. _all.Where(t => Match(t.Name) || Match(t.Identifier)).OrderBy(t => t.Identifier, StringComparer.Ordinal).Take(MaxTenants)];
 
     private static string TenantHref(TenantSummary tenant) => $"/ui/tenants/{Uri.EscapeDataString(tenant.Id)}";
-
-    private void OnKeyUp(KeyboardEventArgs e)
-    {
-        if (e.Key != "Enter")
-        {
-            return;
-        }
-
-        var first = Pages.Select(p => p.Href).Concat(Tenants.Select(TenantHref)).FirstOrDefault();
-        if (first is not null)
-        {
-            MudDialog.Close();
-            Navigation.NavigateTo(first);
-        }
-    }
 }

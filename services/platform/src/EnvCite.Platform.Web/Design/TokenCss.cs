@@ -38,7 +38,7 @@ public static class TokenCss
     {
         var css = new StringBuilder();
         css.Append("--ep-font:").Append(Join(DesignTokens.FontFamily)).Append(';');
-        css.Append("--ep-font-mono:").Append(Join(DesignTokens.FontFamilyMono)).Append(';');
+        css.Append("--ep-code-features:").Append(DesignTokens.CodeFeatures).Append(';');
         foreach (var (name, style) in DesignTokens.Type)
         {
             css.Append(CultureInfo.InvariantCulture, $"--ep-{name}-size:{style.Size};--ep-{name}-leading:{style.LineHeight};")

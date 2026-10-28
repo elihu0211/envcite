@@ -15,19 +15,25 @@
     <style>@((MarkupString)TokenCss.Render())</style>
     @* 自己託管的字型：中文依 unicode-range 切片，瀏覽器只下載頁面上出現的字所在的那幾片（見 scripts/vendor-fonts.sh）。 *@
     <link rel="stylesheet" href="@Assets["_content/EnvCite.Platform.Web/fonts/fonts.css"]" />
-    <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
+    @* 拉丁字型先下載：每一頁都用得到，換字型時版面才不跳。路徑與 fonts.css 裡的 url 相同（不加指紋），瀏覽器才不會重抓一次。 *@
+    <link rel="preload" href="@InterLatin" as="font" type="font/woff2" crossorigin />
+    @if (PageRenderMode is not null)
+    {
+        @* MudBlazor 只給互動的營運後台；靜態頁（入口、登入、說明頁）沒有它的元件，不下載它的樣式與腳本。 *@
+        <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
+    }
     <link rel="stylesheet" href="@Assets["_content/EnvCite.Platform.Web/design/platform.css"]" />
     <HeadOutlet @rendermode="PageRenderMode" />
 </head>
 <body>
     <Routes @rendermode="PageRenderMode" />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
     @if (PageRenderMode is not null)
     {
         <ReconnectModal />
+        <script src="@Assets["_content/MudBlazor/MudBlazor.min.js"]"></script>
+        <script src="@Assets["_content/EnvCite.Platform.Web/design/shortcuts.js"]"></script>
     }
-    <script src="@Assets["_content/MudBlazor/MudBlazor.min.js"]"></script>
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <script src="@Assets["_content/EnvCite.Platform.Web/design/shortcuts.js"]"></script>
 </body>
 </html>
 
@@ -39,5 +45,7 @@
     /// 營運後台是互動的（Interactive Server）；標了 <c>[ExcludeFromInteractiveRouting]</c> 的頁面（客戶入口）是靜態伺服器端渲染：
     /// 每個請求自己解析租戶、自己驗證，不開 circuit，登入表單就是一個普通的 POST。
     /// </summary>
+    internal const string InterLatin = "_content/EnvCite.Platform.Web/fonts/inter/inter-latin-opsz-normal.woff2";
+
     private IComponentRenderMode? PageRenderMode => HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
 }
