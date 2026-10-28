@@ -6,10 +6,8 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Account;
 
-public partial class Security
+public partial class Security(IOperatorTwoFactor twoFactor)
 {
-    [Inject] private IOperatorTwoFactor TwoFactor { get; set; } = default!;
-
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm(FormName = "ui-mfa-enable")] private CodeForm Input { get; set; } = default!;
@@ -28,10 +26,10 @@ public partial class Security
         _codesTitle = L["兩步驟驗證已啟用"];
         Input ??= new();
         Regenerate ??= new();
-        _enabled = await TwoFactor.IsEnabledAsync(HttpContext.User, HttpContext.RequestAborted);
+        _enabled = await twoFactor.IsEnabledAsync(HttpContext.User, HttpContext.RequestAborted);
         if (!_enabled)
         {
-            var setup = await TwoFactor.BeginSetupAsync(HttpContext.User, HttpContext.RequestAborted);
+            var setup = await twoFactor.BeginSetupAsync(HttpContext.User, HttpContext.RequestAborted);
             if (setup.IsOk)
             {
                 _setup = setup.Value;
@@ -44,7 +42,7 @@ public partial class Security
     {
         var code = Input.Code;
         Input.Code = string.Empty;
-        var enabled = await TwoFactor.EnableAsync(HttpContext.User, code, HttpContext.RequestAborted);
+        var enabled = await twoFactor.EnableAsync(HttpContext.User, code, HttpContext.RequestAborted);
         if (enabled.IsOk)
         {
             _recoveryCodes = enabled.Value;
@@ -59,7 +57,7 @@ public partial class Security
     {
         var code = Regenerate.Code;
         Regenerate.Code = string.Empty;
-        var regenerated = await TwoFactor.RegenerateRecoveryCodesAsync(HttpContext.User, code, HttpContext.RequestAborted);
+        var regenerated = await twoFactor.RegenerateRecoveryCodesAsync(HttpContext.User, code, HttpContext.RequestAborted);
         if (regenerated.IsOk)
         {
             _recoveryCodes = regenerated.Value;

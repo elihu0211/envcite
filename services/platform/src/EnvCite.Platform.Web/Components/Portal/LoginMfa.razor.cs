@@ -6,15 +6,9 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class LoginMfa
+public partial class LoginMfa(IPortalAccount account, IPortalTwoFactor twoFactor, NavigationManager navigation)
 {
     [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [Inject] private IPortalAccount Account { get; set; } = default!;
-
-    [Inject] private IPortalTwoFactor TwoFactor { get; set; } = default!;
-
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
@@ -31,16 +25,16 @@ public partial class LoginMfa
     protected override async Task OnInitializedAsync()
     {
         Input ??= new();
-        if (Account.CurrentTenant is null)
+        if (account.CurrentTenant is null)
         {
-            Navigation.NotFound();
+            navigation.NotFound();
             return;
         }
 
         // 沒有（或過期的）暫存憑證：這一頁沒有東西可驗，回到輸入密碼。
-        if (!await TwoFactor.HasPendingSignInAsync())
+        if (!await twoFactor.HasPendingSignInAsync())
         {
-            Navigation.NavigateTo(PortalPaths.Login(Tenant));
+            navigation.NavigateTo(PortalPaths.Login(Tenant));
         }
     }
 
@@ -64,15 +58,15 @@ public partial class LoginMfa
     {
         var code = Input.Code;
         Input.Code = string.Empty; // 碼不寫回表單（理由同密碼）。
-        var status = await TwoFactor.CompleteSignInAsync(code, Recovery, HttpContext.RequestAborted);
+        var status = await twoFactor.CompleteSignInAsync(code, Recovery, HttpContext.RequestAborted);
 
         switch (status)
         {
             case PortalSignInStatus.Succeeded:
-                Navigation.NavigateTo(PortalEndpoints.SafeReturnUrl(ReturnUrl, Tenant));
+                navigation.NavigateTo(PortalEndpoints.SafeReturnUrl(ReturnUrl, Tenant));
                 break;
             case PortalSignInStatus.MustChangePassword:
-                Navigation.NavigateTo(PortalPaths.Password(Tenant));
+                navigation.NavigateTo(PortalPaths.Password(Tenant));
                 break;
             default:
                 // 碼錯、過期、重複使用、被鎖定都是同一句話；暫存憑證在鎖定時會被收回，下一頁會回到輸入密碼。

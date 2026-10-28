@@ -98,8 +98,18 @@ else
     {
         var user = (await Auth.GetAuthenticationStateAsync()).User;
         _selfId = user.FindFirst(PlatformClaimTypes.OperatorId)?.Value;
+        if (Prerendered is not null)
+        {
+            (_operators, Prerendered) = (Prerendered, null);
+            return;
+        }
+
         await LoadAsync();
     }
+
+    /// <summary>預先渲染查到的清單交給互動渲染，不再查一次。重新連線不還原：資料可能已經變了，要重查。</summary>
+    [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
+    public IReadOnlyList<OperatorInfo>? Prerendered { get; set; }
 
     private async Task LoadAsync()
     {
@@ -116,6 +126,10 @@ else
             }
 
             _operators = listed.Value;
+            if (!RendererInfo.IsInteractive)
+            {
+                Prerendered = _operators;
+            }
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

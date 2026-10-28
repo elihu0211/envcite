@@ -6,11 +6,9 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class Members
+public partial class Members(IMemberSelfService team)
 {
     [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [Inject] private IMemberSelfService Team { get; set; } = default!;
 
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
@@ -30,20 +28,20 @@ public partial class Members
     {
         Add ??= new();
         Input ??= new();
-        _grantable = Team.GrantableRoles(HttpContext.User);
+        _grantable = team.GrantableRoles(HttpContext.User);
         Add.Role = string.IsNullOrEmpty(Add.Role) ? (_grantable.Count > 0 ? _grantable[^1] : string.Empty) : Add.Role;
         await LoadAsync();
     }
 
     private async Task LoadAsync()
     {
-        var team = await Team.ListAsync(HttpContext.User, HttpContext.RequestAborted);
-        _team = team.IsOk ? team.Value : null;
+        var listed = await team.ListAsync(HttpContext.User, HttpContext.RequestAborted);
+        _team = listed.IsOk ? listed.Value : null;
     }
 
     private async Task AddAsync()
     {
-        var created = await Team.CreateAsync(HttpContext.User, Add.Email, Add.DisplayName, Add.Role, HttpContext.RequestAborted);
+        var created = await team.CreateAsync(HttpContext.User, Add.Email, Add.DisplayName, Add.Role, HttpContext.RequestAborted);
         if (created.IsOk)
         {
             Reveal(L["新成員已建立"], created.Value!);
@@ -65,16 +63,16 @@ public partial class Members
         {
             case "disable":
             case "enable":
-                var toggled = await Team.SetDisabledAsync(HttpContext.User, id, verb == "disable", HttpContext.RequestAborted);
+                var toggled = await team.SetDisabledAsync(HttpContext.User, id, verb == "disable", HttpContext.RequestAborted);
                 Report(toggled, verb == "disable" ? L["已停用，對方所有登入立刻失效。"] : L["已重新啟用。"]);
                 break;
             case "role":
                 var role = HttpContext.Request.HasFormContentType ? HttpContext.Request.Form[$"role-{id}"].ToString() : string.Empty;
-                var changed = await Team.ChangeRoleAsync(HttpContext.User, id, role, HttpContext.RequestAborted);
+                var changed = await team.ChangeRoleAsync(HttpContext.User, id, role, HttpContext.RequestAborted);
                 Report(changed, L["已變更角色。對方的舊登入已失效，下次登入才會套用新角色。"]);
                 break;
             case "reset":
-                var reset = await Team.ResetPasswordAsync(HttpContext.User, id, HttpContext.RequestAborted);
+                var reset = await team.ResetPasswordAsync(HttpContext.User, id, HttpContext.RequestAborted);
                 if (reset.IsOk)
                 {
                     Reveal(L["新的一次性密碼"], reset.Value!);

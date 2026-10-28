@@ -6,13 +6,9 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class Login
+public partial class Login(NavigationManager navigation)
 {
     [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [Inject] private IPortalAccount Account { get; set; } = default!;
-
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
@@ -29,7 +25,7 @@ public partial class Login
         // 路徑上的租戶不存在：這個頁面就不存在。
         if (Account.CurrentTenant is null)
         {
-            Navigation.NotFound();
+            navigation.NotFound();
         }
     }
 
@@ -41,15 +37,15 @@ public partial class Login
         switch (status)
         {
             case PortalSignInStatus.Succeeded:
-                Navigation.NavigateTo(PortalEndpoints.SafeReturnUrl(ReturnUrl, tenant.Identifier));
+                navigation.NavigateTo(PortalEndpoints.SafeReturnUrl(ReturnUrl, tenant.Identifier));
                 break;
             case PortalSignInStatus.MustChangePassword:
-                Navigation.NavigateTo(PortalPaths.Password(tenant.Identifier));
+                navigation.NavigateTo(PortalPaths.Password(tenant.Identifier));
                 break;
             case PortalSignInStatus.RequiresTwoFactor:
                 // 還沒有登入 cookie，只有一張五分鐘的暫存憑證；returnUrl 帶到第二步，通過後才用它。
                 var next = $"{PortalPaths.Login(tenant.Identifier)}/mfa";
-                Navigation.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? next : $"{next}?returnUrl={Uri.EscapeDataString(ReturnUrl)}");
+                navigation.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? next : $"{next}?returnUrl={Uri.EscapeDataString(ReturnUrl)}");
                 break;
             default:
                 // 密碼不寫回表單：重新渲染的 HTML 會帶著輸入框的值，等於把密碼又傳回瀏覽器（與任何中間的快取）一次。

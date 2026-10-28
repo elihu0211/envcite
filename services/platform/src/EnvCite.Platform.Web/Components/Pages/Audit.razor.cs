@@ -7,15 +7,9 @@ using Microsoft.AspNetCore.Components;
 
 namespace EnvCite.Platform.Web.Components.Pages;
 
-public partial class Audit
+public partial class Audit(IAuditQuery query, ITenantDirectory directory, NavigationManager navigation)
 {
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-
-    [Inject] private IAuditQuery Query { get; set; } = default!;
-
-    [Inject] private ITenantDirectory Directory { get; set; } = default!;
-
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     // 條件的唯一來源是網址：套用只是改網址，參數一變就重新載入。
     [SupplyParameterFromQuery(Name = "tenant")] private string? TenantParam { get; set; }
@@ -45,11 +39,23 @@ public partial class Audit
         : _items.Count == 0 ? L["沒有符合的事件"]
         : _next is null ? L["共 {0} 筆", _items.Count] : L["已載入 {0} 筆，還有更多", _items.Count];
 
+    public sealed record AuditSnapshot(IReadOnlyList<TenantSummary> Tenants, string Filter, AuditPage Page);
+
+    /// <summary>預先渲染查到的租戶與第一頁交給互動渲染，不再查一次。重新連線不還原：可能已有新事件，要重查。</summary>
+    [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
+    public AuditSnapshot? Prerendered { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
+        if (Prerendered is { } snapshot)
+        {
+            _tenantsById = ById(snapshot.Tenants);
+            return;
+        }
+
         try
         {
-            _tenantsById = (await Directory.ListAsync(CancellationToken.None)).ToDictionary(t => t.Id, StringComparer.Ordinal);
+            _tenantsById = ById(await directory.ListAsync(CancellationToken.None));
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -67,17 +73,34 @@ public partial class Audit
 
         _applied = signature;
         (_tenant, _action, _actor) = (TenantParam, ActionParam, ActorParam);
+        if (Prerendered is { } snapshot && snapshot.Filter == signature)
+        {
+            Prerendered = null;
+            _items.AddRange(snapshot.Page.Items);
+            _next = snapshot.Page.NextCursor;
+            _loading = false;
+            return;
+        }
+
+        Prerendered = null;
         await LoadAsync(append: false);
+        if (!RendererInfo.IsInteractive && _error is null)
+        {
+            Prerendered = new([.. _tenantsById.Values], signature, new AuditPage([.. _items], _next));
+        }
     }
 
-    private void Apply() => Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+    private static Dictionary<string, TenantSummary> ById(IEnumerable<TenantSummary> tenants) =>
+        tenants.ToDictionary(t => t.Id, StringComparer.Ordinal);
+
+    private void Apply() => navigation.NavigateTo(navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
     {
         ["tenant"] = Nullable(_tenant),
         ["action"] = Nullable(_action),
         ["actor"] = Nullable(_actor),
     }));
 
-    private void Reset() => Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+    private void Reset() => navigation.NavigateTo(navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
     {
         ["tenant"] = null,
         ["action"] = null,
@@ -103,7 +126,7 @@ public partial class Audit
 
         try
         {
-            var page = await Query.QueryAsync(
+            var page = await query.QueryAsync(
                 new AuditFilter(Nullable(TenantParam), Nullable(ActionParam), Nullable(ActorParam), append ? _next : null),
                 CancellationToken.None);
             _items.AddRange(page.Items);

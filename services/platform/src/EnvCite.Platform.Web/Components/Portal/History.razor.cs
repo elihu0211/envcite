@@ -11,8 +11,6 @@ public partial class History
 
     [Parameter] public string Tenant { get; set; } = string.Empty;
 
-    [Inject] private IConversationHistory Store { get; set; } = default!;
-
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm] private DeleteForm Input { get; set; } = default!;

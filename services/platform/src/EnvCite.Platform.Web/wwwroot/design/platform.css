@@ -1646,6 +1646,69 @@ a.ep-brand {
     transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
+/* 連線中斷的提示（ReconnectModal）：與其他對話框同一個面，從下方落定進場。框架只切換對話框上的 class，
+   哪一段文字與按鈕出現由這裡決定；先延遲一拍再出現，一閃即恢復的短暫斷線不打擾人。 */
+#components-reconnect-modal {
+    margin: auto;
+    inline-size: var(--ep-measure-narrow);
+    max-inline-size: calc(100% - var(--ep-space-8));
+    padding: var(--ep-space-8) var(--ep-space-6) var(--ep-space-6);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-sheet);
+    background: var(--ep-surface-raised);
+    color: var(--ep-text);
+    box-shadow: var(--ep-elevation-3);
+    font: inherit;
+    text-align: center;
+}
+
+#components-reconnect-modal[open] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ep-space-4);
+    animation: ep-rise var(--ep-motion-reveal) var(--ep-motion-ease-settle) var(--ep-motion-slow) both;
+}
+
+#components-reconnect-modal::backdrop {
+    background: var(--ep-scrim);
+}
+
+.ep-reconnect-body {
+    display: grid;
+    gap: var(--ep-space-4);
+    inline-size: 100%;
+}
+
+.ep-reconnect-body p {
+    margin: 0;
+}
+
+.components-reconnect-first-attempt-visible,
+.components-reconnect-repeated-attempt-visible,
+.components-reconnect-failed-visible,
+.components-pause-visible,
+.components-resume-failed-visible,
+.ep-reconnect-progress {
+    display: none;
+}
+
+/* 框架會同時掛上多個狀態（例如 show 加 retrying、再加 failed），所以每段文字排除較後面的狀態，一次只出現一段。 */
+#components-reconnect-modal.components-reconnect-show:not(.components-reconnect-retrying, .components-reconnect-failed) .components-reconnect-first-attempt-visible,
+#components-reconnect-modal.components-reconnect-retrying:not(.components-reconnect-failed) .components-reconnect-repeated-attempt-visible,
+#components-reconnect-modal:is(.components-reconnect-show, .components-reconnect-retrying):not(.components-reconnect-failed) .ep-reconnect-progress,
+#components-reconnect-modal.components-reconnect-failed p.components-reconnect-failed-visible,
+#components-reconnect-modal.components-reconnect-paused:not(.components-reconnect-resume-failed) p.components-pause-visible,
+#components-reconnect-modal.components-reconnect-resume-failed p.components-resume-failed-visible {
+    display: block;
+}
+
+#components-reconnect-modal.components-reconnect-failed .ep-btn.components-reconnect-failed-visible,
+#components-reconnect-modal.components-reconnect-paused:not(.components-reconnect-resume-failed) .ep-btn.components-pause-visible,
+#components-reconnect-modal.components-reconnect-resume-failed .ep-btn.components-resume-failed-visible {
+    display: inline-flex;
+}
+
 
 /* ---- 品牌面與深色層次 ----------------------------------------------------------------------------
  * 深色只是局部的層次（Ink）：營運頂欄與登入的品牌面板。頁面本身仍是淺色，不是深色主題。 */

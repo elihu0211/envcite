@@ -7,12 +7,8 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Account;
 
-public partial class ChangePassword
+public partial class ChangePassword(IOperatorAccount account, NavigationManager navigation)
 {
-    [Inject] private IOperatorAccount Account { get; set; } = default!;
-
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
-
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm] private PasswordForm Input { get; set; } = default!;
@@ -36,11 +32,11 @@ public partial class ChangePassword
             return;
         }
 
-        var changed = await Account.ChangePasswordAsync(HttpContext.User, current, next, HttpContext.RequestAborted);
+        var changed = await account.ChangePasswordAsync(HttpContext.User, current, next, HttpContext.RequestAborted);
         if (changed.IsOk)
         {
             // 回首頁：還沒註冊驗證器的話，授權會把這個請求導去註冊頁（UiRedirects）。
-            Navigation.NavigateTo(UiEndpoints.HomePath);
+            navigation.NavigateTo(UiEndpoints.HomePath);
             return;
         }
 

@@ -105,7 +105,23 @@ else
     private IReadOnlyList<AuditRecord> _recent = [];
     private string? _error;
 
-    protected override Task OnInitializedAsync() => LoadAsync();
+    public sealed record Overview(IReadOnlyList<TenantSummary> Tenants, IReadOnlyList<OperatorInfo> Operators, IReadOnlyList<AuditRecord> Recent);
+
+    /// <summary>預先渲染查到的資料交給互動渲染，不再查一次。重新連線不還原：資料可能已經變了，要重查。</summary>
+    [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
+    public Overview? Prerendered { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        if (Prerendered is { } overview)
+        {
+            Prerendered = null;
+            Show(overview);
+            return Task.CompletedTask;
+        }
+
+        return LoadAsync();
+    }
 
     private async Task LoadAsync()
     {
@@ -124,15 +140,26 @@ else
 
             var recent = await AuditQuery.QueryAsync(new AuditFilter(Limit: RecentCount), CancellationToken.None);
 
-            _tenants = tenants;
-            _operators = operators.Value!;
-            _withoutPlan = [.. tenants.Where(t => t.Plan is null).OrderBy(t => t.Identifier, StringComparer.Ordinal)];
-            _pendingOperators = [.. _operators.Where(o => !o.Disabled && OperatorLabels.Tone(o) != "success")];
-            _recent = recent.Items;
+            var overview = new Overview(tenants, operators.Value!, recent.Items);
+            if (!RendererInfo.IsInteractive)
+            {
+                Prerendered = overview;
+            }
+
+            Show(overview);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             _error = exception.GetType().Name;
         }
+    }
+
+    private void Show(Overview overview)
+    {
+        _tenants = overview.Tenants;
+        _operators = overview.Operators;
+        _withoutPlan = [.. overview.Tenants.Where(t => t.Plan is null).OrderBy(t => t.Identifier, StringComparer.Ordinal)];
+        _pendingOperators = [.. overview.Operators.Where(o => !o.Disabled && OperatorLabels.Tone(o) != "success")];
+        _recent = overview.Recent;
     }
 }

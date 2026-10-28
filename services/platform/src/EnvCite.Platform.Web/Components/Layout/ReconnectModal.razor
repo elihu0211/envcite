@@ -1,0 +1,17 @@
+@* 互動頁的 SignalR 連線中斷時的提示（.NET 範本的 ReconnectModal）。框架在 id 為 components-reconnect-modal 的元素上
+   切換 components-reconnect-* 的 class 並發出 components-reconnect-state-changed 事件；哪一段文字出現由 platform.css 依 class 決定，
+   開關對話框與重試由同目錄的 ReconnectModal.razor.js 處理。只在互動頁放（靜態頁沒有連線可斷）。 *@
+<script src="@Assets["_content/EnvCite.Platform.Web/Components/Layout/ReconnectModal.razor.js"]" type="module"></script>
+
+<dialog id="components-reconnect-modal" class="ep-reconnect" aria-labelledby="ep-reconnect-status" data-nosnippet>
+    <div class="ep-reconnect-body" id="ep-reconnect-status" role="status">
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="ep-reconnect-progress" aria-hidden="true" />
+        <p class="components-reconnect-first-attempt-visible">@L["連線中斷，正在重新連線…"]</p>
+        <p class="components-reconnect-repeated-attempt-visible">@L["重新連線失敗，稍後會自動再試。"]</p>
+        <p class="components-reconnect-failed-visible">@L["無法重新連線。請重試，或重新載入頁面。"]</p>
+        <p class="components-pause-visible">@L["伺服器暫停了這個工作階段。"]</p>
+        <p class="components-resume-failed-visible">@L["無法繼續這個工作階段。請重試，或重新載入頁面。"]</p>
+    </div>
+    <button type="button" id="components-reconnect-button" class="ep-btn ep-btn-primary components-reconnect-failed-visible">@L["重試"]</button>
+    <button type="button" id="components-resume-button" class="ep-btn ep-btn-primary components-pause-visible components-resume-failed-visible">@L["繼續"]</button>
+</dialog>

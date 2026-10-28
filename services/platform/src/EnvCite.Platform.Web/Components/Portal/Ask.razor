@@ -3,6 +3,7 @@
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+@inject IConversationHistory History
 
 <PageTitle>@L["查詢 · 環境知識"]</PageTitle>
 

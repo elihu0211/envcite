@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@inject IDialogService Dialogs
 
 @* 營運者後台的外殼：頂欄放品牌與帳號（選單從帳號鈕長出，點外面或 Esc 收回），左側欄是導覽。
    側欄依群組排：目前只有「平台」；服務有自己的頁面時，以同一個樣式加一組「服務」。導覽只列已經存在的頁面。
@@ -53,8 +54,6 @@
 </div>
 
 @code {
-    [Inject] private IDialogService Dialogs { get; set; } = default!;
-
     private Task OpenPaletteAsync() =>
         Dialogs.ShowAsync<CommandPalette>(
             L["搜尋頁面與租戶"],

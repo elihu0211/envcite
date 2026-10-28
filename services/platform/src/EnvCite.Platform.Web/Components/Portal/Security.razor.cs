@@ -6,11 +6,9 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class Security
+public partial class Security(IPortalTwoFactor twoFactor)
 {
     [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [Inject] private IPortalTwoFactor TwoFactor { get; set; } = default!;
 
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
@@ -35,8 +33,8 @@ public partial class Security
         Input ??= new();
         Regenerate ??= new();
         Disable ??= new();
-        _required = TwoFactor.IsRequired(HttpContext.User);
-        _enabled = await TwoFactor.IsEnabledAsync(HttpContext.User, HttpContext.RequestAborted);
+        _required = twoFactor.IsRequired(HttpContext.User);
+        _enabled = await twoFactor.IsEnabledAsync(HttpContext.User, HttpContext.RequestAborted);
         if (!_enabled)
         {
             await LoadSetupAsync();
@@ -45,7 +43,7 @@ public partial class Security
 
     private async Task LoadSetupAsync()
     {
-        var setup = await TwoFactor.BeginSetupAsync(HttpContext.User, HttpContext.RequestAborted);
+        var setup = await twoFactor.BeginSetupAsync(HttpContext.User, HttpContext.RequestAborted);
         if (setup.IsOk)
         {
             _setup = setup.Value;
@@ -57,7 +55,7 @@ public partial class Security
     {
         var code = Input.Code;
         Input.Code = string.Empty;
-        var enabled = await TwoFactor.EnableAsync(HttpContext.User, code, HttpContext.RequestAborted);
+        var enabled = await twoFactor.EnableAsync(HttpContext.User, code, HttpContext.RequestAborted);
         if (enabled.IsOk)
         {
             _recoveryCodes = enabled.Value;
@@ -72,7 +70,7 @@ public partial class Security
     {
         var code = Regenerate.Code;
         Regenerate.Code = string.Empty;
-        var regenerated = await TwoFactor.RegenerateRecoveryCodesAsync(HttpContext.User, code, HttpContext.RequestAborted);
+        var regenerated = await twoFactor.RegenerateRecoveryCodesAsync(HttpContext.User, code, HttpContext.RequestAborted);
         if (regenerated.IsOk)
         {
             _recoveryCodes = regenerated.Value;
@@ -87,7 +85,7 @@ public partial class Security
     {
         var (password, code) = (Disable.Password, Disable.Code);
         Disable.Password = Disable.Code = string.Empty;
-        var disabled = await TwoFactor.DisableAsync(HttpContext.User, password, code, HttpContext.RequestAborted);
+        var disabled = await twoFactor.DisableAsync(HttpContext.User, password, code, HttpContext.RequestAborted);
         if (!disabled.IsOk)
         {
             _error = disabled.Localized() ?? L["關閉失敗。"];

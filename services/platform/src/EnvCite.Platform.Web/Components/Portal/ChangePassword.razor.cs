@@ -8,13 +8,9 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class ChangePassword
+public partial class ChangePassword(IPortalAccount account, NavigationManager navigation)
 {
     [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [Inject] private IPortalAccount Account { get; set; } = default!;
-
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
@@ -39,10 +35,10 @@ public partial class ChangePassword
             return;
         }
 
-        var changed = await Account.ChangePasswordAsync(HttpContext.User, current, next, HttpContext.RequestAborted);
+        var changed = await account.ChangePasswordAsync(HttpContext.User, current, next, HttpContext.RequestAborted);
         if (changed.IsOk)
         {
-            Navigation.NavigateTo(PortalPaths.Home(Tenant));
+            navigation.NavigateTo(PortalPaths.Home(Tenant));
             return;
         }
 

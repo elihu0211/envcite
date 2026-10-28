@@ -89,7 +89,20 @@ else
     private string? _search;
     private bool _dense;
 
-    protected override Task OnInitializedAsync() => LoadAsync();
+    /// <summary>預先渲染查到的清單交給互動渲染，不再查一次。重新連線不還原：資料可能已經變了，要重查。</summary>
+    [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
+    public IReadOnlyList<TenantSummary>? Prerendered { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        if (Prerendered is not null)
+        {
+            (_tenants, Prerendered) = (Prerendered, null);
+            return Task.CompletedTask;
+        }
+
+        return LoadAsync();
+    }
 
     private async Task LoadAsync()
     {
@@ -98,6 +111,10 @@ else
         try
         {
             _tenants = await Directory.ListAsync(CancellationToken.None);
+            if (!RendererInfo.IsInteractive)
+            {
+                Prerendered = _tenants;
+            }
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

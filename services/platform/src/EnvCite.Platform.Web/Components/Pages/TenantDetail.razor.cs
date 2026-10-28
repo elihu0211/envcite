@@ -11,31 +11,13 @@ using MudBlazor;
 
 namespace EnvCite.Platform.Web.Components.Pages;
 
-public partial class TenantDetail
+public partial class TenantDetail(
+    ITenantDirectory directory, IApiKeyAdmin keys, IPlanAdmin plans, IMemberAdmin members, IUsageAdmin usage, IAuditQuery audit,
+    NavigationManager navigation, IDialogService dialogs, AuthenticationStateProvider auth)
 {
     private static readonly DialogOptions Narrow = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
 
     [Parameter] public string TenantId { get; set; } = string.Empty;
-
-    [Inject] private ITenantDirectory Directory { get; set; } = default!;
-
-    [Inject] private IApiKeyAdmin Keys { get; set; } = default!;
-
-    [Inject] private IPlanAdmin Plans { get; set; } = default!;
-
-    [Inject] private IGroundedAnswerer Answerer { get; set; } = default!;
-
-    [Inject] private IMemberAdmin Members { get; set; } = default!;
-
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
-
-    [Inject] private IAuditQuery Audit { get; set; } = default!;
-
-    [Inject] private IDialogService Dialogs { get; set; } = default!;
-
-    [Inject] private AuthenticationStateProvider Auth { get; set; } = default!;
-
-    [Inject] private IUsageAdmin Usage { get; set; } = default!;
 
     private TenantSummary? _tenant;
     private IReadOnlyList<ApiKeyInfo> _keys = [];
@@ -61,7 +43,35 @@ public partial class TenantDetail
 
         _loaded = TenantId;
         _notice = null;
+        if (Prerendered is { } snapshot && snapshot.TenantId == TenantId)
+        {
+            Prerendered = null;
+            Show(snapshot);
+            return;
+        }
+
+        Prerendered = null;
         await LoadAsync();
+        if (!RendererInfo.IsInteractive && _error is null)
+        {
+            Prerendered = new(TenantId, _tenant, _keys, _members, _recent, _usage);
+        }
+    }
+
+    public sealed record TenantSnapshot(
+        string TenantId, TenantSummary? Tenant, IReadOnlyList<ApiKeyInfo> Keys, IReadOnlyList<MemberInfo> Members,
+        IReadOnlyList<AuditRecord> Recent, IReadOnlyList<TenantUsageSummary> Usage);
+
+    /// <summary>預先渲染查到的資料交給互動渲染，不再查一次。重新連線不還原：資料可能已經變了，要重查。</summary>
+    [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
+    public TenantSnapshot? Prerendered { get; set; }
+
+    private void Show(TenantSnapshot snapshot)
+    {
+        _plans = plans.Plans;
+        (_tenant, _keys, _members, _recent, _usage) = (snapshot.Tenant, snapshot.Keys, snapshot.Members, snapshot.Recent, snapshot.Usage);
+        _selectedPlan = _tenant?.Plan;
+        _loading = false;
     }
 
     private async Task LoadAsync()
@@ -70,8 +80,8 @@ public partial class TenantDetail
         _error = null;
         try
         {
-            _plans = Plans.Plans;
-            _tenant = (await Directory.ListAsync(CancellationToken.None)).FirstOrDefault(t => t.Id == TenantId);
+            _plans = plans.Plans;
+            _tenant = (await directory.ListAsync(CancellationToken.None)).FirstOrDefault(t => t.Id == TenantId);
             if (_tenant is not null)
             {
                 _selectedPlan = _tenant.Plan;
@@ -91,13 +101,13 @@ public partial class TenantDetail
     // 動作之後只重載會變的部分，頁面不閃。
     private async Task LoadDetailsAsync()
     {
-        var keys = await Keys.ListAsync(TenantId, CancellationToken.None);
-        _keys = keys.IsOk ? keys.Value!.OrderByDescending(k => k.CreatedAt).ToList() : [];
+        var listedKeys = await keys.ListAsync(TenantId, CancellationToken.None);
+        _keys = listedKeys.IsOk ? listedKeys.Value!.OrderByDescending(k => k.CreatedAt).ToList() : [];
 
-        var members = await Members.ListAsync(TenantId, CancellationToken.None);
-        _members = members.IsOk ? members.Value! : [];
+        var listedMembers = await members.ListAsync(TenantId, CancellationToken.None);
+        _members = listedMembers.IsOk ? listedMembers.Value! : [];
 
-        var page = await Audit.QueryAsync(new AuditFilter(Tenant: TenantId, Limit: 10), CancellationToken.None);
+        var page = await audit.QueryAsync(new AuditFilter(Tenant: TenantId, Limit: 10), CancellationToken.None);
         _recent = page.Items;
 
         await LoadUsageAsync();
@@ -111,7 +121,7 @@ public partial class TenantDetail
             30 => DateTimeOffset.UtcNow.AddDays(-30),
             _ => null,
         };
-        var usageResult = await Usage.GetTenantUsageAsync(TenantId, since, CancellationToken.None);
+        var usageResult = await usage.GetTenantUsageAsync(TenantId, since, CancellationToken.None);
         _usage = usageResult.IsOk ? usageResult.Value! : [];
     }
 
@@ -134,17 +144,17 @@ public partial class TenantDetail
 
     private async Task RefreshAsync()
     {
-        _tenant = (await Directory.ListAsync(CancellationToken.None)).FirstOrDefault(t => t.Id == TenantId);
+        _tenant = (await directory.ListAsync(CancellationToken.None)).FirstOrDefault(t => t.Id == TenantId);
         _selectedPlan = _tenant?.Plan;
         await LoadDetailsAsync();
     }
 
     /// <summary>給客戶的完整登入網址（用目前後台的主機位址組出來）。</summary>
-    private string PortalLoginUrl => new Uri(new Uri(Navigation.BaseUri), PortalPaths.Login(_tenant?.Identifier ?? string.Empty)).ToString();
+    private string PortalLoginUrl => new Uri(new Uri(navigation.BaseUri), PortalPaths.Login(_tenant?.Identifier ?? string.Empty)).ToString();
 
     private async Task AddMemberAsync()
     {
-        var dialog = await Dialogs.ShowAsync<CreateMemberDialog>(
+        var dialog = await dialogs.ShowAsync<CreateMemberDialog>(
             L["新增成員"], new DialogParameters<CreateMemberDialog> { { x => x.TenantId, TenantId } }, Narrow);
         var result = await dialog.Result;
         if (result is { Canceled: false, Data: IssuedPassword issued })
@@ -160,7 +170,7 @@ public partial class TenantDetail
 
     private async Task ResetPasswordAsync(MemberInfo member)
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await dialogs.ShowMessageBoxAsync(
             L["重設密碼"], L["重設 {0} 的密碼後，這位成員在所有裝置上會立刻登出，要用新的一次性密碼登入並自己改掉。確定？", member.Email],
             yesText: L["重設密碼"], cancelText: L["取消"]);
         if (confirmed != true)
@@ -170,7 +180,7 @@ public partial class TenantDetail
 
         await RunAsync(async () =>
         {
-            var reset = await Members.ResetPasswordAsync(await ActorAsync(), TenantId, member.Id, CancellationToken.None);
+            var reset = await members.ResetPasswordAsync(await ActorAsync(), TenantId, member.Id, CancellationToken.None);
             if (!reset.IsOk)
             {
                 Fail(reset.Localized() ?? L["重設失敗。"]);
@@ -187,7 +197,7 @@ public partial class TenantDetail
     {
         if (disabled)
         {
-            var confirmed = await Dialogs.ShowMessageBoxAsync(
+            var confirmed = await dialogs.ShowMessageBoxAsync(
                 L["停用成員"], L["停用 {0} 後，他在所有裝置上立刻登出、也不能再登入；帳號與稽核紀錄都保留，之後可以重新啟用。確定？", member.Email],
                 yesText: L["停用"], cancelText: L["取消"]);
             if (confirmed != true)
@@ -198,7 +208,7 @@ public partial class TenantDetail
 
         await RunAsync(async () =>
         {
-            var changed = await Members.SetDisabledAsync(await ActorAsync(), TenantId, member.Id, disabled, CancellationToken.None);
+            var changed = await members.SetDisabledAsync(await ActorAsync(), TenantId, member.Id, disabled, CancellationToken.None);
             if (!changed.IsOk)
             {
                 Fail(changed.Localized() ?? L["操作失敗。"]);
@@ -212,7 +222,7 @@ public partial class TenantDetail
 
     private async Task ResetTwoFactorAsync(MemberInfo member)
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await dialogs.ShowMessageBoxAsync(
             L["重設兩步驟驗證"],
             L["這會關掉 {0} 的兩步驟驗證、丟掉他的驗證器金鑰與復原碼，並讓他在所有裝置上登出；之後只靠密碼就能登入，直到他重新設定。", member.Email]
             + L["請先用你們原本的管道確認對方是本人（不是別人冒名來要求重設）。確定？"],
@@ -224,7 +234,7 @@ public partial class TenantDetail
 
         await RunAsync(async () =>
         {
-            var reset = await Members.ResetTwoFactorAsync(await ActorAsync(), TenantId, member.Id, CancellationToken.None);
+            var reset = await members.ResetTwoFactorAsync(await ActorAsync(), TenantId, member.Id, CancellationToken.None);
             if (!reset.IsOk)
             {
                 Fail(reset.Localized() ?? L["重設失敗。"]);
@@ -238,7 +248,7 @@ public partial class TenantDetail
 
     private async Task RevealAsync(IssuedPassword issued, string title)
     {
-        var reveal = await Dialogs.ShowAsync<PasswordRevealDialog>(title, new DialogParameters<PasswordRevealDialog>
+        var reveal = await dialogs.ShowAsync<PasswordRevealDialog>(title, new DialogParameters<PasswordRevealDialog>
         {
             { x => x.Member, issued.Member },
             { x => x.Password, issued.Password },
@@ -247,7 +257,7 @@ public partial class TenantDetail
         await reveal.Result;
     }
 
-    private async Task<ClaimsPrincipal> ActorAsync() => (await Auth.GetAuthenticationStateAsync()).User;
+    private async Task<ClaimsPrincipal> ActorAsync() => (await auth.GetAuthenticationStateAsync()).User;
 
     private string PlanLabel(PlanInfo plan) => L["{0}（每 {1} {2} 次）", plan.Name, FormatWindow(plan.Window), plan.PermitLimit];
 
@@ -258,7 +268,7 @@ public partial class TenantDetail
 
     private async Task RemovePlanAsync()
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await dialogs.ShowMessageBoxAsync(
             L["移除方案"], L["移除後，{0} 立刻不能呼叫資料端點（回 402）。確定？", _tenant!.Identifier],
             yesText: L["移除方案"], cancelText: L["取消"]);
         if (confirmed == true)
@@ -273,7 +283,7 @@ public partial class TenantDetail
         if (enable)
         {
             // 開啟會讓這個租戶的問題離開我們的系統，所以要確認（關閉不用：它只會讓資料少流出去）。
-            var confirmed = await Dialogs.ShowMessageBoxAsync(
+            var confirmed = await dialogs.ShowMessageBoxAsync(
                 L["開啟 AI 回答"], L["{0} 成員提的問題與相關條文會送到外部的模型服務。請確認租戶已同意。確定開啟？", _tenant.Identifier],
                 yesText: L["開啟"], cancelText: L["取消"]);
             if (confirmed != true)
@@ -284,7 +294,7 @@ public partial class TenantDetail
 
         await RunAsync(async () =>
         {
-            var result = await Plans.SetAiAnswerAsync(await ActorAsync(), TenantId, enable, CancellationToken.None);
+            var result = await plans.SetAiAnswerAsync(await ActorAsync(), TenantId, enable, CancellationToken.None);
             if (!result.IsOk)
             {
                 Fail(result.Localized() ?? L["變更失敗。"]);
@@ -300,7 +310,7 @@ public partial class TenantDetail
     {
         await RunAsync(async () =>
         {
-            var change = await Plans.SetAsync(await ActorAsync(), TenantId, plan, CancellationToken.None);
+            var change = await plans.SetAsync(await ActorAsync(), TenantId, plan, CancellationToken.None);
             if (!change.IsOk)
             {
                 Fail(change.Localized() ?? L["變更方案失敗。"]);
@@ -314,7 +324,7 @@ public partial class TenantDetail
 
     private async Task IssueKeyAsync()
     {
-        var dialog = await Dialogs.ShowAsync<IssueApiKeyDialog>(
+        var dialog = await dialogs.ShowAsync<IssueApiKeyDialog>(
             L["簽發 API key"], new DialogParameters<IssueApiKeyDialog> { { x => x.TenantId, TenantId } }, Narrow);
         var result = await dialog.Result;
         if (result is { Canceled: false })
@@ -329,7 +339,7 @@ public partial class TenantDetail
 
     private async Task RevokeKeyAsync(ApiKeyInfo key)
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await dialogs.ShowMessageBoxAsync(
             L["撤銷 API key"], L["撤銷「{0}」（{1}…）後，持有它的客戶立刻無法呼叫 API，且無法復原。確定？", key.Name, key.Prefix],
             yesText: L["撤銷"], cancelText: L["取消"]);
         if (confirmed != true)
@@ -339,7 +349,7 @@ public partial class TenantDetail
 
         await RunAsync(async () =>
         {
-            var revoked = await Keys.RevokeAsync(await ActorAsync(), TenantId, key.Id, CancellationToken.None);
+            var revoked = await keys.RevokeAsync(await ActorAsync(), TenantId, key.Id, CancellationToken.None);
             if (!revoked.IsOk)
             {
                 Fail(revoked.Localized() ?? L["撤銷失敗。"]);

@@ -2,6 +2,7 @@
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+@inject IConversationHistory Store
 
 <PageTitle>@L["對話紀錄 · 環境知識"]</PageTitle>
 

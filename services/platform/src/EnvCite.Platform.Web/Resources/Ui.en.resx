@@ -399,4 +399,13 @@
   <data name="搜尋頁面與租戶" xml:space="preserve"><value>Search pages and tenants</value></data>
   <data name="頁面" xml:space="preserve"><value>Pages</value></data>
   <data name="沒有符合「{0}」的頁面或租戶" xml:space="preserve"><value>No pages or tenants match “{0}”</value></data>
+  <data name="找不到頁面 · 環境知識" xml:space="preserve"><value>Page not found · EnvCite</value></data>
+  <data name="找不到頁面" xml:space="preserve"><value>Page not found</value></data>
+  <data name="這個網址沒有對應的頁面。請確認網址是否正確。" xml:space="preserve"><value>There is no page at this address. Check that the address is correct.</value></data>
+  <data name="連線中斷，正在重新連線…" xml:space="preserve"><value>Connection lost. Reconnecting…</value></data>
+  <data name="重新連線失敗，稍後會自動再試。" xml:space="preserve"><value>Couldn’t reconnect. Trying again shortly.</value></data>
+  <data name="無法重新連線。請重試，或重新載入頁面。" xml:space="preserve"><value>Couldn’t reconnect. Retry, or reload the page.</value></data>
+  <data name="伺服器暫停了這個工作階段。" xml:space="preserve"><value>The server paused this session.</value></data>
+  <data name="無法繼續這個工作階段。請重試，或重新載入頁面。" xml:space="preserve"><value>Couldn’t resume this session. Retry, or reload the page.</value></data>
+  <data name="繼續" xml:space="preserve"><value>Resume</value></data>
 </root>

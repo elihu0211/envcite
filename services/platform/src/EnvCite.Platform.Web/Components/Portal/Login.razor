@@ -3,6 +3,7 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.PortalSignInRateLimit)]
 @attribute [AllowAnonymous]
+@inject IPortalAccount Account
 
 <PageTitle>@L["登入 · 環境知識"]</PageTitle>
 

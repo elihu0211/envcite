@@ -6,12 +6,8 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Account;
 
-public partial class LoginMfa
+public partial class LoginMfa(IOperatorTwoFactor twoFactor, NavigationManager navigation)
 {
-    [Inject] private IOperatorTwoFactor TwoFactor { get; set; } = default!;
-
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
-
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
@@ -29,9 +25,9 @@ public partial class LoginMfa
         Input ??= new();
 
         // 沒有（或過期的）暫存憑證：這一頁沒有東西可驗，回到輸入密碼。
-        if (!await TwoFactor.HasPendingSignInAsync())
+        if (!await twoFactor.HasPendingSignInAsync())
         {
-            Navigation.NavigateTo(UiEndpoints.LoginPath);
+            navigation.NavigateTo(UiEndpoints.LoginPath);
         }
     }
 
@@ -55,15 +51,15 @@ public partial class LoginMfa
     {
         var code = Input.Code;
         Input.Code = string.Empty; // 碼不寫回表單（理由同密碼）。
-        var status = await TwoFactor.CompleteSignInAsync(code, Recovery, HttpContext.RequestAborted);
+        var status = await twoFactor.CompleteSignInAsync(code, Recovery, HttpContext.RequestAborted);
 
         switch (status)
         {
             case OperatorSignInStatus.Succeeded:
-                Navigation.NavigateTo(UiEndpoints.SafeReturnUrl(ReturnUrl));
+                navigation.NavigateTo(UiEndpoints.SafeReturnUrl(ReturnUrl));
                 break;
             case OperatorSignInStatus.MustChangePassword:
-                Navigation.NavigateTo(UiEndpoints.PasswordPath);
+                navigation.NavigateTo(UiEndpoints.PasswordPath);
                 break;
             default:
                 // 碼錯、過期、重複使用、被鎖定都是同一句話；暫存憑證在鎖定時會被收回，下一頁會回到輸入密碼。

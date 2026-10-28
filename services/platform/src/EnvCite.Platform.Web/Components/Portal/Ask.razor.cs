@@ -7,22 +7,12 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class Ask
+public partial class Ask(IPortalAccount account, ITenantDirectory directory, ILawSearch laws, IGroundedAnswerer answerer)
 {
     // 範例是臺灣法規裡會出現的詞（資料庫是中文），所以英文介面也維持中文：翻成英文就搜不到。
     private static readonly string[] Examples = ["噪音管制標準", "固定污染源", "廢棄物清理", "水污染防治"];
 
     [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [Inject] private IPortalAccount Account { get; set; } = default!;
-
-    [Inject] private ITenantDirectory Directory { get; set; } = default!;
-
-    [Inject] private ILawSearch Laws { get; set; } = default!;
-
-    [Inject] private IGroundedAnswerer Answerer { get; set; } = default!;
-
-    [Inject] private IConversationHistory History { get; set; } = default!;
 
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
@@ -53,13 +43,13 @@ public partial class Ask
     /// </summary>
     private async Task<bool> HasPlanAsync()
     {
-        if (Account.CurrentTenant is not { } tenant || await Directory.FindAsync(tenant.Id, HttpContext.RequestAborted) is not { } summary)
+        if (account.CurrentTenant is not { } tenant || await directory.FindAsync(tenant.Id, HttpContext.RequestAborted) is not { } summary)
         {
             return false;
         }
 
         // AI 回答要兩個條件：部署者設定了模型端點，而且這個租戶同意（問題會送到外部的模型服務）。
-        _aiAnswer = summary.Plan is not null && summary.AiAnswer && Answerer.Available;
+        _aiAnswer = summary.Plan is not null && summary.AiAnswer && answerer.Available;
         return summary.Plan is not null;
     }
 
@@ -95,7 +85,7 @@ public partial class Ask
 
     private async Task<string?> AnswerAsync(string query, string? asOf)
     {
-        var result = await Answerer.AnswerAsync(query, asOf, HttpContext.RequestAborted);
+        var result = await answerer.AnswerAsync(query, asOf, HttpContext.RequestAborted);
         switch (result.Status)
         {
             case AdminStatus.Ok:
@@ -114,7 +104,7 @@ public partial class Ask
 
     private async Task<string?> ListAsync(string query, string? asOf)
     {
-        var result = await Laws.SearchAsync(query, asOf, limit: null, HttpContext.RequestAborted);
+        var result = await laws.SearchAsync(query, asOf, limit: null, HttpContext.RequestAborted);
         switch (result.Status)
         {
             case AdminStatus.Ok:

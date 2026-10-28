@@ -1,4 +1,5 @@
 @page "/ui/tenants/{TenantId}"
+@inject IGroundedAnswerer Answerer
 
 <PageTitle>@(_tenant?.Identifier ?? L["租戶"]) · @L["環境知識"]</PageTitle>
 

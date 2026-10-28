@@ -8,17 +8,9 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class AccountOverview
+public partial class AccountOverview(IPortalAccount account, ITenantDirectory directory, IApiKeyAdmin keys, IPortalTwoFactor twoFactor)
 {
     [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [Inject] private IPortalAccount Account { get; set; } = default!;
-
-    [Inject] private ITenantDirectory Directory { get; set; } = default!;
-
-    [Inject] private IApiKeyAdmin Keys { get; set; } = default!;
-
-    [Inject] private IPortalTwoFactor TwoFactor { get; set; } = default!;
 
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
@@ -42,17 +34,17 @@ public partial class AccountOverview
     protected override async Task OnInitializedAsync()
     {
         // 租戶 Id 取自這個請求解析出的租戶（authorization 已確認 cookie 的租戶就是它），不取自使用者的輸入。
-        if (Account.CurrentTenant is not { } current)
+        if (account.CurrentTenant is not { } current)
         {
             return;
         }
 
-        _twoFactor = await TwoFactor.IsEnabledAsync(User, HttpContext.RequestAborted);
-        _tenant = await Directory.FindAsync(current.Id, HttpContext.RequestAborted);
+        _twoFactor = await twoFactor.IsEnabledAsync(User, HttpContext.RequestAborted);
+        _tenant = await directory.FindAsync(current.Id, HttpContext.RequestAborted);
         if (CanSeeKeys)
         {
-            var keys = await Keys.ListAsync(current.Id, HttpContext.RequestAborted);
-            _keys = keys.IsOk ? [.. keys.Value!.OrderByDescending(k => k.CreatedAt)] : [];
+            var listedKeys = await keys.ListAsync(current.Id, HttpContext.RequestAborted);
+            _keys = listedKeys.IsOk ? [.. listedKeys.Value!.OrderByDescending(k => k.CreatedAt)] : [];
         }
     }
 
