@@ -196,6 +196,9 @@ public static class DesignTokens
         ["ease-settle"] = "cubic-bezier(0.16, 1, 0.3, 1)",
         // 進場的位移量：只有一小段，方向與離場相反（從哪來、回哪去）。
         ["travel"] = "0.75rem",
+        // 彈出層（選單）的位移與起始縮放：比頁面元素小一階，看起來是從觸發點長出來，不是滑進來。
+        ["travel-sm"] = "0.25rem",
+        ["scale"] = "0.97",
     };
 
     /// <summary>按下當下的縮放（回饋在按下，不是放開）。使用者要求減少動態時為 1。</summary>

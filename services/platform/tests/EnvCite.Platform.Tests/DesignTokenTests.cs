@@ -116,7 +116,7 @@ public static partial class DesignTokenTests
         Assert.Contains("\"PingFang TC\"", css, StringComparison.Ordinal);
     }
 
-    // 使用者偏好集中在 token 這一層：較高對比時髮絲線與次要文字加深，減少動態時按下不縮放。
+    // 使用者偏好集中在 token 這一層：較高對比時髮絲線與次要文字加深，減少動態時位移與縮放歸零。
     [Fact]
     public static void UserPreferencesAreOverriddenInTheTokensNotPerComponent()
     {
@@ -124,7 +124,7 @@ public static partial class DesignTokenTests
         var c = DesignTokens.Light;
 
         Assert.Contains($"@media (prefers-contrast:more){{:root{{--ep-border-subtle:{c.BorderControl};--ep-text-secondary:{c.Text};}}}}", css, StringComparison.Ordinal);
-        Assert.Contains("@media (prefers-reduced-motion:reduce){:root{--ep-press-scale:1;}}", css, StringComparison.Ordinal);
+        Assert.Contains("@media (prefers-reduced-motion:reduce){:root{--ep-press-scale:1;--ep-motion-scale:1;--ep-motion-travel:0rem;--ep-motion-travel-sm:0rem;}}", css, StringComparison.Ordinal);
         // 加深之後的次要文字與髮絲線也要過關。
         Assert.True(Contrast(c.Text, c.Surface) >= 4.5);
         Assert.True(Contrast(c.BorderControl, c.Surface) >= 3.0);

@@ -260,6 +260,11 @@ a:where(:not([class*="mud-"])) {
     transition-duration: 0s;
 }
 
+/* MudBlazor 的水波紋是 Material 的回饋，跟上面的按下縮放重複；元件沒有全域開關，在這裡一次收掉。 */
+.mud-ripple-effect {
+    display: none;
+}
+
 @media (hover: hover) {
     .ep-send:hover,
     .ep-btn-primary:hover {
@@ -273,7 +278,8 @@ a:where(:not([class*="mud-"])) {
     background: color-mix(in srgb, var(--ep-primary) 10%, var(--ep-surface));
 }
 
-/* 使用者要求減少動態：改成不位移的淡入淡出，不留彈跳或縮放。 */
+/* 使用者要求減少動態：改成不位移的淡入淡出，不留彈跳或縮放。位移量與縮放量已在 token 層歸零，
+   所以自己的元件保留原時長、只剩透明度在變；其他（第三方元件的滑動與縮放動畫）收成瞬間。 */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -281,6 +287,23 @@ a:where(:not([class*="mud-"])) {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
+    }
+
+    .ep-menu,
+    .ep-alert {
+        animation-duration: var(--ep-motion-slow) !important;
+        transition-duration: var(--ep-motion-fast) !important;
+    }
+
+    /* 對話框的放大進場換成同時長的淡入；跨頁的淡入淡出本來就沒有位移，照常播。 */
+    .mud-dialog {
+        animation-name: ep-fade !important;
+        animation-duration: var(--ep-motion-fast) !important;
+    }
+
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: var(--ep-motion-normal) !important;
     }
 }
 
@@ -907,6 +930,16 @@ a:where(:not([class*="mud-"])) {
     border-block-end: 1px solid var(--ep-border-subtle);
 }
 
+/* 捲動邊緣：頁面在頂端時頂欄底下沒有內容，分隔線不出現；內容捲進半透明層底下才浮現。
+   不支援捲動時間軸的瀏覽器維持常駐的髮絲線。 */
+@supports (animation-timeline: scroll()) {
+    .ep-shell-top {
+        animation: ep-scroll-edge linear both;
+        animation-timeline: scroll(root block);
+        animation-range: 0 var(--ep-appbar-height);
+    }
+}
+
 /* 置中的直向欄：入口主內容與問答。寬度各走自己的 measure。 */
 .ep-shell-main,
 .ep-ask {
@@ -974,25 +1007,32 @@ a.ep-brand {
     background: var(--ep-surface);
     color: var(--ep-text);
     box-shadow: var(--ep-elevation-3);
-    /* 進場：快起慢收；popover 開關是 display 的離散切換，所以也轉 display 與 overlay。 */
+    /* 收合：慢起快收，沿進場的同一條路縮回觸發點（transform-origin 見「動態」）。
+       popover 開關是 display 的離散切換，所以也轉 display 與 overlay。 */
     opacity: 0;
-    translate: 0 calc(var(--ep-space-1) * -1);
+    translate: 0 calc(var(--ep-motion-travel-sm) * -1);
+    scale: var(--ep-motion-scale);
     transition:
-        opacity var(--ep-motion-fast) var(--ep-motion-ease-enter),
-        translate var(--ep-motion-fast) var(--ep-motion-ease-enter),
+        opacity var(--ep-motion-fast) var(--ep-motion-ease-exit),
+        translate var(--ep-motion-fast) var(--ep-motion-ease-exit),
+        scale var(--ep-motion-fast) var(--ep-motion-ease-exit),
         display var(--ep-motion-fast) allow-discrete,
         overlay var(--ep-motion-fast) allow-discrete;
 }
 
+/* 進場：快起慢收。 */
 .ep-menu:popover-open {
     opacity: 1;
     translate: 0 0;
+    scale: 1;
+    transition-timing-function: var(--ep-motion-ease-enter);
 }
 
 @starting-style {
     .ep-menu:popover-open {
         opacity: 0;
-        translate: 0 calc(var(--ep-space-1) * -1);
+        translate: 0 calc(var(--ep-motion-travel-sm) * -1);
+        scale: var(--ep-motion-scale);
     }
 }
 
@@ -1566,6 +1606,18 @@ a.ep-brand {
 ::view-transition-new(root) {
     animation-duration: var(--ep-motion-normal);
     animation-timing-function: var(--ep-motion-ease-standard);
+}
+
+@keyframes ep-scroll-edge {
+    from {
+        border-block-end-color: transparent;
+    }
+}
+
+@keyframes ep-fade {
+    from {
+        opacity: 0;
+    }
 }
 
 @keyframes ep-rise {

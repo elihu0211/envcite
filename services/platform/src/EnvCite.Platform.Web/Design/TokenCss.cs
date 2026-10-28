@@ -18,10 +18,10 @@ public static class TokenCss
         css.Append(":root{").Append(Shared()).Append(Colors(DesignTokens.Light)).Append("color-scheme:light;}");
 
         // 使用者偏好集中在 token 這一層，不在每個元件各寫一份：要較高對比，髮絲線與次要文字加深到控制項與正文的程度；
-        // 要減少動態，按下不縮放（其餘動效的退化在樣式表）。
+        // 要減少動態，位移與縮放歸零，元件只剩淡入淡出（第三方元件的動畫在樣式表收掉）。
         var c = DesignTokens.Light;
         css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more){{:root{{--ep-border-subtle:{c.BorderControl};--ep-text-secondary:{c.Text};}}}}");
-        css.Append("@media (prefers-reduced-motion:reduce){:root{--ep-press-scale:1;}}");
+        css.Append("@media (prefers-reduced-motion:reduce){:root{--ep-press-scale:1;--ep-motion-scale:1;--ep-motion-travel:0rem;--ep-motion-travel-sm:0rem;}}");
 
         return css.ToString();
     }
