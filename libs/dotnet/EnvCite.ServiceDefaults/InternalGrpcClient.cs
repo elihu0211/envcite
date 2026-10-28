@@ -1,15 +1,15 @@
 using Grpc.Core;
+using Grpc.Net.Client.Balancer;
 using Grpc.Net.Client.Configuration;
 using Grpc.Net.ClientFactory;
 
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
-namespace EnvCite.Platform.SharedKernel;
+namespace EnvCite.ServiceDefaults;
 
-/// <summary>內部 gRPC 服務的連線設定；各模組以子類別區分（並宣告自己的區段名稱），讓 DI 能同時持有多份。</summary>
+/// <summary>內部 gRPC 服務的連線設定；每個上游一個子類別（並宣告自己的區段名稱），讓 DI 能同時持有多份。</summary>
 public abstract class InternalGrpcClientOptions
 {
     /// <summary>
@@ -23,7 +23,7 @@ public abstract class InternalGrpcClientOptions
 
 /// <summary>位址要是絕對 URI、逾時要為正；錯誤訊息指出是哪個設定鍵。</summary>
 public sealed class InternalGrpcClientOptionsValidator<TOptions> : IValidateOptions<TOptions>
-    where TOptions : InternalGrpcClientOptions, IPlatformOptions
+    where TOptions : InternalGrpcClientOptions, ISectionOptions
 {
     public ValidateOptionsResult Validate(string? name, TOptions options)
     {
@@ -45,34 +45,24 @@ public sealed class InternalGrpcClientOptionsValidator<TOptions> : IValidateOpti
 public static class InternalGrpcClient
 {
     /// <summary>
-    /// 註冊一個內部服務的 typed gRPC client，附帶 tenant/request metadata；服務間的認證與授權由網格負責，
-    /// 這裡不帶應用層密鑰。位址在用到時才自 <see cref="IOptions{TOptions}"/> 取得，驗證在主機啟動時做。
+    /// 註冊一個內部服務的 typed gRPC client：連線、負載平衡、重試與 RED 指標都在這裡，呼叫端只加自己要帶的
+    /// metadata 或期限傳遞。服務間的認證與授權由網格負責，這裡不帶應用層密鑰。位址在用到時才自
+    /// <see cref="IOptions{TOptions}"/> 取得，驗證在主機啟動時做。
     /// </summary>
-    public static IServiceCollection AddInternalGrpcClient<TClient, TOptions>(this IServiceCollection services)
+    public static IHttpClientBuilder AddInternalGrpcClient<TClient, TOptions>(this IServiceCollection services)
         where TClient : class
-        where TOptions : InternalGrpcClientOptions, IPlatformOptions
+        where TOptions : InternalGrpcClientOptions, ISectionOptions
     {
-        services.AddPlatformOptions<TOptions, InternalGrpcClientOptionsValidator<TOptions>>();
-        services.AddHttpContextAccessor();
-        services.TryAddTransient<GrpcClientMetrics>();
+        services.AddSectionOptions<TOptions, InternalGrpcClientOptionsValidator<TOptions>>();
+        services.TryAddSingleton<GrpcClientMetrics>();
+        // `dns:///` 的 resolver 預設只在連線中斷時重新解析，擴容後的新 pod 要等到斷線才分得到流量。Python 伺服器
+        // 以 max_connection_age 的 GOAWAY 促成重連（envcite_grpc.connection），Kestrel 沒有這個設定，所以由用戶端定期解析。
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<ResolverFactory, DnsResolverFactory>(
+            _ => new DnsResolverFactory(refreshInterval: TimeSpan.FromSeconds(30))));
 
-        services.AddGrpcClient<TClient>((provider, o) =>
+        return services.AddGrpcClient<TClient>((provider, o) =>
                 o.Address = new Uri(provider.GetRequiredService<IOptions<TOptions>>().Value.Address))
             .AddInterceptor<GrpcClientMetrics>()
-            .AddCallCredentials((_, metadata, provider) =>
-            {
-                var httpContext = provider.GetRequiredService<IHttpContextAccessor>().HttpContext;
-                if (httpContext is not null)
-                {
-                    metadata.Add("x-request-id", httpContext.TraceIdentifier);
-                    if (httpContext.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value is { } tenant)
-                    {
-                        metadata.Add("x-tenant-id", tenant);
-                    }
-                }
-
-                return Task.CompletedTask;
-            })
             // 長壽命的 HTTP/2 連線：keepalive 偵測 NAT 或負載平衡器的靜默斷線（間隔須大於伺服器容許的
             // 最短 ping 間隔，見 envcite_grpc.connection）；閒置不回收，連線的壽命由伺服器的 GOAWAY 決定。
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
@@ -114,7 +104,8 @@ public static class InternalGrpcClient
                     },
                 };
 
-                // 叢集網路內使用明文 h2c；要用 TLS 就把 Address 改為 https。
+                // 叢集網路內使用明文 h2c；要用 TLS 就把 Address 改為 https。呼叫端以 call credentials
+                // 帶 metadata 時（platform 的租戶），明文 channel 要明示允許。
                 var address = new Uri(provider.GetRequiredService<IOptions<TOptions>>().Value.Address);
                 if (address.Scheme != Uri.UriSchemeHttps)
                 {
@@ -122,7 +113,5 @@ public static class InternalGrpcClient
                     channel.UnsafeUseInsecureChannelCallCredentials = true;
                 }
             });
-
-        return services;
     }
 }

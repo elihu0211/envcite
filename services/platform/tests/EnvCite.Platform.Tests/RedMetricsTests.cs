@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 
 using EnvCite.Platform.Modules.Consult;
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;

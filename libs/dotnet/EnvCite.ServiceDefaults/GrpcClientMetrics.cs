@@ -1,31 +1,28 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using System.Text.RegularExpressions;
 
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 
-namespace EnvCite.Platform.SharedKernel;
+namespace EnvCite.ServiceDefaults;
 
 /// <summary>
 /// 內部 gRPC 用戶端的 RED 指標：每個一元呼叫一筆 <c>rpc.client.call.duration</c>（秒）。
 /// 耗時含用戶端自己的重試（見 <c>InternalGrpcClient</c>），是呼叫端實際等待的時間。
-/// 名稱與標籤對齊 Python 伺服器端的 <c>rpc.server.call.duration</c>（<c>envcite_grpc.metrics</c>），
-/// 所以兩側能用同一組標籤對照。標籤只有服務、方法、結果狀態，都是有限集合；租戶與案件內容不進指標。
+/// 名稱、邊界與標籤的約定見 <see cref="RpcMetrics"/>。
 /// 用戶端工廠的 HttpClient 指標看不出 gRPC 的失敗（gRPC 失敗仍是 HTTP 200），所以另有這個。
 /// </summary>
-public sealed partial class GrpcClientMetrics : Interceptor
+public sealed class GrpcClientMetrics(IMeterFactory meterFactory) : Interceptor
 {
-    public const string MeterName = "EnvCite.Platform.GrpcClient";
+    public const string MeterName = "EnvCite.Grpc.Client";
 
     public const string DurationMetric = "rpc.client.call.duration";
 
-    private static readonly Meter Meter = new(MeterName);
-
-    private static readonly Histogram<double> Duration = Meter.CreateHistogram<double>(
+    // Meter 由主機的 IMeterFactory 建立並隨容器釋放：同一程序裡的多個主機（測試）各量各的。
+    private readonly Histogram<double> _duration = meterFactory.Create(MeterName).CreateHistogram<double>(
         DurationMetric, unit: "s",
         description: "內部 gRPC 一元呼叫從送出到完成的耗時；rpc.response.status_code 為結果。",
-        advice: new InstrumentAdvice<double> { HistogramBucketBoundaries = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30] });
+        advice: RpcMetrics.DurationAdvice);
 
     public override AsyncUnaryCall<TResponse> AsyncUnaryCall<TRequest, TResponse>(
         TRequest request, ClientInterceptorContext<TRequest, TResponse> context, AsyncUnaryCallContinuation<TRequest, TResponse> continuation)
@@ -40,7 +37,7 @@ public sealed partial class GrpcClientMetrics : Interceptor
             call.Dispose);
     }
 
-    private static async Task<TResponse> Observe<TRequest, TResponse>(
+    private async Task<TResponse> Observe<TRequest, TResponse>(
         Task<TResponse> response, Method<TRequest, TResponse> method, long started)
     {
         var status = StatusCode.OK;
@@ -65,18 +62,7 @@ public sealed partial class GrpcClientMetrics : Interceptor
         }
         finally
         {
-            Duration.Record(
-                Stopwatch.GetElapsedTime(started).TotalSeconds,
-                new KeyValuePair<string, object?>("rpc.system.name", "grpc"),
-                new KeyValuePair<string, object?>("rpc.service", method.ServiceName),
-                new KeyValuePair<string, object?>("rpc.method", method.Name),
-                new KeyValuePair<string, object?>("rpc.response.status_code", StatusName(status)));
+            _duration.Record(Stopwatch.GetElapsedTime(started).TotalSeconds, RpcMetrics.Tags(method.ServiceName, method.Name, status));
         }
     }
-
-    /// <summary><c>DeadlineExceeded</c> → <c>DEADLINE_EXCEEDED</c>，與 gRPC 規格及 Python 端的狀態名稱一致。</summary>
-    private static string StatusName(StatusCode status) => WordBoundary().Replace(status.ToString(), "_$1").ToUpperInvariant();
-
-    [GeneratedRegex("(?<=[a-z])([A-Z])")]
-    private static partial Regex WordBoundary();
 }

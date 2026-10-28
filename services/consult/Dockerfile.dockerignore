@@ -1,11 +1,12 @@
 # 建置情境是倉庫根：只送映像需要的。
 *
-!pyproject.toml
-!uv.lock
-!libs/python/envcite-grpc
-!libs/python/envcite-proto
-!services/consult/pyproject.toml
-!services/consult/README.md
+!proto
+proto/**/*.md
+!global.json
+!Directory.Build.props
+!Directory.Packages.props
+!.editorconfig
+!libs/dotnet
 !services/consult/src
-**/__pycache__
-**/.venv
+**/bin
+**/obj

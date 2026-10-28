@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -23,7 +24,7 @@ public static class ApiAccessModule
     public static IServiceCollection AddApiAccessModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
-        services.AddPlatformOptions<ApiAccessOptions, ApiAccessOptionsValidator>();
+        services.AddSectionOptions<ApiAccessOptions, ApiAccessOptionsValidator>();
         services.AddSingleton<PlanCatalog>();
         services.AddSingleton<EntitlementLoader>();
         services.AddSingleton<IEntitlementRefresher>(sp => sp.GetRequiredService<EntitlementLoader>());

@@ -100,7 +100,7 @@ sequenceDiagram
 
 consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 
-**RED 指標**（rate、errors、duration）：每個一元呼叫在兩側各有一個耗時直方圖，次數是 rate、`rpc.response.status_code` 不是 `OK` 的是 errors，分布是 duration；兩側用同一組標籤（`rpc.service`、`rpc.method`、`rpc.response.status_code`），所以能對照。租戶與案件內容不進標籤；匯出的開關依倉庫根 [`AGENTS.md`](../AGENTS.md) 的可觀測性約定。名稱與標籤的真值在程式碼，不在文件：伺服器端是 `libs/python/envcite-grpc` 的 `metrics.py`；platform 的用戶端是 `services/platform` 的 `GrpcClientMetrics.cs`；對外 HTTP 是 ASP.NET Core 標準的伺服器請求指標，接線在 `Observability.cs`。
+**RED 指標**（rate、errors、duration）：每個一元呼叫在兩側各有一個耗時直方圖，次數是 rate、`rpc.response.status_code` 不是 `OK` 的是 errors，分布是 duration；兩側用同一組標籤（`rpc.service`、`rpc.method`、`rpc.response.status_code`），所以能對照。租戶與案件內容不進標籤；匯出的開關依倉庫根 [`AGENTS.md`](../AGENTS.md) 的可觀測性約定。名稱與標籤的真值在程式碼，不在文件：ontology 的伺服器端是 `libs/python/envcite-grpc` 的 `metrics.py`；consult 的伺服器端是 `services/consult` 的 `GrpcServerMetrics.cs`；.NET 的用戶端與兩側共用的約定是 `libs/dotnet` 的 `GrpcClientMetrics.cs`、`RpcMetrics.cs`；對外 HTTP 是 ASP.NET Core 標準的伺服器請求指標，接線在 `libs/dotnet` 的 `Telemetry.cs`。
 
 ## 呼叫端的語言模型
 

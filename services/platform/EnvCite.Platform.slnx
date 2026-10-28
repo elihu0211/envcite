@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/libs/">
+    <Project Path="../../libs/dotnet/EnvCite.ServiceDefaults/EnvCite.ServiceDefaults.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/EnvCite.Platform.Api/EnvCite.Platform.Api.csproj" />
     <Project Path="src/EnvCite.Platform.Data/EnvCite.Platform.Data.csproj" />

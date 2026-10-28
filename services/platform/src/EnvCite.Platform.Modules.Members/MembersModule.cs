@@ -1,5 +1,6 @@
 using EnvCite.Platform.Data;
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -15,7 +16,7 @@ namespace EnvCite.Platform.Modules.Members;
 /// <summary>
 /// <c>Platform:Portal</c> 區段中屬於成員模型的部分（<c>Enabled</c> 與限流屬於 Web）。
 /// </summary>
-public sealed class MembersOptions : IPlatformOptions
+public sealed class MembersOptions : ISectionOptions
 {
     public static string SectionName => "Platform:Portal";
 
@@ -44,7 +45,7 @@ public static class MembersModule
     public static IServiceCollection AddMembersModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
-        services.AddPlatformOptions<MembersOptions>();
+        services.AddSectionOptions<MembersOptions>();
 
         services.AddIdentityCore<ApplicationUser>(ConfigureIdentity)
             .AddEntityFrameworkStores<PlatformDbContext>()

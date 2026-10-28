@@ -1,5 +1,6 @@
 using EnvCite.Platform.Data;
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -9,7 +10,7 @@ using Npgsql;
 namespace EnvCite.Platform.Modules.Metering;
 
 /// <summary><c>Idempotency-Key</c> 的重送視窗（<c>Platform:Idempotency</c> 區段）。</summary>
-public sealed class IdempotencyOptions : IPlatformOptions
+public sealed class IdempotencyOptions : ISectionOptions
 {
     public static string SectionName => "Platform:Idempotency";
 

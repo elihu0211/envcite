@@ -27,17 +27,19 @@ ENV NUGET_PACKAGES=/nuget
 # NuGet Audit 在 restore 時向 nuget.org 查弱點（連不上是 NU1900，TreatWarningsAsErrors 下為錯誤），
 # 是套件齊全時 restore 仍會有的唯一網路存取。弱點由 Renovate 的 `osvVulnerabilityAlerts` 監控，不在映像建置裡。
 ENV NuGetAudit=false
-# 對應倉庫的目錄結構：各模組的 .csproj 在 ../../../../proto 找 proto/。
+# 對應倉庫的目錄結構：各模組的 .csproj 以相對路徑找 proto/ 與 libs/dotnet/，Directory.*.props 在根。
 WORKDIR /repo/services/platform
-COPY services/platform/global.json services/platform/Directory.Build.props services/platform/Directory.Packages.props services/platform/.editorconfig services/platform/dotnet-tools.json ./
+COPY global.json Directory.Build.props Directory.Packages.props .editorconfig /repo/
+COPY services/platform/.editorconfig services/platform/dotnet-tools.json ./
 # 只用專案檔 restore，純原始碼變動時沿用這一層。--parents 保留各專案的路徑，glob 涵蓋 Api 專案
 # 引用的所有專案。restore 與 publish 的 `-a` 要一致，否則 publish 會再 restore 一次。
-COPY --parents services/platform/src/*/*.csproj /repo/
+COPY --parents services/platform/src/*/*.csproj libs/dotnet/*/*.csproj /repo/
 RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
     dotnet tool restore \
  && dotnet restore src/EnvCite.Platform.Api/EnvCite.Platform.Api.csproj -a "$TARGETARCH"
 # proto/ 在建置時編譯、不在 restore，所以放在 restore 層之後。
 COPY proto /repo/proto
+COPY libs/dotnet /repo/libs/dotnet
 COPY services/platform/src ./src
 RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
     dotnet publish src/EnvCite.Platform.Api/EnvCite.Platform.Api.csproj -c Release -a "$TARGETARCH" --no-restore -o /app

@@ -12,6 +12,7 @@ using EnvCite.Platform.Modules.Ontology;
 using EnvCite.Platform.Modules.Tenancy;
 using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web;
+using EnvCite.ServiceDefaults;
 
 using Finbuckle.MultiTenant.AspNetCore.Extensions;
 
@@ -31,8 +32,8 @@ if (generatingOpenApi)
     });
 }
 
-// 設定只在各模組自己的 Options 類別裡讀（IPlatformOptions，啟動時驗證）；這裡不碰 IConfiguration。
-builder.Services.AddPlatformOptions<PlatformHostOptions>();
+// 設定只在各模組自己的 Options 類別裡讀（ISectionOptions，啟動時驗證）；這裡不碰 IConfiguration。
+builder.Services.AddSectionOptions<PlatformHostOptions>();
 builder.AddPlatformObservability();
 builder.Services.AddPlatformOpenApi();
 builder.Services.AddProblemDetails();

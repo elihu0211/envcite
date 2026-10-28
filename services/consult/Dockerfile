@@ -1,55 +1,44 @@
-# Consult 服務映像，以倉庫根為建置情境：
+# Consult 映像，以倉庫根為建置情境（gRPC 契約從根目錄的 proto/ 編譯，共用套件在 libs/dotnet/）。
 #
-#   docker build -f services/consult/Dockerfile .
+# 建置中不下載任何東西：套件來自 CI 的 `deps-dotnet` job 備好的 NuGet 資料夾
+# （ci/prime-dotnet-image-cache.sh），以 build context `nuget` 傳入；碰到套件的步驟都以
+# `--network=none` 執行，缺套件即失敗，不會連外網。資料夾是 bind mount，不會成為映像層。
 #
-# Python workspace（根的 pyproject.toml 與 uv.lock）由所有服務共用，但只複製本服務的成員。
-# uv 無法對看不到的成員檢查鎖檔，所以兩次 sync 都用 `--frozen`，完全照 uv.lock 安裝；
-# 鎖檔本身由 CI 的 `uv sync --locked` 檢查。
+#   NUGET_PACKAGES=$PWD/.nuget/packages ci/prime-dotnet-image-cache.sh
+#   docker buildx build -f services/consult/Dockerfile --build-context nuget=.nuget/packages .
 #
-# 兩個版本由 CI 的變數傳入，預設值供本機建置。
-#
-# 建置中不下載任何東西：wheel 來自 CI 的 `deps-python` job 備好的 uv 快取，以 build context
-# `uv-cache` 傳入；每個 uv 步驟都以 `--network=none` 加 UV_OFFLINE 執行，缺套件即失敗，
-# 不會連 PyPI。快取是 bind mount，不會成為映像層。
-#
-#   UV_CACHE_DIR=$PWD/.uv-cache uv sync --locked --all-packages
-#   docker buildx build -f services/consult/Dockerfile --build-context uv-cache=.uv-cache .
-
-ARG UV_VERSION=0.12.18
-ARG PYTHON_VERSION=3.14
-# registry 是參數：CI 讓所有基底映像只走 runner 主機的 pull-through 快取，沒有就失敗，不退回上游。
+# SDK 階段在建置機的架構上執行並交叉編譯到目標（`-a`），不需要 emulation。SDK 版本與 platform 同一個，
+# 理由見 services/platform/Dockerfile。
+# renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
+ARG DOTNET_VERSION=10.0.403
+# registry 是參數：CI 讓基底映像只走 runner 主機的 pull-through 快取，沒有就失敗，不退回上游。
 # 預設是真正的 registry，供本機建置。
-ARG DOCKER_HUB=docker.io
-ARG GHCR=ghcr.io
+ARG MCR=mcr.microsoft.com
 
-FROM ${GHCR}/astral-sh/uv:${UV_VERSION}-python${PYTHON_VERSION}-trixie-slim AS build
-ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_PYTHON_DOWNLOADS=0 \
-    UV_OFFLINE=1 \
-    UV_CACHE_DIR=/uv-cache
+FROM --platform=$BUILDPLATFORM ${MCR}/dotnet/sdk:${DOTNET_VERSION}-noble AS build
+ARG TARGETARCH
+ENV NUGET_PACKAGES=/nuget
+# NuGet Audit 是套件齊全時 restore 仍會有的唯一網路存取；弱點由 Renovate 監控，不在映像建置裡。
+ENV NuGetAudit=false
+# 對應倉庫的目錄結構：.csproj 以相對路徑找 proto/ 與 libs/dotnet/，Directory.*.props 在根。
+WORKDIR /repo/services/consult
+COPY global.json Directory.Build.props Directory.Packages.props .editorconfig /repo/
+# 只用專案檔 restore，純原始碼變動時沿用這一層。restore 與 publish 的 `-a` 要一致。
+COPY --parents services/consult/src/*/*.csproj libs/dotnet/*/*.csproj /repo/
+RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
+    dotnet restore src/EnvCite.Consult/EnvCite.Consult.csproj -a "$TARGETARCH"
+# proto/ 在建置時編譯、不在 restore，所以放在 restore 層之後。
+COPY proto /repo/proto
+COPY libs/dotnet /repo/libs/dotnet
+COPY services/consult/src ./src
+RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
+    dotnet publish src/EnvCite.Consult/EnvCite.Consult.csproj -c Release -a "$TARGETARCH" --no-restore -o /app
+
+# Chiseled：沒有 shell 與套件管理員，預設非 root。沒有 ICU，專案以 InvariantGlobalization 對齊。
+FROM ${MCR}/dotnet/aspnet:10.0-noble-chiseled
 WORKDIR /app
-# 先裝依賴，純原始碼變動時沿用這一層。
-COPY pyproject.toml uv.lock ./
-RUN --network=none --mount=type=bind,from=uv-cache,target=/uv-cache,rw \
-    uv sync --frozen --no-dev --package envcite-consult --no-install-workspace
-COPY libs/python/envcite-grpc libs/python/envcite-grpc
-COPY libs/python/envcite-proto libs/python/envcite-proto
-COPY services/consult/pyproject.toml services/consult/README.md services/consult/
-COPY services/consult/src services/consult/src
-RUN --network=none --mount=type=bind,from=uv-cache,target=/uv-cache,rw \
-    uv sync --frozen --no-dev --package envcite-consult \
- && .venv/bin/python -m compileall -q services/consult/src libs/python
-
-# 與上面的 uv 映像同一個基底，venv 的直譯器路徑才對得上。
-FROM ${DOCKER_HUB}/library/python:${PYTHON_VERSION}-slim-trixie
-# Pod 的根檔案系統唯讀，位元組碼在建置時編譯。
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PATH=/app/.venv/bin:$PATH
-COPY --from=build /app /app
-WORKDIR /app/services/consult
-# 與部署庫 base/consult 的 runAsUser／runAsGroup 一致。
-USER 1000:1000
+COPY --from=build /app .
+# 與部署庫 base/consult 的 containerPort 與 gRPC 探針一致。
+ENV ASPNETCORE_HTTP_PORTS=50052
 EXPOSE 50052
-CMD ["envcite-consult"]
+ENTRYPOINT ["dotnet", "EnvCite.Consult.dll"]

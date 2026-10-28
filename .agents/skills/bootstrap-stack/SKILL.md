@@ -18,7 +18,7 @@ The services already under `services/` are wired; follow whichever is closest ra
 
 - `services/platform` — C# / .NET, ASP.NET Core modular monolith, `dotnet` 原生工具
 - `services/ontology` — Python, `uv`, gRPC server
-- `services/consult` — Python, `uv`, gRPC server（無資料庫；經 gRPC 呼叫 ontology）
+- `services/consult` — C# / .NET, ASP.NET Core gRPC server（無資料庫；經 gRPC 呼叫 ontology；共用 `libs/dotnet/`）
 
 All consume the **same** contract at the repo root `proto/`. The contract is **gRPC (protobuf)**, not OpenAPI — generated stubs are produced from `proto/`, never hand-written, and never copied into a service.
 

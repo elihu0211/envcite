@@ -1,9 +1,10 @@
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 namespace EnvCite.Platform.Api;
 
 /// <summary>主機層的設定（<c>Platform</c> 區段；與 <c>ApiAccessOptions</c> 共用區段，各取各的鍵）。</summary>
-public sealed class PlatformHostOptions : IPlatformOptions
+public sealed class PlatformHostOptions : ISectionOptions
 {
     public static string SectionName => "Platform";
 

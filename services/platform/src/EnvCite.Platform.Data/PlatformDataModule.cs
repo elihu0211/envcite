@@ -1,4 +1,5 @@
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +12,7 @@ public static class PlatformDataModule
     /// <summary>註冊 <see cref="PlatformDbContext"/>。</summary>
     public static IServiceCollection AddPlatformData(this IServiceCollection services)
     {
-        services.AddPlatformOptions<DatabaseOptions, DatabaseOptionsValidator>();
+        services.AddSectionOptions<DatabaseOptions, DatabaseOptionsValidator>();
         services.AddDbContext<PlatformDbContext>((provider, options) =>
             Configure(options, provider.GetRequiredService<IOptions<DatabaseOptions>>().Value.Platform));
         return services;

@@ -17,7 +17,7 @@
 
 各服務的指令見其 `AGENTS.md`，從**該服務目錄**執行。跨服務的從**倉庫根**執行：
 
-- **版本集中管理**：.NET 套件版本只在 `services/platform/Directory.Packages.props`；Python 在倉庫根 uv workspace（`pyproject.toml`、`uv.lock`），成員只列套件名稱，加依賴用 `uv add --raw <pkg>`，`uv.lock` 只經 `uv add／remove／lock` 改。有相容性理由的下界（如 `envcite-proto` 的 protobuf 執行期）例外，理由寫在旁邊。無法收成單一來源的工具與映像版本，依 `CONTRIBUTING.md`「升級版本」的表在同一次提交一起改。工具與執行期版本以 `global.json`、`.python-version`、`pyproject.toml`、`uv.lock` 為準，不寫進文件。
+- **版本集中管理**：.NET 的 SDK、套件版本、建置屬性與程式碼風格只在倉庫根（`global.json`、`Directory.Packages.props`、`Directory.Build.props`、`.editorconfig`），各 .NET 服務與 `libs/dotnet/` 共用；Python 在倉庫根 uv workspace（`pyproject.toml`、`uv.lock`），成員只列套件名稱，加依賴用 `uv add --raw <pkg>`，`uv.lock` 只經 `uv add／remove／lock` 改。有相容性理由的下界（如 `envcite-proto` 的 protobuf 執行期）例外，理由寫在旁邊。無法收成單一來源的工具與映像版本，依 `CONTRIBUTING.md`「升級版本」的表在同一次提交一起改。工具與執行期版本以 `global.json`、`.python-version`、`pyproject.toml`、`uv.lock` 為準，不寫進文件。
 
 ```bash
 # 契約

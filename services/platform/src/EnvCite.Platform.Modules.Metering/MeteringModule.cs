@@ -1,5 +1,6 @@
 using EnvCite.Platform.Data;
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -33,7 +34,7 @@ public static class MeteringModule
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IUsageRecorder, UsageRecorder>();
         services.AddScoped<IUsageAdmin, UsageAdmin>();
-        services.AddPlatformOptions<IdempotencyOptions, IdempotencyOptionsValidator>();
+        services.AddSectionOptions<IdempotencyOptions, IdempotencyOptionsValidator>();
         services.AddScoped<IIdempotencyStore, IdempotencyStore>();
         return services;
     }

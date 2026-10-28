@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -11,7 +12,7 @@ namespace EnvCite.Platform.Modules.Conversations;
 /// <summary>
 /// 問答歷史。問題文字是客戶案件的內容，所以預設關閉；開啟是部署者的決定（<c>Platform:ConversationHistory</c>）。
 /// </summary>
-public sealed class ConversationHistoryOptions : IPlatformOptions
+public sealed class ConversationHistoryOptions : ISectionOptions
 {
     public static string SectionName => "Platform:ConversationHistory";
 
@@ -30,7 +31,7 @@ public static class ConversationsModule
     public static IServiceCollection AddConversationsModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
-        services.AddPlatformOptions<ConversationHistoryOptions, ConversationHistoryOptionsValidator>();
+        services.AddSectionOptions<ConversationHistoryOptions, ConversationHistoryOptionsValidator>();
         services.AddScoped<IConversationHistory, ConversationHistory>();
         return services;
     }

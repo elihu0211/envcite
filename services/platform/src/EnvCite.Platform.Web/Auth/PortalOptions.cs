@@ -1,4 +1,5 @@
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.Options;
 
@@ -9,7 +10,7 @@ namespace EnvCite.Platform.Web.Auth;
 /// 初始密碼由營運者經手，是展示與內部試用的程度，不是給正式客戶用的（07-01 §5、§9）。
 /// Development 一律開著，方便本機看畫面。
 /// </summary>
-public sealed class PortalOptions : IPlatformOptions
+public sealed class PortalOptions : ISectionOptions
 {
     public static string SectionName => "Platform:Portal";
 

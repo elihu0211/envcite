@@ -1,4 +1,5 @@
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.Options;
 
@@ -16,7 +17,7 @@ public sealed class PlanOptions
 /// <c>Platform</c> 區段中，存取控制的部分：營運者 key、方案、各租戶所屬的方案。
 /// 區段名稱沿用 <c>Platform</c>，所以既有的環境變數（<c>Platform__AdminKeySha256</c> 等）不變。
 /// </summary>
-public sealed class ApiAccessOptions : IPlatformOptions
+public sealed class ApiAccessOptions : ISectionOptions
 {
     public static string SectionName => "Platform";
 

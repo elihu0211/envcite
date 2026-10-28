@@ -1,4 +1,5 @@
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -20,8 +21,8 @@ internal static class WebAuthModule
     /// </summary>
     public static IServiceCollection AddWebAuth(this IServiceCollection services)
     {
-        services.AddPlatformOptions<UiOptions, UiOptionsValidator>();
-        services.AddPlatformOptions<PortalOptions, PortalOptionsValidator>();
+        services.AddSectionOptions<UiOptions, UiOptionsValidator>();
+        services.AddSectionOptions<PortalOptions, PortalOptionsValidator>();
         services.AddRateLimiter(PortalRateLimit.Configure);
         services.AddSingleton<IAuthorizationHandler, OperatorHandler>();
 

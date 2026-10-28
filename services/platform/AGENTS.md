@@ -51,15 +51,15 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **營運操作的失敗帶穩定代碼**（`AdminOutcome.Code`，常數在 `SharedKernel/OutcomeCodes.cs`）：呼叫端與介面依代碼判斷，不依賴文字。`Message` 與 API 的 `detail` 永遠是英文（來自 `OutcomeCodes.English`），服務層不放中文；API 的驗證與一般錯誤回應多一個 `code` 欄位。介面依代碼取使用者的語言（`Labels` 資源檔的 `Outcome.{代碼}`，`OutcomeText.Localized()`）。新增代碼要同時加英文、中文、英文資源檔，測試守住三者一致；Identity 的錯誤經 `IdentityOutcomes` 轉成代碼，不直接傳出。
 - **對外用語獨立於內部 gRPC**（端點在兩者間對映），用法律詞彙；新的公開欄位先取法律用語，內部 proto 不必跟著（例：`pointInTime` 對 gRPC 的 `as_of`）。
 - `.proto` 一律來自倉庫根 `proto/`（Grpc.Tools 於各模組 `.csproj` 編譯），**不得複製**。
-- 內部 gRPC 用戶端只經 `SharedKernel.InternalGrpcClient.AddInternalGrpcClient` 註冊，新增上游也走這裡，不複製一份。連線選項與 Python 伺服器成套（`envcite_grpc.connection`；不等式見 `envcite-grpc` 的 README），改一邊要看另一邊。只重試 `UNAVAILABLE`（內部方法都是唯讀、確定性的一元呼叫），`DEADLINE_EXCEEDED` 與 `RESOURCE_EXHAUSTED` 不重試。
+- 內部 gRPC 用戶端只經 `SharedKernel.PlatformGrpcClient.AddPlatformGrpcClient` 註冊（它在 `libs/dotnet` 的 `AddInternalGrpcClient` 之上加租戶與請求的 metadata），新增上游也走這裡，不複製一份。連線選項與 Python 伺服器成套（`envcite_grpc.connection`；不等式見 `envcite-grpc` 的 README），改一邊要看另一邊。只重試 `UNAVAILABLE`（內部方法都是唯讀、確定性的一元呼叫），`DEADLINE_EXCEEDED` 與 `RESOURCE_EXHAUSTED` 不重試。
 - 錯誤對映：gRPC `InvalidArgument` → 400，`NotFound` → 404，`Unavailable`／`DeadlineExceeded` → 503。
 - 計量只記成功的呼叫（consult 的拒答是成功的結果，要計）；用量不得猜測（端點沒回報用量就不記）。
 - **`Idempotency-Key`（`POST /v2/ground`）**：鍵是（租戶、操作、key）；請求內容只存雜湊，不存原文（問題文字是客戶案情）；只存成功的回應，錯誤不存。回應與用量**在同一次儲存**（`IIdempotencyStore.CompleteAsync`），並行的重複請求只有一個存得進去、另一個的用量隨之回滾，所以重送不重複計量。同 key 不同內容回 422。新的可重送端點照此接上，不另寫一套。
 
 ## Configuration
 
-- 設定只有一條讀法：每個設定群組是一個 `IPlatformOptions` 類別，自己指名區段，以 `AddPlatformOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `Observability.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
-- 新增群組：實作 `IPlatformOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
+- 設定只有一條讀法：每個設定群組是一個 `ISectionOptions` 類別（`libs/dotnet`），自己指名區段，以 `AddSectionOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `libs/dotnet` 的 `Telemetry.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
+- 新增群組：實作 `ISectionOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
 - **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`Section__Key`）。機密（營運者金鑰雜湊、模型端點金鑰）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
 - 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
 - 部署環境不設 `DefaultPlan`（服務是全付費，沒方案的租戶在資料端點得 402）；Development 與測試設定它，讓剛建立的租戶能用。
@@ -69,7 +69,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 ## Observability
 
 - OpenTelemetry 追蹤、指標與日誌，依根 `AGENTS.md` 的約定。已認證的租戶只標在請求追蹤的 `tenant.id`，不進指標（基數無界）。
-- **RED 指標**：HTTP 用 ASP.NET Core 標準的伺服器請求指標（探針以 `DisableHttpMetrics()` 排除，否則稀釋 rate 與延遲）；對 ontology／consult 的 gRPC 用戶端由 `SharedKernel.GrpcClientMetrics` 量，隨 `AddInternalGrpcClient` 掛上，新增上游不必另接。HttpClient 的指標看不出 gRPC 失敗（失敗仍是 HTTP 200），所以不能只靠它。標籤與 Python 伺服器端對齊（見 `proto/README.md`）。
+- **RED 指標**：HTTP 用 ASP.NET Core 標準的伺服器請求指標（探針以 `DisableHttpMetrics()` 排除，否則稀釋 rate 與延遲）；對 ontology／consult 的 gRPC 用戶端由 `libs/dotnet` 的 `GrpcClientMetrics` 量，隨 `AddPlatformGrpcClient` 掛上，新增上游不必另接。HttpClient 的指標看不出 gRPC 失敗（失敗仍是 HTTP 200），所以不能只靠它。標籤與伺服器端對齊（見 `proto/README.md`）。
 - 探針：`/health/live` 不檢查任何東西（依賴故障不該重啟 pod）；`/health/ready` 檢查資料庫（`TenancyDbContext`，它早於租戶解析存在），故障回 503。探針請求不追蹤。
 
 ## Auth & tenancy

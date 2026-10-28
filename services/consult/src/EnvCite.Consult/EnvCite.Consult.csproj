@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- 執行期映像是 chiseled 的 invariant 模式（沒有 ICU）；本服務的字串處理都是 ordinal，不依文化。 -->
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.AspNetCore.HealthChecks" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\libs\dotnet\EnvCite.ServiceDefaults\EnvCite.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      契約的唯一真值在倉庫根的 proto/：本服務實作 consult、呼叫 ontology。兩邊都產生用戶端與伺服器端：
+      測試以 consult 的用戶端打本服務、以 ontology 的伺服器端做假的本體。
+    -->
+    <Protobuf Include="../../../../proto/envcite/consult/v2/consult.proto"
+              ProtoRoot="../../../../proto"
+              GrpcServices="Both" />
+    <Protobuf Include="../../../../proto/envcite/ontology/v1/ontology.proto"
+              ProtoRoot="../../../../proto"
+              GrpcServices="Both" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EnvCite.Consult.Tests" />
+  </ItemGroup>
+
+</Project>

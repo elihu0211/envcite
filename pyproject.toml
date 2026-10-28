@@ -3,7 +3,7 @@
 # 部署邊界不變：各服務的映像只裝自己的成員（`uv sync --package`）。
 
 [tool.uv.workspace]
-members = ["services/ontology", "services/consult", "libs/python/*"]
+members = ["services/ontology", "libs/python/*"]
 
 [tool.uv]
 # 已知與現行程式碼不相容的上界；`uv lock --upgrade`（Renovate 的 lock file maintenance）不看

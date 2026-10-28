@@ -2,21 +2,19 @@ using System.Diagnostics;
 
 using EnvCite.Platform.Modules.Tenancy;
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using Npgsql;
 
-using OpenTelemetry;
-using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
 namespace EnvCite.Platform.Api;
 
 /// <summary>
-/// 追蹤、指標、記錄與健康檢查。設定全部走 OpenTelemetry 標準的 <c>OTEL_*</c> 設定鍵
-/// （k8s 的 ConfigMap 或 Downward API 以環境變數給即可）；只有設了
-/// <c>OTEL_EXPORTER_OTLP_ENDPOINT</c> 才匯出，沒設就只在程序內，不連任何地方。
+/// 追蹤、指標、記錄與健康檢查。遙測的約定（<c>OTEL_*</c> 設定鍵、沒設端點就不匯出）見
+/// <see cref="Telemetry"/>；這裡只加 platform 自己的：資料庫的追蹤、租戶的追蹤標籤與 HTTP 探針。
 /// </summary>
 internal static class Observability
 {
@@ -25,29 +23,8 @@ internal static class Observability
 
     public static WebApplicationBuilder AddPlatformObservability(this WebApplicationBuilder builder)
     {
-        var telemetry = builder.Services.AddOpenTelemetry()
-            .WithTracing(tracing => tracing
-                // 探針每幾秒打一次，不值得進追蹤。
-                .AddAspNetCoreInstrumentation(o => o.Filter = context =>
-                    !context.Request.Path.StartsWithSegments("/health"))
-                // gRPC 用戶端走 HttpClient，這裡一併涵蓋 ontology 與 consult 的呼叫。
-                .AddHttpClientInstrumentation()
-                .AddNpgsql())
-            .WithMetrics(metrics => metrics
-                // RED：http.server.request.duration 一個直方圖，次數是 rate、http.response.status_code 的 5xx 是 errors、
-                // 分布是 duration；標籤只有方法、路由模板、狀態碼，租戶不在其中（見 UseTenantTrace）。
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
-                // 對 ontology／consult 的 gRPC 用戶端：rpc.client.call.duration 以 rpc.response.status_code 區分結果。
-                // 走 HttpClient 的 http.client.request.duration 看不出 gRPC 錯誤（gRPC 失敗仍是 HTTP 200）。
-                .AddMeter(GrpcClientMetrics.MeterName)
-                .AddRuntimeInstrumentation())
-            .WithLogging();
-
-        if (!string.IsNullOrEmpty(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
-        {
-            telemetry.UseOtlpExporter();
-        }
+        // 共用的追蹤、指標與匯出約定在 ServiceDefaults；platform 另加資料庫的追蹤。
+        builder.AddServiceTelemetry().WithTracing(tracing => tracing.AddNpgsql());
 
         // liveness 不查任何依賴（見 MapPlatformHealth）；readiness 查資料庫，連不上就不接流量。
         // 租戶資料庫不屬於任何租戶，租戶解析之前也能建立（PlatformDbContext 不行）。

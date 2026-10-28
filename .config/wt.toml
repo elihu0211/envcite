@@ -12,6 +12,7 @@
 hooks = "git config core.hooksPath .githooks"
 python = "uv sync --all-packages"
 platform = "cd services/platform && dotnet restore && dotnet tool restore"
+consult = "cd services/consult && dotnet restore"
 
 [list]
 url = "http://localhost:{{ ('envcite/platform/' ~ branch) | hash_port }}"
@@ -34,7 +35,7 @@ ONTOLOGY_GRPC_PORT='{{ ('envcite/ontology/' ~ branch) | hash_port }}' exec uv ru
 """
 consult = """
 cd '{{ worktree_path }}/services/consult' && \
-CONSULT_GRPC_PORT='{{ ('envcite/consult/' ~ branch) | hash_port }}' \
-ONTOLOGY_TARGET='dns:///localhost:{{ ('envcite/ontology/' ~ branch) | hash_port }}' \
-exec uv run envcite-consult
+ASPNETCORE_ENVIRONMENT=Development \
+Ontology__Address='http://localhost:{{ ('envcite/ontology/' ~ branch) | hash_port }}' \
+exec dotnet run --project src/EnvCite.Consult --no-launch-profile -- --urls 'http://localhost:{{ ('envcite/consult/' ~ branch) | hash_port }}'
 """

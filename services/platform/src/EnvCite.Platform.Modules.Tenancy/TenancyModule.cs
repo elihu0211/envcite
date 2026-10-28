@@ -1,6 +1,7 @@
 using System.Security.Cryptography.X509Certificates;
 
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.EntityFrameworkCore.Extensions;
@@ -24,7 +25,7 @@ public static class TenancyModule
     /// </summary>
     public static IServiceCollection AddTenancyModule(this IServiceCollection services)
     {
-        services.AddPlatformOptions<DatabaseOptions, DatabaseOptionsValidator>();
+        services.AddSectionOptions<DatabaseOptions, DatabaseOptionsValidator>();
         services.AddDbContext<TenancyDbContext>((provider, options) =>
             Configure(options, provider.GetRequiredService<IOptions<DatabaseOptions>>().Value.Platform));
 
@@ -54,7 +55,7 @@ public static class TenancyModule
     public static IServiceCollection AddPlatformDataProtection(this IServiceCollection services, IConfiguration configuration)
     {
         // 校驗（成對、檔案存在）走一般的選項，啟動時失敗並指名鍵。
-        services.AddPlatformOptions<DataProtectionCertificateOptions, DataProtectionCertificateOptionsValidator>();
+        services.AddSectionOptions<DataProtectionCertificateOptions, DataProtectionCertificateOptionsValidator>();
 
         var protection = services.AddDataProtection()
             .SetApplicationName("envcite-platform")

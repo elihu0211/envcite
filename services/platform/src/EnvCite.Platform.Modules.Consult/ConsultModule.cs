@@ -2,6 +2,7 @@ using System.ClientModel;
 
 using EnvCite.Consult.V2;
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +14,7 @@ using OpenAI;
 namespace EnvCite.Platform.Modules.Consult;
 
 /// <summary>envcite-consult 的連線設定（<c>Consult</c> 區段；叢集內為 <c>dns:///envcite-consult:50052</c>）。</summary>
-public sealed class ConsultOptions : InternalGrpcClientOptions, IPlatformOptions
+public sealed class ConsultOptions : InternalGrpcClientOptions, ISectionOptions
 {
     public static string SectionName => "Consult";
 }
@@ -22,7 +23,7 @@ public sealed class ConsultOptions : InternalGrpcClientOptions, IPlatformOptions
 /// 回答用的模型（<c>Platform:Answer</c> 區段）：任何 OpenAI 相容的端點。預設關閉；關閉時入口只列條文，
 /// 不呼叫模型。<c>ApiKey</c> 是機密（<c>Platform__Answer__ApiKey</c>），不進設定檔。
 /// </summary>
-public sealed class AnswerOptions : IPlatformOptions
+public sealed class AnswerOptions : ISectionOptions
 {
     public static string SectionName => "Platform:Answer";
 
@@ -85,8 +86,8 @@ public static class ConsultModule
 {
     public static IServiceCollection AddConsultModule(this IServiceCollection services)
     {
-        services.AddInternalGrpcClient<ConsultationService.ConsultationServiceClient, ConsultOptions>();
-        services.AddPlatformOptions<AnswerOptions, AnswerOptionsValidator>();
+        services.AddPlatformGrpcClient<ConsultationService.ConsultationServiceClient, ConsultOptions>();
+        services.AddSectionOptions<AnswerOptions, AnswerOptionsValidator>();
         // 只在有人要用時才建立（關閉時沒有端點與金鑰可建）；測試以自己的 IChatClient 取代。
         services.TryAddSingleton<IChatClient>(provider =>
         {

@@ -52,15 +52,3 @@ def configure(service_name: str) -> list[grpc.ServerInterceptor]:
     )
     # RED 指標在最外層，量到的耗時含其他攔截器；追蹤的攔截器在其內。
     return [RedMetricsInterceptor(), server_interceptor()]
-
-
-def client_interceptors() -> list[grpc.UnaryUnaryClientInterceptor]:
-    """客戶端 channel 的追蹤攔截器（以 `grpc.intercept_channel` 套用）：把目前的追蹤接續到
-    下游呼叫。沒設端點為空；須在 `configure` 之後呼叫。
-    """
-    if not os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
-        return []
-
-    from opentelemetry.instrumentation.grpc import client_interceptor
-
-    return [client_interceptor()]

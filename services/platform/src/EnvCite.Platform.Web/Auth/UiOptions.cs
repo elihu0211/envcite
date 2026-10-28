@@ -1,4 +1,5 @@
 using EnvCite.Platform.SharedKernel;
+using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.Options;
 
@@ -9,7 +10,7 @@ namespace EnvCite.Platform.Web.Auth;
 /// 沒開就不掛 <c>/ui</c>（回 404），API 照常啟動。後台的帳號存在資料庫（營運者金鑰的 <c>/admin/operators</c> 管理），
 /// 不需要任何外部憑證，所以開關只是產品決定，不是 Secret 到位與否。
 /// </summary>
-public sealed class UiOptions : IPlatformOptions
+public sealed class UiOptions : ISectionOptions
 {
     public static string SectionName => "Platform:Ui";
 

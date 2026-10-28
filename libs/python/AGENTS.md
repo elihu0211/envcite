@@ -20,7 +20,7 @@ uv run ruff check <套件路徑>
 uv run python -m mypy <套件路徑>/src
 ```
 
-工具設定在根 `pyproject.toml`。使用這些套件的服務：[ontology](../../services/ontology/AGENTS.md)、[consult](../../services/consult/AGENTS.md)。
+工具設定在根 `pyproject.toml`。使用這些套件的服務：[ontology](../../services/ontology/AGENTS.md)。
 
 ## Conventions
 

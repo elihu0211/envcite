@@ -2,9 +2,11 @@
 *
 !proto
 proto/**/*.md
-!services/platform/global.json
-!services/platform/Directory.Build.props
-!services/platform/Directory.Packages.props
+!global.json
+!Directory.Build.props
+!Directory.Packages.props
+!.editorconfig
+!libs/dotnet
 !services/platform/.editorconfig
 !services/platform/dotnet-tools.json
 !services/platform/src

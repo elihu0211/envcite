@@ -83,14 +83,14 @@
       "pinDigests": false
     },
     {
-      "description": "python 在 .python-version、CI 變數與兩個 Dockerfile 各有一處，同一個 MR 一起升",
+      "description": "python 在 .python-version、CI 變數與 ontology 的 Dockerfile 各有一處，同一個 MR 一起升",
       "matchDepNames": [
         "python"
       ],
       "groupName": "python"
     },
     {
-      "description": "uv 在 CI 變數、兩個 Dockerfile 的映像 tag 與各 pyproject 的 uv_build 範圍各有一處，同一個 MR 一起升",
+      "description": "uv 在 CI 變數、ontology 的 Dockerfile 的映像 tag 與各 pyproject 的 uv_build 範圍各有一處，同一個 MR 一起升",
       "matchDepNames": [
         "uv",
         "ghcr.io/astral-sh/uv",
@@ -99,7 +99,7 @@
       "groupName": "uv"
     },
     {
-      "description": ".NET SDK 在 global.json、CI 變數與 platform Dockerfile，執行期映像（aspnet）須同版",
+      "description": ".NET SDK 在 global.json、CI 變數與 platform、consult 的 Dockerfile，執行期映像（aspnet）須同版",
       "matchDepNames": [
         "dotnet-sdk",
         "mcr.microsoft.com/dotnet/sdk",
@@ -113,7 +113,7 @@
         "nuget"
       ],
       "matchFileNames": [
-        "services/platform/global.json"
+        "global.json"
       ],
       "matchDepNames": [
         "dotnet-sdk"

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/libs/">
+    <Project Path="../../libs/dotnet/EnvCite.ServiceDefaults/EnvCite.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/EnvCite.Consult/EnvCite.Consult.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EnvCite.Consult.Tests/EnvCite.Consult.Tests.csproj" />
+  </Folder>
+</Solution>

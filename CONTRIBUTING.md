@@ -16,8 +16,8 @@ owns: [dev-seed-accounts, shared-dev-db]
 | [Worktrunk](https://worktrunk.dev)（`wt`） | — | 分支與本機環境（設定在 `.config/wt.toml`） |
 | Docker | — | 測試（Testcontainers）、映像建置；可用來起開發用資料庫 |
 | PostgreSQL | `.gitlab-ci.yml` 的 `POSTGRES_MAJOR`（與正式區同主版本） | 開發用資料庫 |
-| .NET SDK | [`services/platform/global.json`](services/platform/global.json) | [platform](services/platform/README.md) |
-| [uv](https://docs.astral.sh/uv/) | `.gitlab-ci.yml` 的 `UV_VERSION` | Python workspace（[ontology](services/ontology/README.md)、[consult](services/consult/README.md)、[`libs/python/`](libs/python/AGENTS.md)）；Python 版本見 `.python-version`，由 uv 自動安裝 |
+| .NET SDK | [`global.json`](global.json) | [platform](services/platform/README.md)、[consult](services/consult/README.md)、[`libs/dotnet/`](libs/dotnet/README.md) |
+| [uv](https://docs.astral.sh/uv/) | `.gitlab-ci.yml` 的 `UV_VERSION` | Python workspace（[ontology](services/ontology/README.md)、[`libs/python/`](libs/python/AGENTS.md)）；Python 版本見 `.python-version`，由 uv 自動安裝 |
 | Node.js | — | 以 `npx` 執行 buf |
 
 ## 快速入門
@@ -106,9 +106,9 @@ wt platform   # 同一個終端機啟動，才讀得到上面的環境變數
 
 ## 常用指令
 
-從**該服務目錄**執行；完整指令見各服務的 `AGENTS.md`，環境變數見各服務的 README。Python 服務與 [`libs/python/`](libs/python/AGENTS.md) 是同一個 uv workspace，依賴在倉庫根一次裝好（`uv sync --all-packages`，`wt` 建樹時已執行）。
+從**該服務目錄**執行；完整指令見各服務的 `AGENTS.md`，環境變數見各服務的 README。.NET 服務共用倉庫根的 `global.json`、`Directory.*.props` 與 [`libs/dotnet/`](libs/dotnet/README.md)；Python 服務與 [`libs/python/`](libs/python/AGENTS.md) 是同一個 uv workspace，依賴在倉庫根一次裝好（`uv sync --all-packages`，`wt` 建樹時已執行）。
 
-| | [`services/platform/`](services/platform/AGENTS.md) | [`services/ontology/`](services/ontology/AGENTS.md)、[`services/consult/`](services/consult/AGENTS.md) |
+| | [`services/platform/`](services/platform/AGENTS.md)、[`services/consult/`](services/consult/AGENTS.md) | [`services/ontology/`](services/ontology/AGENTS.md) |
 |---|---|---|
 | 測試 | `dotnet test` | `uv run python -m pytest` |
 | Lint | `dotnet format --verify-no-changes` | `uv run ruff check .` |
@@ -134,7 +134,9 @@ CI 依改動路徑分流，job 與路徑對應以 `.gitlab-ci.yml` 的 `rules:ch
 |------|--------|
 | 任何改動 | 一個恆有的 gate（讓只改文件的 MR 也有 pipeline 可合併） |
 | [`services/platform/`](services/platform/README.md) | 該服務的測試、格式、對外 REST 規格（是否過期、是否破壞相容）與映像 |
-| [`services/ontology/`](services/ontology/README.md)、[`services/consult/`](services/consult/README.md) | 該服務的 lint、型別、測試與映像 |
+| [`services/consult/`](services/consult/README.md) | 該服務的建置、格式、測試與映像 |
+| [`services/ontology/`](services/ontology/README.md) | 該服務的 lint、型別、測試與映像 |
+| [`libs/dotnet/`](libs/dotnet/README.md)、倉庫根 `global.json`、`Directory.*.props`、`.editorconfig` | 所有 .NET 服務與其映像 |
 | [`libs/python/`](libs/python/AGENTS.md) | 使用它的 Python 服務，以及套件自己的檢查（`envcite-proto` 含產生碼是否與 `proto/` 一致） |
 | 倉庫根 `pyproject.toml`、`uv.lock` | 所有 Python 服務與其映像 |
 | [`proto/`](proto/README.md) | `buf lint`、`buf breaking`，以及所有消費它的服務 |
@@ -150,10 +152,10 @@ Renovate 由外部排程集中執行，本倉庫不放令牌也不跑 job。同�
 | 版本 | 位置 |
 |------|------|
 | Python 套件 | 倉庫根 `uv lock --upgrade`（或 `--upgrade-package <pkg>`）；升 `grpcio-tools`、`mypy-protobuf`、`protobuf` 時重新產生 `libs/python/envcite-proto` |
-| .NET 套件 | `services/platform/Directory.Packages.props` |
-| .NET SDK 與映像 | `services/platform/Dockerfile`、`.gitlab-ci.yml` 的 `DOTNET_VERSION`（`global.json` 的 `sdk.version` 只是下限，Renovate 不動它）；SDK 的 patch 決定隱含套件 `Microsoft.AspNetCore.App.Internal.Assets` 的版本，升級時以新 SDK 執行 `dotnet restore --force-evaluate` 一併更新 `packages.lock.json`，否則 CI 的 `--locked-mode` 失敗；本機 SDK 與 `DOTNET_VERSION` 同版，restore 才不會改動 lock 檔 |
-| Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG PYTHON_VERSION` |
-| uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/{ontology,consult}/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
+| .NET 套件 | 倉庫根 `Directory.Packages.props` |
+| .NET SDK 與映像 | `services/{platform,consult}/Dockerfile`、`.gitlab-ci.yml` 的 `DOTNET_VERSION`（`global.json` 的 `sdk.version` 只是下限，Renovate 不動它）；SDK 的 patch 決定隱含套件 `Microsoft.AspNetCore.App.Internal.Assets` 的版本，升級時以新 SDK 執行 `dotnet restore --force-evaluate` 一併更新 `packages.lock.json`，否則 CI 的 `--locked-mode` 失敗；本機 SDK 與 `DOTNET_VERSION` 同版，restore 才不會改動 lock 檔 |
+| Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/ontology/Dockerfile` 的 `ARG PYTHON_VERSION` |
+| uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/ontology/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
 | PostgreSQL | `.gitlab-ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/ontology/tools/holdout.py`、`services/platform/tests/…/PlatformFactory.cs`；主版本與正式區相同。ontology 要 pgvector，用 `pgvector/pgvector:pg<主版本>` |
 | buf | `.gitlab-ci.yml` 的 `BUF_VERSION` |
 | oasdiff | `.gitlab-ci.yml` 的 `OASDIFF_VERSION` |
