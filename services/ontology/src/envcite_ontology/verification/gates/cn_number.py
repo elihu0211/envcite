@@ -4,19 +4,24 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence
+from decimal import Decimal
 
-_DIGIT = {c: i for i, c in enumerate("〇一二三四五六七八九")} | {"零": 0}
+#: 全國法規資料庫的零多寫成「○」（U+25CB），不是「〇」（U+3007）。
+_DIGIT = {c: i for i, c in enumerate("〇一二三四五六七八九")} | {"零": 0, "○": 0}
 _UNIT = {"十": 10, "百": 100, "千": 1000}
-NUMBER = "0-9,〇零一二三四五六七八九十百千萬億"
+NUMBER = "0-9,〇○零一二三四五六七八九十百千萬億"
+_FRACTION = "0-9〇○零一二三四五六七八九"
 
 
 def cn_number(s: str) -> int:
-    """「六萬」→ 60000、「二千萬」→ 20000000、「一百」→ 100；讀不出拋 ValueError。"""
+    """「六萬」→ 60000、「二千萬」→ 20000000、「一百」→ 100、「二○○」→ 200；讀不出拋 ValueError。"""
     s = s.replace(",", "").replace(" ", "")
     if not s:
         raise ValueError(s)
     if s.isdigit():
         return int(s)
+    if all(ch in _DIGIT for ch in s):  # 沒有位數字的是逐位寫法：「二○○」→ 200
+        return int("".join(str(_DIGIT[ch]) for ch in s))
     for mark, scale in (("億", 10**8), ("萬", 10**4)):
         if mark in s:
             head, _, tail = s.partition(mark)
@@ -90,12 +95,15 @@ def ranges(found: Sequence[tuple[int, str | None]]) -> list[tuple[int | None, in
     return out
 
 
-def numbers_in(text: str) -> set[int]:
-    """所有讀得出的整數。"""
-    found: set[int] = set()
-    for m in re.finditer(rf"[{NUMBER}]+", text):
+def numbers_in(text: str) -> set[Decimal]:
+    """所有讀得出的數，含小數（「○．一」→ 0.1；小數點可為「.」「．」「點」，小數部分逐位讀）。"""
+    found: set[Decimal] = set()
+    for m in re.finditer(rf"([{NUMBER}]+)(?:[.．點]([{_FRACTION}]+))?", text):
         try:
-            found.add(cn_number(m.group(0)))
+            whole = cn_number(m.group(1))
         except ValueError:
             continue
+        digits = m.group(2) or ""
+        fraction = "".join(c if c.isdigit() else str(_DIGIT[c]) for c in digits)
+        found.add(Decimal(f"{whole}.{fraction}") if fraction else Decimal(whole))
     return found

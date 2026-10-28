@@ -42,16 +42,18 @@ class NumbersGate:
             (statement_id,),
         ):
             have = numbers_in(u.quoted)
-            ok = (
-                int(Decimal(str(value))) in have
-                if Decimal(str(value)) == int(Decimal(str(value)))
-                else False
-            )
+            number = Decimal(str(value))
+            ok = number in have
             checks.append(
-                {"what": "threshold", "value": str(value), "in_text": sorted(have), "ok": ok}
+                {
+                    "what": "threshold",
+                    "value": str(value),
+                    "in_text": [str(x) for x in sorted(have)],
+                    "ok": ok,
+                }
             )
-            if ok:
-                bound = self._bound(u, int(Decimal(str(value))), str(comparator), bool(negated))
+            if ok and number == number.to_integral_value():
+                bound = self._bound(u, int(number), str(comparator), bool(negated))
                 if bound is not None:
                     checks.append(bound)
         if not checks:

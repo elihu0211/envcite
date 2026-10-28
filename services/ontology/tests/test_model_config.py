@@ -44,13 +44,12 @@ panel = ["b"]
 def test_the_example_file_loads_and_assigns_every_role() -> None:
     models = load(EXAMPLE, ENV)
 
-    assert models.extractor.name == "mistral:mistral-small-4"
-    assert models.roundtrip.name == "google:gemma-4-31b"
-    assert models.independent_test.name == "inkling:coder"
+    assert models.extractor.name == "meta:muse-spark-open"
+    assert models.roundtrip.name == "nvidia:nemotron-3.5-super-vl"
+    assert models.independent_test.name == "mistral:mistral-small-4"
     assert [m.name for m in models.panel] == [
-        "google:gemma-4-31b",
-        "meta:llama4scout",
-        "inkling:coder",
+        "nvidia:nemotron-3.5-super-vl",
+        "mistral:mistral-small-4",
     ]
 
 
@@ -58,9 +57,8 @@ def test_verifiers_are_listed_once_in_the_order_their_roles_come() -> None:
     models = load(EXAMPLE, ENV)
 
     assert [m.name for m in models.verifiers] == [
-        "google:gemma-4-31b",
-        "inkling:coder",
-        "meta:llama4scout",
+        "nvidia:nemotron-3.5-super-vl",
+        "mistral:mistral-small-4",
     ]
     assert models.everyone[0] is models.extractor
 
@@ -77,9 +75,9 @@ def test_the_gates_follow_the_roles_not_the_order() -> None:
 
     by_method = {g.method: g for g in gates_from(models)}
 
-    assert by_method["roundtrip"].reformalizer.name == "google:gemma-4-31b"  # type: ignore[attr-defined]
-    assert by_method["independent_test"].tester.name == "inkling:coder"  # type: ignore[attr-defined]
-    assert len(by_method["panel"].judges) == 3  # type: ignore[attr-defined]
+    assert by_method["roundtrip"].reformalizer.name == "nvidia:nemotron-3.5-super-vl"  # type: ignore[attr-defined]
+    assert by_method["independent_test"].tester.name == "mistral:mistral-small-4"  # type: ignore[attr-defined]
+    assert len(by_method["panel"].judges) == 2  # type: ignore[attr-defined]
 
 
 def test_a_secret_never_appears_in_what_a_model_prints() -> None:
@@ -297,7 +295,7 @@ def test_the_embedder_is_declared_in_the_same_file_and_reuses_an_endpoint() -> N
 
     assert embedder is not None and embedder.model == "bge-m3-embedding"
     assert "secret-value" not in repr(embedder)
-    assert load(EXAMPLE, ENV).extractor.name == "mistral:mistral-small-4"  # 管線照常讀同一份
+    assert load(EXAMPLE, ENV).extractor.name == "meta:muse-spark-open"  # 管線照常讀同一份
 
 
 def test_no_embedding_section_means_no_semantic_arm() -> None:

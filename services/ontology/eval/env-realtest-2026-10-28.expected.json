@@ -1,0 +1,645 @@
+{
+ "description": "環境管制欄位（遷移檔 0033 至 0038）在真實條文上的預期。只依條文原文與 envcite-docs 01-07 §3、§6 判斷，寫於任何抽取之前，跑完後不改。條文取自全國法規資料庫（政府資料開放授權條款－第 1 版），以開發庫的現行文字為準。量測工具 tools/env_realtest.py 讀本檔：slice 決定載入哪些條，expected 決定計分。",
+ "matching": {
+  "description": "同一單元內，依 expected 的列出順序，每一筆取「引文含 anchor、尚未被配對」的實際陳述中引文最短者（引文是單元原文的 span；沒有 span 是整個單元）；一筆實際陳述只配一筆預期。沒有配到的預期記為遺漏，其所有計分欄位都記遺漏；沒有配到的實際陳述記為多出（只計數，不計分）。"
+ },
+ "scoring": {
+  "description": "每一欄只在預期值不是 null 的項目上計分：配到且相等為命中，配到而不等為錯誤，配到而實際為空或沒有配到為遺漏。預期值為 null 或 false 的項目，實際寫了值記為誤報（另列）。kind 可以是一個值或一串可接受的值。",
+  "fields": {
+   "kind": "陳述種類（prescriptive、constitutive、sanction）",
+   "deontic": "義務方向，只對 prescriptive",
+   "effect": "罰則效果，依行政罰法第 1、2 條另加 order、disgorgement；停工、停業、勒令歇業為 restriction，廢止許可證為 deprivation，講習為 warning",
+   "repeating": "按次處罰旗標；只對預期為 true 的項目計分，預期 false 而實際 true 記誤報",
+   "triggers": "效果的觸發：預期的（kind，前提所在的預期 id）集合，只對非空集合計分；預期為空而實際有觸發記誤報。前提為 cross_law 時，命中的條件是至少一個 sanction_imposed 觸發指向本法以外的 fine 或 restriction 陳述",
+   "liability": "主體的責任基礎；act_or_null 表示 act 或省略都算對、不計分，寫了 state 或 representative 記誤報",
+   "judgement": "陳述至少一個要件標 judgement（不確定法律概念：情節重大、必要時、善良管理人注意義務）；只對預期為 true 的項目計分",
+   "permit": "至少一個要件委由個別處分，命中的條件是許可概念的名稱含預期的關鍵字",
+   "averaging": "至少一個要件標平均時段，命中的條件是平均時段概念的名稱含預期的關鍵字",
+   "method": "至少一個要件標檢測方法，命中的條件是檢測方法概念的名稱含預期的關鍵字",
+   "punishes": "罰則處罰的陳述所在的單元路徑（可接受的集合）"
+  }
+ },
+ "slice": [
+  {
+   "pcode": "O0040001",
+   "level": "法律",
+   "articles": [
+    "art_7",
+    "art_8",
+    "art_40",
+    "art_66-2"
+   ]
+  },
+  {
+   "pcode": "O0020001",
+   "level": "法律",
+   "articles": [
+    "art_22",
+    "art_24",
+    "art_86",
+    "art_93"
+   ]
+  },
+  {
+   "pcode": "O0120001",
+   "level": "法律",
+   "articles": [
+    "art_23",
+    "art_24-1"
+   ]
+  },
+  {
+   "pcode": "O0110001",
+   "level": "法律",
+   "articles": [
+    "art_31"
+   ]
+  },
+  {
+   "pcode": "O0020031",
+   "level": "命令",
+   "articles": [
+    "art_5",
+    "art_7"
+   ]
+  }
+ ],
+ "expected": [
+  {
+   "id": "w7",
+   "law": "O0040001",
+   "path": "art_7/para_1",
+   "anchor": "應符合放流水標準",
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "liability": "act_or_null",
+   "note": "被第 40 條處罰的義務之一；放流水標準委由授權命令，不在本次切片"
+  },
+  {
+   "id": "w7-2",
+   "law": "O0040001",
+   "path": "art_7/para_2",
+   "anchor": "由中央主管機關會商相關目的事業主管機關定之",
+   "kind": "constitutive"
+  },
+  {
+   "id": "w8",
+   "law": "O0040001",
+   "path": "art_8",
+   "anchor": "應妥善處理",
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "liability": "act_or_null",
+   "note": "被第 40 條處罰的義務之一"
+  },
+  {
+   "id": "w40a-fine",
+   "law": "O0040001",
+   "path": "art_40/para_1",
+   "anchor": "罰鍰",
+   "kind": "sanction",
+   "effect": "fine",
+   "repeating": false,
+   "triggers": [],
+   "judgement": false,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ]
+  },
+  {
+   "id": "w40a-order",
+   "law": "O0040001",
+   "path": "art_40/para_1",
+   "anchor": "限期改善",
+   "kind": "sanction",
+   "effect": "order",
+   "repeating": false,
+   "triggers": [],
+   "judgement": false,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ],
+   "note": "限期改善是預防性處分，不是行政罰"
+  },
+  {
+   "id": "w40a-again",
+   "law": "O0040001",
+   "path": "art_40/para_1",
+   "anchor": "按次處罰",
+   "kind": "sanction",
+   "effect": "fine",
+   "repeating": true,
+   "triggers": [
+    [
+     "order_lapsed",
+     "w40a-order"
+    ]
+   ],
+   "judgement": false,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ],
+   "note": "01-07 §3 效果的觸發：按次處罰以限期改善屆期未完成為前提；前提要件「屆期仍未完成改善」是它自己的要件"
+  },
+  {
+   "id": "w40a-halt",
+   "law": "O0040001",
+   "path": "art_40/para_1",
+   "anchor": "停工",
+   "kind": "sanction",
+   "effect": "restriction",
+   "repeating": false,
+   "triggers": [],
+   "judgement": true,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ],
+   "note": "情節重大是構成要件的不確定法律概念；「得令」是效果裁量"
+  },
+  {
+   "id": "w40a-revoke",
+   "law": "O0040001",
+   "path": "art_40/para_1",
+   "anchor": "廢止",
+   "kind": "sanction",
+   "effect": "deprivation",
+   "repeating": false,
+   "triggers": [],
+   "judgement": true,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ],
+   "note": "必要時；廢止許可是剝奪或消滅資格、權利之處分"
+  },
+  {
+   "id": "w40a-close",
+   "law": "O0040001",
+   "path": "art_40/para_1",
+   "anchor": "勒令歇業",
+   "kind": "sanction",
+   "effect": "restriction",
+   "repeating": false,
+   "triggers": [],
+   "judgement": true,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ],
+   "note": "必要時；命令歇業是限制或禁止行為之處分"
+  },
+  {
+   "id": "w40b-fine",
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "anchor": "罰鍰",
+   "kind": "sanction",
+   "effect": "fine",
+   "repeating": false,
+   "triggers": [],
+   "judgement": false,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ]
+  },
+  {
+   "id": "w40b-order",
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "anchor": "限期改善",
+   "kind": "sanction",
+   "effect": "order",
+   "repeating": false,
+   "triggers": [],
+   "judgement": false,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ],
+   "note": "限期改善是預防性處分，不是行政罰"
+  },
+  {
+   "id": "w40b-again",
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "anchor": "按次處罰",
+   "kind": "sanction",
+   "effect": "fine",
+   "repeating": true,
+   "triggers": [
+    [
+     "order_lapsed",
+     "w40b-order"
+    ]
+   ],
+   "judgement": false,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ],
+   "note": "01-07 §3 效果的觸發：按次處罰以限期改善屆期未完成為前提；前提要件「屆期仍未完成改善」是它自己的要件"
+  },
+  {
+   "id": "w40b-halt",
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "anchor": "停工",
+   "kind": "sanction",
+   "effect": "restriction",
+   "repeating": false,
+   "triggers": [],
+   "judgement": true,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ],
+   "note": "情節重大是構成要件的不確定法律概念；「得令」是效果裁量"
+  },
+  {
+   "id": "w40b-revoke",
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "anchor": "廢止",
+   "kind": "sanction",
+   "effect": "deprivation",
+   "repeating": false,
+   "triggers": [],
+   "judgement": true,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ],
+   "note": "必要時；廢止許可是剝奪或消滅資格、權利之處分"
+  },
+  {
+   "id": "w40b-close",
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "anchor": "勒令歇業",
+   "kind": "sanction",
+   "effect": "restriction",
+   "repeating": false,
+   "triggers": [],
+   "judgement": true,
+   "punishes": [
+    "art_7/para_1",
+    "art_8"
+   ],
+   "note": "必要時；命令歇業是限制或禁止行為之處分"
+  },
+  {
+   "id": "w66-2a",
+   "law": "O0040001",
+   "path": "art_66-2/para_1",
+   "anchor": "予以追繳",
+   "kind": "sanction",
+   "effect": "disgorgement",
+   "repeating": false,
+   "triggers": [],
+   "note": "處罰的是「本法義務」泛指，原文沒有引用特定條文"
+  },
+  {
+   "id": "w66-2b",
+   "law": "O0040001",
+   "path": "art_66-2/para_2",
+   "anchor": "予以追繳",
+   "kind": "sanction",
+   "effect": "disgorgement",
+   "repeating": false,
+   "triggers": []
+  },
+  {
+   "id": "w66-2c",
+   "law": "O0040001",
+   "path": "art_66-2/para_3",
+   "anchor": "予以追繳",
+   "kind": "sanction",
+   "effect": "disgorgement",
+   "repeating": false,
+   "triggers": []
+  },
+  {
+   "id": "w66-2d",
+   "law": "O0040001",
+   "path": "art_66-2/para_4",
+   "anchor": "由中央主管機關定之",
+   "kind": "constitutive"
+  },
+  {
+   "id": "a86a",
+   "law": "O0020001",
+   "path": "art_86/para_1",
+   "anchor": "予以追繳",
+   "kind": "sanction",
+   "effect": "disgorgement",
+   "repeating": false,
+   "triggers": [],
+   "note": "處罰的是「本法義務」泛指，原文沒有引用特定條文"
+  },
+  {
+   "id": "a86b",
+   "law": "O0020001",
+   "path": "art_86/para_2",
+   "anchor": "予以追繳",
+   "kind": "sanction",
+   "effect": "disgorgement",
+   "repeating": false,
+   "triggers": []
+  },
+  {
+   "id": "a86c",
+   "law": "O0020001",
+   "path": "art_86/para_3",
+   "anchor": "予以追繳",
+   "kind": "sanction",
+   "effect": "disgorgement",
+   "repeating": false,
+   "triggers": []
+  },
+  {
+   "id": "a86d",
+   "law": "O0020001",
+   "path": "art_86/para_4",
+   "anchor": "由中央主管機關定之",
+   "kind": "constitutive"
+  },
+  {
+   "id": "e23",
+   "law": "O0120001",
+   "path": "art_23",
+   "anchor": "環境講習",
+   "kind": "sanction",
+   "effect": "warning",
+   "repeating": false,
+   "triggers": [
+    [
+     "sanction_imposed",
+     "cross_law"
+    ]
+   ],
+   "liability": "representative",
+   "note": "前提是他法（環境保護法律）的停工、停業或五千元以上罰鍰處分，跨法；金額門檻是講習陳述自己的要件；接受講習者是有代表權之人或負責環境保護權責人員"
+  },
+  {
+   "id": "e24-1a",
+   "law": "O0120001",
+   "path": "art_24-1/para_1",
+   "anchor": "由中央主管機關定之",
+   "kind": "constitutive"
+  },
+  {
+   "id": "e24-1b",
+   "law": "O0120001",
+   "path": "art_24-1/para_2",
+   "anchor": "罰鍰",
+   "kind": "sanction",
+   "effect": "fine",
+   "repeating": false,
+   "triggers": [
+    [
+     "sanction_imposed",
+     "e23"
+    ]
+   ],
+   "note": "以講習處分已作成為前提；拒不接受講習違反的是個別處分，語料裡沒有對應的規範性陳述"
+  },
+  {
+   "id": "a22a",
+   "law": "O0020001",
+   "path": "art_22/para_1",
+   "anchor": "設置自動監測設施",
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "liability": "act_or_null",
+   "note": "設置義務不是限值，不帶認定方式；連續自動監測是限值的檢測方法之一（01-07 §6.2）"
+  },
+  {
+   "id": "a22b",
+   "law": "O0020001",
+   "path": "art_22/para_2",
+   "anchor": "得指定公告",
+   "kind": [
+    "constitutive",
+    "prescriptive"
+   ]
+  },
+  {
+   "id": "a22c",
+   "law": "O0020001",
+   "path": "art_22/para_3",
+   "anchor": "應作成紀錄",
+   "kind": "prescriptive",
+   "deontic": "obligation"
+  },
+  {
+   "id": "a24a",
+   "law": "O0020001",
+   "path": "art_24/para_1",
+   "anchor": "依許可證內容進行設置或變更",
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "liability": "act_or_null",
+   "permit": "設置許可"
+  },
+  {
+   "id": "a24b",
+   "law": "O0020001",
+   "path": "art_24/para_2",
+   "anchor": "依核發之許可證內容進行操作",
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "liability": "act_or_null",
+   "permit": "操作許可"
+  },
+  {
+   "id": "a24c",
+   "law": "O0020001",
+   "path": "art_24/para_3",
+   "anchor": "登載於公開網站",
+   "kind": "prescriptive",
+   "deontic": "obligation"
+  },
+  {
+   "id": "a24d",
+   "law": "O0020001",
+   "path": "art_24/para_4",
+   "anchor": "由中央主管機關定之",
+   "kind": "constitutive"
+  },
+  {
+   "id": "a93a",
+   "law": "O0020001",
+   "path": "art_93/para_1",
+   "anchor": "提起訴訟",
+   "kind": "prescriptive",
+   "deontic": "permission",
+   "note": "公民訴訟：受害人民或公益團體得起訴，是賦予人民的權利"
+  },
+  {
+   "id": "a93b",
+   "law": "O0020001",
+   "path": "art_93/para_2",
+   "anchor": "判命被告機關支付",
+   "kind": [
+    "constitutive",
+    "prescriptive"
+   ]
+  },
+  {
+   "id": "a93c",
+   "law": "O0020001",
+   "path": "art_93/para_3",
+   "anchor": "定之",
+   "kind": "constitutive"
+  },
+  {
+   "id": "s31a",
+   "law": "O0110001",
+   "path": "art_31/para_1",
+   "anchor": "負連帶清償責任",
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "liability": "state",
+   "judgement": true,
+   "note": "污染土地關係人（第 2 條第 19 款）因對土地的支配負責；未盡善良管理人注意義務是不確定法律概念"
+  },
+  {
+   "id": "s31b",
+   "law": "O0110001",
+   "path": "art_31/para_2",
+   "anchor": "求償",
+   "kind": "prescriptive",
+   "deontic": "permission"
+  },
+  {
+   "id": "s31c",
+   "law": "O0110001",
+   "path": "art_31/para_3",
+   "anchor": "求償",
+   "kind": "prescriptive",
+   "deontic": "permission"
+  },
+  {
+   "id": "s31d",
+   "law": "O0110001",
+   "path": "art_31/para_4",
+   "anchor": "定之",
+   "kind": "constitutive"
+  },
+  {
+   "id": "d5a",
+   "law": "O0020031",
+   "path": "art_5/para_1",
+   "anchor": "排放標準值",
+   "kind": "constitutive",
+   "averaging": "平均",
+   "method": "採樣",
+   "note": "授權命令訂定的限值；認定方式寫在同條第 2 項：採樣及測定五次以上、取中間三數值的算術平均"
+  },
+  {
+   "id": "d5b",
+   "law": "O0020031",
+   "path": "art_5/para_2",
+   "anchor": "採樣及測定",
+   "kind": [
+    "constitutive",
+    "prescriptive"
+   ]
+  },
+  {
+   "id": "d7",
+   "law": "O0020031",
+   "path": "art_7/para_1",
+   "anchor": "應符合下列條件",
+   "kind": "prescriptive",
+   "deontic": "obligation"
+  },
+  {
+   "id": "d7-1",
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_1",
+   "anchor": "一小時平均值",
+   "kind": [
+    "constitutive",
+    "prescriptive"
+   ],
+   "averaging": "一小時",
+   "note": "燃燒溫度的門檻值，平均時段一小時平均值，未寫檢測方法"
+  },
+  {
+   "id": "d7-2",
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_2",
+   "anchor": "氣體滯留時間",
+   "kind": [
+    "constitutive",
+    "prescriptive"
+   ]
+  },
+  {
+   "id": "d7-3",
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_3",
+   "anchor": "一小時動平均值",
+   "kind": [
+    "constitutive",
+    "prescriptive"
+   ],
+   "averaging": "一小時",
+   "note": "一氧化碳的門檻值，平均時段一小時動平均值"
+  },
+  {
+   "id": "d7-4",
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_4",
+   "anchor": "含氧量",
+   "kind": [
+    "constitutive",
+    "prescriptive"
+   ]
+  },
+  {
+   "id": "d7-5",
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_5",
+   "anchor": "廢氣溫度",
+   "kind": [
+    "constitutive",
+    "prescriptive"
+   ]
+  },
+  {
+   "id": "d7b",
+   "law": "O0020031",
+   "path": "art_7/para_2",
+   "anchor": "得檢具相關證明文件",
+   "kind": "prescriptive",
+   "deontic": "permission"
+  }
+ ],
+ "reasoning": {
+  "description": "推論（engine.evaluate，即 ReasoningService.Evaluate 所呼叫的同一程式）在自擬事實上的預期，依 01-07 §3、§6 與 services/ontology/AGENTS.md「推論」。事實值由工具依實際抽出的要件與比較子產生（使其成立或不成立），概念代碼取自抽取結果；這裡只寫規則上的結果。每組各跑兩次：只讀已確認的陳述，以及 include_unsettled（把 extracted 也當前提）以檢驗規則本身。",
+  "scenarios": [
+   {
+    "id": "lapse-unknown",
+    "description": "違反水污染防治法第 40 條第 1 項所處罰的義務（適用範圍成立、義務內容不成立）；屆期未完成改善沒給、情節重大與必要時沒給、有責性沒給。",
+    "expected": "罰鍰與限期改善列為候選，罰鍰因有責性未知而附條件，限期改善不受行政罰法總則影響；按次處罰列出且附條件，triggered_by 為限期改善（order_lapsed）；停工停業、廢止許可證、勒令歇業的不確定法律概念列在需判斷"
+   },
+   {
+    "id": "lapse-true",
+    "description": "同上，另給屆期未完成改善成立、故意成立。",
+    "expected": "按次處罰列出、不附條件，triggered_by 為限期改善"
+   },
+   {
+    "id": "limit-measurement",
+    "description": "焚化爐戴奧辛的限值要件給超標的量測值：一次不給認定方式，一次給與限值所標不同的認定方式。",
+    "expected": "限值標了認定方式：結果為未知，附未決事項 measurement_mismatch；限值沒標：照常比較，附未決事項 unlabeled"
+   }
+  ]
+ }
+}

@@ -1,0 +1,6388 @@
+{
+ "log": {
+  "dropped": [
+   "丟掉 O0040001 art_7/para_1：s1: quote is not in the text",
+   "丟掉 O0040001 art_8：s1: quote is not in the text",
+   "丟掉 O0040001 art_40/para_1：s_fine: quote is not in the text",
+   "丟掉 O0040001 art_40/para_1：s_revoke: quote is not in the text",
+   "丟掉 O0040001 art_40/para_2：s_revoke: quote is not in the text",
+   "丟掉 O0020001 art_22/para_1：s1: quote is not in the text",
+   "丟掉 O0020001 art_22/para_2：s1: quote is not in the text",
+   "丟掉 O0020001 art_24/para_1：s1: quote is not in the text",
+   "丟掉 O0020001 art_24/para_4：s1: quote is not in the text",
+   "丟掉 O0110001 art_31/para_1：s1: quote is not in the text",
+   "丟掉 O0110001 art_31/para_2：s1: quote is not in the text",
+   "丟掉 O0110001 art_31/para_3：s1: quote is not in the text",
+   "丟掉 O0110001 art_31/para_4：s1: quote is not in the text",
+   "丟掉 O0020031 art_5/para_2：s1: quote is not in the text",
+   "丟掉待連結的罰則：s1: no statement in the cited provisions",
+   "丟掉待連結的罰則：s1: no statement in the cited provisions",
+   "丟掉待連結的罰則：s1: no statement in the cited provisions",
+   "丟掉待連結的罰則：s1: no statement in the cited provisions",
+   "丟掉待連結的罰則：s1: no statement in the cited provisions",
+   "丟掉待連結的罰則：s1: no statement in the cited provisions",
+   "丟掉待連結的罰則：s1: no statement in the cited provisions",
+   "丟掉待連結的罰則：s1: no statement in the cited provisions"
+  ],
+  "summary": [
+   "模型：抽取 meta:muse-spark-open；驗證 nvidia:nemotron-3.5-super-vl、mistral:mistral-small-4",
+   "法規 5 部：O0040001、O0020001、O0120001、O0110001、O0020031",
+   "單元 39（略過 0），抽取 42 個陳述（含連結的罰則 7 個；丟掉 22）；4 個確認、22 個駁回，2 輪",
+   "抽取計數：呼叫 41，修復 2，語法失敗 0，形狀問題 16；詞元 {'prompt': 119331, 'completion': 29672}"
+  ],
+  "errors": [
+   "exit=0"
+  ]
+ },
+ "states": {
+  "confirmed": 4,
+  "extracted": 16,
+  "rejected": 22
+ },
+ "score": {
+  "tally": {
+   "kind": {
+    "hit": 26,
+    "wrong": 0,
+    "miss": 23,
+    "false_positive": 0,
+    "n": 49
+   },
+   "deontic": {
+    "hit": 6,
+    "wrong": 0,
+    "miss": 7,
+    "false_positive": 0,
+    "n": 13
+   },
+   "effect": {
+    "hit": 7,
+    "wrong": 0,
+    "miss": 13,
+    "false_positive": 0,
+    "n": 20
+   },
+   "repeating": {
+    "hit": 2,
+    "wrong": 0,
+    "miss": 0,
+    "false_positive": 0,
+    "n": 2
+   },
+   "triggers": {
+    "hit": 2,
+    "wrong": 0,
+    "miss": 2,
+    "false_positive": 0,
+    "n": 4
+   },
+   "liability": {
+    "hit": 0,
+    "wrong": 0,
+    "miss": 2,
+    "false_positive": 0,
+    "n": 2
+   },
+   "judgement": {
+    "hit": 2,
+    "wrong": 0,
+    "miss": 5,
+    "false_positive": 1,
+    "n": 7
+   },
+   "permit": {
+    "hit": 0,
+    "wrong": 0,
+    "miss": 2,
+    "false_positive": 0,
+    "n": 2
+   },
+   "averaging": {
+    "hit": 0,
+    "wrong": 0,
+    "miss": 3,
+    "false_positive": 0,
+    "n": 3
+   },
+   "method": {
+    "hit": 0,
+    "wrong": 0,
+    "miss": 1,
+    "false_positive": 0,
+    "n": 1
+   },
+   "punishes": {
+    "hit": 7,
+    "wrong": 0,
+    "miss": 5,
+    "false_positive": 0,
+    "n": 12
+   }
+  },
+  "rows": [
+   {
+    "expected": "w7",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "prescriptive",
+      null
+     ],
+     "deontic": [
+      "miss",
+      "obligation",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "w7-2",
+    "statement": 1,
+    "state": "extracted",
+    "fields": {
+     "kind": [
+      "hit",
+      "constitutive",
+      "constitutive"
+     ]
+    }
+   },
+   {
+    "expected": "w8",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "prescriptive",
+      null
+     ],
+     "deontic": [
+      "miss",
+      "obligation",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "w40a-fine",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "fine",
+      null
+     ],
+     "punishes": [
+      "miss",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      null
+     ]
+    }
+   },
+   {
+    "expected": "w40a-order",
+    "statement": 36,
+    "state": "extracted",
+    "fields": {
+     "kind": [
+      "hit",
+      "sanction",
+      "sanction"
+     ],
+     "effect": [
+      "hit",
+      "order",
+      "order"
+     ],
+     "punishes": [
+      "hit",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      "art_8"
+     ]
+    }
+   },
+   {
+    "expected": "w40a-again",
+    "statement": 37,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "sanction",
+      "sanction"
+     ],
+     "effect": [
+      "hit",
+      "fine",
+      "fine"
+     ],
+     "repeating": [
+      "hit",
+      true,
+      true
+     ],
+     "triggers": [
+      "hit",
+      [
+       [
+        "order_lapsed",
+        "w40a-order"
+       ]
+      ],
+      [
+       [
+        "order_lapsed",
+        "w40a-order"
+       ]
+      ]
+     ],
+     "punishes": [
+      "hit",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      "art_8"
+     ]
+    }
+   },
+   {
+    "expected": "w40a-halt",
+    "statement": 38,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "sanction",
+      "sanction"
+     ],
+     "effect": [
+      "hit",
+      "restriction",
+      "restriction"
+     ],
+     "judgement": [
+      "hit",
+      true,
+      true
+     ],
+     "punishes": [
+      "hit",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      "art_8"
+     ]
+    }
+   },
+   {
+    "expected": "w40a-revoke",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "deprivation",
+      null
+     ],
+     "judgement": [
+      "miss",
+      true,
+      null
+     ],
+     "punishes": [
+      "miss",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      null
+     ]
+    }
+   },
+   {
+    "expected": "w40a-close",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "restriction",
+      null
+     ],
+     "judgement": [
+      "miss",
+      true,
+      null
+     ],
+     "punishes": [
+      "miss",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      null
+     ]
+    }
+   },
+   {
+    "expected": "w40b-fine",
+    "statement": 39,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "sanction",
+      "sanction"
+     ],
+     "effect": [
+      "hit",
+      "fine",
+      "fine"
+     ],
+     "punishes": [
+      "hit",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      "art_8"
+     ]
+    }
+   },
+   {
+    "expected": "w40b-order",
+    "statement": 40,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "sanction",
+      "sanction"
+     ],
+     "effect": [
+      "hit",
+      "order",
+      "order"
+     ],
+     "punishes": [
+      "hit",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      "art_8"
+     ]
+    }
+   },
+   {
+    "expected": "w40b-again",
+    "statement": 41,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "sanction",
+      "sanction"
+     ],
+     "effect": [
+      "hit",
+      "fine",
+      "fine"
+     ],
+     "repeating": [
+      "hit",
+      true,
+      true
+     ],
+     "triggers": [
+      "hit",
+      [
+       [
+        "order_lapsed",
+        "w40b-order"
+       ]
+      ],
+      [
+       [
+        "order_lapsed",
+        "w40b-order"
+       ]
+      ]
+     ],
+     "punishes": [
+      "hit",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      "art_8"
+     ]
+    }
+   },
+   {
+    "expected": "w40b-halt",
+    "statement": 42,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "sanction",
+      "sanction"
+     ],
+     "effect": [
+      "hit",
+      "restriction",
+      "restriction"
+     ],
+     "judgement": [
+      "hit",
+      true,
+      true
+     ],
+     "punishes": [
+      "hit",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      "art_8"
+     ]
+    }
+   },
+   {
+    "expected": "w40b-revoke",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "deprivation",
+      null
+     ],
+     "judgement": [
+      "miss",
+      true,
+      null
+     ],
+     "punishes": [
+      "miss",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      null
+     ]
+    }
+   },
+   {
+    "expected": "w40b-close",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "restriction",
+      null
+     ],
+     "judgement": [
+      "miss",
+      true,
+      null
+     ],
+     "punishes": [
+      "miss",
+      [
+       "art_7/para_1",
+       "art_8"
+      ],
+      null
+     ]
+    }
+   },
+   {
+    "expected": "w66-2a",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "disgorgement",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "w66-2b",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "disgorgement",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "w66-2c",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "disgorgement",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "w66-2d",
+    "statement": 8,
+    "state": "extracted",
+    "fields": {
+     "kind": [
+      "hit",
+      "constitutive",
+      "constitutive"
+     ]
+    }
+   },
+   {
+    "expected": "a86a",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "disgorgement",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "a86b",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "disgorgement",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "a86c",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "disgorgement",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "a86d",
+    "statement": 16,
+    "state": "extracted",
+    "fields": {
+     "kind": [
+      "hit",
+      "constitutive",
+      "constitutive"
+     ]
+    }
+   },
+   {
+    "expected": "e23",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "warning",
+      null
+     ],
+     "triggers": [
+      "miss",
+      [
+       [
+        "sanction_imposed",
+        "cross_law"
+       ]
+      ],
+      null
+     ],
+     "liability": [
+      "miss",
+      "representative",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "e24-1a",
+    "statement": 21,
+    "state": "confirmed",
+    "fields": {
+     "kind": [
+      "hit",
+      "constitutive",
+      "constitutive"
+     ]
+    }
+   },
+   {
+    "expected": "e24-1b",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "sanction",
+      null
+     ],
+     "effect": [
+      "miss",
+      "fine",
+      null
+     ],
+     "triggers": [
+      "miss",
+      [
+       [
+        "sanction_imposed",
+        "e23"
+       ]
+      ],
+      null
+     ]
+    }
+   },
+   {
+    "expected": "a22a",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "prescriptive",
+      null
+     ],
+     "deontic": [
+      "miss",
+      "obligation",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "a22b",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      [
+       "constitutive",
+       "prescriptive"
+      ],
+      null
+     ]
+    }
+   },
+   {
+    "expected": "a22c",
+    "statement": 10,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "prescriptive",
+      "prescriptive"
+     ],
+     "deontic": [
+      "hit",
+      "obligation",
+      "obligation"
+     ]
+    }
+   },
+   {
+    "expected": "a24a",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "prescriptive",
+      null
+     ],
+     "deontic": [
+      "miss",
+      "obligation",
+      null
+     ],
+     "permit": [
+      "miss",
+      "設置許可",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "a24b",
+    "statement": 12,
+    "state": "extracted",
+    "fields": {
+     "kind": [
+      "hit",
+      "prescriptive",
+      "prescriptive"
+     ],
+     "deontic": [
+      "hit",
+      "obligation",
+      "obligation"
+     ],
+     "permit": [
+      "miss",
+      "操作許可",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "a24c",
+    "statement": 13,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "prescriptive",
+      "prescriptive"
+     ],
+     "deontic": [
+      "hit",
+      "obligation",
+      "obligation"
+     ]
+    }
+   },
+   {
+    "expected": "a24d",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "constitutive",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "a93a",
+    "statement": 18,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "prescriptive",
+      "prescriptive"
+     ],
+     "deontic": [
+      "hit",
+      "permission",
+      "permission"
+     ]
+    }
+   },
+   {
+    "expected": "a93b",
+    "statement": 19,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      [
+       "constitutive",
+       "prescriptive"
+      ],
+      "constitutive"
+     ],
+     "judgement": [
+      "false_positive",
+      null,
+      true
+     ]
+    }
+   },
+   {
+    "expected": "a93c",
+    "statement": 20,
+    "state": "extracted",
+    "fields": {
+     "kind": [
+      "hit",
+      "constitutive",
+      "constitutive"
+     ]
+    }
+   },
+   {
+    "expected": "s31a",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "prescriptive",
+      null
+     ],
+     "deontic": [
+      "miss",
+      "obligation",
+      null
+     ],
+     "liability": [
+      "miss",
+      "state",
+      null
+     ],
+     "judgement": [
+      "miss",
+      true,
+      null
+     ]
+    }
+   },
+   {
+    "expected": "s31b",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "prescriptive",
+      null
+     ],
+     "deontic": [
+      "miss",
+      "permission",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "s31c",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "prescriptive",
+      null
+     ],
+     "deontic": [
+      "miss",
+      "permission",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "s31d",
+    "statement": null,
+    "state": null,
+    "fields": {
+     "kind": [
+      "miss",
+      "constitutive",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "d5a",
+    "statement": 22,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "constitutive",
+      "constitutive"
+     ],
+     "averaging": [
+      "miss",
+      "平均",
+      null
+     ],
+     "method": [
+      "miss",
+      "採樣",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "d5b",
+    "statement": 23,
+    "state": "extracted",
+    "fields": {
+     "kind": [
+      "hit",
+      [
+       "constitutive",
+       "prescriptive"
+      ],
+      "prescriptive"
+     ]
+    }
+   },
+   {
+    "expected": "d7",
+    "statement": 26,
+    "state": "extracted",
+    "fields": {
+     "kind": [
+      "hit",
+      "prescriptive",
+      "prescriptive"
+     ],
+     "deontic": [
+      "hit",
+      "obligation",
+      "obligation"
+     ]
+    }
+   },
+   {
+    "expected": "d7-1",
+    "statement": 27,
+    "state": "confirmed",
+    "fields": {
+     "kind": [
+      "hit",
+      [
+       "constitutive",
+       "prescriptive"
+      ],
+      "prescriptive"
+     ],
+     "averaging": [
+      "miss",
+      "一小時",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "d7-2",
+    "statement": 28,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      [
+       "constitutive",
+       "prescriptive"
+      ],
+      "prescriptive"
+     ]
+    }
+   },
+   {
+    "expected": "d7-3",
+    "statement": 30,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      [
+       "constitutive",
+       "prescriptive"
+      ],
+      "prescriptive"
+     ],
+     "averaging": [
+      "miss",
+      "一小時",
+      null
+     ]
+    }
+   },
+   {
+    "expected": "d7-4",
+    "statement": 32,
+    "state": "extracted",
+    "fields": {
+     "kind": [
+      "hit",
+      [
+       "constitutive",
+       "prescriptive"
+      ],
+      "prescriptive"
+     ]
+    }
+   },
+   {
+    "expected": "d7-5",
+    "statement": 33,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      [
+       "constitutive",
+       "prescriptive"
+      ],
+      "prescriptive"
+     ]
+    }
+   },
+   {
+    "expected": "d7b",
+    "statement": 35,
+    "state": "rejected",
+    "fields": {
+     "kind": [
+      "hit",
+      "prescriptive",
+      "prescriptive"
+     ],
+     "deontic": [
+      "hit",
+      "permission",
+      "permission"
+     ]
+    }
+   }
+  ],
+  "extra": [
+   {
+    "id": 2,
+    "law": "O0040001",
+    "path": "art_7/para_2",
+    "kind": "prescriptive",
+    "effect": null,
+    "state": "rejected"
+   },
+   {
+    "id": 3,
+    "law": "O0040001",
+    "path": "art_7/para_2",
+    "kind": "constitutive",
+    "effect": null,
+    "state": "extracted"
+   },
+   {
+    "id": 4,
+    "law": "O0040001",
+    "path": "art_7/para_2",
+    "kind": "constitutive",
+    "effect": null,
+    "state": "confirmed"
+   },
+   {
+    "id": 5,
+    "law": "O0040001",
+    "path": "art_8",
+    "kind": "prescriptive",
+    "effect": null,
+    "state": "extracted"
+   },
+   {
+    "id": 6,
+    "law": "O0040001",
+    "path": "art_66-2/para_4",
+    "kind": "constitutive",
+    "effect": null,
+    "state": "rejected"
+   },
+   {
+    "id": 7,
+    "law": "O0040001",
+    "path": "art_66-2/para_4",
+    "kind": "constitutive",
+    "effect": null,
+    "state": "extracted"
+   },
+   {
+    "id": 9,
+    "law": "O0020001",
+    "path": "art_22/para_1",
+    "kind": "prescriptive",
+    "effect": null,
+    "state": "rejected"
+   },
+   {
+    "id": 11,
+    "law": "O0020001",
+    "path": "art_22/para_3",
+    "kind": "constitutive",
+    "effect": null,
+    "state": "confirmed"
+   },
+   {
+    "id": 14,
+    "law": "O0020001",
+    "path": "art_86/para_4",
+    "kind": "constitutive",
+    "effect": null,
+    "state": "extracted"
+   },
+   {
+    "id": 15,
+    "law": "O0020001",
+    "path": "art_86/para_4",
+    "kind": "constitutive",
+    "effect": null,
+    "state": "extracted"
+   },
+   {
+    "id": 17,
+    "law": "O0020001",
+    "path": "art_93/para_1",
+    "kind": "prescriptive",
+    "effect": null,
+    "state": "rejected"
+   },
+   {
+    "id": 24,
+    "law": "O0020031",
+    "path": "art_5/para_2",
+    "kind": "constitutive",
+    "effect": null,
+    "state": "extracted"
+   },
+   {
+    "id": 25,
+    "law": "O0020031",
+    "path": "art_5/para_2",
+    "kind": "prescriptive",
+    "effect": null,
+    "state": "rejected"
+   },
+   {
+    "id": 29,
+    "law": "O0020031",
+    "path": "art_7/para_1/pt_2",
+    "kind": "prescriptive",
+    "effect": null,
+    "state": "extracted"
+   },
+   {
+    "id": 31,
+    "law": "O0020031",
+    "path": "art_7/para_1/pt_3",
+    "kind": "constitutive",
+    "effect": null,
+    "state": "rejected"
+   },
+   {
+    "id": 34,
+    "law": "O0020031",
+    "path": "art_7/para_1/pt_5",
+    "kind": "prescriptive",
+    "effect": null,
+    "state": "rejected"
+   }
+  ],
+  "matched": {
+   "w7": null,
+   "w7-2": 1,
+   "w8": null,
+   "w40a-fine": null,
+   "w40a-order": 36,
+   "w40a-again": 37,
+   "w40a-halt": 38,
+   "w40a-revoke": null,
+   "w40a-close": null,
+   "w40b-fine": 39,
+   "w40b-order": 40,
+   "w40b-again": 41,
+   "w40b-halt": 42,
+   "w40b-revoke": null,
+   "w40b-close": null,
+   "w66-2a": null,
+   "w66-2b": null,
+   "w66-2c": null,
+   "w66-2d": 8,
+   "a86a": null,
+   "a86b": null,
+   "a86c": null,
+   "a86d": 16,
+   "e23": null,
+   "e24-1a": 21,
+   "e24-1b": null,
+   "a22a": null,
+   "a22b": null,
+   "a22c": 10,
+   "a24a": null,
+   "a24b": 12,
+   "a24c": 13,
+   "a24d": null,
+   "a93a": 18,
+   "a93b": 19,
+   "a93c": 20,
+   "s31a": null,
+   "s31b": null,
+   "s31c": null,
+   "s31d": null,
+   "d5a": 22,
+   "d5b": 23,
+   "d7": 26,
+   "d7-1": 27,
+   "d7-2": 28,
+   "d7-3": 30,
+   "d7-4": 32,
+   "d7-5": 33,
+   "d7b": 35
+  },
+  "expected_count": 49,
+  "matched_count": 26
+ },
+ "reasoning": [
+  {
+   "scenario": "lapse-unknown",
+   "include_unsettled": false,
+   "case": {
+    "arbitrary_placement": 1.0,
+    "arbitrary_disposal": 1.0
+   },
+   "result": {
+    "verdicts": {},
+    "penalties": [],
+    "missing": [],
+    "needs_judgement": [],
+    "problems": [],
+    "missing_permits": [],
+    "unpunished": []
+   }
+  },
+  {
+   "scenario": "lapse-unknown",
+   "include_unsettled": true,
+   "case": {
+    "arbitrary_placement": 1.0,
+    "arbitrary_disposal": 1.0
+   },
+   "result": {
+    "verdicts": {
+     "5": "violation"
+    },
+    "penalties": [
+     {
+      "statement": 36,
+      "punishes": 5,
+      "effect": "order",
+      "conditional": true,
+      "repeating": false,
+      "discretionary": false,
+      "triggered_by": []
+     },
+     {
+      "statement": 37,
+      "punishes": 5,
+      "effect": "fine",
+      "conditional": true,
+      "repeating": true,
+      "discretionary": false,
+      "triggered_by": [
+       [
+        36,
+        "order_lapsed"
+       ]
+      ]
+     },
+     {
+      "statement": 38,
+      "punishes": 5,
+      "effect": "restriction",
+      "conditional": true,
+      "repeating": false,
+      "discretionary": true,
+      "triggered_by": []
+     },
+     {
+      "statement": 39,
+      "punishes": 5,
+      "effect": "fine",
+      "conditional": true,
+      "repeating": false,
+      "discretionary": false,
+      "triggered_by": []
+     },
+     {
+      "statement": 40,
+      "punishes": 5,
+      "effect": "order",
+      "conditional": true,
+      "repeating": false,
+      "discretionary": false,
+      "triggered_by": []
+     },
+     {
+      "statement": 41,
+      "punishes": 5,
+      "effect": "fine",
+      "conditional": true,
+      "repeating": true,
+      "discretionary": false,
+      "triggered_by": [
+       [
+        40,
+        "order_lapsed"
+       ]
+      ]
+     },
+     {
+      "statement": 42,
+      "punishes": 5,
+      "effect": "restriction",
+      "conditional": true,
+      "repeating": false,
+      "discretionary": true,
+      "triggered_by": []
+     }
+    ],
+    "missing": [
+     [
+      36,
+      "enterprise"
+     ],
+     [
+      37,
+      "enterprise"
+     ],
+     [
+      39,
+      "livestock_industry"
+     ],
+     [
+      39,
+      "violation_art7_para1"
+     ],
+     [
+      39,
+      "violation_art8"
+     ],
+     [
+      40,
+      "livestock_industry"
+     ],
+     [
+      40,
+      "violation_art7_para1"
+     ],
+     [
+      40,
+      "violation_art8"
+     ],
+     [
+      41,
+      "order_not_complied_after_deadline"
+     ],
+     [
+      42,
+      "livestock_industry"
+     ],
+     [
+      42,
+      "violation_art7_para1"
+     ],
+     [
+      42,
+      "violation_art8"
+     ]
+    ],
+    "needs_judgement": [
+     [
+      38,
+      "enterprise"
+     ],
+     [
+      42,
+      "circumstances_serious"
+     ]
+    ],
+    "problems": [],
+    "missing_permits": [],
+    "unpunished": []
+   }
+  },
+  {
+   "scenario": "lapse-true",
+   "include_unsettled": false,
+   "case": {
+    "arbitrary_placement": 1.0,
+    "arbitrary_disposal": 1.0,
+    "enterprise": 1.0,
+    "ap_intent": 1.0
+   },
+   "result": {
+    "verdicts": {},
+    "penalties": [],
+    "missing": [],
+    "needs_judgement": [],
+    "problems": [],
+    "missing_permits": [],
+    "unpunished": []
+   }
+  },
+  {
+   "scenario": "lapse-true",
+   "include_unsettled": true,
+   "case": {
+    "arbitrary_placement": 1.0,
+    "arbitrary_disposal": 1.0,
+    "enterprise": 1.0,
+    "ap_intent": 1.0
+   },
+   "result": {
+    "verdicts": {
+     "5": "violation"
+    },
+    "penalties": [
+     {
+      "statement": 36,
+      "punishes": 5,
+      "effect": "order",
+      "conditional": false,
+      "repeating": false,
+      "discretionary": false,
+      "triggered_by": []
+     },
+     {
+      "statement": 37,
+      "punishes": 5,
+      "effect": "fine",
+      "conditional": false,
+      "repeating": true,
+      "discretionary": false,
+      "triggered_by": [
+       [
+        36,
+        "order_lapsed"
+       ]
+      ]
+     },
+     {
+      "statement": 38,
+      "punishes": 5,
+      "effect": "restriction",
+      "conditional": false,
+      "repeating": false,
+      "discretionary": true,
+      "triggered_by": []
+     },
+     {
+      "statement": 39,
+      "punishes": 5,
+      "effect": "fine",
+      "conditional": true,
+      "repeating": false,
+      "discretionary": false,
+      "triggered_by": []
+     },
+     {
+      "statement": 40,
+      "punishes": 5,
+      "effect": "order",
+      "conditional": true,
+      "repeating": false,
+      "discretionary": false,
+      "triggered_by": []
+     },
+     {
+      "statement": 41,
+      "punishes": 5,
+      "effect": "fine",
+      "conditional": true,
+      "repeating": true,
+      "discretionary": false,
+      "triggered_by": [
+       [
+        40,
+        "order_lapsed"
+       ]
+      ]
+     },
+     {
+      "statement": 42,
+      "punishes": 5,
+      "effect": "restriction",
+      "conditional": true,
+      "repeating": false,
+      "discretionary": true,
+      "triggered_by": []
+     }
+    ],
+    "missing": [
+     [
+      39,
+      "livestock_industry"
+     ],
+     [
+      39,
+      "violation_art7_para1"
+     ],
+     [
+      39,
+      "violation_art8"
+     ],
+     [
+      40,
+      "livestock_industry"
+     ],
+     [
+      40,
+      "violation_art7_para1"
+     ],
+     [
+      40,
+      "violation_art8"
+     ],
+     [
+      41,
+      "order_not_complied_after_deadline"
+     ],
+     [
+      42,
+      "livestock_industry"
+     ],
+     [
+      42,
+      "violation_art7_para1"
+     ],
+     [
+      42,
+      "violation_art8"
+     ]
+    ],
+    "needs_judgement": [
+     [
+      42,
+      "circumstances_serious"
+     ]
+    ],
+    "problems": [],
+    "missing_permits": [],
+    "unpunished": []
+   }
+  },
+  {
+   "scenario": "limit-measurement",
+   "skipped": "limit conditions on art_5/para_1: 0; conditions delegating to it: 0"
+  }
+ ],
+ "statements": [
+  {
+   "id": 1,
+   "law": "O0040001",
+   "path": "art_7/para_2",
+   "quote": "前項放流水標準，由中央主管機關會商相關目的事業主管機關定之",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "中央主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "定之",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "前項放流水標準",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"種類欄位加入「定義、限值」，但引文僅授權中央主管機關「定之」前項放流水標準；其中「濃度或總量限值」等內容出自未被引用的後段「其內容應包括…」，屬於添加引文以外的內容。\", \"引文中的「會商相關目的事業主管機關」是該授權行為的要件，標註僅列主體為中央主管機關、行為為定之，遺漏了會商要件。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"種類欄位加入「定義、限值」，但引文僅授權中央主管機關「定之」前項放流水標準；其中「濃度或總量限值」等內容出自未被引用的後段「其內容應包括…」，屬於添加引文以外的內容。\", \"引文中的「會商相關目的事業主管機關」是該授權行為的要件，標註僅列主體為中央主管機關、行為為定之，遺漏了會商要件。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "law": "O0040001",
+   "path": "art_7/para_2",
+   "quote": "其內容應包括適用範圍、管制方式、項目、濃度或總量限值、研訂基準及其他應遵行之事項",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "前項放流水標準",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "包括",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "適用範圍",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 2,
+     "literal": "管制方式",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 3,
+     "literal": "項目",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 4,
+     "literal": "濃度或總量限值",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 5,
+     "literal": "研訂基準",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 6,
+     "literal": "其他應遵行之事項",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 1,
+     "role": "duty",
+     "clause": 1,
+     "concept": "content_inclusion",
+     "label": "內容包括",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2018-06-13\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "fail",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\", \"differences\": {\"conditions\": {\"roundtrip\": [[\"duty\", \"content_inclusion\", \"eq\", 1.0, false, false], [\"duty\", \"其他應遵行之事項\", \"eq\", 1.0, false, false], [\"duty\", \"研訂基準\", \"eq\", 1.0, false, false], [\"duty\", \"管制方式\", \"eq\", 1.0, false, false], [\"duty\", \"項目\", \"eq\", 1.0, false, false], [\"limit\", \"濃度或總量限值\", \"eq\", 1.0, false, false], [\"scope\", \"適用範圍\", \"eq\", 1.0, fals"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"agree\": 2, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"content_inclusion\": 1.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": true, \"facts\": {\"content_inclusion\": 0.0}, \"expected\": \"violation\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\"content_inclusion\": 1.0}, \"expected\": \"not_applicable\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\"content_inclusion\": 1.0}, "
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"陳述種類誤判為規範性陳述（prescriptive）・義務（obligation），實為構成性（constitutive）的授權內容規定（即中央主管機關應於放流水標準中納入特定事項）\", \"未標註此為構成性（constitutive）而非規範性（prescriptive）\", \"義務方向誤判為「皆須成立」（obligation），實為中央主管機關「應包含」特定內容（授權內容規定）\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "law": "O0040001",
+   "path": "art_7/para_2",
+   "quote": "直轄市、縣（市）主管機關得視轄區內環境特殊或需特予保護之水體，就排放總量或濃度、管制項目或方式，增訂或加嚴轄內之放流水標準",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "直轄市、縣（市）主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "增訂或加嚴",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "轄內之放流水標準",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"種類描述加入「定義、限值」，但引文僅為地方主管機關增訂或加嚴放流水標準的授權條文，並無定義內容，也未自行設定限值，屬於添加。\", \"遺漏要件：引文中「視轄區內環境特殊或需特予保護之水體」是行使授權的前提條件，標註未列為要件。\", \"遺漏授權範圍：引文中「就排放總量或濃度、管制項目或方式」規定了可增訂或加嚴的具體層面，標註未提及。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"種類描述加入「定義、限值」，但引文僅為地方主管機關增訂或加嚴放流水標準的授權條文，並無定義內容，也未自行設定限值，屬於添加。\", \"遺漏要件：引文中「視轄區內環境特殊或需特予保護之水體」是行使授權的前提條件，標註未列為要件。\", \"遺漏授權範圍：引文中「就排放總量或濃度、管制項目或方式」規定了可增訂或加嚴的具體層面，標註未提及。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "law": "O0040001",
+   "path": "art_7/para_2",
+   "quote": "報請中央主管機關會商相關目的事業主管機關後核定之",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "confirmed",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "直轄市、縣（市）主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "報請核定",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "增訂或加嚴之放流水標準",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "pass",
+     "evidence": "{\"action\": \"confirmed\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "law": "O0040001",
+   "path": "art_8",
+   "quote": "不得任意放置或棄置",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "prohibition",
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "事業",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "subject",
+     "alternative": 2,
+     "literal": "汙水下水道系統",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "subject",
+     "alternative": 3,
+     "literal": "建築物汙水處理設施",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "任意放置",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 2,
+     "literal": "任意棄置",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "其產生之汙泥",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 2,
+     "role": "duty",
+     "clause": 1,
+     "concept": "arbitrary_placement",
+     "label": "任意放置",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 3,
+     "role": "duty",
+     "clause": 1,
+     "concept": "arbitrary_disposal",
+     "label": "任意棄置",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2018-06-13\", \"cases\": [{\"got\": \"violation\", \"case\": \"duty holds\", \"expected\": \"violation\", \"problems\": []}, {\"got\": \"compliant\", \"case\": \"duty broken\", \"expected\": \"compliant\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"義務內容標註「皆須成立」，但原文「不得任意放置或棄置」以「或」連結兩種行為，屬選擇關係，任一行為成立即構成違反，不應要求兩者同時成立。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"義務內容標註「皆須成立」，但原文「不得任意放置或棄置」以「或」連結兩種行為，屬選擇關係，任一行為成立即構成違反，不應要求兩者同時成立。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "law": "O0040001",
+   "path": "art_66-2/para_4",
+   "quote": "前三項追繳，由為裁處之主管機關以行政處分為之；",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "為裁處之主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "追繳",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "前三項追繳",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "medium",
+     "alternative": 1,
+     "literal": "行政處分",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"引文係規範追繳違反義務所得之利益，依本體約定 E 應採用 effect disgorgement，標註卻僅標示為「構成性陳述（授權、定義、限值）」且完全未提及追繳利益或 disgorgement 效果，類別與效果不符。\", \"「對象：前三項追繳」與「行為：追繳」重複，前三項追繳並非追繳的客體，客體應為「前三項」或其所定之利益，標註有誤。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"引文僅包含「前三項追繳，由為裁處之主管機關以行政處分為之；」一句，但標註描述卻納入「所稱利益得包括積極利益及應支出而未支出或減少支出之消極利益，其核算及推估辦法，由中央主管機關定之。」的"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "law": "O0040001",
+   "path": "art_66-2/para_4",
+   "quote": "所稱利益得包括積極利益及應支出而未支出或減少支出之消極利益，",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "所稱利益",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "包括",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "積極利益",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 2,
+     "literal": "應支出而未支出或減少支出之消極利益",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"陳述種類應為 constitutive（定義、適用範圍、授權），而非「構成性陳述（授權、定義、限值）」；其中「限值」為誤植或添加\", \"標註描述未涵蓋「其核算及推估辦法，由中央主管機關定之」的授權內容，構成要件不完整\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"陳述種類應為 constitutive（定義、適用範圍、授權），而非「構成性陳述（授權、定義、限值）」；其中「限值」為誤植或添加\", \"標註描述未涵蓋「其核算及推估辦法，由中央主管機關定之」的授權內容，構成要件不完整\"], \"faithful\": false}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 8,
+   "law": "O0040001",
+   "path": "art_66-2/para_4",
+   "quote": "其核算及推估辦法，由中央主管機關定之。",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "中央主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "定之",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "其核算及推估辦法",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"「其核算及推估辦法，由中央主管機關定之」屬於授權（constitutive）而非構成性陳述（constitutive 通常指定義、適用範圍等，授權主管機關訂定辦法應歸類為授權性規定）；且未標註「kind 為 constitutive」的 deontic 為 null 規則違反約定 A\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"「其核算及推估辦法，由中央主管機關定之」屬於授權（constitutive）而非構成性陳述（constitutive 通常指定義、適用範圍等，授權主管機關訂定辦法應歸類為授權性規定）；且未標註「kind 為 constitutive」的 deontic 為 null 規則違反約定 A\"], \"faithful\": false}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 9,
+   "law": "O0020001",
+   "path": "art_22/para_1",
+   "quote": "其經指定公告應連線者，其監測設施應於規定期限內完成與直轄市、縣（巿）主管機關連線，並公開於直轄市、縣（巿）主管機關網站",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "其經指定公告應連線者",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "於規定期限內完成與直轄市、縣（巿）主管機關連線，並公開於直轄市、縣（巿）主管機關網站",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 4,
+     "role": "scope",
+     "clause": 1,
+     "concept": "zi_dong_jian_ce_she_shi",
+     "label": "自動監測設施",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 5,
+     "role": "duty",
+     "clause": 1,
+     "concept": "zi_dong_jian_ce_she_shi",
+     "label": "自動監測設施",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "inconclusive",
+     "evidence": "{\"reason\": \"two conditions share one concept\"}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"agree\": 2, \"cases\": [{\"got\": \"compliant\", \"agree\": false, \"facts\": {\"zi_dong_jian_ce_she_shi\": 1.0}, \"expected\": \"undetermined\"}, {\"got\": \"not_applicable\", \"agree\": true, \"facts\": {\"zi_dong_jian_ce_she_shi\": 0.0}, \"expected\": \"not_applicable\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"zi_dong_jian_ce_she_shi\": 1.0}, \"expected\": \"compliant\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\""
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"引文並未將「自動監測設施 成立」列為適用範圍或義務內容的要件，該條件屬於單元前半句「設置自動監測設施」的義務，標註將其併入此引文，屬於添加引文以外的內容。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"標註描述中將「行為」拆分為兩個動作（連線與公開），但原文係以「完成與…連線，並公開於…」為單一複合義務，未明確區分兩個獨立要件；且未標註「公開於直轄市、縣（市）主管機關網站」的門檻或條件，可能隱含添加未明確之要件。此外，標註未明確標示「規定期限」為義務門檻，違反原文須忠實呈現要件之要求。\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 10,
+   "law": "O0020001",
+   "path": "art_22/para_3",
+   "quote": "前二項監測或檢驗測定結果，應作成紀錄，並依規定向直轄市、縣（巿）主管機關申報；",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "作成紀錄",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 2,
+     "literal": "申報",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "前二項監測或檢驗測定結果",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "medium",
+     "alternative": 1,
+     "literal": "直轄市、縣（巿）主管機關",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 6,
+     "role": "duty",
+     "clause": 1,
+     "concept": "monitoring_result",
+     "label": "監測或檢驗測定結果",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2018-08-03\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "fail",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\", \"differences\": {\"conditions\": {\"roundtrip\": [[\"scope\", \"monitoring_result\", \"eq\", 1.0, false, false]], \"annotation\": [[\"duty\", \"monitoring_result\", \"eq\", 1.0, false, false]]}}}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"agree\": 1, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"monitoring_result\": 1.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": false, \"facts\": {\"monitoring_result\": 0.0}, \"expected\": \"not_applicable\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\"monitoring_result\": 1.0}, \"expected\": \"violation\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\"monitoring_result\": 1.0},"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"「監測或檢驗測定結果」是義務的客體（應作成紀錄、申報的對象），並非要件條件；標註將其列為「義務內容（皆須成立）……成立」，等同添加「監測或檢驗測定結果已成立」的前提，原文並無此要件。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 11,
+   "law": "O0020001",
+   "path": "art_22/para_3",
+   "quote": "監測或檢驗測定結果之記錄、申報、保存、連線作業規範、完成設置或連線期限及其他應遵行事項之辦法，由中央主管機關定之。",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "confirmed",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "中央主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "監測或檢驗測定結果之記錄、申報、保存、連線作業規範、完成設置或連線期限及其他應遵行事項之辦法",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "pass",
+     "evidence": "{\"action\": \"confirmed\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 12,
+   "law": "O0020001",
+   "path": "art_24/para_2",
+   "quote": "應檢具符合本法相關規定之證明文件，向直轄市、縣（市）主管機關或經中央主管機關委託之機關申請及取得操作許可證，並依核發之許可證內容進行操作",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "前項固定污染源設置或變更者",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "申請及取得操作許可證，並依核發之許可證內容進行操作",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "操作許可證",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "medium",
+     "alternative": 1,
+     "literal": "符合本法相關規定之證明文件",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 7,
+     "role": "scope",
+     "clause": 1,
+     "concept": "fixed_pollution_source",
+     "label": "固定污染源",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 8,
+     "role": "duty",
+     "clause": 1,
+     "concept": "operation_permit",
+     "label": "操作許可證",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2018-08-03\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"fixed_pollution_source not met\", \"expected\": \"not_applicable\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"agree\": 4, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"operation_permit\": 1.0, \"fixed_pollution_source\": 1.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": true, \"facts\": {\"operation_permit\": 0.0, \"fixed_pollution_source\": 1.0}, \"expected\": \"violation\"}, {\"got\": \"not_applicable\", \"agree\": true, \"facts\": {\"operation_permit\": 1.0, \"fixed_pollution_source\": 0.0}, \"expected\":"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"遺漏引文中的申請機關：原文為「向直轄市、縣（市）主管機關或經中央主管機關委託之機關申請」，標註的行為僅寫「申請及取得操作許可證」，未保留申請向誰，未完全反映引文內容。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"遺漏引文中的申請機關：原文為「向直轄市、縣（市）主管機關或經中央主管機關委託之機關申請」，標註的行為僅寫「申請及取得操作許可證」，未保留申請向誰，未完全反映引文內容。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 13,
+   "law": "O0020001",
+   "path": "art_24/para_3",
+   "quote": "直轄市、縣（市）主管機關或經中央主管機關委託之機關，應於前二項許可證核發前，將申請資料登載於公開網站，供民眾查詢並表示意見，作為核發許可證之參考。",
+   "whole_unit": true,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "直轄市、縣（市）主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "subject",
+     "alternative": 2,
+     "literal": "經中央主管機關委託之機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "將申請資料登載於公開網站",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "申請資料",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "medium",
+     "alternative": 1,
+     "literal": "公開網站",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 9,
+     "role": "scope",
+     "clause": 1,
+     "concept": "public_website_disclosure",
+     "label": "將申請資料登載於公開網站",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": "次",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 10,
+     "role": "duty",
+     "clause": 1,
+     "concept": "public_website_disclosure",
+     "label": "將申請資料登載於公開網站",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "fail",
+     "evidence": "{\"checks\": [{\"ok\": false, \"what\": \"threshold\", \"value\": \"1.000\", \"in_text\": [2]}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "inconclusive",
+     "evidence": "{\"reason\": \"two conditions share one concept\"}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"agree\": 1, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"public_website_disclosure\": 1.0}, \"expected\": \"compliant\"}, {\"got\": \"not_applicable\", \"agree\": false, \"facts\": {\"public_website_disclosure\": 0.0}, \"expected\": \"violation\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\"public_website_disclosure\": 1.0}, \"expected\": \"not_applicable\"}, {\"got\": \"not_applicable\", \"agree\": false, \"f"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"未將「於前二項許可證核發前」列為義務要件，原文限定登載時機僅在許可證核發前，標註遺漏此時效條件。\", \"未反映「供民眾查詢並表示意見，作為核發許可證之參考」之目的與作為參考的使用方式，屬於原文義務內容。\", \"在適用範圍與義務內容中加入「等於 1.000次」之次數要求，原文並無頻次或次數限制，屬於未依原文的添加。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"標註描述中出現「適用範圍（皆須成立）」與「義務內容（皆須成立）」的條件敘述，但原文並未明確規定任何門檻值（如1.000次）或「非」條件，此為添加內容；此外，標註描述未明確對應原文的「作為核發許可證之參考」部分，"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 14,
+   "law": "O0020001",
+   "path": "art_86/para_4",
+   "quote": "前三項追繳，由為裁處之各級主管機關以行政處分為之",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "為裁處之各級主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "追繳",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "medium",
+     "alternative": 1,
+     "literal": "行政處分",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"標註種類應為 sanction（罰則）而非構成性陳述（constitutive），因原文為追繳違反義務所得利益的處分依據，屬於罰則條款；且未標註其效果為 disgorgement（追繳利益）\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"標註種類應為 sanction（罰則）而非構成性陳述（constitutive），因原文為追繳違反義務所得利益的處分依據，屬於罰則條款；且未標註其效果為 disgorgement（追繳利益）\"], \"faithful\": false}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 15,
+   "law": "O0020001",
+   "path": "art_86/para_4",
+   "quote": "所稱利益得包括積極利益及應支出而未支出或減少支出之消極利益",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "所稱利益",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "包括",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "積極利益",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 2,
+     "literal": "應支出而未支出或減少支出之消極利益",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"標註種類應為 constitutive（定義、適用範圍、授權），而非「構成性陳述（授權、定義、限值）」；原文「所稱利益得包括……」屬於定義性質，非單純構成性陳述\", \"標註描述中未明確標示「得」係中央主管機關之授權訂定，而原文「其核算及推估辦法，由中央主管機關定之」為授權（constitutive）之依據，標註應補充此點\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"標註種類應為 constitutive（定義、適用範圍、授權），而非「構成性陳述（授權、定義、限值）」；原文「所稱利益得包括……」屬於定義性質，非單純構成性陳述\", \"標註描述中未明確標示「得」係中央主管機關之授權訂定，而原文「其核算及推估辦法，由中央主管機關定之」為授權（constitutive）之依據，標註應補充此點\"], \"faithful\": false}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 16,
+   "law": "O0020001",
+   "path": "art_86/para_4",
+   "quote": "其核算及推估辦法，由中央主管機關定之",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "中央主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "定之",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "核算及推估辦法",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"「其核算及推估辦法，由中央主管機關定之」屬於授權（constitutive）而非構成性陳述（constitutive 通常指定義、適用範圍等，授權主管機關訂定辦法應歸類為授權性質）；且未標註其前提「前三項追繳」的事實要件，違反約定 A 的前提需求\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"「其核算及推估辦法，由中央主管機關定之」屬於授權（constitutive）而非構成性陳述（constitutive 通常指定義、適用範圍等，授權主管機關訂定辦法應歸類為授權性質）；且未標註其前提「前三項追繳」的事實要件，違反約定 A 的前提需求\"], \"faithful\": false}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 17,
+   "law": "O0020001",
+   "path": "art_93/para_1",
+   "quote": "公私場所違反本法或依本法授權訂定之相關命令而各級主管機關疏於執行時，受害人民或公益團體得敘明疏於執行之具體內容，以書面告知各級主管機關。",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "permission",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "受害人民",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "subject",
+     "alternative": 2,
+     "literal": "公益團體",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "敘明疏於執行之具體內容，以書面告知各級主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "各級主管機關",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 11,
+     "role": "scope",
+     "clause": 1,
+     "concept": "public_private_premises",
+     "label": "公私場所",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": "次",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 12,
+     "role": "scope",
+     "clause": 1,
+     "concept": "competent_authority",
+     "label": "主管機關",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": "次",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "fail",
+     "evidence": "{\"checks\": [{\"ok\": false, \"what\": \"threshold\", \"value\": \"1.000\", \"in_text\": []}, {\"ok\": false, \"what\": \"threshold\", \"value\": \"1.000\", \"in_text\": []}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2018-08-03\", \"cases\": [{\"got\": \"compliant\", \"case\": \"scope holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"public_private_premises not met\", \"expected\": \"not_applicable\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"competent_authority not met\", \"expected\": \"not_applicable\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"遺漏要件：引文中的前提「公私場所違反本法或依本法授權訂定之相關命令」與「各級主管機關疏於執行」未在標註中體現，適用範圍僅列出「公私場所 等於 1.000次」、「主管機關 等於 1.000次」，未表達違反義務與疏於執行這兩個構成許可成立的法律要件。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"許可（permission）的種類判斷錯誤：原文中的「得」係授權人民向主管機關提出書面告知，屬於憲法上之「訴願前置程序」或「訴訟前置要件」的構成要件，而非單純的許可（permission）。此處應為 constitutive（適用範圍/程序要件）而非 prescriptive "
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 18,
+   "law": "O0020001",
+   "path": "art_93/para_1",
+   "quote": "各級主管機關於書面告知送達之日起六十日內仍未依法執行者，受害人民或公益團體得以該主管機關為被告，對其怠於執行職務之行為，直接向行政法院提起訴訟，請求判令其執行。",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "permission",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "受害人民",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "subject",
+     "alternative": 2,
+     "literal": "公益團體",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "以該主管機關為被告，對其怠於執行職務之行為，直接向行政法院提起訴訟，請求判令其執行",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "該主管機關",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 13,
+     "role": "scope",
+     "clause": 1,
+     "concept": "competent_authority",
+     "label": "主管機關",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": "次",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "fail",
+     "evidence": "{\"checks\": [{\"ok\": false, \"what\": \"threshold\", \"value\": \"1.000\", \"in_text\": [60]}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2018-08-03\", \"cases\": [{\"got\": \"compliant\", \"case\": \"scope holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"competent_authority not met\", \"expected\": \"not_applicable\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"引文中的要件「書面告知送達之日起六十日內仍未依法執行」未正確反映，標註的「適用範圍」改為「主管機關 等於 1.000次」，既非原文語意，亦添加了原文不存在的「1.000次」門檻。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"種類誤判為「許可」（permission）而非「授權」（constitutive）；本文為人民得對主管機關怠於執行職務提起訴訟之授權規定，非許可性質\", \"要件缺漏「書面告知送達之日起六十日內仍未依法執行」\", \"未標註「效果」為「得提起訴訟」\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 19,
+   "law": "O0020001",
+   "path": "art_93/para_2",
+   "quote": "行政法院為前項判決時，得依職權判命被告機關支付適當律師費用、偵測鑑定費用或其他訴訟費用予對維護空氣品質有具體貢獻之原告",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "行政法院",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "判命支付",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "適當律師費用",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 2,
+     "literal": "偵測鑑定費用",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 3,
+     "literal": "其他訴訟費用",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 14,
+     "role": "scope",
+     "clause": 1,
+     "concept": "administrative_court",
+     "label": "行政法院",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 15,
+     "role": "scope",
+     "clause": 1,
+     "concept": "plaintiff",
+     "label": "原告",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": true,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"種類應為 prescriptive（法院得依職權判命之許可），而非 constitutive 授權；原文並非授權主管機關訂定或指定規則。\", \"遺漏要件「為前項判決時」，未列為適用範圍成立條件。\", \"遺漏原告要件「對維護空氣品質有具體貢獻」，僅標註「原告」，縮減了原文門檻。\", \"遺漏行為態樣「依職權」，未反映法院是職權主導。\", \"對象「偵測鑑定費用或其他訴訟費用」在原文中以「或」連接（替代關係），標註僅列為三個獨立對象，未反映選擇關係。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"陳述種類誤判為「構成性陳述（授權、定義、限值）」而非「授權（constitut"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 20,
+   "law": "O0020001",
+   "path": "art_93/para_3",
+   "quote": "第一項之書面告知格式，由中央主管機關會商有關機關定之。",
+   "whole_unit": true,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "中央主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "定之",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "第一項之書面告知格式",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"主體不完整：原文授權主體為「中央主管機關會商有關機關」，標註僅列「中央主管機關」，遺漏「會商有關機關」及其會商關係，未忠實反映原文。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"主體不完整：原文授權主體為「中央主管機關會商有關機關」，標註僅列「中央主管機關」，遺漏「會商有關機關」及其會商關係，未忠實反映原文。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 21,
+   "law": "O0120001",
+   "path": "art_24-1/para_1",
+   "quote": "本法所定環境講習時數，其執行方式，由中央主管機關定之。",
+   "whole_unit": true,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "confirmed",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "中央主管機關",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "定之",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "本法所定環境講習時數，其執行方式",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "pass",
+     "evidence": "{\"action\": \"confirmed\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 22,
+   "law": "O0020031",
+   "path": "art_5/para_1",
+   "quote": "本標準戴奧辛之排放標準值為○．一ng-TEQ/Nm3。",
+   "whole_unit": true,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [],
+   "conditions": [
+    {
+     "id": 16,
+     "role": "duty",
+     "clause": 1,
+     "concept": "dioxin",
+     "label": "戴奧辛",
+     "comparator": "le",
+     "threshold": 0.1,
+     "unit": "ng-TEQ/Nm3",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "fail",
+     "evidence": "{\"checks\": [{\"ok\": false, \"what\": \"threshold\", \"value\": \"0.100\", \"in_text\": [1, 3]}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "fail",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\", \"differences\": {\"conditions\": {\"roundtrip\": [[\"limit\", \"[dioxin]\", \"le\", 0.1, false, false]], \"annotation\": [[\"duty\", \"dioxin\", \"le\", 0.1, false, false]]}}}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 23,
+   "law": "O0020031",
+   "path": "art_5/para_2",
+   "quote": "採樣及測定應達五次以上",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "採樣及測定",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 17,
+     "role": "duty",
+     "clause": 1,
+     "concept": "sampling_measurement",
+     "label": "採樣及測定",
+     "comparator": "ge",
+     "threshold": 5,
+     "unit": "次",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "pass",
+     "evidence": "{\"checks\": [{\"ok\": true, \"what\": \"threshold\", \"value\": \"5.000\", \"in_text\": [5]}, {\"ok\": true, \"what\": \"bound\", \"value\": \"5\", \"words\": [\"以上\"], \"comparator\": \"ge\"}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"agree\": 3, \"cases\": [{\"got\": \"violation\", \"agree\": true, \"facts\": {\"sampling_measurement\": 4.0}, \"expected\": \"violation\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"sampling_measurement\": 5.0}, \"expected\": \"compliant\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"sampling_measurement\": 6.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": false, \"facts\": {\"sampling_measurement\": "
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"義務方向錯誤：原文為「應達五次以上」，標註描述卻寫為「不小於 5.000次」，未忠實呈現「以上」的門檻意涵（即≥5次），且未標註「以上」的條件\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"agree\": 3, \"cases\": [{\"got\": \"violation\", \"agree\": true, \"facts\": {\"sampling_measurement\": 4.0}, \"expected\": \"violation\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"sampling_measurement\": 5.0}, \"expected\": \"compliant\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"sampling_measurement\": 6.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": false, \"facts\": {\"sampling_measurement\": "
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"義務方向錯誤：原文為「應達五次以上」，標註描述卻寫為「不小於 5.000次」，未忠實呈現「以上」的門檻意涵（即≥5次），且未標註「以上」的條件\"], \"faithful\": false}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 24,
+   "law": "O0020031",
+   "path": "art_5/para_2",
+   "quote": "將其依大小排序取中間三數值之算術平均值",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "依大小排序取中間三數值之算術平均值",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"引文僅為「將其依大小排序取中間三數值之算術平均值」，但標註描述將整段陳述歸為「構成性陳述（授權、定義、限值）」且未明確對應引文內容，未直接反映引文的計算方法規定\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"引文僅為「將其依大小排序取中間三數值之算術平均值」，但標註描述將整段陳述歸為「構成性陳述（授權、定義、限值）」且未明確對應引文內容，未直接反映引文的計算方法規定\"], \"faithful\": false}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 25,
+   "law": "O0020031",
+   "path": "art_5/para_2",
+   "quote": "每次採樣時間應間隔一小時以上",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "採樣時間間隔",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 18,
+     "role": "duty",
+     "clause": 1,
+     "concept": "sampling_measurement",
+     "label": "採樣及測定",
+     "comparator": "ge",
+     "threshold": 1,
+     "unit": "小時",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "pass",
+     "evidence": "{\"checks\": [{\"ok\": true, \"what\": \"threshold\", \"value\": \"1.000\", \"in_text\": [1]}, {\"ok\": true, \"what\": \"bound\", \"value\": \"1\", \"words\": [\"以上\"], \"comparator\": \"ge\"}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"agree\": 4, \"cases\": [{\"got\": \"violation\", \"agree\": true, \"facts\": {\"sampling_measurement\": 0.5}, \"expected\": \"violation\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"sampling_measurement\": 1.5}, \"expected\": \"compliant\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\"sampling_measurement\": 1.0}, \"expected\": \"violation\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"sampling_measurement\": "
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"引文「每次採樣時間應間隔一小時以上」規範的是兩次採樣之間的時間間隔至少一小時，但標註的義務內容寫成「採樣及測定」不小於 1.000 小時，將間隔要求誤寫為採樣/測定動作本身的持續時間，與引文不符。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"義務方向錯誤：原文為「應間隔一小時以上」，即義務方向為 prohibition（禁止間隔不足一小時），而非 obligation（應為之義務）；標註誤植為 obligation。\", \"要件遺漏：原文未明確設定門檻值（如「不小於 1.000小時」），標註自行添加門檻值「不小於 1.000小時」。\"], \"faithful\": "
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 26,
+   "law": "O0020031",
+   "path": "art_7/para_1",
+   "quote": "焚化爐之操作運轉應符合下列條件：",
+   "whole_unit": true,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "焚化爐之操作運轉",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 19,
+     "role": "duty",
+     "clause": 1,
+     "concept": "incinerator_operation",
+     "label": "焚化爐操作運轉",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"agree\": 1, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"incinerator_operation\": 1.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": false, \"facts\": {\"incinerator_operation\": 0.0}, \"expected\": \"not_applicable\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\"incinerator_operation\": 1.0}, \"expected\": \"undetermined\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\"incinerato"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"原文義務內容為「操作運轉應符合下列條件」，標註卻將義務內容寫成「焚化爐操作運轉 成立」，與原文不符，並添加了原文未有的「成立」要件。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"agree\": 1, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"incinerator_operation\": 1.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": false, \"facts\": {\"incinerator_operation\": 0.0}, \"expected\": \"not_applicable\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\"incinerator_operation\": 1.0}, \"expected\": \"undetermined\"}, {\"got\": \"compliant\", \"agree\": false, \"facts\": {\"incinerato"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"原文義務內容為「操作運轉應符合下列條件」，標註卻將義務內容寫成「焚化爐操作運轉 成立」，與原文不符，並添加了原文未有的「成立」要件。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 27,
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_1",
+   "quote": "二次空氣注入口下游燃燒溫度一小時平均值不得低於攝氏八百五十度。",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "prohibition",
+   "state": "confirmed",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "焚化爐",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "二次空氣注入口下游燃燒溫度一小時平均值",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 20,
+     "role": "duty",
+     "clause": 1,
+     "concept": "combustion_temperature_downstream_secondary_air",
+     "label": "二次空氣注入口下游燃燒溫度一小時平均值",
+     "comparator": "ge",
+     "threshold": 850,
+     "unit": "攝氏度",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "pass",
+     "evidence": "{\"checks\": [{\"ok\": true, \"what\": \"threshold\", \"value\": \"850.000\", \"in_text\": [1, 2, 850]}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"violation\", \"case\": \"duty holds\", \"expected\": \"violation\", \"problems\": []}, {\"got\": \"compliant\", \"case\": \"duty broken\", \"expected\": \"compliant\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "pass",
+     "evidence": "{\"action\": \"confirmed\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 28,
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_2",
+   "quote": "氣體滯留時間既存焚化爐應達一秒以上",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "既存焚化爐",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "氣體滯留時間",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 21,
+     "role": "scope",
+     "clause": 1,
+     "concept": "existing_incinerator",
+     "label": "既存焚化爐",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 22,
+     "role": "duty",
+     "clause": 1,
+     "concept": "gas_retention_time",
+     "label": "氣體滯留時間",
+     "comparator": "ge",
+     "threshold": 1,
+     "unit": "秒",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "pass",
+     "evidence": "{\"checks\": [{\"ok\": true, \"what\": \"threshold\", \"value\": \"1.000\", \"in_text\": [1]}, {\"ok\": true, \"what\": \"bound\", \"value\": \"1\", \"words\": [\"以上\"], \"comparator\": \"ge\"}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"existing_incinerator not met\", \"expected\": \"not_applicable\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "fail",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\", \"differences\": {\"conditions\": {\"roundtrip\": [[\"duty\", \"gas_retention_time\", \"ge\", 1.0, false, true], [\"scope\", \"existing_incinerator\", \"eq\", 1.0, false, true]], \"annotation\": [[\"duty\", \"gas_retention_time\", \"ge\", 1.0, false, false], [\"scope\", \"existing_incinerator\", \"eq\", 1.0, false, false]]}}}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"agree\": 7, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"gas_retention_time\": 1.5, \"existing_incinerator\": 1.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": true, \"facts\": {\"gas_retention_time\": 0.9, \"existing_incinerator\": 1.0}, \"expected\": \"violation\"}, {\"got\": \"not_applicable\", \"agree\": true, \"facts\": {\"gas_retention_time\": 2.0, \"existing_incinerator\": 0.0}, \"expected\":"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 29,
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_2",
+   "quote": "新設焚化爐應達二秒以上",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "新設焚化爐",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "氣體滯留時間",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 23,
+     "role": "scope",
+     "clause": 1,
+     "concept": "new_incinerator",
+     "label": "新設焚化爐",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 24,
+     "role": "duty",
+     "clause": 1,
+     "concept": "gas_retention_time",
+     "label": "氣體滯留時間",
+     "comparator": "ge",
+     "threshold": 2,
+     "unit": "秒",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "pass",
+     "evidence": "{\"checks\": [{\"ok\": true, \"what\": \"threshold\", \"value\": \"2.000\", \"in_text\": [2]}, {\"ok\": true, \"what\": \"bound\", \"value\": \"2\", \"words\": [\"以上\"], \"comparator\": \"ge\"}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"new_incinerator not met\", \"expected\": \"not_applicable\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"agree\": 6, \"cases\": [{\"got\": \"violation\", \"agree\": true, \"facts\": {\"new_incinerator\": 1.0, \"gas_retention_time\": 1.5}, \"expected\": \"violation\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"new_incinerator\": 1.0, \"gas_retention_time\": 2.0}, \"expected\": \"compliant\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"new_incinerator\": 1.0, \"gas_retention_time\": 3.0}, \"expected\": \"compliant\"}, {\"got"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"主體認定有誤：依整個單元，主語為「氣體滯留時間」，「新設焚化爐」僅為適用範圍修飾，不應列為主體，且與適用範圍重複。\", \"門檻值添加了原文無的精度：原文為「二秒」，標註寫成「2.000秒」，屬於添加。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"主體認定有誤：依整個單元，主語為「氣體滯留時間」，「新設焚化爐」僅為適用範圍修飾，不應列為主體，且與適用範圍重複。\", \"門檻值添加了原文無的精度：原文為「二秒」，標註寫成「2.000秒」，屬於添加。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 30,
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_3",
+   "quote": "煙道出口一氧化碳（CO）一小時動平均值應低於一○○ ppm",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "焚化爐",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "低於",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "一氧化碳（CO）一小時動平均值",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 25,
+     "role": "scope",
+     "clause": 1,
+     "concept": "incinerator",
+     "label": "焚化爐",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 26,
+     "role": "duty",
+     "clause": 1,
+     "concept": "co_hourly_avg",
+     "label": "煙道出口一氧化碳一小時動平均值",
+     "comparator": "lt",
+     "threshold": 100,
+     "unit": "ppm",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "fail",
+     "evidence": "{\"checks\": [{\"ok\": false, \"what\": \"threshold\", \"value\": \"100.000\", \"in_text\": [1]}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"incinerator not met\", \"expected\": \"not_applicable\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"agree\": 7, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"incinerator\": 1.0, \"co_hourly_avg\": 99.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": true, \"facts\": {\"incinerator\": 1.0, \"co_hourly_avg\": 101.0}, \"expected\": \"violation\"}, {\"got\": \"not_applicable\", \"agree\": true, \"facts\": {\"incinerator\": 0.0, \"co_hourly_avg\": 150.0}, \"expected\": \"not_applicable\"}, {\"got\": \"violatio"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 31,
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_3",
+   "quote": "排氣含氧量以十％為參考基準。",
+   "whole_unit": false,
+   "kind": "constitutive",
+   "deontic": null,
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "排氣含氧量",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "以十％為參考基準",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 27,
+     "role": "scope",
+     "clause": 1,
+     "concept": "exhaust_oxygen_content",
+     "label": "排氣含氧量",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"適用範圍多列「排氣含氧量 成立」為獨立成立要件，原文引文並未將「排氣含氧量」本身作為須成立的條件，僅以其為陳述主體，屬於添加。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"「構成性陳述（授權、定義、限值）」的種類判斷錯誤：原文僅為「以十％為參考基準」，並非授權、定義或限值，而是單純的數值參考基準，應為構成性陳述（適用範圍或條件設定）而非限值\", \"「行為」描述不精確：原文未明確表示「行為」，僅為數值參考基準，標註描述添加了不存在的行為成分\", \"「適用範圍」的條件要件不完整：原文未明確表示「[exhaust_oxygen_content] 排氣含氧量 成立」為適用"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 32,
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_4",
+   "quote": "排氣中含氧量應達六％以上。",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "焚化爐",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "排氣中含氧量",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 28,
+     "role": "scope",
+     "clause": 1,
+     "concept": "incinerator",
+     "label": "焚化爐",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 29,
+     "role": "duty",
+     "clause": 1,
+     "concept": "oxygen_content",
+     "label": "排氣中含氧量",
+     "comparator": "ge",
+     "threshold": 6,
+     "unit": "%",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "pass",
+     "evidence": "{\"checks\": [{\"ok\": true, \"what\": \"threshold\", \"value\": \"6.000\", \"in_text\": [6]}, {\"ok\": true, \"what\": \"bound\", \"value\": \"6\", \"words\": [\"以上\"], \"comparator\": \"ge\"}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"incinerator not met\", \"expected\": \"not_applicable\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"agree\": 6, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"incinerator\": 1.0, \"oxygen_content\": 6.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": true, \"facts\": {\"incinerator\": 1.0, \"oxygen_content\": 5.9}, \"expected\": \"violation\"}, {\"got\": \"not_applicable\", \"agree\": true, \"facts\": {\"incinerator\": 0.0, \"oxygen_content\": 6.0}, \"expected\": \"not_applicable\"}, {\"got\": \"compliant\""
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"引文「排氣中含氧量應達六％以上。」並未出現「焚化爐」，標註將「焚化爐」列為主體與適用範圍條件，屬於從上層條文添加的資訊；\", \"門檻值原文為「六％」，標註寫為「6.000%」，多出小數點後三位，屬於添加原文未有的精度。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"引文「排氣中含氧量應達六％以上。」並未出現「焚化爐」，標註將「焚化爐」列為主體與適用範圍條件，屬於從上層條文添加的資訊；\", \"門檻值原文為「六％」，標註寫為「6.000%」，多出小數點後三位，屬於添加原文未有的精度。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 33,
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_5",
+   "quote": "集塵設備入口廢氣溫度既存焚化爐應在攝氏二八○度以下",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "既存焚化爐",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "集塵設備入口廢氣溫度",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 30,
+     "role": "scope",
+     "clause": 1,
+     "concept": "existing_incinerator",
+     "label": "既存焚化爐",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 31,
+     "role": "duty",
+     "clause": 1,
+     "concept": "dust_collector_inlet_gas_temperature",
+     "label": "集塵設備入口廢氣溫度",
+     "comparator": "le",
+     "threshold": 280,
+     "unit": "攝氏度",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "fail",
+     "evidence": "{\"checks\": [{\"ok\": false, \"what\": \"threshold\", \"value\": \"280.000\", \"in_text\": [8]}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"existing_incinerator not met\", \"expected\": \"not_applicable\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"agree\": 7, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"existing_incinerator\": 1.0, \"dust_collector_inlet_gas_temperature\": 250.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": true, \"facts\": {\"existing_incinerator\": 1.0, \"dust_collector_inlet_gas_temperature\": 300.0}, \"expected\": \"violation\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"existing_incinerator\": 1.0, \"dus"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"標註描述中未包含「新設焚化爐應在攝氏二○○度以下」的部分，違反「一個單元常被拆成幾個陳述，每個陳述只對應其中一段引文」的原則，導致遺漏原文內容\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 34,
+   "law": "O0020031",
+   "path": "art_7/para_1/pt_5",
+   "quote": "新設焚化爐應在攝氏二○○度以下",
+   "whole_unit": false,
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "新設焚化爐",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "object",
+     "alternative": 1,
+     "literal": "集塵設備入口廢氣溫度",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 32,
+     "role": "scope",
+     "clause": 1,
+     "concept": "new_incinerator",
+     "label": "新設焚化爐",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 33,
+     "role": "duty",
+     "clause": 1,
+     "concept": "dust_collector_inlet_gas_temperature",
+     "label": "集塵設備入口廢氣溫度",
+     "comparator": "le",
+     "threshold": 200,
+     "unit": "攝氏度",
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "fail",
+     "evidence": "{\"checks\": [{\"ok\": false, \"what\": \"threshold\", \"value\": \"200.000\", \"in_text\": [2]}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"violation\", \"case\": \"duty broken\", \"expected\": \"violation\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"new_incinerator not met\", \"expected\": \"not_applicable\", \"problems\": []}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "pass",
+     "evidence": "{\"agree\": 7, \"cases\": [{\"got\": \"compliant\", \"agree\": true, \"facts\": {\"new_incinerator\": 1.0, \"dust_collector_inlet_gas_temperature\": 180.0}, \"expected\": \"compliant\"}, {\"got\": \"violation\", \"agree\": true, \"facts\": {\"new_incinerator\": 1.0, \"dust_collector_inlet_gas_temperature\": 220.0}, \"expected\": \"violation\"}, {\"got\": \"compliant\", \"agree\": true, \"facts\": {\"new_incinerator\": 1.0, \"dust_collector_inl"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [], \"faithful\": true}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"陳述種類誤判為規範性（prescriptive）而非構成性（constitutive）；原文為適用範圍之構成要件，非義務性規範\", \"主體與對象標註錯誤：原文僅描述「新設焚化爐」之溫度門檻，未明確指向「集塵設備入口廢氣溫度」為義務對象\", \"適用範圍標註為條件（[new_incinerator] 成立）而非門檻值，且未直接對應原文「應在攝氏二○○度以下」之構成要件\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 35,
+   "law": "O0020031",
+   "path": "art_7/para_2",
+   "quote": "焚化爐不採前項操作運轉條件仍可達相同處理效果者，得檢具相關證明文件向當地主管機關申請依不同條件操作運轉。",
+   "whole_unit": true,
+   "kind": "prescriptive",
+   "deontic": "permission",
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [
+    {
+     "role": "subject",
+     "alternative": 1,
+     "literal": "焚化爐",
+     "concept": null,
+     "liability": null
+    },
+    {
+     "role": "action",
+     "alternative": 1,
+     "literal": "檢具相關證明文件向當地主管機關申請依不同條件操作運轉",
+     "concept": null,
+     "liability": null
+    }
+   ],
+   "conditions": [
+    {
+     "id": 34,
+     "role": "scope",
+     "clause": 1,
+     "concept": "incinerator",
+     "label": "焚化爐",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 35,
+     "role": "scope",
+     "clause": 1,
+     "concept": "operation_condition",
+     "label": "操作運轉條件",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": true,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 36,
+     "role": "duty",
+     "clause": 1,
+     "concept": "application_for_different_operation",
+     "label": "申請依不同條件操作運轉",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": null,
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2003-08-20\", \"cases\": [{\"got\": \"compliant\", \"case\": \"duty holds\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"compliant\", \"case\": \"duty broken\", \"expected\": \"compliant\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"incinerator not met\", \"expected\": \"not_applicable\", \"problems\": []}, {\"got\": \"not_applicable\", \"case\": \"operation_condition not met\", \"expected\": \"not_applicabl"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "fail",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\", \"differences\": {\"conditions\": {\"roundtrip\": [[\"duty\", \"[application_for_different_operation]\", \"eq\", 1.0, false, false], [\"scope\", \"[incinerator]\", \"eq\", 1.0, false, false], [\"scope\", \"[operation_condition]\", \"eq\", 1.0, true, false]], \"annotation\": [[\"duty\", \"application_for_different_operation\", \"eq\", 1.0, false, false], [\"scope\", \"incinerator\", \"eq\", "
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"遺漏要件：原文「仍可達相同處理效果」為適用條件之一，標註未將此條件列為須成立的要件，僅列「不採操作運轉條件」，與引文不符。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"陳述種類應為授權（constitutive）而非許可（permission）。原文中的「得」係主管機關得以訂定或指定不同操作條件，屬授權性質（憲法第172條、地方制度法第2條參照），非許可性質。\", \"未標註「主管機關」為義務方向的主體，原文係由焚化爐向主管機關申請，主體應為焚化爐而非主管機關。\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 36,
+   "law": "O0040001",
+   "path": "art_40/para_1",
+   "quote": "並通知限期改善",
+   "whole_unit": false,
+   "kind": "sanction",
+   "deontic": null,
+   "state": "extracted",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [],
+   "conditions": [
+    {
+     "id": 37,
+     "role": "scope",
+     "clause": 1,
+     "concept": "enterprise",
+     "label": "事業",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": {
+    "effect": "order",
+    "min": null,
+    "max": null,
+    "repeating": false,
+    "discretionary": false,
+    "amount_text": null,
+    "punished_id": 5,
+    "punished": "O0040001 art_8"
+   },
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "inconclusive",
+     "evidence": "{\"cited\": [\"art_7/para_1\", \"art_8\"], \"reason\": \"the punished statement is not yet confirmed\", \"target\": \"art_8\", \"unresolved\": []}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2018-06-13\", \"cases\": [{\"got\": \"candidate\", \"case\": \"scope holds\", \"expected\": \"candidate\"}, {\"got\": \"absent\", \"case\": \"enterprise not met\", \"expected\": \"absent\"}, {\"got\": \"conditional\", \"case\": \"scope unknown\", \"expected\": \"conditional\"}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"適用範圍僅列「事業」，遺漏原文主體「汙水下水道系統」（原文為「事業或汙水下水道系統」），與單元主體不符。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "inconclusive",
+     "evidence": "{\"cited\": [\"art_7/para_1\", \"art_8\"], \"reason\": \"the punished statement is not yet confirmed\", \"target\": \"art_8\", \"unresolved\": []}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "inconclusive",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"適用範圍僅列「事業」，遺漏原文主體「汙水下水道系統」（原文為「事業或汙水下水道系統」），與單元主體不符。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [], \"faithful\": true}], \"skipped\": []}"
+    }
+   ]
+  },
+  {
+   "id": 37,
+   "law": "O0040001",
+   "path": "art_40/para_1",
+   "quote": "屆期仍未完成改善者，按次處罰",
+   "whole_unit": false,
+   "kind": "sanction",
+   "deontic": null,
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [],
+   "conditions": [
+    {
+     "id": 38,
+     "role": "scope",
+     "clause": 1,
+     "concept": "enterprise",
+     "label": "事業",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": {
+    "effect": "fine",
+    "min": 60000,
+    "max": 20000000,
+    "repeating": true,
+    "discretionary": false,
+    "amount_text": "新臺幣六萬元以上二千萬元以下",
+    "punished_id": 5,
+    "punished": "O0040001 art_8"
+   },
+   "triggers": [
+    {
+     "kind": "order_lapsed",
+     "statement_id": 36,
+     "target": "O0040001 art_40/para_1",
+     "target_effect": "order"
+    }
+   ],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "fail",
+     "evidence": "{\"checks\": [{\"ok\": true, \"what\": \"amount_text\", \"value\": \"新臺幣六萬元以上二千萬元以下\"}, {\"ok\": false, \"text\": [], \"what\": \"amounts\", \"stored\": [60000, 20000000]}, {\"ok\": false, \"text\": null, \"what\": \"min\", \"stored\": 60000}, {\"ok\": false, \"text\": null, \"what\": \"max\", \"stored\": 20000000}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "inconclusive",
+     "evidence": "{\"cited\": [\"art_7/para_1\", \"art_8\"], \"reason\": \"the punished statement is not yet confirmed\", \"target\": \"art_8\", \"unresolved\": []}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2018-06-13\", \"cases\": [{\"got\": \"candidate\", \"case\": \"scope holds\", \"expected\": \"candidate\"}, {\"got\": \"absent\", \"case\": \"enterprise not met\", \"expected\": \"absent\"}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"引文「屆期仍未完成改善者，按次處罰」並未載明罰鍰額度，標註卻將「60000 至 20000000」列為該陳述額度，該額度屬於前一個罰鍰陳述，屬於添加。\", \"適用範圍僅列「事業」，遺漏單元主體「汙水下水道系統」。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"罰則效果應分拆為兩個獨立陳述：一為初次罰鍰（效果 fine、額度 60000 至 20000000），另一為按次處罰（效果 fine、repeating 為 true）。標註將兩者合併為單一陳述，且未明確標註按次處罰的前提為「屆期仍未完成改善」係以同一句之限期改善（effect order）為觸發條件（trig"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 38,
+   "law": "O0040001",
+   "path": "art_40/para_1",
+   "quote": "情節重大者，得令其停工或停業",
+   "whole_unit": false,
+   "kind": "sanction",
+   "deontic": null,
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [],
+   "conditions": [
+    {
+     "id": 39,
+     "role": "scope",
+     "clause": 1,
+     "concept": "enterprise",
+     "label": "事業",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": true,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": {
+    "effect": "restriction",
+    "min": null,
+    "max": null,
+    "repeating": false,
+    "discretionary": true,
+    "amount_text": null,
+    "punished_id": 5,
+    "punished": "O0040001 art_8"
+   },
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "inconclusive",
+     "evidence": "{\"cited\": [\"art_7/para_1\", \"art_8\"], \"reason\": \"the punished statement is not yet confirmed\", \"target\": \"art_8\", \"unresolved\": []}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "pass",
+     "evidence": "{\"as_of\": \"2018-06-13\", \"cases\": [{\"got\": \"candidate\", \"case\": \"scope holds\", \"expected\": \"candidate\"}, {\"got\": \"absent\", \"case\": \"enterprise not met\", \"expected\": \"absent\"}, {\"got\": \"conditional\", \"case\": \"scope unknown\", \"expected\": \"conditional\"}]}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"引文「情節重大者」是構成要件，標註的適用範圍未將「情節重大」列為必須成立的要件，僅列「事業」，遺漏必要條件；且「情節重大」才是需判斷的不確定法律概念，非「事業」。\", \"適用範圍僅列「事業」，未涵蓋本體主語「事業或汙水下水道系統」，引文中「其」的指涉對象不完整。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"「適用範圍（皆須成立）」應為「要件」而非「適用範圍」；\", \"「[enterprise] 事業 成立（需判斷）」應為「[enterprise] 事業或汙水下水道系統」而非僅「事業」；\", \"「得（裁量）」應為「得令其停工或停業」而非單純「得」；\", \"未標註「情"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 39,
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "quote": "畜牧業違反第七條第一項或第八條之規定者，處新臺幣六千元以上六十萬元以下罰鍰",
+   "whole_unit": false,
+   "kind": "sanction",
+   "deontic": null,
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [],
+   "conditions": [
+    {
+     "id": 40,
+     "role": "scope",
+     "clause": 1,
+     "concept": "livestock_industry",
+     "label": "畜牧業",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 41,
+     "role": "scope",
+     "clause": 1,
+     "concept": "violation_art7_para1",
+     "label": "違反第七條第一項",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 42,
+     "role": "scope",
+     "clause": 2,
+     "concept": "livestock_industry",
+     "label": "畜牧業",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 43,
+     "role": "scope",
+     "clause": 2,
+     "concept": "violation_art8",
+     "label": "違反第八條",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": {
+    "effect": "fine",
+    "min": 6000,
+    "max": 600000,
+    "repeating": false,
+    "discretionary": false,
+    "amount_text": "新臺幣六千元以上六十萬元以下",
+    "punished_id": 5,
+    "punished": "O0040001 art_8"
+   },
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "pass",
+     "evidence": "{\"checks\": [{\"ok\": true, \"what\": \"amount_text\", \"value\": \"新臺幣六千元以上六十萬元以下\"}, {\"ok\": true, \"text\": 6000, \"what\": \"min\", \"stored\": 6000}, {\"ok\": true, \"text\": 600000, \"what\": \"max\", \"stored\": 600000}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "inconclusive",
+     "evidence": "{\"cited\": [\"art_7/para_1\", \"art_8\"], \"reason\": \"the punished statement is not yet confirmed\", \"target\": \"art_8\", \"unresolved\": []}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "inconclusive",
+     "evidence": "{\"reason\": \"scope has several clauses (disjunction)\"}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "fail",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\", \"differences\": {\"conditions\": {\"roundtrip\": [[\"scope\", \"livestock_industry\", \"eq\", 1.0, false, false], [\"scope\", \"violation_art7_para1\", \"eq\", 1.0, false, false], [\"scope\", \"violation_art8\", \"eq\", 1.0, false, false]], \"annotation\": [[\"scope\", \"livestock_industry\", \"eq\", 1.0, false, false], [\"scope\", \"livestock_industry\", \"eq\", 1.0, false, false], [\"scop"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"原文「違反第七條第一項或第八條之規定者」以「或」連接，構成擇一成立要件；標註將「違反第七條第一項」與「違反第八條」並列於「皆須成立」之下，誤讀為必須同時成立（累積要件），未忠實反映引文的選擇關係。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"罰則效果應拆分為兩個獨立陳述：一為罰鍰（fine），另一為限期改善命令（order）。原文中的「並通知限期改善」屬於改善命令，非罰鍰效果；標註僅描述罰鍰效果，但忽略了限期改善命令的效果與其後續按次處罰的條件（屆期未改善）應為另一獨立陳述。\", \"標註未涵蓋後續條件「屆期仍未完成改善者，按次處罰」的效果與要件，違反約定 B 與 "
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 40,
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "quote": "並通知限期改善",
+   "whole_unit": false,
+   "kind": "sanction",
+   "deontic": null,
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [],
+   "conditions": [
+    {
+     "id": 44,
+     "role": "scope",
+     "clause": 1,
+     "concept": "livestock_industry",
+     "label": "畜牧業",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 45,
+     "role": "scope",
+     "clause": 1,
+     "concept": "violation_art7_para1",
+     "label": "違反第七條第一項",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 46,
+     "role": "scope",
+     "clause": 2,
+     "concept": "livestock_industry",
+     "label": "畜牧業",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 47,
+     "role": "scope",
+     "clause": 2,
+     "concept": "violation_art8",
+     "label": "違反第八條",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": {
+    "effect": "order",
+    "min": null,
+    "max": null,
+    "repeating": false,
+    "discretionary": false,
+    "amount_text": null,
+    "punished_id": 5,
+    "punished": "O0040001 art_8"
+   },
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "inconclusive",
+     "evidence": "{\"cited\": [\"art_7/para_1\", \"art_8\"], \"reason\": \"the punished statement is not yet confirmed\", \"target\": \"art_8\", \"unresolved\": []}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "inconclusive",
+     "evidence": "{\"reason\": \"scope has several clauses (disjunction)\"}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"適用範圍將「違反第七條第一項」與「違反第八條」標示為「皆須成立」，但原文為「違反第七條第一項或第八條」，二者為擇一關係，不應同時要求成立；\", \"適用範圍重複列出「[livestock_industry] 畜牧業 成立」；\", \"該引文「並通知限期改善」僅為限期改善命令，其主體與違規要件屬於單元前序條件，依指示應由其他陳述承擔，此處不應以「皆須成立」方式將第七條與第八條並列為本陳述要件。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"陳述種類應為「命令陳述」（constitutive）而非「罰則陳述」（sanction）；罰則效果應為 order 而非 sancti"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 41,
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "quote": "屆期仍未完成改善者，按次處罰",
+   "whole_unit": false,
+   "kind": "sanction",
+   "deontic": null,
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [],
+   "conditions": [
+    {
+     "id": 48,
+     "role": "scope",
+     "clause": 1,
+     "concept": "order_not_complied_after_deadline",
+     "label": "屆期仍未完成改善",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": {
+    "effect": "fine",
+    "min": 6000,
+    "max": 600000,
+    "repeating": true,
+    "discretionary": false,
+    "amount_text": "新臺幣六千元以上六十萬元以下",
+    "punished_id": 5,
+    "punished": "O0040001 art_8"
+   },
+   "triggers": [
+    {
+     "kind": "order_lapsed",
+     "statement_id": 40,
+     "target": "O0040001 art_40/para_2",
+     "target_effect": "order"
+    }
+   ],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "fail",
+     "evidence": "{\"checks\": [{\"ok\": true, \"what\": \"amount_text\", \"value\": \"新臺幣六千元以上六十萬元以下\"}, {\"ok\": false, \"text\": [], \"what\": \"amounts\", \"stored\": [6000, 600000]}, {\"ok\": false, \"text\": null, \"what\": \"min\", \"stored\": 6000}, {\"ok\": false, \"text\": null, \"what\": \"max\", \"stored\": 600000}]}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "inconclusive",
+     "evidence": "{\"cited\": [\"art_7/para_1\", \"art_8\"], \"reason\": \"the punished statement is not yet confirmed\", \"target\": \"art_8\", \"unresolved\": []}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "inconclusive",
+     "evidence": "{\"reason\": \"scope has several clauses (disjunction)\"}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"引文「屆期仍未完成改善者，按次處罰」本身並未載明罰鍰額度，標註卻加入「額度 6000 至 600000」，該金額屬於單元前段的罰鍰陳述，非本引文內容，屬於添加。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"罰鍰額度（6000 至 600000）不應出現在此陳述中，應屬於前一罰鍰效果的要件\", \"前提應為「屆期仍未完成改善」（kind 為 order_lapsed），而非「另一罰則 order 屆期未履行」\"], \"faithful\": false}], \"skipped\": []}"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  },
+  {
+   "id": 42,
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "quote": "情節重大者，得令其停工或停業",
+   "whole_unit": false,
+   "kind": "sanction",
+   "deontic": null,
+   "state": "rejected",
+   "producer": "meta:muse-spark-open",
+   "version": "realtest-before",
+   "slots": [],
+   "conditions": [
+    {
+     "id": 49,
+     "role": "scope",
+     "clause": 1,
+     "concept": "livestock_industry",
+     "label": "畜牧業",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 50,
+     "role": "scope",
+     "clause": 1,
+     "concept": "violation_art7_para1",
+     "label": "違反第七條第一項",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 51,
+     "role": "scope",
+     "clause": 1,
+     "concept": "circumstances_serious",
+     "label": "情節重大",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": true,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 52,
+     "role": "scope",
+     "clause": 2,
+     "concept": "livestock_industry",
+     "label": "畜牧業",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 53,
+     "role": "scope",
+     "clause": 2,
+     "concept": "violation_art8",
+     "label": "違反第八條",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": false,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    },
+    {
+     "id": 54,
+     "role": "scope",
+     "clause": 2,
+     "concept": "circumstances_serious",
+     "label": "情節重大",
+     "comparator": "eq",
+     "threshold": 1,
+     "unit": null,
+     "negated": false,
+     "judgement": true,
+     "value_concept": null,
+     "permit": null,
+     "permit_label": null,
+     "delegate": null,
+     "method": null,
+     "method_label": null,
+     "averaging": null,
+     "averaging_label": null
+    }
+   ],
+   "sanction": {
+    "effect": "restriction",
+    "min": null,
+    "max": null,
+    "repeating": false,
+    "discretionary": true,
+    "amount_text": null,
+    "punished_id": 5,
+    "punished": "O0040001 art_8"
+   },
+   "triggers": [],
+   "verifications": [
+    {
+     "method": "numbers",
+     "verifier": "gate:numbers@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "references",
+     "verifier": "gate:references@1",
+     "result": "inconclusive",
+     "evidence": "{\"cited\": [\"art_7/para_1\", \"art_8\"], \"reason\": \"the punished statement is not yet confirmed\", \"target\": \"art_8\", \"unresolved\": []}"
+    },
+    {
+     "method": "executable",
+     "verifier": "gate:executable@3",
+     "result": "inconclusive",
+     "evidence": "{\"reason\": \"scope has several clauses (disjunction)\"}"
+    },
+    {
+     "method": "provisos",
+     "verifier": "gate:provisos@1",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "roundtrip",
+     "verifier": "gate:roundtrip@1:nvidia:nemotron-3.5-super-vl",
+     "result": "pass",
+     "evidence": "{\"verifier\": \"nvidia:nemotron-3.5-super-vl\"}"
+    },
+    {
+     "method": "independent_test",
+     "verifier": "gate:independent_test@1:mistral:mistral-small-4",
+     "result": "not_applicable",
+     "evidence": "{}"
+    },
+    {
+     "method": "panel",
+     "verifier": "gate:panel@1:nvidia:nemotron-3.5-super-vl+mistral:mistral-small-4",
+     "result": "fail",
+     "evidence": "{\"votes\": [{\"judge\": \"nvidia:nemotron-3.5-super-vl\", \"issues\": [\"適用範圍重複列出 [livestock_industry] 與 [circumstances_serious]。\", \"將「畜牧業」、「違反第七條第一項」、「違反第八條」列為本陳述適用範圍，但這些內容不屬於引文「情節重大者，得令其停工或停業」，依約定應由其他陳述承載，不應要求本陳述涵蓋引文以外的內容；且原文以「或」連接第七條第一項與第八條，標註卻以「皆須成立」並列，亦有誤。\"], \"faithful\": false}, {\"judge\": \"mistral:mistral-small-4\", \"issues\": [\"「適用範圍」重複列出「畜牧業」與「情節重大」兩次，違反單一陳述僅對應一段引文的原則；\", \"「適用範圍」包含「違反第七條第一項」與「違反第八條」兩個"
+    },
+    {
+     "method": "policy",
+     "verifier": "settle",
+     "result": "fail",
+     "evidence": "{\"action\": \"rejected\", \"required\": [\"numbers\", \"references\", \"executable\", \"provisos\", \"roundtrip\", \"independent_test\", \"panel\"]}"
+    }
+   ]
+  }
+ ]
+}

@@ -1,6 +1,7 @@
 """抽取器：由語言模型從條文單元寫出標註，狀態為 extracted。
 
 模型不負責錨點：每個陳述附 `quote`，span、雜湊、`text` 由這裡在原文定位；引文不在原文的陳述丟掉。
+模型常把原文的字寫成異體字（污→汙），定位時兩邊一併歸一，span 仍取自原文。
 """
 
 from __future__ import annotations
@@ -36,10 +37,12 @@ PROMPT = (
   "statements": [{{"id": "短識別", "quote": "原文中的一段，逐字複製", "kind":
   "prescriptive|constitutive|sanction", "deontic": "obligation|prohibition|permission 或省略",
   "slots": {{"subject|action|object|medium": {{"literal": "…"}} 或 [{{"literal": "…"}}, …]}},
-  "conditions": [{{"role": "scope|duty", "clause": 1, "concept": "代碼", "comparator":
+  "conditions": [{{"role": "scope|duty|limit", "clause": 1, "concept": "代碼", "comparator":
   "le|lt|ge|gt|eq|ne", "threshold": 數字, "unit": "單位或省略", "negated": false,
   "judgement": false, "value_concept": "本法用語的代碼（見下方清單），沒有就省略",
-  "permit": "許可種類的代碼（門檻值是個別許可所載的量值時），沒有就省略"}}],
+  "permit": "許可種類的代碼（門檻值是個別許可所載的量值時），沒有就省略",
+  "method": "檢測方法的代碼（只有 limit），沒有就省略",
+  "averaging": "平均時段的代碼（只有 limit），沒有就省略"}}],
   "sanction": {{"effect": "{effects}",
   "min": 數字或省略, "max": 數字或省略, "amount_text": "原文或省略", "repeating": false,
   "discretionary": false,
@@ -73,6 +76,10 @@ PROMPT = (
    representative；原文看不出來就省略。只有 subject 可以寫 liability。
 12. 門檻值不是寫在條文裡、而是許可證或核定的配額所載（「依許可證內容」「超過許可排放量」）時，
    該要件寫 permit：許可種類的概念代碼（在 concepts 宣告），不要寫 threshold。
+13. 限值（約定 F）寫成 role 為 limit 的要件：concept 是受管制的項目，comparator、threshold、unit
+   照原文，judgement 為 false。原文（或上層條文）寫明認定方式時，檢測方法（連續自動監測、人工採樣
+   檢測…）寫 method，平均時段（即時值、一小時平均值、日平均值、數次採樣的算術平均值…）寫 averaging，
+   兩者都是在 concepts 宣告的代碼；原文沒寫就省略。只有 limit 可以寫 method 與 averaging。
 只輸出 JSON。
 
 {terms}{context}原文（{law} {path}）：
@@ -143,7 +150,7 @@ STATEMENTS_FORMAT: dict[str, Any] = {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "role": {"enum": ["scope", "duty"]},
+                                        "role": {"enum": ["scope", "duty", "limit"]},
                                         "clause": {"type": "integer"},
                                         "concept": _STR,
                                         "comparator": {
@@ -155,6 +162,8 @@ STATEMENTS_FORMAT: dict[str, Any] = {
                                         "judgement": _BOOL,
                                         "value_concept": _nullable(_STR),
                                         "permit": _nullable(_STR),
+                                        "method": _nullable(_STR),
+                                        "averaging": _nullable(_STR),
                                     },
                                 },
                             },
@@ -202,6 +211,15 @@ def _complete(model: Model, prompt: str) -> str:
         complete = cast(Any, model).complete
         return str(complete(prompt, response_format=STATEMENTS_FORMAT))
     return model.complete(prompt)
+
+
+#: 異體字一對一歸一（位置不變）：全國法規資料庫寫「污」「巿」，模型常寫成「汙」「市」。
+_VARIANTS = str.maketrans({"汙": "污", "巿": "市"})
+
+
+def locate(quote: str, text: str) -> int:
+    """引文在原文的起點，異體字視為同字；不在原文（或空引文）為 -1。"""
+    return text.translate(_VARIANTS).find(quote.translate(_VARIANTS)) if quote else -1
 
 
 _CONDITIONAL = re.compile(r"者[，,]\s*(應|不得)")
@@ -289,11 +307,24 @@ def _liability(role: str, value: Any) -> Any:
     return value
 
 
+def _tidy_condition(c: Mapping[str, Any]) -> dict[str, Any]:
+    """一個要件的形狀修正（見 `tidy`）。"""
+    drop: set[str] = set()
+    if c.get("value_concept") or c.get("permit"):
+        drop.add("threshold")
+    if c.get("role") == "limit":
+        drop.add("judgement")
+    else:
+        drop |= {"method", "averaging"}
+    return {k: v for k, v in c.items() if k not in drop}
+
+
 def tidy(answer: Mapping[str, Any], defined: Mapping[str, str] | None = None) -> dict[str, Any]:
     """不改變意思的形狀修正。
 
     槽位直接寫成字串（`"subject": "甲"`，或清單裡的字串）就是它的字面；與概念值比較或委由
     個別處分的要件沒有門檻值，模型多寫的 threshold 去掉；主體以外或不在列舉裡的責任基礎去掉；
+    認定方式只屬限值、限值不標需判斷，別處的去掉（載入器會因它拒絕整份文件）；
     要件指名的本法用語代碼，補進宣告的概念（名稱取自該法的定義）。觸發不在這裡修：少了前提的
     罰則會變成無條件，由 `_local_triggers` 整個丟掉。
     """
@@ -311,12 +342,7 @@ def tidy(answer: Mapping[str, Any], defined: Mapping[str, str] | None = None) ->
         conditions = s.get("conditions")
         if not isinstance(conditions, list):
             continue
-        s["conditions"] = [
-            {k: v for k, v in c.items() if k != "threshold"}
-            if isinstance(c, Mapping) and (c.get("value_concept") or c.get("permit"))
-            else c
-            for c in conditions
-        ]
+        s["conditions"] = [_tidy_condition(c) if isinstance(c, Mapping) else c for c in conditions]
     if defined:
         declared = {str(c["code"]) for c in _concepts_of(answer)}
         used = {
@@ -348,7 +374,7 @@ def shape_issues(
             if not isinstance(c, Mapping):
                 problems.append("要件必須是物件（role、concept、comparator、threshold…）。")
                 continue
-            for field in ("concept", "value_concept", "permit"):
+            for field in ("concept", "value_concept", "permit", "method", "averaging"):
                 code = c.get(field)
                 if field == "concept" and not code:
                     problems.append(
@@ -364,6 +390,8 @@ def shape_issues(
                     problems.append(
                         f"要件的 {field}「{code}」沒有在 concepts 裡宣告（code 與 label 都要寫）。"
                     )
+            if c.get("role") == "limit" and c.get("threshold") is None:
+                problems.append(f"限值「{c.get('concept')}」沒有 threshold：限值要寫原文的數值。")
             if c.get("value_concept") and c.get("permit"):
                 problems.append(
                     f"要件「{c.get('concept')}」同時寫了 value_concept 與 permit："
@@ -588,7 +616,7 @@ def extract_unit(
     for _ in range(MAX_REPAIRS):
         if answer is None:
             break
-        here = [x for x in _statements_of(answer) if str(x.get("quote", "")) in text]
+        here = [x for x in _statements_of(answer) if locate(str(x.get("quote", "")), text) >= 0]
         shape = shape_issues(answer, defined)
         issues = completeness_issues(here) + [
             f"陳述 {ident}：{problem}"
@@ -620,12 +648,14 @@ def extract_unit(
         return Extracted(None, ("<unparseable model output>",), counts=counts)
     statements: list[dict[str, Any]] = []
     dropped: list[str] = []
-    broken = unusable([x for x in _statements_of(answer) if str(x.get("quote", "")) in text])
+    broken = unusable(
+        [x for x in _statements_of(answer) if locate(str(x.get("quote", "")), text) >= 0]
+    )
     for ident in shape_issues(answer, defined):
         broken.setdefault(ident, "malformed conditions")
     for s in _statements_of(answer):
         quote = str(s.get("quote", ""))
-        start = text.find(quote) if quote else -1
+        start = locate(quote, text)
         if start < 0:
             dropped.append(f"{s.get('id', '?')}: quote is not in the text")
             continue
@@ -645,7 +675,7 @@ def extract_unit(
         elif item.get("kind") != "sanction":
             del item["sanction"]  # 罰則只屬於 sanction
         item |= {"law": law, "path": path, "text": text}
-        if quote != text:
+        if len(quote) != len(text):
             item["span"] = [start, start + len(quote)]
         statements.append(item)
     ids = {str(s.get("id")) for s in statements}

@@ -191,3 +191,126 @@ def test_linking_drops_a_penalty_whose_trigger_was_not_linked(conn: Conn, tmp_pa
 
     assert linked.statements == 0
     assert linked.dropped == ("a1: excepts or is triggered by a penalty that was not linked",)
+
+
+def test_a_quote_in_variant_characters_is_anchored_on_the_original_text(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """模型把原文的「污」寫成「汙」：仍定位得到，span 與錨定的文字取自原文。"""
+    text = "排放廢（污）水者，應符合放流水標準"
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(text)))
+    answer = {
+        "concepts": [
+            {"code": "discharging", "label": "排放廢水"},
+            {"code": "standard", "label": "放流水標準"},
+        ],
+        "statements": [
+            {
+                "id": "s1",
+                "quote": "排放廢（汙）水者，應符合放流水標準",
+                "kind": "prescriptive",
+                "deontic": "obligation",
+                "conditions": [
+                    {
+                        "role": "scope",
+                        "clause": 1,
+                        "concept": "discharging",
+                        "comparator": "eq",
+                        "threshold": 1,
+                    },
+                    {
+                        "role": "duty",
+                        "clause": 1,
+                        "concept": "standard",
+                        "comparator": "eq",
+                        "threshold": 1,
+                    },
+                ],
+            }
+        ],
+    }
+
+    out = extract_unit(conn, FakeModel(answer), LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert out.dropped == () and out.loaded is not None and out.loaded.statements == 1
+    assert conn.execute("SELECT span FROM annotation.statement").fetchall() == [(None,)]
+
+
+def test_the_extractor_writes_a_limit_with_its_measurement(conn: Conn, tmp_path: Path) -> None:
+    """限值帶檢測方法與平均時段；認定方式寫在限值以外、或限值標需判斷，去掉該欄而不丟整份。"""
+    text = "戴奧辛排放標準值為○．一ng-TEQ/Nm3，以五次採樣中間三數值之算術平均認定"
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(text)))
+    answer = {
+        "concepts": [
+            {"code": "dioxin", "label": "戴奧辛"},
+            {"code": "stack_sampling", "label": "人工採樣檢測"},
+            {"code": "middle_three_mean", "label": "中間三數值之算術平均"},
+            {"code": "standard", "label": "排放標準"},
+        ],
+        "statements": [
+            {
+                "id": "lim",
+                "quote": text,
+                "kind": "constitutive",
+                "conditions": [
+                    {
+                        "role": "limit",
+                        "clause": 1,
+                        "concept": "dioxin",
+                        "comparator": "le",
+                        "threshold": 0.1,
+                        "unit": "ng-TEQ/Nm3",
+                        "judgement": True,
+                        "method": "stack_sampling",
+                        "averaging": "middle_three_mean",
+                    },
+                    {
+                        "role": "scope",
+                        "clause": 1,
+                        "concept": "standard",
+                        "comparator": "eq",
+                        "threshold": 1,
+                        "averaging": "middle_three_mean",
+                    },
+                ],
+            }
+        ],
+    }
+
+    out = extract_unit(conn, FakeModel(answer), LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert out.dropped == () and out.loaded is not None and out.loaded.statements == 1
+    assert conn.execute(
+        "SELECT c.condition_role::text, c.needs_assessment, m.code, a.code"
+        "  FROM annotation.statement_condition AS c"
+        "  LEFT JOIN vocab.concept AS m ON m.id = c.measurement_method_concept_id"
+        "  LEFT JOIN vocab.concept AS a ON a.id = c.averaging_period_concept_id ORDER BY c.id"
+    ).fetchall() == [
+        ("limit", False, "stack_sampling", "middle_three_mean"),
+        ("scope", False, None, None),
+    ]
+
+
+def test_the_extraction_schema_offers_limits_and_their_measurement() -> None:
+    condition = STATEMENTS_FORMAT["json_schema"]["schema"]["properties"]["statements"]["items"][
+        "properties"
+    ]["conditions"]["items"]["properties"]
+    assert "limit" in condition["role"]["enum"]
+    assert {"method", "averaging"} <= set(condition)
+
+
+def test_a_limit_without_a_threshold_is_a_shape_issue() -> None:
+    answer = {
+        "concepts": [{"code": "dioxin", "label": "戴奧辛"}],
+        "statements": [
+            {
+                "id": "lim",
+                "quote": "x",
+                "kind": "constitutive",
+                "conditions": [
+                    {"role": "limit", "clause": 1, "concept": "dioxin", "comparator": "le"}
+                ],
+            }
+        ],
+    }
+    assert "lim" in shape_issues(answer)

@@ -1,6 +1,7 @@
 """The three deterministic gates, and reading numbers and citations out of the text (envcite-
 docs 02-06 §3.3)."""
 
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,7 @@ from envcite_ontology.verification import (
     settle,
 )
 from envcite_ontology.verification.gates import amounts, citations, cn_number
-from envcite_ontology.verification.gates.cn_number import qualified_numbers
+from envcite_ontology.verification.gates.cn_number import numbers_in, qualified_numbers
 from envcite_ontology.verification.gates.proviso_gate import ProvisoGate, provisos
 from tests.reasoning_support import _plain_duty, _scope, _with
 from tests.test_annotation import LAW, _doc, _limit
@@ -40,6 +41,7 @@ from tests.verification_support import (
         ("十", 10),
         ("1,000", 1000),
         ("三億二千萬", 320000000),
+        ("二○○", 200),  # 全國法規資料庫的零是「○」，沒有位數字的逐位讀
     ],
 )
 def test_chinese_numbers(text: str, value: int) -> None:
@@ -241,6 +243,26 @@ def _age_rule(conn: Conn, tmp_path: Path, comparator: str, *, negated: bool = Fa
         },
     ]
     return load(conn, _with(_doc(duty), "age")).ids["duty"]
+
+
+def test_decimals_are_read_with_the_zero_and_point_the_corpus_writes() -> None:
+    assert Decimal("0.1") in numbers_in("本標準戴奧辛之排放標準值為○．一ng-TEQ/Nm3。")
+    assert Decimal("1.5") in numbers_in("不得超過一點五毫克")
+
+
+def test_numbers_gate_passes_a_decimal_limit_the_text_has(conn: Conn, tmp_path: Path) -> None:
+    text = "本標準戴奧辛之排放標準值為○．一ng-TEQ/Nm3。"
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("乙一", text)))
+    limit = _limit(text, 0) | {
+        "conditions": [
+            {"role": "limit", "clause": 1, "concept": "cod", "comparator": "le", "threshold": 0.1}
+        ]
+    }
+    sid = load(conn, _doc(limit)).ids["limit0"]
+
+    result = NumbersGate().check(conn, sid)
+
+    assert result is not None and result.verdict == "pass"
 
 
 @pytest.mark.parametrize(

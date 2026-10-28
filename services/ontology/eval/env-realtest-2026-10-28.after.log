@@ -1,0 +1,54 @@
+2026-10-28 20:40:49,703 INFO 模型：抽取 meta:muse-spark-open；驗證 nvidia:nemotron-3.5-super-vl、mistral:mistral-small-4
+2026-10-28 20:40:49,717 INFO 法規 5 部：O0040001、O0020001、O0120001、O0110001、O0020031
+2026-10-28 20:41:04,173 INFO 標註載入：Loaded(statements=1, conditions=2, exceptions=0, overrides=0, sanctions=0, ids={'s1': 1}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:41:13,321 INFO 標註載入：Loaded(statements=3, conditions=4, exceptions=0, overrides=0, sanctions=0, ids={'s1': 2, 's2': 3, 's3': 4}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:41:20,934 INFO 標註載入：Loaded(statements=2, conditions=2, exceptions=0, overrides=0, sanctions=0, ids={'s1': 5, 's2': 6}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:42:00,425 INFO 標註載入：Loaded(statements=3, conditions=0, exceptions=0, overrides=0, sanctions=0, ids={'s1': 7, 's2': 8, 's3': 9}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:42:06,588 INFO 標註載入：Loaded(statements=2, conditions=5, exceptions=0, overrides=0, sanctions=0, ids={'s1': 10, 's2': 11}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:42:14,297 INFO 標註載入：Loaded(statements=1, conditions=2, exceptions=0, overrides=0, sanctions=0, ids={'s1': 12}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:42:20,880 INFO 標註載入：Loaded(statements=2, conditions=8, exceptions=0, overrides=0, sanctions=0, ids={'s1': 13, 's2': 14}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:42:30,794 INFO 標註載入：Loaded(statements=1, conditions=3, exceptions=0, overrides=0, sanctions=0, ids={'s1': 15}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:42:38,870 INFO 標註載入：Loaded(statements=1, conditions=3, exceptions=0, overrides=0, sanctions=0, ids={'s1': 16}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:42:46,481 INFO 標註載入：Loaded(statements=1, conditions=2, exceptions=0, overrides=0, sanctions=0, ids={'s1': 17}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:42:50,204 INFO 標註載入：Loaded(statements=1, conditions=0, exceptions=0, overrides=0, sanctions=0, ids={'s1': 18}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:43:09,698 INFO 標註載入：Loaded(statements=3, conditions=0, exceptions=0, overrides=0, sanctions=0, ids={'s1': 19, 's2': 20, 's3': 21}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:43:15,360 INFO 標註載入：Loaded(statements=2, conditions=2, exceptions=0, overrides=0, sanctions=0, ids={'s1': 22, 's2': 23}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:43:20,416 INFO 標註載入：Loaded(statements=1, conditions=2, exceptions=0, overrides=0, sanctions=0, ids={'s1': 24}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:43:23,720 INFO 標註載入：Loaded(statements=1, conditions=0, exceptions=0, overrides=0, sanctions=0, ids={'s1': 25}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:43:30,903 INFO 標註載入：Loaded(statements=1, conditions=0, exceptions=0, overrides=0, sanctions=0, ids={'s1': 26}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:43:46,782 INFO 標註載入：Loaded(statements=1, conditions=3, exceptions=0, overrides=0, sanctions=0, ids={'s1': 27}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:43:50,796 INFO 標註載入：Loaded(statements=1, conditions=1, exceptions=0, overrides=0, sanctions=0, ids={'s1': 28}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:43:55,168 INFO 標註載入：Loaded(statements=1, conditions=1, exceptions=0, overrides=0, sanctions=0, ids={'s1': 29}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:43:57,602 INFO 標註載入：Loaded(statements=1, conditions=0, exceptions=0, overrides=0, sanctions=0, ids={'s1': 30}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:44:00,375 INFO 標註載入：Loaded(statements=1, conditions=1, exceptions=0, overrides=0, sanctions=0, ids={'s1': 31}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:44:05,209 INFO 標註載入：Loaded(statements=3, conditions=3, exceptions=0, overrides=0, sanctions=0, ids={'s1': 32, 's2': 33, 's3': 34}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:44:09,267 INFO 標註載入：Loaded(statements=1, conditions=1, exceptions=0, overrides=0, sanctions=0, ids={'s1': 35}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:44:14,132 INFO 標註載入：Loaded(statements=1, conditions=1, exceptions=0, overrides=0, sanctions=0, ids={'s1': 36}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:44:20,255 INFO 標註載入：Loaded(statements=2, conditions=4, exceptions=0, overrides=0, sanctions=0, ids={'s1': 37, 's2': 38}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:44:24,997 INFO 標註載入：Loaded(statements=1, conditions=2, exceptions=0, overrides=0, sanctions=0, ids={'s1': 39}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:44:30,160 INFO 標註載入：Loaded(statements=1, conditions=1, exceptions=0, overrides=0, sanctions=0, ids={'s1': 40}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:44:35,249 INFO 標註載入：Loaded(statements=1, conditions=2, exceptions=0, overrides=0, sanctions=0, ids={'s1': 41}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:44:41,121 INFO 標註載入：Loaded(statements=1, conditions=3, exceptions=0, overrides=0, sanctions=0, ids={'s1': 42}, definitions=0, duplicates=0, triggers=0)
+2026-10-28 20:44:51,790 INFO 標註載入：Loaded(statements=5, conditions=8, exceptions=0, overrides=0, sanctions=5, ids={'s_fine': 43, 's_order': 44, 's_repeating_fine': 45, 's_suspend': 46, 's_revoke': 47}, definitions=0, duplicates=0, triggers=1)
+2026-10-28 20:45:00,164 INFO 標註載入：Loaded(statements=5, conditions=8, exceptions=0, overrides=0, sanctions=5, ids={'s1': 48, 's2': 49, 's3': 50, 's4': 51, 's5': 52}, definitions=0, duplicates=0, triggers=2)
+2026-10-28 20:45:00,166 WARNING 丟掉待連結的罰則：s1: no statement in the cited provisions
+2026-10-28 20:45:00,167 WARNING 丟掉待連結的罰則：s1: no statement in the cited provisions
+2026-10-28 20:45:00,167 WARNING 丟掉待連結的罰則：s1: no statement in the cited provisions
+2026-10-28 20:45:00,167 WARNING 丟掉待連結的罰則：s1: no statement in the cited provisions
+2026-10-28 20:45:00,167 WARNING 丟掉待連結的罰則：s1: no statement in the cited provisions
+2026-10-28 20:45:00,167 WARNING 丟掉待連結的罰則：s1: no statement in the cited provisions
+2026-10-28 20:45:00,167 WARNING 丟掉待連結的罰則：s1: no statement in the cited provisions
+2026-10-28 20:45:00,167 WARNING 丟掉待連結的罰則：s1: no statement in the cited provisions
+2026-10-28 20:47:30,454 INFO 驗證 10/52
+2026-10-28 20:49:46,698 INFO 驗證 20/52
+2026-10-28 20:51:34,347 INFO 驗證 30/52
+2026-10-28 20:53:50,223 INFO 驗證 40/52
+2026-10-28 20:55:58,902 INFO 驗證 50/52
+2026-10-28 20:56:41,184 INFO 驗證 52/52
+2026-10-28 20:57:58,041 INFO 驗證 10/26
+2026-10-28 20:58:13,449 INFO 驗證 20/26
+2026-10-28 20:58:20,159 INFO 驗證 26/26
+2026-10-28 20:58:20,170 INFO 定義：0 個確認、0 個駁回
+2026-10-28 20:58:20,171 INFO 單元 39（略過 0），抽取 52 個陳述（含連結的罰則 10 個；丟掉 8）；7 個確認、19 個駁回，2 輪
+2026-10-28 20:58:20,171 INFO 抽取計數：呼叫 42，修復 3，語法失敗 0，形狀問題 6；詞元 {'prompt': 144399, 'completion': 39058}
+exit=0

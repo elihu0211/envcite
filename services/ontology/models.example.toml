@@ -1,7 +1,8 @@
 # 模型配置範本：複製成 models.toml 再改（說明見 README「模型配置」）。
 #
 # family 由人宣告，獨立性規則依它判定：驗證者不得與抽取者同一家族，評審團至少要兩個不同家族。
-# 同一個模型常掛在幾個端點名稱下（如 gpt-oss-120b 與 mistral-small-4 是同一個），宣告前先查清楚。
+# 同一個模型常掛在幾個端點名稱下（如 coder、vibecode 就是 muse-spark-open，vibe、office 就是
+# nemotron-3.5-super-vl），宣告前先查清楚，並寫正名、不寫別名。
 
 # 一個 OpenAI 相容的端點。網址與金鑰各有兩種寫法：
 #   base_url = "https://…/v1"       或  base_url_env = "<環境變數>"
@@ -12,25 +13,21 @@ api_key_env = "CHAT_API_KEY"
 
 # name 原樣送給端點。選用：max_tokens（回答長度上限）、max_retries（暫時性失敗的重試次數，0 為不重試）。
 # 推理模型的思考計入輸出長度，max_tokens 要留足。
-[model.extractor]
+[model.muse]
+endpoint = "hosted"
+name = "muse-spark-open"
+family = "meta"
+
+[model.nemotron]
+endpoint = "hosted"
+name = "nemotron-3.5-super-vl"
+family = "nvidia"
+max_tokens = 16384
+
+[model.mistral]
 endpoint = "hosted"
 name = "mistral-small-4"
 family = "mistral"
-
-[model.gemma]
-endpoint = "hosted"
-name = "gemma-4-31b"
-family = "google"
-
-[model.llama]
-endpoint = "hosted"
-name = "llama4scout"
-family = "meta"
-
-[model.coder]
-endpoint = "hosted"
-name = "coder"
-family = "inkling"
 
 # 語意檢索臂的嵌入模型（envcite-ontology、envcite-sync 經 ONTOLOGY_MODELS 讀這一段）。
 # 沿用上面的端點；沒有這一段時只用字面臂。換維度不是 1024 的模型要配一支遷移。
@@ -43,13 +40,9 @@ name = "bge-m3-embedding"
 # provider = "anthropic"
 # name = "claude-sonnet-5-5"
 
-# 四個角色都要指名：
-#   抽取者：mistral-small-4（mistral）。
-#   往返重抽者：gemma-4-31b（google）。
-#   獨立測試設計者：coder（inkling）。
-#   評審團：gemma-4-31b、llama4scout（meta）、coder（inkling）。
+# 四個角色都要指名：抽取者、往返驗證的重抽者、獨立測試的設計者、評審團。驗證者都與抽取者不同家族。
 [roles]
-extractor = "extractor"
-roundtrip = "gemma"
-independent_test = "coder"
-panel = ["gemma", "llama", "coder"]
+extractor = "muse"
+roundtrip = "nemotron"
+independent_test = "mistral"
+panel = ["nemotron", "mistral"]

@@ -22,6 +22,8 @@ E. 追繳違反義務所得的利益用 effect disgorgement，不是處罰也不
    warning。
    以另一處分已作成為前提的效果（處停工、停業或一定金額以上罰鍰者，另令接受講習），triggers 指向
    那個處分的陳述，kind 為 sanction_imposed；金額門檻是這個效果自己的要件。
+F. 授權命令（排放標準、管制標準）訂定的數值限值是 constitutive 陳述、role 為 limit 的要件，
+   不是義務；檢測方法與平均時段是限值的認定方式，只屬 limit。
 """
 
 
