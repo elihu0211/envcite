@@ -5,6 +5,8 @@ exactly as it would from the API, without the network.
 """
 
 import json
+import urllib.error
+import urllib.request
 import zipfile
 from datetime import date
 from pathlib import Path
@@ -12,6 +14,7 @@ from pathlib import Path
 import psycopg
 import pytest
 
+from envcite_jobkit import Policy
 from envcite_ontology.acquire import cli
 from envcite_ontology.acquire.engine import Feed, InvalidSnapshot, Outcome, acquire
 from envcite_ontology.acquire.moj import Moj
@@ -144,3 +147,49 @@ def test_invalid_data_exits_with_the_code_the_cronjob_does_not_retry(
         cli.main()
 
     assert exit_.value.code == cli.EXIT_INVALID == 2
+
+
+NO_WAIT = Policy(max_attempts=3, backoff_base_seconds=0.0)
+
+
+def _failing_first(monkeypatch: pytest.MonkeyPatch, status: int, times: int) -> list[str]:
+    """前 `times` 次下載回 `status`，之後照常讀檔；回傳每次嘗試的網址。"""
+    real = urllib.request.urlopen
+    tried: list[str] = []
+
+    def urlopen(url: str, **kwargs: object) -> object:
+        tried.append(url)
+        if len(tried) <= times:
+            raise urllib.error.HTTPError(url, status, "x", None, None)  # type: ignore[arg-type]
+        return real(url, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    return tried
+
+
+def test_a_server_error_on_download_is_retried(
+    tmp_path: Path, conn: Conn, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tried = _failing_first(monkeypatch, 500, times=2)
+    source = LocalMoj(
+        _publish(tmp_path / "feed.zip", "2026/9/18 上午 12:00:00", [_law("A0000001")])
+    )
+
+    (outcome,) = acquire(source, tmp_path / "snapshots", conn, NO_WAIT)
+
+    assert outcome.snapshot_id is not None
+    assert len(tried) == 3
+
+
+def test_a_client_error_on_download_is_not_retried(
+    tmp_path: Path, conn: Conn, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tried = _failing_first(monkeypatch, 404, times=1)
+    source = LocalMoj(
+        _publish(tmp_path / "feed.zip", "2026/9/18 上午 12:00:00", [_law("A0000001")])
+    )
+
+    with pytest.raises(urllib.error.HTTPError):
+        acquire(source, tmp_path / "snapshots", conn, NO_WAIT)
+
+    assert len(tried) == 1

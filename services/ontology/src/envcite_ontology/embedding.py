@@ -1,20 +1,22 @@
 """嵌入模型：OpenAI 相容的 `/embeddings` 端點，只用標準函式庫（同 `verification.models`）。
 
-語意臂在兩處用它：投影時為段落補嵌入（可重試、批次），查詢時為問題取向量（逾時短、不重試，
-取不到就只用字面臂）。端點與模型宣告在 `models.toml` 的 `[embedding]`（`verification.config`），
-沒有預設值：不把法規文字或客戶的問題悄悄送到未指定的第三方。
+語意臂在兩處用它：投影時為段落補嵌入（批次，重試與斷路由 `envcite_jobkit` 的政策處置），
+查詢時為問題取向量（逾時短、不重試，取不到就只用字面臂）。這裡每次只送一個請求，
+失敗以例外型別表明處置：端點問題、這一批的內容問題、或設定錯誤。端點與模型宣告在
+`models.toml` 的 `[embedding]`（`verification.config`），沒有預設值：不把法規文字或
+客戶的問題悄悄送到未指定的第三方。
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import time
 import urllib.error
 import urllib.request
 from collections.abc import Sequence
 from http.client import HTTPException
 
+from envcite_jobkit import Disposition, EndpointError, FatalError, ItemError, classify_http_status
 from envcite_ontology.endpoint import json_headers
 from envcite_ontology.settings import ModelsSettings
 
@@ -25,11 +27,26 @@ DIMENSION = 1024
 
 
 class EmbeddingError(RuntimeError):
-    """端點沒有給出可用的向量：連不上、逾時、回應形狀不對、維度不符。"""
+    """端點沒有給出可用的向量。"""
 
 
-class PayloadTooLarge(EmbeddingError):
+class EndpointUnavailable(EmbeddingError, EndpointError):
+    """端點的狀況：連不上、逾時、408／429／5xx（含 CDN 的 520–524）、回應不完整。
+
+    稍後重試可能就好。
+    """
+
+
+class EmbeddingRejected(EmbeddingError, ItemError):
+    """端點拒收這一批的內容（413 以外的 4xx）：重送同樣內容沒用，跳過這一批。"""
+
+
+class PayloadTooLarge(EmbeddingRejected):
     """HTTP 413：端點的輸入驗證拒收（模型的輸入上限是逐段的 token 數，不是整批大小）。"""
+
+
+class EndpointMisconfigured(EmbeddingError, FatalError):
+    """401／403 或維度不符：設定錯了，每一批都會失敗。"""
 
 
 class Embedder:
@@ -40,13 +57,11 @@ class Embedder:
         base_url: str,
         api_key: str | None = None,
         timeout: float = 30.0,
-        max_retries: int = 3,
     ) -> None:
         self.model = model
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
         self.timeout = timeout
-        self.max_retries = max_retries
 
     def __repr__(self) -> str:
         return f"Embedder({self.model!r})"  # 不印金鑰
@@ -55,7 +70,7 @@ class Embedder:
         """依序回傳每段文字的向量。
 
         413 是確定性的，重試無益：整批 413 就對半拆開各自重送；單段仍 413（超過模型輸入上限）
-        才截短，並警告，不讓一段過長的文字使整個同步失敗。
+        才截短，並警告，不讓一段過長的文字使整個同步失敗。其他失敗照例外型別交給呼叫端。
         """
         if not texts:
             return []
@@ -94,48 +109,57 @@ class Embedder:
         )
         data = self._post(request).get("data")
         if not isinstance(data, list) or len(data) != len(texts):
-            raise EmbeddingError(f"{self.model}: expected {len(texts)} embeddings")
+            raise EndpointUnavailable(f"{self.model}: expected {len(texts)} embeddings")
         vectors: list[list[float]] = []
         for item in sorted(data, key=lambda d: d.get("index", 0) if isinstance(d, dict) else 0):
             vector = item.get("embedding") if isinstance(item, dict) else None
             if not isinstance(vector, list) or len(vector) != DIMENSION:
-                raise EmbeddingError(f"{self.model}: an embedding is not {DIMENSION} numbers")
+                raise EndpointMisconfigured(
+                    f"{self.model}: an embedding is not {DIMENSION} numbers"
+                )
             vectors.append([float(x) for x in vector])
         return vectors
 
     def _post(self, request: urllib.request.Request) -> dict[str, object]:
-        for attempt in range(self.max_retries + 1):
-            try:
-                with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                    payload = json.loads(response.read())
-                if not isinstance(payload, dict):
-                    raise EmbeddingError(f"{self.model}: the reply is not a JSON object")
-                return payload
-            except urllib.error.HTTPError as e:
-                if e.code == 413:
-                    raise PayloadTooLarge(f"{self.model}: HTTP 413") from e
-                if e.code not in (408, 429, 500, 502, 503, 504) or attempt == self.max_retries:
-                    raise EmbeddingError(f"{self.model}: HTTP {e.code}") from e
-            except (
-                urllib.error.URLError,
-                TimeoutError,
-                ConnectionError,
-                HTTPException,
-                json.JSONDecodeError,
-            ) as e:
-                if attempt == self.max_retries:
-                    raise EmbeddingError(f"{self.model}: {type(e).__name__}: {e}") from e
-            time.sleep(2**attempt)
-        raise AssertionError("unreachable")  # pragma: no cover
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                payload = json.loads(response.read())
+        except urllib.error.HTTPError as e:
+            raise _http_error(self.model, e.code) from e
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            ConnectionError,
+            HTTPException,
+            json.JSONDecodeError,
+        ) as e:
+            raise EndpointUnavailable(f"{self.model}: {type(e).__name__}: {e}") from e
+        if not isinstance(payload, dict):
+            raise EndpointUnavailable(f"{self.model}: the reply is not a JSON object")
+        return payload
 
 
-def from_settings(settings: ModelsSettings, *, timeout: float, max_retries: int) -> Embedder | None:
+def _http_error(model: str, status: int) -> EmbeddingError:
+    """狀態碼依 `envcite_jobkit.classify_http_status` 分類。"""
+    message = f"{model}: HTTP {status}"
+    if status == 413:
+        return PayloadTooLarge(message)
+    match classify_http_status(status):
+        case Disposition.ENDPOINT:
+            return EndpointUnavailable(message)
+        case Disposition.FATAL:
+            return EndpointMisconfigured(message)
+        case _:
+            return EmbeddingRejected(message)
+
+
+def from_settings(settings: ModelsSettings, *, timeout: float) -> Embedder | None:
     """`models.toml` 的 `[embedding]`；沒有設定檔或沒有這一段時為 None，檢索只用字面臂。"""
     if settings.ontology_models is None:
         return None
     from envcite_ontology.verification import config  # 延後匯入：verification 套件會回頭用到 store
 
-    return config.load_embedder(settings.ontology_models, timeout=timeout, max_retries=max_retries)
+    return config.load_embedder(settings.ontology_models, timeout=timeout)
 
 
 def to_sql(vector: Sequence[float]) -> str:

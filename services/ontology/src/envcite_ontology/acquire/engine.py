@@ -2,7 +2,8 @@
 
 來源只回答「從哪裡下載」與「這份檔案裡有什麼」；下載、雜湊、冪等判斷、存檔與寫入
 由引擎做，每個來源都一樣。任一步失敗，資料庫不留下任何東西；檔案先寫、資料庫後
-提交，檔名即雜湊，所以重跑無害。
+提交，檔名即雜湊，所以重跑無害。下載遇到端點問題（連線、逾時、408／429／5xx）依
+`envcite_jobkit` 政策的次數與退避重試。
 """
 
 from __future__ import annotations
@@ -11,14 +12,19 @@ import hashlib
 import logging
 import os
 import ssl
+import time
+import urllib.error
 import urllib.request
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date
+from http.client import HTTPException
 from pathlib import Path
 from typing import Protocol
 
 from psycopg import Connection
+
+from envcite_jobkit import Disposition, Policy, backoff_delay, classify_http_status
 
 log = logging.getLogger(__name__)
 
@@ -75,17 +81,27 @@ class Outcome:
     snapshot_id: int | None
 
 
-def acquire(source: Source, root: Path, conn: Connection[tuple[object, ...]]) -> list[Outcome]:
-    return [_acquire_feed(source, feed, root, conn) for feed in source.feeds]
+def acquire(
+    source: Source,
+    root: Path,
+    conn: Connection[tuple[object, ...]],
+    policy: Policy | None = None,
+) -> list[Outcome]:
+    policy = policy or Policy()
+    return [_acquire_feed(source, feed, root, conn, policy) for feed in source.feeds]
 
 
 def _acquire_feed(
-    source: Source, feed: Feed, root: Path, conn: Connection[tuple[object, ...]]
+    source: Source,
+    feed: Feed,
+    root: Path,
+    conn: Connection[tuple[object, ...]],
+    policy: Policy,
 ) -> Outcome:
     partial = root / ".partial" / feed.name
     partial.parent.mkdir(parents=True, exist_ok=True)
     try:
-        digest, size = _download(feed.url, partial, source.tls())
+        digest, size = _download(feed.url, partial, source.tls(), policy)
         if _known(conn, feed.name, digest):
             log.info("%s: unchanged (%s)", feed.name, digest.hex()[:12])
             return Outcome(feed.name, None)
@@ -119,7 +135,28 @@ def _acquire_feed(
     return Outcome(feed.name, snapshot_id)
 
 
-def _download(url: str, dest: Path, context: ssl.SSLContext) -> tuple[bytes, int]:
+def _download(url: str, dest: Path, context: ssl.SSLContext, policy: Policy) -> tuple[bytes, int]:
+    """端點問題重試到 `policy.max_attempts` 次；其餘失敗（含 4xx）直接拋出。"""
+    for attempt in range(1, policy.max_attempts + 1):
+        try:
+            return _fetch(url, dest, context)
+        except urllib.error.HTTPError as e:
+            if classify_http_status(e.code) is not Disposition.ENDPOINT:
+                raise
+            error: Exception = e
+        except (urllib.error.URLError, TimeoutError, ConnectionError, HTTPException) as e:
+            error = e
+        if attempt == policy.max_attempts:
+            raise error
+        delay = backoff_delay(
+            attempt, base=policy.backoff_base_seconds, cap=policy.backoff_max_seconds
+        )
+        log.warning("%s: %s，%.0f 秒後重試（第 %d 次）", url, error, delay, attempt)
+        time.sleep(delay)
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
+def _fetch(url: str, dest: Path, context: ssl.SSLContext) -> tuple[bytes, int]:
     h = hashlib.sha256()
     size = 0
     with urllib.request.urlopen(url, context=context, timeout=300) as r, dest.open("wb") as f:

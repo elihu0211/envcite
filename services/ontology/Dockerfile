@@ -37,6 +37,7 @@ COPY pyproject.toml uv.lock ./
 RUN --network=none --mount=type=bind,from=uv-cache,target=/uv-cache,rw \
     uv sync --frozen --no-dev --package envcite-ontology --no-install-workspace
 COPY libs/python/envcite-grpc libs/python/envcite-grpc
+COPY libs/python/envcite-jobkit libs/python/envcite-jobkit
 COPY libs/python/envcite-proto libs/python/envcite-proto
 COPY libs/python/envcite-segmenter libs/python/envcite-segmenter
 COPY services/ontology/pyproject.toml services/ontology/README.md services/ontology/

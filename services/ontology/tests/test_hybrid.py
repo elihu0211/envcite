@@ -3,7 +3,6 @@ recalls what the words miss, and searching never fails because the embedder does
 
 import json
 import math
-import time
 import urllib.error
 import urllib.request
 from collections.abc import Sequence
@@ -13,8 +12,16 @@ from typing import Any
 import psycopg
 import pytest
 
+from envcite_jobkit import EndpointError, ExitCode, FatalError, ItemError, Policy
 from envcite_ontology import projection
-from envcite_ontology.embedding import DIMENSION, Embedder, EmbeddingError, PayloadTooLarge
+from envcite_ontology.embedding import (
+    DIMENSION,
+    Embedder,
+    EmbeddingError,
+    EndpointMisconfigured,
+    EndpointUnavailable,
+    PayloadTooLarge,
+)
 from envcite_ontology.endpoint import USER_AGENT
 from envcite_ontology.store import OntologyStore
 from envcite_segmenter import Segmenter
@@ -268,35 +275,90 @@ def test_a_single_text_over_the_model_limit_is_truncated_with_a_warning(
     assert "2000" in caplog.text and "843" in caplog.text
 
 
-def test_only_413_is_split_other_errors_keep_their_behaviour(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize(
+    ("status", "kind"),
+    [
+        (503, EndpointError),
+        (520, EndpointError),  # CDN 前置的端點回 520–524，同屬端點問題
+        (429, EndpointError),
+        (400, ItemError),
+        (401, FatalError),
+    ],
+)
+def test_each_failure_is_one_request_and_names_its_disposition(
+    monkeypatch: pytest.MonkeyPatch, status: int, kind: type[Exception]
 ) -> None:
     calls: list[int] = []
 
     def reply(request: Any, timeout: float) -> _Reply:
         calls.append(len(json.loads(request.data)["input"]))
-        raise _http_error(400)
+        raise _http_error(status)
 
     monkeypatch.setattr(urllib.request, "urlopen", reply)
-    client = Embedder("m", base_url="https://e.example/v1", max_retries=2)
+    client = Embedder("m", base_url="https://e.example/v1")
 
-    with pytest.raises(EmbeddingError, match="HTTP 400") as raised:
+    with pytest.raises(EmbeddingError, match=f"HTTP {status}") as raised:
         client.embed(["甲", "乙"])
 
+    assert isinstance(raised.value, kind)
     assert not isinstance(raised.value, PayloadTooLarge)
-    assert calls == [2]  # 400 不重試也不拆批
+    assert calls == [2]  # 不在這裡重試，也不拆批：重試是呼叫端政策的事
 
-    calls.clear()
-    monkeypatch.setattr(time, "sleep", lambda s: None)
 
-    def unavailable(request: Any, timeout: float) -> _Reply:
-        calls.append(1)
-        raise _http_error(503)
+class Flaky(FakeEmbedder):
+    """前 `failures` 次呼叫回端點錯誤，之後正常。"""
 
-    monkeypatch.setattr(urllib.request, "urlopen", unavailable)
-    with pytest.raises(EmbeddingError, match="HTTP 503"):
-        client.embed(["甲", "乙"])
-    assert len(calls) == 3  # 503 仍照舊重試 max_retries 次
+    def __init__(self, failures: int) -> None:
+        super().__init__()
+        self.failures = failures
+
+    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+        if self.failures:
+            self.failures -= 1
+            raise EndpointUnavailable("fake-m3: HTTP 520")
+        return super().embed(texts)
+
+
+NO_WAIT = Policy(max_attempts=3, backoff_base_seconds=0.0, open_action="wait")
+
+
+def test_a_transient_endpoint_error_is_retried_and_the_projection_completes(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _corpus(conn, tmp_path)
+    embedder = Flaky(failures=2)
+
+    projection.rebuild(conn, embedder, NO_WAIT)  # type: ignore[arg-type]
+
+    assert _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE embedding IS NULL") == 0
+
+
+def test_a_batch_that_keeps_failing_is_skipped_and_embedded_on_the_next_run(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _corpus(conn, tmp_path)
+
+    projection.rebuild(conn, Flaky(failures=NO_WAIT.max_attempts), NO_WAIT)  # type: ignore[arg-type]
+    assert _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE embedding IS NULL") > 0
+
+    projection.rebuild(conn, FakeEmbedder(), NO_WAIT)  # type: ignore[arg-type]
+    assert _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE embedding IS NULL") == 0
+
+
+class Misconfigured(FakeEmbedder):
+    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+        raise EndpointMisconfigured("fake-m3: HTTP 401")
+
+
+def test_a_misconfigured_endpoint_stops_the_projection_with_the_fatal_code(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _corpus(conn, tmp_path)
+
+    with pytest.raises(projection.EmbeddingStopped) as stopped:
+        projection.rebuild(conn, Misconfigured(), NO_WAIT)  # type: ignore[arg-type]
+
+    assert stopped.value.code == ExitCode.FATAL
 
 
 def test_embedding_a_scope_leaves_other_laws_without_vectors(conn: Conn, tmp_path: Path) -> None:

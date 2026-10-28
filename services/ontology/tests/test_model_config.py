@@ -291,7 +291,7 @@ def test_check_asks_every_model_and_needs_no_database(monkeypatch: pytest.Monkey
 
 
 def test_the_embedder_is_declared_in_the_same_file_and_reuses_an_endpoint() -> None:
-    embedder = load_embedder(EXAMPLE, ENV, timeout=5.0, max_retries=0)
+    embedder = load_embedder(EXAMPLE, ENV, timeout=5.0)
 
     assert embedder is not None and embedder.model == "bge-m3-embedding"
     assert "secret-value" not in repr(embedder)
@@ -299,7 +299,7 @@ def test_the_embedder_is_declared_in_the_same_file_and_reuses_an_endpoint() -> N
 
 
 def test_no_embedding_section_means_no_semantic_arm() -> None:
-    assert parse_embedder(MINIMAL, ENV, timeout=5.0, max_retries=0) is None
+    assert parse_embedder(MINIMAL, ENV, timeout=5.0) is None
 
 
 def test_the_embedder_needs_only_its_own_endpoint() -> None:
@@ -310,7 +310,7 @@ def test_the_embedder_needs_only_its_own_endpoint() -> None:
         + '\n[embedding]\nendpoint = "e"\nname = "m3"\n'
     )
 
-    embedder = parse_embedder(text, ENV, timeout=5.0, max_retries=0)
+    embedder = parse_embedder(text, ENV, timeout=5.0)
 
     assert embedder is not None and embedder.model == "m3"
     with pytest.raises(ConfigError, match="endpoint 'nope'"):
@@ -318,14 +318,12 @@ def test_the_embedder_needs_only_its_own_endpoint() -> None:
             MINIMAL + '\n[embedding]\nendpoint = "nope"\nname = "m3"\n',
             ENV,
             timeout=5.0,
-            max_retries=0,
         )
     with pytest.raises(ConfigError, match="unknown keys"):
         parse_embedder(
             MINIMAL + '\n[embedding]\nendpoint = "e"\nname = "m3"\ndim = 1024\n',
             ENV,
             timeout=5.0,
-            max_retries=0,
         )
 
 

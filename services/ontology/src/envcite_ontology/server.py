@@ -80,7 +80,7 @@ def main() -> None:
         interceptors=interceptors,
         health_servicer=health_servicer,
         # 查詢路徑上不重試、逾時短：取不到向量就只用字面臂，不拖慢查詢
-        embedder=embedding.from_settings(settings, timeout=5.0, max_retries=0),
+        embedder=embedding.from_settings(settings, timeout=5.0),
     )
     stop_on_sigterm(server, health_servicer)
     server.start()

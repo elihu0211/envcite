@@ -7,10 +7,12 @@ from typing import Any
 import psycopg
 import pytest
 
+from envcite_jobkit import ExitCode
 from envcite_ontology import sync
 from envcite_ontology.acquire.engine import DownloadFailed, Feed, InvalidSnapshot, acquire
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.ingest.importer import BatchRejected
+from envcite_ontology.projection import EmbeddingStopped
 from tests.test_acquire import _publish
 from tests.test_import import _law
 
@@ -88,3 +90,5 @@ def test_exit_codes_separate_what_a_retry_can_fix() -> None:
     assert sync.exit_code(BatchRejected("x")) == 2
     assert sync.exit_code(DownloadFailed("x")) == 1
     assert sync.exit_code(psycopg.OperationalError("x")) == 1
+    assert sync.exit_code(EmbeddingStopped(ExitCode.FATAL)) == 2
+    assert sync.exit_code(EmbeddingStopped(ExitCode.FAILED)) == 1

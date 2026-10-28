@@ -3,6 +3,7 @@
 !pyproject.toml
 !uv.lock
 !libs/python/envcite-grpc
+!libs/python/envcite-jobkit
 !libs/python/envcite-proto
 !libs/python/envcite-segmenter
 !services/ontology/pyproject.toml

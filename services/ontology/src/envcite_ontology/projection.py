@@ -16,11 +16,12 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import cast
 
 import psycopg
 
+from envcite_jobkit import ExitCode, NullMetrics, Policy, RunStats, run
 from envcite_ontology.embedding import Embedder, to_sql
 from envcite_segmenter import Segmenter
 
@@ -31,6 +32,8 @@ Conn = psycopg.Connection[tuple[object, ...]]
 _PAGE = 2000
 #: 一次送給嵌入端點的段落數
 _EMBED_BATCH = 32
+#: 一批：（內容雜湊，段落文字）
+Page = list[tuple[bytes, str]]
 
 # 一頁要重算字面向量的文字：沒有列，或分詞器不符。以雜湊鍵分頁，現行列雜湊的部分索引可自
 # `after` 起依序走（不用一次性的「全部缺列」查詢：逐頁呼叫會變成頁數乘以全表掃描）。
@@ -63,8 +66,19 @@ _EMBED_PAGE = """
 """
 
 
-def rebuild(conn: Conn, embedder: Embedder | None = None) -> int:
-    """清掉無人引用的列、補齊字面向量，有嵌入模型時再補嵌入；回傳新建或重算的字面列數。"""
+class EmbeddingStopped(RuntimeError):
+    """嵌入沒有走完：政策判定致命，或遇到未分類的錯誤。`code` 是 jobkit 的結束碼。"""
+
+    def __init__(self, code: ExitCode) -> None:
+        super().__init__(f"嵌入中止（結束碼 {int(code)}）")
+        self.code = int(code)
+
+
+def rebuild(conn: Conn, embedder: Embedder | None = None, policy: Policy | None = None) -> int:
+    """清掉無人引用的列、補齊字面向量，有嵌入模型時再補嵌入；回傳新建或重算的字面列數。
+
+    嵌入的重試、退避與斷路依 `policy`（`envcite_jobkit`）。重試用盡的批次跳過，留待下次。
+    """
     segmenter = Segmenter(
         [str(t) for (t,) in conn.execute("SELECT DISTINCT title FROM corpus.legal_expression")]
     )
@@ -76,7 +90,7 @@ def rebuild(conn: Conn, embedder: Embedder | None = None) -> int:
     built = _lexical(conn, segmenter)
     log.info("檢索投影：字面向量新建或重算 %d 列，分詞器 %s", built, segmenter.tokenizer_id)
     if embedder is not None:
-        embedded = _embed(conn, embedder)
+        embedded = _embed(conn, embedder, policy=policy)
         log.info("檢索投影：嵌入 %d 段，模型 %s", embedded, embedder.model)
     return built
 
@@ -109,27 +123,47 @@ def _lexical(conn: Conn, segmenter: Segmenter) -> int:
         after = cast(bytes, rows[-1][0])
 
 
-def embed_scope(conn: Conn, embedder: Embedder, pcodes: Sequence[str]) -> int:
+def embed_scope(
+    conn: Conn, embedder: Embedder, pcodes: Sequence[str], policy: Policy | None = None
+) -> int:
     """只為這些法規（moj_pcode）現行版本的段落補嵌入，其餘不動；其餘同 `rebuild` 的嵌入步驟。
 
     供範圍限定的量測用；字面向量須已建好（列要先在）。同一段文字也出現在範圍外的法規時，
     它的列只有一列，嵌入隨之而有。
     """
-    return _embed(conn, embedder, pcodes=list(pcodes))
+    return _embed(conn, embedder, pcodes=list(pcodes), policy=policy)
 
 
-def _embed(conn: Conn, embedder: Embedder, *, pcodes: list[str] | None = None) -> int:
-    """每批 commit：全量第一次要很久，中斷後重跑只補沒做完的。`pcodes` 為空值時不限範圍。"""
+def _embed(
+    conn: Conn,
+    embedder: Embedder,
+    *,
+    pcodes: list[str] | None = None,
+    policy: Policy | None = None,
+) -> int:
+    """每批 commit：全量第一次要很久，中斷後重跑只補沒做完的。`pcodes` 為空值時不限範圍。
+
+    一批是 jobkit 的一個工作項：端點問題退避重試並計入斷路器，重試用盡或內容被拒的批次
+    跳過（其列仍未嵌入，下次重跑會再選到）。
+    """
+    stats = RunStats()
     embedded = 0
-    after = b""
-    while True:
-        rows = conn.execute(
-            _EMBED_PAGE,
-            {"after": after, "model": embedder.model, "limit": _EMBED_BATCH, "pcodes": pcodes},
-        ).fetchall()
-        if not rows:
-            return embedded
-        vectors = embedder.embed([str(text) for _, text in rows])
+
+    def pages() -> Iterator[Page]:
+        after = b""
+        while True:
+            rows = conn.execute(
+                _EMBED_PAGE,
+                {"after": after, "model": embedder.model, "limit": _EMBED_BATCH, "pcodes": pcodes},
+            ).fetchall()
+            if not rows:
+                return
+            yield [(cast(bytes, digest), str(text)) for digest, text in rows]
+            after = cast(bytes, rows[-1][0])
+
+    def embed_page(rows: Page) -> None:
+        nonlocal embedded
+        vectors = embedder.embed([text for _, text in rows])
         with conn.cursor() as cur:
             cur.executemany(
                 "UPDATE retrieval.passage SET model = %s, embedding = %s::vector"
@@ -143,4 +177,17 @@ def _embed(conn: Conn, embedder: Embedder, *, pcodes: list[str] | None = None) -
         embedded += len(rows)
         if embedded % (_EMBED_BATCH * 50) < len(rows):
             log.info("檢索投影：已嵌入 %d 段", embedded)
-        after = cast(bytes, rows[-1][0])
+
+    code = run(
+        pages(),
+        embed_page,
+        policy,
+        item_id=lambda rows: rows[0][0].hex(),
+        metrics=NullMetrics(),
+        stats=stats,
+    )
+    if stats.dead_lettered:
+        log.warning("檢索投影：%d 批嵌入失敗而跳過，下次同步再補", stats.dead_lettered)
+    if code is not ExitCode.OK:
+        raise EmbeddingStopped(code)
+    return embedded

@@ -10,6 +10,7 @@ requires-python = ">=3.14"
 dependencies = [
     "clingo",
     "envcite-grpc",
+    "envcite-jobkit",
     "envcite-proto",
     "envcite-segmenter",
     "grpcio-health-checking",
@@ -22,6 +23,7 @@ dependencies = [
 
 [tool.uv.sources]
 envcite-grpc = { workspace = true }
+envcite-jobkit = { workspace = true }
 envcite-proto = { workspace = true }
 envcite-segmenter = { workspace = true }
 

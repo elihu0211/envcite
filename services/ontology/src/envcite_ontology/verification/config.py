@@ -201,7 +201,6 @@ def parse_embedder(
     base_dir: Path | None = None,
     *,
     timeout: float,
-    max_retries: int,
 ) -> Embedder | None:
     """`[embedding]` 宣告的嵌入模型；沒有這一段為 None（語意臂關閉）。只解析它指到的端點。"""
     env = os.environ if env is None else env
@@ -223,16 +222,12 @@ def parse_embedder(
     if endpoint not in endpoints:
         raise ConfigError(f"embedding: endpoint {endpoint!r} is not defined")
     base, key = _endpoint(endpoint, endpoints[endpoint], env, base_dir)
-    return Embedder(name, base_url=base, api_key=key, timeout=timeout, max_retries=max_retries)
+    return Embedder(name, base_url=base, api_key=key, timeout=timeout)
 
 
 def load_embedder(
-    path: Path, env: Mapping[str, str] | None = None, *, timeout: float, max_retries: int
+    path: Path, env: Mapping[str, str] | None = None, *, timeout: float
 ) -> Embedder | None:
     return parse_embedder(
-        path.read_text(encoding="utf-8"),
-        env,
-        path.resolve().parent,
-        timeout=timeout,
-        max_retries=max_retries,
+        path.read_text(encoding="utf-8"), env, path.resolve().parent, timeout=timeout
     )

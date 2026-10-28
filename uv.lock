@@ -485,6 +485,7 @@ source = { editable = "services/ontology" }
 dependencies = [
     { name = "clingo" },
     { name = "envcite-grpc" },
+    { name = "envcite-jobkit" },
     { name = "envcite-proto" },
     { name = "envcite-segmenter" },
     { name = "grpcio-health-checking" },
@@ -505,6 +506,7 @@ requires-dist = [
     { name = "anthropic", marker = "extra == 'llm'" },
     { name = "clingo" },
     { name = "envcite-grpc", editable = "libs/python/envcite-grpc" },
+    { name = "envcite-jobkit", editable = "libs/python/envcite-jobkit" },
     { name = "envcite-proto", editable = "libs/python/envcite-proto" },
     { name = "envcite-segmenter", editable = "libs/python/envcite-segmenter" },
     { name = "grpcio-health-checking" },
