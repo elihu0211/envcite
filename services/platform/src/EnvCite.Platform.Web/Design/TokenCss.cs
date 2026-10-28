@@ -39,12 +39,7 @@ public static class TokenCss
         var css = new StringBuilder();
         css.Append("--ep-font:").Append(Join(DesignTokens.FontFamily)).Append(';');
         css.Append("--ep-font-mono:").Append(Join(DesignTokens.FontFamilyMono)).Append(';');
-        foreach (var (name, style) in new (string, DesignTokens.TypeStyle)[]
-        {
-            ("display", DesignTokens.Display), ("h1", DesignTokens.H1), ("h2", DesignTokens.H2), ("h3", DesignTokens.H3),
-            ("body", DesignTokens.Body), ("body-sm", DesignTokens.BodySmall), ("caption", DesignTokens.Caption),
-            ("micro", DesignTokens.Micro), ("button", DesignTokens.Button),
-        })
+        foreach (var (name, style) in DesignTokens.Type)
         {
             css.Append(CultureInfo.InvariantCulture, $"--ep-{name}-size:{style.Size};--ep-{name}-leading:{style.LineHeight};")
                 .Append(CultureInfo.InvariantCulture, $"--ep-{name}-tracking:{style.LetterSpacing};--ep-{name}-weight:{style.Weight};");

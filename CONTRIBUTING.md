@@ -155,4 +155,5 @@ Renovate 由外部排程集中執行，本倉庫不放令牌也不跑 job。同�
 | buf | `.gitlab-ci.yml` 的 `BUF_VERSION` |
 | oasdiff | `.gitlab-ci.yml` 的 `OASDIFF_VERSION` |
 | Docker（映像建置） | `.gitlab-ci.yml` 的 `DOCKER_VERSION` |
+| 後台字型（Inter、Noto Sans TC） | `services/platform/scripts/vendor-fonts.sh` 的 `INTER_VERSION`、`NOTO_VERSION`；改版本後從 `services/platform` 執行該腳本，與重新產生的 `wwwroot/fonts/` 一起提交。Renovate 不追蹤 |
 | hadolint | `.gitlab-ci.yml` 的 `HADOLINT_VERSION` |

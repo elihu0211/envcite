@@ -98,7 +98,7 @@ public static partial class DesignTokenTests
         {
             "--ep-bg", "--ep-surface", "--ep-surface-muted", "--ep-text", "--ep-text-secondary", "--ep-primary", "--ep-on-primary",
             "--ep-link", "--ep-success", "--ep-warning", "--ep-error", "--ep-info", "--ep-border-subtle", "--ep-border-control",
-            "--ep-focus", "--ep-scrim", "--ep-press-scale", "--ep-touch-target", "--ep-micro-size",
+            "--ep-focus", "--ep-scrim", "--ep-press-scale", "--ep-touch-target", "--ep-label-s-size",
             "--ep-motion-fast", "--ep-motion-normal", "--ep-motion-slow", "--ep-motion-reveal",
             "--ep-motion-ease-standard", "--ep-motion-ease-enter", "--ep-motion-ease-exit", "--ep-motion-ease-move",
             "--ep-radius-pill",
@@ -112,8 +112,7 @@ public static partial class DesignTokenTests
         Assert.DoesNotContain("prefers-color-scheme", css, StringComparison.Ordinal);
         Assert.DoesNotContain("data-theme", css, StringComparison.Ordinal);
         Assert.Contains("color-scheme:light", css, StringComparison.Ordinal);
-        Assert.Contains("--ep-font:system-ui", css, StringComparison.Ordinal);
-        Assert.Contains("\"PingFang TC\"", css, StringComparison.Ordinal);
+        Assert.Contains("--ep-font:\"Inter Variable\",\"Noto Sans TC Variable\",sans-serif;", css, StringComparison.Ordinal);
     }
 
     // 使用者偏好集中在 token 這一層：較高對比時髮絲線與次要文字加深，減少動態時位移與縮放歸零。
@@ -170,14 +169,92 @@ public static partial class DesignTokenTests
     [Fact]
     public static void LargeTextTightensTrackingAndSmallTextLoosensIt()
     {
-        static double Em(DesignTokens.TypeStyle s) =>
-            double.Parse(s.LetterSpacing.Replace("em", string.Empty, StringComparison.Ordinal), CultureInfo.InvariantCulture);
+        static double Em(string role) =>
+            double.Parse(DesignTokens.Type[role].LetterSpacing.Replace("em", string.Empty, StringComparison.Ordinal), CultureInfo.InvariantCulture);
 
-        Assert.True(Em(DesignTokens.Display) < Em(DesignTokens.H1));
-        Assert.True(Em(DesignTokens.H1) < Em(DesignTokens.H3));
-        Assert.True(Em(DesignTokens.Body) <= Em(DesignTokens.BodySmall));
-        Assert.True(Em(DesignTokens.BodySmall) < Em(DesignTokens.Caption));
-        Assert.True(Em(DesignTokens.Caption) < Em(DesignTokens.Micro));
+        Assert.True(Em("display-l") < Em("headline-l"));
+        Assert.True(Em("headline-l") < Em("headline-s"));
+        Assert.True(Em("headline-s") < Em("title-l"));
+        Assert.True(Em("body-l") <= Em("body-m"));
+        Assert.True(Em("body-m") < Em("body-s"));
+        Assert.True(Em("body-s") < Em("label-s"));
+    }
+
+    // 字級表是 Material 3 的十五個角色，一個不多、一個不少。
+    [Fact]
+    public static void TheTypeScaleIsTheFifteenMaterialRoles()
+    {
+        var roles = TypeGroups.SelectMany(group => TypeSizes.Select(size => $"{group}-{size}"));
+
+        Assert.Equal(roles.Order(), DesignTokens.Type.Keys.Order());
+        foreach (var role in roles)
+        {
+            Assert.Contains($"--ep-{role}-size:", TokenCss.Render(), StringComparison.Ordinal);
+        }
+    }
+
+    // 中文長時間閱讀：沒有小於 12px 的字，內文至少 15px、行高 1.6 以上。clamp 取下限。
+    [Fact]
+    public static void NoTypeIsTooSmallToReadAndBodyTextBreathes()
+    {
+        static double Rem(string size) => double.Parse(
+            (size.StartsWith("clamp(", StringComparison.Ordinal) ? size[6..size.IndexOf(',', StringComparison.Ordinal)] : size)
+                .Replace("rem", string.Empty, StringComparison.Ordinal),
+            CultureInfo.InvariantCulture);
+
+        Assert.All(DesignTokens.Type.Values, style => Assert.True(Rem(style.Size) * 16 >= 12, style.Size));
+        foreach (var role in new[] { "body-l", "body-m" })
+        {
+            Assert.True(Rem(DesignTokens.Type[role].Size) * 16 >= 15, role);
+        }
+
+        foreach (var role in new[] { "body-l", "body-m", "body-s" })
+        {
+            Assert.True(double.Parse(DesignTokens.Type[role].LineHeight, CultureInfo.InvariantCulture) >= 1.6, role);
+        }
+    }
+
+    // 字型自己託管：token 的字型名稱都在 fonts.css 宣告過、每個字型檔都在、沒有外部網址；樣式表只用變數，不寫字型名稱。
+    [Fact]
+    public static void TheFontsAreSelfHostedAndNamedOnlyInTheTokens()
+    {
+        var fonts = File.ReadAllText(FontsPath());
+        var css = File.ReadAllText(StylesheetPath());
+
+        foreach (var family in DesignTokens.FontFamily.Where(f => f != "sans-serif"))
+        {
+            Assert.Contains($"font-family: '{family}';", fonts, StringComparison.Ordinal);
+            Assert.DoesNotContain(family, css, StringComparison.Ordinal);
+        }
+
+        Assert.DoesNotContain("http", fonts, StringComparison.OrdinalIgnoreCase);
+        foreach (Match url in FontUrl().Matches(fonts))
+        {
+            Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(FontsPath())!, url.Groups[1].Value)), url.Value);
+        }
+
+        Assert.All(FontFamilyDeclaration().Matches(css), m => Assert.StartsWith("var(--ep-font", m.Groups[1].Value, StringComparison.Ordinal));
+    }
+
+    // Inter 排在中文字型前面，所以它要讓出中文排版的標點：引號、破折號、刪節號、間隔號落到 Noto Sans TC，排成全形。
+    [Theory]
+    [InlineData(0x00B7)]
+    [InlineData(0x2014)]
+    [InlineData(0x2018)]
+    [InlineData(0x201C)]
+    [InlineData(0x201D)]
+    [InlineData(0x2026)]
+    public static void InterLeavesChinesePunctuationToTheChineseFont(int codePoint)
+    {
+        var fonts = File.ReadAllText(FontsPath());
+        var interRanges = Regex.Matches(fonts, @"font-family: 'Inter Variable';[^}]*unicode-range: ([^;]+);")
+            .SelectMany(m => m.Groups[1].Value.Split(','))
+            .Select(range => range.Trim()[2..].Split('-'))
+            .Select(bounds => (Low: Convert.ToInt32(bounds[0], 16), High: Convert.ToInt32(bounds[^1], 16)))
+            .ToList();
+
+        Assert.NotEmpty(interRanges);
+        Assert.DoesNotContain(interRanges, r => r.Low <= codePoint && codePoint <= r.High);
     }
 
     [Fact]
@@ -215,13 +292,13 @@ public static partial class DesignTokenTests
         // 半透明材質與小標字級各只寫一次。圖示與色票的尺寸走既有間距階。
         Assert.Equal(1, Regex.Count(css, @"(?<!-)backdrop-filter:\s*blur\("));
         Assert.Equal(1, Regex.Count(css, @"(?<!-)backdrop-filter:\s*none"));
-        Assert.Equal(1, Regex.Count(css, "--ep-h3-leading"));
+        Assert.Equal(1, Regex.Count(css, "--ep-headline-s-leading"));
         Assert.Contains("var(--ep-space-6)", css, StringComparison.Ordinal);
         Assert.Contains("var(--ep-space-12)", css, StringComparison.Ordinal);
         Assert.Equal(1, Regex.Count(css, @"scale\(var\(--ep-press-scale\)\)"));
         Assert.Equal(1, Regex.Count(css, @"var\(--ep-primary\) 10%"));
         Assert.Equal(1, Regex.Count(css, @"var\(--ep-primary\) 88%"));
-        Assert.Equal(1, Regex.Count(css, "--ep-caption-size"));
+        Assert.Equal(1, Regex.Count(css, "--ep-body-s-size"));
         Assert.Equal(1, Regex.Count(css, @"outline: 2px solid var\(--ep-focus\)"));
         foreach (var (key, value) in DesignTokens.Measure)
         {
@@ -268,8 +345,8 @@ public static partial class DesignTokenTests
     [Fact]
     public static void TheLargestTypeSizesAreFluid()
     {
-        Assert.Contains("clamp(", DesignTokens.Display.Size, StringComparison.Ordinal);
-        Assert.Contains("clamp(", DesignTokens.H1.Size, StringComparison.Ordinal);
+        Assert.Contains("clamp(", DesignTokens.Type["display-l"].Size, StringComparison.Ordinal);
+        Assert.Contains("clamp(", DesignTokens.Type["headline-l"].Size, StringComparison.Ordinal);
         Assert.Contains("clamp(", TokenCss.Render(), StringComparison.Ordinal);
     }
 
@@ -290,6 +367,19 @@ public static partial class DesignTokenTests
     private static string StylesheetPath([CallerFilePath] string here = "") =>
         Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.Web", "wwwroot", "design", "platform.css"));
+
+    private static readonly string[] TypeGroups = ["display", "headline", "title", "body", "label"];
+
+    private static readonly string[] TypeSizes = ["l", "m", "s"];
+
+    private static string FontsPath() =>
+        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "..", "fonts", "fonts.css"));
+
+    [GeneratedRegex(@"url\(([^)]+)\)")]
+    private static partial Regex FontUrl();
+
+    [GeneratedRegex(@"font-family:\s*([^;]+);")]
+    private static partial Regex FontFamilyDeclaration();
 
     [GeneratedRegex(@"#[0-9a-fA-F]{3,8}\b")]
     private static partial Regex HexColor();
@@ -331,6 +421,7 @@ public sealed class DesignPageTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("--ep-primary:", html, StringComparison.Ordinal);
         Assert.Contains("design/platform", html, StringComparison.Ordinal);
+        Assert.Contains("fonts/fonts", html, StringComparison.Ordinal); // 自己託管的字型
         Assert.Contains("lang=\"zh-TW\"", html, StringComparison.Ordinal);
         // 手機：延伸到瀏海下（再用安全區內縮）、不禁用縮放、瀏覽器工具列顏色跟著主題（顏色來自 token）。
         Assert.Contains("viewport-fit=cover", html, StringComparison.Ordinal);

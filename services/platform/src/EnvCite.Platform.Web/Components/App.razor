@@ -13,6 +13,8 @@
     <link rel="apple-touch-icon" href="@Assets["_content/EnvCite.Platform.Web/brand/apple-touch-icon.png"]" />
     <base href="/" />
     <style>@((MarkupString)TokenCss.Render())</style>
+    @* 自己託管的字型：中文依 unicode-range 切片，瀏覽器只下載頁面上出現的字所在的那幾片（見 scripts/vendor-fonts.sh）。 *@
+    <link rel="stylesheet" href="@Assets["_content/EnvCite.Platform.Web/fonts/fonts.css"]" />
     <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
     <link rel="stylesheet" href="@Assets["_content/EnvCite.Platform.Web/design/platform.css"]" />
     <HeadOutlet @rendermode="PageRenderMode" />

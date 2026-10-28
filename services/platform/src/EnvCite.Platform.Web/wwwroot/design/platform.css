@@ -13,8 +13,8 @@ html {
 body {
     background: var(--ep-bg);
     color: var(--ep-text);
-    font-size: var(--ep-body-size);
-    line-height: var(--ep-body-leading);
+    font-size: var(--ep-body-l-size);
+    line-height: var(--ep-body-l-leading);
 }
 
 code, kbd, pre {
@@ -54,8 +54,8 @@ a:where(:not([class*="mud-"])) {
     display: inline-flex;
     align-items: center;
     gap: var(--ep-space-2);
-    font-weight: var(--ep-h1-weight);
-    letter-spacing: var(--ep-h3-tracking);
+    font-weight: var(--ep-headline-l-weight);
+    letter-spacing: var(--ep-headline-s-tracking);
 }
 
 /* 品牌圖形跟字同高；顏色跟文字（currentColor），在頂欄上是主色、其他底色上跟文字。 */
@@ -89,18 +89,18 @@ a:where(:not([class*="mud-"])) {
 
 .ep-page-title {
     margin: 0;
-    font-size: var(--ep-h1-size);
-    line-height: var(--ep-h1-leading);
-    letter-spacing: var(--ep-h1-tracking);
-    font-weight: var(--ep-h1-weight);
+    font-size: var(--ep-headline-l-size);
+    line-height: var(--ep-headline-l-leading);
+    letter-spacing: var(--ep-headline-l-tracking);
+    font-weight: var(--ep-headline-l-weight);
 }
 
 .ep-page-description {
     margin: var(--ep-space-1) 0 0;
     color: var(--ep-text-secondary);
-    font-size: var(--ep-body-sm-size);
-    line-height: var(--ep-body-sm-leading);
-    letter-spacing: var(--ep-body-sm-tracking);
+    font-size: var(--ep-body-m-size);
+    line-height: var(--ep-body-m-leading);
+    letter-spacing: var(--ep-body-m-tracking);
 }
 
 /* 直向、間距三階：空狀態置中，回答靠左。 */
@@ -120,10 +120,10 @@ a:where(:not([class*="mud-"])) {
 
 .ep-empty-title,
 .ep-section-title {
-    font-size: var(--ep-h3-size);
-    line-height: var(--ep-h3-leading);
-    letter-spacing: var(--ep-h3-tracking);
-    font-weight: var(--ep-h3-weight);
+    font-size: var(--ep-headline-s-size);
+    line-height: var(--ep-headline-s-leading);
+    letter-spacing: var(--ep-headline-s-tracking);
+    font-weight: var(--ep-headline-s-weight);
 }
 
 .ep-empty-title {
@@ -167,10 +167,10 @@ a:where(:not([class*="mud-"])) {
 .ep-auth-body > .ep-page-title,
 .ep-display {
     margin: 0;
-    font-size: var(--ep-h1-size);
-    line-height: var(--ep-h1-leading);
-    letter-spacing: var(--ep-h1-tracking);
-    font-weight: var(--ep-h1-weight);
+    font-size: var(--ep-headline-l-size);
+    line-height: var(--ep-headline-l-leading);
+    letter-spacing: var(--ep-headline-l-tracking);
+    font-weight: var(--ep-headline-l-weight);
 }
 
 /* 語言選項：每個語言一個文字鈕，目前的語言用主色與字重標示（不只靠顏色，還有 aria-current）。
@@ -190,13 +190,13 @@ a:where(:not([class*="mud-"])) {
     background: transparent;
     color: var(--ep-text-secondary);
     font: inherit;
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
     cursor: pointer;
 }
 
 .ep-lang-option[aria-current="true"] {
     color: var(--ep-link);
-    font-weight: var(--ep-button-weight);
+    font-weight: var(--ep-label-l-weight);
 }
 
 @media (hover: hover) {
@@ -217,7 +217,7 @@ a:where(:not([class*="mud-"])) {
 
 .ep-auth > .ep-brand {
     margin: 0;
-    font-size: var(--ep-h3-size);
+    font-size: var(--ep-headline-s-size);
 }
 
 /* 後台與入口內頁的表單：欄位維持窄欄、送出鈕依內容寬，不撐滿整張卡。 */
@@ -363,14 +363,14 @@ a:where(:not([class*="mud-"])) {
 .ep-plain-table th {
     background: var(--ep-surface-muted);
     color: var(--ep-text-secondary);
-    font-size: var(--ep-body-sm-size);
-    font-weight: var(--ep-button-weight);
+    font-size: var(--ep-body-m-size);
+    font-weight: var(--ep-label-l-weight);
     white-space: nowrap;
 }
 
 .ep-mono {
     font-family: var(--ep-font-mono);
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
 }
 
 .ep-secondary,
@@ -380,8 +380,8 @@ a:where(:not([class*="mud-"])) {
 .ep-note,
 .ep-ask-note {
     color: var(--ep-text-secondary);
-    font-size: var(--ep-caption-size);
-    letter-spacing: var(--ep-caption-tracking);
+    font-size: var(--ep-body-s-size);
+    letter-spacing: var(--ep-body-s-tracking);
 }
 
 .ep-secondary,
@@ -422,7 +422,7 @@ a:where(:not([class*="mud-"])) {
 .ep-detail dt,
 .ep-portal-tenant {
     color: var(--ep-text-secondary);
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
 }
 
 .ep-detail dd {
@@ -503,20 +503,20 @@ a:where(:not([class*="mud-"])) {
 
 .ep-stat-label {
     color: var(--ep-text-secondary);
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
 }
 
 .ep-stat-value {
-    font-size: var(--ep-h1-size);
-    line-height: var(--ep-h1-leading);
-    letter-spacing: var(--ep-h1-tracking);
-    font-weight: var(--ep-h1-weight);
+    font-size: var(--ep-headline-l-size);
+    line-height: var(--ep-headline-l-leading);
+    letter-spacing: var(--ep-headline-l-tracking);
+    font-weight: var(--ep-headline-l-weight);
     font-variant-numeric: tabular-nums;
 }
 
 .ep-stat-note {
     color: var(--ep-text-secondary);
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
 }
 
 .ep-list {
@@ -543,7 +543,7 @@ a:where(:not([class*="mud-"])) {
 .ep-breadcrumb {
     margin-block-end: var(--ep-space-2);
     color: var(--ep-text-secondary);
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
 }
 
 .ep-meta {
@@ -614,7 +614,7 @@ a:where(:not([class*="mud-"])) {
     background: var(--ep-surface-muted);
     color: var(--ep-text-secondary);
     font: inherit;
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
     cursor: pointer;
 }
 
@@ -633,7 +633,7 @@ a:where(:not([class*="mud-"])) {
     border-radius: var(--ep-radius-control);
     background: var(--ep-surface);
     font-family: var(--ep-font);
-    font-size: var(--ep-micro-size);
+    font-size: var(--ep-label-s-size);
 }
 
 @media (hover: hover) {
@@ -658,9 +658,9 @@ a:where(:not([class*="mud-"])) {
 .ep-palette-group {
     margin: var(--ep-space-4) 0 var(--ep-space-1);
     color: var(--ep-text-secondary);
-    font-size: var(--ep-micro-size);
-    letter-spacing: var(--ep-micro-tracking);
-    font-weight: var(--ep-micro-weight);
+    font-size: var(--ep-label-s-size);
+    letter-spacing: var(--ep-label-s-tracking);
+    font-weight: var(--ep-label-s-weight);
 }
 
 .ep-palette-list {
@@ -693,7 +693,7 @@ a:where(:not([class*="mud-"])) {
 
 .ep-console-product {
     color: var(--ep-text-secondary);
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
 }
 
 .ep-console-body {
@@ -715,9 +715,9 @@ a:where(:not([class*="mud-"])) {
     display: none; /* 手機上側欄是一條橫列，群組標題只在直欄時顯示 */
     margin: var(--ep-space-2) var(--ep-space-3) var(--ep-space-1);
     color: var(--ep-text-secondary);
-    font-size: var(--ep-micro-size);
-    letter-spacing: var(--ep-micro-tracking);
-    font-weight: var(--ep-micro-weight);
+    font-size: var(--ep-label-s-size);
+    letter-spacing: var(--ep-label-s-tracking);
+    font-weight: var(--ep-label-s-weight);
 }
 
 .ep-side-nav {
@@ -741,7 +741,7 @@ a:where(:not([class*="mud-"])) {
 .ep-side-link.active {
     background: color-mix(in srgb, var(--ep-primary) 12%, transparent);
     color: var(--ep-link);
-    font-weight: var(--ep-button-weight);
+    font-weight: var(--ep-label-l-weight);
 }
 
 @media (hover: hover) {
@@ -832,7 +832,7 @@ a:where(:not([class*="mud-"])) {
     .ep-cards table tbody tr td[data-label]:not(:first-child)::before {
         content: attr(data-label) "：";
         color: var(--ep-text-secondary);
-        font-size: var(--ep-body-sm-size);
+        font-size: var(--ep-body-m-size);
     }
 
     /* Mud 的表格在窄螢幕會自己插入標籤，這裡統一由我們控制。 */
@@ -991,7 +991,7 @@ a.ep-brand {
     border: 1px solid var(--ep-border-subtle);
     color: var(--ep-primary);
     font: inherit;
-    font-weight: var(--ep-button-weight);
+    font-weight: var(--ep-label-l-weight);
 }
 
 .ep-menu {
@@ -1042,7 +1042,7 @@ a.ep-brand {
     margin: 0;
     padding: var(--ep-space-2) var(--ep-space-3);
     overflow-wrap: anywhere;
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
     border-block-end: 1px solid var(--ep-border-subtle);
 }
 
@@ -1111,10 +1111,10 @@ a.ep-brand {
 
 .ep-ask-title {
     margin: 0;
-    font-size: var(--ep-display-size);
-    line-height: var(--ep-display-leading);
-    letter-spacing: var(--ep-display-tracking);
-    font-weight: var(--ep-display-weight);
+    font-size: var(--ep-display-l-size);
+    line-height: var(--ep-display-l-leading);
+    letter-spacing: var(--ep-display-l-tracking);
+    font-weight: var(--ep-display-l-weight);
 }
 
 .ep-ask-lead {
@@ -1210,7 +1210,7 @@ a.ep-brand {
 
 .ep-ask-note {
     margin: 0;
-    line-height: var(--ep-caption-leading);
+    line-height: var(--ep-body-s-leading);
     text-align: center;
 }
 
@@ -1248,7 +1248,7 @@ a.ep-brand {
     min-block-size: var(--ep-touch-target);
     border-radius: var(--ep-radius-pill);
     background: var(--ep-surface);
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
 }
 
 @media (hover: hover) {
@@ -1286,8 +1286,8 @@ a.ep-brand {
 }
 
 .ep-label {
-    font-size: var(--ep-body-sm-size);
-    font-weight: var(--ep-button-weight);
+    font-size: var(--ep-body-m-size);
+    font-weight: var(--ep-label-l-weight);
 }
 
 .ep-input {
@@ -1323,7 +1323,7 @@ a.ep-brand {
     align-items: center;
     min-block-size: var(--ep-touch-target);
     font: inherit;
-    font-weight: var(--ep-button-weight);
+    font-weight: var(--ep-label-l-weight);
     text-decoration: none;
 }
 
@@ -1370,7 +1370,7 @@ a.ep-brand {
     border-inline-start: 4px solid var(--tone);
     border-radius: var(--ep-radius-control);
     background: color-mix(in srgb, var(--tone) 8%, var(--ep-surface));
-    font-size: var(--ep-body-sm-size);
+    font-size: var(--ep-body-m-size);
     animation: ep-rise var(--ep-motion-slow) var(--ep-motion-ease-settle) both;
 }
 
@@ -1399,10 +1399,10 @@ a.ep-brand {
     border-radius: var(--ep-radius-pill);
     color: var(--tone);
     background: color-mix(in srgb, var(--tone) 10%, var(--ep-surface));
-    font-size: var(--ep-micro-size);
-    line-height: var(--ep-micro-leading);
-    letter-spacing: var(--ep-micro-tracking);
-    font-weight: var(--ep-micro-weight);
+    font-size: var(--ep-label-s-size);
+    line-height: var(--ep-label-s-leading);
+    letter-spacing: var(--ep-label-s-tracking);
+    font-weight: var(--ep-label-s-weight);
     white-space: nowrap;
 }
 
@@ -1514,7 +1514,7 @@ a.ep-brand {
 .ep-secret {
     display: inline-block;
     padding: var(--ep-space-2) var(--ep-space-3);
-    font-size: var(--ep-h3-size);
+    font-size: var(--ep-headline-s-size);
     background: var(--ep-bg);
     border: 1px solid var(--ep-border-control);
     border-radius: var(--ep-radius-control);

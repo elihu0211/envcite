@@ -94,42 +94,49 @@ public static class DesignTokens
     };
 
     // ---- 字型 ----------------------------------------------------------------------------------
-    // 預設用平台系統字型：已內建光學尺寸與字距調校，也不對第三方發請求，也不必隨程式帶字型檔。
-    // 繁中字型依平台列出，最後退到 sans-serif。
+    // 自己託管的開源字型（OFL），各平台看到同一套字，不隨作業系統變：拉丁字與數字用 Inter（光學尺寸軸、等寬數字），
+    // 中文用 Noto Sans TC（收字最完整，法規的罕用字也有）。字型檔與 @font-face 在 wwwroot/fonts/，由 scripts/vendor-fonts.sh
+    // 產生；名稱必須與那裡的 font-family 一致（測試守住）。sans-serif 只在字型下載完成前短暫頂替。
 
-    public static string[] FontFamily { get; } =
-    [
-        "system-ui", "-apple-system", "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "sans-serif",
-    ];
+    public static string[] FontFamily { get; } = ["Inter Variable", "Noto Sans TC Variable", "sans-serif"];
 
     public static string[] FontFamilyMono { get; } =
         ["ui-monospace", "SF Mono", "Menlo", "Consolas", "monospace"];
 
     /// <summary>
-    /// 字級階層：字距與行高隨字級變化（大字收緊、小字略放寬），不是一個固定值。
-    /// 內文層（小字、說明）比常見的標準值各大 1px，公務與法規的長時間閱讀比較不累；
-    /// 中文內文行高取 1.6 以上。單位 rem，使用者調整瀏覽器字級時版面跟著放大。
+    /// 字級階層沿用 Material 3 的十五個角色（display、headline、title、body、label 各分 l、m、s），名稱是業界共通的，
+    /// 數值依中文長時間閱讀調整：最小 12px（M3 的 label-s 是 11px）、內文至少 15px、內文行高 1.6 以上。
+    /// 字距與行高隨字級變化（大字收緊、小字略放寬），不是一個固定值。單位 rem，使用者調整瀏覽器字級時版面跟著放大。
     /// </summary>
     public sealed record TypeStyle(string Size, string LineHeight, string LetterSpacing, int Weight);
 
-    public static TypeStyle Display { get; } = new("clamp(2rem, 1.4rem + 2vw, 2.25rem)", "1.15", "-0.02em", 700);
+    public static IReadOnlyDictionary<string, TypeStyle> Type { get; } = new Dictionary<string, TypeStyle>
+    {
+        // 展示：登入與入口的大標。最大的一階隨視窗寬度縮放，手機上不撐破版面。
+        ["display-l"] = new("clamp(2rem, 1.4rem + 2vw, 2.25rem)", "1.15", "-0.02em", 700),
+        ["display-m"] = new("2rem", "1.15", "-0.02em", 700),
+        ["display-s"] = new("1.75rem", "1.2", "-0.015em", 700),
 
-    public static TypeStyle H1 { get; } = new("clamp(1.5rem, 1.25rem + 1vw, 1.75rem)", "1.25", "-0.015em", 700);
+        // 頁面標題。
+        ["headline-l"] = new("clamp(1.5rem, 1.25rem + 1vw, 1.75rem)", "1.25", "-0.015em", 700),
+        ["headline-m"] = new("1.5rem", "1.3", "-0.01em", 600),
+        ["headline-s"] = new("1.25rem", "1.4", "-0.005em", 600),
 
-    public static TypeStyle H2 { get; } = new("1.5rem", "1.3", "-0.01em", 600);
+        // 卡片、區塊與對話框的標題。
+        ["title-l"] = new("1.125rem", "1.45", "0", 600),
+        ["title-m"] = new("1rem", "1.5", "0", 600),
+        ["title-s"] = new("0.9375rem", "1.5", "0.005em", 600),
 
-    public static TypeStyle H3 { get; } = new("1.25rem", "1.4", "-0.005em", 600);
+        // 內文與條文；body-s 是說明文字。
+        ["body-l"] = new("1rem", "1.625", "0", 400),
+        ["body-m"] = new("0.9375rem", "1.6", "0.005em", 400),
+        ["body-s"] = new("0.8125rem", "1.6", "0.01em", 400),
 
-    public static TypeStyle Body { get; } = new("1rem", "1.625", "0", 400);
-
-    public static TypeStyle BodySmall { get; } = new("0.9375rem", "1.6", "0.005em", 400);
-
-    public static TypeStyle Caption { get; } = new("0.8125rem", "1.45", "0.01em", 400);
-
-    /// <summary>全站最小字級，沒有更小的階：徽章、表格註記。</summary>
-    public static TypeStyle Micro { get; } = new("0.75rem", "1.4", "0.015em", 500);
-
-    public static TypeStyle Button { get; } = new("0.9375rem", "1.3", "0.005em", 600);
+        // 按鈕、表頭、徽章。label-s 是全站最小字級，沒有更小的階。
+        ["label-l"] = new("0.9375rem", "1.3", "0.005em", 600),
+        ["label-m"] = new("0.8125rem", "1.4", "0.01em", 500),
+        ["label-s"] = new("0.75rem", "1.4", "0.015em", 500),
+    };
 
     // ---- 間距、圓角、陰影、動態 -----------------------------------------------------------------
 

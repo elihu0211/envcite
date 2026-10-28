@@ -43,8 +43,9 @@ public static class PlatformTheme
 
     private static Typography Typography()
     {
-        static void Apply(BaseTypography target, DesignTokens.TypeStyle style)
+        static void Apply(BaseTypography target, string role)
         {
+            var style = DesignTokens.Type[role];
             target.FontFamily = DesignTokens.FontFamily;
             target.FontSize = style.Size;
             target.LineHeight = style.LineHeight;
@@ -59,20 +60,32 @@ public static class PlatformTheme
             H2 = new H2Typography(),
             H3 = new H3Typography(),
             H4 = new H4Typography(),
+            H5 = new H5Typography(),
+            H6 = new H6Typography(),
+            Subtitle1 = new Subtitle1Typography(),
+            Subtitle2 = new Subtitle2Typography(),
             Body1 = new Body1Typography(),
             Body2 = new Body2Typography(),
             Caption = new CaptionTypography(),
             Button = new ButtonTypography(),
+            Overline = new OverlineTypography(),
         };
-        Apply(typography.Default, DesignTokens.Body);
-        Apply(typography.H1, DesignTokens.Display);
-        Apply(typography.H2, DesignTokens.H1);
-        Apply(typography.H3, DesignTokens.H2);
-        Apply(typography.H4, DesignTokens.H3);
-        Apply(typography.Body1, DesignTokens.Body);
-        Apply(typography.Body2, DesignTokens.BodySmall);
-        Apply(typography.Caption, DesignTokens.Caption);
-        Apply(typography.Button, DesignTokens.Button);
+        // MudBlazor 的排版名稱對到 M3 角色，元件不論用哪一個名稱，拿到的都是同一張字級表。
+        Apply(typography.Default, "body-l");
+        Apply(typography.H1, "display-l");
+        Apply(typography.H2, "headline-l");
+        Apply(typography.H3, "headline-m");
+        Apply(typography.H4, "headline-s");
+        Apply(typography.H5, "title-l");
+        Apply(typography.H6, "title-m");
+        Apply(typography.Subtitle1, "title-m");
+        Apply(typography.Subtitle2, "title-s");
+        Apply(typography.Body1, "body-l");
+        Apply(typography.Body2, "body-m");
+        Apply(typography.Caption, "body-s");
+        Apply(typography.Button, "label-l");
+        Apply(typography.Overline, "label-s");
+        typography.Overline.TextTransform = "none";
         typography.Button.TextTransform = "none"; // MudBlazor 預設全大寫；中文沒有大小寫，英文全大寫也更難讀。
         return typography;
     }
