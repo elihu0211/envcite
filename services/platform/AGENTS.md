@@ -133,7 +133,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 ## 稽核紀錄
 
-- `AuditEvents` 是**只增不改**，由資料庫觸發器強制（UPDATE、DELETE、TRUNCATE 會報錯），不靠慣例；應用程式的資料庫角色不得是該表的擁有者。
+- `AuditEvents` 是**只增不改**，由資料庫觸發器強制（UPDATE、DELETE、TRUNCATE 會報錯），不靠慣例。執行期以群組 `envcite_platform_app` 的登入身分連線，不是資料庫擁有者（擁有者能停用觸發器）；群組的權限由遷移授予，對該表只有 SELECT、INSERT。遷移以擁有者執行，預設權限才涵蓋之後新建的表。
 - 「誰」從已認證身分推得，**絕不取自請求本文**。針對租戶的事件帶 `SubjectTenantId`；此實體刻意不是 Finbuckle 租戶實體（營運者跨租戶讀取），所以每次讀取都要明確過濾。
 - 有變更可依附的事件用 `db.StageAudit(...)`，與變更同一交易儲存；沒有的用 `IAuditLog.AppendAsync`。`Detail` 不放機密、雜湊或完整 API key（有測試）。
 
@@ -152,7 +152,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 ## Safety
 
 - 連線字串、計費金鑰與本機 appsettings（`appsettings.*.local.json`）的值同樣是機密，不提交。
-- 產生物不手改：`src/*/Migrations/`（用 `dotnet ef`；`.editorconfig` 標為 `generated_code`；唯一例外是 `AuditEventsAppendOnly`，EF 無法表達觸發器，其 `Sql` 呼叫是手寫的）、`obj/` 下的 gRPC 程式碼（來自倉庫根 proto）、`openapi/openapi_v2.json`（來自 `dotnet build`）。
+- 產生物不手改：`src/*/Migrations/`（用 `dotnet ef`；`.editorconfig` 標為 `generated_code`；例外是 EF 無法表達的觸發器與授權：`AuditEventsAppendOnly`、兩個 context 的 `AppRoleGrants`，其 `Sql` 呼叫是手寫的）、`obj/` 下的 gRPC 程式碼（來自倉庫根 proto）、`openapi/openapi_v2.json`（來自 `dotnet build`）。
 
 ## Done when
 
