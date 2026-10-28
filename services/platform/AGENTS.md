@@ -51,7 +51,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **營運操作的失敗帶穩定代碼**（`AdminOutcome.Code`，常數在 `SharedKernel/OutcomeCodes.cs`）：呼叫端與介面依代碼判斷，不依賴文字。`Message` 與 API 的 `detail` 永遠是英文（來自 `OutcomeCodes.English`），服務層不放中文；API 的驗證與一般錯誤回應多一個 `code` 欄位。介面依代碼取使用者的語言（`Labels` 資源檔的 `Outcome.{代碼}`，`OutcomeText.Localized()`）。新增代碼要同時加英文、中文、英文資源檔，測試守住三者一致；Identity 的錯誤經 `IdentityOutcomes` 轉成代碼，不直接傳出。
 - **對外用語獨立於內部 gRPC**（端點在兩者間對映），用法律詞彙；新的公開欄位先取法律用語，內部 proto 不必跟著（例：`pointInTime` 對 gRPC 的 `as_of`）。
 - `.proto` 一律來自倉庫根 `proto/`（Grpc.Tools 於各模組 `.csproj` 編譯），**不得複製**。
-- 內部 gRPC 用戶端只經 `SharedKernel.InternalGrpcClient.AddInternalGrpcClient` 註冊，新增上游也走這裡，不複製一份。連線選項與 Python 伺服器成套（`envcite_grpc.connection`；不等式見 `libs/python/AGENTS.md`），改一邊要看另一邊。只重試 `UNAVAILABLE`（內部方法都是唯讀、確定性的一元呼叫），`DEADLINE_EXCEEDED` 與 `RESOURCE_EXHAUSTED` 不重試。
+- 內部 gRPC 用戶端只經 `SharedKernel.InternalGrpcClient.AddInternalGrpcClient` 註冊，新增上游也走這裡，不複製一份。連線選項與 Python 伺服器成套（`envcite_grpc.connection`；不等式見 `envcite-grpc` 的 README），改一邊要看另一邊。只重試 `UNAVAILABLE`（內部方法都是唯讀、確定性的一元呼叫），`DEADLINE_EXCEEDED` 與 `RESOURCE_EXHAUSTED` 不重試。
 - 錯誤對映：gRPC `InvalidArgument` → 400，`NotFound` → 404，`Unavailable`／`DeadlineExceeded` → 503。
 - 計量只記成功的呼叫（consult 的拒答是成功的結果，要計）；用量不得猜測（端點沒回報用量就不記）。
 - **`Idempotency-Key`（`POST /v2/ground`）**：鍵是（租戶、操作、key）；請求內容只存雜湊，不存原文（問題文字是客戶案情）；只存成功的回應，錯誤不存。回應與用量**在同一次儲存**（`IIdempotencyStore.CompleteAsync`），並行的重複請求只有一個存得進去、另一個的用量隨之回滾，所以重送不重複計量。同 key 不同內容回 422。新的可重送端點照此接上，不另寫一套。
@@ -62,7 +62,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 新增群組：實作 `IPlatformOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
 - **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`Section__Key`）。機密（營運者金鑰雜湊、模型端點金鑰）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
 - 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
-- 正式環境不設 `DefaultPlan`（服務是全付費，沒方案的租戶在資料端點得 402）；Development 與測試設定它，讓剛建立的租戶能用。
+- 部署環境不設 `DefaultPlan`（服務是全付費，沒方案的租戶在資料端點得 402）；Development 與測試設定它，讓剛建立的租戶能用。
 - Development 的種子資料（`SeedDevelopmentData`）只在 Development 生效，且只在對應表是空的時才建；一次性密碼只經 `Console.WriteLine` 印到終端機，不進 `ILogger`，沒有預設密碼。
 - 在 TLS 終止的 proxy 後面要設 `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true`，否則依來源位址限流的規則會把所有人看成同一個位址（且限流狀態是每個副本各一份）。
 
@@ -103,10 +103,10 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 ### 入口的 MFA（TOTP，RFC 6238）
 
-- 登入走 Identity 原生的兩步驟流程（待驗證 cookie 五分鐘、不滑動、授權不認它）。**預設關閉，由使用者在安全頁自行開啟**；驗證與復原碼全用 Identity 原生，不自製 TOTP 驗證與重放防護（Otp.NET 僅營運者後台使用）。
+- 登入走 Identity 原生的兩步驟流程（待驗證 cookie 短效、不滑動、授權不認它）。**預設關閉，由使用者在安全頁自行開啟**；驗證與復原碼全用 Identity 原生，不自製 TOTP 驗證與重放防護（Otp.NET 僅營運者後台使用）。
 - 必須保持且有測試的規則：(1) 密碼與驗證碼共用一個失敗計數器，密碼正確不歸零，要第二步也過才歸零（原生行為，測試守住）；(2) 金鑰以 `GenerateNewAuthenticatorKey` 產生、`SetAuthenticationTokenAsync` 存放，**不用** `ResetAuthenticatorKeyAsync`——設定頁在渲染中執行，它旋轉 stamp 後無法刷新 cookie，會結束該 session；(3) 待驗證 cookie 不能跨租戶使用；(4) 沒有金鑰、驗證碼、復原碼或 `otpauth` URI 進稽核或日誌（測試同時捕捉兩者）。
 - QR 碼在伺服器端繪製，金鑰不交給第三方 QR 服務；復原碼只顯示一次。
-- 要對擁有者與管理員強制 MFA 須明確開啟 `Platform:Portal:RequireMfaForAdmins`（預設 false）；被要求的角色不能自己關閉，營運者重設會把他送回綁定流程，而不是留下無保護的帳號。順序同樣是先改一次性密碼、再綁定。
+- 要對擁有者與管理員強制 MFA 須明確開啟 `Platform:Portal:RequireMfaForAdmins`；被要求的角色不能自己關閉，營運者重設會把他送回綁定流程，而不是留下無保護的帳號。順序同樣是先改一次性密碼、再綁定。
 
 ### 成員管理（客戶自助與營運者）
 
@@ -119,7 +119,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **方案指派是資料，不是設定**：`TenantEntitlements`（不是 Finbuckle 租戶實體）。方案**定義**（限額）在 `Platform:Plans`；**誰在哪個方案**由營運者在執行期設定，立即生效並寫入稽核。查找順序：資料庫指派 → 設定的 `TenantPlans` → `DefaultPlan`。
 - 指派到已從設定移除的方案，視為**沒有方案**（fail closed，記警告），不讓每個請求都失敗。限流分區鍵含方案名稱，所以換方案立即換限流器。
 - **全付費、無免費層**：資料端點需要方案，沒有則回 `402`（problem+json），在授權階段決定、**早於限流**，所以沒方案的租戶不耗用任何額度。管理端點（自己是誰、用量、API key）對任何已認證租戶開放——沒方案的客戶仍要能看到自己、看用量、撤銷被偷的 key——並以一個底限約束，那是濫用防護，不是服務額度。
-- 查詢語意：`asOf` 省略為現行；沒有任何版本涵蓋該日是 `404`，**永遠不回現行條文**；不是日期是 `400`。
+- 查詢語意：`asOf` 同 gRPC 的 `as_of`（倉庫根 `proto/README.md`）；查無對映 `404`，不是日期 `400`。
 - 搜尋與其他可能含客戶案情的輸入用 **POST**：查詢字串會被請求日誌與追蹤的 `url.query` 寫下。**查詢文字不得進任何日誌或指標**（有測試捕捉所有日誌），計量只記次數。REST 搜尋與入口搜尋共用同一個 `ILawSearch`，所以不會漂移。
 - 推論端點只回**候選**結論；`verdicts` 為空代表沒有任何已確認的標註，不代表合規。案件事實放請求本文，不放 URL。公開 DTO 不暴露內部 proto。
 

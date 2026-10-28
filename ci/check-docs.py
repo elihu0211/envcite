@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""檢查文件 front-matter 與相對連結；規範見容器層 AGENTS.md「知識文件」。
+"""檢查文件 front-matter、相對連結與錨點；規範見容器層 AGENTS.md「知識文件」。
 
-只用標準庫。沒有 front-matter 的文件略過；front-matter 不含 type／applies-to／owns 任一鍵者
-（如 skill 的 name／description）不屬本規範，也略過。
+每份知識文件都要有 front-matter；AGENTS.md、CLAUDE.md、skill、MR 範本與評估紀錄不是知識節點，
+不檢查 front-matter，連結照樣檢查。錨點依 GitLab 產生標題 id 的規則比對。只用標準庫。
 """
 
 import re
@@ -13,23 +13,31 @@ TYPES = {"reference", "how-to", "tutorial", "explanation"}
 APPLIES_TO = {"local", "staging", "production", "all"}
 KEBAB = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+HEADING = re.compile(r"^#{1,6}\s+(.*?)\s*#*\s*$")
+FENCE = re.compile(r"^\s*(```|~~~)")
 # 產生物與相依套件目錄，連同 worktree、快取等點開頭目錄一併略過。
 SKIP_DIRS = {"node_modules", "bin", "obj", "__pycache__"}
-FENCE = re.compile(r"^\s*(```|~~~)")
+NOT_NODES = {"AGENTS.md", "CLAUDE.md", "SKILL.md"}
+NOT_NODE_DIRS = (".gitlab/", "services/ontology/eval/")
 
 
 def split_front_matter(text):
-    """回傳 (鍵值 dict 或 None, 內文)。"""
+    """回傳 (鍵值 dict 或 None, 內文)；`owns` 支援行內清單與多行清單。"""
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
         return None, text
     for i in range(1, len(lines)):
         if lines[i].strip() == "---":
-            meta = {}
+            meta, key = {}, None
             for line in lines[1:i]:
+                item = re.match(r"^\s+-\s+(.+?)\s*$", line)
+                if item and key:
+                    meta[key] = (meta[key] + "," if meta[key] else "") + item.group(1)
+                    continue
                 m = re.match(r"^([A-Za-z][\w-]*)\s*:\s*(.*?)\s*(?:#.*)?$", line)
                 if m:
-                    meta[m.group(1)] = m.group(2)
+                    key = m.group(1)
+                    meta[key] = m.group(2)
             return meta, "\n".join(lines[i + 1 :])
     return None, text
 
@@ -41,16 +49,92 @@ def parse_list(value):
     return [v.strip().strip("'\"") for v in value.split(",") if v.strip()]
 
 
-def links(body):
+def outside_fences(body):
     in_fence = False
     for line in body.splitlines():
         if FENCE.match(line):
             in_fence = not in_fence
             continue
-        if in_fence:
+        if not in_fence:
+            yield line
+
+
+def links(body):
+    for line in outside_fences(body):
+        yield from LINK.findall(re.sub(r"`[^`]*`", "", line))
+
+
+def slug(heading):
+    """GitLab 的標題 id：小寫、刪除標點（含全形空白），半形空白轉連字號，連續連字號併為一個。"""
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading).replace("`", "").lower()
+    text = re.sub(r"[^\w\- ]", "", text.strip())
+    return re.sub(r"-+", "-", text.replace(" ", "-"))
+
+
+def anchors(body):
+    """文件的所有標題 id；重複的標題依 GitLab 加 -1、-2。"""
+    seen = {}
+    for line in outside_fences(body):
+        m = HEADING.match(line)
+        if m:
+            base = slug(m.group(1))
+            n = seen.get(base, 0)
+            seen[base] = n + 1
+            if n:
+                seen.setdefault(f"{base}-{n}", 1)
+    return set(seen)
+
+
+def check_front_matter(rel, meta, owners):
+    errors = []
+    if meta is None:
+        return [f"{rel}: 缺少 front-matter（type、applies-to、owns）"]
+    doc_type = meta.get("type")
+    applies_to = meta.get("applies-to")
+    types, applies = "／".join(sorted(TYPES)), "／".join(sorted(APPLIES_TO))
+    if doc_type not in TYPES:
+        errors.append(f"{rel}: type 須為 {types}，得到 {doc_type!r}")
+    if doc_type in {"how-to", "tutorial"} and applies_to not in APPLIES_TO:
+        errors.append(f"{rel}: {doc_type} 須有 applies-to（{applies}），得到 {applies_to!r}")
+    elif applies_to is not None and applies_to not in APPLIES_TO:
+        errors.append(f"{rel}: applies-to 須為 {applies}，得到 {applies_to!r}")
+    for concept in parse_list(meta.get("owns", "")):
+        if not KEBAB.match(concept):
+            errors.append(f"{rel}: owns 的概念 id 須為 kebab-case：{concept!r}")
+        elif concept in owners:
+            errors.append(f"{rel}: 概念 {concept!r} 已被 {owners[concept]} 擁有")
+        else:
+            owners[concept] = rel
+    return errors
+
+
+def check_links(path, rel, body, ids):
+    errors = []
+    for target in links(body):
+        if re.match(r"^([a-zA-Z][a-zA-Z0-9+.-]*:|//)", target):
             continue
-        line = re.sub(r"`[^`]*`", "", line)
-        yield from LINK.findall(line)
+        file_part, _, anchor = target.partition("#")
+        file_part = file_part.split("?", 1)[0]
+        dest = (path.parent / file_part).resolve() if file_part else path
+        if not dest.exists():
+            errors.append(f"{rel}: 連結目標不存在：{target}")
+            continue
+        if not anchor or dest.suffix != ".md":
+            continue
+        if dest not in ids:
+            ids[dest] = anchors(split_front_matter(dest.read_text(encoding="utf-8"))[1])
+        if anchor.lower() not in ids[dest]:
+            errors.append(f"{rel}: 錨點不存在：{target}")
+    return errors
+
+
+def skipped(parts):
+    kept_dot_dirs = {".agents", ".gitlab"}
+    return any((x.startswith(".") and x not in kept_dot_dirs) or x in SKIP_DIRS for x in parts)
+
+
+def is_node(rel):
+    return Path(rel).name not in NOT_NODES and not rel.startswith(NOT_NODE_DIRS)
 
 
 def main():
@@ -58,38 +142,15 @@ def main():
     files = sorted(
         str(p.relative_to(root))
         for p in root.rglob("*.md")
-        if not any(x.startswith(".") and x not in {".agents", ".gitlab"} or x in SKIP_DIRS for x in p.relative_to(root).parts)
+        if not skipped(p.relative_to(root).parts)
     )
-    errors = []
-    owners = {}
-
+    errors, owners, ids = [], {}, {}
     for rel in files:
         path = root / rel
         meta, body = split_front_matter(path.read_text(encoding="utf-8"))
-        if meta is not None and {"type", "applies-to", "owns"} & meta.keys():
-            doc_type = meta.get("type")
-            applies_to = meta.get("applies-to")
-            if doc_type not in TYPES:
-                errors.append(f"{rel}: type 須為 {'／'.join(sorted(TYPES))}，得到 {doc_type!r}")
-            if doc_type in {"how-to", "tutorial"} and applies_to not in APPLIES_TO:
-                errors.append(f"{rel}: {doc_type} 須有 applies-to（{'／'.join(sorted(APPLIES_TO))}），得到 {applies_to!r}")
-            elif applies_to is not None and applies_to not in APPLIES_TO:
-                errors.append(f"{rel}: applies-to 須為 {'／'.join(sorted(APPLIES_TO))}，得到 {applies_to!r}")
-            for concept in parse_list(meta.get("owns", "")):
-                if not KEBAB.match(concept):
-                    errors.append(f"{rel}: owns 的概念 id 須為 kebab-case：{concept!r}")
-                elif concept in owners:
-                    errors.append(f"{rel}: 概念 {concept!r} 已被 {owners[concept]} 擁有")
-                else:
-                    owners[concept] = rel
-
-        for target in links(body):
-            if re.match(r"^([a-zA-Z][a-zA-Z0-9+.-]*:|#|//)", target):
-                continue
-            target_path = target.split("#", 1)[0].split("?", 1)[0]
-            if target_path and not (path.parent / target_path).resolve().exists():
-                errors.append(f"{rel}: 連結目標不存在：{target}")
-
+        if is_node(rel):
+            errors += check_front_matter(rel, meta, owners)
+        errors += check_links(path, rel, body, ids)
     for e in errors:
         print(e, file=sys.stderr)
     return 1 if errors else 0

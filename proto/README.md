@@ -1,15 +1,16 @@
+---
+type: reference
+applies-to: all
+owns: [service-composition, grpc-metadata, as-of-semantics, grpc-error-reasons, red-metrics, caller-grounding, reasoning-api]
+---
+
 # envcite API
 
 gRPC 契約，`buf` 單一模組（根為本目錄）；欄位與方法的語意見 `.proto` 註解。回[倉庫總覽](../README.md)。
 
 套件 `envcite.ontology.v1`（共享，實作在 [`services/ontology`](../services/ontology/README.md)）與 `envcite.consult.v2`（租戶隔離，實作在 [`services/consult`](../services/consult/README.md)）皆為內部介面。外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST，契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
 
-```bash
-buf lint
-buf breaking --against '.git#branch=main'
-```
-
-產生碼與破壞性變更的規則見倉庫根 [`AGENTS.md`](../AGENTS.md) 的 Contract。
+`buf lint`、`buf breaking` 的指令見倉庫根 [`AGENTS.md`](../AGENTS.md) 的 Commands；產生碼與破壞性變更的規則見同檔的 Contract。
 
 ## 服務如何組合
 
@@ -48,7 +49,7 @@ flowchart LR
     class client,llm ext
 ```
 
-外部用戶端只經 platform 的 REST API 進入；服務之間走 gRPC，認證由叢集的服務網格（mTLS 加授權政策）負責，服務本身不驗證呼叫端。
+外部用戶端只經 platform 的 REST API 進入；服務之間走 gRPC，服務本身不驗證呼叫端，只准指定服務呼叫由部署環境執行（部署庫）。
 
 ### 一次接地請求
 
@@ -99,7 +100,7 @@ sequenceDiagram
 
 consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 
-**RED 指標**（rate、errors、duration）：每個一元呼叫在兩側各有一個耗時直方圖，次數是 rate、`rpc.response.status_code` 不是 `OK` 的是 errors，分布是 duration；兩側用同一組標籤（`rpc.service`、`rpc.method`、`rpc.response.status_code`），所以能對照。租戶與案件內容不進標籤。沒設 `OTEL_EXPORTER_OTLP_ENDPOINT` 就不匯出。名稱與標籤的真值在程式碼，不在文件：伺服器端是 `libs/python/envcite-grpc` 的 `metrics.py`；platform 的用戶端是 `services/platform` 的 `GrpcClientMetrics.cs`；對外 HTTP 是 ASP.NET Core 標準的伺服器請求指標，接線在 `Observability.cs`。
+**RED 指標**（rate、errors、duration）：每個一元呼叫在兩側各有一個耗時直方圖，次數是 rate、`rpc.response.status_code` 不是 `OK` 的是 errors，分布是 duration；兩側用同一組標籤（`rpc.service`、`rpc.method`、`rpc.response.status_code`），所以能對照。租戶與案件內容不進標籤；匯出的開關依倉庫根 [`AGENTS.md`](../AGENTS.md) 的可觀測性約定。名稱與標籤的真值在程式碼，不在文件：伺服器端是 `libs/python/envcite-grpc` 的 `metrics.py`；platform 的用戶端是 `services/platform` 的 `GrpcClientMetrics.cs`；對外 HTTP 是 ASP.NET Core 標準的伺服器請求指標，接線在 `Observability.cs`。
 
 ## 呼叫端的語言模型
 

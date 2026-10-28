@@ -1,3 +1,9 @@
+---
+type: reference
+applies-to: all
+owns: [service-map]
+---
+
 # 臺灣環境知識檢索與引用接地服務 (envcite)
 
 [![pipeline status](https://gitlab.com/thuaisse-lab/envcite/badges/main/pipeline.svg)](https://gitlab.com/thuaisse-lab/envcite/-/pipelines)
@@ -6,11 +12,11 @@
 
 | 路徑 | 職責 | 文件 |
 |------|------|------|
-| `services/platform/` | 對外 REST、API key 授權、租戶配額與計量 | [README](services/platform/README.md) |
-| `services/consult/` | 引用接地：封閉證據集、可答性判定 | [README](services/consult/README.md) |
-| `services/ontology/` | 本體：跨來源法規知識的集中存放、檢索與推論 | [README](services/ontology/README.md) |
-| `proto/` | 服務間 gRPC 契約 | [README](proto/README.md) |
-| `libs/python/` | 服務之外、可獨立測試的 Python 套件 | [AGENTS](libs/python/AGENTS.md) |
+| `services/platform/` | 多租戶控制平面：對外 REST、API key 授權、租戶配額與計量 | [README](services/platform/README.md) · [AGENTS](services/platform/AGENTS.md) |
+| `services/consult/` | 接地：封閉證據集、可答性判定，租戶隔離 | [README](services/consult/README.md) · [AGENTS](services/consult/AGENTS.md) |
+| `services/ontology/` | 本體：各來源知識的集中存放、檢索與推論，不分租戶 | [README](services/ontology/README.md) · [AGENTS](services/ontology/AGENTS.md) |
+| `proto/` | 服務間 gRPC 契約，唯一真值 | [README](proto/README.md) |
+| `libs/python/` | 服務之外、可獨立測試的 Python 套件，uv workspace 成員，不發佈 | [AGENTS](libs/python/AGENTS.md) |
 
 ## 延伸閱讀
 

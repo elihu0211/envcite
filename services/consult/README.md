@@ -1,6 +1,12 @@
+---
+type: reference
+applies-to: all
+owns: [consult-surfaces]
+---
+
 # envcite-consult
 
-接地服務：以本體服務供給的內容，為呼叫端的語言模型備妥可引用的封閉證據集（代號如 `L1`、`L2`，附條文），或拒答。本服務不執行生成模型。回[倉庫總覽](../../README.md)。
+接地服務：以本體服務供給的內容，為呼叫端的語言模型備妥可引用的封閉證據集（代號如 `L1`、`L2`，附條文），或拒答；呼叫端怎麼用見 [`proto/README.md`](../../proto/README.md)。回[倉庫總覽](../../README.md)。
 
 - 介面：gRPC `ConsultationService.Ground`，契約 [`consult.proto`](../../proto/envcite/consult/v2/consult.proto)；呼叫端怎麼用證據集、怎麼核驗模型的輸出，見 [`proto/README.md`](../../proto/README.md)。
 - 呼叫端 [`platform`](../platform/README.md)（對外為 `POST /v2/ground`）；上游 [`ontology`](../ontology/README.md)。

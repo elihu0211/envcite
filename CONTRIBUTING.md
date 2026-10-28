@@ -77,7 +77,7 @@ docker exec envcite-pg createdb -U <帳號> platform
 
 各分支共用這兩個庫：同一時間只跑一條分支的服務，否則兩邊的遷移會互相覆寫。測試不使用它們——Testcontainers 每次自起資料庫。
 
-ontology 遷移檔改過（已套用的檔案內容改變）時，清掉 ontology 的綱要後重新遷移並重新匯入資料；綱要的劃分見 [ontology 的 `AGENTS.md`](services/ontology/AGENTS.md)。
+ontology 遷移檔改過（已套用的檔案內容改變）時，清掉 ontology 的綱要後重新遷移並重新匯入資料；綱要以 [`services/ontology/migrations/`](services/ontology/migrations) 為準。
 
 ### 第一組資料（platform，僅本機）
 
@@ -106,7 +106,7 @@ wt platform   # 同一個終端機啟動，才讀得到上面的環境變數
 
 ## 常用指令
 
-從**該服務目錄**執行；完整清單與環境變數見各服務的 `AGENTS.md`。Python 服務與 [`libs/python/`](libs/python/AGENTS.md) 是同一個 uv workspace，依賴在倉庫根一次裝好（`uv sync --all-packages`，`wt` 建樹時已執行）。
+從**該服務目錄**執行；完整指令見各服務的 `AGENTS.md`，環境變數見各服務的 README。Python 服務與 [`libs/python/`](libs/python/AGENTS.md) 是同一個 uv workspace，依賴在倉庫根一次裝好（`uv sync --all-packages`，`wt` 建樹時已執行）。
 
 | | [`services/platform/`](services/platform/AGENTS.md) | [`services/ontology/`](services/ontology/AGENTS.md)、[`services/consult/`](services/consult/AGENTS.md) |
 |---|---|---|
@@ -126,8 +126,7 @@ wt platform   # 同一個終端機啟動，才讀得到上面的環境變數
 4. **上線**：合併後 CI 把受影響服務的映像推送為 `:<commit-sha>`，之後自動部署；流程與回退見部署庫（位置見容器層 `core-env-saas/AGENTS.md`）。
 5. **收尾**：`wt remove <分支>`。
 
-- **改契約**：兩側的產生碼在同一個 MR 更新；破壞性變更開新版本（`v2`），不改 `v1`。
-- **回退**：revert 有問題的 commit，照常合併上線。
+- **改契約**：規則見 [`AGENTS.md`](AGENTS.md) 的 Contract。
 
 CI 依改動路徑分流，job 與路徑對應以 `.gitlab-ci.yml` 的 `rules:changes` 為準。分流的原則：
 
@@ -146,7 +145,7 @@ CI 依改動路徑分流，job 與路徑對應以 `.gitlab-ci.yml` 的 `rules:ch
 
 依賴集中在單一檔案，由 Renovate（`renovate.json`）提 MR 更新；`.gitlab-ci.yml` 的 `variables:` 上方的 `# renovate:` 註記是它辨識版本的依據，新增版本變數時一併加上（Dockerfile 的 `ARG` 由 Renovate 內建的 Dockerfile 解析讀取，不需註記）。手動升級時，表中各位置在同一次提交一起改。
 
-Renovate 由外部排程集中執行，本倉庫不放令牌也不跑 job。同一工具出現在多處者（python、uv、.NET SDK 與映像）已設為同一個 MR。**不自動合併**：合併進 `main` 會建置映像並由 Argo CD Image Updater 自動上線，依賴更新須先看過 MR。
+Renovate 由外部排程集中執行，本倉庫不放令牌也不跑 job。同一工具出現在多處者（python、uv、.NET SDK 與映像）已設為同一個 MR。**不自動合併**：合併進 `main` 會建置映像並自動上線，依賴更新須先看過 MR。
 
 | 版本 | 位置 |
 |------|------|

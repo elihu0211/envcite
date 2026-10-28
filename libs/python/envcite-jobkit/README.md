@@ -1,3 +1,9 @@
+---
+type: reference
+applies-to: all
+owns: [jobkit-policy, jobkit-exit-codes]
+---
+
 # envcite-jobkit
 
 批次 Job 的宣告式韌性政策：斷路器、重試退避、預算、進度心跳、單項隔離。只用標準庫，不引入第三方依賴。
@@ -45,25 +51,24 @@ raise SystemExit(run(batches(), handle, policy, item_id=lambda b: b.id))
 
 ## 政策欄位
 
-來源優先序：環境變數 `JOBKIT_<欄位大寫>` > TOML（頂層或 `[jobkit]` 表）> `Policy` 預設。空字串視為未設定；未知的 TOML 欄位報錯。
+來源優先序：環境變數 `JOBKIT_<欄位大寫>` > TOML（頂層或 `[jobkit]` 表）> `Policy` 預設（預設值以 [`policy.py`](src/envcite_jobkit/policy.py) 為準）。空字串視為未設定；未知的 TOML 欄位報錯。
 
-| 欄位 | 預設 | 說明 |
-|------|------|------|
-| `name` | `job` | 識別；預設心跳檔名 |
-| `failure_threshold` | 0.5 | 視窗內失敗率達此值開啟斷路器 |
-| `min_calls` | 10 | 視窗內至少幾次呼叫才判斷 |
-| `window_seconds` | 60 | 失敗率的滑動視窗 |
-| `open_seconds` | 300 | 開啟多久後轉半開 |
-| `half_open_probes` | 3 | 半開需連續成功幾次才關閉；任一次失敗重新開啟 |
-| `open_action` | `exit` | `exit`：以 75 結束；`wait`：就地等到半開 |
-| `max_attempts` | 3 | 單項的端點錯誤最多嘗試次數 |
-| `backoff_base_seconds`、`backoff_max_seconds` | 0.5、30 | 退避 `[0, min(max, base·2^(n-1))]`（full jitter） |
-| `budget_seconds`、`budget_items` | 不限 | 用完以 0 結束；在取下一項前檢查，不多消耗來源 |
-| `heartbeat_path` | `/tmp/<name>.heartbeat` | 心跳檔 |
-| `heartbeat_min_interval_seconds` | 0 | 心跳最短間隔，項目很細時節流 |
-| `dead_letter_table` | `jobkit_dead_letter` | 資料庫實作的隔離表名 |
-| `dead_letter_path` | 無 | 設定時用 JSONL 檔實作；否則記憶體 |
-| `max_dead_letters` | 不限 | 隔離數超過即視為資料不合預期，結束碼 2 |
+| 欄位 | 說明 |
+|------|------|
+| `name` | 識別；預設心跳檔名 |
+| `failure_threshold` | 視窗內失敗率達此值開啟斷路器 |
+| `min_calls` | 視窗內至少幾次呼叫才判斷 |
+| `window_seconds` | 失敗率的滑動視窗 |
+| `open_seconds` | 開啟多久後轉半開 |
+| `half_open_probes` | 半開需連續成功幾次才關閉；任一次失敗重新開啟 |
+| `open_action` | `exit`：以 75 結束；`wait`：就地等到半開 |
+| `max_attempts` | 單項的端點錯誤最多嘗試次數 |
+| `backoff_base_seconds`、`backoff_max_seconds` | 退避 `[0, min(max, base·2^(n-1))]`（full jitter） |
+| `budget_seconds`、`budget_items` | 用完以 0 結束；在取下一項前檢查，不多消耗來源 |
+| `heartbeat_path` | 心跳檔 |
+| `heartbeat_min_interval_seconds` | 心跳最短間隔，項目很細時節流 |
+| `dead_letter_path` | 設定時用 JSONL 檔實作隔離；未設時在記憶體 |
+| `max_dead_letters` | 隔離數超過即視為資料不合預期，結束碼 2 |
 
 ## 進度心跳
 
@@ -82,20 +87,6 @@ livenessProbe:
 
 `DeadLetterSink.record(DeadLetter(item_id, error, kind, attempts, at))`。內建 `MemoryDeadLetterSink`、`JsonlDeadLetterSink`。
 
-資料庫實作（尚未提供，也不在此建立遷移）建議的資料表，表名取自 `dead_letter_table`：
-
-| 欄位 | 型別 | 說明 |
-|------|------|------|
-| `job` | text | `Policy.name` |
-| `item_id` | text | 項目識別 |
-| `kind` | text | `item`／`retries_exhausted` |
-| `error` | text | 例外型別與訊息 |
-| `attempts` | int | 本次嘗試次數 |
-| `first_seen_at`、`last_seen_at` | timestamptz | |
-| `seen_count` | int | 跨次執行累計 |
-
-主鍵 `(job, item_id)`；以 upsert 累計 `seen_count`，同一項反覆隔離時一眼可見。
-
 ## 跨次執行的斷路器狀態
 
 預設只在記憶體。要讓「開啟」跨次執行有效（重試時不再打爆端點），實作 `BreakerStore.load/save`，每個 `job` 一列：
@@ -111,21 +102,6 @@ livenessProbe:
 ## 指標
 
 `Metrics.gauge(name, value)`：`jobkit_breaker_state`（0 closed、1 half_open、2 open）、`jobkit_dead_letter_total`、`jobkit_budget_remaining_seconds`／`_items`。預設 `LogMetrics` 寫日誌；接 OTel 由服務自己實作該介面。
-
-## 與 K8s 的對應
-
-`podFailurePolicy`（Job `restartPolicy: Never` 時才可用）：
-
-```yaml
-podFailurePolicy:
-  rules:
-    - action: FailJob
-      onExitCodes: {containerName: job, operator: In, values: [2]}
-    - action: Ignore      # 斷路器開啟：不消耗 backoffLimit，由排程器下次再跑
-      onExitCodes: {containerName: job, operator: In, values: [75]}
-```
-
-退出 1 走 `backoffLimit`。`Ignore` 會立刻重建 Pod，若要拉開間隔，改由 CronJob 的下個排程重試（`Ignore` 換成 `Count` 並設小的 `backoffLimit`）。
 
 ## 測試
 

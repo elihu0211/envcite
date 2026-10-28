@@ -1,6 +1,12 @@
+---
+type: reference
+applies-to: all
+owns: [tokenizer-identity]
+---
+
 # envcite-segmenter
 
-中文斷詞，詞典由語料產生，無第三方依賴。索引端與查詢端必須用同一個分詞器（約束見 [`libs/python/AGENTS.md`](../AGENTS.md)），否則詞彙臂會安靜地變差。
+中文斷詞，詞典由語料產生，無第三方依賴。索引端與查詢端必須用同一個分詞器，否則詞彙臂會安靜地變差；識別碼讓兩端不一致時查得出來（見「tokenizer id」）。
 
 ## 切法
 

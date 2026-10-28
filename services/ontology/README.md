@@ -1,3 +1,9 @@
+---
+type: reference
+applies-to: all
+owns: [ontology-entrypoints, sync-exit-codes, models-config]
+---
+
 # envcite-ontology
 
 環境知識本體的集中處：各來源的知識各成一個本體（如法規本體 `law`），在這裡提供語料、檢索與推論。回[倉庫總覽](../../README.md)。
@@ -9,7 +15,7 @@
 
 ## 入口
 
-所有入口都在同一個映像裡：預設 command 是伺服器，其餘以 command 覆寫。完整清單見 `pyproject.toml` 的 `[project.scripts]`。
+所有入口都在同一個映像裡：預設 command 是伺服器，其餘以 command 覆寫。入口名稱是與部署庫的契約，定義在 `pyproject.toml` 的 `[project.scripts]`。
 
 | 入口 | 型態 | 做什麼 |
 |------|------|--------|

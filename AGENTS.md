@@ -5,15 +5,7 @@
 - **Name:** envcite（環境知識 EnvCite）— 臺灣環境知識的檢索與引用接地服務，單一倉庫、多個獨立部署的服務
 - **Remote:** `git@gitlab.com:thuaisse-lab/envcite.git`
 
-| 路徑 | 內容 | 文件 |
-|------|------|------|
-| `proto/` | gRPC 契約，**唯一真值** | [README](proto/README.md) |
-| `services/platform/` | 多租戶控制平面與對外 REST | [README](services/platform/README.md) · [AGENTS](services/platform/AGENTS.md) |
-| `services/ontology/` | 本體：各來源知識的集中處、檢索與推論（shared, non-tenant） | [README](services/ontology/README.md) · [AGENTS](services/ontology/AGENTS.md) |
-| `services/consult/` | 接地：為呼叫端的語言模型備妥封閉證據集，或拒答（租戶隔離；本身不執行生成模型） | [README](services/consult/README.md) · [AGENTS](services/consult/AGENTS.md) |
-| `libs/python/` | 服務之外、可獨立測試的 Python 套件，uv workspace 成員，不發佈 | [AGENTS](libs/python/AGENTS.md) |
-
-總覽見根 [`README.md`](README.md)；本機開發環境見 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
+服務、目錄與各自的 README、AGENTS 見根 [`README.md`](README.md) 的目錄表；本機開發環境見 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
 
@@ -37,7 +29,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 
 ### 平行 worktree
 
-每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree，環境由 `.config/wt.toml` 建立；本機伺服器用 `wt platform`、`wt ontology`、`wt consult` 起，port 由分支推導。各服務的庫固定（各分支共用），同一時間只跑一條分支的服務。資料庫備妥、連線設定與本機種子帳號見 `CONTRIBUTING.md`；測試不經此路，Testcontainers 自起資料庫。
+每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree，環境由 `.config/wt.toml` 建立；本機伺服器用 `wt platform`、`wt ontology`、`wt consult` 起，port 由分支推導。資料庫（各分支共用）、連線設定與本機種子帳號見 `CONTRIBUTING.md`。
 
 ## 目錄配置與擴充判準
 
@@ -61,7 +53,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 - API 文件：欄位語意寫在 `.proto` 註解；跨服務的組合與呼叫端接法寫在 `proto/README.md`（buf 模組文件）。改契約時兩者一起改。
 - 破壞性變更要開新套件版本（`v2`）；`v1` 必須通過 `buf breaking`（WIRE_JSON：守線路與 JSON 相容）。刪除欄位時以 `reserved` 保留其號碼與名稱。
 - 改 proto 的 MR 必須同時更新兩側產生碼，一件事一個 MR。
-- 服務間的 gRPC 認證由叢集的服務網格負責（見 `proto/README.md`），服務本身不驗證呼叫端。
+- 服務本身不驗證 gRPC 呼叫端；只准指定服務呼叫由部署環境執行（見 `proto/README.md`）。
 
 ## Conventions
 
@@ -70,7 +62,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 - **文件只寫不會過時的**：規範、不變式、契約（端點、欄位、設定鍵、格式；寫在擁有該概念的 README）與指向真值的指標。版本、清單、預設值、事件名稱、日期、「目前／尚未」這類現況，以程式碼與測試為準，不寫進文件；決策論據寫在 MR 說明，不寫進 `AGENTS.md`（作業規範寫進論據必然過期）。
 - **可觀測性各服務同一約定**：只認標準 `OTEL_*` 鍵，沒設 `OTEL_EXPORTER_OTLP_ENDPOINT` 就不匯出；指標標籤只用有限集合，租戶與請求內容不進指標。RED 指標的兩側對照見 `proto/README.md`。
 - **配置檔與腳本的註解**：繁體中文，只寫「為什麼」與前提，不寫程式本身已說明的「做什麼」，不寫日期與事件經過；不用裝飾分隔線；JSON 沒有註解，用 `description` 欄位。
-- 新增或搬動目錄、服務時，同一次提交更新根 `README.md` 的目錄與本檔的索引表，以及各 `AGENTS.md` 的索引。
+- 新增或搬動目錄、服務時，同一次提交更新根 `README.md` 的目錄表與各 `AGENTS.md` 的索引。
 - 本檔保持簡短；長流程 → `.agents/skills/<name>/SKILL.md`。各服務的 `AGENTS.md` 只寫該服務獨有的，倉庫層規範以本檔為準、不重複。
 
 ## Layering
@@ -93,10 +85,10 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 ## Safety
 
 - 不提交機密或真實 `.env*` 值。
-- 不在 `main` 上改動或 commit：先開分支，走 MR（`.githooks/pre-commit` 擋下 main 上的 commit；`wt` 建樹時啟用，既有 clone 執行 `git config core.hooksPath .githooks`）。
+- 不在 `main` 上改動或 commit：先開分支，走 MR（擋下的 hook 見 `CONTRIBUTING.md`「從開發到上線」）。
 - 動手前先問：force-push、改寫歷史、正式環境部署、破壞性資料庫操作、對共用資料庫套用遷移。
 - 分支收尾（落地或交接）依容器層 `core-env-saas/AGENTS.md`。
-- 產生物與各服務專屬的禁改路徑、資料來源標示，見各巢狀 `AGENTS.md`（`envcite-proto` 的產生碼在 `libs/python/AGENTS.md`）。
+- 產生物與各服務專屬的禁改路徑、資料來源標示，見各巢狀 `AGENTS.md`（`envcite-proto` 的產生碼見其 README）。
 
 ## Done when
 
