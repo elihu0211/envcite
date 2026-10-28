@@ -30,8 +30,7 @@ public static class ConversationsModule
     public static IServiceCollection AddConversationsModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
-        services.AddPlatformOptions<ConversationHistoryOptions>();
-        services.AddSingleton<IValidateOptions<ConversationHistoryOptions>, ConversationHistoryOptionsValidator>();
+        services.AddPlatformOptions<ConversationHistoryOptions, ConversationHistoryOptionsValidator>();
         services.AddScoped<IConversationHistory, ConversationHistory>();
         return services;
     }

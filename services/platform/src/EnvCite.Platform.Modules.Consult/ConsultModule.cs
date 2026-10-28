@@ -86,8 +86,7 @@ public static class ConsultModule
     public static IServiceCollection AddConsultModule(this IServiceCollection services)
     {
         services.AddInternalGrpcClient<ConsultationService.ConsultationServiceClient, ConsultOptions>();
-        services.AddPlatformOptions<AnswerOptions>();
-        services.AddSingleton<IValidateOptions<AnswerOptions>, AnswerOptionsValidator>();
+        services.AddPlatformOptions<AnswerOptions, AnswerOptionsValidator>();
         // 只在有人要用時才建立（關閉時沒有端點與金鑰可建）；測試以自己的 IChatClient 取代。
         services.TryAddSingleton<IChatClient>(provider =>
         {

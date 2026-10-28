@@ -23,8 +23,7 @@ public static class ApiAccessModule
     public static IServiceCollection AddApiAccessModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
-        services.AddPlatformOptions<ApiAccessOptions>();
-        services.AddSingleton<IValidateOptions<ApiAccessOptions>, ApiAccessOptionsValidator>();
+        services.AddPlatformOptions<ApiAccessOptions, ApiAccessOptionsValidator>();
         services.AddSingleton<PlanCatalog>();
         services.AddSingleton<EntitlementLoader>();
         services.AddSingleton<IEntitlementRefresher>(sp => sp.GetRequiredService<EntitlementLoader>());

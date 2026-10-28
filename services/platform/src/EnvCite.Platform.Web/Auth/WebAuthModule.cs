@@ -20,10 +20,8 @@ internal static class WebAuthModule
     /// </summary>
     public static IServiceCollection AddWebAuth(this IServiceCollection services)
     {
-        services.AddPlatformOptions<UiOptions>();
-        services.AddSingleton<IValidateOptions<UiOptions>, UiOptionsValidator>();
-        services.AddPlatformOptions<PortalOptions>();
-        services.AddSingleton<IValidateOptions<PortalOptions>, PortalOptionsValidator>();
+        services.AddPlatformOptions<UiOptions, UiOptionsValidator>();
+        services.AddPlatformOptions<PortalOptions, PortalOptionsValidator>();
         services.AddRateLimiter(PortalRateLimit.Configure);
         services.AddSingleton<IAuthorizationHandler, OperatorHandler>();
 

@@ -11,7 +11,7 @@ public static class PlatformDataModule
     /// <summary>註冊 <see cref="PlatformDbContext"/>。</summary>
     public static IServiceCollection AddPlatformData(this IServiceCollection services)
     {
-        services.AddPlatformDatabaseOptions();
+        services.AddPlatformOptions<DatabaseOptions, DatabaseOptionsValidator>();
         services.AddDbContext<PlatformDbContext>((provider, options) =>
             Configure(options, provider.GetRequiredService<IOptions<DatabaseOptions>>().Value.Platform));
         return services;

@@ -24,7 +24,7 @@ public static class TenancyModule
     /// </summary>
     public static IServiceCollection AddTenancyModule(this IServiceCollection services)
     {
-        services.AddPlatformDatabaseOptions();
+        services.AddPlatformOptions<DatabaseOptions, DatabaseOptionsValidator>();
         services.AddDbContext<TenancyDbContext>((provider, options) =>
             Configure(options, provider.GetRequiredService<IOptions<DatabaseOptions>>().Value.Platform));
 
@@ -54,8 +54,7 @@ public static class TenancyModule
     public static IServiceCollection AddPlatformDataProtection(this IServiceCollection services, IConfiguration configuration)
     {
         // 校驗（成對、檔案存在）走一般的選項，啟動時失敗並指名鍵。
-        services.AddPlatformOptions<DataProtectionCertificateOptions>();
-        services.AddSingleton<IValidateOptions<DataProtectionCertificateOptions>, DataProtectionCertificateOptionsValidator>();
+        services.AddPlatformOptions<DataProtectionCertificateOptions, DataProtectionCertificateOptionsValidator>();
 
         var protection = services.AddDataProtection()
             .SetApplicationName("envcite-platform")

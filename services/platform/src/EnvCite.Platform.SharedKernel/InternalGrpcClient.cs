@@ -52,8 +52,7 @@ public static class InternalGrpcClient
         where TClient : class
         where TOptions : InternalGrpcClientOptions, IPlatformOptions
     {
-        services.AddPlatformOptions<TOptions>();
-        services.AddSingleton<IValidateOptions<TOptions>, InternalGrpcClientOptionsValidator<TOptions>>();
+        services.AddPlatformOptions<TOptions, InternalGrpcClientOptionsValidator<TOptions>>();
         services.AddHttpContextAccessor();
         services.TryAddTransient<GrpcClientMetrics>();
 
