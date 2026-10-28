@@ -19,25 +19,34 @@
     {"derivation": {"method": "llm", "agent": "…", "agent_version": "…"},
      "review": "confirmed",
      "scheme": {"code": "env", "title": "…", "law": "<pcode，選填：方案只及於這部法規>"},
-     "concepts": [{"code": "cod", "label": "…", "aliases": ["…"]}],
+     "concepts": [{"code": "cod", "label": "…", "aliases": ["…"], "matches": {"cas": "…"}}],
      "definitions": [{"id": "d1", "law": "<pcode>", "path": "art_2", "text": "<原文>",
                       "term": "<code>", "definition": "…", "members": ["<code>"]}],
      "statements": [
        {"id": "s1", "law": "<pcode>", "path": "art_7/para_1", "text": "<原文>",
         "kind": "prescriptive", "deontic": "obligation",
         "slots": {"action": {"concept": "discharging"},
-                  "subject": [{"literal": "事業"}, {"literal": "負責人"}]},  # 多個值彼此擇一
+                  "subject": [{"literal": "事業", "liability": "act"},
+                              {"literal": "負責人"}]},  # 多個值彼此擇一
         "conditions": [{"role": "duty", "clause": 1, "concept": "cod", "comparator": "le",
                         "threshold": 100, "unit": "mg/L", "negated": false, "judgement": false,
-                        "delegate": {"law": "<pcode>", "path": "art_2"}}],
+                        "delegate": {"law": "<pcode>", "path": "art_2"}, "permit": "<code>",
+                        "method": "<code>", "averaging": "<code>"}],
         "exception_of": "s0",
         "sanction": {"punishes": "s1", "effect": "fine", "min": 60000, "max": 20000000,
-                     "repeating": false, "discretionary": false}}],
+                     "repeating": false, "discretionary": false,
+                     "triggers": [{"statement": "s2", "kind": "order_lapsed"}]}}],
      "overrides": [{"winner": "s2", "loser": "s1", "basis": "lex_specialis"}]}
 
-`conditions` 的門檻值恰給一個：`threshold`、`delegate`（委由授權命令的單元）或 `value_concept`。
-罰則 `effect` 除處罰種類外有 `order`（改善命令等非處罰的行政命令）；`repeating` 標按次處罰；
-`discretionary` 標條文寫「得」的效果裁量。
+`conditions` 的門檻值恰給一個：`threshold`、`delegate`（委由授權命令的單元）、`value_concept`，
+或 `permit`（委由個別處分：許可種類的概念，量值由呼叫端隨案件事實提供）。限值（`role: limit`）
+可另標認定方式：`method`（檢測方法）與 `averaging`（平均時段），都是概念代碼。
+主體槽位可標責任基礎 `liability`（`act`、`state`、`representative`），其他槽位不可。
+罰則 `effect` 除處罰種類外有 `order`（改善命令等非處罰的行政命令）與 `disgorgement`（不法利得的
+追繳）；`repeating` 標按次處罰；`discretionary` 標條文寫「得」的效果裁量；`triggers` 是它的前提：
+另一個罰則（文件裡的 `statement`，或資料庫的 `statement_id`），`kind` 為 `order_lapsed`（命令屆期
+未履行，前提須是 `order`）或 `sanction_imposed`（另一處分已作成），數個前提彼此是「或」。
+概念的 `matches` 是外部對映（外部體系 → 識別碼），只記等同。
 `judgement` 標要件中的不確定法律概念（情節重大、必要時）：系統不判定，呼叫端給的值視為其判斷，
 未給則列為需判斷；限值不得標記。效果面裁量不是要件，用罰則的 `discretionary`。
 """
@@ -63,6 +72,21 @@ log = logging.getLogger(__name__)
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
+#: 文件裡可寫的列舉值，與資料庫的同名列舉一致（`tests/test_environmental_annotation.py` 守門）；
+#: 抽取器的提示與解碼期 Schema 由這裡組成。
+LEGAL_EFFECTS = (
+    "fine",
+    "confiscation",
+    "restriction",
+    "deprivation",
+    "reputation",
+    "warning",
+    "order",
+    "disgorgement",
+)
+LIABILITY_BASES = ("act", "state", "representative")
+TRIGGER_KINDS = ("order_lapsed", "sanction_imposed")
+
 EXIT_INVALID = 2
 
 
@@ -81,6 +105,7 @@ class Loaded:
     definitions: int = 0
     #: 內容與既有未駁回主張相同、沿用既有主張的陳述與用語定義數
     duplicates: int = 0
+    triggers: int = 0
 
 
 def load(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
@@ -146,7 +171,7 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
             raise AnnotationError(f"引用了不存在的陳述：{key}")
         return ids[key]
 
-    exceptions = overrides = sanctions = 0
+    exceptions = overrides = sanctions = triggers = 0
     for s, written in held:
         sid, sanction = str(s["id"]), s["sanction"]
         conn.execute(
@@ -180,6 +205,20 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
                 " VALUES (%s, %s) ON CONFLICT DO NOTHING",
                 (ids[str(s["id"])], ref(str(s["exception_of"]))),
             ).rowcount
+    for s, _ in held:
+        for t in s["sanction"].get("triggers") or []:
+            triggers += conn.execute(
+                "INSERT INTO annotation.sanction_trigger"
+                " (statement_id, trigger_statement_id, trigger_kind)"
+                " VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+                (
+                    ids[str(s["id"])],
+                    int(t["statement_id"])
+                    if t.get("statement_id") is not None
+                    else ref(str(t["statement"])),
+                    t["kind"],
+                ),
+            ).rowcount
     for o in doc.get("overrides", []):
         overrides += conn.execute(
             "INSERT INTO annotation.statement_override"
@@ -189,7 +228,15 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
         ).rowcount
     defined, repeated = _definitions(conn, doc.get("definitions", []), concepts, d_id, review)
     return Loaded(
-        len(ids), conditions, exceptions, overrides, sanctions, ids, defined, duplicates + repeated
+        len(ids),
+        conditions,
+        exceptions,
+        overrides,
+        sanctions,
+        ids,
+        defined,
+        duplicates + repeated,
+        triggers,
     )
 
 
@@ -254,12 +301,32 @@ def _concepts(
                 " VALUES (%s, %s, 'alias') ON CONFLICT DO NOTHING",
                 (cid, alt),
             )
+        _matches(conn, cid, c["code"], c.get("matches") or {})
     return {
         str(code): int(cid)  # type: ignore[call-overload]
         for code, cid in conn.execute(
             "SELECT code, id FROM vocab.concept WHERE scheme_id = %s", (scheme_id,)
         )
     }
+
+
+def _matches(conn: Conn, concept_id: int, code: object, matches: Mapping[str, Any]) -> None:
+    """外部對映（外部體系 → 識別碼），只記等同；與既有的對映不同就拒絕，不覆寫。"""
+    for system, value in matches.items():
+        external = str(value)
+        conn.execute(
+            "INSERT INTO vocab.concept_match (concept_id, external_system, external_id)"
+            " VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+            (concept_id, system, external),
+        )
+        row = conn.execute(
+            "SELECT external_id FROM vocab.concept_match"
+            " WHERE concept_id = %s AND external_system = %s",
+            (concept_id, system),
+        ).fetchone()
+        if row is None or row[0] != external:
+            known = None if row is None else row[0]
+            raise AnnotationError(f"概念「{code}」在 {system} 已對映到 {known}，不是 {external}")
 
 
 def _concept(concepts: Mapping[str, int], code: object) -> int:
@@ -392,14 +459,15 @@ def _slot(
 ) -> None:
     conn.execute(
         "INSERT INTO annotation.statement_slot"
-        " (statement_id, slot_role, alternative, concept_id, literal)"
-        " VALUES (%s, %s, %s, %s, %s)",
+        " (statement_id, slot_role, alternative, concept_id, literal, liability_basis)"
+        " VALUES (%s, %s, %s, %s, %s, %s)",
         (
             statement_id,
             slot,
             alternative,
             _concept(concepts, v["concept"]) if v.get("concept") is not None else None,
             v.get("literal"),
+            v.get("liability"),
         ),
     )
 
@@ -416,8 +484,10 @@ def _conditions(
             "INSERT INTO annotation.statement_condition"
             " (statement_id, condition_role, disjunct_no, concept_id, comparator,"
             "  threshold, measure_unit,"
-            "  value_concept_id, negated, delegate_provision_id, needs_assessment)"
-            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "  value_concept_id, negated, delegate_provision_id, needs_assessment,"
+            "  delegate_permit_concept_id, measurement_method_concept_id,"
+            "  averaging_period_concept_id)"
+            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
                 statement_id,
                 c["role"],
@@ -430,6 +500,10 @@ def _conditions(
                 bool(c.get("negated", False)),
                 _provision(conn, delegate["law"], delegate["path"]) if delegate else None,
                 bool(c.get("judgement", False)),
+                *(
+                    _concept(concepts, c[key]) if c.get(key) else None
+                    for key in ("permit", "method", "averaging")
+                ),
             ),
         )
     return len(conditions)

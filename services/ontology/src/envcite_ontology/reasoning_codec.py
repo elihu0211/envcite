@@ -16,6 +16,7 @@ from envcite.ontology.v1 import reasoning_pb2 as pb
 from envcite_ontology import errors
 from envcite_ontology.reasoning import Result
 from envcite_ontology.reasoning.engine import Penalty
+from envcite_ontology.reasoning.facts import Measurement
 
 STATEMENT_KIND = {
     "prescriptive": pb.STATEMENT_KIND_PRESCRIPTIVE,
@@ -57,6 +58,16 @@ LEGAL_EFFECT = {
     "reputation": pb.LEGAL_EFFECT_REPUTATION,
     "warning": pb.LEGAL_EFFECT_WARNING,
     "order": pb.LEGAL_EFFECT_ORDER,
+    "disgorgement": pb.LEGAL_EFFECT_DISGORGEMENT,
+}
+LIABILITY_BASIS = {
+    "act": pb.LIABILITY_BASIS_ACT,
+    "state": pb.LIABILITY_BASIS_STATE,
+    "representative": pb.LIABILITY_BASIS_REPRESENTATIVE,
+}
+TRIGGER_KIND = {
+    "order_lapsed": pb.TRIGGER_KIND_ORDER_LAPSED,
+    "sanction_imposed": pb.TRIGGER_KIND_SANCTION_IMPOSED,
 }
 
 
@@ -97,8 +108,9 @@ VERDICT = {
 PROBLEM_KIND = {
     "contradictory_fact": pb.PROBLEM_KIND_CONTRADICTORY_FACT,
     "unresolved_delegation": pb.PROBLEM_KIND_UNRESOLVED_DELEGATION,
-    "unsupported_condition": pb.PROBLEM_KIND_UNSUPPORTED_CONDITION,
     "bad_date": pb.PROBLEM_KIND_BAD_DATE,
+    "measurement_mismatch": pb.PROBLEM_KIND_MEASUREMENT_MISMATCH,
+    "measurement_unlabeled": pb.PROBLEM_KIND_MEASUREMENT_UNLABELED,
 }
 EXCUSE = {
     "no_fault": pb.EXCUSE_NO_FAULT,
@@ -171,6 +183,8 @@ def statement_ids(result: Result) -> set[int]:
     """結果裡提到的每一個陳述編號，用來查出處。"""
     ids: set[int] = set(result.verdicts)
     ids |= {p.statement_id for p in result.penalties} | {p.punishes_id for p in result.penalties}
+    ids |= {q for p in result.penalties for q, _ in p.triggered_by}
+    ids |= {s for s, _, _ in result.missing_permits}
     for gaps in (result.missing, result.needs_judgement, result.judgement_used):
         ids |= {s for s, _ in gaps}
     for pairs in (result.unresolved_conflicts, result.unresolved_penalty_overlaps):
@@ -191,6 +205,9 @@ def _penalty(p: Penalty) -> pb.PenaltyCandidate:
         conditional=p.conditional,
         per_occasion=p.repeating,
         discretionary=p.discretionary,
+        triggered_by=[
+            pb.SanctionTrigger(statement_id=q, kind=TRIGGER_KIND[k]) for q, k in p.triggered_by
+        ],
     )
     if p.min_amount is not None:
         out.min_amount = p.min_amount
@@ -272,6 +289,9 @@ def outcome(
             if i in sources
         ],
         uncovered_law_ids=list(uncovered),
+        missing_permit_limits=[
+            pb.PermitGap(statement_id=s, permit=k, concept=m) for s, k, m in result.missing_permits
+        ],
         definitions_used=[
             pb.DefinitionUse(
                 condition_id=c,
@@ -306,6 +326,47 @@ def outcome(
 
 def _stamp(day: date) -> float:
     return float(day.year * 10000 + day.month * 100 + day.day)
+
+
+def _number(value: pb.Decimal) -> Decimal | None:
+    """有限的十進位數；不是則 None。"""
+    try:
+        number = Decimal(value.value)
+    except InvalidOperation:
+        return None
+    return number if number.is_finite() else None
+
+
+def measurements(request: pb.EvaluateRequest) -> dict[str, list[Measurement]]:
+    """事實的認定方式；兩者都沒給的事實不列（未提供）。"""
+    out: dict[str, list[Measurement]] = {}
+    for fact in request.facts:
+        if fact.concept and (fact.measurement_method or fact.averaging_period):
+            out.setdefault(fact.concept, []).append(
+                Measurement(fact.measurement_method or None, fact.averaging_period or None)
+            )
+    return out
+
+
+def permit_limits(
+    request: pb.EvaluateRequest, validator: errors.Validator
+) -> dict[tuple[str, str], list[float]]:
+    """許可所載的量值，（許可種類，概念）→ 值。欄位錯誤記在 `validator`。"""
+    out: dict[tuple[str, str], list[float]] = {}
+    for i, limit in enumerate(request.permit_limits):
+        where = f"permit_limits[{i}]"
+        if not limit.permit:
+            validator.add(f"{where}.permit", errors.EMPTY, "permit is required")
+        if not limit.concept:
+            validator.add(f"{where}.concept", errors.EMPTY, "concept is required")
+        number = _number(limit.value)
+        if number is None:
+            validator.add(
+                f"{where}.value.value", errors.INVALID_NUMBER, "must be a finite decimal number"
+            )
+        if limit.permit and limit.concept and number is not None:
+            out.setdefault((limit.permit, limit.concept), []).append(float(number))
+    return out
 
 
 def case_facts(
@@ -345,11 +406,8 @@ def case_facts(
                     continue
                 values.append(v.concept)
             elif kind == "number":
-                try:
-                    number = Decimal(v.number.value)
-                except InvalidOperation:
-                    number = Decimal("NaN")
-                if not number.is_finite():
+                number = _number(v.number)
+                if number is None:
                     validator.add(
                         f"{where}.values[{j}].number.value",
                         errors.INVALID_NUMBER,

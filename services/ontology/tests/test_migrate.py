@@ -5,6 +5,7 @@ import pytest
 from psycopg.conninfo import make_conninfo
 
 from envcite_ontology.migrate import MIGRATIONS_DIR, MigrationChanged, apply_all
+from tests.test_import import _scalar
 
 
 def test_a_database_from_another_baseline_is_refused(dsn: str) -> None:
@@ -217,5 +218,46 @@ def test_the_lexical_index_becomes_one_row_per_passage(dsn: str, tmp_path: Path)
                 "SELECT count(*), count(DISTINCT content_sha256), count(embedding)"
                 " FROM retrieval.passage"
             ).fetchone() == (2, 2, 0)
+    finally:
+        _drop(dsn, name)
+
+
+def test_fingerprints_sealed_before_the_environmental_columns_are_recomputed(
+    dsn: str, tmp_path: Path
+) -> None:
+    """0033 至 0035 改了指紋的算法並重算既有主張：同一份內容只有一種指紋，重載才沿用既有主張。"""
+    name = "fingerprint_upgrade"
+    try:
+        with _at(dsn, name, tmp_path, "0033") as conn:
+            conn.execute(_BEFORE_CLAIM.split("INSERT INTO annotation.derivation")[0])
+            conn.execute(
+                "INSERT INTO annotation.derivation (id, method, producer, producer_version)"
+                " OVERRIDING SYSTEM VALUE VALUES (1, 'human', 'test', '1');"
+                "INSERT INTO vocab.concept_scheme (id, code, title)"
+                " OVERRIDING SYSTEM VALUE VALUES (1, 'env', '環境法概念');"
+                "INSERT INTO vocab.concept (id, scheme_id, code, name)"
+                " OVERRIDING SYSTEM VALUE VALUES (1, 1, 'cod', '化學需氧量');"
+                "INSERT INTO annotation.assertion"
+                " (id, assertion_kind, derivation_id, confirm_state)"
+                " OVERRIDING SYSTEM VALUE VALUES (1, 'statement', 1, 'extracted');"
+                "INSERT INTO annotation.statement"
+                " (id, provision_id, content_sha256, statement_kind, norm_modality)"
+                " VALUES (1, 1, sha256('甲一'::bytea), 'prescriptive', 'obligation');"
+                "INSERT INTO annotation.statement_slot (statement_id, slot_role, literal)"
+                " VALUES (1, 'subject', '事業');"
+                "INSERT INTO annotation.statement_condition"
+                " (statement_id, condition_role, disjunct_no, concept_id, comparator, threshold)"
+                " VALUES (1, 'duty', 1, 1, 'le', 100);"
+                "SELECT annotation.seal(1);"
+            )
+            conn.commit()
+            sealed = _scalar(conn, "SELECT fingerprint FROM annotation.assertion")
+            assert apply_all(conn)[0] == "0033_liability_basis.sql"
+
+            assert conn.execute(
+                "SELECT fingerprint <> %s, fingerprint = annotation.assertion_fingerprint(id)"
+                "  FROM annotation.assertion",
+                (sealed,),
+            ).fetchall() == [(True, True)]
     finally:
         _drop(dsn, name)

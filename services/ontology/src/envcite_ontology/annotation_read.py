@@ -24,7 +24,7 @@ _STATEMENTS = """
 """
 
 _SLOTS = """
-    SELECT sl.statement_id, sl.slot_role::text, k.code, sl.literal
+    SELECT sl.statement_id, sl.slot_role::text, k.code, sl.literal, sl.liability_basis::text
       FROM annotation.statement_slot AS sl
       LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id
      WHERE sl.statement_id = ANY(%(ids)s)
@@ -34,10 +34,13 @@ _SLOTS = """
 _CONDITIONS = """
     SELECT c.id, c.statement_id, c.condition_role::text, c.disjunct_no, k.code, c.comparator::text,
            c.threshold, c.measure_unit, c.negated, c.needs_assessment,
-           vk.code, dl.local_id, dp.path
+           vk.code, dl.local_id, dp.path, pk.code, mk.code, ak.code
       FROM annotation.statement_condition AS c
       JOIN vocab.concept AS k ON k.id = c.concept_id
       LEFT JOIN vocab.concept AS vk ON vk.id = c.value_concept_id
+      LEFT JOIN vocab.concept AS pk ON pk.id = c.delegate_permit_concept_id
+      LEFT JOIN vocab.concept AS mk ON mk.id = c.measurement_method_concept_id
+      LEFT JOIN vocab.concept AS ak ON ak.id = c.averaging_period_concept_id
       LEFT JOIN corpus.provision AS dp ON dp.id = c.delegate_provision_id
       LEFT JOIN corpus.legal_resource AS dl ON dl.id = dp.resource_id
      WHERE c.statement_id = ANY(%(ids)s)
@@ -61,6 +64,12 @@ _SANCTIONS = """
            min_amount, max_amount, per_occasion, discretionary
       FROM annotation.sanction
      WHERE statement_id = ANY(%(ids)s)
+"""
+
+_TRIGGERS = """
+    SELECT statement_id, trigger_statement_id, trigger_kind::text FROM annotation.sanction_trigger
+     WHERE statement_id = ANY(%(ids)s)
+     ORDER BY statement_id, trigger_statement_id
 """
 
 #: 結果引用的陳述於某日的出處：只查這些陳述所屬的法規，不掃全部法規。
@@ -123,12 +132,14 @@ def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListSta
             statement.modality = codec.NORM_MODALITY[str(modality)]
         statements[cast(int, sid)] = statement
 
-    for sid, slot, code, literal in conn.execute(_SLOTS, by_id):
+    for sid, slot, code, literal, liability in conn.execute(_SLOTS, by_id):
         out = statements[cast(int, sid)].slots.add(role=codec.SLOT_ROLE[str(slot)])
         if code is not None:
             out.concept = str(code)
         else:
             out.literal = str(literal)
+        if liability is not None:
+            out.liability_basis = codec.LIABILITY_BASIS[str(liability)]
 
     _conditions(conn, by_id, statements)
 
@@ -147,6 +158,11 @@ def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListSta
             sanction.max_amount = int(cast(Decimal, high))
         sanction.per_occasion = bool(per_occasion)
         sanction.discretionary = bool(discretionary)
+    # 前提可能在別的法規（環境講習以他法的處分為前提）：識別碼照列，不限於本次列出的陳述
+    for sid, trigger, kind in conn.execute(_TRIGGERS, by_id):
+        statements[cast(int, sid)].sanction.triggers.add(
+            statement_id=cast(int, trigger), kind=codec.TRIGGER_KIND[str(kind)]
+        )
 
     return pb.ListStatementsResponse(
         statements=list(statements.values()),
@@ -170,7 +186,7 @@ def _conditions(
     )
     for row in conn.execute(_CONDITIONS, by_id):
         cid, sid, role, disjunct, code, comparator, threshold, unit, negated, needs = row[:10]
-        value_concept, delegate_law, delegate_path = row[10:]
+        value_concept, delegate_law, delegate_path, permit, method, averaging = row[10:]
         condition = pb.Condition(
             id=cast(int, cid),
             concept=str(code),
@@ -178,6 +194,8 @@ def _conditions(
             unit=str(unit or ""),
             negated=bool(negated),
             needs_assessment=bool(needs),
+            measurement_method=str(method or ""),
+            averaging_period=str(averaging or ""),
         )
         if threshold is not None:
             condition.value.CopyFrom(codec.decimal(cast(Decimal, threshold)))
@@ -187,6 +205,8 @@ def _conditions(
             condition.delegate.CopyFrom(
                 pb.Delegation(law_id=str(delegate_law), provision_path=str(delegate_path))
             )
+        elif permit is not None:
+            condition.delegate_permit = str(permit)
         grouped[(cast(int, sid), str(role))][cast(int, disjunct)].append(condition)
 
     for (sid, role), disjuncts in grouped.items():

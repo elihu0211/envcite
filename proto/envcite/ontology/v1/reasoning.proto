@@ -63,6 +63,20 @@ enum SlotRole {
   SLOT_ROLE_PLACE = 6;
 }
 
+// 主體為何負責。只屬主體槽位。
+enum LiabilityBasis {
+  LIABILITY_BASIS_UNSPECIFIED = 0;
+
+  // 因自己的作為或不作為負責。
+  LIABILITY_BASIS_ACT = 1;
+
+  // 因對物的支配負責（狀態責任），如土壤及地下水污染整治法的污染土地關係人。
+  LIABILITY_BASIS_STATE = 2;
+
+  // 代表或受指派而承擔，如環境教育法第 23 條的「有代表權之人或負責環境保護權責人員」。
+  LIABILITY_BASIS_REPRESENTATIVE = 3;
+}
+
 // 事實與門檻的比較，讀作「事實 〈運算子〉 門檻」。
 enum Comparator {
   COMPARATOR_UNSPECIFIED = 0;
@@ -89,8 +103,9 @@ enum ConditionRole {
 
 // 法律效果的種類。FINE（罰鍰）與 CONFISCATION（沒入）是行政罰法第 1 條的裁罰性
 // 不利處分；RESTRICTION、DEPRIVATION、REPUTATION、WARNING 是其第 2 條的四種
-// 「其他種類行政罰」。ORDER（改善命令等）是預防性措施，**不是**行政罰：行政罰法
-// 總則不適用於它。
+// 「其他種類行政罰」；環境講習是同條第 4 款的講習，屬 WARNING。ORDER（改善命令等）
+// 是預防性措施，DISGORGEMENT（不法利得的追繳）使違法者不保有所得利益，兩者都
+// **不是**行政罰：行政罰法總則不適用於它們。
 enum LegalEffect {
   LEGAL_EFFECT_UNSPECIFIED = 0;
   LEGAL_EFFECT_FINE = 1;
@@ -100,6 +115,19 @@ enum LegalEffect {
   LEGAL_EFFECT_REPUTATION = 5;
   LEGAL_EFFECT_WARNING = 6;
   LEGAL_EFFECT_ORDER = 7;
+  LEGAL_EFFECT_DISGORGEMENT = 8;
+}
+
+// 一個罰則以另一個罰則為前提的方式。
+enum TriggerKind {
+  TRIGGER_KIND_UNSPECIFIED = 0;
+
+  // 命令屆期未履行：前提是一個 ORDER（如限期改善），屆期與否是被觸發者自己的要件。
+  TRIGGER_KIND_ORDER_LAPSED = 1;
+
+  // 另一處分已作成：如環境講習以停工、停業或一定金額以上的罰鍰為前提；金額門檻是
+  // 被觸發者自己的要件。
+  TRIGGER_KIND_SANCTION_IMPOSED = 2;
 }
 
 // 兩則陳述衝突時，其一勝出的依據。
@@ -174,6 +202,9 @@ message Slot {
 
     string literal = 3;
   }
+
+  // 只在 role 為 SUBJECT 時可能設定；缺席是未標註，不是「行為」。
+  optional LiabilityBasis liability_basis = 4;
 }
 
 // 析取範式：各析取項之間取「或」，項內的要件取「且」。
@@ -201,6 +232,10 @@ message Condition {
 
     // 與概念而非數字比較。
     string value_concept = 6;
+
+    // 門檻是個別處分所載的量值：值為許可種類的概念代碼。許可不在語料裡，量值由呼叫端
+    // 以 EvaluateRequest.permit_limits 提供；沒有提供時要件為未知。
+    string delegate_permit = 10;
   }
 
   string unit = 7;
@@ -211,6 +246,15 @@ message Condition {
   // 不確定法律概念（「情節重大」、「必要時」）：服務不從事實推斷它，呼叫端
   // 提供的值視為呼叫端自己的判斷。
   bool needs_assessment = 9;
+
+  // 限值的認定方式，只在限值（Statement.limits）上可能設定，皆為受控概念的代碼，空字串為
+  // 未標註。有標註時，事實的認定方式（Fact.measurement_method、Fact.averaging_period）
+  // 不同或沒給，要件為未知（PROBLEM_KIND_MEASUREMENT_MISMATCH）；沒有標註則照常比較，
+  // 結果附 PROBLEM_KIND_MEASUREMENT_UNLABELED。
+  string measurement_method = 11;
+
+  // 平均時段，如即時值、小時平均值、日平均值、最大值。
+  string averaging_period = 12;
 }
 
 message Delegation {
@@ -239,6 +283,16 @@ message Sanction {
   // 條文寫「得」（主管機關得為）而非「應」：效果層次的裁量，與
   // Condition.needs_assessment 是不同層次。
   bool discretionary = 7;
+
+  // 這個效果的前提：另一個罰則陳述，彼此是「或」。前提沒有列出時，這個效果也不列出。
+  repeated SanctionTrigger triggers = 8;
+}
+
+message SanctionTrigger {
+  // 作為前提的罰則陳述。
+  int64 statement_id = 1;
+
+  TriggerKind kind = 2;
 }
 
 message Override {
@@ -268,11 +322,31 @@ message EvaluateRequest {
 
   // 結果發生日（ISO 8601），結果晚於行為終了時才提供。
   string result_on = 6;
+
+  // 場所持有的許可所載的量值，供門檻委由個別處分的要件（Condition.delegate_permit）使用。
+  // 同一許可種類、同一概念有兩個不同的值時，視為矛盾（PROBLEM_KIND_CONTRADICTORY_FACT，
+  // subject 為許可種類的代碼）。
+  repeated PermitLimit permit_limits = 7;
 }
 
 message Fact {
   string concept = 1;
   repeated FactValue values = 2;
+
+  // 這些值的認定方式，皆為受控概念的代碼；空字串為未提供。只在限值標有認定方式時才有
+  // 作用，見 Condition.measurement_method。
+  string measurement_method = 3;
+  string averaging_period = 4;
+}
+
+message PermitLimit {
+  // 許可種類的概念代碼。
+  string permit = 1;
+
+  // 所載量值的概念代碼（如某污染物的排放量）。
+  string concept = 2;
+
+  Decimal value = 3;
 }
 
 message FactValue {
@@ -419,6 +493,9 @@ message Outcome {
   // 「甲屬於乙」的依據。沒有定義涵蓋而判為不屬於的要件，不在此（沒有定義可指）。
   repeated DefinitionUse definitions_used = 17;
 
+  // 門檻委由個別處分、但 permit_limits 沒有提供那筆量值，因而未定的要件。
+  repeated PermitGap missing_permit_limits = 19;
+
   // 主管機關對本結果所依條文的行政規則（行政程序法第 159 條：函釋、裁量基準等）。行政規則
   // 拘束機關內部，不直接拘束人民與法院，所以不參與推論，只附在結果旁。以處分日判斷是否已發布、
   // 尚未停止適用（釋字第 287 號：解釋性規定自所解釋的法規生效日起有效，未確定的案件即可適用），
@@ -464,6 +541,16 @@ message Guidance {
   string source_url = 8;
 }
 
+message PermitGap {
+  int64 statement_id = 1;
+
+  // 許可種類的概念代碼。
+  string permit = 2;
+
+  // 所需量值的概念代碼。
+  string concept = 3;
+}
+
 message DefinitionUse {
   // 要件識別碼。
   int64 condition_id = 1;
@@ -499,6 +586,9 @@ message PenaltyCandidate {
 
   bool per_occasion = 7;
   bool discretionary = 8;
+
+  // 這個候選所依的前提（已列出或附條件列出的罰則）。
+  repeated SanctionTrigger triggered_by = 9;
 }
 
 message FineInterval {
@@ -515,16 +605,25 @@ message Gap {
 enum ProblemKind {
   PROBLEM_KIND_UNSPECIFIED = 0;
 
-  // 同一概念有兩個不同的值：該概念視為未知。
+  // 同一概念有兩個不同的值：該概念視為未知。也用於同一許可種類對同一概念有兩個不同的
+  // 量值（subject 為許可種類的代碼）。
   PROBLEM_KIND_CONTRADICTORY_FACT = 1;
 
   // 授權的限值在該日無法解析。
   PROBLEM_KIND_UNRESOLVED_DELEGATION = 2;
 
-  // 評估不比較的要件。
-  PROBLEM_KIND_UNSUPPORTED_CONDITION = 3;
+  // 3 曾是「評估不比較的要件」，推論從未產生，移除。
+  reserved 3;
+  reserved "PROBLEM_KIND_UNSUPPORTED_CONDITION";
 
   PROBLEM_KIND_BAD_DATE = 4;
+
+  // 限值標有認定方式，事實的認定方式不同或沒給：要件為未知（subject 為要件識別碼）。
+  PROBLEM_KIND_MEASUREMENT_MISMATCH = 5;
+
+  // 限值沒有標認定方式，照常比較；結論是否成立，取決於事實是否以該限值的方式認定
+  // （subject 為要件識別碼）。
+  PROBLEM_KIND_MEASUREMENT_UNLABELED = 6;
 }
 
 message Problem {

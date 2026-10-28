@@ -5,8 +5,12 @@
 附條件，義務陳述的結論不變。罰鍰同列兩種區間（各則自己的額度；確定且上下限皆有者另合併為
 一行為的區間），不選其一。優先關係僅在明文標註時消解，否則列為未決。
 
-`order`（改善命令等預防性處分）不是行政罰：總則的排除、減輕、時效與一行為皆不適用。
-罰則 `discretionary` 是效果裁量（條文寫「得」），與要件的需判斷分屬兩層。
+`order`（改善命令等預防性處分）與 `disgorgement`（不法利得的追繳）不是行政罰：總則的排除、減輕、
+時效與一行為皆不適用。罰則 `discretionary` 是效果裁量（條文寫「得」），與要件的需判斷分屬兩層。
+以另一個效果為前提的罰則（`annotation.sanction_trigger`），前提列出才列出，`triggered_by` 帶前提。
+
+案件事實之外，呼叫端可給事實的認定方式（`measurements`）與場所持有的許可所載的量值（`permits`）：
+授權限值標有認定方式時，方式不符或沒給則要件未知；委由個別處分的要件，以許可的量值為門檻值。
 """
 
 from __future__ import annotations
@@ -39,6 +43,8 @@ class Penalty:
     conditional: bool
     repeating: bool
     discretionary: bool
+    #: 作為前提的罰則與觸發種類（`order_lapsed`、`sanction_imposed`）
+    triggered_by: tuple[tuple[int, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -81,6 +87,8 @@ class Result:
     general: General
     #: （要件編號，定義編號）：概念值要件所依的用語定義
     definitions_used: tuple[tuple[int, int], ...] = ()
+    #: （陳述，許可種類，概念）：委由個別處分、但呼叫端沒提供許可量值的要件
+    missing_permits: tuple[tuple[int, str, str], ...] = ()
 
 
 def _py(symbol: clingo.Symbol) -> Any:
@@ -99,6 +107,8 @@ def evaluate(
     *,
     include_unsettled: bool = False,
     decided_on: date | None = None,
+    measurements: facts.Measurements | None = None,
+    permits: facts.Permits | None = None,
 ) -> Result:
     """對 `as_of` 當日有效的陳述與案件事實推論。
 
@@ -107,7 +117,11 @@ def evaluate(
     """
     statements = facts.statement_facts(conn, as_of, language, include_unsettled=include_unsettled)
     program = "\n".join(
-        [statements, facts.case_facts(case), facts.limitation(decided_on or as_of, case)]
+        [
+            statements,
+            facts.case_facts(case, measurements, permits),
+            facts.limitation(decided_on or as_of, case),
+        ]
     )
     ctl = clingo.Control(["--warn=none"])
     ctl.add("base", [], _RULES)
@@ -144,8 +158,17 @@ def evaluate(
             ([c[0] for c in candidates],),
         )
     }
+    triggers: dict[int, list[tuple[int, str]]] = {}
+    for p, q, kind in get("trigger"):
+        triggers.setdefault(int(p), []).append((int(q), str(kind)))
     penalties = [
-        Penalty(*c, repeating=flags[c[0]][0], discretionary=flags[c[0]][1]) for c in candidates
+        Penalty(
+            *c,
+            repeating=flags[c[0]][0],
+            discretionary=flags[c[0]][1],
+            triggered_by=tuple(triggers.get(c[0], ())),
+        )
+        for c in candidates
     ]
     shown = get("one_act")
     if len(shown) > 1:
@@ -172,4 +195,5 @@ def evaluate(
             time_barred=tuple(int(p) for (p,) in get("time_barred")),
         ),
         definitions_used=tuple((int(c), int(d)) for c, d in get("used_def")),
+        missing_permits=tuple((int(s), str(k), str(m)) for s, k, m in get("missing_permit")),
     )

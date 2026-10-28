@@ -583,7 +583,13 @@ openapi:
       if [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ]; then
         echo "非 MR pipeline，不執行相容性檢查"
       elif git fetch -q --depth=1 origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" && git show "FETCH_HEAD:$SPEC" > /tmp/base.json 2>/dev/null; then
-        oasdiff breaking /tmp/base.json "$SPEC" --fail-on ERR
+        # 刻意的破壞性變更由 MR 的 api-breaking 標籤宣告：只放行這一個 MR，照樣列出破壞處供審查；
+        # 標籤在 pipeline 建立時讀取，事後才加要重跑 pipeline。
+        if printf ',%s,' "$CI_MERGE_REQUEST_LABELS" | grep -q ',api-breaking,'; then
+          oasdiff breaking /tmp/base.json "$SPEC"
+        else
+          oasdiff breaking /tmp/base.json "$SPEC" --fail-on ERR
+        fi
       else
         echo "目標分支 ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME} 尚無 $SPEC，無基準可比——跳過相容性檢查"
       fi

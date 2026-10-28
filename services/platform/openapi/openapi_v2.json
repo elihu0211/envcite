@@ -836,6 +836,15 @@
               "null",
               "string"
             ]
+          },
+          "permitLimits": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PermitLimitDto"
+            }
           }
         }
       },
@@ -887,6 +896,18 @@
             "items": {
               "type": "string"
             }
+          },
+          "measurementMethod": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "averagingPeriod": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1178,7 +1199,8 @@
           "Deprivation",
           "Reputation",
           "Warning",
-          "Order"
+          "Order",
+          "Disgorgement"
         ]
       },
       "LimitSourceDto": {
@@ -1234,7 +1256,8 @@
           "sources",
           "uncoveredLawIds",
           "definitionsUsed",
-          "guidance"
+          "guidance",
+          "missingPermitLimits"
         ],
         "type": "object",
         "properties": {
@@ -1346,6 +1369,12 @@
             "items": {
               "$ref": "#/components/schemas/GuidanceDto"
             }
+          },
+          "missingPermitLimits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermitGapDto"
+            }
           }
         }
       },
@@ -1365,7 +1394,8 @@
           "maxAmount",
           "conditional",
           "perOccasion",
-          "discretionary"
+          "discretionary",
+          "triggeredBy"
         ],
         "type": "object",
         "properties": {
@@ -1414,6 +1444,12 @@
           },
           "discretionary": {
             "type": "boolean"
+          },
+          "triggeredBy": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SanctionTriggerDto"
+            }
           }
         }
       },
@@ -1454,6 +1490,49 @@
           },
           "mitigation": {
             "$ref": "#/components/schemas/MitigationDto"
+          }
+        }
+      },
+      "PermitGapDto": {
+        "required": [
+          "statementId",
+          "permit",
+          "concept"
+        ],
+        "type": "object",
+        "properties": {
+          "statementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "permit": {
+            "type": "string"
+          },
+          "concept": {
+            "type": "string"
+          }
+        }
+      },
+      "PermitLimitDto": {
+        "required": [
+          "permit",
+          "concept",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "permit": {
+            "type": "string"
+          },
+          "concept": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
           }
         }
       },
@@ -1527,8 +1606,9 @@
         "enum": [
           "ContradictoryFact",
           "UnresolvedDelegation",
-          "UnsupportedCondition",
-          "BadDate"
+          "BadDate",
+          "MeasurementMismatch",
+          "MeasurementUnlabeled"
         ]
       },
       "ReasoningResultDto": {
@@ -1561,6 +1641,26 @@
           },
           "detail": {
             "type": "string"
+          }
+        }
+      },
+      "SanctionTriggerDto": {
+        "required": [
+          "statementId",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "statementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TriggerKindDto"
           }
         }
       },
@@ -1758,6 +1858,12 @@
             "$ref": "#/components/schemas/ConditionRoleDto"
           }
         }
+      },
+      "TriggerKindDto": {
+        "enum": [
+          "OrderLapsed",
+          "SanctionImposed"
+        ]
       },
       "UsageSummary": {
         "required": [

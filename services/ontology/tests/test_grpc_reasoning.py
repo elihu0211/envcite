@@ -304,3 +304,40 @@ def test_a_call_that_cannot_get_a_slot_in_its_budget_fails_fast(store: OntologyS
         servicer.Evaluate(_case(), _Context(remaining=0.05))  # type: ignore[arg-type]
 
     assert aborted.value.status.code == grpc.StatusCode.RESOURCE_EXHAUSTED
+
+
+def test_permit_limits_and_ways_of_measuring_reach_the_evaluation(
+    conn: Conn, tmp_path: Path, reasoning_stub: Stub
+) -> None:
+    """許可量值與事實的認定方式隨請求進來；缺的許可量值與認定方式的問題隨結果出去。"""
+    _first(conn, tmp_path, _law_v1())
+    limit = _limit("乙一", 100)
+    limit["conditions"][0]["method"] = "cems"
+    doc = _doc(_duty(), limit)
+    doc["concepts"].append({"code": "cems", "label": "連續自動監測"})
+    duty = load(conn, doc).ids["duty"]
+    conn.commit()
+
+    unmeasured = reasoning_stub.Evaluate(_case(), metadata=call_metadata()).at_decision
+    assert [(v.statement_id, v.verdict) for v in unmeasured.verdicts] == [
+        (duty, reasoning_pb2.VERDICT_UNDETERMINED)
+    ]
+    assert [p.kind for p in unmeasured.problems] == [
+        reasoning_pb2.PROBLEM_KIND_MEASUREMENT_MISMATCH
+    ]
+
+    request = _case()
+    request.facts[1].measurement_method = "cems"
+    measured = reasoning_stub.Evaluate(request, metadata=call_metadata()).at_decision
+    assert [v.verdict for v in measured.verdicts] == [reasoning_pb2.VERDICT_VIOLATION]
+    assert list(measured.problems) == []
+
+
+def test_a_permit_limit_without_a_value_is_an_invalid_argument(reasoning_stub: Stub) -> None:
+    request = _case()
+    request.permit_limits.add(permit="operating_permit", concept="cod")
+    with pytest.raises(grpc.RpcError) as caught:
+        reasoning_stub.Evaluate(request, metadata=call_metadata())
+
+    assert caught.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert _details(caught.value)[1] == ["permit_limits[0].value.value"]

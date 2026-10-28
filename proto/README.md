@@ -127,5 +127,7 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
     - `earlier` 是行為日到裁處日之間陳述組與裁處時不同的法律，不替呼叫端選「最有利」。
     - 語料的歷史有起點：`Outcome.uncovered_law_ids` 列出「那天已制定、但語料沒有當時版本」的法規，其規定缺席不代表當時沒有規定；`earlier` 出現空的 `verdicts` 時先看此欄位，不要解讀成行為時合規。
     - `Outcome.guidance`（行政規則）附在結果旁，不是推論的前提。
+    - 不在語料裡的管制事實由呼叫端隨案件提供：門檻委由個別處分（`Condition.delegate_permit`）的量值放 `permit_limits`，缺了列在 `Outcome.missing_permit_limits`；限值標有認定方式時，`Fact.measurement_method`／`averaging_period` 要與它相同，否則要件未知（`PROBLEM_KIND_MEASUREMENT_MISMATCH`），限值沒標則照常比較並附 `PROBLEM_KIND_MEASUREMENT_UNLABELED`。
+    - 以另一效果為前提的罰則（`Sanction.triggers`），前提沒有列出就不列出；`PenaltyCandidate.triggered_by` 是它所依的前提。
     - 期限同時是資料庫查詢的上限；等不到名額回 `BUSY`。
 - **數值**用 `Decimal`（十進位文字），**日期**維持 ISO 8601 字串；列舉的零值一律是 `*_UNSPECIFIED`，收到就是契約之外的值。

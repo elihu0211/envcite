@@ -13,7 +13,14 @@ from typing import Any, cast
 
 import psycopg
 
-from envcite_ontology.annotate import AnnotationError, Loaded, load
+from envcite_ontology.annotate import (
+    LEGAL_EFFECTS,
+    LIABILITY_BASES,
+    TRIGGER_KINDS,
+    AnnotationError,
+    Loaded,
+    load,
+)
 from envcite_ontology.verification.context import ancestors_text, context_block
 from envcite_ontology.verification.conventions import apply as with_conventions
 from envcite_ontology.verification.gates import citations
@@ -22,7 +29,8 @@ from envcite_ontology.verification.models import Model, ModelError
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
-PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元的原文。
+PROMPT = (
+    with_conventions("""你是法規標註器。下面是一個條文單元的原文。
 請只依原文，輸出一個 JSON 物件：
 {{"concepts": [{{"code": "英文小寫底線的代碼", "label": "中文名稱"}}],
   "statements": [{{"id": "短識別", "quote": "原文中的一段，逐字複製", "kind":
@@ -30,11 +38,13 @@ PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元
   "slots": {{"subject|action|object|medium": {{"literal": "…"}} 或 [{{"literal": "…"}}, …]}},
   "conditions": [{{"role": "scope|duty", "clause": 1, "concept": "代碼", "comparator":
   "le|lt|ge|gt|eq|ne", "threshold": 數字, "unit": "單位或省略", "negated": false,
-  "judgement": false, "value_concept": "本法用語的代碼（見下方清單），沒有就省略"}}],
-  "sanction": {{"effect": "fine|order|restriction|deprivation|reputation|warning|confiscation",
+  "judgement": false, "value_concept": "本法用語的代碼（見下方清單），沒有就省略",
+  "permit": "許可種類的代碼（門檻值是個別許可所載的量值時），沒有就省略"}}],
+  "sanction": {{"effect": "{effects}",
   "min": 數字或省略, "max": 數字或省略, "amount_text": "原文或省略", "repeating": false,
   "discretionary": false,
-  "punishes": "同一個單元裡受罰的那個陳述的 id，沒有就省略"}}}}]}}
+  "punishes": "同一個單元裡受罰的那個陳述的 id，沒有就省略",
+  "triggers": [{{"statement": "同一個單元裡作為前提的罰則 id", "kind": "{trigger_kinds}"}}]}}}}]}}
 {conventions}規則：
 1. 引文必須逐字出現在原文；不要輸出原文沒有的內容。
 2. 只有 kind 為 prescriptive 的陳述才有 deontic；constitutive（定義、適用範圍、授權）與
@@ -58,11 +68,19 @@ PROMPT = with_conventions("""你是法規標註器。下面是一個條文單元
 10. 要件在判斷「主體或對象是否屬於本法定義的某個用語」時，concept 寫該主體或對象的類別概念，
    comparator 用 eq，value_concept 填下方清單裡那個用語的代碼，且不要寫 threshold。只能用清單裡的
    代碼；清單沒有的就不要寫 value_concept（用原本的 threshold 寫法）。
+11. 主體的責任基礎寫在 slots.subject 的項目上（"liability"）：因自己的作為或不作為負責為 act，
+   因對物（土地、設施）的支配負責為 state，代表或受指派而承擔（有代表權之人、負責人員）為
+   representative；原文看不出來就省略。只有 subject 可以寫 liability。
+12. 門檻值不是寫在條文裡、而是許可證或核定的配額所載（「依許可證內容」「超過許可排放量」）時，
+   該要件寫 permit：許可種類的概念代碼（在 concepts 宣告），不要寫 threshold。
 只輸出 JSON。
 
 {terms}{context}原文（{law} {path}）：
 {text}
 """)
+    .replace("{effects}", "|".join(LEGAL_EFFECTS))
+    .replace("{trigger_kinds}", "|".join(TRIGGER_KINDS))
+)
 
 
 REPAIR = """{prompt}
@@ -85,12 +103,12 @@ def _nullable(inner: dict[str, Any]) -> dict[str, Any]:
 _STR: dict[str, Any] = {"type": "string"}
 _NUM: dict[str, Any] = {"type": "number"}
 _BOOL: dict[str, Any] = {"type": "boolean"}
+_SLOT_VALUE: dict[str, Any] = {
+    "type": "object",
+    "properties": {"literal": _STR, "liability": {"enum": [*LIABILITY_BASES, None]}},
+}
 _SLOT: dict[str, Any] = {
-    "anyOf": [
-        {"type": "object", "properties": {"literal": _STR}},
-        {"type": "array", "items": {"type": "object", "properties": {"literal": _STR}}},
-        _STR,
-    ]
+    "anyOf": [_SLOT_VALUE, {"type": "array", "items": _SLOT_VALUE}, _STR],
 }
 
 #: 解碼期約束只管形狀：結構、型別與列舉值。引文逐字在原文、概念已宣告、duty 與 scope 完備等
@@ -136,6 +154,7 @@ STATEMENTS_FORMAT: dict[str, Any] = {
                                         "negated": _BOOL,
                                         "judgement": _BOOL,
                                         "value_concept": _nullable(_STR),
+                                        "permit": _nullable(_STR),
                                     },
                                 },
                             },
@@ -143,24 +162,26 @@ STATEMENTS_FORMAT: dict[str, Any] = {
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "effect": {
-                                            "enum": [
-                                                "fine",
-                                                "order",
-                                                "restriction",
-                                                "deprivation",
-                                                "reputation",
-                                                "warning",
-                                                "confiscation",
-                                                None,
-                                            ]
-                                        },
+                                        "effect": {"enum": [*LEGAL_EFFECTS, None]},
                                         "min": _nullable(_NUM),
                                         "max": _nullable(_NUM),
                                         "amount_text": _nullable(_STR),
                                         "repeating": _BOOL,
                                         "discretionary": _BOOL,
                                         "punishes": _nullable(_STR),
+                                        "triggers": _nullable(
+                                            {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "statement": _STR,
+                                                        "kind": {"enum": list(TRIGGER_KINDS)},
+                                                    },
+                                                    "required": ["statement", "kind"],
+                                                },
+                                            }
+                                        ),
                                     },
                                 }
                             ),
@@ -255,18 +276,32 @@ def _literal(value: Any) -> Any:
     return value
 
 
+def _liability(role: str, value: Any) -> Any:
+    """責任基礎只屬主體、只取列舉值；別處或別的值當作沒寫（載入器會因它拒絕整份文件）。"""
+    if isinstance(value, list):
+        return [_liability(role, v) for v in value]
+    if (
+        isinstance(value, Mapping)
+        and "liability" in value
+        and (role != "subject" or value["liability"] not in LIABILITY_BASES)
+    ):
+        return {k: v for k, v in value.items() if k != "liability"}
+    return value
+
+
 def tidy(answer: Mapping[str, Any], defined: Mapping[str, str] | None = None) -> dict[str, Any]:
     """不改變意思的形狀修正。
 
-    槽位直接寫成字串（`"subject": "甲"`，或清單裡的字串）就是它的字面；與概念值比較的要件
-    沒有門檻值，模型多寫的 threshold 去掉；要件指名的本法用語代碼，補進宣告的概念（名稱取自
-    該法的定義）。
+    槽位直接寫成字串（`"subject": "甲"`，或清單裡的字串）就是它的字面；與概念值比較或委由
+    個別處分的要件沒有門檻值，模型多寫的 threshold 去掉；主體以外或不在列舉裡的責任基礎去掉；
+    要件指名的本法用語代碼，補進宣告的概念（名稱取自該法的定義）。觸發不在這裡修：少了前提的
+    罰則會變成無條件，由 `_local_triggers` 整個丟掉。
     """
     out = dict(answer)
     out["statements"] = [
         {
             **s,
-            "slots": {k: _literal(v) for k, v in slots.items()},
+            "slots": {k: _liability(str(k), _literal(v)) for k, v in slots.items()},
         }
         if isinstance(slots := s.get("slots"), Mapping)
         else dict(s)
@@ -278,7 +313,7 @@ def tidy(answer: Mapping[str, Any], defined: Mapping[str, str] | None = None) ->
             continue
         s["conditions"] = [
             {k: v for k, v in c.items() if k != "threshold"}
-            if isinstance(c, Mapping) and c.get("value_concept")
+            if isinstance(c, Mapping) and (c.get("value_concept") or c.get("permit"))
             else c
             for c in conditions
         ]
@@ -313,7 +348,7 @@ def shape_issues(
             if not isinstance(c, Mapping):
                 problems.append("要件必須是物件（role、concept、comparator、threshold…）。")
                 continue
-            for field in ("concept", "value_concept"):
+            for field in ("concept", "value_concept", "permit"):
                 code = c.get(field)
                 if field == "concept" and not code:
                     problems.append(
@@ -329,6 +364,11 @@ def shape_issues(
                     problems.append(
                         f"要件的 {field}「{code}」沒有在 concepts 裡宣告（code 與 label 都要寫）。"
                     )
+            if c.get("value_concept") and c.get("permit"):
+                problems.append(
+                    f"要件「{c.get('concept')}」同時寫了 value_concept 與 permit："
+                    "門檻值只能有一種來源。"
+                )
             if c.get("value_concept") and c.get("comparator") not in ("eq", "ne"):
                 problems.append(
                     f"要件的 value_concept「{c.get('value_concept')}」只能用 eq 或 ne："
@@ -450,6 +490,55 @@ def _linkable(statements: list[dict[str, Any]], dropped: list[str]) -> list[dict
         statements = kept
 
 
+def _trigger_problem(
+    ident: str, trigger: Any, effects: Mapping[str, Any]
+) -> tuple[str | None, dict[str, str] | None]:
+    """一個觸發的問題（沒有則 None），與整形後的觸發。"""
+    if not isinstance(trigger, Mapping) or trigger.get("kind") not in TRIGGER_KINDS:
+        return "a trigger is malformed", None
+    target = str(trigger.get("statement"))
+    if target == ident or target not in effects:
+        return f"trigger {target} is not in this unit", None
+    if trigger["kind"] == "order_lapsed" and effects[target] != "order":
+        return f"trigger {target} is not an order", None
+    return None, {"statement": target, "kind": str(trigger["kind"])}
+
+
+def _local_triggers(statements: list[dict[str, Any]], dropped: list[str]) -> list[dict[str, Any]]:
+    """觸發只連到同一份文件裡的罰則，命令屆期未履行的前提須是命令。有一個觸發不對就丟掉整個罰則：
+    少了前提的罰則會被當成無條件。連帶丟掉以被丟者為前提或為例外者，直到不再變動。"""
+    while True:
+        effects = {
+            str(s.get("id")): s["sanction"].get("effect")
+            for s in statements
+            if isinstance(s.get("sanction"), Mapping)
+        }
+        ids = {str(s.get("id")) for s in statements}
+        kept: list[dict[str, Any]] = []
+        for s in statements:
+            ident = str(s.get("id"))
+            if s.get("exception_of") is not None and str(s["exception_of"]) not in ids:
+                dropped.append(f"{ident}: excepts nothing in this unit")
+                continue
+            sanction = s.get("sanction")
+            if not isinstance(sanction, Mapping) or not sanction.get("triggers"):
+                kept.append(s)
+                continue
+            triggers = sanction["triggers"]
+            checked = [
+                _trigger_problem(ident, t, effects)
+                for t in (triggers if isinstance(triggers, list) else [None])
+            ]
+            problem = next((p for p, _ in checked if p is not None), None)
+            if problem is not None:
+                dropped.append(f"{ident}: {problem}")
+                continue
+            kept.append({**s, "sanction": {**sanction, "triggers": [t for _, t in checked]}})
+        if len(kept) == len(statements):
+            return kept
+        statements = kept
+
+
 def _linkable_held(held: list[dict[str, Any]], dropped: list[str]) -> list[dict[str, Any]]:
     """待連結罰則的例外須指向同批陳述；指向別處的丟掉。"""
     while True:
@@ -561,8 +650,12 @@ def extract_unit(
         statements.append(item)
     ids = {str(s.get("id")) for s in statements}
     waiting = _waiting(statements, ids, _cites_elsewhere(path, text))
-    held = _linkable_held([s for s in statements if str(s.get("id")) in waiting], dropped)
-    statements = _linkable([s for s in statements if str(s.get("id")) not in waiting], dropped)
+    held = _local_triggers(
+        _linkable_held([s for s in statements if str(s.get("id")) in waiting], dropped), dropped
+    )
+    statements = _local_triggers(
+        _linkable([s for s in statements if str(s.get("id")) not in waiting], dropped), dropped
+    )
     base = {
         "derivation": {
             "method": "llm",

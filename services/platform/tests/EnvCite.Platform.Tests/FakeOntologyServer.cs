@@ -186,13 +186,21 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                         Conditional = true, Discretionary = false,
                     },
                     new PenaltyCandidate { StatementId = 9, Punishes = 7, Effect = LegalEffect.Order },
+                    new PenaltyCandidate
+                    {
+                        StatementId = 11, Punishes = 7, Effect = LegalEffect.Warning,
+                        TriggeredBy = { new SanctionTrigger { StatementId = 8, Kind = TriggerKind.SanctionImposed } },
+                    },
+                    new PenaltyCandidate { StatementId = 12, Punishes = 7, Effect = LegalEffect.Disgorgement },
                 },
+                MissingPermitLimits = { new PermitGap { StatementId = 7, Permit = "operating_permit", Concept = "effluent_cod" } },
                 OneAct = new FineInterval { MinAmount = 60000, MaxAmount = 1000000 },
                 Missing = { new Gap { StatementId = 7, Concept = "effluent_cod" } },
                 Problems =
                 {
                     new Problem { Kind = ProblemKind.ContradictoryFact, Concept = "ph" },
                     new Problem { Kind = ProblemKind.UnresolvedDelegation, ConditionId = 31 },
+                    new Problem { Kind = ProblemKind.MeasurementMismatch, ConditionId = 32 },
                 },
                 Defeated = { new Defeat { Loser = 1, Winner = 2, Basis = OverrideBasis.LexSpecialis } },
                 Trace =

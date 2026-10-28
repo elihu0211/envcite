@@ -10,9 +10,18 @@ namespace EnvCite.Platform.Modules.Ontology;
 /// <param name="Flags">是／否的事實。</param>
 /// <param name="Concepts">概念取某個值概念（例如行業屬於某一類），值為受控概念的代碼；只與以概念比較的要件對得上，
 /// 「屬於」只依該法現行已確認的用語定義判定，沒有定義涵蓋視為不屬於。</param>
+/// <param name="MeasurementMethod">這些值的檢測方法（受控概念的代碼，如連續自動監測）；省略為未提供。限值標有檢測方法時，
+/// 方法不同或未提供，該要件為未知。</param>
+/// <param name="AveragingPeriod">這些值的平均時段（受控概念的代碼，如小時平均值）；規則同上。</param>
 public sealed record FactDto(
     string Concept, IReadOnlyList<string>? Numbers, IReadOnlyList<bool>? Flags,
-    IReadOnlyList<string>? Concepts = null);
+    IReadOnlyList<string>? Concepts = null, string? MeasurementMethod = null, string? AveragingPeriod = null);
+
+/// <summary>場所持有的許可所載的量值；門檻委由個別處分的要件以它為門檻值。</summary>
+/// <param name="Permit">許可種類（受控概念的代碼，如操作許可證）。</param>
+/// <param name="Concept">所載量值的概念代碼（如某污染物的排放量）。</param>
+/// <param name="Value">量值，十進位文字。</param>
+public sealed record PermitLimitDto(string Permit, string Concept, string Value);
 
 /// <summary>
 /// 行政罰法總則所依的事實。<b>省略欄位是「未知」，不是「否」</b>：條文有些規定只在已知為否時才適用，
@@ -45,9 +54,11 @@ public sealed record AdministrativePenaltyFactsDto(
 /// <param name="AdministrativePenalty">行政罰法總則所依的事實；省略表示全部未知。</param>
 /// <param name="ConductEndedOn">行為終了日；起算行政罰法第 27 條的三年裁處權時效。省略則不套用時效。</param>
 /// <param name="ResultOn">結果發生日，晚於行為終了時才給。</param>
+/// <param name="PermitLimits">場所持有的許可所載的量值；同一許可種類、同一概念兩個不同的值是矛盾。</param>
 public sealed record EvaluateReasoningRequest(
     string? ConductOn, string? DecidedOn, IReadOnlyList<FactDto>? Facts,
-    AdministrativePenaltyFactsDto? AdministrativePenalty, string? ConductEndedOn, string? ResultOn);
+    AdministrativePenaltyFactsDto? AdministrativePenalty, string? ConductEndedOn, string? ResultOn,
+    IReadOnlyList<PermitLimitDto>? PermitLimits = null);
 
 [JsonConverter(typeof(JsonStringEnumConverter<VerdictDto>))]
 public enum VerdictDto
@@ -75,6 +86,17 @@ public enum LegalEffectDto
     Warning,
     /// <summary>命令（改善命令等預防性、非裁罰性不利處分）；不是行政罰，行政罰法總則不適用。</summary>
     Order,
+    /// <summary>不法利得的追繳；不是行政罰，行政罰法總則不適用。</summary>
+    Disgorgement,
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter<TriggerKindDto>))]
+public enum TriggerKindDto
+{
+    /// <summary>命令屆期未履行（如限期改善屆期仍未完成）。</summary>
+    OrderLapsed,
+    /// <summary>另一處分已作成（如停工、停業或一定金額以上的罰鍰）。</summary>
+    SanctionImposed,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<ProblemKindDto>))]
@@ -84,9 +106,11 @@ public enum ProblemKindDto
     ContradictoryFact,
     /// <summary>授權命令的限值在該日解析不到。</summary>
     UnresolvedDelegation,
-    /// <summary>推論不比較的要件。</summary>
-    UnsupportedCondition,
     BadDate,
+    /// <summary>限值標有認定方式，事實的認定方式不同或未提供：該要件為未知。</summary>
+    MeasurementMismatch,
+    /// <summary>限值沒有標認定方式而照常比較：結論取決於事實是否以該限值的方式認定。</summary>
+    MeasurementUnlabeled,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<GuidanceKindDto>))]
@@ -153,9 +177,16 @@ public sealed record StatementVerdictDto(long StatementId, VerdictDto Verdict);
 /// <param name="Conditional">罰則自己的要件，或所處罰義務的結論尚未決定。</param>
 /// <param name="PerOccasion">按次處罰。</param>
 /// <param name="Discretionary">條文寫「得」：效果裁量。系統只列候選，不選額度。</param>
+/// <param name="TriggeredBy">這個候選所依的前提：另一個罰則；前提沒有列出時，這個罰則也不列出。</param>
 public sealed record PenaltyCandidateDto(
     long StatementId, long Punishes, LegalEffectDto Effect, long? MinAmount, long? MaxAmount,
-    bool Conditional, bool PerOccasion, bool Discretionary);
+    bool Conditional, bool PerOccasion, bool Discretionary, IReadOnlyList<SanctionTriggerDto> TriggeredBy);
+
+/// <param name="StatementId">作為前提的罰則陳述。</param>
+public sealed record SanctionTriggerDto(long StatementId, TriggerKindDto Kind);
+
+/// <summary>門檻委由個別處分、但請求沒有提供那筆許可量值的要件。</summary>
+public sealed record PermitGapDto(long StatementId, string Permit, string Concept);
 
 /// <summary>一行為（第 24 條）的罰鍰合併區間（元）。數行為（第 25 條）則是各罰則自己的額度。</summary>
 public sealed record FineIntervalDto(long MinAmount, long MaxAmount);
@@ -163,8 +194,8 @@ public sealed record FineIntervalDto(long MinAmount, long MaxAmount);
 /// <summary>陳述需要的一個概念。</summary>
 public sealed record GapDto(long StatementId, string Concept);
 
-/// <param name="Concept">矛盾事實或不支援的要件所涉概念。</param>
-/// <param name="ConditionId">授權解析失敗的要件。</param>
+/// <param name="Concept">矛盾事實所涉的概念，或矛盾的許可種類。</param>
+/// <param name="ConditionId">授權解析失敗或認定方式有問題的要件。</param>
 public sealed record ProblemDto(ProblemKindDto Kind, string? Concept, long? ConditionId);
 
 public sealed record StatementPairDto(long First, long Second);
@@ -224,6 +255,7 @@ public sealed record GuidanceDto(
 /// 不代表當時沒有這些規定。</param>
 /// <param name="DefinitionsUsed">概念值要件所依的用語定義；沒有定義涵蓋而判為不屬於的，沒有定義可指，不在此。</param>
 /// <param name="Guidance">附在結果旁的行政規則；不是推論的前提。</param>
+/// <param name="MissingPermitLimits">結論所需、但請求沒有提供的許可量值。</param>
 public sealed record OutcomeDto(
     IReadOnlyList<StatementVerdictDto> Verdicts, IReadOnlyList<PenaltyCandidateDto> Penalties,
     FineIntervalDto? OneAct, IReadOnlyList<GapDto> Missing, IReadOnlyList<GapDto> NeedsAssessment,
@@ -232,7 +264,8 @@ public sealed record OutcomeDto(
     IReadOnlyList<StatementPairDto> UnresolvedPenaltyOverlaps, IReadOnlyList<DefeatDto> PenaltyDefeated,
     IReadOnlyList<TraceEntryDto> Trace, IReadOnlyList<LimitSourceDto> LimitSources, GeneralPartDto General,
     IReadOnlyList<StatementSourceDto> Sources, IReadOnlyList<string> UncoveredLawIds,
-    IReadOnlyList<DefinitionUseDto> DefinitionsUsed, IReadOnlyList<GuidanceDto> Guidance);
+    IReadOnlyList<DefinitionUseDto> DefinitionsUsed, IReadOnlyList<GuidanceDto> Guidance,
+    IReadOnlyList<PermitGapDto> MissingPermitLimits);
 
 /// <param name="FirstDay">這一組陳述開始適用的第一天（<c>YYYY-MM-DD</c>）。</param>
 public sealed record EarlierOutcomeDto(string FirstDay, OutcomeDto Outcome);

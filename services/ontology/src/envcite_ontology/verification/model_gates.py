@@ -81,7 +81,10 @@ _EFFECT = {
     "reputation": "公布名稱等聲譽處分",
     "warning": "警告",
     "confiscation": "沒入",
+    "disgorgement": "不法利得的追繳",
 }
+_LIABILITY = {"act": "行為責任", "state": "狀態責任", "representative": "代表或受指派"}
+_TRIGGER = {"order_lapsed": "屆期未履行", "sanction_imposed": "已作成"}
 
 
 def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False) -> str:
@@ -91,34 +94,45 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
     """
     u = unit_of(conn, statement_id)
     lines = [f"陳述種類：{_KIND.get((u.kind, u.deontic), u.kind)}"]
-    for slot, value in conn.execute(
-        "SELECT sl.slot_role::text, coalesce(k.code, sl.literal)"
+    for slot, value, liability in conn.execute(
+        "SELECT sl.slot_role::text, coalesce(k.code, sl.literal), sl.liability_basis::text"
         "  FROM annotation.statement_slot AS sl"
         "  LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id"
         " WHERE sl.statement_id = %s ORDER BY sl.slot_role, sl.alternative",
         (statement_id,),
     ):
-        lines.append(f"{_SLOT.get(str(slot), slot)}：{value}")
+        basis = f"（責任基礎：{_LIABILITY.get(str(liability), liability)}）" if liability else ""
+        lines.append(f"{_SLOT.get(str(slot), slot)}：{value}{basis}")
     by_role: dict[str, list[str]] = {}
-    for role, code, label, cmp, threshold, unit, negated, judgement, delegated in conn.execute(
+    for found in conn.execute(
         "SELECT c.condition_role::text, k.code, k.name, c.comparator::text,"
         "       c.threshold, c.measure_unit,"
-        "       c.negated, c.needs_assessment, c.delegate_provision_id IS NOT NULL"
+        "       c.negated, c.needs_assessment, c.delegate_provision_id IS NOT NULL,"
+        "       pk.code, mk.code, ak.code"
         "  FROM annotation.statement_condition AS c JOIN vocab.concept AS k ON k.id = c.concept_id"
+        "  LEFT JOIN vocab.concept AS pk ON pk.id = c.delegate_permit_concept_id"
+        "  LEFT JOIN vocab.concept AS mk ON mk.id = c.measurement_method_concept_id"
+        "  LEFT JOIN vocab.concept AS ak ON ak.id = c.averaging_period_concept_id"
         " WHERE c.statement_id = %s ORDER BY c.id",
         (statement_id,),
     ):
+        role, code, label, cmp, threshold, unit, negated, judgement, delegated = found[:9]
+        permit, method, averaging = found[9:]
         if cmp == "eq" and threshold == 1 and not unit and not delegated:
             text = f"[{code}] {label} 成立"  # 不寫成原文沒有的數值
         else:
             value = (
                 "門檻值由授權命令供給"
                 if delegated
+                else f"門檻值由個別許可（{permit}）所載"
+                if permit is not None
                 else "（另一個概念）"
                 if threshold is None
                 else f"{threshold:g}{unit or ''}"
             )
             text = f"[{code}] {label} {_CMP[str(cmp)]} {value}"
+        if method is not None or averaging is not None:
+            text += f"（檢測方法：{method or '未標註'}；平均時段：{averaging or '未標註'}）"
         by_role.setdefault(str(role), []).append(
             ("非：" if negated else "") + text + ("（需判斷）" if judgement else "")
         )
@@ -145,6 +159,15 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
             + ("；按次處罰" if repeating else "")
             + ("；得（裁量）" if discretionary else "")
         )
+        for effect, kind in conn.execute(
+            "SELECT n.legal_effect::text, t.trigger_kind::text"
+            "  FROM annotation.sanction_trigger AS t"
+            "  JOIN annotation.sanction AS n ON n.statement_id = t.trigger_statement_id"
+            " WHERE t.statement_id = %s ORDER BY n.legal_effect, t.trigger_kind",
+            (statement_id,),
+        ):
+            shown = f"{effect}（{_EFFECT.get(str(effect), effect)}）" if for_reader else effect
+            lines.append(f"前提：另一罰則 {shown} {_TRIGGER.get(str(kind), kind)}")
     return "\n".join(lines)
 
 

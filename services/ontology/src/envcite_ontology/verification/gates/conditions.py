@@ -29,6 +29,8 @@ class Cond:
     delegated: bool
     #: 與概念值比較的要件所比較的概念代碼；數值要件為 None
     value_code: str | None
+    #: 委由個別處分的要件所委由的許可種類代碼；其餘為 None
+    permit: str | None = None
 
     @property
     def by_concept(self) -> bool:
@@ -68,10 +70,11 @@ def load_conditions(conn: Conn, statement_id: int) -> list[Cond]:
     rows = conn.execute(
         "SELECT c.id, c.condition_role::text, c.disjunct_no, k.code, c.comparator::text, c.negated,"
         "       c.threshold, c.delegate_provision_id IS NOT NULL,"
-        "       vk.code"
+        "       vk.code, pk.code"
         "  FROM annotation.statement_condition AS c"
         "  JOIN vocab.concept AS k ON k.id = c.concept_id"
         "  LEFT JOIN vocab.concept AS vk ON vk.id = c.value_concept_id"
+        "  LEFT JOIN vocab.concept AS pk ON pk.id = c.delegate_permit_concept_id"
         " WHERE c.statement_id = %s AND c.condition_role <> 'limit' ORDER BY c.id",
         (statement_id,),
     ).fetchall()
@@ -86,6 +89,7 @@ def load_conditions(conn: Conn, statement_id: int) -> list[Cond]:
             None if r[6] is None else Decimal(str(r[6])),
             bool(r[7]),
             None if r[8] is None else cast(str, r[8]),
+            None if r[9] is None else cast(str, r[9]),
         )
         for r in rows
     ]

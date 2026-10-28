@@ -68,6 +68,14 @@ def _choose(
     return chosen if isinstance(chosen, int) and chosen in {sid for sid, _ in candidates} else None
 
 
+def _references(s: Mapping[str, Any]) -> set[str]:
+    """陳述指向的同批陳述：例外所排除的，與作為前提的罰則。"""
+    refs = {str(t["statement"]) for t in s["sanction"].get("triggers") or []}
+    if s.get("exception_of") is not None:
+        refs.add(str(s["exception_of"]))
+    return refs
+
+
 def link_penalties(conn: Conn, model: Model, pending: Sequence[Mapping[str, Any]]) -> Linked:
     """把待連結的罰則連到被引用條文的陳述並寫入；回傳寫入的陳述數與丟掉的原因。"""
     written = 0
@@ -85,13 +93,18 @@ def link_penalties(conn: Conn, model: Model, pending: Sequence[Mapping[str, Any]
                 dropped.append(f"{s['id']}: could not tell which statement it punishes")
                 continue
             statements.append({**s, "sanction": {**s["sanction"], "punishes_id": target}})
-        ids = {str(s["id"]) for s in statements}
-        kept = [
-            s for s in statements if s.get("exception_of") is None or str(s["exception_of"]) in ids
-        ]
-        dropped += [
-            f"{s['id']}: excepts a penalty that was not linked" for s in statements if s not in kept
-        ]
+        kept = statements
+        while True:
+            ids = {str(s["id"]) for s in kept}
+            survivors = [s for s in kept if _references(s) <= ids]
+            dropped += [
+                f"{s['id']}: excepts or is triggered by a penalty that was not linked"
+                for s in kept
+                if s not in survivors
+            ]
+            if len(survivors) == len(kept):
+                break
+            kept = survivors
         if not kept:
             continue
         try:

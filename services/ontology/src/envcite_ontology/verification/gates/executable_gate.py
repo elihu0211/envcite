@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import Any, cast
 
 from envcite_ontology.reasoning import Result, evaluate
-from envcite_ontology.reasoning.facts import CaseValue
+from envcite_ontology.reasoning.facts import CaseValue, Measurement, limit_at
 from envcite_ontology.verification.gates.base import Conn, GateResult, Unit, unit_of
 from envcite_ontology.verification.gates.conditions import (
     Cond,
@@ -25,6 +25,19 @@ _POLARITY: dict[str, tuple[str, str]] = {
     "permission": ("compliant", "compliant"),
 }
 
+#: 委由個別處分的要件：許可不在語料裡，以一個假設的許可量值檢查結論是否翻轉。
+_PERMITTED = Decimal(100)
+
+
+@dataclass(frozen=True)
+class _Ready:
+    as_of: date
+    conds: list[Cond]
+    resolved: dict[int, Decimal]
+    base: dict[str, CaseValue]
+    measurements: dict[str, list[Measurement]]
+    permits: dict[tuple[str, str], list[float]]
+
 
 @dataclass(frozen=True)
 class ExecutableGate:
@@ -35,7 +48,7 @@ class ExecutableGate:
     """
 
     method: str = "executable"
-    verifier: str = "gate:executable@2"
+    verifier: str = "gate:executable@3"
     language: str = "zho"
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
@@ -48,7 +61,7 @@ class ExecutableGate:
         ready = self._ready(conn, u)
         if isinstance(ready, GateResult):
             return ready
-        as_of, conds, resolved, base = ready
+        conds, resolved, base = ready.conds, ready.resolved, ready.base
         holds, fails = pair
         scope = [c for c in conds if c.role == "scope"]
         duty = [c for c in conds if c.role == "duty"]
@@ -67,7 +80,7 @@ class ExecutableGate:
         for broken in scope:
             facts = base | sat | duty_ok | {broken.code: broken.fact(False, resolved[broken.id])}
             cases.append((f"{broken.code} not met", facts, "not_applicable"))
-        return self._verdicts(conn, as_of, u.statement_id, cases)
+        return self._verdicts(conn, ready, u.statement_id, cases)
 
     def _penalty(self, conn: Conn, u: Unit) -> GateResult:
         row = conn.execute(
@@ -83,7 +96,7 @@ class ExecutableGate:
         breach_ready = self._ready(conn, punished)
         if isinstance(breach_ready, GateResult):
             return breach_ready
-        _, pconds, presolved, pbase = breach_ready
+        pconds, presolved, pbase = breach_ready.conds, breach_ready.resolved, breach_ready.base
         if not any(c.role == "duty" for c in pconds):
             return GateResult(
                 "inconclusive", {"reason": "punished statement has no duty condition"}
@@ -91,7 +104,12 @@ class ExecutableGate:
         pen_ready = self._ready(conn, u)
         if isinstance(pen_ready, GateResult):
             return pen_ready
-        as_of, conds, resolved, base = pen_ready
+        as_of, conds, resolved, base = (
+            pen_ready.as_of,
+            pen_ready.conds,
+            pen_ready.resolved,
+            pen_ready.base,
+        )
         scope = [c for c in conds if c.role == "scope"]
         breach = (
             pbase
@@ -99,9 +117,36 @@ class ExecutableGate:
             | self._vals([c for c in pconds if c.role == "duty"], pair[0] == "violation", presolved)
             | {"ap_intent": 1.0}
         )
+        # 以另一個效果為前提的罰則：前提也要列出。取第一個前提，使它的適用範圍成立；前提處罰的
+        # 是別的陳述（例如跨法的環境講習）時，這裡造不出案件。
+        inputs = [breach_ready, pen_ready]
+        trigger = conn.execute(
+            "SELECT t.trigger_statement_id, n.punished_statement_id,"
+            "       EXISTS (SELECT 1 FROM annotation.sanction_trigger AS tt"
+            "                WHERE tt.statement_id = t.trigger_statement_id)"
+            "  FROM annotation.sanction_trigger AS t"
+            "  JOIN annotation.sanction AS n ON n.statement_id = t.trigger_statement_id"
+            " WHERE t.statement_id = %s ORDER BY t.trigger_statement_id LIMIT 1",
+            (u.statement_id,),
+        ).fetchone()
+        if trigger is not None:
+            if trigger[1] != punished.statement_id:
+                return GateResult("inconclusive", {"reason": "trigger punishes another statement"})
+            if trigger[2]:
+                return GateResult("inconclusive", {"reason": "trigger has a trigger of its own"})
+            trigger_ready = self._ready(conn, unit_of(conn, cast(int, trigger[0])))
+            if isinstance(trigger_ready, GateResult):
+                return trigger_ready
+            inputs.append(trigger_ready)
+            breach |= trigger_ready.base | self._vals(
+                [c for c in trigger_ready.conds if c.role == "scope"],
+                True,
+                trigger_ready.resolved,
+            )
+        merged = _merge(as_of, inputs)
         sat = self._vals(scope, True, resolved)
         held = base | breach | sat
-        probe = evaluate(conn, as_of, held, self.language, include_unsettled=True)
+        probe = self._evaluate(conn, merged, held)
         if probe.verdicts.get(punished.statement_id) != "violation":
             return GateResult(
                 "inconclusive", {"reason": "breach facts did not violate the punished statement"}
@@ -122,19 +167,25 @@ class ExecutableGate:
             }
         ]
         for name, facts, expected in cases[1:]:
-            got = self._penalty_state(
-                evaluate(conn, as_of, facts, self.language, include_unsettled=True),
-                u.statement_id,
-            )
+            got = self._penalty_state(self._evaluate(conn, merged, facts), u.statement_id)
             results.append({"case": name, "expected": expected, "got": got})
         failed = [x for x in results if x["got"] != x["expected"]]
         return GateResult(
             "fail" if failed else "pass", {"as_of": as_of.isoformat(), "cases": results}
         )
 
-    def _ready(
-        self, conn: Conn, u: Unit
-    ) -> GateResult | tuple[date, list[Cond], dict[int, Decimal], dict[str, CaseValue]]:
+    def _evaluate(self, conn: Conn, ready: _Ready, facts: dict[str, CaseValue]) -> Result:
+        return evaluate(
+            conn,
+            ready.as_of,
+            facts,
+            self.language,
+            include_unsettled=True,
+            measurements=ready.measurements,
+            permits=ready.permits,
+        )
+
+    def _ready(self, conn: Conn, u: Unit) -> GateResult | _Ready:
         as_of = statement_as_of(conn, u.statement_id)
         if as_of is None:
             return GateResult("inconclusive", {"reason": "no start date for the text"})
@@ -143,31 +194,42 @@ class ExecutableGate:
         if problem:
             return GateResult("inconclusive", {"reason": problem})
         resolved: dict[int, Decimal] = {}
+        measurements: dict[str, list[Measurement]] = {}
+        permits: dict[tuple[str, str], list[float]] = {}
         for c in conds:
             if c.by_concept:
                 resolved[c.id] = Decimal(0)  # 概念值要件沒有門檻值，事實值由概念代碼決定
                 continue
+            if c.permit is not None:
+                resolved[c.id] = _PERMITTED
+                permits[(c.permit, c.code)] = [float(_PERMITTED)]
+                continue
             value = c.threshold
             if value is None and c.delegated:
-                row = conn.execute(
-                    "SELECT annotation.threshold_at(%s, %s, %s)", (c.id, self.language, as_of)
-                ).fetchone()
-                value = None if row is None or row[0] is None else Decimal(str(row[0]))
+                # 事實照限值的認定方式給，才比得到數值
+                limit = limit_at(conn, c.id, self.language, as_of)
+                if limit is not None:
+                    value = limit.threshold
+                    if limit.method is not None or limit.averaging is not None:
+                        measurements[c.code] = [Measurement(limit.method, limit.averaging)]
             if value is None:
                 return GateResult("inconclusive", {"reason": f"threshold of {c.code} unresolved"})
             resolved[c.id] = value
-        return as_of, conds, resolved, exception_facts(conn, u.statement_id)
+        return _Ready(
+            as_of, conds, resolved, exception_facts(conn, u.statement_id), measurements, permits
+        )
 
     def _verdicts(
         self,
         conn: Conn,
-        as_of: date,
+        ready: _Ready,
         statement_id: int,
         cases: list[tuple[str, dict[str, CaseValue], str]],
     ) -> GateResult:
+        as_of = ready.as_of
         results: list[dict[str, Any]] = []
         for name, facts, expected in cases:
-            result = evaluate(conn, as_of, facts, self.language, include_unsettled=True)
+            result = self._evaluate(conn, ready, facts)
             results.append(
                 {
                     "case": name,
@@ -194,3 +256,13 @@ class ExecutableGate:
         if len(conditional) != 1:
             return "both"
         return "conditional" if hit[0].conditional else "candidate"
+
+
+def _merge(as_of: date, inputs: list[_Ready]) -> _Ready:
+    """數個陳述的認定方式與許可量值併在一起，供同一次推論使用（評估日取罰則的）。"""
+    measurements: dict[str, list[Measurement]] = {}
+    permits: dict[tuple[str, str], list[float]] = {}
+    for r in inputs:
+        measurements |= r.measurements
+        permits |= r.permits
+    return _Ready(as_of, [], {}, {}, measurements, permits)

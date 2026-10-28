@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import cast
@@ -20,6 +21,20 @@ Conn = psycopg.Connection[tuple[object, ...]]
 # 案件事實的值：數字，或概念代碼（概念取某個值概念）；同一概念可帶多個值。
 CaseValue = float | str
 Case = Mapping[str, CaseValue | Sequence[CaseValue]]
+
+
+@dataclass(frozen=True)
+class Measurement:
+    """案件事實的認定方式：檢測方法與平均時段，都是概念代碼；None 是未提供。"""
+
+    method: str | None = None
+    averaging: str | None = None
+
+
+#: 事實概念 → 它的值所用的認定方式（同一概念可由數筆事實提供，各帶認定方式）。
+Measurements = Mapping[str, Sequence[Measurement]]
+#: （許可種類，概念）→ 該場所持有的這種許可所載、這個概念的量值（委由個別處分的門檻值）。
+Permits = Mapping[tuple[str, str], Sequence[float]]
 
 
 def q(text: str) -> str:
@@ -44,10 +59,11 @@ _CONDITIONS = """
     SELECT c.id, c.statement_id, c.condition_role::text, c.disjunct_no, k.code,
            c.comparator::text, c.negated,
            c.needs_assessment, c.threshold, c.delegate_provision_id IS NOT NULL,
-           vk.code
+           vk.code, pk.code
       FROM annotation.statement_condition AS c
       JOIN vocab.concept AS k ON k.id = c.concept_id
       LEFT JOIN vocab.concept AS vk ON vk.id = c.value_concept_id
+      LEFT JOIN vocab.concept AS pk ON pk.id = c.delegate_permit_concept_id
      WHERE c.statement_id = ANY(%(ids)s) AND c.condition_role <> 'limit'
      ORDER BY c.id
 """
@@ -63,7 +79,40 @@ _DEFINITIONS = """
      ORDER BY lr.id, tk.code, mk.code
 """
 
-_SOURCES = "SELECT threshold, statement_id FROM annotation.threshold_source_at(%s, %s, %s)"
+# 授權的限值與它的認定方式（限值那一列要件上的檢測方法、平均時段）。
+_LIMIT = """
+    SELECT s.threshold, s.statement_id, mk.code, ak.code
+      FROM annotation.threshold_source_at(%s, %s, %s) AS s
+      JOIN annotation.statement_condition AS lim ON lim.id = s.condition_id
+      LEFT JOIN vocab.concept AS mk ON mk.id = lim.measurement_method_concept_id
+      LEFT JOIN vocab.concept AS ak ON ak.id = lim.averaging_period_concept_id
+     ORDER BY s.condition_id
+"""
+
+# 對到同一個外部識別碼的概念視為同一個（只記等同）：要件、概念值與定義成員所用的概念，
+# 和與它等同的其他概念之代碼。推論把後者的事實當成前者的事實。
+_MATCHES = """
+    SELECT DISTINCT other.code, used.code
+      FROM vocab.concept AS used
+      JOIN vocab.concept_match AS m ON m.concept_id = used.id
+      JOIN vocab.concept_match AS om ON om.external_system = m.external_system
+                                    AND om.external_id = m.external_id
+                                    AND om.concept_id <> m.concept_id
+      JOIN vocab.concept AS other ON other.id = om.concept_id
+     WHERE other.code <> used.code
+       AND used.id IN (SELECT c.concept_id FROM annotation.statement_condition AS c
+                        WHERE c.statement_id = ANY(%(ids)s)
+                       UNION
+                       SELECT c.value_concept_id FROM annotation.statement_condition AS c
+                        WHERE c.statement_id = ANY(%(ids)s)
+                       UNION
+                       SELECT c.delegate_permit_concept_id FROM annotation.statement_condition AS c
+                        WHERE c.statement_id = ANY(%(ids)s)
+                       UNION
+                       SELECT m.member_concept_id FROM annotation.term_definition_member AS m
+                        WHERE m.definition_id = ANY(%(definitions)s::bigint[]))
+     ORDER BY 1, 2
+"""
 
 _ACTIONS = """
     SELECT sl.statement_id, coalesce(k.code, sl.literal)
@@ -88,6 +137,38 @@ _SANCTIONS = """
       FROM annotation.sanction
      WHERE statement_id = ANY(%(ids)s) AND punished_statement_id = ANY(%(ids)s)
 """
+
+# 被觸發者不論前提是否在當日的陳述裡都標出：前提不在（未確認、文字已改、法規未施行）就不列。
+_TRIGGERS = """
+    SELECT statement_id, trigger_statement_id, trigger_kind::text,
+           trigger_statement_id = ANY(%(ids)s)
+      FROM annotation.sanction_trigger
+     WHERE statement_id = ANY(%(ids)s)
+"""
+
+
+@dataclass(frozen=True)
+class Limit:
+    """委由授權條文的要件在某日所取得的限值：門檻值、提供它的陳述與它的認定方式（概念代碼）。"""
+
+    threshold: Decimal
+    statement_id: int
+    method: str | None
+    averaging: str | None
+
+
+def limit_at(conn: Conn, condition_id: int, language: str, on: date) -> Limit | None:
+    """授權的限值；解析不到為 None。同一條文對同一概念有數個限值時取要件編號最小的。"""
+    row = conn.execute(_LIMIT, (condition_id, language, on)).fetchone()
+    if row is None:
+        return None
+    threshold, statement_id, method, averaging = row
+    return Limit(
+        cast(Decimal, threshold),
+        cast(int, statement_id),
+        None if method is None else str(method),
+        None if averaging is None else str(averaging),
+    )
 
 
 def statement_facts(
@@ -123,6 +204,7 @@ def statement_facts(
             threshold,
             delegated,
             value_concept,
+            permit,
         ) = row
         out.append(
             f"cond({cid},{sid},{role},{clause},{q(str(code))},{comparator},{int(bool(negated))})."
@@ -133,17 +215,29 @@ def statement_facts(
             out.append(f"vcond({cid},{q(str(value_concept))}).")  # 比較子只有 eq、ne（資料庫約束）
         elif threshold is not None:
             out.append(f"thr({cid},{milli(cast(Decimal, threshold))}).")
+        elif permit is not None:
+            out.append(f"permit_cond({cid},{q(str(permit))}).")  # 量值由呼叫端隨案件事實提供
         elif delegated:
             out.append(f"delegated({cid}).")
-            source = conn.execute(_SOURCES, (cid, language, as_of)).fetchone()
-            if source is not None:  # 解析不到則不給 thr，推論程式列為問題而非缺事實
-                out.append(f"thr({cid},{milli(cast(Decimal, source[0]))}).")
-                out.append(f"thr_src({cid},{source[1]}).")
+            limit = limit_at(conn, cast(int, cid), language, as_of)
+            if limit is not None:  # 解析不到則不給 thr，推論程式列為問題而非缺事實
+                out.append(f"thr({cid},{milli(limit.threshold)}).")
+                out.append(f"thr_src({cid},{limit.statement_id}).")
+                if limit.method is not None:
+                    out.append(f"lim_method({cid},{q(limit.method)}).")
+                if limit.averaging is not None:
+                    out.append(f"lim_avg({cid},{q(limit.averaging)}).")
+                if limit.method is None and limit.averaging is None:
+                    out.append(f"lim_unlabeled({cid}).")
 
     # 用語定義只及於本法：成員關係帶法規編號，推論只在要件所屬的法規內使用。
+    definitions: set[int] = set()
     for law_id, term, member, definition_id in conn.execute(_DEFINITIONS, params):
         out.append(f"defmember({law_id},{q(str(term))},{q(str(member))}).")
         out.append(f"defsrc({law_id},{q(str(term))},{q(str(member))},{definition_id}).")
+        definitions.add(cast(int, definition_id))
+    for other, used in conn.execute(_MATCHES, ids_param | {"definitions": sorted(definitions)}):
+        out.append(f"same({q(str(other))},{q(str(used))}).")
     for sid, action in conn.execute(_ACTIONS, ids_param):
         out.append(f"action({sid},{q(str(action))}).")
     for exception, excluded in conn.execute(_EXCEPTIONS, ids_param):
@@ -156,6 +250,10 @@ def statement_facts(
         out.append(f"sanction({sid},{punishes},{effect},{lo},{hi}).")
         if repeating:
             out.append(f"repeating({sid}).")
+    for sid, trigger, kind, present in conn.execute(_TRIGGERS, ids_param):
+        out.append(f"triggered({sid}).")
+        if present:
+            out.append(f"trigger({sid},{trigger},{kind}).")
     return "\n".join(out)
 
 
@@ -163,12 +261,24 @@ def statement_facts(
 _ACCRUAL = ("ap_conduct_ended", "ap_result_on")
 
 
-def case_facts(case: Case) -> str:
+def case_facts(
+    case: Case, measurements: Measurements | None = None, permits: Permits | None = None
+) -> str:
     """案件事實：概念代碼 → 值（同一概念可有多個值，矛盾由推論程式檢出）。
 
-    數字是千分位的 `fact_in`；字串是概念值（行業屬某行業），寫成 `cfact_in`。
+    數字是千分位的 `fact_in`；字串是概念值（行業屬某行業），寫成 `cfact_in`。認定方式寫成
+    `fmethod`／`favg`；許可所載的量值寫成 `permit_in`（同一許可、同一概念有兩個值即矛盾）。
     """
     out: list[str] = []
+    for code, given in (measurements or {}).items():
+        for m in given:
+            if m.method is not None:
+                out.append(f"fmethod({q(code)},{q(m.method)}).")
+            if m.averaging is not None:
+                out.append(f"favg({q(code)},{q(m.averaging)}).")
+    for (permit, code), amounts in (permits or {}).items():
+        for amount in amounts:
+            out.append(f"permit_in({q(permit)},{q(code)},{milli(amount)}).")
     for code, value in case.items():
         if code in _ACCRUAL:
             continue

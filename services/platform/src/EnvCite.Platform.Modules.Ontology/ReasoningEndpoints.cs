@@ -22,24 +22,7 @@ public static class ReasoningEndpoints
             ReasoningService.ReasoningServiceClient client, IOptions<OntologyOptions> options,
             IUsageRecorder usage, CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(request.ConductOn) || string.IsNullOrWhiteSpace(request.DecidedOn))
-            {
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["request"] = ["conductOn and decidedOn are required."],
-                });
-            }
-
-            EvaluateRequest grpcRequest;
-            try
-            {
-                grpcRequest = ReasoningMapper.ToGrpc(request);
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.ValidationProblem(new Dictionary<string, string[]> { ["facts"] = [ex.Message] });
-            }
-
+            var grpcRequest = ReasoningMapper.ToGrpc(request);
             try
             {
                 var response = await client.EvaluateAsync(grpcRequest,

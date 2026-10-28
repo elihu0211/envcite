@@ -15,11 +15,11 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
     private static EvaluateReasoningRequest Request(string conductOn = "2020-01-01", string decidedOn = "2020-06-01") =>
         new(conductOn, decidedOn,
             [
-                new FactDto("effluent_cod", ["120"], null), new FactDto("discharging", null, [true]),
+                new FactDto("effluent_cod", ["120"], null, MeasurementMethod: "cems"), new FactDto("discharging", null, [true]),
                 new FactDto("industry", null, null, ["factory"]),
             ],
             new AdministrativePenaltyFactsDto(null, true, null, 15, null, null, null, null, null, null, null, null, null, null, null, null),
-            "2020-01-05", null);
+            "2020-01-05", null, [new PermitLimitDto("operating_permit", "effluent_cod", "100")]);
 
     [Fact]
     public async Task EvaluateMapsTheCaseToTheInternalContractAndTheOutcomeBackToTypedJson()
@@ -36,18 +36,28 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal("120", sent.Facts[0].Values[0].Number.Value);
         Assert.True(sent.Facts[1].Values[0].Flag);
         Assert.Equal("factory", sent.Facts[2].Values[0].Concept); // 概念值事實原樣對映
+        Assert.Equal(("cems", ""), (sent.Facts[0].MeasurementMethod, sent.Facts[0].AveragingPeriod)); // 省略 = 未提供
+        var permit = Assert.Single(sent.PermitLimits);
+        Assert.Equal(("operating_permit", "effluent_cod", "100"), (permit.Permit, permit.Concept, permit.Value.Value));
         Assert.True(sent.AdministrativePenaltyFacts.HasNegligence);
         Assert.False(sent.AdministrativePenaltyFacts.HasIntent); // 省略 = 未知，不是「否」
         Assert.Equal(15, sent.AdministrativePenaltyFacts.Age);
 
         var outcome = result!.AtDecision;
         Assert.Equal([new StatementVerdictDto(7, VerdictDto.Violation)], outcome.Verdicts);
-        Assert.Equal(new PenaltyCandidateDto(8, 7, LegalEffectDto.Fine, 60000, 1000000, true, false, false), outcome.Penalties[0]);
+        var fine = outcome.Penalties[0];
+        Assert.Empty(fine.TriggeredBy);
+        Assert.Equal(new PenaltyCandidateDto(8, 7, LegalEffectDto.Fine, 60000, 1000000, true, false, false, fine.TriggeredBy), fine);
+        Assert.Equal(LegalEffectDto.Warning, outcome.Penalties[2].Effect);
+        Assert.Equal([new SanctionTriggerDto(8, TriggerKindDto.SanctionImposed)], outcome.Penalties[2].TriggeredBy);
+        Assert.Equal(LegalEffectDto.Disgorgement, outcome.Penalties[3].Effect);
+        Assert.Equal([new PermitGapDto(7, "operating_permit", "effluent_cod")], outcome.MissingPermitLimits);
         Assert.Equal(LegalEffectDto.Order, outcome.Penalties[1].Effect);
         Assert.Null(outcome.Penalties[1].MinAmount); // 沒寫額度 = 省略，不是 0
         Assert.Equal(new FineIntervalDto(60000, 1000000), outcome.OneAct);
         Assert.Equal([new ProblemDto(ProblemKindDto.ContradictoryFact, "ph", null),
-            new ProblemDto(ProblemKindDto.UnresolvedDelegation, null, 31)], outcome.Problems);
+            new ProblemDto(ProblemKindDto.UnresolvedDelegation, null, 31),
+            new ProblemDto(ProblemKindDto.MeasurementMismatch, null, 32)], outcome.Problems);
         Assert.Equal(OverrideBasisDto.LexSpecialis, outcome.Defeated[0].Basis);
         Assert.Equal(new TraceEntryDto(31, 7, "effluent_cod", "120", "100", ConditionRoleDto.Duty), outcome.Trace[0]);
         Assert.Equal([new LimitSourceDto(31, 52)], outcome.LimitSources);
@@ -95,19 +105,23 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal([new UsageSummary(ReasoningEndpoints.EvaluateOperation, 1, 1)], usage!);
     }
 
-    [Theory]
-    [InlineData(null, "2020-06-01")]
-    [InlineData("2020-01-01", " ")]
-    public async Task BothDatesAreRequiredAndNothingIsMetered(string? conductOn, string? decidedOn)
+    [Fact]
+    public async Task TheCaseIsForwardedAsGivenAndJudgedByTheInternalService()
     {
-        var (_, key) = await factory.CreateTenantWithKeyAsync("reason-required");
+        var (_, key) = await factory.CreateTenantWithKeyAsync("reason-forward");
         using var client = factory.CreateTenantClient(key.Key);
+        var request = Request() with
+        {
+            Facts = [new FactDto("effluent_cod", ["lots"], null)],
+            PermitLimits = [new PermitLimitDto("operating_permit", "effluent_cod", "")],
+        };
 
-        using var response = await client.PostAsJsonAsync(Path, new EvaluateReasoningRequest(conductOn, decidedOn, null, null, null, null), cancellationToken: TestContext.Current.CancellationToken);
-        var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
+        using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Empty(usage!);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode); // 假服務不驗證；檢查只在 ontology 一處
+        var sent = factory.Ontology.LastEvaluate!;
+        Assert.Equal("lots", sent.Facts[0].Values[0].Number.Value);
+        Assert.Equal("", sent.PermitLimits[0].Value.Value);
     }
 
     [Fact]
@@ -121,44 +135,6 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Empty(usage!);
-    }
-
-    [Theory]
-    [InlineData("not-a-number")]
-    [InlineData("")]
-    public async Task ABadNumberIs400BeforeTheInternalServiceIsCalled(string number)
-    {
-        var (_, key) = await factory.CreateTenantWithKeyAsync("reason-number");
-        using var client = factory.CreateTenantClient(key.Key);
-        var request = Request() with { Facts = [new FactDto("effluent_cod", [number], null)] };
-
-        using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task ABlankConceptValueIs400BeforeTheInternalServiceIsCalled()
-    {
-        var (_, key) = await factory.CreateTenantWithKeyAsync("reason-blankconcept");
-        using var client = factory.CreateTenantClient(key.Key);
-        var request = Request() with { Facts = [new FactDto("industry", null, null, [" "])] };
-
-        using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task AFactWithoutValuesIs400()
-    {
-        var (_, key) = await factory.CreateTenantWithKeyAsync("reason-novalue");
-        using var client = factory.CreateTenantClient(key.Key);
-        var request = Request() with { Facts = [new FactDto("effluent_cod", null, null)] };
-
-        using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

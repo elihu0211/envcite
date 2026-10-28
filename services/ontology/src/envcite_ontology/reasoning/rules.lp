@@ -5,8 +5,19 @@
 %       defsrc/4（同上，另帶定義編號，供依據軌跡）
 %       cfact_in/2（案件的概念值事實：概念代碼 → 值概念代碼）
 %       judgement/1（需判斷的要件原子）  repeating/1（按次處罰的罰則）
+%       permit_cond/2（委由個別處分的要件：許可種類）  lim_method/2 lim_avg/2 lim_unlabeled/1（授權限值的認定方式）
+%       trigger/3（罰則 → 作為前提的罰則，觸發種類；只列當日在的前提）  triggered/1（有前提的罰則）  same/2（對到同一外部識別碼的概念：前者的事實當成後者的）
 %       fact_in/2（案件事實，由呼叫端提供；同一概念可帶多個值，矛盾由下方檢出）
+%       fmethod/2 favg/2（案件事實的認定方式）  permit_in/3（呼叫端提供的許可量值：許可種類、概念、值）
 role(scope;duty).
+
+% ---- 等同的概念：對到同一個外部識別碼（只記等同，不記上下位）；事實與認定方式照搬 ----
+fact_in(C,V)  :- fact_in(D,V), same(D,C).
+cfact_in(C,V) :- cfact_in(D,V), same(D,C).
+fmethod(C,X)  :- fmethod(D,X), same(D,C).
+favg(C,X)     :- favg(D,X), same(D,C).
+permit_in(K,C,V) :- permit_in(K,D,V), same(D,C).
+permit_in(L,M,V) :- permit_in(K,M,V), same(K,L).
 
 % ---- 矛盾事實：同一概念有兩個不同的值，該概念視同沒有可用的值，並列為問題 ----
 % 不擇一、不取平均：哪一個值對，是事實認定，不是推論。矛盾的概念不冒充「缺事實」，
@@ -23,6 +34,7 @@ given(M) :- cfact_in(M,_).
 
 % 「甲屬於乙」的依據只有該法現行的用語定義（定義只及於本法）；詞彙沒有上下位可用。
 isa(L,X,X) :- stmt_law(_,L), cfact_in(_,X).
+isa(L,X,Y) :- isa(L,X,Z), same(Z,Y).
 isa(L,X,T) :- defmember(L,T,Y), isa(L,X,Y).
 
 % 依據軌跡：某個值之所以屬於比較的用語，所經過的每一則定義（可能是遞移的）。
@@ -34,20 +46,33 @@ used_def(C,D)    :- vcond(C,V), cond(C,S,_,_,M,_,_), cfact(M,X), stmt_law(S,L),
 prescriptive(S) :- statement(S,prescriptive,_).
 deontic(S,D)    :- statement(S,prescriptive,D).
 
+% ---- 委由個別處分：門檻值是呼叫端提供的許可量值；沒提供則要件未知，矛盾則不擇一 ----
+conflicting_p(K,M) :- permit_in(K,M,V1), permit_in(K,M,V2), V1 < V2.
+problem(contradictory_fact, K) :- conflicting_p(K,_).
+permit_given(K,M) :- permit_in(K,M,_).
+thr(C,T) :- permit_cond(C,K), cond(C,_,_,_,M,_,_), permit_in(K,M,T), not conflicting_p(K,M).
+
+% ---- 認定方式：限值有標，事實的檢測方法或平均時段不同或沒給，就不以數值逕判 ----
+meas_bad(C) :- lim_method(C,X), cond(C,_,_,_,M,_,_), not fmethod(M,X).
+meas_bad(C) :- lim_method(C,X), cond(C,_,_,_,M,_,_), fmethod(M,Y), Y != X.
+meas_bad(C) :- lim_avg(C,X), cond(C,_,_,_,M,_,_), not favg(M,X).
+meas_bad(C) :- lim_avg(C,X), cond(C,_,_,_,M,_,_), favg(M,Y), Y != X.
+cmp(C,T) :- thr(C,T), not meas_bad(C).
+
 % ---- 要件原子的三值：t 成立、f 不成立、無（未知） ----
 atom(C) :- cond(C,_,_,_,_,_,_).
-raw(C,t) :- cond(C,_,_,_,M,le,_), thr(C,T), fact(M,V), V <= T.
-raw(C,f) :- cond(C,_,_,_,M,le,_), thr(C,T), fact(M,V), V >  T.
-raw(C,t) :- cond(C,_,_,_,M,lt,_), thr(C,T), fact(M,V), V <  T.
-raw(C,f) :- cond(C,_,_,_,M,lt,_), thr(C,T), fact(M,V), V >= T.
-raw(C,t) :- cond(C,_,_,_,M,ge,_), thr(C,T), fact(M,V), V >= T.
-raw(C,f) :- cond(C,_,_,_,M,ge,_), thr(C,T), fact(M,V), V <  T.
-raw(C,t) :- cond(C,_,_,_,M,gt,_), thr(C,T), fact(M,V), V >  T.
-raw(C,f) :- cond(C,_,_,_,M,gt,_), thr(C,T), fact(M,V), V <= T.
-raw(C,t) :- cond(C,_,_,_,M,eq,_), thr(C,T), fact(M,V), V == T.
-raw(C,f) :- cond(C,_,_,_,M,eq,_), thr(C,T), fact(M,V), V != T.
-raw(C,t) :- cond(C,_,_,_,M,ne,_), thr(C,T), fact(M,V), V != T.
-raw(C,f) :- cond(C,_,_,_,M,ne,_), thr(C,T), fact(M,V), V == T.
+raw(C,t) :- cond(C,_,_,_,M,le,_), cmp(C,T), fact(M,V), V <= T.
+raw(C,f) :- cond(C,_,_,_,M,le,_), cmp(C,T), fact(M,V), V >  T.
+raw(C,t) :- cond(C,_,_,_,M,lt,_), cmp(C,T), fact(M,V), V <  T.
+raw(C,f) :- cond(C,_,_,_,M,lt,_), cmp(C,T), fact(M,V), V >= T.
+raw(C,t) :- cond(C,_,_,_,M,ge,_), cmp(C,T), fact(M,V), V >= T.
+raw(C,f) :- cond(C,_,_,_,M,ge,_), cmp(C,T), fact(M,V), V <  T.
+raw(C,t) :- cond(C,_,_,_,M,gt,_), cmp(C,T), fact(M,V), V >  T.
+raw(C,f) :- cond(C,_,_,_,M,gt,_), cmp(C,T), fact(M,V), V <= T.
+raw(C,t) :- cond(C,_,_,_,M,eq,_), cmp(C,T), fact(M,V), V == T.
+raw(C,f) :- cond(C,_,_,_,M,eq,_), cmp(C,T), fact(M,V), V != T.
+raw(C,t) :- cond(C,_,_,_,M,ne,_), cmp(C,T), fact(M,V), V != T.
+raw(C,f) :- cond(C,_,_,_,M,ne,_), cmp(C,T), fact(M,V), V == T.
 raw(C,t) :- cond(C,S,_,_,M,eq,_), vcond(C,V), cfact(M,X), stmt_law(S,L), isa(L,X,V).
 raw(C,f) :- cond(C,S,_,_,M,eq,_), vcond(C,V), cfact(M,X), stmt_law(S,L), not isa(L,X,V).
 raw(C,t) :- cond(C,S,_,_,M,ne,_), vcond(C,V), cfact(M,X), stmt_law(S,L), not isa(L,X,V).
@@ -115,12 +140,19 @@ verdict(S,V) :- outcome(S,V), relevant(S).
 % ---- 連到罰則：只列候選，額度原文由 PG 提供 ----
 % 罰則自己的要件（情節重大、必要時、屆期未改善）也要涵攝：被處罰的陳述違反時，罰則的適用範圍
 % 成立則為候選，未知則附條件，不成立則不列；被處罰的陳述只是附條件違反時，罰則成立或未知都附條件。
-candidate_penalty(P,S,Eff,Min,Max)        :- sanction(P,S,Eff,Min,Max), outcome(S,violation), pv(P,scope,t).
-candidate_penalty_cond(P,S,Eff,Min,Max)   :- sanction(P,S,Eff,Min,Max), outcome(S,violation), pv(P,scope,u).
-candidate_penalty_cond(P,S,Eff,Min,Max)   :- sanction(P,S,Eff,Min,Max), outcome(S,conditional_violation), pv(P,scope,t).
-candidate_penalty_cond(P,S,Eff,Min,Max)   :- sanction(P,S,Eff,Min,Max), outcome(S,conditional_violation), pv(P,scope,u).
-pen_live(P) :- sanction(P,S,_,_,_), outcome(S,violation).
-pen_live(P) :- sanction(P,S,_,_,_), outcome(S,conditional_violation).
+% 以另一個效果為前提的罰則（觸發），前提的罰則確定列出才確定，只附條件列出則附條件，不列則不列；
+% 數個前提彼此是「或」。前提屆期未履行與否、處分的金額門檻，是被觸發者自己的要件。
+live(t). live(u).
+viol(S,t) :- outcome(S,violation).
+viol(S,u) :- outcome(S,conditional_violation).
+arm(P,t) :- sanction(P,_,_,_,_), not triggered(P).
+arm(P,t) :- trigger(P,Q,_), listed(Q,_,_,_,_).
+arm(P,u) :- trigger(P,Q,_), listed_cond(Q,_,_,_,_).
+candidate_penalty(P,S,Eff,Min,Max)      :- sanction(P,S,Eff,Min,Max), viol(S,t), pv(P,scope,t), arm(P,t).
+candidate_penalty_cond(P,S,Eff,Min,Max) :- sanction(P,S,Eff,Min,Max), viol(S,X), pv(P,scope,Y), arm(P,Z),
+                                           live(X), live(Y), live(Z), not candidate_penalty(P,S,Eff,Min,Max).
+pen_live(P) :- sanction(P,S,_,_,_), outcome(S,violation), arm(P,_).
+pen_live(P) :- sanction(P,S,_,_,_), outcome(S,conditional_violation), arm(P,_).
 
 % ---- 衝突與優先：只在有明文優先關係時消解，否則列為未決 ----
 holds(S) :- status(S,applies).
@@ -146,6 +178,14 @@ needs_judgement(S,M) :- verdict(S,conditional_violation), exception(E,S), unk_co
 missing(P,M)          :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), not judgement(C), not given(M).
 needs_judgement(P,M)  :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), judgement(C), not given(M).
 problem(unresolved_delegation, C) :- delegated(C), not thr(C,_).
+% 許可量值沒提供：缺的是（許可，概念）這筆事實，不是概念本身，另列。
+unk_permit(S,K,M) :- cond(C,S,R,Kl,M,_,_), permit_cond(C,K), unk(C), not clause_f(S,R,Kl),
+                     not permit_given(K,M).
+missing_permit(S,K,M) :- verdict(S,undetermined), unk_permit(S,K,M).
+missing_permit(P,K,M) :- pen_live(P), pv(P,scope,u), unk_permit(P,K,M).
+% 認定方式：事實給了而方式不符或沒給，要件未知，列為問題；限值沒有標而照常比較，也列出來。
+problem(measurement_mismatch, C) :- meas_bad(C), cond(C,_,_,_,M,_,_), given(M).
+problem(measurement_unlabeled, C) :- lim_unlabeled(C), v(C,_).
 
 % ---- 依據軌跡：每個原子的取值、所用門檻值與其來源 ----
 trace(C,S,M,V,T,R) :- cond(C,S,R,_,M,_,_), fact(M,V), thr(C,T), v(C,_).
@@ -155,6 +195,11 @@ judgement_used(S,M) :- cond(C,S,_,_,M,_,_), judgement(C), fact(M,_), v(C,_).
 judgement_used(S,M) :- cond(C,S,_,_,M,_,_), judgement(C), cfact(M,_), v(C,_).
 judgement_used(S,M) :- exception(E,S), cond(C,E,_,_,M,_,_), judgement(C), fact(M,_), v(C,_).
 judgement_used(S,M) :- exception(E,S), cond(C,E,_,_,M,_,_), judgement(C), cfact(M,_), v(C,_).
+
+% ---- 不是行政罰的效果：改善命令等預防性處分（order）與不法利得的追繳（disgorgement） ----
+% 兩者都不以故意過失為要件，行政罰法總則的排除、減輕、時效與一行為不適用。
+non_penal(order). non_penal(disgorgement).
+penal(E) :- sanction(_,_,E,_,_), not non_penal(E).
 
 % ---- 行政罰法總則：排除的是處罰，不是義務（01-02 §4.7） ----
 % 案件事實用保留代碼。布林以正值為是、0 為否；年齡是歲。未提供不等於否定，
@@ -176,14 +221,14 @@ withheld :- excuse(_).
 % 有責性未知，或職務命令而已知與否未知：罰則改為附條件，不當成可罰。
 soften :- not culpable, not excuse(no_fault).
 soften :- yes("ap_superior_order"), not yes("ap_knew_illegal"), not no("ap_knew_illegal").
-% order（改善命令等預防性處分）不是行政罰：不要有責性，不受總則的排除、減輕、時效與一行為約束。
-listed(P,S,order,Min,Max)      :- candidate_penalty(P,S,order,Min,Max).
-listed_cond(P,S,order,Min,Max) :- candidate_penalty_cond(P,S,order,Min,Max).
-listed(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), E != order, culpable, not withheld, not soften.
-listed_cond(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), E != order, not withheld, soften.
-listed_cond(P,S,E,Min,Max) :- candidate_penalty_cond(P,S,E,Min,Max), E != order, not withheld.
-open(P) :- candidate_penalty(P,_,E,_,_), E != order.
-open(P) :- candidate_penalty_cond(P,_,E,_,_), E != order.
+% 不是行政罰的效果不要有責性，不受總則的排除、減輕、時效與一行為約束。
+listed(P,S,E,Min,Max)      :- candidate_penalty(P,S,E,Min,Max), non_penal(E).
+listed_cond(P,S,E,Min,Max) :- candidate_penalty_cond(P,S,E,Min,Max), non_penal(E).
+listed(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), penal(E), culpable, not withheld, not soften.
+listed_cond(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), penal(E), not withheld, soften.
+listed_cond(P,S,E,Min,Max) :- candidate_penalty_cond(P,S,E,Min,Max), penal(E), not withheld.
+open(P) :- candidate_penalty(P,_,E,_,_), penal(E).
+open(P) :- candidate_penalty_cond(P,_,E,_,_), penal(E).
 barred(P,G) :- open(P), excuse(G).
 mitigation(P,youth) :- open(P), fact("ap_age",V), V >= 14000, V < 18000, not withheld.
 mitigation(P,reduced_capacity) :- open(P), yes("ap_capacity_reduced"), no("ap_self_induced"), not withheld.
@@ -194,13 +239,13 @@ presumed(P,agent_fault) :- open(P), yes("ap_agent_fault"), not yes("ap_intent"),
 
 % 裁處權時效（行政罰法第 27 條）：只標記仍列出的罰則。三年的末日由日曆算出後傳入；
 % 沒有 deadline 就是起算日不明，不標已逾。罰則留在候選裡。
-time_barred(P) :- listed(P,_,E,_,_), E != order, decision(D), deadline(T), D > T.
-time_barred(P) :- listed_cond(P,_,E,_,_), E != order, decision(D), deadline(T), D > T.
+time_barred(P) :- listed(P,_,E,_,_), penal(E), decision(D), deadline(T), D > T.
+time_barred(P) :- listed_cond(P,_,E,_,_), penal(E), decision(D), deadline(T), D > T.
 
 % ---- 罰則的競合：同一被處罰的陳述、同一效果，兩個仍列出的罰則才競合 ----
 % 哪一個優先是解釋（特別規定的「同一事項」），只在有明文標註的優先關係時消解，否則列為未決。
-live_pen(P,S,Eff) :- listed(P,S,Eff,_,_), Eff != order.
-live_pen(P,S,Eff) :- listed_cond(P,S,Eff,_,_), Eff != order.
+live_pen(P,S,Eff) :- listed(P,S,Eff,_,_), penal(Eff).
+live_pen(P,S,Eff) :- listed_cond(P,S,Eff,_,_), penal(Eff).
 % 按次處罰是同一個罰鍰之後的反覆裁處，不與第一次的罰鍰互為替代：只有同為首次、或同為按次者才競合。
 pkind(P,again) :- repeating(P).
 pkind(P,once)  :- sanction(P,_,_,_,_), not repeating(P).
@@ -222,8 +267,6 @@ one_floor(M) :- some_fine, M = #max{ Min,P : bounded_fine(P,Min,_) }.
 one_cap(M) :- some_fine, M = #max{ Max,P : bounded_fine(P,_,Max) }.
 one_act(Lo,Hi) :- one_floor(Lo), one_cap(Hi), not open_fine.
 
-% 概念值的比較（行業屬某行業）本程式不做：誠實列為問題，不讓結論悄悄停在未知。
-
 % ---- 輸出 ----
 #show verdict/2.
 #show candidate_penalty(P,S,Eff,Min,Max) : listed(P,S,Eff,Min,Max).
@@ -236,6 +279,8 @@ one_act(Lo,Hi) :- one_floor(Lo), one_cap(Hi), not open_fine.
 #show defeated/3.
 #show missing/2.
 #show needs_judgement/2.
+#show missing_permit/3.
+#show trigger/3.
 #show judgement_used/2.
 #show problem/2.
 #show trace/6.

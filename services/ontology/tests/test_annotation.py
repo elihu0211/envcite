@@ -11,6 +11,7 @@ import pytest
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.annotate import AnnotationError, load
 from envcite_ontology.ingest import importer
+from envcite_ontology.reasoning.facts import limit_at
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
 from tests.test_incremental import (
@@ -169,8 +170,8 @@ def test_a_delegated_threshold_is_the_limit_in_force_on_the_date(
     cond = _duty_condition(conn)
 
     def threshold(on: date) -> Decimal | None:
-        value = _scalar(conn, "SELECT annotation.threshold_at(%s, 'zho', %s)", cond, on)
-        return None if value is None else Decimal(value)
+        limit = limit_at(conn, cond, "zho", on)
+        return None if limit is None else limit.threshold
 
     assert threshold(BEFORE) == Decimal(100)
     assert threshold(AFTER) == Decimal(80)
@@ -187,10 +188,7 @@ def test_a_threshold_from_an_unconfirmed_limit_is_not_used(conn: Conn, tmp_path:
     )
     conn.commit()
 
-    value = _scalar(
-        conn, "SELECT annotation.threshold_at(%s, 'zho', %s)", _duty_condition(conn), BEFORE
-    )
-    assert value is None
+    assert limit_at(conn, _duty_condition(conn), "zho", BEFORE) is None
 
 
 def test_exceptions_overrides_and_sanctions_are_loaded(conn: Conn, tmp_path: Path) -> None:

@@ -1,10 +1,11 @@
-using System.Globalization;
-
 using EnvCite.Ontology.V1;
 
 namespace EnvCite.Platform.Modules.Ontology;
 
-/// <summary>公開的推論契約與內部 gRPC 契約之間的對映；列舉不認得時視為契約破壞，不猜。</summary>
+/// <summary>
+/// 公開的推論契約與內部 gRPC 契約之間的對映；列舉不認得時視為契約破壞，不猜。只轉譯，不驗證：
+/// 事實與日期的檢查由 ontology 一處負責，錯誤以 <c>InvalidArgument</c> 回來。
+/// </summary>
 internal static class ReasoningMapper
 {
     public static EvaluateRequest ToGrpc(EvaluateReasoningRequest r)
@@ -16,46 +17,27 @@ internal static class ReasoningMapper
             ConductEndedOn = r.ConductEndedOn ?? string.Empty,
             ResultOn = r.ResultOn ?? string.Empty,
         };
+        // 缺的值轉成空字串：proto 的字串不收 null，缺席由 ontology 回報為欄位錯誤。
         foreach (var fact in r.Facts ?? [])
         {
-            if (string.IsNullOrWhiteSpace(fact.Concept))
+            var f = new Fact
             {
-                throw new ArgumentException("every fact needs a concept.");
-            }
-
-            var f = new Fact { Concept = fact.Concept };
-            foreach (var number in fact.Numbers ?? [])
-            {
-                if (!decimal.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out _))
-                {
-                    throw new ArgumentException($"'{number}' is not a decimal number (concept '{fact.Concept}').");
-                }
-
-                f.Values.Add(new FactValue { Number = new EnvCite.Ontology.V1.Decimal { Value = number } });
-            }
-
-            foreach (var flag in fact.Flags ?? [])
-            {
-                f.Values.Add(new FactValue { Flag = flag });
-            }
-
-            foreach (var concept in fact.Concepts ?? [])
-            {
-                if (string.IsNullOrWhiteSpace(concept))
-                {
-                    throw new ArgumentException($"a concept value of fact '{fact.Concept}' is blank.");
-                }
-
-                f.Values.Add(new FactValue { Concept = concept });
-            }
-
-            if (f.Values.Count == 0)
-            {
-                throw new ArgumentException($"fact '{fact.Concept}' has no values.");
-            }
-
+                Concept = fact.Concept ?? string.Empty,
+                MeasurementMethod = fact.MeasurementMethod ?? string.Empty,
+                AveragingPeriod = fact.AveragingPeriod ?? string.Empty,
+            };
+            f.Values.AddRange((fact.Numbers ?? []).Select(n => new FactValue { Number = Number(n) }));
+            f.Values.AddRange((fact.Flags ?? []).Select(flag => new FactValue { Flag = flag }));
+            f.Values.AddRange((fact.Concepts ?? []).Select(c => new FactValue { Concept = c ?? string.Empty }));
             request.Facts.Add(f);
         }
+
+        request.PermitLimits.AddRange((r.PermitLimits ?? []).Select(l => new PermitLimit
+        {
+            Permit = l.Permit ?? string.Empty,
+            Concept = l.Concept ?? string.Empty,
+            Value = Number(l.Value),
+        }));
 
         if (r.AdministrativePenalty is { } a)
         {
@@ -82,6 +64,8 @@ internal static class ReasoningMapper
         return request;
     }
 
+    private static EnvCite.Ontology.V1.Decimal Number(string? value) => new() { Value = value ?? string.Empty };
+
     public static ReasoningResultDto ToDto(EvaluateResponse r) =>
         new(ToDto(r.AtDecision ?? new Outcome()), [.. r.Earlier.Select(e => new EarlierOutcomeDto(e.FirstDay, ToDto(e.Outcome ?? new Outcome())))]);
 
@@ -93,7 +77,8 @@ internal static class ReasoningMapper
         [.. o.Penalties.Select(p => new PenaltyCandidateDto(
             p.StatementId, p.Punishes, Map(p.Effect),
             p.HasMinAmount ? p.MinAmount : null, p.HasMaxAmount ? p.MaxAmount : null,
-            p.Conditional, p.PerOccasion, p.Discretionary))],
+            p.Conditional, p.PerOccasion, p.Discretionary,
+            [.. p.TriggeredBy.Select(t => new SanctionTriggerDto(t.StatementId, Map(t.Kind)))]))],
         o.OneAct is { } one ? new FineIntervalDto(one.MinAmount, one.MaxAmount) : null,
         [.. o.Missing.Select(g => new GapDto(g.StatementId, g.Concept))],
         [.. o.NeedsAssessment.Select(g => new GapDto(g.StatementId, g.Concept))],
@@ -120,7 +105,8 @@ internal static class ReasoningMapper
             d.ConditionId, d.DefinitionId, d.VersionIri, d.Term, [.. d.Members]))],
         [.. o.Guidance.Select(g => new GuidanceDto(
             g.Issuer, g.DocumentNo, g.IssuedOn, Map(g.Kind), g.Subject, [.. g.StatementIds],
-            g.PublishedIn.Length > 0 ? g.PublishedIn : null, g.SourceUrl.Length > 0 ? g.SourceUrl : null))]);
+            g.PublishedIn.Length > 0 ? g.PublishedIn : null, g.SourceUrl.Length > 0 ? g.SourceUrl : null))],
+        [.. o.MissingPermitLimits.Select(g => new PermitGapDto(g.StatementId, g.Permit, g.Concept))]);
 
     private static VerdictDto Map(Verdict v) => v switch
     {
@@ -143,15 +129,24 @@ internal static class ReasoningMapper
         LegalEffect.Reputation => LegalEffectDto.Reputation,
         LegalEffect.Warning => LegalEffectDto.Warning,
         LegalEffect.Order => LegalEffectDto.Order,
+        LegalEffect.Disgorgement => LegalEffectDto.Disgorgement,
         _ => throw Unknown(e),
+    };
+
+    private static TriggerKindDto Map(TriggerKind k) => k switch
+    {
+        TriggerKind.OrderLapsed => TriggerKindDto.OrderLapsed,
+        TriggerKind.SanctionImposed => TriggerKindDto.SanctionImposed,
+        _ => throw Unknown(k),
     };
 
     private static ProblemKindDto Map(ProblemKind k) => k switch
     {
         ProblemKind.ContradictoryFact => ProblemKindDto.ContradictoryFact,
         ProblemKind.UnresolvedDelegation => ProblemKindDto.UnresolvedDelegation,
-        ProblemKind.UnsupportedCondition => ProblemKindDto.UnsupportedCondition,
         ProblemKind.BadDate => ProblemKindDto.BadDate,
+        ProblemKind.MeasurementMismatch => ProblemKindDto.MeasurementMismatch,
+        ProblemKind.MeasurementUnlabeled => ProblemKindDto.MeasurementUnlabeled,
         _ => throw Unknown(k),
     };
 

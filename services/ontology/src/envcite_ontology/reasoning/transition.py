@@ -21,7 +21,7 @@ from datetime import date
 import psycopg
 
 from envcite_ontology.reasoning.engine import Result, evaluate
-from envcite_ontology.reasoning.facts import Case
+from envcite_ontology.reasoning.facts import Case, Measurements, Permits
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -116,6 +116,9 @@ def evaluate_across(
     decided_on: date,
     case: Case,
     language: str = "zho",
+    *,
+    measurements: Measurements | None = None,
+    permits: Permits | None = None,
 ) -> Transition:
     """裁處時之法律，加行為日到裁處日之間每組不同的陳述；裁處權時效一律對裁處日。"""
     if conduct_on > decided_on:
@@ -135,14 +138,22 @@ def evaluate_across(
         earlier.append(
             Candidate(
                 day,
-                evaluate(conn, day, case, language, decided_on=decided_on),
+                evaluate(
+                    conn,
+                    day,
+                    case,
+                    language,
+                    decided_on=decided_on,
+                    measurements=measurements,
+                    permits=permits,
+                ),
                 _uncovered(conn, final, language, day),
             )
         )
     return Transition(
         conduct_on,
         decided_on,
-        evaluate(conn, decided_on, case, language),
+        evaluate(conn, decided_on, case, language, measurements=measurements, permits=permits),
         tuple(earlier),
         _uncovered(conn, final, language, decided_on),
     )
