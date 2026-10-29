@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 
 from envcite_ontology.ingest.law import ParsedLaw
 
-#: 名稱 → (分母說明, 上限)。實測：不可寫入 0.01%、切分退回 0.23%、認不得的事件 1.8%、
+#: 名稱 → (分母說明, 上限)。實測：不可寫入 0.01%、切分退回 0.23%、認不得的事件 1.3%、
 #: 待確認 4.0%。
 LIMITS = {
     "rejected_laws": ("不可寫入的法規占法規", 0.005),

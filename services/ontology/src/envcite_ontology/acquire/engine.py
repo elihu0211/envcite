@@ -40,7 +40,7 @@ class NotAnArchive(InvalidSnapshot):
 
 
 class DownloadFailed(OSError):
-    """下載到的不是預期的容器：來源的錯誤頁或中斷的回應，重試可能就好（03-04 §3）。
+    """下載到的不是預期的容器：來源的錯誤頁或中斷的回應，重試可能就好（02-04 §3）。
 
     與 `InvalidSnapshot` 分開：容器完好而資料形狀不合，才是重試無益的情形。
     """

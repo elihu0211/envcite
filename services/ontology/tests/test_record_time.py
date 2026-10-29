@@ -1,4 +1,4 @@
-"""Record time (03-04 §4): a correction adds a row and ends the old one, never overwrites.
+"""Record time (02-02 §2): a correction adds a row and ends the old one, never overwrites.
 
 The constraints that make that safe live in the schema, so they are tested there: only
 current rows are unique and non-overlapping, queries see only current rows, and the

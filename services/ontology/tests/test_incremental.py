@@ -1,4 +1,4 @@
-"""Incremental import (03-04 §4): what a second snapshot does to what the first wrote."""
+"""Incremental import (02-03 §8): what a second snapshot does to what the first wrote."""
 
 import hashlib
 import json

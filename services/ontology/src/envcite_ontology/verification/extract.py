@@ -119,7 +119,7 @@ _SLOT: dict[str, Any] = {
 }
 
 #: 解碼期約束只管形狀：結構、型別與列舉值。引文逐字在原文、概念已宣告、duty 與 scope 完備等
-#: 語意性質不在此，仍由事後檢查負責（見 01-11 受約束的條文抽取）。
+#: 語意性質不在此，仍由事後檢查負責（見 01-12 §4）。
 STATEMENTS_FORMAT: dict[str, Any] = {
     "type": "json_schema",
     "json_schema": {

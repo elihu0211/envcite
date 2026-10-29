@@ -40,7 +40,7 @@ public static class MembersModule
     /// <summary>
     /// 客戶入口的成員：ASP.NET Core Identity 的使用者與密碼雜湊（PBKDF2），存在 <c>PlatformDbContext</c>，
     /// 隨 Finbuckle 屬於單一租戶。登入 cookie 是自己的 scheme，帶 tenant、使用者 Id、角色 claim；
-    /// 授權只讀 claim。這一版只有帳密：沒有 MFA、外部登入、寄信與邀請（見 07-01 §5）。
+    /// 授權只讀 claim。沒有外部登入、寄信與邀請（見 07-01）。
     /// </summary>
     public static IServiceCollection AddMembersModule(this IServiceCollection services)
     {

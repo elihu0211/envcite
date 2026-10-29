@@ -201,7 +201,7 @@ judgement_used(S,M) :- exception(E,S), cond(C,E,_,_,M,_,_), judgement(C), cfact(
 non_penal(order). non_penal(disgorgement).
 penal(E) :- sanction(_,_,E,_,_), not non_penal(E).
 
-% ---- 行政罰法總則：排除的是處罰，不是義務（01-02 §4.7） ----
+% ---- 行政罰法總則：排除的是處罰，不是義務（03-04 §5.3） ----
 % 案件事實用保留代碼。布林以正值為是、0 為否；年齡是歲。未提供不等於否定，
 % 只有條文寫明「有事實才排除」或「未知則不套用」的，才依該句。
 yes(C) :- fact(C,V), V > 0.

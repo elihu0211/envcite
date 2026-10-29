@@ -2,7 +2,7 @@ using System.Security.Claims;
 
 namespace EnvCite.Platform.SharedKernel;
 
-/// <summary>客戶入口的角色。授權只讀 role claim，不依賴 Identity 的內部類別（見 07-01 §6）。</summary>
+/// <summary>客戶入口的角色。授權只讀 role claim，不依賴 Identity 的內部類別（見 07-01 §7）。</summary>
 public static class CustomerRoles
 {
     public const string Owner = "TenantOwner";
@@ -87,7 +87,7 @@ public sealed record IssuedPassword(MemberInfo Member, string Password);
 
 /// <summary>
 /// 營運者管理租戶的成員。邀請與寄信的基礎設施還不存在，所以現階段由營運者建立帳號並把一次性的初始密碼
-/// 交給客戶（客戶第一次登入必須改掉）；這是過渡做法，不是終態（07-01 §5）。每個動作都留稽核。
+/// 交給客戶（客戶第一次登入必須改掉）；這是過渡做法，不是終態（07-01 §1.2）。每個動作都留稽核。
 /// </summary>
 public interface IMemberAdmin
 {

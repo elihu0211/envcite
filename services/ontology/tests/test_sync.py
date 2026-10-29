@@ -1,4 +1,4 @@
-"""One cycle (03-04 §3): acquire, import, projection, and how each failure exits."""
+"""One cycle (02-04 §4): acquire, import, projection, and how each failure exits."""
 
 import zipfile
 from pathlib import Path

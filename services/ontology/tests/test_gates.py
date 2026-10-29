@@ -1,5 +1,5 @@
 """The three deterministic gates, and reading numbers and citations out of the text (envcite-
-docs 02-06 §3.3)."""
+docs 03-04 §3.3)."""
 
 from decimal import Decimal
 from pathlib import Path
