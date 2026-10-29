@@ -2,10 +2,10 @@
 
     from scoped_search import scoped_search
 
-服務端的函式不動、不遷移：這裡逐字重現 0032_passage.sql 的 `search_hybrid`（同一個
-`ts_rank_cd`、`terms_to_tsquery`、候選池、名次倒數融合 k = 60）與 `OntologyStore.search` 的外層
-查詢，只在兩臂取候選的 WHERE 加 `resource_id = ANY(範圍)`。`scope=None` 時查詢與服務端相同，
-`tests/test_scoped_search.py` 以同一語料比對兩者的輸出完全相同。
+服務端的函式不動、不遷移：這裡逐字重現 0039_hybrid_tiebreak.sql 的 `search_hybrid`（同一個
+`ts_rank_cd`、`terms_to_tsquery`、候選池與同分次序、名次倒數融合 k = 60）與
+`OntologyStore.search` 的外層查詢，只在兩臂取候選的 WHERE 加 `resource_id = ANY(範圍)`。
+`scope=None` 時查詢與服務端相同，`tests/test_scoped_search.py` 以同一語料比對兩者的輸出完全相同。
 
 語意臂的 HNSW 近鄰（`near`）不加範圍條件：近似最近鄰只能先排序後過濾，加在其後的 `sem` 才是
 候選池；本次範圍內的段落才有嵌入，所以 `near` 本來就只會出範圍內的段落。
@@ -38,7 +38,7 @@ lex AS (
        AND e.text_status = 'available'
        {scope}
      GROUP BY p.resource_id, p.article_path
-     ORDER BY score DESC
+     ORDER BY score DESC, p.resource_id, p.article_path
      LIMIT %(pool)s
 ),
 near AS (
@@ -60,7 +60,7 @@ sem AS (
        AND e.text_status = 'available'
        {scope}
      GROUP BY p.resource_id, p.article_path
-     ORDER BY score DESC
+     ORDER BY score DESC, p.resource_id, p.article_path
      LIMIT %(pool)s
 ),
 fused AS (
@@ -68,8 +68,10 @@ fused AS (
            coalesce(l.article_path, s.article_path) AS article_path,
            l.score AS lexical, s.score AS semantic,
            coalesce(1.0 / (60 + l.r), 0) + coalesce(1.0 / (60 + s.r), 0) AS rank_score
-      FROM (SELECT *, row_number() OVER (ORDER BY score DESC) AS r FROM lex) AS l
-      FULL JOIN (SELECT *, row_number() OVER (ORDER BY score DESC) AS r FROM sem) AS s
+      FROM (SELECT *, row_number() OVER (ORDER BY score DESC, resource_id, article_path) AS r
+              FROM lex) AS l
+      FULL JOIN (SELECT *, row_number() OVER (ORDER BY score DESC, resource_id, article_path) AS r
+                   FROM sem) AS s
         ON s.resource_id = l.resource_id AND s.article_path = l.article_path
 ),
 s AS (
