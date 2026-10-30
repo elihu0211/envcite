@@ -49,11 +49,19 @@ def milli(value: Decimal | float | int) -> int:
 _STATEMENTS = """
     SELECT s.id, s.statement_kind::text, s.norm_modality::text, corpus.version_iri(r.version_id),
            lr.id
-      FROM corpus.legal_resource AS lr
-     CROSS JOIN LATERAL annotation.{resolver}(lr.id, %(lang)s, %(on)s) AS r
+      FROM (SELECT DISTINCT p.resource_id AS id
+              FROM annotation.statement AS x
+              JOIN corpus.provision AS p ON p.id = x.provision_id) AS lr
+     CROSS JOIN LATERAL (SELECT * FROM annotation.{resolver}(lr.id, %(lang)s, %(on)s) OFFSET 0) AS r
       JOIN annotation.statement AS s ON s.id = r.statement_id
      ORDER BY s.id
 """
+# 由陳述出發，只對「有陳述的法規」解析時點；沒有陳述的法規本來就不回任何列，結果不變
+# （`provision.resource_id` 是指向 `legal_resource` 的非空外鍵，不必再連 `legal_resource`）。
+# `OFFSET 0` 是最佳化屏障，不是殘留：解析函式是單一 SELECT 的 SQL 函式，會被內聯進外層查詢，
+# 規劃器把「各法規的現行條文」估成每部一列，便排出對 `provision_version` 的巢狀迴圈加
+# `Join Filter (v.id = a.version_id)`——線上抽樣二十部法規就比對了一億次，全庫要十幾分鐘，
+# 縮到一部法規仍要數百毫秒。屏障讓函式維持「每部法規一次、以條文編號走索引」的計畫；拿掉就會退回。
 
 _CONDITIONS = """
     SELECT c.id, c.statement_id, c.condition_role::text, c.disjunct_no, k.code,
