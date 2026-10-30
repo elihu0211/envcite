@@ -91,7 +91,8 @@ _SEARCH = """
            corpus.article_number(s.path), corpus.article_text(s.version_id),
            s.lexical_score, s.semantic_similarity
       FROM retrieval.search_hybrid(
-               %(terms)s, %(tokenizer)s, %(embedding)s::vector, %(model)s,
+               retrieval.prune_terms(%(terms)s, %(tokenizer)s, %(max_df)s::double precision),
+               %(tokenizer)s, %(embedding)s::vector, %(model)s,
                %(on)s::date, %(language)s, %(limit)s, %(pool)s
            ) AS s
       JOIN corpus.legal_resource AS r ON r.id = s.resource_id
@@ -190,10 +191,13 @@ class OntologyStore:
         limit: int = 10,
         embedding: Sequence[float] | None = None,
         model: str = "",
+        max_df: float = 0.0,
     ) -> list[SearchHit]:
         """`as_of`（空為今日）有效的條，字面臂比對已分詞的 `terms`，語意臂比對 `embedding`。
 
         沒有 `embedding` 時只用字面臂。兩臂以名次倒數融合排序（`retrieval.search_hybrid`）。
+        `max_df`（段落比例）大於 0 時，字面臂先略過出現在超過這個比例的段落的詞
+        （`retrieval.prune_terms`）；0 為不修剪。
         """
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(
@@ -201,6 +205,7 @@ class OntologyStore:
                 {
                     "terms": terms,
                     "tokenizer": tokenizer,
+                    "max_df": max_df,
                     "on": _date(as_of),
                     "language": LANGUAGE,
                     "limit": limit,

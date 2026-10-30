@@ -65,9 +65,14 @@ def add_filler_laws(conn: Conn) -> None:
     conn.execute(_FILLER, {"laws": FILLER_LAWS, "provisions": FILLER_PROVISIONS})
     conn.commit()
     # 規劃器的列數估計來自統計；不分析的話，新表用的是預設估計，計畫與線上不是同一種。
-    for table in ("legal_resource", "legal_expression", "provision", "provision_version"):
-        conn.execute(f"ANALYZE corpus.{table}")
-    conn.execute("ANALYZE annotation.statement")
+    # 整個測試庫共用，前面的測試留下的列數會被背景的自動分析在不確定的時間點記成統計，計畫跟著
+    # 變；所以這幾個綱要的表一律在這裡分析，不只分析夾具新增的表。
+    tables = conn.execute(
+        "SELECT format('%I.%I', schemaname, tablename) FROM pg_tables"
+        " WHERE schemaname IN ('corpus', 'annotation', 'vocab')"
+    ).fetchall()
+    for (table,) in tables:
+        conn.execute(f"ANALYZE {table}")
     conn.commit()
 
 

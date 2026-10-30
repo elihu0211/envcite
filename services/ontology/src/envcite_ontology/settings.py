@@ -39,6 +39,14 @@ class ServerSettings(DatabaseSettings, ModelsSettings):
     """gRPC 伺服器（envcite-ontology）。"""
 
     ontology_grpc_port: int = Field(default=50051, ge=1, le=65535, description="gRPC 監聽埠")
+    # 預設值取自黃金題庫的量測：在這個比例下召回不降、整句問題的延遲約降一個數量級；越低越快，
+    # 但越接近開始丟掉有鑑別力的詞。改預設值要重跑 `tools/golden_retrieval_eval.py` 對照。
+    ontology_lexical_max_df: float = Field(
+        default=0.005,
+        ge=0,
+        le=1,
+        description="字面臂略過出現在超過此比例的段落的詞；0 為不略過",
+    )
 
 
 def load[S: BaseSettings](cls: type[S]) -> S:

@@ -18,6 +18,7 @@ ALL_NAMES = (
     "ACQUIRE_SNAPSHOT_DIR",
     "ONTOLOGY_GRPC_PORT",
     "ONTOLOGY_MODELS",
+    "ONTOLOGY_LEXICAL_MAX_DF",
 )
 
 
@@ -56,6 +57,21 @@ def test_invalid_port_is_rejected(monkeypatch: pytest.MonkeyPatch, port: str) ->
     monkeypatch.setenv("ONTOLOGY_GRPC_PORT", port)
     with pytest.raises(SystemExit, match="ONTOLOGY_GRPC_PORT"):
         load(ServerSettings)
+
+
+@pytest.mark.parametrize("ratio", ["-0.1", "1.5", "many", ""])
+def test_invalid_lexical_ratio_is_rejected(monkeypatch: pytest.MonkeyPatch, ratio: str) -> None:
+    monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://u:p@h/db")
+    monkeypatch.setenv("ONTOLOGY_LEXICAL_MAX_DF", ratio)
+    with pytest.raises(SystemExit, match="ONTOLOGY_LEXICAL_MAX_DF"):
+        load(ServerSettings)
+
+
+def test_lexical_ratio_can_be_turned_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://u:p@h/db")
+    assert load(ServerSettings).ontology_lexical_max_df > 0
+    monkeypatch.setenv("ONTOLOGY_LEXICAL_MAX_DF", "0")
+    assert load(ServerSettings).ontology_lexical_max_df == 0
 
 
 def test_defaults_and_names_are_case_insensitive(monkeypatch: pytest.MonkeyPatch) -> None:

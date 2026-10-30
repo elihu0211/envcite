@@ -37,8 +37,12 @@ def build_server(
     interceptors: Sequence[grpc.ServerInterceptor] = (),
     health_servicer: health.HealthServicer | None = None,
     embedder: Embedder | None = None,
+    lexical_max_df: float = 0.0,
 ) -> tuple[grpc.Server, int]:
-    """建立但不啟動；回傳伺服器與實際綁定的埠號。`health_servicer` 讓呼叫端在關閉時切換狀態。"""
+    """建立但不啟動；回傳伺服器與實際綁定的埠號。`health_servicer` 讓呼叫端在關閉時切換狀態。
+
+    `lexical_max_df` 是字面臂略過高頻詞的段落比例上限（見 `ServerSettings`）；0 為不略過。
+    """
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=WORKERS),
         interceptors=list(interceptors),
@@ -48,7 +52,7 @@ def build_server(
     # lexicon 啟動時只讀一次：新匯入的用語須重啟才進入查詢。
     segmenter = Segmenter(store.lexicon())
     ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
-        OntologyServicer(store, segmenter, embedder), server
+        OntologyServicer(store, segmenter, embedder, lexical_max_df), server
     )
 
     reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(ReasoningServicer(store), server)
@@ -81,6 +85,7 @@ def main() -> None:
         health_servicer=health_servicer,
         # 查詢路徑上不重試、逾時短：取不到向量就只用字面臂，不拖慢查詢
         embedder=embedding.from_settings(settings, timeout=5.0),
+        lexical_max_df=settings.ontology_lexical_max_df,
     )
     stop_on_sigterm(server, health_servicer)
     server.start()

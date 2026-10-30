@@ -9,6 +9,9 @@
 - 文字改了：舊列無人引用（`retrieval.prune` 清掉），新文字沒有列，這裡補上。
 - 效力列更替而文字沒變：雜湊相同，沿用原列。
 
+字面臂的高頻詞修剪靠詞頻表（`retrieval.term_stat`）：索引有變動就整批重算，與段落同一個
+分詞器識別碼；沒有統計時查詢不修剪（較慢，不出錯）。
+
 分詞器識別碼含詞典（法規名稱）雜湊，新法規出現即變：不符的列就地重算字面向量，嵌入不動。
 模型換了同理，只重算嵌入。服務端詞典啟動時讀一次，重建後須重啟才採用新識別碼。
 """
@@ -89,10 +92,23 @@ def rebuild(conn: Conn, embedder: Embedder | None = None, policy: Policy | None 
 
     built = _lexical(conn, segmenter)
     log.info("檢索投影：字面向量新建或重算 %d 列，分詞器 %s", built, segmenter.tokenizer_id)
+    _term_stat(conn, segmenter.tokenizer_id, changed=bool(built or (pruned and pruned[0])))
     if embedder is not None:
         embedded = _embed(conn, embedder, policy=policy)
         log.info("檢索投影：嵌入 %d 段，模型 %s", embedded, embedder.model)
     return built
+
+
+def _term_stat(conn: Conn, tokenizer: str, *, changed: bool) -> None:
+    """索引有變動、或這個分詞器還沒有統計時，整批重算詞頻；其餘情形統計仍然有效。"""
+    current = conn.execute(
+        "SELECT 1 FROM retrieval.term_stat_total WHERE tokenizer = %s", (tokenizer,)
+    ).fetchone()
+    if current and not changed:
+        return
+    row = conn.execute("SELECT retrieval.refresh_term_stat(%s)", (tokenizer,)).fetchone()
+    conn.commit()
+    log.info("檢索投影：詞頻 %s 個詞", row[0] if row else 0)
 
 
 def _lexical(conn: Conn, segmenter: Segmenter) -> int:

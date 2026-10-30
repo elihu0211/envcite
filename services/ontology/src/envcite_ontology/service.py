@@ -25,9 +25,14 @@ MAX_SEARCH_LIMIT = 50
 
 class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def __init__(
-        self, store: OntologyStore, segmenter: Segmenter, embedder: Embedder | None = None
+        self,
+        store: OntologyStore,
+        segmenter: Segmenter,
+        embedder: Embedder | None = None,
+        lexical_max_df: float = 0.0,
     ) -> None:
         self._store = store
+        self._lexical_max_df = lexical_max_df
         self._segmenter = segmenter
         self._embedder = embedder
 
@@ -96,6 +101,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
             limit=limit,
             embedding=self._query_embedding(request.query),
             model=self._embedder.model if self._embedder else "",
+            max_df=self._lexical_max_df,
         )
         return ontology_pb2.SearchArticlesResponse(
             hits=[
