@@ -59,7 +59,7 @@ def endpoint() -> Iterator[Endpoint]:
 
 def chat(e: Endpoint, **kw: Any) -> ChatCompletionsModel:
     kw.setdefault("api_key", "k")
-    return ChatCompletionsModel("openai/gpt-oss-120b", family="openai", base_url=e.url, **kw)
+    return ChatCompletionsModel("mistral-small-4", family="mistral", base_url=e.url, **kw)
 
 
 def test_one_user_message_goes_to_the_chat_completions_route(endpoint: Endpoint) -> None:
@@ -71,7 +71,7 @@ def test_one_user_message_goes_to_the_chat_completions_route(endpoint: Endpoint)
     assert sent["auth"] == "Bearer k"
     assert sent["user_agent"] == USER_AGENT
     assert sent["body"] == {
-        "model": "openai/gpt-oss-120b",
+        "model": "mistral-small-4",
         "messages": [{"role": "user", "content": "問題"}],
         "max_tokens": 100,
         "temperature": 0,
@@ -125,8 +125,8 @@ def test_the_name_is_family_and_model_id_and_the_model_id_goes_out_verbatim(
     model = chat(endpoint)
     model.complete("x")
 
-    assert (model.name, model.family) == ("openai:openai/gpt-oss-120b", "openai")
-    assert endpoint.requests[0]["body"]["model"] == "openai/gpt-oss-120b"
+    assert (model.name, model.family) == ("mistral:mistral-small-4", "mistral")
+    assert endpoint.requests[0]["body"]["model"] == "mistral-small-4"
 
 
 def test_no_response_format_is_sent_unless_asked(endpoint: Endpoint) -> None:

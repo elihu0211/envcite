@@ -16,8 +16,8 @@ from envcite_ontology.verification.config import (
 from envcite_ontology.verification.run import SameModel, gates_from, main
 from tests.test_chat_adapter import Endpoint
 
-EXAMPLE = Path(__file__).resolve().parents[1] / "models.example.toml"
-ENV = {"CHAT_BASE_URL": "https://models.invalid/v1", "CHAT_API_KEY": "secret-value"}
+EXAMPLE = Path(__file__).resolve().parents[1] / "models.toml"
+ENV = {"CHAT_BASE_URL": "https://models.invalid/v1", "THU_API_KEY": "secret-value"}
 
 MINIMAL = """
 [endpoint.e]
@@ -44,12 +44,12 @@ panel = ["b"]
 def test_the_example_file_loads_and_assigns_every_role() -> None:
     models = load(EXAMPLE, ENV)
 
-    assert models.extractor.name == "meta:muse-spark-open"
+    assert models.extractor.name == "mistral:mistral-small-4"
     assert models.roundtrip.name == "nvidia:nemotron-3.5-super-vl"
-    assert models.independent_test.name == "mistral:mistral-small-4"
+    assert models.independent_test.name == "meta:muse-spark-open"
     assert [m.name for m in models.panel] == [
+        "meta:muse-spark-open",
         "nvidia:nemotron-3.5-super-vl",
-        "mistral:mistral-small-4",
     ]
 
 
@@ -58,7 +58,7 @@ def test_verifiers_are_listed_once_in_the_order_their_roles_come() -> None:
 
     assert [m.name for m in models.verifiers] == [
         "nvidia:nemotron-3.5-super-vl",
-        "mistral:mistral-small-4",
+        "meta:muse-spark-open",
     ]
     assert models.everyone[0] is models.extractor
 
@@ -76,7 +76,7 @@ def test_the_gates_follow_the_roles_not_the_order() -> None:
     by_method = {g.method: g for g in gates_from(models)}
 
     assert by_method["roundtrip"].reformalizer.name == "nvidia:nemotron-3.5-super-vl"  # type: ignore[attr-defined]
-    assert by_method["independent_test"].tester.name == "mistral:mistral-small-4"  # type: ignore[attr-defined]
+    assert by_method["independent_test"].tester.name == "meta:muse-spark-open"  # type: ignore[attr-defined]
     assert len(by_method["panel"].judges) == 2  # type: ignore[attr-defined]
 
 
@@ -92,8 +92,7 @@ def test_a_model_talks_to_its_declared_endpoint_with_its_declared_name(
     served = Endpoint()
     other = Endpoint()
     monkeypatch.setenv("CHAT_BASE_URL", other.url)  # 設定檔明寫的端點優先，不被舊的環境變數搶走
-    monkeypatch.setenv("CHAT_API_KEY", "from-the-environment")
-    env = {"CHAT_BASE_URL": served.url, "CHAT_API_KEY": "from-the-file-reference"}
+    env = {"CHAT_BASE_URL": served.url}
     try:
         models = parse(MINIMAL, env)
 
@@ -250,7 +249,7 @@ def test_an_empty_or_missing_key_file_is_refused(tmp_path: Path, setup: str, mes
 
 def test_a_key_file_and_a_key_variable_together_are_refused(tmp_path: Path) -> None:
     _key_file(tmp_path, "k")
-    text = _with_key_file().replace("api_key_file", 'api_key_env = "CHAT_API_KEY"\napi_key_file')
+    text = _with_key_file().replace("api_key_file", 'api_key_env = "KEY"\napi_key_file')
 
     with pytest.raises(ConfigError, match="at most one"):
         parse(text, ENV, tmp_path)
@@ -274,13 +273,23 @@ def test_a_key_file_inside_a_git_repository_must_be_ignored(tmp_path: Path) -> N
     assert load(tmp_path / "models.toml", {}).extractor._api_key == "file-secret"  # type: ignore[attr-defined]
 
 
-def test_check_asks_every_model_and_needs_no_database(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_check_asks_every_model_and_needs_no_database(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     """替身端點對每個問題都答同一句，所以別名檢查會擋下；擋下就表示每個模型都被問到了。"""
     served = Endpoint()
+    models = tmp_path / "models.toml"
+    models.write_text(
+        EXAMPLE.read_text(encoding="utf-8").replace(
+            'base_url = "https://api.ithu.tw/v1"',
+            'base_url_env = "CHAT_BASE_URL"',
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.delenv("ONTOLOGY_DSN", raising=False)
     monkeypatch.setenv("CHAT_BASE_URL", served.url)
-    monkeypatch.setenv("CHAT_API_KEY", "k")
-    monkeypatch.setattr("sys.argv", ["envcite-pipeline", "--models", str(EXAMPLE), "--check"])
+    monkeypatch.setenv("THU_API_KEY", "k")
+    monkeypatch.setattr("sys.argv", ["envcite-pipeline", "--models", str(models), "--check"])
     try:
         with pytest.raises(SameModel):
             main()
@@ -295,7 +304,7 @@ def test_the_embedder_is_declared_in_the_same_file_and_reuses_an_endpoint() -> N
 
     assert embedder is not None and embedder.model == "bge-m3-embedding"
     assert "secret-value" not in repr(embedder)
-    assert load(EXAMPLE, ENV).extractor.name == "meta:muse-spark-open"  # 管線照常讀同一份
+    assert load(EXAMPLE, ENV).extractor.name == "mistral:mistral-small-4"  # 管線照常讀同一份
 
 
 def test_no_embedding_section_means_no_semantic_arm() -> None:

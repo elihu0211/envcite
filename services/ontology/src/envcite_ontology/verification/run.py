@@ -320,9 +320,7 @@ def main() -> None:
     parser.add_argument(
         "--limit", type=int, help="與 --pending 併用：一次最多處理幾部法規（控制模型費用）"
     )
-    parser.add_argument(
-        "--models", type=Path, required=True, help="模型配置檔（TOML，範本 models.example.toml）"
-    )
+    parser.add_argument("--models", type=Path, required=True, help="模型配置檔（models.toml）")
     parser.add_argument(
         "--check",
         action="store_true",

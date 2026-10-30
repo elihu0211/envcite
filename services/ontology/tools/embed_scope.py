@@ -1,6 +1,6 @@
 """Embed the passages of a recorded scope (see golden_scope.py) and nothing else.
 
-    CHAT_API_KEY=… ONTOLOGY_MODELS=models.toml ONTOLOGY_DSN=… \
+    ONTOLOGY_MODELS=models.toml ONTOLOGY_DSN=… \
         uv run python tools/embed_scope.py eval/golden-scope-<date>.json
 
 Uses `projection.embed_scope`, the same batching and per-batch commit as the service's own

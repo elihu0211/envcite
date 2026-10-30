@@ -13,9 +13,6 @@ from envcite_ontology.settings import (
 
 ENV_EXAMPLE = Path(__file__).resolve().parents[1] / ".env.example"
 
-# 不經 Settings 讀取的 .env.example 條目：models.toml 以 `*_env` 引用的模型金鑰。
-NON_SETTINGS_KEYS = {"CHAT_API_KEY"}
-
 ALL_NAMES = (
     "ONTOLOGY_DSN",
     "ACQUIRE_SNAPSHOT_DIR",
@@ -70,7 +67,7 @@ def test_defaults_and_names_are_case_insensitive(monkeypatch: pytest.MonkeyPatch
 
 def test_unrelated_variables_are_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://u:p@h/db")
-    monkeypatch.setenv("CHAT_API_KEY", "x")
+    monkeypatch.setenv("NOT_A_SETTING", "x")
     assert load(DatabaseSettings).ontology_dsn == "postgresql://u:p@h/db"
 
 
@@ -102,9 +99,7 @@ def test_env_example_matches_settings() -> None:
         if line.strip() and not line.lstrip().startswith("#") and "=" in line
     }
     names, optional = _env_names(DatabaseSettings, SnapshotSettings, ServerSettings)
-    expected_required = (names - optional) | NON_SETTINGS_KEYS
+    expected_required = names - optional
     hint = "settings.py 與 .env.example 不一致，請更新 .env.example"
     assert expected_required <= keys, f"{hint}：缺 {sorted(expected_required - keys)}"
-    assert keys <= names | NON_SETTINGS_KEYS, (
-        f"{hint}：多出 {sorted(keys - names - NON_SETTINGS_KEYS)}"
-    )
+    assert keys <= names, f"{hint}：多出 {sorted(keys - names)}"

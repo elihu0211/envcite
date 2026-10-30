@@ -48,12 +48,10 @@ uv run --env-file .env envcite-pipeline --pending --limit <N> --models models.to
 
 ### 模型配置（`models.toml`）
 
-模型、角色與檢索用的嵌入模型全部寫在一個 TOML 檔，沒有別的設定途徑：標註管線由 `--models` 指定，伺服器與同步由 `ONTOLOGY_MODELS` 指向它。鍵與角色見範本 [`models.example.toml`](models.example.toml)；`models.toml` 不進版控。
+端點、金鑰變數、角色與嵌入模型只寫在 [`models.toml`](models.toml)。標註管線由 `--models` 指定，伺服器與同步由 `ONTOLOGY_MODELS` 指向它。金鑰不寫進這個檔，由它的 `api_key_env` 指名環境變數。
 
 ```bash
-cp models.example.toml models.toml   # 改端點網址與要用的模型
-cp .env.example .env                 # 用編輯器填入 CHAT_API_KEY，不要貼到對話或提交
 uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每個模型送探測問題，不連資料庫
 ```
 
-金鑰只放 `.env`，`models.toml` 以 `api_key_env = "CHAT_API_KEY"` 引用。`[embedding]` 只需要它指名的端點備妥金鑰，伺服器不因標註管線的端點缺金鑰而起不來。
+`[embedding]` 只需要它指名的端點備妥金鑰，伺服器不因標註管線的端點缺金鑰而起不來。
