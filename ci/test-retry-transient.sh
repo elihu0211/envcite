@@ -33,7 +33,7 @@ check() { # 名稱 模式 預期結束碼 預期呼叫次數
   FAKE_MODE=$2 sh "$here/retry-transient.sh" "$tmp/fake" >/dev/null 2>&1
   rc=$?; calls=$(cat "$CALLS" 2>/dev/null || echo 0)
   if [ "$rc" = "$3" ] && [ "$calls" = "$4" ]; then echo "ok   $1"
-  else echo "FAIL $1：結束碼 $rc（預期 $3）、呼叫 $calls 次（預期 $4）"; fail=1; fi
+  else echo "FAIL $1：結束碼 ${rc}（預期 ${3}）、呼叫 ${calls} 次（預期 ${4}）"; fail=1; fi
 }
 
 check '成功 → 一次就過'                                   ok        0 1
