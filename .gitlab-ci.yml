@@ -3,7 +3,8 @@
 #
 # 檢查只在 MR pipeline 跑，預設分支只建置映像（與 gate、掃描）。前提：合併方式為 Fast-forward 並開啟
 # 「合併前自動 rebase」，MR pipeline 測的就是合併後的結果。前提若被改掉，要把檢查加回預設分支。
-# 映像 job 的 `needs` 因此標 optional。
+# 映像 job 因此只等依賴（`deps-*`），不等同一 MR 的檢查：兩者平行，總時間取較長者而非相加；
+# 檢查失敗時 `on_job_failure: all` 會取消映像建置。
 include:
   - component: $CI_SERVER_FQDN/components/secret-detection/secret-detection@2.4.0
     inputs:
@@ -19,6 +20,15 @@ include:
       stage: check
       max_scan_depth: 6
       disabled_resolution_jobs: "maven,gradle,python"
+
+# 掃描與 gate 跑在 GitLab 的 shared runner，不用等 prepare 階段的 deps-*：立刻開始，失敗也更早取消同
+# pipeline 其餘 job。
+secret_detection:
+  needs: []
+semgrep-sast:
+  needs: []
+dependency-scanning:
+  needs: []
 
 workflow:
   # 沒開 MR 的功能分支不跑 CI；不留 branch pipeline，否則先 push 再開 MR 會同一 SHA 跑兩條，
@@ -90,12 +100,14 @@ variables:
 
 # 依賴只在 prepare 階段由 deps-* 下載一次，其餘 job 以 `policy: pull` 離線執行：缺套件立刻失敗，
 # 不各自連外網。
-# NuGet 的 key 綁套件清單的雜湊，清單沒變則所有分支共用；冷啟動要下載約 170 MB，時間隨頻寬而定。
+# NuGet 的 key 綁套件清單與工具清單（dotnet-ef 的版本）的雜湊，兩者沒變則所有分支共用；冷啟動要下載
+# 約 170 MB，時間隨頻寬而定。工具清單要在 key 裡：同 key 的快取已存在時 runner 不再上傳，工具升版而
+# key 不變，下游映像建置會讀到缺工具的舊快取。
 # key 帶專案路徑：runner 的 S3 cache 為 Shared，同 key 會跨專案共用。
 .cache-nuget: &cache-nuget
   key:
     prefix: "$CI_PROJECT_PATH-sdk$DOTNET_VERSION"
-    files: [Directory.Packages.props]
+    files: [Directory.Packages.props, services/platform/dotnet-tools.json]
   paths: [.nuget/packages]
 
 # uv 的 key 綁 uv.lock 的雜湊，理由同 NuGet。
@@ -243,6 +255,7 @@ variables:
 # 只改文件的 MR 不符合任何 `rules:changes`，而合併要求 pipeline 成功：此 job 讓 pipeline 永遠存在。
 gate:
   stage: check
+  needs: []
   image: alpine:$ALPINE_VERSION
   variables:
     GIT_STRATEGY: none
@@ -290,7 +303,7 @@ deps-dotnet:
     # 鎖檔釘住含間接依賴的完整依賴圖；與清單不一致即失敗。
     - (cd services/platform && dotnet restore --locked-mode)
     - (cd services/consult && dotnet restore --locked-mode)
-    # 映像建置要的另一份（離線執行，只讀此快取），內容與 Dockerfile 同源，見腳本。
+    # 映像建置要的另一份（離線執行，只讀此快取），內容與 Dockerfile 同源；快取命中且輸入沒變就跳過，見腳本。
     - ci/prime-dotnet-image-cache.sh
 
 # .NET 成員共用：離線 restore（套件已由 deps-dotnet 備妥），再在 `$MEMBER` 目錄跑檢查。
@@ -510,9 +523,7 @@ python-proto:
 
 ontology-image:
   extends: .image
-  needs:
-    - {job: ontology, optional: true}
-    - deps-python
+  needs: [deps-python]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-ontology
@@ -530,9 +541,7 @@ ontology-image:
 
 consult-image:
   extends: .image
-  needs:
-    - {job: consult, optional: true}
-    - deps-dotnet
+  needs: [deps-dotnet]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-consult
@@ -550,11 +559,7 @@ consult-image:
 
 platform-image:
   extends: .image
-  needs:
-    - {job: platform, optional: true}
-    - {job: platform-format, optional: true}
-    - {job: openapi, optional: true}
-    - deps-dotnet
+  needs: [deps-dotnet]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-platform
