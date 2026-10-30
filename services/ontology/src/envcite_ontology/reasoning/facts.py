@@ -78,8 +78,11 @@ _CONDITIONS = """
 
 _DEFINITIONS = """
     SELECT lr.id, tk.code, mk.code, t.id
-      FROM corpus.legal_resource AS lr
-     CROSS JOIN LATERAL annotation.definitions_at(lr.id, %(lang)s, %(on)s) AS d
+      FROM (SELECT DISTINCT p.resource_id AS id
+              FROM annotation.term_definition AS x
+              JOIN corpus.provision AS p ON p.id = x.provision_id) AS lr
+     CROSS JOIN LATERAL (SELECT * FROM annotation.definitions_at(lr.id, %(lang)s, %(on)s)
+                         OFFSET 0) AS d
       JOIN annotation.term_definition AS t ON t.id = d.definition_id
       JOIN vocab.concept AS tk ON tk.id = t.term_concept_id
       JOIN annotation.term_definition_member AS m ON m.definition_id = t.id

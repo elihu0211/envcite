@@ -91,8 +91,12 @@ _DEFINITION_SOURCES = """
                        FROM annotation.term_definition_member AS m
                        JOIN vocab.concept AS mk ON mk.id = m.member_concept_id
                       WHERE m.definition_id = t.id), '{}')
-      FROM corpus.legal_resource AS lr
-     CROSS JOIN LATERAL annotation.definitions_at(lr.id, %(language)s, %(on)s) AS r
+      FROM (SELECT DISTINCT p.resource_id AS id
+              FROM annotation.term_definition AS x
+              JOIN corpus.provision AS p ON p.id = x.provision_id
+             WHERE x.id = ANY(%(ids)s)) AS lr
+     CROSS JOIN LATERAL (SELECT * FROM annotation.definitions_at(lr.id, %(language)s, %(on)s)
+                         OFFSET 0) AS r
       JOIN annotation.term_definition AS t ON t.id = r.definition_id
       JOIN vocab.concept AS tk ON tk.id = t.term_concept_id
      WHERE t.id = ANY(%(ids)s)
