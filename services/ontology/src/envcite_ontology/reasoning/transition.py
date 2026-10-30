@@ -27,9 +27,15 @@ Conn = psycopg.Connection[tuple[object, ...]]
 
 _APPLICABLE = """
     SELECT r.statement_id
-      FROM corpus.legal_resource AS lr
-     CROSS JOIN LATERAL annotation.statement_versions_at(lr.id, %(lang)s, %(on)s) AS r
+      FROM (SELECT DISTINCT p.resource_id AS id
+              FROM annotation.statement AS x
+              JOIN corpus.provision AS p ON p.id = x.provision_id) AS lr
+     CROSS JOIN LATERAL (SELECT * FROM annotation.statement_versions_at(lr.id, %(lang)s, %(on)s)
+                         OFFSET 0) AS r
 """
+# 只對有陳述的法規解析時點，且以 `OFFSET 0` 擋住函式內聯後的重排：與 `facts.py` 的 `_STATEMENTS`
+# 同一個原因（內聯後規劃器排出對 `provision_version` 的二次方巢狀迴圈），理由與數字見那裡。
+# 這條每個變更日跑一次，成本會乘上日數。
 
 # 帶陳述單元的效力起訖與法規廢止日：適用的陳述組只可能在這些日子改變。
 _CHANGE_DATES = """
