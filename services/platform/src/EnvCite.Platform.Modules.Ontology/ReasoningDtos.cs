@@ -55,10 +55,12 @@ public sealed record AdministrativePenaltyFactsDto(
 /// <param name="ConductEndedOn">行為終了日；起算行政罰法第 27 條的三年裁處權時效。省略則不套用時效。</param>
 /// <param name="ResultOn">結果發生日，晚於行為終了時才給。</param>
 /// <param name="PermitLimits">場所持有的許可所載的量值；同一許可種類、同一概念兩個不同的值是矛盾。</param>
+/// <param name="ActorBases">行為人所屬的責任基礎，可同時屬數種。罰則的主體標有責任基礎時，要在其中，否則主體要件不成立、
+/// 罰則不列出；省略則該罰則附條件，缺的事實是概念 <c>liability_basis</c>。</param>
 public sealed record EvaluateReasoningRequest(
     string? ConductOn, string? DecidedOn, IReadOnlyList<FactDto>? Facts,
     AdministrativePenaltyFactsDto? AdministrativePenalty, string? ConductEndedOn, string? ResultOn,
-    IReadOnlyList<PermitLimitDto>? PermitLimits = null);
+    IReadOnlyList<PermitLimitDto>? PermitLimits = null, IReadOnlyList<LiabilityBasisDto>? ActorBases = null);
 
 [JsonConverter(typeof(JsonStringEnumConverter<VerdictDto>))]
 public enum VerdictDto
@@ -73,6 +75,18 @@ public enum VerdictDto
     /// <summary>被成立的但書排除。</summary>
     Excluded,
     NotApplicable,
+}
+
+/// <summary>主體為何負責。</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<LiabilityBasisDto>))]
+public enum LiabilityBasisDto
+{
+    /// <summary>因自己的作為或不作為負責。</summary>
+    Act,
+    /// <summary>因對物的支配負責（狀態責任）。</summary>
+    State,
+    /// <summary>代表或受指派而承擔。</summary>
+    Representative,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<LegalEffectDto>))]
@@ -178,9 +192,11 @@ public sealed record StatementVerdictDto(long StatementId, VerdictDto Verdict);
 /// <param name="PerOccasion">按次處罰。</param>
 /// <param name="Discretionary">條文寫「得」：效果裁量。系統只列候選，不選額度。</param>
 /// <param name="TriggeredBy">這個候選所依的前提：另一個罰則；前提沒有列出時，這個罰則也不列出。</param>
+/// <param name="SubjectBases">罰則主體槽位標註的責任基礎；空表示主體不受責任基礎限制。</param>
 public sealed record PenaltyCandidateDto(
     long StatementId, long Punishes, LegalEffectDto Effect, long? MinAmount, long? MaxAmount,
-    bool Conditional, bool PerOccasion, bool Discretionary, IReadOnlyList<SanctionTriggerDto> TriggeredBy);
+    bool Conditional, bool PerOccasion, bool Discretionary, IReadOnlyList<SanctionTriggerDto> TriggeredBy,
+    IReadOnlyList<LiabilityBasisDto> SubjectBases);
 
 /// <param name="StatementId">作為前提的罰則陳述。</param>
 public sealed record SanctionTriggerDto(long StatementId, TriggerKindDto Kind);
@@ -256,6 +272,7 @@ public sealed record GuidanceDto(
 /// <param name="DefinitionsUsed">概念值要件所依的用語定義；沒有定義涵蓋而判為不屬於的，沒有定義可指，不在此。</param>
 /// <param name="Guidance">附在結果旁的行政規則；不是推論的前提。</param>
 /// <param name="MissingPermitLimits">結論所需、但請求沒有提供的許可量值。</param>
+/// <param name="SubjectMismatch">其餘要件成立或未知、但主體的責任基礎與請求的行為人所屬都不符，因而不列出的罰則陳述。</param>
 public sealed record OutcomeDto(
     IReadOnlyList<StatementVerdictDto> Verdicts, IReadOnlyList<PenaltyCandidateDto> Penalties,
     FineIntervalDto? OneAct, IReadOnlyList<GapDto> Missing, IReadOnlyList<GapDto> NeedsAssessment,
@@ -265,7 +282,7 @@ public sealed record OutcomeDto(
     IReadOnlyList<TraceEntryDto> Trace, IReadOnlyList<LimitSourceDto> LimitSources, GeneralPartDto General,
     IReadOnlyList<StatementSourceDto> Sources, IReadOnlyList<string> UncoveredLawIds,
     IReadOnlyList<DefinitionUseDto> DefinitionsUsed, IReadOnlyList<GuidanceDto> Guidance,
-    IReadOnlyList<PermitGapDto> MissingPermitLimits);
+    IReadOnlyList<PermitGapDto> MissingPermitLimits, IReadOnlyList<long> SubjectMismatch);
 
 /// <param name="FirstDay">這一組陳述開始適用的第一天（<c>YYYY-MM-DD</c>）。</param>
 public sealed record EarlierOutcomeDto(string FirstDay, OutcomeDto Outcome);

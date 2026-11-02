@@ -845,6 +845,15 @@
             "items": {
               "$ref": "#/components/schemas/PermitLimitDto"
             }
+          },
+          "actorBases": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LiabilityBasisDto"
+            }
           }
         }
       },
@@ -1203,6 +1212,13 @@
           "Disgorgement"
         ]
       },
+      "LiabilityBasisDto": {
+        "enum": [
+          "Act",
+          "State",
+          "Representative"
+        ]
+      },
       "LimitSourceDto": {
         "required": [
           "conditionId",
@@ -1257,7 +1273,8 @@
           "uncoveredLawIds",
           "definitionsUsed",
           "guidance",
-          "missingPermitLimits"
+          "missingPermitLimits",
+          "subjectMismatch"
         ],
         "type": "object",
         "properties": {
@@ -1375,6 +1392,17 @@
             "items": {
               "$ref": "#/components/schemas/PermitGapDto"
             }
+          },
+          "subjectMismatch": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
           }
         }
       },
@@ -1395,7 +1423,8 @@
           "conditional",
           "perOccasion",
           "discretionary",
-          "triggeredBy"
+          "triggeredBy",
+          "subjectBases"
         ],
         "type": "object",
         "properties": {
@@ -1449,6 +1478,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SanctionTriggerDto"
+            }
+          },
+          "subjectBases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LiabilityBasisDto"
             }
           }
         }

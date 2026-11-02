@@ -129,6 +129,7 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
     - 語料的歷史有起點：`Outcome.uncovered_law_ids` 列出「那天已制定、但語料沒有當時版本」的法規，其規定缺席不代表當時沒有規定；`earlier` 出現空的 `verdicts` 時先看此欄位，不要解讀成行為時合規。
     - `Outcome.guidance`（行政規則）附在結果旁，不是推論的前提。
     - 不在語料裡的管制事實由呼叫端隨案件提供：門檻委由個別處分（`Condition.delegate_permit`）的量值放 `permit_limits`，缺了列在 `Outcome.missing_permit_limits`；限值標有認定方式時，`Fact.measurement_method`／`averaging_period` 要與它相同，否則要件未知（`PROBLEM_KIND_MEASUREMENT_MISMATCH`），限值沒標則照常比較並附 `PROBLEM_KIND_MEASUREMENT_UNLABELED`。
+    - 責任基礎：罰則的主體槽位標有責任基礎（`Slot.liability_basis`）時，`PenaltyCandidate.subject_bases` 帶出它；呼叫端以 `actor_bases` 說明行為人屬哪種基礎（可同時屬數種）。有交集則主體成立；沒有交集則主體不成立，罰則不列出，列在 `Outcome.subject_mismatch`；沒說明則主體未知，罰則附條件，缺的事實是概念 `liability_basis`（`Outcome.missing`）。主體槽位沒有標註，或擇一的值有一個沒標，則不受限制。推論只比對基礎，不判斷行為人是否「真的」屬於該基礎，那是呼叫端的事實認定。
     - 以另一效果為前提的罰則（`Sanction.triggers`），前提沒有列出就不列出；`PenaltyCandidate.triggered_by` 是它所依的前提。
     - 期限同時是資料庫查詢的上限；等不到名額回 `BUSY`。
 - **數值**用 `Decimal`（十進位文字），**日期**維持 ISO 8601 字串；列舉的零值一律是 `*_UNSPECIFIED`，收到就是契約之外的值。

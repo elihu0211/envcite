@@ -856,6 +856,7 @@ class EvaluateRequest(_message.Message):
     CONDUCT_ENDED_ON_FIELD_NUMBER: _builtins.int
     RESULT_ON_FIELD_NUMBER: _builtins.int
     PERMIT_LIMITS_FIELD_NUMBER: _builtins.int
+    ACTOR_BASES_FIELD_NUMBER: _builtins.int
     conduct_on: _builtins.str
     """行為日（ISO 8601）。必填。"""
     decided_on: _builtins.str
@@ -881,6 +882,14 @@ class EvaluateRequest(_message.Message):
         subject 為許可種類的代碼）。
         """
 
+    @_builtins.property
+    def actor_bases(self) -> _containers.RepeatedScalarFieldContainer[Global___LiabilityBasis.ValueType]:
+        """行為人所屬的責任基礎，可同時屬數種。罰則的主體槽位標有責任基礎時，這裡要有其中之一，
+        否則主體要件不成立、罰則不列出（Outcome.subject_mismatch）；留空是未說明，標有責任基礎的
+        罰則附條件列出，缺的事實為概念 "liability_basis"（Outcome.missing）。主體槽位沒有標註，
+        或擇一的值有一個沒標，則不受限制。不得為 UNSPECIFIED。
+        """
+
     def __init__(
         self,
         *,
@@ -891,10 +900,11 @@ class EvaluateRequest(_message.Message):
         conduct_ended_on: _builtins.str = ...,
         result_on: _builtins.str = ...,
         permit_limits: _abc.Iterable[Global___PermitLimit] | None = ...,
+        actor_bases: _abc.Iterable[Global___LiabilityBasis.ValueType] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["administrative_penalty_facts", b"administrative_penalty_facts"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["administrative_penalty_facts", b"administrative_penalty_facts", "conduct_ended_on", b"conduct_ended_on", "conduct_on", b"conduct_on", "decided_on", b"decided_on", "facts", b"facts", "permit_limits", b"permit_limits", "result_on", b"result_on"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["actor_bases", b"actor_bases", "administrative_penalty_facts", b"administrative_penalty_facts", "conduct_ended_on", b"conduct_ended_on", "conduct_on", b"conduct_on", "decided_on", b"decided_on", "facts", b"facts", "permit_limits", b"permit_limits", "result_on", b"result_on"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -1251,6 +1261,7 @@ class Outcome(_message.Message):
     DEFINITIONS_USED_FIELD_NUMBER: _builtins.int
     MISSING_PERMIT_LIMITS_FIELD_NUMBER: _builtins.int
     GUIDANCE_FIELD_NUMBER: _builtins.int
+    SUBJECT_MISMATCH_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def verdicts(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementVerdict]: ...
     @_builtins.property
@@ -1330,6 +1341,12 @@ class Outcome(_message.Message):
         且所解釋的須正是陳述所讀的那段文字；條文修正後文字改了，舊的解釋就不再附上。
         """
 
+    @_builtins.property
+    def subject_mismatch(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]:
+        """其餘要件成立或未知、但主體槽位的責任基礎與 EvaluateRequest.actor_bases 都不符，因而
+        不列出的罰則（罰則陳述的識別碼）。
+        """
+
     def __init__(
         self,
         *,
@@ -1352,10 +1369,11 @@ class Outcome(_message.Message):
         definitions_used: _abc.Iterable[Global___DefinitionUse] | None = ...,
         missing_permit_limits: _abc.Iterable[Global___PermitGap] | None = ...,
         guidance: _abc.Iterable[Global___Guidance] | None = ...,
+        subject_mismatch: _abc.Iterable[_builtins.int] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "general", b"general", "one_act", b"one_act"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "assessment_used", b"assessment_used", "defeated", b"defeated", "definitions_used", b"definitions_used", "general", b"general", "guidance", b"guidance", "limit_sources", b"limit_sources", "missing", b"missing", "missing_permit_limits", b"missing_permit_limits", "needs_assessment", b"needs_assessment", "one_act", b"one_act", "penalties", b"penalties", "penalty_defeated", b"penalty_defeated", "problems", b"problems", "sources", b"sources", "trace", b"trace", "uncovered_law_ids", b"uncovered_law_ids", "unresolved_conflicts", b"unresolved_conflicts", "unresolved_penalty_overlaps", b"unresolved_penalty_overlaps", "verdicts", b"verdicts"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "assessment_used", b"assessment_used", "defeated", b"defeated", "definitions_used", b"definitions_used", "general", b"general", "guidance", b"guidance", "limit_sources", b"limit_sources", "missing", b"missing", "missing_permit_limits", b"missing_permit_limits", "needs_assessment", b"needs_assessment", "one_act", b"one_act", "penalties", b"penalties", "penalty_defeated", b"penalty_defeated", "problems", b"problems", "sources", b"sources", "subject_mismatch", b"subject_mismatch", "trace", b"trace", "uncovered_law_ids", b"uncovered_law_ids", "unresolved_conflicts", b"unresolved_conflicts", "unresolved_penalty_overlaps", b"unresolved_penalty_overlaps", "verdicts", b"verdicts"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     _WhichOneofReturnType__one_act: _TypeAlias = _typing.Literal["one_act"]  # noqa: Y015
     _WhichOneofArgType__one_act: _TypeAlias = _typing.Literal["_one_act", b"_one_act"]  # noqa: Y015
@@ -1509,6 +1527,7 @@ class PenaltyCandidate(_message.Message):
     PER_OCCASION_FIELD_NUMBER: _builtins.int
     DISCRETIONARY_FIELD_NUMBER: _builtins.int
     TRIGGERED_BY_FIELD_NUMBER: _builtins.int
+    SUBJECT_BASES_FIELD_NUMBER: _builtins.int
     statement_id: _builtins.int
     punishes: _builtins.int
     """被處罰的陳述。"""
@@ -1523,6 +1542,10 @@ class PenaltyCandidate(_message.Message):
     def triggered_by(self) -> _containers.RepeatedCompositeFieldContainer[Global___SanctionTrigger]:
         """這個候選所依的前提（已列出或附條件列出的罰則）。"""
 
+    @_builtins.property
+    def subject_bases(self) -> _containers.RepeatedScalarFieldContainer[Global___LiabilityBasis.ValueType]:
+        """罰則主體槽位標註的責任基礎；沒有標註（主體不受責任基礎限制）為空。"""
+
     def __init__(
         self,
         *,
@@ -1535,10 +1558,11 @@ class PenaltyCandidate(_message.Message):
         per_occasion: _builtins.bool = ...,
         discretionary: _builtins.bool = ...,
         triggered_by: _abc.Iterable[Global___SanctionTrigger] | None = ...,
+        subject_bases: _abc.Iterable[Global___LiabilityBasis.ValueType] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["_max_amount", b"_max_amount", "_min_amount", b"_min_amount", "max_amount", b"max_amount", "min_amount", b"min_amount"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_max_amount", b"_max_amount", "_min_amount", b"_min_amount", "conditional", b"conditional", "discretionary", b"discretionary", "effect", b"effect", "max_amount", b"max_amount", "min_amount", b"min_amount", "per_occasion", b"per_occasion", "punishes", b"punishes", "statement_id", b"statement_id", "triggered_by", b"triggered_by"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_max_amount", b"_max_amount", "_min_amount", b"_min_amount", "conditional", b"conditional", "discretionary", b"discretionary", "effect", b"effect", "max_amount", b"max_amount", "min_amount", b"min_amount", "per_occasion", b"per_occasion", "punishes", b"punishes", "statement_id", b"statement_id", "subject_bases", b"subject_bases", "triggered_by", b"triggered_by"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     _WhichOneofReturnType__max_amount: _TypeAlias = _typing.Literal["max_amount"]  # noqa: Y015
     _WhichOneofArgType__max_amount: _TypeAlias = _typing.Literal["_max_amount", b"_max_amount"]  # noqa: Y015

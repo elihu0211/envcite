@@ -19,7 +19,8 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
                 new FactDto("industry", null, null, ["factory"]),
             ],
             new AdministrativePenaltyFactsDto(null, true, null, 15, null, null, null, null, null, null, null, null, null, null, null, null),
-            "2020-01-05", null, [new PermitLimitDto("operating_permit", "effluent_cod", "100")]);
+            "2020-01-05", null, [new PermitLimitDto("operating_permit", "effluent_cod", "100")],
+            [LiabilityBasisDto.State, LiabilityBasisDto.Representative]);
 
     [Fact]
     public async Task EvaluateMapsTheCaseToTheInternalContractAndTheOutcomeBackToTypedJson()
@@ -39,6 +40,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal(("cems", ""), (sent.Facts[0].MeasurementMethod, sent.Facts[0].AveragingPeriod)); // 省略 = 未提供
         var permit = Assert.Single(sent.PermitLimits);
         Assert.Equal(("operating_permit", "effluent_cod", "100"), (permit.Permit, permit.Concept, permit.Value.Value));
+        Assert.Equal([EnvCite.Ontology.V1.LiabilityBasis.State, EnvCite.Ontology.V1.LiabilityBasis.Representative], sent.ActorBases);
         Assert.True(sent.AdministrativePenaltyFacts.HasNegligence);
         Assert.False(sent.AdministrativePenaltyFacts.HasIntent); // 省略 = 未知，不是「否」
         Assert.Equal(15, sent.AdministrativePenaltyFacts.Age);
@@ -47,11 +49,13 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal([new StatementVerdictDto(7, VerdictDto.Violation)], outcome.Verdicts);
         var fine = outcome.Penalties[0];
         Assert.Empty(fine.TriggeredBy);
-        Assert.Equal(new PenaltyCandidateDto(8, 7, LegalEffectDto.Fine, 60000, 1000000, true, false, false, fine.TriggeredBy), fine);
+        Assert.Equal(new PenaltyCandidateDto(8, 7, LegalEffectDto.Fine, 60000, 1000000, true, false, false, fine.TriggeredBy, fine.SubjectBases), fine);
+        Assert.Equal([LiabilityBasisDto.State], fine.SubjectBases);
         Assert.Equal(LegalEffectDto.Warning, outcome.Penalties[2].Effect);
         Assert.Equal([new SanctionTriggerDto(8, TriggerKindDto.SanctionImposed)], outcome.Penalties[2].TriggeredBy);
         Assert.Equal(LegalEffectDto.Disgorgement, outcome.Penalties[3].Effect);
         Assert.Equal([new PermitGapDto(7, "operating_permit", "effluent_cod")], outcome.MissingPermitLimits);
+        Assert.Equal([9L], outcome.SubjectMismatch);
         Assert.Equal(LegalEffectDto.Order, outcome.Penalties[1].Effect);
         Assert.Null(outcome.Penalties[1].MinAmount); // 沒寫額度 = 省略，不是 0
         Assert.Equal(new FineIntervalDto(60000, 1000000), outcome.OneAct);

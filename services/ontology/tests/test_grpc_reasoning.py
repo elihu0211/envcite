@@ -341,3 +341,15 @@ def test_a_permit_limit_without_a_value_is_an_invalid_argument(reasoning_stub: S
 
     assert caught.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     assert _details(caught.value)[1] == ["permit_limits[0].value.value"]
+
+
+def test_an_unspecified_actor_basis_is_an_invalid_argument(reasoning_stub: Stub) -> None:
+    request = _case()
+    request.actor_bases.extend(
+        [reasoning_pb2.LIABILITY_BASIS_ACT, reasoning_pb2.LIABILITY_BASIS_UNSPECIFIED]
+    )
+    with pytest.raises(grpc.RpcError) as caught:
+        reasoning_stub.Evaluate(request, metadata=call_metadata())
+
+    assert caught.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert _details(caught.value)[1] == ["actor_bases[1]"]

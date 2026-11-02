@@ -96,6 +96,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
             v.add("conduct_on", errors.DATE_ORDER, "conduct_on must not be after decided_on")
         case = codec.case_facts(request, v, conduct_ended, result_on)
         permits = codec.permit_limits(request, v)
+        actor_bases = codec.actor_bases(request, v)
         v.check()
         assert conduct_on is not None and decided_on is not None  # check() 已擋下
 
@@ -111,7 +112,13 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                     grpc.StatusCode.CANCELLED, errors.EVALUATION_TIMEOUT, "call is no longer active"
                 )
             return self._evaluate(
-                context, conduct_on, decided_on, case, codec.measurements(request), permits
+                context,
+                conduct_on,
+                decided_on,
+                case,
+                codec.measurements(request),
+                permits,
+                actor_bases,
             )
         finally:
             self._metrics.in_flight.add(-1)
@@ -125,6 +132,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         case: dict[str, float | list[float | str]],
         measurements: Measurements,
         permits: Permits,
+        actor_bases: list[str],
     ) -> pb.EvaluateResponse:
         try:
             with self._store.read_connection(timeout=remaining_seconds(context)) as conn:
@@ -136,6 +144,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                     LANGUAGE,
                     measurements=measurements,
                     permits=permits,
+                    actor_bases=actor_bases,
                 )
 
                 def outcome(result: Result, on: date, uncovered: tuple[str, ...]) -> pb.Outcome:

@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
@@ -132,6 +132,13 @@ _ACTIONS = """
      WHERE sl.slot_role = 'action' AND sl.statement_id = ANY(%(ids)s)
 """
 
+# 主體槽位的責任基礎：每個擇一的值一列；沒有標註的值（NULL）使主體不受責任基礎限制。
+_SUBJECTS = """
+    SELECT statement_id, liability_basis::text
+      FROM annotation.statement_slot
+     WHERE slot_role = 'subject' AND statement_id = ANY(%(ids)s)
+"""
+
 _EXCEPTIONS = """
     SELECT exception_id, excluded_id FROM annotation.statement_exception
      WHERE exception_id = ANY(%(ids)s) AND excluded_id = ANY(%(ids)s)
@@ -251,6 +258,10 @@ def statement_facts(
         out.append(f"same({q(str(other))},{q(str(used))}).")
     for sid, action in conn.execute(_ACTIONS, ids_param):
         out.append(f"action({sid},{q(str(action))}).")
+    for sid, basis in conn.execute(_SUBJECTS, ids_param):
+        out.append(
+            f"subject_basis({sid},{basis})." if basis is not None else f"subject_any({sid})."
+        )
     for exception, excluded in conn.execute(_EXCEPTIONS, ids_param):
         out.append(f"exception({exception},{excluded}).")
     for winner, loser, basis in conn.execute(_OVERRIDES, ids_param):
@@ -273,14 +284,19 @@ _ACCRUAL = ("ap_conduct_ended", "ap_result_on")
 
 
 def case_facts(
-    case: Case, measurements: Measurements | None = None, permits: Permits | None = None
+    case: Case,
+    measurements: Measurements | None = None,
+    permits: Permits | None = None,
+    actor_bases: Collection[str] | None = None,
 ) -> str:
     """案件事實：概念代碼 → 值（同一概念可有多個值，矛盾由推論程式檢出）。
 
     數字是千分位的 `fact_in`；字串是概念值（行業屬某行業），寫成 `cfact_in`。認定方式寫成
     `fmethod`／`favg`；許可所載的量值寫成 `permit_in`（同一許可、同一概念有兩個值即矛盾）。
+    行為人所屬的責任基礎（`act`、`state`、`representative`，可同時屬數種）寫成 `actor_basis`；
+    沒給與給了空集合相同，皆是未說明。
     """
-    out: list[str] = []
+    out: list[str] = [f"actor_basis({basis})." for basis in sorted(set(actor_bases or ()))]
     for code, given in (measurements or {}).items():
         for m in given:
             if m.method is not None:

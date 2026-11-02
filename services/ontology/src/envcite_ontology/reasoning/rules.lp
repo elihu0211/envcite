@@ -8,6 +8,7 @@
 %       permit_cond/2（委由個別處分的要件：許可種類）  lim_method/2 lim_avg/2 lim_unlabeled/1（授權限值的認定方式）
 %       trigger/3（罰則 → 作為前提的罰則，觸發種類；只列當日在的前提）  triggered/1（有前提的罰則）  same/2（對到同一外部識別碼的概念：前者的事實當成後者的）
 %       fact_in/2（案件事實，由呼叫端提供；同一概念可帶多個值，矛盾由下方檢出）
+%       subject_basis/2 subject_any/1（罰則主體槽位標的責任基礎）  actor_basis/1（呼叫端說明的行為人責任基礎）
 %       fmethod/2 favg/2（案件事實的認定方式）  permit_in/3（呼叫端提供的許可量值：許可種類、概念、值）
 role(scope;duty).
 
@@ -137,6 +138,16 @@ relevant(S) :- cond(_,S,_,_,M,_,_), given(M).
 relevant(S) :- exception(E,S), cond(_,E,_,_,M,_,_), given(M).
 verdict(S,V) :- outcome(S,V), relevant(S).
 
+% ---- 主體的責任基礎：罰則的主體槽位標有責任基礎，行為人所屬的基礎要在其中 ----
+% 主體槽位的每個擇一的值都標了基礎，才限制主體；有一個沒標，該值不限基礎，主體不受限。
+% 呼叫端沒說明行為人屬哪種基礎則未知（缺事實），說明了而不在其中則不成立。
+constrained(P) :- subject_basis(P,_), not subject_any(P).
+actor_stated   :- actor_basis(_).
+subj(P,t) :- sanction(P,_,_,_,_), not constrained(P).
+subj(P,t) :- constrained(P), subject_basis(P,B), actor_basis(B).
+subj(P,f) :- constrained(P), actor_stated, not subj(P,t).
+subj(P,u) :- constrained(P), not actor_stated.
+
 % ---- 連到罰則：只列候選，額度原文由 PG 提供 ----
 % 罰則自己的要件（情節重大、必要時、屆期未改善）也要涵攝：被處罰的陳述違反時，罰則的適用範圍
 % 成立則為候選，未知則附條件，不成立則不列；被處罰的陳述只是附條件違反時，罰則成立或未知都附條件。
@@ -148,9 +159,14 @@ viol(S,u) :- outcome(S,conditional_violation).
 arm(P,t) :- sanction(P,_,_,_,_), not triggered(P).
 arm(P,t) :- trigger(P,Q,_), listed(Q,_,_,_,_).
 arm(P,u) :- trigger(P,Q,_), listed_cond(Q,_,_,_,_).
-candidate_penalty(P,S,Eff,Min,Max)      :- sanction(P,S,Eff,Min,Max), viol(S,t), pv(P,scope,t), arm(P,t).
+candidate_penalty(P,S,Eff,Min,Max)      :- sanction(P,S,Eff,Min,Max), viol(S,t), pv(P,scope,t), arm(P,t),
+                                           subj(P,t).
 candidate_penalty_cond(P,S,Eff,Min,Max) :- sanction(P,S,Eff,Min,Max), viol(S,X), pv(P,scope,Y), arm(P,Z),
-                                           live(X), live(Y), live(Z), not candidate_penalty(P,S,Eff,Min,Max).
+                                           subj(P,W), live(X), live(Y), live(Z), live(W),
+                                           not candidate_penalty(P,S,Eff,Min,Max).
+% 主體不成立而不列出的罰則：其餘要件若成立或未知，原本會是候選。
+subject_mismatch(P) :- sanction(P,S,_,_,_), viol(S,X), pv(P,scope,Y), arm(P,Z),
+                       live(X), live(Y), live(Z), subj(P,f).
 pen_live(P) :- sanction(P,S,_,_,_), outcome(S,violation), arm(P,_).
 pen_live(P) :- sanction(P,S,_,_,_), outcome(S,conditional_violation), arm(P,_).
 
@@ -177,6 +193,7 @@ missing(S,M) :- verdict(S,conditional_violation), exception(E,S), unk_concept(E,
 needs_judgement(S,M) :- verdict(S,conditional_violation), exception(E,S), unk_concept(E,M,C), judgement(C), not given(M).
 missing(P,M)          :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), not judgement(C), not given(M).
 needs_judgement(P,M)  :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), judgement(C), not given(M).
+missing(P,"liability_basis") :- pen_live(P), pv(P,scope,Y), live(Y), subj(P,u).
 problem(unresolved_delegation, C) :- delegated(C), not thr(C,_).
 % 許可量值沒提供：缺的是（許可，概念）這筆事實，不是概念本身，另列。
 unk_permit(S,K,M) :- cond(C,S,R,Kl,M,_,_), permit_cond(C,K), unk(C), not clause_f(S,R,Kl),
@@ -271,6 +288,8 @@ one_act(Lo,Hi) :- one_floor(Lo), one_cap(Hi), not open_fine.
 #show verdict/2.
 #show candidate_penalty(P,S,Eff,Min,Max) : listed(P,S,Eff,Min,Max).
 #show candidate_penalty_cond(P,S,Eff,Min,Max) : listed_cond(P,S,Eff,Min,Max).
+#show subject_basis/2.
+#show subject_mismatch/1.
 #show barred/2.
 #show mitigation/2.
 #show presumed/2.

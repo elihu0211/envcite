@@ -327,6 +327,12 @@ message EvaluateRequest {
   // 同一許可種類、同一概念有兩個不同的值時，視為矛盾（PROBLEM_KIND_CONTRADICTORY_FACT，
   // subject 為許可種類的代碼）。
   repeated PermitLimit permit_limits = 7;
+
+  // 行為人所屬的責任基礎，可同時屬數種。罰則的主體槽位標有責任基礎時，這裡要有其中之一，
+  // 否則主體要件不成立、罰則不列出（Outcome.subject_mismatch）；留空是未說明，標有責任基礎的
+  // 罰則附條件列出，缺的事實為概念 "liability_basis"（Outcome.missing）。主體槽位沒有標註，
+  // 或擇一的值有一個沒標，則不受限制。不得為 UNSPECIFIED。
+  repeated LiabilityBasis actor_bases = 8;
 }
 
 message Fact {
@@ -501,6 +507,10 @@ message Outcome {
   // 尚未停止適用（釋字第 287 號：解釋性規定自所解釋的法規生效日起有效，未確定的案件即可適用），
   // 且所解釋的須正是陳述所讀的那段文字；條文修正後文字改了，舊的解釋就不再附上。
   repeated Guidance guidance = 18;
+
+  // 其餘要件成立或未知、但主體槽位的責任基礎與 EvaluateRequest.actor_bases 都不符，因而
+  // 不列出的罰則（罰則陳述的識別碼）。
+  repeated int64 subject_mismatch = 20;
 }
 
 enum GuidanceKind {
@@ -589,6 +599,9 @@ message PenaltyCandidate {
 
   // 這個候選所依的前提（已列出或附條件列出的罰則）。
   repeated SanctionTrigger triggered_by = 9;
+
+  // 罰則主體槽位標註的責任基礎；沒有標註（主體不受責任基礎限制）為空。
+  repeated LiabilityBasis subject_bases = 10;
 }
 
 message FineInterval {

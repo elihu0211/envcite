@@ -184,6 +184,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                     {
                         StatementId = 8, Punishes = 7, Effect = LegalEffect.Fine, MinAmount = 60000, MaxAmount = 1000000,
                         Conditional = true, Discretionary = false,
+                        SubjectBases = { LiabilityBasis.State },
                     },
                     new PenaltyCandidate { StatementId = 9, Punishes = 7, Effect = LegalEffect.Order },
                     new PenaltyCandidate
@@ -193,6 +194,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                     },
                     new PenaltyCandidate { StatementId = 12, Punishes = 7, Effect = LegalEffect.Disgorgement },
                 },
+                SubjectMismatch = { 9 },
                 MissingPermitLimits = { new PermitGap { StatementId = 7, Permit = "operating_permit", Concept = "effluent_cod" } },
                 OneAct = new FineInterval { MinAmount = 60000, MaxAmount = 1000000 },
                 Missing = { new Gap { StatementId = 7, Concept = "effluent_cod" } },

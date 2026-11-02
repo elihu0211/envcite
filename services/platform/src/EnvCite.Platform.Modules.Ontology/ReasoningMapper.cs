@@ -39,6 +39,8 @@ internal static class ReasoningMapper
             Value = Number(l.Value),
         }));
 
+        request.ActorBases.AddRange((r.ActorBases ?? []).Select(Map));
+
         if (r.AdministrativePenalty is { } a)
         {
             var p = new AdministrativePenaltyFacts();
@@ -78,7 +80,8 @@ internal static class ReasoningMapper
             p.StatementId, p.Punishes, Map(p.Effect),
             p.HasMinAmount ? p.MinAmount : null, p.HasMaxAmount ? p.MaxAmount : null,
             p.Conditional, p.PerOccasion, p.Discretionary,
-            [.. p.TriggeredBy.Select(t => new SanctionTriggerDto(t.StatementId, Map(t.Kind)))]))],
+            [.. p.TriggeredBy.Select(t => new SanctionTriggerDto(t.StatementId, Map(t.Kind)))],
+            [.. p.SubjectBases.Select(Map)]))],
         o.OneAct is { } one ? new FineIntervalDto(one.MinAmount, one.MaxAmount) : null,
         [.. o.Missing.Select(g => new GapDto(g.StatementId, g.Concept))],
         [.. o.NeedsAssessment.Select(g => new GapDto(g.StatementId, g.Concept))],
@@ -106,7 +109,8 @@ internal static class ReasoningMapper
         [.. o.Guidance.Select(g => new GuidanceDto(
             g.Issuer, g.DocumentNo, g.IssuedOn, Map(g.Kind), g.Subject, [.. g.StatementIds],
             g.PublishedIn.Length > 0 ? g.PublishedIn : null, g.SourceUrl.Length > 0 ? g.SourceUrl : null))],
-        [.. o.MissingPermitLimits.Select(g => new PermitGapDto(g.StatementId, g.Permit, g.Concept))]);
+        [.. o.MissingPermitLimits.Select(g => new PermitGapDto(g.StatementId, g.Permit, g.Concept))],
+        [.. o.SubjectMismatch]);
 
     private static VerdictDto Map(Verdict v) => v switch
     {
@@ -131,6 +135,22 @@ internal static class ReasoningMapper
         LegalEffect.Order => LegalEffectDto.Order,
         LegalEffect.Disgorgement => LegalEffectDto.Disgorgement,
         _ => throw Unknown(e),
+    };
+
+    private static LiabilityBasisDto Map(LiabilityBasis b) => b switch
+    {
+        LiabilityBasis.Act => LiabilityBasisDto.Act,
+        LiabilityBasis.State => LiabilityBasisDto.State,
+        LiabilityBasis.Representative => LiabilityBasisDto.Representative,
+        _ => throw Unknown(b),
+    };
+
+    private static LiabilityBasis Map(LiabilityBasisDto b) => b switch
+    {
+        LiabilityBasisDto.Act => LiabilityBasis.Act,
+        LiabilityBasisDto.State => LiabilityBasis.State,
+        LiabilityBasisDto.Representative => LiabilityBasis.Representative,
+        _ => throw new ArgumentOutOfRangeException(nameof(b), b, null),
     };
 
     private static TriggerKindDto Map(TriggerKind k) => k switch

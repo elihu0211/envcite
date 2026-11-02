@@ -184,7 +184,7 @@ def statement_ids(result: Result) -> set[int]:
     ids: set[int] = set(result.verdicts)
     ids |= {p.statement_id for p in result.penalties} | {p.punishes_id for p in result.penalties}
     ids |= {q for p in result.penalties for q, _ in p.triggered_by}
-    ids |= {s for s, _, _ in result.missing_permits}
+    ids |= {s for s, _, _ in result.missing_permits} | set(result.subject_mismatch)
     for gaps in (result.missing, result.needs_judgement, result.judgement_used):
         ids |= {s for s, _ in gaps}
     for pairs in (result.unresolved_conflicts, result.unresolved_penalty_overlaps):
@@ -205,6 +205,7 @@ def _penalty(p: Penalty) -> pb.PenaltyCandidate:
         conditional=p.conditional,
         per_occasion=p.repeating,
         discretionary=p.discretionary,
+        subject_bases=[LIABILITY_BASIS[b] for b in p.subject_bases],
         triggered_by=[
             pb.SanctionTrigger(statement_id=q, kind=TRIGGER_KIND[k]) for q, k in p.triggered_by
         ],
@@ -288,6 +289,7 @@ def outcome(
             for i in sorted(statement_ids(result))
             if i in sources
         ],
+        subject_mismatch=list(result.subject_mismatch),
         uncovered_law_ids=list(uncovered),
         missing_permit_limits=[
             pb.PermitGap(statement_id=s, permit=k, concept=m) for s, k, m in result.missing_permits
@@ -366,6 +368,18 @@ def permit_limits(
             )
         if limit.permit and limit.concept and number is not None:
             out.setdefault((limit.permit, limit.concept), []).append(float(number))
+    return out
+
+
+def actor_bases(request: pb.EvaluateRequest, validator: errors.Validator) -> list[str]:
+    """行為人所屬的責任基礎，推論程式用的名稱。欄位錯誤記在 `validator`。"""
+    names = {value: name for name, value in LIABILITY_BASIS.items()}
+    out: list[str] = []
+    for i, basis in enumerate(request.actor_bases):
+        if basis not in names:
+            validator.add(f"actor_bases[{i}]", errors.UNSET, "a liability basis is required")
+        else:
+            out.append(names[basis])
     return out
 
 

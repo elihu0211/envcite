@@ -11,11 +11,13 @@
 
 案件事實之外，呼叫端可給事實的認定方式（`measurements`）與場所持有的許可所載的量值（`permits`）：
 授權限值標有認定方式時，方式不符或沒給則要件未知；委由個別處分的要件，以許可的量值為門檻值。
+罰則的主體槽位標有責任基礎時，呼叫端說明行為人所屬的基礎（`actor_bases`）要在其中：不在則主體
+要件不成立、罰則不列（`subject_mismatch`），沒說明則缺事實（概念 `liability_basis`）、罰則附條件。
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from datetime import date
 from importlib import resources
@@ -45,6 +47,8 @@ class Penalty:
     discretionary: bool
     #: 作為前提的罰則與觸發種類（`order_lapsed`、`sanction_imposed`）
     triggered_by: tuple[tuple[int, str], ...] = ()
+    #: 罰則主體槽位標註的責任基礎（`act`、`state`、`representative`）；沒有標註為空
+    subject_bases: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -89,6 +93,8 @@ class Result:
     definitions_used: tuple[tuple[int, int], ...] = ()
     #: （陳述，許可種類，概念）：委由個別處分、但呼叫端沒提供許可量值的要件
     missing_permits: tuple[tuple[int, str, str], ...] = ()
+    #: 其餘要件成立或未知、但主體的責任基礎與行為人所屬不符而不列出的罰則
+    subject_mismatch: tuple[int, ...] = ()
 
 
 def _py(symbol: clingo.Symbol) -> Any:
@@ -109,6 +115,7 @@ def evaluate(
     decided_on: date | None = None,
     measurements: facts.Measurements | None = None,
     permits: facts.Permits | None = None,
+    actor_bases: Collection[str] | None = None,
 ) -> Result:
     """對 `as_of` 當日有效的陳述與案件事實推論。
 
@@ -119,7 +126,7 @@ def evaluate(
     program = "\n".join(
         [
             statements,
-            facts.case_facts(case, measurements, permits),
+            facts.case_facts(case, measurements, permits, actor_bases),
             facts.limitation(decided_on or as_of, case),
         ]
     )
@@ -161,12 +168,16 @@ def evaluate(
     triggers: dict[int, list[tuple[int, str]]] = {}
     for p, q, kind in get("trigger"):
         triggers.setdefault(int(p), []).append((int(q), str(kind)))
+    bases: dict[int, list[str]] = {}
+    for p, basis in get("subject_basis"):
+        bases.setdefault(int(p), []).append(str(basis))
     penalties = [
         Penalty(
             *c,
             repeating=flags[c[0]][0],
             discretionary=flags[c[0]][1],
             triggered_by=tuple(triggers.get(c[0], ())),
+            subject_bases=tuple(sorted(set(bases.get(c[0], ())))),
         )
         for c in candidates
     ]
@@ -196,4 +207,5 @@ def evaluate(
         ),
         definitions_used=tuple((int(c), int(d)) for c, d in get("used_def")),
         missing_permits=tuple((int(s), str(k), str(m)) for s, k, m in get("missing_permit")),
+        subject_mismatch=tuple(int(p) for (p,) in get("subject_mismatch")),
     )

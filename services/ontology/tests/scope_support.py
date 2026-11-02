@@ -110,6 +110,8 @@ def provision_lookups_by_resource(conn: Conn, sql: LiteralString) -> int:
     while stack:
         node = stack.pop()
         conds = str(node.get("Index Cond", "")) + str(node.get("Filter", ""))
+        if node.get("Node Type") == "Bitmap Heap Scan":  # 條件在子節點的 Bitmap Index Scan
+            conds += "".join(str(c.get("Index Cond", "")) for c in node.get("Plans", []))
         if node.get("Relation Name") == "provision" and "resource_id" in conds:
             total += int(node["Actual Loops"])
         stack.extend(node.get("Plans", []))
