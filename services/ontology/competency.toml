@@ -1,0 +1,204 @@
+# 能力問題登記：本體必須回答的問題與各題今天的實作現況。這個檔與 tests/test_competency.py 是現況的單一真值。
+#
+# status
+#   answerable  術語層（資料庫物件或 rpc）與機制都在，且有測試；不表示資料庫裡已有答案。
+#   partial     只做了一部分：表在而機制只做一半，或依賴另一題而那一題沒有。
+#   design_only 只有設計，沒有資料庫物件與 rpc 承載。
+#
+# evidence（逐項由 tests/test_competency.py 驗證確實存在）
+#   db     "schema.object"：套完遷移的真實 PostgreSQL 裡的表、檢視或函式
+#   rpc    "Service.Method"：proto 裡的 rpc
+#   field  "Message.field"：proto 訊息的欄位
+#   test   "tests/檔名.py::函式"：該測試函式
+
+[[question]]
+id = "A1"
+status = "answerable"
+db = ["corpus.provisions_at", "corpus.provision_version"]
+rpc = ["OntologyService.GetLaw"]
+test = ["tests/test_store.py::test_get_law_reads_title_from_expression"]
+
+[[question]]
+id = "A2"
+status = "answerable"
+db = ["corpus.provisions_at"]
+rpc = ["OntologyService.ListArticles"]
+test = ["tests/test_store.py::test_a_date_before_the_held_versions_is_a_corpus_gap"]
+
+[[question]]
+id = "A3"
+status = "answerable"
+db = ["corpus.lifecycle_event"]
+test = ["tests/test_ingest_history.py::test_parse_dates_kinds_and_document_numbers"]
+
+[[question]]
+id = "A4"
+status = "partial"
+db = ["corpus.provision_version"]
+test = ["tests/test_incremental.py::test_an_amendment_adds_a_version_and_closes_the_previous_one"]
+
+[[question]]
+id = "A5"
+status = "partial"
+db = ["corpus.lifecycle_event"]
+test = ["tests/test_incremental.py::test_a_repealed_law_is_no_longer_in_force_even_when_its_commencement_is_unknown"]
+
+[[question]]
+id = "B1"
+status = "answerable"
+db = ["annotation.delegations_at", "annotation.delegation_usable"]
+test = ["tests/test_delegation.py::test_resolves_by_the_date_asked"]
+
+[[question]]
+id = "B2"
+status = "design_only"
+
+[[question]]
+id = "B3"
+status = "design_only"
+
+[[question]]
+id = "B4"
+status = "partial"
+db = ["guidance.document", "guidance.interpretation", "guidance.for_statements"]
+test = ["tests/test_guidance.py::test_a_later_letter_supersedes_from_its_issue_date"]
+
+[[question]]
+id = "B5"
+status = "partial"
+db = ["annotation.delegations_at"]
+test = ["tests/test_delegation.py::test_a_model_extracted_delegation_is_unusable_until_confirmed"]
+
+[[question]]
+id = "C1"
+status = "answerable"
+db = ["annotation.statement", "annotation.statement_slot"]
+rpc = ["ReasoningService.ListStatements"]
+test = ["tests/test_grpc_reasoning.py::test_statements_come_back_typed"]
+
+[[question]]
+id = "C2"
+status = "answerable"
+db = ["annotation.statement_condition", "annotation.threshold_source_at"]
+test = ["tests/test_annotation.py::test_a_delegated_threshold_is_the_limit_in_force_on_the_date"]
+
+[[question]]
+id = "C3"
+status = "answerable"
+rpc = ["ReasoningService.Evaluate"]
+test = ["tests/test_reasoning.py::test_unknown_facts_are_listed_not_guessed"]
+
+[[question]]
+id = "C4"
+status = "answerable"
+db = ["annotation.statement_exception", "annotation.statement_override"]
+test = ["tests/test_reasoning.py::test_a_proviso_excludes_the_rule_or_makes_the_conclusion_conditional"]
+
+[[question]]
+id = "C5"
+status = "answerable"
+db = ["annotation.sanction"]
+test = ["tests/test_reasoning_water.py::test_a_business_over_the_standard_gets_the_candidate_penalties_that_apply"]
+
+[[question]]
+id = "C6"
+status = "answerable"
+field = ["GeneralPart.unpunished", "GeneralPart.mitigation"]
+test = ["tests/test_reasoning_penalties.py::test_the_general_part_blocks_punishment_and_leaves_the_duty"]
+
+[[question]]
+id = "C7"
+status = "answerable"
+field = ["Outcome.one_act", "GeneralPart.time_barred"]
+test = ["tests/test_reasoning_penalties.py::test_one_act_and_several_acts_are_both_reported"]
+
+[[question]]
+id = "C8"
+status = "answerable"
+db = ["annotation.term_definition", "annotation.definitions_at"]
+test = ["tests/test_reasoning.py::test_belonging_follows_the_statutory_definition"]
+
+[[question]]
+id = "D1"
+status = "design_only"
+
+[[question]]
+id = "D2"
+status = "design_only"
+
+[[question]]
+id = "D3"
+status = "design_only"
+
+[[question]]
+id = "E1"
+status = "answerable"
+db = ["annotation.anchored_statements_at"]
+field = ["StatementSource.version_iri"]
+test = ["tests/test_annotation.py::test_a_loaded_statement_is_a_fact_on_the_day_its_text_is_in_force"]
+
+[[question]]
+id = "E2"
+status = "answerable"
+db = ["annotation.derivation", "annotation.verification", "annotation.settle"]
+test = ["tests/test_integrity.py::test_the_extractor_cannot_verify_itself_even_by_a_direct_insert"]
+
+[[question]]
+id = "E3"
+status = "answerable"
+db = ["annotation.assertion_fingerprint", "annotation.anchored_statements_at"]
+test = ["tests/test_annotation.py::test_a_statement_drops_out_when_its_text_is_corrected"]
+
+[[question]]
+id = "F1"
+status = "partial"
+db = ["retrieval.search_hybrid"]
+rpc = ["OntologyService.SearchArticles"]
+test = ["tests/test_hybrid.py::test_both_arms_agreeing_ranks_first"]
+
+[[question]]
+id = "F2"
+status = "answerable"
+field = ["Outcome.missing", "Outcome.needs_assessment", "Outcome.problems", "Outcome.unresolved_conflicts"]
+test = ["tests/test_reasoning.py::test_a_proviso_that_needs_judgement_is_not_a_missing_fact"]
+
+[[question]]
+id = "G1"
+status = "answerable"
+db = ["annotation.statement_slot", "annotation.statement_condition"]
+test = ["tests/test_reasoning_water.py::test_a_livestock_farm_matches_two_fines_and_the_priority_is_left_to_a_human"]
+
+[[question]]
+id = "G2"
+status = "answerable"
+field = ["Condition.measurement_method", "Fact.measurement_method"]
+test = ["tests/test_environmental_annotation.py::test_a_labeled_limit_compares_only_facts_measured_its_way"]
+
+[[question]]
+id = "G3"
+status = "answerable"
+field = ["Condition.delegate_permit", "EvaluateRequest.permit_limits"]
+test = ["tests/test_environmental_annotation.py::test_a_permit_threshold_comes_from_the_caller"]
+
+[[question]]
+id = "G4"
+status = "answerable"
+field = ["Slot.liability_basis", "EvaluateRequest.actor_bases", "Outcome.subject_mismatch"]
+test = ["tests/test_reasoning_liability.py::test_a_different_basis_fails_the_subject"]
+
+[[question]]
+id = "G5"
+status = "answerable"
+db = ["annotation.sanction_trigger"]
+field = ["PenaltyCandidate.triggered_by"]
+test = ["tests/test_environmental_annotation.py::test_a_triggered_penalty_follows_its_trigger"]
+
+[[question]]
+id = "G6"
+status = "design_only"
+
+[[question]]
+id = "G7"
+status = "answerable"
+db = ["vocab.concept_match"]
+test = ["tests/test_reasoning.py::test_a_missing_concept_value_is_listed_and_contradictory_ones_are_reported"]

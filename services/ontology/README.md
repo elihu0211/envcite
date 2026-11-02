@@ -1,7 +1,7 @@
 ---
 type: reference
 applies-to: all
-owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations]
+owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations, competency-registry]
 ---
 
 # envcite-ontology
@@ -68,3 +68,9 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
   - `annotation.delegated_by(法律法規 id, 語文, 日期)`：某法在該日的授權命令。
   - 兩者都回報法律端條文在該日的 `law_status`；`law_resource_id`／`law_provision_id` 為空、`law_status` 不是 `in_force`、或命令一列也沒有，都是授權不明，是否因此不得作為依據由呼叫端判斷。
 - **守門**：只回已確認或規則推導的授權，駁回的不回；模型抽取而未確認的不回（同陳述與用語定義）。
+
+## 能力問題登記
+
+本體必須回答的問題與各題今天的實作現況，只登記在 [`competency.toml`](competency.toml)：每題一列，`status` 是 `answerable`（術語層與機制都在且有測試）、`partial`（只做了一部分）或 `design_only`（只有設計，沒有承載）。「可答」說的是機制存在，不是資料庫裡已有答案。
+
+每題的證據分四種：資料庫物件（`db`）、rpc（`rpc`）、契約欄位（`field`）與測試函式（`test`）。[`tests/test_competency.py`](tests/test_competency.py) 驗證：登記涵蓋題號集合、每項證據真的存在、標可答的題有機制與測試、標只有設計的題沒有證據。它不執行那些題，只驗證證據；加題或改現況時，登記檔與該測試裡的題號集合同一次更新。
