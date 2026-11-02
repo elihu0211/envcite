@@ -152,6 +152,7 @@ public sealed class OutcomeCodeBehaviourTests(PlatformFactory factory)
         AssertFailure(await members.CreateAsync(actor, tenant.Id, email, null, CustomerRoles.Viewer, CancellationToken.None), AdminStatus.Conflict, OutcomeCodes.MemberEmailTaken);
         AssertFailure(await members.ResetPasswordAsync(actor, tenant.Id, Guid.NewGuid().ToString(), CancellationToken.None), AdminStatus.NotFound, OutcomeCodes.MemberNotFound);
         AssertFailure(await operators.CreateAsync(actor, "bad", null, CancellationToken.None), AdminStatus.Invalid, OutcomeCodes.EmailInvalid);
+        _ = await factory.EnsureOperatorAsync();
         AssertFailure(await operators.CreateAsync(actor, PlatformFactory.OperatorEmail, null, CancellationToken.None), AdminStatus.Conflict, OutcomeCodes.OperatorEmailTaken);
     }
 
