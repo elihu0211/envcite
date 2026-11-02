@@ -71,9 +71,14 @@ def add_filler_laws(conn: Conn) -> None:
         "SELECT format('%I.%I', schemaname, tablename) FROM pg_tables"
         " WHERE schemaname IN ('corpus', 'annotation', 'vocab')"
     ).fetchall()
-    for (table,) in tables:
-        conn.execute(f"ANALYZE {table}")
+    # 先 VACUUM：前面的測試刪掉的列留下的死元組與膨脹的頁數會改變成本估計，計畫因測試的順序而變
     conn.commit()
+    conn.autocommit = True
+    try:
+        for (table,) in tables:
+            conn.execute(f"VACUUM (ANALYZE) {table}")
+    finally:
+        conn.autocommit = False
 
 
 def one(conn: Conn, sql: LiteralString) -> Any:

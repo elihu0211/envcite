@@ -1,7 +1,7 @@
 ---
 type: reference
 applies-to: all
-owns: [ontology-entrypoints, sync-exit-codes, models-config]
+owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations]
 ---
 
 # envcite-ontology
@@ -21,7 +21,7 @@ owns: [ontology-entrypoints, sync-exit-codes, models-config]
 |------|------|--------|
 | `envcite-ontology` | 長駐 | gRPC 伺服器 |
 | `envcite-migrate` | 一次性 | 套用 `migrations/*.sql` |
-| `envcite-sync <來源>` | 排程 | 取得、匯入、檢索投影，三步冪等 |
+| `envcite-sync <來源>` | 排程 | 取得、匯入、授權抽取、檢索投影，四步冪等 |
 | `envcite-acquire <來源>` | 一次性 | 只取得快照 |
 | `envcite-import <來源>` | 一次性 | 快照寫入語料；`--dry-run` 只解析與驗收 |
 | `envcite-pipeline` | 排程 | 標註：抽取、驗證、接受 |
@@ -55,3 +55,16 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 ```
 
 `[embedding]` 只需要它指名的端點備妥金鑰，伺服器不因標註管線的端點缺金鑰而起不來。
+
+## 規範關係：授權
+
+命令依哪一部法律的哪一條訂定（行政程序法第 150 條第 2 項），是授權鏈的一環。授權是一種主張（`assertion_kind = delegation`，表 `annotation.delegation`），沿用推導活動、封存、驗證與確認狀態；其餘規範關係（準用、特別規定、引用）尚無表。
+
+- **抽取**：`envcite-sync` 在匯入之後從語料內每部命令（位階非憲法、法律）的首條抽「本辦法依某法第某條規定訂定之」，純規則，`derivation.method` 為 `rule`，來源是 [`delegation.py`](src/envcite_ontology/delegation.py)；已有主張的引文（含駁回的）不重寫。其他來源（如公報說明的「依據：」）沒有抽取。
+- **法律端**：法名只對語料內已有的法規標題（任一版本）且對到唯一一部；對不到、同名數部、或法規沒有該條文單元，`law_resource_id`／`law_provision_id` 為空，不猜。款記到所屬的項。
+- **命令端**錨定（法規，條文單元，內容雜湊）：命令首條改了文字，授權跟著該日現行的文字走。授權不固定目標版本，不存版本，依查詢日解析。
+- **讀取**（SQL 函式，唯讀角色可呼叫；`p_language` 同其他逐日解析）：
+  - `annotation.delegations_at(命令法規 id, 語文, 日期)`：某命令在該日的授權依據（B1、B5）。
+  - `annotation.delegated_by(法律法規 id, 語文, 日期)`：某法在該日的授權命令。
+  - 兩者都回報法律端條文在該日的 `law_status`；`law_resource_id`／`law_provision_id` 為空、`law_status` 不是 `in_force`、或命令一列也沒有，都是授權不明，是否因此不得作為依據由呼叫端判斷。
+- **守門**：只回已確認或規則推導的授權，駁回的不回；模型抽取而未確認的不回（同陳述與用語定義）。
