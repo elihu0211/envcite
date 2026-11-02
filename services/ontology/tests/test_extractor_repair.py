@@ -14,6 +14,7 @@ from envcite_ontology.verification import (
 from envcite_ontology.verification.extract import (
     MAX_REPAIRS,
     STATEMENTS_FORMAT,
+    borrowed_issues,
     completeness_issues,
     extract_unit,
 )
@@ -278,3 +279,23 @@ def test_an_unconstrained_model_is_called_exactly_as_before(conn: Conn, tmp_path
     out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
 
     assert out.loaded is not None and len(model.prompts) == 1
+
+
+def test_a_duty_that_borrows_a_defined_term_is_sent_back_unless_it_is_a_value_concept() -> None:
+    defined = {"measures": "水污染防治措施", "business": "事業"}
+    statement = {
+        "id": "s1",
+        "kind": "prescriptive",
+        "deontic": "obligation",
+        "conditions": [
+            {"role": "scope", "concept": "business", "value_concept": "business"},
+            {"role": "duty", "concept": "measures"},
+        ],
+    }
+
+    issues = borrowed_issues([statement], defined)
+
+    assert len(issues) == 1 and "measures" in issues[0] and "duty" in issues[0]
+    own = {**statement, "conditions": [{"role": "duty", "concept": "sludge_handled"}]}
+    assert borrowed_issues([own], defined) == []
+    assert borrowed_issues([statement], None) == []

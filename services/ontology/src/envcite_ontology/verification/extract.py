@@ -71,6 +71,7 @@ PROMPT = (
 10. 要件在判斷「主體或對象是否屬於本法定義的某個用語」時，concept 寫該主體或對象的類別概念，
    comparator 用 eq，value_concept 填下方清單裡那個用語的代碼，且不要寫 threshold。只能用清單裡的
    代碼；清單沒有的就不要寫 value_concept（用原本的 threshold 寫法）。
+   清單只給 value_concept 用；要件的 concept 要依約定 G 自己宣告。
 11. 主體的責任基礎寫在 slots.subject 的項目上（"liability"）：因自己的作為或不作為負責為 act，
    因對物（土地、設施）的支配負責為 state，代表或受指派而承擔（有代表權之人、負責人員）為
    representative；原文看不出來就省略。只有 subject 可以寫 liability。
@@ -411,6 +412,29 @@ def shape_issues(
     return out
 
 
+def borrowed_issues(
+    statements: Sequence[Mapping[str, Any]], defined: Mapping[str, str] | None
+) -> list[str]:
+    """義務內容或適用範圍借用本法已定義的泛稱（約定 G）：只請模型修，修不好不丟，交給驗證。
+
+    用語只屬 value_concept；以它當 duty 的概念，標註說的不是引文的那件事。
+    """
+    if not defined:
+        return []
+    return [
+        f"陳述 {s.get('id', '?')} 的 {c.get('role')} 要件借用本法已定義的用語「{c['concept']}」"
+        "當概念：請依約定 G 另外宣告，用引文自己的字命名這句話說的那件事"
+        "（用語只能放 value_concept）。"
+        for s in statements
+        if s.get("kind") == "prescriptive"
+        for c in s.get("conditions") or []
+        if isinstance(c, Mapping)
+        and c.get("role") in ("duty", "scope")
+        and str(c.get("concept")) in defined
+        and not c.get("value_concept")
+    ]
+
+
 def unusable(statements: Sequence[Mapping[str, Any]]) -> dict[str, str]:
     """修復後仍不可用的陳述（id → 原因）：規範性陳述無方向，或義務、禁止無 duty 要件。
 
@@ -618,12 +642,16 @@ def extract_unit(
             break
         here = [x for x in _statements_of(answer) if locate(str(x.get("quote", "")), text) >= 0]
         shape = shape_issues(answer, defined)
-        issues = completeness_issues(here) + [
-            f"陳述 {ident}：{problem}"
-            for x in here
-            for ident in [str(x.get("id", "?"))]
-            for problem in shape.get(ident, [])
-        ]
+        issues = (
+            completeness_issues(here)
+            + borrowed_issues(here, defined)
+            + [
+                f"陳述 {ident}：{problem}"
+                for x in here
+                for ident in [str(x.get("id", "?"))]
+                for problem in shape.get(ident, [])
+            ]
+        )
         if not issues:
             break
         calls += 1

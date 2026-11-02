@@ -32,3 +32,7 @@ def test_the_conventions_state_the_two_rules_the_runs_found_missing() -> None:
 def test_the_conventions_can_sit_inside_a_format_template() -> None:
     assert "{" not in CONVENTIONS and "}" not in CONVENTIONS
     assert apply("{conventions}\n{x}").format(x="ok").endswith("\nok")
+
+
+def test_the_conventions_forbid_borrowing_a_defined_term_as_the_duty() -> None:
+    assert "不得借來當 duty 或 scope 的概念" in CONVENTIONS
