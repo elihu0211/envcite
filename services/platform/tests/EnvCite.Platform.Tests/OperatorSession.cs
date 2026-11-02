@@ -28,27 +28,33 @@ internal static class OperatorSession
     /// <summary>已完成所有強制步驟的營運者帳號（沒有就建立）。</summary>
     public static async Task<OperatorUser> EnsureOperatorAsync(this WebApplicationFactory<Program> app, string email = PlatformFactory.OperatorEmail)
     {
-        await using var scope = app.Services.CreateAsyncScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
-        if (await users.FindByEmailAsync(email) is { } existing)
+        // 建立與改旗標是兩步：不上鎖時，平行的測試會看到「已存在」就直接用，但旗標還沒改完，後台因此轉去改密碼頁。
+        await EnsureLock.WaitAsync();
+        try
         {
-            return existing;
-        }
+            await using var scope = app.Services.CreateAsyncScope();
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
+            if (await users.FindByEmailAsync(email) is { } existing)
+            {
+                return existing;
+            }
 
-        var created = await app.Services.GetRequiredService<IOperatorAdmin>().CreateAsync(Principal(email), email, null, CancellationToken.None);
-        if (!created.IsOk)
+            var created = await app.Services.GetRequiredService<IOperatorAdmin>().CreateAsync(Principal(email), email, null, CancellationToken.None);
+            Assert.True(created.IsOk, $"建立營運者失敗：{created.Status}");
+
+            var user = (await users.FindByIdAsync(created.Value!.Operator.Id))!;
+            user.MustChangePassword = false;
+            user.TwoFactorEnabled = true;
+            Assert.True((await users.UpdateAsync(user)).Succeeded);
+            return user;
+        }
+        finally
         {
-            // 平行的測試剛好同時建了同一位：以資料庫裡的為準。
-            Assert.Equal(AdminStatus.Conflict, created.Status);
-            return (await users.FindByEmailAsync(email))!;
+            EnsureLock.Release();
         }
-
-        var user = (await users.FindByIdAsync(created.Value!.Operator.Id))!;
-        user.MustChangePassword = false;
-        user.TwoFactorEnabled = true;
-        Assert.True((await users.UpdateAsync(user)).Succeeded);
-        return user;
     }
+
+    private static readonly SemaphoreSlim EnsureLock = new(1, 1);
 
     public static ClaimsPrincipal SessionOf(this WebApplicationFactory<Program> app, OperatorUser user)
     {
