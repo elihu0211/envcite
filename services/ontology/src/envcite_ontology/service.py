@@ -22,6 +22,11 @@ log = logging.getLogger(__name__)
 DEFAULT_SEARCH_LIMIT = 10
 MAX_SEARCH_LIMIT = 50
 
+_RULING_KINDS = {
+    "interpretation": ontology_pb2.RULING_KIND_INTERPRETATION,
+    "judgment": ontology_pb2.RULING_KIND_JUDGMENT,
+}
+
 
 class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def __init__(
@@ -76,6 +81,33 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
             raise self._not_found(request.law_id, request.as_of)
         return ontology_pb2.ListArticlesResponse(
             articles=[ontology_pb2.Article(iri=a.iri, number=a.number) for a in articles]
+        )
+
+    @errors.maps_errors
+    def ListInvalidations(
+        self, request: ontology_pb2.ListInvalidationsRequest, context: grpc.ServicerContext
+    ) -> ontology_pb2.ListInvalidationsResponse:
+        _log_call(context, "ListInvalidations", request.law_id)
+        _check_as_of(request.as_of)
+        found = self._store.list_invalidations(
+            request.law_id, as_of=request.as_of, article_number=request.article_number
+        )
+        if found is None:
+            raise self._not_found(request.law_id, request.as_of)
+        return ontology_pb2.ListInvalidationsResponse(
+            invalidations=[
+                ontology_pb2.Invalidation(
+                    ruling_no=i.ruling_no,
+                    ruling_kind=_RULING_KINDS[i.ruling_kind],
+                    decided_on=i.decided_on,
+                    source_url=i.source_url,
+                    excerpt=i.excerpt,
+                    path=i.path,
+                    invalid_from=i.invalid_from,
+                    partial=i.partial,
+                )
+                for i in found
+            ]
         )
 
     @errors.maps_errors

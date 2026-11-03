@@ -18,6 +18,10 @@ service OntologyService {
   // 在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。查詢是原始文字，
   // 由服務以建索引時的斷詞器自行斷詞：呼叫端若自行斷詞，會悄悄比對到較少的列。
   rpc SearchArticles(SearchArticlesRequest) returns (SearchArticlesResponse);
+
+  // `as_of` 當日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效）。法規不存在或
+  // 該日無施行版本的回應同 GetLaw。
+  rpc ListInvalidations(ListInvalidationsRequest) returns (ListInvalidationsResponse);
 }
 
 message Law {
@@ -104,4 +108,51 @@ message ArticleHit {
 
   reserved 6, 8;
   reserved "rank_score", "dense_distance";
+}
+
+message ListInvalidationsRequest {
+  string law_id = 1;
+
+  // 見 GetLawRequest.as_of。失效依這一天解析：失效日在這一天之後的裁判不列入；
+  // 裁判之後修正的新文字不受影響，所以只列裁判作成時已在施行、且 `as_of` 當日仍是該文字的單元。
+  string as_of = 2;
+
+  // 只看某一條（條號依原文書寫，例如 "5-1"）；留空為整部法規。
+  string article_number = 3;
+}
+
+message ListInvalidationsResponse {
+  repeated Invalidation invalidations = 1;
+}
+
+message Invalidation {
+  // 裁判字號，例如 "釋字第748號"、"111年憲判字第1號"。
+  string ruling_no = 1;
+
+  RulingKind ruling_kind = 2;
+
+  // 公布或宣判日（ISO 8601）。
+  string decided_on = 3;
+
+  // 憲法法庭網站上該裁判的位址；使用時須標示出處（憲法法庭）。
+  string source_url = 4;
+
+  // 解釋文（判決主文）中宣告失效的原文，供核對失效日。
+  string excerpt = 5;
+
+  // 失效的條文單元路徑，例如 "art_7/para_1"；條號是 "art_" 後的部分。
+  string path = 6;
+
+  // 失效日（ISO 8601）。
+  string invalid_from = 7;
+
+  // 裁判只宣告條文的一部分（「關於…部分」「於此範圍內」）。失效仍記在整個條文單元上
+  // （資料到項為止），範圍以 `excerpt` 核對；呼叫端不要據此斷定整條都不能適用。
+  bool partial = 8;
+}
+
+enum RulingKind {
+  RULING_KIND_UNSPECIFIED = 0;
+  RULING_KIND_INTERPRETATION = 1;
+  RULING_KIND_JUDGMENT = 2;
 }

@@ -45,6 +45,10 @@ class OntologyServiceStub:
     """在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。查詢是原始文字，
     由服務以建索引時的斷詞器自行斷詞：呼叫端若自行斷詞，會悄悄比對到較少的列。
     """
+    ListInvalidations: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.ListInvalidationsRequest, _ontology_pb2.ListInvalidationsResponse]
+    """`as_of` 當日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效）。法規不存在或
+    該日無施行版本的回應同 GetLaw。
+    """
 
 @_typing.type_check_only
 class OntologyServiceAsyncStub(OntologyServiceStub):
@@ -62,6 +66,10 @@ class OntologyServiceAsyncStub(OntologyServiceStub):
     SearchArticles: _aio.UnaryUnaryMultiCallable[_ontology_pb2.SearchArticlesRequest, _ontology_pb2.SearchArticlesResponse]  # type: ignore[assignment]
     """在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。查詢是原始文字，
     由服務以建索引時的斷詞器自行斷詞：呼叫端若自行斷詞，會悄悄比對到較少的列。
+    """
+    ListInvalidations: _aio.UnaryUnaryMultiCallable[_ontology_pb2.ListInvalidationsRequest, _ontology_pb2.ListInvalidationsResponse]  # type: ignore[assignment]
+    """`as_of` 當日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效）。法規不存在或
+    該日無施行版本的回應同 GetLaw。
     """
 
 class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
@@ -95,6 +103,16 @@ class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
     ) -> _typing.Union[_ontology_pb2.SearchArticlesResponse, _abc.Awaitable[_ontology_pb2.SearchArticlesResponse]]:
         """在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。查詢是原始文字，
         由服務以建索引時的斷詞器自行斷詞：呼叫端若自行斷詞，會悄悄比對到較少的列。
+        """
+
+    @_abc_1.abstractmethod
+    def ListInvalidations(
+        self,
+        request: _ontology_pb2.ListInvalidationsRequest,
+        context: _ServicerContext,
+    ) -> _typing.Union[_ontology_pb2.ListInvalidationsResponse, _abc.Awaitable[_ontology_pb2.ListInvalidationsResponse]]:
+        """`as_of` 當日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效）。法規不存在或
+        該日無施行版本的回應同 GetLaw。
         """
 
 def add_OntologyServiceServicer_to_server(servicer: OntologyServiceServicer, server: _typing.Union[_grpc.Server, _aio.Server]) -> None: ...

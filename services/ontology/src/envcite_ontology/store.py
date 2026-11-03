@@ -45,6 +45,19 @@ class ArticleRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class InvalidationRecord:
+    ruling_no: str
+    #: `corpus.ruling_kind` 的值：interpretation 或 judgment
+    ruling_kind: str
+    decided_on: str
+    source_url: str
+    excerpt: str
+    path: str
+    invalid_from: str
+    partial: bool
+
+
+@dataclass(frozen=True, slots=True)
 class SearchHit:
     iri: str
     law_id: str
@@ -144,6 +157,42 @@ class OntologyStore:
                 {"resource": resource_id, "language": LANGUAGE, "on": _date(as_of)},
             )
             return [ArticleRecord(iri=iri, number=number) for iri, number in cur.fetchall()]
+
+    def list_invalidations(
+        self, law_id: str, *, as_of: str = "", article_number: str = ""
+    ) -> list[InvalidationRecord] | None:
+        """`as_of` 當日因違憲而失效的條文單元；法規或版本不存在為 None，沒有失效為 []。
+
+        `article_number` 非空時只看該條（含其下各項）。
+        """
+        found = self._resolve(law_id, as_of)
+        if found is None:
+            return None
+        resource_id, _ = found
+        with self._pool.connection() as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT i.ruling_no, r.ruling_kind::text, r.decided_on, r.source_url, r.excerpt,"
+                "       i.path, i.invalid_from, x.partial"
+                "  FROM corpus.invalidations_at(%(resource)s, %(language)s, %(on)s::date) AS i"
+                "  JOIN corpus.constitutional_ruling AS r ON r.id = i.ruling_id"
+                "  JOIN corpus.ruling_invalidation AS x"
+                "    ON x.ruling_id = i.ruling_id AND x.provision_id = i.provision_id"
+                " WHERE %(article)s = '' OR i.path = 'art_' || %(article)s"
+                "       OR starts_with(i.path, 'art_' || %(article)s || '/')"
+                " ORDER BY r.decided_on, i.ruling_id, i.provision_id",
+                {
+                    "resource": resource_id,
+                    "language": LANGUAGE,
+                    "on": _date(as_of),
+                    "article": article_number.strip(),
+                },
+            )
+            return [
+                InvalidationRecord(
+                    no, kind, decided.isoformat(), url, excerpt, path, since.isoformat(), partial
+                )
+                for no, kind, decided, url, excerpt, path, since, partial in cur.fetchall()
+            ]
 
     def law_exists(self, law_id: str) -> bool:
         """法規在語料裡有沒有，不論哪一天。區分「查無此法」與「該日無版本」。"""

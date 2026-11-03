@@ -64,6 +64,7 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
         # 標註隨單元連鎖刪除；推導活動與詞彙不隨之而去，測試之間要自己清（概念先於方案）。
         c.execute("DELETE FROM guidance.document")  # 公文不隨法規連鎖刪除，且指向推導活動
         c.execute("DELETE FROM corpus.constitutional_ruling")  # 裁判不隨法規連鎖刪除
+        c.execute("DELETE FROM corpus.ruling_scan")
         c.execute("DELETE FROM annotation.derivation")
         c.execute("DELETE FROM vocab.concept")
         c.execute("DELETE FROM vocab.concept_scheme")

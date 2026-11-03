@@ -7,6 +7,7 @@ from collections import abc as _abc
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 import builtins as _builtins
 import sys
 import typing as _typing
@@ -17,6 +18,23 @@ else:
     from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
 DESCRIPTOR: _descriptor.FileDescriptor
+
+class _RulingKind:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _RulingKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_RulingKind.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    RULING_KIND_UNSPECIFIED: _RulingKind.ValueType  # 0
+    RULING_KIND_INTERPRETATION: _RulingKind.ValueType  # 1
+    RULING_KIND_JUDGMENT: _RulingKind.ValueType  # 2
+
+class RulingKind(_RulingKind, metaclass=_RulingKindEnumTypeWrapper): ...
+
+RULING_KIND_UNSPECIFIED: RulingKind.ValueType  # 0
+RULING_KIND_INTERPRETATION: RulingKind.ValueType  # 1
+RULING_KIND_JUDGMENT: RulingKind.ValueType  # 2
+Global___RulingKind: _TypeAlias = RulingKind  # noqa: Y015
 
 @_typing.final
 class Law(_message.Message):
@@ -259,3 +277,101 @@ class ArticleHit(_message.Message):
     def WhichOneof(self, oneof_group: _WhichOneofArgType__semantic_similarity) -> _WhichOneofReturnType__semantic_similarity | None: ...
 
 Global___ArticleHit: _TypeAlias = ArticleHit  # noqa: Y015
+
+@_typing.final
+class ListInvalidationsRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    LAW_ID_FIELD_NUMBER: _builtins.int
+    AS_OF_FIELD_NUMBER: _builtins.int
+    ARTICLE_NUMBER_FIELD_NUMBER: _builtins.int
+    law_id: _builtins.str
+    as_of: _builtins.str
+    """見 GetLawRequest.as_of。失效依這一天解析：失效日在這一天之後的裁判不列入；
+    裁判之後修正的新文字不受影響，所以只列裁判作成時已在施行、且 `as_of` 當日仍是該文字的單元。
+    """
+    article_number: _builtins.str
+    """只看某一條（條號依原文書寫，例如 "5-1"）；留空為整部法規。"""
+    def __init__(
+        self,
+        *,
+        law_id: _builtins.str = ...,
+        as_of: _builtins.str = ...,
+        article_number: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["article_number", b"article_number", "as_of", b"as_of", "law_id", b"law_id"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ListInvalidationsRequest: _TypeAlias = ListInvalidationsRequest  # noqa: Y015
+
+@_typing.final
+class ListInvalidationsResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    INVALIDATIONS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def invalidations(self) -> _containers.RepeatedCompositeFieldContainer[Global___Invalidation]: ...
+    def __init__(
+        self,
+        *,
+        invalidations: _abc.Iterable[Global___Invalidation] | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["invalidations", b"invalidations"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ListInvalidationsResponse: _TypeAlias = ListInvalidationsResponse  # noqa: Y015
+
+@_typing.final
+class Invalidation(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    RULING_NO_FIELD_NUMBER: _builtins.int
+    RULING_KIND_FIELD_NUMBER: _builtins.int
+    DECIDED_ON_FIELD_NUMBER: _builtins.int
+    SOURCE_URL_FIELD_NUMBER: _builtins.int
+    EXCERPT_FIELD_NUMBER: _builtins.int
+    PATH_FIELD_NUMBER: _builtins.int
+    INVALID_FROM_FIELD_NUMBER: _builtins.int
+    PARTIAL_FIELD_NUMBER: _builtins.int
+    ruling_no: _builtins.str
+    """裁判字號，例如 "釋字第748號"、"111年憲判字第1號"。"""
+    ruling_kind: Global___RulingKind.ValueType
+    decided_on: _builtins.str
+    """公布或宣判日（ISO 8601）。"""
+    source_url: _builtins.str
+    """憲法法庭網站上該裁判的位址；使用時須標示出處（憲法法庭）。"""
+    excerpt: _builtins.str
+    """解釋文（判決主文）中宣告失效的原文，供核對失效日。"""
+    path: _builtins.str
+    """失效的條文單元路徑，例如 "art_7/para_1"；條號是 "art_" 後的部分。"""
+    invalid_from: _builtins.str
+    """失效日（ISO 8601）。"""
+    partial: _builtins.bool
+    """裁判只宣告條文的一部分（「關於…部分」「於此範圍內」）。失效仍記在整個條文單元上
+    （資料到項為止），範圍以 `excerpt` 核對；呼叫端不要據此斷定整條都不能適用。
+    """
+    def __init__(
+        self,
+        *,
+        ruling_no: _builtins.str = ...,
+        ruling_kind: Global___RulingKind.ValueType = ...,
+        decided_on: _builtins.str = ...,
+        source_url: _builtins.str = ...,
+        excerpt: _builtins.str = ...,
+        path: _builtins.str = ...,
+        invalid_from: _builtins.str = ...,
+        partial: _builtins.bool = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["decided_on", b"decided_on", "excerpt", b"excerpt", "invalid_from", b"invalid_from", "partial", b"partial", "path", b"path", "ruling_kind", b"ruling_kind", "ruling_no", b"ruling_no", "source_url", b"source_url"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___Invalidation: _TypeAlias = Invalidation  # noqa: Y015

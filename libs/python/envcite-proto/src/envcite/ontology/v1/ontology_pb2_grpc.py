@@ -53,6 +53,11 @@ class OntologyServiceStub:
                 request_serializer=envcite_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesRequest.SerializeToString,
                 response_deserializer=envcite_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesResponse.FromString,
                 _registered_method=True)
+        self.ListInvalidations = channel.unary_unary(
+                '/envcite.ontology.v1.OntologyService/ListInvalidations',
+                request_serializer=envcite_dot_ontology_dot_v1_dot_ontology__pb2.ListInvalidationsRequest.SerializeToString,
+                response_deserializer=envcite_dot_ontology_dot_v1_dot_ontology__pb2.ListInvalidationsResponse.FromString,
+                _registered_method=True)
 
 
 class OntologyServiceServicer:
@@ -84,6 +89,14 @@ class OntologyServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListInvalidations(self, request, context):
+        """`as_of` 當日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效）。法規不存在或
+        該日無施行版本的回應同 GetLaw。
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OntologyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -101,6 +114,11 @@ def add_OntologyServiceServicer_to_server(servicer, server):
                     servicer.SearchArticles,
                     request_deserializer=envcite_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesRequest.FromString,
                     response_serializer=envcite_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesResponse.SerializeToString,
+            ),
+            'ListInvalidations': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListInvalidations,
+                    request_deserializer=envcite_dot_ontology_dot_v1_dot_ontology__pb2.ListInvalidationsRequest.FromString,
+                    response_serializer=envcite_dot_ontology_dot_v1_dot_ontology__pb2.ListInvalidationsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -188,6 +206,33 @@ class OntologyService:
             '/envcite.ontology.v1.OntologyService/SearchArticles',
             envcite_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesRequest.SerializeToString,
             envcite_dot_ontology_dot_v1_dot_ontology__pb2.SearchArticlesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListInvalidations(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/envcite.ontology.v1.OntologyService/ListInvalidations',
+            envcite_dot_ontology_dot_v1_dot_ontology__pb2.ListInvalidationsRequest.SerializeToString,
+            envcite_dot_ontology_dot_v1_dot_ontology__pb2.ListInvalidationsResponse.FromString,
             options,
             channel_credentials,
             insecure,

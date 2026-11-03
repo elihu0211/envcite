@@ -2,11 +2,13 @@ import os
 import signal
 
 import grpc
+import psycopg
 import pytest
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 
 from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
 from envcite_grpc import stop_on_sigterm
+from envcite_ontology.ruling import load
 from envcite_ontology.server import build_server
 from envcite_ontology.store import OntologyStore
 
@@ -34,6 +36,73 @@ def test_unknown_law_is_not_found(stub: ontology_pb2_grpc.OntologyServiceStub) -
     with pytest.raises(grpc.RpcError) as error:
         stub.GetLaw(ontology_pb2.GetLawRequest(id="Z9999999"), metadata=call_metadata())
 
+    assert error.value.code() == grpc.StatusCode.NOT_FOUND
+
+
+def _ruling_on_air_article_1(conn: psycopg.Connection[tuple[object, ...]]) -> None:
+    load(
+        conn,
+        {
+            "rulings": [
+                {
+                    "ruling_no": "釋字第1號",
+                    "kind": "interpretation",
+                    "decided_on": "2019-01-01",
+                    "source_url": "https://cons.judicial.gov.tw/docdata.aspx?fid=100&id=1",
+                    "excerpt": "空氣污染防制法第1條違憲，至遲於屆滿一年時失其效力。",
+                    "invalidates": [
+                        {
+                            "law": "O0020001",
+                            "path": "art_1",
+                            "invalid_from": "2020-01-01",
+                            "partial": True,
+                        }
+                    ],
+                }
+            ]
+        },
+    )
+
+
+def test_list_invalidations_answers_by_the_date_asked(
+    stub: ontology_pb2_grpc.OntologyServiceStub, conn: psycopg.Connection[tuple[object, ...]]
+) -> None:
+    _ruling_on_air_article_1(conn)
+
+    def ask(as_of: str, article: str = "") -> ontology_pb2.ListInvalidationsResponse:
+        return stub.ListInvalidations(
+            ontology_pb2.ListInvalidationsRequest(
+                law_id="O0020001", as_of=as_of, article_number=article
+            ),
+            metadata=call_metadata(),
+        )
+
+    assert list(ask("2019-12-31").invalidations) == []
+    (found,) = ask("2020-01-01").invalidations
+    assert (found.ruling_no, found.path, found.invalid_from, found.partial) == (
+        "釋字第1號",
+        "art_1",
+        "2020-01-01",
+        True,
+    )
+    assert found.ruling_kind == ontology_pb2.RULING_KIND_INTERPRETATION
+    assert found.source_url.startswith("https://cons.judicial.gov.tw/")
+    assert "失其效力" in found.excerpt
+    assert len(ask("2020-01-01", article="1").invalidations) == 1
+    assert list(ask("2020-01-01", article="100").invalidations) == []
+
+
+def test_list_invalidations_without_a_ruling_is_empty_and_unknown_law_is_not_found(
+    stub: ontology_pb2_grpc.OntologyServiceStub,
+) -> None:
+    empty = stub.ListInvalidations(
+        ontology_pb2.ListInvalidationsRequest(law_id="O0020001"), metadata=call_metadata()
+    )
+    assert list(empty.invalidations) == []
+    with pytest.raises(grpc.RpcError) as error:
+        stub.ListInvalidations(
+            ontology_pb2.ListInvalidationsRequest(law_id="Z9999999"), metadata=call_metadata()
+        )
     assert error.value.code() == grpc.StatusCode.NOT_FOUND
 
 

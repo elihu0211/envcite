@@ -39,11 +39,17 @@ test = ["tests/test_incremental.py::test_an_amendment_adds_a_version_and_closes_
 
 [[question]]
 id = "A5"
-status = "partial"
-db = ["corpus.lifecycle_event", "corpus.constitutional_ruling", "corpus.ruling_invalidation", "corpus.invalidations_at"]
+status = "answerable"
+db = ["corpus.lifecycle_event", "corpus.constitutional_ruling", "corpus.ruling_invalidation", "corpus.ruling_scan", "corpus.invalidations_at"]
+rpc = ["OntologyService.ListInvalidations"]
+field = ["Invalidation.partial", "Invalidation.excerpt"]
 test = [
   "tests/test_incremental.py::test_a_repealed_law_is_no_longer_in_force_even_when_its_commencement_is_unknown",
   "tests/test_ruling.py::test_a_ruling_invalidates_from_its_date_and_not_before",
+  "tests/test_ruling_sync.py::test_fetching_loads_the_ruling_and_its_invalidation",
+  "tests/test_ruling_sync.py::test_fetching_again_changes_nothing_and_does_not_fetch",
+  "tests/test_ruling_sync.py::test_ambiguous_wordings_are_not_guessed",
+  "tests/test_grpc.py::test_list_invalidations_answers_by_the_date_asked",
 ]
 
 [[question]]

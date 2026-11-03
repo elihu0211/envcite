@@ -10,9 +10,13 @@
        {"ruling_no": "<釋字第N號 或 N年憲判字第M號>", "kind": "interpretation | judgment",
         "decided_on": "<公布或宣判日>", "source_url": "https://cons.judicial.gov.tw/…",
         "excerpt": "<解釋文／主文中宣告失效的原文>",
-        "invalidates": [{"law": "<pcode>", "path": "art_7/para_1", "invalid_from": "<失效日>"}]}]}
+        "invalidates": [{"law": "<pcode>", "path": "art_7/para_1", "invalid_from": "<失效日>",
+                         "partial": false}]}]}
 
-條文單元必須在語料裡；一個條文單元對同一則裁判只記一次。
+條文單元必須在語料裡；一個條文單元對同一則裁判只記一次。`partial` 可省略（預設否）。
+
+兩個入口：`envcite-ruling load <檔>` 載入上述文件（人讀原文填失效日）；`envcite-ruling fetch`
+自憲法法庭網站取得裁判並由規則提出失效（`ruling_sync`），兩者可並存：抽取流程只刪改自己寫的列。
 """
 
 from __future__ import annotations
@@ -37,6 +41,7 @@ log = logging.getLogger(__name__)
 Conn = psycopg.Connection[tuple[object, ...]]
 
 EXIT_INVALID = 2
+EXIT_TRANSIENT = 1
 
 
 class RulingError(AnnotationError):
@@ -90,10 +95,15 @@ def _rulings(conn: Conn, doc: Mapping[str, Any]) -> LoadedRulings:
             provision_id = _provision(conn, i["law"], i["path"])
             invalidations += conn.execute(
                 "INSERT INTO corpus.ruling_invalidation"
-                " (ruling_id, resource_id, provision_id, invalid_from)"
-                " SELECT %s, resource_id, id, %s FROM corpus.provision WHERE id = %s"
+                " (ruling_id, resource_id, provision_id, invalid_from, partial)"
+                " SELECT %s, resource_id, id, %s, %s FROM corpus.provision WHERE id = %s"
                 " ON CONFLICT (ruling_id, provision_id) DO NOTHING",
-                (ruling_id, date.fromisoformat(str(i["invalid_from"])), provision_id),
+                (
+                    ruling_id,
+                    date.fromisoformat(str(i["invalid_from"])),
+                    bool(i.get("partial", False)),
+                    provision_id,
+                ),
             ).rowcount
     return LoadedRulings(count, repeated, invalidations)
 
@@ -123,14 +133,33 @@ def _ruling(conn: Conn, r: Mapping[str, Any]) -> tuple[int, int]:
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="envcite-ruling")
-    parser.add_argument("file", type=Path, help="違憲失效裁判文件（JSON）")
+    commands = parser.add_subparsers(dest="command", required=True)
+    load_cmd = commands.add_parser("load", help="載入違憲失效裁判文件（JSON）")
+    load_cmd.add_argument("file", type=Path)
+    fetch_cmd = commands.add_parser("fetch", help="自憲法法庭網站取得裁判並提出失效")
+    fetch_cmd.add_argument(
+        "--rescan", action="store_true", help="已掃描過的頁面也重抓（網站內容有疑義時）"
+    )
     args = parser.parse_args()
 
     settings = load_settings(DatabaseSettings)
     try:
-        doc = json.loads(args.file.read_text(encoding="utf-8"))
         with psycopg.connect(settings.ontology_dsn) as conn:
-            load(conn, doc)
+            if args.command == "load":
+                load(conn, json.loads(args.file.read_text(encoding="utf-8")))
+            else:
+                raise SystemExit(_fetch(conn, rescan=args.rescan))
     except (RulingError, json.JSONDecodeError) as e:
         log.error("ruling rejected: %s", e)
         raise SystemExit(EXIT_INVALID) from e
+
+
+def _fetch(conn: Conn, *, rescan: bool) -> int:
+    from envcite_ontology import ruling_sync
+
+    try:
+        result = ruling_sync.sync(conn, rescan=rescan)
+    except OSError as e:
+        log.error("ruling fetch failed: %s", e)
+        return EXIT_TRANSIENT
+    return EXIT_INVALID if result.unreadable else 0

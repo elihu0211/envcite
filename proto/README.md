@@ -110,6 +110,8 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 
 `SearchArticles` 是混合檢索，順序由字面臂與語意臂融合決定；`lexical_score`、`semantic_similarity` 只在同一次查詢之內可比較。
 
+`ListInvalidations` 回某日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效），`as_of` 語意同其他 rpc，法規不存在或該日無版本的錯誤同 `GetLaw`。回應逐筆附裁判字號、出處網址與解釋文原文；`partial` 為真時裁判只宣告條文的一部分，範圍以原文為準。**沒有列出不等於沒有失效**：失效條文由規則自解釋文提出，寫法含糊的不提（見 ontology README〈違憲失效〉），顯示這些資料須標示出處（憲法法庭）。
+
 - `question` 傳使用者原句，不要先改寫；`SearchArticles` 的 `query` 同樣傳原文，斷詞由服務做。
 - 回應的 `outcome` 恰有一個：`evidence`（有筆數上限的引用，依相關程度排序）或 `refused`（拒答）。拒答是結果，不是錯誤：呈現給使用者，不重試、不呼叫模型。
 - 交給模型時，證據以代號（`L1`…）開頭，限定模型只能以 `[L1]` 引用。代號的字母是來源本體的（法規本體 `law` 為 `L`），每筆 `Citation.ontology` 標明出處；每個本體各領一個字母，序號在整份證據內連續。
