@@ -55,7 +55,7 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", stream=sys.stdout)
 
     pcodes = sorted(e["pcode"] for e in load_scope(args.scope)["laws"])
-    embedder = embedding.from_settings(load(ModelsSettings), timeout=120.0, max_retries=3)
+    embedder = embedding.from_settings(load(ModelsSettings), timeout=120.0)
     if embedder is None:
         raise SystemExit("沒有設定嵌入端點（ONTOLOGY_MODELS 的 [embedding]）")
     started = time.monotonic()

@@ -274,7 +274,7 @@ def main() -> None:
     items = [
         json.loads(line) for line in args.dataset.read_text(encoding="utf-8").splitlines() if line
     ]
-    embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0, max_retries=3)
+    embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0)
     with OntologyStore.from_dsn(db.ontology_dsn) as store:
         segmenter = Segmenter(store.lexicon())
         lexical = search_all(store, segmenter, items, None, k=args.k, on=on.isoformat())

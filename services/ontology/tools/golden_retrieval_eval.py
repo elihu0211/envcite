@@ -518,7 +518,7 @@ def main() -> None:
     raw = args.golden.read_bytes()
     items = yaml.safe_load(raw)["items"]
     db = load(DatabaseSettings)
-    embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0, max_retries=3)
+    embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0)
     on = date.today().isoformat()
     scope_doc = load_scope(args.scope) if args.scope else None
     scope = frozenset(e["pcode"] for e in scope_doc["laws"]) if scope_doc else None
