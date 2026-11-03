@@ -19,13 +19,14 @@ owns: [config-naming, secret-sources]
 
 ## 機密的來源
 
-設定檔不放機密值，只放金鑰的**名稱**，欄位一律叫 `api_key`：
+設定檔不放機密值，也不寫金鑰的名稱：`models.toml` 的端點表只有 `base_url`，金鑰名由端點名推導，**`ENVCITE_` ＋ 端點名大寫 ＋ `_API_KEY`**：
 
 ```toml
-[endpoint.hosted]
+[endpoint.llm]                       # 金鑰名：ENVCITE_LLM_API_KEY
 base_url = "https://…/v1"
-api_key = "ENVCITE_ONTOLOGY_HOSTED_API_KEY"
 ```
+
+端點名限小寫字母開頭、其後小寫字母、數字與底線（`[a-z][a-z0-9_]*`），不收連字號與大寫，才能轉成合法且不重名的環境變數名；不合法則載入失敗。每個端點都要有金鑰，缺則載入失敗。Anthropic 的 `provider = "anthropic"` 模型不經端點，金鑰是標準的 `ANTHROPIC_API_KEY`。
 
 名稱依序從兩處解析，取第一個非空者；兩處都沒有則載入失敗，訊息列出名稱與找過的位置（不含值）：
 
@@ -37,8 +38,8 @@ api_key = "ENVCITE_ONTOLOGY_HOSTED_API_KEY"
 存入鑰匙圈（值由終端機提示輸入，不經命令列）：
 
 ```bash
-security add-generic-password -s ENVCITE_ONTOLOGY_HOSTED_API_KEY -a "$USER" -w      # macOS
-secret-tool store --label=ENVCITE_ONTOLOGY_HOSTED_API_KEY service ENVCITE_ONTOLOGY_HOSTED_API_KEY   # Linux
+security add-generic-password -s ENVCITE_LLM_API_KEY -a "$USER" -w      # macOS
+secret-tool store --label=ENVCITE_LLM_API_KEY service ENVCITE_LLM_API_KEY   # Linux
 ```
 
 .NET 服務只經環境變數取機密，不讀鑰匙圈。其設定來源只認 `ENVCITE_` 前綴的環境變數（`EnvCite.ServiceDefaults` 的 `AddServiceEnvironment`，取代預設不帶前綴的來源）；`OTEL_*` 以原名保留給 OpenTelemetry。

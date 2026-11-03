@@ -1,6 +1,6 @@
 """End to end: how many questions survive retrieval → floor → model → citation check.
 
-    ENVCITE_ONTOLOGY_DSN=… ENVCITE_ONTOLOGY_HOSTED_API_KEY=… \
+    ENVCITE_ONTOLOGY_DSN=… ENVCITE_LLM_API_KEY=… \
         uv run python tools/grounding_check_eval.py <golden.yaml> --consult localhost:<port> \
         --models models.toml --model mistral --out eval/grounding-check-<date>
 
@@ -53,7 +53,7 @@ from golden_retrieval_eval import NEGATIVE, git, load_corpus, resolve
 from envcite.consult.v2 import consult_pb2, consult_pb2_grpc
 from envcite_ontology.endpoint import json_headers
 from envcite_ontology.settings import DatabaseSettings, load
-from envcite_ontology.verification.config import ConfigError, resolve_secret
+from envcite_ontology.verification.config import ConfigError, resolve_secret, secret_name
 
 # 與 platform 的 GroundedAnswerer 逐字相同（改了那邊要同步這裡）。
 INSUFFICIENT = "證據不足"
@@ -115,10 +115,11 @@ class Chat:
     def __init__(self, models: Path, name: str, max_calls: int) -> None:
         cfg = tomllib.loads(models.read_text(encoding="utf-8"))
         model = cfg["model"][name]
-        endpoint = cfg["endpoint"][model["endpoint"]]
+        endpoint_name = model["endpoint"]
+        endpoint = cfg["endpoint"][endpoint_name]
         self.url = endpoint["base_url"].rstrip("/") + "/chat/completions"
         try:
-            self.key = resolve_secret(endpoint["api_key"])
+            self.key = resolve_secret(secret_name(endpoint_name))
         except ConfigError as e:
             raise SystemExit(str(e)) from None
         self.model_id: str = model["name"]

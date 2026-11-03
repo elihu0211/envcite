@@ -2,26 +2,25 @@
 #
 # family 由人宣告，獨立性規則依它判定：驗證者不得與抽取者同一家族，評審團至少要兩個不同家族。
 
-# 一個 OpenAI 相容的端點。api_key 是金鑰的名稱，不是金鑰本體：依序取同名環境變數、
-# 作業系統鑰匙圈同名 service（見 CONFIGURATION.md），所以各環境寫法相同。
-[endpoint.hosted]
+# 一個 OpenAI 相容的端點。金鑰名由端點名推導（這裡是 ENVCITE_LLM_API_KEY）：依序取同名環境變數、
+# 作業系統鑰匙圈同名 service（見 CONFIGURATION.md），所以各環境寫法相同。同時服務對話與嵌入。
+[endpoint.llm]
 base_url = "https://api.ithu.tw/v1"
-api_key = "ENVCITE_ONTOLOGY_HOSTED_API_KEY"
 
 # name 原樣送給端點。選用：max_tokens（回答長度上限）、max_retries（暫時性失敗的重試次數，0 為不重試）。
 # 推理模型的思考計入輸出長度，max_tokens 要留足。
 [model.mistral]
-endpoint = "hosted"
+endpoint = "llm"
 name = "mistral-small-4"
 family = "mistral"
 
 [model.muse]
-endpoint = "hosted"
+endpoint = "llm"
 name = "muse-spark-open"
 family = "meta"
 
 [model.nemotron]
-endpoint = "hosted"
+endpoint = "llm"
 name = "nemotron-3.5-super-vl"
 family = "nvidia"
 max_tokens = 16384
@@ -29,7 +28,7 @@ max_tokens = 16384
 # 語意檢索臂的嵌入模型（envcite-ontology、envcite-sync 經 ENVCITE_ONTOLOGY_MODELS 讀這一段）。
 # 沿用上面的端點；沒有這一段時只用字面臂。換維度不是 1024 的模型要配一支遷移。
 [embedding]
-endpoint = "hosted"
+endpoint = "llm"
 name = "bge-m3-embedding"
 
 # Anthropic 的模型不經端點，金鑰取自 ANTHROPIC_API_KEY（需要 `uv sync --extra llm`）。

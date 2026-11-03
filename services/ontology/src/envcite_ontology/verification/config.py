@@ -2,8 +2,8 @@
 
 - 角色明寫：抽取者、往返重抽者、獨立測試設計者、評審團各指名模型，不靠驗證者順序隱含。
 - 家族由人宣告，不從模型名推測：託管端點的名稱可能是別名，獨立性規則依家族判定。
-- 設定檔只寫金鑰的名稱（`api_key = "<名稱>"`），金鑰值不進設定檔；名稱依序從同名環境變數、
-  作業系統鑰匙圈同名 service 解析（`resolve_secret`）。
+- 設定檔不寫金鑰與金鑰名：名稱由端點名推導（`secret_name`），即 `ENVCITE_<端點名大寫>_API_KEY`，
+  依序從同名環境變數、作業系統鑰匙圈同名 service 解析（`resolve_secret`）。
 - 語意檢索的嵌入模型也在這裡宣告（`[embedding]`），沿用同一組端點；伺服器與同步排程只讀這一段，
   不需要標註管線的角色（`load_embedder`）。
 
@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Callable, Mapping
@@ -111,22 +112,33 @@ def resolve_secret(
     )
 
 
+# 端點名要能轉成環境變數名：小寫字母開頭，其後小寫字母、數字、底線。不收大寫與連字號，
+# 避免 `llm` 與 `LLM` 推導出同一把金鑰、或推導出 shell 不能設的名稱。
+_ENDPOINT_NAME = re.compile(r"[a-z][a-z0-9_]*")
+
+
+def secret_name(endpoint: str) -> str:
+    """端點的金鑰名稱：`ENVCITE_<端點名大寫>_API_KEY`。端點名不合法則 `ConfigError`。"""
+    if not _ENDPOINT_NAME.fullmatch(endpoint):
+        raise ConfigError(
+            f"endpoint.{endpoint}: the endpoint name must match [a-z][a-z0-9_]* "
+            "(it becomes part of the secret name ENVCITE_<NAME>_API_KEY)"
+        )
+    return f"ENVCITE_{endpoint.upper()}_API_KEY"
+
+
 def _endpoint(
     name: str,
     table: Mapping[str, Any],
     env: Mapping[str, str],
     keychain: Callable[[str], str | None],
-) -> tuple[str, str | None]:
+) -> tuple[str, str]:
     where = f"endpoint.{name}"
-    _only(table, {"base_url", "api_key"}, where)
+    secret = secret_name(name)
+    _only(table, {"base_url"}, where)
     base = table.get("base_url")
     if not isinstance(base, str) or not base:
         raise ConfigError(f"{where}: base_url is required")
-    secret = table.get("api_key")
-    if secret is None:
-        return base, None
-    if not isinstance(secret, str) or not secret:
-        raise ConfigError(f"{where}: api_key is the name of the secret")
     try:
         return base, resolve_secret(secret, env, keychain=keychain)
     except ConfigError as e:
@@ -136,7 +148,7 @@ def _endpoint(
 def _model(
     name: str,
     table: Mapping[str, Any],
-    endpoints: Mapping[str, tuple[str, str | None]],
+    endpoints: Mapping[str, tuple[str, str]],
 ) -> Model:
     where = f"model.{name}"
     _only(

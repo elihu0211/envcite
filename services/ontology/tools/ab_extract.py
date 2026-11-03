@@ -3,9 +3,9 @@
     python tools/ab_extract.py <dir with slices and models_A.toml, models_B.toml> <pcode>
 
 Arm B is models_A.toml plus `constrained_extraction = true` on the extractor. Needs a postgres
-(pgvector) on localhost:55432. The endpoint and its key variable are in models.toml. Counts go to
-<pcode>_extract_only.jsonl. Identical requests may be served from an endpoint cache, so a repeat is
-not necessarily an independent run.
+(pgvector) on localhost:55432. The endpoint is in models.toml and its key is derived from the
+endpoint name. Counts go to <pcode>_extract_only.jsonl. Identical requests may be served from an
+endpoint cache, so a repeat is not necessarily an independent run.
 """
 
 import json

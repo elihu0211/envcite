@@ -168,7 +168,7 @@ roundtrip = "a"
 independent_test = "a"
 panel = ["a"]
 """
-    models = parse(text, {})
+    models = parse(text, {"ENVCITE_E_API_KEY": "k"})
 
     with pytest.raises(ModelError):
         models.extractor.complete("問")

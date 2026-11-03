@@ -16,13 +16,14 @@ from envcite_ontology.verification.config import (
     parse,
     parse_embedder,
     resolve_secret,
+    secret_name,
 )
 from envcite_ontology.verification.run import SameModel, gates_from, main
 from tests.test_chat_adapter import Endpoint
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "models.toml"
-KEY = "ENVCITE_ONTOLOGY_HOSTED_API_KEY"
-ENV = {KEY: "secret-value"}
+KEY = "ENVCITE_LLM_API_KEY"
+ENV = {KEY: "secret-value", "ENVCITE_E_API_KEY": "secret-e"}
 
 
 def no_keychain(name: str) -> None:
@@ -100,7 +101,7 @@ def test_a_secret_never_appears_in_what_a_model_prints() -> None:
 def test_a_model_talks_to_its_declared_endpoint_with_its_declared_name() -> None:
     served = Endpoint()
     try:
-        models = parse(MINIMAL.replace("https://models.invalid/v1", served.url), {})
+        models = parse(MINIMAL.replace("https://models.invalid/v1", served.url), ENV)
 
         models.extractor.complete("問")
     finally:
@@ -137,7 +138,7 @@ independent_test = "b"
 panel = ["a", "b"]
 """
     try:
-        models = parse(text, {})
+        models = parse(text, {"ENVCITE_ONE_API_KEY": "k1", "ENVCITE_TWO_API_KEY": "k2"})
         models.extractor.complete("x")
         models.roundtrip.complete("y")
     finally:
@@ -164,11 +165,11 @@ panel = ["a", "b"]
             "unknown keys",
         ),
         (
-            ('base_url = "https://models.invalid/v1"', 'base_url = "http://x"\napi_key_env = "X"'),
+            ('base_url = "https://models.invalid/v1"', 'base_url = "http://x"\napi_key = "X"'),
             "unknown keys",
         ),
         (
-            ('base_url = "https://models.invalid/v1"', 'base_url = "http://x"\napi_key_file = "k"'),
+            ('base_url = "https://models.invalid/v1"', 'base_url = "http://x"\napi_key_env = "X"'),
             "unknown keys",
         ),
         (('name = "model-a"', 'name = "model-a"\ncolour = "red"'), "unknown keys"),
@@ -246,7 +247,7 @@ def test_the_embedder_needs_only_its_own_endpoint() -> None:
     """伺服器只拿得到嵌入端點的金鑰時，別的端點缺環境變數不影響它。"""
     text = (
         MINIMAL
-        + '\n[endpoint.other]\nbase_url = "http://other.invalid"\napi_key = "MISSING_KEY"\n'
+        + '\n[endpoint.other]\nbase_url = "http://other.invalid"\n'
         + '\n[embedding]\nendpoint = "e"\nname = "m3"\n'
     )
 
@@ -328,25 +329,43 @@ def test_a_missing_key_is_refused_naming_it_and_where_it_was_looked_for() -> Non
         load(EXAMPLE, {"OTHER": "not-this-one"}, keychain=no_keychain)
 
     message = str(raised.value)
-    assert KEY in message and "endpoint.hosted" in message
+    assert KEY in message and "endpoint.llm" in message
     assert "keychain" in message and "environment variable" in message
     assert "not-this-one" not in message
 
 
-def test_an_endpoint_without_api_key_needs_none() -> None:
-    models = parse(MINIMAL, {}, keychain=no_keychain)
+def test_the_secret_name_is_derived_from_the_endpoint_name() -> None:
+    assert secret_name("llm") == "ENVCITE_LLM_API_KEY"
+    assert secret_name("self_hosted2") == "ENVCITE_SELF_HOSTED2_API_KEY"
+    assert load(EXAMPLE, {KEY: "k"}, keychain=no_keychain).extractor._api_key == "k"  # type: ignore[attr-defined]
 
-    assert models.extractor._api_key is None  # type: ignore[attr-defined]
+
+@pytest.mark.parametrize("name", ["my-llm", "LLM", "1llm", "_llm", "a.b", "llm "])
+def test_an_endpoint_name_that_is_not_an_environment_variable_name_is_refused(name: str) -> None:
+    with pytest.raises(ConfigError, match="must match"):
+        secret_name(name)
+    text = MINIMAL.replace("[endpoint.e]", f'[endpoint."{name}"]').replace(
+        'endpoint = "e"', f'endpoint = "{name}"'
+    )
+    with pytest.raises(ConfigError, match="must match"):
+        parse(text, ENV, keychain=no_keychain)
 
 
-def test_api_key_must_be_a_name() -> None:
+def test_the_endpoint_never_names_its_key() -> None:
+    """api_key 欄位已移除：留著的舊設定檔報錯，訊息只列欄位名，不含值。"""
     text = MINIMAL.replace(
         'base_url = "https://models.invalid/v1"',
-        'base_url = "https://models.invalid/v1"\napi_key = 7',
+        'base_url = "https://models.invalid/v1"\napi_key = "TOP-SECRET-NAME"',
     )
 
-    with pytest.raises(ConfigError, match="api_key is the name"):
+    with pytest.raises(ConfigError, match=r"unknown keys \['api_key'\]") as raised:
         parse(text, ENV, keychain=no_keychain)
+    assert "TOP-SECRET-NAME" not in str(raised.value)
+
+
+def test_every_endpoint_needs_its_key() -> None:
+    with pytest.raises(ConfigError, match="ENVCITE_E_API_KEY"):
+        parse(MINIMAL, {}, keychain=no_keychain)
 
 
 class _Done:

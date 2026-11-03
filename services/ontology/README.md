@@ -48,7 +48,7 @@ uv run --env-file .env envcite-pipeline --pending --limit <N> --models models.to
 
 ### 模型配置（`models.toml`）
 
-端點、金鑰名稱、角色與嵌入模型只寫在 [`models.toml`](models.toml)。標註管線由 `--models` 指定，伺服器與同步由 `ENVCITE_ONTOLOGY_MODELS` 指向它。金鑰不寫進這個檔：端點的 `api_key` 只寫名稱，依序從同名環境變數、作業系統鑰匙圈解析，規則見 [`CONFIGURATION.md`](../../CONFIGURATION.md)。
+端點、角色與嵌入模型只寫在 [`models.toml`](models.toml)。標註管線由 `--models` 指定，伺服器與同步由 `ENVCITE_ONTOLOGY_MODELS` 指向它。金鑰不寫進這個檔：金鑰名由端點名推導（`[endpoint.llm]` 的金鑰是 `ENVCITE_LLM_API_KEY`），依序從同名環境變數、作業系統鑰匙圈解析，規則見 [`CONFIGURATION.md`](../../CONFIGURATION.md)。
 
 ```bash
 uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每個模型送探測問題，不連資料庫
