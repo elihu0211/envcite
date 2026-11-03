@@ -75,9 +75,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             server.Searches.Enqueue((request, context.Deadline));
             return request.Query switch
             {
-                AnswerableQuery => Respond(Hit(1, 0.9F), Hit(2, 0.4F)),
+                AnswerableQuery => Respond(Hit(1, 9F), Hit(2, 4.5F)),
                 MappedQuery => Respond(
-                    new ArticleHit { Iri = "a", LawTitle = "空氣污染防制法", Number = "5-1", Content = "…", LexicalScore = 0.4F, SemanticSimilarity = 0.85F },
+                    new ArticleHit { Iri = "a", LawTitle = "空氣污染防制法", Number = "5-1", Content = "…", LexicalScore = 4.5F, SemanticSimilarity = 0.85F },
                     new ArticleHit { Iri = "b", LawTitle = "空氣污染防制法", Number = "20", Content = "…", LexicalScore = 0.1F }),
                 IrrelevantQuery => Respond(Hit(1, 0.1F)),
                 InvalidQuery => throw new RpcException(

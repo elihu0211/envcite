@@ -43,15 +43,21 @@ internal static class Grounding
 {
     /// <summary>
     /// 低於此值的檢索資料，視為與問題無關。下界都是受模型制約的值，不是領域常數：只在產生它的評分方式下才可比較，
-    /// 評分方式一旦改變就必須重新量測分數分佈後重訂。
+    /// 評分方式一旦改變就必須重新量測分數分佈後重訂。字面分數是未正規化的 <c>ts_rank_cd</c>，隨語料大小而變，
+    /// 語料明顯增長後要重量。
+    /// 兩個下界取自離線風險—覆蓋掃描：要求可答問句至少 97% 通過，在其下讓最少的無答案問句通過
+    /// （<c>services/ontology/eval/answerability-floor-2026-11-02.md</c>）。
     /// </summary>
-    public const double RelevanceFloor = 0.30;
+    public const double RelevanceFloor = 4.0;
 
-    /// <summary>語意臂的餘弦相似度下界（由 golden-eval／calibration 推得，超過此值視為相關）。</summary>
-    public const double SemanticRelevanceFloor = 0.65;
+    /// <summary>語意臂的餘弦相似度下界。</summary>
+    public const double SemanticRelevanceFloor = 0.61;
 
-    /// <summary>至少有一個來源達到此強度，即表示答案建立在直接的依據上。</summary>
-    public const double HighConfidenceFloor = 0.50;
+    /// <summary>
+    /// 至少有一個來源達到此強度，即表示答案建立在直接的依據上。取下界的 1.5 倍：高信心要比「相關」更強，
+    /// 而兩者之間沒有獨立的量測準則可定，所以只保留與下界的固定比例。
+    /// </summary>
+    public const double HighConfidenceFloor = 6.0;
 
     /// <summary>語意臂達到此強度表示高度語意對齊。</summary>
     public const double HighConfidenceSemanticFloor = 0.75;

@@ -20,7 +20,7 @@ public sealed class GroundingTests
     [Fact]
     public void GroundAssignsCodesInRetrievalOrder()
     {
-        var grounding = Grounding.Ground([Law(10, 0.9), Law(2, 0.8)]);
+        var grounding = Grounding.Ground([Law(10, 9), Law(2, 8)]);
 
         Assert.Equal(["L1", "L2"], grounding.Select(c => c.Code));
         Assert.Equal(["空氣污染防制法 第 10 條", "空氣污染防制法 第 2 條"], grounding.Select(c => c.Label));
@@ -30,7 +30,7 @@ public sealed class GroundingTests
     [Fact]
     public void GroundDropsArticlesBelowTheRelevanceFloor()
     {
-        var grounding = Grounding.Ground([Law(1, 0.9), Law(2, 0.1)]);
+        var grounding = Grounding.Ground([Law(1, 9), Law(2, 0.1)]);
 
         Assert.Equal(["L1"], grounding.Select(c => c.Code));
     }
@@ -38,7 +38,7 @@ public sealed class GroundingTests
     [Fact]
     public void GroundCapsTheClosedSet()
     {
-        Article[] many = [.. Enumerable.Range(1, Grounding.MaxCitations + 4).Select(n => Law(n, 0.9))];
+        Article[] many = [.. Enumerable.Range(1, Grounding.MaxCitations + 4).Select(n => Law(n, 9))];
 
         Assert.Equal(Grounding.MaxCitations, Grounding.Ground(many).Count);
     }
@@ -46,7 +46,7 @@ public sealed class GroundingTests
     [Fact]
     public void GroundKeepsArticlesThatQualifyBySemanticSimilarityAlone()
     {
-        // 字面分數未達 0.30，但語意相似度達 0.80（>= 0.65）的條文保留；0.45 不夠。
+        // 字面分數未達 4，但語意相似度達 0.80（>= 0.61）的條文保留；0.45 不夠。
         var grounding = Grounding.Ground([Law(5, 0.05, semantic: 0.80), Law(6, 0.10, semantic: 0.45)]);
 
         Assert.Equal(Law(5, 0).Iri, Assert.Single(grounding).Iri);
@@ -64,9 +64,9 @@ public sealed class GroundingTests
     [Fact]
     public void ConfidenceFollowsTheStrongestGroundedSource()
     {
-        Article[] weak = [Law(1, 0.35)];
-        Article[] strong = [Law(1, 0.9)];
-        Article[] semantic = [Law(1, 0.35, semantic: 0.78)];
+        Article[] weak = [Law(1, 4.5)];
+        Article[] strong = [Law(1, 9)];
+        Article[] semantic = [Law(1, 4.5, semantic: 0.78)];
 
         Assert.Equal(Confidence.Low, Grounding.ConfidenceOf(Grounding.Ground(weak), weak));
         Assert.Equal(Confidence.High, Grounding.ConfidenceOf(Grounding.Ground(strong), strong));
@@ -76,7 +76,7 @@ public sealed class GroundingTests
     [Fact]
     public async Task ABlankQuestionIsRefusedBeforeRetrieval()
     {
-        var ontology = new FakeOntology(Law(1, 0.9));
+        var ontology = new FakeOntology(Law(1, 9));
 
         var outcome = await new GroundingPipeline(ontology).RunAsync("　 ", "", TestContext.Current.CancellationToken);
 
@@ -87,7 +87,7 @@ public sealed class GroundingTests
     [Fact]
     public async Task EvidenceIsGradedByItsOwnRetrieval()
     {
-        var ontology = new FakeOntology(Law(1, 0.35), Law(2, 0.1));
+        var ontology = new FakeOntology(Law(1, 4.5), Law(2, 0.1));
 
         var outcome = await new GroundingPipeline(ontology).RunAsync("問句", "2020-01-01", TestContext.Current.CancellationToken);
 

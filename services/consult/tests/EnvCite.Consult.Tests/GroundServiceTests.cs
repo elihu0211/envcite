@@ -34,7 +34,7 @@ public sealed class GroundServiceTests(ConsultFactory factory)
     {
         var response = await GroundAsync(new GroundRequest { Question = FakeOntologyServer.MappedQuery });
 
-        // 第一筆字面 0.4 過下界，語意 0.85 達高信心；第二筆兩臂都不夠。
+        // 第一筆字面 4.5 過下界，語意 0.85 達高信心；第二筆兩臂都不夠。
         var citation = Assert.Single(response.Evidence.Citations);
         Assert.Equal(("a", "空氣污染防制法 第 5 條之 1"), (citation.Iri, citation.Label));
         Assert.Equal(V2.Confidence.High, response.Evidence.Confidence);
