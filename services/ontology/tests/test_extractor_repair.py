@@ -18,7 +18,10 @@ from envcite_ontology.verification.extract import (
     completeness_issues,
     criminal_penalties,
     extract_unit,
+    fragment_issues,
+    fragments,
     sanction_issues,
+    uncovered_issues,
 )
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
@@ -394,3 +397,91 @@ def test_a_criminal_penalty_is_sent_back_and_dropped_when_it_stays(
     assert any("criminal penalty" in reason for reason in out.dropped)
     assert len(model.prompts) == 1 + MAX_REPAIRS
     assert "刑罰" in model.prompts[-1]
+
+
+def _duty(ident: str, quote: str) -> dict[str, Any]:
+    return {"id": ident, "kind": "prescriptive", "deontic": "obligation", "quote": quote}
+
+
+def test_a_duty_quoting_a_clause_without_its_modal_is_a_fragment() -> None:
+    text = "其有疏漏致污染水體者，應立即採取緊急應變措施，並於事故發生後三小時內，通知當地主管機關"
+    whole = _duty("s1", text)
+    clause = _duty("s2", "並於事故發生後三小時內，通知當地主管機關")
+
+    assert fragments([whole, clause], text) == {"s2": clause["quote"]}
+    assert "s2" in fragment_issues([clause], text)[0]
+
+
+def test_an_item_whose_modal_is_in_the_parent_clause_is_not_a_fragment() -> None:
+    item = _duty("s1", "在水體或其沿岸規定距離內棄置垃圾")
+
+    assert fragments([item], "二、在水體或其沿岸規定距離內棄置垃圾。") == {}
+
+
+def test_only_prescriptive_statements_are_checked_for_fragments() -> None:
+    penalty = {"id": "p1", "kind": "sanction", "quote": "處新臺幣一萬元以上罰鍰"}
+
+    assert fragments([penalty], "違反前條規定者，處新臺幣一萬元以上罰鍰") == {}
+
+
+def test_a_fragment_is_sent_back_and_dropped_when_it_stays(conn: Conn, tmp_path: Path) -> None:
+    text = "事業應採行防治措施，並保存紀錄"
+    doc: dict[str, Any] = {
+        "concepts": [{"code": "records_kept", "label": "紀錄已保存"}],
+        "statements": [
+            {
+                "id": "s1",
+                "quote": "並保存紀錄",
+                "kind": "prescriptive",
+                "deontic": "obligation",
+                "conditions": [{"role": "duty", "concept": "records_kept", "threshold": 1}],
+            }
+        ],
+    }
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles(text, "乙一")))
+    model = FakeModel(doc)
+
+    out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert out.loaded is None
+    assert any("without a modal" in reason for reason in out.dropped)
+    assert len(model.prompts) == 1 + MAX_REPAIRS
+    assert "規則 14" in model.prompts[-1]
+
+
+def _reported(quote: str, labels: dict[str, str], subject: str = "事業") -> list[str]:
+    roles = {"a": "scope", "b": "duty", "c": "duty"}
+    statement = {
+        **_duty("s1", quote),
+        "slots": {"subject": [{"literal": subject}]},
+        "conditions": [{"role": roles[code], "concept": code} for code in labels],
+    }
+    return uncovered_issues([statement], labels)
+
+
+def test_a_duty_that_leaves_out_the_deadline_and_the_addressee_is_sent_back() -> None:
+    quote = "其有疏漏致污染水體者，應立即採取緊急應變措施，並於事故發生後三小時內，通知當地主管機關"
+
+    issues = _reported(quote, {"a": "有疏漏致污染水體", "b": "緊急應變措施", "c": "通知義務"})
+
+    assert len(issues) == 1 and "duty" in issues[0]
+    assert "三小時內" in issues[0] and "當地主管機關" in issues[0]
+
+
+def test_a_duty_whose_conditions_cover_the_quote_is_complete() -> None:
+    quote = "其有疏漏致污染水體者，應立即採取緊急應變措施，並於事故發生後三小時內，通知當地主管機關"
+    labels = {
+        "a": "有疏漏致污染水體",
+        "b": "立即採取緊急應變措施",
+        "c": "於事故發生後三小時內通知當地主管機關",
+    }
+
+    assert _reported(quote, labels) == []
+
+
+def test_a_qualifier_of_the_subject_left_out_of_the_scope_is_sent_back() -> None:
+    quote = "經中央主管機關指定公告之飲用水設備，應符合國家標準"
+
+    issues = _reported(quote, {"a": "飲用水設備", "b": "符合國家標準"}, subject="飲用水設備")
+
+    assert len(issues) == 1 and "scope" in issues[0] and "指定公告" in issues[0]
