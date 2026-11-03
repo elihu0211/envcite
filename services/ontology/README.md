@@ -24,6 +24,7 @@ owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations, com
 | `envcite-sync <來源>` | 排程 | 取得、匯入、授權抽取、檢索投影，四步冪等 |
 | `envcite-acquire <來源>` | 一次性 | 只取得快照 |
 | `envcite-import <來源>` | 一次性 | 快照寫入語料；`--dry-run` 只解析與驗收 |
+| `envcite-history [sync\|acquire\|import]` | 排程 | 環境部主管法規的歷史版本：取得、回推、授權抽取、檢索投影；見〈歷史版本〉 |
 | `envcite-pipeline` | 排程 | 標註：抽取、驗證、接受 |
 | `envcite-annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
 | `envcite-guidance sync <來源>` | 排程 | 取得行政規則寫入 `guidance`（`gazette` 公報、`moenv` 環境部函釋）；見下節 |
@@ -86,6 +87,15 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 - **匯入問題**（`source.import_problem`，鍵是來源項目）：`law_unresolved`、`law_ambiguous`、`no_article`、`provision_unresolved`、`no_version_at_issue`、`ceased_without_date`、`ceased_before_issue`、`content_changed` 為 warning；`kind_ambiguous`（公報標題同時像裁量基準與解釋）、`incomplete`、`rejected` 為 error，該件不寫入。
 - **結束碼**沿用 jobkit（0、75、2、1）；隔離的工作項超過列舉數的 1% 時為 1。
 - **未做**：函釋的下架偵測（連續兩次全量走訪未出現）、公報以標題「廢止」停止前一規則的對應、公報行政規則的錨定。
+
+## 歷史版本
+
+全國法規資料庫的 API 只有現行版本；環境部主管的法律與命令，每次修正前的完整版本取自環境部主管法規查詢系統（只有網頁；網站資料開放宣告 CC BY 4.0，**須標示出處**，實作在 [`acquire/moenv_law.py`](src/envcite_ontology/acquire/moenv_law.py)）。其他主管機關的法規沒有這個來源，版本只從首次取得全國法規資料庫快照起累積。
+
+- **取得**：`envcite-history acquire` 走分類樹列出法律與命令，一部法規的歷史清單、現行頁與各歷史頁打包成一份快照（feed `moenv_law`，鍵是該系統的法規代碼）；已存的歷史頁不重抓，`--rescan` 全部重抓。
+- **匯入**：`envcite-history import` 以名稱、種類對到語料的法規，主管機關系統的現行版本日要與語料最新版本同日；由語料最早的官方資料庫版本往舊回推（[`ingest/backfill.py`](src/envcite_ontology/ingest/backfill.py)），寫成 `text_authority = competent_authority` 的版本與條文單元版本。沿革的每一次公布都要有同日的全文，缺一版（或條文只在 PDF、解析不出）就停在那裡，更早的不寫；效力上界的規則同增量匯入，相鄰兩版同一單元的區間首尾相接。須先跑過 `envcite-sync moj`。
+- **讀取**：不另立介面；`corpus.provisions_at` 與依日檢索照常逐條解析，歷史版本與官方資料庫版本同一條時間軸。
+- 結束碼 0／1（暫時性，含隔離超過列舉數的 1%）／2（資料不合預期、整批比例越線）／75（斷路器開啟）。問題記在 `source.import_problem`。
 
 ## 違憲失效
 

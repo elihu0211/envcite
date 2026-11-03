@@ -36,6 +36,7 @@ envcite-sync = "envcite_ontology.sync:main"
 envcite-annotate = "envcite_ontology.annotate:main"
 envcite-guidance = "envcite_ontology.guidance:main"
 envcite-ruling = "envcite_ontology.ruling:main"
+envcite-history = "envcite_ontology.history_sync:main"
 envcite-verify = "envcite_ontology.verification.cli:main"
 envcite-pipeline = "envcite_ontology.verification.run:main"
 

@@ -23,7 +23,10 @@ id = "A2"
 status = "answerable"
 db = ["corpus.provisions_at"]
 rpc = ["OntologyService.ListArticles"]
-test = ["tests/test_store.py::test_a_date_before_the_held_versions_is_a_corpus_gap"]
+test = [
+  "tests/test_store.py::test_a_date_before_the_held_versions_is_a_corpus_gap",
+  "tests/test_backfill.py::test_each_date_reads_the_text_then_in_force",
+]
 
 [[question]]
 id = "A3"

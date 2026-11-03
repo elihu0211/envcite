@@ -23,18 +23,14 @@ import hashlib
 import json
 import logging
 import os
-import ssl
 import time
 import unicodedata
-import urllib.error
-import urllib.request
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date
-from http.client import HTTPException
 from pathlib import Path
-from typing import Any, Protocol, cast
+from typing import Any, Protocol
 
 import psycopg
 
@@ -45,12 +41,12 @@ from envcite_jobkit import (
     Policy,
     RunStats,
     backoff_delay,
-    raise_for_status,
     run,
 )
 from envcite_ontology import guidance
 from envcite_ontology.acquire import gazette, moenv
 from envcite_ontology.acquire.engine import InvalidSnapshot
+from envcite_ontology.acquire.web import Http
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +66,6 @@ COVERAGE_TOLERANCE = 0.01
 MAX_PAGES = 200
 #: 連續幾頁沒有資料就判定葉分類走完（網站的總筆數不可信）
 EMPTY_PAGES = 3
-USER_AGENT = "envcite-ontology (+https://gitlab.com/thuaisse-lab/envcite)"
 PRODUCER = "envcite-guidance-sync"
 #: 改變寫入的公文內容或錨定規則時遞增
 RULE_VERSION = "1"
@@ -84,47 +79,6 @@ class Client(Protocol):
     def file(self, url: str, dest: Path) -> tuple[bytes, int]:
         """下載到 `dest`；回傳（SHA-256，位元組數）。"""
         ...
-
-
-class Http:
-    """循序、帶禮貌間隔與身分的 HTTP。失敗依 jobkit 分類：端點問題可重試，其餘隔離或致命。"""
-
-    def __init__(self, pause: float = PAUSE_SECONDS) -> None:
-        self._pause = pause
-        self._last = 0.0
-        # 兩站憑證都缺少 Subject Key Identifier（同全國法規資料庫），只清除這一個旗標
-        self._tls = ssl.create_default_context()
-        self._tls.verify_flags &= ~ssl.VERIFY_X509_STRICT
-
-    def text(self, url: str) -> str:
-        with self._open(url) as r:
-            return cast(bytes, r.read()).decode("utf-8-sig")
-
-    def file(self, url: str, dest: Path) -> tuple[bytes, int]:
-        h = hashlib.sha256()
-        size = 0
-        with self._open(url) as r, dest.open("wb") as f:
-            while chunk := r.read(1 << 20):
-                h.update(chunk)
-                f.write(chunk)
-                size += len(chunk)
-        if size == 0:
-            raise ItemError(f"{url}: empty response")
-        return h.digest(), size
-
-    def _open(self, url: str) -> Any:
-        wait = self._last + self._pause - time.monotonic()
-        if wait > 0:
-            time.sleep(wait)
-        self._last = time.monotonic()
-        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        try:
-            return urllib.request.urlopen(request, context=self._tls, timeout=60)
-        except urllib.error.HTTPError as e:
-            raise_for_status(e.code, f"{url}: {e}")
-            raise
-        except (urllib.error.URLError, TimeoutError, ConnectionError, HTTPException) as e:
-            raise EndpointError(f"{url}: {e}") from e
 
 
 @dataclass
@@ -170,7 +124,7 @@ def sync(
     sleep: Callable[[float], None] = time.sleep,
 ) -> Report:
     started = time.monotonic()
-    client = client or Http()
+    client = client or Http(PAUSE_SECONDS)
     report = Report(source)
     resolver = _Resolver(conn)
     job = _Job(conn, root, report, resolver)
