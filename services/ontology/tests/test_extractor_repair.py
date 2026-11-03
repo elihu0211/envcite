@@ -16,7 +16,9 @@ from envcite_ontology.verification.extract import (
     STATEMENTS_FORMAT,
     borrowed_issues,
     completeness_issues,
+    criminal_penalties,
     extract_unit,
+    sanction_issues,
 )
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
@@ -299,3 +301,96 @@ def test_a_duty_that_borrows_a_defined_term_is_sent_back_unless_it_is_a_value_co
     own = {**statement, "conditions": [{"role": "duty", "concept": "sludge_handled"}]}
     assert borrowed_issues([own], defined) == []
     assert borrowed_issues([statement], None) == []
+
+
+def _penalty(ident: str, quote: str, effect: str = "fine", **extra: Any) -> dict[str, Any]:
+    return {
+        "id": ident,
+        "kind": "sanction",
+        "quote": quote,
+        "sanction": {"effect": effect, **extra},
+    }
+
+
+def test_a_penalty_whose_quote_holds_another_effect_is_sent_back() -> None:
+    joined = _penalty(
+        "s1", "處新臺幣一萬元以上十萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰"
+    )
+
+    issues = sanction_issues([joined])
+
+    assert len(issues) == 1 and "s1" in issues[0]
+    assert "order" in issues[0] and "repeating" in issues[0]
+
+
+def test_penalties_that_each_quote_their_own_clause_are_complete() -> None:
+    split = [
+        _penalty("s1", "處新臺幣一萬元以上十萬元以下罰鍰"),
+        _penalty("s2", "通知限期補正", "order"),
+        _penalty("s3", "屆期仍未補正者，按次處罰", repeating=True),
+        _penalty("s4", "情節重大者，禁止供飲用", "restriction"),
+    ]
+
+    assert sanction_issues(split) == []
+
+
+def test_a_repeating_fine_may_quote_its_own_repeating_clause_but_not_the_order() -> None:
+    assert sanction_issues([_penalty("s1", "按日連續處罰", repeating=True)]) == []
+    assert sanction_issues([_penalty("s1", "按日連續處罰", repeating=False)]) != []
+
+
+def test_penalties_of_other_kinds_are_not_checked_for_split_effects() -> None:
+    other = {"id": "c1", "kind": "constitutive", "quote": "罰鍰並通知限期改善"}
+
+    assert sanction_issues([other]) == []
+
+
+def test_a_criminal_fine_is_not_an_administrative_fine() -> None:
+    own = _penalty("s1", "違反第三條規定者，處新臺幣六萬元以下罰金", amount_text="六萬元以下罰金")
+    item = _penalty("s2", "一、違反第五條第一項規定。", amount_text="新臺幣六萬元以下")
+    parent = "有下列情形之一者，處一年以下有期徒刑、拘役，得併科新臺幣六萬元以下罰金："
+
+    assert set(criminal_penalties([own], own["quote"], "")) == {"s1"}
+    assert set(criminal_penalties([item], item["quote"], parent)) == {"s2"}
+
+
+def test_an_administrative_fine_is_not_mistaken_for_a_criminal_one() -> None:
+    fine = _penalty("s1", "一、未依規定申報。", amount_text="新臺幣一萬元以上十萬元以下")
+    parent = "有下列情形之一者，處新臺幣一萬元以上十萬元以下罰鍰："
+    mixed = "處罰鍰；其情節重大者，處有期徒刑"
+
+    assert criminal_penalties([fine], fine["quote"], parent) == {}
+    assert criminal_penalties([fine], mixed, "") == {}
+
+
+def test_a_criminal_penalty_is_sent_back_and_dropped_when_it_stays(
+    conn: Conn, tmp_path: Path
+) -> None:
+    doc: dict[str, Any] = {
+        "concepts": [],
+        "statements": [
+            {
+                "id": "p1",
+                "quote": "處一年以下有期徒刑，得併科新臺幣六萬元以下罰金",
+                "kind": "sanction",
+                "sanction": {"effect": "fine", "amount_text": "新臺幣六萬元以下罰金"},
+            }
+        ],
+    }
+    _first(
+        conn,
+        tmp_path,
+        _law_v1(
+            LawArticles=_articles(
+                "違反本法者，處一年以下有期徒刑，得併科新臺幣六萬元以下罰金", "乙一"
+            )
+        ),
+    )
+    model = FakeModel(doc)
+
+    out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
+
+    assert out.loaded is None
+    assert any("criminal penalty" in reason for reason in out.dropped)
+    assert len(model.prompts) == 1 + MAX_REPAIRS
+    assert "刑罰" in model.prompts[-1]

@@ -259,6 +259,71 @@ def completeness_issues(statements: Sequence[Mapping[str, Any]]) -> list[str]:
     return issues
 
 
+#: 一個罰則句常把幾個效果接在一起；每個效果的子句有這些字樣。罰則的引文只取自己效果的子句。
+_EFFECT_CLAUSES = {
+    "fine": re.compile(r"罰鍰"),
+    "order": re.compile(
+        r"通知[^，；。]{0,8}(限期|禁止|停止|補正|改善)|命[^，；。]{0,6}限期|限期(改善|補正|拆除)"
+    ),
+    "repeating": re.compile(r"按(次|日)(連續)?處罰"),
+    "restriction": re.compile(r"停工|停業|禁止供飲用"),
+}
+#: 刑罰的字樣：它不是行政罰，沒有對應的 effect（罰金不是 fine）。
+_CRIMINAL = re.compile(r"有期徒刑|拘役|罰金")
+
+
+def _own_clauses(sanction: Mapping[str, Any]) -> set[str]:
+    effect = str(sanction.get("effect"))
+    own = {effect} if effect in _EFFECT_CLAUSES else set()
+    if sanction.get("repeating"):
+        own.add("repeating")
+    return own
+
+
+def sanction_issues(statements: Sequence[Mapping[str, Any]]) -> list[str]:
+    """罰則的引文含別的效果的子句（約定 B、C）：一個效果一個陳述，引文只取自己的子句。
+
+    只請模型修，修不好不丟，交給驗證：併在一起的陳述不是錯的，只是遺漏了其餘的效果。
+    """
+    issues: list[str] = []
+    for s in statements:
+        sanction = s.get("sanction")
+        if s.get("kind") != "sanction" or not isinstance(sanction, Mapping):
+            continue
+        quote = str(s.get("quote", ""))
+        own = _own_clauses(sanction)
+        extra = sorted(name for name, clause in _EFFECT_CLAUSES.items() if clause.search(quote))
+        extra = [name for name in extra if name not in own]
+        if own and extra:
+            issues.append(
+                f"陳述 {s.get('id', '?')} 的引文含另一個效果的子句（{'、'.join(extra)}）："
+                "依約定 B、C，一個效果一個陳述，引文只取自己效果的子句（其餘的效果各寫成自己的"
+                "sanction 陳述，沒有寫就補上）。"
+            )
+    return issues
+
+
+def criminal_penalties(
+    statements: Sequence[Mapping[str, Any]], text: str, context: str
+) -> dict[str, str]:
+    """把刑罰（徒刑、拘役、罰金）當成罰鍰的罰則（id → 原因）：行政罰以外沒有對應的 effect。
+
+    款、目只有半句話，處罰寫在上層條文，故連上層一起看；上層與本文同時出現罰鍰時不判。
+    """
+    whole = f"{context}\n{text}"
+    criminal_context = "罰鍰" not in whole and bool(_CRIMINAL.search(whole))
+    out: dict[str, str] = {}
+    for s in statements:
+        sanction = s.get("sanction")
+        if s.get("kind") != "sanction" or not isinstance(sanction, Mapping):
+            continue
+        if sanction.get("effect") != "fine":
+            continue
+        if _CRIMINAL.search(str(sanction.get("amount_text") or "")) or criminal_context:
+            out[str(s.get("id", "?"))] = "criminal penalty is not an administrative sanction"
+    return out
+
+
 def _statements_of(answer: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     """模型回答裡的陳述；形狀不對的項目當作沒有（外來輸出不可信）。"""
     items = answer.get("statements")
@@ -618,12 +683,13 @@ def extract_unit(
     """抽取一個條文單元。`agent` 記為推導者（預設為模型的名字）；驗證者不得與它相同。"""
     provision_id, text = _unit_text(conn, law, path)
     terms = terms_block(defined)
+    context = ancestors_text(conn, provision_id)
     prompt = PROMPT.format(
         law=law,
         path=path,
         text=text,
         terms=terms,
-        context=context_block(ancestors_text(conn, provision_id)),
+        context=context_block(context),
     )
     try:
         raw = _complete(model, prompt)
@@ -645,6 +711,12 @@ def extract_unit(
         issues = (
             completeness_issues(here)
             + borrowed_issues(here, defined)
+            + sanction_issues(here)
+            + [
+                f"陳述 {ident}：{reason}。刑罰（有期徒刑、拘役、罰金）不是行政罰，沒有對應的 effect"
+                "（罰金不是 fine）：這樣的罰則不要寫成 sanction 陳述。"
+                for ident, reason in criminal_penalties(here, text, context).items()
+            ]
             + [
                 f"陳述 {ident}：{problem}"
                 for x in here
@@ -678,6 +750,11 @@ def extract_unit(
     dropped: list[str] = []
     broken = unusable(
         [x for x in _statements_of(answer) if locate(str(x.get("quote", "")), text) >= 0]
+    )
+    broken |= criminal_penalties(
+        [x for x in _statements_of(answer) if locate(str(x.get("quote", "")), text) >= 0],
+        text,
+        context,
     )
     for ident in shape_issues(answer, defined):
         broken.setdefault(ident, "malformed conditions")

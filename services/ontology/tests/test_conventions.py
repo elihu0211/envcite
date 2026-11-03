@@ -36,3 +36,8 @@ def test_the_conventions_can_sit_inside_a_format_template() -> None:
 
 def test_the_conventions_forbid_borrowing_a_defined_term_as_the_duty() -> None:
     assert "不得借來當 duty 或 scope 的概念" in CONVENTIONS
+
+
+def test_the_conventions_split_effects_by_clause_and_exclude_criminal_penalties() -> None:
+    assert "引文只取自己效果的子句" in CONVENTIONS
+    assert "罰金不是 fine" in CONVENTIONS
