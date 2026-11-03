@@ -51,8 +51,9 @@ def build_server(
     )
     # lexicon 啟動時只讀一次：新匯入的用語須重啟才進入查詢。
     segmenter = Segmenter(store.lexicon())
+    law_names = store.law_names()
     ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
-        OntologyServicer(store, segmenter, embedder, lexical_max_df), server
+        OntologyServicer(store, segmenter, law_names, embedder, lexical_max_df), server
     )
 
     reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(ReasoningServicer(store), server)

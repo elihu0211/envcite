@@ -65,6 +65,7 @@ from retrieval_eval import Embeds
 from scoped_search import resource_ids, scoped_search
 
 from envcite_ontology import embedding
+from envcite_ontology.law_names import LawNames
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
 from envcite_ontology.store import SEARCH_POOL, OntologyStore
 from envcite_segmenter import Segmenter
@@ -318,6 +319,7 @@ def search_all(
     on: str,
     scope: frozenset[str] | None = None,
     pool: tuple[psycopg.Connection[Any], list[int]] | None = None,
+    law_names: LawNames | None = None,
 ) -> list[Measured]:
     """逐題檢索前 k 條，回傳填了排序、第一個相關條的名次與最高分的新列；negative 只記最高分。
 
@@ -351,6 +353,7 @@ def search_all(
                 limit=2 * SEARCH_POOL if scope is not None else k,
                 embedding=vector,
                 model=embedder.model if embedder else "",
+                laws=law_names.find(r.question) if law_names else (),
             )
         dropped = None
         if scope is not None:
@@ -511,7 +514,8 @@ def markdown(meta: dict[str, Any], arm: str, s: dict[str, Any]) -> str:
         *versions(meta),
         f"- 語料：{c['legal_resources']} 部法規、{c['provisions']} 個條文單元、"
         f"{c['passages']} 筆 passage（其中有嵌入 {c['passages_with_embedding']}）",
-        f"- 檢索：{r['arms']}；分詞器 `{r['tokenizer']}`；k = {r['k']}",
+        f"- 檢索：{r['arms']}；分詞器 `{r['tokenizer']}`；k = {r['k']}；"
+        + ("問句點名的法規縮小範圍" if r.get("law_names") else "不依點名的法規縮小範圍"),
         *(
             [
                 f"- 範圍：{sc['counts']['laws']} 部法規（題庫所引 {sc['counts']['cited']}、"
@@ -663,6 +667,7 @@ def cmd_measure(args: argparse.Namespace) -> None:
     ):
         rconn.read_only = True
         segmenter = Segmenter(store.lexicon())
+        law_names = None if args.no_law_names else store.law_names()
         pool = (rconn, resource_ids(rconn, sorted(scope))) if args.scope_in_pool and scope else None
         if pool:
             equivalence = check_equivalence(store, rconn, segmenter, rows, embedder, on=on)
@@ -670,7 +675,16 @@ def cmd_measure(args: argparse.Namespace) -> None:
                 raise SystemExit(f"scoped_search 與 OntologyStore.search 不等價：{equivalence}")
         arms = {
             name: search_all(
-                store, segmenter, rows, e, qrels=qrels, k=args.k, on=on, scope=scope, pool=pool
+                store,
+                segmenter,
+                rows,
+                e,
+                qrels=qrels,
+                k=args.k,
+                on=on,
+                scope=scope,
+                pool=pool,
+                law_names=law_names,
             )
             for name, e in (("lexical", None), ("hybrid", embedder))
             if name == "lexical" or e is not None
@@ -702,6 +716,7 @@ def cmd_measure(args: argparse.Namespace) -> None:
             "tokenizer": tokenizer,
             "k": args.k,
             "embedding_model": embedder.model if embedder else None,
+            "law_names": law_names is not None,
         },
     }
     if scope_doc and scope:
@@ -877,6 +892,11 @@ def main() -> None:
         "--scope-in-pool",
         action="store_true",
         help="兩臂的候選池在取候選之前就限定在範圍內（唯讀重現 search_hybrid）",
+    )
+    m.add_argument(
+        "--no-law-names",
+        action="store_true",
+        help="不依問句點名的法規縮小範圍（服務端預設會）；只用來對照",
     )
     c = sub.add_parser("compare", help="同一子集的 run 兩兩檢定")
     c.add_argument("--qrels", type=Path, required=True)

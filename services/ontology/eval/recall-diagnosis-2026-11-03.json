@@ -1,0 +1,3412 @@
+[
+{
+"id": "a-01",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": 15,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "a-02",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": 33,
+"semantic_rank_top50": 2,
+"hybrid_rank_top100": 1
+},
+{
+"id": "a-03",
+"bucket": "exact_id",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "a-04",
+"bucket": "exact_id",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 2,
+"hybrid_rank_top100": 7
+},
+{
+"id": "a-05",
+"bucket": "exact_id",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 39,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 2
+},
+{
+"id": "a-06",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 2,
+"hybrid_rank_top100": 3
+},
+{
+"id": "a-07",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": 5,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "a-08",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "a-09",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "a-11",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": 43,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 2
+},
+{
+"id": "a-13",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 1,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "a-14",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 3,
+"hybrid_rank_top100": 5
+},
+{
+"id": "a-15",
+"bucket": "exact_id",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 1,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "a-16",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": 15,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "a-17",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": 23,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "a-18",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": 2,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "a-20",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 31,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": 52
+},
+{
+"id": "a-22",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": 15,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "a-23",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "a-25",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "a-27",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": 19,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "ch-08",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-001",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-002",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 2,
+"hybrid_rank_top100": 3
+},
+{
+"id": "eid-003",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 26,
+"hybrid_rank_top100": 51
+},
+{
+"id": "eid-005",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-006",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-007",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 3,
+"hybrid_rank_top100": 5
+},
+{
+"id": "eid-009",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 4,
+"hybrid_rank_top100": 7
+},
+{
+"id": "eid-010",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-011",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "eid-012",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 3,
+"hybrid_rank_top100": 5
+},
+{
+"id": "eid-013",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-014",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-015",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-016",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "eid-017",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-019",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 13,
+"hybrid_rank_top100": 25
+},
+{
+"id": "eid-020",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-021",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-024",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 3,
+"hybrid_rank_top100": 5
+},
+{
+"id": "eid-025",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-026",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 7,
+"hybrid_rank_top100": 13
+},
+{
+"id": "eid-027",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-029",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-030",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-031",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-033",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-034",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 19,
+"hybrid_rank_top100": 37
+},
+{
+"id": "eid-036",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "eid-037",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-038",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 6,
+"hybrid_rank_top100": 11
+},
+{
+"id": "eid-039",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 9,
+"hybrid_rank_top100": 17
+},
+{
+"id": "eid-040",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 6,
+"hybrid_rank_top100": 11
+},
+{
+"id": "eid-042",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "eid-043",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-045",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 5,
+"hybrid_rank_top100": 9
+},
+{
+"id": "eid-047",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-048",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-050",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-051",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-052",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-053",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-054",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-055",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-056",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-057",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-058",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-060",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-062",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-064",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-065",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 3,
+"hybrid_rank_top100": 5
+},
+{
+"id": "eid-066",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-067",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-068",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-069",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 3,
+"hybrid_rank_top100": 5
+},
+{
+"id": "eid-070",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-071",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "eid-074",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 4,
+"hybrid_rank_top100": 7
+},
+{
+"id": "eid-076",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "eid-078",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 3,
+"hybrid_rank_top100": 5
+},
+{
+"id": "pd-01",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 2,
+"hybrid_rank_top100": 3
+},
+{
+"id": "pd-05",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "fm-03",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-002",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 2,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "par-003",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-004",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-005",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-006",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-007",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-008",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-009",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 19,
+"hybrid_rank_top100": 35
+},
+{
+"id": "par-010",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-012",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-013",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-014",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-015",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-016",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-017",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 21,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "par-019",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 31,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "par-021",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-022",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-023",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-024",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-026",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-027",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-030",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-031",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-032",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-033",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-034",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-035",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-037",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-039",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 16,
+"semantic_rank_top50": 11,
+"hybrid_rank_top100": 3
+},
+{
+"id": "par-041",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-044",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-045",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-046",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-047",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-048",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-049",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-050",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-051",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 28,
+"hybrid_rank_top100": 51
+},
+{
+"id": "par-052",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-053",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-054",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-055",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-056",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-057",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-059",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-060",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-065",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-066",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-067",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-068",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-069",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-070",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-071",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-072",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-073",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-074",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 6,
+"hybrid_rank_top100": 11
+},
+{
+"id": "par-075",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 10,
+"hybrid_rank_top100": 20
+},
+{
+"id": "par-076",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 3,
+"hybrid_rank_top100": 6
+},
+{
+"id": "par-077",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 19,
+"hybrid_rank_top100": 37
+},
+{
+"id": "par-078",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-079",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-080",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-081",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-082",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-083",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-085",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-086",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-087",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-088",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-089",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 9,
+"hybrid_rank_top100": 17
+},
+{
+"id": "par-090",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-091",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 13,
+"hybrid_rank_top100": 25
+},
+{
+"id": "par-092",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-095",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-097",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-098",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-100",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-102",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 30,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": 38
+},
+{
+"id": "par-103",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 17,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": 29
+},
+{
+"id": "par-104",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 15,
+"semantic_rank_top50": 7,
+"hybrid_rank_top100": 6
+},
+{
+"id": "par-106",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-107",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-108",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-110",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-111",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-112",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-113",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-114",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-115",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-116",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-117",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-118",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-120",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-121",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-122",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-124",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 14,
+"hybrid_rank_top100": 27
+},
+{
+"id": "par-125",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-128",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-129",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-131",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-132",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-135",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-137",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-139",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-140",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-141",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-142",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-144",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-146",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-148",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-150",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-151",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-152",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-153",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-156",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-157",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-158",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-159",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-160",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-161",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-162",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-164",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-166",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-167",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-169",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-170",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-172",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-173",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-174",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-175",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-176",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-178",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 10,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "par-180",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-181",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-182",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-183",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-184",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 24,
+"hybrid_rank_top100": 45
+},
+{
+"id": "par-185",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-186",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 11,
+"hybrid_rank_top100": 24
+},
+{
+"id": "par-187",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-188",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-189",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-190",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-192",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "par-193",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 25,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": 36
+},
+{
+"id": "par-194",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 28,
+"semantic_rank_top50": 10,
+"hybrid_rank_top100": 9
+},
+{
+"id": "par-195",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 29,
+"semantic_rank_top50": 20,
+"hybrid_rank_top100": 13
+},
+{
+"id": "par-196",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 11,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 3
+},
+{
+"id": "b-01",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "b-02",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "b-03",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "b-04",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "b-05",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "b-06",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 17,
+"hybrid_rank_top100": 33
+},
+{
+"id": "b-07",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "b-08",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 28,
+"hybrid_rank_top100": 55
+},
+{
+"id": "b-09",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "b-11",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "b-12",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ch-01",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ch-02",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 2,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "ch-03",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 2
+},
+{
+"id": "ch-04",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 2,
+"hybrid_rank_top100": 6
+},
+{
+"id": "ch-05",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 9,
+"hybrid_rank_top100": 17
+},
+{
+"id": "ch-06",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 28,
+"semantic_rank_top50": 17,
+"hybrid_rank_top100": 8
+},
+{
+"id": "ch-07",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 5,
+"hybrid_rank_top100": 9
+},
+{
+"id": "ch-09",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ch-10",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 12,
+"hybrid_rank_top100": 22
+},
+{
+"id": "g-01",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "g-02",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 36,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 7
+},
+{
+"id": "g-03",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 3,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "g-04",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "g-05",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 4
+},
+{
+"id": "h-01",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 14,
+"hybrid_rank_top100": 27
+},
+{
+"id": "h-02",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 40,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": 69
+},
+{
+"id": "h-04",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "h-05",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "h-06",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "h-07",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "h-08",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 4,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": 8
+},
+{
+"id": "h-09",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 6,
+"hybrid_rank_top100": 11
+},
+{
+"id": "h-10",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-001",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 9,
+"hybrid_rank_top100": 17
+},
+{
+"id": "mh-002",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-003",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-004",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 22,
+"semantic_rank_top50": 14,
+"hybrid_rank_top100": 8
+},
+{
+"id": "mh-021",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-022",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-026",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "mh-029",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 5,
+"hybrid_rank_top100": 9
+},
+{
+"id": "mh-030",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-031",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 4,
+"hybrid_rank_top100": 7
+},
+{
+"id": "mh-032",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 4,
+"hybrid_rank_top100": 7
+},
+{
+"id": "mh-033",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-034",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "mh-036",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-037",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-038",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-039",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-040",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 2,
+"hybrid_rank_top100": 3
+},
+{
+"id": "mh-041",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-042",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 4,
+"hybrid_rank_top100": 7
+},
+{
+"id": "mh-045",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "mh-046",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-047",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 2,
+"hybrid_rank_top100": 3
+},
+{
+"id": "mh-048",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "mh-049",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 2,
+"hybrid_rank_top100": 3
+},
+{
+"id": "mh-050",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "mh-052",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-053",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-055",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-057",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 3,
+"hybrid_rank_top100": 5
+},
+{
+"id": "mh-058",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "mh-060",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "mh-061",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-063",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 4,
+"hybrid_rank_top100": 7
+},
+{
+"id": "mh-065",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-066",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-067",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": true,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-069",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 4,
+"hybrid_rank_top100": 7
+},
+{
+"id": "mh-070",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "mh-071",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "pd-04",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "fr-02",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "pos-01",
+"bucket": "multi_hop",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ont-03",
+"bucket": "multi_hop",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ont-04",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": true,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "icd-01",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "icd-02",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "icd-03",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 28,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": 49
+},
+{
+"id": "icd-04",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "icd-05",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 10,
+"semantic_rank_top50": 2,
+"hybrid_rank_top100": 3
+},
+{
+"id": "icd-08",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 18,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "icd-09",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 2,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "icd-10",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 31,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 5
+},
+{
+"id": "icd-11",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 9,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "icd-12",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ipf-01",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 3,
+"hybrid_rank_top100": 11
+},
+{
+"id": "ipf-02",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ipf-03",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ipf-04",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 13,
+"hybrid_rank_top100": 27
+},
+{
+"id": "ipf-05",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ipf-06",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 5,
+"hybrid_rank_top100": 12
+},
+{
+"id": "ipf-08",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ipf-09",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "ipf-11",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 13,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "ipf-13",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "xl-01",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "scp-01",
+"bucket": "exact_id",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 49,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 5
+},
+{
+"id": "scp-02",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "scp-03",
+"bucket": "exact_id",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 1,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "scp-04",
+"bucket": "paraphrase",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "scp-05",
+"bucket": "exact_id",
+"law_named": true,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 5,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 1
+},
+{
+"id": "scp-06",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": 18,
+"semantic_rank_top50": 1,
+"hybrid_rank_top100": 4
+},
+{
+"id": "scp-07",
+"bucket": "exact_id",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+},
+{
+"id": "scp-08",
+"bucket": "paraphrase",
+"law_named": false,
+"expected_number_named": false,
+"any_number_named": false,
+"lexical_rank_top50": null,
+"semantic_rank_top50": null,
+"hybrid_rank_top100": null
+}
+]

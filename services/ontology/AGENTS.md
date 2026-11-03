@@ -41,6 +41,7 @@ uv run --env-file .env envcite-ontology
 - **匯入**：`law.parse` 是純函式；整批比例過 `audit.LIMITS` 才寫入，否則結束碼 2。**改變解析輸出的修改必須遞增 `law.PARSER_VERSION`**，已匯入的法規才會以新版重寫。已匯入法規的內容改變是增量（`ingest/write.py` 的 `apply`）：更正以新增列取代舊列（`superseded_at`），查詢只看現行列。
 - **檢索投影**（混合檢索）：字面臂與語意臂同列、以段落文字的雜湊為鍵，更正後無從陳舊；取不到查詢向量時只用字面臂，查詢不失敗。伺服器的詞典啟動時讀一次，**重建之後要重啟服務**。嵌入模型宣告在模型配置檔的 `[embedding]`，沒有這一段就只有字面臂。
 - **字面臂略過高頻詞**：整句問題的 OR 查詢會被「之」「應」這類幾乎每段都有的詞撐成巨大的候選集，延遲與候選數成正比；`retrieval.prune_terms` 在查詢前略過段落比例超過 `ENVCITE_ONTOLOGY_LEXICAL_MAX_DF` 的詞，全是高頻詞時留最稀有的一個，不空查詢。詞頻表（`retrieval.term_stat`）隨檢索投影整批重算；沒有現行分詞器的統計時不修剪，查詢較慢但不出錯。改門檻預設要用 `tools/golden_retrieval_eval.py` 在開發集量測、以 `compare` 檢定，不憑感覺。
+- **問句點名法規則縮小範圍**：問句含法規全名（`law_names.LawNames`，標題取自資料庫所有版本，三字以上、由長到短不重疊）時，`search_hybrid` 的兩臂只在那些法規裡找（`p_resources`；語意臂在範圍內改精確掃描，HNSW 先取近鄰再過濾會落空）；點名的法規沒有任何命中才改找全庫。名稱表和詞典一樣啟動時讀一次，匯入新法規後要重啟。門檻與比對規則的改動要用 `tools/golden_retrieval_eval.py` 在開發集量測（`--no-law-names` 為不縮小的對照）、以 `compare` 檢定。
 - **授權抽取**：`envcite-sync` 在匯入後跑 `delegation.extract`（規則、冪等）；**改解析規則要遞增 `delegation.RULE_VERSION`**。授權是 `annotation.assertion` 的子型別，語意與讀取見 README「規範關係：授權」。
 - 分詞器的約束屬 `envcite-segmenter`（見其 README）。
 - 結束碼的意義見 README；`2` 的情形是資料形狀不合、快照不存在、整批比例越線、嵌入端點設定錯誤（401／403、維度不符）。

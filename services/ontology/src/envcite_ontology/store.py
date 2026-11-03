@@ -16,6 +16,7 @@ import psycopg
 from psycopg_pool import ConnectionPool
 
 from envcite_ontology.embedding import to_sql
+from envcite_ontology.law_names import LawNames
 
 #: 全國法規資料庫 pcode 的形狀，對應 `corpus.legal_resource` 的 CHECK；只省一次往返，
 #: 不是注入防禦（查詢皆已參數化）。
@@ -99,6 +100,15 @@ _LIST_ARTICLES = """
 #: segmenter 詞典（法規名稱）；須與建索引同源，否則分詞器識別碼不符、字面檢索全落空（04-01 §5）。
 _LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression"
 
+#: 標題（含各版本的舊名稱）→ 法規代碼；問句點名法規用（`law_names.LawNames`）。
+_LAW_TITLES = """
+    SELECT e.title, array_agg(DISTINCT r.local_id)
+      FROM corpus.legal_expression AS e
+      JOIN corpus.legal_resource AS r ON r.id = e.resource_id
+     WHERE r.id_scheme = 'moj_pcode'
+     GROUP BY e.title
+"""
+
 _SEARCH = """
     SELECT corpus.version_iri(s.version_id), r.local_id, e.title,
            corpus.article_number(s.path), corpus.article_text(s.version_id),
@@ -106,7 +116,11 @@ _SEARCH = """
       FROM retrieval.search_hybrid(
                retrieval.prune_terms(%(terms)s, %(tokenizer)s, %(max_df)s::double precision),
                %(tokenizer)s, %(embedding)s::vector, %(model)s,
-               %(on)s::date, %(language)s, %(limit)s, %(pool)s
+               %(on)s::date, %(language)s, %(limit)s, %(pool)s,
+               CASE WHEN cardinality(%(laws)s::text[]) = 0 THEN NULL
+                    ELSE (SELECT array_agg(id) FROM corpus.legal_resource
+                           WHERE id_scheme = 'moj_pcode' AND local_id = ANY(%(laws)s::text[]))
+               END
            ) AS s
       JOIN corpus.legal_resource AS r ON r.id = s.resource_id
       JOIN corpus.provision_version AS v ON v.id = s.version_id
@@ -231,6 +245,11 @@ class OntologyStore:
             cur.execute(_LEXICON)
             return [title for (title,) in cur.fetchall()]
 
+    def law_names(self) -> LawNames:
+        with self._pool.connection() as conn, conn.cursor() as cur:
+            cur.execute(_LAW_TITLES)
+            return LawNames({title: pcodes for title, pcodes in cur.fetchall()})
+
     def search(
         self,
         terms: str,
@@ -241,17 +260,38 @@ class OntologyStore:
         embedding: Sequence[float] | None = None,
         model: str = "",
         max_df: float = 0.0,
+        laws: Sequence[str] = (),
     ) -> list[SearchHit]:
         """`as_of`（空為今日）有效的條，字面臂比對已分詞的 `terms`，語意臂比對 `embedding`。
 
         沒有 `embedding` 時只用字面臂。兩臂以名次倒數融合排序（`retrieval.search_hybrid`）。
         `max_df`（段落比例）大於 0 時，字面臂先略過出現在超過這個比例的段落的詞
         （`retrieval.prune_terms`）；0 為不修剪。
+
+        `laws`（法規代碼）非空時兩臂只在這些法規裡找；它們在 `as_of` 沒有任何可檢索的條時，
+        改在全庫找，不回空。
         """
+        hits = self._search(terms, tokenizer, as_of, limit, embedding, model, max_df, tuple(laws))
+        if laws and not hits:
+            hits = self._search(terms, tokenizer, as_of, limit, embedding, model, max_df, ())
+        return hits
+
+    def _search(
+        self,
+        terms: str,
+        tokenizer: str,
+        as_of: str,
+        limit: int,
+        embedding: Sequence[float] | None,
+        model: str,
+        max_df: float,
+        laws: tuple[str, ...],
+    ) -> list[SearchHit]:
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(
                 _SEARCH,
                 {
+                    "laws": list(laws),
                     "terms": terms,
                     "tokenizer": tokenizer,
                     "max_df": max_df,

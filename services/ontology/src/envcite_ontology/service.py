@@ -12,6 +12,7 @@ import grpc
 from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
 from envcite_ontology import errors
 from envcite_ontology.embedding import Embedder, EmbeddingError
+from envcite_ontology.law_names import LawNames
 from envcite_ontology.store import OntologyStore
 from envcite_segmenter import Segmenter
 
@@ -33,10 +34,12 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         self,
         store: OntologyStore,
         segmenter: Segmenter,
+        law_names: LawNames,
         embedder: Embedder | None = None,
         lexical_max_df: float = 0.0,
     ) -> None:
         self._store = store
+        self._law_names = law_names
         self._lexical_max_df = lexical_max_df
         self._segmenter = segmenter
         self._embedder = embedder
@@ -134,6 +137,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
             embedding=self._query_embedding(request.query),
             model=self._embedder.model if self._embedder else "",
             max_df=self._lexical_max_df,
+            laws=self._law_names.find(request.query),
         )
         return ontology_pb2.SearchArticlesResponse(
             hits=[
