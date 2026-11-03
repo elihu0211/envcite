@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterator, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from typing import cast
 
 import psycopg
@@ -35,6 +36,8 @@ Conn = psycopg.Connection[tuple[object, ...]]
 _PAGE = 2000
 #: 一次送給嵌入端點的段落數
 _EMBED_BATCH = 32
+#: 同時送出的請求數；一個工作項是這麼多批，一起嵌入、一起 commit
+_EMBED_WORKERS = 8
 #: 一批：（內容雜湊，段落文字）
 Page = list[tuple[bytes, str]]
 
@@ -157,9 +160,10 @@ def _embed(
     pcodes: list[str] | None = None,
     policy: Policy | None = None,
 ) -> int:
-    """每批 commit：全量第一次要很久，中斷後重跑只補沒做完的。`pcodes` 為空值時不限範圍。
+    """每頁 commit：全量第一次要很久，中斷後重跑只補沒做完的。`pcodes` 為空值時不限範圍。
 
-    一批是 jobkit 的一個工作項：端點問題退避重試並計入斷路器，重試用盡或內容被拒的批次
+    一頁（`_EMBED_WORKERS` 批）是 jobkit 的一個工作項，批次並行送出以壓低全量的牆鐘時間，
+    資料庫只由本執行緒寫。端點問題退避重試並計入斷路器（重試整頁），重試用盡或內容被拒的頁
     跳過（其列仍未嵌入，下次重跑會再選到）。
     """
     stats = RunStats()
@@ -170,7 +174,12 @@ def _embed(
         while True:
             rows = conn.execute(
                 _EMBED_PAGE,
-                {"after": after, "model": embedder.model, "limit": _EMBED_BATCH, "pcodes": pcodes},
+                {
+                    "after": after,
+                    "model": embedder.model,
+                    "limit": _EMBED_BATCH * _EMBED_WORKERS,
+                    "pcodes": pcodes,
+                },
             ).fetchall()
             if not rows:
                 return
@@ -179,7 +188,10 @@ def _embed(
 
     def embed_page(rows: Page) -> None:
         nonlocal embedded
-        vectors = embedder.embed([text for _, text in rows])
+        chunks = [rows[i : i + _EMBED_BATCH] for i in range(0, len(rows), _EMBED_BATCH)]
+        with ThreadPoolExecutor(len(chunks)) as pool:
+            results = pool.map(lambda c: embedder.embed([text for _, text in c]), chunks)
+            vectors = [v for chunk in results for v in chunk]
         with conn.cursor() as cur:
             cur.executemany(
                 "UPDATE retrieval.passage SET model = %s, embedding = %s::vector"
@@ -191,7 +203,7 @@ def _embed(
             )
         conn.commit()
         embedded += len(rows)
-        if embedded % (_EMBED_BATCH * 50) < len(rows):
+        if embedded % (_EMBED_BATCH * _EMBED_WORKERS * 10) < len(rows):
             log.info("檢索投影：已嵌入 %d 段", embedded)
 
     code = run(
