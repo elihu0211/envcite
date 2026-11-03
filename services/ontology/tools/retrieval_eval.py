@@ -10,10 +10,10 @@ many character pairs with its article is dropped: it would measure the lexical a
 itself. The set is written once and then kept: regenerating after looking at the scores tunes
 the measurement to the system.
 
-`run` searches every question twice, words only and hybrid, and reports recall@k and MRR for the
-answerable ones. For each score it also reports the floor that best separates answerable from
-out-of-scope questions (by each question's top score): that is what consult's relevance floor is
-calibrated from, and it holds only for the score it was derived from.
+`run` searches every question twice, words only and hybrid, and reports R@k (ranx `hit_rate@k`)
+and MRR (ranx `mrr`) for the answerable ones. For each score it also reports the floor that best
+separates answerable from out-of-scope questions (by each question's top score): that is what
+consult's relevance floor is calibrated from, and it holds only for the score it was derived from.
 
 Database and embedder come from the environment (ENVCITE_ONTOLOGY_DSN, ENVCITE_ONTOLOGY_MODELS);
 the question writer from `models.toml`. This script never reads or writes a key itself.
@@ -33,6 +33,9 @@ from typing import Any, Protocol
 import psycopg
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import golden_set as gs
 
 from envcite_ontology import embedding
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
@@ -145,6 +148,7 @@ class Outcome:
     rank: int | None  # 正確條文的名次（1 起算），沒找到為 None
     top_lexical: float
     top_semantic: float | None
+    ranking: list[str]  # 前 k 條的條文代號
 
 
 def search_all(
@@ -167,29 +171,26 @@ def search_all(
             embedding=vector,
             model=embedder.model if embedder else "",
         )
-        rank = next(
-            (
-                i
-                for i, h in enumerate(hits, 1)
-                if (h.law_id, h.number) == (item.get("law_id"), item.get("article"))
-            ),
-            None,
-        )
+        ranking = [gs.doc_id(h.law_id, h.number) for h in hits]
+        want = gs.doc_id(item["law_id"], item["article"]) if "law_id" in item else None
         semantic = [h.semantic_similarity for h in hits if h.semantic_similarity is not None]
         out.append(
             Outcome(
-                rank, max((h.lexical_score for h in hits), default=0.0), max(semantic, default=None)
+                next((i for i, d in enumerate(ranking, 1) if d == want), None),
+                max((h.lexical_score for h in hits), default=0.0),
+                max(semantic, default=None),
+                ranking,
             )
         )
     return out
 
 
-def recall(outcomes: Sequence[Outcome], k: int) -> float:
-    return sum(o.rank is not None and o.rank <= k for o in outcomes) / max(len(outcomes), 1)
-
-
-def mrr(outcomes: Sequence[Outcome]) -> float:
-    return sum(1 / o.rank for o in outcomes if o.rank) / max(len(outcomes), 1)
+def qrels_of(items: Sequence[dict[str, Any]]) -> gs.Qrels:
+    return {
+        item["id"]: {gs.doc_id(item["law_id"], item["article"]): 1}
+        for item in items
+        if item["kind"] == "answerable"
+    }
 
 
 def best_floor(
@@ -216,15 +217,16 @@ def report(
     lines = [
         f"題數：可答 {len(answerable)}、範圍外 {len(scope)}",
         "",
-        "| 檢索 | recall@1 | recall@5 | recall@10 | MRR |",
+        "| 檢索 | R@1 | R@5 | R@10 | MRR |",
         "|---|---|---|---|---|",
     ]
+    qrels = qrels_of(items)
+    metrics = ("hit_rate@1", "hit_rate@5", "hit_rate@10", "mrr")
     for name, outs in (("字面臂", lexical), ("混合", hybrid)):
         if outs is None:
             continue
-        a = [outs[i] for i in answerable]
-        row = (recall(a, 1), recall(a, 5), recall(a, 10), mrr(a))
-        lines.append(f"| {name} | " + " | ".join(f"{x:.3f}" for x in row) + " |")
+        got = gs.evaluate(qrels, {items[i]["id"]: outs[i].ranking for i in answerable}, metrics)
+        lines.append(f"| {name} | " + " | ".join(f"{got[m]:.3f}" for m in metrics) + " |")
     lines += ["", "| 分數 | 下界 | 可答通過 | 範圍外通過 |", "|---|---|---|---|"]
     floor, tpr, fpr = best_floor(
         [lexical[i].top_lexical for i in answerable], [lexical[i].top_lexical for i in scope]

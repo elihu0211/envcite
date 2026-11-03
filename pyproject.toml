@@ -23,6 +23,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "pyyaml",
+    "ranx",
     "ruff",
     "testcontainers[postgres]",
     "types-grpcio",
@@ -51,6 +52,11 @@ strict = true
 # grpc_tools 產生的程式碼；型別由一併提交的 .pyi 提供。
 module = ["envcite.ontology.v1.*", "envcite.consult.v2.*"]
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+# ranx（評估工具用）不帶型別資訊，也沒有 types- 套件。
+module = "ranx"
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # googleapis-common-protos（google.rpc 的 ErrorInfo、BadRequest）不帶型別資訊，也沒有 types- 套件。

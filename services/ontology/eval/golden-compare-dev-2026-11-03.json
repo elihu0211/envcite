@@ -1,0 +1,84 @@
+{
+ "qrels_sha256": "5647b846502ac119e22637dfa2ec6d547207633fe1a709a9f593c3d434736645",
+ "split_sha256": "2e4dfd1335c7002d84f7ac51bce73685e13b61470705a12f4cafa417afbf055e",
+ "subset": "dev",
+ "questions": 170,
+ "alpha": 0.05,
+ "test": "Fisher 隨機化檢定（ranx compare，成對、雙尾，10000 次置換，種子 0）",
+ "runs": {
+  "golden-retrieval-dev-2026-11-03.lexical": {
+   "sha256": "1e269955df27d4e2480f472b33233ff65fe2992152e8d375a3efbd66252052ea",
+   "scores": {
+    "hit_rate@1": 0.0,
+    "hit_rate@5": 0.0176,
+    "hit_rate@10": 0.0353,
+    "hit_rate@20": 0.0647,
+    "hit_rate@50": 0.1118,
+    "mrr": 0.0109
+   },
+   "hole@10": 0.9964705882352941
+  },
+  "golden-retrieval-dev-2026-11-03.hybrid": {
+   "sha256": "84980e2b2db12761ad437fdebc6f7060e451b81c9a94b7df8d6788d2fe5abfa9",
+   "scores": {
+    "hit_rate@1": 0.1235,
+    "hit_rate@5": 0.2118,
+    "hit_rate@10": 0.2588,
+    "hit_rate@20": 0.2882,
+    "hit_rate@50": 0.3529,
+    "mrr": 0.1603
+   },
+   "hole@10": 0.9723529411764706
+  }
+ },
+ "pairs": [
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "hit_rate@1",
+   "difference": 0.1235,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "hit_rate@5",
+   "difference": 0.1941,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "hit_rate@10",
+   "difference": 0.2235,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "hit_rate@20",
+   "difference": 0.2235,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "hit_rate@50",
+   "difference": 0.2412,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "mrr",
+   "difference": 0.1494,
+   "p": 0.0,
+   "significant": true
+  }
+ ]
+}

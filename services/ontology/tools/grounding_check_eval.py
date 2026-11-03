@@ -2,10 +2,11 @@
 
     ENVCITE_ONTOLOGY_DSN=… ENVCITE_LLM_API_KEY=… \
         uv run python tools/grounding_check_eval.py <golden.yaml> --consult localhost:<port> \
+        --qrels eval/golden-qrels.json --split eval/golden-split.json --subset test \
         --models models.toml --model mistral --out eval/grounding-check-<date>
 
-For every golden question that has an answer (`scored`: at least one expected article exists in the
-corpus) or none (`negative`), the same path the deployed answer service takes:
+For every golden question of the split subset that has an answer (`scored`: the qrels has at least
+one relevant article for it) or none (`negative`), the same path the deployed answer service takes:
 
 1. `consult` `Ground` over gRPC — retrieval, the relevance floor, the closed citation set.
    No evidence → refused by the floor; no model call.
@@ -15,9 +16,10 @@ corpus) or none (`negative`), the same path the deployed answer service takes:
    evidence, otherwise it is void.
 
 The final class of each question is one of `FINAL`. For answerable questions an `answered`
-outcome is further split by whether any cited article is an expected one (the IRI of every
-current version of an
-expected provision is looked up in the database). Nothing here judges whether the text is correct.
+outcome is further split by whether any cited article is relevant in the qrels (the IRI of every
+current version of a relevant provision is looked up in the database); a cited article the qrels has
+no judgement for is a hole, not a miss. Nothing here judges whether the text is correct. The report
+records the sha256 of the golden set, the qrels and the split.
 
 The model calls are capped (`--max-calls`, retries count); results are cached per question in
 `<out>.cache.jsonl`, so a rerun only calls for questions not yet done. Question and answer text are
@@ -48,7 +50,8 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from golden_retrieval_eval import NEGATIVE, git, load_corpus, resolve
+import golden_set as gs
+from golden_retrieval_eval import NEGATIVE, git, require_snapshots, snapshots
 
 from envcite.consult.v2 import consult_pb2, consult_pb2_grpc
 from envcite_ontology.endpoint import json_headers
@@ -165,19 +168,33 @@ class Chat:
         return None, used, last
 
 
-def expected_iris(conn: psycopg.Connection[Any], mapped: list[dict[str, str]]) -> set[str]:
-    """期望條文所有現行版本的 IRI。"""
+def expected_iris(conn: psycopg.Connection[Any], docs: list[str]) -> set[str]:
+    """相關條文（條文代號）所有現行版本的 IRI。"""
     iris: set[str] = set()
-    for m in mapped:
+    for doc in docs:
+        pcode, number = gs.parse_doc(doc)
         for (iri,) in conn.execute(
             "SELECT corpus.version_iri(v.id) FROM corpus.provision_version AS v"
             "  JOIN corpus.provision AS p ON p.id = v.provision_id"
             "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
-            " WHERE v.superseded_at IS NULL AND r.local_id = %s AND p.article_path = %s",
-            (m["pcode"], m["article_path"]),
+            " WHERE v.superseded_at IS NULL AND r.id_scheme = 'moj_pcode' AND r.local_id = %s"
+            "   AND p.provision_type = 'article' AND corpus.article_number(p.article_path) = %s",
+            (pcode, number),
         ):
             iris.add(str(iri))
     return iris
+
+
+@dataclass(frozen=True)
+class Question:
+    id: str
+    bucket: str
+    question: str
+    relevant: dict[str, int]
+
+    @property
+    def scored(self) -> bool:
+        return self.bucket != NEGATIVE
 
 
 def load_cache(path: Path) -> dict[str, Row]:
@@ -219,7 +236,11 @@ def markdown(meta: dict[str, Any], rows: list[Row]) -> str:
         f"- 執行：{meta['run_at']}；commit `{meta['envcite_commit']}`"
         + ("（工作樹有未提交變更）" if meta["git_dirty"] else ""),
         f"- 題庫：`{meta['golden']['path']}` sha256 `{meta['golden']['sha256']}`；"
-        f"無答案 {len(neg)} 題、可答 {len(pos)} 題（對得到條文的）",
+        f"無答案 {len(neg)} 題、可答 {len(pos)} 題（qrels 有相關條的）",
+        f"- qrels：`{meta['qrels']['path']}` sha256 `{meta['qrels']['sha256']}`；"
+        f"人工判定 {meta['qrels']['judgements']} 份",
+        f"- 切分：`{meta['split']['path']}` sha256 `{meta['split']['sha256']}`；"
+        f"本報告為 **{meta['split']['subset']}**",
         "- 語料快照："
         + "；".join(f"{s['feed']} data_date {s['data_date']}" for s in meta["snapshots"]),
         f"- 模型：`{meta['model']}`（temperature 0、max_tokens {MAX_OUTPUT_TOKENS}）；"
@@ -255,6 +276,9 @@ def main() -> None:
     p = argparse.ArgumentParser(prog="grounding_check_eval")
     p.add_argument("golden", type=Path)
     p.add_argument("--consult", required=True, help="consult 的 host:port（明文 h2c）")
+    p.add_argument("--qrels", type=Path, required=True)
+    p.add_argument("--split", type=Path, required=True)
+    p.add_argument("--subset", choices=("dev", "test"), required=True)
     p.add_argument("--models", type=Path, required=True)
     p.add_argument("--model", required=True, help="models.toml 的 [model.<名稱>]")
     p.add_argument("--out", type=Path, required=True)
@@ -263,7 +287,20 @@ def main() -> None:
     args = p.parse_args()
 
     raw = args.golden.read_bytes()
+    golden_sha = hashlib.sha256(raw).hexdigest()
     items = yaml.safe_load(raw)["items"]
+    qrels_doc, split_doc = gs.read(args.qrels), gs.read(args.split)
+    gs.require_golden(qrels_doc, golden_sha, str(args.qrels))
+    gs.require_golden(split_doc, golden_sha, str(args.split))
+    relevant = gs.relevant(qrels_doc["qrels"])
+    subset = gs.subset_ids(split_doc, args.subset)
+    questions = [
+        Question(str(i["id"]), str(i["bucket"]), str(i["question"]), relevant.get(str(i["id"]), {}))
+        for i in items
+        if str(i["id"]) in subset and (i["bucket"] == NEGATIVE or relevant.get(str(i["id"])))
+    ]
+    if args.limit:
+        questions = questions[: args.limit]
     db = load(DatabaseSettings)
     chat = Chat(args.models, args.model, args.max_calls)
     cache_path = args.out.parent / (args.out.name + ".cache.jsonl")
@@ -272,27 +309,18 @@ def main() -> None:
 
     with psycopg.connect(db.dsn) as conn:
         conn.read_only = True
-        by_title, provisions = load_corpus(conn)
-        resolved = [r for r in resolve(items, by_title, provisions) if r.status != "unmapped"]
-        if args.limit:
-            resolved = resolved[: args.limit]
-        snaps = [
-            {"feed": f, "data_date": d.isoformat()}
-            for f, d in conn.execute(
-                "SELECT DISTINCT ON (feed) feed, data_date FROM source.snapshot"
-                " ORDER BY feed, data_date DESC, id DESC"
-            )
-        ]
+        snaps = snapshots(conn)
+        require_snapshots(qrels_doc, snaps)
         stub = consult_pb2_grpc.ConsultationServiceStub(grpc.insecure_channel(args.consult))
         args.out.parent.mkdir(parents=True, exist_ok=True)
         with cache_path.open("a", encoding="utf-8") as sink:
-            for i, r in enumerate(resolved, 1):
+            for i, r in enumerate(questions, 1):
                 if r.id in cache:
                     continue
                 row = Row(
                     r.id, r.bucket, hashlib.sha256(r.question.encode("utf-8")).hexdigest(), ""
                 )
-                want = expected_iris(conn, r.mapped) if r.status == "scored" else set()
+                want = expected_iris(conn, sorted(r.relevant))
                 resp = stub.Ground(
                     consult_pb2.GroundRequest(question=r.question.strip(), as_of=on),
                     timeout=120,
@@ -316,7 +344,7 @@ def main() -> None:
                 else:
                     cites = list(resp.evidence.citations)
                     row.evidence = len(cites)
-                    if r.status == "scored":
+                    if r.scored:
                         row.evidence_has_expected = any(c.iri in want for c in cites)
                     evidence = "".join(f"[{c.code}] {c.label}：{c.text}\n" for c in cites)
                     text, row.model_calls, err = chat.complete(
@@ -326,21 +354,27 @@ def main() -> None:
                         row.final, row.error = "model_error", err
                     else:
                         row.final, row.cited = verify(text, {c.code for c in cites})
-                        if row.final == "answered" and r.status == "scored":
+                        if row.final == "answered" and r.scored:
                             by_code = {c.code: c.iri for c in cites}
                             row.cites_expected = any(by_code[c] in want for c in row.cited)
                 sink.write(json.dumps(asdict(row), ensure_ascii=False) + "\n")
                 sink.flush()
                 cache[r.id] = row
                 if i % 25 == 0:
-                    print(f"{i}/{len(resolved)} 呼叫 {chat.calls}", flush=True)
+                    print(f"{i}/{len(questions)} 呼叫 {chat.calls}", flush=True)
 
-    rows = [cache[r.id] for r in resolved if r.id in cache]
+    rows = [cache[r.id] for r in questions if r.id in cache]
     meta = {
         "run_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "envcite_commit": git("rev-parse", "HEAD"),
         "git_dirty": bool(git("status", "--porcelain", "--", "..")),
-        "golden": {"path": args.golden.name, "sha256": hashlib.sha256(raw).hexdigest()},
+        "golden": {"path": args.golden.name, "sha256": golden_sha},
+        "qrels": {
+            "path": args.qrels.name,
+            "sha256": qrels_doc["sha256"],
+            "judgements": len(qrels_doc["judgements"]),
+        },
+        "split": {"path": args.split.name, "sha256": split_doc["sha256"], "subset": args.subset},
         "snapshots": snaps,
         "model": chat.model_id,
         "model_calls": sum(r.model_calls for r in rows),

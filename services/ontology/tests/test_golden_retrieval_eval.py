@@ -8,6 +8,8 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any
 
+import pytest
+
 TOOL = Path(__file__).resolve().parents[1] / "tools" / "golden_retrieval_eval.py"
 
 
@@ -126,87 +128,162 @@ class FakeSegmenter:
         return text
 
 
-def test_a_hit_is_any_expected_article_in_the_top_k_and_summaries_split_by_bucket() -> None:
+ITEMS: list[dict[str, Any]] = [
+    {
+        "id": "first",
+        "bucket": "exact_id",
+        "question": "q",
+        "citation_allowlist": [{"statute": "空氣污染防制法", "article": "第68條"}],
+    },
+    {
+        "id": "second-of-two",
+        "bucket": "multi_hop",
+        "question": "q",
+        "citation_allowlist": [
+            {"statute": "空氣污染防制法", "article": "第24條"},
+            {"statute": "空氣污染防制法", "article": "第15條之1"},
+        ],
+    },
+    {
+        "id": "miss",
+        "bucket": "paraphrase",
+        "question": "q",
+        "citation_allowlist": [
+            {"statute": "空氣污染防制法", "article": "第24條"},
+            {"statute": "不存在法", "article": "第1條"},
+        ],
+    },
+    {
+        "id": "gone",
+        "bucket": "paraphrase",
+        "question": "q",
+        "citation_allowlist": [{"statute": "不存在法", "article": "第1條"}],
+    },
+    {"id": "neg", "bucket": "negative", "question": "q"},
+]
+
+
+def _qrels_doc(tool: ModuleType) -> dict[str, Any]:
+    qrels, unmapped = tool.build_qrels(tool.resolve(ITEMS, *_corpus(tool)))
+    return {"qrels": qrels, "unmapped": unmapped}
+
+
+def test_qrels_hold_the_mapped_articles_of_answerable_questions_only() -> None:
     tool = _tool()
-    by_title, provisions = _corpus(tool)
-    items = [
-        {
-            "id": "first",
-            "bucket": "exact_id",
-            "question": "q",
-            "citation_allowlist": [{"statute": "空氣污染防制法", "article": "第68條"}],
-        },
-        {
-            "id": "second-of-two",
-            "bucket": "multi_hop",
-            "question": "q",
-            "citation_allowlist": [
-                {"statute": "空氣污染防制法", "article": "第24條"},
-                {"statute": "空氣污染防制法", "article": "第15條之1"},
-            ],
-        },
-        {
-            "id": "miss",
-            "bucket": "paraphrase",
-            "question": "q",
-            "citation_allowlist": [{"statute": "空氣污染防制法", "article": "第24條"}],
-        },
-        {"id": "neg", "bucket": "negative", "question": "q"},
-    ]
-    store = FakeStore([("O0020001", "68"), ("Z", "1"), ("O0020001", "15-1")])
-    out = tool.search_all(
-        store,
-        FakeSegmenter(),
-        tool.resolve(items, by_title, provisions),
-        None,
-        k=50,
-        on="2026-10-23",
+    doc = _qrels_doc(tool)
+
+    assert doc["qrels"] == {
+        "first": {"O0020001-art-68": 1},
+        "second-of-two": {"O0020001-art-24": 1, "O0020001-art-15-1": 1},
+        "miss": {"O0020001-art-24": 1},
+    }
+    assert set(doc["unmapped"]) == {"miss", "gone"}  # 「miss」只是部分對應
+
+
+def _measure(tool: ModuleType, doc: dict[str, Any], hits: list[tuple[str, str]]) -> list[Any]:
+    rows = tool.questions(ITEMS, doc, frozenset(i["id"] for i in ITEMS))
+    return list(
+        tool.search_all(
+            FakeStore(hits), FakeSegmenter(), rows, None, qrels=doc["qrels"], k=50, on="2026-10-23"
+        )
     )
+
+
+def test_a_hit_is_any_relevant_article_in_the_top_k_and_ranx_scores_it_by_bucket() -> None:
+    tool = _tool()
+    doc = _qrels_doc(tool)
+    out = _measure(tool, doc, [("O0020001", "68"), ("Z0000001", "1"), ("O0020001", "15-1")])
     got = {r.id: r for r in out}
 
     assert got["first"].rank == 1
-    assert (
-        got["second-of-two"].rank == 3 and got["second-of-two"].hit_article == "O0020001 第15-1條"
-    )
-    assert got["miss"].rank is None
-    assert got["neg"].rank is None and got["neg"].top_lexical == 10.0
+    assert got["second-of-two"].rank == 3
+    assert got["second-of-two"].ranking == [
+        "O0020001-art-68",
+        "Z0000001-art-1",
+        "O0020001-art-15-1",
+    ]
+    assert got["miss"].rank is None and got["miss"].partial
+    assert got["gone"].status == "unmapped" and got["gone"].ranking == []
+    assert got["neg"].ranking == [] and got["neg"].top_lexical == 10.0
 
-    s = tool.summarize(out)
-    assert s["by_bucket"]["exact_id"]["recall@1"] == 1.0
-    assert s["by_bucket"]["multi_hop"]["recall@1"] == 0.0
-    assert s["by_bucket"]["multi_hop"]["recall@5"] == 1.0
-    assert s["by_bucket"]["paraphrase"]["mrr"] == 0.0
-    assert s["overall"]["n"] == 3  # negative 不計分
-    assert s["overall"]["recall@5"] == round(2 / 3, 4)
+    s = tool.summarize(out, doc["qrels"])
+    assert s["by_bucket"]["exact_id"]["hit_rate@1"] == 1.0
+    assert s["by_bucket"]["multi_hop"]["hit_rate@1"] == 0.0
+    assert s["by_bucket"]["multi_hop"]["hit_rate@5"] == 1.0
+    assert s["by_bucket"]["multi_hop"]["mrr"] == round(1 / 3, 4)
+    assert s["by_bucket"]["paraphrase"]["unmapped"] == 1
+    assert s["by_bucket"]["paraphrase"]["partially_mapped"] == 1
+    assert s["overall"]["n"] == 3  # negative 與 unmapped 不計分
+    assert s["overall"]["hit_rate@5"] == round(2 / 3, 4)
+    # 每題前 10 條都是同樣三條；只有各題 qrels 裡的才算判定過
+    assert s["overall"]["hole@10"] == round((2 + 2 + 3) / 9, 4)
     assert s["negative"]["n"] == 1 and s["negative"]["top_semantic"] is None
+
+
+def test_a_judged_irrelevant_article_is_not_a_hole_and_not_a_hit() -> None:
+    tool = _tool()
+    doc = _qrels_doc(tool)
+    doc["qrels"]["first"]["Z0000001-art-1"] = 0
+    out = _measure(tool, doc, [("Z0000001", "1"), ("O0020001", "68")])
+    s = tool.summarize([r for r in out if r.id == "first"], doc["qrels"])
+
+    assert s["by_bucket"]["exact_id"]["hit_rate@1"] == 0.0
+    assert s["by_bucket"]["exact_id"]["hit_rate@5"] == 1.0
+    assert s["by_bucket"]["exact_id"]["hole@10"] == 0.0
+
+
+def test_only_the_questions_of_the_subset_are_measured() -> None:
+    tool = _tool()
+    rows = tool.questions(ITEMS, _qrels_doc(tool), frozenset({"first", "neg"}))
+    assert [r.id for r in rows] == ["first", "neg"]
 
 
 def test_a_scope_drops_hits_of_other_laws_before_the_first_k_are_taken() -> None:
     tool = _tool()
-    by_title, provisions = _corpus(tool)
-    items = [
-        {
-            "id": "q",
-            "bucket": "exact_id",
-            "question": "q",
-            "citation_allowlist": [{"statute": "空氣污染防制法", "article": "第68條"}],
-        }
-    ]
-    store = FakeStore([("Z", str(i)) for i in range(1, 6)] + [("O0020001", "68")])
-    resolved = tool.resolve(items, by_title, provisions)
+    doc = _qrels_doc(tool)
+    rows = tool.questions(ITEMS[:1], doc, frozenset({"first"}))
+    store = FakeStore([("Z0000001", str(i)) for i in range(1, 6)] + [("O0020001", "68")])
+    kw: dict[str, Any] = {"qrels": doc["qrels"], "k": 3, "on": "2026-10-23"}
 
-    plain = tool.search_all(store, FakeSegmenter(), resolved, None, k=3, on="2026-10-23")
+    plain = tool.search_all(store, FakeSegmenter(), rows, None, **kw)
     scoped = tool.search_all(
-        store, FakeSegmenter(), resolved, None, k=3, on="2026-10-23", scope=frozenset({"O0020001"})
+        store, FakeSegmenter(), rows, None, scope=frozenset({"O0020001"}), **kw
     )
 
     assert plain[0].rank is None and plain[0].out_of_scope_dropped is None
     assert scoped[0].rank == 1 and scoped[0].out_of_scope_dropped == 5
 
 
-def test_a_published_row_keeps_the_question_hash_but_not_its_text() -> None:
+def test_a_published_row_keeps_the_question_hash_but_not_its_text_or_ranking() -> None:
     tool = _tool()
-    result = tool.Result(id="x", bucket="exact_id", question="某題目文字", expected=[])
-    row = tool.publishable(result)
-    assert "question" not in row
+    row = tool.publishable(tool.Measured("x", "exact_id", "某題目文字", "scored", ranking=["a"]))
+    assert "question" not in row and "ranking" not in row
     assert row["question_sha256"] == hashlib.sha256("某題目文字".encode()).hexdigest()
+
+
+def _run(tool: ModuleType, ranking: dict[str, list[str]], subset: str = "dev") -> dict[str, Any]:
+    gs = sys.modules["golden_set"]
+    sealed: dict[str, Any] = gs.seal(
+        {"golden_sha256": "g", "split_sha256": "s", "subset": subset, "ranking": ranking}
+    )
+    return sealed
+
+
+def test_runs_are_compared_with_a_paired_test_and_must_share_a_subset() -> None:
+    tool = _tool()
+    gs = sys.modules["golden_set"]
+    qrels_doc = gs.seal(
+        {"golden_sha256": "g", "qrels": {f"q{i}": {"A0000001-art-1": 1} for i in range(8)}}
+    )
+    good = {f"q{i}": ["A0000001-art-1"] for i in range(8)}
+    bad = {f"q{i}": ["B0000001-art-1", "A0000001-art-1"] for i in range(8)}
+
+    c = tool.compared(qrels_doc, {"good": _run(tool, good), "bad": _run(tool, bad)}, 0.05)
+    r1 = next(p for p in c["pairs"] if p["metric"] == "hit_rate@1")
+    assert r1["difference"] == -1.0 and r1["significant"]
+    assert c["runs"]["bad"]["hole@10"] == 0.5
+    same = tool.compared(qrels_doc, {"a": _run(tool, good), "b": _run(tool, good)}, 0.05)
+    assert not any(p["significant"] for p in same["pairs"])
+
+    with pytest.raises(SystemExit, match="切分子集"):
+        tool.compared(qrels_doc, {"a": _run(tool, good), "b": _run(tool, good, "test")}, 0.05)

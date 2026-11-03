@@ -1,7 +1,7 @@
 ---
 type: reference
 applies-to: all
-owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations, competency-registry]
+owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations, competency-registry, golden-test-collection]
 ---
 
 # envcite-ontology
@@ -77,6 +77,32 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 - **載入**：`envcite-ruling load <file.json>`，格式見 [`ruling.py`](src/envcite_ontology/ruling.py) 的模組說明。由人讀解釋文填失效日，每則裁判附出處與解釋文原文；裁判不可改，同一字號內容須相同；一次載入一個交易。抽取流程只刪改自己寫的列（`extractor_version` 有值），人載入的列不動。
 - **讀取**：rpc `OntologyService.ListInvalidations`（依法規、日期、可選的條號）；SQL 是 `corpus.invalidations_at(法規 id, 語文, 日期)`。只有裁判日已施行的文字被宣告失效，裁判之後修正的新文字不受影響。`partial` 標示裁判只宣告條文的一部分（失效仍記在整個條文單元，範圍看 `excerpt`）。
 - **範圍與未做**：自動取得涵蓋全部大法官解釋與憲法法庭判決；裁定與不受理決議不取。規則只提得出明確寫法的失效（多條並列、「同法」回指、命令函釋、附條件的失效日都留給人以 `load` 填），所以**庫裡有裁判不等於已提出條文**。`provisions_at` 的 `status` 不含違憲失效，讀取方各自合併。事件所涉條文的通用表（A4）未做。
+
+## 黃金測試集
+
+檢索的召回與拒答以外部黃金題庫（`golden.yaml`，不在倉庫）量測。工具在 `tools/`，指標與檢定由 [ranx](https://github.com/AmenRa/ranx) 算（只在開發依賴）；設計依據見 envcite-docs〈黃金測試集的架構〉。
+
+| 步驟 | 指令（在本目錄） | 產出 |
+|------|------|------|
+| 建 qrels | `uv run python tools/golden_retrieval_eval.py qrels <golden.yaml> --out eval/golden-qrels.json` | qrels（需資料庫） |
+| 切分 | `uv run python tools/golden_set.py split <golden.yaml> --out eval/golden-split.json` | 開發集與測試集 |
+| 量測 | `uv run python tools/golden_retrieval_eval.py measure <golden.yaml> --qrels … --split … --subset dev --out eval/golden-retrieval-<日期>` | 報告 `.json`／`.md`、每臂一個 `.<臂>.run.json` |
+| 比較 | `uv run python tools/golden_retrieval_eval.py compare --qrels … <a>.run.json <b>.run.json [--out …]` | 各 run 的指標、Hole@10、兩兩的 p 值 |
+| 匯出待判 | `uv run python tools/golden_set.py pool <golden.yaml> --qrels … --run <a>.run.json [--run …] --out <倉庫外>/pool.yaml` | 待判清單（需資料庫） |
+| 匯回判定 | `uv run python tools/golden_set.py judge --qrels eval/golden-qrels.json --judgements <填好的 pool.yaml> --out eval/golden-qrels.json` | 新版 qrels |
+| 選下界 | `tools/answerability_floor.py`、`tools/floor_risk_coverage.py`，`--lexical`／`--semantic` 給開發集的報告 | 只印出，不改任何下界 |
+| 端到端 | `tools/grounding_check_eval.py <golden.yaml> --qrels … --split … --subset test …` | 拒答與引用的報告 |
+
+**格式**（JSON 文件都帶 `sha256`：自身去掉該欄後的正規化 JSON（鍵排序、緊湊分隔、UTF-8）的雜湊；`golden_set.read` 不符即停）：
+
+- **條文代號**：`<pcode>-art-<條號>`，條號同 `corpus.article_number`（如 `O0020001-art-15-1`）。
+- **qrels**：`qrels` 為題號 → 條文代號 → relevance（`1` 相關、`0` 已判為不相關）；只含可答且對得到語料的題。另記 `golden_sha256`、對應時的語料快照 `snapshots`（量測時資料庫快照不同即停，要重建 qrels 再重新併入判定檔）、`unmapped`（題號 → 對不到的原因）與 `judgements`（每份併入的判定檔：檔名、雜湊、判定者、日期、新增數）。無答案題不進 qrels。
+- **切分**：`dev`、`test` 兩份題號清單（含無答案題），依桶分層、固定種子；記 `golden_sha256`、`seed`、`test_fraction`。選下界、調融合與候選池只用 `dev`；`test` 在定案後報告。
+- **run**：`ranking` 為題號 → 前 k 條的條文代號（依名次）；記臂、`golden_sha256`、切分雜湊與子集、commit、語料快照、檢索設定。run 不綁 qrels，補判後可對新 qrels 重算。
+- **報告**：`meta` 記 commit、題庫、qrels、切分與語料快照的雜湊；每臂的 `summary` 依桶列 `hit_rate@k`（表中的 R@k：任一相關條在前 k）、`mrr`、`hole@10`，`results` 逐題記狀態、第一個相關條的名次與兩臂最高分（不存題目文字）。
+- **Hole@10**：每題前 10 條中 qrels 沒有判定（相關或不相關）的條所占的比例。
+- **比較**：成對 Fisher 隨機化檢定（ranx `compare`，`stat_test="fisher"`），兩個 run 必須是同一切分子集、同一批題；p ≥ α 的差距不寫成改善或退步。
+- **待判清單**（YAML，含題目全文，不提交進倉庫）：每列 `qid`、`doc`、`article`、`text`（條文全文）、`relevance`（人填 `0`／`1`，留空仍是洞）、`prescreen`（模型預篩，只供參考）。匯回時檔案須填 `judge` 與 `date`（ISO 8601）；只讀 `relevance`，`prescreen` 一律不匯入；與 qrels 已有判定矛盾、或題號不在 qrels 的列使整份拒絕。
 
 ## 能力問題登記
 

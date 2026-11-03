@@ -1,31 +1,30 @@
-"""Re-derive consult's relevance floors from the golden-set reports, offline.
+"""Re-derive consult's relevance floors from the golden-set reports of the dev subset, offline.
 
     uv run python tools/answerability_floor.py \\
-        --lexical eval/golden-retrieval-2026-10-23.json \\
-        --semantic eval/golden-retrieval-scoped2-2026-10-24.json
+        --lexical eval/golden-retrieval-<date>.json --semantic eval/golden-retrieval-<date>.json
 
 Each report records, per question, the best score of each arm over the top 50. A question
 passes consult's floor when either arm reaches its floor, so the pass rate of the out-of-scope
 (negative) questions is the share consult would answer instead of declining, and the pass rate
 of the answerable ones is the share it would not wrongly decline.
 
-The deployed service searches the whole corpus with the lexical arm, but only the scoped
-passages carry embeddings. So the lexical scores come from the whole-corpus run and the
-semantic ones from the scoped run, joined by question id: that pairing is what the deployed
-arms would see. Only the reports are read: no database, no embedding endpoint.
+The lexical scores come from the lexical arm of one report and the semantic ones from the hybrid
+arm of another (the same file when one run measured both), joined by question id. Both must be
+reports of the dev subset of the same split (`golden_retrieval_eval.py measure --subset dev`): the
+floors are chosen on dev and the test subset is not read here; how a chosen floor does on unseen
+questions is the end-to-end measurement on test. Only the reports are read: no database, no
+embedding endpoint.
 
 The floors this prints are not applied anywhere. Which point on the curve to take is a price
 the owner of consult sets (how many answerable questions may be declined to catch how many
 out-of-scope ones); the tool reports the curve and the point that maximises the difference
-between the two pass rates (Youden's J), checked on random halves so an optimum fitted to 94
-negatives is not mistaken for a result.
+between the two pass rates (Youden's J).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import random
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -57,8 +56,16 @@ def _results(report: dict[str, Any], arm: str) -> dict[str, dict[str, Any]]:
     return {r["id"]: r for r in report["arms"][arm]["results"]}
 
 
+def require_dev(*reports: dict[str, Any]) -> None:
+    """下界只在開發集上選：每份報告都是同一個切分的 dev。"""
+    splits = {(r["meta"]["split"]["sha256"], r["meta"]["split"]["subset"]) for r in reports}
+    if len(splits) != 1 or next(iter(splits))[1] != "dev":
+        raise SystemExit(f"下界只在同一切分的開發集上選；得到 {sorted(splits)}")
+
+
 def join(lexical: dict[str, Any], semantic: dict[str, Any]) -> list[Row]:
     """Negatives and scored answerable questions: lexical from one run, semantic from the other."""
+    require_dev(lexical, semantic)
     lex = _results(lexical, "lexical")
     rows: list[Row] = []
     for qid, s in _results(semantic, "hybrid").items():
@@ -93,21 +100,6 @@ def best(rows: Sequence[Row], lexicals: Sequence[float], semantics: Sequence[flo
     return max((evaluate(rows, lf, sf) for lf in lexicals for sf in semantics), key=lambda p: p.j)
 
 
-def held_out_j(
-    rows: Sequence[Row], lexicals: Sequence[float], semantics: Sequence[float], rounds: int = 20
-) -> float:
-    """Mean J on the half not used to pick the floors, over random halves."""
-    rng = random.Random(0)
-    total = 0.0
-    for _ in range(rounds):
-        shuffled = list(rows)
-        rng.shuffle(shuffled)
-        half = len(shuffled) // 2
-        chosen = best(shuffled[:half], lexicals, semantics)
-        total += evaluate(shuffled[half:], chosen.lexical, chosen.semantic).j
-    return total / rounds
-
-
 LEXICALS = (0.3, 0.5, 1.0, 2.0, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, float("inf"))
 SEMANTICS = (*(round(0.6 + i * 0.01, 2) for i in range(25)), float("inf"))
 
@@ -130,9 +122,6 @@ def report(rows: Sequence[Row], current: tuple[float, float]) -> str:
         "|---|---|---|---|---|---|",
         _row("current", evaluate(rows, *current)),
         _row("max J", chosen),
-        "",
-        f"max J on the half not used to choose it (mean of 20 random halves): "
-        f"{held_out_j(rows, LEXICALS, SEMANTICS):.3f}",
         "",
         "Either arm alone (the other disabled):",
         "",

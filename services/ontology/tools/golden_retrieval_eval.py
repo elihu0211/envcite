@@ -1,21 +1,35 @@
-"""Retrieval recall against an external golden question set (read-only), with provenance.
+"""Retrieval against the golden question set (read-only): qrels, runs, metrics and tests.
 
-    uv run python tools/golden_retrieval_eval.py <golden.yaml> --out eval/golden-retrieval-<date>
+    uv run python tools/golden_retrieval_eval.py qrels <golden.yaml> --out eval/golden-qrels.json
+    uv run python tools/golden_retrieval_eval.py measure <golden.yaml> \\
+        --qrels eval/golden-qrels.json --split eval/golden-split.json --subset dev \\
+        --out eval/golden-retrieval-<date>
+    uv run python tools/golden_retrieval_eval.py compare --qrels eval/golden-qrels.json \\
+        <a>.hybrid.run.json <b>.hybrid.run.json [--out eval/golden-compare-<date>]
 
-Each question lists the articles that answer it (`citation_allowlist`: law name, article number,
-sometimes a `<pcode>-art-<n>` id). They are mapped to this corpus — law name to pcode by exact
+`qrels` maps each answerable question's expected articles (`citation_allowlist`: law name, article
+number, sometimes a `<pcode>-art-<n>` id) to this corpus — law name to pcode by exact
 `legal_expression.title` (an id's pcode wins), article number to `corpus.provision.article_path` —
-and the question is searched with the same `OntologyStore.search` the service uses. A hit is any
-expected article within the top k. A question none of whose articles map is `unmapped`, listed
-with the reason and left out of the denominator; it is never scored as a miss. The negative bucket
-has no recall: only each question's top score is recorded, for calibrating a refusal floor.
+and writes them as qrels keyed by article id (relevance 1). A question none of whose articles map
+is `unmapped`: listed with the reason, never in the qrels, never scored as a miss. Negatives are
+not in the qrels either; they measure refusal. The qrels records the golden set's sha256 and the
+corpus snapshots it was mapped against; a measurement on other snapshots stops (map again).
 
-The measurement is retrieval only (the pool_recall counterpart); nothing here judges an answer.
-The method is fixed: it does not change with the scores. Every number in the output carries the
-commit, the corpus snapshots, the question file's sha256 and the retrieval settings that made it.
+`measure` searches the questions of one split subset with the same `OntologyStore.search` the
+service uses, writes one run per arm (`<out>.<arm>.run.json`) and a report scored from qrels and
+run by ranx: R@k is ranx `hit_rate@k` (any relevant article within the top k), MRR is ranx `mrr`.
+Hole@10 is the share of the top 10 that the qrels has no judgement for; those are the articles
+`golden_set.py pool` sends to be judged. Negatives only record each arm's top score, for the
+floor tools. Tune on `dev`; `test` is reported once, after the choice is made.
 
-Database and embedder come from the environment (ENVCITE_ONTOLOGY_DSN, ENVCITE_ONTOLOGY_MODELS);
-with no embedding declared only the lexical arm runs and the result says so.
+`compare` scores two or more runs of the same subset against one qrels (possibly newer than the
+runs) and tests every pair with Fisher's randomization test. A difference that does not pass is not
+an improvement or a regression.
+
+Every report records the commit, the corpus snapshots and the sha256 of the golden set, the qrels
+and the split. Database and embedder come from the environment (ENVCITE_ONTOLOGY_DSN,
+ENVCITE_ONTOLOGY_MODELS); with no embedding declared only the lexical arm runs and the result
+says so.
 
 `--scope <golden_scope.py output>` limits the search to that set of laws without touching the
 retrieval function: the service's `search` is asked for every candidate it can return and the hits
@@ -34,7 +48,7 @@ import re
 import subprocess
 import sys
 from collections import defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -46,7 +60,8 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from retrieval_eval import Embeds, Outcome, mrr, recall
+import golden_set as gs
+from retrieval_eval import Embeds
 from scoped_search import resource_ids, scoped_search
 
 from envcite_ontology import embedding
@@ -55,8 +70,9 @@ from envcite_ontology.store import SEARCH_POOL, OntologyStore
 from envcite_segmenter import Segmenter
 
 KS = (1, 5, 10, 20, 50)
+METRICS = (*(f"hit_rate@{k}" for k in KS), "mrr")
 BUCKETS = ("exact_id", "paraphrase", "multi_hop")
-NEGATIVE = "negative"
+NEGATIVE = gs.NEGATIVE
 
 _ARTICLE = re.compile(r"^第\s*(\d+)(?:\s*條之\s*(\d+)|\s*-\s*(\d+)\s*條|\s*條)")
 _ID = re.compile(r"^(?P<pcode>[A-Z]\d{7})-art-(?P<number>\d+(?:-\d+)?)$")
@@ -86,18 +102,6 @@ class Result:
     mapped: list[dict[str, str]] = field(default_factory=list)
     unmapped_reasons: list[str] = field(default_factory=list)
     status: str = "scored"  # scored | unmapped | negative
-    rank: int | None = None
-    hit_article: str | None = None
-    top_lexical: float | None = None
-    top_semantic: float | None = None
-    out_of_scope_dropped: int | None = None
-
-
-def publishable(r: Result) -> dict[str, Any]:
-    """寫進結果檔的一題：不存題目文字（題庫是外部的，以 id 回題庫查），只留文字的雜湊供核對。"""
-    row = asdict(r)
-    row["question_sha256"] = hashlib.sha256(row.pop("question").encode("utf-8")).hexdigest()
-    return row
 
 
 def article_number(text: str | None) -> str | None:
@@ -238,25 +242,91 @@ def resolve(
     return results
 
 
+def build_qrels(results: Iterable[Result]) -> tuple[gs.Qrels, dict[str, list[str]]]:
+    """（qrels, 有對不到的條的題 → 原因）。只有 scored 的題進 qrels。"""
+    qrels: gs.Qrels = {}
+    reasons: dict[str, list[str]] = {}
+    for r in results:
+        if r.status == "scored":
+            qrels[r.id] = {gs.doc_id(m["pcode"], m["number"]): 1 for m in r.mapped}
+        if r.unmapped_reasons:
+            reasons[r.id] = r.unmapped_reasons
+    return qrels, reasons
+
+
+@dataclass(frozen=True)
+class Measured:
+    id: str
+    bucket: str
+    question: str
+    status: str  # scored | unmapped | negative
+    partial: bool = False  # 有期望條文對不到語料
+    ranking: list[str] = field(default_factory=list)
+    rank: int | None = None  # 第一個相關條的名次
+    top_lexical: float | None = None
+    top_semantic: float | None = None
+    out_of_scope_dropped: int | None = None
+
+
+def questions(
+    items: Iterable[Mapping[str, Any]], qrels_doc: Mapping[str, Any], subset: frozenset[str]
+) -> list[Measured]:
+    """子集內的題；是否計分由 qrels 決定（在 qrels 裡且有相關條）。"""
+    qrels: gs.Qrels = qrels_doc["qrels"]
+    reasons: dict[str, list[str]] = qrels_doc["unmapped"]
+    out = []
+    for item in items:
+        qid = str(item["id"])
+        if qid not in subset:
+            continue
+        bucket = str(item["bucket"])
+        if bucket == NEGATIVE:
+            status = "negative"
+        elif any(rel > 0 for rel in qrels.get(qid, {}).values()):
+            status = "scored"
+        else:
+            status = "unmapped"
+        out.append(
+            Measured(
+                qid,
+                bucket,
+                str(item["question"]),
+                status,
+                partial=status == "scored" and qid in reasons,
+            )
+        )
+    return out
+
+
+def publishable(r: Measured) -> dict[str, Any]:
+    """寫進報告的一題：不存題目文字（題庫是外部的，以 id 回題庫查），只留文字的雜湊供核對；
+    排序在 run 檔。"""
+    row = asdict(r)
+    row["question_sha256"] = hashlib.sha256(row.pop("question").encode("utf-8")).hexdigest()
+    del row["ranking"]
+    return row
+
+
 def search_all(
     store: OntologyStore,
     segmenter: Segmenter,
-    results: Sequence[Result],
+    rows: Sequence[Measured],
     embedder: Embeds | None,
     *,
+    qrels: gs.Qrels,
     k: int,
     on: str,
     scope: frozenset[str] | None = None,
     pool: tuple[psycopg.Connection[Any], list[int]] | None = None,
-) -> list[Result]:
-    """逐題檢索前 k 條，回傳填了名次與最高分的新 Result；negative 只記最高分。
+) -> list[Measured]:
+    """逐題檢索前 k 條，回傳填了排序、第一個相關條的名次與最高分的新列；negative 只記最高分。
 
     有 `scope`（pcode 集合）時向檢索要它能給的全部候選，丟掉範圍外法規的命中後再取前 k 條。
     有 `pool`（連線，範圍內的法規內部編號）時改走 `scoped_search`：兩臂的候選池在取候選之前就
     限定在範圍內，取前 k 條後不再過濾（`out_of_scope_dropped` 照記，應為 0）。
     """
     out = []
-    for r in results:
+    for r in rows:
         if r.status == "unmapped":
             out.append(r)
             continue
@@ -290,18 +360,13 @@ def search_all(
         if pool is not None:
             assert dropped == 0, "候選池應只含範圍內的法規"
         semantic = [h.semantic_similarity for h in hits if h.semantic_similarity is not None]
-        rank, hit_article = None, None
-        if r.status == "scored":
-            wanted = {(m["pcode"], m["number"]) for m in r.mapped}
-            for i, h in enumerate(hits, 1):
-                if (h.law_id, h.number) in wanted:
-                    rank, hit_article = i, f"{h.law_id} 第{h.number}條"
-                    break
+        ranking = [gs.doc_id(h.law_id, h.number) for h in hits] if r.status == "scored" else []
+        wanted = {d for d, rel in qrels.get(r.id, {}).items() if rel > 0}
         out.append(
             replace(
                 r,
-                rank=rank,
-                hit_article=hit_article,
+                ranking=ranking,
+                rank=next((i for i, d in enumerate(ranking, 1) if d in wanted), None),
                 top_lexical=max((h.lexical_score for h in hits), default=0.0),
                 top_semantic=max(semantic, default=None),
                 out_of_scope_dropped=dropped,
@@ -310,11 +375,15 @@ def search_all(
     return out
 
 
+def ranking_of(rows: Iterable[Measured]) -> gs.Ranking:
+    return {r.id: r.ranking for r in rows if r.status == "scored"}
+
+
 def check_equivalence(
     store: OntologyStore,
     conn: psycopg.Connection[Any],
     segmenter: Segmenter,
-    results: Sequence[Result],
+    results: Sequence[Measured],
     embedder: Embeds | None,
     *,
     on: str,
@@ -359,35 +428,33 @@ def _distribution(values: Sequence[float | None]) -> dict[str, float | int] | No
     }
 
 
-def summarize(results: Sequence[Result]) -> dict[str, Any]:
-    def block(rows: Sequence[Result]) -> dict[str, Any]:
-        outs = [Outcome(r.rank, r.top_lexical or 0.0, r.top_semantic) for r in rows]
+def scores(qrels: gs.Qrels, ranking: gs.Ranking) -> dict[str, Any]:
+    """一組題的 ranx 指標與 Hole@10。"""
+    judged = {q: qrels[q] for q in ranking}
+    return {
+        "n": len(ranking),
+        **{m: round(v, 4) for m, v in gs.evaluate(judged, ranking, METRICS).items()},
+        "hole@10": None if (h := gs.hole_rate(judged, ranking)) is None else round(h, 4),
+    }
+
+
+def summarize(rows: Sequence[Measured], qrels: gs.Qrels) -> dict[str, Any]:
+    def counts(rs: Sequence[Measured]) -> dict[str, int]:
         return {
-            "n": len(rows),
-            **{f"recall@{k}": round(recall(outs, k), 4) for k in KS},
-            "mrr": round(mrr(outs), 4),
+            "questions": len(rs),
+            "unmapped": sum(r.status == "unmapped" for r in rs),
+            "partially_mapped": sum(r.partial for r in rs),
         }
 
-    by_bucket: dict[str, Any] = {}
+    by_bucket = {}
     for b in BUCKETS:
-        rows = [r for r in results if r.bucket == b]
-        by_bucket[b] = {
-            "questions": len(rows),
-            "unmapped": sum(r.status == "unmapped" for r in rows),
-            "partially_mapped": sum(
-                r.status == "scored" and bool(r.unmapped_reasons) for r in rows
-            ),
-            **block([r for r in rows if r.status == "scored"]),
-        }
-    neg = [r for r in results if r.bucket == NEGATIVE]
+        rs = [r for r in rows if r.bucket == b]
+        by_bucket[b] = {**counts(rs), **scores(qrels, ranking_of(rs))}
+    answerable = [r for r in rows if r.bucket in BUCKETS]
+    neg = [r for r in rows if r.bucket == NEGATIVE]
     return {
         "by_bucket": by_bucket,
-        "overall": {
-            "questions": sum(r.bucket in BUCKETS for r in results),
-            "unmapped": sum(r.status == "unmapped" for r in results),
-            "partially_mapped": sum(v["partially_mapped"] for v in by_bucket.values()),
-            **block([r for r in results if r.status == "scored"]),
-        },
+        "overall": {**counts(answerable), **scores(qrels, ranking_of(answerable))},
         "negative": {
             "n": len(neg),
             "top_lexical": _distribution([r.top_lexical for r in neg]),
@@ -396,22 +463,40 @@ def summarize(results: Sequence[Result]) -> dict[str, Any]:
     }
 
 
+def _pct(x: float | None) -> str:
+    return "—" if x is None else f"{x:.1%}"
+
+
+def versions(meta: Mapping[str, Any]) -> list[str]:
+    g, q, s = meta["golden"], meta["qrels"], meta["split"]
+    return [
+        f"- 執行：{meta['run_at']}（as_of {meta['as_of']}）；commit `{meta['envcite_commit']}`"
+        + ("（工作樹有未提交變更）" if meta["git_dirty"] else ""),
+        f"- 題庫：`{g['path']}`，sha256 `{g['sha256']}`，{g['items']} 題",
+        f"- qrels：`{q['path']}`，sha256 `{q['sha256']}`；人工判定 {q['judgements']} 份",
+        f"- 切分：`{s['path']}`，sha256 `{s['sha256']}`；本報告為 **{s['subset']}**，"
+        f"{s['questions']} 題",
+        "- 語料快照："
+        + "；".join(f"{x['feed']} data_date {x['data_date']}" for x in meta["snapshots"]),
+    ]
+
+
 def markdown(meta: dict[str, Any], arm: str, s: dict[str, Any]) -> str:
-    g, r, c = meta["golden"], meta["retrieval"], meta["corpus"]
+    r, c = meta["retrieval"], meta["corpus"]
     lines = [
         f"## {arm} 臂",
         "",
         "| 桶 | 題數 | unmapped | 部分對應 | 計分 n | "
         + " | ".join(f"R@{k}" for k in KS)
-        + " | MRR |",
-        "|---|---|---|---|---|" + "---|" * (len(KS) + 1),
+        + " | MRR | Hole@10 |",
+        "|---|---|---|---|---|" + "---|" * (len(KS) + 2),
     ]
     rows = [(b, s["by_bucket"][b]) for b in BUCKETS] + [("總計", s["overall"])]
     for name, x in rows:
         lines.append(
             f"| {name} | {x['questions']} | {x['unmapped']} | {x['partially_mapped']} | {x['n']} | "
-            + " | ".join(f"{x[f'recall@{k}']:.3f}" for k in KS)
-            + f" | {x['mrr']:.3f} |"
+            + " | ".join(f"{x[f'hit_rate@{k}']:.3f}" for k in KS)
+            + f" | {x['mrr']:.3f} | {_pct(x['hole@10'])} |"
         )
     n = s["negative"]
     lines += ["", f"negative 桶 {n['n']} 題的最高分（不算召回）：", ""]
@@ -423,27 +508,26 @@ def markdown(meta: dict[str, Any], arm: str, s: dict[str, Any]) -> str:
     header = [
         "# 黃金題庫條文檢索召回（envcite）",
         "",
-        f"- 執行：{meta['run_at']}（as_of {meta['as_of']}）；commit `{meta['envcite_commit']}`"
-        + ("（工作樹有未提交變更）" if meta["git_dirty"] else ""),
-        f"- 題庫：`{g['path']}`，sha256 `{g['sha256']}`，{g['items']} 題",
-        "- 語料快照："
-        + "；".join(f"{x['feed']} data_date {x['data_date']}" for x in meta["snapshots"]),
+        *versions(meta),
         f"- 語料：{c['legal_resources']} 部法規、{c['provisions']} 個條文單元、"
         f"{c['passages']} 筆 passage（其中有嵌入 {c['passages_with_embedding']}）",
         f"- 檢索：{r['arms']}；分詞器 `{r['tokenizer']}`；k = {r['k']}",
         *(
             [
-                f"- 範圍：{s['counts']['laws']} 部法規（題庫所引 {s['counts']['cited']}、授權命令 "
-                f"{s['counts']['authorized']}、總則法 {s['counts']['general']}），"
-                f"{s['passages']} 段落，清單 sha256 `{s['pcodes_sha256']}`（`{s['path']}`）",
-                f"- 嵌入：模型 `{s['embedding_model']}`，完成 {s['embedded']}/{s['passages']}"
-                f"（{s['embedded'] / s['passages']:.1%}）；方法：{s['method']}",
+                f"- 範圍：{sc['counts']['laws']} 部法規（題庫所引 {sc['counts']['cited']}、"
+                f"授權命令 "
+                f"{sc['counts']['authorized']}、總則法 {sc['counts']['general']}），"
+                f"{sc['passages']} 段落，清單 sha256 `{sc['pcodes_sha256']}`（`{sc['path']}`）",
+                f"- 嵌入：模型 `{sc['embedding_model']}`，完成 {sc['embedded']}/{sc['passages']}"
+                f"（{sc['embedded'] / sc['passages']:.1%}）；方法：{sc['method']}",
             ]
-            if (s := meta.get("scope"))
+            if (sc := meta.get("scope"))
             else []
         ),
-        "- 命中：任一期望條文在前 k 條；unmapped 不計入分母，原因逐題列在 JSON；"
-        "部分對應的題只以對得到的條文計。僅檢索層，不含答對率。",
+        "- 指標由 ranx 以 qrels 與 run 算出：R@k 是 `hit_rate@k`（任一相關條在前 k 條），MRR 是"
+        " `mrr`；Hole@10 是前 10 條中 qrels 沒有判定的比例，洞裡的條未經判定，召回是下界。"
+        "unmapped 不計入分母，原因逐題列在 qrels；部分對應的題只以對得到的條文計。"
+        "僅檢索層，不含答對率。",
         "",
     ]
     return "\n".join(header + lines) + "\n"
@@ -464,6 +548,19 @@ def snapshots(conn: psycopg.Connection[Any]) -> list[dict[str, Any]]:
         {"feed": f, "data_date": d.isoformat(), "sha256": h, "fetched_at": t.isoformat()}
         for f, d, h, t in rows
     ]
+
+
+def require_snapshots(qrels_doc: Mapping[str, Any], snaps: Sequence[Mapping[str, Any]]) -> None:
+    """qrels 是對著哪些快照對應的，量測就只能在那些快照上做。"""
+
+    def key(xs: Iterable[Mapping[str, Any]]) -> list[tuple[str, str]]:
+        return sorted((str(x["feed"]), str(x["sha256"])) for x in xs)
+
+    if key(qrels_doc["snapshots"]) != key(snaps):
+        raise SystemExit(
+            "資料庫的語料快照與 qrels 對應時的不同：以 `qrels` 重新對應，再以 golden_set.py judge "
+            "重新併入判定檔"
+        )
 
 
 def corpus_counts(conn: psycopg.Connection[Any]) -> dict[str, int]:
@@ -500,36 +597,65 @@ def scope_completion(conn: psycopg.Connection[Any], embedder: Embeds, scope: fro
     return int(row[0])
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(prog="golden_retrieval_eval")
-    parser.add_argument("golden", type=Path)
-    parser.add_argument("--out", type=Path, required=True, help="輸出檔前綴（寫 .json 與 .md）")
-    parser.add_argument("--k", type=int, default=max(KS))
-    parser.add_argument("--scope", type=Path, help="golden_scope.py 的輸出；限定檢索範圍")
-    parser.add_argument(
-        "--scope-in-pool",
-        action="store_true",
-        help="兩臂的候選池在取候選之前就限定在範圍內（唯讀重現 search_hybrid）",
-    )
-    args = parser.parse_args()
-    if args.k < max(KS):
-        parser.error(f"--k 至少 {max(KS)}（recall@{max(KS)} 需要）")
+def _golden(path: Path) -> tuple[list[dict[str, Any]], str]:
+    raw = path.read_bytes()
+    items: list[dict[str, Any]] = yaml.safe_load(raw)["items"]
+    return items, hashlib.sha256(raw).hexdigest()
 
-    raw = args.golden.read_bytes()
-    items = yaml.safe_load(raw)["items"]
+
+def cmd_qrels(args: argparse.Namespace) -> None:
+    items, golden_sha = _golden(args.golden)
+    db = load(DatabaseSettings)
+    with psycopg.connect(db.dsn) as conn:
+        conn.read_only = True
+        by_title, provisions = load_corpus(conn)
+        snaps = snapshots(conn)
+    resolved = resolve(items, by_title, provisions)
+    qrels, reasons = build_qrels(resolved)
+    doc = gs.write(
+        args.out,
+        {
+            "golden_sha256": golden_sha,
+            "snapshots": [{k: s[k] for k in ("feed", "data_date", "sha256")} for s in snaps],
+            "rule": "期望條文對到語料：法規名稱以 legal_expression.title 完全相同對 pcode"
+            "（有 article_id 時其 pcode 為準），條號對 corpus.provision.article_path；"
+            "alternatives 攤平；"
+            "relevance 1 來自題庫，其後的判定來自 judgements 所列的判定檔",
+            "counts": {
+                "items": len(items),
+                "scored": len(qrels),
+                "unmapped": sum(r.status == "unmapped" for r in resolved),
+                "negative": sum(r.status == "negative" for r in resolved),
+            },
+            "qrels": qrels,
+            "unmapped": reasons,
+            "judgements": [],
+        },
+    )
+    print(f"{doc['counts']}；{args.out}：sha256 {doc['sha256']}")
+
+
+def cmd_measure(args: argparse.Namespace) -> None:
+    if args.k < max(KS):
+        raise SystemExit(f"--k 至少 {max(KS)}（R@{max(KS)} 需要）")
+    if args.scope_in_pool and not args.scope:
+        raise SystemExit("--scope-in-pool 需要 --scope")
+    items, golden_sha = _golden(args.golden)
+    qrels_doc, split_doc = gs.read(args.qrels), gs.read(args.split)
+    gs.require_golden(qrels_doc, golden_sha, str(args.qrels))
+    gs.require_golden(split_doc, golden_sha, str(args.split))
+    qrels: gs.Qrels = qrels_doc["qrels"]
+    rows = questions(items, qrels_doc, gs.subset_ids(split_doc, args.subset))
     db = load(DatabaseSettings)
     embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0)
     on = date.today().isoformat()
     scope_doc = load_scope(args.scope) if args.scope else None
     scope = frozenset(e["pcode"] for e in scope_doc["laws"]) if scope_doc else None
     with psycopg.connect(db.dsn) as conn:
-        by_title, provisions = load_corpus(conn)
         snaps = snapshots(conn)
+        require_snapshots(qrels_doc, snaps)
         counts = corpus_counts(conn)
         scope_embedded = scope_completion(conn, embedder, scope) if scope and embedder else None
-    if args.scope_in_pool and not scope:
-        parser.error("--scope-in-pool 需要 --scope")
-    resolved = resolve(items, by_title, provisions)
     equivalence = None
     with (
         OntologyStore.from_dsn(db.dsn) as store,
@@ -539,29 +665,34 @@ def main() -> None:
         segmenter = Segmenter(store.lexicon())
         pool = (rconn, resource_ids(rconn, sorted(scope))) if args.scope_in_pool and scope else None
         if pool:
-            equivalence = check_equivalence(store, rconn, segmenter, resolved, embedder, on=on)
+            equivalence = check_equivalence(store, rconn, segmenter, rows, embedder, on=on)
             if equivalence["identical"] != equivalence["comparisons"]:
                 raise SystemExit(f"scoped_search 與 OntologyStore.search 不等價：{equivalence}")
         arms = {
-            "lexical": search_all(
-                store, segmenter, resolved, None, k=args.k, on=on, scope=scope, pool=pool
+            name: search_all(
+                store, segmenter, rows, e, qrels=qrels, k=args.k, on=on, scope=scope, pool=pool
             )
+            for name, e in (("lexical", None), ("hybrid", embedder))
+            if name == "lexical" or e is not None
         }
-        if embedder:
-            arms["hybrid"] = search_all(
-                store, segmenter, resolved, embedder, k=args.k, on=on, scope=scope, pool=pool
-            )
         tokenizer = segmenter.tokenizer_id
 
-    meta = {
+    meta: dict[str, Any] = {
         "run_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "as_of": on,
         "envcite_commit": git("rev-parse", "HEAD"),
         "git_dirty": bool(git("status", "--porcelain", "--", "..")),
-        "golden": {
-            "path": args.golden.name,
-            "sha256": hashlib.sha256(raw).hexdigest(),
-            "items": len(items),
+        "golden": {"path": args.golden.name, "sha256": golden_sha, "items": len(items)},
+        "qrels": {
+            "path": args.qrels.name,
+            "sha256": qrels_doc["sha256"],
+            "judgements": len(qrels_doc["judgements"]),
+        },
+        "split": {
+            "path": args.split.name,
+            "sha256": split_doc["sha256"],
+            "subset": args.subset,
+            "questions": len(rows),
         },
         "snapshots": snaps,
         "corpus": counts,
@@ -592,15 +723,37 @@ def main() -> None:
             "scope_in_pool": args.scope_in_pool,
             "equivalence_check": equivalence,
         }
-    summaries = {name: summarize(rs) for name, rs in arms.items()}
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    runs = {
+        name: gs.write(
+            args.out.parent / f"{args.out.name}.{name}.run.json",
+            {
+                "arm": name,
+                "golden_sha256": golden_sha,
+                "split_sha256": split_doc["sha256"],
+                "subset": args.subset,
+                "envcite_commit": meta["envcite_commit"],
+                "git_dirty": meta["git_dirty"],
+                "snapshots": snaps,
+                "retrieval": meta["retrieval"],
+                "scope": meta.get("scope"),
+                "ranking": ranking_of(rs),
+            },
+        )
+        for name, rs in arms.items()
+    }
+    summaries = {name: summarize(rs, qrels) for name, rs in arms.items()}
     doc = {
         "meta": meta,
         "arms": {
-            name: {"summary": summaries[name], "results": [publishable(r) for r in rs]}
+            name: {
+                "summary": summaries[name],
+                "run": {"path": f"{args.out.name}.{name}.run.json", "sha256": runs[name]["sha256"]},
+                "results": [publishable(r) for r in rs],
+            }
             for name, rs in arms.items()
         },
     }
-    args.out.parent.mkdir(parents=True, exist_ok=True)
     json_path = args.out.parent / (args.out.name + ".json")
     json_path.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     parts = [markdown(meta, name, s) for name, s in summaries.items()]
@@ -608,6 +761,130 @@ def main() -> None:
     (args.out.parent / (args.out.name + ".md")).write_text(md, encoding="utf-8")
     print(md)
     print(f"結果：{json_path}")
+
+
+def compared(
+    qrels_doc: Mapping[str, Any], runs: Mapping[str, Mapping[str, Any]], alpha: float
+) -> dict[str, Any]:
+    """同一子集的 run 對同一份 qrels：各自的指標與 Hole@10，兩兩的 Fisher p 值與結論。"""
+    first = next(iter(runs.values()))
+    for name, r in runs.items():
+        gs.require_golden(r, qrels_doc["golden_sha256"], name)
+        if (r["split_sha256"], r["subset"]) != (first["split_sha256"], first["subset"]):
+            raise SystemExit(f"{name} 與其他 run 不是同一個切分子集")
+        if set(r["ranking"]) != set(first["ranking"]):
+            raise SystemExit(f"{name} 與其他 run 的題目不同")
+    qids = set(first["ranking"])
+    qrels = {q: d for q, d in qrels_doc["qrels"].items() if q in qids}
+    rankings = {name: r["ranking"] for name, r in runs.items()}
+    report = gs.compare(qrels, rankings, METRICS)
+    names = list(runs)
+    pairs = []
+    for i, a in enumerate(names):
+        for b in names[i + 1 :]:
+            for m in METRICS:
+                p = float(report[a]["comparisons"][b][m])
+                diff = report[b]["scores"][m] - report[a]["scores"][m]
+                pairs.append(
+                    {
+                        "a": a,
+                        "b": b,
+                        "metric": m,
+                        "difference": round(diff, 4),
+                        "p": p,
+                        "significant": p < alpha,
+                    }
+                )
+    return {
+        "qrels_sha256": qrels_doc["sha256"],
+        "split_sha256": first["split_sha256"],
+        "subset": first["subset"],
+        "questions": len(qids),
+        "alpha": alpha,
+        "test": "Fisher 隨機化檢定（ranx compare，成對、雙尾，10000 次置換，種子 0）",
+        "runs": {
+            name: {
+                "sha256": r["sha256"],
+                "scores": {m: round(float(report[name]["scores"][m]), 4) for m in METRICS},
+                "hole@10": gs.hole_rate(qrels, r["ranking"]),
+            }
+            for name, r in runs.items()
+        },
+        "pairs": pairs,
+    }
+
+
+def compare_markdown(c: Mapping[str, Any]) -> str:
+    lines = [
+        "# 黃金題庫檢索比較（envcite）",
+        "",
+        f"- qrels sha256 `{c['qrels_sha256']}`；切分 sha256 `{c['split_sha256']}`，"
+        f"子集 **{c['subset']}**，{c['questions']} 題",
+        f"- 檢定：{c['test']}；α = {c['alpha']}。未通過檢定的差距不寫成改善或退步；"
+        "Hole@10 偏高時，未判定的條可能改變結論。",
+        "",
+        "| run | " + " | ".join(f"R@{k}" for k in KS) + " | MRR | Hole@10 |",
+        "|---|" + "---|" * (len(KS) + 2),
+    ]
+    for name, r in c["runs"].items():
+        lines.append(
+            f"| {name} | "
+            + " | ".join(f"{r['scores'][m]:.3f}" for m in METRICS)
+            + f" | {_pct(r['hole@10'])} |"
+        )
+    lines += ["", "| a → b | 指標 | 差（b − a） | p | 結論 |", "|---|---|---|---|---|"]
+    for p in c["pairs"]:
+        label = "R@" + p["metric"].split("@")[1] if "@" in p["metric"] else "MRR"
+        verdict = "差異顯著" if p["significant"] else "未通過檢定"
+        lines.append(
+            f"| {p['a']} → {p['b']} | {label} | {p['difference']:+.4f} | {p['p']:.4f} | {verdict} |"
+        )
+    return "\n".join(lines) + "\n"
+
+
+def cmd_compare(args: argparse.Namespace) -> None:
+    if len(args.runs) < 2:
+        raise SystemExit("至少兩個 run")
+    runs = {p.name.removesuffix(".run.json"): gs.read(p) for p in args.runs}
+    if len(runs) != len(args.runs):
+        raise SystemExit("run 檔名重複")
+    c = compared(gs.read(args.qrels), runs, args.alpha)
+    md = compare_markdown(c)
+    if args.out:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        (args.out.parent / (args.out.name + ".json")).write_text(
+            json.dumps(c, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+        )
+        (args.out.parent / (args.out.name + ".md")).write_text(md, encoding="utf-8")
+    print(md)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="golden_retrieval_eval")
+    sub = parser.add_subparsers(dest="command", required=True)
+    q = sub.add_parser("qrels", help="題庫的可答題對到語料，寫成 qrels")
+    q.add_argument("golden", type=Path)
+    q.add_argument("--out", type=Path, required=True)
+    m = sub.add_parser("measure", help="檢索一個切分子集，寫 run 與報告")
+    m.add_argument("golden", type=Path)
+    m.add_argument("--qrels", type=Path, required=True)
+    m.add_argument("--split", type=Path, required=True)
+    m.add_argument("--subset", choices=("dev", "test"), required=True)
+    m.add_argument("--out", type=Path, required=True, help="輸出檔前綴（寫 .json、.md 與各臂 run）")
+    m.add_argument("--k", type=int, default=max(KS))
+    m.add_argument("--scope", type=Path, help="golden_scope.py 的輸出；限定檢索範圍")
+    m.add_argument(
+        "--scope-in-pool",
+        action="store_true",
+        help="兩臂的候選池在取候選之前就限定在範圍內（唯讀重現 search_hybrid）",
+    )
+    c = sub.add_parser("compare", help="同一子集的 run 兩兩檢定")
+    c.add_argument("--qrels", type=Path, required=True)
+    c.add_argument("runs", type=Path, nargs="+")
+    c.add_argument("--alpha", type=float, default=0.05)
+    c.add_argument("--out", type=Path, help="輸出檔前綴（寫 .json 與 .md）；省略只印出")
+    args = parser.parse_args()
+    {"qrels": cmd_qrels, "measure": cmd_measure, "compare": cmd_compare}[args.command](args)
 
 
 if __name__ == "__main__":

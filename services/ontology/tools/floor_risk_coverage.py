@@ -1,18 +1,16 @@
-"""風險—覆蓋掃描：可答覆蓋率目標下，讓最少的無答案問句通過的兩個下界，並在留出的一半驗證。
+"""風險—覆蓋掃描：可答覆蓋率目標下，讓最少的無答案問句通過的兩個下界（只看開發集）。
 
     uv run python tools/floor_risk_coverage.py \
-        --lexical eval/golden-retrieval-fullcorpus-2026-11-03.json \
-        --semantic eval/golden-retrieval-fullcorpus-2026-11-03.json
+        --lexical eval/golden-retrieval-<date>.json --semantic eval/golden-retrieval-<date>.json
 
-輸入與配對同 `answerability_floor.py`（共用它的 `join`、`evaluate`、候選下界）。每個目標先在
-隨機一半的題目上選下界，再在另一半驗證，20 次切半取平均。只印出結果，不改任何下界。
+輸入與配對同 `answerability_floor.py`（共用它的 `join`、`evaluate`、候選下界），只接受同一切分
+開發集的報告；選定的下界在測試集上的表現由端到端量測報告。只印出結果，不改任何下界。
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import random
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -35,20 +33,6 @@ def pick(rows: Sequence[Row], target: float) -> Point:
     return min(feasible, key=lambda p: p.negatives_pass)
 
 
-def held_out(rows: Sequence[Row], target: float, rounds: int = 20) -> tuple[float, float]:
-    rng = random.Random(0)
-    neg = ans = 0.0
-    for _ in range(rounds):
-        shuffled = list(rows)
-        rng.shuffle(shuffled)
-        half = len(shuffled) // 2
-        chosen = pick(shuffled[:half], target)
-        e = evaluate(shuffled[half:], chosen.lexical, chosen.semantic)
-        neg += e.negatives_pass / e.negatives
-        ans += e.answerable_pass / e.answerable
-    return neg / rounds, ans / rounds
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(prog="floor_risk_coverage")
     parser.add_argument("--lexical", type=Path, required=True)
@@ -63,14 +47,13 @@ def main() -> None:
         f"無答案放過 {now.negatives_pass}／{now.negatives}，"
         f"可答通過 {now.answerable_pass}／{now.answerable}\n"
     )
-    print("| 可答覆蓋率目標 | 全量題目上選出的下界 | 全量放過 | 留出放過 | 留出可答通過 |")
-    print("|---|---|---|---|---|")
+    print("| 可答覆蓋率目標 | 開發集上選出的下界 | 無答案放過 | 可答通過 |")
+    print("|---|---|---|---|")
     for target in TARGETS:
         p = pick(rows, target)
-        neg, ans = held_out(rows, target)
         print(
             f"| {target:.0%} | 字面 {p.lexical:g}、語意 {p.semantic:g}"
-            f" | {p.negatives_pass}／{p.negatives} | {neg:.0%} | {ans:.0%} |"
+            f" | {p.negatives_pass}／{p.negatives} | {p.answerable_pass}／{p.answerable} |"
         )
 
 

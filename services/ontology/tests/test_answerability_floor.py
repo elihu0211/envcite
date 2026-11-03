@@ -21,9 +21,12 @@ def _tool() -> ModuleType:
 
 
 def _report(
-    arm: str, rows: list[tuple[str, str, str, float | None, float | None]]
+    arm: str,
+    rows: list[tuple[str, str, str, float | None, float | None]],
+    subset: str = "dev",
 ) -> dict[str, Any]:
     return {
+        "meta": {"split": {"sha256": "s", "subset": subset}},
         "arms": {
             arm: {
                 "results": [
@@ -37,7 +40,7 @@ def _report(
                     for i, bucket, status, lexical, semantic in rows
                 ]
             }
-        }
+        },
     }
 
 
@@ -90,3 +93,14 @@ def test_a_question_missing_from_the_lexical_run_is_an_error() -> None:
         tool.join(
             _report("lexical", []), _report("hybrid", [("a", "exact_id", "scored", 1.0, 0.7)])
         )
+
+
+def test_floors_are_chosen_on_the_dev_subset_only() -> None:
+    tool = _tool()
+    row: list[tuple[str, str, str, float | None, float | None]] = [
+        ("n1", "negative", "negative", 1.0, 0.5)
+    ]
+    with pytest.raises(SystemExit, match="開發集"):
+        tool.join(_report("lexical", row, "test"), _report("hybrid", row, "test"))
+    with pytest.raises(SystemExit, match="開發集"):
+        tool.join(_report("lexical", row), _report("hybrid", row, "test"))

@@ -87,9 +87,21 @@ def test_the_report_measures_both_arms(conn: Conn, tmp_path: Path, dsn: str) -> 
     embedder = FakeEmbedder()
     projection.rebuild(conn, embedder)  # type: ignore[arg-type]
     items = [
-        {"kind": "answerable", "question": "廢水", "law_id": "T0000001", "article": "2"},
-        {"kind": "answerable", "question": "聲響", "law_id": "T0000001", "article": "1"},
-        {"kind": "out_of_scope", "question": "紅燒肉"},
+        {
+            "id": "a1",
+            "kind": "answerable",
+            "question": "廢水",
+            "law_id": "T0000001",
+            "article": "2",
+        },
+        {
+            "id": "a2",
+            "kind": "answerable",
+            "question": "聲響",
+            "law_id": "T0000001",
+            "article": "1",
+        },
+        {"id": "n1", "kind": "out_of_scope", "question": "紅燒肉"},
     ]
     with OntologyStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.lexicon())
