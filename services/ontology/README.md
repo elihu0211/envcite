@@ -66,7 +66,8 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 - **讀取**（SQL 函式，唯讀角色可呼叫；`p_language` 同其他逐日解析）：
   - `annotation.delegations_at(命令法規 id, 語文, 日期)`：某命令在該日的授權依據（B1、B5）。
   - `annotation.delegated_by(法律法規 id, 語文, 日期)`：某法在該日的授權命令。
-  - 兩者都回報法律端條文在該日的 `law_status`；`law_resource_id`／`law_provision_id` 為空、`law_status` 不是 `in_force`、或命令一列也沒有，都是授權不明，是否因此不得作為依據由呼叫端判斷。
+  - 兩者都回報法律端條文在該日的 `law_status`；`law_resource_id`／`law_provision_id` 為空、`law_status` 不是 `in_force`、或命令一列也沒有，都是授權不明。
+- **推論**：命令陳述的授權鏈由 [`reasoning/facts.py`](src/envcite_ontology/reasoning/facts.py) 的 `chain_at` 沿 `delegations_at` 往上走到法律（授權者又是命令就接著走）；授權條文該日已違憲失效也算斷。鏈的每一環與缺口在 `Outcome.delegation_bases`；鏈到不了法律時，命令所定的罰則與處罰命令義務的罰則附條件，義務的結論不變。
 - **守門**：只回已確認或規則推導的授權，駁回的不回；模型抽取而未確認的不回（同陳述與用語定義）。
 
 ## 違憲失效
@@ -75,8 +76,9 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 
 - **取得**：`envcite-ruling fetch`，走憲法法庭網站的解釋與判決清單逐則抓頁（來源只有 HTML，無 API；資料開放宣告允許重製與改作，**須標示出處**，實作在 [`acquire/cons.py`](src/envcite_ontology/acquire/cons.py)）。主文宣告失效的裁判連同原文入庫；失效條文由 [`ruling_extract.py`](src/envcite_ontology/ruling_extract.py) 的保守規則提出（句中恰有一個「語料裡的法規標題＋條（項）」、失效日寫法明確），寫法含糊的寧可不提——原文仍在庫，規則放寬（遞增 `EXTRACTOR_VERSION`）或語料新增法規後重跑即補上，不必重抓。頁面雜湊記在 `corpus.ruling_scan`，記過的頁面不再抓，`--rescan` 全部重抓。結束碼 0／1（網路等暫時性）／2（頁面不合或裁判內容與已載入的不同）。
 - **載入**：`envcite-ruling load <file.json>`，格式見 [`ruling.py`](src/envcite_ontology/ruling.py) 的模組說明。由人讀解釋文填失效日，每則裁判附出處與解釋文原文；裁判不可改，同一字號內容須相同；一次載入一個交易。抽取流程只刪改自己寫的列（`extractor_version` 有值），人載入的列不動。
-- **讀取**：rpc `OntologyService.ListInvalidations`（依法規、日期、可選的條號）；SQL 是 `corpus.invalidations_at(法規 id, 語文, 日期)`。只有裁判日已施行的文字被宣告失效，裁判之後修正的新文字不受影響。`partial` 標示裁判只宣告條文的一部分（失效仍記在整個條文單元，範圍看 `excerpt`）。
-- **範圍與未做**：自動取得涵蓋全部大法官解釋與憲法法庭判決；裁定與不受理決議不取。規則只提得出明確寫法的失效（多條並列、「同法」回指、命令函釋、附條件的失效日都留給人以 `load` 填），所以**庫裡有裁判不等於已提出條文**。`provisions_at` 的 `status` 不含違憲失效，讀取方各自合併。事件所涉條文的通用表（A4）未做。
+- **讀取**：rpc `OntologyService.ListInvalidations`（依法規、日期、可選的條號）；SQL 是 `corpus.invalidations_at(法規 id, 語文, 日期)`。
+- **推論**：失效的版本自失效日起不是依據。`annotation.statement_versions_at` 不回讀它的陳述，`annotation.threshold_source_at` 不解析它的限值；被排除的陳述由 `annotation.invalidated_statements_at(法規 id, 語文, 日期)` 回報，進 `Outcome.invalidated` 與 `ListStatementsResponse.invalidated`，限值失效的要件附 `PROBLEM_KIND_INVALIDATED_DELEGATION`。`partial` 的裁判同樣整個排除。失效日是 `evaluate_across` 的變更日。只有裁判日已施行的文字被宣告失效，裁判之後修正的新文字不受影響。`partial` 標示裁判只宣告條文的一部分（失效仍記在整個條文單元，範圍看 `excerpt`）。
+- **範圍與未做**：自動取得涵蓋全部大法官解釋與憲法法庭判決；裁定與不受理決議不取。規則只提得出明確寫法的失效（多條並列、「同法」回指、命令函釋、附條件的失效日都留給人以 `load` 填），所以**庫裡有裁判不等於已提出條文**。`provisions_at` 的 `status` 不含違憲失效，讀取方各自合併（推論與 `ListStatements` 已合併）。事件所涉條文的通用表（A4）未做。
 
 ## 黃金測試集
 

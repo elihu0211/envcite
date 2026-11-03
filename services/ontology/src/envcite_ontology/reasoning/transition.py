@@ -38,7 +38,7 @@ _APPLICABLE = """
 # 同一個原因（內聯後規劃器排出對 `provision_version` 的二次方巢狀迴圈），理由與數字見那裡。
 # 這條每個變更日跑一次，成本會乘上日數。
 
-# 帶陳述單元的效力起訖與法規廢止日：適用的陳述組只可能在這些日子改變。
+# 帶陳述單元的效力起訖、法規廢止日與違憲失效日：適用的陳述組只可能在這些日子改變。
 _CHANGE_DATES = """
     SELECT d FROM (
         SELECT lower(v.force_period) AS d
@@ -52,6 +52,8 @@ _CHANGE_DATES = """
                SELECT 1 FROM annotation.statement AS s WHERE s.provision_id = v.provision_id)
         UNION
         SELECT repealed_on FROM corpus.legal_resource
+        UNION
+        SELECT invalid_from FROM corpus.ruling_invalidation
     ) AS days
      WHERE d > %(conduct)s AND d <= %(decided)s
      ORDER BY d

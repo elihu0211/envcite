@@ -10,6 +10,10 @@
 %       fact_in/2（案件事實，由呼叫端提供；同一概念可帶多個值，矛盾由下方檢出）
 %       subject_basis/2 subject_any/1（罰則主體槽位標的責任基礎）  actor_basis/1（呼叫端說明的行為人責任基礎）
 %       fmethod/2 favg/2（案件事實的認定方式）  permit_in/3（呼叫端提供的許可量值：許可種類、概念、值）
+%       void_limit/1（授權限值的條文版本已違憲失效；違憲失效的陳述本身不進來）
+%       unrooted/1（命令陳述，命令的授權鏈到不了法律）
+%       criminal_cleared/0（刑事程序以不起訴等確定）  benefit_over/1（所得利益超過該罰鍰的最高額）
+%       deduction_given/0 wage_missing/0（第 26 條的扣抵額已定；有勞務時數而沒有基本工資）
 role(scope;duty).
 
 % ---- 等同的概念：對到同一個外部識別碼（只記等同，不記上下位）；事實與認定方式照搬 ----
@@ -159,11 +163,16 @@ viol(S,u) :- outcome(S,conditional_violation).
 arm(P,t) :- sanction(P,_,_,_,_), not triggered(P).
 arm(P,t) :- trigger(P,Q,_), listed(Q,_,_,_,_).
 arm(P,u) :- trigger(P,Q,_), listed_cond(Q,_,_,_,_).
+% 授權鏈（行政罰法第 4 條；釋字第 313、394、402 號）：命令所定的罰則，或處罰命令所定義務的罰則，
+% 命令要回溯得到法律的授權。回溯不到是授權依據待查，不是不成立：附條件。
+rooted(P,t) :- sanction(P,S,_,_,_), not unrooted(P), not unrooted(S).
+rooted(P,u) :- sanction(P,_,_,_,_), unrooted(P).
+rooted(P,u) :- sanction(P,S,_,_,_), unrooted(S).
 candidate_penalty(P,S,Eff,Min,Max)      :- sanction(P,S,Eff,Min,Max), viol(S,t), pv(P,scope,t), arm(P,t),
-                                           subj(P,t).
+                                           subj(P,t), rooted(P,t).
 candidate_penalty_cond(P,S,Eff,Min,Max) :- sanction(P,S,Eff,Min,Max), viol(S,X), pv(P,scope,Y), arm(P,Z),
-                                           subj(P,W), live(X), live(Y), live(Z), live(W),
-                                           not candidate_penalty(P,S,Eff,Min,Max).
+                                           subj(P,W), rooted(P,R), live(X), live(Y), live(Z), live(W),
+                                           live(R), not candidate_penalty(P,S,Eff,Min,Max).
 % 主體不成立而不列出的罰則：其餘要件若成立或未知，原本會是候選。
 subject_mismatch(P) :- sanction(P,S,_,_,_), viol(S,X), pv(P,scope,Y), arm(P,Z),
                        live(X), live(Y), live(Z), subj(P,f).
@@ -194,7 +203,8 @@ needs_judgement(S,M) :- verdict(S,conditional_violation), exception(E,S), unk_co
 missing(P,M)          :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), not judgement(C), not given(M).
 needs_judgement(P,M)  :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), judgement(C), not given(M).
 missing(P,"liability_basis") :- pen_live(P), pv(P,scope,Y), live(Y), subj(P,u).
-problem(unresolved_delegation, C) :- delegated(C), not thr(C,_).
+problem(unresolved_delegation, C) :- delegated(C), not thr(C,_), not void_limit(C).
+problem(invalidated_delegation, C) :- void_limit(C).
 % 許可量值沒提供：缺的是（許可，概念）這筆事實，不是概念本身，另列。
 unk_permit(S,K,M) :- cond(C,S,R,Kl,M,_,_), permit_cond(C,K), unk(C), not clause_f(S,R,Kl),
                      not permit_given(K,M).
@@ -235,24 +245,63 @@ excuse(superior_order) :- yes("ap_superior_order"), yes("ap_knew_illegal"), yes(
 excuse(self_defense) :- yes("ap_self_defense"), not yes("ap_defense_excessive").
 excuse(necessity) :- yes("ap_necessity"), not yes("ap_necessity_excessive").
 withheld :- excuse(_).
+% 刑事優先（第 26 條第 1 項）：一行為同時觸犯刑事法律，依刑事法律處罰，罰鍰不裁處；其他種類行政罰
+% 照列；得沒入之物，法院已宣告沒收則不沒入，未知則附條件。刑事程序以不起訴、無罪等確定（第 2 項）
+% 即不再優先。是否觸犯刑事法律未提供，不套用。
+criminal :- yes("ap_criminal_offense").
+criminal :- criminal_cleared.
+criminal_first :- criminal, not criminal_cleared.
+blocked(P) :- criminal_first, sanction(P,_,fine,_,_).
+blocked(P) :- criminal_first, sanction(P,_,confiscation,_,_), yes("ap_court_confiscated").
+seizure_open(P) :- criminal_first, sanction(P,_,confiscation,_,_),
+                   not yes("ap_court_confiscated"), not no("ap_court_confiscated").
 % 有責性未知，或職務命令而已知與否未知：罰則改為附條件，不當成可罰。
 soften :- not culpable, not excuse(no_fault).
 soften :- yes("ap_superior_order"), not yes("ap_knew_illegal"), not no("ap_knew_illegal").
 % 不是行政罰的效果不要有責性，不受總則的排除、減輕、時效與一行為約束。
 listed(P,S,E,Min,Max)      :- candidate_penalty(P,S,E,Min,Max), non_penal(E).
 listed_cond(P,S,E,Min,Max) :- candidate_penalty_cond(P,S,E,Min,Max), non_penal(E).
-listed(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), penal(E), culpable, not withheld, not soften.
-listed_cond(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), penal(E), not withheld, soften.
-listed_cond(P,S,E,Min,Max) :- candidate_penalty_cond(P,S,E,Min,Max), penal(E), not withheld.
+listed(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), penal(E), culpable, not withheld, not soften,
+                         not blocked(P), not seizure_open(P).
+listed_cond(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), penal(E), not withheld, not blocked(P), soften.
+listed_cond(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), penal(E), not withheld, not blocked(P),
+                              seizure_open(P).
+listed_cond(P,S,E,Min,Max) :- candidate_penalty_cond(P,S,E,Min,Max), penal(E), not withheld, not blocked(P).
 open(P) :- candidate_penalty(P,_,E,_,_), penal(E).
 open(P) :- candidate_penalty_cond(P,_,E,_,_), penal(E).
 barred(P,G) :- open(P), excuse(G).
-mitigation(P,youth) :- open(P), fact("ap_age",V), V >= 14000, V < 18000, not withheld.
-mitigation(P,reduced_capacity) :- open(P), yes("ap_capacity_reduced"), no("ap_self_induced"), not withheld.
-mitigation(P,ignorance) :- open(P), yes("ap_ignorance_of_law"), not withheld.
-mitigation(P,excessive_defense) :- open(P), yes("ap_self_defense"), yes("ap_defense_excessive"), not withheld.
-mitigation(P,excessive_necessity) :- open(P), yes("ap_necessity"), yes("ap_necessity_excessive"), not withheld.
-presumed(P,agent_fault) :- open(P), yes("ap_agent_fault"), not yes("ap_intent"), not yes("ap_negligence"), not withheld.
+barred(P,criminal_priority) :- open(P), blocked(P).
+active(P) :- open(P), not withheld, not blocked(P).
+mitigation(P,youth) :- active(P), fact("ap_age",V), V >= 14000, V < 18000.
+mitigation(P,reduced_capacity) :- active(P), yes("ap_capacity_reduced"), no("ap_self_induced").
+mitigation(P,ignorance) :- active(P), yes("ap_ignorance_of_law").
+mitigation(P,excessive_defense) :- active(P), yes("ap_self_defense"), yes("ap_defense_excessive").
+mitigation(P,excessive_necessity) :- active(P), yes("ap_necessity"), yes("ap_necessity_excessive").
+presumed(P,agent_fault) :- active(P), yes("ap_agent_fault"), not yes("ap_intent"), not yes("ap_negligence").
+
+% 減輕的額度（第 18 條第 3 項）：罰鍰不得逾最高額、亦不得低於最低額的二分之一；事由同時有免除
+% 處罰的規定（第 8、12、13 條「得減輕或免除」）者為三分之一。下限進位、上限捨去到元。是否減輕
+% 不選；法律或自治條例另有規定（但書）不在標註裡。其他種類行政罰定有期間者準用（第 4 項），
+% 但標註沒有期間，不算。
+share(youth,2). share(reduced_capacity,2).
+share(ignorance,3). share(excessive_defense,3). share(excessive_necessity,3).
+fine_out(P) :- listed(P,_,fine,_,_).
+fine_out(P) :- listed_cond(P,_,fine,_,_).
+reducible(P,G,K) :- mitigation(P,G), fine_out(P), share(G,K).
+red_lo(P,G,(Min+K-1)/K) :- reducible(P,G,K), sanction(P,_,_,Min,_), Min != none.
+red_lo(P,G,none)        :- reducible(P,G,_), sanction(P,_,_,none,_).
+red_hi(P,G,Max/K)       :- reducible(P,G,K), sanction(P,_,_,_,Max), Max != none.
+red_hi(P,G,none)        :- reducible(P,G,_), sanction(P,_,_,_,none).
+reduced(P,G,K,Lo,Hi) :- reducible(P,G,K), red_lo(P,G,Lo), red_hi(P,G,Hi), (Lo,Hi) != (none,none).
+
+% 所得利益超過法定最高額（第 18 條第 2 項）：得於利益範圍內加重，不受最高額限制。金額比較在
+% Python（32 位元整數放不下千分位的金額）。
+aggravable(P) :- fine_out(P), benefit_over(P).
+
+% 刑事程序已確定而得再裁處的罰鍰（第 26 條第 2 項），緩起訴、緩刑支付的金額與勞務應扣抵
+% （第 3、4 項）；扣抵額由 Python 算。有勞務時數而沒有基本工資，扣抵額缺事實。
+deduct(P) :- fine_out(P), criminal_cleared, deduction_given.
+missing(P,"ap_minimum_hourly_wage") :- fine_out(P), criminal_cleared, wage_missing.
 
 % 裁處權時效（行政罰法第 27 條）：只標記仍列出的罰則。三年的末日由日曆算出後傳入；
 % 沒有 deadline 就是起算日不明，不標已逾。罰則留在候選裡。
@@ -294,6 +343,9 @@ one_act(Lo,Hi) :- one_floor(Lo), one_cap(Hi), not open_fine.
 #show mitigation/2.
 #show presumed/2.
 #show time_barred/1.
+#show reduced/5.
+#show aggravable/1.
+#show deduct/1.
 #show unresolved_conflict/2.
 #show defeated/3.
 #show missing/2.

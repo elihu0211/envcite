@@ -14,9 +14,9 @@ from envcite_ontology.annotate import load
 from envcite_ontology.reasoning_service import ReasoningServicer
 from envcite_ontology.store import OntologyStore
 from tests.conftest import call_metadata
-from tests.reasoning_support import Conn
+from tests.reasoning_support import Conn, _plain_duty
 from tests.test_annotation import LAW, _doc, _duty, _limit
-from tests.test_incremental import _first, _law_v1
+from tests.test_incremental import _articles, _first, _law_v1
 from tests.test_reasoning_transition import _amended
 
 Stub = reasoning_pb2_grpc.ReasoningServiceStub
@@ -353,3 +353,112 @@ def test_an_unspecified_actor_basis_is_an_invalid_argument(reasoning_stub: Stub)
 
     assert caught.value.code() == grpc.StatusCode.INVALID_ARGUMENT
     assert _details(caught.value)[1] == ["actor_bases[1]"]
+
+
+def test_the_penalty_law_facts_reach_the_evaluation_and_come_back_typed(
+    conn: Conn, tmp_path: Path, reasoning_stub: Stub
+) -> None:
+    """第 18、26 條：減輕的範圍、加重的上限、扣抵額與刑事優先，都經契約往返。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", "乙一")))
+    penalty = {
+        "id": "fine",
+        "law": LAW,
+        "path": "art_2",
+        "text": "乙一",
+        "kind": "sanction",
+        "conditions": [],
+        "sanction": {"punishes": "duty", "effect": "fine", "min": 1000, "max": 60000},
+    }
+    fine = load(conn, _doc(_plain_duty(), penalty)).ids["fine"]
+    conn.commit()
+
+    def money(value: str) -> reasoning_pb2.Decimal:
+        return reasoning_pb2.Decimal(value=value)
+
+    cleared = _case(conduct_on="2019-01-01", decided_on="2019-01-01")
+    cleared.administrative_penalty_facts.CopyFrom(
+        reasoning_pb2.AdministrativePenaltyFacts(
+            intent=True,
+            age=16,
+            criminal_offense=True,
+            criminal_cleared_on="2018-12-01",
+            criminal_payment=money("5000"),
+            community_service_hours=money("2"),
+            minimum_hourly_wage=money("150.5"),
+            gained_benefit=money("90000"),
+        )
+    )
+    general = reasoning_stub.Evaluate(cleared, metadata=call_metadata()).at_decision.general
+    (reduced,) = general.reduced
+    assert (reduced.penalty_statement_id, reduced.share) == (
+        fine,
+        reasoning_pb2.REDUCTION_SHARE_HALF,
+    )
+    assert (reduced.min_amount, reduced.max_amount) == (500, 30000)
+    assert [(c.penalty_statement_id, c.max_amount.value) for c in general.raised_caps] == [
+        (fine, "90000")
+    ]
+    assert [(d.penalty_statement_id, d.amount.value) for d in general.criminal_deductions] == [
+        (fine, "5301")
+    ]
+
+    pending = _case(conduct_on="2019-01-01", decided_on="2019-01-01")
+    pending.administrative_penalty_facts.CopyFrom(
+        reasoning_pb2.AdministrativePenaltyFacts(intent=True, criminal_offense=True)
+    )
+    outcome = reasoning_stub.Evaluate(pending, metadata=call_metadata()).at_decision
+    assert not outcome.penalties
+    assert [(u.penalty_statement_id, u.excuse) for u in outcome.general.unpunished] == [
+        (fine, reasoning_pb2.EXCUSE_CRIMINAL_PRIORITY)
+    ]
+
+
+def test_invalid_penalty_law_facts_are_reported(reasoning_stub: Stub) -> None:
+    request = _case()
+    request.administrative_penalty_facts.CopyFrom(
+        reasoning_pb2.AdministrativePenaltyFacts(
+            criminal_cleared_on="yesterday",
+            gained_benefit=reasoning_pb2.Decimal(value="-1"),
+            criminal_payment=reasoning_pb2.Decimal(value="many"),
+        )
+    )
+
+    with pytest.raises(grpc.RpcError) as error:
+        reasoning_stub.Evaluate(request, metadata=call_metadata())
+
+    _, fields = _details(error.value)
+    assert fields == [
+        "administrative_penalty_facts.criminal_cleared_on",
+        "administrative_penalty_facts.criminal_payment.value",
+        "administrative_penalty_facts.gained_benefit",
+    ]
+
+
+def test_an_invalidated_limit_comes_back_with_its_ruling(
+    conn: Conn, tmp_path: Path, reasoning_stub: Stub
+) -> None:
+    duty_id, limit_id = _committed(conn, tmp_path)
+    ruling = conn.execute(
+        "INSERT INTO corpus.constitutional_ruling"
+        " (ruling_no, ruling_kind, decided_on, source_url, excerpt)"
+        " VALUES ('憲判字第 99 號', 'judgment', '2019-02-01', 'https://cons.judicial.gov.tw/x',"
+        " '失其效力') RETURNING id"
+    ).fetchone()
+    assert ruling is not None
+    conn.execute(
+        "INSERT INTO corpus.ruling_invalidation"
+        " (ruling_id, resource_id, provision_id, invalid_from)"
+        " SELECT %s, resource_id, id, '2019-03-01' FROM corpus.provision WHERE path = 'art_2'",
+        (ruling[0],),
+    )
+    conn.commit()
+
+    outcome = reasoning_stub.Evaluate(_case(), metadata=call_metadata()).at_decision
+
+    assert [(v.statement_id, v.verdict) for v in outcome.verdicts] == [
+        (duty_id, reasoning_pb2.VERDICT_UNDETERMINED)
+    ]
+    assert [p.kind for p in outcome.problems] == [reasoning_pb2.PROBLEM_KIND_INVALIDATED_DELEGATION]
+    assert [(i.statement_id, i.ruling_no, i.invalid_from) for i in outcome.invalidated] == [
+        (limit_id, "憲判字第 99 號", "2019-03-01")
+    ]

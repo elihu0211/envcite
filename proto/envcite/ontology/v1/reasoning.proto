@@ -160,6 +160,9 @@ message ListStatementsRequest {
 message ListStatementsResponse {
   repeated Statement statements = 1;
   repeated Override overrides = 2;
+
+  // 該日因違憲失效而不在 statements 裡的陳述（見 Outcome.invalidated）。
+  repeated InvalidatedStatement invalidated = 3;
 }
 
 message Statement {
@@ -405,6 +408,30 @@ message AdministrativePenaltyFacts {
   optional bool capacity_reduced = 15;
 
   optional bool ignorance_of_law = 16;
+
+  // 一行為同時觸犯刑事法律（第 26 條第 1 項）。是否為同一行為是呼叫端的認定。
+  optional bool criminal_offense = 17;
+
+  // 法院已宣告沒收應沒入之物（第 26 條第 1 項但書）。
+  optional bool court_confiscated = 18;
+
+  // 不起訴處分、緩起訴處分確定，或無罪、免訴、不受理、不付審理、不付保護處分、免刑、緩刑之裁判
+  // 確定之日（ISO 8601；第 26 條第 2 項）。有此日即不再刑事優先，第 27 條三年自此日起算；留空是
+  // 刑事程序未以這些方式確定（或未知），criminal_offense 為真時罰鍰依第 1 項不裁處。
+  string criminal_cleared_on = 19;
+
+  // 緩起訴或緩刑命支付的金額（元；第 26 條第 3 項），自罰鍰扣抵。
+  optional Decimal criminal_payment = 20;
+
+  // 緩起訴或緩刑命提供的義務勞務時數；乘以 minimum_hourly_wage 為扣抵額（第 26 條第 4 項）。
+  optional Decimal community_service_hours = 21;
+
+  // 最初裁處時的每小時基本工資（元）。基本工資不在語料裡，由呼叫端給；有時數而沒有工資，
+  // 扣抵額未定，列在 Outcome.missing（概念 "ap_minimum_hourly_wage"）。
+  optional Decimal minimum_hourly_wage = 22;
+
+  // 因違反行政法上義務所得之利益（元；第 18 條第 2 項）。
+  optional Decimal gained_benefit = 23;
 }
 
 message EvaluateResponse {
@@ -511,6 +538,71 @@ message Outcome {
   // 其餘要件成立或未知、但主體槽位的責任基礎與 EvaluateRequest.actor_bases 都不符，因而
   // 不列出的罰則（罰則陳述的識別碼）。
   repeated int64 subject_mismatch = 20;
+
+  // 本結果所依法規中，該日因大法官解釋或憲法法庭判決宣告違憲失效、因而不參與推論的陳述。
+  // 只有裁判作成時已施行的文字失效；裁判只宣告一部分（partial）者也整個排除，範圍看裁判原文。
+  repeated InvalidatedStatement invalidated = 21;
+
+  // 本結果提及的命令陳述之授權鏈：由命令往上到法律的每一環（行政罰法第 4 條；釋字第 313、
+  // 394、402 號）。鏈不完整的命令所定之罰則，或處罰命令所定義務的罰則，附條件列出（授權依據
+  // 待查）；命令的義務結論不變。法律與憲法的陳述不在此。
+  repeated DelegationBasis delegation_bases = 22;
+}
+
+message InvalidatedStatement {
+  int64 statement_id = 1;
+
+  // 陳述所讀、被宣告失效的條文版本之 IRI。
+  string version_iri = 2;
+
+  // 解釋或判決的字號。
+  string ruling_no = 3;
+
+  // 失效日（ISO 8601）。
+  string invalid_from = 4;
+  bool partial = 5;
+}
+
+// 授權鏈的一環為何不成立。
+enum DelegationGap {
+  // 這一環成立。
+  DELEGATION_GAP_UNSPECIFIED = 0;
+  // 命令沒有可用的授權引文：抽取不到，不等於沒有授權。
+  DELEGATION_GAP_NO_CITATION = 1;
+  // 引文的法名或條文在語料裡對不到唯一一處。
+  DELEGATION_GAP_UNRESOLVED_LAW = 2;
+  // 授權條文在該日不現行。
+  DELEGATION_GAP_LAW_NOT_IN_FORCE = 3;
+  // 授權條文在該日已違憲失效。
+  DELEGATION_GAP_LAW_INVALIDATED = 4;
+  // 授權回到鏈上已出現的命令。
+  DELEGATION_GAP_CYCLE = 5;
+}
+
+message DelegationLink {
+  // 被授權的命令（pcode）。
+  string command_law_id = 1;
+
+  // 命令首條所引的法名與條文路徑（原文）；NO_CITATION 時為空。
+  string cited_law_name = 2;
+  string cited_path = 3;
+
+  // 對到的授權法規（pcode）；對不到為空。
+  string law_id = 4;
+
+  // 授權條文在該日現行的版本之 IRI；不現行為空。
+  string version_iri = 5;
+  DelegationGap gap = 6;
+}
+
+message DelegationBasis {
+  int64 statement_id = 1;
+
+  // 至少有一條路徑經成立的環節到達法律。
+  bool rooted = 2;
+
+  // 自陳述所屬的命令往上走過的每一環；授權者又是命令時，接著列它的授權。
+  repeated DelegationLink links = 3;
 }
 
 enum GuidanceKind {
@@ -637,6 +729,9 @@ enum ProblemKind {
   // 限值沒有標認定方式，照常比較；結論是否成立，取決於事實是否以該限值的方式認定
   // （subject 為要件識別碼）。
   PROBLEM_KIND_MEASUREMENT_UNLABELED = 6;
+  // 授權的限值所在的條文版本在該日已違憲失效（subject 為要件識別碼）：要件為未知，裁判見
+  // Outcome.invalidated。
+  PROBLEM_KIND_INVALIDATED_DELEGATION = 7;
 }
 
 message Problem {
@@ -678,6 +773,9 @@ enum Excuse {
   EXCUSE_SUPERIOR_ORDER = 5;
   EXCUSE_SELF_DEFENSE = 6;
   EXCUSE_NECESSITY = 7;
+  // 一行為同時觸犯刑事法律，依刑事法律處罰（第 26 條第 1 項）：只擋罰鍰，以及法院已宣告沒收時
+  // 的沒入；其他種類行政罰照列。
+  EXCUSE_CRIMINAL_PRIORITY = 8;
 }
 
 // 行政罰法總則下得減輕處罰的理由。
@@ -705,6 +803,50 @@ message GeneralPart {
   // 三年時效（第 27 條）在 decided_on 已完成的處罰（處罰陳述的識別碼）。處罰仍
   // 是候選；是否適用時效，由呼叫端決定。
   repeated int64 time_barred = 4;
+
+  // 第 18 條第 3 項：決定依總則減輕時，罰鍰的範圍。只對列出（含附條件）、有得減輕事由的罰鍰；
+  // 是否減輕不選。法律或自治條例另有規定（同項但書）不在標註裡，不檢出。
+  repeated ReducedFine reduced = 5;
+
+  // 第 18 條第 2 項：所得利益超過法定最高額的罰鍰，得在所得利益範圍內加重，不受最高額限制。
+  repeated RaisedCap raised_caps = 6;
+
+  // 第 26 條第 3、4 項：刑事程序已確定（criminal_cleared_on）而依第 2 項得裁處的罰鍰，應扣抵的
+  // 金額。罰鍰額不選，扣抵額原樣給出。
+  repeated CriminalDeduction criminal_deductions = 7;
+}
+
+// 減輕的比例：二分之一；同時有免除處罰之規定者（第 8、12、13 條）三分之一。
+enum ReductionShare {
+  REDUCTION_SHARE_UNSPECIFIED = 0;
+  REDUCTION_SHARE_HALF = 1;
+  REDUCTION_SHARE_THIRD = 2;
+}
+
+message ReducedFine {
+  int64 penalty_statement_id = 1;
+  Mitigation mitigation = 2;
+  ReductionShare share = 3;
+
+  // 法定最低額乘以比例，進位到元；法定最低額缺則缺。
+  optional int64 min_amount = 4;
+
+  // 法定最高額乘以比例，捨去到元；法定最高額缺則缺。
+  optional int64 max_amount = 5;
+}
+
+message RaisedCap {
+  int64 penalty_statement_id = 1;
+
+  // 加重後的上限，即所得利益。
+  Decimal max_amount = 2;
+}
+
+message CriminalDeduction {
+  int64 penalty_statement_id = 1;
+
+  // 支付的金額加上勞務時數乘以基本工資（元）。
+  Decimal amount = 2;
 }
 
 message PenaltyExcuse {

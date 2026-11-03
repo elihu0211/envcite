@@ -65,6 +65,8 @@ uv run --env-file .env envcite-ontology
 - **推論**（`reasoning/`）：通用推論程式 `rules.lp`（clingo）**不含任何法條**，也不用模型；案件事實由呼叫端給。結論都是**候選**；缺的事實、需判斷的要件、矛盾的事實、未決的衝突與罰則競合分開回報。
   - `order`（預防性處分）與 `disgorgement`（不法利得的追繳）不是行政罰，行政罰法總則的排除、減輕、時效與一行為都不適用；罰則的 `discretionary` 與要件的 `judgement` 是兩個層次。以另一效果為前提的罰則（`sanction_trigger`），前提列出才列出，前提附條件則它也附條件。
   - 呼叫端看得到的語意（未給的許可量值是未知、認定方式不符不逕判、`evaluate_across` 不選「最有利」、`uncovered_laws`）以倉庫根 `proto/README.md`〈標註與推論〉為準，改推論時一起看。
+  - 違憲失效的版本不是依據：陳述與限值的解析在 SQL 排除它，被排除的另列（`invalidated`），不悄悄消失。命令的授權鏈斷了是「授權依據待查」，罰則附條件，不是不成立。
+  - 行政罰法第 18、26 條只給候選與額度，不選罰鍰額；刑事優先只擋罰鍰（與法院已宣告沒收時的沒入），是否觸犯刑事法律沒給就不套用。金額不進 clingo（32 位元整數放不下千分位的金額），比較與加總在 `facts.amounts`。
   - **改 `rules.lp` 要跑 `tests/test_reasoning*.py`**（真實 schema、不用替身）。
 
 ## Contract

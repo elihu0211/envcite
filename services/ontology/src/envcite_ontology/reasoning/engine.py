@@ -13,13 +13,21 @@
 授權限值標有認定方式時，方式不符或沒給則要件未知；委由個別處分的要件，以許可的量值為門檻值。
 罰則的主體槽位標有責任基礎時，呼叫端說明行為人所屬的基礎（`actor_bases`）要在其中：不在則主體
 要件不成立、罰則不列（`subject_mismatch`），沒說明則缺事實（概念 `liability_basis`）、罰則附條件。
+
+違憲失效的條文版本自失效日起不是依據：讀它的陳述不進推論，列在 `invalidated`。命令的陳述帶
+授權鏈（`delegation`）；鏈到不了法律時，命令所定的罰則與處罰命令義務的罰則附條件。
+
+第 18 條：得減輕的罰鍰另給減輕後的範圍（`General.reduced`），所得利益超過最高額者標得加重
+（`General.raised_caps`）；審酌與選定額度不做。第 26 條：一行為同時觸犯刑事法律則罰鍰不列
+（`criminal_priority`），刑事程序以不起訴等確定後照列並給扣抵額（`General.deductions`）。
 """
 
 from __future__ import annotations
 
 from collections.abc import Collection, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
+from decimal import Decimal
 from importlib import resources
 from typing import Any
 
@@ -59,6 +67,12 @@ class General:
     mitigation: tuple[tuple[int, str], ...]
     presumed: tuple[tuple[int, str], ...]
     time_barred: tuple[int, ...]
+    #: （罰則，減輕事由，分母 2 或 3，下限，上限）：第 18 條第 3 項；缺的額度為 None
+    reduced: tuple[tuple[int, str, int, int | None, int | None], ...] = ()
+    #: （罰則，所得利益）：第 18 條第 2 項，得在所得利益範圍內加重
+    raised_caps: tuple[tuple[int, Decimal], ...] = ()
+    #: （罰則，扣抵額）：第 26 條第 3、4 項
+    deductions: tuple[tuple[int, Decimal], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -95,6 +109,10 @@ class Result:
     missing_permits: tuple[tuple[int, str, str], ...] = ()
     #: 其餘要件成立或未知、但主體的責任基礎與行為人所屬不符而不列出的罰則
     subject_mismatch: tuple[int, ...] = ()
+    #: 該日因違憲失效而不參與推論的陳述
+    invalidated: tuple[facts.Invalidated, ...] = ()
+    #: 命令陳述 → 其命令的授權鏈
+    delegation: Mapping[int, facts.Chain] = field(default_factory=dict)
 
 
 def _py(symbol: clingo.Symbol) -> Any:
@@ -123,11 +141,13 @@ def evaluate(
     `include_unsettled` 僅供驗證閘門在接受前評估陳述，推論呼叫端不可用。
     """
     statements = facts.statement_facts(conn, as_of, language, include_unsettled=include_unsettled)
+    given = facts.amounts(case)
     program = "\n".join(
         [
-            statements,
+            statements.program,
             facts.case_facts(case, measurements, permits, actor_bases),
             facts.limitation(decided_on or as_of, case),
+            facts.amount_facts(given, statements.fine_caps),
         ]
     )
     ctl = clingo.Control(["--warn=none"])
@@ -185,6 +205,16 @@ def evaluate(
     if len(shown) > 1:
         raise RuntimeError(f"expected one fine interval, got {len(shown)}")
     one_act = None if not shown else (int(shown[0][0]), int(shown[0][1]))
+    raised = (
+        ()
+        if given.benefit is None
+        else tuple((int(p), given.benefit) for (p,) in get("aggravable"))
+    )
+    deductions = (
+        ()
+        if given.deduction is None
+        else tuple((int(p), given.deduction) for (p,) in get("deduct"))
+    )
     return Result(
         verdicts={s: v for s, v in get("verdict")},
         penalties=tuple(sorted(penalties, key=lambda x: (x.statement_id, x.punishes_id))),
@@ -204,8 +234,16 @@ def evaluate(
             mitigation=tuple((int(p), str(g)) for p, g in get("mitigation")),
             presumed=tuple((int(p), str(g)) for p, g in get("presumed")),
             time_barred=tuple(int(p) for (p,) in get("time_barred")),
+            reduced=tuple(
+                (int(p), str(g), int(k), amount(lo), amount(hi))
+                for p, g, k, lo, hi in get("reduced")
+            ),
+            raised_caps=raised,
+            deductions=deductions,
         ),
         definitions_used=tuple((int(c), int(d)) for c, d in get("used_def")),
         missing_permits=tuple((int(s), str(k), str(m)) for s, k, m in get("missing_permit")),
         subject_mismatch=tuple(int(p) for (p,) in get("subject_mismatch")),
+        invalidated=statements.invalidated,
+        delegation=statements.chains,
     )

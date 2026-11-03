@@ -92,9 +92,13 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         decided_on = v.date("decided_on", request.decided_on, required=True)
         conduct_ended = v.date("conduct_ended_on", request.conduct_ended_on)
         result_on = v.date("result_on", request.result_on)
+        cleared = v.date(
+            "administrative_penalty_facts.criminal_cleared_on",
+            request.administrative_penalty_facts.criminal_cleared_on,
+        )
         if conduct_on is not None and decided_on is not None and conduct_on > decided_on:
             v.add("conduct_on", errors.DATE_ORDER, "conduct_on must not be after decided_on")
-        case = codec.case_facts(request, v, conduct_ended, result_on)
+        case = codec.case_facts(request, v, conduct_ended, result_on, cleared)
         permits = codec.permit_limits(request, v)
         actor_bases = codec.actor_bases(request, v)
         v.check()

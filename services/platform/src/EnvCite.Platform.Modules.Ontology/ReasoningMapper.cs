@@ -167,6 +167,7 @@ internal static class ReasoningMapper
         ProblemKind.BadDate => ProblemKindDto.BadDate,
         ProblemKind.MeasurementMismatch => ProblemKindDto.MeasurementMismatch,
         ProblemKind.MeasurementUnlabeled => ProblemKindDto.MeasurementUnlabeled,
+        ProblemKind.InvalidatedDelegation => ProblemKindDto.InvalidatedDelegation,
         _ => throw Unknown(k),
     };
 
@@ -203,6 +204,7 @@ internal static class ReasoningMapper
         Excuse.SuperiorOrder => ExcuseDto.SuperiorOrder,
         Excuse.SelfDefense => ExcuseDto.SelfDefense,
         Excuse.Necessity => ExcuseDto.Necessity,
+        Excuse.CriminalPriority => ExcuseDto.CriminalPriority,
         _ => throw Unknown(e),
     };
 

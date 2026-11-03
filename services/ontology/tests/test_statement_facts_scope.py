@@ -102,6 +102,6 @@ def test_statement_facts_for_the_gate_is_unchanged_among_many_laws(
     不斷言耗時：整個入口還包含其他尚未限縮的查詢，牆鐘時間在負載高的 CI 上不穩定；
     效能由上面的計畫計數斷言保證。
     """
-    facts = statement_facts(annotated_among_many, ON, include_unsettled=True)
+    facts = statement_facts(annotated_among_many, ON, include_unsettled=True).program
 
     assert facts.count("\nstatement(") + facts.startswith("statement(") == 2

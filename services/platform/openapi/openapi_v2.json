@@ -865,7 +865,8 @@
           "PursuantToLaw",
           "SuperiorOrder",
           "SelfDefense",
-          "Necessity"
+          "Necessity",
+          "CriminalPriority"
         ]
       },
       "FactDto": {
@@ -1643,7 +1644,8 @@
           "UnresolvedDelegation",
           "BadDate",
           "MeasurementMismatch",
-          "MeasurementUnlabeled"
+          "MeasurementUnlabeled",
+          "InvalidatedDelegation"
         ]
       },
       "ReasoningResultDto": {

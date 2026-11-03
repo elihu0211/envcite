@@ -125,6 +125,8 @@ public enum ProblemKindDto
     MeasurementMismatch,
     /// <summary>限值沒有標認定方式而照常比較：結論取決於事實是否以該限值的方式認定。</summary>
     MeasurementUnlabeled,
+    /// <summary>授權命令的限值所在的條文版本已違憲失效：該要件為未知。</summary>
+    InvalidatedDelegation,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<GuidanceKindDto>))]
@@ -170,6 +172,8 @@ public enum ExcuseDto
     SuperiorOrder,
     SelfDefense,
     Necessity,
+    /// <summary>一行為同時觸犯刑事法律，依刑事法律處罰（第 26 條第 1 項）。</summary>
+    CriminalPriority,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<MitigationDto>))]

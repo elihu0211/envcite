@@ -14,9 +14,9 @@ from typing import Literal
 
 from envcite.ontology.v1 import reasoning_pb2 as pb
 from envcite_ontology import errors
-from envcite_ontology.reasoning import Result
+from envcite_ontology.reasoning import Result, facts
 from envcite_ontology.reasoning.engine import Penalty
-from envcite_ontology.reasoning.facts import Measurement
+from envcite_ontology.reasoning.facts import Chain, Measurement
 
 STATEMENT_KIND = {
     "prescriptive": pb.STATEMENT_KIND_PRESCRIPTIVE,
@@ -111,6 +111,7 @@ PROBLEM_KIND = {
     "bad_date": pb.PROBLEM_KIND_BAD_DATE,
     "measurement_mismatch": pb.PROBLEM_KIND_MEASUREMENT_MISMATCH,
     "measurement_unlabeled": pb.PROBLEM_KIND_MEASUREMENT_UNLABELED,
+    "invalidated_delegation": pb.PROBLEM_KIND_INVALIDATED_DELEGATION,
 }
 EXCUSE = {
     "no_fault": pb.EXCUSE_NO_FAULT,
@@ -120,6 +121,7 @@ EXCUSE = {
     "superior_order": pb.EXCUSE_SUPERIOR_ORDER,
     "self_defense": pb.EXCUSE_SELF_DEFENSE,
     "necessity": pb.EXCUSE_NECESSITY,
+    "criminal_priority": pb.EXCUSE_CRIMINAL_PRIORITY,
 }
 MITIGATION = {
     "youth": pb.MITIGATION_YOUTH,
@@ -127,6 +129,15 @@ MITIGATION = {
     "ignorance": pb.MITIGATION_IGNORANCE,
     "excessive_defense": pb.MITIGATION_EXCESSIVE_DEFENSE,
     "excessive_necessity": pb.MITIGATION_EXCESSIVE_NECESSITY,
+}
+REDUCTION_SHARE = {2: pb.REDUCTION_SHARE_HALF, 3: pb.REDUCTION_SHARE_THIRD}
+DELEGATION_GAP = {
+    None: pb.DELEGATION_GAP_UNSPECIFIED,
+    "no_citation": pb.DELEGATION_GAP_NO_CITATION,
+    "unresolved_law": pb.DELEGATION_GAP_UNRESOLVED_LAW,
+    "law_not_in_force": pb.DELEGATION_GAP_LAW_NOT_IN_FORCE,
+    "law_invalidated": pb.DELEGATION_GAP_LAW_INVALIDATED,
+    "cycle": pb.DELEGATION_GAP_CYCLE,
 }
 
 #: 推論程式為行政罰法總則保留的案件事實代碼前綴。
@@ -148,6 +159,8 @@ _BooleanFact = Literal[
     "necessity_excessive",
     "capacity_reduced",
     "ignorance_of_law",
+    "criminal_offense",
+    "court_confiscated",
 ]
 _BOOLEAN_FACTS: tuple[_BooleanFact, ...] = (
     "intent",
@@ -165,6 +178,17 @@ _BOOLEAN_FACTS: tuple[_BooleanFact, ...] = (
     "necessity_excessive",
     "capacity_reduced",
     "ignorance_of_law",
+    "criminal_offense",
+    "court_confiscated",
+)
+_DecimalFact = Literal[
+    "criminal_payment", "community_service_hours", "minimum_hourly_wage", "gained_benefit"
+]
+_DECIMAL_FACTS: tuple[_DecimalFact, ...] = (
+    "criminal_payment",
+    "community_service_hours",
+    "minimum_hourly_wage",
+    "gained_benefit",
 )
 
 
@@ -194,7 +218,37 @@ def statement_ids(result: Result) -> set[int]:
     ids |= {t.statement_id for t in result.trace} | set(result.limit_sources.values())
     ids |= {p for p, _ in result.general.unpunished} | {p for p, _ in result.general.mitigation}
     ids |= {p for p, _ in result.general.presumed} | set(result.general.time_barred)
+    ids |= {r[0] for r in result.general.reduced} | {p for p, _ in result.general.raised_caps}
+    ids |= {p for p, _ in result.general.deductions}
     return ids
+
+
+def _delegation(statement_id: int, chain: Chain) -> pb.DelegationBasis:
+    return pb.DelegationBasis(
+        statement_id=statement_id,
+        rooted=chain.rooted,
+        links=[
+            pb.DelegationLink(
+                command_law_id=link.command_law_id,
+                cited_law_name=link.cited_law_name,
+                cited_path=link.cited_path,
+                law_id=link.law_id or "",
+                version_iri=link.version_iri or "",
+                gap=DELEGATION_GAP[link.gap],
+            )
+            for link in chain.links
+        ],
+    )
+
+
+def _reduced(row: tuple[int, str, int, int | None, int | None]) -> pb.ReducedFine:
+    p, g, k, lo, hi = row
+    out = pb.ReducedFine(penalty_statement_id=p, mitigation=MITIGATION[g], share=REDUCTION_SHARE[k])
+    if lo is not None:
+        out.min_amount = lo
+    if hi is not None:
+        out.max_amount = hi
+    return out
 
 
 def _penalty(p: Penalty) -> pb.PenaltyCandidate:
@@ -283,6 +337,15 @@ def outcome(
             ],
             presumed_agent_fault=[p for p, _ in result.general.presumed],
             time_barred=list(result.general.time_barred),
+            reduced=[_reduced(r) for r in result.general.reduced],
+            raised_caps=[
+                pb.RaisedCap(penalty_statement_id=p, max_amount=decimal(v))
+                for p, v in result.general.raised_caps
+            ],
+            criminal_deductions=[
+                pb.CriminalDeduction(penalty_statement_id=p, amount=decimal(v))
+                for p, v in result.general.deductions
+            ],
         ),
         sources=[
             pb.StatementSource(statement_id=i, version_iri=sources[i])
@@ -290,6 +353,12 @@ def outcome(
             if i in sources
         ],
         subject_mismatch=list(result.subject_mismatch),
+        invalidated=[invalidated(i) for i in result.invalidated],
+        delegation_bases=[
+            _delegation(i, result.delegation[i])
+            for i in sorted(statement_ids(result))
+            if i in result.delegation
+        ],
         uncovered_law_ids=list(uncovered),
         missing_permit_limits=[
             pb.PermitGap(statement_id=s, permit=k, concept=m) for s, k, m in result.missing_permits
@@ -324,6 +393,16 @@ def outcome(
             pb.FineInterval(min_amount=result.one_act[0], max_amount=result.one_act[1])
         )
     return out
+
+
+def invalidated(i: facts.Invalidated) -> pb.InvalidatedStatement:
+    return pb.InvalidatedStatement(
+        statement_id=i.statement_id,
+        version_iri=i.version_iri,
+        ruling_no=i.ruling_no,
+        invalid_from=i.invalid_from.isoformat(),
+        partial=i.partial,
+    )
 
 
 def _stamp(day: date) -> float:
@@ -388,6 +467,7 @@ def case_facts(
     validator: errors.Validator,
     conduct_ended: date | None,
     result_on: date | None,
+    criminal_cleared: date | None,
 ) -> dict[str, float | list[float | str]]:
     """請求的案件事實轉成推論程式的輸入。欄位錯誤記在 `validator`，不丟例外。"""
     several: dict[str, list[float | str]] = {}
@@ -447,6 +527,20 @@ def case_facts(
             )
         else:
             case[f"{RESERVED_PREFIX}age"] = float(penalty.age)
+    for decimal_name in _DECIMAL_FACTS:
+        if penalty.HasField(decimal_name):
+            where = f"administrative_penalty_facts.{decimal_name}"
+            number = _number(getattr(penalty, decimal_name))
+            if number is None:
+                validator.add(
+                    f"{where}.value", errors.INVALID_NUMBER, "must be a finite decimal number"
+                )
+            elif number < 0:
+                validator.add(where, errors.OUT_OF_RANGE, "must not be negative")
+            else:
+                case[f"{RESERVED_PREFIX}{decimal_name}"] = float(number)
+    if criminal_cleared is not None:
+        case[f"{RESERVED_PREFIX}criminal_cleared"] = _stamp(criminal_cleared)
     if conduct_ended is not None:
         case[f"{RESERVED_PREFIX}conduct_ended"] = _stamp(conduct_ended)
     if result_on is not None:

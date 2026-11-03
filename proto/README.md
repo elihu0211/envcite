@@ -133,5 +133,8 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
     - 不在語料裡的管制事實由呼叫端隨案件提供：門檻委由個別處分（`Condition.delegate_permit`）的量值放 `permit_limits`，缺了列在 `Outcome.missing_permit_limits`；限值標有認定方式時，`Fact.measurement_method`／`averaging_period` 要與它相同，否則要件未知（`PROBLEM_KIND_MEASUREMENT_MISMATCH`），限值沒標則照常比較並附 `PROBLEM_KIND_MEASUREMENT_UNLABELED`。
     - 責任基礎：罰則的主體槽位標有責任基礎（`Slot.liability_basis`）時，`PenaltyCandidate.subject_bases` 帶出它；呼叫端以 `actor_bases` 說明行為人屬哪種基礎（可同時屬數種）。有交集則主體成立；沒有交集則主體不成立，罰則不列出，列在 `Outcome.subject_mismatch`；沒說明則主體未知，罰則附條件，缺的事實是概念 `liability_basis`（`Outcome.missing`）。主體槽位沒有標註，或擇一的值有一個沒標，則不受限制。推論只比對基礎，不判斷行為人是否「真的」屬於該基礎，那是呼叫端的事實認定。
     - 以另一效果為前提的罰則（`Sanction.triggers`），前提沒有列出就不列出；`PenaltyCandidate.triggered_by` 是它所依的前提。
+    - 違憲失效：被宣告失效的條文版本自失效日起不參與推論，讀它的陳述列在 `Outcome.invalidated`（`ListStatementsResponse.invalidated`）；`verdicts` 少了某則陳述時先看這裡。限值的條文失效，要件附 `PROBLEM_KIND_INVALIDATED_DELEGATION`。
+    - 授權鏈：命令陳述的 `Outcome.delegation_bases` 列出由命令往上到法律的每一環；`rooted` 為假時，相關罰則附條件（授權依據待查），不是不成立。
+    - 行政罰法第 18、26 條：`AdministrativePenaltyFacts` 的刑事欄位與 `gained_benefit` 缺席都是未知；`criminal_offense` 為真而沒有 `criminal_cleared_on`，罰鍰列在 `GeneralPart.unpunished`（`EXCUSE_CRIMINAL_PRIORITY`）。減輕的範圍（`reduced`）、加重的上限（`raised_caps`）與扣抵額（`criminal_deductions`）只給額度，不選罰鍰。
     - 期限同時是資料庫查詢的上限；等不到名額回 `BUSY`。
 - **數值**用 `Decimal`（十進位文字），**日期**維持 ISO 8601 字串；列舉的零值一律是 `*_UNSPECIFIED`，收到就是契約之外的值。

@@ -40,10 +40,11 @@ test = ["tests/test_incremental.py::test_an_amendment_adds_a_version_and_closes_
 [[question]]
 id = "A5"
 status = "answerable"
-db = ["corpus.lifecycle_event", "corpus.constitutional_ruling", "corpus.ruling_invalidation", "corpus.ruling_scan", "corpus.invalidations_at"]
+db = ["corpus.lifecycle_event", "corpus.constitutional_ruling", "corpus.ruling_invalidation", "corpus.ruling_scan", "corpus.invalidations_at", "annotation.invalidated_statements_at"]
 rpc = ["OntologyService.ListInvalidations"]
-field = ["Invalidation.partial", "Invalidation.excerpt"]
+field = ["Invalidation.partial", "Invalidation.excerpt", "Outcome.invalidated", "ListStatementsResponse.invalidated"]
 test = [
+  "tests/test_reasoning_invalidation.py::test_an_invalidated_duty_is_no_basis_from_the_day_it_lapses",
   "tests/test_incremental.py::test_a_repealed_law_is_no_longer_in_force_even_when_its_commencement_is_unknown",
   "tests/test_ruling.py::test_a_ruling_invalidates_from_its_date_and_not_before",
   "tests/test_ruling_sync.py::test_fetching_loads_the_ruling_and_its_invalidation",
@@ -76,7 +77,11 @@ test = ["tests/test_guidance.py::test_a_later_letter_supersedes_from_its_issue_d
 id = "B5"
 status = "partial"
 db = ["annotation.delegations_at"]
-test = ["tests/test_delegation.py::test_a_model_extracted_delegation_is_unusable_until_confirmed"]
+field = ["Outcome.delegation_bases"]
+test = [
+  "tests/test_delegation.py::test_a_model_extracted_delegation_is_unusable_until_confirmed",
+  "tests/test_reasoning_delegation.py::test_a_command_without_a_citation_is_pending",
+]
 
 [[question]]
 id = "C1"

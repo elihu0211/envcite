@@ -14,6 +14,7 @@ from typing import cast
 
 from envcite.ontology.v1 import reasoning_pb2 as pb
 from envcite_ontology import reasoning_codec as codec
+from envcite_ontology.reasoning.facts import Invalidated
 from envcite_ontology.store import LANGUAGE, Conn
 
 _STATEMENTS = """
@@ -21,6 +22,11 @@ _STATEMENTS = """
       FROM annotation.statement_versions_at(%(resource)s, %(language)s, %(on)s) AS r
       JOIN annotation.statement AS s ON s.id = r.statement_id
      ORDER BY s.id
+"""
+
+_INVALIDATED = """
+    SELECT statement_id, corpus.version_iri(version_id), ruling_no, invalid_from, partial
+      FROM annotation.invalidated_statements_at(%(resource)s, %(language)s, %(on)s)
 """
 
 _SLOTS = """
@@ -121,10 +127,16 @@ def definition_sources(
 def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListStatementsResponse:
     """資源 `resource_id` 在 `on`（None 為今日）有效、已確認的陳述。"""
     params = {"resource": resource_id, "language": LANGUAGE, "on": on or date.today()}
+    invalidated = [
+        codec.invalidated(
+            Invalidated(cast(int, sid), str(iri), str(no), cast(date, since), bool(partial))
+        )
+        for sid, iri, no, since, partial in conn.execute(_INVALIDATED, params)
+    ]
     rows = conn.execute(_STATEMENTS, params).fetchall()
     ids = [cast(int, r[0]) for r in rows]
     if not ids:
-        return pb.ListStatementsResponse()
+        return pb.ListStatementsResponse(invalidated=invalidated)
     by_id = {"ids": ids}
 
     statements: dict[int, pb.Statement] = {}
@@ -170,6 +182,7 @@ def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListSta
 
     return pb.ListStatementsResponse(
         statements=list(statements.values()),
+        invalidated=invalidated,
         overrides=[
             pb.Override(
                 prevailing=cast(int, w),
