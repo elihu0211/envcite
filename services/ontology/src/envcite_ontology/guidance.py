@@ -32,7 +32,7 @@ import argparse
 import hashlib
 import json
 import logging
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -41,7 +41,7 @@ from typing import Any, cast
 import psycopg
 
 from envcite_ontology.annotate import AnnotationError, anchor
-from envcite_ontology.settings import DatabaseSettings
+from envcite_ontology.settings import DatabaseSettings, SnapshotSettings
 from envcite_ontology.settings import load as load_settings
 
 log = logging.getLogger(__name__)
@@ -53,6 +53,10 @@ EXIT_INVALID = 2
 
 class GuidanceError(AnnotationError):
     """文件不合：錨定的文字不在語料、同一件公文內容不同、引用不存在的前函。"""
+
+
+class DocumentChanged(GuidanceError):
+    """同一件公文（發文機關，字號）已載入，內容與這次不同：公文不可改，由人判斷。"""
 
 
 @dataclass(frozen=True)
@@ -93,20 +97,29 @@ def _load(conn: Conn, doc: Mapping[str, Any]) -> LoadedGuidance:
 
 def _write(conn: Conn, doc: Mapping[str, Any]) -> LoadedGuidance:
     derivation = doc["derivation"]
-    d_id = _one(
-        conn,
-        "INSERT INTO annotation.derivation (method, producer, producer_version)"
-        " VALUES (%s, %s, %s) RETURNING id",
-        derivation["method"],
-        derivation["agent"],
-        derivation["agent_version"],
-    )
+    d_id: list[int] = []
+
+    def derivation_id() -> int:
+        # 只在有新公文時才記推導活動：同步重跑沿用已載入的公文，不留下空的推導紀錄
+        if not d_id:
+            d_id.append(
+                _one(
+                    conn,
+                    "INSERT INTO annotation.derivation (method, producer, producer_version)"
+                    " VALUES (%s, %s, %s) RETURNING id",
+                    derivation["method"],
+                    derivation["agent"],
+                    derivation["agent_version"],
+                )
+            )
+        return d_id[0]
+
     # 先寫全部公文，再寫關係：後函可以引用同一份文件裡的前函
     ids: dict[tuple[str, str], int] = {}
     repeated = 0
     for d in doc["documents"]:
         key = (str(d["issuer"]), str(d["document_no"]))
-        ids[key], again = _document(conn, d, d_id)
+        ids[key], again = _document(conn, d, derivation_id)
         repeated += again
     interpretations = cessations = 0
     for d in doc["documents"]:
@@ -127,7 +140,9 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> LoadedGuidance:
     return LoadedGuidance(len(ids), repeated, interpretations, cessations)
 
 
-def _document(conn: Conn, d: Mapping[str, Any], derivation_id: int) -> tuple[int, int]:
+def _document(
+    conn: Conn, d: Mapping[str, Any], derivation_id: Callable[[], int]
+) -> tuple[int, int]:
     """寫入一件公文；已有同一件時內容必須相同。回傳（id，是否沿用）。"""
     digest = hashlib.sha256(f"{d['subject']}\n{d['body']}".encode()).digest()
     row = conn.execute(
@@ -142,7 +157,7 @@ def _document(conn: Conn, d: Mapping[str, Any], derivation_id: int) -> tuple[int
             d["kind"],
         )
         if not same:
-            raise GuidanceError(f"{d['issuer']} {d['document_no']} 已載入，內容與這次不同")
+            raise DocumentChanged(f"{d['issuer']} {d['document_no']} 已載入，內容與這次不同")
         return cast(int, row[0]), 1
     return (
         _one(
@@ -158,7 +173,7 @@ def _document(conn: Conn, d: Mapping[str, Any], derivation_id: int) -> tuple[int
             d["body"],
             d.get("published_in"),
             d.get("source_url"),
-            derivation_id,
+            derivation_id(),
         ),
         0,
     )
@@ -203,9 +218,21 @@ def _one(conn: Conn, sql: str, *args: object) -> int:
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="envcite-guidance")
-    parser.add_argument("file", type=Path, help="行政規則文件（JSON）")
+    commands = parser.add_subparsers(dest="command", required=True)
+    load_cmd = commands.add_parser("load", help="載入一份人寫的行政規則文件（JSON）")
+    load_cmd.add_argument("file", type=Path)
+    sync_cmd = commands.add_parser("sync", help="自公報或環境部函釋取得行政規則並寫入")
+    sync_cmd.add_argument("source", choices=("gazette", "moenv"))
+    sync_cmd.add_argument(
+        "--since", type=date.fromisoformat, help="只取此日（含）以後的刊登或發文；YYYY-MM-DD"
+    )
+    sync_cmd.add_argument(
+        "--rescan", action="store_true", help="已處理過的也重抓，用來發現網站內容的改變"
+    )
     args = parser.parse_args()
 
+    if args.command == "sync":
+        raise SystemExit(_sync(args.source, since=args.since, rescan=args.rescan))
     settings = load_settings(DatabaseSettings)
     try:
         doc = json.loads(args.file.read_text(encoding="utf-8"))
@@ -214,3 +241,16 @@ def main() -> None:
     except (GuidanceError, json.JSONDecodeError) as e:
         log.error("guidance rejected: %s", e)
         raise SystemExit(EXIT_INVALID) from e
+
+
+def _sync(source: str, *, since: date | None, rescan: bool) -> int:
+    from envcite_jobkit import Policy
+    from envcite_ontology import guidance_sync
+
+    settings = load_settings(SnapshotSettings)
+    policy = Policy.load(defaults=guidance_sync.POLICY)
+    with psycopg.connect(settings.dsn) as conn:
+        report = guidance_sync.sync(
+            conn, source, settings.snapshot_dir, since=since, rescan=rescan, policy=policy
+        )
+    return report.exit_code

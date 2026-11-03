@@ -26,7 +26,8 @@ owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations, com
 | `envcite-import <來源>` | 一次性 | 快照寫入語料；`--dry-run` 只解析與驗收 |
 | `envcite-pipeline` | 排程 | 標註：抽取、驗證、接受 |
 | `envcite-annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
-| `envcite-guidance <檔>` | 一次性 | 載入行政規則（函釋、裁量基準）JSON；格式見 [`guidance.py`](src/envcite_ontology/guidance.py) |
+| `envcite-guidance sync <來源>` | 排程 | 取得行政規則寫入 `guidance`（`gazette` 公報、`moenv` 環境部函釋）；見下節 |
+| `envcite-guidance load <檔>` | 一次性 | 載入一份人寫的行政規則（函釋、裁量基準）JSON；格式見 [`guidance.py`](src/envcite_ontology/guidance.py) |
 | `envcite-verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |
 
 `<來源>` 登記在 [`acquire/cli.py`](src/envcite_ontology/acquire/cli.py) 的 `SOURCES`；`moj` 是全國法規資料庫。開發用工具在 [`tools/`](tools)，不進映像，用法見各檔開頭。
@@ -69,6 +70,22 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
   - 兩者都回報法律端條文在該日的 `law_status`；`law_resource_id`／`law_provision_id` 為空、`law_status` 不是 `in_force`、或命令一列也沒有，都是授權不明。
 - **推論**：命令陳述的授權鏈由 [`reasoning/facts.py`](src/envcite_ontology/reasoning/facts.py) 的 `chain_at` 沿 `delegations_at` 往上走到法律（授權者又是命令就接著走）；授權條文該日已違憲失效也算斷。鏈的每一環與缺口在 `Outcome.delegation_bases`；鏈到不了法律時，命令所定的罰則與處罰命令義務的罰則附條件，義務的結論不變。
 - **守門**：只回已確認或規則推導的授權，駁回的不回；模型抽取而未確認的不回（同陳述與用語定義）。
+
+## 行政規則的取得
+
+`envcite-guidance sync <gazette|moenv> [--since YYYY-MM-DD] [--rescan]`，實作在 [`guidance_sync.py`](src/envcite_ontology/guidance_sync.py)。每個工作項（公報的一包、函釋的一頁）是一個 jobkit 工作項：端點錯誤退避重試、斷路器、單項隔離，政策以 `ENVCITE_JOBKIT_<欄位>` 覆寫，預設值以該模組的 `POLICY` 為準；每件公文一個交易，可重跑。
+
+| 來源 | 取得 | 出處標示 | 錨定 |
+|------|------|----------|------|
+| `gazette` | 行政院公報開放資料的 ZIP（本月每日包與歷史月包），只取 `Doc_Style_LName` 為「行政規則」者 | 政府資料開放授權條款－第 1 版（資料集 5959） | 不錨定：XML 沒有相關法規欄 |
+| `moenv` | 環境部主管法規查詢系統的函釋清單（走葉分類）與詳細頁；逐頁循序、間隔至少 0.5 秒 | 環境部網站資料開放宣告（CC BY 4.0） | 只取「相關法規」欄 |
+
+- **略過已處理的**：公報看包名（`source.snapshot.origin_name`），函釋看發文字號是否已有來源項目；未給 `--since` 時公報從上個月一日起、函釋走全部清單。`--rescan` 全部重抓，用來發現網站內容的改變。
+- **公文不可改**：同一件（發文機關，正規化字號）再寫入時內容不同，不改寫，記匯入問題 `content_changed`。字號去除空白與文別（「號函」記為「號」），公報與網站的同一件是同一列，先寫入者為準。
+- **錨定**：法名對語料任一版本的標題且唯一，條號對到條文單元，錨定到該單元之下每個最細單元在**發文日**現行的文字；發文日沒有現行版本的不錨定。
+- **匯入問題**（`source.import_problem`，鍵是來源項目）：`law_unresolved`、`law_ambiguous`、`no_article`、`provision_unresolved`、`no_version_at_issue`、`ceased_without_date`、`ceased_before_issue`、`content_changed` 為 warning；`kind_ambiguous`（公報標題同時像裁量基準與解釋）、`incomplete`、`rejected` 為 error，該件不寫入。
+- **結束碼**沿用 jobkit（0、75、2、1）；隔離的工作項超過列舉數的 1% 時為 1。
+- **未做**：函釋的下架偵測（連續兩次全量走訪未出現）、公報以標題「廢止」停止前一規則的對應、公報行政規則的錨定。
 
 ## 違憲失效
 
