@@ -450,7 +450,7 @@ ontology:
     POSTGRES_DB: envcite_test
     POSTGRES_USER: envcite
     POSTGRES_PASSWORD: envcite
-    ONTOLOGY_TEST_DSN: "postgresql://envcite:envcite@postgres:5432/envcite_test"
+    ENVCITE_ONTOLOGY_TEST_DSN: "postgresql://envcite:envcite@postgres:5432/envcite_test"
 
 # 重新產生後須與提交的產生碼一致。
 python-proto:

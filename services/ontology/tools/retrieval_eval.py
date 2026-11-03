@@ -15,8 +15,8 @@ answerable ones. For each score it also reports the floor that best separates an
 out-of-scope questions (by each question's top score): that is what consult's relevance floor is
 calibrated from, and it holds only for the score it was derived from.
 
-Database and embedder come from the environment (ONTOLOGY_DSN, ONTOLOGY_MODELS); the question writer
-from `models.toml`. This script never reads or writes a key itself.
+Database and embedder come from the environment (ENVCITE_ONTOLOGY_DSN, ENVCITE_ONTOLOGY_MODELS);
+the question writer from `models.toml`. This script never reads or writes a key itself.
 """
 
 from __future__ import annotations
@@ -261,7 +261,7 @@ def main() -> None:
     if args.command == "generate":
         models = config.load(args.models)
         writer = next((m for m in models.everyone if m.name == args.model), models.extractor)
-        with psycopg.connect(db.ontology_dsn) as conn:
+        with psycopg.connect(db.dsn) as conn:
             items = generate(
                 conn, writer, count=args.count, negatives=args.negatives, seed=args.seed, on=on
             )
@@ -275,7 +275,7 @@ def main() -> None:
         json.loads(line) for line in args.dataset.read_text(encoding="utf-8").splitlines() if line
     ]
     embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0)
-    with OntologyStore.from_dsn(db.ontology_dsn) as store:
+    with OntologyStore.from_dsn(db.dsn) as store:
         segmenter = Segmenter(store.lexicon())
         lexical = search_all(store, segmenter, items, None, k=args.k, on=on.isoformat())
         hybrid = (

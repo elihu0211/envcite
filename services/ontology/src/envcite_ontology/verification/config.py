@@ -2,8 +2,8 @@
 
 - 角色明寫：抽取者、往返重抽者、獨立測試設計者、評審團各指名模型，不靠驗證者順序隱含。
 - 家族由人宣告，不從模型名推測：託管端點的名稱可能是別名，獨立性規則依家族判定。
-- 設定檔只寫金鑰位置（`api_key_env` 或相對於設定檔的 `api_key_file`）；
-  金鑰檔在未忽略的 git 工作樹內則拒絕載入。
+- 設定檔只寫金鑰的名稱（`api_key = "<名稱>"`），金鑰值不進設定檔；名稱依序從同名環境變數、
+  作業系統鑰匙圈同名 service 解析（`resolve_secret`）。
 - 語意檢索的嵌入模型也在這裡宣告（`[embedding]`），沿用同一組端點；伺服器與同步排程只讀這一段，
   不需要標註管線的角色（`load_embedder`）。
 
@@ -14,7 +14,8 @@ from __future__ import annotations
 
 import os
 import subprocess
-from collections.abc import Mapping
+import sys
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -28,7 +29,7 @@ ROLES = ("extractor", "roundtrip", "independent_test", "panel")
 
 
 class ConfigError(ValueError):
-    """設定檔不合：缺角色、參照不存在、不認得的鍵、缺環境變數。"""
+    """設定檔不合：缺角色、參照不存在、不認得的鍵、缺金鑰。"""
 
 
 @dataclass(frozen=True)
@@ -57,52 +58,79 @@ def _only(table: Mapping[str, Any], allowed: set[str], where: str) -> None:
         raise ConfigError(f"{where}: unknown keys {sorted(extra)}")
 
 
-def _key_from_file(where: str, name: Any, base: Path) -> str:
-    path = (base / str(name)).resolve()
+KEYCHAIN_TIMEOUT = 10.0
+
+# 子行程的指令表，依 sys.platform 選；金鑰只經標準輸出回到本行程，不進命令列。
+# Windows 與沒有鑰匙圈 CLI 的環境沒有這一項，只剩環境變數。
+_KEYCHAIN_COMMANDS: Mapping[str, Callable[[str], list[str]]] = {
+    "darwin": lambda name: ["security", "find-generic-password", "-s", name, "-w"],
+    "linux": lambda name: ["secret-tool", "lookup", "service", name],
+}
+
+
+def keychain_lookup(
+    name: str, *, platform: str | None = None, timeout: float | None = None
+) -> str | None:
+    """作業系統鑰匙圈裡 service 為 `name` 的通用密碼；沒有、取不到、逾時或沒有鑰匙圈為 None。
+
+    鎖住的鑰匙圈會跳出授權視窗，所以子行程有逾時；逾時視同取不到，不拋出子行程的任何輸出。
+    """
+    command = _KEYCHAIN_COMMANDS.get(platform or sys.platform)
+    if command is None:
+        return None
     try:
-        key = path.read_text(encoding="utf-8").strip()
-    except OSError as e:
-        raise ConfigError(f"{where}: cannot read the key file {path}: {e.strerror}") from e
-    if not key:
-        raise ConfigError(f"{where}: the key file {path} is empty")
-    # check-ignore 回 1＝在工作樹內且未忽略，拒絕以免被提交；128（不在工作樹）或無 git 則放行。
-    try:
-        ignored = subprocess.run(
-            ["git", "-C", str(path.parent), "check-ignore", "-q", str(path)],
+        done = subprocess.run(
+            command(name),
             capture_output=True,
-        ).returncode
-    except OSError:
-        ignored = 128
-    if ignored == 1:
-        raise ConfigError(
-            f"{where}: the key file {path} is inside a git repository and not ignored"
+            text=True,
+            timeout=KEYCHAIN_TIMEOUT if timeout is None else timeout,
         )
-    return key
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return (done.stdout.strip() or None) if done.returncode == 0 else None
+
+
+def resolve_secret(
+    name: str,
+    env: Mapping[str, str] | None = None,
+    *,
+    keychain: Callable[[str], str | None] = keychain_lookup,
+) -> str:
+    """名稱對應的機密：同名環境變數優先，其次鑰匙圈同名 service；都沒有則 `ConfigError`。
+
+    錯誤訊息只列名稱與找過的位置，不含任何值。
+    """
+    env = os.environ if env is None else env
+    if value := env.get(name):
+        return value
+    if value := keychain(name):
+        return value
+    raise ConfigError(
+        f"secret {name} not found: set the environment variable {name}, "
+        f"or store a keychain generic password with service {name}"
+    )
 
 
 def _endpoint(
-    name: str, table: Mapping[str, Any], env: Mapping[str, str], base_dir: Path
+    name: str,
+    table: Mapping[str, Any],
+    env: Mapping[str, str],
+    keychain: Callable[[str], str | None],
 ) -> tuple[str, str | None]:
     where = f"endpoint.{name}"
-    _only(table, {"base_url", "base_url_env", "api_key_env", "api_key_file"}, where)
-    if "api_key_env" in table and "api_key_file" in table:
-        raise ConfigError(f"{where}: give at most one of api_key_env and api_key_file")
-    if ("base_url" in table) == ("base_url_env" in table):
-        raise ConfigError(f"{where}: give exactly one of base_url and base_url_env")
+    _only(table, {"base_url", "api_key"}, where)
     base = table.get("base_url")
-    if base is None:
-        var = str(table["base_url_env"])
-        base = env.get(var)
-        if not base:
-            raise ConfigError(f"{where}: environment variable {var} is not set")
-    key: str | None = None
-    if "api_key_file" in table:
-        key = _key_from_file(where, table["api_key_file"], base_dir)
-    elif (key_var := table.get("api_key_env")) is not None:
-        key = env.get(str(key_var))
-        if not key:
-            raise ConfigError(f"{where}: environment variable {key_var} is not set")
-    return str(base), key
+    if not isinstance(base, str) or not base:
+        raise ConfigError(f"{where}: base_url is required")
+    secret = table.get("api_key")
+    if secret is None:
+        return base, None
+    if not isinstance(secret, str) or not secret:
+        raise ConfigError(f"{where}: api_key is the name of the secret")
+    try:
+        return base, resolve_secret(secret, env, keychain=keychain)
+    except ConfigError as e:
+        raise ConfigError(f"{where}: {e}") from None
 
 
 def _model(
@@ -156,17 +184,19 @@ def _model(
 
 
 def parse(
-    text: str, env: Mapping[str, str] | None = None, base_dir: Path | None = None
+    text: str,
+    env: Mapping[str, str] | None = None,
+    *,
+    keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> ModelSet:
     env = os.environ if env is None else env
-    base_dir = Path.cwd() if base_dir is None else base_dir
     try:
         doc = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"not valid TOML: {e}") from e
     _only(doc, {"endpoint", "model", "roles", "embedding"}, "top level")
     endpoints = {
-        str(n): _endpoint(str(n), t, env, base_dir) for n, t in (doc.get("endpoint") or {}).items()
+        str(n): _endpoint(str(n), t, env, keychain) for n, t in (doc.get("endpoint") or {}).items()
     }
     models = {str(n): _model(str(n), t, endpoints) for n, t in (doc.get("model") or {}).items()}
     roles = doc.get("roles") or {}
@@ -191,20 +221,24 @@ def parse(
     )
 
 
-def load(path: Path, env: Mapping[str, str] | None = None) -> ModelSet:
-    return parse(path.read_text(encoding="utf-8"), env, path.resolve().parent)
+def load(
+    path: Path,
+    env: Mapping[str, str] | None = None,
+    *,
+    keychain: Callable[[str], str | None] = keychain_lookup,
+) -> ModelSet:
+    return parse(path.read_text(encoding="utf-8"), env, keychain=keychain)
 
 
 def parse_embedder(
     text: str,
     env: Mapping[str, str] | None = None,
-    base_dir: Path | None = None,
     *,
     timeout: float,
+    keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> Embedder | None:
     """`[embedding]` 宣告的嵌入模型；沒有這一段為 None（語意臂關閉）。只解析它指到的端點。"""
     env = os.environ if env is None else env
-    base_dir = Path.cwd() if base_dir is None else base_dir
     try:
         doc = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
@@ -221,13 +255,15 @@ def parse_embedder(
     endpoints = doc.get("endpoint") or {}
     if endpoint not in endpoints:
         raise ConfigError(f"embedding: endpoint {endpoint!r} is not defined")
-    base, key = _endpoint(endpoint, endpoints[endpoint], env, base_dir)
+    base, key = _endpoint(endpoint, endpoints[endpoint], env, keychain)
     return Embedder(name, base_url=base, api_key=key, timeout=timeout)
 
 
 def load_embedder(
-    path: Path, env: Mapping[str, str] | None = None, *, timeout: float
+    path: Path,
+    env: Mapping[str, str] | None = None,
+    *,
+    timeout: float,
+    keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> Embedder | None:
-    return parse_embedder(
-        path.read_text(encoding="utf-8"), env, path.resolve().parent, timeout=timeout
-    )
+    return parse_embedder(path.read_text(encoding="utf-8"), env, timeout=timeout, keychain=keychain)

@@ -65,7 +65,7 @@ def apply_all(conn: Connection[tuple[object, ...]], directory: Path | None = Non
 
 
 def main() -> None:
-    """對 `ONTOLOGY_DSN` 套用 migration 後結束。
+    """對 `ENVCITE_ONTOLOGY_DSN` 套用 migration 後結束。
 
     與伺服器分開：避免每個 replica 啟動時都寫入而使 rollout 競態，並讓 schema 變更有可等待的終點。
     """
@@ -78,7 +78,7 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     settings = load(DatabaseSettings)
 
-    with psycopg.connect(settings.ontology_dsn) as conn:
+    with psycopg.connect(settings.dsn) as conn:
         applied = apply_all(conn)
 
     log = logging.getLogger(__name__)

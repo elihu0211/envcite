@@ -21,7 +21,7 @@ public sealed class ConsultOptions : InternalGrpcClientOptions, ISectionOptions
 
 /// <summary>
 /// 回答用的模型（<c>Platform:Answer</c> 區段）：任何 OpenAI 相容的端點。預設關閉；關閉時入口只列條文，
-/// 不呼叫模型。<c>ApiKey</c> 是機密（<c>Platform__Answer__ApiKey</c>），不進設定檔。
+/// 不呼叫模型。<c>ApiKey</c> 是機密（<c>ENVCITE_Platform__Answer__ApiKey</c>），不進設定檔。
 /// </summary>
 public sealed class AnswerOptions : ISectionOptions
 {

@@ -139,8 +139,8 @@ def test_invalid_data_exits_with_the_code_the_cronjob_does_not_retry(
     """The deploy repo's podFailurePolicy fails the Job outright on exit code 2."""
     source = LocalMoj(_publish(tmp_path / "feed.zip", "not a date", [_law("T0000001")]))
     monkeypatch.setitem(cli.SOURCES, "moj", source)
-    monkeypatch.setenv("ONTOLOGY_DSN", dsn)
-    monkeypatch.setenv("ACQUIRE_SNAPSHOT_DIR", str(tmp_path / "snapshots"))
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_DSN", dsn)
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_SNAPSHOT_DIR", str(tmp_path / "snapshots"))
     monkeypatch.setattr("sys.argv", ["envcite-acquire", "moj"])
 
     with pytest.raises(SystemExit) as exit_:

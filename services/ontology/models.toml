@@ -1,13 +1,12 @@
-# 端點、金鑰變數、角色與嵌入模型只寫在這一個檔。金鑰本體不寫進來。
+# 端點、金鑰名稱、角色與嵌入模型只寫在這一個檔。金鑰本體不寫進來。
 #
 # family 由人宣告，獨立性規則依它判定：驗證者不得與抽取者同一家族，評審團至少要兩個不同家族。
 
-# 一個 OpenAI 相容的端點。網址與金鑰各有兩種寫法：
-#   base_url = "https://…/v1"       或  base_url_env = "<環境變數>"
-#   api_key_file = ".secrets/key"   或  api_key_env  = "<環境變數>"（相對於本檔，檔案放在被忽略的位置）
+# 一個 OpenAI 相容的端點。api_key 是金鑰的名稱，不是金鑰本體：依序取同名環境變數、
+# 作業系統鑰匙圈同名 service（見 CONFIGURATION.md），所以各環境寫法相同。
 [endpoint.hosted]
 base_url = "https://api.ithu.tw/v1"
-api_key_env = "THU_API_KEY"
+api_key = "ENVCITE_ONTOLOGY_HOSTED_API_KEY"
 
 # name 原樣送給端點。選用：max_tokens（回答長度上限）、max_retries（暫時性失敗的重試次數，0 為不重試）。
 # 推理模型的思考計入輸出長度，max_tokens 要留足。
@@ -27,7 +26,7 @@ name = "nemotron-3.5-super-vl"
 family = "nvidia"
 max_tokens = 16384
 
-# 語意檢索臂的嵌入模型（envcite-ontology、envcite-sync 經 ONTOLOGY_MODELS 讀這一段）。
+# 語意檢索臂的嵌入模型（envcite-ontology、envcite-sync 經 ENVCITE_ONTOLOGY_MODELS 讀這一段）。
 # 沿用上面的端點；沒有這一段時只用字面臂。換維度不是 1024 的模型要配一支遷移。
 [embedding]
 endpoint = "hosted"

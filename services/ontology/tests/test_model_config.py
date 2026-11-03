@@ -2,26 +2,37 @@
 
 No provider is called except a loopback server that records what it was sent."""
 
+import subprocess
 from pathlib import Path
 
 import pytest
 
+from envcite_ontology.verification import config
 from envcite_ontology.verification.config import (
     ConfigError,
+    keychain_lookup,
     load,
     load_embedder,
     parse,
     parse_embedder,
+    resolve_secret,
 )
 from envcite_ontology.verification.run import SameModel, gates_from, main
 from tests.test_chat_adapter import Endpoint
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "models.toml"
-ENV = {"CHAT_BASE_URL": "https://models.invalid/v1", "THU_API_KEY": "secret-value"}
+KEY = "ENVCITE_ONTOLOGY_HOSTED_API_KEY"
+ENV = {KEY: "secret-value"}
+
+
+def no_keychain(name: str) -> None:
+    """測試不碰真實的鑰匙圈：環境變數沒有就當作取不到。"""
+    return None
+
 
 MINIMAL = """
 [endpoint.e]
-base_url_env = "CHAT_BASE_URL"
+base_url = "https://models.invalid/v1"
 
 [model.a]
 endpoint = "e"
@@ -86,22 +97,15 @@ def test_a_secret_never_appears_in_what_a_model_prints() -> None:
     assert "secret-value" not in repr(models) + repr(models.extractor) + models.extractor.name
 
 
-def test_a_model_talks_to_its_declared_endpoint_with_its_declared_name(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_a_model_talks_to_its_declared_endpoint_with_its_declared_name() -> None:
     served = Endpoint()
-    other = Endpoint()
-    monkeypatch.setenv("CHAT_BASE_URL", other.url)  # 設定檔明寫的端點優先，不被舊的環境變數搶走
-    env = {"CHAT_BASE_URL": served.url}
     try:
-        models = parse(MINIMAL, env)
+        models = parse(MINIMAL.replace("https://models.invalid/v1", served.url), {})
 
         models.extractor.complete("問")
     finally:
         served.server.shutdown()
-        other.server.shutdown()
 
-    assert other.requests == []
     (request,) = served.requests
     assert request["body"]["model"] == "model-a"
     assert request["path"] == "/v1/chat/completions"
@@ -154,10 +158,18 @@ panel = ["a", "b"]
             ('endpoint = "e"\nname = "model-a"', 'endpoint = "nowhere"\nname = "model-a"'),
             "endpoint",
         ),
-        (('base_url_env = "CHAT_BASE_URL"', 'base_url_env = "UNSET_VARIABLE"'), "is not set"),
+        (('base_url = "https://models.invalid/v1"', ""), "base_url is required"),
         (
-            ('base_url_env = "CHAT_BASE_URL"', 'base_url_env = "X"\nbase_url = "http://x"'),
-            "exactly one",
+            ('base_url = "https://models.invalid/v1"', 'base_url_env = "X"'),
+            "unknown keys",
+        ),
+        (
+            ('base_url = "https://models.invalid/v1"', 'base_url = "http://x"\napi_key_env = "X"'),
+            "unknown keys",
+        ),
+        (
+            ('base_url = "https://models.invalid/v1"', 'base_url = "http://x"\napi_key_file = "k"'),
+            "unknown keys",
         ),
         (('name = "model-a"', 'name = "model-a"\ncolour = "red"'), "unknown keys"),
         (('panel = ["b"]', "panel = []"), "non-empty"),
@@ -167,17 +179,7 @@ def test_a_bad_file_is_refused_with_the_reason(change: tuple[str, str], message:
     old, new = change
     assert old in MINIMAL
     with pytest.raises(ConfigError, match=message):
-        parse(MINIMAL.replace(old, new, 1), ENV)
-
-
-def test_a_declared_key_variable_that_is_not_set_is_refused() -> None:
-    text = MINIMAL.replace(
-        'base_url_env = "CHAT_BASE_URL"',
-        'base_url_env = "CHAT_BASE_URL"\napi_key_env = "MISSING_KEY"',
-    )
-
-    with pytest.raises(ConfigError, match="MISSING_KEY"):
-        parse(text, ENV)
+        parse(MINIMAL.replace(old, new, 1), ENV, keychain=no_keychain)
 
 
 def test_text_that_is_not_toml_is_refused() -> None:
@@ -186,7 +188,7 @@ def test_text_that_is_not_toml_is_refused() -> None:
 
 
 def test_the_command_line_names_what_is_missing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://unused")
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_DSN", "postgresql://unused")
     monkeypatch.setattr("sys.argv", ["envcite-pipeline", "--law", "X"])
 
     with pytest.raises(SystemExit) as raised:
@@ -199,78 +201,11 @@ def test_a_bad_file_stops_the_command_line_with_its_path(
 ) -> None:
     bad = tmp_path / "models.toml"
     bad.write_text("[roles]\n", encoding="utf-8")
-    monkeypatch.setenv("ONTOLOGY_DSN", "postgresql://unused")
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_DSN", "postgresql://unused")
     monkeypatch.setattr("sys.argv", ["envcite-pipeline", "--law", "X", "--models", str(bad)])
 
     with pytest.raises(SystemExit, match=r"models\.toml"):
         main()
-
-
-# ---- the key can live in a file inside the project, never in the config itself ----
-
-
-def _with_key_file(name: str = ".secrets/key") -> str:
-    return MINIMAL.replace(
-        'base_url_env = "CHAT_BASE_URL"',
-        f'base_url = "https://x.invalid/v1"\napi_key_file = "{name}"',
-    )
-
-
-def _key_file(root: Path, text: str) -> None:
-    (root / ".secrets").mkdir(exist_ok=True)
-    (root / ".secrets" / "key").write_text(text, encoding="utf-8")
-
-
-def test_a_key_file_is_read_relative_to_the_config_and_trimmed(tmp_path: Path) -> None:
-    _key_file(tmp_path, "  file-secret \n")
-    (tmp_path / "models.toml").write_text(_with_key_file(), encoding="utf-8")
-
-    models = load(tmp_path / "models.toml", {})
-
-    assert models.extractor._api_key == "file-secret"  # type: ignore[attr-defined]
-    assert "file-secret" not in repr(models.extractor)
-
-
-@pytest.mark.parametrize(
-    ("setup", "message"),
-    [
-        pytest.param("empty", "is empty", id="empty"),
-        pytest.param("missing", "cannot read the key file", id="missing"),
-    ],
-)
-def test_an_empty_or_missing_key_file_is_refused(tmp_path: Path, setup: str, message: str) -> None:
-    if setup == "empty":
-        _key_file(tmp_path, "  \n")
-    (tmp_path / "models.toml").write_text(_with_key_file(), encoding="utf-8")
-
-    with pytest.raises(ConfigError, match=message):
-        load(tmp_path / "models.toml", {})
-
-
-def test_a_key_file_and_a_key_variable_together_are_refused(tmp_path: Path) -> None:
-    _key_file(tmp_path, "k")
-    text = _with_key_file().replace("api_key_file", 'api_key_env = "KEY"\napi_key_file')
-
-    with pytest.raises(ConfigError, match="at most one"):
-        parse(text, ENV, tmp_path)
-
-
-def test_a_key_file_inside_a_git_repository_must_be_ignored(tmp_path: Path) -> None:
-    """A key that `git add` would pick up is a leaked key: refuse to load it."""
-    import shutil
-    import subprocess
-
-    if shutil.which("git") is None:
-        pytest.skip("git is not installed (the guard is a no-op without it)")
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    _key_file(tmp_path, "file-secret")
-    (tmp_path / "models.toml").write_text(_with_key_file(), encoding="utf-8")
-
-    with pytest.raises(ConfigError, match="not ignored"):
-        load(tmp_path / "models.toml", {})
-
-    (tmp_path / ".gitignore").write_text(".secrets/\n", encoding="utf-8")
-    assert load(tmp_path / "models.toml", {}).extractor._api_key == "file-secret"  # type: ignore[attr-defined]
 
 
 def test_check_asks_every_model_and_needs_no_database(
@@ -280,15 +215,11 @@ def test_check_asks_every_model_and_needs_no_database(
     served = Endpoint()
     models = tmp_path / "models.toml"
     models.write_text(
-        EXAMPLE.read_text(encoding="utf-8").replace(
-            'base_url = "https://api.ithu.tw/v1"',
-            'base_url_env = "CHAT_BASE_URL"',
-        ),
+        EXAMPLE.read_text(encoding="utf-8").replace("https://api.ithu.tw/v1", served.url),
         encoding="utf-8",
     )
-    monkeypatch.delenv("ONTOLOGY_DSN", raising=False)
-    monkeypatch.setenv("CHAT_BASE_URL", served.url)
-    monkeypatch.setenv("THU_API_KEY", "k")
+    monkeypatch.delenv("ENVCITE_ONTOLOGY_DSN", raising=False)
+    monkeypatch.setenv(KEY, "k")
     monkeypatch.setattr("sys.argv", ["envcite-pipeline", "--models", str(models), "--check"])
     try:
         with pytest.raises(SameModel):
@@ -296,7 +227,7 @@ def test_check_asks_every_model_and_needs_no_database(
     finally:
         served.server.shutdown()
 
-    assert len(served.requests) == 2 * len(load(EXAMPLE).everyone)
+    assert len(served.requests) == 2 * len(load(EXAMPLE, ENV).everyone)
 
 
 def test_the_embedder_is_declared_in_the_same_file_and_reuses_an_endpoint() -> None:
@@ -315,11 +246,11 @@ def test_the_embedder_needs_only_its_own_endpoint() -> None:
     """伺服器只拿得到嵌入端點的金鑰時，別的端點缺環境變數不影響它。"""
     text = (
         MINIMAL
-        + '\n[endpoint.other]\nbase_url_env = "MISSING"\n'
+        + '\n[endpoint.other]\nbase_url = "http://other.invalid"\napi_key = "MISSING_KEY"\n'
         + '\n[embedding]\nendpoint = "e"\nname = "m3"\n'
     )
 
-    embedder = parse_embedder(text, ENV, timeout=5.0)
+    embedder = parse_embedder(text, ENV, timeout=5.0, keychain=no_keychain)
 
     assert embedder is not None and embedder.model == "m3"
     with pytest.raises(ConfigError, match="endpoint 'nope'"):
@@ -356,3 +287,135 @@ def test_constrained_extraction_must_be_a_boolean() -> None:
 
     with pytest.raises(ConfigError, match="constrained_extraction must be true or false"):
         parse(text, ENV)
+
+
+# ---- 金鑰：設定檔只寫名稱，依序取同名環境變數、鑰匙圈同名 service ----
+
+
+def test_the_key_comes_from_the_variable_of_the_same_name() -> None:
+    models = load(EXAMPLE, ENV, keychain=no_keychain)
+
+    assert models.extractor._api_key == "secret-value"  # type: ignore[attr-defined]
+
+
+def test_the_environment_wins_and_the_keychain_is_not_asked() -> None:
+    asked: list[str] = []
+
+    def keychain(name: str) -> str | None:
+        asked.append(name)
+        return "from-keychain"
+
+    assert resolve_secret(KEY, {KEY: "from-env"}, keychain=keychain) == "from-env"
+    assert asked == []
+
+
+def test_the_keychain_is_used_when_the_variable_is_missing_or_empty() -> None:
+    seen: list[str] = []
+
+    def keychain(name: str) -> str | None:
+        seen.append(name)
+        return "from-keychain"
+
+    assert resolve_secret(KEY, {}, keychain=keychain) == "from-keychain"
+    assert resolve_secret(KEY, {KEY: ""}, keychain=keychain) == "from-keychain"
+    assert seen == [KEY, KEY]
+    models = load(EXAMPLE, {}, keychain=keychain)
+    assert models.extractor._api_key == "from-keychain"  # type: ignore[attr-defined]
+
+
+def test_a_missing_key_is_refused_naming_it_and_where_it_was_looked_for() -> None:
+    with pytest.raises(ConfigError) as raised:
+        load(EXAMPLE, {"OTHER": "not-this-one"}, keychain=no_keychain)
+
+    message = str(raised.value)
+    assert KEY in message and "endpoint.hosted" in message
+    assert "keychain" in message and "environment variable" in message
+    assert "not-this-one" not in message
+
+
+def test_an_endpoint_without_api_key_needs_none() -> None:
+    models = parse(MINIMAL, {}, keychain=no_keychain)
+
+    assert models.extractor._api_key is None  # type: ignore[attr-defined]
+
+
+def test_api_key_must_be_a_name() -> None:
+    text = MINIMAL.replace(
+        'base_url = "https://models.invalid/v1"',
+        'base_url = "https://models.invalid/v1"\napi_key = 7',
+    )
+
+    with pytest.raises(ConfigError, match="api_key is the name"):
+        parse(text, ENV, keychain=no_keychain)
+
+
+class _Done:
+    def __init__(self, returncode: int, stdout: str) -> None:
+        self.returncode = returncode
+        self.stdout = stdout
+
+
+def test_the_keychain_command_follows_the_platform(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def run(command: list[str], **kwargs: object) -> _Done:
+        calls.append(command)
+        assert kwargs["timeout"] == config.KEYCHAIN_TIMEOUT
+        return _Done(0, "  value\n")
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    assert keychain_lookup("N", platform="darwin") == "value"
+    assert keychain_lookup("N", platform="linux") == "value"
+    assert calls == [
+        ["security", "find-generic-password", "-s", "N", "-w"],
+        ["secret-tool", "lookup", "service", "N"],
+    ]
+
+
+def test_there_is_no_keychain_on_other_platforms(monkeypatch: pytest.MonkeyPatch) -> None:
+    def run(*args: object, **kwargs: object) -> _Done:
+        raise AssertionError("no command to run on this platform")
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    assert keychain_lookup("N", platform="win32") is None
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    [
+        pytest.param(_Done(44, ""), id="not-found"),
+        pytest.param(_Done(0, "\n"), id="empty"),
+        pytest.param(FileNotFoundError("security"), id="no-cli"),
+        pytest.param(subprocess.TimeoutExpired("security", 1), id="timeout"),
+    ],
+)
+def test_a_keychain_that_cannot_answer_is_a_miss_not_a_crash(
+    monkeypatch: pytest.MonkeyPatch, outcome: object
+) -> None:
+    def run(*args: object, **kwargs: object) -> _Done:
+        if isinstance(outcome, BaseException):
+            raise outcome
+        assert isinstance(outcome, _Done)
+        return outcome
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    assert keychain_lookup("N", platform="darwin") is None
+    with pytest.raises(ConfigError, match="N not found"):
+        resolve_secret("N", {}, keychain=lambda n: keychain_lookup(n, platform="darwin"))
+
+
+def test_a_stalled_keychain_is_cut_off_by_the_timeout() -> None:
+    import sys
+
+    if sys.platform not in {"darwin", "linux"}:
+        pytest.skip("no keychain command on this platform")
+    # 用一個不會回來的子行程驗證逾時真的生效，不碰真實的鑰匙圈。
+    original = config._KEYCHAIN_COMMANDS
+    try:
+        config._KEYCHAIN_COMMANDS = {sys.platform: lambda name: ["sleep", "5"]}
+        assert keychain_lookup("N", timeout=0.2) is None
+    finally:
+        config._KEYCHAIN_COMMANDS = original

@@ -1,6 +1,6 @@
 """Embed the passages of a recorded scope (see golden_scope.py) and nothing else.
 
-    ONTOLOGY_MODELS=models.toml ONTOLOGY_DSN=… \
+    ENVCITE_ONTOLOGY_MODELS=models.toml ENVCITE_ONTOLOGY_DSN=… \
         uv run python tools/embed_scope.py eval/golden-scope-<date>.json
 
 Uses `projection.embed_scope`, the same batching and per-batch commit as the service's own
@@ -57,9 +57,9 @@ def main() -> None:
     pcodes = sorted(e["pcode"] for e in load_scope(args.scope)["laws"])
     embedder = embedding.from_settings(load(ModelsSettings), timeout=120.0)
     if embedder is None:
-        raise SystemExit("沒有設定嵌入端點（ONTOLOGY_MODELS 的 [embedding]）")
+        raise SystemExit("沒有設定嵌入端點（ENVCITE_ONTOLOGY_MODELS 的 [embedding]）")
     started = time.monotonic()
-    with psycopg.connect(load(DatabaseSettings).ontology_dsn) as conn:
+    with psycopg.connect(load(DatabaseSettings).dsn) as conn:
         done, total = completion(conn, embedder.model, pcodes)
         log.info(
             "範圍 %d 部法規；段落 %d，已嵌入 %d（模型 %s）",

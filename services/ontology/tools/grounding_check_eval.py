@@ -1,6 +1,6 @@
 """End to end: how many questions survive retrieval → floor → model → citation check.
 
-    ONTOLOGY_DSN=… THU_API_KEY=… \
+    ENVCITE_ONTOLOGY_DSN=… ENVCITE_ONTOLOGY_HOSTED_API_KEY=… \
         uv run python tools/grounding_check_eval.py <golden.yaml> --consult localhost:<port> \
         --models models.toml --model mistral --out eval/grounding-check-<date>
 
@@ -22,7 +22,7 @@ expected provision is looked up in the database). Nothing here judges whether th
 The model calls are capped (`--max-calls`, retries count); results are cached per question in
 `<out>.cache.jsonl`, so a rerun only calls for questions not yet done. Question and answer text are
 not written out (the golden set is external; ids and a hash of the question only). The key is read
-from the environment variable `models.toml` names and goes nowhere else.
+by the name `models.toml` gives (environment variable, then the OS keychain) and goes nowhere else.
 """
 
 from __future__ import annotations
@@ -48,13 +48,12 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import os
-
 from golden_retrieval_eval import NEGATIVE, git, load_corpus, resolve
 
 from envcite.consult.v2 import consult_pb2, consult_pb2_grpc
 from envcite_ontology.endpoint import json_headers
 from envcite_ontology.settings import DatabaseSettings, load
+from envcite_ontology.verification.config import ConfigError, resolve_secret
 
 # 與 platform 的 GroundedAnswerer 逐字相同（改了那邊要同步這裡）。
 INSUFFICIENT = "證據不足"
@@ -111,17 +110,17 @@ def verify(text: str | None, codes: set[str]) -> tuple[str, list[str]]:
 
 
 class Chat:
-    """OpenAI 相容的 chat/completions；`models.toml` 指名的端點與金鑰變數。"""
+    """OpenAI 相容的 chat/completions；`models.toml` 指名的端點與金鑰名稱。"""
 
     def __init__(self, models: Path, name: str, max_calls: int) -> None:
         cfg = tomllib.loads(models.read_text(encoding="utf-8"))
         model = cfg["model"][name]
         endpoint = cfg["endpoint"][model["endpoint"]]
         self.url = endpoint["base_url"].rstrip("/") + "/chat/completions"
-        key = os.environ.get(endpoint["api_key_env"])
-        if not key:
-            raise SystemExit(f"環境變數 {endpoint['api_key_env']} 沒有設定")
-        self.key = key
+        try:
+            self.key = resolve_secret(endpoint["api_key"])
+        except ConfigError as e:
+            raise SystemExit(str(e)) from None
         self.model_id: str = model["name"]
         self.calls = 0
         self.max_calls = max_calls
@@ -270,7 +269,7 @@ def main() -> None:
     cache = load_cache(cache_path)
     on = date.today().isoformat()
 
-    with psycopg.connect(db.ontology_dsn) as conn:
+    with psycopg.connect(db.dsn) as conn:
         conn.read_only = True
         by_title, provisions = load_corpus(conn)
         resolved = [r for r in resolve(items, by_title, provisions) if r.status != "unmapped"]

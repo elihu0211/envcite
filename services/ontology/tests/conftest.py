@@ -24,11 +24,11 @@ def dsn() -> Iterator[str]:
     reading order, the derived column, the CHECK constraints — and testing against a
     double is not testing that half.
 
-    `ONTOLOGY_TEST_DSN` points at an already-running server (CI attaches one as a
+    `ENVCITE_ONTOLOGY_TEST_DSN` points at an already-running server (CI attaches one as a
     job service; locally it can be anything). Without it, a container is started,
     which needs a Docker daemon.
     """
-    external = os.environ.get("ONTOLOGY_TEST_DSN")
+    external = os.environ.get("ENVCITE_ONTOLOGY_TEST_DSN")
     if external:
         with psycopg.connect(external) as conn:
             apply_all(conn)

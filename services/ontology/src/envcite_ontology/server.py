@@ -1,4 +1,4 @@
-"""gRPC 伺服器啟動；環境變數：ONTOLOGY_DSN（必填）、ONTOLOGY_GRPC_PORT。"""
+"""gRPC 伺服器啟動；環境變數：ENVCITE_ONTOLOGY_DSN（必填）、ENVCITE_ONTOLOGY_GRPC_PORT。"""
 
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ def build_server(
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = load(ServerSettings)
-    store = OntologyStore.from_dsn(settings.ontology_dsn)
+    store = OntologyStore.from_dsn(settings.dsn)
 
     # 沒設 OTEL_EXPORTER_OTLP_ENDPOINT 時什麼都不做（見 envcite_grpc.telemetry）。
     interceptors = configure_telemetry("envcite-ontology")
@@ -80,12 +80,12 @@ def main() -> None:
     health_servicer = health.HealthServicer()
     server, bound = build_server(
         store,
-        f"[::]:{settings.ontology_grpc_port}",
+        f"[::]:{settings.grpc_port}",
         interceptors=interceptors,
         health_servicer=health_servicer,
         # 查詢路徑上不重試、逾時短：取不到向量就只用字面臂，不拖慢查詢
         embedder=embedding.from_settings(settings, timeout=5.0),
-        lexical_max_df=settings.ontology_lexical_max_df,
+        lexical_max_df=settings.lexical_max_df,
     )
     stop_on_sigterm(server, health_servicer)
     server.start()

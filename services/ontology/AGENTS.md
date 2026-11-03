@@ -31,7 +31,7 @@ uv run --env-file .env envcite-ontology
 ```
 
 - **環境變數以 `src/envcite_ontology/settings.py` 為唯一來源**；入口不直接讀 `os.environ`；加變數時同步 `.env.example`（`tests/test_settings.py` 守門）。
-- 測試用**真實的 PostgreSQL**：設 `ONTOLOGY_TEST_DSN`，或留空讓 testcontainers 起一個（需要 Docker daemon）。不用替身，因為本服務一半的讀取邏輯在 SQL 裡。
+- 測試用**真實的 PostgreSQL**：設 `ENVCITE_ONTOLOGY_TEST_DSN`，或留空讓 testcontainers 起一個（需要 Docker daemon）。不用替身，因為本服務一半的讀取邏輯在 SQL 裡。
 - **綱要由 `migrations/*.sql` 依檔名順序套用。已套用的檔案不可修改**——要改就新增一個檔，由 `schema_migration` 的雜湊比對強制。
 - **資料庫角色**（定義在 `migrations/` 的角色遷移）：`reader`（伺服器）、`writer`（取得、匯入、投影、標註管線）、`reviewer`（writer 加手動審核與載入已審核的主張）。標註層對寫入者**只能新增**：主張寫入後內容不改不刪，驗證紀錄只經 `record_verification`、接受只經 `settle`、手動審核只經 `set_confirm_state`（都是 `SECURITY DEFINER`）。角色由部署庫建立，遷移只授權；權限測試用 `SET ROLE`。
 
@@ -40,8 +40,8 @@ uv run --env-file .env envcite-ontology
 - **取得**：引擎負責下載、SHA-256、冪等與存檔；來源只實作 `Source`，在 `acquire/cli.py` 的 `SOURCES` 登記。
 - **匯入**：`law.parse` 是純函式；整批比例過 `audit.LIMITS` 才寫入，否則結束碼 2。**改變解析輸出的修改必須遞增 `law.PARSER_VERSION`**，已匯入的法規才會以新版重寫。已匯入法規的內容改變是增量（`ingest/write.py` 的 `apply`）：更正以新增列取代舊列（`superseded_at`），查詢只看現行列。
 - **檢索投影**（混合檢索）：字面臂與語意臂同列、以段落文字的雜湊為鍵，更正後無從陳舊；取不到查詢向量時只用字面臂，查詢不失敗。伺服器的詞典啟動時讀一次，**重建之後要重啟服務**。嵌入模型宣告在模型配置檔的 `[embedding]`，沒有這一段就只有字面臂。
-- **字面臂略過高頻詞**：整句問題的 OR 查詢會被「之」「應」這類幾乎每段都有的詞撐成巨大的候選集，延遲與候選數成正比；`retrieval.prune_terms` 在查詢前略過段落比例超過 `ONTOLOGY_LEXICAL_MAX_DF` 的詞，全是高頻詞時留最稀有的一個，不空查詢。詞頻表（`retrieval.term_stat`）隨檢索投影整批重算；沒有現行分詞器的統計時不修剪，查詢較慢但不出錯。改門檻預設要用 `tools/golden_retrieval_eval.py` 對照召回，不憑感覺。
-- **字面臂略過高頻詞**：整句問題的 OR 查詢會被「之」「應」這類幾乎每段都有的詞撐成巨大的候選集，延遲與候選數成正比；`retrieval.prune_terms` 在查詢前略過段落比例超過 `ONTOLOGY_LEXICAL_MAX_DF` 的詞，全是高頻詞時留最稀有的一個，不空查詢。詞頻表（`retrieval.term_stat`）隨檢索投影整批重算；沒有現行分詞器的統計時不修剪，查詢較慢但不出錯。改門檻預設要用 `tools/golden_retrieval_eval.py` 對照召回，不憑感覺。
+- **字面臂略過高頻詞**：整句問題的 OR 查詢會被「之」「應」這類幾乎每段都有的詞撐成巨大的候選集，延遲與候選數成正比；`retrieval.prune_terms` 在查詢前略過段落比例超過 `ENVCITE_ONTOLOGY_LEXICAL_MAX_DF` 的詞，全是高頻詞時留最稀有的一個，不空查詢。詞頻表（`retrieval.term_stat`）隨檢索投影整批重算；沒有現行分詞器的統計時不修剪，查詢較慢但不出錯。改門檻預設要用 `tools/golden_retrieval_eval.py` 對照召回，不憑感覺。
+- **字面臂略過高頻詞**：整句問題的 OR 查詢會被「之」「應」這類幾乎每段都有的詞撐成巨大的候選集，延遲與候選數成正比；`retrieval.prune_terms` 在查詢前略過段落比例超過 `ENVCITE_ONTOLOGY_LEXICAL_MAX_DF` 的詞，全是高頻詞時留最稀有的一個，不空查詢。詞頻表（`retrieval.term_stat`）隨檢索投影整批重算；沒有現行分詞器的統計時不修剪，查詢較慢但不出錯。改門檻預設要用 `tools/golden_retrieval_eval.py` 對照召回，不憑感覺。
 - **授權抽取**：`envcite-sync` 在匯入後跑 `delegation.extract`（規則、冪等）；**改解析規則要遞增 `delegation.RULE_VERSION`**。授權是 `annotation.assertion` 的子型別，語意與讀取見 README「規範關係：授權」。
 - 分詞器的約束屬 `envcite-segmenter`（見其 README）。
 - 結束碼的意義見 README；`2` 的情形是資料形狀不合、快照不存在、整批比例越線、嵌入端點設定錯誤（401／403、維度不符）。
@@ -55,7 +55,7 @@ uv run --env-file .env envcite-ontology
   - **抽取者不得驗證自己的主張**（觸發器強制）；驗證者**預設也不得與抽取者同一家族**，合格者不足則 `inconclusive`。
   - **確定性閘門不證明語意忠於原文**。`envcite-verify` 用預設政策不接受任何陳述；只用確定性閘門接受要明說 `--require`。
   - 閘門失敗、逾時或模型無答案是 `inconclusive`，不是駁回、也不中斷。
-- **模型配置**（檔案與用法見 README「模型配置」）：**家族由人明宣告**。**金鑰不入設定檔、不貼進對話**，設定檔只寫它在哪裡；在 git 工作樹裡又沒被忽略的金鑰檔拒絕載入。
+- **模型配置**（檔案與用法見 README「模型配置」）：**家族由人明宣告**。**金鑰不入設定檔、不貼進對話**，設定檔只寫金鑰的名稱（`api_key`），值依序從同名環境變數、作業系統鑰匙圈取（`verification/config.py` 的 `resolve_secret`）；缺值的錯誤只列名稱。
   - **託管服務的模型名稱不保證是它所指的模型**：管線預設先對所有模型問固定的開放式問題，答案逐字相同就拒絕開跑（`SameModel`）；`--no-distinct-check` 略過。
   - 單元測試全用有名字與家族的替身，**沒有呼叫過任何模型**。
 - 抽取者輸出的形狀不可信：形狀問題請模型修有限輪，修不好只丟那個陳述，不連累同單元其餘的陳述。

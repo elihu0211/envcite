@@ -11,7 +11,7 @@ namespace EnvCite.Platform.Data;
 /// <summary>
 /// EF Core 工具與遷移 bundle 建立 context 的途徑，不經應用程式的 host：否則 bundle 執行時
 /// 會跑一遍 Program.cs，連遷移用不到的內部服務設定都得提供。
-/// 連線字串與應用程式同一個鍵（<c>ConnectionStrings__Platform</c>）；bundle 的
+/// 連線字串與應用程式同一個鍵（<c>ENVCITE_ConnectionStrings__Platform</c>）；bundle 的
 /// <c>--connection</c> 可覆寫。
 /// </summary>
 public sealed class PlatformDbContextDesignTimeFactory : IDesignTimeDbContextFactory<PlatformDbContext>

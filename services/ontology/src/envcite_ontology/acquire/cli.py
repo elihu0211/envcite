@@ -30,8 +30,8 @@ def main() -> None:
     settings = load(SnapshotSettings)
 
     try:
-        with psycopg.connect(settings.ontology_dsn) as conn:
-            acquire(SOURCES[args.source], settings.acquire_snapshot_dir, conn)
+        with psycopg.connect(settings.dsn) as conn:
+            acquire(SOURCES[args.source], settings.snapshot_dir, conn)
     except InvalidSnapshot as e:
         logging.getLogger(__name__).error("invalid snapshot: %s", e)
         raise SystemExit(EXIT_INVALID) from e

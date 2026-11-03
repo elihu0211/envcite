@@ -14,8 +14,8 @@ The measurement is retrieval only (the pool_recall counterpart); nothing here ju
 The method is fixed: it does not change with the scores. Every number in the output carries the
 commit, the corpus snapshots, the question file's sha256 and the retrieval settings that made it.
 
-Database and embedder come from the environment (ONTOLOGY_DSN, ONTOLOGY_MODELS); with no embedding
-declared only the lexical arm runs and the result says so.
+Database and embedder come from the environment (ENVCITE_ONTOLOGY_DSN, ENVCITE_ONTOLOGY_MODELS);
+with no embedding declared only the lexical arm runs and the result says so.
 
 `--scope <golden_scope.py output>` limits the search to that set of laws without touching the
 retrieval function: the service's `search` is asked for every candidate it can return and the hits
@@ -522,7 +522,7 @@ def main() -> None:
     on = date.today().isoformat()
     scope_doc = load_scope(args.scope) if args.scope else None
     scope = frozenset(e["pcode"] for e in scope_doc["laws"]) if scope_doc else None
-    with psycopg.connect(db.ontology_dsn) as conn:
+    with psycopg.connect(db.dsn) as conn:
         by_title, provisions = load_corpus(conn)
         snaps = snapshots(conn)
         counts = corpus_counts(conn)
@@ -532,8 +532,8 @@ def main() -> None:
     resolved = resolve(items, by_title, provisions)
     equivalence = None
     with (
-        OntologyStore.from_dsn(db.ontology_dsn) as store,
-        psycopg.connect(db.ontology_dsn) as rconn,
+        OntologyStore.from_dsn(db.dsn) as store,
+        psycopg.connect(db.dsn) as rconn,
     ):
         rconn.read_only = True
         segmenter = Segmenter(store.lexicon())

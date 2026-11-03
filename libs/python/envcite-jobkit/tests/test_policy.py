@@ -13,12 +13,12 @@ def test_defaults_valid() -> None:
 def test_from_env_parses_fields_and_ignores_empty() -> None:
     p = Policy.from_env(
         {
-            "JOBKIT_NAME": "sync-moj",
-            "JOBKIT_OPEN_SECONDS": "120",
-            "JOBKIT_MIN_CALLS": "5",
-            "JOBKIT_BUDGET_ITEMS": "1000",
-            "JOBKIT_OPEN_ACTION": "wait",
-            "JOBKIT_BUDGET_SECONDS": "",
+            "ENVCITE_JOBKIT_NAME": "sync-moj",
+            "ENVCITE_JOBKIT_OPEN_SECONDS": "120",
+            "ENVCITE_JOBKIT_MIN_CALLS": "5",
+            "ENVCITE_JOBKIT_BUDGET_ITEMS": "1000",
+            "ENVCITE_JOBKIT_OPEN_ACTION": "wait",
+            "ENVCITE_JOBKIT_BUDGET_SECONDS": "",
         }
     )
     assert (p.name, p.open_seconds, p.min_calls, p.budget_items) == ("sync-moj", 120, 5, 1000)
@@ -32,7 +32,7 @@ def test_from_env_custom_prefix() -> None:
 
 def test_invalid_values_rejected() -> None:
     with pytest.raises(ValueError):
-        Policy.from_env({"JOBKIT_OPEN_ACTION": "later"})
+        Policy.from_env({"ENVCITE_JOBKIT_OPEN_ACTION": "later"})
     with pytest.raises(ValueError):
         Policy(failure_threshold=0)
     with pytest.raises(ValueError):
@@ -42,7 +42,7 @@ def test_invalid_values_rejected() -> None:
 def test_file_then_env_precedence(tmp_path: Path) -> None:
     f = tmp_path / "p.toml"
     f.write_text('[jobkit]\nopen_seconds = 60\nmin_calls = 3\ndead_letter_table = "dl"\n')
-    p = Policy.load(f, {"JOBKIT_MIN_CALLS": "9"})
+    p = Policy.load(f, {"ENVCITE_JOBKIT_MIN_CALLS": "9"})
     assert (p.open_seconds, p.min_calls, p.dead_letter_table) == (60, 9, "dl")
 
 

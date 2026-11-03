@@ -4,7 +4,7 @@
 結束碼：0 成功（含無事可做）；1 暫時性失敗，可重試；2 重試無益（資料不合預期、整批比例越線、
 嵌入端點的設定錯誤）。
 
-下載與嵌入對外部端點的重試、退避與斷路依 `POLICY`，可由 `JOBKIT_*` 環境變數覆寫
+下載與嵌入對外部端點的重試、退避與斷路依 `POLICY`，可由 `ENVCITE_JOBKIT_*` 環境變數覆寫
 （`envcite_jobkit`）。嵌入一跑數小時，偶發的端點錯誤不讓整次失敗：斷路器開啟時原地等到
 半開，重試用盡的批次跳過、下次再補。
 """
@@ -79,9 +79,7 @@ def main() -> None:
 
     settings = load(SnapshotSettings)
 
-    with psycopg.connect(settings.ontology_dsn) as conn:
+    with psycopg.connect(settings.dsn) as conn:
         embedder = embedding.from_settings(settings, timeout=60.0)
         policy = Policy.load(defaults=POLICY)
-        raise SystemExit(
-            sync(conn, SOURCES[args.source], settings.acquire_snapshot_dir, embedder, policy)
-        )
+        raise SystemExit(sync(conn, SOURCES[args.source], settings.snapshot_dir, embedder, policy))

@@ -6,7 +6,6 @@
 *.key
 *.pfx
 appsettings.*.local.json
-services/ontology/.secrets/
 
 # .NET
 bin/

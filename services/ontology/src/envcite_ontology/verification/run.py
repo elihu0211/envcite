@@ -358,7 +358,7 @@ def main() -> None:
         "、".join(m.name for m in verifiers) or "（沒有）",
     )
     required = [m.strip() for m in args.require.split(",") if m.strip()]
-    with psycopg.connect(settings.ontology_dsn) as conn:
+    with psycopg.connect(settings.dsn) as conn:
         if not try_lock(conn):
             log.info("另一個流程正在跑，這次不處理")
             return

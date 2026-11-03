@@ -7,7 +7,7 @@ namespace EnvCite.Platform.Modules.Tenancy;
 
 /// <summary>
 /// <c>Platform:DataProtection</c> 區段：金鑰環的靜態加密，<b>可選</b>。兩個值都設才加密；都不設維持明文；只設一個啟動就失敗。
-/// 密碼只經環境變數（<c>Platform__DataProtection__CertificatePassword</c>），不進檔案。
+/// 密碼只經環境變數（<c>ENVCITE_Platform__DataProtection__CertificatePassword</c>），不進檔案。
 /// </summary>
 public sealed class DataProtectionCertificateOptions : ISectionOptions
 {

@@ -73,7 +73,7 @@ docker run -d --name envcite-pg -p 127.0.0.1:5432:5432 \
 docker exec envcite-pg createdb -U <帳號> platform
 ```
 
-連線由環境變數指定：ontology 用 `ONTOLOGY_DSN`，platform 用 `ConnectionStrings__Platform`。未設定時，`wt` 別名（`.config/wt.toml`）與 platform 的 `appsettings.Development.json` 提供本機預設值。
+連線由環境變數指定：ontology 用 `ENVCITE_ONTOLOGY_DSN`，platform 用 `ENVCITE_ConnectionStrings__Platform`。未設定時，`wt` 別名（`.config/wt.toml`）與 platform 的 `appsettings.Development.json` 提供本機預設值。
 
 各分支共用這兩個庫：同一時間只跑一條分支的服務，否則兩邊的遷移會互相覆寫。測試不使用它們——Testcontainers 每次自起資料庫。
 
@@ -98,7 +98,7 @@ ontology 遷移檔改過（已套用的檔案內容改變）時，清掉 ontolog
 
 ```bash
 read -rsp '自訂一把本機用的 key: ' ADMIN_KEY; echo
-export Platform__AdminKeySha256="$(printf %s "$ADMIN_KEY" | shasum -a 256 | cut -d' ' -f1)"
+export ENVCITE_Platform__AdminKeySha256="$(printf %s "$ADMIN_KEY" | shasum -a 256 | cut -d' ' -f1)"
 wt platform   # 同一個終端機啟動，才讀得到上面的環境變數
 ```
 

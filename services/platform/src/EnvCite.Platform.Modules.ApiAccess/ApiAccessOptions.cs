@@ -15,7 +15,7 @@ public sealed class PlanOptions
 
 /// <summary>
 /// <c>Platform</c> 區段中，存取控制的部分：營運者 key、方案、各租戶所屬的方案。
-/// 區段名稱沿用 <c>Platform</c>，所以既有的環境變數（<c>Platform__AdminKeySha256</c> 等）不變。
+/// 區段名稱沿用 <c>Platform</c>，環境變數是 <c>ENVCITE_</c> 加設定路徑（<c>ENVCITE_Platform__AdminKeySha256</c> 等）。
 /// </summary>
 public sealed class ApiAccessOptions : ISectionOptions
 {

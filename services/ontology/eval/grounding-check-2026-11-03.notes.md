@@ -45,6 +45,6 @@
 
 ## 重現
 
-1. 起拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，新容器、新埠），`envcite-migrate`；以 `ONTOLOGY_MODELS` 未設定的環境 `envcite-sync moj`（只做字面投影）。
-2. `tools/embed_scope.py eval/golden-scope-2026-10-24.json`（需 `ONTOLOGY_MODELS` 與 `THU_API_KEY`）。
-3. 起 `envcite-ontology` 與 consult（`Ontology__Timeout=00:01:00`），再跑 `tools/grounding_check_eval.py`。
+1. 起拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，新容器、新埠），`envcite-migrate`；以 `ENVCITE_ONTOLOGY_MODELS` 未設定的環境 `envcite-sync moj`（只做字面投影）。
+2. `tools/embed_scope.py eval/golden-scope-2026-10-24.json`（需 `ENVCITE_ONTOLOGY_MODELS` 與 `ENVCITE_ONTOLOGY_HOSTED_API_KEY`）。
+3. 起 `envcite-ontology` 與 consult（`ENVCITE_Ontology__Timeout=00:01:00`），再跑 `tools/grounding_check_eval.py`。

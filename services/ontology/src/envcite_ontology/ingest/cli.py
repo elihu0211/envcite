@@ -28,8 +28,8 @@ def main() -> None:
     settings = load(SnapshotSettings)
 
     try:
-        with psycopg.connect(settings.ontology_dsn) as conn:
-            run(conn, settings.acquire_snapshot_dir, SOURCES[args.source], dry_run=args.dry_run)
+        with psycopg.connect(settings.dsn) as conn:
+            run(conn, settings.snapshot_dir, SOURCES[args.source], dry_run=args.dry_run)
             if not args.dry_run:
                 rebuild(conn)
     except (BatchRejected, InvalidSnapshot) as e:

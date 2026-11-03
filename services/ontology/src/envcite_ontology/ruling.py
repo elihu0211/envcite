@@ -144,7 +144,7 @@ def main() -> None:
 
     settings = load_settings(DatabaseSettings)
     try:
-        with psycopg.connect(settings.ontology_dsn) as conn:
+        with psycopg.connect(settings.dsn) as conn:
             if args.command == "load":
                 load(conn, json.loads(args.file.read_text(encoding="utf-8")))
             else:

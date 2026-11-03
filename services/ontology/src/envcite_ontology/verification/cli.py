@@ -24,7 +24,7 @@ def main() -> None:
     args = parser.parse_args()
     settings = load(DatabaseSettings)
     required = [m.strip() for m in args.require.split(",") if m.strip()]
-    with psycopg.connect(settings.ontology_dsn) as conn:
+    with psycopg.connect(settings.dsn) as conn:
         result = settle(conn, required)
     logging.getLogger(__name__).info(
         "驗證完成：%d 個升為 confirmed，%d 個 rejected，%d 輪（政策：%s）",

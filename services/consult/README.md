@@ -20,7 +20,7 @@ owns: [consult-surfaces]
 
 ## 設定
 
-設定鍵以 `src/EnvCite.Consult/appsettings.json` 為準，環境變數以 `__` 分隔區段（如 `Ontology__Address`）。
+設定鍵以 `src/EnvCite.Consult/appsettings.json` 為準，環境變數以 `__` 分隔區段（如 `ENVCITE_Ontology__Address`）。
 
 | 鍵 | 說明 |
 |----|------|

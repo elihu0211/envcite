@@ -22,5 +22,6 @@ owns: [service-map]
 ## 延伸閱讀
 
 - 本機開發環境、分支與 MR 流程：[`CONTRIBUTING.md`](CONTRIBUTING.md)
+- 環境變數命名與機密來源：[`CONFIGURATION.md`](CONFIGURATION.md)
 - 架構規範與開發準則：[`AGENTS.md`](AGENTS.md)（各服務另有巢狀 `AGENTS.md`）
 - 部署清單在獨立的部署庫，不在本倉庫

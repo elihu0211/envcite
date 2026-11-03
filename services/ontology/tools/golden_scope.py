@@ -132,7 +132,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     raw = args.golden.read_bytes()
-    with psycopg.connect(load(DatabaseSettings).ontology_dsn) as conn:
+    with psycopg.connect(load(DatabaseSettings).dsn) as conn:
         scope = build(yaml.safe_load(raw)["items"], conn)
         row = conn.execute(
             "SELECT count(DISTINCT v.content_sha256) FROM corpus.provision_version AS v"

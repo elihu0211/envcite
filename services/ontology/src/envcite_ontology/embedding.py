@@ -155,11 +155,11 @@ def _http_error(model: str, status: int) -> EmbeddingError:
 
 def from_settings(settings: ModelsSettings, *, timeout: float) -> Embedder | None:
     """`models.toml` 的 `[embedding]`；沒有設定檔或沒有這一段時為 None，檢索只用字面臂。"""
-    if settings.ontology_models is None:
+    if settings.models is None:
         return None
     from envcite_ontology.verification import config  # 延後匯入：verification 套件會回頭用到 store
 
-    return config.load_embedder(settings.ontology_models, timeout=timeout)
+    return config.load_embedder(settings.models, timeout=timeout)
 
 
 def to_sql(vector: Sequence[float]) -> str:

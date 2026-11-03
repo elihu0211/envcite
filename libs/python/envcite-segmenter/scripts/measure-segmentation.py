@@ -17,7 +17,7 @@ corpus before then:
 
     ./scripts/fetch-corpus.sh /tmp/corpus.json
     uv run scripts/measure-segmentation.py --corpus /tmp/corpus.json
-    uv run scripts/measure-segmentation.py --dsn "$ONTOLOGY_DSN"
+    uv run scripts/measure-segmentation.py --dsn "$ENVCITE_ONTOLOGY_DSN"
 """
 
 from __future__ import annotations

@@ -21,7 +21,7 @@ def handle(batch):
     raise_for_status(resp.status)  # 413 → 隔離；408/429/5xx → 計入斷路器；401/403 → 致命
 
 
-policy = Policy.load("job-policy.toml")  # 可省略；環境變數 JOBKIT_* 優先
+policy = Policy.load("job-policy.toml")  # 可省略；環境變數 ENVCITE_JOBKIT_* 優先
 raise SystemExit(run(batches(), handle, policy, item_id=lambda b: b.id))
 ```
 
@@ -51,7 +51,7 @@ raise SystemExit(run(batches(), handle, policy, item_id=lambda b: b.id))
 
 ## 政策欄位
 
-來源優先序：環境變數 `JOBKIT_<欄位大寫>` > TOML（頂層或 `[jobkit]` 表）> `Policy` 預設（預設值以 [`policy.py`](src/envcite_jobkit/policy.py) 為準）。空字串視為未設定；未知的 TOML 欄位報錯。
+來源優先序：環境變數 `ENVCITE_JOBKIT_<欄位大寫>` > TOML（頂層或 `[jobkit]` 表）> `Policy` 預設（預設值以 [`policy.py`](src/envcite_jobkit/policy.py) 為準）。空字串視為未設定；未知的 TOML 欄位報錯。
 
 | 欄位 | 說明 |
 |------|------|

@@ -2,7 +2,7 @@
 #
 # 內容：伺服器（預設進入點）與兩個 EF Core migration bundle（EF Core 文件建議的自動部署形式）。
 # 遷移 Job 依序執行 /app/migrate/tenancy、/app/migrate/platform；bundle 以 design-time factory
-# 建 DbContext，連線取自與伺服器相同的 ConnectionStrings__Platform／PGUSER／PGPASSWORD。
+# 建 DbContext，連線取自與伺服器相同的 ENVCITE_ConnectionStrings__Platform／PGUSER／PGPASSWORD。
 #
 # SDK 階段在建置機的架構上執行並交叉編譯到目標（`-a`／`-r`），不需要 emulation。
 

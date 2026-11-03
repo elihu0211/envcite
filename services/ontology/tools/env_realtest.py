@@ -136,7 +136,7 @@ def pipeline(dsn: str, models: str, agent_version: str, log: Path) -> int:
                 "--agent-version",
                 agent_version,
             ],
-            env={**__import__("os").environ, "ONTOLOGY_DSN": dsn},
+            env={**__import__("os").environ, "ENVCITE_ONTOLOGY_DSN": dsn},
             stdout=out,
             stderr=subprocess.STDOUT,
         ).returncode

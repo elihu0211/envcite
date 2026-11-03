@@ -39,7 +39,9 @@ from envcite_ontology.verification.gates import citations
 from envcite_ontology.verification.run import units_of
 from tests.sample import stored_snapshot
 
-DEV_DSN = os.environ.get("ONTOLOGY_DEV_DSN", "postgresql://envcite:envcite@localhost:5432/envcite")
+DEV_DSN = os.environ.get(
+    "ENVCITE_ONTOLOGY_DEV_DSN", "postgresql://envcite:envcite@localhost:5432/envcite"
+)
 FINE = re.compile(r"處新臺幣.{0,40}罰鍰")
 
 
@@ -175,7 +177,7 @@ def main() -> None:
     if units == 0:
         sys.exit("the slice loaded no units, nothing was run")
     print(f"{units} units loaded; running the pipeline (log: {args.log})")
-    env = {**os.environ, "ONTOLOGY_DSN": dsn}
+    env = {**os.environ, "ENVCITE_ONTOLOGY_DSN": dsn}
     with args.log.open("w", encoding="utf-8") as log:
         code = subprocess.run(
             [

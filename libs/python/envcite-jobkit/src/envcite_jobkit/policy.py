@@ -108,10 +108,10 @@ class Policy:
         cls,
         environ: Mapping[str, str] | None = None,
         *,
-        prefix: str = "JOBKIT_",
+        prefix: str = "ENVCITE_JOBKIT_",
         base: "Policy | None" = None,
     ) -> "Policy":
-        """`<prefix><欄位名大寫>`，如 `JOBKIT_OPEN_SECONDS`。空字串視為未設定。"""
+        """`<prefix><欄位名大寫>`，如 `ENVCITE_JOBKIT_OPEN_SECONDS`。空字串視為未設定。"""
         env = os.environ if environ is None else environ
         values: dict[str, Any] = {}
         for f in fields(cls):
@@ -137,7 +137,7 @@ class Policy:
         path: str | os.PathLike[str] | None = None,
         environ: Mapping[str, str] | None = None,
         *,
-        prefix: str = "JOBKIT_",
+        prefix: str = "ENVCITE_JOBKIT_",
         defaults: "Policy | None" = None,
     ) -> "Policy":
         """優先序：環境變數 > 設定檔 > `defaults` > 內建預設。"""

@@ -56,7 +56,7 @@ dotnet restore                 # 改了倉庫根 Directory.Packages.props 或 cs
 dotnet build                   # 警告視為錯誤，等同 lint 與型別檢查
 dotnet format                  # --verify-no-changes 只檢查
 dotnet test
-Ontology__Address=http://localhost:<ontology 埠> dotnet run --project src/EnvCite.Consult -- --urls http://localhost:<埠>   # worktree 內用 `wt consult`
+ENVCITE_Ontology__Address=http://localhost:<ontology 埠> dotnet run --project src/EnvCite.Consult -- --urls http://localhost:<埠>   # worktree 內用 `wt consult`
 ```
 
 映像以倉庫根為建置情境、離線取套件，指令見 `Dockerfile` 開頭。測試不需要外部服務：本體以行程內的 gRPC fake（`tests/…/FakeOntologyServer.cs`）取代。

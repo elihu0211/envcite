@@ -22,20 +22,20 @@ url = "http://localhost:{{ ('envcite/platform/' ~ branch) | hash_port }}"
 platform = """
 cd '{{ worktree_path }}/services/platform' && \
 ASPNETCORE_ENVIRONMENT=Development \
-ConnectionStrings__Platform="${ConnectionStrings__Platform:-Host=localhost;Port=5432;Database=platform;Username=envcite;Password=envcite}" \
-Ontology__Address='http://localhost:{{ ('envcite/ontology/' ~ branch) | hash_port }}' \
-Consult__Address='http://localhost:{{ ('envcite/consult/' ~ branch) | hash_port }}' \
+ENVCITE_ConnectionStrings__Platform="${ENVCITE_ConnectionStrings__Platform:-Host=localhost;Port=5432;Database=platform;Username=envcite;Password=envcite}" \
+ENVCITE_Ontology__Address='http://localhost:{{ ('envcite/ontology/' ~ branch) | hash_port }}' \
+ENVCITE_Consult__Address='http://localhost:{{ ('envcite/consult/' ~ branch) | hash_port }}' \
 exec dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- --urls 'http://localhost:{{ ('envcite/platform/' ~ branch) | hash_port }}'
 """
 ontology = """
 cd '{{ worktree_path }}/services/ontology' && \
-export ONTOLOGY_DSN="${ONTOLOGY_DSN:-postgresql://envcite:envcite@localhost:5432/envcite}" && \
+export ENVCITE_ONTOLOGY_DSN="${ENVCITE_ONTOLOGY_DSN:-postgresql://envcite:envcite@localhost:5432/envcite}" && \
 uv run envcite-migrate && \
-ONTOLOGY_GRPC_PORT='{{ ('envcite/ontology/' ~ branch) | hash_port }}' exec uv run envcite-ontology
+ENVCITE_ONTOLOGY_GRPC_PORT='{{ ('envcite/ontology/' ~ branch) | hash_port }}' exec uv run envcite-ontology
 """
 consult = """
 cd '{{ worktree_path }}/services/consult' && \
 ASPNETCORE_ENVIRONMENT=Development \
-Ontology__Address='http://localhost:{{ ('envcite/ontology/' ~ branch) | hash_port }}' \
+ENVCITE_Ontology__Address='http://localhost:{{ ('envcite/ontology/' ~ branch) | hash_port }}' \
 exec dotnet run --project src/EnvCite.Consult --no-launch-profile -- --urls 'http://localhost:{{ ('envcite/consult/' ~ branch) | hash_port }}'
 """
