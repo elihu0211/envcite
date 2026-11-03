@@ -40,8 +40,11 @@ test = ["tests/test_incremental.py::test_an_amendment_adds_a_version_and_closes_
 [[question]]
 id = "A5"
 status = "partial"
-db = ["corpus.lifecycle_event"]
-test = ["tests/test_incremental.py::test_a_repealed_law_is_no_longer_in_force_even_when_its_commencement_is_unknown"]
+db = ["corpus.lifecycle_event", "corpus.constitutional_ruling", "corpus.ruling_invalidation", "corpus.invalidations_at"]
+test = [
+  "tests/test_incremental.py::test_a_repealed_law_is_no_longer_in_force_even_when_its_commencement_is_unknown",
+  "tests/test_ruling.py::test_a_ruling_invalidates_from_its_date_and_not_before",
+]
 
 [[question]]
 id = "B1"

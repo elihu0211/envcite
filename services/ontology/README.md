@@ -69,6 +69,14 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
   - 兩者都回報法律端條文在該日的 `law_status`；`law_resource_id`／`law_provision_id` 為空、`law_status` 不是 `in_force`、或命令一列也沒有，都是授權不明，是否因此不得作為依據由呼叫端判斷。
 - **守門**：只回已確認或規則推導的授權，駁回的不回；模型抽取而未確認的不回（同陳述與用語定義）。
 
+## 違憲失效
+
+大法官解釋與憲法法庭判決宣告條文違憲失效（能力問題 A5），記在 `corpus.constitutional_ruling`（裁判）與 `corpus.ruling_invalidation`（裁判使哪個條文單元自何日失效），不放進 `lifecycle_event`：匯入器重寫法規時會刪光它的事件，而來源是憲法法庭。
+
+- **載入**：`envcite-ruling <file.json>`，格式見 [`ruling.py`](src/envcite_ontology/ruling.py) 的模組說明。由人讀解釋文填失效日，每則裁判附出處與解釋文原文；來源網站只有 HTML、沒有結構化欄位，程式不推斷。裁判不可改，同一字號內容須相同；一次載入一個交易。
+- **讀取**：`corpus.invalidations_at(法規 id, 語文, 日期)` 回該日因違憲失效的條文單元。只有裁判日已施行的文字被宣告失效，裁判之後修正的新文字不受影響。
+- **未做**：`provisions_at` 的 `status` 不含違憲失效，沒有 rpc；兩者要讀取方各自合併。事件所涉條文的通用表（A4）、憲法法庭判決與解釋的自動取得，皆未做。
+
 ## 能力問題登記
 
 本體必須回答的問題與各題今天的實作現況，只登記在 [`competency.toml`](competency.toml)：每題一列，`status` 是 `answerable`（術語層與機制都在且有測試）、`partial`（只做了一部分）或 `design_only`（只有設計，沒有承載）。「可答」說的是機制存在，不是資料庫裡已有答案。
