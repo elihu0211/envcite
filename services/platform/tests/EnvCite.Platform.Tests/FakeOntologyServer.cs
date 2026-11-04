@@ -203,6 +203,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                     new Problem { Kind = ProblemKind.ContradictoryFact, Concept = "ph" },
                     new Problem { Kind = ProblemKind.UnresolvedDelegation, ConditionId = 31 },
                     new Problem { Kind = ProblemKind.MeasurementMismatch, ConditionId = 32 },
+                    new Problem { Kind = ProblemKind.InvalidatedDelegation, ConditionId = 33 },
                 },
                 Defeated = { new Defeat { Loser = 1, Winner = 2, Basis = OverrideBasis.LexSpecialis } },
                 Trace =
@@ -217,10 +218,53 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                 LimitSources = { { 31, 52 } },
                 General = new GeneralPart
                 {
-                    Unpunished = { new PenaltyExcuse { PenaltyStatementId = 10, Excuse = Excuse.UnderFourteen } },
+                    Unpunished =
+                    {
+                        new PenaltyExcuse { PenaltyStatementId = 10, Excuse = Excuse.UnderFourteen },
+                        new PenaltyExcuse { PenaltyStatementId = 13, Excuse = Excuse.CriminalPriority },
+                    },
                     Mitigation = { new PenaltyMitigation { PenaltyStatementId = 8, Mitigation = Mitigation.Youth } },
                     PresumedAgentFault = { 8 },
                     TimeBarred = { 8 },
+                    Reduced =
+                    {
+                        new ReducedFine
+                        {
+                            PenaltyStatementId = 8, Mitigation = Mitigation.Youth, Share = ReductionShare.Half,
+                            MinAmount = 30000, MaxAmount = 500000,
+                        },
+                        new ReducedFine { PenaltyStatementId = 14, Mitigation = Mitigation.ExcessiveDefense, Share = ReductionShare.Third },
+                    },
+                    RaisedCaps = { new RaisedCap { PenaltyStatementId = 8, MaxAmount = new EnvCite.Ontology.V1.Decimal { Value = "2500000" } } },
+                    CriminalDeductions = { new CriminalDeduction { PenaltyStatementId = 8, Amount = new EnvCite.Ontology.V1.Decimal { Value = "41760" } } },
+                },
+                Invalidated =
+                {
+                    new InvalidatedStatement
+                    {
+                        StatementId = 15, VersionIri = "https://envcite/tw/law/O0020001/2018-08-01/zho/art_40",
+                        RulingNo = "112年憲判字第1號", InvalidFrom = "2023-03-01", Partial = true,
+                    },
+                },
+                DelegationBases =
+                {
+                    new DelegationBasis
+                    {
+                        StatementId = 52, Rooted = true,
+                        Links =
+                        {
+                            new DelegationLink
+                            {
+                                CommandLawId = "O0020010", CitedLawName = "水污染防治法", CitedPath = "art_7/para_2",
+                                LawId = "O0020001", VersionIri = "https://envcite/tw/law/O0020001/2018-08-01/zho/art_7/para_2",
+                            },
+                        },
+                    },
+                    new DelegationBasis
+                    {
+                        StatementId = 53,
+                        Links = { new DelegationLink { CommandLawId = "O0020011", Gap = DelegationGap.NoCitation } },
+                    },
                 },
                 Sources = { new StatementSource { StatementId = 7, VersionIri = "https://envcite/tw/law/O0020001/2018-08-01/zho/art_32" } },
                 UncoveredLawIds = { "O0040001" },

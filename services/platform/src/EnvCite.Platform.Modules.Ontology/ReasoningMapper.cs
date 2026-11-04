@@ -60,6 +60,13 @@ internal static class ReasoningMapper
             if (a.NecessityExcessive is { } necessityExcessive) { p.NecessityExcessive = necessityExcessive; }
             if (a.CapacityReduced is { } capacityReduced) { p.CapacityReduced = capacityReduced; }
             if (a.IgnoranceOfLaw is { } ignorance) { p.IgnoranceOfLaw = ignorance; }
+            if (a.CriminalOffense is { } criminalOffense) { p.CriminalOffense = criminalOffense; }
+            if (a.CourtConfiscated is { } courtConfiscated) { p.CourtConfiscated = courtConfiscated; }
+            p.CriminalClearedOn = a.CriminalClearedOn ?? string.Empty;
+            if (a.CriminalPayment is { } payment) { p.CriminalPayment = Number(payment); }
+            if (a.CommunityServiceHours is { } hours) { p.CommunityServiceHours = Number(hours); }
+            if (a.MinimumHourlyWage is { } wage) { p.MinimumHourlyWage = Number(wage); }
+            if (a.GainedBenefit is { } benefit) { p.GainedBenefit = Number(benefit); }
             request.AdministrativePenaltyFacts = p;
         }
 
@@ -101,16 +108,47 @@ internal static class ReasoningMapper
             [.. general.Unpunished.Select(u => new PenaltyExcuseDto(u.PenaltyStatementId, Map(u.Excuse)))],
             [.. general.Mitigation.Select(m => new PenaltyMitigationDto(m.PenaltyStatementId, Map(m.Mitigation)))],
             [.. general.PresumedAgentFault],
-            [.. general.TimeBarred]),
+            [.. general.TimeBarred],
+            [.. general.Reduced.Select(f => new ReducedFineDto(
+                f.PenaltyStatementId, Map(f.Mitigation), Map(f.Share),
+                f.HasMinAmount ? f.MinAmount : null, f.HasMaxAmount ? f.MaxAmount : null))],
+            [.. general.RaisedCaps.Select(c => new RaisedCapDto(c.PenaltyStatementId, c.MaxAmount?.Value ?? string.Empty))],
+            [.. general.CriminalDeductions.Select(d => new CriminalDeductionDto(d.PenaltyStatementId, d.Amount?.Value ?? string.Empty))]),
         [.. o.Sources.Select(s => new StatementSourceDto(s.StatementId, s.VersionIri))],
         [.. o.UncoveredLawIds],
         [.. o.DefinitionsUsed.Select(d => new DefinitionUseDto(
             d.ConditionId, d.DefinitionId, d.VersionIri, d.Term, [.. d.Members]))],
         [.. o.Guidance.Select(g => new GuidanceDto(
             g.Issuer, g.DocumentNo, g.IssuedOn, Map(g.Kind), g.Subject, [.. g.StatementIds],
-            g.PublishedIn.Length > 0 ? g.PublishedIn : null, g.SourceUrl.Length > 0 ? g.SourceUrl : null))],
+            NullIfEmpty(g.PublishedIn), NullIfEmpty(g.SourceUrl)))],
         [.. o.MissingPermitLimits.Select(g => new PermitGapDto(g.StatementId, g.Permit, g.Concept))],
-        [.. o.SubjectMismatch]);
+        [.. o.SubjectMismatch],
+        [.. o.Invalidated.Select(i => new InvalidatedStatementDto(i.StatementId, i.VersionIri, i.RulingNo, i.InvalidFrom, i.Partial))],
+        [.. o.DelegationBases.Select(b => new DelegationBasisDto(b.StatementId, b.Rooted, [.. b.Links.Select(Map)]))]);
+
+    // 空字串是 proto3 的「沒有」，對外寫成 null；gap 的零值是「這一環成立」，不是契約之外的值。
+    private static DelegationLinkDto Map(DelegationLink l) => new(
+        l.CommandLawId, NullIfEmpty(l.CitedLawName), NullIfEmpty(l.CitedPath), NullIfEmpty(l.LawId),
+        NullIfEmpty(l.VersionIri), l.Gap == DelegationGap.Unspecified ? null : Map(l.Gap));
+
+    private static string? NullIfEmpty(string value) => value.Length > 0 ? value : null;
+
+    private static DelegationGapDto Map(DelegationGap g) => g switch
+    {
+        DelegationGap.NoCitation => DelegationGapDto.NoCitation,
+        DelegationGap.UnresolvedLaw => DelegationGapDto.UnresolvedLaw,
+        DelegationGap.LawNotInForce => DelegationGapDto.LawNotInForce,
+        DelegationGap.LawInvalidated => DelegationGapDto.LawInvalidated,
+        DelegationGap.Cycle => DelegationGapDto.Cycle,
+        _ => throw Unknown(g),
+    };
+
+    private static ReductionShareDto Map(ReductionShare s) => s switch
+    {
+        ReductionShare.Half => ReductionShareDto.Half,
+        ReductionShare.Third => ReductionShareDto.Third,
+        _ => throw Unknown(s),
+    };
 
     private static VerdictDto Map(Verdict v) => v switch
     {

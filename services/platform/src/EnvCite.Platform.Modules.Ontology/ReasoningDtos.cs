@@ -43,10 +43,23 @@ public sealed record PermitLimitDto(string Permit, string Concept, string Value)
 /// <param name="NecessityExcessive">避難行為過當。</param>
 /// <param name="CapacityReduced">辨識能力顯著減低（第 9 條第 4 項）。</param>
 /// <param name="IgnoranceOfLaw">不知法規（第 8 條）。</param>
+/// <param name="CriminalOffense">一行為同時觸犯刑事法律（第 26 條第 1 項）；是否為同一行為由呼叫端認定。為真而沒有
+/// <c>CriminalClearedOn</c> 時，罰鍰不列出（<c>CriminalPriority</c>）。</param>
+/// <param name="CourtConfiscated">法院已宣告沒收應沒入之物（第 26 條第 1 項但書）。</param>
+/// <param name="CriminalClearedOn">不起訴、緩起訴處分確定，或無罪、免訴、不受理、不付審理、不付保護處分、免刑、緩刑之裁判
+/// 確定之日（<c>YYYY-MM-DD</c>；第 26 條第 2 項）。有此日即不再刑事優先，第 27 條的三年自此日起算。</param>
+/// <param name="CriminalPayment">緩起訴或緩刑命支付的金額（元，十進位文字；第 26 條第 3 項），自罰鍰扣抵。</param>
+/// <param name="CommunityServiceHours">緩起訴或緩刑命提供的義務勞務時數（十進位文字；第 26 條第 4 項）。</param>
+/// <param name="MinimumHourlyWage">最初裁處時的每小時基本工資（元，十進位文字）；有時數而沒有工資，扣抵額未定，缺的事實是概念
+/// <c>ap_minimum_hourly_wage</c>。</param>
+/// <param name="GainedBenefit">因違反行政法上義務所得之利益（元，十進位文字；第 18 條第 2 項）。</param>
 public sealed record AdministrativePenaltyFactsDto(
     bool? Intent, bool? Negligence, bool? AgentFault, int? Age, bool? Incapable, bool? SelfInduced,
     bool? PursuantToLaw, bool? SuperiorOrder, bool? KnewIllegal, bool? StatedOpinion, bool? SelfDefense,
-    bool? DefenseExcessive, bool? Necessity, bool? NecessityExcessive, bool? CapacityReduced, bool? IgnoranceOfLaw);
+    bool? DefenseExcessive, bool? Necessity, bool? NecessityExcessive, bool? CapacityReduced, bool? IgnoranceOfLaw,
+    bool? CriminalOffense = null, bool? CourtConfiscated = null, string? CriminalClearedOn = null,
+    string? CriminalPayment = null, string? CommunityServiceHours = null, string? MinimumHourlyWage = null,
+    string? GainedBenefit = null);
 
 /// <param name="ConductOn">行為日（<c>YYYY-MM-DD</c>）；必填。</param>
 /// <param name="DecidedOn">裁處日（<c>YYYY-MM-DD</c>）；必填，不早於行為日。</param>
@@ -176,6 +189,32 @@ public enum ExcuseDto
     CriminalPriority,
 }
 
+/// <summary>授權鏈的一環為何不成立。</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<DelegationGapDto>))]
+public enum DelegationGapDto
+{
+    /// <summary>命令沒有可用的授權引文：抽取不到，不等於沒有授權。</summary>
+    NoCitation,
+    /// <summary>引文的法名或條文在語料裡對不到唯一一處。</summary>
+    UnresolvedLaw,
+    /// <summary>授權條文在該日不現行。</summary>
+    LawNotInForce,
+    /// <summary>授權條文在該日已違憲失效。</summary>
+    LawInvalidated,
+    /// <summary>授權回到鏈上已出現的命令。</summary>
+    Cycle,
+}
+
+/// <summary>依總則減輕時罰鍰的比例（第 18 條第 3 項）。</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<ReductionShareDto>))]
+public enum ReductionShareDto
+{
+    /// <summary>二分之一。</summary>
+    Half,
+    /// <summary>三分之一：該事由同時有免除處罰之規定（第 8、12、13 條）。</summary>
+    Third,
+}
+
 [JsonConverter(typeof(JsonStringEnumConverter<MitigationDto>))]
 public enum MitigationDto
 {
@@ -234,16 +273,60 @@ public sealed record PenaltyExcuseDto(long PenaltyStatementId, ExcuseDto Excuse)
 
 public sealed record PenaltyMitigationDto(long PenaltyStatementId, MitigationDto Mitigation);
 
+/// <summary>決定依總則減輕時，罰鍰的範圍（第 18 條第 3 項）。只給範圍，是否減輕不選。</summary>
+/// <param name="MinAmount">法定最低額乘以比例，進位到元；法定最低額缺則省略。</param>
+/// <param name="MaxAmount">法定最高額乘以比例，捨去到元；法定最高額缺則省略。</param>
+public sealed record ReducedFineDto(
+    long PenaltyStatementId, MitigationDto Mitigation, ReductionShareDto Share, long? MinAmount, long? MaxAmount);
+
+/// <summary>所得利益超過法定最高額的罰鍰，得在所得利益範圍內加重（第 18 條第 2 項）。</summary>
+/// <param name="MaxAmount">加重後的上限，即所得利益（元，十進位文字）。</param>
+public sealed record RaisedCapDto(long PenaltyStatementId, string MaxAmount);
+
+/// <summary>刑事程序確定後得裁處的罰鍰應扣抵的金額（第 26 條第 3、4 項）。罰鍰額不選。</summary>
+/// <param name="Amount">支付的金額加上勞務時數乘以基本工資（元，十進位文字）。</param>
+public sealed record CriminalDeductionDto(long PenaltyStatementId, string Amount);
+
 /// <summary>行政罰法總則對罰則的標記。排除事由成立者不在 <c>penalties</c>，而在 <c>unpunished</c>。</summary>
 /// <param name="PresumedAgentFault">依代表人等之過失推定的罰則。</param>
 /// <param name="TimeBarred">三年時效已過的罰則：罰則仍是候選，是否適用時效由呼叫端決定。</param>
+/// <param name="Reduced">列出（含附條件）、有得減輕事由的罰鍰減輕後的範圍。法律或自治條例另有規定（同項但書）不檢出。</param>
+/// <param name="RaisedCaps">得依所得利益加重上限的罰鍰。</param>
+/// <param name="CriminalDeductions">刑事程序已確定而得裁處的罰鍰應扣抵的金額。</param>
 public sealed record GeneralPartDto(
     IReadOnlyList<PenaltyExcuseDto> Unpunished, IReadOnlyList<PenaltyMitigationDto> Mitigation,
-    IReadOnlyList<long> PresumedAgentFault, IReadOnlyList<long> TimeBarred);
+    IReadOnlyList<long> PresumedAgentFault, IReadOnlyList<long> TimeBarred, IReadOnlyList<ReducedFineDto> Reduced,
+    IReadOnlyList<RaisedCapDto> RaisedCaps, IReadOnlyList<CriminalDeductionDto> CriminalDeductions);
 
 /// <summary>結論所讀的條文版本。</summary>
 /// <param name="Uri">條文版本的網址。</param>
 public sealed record StatementSourceDto(long StatementId, string Uri);
+
+/// <summary>
+/// 因大法官解釋或憲法法庭判決宣告違憲失效、自失效日起不參與推論的陳述。只有裁判作成時已施行的文字失效；
+/// 裁判只宣告一部分者也整個排除，範圍看裁判原文。
+/// </summary>
+/// <param name="Uri">陳述所讀、被宣告失效的條文版本的網址。</param>
+/// <param name="RulingNo">解釋或判決的字號。</param>
+/// <param name="InvalidFrom">失效日（<c>YYYY-MM-DD</c>）。</param>
+/// <param name="Partial">裁判只宣告該條文的一部分失效。</param>
+public sealed record InvalidatedStatementDto(long StatementId, string Uri, string RulingNo, string InvalidFrom, bool Partial);
+
+/// <summary>授權鏈的一環：一個命令與它所引的授權依據。</summary>
+/// <param name="CommandLawId">被授權的命令（pcode）。</param>
+/// <param name="CitedLawName">命令首條所引的法名（原文）；沒有引文時為 null。</param>
+/// <param name="CitedPath">所引的條文路徑（原文）；沒有引文時為 null。</param>
+/// <param name="LawId">對到的授權法規（pcode）；對不到時為 null。</param>
+/// <param name="Uri">授權條文在該日現行的版本的網址；不現行時為 null。</param>
+/// <param name="Gap">這一環為何不成立；成立時為 null。</param>
+public sealed record DelegationLinkDto(
+    string CommandLawId, string? CitedLawName, string? CitedPath, string? LawId, string? Uri, DelegationGapDto? Gap);
+
+/// <summary>命令陳述的授權鏈（行政罰法第 4 條；釋字第 313、394、402 號）。</summary>
+/// <param name="Rooted">至少有一條路徑經成立的環節到達法律。為假時，命令所定的罰則與處罰命令義務的罰則附條件列出
+/// （授權依據待查），不是不成立；命令的義務結論不變。</param>
+/// <param name="Links">自陳述所屬的命令往上走過的每一環；授權者又是命令時，接著列它的授權。</param>
+public sealed record DelegationBasisDto(long StatementId, bool Rooted, IReadOnlyList<DelegationLinkDto> Links);
 
 /// <summary>概念值要件之所以成立或不成立所依的一則用語定義：「甲屬於乙」的依據。</summary>
 /// <param name="Uri">定義所讀自的條文版本的網址。</param>
@@ -277,6 +360,8 @@ public sealed record GuidanceDto(
 /// <param name="Guidance">附在結果旁的行政規則；不是推論的前提。</param>
 /// <param name="MissingPermitLimits">結論所需、但請求沒有提供的許可量值。</param>
 /// <param name="SubjectMismatch">其餘要件成立或未知、但主體的責任基礎與請求的行為人所屬都不符，因而不列出的罰則陳述。</param>
+/// <param name="Invalidated">所依法規中該日已違憲失效、因而不參與推論的陳述；<c>verdicts</c> 少了某則陳述時先看這裡。</param>
+/// <param name="DelegationBases">結果提及的命令陳述之授權鏈；法律與憲法的陳述不在此。</param>
 public sealed record OutcomeDto(
     IReadOnlyList<StatementVerdictDto> Verdicts, IReadOnlyList<PenaltyCandidateDto> Penalties,
     FineIntervalDto? OneAct, IReadOnlyList<GapDto> Missing, IReadOnlyList<GapDto> NeedsAssessment,
@@ -286,7 +371,8 @@ public sealed record OutcomeDto(
     IReadOnlyList<TraceEntryDto> Trace, IReadOnlyList<LimitSourceDto> LimitSources, GeneralPartDto General,
     IReadOnlyList<StatementSourceDto> Sources, IReadOnlyList<string> UncoveredLawIds,
     IReadOnlyList<DefinitionUseDto> DefinitionsUsed, IReadOnlyList<GuidanceDto> Guidance,
-    IReadOnlyList<PermitGapDto> MissingPermitLimits, IReadOnlyList<long> SubjectMismatch);
+    IReadOnlyList<PermitGapDto> MissingPermitLimits, IReadOnlyList<long> SubjectMismatch,
+    IReadOnlyList<InvalidatedStatementDto> Invalidated, IReadOnlyList<DelegationBasisDto> DelegationBases);
 
 /// <param name="FirstDay">這一組陳述開始適用的第一天（<c>YYYY-MM-DD</c>）。</param>
 public sealed record EarlierOutcomeDto(string FirstDay, OutcomeDto Outcome);

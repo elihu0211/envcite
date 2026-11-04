@@ -603,6 +603,48 @@
               "null",
               "boolean"
             ]
+          },
+          "criminalOffense": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "courtConfiscated": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "criminalClearedOn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "criminalPayment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "communityServiceHours": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "minimumHourlyWage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gainedBenefit": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -699,6 +741,26 @@
           "Limit"
         ]
       },
+      "CriminalDeductionDto": {
+        "required": [
+          "penaltyStatementId",
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "penaltyStatementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "amount": {
+            "type": "string"
+          }
+        }
+      },
       "DefeatDto": {
         "required": [
           "loser",
@@ -765,6 +827,93 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "DelegationBasisDto": {
+        "required": [
+          "statementId",
+          "rooted",
+          "links"
+        ],
+        "type": "object",
+        "properties": {
+          "statementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "rooted": {
+            "type": "boolean"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DelegationLinkDto"
+            }
+          }
+        }
+      },
+      "DelegationGapDto": {
+        "enum": [
+          "NoCitation",
+          "UnresolvedLaw",
+          "LawNotInForce",
+          "LawInvalidated",
+          "Cycle",
+          null
+        ]
+      },
+      "DelegationLinkDto": {
+        "required": [
+          "commandLawId",
+          "citedLawName",
+          "citedPath",
+          "lawId",
+          "uri",
+          "gap"
+        ],
+        "type": "object",
+        "properties": {
+          "commandLawId": {
+            "type": "string"
+          },
+          "citedLawName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "citedPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lawId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "uri": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gap": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DelegationGapDto"
+              }
+            ]
           }
         }
       },
@@ -971,7 +1120,10 @@
           "unpunished",
           "mitigation",
           "presumedAgentFault",
-          "timeBarred"
+          "timeBarred",
+          "reduced",
+          "raisedCaps",
+          "criminalDeductions"
         ],
         "type": "object",
         "properties": {
@@ -1007,6 +1159,24 @@
                 "string"
               ],
               "format": "int64"
+            }
+          },
+          "reduced": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReducedFineDto"
+            }
+          },
+          "raisedCaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RaisedCapDto"
+            }
+          },
+          "criminalDeductions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CriminalDeductionDto"
             }
           }
         }
@@ -1171,6 +1341,38 @@
           }
         }
       },
+      "InvalidatedStatementDto": {
+        "required": [
+          "statementId",
+          "uri",
+          "rulingNo",
+          "invalidFrom",
+          "partial"
+        ],
+        "type": "object",
+        "properties": {
+          "statementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "rulingNo": {
+            "type": "string"
+          },
+          "invalidFrom": {
+            "type": "string"
+          },
+          "partial": {
+            "type": "boolean"
+          }
+        }
+      },
       "LawDto": {
         "required": [
           "id",
@@ -1275,7 +1477,9 @@
           "definitionsUsed",
           "guidance",
           "missingPermitLimits",
-          "subjectMismatch"
+          "subjectMismatch",
+          "invalidated",
+          "delegationBases"
         ],
         "type": "object",
         "properties": {
@@ -1403,6 +1607,18 @@
                 "string"
               ],
               "format": "int64"
+            }
+          },
+          "invalidated": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvalidatedStatementDto"
+            }
+          },
+          "delegationBases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DelegationBasisDto"
             }
           }
         }
@@ -1648,6 +1864,26 @@
           "InvalidatedDelegation"
         ]
       },
+      "RaisedCapDto": {
+        "required": [
+          "penaltyStatementId",
+          "maxAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "penaltyStatementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "maxAmount": {
+            "type": "string"
+          }
+        }
+      },
       "ReasoningResultDto": {
         "required": [
           "atDecision",
@@ -1665,6 +1901,56 @@
             }
           }
         }
+      },
+      "ReducedFineDto": {
+        "required": [
+          "penaltyStatementId",
+          "mitigation",
+          "share",
+          "minAmount",
+          "maxAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "penaltyStatementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "mitigation": {
+            "$ref": "#/components/schemas/MitigationDto"
+          },
+          "share": {
+            "$ref": "#/components/schemas/ReductionShareDto"
+          },
+          "minAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "maxAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "ReductionShareDto": {
+        "enum": [
+          "Half",
+          "Third"
+        ]
       },
       "RefusalDto": {
         "required": [

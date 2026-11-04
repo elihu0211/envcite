@@ -18,7 +18,9 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
                 new FactDto("effluent_cod", ["120"], null, MeasurementMethod: "cems"), new FactDto("discharging", null, [true]),
                 new FactDto("industry", null, null, ["factory"]),
             ],
-            new AdministrativePenaltyFactsDto(null, true, null, 15, null, null, null, null, null, null, null, null, null, null, null, null),
+            new AdministrativePenaltyFactsDto(null, true, null, 15, null, null, null, null, null, null, null, null, null, null, null, null,
+                CriminalOffense: true, CriminalClearedOn: "2020-04-01", CriminalPayment: "30000",
+                CommunityServiceHours: "60", GainedBenefit: "2500000"),
             "2020-01-05", null, [new PermitLimitDto("operating_permit", "effluent_cod", "100")],
             [LiabilityBasisDto.State, LiabilityBasisDto.Representative]);
 
@@ -44,6 +46,12 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.True(sent.AdministrativePenaltyFacts.HasNegligence);
         Assert.False(sent.AdministrativePenaltyFacts.HasIntent); // 省略 = 未知，不是「否」
         Assert.Equal(15, sent.AdministrativePenaltyFacts.Age);
+        var ap = sent.AdministrativePenaltyFacts;
+        Assert.True(ap.CriminalOffense);
+        Assert.False(ap.HasCourtConfiscated);
+        Assert.Equal("2020-04-01", ap.CriminalClearedOn);
+        Assert.Equal(("30000", "60", "2500000"), (ap.CriminalPayment.Value, ap.CommunityServiceHours.Value, ap.GainedBenefit.Value));
+        Assert.Null(ap.MinimumHourlyWage); // 省略 = 未知，不是 0 元
 
         var outcome = result!.AtDecision;
         Assert.Equal([new StatementVerdictDto(7, VerdictDto.Violation)], outcome.Verdicts);
@@ -61,12 +69,27 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal(new FineIntervalDto(60000, 1000000), outcome.OneAct);
         Assert.Equal([new ProblemDto(ProblemKindDto.ContradictoryFact, "ph", null),
             new ProblemDto(ProblemKindDto.UnresolvedDelegation, null, 31),
-            new ProblemDto(ProblemKindDto.MeasurementMismatch, null, 32)], outcome.Problems);
+            new ProblemDto(ProblemKindDto.MeasurementMismatch, null, 32),
+            new ProblemDto(ProblemKindDto.InvalidatedDelegation, null, 33)], outcome.Problems);
         Assert.Equal(OverrideBasisDto.LexSpecialis, outcome.Defeated[0].Basis);
         Assert.Equal(new TraceEntryDto(31, 7, "effluent_cod", "120", "100", ConditionRoleDto.Duty), outcome.Trace[0]);
         Assert.Equal([new LimitSourceDto(31, 52)], outcome.LimitSources);
         Assert.Equal(ExcuseDto.UnderFourteen, outcome.General.Unpunished[0].Excuse);
         Assert.Equal([8L], outcome.General.TimeBarred);
+        Assert.Equal(new PenaltyExcuseDto(13, ExcuseDto.CriminalPriority), outcome.General.Unpunished[1]);
+        Assert.Equal([new ReducedFineDto(8, MitigationDto.Youth, ReductionShareDto.Half, 30000, 500000),
+            new ReducedFineDto(14, MitigationDto.ExcessiveDefense, ReductionShareDto.Third, null, null)], outcome.General.Reduced); // 缺額度 = 省略
+        Assert.Equal([new RaisedCapDto(8, "2500000")], outcome.General.RaisedCaps);
+        Assert.Equal([new CriminalDeductionDto(8, "41760")], outcome.General.CriminalDeductions);
+        Assert.Equal([new InvalidatedStatementDto(15, "https://envcite/tw/law/O0020001/2018-08-01/zho/art_40", "112年憲判字第1號", "2023-03-01", true)],
+            outcome.Invalidated);
+        var rooted = outcome.DelegationBases[0];
+        Assert.True(rooted.Rooted);
+        Assert.Equal(new DelegationLinkDto("O0020010", "水污染防治法", "art_7/para_2", "O0020001",
+            "https://envcite/tw/law/O0020001/2018-08-01/zho/art_7/para_2", null), Assert.Single(rooted.Links)); // 成立的環沒有缺口
+        var unrooted = outcome.DelegationBases[1];
+        Assert.False(unrooted.Rooted);
+        Assert.Equal(new DelegationLinkDto("O0020011", null, null, null, null, DelegationGapDto.NoCitation), Assert.Single(unrooted.Links));
         Assert.Equal(["O0040001"], outcome.UncoveredLawIds);
         var used = Assert.Single(outcome.DefinitionsUsed);
         Assert.Equal((31L, 5L, "事業"), (used.ConditionId, used.DefinitionId, used.Term));
@@ -79,8 +102,36 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal("行政院公報第26卷", guidance.PublishedIn);
         Assert.Null(guidance.SourceUrl); // 空字串 = 沒有，不是空網址
         Assert.Equal("2020-01-01", result.Earlier[0].FirstDay);
+        var earlier = result.Earlier[0].Outcome; // 空的結果：清單是空的，不是 null
+        Assert.Empty(earlier.Invalidated);
+        Assert.Empty(earlier.DelegationBases);
+        Assert.Empty(earlier.General.Reduced);
         Assert.Contains(factory.Ontology.ReceivedMetadata, m =>
             m.GetValue("x-tenant-id") == tenant.Identifier);
+    }
+
+    [Fact]
+    public async Task OmittedCriminalAndBenefitFactsStayUnknown()
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync("reason-unknown");
+        using var client = factory.CreateTenantClient(key.Key);
+        var request = Request() with
+        {
+            AdministrativePenalty = new AdministrativePenaltyFactsDto(
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null),
+        };
+
+        using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var ap = factory.Ontology.LastEvaluate!.AdministrativePenaltyFacts;
+        Assert.False(ap.HasCriminalOffense);
+        Assert.False(ap.HasCourtConfiscated);
+        Assert.Equal("", ap.CriminalClearedOn);
+        Assert.Null(ap.CriminalPayment);
+        Assert.Null(ap.CommunityServiceHours);
+        Assert.Null(ap.MinimumHourlyWage);
+        Assert.Null(ap.GainedBenefit);
     }
 
     [Fact]
@@ -94,6 +145,9 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
 
         Assert.Equal("Violation", json.GetProperty("atDecision").GetProperty("verdicts")[0].GetProperty("verdict").GetString());
         Assert.Equal("Fine", json.GetProperty("atDecision").GetProperty("penalties")[0].GetProperty("effect").GetString());
+        var atDecision = json.GetProperty("atDecision");
+        Assert.Equal("Half", atDecision.GetProperty("general").GetProperty("reduced")[0].GetProperty("share").GetString());
+        Assert.Equal("NoCitation", atDecision.GetProperty("delegationBases")[1].GetProperty("links")[0].GetProperty("gap").GetString());
     }
 
     [Fact]
