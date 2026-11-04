@@ -79,16 +79,16 @@ def test_the_anthropic_adapter_refuses_to_run_without_a_key(
 def test_two_names_that_answer_every_probe_identically_are_one_model() -> None:
     """託管服務常把同一個模型掛在幾個名字下：名字不同不等於家族不同。"""
     twin = {p: f"答：{i}" for i, p in enumerate(PROBES)}
-    a = Scripted("openai:gpt-oss-120b", lambda prompt: twin[prompt])
-    b = Scripted("mistral:mistral-small-4", lambda prompt: twin[prompt])
+    a = Scripted("fam-a:alias-of-b", lambda prompt: twin[prompt])
+    b = Scripted("fam-b:model-b", lambda prompt: twin[prompt])
 
     with pytest.raises(SameModel, match="same model under two names"):
         assert_distinct([a, b])
 
 
 def test_models_that_answer_differently_are_distinct() -> None:
-    a = Scripted("google:gemma", lambda prompt: "甲" + prompt[:3])
-    b = Scripted("meta:llama", lambda prompt: "乙" + prompt[:3])
+    a = Scripted("fam-a:model-a", lambda prompt: "甲" + prompt[:3])
+    b = Scripted("fam-b:model-b", lambda prompt: "乙" + prompt[:3])
 
     assert_distinct([a, b])
 

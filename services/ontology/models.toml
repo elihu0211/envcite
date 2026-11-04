@@ -26,8 +26,13 @@ family = "nvidia"
 max_tokens = 16384
 
 # 黃金測試集的相關性判定者之一（tools/relevance_judge.py），不參與任何管線。家族依端點的路由表
-# （/v1/model/info）宣告：ornith-35b 是以 Qwen 3.5 為底的 Ornith 1.0。端點上不少名稱是別名
-# （office、gpt-oss-120b 路由到 Mistral-Small-4），別名由判定前的 SameModel 探測擋下。
+# （/v1/model/info）宣告：ornith-35b 是以 Qwen 3.5 為底的 Ornith 1.0。
+# 端點上多個名稱指向同一個模型，名稱不同不代表家族不同，選模型要看路由表：
+#   Mistral-Small-4：mistral-small-4、office、gpt-oss-120b
+#   nemotron-3.5-super-vl：nemotron-3.5-super-vl、vibe、nemotron-3-ultra
+#   Ornith-1.0-35B：ornith-35b、horizon、vibelight
+#   muse-spark-open：muse-spark-open、coder、vibecode
+# 漏看的別名由判定與管線開跑前的 SameModel 探測擋下。
 [model.ornith]
 endpoint = "llm"
 name = "ornith-35b"

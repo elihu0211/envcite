@@ -56,7 +56,7 @@ uv run --env-file .env envcite-pipeline --pending --limit <N> --models models.to
 uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每個模型送探測問題，不連資料庫
 ```
 
-`[embedding]` 只需要它指名的端點備妥金鑰，伺服器不因標註管線的端點缺金鑰而起不來。`[relevance]` 是黃金測試集的相關性判定者（見「黃金測試集」），不參與任何管線。
+`[embedding]` 只需要它指名的端點備妥金鑰，伺服器不因標註管線的端點缺金鑰而起不來。`[relevance]` 是黃金測試集的相關性判定者，不參與任何管線：`judges` 列模型名稱（至少兩個、彼此不同家族），`system_families` 列受測路徑（檢索與作答）的家族；判定者不得屬於這些家族，標註管線各角色的家族不自動加入（規則見「黃金測試集」的判定者）。
 
 ## 規範關係：授權
 
@@ -122,6 +122,8 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 | 匯回判定 | `uv run python tools/golden_set.py judge --qrels eval/golden-qrels.json --judgements eval/golden-judgements-….json --out eval/golden-qrels.json` | 新版 qrels |
 | 選下界 | `tools/answerability_floor.py`、`tools/floor_risk_coverage.py`，`--lexical`／`--semantic` 給開發集的報告 | 只印出，不改任何下界 |
 | 端到端 | `tools/grounding_check_eval.py <golden.yaml> --qrels … --split … --subset test …` | 拒答與引用的報告 |
+
+判定的順序：在開發集 `calibrate`（提示只依它調），提示定案後對 `dev`、`test` 各跑一次 `pool`（同一份校準檔），再依序以 `judge` 匯回。`pool` 與 `calibrate` 另收 `--as-of`（條文版本日，預設今天）、`--workers`（每位判定者的並行數）與 `--no-distinct-check`（略過別名探測，只供除錯）；中斷後以同一個 `--cache` 重跑會略過已判的條，只重問失敗的。
 
 **格式**（JSON 文件都帶 `sha256`：自身去掉該欄後的正規化 JSON（鍵排序、緊湊分隔、UTF-8）的雜湊；`golden_set.read` 不符即停）：
 
