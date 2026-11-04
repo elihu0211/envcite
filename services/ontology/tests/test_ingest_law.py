@@ -113,9 +113,15 @@ def test_a_date_left_in_an_untouched_last_article_is_not_this_versions() -> None
     assert rules == {"art_1": ("unconfirmed", None), "art_3-1": ("unchanged", date(2018, 8, 1))}
     assert ("warning", "stale_last_article") in {(x.level, x.code) for x in p.problems}
 
-    # 同一次修正也改了末條：末條的日期就是這一版的
+    # 同一次修正也改了末條：末條的日期就是這一版的，早於公布日是明文的溯及既往
     p = _parse(LawHistories=histories.replace("第 1 條", "第 1、3-1 條"), LawArticles=articles)
-    assert {u.rule for u in p.units if u.type == "article"} == {"specified"}
+    assert {u.rule for u in p.units if u.type == "article"} == {"retroactive"}
+
+
+def test_a_written_date_before_the_promulgation_is_retroactive() -> None:
+    histories = "1.中華民國一百零七年八月一日總統令制定公布全文 3 條；並自一百零七年一月一日施行"
+    p = _parse(LawHistories=histories)
+    assert {(u.rule, u.starts) for u in p.units} == {("retroactive", date(2018, 1, 1))}
 
 
 def test_a_later_commencement_order_dates_the_articles_awaiting_it() -> None:

@@ -15,7 +15,7 @@ from envcite_ontology.ingest import articles, commencement, history
 from envcite_ontology.ingest.numerals import parse_yyyymmdd
 
 #: 解析邏輯的版本。改變輸出的修改必須遞增，快照才會以新版重匯。
-PARSER_VERSION = 2
+PARSER_VERSION = 3
 
 _KINDS = {"憲法": "constitution", "法律": "statute", "命令": "regulation"}
 
@@ -87,7 +87,7 @@ def parse(law: dict[str, Any], *, pcode: str, data_date: date) -> ParsedLaw:
     if not title:
         error("title")
 
-    events = history.parse(str(law.get("LawHistories") or ""))
+    events = history.parse(str(law.get("LawHistories") or ""), statute=level in ("法律", "憲法"))
     for e in events:
         if e.kind == "unknown":
             warn("event_unknown", e.text)
@@ -251,6 +251,10 @@ def _articles(
         if rule.rule == "by_order" and parsed.abandoned_on is not None:
             # 已廢止的法規不會「尚待命令施行」：是否施行過不可考。
             rule = commencement.Commencement("unconfirmed", None)
+        if rule.rule == "specified" and rule.start is not None and rule.start < version_date:
+            # 明文規定溯及既往（多見於組織規程與補助辦法）：照寫，另成一種規則，
+            # 綱要只准它早於版本日。
+            rule = commencement.Commencement("retroactive", rule.start)
         starts, ends = rule.start, parsed.abandoned_on
         kind = rule.rule
         if starts is not None and ends is not None and ends <= starts:

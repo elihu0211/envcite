@@ -4,8 +4,9 @@
 往舊逐一回推，接得上才寫（`plan`，純函式）：
 
 1. **對齊沿革**：錨點之前沿革的每一次公布（制定、全文修正、部分修正）都要有一個同日的歷史版本；
-   缺一次、該版有條文只在 PDF、或解析不出可寫的版本，就停在那裡，更早的不寫（查得到的區間只從停下處
-   之後起算，之前仍是查無），不跳過缺口接著寫，也不以其他版本的文字頂替。
+   缺一次、該版有條文只在 PDF、或解析不出可寫的版本，就停在那裡：那一次與更早的每一次公布寫成
+   **查不到全文的版本**（`text_status = unavailable`，沒有條文單元版本、標題不詳），版本的時間軸照樣
+   接到制定、不留縫；不跳過缺口接著寫，也不以其他版本的文字頂替。
 2. **文字**：與較新版本正規化後相同的條，沿用較新版本的文字與分項（錨點是全國法規資料庫
    的文字），只有改過的條用主管機關系統的轉錄；轉錄的折行還原有判不準的分項處，逐版計數記警告。
 3. **效力**：每一版當作「那時的現行版本」交給 `law.parse` 推導生效日——沿革截到下一次公布之前，
@@ -92,10 +93,15 @@ class Anchor:
 @dataclass(frozen=True)
 class Planned:
     version_date: date
-    title: str
+    #: 查不到全文的版本（`units` 為空）不知道當時的標題
+    title: str | None
     #: 文字時間的上界：下一個版本的版本日
     until: date
     units: list[ParsedUnit]
+
+    @property
+    def status(self) -> str:
+        return "available" if self.title is not None else "unavailable"
 
 
 @dataclass
@@ -132,7 +138,8 @@ def plan(anchor: Anchor, current: Version, past: list[Version]) -> Plan:
         )
         return out
 
-    events = [(e, history.parse(e)) for e in anchor.events]
+    statute = anchor.kind in ("statute", "constitution")
+    events = [(e, history.parse(e, statute=statute)) for e in anchor.events]
     promulgated = sorted(
         {
             ev.date
@@ -156,6 +163,7 @@ def plan(anchor: Anchor, current: Version, past: list[Version]) -> Plan:
             Problem("warning", "history_extra", "沿革沒有這些公布：" + "、".join(map(str, extra)))
         )
 
+    stopped: date | None = None
     reference = anchor.articles
     # 來源裡與 `reference` 同一版的文字：兩個系統的同一條常差標點或字形（「，」與「；」、「椿」與
     # 「樁」），相鄰兩版是否修正，以同一來源的文字比，不以跨系統的文字比。
@@ -170,11 +178,13 @@ def plan(anchor: Anchor, current: Version, past: list[Version]) -> Plan:
             out.problems.append(
                 Problem("warning", "history_missing", f"{when} 沒有全文，更早的不寫")
             )
+            stopped = when
             break
         if any(a.incomplete for a in version.articles):
             out.problems.append(
                 Problem("warning", "history_incomplete", f"{when} 有條文只在 PDF，更早的不寫")
             )
+            stopped = when
             break
         articles, ambiguous = _texts(version, reference, newer)
         raw = {
@@ -196,6 +206,7 @@ def plan(anchor: Anchor, current: Version, past: list[Version]) -> Plan:
             out.problems.append(
                 Problem("warning", "history_unparsable", f"{when}：{codes}，更早的不寫")
             )
+            stopped = when
             break
         if ambiguous:
             out.problems.append(
@@ -212,10 +223,20 @@ def plan(anchor: Anchor, current: Version, past: list[Version]) -> Plan:
         newer = version
         until = when
 
-    out.versions = _intervals(anchor, accepted)
+    out.versions = _unavailable(promulgated, stopped, until) + _intervals(anchor, accepted)
     never = sum(len(p.units) for _, p in accepted) - sum(len(v.units) for v in out.versions)
     if never:
         out.problems.append(Problem("warning", "never_in_force", f"{never} 個單元起點不早於下一版"))
+    return out
+
+
+def _unavailable(promulgated: list[date], stopped: date | None, until: date) -> list[Planned]:
+    """停下處與更早的每一次公布：查不到全文的版本，舊到新，最新一版止於 `until`。"""
+    out: list[Planned] = []
+    for when in (d for d in promulgated if stopped is not None and d <= stopped):
+        out.append(Planned(when, None, until, []))
+        until = when
+    out.reverse()
     return out
 
 
@@ -389,9 +410,15 @@ def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> 
     同日的版本列改記新的來源、條文單元依新的文字取代。
     """
     existing = {
-        cast(date, d): (cast(int, i), cast(str, t), cast(Range[date], p), cast(str, a))
-        for i, d, t, p, a in conn.execute(
-            "SELECT id, version_date, title, text_period, text_authority::text"
+        cast(date, d): (
+            cast(int, i),
+            cast(str | None, t),
+            cast(Range[date], p),
+            cast(str, a),
+            cast(str, st),
+        )
+        for i, d, t, p, a, st in conn.execute(
+            "SELECT id, version_date, title, text_period, text_authority::text, text_status::text"
             "  FROM corpus.legal_expression"
             " WHERE resource_id = %s AND language = 'zho' AND text_authority <> 'official_db'",
             (anchor.resource,),
@@ -405,20 +432,20 @@ def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> 
     for v in target:
         period = Range(v.version_date, v.until, "[)")
         if v.version_date in existing:
-            expression, title, current, by = existing[v.version_date]
-            if title != v.title or current != period or by != authority:
+            expression, title, current, by, was = existing[v.version_date]
+            if (title, current, by, was) != (v.title, period, authority, v.status):
                 conn.execute(
                     "UPDATE corpus.legal_expression SET title = %s, text_period = %s,"
-                    "  text_authority = %s WHERE id = %s",
-                    (v.title, period, authority, expression),
+                    "  text_authority = %s, text_status = %s WHERE id = %s",
+                    (v.title, period, authority, v.status, expression),
                 )
                 changed = True
         else:
             row = conn.execute(
                 "INSERT INTO corpus.legal_expression (resource_id, language, version_date, title,"
                 "  text_period, text_status, text_authority)"
-                " VALUES (%s, 'zho', %s, %s, %s, 'available', %s) RETURNING id",
-                (anchor.resource, v.version_date, v.title, period, authority),
+                " VALUES (%s, 'zho', %s, %s, %s, %s, %s) RETURNING id",
+                (anchor.resource, v.version_date, v.title, period, v.status, authority),
             ).fetchone()
             assert row is not None and isinstance(row[0], int)
             expression = row[0]

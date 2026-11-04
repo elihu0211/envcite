@@ -135,7 +135,8 @@ def test_an_authorizing_article_out_of_force_breaks_the_chain(conn: Conn, tmp_pa
     _corpus(conn, tmp_path, "本辦法依母法第一條規定訂定之。")
     ids = _statements(conn)
     conn.execute(
-        "UPDATE corpus.provision_version AS v SET force_period = %s"
+        "UPDATE corpus.provision_version AS v"
+        " SET force_period = %s, commencement_rule = 'unchanged'"
         "  FROM corpus.provision AS p JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
         " WHERE v.provision_id = p.id AND r.local_id = %s AND p.path = 'art_1'",
         (Range(date(2018, 8, 1), date(2018, 12, 1), "[)"), MOTHER),

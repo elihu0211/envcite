@@ -49,10 +49,11 @@ def entries(histories: str) -> list[str]:
     return [e for e in cleaned if e]
 
 
-def parse(histories: str) -> list[Event]:
+def parse(histories: str, *, statute: bool = False) -> list[Event]:
+    """`statute`：法律（含憲法）的沿革；它們只由總統公布，見 `classify`。"""
     events: list[Event] = []
     for entry in entries(histories):
-        kind = classify(entry)
+        kind = classify(entry, statute=statute)
         if kind is None:
             continue
         m = DATE_WITH_ERA.match(entry)
@@ -73,6 +74,7 @@ _AMEND = re.compile(r"修正|增訂|刪除")
 _ENACT = re.compile(r"制定|訂定|[公發]布同日施行|公布全文|發布全文")
 # 施行命令：「令發布定自某日施行」「令定自某日生效」，或只有「施行」「生效」。
 _COMMENCEMENT = re.compile(r"定[自於].*(?:施行|生效)|[公發]布.*自.*(?:施行|生效)")
+_EFFECT = re.compile(r"施行|生效")
 _BARE_COMMENCEMENT = re.compile(r"(?:自)?(?:同日|當日)?(?:起)?(?:施行|生效)")
 # 公布或發布了某幾條的條文，沒有寫修正或增訂。
 _PROMULGATED = re.compile(r"公布|發布")
@@ -87,10 +89,16 @@ def _after_issuer(text: str) -> str:
     return re.sub(r"^[^令函]*?[令函]", "", text)
 
 
-def classify(entry: str) -> str | None:
-    """事件種類；管轄變更公告回 None（不是事件），認不得回 'unknown'。"""
+def classify(entry: str, *, statute: bool = False) -> str | None:
+    """事件種類；管轄變更公告回 None（不是事件），認不得回 'unknown'。
+
+    法律是「公布」的；法律的沿革裡以「發布」起頭的動作是行政機關的施行命令（「令發布第 51-5 條條文
+    定自…施行」「令發布：本次修正條文，定自…施行」），不是修正。
+    """
     m = DATE_WITH_ERA.match(entry)
     text = entry[m.end() :] if m else entry
+    if statute and _after_issuer(text).lstrip("：:").startswith("發布") and _EFFECT.search(text):
+        return "commencement"
 
     if _JURISDICTION.search(text):
         return None

@@ -86,7 +86,12 @@ def rebuild(conn: Conn, embedder: Embedder | None = None, policy: Policy | None 
     嵌入的重試、退避與斷路依 `policy`（`envcite_jobkit`）。重試用盡的批次跳過，留待下次。
     """
     segmenter = Segmenter(
-        [str(t) for (t,) in conn.execute("SELECT DISTINCT title FROM corpus.legal_expression")]
+        [
+            str(t)
+            for (t,) in conn.execute(
+                "SELECT DISTINCT title FROM corpus.legal_expression WHERE title IS NOT NULL"
+            )
+        ]
     )
     pruned = conn.execute("SELECT retrieval.prune()").fetchone()
     conn.commit()

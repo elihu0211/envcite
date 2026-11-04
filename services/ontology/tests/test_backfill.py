@@ -198,8 +198,19 @@ def test_a_missing_version_stops_the_chain_there(conn: Conn, tmp_path: Path) -> 
 
     assert {d for _, d, _, _ in _rows(conn)} == {V2, V3}
     assert _at(conn, date(2000, 1, 1)) == {}  # 不以 107 年的文字頂替
+    # 缺的那一版仍是一版：查不到全文、標題不詳，時間軸接到制定、不留縫。
+    expressions = conn.execute(
+        "SELECT version_date, text_period, text_status::text, title FROM corpus.legal_expression"
+        " ORDER BY version_date"
+    ).fetchall()
+    assert expressions[0] == (V1, Range(V1, V2, "[)"), "unavailable", None)
+    assert [e[2] for e in expressions[1:]] == ["available", "available"]
     problems = conn.execute("SELECT severity, problem_code FROM source.import_problem").fetchall()
     assert ("warning", "history_missing") in problems
+
+    # 來源後來補上了：同一版改為查得到全文，不是另一版。
+    assert _sync(conn, tmp_path, _full_site()) == 0
+    assert {d for _, d, _, _ in _rows(conn)} == {V1, V2, V3}
 
 
 def test_a_source_behind_the_corpus_still_backfills_before_the_anchor(

@@ -123,8 +123,10 @@ def _provision(
         conn.execute(
             "INSERT INTO corpus.provision_version"
             " (provision_id, expression_id, resource_id, content, force_period, commencement_rule)"
-            " VALUES (%s, %s, %s, %s, %s, 'promulgation')",
-            (provision, expression, law, text, Range(lo, hi, "[)")),
+            " VALUES (%s, %s, %s, %s, %s, CASE WHEN %s < (SELECT version_date"
+            "   FROM corpus.legal_expression WHERE id = %s) THEN 'retroactive'"
+            "   ELSE 'specified' END::corpus.commencement_rule)",
+            (provision, expression, law, text, Range(lo, hi, "[)"), lo, expression),
         )
     return provision
 

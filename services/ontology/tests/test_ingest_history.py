@@ -118,3 +118,23 @@ def test_the_first_entry_with_an_unspecified_promulgation_is_the_enactment() -> 
     )
     # 沿革的第一筆之前沒有別的公布；之後的同樣寫法不能這樣推定。
     assert first.kind == "enactment" and later.kind == "unknown"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "中華民國一百十一年七月四日司法院院台廳司一字第1110019956號令發布第51-5～51-8、90-2條條文"
+        "定自一百十一年八月一日施行；第14、15、79條條文自一百十二年八月十五日施行",
+        "中華民國八十八年七月三十一日行政院（88）台規字第29626號令發布：本次修正條文，"
+        "定自八十九年七月一日起施行",
+    ],
+)
+def test_an_order_issued_for_a_statute_is_its_commencement_not_an_amendment(text: str) -> None:
+    """法律只由總統公布；法律的沿革裡「令發布…施行」是行政機關的施行命令。命令的同樣寫法是發布條文。"""
+    assert classify(text, statute=True) == "commencement"
+    assert classify(text) != "commencement"
+
+
+def test_a_statute_amended_by_presidential_order_is_still_an_amendment() -> None:
+    text = "中華民國一百十一年六月二十二日總統華總一義字第11100052481號令修正公布第14條條文"
+    assert classify(text, statute=True) == "partial_amendment"

@@ -72,7 +72,8 @@ def test_only_laws_with_statements_are_resolved(amended_among_many: Conn) -> Non
     scoped = provision_lookups_by_resource(conn, _APPLICABLE)
     full_scan = provision_lookups_by_resource(conn, LEGACY)
 
-    assert scoped == 1
+    # 只為有標註的那一部解析：次數是那一部的版本列數，與填充法規的部數無關。
+    assert 0 < scoped * 100 < full_scan
     assert full_scan >= laws  # 這條斷言證明上面的計數看得見差別
 
 

@@ -82,9 +82,18 @@ def _version(
             law,
             text,
             Range(lo, hi, "[)") if lo else None,
-            "promulgation" if lo else rule,
+            _dated(conn, expression, lo) if lo else rule,
         ),
     )
+
+
+def _dated(conn: Conn, expression: int, start: date) -> str:
+    """任意給定的施行日：不早於版本日是 specified，早於是 retroactive（綱要只准這兩種任意日）。"""
+    row = conn.execute(
+        "SELECT version_date FROM corpus.legal_expression WHERE id = %s", (expression,)
+    ).fetchone()
+    assert row is not None and isinstance(row[0], date)
+    return "retroactive" if start < row[0] else "specified"
 
 
 def _at(conn: Conn, law: int, on: date) -> list[tuple[str, str, str | None]]:
@@ -243,3 +252,79 @@ def test_an_event_date_must_be_the_expression_version_date(conn: Conn) -> None:
             " VALUES (%s, 'enactment', DATE '1999-01-01', %s)",
             (law, expression),
         )
+
+
+def _expression(conn: Conn, law: int, on: date, end: date | None, **over: object) -> int:
+    values = {"title": "甲法", "status": "available"} | over
+    return _id(
+        conn.execute(
+            "INSERT INTO corpus.legal_expression (resource_id, language, version_date, title,"
+            " text_period, text_status, text_authority)"
+            " VALUES (%s, 'zho', %s, %s, %s, %s, 'official_db') RETURNING id",
+            (law, on, values["title"], Range(on, end, "[)"), values["status"]),
+        ).fetchone()
+    )
+
+
+def test_versions_of_a_law_leave_no_gap(conn: Conn) -> None:
+    """除了最新一版，每一版都止於另一版的版本日：綱要在交易結束時檢查，中途可以不相接。"""
+    law, _ = _law(conn, "Z0000001", (date(2000, 1, 1), "available"))
+    _expression(conn, law, date(1990, 1, 1), date(1995, 1, 1))  # 1995 年沒有一版
+    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+        conn.commit()
+
+
+def test_a_version_without_text_is_a_version_with_an_unknown_title(conn: Conn) -> None:
+    law, _ = _law(conn, "Z0000001", (date(2000, 1, 1), "available"))
+    _expression(conn, law, date(1990, 1, 1), date(2000, 1, 1), title=None, status="unavailable")
+    conn.commit()
+    with pytest.raises(psycopg.errors.CheckViolation):
+        _expression(conn, law, date(1980, 1, 1), date(1990, 1, 1), title=None)
+
+
+@pytest.mark.parametrize(
+    ("rule", "start", "ok"),
+    [
+        ("unchanged", date(2020, 1, 1), True),
+        ("unchanged", date(2020, 1, 3), False),
+        ("promulgation", date(2020, 1, 3), True),
+        ("promulgation", date(2020, 1, 1), False),
+        ("specified", date(2020, 7, 1), True),
+        ("specified", date(2019, 7, 1), False),  # 早於公布：只能是明文的溯及既往
+        ("retroactive", date(2019, 7, 1), True),
+        ("retroactive", date(2020, 7, 1), False),
+    ],
+)
+def test_the_start_follows_from_the_rule_and_the_version_date(
+    conn: Conn, rule: str, start: date, ok: bool
+) -> None:
+    law, (expression,) = _law(conn, "Z0000001", (date(2020, 1, 1), "available"))
+    article = _article(conn, law, "1")
+
+    def insert() -> None:
+        conn.execute(
+            "INSERT INTO corpus.provision_version"
+            " (provision_id, expression_id, resource_id, content, force_period, commencement_rule)"
+            " VALUES (%s, %s, %s, '甲。', %s, %s::corpus.commencement_rule)",
+            (article, expression, law, Range(start, None, "[)"), rule),
+        )
+
+    if ok:
+        insert()
+    else:
+        with pytest.raises(psycopg.errors.CheckViolation):
+            insert()
+
+
+def test_a_version_carries_the_date_of_its_expression(conn: Conn) -> None:
+    law, (expression,) = _law(conn, "Z0000001", (date(2020, 1, 1), "available"))
+    article = _article(conn, law, "1")
+    conn.execute(
+        "INSERT INTO corpus.provision_version"
+        " (provision_id, expression_id, resource_id, content, force_period, commencement_rule)"
+        " VALUES (%s, %s, %s, '甲。', NULL, 'unconfirmed')",
+        (article, expression, law),
+    )
+    assert conn.execute("SELECT expression_date FROM corpus.provision_version").fetchone() == (
+        date(2020, 1, 1),
+    )

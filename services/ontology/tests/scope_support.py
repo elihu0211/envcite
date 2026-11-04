@@ -30,7 +30,7 @@ _FILLER = """
           JOIN corpus.legal_expression AS e ON e.resource_id = lr.id
           JOIN corpus.provision AS p ON p.resource_id = lr.id
           JOIN corpus.provision_version AS v ON v.provision_id = p.id AND v.expression_id = e.id
-         WHERE lr.local_id = 'T0000001' AND v.superseded_at IS NULL
+         WHERE lr.local_id = 'T0000001' AND v.superseded_at IS NULL AND upper_inf(e.text_period)
          LIMIT 1
     ), res AS (
         INSERT INTO corpus.legal_resource (id_scheme, local_id, norm_kind, document_type)

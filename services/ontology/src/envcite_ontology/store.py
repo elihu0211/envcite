@@ -74,7 +74,7 @@ def is_valid_law_id(value: str) -> bool:
     return bool(_PCODE.fullmatch(value))
 
 
-#: 某日有效的版本；法規不存在與該日無版本皆查無結果。
+#: 某日有效、有全文的版本；法規不存在、該日無版本或該日的版本查不到全文（`text_status`）皆查無結果。
 _RESOLVE = """
     SELECT r.id, corpus.resource_iri(r.norm_kind, r.local_id), e.title, e.language,
            (SELECT min(le.event_date)
@@ -86,6 +86,7 @@ _RESOLVE = """
        AND r.local_id = %(law)s
        AND e.language = %(language)s
        AND e.text_period @> %(on)s::date
+       AND e.text_status = 'available'
 """
 
 #: 該日有效的條，含 `text_unavailable`（有效，只是無文字）。
@@ -98,14 +99,14 @@ _LIST_ARTICLES = """
 """
 
 #: segmenter 詞典（法規名稱）；須與建索引同源，否則分詞器識別碼不符、字面檢索全落空（04-01 §5）。
-_LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression"
+_LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression WHERE title IS NOT NULL"
 
 #: 標題（含各版本的舊名稱）→ 法規代碼；問句點名法規用（`law_names.LawNames`）。
 _LAW_TITLES = """
     SELECT e.title, array_agg(DISTINCT r.local_id)
       FROM corpus.legal_expression AS e
       JOIN corpus.legal_resource AS r ON r.id = e.resource_id
-     WHERE r.id_scheme = 'moj_pcode'
+     WHERE r.id_scheme = 'moj_pcode' AND e.title IS NOT NULL
      GROUP BY e.title
 """
 
