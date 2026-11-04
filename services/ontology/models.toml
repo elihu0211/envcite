@@ -25,15 +25,9 @@ name = "nemotron-3.5-super-vl"
 family = "nvidia"
 max_tokens = 16384
 
-# 黃金測試集的相關性判定者（tools/relevance_judge.py），不參與任何管線。家族依端點的路由表
-# （/v1/model/info）宣告：gemma-4-31b 是 Google Gemma 4，ornith-35b 是以 Qwen 3.5 為底的 Ornith 1.0。
-# 同端點的 gpt-oss-120b 實際路由到 Mistral-Small-4，與作答模型相同，不能當判定者。
-[model.gemma]
-endpoint = "llm"
-name = "gemma-4-31b"
-family = "google"
-max_tokens = 4096
-
+# 黃金測試集的相關性判定者之一（tools/relevance_judge.py），不參與任何管線。家族依端點的路由表
+# （/v1/model/info）宣告：ornith-35b 是以 Qwen 3.5 為底的 Ornith 1.0。端點上不少名稱是別名
+# （office、gpt-oss-120b 路由到 Mistral-Small-4），別名由判定前的 SameModel 探測擋下。
 [model.ornith]
 endpoint = "llm"
 name = "ornith-35b"
@@ -58,8 +52,9 @@ roundtrip = "nemotron"
 independent_test = "muse"
 panel = ["muse", "nemotron"]
 
-# 判定者不得與受測系統同家族：system_families 是設定檔外的受測模型（嵌入 bge-m3 為 baai、consult
-# 作答 mistral-small-4 為 mistral），各角色模型的家族自動加入。
+# 判定者不得與受測系統同家族。黃金測試集量的是檢索與作答，受測路徑上只有嵌入 bge-m3（baai）與
+# consult 作答的 mistral-small-4（mistral）；標註管線的抽取與評審角色是離線的，不在受測路徑上，
+# 所以它們的家族（nvidia、meta）可以當判定者。
 [relevance]
-judges = ["gemma", "ornith"]
+judges = ["nemotron", "ornith"]
 system_families = ["baai", "mistral"]

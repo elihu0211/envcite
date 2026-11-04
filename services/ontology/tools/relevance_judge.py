@@ -18,10 +18,11 @@ schema, the judges' names and families and the temperature go into every file wr
 template's sha256 is part of what a judgement file's own sha256 covers.
 
 The judges come from `[relevance]` in the model configuration (`config.load_judges`): at least two,
-of different families, none of a family in the system under test. Before judging, every judge and
-every role model is asked the same open questions; identical answers stop the run (`SameModel`),
-which catches a hosted alias of a system model. A reply naming another model than the one asked for
-(a gateway's fallback) is a failed call, not a judgement. Nothing judged here reranks a retrieval.
+of different families, none of a family on the measured path (retrieval and answering). Before
+judging, every judge and every role model of a system family is asked the same open questions;
+identical answers stop the run (`SameModel`), which catches a hosted alias of a system model.
+A reply naming another model than the one asked for (a gateway's fallback) is a failed call, not a
+judgement. Nothing judged here reranks a retrieval.
 
 Each article is judged once by each judge. The final grade is the lower of the two (conservative);
 an article that either judge could not grade stays a hole. Agreement is reported as Cohen's κ on
@@ -593,7 +594,12 @@ def setup(args: argparse.Namespace) -> tuple[list[Judge], dict[str, Any]]:
             )
         judges.append(Judge(m))
     if not args.no_distinct_check:
-        system: list[Model] = list(load_models(path).everyone)
+        names = {j.name for j in judges}
+        system: list[Model] = [
+            m
+            for m in load_models(path).everyone
+            if m.family in configured.system_families and m.name not in names
+        ]
         assert_distinct([*judges, *system])
     described = {
         "judges": [

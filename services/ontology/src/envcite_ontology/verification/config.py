@@ -7,7 +7,7 @@
 - 語意檢索的嵌入模型也在這裡宣告（`[embedding]`），沿用同一組端點；伺服器與同步排程只讀這一段，
   不需要標註管線的角色（`load_embedder`）。
 - 黃金測試集的相關性判定者也在這裡（`[relevance]`，`load_judges`）：至少兩個、彼此不同家族，且不與
-  受測系統的任何家族相同（`system_families` 加上各角色模型的家族）。
+  受測路徑上的任何家族相同（`system_families`）。
 
 不認得的鍵與指向不存在者的參照一律報錯。
 """
@@ -300,7 +300,8 @@ def parse_judges(
 ) -> Judges:
     """`[relevance]` 指名的判定者。判定者少於兩個、彼此同家族、或與受測系統同家族都報錯。
 
-    受測系統的家族是 `system_families`（設定檔外的模型，如嵌入與作答模型）加上各角色模型的家族。
+    受測系統的家族只有 `system_families`（受測路徑上的模型：嵌入與作答）；標註管線的角色是離線的，
+    不算受測系統，它們的模型可以當判定者。
     """
     env = os.environ if env is None else env
     try:
@@ -330,12 +331,7 @@ def parse_judges(
         if n not in tables:
             raise ConfigError(f"relevance.judges: model {n!r} is not defined")
     judges = tuple(_model(str(n), tables[n], endpoints) for n in names)
-    roles = doc.get("roles") or {}
-    used = {roles.get(r) for r in ("extractor", "roundtrip", "independent_test")}
-    used |= set(roles.get("panel") or [])
-    system = set(declared) | {
-        str(tables[a].get("family")) for a in used if a in tables and tables[a].get("family")
-    }
+    system = set(declared)
     families = [j.family for j in judges]
     if len(set(families)) != len(families):
         raise ConfigError(f"relevance.judges: two judges share a family {families}")

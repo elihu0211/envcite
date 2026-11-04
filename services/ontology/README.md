@@ -132,10 +132,10 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 - **報告**：`meta` 記 commit、題庫、qrels、切分與語料快照的雜湊；每臂的 `summary` 依桶列 `hit_rate@k`（表中的 R@k：任一相關條在前 k）、`mrr`、`ndcg@10`（分數為增益）、`hole@10`，`results` 逐題記狀態、第一個相關條的名次與兩臂最高分（不存題目文字）。
 - **Hole@10**：每題前 10 條中 qrels 沒有判定（相關或不相關）的條所占的比例。
 - **比較**：成對 Fisher 隨機化檢定（ranx `compare`，`stat_test="fisher"`），兩個 run 必須是同一切分子集、同一批題；p ≥ α 的差距不寫成改善或退步。
-- **判定者**：模型配置檔的 `[relevance]`（`judges`、`system_families`）；至少兩個、彼此不同家族，且不與受測系統的家族相同（`system_families` 加上各角色模型的家族），判定前另以固定問題排除別名（`SameModel`）。回覆的模型名與所問的不同（閘道備援）視為失敗。判定模型不重排任何檢索結果。
+- **判定者**：模型配置檔的 `[relevance]`（`judges`、`system_families`）；至少兩個、彼此不同家族，且不與受測路徑（檢索與作答）的家族 `system_families` 相同；標註管線的角色是離線的，不算受測系統。判定前以固定問題對判定者與受測家族的角色模型探測別名（`SameModel`）。回覆的模型名與所問的不同（閘道備援）視為失敗。判定模型不重排任何檢索結果。
 - **判定**：提示是 UMBRELA 的 zero-shot 提示（意圖、M、T、O 四步、0–3 分）的繁體中文法規版，給題目、法規名稱與條號、`--as-of` 現行版本的公布或修正日與條文全文，溫度 0、以 JSON schema 要求 `intent`、`M`、`T`、`O`、`reason`。每條每位判定者判一次，最終分數取較低者；任一位沒有分數仍是洞。
 - **校準檔**（`kind: calibration`，只在 `dev`）：題庫給定的條（正例）與每個正例一條同法規、題庫沒列給該題的隨機現行條（負例，固定種子）；`rates` 記各判定者與保守分數對正例的召回、對負例的誤判，`agreement` 記一致性。提示只依校準調；`pool` 要求校準檔的提示雜湊與現行提示相同，所以測試集只由在開發集定案的提示判定。
-- **判定檔**（`kind: judgements`）：判一個子集各 run 前 10 條的洞與尚未分級的期望條文。記題庫、qrels、切分、各 run、校準檔的雜湊，提示全文與雜湊、`response_format`、判定者（名稱、模型識別、家族、溫度）、`as_of`、日期；`rows` 每列 `qid`、`doc`、`upstream`、`text_sha256`、各判定者的分數與 `verdicts`（含理由）、最終 `grade`、失敗原因；`agreement` 為二元化（≥ `relevant_from`）的 Cohen's κ、二次加權 κ、分歧比例與混淆表；`usage` 為各判定者的呼叫數與詞元。不存題目文字。快取（JSONL，含題目全文）放倉庫外，中斷可續跑。
+- **判定檔**（`kind: judgements`）：判一個子集各 run 前 10 條的洞與尚未分級的期望條文。記題庫、qrels、切分、各 run、校準檔的雜湊，提示全文與雜湊、`response_format`、判定者（名稱、模型識別、家族、溫度）、`as_of`、日期；`rows` 每列 `qid`、`doc`、`upstream`、`text_sha256`、各判定者的分數與 `verdicts`（含理由）、最終 `grade`、失敗原因；`agreement` 為二元化（≥ `relevant_from`）的 Cohen's κ、二次加權 κ、分歧比例與混淆表；`usage` 為各判定者本次執行（快取未命中）的呼叫數與詞元，續跑時不含先前的呼叫。不存題目文字。快取（JSONL，含題目全文）放倉庫外，中斷可續跑。
 
 ## 能力問題登記
 

@@ -1,0 +1,94 @@
+{
+ "qrels_sha256": "78142a093ec1b18e88b26819ceabe57369e160b82a7594d8278361a80c9359bc",
+ "split_sha256": "2e4dfd1335c7002d84f7ac51bce73685e13b61470705a12f4cafa417afbf055e",
+ "subset": "test",
+ "questions": 171,
+ "alpha": 0.05,
+ "test": "Fisher 隨機化檢定（ranx compare，成對、雙尾，10000 次置換，種子 0）",
+ "runs": {
+  "golden-retrieval-test-2026-11-04.lexical": {
+   "sha256": "9eb544cb2904a97468e18a4d1935141ab6d7a368d5a6e82340c3e93810c305ac",
+   "scores": {
+    "hit_rate@1": 0.0585,
+    "hit_rate@5": 0.1637,
+    "hit_rate@10": 0.269,
+    "hit_rate@20": 0.3567,
+    "hit_rate@50": 0.4444,
+    "mrr": 0.116,
+    "ndcg@10": 0.2224
+   },
+   "hole@10": 0.0006013229104028864
+  },
+  "golden-retrieval-test-2026-11-04.hybrid": {
+   "sha256": "6cccda2188a5109ab9ef978be590dcc7fefb6cbc1c701c2ce5669aa82402115a",
+   "scores": {
+    "hit_rate@1": 0.2281,
+    "hit_rate@5": 0.386,
+    "hit_rate@10": 0.4678,
+    "hit_rate@20": 0.5088,
+    "hit_rate@50": 0.5497,
+    "mrr": 0.3062,
+    "ndcg@10": 0.4849
+   },
+   "hole@10": 0.0
+  }
+ },
+ "pairs": [
+  {
+   "a": "golden-retrieval-test-2026-11-04.lexical",
+   "b": "golden-retrieval-test-2026-11-04.hybrid",
+   "metric": "hit_rate@1",
+   "difference": 0.1696,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-test-2026-11-04.lexical",
+   "b": "golden-retrieval-test-2026-11-04.hybrid",
+   "metric": "hit_rate@5",
+   "difference": 0.2222,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-test-2026-11-04.lexical",
+   "b": "golden-retrieval-test-2026-11-04.hybrid",
+   "metric": "hit_rate@10",
+   "difference": 0.1988,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-test-2026-11-04.lexical",
+   "b": "golden-retrieval-test-2026-11-04.hybrid",
+   "metric": "hit_rate@20",
+   "difference": 0.152,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-test-2026-11-04.lexical",
+   "b": "golden-retrieval-test-2026-11-04.hybrid",
+   "metric": "hit_rate@50",
+   "difference": 0.1053,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-test-2026-11-04.lexical",
+   "b": "golden-retrieval-test-2026-11-04.hybrid",
+   "metric": "mrr",
+   "difference": 0.1902,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-test-2026-11-04.lexical",
+   "b": "golden-retrieval-test-2026-11-04.hybrid",
+   "metric": "ndcg@10",
+   "difference": 0.2625,
+   "p": 0.0,
+   "significant": true
+  }
+ ]
+}

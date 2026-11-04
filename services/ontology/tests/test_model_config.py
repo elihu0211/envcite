@@ -462,13 +462,14 @@ def test_the_example_file_declares_judges_outside_the_system_families() -> None:
 
     assert len(judges.models) >= 2
     assert not {m.family for m in judges.models} & judges.system_families
-    assert {"mistral", "meta", "nvidia"} <= judges.system_families  # 各角色的家族自動加入
+    # 受測路徑只有嵌入與作答；離線的標註角色（nvidia、meta）不算
+    assert judges.system_families == {"baai", "mistral"}
 
 
 def test_judges_are_two_families_none_of_them_in_the_system() -> None:
     judges = config.parse_judges(MINIMAL + JUDGES, ENV, keychain=no_keychain)
     assert [m.name for m in judges.models] == ["fam-j1:judge-1", "fam-j2:judge-2"]
-    assert judges.system_families == {"fam-a", "fam-b", "fam-embed"}
+    assert judges.system_families == {"fam-embed"}
 
 
 @pytest.mark.parametrize(
@@ -477,7 +478,7 @@ def test_judges_are_two_families_none_of_them_in_the_system() -> None:
         (('judges = ["j1", "j2"]', 'judges = ["j1"]'), "at least two"),
         (('judges = ["j1", "j2"]', 'judges = ["j1", "nope"]'), "not defined"),
         (('family = "fam-j2"', 'family = "fam-j1"'), "share a family"),
-        (('family = "fam-j2"', 'family = "fam-a"'), "system under test"),
+        (('family = "fam-j2"', 'family = "fam-embed"'), "system under test"),
         (('system_families = ["fam-embed"]', 'system_families = ["fam-j1"]'), "system under test"),
         (("[relevance]", "[relevance]\nextra = 1"), "unknown keys"),
     ],

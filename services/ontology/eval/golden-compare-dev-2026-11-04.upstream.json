@@ -1,0 +1,400 @@
+{
+ "qrels_sha256": "e424dbe60ceed97a3e838f029ccd40057b08a694098a76ab547c9e43bfa28d9b",
+ "split_sha256": "2e4dfd1335c7002d84f7ac51bce73685e13b61470705a12f4cafa417afbf055e",
+ "subset": "dev",
+ "questions": 170,
+ "alpha": 0.05,
+ "test": "Fisher 隨機化檢定（ranx compare，成對、雙尾，10000 次置換，種子 0）",
+ "runs": {
+  "golden-retrieval-dev-2026-11-03.lexical": {
+   "sha256": "1e269955df27d4e2480f472b33233ff65fe2992152e8d375a3efbd66252052ea",
+   "scores": {
+    "hit_rate@1": 0.0,
+    "hit_rate@5": 0.0176,
+    "hit_rate@10": 0.0353,
+    "hit_rate@20": 0.0647,
+    "hit_rate@50": 0.1118,
+    "mrr": 0.0109,
+    "ndcg@10": 0.0131
+   },
+   "hole@10": 0.9964705882352941
+  },
+  "golden-retrieval-dev-2026-11-03.hybrid": {
+   "sha256": "84980e2b2db12761ad437fdebc6f7060e451b81c9a94b7df8d6788d2fe5abfa9",
+   "scores": {
+    "hit_rate@1": 0.1235,
+    "hit_rate@5": 0.2118,
+    "hit_rate@10": 0.2588,
+    "hit_rate@20": 0.2882,
+    "hit_rate@50": 0.3529,
+    "mrr": 0.1603,
+    "ndcg@10": 0.1706
+   },
+   "hole@10": 0.9723529411764706
+  },
+  "golden-retrieval-dev-2026-11-04.lexical": {
+   "sha256": "c30060787e00d0ec569637f03e2a760a9dc149338ee8f8922cdd2eeb2983df20",
+   "scores": {
+    "hit_rate@1": 0.0353,
+    "hit_rate@5": 0.1118,
+    "hit_rate@10": 0.1588,
+    "hit_rate@20": 0.2765,
+    "hit_rate@50": 0.3235,
+    "mrr": 0.0787,
+    "ndcg@10": 0.0857
+   },
+   "hole@10": 0.9831426851294401
+  },
+  "golden-retrieval-dev-2026-11-04.hybrid": {
+   "sha256": "74207ea17852650ae66367e64a55f4b806d044c2cc2176b559775cae49ffad7d",
+   "scores": {
+    "hit_rate@1": 0.1,
+    "hit_rate@5": 0.2941,
+    "hit_rate@10": 0.3294,
+    "hit_rate@20": 0.3529,
+    "hit_rate@50": 0.4294,
+    "mrr": 0.176,
+    "ndcg@10": 0.2004
+   },
+   "hole@10": 0.9628756629345905
+  }
+ },
+ "pairs": [
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "hit_rate@1",
+   "difference": 0.1235,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "hit_rate@5",
+   "difference": 0.1941,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "hit_rate@10",
+   "difference": 0.2235,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "hit_rate@20",
+   "difference": 0.2235,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "hit_rate@50",
+   "difference": 0.2412,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "mrr",
+   "difference": 0.1494,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-03.hybrid",
+   "metric": "ndcg@10",
+   "difference": 0.1575,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "hit_rate@1",
+   "difference": 0.0353,
+   "p": 0.0316,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "hit_rate@5",
+   "difference": 0.0941,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "hit_rate@10",
+   "difference": 0.1235,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "hit_rate@20",
+   "difference": 0.2118,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "hit_rate@50",
+   "difference": 0.2118,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "mrr",
+   "difference": 0.0678,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "ndcg@10",
+   "difference": 0.0726,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@1",
+   "difference": 0.1,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@5",
+   "difference": 0.2765,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@10",
+   "difference": 0.2941,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@20",
+   "difference": 0.2882,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@50",
+   "difference": 0.3176,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "mrr",
+   "difference": 0.1651,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "ndcg@10",
+   "difference": 0.1873,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "hit_rate@1",
+   "difference": -0.0882,
+   "p": 0.001,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "hit_rate@5",
+   "difference": -0.1,
+   "p": 0.0028,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "hit_rate@10",
+   "difference": -0.1,
+   "p": 0.0039,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "hit_rate@20",
+   "difference": -0.0118,
+   "p": 0.8355,
+   "significant": false
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "hit_rate@50",
+   "difference": -0.0294,
+   "p": 0.4537,
+   "significant": false
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "mrr",
+   "difference": -0.0816,
+   "p": 0.0002,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.lexical",
+   "metric": "ndcg@10",
+   "difference": -0.0849,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@1",
+   "difference": -0.0235,
+   "p": 0.3842,
+   "significant": false
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@5",
+   "difference": 0.0824,
+   "p": 0.0006,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@10",
+   "difference": 0.0706,
+   "p": 0.0003,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@20",
+   "difference": 0.0647,
+   "p": 0.0095,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@50",
+   "difference": 0.0765,
+   "p": 0.0049,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "mrr",
+   "difference": 0.0157,
+   "p": 0.3446,
+   "significant": false
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-03.hybrid",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "ndcg@10",
+   "difference": 0.0298,
+   "p": 0.0509,
+   "significant": false
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-04.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@1",
+   "difference": 0.0647,
+   "p": 0.0032,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-04.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@5",
+   "difference": 0.1824,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-04.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@10",
+   "difference": 0.1706,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-04.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@20",
+   "difference": 0.0765,
+   "p": 0.0003,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-04.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "hit_rate@50",
+   "difference": 0.1059,
+   "p": 0.0001,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-04.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "mrr",
+   "difference": 0.0973,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "golden-retrieval-dev-2026-11-04.lexical",
+   "b": "golden-retrieval-dev-2026-11-04.hybrid",
+   "metric": "ndcg@10",
+   "difference": 0.1147,
+   "p": 0.0,
+   "significant": true
+  }
+ ]
+}
