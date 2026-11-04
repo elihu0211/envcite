@@ -1,0 +1,1670 @@
+{
+ "meta": {
+  "run_at": "2026-11-05T02:28:25+08:00",
+  "envcite_commit": "8d153d109545d02abdd8a6f4c335e0586b94739c",
+  "dirty": true,
+  "golden": {
+   "path": "regulations-golden-eval.yaml",
+   "sha256": "6609967f234427579f1d1f701961bdf30628775a0fb4c60cedd9633fd5a461b0"
+  },
+  "split": {
+   "path": "golden-split.json",
+   "sha256": "8cf61b76741df913c0af94567aded068e5f0c50e6cab136077ee561e57cb7427",
+   "subset": "dev"
+  },
+  "questions": 234,
+  "ladder": [
+   1,
+   2,
+   4,
+   8,
+   16,
+   24,
+   32
+  ],
+  "iterations_per_stage": 234,
+  "timeout": "10s",
+  "host": {
+   "cpu": "Apple M4 Pro",
+   "cores": 12,
+   "memory_gib": 24.0,
+   "os": "Darwin 27.2.0"
+  },
+  "docker_vm": {
+   "cpus": 12,
+   "memory_gib": 7.8,
+   "server_version": "29.8.2"
+  },
+  "postgres": {
+   "version": "18.6 (Debian 18.6-1.pgdg12+2)",
+   "shared_buffers": "2GB",
+   "effective_cache_size": "4GB",
+   "work_mem": "4MB",
+   "max_connections": "100"
+  },
+  "corpus": {
+   "legal_resources": 11803,
+   "provisions": 911497,
+   "passages": 650197,
+   "embedded_passages": 650197,
+   "embedding_models": [
+    "bge-m3-embedding"
+   ],
+   "confirmed_statements": 0,
+   "database_size": "9837 MB",
+   "snapshots": [
+    {
+     "feed": "moj_law",
+     "data_date": "2026-10-22",
+     "sha256": "a7d4c9d0a92ec435517041d5d645977e3c5d192f00c5d05e40b9687797409ef1",
+     "fetched_at": "2026-11-04T01:02:40.008229+00:00"
+    },
+    {
+     "feed": "moj_order",
+     "data_date": "2026-10-22",
+     "sha256": "69a056e26a39b96b2ef496ccf9556585ee0f3e76871513e34e6da79bc8df9bc0",
+     "fetched_at": "2026-11-04T01:02:50.202636+00:00"
+    }
+   ]
+  },
+  "servers": {
+   "ontology_workers": 10,
+   "ontology_max_concurrent_rpcs": 20,
+   "lexical_max_df": 0.005,
+   "models": "models.toml",
+   "consult_ontology_timeout": "00:00:05",
+   "search_limit": 10
+  },
+  "tools": {
+   "k6": "k6 v2.3.0 (commit/devel, go1.27.1, darwin/arm64)",
+   "dotnet": "10.0.403",
+   "python": "3.14.10"
+  },
+  "embedding_calls": 4680
+ },
+ "results": [
+  {
+   "target": "search",
+   "phase": "cold",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.9392047495,
+   "p95": 1.552914375,
+   "p99": 1.835370792,
+   "max": 2.367383958,
+   "ok_p95": 1.552914375,
+   "wall_seconds": 236.835040807724,
+   "throughput_rps": 0.9880294706473539,
+   "ok_rps": 0.9880294706473539,
+   "slowest": [
+    {
+     "id": "a-01",
+     "seconds": 2.3674,
+     "status": "OK"
+    },
+    {
+     "id": "a-03",
+     "seconds": 1.9265,
+     "status": "OK"
+    },
+    {
+     "id": "c-11",
+     "seconds": 1.8354,
+     "status": "OK"
+    },
+    {
+     "id": "a-08",
+     "seconds": 1.7595,
+     "status": "OK"
+    },
+    {
+     "id": "h-02",
+     "seconds": 1.7408,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search",
+   "phase": "hot",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.770080333,
+   "p95": 1.20892275,
+   "p99": 1.522804625,
+   "max": 5.317052542000001,
+   "ok_p95": 1.20892275,
+   "wall_seconds": 199.895161151886,
+   "throughput_rps": 1.1706136289222138,
+   "ok_rps": 1.1706136289222138,
+   "slowest": [
+    {
+     "id": "neg-008",
+     "seconds": 5.3171,
+     "status": "OK"
+    },
+    {
+     "id": "neg-030",
+     "seconds": 2.3547,
+     "status": "OK"
+    },
+    {
+     "id": "par-079",
+     "seconds": 1.5228,
+     "status": "OK"
+    },
+    {
+     "id": "par-195",
+     "seconds": 1.4739,
+     "status": "OK"
+    },
+    {
+     "id": "par-060",
+     "seconds": 1.4304,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search",
+   "phase": "ladder",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.8457164374999999,
+   "p95": 1.065063834,
+   "p99": 1.255312792,
+   "max": 1.3553015419999999,
+   "ok_p95": 1.065063834,
+   "wall_seconds": 199.46777510643005,
+   "throughput_rps": 1.1731218231874525,
+   "ok_rps": 1.1731218231874525,
+   "slowest": [
+    {
+     "id": "h-02",
+     "seconds": 1.3553,
+     "status": "OK"
+    },
+    {
+     "id": "icd-08",
+     "seconds": 1.264,
+     "status": "OK"
+    },
+    {
+     "id": "par-167",
+     "seconds": 1.2553,
+     "status": "OK"
+    },
+    {
+     "id": "par-082",
+     "seconds": 1.1894,
+     "status": "OK"
+    },
+    {
+     "id": "f-08",
+     "seconds": 1.1747,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search",
+   "phase": "ladder",
+   "vus": 2,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.8335731455,
+   "p95": 1.068362583,
+   "p99": 1.275916167,
+   "max": 4.243379,
+   "ok_p95": 1.068362583,
+   "wall_seconds": 101.33534622192383,
+   "throughput_rps": 2.3091646569948194,
+   "ok_rps": 2.3091646569948194,
+   "slowest": [
+    {
+     "id": "mh-066",
+     "seconds": 4.2434,
+     "status": "OK"
+    },
+    {
+     "id": "ont-04",
+     "seconds": 1.8899,
+     "status": "OK"
+    },
+    {
+     "id": "a-03",
+     "seconds": 1.2759,
+     "status": "OK"
+    },
+    {
+     "id": "par-167",
+     "seconds": 1.2506,
+     "status": "OK"
+    },
+    {
+     "id": "par-027",
+     "seconds": 1.2156,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search",
+   "phase": "ladder",
+   "vus": 4,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.832604854,
+   "p95": 1.037993125,
+   "p99": 1.146895583,
+   "max": 1.17041525,
+   "ok_p95": 1.037993125,
+   "wall_seconds": 49.24891233444214,
+   "throughput_rps": 4.751373967630804,
+   "ok_rps": 4.751373967630804,
+   "slowest": [
+    {
+     "id": "par-182",
+     "seconds": 1.1704,
+     "status": "OK"
+    },
+    {
+     "id": "par-140",
+     "seconds": 1.1537,
+     "status": "OK"
+    },
+    {
+     "id": "par-050",
+     "seconds": 1.1469,
+     "status": "OK"
+    },
+    {
+     "id": "par-037",
+     "seconds": 1.1451,
+     "status": "OK"
+    },
+    {
+     "id": "par-046",
+     "seconds": 1.138,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search",
+   "phase": "ladder",
+   "vus": 8,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.8294241665,
+   "p95": 1.0946458339999998,
+   "p99": 1.226430708,
+   "max": 1.376836833,
+   "ok_p95": 1.0946458339999998,
+   "wall_seconds": 25.098700046539307,
+   "throughput_rps": 9.323192020547085,
+   "ok_rps": 9.323192020547085,
+   "slowest": [
+    {
+     "id": "par-162",
+     "seconds": 1.3768,
+     "status": "OK"
+    },
+    {
+     "id": "par-091",
+     "seconds": 1.2873,
+     "status": "OK"
+    },
+    {
+     "id": "par-124",
+     "seconds": 1.2264,
+     "status": "OK"
+    },
+    {
+     "id": "par-050",
+     "seconds": 1.1785,
+     "status": "OK"
+    },
+    {
+     "id": "f-08",
+     "seconds": 1.1553,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search",
+   "phase": "ladder",
+   "vus": 16,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 1.3061198335,
+   "p95": 1.746835083,
+   "p99": 1.9506848339999998,
+   "max": 2.3895562920000004,
+   "ok_p95": 1.746835083,
+   "wall_seconds": 20.19726300239563,
+   "throughput_rps": 11.585728223286734,
+   "ok_rps": 11.585728223286734,
+   "slowest": [
+    {
+     "id": "eid-060",
+     "seconds": 2.3896,
+     "status": "OK"
+    },
+    {
+     "id": "par-124",
+     "seconds": 2.0211,
+     "status": "OK"
+    },
+    {
+     "id": "par-122",
+     "seconds": 1.9507,
+     "status": "OK"
+    },
+    {
+     "id": "par-120",
+     "seconds": 1.8707,
+     "status": "OK"
+    },
+    {
+     "id": "par-180",
+     "seconds": 1.8603,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search",
+   "phase": "ladder",
+   "vus": 24,
+   "n": 234,
+   "statuses": {
+    "RESOURCE_EXHAUSTED": 214,
+    "OK": 20
+   },
+   "error_rate": 0.9145299145299145,
+   "p50": 0.00013158349999999998,
+   "p95": 0.960570333,
+   "p99": 1.740186458,
+   "max": 1.8634289579999999,
+   "ok_p95": 1.817725167,
+   "wall_seconds": 1.8638887405395508,
+   "throughput_rps": 125.54397422469683,
+   "ok_rps": 10.730254207239046,
+   "slowest": [
+    {
+     "id": "b-05",
+     "seconds": 1.8634,
+     "status": "OK"
+    },
+    {
+     "id": "a-09",
+     "seconds": 1.8177,
+     "status": "OK"
+    },
+    {
+     "id": "ad-11",
+     "seconds": 1.7402,
+     "status": "OK"
+    },
+    {
+     "id": "ad-01",
+     "seconds": 1.7297,
+     "status": "OK"
+    },
+    {
+     "id": "b-01",
+     "seconds": 1.6464,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search",
+   "phase": "ladder",
+   "vus": 32,
+   "n": 234,
+   "statuses": {
+    "RESOURCE_EXHAUSTED": 214,
+    "OK": 20
+   },
+   "error_rate": 0.9145299145299145,
+   "p50": 0.000235563,
+   "p95": 0.904242375,
+   "p99": 1.829088625,
+   "max": 1.943571958,
+   "ok_p95": 1.8472202500000001,
+   "wall_seconds": 1.9443705081939697,
+   "throughput_rps": 120.34743327667066,
+   "ok_rps": 10.28610540826245,
+   "slowest": [
+    {
+     "id": "ad-04",
+     "seconds": 1.9436,
+     "status": "OK"
+    },
+    {
+     "id": "ad-01",
+     "seconds": 1.8472,
+     "status": "OK"
+    },
+    {
+     "id": "a-05",
+     "seconds": 1.8291,
+     "status": "OK"
+    },
+    {
+     "id": "a-07",
+     "seconds": 1.795,
+     "status": "OK"
+    },
+    {
+     "id": "b-14",
+     "seconds": 1.6366,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "ground",
+   "phase": "cold",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.8440873955,
+   "p95": 1.1719324999999998,
+   "p99": 1.952725125,
+   "max": 2.244302708,
+   "ok_p95": 1.1719324999999998,
+   "wall_seconds": 206.75701522827148,
+   "throughput_rps": 1.1317632910382784,
+   "ok_rps": 1.1317632910382784,
+   "slowest": [
+    {
+     "id": "a-03",
+     "seconds": 2.2443,
+     "status": "OK"
+    },
+    {
+     "id": "a-05",
+     "seconds": 2.1867,
+     "status": "OK"
+    },
+    {
+     "id": "a-01",
+     "seconds": 1.9527,
+     "status": "OK"
+    },
+    {
+     "id": "par-164",
+     "seconds": 1.6327,
+     "status": "OK"
+    },
+    {
+     "id": "ad-01",
+     "seconds": 1.5078,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "ground",
+   "phase": "hot",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.7642073125,
+   "p95": 1.012396708,
+   "p99": 1.0726913340000002,
+   "max": 1.137678875,
+   "ok_p95": 1.012396708,
+   "wall_seconds": 185.15115404129028,
+   "throughput_rps": 1.2638322521490524,
+   "ok_rps": 1.2638322521490524,
+   "slowest": [
+    {
+     "id": "par-013",
+     "seconds": 1.1377,
+     "status": "OK"
+    },
+    {
+     "id": "par-047",
+     "seconds": 1.1144,
+     "status": "OK"
+    },
+    {
+     "id": "par-167",
+     "seconds": 1.0727,
+     "status": "OK"
+    },
+    {
+     "id": "par-045",
+     "seconds": 1.0722,
+     "status": "OK"
+    },
+    {
+     "id": "par-050",
+     "seconds": 1.0719,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "ground",
+   "phase": "ladder",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.754876229,
+   "p95": 0.9897016660000001,
+   "p99": 1.060148875,
+   "max": 1.098710917,
+   "ok_p95": 0.9897016660000001,
+   "wall_seconds": 183.444983959198,
+   "throughput_rps": 1.2755867996480432,
+   "ok_rps": 1.2755867996480432,
+   "slowest": [
+    {
+     "id": "par-184",
+     "seconds": 1.0987,
+     "status": "OK"
+    },
+    {
+     "id": "par-122",
+     "seconds": 1.0639,
+     "status": "OK"
+    },
+    {
+     "id": "par-167",
+     "seconds": 1.0601,
+     "status": "OK"
+    },
+    {
+     "id": "par-162",
+     "seconds": 1.0471,
+     "status": "OK"
+    },
+    {
+     "id": "scp-07",
+     "seconds": 1.034,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "ground",
+   "phase": "ladder",
+   "vus": 2,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.742369292,
+   "p95": 1.044796125,
+   "p99": 1.36794375,
+   "max": 2.4095839999999997,
+   "ok_p95": 1.044796125,
+   "wall_seconds": 93.22159218788147,
+   "throughput_rps": 2.510148073081499,
+   "ok_rps": 2.510148073081499,
+   "slowest": [
+    {
+     "id": "par-106",
+     "seconds": 2.4096,
+     "status": "OK"
+    },
+    {
+     "id": "par-182",
+     "seconds": 1.5514,
+     "status": "OK"
+    },
+    {
+     "id": "par-193",
+     "seconds": 1.3679,
+     "status": "OK"
+    },
+    {
+     "id": "scp-02",
+     "seconds": 1.3538,
+     "status": "OK"
+    },
+    {
+     "id": "par-175",
+     "seconds": 1.3359,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "ground",
+   "phase": "ladder",
+   "vus": 4,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.751636667,
+   "p95": 1.1327176669999999,
+   "p99": 1.316650542,
+   "max": 1.424540125,
+   "ok_p95": 1.1327176669999999,
+   "wall_seconds": 47.47563934326172,
+   "throughput_rps": 4.928843576136314,
+   "ok_rps": 4.928843576136314,
+   "slowest": [
+    {
+     "id": "neg-029",
+     "seconds": 1.4245,
+     "status": "OK"
+    },
+    {
+     "id": "ipf-13",
+     "seconds": 1.3929,
+     "status": "OK"
+    },
+    {
+     "id": "ad-11",
+     "seconds": 1.3167,
+     "status": "OK"
+    },
+    {
+     "id": "ad-04",
+     "seconds": 1.3099,
+     "status": "OK"
+    },
+    {
+     "id": "mh-055",
+     "seconds": 1.2838,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "ground",
+   "phase": "ladder",
+   "vus": 8,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.734750604,
+   "p95": 1.032385333,
+   "p99": 1.189200791,
+   "max": 1.451264667,
+   "ok_p95": 1.032385333,
+   "wall_seconds": 23.544601440429688,
+   "throughput_rps": 9.938584035582194,
+   "ok_rps": 9.938584035582194,
+   "slowest": [
+    {
+     "id": "par-060",
+     "seconds": 1.4513,
+     "status": "OK"
+    },
+    {
+     "id": "par-027",
+     "seconds": 1.2423,
+     "status": "OK"
+    },
+    {
+     "id": "par-046",
+     "seconds": 1.1892,
+     "status": "OK"
+    },
+    {
+     "id": "par-047",
+     "seconds": 1.1771,
+     "status": "OK"
+    },
+    {
+     "id": "par-124",
+     "seconds": 1.152,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "ground",
+   "phase": "ladder",
+   "vus": 16,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 1.2637278749999998,
+   "p95": 1.623444042,
+   "p99": 1.883211042,
+   "max": 2.851323042,
+   "ok_p95": 1.623444042,
+   "wall_seconds": 19.13479232788086,
+   "throughput_rps": 12.229032643277977,
+   "ok_rps": 12.229032643277977,
+   "slowest": [
+    {
+     "id": "par-098",
+     "seconds": 2.8513,
+     "status": "OK"
+    },
+    {
+     "id": "par-045",
+     "seconds": 1.9463,
+     "status": "OK"
+    },
+    {
+     "id": "par-184",
+     "seconds": 1.8832,
+     "status": "OK"
+    },
+    {
+     "id": "par-046",
+     "seconds": 1.7419,
+     "status": "OK"
+    },
+    {
+     "id": "par-122",
+     "seconds": 1.7403,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "ground",
+   "phase": "ladder",
+   "vus": 24,
+   "n": 234,
+   "statuses": {
+    "RESOURCE_EXHAUSTED": 214,
+    "OK": 20
+   },
+   "error_rate": 0.9145299145299145,
+   "p50": 0.000528729,
+   "p95": 0.88244475,
+   "p99": 1.714389166,
+   "max": 1.795515083,
+   "ok_p95": 1.7615047910000001,
+   "wall_seconds": 1.7963123321533203,
+   "throughput_rps": 130.26687832148525,
+   "ok_rps": 11.13392122405857,
+   "slowest": [
+    {
+     "id": "ad-04",
+     "seconds": 1.7955,
+     "status": "OK"
+    },
+    {
+     "id": "ad-01",
+     "seconds": 1.7615,
+     "status": "OK"
+    },
+    {
+     "id": "ad-11",
+     "seconds": 1.7144,
+     "status": "OK"
+    },
+    {
+     "id": "b-05",
+     "seconds": 1.6896,
+     "status": "OK"
+    },
+    {
+     "id": "c-05",
+     "seconds": 1.6701,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "ground",
+   "phase": "ladder",
+   "vus": 32,
+   "n": 234,
+   "statuses": {
+    "RESOURCE_EXHAUSTED": 214,
+    "OK": 20
+   },
+   "error_rate": 0.9145299145299145,
+   "p50": 0.0006982290000000001,
+   "p95": 0.9862302089999999,
+   "p99": 1.711411333,
+   "max": 1.81517225,
+   "ok_p95": 1.732509834,
+   "wall_seconds": 1.816009283065796,
+   "throughput_rps": 128.8539668723279,
+   "ok_rps": 11.013159561737426,
+   "slowest": [
+    {
+     "id": "ad-04",
+     "seconds": 1.8152,
+     "status": "OK"
+    },
+    {
+     "id": "a-11",
+     "seconds": 1.7325,
+     "status": "OK"
+    },
+    {
+     "id": "c-03",
+     "seconds": 1.7114,
+     "status": "OK"
+    },
+    {
+     "id": "b-11",
+     "seconds": 1.6522,
+     "status": "OK"
+    },
+    {
+     "id": "a-09",
+     "seconds": 1.629,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "evaluate",
+   "phase": "cold",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.0148145415,
+   "p95": 0.015876875,
+   "p99": 0.025117417,
+   "max": 0.057797958,
+   "ok_p95": 0.015876875,
+   "wall_seconds": 3.5961310863494873,
+   "throughput_rps": 65.06993053958404,
+   "ok_rps": 65.06993053958404,
+   "slowest": [
+    {
+     "id": "evaluate",
+     "seconds": 0.0578,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0377,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0251,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0248,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0177,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "evaluate",
+   "phase": "hot",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.014651021,
+   "p95": 0.015523292,
+   "p99": 0.015948208,
+   "max": 0.016043709,
+   "ok_p95": 0.015523292,
+   "wall_seconds": 3.4692018032073975,
+   "throughput_rps": 67.45067403794697,
+   "ok_rps": 67.45067403794697,
+   "slowest": [
+    {
+     "id": "evaluate",
+     "seconds": 0.016,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.016,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0159,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0159,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0157,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "evaluate",
+   "phase": "ladder",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.0146778125,
+   "p95": 0.015615707999999999,
+   "p99": 0.016615708,
+   "max": 0.025415417000000003,
+   "ok_p95": 0.015615707999999999,
+   "wall_seconds": 3.4888076782226562,
+   "throughput_rps": 67.07162491662748,
+   "ok_rps": 67.07162491662748,
+   "slowest": [
+    {
+     "id": "evaluate",
+     "seconds": 0.0254,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0178,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0166,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0165,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0163,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "evaluate",
+   "phase": "ladder",
+   "vus": 2,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.017004375,
+   "p95": 0.019977625,
+   "p99": 0.026188458,
+   "max": 0.028258833,
+   "ok_p95": 0.019977625,
+   "wall_seconds": 2.0419762134552,
+   "throughput_rps": 114.5948706248893,
+   "ok_rps": 114.5948706248893,
+   "slowest": [
+    {
+     "id": "evaluate",
+     "seconds": 0.0283,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0282,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0262,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0261,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0256,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "evaluate",
+   "phase": "ladder",
+   "vus": 4,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.033187646,
+   "p95": 0.036357083000000005,
+   "p99": 0.038904167,
+   "max": 0.041698833,
+   "ok_p95": 0.036357083000000005,
+   "wall_seconds": 1.9638187885284424,
+   "throughput_rps": 119.1555969251849,
+   "ok_rps": 119.1555969251849,
+   "slowest": [
+    {
+     "id": "evaluate",
+     "seconds": 0.0417,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.04,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0389,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0386,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0381,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "evaluate",
+   "phase": "ladder",
+   "vus": 8,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.068671125,
+   "p95": 0.081474958,
+   "p99": 0.089247083,
+   "max": 0.09214024999999999,
+   "ok_p95": 0.081474958,
+   "wall_seconds": 2.0510354042053223,
+   "throughput_rps": 114.08871807879092,
+   "ok_rps": 114.08871807879092,
+   "slowest": [
+    {
+     "id": "evaluate",
+     "seconds": 0.0921,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0911,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0892,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.0873,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.087,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "evaluate",
+   "phase": "ladder",
+   "vus": 16,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.13873054150000003,
+   "p95": 0.157246834,
+   "p99": 0.2035405,
+   "max": 0.22647508300000002,
+   "ok_p95": 0.157246834,
+   "wall_seconds": 2.083543300628662,
+   "throughput_rps": 112.30868104799923,
+   "ok_rps": 112.30868104799923,
+   "slowest": [
+    {
+     "id": "evaluate",
+     "seconds": 0.2265,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.2133,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.2035,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.1642,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.1638,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "evaluate",
+   "phase": "ladder",
+   "vus": 24,
+   "n": 234,
+   "statuses": {
+    "RESOURCE_EXHAUSTED": 214,
+    "OK": 20
+   },
+   "error_rate": 0.9145299145299145,
+   "p50": 0.00014545849999999998,
+   "p95": 0.07799475,
+   "p99": 0.174475584,
+   "max": 0.189232208,
+   "ok_p95": 0.18487,
+   "wall_seconds": 0.18976211547851562,
+   "throughput_rps": 1233.1228465172378,
+   "ok_rps": 105.3951150869434,
+   "slowest": [
+    {
+     "id": "evaluate",
+     "seconds": 0.1892,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.1849,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.1745,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.1696,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.1567,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "evaluate",
+   "phase": "ladder",
+   "vus": 32,
+   "n": 234,
+   "statuses": {
+    "RESOURCE_EXHAUSTED": 214,
+    "OK": 20
+   },
+   "error_rate": 0.9145299145299145,
+   "p50": 0.0002417295,
+   "p95": 0.07753141599999999,
+   "p99": 0.16725837500000001,
+   "max": 0.182853792,
+   "ok_p95": 0.177211,
+   "wall_seconds": 0.18341994285583496,
+   "throughput_rps": 1275.7609470193768,
+   "ok_rps": 109.03939718114333,
+   "slowest": [
+    {
+     "id": "evaluate",
+     "seconds": 0.1829,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.1772,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.1673,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.1586,
+     "status": "OK"
+    },
+    {
+     "id": "evaluate",
+     "seconds": 0.1512,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search-lexical",
+   "phase": "hot",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.07561037500000001,
+   "p95": 0.31614445799999996,
+   "p99": 0.382995917,
+   "max": 0.421681084,
+   "ok_p95": 0.31614445799999996,
+   "wall_seconds": 23.45678472518921,
+   "throughput_rps": 9.975791769479715,
+   "ok_rps": 9.975791769479715,
+   "slowest": [
+    {
+     "id": "par-167",
+     "seconds": 0.4217,
+     "status": "OK"
+    },
+    {
+     "id": "par-162",
+     "seconds": 0.4003,
+     "status": "OK"
+    },
+    {
+     "id": "par-027",
+     "seconds": 0.383,
+     "status": "OK"
+    },
+    {
+     "id": "par-124",
+     "seconds": 0.3797,
+     "status": "OK"
+    },
+    {
+     "id": "par-182",
+     "seconds": 0.3487,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search-lexical",
+   "phase": "ladder",
+   "vus": 1,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.074022479,
+   "p95": 0.325544583,
+   "p99": 0.38888316700000003,
+   "max": 0.42393000000000003,
+   "ok_p95": 0.325544583,
+   "wall_seconds": 23.55198383331299,
+   "throughput_rps": 9.935468776478176,
+   "ok_rps": 9.935468776478176,
+   "slowest": [
+    {
+     "id": "par-167",
+     "seconds": 0.4239,
+     "status": "OK"
+    },
+    {
+     "id": "par-162",
+     "seconds": 0.4081,
+     "status": "OK"
+    },
+    {
+     "id": "par-027",
+     "seconds": 0.3889,
+     "status": "OK"
+    },
+    {
+     "id": "par-124",
+     "seconds": 0.3836,
+     "status": "OK"
+    },
+    {
+     "id": "par-182",
+     "seconds": 0.3499,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search-lexical",
+   "phase": "ladder",
+   "vus": 2,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.07693900000000001,
+   "p95": 0.320407625,
+   "p99": 0.400186292,
+   "max": 0.43340220799999996,
+   "ok_p95": 0.320407625,
+   "wall_seconds": 12.169434309005737,
+   "throughput_rps": 19.228502661527425,
+   "ok_rps": 19.228502661527425,
+   "slowest": [
+    {
+     "id": "par-167",
+     "seconds": 0.4334,
+     "status": "OK"
+    },
+    {
+     "id": "par-162",
+     "seconds": 0.4226,
+     "status": "OK"
+    },
+    {
+     "id": "par-027",
+     "seconds": 0.4002,
+     "status": "OK"
+    },
+    {
+     "id": "par-124",
+     "seconds": 0.3977,
+     "status": "OK"
+    },
+    {
+     "id": "par-182",
+     "seconds": 0.3664,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search-lexical",
+   "phase": "ladder",
+   "vus": 4,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.07861579099999999,
+   "p95": 0.36177712500000003,
+   "p99": 0.424938458,
+   "max": 0.479336458,
+   "ok_p95": 0.36177712500000003,
+   "wall_seconds": 6.646591663360596,
+   "throughput_rps": 35.206014127500474,
+   "ok_rps": 35.206014127500474,
+   "slowest": [
+    {
+     "id": "par-162",
+     "seconds": 0.4793,
+     "status": "OK"
+    },
+    {
+     "id": "par-167",
+     "seconds": 0.4707,
+     "status": "OK"
+    },
+    {
+     "id": "par-124",
+     "seconds": 0.4249,
+     "status": "OK"
+    },
+    {
+     "id": "par-050",
+     "seconds": 0.4148,
+     "status": "OK"
+    },
+    {
+     "id": "par-182",
+     "seconds": 0.4136,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search-lexical",
+   "phase": "ladder",
+   "vus": 8,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.10381808349999999,
+   "p95": 0.523267334,
+   "p99": 0.719593041,
+   "max": 0.758647583,
+   "ok_p95": 0.523267334,
+   "wall_seconds": 4.836814880371094,
+   "throughput_rps": 48.37894477823118,
+   "ok_rps": 48.37894477823118,
+   "slowest": [
+    {
+     "id": "par-167",
+     "seconds": 0.7586,
+     "status": "OK"
+    },
+    {
+     "id": "par-162",
+     "seconds": 0.7485,
+     "status": "OK"
+    },
+    {
+     "id": "par-027",
+     "seconds": 0.7196,
+     "status": "OK"
+    },
+    {
+     "id": "par-180",
+     "seconds": 0.6541,
+     "status": "OK"
+    },
+    {
+     "id": "par-182",
+     "seconds": 0.6499,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search-lexical",
+   "phase": "ladder",
+   "vus": 16,
+   "n": 234,
+   "statuses": {
+    "OK": 234
+   },
+   "error_rate": 0.0,
+   "p50": 0.2136779375,
+   "p95": 0.795531833,
+   "p99": 0.991064167,
+   "max": 1.046000041,
+   "ok_p95": 0.795531833,
+   "wall_seconds": 4.792425870895386,
+   "throughput_rps": 48.82704632346894,
+   "ok_rps": 48.82704632346894,
+   "slowest": [
+    {
+     "id": "par-162",
+     "seconds": 1.046,
+     "status": "OK"
+    },
+    {
+     "id": "par-167",
+     "seconds": 1.0153,
+     "status": "OK"
+    },
+    {
+     "id": "par-124",
+     "seconds": 0.9911,
+     "status": "OK"
+    },
+    {
+     "id": "par-182",
+     "seconds": 0.9226,
+     "status": "OK"
+    },
+    {
+     "id": "par-076",
+     "seconds": 0.9114,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search-lexical",
+   "phase": "ladder",
+   "vus": 24,
+   "n": 234,
+   "statuses": {
+    "RESOURCE_EXHAUSTED": 207,
+    "OK": 27
+   },
+   "error_rate": 0.8846153846153846,
+   "p50": 0.00025958299999999997,
+   "p95": 0.188382042,
+   "p99": 0.278452916,
+   "max": 0.367663792,
+   "ok_p95": 0.35814687500000003,
+   "wall_seconds": 0.42791080474853516,
+   "throughput_rps": 546.8429340958374,
+   "ok_rps": 63.09726162644279,
+   "slowest": [
+    {
+     "id": "ad-01",
+     "seconds": 0.3677,
+     "status": "OK"
+    },
+    {
+     "id": "mh-004",
+     "seconds": 0.3581,
+     "status": "OK"
+    },
+    {
+     "id": "c-03",
+     "seconds": 0.2785,
+     "status": "OK"
+    },
+    {
+     "id": "ad-11",
+     "seconds": 0.2489,
+     "status": "OK"
+    },
+    {
+     "id": "mh-046",
+     "seconds": 0.2419,
+     "status": "OK"
+    }
+   ]
+  },
+  {
+   "target": "search-lexical",
+   "phase": "ladder",
+   "vus": 32,
+   "n": 234,
+   "statuses": {
+    "RESOURCE_EXHAUSTED": 204,
+    "OK": 30
+   },
+   "error_rate": 0.8717948717948718,
+   "p50": 0.000780917,
+   "p95": 0.17135425,
+   "p99": 0.276595458,
+   "max": 0.316352666,
+   "ok_p95": 0.287514041,
+   "wall_seconds": 0.317002534866333,
+   "throughput_rps": 738.1644443274506,
+   "ok_rps": 94.63646722146802,
+   "slowest": [
+    {
+     "id": "a-15",
+     "seconds": 0.3164,
+     "status": "OK"
+    },
+    {
+     "id": "c-05",
+     "seconds": 0.2875,
+     "status": "OK"
+    },
+    {
+     "id": "e-05",
+     "seconds": 0.2766,
+     "status": "OK"
+    },
+    {
+     "id": "ad-11",
+     "seconds": 0.2721,
+     "status": "OK"
+    },
+    {
+     "id": "eid-005",
+     "seconds": 0.2452,
+     "status": "OK"
+    }
+   ]
+  }
+ ]
+}

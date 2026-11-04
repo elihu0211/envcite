@@ -143,6 +143,7 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 | 匯回判定 | `uv run python tools/golden_set.py judge --qrels eval/golden-qrels.json --judgements eval/golden-judgements-….json --out eval/golden-qrels.json` | 新版 qrels |
 | 選下界 | `tools/answerability_floor.py`、`tools/floor_risk_coverage.py`，`--lexical`／`--semantic` 給開發集的報告 | 只印出，不改任何下界 |
 | 端到端 | `tools/grounding_check_eval.py <golden.yaml> --qrels … --split … --subset test …` | 拒答與引用的報告 |
+| 效能基準 | `uv run --env-file <env> python tools/load_bench.py run <golden.yaml> --split … --pg-container <拋棄式容器> --out eval/load-bench-<日期>`（需要 [k6](https://grafana.com/docs/k6/)；起服務、重啟該容器量冷快取） | `search`、`ground`、`evaluate` 的延遲分佈、逐步加並行的吞吐與錯誤率，`.json`／`.md` |
 
 判定的順序：在開發集 `calibrate`（提示只依它調），提示定案後對 `dev`、`test` 各跑一次 `pool`（同一份校準檔），再依序以 `judge` 匯回。`pool` 與 `calibrate` 另收 `--as-of`（條文版本日，預設今天）、`--workers`（每位判定者的並行數）與 `--no-distinct-check`（略過別名探測，只供除錯）；中斷後以同一個 `--cache` 重跑會略過已判的條，只重問失敗的。
 
