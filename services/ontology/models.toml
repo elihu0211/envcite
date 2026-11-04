@@ -25,6 +25,21 @@ name = "nemotron-3.5-super-vl"
 family = "nvidia"
 max_tokens = 16384
 
+# 黃金測試集的相關性判定者（tools/relevance_judge.py），不參與任何管線。家族依端點的路由表
+# （/v1/model/info）宣告：gemma-4-31b 是 Google Gemma 4，ornith-35b 是以 Qwen 3.5 為底的 Ornith 1.0。
+# 同端點的 gpt-oss-120b 實際路由到 Mistral-Small-4，與作答模型相同，不能當判定者。
+[model.gemma]
+endpoint = "llm"
+name = "gemma-4-31b"
+family = "google"
+max_tokens = 4096
+
+[model.ornith]
+endpoint = "llm"
+name = "ornith-35b"
+family = "qwen"
+max_tokens = 4096
+
 # 語意檢索臂的嵌入模型（envcite-ontology、envcite-sync 經 ENVCITE_ONTOLOGY_MODELS 讀這一段）。
 # 沿用上面的端點；沒有這一段時只用字面臂。換維度不是 1024 的模型要配一支遷移。
 [embedding]
@@ -42,3 +57,9 @@ extractor = "mistral"
 roundtrip = "nemotron"
 independent_test = "muse"
 panel = ["muse", "nemotron"]
+
+# 判定者不得與受測系統同家族：system_families 是設定檔外的受測模型（嵌入 bge-m3 為 baai、consult
+# 作答 mistral-small-4 為 mistral），各角色模型的家族自動加入。
+[relevance]
+judges = ["gemma", "ornith"]
+system_families = ["baai", "mistral"]

@@ -238,7 +238,7 @@ def markdown(meta: dict[str, Any], rows: list[Row]) -> str:
         f"- 題庫：`{meta['golden']['path']}` sha256 `{meta['golden']['sha256']}`；"
         f"無答案 {len(neg)} 題、可答 {len(pos)} 題（qrels 有相關條的）",
         f"- qrels：`{meta['qrels']['path']}` sha256 `{meta['qrels']['sha256']}`；"
-        f"人工判定 {meta['qrels']['judgements']} 份",
+        f"模型判定檔 {meta['qrels']['judgements']} 份",
         f"- 切分：`{meta['split']['path']}` sha256 `{meta['split']['sha256']}`；"
         f"本報告為 **{meta['split']['subset']}**",
         "- 語料快照："
@@ -292,7 +292,7 @@ def main() -> None:
     qrels_doc, split_doc = gs.read(args.qrels), gs.read(args.split)
     gs.require_golden(qrels_doc, golden_sha, str(args.qrels))
     gs.require_golden(split_doc, golden_sha, str(args.split))
-    relevant = gs.relevant(qrels_doc["qrels"])
+    relevant = gs.relevant(qrels_doc["qrels"], relevant_from=int(qrels_doc["relevant_from"]))
     subset = gs.subset_ids(split_doc, args.subset)
     questions = [
         Question(str(i["id"]), str(i["bucket"]), str(i["question"]), relevant.get(str(i["id"]), {}))

@@ -1,28 +1,28 @@
 """The golden test collection: qrels, runs, the dev/test split, the judgement pool and its holes.
 
     uv run python tools/golden_set.py split <golden.yaml> --out eval/golden-split.json
-    uv run python tools/golden_set.py pool <golden.yaml> --qrels eval/golden-qrels.json \\
-        --run <report>.hybrid.run.json [--run …] --out <outside the repo>/pool.yaml
     uv run python tools/golden_set.py judge --qrels eval/golden-qrels.json \\
-        --judgements <filled pool.yaml> --out eval/golden-qrels.json
+        --judgements eval/golden-judgements-<subset>-<date>.json --out eval/golden-qrels.json
 
-A qrels document maps each answerable question to the articles judged for it (`<pcode>-art-<n>`,
-relevance 1 or 0); a judged 0 is no longer a hole. Negative questions are never in it: they measure
-refusal. A run maps each question to the articles a retrieval variant ranked. Metrics come from
-these two alone (ranx), so a run made before a judgement can be scored again after it.
+A qrels document maps each answerable question to the articles judged for it (`<pcode>-art-<n>`)
+with a graded relevance 0–3 (UMBRELA's scale); an article is relevant from `relevant_from` (2) up,
+and a judged 0 or 1 is no longer a hole. The golden set's own expected articles (`upstream`) enter
+at relevance 2 and a model's grade can only raise them. Negative questions are never in it: they
+measure refusal. A run maps each question to the articles a retrieval variant ranked. Metrics come
+from these two alone (ranx): R@k and MRR on relevance ≥ `relevant_from`, nDCG on the grades, so a
+run made before a judgement can be scored again after it.
 
 Every document written here carries `sha256`, the hash of its own canonical JSON without that
 field, and the hashes of what it was made from, so a report can name exactly which versions made
 its numbers.
 
 `split` assigns every question (negatives included) to `dev` or `test`, stratified by bucket with a
-fixed seed. Floors, fusion and candidate pools are chosen on dev; test is reported once, at the end.
+fixed seed. Floors, fusion, candidate pools and the judge prompt are chosen on dev; test is reported
+once, at the end.
 
-`pool` lists the holes of the given runs: articles in a question's top 10 that the qrels has no
-judgement for, with the question and the article's full text, for a person to judge. The file holds
-question text (the golden set is external): keep it outside the repository. `judge` merges a filled
-pool back into qrels. Only `relevance` is read; a model's pre-screen goes in `prescreen` and is
-never imported. The file must name its `judge` and `date`.
+The holes of the runs (articles in a question's top 10 that the qrels has no judgement for) are
+judged by models (`relevance_judge.py`); `judge` merges the sealed judgement file back into qrels
+and records its hash, judges, date and prompt hash.
 """
 
 from __future__ import annotations
@@ -35,7 +35,6 @@ import re
 import sys
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
-from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -52,7 +51,6 @@ with warnings.catch_warnings():
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from envcite_ontology.settings import DatabaseSettings, load
 
 NEGATIVE = "negative"
 HOLE_DEPTH = 10
@@ -108,8 +106,20 @@ def require_golden(doc: Mapping[str, Any], golden_sha256: str, what: str) -> Non
         raise SystemExit(f"{what} 不是由這份題庫產生的（golden sha256 不同）")
 
 
-def relevant(qrels: Qrels) -> Qrels:
-    """只留判為相關的條；ranx 以 relevance > 0 為相關，0 只表示已判定。"""
+#: UMBRELA 的分級；relevant_from 以上為相關（二元指標與 Cohen's κ 的二元化）
+SCALE = (0, 1, 2, 3)
+RELEVANT_FROM = 2
+#: 題庫給定的期望條文進 qrels 的分數；模型的判定只能把它往上調
+UPSTREAM_GRADE = 2
+
+
+def relevant(qrels: Qrels, *, relevant_from: int) -> Qrels:
+    """只留判為相關（≥ relevant_from）的條，值一律為 1；ranx 的二元指標以 > 0 為相關。"""
+    return {q: {d: 1 for d, r in docs.items() if r >= relevant_from} for q, docs in qrels.items()}
+
+
+def graded(qrels: Qrels) -> Qrels:
+    """nDCG 用的分級：分數即增益，0 不入。"""
     return {q: {d: r for d, r in docs.items() if r > 0} for q, docs in qrels.items()}
 
 
@@ -157,16 +167,39 @@ def hole_rate(qrels: Qrels, ranking: Ranking, depth: int = HOLE_DEPTH) -> float 
     return sum(map(len, holes(qrels, ranking, depth).values())) / slots
 
 
-def evaluate(qrels: Qrels, ranking: Ranking, metrics: Sequence[str]) -> dict[str, float]:
-    """以 ranx 算各指標的平均；只算 qrels 裡有的題，run 沒交的題以 0 計。"""
-    q = {k: v for k, v in relevant(qrels).items() if v}
-    run = {k: v for k, v in run_scores(ranking).items() if k in q and v}
-    if not q:
+def _is_graded(metric: str) -> bool:
+    return metric.startswith("ndcg")
+
+
+def _judged_questions(qrels: Qrels, relevant_from: int) -> Qrels:
+    """計分的題：至少有一條相關（≥ relevant_from）。"""
+    return {k: v for k, v in relevant(qrels, relevant_from=relevant_from).items() if v}
+
+
+def evaluate(
+    qrels: Qrels, ranking: Ranking, metrics: Sequence[str], *, relevant_from: int
+) -> dict[str, float]:
+    """以 ranx 算各指標的平均；只算至少有一條相關的題，run 沒交的題以 0 計。
+
+    `ndcg@k` 以分級為增益，其餘指標以 ≥ relevant_from 為相關。
+    """
+    binary = _judged_questions(qrels, relevant_from)
+    if not binary:
         return dict.fromkeys(metrics, 0.0)
-    got = rx_evaluate(RQrels(q), Run(run), list(metrics), make_comparable=True)
-    if isinstance(got, float):
-        return {metrics[0]: float(got)}
-    return {m: float(got[m]) for m in metrics}
+    gains = {k: v for k, v in graded(qrels).items() if k in binary}
+    run = {k: v for k, v in run_scores(ranking).items() if k in binary and v}
+    out: dict[str, float] = {}
+    for q, ms in (
+        (gains, [m for m in metrics if _is_graded(m)]),
+        (binary, [m for m in metrics if not _is_graded(m)]),
+    ):
+        if not ms:
+            continue
+        got = rx_evaluate(RQrels(q), Run(run), ms, make_comparable=True)
+        out.update(
+            {ms[0]: float(got)} if isinstance(got, float) else {m: float(got[m]) for m in ms}
+        )
+    return {m: out[m] for m in metrics}
 
 
 def compare(
@@ -174,25 +207,40 @@ def compare(
     rankings: Mapping[str, Ranking],
     metrics: Sequence[str],
     *,
+    relevant_from: int,
     permutations: int = 10_000,
     seed: int = 0,
 ) -> dict[str, Any]:
-    """成對 Fisher 隨機化檢定（ranx `compare`）：各 run 的平均與兩兩的 p 值。"""
-    q = {k: v for k, v in relevant(qrels).items() if v}
-    runs = [
-        Run({k: v for k, v in run_scores(r).items() if k in q and v}, name=name)
-        for name, r in rankings.items()
-    ]
-    report = rx_compare(
-        RQrels(q),
-        runs,
-        list(metrics),
-        stat_test="fisher",
-        n_permutations=permutations,
-        random_seed=seed,
-        make_comparable=True,
-    )
-    out: dict[str, Any] = report.to_dict()
+    """成對 Fisher 隨機化檢定（ranx `compare`）：各 run 的平均與兩兩的 p 值。
+
+    回傳 run → {"scores": 指標 → 平均, "comparisons": 另一個 run → 指標 → p}。
+    """
+    binary = _judged_questions(qrels, relevant_from)
+    gains = {k: v for k, v in graded(qrels).items() if k in binary}
+    out: dict[str, Any] = {name: {"scores": {}, "comparisons": {}} for name in rankings}
+    for q, ms in (
+        (gains, [m for m in metrics if _is_graded(m)]),
+        (binary, [m for m in metrics if not _is_graded(m)]),
+    ):
+        if not ms:
+            continue
+        runs = [
+            Run({k: v for k, v in run_scores(r).items() if k in binary and v}, name=name)
+            for name, r in rankings.items()
+        ]
+        report = rx_compare(
+            RQrels(q),
+            runs,
+            ms,
+            stat_test="fisher",
+            n_permutations=permutations,
+            random_seed=seed,
+            make_comparable=True,
+        ).to_dict()
+        for name in rankings:
+            out[name]["scores"].update(report[name]["scores"])
+            for other, ps in report[name]["comparisons"].items():
+                out[name]["comparisons"].setdefault(other, {}).update(ps)
     return out
 
 
@@ -208,52 +256,57 @@ def pool_rows(
     return sorted(pairs)
 
 
-def merge_judgements(qrels: Qrels, judged: Mapping[str, Any]) -> tuple[Qrels, int]:
-    """把填好的判定併進 qrels；回傳（新 qrels, 新增的判定數）。
+def merge_judgements(
+    doc: Mapping[str, Any], rows: Iterable[Mapping[str, Any]], tag: str
+) -> tuple[Qrels, dict[str, dict[str, str]], int]:
+    """把模型判定的分數併進 qrels；回傳（新 qrels, 新 graded_by, 新增的判定數）。
 
-    只讀 `relevance`（0 或 1）；留空的列仍是洞。`prescreen`（模型預篩）一律不讀。
-    與 qrels 已有判定矛盾的列整份拒絕。
+    題庫給定的條（`upstream`）取 max(UPSTREAM_GRADE, 分數)，其餘取分數；`grade` 為 None 的列仍是
+    洞。同一條已有模型判定時新值必須相同（不覆寫），題號不在 qrels、分數不在 0–3 都使整份拒絕。
+    `graded_by` 記每一條模型判定來自哪份判定檔（`tag`）。
     """
-    if not str(judged.get("judge") or "").strip():
-        raise ValueError("判定檔沒有寫判定者（judge）")
-    try:
-        date.fromisoformat(str(judged.get("date")))
-    except ValueError:
-        raise ValueError(f"判定檔的日期不是 ISO 8601：{judged.get('date')!r}") from None
+    qrels: Qrels = doc["qrels"]
+    upstream = {q: set(ds) for q, ds in doc["upstream"].items()}
     out = {q: dict(docs) for q, docs in qrels.items()}
+    by = {q: dict(ds) for q, ds in doc["graded_by"].items()}
     added = 0
     problems: list[str] = []
-    for row in judged.get("items") or []:
-        q, d, rel = str(row["qid"]), str(row["doc"]), row.get("relevance")
-        if rel is None:
+    for row in rows:
+        q, d, grade = str(row["qid"]), str(row["doc"]), row.get("grade")
+        if grade is None:
             continue
-        if rel not in (0, 1) or isinstance(rel, bool):
-            problems.append(f"{q} {d}：relevance 只能是 0 或 1，得到 {rel!r}")
+        if grade not in SCALE or isinstance(grade, bool):
+            problems.append(f"{q} {d}：分數只能是 0–3，得到 {grade!r}")
             continue
         if q not in out:
             problems.append(f"{q}：qrels 沒有這一題（無答案題與 unmapped 題不判）")
             continue
         parse_doc(d)
-        have = out[q].get(d)
-        if have is None:
-            out[q][d] = int(rel)
-            added += 1
-        elif have != rel:
-            problems.append(f"{q} {d}：qrels 已判為 {have}，判定檔為 {rel}")
+        value = max(UPSTREAM_GRADE, int(grade)) if d in upstream.get(q, set()) else int(grade)
+        if d in by.get(q, {}):
+            if out[q][d] != value:
+                problems.append(f"{q} {d}：qrels 已判為 {out[q][d]}，判定檔為 {value}")
+            continue
+        if d in out[q] and d not in upstream.get(q, set()):
+            problems.append(f"{q} {d}：qrels 已有不是題庫給定、也沒有判定來源的分數")
+            continue
+        out[q][d] = value
+        by.setdefault(q, {})[d] = tag
+        added += 1
     if problems:
         raise ValueError("判定檔有問題，整份不併入：\n" + "\n".join(problems))
-    return out, added
+    return out, by, added
 
 
 def article_texts(
     conn: psycopg.Connection[Any], docs: Iterable[str], on: str
-) -> dict[str, tuple[str, str]]:
-    """條文代號 → （法規名稱, 該日有效的條文全文）。"""
+) -> dict[str, tuple[str, str, str]]:
+    """條文代號 → （法規名稱, 該日有效版本的公布或修正日, 條文全文）。"""
     wanted = {parse_doc(d) for d in docs}
     pcodes = sorted({p for p, _ in wanted})
-    out: dict[str, tuple[str, str]] = {}
-    for pcode, title, number, text in conn.execute(
-        "SELECT r.local_id, e.title, corpus.article_number(s.path),"
+    out: dict[str, tuple[str, str, str]] = {}
+    for pcode, title, version, number, text in conn.execute(
+        "SELECT r.local_id, e.title, e.version_date, corpus.article_number(s.path),"
         "       corpus.article_text(s.version_id)"
         "  FROM corpus.legal_resource AS r"
         "  JOIN corpus.legal_expression AS e"
@@ -264,7 +317,7 @@ def article_texts(
         {"on": on, "pcodes": pcodes},
     ):
         if (str(pcode), str(number)) in wanted:
-            out[doc_id(str(pcode), str(number))] = (str(title), str(text or ""))
+            out[doc_id(str(pcode), str(number))] = (str(title), str(version), str(text or ""))
     return out
 
 
@@ -298,76 +351,36 @@ def cmd_split(args: argparse.Namespace) -> None:
     print(f"{args.out}：sha256 {doc['sha256']}")
 
 
-def cmd_pool(args: argparse.Namespace) -> None:
-    items, golden_sha = _items(args.golden)
-    qrels_doc = read(args.qrels)
-    require_golden(qrels_doc, golden_sha, str(args.qrels))
-    runs = [read(p) for p in args.run]
-    for p, r in zip(args.run, runs, strict=True):
-        require_golden(r, golden_sha, str(p))
-    qrels: Qrels = qrels_doc["qrels"]
-    pairs = pool_rows(qrels, [r["ranking"] for r in runs], args.depth)
-    questions = {str(i["id"]): i for i in items}
-    db = load(DatabaseSettings)
-    with psycopg.connect(db.dsn) as conn:
-        conn.read_only = True
-        texts = article_texts(conn, {d for _, d in pairs}, date.today().isoformat())
-    rows = []
-    for q, d in pairs:
-        title, text = texts.get(d, ("", ""))
-        _, number = parse_doc(d)
-        rows.append(
-            {
-                "qid": q,
-                "bucket": questions[q]["bucket"],
-                "question": str(questions[q]["question"]).strip(),
-                "doc": d,
-                "article": f"{title} 第{number}條",
-                "text": text,
-                "relevance": None,
-                "prescreen": None,
-            }
-        )
-    doc = {
-        "judge": None,
-        "date": None,
-        "instructions": "每列讀題目與條文全文，條文能回答（或是回答所需的一部分）填 relevance: 1，"
-        "否則填 0；判不了就留空（仍是洞）。prescreen 是模型預篩，只供參考，不會匯入。"
-        "填完寫上 judge（判定者）與 date（YYYY-MM-DD），再以 golden_set.py judge 併入 qrels。"
-        "本檔含題目全文，不提交進倉庫。",
-        "golden_sha256": golden_sha,
-        "qrels_sha256": qrels_doc["sha256"],
-        "runs": [
-            {"path": p.name, "sha256": r["sha256"]} for p, r in zip(args.run, runs, strict=True)
-        ],
-        "depth": args.depth,
-        "items": rows,
-    }
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
-    print(f"{len(rows)} 個待判（{len({q for q, _ in pairs})} 題）：{args.out}")
-
-
 def cmd_judge(args: argparse.Namespace) -> None:
     qrels_doc = read(args.qrels)
-    raw = args.judgements.read_bytes()
-    judged = yaml.safe_load(raw)
-    if judged.get("golden_sha256") != qrels_doc["golden_sha256"]:
+    judged = read(args.judgements)
+    if judged["golden_sha256"] != qrels_doc["golden_sha256"]:
         raise SystemExit("判定檔與 qrels 不是同一份題庫")
+    if judged["relevant_from"] != qrels_doc["relevant_from"]:
+        raise SystemExit("判定檔與 qrels 的相關門檻不同")
+    tag = judged["sha256"][:12]
     try:
-        qrels, added = merge_judgements(qrels_doc["qrels"], judged)
+        qrels, graded_by, added = merge_judgements(qrels_doc, judged["rows"], tag)
     except ValueError as e:
         raise SystemExit(str(e)) from None
     record = {
         "path": args.judgements.name,
-        "sha256": hashlib.sha256(raw).hexdigest(),
-        "judge": str(judged["judge"]).strip(),
-        "date": str(judged["date"]),
+        "sha256": judged["sha256"],
+        "tag": tag,
+        "judges": [j["name"] for j in judged["judges"]],
+        "date": judged["date"],
+        "prompt_sha256": judged["prompt"]["sha256"],
+        "subset": judged["subset"],
         "added": added,
     }
     doc = write(
         args.out,
-        {**qrels_doc, "qrels": qrels, "judgements": [*qrels_doc["judgements"], record]},
+        {
+            **qrels_doc,
+            "qrels": qrels,
+            "graded_by": graded_by,
+            "judgements": [*qrels_doc["judgements"], record],
+        },
     )
     print(f"併入 {added} 個判定；{args.out}：sha256 {doc['sha256']}")
 
@@ -380,18 +393,12 @@ def main() -> None:
     s.add_argument("--seed", default="envcite-golden-1")
     s.add_argument("--test-fraction", type=float, default=0.5)
     s.add_argument("--out", type=Path, required=True)
-    p = sub.add_parser("pool", help="匯出待判清單（各 run 前 10 條的洞）")
-    p.add_argument("golden", type=Path)
-    p.add_argument("--qrels", type=Path, required=True)
-    p.add_argument("--run", type=Path, action="append", required=True)
-    p.add_argument("--depth", type=int, default=HOLE_DEPTH)
-    p.add_argument("--out", type=Path, required=True)
-    j = sub.add_parser("judge", help="把填好的待判清單併入 qrels")
+    j = sub.add_parser("judge", help="把封存的模型判定檔併入 qrels")
     j.add_argument("--qrels", type=Path, required=True)
     j.add_argument("--judgements", type=Path, required=True)
     j.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
-    {"split": cmd_split, "pool": cmd_pool, "judge": cmd_judge}[args.command](args)
+    {"split": cmd_split, "judge": cmd_judge}[args.command](args)
 
 
 if __name__ == "__main__":

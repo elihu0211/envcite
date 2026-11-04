@@ -6,6 +6,8 @@
   依序從同名環境變數、作業系統鑰匙圈同名 service 解析（`resolve_secret`）。
 - 語意檢索的嵌入模型也在這裡宣告（`[embedding]`），沿用同一組端點；伺服器與同步排程只讀這一段，
   不需要標註管線的角色（`load_embedder`）。
+- 黃金測試集的相關性判定者也在這裡（`[relevance]`，`load_judges`）：至少兩個、彼此不同家族，且不與
+  受測系統的任何家族相同（`system_families` 加上各角色模型的家族）。
 
 不認得的鍵與指向不存在者的參照一律報錯。
 """
@@ -27,6 +29,7 @@ from envcite_ontology.embedding import Embedder
 from envcite_ontology.verification.models import AnthropicModel, ChatCompletionsModel, Model
 
 ROLES = ("extractor", "roundtrip", "independent_test", "panel")
+TOP_LEVEL = ("endpoint", "model", "roles", "embedding", "relevance")
 
 
 class ConfigError(ValueError):
@@ -206,7 +209,7 @@ def parse(
         doc = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"not valid TOML: {e}") from e
-    _only(doc, {"endpoint", "model", "roles", "embedding"}, "top level")
+    _only(doc, set(TOP_LEVEL), "top level")
     endpoints = {
         str(n): _endpoint(str(n), t, env, keychain) for n, t in (doc.get("endpoint") or {}).items()
     }
@@ -255,7 +258,7 @@ def parse_embedder(
         doc = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"not valid TOML: {e}") from e
-    _only(doc, {"endpoint", "model", "roles", "embedding"}, "top level")
+    _only(doc, set(TOP_LEVEL), "top level")
     table = doc.get("embedding")
     if table is None:
         return None
@@ -279,3 +282,73 @@ def load_embedder(
     keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> Embedder | None:
     return parse_embedder(path.read_text(encoding="utf-8"), env, timeout=timeout, keychain=keychain)
+
+
+@dataclass(frozen=True)
+class Judges:
+    """相關性判定者與它們必須避開的受測系統家族。"""
+
+    models: tuple[Model, ...]
+    system_families: frozenset[str]
+
+
+def parse_judges(
+    text: str,
+    env: Mapping[str, str] | None = None,
+    *,
+    keychain: Callable[[str], str | None] = keychain_lookup,
+) -> Judges:
+    """`[relevance]` 指名的判定者。判定者少於兩個、彼此同家族、或與受測系統同家族都報錯。
+
+    受測系統的家族是 `system_families`（設定檔外的模型，如嵌入與作答模型）加上各角色模型的家族。
+    """
+    env = os.environ if env is None else env
+    try:
+        doc = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigError(f"not valid TOML: {e}") from e
+    _only(doc, set(TOP_LEVEL), "top level")
+    table = doc.get("relevance")
+    if table is None:
+        raise ConfigError("relevance: no judges declared")
+    _only(table, {"judges", "system_families"}, "relevance")
+    names = table.get("judges")
+    if not isinstance(names, list) or len(names) < 2:
+        raise ConfigError("relevance.judges: at least two model names")
+    declared = table.get("system_families") or []
+    if not isinstance(declared, list) or not all(isinstance(f, str) and f for f in declared):
+        raise ConfigError("relevance.system_families: a list of family names")
+    tables = doc.get("model") or {}
+    endpoints_doc = doc.get("endpoint") or {}
+    wanted = {str(tables[n].get("endpoint")) for n in names if n in tables}
+    endpoints = {
+        str(n): _endpoint(str(n), t, env, keychain)
+        for n, t in endpoints_doc.items()
+        if str(n) in wanted
+    }
+    for n in names:
+        if n not in tables:
+            raise ConfigError(f"relevance.judges: model {n!r} is not defined")
+    judges = tuple(_model(str(n), tables[n], endpoints) for n in names)
+    roles = doc.get("roles") or {}
+    used = {roles.get(r) for r in ("extractor", "roundtrip", "independent_test")}
+    used |= set(roles.get("panel") or [])
+    system = set(declared) | {
+        str(tables[a].get("family")) for a in used if a in tables and tables[a].get("family")
+    }
+    families = [j.family for j in judges]
+    if len(set(families)) != len(families):
+        raise ConfigError(f"relevance.judges: two judges share a family {families}")
+    clash = sorted(set(families) & system)
+    if clash:
+        raise ConfigError(f"relevance.judges: family {clash} is part of the system under test")
+    return Judges(judges, frozenset(system))
+
+
+def load_judges(
+    path: Path,
+    env: Mapping[str, str] | None = None,
+    *,
+    keychain: Callable[[str], str | None] = keychain_lookup,
+) -> Judges:
+    return parse_judges(path.read_text(encoding="utf-8"), env, keychain=keychain)

@@ -438,3 +438,58 @@ def test_a_stalled_keychain_is_cut_off_by_the_timeout() -> None:
         assert keychain_lookup("N", timeout=0.2) is None
     finally:
         config._KEYCHAIN_COMMANDS = original
+
+
+JUDGES = """
+[model.j1]
+endpoint = "e"
+name = "judge-1"
+family = "fam-j1"
+
+[model.j2]
+endpoint = "e"
+name = "judge-2"
+family = "fam-j2"
+
+[relevance]
+judges = ["j1", "j2"]
+system_families = ["fam-embed"]
+"""
+
+
+def test_the_example_file_declares_judges_outside_the_system_families() -> None:
+    judges = config.load_judges(EXAMPLE, ENV, keychain=no_keychain)
+
+    assert len(judges.models) >= 2
+    assert not {m.family for m in judges.models} & judges.system_families
+    assert {"mistral", "meta", "nvidia"} <= judges.system_families  # 各角色的家族自動加入
+
+
+def test_judges_are_two_families_none_of_them_in_the_system() -> None:
+    judges = config.parse_judges(MINIMAL + JUDGES, ENV, keychain=no_keychain)
+    assert [m.name for m in judges.models] == ["fam-j1:judge-1", "fam-j2:judge-2"]
+    assert judges.system_families == {"fam-a", "fam-b", "fam-embed"}
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (('judges = ["j1", "j2"]', 'judges = ["j1"]'), "at least two"),
+        (('judges = ["j1", "j2"]', 'judges = ["j1", "nope"]'), "not defined"),
+        (('family = "fam-j2"', 'family = "fam-j1"'), "share a family"),
+        (('family = "fam-j2"', 'family = "fam-a"'), "system under test"),
+        (('system_families = ["fam-embed"]', 'system_families = ["fam-j1"]'), "system under test"),
+        (("[relevance]", "[relevance]\nextra = 1"), "unknown keys"),
+    ],
+)
+def test_judges_that_are_not_independent_of_the_system_are_refused(
+    change: tuple[str, str], message: str
+) -> None:
+    with pytest.raises(ConfigError, match=message):
+        config.parse_judges((MINIMAL + JUDGES).replace(*change), ENV, keychain=no_keychain)
+
+
+def test_a_file_without_judges_is_refused_only_when_judges_are_asked_for() -> None:
+    parse(MINIMAL, ENV, keychain=no_keychain)
+    with pytest.raises(ConfigError, match="no judges"):
+        config.parse_judges(MINIMAL, ENV, keychain=no_keychain)

@@ -165,7 +165,7 @@ ITEMS: list[dict[str, Any]] = [
 
 def _qrels_doc(tool: ModuleType) -> dict[str, Any]:
     qrels, unmapped = tool.build_qrels(tool.resolve(ITEMS, *_corpus(tool)))
-    return {"qrels": qrels, "unmapped": unmapped}
+    return {"qrels": qrels, "unmapped": unmapped, "relevant_from": 2}
 
 
 def test_qrels_hold_the_mapped_articles_of_answerable_questions_only() -> None:
@@ -173,9 +173,9 @@ def test_qrels_hold_the_mapped_articles_of_answerable_questions_only() -> None:
     doc = _qrels_doc(tool)
 
     assert doc["qrels"] == {
-        "first": {"O0020001-art-68": 1},
-        "second-of-two": {"O0020001-art-24": 1, "O0020001-art-15-1": 1},
-        "miss": {"O0020001-art-24": 1},
+        "first": {"O0020001-art-68": 2},
+        "second-of-two": {"O0020001-art-24": 2, "O0020001-art-15-1": 2},
+        "miss": {"O0020001-art-24": 2},
     }
     assert set(doc["unmapped"]) == {"miss", "gone"}  # 「miss」只是部分對應
 
@@ -184,7 +184,14 @@ def _measure(tool: ModuleType, doc: dict[str, Any], hits: list[tuple[str, str]])
     rows = tool.questions(ITEMS, doc, frozenset(i["id"] for i in ITEMS))
     return list(
         tool.search_all(
-            FakeStore(hits), FakeSegmenter(), rows, None, qrels=doc["qrels"], k=50, on="2026-10-23"
+            FakeStore(hits),
+            FakeSegmenter(),
+            rows,
+            None,
+            qrels=doc["qrels"],
+            relevant_from=2,
+            k=50,
+            on="2026-10-23",
         )
     )
 
@@ -206,7 +213,7 @@ def test_a_hit_is_any_relevant_article_in_the_top_k_and_ranx_scores_it_by_bucket
     assert got["gone"].status == "unmapped" and got["gone"].ranking == []
     assert got["neg"].ranking == [] and got["neg"].top_lexical == 10.0
 
-    s = tool.summarize(out, doc["qrels"])
+    s = tool.summarize(out, doc["qrels"], 2)
     assert s["by_bucket"]["exact_id"]["hit_rate@1"] == 1.0
     assert s["by_bucket"]["multi_hop"]["hit_rate@1"] == 0.0
     assert s["by_bucket"]["multi_hop"]["hit_rate@5"] == 1.0
@@ -220,12 +227,12 @@ def test_a_hit_is_any_relevant_article_in_the_top_k_and_ranx_scores_it_by_bucket
     assert s["negative"]["n"] == 1 and s["negative"]["top_semantic"] is None
 
 
-def test_a_judged_irrelevant_article_is_not_a_hole_and_not_a_hit() -> None:
+def test_an_article_graded_below_the_threshold_is_not_a_hole_and_not_a_hit() -> None:
     tool = _tool()
     doc = _qrels_doc(tool)
-    doc["qrels"]["first"]["Z0000001-art-1"] = 0
+    doc["qrels"]["first"]["Z0000001-art-1"] = 1
     out = _measure(tool, doc, [("Z0000001", "1"), ("O0020001", "68")])
-    s = tool.summarize([r for r in out if r.id == "first"], doc["qrels"])
+    s = tool.summarize([r for r in out if r.id == "first"], doc["qrels"], 2)
 
     assert s["by_bucket"]["exact_id"]["hit_rate@1"] == 0.0
     assert s["by_bucket"]["exact_id"]["hit_rate@5"] == 1.0
@@ -243,7 +250,7 @@ def test_a_scope_drops_hits_of_other_laws_before_the_first_k_are_taken() -> None
     doc = _qrels_doc(tool)
     rows = tool.questions(ITEMS[:1], doc, frozenset({"first"}))
     store = FakeStore([("Z0000001", str(i)) for i in range(1, 6)] + [("O0020001", "68")])
-    kw: dict[str, Any] = {"qrels": doc["qrels"], "k": 3, "on": "2026-10-23"}
+    kw: dict[str, Any] = {"qrels": doc["qrels"], "relevant_from": 2, "k": 3, "on": "2026-10-23"}
 
     plain = tool.search_all(store, FakeSegmenter(), rows, None, **kw)
     scoped = tool.search_all(
@@ -273,7 +280,11 @@ def test_runs_are_compared_with_a_paired_test_and_must_share_a_subset() -> None:
     tool = _tool()
     gs = sys.modules["golden_set"]
     qrels_doc = gs.seal(
-        {"golden_sha256": "g", "qrels": {f"q{i}": {"A0000001-art-1": 1} for i in range(8)}}
+        {
+            "golden_sha256": "g",
+            "relevant_from": 2,
+            "qrels": {f"q{i}": {"A0000001-art-1": 3} for i in range(8)},
+        }
     )
     good = {f"q{i}": ["A0000001-art-1"] for i in range(8)}
     bad = {f"q{i}": ["B0000001-art-1", "A0000001-art-1"] for i in range(8)}
@@ -281,6 +292,8 @@ def test_runs_are_compared_with_a_paired_test_and_must_share_a_subset() -> None:
     c = tool.compared(qrels_doc, {"good": _run(tool, good), "bad": _run(tool, bad)}, 0.05)
     r1 = next(p for p in c["pairs"] if p["metric"] == "hit_rate@1")
     assert r1["difference"] == -1.0 and r1["significant"]
+    ndcg = next(p for p in c["pairs"] if p["metric"] == "ndcg@10")
+    assert ndcg["difference"] < 0
     assert c["runs"]["bad"]["hole@10"] == 0.5
     same = tool.compared(qrels_doc, {"a": _run(tool, good), "b": _run(tool, good)}, 0.05)
     assert not any(p["significant"] for p in same["pairs"])

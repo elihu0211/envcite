@@ -1,5 +1,5 @@
 """The golden test collection: sealed documents, the stratified split, ranx metrics, holes and the
-judgement pool."""
+model judgements merged into qrels."""
 
 import importlib.util
 import json
@@ -51,16 +51,35 @@ def test_the_split_is_stratified_by_bucket_and_fixed_by_its_seed() -> None:
         assert sum(q.startswith(bucket) for q in a["test"]) == n
 
 
-def test_ranx_scores_follow_the_ranking_and_a_judged_zero_is_not_relevant() -> None:
+def test_ranx_scores_follow_the_ranking_and_a_grade_below_the_threshold_is_not_relevant() -> None:
     gs = _tool()
-    qrels = {"q1": {"A0000001-art-1": 1, "B0000001-art-1": 0}, "q2": {"C0000001-art-1": 1}}
+    qrels = {"q1": {"A0000001-art-1": 2, "B0000001-art-1": 1}, "q2": {"C0000001-art-1": 3}}
     ranking = {"q1": ["B0000001-art-1", "A0000001-art-1"], "q2": ["X0000001-art-1"]}
 
-    got = gs.evaluate(qrels, ranking, ["hit_rate@1", "hit_rate@2", "mrr"])
+    got = gs.evaluate(qrels, ranking, ["hit_rate@1", "hit_rate@2", "mrr"], relevant_from=2)
     assert got == {"hit_rate@1": 0.0, "hit_rate@2": 0.5, "mrr": 0.25}
     # 交了空排序或沒交的題以 0 計，不從分母消失
-    assert gs.evaluate(qrels, {"q1": ["A0000001-art-1"], "q2": []}, ["hit_rate@1"]) == {
-        "hit_rate@1": 0.5
+    got = gs.evaluate(qrels, {"q1": ["A0000001-art-1"], "q2": []}, ["hit_rate@1"], relevant_from=2)
+    assert got == {"hit_rate@1": 0.5}
+    # 門檻是 1 時分數 1 的條也算相關
+    got = gs.evaluate(qrels, ranking, ["hit_rate@1"], relevant_from=1)
+    assert got == {"hit_rate@1": 0.5}
+
+
+def test_ndcg_takes_the_grades_as_gains() -> None:
+    gs = _tool()
+    qrels = {"q1": {"A0000001-art-1": 3, "B0000001-art-1": 1}}
+    best = gs.evaluate(
+        qrels, {"q1": ["A0000001-art-1", "B0000001-art-1"]}, ["ndcg@10"], relevant_from=2
+    )
+    worse = gs.evaluate(
+        qrels, {"q1": ["B0000001-art-1", "A0000001-art-1"]}, ["ndcg@10"], relevant_from=2
+    )
+    assert best == {"ndcg@10": 1.0}
+    assert 0 < worse["ndcg@10"] < 1
+    # 只有分數 1 的題沒有相關條，不計分
+    assert gs.evaluate({"q1": {"A0000001-art-1": 1}}, {"q1": []}, ["ndcg@10"], relevant_from=2) == {
+        "ndcg@10": 0.0
     }
 
 
@@ -84,40 +103,62 @@ def test_the_pool_merges_the_holes_of_every_run_once() -> None:
     assert gs.pool_rows(qrels, [a, b]) == [("q1", "B0000001-art-1"), ("q1", "C0000001-art-1")]
 
 
-def _judged(**kw: Any) -> dict[str, Any]:
-    return {"judge": "王小明", "date": "2026-11-03", **kw}
+def _doc(**kw: Any) -> dict[str, Any]:
+    return {
+        "qrels": {"q1": {"A0000001-art-1": 2}},
+        "upstream": {"q1": ["A0000001-art-1"]},
+        "graded_by": {},
+        **kw,
+    }
 
 
-def test_judgements_are_merged_by_relevance_and_a_prescreen_is_never_read() -> None:
+def test_model_grades_are_merged_and_an_expected_article_is_only_raised() -> None:
     gs = _tool()
-    qrels = {"q1": {"A0000001-art-1": 1}}
-    items = [
-        {"qid": "q1", "doc": "B0000001-art-1", "relevance": 0, "prescreen": 1},
-        {"qid": "q1", "doc": "C0000001-art-1", "relevance": 1},
-        {"qid": "q1", "doc": "D0000001-art-1", "relevance": None, "prescreen": 1},
-        {"qid": "q1", "doc": "A0000001-art-1", "relevance": 1},
+    doc = _doc()
+    rows = [
+        {"qid": "q1", "doc": "B0000001-art-1", "grade": 0},
+        {"qid": "q1", "doc": "C0000001-art-1", "grade": 3},
+        {"qid": "q1", "doc": "D0000001-art-1", "grade": None},
+        {"qid": "q1", "doc": "A0000001-art-1", "grade": 1},
     ]
 
-    merged, added = gs.merge_judgements(qrels, _judged(items=items))
-    assert added == 2
-    assert merged == {"q1": {"A0000001-art-1": 1, "B0000001-art-1": 0, "C0000001-art-1": 1}}
-    assert qrels == {"q1": {"A0000001-art-1": 1}}  # 原 qrels 不被改動
+    merged, by, added = gs.merge_judgements(doc, rows, "t1")
+    assert added == 3
+    assert merged == {"q1": {"A0000001-art-1": 2, "B0000001-art-1": 0, "C0000001-art-1": 3}}
+    assert by == {"q1": {"A0000001-art-1": "t1", "B0000001-art-1": "t1", "C0000001-art-1": "t1"}}
+    assert doc["qrels"] == {"q1": {"A0000001-art-1": 2}}  # 原 qrels 不被改動
+
+    raised, _, _ = gs.merge_judgements(
+        doc, [{"qid": "q1", "doc": "A0000001-art-1", "grade": 3}], "t"
+    )
+    assert raised["q1"]["A0000001-art-1"] == 3
+
+
+def test_a_second_judgement_of_the_same_article_must_agree() -> None:
+    gs = _tool()
+    doc = _doc(
+        qrels={"q1": {"A0000001-art-1": 2, "B0000001-art-1": 1}},
+        graded_by={"q1": {"B0000001-art-1": "t1"}},
+    )
+    same, _, added = gs.merge_judgements(
+        doc, [{"qid": "q1", "doc": "B0000001-art-1", "grade": 1}], "t2"
+    )
+    assert added == 0 and same == doc["qrels"]
+    with pytest.raises(ValueError, match="已判為 1"):
+        gs.merge_judgements(doc, [{"qid": "q1", "doc": "B0000001-art-1", "grade": 2}], "t2")
 
 
 @pytest.mark.parametrize(
-    ("judged", "message"),
+    ("rows", "message"),
     [
-        (_judged(judge=""), "判定者"),
-        (_judged(date="昨天"), "ISO 8601"),
-        (_judged(items=[{"qid": "q1", "doc": "A0000001-art-1", "relevance": 0}]), "已判為 1"),
-        (_judged(items=[{"qid": "neg", "doc": "A0000001-art-1", "relevance": 1}]), "沒有這一題"),
-        (_judged(items=[{"qid": "q1", "doc": "B0000001-art-1", "relevance": 2}]), "0 或 1"),
-        (_judged(items=[{"qid": "q1", "doc": "B0000001-art-1", "relevance": True}]), "0 或 1"),
+        ([{"qid": "neg", "doc": "A0000001-art-1", "grade": 1}], "沒有這一題"),
+        ([{"qid": "q1", "doc": "B0000001-art-1", "grade": 4}], "0–3"),
+        ([{"qid": "q1", "doc": "B0000001-art-1", "grade": True}], "0–3"),
     ],
 )
-def test_a_judgement_file_that_is_unsigned_or_contradicts_the_qrels_is_refused(
-    judged: dict[str, Any], message: str
+def test_a_judgement_file_with_a_bad_row_is_refused_whole(
+    rows: list[dict[str, Any]], message: str
 ) -> None:
     gs = _tool()
     with pytest.raises(ValueError, match=message):
-        gs.merge_judgements({"q1": {"A0000001-art-1": 1}}, judged)
+        gs.merge_judgements(_doc(), rows, "t")

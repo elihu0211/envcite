@@ -225,7 +225,8 @@ def report(
     for name, outs in (("字面臂", lexical), ("混合", hybrid)):
         if outs is None:
             continue
-        got = gs.evaluate(qrels, {items[i]["id"]: outs[i].ranking for i in answerable}, metrics)
+        ranking = {items[i]["id"]: outs[i].ranking for i in answerable}
+        got = gs.evaluate(qrels, ranking, metrics, relevant_from=1)
         lines.append(f"| {name} | " + " | ".join(f"{got[m]:.3f}" for m in metrics) + " |")
     lines += ["", "| 分數 | 下界 | 可答通過 | 範圍外通過 |", "|---|---|---|---|"]
     floor, tpr, fpr = best_floor(

@@ -10,17 +10,19 @@
 `qrels` maps each answerable question's expected articles (`citation_allowlist`: law name, article
 number, sometimes a `<pcode>-art-<n>` id) to this corpus — law name to pcode by exact
 `legal_expression.title` (an id's pcode wins), article number to `corpus.provision.article_path` —
-and writes them as qrels keyed by article id (relevance 1). A question none of whose articles map
+and writes them as qrels keyed by article id (relevance `gs.UPSTREAM_GRADE`, listed as `upstream`).
+A question none of whose articles map
 is `unmapped`: listed with the reason, never in the qrels, never scored as a miss. Negatives are
 not in the qrels either; they measure refusal. The qrels records the golden set's sha256 and the
 corpus snapshots it was mapped against; a measurement on other snapshots stops (map again).
 
 `measure` searches the questions of one split subset with the same `OntologyStore.search` the
 service uses, writes one run per arm (`<out>.<arm>.run.json`) and a report scored from qrels and
-run by ranx: R@k is ranx `hit_rate@k` (any relevant article within the top k), MRR is ranx `mrr`.
-Hole@10 is the share of the top 10 that the qrels has no judgement for; those are the articles
-`golden_set.py pool` sends to be judged. Negatives only record each arm's top score, for the
-floor tools. Tune on `dev`; `test` is reported once, after the choice is made.
+run by ranx: R@k is ranx `hit_rate@k` (any article of relevance ≥ `relevant_from` within the
+top k), MRR is ranx `mrr`, nDCG@10 is ranx `ndcg@10` on the graded relevance. Hole@10 is the share
+of the top 10 that the qrels has no judgement for; those are the articles `relevance_judge.py pool`
+judges. Negatives only record each arm's top score, for the floor tools. Tune on `dev`; `test` is
+reported once, after the choice is made.
 
 `compare` scores two or more runs of the same subset against one qrels (possibly newer than the
 runs) and tests every pair with Fisher's randomization test. A difference that does not pass is not
@@ -71,9 +73,11 @@ from envcite_ontology.store import SEARCH_POOL, OntologyStore
 from envcite_segmenter import Segmenter
 
 KS = (1, 5, 10, 20, 50)
-METRICS = (*(f"hit_rate@{k}" for k in KS), "mrr")
+METRICS = (*(f"hit_rate@{k}" for k in KS), "mrr", "ndcg@10")
 BUCKETS = ("exact_id", "paraphrase", "multi_hop")
 NEGATIVE = gs.NEGATIVE
+
+LABELS = {**{f"hit_rate@{k}": f"R@{k}" for k in KS}, "mrr": "MRR", "ndcg@10": "nDCG@10"}
 
 _ARTICLE = re.compile(r"^第\s*(\d+)(?:\s*條之\s*(\d+)|\s*-\s*(\d+)\s*條|\s*條)")
 _ID = re.compile(r"^(?P<pcode>[A-Z]\d{7})-art-(?P<number>\d+(?:-\d+)?)$")
@@ -244,12 +248,13 @@ def resolve(
 
 
 def build_qrels(results: Iterable[Result]) -> tuple[gs.Qrels, dict[str, list[str]]]:
-    """（qrels, 有對不到的條的題 → 原因）。只有 scored 的題進 qrels。"""
+    """（qrels, 有對不到的條的題 → 原因）。只有 scored 的題進 qrels，期望條文的分數是
+    `gs.UPSTREAM_GRADE`。"""
     qrels: gs.Qrels = {}
     reasons: dict[str, list[str]] = {}
     for r in results:
         if r.status == "scored":
-            qrels[r.id] = {gs.doc_id(m["pcode"], m["number"]): 1 for m in r.mapped}
+            qrels[r.id] = {gs.doc_id(m["pcode"], m["number"]): gs.UPSTREAM_GRADE for m in r.mapped}
         if r.unmapped_reasons:
             reasons[r.id] = r.unmapped_reasons
     return qrels, reasons
@@ -274,6 +279,7 @@ def questions(
 ) -> list[Measured]:
     """子集內的題；是否計分由 qrels 決定（在 qrels 裡且有相關條）。"""
     qrels: gs.Qrels = qrels_doc["qrels"]
+    floor = int(qrels_doc["relevant_from"])
     reasons: dict[str, list[str]] = qrels_doc["unmapped"]
     out = []
     for item in items:
@@ -283,7 +289,7 @@ def questions(
         bucket = str(item["bucket"])
         if bucket == NEGATIVE:
             status = "negative"
-        elif any(rel > 0 for rel in qrels.get(qid, {}).values()):
+        elif any(rel >= floor for rel in qrels.get(qid, {}).values()):
             status = "scored"
         else:
             status = "unmapped"
@@ -315,6 +321,7 @@ def search_all(
     embedder: Embeds | None,
     *,
     qrels: gs.Qrels,
+    relevant_from: int,
     k: int,
     on: str,
     scope: frozenset[str] | None = None,
@@ -364,7 +371,7 @@ def search_all(
             assert dropped == 0, "候選池應只含範圍內的法規"
         semantic = [h.semantic_similarity for h in hits if h.semantic_similarity is not None]
         ranking = [gs.doc_id(h.law_id, h.number) for h in hits] if r.status == "scored" else []
-        wanted = {d for d, rel in qrels.get(r.id, {}).items() if rel > 0}
+        wanted = {d for d, rel in qrels.get(r.id, {}).items() if rel >= relevant_from}
         out.append(
             replace(
                 r,
@@ -431,17 +438,18 @@ def _distribution(values: Sequence[float | None]) -> dict[str, float | int] | No
     }
 
 
-def scores(qrels: gs.Qrels, ranking: gs.Ranking) -> dict[str, Any]:
+def scores(qrels: gs.Qrels, ranking: gs.Ranking, relevant_from: int) -> dict[str, Any]:
     """一組題的 ranx 指標與 Hole@10。"""
     judged = {q: qrels[q] for q in ranking}
+    got = gs.evaluate(judged, ranking, METRICS, relevant_from=relevant_from)
     return {
         "n": len(ranking),
-        **{m: round(v, 4) for m, v in gs.evaluate(judged, ranking, METRICS).items()},
+        **{m: round(v, 4) for m, v in got.items()},
         "hole@10": None if (h := gs.hole_rate(judged, ranking)) is None else round(h, 4),
     }
 
 
-def summarize(rows: Sequence[Measured], qrels: gs.Qrels) -> dict[str, Any]:
+def summarize(rows: Sequence[Measured], qrels: gs.Qrels, relevant_from: int) -> dict[str, Any]:
     def counts(rs: Sequence[Measured]) -> dict[str, int]:
         return {
             "questions": len(rs),
@@ -452,12 +460,12 @@ def summarize(rows: Sequence[Measured], qrels: gs.Qrels) -> dict[str, Any]:
     by_bucket = {}
     for b in BUCKETS:
         rs = [r for r in rows if r.bucket == b]
-        by_bucket[b] = {**counts(rs), **scores(qrels, ranking_of(rs))}
+        by_bucket[b] = {**counts(rs), **scores(qrels, ranking_of(rs), relevant_from)}
     answerable = [r for r in rows if r.bucket in BUCKETS]
     neg = [r for r in rows if r.bucket == NEGATIVE]
     return {
         "by_bucket": by_bucket,
-        "overall": {**counts(answerable), **scores(qrels, ranking_of(answerable))},
+        "overall": {**counts(answerable), **scores(qrels, ranking_of(answerable), relevant_from)},
         "negative": {
             "n": len(neg),
             "top_lexical": _distribution([r.top_lexical for r in neg]),
@@ -476,7 +484,7 @@ def versions(meta: Mapping[str, Any]) -> list[str]:
         f"- 執行：{meta['run_at']}（as_of {meta['as_of']}）；commit `{meta['envcite_commit']}`"
         + ("（工作樹有未提交變更）" if meta["git_dirty"] else ""),
         f"- 題庫：`{g['path']}`，sha256 `{g['sha256']}`，{g['items']} 題",
-        f"- qrels：`{q['path']}`，sha256 `{q['sha256']}`；人工判定 {q['judgements']} 份",
+        f"- qrels：`{q['path']}`，sha256 `{q['sha256']}`；模型判定檔 {q['judgements']} 份",
         f"- 切分：`{s['path']}`，sha256 `{s['sha256']}`；本報告為 **{s['subset']}**，"
         f"{s['questions']} 題",
         "- 語料快照："
@@ -491,15 +499,15 @@ def markdown(meta: dict[str, Any], arm: str, s: dict[str, Any]) -> str:
         "",
         "| 桶 | 題數 | unmapped | 部分對應 | 計分 n | "
         + " | ".join(f"R@{k}" for k in KS)
-        + " | MRR | Hole@10 |",
-        "|---|---|---|---|---|" + "---|" * (len(KS) + 2),
+        + " | MRR | nDCG@10 | Hole@10 |",
+        "|---|---|---|---|---|" + "---|" * (len(KS) + 3),
     ]
     rows = [(b, s["by_bucket"][b]) for b in BUCKETS] + [("總計", s["overall"])]
     for name, x in rows:
         lines.append(
             f"| {name} | {x['questions']} | {x['unmapped']} | {x['partially_mapped']} | {x['n']} | "
             + " | ".join(f"{x[f'hit_rate@{k}']:.3f}" for k in KS)
-            + f" | {x['mrr']:.3f} | {_pct(x['hole@10'])} |"
+            + f" | {x['mrr']:.3f} | {x['ndcg@10']:.3f} | {_pct(x['hole@10'])} |"
         )
     n = s["negative"]
     lines += ["", f"negative 桶 {n['n']} 題的最高分（不算召回）：", ""]
@@ -528,8 +536,9 @@ def markdown(meta: dict[str, Any], arm: str, s: dict[str, Any]) -> str:
             if (sc := meta.get("scope"))
             else []
         ),
-        "- 指標由 ranx 以 qrels 與 run 算出：R@k 是 `hit_rate@k`（任一相關條在前 k 條），MRR 是"
-        " `mrr`；Hole@10 是前 10 條中 qrels 沒有判定的比例，洞裡的條未經判定，召回是下界。"
+        "- 指標由 ranx 以 qrels 與 run 算出：R@k 是 `hit_rate@k`（任一分數 ≥ 相關門檻的條在前 k"
+        " 條），MRR 是 `mrr`，nDCG@10 以 0–3 分級為增益；"
+        "Hole@10 是前 10 條中 qrels 沒有判定的比例，洞裡的條未經判定，Hole@10 不為 0 時召回是下界。"
         "unmapped 不計入分母，原因逐題列在 qrels；部分對應的題只以對得到的條文計。"
         "僅檢索層，不含答對率。",
         "",
@@ -623,8 +632,10 @@ def cmd_qrels(args: argparse.Namespace) -> None:
             "snapshots": [{k: s[k] for k in ("feed", "data_date", "sha256")} for s in snaps],
             "rule": "期望條文對到語料：法規名稱以 legal_expression.title 完全相同對 pcode"
             "（有 article_id 時其 pcode 為準），條號對 corpus.provision.article_path；"
-            "alternatives 攤平；"
-            "relevance 1 來自題庫，其後的判定來自 judgements 所列的判定檔",
+            "alternatives 攤平；題庫給定的條（upstream）分數為 "
+            f"{gs.UPSTREAM_GRADE}，模型判定只能往上調；其餘分數來自 judgements 所列的判定檔",
+            "scale": list(gs.SCALE),
+            "relevant_from": gs.RELEVANT_FROM,
             "counts": {
                 "items": len(items),
                 "scored": len(qrels),
@@ -632,6 +643,8 @@ def cmd_qrels(args: argparse.Namespace) -> None:
                 "negative": sum(r.status == "negative" for r in resolved),
             },
             "qrels": qrels,
+            "upstream": {q: sorted(ds) for q, ds in qrels.items()},
+            "graded_by": {},
             "unmapped": reasons,
             "judgements": [],
         },
@@ -649,6 +662,7 @@ def cmd_measure(args: argparse.Namespace) -> None:
     gs.require_golden(qrels_doc, golden_sha, str(args.qrels))
     gs.require_golden(split_doc, golden_sha, str(args.split))
     qrels: gs.Qrels = qrels_doc["qrels"]
+    floor = int(qrels_doc["relevant_from"])
     rows = questions(items, qrels_doc, gs.subset_ids(split_doc, args.subset))
     db = load(DatabaseSettings)
     embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0)
@@ -680,6 +694,7 @@ def cmd_measure(args: argparse.Namespace) -> None:
                 rows,
                 e,
                 qrels=qrels,
+                relevant_from=floor,
                 k=args.k,
                 on=on,
                 scope=scope,
@@ -757,7 +772,7 @@ def cmd_measure(args: argparse.Namespace) -> None:
         )
         for name, rs in arms.items()
     }
-    summaries = {name: summarize(rs, qrels) for name, rs in arms.items()}
+    summaries = {name: summarize(rs, qrels, floor) for name, rs in arms.items()}
     doc = {
         "meta": meta,
         "arms": {
@@ -792,7 +807,7 @@ def compared(
     qids = set(first["ranking"])
     qrels = {q: d for q, d in qrels_doc["qrels"].items() if q in qids}
     rankings = {name: r["ranking"] for name, r in runs.items()}
-    report = gs.compare(qrels, rankings, METRICS)
+    report = gs.compare(qrels, rankings, METRICS, relevant_from=int(qrels_doc["relevant_from"]))
     names = list(runs)
     pairs = []
     for i, a in enumerate(names):
@@ -838,8 +853,8 @@ def compare_markdown(c: Mapping[str, Any]) -> str:
         f"- 檢定：{c['test']}；α = {c['alpha']}。未通過檢定的差距不寫成改善或退步；"
         "Hole@10 偏高時，未判定的條可能改變結論。",
         "",
-        "| run | " + " | ".join(f"R@{k}" for k in KS) + " | MRR | Hole@10 |",
-        "|---|" + "---|" * (len(KS) + 2),
+        "| run | " + " | ".join(f"R@{k}" for k in KS) + " | MRR | nDCG@10 | Hole@10 |",
+        "|---|" + "---|" * (len(KS) + 3),
     ]
     for name, r in c["runs"].items():
         lines.append(
@@ -849,7 +864,7 @@ def compare_markdown(c: Mapping[str, Any]) -> str:
         )
     lines += ["", "| a → b | 指標 | 差（b − a） | p | 結論 |", "|---|---|---|---|---|"]
     for p in c["pairs"]:
-        label = "R@" + p["metric"].split("@")[1] if "@" in p["metric"] else "MRR"
+        label = LABELS[p["metric"]]
         verdict = "差異顯著" if p["significant"] else "未通過檢定"
         lines.append(
             f"| {p['a']} → {p['b']} | {label} | {p['difference']:+.4f} | {p['p']:.4f} | {verdict} |"
