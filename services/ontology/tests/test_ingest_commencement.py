@@ -34,6 +34,7 @@ def d(**kw: object) -> Commencement:
         "version_date": V,
         "entry": "",
         "last_article": "",
+        "last_article_touched": True,
         "deferred": False,
         "touched": True,
     }
@@ -69,6 +70,36 @@ def test_a_specific_date_is_used_as_written() -> None:
     assert got == Commencement("specified", date(2015, 5, 3))
     got = d(entry="修正發布第 5 條條文", last_article="本辦法自中華民國一百十三年七月一日施行。")
     assert got == Commencement("specified", date(2024, 7, 1))
+
+
+def test_an_untouched_last_article_dates_an_earlier_promulgation() -> None:
+    """末條不在這次公布所觸及的條裡：它的日期是較早一版的施行日，不論早於或晚於版本日。"""
+    for written in ("八十年七月一日", "一百十四年一月一日"):
+        got = d(
+            entry="修正公布第 5 條條文",
+            last_article=f"本法自中華民國{written}施行。",
+            last_article_touched=False,
+        )
+        assert got == Commencement("stale", None)
+
+
+def test_an_untouched_last_article_still_says_promulgation_day_or_by_order() -> None:
+    """「自公布日施行」與「由命令定之」不帶日期，對其後的每次公布都成立。"""
+    assert d(
+        entry="修正公布第 5 條條文", last_article="本法自公布日施行。", last_article_touched=False
+    ) == Commencement("promulgation", date(2024, 5, 3))
+    assert d(
+        last_article="本法施行日期，由行政院以命令定之。", last_article_touched=False
+    ) == Commencement("by_order", None)
+
+
+def test_the_entry_wins_over_an_untouched_last_article() -> None:
+    got = d(
+        entry="修正公布第 5 條條文；並自公布日施行",
+        last_article="本法自中華民國八十年七月一日施行。",
+        last_article_touched=False,
+    )
+    assert got == Commencement("promulgation", date(2024, 5, 3))
 
 
 def test_per_article_dates_are_not_law_wide() -> None:

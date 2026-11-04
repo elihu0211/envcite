@@ -15,7 +15,7 @@ from envcite_ontology.ingest import articles, commencement, history
 from envcite_ontology.ingest.numerals import parse_yyyymmdd
 
 #: 解析邏輯的版本。改變輸出的修改必須遞增，快照才會以新版重匯。
-PARSER_VERSION = 1
+PARSER_VERSION = 2
 
 _KINDS = {"憲法": "constitution", "法律": "statute", "命令": "regulation"}
 
@@ -226,7 +226,7 @@ def _articles(
         e for e in parsed.events if e.kind == "commencement" and (last is None or _after(e, last))
     ]
     orders = [(e, commencement.touched_articles(e.text, seen)) for e in after]
-    emptied = 0
+    emptied = stale = 0
     for path, (_, content) in seen.items():
         result = articles.split(path, content)
         if result.degraded:
@@ -238,10 +238,14 @@ def _articles(
             version_date=version_date,
             entry=entry,
             last_article=last_text,
+            last_article_touched=last_path in touched,
             deferred=path in deferred,
             note=from_note,
             touched=path in touched,
         )
+        if rule.rule == "stale":
+            stale += 1
+            rule = commencement.Commencement("unconfirmed", None)
         if rule.rule == "by_order":
             rule = _by_order(path, orders) or rule
         if rule.rule == "by_order" and parsed.abandoned_on is not None:
@@ -259,6 +263,10 @@ def _articles(
             parsed.units.append(
                 ParsedUnit(u.path, u.type, u.content, articles.sort_key(u.path), kind, starts, ends)
             )
+    if stale:
+        parsed.problems.append(
+            Problem("warning", "stale_last_article", f"{stale} 條：末條的施行日屬較早的公布")
+        )
     if emptied:
         parsed.problems.append(
             Problem("warning", "empty_in_force", f"{emptied} 條的施行日不早於廢止日")

@@ -163,18 +163,11 @@ def plan(anchor: Anchor, current: moenv_law.Version, past: list[moenv_law.Versio
             out.problems.append(
                 Problem("warning", "paragraph_ambiguous", f"{when}：{ambiguous} 處")
             )
-        early = sum(u.starts is not None and u.starts < when for u in parsed.units)
-        if early:
-            # 末條留著較早一版的施行日（沿革這一版沒寫施行）：文字不會在公布前生效，不猜，待確認。
-            parsed.units = [
-                replace(u, rule="unconfirmed", starts=None, ends=None)
-                if u.starts is not None and u.starts < when
-                else u
-                for u in parsed.units
-            ]
-            out.problems.append(
-                Problem("warning", "start_before_version", f"{when}：{early} 個單元")
-            )
+        out.problems.extend(
+            Problem(p.level, p.code, f"{when}：{p.detail}")
+            for p in parsed.problems
+            if p.code == "stale_last_article"
+        )
         out.parsed.append(parsed)
         accepted.append((version, parsed))
         reference = articles

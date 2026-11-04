@@ -9,7 +9,8 @@
 1. 全國法規資料庫的施行說明列出的條：待確認。
 2. 最後一次公布沒有觸及該條：文字在此版本之前已存在，以版本日為界（unchanged）。
 3. 最後一次公布的沿革語句，或（沒有時）末條，明定自公布或發布日施行：第三日（promulgation）。
-4. 同上，明定特定日期：該日（specified）。
+4. 同上，明定特定日期：該日（specified）。末條不在最後一次公布所觸及的條裡時，它的日期是
+   較早一次公布的施行日，不是這一版的：待確認（`stale`）。
 5. 明定施行日由命令定之：尚未施行（by_order）。
 6. 其餘：待確認，不推定第 13 條（unconfirmed）。
 
@@ -47,7 +48,9 @@ PROMULGATION_DAYS = 2  # 「自公布或發布之日起算至第三日」：公�
 
 @dataclass(frozen=True)
 class Commencement:
-    rule: str  # unchanged | promulgation | specified | by_order | unconfirmed
+    # unchanged | promulgation | specified | by_order | unconfirmed；stale 是待確認的一種，
+    # 只在推導時區分（呼叫端記為 unconfirmed 並計數）。
+    rule: str
     start: date | None
 
 
@@ -93,22 +96,28 @@ def derive(
     version_date: date,
     entry: str,
     last_article: str,
+    last_article_touched: bool,
     deferred: bool,
     touched: bool,
     note: Commencement | None = None,
 ) -> Commencement:
-    """一條在現行版本的生效日；`entry` 是最後一次公布的沿革語句，`note` 見 `from_note`。"""
+    """一條在現行版本的生效日；`entry` 是最後一次公布的沿革語句，`note` 見 `from_note`。
+
+    `last_article_touched` 是末條是否在最後一次公布所觸及的條裡。
+    """
     if deferred:
         return Commencement("unconfirmed", None)
     if not touched:
         return Commencement("unchanged", version_date)
     if note is not None:
         return note
-    for source in (entry, last_article):
-        found = _from_text(source, version_date)
-        if found is not None:
-            return found
-    return Commencement("unconfirmed", None)
+    found = _from_text(entry, version_date)
+    if found is not None:
+        return found
+    found = _from_text(last_article, version_date)
+    if found is not None and found.rule == "specified" and not last_article_touched:
+        return Commencement("stale", None)
+    return found or Commencement("unconfirmed", None)
 
 
 def _from_text(text: str, version_date: date) -> Commencement | None:

@@ -96,6 +96,28 @@ def test_untouched_articles_of_a_partial_amendment_are_bounded_by_the_version_da
     assert rules == {"art_1": "promulgation", "art_3-1": "unchanged"}
 
 
+def test_a_date_left_in_an_untouched_last_article_is_not_this_versions() -> None:
+    """末條是制定時的「自某日施行」、最後一次修正沒觸及它：那是制定的施行日，修正的條待確認。"""
+    histories = (
+        "1.中華民國六十四年五月二十三日總統令制定公布全文 3 條\r\n"
+        "2.中華民國一百零七年八月一日總統令修正公布第 1 條條文"
+    )
+    articles = _law()["LawArticles"]
+    articles[-1] = {
+        "ArticleType": "A",
+        "ArticleNo": "第 3-1 條",
+        "ArticleContent": "本法自中華民國六十四年七月一日施行。",
+    }
+    p = _parse(LawHistories=histories, LawArticles=articles)
+    rules = {u.path: (u.rule, u.starts) for u in p.units if u.type == "article"}
+    assert rules == {"art_1": ("unconfirmed", None), "art_3-1": ("unchanged", date(2018, 8, 1))}
+    assert ("warning", "stale_last_article") in {(x.level, x.code) for x in p.problems}
+
+    # 同一次修正也改了末條：末條的日期就是這一版的
+    p = _parse(LawHistories=histories.replace("第 1 條", "第 1、3-1 條"), LawArticles=articles)
+    assert {u.rule for u in p.units if u.type == "article"} == {"specified"}
+
+
 def test_a_later_commencement_order_dates_the_articles_awaiting_it() -> None:
     histories = (
         "1.中華民國一百零七年八月一日總統令制定公布全文 3 條\r\n"

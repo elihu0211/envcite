@@ -236,8 +236,8 @@ def test_a_repealed_law_is_checked_against_its_last_version_in_the_history_list(
     assert {d for _, d, _, _ in _rows(conn)} == {V1, V2, V3}
 
 
-def test_a_commencement_date_before_the_version_is_not_taken_from_an_older_last_article() -> None:
-    """末條留著制定時的施行日、沿革這一版沒寫施行：文字不在公布前生效，該條待確認，不猜。"""
+def test_an_older_last_article_does_not_date_a_past_version() -> None:
+    """末條留著制定時的施行日、沿革這一版沒寫施行：那是較早一次公布的施行日，該條待確認，不猜。"""
     history = (
         "1.中華民國八十年五月二十三日總統令制定公布全文 2 條",
         "2.中華民國一百零七年八月一日總統令修正公布第 1 條條文",
@@ -274,7 +274,7 @@ def test_a_commencement_date_before_the_version_is_not_taken_from_an_older_last_
     }
     assert rows[(V1, "art_1")] == ("specified", date(1991, 7, 1), V3 + DAY3)
     assert rows[(V2, "art_1")] == ("unconfirmed", None, None)
-    assert ("warning", "start_before_version") in {(p.level, p.code) for p in plan.problems}
+    assert ("warning", "stale_last_article") in {(p.level, p.code) for p in plan.problems}
 
 
 def test_a_law_never_amended_is_acquired_and_has_no_past_versions(
