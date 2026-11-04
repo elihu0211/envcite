@@ -1,6 +1,6 @@
-"""歷史版本的回推與寫入（02-02 §3）：經 `envcite-history` 的入口，對真實綱要。
+"""歷史版本的回推與寫入（02-02 §3）：經 `envcite-history moenv` 的入口，對真實綱要。
 
-一部三版的法律：民國 80 年制定（4 條，自公布日施行）、107 年全文修正（條號重排：舊第 3 條
+一部三版的命令：民國 80 年制定（4 條，自公布日施行）、107 年全文修正（條號重排：舊第 3 條
 成為新第 2 條，第 4 條刪除）、109 年修正第 2 條。
 全國法規資料庫只有 109 年版（錨點），主管機關系統有前兩版的全文。
 """
@@ -13,11 +13,13 @@ import psycopg
 import pytest
 from psycopg.types.range import Range
 
-from envcite_jobkit import ItemError, Policy
+from envcite_jobkit import Policy
 from envcite_ontology import history_sync
 from envcite_ontology.acquire import moenv_law
 from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.history_sources import Moenv
 from envcite_ontology.ingest import backfill, importer
+from tests.fake_web import FakeWeb
 from tests.moenv_site import current_page, site
 from tests.sample import stored_snapshot
 from tests.test_import import _law
@@ -25,7 +27,7 @@ from tests.test_import import _law
 Conn = psycopg.Connection[tuple[object, ...]]
 
 PCODE = "T0000001"
-TITLE = "噪音管制法"
+TITLE = "噪音管制法施行細則"
 HISTORY = (
     "1.中華民國八十年五月二十三日總統令制定公布全文 4 條\r\n"
     "2.中華民國一百零七年八月一日總統令修正公布全文 3 條；並自公布日施行\r\n"
@@ -60,7 +62,12 @@ def _anchor(conn: Conn, root: Path) -> None:
         root,
         [
             _law(
-                PCODE, TITLE, LawHistories=HISTORY, LawModifiedDate="20200301", LawArticles=articles
+                PCODE,
+                TITLE,
+                LawLevel="命令",
+                LawHistories=HISTORY,
+                LawModifiedDate="20200301",
+                LawArticles=articles,
             )
         ],
     )
@@ -68,17 +75,10 @@ def _anchor(conn: Conn, root: Path) -> None:
     conn.commit()
 
 
-def _fetch(pages: dict[str, str]) -> history_sync.Fetch:
-    def fetch(url: str) -> str:
-        if url not in pages:
-            raise ItemError(f"404 {url}")
-        return pages[url]
-
-    return fetch
-
-
 def _sync(conn: Conn, root: Path, pages: dict[str, str], **kw: Any) -> int:
-    return history_sync.sync(conn, root, _fetch(pages), policy=POLICY, sleep=lambda _: None, **kw)
+    return history_sync.sync(
+        conn, Moenv(), root, FakeWeb(pages), policy=POLICY, sleep=lambda _: None, **kw
+    )
 
 
 def _full_site(**over: Any) -> dict[str, str]:
@@ -202,15 +202,42 @@ def test_a_missing_version_stops_the_chain_there(conn: Conn, tmp_path: Path) -> 
     assert ("warning", "history_missing") in problems
 
 
-def test_a_stale_current_page_writes_nothing(conn: Conn, tmp_path: Path) -> None:
+def test_a_source_behind_the_corpus_still_backfills_before_the_anchor(
+    conn: Conn, tmp_path: Path
+) -> None:
     _anchor(conn, tmp_path)
     pages = _full_site(current=(V2, V2_TEXT))  # 主管機關系統還沒更新到 109 年
+
+    assert _sync(conn, tmp_path, pages) == 0
+
+    assert {d for _, d, _, _ in _rows(conn)} == {V1, V2, V3}
+    problems = conn.execute("SELECT severity, problem_code FROM source.import_problem").fetchall()
+    assert problems == [("warning", "source_behind")]
+
+
+def test_a_source_ahead_without_the_corpus_version_writes_nothing(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _anchor(conn, tmp_path)
+    pages = _full_site(current=(date(2021, 1, 1), V3_TEXT))  # 沒有語料的 109 年版
 
     assert _sync(conn, tmp_path, pages) == 0
 
     assert {d for _, d, _, _ in _rows(conn)} == {V3}
     problems = conn.execute("SELECT severity, problem_code FROM source.import_problem").fetchall()
     assert problems == [("error", "current_date_mismatch")]
+
+
+def test_an_article_unchanged_within_the_source_keeps_the_corpus_text(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """兩個系統的同一條差標點：來源的相鄰兩版相同就是沒修正，沿用語料的文字。"""
+    _anchor(conn, tmp_path)
+    current = [("1", "甲；"), ("2", "丁。"), ("3", "本法自公布日施行。")]  # 語料是「甲。」
+    v2 = [("1", "甲；"), ("2", "丙。"), ("3", "本法自公布日施行。")]
+    _sync(conn, tmp_path, _full_site(current=(V3, current), past={12: (V2, v2)}))
+
+    assert _at(conn, date(2019, 1, 1))["art_1"] == ("in_force", "甲。")
 
 
 def test_unchanged_articles_take_the_newer_version_text(conn: Conn, tmp_path: Path) -> None:
@@ -247,7 +274,7 @@ def test_an_older_last_article_does_not_date_a_past_version() -> None:
     anchor = backfill.Anchor(
         resource=1,
         pcode=PCODE,
-        kind="statute",
+        kind="regulation",
         repealed_on=None,
         version_date=V3,
         latest_date=V3,
@@ -257,13 +284,13 @@ def test_an_older_last_article_does_not_date_a_past_version() -> None:
         events=list(history),
     )
 
-    def version(when: date, first: str) -> moenv_law.Version:
-        return moenv_law.Version(
+    def version(when: date, first: str) -> backfill.Version:
+        return backfill.Version(
             TITLE,
             when,
             [
-                moenv_law.Article("第 1 條", first, False, 0),
-                moenv_law.Article("第 2 條", last, False, 0),
+                backfill.Article("第 1 條", first, False, 0),
+                backfill.Article("第 2 條", last, False, 0),
             ],
         )
 

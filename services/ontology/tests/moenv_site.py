@@ -77,7 +77,7 @@ def site(
     current: tuple[date, list[tuple[str, str]]],
     past: dict[int, tuple[date, list[tuple[str, str]]]],
     *,
-    kind: str = "法律",
+    kind: str = "命令",
 ) -> dict[str, str]:
     """網址 → 頁面。`past` 是 hid → （異動日期，條文）。"""
     pages = {

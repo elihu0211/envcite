@@ -19,6 +19,8 @@
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from datetime import date
@@ -27,7 +29,6 @@ from typing import cast
 import psycopg
 from psycopg.types.range import Range
 
-from envcite_ontology.acquire import moenv_law
 from envcite_ontology.ingest import history, law
 from envcite_ontology.ingest.law import ParsedLaw, ParsedUnit, Problem
 from envcite_ontology.ingest.write import _ensure_provisions, _insert_versions, _sha
@@ -35,6 +36,35 @@ from envcite_ontology.ingest.write import _ensure_provisions, _insert_versions, 
 Conn = psycopg.Connection[tuple[object, ...]]
 
 _LEVELS = {"constitution": "憲法", "statute": "法律", "regulation": "命令"}
+
+
+class UnreadablePage(ValueError):
+    """來源的頁面抓到了，卻不是預期的形狀。"""
+
+
+@dataclass(frozen=True, slots=True)
+class Article:
+    article_no: str  # 「第 N 條」「第 N-M 條」
+    #: 項、款、目各一行
+    content: str
+    #: 版面排不下、全文只在附件（PDF）
+    incomplete: bool
+    #: 轉錄還原時判不準的分項處（來源是折行轉錄者才有）
+    ambiguous: int
+
+
+@dataclass(frozen=True, slots=True)
+class Version:
+    """來源的一個歷次版本；版本日是公布或發布日，與沿革同。"""
+
+    title: str
+    version_date: date
+    articles: list[Article]
+
+
+def fold(text: str) -> str:
+    """比對用：相容字形與空白不算差異（各系統的括號全半形、英數前後的空白不同）。"""
+    return re.sub(r"\s+", "", unicodedata.normalize("NFKC", text))
 
 
 @dataclass(frozen=True)
@@ -83,21 +113,24 @@ class Plan:
         return not any(p.level == "error" for p in self.problems)
 
 
-def plan(anchor: Anchor, current: moenv_law.Version, past: list[moenv_law.Version]) -> Plan:
+def plan(anchor: Anchor, current: Version, past: list[Version]) -> Plan:
     out = Plan()
     # 已廢止者的現行頁不帶最後一版的日期，最後一版在歷史清單裡。
     same_day = [v for v in (current, *past) if v.version_date == anchor.latest_date]
     latest = next((v for v in same_day if v.articles), same_day[0] if same_day else None)
-    if latest is None:
+    newest = max(v.version_date for v in (current, *past))
+    if latest is not None:
+        out.check = _check(latest, anchor.latest_articles)
+    elif newest < anchor.latest_date:
+        # 來源還沒收最新的修正：回推只用錨點之前的版本，照樣可做，只是沒有現行版可核對。
         out.problems.append(
-            Problem(
-                "error",
-                "current_date_mismatch",
-                f"主管機關系統 {current.version_date}，語料 {anchor.latest_date}",
-            )
+            Problem("warning", "source_behind", f"來源 {newest}，語料 {anchor.latest_date}")
+        )
+    else:
+        out.problems.append(
+            Problem("error", "current_date_mismatch", f"來源 {newest}，語料 {anchor.latest_date}")
         )
         return out
-    out.check = _check(latest, anchor.latest_articles)
 
     events = [(e, history.parse(e)) for e in anchor.events]
     promulgated = sorted(
@@ -111,7 +144,7 @@ def plan(anchor: Anchor, current: moenv_law.Version, past: list[moenv_law.Versio
         },
         reverse=True,
     )
-    by_date: dict[date, moenv_law.Version] = {}
+    by_date: dict[date, Version] = {}
     for v in past:
         if v.version_date in by_date:
             out.problems.append(Problem("error", "history_duplicate", str(v.version_date)))
@@ -124,7 +157,12 @@ def plan(anchor: Anchor, current: moenv_law.Version, past: list[moenv_law.Versio
         )
 
     reference = anchor.articles
-    accepted: list[tuple[moenv_law.Version, ParsedLaw]] = []
+    # 來源裡與 `reference` 同一版的文字：兩個系統的同一條常差標點或字形（「，」與「；」、「椿」與
+    # 「樁」），相鄰兩版是否修正，以同一來源的文字比，不以跨系統的文字比。
+    newer = next(
+        (v for v in (current, *past) if v.version_date == anchor.version_date and v.articles), None
+    )
+    accepted: list[tuple[Version, ParsedLaw]] = []
     until = anchor.version_date
     for when in promulgated:
         version = by_date.get(when)
@@ -138,7 +176,7 @@ def plan(anchor: Anchor, current: moenv_law.Version, past: list[moenv_law.Versio
                 Problem("warning", "history_incomplete", f"{when} 有條文只在 PDF，更早的不寫")
             )
             break
-        articles, ambiguous = _texts(version, reference)
+        articles, ambiguous = _texts(version, reference, newer)
         raw = {
             "LawLevel": _LEVELS[anchor.kind],
             "LawName": version.title,
@@ -171,6 +209,7 @@ def plan(anchor: Anchor, current: moenv_law.Version, past: list[moenv_law.Versio
         out.parsed.append(parsed)
         accepted.append((version, parsed))
         reference = articles
+        newer = version
         until = when
 
     out.versions = _intervals(anchor, accepted)
@@ -185,18 +224,27 @@ def _before(parsed: list[history.Event], until: date) -> bool:
     return bool(parsed) and all(e.date is not None and e.date < until for e in parsed)
 
 
-def _texts(version: moenv_law.Version, reference: dict[str, str]) -> tuple[dict[str, str], int]:
-    known = {moenv_law.fold(t): t for t in reference.values()}
+def _texts(
+    version: Version, reference: dict[str, str], newer: Version | None
+) -> tuple[dict[str, str], int]:
+    """各條的文字：與較新一版相同（正規化後，或與來源的較新一版相同）的沿用較新一版的文字。"""
+    known = {fold(t): t for t in reference.values()}
+    if newer is not None:
+        known |= {
+            fold(a.content): reference[a.article_no]
+            for a in newer.articles
+            if a.article_no in reference and fold(a.content) not in known
+        }
     texts: dict[str, str] = {}
     ambiguous = 0
     for a in version.articles:
-        same = known.get(moenv_law.fold(a.content))
+        same = known.get(fold(a.content))
         texts[a.article_no] = same if same is not None else a.content
         ambiguous += a.ambiguous if same is None else 0
     return texts, ambiguous
 
 
-def _check(current: moenv_law.Version, latest: dict[str, str]) -> Counter[str]:
+def _check(current: Version, latest: dict[str, str]) -> Counter[str]:
     got = {a.article_no: a for a in current.articles}
     out: Counter[str] = Counter()
     for no, text in latest.items():
@@ -207,7 +255,7 @@ def _check(current: moenv_law.Version, latest: dict[str, str]) -> Counter[str]:
             out["incomplete"] += 1
         elif a.content == text:
             out["exact"] += 1
-        elif moenv_law.fold(a.content) != moenv_law.fold(text):
+        elif fold(a.content) != fold(text):
             out["differs"] += 1
         elif a.content.count("\n") == text.count("\n"):
             out["typography"] += 1
@@ -241,9 +289,7 @@ def _end(later: list[_Later], path: str) -> date | None:
     return None
 
 
-def _intervals(
-    anchor: Anchor, accepted: list[tuple[moenv_law.Version, ParsedLaw]]
-) -> list[Planned]:
+def _intervals(anchor: Anchor, accepted: list[tuple[Version, ParsedLaw]]) -> list[Planned]:
     """由新往舊定每一版各單元的效力上界（`accepted` 是新到舊）。"""
     later = [_Later(dict(anchor.starts), set())]
     planned: list[Planned] = []
@@ -336,14 +382,18 @@ def _articles(conn: Conn, resource: int, version_date: date) -> dict[str, str]:
     }
 
 
-def write(conn: Conn, anchor: Anchor, target: list[Planned]) -> str:
-    """寫入一部法規的歷史版本；回傳動作：added、updated、unchanged、reshaped（不寫）。"""
+def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> str:
+    """寫入一部法規的歷史版本；回傳動作：added、updated、unchanged、reshaped（不寫）。
+
+    歷史版本是官方資料庫以外的所有版本，不論由哪個來源寫入：改由另一個來源（`authority`）提供時，
+    同日的版本列改記新的來源、條文單元依新的文字取代。
+    """
     existing = {
-        cast(date, d): (cast(int, i), cast(str, t), cast(Range[date], p))
-        for i, d, t, p in conn.execute(
-            "SELECT id, version_date, title, text_period FROM corpus.legal_expression"
-            " WHERE resource_id = %s AND language = 'zho'"
-            "   AND text_authority = 'competent_authority'",
+        cast(date, d): (cast(int, i), cast(str, t), cast(Range[date], p), cast(str, a))
+        for i, d, t, p, a in conn.execute(
+            "SELECT id, version_date, title, text_period, text_authority::text"
+            "  FROM corpus.legal_expression"
+            " WHERE resource_id = %s AND language = 'zho' AND text_authority <> 'official_db'",
             (anchor.resource,),
         )
     }
@@ -355,19 +405,20 @@ def write(conn: Conn, anchor: Anchor, target: list[Planned]) -> str:
     for v in target:
         period = Range(v.version_date, v.until, "[)")
         if v.version_date in existing:
-            expression, title, current = existing[v.version_date]
-            if title != v.title or current != period:
+            expression, title, current, by = existing[v.version_date]
+            if title != v.title or current != period or by != authority:
                 conn.execute(
-                    "UPDATE corpus.legal_expression SET title = %s, text_period = %s WHERE id = %s",
-                    (v.title, period, expression),
+                    "UPDATE corpus.legal_expression SET title = %s, text_period = %s,"
+                    "  text_authority = %s WHERE id = %s",
+                    (v.title, period, authority, expression),
                 )
                 changed = True
         else:
             row = conn.execute(
                 "INSERT INTO corpus.legal_expression (resource_id, language, version_date, title,"
                 "  text_period, text_status, text_authority)"
-                " VALUES (%s, 'zho', %s, %s, %s, 'available', 'competent_authority') RETURNING id",
-                (anchor.resource, v.version_date, v.title, period),
+                " VALUES (%s, 'zho', %s, %s, %s, 'available', %s) RETURNING id",
+                (anchor.resource, v.version_date, v.title, period, authority),
             ).fetchone()
             assert row is not None and isinstance(row[0], int)
             expression = row[0]

@@ -28,6 +28,7 @@ import unicodedata
 from dataclasses import dataclass
 from datetime import date
 
+from envcite_ontology.ingest.backfill import Article, UnreadablePage, Version
 from envcite_ontology.ingest.numerals import CN_NUMERALS
 
 BASE = "https://oaout.moenv.gov.tw/law/"
@@ -76,10 +77,6 @@ _BOX = re.compile(r"[─-╿]")
 _MIN_WRAP = 60
 
 
-class UnreadablePage(ValueError):
-    """頁面抓到了，卻不是預期的清單、現行或歷史頁。"""
-
-
 @dataclass(frozen=True, slots=True)
 class Row:
     """葉分類清單上的一部法規。"""
@@ -87,24 +84,6 @@ class Row:
     site_id: str
     title: str
     kind: str
-
-
-@dataclass(frozen=True, slots=True)
-class Article:
-    article_no: str
-    #: 項以換行分隔，已還原折行；款目的層級縮排照來源保留
-    content: str
-    #: 版面排不下、全文只在 PDF
-    incomplete: bool
-    #: 還原時判不準的分項處（滿寬且以「。」結束的行之後的頂格行，判為新項）
-    ambiguous: int
-
-
-@dataclass(frozen=True, slots=True)
-class Version:
-    title: str
-    version_date: date
-    articles: list[Article]
 
 
 def parent_categories(page: str) -> list[str]:
@@ -236,11 +215,6 @@ def unwrap(lines: list[str], width: int) -> tuple[str, int]:
             hang = display_width(m.group(0)) if m else 0
         last = line
     return "\n".join(out), ambiguous
-
-
-def fold(text: str) -> str:
-    """比對用：相容字形與空白不算差異（兩個系統的括號全半形、英數前後的空白不同）。"""
-    return re.sub(r"\s+", "", unicodedata.normalize("NFKC", text))
 
 
 def _roc(text: str) -> date | None:

@@ -1,18 +1,20 @@
-"""`envcite-history`：取得環境部主管法規的歷史版本並補進語料（02-02 §3）。可重跑、冪等。
+"""`envcite-history <來源>`：取得法規的歷史版本並補進語料（02-02 §3）。可重跑、冪等。
 
-依序三步，與 `envcite-sync` 同一套：取得只要網路與檔案、匯入只要快照與資料庫。
+一部法規的歷史只有一個來源，依種類分：**法律**取自立法院法律系統（`ly`，制定機關）、**命令**取自
+主管機關的系統（`moenv`，目前只有環境部的）。依序三步，與 `envcite-sync` 同一套：取得只要網路與
+檔案、匯入只要快照與資料庫。
 
-1. **取得**（`envcite_jobkit.run`，一部法規一項：端點錯誤退避重試、斷路器、單項隔離）：走分類樹
-   列出法律與命令，逐部抓歷史清單、現行頁與各歷史頁，打包成一份 JSON 快照（內容定址，只存頁面的
-   內容部分），記 `source.snapshot` 與 `source.item`（feed `moenv_law`，鍵是系統的法規代碼），
-   一部一個交易。歷史頁是過去的版本，上一份快照已有的同一 `hid` 沿用、不重抓；`--rescan` 全部重抓。
-2. **匯入**：每部取最新的快照，以名稱、種類與現行版本日對到語料的法規，`backfill.plan`
-   回推出歷史版本；整批比例過驗收才寫，一部一個交易（`backfill.write`），問題記入
-   `source.import_problem`。全國法規資料庫的匯入要先跑過：錨點是它寫入的版本。
+1. **取得**（`envcite_jobkit.run`，一部法規一項：端點錯誤退避重試、斷路器、單項隔離）：來源列出
+   目標（`targets`），逐部抓它的各版打包成一份 JSON 快照（內容定址，只存頁面的內容部分），記
+   `source.snapshot` 與 `source.item`（鍵見各來源），一部一個交易。過去的版本不會再變，上一份快照
+   已有的同一版沿用、不重抓；`--rescan` 全部重抓。
+2. **匯入**：每部取最新的快照，對到語料的法規（`resolve`），`backfill.plan` 回推出歷史版本；整批
+   比例過驗收才寫，一部一個交易（`backfill.write`），問題記入 `source.import_problem`。全國法規
+   資料庫的匯入要先跑過：錨點是它寫入的版本。
 3. 授權抽取與檢索投影，同 `envcite-sync`（歷史條文的首條與段落也要有）。
 
 結束碼：0 完成；1 暫時性失敗（含隔離超過列舉數的 1%）；2 資料不合預期或整批比例越線；75 斷路器開啟。
-來源與授權見 `acquire/moenv_law.py`；顯示這些文字時須標示出處（環境部）。
+來源與授權見 `history_sources.py`；顯示這些文字時須標示出處（快照的 `license_notice`）。
 """
 
 from __future__ import annotations
@@ -42,19 +44,24 @@ from envcite_jobkit import (
     run,
 )
 from envcite_ontology import delegation, embedding, projection
-from envcite_ontology.acquire import moenv_law
-from envcite_ontology.acquire.moenv_law import Row
 from envcite_ontology.acquire.web import Http
+from envcite_ontology.history_sources import (
+    SOURCES,
+    HistorySource,
+    Skip,
+    Target,
+    Unmatched,
+    Web,
+)
 from envcite_ontology.ingest import audit, backfill, law
+from envcite_ontology.ingest.backfill import UnreadablePage
 from envcite_ontology.ingest.law import Problem
 from envcite_ontology.settings import SnapshotSettings, load
 
 log = logging.getLogger(__name__)
 
 Conn = psycopg.Connection[tuple[object, ...]]
-Fetch = Callable[[str], str]
 
-FEED = "moenv_law"
 POLICY = Policy(
     name="history",
     open_action="exit",
@@ -62,19 +69,14 @@ POLICY = Policy(
     backoff_base_seconds=2.0,
     backoff_max_seconds=60.0,
 )
-#: 對來源網站的禮貌間隔（秒）；逐頁循序抓
-PAUSE_SECONDS = 1.0
 #: 隔離的法規占列舉數超過此比例，本次判定失敗
 COVERAGE_TOLERANCE = 0.01
 
-#: 整批驗收：名稱 → (說明, 上限)
+#: 整批驗收：名稱 → (說明, 上限)；對不到的上限因來源而異（`HistorySource.unmatched_limit`）
 LIMITS = {
-    "unmatched": ("對不到語料法規的占列舉數", 0.02),
     "rejected": ("有 error 而不寫的占對到的法規", 0.05),
     "degraded_articles": ("切分退回整條的條占歷史版本的條", audit.LIMITS["degraded_articles"][1]),
 }
-
-_KINDS = {"法律": ("statute", "constitution"), "命令": ("regulation",)}
 
 
 class _LoggedSink:
@@ -104,6 +106,7 @@ class Report:
     snapshots: int = 0
     dead_lettered: int = 0
     matched: int = 0
+    skipped: int = 0
     actions: Counter[str] = field(default_factory=Counter)
     versions: int = 0
     units: int = 0
@@ -118,44 +121,26 @@ class Report:
         )
 
 
-def rows(fetch: Fetch) -> list[Row]:
-    """分類樹的每個葉分類翻到底；只留法律與命令，同一部法規出現在數個分類只算一次。"""
-    root = fetch(moenv_law.CATEGORIES)
-    leaves = moenv_law.leaf_categories(root)
-    for parent in moenv_law.parent_categories(root):
-        leaves += moenv_law.leaf_categories(fetch(f"{moenv_law.CATEGORIES}&CategoryID={parent}"))
-    found: dict[str, Row] = {}
-    for leaf in dict.fromkeys(leaves):
-        page = 1
-        while True:
-            listed = moenv_law.list_rows(fetch(moenv_law.LIST.format(category=leaf, page=page)))
-            for r in listed:
-                if r.kind in moenv_law.KINDS:
-                    found.setdefault(r.site_id, r)
-            if len(listed) < moenv_law.PAGE_SIZE:
-                break
-            page += 1
-    return list(found.values())
-
-
 def acquire(
     conn: Conn,
+    source: HistorySource,
     root: Path,
-    fetch: Fetch,
+    web: Web,
     report: Report,
     *,
     rescan: bool = False,
     policy: Policy = POLICY,
     sleep: Callable[[float], None] = time.sleep,
 ) -> ExitCode:
-    listed = rows(fetch)
+    listed = source.targets(conn, web)
+    conn.rollback()
     report.listed = len(listed)
     stats = RunStats()
     code = run(
         listed,
-        lambda r: _acquire_one(conn, root, fetch, r, report, rescan=rescan),
+        lambda t: _acquire_one(conn, source, root, web, t, report, rescan=rescan),
         policy,
-        item_id=lambda r: r.site_id,
+        item_id=lambda t: t.key,
         sink=_LoggedSink(policy),
         stats=stats,
         sleep=sleep,
@@ -168,49 +153,44 @@ def acquire(
 
 
 def _acquire_one(
-    conn: Conn, root: Path, fetch: Fetch, row: Row, report: Report, *, rescan: bool
+    conn: Conn,
+    source: HistorySource,
+    root: Path,
+    web: Web,
+    target: Target,
+    report: Report,
+    *,
+    rescan: bool,
 ) -> None:
+    previous: dict[str, Any] = {}
+    if not rescan:
+        latest = _latest_bundle(conn, source, root, target.key)
+        conn.rollback()
+        previous = cast(dict[str, Any], latest.get("versions", {})) if latest else {}
     try:
-        listing = fetch(moenv_law.HISTORY_LIST.format(site_id=row.site_id))
-        current = fetch(moenv_law.CURRENT.format(site_id=row.site_id))
-        previous = {} if rescan else _previous_versions(conn, root, row.site_id)
-        versions: dict[str, str] = {}
-        for hid in moenv_law.history_ids(listing):
-            if str(hid) in previous:
-                versions[str(hid)] = previous[str(hid)]
-                report.reused_pages += 1
-                continue
-            page = fetch(moenv_law.HISTORY.format(hid=hid, site_id=row.site_id))
-            versions[str(hid)] = moenv_law.fragment(page)
-            report.fetched_pages += 1
-        report.fetched_pages += 2
-        bundle = {
-            "site_id": row.site_id,
-            "title": row.title,
-            "kind": row.kind,
-            "current": moenv_law.fragment(current),
-            "history_ids": list(versions),
-            "versions": versions,
-        }
-    except moenv_law.UnreadablePage as e:
-        raise ItemError(f"{row.site_id}: {e}") from e
+        bundle = source.bundle(web, target, previous)
+    except UnreadablePage as e:
+        raise ItemError(f"{target.key}: {e}") from e
+    report.fetched_pages += bundle.pop("_fetched")
+    report.reused_pages += bundle.pop("_reused")
     data = json.dumps(bundle, ensure_ascii=False, sort_keys=True).encode()
     digest = hashlib.sha256(data).digest()
-    location = f"{FEED}/{digest.hex()}"
+    location = f"{source.feed}/{digest.hex()}"
     path = root / location
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists():
         path.write_bytes(data)
     with conn.transaction():
         known = conn.execute(
-            "SELECT id FROM source.snapshot WHERE feed = %s AND sha256 = %s", (FEED, digest)
+            "SELECT id FROM source.snapshot WHERE feed = %s AND sha256 = %s",
+            (source.feed, digest),
         ).fetchone()
         if known is not None:
             return
         snapshot = conn.execute(
             "INSERT INTO source.snapshot (feed, data_date, sha256, size_bytes, location,"
             "  license_notice) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-            (FEED, date.today(), digest, len(data), location, moenv_law.ATTRIBUTION),
+            (source.feed, date.today(), digest, len(data), location, source.attribution),
         ).fetchone()
         assert snapshot is not None
         conn.execute(
@@ -219,23 +199,19 @@ def _acquire_one(
             " VALUES (%(feed)s, %(key)s, %(sha)s, %(id)s, %(id)s)"
             " ON CONFLICT (feed, key) DO UPDATE SET content_sha256 = excluded.content_sha256,"
             "   last_snapshot_id = excluded.last_snapshot_id, dropped_on = NULL",
-            {"feed": FEED, "key": row.site_id, "sha": digest, "id": snapshot[0]},
+            {"feed": source.feed, "key": target.key, "sha": digest, "id": snapshot[0]},
         )
         report.snapshots += 1
 
 
-def _previous_versions(conn: Conn, root: Path, site_id: str) -> dict[str, str]:
-    bundle = _latest_bundle(conn, root, site_id)
-    conn.rollback()
-    return cast(dict[str, str], bundle["versions"]) if bundle else {}
-
-
-def _latest_bundle(conn: Conn, root: Path, site_id: str) -> dict[str, Any] | None:
+def _latest_bundle(
+    conn: Conn, source: HistorySource, root: Path, key: str
+) -> dict[str, Any] | None:
     row = conn.execute(
         "SELECT s.location FROM source.item AS i"
         "  JOIN source.snapshot AS s ON s.id = i.last_snapshot_id"
         " WHERE i.feed = %s AND i.key = %s",
-        (FEED, site_id),
+        (source.feed, key),
     ).fetchone()
     if row is None:
         return None
@@ -247,23 +223,23 @@ def _latest_bundle(conn: Conn, root: Path, site_id: str) -> dict[str, Any] | Non
 class _Prepared:
     item_id: int
     snapshot_id: int
-    site_id: str
     anchor: backfill.Anchor | None
     plan: backfill.Plan
 
 
-def import_(conn: Conn, root: Path, report: Report, *, dry_run: bool = False) -> None:
+def import_(
+    conn: Conn, source: HistorySource, root: Path, report: Report, *, dry_run: bool = False
+) -> None:
     """每部取最新快照回推；整批比例不過就一部都不寫（`BatchRejected`）。"""
-    titles = _titles(conn)
     prepared: list[_Prepared] = []
     metrics = audit.Metrics()
     items = conn.execute(
-        "SELECT i.id, i.key, s.id, s.location FROM source.item AS i"
+        "SELECT i.id, s.id, s.location FROM source.item AS i"
         "  JOIN source.snapshot AS s ON s.id = i.last_snapshot_id"
         " WHERE i.feed = %s ORDER BY i.key",
-        (FEED,),
+        (source.feed,),
     ).fetchall()
-    for item_id, key, snapshot_id, location in items:
+    for item_id, snapshot_id, location in items:
         path = root / str(location)
         if not path.exists():
             raise BatchRejected(f"snapshot file missing: {location}")
@@ -272,29 +248,24 @@ def import_(conn: Conn, root: Path, report: Report, *, dry_run: bool = False) ->
         anchor = None
         plan = backfill.Plan(problems=problems)
         try:
-            current = moenv_law.parse_version(bundle["current"])
-            past = [moenv_law.parse_version(p) for p in bundle["versions"].values()]
-        except moenv_law.UnreadablePage as e:
+            pcode = source.resolve(conn, bundle)
+            current, past = source.versions(bundle)
+        except Skip:
+            report.skipped += 1
+            continue
+        except UnreadablePage as e:
             problems.append(Problem("error", "unreadable", str(e)))
+        except Unmatched as e:
+            problems.append(Problem("error", e.code, e.detail))
         else:
-            # 同名的數部（廢止後另立同名法規）以現行版本日分辨。
-            named = titles.get((current.title, bundle["kind"]), [])
-            pcodes = [c for c, d in named if d == current.version_date] if len(named) > 1 else []
-            pcodes = pcodes or [c for c, _ in named]
-            if len(pcodes) != 1:
-                code = "unmatched" if not pcodes else "ambiguous_title"
-                problems.append(Problem("error", code, f"{current.title}（{bundle['kind']}）"))
+            anchor = backfill.load_anchor(conn, pcode)
+            if anchor is None:
+                problems.append(Problem("error", "unmatched", pcode))
             else:
-                anchor = backfill.load_anchor(conn, pcodes[0])
-                if anchor is None:
-                    problems.append(Problem("error", "unmatched", pcodes[0]))
-                else:
-                    plan = backfill.plan(anchor, current, past)
+                plan = backfill.plan(anchor, current, past)
         for parsed in plan.parsed:
             metrics.add(parsed)
-        prepared.append(
-            _Prepared(cast(int, item_id), cast(int, snapshot_id), str(key), anchor, plan)
-        )
+        prepared.append(_Prepared(cast(int, item_id), cast(int, snapshot_id), anchor, plan))
     conn.rollback()
 
     matched = [p for p in prepared if p.anchor is not None]
@@ -302,19 +273,20 @@ def import_(conn: Conn, root: Path, report: Report, *, dry_run: bool = False) ->
     for p in prepared:
         report.problems.update(f"{x.level} {x.code}" for x in p.plan.problems)
         report.check.update(p.plan.check)
+    limits = LIMITS | {"unmatched": ("對不到語料法規的占列舉數", source.unmatched_limit)}
     ratios = {
         "unmatched": (len(prepared) - len(matched), len(prepared)),
         "rejected": (sum(not p.plan.ok for p in matched), len(matched)),
         "degraded_articles": (metrics.degraded_articles, metrics.articles),
     }
     for name, (n, d) in ratios.items():
-        log.info("%s %d／%d", LIMITS[name][0], n, d)
+        log.info("%s %d／%d", limits[name][0], n, d)
     violations = [
-        f"{LIMITS[n][0]} {k / d:.2%}，上限 {LIMITS[n][1]:.2%}"
+        f"{limits[n][0]} {k / d:.2%}，上限 {limits[n][1]:.2%}"
         for n, (k, d) in ratios.items()
-        if d and k / d > LIMITS[n][1]
+        if d and k / d > limits[n][1]
     ]
-    if not prepared:
+    if not prepared and not report.skipped:
         violations.append("沒有任何快照")
     if violations:
         raise BatchRejected("；".join(violations))
@@ -325,7 +297,7 @@ def import_(conn: Conn, root: Path, report: Report, *, dry_run: bool = False) ->
         with conn.transaction():
             problems = list(p.plan.problems)
             if p.anchor is not None and p.plan.ok:
-                action = backfill.write(conn, p.anchor, p.plan.versions)
+                action = backfill.write(conn, p.anchor, p.plan.versions, source.authority)
                 if action == "reshaped":
                     problems.append(
                         Problem("error", "history_reshaped", "已寫入的歷史版本日不在這次的目標裡")
@@ -351,27 +323,11 @@ def import_(conn: Conn, root: Path, report: Report, *, dry_run: bool = False) ->
             )
 
 
-def _titles(conn: Conn) -> dict[tuple[str, str], list[tuple[str, date]]]:
-    """（最新版本的標題，種類）→（pcode，最新版本日）；歷來改過名的法規只以現名對。"""
-    out: dict[tuple[str, str], list[tuple[str, date]]] = {}
-    for title, kind, pcode, latest in conn.execute(
-        "SELECT DISTINCT ON (r.id) e.title, r.norm_kind::text, r.local_id, e.version_date"
-        "  FROM corpus.legal_resource AS r"
-        "  JOIN corpus.legal_expression AS e ON e.resource_id = r.id AND e.language = 'zho'"
-        " WHERE r.id_scheme = 'moj_pcode'"
-        " ORDER BY r.id, e.version_date DESC"
-    ):
-        for label, kinds in _KINDS.items():
-            if kind in kinds:
-                out.setdefault((str(title), label), []).append((str(pcode), cast(date, latest)))
-    conn.rollback()
-    return out
-
-
 def sync(
     conn: Conn,
+    source: HistorySource,
     root: Path,
-    fetch: Fetch,
+    web: Web,
     *,
     step: str = "sync",
     rescan: bool = False,
@@ -385,9 +341,11 @@ def sync(
     code: int = ExitCode.OK
     try:
         if step in ("sync", "acquire"):
-            code = acquire(conn, root, fetch, report, rescan=rescan, policy=policy, sleep=sleep)
+            code = acquire(
+                conn, source, root, web, report, rescan=rescan, policy=policy, sleep=sleep
+            )
         if code == ExitCode.OK and step in ("sync", "import"):
-            import_(conn, root, report, dry_run=dry_run)
+            import_(conn, source, root, report, dry_run=dry_run)
             if not dry_run:
                 delegation.extract(conn)
                 conn.commit()
@@ -400,18 +358,20 @@ def sync(
         conn.rollback()
         code = e.code
     report.seconds = round(time.monotonic() - started, 1)
-    log.info("歷史版本：%s", report.line())
+    log.info("歷史版本（%s）：%s", source.feed, report.line())
     return int(code)
 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="envcite-history")
+    parser.add_argument("source", choices=sorted(SOURCES))
     parser.add_argument("step", nargs="?", default="sync", choices=("sync", "acquire", "import"))
-    parser.add_argument("--rescan", action="store_true", help="歷史頁全部重抓")
+    parser.add_argument("--rescan", action="store_true", help="過去的版本全部重抓")
     parser.add_argument("--dry-run", action="store_true", help="匯入只回推與驗收，不寫")
     args = parser.parse_args()
 
+    source = SOURCES[args.source]()
     settings = load(SnapshotSettings)
     with psycopg.connect(settings.dsn) as conn:
         embedder = embedding.from_settings(settings, timeout=60.0)
@@ -419,8 +379,9 @@ def main() -> None:
         raise SystemExit(
             sync(
                 conn,
+                source,
                 settings.snapshot_dir,
-                Http(PAUSE_SECONDS).text,
+                Http(source.pause, legacy_tls=source.legacy_tls),
                 step=args.step,
                 rescan=args.rescan,
                 dry_run=args.dry_run,
