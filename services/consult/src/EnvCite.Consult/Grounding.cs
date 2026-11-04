@@ -1,5 +1,7 @@
 using System.Collections.Frozen;
 
+using Microsoft.Extensions.Options;
+
 namespace EnvCite.Consult;
 
 internal enum Confidence
@@ -41,27 +43,6 @@ internal sealed record Refusal(RefusalReason Reason, string Detail) : GroundingO
 /// </summary>
 internal static class Grounding
 {
-    /// <summary>
-    /// 低於此值的檢索資料，視為與問題無關。下界都是受模型制約的值，不是領域常數：只在產生它的評分方式下才可比較，
-    /// 評分方式一旦改變就必須重新量測分數分佈後重訂。字面分數是未正規化的 <c>ts_rank_cd</c>，隨語料大小而變，
-    /// 語料明顯增長後要重量。
-    /// 兩個下界取自離線風險—覆蓋掃描：要求可答問句至少 97% 通過，在其下讓最少的無答案問句通過
-    /// （<c>services/ontology/eval/answerability-floor-2026-11-02.md</c>）。
-    /// </summary>
-    public const double RelevanceFloor = 4.0;
-
-    /// <summary>語意臂的餘弦相似度下界。</summary>
-    public const double SemanticRelevanceFloor = 0.61;
-
-    /// <summary>
-    /// 至少有一個來源達到此強度，即表示答案建立在直接的依據上。取下界的 1.5 倍：高信心要比「相關」更強，
-    /// 而兩者之間沒有獨立的量測準則可定，所以只保留與下界的固定比例。
-    /// </summary>
-    public const double HighConfidenceFloor = 6.0;
-
-    /// <summary>語意臂達到此強度表示高度語意對齊。</summary>
-    public const double HighConfidenceSemanticFloor = 0.75;
-
     /// <summary>封閉引用集合設有上限，讓證據區塊維持在模型能可靠關注的範圍內。超出的來源直接捨棄，而非加以摘要。</summary>
     public const int MaxCitations = 8;
 
@@ -71,19 +52,12 @@ internal static class Grounding
     public static FrozenDictionary<string, string> CodePrefix { get; } =
         new Dictionary<string, string> { [Law] = "L" }.ToFrozenDictionary(StringComparer.Ordinal);
 
-    /// <summary>單一條文是否通過相關性下界：字面臂或語意臂任一臂達標。</summary>
-    public static bool IsRelevant(Article article) =>
-        article.SemanticSimilarity >= SemanticRelevanceFloor || article.LexicalScore >= RelevanceFloor;
-
-    public static bool IsHighConfidence(Article article) =>
-        article.SemanticSimilarity >= HighConfidenceSemanticFloor || article.LexicalScore >= HighConfidenceFloor;
-
     /// <summary>
     /// 指派封閉的引用集合：依檢索順序編為 L1、L2、…。代碼由程式碼指派，絕不由模型指派，而這個對應關係正是
     /// 引用得以查核的原因：<c>L3</c> 要嘛在這份清單裡，要嘛不在。
     /// </summary>
-    public static IReadOnlyList<Citation> Ground(IReadOnlyList<Article> articles) =>
-        [.. articles.Where(IsRelevant).Take(MaxCitations)
+    public static IReadOnlyList<Citation> Ground(IReadOnlyList<Article> articles, RelevanceOptions relevance) =>
+        [.. articles.Where(relevance.IsRelevant).Take(MaxCitations)
             .Select((a, i) => new Citation($"{CodePrefix[Law]}{i + 1}", a.Iri, a.Label, a.Text, Law))];
 
     /// <summary>依檢索結果決定是否作答：回傳拒答，或回傳 null 表示繼續。</summary>
@@ -99,15 +73,15 @@ internal static class Grounding
         return grounding.Count == 0 ? new Refusal(RefusalReason.OutOfScope, "檢索結果皆未達相關性下界") : null;
     }
 
-    public static Confidence ConfidenceOf(IReadOnlyList<Citation> grounding, IReadOnlyList<Article> articles)
+    public static Confidence ConfidenceOf(IReadOnlyList<Citation> grounding, IReadOnlyList<Article> articles, RelevanceOptions relevance)
     {
         var cited = grounding.Select(c => c.Iri).ToHashSet(StringComparer.Ordinal);
-        return articles.Any(a => cited.Contains(a.Iri) && IsHighConfidence(a)) ? Confidence.High : Confidence.Low;
+        return articles.Any(a => cited.Contains(a.Iri) && relevance.IsHighConfidence(a)) ? Confidence.High : Confidence.Low;
     }
 }
 
 /// <summary>為一個問題備妥證據，或拒答。只檢索一次：信心度與 grounding 出自同一次結果。</summary>
-internal sealed class GroundingPipeline(IOntologySearch ontology)
+internal sealed class GroundingPipeline(IOntologySearch ontology, IOptions<RelevanceOptions> relevance)
 {
     public async Task<GroundingOutcome> RunAsync(string question, string asOf, CancellationToken cancellationToken)
     {
@@ -118,8 +92,8 @@ internal sealed class GroundingPipeline(IOntologySearch ontology)
         }
 
         var articles = await ontology.SearchAsync(question, asOf, cancellationToken);
-        var grounding = Grounding.Ground(articles);
+        var grounding = Grounding.Ground(articles, relevance.Value);
         return Grounding.Assess(grounding, articles)
-            ?? (GroundingOutcome)new Evidence(grounding, Grounding.ConfidenceOf(grounding, articles));
+            ?? (GroundingOutcome)new Evidence(grounding, Grounding.ConfidenceOf(grounding, articles, relevance.Value));
     }
 }

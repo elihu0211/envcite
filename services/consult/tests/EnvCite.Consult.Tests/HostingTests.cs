@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 
 using OpenTelemetry;
@@ -86,6 +87,15 @@ public sealed class HostingTests(ConsultFactory factory)
             // 標籤全是有限集合：租戶與問句不在其中。
             Assert.Equal(4, p.Tags.Count);
         });
+    }
+
+    [Fact]
+    public void AnOutOfRangeRelevanceFloorStopsTheHostFromStarting()
+    {
+        using var host = factory.WithWebHostBuilder(b => b.UseSetting("Relevance:SemanticFloor", "0"));
+
+        var error = Assert.Throws<OptionsValidationException>(() => host.Services);
+        Assert.Contains("Relevance:SemanticFloor", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

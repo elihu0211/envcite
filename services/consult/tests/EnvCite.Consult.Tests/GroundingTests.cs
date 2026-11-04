@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+
 namespace EnvCite.Consult.Tests;
 
 /// <summary>管線的形狀：哪個階段決定什麼。檢索由測試控制，因為管線的工作正是決定拿檢索結果做什麼。</summary>
@@ -14,13 +16,18 @@ public sealed class GroundingTests
         }
     }
 
+    /// <summary>測試自己的下界：管線的形狀不取決於部署的值。</summary>
+    private static readonly RelevanceOptions Relevance = new() { LexicalFloor = 4, SemanticFloor = 0.61, HighConfidenceSemantic = 0.75 };
+
+    private static GroundingPipeline Pipeline(IOntologySearch ontology) => new(ontology, Options.Create(Relevance));
+
     private static Article Law(int n, double score, double? semantic = null) =>
         new($"https://envcite/tw/law/O0020001/2018-08-01/zho/art_{n}", $"空氣污染防制法 第 {n} 條", $"第 {n} 條條文內容。", score, semantic);
 
     [Fact]
     public void GroundAssignsCodesInRetrievalOrder()
     {
-        var grounding = Grounding.Ground([Law(10, 9), Law(2, 8)]);
+        var grounding = Grounding.Ground([Law(10, 9), Law(2, 8)], Relevance);
 
         Assert.Equal(["L1", "L2"], grounding.Select(c => c.Code));
         Assert.Equal(["空氣污染防制法 第 10 條", "空氣污染防制法 第 2 條"], grounding.Select(c => c.Label));
@@ -30,7 +37,7 @@ public sealed class GroundingTests
     [Fact]
     public void GroundDropsArticlesBelowTheRelevanceFloor()
     {
-        var grounding = Grounding.Ground([Law(1, 9), Law(2, 0.1)]);
+        var grounding = Grounding.Ground([Law(1, 9), Law(2, 0.1)], Relevance);
 
         Assert.Equal(["L1"], grounding.Select(c => c.Code));
     }
@@ -40,14 +47,14 @@ public sealed class GroundingTests
     {
         Article[] many = [.. Enumerable.Range(1, Grounding.MaxCitations + 4).Select(n => Law(n, 9))];
 
-        Assert.Equal(Grounding.MaxCitations, Grounding.Ground(many).Count);
+        Assert.Equal(Grounding.MaxCitations, Grounding.Ground(many, Relevance).Count);
     }
 
     [Fact]
     public void GroundKeepsArticlesThatQualifyBySemanticSimilarityAlone()
     {
         // 字面分數未達 4，但語意相似度達 0.80（>= 0.61）的條文保留；0.45 不夠。
-        var grounding = Grounding.Ground([Law(5, 0.05, semantic: 0.80), Law(6, 0.10, semantic: 0.45)]);
+        var grounding = Grounding.Ground([Law(5, 0.05, semantic: 0.80), Law(6, 0.10, semantic: 0.45)], Relevance);
 
         Assert.Equal(Law(5, 0).Iri, Assert.Single(grounding).Iri);
     }
@@ -58,7 +65,7 @@ public sealed class GroundingTests
         Article[] irrelevant = [Law(1, 0.1)];
 
         Assert.Equal(RefusalReason.NoEvidence, Grounding.Assess([], [])?.Reason);
-        Assert.Equal(RefusalReason.OutOfScope, Grounding.Assess(Grounding.Ground(irrelevant), irrelevant)?.Reason);
+        Assert.Equal(RefusalReason.OutOfScope, Grounding.Assess(Grounding.Ground(irrelevant, Relevance), irrelevant)?.Reason);
     }
 
     [Fact]
@@ -68,9 +75,9 @@ public sealed class GroundingTests
         Article[] strong = [Law(1, 9)];
         Article[] semantic = [Law(1, 4.5, semantic: 0.78)];
 
-        Assert.Equal(Confidence.Low, Grounding.ConfidenceOf(Grounding.Ground(weak), weak));
-        Assert.Equal(Confidence.High, Grounding.ConfidenceOf(Grounding.Ground(strong), strong));
-        Assert.Equal(Confidence.High, Grounding.ConfidenceOf(Grounding.Ground(semantic), semantic));
+        Assert.Equal(Confidence.Low, Grounding.ConfidenceOf(Grounding.Ground(weak, Relevance), weak, Relevance));
+        Assert.Equal(Confidence.High, Grounding.ConfidenceOf(Grounding.Ground(strong, Relevance), strong, Relevance));
+        Assert.Equal(Confidence.High, Grounding.ConfidenceOf(Grounding.Ground(semantic, Relevance), semantic, Relevance));
     }
 
     [Fact]
@@ -78,7 +85,7 @@ public sealed class GroundingTests
     {
         var ontology = new FakeOntology(Law(1, 9));
 
-        var outcome = await new GroundingPipeline(ontology).RunAsync("　 ", "", TestContext.Current.CancellationToken);
+        var outcome = await Pipeline(ontology).RunAsync("　 ", "", TestContext.Current.CancellationToken);
 
         Assert.Equal(RefusalReason.MissingInput, Assert.IsType<Refusal>(outcome).Reason);
         Assert.Empty(ontology.Searches);
@@ -89,7 +96,7 @@ public sealed class GroundingTests
     {
         var ontology = new FakeOntology(Law(1, 4.5), Law(2, 0.1));
 
-        var outcome = await new GroundingPipeline(ontology).RunAsync("問句", "2020-01-01", TestContext.Current.CancellationToken);
+        var outcome = await Pipeline(ontology).RunAsync("問句", "2020-01-01", TestContext.Current.CancellationToken);
 
         var evidence = Assert.IsType<Evidence>(outcome);
         Assert.Equal(["L1"], evidence.Citations.Select(c => c.Code));
@@ -100,9 +107,34 @@ public sealed class GroundingTests
     [Fact]
     public async Task NothingRetrievedIsRefused()
     {
-        var outcome = await new GroundingPipeline(new FakeOntology()).RunAsync("問句", "", TestContext.Current.CancellationToken);
+        var outcome = await Pipeline(new FakeOntology()).RunAsync("問句", "", TestContext.Current.CancellationToken);
 
         Assert.Equal(RefusalReason.NoEvidence, Assert.IsType<Refusal>(outcome).Reason);
+    }
+
+    [Fact]
+    public void HighConfidenceLexicalIsAFixedMultipleOfTheFloor()
+    {
+        Assert.Equal(6, Relevance.HighConfidenceLexical);
+    }
+
+    [Theory]
+    [InlineData(0, 0.61, 0.75)]
+    [InlineData(4, 0, 0.75)]
+    [InlineData(4, 1, 1)]
+    [InlineData(4, 0.8, 0.75)]
+    [InlineData(4, 0.61, 1.2)]
+    public void FloorsOutOfRangeAreRejected(double lexical, double semantic, double highSemantic)
+    {
+        var options = new RelevanceOptions { LexicalFloor = lexical, SemanticFloor = semantic, HighConfidenceSemantic = highSemantic };
+
+        Assert.True(new RelevanceOptionsValidator().Validate(null, options).Failed);
+    }
+
+    [Fact]
+    public void TheTestFloorsAreValid()
+    {
+        Assert.True(new RelevanceOptionsValidator().Validate(null, Relevance).Succeeded);
     }
 
     [Theory]

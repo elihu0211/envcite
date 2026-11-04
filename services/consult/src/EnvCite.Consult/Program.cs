@@ -25,6 +25,7 @@ builder.Services.AddGrpc().AddServiceOptions<ConsultationGrpcService>(o => o.Int
 builder.Services.AddInternalGrpcClient<OntologyService.OntologyServiceClient, OntologyOptions>()
     .EnableCallContextPropagation();
 builder.Services.AddScoped<IOntologySearch, OntologySearch>();
+builder.Services.AddSectionOptions<RelevanceOptions, RelevanceOptionsValidator>();
 builder.Services.AddScoped<GroundingPipeline>();
 
 // 空字串（liveness）與服務名稱（readiness）都回報排空狀態；本服務不查依賴，本體掛了重啟這裡沒有用。

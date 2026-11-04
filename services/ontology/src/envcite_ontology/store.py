@@ -114,19 +114,18 @@ _SEARCH = """
     SELECT corpus.version_iri(s.version_id), r.local_id, e.title,
            corpus.article_number(s.path), corpus.article_text(s.version_id),
            s.lexical_score, s.semantic_similarity
-      FROM retrieval.search_hybrid(
+      FROM retrieval.search_expanded(
                retrieval.prune_terms(%(terms)s, %(tokenizer)s, %(max_df)s::double precision),
                %(tokenizer)s, %(embedding)s::vector, %(model)s,
                %(on)s::date, %(language)s, %(limit)s, %(pool)s,
                CASE WHEN cardinality(%(laws)s::text[]) = 0 THEN NULL
-                    ELSE (SELECT array_agg(id) FROM corpus.legal_resource
-                           WHERE id_scheme = 'moj_pcode' AND local_id = ANY(%(laws)s::text[]))
+                    ELSE retrieval.law_scope(%(laws)s::text[], %(language)s, %(on)s::date)
                END
            ) AS s
       JOIN corpus.legal_resource AS r ON r.id = s.resource_id
       JOIN corpus.provision_version AS v ON v.id = s.version_id
       JOIN corpus.legal_expression AS e ON e.id = v.expression_id
-     ORDER BY s.rank_score DESC, s.version_id
+     ORDER BY s.rank
 """
 
 #: 每一臂的候選池（條數）。融合前各取這麼多；尚未以題庫量測，取 limit 上限的數倍。
@@ -265,12 +264,13 @@ class OntologyStore:
     ) -> list[SearchHit]:
         """`as_of`（空為今日）有效的條，字面臂比對已分詞的 `terms`，語意臂比對 `embedding`。
 
-        沒有 `embedding` 時只用字面臂。兩臂以名次倒數融合排序（`retrieval.search_hybrid`）。
+        沒有 `embedding` 時只用字面臂。兩臂以名次倒數融合排序（`retrieval.search_hybrid`），每條之後
+        緊接處罰它（或授權其所在命令的條）的罰則條，分數取帶出它的那一條（`retrieval.search_expanded`）。
         `max_df`（段落比例）大於 0 時，字面臂先略過出現在超過這個比例的段落的詞
         （`retrieval.prune_terms`）；0 為不修剪。
 
-        `laws`（法規代碼）非空時兩臂只在這些法規裡找；它們在 `as_of` 沒有任何可檢索的條時，
-        改在全庫找，不回空。
+        `laws`（法規代碼）非空時兩臂只在這些法規與依其授權訂定的命令裡找
+        （`retrieval.law_scope`）；範圍在 `as_of` 沒有任何可檢索的條時，改在全庫找，不回空。
         """
         hits = self._search(terms, tokenizer, as_of, limit, embedding, model, max_df, tuple(laws))
         if laws and not hits:

@@ -100,6 +100,18 @@ def best(rows: Sequence[Row], lexicals: Sequence[float], semantics: Sequence[flo
     return max((evaluate(rows, lf, sf) for lf in lexicals for sf in semantics), key=lambda p: p.j)
 
 
+#: 下界只寫在 consult 的設定一處；「現行」一列讀它。
+CONSULT_SETTINGS = (
+    Path(__file__).resolve().parents[2] / "consult" / "src" / "EnvCite.Consult" / "appsettings.json"
+)
+
+
+def current_floors() -> tuple[float, float]:
+    """consult 現行的（字面、語意）下界。"""
+    floors = json.loads(CONSULT_SETTINGS.read_text(encoding="utf-8"))["Relevance"]
+    return float(floors["LexicalFloor"]), float(floors["SemanticFloor"])
+
+
 LEXICALS = (0.3, 0.5, 1.0, 2.0, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, float("inf"))
 SEMANTICS = (*(round(0.6 + i * 0.01, 2) for i in range(25)), float("inf"))
 
@@ -142,14 +154,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--lexical", type=Path, required=True, help="whole-corpus lexical report")
     parser.add_argument("--semantic", type=Path, required=True, help="scoped hybrid report")
-    parser.add_argument("--current-lexical", type=float, default=0.30)
-    parser.add_argument("--current-semantic", type=float, default=0.65)
     args = parser.parse_args()
     rows = join(
         json.loads(args.lexical.read_text(encoding="utf-8")),
         json.loads(args.semantic.read_text(encoding="utf-8")),
     )
-    print(report(rows, (args.current_lexical, args.current_semantic)))
+    print(report(rows, current_floors()))
 
 
 if __name__ == "__main__":
