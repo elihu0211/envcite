@@ -56,13 +56,16 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
         c.rollback()
         c.execute("RESET ROLE")
         c.execute("DELETE FROM corpus.legal_resource")
-        c.execute("TRUNCATE source.import_problem, source.item, source.snapshot")
+        c.execute(
+            "DELETE FROM guidance.document"
+        )  # 公文不隨法規連鎖刪除；下架的停止適用參照來源項目
+        for table in ("source.import_problem", "source.item", "source.snapshot"):
+            c.execute(f"DELETE FROM {table}")  # 有外鍵參照（停止適用→項目），不能 TRUNCATE
         # 索引是內容定址的衍生物：不隨法規連鎖刪除，測試之間要自己清。
         c.execute("DELETE FROM retrieval.passage")
         c.execute("DELETE FROM retrieval.term_stat")
         c.execute("DELETE FROM retrieval.term_stat_total")
         # 標註隨單元連鎖刪除；推導活動與詞彙不隨之而去，測試之間要自己清（概念先於方案）。
-        c.execute("DELETE FROM guidance.document")  # 公文不隨法規連鎖刪除，且指向推導活動
         c.execute("DELETE FROM corpus.constitutional_ruling")  # 裁判不隨法規連鎖刪除
         c.execute("DELETE FROM corpus.ruling_scan")
         c.execute("DELETE FROM annotation.derivation")

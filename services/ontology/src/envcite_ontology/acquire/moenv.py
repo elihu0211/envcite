@@ -158,6 +158,18 @@ def parse(fragment: str) -> Letter:
     )
 
 
+_LISTED = re.compile(r"^(?P<law>.+?)第(?P<arts>\d+(?:-\d+)?(?:、\d+(?:-\d+)?)+)條$")
+
+
+def expand(text: str) -> list[str]:
+    """並列的條號各成一處：`水污染防治法第4、23條` → `水污染防治法第4條`、`水污染防治法第23條`。"""
+    text = "".join(text.split())
+    m = _LISTED.match(text)
+    if m is None:
+        return [text]
+    return [f"{m.group('law')}第{a}條" for a in m.group("arts").split("、")]
+
+
 def citation(text: str) -> Citation:
     """`空氣污染防制法第32條第1項第1款` → 法名與條文路徑；款是 `pt`、目是 `item`。
 

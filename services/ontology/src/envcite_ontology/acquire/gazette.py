@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Literal
 
 from envcite_ontology.acquire.engine import InvalidSnapshot, NotAnArchive
+from envcite_ontology.ingest import numerals
 
 BASE = "https://gazette.nat.gov.tw/egFront/"
 #: 本月每日一包
@@ -43,8 +44,30 @@ _PARAGRAPH = re.compile(r"<p\b([^>]*)>(.*?)</p>", re.S)
 #: 裁量基準的標題字樣（02-05 §4.3）；解釋的字樣用來判斷兩邊都沾得上的
 _DISCRETION = re.compile(r"裁罰|裁量基準|罰鍰額度")
 _INTERPRETATION = re.compile(r"解釋|釋示|疑義")
+#: 主旨裡的動作與其後的規則名稱：`修正「甲」、「乙」第三點，名稱並修正為「丙」`
+_ACTION = re.compile(
+    r"(?P<verb>名稱並修正為|名稱修正為|訂定|修正|廢止|停止適用)"
+    r"(?P<names>(?:「[^」]+」(?:第[^，。、；「」]*?[點條項款])?(?:部分規定)?[、及與暨]?)+)"
+)
+_NAME = re.compile(r"「([^」]+)」((?:第[^，。、；「」]*?[點條項款])|部分規定)?")
+#: 停止的生效日；寫「即日」或沒寫就是發文日
+_EFFECTIVE = re.compile(r"自([^，。；]{4,24}?日)(?:起)?(?:生效|停止適用|廢止)")
 
 RuleKind = Literal["interpretation", "discretion_standard"]
+
+
+@dataclass(frozen=True, slots=True)
+class Actions:
+    """主旨所載對規則的動作，依名稱。名稱是規則在公報上的稱呼，不是識別碼。"""
+
+    #: 本件訂定、修正（含部分修正）或改名所及的規則名稱
+    sets: tuple[str, ...]
+    #: 本件的改名（舊名，新名）：「修正「甲」，名稱並修正為「乙」」
+    renames: tuple[tuple[str, str], ...]
+    #: 本件整部廢止或停止適用的規則名稱（只廢止其中幾點的不算）
+    repeals: tuple[str, ...]
+    #: 主旨寫明的停止生效日；沒寫或「即日」為 None
+    effective_on: date | None
 
 
 class AmbiguousKind(ValueError):
@@ -109,6 +132,32 @@ def rule_kind(title: str) -> RuleKind:
     if discretion and _INTERPRETATION.search(title):
         raise AmbiguousKind(title)
     return "discretion_standard" if discretion else "interpretation"
+
+
+def actions(subject: str) -> Actions:
+    """`廢止「甲」，並自即日生效` → 廢止甲；`修正「甲」第三點` → 甲的修正。"""
+    text = "".join(subject.split())
+    sets: dict[str, None] = {}
+    repeals: dict[str, None] = {}
+    renames: list[tuple[str, str]] = []
+    last: str | None = None
+    for m in _ACTION.finditer(text):
+        verb = m.group("verb")
+        for name, part in _NAME.findall(m.group("names")):
+            if verb in ("廢止", "停止適用"):
+                if not part:
+                    repeals.setdefault(name)
+                continue
+            if verb.startswith("名稱") and last is not None:
+                renames.append((last, name))
+            sets.setdefault(name)
+            last = name
+    effective = _EFFECTIVE.search(text)
+    on = None
+    if effective and repeals:
+        written = numerals.DATE_BARE.search(effective.group(1))
+        on = numerals.roc_date(*written.groups()) if written else None
+    return Actions(tuple(sets), tuple(renames), tuple(repeals), on)
 
 
 def published_in(gazette_html: str) -> str | None:

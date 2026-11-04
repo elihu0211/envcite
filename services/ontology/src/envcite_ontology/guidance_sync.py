@@ -9,10 +9,19 @@
    最後在一個交易內記快照、來源項目與匯入問題（`source.import_problem`）。中途失敗，重跑時已寫入的
    公文沿用，未完成的項目重做。
 3. **覆蓋率**：隔離的項目超過列舉數的 1% 時，本次判定失敗（02-01 §7.1）。
+4. **停止適用**（逐項之後，各一個交易）：
+   - 公報：主旨寫「廢止「甲」」或「停止適用「甲」」的一件，停止此前以「訂定」「修正」（含改名）
+     刊登甲的每一件，自主旨寫明的生效日起，沒寫為發文日。名稱只在公報的行政規則之間比對；對到的
+     出自兩個以上機關、或一件都沒對到，記匯入問題，不停止。只廢止其中幾點的不算。每次對全部已載入的
+     公報行政規則重算，所以先刊登的廢止在回填出舊規則之後也會補上。
+   - 函釋：不給 `--since` 的走訪是全量（02-05 §2）。全部葉分類走完、且沒出現的不超過已知函釋的
+     5% 時，這次走訪才算完整；連續兩次完整走訪都沒出現的函釋記下架日，並自下架日起停止適用，
+     公文不刪除。下架後又出現的記匯入問題，已寫入的停止適用不撤回，由人判斷。
 
-函釋解釋的條文只取「相關法規」欄（02-05 §7.2）：法名對語料任一版本的標題且唯一，條號對到條文單元，
-錨定到該單元之下每個最細單元在**發文日**現行的文字；發文日沒有現行版本的不錨定，不以現行文字代替。
-公報的行政規則沒有相關法規欄，不錨定。對不上的逐筆記成匯入問題，比例可列舉。
+錨定（`guidance_anchor`）：函釋只取「相關法規」欄；公報的行政規則沒有這一欄，只取內文寫出依據的
+「核釋」「依」「為執行」之後的「法名第幾條」。法名以語料任一版本的標題或沿革所載的舊名解析且須唯一，
+條號對到條文單元，錨定到該單元之下每個最細單元在**發文日**現行的文字；發文日沒有現行版本的不錨定，
+不以現行文字代替。對不上的逐筆記成匯入問題，比例可列舉。
 
 結束碼沿用 jobkit：0 完成；75 斷路器開啟；2 資料不合預期；1 其他暫時性失敗（含覆蓋率不足）。
 """
@@ -24,13 +33,12 @@ import json
 import logging
 import os
 import time
-import unicodedata
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 import psycopg
 
@@ -47,6 +55,7 @@ from envcite_ontology import guidance
 from envcite_ontology.acquire import gazette, moenv
 from envcite_ontology.acquire.engine import InvalidSnapshot
 from envcite_ontology.acquire.web import Http
+from envcite_ontology.guidance_anchor import Problem, Resolver
 
 log = logging.getLogger(__name__)
 
@@ -67,10 +76,8 @@ MAX_PAGES = 200
 #: 連續幾頁沒有資料就判定葉分類走完（網站的總筆數不可信）
 EMPTY_PAGES = 3
 PRODUCER = "envcite-guidance-sync"
-#: 改變寫入的公文內容或錨定規則時遞增
-RULE_VERSION = "1"
-
-Problem = tuple[str, str, str]  # （severity，problem_code，detail）
+#: 改變寫入的公文內容、錨定或停止適用的規則時遞增
+RULE_VERSION = "2"
 
 
 class Client(Protocol):
@@ -92,6 +99,10 @@ class Report:
     repeated: int = 0
     interpretations: int = 0
     cessations: int = 0
+    #: 函釋：這次是否為完整的全量走訪；不是全量走訪為 None
+    crawl_complete: bool | None = None
+    #: 函釋：這次推論下架的件數
+    dropped: int = 0
     problems: Counter[str] = field(default_factory=Counter)
     seconds: float = 0.0
     exit_code: int = 0
@@ -126,7 +137,7 @@ def sync(
     started = time.monotonic()
     client = client or Http(PAUSE_SECONDS)
     report = Report(source)
-    resolver = _Resolver(conn)
+    resolver = Resolver(conn)
     job = _Job(conn, root, report, resolver)
     stats = RunStats()
     if source == "gazette":
@@ -140,27 +151,37 @@ def sync(
             stats=stats,
             sleep=sleep,
         )
+        code = _covered(report, stats, code)
+        _repeals(conn, report)
     elif source == "moenv":
-        rows = _moenv_rows(conn, client, policy, sleep, since=since, rescan=rescan)
-        report.listed = len(rows)
+        crawl = _moenv_rows(conn, client, policy, sleep, since=since, rescan=rescan)
+        report.listed = len(crawl.rows)
         code = run(
-            rows,
+            crawl.rows,
             lambda r: job.letter(client, r),
             policy,
             item_id=lambda r: r.site_id,
             stats=stats,
             sleep=sleep,
         )
+        code = _covered(report, stats, code)
+        if since is None and code == ExitCode.OK:
+            _crawled(conn, crawl, report)
     else:
         raise ValueError(f"unknown guidance source: {source}")
-    report.processed, report.dead_lettered = stats.processed, stats.dead_lettered
-    if code == ExitCode.OK and report.dead_lettered > COVERAGE_TOLERANCE * report.listed:
-        log.error("覆蓋率不足：%d／%d 項被隔離", report.dead_lettered, report.listed)
-        code = ExitCode.FAILED
     report.exit_code = int(code)
     report.seconds = round(time.monotonic() - started, 1)
     log.info("行政規則取得：%s", report.line())
     return report
+
+
+def _covered(report: Report, stats: RunStats, code: ExitCode) -> ExitCode:
+    """隔離的項目超過列舉數的 1%，本次判定失敗（02-01 §7.1）。"""
+    report.processed, report.dead_lettered = stats.processed, stats.dead_lettered
+    if code == ExitCode.OK and report.dead_lettered > COVERAGE_TOLERANCE * report.listed:
+        log.error("覆蓋率不足：%d／%d 項被隔離", report.dead_lettered, report.listed)
+        return ExitCode.FAILED
+    return code
 
 
 def _retrying[T](fn: Callable[[], T], policy: Policy, sleep: Callable[[float], None]) -> T:
@@ -213,7 +234,7 @@ def _moenv_rows(
     *,
     since: date | None,
     rescan: bool,
-) -> list[moenv.Row]:
+) -> _Crawl:
     """走全部葉分類；清單依發文日新到舊，整頁都早於 `since` 就不再往後翻。"""
 
     def get(url: str) -> str:
@@ -223,6 +244,7 @@ def _moenv_rows(
     for parent in moenv.parents(get(moenv.QUERY)):
         leaves += moenv.leaves(get(moenv.LIST.format(feid=parent, page=1))) or [parent]
     found: dict[str, moenv.Row] = {}
+    complete = True
     for leaf in dict.fromkeys(leaves):
         empty = 0
         for page in range(1, MAX_PAGES + 1):
@@ -240,8 +262,23 @@ def _moenv_rows(
                 break
         else:
             log.warning("葉分類 %s 翻到 %d 頁仍有資料，未走完", leaf, MAX_PAGES)
+            complete = False
     done = set() if rescan else _keys(conn, "moenv_guidance")
-    return [r for r in found.values() if r.document_no not in done]
+    return _Crawl(
+        rows=[r for r in found.values() if r.document_no not in done],
+        seen=frozenset(r.document_no for r in found.values()),
+        complete=complete,
+    )
+
+
+@dataclass(frozen=True)
+class _Crawl:
+    #: 這次要處理的列
+    rows: Sequence[moenv.Row]
+    #: 清單上出現的每個字號（含已處理過而略過的）
+    seen: frozenset[str]
+    #: 每個葉分類都走到了空頁
+    complete: bool
 
 
 def _origins(conn: Conn, feed: str) -> set[str]:
@@ -259,66 +296,196 @@ def _keys(conn: Conn, feed: str) -> set[str]:
     return {str(r[0]) for r in rows}
 
 
-class _Resolver:
-    """法規名稱 → pcode（02-05 §3.3 的第一層：語料任一版本的標題）；同名對到數部為 None。"""
-
-    def __init__(self, conn: Conn) -> None:
-        self._conn = conn
-        titles: dict[str, str | None] = {}
-        for title, pcode in conn.execute(
-            "SELECT DISTINCT e.title, r.local_id FROM corpus.legal_expression AS e"
-            "  JOIN corpus.legal_resource AS r ON r.id = e.resource_id"
-            " WHERE r.id_scheme = 'moj_pcode'"
-        ):
-            key = _name(str(title))
-            titles[key] = str(pcode) if titles.get(key, pcode) == pcode else None
-        conn.rollback()
-        self._titles = titles
-
-    def anchors(self, cited: str, on: date) -> tuple[list[dict[str, str]], list[Problem]]:
-        """一處「相關法規」→ 載入文件的 `interprets`，或對不上的原因。"""
-        c = moenv.citation(cited)
-        key = _name(c.law_name)
-        if key not in self._titles:
-            return [], [("warning", "law_unresolved", cited)]
-        pcode = self._titles[key]
-        if pcode is None:
-            return [], [("warning", "law_ambiguous", cited)]
-        if c.path is None:
-            return [], [("warning", "no_article", cited)]
-        rows = self._conn.execute(
-            """
-            SELECT p.path, v.content
-              FROM corpus.provision AS p
-              JOIN corpus.legal_resource AS r ON r.id = p.resource_id
-              LEFT JOIN corpus.provision_version AS v
-                ON v.provision_id = p.id AND v.superseded_at IS NULL AND v.content IS NOT NULL
-               AND v.force_period @> %(on)s::date
-             WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %(pcode)s
-               AND (p.path = %(path)s OR starts_with(p.path, %(path)s || '/'))
-             ORDER BY p.sort_key
-            """,
-            {"pcode": pcode, "path": c.path, "on": on},
+def _crawled(conn: Conn, crawl: _Crawl, report: Report) -> None:
+    """一次全量走訪之後：未出現的計數與下架由 `guidance.settle_crawl` 轉移（門檻在遷移 0050）。"""
+    if not crawl.complete:
+        report.crawl_complete = False
+        log.warning("有葉分類沒走完，不推論下架")
+        return
+    with conn.transaction():
+        row = conn.execute(
+            "SELECT * FROM guidance.settle_crawl(%s, %s, %s)",
+            (sorted(crawl.seen), date.today(), moenv.BASE),
+        ).fetchone()
+        assert row is not None
+        complete, dropped, ceased, reappeared = row
+        back = conn.execute(
+            "SELECT id, last_snapshot_id FROM source.item WHERE id = ANY(%s)", (reappeared,)
         ).fetchall()
-        if not rows:
-            return [], [("warning", "provision_unresolved", cited)]
-        found = [
-            {"law": pcode, "path": str(path), "text": str(text)}
-            for path, text in rows
-            if text is not None
-        ]
-        if not found:
-            return [], [("warning", "no_version_at_issue", f"{cited}（{on}）")]
-        return found, []
+        for item_id, snapshot_id in back:
+            _problems(
+                conn,
+                report,
+                cast(int, item_id),
+                cast(int, snapshot_id),
+                [("warning", "reappeared", "")],
+            )
+    report.crawl_complete = bool(complete)
+    if not complete:
+        log.warning("沒出現的函釋超過還在架上的 5%%，視為網站異常，不推論下架")
+    report.dropped += cast(int, dropped)
+    report.cessations += cast(int, ceased)
 
 
-def _name(title: str) -> str:
-    """名稱比對只正規化全形半形與空白（02-05 §3.2）。"""
-    return "".join(unicodedata.normalize("NFKC", title).split())
+def _repeals(conn: Conn, report: Report) -> None:
+    """公報的「廢止「甲」」停止此前刊登甲的各件（只在公報的行政規則之間比對名稱）。"""
+    docs = conn.execute(
+        "SELECT d.id, d.issuer, d.issued_on, d.subject,"
+        "       EXISTS (SELECT 1 FROM guidance.cessation AS c WHERE c.document_id = d.id)"
+        "  FROM guidance.document AS d WHERE starts_with(d.source_url, %s)"
+        " ORDER BY d.issued_on, d.id",
+        (gazette.BASE,),
+    ).fetchall()
+    conn.rollback()
+    actions = {cast(int, r[0]): gazette.actions(str(r[3])) for r in docs}
+    issuer = {cast(int, r[0]): str(r[1]) for r in docs}
+    issued = {cast(int, r[0]): cast(date, r[2]) for r in docs}
+    ceased = {cast(int, r[0]) for r in docs if r[4]}
+    rules = _RuleNames()
+    for doc_id, a in actions.items():
+        rules.add(doc_id, a.sets, a.renames)
+    for doc_id, a in actions.items():
+        if not a.repeals:
+            continue
+        problems: list[Problem] = []
+        earlier: set[int] = set()
+        for name in a.repeals:
+            found = {
+                d for d in rules.documents(name) if issued[d] <= issued[doc_id] and d != doc_id
+            }
+            if not found:
+                problems.append(("warning", "repeal_unmatched", name))
+            elif len({issuer[d] for d in found}) > 1:
+                problems.append(("warning", "repeal_ambiguous", name))
+            else:
+                earlier |= found
+        on = a.effective_on
+        if on is not None and on < issued[doc_id]:
+            problems.append(("warning", "repeal_before_issue", on.isoformat()))
+            on = None
+        pending = sorted(earlier - ceased)
+        if pending:
+            document = {
+                **_loaded(conn, doc_id),
+                "supersedes": [
+                    {**_ref(conn, d), **({"from": on.isoformat()} if on else {})} for d in pending
+                ],
+            }
+            loaded = _reload(conn, report, document)
+            if loaded < 0:
+                problems.append(("warning", "repeal_rejected", "、".join(a.repeals)))
+            else:
+                # 同一條規則再被後一件廢止時，已停止的不再寫（停止適用只記最早的一次）
+                ceased.update(pending)
+                report.cessations += loaded
+        _repeal_problems(conn, report, doc_id, problems)
+
+
+class _RuleNames:
+    """公報上的規則名稱 → 刊登它的各件。
+
+    同一件裡的改名（「名稱並修正為」）把新舊名稱連成一條規則。
+    """
+
+    def __init__(self) -> None:
+        self._parent: dict[str, str] = {}
+        self._documents: dict[str, set[int]] = {}
+
+    def add(self, doc_id: int, names: Sequence[str], renames: Sequence[tuple[str, str]]) -> None:
+        for name in names:
+            self._documents.setdefault(self._root(name), set()).add(doc_id)
+        for old, new in renames:
+            self._union(old, new)
+
+    def documents(self, name: str) -> set[int]:
+        return set(self._documents.get(self._root(name), set()))
+
+    def _root(self, name: str) -> str:
+        self._parent.setdefault(name, name)
+        while self._parent[name] != name:
+            name = self._parent[name]
+        return name
+
+    def _union(self, a: str, b: str) -> None:
+        ra, rb = self._root(a), self._root(b)
+        if ra != rb:
+            self._parent[rb] = ra
+            self._documents.setdefault(ra, set()).update(self._documents.pop(rb, set()))
+
+
+def _loaded(conn: Conn, document_id: int) -> dict[str, Any]:
+    """已載入的一件公文，照原樣：重新載入時是同一件，只多停止適用。"""
+    row = conn.execute(
+        "SELECT issuer, document_no, issued_on, rule_kind::text, subject, body, published_in,"
+        "       source_url FROM guidance.document WHERE id = %s",
+        (document_id,),
+    ).fetchone()
+    conn.rollback()
+    assert row is not None
+    keys = ("issuer", "document_no", "issued_on", "kind", "subject", "body")
+    document: dict[str, Any] = dict(zip(keys, row[:6], strict=True))
+    document["issued_on"] = cast(date, row[2]).isoformat()
+    return document
+
+
+def _ref(conn: Conn, document_id: int) -> dict[str, str]:
+    d = _loaded(conn, document_id)
+    return {"issuer": d["issuer"], "document_no": d["document_no"]}
+
+
+def _reload(conn: Conn, report: Report, document: Mapping[str, Any]) -> int:
+    """以 `guidance.load` 對已載入的公文補停止適用；回傳寫入的筆數，被拒為 -1。"""
+    try:
+        loaded = guidance.load(
+            conn,
+            {
+                "derivation": {"method": "rule", "agent": PRODUCER, "agent_version": RULE_VERSION},
+                "documents": [document],
+            },
+        )
+    except guidance.GuidanceError as e:
+        log.warning("停止適用未寫入：%s", e)
+        return -1
+    return loaded.cessations
+
+
+def _repeal_problems(conn: Conn, report: Report, document_id: int, problems: list[Problem]) -> None:
+    """廢止的對應問題記在該件公報刊登的來源項目上；每次重算，所以先清掉上一次的。"""
+    with conn.transaction():
+        row = conn.execute(
+            "SELECT i.id, i.last_snapshot_id FROM guidance.document AS d"
+            "  JOIN source.item AS i ON i.feed = 'gazette'"
+            "   AND i.key = substring(d.source_url FROM 'metaid=([^&]+)')"
+            " WHERE d.id = %s",
+            (document_id,),
+        ).fetchone()
+        if row is None:
+            return
+        conn.execute(
+            "DELETE FROM source.import_problem WHERE item_id = %s AND problem_code = ANY(%s)",
+            (row[0], list(REPEAL_PROBLEMS)),
+        )
+        _problems(conn, report, cast(int, row[0]), cast(int, row[1]), problems)
+
+
+REPEAL_PROBLEMS = ("repeal_unmatched", "repeal_ambiguous", "repeal_before_issue", "repeal_rejected")
+
+
+def _problems(
+    conn: Conn, report: Report, item_id: int, snapshot_id: int, problems: Sequence[Problem]
+) -> None:
+    for severity, code, detail in problems:
+        report.problems[code] += 1
+        conn.execute(
+            "INSERT INTO source.import_problem"
+            " (item_id, snapshot_id, severity, problem_code, detail)"
+            " VALUES (%s, %s, %s, %s, %s)",
+            (item_id, snapshot_id, severity, code, detail),
+        )
 
 
 class _Job:
-    def __init__(self, conn: Conn, root: Path, report: Report, resolver: _Resolver) -> None:
+    def __init__(self, conn: Conn, root: Path, report: Report, resolver: Resolver) -> None:
         self._conn = conn
         self._root = root
         self._report = report
@@ -346,6 +513,12 @@ class _Job:
             return [("error", "kind_ambiguous", r.title)]
         if r.issued_on is None or not r.body or not r.document_no or not r.issuer:
             return [("error", "incomplete", r.title)]
+        problems: list[Problem] = []
+        interprets: list[dict[str, str]] = []
+        for cited, citation in self._resolver.basis(r.body):
+            found, missing = self._resolver.anchors(cited, r.issued_on, citation)
+            interprets += found
+            problems += missing
         document = {
             "issuer": r.issuer,
             "document_no": moenv.normalize_document_no(r.document_no),
@@ -355,8 +528,9 @@ class _Job:
             "body": r.body,
             "published_in": r.published_in,
             "source_url": r.source_url,
+            "interprets": interprets,
         }
-        return self._load(document)
+        return problems + self._load(document)
 
     def letter(self, client: Client, row: moenv.Row) -> None:
         try:
@@ -370,7 +544,7 @@ class _Job:
             partial.write_bytes(data)
             problems: list[Problem] = []
             interprets: list[dict[str, str]] = []
-            for cited in letter.related:
+            for cited in (c for related in letter.related for c in moenv.expand(related)):
                 found, missing = self._resolver.anchors(cited, letter.issued_on)
                 interprets += found
                 problems += missing
@@ -448,15 +622,12 @@ class _Job:
                     {"feed": c.feed, "key": key, "sha": sha, "id": snapshot_id},
                 ).fetchone()
                 assert item is not None
-                conn.execute("DELETE FROM source.import_problem WHERE item_id = %s", (item[0],))
-                for severity, code, detail in problems:
-                    self._report.problems[code] += 1
-                    conn.execute(
-                        "INSERT INTO source.import_problem"
-                        " (item_id, snapshot_id, severity, problem_code, detail)"
-                        " VALUES (%s, %s, %s, %s, %s)",
-                        (item[0], snapshot_id, severity, code, detail),
-                    )
+                conn.execute(
+                    "DELETE FROM source.import_problem"
+                    " WHERE item_id = %s AND NOT problem_code = ANY(%s)",
+                    (item[0], list(REPEAL_PROBLEMS)),
+                )
+                _problems(conn, self._report, cast(int, item[0]), cast(int, snapshot_id), problems)
 
 
 def _digest(rule: gazette.Rule) -> bytes:

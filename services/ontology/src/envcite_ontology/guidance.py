@@ -7,8 +7,8 @@
 與標註同一套：條文修正而文字改了，解釋不再自動附上。
 
 **公文不可改。** 同一件（發文機關，字號）再載入時內容必須相同，相同則沿用（重複載入無害），
-不同則整份拒絕。後函變更前釋示寫在後函的 `supersedes`：前函自後函發文日起停止適用
-（釋字第 287 號）；沒有後函的停止寫 `ceased_on`。
+不同則整份拒絕。後函變更或廢止前函寫在後函的 `supersedes`：前函自後函發文日起停止適用
+（釋字第 287 號），後函載明較晚的生效日時寫在該項的 `from`；沒有後函的停止寫 `ceased_on`。
 
 由人或規則載入，`derivation.method` 不得為 `llm`。一次載入一個交易。
 
@@ -20,7 +20,7 @@
         "kind": "interpretation", "subject": "<主旨>", "body": "<說明>",
         "published_in": "<公報出處，選填>", "source_url": "<選填>",
         "interprets": [{"law": "<pcode>", "path": "art_7/para_1", "text": "<原文>"}],
-        "supersedes": [{"issuer": "環境部", "document_no": "<前函字號>"}],
+        "supersedes": [{"issuer": "環境部", "document_no": "<前函字號>", "from": "<選填>"}],
         "ceased_on": "<選填：逕行停止適用之日>"}]}
 
 `kind`：`interpretation`（解釋性規定）、`discretion_standard`（裁量基準）、`operational`（作業性規定）。
@@ -132,11 +132,10 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> LoadedGuidance:
                 (did, provision_id, digest),
             ).rowcount
         for earlier in d.get("supersedes", []):
-            cessations += _cease(
-                conn, _existing(conn, ids, earlier), date.fromisoformat(str(d["issued_on"])), did
-            )
+            on = date.fromisoformat(str(earlier.get("from") or d["issued_on"]))
+            cessations += _cease(conn, _existing(conn, ids, earlier), on, did)
         if d.get("ceased_on") is not None:
-            cessations += _cease(conn, did, date.fromisoformat(str(d["ceased_on"])), None)
+            cessations += _cease(conn, did, date.fromisoformat(str(d["ceased_on"])))
     return LoadedGuidance(len(ids), repeated, interpretations, cessations)
 
 
@@ -191,20 +190,25 @@ def _existing(conn: Conn, ids: Mapping[tuple[str, str], int], ref: Mapping[str, 
     return cast(int, row[0])
 
 
-def _cease(conn: Conn, document_id: int, on: date, by: int | None) -> int:
-    """記一筆停止適用；已記過時必須相同。"""
+def _cease(conn: Conn, document_id: int, on: date, by: int | None = None) -> int:
+    """記一筆停止適用（有後函為 successor，否則為來源載明的 announced）；已記過時必須相同。"""
+    cause = "announced" if by is None else "successor"
     row = conn.execute(
-        "SELECT ceased_on, by_document_id FROM guidance.cessation WHERE document_id = %s",
+        "SELECT ceased_on, by_document_id, cause::text FROM guidance.cessation"
+        " WHERE document_id = %s",
         (document_id,),
     ).fetchone()
     if row is not None:
-        if (row[0], row[1]) != (on, by):
+        if tuple(row) != (on, by, cause):
             raise GuidanceError(f"行政規則 {document_id} 已記有不同的停止適用")
         return 0
     conn.execute(
-        "INSERT INTO guidance.cessation (document_id, ceased_on, by_document_id)"
-        " VALUES (%s, %s, %s)",
-        (document_id, on, by),
+        "INSERT INTO guidance.cessation"
+        " (document_id, issued_on, ceased_on, cause, by_document_id, by_issued_on)"
+        " SELECT d.id, d.issued_on, %(on)s, %(cause)s, b.id, b.issued_on"
+        "   FROM guidance.document AS d LEFT JOIN guidance.document AS b ON b.id = %(by)s"
+        "  WHERE d.id = %(id)s",
+        {"id": document_id, "on": on, "cause": cause, "by": by},
     )
     return 1
 

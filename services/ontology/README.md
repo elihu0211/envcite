@@ -78,15 +78,17 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 
 | 來源 | 取得 | 出處標示 | 錨定 |
 |------|------|----------|------|
-| `gazette` | 行政院公報開放資料的 ZIP（本月每日包與歷史月包），只取 `Doc_Style_LName` 為「行政規則」者 | 政府資料開放授權條款－第 1 版（資料集 5959） | 不錨定：XML 沒有相關法規欄 |
-| `moenv` | 環境部主管法規查詢系統的函釋清單（走葉分類）與詳細頁；逐頁循序、間隔至少 0.5 秒 | 環境部網站資料開放宣告（CC BY 4.0） | 只取「相關法規」欄 |
+| `gazette` | 行政院公報開放資料的 ZIP（本月每日包與歷史月包），只取 `Doc_Style_LName` 為「行政規則」者 | 政府資料開放授權條款－第 1 版（資料集 5959） | XML 沒有相關法規欄：只取內文緊接在「核釋」之後的「法名第幾條」，或緊接在「依」「依據」「為執行」之後、且同一句寫明本規則的訂定（「特訂定本…」「…規定訂定之」）者；同一依據字樣下以「及」「、」並列的也取 |
+| `moenv` | 環境部主管法規查詢系統的函釋清單（走葉分類）與詳細頁；逐頁循序、間隔至少 0.5 秒 | 環境部網站資料開放宣告（CC BY 4.0） | 只取「相關法規」欄；「第4、23條」並列的條號各成一處 |
 
 - **略過已處理的**：公報看包名（`source.snapshot.origin_name`），函釋看發文字號是否已有來源項目；未給 `--since` 時公報從上個月一日起、函釋走全部清單。`--rescan` 全部重抓，用來發現網站內容的改變。
 - **公文不可改**：同一件（發文機關，正規化字號）再寫入時內容不同，不改寫，記匯入問題 `content_changed`。字號去除空白與文別（「號函」記為「號」），公報與網站的同一件是同一列，先寫入者為準。
-- **錨定**：法名對語料任一版本的標題且唯一，條號對到條文單元，錨定到該單元之下每個最細單元在**發文日**現行的文字；發文日沒有現行版本的不錨定。
-- **匯入問題**（`source.import_problem`，鍵是來源項目）：`law_unresolved`、`law_ambiguous`、`no_article`、`provision_unresolved`、`no_version_at_issue`、`ceased_without_date`、`ceased_before_issue`、`content_changed` 為 warning；`kind_ambiguous`（公報標題同時像裁量基準與解釋）、`incomplete`、`rejected` 為 error，該件不寫入。
+- **錨定**（[`guidance_anchor.py`](src/envcite_ontology/guidance_anchor.py)）：法名查視圖 `guidance.law_name`（語料任一版本的標題與沿革記載的舊名「（原名稱：甲；新名稱：乙）」，名稱是鍵）；對到兩部以上法規的名稱 `pcode` 為空值，不錨定（`law_ambiguous`）；條號對到條文單元，錨定到該單元之下每個最細單元在**發文日**現行的文字；發文日沒有現行版本的不錨定。舊名只在這裡解析，與檢索的法名表不共用。
+- **公報的廢止**：主旨「廢止「甲」」或「停止適用「甲」」的一件，停止此前以「訂定」「修正」刊登甲（含經「名稱並修正為」改名前後的名稱）的每一件，自主旨寫明的生效日起，沒寫為發文日（`cause = successor`，`by_document_id` 指向該件）。名稱只在公報的行政規則之間比對；只廢止其中幾點的不算。每次同步對全部已載入的公報行政規則重算，回填晚於廢止也會補上。
+- **函釋的下架**：不給 `--since` 的走訪是全量。每個葉分類都走到空頁、且沒出現的不超過已知函釋的 5%，這次才算完整（`crawl_complete`）；計數與下架只經 `guidance.settle_crawl` 轉移：連續兩次完整走訪都沒出現的記 `source.item.dropped_on`（終態，之後再出現也不改），並自該日起停止適用（`cause = taken_down`）。公文不刪除；已記「廢/停」（`cause = announced`）的不另寫。
+- **停止適用的約束**（`guidance.cessation`）：停止日不早於本件與後函的發文日（兩個發文日以複合外鍵抄進本列再比較）；`cause` 決定必填的欄位；`taken_down` 以 (feed, key, 停止日) 參照在該日下架、鍵為本件發文字號的函釋項目。這些都是資料庫約束，繞過載入程式直接寫入也一樣。
+- **匯入問題**（`source.import_problem`，鍵是來源項目）：`law_unresolved`、`law_ambiguous`、`no_article`、`provision_unresolved`、`no_version_at_issue`、`ceased_without_date`、`ceased_before_issue`、`content_changed`、`reappeared`（下架後又出現；停止適用不撤回，由人判斷）、`repeal_unmatched`（廢止的名稱沒對到任何已載入的刊登）、`repeal_ambiguous`（對到兩個以上機關的刊登）、`repeal_before_issue`（生效日早於發文日，改以發文日）、`repeal_rejected`（與已記的停止適用不同）為 warning；`kind_ambiguous`（公報標題同時像裁量基準與解釋）、`incomplete`、`rejected` 為 error，該件不寫入。
 - **結束碼**沿用 jobkit（0、75、2、1）；隔離的工作項超過列舉數的 1% 時為 1。
-- **未做**：函釋的下架偵測（連續兩次全量走訪未出現）、公報以標題「廢止」停止前一規則的對應、公報行政規則的錨定。
 
 ## 歷史版本
 
