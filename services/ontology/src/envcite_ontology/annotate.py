@@ -10,6 +10,10 @@
 **載入不接受任何陳述。** 狀態取文件的 `review`（預設 `extracted`）；下游只取 `confirmed`
 （或規則推導）者。
 
+**罰則只處罰已確認的陳述**（綱要強制）：所處罰的陳述在文件裡未確認、在資料庫未確認，或沒有指明
+（處罰的是原文引用的別條）的罰則，不寫成陳述，存成待連結罰則（`annotation.held_penalty`），連同以它為
+前提或為例外者；等義務確認後由 `verification.link` 寫成陳述。
+
 一次載入是一個推導活動、一個交易：任一處不合，整份不寫入。每個主張寫完內容即封存
 （`annotation.seal`）：已有內容相同、未駁回的主張時沿用既有的，所以同一份載入兩次不會多出主張。
 修正時先以 `annotation.set_confirm_state` 把舊陳述駁回，再載入新的。
@@ -106,12 +110,25 @@ class Loaded:
     #: 內容與既有未駁回主張相同、沿用既有主張的陳述與用語定義數
     duplicates: int = 0
     triggers: int = 0
+    #: 存成待連結罰則的陳述數（不含在 statements）
+    held: int = 0
 
 
-def load(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
-    """寫入一份標註文件；整份成功或整份不寫入。"""
+def load(conn: Conn, doc: Mapping[str, Any], *, held_penalty: int | None = None) -> Loaded:
+    """寫入一份標註文件；整份成功或整份不寫入。
+
+    `held_penalty` 是這份文件所寫成的待連結罰則：寫入的罰則同一個交易記為它的連結。
+    """
     try:
         loaded = _load(conn, doc)
+        if held_penalty is not None:
+            for s in doc["statements"]:
+                if s.get("sanction") is not None and str(s["id"]) in loaded.ids:
+                    conn.execute(
+                        "INSERT INTO annotation.held_penalty_link (held_penalty_id, statement_id)"
+                        " VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                        (held_penalty, loaded.ids[str(s["id"])]),
+                    )
     except Exception:
         conn.rollback()
         raise
@@ -147,10 +164,13 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
     )
     concepts = _concepts(conn, doc.get("scheme"), doc.get("concepts", []))
 
+    everything: Sequence[Mapping[str, Any]] = doc.get("statements", [])
+    waiting = _waiting(conn, everything, review)
+    statements = [s for s in everything if str(s["id"]) not in waiting]
     ids: dict[str, int] = {}
     conditions = duplicates = 0
     held: list[tuple[Mapping[str, Any], int]] = []
-    for s in doc.get("statements", []):
+    for s in statements:
         sid = str(s["id"])
         if sid in ids:
             raise AnnotationError(f"陳述 id 重複：{sid}")
@@ -198,7 +218,7 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
         else:
             sanctions, conditions = sanctions + 1, conditions + written
     # 例外與優先是陳述之間的關係，兩方都封存、id 確定之後才寫；沿用既有主張時關係可能已在
-    for s in doc.get("statements", []):
+    for s in statements:
         if s.get("exception_of") is not None:
             exceptions += conn.execute(
                 "INSERT INTO annotation.statement_exception (exception_id, excluded_id)"
@@ -226,6 +246,10 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
             " VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
             (ref(str(o["winner"])), ref(str(o["loser"])), o["basis"]),
         ).rowcount
+    for o in doc.get("overrides", []):
+        if {str(o["winner"]), str(o["loser"])} & waiting:
+            raise AnnotationError(f"優先關係涉及待連結的罰則：{o['winner']}、{o['loser']}")
+    kept_back = _hold(conn, doc, [s for s in everything if str(s["id"]) in waiting], ids)
     defined, repeated = _definitions(conn, doc.get("definitions", []), concepts, d_id, review)
     return Loaded(
         len(ids),
@@ -237,7 +261,140 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
         defined,
         duplicates + repeated,
         triggers,
+        kept_back,
     )
+
+
+def _punished(s: Mapping[str, Any]) -> str | int | None:
+    """罰則所處罰的陳述：文件裡的 id（str）、資料庫的編號（int），或沒有指明（None）。"""
+    sanction = s["sanction"]
+    if sanction.get("punishes_id") is not None:
+        return int(sanction["punishes_id"])
+    return None if sanction.get("punishes") is None else str(sanction["punishes"])
+
+
+def _waiting(conn: Conn, statements: Sequence[Mapping[str, Any]], review: str) -> set[str]:
+    """要存成待連結罰則的陳述 id：處罰的陳述未確認或沒有指明的罰則，加上以它們為前提或為例外者。"""
+    in_doc = {str(s["id"]) for s in statements}
+    waiting: set[str] = set()
+    for s in statements:
+        if s.get("sanction") is None:
+            continue
+        target = _punished(s)
+        if isinstance(target, str):
+            if target not in in_doc:
+                raise AnnotationError(f"引用了不存在的陳述：{target}")
+            confirmed = review == "confirmed"
+        elif isinstance(target, int):
+            row = conn.execute(
+                "SELECT confirm_state = 'confirmed' FROM annotation.assertion WHERE id = %s",
+                (target,),
+            ).fetchone()
+            confirmed = bool(row and row[0])
+        else:
+            confirmed = False
+        if not confirmed:
+            waiting.add(str(s["id"]))
+    while True:
+        more = {
+            str(s["id"])
+            for s in statements
+            if str(s["id"]) not in waiting
+            and (
+                str(s.get("exception_of")) in waiting
+                or any(
+                    str(t.get("statement")) in waiting
+                    for t in (s.get("sanction") or {}).get("triggers") or []
+                )
+            )
+        }
+        if not more:
+            return waiting
+        waiting |= more
+
+
+def _hold(
+    conn: Conn,
+    doc: Mapping[str, Any],
+    statements: Sequence[Mapping[str, Any]],
+    ids: Mapping[str, int],
+) -> int:
+    """把待連結罰則依處罰對象分組存起來；以彼此為前提或為例外的同組。回傳存起來的陳述數。
+
+    同一組必須處罰同一個對象；沒有指明受罰者的一組還要錨在同一個單元（經它的引用找被引條文）。
+    內容相同的一組已存過就不再存。
+    """
+    group = {str(s["id"]): str(s["id"]) for s in statements}
+
+    def root(k: str) -> str:
+        while group[k] != k:
+            k = group[k]
+        return k
+
+    for s in statements:
+        linked = [str(s.get("exception_of"))] + [
+            str(t.get("statement")) for t in (s.get("sanction") or {}).get("triggers") or []
+        ]
+        for other in linked:
+            if other in group:
+                group[root(other)] = root(str(s["id"]))
+    for s in statements:
+        for t in (s.get("sanction") or {}).get("triggers") or []:
+            if t.get("statement_id") is None and str(t.get("statement")) not in group:
+                raise AnnotationError(f"引用了不存在的陳述：{t.get('statement')}")
+    groups: dict[str, list[Mapping[str, Any]]] = {}
+    for s in statements:
+        groups.setdefault(root(str(s["id"])), []).append(s)
+    for members in groups.values():
+        targets = {_punished(s) for s in members if s.get("sanction") is not None}
+        if len(targets) != 1:
+            raise AnnotationError(
+                "以彼此為前提的罰則處罰不同的陳述：" + "、".join(str(s["id"]) for s in members)
+            )
+        (target,) = targets
+        punished = ids[target] if isinstance(target, str) else target
+        anchors = [anchor(conn, "待連結的罰則", s) for s in members]
+        if punished is None and len(set(anchors)) != 1:
+            # 被引條文由錨定單元的引用找，錨在數個單元就不知道該看誰的引用
+            raise AnnotationError(
+                "一組沒有指明受罰者的罰則錨在不同的單元："
+                + "、".join(str(s["id"]) for s in members)
+            )
+        provision_id, digest = anchors[0]
+        kept = [
+            {
+                **s,
+                "sanction": {
+                    k: v for k, v in s["sanction"].items() if k not in ("punishes", "punishes_id")
+                },
+            }
+            if s.get("sanction") is not None
+            else dict(s)
+            for s in members
+        ]
+        document = {
+            k: v for k, v in doc.items() if k not in ("statements", "definitions", "overrides")
+        }
+        document["statements"] = kept
+        body = json.dumps(
+            {"document": document, "punished": punished}, ensure_ascii=False, sort_keys=True
+        )
+        conn.execute(
+            "INSERT INTO annotation.held_penalty"
+            " (provision_id, content_sha256, producer, producer_version, punished_statement_id,"
+            "  document, fingerprint)"
+            " VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s) ON CONFLICT DO NOTHING",
+            (
+                provision_id,
+                digest,
+                doc["derivation"]["agent"],
+                doc["derivation"]["agent_version"],
+                punished,
+                json.dumps(document, ensure_ascii=False),
+                hashlib.sha256(body.encode()).digest(),
+            ),
+        )
+    return len(statements)
 
 
 def _seal(conn: Conn, claim: int) -> int:

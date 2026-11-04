@@ -10,6 +10,7 @@ from envcite_ontology.verification import (
     verify,
 )
 from envcite_ontology.verification.gates import GateResult
+from envcite_ontology.verification.link import link_penalties
 from tests.reasoning_support import WATER_DAY
 from tests.test_import import _scalar
 from tests.verification_support import (
@@ -18,6 +19,7 @@ from tests.verification_support import (
     _latest,
     _review,
     _water,
+    _water_draft,
     _water_with,
 )
 
@@ -25,12 +27,12 @@ from tests.verification_support import (
 def test_verify_writes_one_row_per_gate_and_reruns_only_the_inconclusive(
     conn: Conn, sample: None
 ) -> None:
-    ids = _water(conn, sample).ids
+    ids = _water_draft(conn, sample).ids
 
     first = verify(conn)
     second = verify(conn)
 
-    assert first == 13 * len(DEFAULT_GATES)  # 每個陳述、每個閘門一列（不適用也記）
+    assert first == 3 * len(DEFAULT_GATES)  # 每個陳述、每個閘門一列（不適用也記）
     assert second <= first
     assert _latest(conn, ids["w7_2a"], "executable") == "not_applicable"
 
@@ -65,12 +67,16 @@ def test_a_crash_keeps_the_verdicts_already_recorded(conn: Conn, sample: None) -
 def test_the_water_draft_is_accepted_without_a_human_where_the_gates_can_decide(
     conn: Conn, sample: None
 ) -> None:
-    ids = _water(conn, sample).ids
+    ids = dict(_water_draft(conn, sample).ids)
 
-    result = settle(conn, DETERMINISTIC)
+    duties = settle(conn, DETERMINISTIC)
+    linked = link_penalties(conn, None)  # 義務確認了，待連結的罰則才寫成陳述
+    penalties = settle(conn, DETERMINISTIC)
+    ids |= {k.split("@")[0]: v for k, v in linked.ids.items()}
 
     # 義務、許可與十個罰則通過。授權是構成性，三個閘門都不適用，維持 extracted。
-    assert (result.confirmed, result.rejected) == (12, 0)
+    assert (duties.confirmed, linked.statements, penalties.confirmed) == (2, 10, 10)
+    assert duties.rejected == penalties.rejected == 0
     assert _review(conn, ids["w7_1"]) == "confirmed"
     assert _review(conn, ids["p40_1_fine"]) == "confirmed"
     assert _review(conn, ids["w7_2b"]) == "confirmed"

@@ -7,10 +7,9 @@ from __future__ import annotations
 
 import argparse
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import psycopg
 
@@ -28,7 +27,11 @@ from envcite_ontology.verification.definitions import (
 )
 from envcite_ontology.verification.extract import Extracted, extract_unit
 from envcite_ontology.verification.gates import DEFAULT_GATES, Gate
-from envcite_ontology.verification.link import link_penalties
+from envcite_ontology.verification.link import (
+    held_states,
+    link_penalties,
+    penalized,
+)
 from envcite_ontology.verification.model_gates import IndependentTestGate, PanelGate, RoundtripGate
 from envcite_ontology.verification.models import Model
 from envcite_ontology.verification.pipeline import Settled, settle
@@ -238,7 +241,6 @@ def run(
         assert_distinct([extractor, *verifiers])
     units = skipped = extracted = dropped = definitions = 0
     calls = repairs = syntax_failures = shape_failures = 0
-    pending: list[Mapping[str, Any]] = []
     for law in laws:
         # 先抽用語定義：陳述的要件要指名本法已定義的用語，兩邊代碼從源頭一致。
         # 定義項（「本法用語，定義如下」之下的款）不當規範抽取，只抽定義。
@@ -257,6 +259,7 @@ def run(
             for reason in found.dropped:
                 log.warning("丟掉定義 %s %s：%s", law, path, reason[:300])
         terms = defined_terms(conn, law)
+        punished = penalized(conn, law)
         for path in units_of(conn, law):
             if path in in_definitions:
                 continue
@@ -265,7 +268,13 @@ def run(
                 skipped += 1
                 continue
             out = extract_unit(
-                conn, extractor, law, path, agent_version=agent_version, defined=terms
+                conn,
+                extractor,
+                law,
+                path,
+                agent_version=agent_version,
+                defined=terms,
+                punished_by=punished.get(path, ()),
             )
             _record_attempt(conn, law, path, extractor.name, agent_version, out)
             extracted += out.loaded.statements if out.loaded else 0
@@ -274,16 +283,23 @@ def run(
             syntax_failures += out.counts.syntax_failures
             shape_failures += out.counts.shape_failures
             dropped += len(out.dropped)
-            pending += out.pending
             for reason in out.dropped:
                 log.warning("丟掉 %s %s：%s", law, path, reason[:300])
-    linked = link_penalties(conn, extractor, pending)
+    chosen = gates if gates is not None else gates_for(verifiers, allow_same_family)
+    # 綱要只讓罰則處罰已確認的義務：先接受，再把待連結罰則寫成陳述，再接受那些罰則。
+    before = settle(conn, list(required), chosen)
+    linked = link_penalties(conn, extractor)
     extracted += linked.statements
     dropped += len(linked.dropped)
     for reason in linked.dropped:
-        log.warning("丟掉待連結的罰則：%s", reason[:300])
-    chosen = gates if gates is not None else gates_for(verifiers, allow_same_family)
-    settled = settle(conn, list(required), chosen)
+        log.warning("待連結的罰則沒連成：%s", reason[:300])
+    after = settle(conn, list(required), chosen)
+    log.info("待連結罰則：%s", held_states(conn))
+    settled = Settled(
+        before.confirmed + after.confirmed,
+        before.rejected + after.rejected,
+        before.rounds + after.rounds,
+    )
     # 定義與陳述各自接受：必要方法固定是 literal 加往返，沒有往返的重讀者就不確認任何定義。
     chosen_defs = (
         definition_gates_

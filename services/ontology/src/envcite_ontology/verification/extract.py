@@ -25,9 +25,9 @@ from envcite_ontology.annotate import (
 )
 from envcite_ontology.verification.context import ancestors_text, context_block
 from envcite_ontology.verification.conventions import apply as with_conventions
-from envcite_ontology.verification.gates import citations
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, ModelError
+from envcite_ontology.violation import citations
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -88,7 +88,7 @@ PROMPT = (
    子句。「應…，不得…」是兩個陳述。
 只輸出 JSON。
 
-{terms}{context}原文（{law} {path}）：
+{terms}{context}{punished}原文（{law} {path}）：
 {text}
 """)
     .replace("{effects}", "|".join(LEGAL_EFFECTS))
@@ -641,8 +641,6 @@ class Extracted:
     loaded: Loaded | None
     #: 丟掉的輸出：引文不在原文的陳述，或違反資料庫約束的整份文件
     dropped: tuple[str, ...]
-    #: 受罰陳述在別的單元的罰則：等所有單元抽完，由 `link.link_penalties` 連結
-    pending: tuple[Mapping[str, Any], ...] = ()
     counts: Counts = Counts()
 
 
@@ -667,48 +665,19 @@ def _cites_elsewhere(path: str, text: str) -> bool:
     return bool(cited) and not any(path == c or path.startswith(c + "/") for c in cited)
 
 
-def _held(s: Mapping[str, Any], ids: set[str], elsewhere: bool) -> bool:
-    """罰則是否處罰原文引用的別條：未指明同單元的受罰陳述（或 id 不在此單元），或原文引用了別條。
+def _aimed(s: dict[str, Any], duties: set[str], elsewhere: bool) -> dict[str, Any]:
+    """罰則處罰的若不是同單元的規範性陳述，或原文引用了別條，就不指明受罰者：處罰的是被引條文的義務，
+    由依賴圖找（`annotation.violation`），載入時存成待連結罰則。
 
     模型會把罰則連到同單元重述義務的陳述（「違反第三十八條第三項規定，…者，處…」）；
     引用閘門雖會擋下，卻白丟一個連得上的罰則，故原文引別條一律交給連結。
     """
     sanction = s.get("sanction")
-    return isinstance(sanction, Mapping) and (str(sanction.get("punishes")) not in ids or elsewhere)
-
-
-def _waiting(statements: Sequence[Mapping[str, Any]], ids: set[str], elsewhere: bool) -> set[str]:
-    """留待連結的罰則 id：等連結者，加上處罰它們的罰則（同一條原文引用同一批條文）。"""
-    waiting = {str(s.get("id")) for s in statements if _held(s, ids, elsewhere)}
-    while True:
-        more = {
-            str(s.get("id"))
-            for s in statements
-            if isinstance(s.get("sanction"), Mapping)
-            and str(s["sanction"].get("punishes")) in waiting
-            and str(s.get("id")) not in waiting
-        }
-        if not more:
-            return waiting
-        waiting |= more
-
-
-def _linkable(statements: list[dict[str, Any]], dropped: list[str]) -> list[dict[str, Any]]:
-    """丟掉指向文件外的罰則與例外（連帶丟掉指向被丟者的陳述），直到不再變動。"""
-    while True:
-        ids = {str(s.get("id")) for s in statements}
-        kept: list[dict[str, Any]] = []
-        for s in statements:
-            sanction = s.get("sanction")
-            if isinstance(sanction, Mapping) and str(sanction.get("punishes")) not in ids:
-                dropped.append(f"{s.get('id', '?')}: sanction punishes nothing in this unit")
-            elif s.get("exception_of") is not None and str(s["exception_of"]) not in ids:
-                dropped.append(f"{s.get('id', '?')}: excepts nothing in this unit")
-            else:
-                kept.append(s)
-        if len(kept) == len(statements):
-            return kept
-        statements = kept
+    if not isinstance(sanction, Mapping) or (
+        str(sanction.get("punishes")) in duties and not elsewhere
+    ):
+        return s
+    return {**s, "sanction": {k: v for k, v in sanction.items() if k != "punishes"}}
 
 
 def _trigger_problem(
@@ -760,17 +729,29 @@ def _local_triggers(statements: list[dict[str, Any]], dropped: list[str]) -> lis
         statements = kept
 
 
-def _linkable_held(held: list[dict[str, Any]], dropped: list[str]) -> list[dict[str, Any]]:
-    """待連結罰則的例外須指向同批陳述；指向別處的丟掉。"""
-    while True:
-        ids = {str(s.get("id")) for s in held}
-        kept = [s for s in held if s.get("exception_of") is None or str(s["exception_of"]) in ids]
-        for s in held:
-            if s not in kept:
-                dropped.append(f"{s.get('id', '?')}: excepts nothing in this unit")
-        if len(kept) == len(held):
-            return kept
-        held = kept
+def punished_block(by: Sequence[str]) -> str:
+    """單元被處罰條文以「違反」引用時的提示：行政罰以違反義務為前提，這裡必有義務或禁止。"""
+    if not by:
+        return ""
+    return (
+        f"本單元被同法的處罰條文（{'、'.join(by)}）以「違反」引用。行政罰以違反行政法上義務為前提"
+        "（行政罰法第 1、4 條），所以本單元至少有一個 obligation 或 prohibition 的陳述。"
+        "「應…經許可（核准、登記）後，始得…」是義務（先取得許可）或禁止（未經許可不得為之），"
+        "不是許可（permission）。\n\n"
+    )
+
+
+def penalized_issues(statements: Sequence[Mapping[str, Any]], by: Sequence[str]) -> list[str]:
+    """被處罰條文以「違反」引用的單元，卻沒有任何義務或禁止陳述：送回修復，修不好不丟。"""
+    if not by or any(
+        s.get("kind") == "prescriptive" and s.get("deontic") in ("obligation", "prohibition")
+        for s in statements
+    ):
+        return []
+    return [
+        f"本單元被處罰條文（{'、'.join(by)}）以「違反」引用，卻沒有任何 obligation 或 prohibition"
+        "的陳述：找出它課予的義務或禁止，「始得」之前的「應」是義務，不是許可。"
+    ]
 
 
 def extract_unit(
@@ -783,8 +764,12 @@ def extract_unit(
     agent_version: str,
     scheme: tuple[str, str] = ("env", "環境法概念"),
     defined: Mapping[str, str] | None = None,
+    punished_by: Sequence[str] = (),
 ) -> Extracted:
-    """抽取一個條文單元。`agent` 記為推導者（預設為模型的名字）；驗證者不得與它相同。"""
+    """抽取一個條文單元。`agent` 記為推導者（預設為模型的名字）；驗證者不得與它相同。
+
+    `punished_by` 是以「違反」引用本單元的處罰條文（`link.penalized`）。
+    """
     provision_id, text = _unit_text(conn, law, path)
     terms = terms_block(defined)
     context = ancestors_text(conn, provision_id)
@@ -794,12 +779,13 @@ def extract_unit(
         text=text,
         terms=terms,
         context=context_block(context),
+        punished=punished_block(punished_by),
     )
     try:
         raw = _complete(model, prompt)
     except ModelError as e:
         # 重試用盡：不寫入，下次仍是「還沒抽」
-        return Extracted(None, (f"<model error: {e}>"[:300],), counts=Counts(calls=1))
+        return Extracted(None, (f"<model error: {e}>"[:300],), Counts(calls=1))
     calls, repairs = 1, 0
     answer: Mapping[str, Any] | None = object_from(raw)
     answer = None if answer is None else tidy(answer, defined)
@@ -822,6 +808,7 @@ def extract_unit(
                 | dict(defined or {}),
             )
             + sanction_issues(here)
+            + penalized_issues(here, punished_by)
             + [
                 f"陳述 {ident}：{reason}。刑罰（有期徒刑、拘役、罰金）不是行政罰，沒有對應的 effect"
                 "（罰金不是 fine）：這樣的罰則不要寫成 sanction 陳述。"
@@ -855,7 +842,7 @@ def extract_unit(
         shape_failures=shape_failures,
     )
     if answer is None:
-        return Extracted(None, ("<unparseable model output>",), counts=counts)
+        return Extracted(None, ("<unparseable model output>",), counts)
     statements: list[dict[str, Any]] = []
     dropped: list[str] = []
     located = [x for x in _statements_of(answer) if locate(str(x.get("quote", "")), text) >= 0]
@@ -889,14 +876,9 @@ def extract_unit(
         if len(quote) != len(text):
             item["span"] = [start, start + len(quote)]
         statements.append(item)
-    ids = {str(s.get("id")) for s in statements}
-    waiting = _waiting(statements, ids, _cites_elsewhere(path, text))
-    held = _local_triggers(
-        _linkable_held([s for s in statements if str(s.get("id")) in waiting], dropped), dropped
-    )
-    statements = _local_triggers(
-        _linkable([s for s in statements if str(s.get("id")) not in waiting], dropped), dropped
-    )
+    duties = {str(s.get("id")) for s in statements if s.get("kind") == "prescriptive"}
+    elsewhere = _cites_elsewhere(path, text)
+    statements = _local_triggers([_aimed(s, duties, elsewhere) for s in statements], dropped)
     base = {
         "derivation": {
             "method": "llm",
@@ -907,13 +889,12 @@ def extract_unit(
         "scheme": {"code": scheme[0], "title": scheme[1]},
         "concepts": _concepts_of(answer),
     }
-    pending = (base | {"statements": held},) if held else ()
     if not statements:
-        return Extracted(None, tuple(dropped), pending, counts)
+        return Extracted(None, tuple(dropped), counts)
     doc = base | {"statements": statements}
     try:
         loaded = load(conn, doc)
     except AnnotationError as e:
         # 違反約束的文件整份不寫（`load` 已回滾），記下來，不拖垮管線
-        return Extracted(None, (*dropped, f"<invalid document: {e}>"), pending, counts)
-    return Extracted(loaded, tuple(dropped), pending, counts)
+        return Extracted(None, (*dropped, f"<invalid document: {e}>"), counts)
+    return Extracted(loaded, tuple(dropped), counts)

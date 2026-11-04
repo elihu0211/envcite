@@ -72,6 +72,18 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 - **推論**：命令陳述的授權鏈由 [`reasoning/facts.py`](src/envcite_ontology/reasoning/facts.py) 的 `chain_at` 沿 `delegations_at` 往上走到法律（授權者又是命令就接著走）；授權條文該日已違憲失效也算斷。鏈的每一環與缺口在 `Outcome.delegation_bases`；鏈到不了法律時，命令所定的罰則與處罰命令義務的罰則附條件，義務的結論不變。
 - **守門**：只回已確認或規則推導的授權，駁回的不回；模型抽取而未確認的不回（同陳述與用語定義）。
 
+## 規範關係：罰則的連結
+
+罰則陳述以 `annotation.sanction.punished_statement_id`（單一、非空的外鍵）處罰一個義務或禁止陳述；一則條文處罰數個義務時，每個義務一列罰則陳述。表與規則在遷移檔 `0055_penalty_link.sql`，寫入在 [`verification/link.py`](src/envcite_ontology/verification/link.py)。
+
+- **只處罰已確認的陳述**：寫入罰則列時所處罰的陳述必須是 `confirmed`（觸發器 `sanction_punishes_confirmed`）；`annotation.settle` 不接受所處罰陳述已非 `confirmed` 的罰則，所處罰陳述被駁回則罰則駁回。
+- **待連結罰則**：載入（`annotate.load`）時連不上的罰則（所處罰的陳述未確認，或原文處罰的是別條）連同以它為前提或為例外者，存成 `annotation.held_penalty`；寫成陳述後記在 `annotation.held_penalty_link`。`envcite-pipeline` 在第一次接受之後連結，再接受一次。
+- **依賴圖**：`annotation.violation` 是處罰條文（單元，內容雜湊）所罰的條、項、款，`envcite-sync` 在匯入後以確定性的條號解析對全庫寫入（[`violation.py`](src/envcite_ontology/violation.py)，規則版本 `RULE_VERSION`）；`annotation.current_violation` 只取最新規則版本。`violation_kind` 為 `duty`（所罰義務所在的條文）或 `delegated_rule`（「違反依第 N 條所定辦法」的授權條文，義務在授權命令裡，沿 `annotation.delegated_by` 找命令）；連結與 `duty_gap` 只讀 `duty`。
+- **讀取**：
+  - `annotation.penalty_candidates(待連結罰則 id)`：候選的義務與是否已確認——同單元已指明的受罰陳述，或被引條文（含其下的項款、或引款而錨在項的列舉句）裡現行、未駁回的義務與禁止。
+  - `annotation.held_penalty_state`：`linked`（已寫成陳述）、`linkable`（有已確認的候選）、`awaiting_duty`（候選都未定）、`no_duty`（被引條文沒有未駁回的義務）、`no_citation`（不知受罰者、也解析不出引用）。
+  - `annotation.duty_gap`：被處罰條文以「違反」引用、現行文字上沒有未駁回義務或禁止陳述的條文。
+
 ## 行政規則的取得
 
 `envcite-guidance sync <gazette|moenv> [--since YYYY-MM-DD] [--rescan]`，實作在 [`guidance_sync.py`](src/envcite_ontology/guidance_sync.py)。每個工作項（公報的一包、函釋的一頁）是一個 jobkit 工作項：端點錯誤退避重試、斷路器、單項隔離，政策以 `ENVCITE_JOBKIT_<欄位>` 覆寫，預設值以該模組的 `POLICY` 為準；每件公文一個交易，可重跑。

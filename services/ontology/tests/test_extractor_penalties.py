@@ -1,9 +1,9 @@
-"""Penalties the extractor cannot tie to a punished statement in the same unit: held for
-linking, or dropped."""
+"""Penalties whose punished statement is not confirmed yet, or is in the article the text cites:
+held for linking (`annotation.held_penalty`), or dropped."""
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from envcite_ontology.verification.extract import (
     extract_unit,
@@ -17,6 +17,16 @@ from tests.verification_support import (
     FakeModel,
     _duty_and_cited_penalty,
 )
+
+
+def _held(conn: Conn) -> list[tuple[list[str], int | None]]:
+    """待連結罰則：每份的陳述 id 與指明的受罰陳述。"""
+    return [
+        ([str(x["id"]) for x in doc["statements"]], cast("int | None", punished))  # type: ignore[index]
+        for doc, punished in conn.execute(
+            "SELECT document, punished_statement_id FROM annotation.held_penalty ORDER BY id"
+        )
+    ]
 
 
 def test_a_penalty_without_a_target_in_the_unit_is_held_for_linking(
@@ -34,9 +44,9 @@ def test_a_penalty_without_a_target_in_the_unit_is_held_for_linking(
         agent_version="1",
     )
 
-    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.loaded is not None and (out.loaded.statements, out.loaded.held) == (1, 1)
     assert out.dropped == ()
-    assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1"]
+    assert _held(conn) == [(["p1"], None)]
     assert _scalar(conn, "SELECT count(*) FROM annotation.sanction") == 0
 
 
@@ -59,7 +69,7 @@ def test_a_penalty_that_names_a_statement_missing_from_the_unit_is_held_like_one
 
     assert out.loaded is not None and out.loaded.statements == 1
     assert out.dropped == ()
-    assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1"]
+    assert _held(conn) == [(["p1"], None)]
 
 
 def _duty_and_penalty_citing(article: str) -> tuple[str, dict[str, Any]]:
@@ -95,12 +105,13 @@ def test_a_penalty_tied_to_the_unit_but_citing_another_article_is_held_for_linki
     )
 
     assert out.loaded is not None and out.loaded.statements == 1
-    assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1"]
+    assert _held(conn) == [(["p1"], None)]
 
 
-def test_a_penalty_tied_to_the_unit_stays_when_the_text_cites_the_unit_itself(
+def test_a_penalty_tied_to_the_unit_keeps_its_target_when_the_text_cites_the_unit_itself(
     conn: Conn, tmp_path: Path
 ) -> None:
+    """同單元的受罰陳述還沒確認：罰則存著等它，受罰者已指明。"""
     text, doc = _duty_and_penalty_citing("第一條")
     _first(conn, tmp_path, _law_v1(LawArticles=_articles(text, "乙一")))
 
@@ -113,12 +124,12 @@ def test_a_penalty_tied_to_the_unit_stays_when_the_text_cites_the_unit_itself(
         agent_version="1",
     )
 
-    assert out.loaded is not None and out.loaded.statements == 2
-    assert out.pending == ()
+    assert out.loaded is not None and (out.loaded.statements, out.loaded.held) == (1, 1)
+    assert _held(conn) == [(["p1"], out.loaded.ids["s1"])]
 
 
-def test_an_exception_to_a_held_penalty_is_dropped(conn: Conn, tmp_path: Path) -> None:
-    """例外只能指向同一份文件裡寫入的陳述；它例外的罰則還在等連結，所以連它一起丟。"""
+def test_an_exception_to_a_held_penalty_is_held_with_it(conn: Conn, tmp_path: Path) -> None:
+    """例外要和它所排除的罰則一起寫入，所以跟著罰則一起等連結。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
     doc = json.loads(json.dumps(EXTRACTED))
     doc["statements"] = [
@@ -141,9 +152,9 @@ def test_an_exception_to_a_held_penalty_is_dropped(conn: Conn, tmp_path: Path) -
         agent_version="1",
     )
 
-    assert out.loaded is not None and out.loaded.statements == 1
-    assert out.dropped == ("e1: excepts nothing in this unit",)
-    assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1"]
+    assert out.loaded is not None and (out.loaded.statements, out.loaded.held) == (1, 2)
+    assert out.dropped == ()
+    assert _held(conn) == [(["p1", "e1"], None)]
 
 
 def test_an_empty_sanction_template_on_a_duty_is_ignored(conn: Conn, tmp_path: Path) -> None:
@@ -168,7 +179,7 @@ def test_an_empty_sanction_template_on_a_duty_is_ignored(conn: Conn, tmp_path: P
     )
 
     assert out.loaded is not None and out.loaded.statements == 1
-    assert out.pending == ()
+    assert _held(conn) == []
     assert _scalar(conn, "SELECT count(*) FROM annotation.sanction") == 0
 
 
@@ -188,4 +199,4 @@ def test_a_penalty_without_an_effect_is_dropped(conn: Conn, tmp_path: Path) -> N
 
     assert out.loaded is not None and out.loaded.statements == 1
     assert out.dropped == ("p1: penalty without a sanction effect",)
-    assert out.pending == ()
+    assert _held(conn) == []

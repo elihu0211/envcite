@@ -108,8 +108,9 @@ def test_repair_stops_after_the_allowed_rounds(conn: Conn, tmp_path: Path) -> No
     assert out.dropped == ("s1: obligation or prohibition without a duty condition after repair",)
 
 
-def test_a_penalty_that_punishes_a_held_penalty_is_held_with_it(conn: Conn, tmp_path: Path) -> None:
-    """同一條原文裡的附加處罰（按次處罰、停工）常被模型標成處罰第一個罰則：一起留待連結。"""
+def test_a_penalty_that_punishes_a_held_penalty_is_held_too(conn: Conn, tmp_path: Path) -> None:
+    """同一條原文裡的附加處罰（按次處罰、停工）常被模型標成處罰第一個罰則：罰則只處罰義務，
+    所以它也不指明受罰者，和第一個罰則一樣經被引條文連結。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
     doc = _duty_and_cited_penalty()
     doc["statements"].append(
@@ -130,9 +131,11 @@ def test_a_penalty_that_punishes_a_held_penalty_is_held_with_it(conn: Conn, tmp_
         agent_version="1",
     )
 
-    assert out.loaded is not None and out.loaded.statements == 1
+    assert out.loaded is not None and (out.loaded.statements, out.loaded.held) == (1, 2)
     assert out.dropped == ()
-    assert [s["id"] for d in out.pending for s in d["statements"]] == ["p1", "p2"]
+    assert conn.execute(
+        "SELECT count(*) FROM annotation.held_penalty WHERE punished_statement_id IS NULL"
+    ).fetchone() == (2,)
 
 
 def test_numbers_gate_evidence_can_be_stored_when_the_model_invented_an_amount(
@@ -220,7 +223,8 @@ def test_statements_that_are_not_a_list_of_objects_count_as_none(
         agent_version="1",
     )
 
-    assert out.loaded is None and out.pending == ()
+    assert out.loaded is None
+    assert _scalar(conn, "SELECT count(*) FROM annotation.held_penalty") == 0
 
 
 def test_counts_record_the_calls_and_repairs_of_a_unit(conn: Conn, tmp_path: Path) -> None:

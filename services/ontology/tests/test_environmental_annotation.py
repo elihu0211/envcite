@@ -26,6 +26,7 @@ from tests.reasoning_support import Conn, _plain_duty, _scope, _with
 from tests.test_annotation import BEFORE, LAW, _doc, _duty, _limit
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_id, _law_v1
+from tests.verification_support import _with_penalties
 
 
 def _law(conn: Conn, tmp_path: Path, n: int = 4) -> None:
@@ -479,7 +480,7 @@ def test_the_executable_gate_lists_a_triggered_penalty_with_its_trigger(
     _law(conn, tmp_path)
     doc = _chain()
     doc["review"] = "extracted"
-    loaded = load(conn, doc)
+    loaded = _with_penalties(conn, doc)
 
     result = ExecutableGate().check(conn, loaded.ids["again"])
     assert result is not None and result.verdict == "pass"
@@ -510,7 +511,7 @@ def test_the_executable_gate_does_not_fail_a_chain_it_cannot_build(
             },
         )
     )
-    loaded = load(conn, doc)
+    loaded = _with_penalties(conn, doc)
 
     result = ExecutableGate().check(conn, loaded.ids["training"])
     assert result is not None and result.verdict == "inconclusive"

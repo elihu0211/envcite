@@ -10,10 +10,11 @@ import pytest
 
 from envcite_ontology.annotate import load
 from envcite_ontology.verification import settle
+from envcite_ontology.verification.link import link_penalties
 from tests.test_annotation import _doc, _duty
 from tests.test_import import _scalar
 from tests.test_incremental import _first, _law_v1
-from tests.verification_support import DETERMINISTIC, Conn, _two_statements, _water
+from tests.verification_support import DETERMINISTIC, Conn, _two_statements, _water_draft
 
 READER = "envcite_ontology_reader"
 WRITER = "envcite_ontology_writer"
@@ -42,9 +43,10 @@ def test_a_writer_runs_the_pipeline_without_touching_states_directly(
     conn: Conn, sample: None
 ) -> None:
     with _as(conn, WRITER):
-        _water(conn, sample)
-        result = settle(conn, DETERMINISTIC)
-        assert result.confirmed > 0
+        _water_draft(conn, sample)
+        assert settle(conn, DETERMINISTIC).confirmed > 0
+        assert link_penalties(conn, None).statements == 10
+        assert settle(conn, DETERMINISTIC).confirmed > 0
         assert (
             _scalar(
                 conn,

@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from envcite_ontology.annotate import Loaded, load
+from envcite_ontology.annotate import Loaded
 from envcite_ontology.reasoning import Result, evaluate
 from tests.reasoning_support import (
     WATER,
@@ -13,11 +13,12 @@ from tests.reasoning_support import (
     Conn,
 )
 from tests.test_import import _scalar
+from tests.verification_support import _with_penalties
 
 
 @pytest.fixture
 def water(conn: Conn, sample: None) -> Loaded:
-    loaded = load(conn, json.loads(WATER.read_text(encoding="utf-8")))
+    loaded = _with_penalties(conn, json.loads(WATER.read_text(encoding="utf-8")))
     conn.execute(
         "UPDATE annotation.assertion SET confirm_state = 'confirmed'"
         " WHERE assertion_kind = 'statement'"

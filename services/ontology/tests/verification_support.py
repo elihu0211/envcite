@@ -2,12 +2,14 @@
 canned answers."""
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 import psycopg
 
 from envcite_ontology.annotate import Loaded, load
+from envcite_ontology.verification.link import link_penalties
 from tests.reasoning_support import WATER, _plain_duty
 from tests.test_annotation import _doc
 from tests.test_import import _scalar
@@ -52,8 +54,36 @@ def _two_statements(conn: Conn, tmp_path: Path) -> Loaded:
     return load(conn, _doc(_plain_duty(), review="extracted"))
 
 
-def _water(conn: Conn, sample: None) -> Loaded:
+def _with_penalties(conn: Conn, doc: dict[str, Any]) -> Loaded:
+    """載入草稿、確認罰則所處罰的義務（審核者的角色），再把待連結罰則寫成陳述。
+
+    綱要只讓罰則處罰已確認的陳述，所以罰則的閘門與推論要在義務確認之後才看得到罰則。
+    回傳的 id 沿用文件裡的名字（一個罰則只處罰一個義務時，去掉連結加上的「@編號」）。
+    """
+    loaded = load(conn, doc)
+    conn.execute(
+        "UPDATE annotation.assertion SET confirm_state = 'confirmed'"
+        " WHERE id IN (SELECT punished_statement_id FROM annotation.held_penalty)"
+    )
+    conn.commit()
+    linked = link_penalties(conn, None)
+    assert not linked.dropped, linked.dropped
+    named = {k.split("@")[0]: v for k, v in linked.ids.items()}
+    return replace(
+        loaded,
+        statements=loaded.statements + linked.statements,
+        sanctions=len(named),
+        ids={**loaded.ids, **named},
+    )
+
+
+def _water_draft(conn: Conn, sample: None) -> Loaded:
+    """水污法樣本照原樣載入：義務未確認，十個罰則存成待連結罰則。"""
     return load(conn, json.loads(WATER.read_text(encoding="utf-8")))
+
+
+def _water(conn: Conn, sample: None) -> Loaded:
+    return _with_penalties(conn, json.loads(WATER.read_text(encoding="utf-8")))
 
 
 def _water_with(conn: Conn, sid: str, **sanction: Any) -> Loaded:
@@ -61,7 +91,7 @@ def _water_with(conn: Conn, sid: str, **sanction: Any) -> Loaded:
     doc = json.loads(WATER.read_text(encoding="utf-8"))
     s = next(x for x in doc["statements"] if x["id"] == sid)
     s["sanction"] = {**s["sanction"], **sanction}
-    return load(conn, doc)
+    return _with_penalties(conn, doc)
 
 
 class FakeModel:

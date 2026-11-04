@@ -16,6 +16,7 @@ import pytest
 from envcite_ontology.annotate import Loaded, load
 from tests.sample import WATER
 from tests.test_import import _scalar
+from tests.verification_support import _with_penalties
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -43,13 +44,33 @@ def _facts(conn: Conn) -> int:
 
 
 @pytest.fixture
-def loaded(conn: Conn, sample: None) -> Loaded:
+def drafted(conn: Conn, sample: None) -> Loaded:
     return load(conn, _doc())
 
 
-def test_the_draft_loads_against_the_real_wording(loaded: Loaded) -> None:
-    assert (loaded.statements, loaded.conditions, loaded.sanctions) == (13, 20, 10)
-    assert (loaded.exceptions, loaded.overrides) == (0, 0)
+@pytest.fixture
+def loaded(conn: Conn, sample: None) -> Loaded:
+    """義務經審核確認、罰則連上之後。"""
+    return _with_penalties(conn, _doc())
+
+
+def test_the_draft_loads_against_the_real_wording(conn: Conn, drafted: Loaded) -> None:
+    """罰則只處罰已確認的陳述：草稿裡的義務還沒確認，十個罰則存成待連結罰則。"""
+    assert (drafted.statements, drafted.sanctions, drafted.held) == (3, 0, 10)
+    assert (drafted.exceptions, drafted.overrides) == (0, 0)
+    assert _scalar(conn, "SELECT count(*) FROM annotation.sanction") == 0
+    states = conn.execute(
+        "SELECT state, count(*) FROM annotation.held_penalty_state GROUP BY state"
+    ).fetchall()
+    assert states == [("awaiting_duty", 10)]  # 都等第 7 條第 1 項那一個義務
+
+
+def test_the_penalties_are_written_once_the_duty_is_confirmed(conn: Conn, loaded: Loaded) -> None:
+    assert (loaded.statements, loaded.sanctions) == (13, 10)
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement_condition") == 20
+    assert conn.execute("SELECT DISTINCT state FROM annotation.held_penalty_state").fetchall() == [
+        ("linked",)
+    ]
 
 
 def test_spans_select_the_sentence_each_statement_is_about(conn: Conn, loaded: Loaded) -> None:
@@ -66,7 +87,7 @@ def test_spans_select_the_sentence_each_statement_is_about(conn: Conn, loaded: L
     assert any(q.startswith("直轄市、縣（市）主管機關得視") for q in quoted)
 
 
-def test_a_draft_nobody_reviewed_contributes_no_facts(conn: Conn, loaded: Loaded) -> None:
+def test_a_draft_nobody_reviewed_contributes_no_facts(conn: Conn, drafted: Loaded) -> None:
     assert _facts(conn) == 0
 
 

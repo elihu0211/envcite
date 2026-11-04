@@ -14,7 +14,7 @@ from envcite_ontology.verification.gates.conditions import statement_as_of
 from envcite_ontology.verification.gates.executable_gate import ExecutableGate
 from envcite_ontology.verification.gates.numbers_gate import NumbersGate
 from envcite_ontology.verification.gates.proviso_gate import ProvisoGate
-from envcite_ontology.verification.gates.references_gate import ReferencesGate, citations
+from envcite_ontology.verification.gates.references_gate import ReferencesGate
 
 DEFAULT_GATES: tuple[Gate, ...] = (NumbersGate(), ReferencesGate(), ExecutableGate(), ProvisoGate())
 
@@ -36,4 +36,6 @@ __all__ = [
     "numbers_in",
     "statement_as_of",
     "unit_of",
+    "violations",
+    "within",
 ]

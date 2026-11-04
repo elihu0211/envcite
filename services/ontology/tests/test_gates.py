@@ -14,9 +14,10 @@ from envcite_ontology.verification import (
     ReferencesGate,
     settle,
 )
-from envcite_ontology.verification.gates import amounts, citations, cn_number
+from envcite_ontology.verification.gates import amounts, cn_number
 from envcite_ontology.verification.gates.cn_number import numbers_in, qualified_numbers
 from envcite_ontology.verification.gates.proviso_gate import ProvisoGate, provisos
+from envcite_ontology.violation import citations, delegated_rules, violations
 from tests.reasoning_support import _plain_duty, _scope, _with
 from tests.test_annotation import LAW, _doc, _limit
 from tests.test_incremental import _articles, _first, _law_v1
@@ -58,6 +59,52 @@ def test_the_amounts_and_their_bounds_are_read_from_a_penalty_sentence() -> None
 def test_citations_resolve_to_provision_paths() -> None:
     assert citations("違反第七條第一項或第八條規定者") == ["art_7/para_1", "art_8"]
     assert citations("依第五條之一第二項辦理") == ["art_5-1/para_2"]
+
+
+def test_citations_carry_the_article_into_the_items_that_follow() -> None:
+    """接續的項、款沿用前面的條（水污染防治法第 51 條、第 46 條之 1），「至」展開範圍。"""
+    assert citations("違反第二十七條第一項、第四項規定者") == ["art_27/para_1", "art_27/para_4"]
+    assert citations("違反第十八條之一第一項、第二項或第四項規定者") == [
+        "art_18-1/para_1",
+        "art_18-1/para_2",
+        "art_18-1/para_4",
+    ]
+    assert citations("違反第十條第一項第二款至第四款") == [
+        "art_10/para_1/pt_2",
+        "art_10/para_1/pt_3",
+        "art_10/para_1/pt_4",
+    ]
+    assert citations("違反第二十七條第一項、第二十八條第一項未立即") == [
+        "art_27/para_1",
+        "art_28/para_1",
+    ]
+
+
+def test_violations_are_what_a_penalty_punishes_not_what_it_delegates() -> None:
+    """處罰條文「違反」的條；違反授權命令的，被引的是授權條文，不算；不是處罰條文就沒有。"""
+    assert violations("違反第七條第一項或第八條規定者，處新臺幣六萬元以上罰鍰") == [
+        "art_7/para_1",
+        "art_8",
+    ]
+    assert violations(
+        "違反第二十三條第一項或依第二十三條第二項所定管理辦法者，處新臺幣三萬元以上罰鍰"
+    ) == ["art_23/para_1"]
+    assert violations("違反依第十三條第四項或第十八條所定辦法規定者，處新臺幣一萬元以上罰鍰") == []
+    assert violations("違反第十三條規定者，處一年以下有期徒刑") == ["art_13"]
+    assert violations("違反本法規定所裁處之罰鍰及第六十六條之二追繳所得利益") == []
+
+
+def test_a_penalty_on_a_delegated_rule_records_the_delegating_article() -> None:
+    """違反授權命令：義務在命令裡，記授權條文，沿授權找命令。"""
+    text = "違反依第十三條第四項或第十八條所定辦法規定者，處新臺幣一萬元以上罰鍰"
+    assert delegated_rules(text) == ["art_13/para_4", "art_18"]
+    assert delegated_rules("違反第七條規定者，處新臺幣一萬元以上罰鍰") == []
+
+
+def test_items_without_an_article_are_not_citations() -> None:
+    """沒有條作開頭的項指本條，不是引用別條；中間隔著別的字就不再接續。"""
+    assert citations("前項處罰不適用第二項規定") == []
+    assert citations("依第五條規定辦理，並依第二項公告") == ["art_5"]
 
 
 def test_numbers_gate_checks_the_amounts_against_the_text(conn: Conn, sample: None) -> None:

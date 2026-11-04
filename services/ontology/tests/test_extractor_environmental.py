@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from envcite_ontology.annotate import load
+from envcite_ontology.annotate import AnnotationError, load
 from envcite_ontology.verification.extract import (
     STATEMENTS_FORMAT,
     extract_unit,
@@ -13,7 +13,6 @@ from envcite_ontology.verification.extract import (
     tidy,
 )
 from envcite_ontology.verification.link import link_penalties
-from tests.reasoning_support import _plain_duty
 from tests.test_annotation import LAW, _doc
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
@@ -95,8 +94,14 @@ def test_the_extractor_writes_liability_permits_and_triggers(conn: Conn, tmp_pat
         conn, FakeModel(_answer()), LAW, "art_1", agent="fake-model", agent_version="1"
     )
 
-    assert out.loaded is not None and (out.loaded.statements, out.loaded.triggers) == (3, 1)
+    # 義務還沒確認：兩個罰則存成待連結罰則，義務確認後才寫成陳述
+    assert out.loaded is not None and (out.loaded.statements, out.loaded.held) == (1, 2)
     assert out.dropped == ()
+    conn.execute(
+        "UPDATE annotation.assertion SET confirm_state = 'confirmed' WHERE id = %s",
+        (out.loaded.ids["s1"],),
+    )
+    assert link_penalties(conn, None).statements == 2
     assert conn.execute(
         "SELECT slot_role::text, liability_basis::text FROM annotation.statement_slot"
         " ORDER BY slot_role"
@@ -139,7 +144,7 @@ def test_a_penalty_with_a_bad_trigger_is_dropped_whole(
 
     out = extract_unit(conn, FakeModel(answer), LAW, "art_1", agent="fake-model", agent_version="1")
 
-    assert out.loaded is not None and (out.loaded.statements, out.loaded.triggers) == (3, 0)
+    assert out.loaded is not None and (out.loaded.statements, out.loaded.held) == (1, 2)
     assert out.dropped == (f"a1: {reason}",)
 
 
@@ -167,11 +172,12 @@ def test_the_decoding_schema_knows_the_new_shapes() -> None:
     assert "permit" in condition
 
 
-def test_linking_drops_a_penalty_whose_trigger_was_not_linked(conn: Conn, tmp_path: Path) -> None:
-    """待連結的罰則以沒連上的罰則為前提：連帶丟掉，不讓整份文件因懸空的引用被拒。"""
+def test_a_held_penalty_triggered_by_a_statement_not_in_the_document_is_refused(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """待連結罰則的前提要在同一份文件裡：懸空的前提在載入時就拒絕，不留到連結才發現。"""
     penalty_text = "違反第一條規定者，處新臺幣一萬元以上十萬元以下罰鍰"
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", penalty_text)))
-    load(conn, _doc(_plain_duty(text="排放廢水者應符合標準")))
     held = {
         "id": "a1",
         "law": LAW,
@@ -185,12 +191,10 @@ def test_linking_drops_a_penalty_whose_trigger_was_not_linked(conn: Conn, tmp_pa
             "triggers": [{"statement": "o1", "kind": "order_lapsed"}],
         },
     }
-    base = {k: v for k, v in _doc().items() if k != "statements"}
 
-    linked = link_penalties(conn, FakeModel({}), [base | {"statements": [held]}])
-
-    assert linked.statements == 0
-    assert linked.dropped == ("a1: excepts or is triggered by a penalty that was not linked",)
+    with pytest.raises(AnnotationError, match="引用了不存在的陳述：o1"):
+        load(conn, {**_doc(), "statements": [held]})
+    assert _scalar(conn, "SELECT count(*) FROM annotation.held_penalty") == 0
 
 
 def test_a_quote_in_variant_characters_is_anchored_on_the_original_text(

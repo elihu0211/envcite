@@ -15,7 +15,7 @@ from envcite_ontology.reasoning_service import ReasoningServicer
 from envcite_ontology.store import OntologyStore
 from envcite_ontology.telemetry import register_annotation_health
 from tests.test_import import _scalar
-from tests.verification_support import Conn, _water
+from tests.verification_support import Conn, _water_draft
 
 
 def test_without_an_otlp_endpoint_telemetry_does_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -108,26 +108,26 @@ def test_the_annotation_health_views_count_states_and_latest_gate_results(
 ) -> None:
     from envcite_ontology.verification import verify
 
-    _water(conn, sample)
+    _water_draft(conn, sample)
     verify(conn)
 
     rows = conn.execute("SELECT state, statements FROM annotation.statement_health").fetchall()
     states = {str(state): count for state, count in rows}
-    assert states == {"extracted": 13}
+    assert states == {"extracted": 3}  # 罰則等義務確認才寫成陳述
     per_method = conn.execute(
         "SELECT method, sum(statements)::int FROM annotation.gate_health GROUP BY method"
     ).fetchall()
-    assert {m: n for m, n in per_method} == {m: 13 for m, _ in per_method}  # 每個陳述每個方法一列
+    assert {m: n for m, n in per_method} == {m: 3 for m, _ in per_method}  # 每個陳述每個方法一列
     assert _scalar(conn, "SELECT count(*) FROM annotation.gate_health WHERE method = 'policy'") == 0
 
 
 def test_the_health_gauges_report_what_the_views_hold(
     conn: Conn, sample: None, store: OntologyStore
 ) -> None:
-    _water(conn, sample)
+    _water_draft(conn, sample)
     reader = InMemoryMetricReader()
     register_annotation_health(store, MeterProvider(metric_readers=[reader]).get_meter("test"))
 
     points = _points(reader, "envcite.annotation.statements")
 
-    assert ({"state": "extracted"}, 13) in points
+    assert ({"state": "extracted"}, 3) in points

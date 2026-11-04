@@ -1,6 +1,6 @@
-"""`envcite-sync <來源>`：取得、匯入、授權抽取、檢索投影依序執行。
+"""`envcite-sync <來源>`：取得、匯入、授權與處罰依賴圖的抽取、檢索投影依序執行。
 
-四步冪等，每次全跑（映像升級後解析器版本改變，沒有新檔也須重匯）；任一步失敗即停。
+各步冪等，每次全跑（映像升級後解析器版本改變，沒有新檔也須重匯）；任一步失敗即停。
 結束碼：0 成功（含無事可做）；1 暫時性失敗，可重試；2 重試無益（資料不合預期、整批比例越線、
 嵌入端點的設定錯誤）。
 
@@ -18,7 +18,7 @@ from pathlib import Path
 import psycopg
 
 from envcite_jobkit import Policy
-from envcite_ontology import delegation, embedding, projection
+from envcite_ontology import delegation, embedding, projection, violation
 from envcite_ontology.acquire.cli import EXIT_INVALID, SOURCES
 from envcite_ontology.acquire.engine import InvalidSnapshot, Source, acquire
 from envcite_ontology.embedding import Embedder
@@ -61,6 +61,7 @@ def sync(
         acquire(source, root, conn, policy)
         importer.run(conn, root, source)
         delegation.extract(conn)
+        violation.extract(conn)
         conn.commit()
         projection.rebuild(conn, embedder, policy)
     except Exception as e:
