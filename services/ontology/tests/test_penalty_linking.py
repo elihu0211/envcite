@@ -310,6 +310,36 @@ def test_a_penalty_citing_an_article_with_no_duty_waits_and_the_gap_is_listed(
     assert conn.execute("SELECT path FROM annotation.duty_gap").fetchall() == [("art_1",)]
 
 
+def test_an_article_a_penalty_cites_without_a_duty_is_asked_again_and_the_penalty_follows(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """被處罰卻抽不出義務的關鍵義務重抽（duty_gap 的單元到期）；第二次抽到，罰則就連上。"""
+    _corpus(conn, tmp_path, TEXT, PENALTY_TEXT)
+    asked: list[str] = []
+
+    def reply(prompt: str) -> str:
+        if f"{LAW} art_2）" in prompt:
+            return json.dumps(_penalty_doc())
+        asked.append(prompt)
+        return json.dumps({"statements": []} if len(asked) == 1 else EXTRACTED)
+
+    result = run(
+        conn,
+        Scripted(EXTRACTOR, reply),
+        [],
+        [LAW],
+        agent_version="1",
+        required=["fake", "references"],
+        gates=(_ConfirmsDuties(), ReferencesGate()),
+        reextract_rounds=1,
+    )
+
+    assert len(asked) == 2 and "審查意見" not in asked[1]
+    assert result.linked == 1
+    assert _states(conn) == [("linked", 1)]
+    assert conn.execute("SELECT count(*) FROM annotation.duty_gap").fetchone() == (0,)
+
+
 def test_a_penalty_whose_duty_is_still_undecided_waits(conn: Conn, tmp_path: Path) -> None:
     """義務還沒有定論（沒有閘門能判）：罰則不寫成陳述，也不駁回，狀態是 awaiting_duty。"""
     _corpus(conn, tmp_path, TEXT, PENALTY_TEXT)

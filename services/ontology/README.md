@@ -44,9 +44,12 @@ owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations, com
 ```bash
 uv run --env-file .env envcite-pipeline --law <pcode> --models models.toml          # 指定法規
 uv run --env-file .env envcite-pipeline --pending --limit <N> --models models.toml   # 自找待辦，最多 N 部
+uv run --env-file .env envcite-pipeline --law <pcode> --models models.toml --reextract 3   # 義務沒有定論的單元最多再抽 3 輪
 ```
 
 `--limit` 是每次的模型費用上限。驗證與推論的規範見 [`AGENTS.md`](AGENTS.md)；推論結果的呼叫端用法見 [`proto/README.md`](../../proto/README.md) 的〈標註與推論〉。
+
+**重抽**（`--reextract N`，0 至 3，預設 0）：義務沒有定論的單元，帶審查者對上一輪的意見再抽，每輪之後重新接受。該重抽的單元由資料推得（視圖 `annotation.reextraction_due`，`next_round` 是下一輪的編號）：首次抽取已完成、輪數沒用完，而且單元現行文字上有 `annotation.unresolved_duty`（義務或禁止未確認，且沒有已確認的義務涵蓋同一段引文），或被處罰條文以「違反」引用卻沒有未駁回的義務（`annotation.duty_gap`）。輪號記在 `extraction_attempt.round`，上限 3 是該欄的 CHECK；中斷後重跑，各單元接著自己停下的那一輪。`tools/duty_report.py <dsn> <抽取版本>…` 唯讀，報一個抽取版本的義務與罰則確認數、關鍵義務（被最多罰則以「違反」引用的單元）與駁回的失敗型態；`tools/duty_sample.py <dsn> <抽取版本>` 唯讀，依種子抽已確認的義務，連同單元原文、槽位與要件印出，供逐筆對照原文。
 
 ### 模型配置（`models.toml`）
 

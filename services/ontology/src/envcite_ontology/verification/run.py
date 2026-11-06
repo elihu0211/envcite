@@ -10,6 +10,7 @@ import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import psycopg
 
@@ -35,6 +36,7 @@ from envcite_ontology.verification.link import (
 from envcite_ontology.verification.model_gates import IndependentTestGate, PanelGate, RoundtripGate
 from envcite_ontology.verification.models import Model
 from envcite_ontology.verification.pipeline import Settled, settle
+from envcite_ontology.verification.reextract import due_units, review_notes
 
 log = logging.getLogger(__name__)
 
@@ -178,20 +180,21 @@ def _record_attempt(
     agent: str,
     version: str,
     out: Extracted | ExtractedDefinitions,
+    round: int = 0,
 ) -> None:
     if any(reason.startswith(_NO_ANSWER) for reason in out.dropped):
         return
     conn.execute(
         "INSERT INTO annotation.extraction_attempt"
         "  (provision_id, content_sha256, producer, producer_version,"
-        "   statement_count, dropped_count)"
-        " SELECT p.id, v.content_sha256, %s, %s, %s, %s"
+        "   statement_count, dropped_count, round)"
+        " SELECT p.id, v.content_sha256, %s, %s, %s, %s, %s"
         "   FROM corpus.provision AS p"
         "   JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
         "   JOIN corpus.provision_version AS v ON v.provision_id = p.id AND v.superseded_at IS NULL"
         "  WHERE r.local_id = %s AND p.path = %s"
         " ON CONFLICT DO NOTHING",
-        (agent, version, _count(out), len(out.dropped), law, path),
+        (agent, version, _count(out), len(out.dropped), round, law, path),
     )
     conn.commit()
 
@@ -200,6 +203,51 @@ def _count(out: Extracted | ExtractedDefinitions) -> int:
     if out.loaded is None:
         return 0
     return out.loaded.statements if isinstance(out, Extracted) else out.loaded.definitions
+
+
+def reextract(
+    conn: Conn, extractor: Model, laws: Sequence[str], agent_version: str, max_round: int
+) -> tuple[int, int]:
+    """義務沒有定論的單元各再抽一輪（帶審查意見）；回傳（重抽的單元數，寫入的陳述數）。
+
+    `annotation.reextraction_due` 決定單元與各自的輪號（中斷後續跑，各單元停在不同輪也各自接著做）；
+    只抽輪號不超過 `max_round` 的。輪數上限在資料庫（`extraction_attempt.round`）。
+    """
+    units = statements = 0
+    for law in laws:
+        todo = [
+            d for d in due_units(conn, extractor.name, agent_version, law) if d.round <= max_round
+        ]
+        if not todo:
+            continue
+        terms = defined_terms(conn, law)
+        punished = penalized(conn, law)
+        for due in todo:
+            provision = conn.execute(
+                "SELECT p.id, v.content_sha256 FROM corpus.provision AS p"
+                "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
+                "  JOIN corpus.provision_version AS v ON v.provision_id = p.id"
+                "   AND v.superseded_at IS NULL"
+                " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND p.path = %s",
+                (law, due.path),
+            ).fetchone()
+            assert provision is not None
+            out = extract_unit(
+                conn,
+                extractor,
+                law,
+                due.path,
+                agent_version=agent_version,
+                defined=terms,
+                punished_by=punished.get(due.path, ()),
+                review=review_notes(conn, int(str(provision[0])), bytes(cast(bytes, provision[1]))),
+            )
+            _record_attempt(conn, law, due.path, extractor.name, agent_version, out, due.round)
+            units += 1
+            statements += out.loaded.statements if out.loaded else 0
+            for reason in out.dropped:
+                log.warning("重抽第 %d 輪丟掉 %s %s：%s", due.round, law, due.path, reason[:300])
+    return units, statements
 
 
 def gates_for(verifiers: Sequence[Model], allow_same_family: bool = False) -> tuple[Gate, ...]:
@@ -236,6 +284,7 @@ def run(
     check_distinct: bool = False,
     gates: Sequence[Gate] | None = None,
     definition_gates_: Sequence[DefinitionGate] | None = None,
+    reextract_rounds: int = 0,
 ) -> Run:
     if check_distinct:
         assert_distinct([extractor, *verifiers])
@@ -288,6 +337,18 @@ def run(
     chosen = gates if gates is not None else gates_for(verifiers, allow_same_family)
     # 綱要只讓罰則處罰已確認的義務：先接受，再把待連結罰則寫成陳述，再接受那些罰則。
     before = settle(conn, list(required), chosen)
+    for _ in range(reextract_rounds):
+        redone, again = reextract(conn, extractor, laws, agent_version, reextract_rounds)
+        log.info("重抽：%d 個單元，%d 個陳述", redone, again)
+        if not redone:
+            break
+        extracted += again
+        after_round = settle(conn, list(required), chosen)
+        before = Settled(
+            before.confirmed + after_round.confirmed,
+            before.rejected + after_round.rejected,
+            before.rounds + after_round.rounds,
+        )
     linked = link_penalties(conn, extractor)
     extracted += linked.statements
     dropped += len(linked.dropped)
@@ -343,6 +404,13 @@ def main() -> None:
         help="只確認設定檔、端點、金鑰與每個模型都通（開跑前的同一個別名檢查），不連資料庫",
     )
     parser.add_argument("--agent-version", default="pipeline-1")
+    parser.add_argument(
+        "--reextract",
+        type=int,
+        choices=range(4),
+        default=0,
+        help="義務沒有定論的單元最多帶審查意見重抽幾輪（資料庫上限 3）",
+    )
     parser.add_argument("--require", default=",".join(ALL_METHODS), help="必要的驗證方法，逗號分隔")
     parser.add_argument(
         "--allow-same-family", action="store_true", help="採計與抽取者同一家族的驗證者（不建議）"
@@ -395,6 +463,7 @@ def main() -> None:
             check_distinct=not args.no_distinct_check,
             gates=gates,
             definition_gates_=definition_gates_,
+            reextract_rounds=args.reextract,
         )
     logging.getLogger(__name__).info(
         "單元 %d（略過 %d），抽取 %d 個陳述（含連結的罰則 %d 個；丟掉 %d）；"

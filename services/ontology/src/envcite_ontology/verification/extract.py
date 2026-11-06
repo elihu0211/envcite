@@ -88,7 +88,7 @@ PROMPT = (
    子句。「應…，不得…」是兩個陳述。
 只輸出 JSON。
 
-{terms}{context}{punished}原文（{law} {path}）：
+{terms}{context}{punished}{review}原文（{law} {path}）：
 {text}
 """)
     .replace("{effects}", "|".join(LEGAL_EFFECTS))
@@ -741,6 +741,18 @@ def punished_block(by: Sequence[str]) -> str:
     )
 
 
+def review_block(notes: Sequence[str]) -> str:
+    """重抽時帶上審查者對上一輪的意見：同一個單元上一輪抽的義務沒被接受，這一輪要補上缺的。"""
+    if not notes:
+        return ""
+    return (
+        "本單元上一輪抽出的義務沒有被接受，審查意見如下。請對照原文，補上被指出遺漏的"
+        "適用情形、對象、期限與限定語，不要添加原文沒有的內容，引文仍須是完整的規範句：\n"
+        + "\n".join(f"- {n}" for n in notes)
+        + "\n\n"
+    )
+
+
 def penalized_issues(statements: Sequence[Mapping[str, Any]], by: Sequence[str]) -> list[str]:
     """被處罰條文以「違反」引用的單元，卻沒有任何義務或禁止陳述：送回修復，修不好不丟。"""
     if not by or any(
@@ -765,10 +777,12 @@ def extract_unit(
     scheme: tuple[str, str] = ("env", "環境法概念"),
     defined: Mapping[str, str] | None = None,
     punished_by: Sequence[str] = (),
+    review: Sequence[str] = (),
 ) -> Extracted:
     """抽取一個條文單元。`agent` 記為推導者（預設為模型的名字）；驗證者不得與它相同。
 
-    `punished_by` 是以「違反」引用本單元的處罰條文（`link.penalized`）。
+    `punished_by` 是以「違反」引用本單元的處罰條文（`link.penalized`）；
+    `review` 是重抽時審查者對上一輪的意見。
     """
     provision_id, text = _unit_text(conn, law, path)
     terms = terms_block(defined)
@@ -780,6 +794,7 @@ def extract_unit(
         terms=terms,
         context=context_block(context),
         punished=punished_block(punished_by),
+        review=review_block(review),
     )
     try:
         raw = _complete(model, prompt)
