@@ -103,7 +103,10 @@ test = ["tests/test_annotation.py::test_a_delegated_threshold_is_the_limit_in_fo
 id = "C3"
 status = "answerable"
 rpc = ["ReasoningService.Evaluate"]
-test = ["tests/test_reasoning.py::test_unknown_facts_are_listed_not_guessed"]
+test = [
+  "tests/test_reasoning.py::test_unknown_facts_are_listed_not_guessed",
+  "tests/test_subsumption_eval.py::test_subsumption_benchmark_all_cases_pass",
+]
 
 [[question]]
 id = "C4"

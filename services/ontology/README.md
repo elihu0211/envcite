@@ -166,6 +166,14 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 - **校準檔**（`kind: calibration`，只在 `dev`）：題庫給定的條（正例）與每個正例一條同法規、題庫沒列給該題的隨機現行條（負例，固定種子）；`rates` 記各判定者與保守分數對正例的召回、對負例的誤判，`agreement` 記一致性。提示只依校準調；`pool` 要求校準檔的提示雜湊與現行提示相同，所以測試集只由在開發集定案的提示判定。
 - **判定檔**（`kind: judgements`）：判一個子集各 run 前 10 條的洞與尚未分級的期望條文。記題庫、qrels、切分、各 run、校準檔的雜湊，提示全文與雜湊、`response_format`、判定者（名稱、模型識別、家族、溫度）、`as_of`、日期；`rows` 每列 `qid`、`doc`、`upstream`、`text_sha256`、各判定者的分數與 `verdicts`（含理由）、最終 `grade`、失敗原因；`agreement` 為二元化（≥ `relevant_from`）的 Cohen's κ、二次加權 κ、分歧比例與混淆表；`usage` 為各判定者本次執行（快取未命中）的呼叫數與詞元，續跑時不含先前的呼叫。不存題目文字。快取（JSONL，含題目全文）放倉庫外，中斷可續跑。
 
+## 涵攝評估
+
+以真實條文規範陳述（水污染防治法第 7 條與第 40 條）為大前提，案件事實為小前提，呼叫符號推理機（clingo），量測三值 Kleene 涵攝邏輯、缺漏事實識別、不確定概念裁量判斷、責任主體分流與行政罰法總則阻卻之正確性（能力問題 C3、C5、C6、C7）。
+
+- **案例庫**：[`eval/subsumption_benchmark.json`](eval/subsumption_benchmark.json)，涵蓋 10 類典型法學情境（超標違規、完全合規、不確定概念裁量、按次處罰觸發、主體分流、缺事實三值未知、非受規範主體不適用、無故意過失不罰、三年時效消滅、正當防衛阻卻）。
+- **評估工具**：[`tools/subsumption_eval.py`](tools/subsumption_eval.py)，支援輸出結構化 JSON 與 Markdown 報告。
+- **守門測試**：[`tests/test_subsumption_eval.py`](tests/test_subsumption_eval.py)。
+
 ## 能力問題登記
 
 本體必須回答的問題與各題今天的實作現況，只登記在 [`competency.toml`](competency.toml)：每題一列，`status` 是 `answerable`（術語層與機制都在且有測試）、`partial`（只做了一部分）或 `design_only`（只有設計，沒有承載）。「可答」說的是機制存在，不是資料庫裡已有答案。

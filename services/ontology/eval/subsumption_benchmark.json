@@ -1,0 +1,240 @@
+[
+  {
+    "case_id": "CASE-01",
+    "title": "一般事業放流水超標（普通違規）",
+    "description": "事業排放廢水於地面水體，放流水未達放流水標準，情節非重大、無需廢止或停工、未屆期改善",
+    "as_of": "2019-01-01",
+    "case_facts": {
+      "actor_is_regulated_entity": 1,
+      "discharges_to_surface_water": 1,
+      "actor_is_business_or_sewer_system": 1,
+      "actor_is_livestock_business": 0,
+      "effluent_meets_standard": 0,
+      "circumstances_serious": 0,
+      "revocation_necessary": 0,
+      "improvement_overdue": 0,
+      "ap_intent": 1
+    },
+    "expected_verdicts": {
+      "w7_1": "violation"
+    },
+    "expected_penalties": [
+      ["p40_1_fine", "fine", false],
+      ["p40_1_order", "order", false]
+    ]
+  },
+  {
+    "case_id": "CASE-02",
+    "title": "一般事業放流水完全合規（合法排放）",
+    "description": "事業排放廢水符合放流水標準，不成立義務違反，亦無任何處罰效果",
+    "as_of": "2019-01-01",
+    "case_facts": {
+      "actor_is_regulated_entity": 1,
+      "discharges_to_surface_water": 1,
+      "actor_is_business_or_sewer_system": 1,
+      "actor_is_livestock_business": 0,
+      "effluent_meets_standard": 1,
+      "ap_intent": 1
+    },
+    "expected_verdicts": {
+      "w7_1": "compliant"
+    },
+    "expected_penalties": []
+  },
+  {
+    "case_id": "CASE-03",
+    "title": "情節重大與必要性不確定概念（裁量附條件）",
+    "description": "放流水超標，但呼叫端未認定情節是否重大或有無廢止必要，停工與廢止許可附條件",
+    "as_of": "2019-01-01",
+    "case_facts": {
+      "actor_is_regulated_entity": 1,
+      "discharges_to_surface_water": 1,
+      "actor_is_business_or_sewer_system": 1,
+      "actor_is_livestock_business": 0,
+      "effluent_meets_standard": 0,
+      "improvement_overdue": 0,
+      "ap_intent": 1
+    },
+    "expected_verdicts": {
+      "w7_1": "violation"
+    },
+    "expected_penalties": [
+      ["p40_1_fine", "fine", false],
+      ["p40_1_order", "order", false],
+      ["p40_1_revoke", "deprivation", true],
+      ["p40_1_suspend", "restriction", true]
+    ],
+    "expected_judgements": [
+      ["p40_1_revoke", "revocation_necessary"],
+      ["p40_1_suspend", "circumstances_serious"]
+    ]
+  },
+  {
+    "case_id": "CASE-04",
+    "title": "限期改善屆期未改善（按次處罰觸發）",
+    "description": "經通知限期改善，屆期仍未完成改善，觸發第40條第1項後段按次處罰",
+    "as_of": "2019-01-01",
+    "case_facts": {
+      "actor_is_regulated_entity": 1,
+      "discharges_to_surface_water": 1,
+      "actor_is_business_or_sewer_system": 1,
+      "actor_is_livestock_business": 0,
+      "effluent_meets_standard": 0,
+      "circumstances_serious": 0,
+      "revocation_necessary": 0,
+      "improvement_overdue": 1,
+      "ap_intent": 1
+    },
+    "expected_verdicts": {
+      "w7_1": "violation"
+    },
+    "expected_penalties": [
+      ["p40_1_fine", "fine", false],
+      ["p40_1_order", "order", false],
+      ["p40_1_repeat", "fine", false]
+    ]
+  },
+  {
+    "case_id": "CASE-05",
+    "title": "畜牧業專屬罰則（主體分流）",
+    "description": "行為人屬畜牧業，落入第40條第2項專屬處罰區間，第1項一般事業罰則因主體不符排除",
+    "as_of": "2019-01-01",
+    "case_facts": {
+      "actor_is_regulated_entity": 1,
+      "discharges_to_surface_water": 1,
+      "actor_is_business_or_sewer_system": 0,
+      "actor_is_livestock_business": 1,
+      "effluent_meets_standard": 0,
+      "circumstances_serious": 0,
+      "revocation_necessary": 0,
+      "improvement_overdue": 0,
+      "ap_intent": 1
+    },
+    "expected_verdicts": {
+      "w7_1": "violation"
+    },
+    "expected_penalties": [
+      ["p40_2_fine", "fine", false],
+      ["p40_2_order", "order", false]
+    ]
+  },
+  {
+    "case_id": "CASE-06",
+    "title": "放流水事實未明（三值未知涵攝）",
+    "description": "事業排放廢水但無檢測數據，構成要件無法判定，精確列出缺事實",
+    "as_of": "2019-01-01",
+    "case_facts": {
+      "actor_is_regulated_entity": 1,
+      "discharges_to_surface_water": 1,
+      "actor_is_business_or_sewer_system": 1,
+      "actor_is_livestock_business": 0,
+      "ap_intent": 1
+    },
+    "expected_verdicts": {
+      "w7_1": "undetermined"
+    },
+    "expected_missing": [
+      ["w7_1", "effluent_meets_standard"]
+    ],
+    "expected_penalties": []
+  },
+  {
+    "case_id": "CASE-07",
+    "title": "非受規範主體（非事業／非污水下水道）",
+    "description": "主體不該當水污法第7條第1項前段之管制主體，不成立義務違反，判為不適用（not_applicable）",
+    "as_of": "2019-01-01",
+    "case_facts": {
+      "actor_is_regulated_entity": 0,
+      "discharges_to_surface_water": 1,
+      "effluent_meets_standard": 0,
+      "ap_intent": 1
+    },
+    "expected_verdicts": {
+      "w7_1": "not_applicable"
+    },
+    "expected_penalties": []
+  },
+  {
+    "case_id": "CASE-08",
+    "title": "行政罰法第7條無責任阻卻（欠缺故意過失）",
+    "description": "超標行為人無故意亦無過失，第40條第1項罰鍰不予處罰，但改善命令照列",
+    "as_of": "2019-01-01",
+    "case_facts": {
+      "actor_is_regulated_entity": 1,
+      "discharges_to_surface_water": 1,
+      "actor_is_business_or_sewer_system": 1,
+      "actor_is_livestock_business": 0,
+      "effluent_meets_standard": 0,
+      "circumstances_serious": 0,
+      "revocation_necessary": 0,
+      "improvement_overdue": 0,
+      "ap_intent": 0,
+      "ap_negligence": 0
+    },
+    "expected_verdicts": {
+      "w7_1": "violation"
+    },
+    "expected_penalties": [
+      ["p40_1_order", "order", false]
+    ],
+    "expected_unpunished": [
+      "p40_1_fine"
+    ]
+  },
+  {
+    "case_id": "CASE-09",
+    "title": "行政罰法第27條裁處權時效消滅（逾三年）",
+    "description": "違規行為終了於2018-07-01，裁處日為2022-07-02，罰鍰保留於候選並明確標示裁處權時效消滅",
+    "as_of": "2018-07-01",
+    "decided_on": "2022-07-02",
+    "case_facts": {
+      "ap_conduct_ended": 20180701,
+      "actor_is_regulated_entity": 1,
+      "discharges_to_surface_water": 1,
+      "actor_is_business_or_sewer_system": 1,
+      "actor_is_livestock_business": 0,
+      "effluent_meets_standard": 0,
+      "circumstances_serious": 0,
+      "revocation_necessary": 0,
+      "improvement_overdue": 0,
+      "ap_intent": 1
+    },
+    "expected_verdicts": {
+      "w7_1": "violation"
+    },
+    "expected_penalties": [
+      ["p40_1_fine", "fine", false],
+      ["p40_1_order", "order", false]
+    ],
+    "expected_time_barred": [
+      "p40_1_fine"
+    ]
+  },
+  {
+    "case_id": "CASE-10",
+    "title": "行政罰法第12條正當防衛（不罰事由阻卻）",
+    "description": "因正當防衛行為致放流水超標，罰鍰依法不予處罰，改善命令照列",
+    "as_of": "2019-01-01",
+    "case_facts": {
+      "actor_is_regulated_entity": 1,
+      "discharges_to_surface_water": 1,
+      "actor_is_business_or_sewer_system": 1,
+      "actor_is_livestock_business": 0,
+      "effluent_meets_standard": 0,
+      "circumstances_serious": 0,
+      "revocation_necessary": 0,
+      "improvement_overdue": 0,
+      "ap_intent": 1,
+      "ap_self_defense": 1
+    },
+    "expected_verdicts": {
+      "w7_1": "violation"
+    },
+    "expected_penalties": [
+      ["p40_1_order", "order", false]
+    ],
+    "expected_unpunished": [
+      "p40_1_fine"
+    ]
+  }
+]
