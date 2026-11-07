@@ -82,12 +82,41 @@ def _sha(content: str | None) -> bytes:
 def _upsert_resource(conn: Conn, law: ParsedLaw) -> int:
     row = conn.execute(
         "INSERT INTO corpus.legal_resource"
-        " (id_scheme, local_id, norm_kind, document_type, repealed_on)"
-        " VALUES ('moj_pcode', %s, %s::corpus.norm_kind, %s, %s)"
-        " ON CONFLICT (id_scheme, local_id) DO UPDATE"
-        "   SET norm_kind = EXCLUDED.norm_kind, document_type = EXCLUDED.document_type"
+        " (jurisdiction, id_scheme, local_id, norm_kind, document_type, repealed_on,"
+        "  approval_authority, approval_doc_no, ratified_at, invalidated_by, invalidation_date)"
+        " VALUES (%s, %s, %s, %s::corpus.norm_kind, %s, %s, %s, %s, %s, %s, %s)"
+        " ON CONFLICT (jurisdiction, id_scheme, local_id) DO UPDATE"
+        "   SET norm_kind = EXCLUDED.norm_kind,"
+        "       document_type = EXCLUDED.document_type,"
+        "       approval_authority = COALESCE("
+        "           EXCLUDED.approval_authority, corpus.legal_resource.approval_authority"
+        "       ),"
+        "       approval_doc_no = COALESCE("
+        "           EXCLUDED.approval_doc_no, corpus.legal_resource.approval_doc_no"
+        "       ),"
+        "       ratified_at = COALESCE("
+        "           EXCLUDED.ratified_at, corpus.legal_resource.ratified_at"
+        "       ),"
+        "       invalidated_by = COALESCE("
+        "           EXCLUDED.invalidated_by, corpus.legal_resource.invalidated_by"
+        "       ),"
+        "       invalidation_date = COALESCE("
+        "           EXCLUDED.invalidation_date, corpus.legal_resource.invalidation_date"
+        "       )"
         " RETURNING id",
-        (law.pcode, law.kind, law.document_type, None),
+        (
+            law.jurisdiction,
+            law.id_scheme,
+            law.local_id or law.pcode,
+            law.kind,
+            law.document_type,
+            None,
+            law.approval_authority,
+            law.approval_doc_no,
+            law.ratified_at,
+            law.invalidated_by,
+            law.invalidation_date,
+        ),
     ).fetchone()
     assert row is not None and isinstance(row[0], int)
     return row[0]

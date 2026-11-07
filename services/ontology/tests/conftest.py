@@ -8,6 +8,8 @@ import pytest
 from testcontainers.community.postgres import PostgresContainer
 
 from envcite.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
+from envcite.ontology.v2 import ontology_pb2_grpc as ontology_v2_grpc
+from envcite.ontology.v2 import reasoning_pb2_grpc as reasoning_v2_grpc
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.ingest import importer
 from envcite_ontology.migrate import apply_all
@@ -109,6 +111,16 @@ def stub(channel: grpc.Channel) -> ontology_pb2_grpc.OntologyServiceStub:
 @pytest.fixture
 def reasoning_stub(channel: grpc.Channel) -> reasoning_pb2_grpc.ReasoningServiceStub:
     return reasoning_pb2_grpc.ReasoningServiceStub(channel)
+
+
+@pytest.fixture
+def stub_v2(channel: grpc.Channel) -> ontology_v2_grpc.OntologyServiceStub:
+    return ontology_v2_grpc.OntologyServiceStub(channel)
+
+
+@pytest.fixture
+def reasoning_stub_v2(channel: grpc.Channel) -> reasoning_v2_grpc.ReasoningServiceStub:
+    return reasoning_v2_grpc.ReasoningServiceStub(channel)
 
 
 def call_metadata() -> tuple[tuple[str, str], ...]:

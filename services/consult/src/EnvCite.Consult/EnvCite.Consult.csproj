@@ -22,7 +22,7 @@
     <Protobuf Include="../../../../proto/envcite/consult/v2/consult.proto"
               ProtoRoot="../../../../proto"
               GrpcServices="Both" />
-    <Protobuf Include="../../../../proto/envcite/ontology/v1/ontology.proto"
+    <Protobuf Include="../../../../proto/envcite/ontology/v2/ontology.proto"
               ProtoRoot="../../../../proto"
               GrpcServices="Both" />
   </ItemGroup>

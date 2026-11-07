@@ -93,7 +93,8 @@ _LINKS = """
     SELECT d.cited_law_name, d.cited_path, d.law_resource_id, d.law_local_id, d.law_provision_id,
            d.law_status::text, lr.norm_kind::text, corpus.version_iri(d.law_version_id),
            EXISTS (SELECT 1 FROM corpus.invalidations_at(d.law_resource_id, %(lang)s, %(on)s) AS i
-                    WHERE i.version_id = d.law_version_id)
+                    WHERE i.version_id = d.law_version_id),
+           lr.jurisdiction, lr.id_scheme
       FROM annotation.delegations_at(%(law)s, %(lang)s, %(on)s) AS d
       LEFT JOIN corpus.legal_resource AS lr ON lr.id = d.law_resource_id
      ORDER BY d.cited_path, d.delegation_id
@@ -217,7 +218,7 @@ class Invalidated:
 
 @dataclass(frozen=True)
 class Link:
-    """授權鏈的一環：命令（pcode）所引的授權條文；`gap` 為 None 即這一環成立。
+    """授權鏈的一環：命令所引的授權條文；`gap` 為 None 即這一環成立。
 
     `gap`：`no_citation`、`unresolved_law`、`law_not_in_force`、`law_invalidated`、`cycle`。
     """
@@ -228,6 +229,18 @@ class Link:
     law_id: str | None
     version_iri: str | None
     gap: str | None
+    command_jurisdiction: str = "TW-CENTRAL"
+    command_id_scheme: str = "moj_pcode"
+    target_jurisdiction: str | None = None
+    target_id_scheme: str | None = None
+
+    @property
+    def command_local_id(self) -> str:
+        return self.command_law_id
+
+    @property
+    def target_local_id(self) -> str | None:
+        return self.law_id
 
 
 @dataclass(frozen=True)
@@ -264,16 +277,45 @@ def _chain(
     path: tuple[int, ...],
 ) -> Chain:
     # 不跨起點快取：在環上被截斷的鏈只對那個起點成立。
-    (local_id,) = cast(
-        tuple[str],
-        conn.execute("SELECT local_id FROM corpus.legal_resource WHERE id = %s", (law,)).fetchone(),
+    (cmd_jur, cmd_scheme, local_id) = cast(
+        tuple[str, str, str],
+        conn.execute(
+            "SELECT jurisdiction, id_scheme, local_id FROM corpus.legal_resource WHERE id = %s",
+            (law,),
+        ).fetchone(),
     )
     rows = conn.execute(_LINKS, {"law": law, "lang": language, "on": on}).fetchall()
     if not rows:
-        return Chain(False, (Link(str(local_id), "", "", None, None, "no_citation"),))
+        return Chain(
+            False,
+            (
+                Link(
+                    str(local_id),
+                    "",
+                    "",
+                    None,
+                    None,
+                    "no_citation",
+                    command_jurisdiction=str(cmd_jur),
+                    command_id_scheme=str(cmd_scheme),
+                ),
+            ),
+        )
     links: list[Link] = []
     rooted = False
-    for name, cited, parent, parent_id, provision, status, kind, iri, void in rows:
+    for (
+        name,
+        cited,
+        parent,
+        parent_id,
+        provision,
+        status,
+        kind,
+        iri,
+        void,
+        p_jur,
+        p_scheme,
+    ) in rows:
         here = Link(
             str(local_id),
             str(name),
@@ -281,6 +323,10 @@ def _chain(
             None if parent_id is None else str(parent_id),
             None if iri is None else str(iri),
             None,
+            command_jurisdiction=str(cmd_jur),
+            command_id_scheme=str(cmd_scheme),
+            target_jurisdiction=None if p_jur is None else str(p_jur),
+            target_id_scheme=None if p_scheme is None else str(p_scheme),
         )
         if parent is None or provision is None:
             links.append(_gap(here, "unresolved_law"))
@@ -302,7 +348,18 @@ def _chain(
 
 
 def _gap(link: Link, gap: str) -> Link:
-    return Link(link.command_law_id, link.cited_law_name, link.cited_path, link.law_id, None, gap)
+    return Link(
+        link.command_law_id,
+        link.cited_law_name,
+        link.cited_path,
+        link.law_id,
+        None,
+        gap,
+        command_jurisdiction=link.command_jurisdiction,
+        command_id_scheme=link.command_id_scheme,
+        target_jurisdiction=link.target_jurisdiction,
+        target_id_scheme=link.target_id_scheme,
+    )
 
 
 @dataclass(frozen=True)

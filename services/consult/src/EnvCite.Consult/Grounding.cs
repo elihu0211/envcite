@@ -1,5 +1,7 @@
 using System.Collections.Frozen;
 
+using EnvCite.Ontology.V2;
+
 using Microsoft.Extensions.Options;
 
 namespace EnvCite.Consult;
@@ -17,7 +19,13 @@ internal enum RefusalReason
     MissingInput,
 }
 
-internal sealed record Citation(string Code, string Iri, string Label, string Text, string Ontology);
+internal sealed record Citation(
+    string Code,
+    string Iri,
+    string Label,
+    string Text,
+    string Ontology,
+    LawIdentifier? LawIdentifier = null);
 
 /// <summary>一次管線執行的結果：<see cref="Evidence"/> 或 <see cref="Refusal"/>，恰有其一。</summary>
 internal abstract record GroundingOutcome;
@@ -58,7 +66,7 @@ internal static class Grounding
     /// </summary>
     public static IReadOnlyList<Citation> Ground(IReadOnlyList<Article> articles, RelevanceOptions relevance) =>
         [.. articles.Where(relevance.IsRelevant).Take(MaxCitations)
-            .Select((a, i) => new Citation($"{CodePrefix[Law]}{i + 1}", a.Iri, a.Label, a.Text, Law))];
+            .Select((a, i) => new Citation($"{CodePrefix[Law]}{i + 1}", a.Iri, a.Label, a.Text, Law, a.LawIdentifier))];
 
     /// <summary>依檢索結果決定是否作答：回傳拒答，或回傳 null 表示繼續。</summary>
     public static Refusal? Assess(IReadOnlyList<Citation> grounding, IReadOnlyList<Article> articles)

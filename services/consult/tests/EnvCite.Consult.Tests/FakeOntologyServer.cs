@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 
-using EnvCite.Ontology.V1;
+using EnvCite.Ontology.V2;
 
 using Grpc.Core;
 
@@ -20,6 +20,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
 
     /// <summary>條次帶「之」與語意相似度的命中，驗證轉接的對映。</summary>
     public const string MappedQuery = "排放標準";
+
+    /// <summary>同時涵蓋中央空污法與臺北市自治條例的雙軌檢索。</summary>
+    public const string DualTrackQuery = "臺北市空氣污染防制與自治裁罰標準";
 
     /// <summary>有命中，但都未達相關性下界。</summary>
     public const string IrrelevantQuery = "量子電腦";
@@ -62,6 +65,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     internal static ArticleHit Hit(int n, float lexicalScore) => new()
     {
         Iri = $"https://envcite/tw/law/O0020001/2018-08-01/zho/art_{n}",
+        Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020001" },
         LawTitle = "空氣污染防制法",
         Number = n.ToString(System.Globalization.CultureInfo.InvariantCulture),
         Content = $"第 {n} 條條文內容。",
@@ -76,9 +80,30 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             return request.Query switch
             {
                 AnswerableQuery => Respond(Hit(1, 9F), Hit(2, 4.5F)),
+                DualTrackQuery => Respond(
+                    new ArticleHit
+                    {
+                        Iri = "https://envcite/tw/law/O0020001/2018-08-01/zho/art_20",
+                        Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020001" },
+                        LawTitle = "空氣污染防制法",
+                        Number = "20",
+                        Content = "公私場所固定污染源排放空氣污染物，應符合排放標準。",
+                        LexicalScore = 8.5F,
+                        SemanticSimilarity = 0.9F,
+                    },
+                    new ArticleHit
+                    {
+                        Iri = "https://envcite/tw/law/TPE-ENV-001/2023-01-01/zho/art_5",
+                        Identifier = new LawIdentifier { Jurisdiction = "TW-TPE", IdScheme = "local_glrs", LocalId = "TPE-ENV-001" },
+                        LawTitle = "臺北市宜居城市環境保護自治條例",
+                        Number = "5",
+                        Content = "臺北市轄內各公私場所應遵行嚴於中央法規之特定區域排放標準；違反者得加重裁處。",
+                        LexicalScore = 7.8F,
+                        SemanticSimilarity = 0.88F,
+                    }),
                 MappedQuery => Respond(
-                    new ArticleHit { Iri = "a", LawTitle = "空氣污染防制法", Number = "5-1", Content = "…", LexicalScore = 4.5F, SemanticSimilarity = 0.85F },
-                    new ArticleHit { Iri = "b", LawTitle = "空氣污染防制法", Number = "20", Content = "…", LexicalScore = 0.1F }),
+                    new ArticleHit { Iri = "a", Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020001" }, LawTitle = "空氣污染防制法", Number = "5-1", Content = "…", LexicalScore = 4.5F, SemanticSimilarity = 0.85F },
+                    new ArticleHit { Iri = "b", Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020001" }, LawTitle = "空氣污染防制法", Number = "20", Content = "…", LexicalScore = 0.1F }),
                 IrrelevantQuery => Respond(Hit(1, 0.1F)),
                 InvalidQuery => throw new RpcException(
                     new Status(StatusCode.InvalidArgument, InvalidDetail),

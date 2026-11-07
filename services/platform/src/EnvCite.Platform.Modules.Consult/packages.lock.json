@@ -101,6 +101,14 @@
         "resolved": "10.0.9",
         "contentHash": "YweovHiLUoEdbr2Xv8eRqCSkTu1vMms4a6xBHaQiMSFVy32PL+hXv6Vhol2NWOmLHjaVgTyhJ3R52U6JxS6w3Q=="
       },
+      "envcite.platform.modules.ontology": {
+        "type": "Project",
+        "dependencies": {
+          "EnvCite.Platform.SharedKernel": "[1.0.0, )",
+          "Google.Protobuf": "[3.36.2, )",
+          "Grpc.Net.ClientFactory": "[2.84.0, )"
+        }
+      },
       "envcite.platform.sharedkernel": {
         "type": "Project",
         "dependencies": {

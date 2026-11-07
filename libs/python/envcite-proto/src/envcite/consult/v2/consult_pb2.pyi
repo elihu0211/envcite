@@ -4,6 +4,7 @@ isort:skip_file
 """
 
 from collections import abc as _abc
+from envcite.ontology.v2 import ontology_pb2 as _ontology_pb2
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf.internal import containers as _containers
@@ -133,6 +134,7 @@ class Citation(_message.Message):
     LABEL_FIELD_NUMBER: _builtins.int
     TEXT_FIELD_NUMBER: _builtins.int
     ONTOLOGY_FIELD_NUMBER: _builtins.int
+    LAW_IDENTIFIER_FIELD_NUMBER: _builtins.int
     code: _builtins.str
     """模型以方括號寫出的短代號，例如 "[L1]"。不在證據集內的代號是捏造的引用：
     剝除它，或退回整個答案。
@@ -145,6 +147,10 @@ class Citation(_message.Message):
     """`as_of` 當日有效的條文全文，即證據本身。"""
     ontology: _builtins.str
     """所屬本體的代號，例如 "law"。"""
+    @_builtins.property
+    def law_identifier(self) -> _ontology_pb2.LawIdentifier:
+        """條文所屬法規的複合自然鍵識別碼（所屬本體為法規時具備）。"""
+
     def __init__(
         self,
         *,
@@ -153,10 +159,11 @@ class Citation(_message.Message):
         label: _builtins.str = ...,
         text: _builtins.str = ...,
         ontology: _builtins.str = ...,
+        law_identifier: _ontology_pb2.LawIdentifier | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["law_identifier", b"law_identifier"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["code", b"code", "iri", b"iri", "label", b"label", "ontology", b"ontology", "text", b"text"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["code", b"code", "iri", b"iri", "label", b"label", "law_identifier", b"law_identifier", "ontology", b"ontology", "text", b"text"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

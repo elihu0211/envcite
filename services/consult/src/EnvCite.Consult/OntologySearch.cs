@@ -1,4 +1,4 @@
-using EnvCite.Ontology.V1;
+using EnvCite.Ontology.V2;
 using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.Options;
@@ -6,7 +6,13 @@ using Microsoft.Extensions.Options;
 namespace EnvCite.Consult;
 
 /// <summary>一筆檢索到的條文。分數只在同一次檢索之內可比較。</summary>
-internal sealed record Article(string Iri, string Label, string Text, double LexicalScore, double? SemanticSimilarity = null);
+internal sealed record Article(
+    string Iri,
+    string Label,
+    string Text,
+    double LexicalScore,
+    double? SemanticSimilarity = null,
+    LawIdentifier? LawIdentifier = null);
 
 /// <summary>
 /// 管線所依賴的 port：法規的讀取途徑，本服務中法律事實的唯一來源。它是介面而非 client——管線的形狀
@@ -45,7 +51,8 @@ internal sealed class OntologySearch(OntologyService.OntologyServiceClient clien
             hit.Content,
             // 相關性下界以字面分數或語意相似度校定；分數的定義一旦改變，下界就必須重新推導。
             hit.LexicalScore,
-            hit.HasSemanticSimilarity ? hit.SemanticSimilarity : null))];
+            hit.HasSemanticSimilarity ? hit.SemanticSimilarity : null,
+            hit.Identifier))];
     }
 
     /// <summary>「20」→ 第 20 條；「5-1」→ 第 5 條之 1。</summary>

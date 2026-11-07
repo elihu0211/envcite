@@ -88,7 +88,7 @@ s AS (
      ORDER BY f.rank_score DESC, av.id
      LIMIT %(limit)s
 )
-SELECT corpus.version_iri(s.version_id), r.local_id, e.title,
+SELECT corpus.version_iri(s.version_id), r.jurisdiction, r.id_scheme, r.local_id, e.title,
        corpus.article_number(s.path), corpus.article_text(s.version_id),
        s.lexical_score, s.semantic_similarity
   FROM s
@@ -142,12 +142,14 @@ def scoped_search(
     return [
         SearchHit(
             iri=iri,
-            law_id=law_id,
+            jurisdiction=jur,
+            id_scheme=scheme,
+            local_id=lid,
             law_title=title,
             number=number,
             content=content,
             lexical_score=lexical,
             semantic_similarity=semantic,
         )
-        for iri, law_id, title, number, content, lexical, semantic in rows
+        for iri, jur, scheme, lid, title, number, content, lexical, semantic in rows
     ]

@@ -62,10 +62,9 @@ _CHANGE_DATES = """
 
 #: 在 `on` 那天已經制定、但語料持有的第一個版本晚於那天的法規（限於提供陳述的法規）。
 _UNCOVERED = """
-    SELECT lr.local_id
+    SELECT lr.jurisdiction, lr.id_scheme, lr.local_id
       FROM corpus.legal_resource AS lr
-     WHERE lr.id_scheme = 'moj_pcode'
-       AND lr.id IN (SELECT p.resource_id
+     WHERE lr.id IN (SELECT p.resource_id
                        FROM annotation.statement AS s
                        JOIN corpus.provision AS p ON p.id = s.provision_id
                       WHERE s.id = ANY(%(ids)s))
@@ -74,7 +73,7 @@ _UNCOVERED = """
        AND coalesce((SELECT min(le.event_date) FROM corpus.lifecycle_event AS le
                       WHERE le.resource_id = lr.id AND le.event_kind = 'enactment'),
                     %(on)s) <= %(on)s
-     ORDER BY lr.local_id
+     ORDER BY lr.jurisdiction, lr.id_scheme, lr.local_id
 """
 
 
@@ -82,13 +81,13 @@ _UNCOVERED = """
 class Candidate:
     """裁處前之法律的一組陳述與其推論。`as_of` 是這組陳述適用的第一天。
 
-    `uncovered_laws`：那天已制定、但語料沒有當時版本的法規（pcode）。它們的規定不在這組陳述
-    裡，不代表當時沒有規定。
+    `uncovered_laws`：那天已制定、但語料沒有當時版本的法規（管轄, 方案, 內部編號）。
+    它們的規定不在這組陳述裡，不代表當時沒有規定。
     """
 
     as_of: date
     result: Result
-    uncovered_laws: tuple[str, ...] = ()
+    uncovered_laws: tuple[tuple[str, str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -99,7 +98,7 @@ class Transition:
     decided_on: date
     at_decision: Result
     earlier: tuple[Candidate, ...]
-    at_decision_uncovered_laws: tuple[str, ...] = ()
+    at_decision_uncovered_laws: tuple[tuple[str, str, str], ...] = ()
 
     @property
     def changed(self) -> bool:
@@ -113,10 +112,12 @@ def _statement_ids(conn: Conn, language: str, day: date) -> frozenset[int]:
     )
 
 
-def _uncovered(conn: Conn, ids: frozenset[int], language: str, day: date) -> tuple[str, ...]:
+def _uncovered(
+    conn: Conn, ids: frozenset[int], language: str, day: date
+) -> tuple[tuple[str, str, str], ...]:
     # 用裁處時的陳述組所屬的法規：早期才有、現在已沒有陳述的法規，與這次推論無關。
     rows = conn.execute(_UNCOVERED, {"ids": sorted(ids), "lang": language, "on": day})
-    return tuple(str(r[0]) for r in rows)
+    return tuple((str(r[0]), str(r[1]), str(r[2])) for r in rows)
 
 
 def evaluate_across(

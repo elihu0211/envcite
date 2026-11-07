@@ -137,7 +137,7 @@
           "法規"
         ],
         "summary": "取得法規",
-        "description": "`lawId` 為全國法規資料庫的 pcode（如 `O0020001`）；標題取自 `asOf` 當日有效的版本，省略 `asOf`（`YYYY-MM-DD`）表示現行。該日沒有有效的版本回 404，不會退回現行版本。成功計量為一次 `ontology.get_law`。",
+        "description": "`lawId` 為法規識別碼（支援自然鍵複合識別碼或全國法規資料庫 pcode）；標題取自 `asOf` 當日有效的版本，省略 `asOf`（`YYYY-MM-DD`）表示現行。該日沒有有效的版本回 404，不會退回現行版本。成功計量為一次 `ontology.get_law`。",
         "operationId": "GetLaw",
         "parameters": [
           {
@@ -869,17 +869,17 @@
       },
       "DelegationLinkDto": {
         "required": [
-          "commandLawId",
+          "commandIdentifier",
           "citedLawName",
           "citedPath",
-          "lawId",
+          "identifier",
           "uri",
           "gap"
         ],
         "type": "object",
         "properties": {
-          "commandLawId": {
-            "type": "string"
+          "commandIdentifier": {
+            "$ref": "#/components/schemas/LawIdentifierDto"
           },
           "citedLawName": {
             "type": [
@@ -893,10 +893,14 @@
               "string"
             ]
           },
-          "lawId": {
-            "type": [
-              "null",
-              "string"
+          "identifier": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LawIdentifierDto"
+              }
             ]
           },
           "uri": {
@@ -1375,7 +1379,7 @@
       },
       "LawDto": {
         "required": [
-          "id",
+          "identifier",
           "uri",
           "title",
           "language",
@@ -1383,8 +1387,8 @@
         ],
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
+          "identifier": {
+            "$ref": "#/components/schemas/LawIdentifierDto"
           },
           "uri": {
             "type": "string"
@@ -1400,6 +1404,55 @@
               "null",
               "string"
             ]
+          },
+          "approvalAuthority": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "approvalDocNo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ratifiedAt": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "invalidatedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "invalidationDate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "LawIdentifierDto": {
+        "required": [
+          "jurisdiction",
+          "idScheme",
+          "localId"
+        ],
+        "type": "object",
+        "properties": {
+          "jurisdiction": {
+            "type": "string"
+          },
+          "idScheme": {
+            "type": "string"
+          },
+          "localId": {
+            "type": "string"
           }
         }
       },
@@ -1473,7 +1526,7 @@
           "limitSources",
           "general",
           "sources",
-          "uncoveredLawIds",
+          "uncoveredLawIdentifiers",
           "definitionsUsed",
           "guidance",
           "missingPermitLimits",
@@ -1574,10 +1627,10 @@
               "$ref": "#/components/schemas/StatementSourceDto"
             }
           },
-          "uncoveredLawIds": {
+          "uncoveredLawIdentifiers": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/LawIdentifierDto"
             }
           },
           "definitionsUsed": {
@@ -1990,7 +2043,7 @@
       "SearchHitDto": {
         "required": [
           "uri",
-          "lawId",
+          "identifier",
           "lawTitle",
           "number",
           "content",
@@ -2001,8 +2054,8 @@
           "uri": {
             "type": "string"
           },
-          "lawId": {
-            "type": "string"
+          "identifier": {
+            "$ref": "#/components/schemas/LawIdentifierDto"
           },
           "lawTitle": {
             "type": "string"

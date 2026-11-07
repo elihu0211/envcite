@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 
-using EnvCite.Ontology.V1;
+using EnvCite.Ontology.V2;
 
 using Grpc.Core;
 
@@ -67,11 +67,12 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     {
         public override Task<GetLawResponse> GetLaw(GetLawRequest request, ServerCallContext context)
         {
-            Authorize(context, request.Id);
+            var id = request.Identifier?.LocalId ?? string.Empty;
+            Authorize(context, id);
             server.LastAsOf = request.AsOf;
             CheckAsOf(request.AsOf);
-            var calls = server.GetLawCalls.AddOrUpdate(request.Id, 1, (_, n) => n + 1);
-            if (request.Id == FlakyLawId && calls == 1)
+            var calls = server.GetLawCalls.AddOrUpdate(id, 1, (_, n) => n + 1);
+            if (id == FlakyLawId && calls == 1)
             {
                 throw new RpcException(new Status(StatusCode.Unavailable, "restarting"));
             }
@@ -80,8 +81,8 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             {
                 Law = new Law
                 {
-                    Id = request.Id,
-                    Iri = $"https://envcite/tw/law/{request.Id}",
+                    Identifier = request.Identifier ?? new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = id },
+                    Iri = $"https://envcite/tw/law/{id}",
                     Title = "空氣污染防制法",
                     Language = "zh-hant",
                     DateDocument = "2000-01-01",
@@ -91,7 +92,8 @@ public sealed class FakeOntologyServer : IAsyncDisposable
 
         public override Task<ListArticlesResponse> ListArticles(ListArticlesRequest request, ServerCallContext context)
         {
-            Authorize(context, request.LawId);
+            var id = request.Identifier?.LocalId ?? string.Empty;
+            Authorize(context, id);
             server.LastAsOf = request.AsOf;
             CheckAsOf(request.AsOf);
             return Task.FromResult(new ListArticlesResponse
@@ -120,8 +122,12 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                 {
                     new ArticleHit
                     {
-                        Iri = "a5-1", LawId = KnownLawId, LawTitle = "空氣污染防制法", Number = "5-1",
-                        Content = "（條文內容）", LexicalScore = 0.42f,
+                        Iri = "a5-1",
+                        Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = KnownLawId },
+                        LawTitle = "空氣污染防制法",
+                        Number = "5-1",
+                        Content = "（條文內容）",
+                        LexicalScore = 0.42f,
                     },
                 },
             });
@@ -211,8 +217,8 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                     new TraceEntry
                     {
                         ConditionId = 31, StatementId = 7, Concept = "effluent_cod", Role = ConditionRole.Duty,
-                        Fact = new EnvCite.Ontology.V1.Decimal { Value = "120" },
-                        Threshold = new EnvCite.Ontology.V1.Decimal { Value = "100" },
+                        Fact = new EnvCite.Ontology.V2.Decimal { Value = "120" },
+                        Threshold = new EnvCite.Ontology.V2.Decimal { Value = "100" },
                     },
                 },
                 LimitSources = { { 31, 52 } },
@@ -235,8 +241,8 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                         },
                         new ReducedFine { PenaltyStatementId = 14, Mitigation = Mitigation.ExcessiveDefense, Share = ReductionShare.Third },
                     },
-                    RaisedCaps = { new RaisedCap { PenaltyStatementId = 8, MaxAmount = new EnvCite.Ontology.V1.Decimal { Value = "2500000" } } },
-                    CriminalDeductions = { new CriminalDeduction { PenaltyStatementId = 8, Amount = new EnvCite.Ontology.V1.Decimal { Value = "41760" } } },
+                    RaisedCaps = { new RaisedCap { PenaltyStatementId = 8, MaxAmount = new EnvCite.Ontology.V2.Decimal { Value = "2500000" } } },
+                    CriminalDeductions = { new CriminalDeduction { PenaltyStatementId = 8, Amount = new EnvCite.Ontology.V2.Decimal { Value = "41760" } } },
                 },
                 Invalidated =
                 {
@@ -255,19 +261,22 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                         {
                             new DelegationLink
                             {
-                                CommandLawId = "O0020010", CitedLawName = "水污染防治法", CitedPath = "art_7/para_2",
-                                LawId = "O0020001", VersionIri = "https://envcite/tw/law/O0020001/2018-08-01/zho/art_7/para_2",
+                                CommandIdentifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020010" },
+                                CitedLawName = "水污染防治法",
+                                CitedPath = "art_7/para_2",
+                                Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020001" },
+                                VersionIri = "https://envcite/tw/law/O0020001/2018-08-01/zho/art_7/para_2",
                             },
                         },
                     },
                     new DelegationBasis
                     {
                         StatementId = 53,
-                        Links = { new DelegationLink { CommandLawId = "O0020011", Gap = DelegationGap.NoCitation } },
+                        Links = { new DelegationLink { CommandIdentifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020011" }, Gap = DelegationGap.NoCitation } },
                     },
                 },
                 Sources = { new StatementSource { StatementId = 7, VersionIri = "https://envcite/tw/law/O0020001/2018-08-01/zho/art_32" } },
-                UncoveredLawIds = { "O0040001" },
+                UncoveredLawIdentifiers = { new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0040001" } },
                 DefinitionsUsed =
                 {
                     new DefinitionUse

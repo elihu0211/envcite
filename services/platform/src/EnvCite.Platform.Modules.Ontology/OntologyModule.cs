@@ -1,4 +1,4 @@
-using EnvCite.Ontology.V1;
+using EnvCite.Ontology.V2;
 using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
 

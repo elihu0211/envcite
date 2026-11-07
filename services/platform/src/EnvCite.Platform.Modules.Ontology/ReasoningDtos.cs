@@ -313,14 +313,19 @@ public sealed record StatementSourceDto(long StatementId, string Uri);
 public sealed record InvalidatedStatementDto(long StatementId, string Uri, string RulingNo, string InvalidFrom, bool Partial);
 
 /// <summary>授權鏈的一環：一個命令與它所引的授權依據。</summary>
-/// <param name="CommandLawId">被授權的命令（pcode）。</param>
+/// <param name="CommandIdentifier">被授權的命令之自然鍵識別碼。</param>
 /// <param name="CitedLawName">命令首條所引的法名（原文）；沒有引文時為 null。</param>
 /// <param name="CitedPath">所引的條文路徑（原文）；沒有引文時為 null。</param>
-/// <param name="LawId">對到的授權法規（pcode）；對不到時為 null。</param>
+/// <param name="Identifier">對到的授權法規之自然鍵識別碼；對不到時為 null。</param>
 /// <param name="Uri">授權條文在該日現行的版本的網址；不現行時為 null。</param>
 /// <param name="Gap">這一環為何不成立；成立時為 null。</param>
 public sealed record DelegationLinkDto(
-    string CommandLawId, string? CitedLawName, string? CitedPath, string? LawId, string? Uri, DelegationGapDto? Gap);
+    EnvCite.Platform.SharedKernel.LawIdentifierDto CommandIdentifier,
+    string? CitedLawName,
+    string? CitedPath,
+    EnvCite.Platform.SharedKernel.LawIdentifierDto? Identifier,
+    string? Uri,
+    DelegationGapDto? Gap);
 
 /// <summary>命令陳述的授權鏈（行政罰法第 4 條；釋字第 313、394、402 號）。</summary>
 /// <param name="Rooted">至少有一條路徑經成立的環節到達法律。為假時，命令所定的罰則與處罰命令義務的罰則附條件列出
@@ -354,7 +359,7 @@ public sealed record GuidanceDto(
 /// </summary>
 /// <param name="NeedsAssessment">要件是不確定法律概念，須呼叫端判斷；不算缺事實。</param>
 /// <param name="AssessmentUsed">結論倚賴了呼叫端對不確定法律概念的判斷。</param>
-/// <param name="UncoveredLawIds">當日已制定、但語料沒有當時版本的法規（pcode）；其規定不在結果裡，
+/// <param name="UncoveredLawIdentifiers">當日已制定、但語料沒有當時版本的法規（自然鍵複合識別碼）；其規定不在結果裡，
 /// 不代表當時沒有這些規定。</param>
 /// <param name="DefinitionsUsed">概念值要件所依的用語定義；沒有定義涵蓋而判為不屬於的，沒有定義可指，不在此。</param>
 /// <param name="Guidance">附在結果旁的行政規則；不是推論的前提。</param>
@@ -369,7 +374,7 @@ public sealed record OutcomeDto(
     IReadOnlyList<StatementPairDto> UnresolvedConflicts, IReadOnlyList<DefeatDto> Defeated,
     IReadOnlyList<StatementPairDto> UnresolvedPenaltyOverlaps, IReadOnlyList<DefeatDto> PenaltyDefeated,
     IReadOnlyList<TraceEntryDto> Trace, IReadOnlyList<LimitSourceDto> LimitSources, GeneralPartDto General,
-    IReadOnlyList<StatementSourceDto> Sources, IReadOnlyList<string> UncoveredLawIds,
+    IReadOnlyList<StatementSourceDto> Sources, IReadOnlyList<EnvCite.Platform.SharedKernel.LawIdentifierDto> UncoveredLawIdentifiers,
     IReadOnlyList<DefinitionUseDto> DefinitionsUsed, IReadOnlyList<GuidanceDto> Guidance,
     IReadOnlyList<PermitGapDto> MissingPermitLimits, IReadOnlyList<long> SubjectMismatch,
     IReadOnlyList<InvalidatedStatementDto> Invalidated, IReadOnlyList<DelegationBasisDto> DelegationBases);

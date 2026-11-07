@@ -10,6 +10,8 @@ import logging
 import grpc
 
 from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
+from envcite.ontology.v2 import ontology_pb2 as pb2_v2
+from envcite.ontology.v2 import ontology_pb2_grpc as grpc_v2
 from envcite_ontology import errors
 from envcite_ontology.embedding import Embedder, EmbeddingError
 from envcite_ontology.law_names import LawNames
@@ -26,6 +28,11 @@ MAX_SEARCH_LIMIT = 50
 _RULING_KINDS = {
     "interpretation": ontology_pb2.RULING_KIND_INTERPRETATION,
     "judgment": ontology_pb2.RULING_KIND_JUDGMENT,
+}
+
+_RULING_KINDS_V2 = {
+    "interpretation": pb2_v2.RULING_KIND_INTERPRETATION,
+    "judgment": pb2_v2.RULING_KIND_JUDGMENT,
 }
 
 
@@ -156,6 +163,172 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
 
     def _query_embedding(self, query: str) -> list[float] | None:
         """問題的向量；沒有嵌入模型或取不到時為 None，檢索退回只用字面臂，不讓查詢失敗。"""
+        if self._embedder is None:
+            return None
+        try:
+            return self._embedder.embed([query])[0]
+        except EmbeddingError as e:
+            log.warning("semantic arm skipped: %s", e)
+            return None
+
+
+class OntologyV2Servicer(grpc_v2.OntologyServiceServicer):
+    def __init__(
+        self,
+        store: OntologyStore,
+        segmenter: Segmenter,
+        law_names: LawNames,
+        embedder: Embedder | None = None,
+        lexical_max_df: float = 0.0,
+    ) -> None:
+        self._store = store
+        self._law_names = law_names
+        self._lexical_max_df = lexical_max_df
+        self._segmenter = segmenter
+        self._embedder = embedder
+
+    def _not_found(
+        self, local_id: str, as_of: str, jurisdiction: str, id_scheme: str
+    ) -> errors.ServiceError:
+        if self._store.law_exists(local_id, jurisdiction=jurisdiction, id_scheme=id_scheme):
+            when = f"in force on {as_of}" if as_of else "in force today"
+            return errors.not_found(
+                errors.AS_OF_NOT_COVERED,
+                f"law '{jurisdiction}:{id_scheme}:{local_id}' has no version {when}",
+            )
+        return errors.not_found(
+            errors.LAW_NOT_FOUND, f"law '{jurisdiction}:{id_scheme}:{local_id}' not found"
+        )
+
+    @errors.maps_errors
+    def GetLaw(
+        self, request: pb2_v2.GetLawRequest, context: grpc.ServicerContext
+    ) -> pb2_v2.GetLawResponse:
+        lid = request.identifier.local_id
+        jur = request.identifier.jurisdiction or "TW-CENTRAL"
+        scheme = request.identifier.id_scheme or "moj_pcode"
+        _log_call(context, "GetLaw[v2]", f"{jur}:{scheme}:{lid}")
+        _check_as_of(request.as_of)
+        law = self._store.get_law(lid, as_of=request.as_of, jurisdiction=jur, id_scheme=scheme)
+        if law is None:
+            raise self._not_found(lid, request.as_of, jur, scheme)
+        return pb2_v2.GetLawResponse(
+            law=pb2_v2.Law(
+                identifier=pb2_v2.LawIdentifier(
+                    jurisdiction=law.jurisdiction,
+                    id_scheme=law.id_scheme,
+                    local_id=law.local_id,
+                ),
+                iri=law.iri,
+                title=law.title,
+                language=law.language,
+                date_document=law.date_document,
+                approval_authority=law.approval_authority,
+                approval_doc_no=law.approval_doc_no,
+                ratified_at=law.ratified_at,
+                invalidated_by=law.invalidated_by,
+                invalidation_date=law.invalidation_date,
+            )
+        )
+
+    @errors.maps_errors
+    def ListArticles(
+        self, request: pb2_v2.ListArticlesRequest, context: grpc.ServicerContext
+    ) -> pb2_v2.ListArticlesResponse:
+        lid = request.identifier.local_id
+        jur = request.identifier.jurisdiction or "TW-CENTRAL"
+        scheme = request.identifier.id_scheme or "moj_pcode"
+        _log_call(context, "ListArticles[v2]", f"{jur}:{scheme}:{lid}")
+        _check_as_of(request.as_of)
+        articles = self._store.list_articles(
+            lid, as_of=request.as_of, jurisdiction=jur, id_scheme=scheme
+        )
+        if articles is None:
+            raise self._not_found(lid, request.as_of, jur, scheme)
+        return pb2_v2.ListArticlesResponse(
+            articles=[pb2_v2.Article(iri=a.iri, number=a.number) for a in articles]
+        )
+
+    @errors.maps_errors
+    def ListInvalidations(
+        self, request: pb2_v2.ListInvalidationsRequest, context: grpc.ServicerContext
+    ) -> pb2_v2.ListInvalidationsResponse:
+        lid = request.identifier.local_id
+        jur = request.identifier.jurisdiction or "TW-CENTRAL"
+        scheme = request.identifier.id_scheme or "moj_pcode"
+        _log_call(context, "ListInvalidations[v2]", f"{jur}:{scheme}:{lid}")
+        _check_as_of(request.as_of)
+        found = self._store.list_invalidations(
+            lid,
+            as_of=request.as_of,
+            article_number=request.article_number,
+            jurisdiction=jur,
+            id_scheme=scheme,
+        )
+        if found is None:
+            raise self._not_found(lid, request.as_of, jur, scheme)
+        return pb2_v2.ListInvalidationsResponse(
+            invalidations=[
+                pb2_v2.Invalidation(
+                    ruling_no=i.ruling_no,
+                    ruling_kind=_RULING_KINDS_V2[i.ruling_kind],
+                    decided_on=i.decided_on,
+                    source_url=i.source_url,
+                    excerpt=i.excerpt,
+                    path=i.path,
+                    invalid_from=i.invalid_from,
+                    partial=i.partial,
+                )
+                for i in found
+            ]
+        )
+
+    @errors.maps_errors
+    def SearchArticles(
+        self, request: pb2_v2.SearchArticlesRequest, context: grpc.ServicerContext
+    ) -> pb2_v2.SearchArticlesResponse:
+        _log_call(context, "SearchArticles[v2]", f"query_chars={len(request.query)}")
+        v = errors.Validator()
+        terms = self._segmenter.to_tsvector_input(request.query)
+        if not terms:
+            v.add("query", errors.EMPTY, "query must not be empty")
+        limit = request.limit or DEFAULT_SEARCH_LIMIT
+        if not 0 < limit <= MAX_SEARCH_LIMIT:
+            v.add("limit", errors.OUT_OF_RANGE, f"limit must be between 1 and {MAX_SEARCH_LIMIT}")
+        v.date("as_of", request.as_of)
+        v.check()
+
+        hits = self._store.search(
+            terms,
+            tokenizer=self._segmenter.tokenizer_id,
+            as_of=request.as_of,
+            limit=limit,
+            embedding=self._query_embedding(request.query),
+            model=self._embedder.model if self._embedder else "",
+            max_df=self._lexical_max_df,
+            laws=self._law_names.find(request.query),
+            jurisdiction=request.jurisdiction or None,
+        )
+        return pb2_v2.SearchArticlesResponse(
+            hits=[
+                pb2_v2.ArticleHit(
+                    iri=h.iri,
+                    identifier=pb2_v2.LawIdentifier(
+                        jurisdiction=h.jurisdiction,
+                        id_scheme=h.id_scheme,
+                        local_id=h.local_id,
+                    ),
+                    law_title=h.law_title,
+                    number=h.number,
+                    content=h.content,
+                    lexical_score=h.lexical_score,
+                    semantic_similarity=h.semantic_similarity,
+                )
+                for h in hits
+            ]
+        )
+
+    def _query_embedding(self, query: str) -> list[float] | None:
         if self._embedder is None:
             return None
         try:

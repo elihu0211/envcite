@@ -10,9 +10,11 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
-from typing import Literal
+from typing import Any, Literal
 
 from envcite.ontology.v1 import reasoning_pb2 as pb
+from envcite.ontology.v2 import ontology_pb2 as ont_pb2_v2
+from envcite.ontology.v2 import reasoning_pb2 as pb2_v2
 from envcite_ontology import errors
 from envcite_ontology.reasoning import Result, facts
 from envcite_ontology.reasoning.engine import Penalty
@@ -140,6 +142,107 @@ DELEGATION_GAP = {
     "cycle": pb.DELEGATION_GAP_CYCLE,
 }
 
+STATEMENT_KIND_V2 = {
+    "prescriptive": pb2_v2.STATEMENT_KIND_PRESCRIPTIVE,
+    "constitutive": pb2_v2.STATEMENT_KIND_CONSTITUTIVE,
+    "sanction": pb2_v2.STATEMENT_KIND_PENALTY,
+    "reparation": pb2_v2.STATEMENT_KIND_REPARATION,
+}
+NORM_MODALITY_V2 = {
+    "obligation": pb2_v2.NORM_MODALITY_OBLIGATION,
+    "prohibition": pb2_v2.NORM_MODALITY_PROHIBITION,
+    "permission": pb2_v2.NORM_MODALITY_PERMISSION,
+}
+SLOT_ROLE_V2 = {
+    "subject": pb2_v2.SLOT_ROLE_SUBJECT,
+    "action": pb2_v2.SLOT_ROLE_ACTION,
+    "object": pb2_v2.SLOT_ROLE_OBJECT,
+    "medium": pb2_v2.SLOT_ROLE_MEDIUM,
+    "time": pb2_v2.SLOT_ROLE_TIME,
+    "place": pb2_v2.SLOT_ROLE_PLACE,
+}
+COMPARATOR_V2 = {
+    "le": pb2_v2.COMPARATOR_LE,
+    "lt": pb2_v2.COMPARATOR_LT,
+    "ge": pb2_v2.COMPARATOR_GE,
+    "gt": pb2_v2.COMPARATOR_GT,
+    "eq": pb2_v2.COMPARATOR_EQ,
+    "ne": pb2_v2.COMPARATOR_NE,
+}
+CONDITION_ROLE_V2 = {
+    "scope": pb2_v2.CONDITION_ROLE_SCOPE,
+    "duty": pb2_v2.CONDITION_ROLE_DUTY,
+    "limit": pb2_v2.CONDITION_ROLE_LIMIT,
+}
+LEGAL_EFFECT_V2 = {
+    "fine": pb2_v2.LEGAL_EFFECT_FINE,
+    "confiscation": pb2_v2.LEGAL_EFFECT_CONFISCATION,
+    "restriction": pb2_v2.LEGAL_EFFECT_RESTRICTION,
+    "deprivation": pb2_v2.LEGAL_EFFECT_DEPRIVATION,
+    "reputation": pb2_v2.LEGAL_EFFECT_REPUTATION,
+    "warning": pb2_v2.LEGAL_EFFECT_WARNING,
+    "order": pb2_v2.LEGAL_EFFECT_ORDER,
+    "disgorgement": pb2_v2.LEGAL_EFFECT_DISGORGEMENT,
+}
+LIABILITY_BASIS_V2 = {
+    "act": pb2_v2.LIABILITY_BASIS_ACT,
+    "state": pb2_v2.LIABILITY_BASIS_STATE,
+    "representative": pb2_v2.LIABILITY_BASIS_REPRESENTATIVE,
+}
+TRIGGER_KIND_V2 = {
+    "order_lapsed": pb2_v2.TRIGGER_KIND_ORDER_LAPSED,
+    "sanction_imposed": pb2_v2.TRIGGER_KIND_SANCTION_IMPOSED,
+}
+GUIDANCE_KIND_V2 = {
+    "interpretation": pb2_v2.GUIDANCE_KIND_INTERPRETATION,
+    "discretion_standard": pb2_v2.GUIDANCE_KIND_DISCRETION_STANDARD,
+    "operational": pb2_v2.GUIDANCE_KIND_OPERATIONAL,
+}
+OVERRIDE_BASIS_V2 = {
+    "hierarchy": pb2_v2.OVERRIDE_BASIS_HIERARCHY,
+    "lex_specialis": pb2_v2.OVERRIDE_BASIS_LEX_SPECIALIS,
+    "lex_posterior": pb2_v2.OVERRIDE_BASIS_LEX_POSTERIOR,
+    "exception": pb2_v2.OVERRIDE_BASIS_EXCEPTION,
+}
+VERDICT_V2 = {
+    "violation": pb2_v2.VERDICT_VIOLATION,
+    "compliant": pb2_v2.VERDICT_COMPLIANT,
+}
+EXCUSE_V2 = {
+    "no_fault": pb2_v2.EXCUSE_NO_FAULT,
+    "under_fourteen": pb2_v2.EXCUSE_UNDER_FOURTEEN,
+    "incapable": pb2_v2.EXCUSE_INCAPABLE,
+    "pursuant_to_law": pb2_v2.EXCUSE_PURSUANT_TO_LAW,
+    "superior_order": pb2_v2.EXCUSE_SUPERIOR_ORDER,
+    "self_defense": pb2_v2.EXCUSE_SELF_DEFENSE,
+    "necessity": pb2_v2.EXCUSE_NECESSITY,
+    "criminal_priority": pb2_v2.EXCUSE_CRIMINAL_PRIORITY,
+}
+MITIGATION_V2 = {
+    "youth": pb2_v2.MITIGATION_YOUTH,
+    "reduced_capacity": pb2_v2.MITIGATION_REDUCED_CAPACITY,
+    "ignorance": pb2_v2.MITIGATION_IGNORANCE,
+    "excessive_defense": pb2_v2.MITIGATION_EXCESSIVE_DEFENSE,
+    "excessive_necessity": pb2_v2.MITIGATION_EXCESSIVE_NECESSITY,
+}
+REDUCTION_SHARE_V2 = {2: pb2_v2.REDUCTION_SHARE_HALF, 3: pb2_v2.REDUCTION_SHARE_THIRD}
+DELEGATION_GAP_V2 = {
+    None: pb2_v2.DELEGATION_GAP_UNSPECIFIED,
+    "no_citation": pb2_v2.DELEGATION_GAP_NO_CITATION,
+    "unresolved_law": pb2_v2.DELEGATION_GAP_UNRESOLVED_LAW,
+    "law_not_in_force": pb2_v2.DELEGATION_GAP_LAW_NOT_IN_FORCE,
+    "law_invalidated": pb2_v2.DELEGATION_GAP_LAW_INVALIDATED,
+    "cycle": pb2_v2.DELEGATION_GAP_CYCLE,
+}
+PROBLEM_KIND_V2 = {
+    "contradictory_fact": pb2_v2.PROBLEM_KIND_CONTRADICTORY_FACT,
+    "unresolved_delegation": pb2_v2.PROBLEM_KIND_UNRESOLVED_DELEGATION,
+    "bad_date": pb2_v2.PROBLEM_KIND_BAD_DATE,
+    "measurement_mismatch": pb2_v2.PROBLEM_KIND_MEASUREMENT_MISMATCH,
+    "measurement_unlabeled": pb2_v2.PROBLEM_KIND_MEASUREMENT_UNLABELED,
+    "invalidated_delegation": pb2_v2.PROBLEM_KIND_INVALIDATED_DELEGATION,
+}
+
 #: 推論程式為行政罰法總則保留的案件事實代碼前綴。
 RESERVED_PREFIX = "ap_"
 
@@ -201,6 +304,17 @@ def decimal(value: Decimal) -> pb.Decimal:
 def milli(value: int) -> pb.Decimal:
     """推論程式的千分位整數還原為十進位數。"""
     return decimal(Decimal(value).scaleb(-3))
+
+
+def decimal_v2(value: Decimal) -> pb2_v2.Decimal:
+    """不帶指數與多餘尾零的十進位文字（v2）。"""
+    text = format(value.normalize(), "f")
+    return pb2_v2.Decimal(value=text if "." in text or value != 0 else "0")
+
+
+def milli_v2(value: int) -> pb2_v2.Decimal:
+    """推論程式的千分位整數還原為十進位數（v2）。"""
+    return decimal_v2(Decimal(value).scaleb(-3))
 
 
 def statement_ids(result: Result) -> set[int]:
@@ -287,7 +401,7 @@ def _problem(kind: str, subject: int | str) -> pb.Problem:
 def outcome(
     result: Result,
     sources: Mapping[int, str],
-    uncovered: Iterable[str] = (),
+    uncovered: Iterable[str | tuple[str, str, str]] = (),
     definitions: Mapping[int, tuple[str, str, list[str]]] | None = None,
     guidance: Iterable[GuidanceRef] = (),
 ) -> pb.Outcome:
@@ -359,7 +473,9 @@ def outcome(
             for i in sorted(statement_ids(result))
             if i in result.delegation
         ],
-        uncovered_law_ids=list(uncovered),
+        uncovered_law_ids=[
+            x[2] if isinstance(x, tuple) and len(x) == 3 else str(x) for x in uncovered
+        ],
         missing_permit_limits=[
             pb.PermitGap(statement_id=s, permit=k, concept=m) for s, k, m in result.missing_permits
         ],
@@ -395,6 +511,214 @@ def outcome(
     return out
 
 
+def _delegation_v2(statement_id: int, chain: Chain) -> pb2_v2.DelegationBasis:
+    return pb2_v2.DelegationBasis(
+        statement_id=statement_id,
+        rooted=chain.rooted,
+        links=[
+            pb2_v2.DelegationLink(
+                command_identifier=ont_pb2_v2.LawIdentifier(
+                    jurisdiction=link.command_jurisdiction,
+                    id_scheme=link.command_id_scheme,
+                    local_id=link.command_local_id,
+                ),
+                cited_law_name=link.cited_law_name,
+                cited_path=link.cited_path,
+                identifier=(
+                    ont_pb2_v2.LawIdentifier(
+                        jurisdiction=link.target_jurisdiction,
+                        id_scheme=link.target_id_scheme,
+                        local_id=link.target_local_id,
+                    )
+                    if link.target_jurisdiction and link.target_id_scheme and link.target_local_id
+                    else None
+                ),
+                version_iri=link.version_iri or "",
+                gap=DELEGATION_GAP_V2[link.gap],
+            )
+            for link in chain.links
+        ],
+    )
+
+
+def _reduced_v2(row: tuple[int, str, int, int | None, int | None]) -> pb2_v2.ReducedFine:
+    p, g, k, lo, hi = row
+    out = pb2_v2.ReducedFine(
+        penalty_statement_id=p,
+        mitigation=MITIGATION_V2[g],
+        share=REDUCTION_SHARE_V2[k],
+    )
+    if lo is not None:
+        out.min_amount = lo
+    if hi is not None:
+        out.max_amount = hi
+    return out
+
+
+def _penalty_v2(p: Penalty) -> pb2_v2.PenaltyCandidate:
+    out = pb2_v2.PenaltyCandidate(
+        statement_id=p.statement_id,
+        punishes=p.punishes_id,
+        effect=LEGAL_EFFECT_V2[p.effect],
+        conditional=p.conditional,
+        per_occasion=p.repeating,
+        discretionary=p.discretionary,
+        subject_bases=[LIABILITY_BASIS_V2[b] for b in p.subject_bases],
+        triggered_by=[
+            pb2_v2.SanctionTrigger(statement_id=q, kind=TRIGGER_KIND_V2[k])
+            for q, k in p.triggered_by
+        ],
+    )
+    if p.min_amount is not None:
+        out.min_amount = p.min_amount
+    if p.max_amount is not None:
+        out.max_amount = p.max_amount
+    return out
+
+
+def _gaps_v2(rows: Iterable[tuple[int, str]]) -> list[pb2_v2.Gap]:
+    return [pb2_v2.Gap(statement_id=s, concept=c) for s, c in rows]
+
+
+def _problem_v2(kind: str, subject: int | str) -> pb2_v2.Problem:
+    out = pb2_v2.Problem(kind=PROBLEM_KIND_V2[kind])
+    if isinstance(subject, int):
+        out.condition_id = subject
+    else:
+        out.concept = subject
+    return out
+
+
+def invalidated_v2(i: facts.Invalidated) -> pb2_v2.InvalidatedStatement:
+    return pb2_v2.InvalidatedStatement(
+        statement_id=i.statement_id,
+        version_iri=i.version_iri,
+        ruling_no=i.ruling_no,
+        invalid_from=i.invalid_from.isoformat(),
+        partial=i.partial,
+    )
+
+
+def outcome_v2(
+    result: Result,
+    sources: Mapping[int, str],
+    uncovered: Iterable[tuple[str, str, str]] = (),
+    definitions: Mapping[int, tuple[str, str, list[str]]] | None = None,
+    guidance: Iterable[GuidanceRef] = (),
+) -> pb2_v2.Outcome:
+    out = pb2_v2.Outcome(
+        verdicts=[
+            pb2_v2.StatementVerdict(statement_id=s, verdict=VERDICT_V2[v])
+            for s, v in sorted(result.verdicts.items())
+        ],
+        penalties=[_penalty_v2(p) for p in result.penalties],
+        missing=_gaps_v2(result.missing),
+        needs_assessment=_gaps_v2(result.needs_judgement),
+        assessment_used=_gaps_v2(result.judgement_used),
+        problems=[_problem_v2(k, v) for k, v in result.problems],
+        unresolved_conflicts=[
+            pb2_v2.StatementPair(first=a, second=b) for a, b in result.unresolved_conflicts
+        ],
+        defeated=[
+            pb2_v2.Defeat(loser=lo, winner=w, basis=OVERRIDE_BASIS_V2[b])
+            for lo, w, b in result.defeated
+        ],
+        unresolved_penalty_overlaps=[
+            pb2_v2.StatementPair(first=a, second=b) for a, b in result.unresolved_penalty_overlaps
+        ],
+        penalty_defeated=[
+            pb2_v2.Defeat(loser=lo, winner=w, basis=OVERRIDE_BASIS_V2[b])
+            for lo, w, b in result.penalty_defeated
+        ],
+        trace=[
+            pb2_v2.TraceEntry(
+                condition_id=t.condition_id,
+                statement_id=t.statement_id,
+                concept=t.concept,
+                fact=milli_v2(t.fact),
+                threshold=milli_v2(t.threshold),
+                role=CONDITION_ROLE_V2[t.role],
+            )
+            for t in result.trace
+        ],
+        limit_sources=dict(result.limit_sources),
+        general=pb2_v2.GeneralPart(
+            unpunished=[
+                pb2_v2.PenaltyExcuse(penalty_statement_id=p, excuse=EXCUSE_V2[g])
+                for p, g in result.general.unpunished
+            ],
+            mitigation=[
+                pb2_v2.PenaltyMitigation(penalty_statement_id=p, mitigation=MITIGATION_V2[g])
+                for p, g in result.general.mitigation
+            ],
+            presumed_agent_fault=[p for p, _ in result.general.presumed],
+            time_barred=list(result.general.time_barred),
+            reduced=[_reduced_v2(r) for r in result.general.reduced],
+            raised_caps=[
+                pb2_v2.RaisedCap(penalty_statement_id=p, max_amount=decimal_v2(v))
+                for p, v in result.general.raised_caps
+            ],
+            criminal_deductions=[
+                pb2_v2.CriminalDeduction(penalty_statement_id=p, amount=decimal_v2(v))
+                for p, v in result.general.deductions
+            ],
+        ),
+        sources=[
+            pb2_v2.StatementSource(statement_id=i, version_iri=sources[i])
+            for i in sorted(statement_ids(result))
+            if i in sources
+        ],
+        subject_mismatch=list(result.subject_mismatch),
+        invalidated=[invalidated_v2(i) for i in result.invalidated],
+        delegation_bases=[
+            _delegation_v2(i, result.delegation[i])
+            for i in sorted(statement_ids(result))
+            if i in result.delegation
+        ],
+        uncovered_law_identifiers=[
+            ont_pb2_v2.LawIdentifier(
+                jurisdiction=jur,
+                id_scheme=scheme,
+                local_id=local_id,
+            )
+            for jur, scheme, local_id in uncovered
+        ],
+        missing_permit_limits=[
+            pb2_v2.PermitGap(statement_id=s, permit=k, concept=m)
+            for s, k, m in result.missing_permits
+        ],
+        definitions_used=[
+            pb2_v2.DefinitionUse(
+                condition_id=c,
+                definition_id=d,
+                version_iri=known[0],
+                term=known[1],
+                members=known[2],
+            )
+            for c, d in sorted(result.definitions_used)
+            if (known := (definitions or {}).get(d)) is not None
+        ],
+        guidance=[
+            pb2_v2.Guidance(
+                issuer=g.issuer,
+                document_no=g.document_no,
+                issued_on=g.issued_on.isoformat(),
+                kind=GUIDANCE_KIND_V2[g.kind],
+                subject=g.subject,
+                statement_ids=list(g.statement_ids),
+                published_in=g.published_in,
+                source_url=g.source_url,
+            )
+            for g in guidance
+        ],
+    )
+    if result.one_act is not None:
+        out.one_act.CopyFrom(
+            pb2_v2.FineInterval(min_amount=result.one_act[0], max_amount=result.one_act[1])
+        )
+    return out
+
+
 def invalidated(i: facts.Invalidated) -> pb.InvalidatedStatement:
     return pb.InvalidatedStatement(
         statement_id=i.statement_id,
@@ -409,16 +733,18 @@ def _stamp(day: date) -> float:
     return float(day.year * 10000 + day.month * 100 + day.day)
 
 
-def _number(value: pb.Decimal) -> Decimal | None:
+def _number(value: Any) -> Decimal | None:
     """有限的十進位數；不是則 None。"""
     try:
         number = Decimal(value.value)
-    except InvalidOperation:
+    except (InvalidOperation, AttributeError):
         return None
     return number if number.is_finite() else None
 
 
-def measurements(request: pb.EvaluateRequest) -> dict[str, list[Measurement]]:
+def measurements(
+    request: Any,
+) -> dict[str, list[Measurement]]:
     """事實的認定方式；兩者都沒給的事實不列（未提供）。"""
     out: dict[str, list[Measurement]] = {}
     for fact in request.facts:
@@ -429,9 +755,7 @@ def measurements(request: pb.EvaluateRequest) -> dict[str, list[Measurement]]:
     return out
 
 
-def permit_limits(
-    request: pb.EvaluateRequest, validator: errors.Validator
-) -> dict[tuple[str, str], list[float]]:
+def permit_limits(request: Any, validator: errors.Validator) -> dict[tuple[str, str], list[float]]:
     """許可所載的量值，（許可種類，概念）→ 值。欄位錯誤記在 `validator`。"""
     out: dict[tuple[str, str], list[float]] = {}
     for i, limit in enumerate(request.permit_limits):
@@ -450,20 +774,21 @@ def permit_limits(
     return out
 
 
-def actor_bases(request: pb.EvaluateRequest, validator: errors.Validator) -> list[str]:
+def actor_bases(request: Any, validator: errors.Validator) -> list[str]:
     """行為人所屬的責任基礎，推論程式用的名稱。欄位錯誤記在 `validator`。"""
-    names = {value: name for name, value in LIABILITY_BASIS.items()}
+    names: dict[int, str] = {int(value): name for name, value in LIABILITY_BASIS.items()}
     out: list[str] = []
     for i, basis in enumerate(request.actor_bases):
-        if basis not in names:
+        b_val = int(basis)
+        if b_val not in names:
             validator.add(f"actor_bases[{i}]", errors.UNSET, "a liability basis is required")
         else:
-            out.append(names[basis])
+            out.append(names[b_val])
     return out
 
 
 def case_facts(
-    request: pb.EvaluateRequest,
+    request: Any,
     validator: errors.Validator,
     conduct_ended: date | None,
     result_on: date | None,

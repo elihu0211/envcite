@@ -1,4 +1,4 @@
-using EnvCite.Ontology.V1;
+using EnvCite.Ontology.V2;
 
 namespace EnvCite.Platform.Modules.Ontology;
 
@@ -73,7 +73,7 @@ internal static class ReasoningMapper
         return request;
     }
 
-    private static EnvCite.Ontology.V1.Decimal Number(string? value) => new() { Value = value ?? string.Empty };
+    private static EnvCite.Ontology.V2.Decimal Number(string? value) => new() { Value = value ?? string.Empty };
 
     public static ReasoningResultDto ToDto(EvaluateResponse r) =>
         new(ToDto(r.AtDecision ?? new Outcome()), [.. r.Earlier.Select(e => new EarlierOutcomeDto(e.FirstDay, ToDto(e.Outcome ?? new Outcome())))]);
@@ -115,7 +115,7 @@ internal static class ReasoningMapper
             [.. general.RaisedCaps.Select(c => new RaisedCapDto(c.PenaltyStatementId, c.MaxAmount?.Value ?? string.Empty))],
             [.. general.CriminalDeductions.Select(d => new CriminalDeductionDto(d.PenaltyStatementId, d.Amount?.Value ?? string.Empty))]),
         [.. o.Sources.Select(s => new StatementSourceDto(s.StatementId, s.VersionIri))],
-        [.. o.UncoveredLawIds],
+        [.. o.UncoveredLawIdentifiers.Select(ToDto)],
         [.. o.DefinitionsUsed.Select(d => new DefinitionUseDto(
             d.ConditionId, d.DefinitionId, d.VersionIri, d.Term, [.. d.Members]))],
         [.. o.Guidance.Select(g => new GuidanceDto(
@@ -128,8 +128,12 @@ internal static class ReasoningMapper
 
     // 空字串是 proto3 的「沒有」，對外寫成 null；gap 的零值是「這一環成立」，不是契約之外的值。
     private static DelegationLinkDto Map(DelegationLink l) => new(
-        l.CommandLawId, NullIfEmpty(l.CitedLawName), NullIfEmpty(l.CitedPath), NullIfEmpty(l.LawId),
+        ToDto(l.CommandIdentifier), NullIfEmpty(l.CitedLawName), NullIfEmpty(l.CitedPath),
+        l.Identifier is null ? null : ToDto(l.Identifier),
         NullIfEmpty(l.VersionIri), l.Gap == DelegationGap.Unspecified ? null : Map(l.Gap));
+
+    private static EnvCite.Platform.SharedKernel.LawIdentifierDto ToDto(LawIdentifier? id) =>
+        new(id?.Jurisdiction ?? "TW-CENTRAL", id?.IdScheme ?? "moj_pcode", id?.LocalId ?? string.Empty);
 
     private static string? NullIfEmpty(string value) => value.Length > 0 ? value : null;
 

@@ -1,4 +1,4 @@
-using EnvCite.Ontology.V1;
+using EnvCite.Ontology.V2;
 using EnvCite.Platform.SharedKernel;
 
 using Grpc.Core;
@@ -10,12 +10,22 @@ using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Ontology;
 
-/// <param name="Id">全國法規資料庫的 pcode（如 <c>O0020001</c>）。</param>
-/// <param name="Uri">由法規的 pcode 組成，可反查到該法規。</param>
+/// <param name="Identifier">複合自然鍵識別碼（中央與地方雙軌）。</param>
+/// <param name="Uri">由法規組成，可反查到該法規。</param>
 /// <param name="DateDocument">制定（首次公布）日。</param>
-public sealed record LawDto(string Id, string Uri, string Title, string Language, string? DateDocument);
+public sealed record LawDto(
+    LawIdentifierDto Identifier,
+    string Uri,
+    string Title,
+    string Language,
+    string? DateDocument,
+    string? ApprovalAuthority = null,
+    string? ApprovalDocNo = null,
+    string? RatifiedAt = null,
+    string? InvalidatedBy = null,
+    string? InvalidationDate = null);
 
-/// <param name="Uri">由法規的 pcode 與條號組成，可反查到該條的現行版本。</param>
+/// <param name="Uri">由法規與條號組成，可反查到該條的現行版本。</param>
 /// <param name="Number">條號，照來源寫法（如 <c>5-1</c>）。</param>
 public sealed record ArticleDto(string Uri, string Number);
 
@@ -24,18 +34,29 @@ public sealed record ArticleDto(string Uri, string Number);
 /// <param name="Limit">最多幾筆，1–50；省略為 10。</param>
 public sealed record SearchRequest(string? Query, string? AsOf, int? Limit);
 
-/// <param name="Uri">由法規的 pcode 與條號組成，可反查到該條。</param>
-/// <param name="LawId">所屬法規的 pcode。</param>
+/// <param name="Uri">由法規與條號組成，可反查到該條。</param>
+/// <param name="Identifier">所屬法規的複合自然鍵識別碼。</param>
 /// <param name="LawTitle">查詢日有效版本的法規標題。</param>
 /// <param name="Number">條號，照來源寫法（如 <c>5-1</c>）。</param>
 /// <param name="Score">字面相關度；只在同一次回應內可比，跨查詢不可比。</param>
-public sealed record SearchHitDto(string Uri, string LawId, string LawTitle, string Number, string Content, float Score);
+public sealed record SearchHitDto(string Uri, LawIdentifierDto Identifier, string LawTitle, string Number, string Content, float Score);
 
 public static class OntologyEndpoints
 {
     public const string GetLawOperation = "ontology.get_law";
     public const string ListArticlesOperation = "ontology.list_articles";
     public const string SearchOperation = "ontology.search";
+
+    public static LawIdentifier ParseLawIdentifier(string lawId)
+    {
+        var parts = lawId.Split(':', 3);
+        return parts.Length switch
+        {
+            3 => new LawIdentifier { Jurisdiction = parts[0], IdScheme = parts[1], LocalId = parts[2] },
+            2 => new LawIdentifier { Jurisdiction = parts[0], IdScheme = "local_glrs", LocalId = parts[1] },
+            _ => new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = lawId },
+        };
+    }
 
     /// <summary>包在內部 gRPC 服務外的對外 REST facade；成功的呼叫會被計量。</summary>
     public static RouteGroupBuilder MapOntologyEndpoints(this RouteGroupBuilder v1)
@@ -44,17 +65,28 @@ public static class OntologyEndpoints
             IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
             await CallAsync(async () =>
             {
-                var response = await client.GetLawAsync(new GetLawRequest { Id = lawId, AsOf = asOf ?? string.Empty },
+                var identifier = ParseLawIdentifier(lawId);
+                var response = await client.GetLawAsync(new GetLawRequest { Identifier = identifier, AsOf = asOf ?? string.Empty },
                     deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
                 await usage.RecordAsync(GetLawOperation, 1, ct);
                 var law = response.Law;
-                return Results.Ok(new LawDto(law.Id, law.Iri, law.Title, law.Language,
-                    string.IsNullOrEmpty(law.DateDocument) ? null : law.DateDocument));
+                var lawIdDto = new LawIdentifierDto(law.Identifier?.Jurisdiction ?? "TW-CENTRAL", law.Identifier?.IdScheme ?? "moj_pcode", law.Identifier?.LocalId ?? lawId);
+                return Results.Ok(new LawDto(
+                    lawIdDto,
+                    law.Iri,
+                    law.Title,
+                    law.Language,
+                    string.IsNullOrEmpty(law.DateDocument) ? null : law.DateDocument,
+                    string.IsNullOrEmpty(law.ApprovalAuthority) ? null : law.ApprovalAuthority,
+                    string.IsNullOrEmpty(law.ApprovalDocNo) ? null : law.ApprovalDocNo,
+                    string.IsNullOrEmpty(law.RatifiedAt) ? null : law.RatifiedAt,
+                    string.IsNullOrEmpty(law.InvalidatedBy) ? null : law.InvalidatedBy,
+                    string.IsNullOrEmpty(law.InvalidationDate) ? null : law.InvalidationDate));
             }))
             .WithName("GetLaw")
             .WithTags("法規")
             .WithSummary("取得法規")
-            .WithDescription("`lawId` 為全國法規資料庫的 pcode（如 `O0020001`）；標題取自 `asOf` 當日有效的版本，省略 `asOf`（`YYYY-MM-DD`）表示現行。"
+            .WithDescription("`lawId` 為法規識別碼（支援自然鍵複合識別碼或全國法規資料庫 pcode）；標題取自 `asOf` 當日有效的版本，省略 `asOf`（`YYYY-MM-DD`）表示現行。"
                 + "該日沒有有效的版本回 404，不會退回現行版本。成功計量為一次 `ontology.get_law`。")
             .Produces<LawDto>()
             .ProducesValidationProblem()
@@ -65,7 +97,8 @@ public static class OntologyEndpoints
             IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
             await CallAsync(async () =>
             {
-                var response = await client.ListArticlesAsync(new ListArticlesRequest { LawId = lawId, AsOf = asOf ?? string.Empty },
+                var identifier = ParseLawIdentifier(lawId);
+                var response = await client.ListArticlesAsync(new ListArticlesRequest { Identifier = identifier, AsOf = asOf ?? string.Empty },
                     deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
                 await usage.RecordAsync(ListArticlesOperation, 1, ct);
                 return Results.Ok(response.Articles.Select(a => new ArticleDto(a.Iri, a.Number)));
@@ -87,7 +120,7 @@ public static class OntologyEndpoints
                 return result.Status switch
                 {
                     AdminStatus.Ok => Results.Ok(result.Value!.Select(h =>
-                        new SearchHitDto(h.Uri, h.LawId, h.LawTitle, h.Number, h.Content, h.Score))),
+                        new SearchHitDto(h.Uri, h.Identifier, h.LawTitle, h.Number, h.Content, h.Score))),
                     AdminStatus.Invalid => result.ValidationProblem(),
                     _ => result.Problem(StatusCodes.Status503ServiceUnavailable, "Ontology service unavailable."),
                 };

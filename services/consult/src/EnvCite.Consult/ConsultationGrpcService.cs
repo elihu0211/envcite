@@ -49,7 +49,12 @@ internal sealed partial class ConsultationGrpcService(GroundingPipeline pipeline
                     {
                         evidence.Citations.Select(c => new Proto.Citation
                         {
-                            Code = c.Code, Iri = c.Iri, Label = c.Label, Text = c.Text, Ontology = c.Ontology,
+                            Code = c.Code,
+                            Iri = c.Iri,
+                            Label = c.Label,
+                            Text = c.Text,
+                            Ontology = c.Ontology,
+                            LawIdentifier = c.LawIdentifier,
                         }),
                     },
                     Confidence = evidence.Confidence switch

@@ -1,0 +1,862 @@
+syntax = "proto3";
+
+package envcite.ontology.v2;
+
+option csharp_namespace = "EnvCite.Ontology.V2";
+
+import "envcite/ontology/v2/ontology.proto";
+
+// 規範標註的唯讀存取，以及由標註推出的候選結論。
+//
+// 傳輸規則同 OntologyService（見 proto/README.md）。錯誤帶 google.rpc.ErrorInfo
+// （reason 為 UPPER_SNAKE_CASE，domain 為 "ontology.envcite"）；INVALID_ARGUMENT
+// 另帶 google.rpc.BadRequest。
+//
+// 這裡的每個結論都只是「候選」。未通過驗證閘門確認的陳述不產生任何結論，沒有
+// 已確認的標註時，所有 verdict 清單皆為空。本服務不替法院或主管機關下判斷：
+// 只回報已確認的陳述推得什麼、缺了什麼、哪些需要人來判斷。
+service ReasoningService {
+  // 一部法規在 `as_of` 當日有效、已確認的陳述（含附屬的要件、例外與制裁）。
+  // 法規不存在回 NOT_FOUND（LAW_NOT_FOUND）；沒有版本涵蓋該日也回 NOT_FOUND
+  // （AS_OF_NOT_COVERED）。
+  rpc ListStatements(ListStatementsRequest) returns (ListStatementsResponse);
+
+  // 依有效的陳述評估一個案件。唯讀，可安全重試。期限是預算：評估受其約束，
+  // 期限內拿不到執行名額則回 RESOURCE_EXHAUSTED（BUSY）。
+  rpc Evaluate(EvaluateRequest) returns (EvaluateResponse);
+}
+
+// 十進位數，以文字表示（"100"、"0.5"），不用浮點數：語料的門檻是
+// numeric(18,3)，double 無法無損往返。
+message Decimal {
+  string value = 1;
+}
+
+enum StatementKind {
+  STATEMENT_KIND_UNSPECIFIED = 0;
+
+  // 規定行為，帶有 NormModality。
+  STATEMENT_KIND_PRESCRIPTIVE = 1;
+
+  // 定義、劃定範圍或授權（授權主管機關的「得」屬於此類，不是許可）。
+  STATEMENT_KIND_CONSTITUTIVE = 2;
+
+  STATEMENT_KIND_PENALTY = 3;
+  STATEMENT_KIND_REPARATION = 4;
+}
+
+enum NormModality {
+  NORM_MODALITY_UNSPECIFIED = 0;
+  NORM_MODALITY_OBLIGATION = 1;
+  NORM_MODALITY_PROHIBITION = 2;
+  NORM_MODALITY_PERMISSION = 3;
+}
+
+enum SlotRole {
+  SLOT_ROLE_UNSPECIFIED = 0;
+  SLOT_ROLE_SUBJECT = 1;
+  SLOT_ROLE_ACTION = 2;
+  SLOT_ROLE_OBJECT = 3;
+
+  // 行為所經由的介質，如水、空氣、土壤。
+  SLOT_ROLE_MEDIUM = 4;
+
+  SLOT_ROLE_TIME = 5;
+  SLOT_ROLE_PLACE = 6;
+}
+
+// 主體為何負責。只屬主體槽位。
+enum LiabilityBasis {
+  LIABILITY_BASIS_UNSPECIFIED = 0;
+
+  // 因自己的作為或不作為負責。
+  LIABILITY_BASIS_ACT = 1;
+
+  // 因對物的支配負責（狀態責任），如土壤及地下水污染整治法的污染土地關係人。
+  LIABILITY_BASIS_STATE = 2;
+
+  // 代表或受指派而承擔，如環境教育法第 23 條的「有代表權之人或負責環境保護權責人員」。
+  LIABILITY_BASIS_REPRESENTATIVE = 3;
+}
+
+// 事實與門檻的比較，讀作「事實 〈運算子〉 門檻」。
+enum Comparator {
+  COMPARATOR_UNSPECIFIED = 0;
+  COMPARATOR_LE = 1;
+  COMPARATOR_LT = 2;
+  COMPARATOR_GE = 3;
+  COMPARATOR_GT = 4;
+  COMPARATOR_EQ = 5;
+  COMPARATOR_NE = 6;
+}
+
+enum ConditionRole {
+  CONDITION_ROLE_UNSPECIFIED = 0;
+
+  // 規範是否觸及這些事實。
+  CONDITION_ROLE_SCOPE = 1;
+
+  // 遵守規範的內容。
+  CONDITION_ROLE_DUTY = 2;
+
+  // 授權命令訂定的限值。
+  CONDITION_ROLE_LIMIT = 3;
+}
+
+// 法律效果的種類。FINE（罰鍰）與 CONFISCATION（沒入）是行政罰法第 1 條的裁罰性
+// 不利處分；RESTRICTION、DEPRIVATION、REPUTATION、WARNING 是其第 2 條的四種
+// 「其他種類行政罰」；環境講習是同條第 4 款的講習，屬 WARNING。ORDER（改善命令等）
+// 是預防性措施，DISGORGEMENT（不法利得的追繳）使違法者不保有所得利益，兩者都
+// **不是**行政罰：行政罰法總則不適用於它們。
+enum LegalEffect {
+  LEGAL_EFFECT_UNSPECIFIED = 0;
+  LEGAL_EFFECT_FINE = 1;
+  LEGAL_EFFECT_CONFISCATION = 2;
+  LEGAL_EFFECT_RESTRICTION = 3;
+  LEGAL_EFFECT_DEPRIVATION = 4;
+  LEGAL_EFFECT_REPUTATION = 5;
+  LEGAL_EFFECT_WARNING = 6;
+  LEGAL_EFFECT_ORDER = 7;
+  LEGAL_EFFECT_DISGORGEMENT = 8;
+}
+
+// 一個罰則以另一個罰則為前提的方式。
+enum TriggerKind {
+  TRIGGER_KIND_UNSPECIFIED = 0;
+
+  // 命令屆期未履行：前提是一個 ORDER（如限期改善），屆期與否是被觸發者自己的要件。
+  TRIGGER_KIND_ORDER_LAPSED = 1;
+
+  // 另一處分已作成：如環境講習以停工、停業或一定金額以上的罰鍰為前提；金額門檻是
+  // 被觸發者自己的要件。
+  TRIGGER_KIND_SANCTION_IMPOSED = 2;
+}
+
+// 兩則陳述衝突時，其一勝出的依據。
+enum OverrideBasis {
+  OVERRIDE_BASIS_UNSPECIFIED = 0;
+
+  // 中央法規標準法第 11 條。
+  OVERRIDE_BASIS_HIERARCHY = 1;
+
+  // 中央法規標準法第 16 條。
+  OVERRIDE_BASIS_LEX_SPECIALIS = 2;
+
+  // 學說而非成文法，僅在標註如此記載時使用。
+  OVERRIDE_BASIS_LEX_POSTERIOR = 3;
+
+  // 不再產生：但書是規則與例外的結構，見 Statement.exception_of，不是優先依據。
+  OVERRIDE_BASIS_EXCEPTION = 4 [deprecated = true];
+}
+
+// ---- ListStatements ------------------------------------------------------------
+
+message ListStatementsRequest {
+  // 複合自然鍵識別碼。
+  LawIdentifier identifier = 1;
+
+  // ISO 8601 日期；留空為今日。見 GetLawRequest.as_of。
+  string as_of = 2;
+}
+
+message ListStatementsResponse {
+  repeated Statement statements = 1;
+  repeated Override overrides = 2;
+
+  // 該日因違憲失效而不在 statements 裡的陳述（見 Outcome.invalidated）。
+  repeated InvalidatedStatement invalidated = 3;
+}
+
+message Statement {
+  // 只在同一個語料狀態內有意義，不是穩定的鍵（被駁回後重新抽取的陳述會得到
+  // 新的識別碼）。
+  int64 id = 1;
+
+  StatementKind kind = 2;
+
+  // 恰在 kind 為 PRESCRIPTIVE 時設定。
+  optional NormModality modality = 3;
+
+  // 陳述所讀自的條文版本之 IRI。
+  string version_iri = 4;
+
+  // 同一角色出現多次時彼此擇一（「事業或其負責人」），順序不具意義。
+  repeated Slot slots = 5;
+
+  // 規範何時適用。沒有析取項表示恆適用。
+  Requirement scope = 6;
+
+  // 遵守規範的內容。沒有析取項表示除 scope 外別無要求。
+  Requirement duty = 7;
+
+  // 此陳述訂定的限值（當它本身是授權命令所訂的限值）。
+  repeated Condition limits = 8;
+
+  // 此陳述作為其例外（但書）的那些陳述之識別碼。
+  repeated int64 exception_of = 9;
+
+  optional Sanction sanction = 10;
+}
+
+message Slot {
+  SlotRole role = 1;
+
+  oneof value {
+    // 受控概念的代碼。
+    string concept = 2;
+
+    string literal = 3;
+  }
+
+  // 只在 role 為 SUBJECT 時可能設定；缺席是未標註，不是「行為」。
+  optional LiabilityBasis liability_basis = 4;
+}
+
+// 析取範式：各析取項之間取「或」，項內的要件取「且」。
+message Requirement {
+  repeated Disjunct any_of = 1;
+}
+
+message Disjunct {
+  repeated Condition all_of = 1;
+}
+
+message Condition {
+  int64 id = 1;
+
+  // 要件所涉受控概念的代碼。
+  string concept = 2;
+
+  Comparator comparator = 3;
+
+  oneof threshold {
+    Decimal value = 4;
+
+    // 門檻由另一條文訂定，於查詢當日解析。
+    Delegation delegate = 5;
+
+    // 與概念而非數字比較。
+    string value_concept = 6;
+
+    // 門檻是個別處分所載的量值：值為許可種類的概念代碼。許可不在語料裡，量值由呼叫端
+    // 以 EvaluateRequest.permit_limits 提供；沒有提供時要件為未知。
+    string delegate_permit = 10;
+  }
+
+  string unit = 7;
+
+  // 比較結果取反。
+  bool negated = 8;
+
+  // 不確定法律概念（「情節重大」、「必要時」）：服務不從事實推斷它，呼叫端
+  // 提供的值視為呼叫端自己的判斷。
+  bool needs_assessment = 9;
+
+  // 限值的認定方式，只在限值（Statement.limits）上可能設定，皆為受控概念的代碼，空字串為
+  // 未標註。有標註時，事實的認定方式（Fact.measurement_method、Fact.averaging_period）
+  // 不同或沒給，要件為未知（PROBLEM_KIND_MEASUREMENT_MISMATCH）；沒有標註則照常比較，
+  // 結果附 PROBLEM_KIND_MEASUREMENT_UNLABELED。
+  string measurement_method = 11;
+
+  // 平均時段，如即時值、小時平均值、日平均值、最大值。
+  string averaging_period = 12;
+}
+
+message Delegation {
+  // 被授權法規的複合自然鍵識別碼。
+  LawIdentifier identifier = 1;
+
+  // 被授權條文的路徑，例如 "art_2"。
+  string provision_path = 2;
+}
+
+message Sanction {
+  // 此制裁所處罰的陳述（ORDER 則是它所強制履行的陳述）。
+  int64 punishes = 1;
+
+  LegalEffect effect = 2;
+
+  optional int64 min_amount = 3;
+  optional int64 max_amount = 4;
+
+  // 條文中金額的原文。
+  string amount_text = 5;
+
+  // 持續不遵守時重複處罰（按次處罰）。
+  bool per_occasion = 6;
+
+  // 條文寫「得」（主管機關得為）而非「應」：效果層次的裁量，與
+  // Condition.needs_assessment 是不同層次。
+  bool discretionary = 7;
+
+  // 這個效果的前提：另一個罰則陳述，彼此是「或」。前提沒有列出時，這個效果也不列出。
+  repeated SanctionTrigger triggers = 8;
+}
+
+message SanctionTrigger {
+  // 作為前提的罰則陳述。
+  int64 statement_id = 1;
+
+  TriggerKind kind = 2;
+}
+
+message Override {
+  int64 prevailing = 1;
+  int64 subordinate = 2;
+  OverrideBasis basis = 3;
+}
+
+// ---- Evaluate ------------------------------------------------------------------
+
+message EvaluateRequest {
+  // 行為日（ISO 8601）。必填。
+  string conduct_on = 1;
+
+  // 作成處分之日（ISO 8601）。必填，不得早於 conduct_on。
+  string decided_on = 2;
+
+  // 案件事實，以概念代碼表示。一個概念可帶多個值；矛盾會被回報，不被消解。
+  // 以 "ap_" 開頭的代碼保留給 administrative_penalty_facts。
+  repeated Fact facts = 3;
+
+  AdministrativePenaltyFacts administrative_penalty_facts = 4;
+
+  // 行為終了日（ISO 8601），行政罰法第 27 條三年時效由此起算。未提供則不適用
+  // 時效。
+  string conduct_ended_on = 5;
+
+  // 結果發生日（ISO 8601），結果晚於行為終了時才提供。
+  string result_on = 6;
+
+  // 場所持有的許可所載的量值，供門檻委由個別處分的要件（Condition.delegate_permit）使用。
+  // 同一許可種類、同一概念有兩個不同的值時，視為矛盾（PROBLEM_KIND_CONTRADICTORY_FACT，
+  // subject 為許可種類的代碼）。
+  repeated PermitLimit permit_limits = 7;
+
+  // 行為人所屬的責任基礎，可同時屬數種。罰則的主體槽位標有責任基礎時，這裡要有其中之一，
+  // 否則主體要件不成立、罰則不列出（Outcome.subject_mismatch）；留空是未說明，標有責任基礎的
+  // 罰則附條件列出，缺的事實為概念 "liability_basis"（Outcome.missing）。主體槽位沒有標註，
+  // 或擇一的值有一個沒標，則不受限制。不得為 UNSPECIFIED。
+  repeated LiabilityBasis actor_bases = 8;
+}
+
+message Fact {
+  string concept = 1;
+  repeated FactValue values = 2;
+
+  // 這些值的認定方式，皆為受控概念的代碼；空字串為未提供。只在限值標有認定方式時才有
+  // 作用，見 Condition.measurement_method。
+  string measurement_method = 3;
+  string averaging_period = 4;
+}
+
+message PermitLimit {
+  // 許可種類的概念代碼。
+  string permit = 1;
+
+  // 所載量值的概念代碼（如某污染物的排放量）。
+  string concept = 2;
+
+  Decimal value = 3;
+}
+
+message FactValue {
+  oneof value {
+    bool flag = 1;
+    Decimal number = 2;
+
+    // 概念取某個值概念（例如行業屬於某一類），值為受控概念的代碼。只與以
+    // value_concept 比較的要件對得上；「屬於」只依該法現行的用語定義判定，
+    // 沒有定義涵蓋的值視為不屬於。
+    string concept = 3;
+  }
+}
+
+// 行政罰法總則所依據的事實。欄位缺席表示未知，與「否」不同：條文有些規則只在
+// 已知為否時適用，有些只在已知為是時適用。
+message AdministrativePenaltyFacts {
+  optional bool intent = 1;
+  optional bool negligence = 2;
+
+  // 代表人、代理人、受僱人等有故意或過失（推定為本人之故意過失）。
+  optional bool agent_fault = 3;
+
+  // 行為時的年齡。
+  optional int32 age = 4;
+
+  // 行為時不能辨識行為違法，或欠缺依其辨識而行為的能力。
+  optional bool incapable = 5;
+
+  // 上述狀態是行為人因故意或過失自行招致。
+  optional bool self_induced = 6;
+
+  optional bool pursuant_to_law = 7;
+
+  // 依所屬上級公務員職務上命令之行為。
+  optional bool superior_order = 8;
+
+  // 明知該命令違法。
+  optional bool knew_illegal = 9;
+
+  // 已依法陳述意見。
+  optional bool stated_opinion = 10;
+
+  optional bool self_defense = 11;
+  optional bool defense_excessive = 12;
+  optional bool necessity = 13;
+  optional bool necessity_excessive = 14;
+
+  // 辨識能力顯著減低。
+  optional bool capacity_reduced = 15;
+
+  optional bool ignorance_of_law = 16;
+
+  // 一行為同時觸犯刑事法律（第 26 條第 1 項）。是否為同一行為是呼叫端的認定。
+  optional bool criminal_offense = 17;
+
+  // 法院已宣告沒收應沒入之物（第 26 條第 1 項但書）。
+  optional bool court_confiscated = 18;
+
+  // 不起訴處分、緩起訴處分確定，或無罪、免訴、不受理、不付審理、不付保護處分、免刑、緩刑之裁判
+  // 確定之日（ISO 8601；第 26 條第 2 項）。有此日即不再刑事優先，第 27 條三年自此日起算；留空是
+  // 刑事程序未以這些方式確定（或未知），criminal_offense 為真時罰鍰依第 1 項不裁處。
+  string criminal_cleared_on = 19;
+
+  // 緩起訴或緩刑命支付的金額（元；第 26 條第 3 項），自罰鍰扣抵。
+  optional Decimal criminal_payment = 20;
+
+  // 緩起訴或緩刑命提供的義務勞務時數；乘以 minimum_hourly_wage 為扣抵額（第 26 條第 4 項）。
+  optional Decimal community_service_hours = 21;
+
+  // 最初裁處時的每小時基本工資（元）。基本工資不在語料裡，由呼叫端給；有時數而沒有工資，
+  // 扣抵額未定，列在 Outcome.missing（概念 "ap_minimum_hourly_wage"）。
+  optional Decimal minimum_hourly_wage = 22;
+
+  // 因違反行政法上義務所得之利益（元；第 18 條第 2 項）。
+  optional Decimal gained_benefit = 23;
+}
+
+message EvaluateResponse {
+  // 處分時之法律（行政罰法第 5 條的預設）。
+  Outcome at_decision = 1;
+
+  // 行為日至處分日之間有效、且陳述與 at_decision 不同的法律，由早到晚。
+  // 第 5 條所稱「最有利」者不在此選定：陳述組無法機械地比較優劣。
+  repeated EarlierLaw earlier = 2;
+}
+
+message EarlierLaw {
+  // 這組陳述開始適用的第一天（ISO 8601）。
+  string first_day = 1;
+
+  Outcome outcome = 2;
+}
+
+message StatementSource {
+  int64 statement_id = 1;
+
+  // 陳述所讀自的條文版本之 IRI。
+  string version_iri = 2;
+}
+
+enum Verdict {
+  VERDICT_UNSPECIFIED = 0;
+  VERDICT_VIOLATION = 1;
+  VERDICT_COMPLIANT = 2;
+
+  // 成立與否取決於一個尚未決定的例外是否不適用。
+  VERDICT_CONDITIONAL_VIOLATION = 3;
+  VERDICT_CONDITIONAL_COMPLIANT = 4;
+
+  // 無法由所給事實決定：見 missing 與 needs_assessment。
+  VERDICT_UNDETERMINED = 5;
+
+  // 被成立的但書排除。
+  VERDICT_EXCLUDED = 6;
+
+  VERDICT_NOT_APPLICABLE = 7;
+}
+
+message Outcome {
+  repeated StatementVerdict verdicts = 1;
+  repeated PenaltyCandidate penalties = 2;
+
+  // 若這些罰鍰屬一行為（行政罰法第 24 條），為它們合併成的單一區間。數行為說
+  // （第 25 條）則是各處罰自己的金額。兩者都不在此選定。
+  optional FineInterval one_act = 3;
+
+  // 結論所需、但案件沒有提供的事實。
+  repeated Gap missing = 4;
+
+  // 需由呼叫端判斷的不確定概念。
+  repeated Gap needs_assessment = 5;
+
+  // 結論所依據的、呼叫端提供的判斷。
+  repeated Gap assessment_used = 6;
+
+  repeated Problem problems = 7;
+
+  // 無法排解的陳述衝突。
+  repeated StatementPair unresolved_conflicts = 8;
+
+  // 已排解的衝突。
+  repeated Defeat defeated = 9;
+
+  // 無法排解的處罰重疊。
+  repeated StatementPair unresolved_penalty_overlaps = 10;
+
+  // 已排解的處罰重疊。
+  repeated Defeat penalty_defeated = 11;
+
+  repeated TraceEntry trace = 12;
+
+  // 要件識別碼 → 提供其授權限值的陳述識別碼。
+  map<int64, int64> limit_sources = 13;
+
+  // 行政罰法總則對這些處罰的處理。
+  GeneralPart general = 14;
+
+  // 本結果提及的每則陳述是從哪裡讀來的。
+  repeated StatementSource sources = 15;
+
+  // 本結果所指那一天已制定、但語料沒有當日版本的法規：語料只有現行
+  // 整合文字與沿革，沒有更早的文字。它們的規定不在本結果裡，這與「該法規當時
+  // 沒有這樣的規定」**不同**。語料涵蓋該日時為空。
+  repeated LawIdentifier uncovered_law_identifiers = 16;
+
+  // 概念值要件（與用語比較的要件）之所以成立或不成立，所依的用語定義：
+  // 「甲屬於乙」的依據。沒有定義涵蓋而判為不屬於的要件，不在此（沒有定義可指）。
+  repeated DefinitionUse definitions_used = 17;
+
+  // 門檻委由個別處分、但 permit_limits 沒有提供那筆量值，因而未定的要件。
+  repeated PermitGap missing_permit_limits = 19;
+
+  // 主管機關對本結果所依條文的行政規則（行政程序法第 159 條：函釋、裁量基準等）。行政規則
+  // 拘束機關內部，不直接拘束人民與法院，所以不參與推論，只附在結果旁。以處分日判斷是否已發布、
+  // 尚未停止適用（釋字第 287 號：解釋性規定自所解釋的法規生效日起有效，未確定的案件即可適用），
+  // 且所解釋的須正是陳述所讀的那段文字；條文修正後文字改了，舊的解釋就不再附上。
+  repeated Guidance guidance = 18;
+
+  // 其餘要件成立或未知、但主體槽位的責任基礎與 EvaluateRequest.actor_bases 都不符，因而
+  // 不列出的罰則（罰則陳述的識別碼）。
+  repeated int64 subject_mismatch = 20;
+
+  // 本結果所依法規中，該日因大法官解釋或憲法法庭判決宣告違憲失效、因而不參與推論的陳述。
+  // 只有裁判作成時已施行的文字失效；裁判只宣告一部分（partial）者也整個排除，範圍看裁判原文。
+  repeated InvalidatedStatement invalidated = 21;
+
+  // 本結果提及的命令陳述之授權鏈：由命令往上到法律的每一環（行政罰法第 4 條；釋字第 313、
+  // 394、402 號）。鏈不完整的命令所定之罰則，或處罰命令所定義務的罰則，附條件列出（授權依據
+  // 待查）；命令的義務結論不變。法律與憲法的陳述不在此。
+  repeated DelegationBasis delegation_bases = 22;
+}
+
+message InvalidatedStatement {
+  int64 statement_id = 1;
+
+  // 陳述所讀、被宣告失效的條文版本之 IRI。
+  string version_iri = 2;
+
+  // 解釋或判決的字號。
+  string ruling_no = 3;
+
+  // 失效日（ISO 8601）。
+  string invalid_from = 4;
+  bool partial = 5;
+}
+
+// 授權鏈的一環為何不成立。
+enum DelegationGap {
+  // 這一環成立。
+  DELEGATION_GAP_UNSPECIFIED = 0;
+  // 命令沒有可用的授權引文：抽取不到，不等於沒有授權。
+  DELEGATION_GAP_NO_CITATION = 1;
+  // 引文的法名或條文在語料裡對不到唯一一處。
+  DELEGATION_GAP_UNRESOLVED_LAW = 2;
+  // 授權條文在該日不現行。
+  DELEGATION_GAP_LAW_NOT_IN_FORCE = 3;
+  // 授權條文在該日已違憲失效。
+  DELEGATION_GAP_LAW_INVALIDATED = 4;
+  // 授權回到鏈上已出現的命令。
+  DELEGATION_GAP_CYCLE = 5;
+}
+
+message DelegationLink {
+  // 被授權的命令之複合自然鍵識別碼。
+  LawIdentifier command_identifier = 1;
+
+  // 命令首條所引的法名與條文路徑（原文）；NO_CITATION 時為空。
+  string cited_law_name = 2;
+  string cited_path = 3;
+
+  // 對到的授權法規；對不到為空。
+  LawIdentifier identifier = 4;
+
+  // 授權條文在該日現行的版本之 IRI；不現行為空。
+  string version_iri = 5;
+  DelegationGap gap = 6;
+}
+
+message DelegationBasis {
+  int64 statement_id = 1;
+
+  // 至少有一條路徑經成立的環節到達法律。
+  bool rooted = 2;
+
+  // 自陳述所屬的命令往上走過的每一環；授權者又是命令時，接著列它的授權。
+  repeated DelegationLink links = 3;
+}
+
+enum GuidanceKind {
+  GUIDANCE_KIND_UNSPECIFIED = 0;
+
+  // 解釋性規定（行政程序法第 159 條第 2 項第 2 款）。
+  GUIDANCE_KIND_INTERPRETATION = 1;
+
+  // 裁量基準（同款）。
+  GUIDANCE_KIND_DISCRETION_STANDARD = 2;
+
+  // 組織性、作業性規定（同項第 1 款）。
+  GUIDANCE_KIND_OPERATIONAL = 3;
+}
+
+message Guidance {
+  // 發文機關。
+  string issuer = 1;
+
+  // 發文字號。
+  string document_no = 2;
+
+  // 發文日（ISO 8601）。
+  string issued_on = 3;
+
+  GuidanceKind kind = 4;
+
+  // 主旨。
+  string subject = 5;
+
+  // 本則所解釋、出現在本結果裡的陳述。
+  repeated int64 statement_ids = 6;
+
+  // 公報出處（行政程序法第 160 條第 2 項），可能為空。
+  string published_in = 7;
+
+  // 原文的網址，可能為空。
+  string source_url = 8;
+}
+
+message PermitGap {
+  int64 statement_id = 1;
+
+  // 許可種類的概念代碼。
+  string permit = 2;
+
+  // 所需量值的概念代碼。
+  string concept = 3;
+}
+
+message DefinitionUse {
+  // 要件識別碼。
+  int64 condition_id = 1;
+
+  int64 definition_id = 2;
+
+  // 定義所讀自的條文版本之 IRI。
+  string version_iri = 3;
+
+  // 被定義的用語與它明文涵蓋的成員（受控概念的名稱）。
+  string term = 4;
+  repeated string members = 5;
+}
+
+message StatementVerdict {
+  int64 statement_id = 1;
+  Verdict verdict = 2;
+}
+
+message PenaltyCandidate {
+  int64 statement_id = 1;
+
+  // 被處罰的陳述。
+  int64 punishes = 2;
+
+  LegalEffect effect = 3;
+
+  optional int64 min_amount = 4;
+  optional int64 max_amount = 5;
+
+  // 處罰本身的要件，或被處罰陳述的結論，尚未決定。
+  bool conditional = 6;
+
+  bool per_occasion = 7;
+  bool discretionary = 8;
+
+  // 這個候選所依的前提（已列出或附條件列出的罰則）。
+  repeated SanctionTrigger triggered_by = 9;
+
+  // 罰則主體槽位標註的責任基礎；沒有標註（主體不受責任基礎限制）為空。
+  repeated LiabilityBasis subject_bases = 10;
+}
+
+message FineInterval {
+  int64 min_amount = 1;
+  int64 max_amount = 2;
+}
+
+// 陳述所需的一個概念。
+message Gap {
+  int64 statement_id = 1;
+  string concept = 2;
+}
+
+enum ProblemKind {
+  PROBLEM_KIND_UNSPECIFIED = 0;
+
+  // 同一概念有兩個不同的值：該概念視為未知。也用於同一許可種類對同一概念有兩個不同的
+  // 量值（subject 為許可種類的代碼）。
+  PROBLEM_KIND_CONTRADICTORY_FACT = 1;
+
+  // 授權的限值在該日無法解析。
+  PROBLEM_KIND_UNRESOLVED_DELEGATION = 2;
+
+  // 3 曾是「評估不比較的要件」，推論從未產生，移除。
+  reserved 3;
+  reserved "PROBLEM_KIND_UNSUPPORTED_CONDITION";
+
+  PROBLEM_KIND_BAD_DATE = 4;
+
+  // 限值標有認定方式，事實的認定方式不同或沒給：要件為未知（subject 為要件識別碼）。
+  PROBLEM_KIND_MEASUREMENT_MISMATCH = 5;
+
+  // 限值沒有標認定方式，照常比較；結論是否成立，取決於事實是否以該限值的方式認定
+  // （subject 為要件識別碼）。
+  PROBLEM_KIND_MEASUREMENT_UNLABELED = 6;
+  // 授權的限值所在的條文版本在該日已違憲失效（subject 為要件識別碼）：要件為未知，裁判見
+  // Outcome.invalidated。
+  PROBLEM_KIND_INVALIDATED_DELEGATION = 7;
+}
+
+message Problem {
+  ProblemKind kind = 1;
+
+  oneof subject {
+    string concept = 2;
+    int64 condition_id = 3;
+  }
+}
+
+message StatementPair {
+  int64 first = 1;
+  int64 second = 2;
+}
+
+message Defeat {
+  int64 loser = 1;
+  int64 winner = 2;
+  OverrideBasis basis = 3;
+}
+
+message TraceEntry {
+  int64 condition_id = 1;
+  int64 statement_id = 2;
+  string concept = 3;
+  Decimal fact = 4;
+  Decimal threshold = 5;
+  ConditionRole role = 6;
+}
+
+// 行政罰法總則下不予處罰的理由。
+enum Excuse {
+  EXCUSE_UNSPECIFIED = 0;
+  EXCUSE_NO_FAULT = 1;
+  EXCUSE_UNDER_FOURTEEN = 2;
+  EXCUSE_INCAPABLE = 3;
+  EXCUSE_PURSUANT_TO_LAW = 4;
+  EXCUSE_SUPERIOR_ORDER = 5;
+  EXCUSE_SELF_DEFENSE = 6;
+  EXCUSE_NECESSITY = 7;
+  // 一行為同時觸犯刑事法律，依刑事法律處罰（第 26 條第 1 項）：只擋罰鍰，以及法院已宣告沒收時
+  // 的沒入；其他種類行政罰照列。
+  EXCUSE_CRIMINAL_PRIORITY = 8;
+}
+
+// 行政罰法總則下得減輕處罰的理由。
+enum Mitigation {
+  MITIGATION_UNSPECIFIED = 0;
+
+  // 已滿十四歲而未滿十八歲。
+  MITIGATION_YOUTH = 1;
+
+  MITIGATION_REDUCED_CAPACITY = 2;
+  MITIGATION_IGNORANCE = 3;
+  MITIGATION_EXCESSIVE_DEFENSE = 4;
+  MITIGATION_EXCESSIVE_NECESSITY = 5;
+}
+
+// 行政罰法總則對一份結果中各處罰的處理。依所給事實不予處罰的處罰不在
+// `penalties` 之中，而列在這裡。
+message GeneralPart {
+  repeated PenaltyExcuse unpunished = 1;
+  repeated PenaltyMitigation mitigation = 2;
+
+  // 因代表人、代理人等的過失而推定有過失的處罰（處罰陳述的識別碼）。
+  repeated int64 presumed_agent_fault = 3;
+
+  // 三年時效（第 27 條）在 decided_on 已完成的處罰（處罰陳述的識別碼）。處罰仍
+  // 是候選；是否適用時效，由呼叫端決定。
+  repeated int64 time_barred = 4;
+
+  // 第 18 條第 3 項：決定依總則減輕時，罰鍰的範圍。只對列出（含附條件）、有得減輕事由的罰鍰；
+  // 是否減輕不選。法律或自治條例另有規定（同項但書）不在標註裡，不檢出。
+  repeated ReducedFine reduced = 5;
+
+  // 第 18 條第 2 項：所得利益超過法定最高額的罰鍰，得在所得利益範圍內加重，不受最高額限制。
+  repeated RaisedCap raised_caps = 6;
+
+  // 第 26 條第 3、4 項：刑事程序已確定（criminal_cleared_on）而依第 2 項得裁處的罰鍰，應扣抵的
+  // 金額。罰鍰額不選，扣抵額原樣給出。
+  repeated CriminalDeduction criminal_deductions = 7;
+}
+
+// 減輕的比例：二分之一；同時有免除處罰之規定者（第 8、12、13 條）三分之一。
+enum ReductionShare {
+  REDUCTION_SHARE_UNSPECIFIED = 0;
+  REDUCTION_SHARE_HALF = 1;
+  REDUCTION_SHARE_THIRD = 2;
+}
+
+message ReducedFine {
+  int64 penalty_statement_id = 1;
+  Mitigation mitigation = 2;
+  ReductionShare share = 3;
+
+  // 法定最低額乘以比例，進位到元；法定最低額缺則缺。
+  optional int64 min_amount = 4;
+
+  // 法定最高額乘以比例，捨去到元；法定最高額缺則缺。
+  optional int64 max_amount = 5;
+}
+
+message RaisedCap {
+  int64 penalty_statement_id = 1;
+
+  // 加重後的上限，即所得利益。
+  Decimal max_amount = 2;
+}
+
+message CriminalDeduction {
+  int64 penalty_statement_id = 1;
+
+  // 支付的金額加上勞務時數乘以基本工資（元）。
+  Decimal amount = 2;
+}
+
+message PenaltyExcuse {
+  int64 penalty_statement_id = 1;
+  Excuse excuse = 2;
+}
+
+message PenaltyMitigation {
+  int64 penalty_statement_id = 1;
+  Mitigation mitigation = 2;
+}

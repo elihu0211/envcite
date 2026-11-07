@@ -1,4 +1,4 @@
-using EnvCite.Ontology.V1;
+using EnvCite.Ontology.V2;
 using EnvCite.Platform.SharedKernel;
 
 using Grpc.Core;
@@ -21,7 +21,13 @@ internal sealed class LawSearch(
                 deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
             await usage.RecordAsync(OntologyEndpoints.SearchOperation, 1, cancellationToken);
             return AdminOutcome.Ok<IReadOnlyList<LawHit>>(
-                [.. response.Hits.Select(h => new LawHit(h.Iri, h.LawId, h.LawTitle, h.Number, h.Content, h.LexicalScore))]);
+                [.. response.Hits.Select(h => new LawHit(
+                    h.Iri,
+                    new LawIdentifierDto(h.Identifier?.Jurisdiction ?? "TW-CENTRAL", h.Identifier?.IdScheme ?? "moj_pcode", h.Identifier?.LocalId ?? string.Empty),
+                    h.LawTitle,
+                    h.Number,
+                    h.Content,
+                    h.LexicalScore))]);
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
         {

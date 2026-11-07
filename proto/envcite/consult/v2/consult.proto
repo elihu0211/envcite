@@ -4,6 +4,8 @@ package envcite.consult.v2;
 
 option csharp_namespace = "EnvCite.Consult.V2";
 
+import "envcite/ontology/v2/ontology.proto";
+
 // 接地服務：為呼叫端的語言模型備妥可引用的封閉證據集，或明確拒答。
 //
 // 本體（ontology）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
@@ -66,6 +68,9 @@ message Citation {
 
   // 所屬本體的代號，例如 "law"。
   string ontology = 5;
+
+  // 條文所屬法規的複合自然鍵識別碼（所屬本體為法規時具備）。
+  envcite.ontology.v2.LawIdentifier law_identifier = 6;
 }
 
 // 服務為何不接地。由呼叫端呈現給使用者；不重試，也不計為失敗。

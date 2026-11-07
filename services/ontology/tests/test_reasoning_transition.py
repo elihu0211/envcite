@@ -78,7 +78,7 @@ def test_a_conduct_before_the_corpus_history_is_marked_uncovered(
     first, second = moved.earlier
     assert first.as_of == date(2010, 1, 1)
     assert first.result.verdicts == {}
-    assert first.uncovered_laws == (LAW,)  # 1991 年已制定，語料從 2018 年的版本才有
+    assert first.uncovered_laws == (("TW-CENTRAL", "moj_pcode", LAW),)
     assert second.uncovered_laws == ()
     assert moved.at_decision_uncovered_laws == ()
 

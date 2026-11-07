@@ -1,5 +1,5 @@
 using EnvCite.Consult;
-using EnvCite.Ontology.V1;
+using EnvCite.Ontology.V2;
 using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Server.Kestrel.Core;

@@ -30,6 +30,28 @@ public sealed class GroundServiceTests(ConsultFactory factory)
     }
 
     [Fact]
+    public async Task DualTrackEvidenceCarriesBothCentralAndMunicipalIdentities()
+    {
+        var response = await GroundAsync(new GroundRequest { Question = FakeOntologyServer.DualTrackQuery });
+
+        Assert.Equal(GroundResponse.OutcomeOneofCase.Evidence, response.OutcomeCase);
+        var citations = response.Evidence.Citations;
+        Assert.Equal(2, citations.Count);
+        Assert.Equal(["L1", "L2"], citations.Select(c => c.Code));
+        Assert.Equal("空氣污染防制法 第 20 條", citations[0].Label);
+        Assert.NotNull(citations[0].LawIdentifier);
+        Assert.Equal("TW-CENTRAL", citations[0].LawIdentifier.Jurisdiction);
+        Assert.Equal("moj_pcode", citations[0].LawIdentifier.IdScheme);
+        Assert.Equal("O0020001", citations[0].LawIdentifier.LocalId);
+
+        Assert.Equal("臺北市宜居城市環境保護自治條例 第 5 條", citations[1].Label);
+        Assert.NotNull(citations[1].LawIdentifier);
+        Assert.Equal("TW-TPE", citations[1].LawIdentifier.Jurisdiction);
+        Assert.Equal("local_glrs", citations[1].LawIdentifier.IdScheme);
+        Assert.Equal("TPE-ENV-001", citations[1].LawIdentifier.LocalId);
+    }
+
+    [Fact]
     public async Task HitsAreLabelledAndKeptByEitherArm()
     {
         var response = await GroundAsync(new GroundRequest { Question = FakeOntologyServer.MappedQuery });

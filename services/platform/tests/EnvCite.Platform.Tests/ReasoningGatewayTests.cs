@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using EnvCite.Platform.Modules.Metering;
 using EnvCite.Platform.Modules.Ontology;
+using EnvCite.Platform.SharedKernel;
 
 namespace EnvCite.Platform.Tests;
 
@@ -42,7 +43,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal(("cems", ""), (sent.Facts[0].MeasurementMethod, sent.Facts[0].AveragingPeriod)); // 省略 = 未提供
         var permit = Assert.Single(sent.PermitLimits);
         Assert.Equal(("operating_permit", "effluent_cod", "100"), (permit.Permit, permit.Concept, permit.Value.Value));
-        Assert.Equal([EnvCite.Ontology.V1.LiabilityBasis.State, EnvCite.Ontology.V1.LiabilityBasis.Representative], sent.ActorBases);
+        Assert.Equal([EnvCite.Ontology.V2.LiabilityBasis.State, EnvCite.Ontology.V2.LiabilityBasis.Representative], sent.ActorBases);
         Assert.True(sent.AdministrativePenaltyFacts.HasNegligence);
         Assert.False(sent.AdministrativePenaltyFacts.HasIntent); // 省略 = 未知，不是「否」
         Assert.Equal(15, sent.AdministrativePenaltyFacts.Age);
@@ -85,12 +86,13 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
             outcome.Invalidated);
         var rooted = outcome.DelegationBases[0];
         Assert.True(rooted.Rooted);
-        Assert.Equal(new DelegationLinkDto("O0020010", "水污染防治法", "art_7/para_2", "O0020001",
+        Assert.Equal(new DelegationLinkDto(new LawIdentifierDto("TW-CENTRAL", "moj_pcode", "O0020010"), "水污染防治法", "art_7/para_2",
+            new LawIdentifierDto("TW-CENTRAL", "moj_pcode", "O0020001"),
             "https://envcite/tw/law/O0020001/2018-08-01/zho/art_7/para_2", null), Assert.Single(rooted.Links)); // 成立的環沒有缺口
         var unrooted = outcome.DelegationBases[1];
         Assert.False(unrooted.Rooted);
-        Assert.Equal(new DelegationLinkDto("O0020011", null, null, null, null, DelegationGapDto.NoCitation), Assert.Single(unrooted.Links));
-        Assert.Equal(["O0040001"], outcome.UncoveredLawIds);
+        Assert.Equal(new DelegationLinkDto(new LawIdentifierDto("TW-CENTRAL", "moj_pcode", "O0020011"), null, null, null, null, DelegationGapDto.NoCitation), Assert.Single(unrooted.Links));
+        Assert.Equal([new LawIdentifierDto("TW-CENTRAL", "moj_pcode", "O0040001")], outcome.UncoveredLawIdentifiers);
         var used = Assert.Single(outcome.DefinitionsUsed);
         Assert.Equal((31L, 5L, "事業"), (used.ConditionId, used.DefinitionId, used.Term));
         Assert.EndsWith("/art_2/para_1/pt_1", used.Uri);

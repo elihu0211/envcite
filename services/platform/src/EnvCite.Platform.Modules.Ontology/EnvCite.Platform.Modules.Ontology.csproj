@@ -19,10 +19,10 @@
 
   <ItemGroup>
     <!-- Contract source of truth: the repo-root proto/. Server stubs are generated too, for test fakes. -->
-    <Protobuf Include="../../../../proto/envcite/ontology/v1/ontology.proto"
+    <Protobuf Include="../../../../proto/envcite/ontology/v2/ontology.proto"
               ProtoRoot="../../../../proto"
               GrpcServices="Both" />
-    <Protobuf Include="../../../../proto/envcite/ontology/v1/reasoning.proto"
+    <Protobuf Include="../../../../proto/envcite/ontology/v2/reasoning.proto"
               ProtoRoot="../../../../proto"
               GrpcServices="Both" />
   </ItemGroup>

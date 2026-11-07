@@ -1,11 +1,16 @@
 namespace EnvCite.Platform.SharedKernel;
 
-/// <param name="Uri">由法規的 pcode 與條號組成，可反查到該條。</param>
-/// <param name="LawId">所屬法規的 pcode。</param>
+/// <param name="Jurisdiction">管轄代碼（'TW-CENTRAL' 或 22 縣市代碼）。</param>
+/// <param name="IdScheme">方案代碼（'moj_pcode', 'local_glrs' 等）。</param>
+/// <param name="LocalId">本地識別碼。</param>
+public sealed record LawIdentifierDto(string Jurisdiction, string IdScheme, string LocalId);
+
+/// <param name="Uri">由法規與條號組成，可反查到該條。</param>
+/// <param name="Identifier">所屬法規的複合自然鍵識別碼。</param>
 /// <param name="LawTitle">查詢日有效版本的法規標題。</param>
 /// <param name="Number">條號，照來源寫法（如 <c>5-1</c>）。</param>
 /// <param name="Score">字面相關度；只在同一次回應內可比，跨查詢不可比。</param>
-public sealed record LawHit(string Uri, string LawId, string LawTitle, string Number, string Content, float Score);
+public sealed record LawHit(string Uri, LawIdentifierDto Identifier, string LawTitle, string Number, string Content, float Score);
 
 /// <summary>
 /// 條文搜尋：某一天有效的條文，字面檢索。對外的 <c>POST /v2/search</c> 與客戶入口的搜尋頁共用這一份，
