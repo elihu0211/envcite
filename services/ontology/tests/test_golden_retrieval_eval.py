@@ -300,3 +300,50 @@ def test_runs_are_compared_with_a_paired_test_and_must_share_a_subset() -> None:
 
     with pytest.raises(SystemExit, match="切分子集"):
         tool.compared(qrels_doc, {"a": _run(tool, good), "b": _run(tool, good, "test")}, 0.05)
+
+
+def test_dual_track_mapping_and_scoring() -> None:
+    tool = _tool()
+    gs = sys.modules["golden_set"]
+
+    by_title = {
+        "空氣污染防制法": {"O0020001"},
+        "臺北市空氣污染防制自治條例": {"01-02-1001"},
+    }
+    provisions = {
+        ("O0020001", "15"): tool.Provision("O0020001", "15", "art_15", "空氣污染防制法", "TW-ROC"),
+        ("TW-TPE", "01-02-1001", "5"): tool.Provision(
+            "01-02-1001", "5", "art_5", "臺北市空氣污染防制自治條例", "TW-TPE"
+        ),
+    }
+
+    c_exp = tool.Expected("空氣污染防制法", "第15條", "O0020001-art-15")
+    l_exp = tool.Expected("臺北市空氣污染防制自治條例", "第5條", "TW-TPE/01-02-1001-art-5")
+
+    prov_c, why_c = tool.map_expected(c_exp, by_title, provisions)
+    assert prov_c is not None and prov_c.pcode == "O0020001" and not why_c
+
+    prov_l, why_l = tool.map_expected(l_exp, by_title, provisions)
+    assert (
+        prov_l is not None
+        and prov_l.pcode == "01-02-1001"
+        and prov_l.jurisdiction == "TW-TPE"
+        and not why_l
+    )
+
+    items = [
+        {
+            "id": "q_local",
+            "bucket": "exact_id",
+            "question": "臺北市特定區域禁止燃燒行為規定？",
+            "citation_allowlist": [{"article_id": "TW-TPE/01-02-1001-art-5"}],
+        }
+    ]
+    results = tool.resolve(items, by_title, provisions)
+    qrels, _ = tool.build_qrels(results)
+    assert "q_local" in qrels
+    assert qrels["q_local"] == {"TW-TPE/01-02-1001-art-5": 2}
+
+    run_ranking = {"q_local": ["TW-TPE/01-02-1001-art-5"]}
+    scores = gs.evaluate(qrels, run_ranking, ["hit_rate@1", "mrr"], relevant_from=2)
+    assert scores == {"hit_rate@1": 1.0, "mrr": 1.0}

@@ -162,3 +162,29 @@ def test_a_judgement_file_with_a_bad_row_is_refused_whole(
     gs = _tool()
     with pytest.raises(ValueError, match=message):
         gs.merge_judgements(_doc(), rows, "t")
+
+
+def test_dual_track_composite_natural_keys_in_golden_set() -> None:
+    gs = _tool()
+    # 中央法規向後相容
+    assert gs.doc_id("O0020001", "15-1") == "O0020001-art-15-1"
+    assert gs.doc_id("O0020001", "15-1", "TW-ROC") == "O0020001-art-15-1"
+    assert gs.parse_doc("O0020001-art-15-1") == ("O0020001", "15-1")
+    assert gs.parse_doc_key("O0020001-art-15-1") == ("TW-ROC", "O0020001", "15-1")
+
+    # 地方自治法規
+    assert gs.doc_id("01-02-1001", "5", "TW-TPE") == "TW-TPE/01-02-1001-art-5"
+    assert gs.parse_doc("TW-TPE/01-02-1001-art-5") == ("01-02-1001", "5")
+    assert gs.parse_doc_key("TW-TPE/01-02-1001-art-5") == ("TW-TPE", "01-02-1001", "5")
+
+    # 混合評估
+    qrels = {
+        "q_central": {"O0020001-art-15-1": 3},
+        "q_local": {"TW-TPE/01-02-1001-art-5": 2},
+    }
+    ranking = {
+        "q_central": ["O0020001-art-15-1"],
+        "q_local": ["TW-TPE/01-02-1001-art-5"],
+    }
+    scores = gs.evaluate(qrels, ranking, ["hit_rate@1", "mrr", "ndcg@10"], relevant_from=2)
+    assert scores == {"hit_rate@1": 1.0, "mrr": 1.0, "ndcg@10": 1.0}

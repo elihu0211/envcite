@@ -54,22 +54,36 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 NEGATIVE = "negative"
 HOLE_DEPTH = 10
-DOC = re.compile(r"^(?P<pcode>[A-Z]\d{7})-art-(?P<number>\d+(?:-\d+)?)$")
+DOC = re.compile(
+    r"^(?:(?P<jurisdiction>[A-Z]{2}-[A-Za-z0-9]+)/)?(?P<local_id>[A-Za-z0-9_.-]+)-art-(?P<number>\d+(?:-\d+)?)$"
+)
 
 Qrels = dict[str, dict[str, int]]
 Ranking = dict[str, list[str]]
 
 
-def doc_id(pcode: str, number: str) -> str:
-    """條文代號：`O0020001-art-15-1`（題庫 `article_id` 的形式）。"""
-    return f"{pcode}-art-{number}"
+def doc_id(local_id: str, number: str, jurisdiction: str = "TW-ROC") -> str:
+    """條文代號：中央 `O0020001-art-15-1` 或地方 `TW-TPE/01-02-1001-art-5`。"""
+    if jurisdiction and jurisdiction != "TW-ROC":
+        return f"{jurisdiction}/{local_id}-art-{number}"
+    return f"{local_id}-art-{number}"
 
 
 def parse_doc(doc: str) -> tuple[str, str]:
+    """回傳 (local_id, number)；保持既有 2-tuple 解包相容性。"""
     m = DOC.match(doc)
     if not m:
         raise ValueError(f"條文代號格式不合：{doc}")
-    return m["pcode"], m["number"]
+    return m["local_id"], m["number"]
+
+
+def parse_doc_key(doc: str) -> tuple[str, str, str]:
+    """回傳複合鍵 (jurisdiction, local_id, number)；未指定 jurisdiction 時預設 'TW-ROC'。"""
+    m = DOC.match(doc)
+    if not m:
+        raise ValueError(f"條文代號格式不合：{doc}")
+    jurisdiction = m["jurisdiction"] or "TW-ROC"
+    return jurisdiction, m["local_id"], m["number"]
 
 
 def digest(doc: Mapping[str, Any]) -> str:
@@ -302,22 +316,26 @@ def article_texts(
     conn: psycopg.Connection[Any], docs: Iterable[str], on: str
 ) -> dict[str, tuple[str, str, str]]:
     """條文代號 → （法規名稱, 該日有效版本的公布或修正日, 條文全文）。"""
-    wanted = {parse_doc(d) for d in docs}
-    pcodes = sorted({p for p, _ in wanted})
+    wanted = {parse_doc_key(d) for d in docs}
+    jurisdictions = [j for j, _, _ in wanted]
+    local_ids = [lid for _, lid, _ in wanted]
     out: dict[str, tuple[str, str, str]] = {}
-    for pcode, title, version, number, text in conn.execute(
-        "SELECT r.local_id, e.title, e.version_date, corpus.article_number(s.path),"
+    for jur, local_id, title, version, number, text in conn.execute(
+        "SELECT r.jurisdiction, r.local_id, e.title, e.version_date, corpus.article_number(s.path),"
         "       corpus.article_text(s.version_id)"
-        "  FROM corpus.legal_resource AS r"
+        "  FROM unnest(%(jurisdictions)s::text[], %(local_ids)s::text[]) AS w(jur, lid)"
+        "  JOIN corpus.legal_resource AS r ON r.jurisdiction = w.jur AND r.local_id = w.lid"
         "  JOIN corpus.legal_expression AS e"
         "    ON e.resource_id = r.id AND e.language = 'zho' AND e.text_period @> %(on)s::date"
         " CROSS JOIN LATERAL corpus.provisions_at(r.id, 'zho', %(on)s::date) AS s"
-        " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = ANY(%(pcodes)s)"
-        "   AND s.provision_type = 'article'",
-        {"on": on, "pcodes": pcodes},
+        " WHERE s.provision_type = 'article'",
+        {"on": on, "jurisdictions": jurisdictions, "local_ids": local_ids},
     ):
-        if (str(pcode), str(number)) in wanted:
-            out[doc_id(str(pcode), str(number))] = (str(title), str(version), str(text or ""))
+        j_str = str(jur)
+        lid_str = str(local_id)
+        num_str = str(number)
+        if (j_str, lid_str, num_str) in wanted:
+            out[doc_id(lid_str, num_str, j_str)] = (str(title), str(version), str(text or ""))
     return out
 
 
