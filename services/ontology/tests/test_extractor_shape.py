@@ -117,7 +117,7 @@ def test_a_slot_written_as_a_plain_string_is_its_literal(conn: Conn, tmp_path: P
     """真實模型常把槽位寫成 `"subject": "事業"`：字串無歧義就是字面，照收，不丟。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
     doc = json.loads(json.dumps(EXTRACTED))
-    doc["statements"][0]["slots"] = {"subject": "事業"}
+    doc["statements"][0]["slots"] = {"subject": "排放廢水者"}
 
     out = extract_unit(
         conn,
@@ -129,7 +129,7 @@ def test_a_slot_written_as_a_plain_string_is_its_literal(conn: Conn, tmp_path: P
     )
 
     assert out.loaded is not None and out.loaded.statements == 1
-    assert _scalar(conn, "SELECT literal FROM annotation.statement_slot") == "事業"
+    assert _scalar(conn, "SELECT literal FROM annotation.statement_slot") == "排放廢水者"
 
 
 def test_a_prescriptive_statement_that_stays_without_a_direction_is_not_written(

@@ -51,6 +51,8 @@ uv run --env-file .env envcite-pipeline --law <pcode> --models models.toml --ree
 
 **重抽**（`--reextract N`，0 至 3，預設 0）：義務沒有定論的單元，帶審查者對上一輪的意見再抽，每輪之後重新接受。該重抽的單元由資料推得（視圖 `annotation.reextraction_due`，`next_round` 是下一輪的編號）：首次抽取已完成、輪數沒用完，而且單元現行文字上有 `annotation.unresolved_duty`（義務或禁止未確認，且沒有已確認的義務涵蓋同一段引文），或被處罰條文以「違反」引用卻沒有未駁回的義務（`annotation.duty_gap`）。輪號記在 `extraction_attempt.round`，上限 3 是該欄的 CHECK；中斷後重跑，各單元接著自己停下的那一輪。`tools/duty_report.py <dsn> <抽取版本>…` 唯讀，報一個抽取版本的義務與罰則確認數、關鍵義務（被最多罰則以「違反」引用的單元）與駁回的失敗型態；`tools/duty_sample.py <dsn> <抽取版本>` 唯讀，依種子抽已確認的義務，連同單元原文、槽位與要件印出，供逐筆對照原文。
 
+**主體與上位的適用情形**（確定性程式，不靠抽取者，見 `verification/subject.py`、`verification/carry.py`）：義務與禁止陳述的主體槽位，每個值都要是原文寫出的行為人——字由單元與上層原文拼成，而且以人、者、機關、事業…結尾，或後面接著一段行為，或與行為人並列；否則整個槽位記為「未明示」（`statement_slot.unstated`：只屬主體，沒有值與責任基礎，與其他擇一值互斥，由 CHECK 與觸發器強制；契約沒有這種槽位，呼叫端看到的是沒有主體槽位）。引文之前、同一句或上位導言（「…，不得有下列行為：」）助動詞之前的條件子句，陳述的 scope 與主體沒涵蓋就補成 scope 要件，標為承自上位（`statement_condition.carried`：只能是成立與否的 scope，由 CHECK 強制；概念代碼是 `ctx_` 加原文雜湊）。引文停在並列的行為或替代方式之前則送回抽取者修復，不丟。`tools/duty_defects.py <dsn> <抽取版本>…` 唯讀，量這些規則在一個版本上擋下多少；`tools/duty_audit.py` 以兩位判定者量語意上的主體與適用範圍瑕疵，先以抽查報告的人工判斷校準。
+
 ### 模型配置（`models.toml`）
 
 端點、角色、嵌入模型與相關性判定者只寫在 [`models.toml`](models.toml)。標註管線由 `--models` 指定，伺服器與同步由 `ENVCITE_ONTOLOGY_MODELS` 指向它。金鑰不寫進這個檔：金鑰名由端點名推導（`[endpoint.llm]` 的金鑰是 `ENVCITE_LLM_API_KEY`），依序從同名環境變數、作業系統鑰匙圈解析，規則見 [`CONFIGURATION.md`](../../CONFIGURATION.md)。

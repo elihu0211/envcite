@@ -35,7 +35,7 @@ _SLOTS = """
     SELECT sl.statement_id, sl.slot_role::text, k.code, sl.literal, sl.liability_basis::text
       FROM annotation.statement_slot AS sl
       LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id
-     WHERE sl.statement_id = ANY(%(ids)s)
+     WHERE sl.statement_id = ANY(%(ids)s) AND NOT sl.unstated
      ORDER BY sl.statement_id, sl.slot_role, sl.alternative
 """
 

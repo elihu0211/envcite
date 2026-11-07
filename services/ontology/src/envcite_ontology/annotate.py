@@ -616,8 +616,8 @@ def _slot(
 ) -> None:
     conn.execute(
         "INSERT INTO annotation.statement_slot"
-        " (statement_id, slot_role, alternative, concept_id, literal, liability_basis)"
-        " VALUES (%s, %s, %s, %s, %s, %s)",
+        " (statement_id, slot_role, alternative, concept_id, literal, liability_basis, unstated)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s)",
         (
             statement_id,
             slot,
@@ -625,6 +625,7 @@ def _slot(
             _concept(concepts, v["concept"]) if v.get("concept") is not None else None,
             v.get("literal"),
             v.get("liability"),
+            v.get("unstated") is True,
         ),
     )
 
@@ -643,8 +644,8 @@ def _conditions(
             "  threshold, measure_unit,"
             "  value_concept_id, negated, delegate_provision_id, needs_assessment,"
             "  delegate_permit_concept_id, measurement_method_concept_id,"
-            "  averaging_period_concept_id)"
-            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "  averaging_period_concept_id, carried)"
+            " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
                 statement_id,
                 c["role"],
@@ -661,6 +662,7 @@ def _conditions(
                     _concept(concepts, c[key]) if c.get(key) else None
                     for key in ("permit", "method", "averaging")
                 ),
+                c.get("carried") is True,
             ),
         )
     return len(conditions)

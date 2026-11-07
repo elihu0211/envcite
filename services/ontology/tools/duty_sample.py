@@ -67,16 +67,18 @@ def detail(conn: Any, sid: int) -> tuple[list[str], list[str]]:
     slots = [
         f"{role}={name}" + (f"[{basis}]" if basis else "")
         for role, name, basis in conn.execute(
-            "SELECT sl.slot_role::text, coalesce(k.name, sl.literal), sl.liability_basis::text"
+            "SELECT sl.slot_role::text,"
+            " CASE WHEN sl.unstated THEN '（未明示）' ELSE coalesce(k.name, sl.literal) END,"
+            " sl.liability_basis::text"
             " FROM annotation.statement_slot sl LEFT JOIN vocab.concept k ON k.id = sl.concept_id"
             " WHERE sl.statement_id = %s ORDER BY 1, sl.alternative",
             (sid,),
         )
     ]
     conds = [
-        f"{role}/{disjunct}:{name}{' NOT' if negated else ''}"
-        for role, disjunct, name, negated in conn.execute(
-            "SELECT c.condition_role::text, c.disjunct_no, k.name, c.negated"
+        f"{role}/{disjunct}:{name}{' NOT' if negated else ''}{'（承自上位）' if carried else ''}"
+        for role, disjunct, name, negated, carried in conn.execute(
+            "SELECT c.condition_role::text, c.disjunct_no, k.name, c.negated, c.carried"
             " FROM annotation.statement_condition c JOIN vocab.concept k ON k.id = c.concept_id"
             " WHERE c.statement_id = %s ORDER BY c.condition_role, c.disjunct_no, c.id",
             (sid,),

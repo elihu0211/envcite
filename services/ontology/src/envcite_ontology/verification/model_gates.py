@@ -84,6 +84,8 @@ _EFFECT = {
     "disgorgement": "不法利得的追繳",
 }
 _LIABILITY = {"act": "行為責任", "state": "狀態責任", "representative": "代表或受指派"}
+#: 主體槽位標為未明示時，描述裡寫的字。
+UNSTATED = "（原文未明示）"
 _TRIGGER = {"order_lapsed": "屆期未履行", "sanction_imposed": "已作成"}
 
 
@@ -95,11 +97,13 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
     u = unit_of(conn, statement_id)
     lines = [f"陳述種類：{_KIND.get((u.kind, u.deontic), u.kind)}"]
     for slot, value, liability in conn.execute(
-        "SELECT sl.slot_role::text, coalesce(k.code, sl.literal), sl.liability_basis::text"
+        "SELECT sl.slot_role::text,"
+        "       CASE WHEN sl.unstated THEN %s ELSE coalesce(k.code, sl.literal) END,"
+        "       sl.liability_basis::text"
         "  FROM annotation.statement_slot AS sl"
         "  LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id"
         " WHERE sl.statement_id = %s ORDER BY sl.slot_role, sl.alternative",
-        (statement_id,),
+        (UNSTATED, statement_id),
     ):
         basis = f"（責任基礎：{_LIABILITY.get(str(liability), liability)}）" if liability else ""
         lines.append(f"{_SLOT.get(str(slot), slot)}：{value}{basis}")
@@ -108,7 +112,7 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
         "SELECT c.condition_role::text, k.code, k.name, c.comparator::text,"
         "       c.threshold, c.measure_unit,"
         "       c.negated, c.needs_assessment, c.delegate_provision_id IS NOT NULL,"
-        "       pk.code, mk.code, ak.code"
+        "       pk.code, mk.code, ak.code, c.carried"
         "  FROM annotation.statement_condition AS c JOIN vocab.concept AS k ON k.id = c.concept_id"
         "  LEFT JOIN vocab.concept AS pk ON pk.id = c.delegate_permit_concept_id"
         "  LEFT JOIN vocab.concept AS mk ON mk.id = c.measurement_method_concept_id"
@@ -117,7 +121,7 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
         (statement_id,),
     ):
         role, code, label, cmp, threshold, unit, negated, judgement, delegated = found[:9]
-        permit, method, averaging = found[9:]
+        permit, method, averaging, carried = found[9:]
         if cmp == "eq" and threshold == 1 and not unit and not delegated:
             text = f"[{code}] {label} 成立"  # 不寫成原文沒有的數值
         else:
@@ -134,7 +138,10 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
         if method is not None or averaging is not None:
             text += f"（檢測方法：{method or '未標註'}；平均時段：{averaging or '未標註'}）"
         by_role.setdefault(str(role), []).append(
-            ("非：" if negated else "") + text + ("（需判斷）" if judgement else "")
+            ("非：" if negated else "")
+            + text
+            + ("（需判斷）" if judgement else "")
+            + ("（承自上位）" if carried else "")
         )
     names = {"scope": "適用範圍（皆須成立）", "duty": "義務內容（皆須成立）", "limit": "限值"}
     for role in ("scope", "duty", "limit"):
@@ -431,7 +438,9 @@ JUDGE = with_conventions("""你是法規標註的審查者。
 引文判斷，需要前後文時看整個單元，不要要求這個陳述涵蓋引文以外的內容。
 請判斷這份標註是否忠於引文（與它所在的單元）：種類、義務方向、要件（含門檻值與「非」）、罰則的效果與額度，是否都有
 原文依據，沒有遺漏或添加。描述裡的「成立」是要件成立之意，不是數值；沒有寫出的預設（例如沒有
-「按次處罰」字樣）不算添加。輸出 JSON：{{"faithful": true|false, "issues": ["具體問題"]}}。
+「按次處罰」字樣）不算添加。主體為「（原文未明示）」是說原文沒有寫出義務人，不算遺漏；主體若是
+被規範的物或行為而不是人，才是錯。標有「承自上位」的適用範圍要件，是程式從上層條文或句首帶入的，
+不算添加。輸出 JSON：{{"faithful": true|false, "issues": ["具體問題"]}}。
 只輸出 JSON。
 
 {conventions}

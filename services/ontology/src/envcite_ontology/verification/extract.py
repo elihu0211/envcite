@@ -23,10 +23,12 @@ from envcite_ontology.annotate import (
     Loaded,
     load,
 )
+from envcite_ontology.verification.carry import carry, truncated_issues
 from envcite_ontology.verification.context import ancestors_text, context_block
 from envcite_ontology.verification.conventions import apply as with_conventions
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, ModelError
+from envcite_ontology.verification.subject import normalize as normalize_subjects
 from envcite_ontology.violation import citations
 
 Conn = psycopg.Connection[tuple[object, ...]]
@@ -86,6 +88,9 @@ PROMPT = (
    「得」等助動詞，到這個義務的最後一個行為。同一個「應」之下以頓號、「並」接的幾個行為是同一個
    陳述的幾個 duty 要件，不拆成幾個陳述；不要只引「並於…通知」「始得…」這類缺了助動詞或適用情形的
    子句。「應…，不得…」是兩個陳述。
+15. slots.subject 是負有這個義務的人或組織，必須是原文寫出的字。原文沒有寫出義務人時（被動式、
+   「某設備應符合標準」這類以物為主題的句子、代名詞「其」指前句的物），寫 {{"unstated": true}}：
+   不要拿被規範的設施、物質或行為當主體，也不要自行補「任何人」「行為人」。
 只輸出 JSON。
 
 {terms}{context}{punished}{review}原文（{law} {path}）：
@@ -118,7 +123,11 @@ _NUM: dict[str, Any] = {"type": "number"}
 _BOOL: dict[str, Any] = {"type": "boolean"}
 _SLOT_VALUE: dict[str, Any] = {
     "type": "object",
-    "properties": {"literal": _STR, "liability": {"enum": [*LIABILITY_BASES, None]}},
+    "properties": {
+        "literal": _STR,
+        "liability": {"enum": [*LIABILITY_BASES, None]},
+        "unstated": _BOOL,
+    },
 }
 _SLOT: dict[str, Any] = {
     "anyOf": [_SLOT_VALUE, {"type": "array", "items": _SLOT_VALUE}, _STR],
@@ -394,21 +403,26 @@ def _literal(value: Any) -> Any:
 
 
 def _liability(role: str, value: Any) -> Any:
-    """責任基礎只屬主體、只取列舉值；別處或別的值當作沒寫（載入器會因它拒絕整份文件）。"""
+    """責任基礎只屬主體、只取列舉值；別處或別的值當作沒寫（載入器會因它拒絕整份文件）。
+
+    「未明示」同樣只屬主體；別的槽位寫它等於沒有值，整個槽位值去掉。
+    """
     if isinstance(value, list):
-        return [_liability(role, v) for v in value]
-    if (
-        isinstance(value, Mapping)
-        and "liability" in value
-        and (role != "subject" or value["liability"] not in LIABILITY_BASES)
-    ):
-        return {k: v for k, v in value.items() if k != "liability"}
+        kept = [_liability(role, v) for v in value]
+        return [v for v in kept if v != {}]
+    if isinstance(value, Mapping):
+        if "liability" in value and (
+            role != "subject" or value["liability"] not in LIABILITY_BASES
+        ):
+            value = {k: v for k, v in value.items() if k != "liability"}
+        if role != "subject" and "unstated" in value:
+            value = {k: v for k, v in value.items() if k != "unstated"}
     return value
 
 
 def _tidy_condition(c: Mapping[str, Any]) -> dict[str, Any]:
-    """一個要件的形狀修正（見 `tidy`）。"""
-    drop: set[str] = set()
+    """一個要件的形狀修正（見 `tidy`）。承自上位是程式標的（`carry`），模型寫的不算。"""
+    drop: set[str] = {"carried"}
     if c.get("value_concept") or c.get("permit"):
         drop.add("threshold")
     if c.get("role") == "limit":
@@ -822,6 +836,7 @@ def extract_unit(
                 {str(c["code"]): str(c["label"]) for c in _concepts_of(answer)}
                 | dict(defined or {}),
             )
+            + truncated_issues(here, text)
             + sanction_issues(here)
             + penalized_issues(here, punished_by)
             + [
@@ -858,6 +873,12 @@ def extract_unit(
     )
     if answer is None:
         return Extracted(None, ("<unparseable model output>",), counts)
+    # 主體只留原文寫出的行為人；其餘記成未明示（不靠提示：見 `subject`）
+    answer = {**answer, "statements": normalize_subjects(_statements_of(answer), text, context)[0]}
+    # 上位項與句首的適用情形由程式補上，不靠抽取者記得（見 `carry`）
+    labels = {str(c["code"]): str(c["label"]) for c in _concepts_of(answer)} | dict(defined or {})
+    carried, new_concepts = carry(_statements_of(answer), text, context, labels)
+    answer = {**answer, "statements": carried, "concepts": [*_concepts_of(answer), *new_concepts]}
     statements: list[dict[str, Any]] = []
     dropped: list[str] = []
     located = [x for x in _statements_of(answer) if locate(str(x.get("quote", "")), text) >= 0]
