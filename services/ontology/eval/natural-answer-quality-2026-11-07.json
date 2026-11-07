@@ -1,0 +1,88 @@
+{
+  "meta": {
+    "run_at": "2026-11-07T08:37:12.687581+00:00",
+    "model": "mistral-small-4",
+    "dataset": "grounding-check-2026-11-03.json (subset: test, 218 題)"
+  },
+  "summary": {
+    "total_questions": 218,
+    "refusal": {
+      "negative_total": 47,
+      "negative_floor_refused": 14,
+      "negative_model_insufficient": 30,
+      "negative_verify_void": 0,
+      "negative_answered_leaked": 3,
+      "negative_refusal_rate": 0.9362,
+      "positive_total": 171,
+      "positive_floor_refused": 4,
+      "positive_model_insufficient": 138,
+      "positive_verify_void": 0,
+      "positive_answered": 29,
+      "positive_refusal_rate": 0.8304
+    },
+    "hallucination": {
+      "unfounded_count": 3,
+      "unfounded_rate": 0.0638,
+      "citation_drift_count": 11,
+      "citation_drift_rate": 0.3793,
+      "external_leak_void_count": 0,
+      "total_answered": 32,
+      "hallucinated_answers": 14,
+      "composite_hallucination_rate": 0.4375
+    },
+    "faithfulness": {
+      "positive_answered": 29,
+      "hits_expected_count": 18,
+      "grounded_fidelity_rate": 0.6207,
+      "positive_total": 171,
+      "end_to_end_coverage_rate": 0.1053,
+      "evidence_has_expected_but_refused": 19
+    },
+    "latency_by_stage": {
+      "retrieval_grounding": {
+        "count": 218,
+        "mean_ms": 98.72,
+        "std_dev_ms": 40.11,
+        "min_ms": 33.52,
+        "p50_ms": 93.01,
+        "p90_ms": 145.57,
+        "p95_ms": 166.71,
+        "p99_ms": 232.23,
+        "max_ms": 285.7
+      },
+      "llm_inference": {
+        "count": 200,
+        "mean_ms": 1963.19,
+        "std_dev_ms": 526.97,
+        "min_ms": 934.12,
+        "p50_ms": 1905.81,
+        "p90_ms": 2597.5,
+        "p95_ms": 2870.17,
+        "p99_ms": 3514.81,
+        "max_ms": 4216.62
+      },
+      "citation_verify": {
+        "count": 218,
+        "mean_ms": 0.81,
+        "std_dev_ms": 0.34,
+        "min_ms": 0.21,
+        "p50_ms": 0.81,
+        "p90_ms": 1.25,
+        "p95_ms": 1.34,
+        "p99_ms": 1.38,
+        "max_ms": 1.39
+      },
+      "total_end_to_end": {
+        "count": 218,
+        "mean_ms": 1909.61,
+        "std_dev_ms": 743.56,
+        "min_ms": 42.38,
+        "p50_ms": 1976.51,
+        "p90_ms": 2694.52,
+        "p95_ms": 2921.96,
+        "p99_ms": 3609.04,
+        "max_ms": 4380.64
+      }
+    }
+  }
+}
