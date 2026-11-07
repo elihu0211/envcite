@@ -34,7 +34,7 @@ import tempfile
 import time
 from collections import Counter
 from collections.abc import Iterator, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -327,9 +327,22 @@ def requests(target: Target, questions: Sequence[tuple[str, str]]) -> tuple[list
 
 def environment(dsn: str, models: Path | None) -> dict[str, Any]:
     def sh(*cmd: str) -> str:
-        return subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
+        try:
+            return subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
+        except Exception:
+            return ""
 
-    docker = json.loads(sh("docker", "info", "--format", "{{json .}}"))
+    try:
+        docker_raw = subprocess.run(
+            ["docker", "info", "--format", "{{json .}}"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        docker = json.loads(docker_raw) if docker_raw else {}
+    except Exception:
+        docker = {}
+
     with psycopg.connect(dsn) as conn:
         conn.read_only = True
 
@@ -365,11 +378,21 @@ def environment(dsn: str, models: Path | None) -> dict[str, Any]:
             "work_mem": one("SHOW work_mem"),
             "max_connections": one("SHOW max_connections"),
         }
+
+    try:
+        cpu = sh("sysctl", "-n", "machdep.cpu.brand_string") or platform.processor() or "unknown"
+        cores = int(sh("sysctl", "-n", "hw.ncpu") or (os.cpu_count() or 1))
+        mem = int(sh("sysctl", "-n", "hw.memsize") or 0) / 2**30
+    except Exception:
+        cpu = platform.processor() or "unknown"
+        cores = os.cpu_count() or 1
+        mem = 0.0
+
     return {
         "host": {
-            "cpu": sh("sysctl", "-n", "machdep.cpu.brand_string"),
-            "cores": int(sh("sysctl", "-n", "hw.ncpu")),
-            "memory_gib": int(sh("sysctl", "-n", "hw.memsize")) / 2**30,
+            "cpu": cpu,
+            "cores": cores,
+            "memory_gib": mem,
             "os": f"{platform.system()} {platform.release()}",
         },
         "docker_vm": {
@@ -386,12 +409,14 @@ def environment(dsn: str, models: Path | None) -> dict[str, Any]:
             "models": models.name if models else None,
             "consult_ontology_timeout": json.loads(
                 (CONSULT_PROJECT / "appsettings.json").read_text(encoding="utf-8")
-            )["Ontology"]["Timeout"],
+            )["Ontology"]["Timeout"]
+            if (CONSULT_PROJECT / "appsettings.json").exists()
+            else "5s",
             "search_limit": SEARCH_LIMIT,
         },
         "tools": {
-            "k6": sh("k6", "version").splitlines()[0],
-            "dotnet": sh("dotnet", "--version"),
+            "k6": sh("k6", "version").splitlines()[0] if sh("k6", "version") else "unknown",
+            "dotnet": sh("dotnet", "--version") or "unknown",
             "python": platform.python_version(),
         },
     }
@@ -407,10 +432,19 @@ def run(args: argparse.Namespace) -> None:
     ladder = [int(v) for v in args.ladder.split(",")]
     db = load(DatabaseSettings)
     models = load(ModelsSettings).models
-    if any(t.embedding for t in targets) and models is None:
-        raise SystemExit("混合檢索的對象需要 ENVCITE_ONTOLOGY_MODELS")
 
-    if any(t.service == "consult" for t in targets):
+    external_ontology: str | None = getattr(args, "ontology_address", None)
+    external_consult: str | None = getattr(args, "consult_address", None)
+    skip_cold: bool = bool(args.skip_cold or not args.pg_container)
+
+    need_local_ontology = any(t.service == "ontology" for t in targets) and not external_ontology
+    need_local_consult = any(t.service == "consult" for t in targets) and not external_consult
+    need_servers = need_local_ontology or need_local_consult
+
+    if any(t.embedding for t in targets) and models is None and need_local_ontology:
+        raise SystemExit("混合檢索的本地服務需要 ENVCITE_ONTOLOGY_MODELS")
+
+    if need_local_consult:
         subprocess.run(
             ["dotnet", "build", "-c", "Release", "--nologo", "-v", "q", str(CONSULT_PROJECT)],
             check=True,
@@ -432,27 +466,52 @@ def run(args: argparse.Namespace) -> None:
         "ladder": ladder,
         "iterations_per_stage": args.iterations or len(questions),
         "timeout": TIMEOUT,
+        "skip_cold": skip_cold,
+        "external_targets": {
+            "ontology": external_ontology,
+            "consult": external_consult,
+        },
         **environment(db.dsn, models),
     }
     results: list[dict[str, Any]] = []
     embedding_calls = 0
     logs = Path(tempfile.mkdtemp(prefix="load-bench-"))
     print(f"服務日誌：{logs}", file=sys.stderr)
-    with servers(logs) as s:
+    ctx = servers(logs) if need_servers else nullcontext()
+    with ctx as s:
         for target in targets:
             ids, data = requests(target, questions)
             n = len(questions)
             consult = target.service == "consult"
             plan = [("warmup", 1, n), ("hot", 1, n)]
             plan += [("ladder", vus, args.iterations or n) for vus in ladder]
-            if target.cold:
+
+            if consult:
+                if external_consult:
+                    address = external_consult
+                elif s is not None:
+                    if not s.consult or s.embedding is not target.embedding:
+                        s.start(embedding=target.embedding, consult=True)
+                    address = s.consult
+                else:
+                    raise SystemExit("未提供 consult 服務位址且未啟動本地 consult")
+            else:
+                if external_ontology:
+                    address = external_ontology
+                elif s is not None:
+                    if not s.ontology or s.embedding is not target.embedding:
+                        s.start(embedding=target.embedding, consult=False)
+                    address = s.ontology
+                else:
+                    raise SystemExit("未提供 ontology 服務位址且未啟動本地 ontology")
+
+            if target.cold and not skip_cold and args.pg_container and s is not None:
                 s.stop()
                 restart_database(args.pg_container, db.dsn)
                 s.start(embedding=target.embedding, consult=consult)
+                address = s.consult if consult else s.ontology
                 plan.insert(0, ("cold", 1, n))
-            elif s.embedding is not target.embedding or (consult and not s.consult):
-                s.start(embedding=target.embedding, consult=consult)
-            address = s.consult if consult else s.ontology
+
             for phase, vus, iterations in plan:
                 points = k6(target, address, ids, data, vus=vus, iterations=iterations, work=logs)
                 if target.embedding:
@@ -506,6 +565,16 @@ def render(doc: dict[str, Any]) -> str:
         f"請求期限 {m['timeout']}",
         f"- 每階 {m['iterations_per_stage']} 次請求；{m['tools']['k6']}；"
         f"嵌入端點呼叫 {m['embedding_calls']:,} 次",
+    ]
+    if m.get("skip_cold"):
+        lines.append("- 注意：已略過冷快取量測。")
+    ext = m.get("external_targets", {})
+    if any(ext.values()):
+        lines.append(
+            f"- 外部服務位址：ontology={ext.get('ontology') or '本地'}，"
+            f"consult={ext.get('consult') or '本地'}"
+        )
+    lines += [
         "",
         "## 結果",
         "",
@@ -536,7 +605,22 @@ def main() -> None:
     r.add_argument("golden", type=Path)
     r.add_argument("--split", type=Path, required=True)
     r.add_argument("--subset", default="dev")
-    r.add_argument("--pg-container", required=True, help="本機拋棄式資料庫的容器名；量冷時會重啟")
+    r.add_argument(
+        "--pg-container",
+        default=None,
+        help="本機拋棄式資料庫的容器名；量冷時會重啟（未提供則略過冷快取）",
+    )
+    r.add_argument("--skip-cold", action="store_true", help="略過冷快取量測，不重啟資料庫容器")
+    r.add_argument(
+        "--ontology-address",
+        default=None,
+        help="外部已啟動之 Ontology gRPC 位址（如 127.0.0.1:50051），指定時不啟動本地 ontology",
+    )
+    r.add_argument(
+        "--consult-address",
+        default=None,
+        help="外部已啟動之 Consult gRPC 位址（如 127.0.0.1:50052），指定時不啟動本地 consult",
+    )
     r.add_argument("--targets", default="search,ground,evaluate,search-lexical")
     r.add_argument("--ladder", default="1,2,4,8,16,24,32")
     r.add_argument("--iterations", type=int, default=0, help="每階請求數；0 為題數")
