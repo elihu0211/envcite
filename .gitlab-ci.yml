@@ -68,9 +68,9 @@ variables:
   # renovate: datasource=docker depName=docker
   DOCKER_VERSION: "29.8.1"
   # renovate: datasource=docker depName=bufbuild/buf
-  BUF_VERSION: "1.73.0"
+  BUF_VERSION: "1.75.0"
   # renovate: datasource=docker depName=tufin/oasdiff
-  OASDIFF_VERSION: "v1.32.1"
+  OASDIFF_VERSION: "v1.35.0"
   # renovate: datasource=docker depName=hadolint/hadolint
   HADOLINT_VERSION: "v2.15.1"
   # renovate: datasource=docker depName=alpine
@@ -604,26 +604,22 @@ openapi:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-platform
     - *mr-ci-change
+    # 腳本改了，要用真的 oasdiff 跑一次（ci-scripts 只用假指令測）。
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: [ci/check-openapi.sh]
   image:
     name: tufin/oasdiff:$OASDIFF_VERSION
     entrypoint: [""]
   variables:
     SPEC: services/platform/openapi/openapi_v2.json
   script:
+    # 平台相關的只有這兩個輸入：目標分支名，與「是否放行破壞性變更」。後者由 MR 的 api-breaking
+    # 標籤宣告：只放行這一個 MR，照樣列出破壞處供審查；標籤在 pipeline 建立時讀取，事後才加要重跑
+    # pipeline。比對本身在腳本裡，不讀平台變數。
     - |
-      if [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ]; then
-        echo "非 MR pipeline，不執行相容性檢查"
-      elif git fetch -q --depth=1 origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" && git show "FETCH_HEAD:$SPEC" > /tmp/base.json 2>/dev/null; then
-        # 刻意的破壞性變更由 MR 的 api-breaking 標籤宣告：只放行這一個 MR，照樣列出破壞處供審查；
-        # 標籤在 pipeline 建立時讀取，事後才加要重跑 pipeline。
-        if printf ',%s,' "$CI_MERGE_REQUEST_LABELS" | grep -q ',api-breaking,'; then
-          oasdiff breaking /tmp/base.json "$SPEC"
-        else
-          oasdiff breaking /tmp/base.json "$SPEC" --fail-on ERR
-        fi
-      else
-        echo "目標分支 ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME} 尚無 $SPEC，無基準可比——跳過相容性檢查"
-      fi
+      allow=
+      case ",$CI_MERGE_REQUEST_LABELS," in *,api-breaking,*) allow=--allow-breaking ;; esac
+      sh ci/check-openapi.sh $allow "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" "$SPEC"
 
 proto:
   extends: .runner
@@ -632,22 +628,17 @@ proto:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *changes-proto
     - *mr-ci-change
+    # 腳本改了，要用真的 buf 跑一次（ci-scripts 只用假指令測）。
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: [ci/check-proto.sh]
   image:
     name: bufbuild/buf:$BUF_VERSION
     entrypoint: [""]
   script:
-    - buf lint
-    # 目標分支尚無 proto 模組時沒有基準可比，明示跳過，不靜默通過。
-    - |
-      if [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ]; then
-        echo "非 MR pipeline，不執行相容性檢查"
-      elif buf build "${CI_REPOSITORY_URL}#branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}" -o /dev/null >/dev/null 2>&1; then
-        buf breaking --against "${CI_REPOSITORY_URL}#branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
-      else
-        echo "目標分支 ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME} 尚無 proto 模組，無基準可比——跳過相容性檢查"
-      fi
+    # lint 與對目標分支的 breaking 都在腳本裡；平台相關的只有目標分支名。
+    - sh ci/check-proto.sh "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
 
-# ci/ 腳本與 .githooks/block-main.sh 的離線測試（假指令、暫時 repo，不連網）：映像 job 的重試與 main 守門靠它，壞了等於沒守門。
+# ci/ 腳本與 .githooks/block-main.sh 的離線測試（假指令、暫時 repo，不連網）：映像 job 的重試、契約與規格檢查的跳過與失敗語意、main 守門靠它，壞了等於沒守門。另掃 ci/ 與 .githooks/ 不得讀 CI 平台變數。
 ci-scripts:
   extends: .runner
   stage: check
@@ -664,6 +655,8 @@ ci-scripts:
     - apk add --no-cache git jq
     - sh ci/test-retry-transient.sh
     - sh ci/test-block-main.sh
+    - sh ci/test-check-scripts.sh
+    - sh ci/test-platform-neutral.sh
 
 # 文件 front-matter 與相對連結（規範見容器層 AGENTS.md「知識文件」）：不退化靠 CI 擋。純標準庫腳本。
 docs:
