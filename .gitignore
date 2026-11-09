@@ -29,9 +29,6 @@ __pycache__/
 coverage.xml
 report.xml
 
-# CI 暫存
-.generated-before/
-
 # 編輯器與作業系統（.vscode 只追蹤共用設定）
 .idea/
 .vscode/*
