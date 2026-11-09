@@ -8,7 +8,7 @@ owns: [service-composition, grpc-metadata, as-of-semantics, grpc-error-reasons, 
 
 gRPC 契約，`buf` 單一模組（根為本目錄）；欄位與方法的語意見 `.proto` 註解。回[倉庫總覽](../README.md)。
 
-套件 `envcite.ontology.v1`（共享，實作在 [`services/ontology`](../services/ontology/README.md)）與 `envcite.consult.v2`（租戶隔離，實作在 [`services/consult`](../services/consult/README.md)）皆為內部介面。外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST，契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
+套件 `envcite.ontology.v2`（共享，實作在 [`services/ontology`](../services/ontology/README.md)）與 `envcite.consult.v2`（租戶隔離，實作在 [`services/consult`](../services/consult/README.md)）皆為內部介面。外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST，契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
 
 `buf lint`、`buf breaking` 的指令見倉庫根 [`AGENTS.md`](../AGENTS.md) 的 Commands；產生碼與破壞性變更的規則見同檔的 Contract。
 
@@ -83,6 +83,8 @@ sequenceDiagram
 | `x-tenant-id` | consult 必填 | 配額與稽核；ontology 只用於日誌。consult 缺少 → `INVALID_ARGUMENT` |
 | `x-request-id` | 否 | 只用於日誌 |
 
+**法規識別**：法規以複合自然鍵 `LawIdentifier`（`jurisdiction`、`id_scheme`、`local_id`）標識，ontology 的請求與回應都用它，不用單一字串的法規代號；三個欄位的取值與語意見 `ontology.proto` 的註解。
+
 **`as_of`**：ISO 8601 日期，依哪一天施行的條文；空字串為現行。沒有任何版本涵蓋該日時回**查無**，不回現行條文。
 
 **狀態碼與錯誤原因**
@@ -121,14 +123,14 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 
 ## 標註與推論
 
-`ReasoningService`（`envcite.ontology.v1`）唯讀地提供規範標註與由它推出的**候選**結論。它不判決：沒有通過驗證閘門的陳述不產生任何結論，沒有確認的標註時 `verdicts` 為空。
+`ReasoningService`（`envcite.ontology.v2`）唯讀地提供規範標註與由它推出的**候選**結論。它不判決：沒有通過驗證閘門的陳述不產生任何結論，沒有確認的標註時 `verdicts` 為空。
 
-- **`ListStatements(law_id, as_of)`**：某日有效、已確認的陳述。`Statement` 的要件是析取範式（`Requirement.any_of` 是「或」，`Disjunct.all_of` 是「且」）；委由授權命令的門檻值以 `Delegation` 表示，不在這裡解析。
+- **`ListStatements(identifier, as_of)`**：某日有效、已確認的陳述。`Statement` 的要件是析取範式（`Requirement.any_of` 是「或」，`Disjunct.all_of` 是「且」）；委由授權命令的門檻值以 `Delegation` 表示，不在這裡解析。
 - **`Evaluate`**：給 `conduct_on`（行為日）、`decided_on`（裁處日）與案件事實。回傳 `at_decision`（裁處時之法律，行政罰法第 5 條的預設）與 `earlier`。
   - 結果的結構與各欄位語意見 `.proto` 註解；呼叫端須知：
     - `AdministrativePenaltyFacts` 欄位缺席是「未知」，不是「否」；代碼以 `ap_` 開頭的 `Fact` 被拒絕（`RESERVED_CONCEPT`）。
     - `earlier` 是行為日到裁處日之間陳述組與裁處時不同的法律，不替呼叫端選「最有利」。
-    - 語料的歷史有起點：`Outcome.uncovered_law_ids` 列出「那天已制定、但語料沒有當時版本」的法規，其規定缺席不代表當時沒有規定；`earlier` 出現空的 `verdicts` 時先看此欄位，不要解讀成行為時合規。
+    - 語料的歷史有起點：`Outcome.uncovered_law_identifiers` 列出「那天已制定、但語料沒有當時版本」的法規，其規定缺席不代表當時沒有規定；`earlier` 出現空的 `verdicts` 時先看此欄位，不要解讀成行為時合規。
     - `Outcome.guidance`（行政規則）附在結果旁，不是推論的前提。
     - 不在語料裡的管制事實由呼叫端隨案件提供：門檻委由個別處分（`Condition.delegate_permit`）的量值放 `permit_limits`，缺了列在 `Outcome.missing_permit_limits`；限值標有認定方式時，`Fact.measurement_method`／`averaging_period` 要與它相同，否則要件未知（`PROBLEM_KIND_MEASUREMENT_MISMATCH`），限值沒標則照常比較並附 `PROBLEM_KIND_MEASUREMENT_UNLABELED`。
     - 責任基礎：罰則的主體槽位標有責任基礎（`Slot.liability_basis`）時，`PenaltyCandidate.subject_bases` 帶出它；呼叫端以 `actor_bases` 說明行為人屬哪種基礎（可同時屬數種）。有交集則主體成立；沒有交集則主體不成立，罰則不列出，列在 `Outcome.subject_mismatch`；沒說明則主體未知，罰則附條件，缺的事實是概念 `liability_basis`（`Outcome.missing`）。主體槽位沒有標註，或擇一的值有一個沒標，則不受限制。推論只比對基礎，不判斷行為人是否「真的」屬於該基礎，那是呼叫端的事實認定。

@@ -78,7 +78,7 @@ uv run --env-file .env envcite-ontology
 
 ## Contract
 
-- 契約是倉庫根的 `proto/envcite/ontology/v1/ontology.proto` 與 `reasoning.proto`；錯誤原因清單在 `proto/README.md`。
+- 契約是倉庫根的 `proto/envcite/ontology/v2/ontology.proto` 與 `reasoning.proto`；錯誤原因清單在 `proto/README.md`。
 - 資料不分租戶；`x-tenant-id`／`x-request-id` metadata 只用於日誌與稽核。
 - `ReasoningService` 唯讀。訊息強型別：列舉不用字串、數值用 `Decimal`（十進位文字，不用浮點）、`AdministrativePenaltyFacts` 用 `optional`。日期維持 ISO 8601 字串。
 - 錯誤一律 `errors.ServiceError`，由 `errors.maps_errors` 在 servicer 邊界轉成 `google.rpc.Status`；呼叫端依 `reason` 分流，不解析訊息。新增錯誤是新增常數，不改現有 reason 的意思。
