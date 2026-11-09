@@ -62,15 +62,20 @@ Qrels = dict[str, dict[str, int]]
 Ranking = dict[str, list[str]]
 
 
-def doc_id(local_id: str, number: str, jurisdiction: str = "TW-ROC") -> str:
+#: 中央法規在 `corpus.legal_resource.jurisdiction` 的值。條文代號對中央省略管轄前綴，
+#: 地方法規帶 `<管轄>/`；工具各處都用這個常數，不各自寫字面值。
+CENTRAL = "TW-CENTRAL"
+
+
+def doc_id(local_id: str, number: str, jurisdiction: str = CENTRAL) -> str:
     """條文代號：中央 `O0020001-art-15-1` 或地方 `TW-TPE/01-02-1001-art-5`。"""
-    if jurisdiction and jurisdiction != "TW-ROC":
-        return f"{jurisdiction}/{local_id}-art-{number}"
-    return f"{local_id}-art-{number}"
+    if jurisdiction == CENTRAL:
+        return f"{local_id}-art-{number}"
+    return f"{jurisdiction}/{local_id}-art-{number}"
 
 
 def parse_doc(doc: str) -> tuple[str, str]:
-    """回傳 (local_id, number)；保持既有 2-tuple 解包相容性。"""
+    """回傳 (local_id, number)，丟掉管轄；呼叫端只在中央法規上用（查詢另有方案限定）。"""
     m = DOC.match(doc)
     if not m:
         raise ValueError(f"條文代號格式不合：{doc}")
@@ -78,12 +83,11 @@ def parse_doc(doc: str) -> tuple[str, str]:
 
 
 def parse_doc_key(doc: str) -> tuple[str, str, str]:
-    """回傳複合鍵 (jurisdiction, local_id, number)；未指定 jurisdiction 時預設 'TW-ROC'。"""
+    """回傳複合鍵 (jurisdiction, local_id, number)；沒有管轄前綴的是中央。"""
     m = DOC.match(doc)
     if not m:
         raise ValueError(f"條文代號格式不合：{doc}")
-    jurisdiction = m["jurisdiction"] or "TW-ROC"
-    return jurisdiction, m["local_id"], m["number"]
+    return m["jurisdiction"] or CENTRAL, m["local_id"], m["number"]
 
 
 def digest(doc: Mapping[str, Any]) -> str:

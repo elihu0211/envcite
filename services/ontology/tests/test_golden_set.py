@@ -166,11 +166,17 @@ def test_a_judgement_file_with_a_bad_row_is_refused_whole(
 
 def test_dual_track_composite_natural_keys_in_golden_set() -> None:
     gs = _tool()
-    # 中央法規向後相容
+    # 中央法規的條文代號沒有管轄前綴；管轄的值是資料庫的 'TW-CENTRAL'
+    assert gs.CENTRAL == "TW-CENTRAL"
     assert gs.doc_id("O0020001", "15-1") == "O0020001-art-15-1"
-    assert gs.doc_id("O0020001", "15-1", "TW-ROC") == "O0020001-art-15-1"
+    assert gs.doc_id("O0020001", "15-1", gs.CENTRAL) == "O0020001-art-15-1"
     assert gs.parse_doc("O0020001-art-15-1") == ("O0020001", "15-1")
-    assert gs.parse_doc_key("O0020001-art-15-1") == ("TW-ROC", "O0020001", "15-1")
+    assert gs.parse_doc_key("O0020001-art-15-1") == (gs.CENTRAL, "O0020001", "15-1")
+    assert gs.parse_doc_key(gs.doc_id("O0020001", "15-1", gs.CENTRAL)) == (
+        gs.CENTRAL,
+        "O0020001",
+        "15-1",
+    )
 
     # 地方自治法規
     assert gs.doc_id("01-02-1001", "5", "TW-TPE") == "TW-TPE/01-02-1001-art-5"

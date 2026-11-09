@@ -32,7 +32,8 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from golden_retrieval_eval import _ID, expected_of, load_corpus
+import golden_set as gs
+from golden_retrieval_eval import expected_of, load_corpus
 
 from envcite_ontology.settings import DatabaseSettings, load
 
@@ -80,15 +81,17 @@ def build(items: list[dict[str, Any]], conn: psycopg.Connection[Any]) -> dict[st
     for item in items:
         for exp in expected_of(item):
             if exp.article_id:
-                m = _ID.match(exp.article_id)
-                pcodes = {m["pcode"]} if m else set()
+                try:
+                    pcodes = {gs.parse_doc(exp.article_id)[0]}
+                except ValueError:
+                    pcodes = set()
             else:
-                pcodes = by_title.get(exp.statute, set())
+                pcodes = {pcode for _, pcode in by_title.get(exp.statute, set())}
             for pcode in pcodes:
                 reason.setdefault(pcode, {"part": "cited"})
 
     for title in GENERAL:
-        for pcode in by_title.get(title, set()):
+        for _, pcode in by_title.get(title, set()):
             reason.setdefault(pcode, {"part": "general"})
 
     rounds = 0

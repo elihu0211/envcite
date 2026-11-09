@@ -80,9 +80,6 @@ NEGATIVE = gs.NEGATIVE
 LABELS = {**{f"hit_rate@{k}": f"R@{k}" for k in KS}, "mrr": "MRR", "ndcg@10": "nDCG@10"}
 
 _ARTICLE = re.compile(r"^第\s*(\d+)(?:\s*條之\s*(\d+)|\s*-\s*(\d+)\s*條|\s*條)")
-_ID = re.compile(
-    r"^(?:(?P<jurisdiction>[A-Z]{2}-[A-Za-z0-9]+)/)?(?P<pcode>[A-Za-z0-9_.-]+)-art-(?P<number>\d+(?:-\d+)?)$"
-)
 
 
 @dataclass(frozen=True)
@@ -98,7 +95,7 @@ class Provision:
     number: str  # corpus.article_number 的形式：「68」「15-1」
     article_path: str
     title: str
-    jurisdiction: str = "TW-ROC"
+    jurisdiction: str  # corpus.legal_resource.jurisdiction 的值；中央是 gs.CENTRAL
 
 
 @dataclass(frozen=True)
@@ -146,45 +143,44 @@ def expected_of(item: dict[str, Any]) -> list[Expected]:
 
 def map_expected(
     exp: Expected,
-    by_title: dict[str, set[str]],
-    provisions: dict[Any, Provision],
+    by_title: dict[str, set[tuple[str, str]]],
+    provisions: dict[tuple[str, str, str], Provision],
 ) -> tuple[Provision | None, str]:
-    """（對應的條，沒有時的原因）。有 article_id 時其 pcode 與條號為準。"""
-    jurisdiction = "TW-ROC"
+    """（對應的條，沒有時的原因）。有 article_id 時其管轄、pcode 與條號為準；否則由標題找法規，
+    管轄取自資料庫、不假設。"""
     if exp.article_id:
-        m = _ID.match(exp.article_id)
-        if not m:
+        try:
+            jurisdiction, pcode, number = gs.parse_doc_key(exp.article_id)
+        except ValueError:
             return None, f"article_id 格式不合：{exp.article_id}"
-        jurisdiction = m["jurisdiction"] or "TW-ROC"
-        pcode, number = m["pcode"], m["number"]
     else:
         candidates = by_title.get(exp.statute, set())
         if not candidates:
             return None, f"法規名稱在資料庫沒有完全相同的標題：{exp.statute}"
         if len(candidates) > 1:
-            return None, f"法規名稱對應多個 pcode：{exp.statute} → {sorted(candidates)}"
-        pcode = next(iter(candidates))
+            return None, f"法規名稱對應多部法規：{exp.statute} → {sorted(candidates)}"
+        jurisdiction, pcode = next(iter(candidates))
         parsed = article_number(exp.article)
         if parsed is None:
             return None, f"條號無法解析：{exp.article!r}"
         number = parsed
-    found = provisions.get((jurisdiction, pcode, number)) or provisions.get((pcode, number))
+    found = provisions.get((jurisdiction, pcode, number))
     if found is None:
-        target = f"{jurisdiction}/{pcode}" if jurisdiction != "TW-ROC" else pcode
+        target = pcode if jurisdiction == gs.CENTRAL else f"{jurisdiction}/{pcode}"
         return None, f"資料庫沒有這一條：{target} 第{number}條"
     return found, ""
 
 
 def load_corpus(
     conn: psycopg.Connection[Any],
-) -> tuple[dict[str, set[str]], dict[Any, Provision]]:
-    """標題 → pcode 集合（取各法規所有版本名稱）；（pcode, 條號）及三元組 → 條。"""
-    by_title: dict[str, set[str]] = defaultdict(set)
-    for pcode, title in conn.execute(
-        "SELECT r.local_id, e.title FROM corpus.legal_resource AS r"
+) -> tuple[dict[str, set[tuple[str, str]]], dict[tuple[str, str, str], Provision]]:
+    """標題 → （管轄, pcode）集合（取各法規所有版本名稱）；（管轄, pcode, 條號）→ 條。"""
+    by_title: dict[str, set[tuple[str, str]]] = defaultdict(set)
+    for jur, pcode, title in conn.execute(
+        "SELECT r.jurisdiction, r.local_id, e.title FROM corpus.legal_resource AS r"
         " JOIN corpus.legal_expression AS e ON e.resource_id = r.id"
     ):
-        by_title[str(title)].add(str(pcode))
+        by_title[str(title)].add((str(jur), str(pcode)))
     titles: dict[tuple[str, str], str] = {
         (str(jur), str(pcode)): str(title)
         for jur, pcode, title in conn.execute(
@@ -194,26 +190,23 @@ def load_corpus(
             " ORDER BY r.id, e.version_date DESC"
         )
     }
-    provisions: dict[Any, Provision] = {}
+    provisions: dict[tuple[str, str, str], Provision] = {}
     for jur, pcode, number, path in conn.execute(
         "SELECT r.jurisdiction, r.local_id, corpus.article_number(p.article_path), p.article_path"
         "  FROM corpus.provision AS p JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
         " WHERE p.provision_type = 'article' AND p.article_path IS NOT NULL"
     ):
-        j_str, p_str, num_str = str(jur), str(pcode), str(number)
-        prov = Provision(
-            p_str, num_str, str(path), titles.get((j_str, p_str), ""), jurisdiction=j_str
+        key = (str(jur), str(pcode), str(number))
+        provisions[key] = Provision(
+            key[1], key[2], str(path), titles.get(key[:2], ""), jurisdiction=key[0]
         )
-        provisions[(j_str, p_str, num_str)] = prov
-        if j_str == "TW-ROC":
-            provisions[(p_str, num_str)] = prov
     return dict(by_title), provisions
 
 
 def resolve(
     items: Iterable[dict[str, Any]],
-    by_title: dict[str, set[str]],
-    provisions: dict[Any, Provision],
+    by_title: dict[str, set[tuple[str, str]]],
+    provisions: dict[tuple[str, str, str], Provision],
 ) -> list[Result]:
     results = []
     for item in items:
@@ -267,9 +260,7 @@ def build_qrels(results: Iterable[Result]) -> tuple[gs.Qrels, dict[str, list[str
     for r in results:
         if r.status == "scored":
             qrels[r.id] = {
-                gs.doc_id(
-                    m["pcode"], m["number"], m.get("jurisdiction", "TW-ROC")
-                ): gs.UPSTREAM_GRADE
+                gs.doc_id(m["pcode"], m["number"], m["jurisdiction"]): gs.UPSTREAM_GRADE
                 for m in r.mapped
             }
         if r.unmapped_reasons:
@@ -381,21 +372,14 @@ def search_all(
             )
         dropped = None
         if scope is not None:
-            kept = [h for h in hits if h.law_id in scope]
+            kept = [h for h in hits if h.local_id in scope]
             dropped = len(hits) - len(kept)
             hits = kept[:k]
         if pool is not None:
             assert dropped == 0, "候選池應只含範圍內的法規"
         semantic = [h.semantic_similarity for h in hits if h.semantic_similarity is not None]
         ranking = (
-            [
-                gs.doc_id(
-                    getattr(h, "local_id", getattr(h, "law_id", "")),
-                    h.number,
-                    getattr(h, "jurisdiction", "TW-ROC"),
-                )
-                for h in hits
-            ]
+            [gs.doc_id(h.local_id, h.number, h.jurisdiction) for h in hits]
             if r.status == "scored"
             else []
         )
