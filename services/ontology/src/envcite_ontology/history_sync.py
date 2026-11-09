@@ -9,11 +9,14 @@
    `source.snapshot` 與 `source.item`（鍵見各來源），一部一個交易。過去的版本不會再變，上一份快照
    已有的同一版沿用、不重抓；`--rescan` 全部重抓。
 2. **匯入**：每部取最新的快照，對到語料的法規（`resolve`），`backfill.plan` 回推出歷史版本；整批
-   比例過驗收才寫，一部一個交易（`backfill.write`），問題記入 `source.import_problem`。全國法規
+   比例過驗收才寫，一部一個交易（`backfill.write`），問題記入 `source.import_problem`。寫入時被
+   資料庫的約束或型別擋下的那一部（`IntegrityError`、`DataError`）整部不寫、記 error
+   `history_write_rejected`，其餘照寫；占對到的法規超過上限，其餘都寫完之後以 2 結束。全國法規
    資料庫的匯入要先跑過：錨點是它寫入的版本。
 3. 授權抽取與檢索投影，同 `envcite-sync`（歷史條文的首條與段落也要有）。
 
-結束碼：0 完成；1 暫時性失敗（含隔離超過列舉數的 1%）；2 資料不合預期或整批比例越線；75 斷路器開啟。
+結束碼：0 完成；1 暫時性失敗（含隔離超過列舉數的 1%）；2 資料不合預期、整批比例越線或寫入被資料庫
+擋下的比例越線；75 斷路器開啟。
 來源與授權見 `history_sources.py`；顯示這些文字時須標示出處（快照的 `license_notice`）。
 """
 
@@ -72,10 +75,15 @@ POLICY = Policy(
 #: 隔離的法規占列舉數超過此比例，本次判定失敗
 COVERAGE_TOLERANCE = 0.01
 
+#: 資料庫以約束或型別擋下的寫入：資料本身不合，重試得到同樣的結果
+_REJECTED_BY_DATABASE = (psycopg.errors.IntegrityError, psycopg.errors.DataError)
+
 #: 整批驗收：名稱 → (說明, 上限)；對不到的上限因來源而異（`HistorySource.unmatched_limit`）
 LIMITS = {
     "rejected": ("有 error 而不寫的占對到的法規", 0.05),
     "degraded_articles": ("切分退回整條的條占歷史版本的條", audit.LIMITS["degraded_articles"][1]),
+    # 寫完才知道，不在寫入前的驗收裡；見 `_write_gate`
+    "write_rejected": ("寫入時被資料庫擋下的占對到的法規", 0.05),
 }
 
 
@@ -294,33 +302,84 @@ def import_(
         return
 
     for p in prepared:
-        with conn.transaction():
-            problems = list(p.plan.problems)
-            if p.anchor is not None and p.plan.ok:
-                action = backfill.write(conn, p.anchor, p.plan.versions, source.authority)
-                if action == "reshaped":
-                    problems.append(
-                        Problem("error", "history_reshaped", "已寫入的歷史版本日不在這次的目標裡")
-                    )
-                else:
-                    report.versions += len(p.plan.versions)
-                    report.units += sum(len(v.units) for v in p.plan.versions)
-                report.actions[action] += 1
-            else:
-                report.actions["rejected"] += 1
-            conn.execute("DELETE FROM source.import_problem WHERE item_id = %s", (p.item_id,))
-            with conn.cursor() as cur:
-                cur.executemany(
-                    "INSERT INTO source.import_problem"
-                    " (item_id, snapshot_id, severity, problem_code, detail)"
-                    " VALUES (%s, %s, %s, %s, %s)",
-                    [(p.item_id, p.snapshot_id, x.level, x.code, x.detail) for x in problems],
+        try:
+            action = _write_one(conn, source, p)
+        except _REJECTED_BY_DATABASE as e:
+            # 回推規劃讀的是規劃當時的語料，寫入時資料庫仍可能擋下（約束只認寫入當下的狀態）。
+            # 只攔「資料本身不合」的一類；連線、逾時、死結這類暫時性錯誤照舊往外拋，整個 Job 重試。
+            action = "write_rejected"
+            detail = _describe(e)
+            log.error("寫入被資料庫擋下，該部不寫：%s（%s）", _label(p), detail)
+            with conn.transaction():
+                _record(
+                    conn, p, [*p.plan.problems, Problem("error", "history_write_rejected", detail)]
                 )
-            conn.execute(
-                "UPDATE source.item SET imported_sha256 = content_sha256, parser_version = %s"
-                " WHERE id = %s",
-                (law.PARSER_VERSION, p.item_id),
-            )
+        report.actions[action] += 1
+        if action not in ("rejected", "reshaped", "write_rejected"):
+            report.versions += len(p.plan.versions)
+            report.units += sum(len(v.units) for v in p.plan.versions)
+
+
+def _write_one(conn: Conn, source: HistorySource, p: _Prepared) -> str:
+    """一部一個交易；回傳動作（`backfill.write` 的回傳，或沒有寫的 `rejected`）。
+
+    延遲的約束在提交時才檢查，所以提交也在 `try` 之內。
+    """
+    problems = list(p.plan.problems)
+    action = "rejected"
+    with conn.transaction():
+        if p.anchor is not None and p.plan.ok:
+            action = backfill.write(conn, p.anchor, p.plan.versions, source.authority)
+            if action == "reshaped":
+                problems.append(
+                    Problem("error", "history_reshaped", "已寫入的歷史版本日不在這次的目標裡")
+                )
+        _record(conn, p, problems)
+    return action
+
+
+def _record(conn: Conn, p: _Prepared, problems: list[Problem]) -> None:
+    """這部法規這次匯入的問題（每次重寫一份）與匯入記錄。"""
+    conn.execute("DELETE FROM source.import_problem WHERE item_id = %s", (p.item_id,))
+    with conn.cursor() as cur:
+        cur.executemany(
+            "INSERT INTO source.import_problem"
+            " (item_id, snapshot_id, severity, problem_code, detail)"
+            " VALUES (%s, %s, %s, %s, %s)",
+            [(p.item_id, p.snapshot_id, x.level, x.code, x.detail) for x in problems],
+        )
+    conn.execute(
+        "UPDATE source.item SET imported_sha256 = content_sha256, parser_version = %s"
+        " WHERE id = %s",
+        (law.PARSER_VERSION, p.item_id),
+    )
+
+
+def _label(p: _Prepared) -> str:
+    return p.anchor.pcode if p.anchor is not None else f"item {p.item_id}"
+
+
+def _describe(e: psycopg.Error) -> str:
+    """資料庫回報的原因，一行：約束名稱與衝突的鍵值都在裡面。"""
+    d = e.diag
+    return " ".join(filter(None, [d.message_primary, d.message_detail])) or str(e)
+
+
+def _write_gate(report: Report) -> ExitCode:
+    """被資料庫擋下的占對到的法規超過上限就判資料不合預期。
+
+    寫完才知道，所以在其餘法規都寫完、投影也跑完之後才判：寫進去的都是資料庫認可的，
+    不必因為少數幾部被擋下而讓整批的檢索停在舊的投影。
+    """
+    failed = report.actions["write_rejected"]
+    if not report.matched:
+        return ExitCode.OK
+    description, limit = LIMITS["write_rejected"]
+    log.info("%s %d／%d", description, failed, report.matched)
+    if failed / report.matched > limit:
+        log.error("%s %.2f%%，上限 %.2f%%", description, failed / report.matched * 100, limit * 100)
+        return ExitCode.FATAL
+    return ExitCode.OK
 
 
 def sync(
@@ -350,6 +409,7 @@ def sync(
                 delegation.extract(conn)
                 conn.commit()
                 projection.rebuild(conn, embedder, policy)
+                code = _write_gate(report)
     except BatchRejected as e:
         conn.rollback()
         log.error("history import rejected: %s", e)
