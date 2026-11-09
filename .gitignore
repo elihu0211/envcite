@@ -31,7 +31,6 @@ report.xml
 
 # CI 暫存
 .generated-before/
-buildkitd.toml
 
 # 編輯器與作業系統（.vscode 只追蹤共用設定）
 .idea/

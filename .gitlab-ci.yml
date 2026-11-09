@@ -229,10 +229,11 @@ variables:
   - buf.yaml
 
 # `.gitlab-ci.yml` 不在上面任何清單：它只在 MR 觸發驗證（見各 job 的 `*mr-ci-change`），預設分支不因它
-# 重跑依賴與映像建置，否則只改註解也會推出新 SHA 的映像並觸發 Image Updater。
+# 重跑依賴與映像建置，否則只改註解也會推出新 SHA 的映像並觸發 Image Updater。映像建置的邏輯在
+# `ci/build-image.sh`，改它等同改建置本身，同樣在 MR 整條跑一次真的建置（ci-scripts 只用假 docker 測）。
 .mr-ci-change: &mr-ci-change
   if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  changes: [.gitlab-ci.yml]
+  changes: [.gitlab-ci.yml, ci/build-image.sh]
 
 # 自建 runner 的 tag 只在這裡定義。
 .runner:
@@ -478,48 +479,22 @@ python-proto:
     IMAGE: $CI_REGISTRY_IMAGE/$SERVICE:$CI_COMMIT_SHA
     # 層快取放 registry（dind 每次全新）；路徑與映像分開，避免被 Image Updater 當成新版本。
     CACHE: $CI_REGISTRY_IMAGE/cache/$SERVICE
-  before_script:
-    # registry.gitlab.com 偶發逾時：只對暫時性錯誤重試，見 ci/retry-transient.sh。
-    - sh ci/retry-transient.sh sh -c 'echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"'
-    # 匯出 registry 快取需要 docker-container driver，並用 host 網路：job 容器 MTU 1360、dind 橋接
-    # 網路 1500，大封包被靜默丟棄（症狀：`dotnet restore` 連 api.nuget.org 逾時）。
-    # 基底映像與 buildkit 映像都不直連上游：Dockerfile 的 FROM 以 build-arg 指向 runner 主機的
-    # pull-through 快取（5000 docker.io、5002 ghcr.io、5004 mcr.microsoft.com），沒有就失敗。
-    # 不用 BuildKit 的 mirror 設定，它找不到時會退回原 registry。位址取 host-gateway（buildkit 在
-    # host 網路裡看不到 job 容器的 /etc/hosts）；buildkitd.toml 只用來放行這幾個 http 位址。
-    # host_ip 留給下面的 script 用（同一個 shell）。
-    - |
-      host_ip=$(awk '/host\.docker\.internal/ {print $1; exit}' /etc/hosts)
-      [ -n "$host_ip" ] || { echo "解析不到 host.docker.internal，無法使用 runner 主機的 registry 快取" >&2; exit 1; }
-      for port in 5000 5002 5004; do
-        printf '[registry."%s:%s"]\n  http = true\n  insecure = true\n' "$host_ip" "$port"
-      done > buildkitd.toml
-      docker buildx create --use --driver docker-container \
-        --driver-opt "network=host,image=$host_ip:5000/moby/buildkit:buildx-stable-1" \
-        --buildkitd-flags '--oci-worker-net=host' --buildkitd-config buildkitd.toml
   script:
-    # 套件不在這裡下載：Dockerfile 的套件步驟以 `--network=none` 執行，只讀 deps-* 備好的快取
-    # （經 $CONTEXTS 傳入），缺套件即失敗。層快取先讀本分支、再讀預設分支，各分支各寫各的，
-    # 讀寫失敗不讓建置失敗。各 Dockerfile 只用部分 build-arg，多餘的只會警告。
+    # 建置的邏輯在 ci/build-image.sh，這裡只決定平台相關的輸入：映像與快取的位址、分支名、registry
+    # 帳密，以及「只有預設分支才推送」。密碼用環境變數前綴而不開新的 job 變數，才不會多出一份沒被
+    # 遮蔽的複本。套件不在建置時下載：Dockerfile 的套件步驟以 `--network=none` 執行，只讀 deps-*
+    # 備好的快取（經 build-context 傳入），缺套件即失敗。
     - |
-      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
-        output="--push"
-      else
-        echo "非預設分支，只驗證建置、不推送：$IMAGE"
-        output="--output type=cacheonly"
-      fi
-      # 只對暫時性逾時（拉基底層、ghcr token、推送）重試，建置失敗照舊立刻紅；重試時層快取已在 registry。
-      sh ci/retry-transient.sh docker buildx build -f services/$SERVICE/Dockerfile $CONTEXTS \
-        --build-arg DOCKER_HUB="$host_ip:5000" \
-        --build-arg GHCR="$host_ip:5002" \
-        --build-arg MCR="$host_ip:5004" \
+      push=
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then push=--push; fi
+      REGISTRY_PASSWORD="$CI_REGISTRY_PASSWORD" sh ci/build-image.sh $push \
+        --service "$SERVICE" --image "$IMAGE" --cache "$CACHE" \
+        --cache-scope "$CI_COMMIT_REF_SLUG" --cache-fallback-scope "$CI_DEFAULT_BRANCH" \
+        --registry "$CI_REGISTRY" --registry-user "$CI_REGISTRY_USER" \
+        -- --build-context "$CONTEXT" \
         --build-arg UV_VERSION="$UV_VERSION" \
         --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
-        --build-arg DOTNET_VERSION="$DOTNET_VERSION" \
-        --cache-from "type=registry,ref=$CACHE:$CI_COMMIT_REF_SLUG" \
-        --cache-from "type=registry,ref=$CACHE:$CI_DEFAULT_BRANCH" \
-        --cache-to "type=registry,ref=$CACHE:$CI_COMMIT_REF_SLUG,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true" \
-        -t "$IMAGE" $output .
+        --build-arg DOTNET_VERSION="$DOTNET_VERSION"
 
 ontology-image:
   extends: .image
@@ -537,7 +512,7 @@ ontology-image:
       policy: pull
   variables:
     SERVICE: ontology
-    CONTEXTS: --build-context uv-cache=.uv-cache
+    CONTEXT: uv-cache=.uv-cache
 
 consult-image:
   extends: .image
@@ -555,7 +530,7 @@ consult-image:
       policy: pull
   variables:
     SERVICE: consult
-    CONTEXTS: --build-context nuget=.nuget/packages
+    CONTEXT: nuget=.nuget/packages
 
 platform-image:
   extends: .image
@@ -573,7 +548,7 @@ platform-image:
       policy: pull
   variables:
     SERVICE: platform
-    CONTEXTS: --build-context nuget=.nuget/packages
+    CONTEXT: nuget=.nuget/packages
 
 segmenter:
   extends: .python-checks
@@ -638,7 +613,7 @@ proto:
     # lint 與對目標分支的 breaking 都在腳本裡；平台相關的只有目標分支名。
     - sh ci/check-proto.sh "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
 
-# ci/ 腳本與 .githooks/block-main.sh 的離線測試（假指令、暫時 repo，不連網）：映像 job 的重試、契約與規格檢查的跳過與失敗語意、main 守門靠它，壞了等於沒守門。另掃 ci/ 與 .githooks/ 不得讀 CI 平台變數。
+# ci/ 腳本與 .githooks/block-main.sh 的離線測試（假指令、暫時 repo，不連網）：映像 job 的重試與建置參數（推送路徑只在預設分支才跑，這裡是它合併前唯一的證據）、契約與規格檢查的跳過與失敗語意、main 守門靠它，壞了等於沒守門。另掃 ci/ 與 .githooks/ 不得讀 CI 平台變數。
 ci-scripts:
   extends: .runner
   stage: check
@@ -656,6 +631,7 @@ ci-scripts:
     - sh ci/test-retry-transient.sh
     - sh ci/test-block-main.sh
     - sh ci/test-check-scripts.sh
+    - sh ci/test-build-image.sh
     - sh ci/test-platform-neutral.sh
 
 # 文件 front-matter 與相對連結（規範見容器層 AGENTS.md「知識文件」）：不退化靠 CI 擋。純標準庫腳本。
