@@ -31,7 +31,7 @@ def _found(dsn: str, query: str) -> set[tuple[str, str]]:
             tokenizer=segmenter.tokenizer_id,
             as_of="2020-01-01",
         )
-        return {(h.law_id, h.number) for h in hits}
+        return {(h.local_id, h.number) for h in hits}
 
 
 def test_imported_articles_become_searchable(conn: Conn, tmp_path: Path, dsn: str) -> None:

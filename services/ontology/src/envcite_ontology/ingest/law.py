@@ -48,7 +48,10 @@ class ParsedUnit:
 
 @dataclass
 class ParsedLaw:
-    pcode: str
+    # 法規的自然鍵；解析器產出什麼來源的法規就明寫什麼，沒有預設。
+    jurisdiction: str
+    id_scheme: str
+    local_id: str
     kind: str
     document_type: str
     title: str
@@ -58,19 +61,6 @@ class ParsedLaw:
     # 生出現行版本的那一筆公布（events 的索引）；版本日取自來源欄位時為 None。
     version_event: int | None
     units: list[ParsedUnit] = field(default_factory=list)
-    jurisdiction: str = "TW-CENTRAL"
-    id_scheme: str = "moj_pcode"
-    local_id: str = ""
-    approval_authority: str | None = None
-    approval_doc_no: str | None = None
-    ratified_at: date | None = None
-    invalidated_by: str | None = None
-    invalidation_date: date | None = None
-
-    def __post_init__(self) -> None:
-        if not self.local_id:
-            self.local_id = self.pcode
-
     deleted_articles: int = 0
     degraded_articles: int = 0
     problems: list[Problem] = field(default_factory=list)
@@ -136,7 +126,9 @@ def parse(law: dict[str, Any], *, pcode: str, data_date: date) -> ParsedLaw:
         warn("repeal_event_but_live")
 
     parsed = ParsedLaw(
-        pcode=pcode,
+        jurisdiction="TW-CENTRAL",
+        id_scheme="moj_pcode",
+        local_id=pcode,
         kind=_KINDS.get(level, ""),
         document_type=document_type(title),
         title=title,

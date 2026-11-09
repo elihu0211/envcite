@@ -9,6 +9,7 @@ using EnvCite.Platform.Web;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 using static EnvCite.Platform.Tests.PortalTestSupport;
 
@@ -302,7 +303,15 @@ public sealed partial class LanguageSwitchTests(PlatformFactory factory)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("<html lang=\"en\">", html, StringComparison.Ordinal);
-        Assert.Equal(string.Empty, LeftoverChinese(html));
+        Assert.Equal(string.Empty, LeftoverChinese(await WithoutTenantNamesAsync(html)));
+    }
+
+    // 租戶名稱是營運者輸入的資料，不是介面文字；別的測試建立的中文名稱留在共用資料庫裡，
+    // 頁面列出它們不算殘留（與下面搜尋範例同理）。
+    private async Task<string> WithoutTenantNamesAsync(string html)
+    {
+        var tenants = await factory.Services.GetRequiredService<ITenantDirectory>().ListAsync(TestContext.Current.CancellationToken);
+        return tenants.Where(t => t.Name is not null).Aggregate(html, (current, t) => current.Replace(t.Name!, string.Empty, StringComparison.Ordinal));
     }
 
     // 搜尋範例是臺灣法規裡的詞（資料是中文），英文介面也維持中文，所以不算殘留。

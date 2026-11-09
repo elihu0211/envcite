@@ -18,7 +18,7 @@ namespace EnvCite.Platform.Tests;
 [Collection(PlatformTestGroup.Name)]
 public sealed class PaidOnlyTests(PlatformFactory factory)
 {
-    private static readonly Uri LawUri = new($"/v2/laws/{FakeOntologyServer.KnownLawId}", UriKind.Relative);
+    private static readonly Uri LawUri = new($"{FakeOntologyServer.CentralLawsPath}{FakeOntologyServer.KnownLawId}", UriKind.Relative);
 
     private WebApplicationFactory<Program> HostWithoutDefaultPlan(Action<IWebHostBuilder>? more = null) =>
         factory.WithWebHostBuilder(b =>

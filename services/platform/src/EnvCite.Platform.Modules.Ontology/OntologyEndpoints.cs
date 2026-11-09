@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Ontology;
 
-/// <param name="Identifier">複合自然鍵識別碼（中央與地方雙軌）。</param>
+/// <param name="Identifier">法規的複合自然鍵（管轄，識別碼方案，在地識別碼）。</param>
 /// <param name="Uri">由法規組成，可反查到該法規。</param>
 /// <param name="DateDocument">制定（首次公布）日。</param>
 public sealed record LawDto(
@@ -18,12 +18,7 @@ public sealed record LawDto(
     string Uri,
     string Title,
     string Language,
-    string? DateDocument,
-    string? ApprovalAuthority = null,
-    string? ApprovalDocNo = null,
-    string? RatifiedAt = null,
-    string? InvalidatedBy = null,
-    string? InvalidationDate = null);
+    string? DateDocument);
 
 /// <param name="Uri">由法規與條號組成，可反查到該條的現行版本。</param>
 /// <param name="Number">條號，照來源寫法（如 <c>5-1</c>）。</param>
@@ -47,57 +42,41 @@ public static class OntologyEndpoints
     public const string ListArticlesOperation = "ontology.list_articles";
     public const string SearchOperation = "ontology.search";
 
-    public static LawIdentifier ParseLawIdentifier(string lawId)
-    {
-        var parts = lawId.Split(':', 3);
-        return parts.Length switch
-        {
-            3 => new LawIdentifier { Jurisdiction = parts[0], IdScheme = parts[1], LocalId = parts[2] },
-            2 => new LawIdentifier { Jurisdiction = parts[0], IdScheme = "local_glrs", LocalId = parts[1] },
-            _ => new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = lawId },
-        };
-    }
-
     /// <summary>包在內部 gRPC 服務外的對外 REST facade；成功的呼叫會被計量。</summary>
     public static RouteGroupBuilder MapOntologyEndpoints(this RouteGroupBuilder v1)
     {
-        v1.MapGet("/laws/{lawId}", async (string lawId, string? asOf, OntologyService.OntologyServiceClient client,
-            IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
+        v1.MapGet("/laws/{jurisdiction}/{idScheme}/{localId}", async (string jurisdiction, string idScheme, string localId, string? asOf,
+            OntologyService.OntologyServiceClient client, IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
             await CallAsync(async () =>
             {
-                var identifier = ParseLawIdentifier(lawId);
+                var identifier = new LawIdentifier { Jurisdiction = jurisdiction, IdScheme = idScheme, LocalId = localId };
                 var response = await client.GetLawAsync(new GetLawRequest { Identifier = identifier, AsOf = asOf ?? string.Empty },
                     deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
                 await usage.RecordAsync(GetLawOperation, 1, ct);
                 var law = response.Law;
-                var lawIdDto = new LawIdentifierDto(law.Identifier?.Jurisdiction ?? "TW-CENTRAL", law.Identifier?.IdScheme ?? "moj_pcode", law.Identifier?.LocalId ?? lawId);
                 return Results.Ok(new LawDto(
-                    lawIdDto,
+                    LawIdentifiers.ToDto(law.Identifier),
                     law.Iri,
                     law.Title,
                     law.Language,
-                    string.IsNullOrEmpty(law.DateDocument) ? null : law.DateDocument,
-                    string.IsNullOrEmpty(law.ApprovalAuthority) ? null : law.ApprovalAuthority,
-                    string.IsNullOrEmpty(law.ApprovalDocNo) ? null : law.ApprovalDocNo,
-                    string.IsNullOrEmpty(law.RatifiedAt) ? null : law.RatifiedAt,
-                    string.IsNullOrEmpty(law.InvalidatedBy) ? null : law.InvalidatedBy,
-                    string.IsNullOrEmpty(law.InvalidationDate) ? null : law.InvalidationDate));
+                    string.IsNullOrEmpty(law.DateDocument) ? null : law.DateDocument));
             }))
             .WithName("GetLaw")
             .WithTags("法規")
             .WithSummary("取得法規")
-            .WithDescription("`lawId` 為法規識別碼（支援自然鍵複合識別碼或全國法規資料庫 pcode）；標題取自 `asOf` 當日有效的版本，省略 `asOf`（`YYYY-MM-DD`）表示現行。"
+            .WithDescription("法規以複合自然鍵 `jurisdiction`／`idScheme`／`localId` 指定，三段都必填（中央法規如 `TW-CENTRAL/moj_pcode/O0020001`）；"
+                + "值不是合法的管轄或方案回 400，標題取自 `asOf` 當日有效的版本，省略 `asOf`（`YYYY-MM-DD`）表示現行。"
                 + "該日沒有有效的版本回 404，不會退回現行版本。成功計量為一次 `ontology.get_law`。")
             .Produces<LawDto>()
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
-        v1.MapGet("/laws/{lawId}/articles", async (string lawId, string? asOf, OntologyService.OntologyServiceClient client,
-            IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
+        v1.MapGet("/laws/{jurisdiction}/{idScheme}/{localId}/articles", async (string jurisdiction, string idScheme, string localId, string? asOf,
+            OntologyService.OntologyServiceClient client, IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
             await CallAsync(async () =>
             {
-                var identifier = ParseLawIdentifier(lawId);
+                var identifier = new LawIdentifier { Jurisdiction = jurisdiction, IdScheme = idScheme, LocalId = localId };
                 var response = await client.ListArticlesAsync(new ListArticlesRequest { Identifier = identifier, AsOf = asOf ?? string.Empty },
                     deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
                 await usage.RecordAsync(ListArticlesOperation, 1, ct);
@@ -106,7 +85,7 @@ public static class OntologyEndpoints
             .WithName("ListArticles")
             .WithTags("法規")
             .WithSummary("列出法規某日有效的各條")
-            .WithDescription("依條次排序；`number` 照來源寫法（如 `5-1`）。省略 `asOf`（`YYYY-MM-DD`）表示現行；該日沒有有效的版本回 404，不會退回現行版本。"
+            .WithDescription("法規的指定方式同「取得法規」。依條次排序；`number` 照來源寫法（如 `5-1`）。省略 `asOf`（`YYYY-MM-DD`）表示現行；該日沒有有效的版本回 404，不會退回現行版本。"
                 + "成功計量為一次 `ontology.list_articles`。")
             .Produces<IEnumerable<ArticleDto>>()
             .ProducesValidationProblem()

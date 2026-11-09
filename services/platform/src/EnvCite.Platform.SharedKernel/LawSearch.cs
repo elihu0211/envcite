@@ -1,8 +1,8 @@
 namespace EnvCite.Platform.SharedKernel;
 
 /// <param name="Jurisdiction">管轄代碼（'TW-CENTRAL' 或 22 縣市代碼）。</param>
-/// <param name="IdScheme">方案代碼（'moj_pcode', 'local_glrs' 等）。</param>
-/// <param name="LocalId">本地識別碼。</param>
+/// <param name="IdScheme">方案代碼（'moj_pcode' 只配 'TW-CENTRAL'，'local_glrs' 只配縣市）。</param>
+/// <param name="LocalId">在地識別碼，在（管轄，方案）之內唯一。</param>
 public sealed record LawIdentifierDto(string Jurisdiction, string IdScheme, string LocalId);
 
 /// <param name="Uri">由法規與條號組成，可反查到該條。</param>

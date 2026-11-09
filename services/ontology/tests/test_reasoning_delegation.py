@@ -98,7 +98,7 @@ def test_a_command_traced_to_its_statute_is_rooted(conn: Conn, tmp_path: Path) -
     chain = result.delegation[ids["duty"]]
     assert chain.rooted
     (link,) = chain.links
-    assert (link.command_law_id, link.cited_path, link.law_id, link.gap) == (
+    assert (link.command_local_id, link.cited_path, link.target_local_id, link.gap) == (
         COMMAND,
         "art_1",
         MOTHER,
@@ -183,7 +183,7 @@ def test_a_command_delegated_by_a_command_walks_up_to_the_statute(
     chain = evaluate(conn, ON, CASE).delegation[ids["duty"]]
 
     assert chain.rooted
-    assert [(link.command_law_id, link.law_id, link.gap) for link in chain.links] == [
+    assert [(link.command_local_id, link.target_local_id, link.gap) for link in chain.links] == [
         (COMMAND, OTHER, None),
         (OTHER, MOTHER, None),
     ]

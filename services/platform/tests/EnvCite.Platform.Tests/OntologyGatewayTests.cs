@@ -3,13 +3,14 @@ using System.Net.Http.Json;
 
 using EnvCite.Platform.Modules.Metering;
 using EnvCite.Platform.Modules.Ontology;
+using EnvCite.Platform.SharedKernel;
 
 namespace EnvCite.Platform.Tests;
 
 [Collection(PlatformTestGroup.Name)]
 public sealed class OntologyGatewayTests(PlatformFactory factory)
 {
-    private const string LawPath = $"/v2/laws/{FakeOntologyServer.KnownLawId}";
+    private const string LawPath = $"{FakeOntologyServer.CentralLawsPath}{FakeOntologyServer.KnownLawId}";
 
     [Fact]
     public async Task GetLawProxiesWithTenantMetadata()
@@ -23,6 +24,36 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         Assert.Contains(factory.Ontology.ReceivedMetadata, m =>
             m.GetValue("x-tenant-id") == tenant.Identifier
             && !string.IsNullOrEmpty(m.GetValue("x-request-id")));
+    }
+
+    [Fact]
+    public async Task TheThreeSegmentsReachTheOntologyServiceAndTheKeyComesBackWhole()
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync("key");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        var law = await client.GetFromJsonAsync<LawDto>(LawPath, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(new LawIdentifierDto("TW-CENTRAL", "moj_pcode", FakeOntologyServer.KnownLawId), law!.Identifier);
+        Assert.Equal("TW-CENTRAL", factory.Ontology.LastIdentifier!.Jurisdiction);
+        Assert.Equal("moj_pcode", factory.Ontology.LastIdentifier.IdScheme);
+        Assert.Equal(FakeOntologyServer.KnownLawId, factory.Ontology.LastIdentifier.LocalId);
+    }
+
+    [Theory]
+    [InlineData("/v2/laws/O0020001")]
+    [InlineData("/v2/laws/moj_pcode/O0020001")]
+    [InlineData("/v2/laws/TW-CENTRAL:moj_pcode:O0020001")]
+    public async Task ALawNamedWithoutAllThreeSegmentsIsNotGuessedAtAndNeverReachesTheOntologyService(string path)
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync("segments");
+        using var client = factory.CreateTenantClient(key.Key);
+        factory.Ontology.ReceivedMetadata.Clear();
+
+        using var response = await client.GetAsync(new Uri(path, UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Empty(factory.Ontology.ReceivedMetadata);
     }
 
     [Fact]
@@ -42,7 +73,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("retry");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.GetAsync(new Uri($"/v2/laws/{FakeOntologyServer.FlakyLawId}", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(new Uri($"{FakeOntologyServer.CentralLawsPath}{FakeOntologyServer.FlakyLawId}", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(2, factory.Ontology.GetLawCalls[FakeOntologyServer.FlakyLawId]);
@@ -56,7 +87,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("errors");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.GetAsync(new Uri($"/v2/laws/{lawId}", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(new Uri($"{FakeOntologyServer.CentralLawsPath}{lawId}", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(expected, response.StatusCode);
     }
@@ -115,7 +146,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
         (await meteredClient.GetAsync(new Uri(LawPath, UriKind.Relative), TestContext.Current.CancellationToken)).Dispose();
         (await meteredClient.GetAsync(new Uri(LawPath, UriKind.Relative), TestContext.Current.CancellationToken)).Dispose();
         (await meteredClient.GetAsync(new Uri($"{LawPath}/articles", UriKind.Relative), TestContext.Current.CancellationToken)).Dispose();
-        (await meteredClient.GetAsync(new Uri("/v2/laws/unknown-act", UriKind.Relative), TestContext.Current.CancellationToken)).Dispose(); // not metered
+        (await meteredClient.GetAsync(new Uri($"{FakeOntologyServer.CentralLawsPath}unknown-act", UriKind.Relative), TestContext.Current.CancellationToken)).Dispose(); // not metered
 
         var usage = await meteredClient.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
         var idleUsage = await idleClient.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);

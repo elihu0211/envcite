@@ -16,6 +16,9 @@ namespace EnvCite.Platform.Tests;
 public sealed class FakeOntologyServer : IAsyncDisposable
 {
     public const string KnownLawId = "O0020001";
+
+    /// <summary>中央法規在對外 REST 的路徑前綴；之後接在地識別碼。</summary>
+    public const string CentralLawsPath = "/v2/laws/TW-CENTRAL/moj_pcode/";
     public const string UnavailableLawId = "trigger-unavailable";
 
     /// <summary>每個新的請求頭一次呼叫回 UNAVAILABLE、之後成功的法規（驗證客戶端的重試）。</summary>
@@ -41,6 +44,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
 
     /// <summary>最近一次 GetLaw／ListArticles 收到的 as_of（測試用）。</summary>
     public string? LastAsOf { get; private set; }
+
+    /// <summary>最近一次 GetLaw／ListArticles 收到的法規識別碼（測試用，驗證路徑三段原樣傳到內部服務）。</summary>
+    public LawIdentifier? LastIdentifier { get; private set; }
 
     public async Task StartAsync()
     {
@@ -70,6 +76,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             var id = request.Identifier?.LocalId ?? string.Empty;
             Authorize(context, id);
             server.LastAsOf = request.AsOf;
+            server.LastIdentifier = request.Identifier;
             CheckAsOf(request.AsOf);
             var calls = server.GetLawCalls.AddOrUpdate(id, 1, (_, n) => n + 1);
             if (id == FlakyLawId && calls == 1)
@@ -81,7 +88,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             {
                 Law = new Law
                 {
-                    Identifier = request.Identifier ?? new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = id },
+                    Identifier = request.Identifier,
                     Iri = $"https://envcite/tw/law/{id}",
                     Title = "空氣污染防制法",
                     Language = "zh-hant",
@@ -95,6 +102,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             var id = request.Identifier?.LocalId ?? string.Empty;
             Authorize(context, id);
             server.LastAsOf = request.AsOf;
+            server.LastIdentifier = request.Identifier;
             CheckAsOf(request.AsOf);
             return Task.FromResult(new ListArticlesResponse
             {

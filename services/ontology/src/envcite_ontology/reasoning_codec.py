@@ -343,10 +343,10 @@ def _delegation(statement_id: int, chain: Chain) -> pb.DelegationBasis:
         rooted=chain.rooted,
         links=[
             pb.DelegationLink(
-                command_law_id=link.command_law_id,
+                command_law_id=link.command_local_id,
                 cited_law_name=link.cited_law_name,
                 cited_path=link.cited_path,
-                law_id=link.law_id or "",
+                law_id=link.target_local_id or "",
                 version_iri=link.version_iri or "",
                 gap=DELEGATION_GAP[link.gap],
             )

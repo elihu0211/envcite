@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
+from functools import cached_property
 from types import TracebackType
 from typing import Self
 
@@ -18,15 +18,36 @@ from psycopg_pool import ConnectionPool
 from envcite_ontology.embedding import to_sql
 from envcite_ontology.law_names import LawNames
 
-#: 全國法規資料庫 pcode 的形狀，對應 `corpus.legal_resource` 的 CHECK；只省一次往返，
-#: 不是注入防禦（查詢皆已參數化）。
-_PCODE = re.compile(r"^[A-Z][0-9]{7}$")
-
 #: 語料目前只有中文版本。
 LANGUAGE = "zho"
 
 
 Conn = psycopg.Connection[tuple[object, ...]]
+
+
+#: 中央管轄與全國法規資料庫的識別碼方案；v1 契約的 `law_id` 就是這一組的 pcode。
+CENTRAL = "TW-CENTRAL"
+MOJ_PCODE = "moj_pcode"
+
+
+@dataclass(frozen=True, slots=True)
+class LawKey:
+    """法規的自然鍵（管轄，識別碼方案，在地識別碼）；三個欄位都由呼叫端明說，沒有預設。
+
+    管轄與方案是否配對由資料庫強制（`legal_resource_scheme_matches_jurisdiction`）。
+    """
+
+    jurisdiction: str
+    id_scheme: str
+    local_id: str
+
+    @classmethod
+    def moj(cls, pcode: str) -> LawKey:
+        """全國法規資料庫的法規（中央、`moj_pcode`）。"""
+        return cls(CENTRAL, MOJ_PCODE, pcode)
+
+    def __str__(self) -> str:
+        return f"{self.jurisdiction}:{self.id_scheme}:{self.local_id}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,15 +59,6 @@ class LawRecord:
     title: str
     language: str
     date_document: str
-    approval_authority: str = ""
-    approval_doc_no: str = ""
-    ratified_at: str = ""
-    invalidated_by: str = ""
-    invalidation_date: str = ""
-
-    @property
-    def id(self) -> str:
-        return self.local_id
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,10 +92,6 @@ class SearchHit:
     lexical_score: float
     semantic_similarity: float | None = None
 
-    @property
-    def law_id(self) -> str:
-        return self.local_id
-
 
 def is_valid_law_id(value: str) -> bool:
     return bool(value and len(value) <= 64)
@@ -95,13 +103,11 @@ _RESOLVE = """
            (SELECT min(le.event_date)
               FROM corpus.lifecycle_event AS le
              WHERE le.resource_id = r.id AND le.event_kind = 'enactment'),
-           r.jurisdiction, r.id_scheme, r.local_id,
-           r.approval_authority, r.approval_doc_no, r.ratified_at,
-           r.invalidated_by, r.invalidation_date
+           r.jurisdiction, r.id_scheme, r.local_id
       FROM corpus.legal_resource AS r
       JOIN corpus.legal_expression AS e ON e.resource_id = r.id
-     WHERE (%(jurisdiction)s::text IS NULL OR r.jurisdiction = %(jurisdiction)s::text)
-       AND (%(id_scheme)s::text IS NULL OR r.id_scheme = %(id_scheme)s::corpus.id_scheme)
+     WHERE r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction
+       AND r.id_scheme = %(id_scheme)s::corpus.id_scheme
        AND r.local_id = %(law)s
        AND e.language = %(language)s
        AND e.text_period @> %(on)s::date
@@ -116,6 +122,9 @@ _LIST_ARTICLES = """
        AND s.status IN ('in_force', 'text_unavailable')
      ORDER BY s.sort_key
 """
+
+_JURISDICTIONS = "SELECT unnest(enum_range(NULL::corpus.jurisdiction))::text"
+_ID_SCHEMES = "SELECT unnest(enum_range(NULL::corpus.id_scheme))::text"
 
 #: segmenter 詞典（法規名稱）；須與建索引同源，否則分詞器識別碼不符、字面檢索全落空（04-01 §5）。
 _LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression WHERE title IS NOT NULL"
@@ -144,7 +153,8 @@ _SEARCH = """
       JOIN corpus.legal_resource AS r ON r.id = s.resource_id
       JOIN corpus.provision_version AS v ON v.id = s.version_id
       JOIN corpus.legal_expression AS e ON e.id = v.expression_id
-     WHERE (%(jurisdiction)s::text IS NULL OR r.jurisdiction = %(jurisdiction)s::text)
+     WHERE (%(jurisdiction)s::corpus.jurisdiction IS NULL
+            OR r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction)
      ORDER BY s.rank
 """
 
@@ -174,28 +184,14 @@ class OntologyStore:
     ) -> None:
         self.close()
 
-    def get_law(
-        self,
-        law_id: str,
-        *,
-        as_of: str = "",
-        jurisdiction: str | None = None,
-        id_scheme: str | None = None,
-    ) -> LawRecord | None:
+    def get_law(self, key: LawKey, *, as_of: str = "") -> LawRecord | None:
         """`as_of`（ISO 日期，空為今日）有效版本的法規；法規不存在或該日無版本時為 None。"""
-        found = self._resolve(law_id, as_of, jurisdiction=jurisdiction, id_scheme=id_scheme)
+        found = self._resolve(key, as_of)
         return found[1] if found else None
 
-    def list_articles(
-        self,
-        law_id: str,
-        *,
-        as_of: str = "",
-        jurisdiction: str | None = None,
-        id_scheme: str | None = None,
-    ) -> list[ArticleRecord] | None:
+    def list_articles(self, key: LawKey, *, as_of: str = "") -> list[ArticleRecord] | None:
         """`as_of` 當日有效的各條；法規或版本不存在為 None，有版本而無有效條為 []，兩者語意不同。"""
-        found = self._resolve(law_id, as_of, jurisdiction=jurisdiction, id_scheme=id_scheme)
+        found = self._resolve(key, as_of)
         if found is None:
             return None
         resource_id, _ = found
@@ -207,19 +203,13 @@ class OntologyStore:
             return [ArticleRecord(iri=iri, number=number) for iri, number in cur.fetchall()]
 
     def list_invalidations(
-        self,
-        law_id: str,
-        *,
-        as_of: str = "",
-        article_number: str = "",
-        jurisdiction: str | None = None,
-        id_scheme: str | None = None,
+        self, key: LawKey, *, as_of: str = "", article_number: str = ""
     ) -> list[InvalidationRecord] | None:
         """`as_of` 當日因違憲而失效的條文單元；法規或版本不存在為 None，沒有失效為 []。
 
         `article_number` 非空時只看該條（含其下各項）。
         """
-        found = self._resolve(law_id, as_of, jurisdiction=jurisdiction, id_scheme=id_scheme)
+        found = self._resolve(key, as_of)
         if found is None:
             return None
         resource_id, _ = found
@@ -248,37 +238,39 @@ class OntologyStore:
                 for no, kind, decided, url, excerpt, path, since, partial in cur.fetchall()
             ]
 
-    def law_exists(
-        self,
-        law_id: str,
-        *,
-        jurisdiction: str | None = None,
-        id_scheme: str | None = None,
-    ) -> bool:
+    def law_exists(self, key: LawKey) -> bool:
         """法規在語料裡有沒有，不論哪一天。區分「查無此法」與「該日無版本」。"""
-        if not is_valid_law_id(law_id):
+        if not is_valid_law_id(key.local_id):
             return False
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(
                 "SELECT 1 FROM corpus.legal_resource"
-                " WHERE (%s::text IS NULL OR jurisdiction = %s)"
-                "   AND (%s::text IS NULL OR id_scheme = %s::corpus.id_scheme)"
+                " WHERE jurisdiction = %s::corpus.jurisdiction"
+                "   AND id_scheme = %s::corpus.id_scheme"
                 "   AND local_id = %s",
-                (jurisdiction, jurisdiction, id_scheme, id_scheme, law_id),
+                (key.jurisdiction, key.id_scheme, key.local_id),
             )
             return cur.fetchone() is not None
 
-    def resource_id(
-        self,
-        law_id: str,
-        *,
-        as_of: str = "",
-        jurisdiction: str | None = None,
-        id_scheme: str | None = None,
-    ) -> int | None:
+    def resource_id(self, key: LawKey, *, as_of: str = "") -> int | None:
         """`as_of` 有效版本的法規之內部編號；法規不存在或該日無版本時為 None。"""
-        found = self._resolve(law_id, as_of, jurisdiction=jurisdiction, id_scheme=id_scheme)
+        found = self._resolve(key, as_of)
         return found[0] if found else None
+
+    @cached_property
+    def jurisdictions(self) -> frozenset[str]:
+        """綱要接受的管轄（`corpus.jurisdiction`）；封閉集合，啟動後第一次用到時讀一次。"""
+        return self._values(_JURISDICTIONS)
+
+    @cached_property
+    def id_schemes(self) -> frozenset[str]:
+        """綱要接受的識別碼方案（`corpus.id_scheme`）；讀取時機同 `jurisdictions`。"""
+        return self._values(_ID_SCHEMES)
+
+    def _values(self, query: str) -> frozenset[str]:
+        with self._pool.connection() as conn, conn.cursor() as cur:
+            cur.execute(query)
+            return frozenset(str(value) for (value,) in cur.fetchall())
 
     @contextmanager
     def read_connection(self, *, timeout: float | None = None) -> Iterator[Conn]:
@@ -391,25 +383,18 @@ class OntologyStore:
                 ) in cur.fetchall()
             ]
 
-    def _resolve(
-        self,
-        law_id: str,
-        as_of: str,
-        *,
-        jurisdiction: str | None = None,
-        id_scheme: str | None = None,
-    ) -> tuple[int, LawRecord] | None:
-        if not is_valid_law_id(law_id):
+    def _resolve(self, key: LawKey, as_of: str) -> tuple[int, LawRecord] | None:
+        if not is_valid_law_id(key.local_id):
             return None
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(
                 _RESOLVE,
                 {
-                    "law": law_id,
+                    "law": key.local_id,
                     "language": LANGUAGE,
                     "on": _date(as_of),
-                    "jurisdiction": jurisdiction,
-                    "id_scheme": id_scheme,
+                    "jurisdiction": key.jurisdiction,
+                    "id_scheme": key.id_scheme,
                 },
             )
             row = cur.fetchone()
@@ -424,11 +409,6 @@ class OntologyStore:
             jur,
             scheme,
             lid,
-            app_auth,
-            app_doc,
-            rat_at,
-            inv_by,
-            inv_date,
         ) = row
         return resource_id, LawRecord(
             jurisdiction=jur,
@@ -438,11 +418,6 @@ class OntologyStore:
             title=title,
             language=language,
             date_document=enacted.isoformat() if enacted is not None else "",
-            approval_authority=app_auth or "",
-            approval_doc_no=app_doc or "",
-            ratified_at=rat_at.isoformat() if rat_at is not None else "",
-            invalidated_by=inv_by or "",
-            invalidation_date=inv_date.isoformat() if inv_date is not None else "",
         )
 
 

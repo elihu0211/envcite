@@ -24,8 +24,9 @@ def search_stub(
     conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore
 ) -> Iterator[ontology_pb2_grpc.OntologyServiceStub]:
     law = conn.execute(
-        "INSERT INTO corpus.legal_resource (id_scheme, local_id, norm_kind, document_type)"
-        " VALUES ('moj_pcode', 'T0000001', 'statute', '法律') RETURNING id"
+        "INSERT INTO corpus.legal_resource"
+        " (jurisdiction, id_scheme, local_id, norm_kind, document_type)"
+        " VALUES ('TW-CENTRAL', 'moj_pcode', 'T0000001', 'statute', '法律') RETURNING id"
     ).fetchone()
     assert law is not None
     expression = conn.execute(

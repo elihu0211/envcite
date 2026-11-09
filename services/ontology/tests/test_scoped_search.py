@@ -110,4 +110,4 @@ def test_a_scope_limits_the_pool_before_candidates_are_taken(
             model=embedder.model,
             scope=scope,
         )
-        assert hits and {h.law_id for h in hits} == {"T0000002"}
+        assert hits and {h.local_id for h in hits} == {"T0000002"}

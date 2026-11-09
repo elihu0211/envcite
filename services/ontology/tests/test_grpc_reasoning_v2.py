@@ -98,16 +98,16 @@ def test_v2_codec_dual_track_delegation_and_uncovered() -> None:
     from envcite_ontology.reasoning.facts import Chain, Link
 
     central_act = Link(
-        command_law_id="TPE-ENV-001",
-        cited_law_name="空氣污染防制法",
-        cited_path="art_20",
-        law_id="O0020001",
-        version_iri="https://envcite/tw/law/O0020001/2018-08-01/zho/art_20",
-        gap=None,
         command_jurisdiction="TW-TPE",
         command_id_scheme="local_glrs",
+        command_local_id="TPE-ENV-001",
+        cited_law_name="空氣污染防制法",
+        cited_path="art_20",
         target_jurisdiction="TW-CENTRAL",
         target_id_scheme="moj_pcode",
+        target_local_id="O0020001",
+        version_iri="https://envcite/tw/law/O0020001/2018-08-01/zho/art_20",
+        gap=None,
     )
     chain = Chain(rooted=True, links=(central_act,))
     basis = codec._delegation_v2(statement_id=101, chain=chain)

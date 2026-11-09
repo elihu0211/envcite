@@ -24,15 +24,20 @@ service OntologyService {
   rpc ListInvalidations(ListInvalidationsRequest) returns (ListInvalidationsResponse);
 }
 
-// 複合自然鍵識別碼（中央與地方雙軌五領域）
+// 法規的複合自然鍵（管轄，識別碼方案，在地識別碼）。三個欄位都必填，沒有預設：
+// 缺少任一個回 INVALID_ARGUMENT（`EMPTY`），值不在下列集合內也是 INVALID_ARGUMENT（`UNKNOWN_VALUE`）。
 message LawIdentifier {
-  // 管轄代號：'TW-CENTRAL' 或 22 縣市代碼（如 'TW-TPE', 'TW-NWT', 'TW-TXG', 'TW-TNN', 'TW-KHH' 等）。
+  // 管轄代號：'TW-CENTRAL'（中央）或 ISO 3166-2:TW 的 22 個縣市代碼（'TW-TPE'、'TW-NWT'、
+  // 'TW-TAO'、'TW-TXG'、'TW-TNN'、'TW-KHH'、'TW-KEE'、'TW-HSZ'、'TW-CYI'、'TW-HSQ'、'TW-MIA'、
+  // 'TW-CHA'、'TW-NAN'、'TW-YUN'、'TW-CYQ'、'TW-PIF'、'TW-ILA'、'TW-HUA'、'TW-TTT'、'TW-PEN'、
+  // 'TW-KIN'、'TW-LIE'）。
   string jurisdiction = 1;
 
-  // 方案代號：'moj_pcode', 'local_glrs', 'ly_statute', 'gazette_order', 'moenv_order'。
+  // 方案代號：'moj_pcode'（全國法規資料庫 pcode，只配 'TW-CENTRAL'）或 'local_glrs'（地方法規，
+  // 只配縣市）。不合法的配對不存在於語料，查詢回 NOT_FOUND。
   string id_scheme = 2;
 
-  // 本地識別碼。
+  // 在地識別碼，在（管轄，方案）之內唯一。
   string local_id = 3;
 }
 
@@ -52,12 +57,11 @@ message Law {
   // 制定日（ISO 8601）；語料沒有制定紀錄時為空。
   string date_document = 5;
 
-  // 雙軌核定與效力欄位
-  string approval_authority = 6;
-  string approval_doc_no = 7;
-  string ratified_at = 8;
-  string invalidated_by = 9;
-  string invalidation_date = 10;
+  // 曾有核定機關、核定文號、核定日、失效依據與失效日欄位，語料沒有任何來源填它們而移除；
+  // 違憲失效以 ListInvalidations 取得。
+  reserved 6 to 10;
+  reserved "approval_authority", "approval_doc_no", "ratified_at", "invalidated_by",
+      "invalidation_date";
 }
 
 message Article {
@@ -100,7 +104,7 @@ message SearchArticlesRequest {
   // 最多回傳幾筆；0 為服務預設值。
   int32 limit = 3;
 
-  // 可選管轄過濾（留空為全部管轄）。
+  // 可選管轄過濾：留空為全部管轄；有值須是 LawIdentifier.jurisdiction 的合法值，否則 INVALID_ARGUMENT。
   string jurisdiction = 4;
 }
 

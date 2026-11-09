@@ -85,8 +85,9 @@ def _law(
     """一部法規與它各版本的標題；回傳（法規 id，各版本的語文版本 id）。"""
     law = _id(
         conn.execute(
-            "INSERT INTO corpus.legal_resource (id_scheme, local_id, norm_kind, document_type)"
-            " VALUES ('moj_pcode', %s, %s, '法律') RETURNING id",
+            "INSERT INTO corpus.legal_resource"
+            " (jurisdiction, id_scheme, local_id, norm_kind, document_type)"
+            " VALUES ('TW-CENTRAL', 'moj_pcode', %s, %s, '法律') RETURNING id",
             (local_id, kind),
         ).fetchone()
     )

@@ -66,7 +66,7 @@ def test_naming_the_statute_searches_its_commands_down_the_chain(
         segmenter = Segmenter(store.lexicon())
         terms = segmenter.to_tsvector_input("申報")
         hits = store.search(terms, tokenizer=segmenter.tokenizer_id, as_of=ON, laws=["T0000001"])
-        assert {h.law_id for h in hits} == {"T0000001", "T0000002", "T0000003"}
+        assert {h.local_id for h in hits} == {"T0000001", "T0000002", "T0000003"}
 
 
 def test_naming_a_command_does_not_climb_to_its_statute(
@@ -77,4 +77,4 @@ def test_naming_a_command_does_not_climb_to_its_statute(
         segmenter = Segmenter(store.lexicon())
         terms = segmenter.to_tsvector_input("申報")
         hits = store.search(terms, tokenizer=segmenter.tokenizer_id, as_of=ON, laws=["T0000002"])
-        assert {h.law_id for h in hits} == {"T0000002", "T0000003"}
+        assert {h.local_id for h in hits} == {"T0000002", "T0000003"}

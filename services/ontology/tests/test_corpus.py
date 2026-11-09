@@ -30,8 +30,9 @@ def _law(conn: Conn, pcode: str, *versions: tuple[date, str]) -> tuple[int, list
     """A statute and its expressions, one per (version date, text status), in order."""
     law = _id(
         conn.execute(
-            "INSERT INTO corpus.legal_resource (id_scheme, local_id, norm_kind, document_type)"
-            " VALUES ('moj_pcode', %s, 'statute', '法律') RETURNING id",
+            "INSERT INTO corpus.legal_resource"
+            " (jurisdiction, id_scheme, local_id, norm_kind, document_type)"
+            " VALUES ('TW-CENTRAL', 'moj_pcode', %s, 'statute', '法律') RETURNING id",
             (pcode,),
         ).fetchone()
     )
@@ -110,8 +111,9 @@ def _at(conn: Conn, law: int, on: date) -> list[tuple[str, str, str | None]]:
 def test_pcode_shape_is_enforced(conn: Conn) -> None:
     with pytest.raises(psycopg.errors.CheckViolation):
         conn.execute(
-            "INSERT INTO corpus.legal_resource (id_scheme, local_id, norm_kind, document_type)"
-            " VALUES ('moj_pcode', 'air-pollution-control-act', 'statute', '法律')"
+            "INSERT INTO corpus.legal_resource"
+            " (jurisdiction, id_scheme, local_id, norm_kind, document_type)"
+            " VALUES ('TW-CENTRAL', 'moj_pcode', 'air-pollution-control-act', 'statute', '法律')"
         )
 
 

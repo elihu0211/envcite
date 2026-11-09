@@ -171,7 +171,7 @@ def search_all(
             embedding=vector,
             model=embedder.model if embedder else "",
         )
-        ranking = [gs.doc_id(h.law_id, h.number) for h in hits]
+        ranking = [gs.doc_id(h.local_id, h.number) for h in hits]
         want = gs.doc_id(item["law_id"], item["article"]) if "law_id" in item else None
         semantic = [h.semantic_similarity for h in hits if h.semantic_similarity is not None]
         out.append(

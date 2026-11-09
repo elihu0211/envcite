@@ -38,7 +38,9 @@ Global___RulingKind: _TypeAlias = RulingKind  # noqa: Y015
 
 @_typing.final
 class LawIdentifier(_message.Message):
-    """複合自然鍵識別碼（中央與地方雙軌五領域）"""
+    """法規的複合自然鍵（管轄，識別碼方案，在地識別碼）。三個欄位都必填，沒有預設：
+    缺少任一個回 INVALID_ARGUMENT（`EMPTY`），值不在下列集合內也是 INVALID_ARGUMENT（`UNKNOWN_VALUE`）。
+    """
 
     DESCRIPTOR: _descriptor.Descriptor
 
@@ -46,11 +48,17 @@ class LawIdentifier(_message.Message):
     ID_SCHEME_FIELD_NUMBER: _builtins.int
     LOCAL_ID_FIELD_NUMBER: _builtins.int
     jurisdiction: _builtins.str
-    """管轄代號：'TW-CENTRAL' 或 22 縣市代碼（如 'TW-TPE', 'TW-NWT', 'TW-TXG', 'TW-TNN', 'TW-KHH' 等）。"""
+    """管轄代號：'TW-CENTRAL'（中央）或 ISO 3166-2:TW 的 22 個縣市代碼（'TW-TPE'、'TW-NWT'、
+    'TW-TAO'、'TW-TXG'、'TW-TNN'、'TW-KHH'、'TW-KEE'、'TW-HSZ'、'TW-CYI'、'TW-HSQ'、'TW-MIA'、
+    'TW-CHA'、'TW-NAN'、'TW-YUN'、'TW-CYQ'、'TW-PIF'、'TW-ILA'、'TW-HUA'、'TW-TTT'、'TW-PEN'、
+    'TW-KIN'、'TW-LIE'）。
+    """
     id_scheme: _builtins.str
-    """方案代號：'moj_pcode', 'local_glrs', 'ly_statute', 'gazette_order', 'moenv_order'。"""
+    """方案代號：'moj_pcode'（全國法規資料庫 pcode，只配 'TW-CENTRAL'）或 'local_glrs'（地方法規，
+    只配縣市）。不合法的配對不存在於語料，查詢回 NOT_FOUND。
+    """
     local_id: _builtins.str
-    """本地識別碼。"""
+    """在地識別碼，在（管轄，方案）之內唯一。"""
     def __init__(
         self,
         *,
@@ -75,11 +83,6 @@ class Law(_message.Message):
     TITLE_FIELD_NUMBER: _builtins.int
     LANGUAGE_FIELD_NUMBER: _builtins.int
     DATE_DOCUMENT_FIELD_NUMBER: _builtins.int
-    APPROVAL_AUTHORITY_FIELD_NUMBER: _builtins.int
-    APPROVAL_DOC_NO_FIELD_NUMBER: _builtins.int
-    RATIFIED_AT_FIELD_NUMBER: _builtins.int
-    INVALIDATED_BY_FIELD_NUMBER: _builtins.int
-    INVALIDATION_DATE_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     """法規的標準 IRI。"""
     title: _builtins.str
@@ -88,12 +91,6 @@ class Law(_message.Message):
     """標題的 ISO 639-3 語言代碼，例如 "zho"（IRI 中也用同一代碼）。"""
     date_document: _builtins.str
     """制定日（ISO 8601）；語料沒有制定紀錄時為空。"""
-    approval_authority: _builtins.str
-    """雙軌核定與效力欄位"""
-    approval_doc_no: _builtins.str
-    ratified_at: _builtins.str
-    invalidated_by: _builtins.str
-    invalidation_date: _builtins.str
     @_builtins.property
     def identifier(self) -> Global___LawIdentifier:
         """複合自然鍵識別碼。"""
@@ -106,15 +103,10 @@ class Law(_message.Message):
         title: _builtins.str = ...,
         language: _builtins.str = ...,
         date_document: _builtins.str = ...,
-        approval_authority: _builtins.str = ...,
-        approval_doc_no: _builtins.str = ...,
-        ratified_at: _builtins.str = ...,
-        invalidated_by: _builtins.str = ...,
-        invalidation_date: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["identifier", b"identifier"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["approval_authority", b"approval_authority", "approval_doc_no", b"approval_doc_no", "date_document", b"date_document", "identifier", b"identifier", "invalidated_by", b"invalidated_by", "invalidation_date", b"invalidation_date", "iri", b"iri", "language", b"language", "ratified_at", b"ratified_at", "title", b"title"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["date_document", b"date_document", "identifier", b"identifier", "iri", b"iri", "language", b"language", "title", b"title"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -248,7 +240,7 @@ class SearchArticlesRequest(_message.Message):
     limit: _builtins.int
     """最多回傳幾筆；0 為服務預設值。"""
     jurisdiction: _builtins.str
-    """可選管轄過濾（留空為全部管轄）。"""
+    """可選管轄過濾：留空為全部管轄；有值須是 LawIdentifier.jurisdiction 的合法值，否則 INVALID_ARGUMENT。"""
     def __init__(
         self,
         *,

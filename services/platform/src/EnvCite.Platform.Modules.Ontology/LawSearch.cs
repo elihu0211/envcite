@@ -23,7 +23,7 @@ internal sealed class LawSearch(
             return AdminOutcome.Ok<IReadOnlyList<LawHit>>(
                 [.. response.Hits.Select(h => new LawHit(
                     h.Iri,
-                    new LawIdentifierDto(h.Identifier?.Jurisdiction ?? "TW-CENTRAL", h.Identifier?.IdScheme ?? "moj_pcode", h.Identifier?.LocalId ?? string.Empty),
+                    LawIdentifiers.ToDto(h.Identifier),
                     h.LawTitle,
                     h.Number,
                     h.Content,

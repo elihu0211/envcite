@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from collections.abc import Collection, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import cast
@@ -223,24 +223,16 @@ class Link:
     `gap`：`no_citation`、`unresolved_law`、`law_not_in_force`、`law_invalidated`、`cycle`。
     """
 
-    command_law_id: str
+    command_jurisdiction: str
+    command_id_scheme: str
+    command_local_id: str
     cited_law_name: str
     cited_path: str
-    law_id: str | None
+    target_jurisdiction: str | None
+    target_id_scheme: str | None
+    target_local_id: str | None
     version_iri: str | None
     gap: str | None
-    command_jurisdiction: str = "TW-CENTRAL"
-    command_id_scheme: str = "moj_pcode"
-    target_jurisdiction: str | None = None
-    target_id_scheme: str | None = None
-
-    @property
-    def command_local_id(self) -> str:
-        return self.command_law_id
-
-    @property
-    def target_local_id(self) -> str | None:
-        return self.law_id
 
 
 @dataclass(frozen=True)
@@ -290,14 +282,16 @@ def _chain(
             False,
             (
                 Link(
-                    str(local_id),
-                    "",
-                    "",
-                    None,
-                    None,
-                    "no_citation",
                     command_jurisdiction=str(cmd_jur),
                     command_id_scheme=str(cmd_scheme),
+                    command_local_id=str(local_id),
+                    cited_law_name="",
+                    cited_path="",
+                    target_jurisdiction=None,
+                    target_id_scheme=None,
+                    target_local_id=None,
+                    version_iri=None,
+                    gap="no_citation",
                 ),
             ),
         )
@@ -317,16 +311,16 @@ def _chain(
         p_scheme,
     ) in rows:
         here = Link(
-            str(local_id),
-            str(name),
-            str(cited),
-            None if parent_id is None else str(parent_id),
-            None if iri is None else str(iri),
-            None,
             command_jurisdiction=str(cmd_jur),
             command_id_scheme=str(cmd_scheme),
+            command_local_id=str(local_id),
+            cited_law_name=str(name),
+            cited_path=str(cited),
             target_jurisdiction=None if p_jur is None else str(p_jur),
             target_id_scheme=None if p_scheme is None else str(p_scheme),
+            target_local_id=None if parent_id is None else str(parent_id),
+            version_iri=None if iri is None else str(iri),
+            gap=None,
         )
         if parent is None or provision is None:
             links.append(_gap(here, "unresolved_law"))
@@ -348,18 +342,7 @@ def _chain(
 
 
 def _gap(link: Link, gap: str) -> Link:
-    return Link(
-        link.command_law_id,
-        link.cited_law_name,
-        link.cited_path,
-        link.law_id,
-        None,
-        gap,
-        command_jurisdiction=link.command_jurisdiction,
-        command_id_scheme=link.command_id_scheme,
-        target_jurisdiction=link.target_jurisdiction,
-        target_id_scheme=link.target_id_scheme,
-    )
+    return replace(link, version_iri=None, gap=gap)
 
 
 @dataclass(frozen=True)

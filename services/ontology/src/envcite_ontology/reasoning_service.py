@@ -18,15 +18,15 @@ from opentelemetry.metrics import Meter
 
 from envcite.ontology.v1 import reasoning_pb2 as pb
 from envcite.ontology.v1 import reasoning_pb2_grpc
-from envcite.ontology.v2 import ontology_pb2 as ont_pb2_v2
 from envcite.ontology.v2 import reasoning_pb2 as pb2_v2
 from envcite.ontology.v2 import reasoning_pb2_grpc as reasoning_v2_grpc
 from envcite_grpc import remaining_seconds
 from envcite_ontology import annotation_read, errors
 from envcite_ontology import reasoning_codec as codec
+from envcite_ontology.identifiers import law_key
 from envcite_ontology.reasoning import Result, evaluate_across
 from envcite_ontology.reasoning.facts import Measurements, Permits
-from envcite_ontology.store import LANGUAGE, OntologyStore
+from envcite_ontology.store import LANGUAGE, LawKey, OntologyStore
 from envcite_ontology.telemetry import ReasoningMetrics
 
 log = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         v = errors.Validator()
         on = v.date("as_of", request.as_of)
         v.check()
-        resource_id = self._store.resource_id(request.law_id, as_of=request.as_of)
+        resource_id = self._store.resource_id(LawKey.moj(request.law_id), as_of=request.as_of)
         if resource_id is None:
             raise self._not_found(request.law_id, request.as_of)
         with self._store.read_connection(timeout=remaining_seconds(context)) as conn:
@@ -186,8 +186,8 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
             ) from error
 
     def _not_found(self, law_id: str, as_of: str) -> errors.ServiceError:
-        # 法規不存在與該日無施行版本是兩件事，呼叫端要能分辨。
-        if self._store.law_exists(law_id):
+        # 法規不存在與該日無施行版本是兩件事，呼叫端要能分辨。v1 的 law_id 是全國法規資料庫 pcode。
+        if self._store.law_exists(LawKey.moj(law_id)):
             when = f"in force on {as_of}" if as_of else "in force today"
             return errors.not_found(
                 errors.AS_OF_NOT_COVERED, f"law '{law_id}' has no version {when}"
@@ -210,24 +210,19 @@ class ReasoningV2Servicer(reasoning_v2_grpc.ReasoningServiceServicer):
     def ListStatements(
         self, request: pb2_v2.ListStatementsRequest, context: grpc.ServicerContext
     ) -> pb2_v2.ListStatementsResponse:
-        ident_str = (
+        _log_call(
+            context,
+            "ListStatements[v2]",
             f"{request.identifier.jurisdiction}:{request.identifier.id_scheme}:"
-            f"{request.identifier.local_id}"
+            f"{request.identifier.local_id}",
         )
-        _log_call(context, "ListStatements[v2]", ident_str)
         v = errors.Validator()
-        if not request.identifier.local_id:
-            v.add("identifier.local_id", errors.EMPTY, "local_id is required")
+        key = law_key(self._store, request.identifier, v)
         on = v.date("as_of", request.as_of)
         v.check()
-        resource_id = self._store.resource_id(
-            request.identifier.local_id,
-            as_of=request.as_of,
-            jurisdiction=request.identifier.jurisdiction or None,
-            id_scheme=request.identifier.id_scheme or None,
-        )
+        resource_id = self._store.resource_id(key, as_of=request.as_of)
         if resource_id is None:
-            raise self._not_found(request.identifier, request.as_of)
+            raise self._not_found(key, request.as_of)
         with self._store.read_connection(timeout=remaining_seconds(context)) as conn:
             return annotation_read.list_statements_v2(conn, resource_id, on)
 
@@ -347,16 +342,11 @@ class ReasoningV2Servicer(reasoning_v2_grpc.ReasoningServiceServicer):
                 "evaluation did not finish within the deadline",
             ) from error
 
-    def _not_found(self, identifier: ont_pb2_v2.LawIdentifier, as_of: str) -> errors.ServiceError:
-        jur = identifier.jurisdiction or None
-        scheme = identifier.id_scheme or None
-        if self._store.law_exists(identifier.local_id, jurisdiction=jur, id_scheme=scheme):
+    def _not_found(self, key: LawKey, as_of: str) -> errors.ServiceError:
+        if self._store.law_exists(key):
             when = f"in force on {as_of}" if as_of else "in force today"
-            return errors.not_found(
-                errors.AS_OF_NOT_COVERED,
-                f"law '{identifier.local_id}' has no version {when}",
-            )
-        return errors.not_found(errors.LAW_NOT_FOUND, f"law '{identifier.local_id}' not found")
+            return errors.not_found(errors.AS_OF_NOT_COVERED, f"law '{key}' has no version {when}")
+        return errors.not_found(errors.LAW_NOT_FOUND, f"law '{key}' not found")
 
 
 def _log_call(context: grpc.ServicerContext, method: str, subject: str) -> None:

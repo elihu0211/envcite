@@ -282,7 +282,7 @@ def test_a_correction_below_the_article_reaches_the_search_index(
                 tokenizer=segmenter.tokenizer_id,
                 as_of="2020-01-01",
             )
-            return ("T0000001", "2") in {(h.law_id, h.number) for h in hits}
+            return ("T0000001", "2") in {(h.local_id, h.number) for h in hits}
 
         assert found("噪音")
         if gained:

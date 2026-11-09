@@ -125,12 +125,12 @@ def test_the_search_follows_the_named_laws_and_falls_back_to_everything(
         segmenter = Segmenter(store.lexicon())
         tokenizer = segmenter.tokenizer_id
         terms = segmenter.to_tsvector_input("檢查")
-        assert {h.law_id for h in store.search(terms, tokenizer=tokenizer, as_of=ON)} == {
+        assert {h.local_id for h in store.search(terms, tokenizer=tokenizer, as_of=ON)} == {
             p for p, *_ in LAWS
         }
         scoped = store.search(terms, tokenizer=tokenizer, as_of=ON, laws=["T0000003"])
-        assert {h.law_id for h in scoped} == {"T0000003"}
+        assert {h.local_id for h in scoped} == {"T0000003"}
         # 點名的法規裡沒有任何命中（字面臂找不到、沒有向量）：改在全庫找，不回空
         elsewhere = segmenter.to_tsvector_input("廢水")
         hits = store.search(elsewhere, tokenizer=tokenizer, as_of=ON, laws=["T0000002"])
-        assert {h.law_id for h in hits} == {"T0000001"}
+        assert {h.local_id for h in hits} == {"T0000001"}

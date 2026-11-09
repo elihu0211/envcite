@@ -23,7 +23,7 @@ FILLER_PROVISIONS = 25
 #: 以範本法規（`T0000001`）的資源、語文版本、條文與版本列為樣板，複製出沒有標註的法規。
 _FILLER = """
     WITH tmpl AS (
-        SELECT lr.id_scheme, lr.norm_kind, lr.document_type,
+        SELECT lr.jurisdiction, lr.id_scheme, lr.norm_kind, lr.document_type,
                e.language, e.version_date, e.title, e.text_period, e.text_status, e.text_authority,
                p.provision_type, v.force_period, v.commencement_rule
           FROM corpus.legal_resource AS lr
@@ -33,8 +33,10 @@ _FILLER = """
          WHERE lr.local_id = 'T0000001' AND v.superseded_at IS NULL AND upper_inf(e.text_period)
          LIMIT 1
     ), res AS (
-        INSERT INTO corpus.legal_resource (id_scheme, local_id, norm_kind, document_type)
-        SELECT t.id_scheme, 'F' || lpad(g::text, 7, '0'), t.norm_kind, t.document_type
+        INSERT INTO corpus.legal_resource
+            (jurisdiction, id_scheme, local_id, norm_kind, document_type)
+        SELECT t.jurisdiction, t.id_scheme, 'F' || lpad(g::text, 7, '0'),
+               t.norm_kind, t.document_type
           FROM tmpl AS t CROSS JOIN generate_series(1, %(laws)s) AS g
         RETURNING id
     ), expr AS (

@@ -64,7 +64,7 @@ def _corpus(conn: Conn, tmp_path: Path) -> None:
 def _ids(store: OntologyStore, segmenter: Segmenter, query: str) -> list[str]:
     terms = segmenter.to_tsvector_input(query)
     hits = store.search(terms, tokenizer=segmenter.tokenizer_id, as_of=ON, limit=10)
-    return [f"{h.law_id}-{h.number}" for h in hits]
+    return [f"{h.local_id}-{h.number}" for h in hits]
 
 
 def test_a_duty_hit_brings_its_sanction_right_after_it(
