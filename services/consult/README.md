@@ -11,6 +11,7 @@ owns: [consult-surfaces]
 - 介面：gRPC `ConsultationService.Ground`，契約 [`consult.proto`](../../proto/envcite/consult/v2/consult.proto)；呼叫端怎麼用證據集、怎麼核驗模型的輸出，見 [`proto/README.md`](../../proto/README.md)。
 - 呼叫端 [`platform`](../platform/README.md)（對外為 `POST /v2/ground`）；上游 [`ontology`](../ontology/README.md)。
 - 租戶隔離，`x-tenant-id` 必填；本服務自己不存資料。
+- 證據集的來源語料只涵蓋中央法規，地方自治法規不在範圍內；範圍與拒答的解讀見 [`platform` 的「語料範圍」](../platform/README.md#語料範圍)。
 
 ## 入口
 

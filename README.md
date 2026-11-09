@@ -8,7 +8,7 @@ owns: [service-map]
 
 [![pipeline status](https://gitlab.com/thuaisse-lab/envcite/badges/main/pipeline.svg)](https://gitlab.com/thuaisse-lab/envcite/-/pipelines)
 
-臺灣環境知識的檢索與引用接地（Grounding）：為呼叫端的語言模型備妥封閉證據集，證據不足時拒答。服務如何組合、呼叫流程見 [`proto/README.md`](proto/README.md)。
+臺灣環境知識的檢索與引用接地（Grounding）：為呼叫端的語言模型備妥封閉證據集，證據不足時拒答。語料只涵蓋中央法規，地方自治法規不在範圍內，見 [`services/platform/README.md`](services/platform/README.md#語料範圍)。服務如何組合、呼叫流程見 [`proto/README.md`](proto/README.md)。
 
 | 路徑 | 職責 | 文件 |
 |------|------|------|

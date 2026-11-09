@@ -22,7 +22,9 @@ internal static class PlatformOpenApi
                     Title = "envcite API",
                     Version = "v2",
                     Description = "環境知識 API。以租戶的 API key 呼叫（`Authorization: Bearer sk_live_…`）。"
-                        + "拒答是結果、不是錯誤：`POST /v2/ground` 有法源與拒答都回 200，以 `outcome` 區分。",
+                        + "拒答是結果、不是錯誤：`POST /v2/ground` 有法源與拒答都回 200，以 `outcome` 區分。\n\n"
+                        + "語料範圍只含中央法規；地方自治法規（自治條例、自治規則等）不在範圍內。"
+                        + "查無結果或拒答，不代表地方法規沒有規定。",
                 };
                 document.Components ??= new OpenApiComponents();
                 document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>

@@ -1,7 +1,7 @@
 ---
 type: reference
 applies-to: all
-owns: [operator-accounts, reasoning-rest]
+owns: [operator-accounts, reasoning-rest, corpus-scope]
 ---
 
 # envcite-platform
@@ -11,6 +11,16 @@ owns: [operator-accounts, reasoning-rest]
 - 介面：`/v2` 租戶 REST API（API key）；`/admin` 營運者 API；`/ui` 營運者後台；`/portal` 客戶入口（以設定開關）。契約 [`openapi/openapi_v2.json`](openapi/openapi_v2.json)（`dotnet build` 產生、隨程式碼提交）；上游 gRPC 契約與外部呼叫端的接法見 [`proto/README.md`](../../proto/README.md)。
 - 外部用戶端只經本服務進入系統；上游 [`ontology`](../ontology/README.md)、[`consult`](../consult/README.md)（gRPC，啟動時必須設定位址）。
 - 資料：PostgreSQL，schema `platform`；租戶隔離是執行期機制（租戶解析加查詢過濾）。
+
+## 語料範圍
+
+`/v2` 的法規、搜尋、接地與推論只涵蓋**中央法規**；**地方自治法規（自治條例、自治規則等）不在範圍內**。這是產品範圍，不是語料的缺口：
+
+- **範圍外與「查無」無法從回應區分**：`POST /v2/search` 沒有結果、`POST /v2/ground` 回 `refused`、`GET /v2/laws/…` 回 404，都不代表地方法規沒有規定。呼叫端對使用者呈現時不得暗示「地方沒有相關規定」；問題涉及地方權責或地方加嚴標準時，請使用者另查該地方政府的法規。
+- **識別碼的格式不代表語料範圍**：`jurisdiction`、`idScheme` 的合法值含縣市管轄與地方方案（取值見 [`ontology.proto`](../../proto/envcite/ontology/v2/ontology.proto) 的 `LawIdentifier`），那是契約預留；帶縣市管轄的識別碼與任何不在語料的識別碼一樣查無。
+- **`refusal.reason` 的 `out_of_scope` 不是語料範圍外**：它指檢索到的條文都未達相關度門檻（問的是別的事）；拒答的語意見 [`proto/README.md`](../../proto/README.md) 的〈呼叫端的語言模型〉。
+
+對外規格 [`openapi/openapi_v2.json`](openapi/openapi_v2.json) 的 `info.description` 帶同一句範圍聲明（來源 `PlatformOpenApi.cs`）。
 
 ## 一次 `/v2` 請求
 
