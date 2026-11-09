@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-import argparse
 import importlib.util
 import sys
 from pathlib import Path
 from typing import Any
+
+import pytest
+from google.protobuf import json_format, message_factory
 
 # 動態載入 tools/load_bench.py，避免非套件目錄引發 mypy 模組路徑衝突
 _tool_path = Path(__file__).resolve().parents[1] / "tools" / "load_bench.py"
@@ -17,7 +19,10 @@ sys.modules["load_bench_module"] = _load_bench
 _spec.loader.exec_module(_load_bench)
 
 TARGETS: dict[str, Any] = _load_bench.TARGETS
+build_parser = _load_bench.build_parser
+environment = _load_bench.environment
 percentile = _load_bench.percentile
+preflight = _load_bench.preflight
 render = _load_bench.render
 requests = _load_bench.requests
 summarize = _load_bench.summarize
@@ -147,39 +152,123 @@ def test_render_report() -> None:
     assert "| search | hot | 1 | 10 | 0.085 | 0.120 | 0.150 | 0.180 | 11.5 | 0.0% | — |" in md
 
 
-def test_cli_argument_parsing() -> None:
-    # 測試 CLI 參數解析器，確保 --pg-container 變成非必填，且支援新增的 staging/外部參數
-    parser = argparse.ArgumentParser()
-    sub = parser.add_subparsers(dest="cmd", required=True)
-    r = sub.add_parser("run")
-    r.add_argument("golden", type=Path)
-    r.add_argument("--split", type=Path, required=True)
-    r.add_argument("--subset", default="dev")
-    r.add_argument("--pg-container", default=None)
-    r.add_argument("--skip-cold", action="store_true")
-    r.add_argument("--ontology-address", default=None)
-    r.add_argument("--consult-address", default=None)
-    r.add_argument("--targets", default="search,ground,evaluate,search-lexical")
-    r.add_argument("--ladder", default="1,2,4,8,16,24,32")
-    r.add_argument("--iterations", type=int, default=0)
-    r.add_argument("--out", type=Path, required=True)
-
-    # 模擬 staging 執行（無 --pg-container）
-    args = parser.parse_args(
-        [
-            "run",
-            "eval/regulations-golden-eval.yaml",
-            "--split",
-            "eval/golden-split.json",
-            "--out",
-            "eval/load-bench-staging",
-            "--ontology-address",
-            "envcite-ontology.envcite.svc:50051",
-            "--skip-cold",
-        ]
+def _args(*extra: str) -> Any:
+    return build_parser().parse_args(
+        ["run", "golden.yaml", "--split", "split.json", "--out", "out", *extra]
     )
 
-    assert args.pg_container is None
-    assert args.skip_cold is True
+
+def test_parser_takes_the_options_the_readme_documents() -> None:
+    args = _args(
+        "--skip-cold",
+        "--ontology-address",
+        "envcite-ontology.envcite.svc:50051",
+        "--consult-address",
+        "envcite-consult.envcite.svc:50052",
+    )
+    assert args.pg_container is None and args.skip_cold is True
     assert args.ontology_address == "envcite-ontology.envcite.svc:50051"
-    assert args.consult_address is None
+    assert args.consult_address == "envcite-consult.envcite.svc:50052"
+    assert args.subset == "dev" and args.targets == "search,ground,evaluate,search-lexical"
+
+
+def test_preflight_refuses_what_cannot_be_measured(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(_load_bench.shutil, "which", lambda name: f"/usr/bin/{name}")
+
+    targets, ladder = preflight(_args("--pg-container", "pg"))
+    assert [t.name for t in targets] == ["search", "ground", "evaluate", "search-lexical"]
+    assert ladder == [1, 2, 4, 8, 16, 24, 32]
+
+    with pytest.raises(SystemExit, match="--skip-cold"):
+        preflight(_args())  # 既不量冷也沒有可重啟的容器：不默默略過
+    with pytest.raises(SystemExit, match="無法重啟"):
+        preflight(_args("--pg-container", "pg", "--ontology-address", "host:50051"))
+    with pytest.raises(SystemExit, match="不認得的對象"):
+        preflight(_args("--skip-cold", "--targets", "search,nope"))
+
+    monkeypatch.setattr(_load_bench.shutil, "which", lambda name: None)
+    with pytest.raises(SystemExit, match="k6"):
+        preflight(_args("--skip-cold"))
+
+
+def test_targets_are_v2_methods_that_exist_and_accept_the_requests_sent() -> None:
+    """方法名、proto 檔與請求本體都對真實的 v2 契約驗證（k6 在跑的時候才發現就太晚）。"""
+    from envcite.ontology.v2 import ontology_pb2, reasoning_pb2
+
+    files = {
+        "OntologyService": ontology_pb2.DESCRIPTOR,
+        "ReasoningService": reasoning_pb2.DESCRIPTOR,
+    }
+    questions = [("q1", "第一條是什麼？")]
+    for name in ("search", "search-lexical", "evaluate"):
+        target = TARGETS[name]
+        full_service, rpc = target.method.split("/")
+        assert full_service.startswith("envcite.ontology.v2.")
+        service = files[full_service.rsplit(".", 1)[1]].services_by_name[
+            full_service.rsplit(".", 1)[1]
+        ]
+        method = service.methods_by_name[rpc]
+        assert (_load_bench.PROTO_ROOT / target.proto).is_file()
+
+        _, reqs = requests(target, questions)
+        message = message_factory.GetMessageClass(method.input_type)()
+        json_format.ParseDict(reqs[0], message)  # 欄位名不對會拋 ParseError
+    assert not any("ontology.v1" in t.method or "ontology/v1" in t.proto for t in TARGETS.values())
+
+
+def test_environment_records_unknowns_instead_of_inventing_values(
+    dsn: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(_load_bench, "probe", lambda *cmd: None)
+
+    env = environment(dsn, None, local_ontology=False, local_consult=False)
+
+    assert env["host"]["cpu"] is None and env["host"]["memory_gib"] is None
+    assert env["docker_vm"] is None
+    assert env["tools"]["k6"] is None and env["tools"]["dotnet"] is None
+    # 量的是已部署的服務：本機的服務設定不是它的，不記
+    assert env["servers"]["ontology_workers"] is None
+    assert env["servers"]["lexical_max_df"] is None
+    assert env["servers"]["consult_ontology_timeout"] is None
+    assert env["servers"]["search_limit"] == 10  # 這個是本程式送出的請求自己帶的
+    assert env["postgres"]["version"]  # 資料庫的值照實讀
+    assert env["corpus"]["legal_resources"] == 0
+
+
+def test_environment_reads_the_local_consult_timeout_from_its_settings(
+    dsn: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_DSN", dsn)
+    env = environment(dsn, None, local_ontology=True, local_consult=True)
+
+    assert env["servers"]["consult_ontology_timeout"]
+    assert env["servers"]["ontology_workers"] == _load_bench.server.WORKERS
+
+
+def test_render_says_unknown_for_what_was_not_measured(
+    dsn: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(_load_bench, "probe", lambda *cmd: None)
+    env = environment(dsn, None, local_ontology=False, local_consult=False)
+    doc: dict[str, Any] = {
+        "meta": {
+            "run_at": "2026-11-09T10:00:00+08:00",
+            "envcite_commit": "abc",
+            "dirty": False,
+            "golden": {"path": "g.yaml", "sha256": "0" * 64},
+            "split": {"path": "s.json", "subset": "dev"},
+            "questions": 1,
+            "iterations_per_stage": 1,
+            "embedding_calls": 0,
+            "timeout": "10s",
+            "skip_cold": True,
+            "external_targets": {"ontology": "h:1", "consult": None},
+            **env,
+        },
+        "results": [],
+    }
+    md = render(doc)
+
+    assert "主機 未知，" in md and "Docker VM 未知 核" in md
+    assert "ontology 執行緒 未知" in md and "consult 對 ontology 期限 未知" in md
+    assert "5s" not in md

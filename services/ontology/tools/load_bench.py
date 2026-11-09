@@ -1,23 +1,31 @@
 """效能基準：延遲分佈、逐步加並行的吞吐與錯誤率，分冷熱快取（題庫外部，唯讀）。
 
     uv run --env-file <env> python tools/load_bench.py run <golden.yaml> \\
-        --split eval/golden-split.json --pg-container <拋棄式容器> --out eval/load-bench-<日期>
+        --split eval/golden-split.json [--subset dev|test] \\
+        (--pg-container <拋棄式容器> | --skip-cold) \\
+        [--ontology-address <host:port>] [--consult-address <host:port>] \\
+        [--targets search,ground,evaluate,search-lexical] [--ladder 1,2,4,…] \\
+        --out eval/load-bench-<日期>
 
-一鍵跑完：本程式自己起 ontology 與 consult（Release）、以 k6（`tools/load.js`）送 gRPC 負載，
-最後寫 `<out>.json` 與 `<out>.md`。對象與每個對象的量法：
+預設本程式自己起 ontology 與 consult（Release），以 k6（`tools/load.js`）送 gRPC 負載，最後寫
+`<out>.json` 與 `<out>.md`。給 `--ontology-address`／`--consult-address` 時改量該位址上已部署的
+服務：不起本地的，也不能量冷（無法重啟它，要加 `--skip-cold`），報告裡只有本地才知道的設定
+（ontology 執行緒、同時 RPC 上限、字面臂門檻、模型配置、consult 對 ontology 的期限）記為未知。
+對象與每個對象的量法：
 
-- `search`：ontology `SearchArticles`（混合檢索，limit 與 consult 相同）
+- `search`：ontology v2 `SearchArticles`（混合檢索，limit 與 consult 相同）
 - `ground`：consult `Ground`（端到端：consult → ontology 混合檢索 → 可答性判定）
-- `evaluate`：ontology `Evaluate`（推論；固定一件案件事實）
+- `evaluate`：ontology v2 `Evaluate`（推論；固定一件案件事實）
 - `search-lexical`：`SearchArticles` 只開字面臂（伺服器不設模型），不呼叫嵌入端點，隔離資料庫的容量
 
 每個對象依序量 `cold`（重啟資料庫容器與服務後循序一輪）、`hot`（循序暖一輪後再量一輪）與
 `--ladder` 的每個並行度（shared-iterations，每階 `--iterations` 次）。`search-lexical` 不量冷。
 冷只清得掉 PostgreSQL 的 shared_buffers 與服務行程的快取；Docker VM 的作業系統頁快取不清。
 
-前提：`--pg-container` 是本機拋棄式的庫，**會被重啟**；資料庫由 ENVCITE_ONTOLOGY_DSN、
-嵌入模型由 ENVCITE_ONTOLOGY_MODELS 給（同伺服器）。輸出不含題目文字，只有題號與數字；題目只經
-環境變數交給 k6，不寫檔。混合檢索每次請求呼叫嵌入端點一次，總次數記在報告裡。
+前提：需要 k6；`--pg-container` 是本機拋棄式的庫，**會被重啟**；資料庫由 ENVCITE_ONTOLOGY_DSN、
+嵌入模型由 ENVCITE_ONTOLOGY_MODELS 給（同伺服器）。環境量不到的項目在報告裡記為未知，不以
+預設值代替。輸出不含題目文字，只有題號與數字；題目只經環境變數交給 k6，不寫檔。混合檢索每次
+請求呼叫嵌入端點一次，總次數記在報告裡。
 """
 
 from __future__ import annotations
@@ -26,6 +34,7 @@ import argparse
 import json
 import os
 import platform
+import shutil
 import socket
 import statistics
 import subprocess
@@ -101,8 +110,8 @@ TARGETS = {
     for t in (
         Target(
             "search",
-            "envcite.ontology.v1.OntologyService/SearchArticles",
-            "envcite/ontology/v1/ontology.proto",
+            "envcite.ontology.v2.OntologyService/SearchArticles",
+            "envcite/ontology/v2/ontology.proto",
             "ontology",
             embedding=True,
         ),
@@ -115,15 +124,15 @@ TARGETS = {
         ),
         Target(
             "evaluate",
-            "envcite.ontology.v1.ReasoningService/Evaluate",
-            "envcite/ontology/v1/reasoning.proto",
+            "envcite.ontology.v2.ReasoningService/Evaluate",
+            "envcite/ontology/v2/reasoning.proto",
             "ontology",
             embedding=False,
         ),
         Target(
             "search-lexical",
-            "envcite.ontology.v1.OntologyService/SearchArticles",
-            "envcite/ontology/v1/ontology.proto",
+            "envcite.ontology.v2.OntologyService/SearchArticles",
+            "envcite/ontology/v2/ontology.proto",
             "ontology",
             embedding=False,
             cold=False,
@@ -325,24 +334,36 @@ def requests(target: Target, questions: Sequence[tuple[str, str]]) -> tuple[list
     return [q for q, _ in questions], [{"query": t, "limit": SEARCH_LIMIT} for _, t in questions]
 
 
-def environment(dsn: str, models: Path | None) -> dict[str, Any]:
-    def sh(*cmd: str) -> str:
-        try:
-            return subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
-        except Exception:
-            return ""
-
+def probe(*cmd: str) -> str | None:
+    """外部指令的輸出；指令不存在或失敗是未知（None），不以空字串或預設值代替。"""
     try:
-        docker_raw = subprocess.run(
-            ["docker", "info", "--format", "{{json .}}"],
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-        docker = json.loads(docker_raw) if docker_raw else {}
-    except Exception:
-        docker = {}
+        out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return None
+    return out or None
 
+
+def docker_vm() -> dict[str, Any] | None:
+    raw = probe("docker", "info", "--format", "{{json .}}")
+    if raw is None:
+        return None
+    info = json.loads(raw)
+    mem = info.get("MemTotal")
+    return {
+        "cpus": info.get("NCPU"),
+        "memory_gib": None if mem is None else round(int(mem) / 2**30, 1),
+        "server_version": info.get("ServerVersion"),
+    }
+
+
+def environment(
+    dsn: str, models: Path | None, *, local_ontology: bool, local_consult: bool
+) -> dict[str, Any]:
+    """量測環境。量不到的、或描述的不是被量的服務的，一律記 None（未知）。
+
+    `local_ontology`／`local_consult` 為 False（量的是已部署的服務）時，本程式所在機器的服務
+    設定（執行緒、同時 RPC、字面臂門檻、模型配置、consult 的期限）不是被量的那個，所以不記。
+    """
     with psycopg.connect(dsn) as conn:
         conn.read_only = True
 
@@ -379,63 +400,67 @@ def environment(dsn: str, models: Path | None) -> dict[str, Any]:
             "max_connections": one("SHOW max_connections"),
         }
 
-    try:
-        cpu = sh("sysctl", "-n", "machdep.cpu.brand_string") or platform.processor() or "unknown"
-        cores = int(sh("sysctl", "-n", "hw.ncpu") or (os.cpu_count() or 1))
-        mem = int(sh("sysctl", "-n", "hw.memsize") or 0) / 2**30
-    except Exception:
-        cpu = platform.processor() or "unknown"
-        cores = os.cpu_count() or 1
-        mem = 0.0
-
+    memsize = probe("sysctl", "-n", "hw.memsize")
+    k6_version = probe("k6", "version")
+    consult_timeout: str | None = None
+    if local_consult:
+        # 本地的 consult 讀這個檔；缺檔是安裝壞了，不是「5 秒」
+        settings = json.loads((CONSULT_PROJECT / "appsettings.json").read_text(encoding="utf-8"))
+        consult_timeout = settings["Ontology"]["Timeout"]
     return {
         "host": {
-            "cpu": cpu,
-            "cores": cores,
-            "memory_gib": mem,
+            "cpu": probe("sysctl", "-n", "machdep.cpu.brand_string"),
+            "cores": os.cpu_count(),
+            "memory_gib": None if memsize is None else int(memsize) / 2**30,
             "os": f"{platform.system()} {platform.release()}",
         },
-        "docker_vm": {
-            "cpus": docker.get("NCPU"),
-            "memory_gib": round(int(docker.get("MemTotal", 0)) / 2**30, 1),
-            "server_version": docker.get("ServerVersion"),
-        },
+        "docker_vm": docker_vm(),
         "postgres": pg,
         "corpus": corpus,
         "servers": {
-            "ontology_workers": server.WORKERS,
-            "ontology_max_concurrent_rpcs": server.MAX_CONCURRENT_RPCS,
-            "lexical_max_df": load(ServerSettings).lexical_max_df,
-            "models": models.name if models else None,
-            "consult_ontology_timeout": json.loads(
-                (CONSULT_PROJECT / "appsettings.json").read_text(encoding="utf-8")
-            )["Ontology"]["Timeout"]
-            if (CONSULT_PROJECT / "appsettings.json").exists()
-            else "5s",
+            "ontology_workers": server.WORKERS if local_ontology else None,
+            "ontology_max_concurrent_rpcs": server.MAX_CONCURRENT_RPCS if local_ontology else None,
+            "lexical_max_df": load(ServerSettings).lexical_max_df if local_ontology else None,
+            "models": (models.name if models else None) if local_ontology else None,
+            "consult_ontology_timeout": consult_timeout,
             "search_limit": SEARCH_LIMIT,
         },
         "tools": {
-            "k6": sh("k6", "version").splitlines()[0] if sh("k6", "version") else "unknown",
-            "dotnet": sh("dotnet", "--version") or "unknown",
+            "k6": None if k6_version is None else k6_version.splitlines()[0],
+            "dotnet": probe("dotnet", "--version"),
             "python": platform.python_version(),
         },
     }
 
 
+def preflight(args: argparse.Namespace) -> tuple[list[Target], list[int]]:
+    """跑之前就能判定的錯：對象名、k6、冷快取與外部服務的組合。"""
+    names = args.targets.split(",")
+    unknown = [t for t in names if t not in TARGETS]
+    if unknown:
+        raise SystemExit(f"不認得的對象 {unknown}；可用：{', '.join(TARGETS)}")
+    if shutil.which("k6") is None:
+        raise SystemExit("需要 k6（https://grafana.com/docs/k6/）")
+    if not args.skip_cold and not args.pg_container:
+        raise SystemExit("量冷快取要 --pg-container（會被重啟）；不量冷請加 --skip-cold")
+    if not args.skip_cold and (args.ontology_address or args.consult_address):
+        raise SystemExit("量已部署的服務無法重啟它，不能量冷快取：加 --skip-cold")
+    return [TARGETS[t] for t in names], [int(v) for v in args.ladder.split(",")]
+
+
 def run(args: argparse.Namespace) -> None:
+    targets, ladder = preflight(args)
     items, golden_sha = _golden(args.golden)
     split_doc = gs.read(args.split)
     gs.require_golden(split_doc, golden_sha, str(args.split))
     wanted = gs.subset_ids(split_doc, args.subset)
     questions = sorted((str(i["id"]), str(i["question"])) for i in items if str(i["id"]) in wanted)
-    targets = [TARGETS[t] for t in args.targets.split(",")]
-    ladder = [int(v) for v in args.ladder.split(",")]
     db = load(DatabaseSettings)
     models = load(ModelsSettings).models
 
-    external_ontology: str | None = getattr(args, "ontology_address", None)
-    external_consult: str | None = getattr(args, "consult_address", None)
-    skip_cold: bool = bool(args.skip_cold or not args.pg_container)
+    external_ontology: str | None = args.ontology_address
+    external_consult: str | None = args.consult_address
+    skip_cold: bool = args.skip_cold
 
     need_local_ontology = any(t.service == "ontology" for t in targets) and not external_ontology
     need_local_consult = any(t.service == "consult" for t in targets) and not external_consult
@@ -471,7 +496,9 @@ def run(args: argparse.Namespace) -> None:
             "ontology": external_ontology,
             "consult": external_consult,
         },
-        **environment(db.dsn, models),
+        **environment(
+            db.dsn, models, local_ontology=need_servers, local_consult=need_local_consult
+        ),
     }
     results: list[dict[str, Any]] = []
     embedding_calls = 0
@@ -505,7 +532,10 @@ def run(args: argparse.Namespace) -> None:
                 else:
                     raise SystemExit("未提供 ontology 服務位址且未啟動本地 ontology")
 
-            if target.cold and not skip_cold and args.pg_container and s is not None:
+            if target.cold and not skip_cold:
+                assert (
+                    s is not None and args.pg_container
+                )  # 量冷時一定是本地服務，見 skip_cold 的檢查
                 s.stop()
                 restart_database(args.pg_container, db.dsn)
                 s.start(embedding=target.embedding, consult=consult)
@@ -535,9 +565,15 @@ def run(args: argparse.Namespace) -> None:
     print(f"{args.out}.json、{args.out}.md；嵌入端點呼叫 {embedding_calls} 次", file=sys.stderr)
 
 
+def known(value: Any, spec: str = "") -> str:
+    """報告裡的值；None 是量不到，寫「未知」，不寫成 0 或預設值。"""
+    return "未知" if value is None else format(value, spec)
+
+
 def render(doc: dict[str, Any]) -> str:
     m = doc["meta"]
     c = m["corpus"]
+    h, vm, sv = m["host"], m["docker_vm"] or {}, m["servers"]
     lines = [
         f"# 效能基準（{m['run_at'][:10]}）",
         "",
@@ -548,8 +584,8 @@ def render(doc: dict[str, Any]) -> str:
         f"- commit `{m['envcite_commit']}`{'（工作樹有未提交的改動）' if m['dirty'] else ''}；"
         f"題庫 `{m['golden']['path']}` sha256 `{m['golden']['sha256'][:8]}…`，"
         f"{m['split']['subset']} 集 {m['questions']} 題",
-        f"- 主機 {m['host']['cpu']}，{m['host']['cores']} 核，{m['host']['memory_gib']:.0f} GiB；"
-        f"Docker VM {m['docker_vm']['cpus']} 核、{m['docker_vm']['memory_gib']} GiB",
+        f"- 主機 {known(h['cpu'])}，{known(h['cores'])} 核，{known(h['memory_gib'], '.0f')} GiB；"
+        f"Docker VM {known(vm.get('cpus'))} 核、{known(vm.get('memory_gib'))} GiB",
         f"- PostgreSQL {m['postgres']['version']}，"
         f"shared_buffers {m['postgres']['shared_buffers']}，work_mem {m['postgres']['work_mem']}；"
         f"庫 {c['database_size']}",
@@ -558,12 +594,12 @@ def render(doc: dict[str, Any]) -> str:
         f"（已嵌入 {c['embedded_passages']:,}，模型 {', '.join(c['embedding_models']) or '無'}）；"
         f"已確認的陳述 {c['confirmed_statements']}；快照 "
         + "、".join(f"{s['feed']} {s['data_date']}" for s in c["snapshots"]),
-        f"- ontology 執行緒 {m['servers']['ontology_workers']}、同時 RPC 上限 "
-        f"{m['servers']['ontology_max_concurrent_rpcs']}；lexical_max_df "
-        f"{m['servers']['lexical_max_df']}；search limit {m['servers']['search_limit']}；"
-        f"consult 對 ontology 期限 {m['servers']['consult_ontology_timeout']}；"
+        f"- ontology 執行緒 {known(sv['ontology_workers'])}、同時 RPC 上限 "
+        f"{known(sv['ontology_max_concurrent_rpcs'])}；lexical_max_df "
+        f"{known(sv['lexical_max_df'])}；search limit {sv['search_limit']}；"
+        f"consult 對 ontology 期限 {known(sv['consult_ontology_timeout'])}；"
         f"請求期限 {m['timeout']}",
-        f"- 每階 {m['iterations_per_stage']} 次請求；{m['tools']['k6']}；"
+        f"- 每階 {m['iterations_per_stage']} 次請求；{known(m['tools']['k6'])}；"
         f"嵌入端點呼叫 {m['embedding_calls']:,} 次",
     ]
     if m.get("skip_cold"):
@@ -598,7 +634,7 @@ def render(doc: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
@@ -608,9 +644,9 @@ def main() -> None:
     r.add_argument(
         "--pg-container",
         default=None,
-        help="本機拋棄式資料庫的容器名；量冷時會重啟（未提供則略過冷快取）",
+        help="本機拋棄式資料庫的容器名；量冷時會重啟。不量冷就不給，改給 --skip-cold",
     )
-    r.add_argument("--skip-cold", action="store_true", help="略過冷快取量測，不重啟資料庫容器")
+    r.add_argument("--skip-cold", action="store_true", help="不量冷快取，不重啟任何容器")
     r.add_argument(
         "--ontology-address",
         default=None,
@@ -626,7 +662,11 @@ def main() -> None:
     r.add_argument("--iterations", type=int, default=0, help="每階請求數；0 為題數")
     r.add_argument("--out", type=Path, required=True)
     r.set_defaults(fn=run)
-    args = p.parse_args()
+    return p
+
+
+def main() -> None:
+    args = build_parser().parse_args()
     args.fn(args)
 
 
