@@ -22,19 +22,45 @@ from typing import Any
 
 NEGATIVE_BUCKET = "negative"
 
-FINAL_REFUSED_BELOW_FLOOR = "refused_below_floor"
-FINAL_REFUSED_NO_EVIDENCE = "refused_no_evidence"
-FINAL_MODEL_INSUFFICIENT = "model_insufficient"
-FINAL_VOID_NO_CITATION = "void_no_citation"
-FINAL_VOID_UNKNOWN_CITATION = "void_unknown_citation"
-FINAL_VOID_EMPTY = "void_empty"
-FINAL_ANSWERED = "answered"
-FINAL_MODEL_ERROR = "model_error"
+FINAL_REFUSED_NO_EVIDENCE = "refused_no_evidence"  # 檢索無任何結果
+FINAL_REFUSED_BELOW_FLOOR = "refused_below_floor"  # 有結果但皆未達下界
+FINAL_REFUSED_LOCAL_LAW = "refused_local_law_uncovered"  # 問地方自治法規，且無條文達下界
+FINAL_MODEL_INSUFFICIENT = "model_insufficient"  # 模型回「證據不足」
+FINAL_VOID_NO_CITATION = "void_no_citation"  # 回答沒有任何代號
+FINAL_VOID_UNKNOWN_CITATION = "void_unknown_citation"  # 引用了證據裡沒有的代號
+FINAL_VOID_EMPTY = "void_empty"  # 模型沒有產生回答
+FINAL_ANSWERED = "answered"  # 有引用的回答
+FINAL_MODEL_ERROR = "model_error"  # 模型端點失敗（重試用盡）；不歸入任何一類
 
-FLOOR_REFUSALS = frozenset({FINAL_REFUSED_BELOW_FLOOR, FINAL_REFUSED_NO_EVIDENCE})
+FLOOR_REFUSALS = frozenset(
+    {FINAL_REFUSED_NO_EVIDENCE, FINAL_REFUSED_BELOW_FLOOR, FINAL_REFUSED_LOCAL_LAW}
+)
 MODEL_REFUSALS = frozenset({FINAL_MODEL_INSUFFICIENT})
 VERIFY_VOIDS = frozenset({FINAL_VOID_NO_CITATION, FINAL_VOID_UNKNOWN_CITATION, FINAL_VOID_EMPTY})
 KNOWN_FINALS = FLOOR_REFUSALS | MODEL_REFUSALS | VERIFY_VOIDS | {FINAL_ANSWERED, FINAL_MODEL_ERROR}
+
+# 報表的列順序。
+FINALS = (
+    FINAL_REFUSED_NO_EVIDENCE,
+    FINAL_REFUSED_BELOW_FLOOR,
+    FINAL_REFUSED_LOCAL_LAW,
+    FINAL_MODEL_INSUFFICIENT,
+    FINAL_VOID_NO_CITATION,
+    FINAL_VOID_UNKNOWN_CITATION,
+    FINAL_VOID_EMPTY,
+    FINAL_ANSWERED,
+    FINAL_MODEL_ERROR,
+)
+
+# consult `Refused.Reason`（按列舉名）→ 該題的 final。與契約列舉的完整對應由
+# tests/test_refusal_reasons.py 對 proto 產生碼守門：契約新增原因而這裡沒跟上，測試失敗。
+REFUSAL_FINAL = {
+    "REASON_NO_EVIDENCE": FINAL_REFUSED_NO_EVIDENCE,
+    "REASON_OUT_OF_SCOPE": FINAL_REFUSED_BELOW_FLOOR,
+    "REASON_LOCAL_LAW_UNCOVERED": FINAL_REFUSED_LOCAL_LAW,
+}
+# 評估題庫不會觸發的原因：出現就是題庫或服務出錯，工具要停下，不歸類。
+REFUSAL_UNEXPECTED = frozenset({"REASON_UNSPECIFIED", "REASON_MISSING_INPUT"})
 
 
 class InputError(ValueError):

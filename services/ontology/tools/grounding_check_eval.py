@@ -54,6 +54,7 @@ import golden_set as gs
 from golden_retrieval_eval import NEGATIVE, git, require_snapshots, snapshots
 
 from envcite.consult.v2 import consult_pb2, consult_pb2_grpc
+from envcite_ontology.answer_quality import FINALS, FLOOR_REFUSALS, REFUSAL_FINAL
 from envcite_ontology.endpoint import json_headers
 from envcite_ontology.settings import DatabaseSettings, load
 from envcite_ontology.verification.config import ConfigError, resolve_secret, secret_name
@@ -72,17 +73,8 @@ CODE = re.compile(r"\[(L\d+)\]")
 MAX_OUTPUT_TOKENS = 800
 MODEL_TIMEOUT = 60.0
 
-FINAL = (
-    "refused_no_evidence",  # 檢索無任何結果
-    "refused_below_floor",  # 有結果但皆未達下界
-    "model_insufficient",  # 模型回「證據不足」
-    "void_no_citation",  # 回答沒有任何代號
-    "void_unknown_citation",  # 引用了證據裡沒有的代號
-    "void_empty",  # 模型沒有產生回答
-    "answered",  # 有引用的回答
-    "model_error",  # 模型端點失敗（重試用盡）；不歸入任何一類
-)
-FLOOR_REFUSED = FINAL[:2]
+FINAL = FINALS
+FLOOR_REFUSED = FLOOR_REFUSALS
 
 
 @dataclass
@@ -330,17 +322,10 @@ def main() -> None:
                     ),
                 )
                 if resp.WhichOneof("outcome") != "evidence":
-                    reason = resp.refused.reason
-                    row.final = (
-                        "refused_no_evidence"
-                        if reason == consult_pb2.Refused.REASON_NO_EVIDENCE
-                        else "refused_below_floor"
-                    )
-                    if reason not in (
-                        consult_pb2.Refused.REASON_NO_EVIDENCE,
-                        consult_pb2.Refused.REASON_OUT_OF_SCOPE,
-                    ):
-                        raise SystemExit(f"{r.id}: 意外的拒答原因 {reason}")
+                    name = consult_pb2.Refused.Reason.Name(resp.refused.reason)
+                    if name not in REFUSAL_FINAL:
+                        raise SystemExit(f"{r.id}: 意外的拒答原因 {name}")
+                    row.final = REFUSAL_FINAL[name]
                 else:
                     cites = list(resp.evidence.citations)
                     row.evidence = len(cites)
