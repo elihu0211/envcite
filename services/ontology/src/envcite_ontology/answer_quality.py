@@ -1,18 +1,26 @@
-"""自然情境作答品質總結性評估（Natural Setting Answer Quality Evaluation）。
+"""端到端作答結果的彙總：只計數輸入 run 裡已有的分類，不產生任何輸入檔沒有的數字。
 
-量測與審計四項核心指標：
-1. 拒答率（Refusal Rates）：無答案真拒答率與可答題保守拒答率。
-2. 幻覺率（Hallucination Rates）：無答案放過率、引用漂移率與綜合幻覺率。
-3. 引用忠實度（Citation Faithfulness）：回答所引條文命中真實期望法規的比例。
-4. 端到端延遲分佈（Latency Distribution）：檢索接地、模型推理、引用查核與端到端總時延之分位數。
+輸入是 `tools/grounding_check_eval.py` 寫出的逐題結果（`results`）與該次執行的 `meta`。每題的
+`final` 分類、`cites_expected`、`evidence_has_expected` 都由那支工具對真實服務與 qrels 判定；本模組
+不判定對錯，也沒有計時：延遲只能來自真實量測（`tools/load_bench.py`）。
+
+口徑與已有的判定一致：
+
+- 無答案題給出有引用回答的比例是**上界**，不是不當作答率。放過的題要逐題檢視才知道（題庫標註錯、
+  澄清題與灰區都在其中）。
+- 有引用但未引到期望條的比例**無法判斷好壞**：期望條是 qrels 裡判為相關的條，qrels 沒有判定的條
+  是洞，不是答錯。
+- 兩者分母不同、意義不同，所以不合算成單一比率。
 """
 
 from __future__ import annotations
 
-import math
 from collections import Counter
-from dataclasses import asdict, dataclass, field
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import asdict, dataclass
 from typing import Any
+
+NEGATIVE_BUCKET = "negative"
 
 FINAL_REFUSED_BELOW_FLOOR = "refused_below_floor"
 FINAL_REFUSED_NO_EVIDENCE = "refused_no_evidence"
@@ -23,127 +31,49 @@ FINAL_VOID_EMPTY = "void_empty"
 FINAL_ANSWERED = "answered"
 FINAL_MODEL_ERROR = "model_error"
 
-FLOOR_REFUSALS = {FINAL_REFUSED_BELOW_FLOOR, FINAL_REFUSED_NO_EVIDENCE}
-MODEL_REFUSALS = {FINAL_MODEL_INSUFFICIENT}
-VERIFY_REFUSALS = {FINAL_VOID_NO_CITATION, FINAL_VOID_UNKNOWN_CITATION, FINAL_VOID_EMPTY}
-ALL_REFUSALS = FLOOR_REFUSALS | MODEL_REFUSALS | VERIFY_REFUSALS
+FLOOR_REFUSALS = frozenset({FINAL_REFUSED_BELOW_FLOOR, FINAL_REFUSED_NO_EVIDENCE})
+MODEL_REFUSALS = frozenset({FINAL_MODEL_INSUFFICIENT})
+VERIFY_VOIDS = frozenset({FINAL_VOID_NO_CITATION, FINAL_VOID_UNKNOWN_CITATION, FINAL_VOID_EMPTY})
+KNOWN_FINALS = FLOOR_REFUSALS | MODEL_REFUSALS | VERIFY_VOIDS | {FINAL_ANSWERED, FINAL_MODEL_ERROR}
+
+
+class InputError(ValueError):
+    """輸入的逐題結果不合格式：不猜、不略過，整份拒絕。"""
 
 
 @dataclass(frozen=True)
-class LatencyPercentiles:
-    count: int
-    mean_ms: float
-    std_dev_ms: float
-    min_ms: float
-    p50_ms: float
-    p90_ms: float
-    p95_ms: float
-    p99_ms: float
-    max_ms: float
+class Outcomes:
+    """一組題目的最後分類計數。"""
+
+    total: int
+    floor_refused: int
+    model_insufficient: int
+    verify_void: int
+    answered: int  # 給出有引用的回答
+    model_error: int
+
+    @property
+    def not_answered(self) -> int:
+        """最後沒有回答（下界、模型自認不足、引用查核作廢）；模型端點失敗不算拒答。"""
+        return self.floor_refused + self.model_insufficient + self.verify_void
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-def calculate_percentiles(values: list[float]) -> LatencyPercentiles:
-    """計算一組延遲數值（毫秒）的統計量與分位數。"""
-    if not values:
-        return LatencyPercentiles(
-            count=0,
-            mean_ms=0.0,
-            std_dev_ms=0.0,
-            min_ms=0.0,
-            p50_ms=0.0,
-            p90_ms=0.0,
-            p95_ms=0.0,
-            p99_ms=0.0,
-            max_ms=0.0,
-        )
-
-    s = sorted(values)
-    n = len(s)
-    mean = sum(s) / n
-    variance = sum((x - mean) ** 2 for x in s) / n if n > 1 else 0.0
-    std_dev = math.sqrt(variance)
-
-    def _pct(p: float) -> float:
-        k = (n - 1) * p
-        f = math.floor(k)
-        c = math.ceil(k)
-        if f == c:
-            return s[int(k)]
-        return s[f] * (c - k) + s[c] * (k - f)
-
-    return LatencyPercentiles(
-        count=n,
-        mean_ms=round(mean, 2),
-        std_dev_ms=round(std_dev, 2),
-        min_ms=round(s[0], 2),
-        p50_ms=round(_pct(0.50), 2),
-        p90_ms=round(_pct(0.90), 2),
-        p95_ms=round(_pct(0.95), 2),
-        p99_ms=round(_pct(0.99), 2),
-        max_ms=round(s[-1], 2),
-    )
+        return {**asdict(self), "not_answered": self.not_answered}
 
 
 @dataclass(frozen=True)
-class RefusalMetrics:
-    # 無答案問句（Negative Questions）應拒答
-    negative_total: int
-    negative_floor_refused: int
-    negative_model_insufficient: int
-    negative_verify_void: int
-    negative_answered_leaked: int
-    negative_refusal_rate: float  # (floor + model + void) / total
+class CitationMetrics:
+    """可答題中，所引條文與期望條（qrels 判為相關的條）的關係。"""
 
-    # 可答問句（Positive Questions）
-    positive_total: int
-    positive_floor_refused: int
-    positive_model_insufficient: int
-    positive_verify_void: int
-    positive_answered: int
-    positive_refusal_rate: float  # 保守/誤拒答率
+    answerable_total: int
+    answered: int
+    cites_expected: int
+    cites_other: int  # 有引用但未引到任何期望條；無法判斷好壞
 
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-@dataclass(frozen=True)
-class HallucinationMetrics:
-    # 嚴格無事實依據幻覺（無答案題卻產生有引用回答）
-    unfounded_count: int
-    unfounded_rate: float  # unfounded_count / negative_total
-
-    # 引用漂移（可答題有引用回答，但未引任何期望條文）
-    citation_drift_count: int
-    citation_drift_rate: float  # drift / positive_answered
-
-    # 外部知識外溢（可答題試圖用外部知識作答而被查核作廢）
-    external_leak_void_count: int
-
-    # 綜合回答幻覺率（所有給出的回答中，未接地或引用漂移的比例）
-    total_answered: int
-    hallucinated_answers: int  # unfounded_count + citation_drift_count
-    composite_hallucination_rate: float
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-@dataclass(frozen=True)
-class FaithfulnessMetrics:
-    # 有引用的可答題中，所引條文命中期望條文的忠實度
-    positive_answered: int
-    hits_expected_count: int
-    grounded_fidelity_rate: float  # hits / positive_answered
-
-    # 占全體可答題的端到端成功解答率
-    positive_total: int
-    end_to_end_coverage_rate: float  # hits / positive_total
-
-    # 證據集含期望條文但模型仍拒答（模型保守性）
-    evidence_has_expected_but_refused: int
+    # 過下界的可答題（封閉證據集非空）中，證據集含期望條的題數與其中最後未作答的題數
+    passed_floor: int
+    evidence_has_expected: int
+    evidence_has_expected_not_answered: int
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -152,311 +82,159 @@ class FaithfulnessMetrics:
 @dataclass(frozen=True)
 class AnswerQualitySummary:
     total_questions: int
-    refusal: RefusalMetrics
-    hallucination: HallucinationMetrics
-    faithfulness: FaithfulnessMetrics
-    latency_by_stage: dict[str, LatencyPercentiles] = field(default_factory=dict)
+    negative: Outcomes
+    answerable: Outcomes
+    citation: CitationMetrics
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "total_questions": self.total_questions,
-            "refusal": self.refusal.to_dict(),
-            "hallucination": self.hallucination.to_dict(),
-            "faithfulness": self.faithfulness.to_dict(),
-            "latency_by_stage": {k: v.to_dict() for k, v in self.latency_by_stage.items()},
+            "negative": self.negative.to_dict(),
+            "answerable": self.answerable.to_dict(),
+            "citation": self.citation.to_dict(),
         }
 
 
-def simulate_realistic_latencies(
-    records: list[dict[str, Any]], seed: int = 42
-) -> dict[str, list[float]]:
-    """根據實際服務基準分佈生成各處理階段之延遲觀測值（毫秒）。
+def _outcomes(rows: Sequence[Mapping[str, Any]]) -> Outcomes:
+    c = Counter(r["final"] for r in rows)
+    return Outcomes(
+        total=len(rows),
+        floor_refused=sum(c[k] for k in FLOOR_REFUSALS),
+        model_insufficient=sum(c[k] for k in MODEL_REFUSALS),
+        verify_void=sum(c[k] for k in VERIFY_VOIDS),
+        answered=c[FINAL_ANSWERED],
+        model_error=c[FINAL_MODEL_ERROR],
+    )
 
-    - 檢索與接地判定（retrieval_grounding）：全庫字面與向量檢索，p50 約 85ms，p95 約 160ms。
-    - 模型推理（llm_inference）：Mistral-Small-4 API 推理，有作答者 p50 約 1850ms，p95 約 3200ms；
-      下界攔截者提前返回（0ms）。
-    - 引用查核（citation_verify）：正則提取與集合包含檢查，p50 約 0.4ms，p95 約 1.2ms。
-    - 端到端總延遲（total_end_to_end）：各階段疊加加上網路開銷。
-    """
-    import random
 
-    rng = random.Random(seed)
-
-    retrieval_ms: list[float] = []
-    inference_ms: list[float] = []
-    verify_ms: list[float] = []
-    total_ms: list[float] = []
-
-    for r in records:
+def _validate(records: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    rows = list(records)
+    for r in rows:
+        ident = r.get("id", "?")
         final = r.get("final")
-        ret_val = rng.lognormvariate(4.45, 0.35)  # mean ~90ms
-        retrieval_ms.append(ret_val)
-
-        ver_val = rng.uniform(0.2, 1.4)
-        verify_ms.append(ver_val)
-
-        if final in FLOOR_REFUSALS:
-            inf_val = 0.0
-            tot_val = ret_val + 2.0
-        else:
-            inf_val = rng.lognormvariate(7.55, 0.28)  # mean ~2000ms
-            tot_val = ret_val + inf_val + ver_val + rng.uniform(5.0, 15.0)
-
-        inference_ms.append(inf_val)
-        total_ms.append(tot_val)
-
-    return {
-        "retrieval_grounding": retrieval_ms,
-        "llm_inference": [v for v in inference_ms if v > 0],
-        "citation_verify": verify_ms,
-        "total_end_to_end": total_ms,
-    }
+        if final not in KNOWN_FINALS:
+            raise InputError(f"{ident}: 不認得的 final 分類 {final!r}")
+        if r.get("bucket") is None:
+            raise InputError(f"{ident}: 缺 bucket")
+        if (
+            r["bucket"] != NEGATIVE_BUCKET
+            and final == FINAL_ANSWERED
+            and not isinstance(r.get("cites_expected"), bool)
+        ):
+            # 可答題的有引用回答必有 cites_expected；缺了就無從分到「含期望條」或「不含」
+            raise InputError(f"{ident}: 可答題的 answered 缺 cites_expected")
+    return rows
 
 
-def evaluate_records(
-    records: list[dict[str, Any]],
-    latencies: dict[str, list[float]] | None = None,
-) -> AnswerQualitySummary:
-    """審計端到端作答紀錄列表，計算全套自然情境作答品質指標。"""
-    neg_rows = [r for r in records if r.get("bucket") == "negative"]
-    pos_rows = [r for r in records if r.get("bucket") != "negative"]
+def evaluate_records(records: Iterable[Mapping[str, Any]]) -> AnswerQualitySummary:
+    """彙總逐題結果。分類不認得、可答題缺判定欄位時拋 `InputError`。"""
+    rows = _validate(records)
+    neg = [r for r in rows if r["bucket"] == NEGATIVE_BUCKET]
+    pos = [r for r in rows if r["bucket"] != NEGATIVE_BUCKET]
+    answerable = _outcomes(pos)
 
-    # 1. 拒答分析 - 無答案題
-    neg_c = Counter(r.get("final") for r in neg_rows)
-    neg_total = len(neg_rows)
-    neg_floor = sum(neg_c[k] for k in FLOOR_REFUSALS)
-    neg_model = sum(neg_c[k] for k in MODEL_REFUSALS)
-    neg_void = sum(neg_c[k] for k in VERIFY_REFUSALS)
-    neg_answered = neg_c[FINAL_ANSWERED]
-    neg_refused = neg_floor + neg_model + neg_void
-    neg_refusal_rate = (neg_refused / neg_total) if neg_total > 0 else 0.0
-
-    # 拒答分析 - 可答題
-    pos_c = Counter(r.get("final") for r in pos_rows)
-    pos_total = len(pos_rows)
-    pos_floor = sum(pos_c[k] for k in FLOOR_REFUSALS)
-    pos_model = sum(pos_c[k] for k in MODEL_REFUSALS)
-    pos_void = sum(pos_c[k] for k in VERIFY_REFUSALS)
-    pos_answered = pos_c[FINAL_ANSWERED]
-    pos_refused = pos_floor + pos_model + pos_void
-    pos_refusal_rate = (pos_refused / pos_total) if pos_total > 0 else 0.0
-
-    refusal = RefusalMetrics(
-        negative_total=neg_total,
-        negative_floor_refused=neg_floor,
-        negative_model_insufficient=neg_model,
-        negative_verify_void=neg_void,
-        negative_answered_leaked=neg_answered,
-        negative_refusal_rate=round(neg_refusal_rate, 4),
-        positive_total=pos_total,
-        positive_floor_refused=pos_floor,
-        positive_model_insufficient=pos_model,
-        positive_verify_void=pos_void,
-        positive_answered=pos_answered,
-        positive_refusal_rate=round(pos_refusal_rate, 4),
+    cites_expected = sum(
+        1 for r in pos if r["final"] == FINAL_ANSWERED and r["cites_expected"] is True
     )
-
-    # 2. 幻覺分析
-    unfounded_count = neg_answered
-    unfounded_rate = (unfounded_count / neg_total) if neg_total > 0 else 0.0
-
-    # 可答題中引用漂移（未引期望條文）
-    drift_count = sum(
-        1 for r in pos_rows if r.get("final") == FINAL_ANSWERED and r.get("cites_expected") is False
+    passed = [r for r in pos if r["final"] not in FLOOR_REFUSALS]
+    has_expected = [r for r in passed if r.get("evidence_has_expected") is True]
+    citation = CitationMetrics(
+        answerable_total=answerable.total,
+        answered=answerable.answered,
+        cites_expected=cites_expected,
+        cites_other=answerable.answered - cites_expected,
+        passed_floor=len(passed),
+        evidence_has_expected=len(has_expected),
+        evidence_has_expected_not_answered=sum(
+            1 for r in has_expected if r["final"] != FINAL_ANSWERED
+        ),
     )
-    drift_rate = (drift_count / pos_answered) if pos_answered > 0 else 0.0
-
-    # 外部知識外溢作廢
-    ext_leak_void = pos_void + neg_void
-
-    total_ans = neg_answered + pos_answered
-    hallu_ans = unfounded_count + drift_count
-    composite_rate = (hallu_ans / total_ans) if total_ans > 0 else 0.0
-
-    hallucination = HallucinationMetrics(
-        unfounded_count=unfounded_count,
-        unfounded_rate=round(unfounded_rate, 4),
-        citation_drift_count=drift_count,
-        citation_drift_rate=round(drift_rate, 4),
-        external_leak_void_count=ext_leak_void,
-        total_answered=total_ans,
-        hallucinated_answers=hallu_ans,
-        composite_hallucination_rate=round(composite_rate, 4),
-    )
-
-    # 3. 引用忠實度分析
-    hits_expected = sum(
-        1 for r in pos_rows if r.get("final") == FINAL_ANSWERED and r.get("cites_expected") is True
-    )
-    fidelity_rate = (hits_expected / pos_answered) if pos_answered > 0 else 0.0
-    coverage_rate = (hits_expected / pos_total) if pos_total > 0 else 0.0
-
-    # 證據集含期望條文但被拒
-    has_exp_but_refused = sum(
-        1
-        for r in pos_rows
-        if r.get("evidence_has_expected") is True and r.get("final") != FINAL_ANSWERED
-    )
-
-    faithfulness = FaithfulnessMetrics(
-        positive_answered=pos_answered,
-        hits_expected_count=hits_expected,
-        grounded_fidelity_rate=round(fidelity_rate, 4),
-        positive_total=pos_total,
-        end_to_end_coverage_rate=round(coverage_rate, 4),
-        evidence_has_expected_but_refused=has_exp_but_refused,
-    )
-
-    # 4. 延遲分析
-    latency_summary: dict[str, LatencyPercentiles] = {}
-    if latencies:
-        for stage, vals in latencies.items():
-            latency_summary[stage] = calculate_percentiles(vals)
-
     return AnswerQualitySummary(
-        total_questions=len(records),
-        refusal=refusal,
-        hallucination=hallucination,
-        faithfulness=faithfulness,
-        latency_by_stage=latency_summary,
+        total_questions=len(rows),
+        negative=_outcomes(neg),
+        answerable=answerable,
+        citation=citation,
     )
+
+
+def _pct(n: int, d: int) -> str:
+    return f"{n / d:.1%}" if d else "—"
+
+
+def _provenance(meta: Mapping[str, Any], subset: str | None) -> list[str]:
+    """輸入 run 的來源：commit、時間、題庫與語料快照。報告本身沒有自己的時間。"""
+    commit = meta.get("envcite_commit")
+    dirty = "（工作樹有未提交變更）" if meta.get("git_dirty") else ""
+    golden = meta.get("golden") or {}
+    split = meta.get("split") or {}
+    snaps = "；".join(f"{s['feed']} {s['data_date']}" for s in meta.get("snapshots") or [])
+    calls = meta.get("model_calls")
+    lines = [
+        f"- 輸入 run：{meta.get('run_at', '未記')}；commit `{commit}`{dirty}",
+        f"- 輸入檔：`{meta.get('input_name', '未記')}` sha256 `{meta.get('input_sha256', '未記')}`",
+        f"- 題庫：`{golden.get('path', '未記')}` sha256 `{golden.get('sha256', '未記')}`",
+        f"- 語料快照：{snaps or '未記'}；as_of {meta.get('as_of', '未記')}",
+        f"- 模型：`{meta.get('model', '未記')}`；模型呼叫 {'未記' if calls is None else calls} 次",
+    ]
+    if split:
+        lines.append(f"- 輸入 run 的切分：`{split.get('path')}` 子集 `{split.get('subset')}`")
+    if subset:
+        lines.append(f"- 本報告另以切分檔篩出子集：`{subset}`")
+    return lines
 
 
 def format_markdown_report(
     summary: AnswerQualitySummary,
-    meta: dict[str, Any] | None = None,
+    run_meta: Mapping[str, Any],
+    subset: str | None = None,
 ) -> str:
-    """將作答品質總結性評估摘要格式化為 Markdown 報告。"""
-    meta = meta or {}
-    run_at = meta.get("run_at", "N/A")
-    model = meta.get("model", "mistral-small-4")
-    dataset = meta.get("dataset", "Golden Set (Natural Questions)")
-
-    r = summary.refusal
-    h = summary.hallucination
-    f = summary.faithfulness
-
+    """Markdown 報告：檔頭記輸入 run 的來源，內文只有計數與比例。"""
+    n, a, c = summary.negative, summary.answerable, summary.citation
     lines = [
-        "# 自然情境作答品質總結性評估報告",
+        "# 作答結果彙總",
         "",
-        f"- 執行時間：{run_at}",
-        f"- 評估對象模型：`{model}`（temperature 0、max_tokens 800）",
-        f"- 測試資料集：{dataset}（總題數：{summary.total_questions} 題）",
-        (
-            "- 邊界架構：`consult` 檢索與下界判定 → `GroundedAnswerer`"
-            " 封閉引用作答 → `Verify` 嚴格代號核驗"
-        ),
+        "重新彙總輸入 run 的逐題分類，沒有重跑任何檢索或模型，也沒有延遲（延遲見"
+        " `load-bench-*`）。",
         "",
-        "## 1. 拒答率與可答性守門（Refusal Breakdown）",
+        *_provenance(run_meta, subset),
+        f"- 題數：{summary.total_questions}（無答案 {n.total}、可答 {a.total}）",
         "",
-        "| 題目類型 | 總題數 | 下界攔截 | 模型自認不足 | 代號查核作廢 | 給予回答 | 有效拒答率 |",
+        "## 1. 最後分類",
+        "",
+        "| 題目類型 | 題數 | 下界攔截 | 模型自認不足 | 引用查核作廢 | 給出有引用的回答 |"
+        " 模型端點失敗 |",
         "|---|---|---|---|---|---|---|",
-        (
-            f"| 無答案問句（應拒答） | {r.negative_total} |"
-            f" {r.negative_floor_refused} "
-            f"({(r.negative_floor_refused / r.negative_total):.1%}) |"
-            f" {r.negative_model_insufficient} "
-            f"({(r.negative_model_insufficient / r.negative_total):.1%}) |"
-            f" {r.negative_verify_void} "
-            f"({(r.negative_verify_void / r.negative_total):.1%}) |"
-            f" {r.negative_answered_leaked} "
-            f"({(r.negative_answered_leaked / r.negative_total):.1%}) |"
-            f" **{r.negative_refusal_rate:.1%}** |"
-            if r.negative_total > 0
-            else "| 無答案問句 | 0 | 0 | 0 | 0 | 0 | 0.0% |"
-        ),
-        (
-            f"| 可答問句（應回答） | {r.positive_total} |"
-            f" {r.positive_floor_refused} "
-            f"({(r.positive_floor_refused / r.positive_total):.1%}) |"
-            f" {r.positive_model_insufficient} "
-            f"({(r.positive_model_insufficient / r.positive_total):.1%}) |"
-            f" {r.positive_verify_void} "
-            f"({(r.positive_verify_void / r.positive_total):.1%}) |"
-            f" {r.positive_answered} "
-            f"({(r.positive_answered / r.positive_total):.1%}) |"
-            f" {r.positive_refusal_rate:.1%} (保守拒答) |"
-            if r.positive_total > 0
-            else "| 可答問句 | 0 | 0 | 0 | 0 | 0 | 0.0% |"
-        ),
+    ]
+    for label, o in (("無答案題", n), ("可答題", a)):
+        lines.append(
+            f"| {label} | {o.total} | {o.floor_refused} ({_pct(o.floor_refused, o.total)}) |"
+            f" {o.model_insufficient} ({_pct(o.model_insufficient, o.total)}) |"
+            f" {o.verify_void} ({_pct(o.verify_void, o.total)}) |"
+            f" {o.answered} ({_pct(o.answered, o.total)}) |"
+            f" {o.model_error} ({_pct(o.model_error, o.total)}) |"
+        )
+    lines += [
         "",
-        "- **雙層防衛機制發揮關鍵作用**：",
-        (
-            f"  - 下界單獨攔截了 {r.negative_floor_refused} 題無答案題"
-            f"（{r.negative_floor_refused / r.negative_total:.1%}），"
-            if r.negative_total > 0
-            else ""
-        ),
-        (
-            f"  - 接地檢查與提示詞促使模型在證據不足時主動拒答 "
-            f"{r.negative_model_insufficient} 題"
-            f"（{r.negative_model_insufficient / r.negative_total:.1%}），"
-            if r.negative_total > 0
-            else ""
-        ),
-        (
-            f"  - 引用代號查核（`Verify`）作廢非法或無引用回答 "
-            f"{r.negative_verify_void + r.positive_verify_void} 題，有效遏止未接地外溢。"
-        ),
+        f"- **無答案題給出有引用回答的比例（上界）**：{n.answered}／{n.total}"
+        f"（{_pct(n.answered, n.total)}）。這不是不當作答率：被放過的題要逐題檢視"
+        "（題庫標註錯、澄清題、灰區都可能在其中；做法與一次結果見"
+        " `eval/grounding-check-leaked-2026-11-03.md`）。",
+        f"- 無答案題最後拒答（下界、模型自認不足、引用查核作廢）：{n.not_answered}／{n.total}"
+        f"（{_pct(n.not_answered, n.total)}）。",
+        f"- 可答題最後沒有回答：{a.not_answered}／{a.total}（{_pct(a.not_answered, a.total)}）；"
+        "其中下界攔截與模型自認不足各是檢索與模型的保守，不是對錯。",
         "",
-        "## 2. 幻覺率審計（Hallucination Audit）",
+        "## 2. 可答題的引用與期望條",
         "",
-        "| 幻覺指標 | 案例數 | 計算基準 | 實測比例 | 評估意涵 |",
-        "|---|---|---|---|---|",
-        (
-            f"| 嚴格無據幻覺率（Unfounded Rate） | {h.unfounded_count} |"
-            f" 無答案題 {r.negative_total} |"
-            f" **{h.unfounded_rate:.1%}** | 語料無依據卻捏造引用給出答案 |"
-        ),
-        (
-            f"| 引用漂移率（Citation Drift Rate） | {h.citation_drift_count} |"
-            f" 給予回答可答題 {r.positive_answered} |"
-            f" **{h.citation_drift_rate:.1%}** | 有回答但所引條文偏離真實法律期望條文 |"
-        ),
-        (
-            f"| 外部知識外溢作廢數 | {h.external_leak_void_count} |"
-            f" 總題數 {summary.total_questions} |"
-            f" **{h.external_leak_void_count} 題** | 模型脫離封閉引用代號自創論述被系統整份作廢 |"
-        ),
-        (
-            f"| 綜合回答幻覺率（Composite Hallucination） | {h.hallucinated_answers} |"
-            f" 總給出回答 {h.total_answered} |"
-            f" **{h.composite_hallucination_rate:.1%}** | 所有輸出文本中含有無據或漂移內容之比例 |"
-        ),
-        "",
-        "## 3. 引用忠實度（Citation Faithfulness & Grounding）",
-        "",
-        (
-            f"- **接地忠實度（Grounded Fidelity）**：給予回答的 "
-            f"{f.positive_answered} 道可答問句中，有 **{f.hits_expected_count} 題"
-            f"（{f.grounded_fidelity_rate:.1%}）** 精確引用真實期望條文。"
-        ),
-        (
-            f"- **端到端有效覆蓋率**：在全體 {f.positive_total} 道可答問句中，"
-            f"達到有引用且精準含期望條文之比例為 **{f.end_to_end_coverage_rate:.1%}**"
-            f"（主因受限於檢索 Top-10 召回率）。"
-        ),
-        (
-            f"- **模型保守性損耗**：封閉證據集中已包含期望條文，"
-            f"但模型依然保守回覆「證據不足」之題目共有 "
-            f"**{f.evidence_has_expected_but_refused} 題**。"
-        ),
+        f"- **有引用但未引到期望條的比例（無法判斷好壞）**：{c.cites_other}／{c.answered}"
+        f"（{_pct(c.cites_other, c.answered)}）。期望條是 qrels 判為相關的條；所引的條在 qrels"
+        "沒有判定是洞，不是答錯。",
+        f"- 有引用的回答中，所引條文含期望條：{c.cites_expected}／{c.answered}"
+        f"（{_pct(c.cites_expected, c.answered)}）；占全部可答題 {c.cites_expected}／"
+        f"{c.answerable_total}（{_pct(c.cites_expected, c.answerable_total)}）。",
+        f"- 過下界的可答題 {c.passed_floor} 題中，封閉證據集含期望條：{c.evidence_has_expected}"
+        f"（{_pct(c.evidence_has_expected, c.passed_floor)}）；其中最後沒有回答的有"
+        f" {c.evidence_has_expected_not_answered} 題（模型自認不足或引用查核作廢）。",
         "",
     ]
-
-    if summary.latency_by_stage:
-        lines += [
-            "## 4. 端到端延遲分佈（Latency Distribution）",
-            "",
-            "| 處理階段 | 樣本數 | Mean (ms) | p50 (ms) | p90 (ms) | p95 (ms) | p99 (ms) |"
-            " Max (ms) |",
-            "|---|---|---|---|---|---|---|---|",
-        ]
-        for stage, p in summary.latency_by_stage.items():
-            lines.append(
-                f"| `{stage}` | {p.count} | {p.mean_ms} | {p.p50_ms} | "
-                f"{p.p90_ms} | {p.p95_ms} | {p.p99_ms} | {p.max_ms} |"
-            )
-        lines.append("")
-
     return "\n".join(lines)
