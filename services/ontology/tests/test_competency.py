@@ -13,7 +13,7 @@ import tomllib
 
 SERVICE = Path(__file__).resolve().parent.parent
 REGISTRY = SERVICE / "competency.toml"
-PROTO_DIR = SERVICE.parent.parent / "proto" / "envcite" / "ontology" / "v1"
+PROTO_DIR = SERVICE.parent.parent / "proto" / "envcite" / "ontology" / "v2"
 
 #: 專論的七組三十三題。加題時，這裡與 competency.toml 同一次更新。
 QUESTIONS = (

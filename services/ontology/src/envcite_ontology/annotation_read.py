@@ -12,9 +12,8 @@ from datetime import date
 from decimal import Decimal
 from typing import cast
 
-from envcite.ontology.v1 import reasoning_pb2 as pb
-from envcite.ontology.v2 import ontology_pb2 as ont_pb2_v2
-from envcite.ontology.v2 import reasoning_pb2 as pb2_v2
+from envcite.ontology.v2 import ontology_pb2 as ont_pb
+from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite_ontology import reasoning_codec as codec
 from envcite_ontology.reasoning.facts import Invalidated
 from envcite_ontology.store import LANGUAGE, Conn
@@ -205,7 +204,9 @@ def _conditions(
     )
     for row in conn.execute(_CONDITIONS, by_id):
         cid, sid, role, disjunct, code, comparator, threshold, unit, negated, needs = row[:10]
-        value_concept, _jur, _scheme, dl_local, delegate_path, permit, method, averaging = row[10:]
+        value_concept, dl_jur, dl_scheme, dl_local, delegate_path, permit, method, averaging = row[
+            10:
+        ]
         condition = pb.Condition(
             id=cast(int, cid),
             concept=str(code),
@@ -222,123 +223,8 @@ def _conditions(
             condition.value_concept = str(value_concept)
         elif delegate_path is not None:
             condition.delegate.CopyFrom(
-                pb.Delegation(law_id=str(dl_local), provision_path=str(delegate_path))
-            )
-        elif permit is not None:
-            condition.delegate_permit = str(permit)
-        grouped[(cast(int, sid), str(role))][cast(int, disjunct)].append(condition)
-
-    for (sid, role), disjuncts in grouped.items():
-        statement = statements[sid]
-        if role == "limit":
-            statement.limits.extend(c for group in disjuncts.values() for c in group)
-            continue
-        requirement = statement.scope if role == "scope" else statement.duty
-        for _, conditions in sorted(disjuncts.items()):
-            requirement.any_of.add(all_of=conditions)
-
-
-def list_statements_v2(
-    conn: Conn, resource_id: int, on: date | None
-) -> pb2_v2.ListStatementsResponse:
-    """資源 `resource_id` 在 `on`（None 為今日）有效、已確認的陳述（v2）。"""
-    params = {"resource": resource_id, "language": LANGUAGE, "on": on or date.today()}
-    invalidated = [
-        codec.invalidated_v2(
-            Invalidated(cast(int, sid), str(iri), str(no), cast(date, since), bool(partial))
-        )
-        for sid, iri, no, since, partial in conn.execute(_INVALIDATED, params)
-    ]
-    rows = conn.execute(_STATEMENTS, params).fetchall()
-    ids = [cast(int, r[0]) for r in rows]
-    if not ids:
-        return pb2_v2.ListStatementsResponse(invalidated=invalidated)
-    by_id = {"ids": ids}
-
-    statements: dict[int, pb2_v2.Statement] = {}
-    for sid, kind, modality, iri in rows:
-        statement = pb2_v2.Statement(
-            id=cast(int, sid), kind=codec.STATEMENT_KIND_V2[str(kind)], version_iri=str(iri)
-        )
-        if modality is not None:
-            statement.modality = codec.NORM_MODALITY_V2[str(modality)]
-        statements[cast(int, sid)] = statement
-
-    for sid, slot, code, literal, liability in conn.execute(_SLOTS, by_id):
-        out = statements[cast(int, sid)].slots.add(role=codec.SLOT_ROLE_V2[str(slot)])
-        if code is not None:
-            out.concept = str(code)
-        else:
-            out.literal = str(literal)
-        if liability is not None:
-            out.liability_basis = codec.LIABILITY_BASIS_V2[str(liability)]
-
-    _conditions_v2(conn, by_id, statements)
-
-    for exception, excluded in conn.execute(_EXCEPTIONS, by_id):
-        statements[cast(int, exception)].exception_of.append(cast(int, excluded))
-    for sid, punishes, effect, text, low, high, per_occasion, discretionary in conn.execute(
-        _SANCTIONS, by_id
-    ):
-        sanction = statements[cast(int, sid)].sanction
-        sanction.punishes = cast(int, punishes)
-        sanction.effect = codec.LEGAL_EFFECT_V2[str(effect)]
-        sanction.amount_text = str(text or "")
-        if low is not None:
-            sanction.min_amount = int(cast(Decimal, low))
-        if high is not None:
-            sanction.max_amount = int(cast(Decimal, high))
-        sanction.per_occasion = bool(per_occasion)
-        sanction.discretionary = bool(discretionary)
-    for sid, trigger, kind in conn.execute(_TRIGGERS, by_id):
-        statements[cast(int, sid)].sanction.triggers.add(
-            statement_id=cast(int, trigger), kind=codec.TRIGGER_KIND_V2[str(kind)]
-        )
-
-    return pb2_v2.ListStatementsResponse(
-        statements=list(statements.values()),
-        invalidated=invalidated,
-        overrides=[
-            pb2_v2.Override(
-                prevailing=cast(int, w),
-                subordinate=cast(int, s),
-                basis=codec.OVERRIDE_BASIS_V2[str(b)],
-            )
-            for w, s, b in conn.execute(_OVERRIDES, by_id)
-        ],
-    )
-
-
-def _conditions_v2(
-    conn: Conn, by_id: dict[str, list[int]], statements: dict[int, pb2_v2.Statement]
-) -> None:
-    """要件依（陳述, 角色）分組，組內依析取編號成為 DNF（v2）。"""
-    grouped: dict[tuple[int, str], dict[int, list[pb2_v2.Condition]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
-    for row in conn.execute(_CONDITIONS, by_id):
-        cid, sid, role, disjunct, code, comparator, threshold, unit, negated, needs = row[:10]
-        value_concept, dl_jur, dl_scheme, dl_local, delegate_path, permit, method, averaging = row[
-            10:
-        ]
-        condition = pb2_v2.Condition(
-            id=cast(int, cid),
-            concept=str(code),
-            comparator=codec.COMPARATOR_V2[str(comparator)],
-            unit=str(unit or ""),
-            negated=bool(negated),
-            needs_assessment=bool(needs),
-            measurement_method=str(method or ""),
-            averaging_period=str(averaging or ""),
-        )
-        if threshold is not None:
-            condition.value.CopyFrom(codec.decimal_v2(cast(Decimal, threshold)))
-        elif value_concept is not None:
-            condition.value_concept = str(value_concept)
-        elif delegate_path is not None:
-            condition.delegate.CopyFrom(
-                pb2_v2.Delegation(
-                    identifier=ont_pb2_v2.LawIdentifier(
+                pb.Delegation(
+                    identifier=ont_pb.LawIdentifier(
                         jurisdiction=str(dl_jur),
                         id_scheme=str(dl_scheme),
                         local_id=str(dl_local),

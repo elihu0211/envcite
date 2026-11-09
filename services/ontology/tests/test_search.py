@@ -11,7 +11,7 @@ import grpc
 import psycopg
 import pytest
 
-from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
+from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
 from envcite_ontology.server import build_server
 from envcite_ontology.store import OntologyStore
 from envcite_segmenter import Segmenter
@@ -90,7 +90,13 @@ def test_search_finds_the_article_by_raw_text(
     )
 
     top = response.hits[0]
-    assert (top.law_id, top.law_title, top.number) == ("T0000001", "噪音管制法", "9")
+    assert (
+        top.identifier.jurisdiction,
+        top.identifier.id_scheme,
+        top.identifier.local_id,
+        top.law_title,
+        top.number,
+    ) == ("TW-CENTRAL", "moj_pcode", "T0000001", "噪音管制法", "9")
     assert top.lexical_score > 0
 
 

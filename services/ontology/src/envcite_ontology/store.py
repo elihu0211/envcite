@@ -25,11 +25,6 @@ LANGUAGE = "zho"
 Conn = psycopg.Connection[tuple[object, ...]]
 
 
-#: 中央管轄與全國法規資料庫的識別碼方案；v1 契約的 `law_id` 就是這一組的 pcode。
-CENTRAL = "TW-CENTRAL"
-MOJ_PCODE = "moj_pcode"
-
-
 @dataclass(frozen=True, slots=True)
 class LawKey:
     """法規的自然鍵（管轄，識別碼方案，在地識別碼）；三個欄位都由呼叫端明說，沒有預設。
@@ -40,11 +35,6 @@ class LawKey:
     jurisdiction: str
     id_scheme: str
     local_id: str
-
-    @classmethod
-    def moj(cls, pcode: str) -> LawKey:
-        """全國法規資料庫的法規（中央、`moj_pcode`）。"""
-        return cls(CENTRAL, MOJ_PCODE, pcode)
 
     def __str__(self) -> str:
         return f"{self.jurisdiction}:{self.id_scheme}:{self.local_id}"

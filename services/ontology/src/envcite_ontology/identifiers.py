@@ -7,14 +7,14 @@
 
 from __future__ import annotations
 
-from envcite.ontology.v2 import ontology_pb2 as pb2_v2
+from envcite.ontology.v2 import ontology_pb2 as pb
 from envcite_ontology import errors
 from envcite_ontology.store import LawKey, OntologyStore
 
 
 def law_key(
     store: OntologyStore,
-    identifier: pb2_v2.LawIdentifier,
+    identifier: pb.LawIdentifier,
     v: errors.Validator,
     field: str = "identifier",
 ) -> LawKey:

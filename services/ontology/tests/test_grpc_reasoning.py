@@ -8,12 +8,12 @@ import pytest
 from google.rpc import error_details_pb2
 from grpc_status import rpc_status
 
-from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc, reasoning_pb2, reasoning_pb2_grpc
+from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc, reasoning_pb2, reasoning_pb2_grpc
 from envcite_ontology import errors
 from envcite_ontology.annotate import load
 from envcite_ontology.reasoning_service import ReasoningServicer
 from envcite_ontology.store import OntologyStore
-from tests.conftest import call_metadata
+from tests.conftest import call_metadata, identifier
 from tests.reasoning_support import Conn, _plain_duty
 from tests.test_annotation import LAW, _doc, _duty, _limit
 from tests.test_incremental import _articles, _first, _law_v1
@@ -67,7 +67,7 @@ def test_statements_come_back_typed(conn: Conn, tmp_path: Path, reasoning_stub: 
     duty_id, limit_id = _committed(conn, tmp_path)
 
     response = reasoning_stub.ListStatements(
-        reasoning_pb2.ListStatementsRequest(law_id=LAW), metadata=call_metadata()
+        reasoning_pb2.ListStatementsRequest(identifier=identifier(LAW)), metadata=call_metadata()
     )
 
     by_id = {s.id: s for s in response.statements}
@@ -79,7 +79,7 @@ def test_statements_come_back_typed(conn: Conn, tmp_path: Path, reasoning_stub: 
     assert (scope.concept, scope.comparator) == ("discharging", reasoning_pb2.COMPARATOR_EQ)
     assert scope.value.value == "1"
     delegated = duty.duty.any_of[0].all_of[0]
-    assert delegated.delegate.law_id == LAW
+    assert delegated.delegate.identifier == identifier(LAW)
     assert delegated.delegate.provision_path == "art_2"
     assert limit.kind == reasoning_pb2.STATEMENT_KIND_CONSTITUTIVE
     assert not limit.HasField("modality")
@@ -161,8 +161,8 @@ def test_a_day_the_corpus_does_not_cover_is_named_not_silently_empty(
     response = reasoning_stub.Evaluate(request, metadata=call_metadata())
 
     assert not response.earlier[0].outcome.verdicts
-    assert list(response.earlier[0].outcome.uncovered_law_ids) == [LAW]
-    assert not response.at_decision.uncovered_law_ids
+    assert list(response.earlier[0].outcome.uncovered_law_identifiers) == [identifier(LAW)]
+    assert not response.at_decision.uncovered_law_identifiers
 
 
 def test_no_annotation_means_no_conclusion(
@@ -184,11 +184,12 @@ def test_an_unknown_law_and_an_uncovered_date_are_different_reasons(
 
     with pytest.raises(grpc.RpcError) as unknown:
         reasoning_stub.ListStatements(
-            reasoning_pb2.ListStatementsRequest(law_id="Z9999999"), metadata=call_metadata()
+            reasoning_pb2.ListStatementsRequest(identifier=identifier("Z9999999")),
+            metadata=call_metadata(),
         )
     with pytest.raises(grpc.RpcError) as early:
         reasoning_stub.ListStatements(
-            reasoning_pb2.ListStatementsRequest(law_id=LAW, as_of="1900-01-01"),
+            reasoning_pb2.ListStatementsRequest(identifier=identifier(LAW), as_of="1900-01-01"),
             metadata=call_metadata(),
         )
 
@@ -253,7 +254,9 @@ def test_conduct_after_decision_is_a_date_order_violation(reasoning_stub: Stub) 
         )
 
     assert error.value.code() == grpc.StatusCode.INVALID_ARGUMENT
-    assert _details(error.value)[1] == ["conduct_on"]
+    info, fields = _details(error.value)
+    assert info.reason == errors.INVALID_REQUEST
+    assert fields == ["conduct_on"]
 
 
 def test_the_existing_service_uses_the_same_error_model(
@@ -261,7 +264,8 @@ def test_the_existing_service_uses_the_same_error_model(
 ) -> None:
     with pytest.raises(grpc.RpcError) as error:
         stub.GetLaw(
-            ontology_pb2.GetLawRequest(id="O0020001", as_of="yesterday"), metadata=call_metadata()
+            ontology_pb2.GetLawRequest(identifier=identifier("O0020001"), as_of="yesterday"),
+            metadata=call_metadata(),
         )
 
     assert error.value.code() == grpc.StatusCode.INVALID_ARGUMENT
@@ -462,3 +466,120 @@ def test_an_invalidated_limit_comes_back_with_its_ruling(
     assert [(i.statement_id, i.ruling_no, i.invalid_from) for i in outcome.invalidated] == [
         (limit_id, "憲判字第 99 號", "2019-03-01")
     ]
+
+
+def test_a_missing_local_id_is_reported(reasoning_stub: Stub) -> None:
+    request = reasoning_pb2.ListStatementsRequest(
+        identifier=identifier("", jurisdiction="TW-TPE", id_scheme="local_glrs"),
+    )
+    with pytest.raises(grpc.RpcError) as err:
+        reasoning_stub.ListStatements(request, metadata=call_metadata())
+
+    assert err.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    info, fields = _details(err.value)
+    assert info.reason == errors.INVALID_REQUEST
+    assert "identifier.local_id" in fields
+
+
+def test_a_local_law_that_does_not_exist_is_not_found(reasoning_stub: Stub) -> None:
+    request = reasoning_pb2.ListStatementsRequest(
+        identifier=identifier("NON_EXISTENT_999", jurisdiction="TW-TPE", id_scheme="local_glrs"),
+    )
+    with pytest.raises(grpc.RpcError) as err:
+        reasoning_stub.ListStatements(request, metadata=call_metadata())
+
+    assert err.value.code() == grpc.StatusCode.NOT_FOUND
+    info, _ = _details(err.value)
+    assert info.reason == errors.LAW_NOT_FOUND
+
+
+def test_an_unparseable_number_is_reported_with_its_path(reasoning_stub: Stub) -> None:
+    request = reasoning_pb2.EvaluateRequest(
+        conduct_on="not-a-date",
+        facts=[
+            reasoning_pb2.Fact(concept="ap_intent", values=[reasoning_pb2.FactValue(flag=True)]),
+            reasoning_pb2.Fact(
+                concept="cod",
+                values=[reasoning_pb2.FactValue(number=reasoning_pb2.Decimal(value="bad-num"))],
+            ),
+        ],
+    )
+    with pytest.raises(grpc.RpcError) as err:
+        reasoning_stub.Evaluate(request, metadata=call_metadata())
+
+    assert err.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    info, fields = _details(err.value)
+    assert info.reason == errors.INVALID_REQUEST
+    assert "conduct_on" in fields
+    assert "decided_on" in fields
+    assert "facts[0].concept" in fields
+    assert "facts[1].values[0].number.value" in fields
+
+
+def test_codec_carries_the_identifiers_of_central_and_local_laws() -> None:
+    """測試推論編碼器原生支援中央與地方雙軌授權鏈與未涵蓋法規識別碼。"""
+    from envcite_ontology import reasoning_codec as codec
+    from envcite_ontology.reasoning import Result
+    from envcite_ontology.reasoning.facts import Chain, Link
+
+    central_act = Link(
+        command_jurisdiction="TW-TPE",
+        command_id_scheme="local_glrs",
+        command_local_id="TPE-ENV-001",
+        cited_law_name="空氣污染防制法",
+        cited_path="art_20",
+        target_jurisdiction="TW-CENTRAL",
+        target_id_scheme="moj_pcode",
+        target_local_id="O0020001",
+        version_iri="https://envcite/tw/law/O0020001/2018-08-01/zho/art_20",
+        gap=None,
+    )
+    chain = Chain(rooted=True, links=(central_act,))
+    basis = codec._delegation(statement_id=101, chain=chain)
+
+    assert basis.statement_id == 101
+    assert basis.rooted is True
+    assert len(basis.links) == 1
+    link = basis.links[0]
+    assert link.command_identifier.jurisdiction == "TW-TPE"
+    assert link.command_identifier.id_scheme == "local_glrs"
+    assert link.command_identifier.local_id == "TPE-ENV-001"
+    assert link.identifier.jurisdiction == "TW-CENTRAL"
+    assert link.identifier.id_scheme == "moj_pcode"
+    assert link.identifier.local_id == "O0020001"
+    assert link.cited_law_name == "空氣污染防制法"
+
+    # outcome 原生封裝 uncovered_law_identifiers
+    from envcite_ontology.reasoning.engine import General
+
+    general = General(unpunished=(), mitigation=(), presumed=(), time_barred=())
+    result = Result(
+        verdicts={101: "violation"},
+        penalties=(),
+        one_act=None,
+        missing=(),
+        needs_judgement=(),
+        judgement_used=(),
+        problems=(),
+        unresolved_conflicts=(),
+        defeated=(),
+        unresolved_penalty_overlaps=(),
+        penalty_defeated=(),
+        trace=(),
+        limit_sources={},
+        general=general,
+        delegation={101: chain},
+    )
+    uncovered = (
+        ("TW-CENTRAL", "moj_pcode", "O0020001"),
+        ("TW-TPE", "local_glrs", "TPE-ENV-001"),
+    )
+    out = codec.outcome(result, sources={101: "https://iri"}, uncovered=uncovered)
+    assert len(out.uncovered_law_identifiers) == 2
+    assert out.uncovered_law_identifiers[0].jurisdiction == "TW-CENTRAL"
+    assert out.uncovered_law_identifiers[0].local_id == "O0020001"
+    assert out.uncovered_law_identifiers[1].jurisdiction == "TW-TPE"
+    assert out.uncovered_law_identifiers[1].local_id == "TPE-ENV-001"
+    assert len(out.delegation_bases) == 1
+    assert out.delegation_bases[0].links[0].command_identifier.jurisdiction == "TW-TPE"
+    assert out.delegation_bases[0].links[0].identifier.jurisdiction == "TW-CENTRAL"

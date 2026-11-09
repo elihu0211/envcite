@@ -8,8 +8,8 @@ import pytest
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
-from envcite.ontology.v1 import reasoning_pb2 as pb
-from envcite.ontology.v1 import reasoning_pb2_grpc
+from envcite.ontology.v2 import reasoning_pb2 as pb
+from envcite.ontology.v2 import reasoning_pb2_grpc
 from envcite_grpc import configure_telemetry
 from envcite_ontology.reasoning_service import ReasoningServicer
 from envcite_ontology.store import OntologyStore

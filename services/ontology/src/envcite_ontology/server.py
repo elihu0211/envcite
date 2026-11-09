@@ -10,23 +10,19 @@ import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
-from envcite.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
-from envcite.ontology.v2 import ontology_pb2_grpc as ontology_v2_grpc
-from envcite.ontology.v2 import reasoning_pb2_grpc as reasoning_v2_grpc
+from envcite.ontology.v2 import ontology_pb2_grpc, reasoning_pb2_grpc
 from envcite_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
 from envcite_ontology import embedding
 from envcite_ontology.embedding import Embedder
-from envcite_ontology.reasoning_service import ReasoningServicer, ReasoningV2Servicer
-from envcite_ontology.service import OntologyServicer, OntologyV2Servicer
+from envcite_ontology.reasoning_service import ReasoningServicer
+from envcite_ontology.service import OntologyServicer
 from envcite_ontology.settings import ServerSettings, load
 from envcite_ontology.store import OntologyStore
 from envcite_ontology.telemetry import register_annotation_health
 from envcite_segmenter import Segmenter
 
-SERVICE_NAME = "envcite.ontology.v1.OntologyService"
-SERVICE_NAME_V2 = "envcite.ontology.v2.OntologyService"
-REASONING_SERVICE_NAME = "envcite.ontology.v1.ReasoningService"
-REASONING_SERVICE_NAME_V2 = "envcite.ontology.v2.ReasoningService"
+SERVICE_NAME = "envcite.ontology.v2.OntologyService"
+REASONING_SERVICE_NAME = "envcite.ontology.v2.ReasoningService"
 
 WORKERS = 10
 #: 同時進行的 RPC 上限。固定大小的執行緒池之外，超過的請求排隊；上限讓排隊有界，超過就
@@ -59,18 +55,11 @@ def build_server(
     ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
         OntologyServicer(store, segmenter, law_names, embedder, lexical_max_df), server
     )
-    ontology_v2_grpc.add_OntologyServiceServicer_to_server(
-        OntologyV2Servicer(store, segmenter, law_names, embedder, lexical_max_df), server
-    )
-
     reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(ReasoningServicer(store), server)
-    reasoning_v2_grpc.add_ReasoningServiceServicer_to_server(ReasoningV2Servicer(store), server)
     reflection.enable_server_reflection(
         (
             SERVICE_NAME,
-            SERVICE_NAME_V2,
             REASONING_SERVICE_NAME,
-            REASONING_SERVICE_NAME_V2,
             health.SERVICE_NAME,
             reflection.SERVICE_NAME,
         ),
@@ -79,13 +68,7 @@ def build_server(
 
     health_servicer = health_servicer or health.HealthServicer()
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
-    for name in (
-        "",
-        SERVICE_NAME,
-        SERVICE_NAME_V2,
-        REASONING_SERVICE_NAME,
-        REASONING_SERVICE_NAME_V2,
-    ):
+    for name in ("", SERVICE_NAME, REASONING_SERVICE_NAME):
         health_servicer.set(name, health_pb2.HealthCheckResponse.SERVING)
 
     port = server.add_insecure_port(address)

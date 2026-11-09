@@ -79,7 +79,7 @@ def flaky_server() -> Iterator[tuple[str, grpc.GenericRpcHandler]]:
 def _call(target: str, options: list[tuple[str, int | str]]) -> bytes:
     with grpc.insecure_channel(target, options=options) as channel:
         method: grpc.UnaryUnaryMultiCallable[bytes, bytes] = channel.unary_unary(
-            "/envcite.ontology.v1.OntologyService/GetLaw"
+            "/envcite.ontology.v2.OntologyService/GetLaw"
         )
         reply: bytes = method(b"", timeout=5)
         return reply
@@ -91,7 +91,7 @@ def test_unavailable_is_retried_for_read_only_services(
     target, handler = flaky_server
     handler.code, handler.fail = grpc.StatusCode.UNAVAILABLE, 2
 
-    reply = _call(target, client_options(["envcite.ontology.v1.OntologyService"]))
+    reply = _call(target, client_options(["envcite.ontology.v2.OntologyService"]))
 
     assert reply == b"ok"
     assert handler.calls == 3
@@ -108,7 +108,7 @@ def test_capacity_and_bad_requests_are_not_retried(
     handler.code, handler.fail = code, 5
 
     with pytest.raises(grpc.RpcError) as error:
-        _call(target, client_options(["envcite.ontology.v1.OntologyService"]))
+        _call(target, client_options(["envcite.ontology.v2.OntologyService"]))
 
     assert error.value.code() == code
     assert handler.calls == 1
@@ -127,7 +127,7 @@ def test_a_service_not_listed_as_read_only_is_not_retried(
 
 
 def test_retries_are_throttled_so_a_failing_downstream_is_not_amplified() -> None:
-    options = dict(client_options(["envcite.ontology.v1.OntologyService"]))
+    options = dict(client_options(["envcite.ontology.v2.OntologyService"]))
 
     config = json.loads(str(options["grpc.service_config"]))
 

@@ -50,7 +50,7 @@ strict = true
 
 [[tool.mypy.overrides]]
 # grpc_tools 產生的程式碼；型別由一併提交的 .pyi 提供。
-module = ["envcite.ontology.v1.*", "envcite.consult.v2.*"]
+module = ["envcite.consult.v2.*"]
 ignore_errors = true
 
 [[tool.mypy.overrides]]

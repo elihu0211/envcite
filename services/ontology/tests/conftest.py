@@ -7,9 +7,7 @@ import psycopg
 import pytest
 from testcontainers.community.postgres import PostgresContainer
 
-from envcite.ontology.v1 import ontology_pb2_grpc, reasoning_pb2_grpc
-from envcite.ontology.v2 import ontology_pb2_grpc as ontology_v2_grpc
-from envcite.ontology.v2 import reasoning_pb2_grpc as reasoning_v2_grpc
+from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc, reasoning_pb2_grpc
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.ingest import importer
 from envcite_ontology.migrate import apply_all
@@ -113,14 +111,13 @@ def reasoning_stub(channel: grpc.Channel) -> reasoning_pb2_grpc.ReasoningService
     return reasoning_pb2_grpc.ReasoningServiceStub(channel)
 
 
-@pytest.fixture
-def stub_v2(channel: grpc.Channel) -> ontology_v2_grpc.OntologyServiceStub:
-    return ontology_v2_grpc.OntologyServiceStub(channel)
-
-
-@pytest.fixture
-def reasoning_stub_v2(channel: grpc.Channel) -> reasoning_v2_grpc.ReasoningServiceStub:
-    return reasoning_v2_grpc.ReasoningServiceStub(channel)
+def identifier(
+    local_id: str, jurisdiction: str = "TW-CENTRAL", id_scheme: str = "moj_pcode"
+) -> ontology_pb2.LawIdentifier:
+    """法規的複合自然鍵；預設是中央法規（全國法規資料庫 pcode）。"""
+    return ontology_pb2.LawIdentifier(
+        jurisdiction=jurisdiction, id_scheme=id_scheme, local_id=local_id
+    )
 
 
 def call_metadata() -> tuple[tuple[str, str], ...]:

@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from envcite.ontology.v1 import reasoning_pb2 as pb
+from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite_ontology import reasoning_codec as codec
 from envcite_ontology.annotate import (
     LEGAL_EFFECTS,

@@ -51,7 +51,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 
 - `proto/envcite/**` 是 gRPC API 的**單一真值**，各服務都由此產生程式碼，**不得各自複製一份**。
 - API 文件：欄位語意寫在 `.proto` 註解；跨服務的組合與呼叫端接法寫在 `proto/README.md`（buf 模組文件）。改契約時兩者一起改。
-- 破壞性變更要開新套件版本（`v2`）；`v1` 必須通過 `buf breaking`（WIRE_JSON：守線路與 JSON 相容）。刪除欄位時以 `reserved` 保留其號碼與名稱。
+- 現行套件必須通過 `buf breaking`（WIRE_JSON：守線路與 JSON 相容）；刪除欄位時以 `reserved` 保留其號碼與名稱。破壞性變更開新套件版本，消費者遷完後整個刪除舊版套件（含產生碼、健康名稱與部署探針），不並存、不留相容層；WIRE_JSON 不檢查整個套件的刪除，不必為此放寬 `buf breaking`。
 - 改 proto 的 MR 必須同時更新兩側產生碼，一件事一個 MR。
 - 服務本身不驗證 gRPC 呼叫端；只准指定服務呼叫由部署環境執行（見 `proto/README.md`）。
 

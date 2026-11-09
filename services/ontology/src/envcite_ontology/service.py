@@ -9,9 +9,8 @@ import logging
 
 import grpc
 
-from envcite.ontology.v1 import ontology_pb2, ontology_pb2_grpc
-from envcite.ontology.v2 import ontology_pb2 as pb2_v2
-from envcite.ontology.v2 import ontology_pb2_grpc as grpc_v2
+from envcite.ontology.v2 import ontology_pb2 as pb
+from envcite.ontology.v2 import ontology_pb2_grpc
 from envcite_ontology import errors
 from envcite_ontology.embedding import Embedder, EmbeddingError
 from envcite_ontology.identifiers import jurisdiction_filter, law_key
@@ -27,153 +26,12 @@ DEFAULT_SEARCH_LIMIT = 10
 MAX_SEARCH_LIMIT = 50
 
 _RULING_KINDS = {
-    "interpretation": ontology_pb2.RULING_KIND_INTERPRETATION,
-    "judgment": ontology_pb2.RULING_KIND_JUDGMENT,
-}
-
-_RULING_KINDS_V2 = {
-    "interpretation": pb2_v2.RULING_KIND_INTERPRETATION,
-    "judgment": pb2_v2.RULING_KIND_JUDGMENT,
+    "interpretation": pb.RULING_KIND_INTERPRETATION,
+    "judgment": pb.RULING_KIND_JUDGMENT,
 }
 
 
 class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
-    def __init__(
-        self,
-        store: OntologyStore,
-        segmenter: Segmenter,
-        law_names: LawNames,
-        embedder: Embedder | None = None,
-        lexical_max_df: float = 0.0,
-    ) -> None:
-        self._store = store
-        self._law_names = law_names
-        self._lexical_max_df = lexical_max_df
-        self._segmenter = segmenter
-        self._embedder = embedder
-
-    def _not_found(self, law_id: str, as_of: str) -> errors.ServiceError:
-        # 法規不存在與該日無施行版本，契約都回 NOT_FOUND，reason 分開：呼叫端要能分辨語料缺漏
-        # 與「那天沒有這部法」。v1 的 law_id 定義為全國法規資料庫 pcode（中央）。
-        if self._store.law_exists(LawKey.moj(law_id)):
-            when = f"in force on {as_of}" if as_of else "in force today"
-            return errors.not_found(
-                errors.AS_OF_NOT_COVERED, f"law '{law_id}' has no version {when}"
-            )
-        return errors.not_found(errors.LAW_NOT_FOUND, f"law '{law_id}' not found")
-
-    @errors.maps_errors
-    def GetLaw(
-        self, request: ontology_pb2.GetLawRequest, context: grpc.ServicerContext
-    ) -> ontology_pb2.GetLawResponse:
-        _log_call(context, "GetLaw", request.id)
-        _check_as_of(request.as_of)
-        law = self._store.get_law(LawKey.moj(request.id), as_of=request.as_of)
-        if law is None:
-            raise self._not_found(request.id, request.as_of)
-        return ontology_pb2.GetLawResponse(
-            law=ontology_pb2.Law(
-                id=law.local_id,
-                iri=law.iri,
-                title=law.title,
-                language=law.language,
-                date_document=law.date_document,
-            )
-        )
-
-    @errors.maps_errors
-    def ListArticles(
-        self, request: ontology_pb2.ListArticlesRequest, context: grpc.ServicerContext
-    ) -> ontology_pb2.ListArticlesResponse:
-        _log_call(context, "ListArticles", request.law_id)
-        _check_as_of(request.as_of)
-        articles = self._store.list_articles(LawKey.moj(request.law_id), as_of=request.as_of)
-        if articles is None:
-            raise self._not_found(request.law_id, request.as_of)
-        return ontology_pb2.ListArticlesResponse(
-            articles=[ontology_pb2.Article(iri=a.iri, number=a.number) for a in articles]
-        )
-
-    @errors.maps_errors
-    def ListInvalidations(
-        self, request: ontology_pb2.ListInvalidationsRequest, context: grpc.ServicerContext
-    ) -> ontology_pb2.ListInvalidationsResponse:
-        _log_call(context, "ListInvalidations", request.law_id)
-        _check_as_of(request.as_of)
-        found = self._store.list_invalidations(
-            LawKey.moj(request.law_id), as_of=request.as_of, article_number=request.article_number
-        )
-        if found is None:
-            raise self._not_found(request.law_id, request.as_of)
-        return ontology_pb2.ListInvalidationsResponse(
-            invalidations=[
-                ontology_pb2.Invalidation(
-                    ruling_no=i.ruling_no,
-                    ruling_kind=_RULING_KINDS[i.ruling_kind],
-                    decided_on=i.decided_on,
-                    source_url=i.source_url,
-                    excerpt=i.excerpt,
-                    path=i.path,
-                    invalid_from=i.invalid_from,
-                    partial=i.partial,
-                )
-                for i in found
-            ]
-        )
-
-    @errors.maps_errors
-    def SearchArticles(
-        self, request: ontology_pb2.SearchArticlesRequest, context: grpc.ServicerContext
-    ) -> ontology_pb2.SearchArticlesResponse:
-        # 查詢文字可能是客戶案件內容：日誌只記長度。
-        _log_call(context, "SearchArticles", f"query_chars={len(request.query)}")
-        v = errors.Validator()
-        terms = self._segmenter.to_tsvector_input(request.query)
-        if not terms:
-            v.add("query", errors.EMPTY, "query must not be empty")
-        limit = request.limit or DEFAULT_SEARCH_LIMIT
-        if not 0 < limit <= MAX_SEARCH_LIMIT:
-            v.add("limit", errors.OUT_OF_RANGE, f"limit must be between 1 and {MAX_SEARCH_LIMIT}")
-        v.date("as_of", request.as_of)
-        v.check()
-
-        hits = self._store.search(
-            terms,
-            tokenizer=self._segmenter.tokenizer_id,
-            as_of=request.as_of,
-            limit=limit,
-            embedding=self._query_embedding(request.query),
-            model=self._embedder.model if self._embedder else "",
-            max_df=self._lexical_max_df,
-            laws=self._law_names.find(request.query),
-        )
-        return ontology_pb2.SearchArticlesResponse(
-            hits=[
-                ontology_pb2.ArticleHit(
-                    iri=h.iri,
-                    law_id=h.local_id,
-                    law_title=h.law_title,
-                    number=h.number,
-                    content=h.content,
-                    lexical_score=h.lexical_score,
-                    semantic_similarity=h.semantic_similarity,
-                )
-                for h in hits
-            ]
-        )
-
-    def _query_embedding(self, query: str) -> list[float] | None:
-        """問題的向量；沒有嵌入模型或取不到時為 None，檢索退回只用字面臂，不讓查詢失敗。"""
-        if self._embedder is None:
-            return None
-        try:
-            return self._embedder.embed([query])[0]
-        except EmbeddingError as e:
-            log.warning("semantic arm skipped: %s", e)
-            return None
-
-
-class OntologyV2Servicer(grpc_v2.OntologyServiceServicer):
     def __init__(
         self,
         store: OntologyStore,
@@ -194,7 +52,7 @@ class OntologyV2Servicer(grpc_v2.OntologyServiceServicer):
             return errors.not_found(errors.AS_OF_NOT_COVERED, f"law '{key}' has no version {when}")
         return errors.not_found(errors.LAW_NOT_FOUND, f"law '{key}' not found")
 
-    def _request_key(self, identifier: pb2_v2.LawIdentifier, as_of: str) -> LawKey:
+    def _request_key(self, identifier: pb.LawIdentifier, as_of: str) -> LawKey:
         """必填的自然鍵與 `as_of` 一次驗證，違規一次回報。"""
         v = errors.Validator()
         key = law_key(self._store, identifier, v)
@@ -203,17 +61,15 @@ class OntologyV2Servicer(grpc_v2.OntologyServiceServicer):
         return key
 
     @errors.maps_errors
-    def GetLaw(
-        self, request: pb2_v2.GetLawRequest, context: grpc.ServicerContext
-    ) -> pb2_v2.GetLawResponse:
-        _log_call(context, "GetLaw[v2]", _identifier_subject(request.identifier))
+    def GetLaw(self, request: pb.GetLawRequest, context: grpc.ServicerContext) -> pb.GetLawResponse:
+        _log_call(context, "GetLaw", _identifier_subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         law = self._store.get_law(key, as_of=request.as_of)
         if law is None:
             raise self._not_found(key, request.as_of)
-        return pb2_v2.GetLawResponse(
-            law=pb2_v2.Law(
-                identifier=pb2_v2.LawIdentifier(
+        return pb.GetLawResponse(
+            law=pb.Law(
+                identifier=pb.LawIdentifier(
                     jurisdiction=law.jurisdiction,
                     id_scheme=law.id_scheme,
                     local_id=law.local_id,
@@ -227,33 +83,33 @@ class OntologyV2Servicer(grpc_v2.OntologyServiceServicer):
 
     @errors.maps_errors
     def ListArticles(
-        self, request: pb2_v2.ListArticlesRequest, context: grpc.ServicerContext
-    ) -> pb2_v2.ListArticlesResponse:
-        _log_call(context, "ListArticles[v2]", _identifier_subject(request.identifier))
+        self, request: pb.ListArticlesRequest, context: grpc.ServicerContext
+    ) -> pb.ListArticlesResponse:
+        _log_call(context, "ListArticles", _identifier_subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         articles = self._store.list_articles(key, as_of=request.as_of)
         if articles is None:
             raise self._not_found(key, request.as_of)
-        return pb2_v2.ListArticlesResponse(
-            articles=[pb2_v2.Article(iri=a.iri, number=a.number) for a in articles]
+        return pb.ListArticlesResponse(
+            articles=[pb.Article(iri=a.iri, number=a.number) for a in articles]
         )
 
     @errors.maps_errors
     def ListInvalidations(
-        self, request: pb2_v2.ListInvalidationsRequest, context: grpc.ServicerContext
-    ) -> pb2_v2.ListInvalidationsResponse:
-        _log_call(context, "ListInvalidations[v2]", _identifier_subject(request.identifier))
+        self, request: pb.ListInvalidationsRequest, context: grpc.ServicerContext
+    ) -> pb.ListInvalidationsResponse:
+        _log_call(context, "ListInvalidations", _identifier_subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         found = self._store.list_invalidations(
             key, as_of=request.as_of, article_number=request.article_number
         )
         if found is None:
             raise self._not_found(key, request.as_of)
-        return pb2_v2.ListInvalidationsResponse(
+        return pb.ListInvalidationsResponse(
             invalidations=[
-                pb2_v2.Invalidation(
+                pb.Invalidation(
                     ruling_no=i.ruling_no,
-                    ruling_kind=_RULING_KINDS_V2[i.ruling_kind],
+                    ruling_kind=_RULING_KINDS[i.ruling_kind],
                     decided_on=i.decided_on,
                     source_url=i.source_url,
                     excerpt=i.excerpt,
@@ -267,9 +123,9 @@ class OntologyV2Servicer(grpc_v2.OntologyServiceServicer):
 
     @errors.maps_errors
     def SearchArticles(
-        self, request: pb2_v2.SearchArticlesRequest, context: grpc.ServicerContext
-    ) -> pb2_v2.SearchArticlesResponse:
-        _log_call(context, "SearchArticles[v2]", f"query_chars={len(request.query)}")
+        self, request: pb.SearchArticlesRequest, context: grpc.ServicerContext
+    ) -> pb.SearchArticlesResponse:
+        _log_call(context, "SearchArticles", f"query_chars={len(request.query)}")
         v = errors.Validator()
         terms = self._segmenter.to_tsvector_input(request.query)
         if not terms:
@@ -292,11 +148,11 @@ class OntologyV2Servicer(grpc_v2.OntologyServiceServicer):
             laws=self._law_names.find(request.query),
             jurisdiction=jurisdiction,
         )
-        return pb2_v2.SearchArticlesResponse(
+        return pb.SearchArticlesResponse(
             hits=[
-                pb2_v2.ArticleHit(
+                pb.ArticleHit(
                     iri=h.iri,
-                    identifier=pb2_v2.LawIdentifier(
+                    identifier=pb.LawIdentifier(
                         jurisdiction=h.jurisdiction,
                         id_scheme=h.id_scheme,
                         local_id=h.local_id,
@@ -321,14 +177,8 @@ class OntologyV2Servicer(grpc_v2.OntologyServiceServicer):
             return None
 
 
-def _identifier_subject(identifier: pb2_v2.LawIdentifier) -> str:
+def _identifier_subject(identifier: pb.LawIdentifier) -> str:
     return f"{identifier.jurisdiction}:{identifier.id_scheme}:{identifier.local_id}"
-
-
-def _check_as_of(as_of: str) -> None:
-    v = errors.Validator()
-    v.date("as_of", as_of)
-    v.check()
 
 
 def _log_call(context: grpc.ServicerContext, method: str, subject: str) -> None:

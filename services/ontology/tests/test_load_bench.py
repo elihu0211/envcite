@@ -213,7 +213,6 @@ def test_targets_are_v2_methods_that_exist_and_accept_the_requests_sent() -> Non
         _, reqs = requests(target, questions)
         message = message_factory.GetMessageClass(method.input_type)()
         json_format.ParseDict(reqs[0], message)  # 欄位名不對會拋 ParseError
-    assert not any("ontology.v1" in t.method or "ontology/v1" in t.proto for t in TARGETS.values())
 
 
 def test_environment_records_unknowns_instead_of_inventing_values(
