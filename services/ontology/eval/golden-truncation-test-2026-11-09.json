@@ -1,0 +1,895 @@
+{
+  "input": {
+    "path": "golden-retrieval-test-2026-11-09.json",
+    "sha256": "abd9d674c47ef63c2f8c4e12b8963606dd730953cc2360b28654a6c1def6c965",
+    "arm": "hybrid",
+    "subset": "test",
+    "k": 50,
+    "envcite_commit": "555a323f5a69001ef45f8b5d9ed6a79f9fd543de",
+    "snapshots": [
+      {
+        "feed": "moj_law",
+        "data_date": "2026-10-30",
+        "sha256": "b9c30700c81afd8a5602823e225318279a29f3c798accdd376ef7e04b413383b",
+        "fetched_at": "2026-11-09T10:52:50.459961+00:00"
+      },
+      {
+        "feed": "moj_order",
+        "data_date": "2026-10-30",
+        "sha256": "234e3d56bd6fa1aca119a4e2d59db2c7bb153b647ab0d46d56f0f262bddf203f",
+        "fetched_at": "2026-11-09T10:52:54.635404+00:00"
+      }
+    ],
+    "unmapped_not_run": 19
+  },
+  "floors": {
+    "lexical": 0.5,
+    "semantic": 0.71,
+    "source": "appsettings.json 的 Relevance 區段"
+  },
+  "total_questions": 218,
+  "truncation": {
+    "answerable": {
+      "n": 171,
+      "pass_deep": 159,
+      "pass_top10": 158,
+      "rate_deep": 0.9298,
+      "rate_top10": 0.924,
+      "truncation_gap": 1,
+      "truncation_gap_rate": 0.0058,
+      "truncation_gap_rate_ci95": [
+        0.001,
+        0.0324
+      ],
+      "gap_questions": [
+        "b-08"
+      ]
+    },
+    "unanswerable": {
+      "n": 47,
+      "pass_deep": 41,
+      "pass_top10": 41,
+      "rate_deep": 0.8723,
+      "rate_top10": 0.8723,
+      "truncation_gap": 0,
+      "truncation_gap_rate": 0.0,
+      "truncation_gap_rate_ci95": [
+        0.0,
+        0.0756
+      ],
+      "gap_questions": []
+    },
+    "by_bucket": {
+      "exact_id": {
+        "n": 46,
+        "pass_deep": 44,
+        "pass_top10": 44,
+        "rate_deep": 0.9565,
+        "rate_top10": 0.9565,
+        "truncation_gap": 0,
+        "truncation_gap_rate": 0.0,
+        "truncation_gap_rate_ci95": [
+          0.0,
+          0.0771
+        ],
+        "gap_questions": []
+      },
+      "multi_hop": {
+        "n": 39,
+        "pass_deep": 32,
+        "pass_top10": 31,
+        "rate_deep": 0.8205,
+        "rate_top10": 0.7949,
+        "truncation_gap": 1,
+        "truncation_gap_rate": 0.0256,
+        "truncation_gap_rate_ci95": [
+          0.0045,
+          0.1318
+        ],
+        "gap_questions": [
+          "b-08"
+        ]
+      },
+      "negative": {
+        "n": 47,
+        "pass_deep": 41,
+        "pass_top10": 41,
+        "rate_deep": 0.8723,
+        "rate_top10": 0.8723,
+        "truncation_gap": 0,
+        "truncation_gap_rate": 0.0,
+        "truncation_gap_rate_ci95": [
+          0.0,
+          0.0756
+        ],
+        "gap_questions": []
+      },
+      "paraphrase": {
+        "n": 86,
+        "pass_deep": 83,
+        "pass_top10": 83,
+        "rate_deep": 0.9651,
+        "rate_top10": 0.9651,
+        "truncation_gap": 0,
+        "truncation_gap_rate": 0.0,
+        "truncation_gap_rate_ci95": [
+          0.0,
+          0.0428
+        ],
+        "gap_questions": []
+      }
+    }
+  },
+  "grid_top10": [
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.6,
+      "answerable_pass": 166,
+      "unanswerable_pass": 46,
+      "coverage_answerable": 0.9708,
+      "leak_unanswerable": 0.9787
+    },
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.65,
+      "answerable_pass": 164,
+      "unanswerable_pass": 44,
+      "coverage_answerable": 0.9591,
+      "leak_unanswerable": 0.9362
+    },
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.7,
+      "answerable_pass": 162,
+      "unanswerable_pass": 44,
+      "coverage_answerable": 0.9474,
+      "leak_unanswerable": 0.9362
+    },
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.71,
+      "answerable_pass": 162,
+      "unanswerable_pass": 43,
+      "coverage_answerable": 0.9474,
+      "leak_unanswerable": 0.9149
+    },
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.75,
+      "answerable_pass": 162,
+      "unanswerable_pass": 43,
+      "coverage_answerable": 0.9474,
+      "leak_unanswerable": 0.9149
+    },
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.8,
+      "answerable_pass": 162,
+      "unanswerable_pass": 43,
+      "coverage_answerable": 0.9474,
+      "leak_unanswerable": 0.9149
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.6,
+      "answerable_pass": 166,
+      "unanswerable_pass": 45,
+      "coverage_answerable": 0.9708,
+      "leak_unanswerable": 0.9574
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.65,
+      "answerable_pass": 162,
+      "unanswerable_pass": 42,
+      "coverage_answerable": 0.9474,
+      "leak_unanswerable": 0.8936
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.7,
+      "answerable_pass": 159,
+      "unanswerable_pass": 42,
+      "coverage_answerable": 0.9298,
+      "leak_unanswerable": 0.8936
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.71,
+      "answerable_pass": 158,
+      "unanswerable_pass": 41,
+      "coverage_answerable": 0.924,
+      "leak_unanswerable": 0.8723
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.75,
+      "answerable_pass": 158,
+      "unanswerable_pass": 41,
+      "coverage_answerable": 0.924,
+      "leak_unanswerable": 0.8723
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.8,
+      "answerable_pass": 158,
+      "unanswerable_pass": 41,
+      "coverage_answerable": 0.924,
+      "leak_unanswerable": 0.8723
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.6,
+      "answerable_pass": 166,
+      "unanswerable_pass": 41,
+      "coverage_answerable": 0.9708,
+      "leak_unanswerable": 0.8723
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.65,
+      "answerable_pass": 158,
+      "unanswerable_pass": 36,
+      "coverage_answerable": 0.924,
+      "leak_unanswerable": 0.766
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.7,
+      "answerable_pass": 153,
+      "unanswerable_pass": 35,
+      "coverage_answerable": 0.8947,
+      "leak_unanswerable": 0.7447
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.71,
+      "answerable_pass": 150,
+      "unanswerable_pass": 34,
+      "coverage_answerable": 0.8772,
+      "leak_unanswerable": 0.7234
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.75,
+      "answerable_pass": 148,
+      "unanswerable_pass": 34,
+      "coverage_answerable": 0.8655,
+      "leak_unanswerable": 0.7234
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.8,
+      "answerable_pass": 148,
+      "unanswerable_pass": 34,
+      "coverage_answerable": 0.8655,
+      "leak_unanswerable": 0.7234
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.6,
+      "answerable_pass": 166,
+      "unanswerable_pass": 41,
+      "coverage_answerable": 0.9708,
+      "leak_unanswerable": 0.8723
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.65,
+      "answerable_pass": 151,
+      "unanswerable_pass": 35,
+      "coverage_answerable": 0.883,
+      "leak_unanswerable": 0.7447
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.7,
+      "answerable_pass": 140,
+      "unanswerable_pass": 33,
+      "coverage_answerable": 0.8187,
+      "leak_unanswerable": 0.7021
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.71,
+      "answerable_pass": 137,
+      "unanswerable_pass": 32,
+      "coverage_answerable": 0.8012,
+      "leak_unanswerable": 0.6809
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.75,
+      "answerable_pass": 134,
+      "unanswerable_pass": 32,
+      "coverage_answerable": 0.7836,
+      "leak_unanswerable": 0.6809
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.8,
+      "answerable_pass": 132,
+      "unanswerable_pass": 32,
+      "coverage_answerable": 0.7719,
+      "leak_unanswerable": 0.6809
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.6,
+      "answerable_pass": 166,
+      "unanswerable_pass": 39,
+      "coverage_answerable": 0.9708,
+      "leak_unanswerable": 0.8298
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.65,
+      "answerable_pass": 140,
+      "unanswerable_pass": 31,
+      "coverage_answerable": 0.8187,
+      "leak_unanswerable": 0.6596
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.7,
+      "answerable_pass": 115,
+      "unanswerable_pass": 26,
+      "coverage_answerable": 0.6725,
+      "leak_unanswerable": 0.5532
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.71,
+      "answerable_pass": 111,
+      "unanswerable_pass": 23,
+      "coverage_answerable": 0.6491,
+      "leak_unanswerable": 0.4894
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.75,
+      "answerable_pass": 107,
+      "unanswerable_pass": 22,
+      "coverage_answerable": 0.6257,
+      "leak_unanswerable": 0.4681
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.8,
+      "answerable_pass": 105,
+      "unanswerable_pass": 22,
+      "coverage_answerable": 0.614,
+      "leak_unanswerable": 0.4681
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.6,
+      "answerable_pass": 166,
+      "unanswerable_pass": 39,
+      "coverage_answerable": 0.9708,
+      "leak_unanswerable": 0.8298
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.65,
+      "answerable_pass": 136,
+      "unanswerable_pass": 31,
+      "coverage_answerable": 0.7953,
+      "leak_unanswerable": 0.6596
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.7,
+      "answerable_pass": 107,
+      "unanswerable_pass": 25,
+      "coverage_answerable": 0.6257,
+      "leak_unanswerable": 0.5319
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.71,
+      "answerable_pass": 103,
+      "unanswerable_pass": 22,
+      "coverage_answerable": 0.6023,
+      "leak_unanswerable": 0.4681
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.75,
+      "answerable_pass": 96,
+      "unanswerable_pass": 21,
+      "coverage_answerable": 0.5614,
+      "leak_unanswerable": 0.4468
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.8,
+      "answerable_pass": 92,
+      "unanswerable_pass": 21,
+      "coverage_answerable": 0.538,
+      "leak_unanswerable": 0.4468
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.6,
+      "answerable_pass": 165,
+      "unanswerable_pass": 37,
+      "coverage_answerable": 0.9649,
+      "leak_unanswerable": 0.7872
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.65,
+      "answerable_pass": 133,
+      "unanswerable_pass": 26,
+      "coverage_answerable": 0.7778,
+      "leak_unanswerable": 0.5532
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.7,
+      "answerable_pass": 88,
+      "unanswerable_pass": 17,
+      "coverage_answerable": 0.5146,
+      "leak_unanswerable": 0.3617
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.71,
+      "answerable_pass": 80,
+      "unanswerable_pass": 12,
+      "coverage_answerable": 0.4678,
+      "leak_unanswerable": 0.2553
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.75,
+      "answerable_pass": 63,
+      "unanswerable_pass": 10,
+      "coverage_answerable": 0.3684,
+      "leak_unanswerable": 0.2128
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.8,
+      "answerable_pass": 53,
+      "unanswerable_pass": 9,
+      "coverage_answerable": 0.3099,
+      "leak_unanswerable": 0.1915
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.6,
+      "answerable_pass": 165,
+      "unanswerable_pass": 37,
+      "coverage_answerable": 0.9649,
+      "leak_unanswerable": 0.7872
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.65,
+      "answerable_pass": 132,
+      "unanswerable_pass": 25,
+      "coverage_answerable": 0.7719,
+      "leak_unanswerable": 0.5319
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.7,
+      "answerable_pass": 80,
+      "unanswerable_pass": 15,
+      "coverage_answerable": 0.4678,
+      "leak_unanswerable": 0.3191
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.71,
+      "answerable_pass": 72,
+      "unanswerable_pass": 9,
+      "coverage_answerable": 0.4211,
+      "leak_unanswerable": 0.1915
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.75,
+      "answerable_pass": 49,
+      "unanswerable_pass": 7,
+      "coverage_answerable": 0.2865,
+      "leak_unanswerable": 0.1489
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.8,
+      "answerable_pass": 38,
+      "unanswerable_pass": 6,
+      "coverage_answerable": 0.2222,
+      "leak_unanswerable": 0.1277
+    }
+  ],
+  "grid_deep": [
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.6,
+      "answerable_pass": 169,
+      "unanswerable_pass": 46,
+      "coverage_answerable": 0.9883,
+      "leak_unanswerable": 0.9787
+    },
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.65,
+      "answerable_pass": 166,
+      "unanswerable_pass": 44,
+      "coverage_answerable": 0.9708,
+      "leak_unanswerable": 0.9362
+    },
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.7,
+      "answerable_pass": 164,
+      "unanswerable_pass": 44,
+      "coverage_answerable": 0.9591,
+      "leak_unanswerable": 0.9362
+    },
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.71,
+      "answerable_pass": 163,
+      "unanswerable_pass": 43,
+      "coverage_answerable": 0.9532,
+      "leak_unanswerable": 0.9149
+    },
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.75,
+      "answerable_pass": 163,
+      "unanswerable_pass": 43,
+      "coverage_answerable": 0.9532,
+      "leak_unanswerable": 0.9149
+    },
+    {
+      "lexical_floor": 0.3,
+      "semantic_floor": 0.8,
+      "answerable_pass": 163,
+      "unanswerable_pass": 43,
+      "coverage_answerable": 0.9532,
+      "leak_unanswerable": 0.9149
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.6,
+      "answerable_pass": 169,
+      "unanswerable_pass": 45,
+      "coverage_answerable": 0.9883,
+      "leak_unanswerable": 0.9574
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.65,
+      "answerable_pass": 164,
+      "unanswerable_pass": 42,
+      "coverage_answerable": 0.9591,
+      "leak_unanswerable": 0.8936
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.7,
+      "answerable_pass": 161,
+      "unanswerable_pass": 42,
+      "coverage_answerable": 0.9415,
+      "leak_unanswerable": 0.8936
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.71,
+      "answerable_pass": 159,
+      "unanswerable_pass": 41,
+      "coverage_answerable": 0.9298,
+      "leak_unanswerable": 0.8723
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.75,
+      "answerable_pass": 159,
+      "unanswerable_pass": 41,
+      "coverage_answerable": 0.9298,
+      "leak_unanswerable": 0.8723
+    },
+    {
+      "lexical_floor": 0.5,
+      "semantic_floor": 0.8,
+      "answerable_pass": 159,
+      "unanswerable_pass": 41,
+      "coverage_answerable": 0.9298,
+      "leak_unanswerable": 0.8723
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.6,
+      "answerable_pass": 169,
+      "unanswerable_pass": 41,
+      "coverage_answerable": 0.9883,
+      "leak_unanswerable": 0.8723
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.65,
+      "answerable_pass": 162,
+      "unanswerable_pass": 36,
+      "coverage_answerable": 0.9474,
+      "leak_unanswerable": 0.766
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.7,
+      "answerable_pass": 157,
+      "unanswerable_pass": 35,
+      "coverage_answerable": 0.9181,
+      "leak_unanswerable": 0.7447
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.71,
+      "answerable_pass": 154,
+      "unanswerable_pass": 34,
+      "coverage_answerable": 0.9006,
+      "leak_unanswerable": 0.7234
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.75,
+      "answerable_pass": 154,
+      "unanswerable_pass": 34,
+      "coverage_answerable": 0.9006,
+      "leak_unanswerable": 0.7234
+    },
+    {
+      "lexical_floor": 0.8,
+      "semantic_floor": 0.8,
+      "answerable_pass": 154,
+      "unanswerable_pass": 34,
+      "coverage_answerable": 0.9006,
+      "leak_unanswerable": 0.7234
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.6,
+      "answerable_pass": 169,
+      "unanswerable_pass": 41,
+      "coverage_answerable": 0.9883,
+      "leak_unanswerable": 0.8723
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.65,
+      "answerable_pass": 160,
+      "unanswerable_pass": 35,
+      "coverage_answerable": 0.9357,
+      "leak_unanswerable": 0.7447
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.7,
+      "answerable_pass": 154,
+      "unanswerable_pass": 34,
+      "coverage_answerable": 0.9006,
+      "leak_unanswerable": 0.7234
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.71,
+      "answerable_pass": 151,
+      "unanswerable_pass": 33,
+      "coverage_answerable": 0.883,
+      "leak_unanswerable": 0.7021
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.75,
+      "answerable_pass": 151,
+      "unanswerable_pass": 33,
+      "coverage_answerable": 0.883,
+      "leak_unanswerable": 0.7021
+    },
+    {
+      "lexical_floor": 1.0,
+      "semantic_floor": 0.8,
+      "answerable_pass": 150,
+      "unanswerable_pass": 33,
+      "coverage_answerable": 0.8772,
+      "leak_unanswerable": 0.7021
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.6,
+      "answerable_pass": 169,
+      "unanswerable_pass": 39,
+      "coverage_answerable": 0.9883,
+      "leak_unanswerable": 0.8298
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.65,
+      "answerable_pass": 152,
+      "unanswerable_pass": 31,
+      "coverage_answerable": 0.8889,
+      "leak_unanswerable": 0.6596
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.7,
+      "answerable_pass": 130,
+      "unanswerable_pass": 27,
+      "coverage_answerable": 0.7602,
+      "leak_unanswerable": 0.5745
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.71,
+      "answerable_pass": 125,
+      "unanswerable_pass": 25,
+      "coverage_answerable": 0.731,
+      "leak_unanswerable": 0.5319
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.75,
+      "answerable_pass": 123,
+      "unanswerable_pass": 24,
+      "coverage_answerable": 0.7193,
+      "leak_unanswerable": 0.5106
+    },
+    {
+      "lexical_floor": 1.5,
+      "semantic_floor": 0.8,
+      "answerable_pass": 122,
+      "unanswerable_pass": 24,
+      "coverage_answerable": 0.7135,
+      "leak_unanswerable": 0.5106
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.6,
+      "answerable_pass": 169,
+      "unanswerable_pass": 39,
+      "coverage_answerable": 0.9883,
+      "leak_unanswerable": 0.8298
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.65,
+      "answerable_pass": 151,
+      "unanswerable_pass": 31,
+      "coverage_answerable": 0.883,
+      "leak_unanswerable": 0.6596
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.7,
+      "answerable_pass": 124,
+      "unanswerable_pass": 25,
+      "coverage_answerable": 0.7251,
+      "leak_unanswerable": 0.5319
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.71,
+      "answerable_pass": 119,
+      "unanswerable_pass": 22,
+      "coverage_answerable": 0.6959,
+      "leak_unanswerable": 0.4681
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.75,
+      "answerable_pass": 116,
+      "unanswerable_pass": 21,
+      "coverage_answerable": 0.6784,
+      "leak_unanswerable": 0.4468
+    },
+    {
+      "lexical_floor": 2.0,
+      "semantic_floor": 0.8,
+      "answerable_pass": 115,
+      "unanswerable_pass": 21,
+      "coverage_answerable": 0.6725,
+      "leak_unanswerable": 0.4468
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.6,
+      "answerable_pass": 168,
+      "unanswerable_pass": 37,
+      "coverage_answerable": 0.9825,
+      "leak_unanswerable": 0.7872
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.65,
+      "answerable_pass": 143,
+      "unanswerable_pass": 27,
+      "coverage_answerable": 0.8363,
+      "leak_unanswerable": 0.5745
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.7,
+      "answerable_pass": 94,
+      "unanswerable_pass": 17,
+      "coverage_answerable": 0.5497,
+      "leak_unanswerable": 0.3617
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.71,
+      "answerable_pass": 86,
+      "unanswerable_pass": 12,
+      "coverage_answerable": 0.5029,
+      "leak_unanswerable": 0.2553
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.75,
+      "answerable_pass": 73,
+      "unanswerable_pass": 10,
+      "coverage_answerable": 0.4269,
+      "leak_unanswerable": 0.2128
+    },
+    {
+      "lexical_floor": 3.0,
+      "semantic_floor": 0.8,
+      "answerable_pass": 64,
+      "unanswerable_pass": 9,
+      "coverage_answerable": 0.3743,
+      "leak_unanswerable": 0.1915
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.6,
+      "answerable_pass": 168,
+      "unanswerable_pass": 37,
+      "coverage_answerable": 0.9825,
+      "leak_unanswerable": 0.7872
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.65,
+      "answerable_pass": 141,
+      "unanswerable_pass": 26,
+      "coverage_answerable": 0.8246,
+      "leak_unanswerable": 0.5532
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.7,
+      "answerable_pass": 84,
+      "unanswerable_pass": 15,
+      "coverage_answerable": 0.4912,
+      "leak_unanswerable": 0.3191
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.71,
+      "answerable_pass": 76,
+      "unanswerable_pass": 9,
+      "coverage_answerable": 0.4444,
+      "leak_unanswerable": 0.1915
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.75,
+      "answerable_pass": 57,
+      "unanswerable_pass": 7,
+      "coverage_answerable": 0.3333,
+      "leak_unanswerable": 0.1489
+    },
+    {
+      "lexical_floor": 4.0,
+      "semantic_floor": 0.8,
+      "answerable_pass": 48,
+      "unanswerable_pass": 6,
+      "coverage_answerable": 0.2807,
+      "leak_unanswerable": 0.1277
+    }
+  ]
+}

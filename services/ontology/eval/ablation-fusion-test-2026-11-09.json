@@ -1,0 +1,603 @@
+{
+ "kind": "fusion-ablation",
+ "subset": "test",
+ "rounds": 3,
+ "inputs": {
+  "arms": [
+   {
+    "path": "test-svc-r1.json",
+    "sha256": "64a91a2be2a6df181af58cd90a3ebc4127a69f04a1f4a4dde7547fc2031e422e",
+    "run_at": "2026-11-09T14:18:10+00:00"
+   },
+   {
+    "path": "test-svc-r2.json",
+    "sha256": "2b89b67706cf363b86d52a5e73c2b29fe140c39f3c0e949c9704df4aa17198e4",
+    "run_at": "2026-11-09T14:18:18+00:00"
+   },
+   {
+    "path": "test-svc-r3.json",
+    "sha256": "c5f349545c507834910c5a3a74cb152c6be3fc22a6223f5f745cf4549c14d1ad",
+    "run_at": "2026-11-09T14:18:19+00:00"
+   }
+  ],
+  "qrels": {
+   "path": "golden-qrels-2026-11-09.json",
+   "sha256": "66472a1daac640b8a64867bfc04d7dc71f43a4d014e9d486f58ebbf6eefd8c6b"
+  },
+  "golden_sha256": "6609967f234427579f1d1f701961bdf30628775a0fb4c60cedd9633fd5a461b0",
+  "split_sha256": "2e4dfd1335c7002d84f7ac51bce73685e13b61470705a12f4cafa417afbf055e",
+  "envcite_commit": "d15b91009a17a5fb76b0867d9c90dfbb70e31a13",
+  "snapshots": [
+   {
+    "feed": "moj_law",
+    "data_date": "2026-10-30",
+    "sha256": "b9c30700c81afd8a5602823e225318279a29f3c798accdd376ef7e04b413383b",
+    "fetched_at": "2026-11-09T10:52:50.459961+00:00"
+   },
+   {
+    "feed": "moj_order",
+    "data_date": "2026-10-30",
+    "sha256": "234e3d56bd6fa1aca119a4e2d59db2c7bb153b647ab0d46d56f0f262bddf203f",
+    "fetched_at": "2026-11-09T10:52:54.635404+00:00"
+   }
+  ],
+  "retrieval": {
+   "tokenizer": "lexbigram-1+dict-94450239",
+   "embedding_model": "bge-m3-embedding",
+   "law_names": true,
+   "pools": [
+    30,
+    50,
+    100
+   ],
+   "hnsw_ef_search": 40,
+   "hnsw_ef_search_is_service_setting": true,
+   "near_probe": {
+    "limit": 400,
+    "returned_rows": 40,
+    "plan_nodes": [
+     "Index Scan",
+     "Limit"
+    ]
+   }
+  }
+ },
+ "baseline": "P50-k60",
+ "questions": 171,
+ "relevant_from": 2,
+ "fidelity_to_service": [
+  {
+   "30": {
+    "questions": 171,
+    "identical": 171
+   },
+   "50": {
+    "questions": 171,
+    "identical": 171
+   },
+   "100": {
+    "questions": 171,
+    "identical": 171
+   }
+  },
+  {
+   "30": {
+    "questions": 171,
+    "identical": 171
+   },
+   "50": {
+    "questions": 171,
+    "identical": 171
+   },
+   "100": {
+    "questions": 171,
+    "identical": 171
+   }
+  },
+  {
+   "30": {
+    "questions": 171,
+    "identical": 171
+   },
+   "50": {
+    "questions": 171,
+    "identical": 171
+   },
+   "100": {
+    "questions": 171,
+    "identical": 171
+   }
+  }
+ ],
+ "service_path_check": [
+  {
+   "questions": 171,
+   "identical": 111,
+   "reordered": 60,
+   "different": 0,
+   "different_questions": []
+  },
+  {
+   "questions": 171,
+   "identical": 111,
+   "reordered": 60,
+   "different": 0,
+   "different_questions": []
+  },
+  {
+   "questions": 171,
+   "identical": 111,
+   "reordered": 60,
+   "different": 0,
+   "different_questions": []
+  }
+ ],
+ "semantic_arm_depth": [
+  {
+   "30": {
+    "questions": 171,
+    "min": 6,
+    "median": 30,
+    "max": 30,
+    "full_pool": 96
+   },
+   "50": {
+    "questions": 171,
+    "min": 6,
+    "median": 35,
+    "max": 50,
+    "full_pool": 81
+   },
+   "100": {
+    "questions": 171,
+    "min": 6,
+    "median": 35,
+    "max": 100,
+    "full_pool": 79
+   }
+  },
+  {
+   "30": {
+    "questions": 171,
+    "min": 6,
+    "median": 30,
+    "max": 30,
+    "full_pool": 96
+   },
+   "50": {
+    "questions": 171,
+    "min": 6,
+    "median": 35,
+    "max": 50,
+    "full_pool": 81
+   },
+   "100": {
+    "questions": 171,
+    "min": 6,
+    "median": 35,
+    "max": 100,
+    "full_pool": 79
+   }
+  },
+  {
+   "30": {
+    "questions": 171,
+    "min": 6,
+    "median": 30,
+    "max": 30,
+    "full_pool": 96
+   },
+   "50": {
+    "questions": 171,
+    "min": 6,
+    "median": 35,
+    "max": 50,
+    "full_pool": 81
+   },
+   "100": {
+    "questions": 171,
+    "min": 6,
+    "median": 35,
+    "max": 100,
+    "full_pool": 79
+   }
+  }
+ ],
+ "cells": {
+  "P50-k60": {
+   "rounds": {
+    "hit_rate@1": [
+     0.1988,
+     0.1988,
+     0.1988
+    ],
+    "hit_rate@5": [
+     0.345,
+     0.345,
+     0.345
+    ],
+    "hit_rate@10": [
+     0.4152,
+     0.4152,
+     0.4152
+    ],
+    "mrr": [
+     0.2707,
+     0.2707,
+     0.2707
+    ],
+    "ndcg@10": [
+     0.4299,
+     0.4299,
+     0.4299
+    ],
+    "hole@10": [
+     0.0029,
+     0.0029,
+     0.0029
+    ]
+   },
+   "mean": {
+    "hit_rate@1": 0.1988,
+    "hit_rate@5": 0.345,
+    "hit_rate@10": 0.4152,
+    "mrr": 0.2707,
+    "ndcg@10": 0.4299,
+    "hole@10": 0.0029
+   },
+   "range": {
+    "hit_rate@1": 0.0,
+    "hit_rate@5": 0.0,
+    "hit_rate@10": 0.0,
+    "mrr": 0.0,
+    "ndcg@10": 0.0,
+    "hole@10": 0.0
+   }
+  },
+  "P100-k60": {
+   "rounds": {
+    "hit_rate@1": [
+     0.1988,
+     0.1988,
+     0.1988
+    ],
+    "hit_rate@5": [
+     0.3567,
+     0.3567,
+     0.3567
+    ],
+    "hit_rate@10": [
+     0.4152,
+     0.4152,
+     0.4152
+    ],
+    "mrr": [
+     0.2712,
+     0.2712,
+     0.2712
+    ],
+    "ndcg@10": [
+     0.4426,
+     0.4426,
+     0.4426
+    ],
+    "hole@10": [
+     0.0029,
+     0.0029,
+     0.0029
+    ]
+   },
+   "mean": {
+    "hit_rate@1": 0.1988,
+    "hit_rate@5": 0.3567,
+    "hit_rate@10": 0.4152,
+    "mrr": 0.2712,
+    "ndcg@10": 0.4426,
+    "hole@10": 0.0029
+   },
+   "range": {
+    "hit_rate@1": 0.0,
+    "hit_rate@5": 0.0,
+    "hit_rate@10": 0.0,
+    "mrr": 0.0,
+    "ndcg@10": 0.0,
+    "hole@10": 0.0
+   }
+  },
+  "semantic-only": {
+   "rounds": {
+    "hit_rate@1": [
+     0.2281,
+     0.2281,
+     0.2281
+    ],
+    "hit_rate@5": [
+     0.3801,
+     0.3801,
+     0.3801
+    ],
+    "hit_rate@10": [
+     0.4678,
+     0.4678,
+     0.4678
+    ],
+    "mrr": [
+     0.304,
+     0.304,
+     0.304
+    ],
+    "ndcg@10": [
+     0.4763,
+     0.4763,
+     0.4763
+    ],
+    "hole@10": [
+     0.0041,
+     0.0041,
+     0.0041
+    ]
+   },
+   "mean": {
+    "hit_rate@1": 0.2281,
+    "hit_rate@5": 0.3801,
+    "hit_rate@10": 0.4678,
+    "mrr": 0.304,
+    "ndcg@10": 0.4763,
+    "hole@10": 0.0041
+   },
+   "range": {
+    "hit_rate@1": 0.0,
+    "hit_rate@5": 0.0,
+    "hit_rate@10": 0.0,
+    "mrr": 0.0,
+    "ndcg@10": 0.0,
+    "hole@10": 0.0
+   }
+  }
+ },
+ "by_bucket_round1": {
+  "P50-k60": {
+   "exact_id": {
+    "n": 46,
+    "hit_rate@10": 0.4783,
+    "mrr": 0.2931,
+    "ndcg@10": 0.4596
+   },
+   "multi_hop": {
+    "n": 39,
+    "hit_rate@10": 0.3077,
+    "mrr": 0.1855,
+    "ndcg@10": 0.3646
+   },
+   "paraphrase": {
+    "n": 86,
+    "hit_rate@10": 0.4302,
+    "mrr": 0.2973,
+    "ndcg@10": 0.4437
+   }
+  },
+  "P100-k60": {
+   "exact_id": {
+    "n": 46,
+    "hit_rate@10": 0.413,
+    "mrr": 0.2926,
+    "ndcg@10": 0.4458
+   },
+   "multi_hop": {
+    "n": 39,
+    "hit_rate@10": 0.3077,
+    "mrr": 0.1856,
+    "ndcg@10": 0.3653
+   },
+   "paraphrase": {
+    "n": 86,
+    "hit_rate@10": 0.4651,
+    "mrr": 0.2985,
+    "ndcg@10": 0.476
+   }
+  },
+  "semantic-only": {
+   "exact_id": {
+    "n": 46,
+    "hit_rate@10": 0.5,
+    "mrr": 0.2987,
+    "ndcg@10": 0.4915
+   },
+   "multi_hop": {
+    "n": 39,
+    "hit_rate@10": 0.3077,
+    "mrr": 0.2244,
+    "ndcg@10": 0.361
+   },
+   "paraphrase": {
+    "n": 86,
+    "hit_rate@10": 0.5233,
+    "mrr": 0.343,
+    "ndcg@10": 0.5204
+   }
+  }
+ },
+ "versus_baseline": {
+  "P100-k60": {
+   "ndcg@10": {
+    "mean_gap": 0.0127,
+    "relative_gap": 0.0295,
+    "round_gaps": [
+     0.0127,
+     0.0127,
+     0.0127
+    ],
+    "between_round_range": 0.0,
+    "p_raw_by_round": [
+     0.0293,
+     0.0264,
+     0.027
+    ],
+    "p_holm_by_round": [
+     0.0293,
+     0.0264,
+     0.027
+    ],
+    "different": true
+   },
+   "mrr": {
+    "mean_gap": 0.0005,
+    "relative_gap": 0.0018,
+    "round_gaps": [
+     0.0005,
+     0.0005,
+     0.0005
+    ],
+    "between_round_range": 0.0,
+    "p_raw_by_round": [
+     0.8455,
+     0.8448,
+     0.8506
+    ],
+    "p_holm_by_round": [
+     0.8455,
+     0.8448,
+     0.8506
+    ],
+    "different": false
+   }
+  },
+  "semantic-only": {
+   "ndcg@10": {
+    "mean_gap": 0.0464,
+    "relative_gap": 0.1079,
+    "round_gaps": [
+     0.0464,
+     0.0464,
+     0.0464
+    ],
+    "between_round_range": 0.0,
+    "p_raw_by_round": [
+     0.0005,
+     0.0011,
+     0.0008
+    ],
+    "p_holm_by_round": [
+     0.001,
+     0.0022,
+     0.0016
+    ],
+    "different": true
+   },
+   "mrr": {
+    "mean_gap": 0.0333,
+    "relative_gap": 0.123,
+    "round_gaps": [
+     0.0333,
+     0.0333,
+     0.0333
+    ],
+    "between_round_range": 0.0,
+    "p_raw_by_round": [
+     0.0924,
+     0.0891,
+     0.092
+    ],
+    "p_holm_by_round": [
+     0.1848,
+     0.1782,
+     0.184
+    ],
+    "different": false
+   }
+  }
+ },
+ "versus_semantic_only": {
+  "P50-k60": {
+   "ndcg@10": {
+    "mean_gap": -0.0464,
+    "relative_gap": -0.0974,
+    "round_gaps": [
+     -0.0464,
+     -0.0464,
+     -0.0464
+    ],
+    "between_round_range": 0.0,
+    "p_raw_by_round": [
+     0.001,
+     0.0008,
+     0.0011
+    ],
+    "p_holm_by_round": [
+     0.002,
+     0.0016,
+     0.0022
+    ],
+    "different": true
+   },
+   "mrr": {
+    "mean_gap": -0.0333,
+    "relative_gap": -0.1095,
+    "round_gaps": [
+     -0.0333,
+     -0.0333,
+     -0.0333
+    ],
+    "between_round_range": 0.0,
+    "p_raw_by_round": [
+     0.0893,
+     0.0923,
+     0.0936
+    ],
+    "p_holm_by_round": [
+     0.1786,
+     0.1846,
+     0.1872
+    ],
+    "different": false
+   }
+  },
+  "P100-k60": {
+   "ndcg@10": {
+    "mean_gap": -0.0337,
+    "relative_gap": -0.0708,
+    "round_gaps": [
+     -0.0337,
+     -0.0337,
+     -0.0337
+    ],
+    "between_round_range": 0.0,
+    "p_raw_by_round": [
+     0.018,
+     0.021,
+     0.0195
+    ],
+    "p_holm_by_round": [
+     0.018,
+     0.021,
+     0.0195
+    ],
+    "different": true
+   },
+   "mrr": {
+    "mean_gap": -0.0328,
+    "relative_gap": -0.1079,
+    "round_gaps": [
+     -0.0328,
+     -0.0328,
+     -0.0328
+    ],
+    "between_round_range": 0.0,
+    "p_raw_by_round": [
+     0.1028,
+     0.0976,
+     0.0997
+    ],
+    "p_holm_by_round": [
+     0.1786,
+     0.1846,
+     0.1872
+    ],
+    "different": false
+   }
+  }
+ },
+ "other_condition": null,
+ "versus_other_condition": null,
+ "claim_rule": "各輪方向一致、Holm 校正後 p < 0.05、平均差大於兩格的輪間範圍，且至少 3 輪"
+}

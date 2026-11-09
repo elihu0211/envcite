@@ -1,0 +1,94 @@
+{
+ "qrels_sha256": "66472a1daac640b8a64867bfc04d7dc71f43a4d014e9d486f58ebbf6eefd8c6b",
+ "split_sha256": "2e4dfd1335c7002d84f7ac51bce73685e13b61470705a12f4cafa417afbf055e",
+ "subset": "dev",
+ "questions": 170,
+ "alpha": 0.05,
+ "test": "Fisher 隨機化檢定（ranx compare，成對、雙尾，10000 次置換，種子 0）",
+ "runs": {
+  "P50-k60.r1": {
+   "sha256": "42046a33637a147def79645c24c8d682489a9aa8fffa0f5399b387f1f00e07da",
+   "scores": {
+    "hit_rate@1": 0.1588,
+    "hit_rate@5": 0.3471,
+    "hit_rate@10": 0.4471,
+    "hit_rate@20": 0.5412,
+    "hit_rate@50": 0.5765,
+    "mrr": 0.242,
+    "ndcg@10": 0.3987
+   },
+   "hole@10": 0.0029463759575721863
+  },
+  "golden-retrieval-dev-2026-11-09.hybrid": {
+   "sha256": "a14fcefd9d774893aed726460a45ee83b6d2074ba4ab29721f53cf0b29251495",
+   "scores": {
+    "hit_rate@1": 0.1588,
+    "hit_rate@5": 0.4,
+    "hit_rate@10": 0.5471,
+    "hit_rate@20": 0.6235,
+    "hit_rate@50": 0.7,
+    "mrr": 0.2846,
+    "ndcg@10": 0.4159
+   },
+   "hole@10": 0.0035294117647058825
+  }
+ },
+ "pairs": [
+  {
+   "a": "P50-k60.r1",
+   "b": "golden-retrieval-dev-2026-11-09.hybrid",
+   "metric": "hit_rate@1",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "P50-k60.r1",
+   "b": "golden-retrieval-dev-2026-11-09.hybrid",
+   "metric": "hit_rate@5",
+   "difference": 0.0529,
+   "p": 0.1433,
+   "significant": false
+  },
+  {
+   "a": "P50-k60.r1",
+   "b": "golden-retrieval-dev-2026-11-09.hybrid",
+   "metric": "hit_rate@10",
+   "difference": 0.1,
+   "p": 0.0013,
+   "significant": true
+  },
+  {
+   "a": "P50-k60.r1",
+   "b": "golden-retrieval-dev-2026-11-09.hybrid",
+   "metric": "hit_rate@20",
+   "difference": 0.0824,
+   "p": 0.0071,
+   "significant": true
+  },
+  {
+   "a": "P50-k60.r1",
+   "b": "golden-retrieval-dev-2026-11-09.hybrid",
+   "metric": "hit_rate@50",
+   "difference": 0.1235,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "P50-k60.r1",
+   "b": "golden-retrieval-dev-2026-11-09.hybrid",
+   "metric": "mrr",
+   "difference": 0.0426,
+   "p": 0.0002,
+   "significant": true
+  },
+  {
+   "a": "P50-k60.r1",
+   "b": "golden-retrieval-dev-2026-11-09.hybrid",
+   "metric": "ndcg@10",
+   "difference": 0.0172,
+   "p": 0.0549,
+   "significant": false
+  }
+ ]
+}

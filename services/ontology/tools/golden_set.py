@@ -328,7 +328,7 @@ def article_texts(
         "SELECT r.jurisdiction, r.local_id, e.title, e.version_date, corpus.article_number(s.path),"
         "       corpus.article_text(s.version_id)"
         "  FROM unnest(%(jurisdictions)s::text[], %(local_ids)s::text[]) AS w(jur, lid)"
-        "  JOIN corpus.legal_resource AS r ON r.jurisdiction = w.jur AND r.local_id = w.lid"
+        "  JOIN corpus.legal_resource AS r ON r.jurisdiction::text = w.jur AND r.local_id = w.lid"
         "  JOIN corpus.legal_expression AS e"
         "    ON e.resource_id = r.id AND e.language = 'zho' AND e.text_period @> %(on)s::date"
         " CROSS JOIN LATERAL corpus.provisions_at(r.id, 'zho', %(on)s::date) AS s"

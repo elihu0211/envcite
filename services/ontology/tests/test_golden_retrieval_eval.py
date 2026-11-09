@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import sys
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -382,6 +383,39 @@ def test_a_scope_drops_hits_of_other_laws_before_the_first_k_are_taken(
     assert scoped[0].rank == 1 and scoped[0].out_of_scope_dropped == 5
 
 
+def test_the_top_scores_are_kept_for_the_first_k_hits_and_for_the_ten_consult_reads(
+    corpus: tuple[ModuleType, Any, Any],
+) -> None:
+    """分數隨名次升高、語意相似度只出現在第 13 條：前 10 條的最高分低於前 k 條的。"""
+    tool, _, provisions = corpus
+    doc = _qrels_doc(corpus)
+    rows = tool.questions(ITEMS[:1], doc, frozenset({"first"}))
+
+    class Rising(FakeStore):
+        def search(self, terms: str, **kw: Any) -> list[SearchHit]:
+            hits = super().search(terms, **kw)
+            return [
+                replace(
+                    h,
+                    lexical_score=float(i),
+                    semantic_similarity=0.9 if i == 12 else None,
+                )
+                for i, h in enumerate(hits)
+            ]
+
+    store = Rising(
+        [provisions[(sys.modules["golden_set"].CENTRAL, DUP_A, str(i))] for i in (1, 2, 3, 4, 5)]
+        * 3
+    )
+    got = tool.search_all(
+        store, FakeSegmenter(), rows, None, qrels=doc["qrels"], relevant_from=2, k=15, on=ON
+    )[0]
+
+    assert tool.CONSULT_LIMIT == 10
+    assert (got.top_lexical, got.top_semantic) == (14.0, 0.9)
+    assert (got.top10_lexical, got.top10_semantic) == (9.0, None)
+
+
 def test_a_real_search_hit_lands_on_the_qrels_doc_id_of_the_article_it_was_mapped_to(
     corpus: tuple[ModuleType, Any, Any], conn: Conn, store: OntologyStore
 ) -> None:
@@ -417,6 +451,21 @@ def test_a_real_search_hit_lands_on_the_qrels_doc_id_of_the_article_it_was_mappe
 
     assert out["central"].ranking[0] == f"{AIR}-art-1" and out["central"].rank == 1
     assert out["local"].ranking[0] == f"TW-TPE/{TPE}-art-5" and out["local"].rank == 1
+
+
+def test_article_texts_reads_the_text_in_force_by_jurisdiction_and_local_id(
+    corpus: tuple[ModuleType, Any, Any], conn: Conn
+) -> None:
+    """判定工具讀條文全文走這個查詢；管轄是列舉型別，與文字比較曾使整個查詢失敗。"""
+    gs = sys.modules["golden_set"]
+    got = gs.article_texts(
+        conn, [gs.doc_id(AIR, "1"), gs.doc_id(TPE, "5", "TW-TPE"), gs.doc_id(AIR, "999")], ON
+    )
+
+    assert set(got) == {gs.doc_id(AIR, "1"), gs.doc_id(TPE, "5", "TW-TPE")}
+    title, _, text = got[gs.doc_id(AIR, "1")]
+    assert title == "空氣污染防制法" and "防制空氣污染" in text
+    assert got[gs.doc_id(TPE, "5", "TW-TPE")][0] == "臺北市空氣污染防制自治條例"
 
 
 def test_a_published_row_keeps_the_question_hash_but_not_its_text_or_ranking() -> None:

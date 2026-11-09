@@ -73,6 +73,8 @@ from envcite_ontology.store import SEARCH_POOL, OntologyStore
 from envcite_segmenter import Segmenter
 
 KS = (1, 5, 10, 20, 50)
+#: consult 向檢索要的條數（`OntologySearch.Limit`）；可答性下界只看這麼多條。
+CONSULT_LIMIT = 10
 METRICS = (*(f"hit_rate@{k}" for k in KS), "mrr", "ndcg@10")
 BUCKETS = ("exact_id", "paraphrase", "multi_hop")
 NEGATIVE = gs.NEGATIVE
@@ -277,8 +279,12 @@ class Measured:
     partial: bool = False  # 有期望條文對不到語料
     ranking: list[str] = field(default_factory=list)
     rank: int | None = None  # 第一個相關條的名次
+    #: 前 k 條（`--k`）的最高分。
     top_lexical: float | None = None
     top_semantic: float | None = None
+    #: 前 `CONSULT_LIMIT` 條的最高分：consult 實際看到的那些條。與上面兩欄之差就是截斷造成的落差。
+    top10_lexical: float | None = None
+    top10_semantic: float | None = None
     out_of_scope_dropped: int | None = None
 
 
@@ -378,6 +384,8 @@ def search_all(
         if pool is not None:
             assert dropped == 0, "候選池應只含範圍內的法規"
         semantic = [h.semantic_similarity for h in hits if h.semantic_similarity is not None]
+        seen = hits[:CONSULT_LIMIT]
+        seen_semantic = [h.semantic_similarity for h in seen if h.semantic_similarity is not None]
         ranking = (
             [gs.doc_id(h.local_id, h.number, h.jurisdiction) for h in hits]
             if r.status == "scored"
@@ -391,6 +399,8 @@ def search_all(
                 rank=next((i for i, d in enumerate(ranking, 1) if d in wanted), None),
                 top_lexical=max((h.lexical_score for h in hits), default=0.0),
                 top_semantic=max(semantic, default=None),
+                top10_lexical=max((h.lexical_score for h in seen), default=0.0),
+                top10_semantic=max(seen_semantic, default=None),
                 out_of_scope_dropped=dropped,
             )
         )
