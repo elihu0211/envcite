@@ -188,6 +188,11 @@ class Refused(_message.Message):
         """有檢索到條文，但沒有一筆達到相關度門檻：問的是別的事。"""
         REASON_MISSING_INPUT: Refused._Reason.ValueType  # 3
         """缺少使用者未提供的必要輸入（例如問題是空白）。"""
+        REASON_LOCAL_LAW_UNCOVERED: Refused._Reason.ValueType  # 4
+        """問句明白在問地方自治法規（出現「自治條例」「自治法規」「自治規則」「地方加嚴」之一），而且沒有任何條文達到
+        相關度門檻。語料只涵蓋中央法規，地方自治法規不在範圍內：這不是語料的缺漏，也不是問了別的事，
+        不可呈現為「沒有相關規定」。有達標的條文時照常回證據，不用這個原因（中央條文可能正是答案）。
+        """
 
     class Reason(_Reason, metaclass=_ReasonEnumTypeWrapper): ...
     REASON_UNSPECIFIED: Refused.Reason.ValueType  # 0
@@ -197,6 +202,11 @@ class Refused(_message.Message):
     """有檢索到條文，但沒有一筆達到相關度門檻：問的是別的事。"""
     REASON_MISSING_INPUT: Refused.Reason.ValueType  # 3
     """缺少使用者未提供的必要輸入（例如問題是空白）。"""
+    REASON_LOCAL_LAW_UNCOVERED: Refused.Reason.ValueType  # 4
+    """問句明白在問地方自治法規（出現「自治條例」「自治法規」「自治規則」「地方加嚴」之一），而且沒有任何條文達到
+    相關度門檻。語料只涵蓋中央法規，地方自治法規不在範圍內：這不是語料的缺漏，也不是問了別的事，
+    不可呈現為「沒有相關規定」。有達標的條文時照常回證據，不用這個原因（中央條文可能正是答案）。
+    """
 
     REASON_FIELD_NUMBER: _builtins.int
     DETAIL_FIELD_NUMBER: _builtins.int

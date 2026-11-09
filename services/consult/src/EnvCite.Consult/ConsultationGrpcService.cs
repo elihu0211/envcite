@@ -74,6 +74,7 @@ internal sealed partial class ConsultationGrpcService(GroundingPipeline pipeline
         RefusalReason.NoEvidence => Proto.Refused.Types.Reason.NoEvidence,
         RefusalReason.OutOfScope => Proto.Refused.Types.Reason.OutOfScope,
         RefusalReason.MissingInput => Proto.Refused.Types.Reason.MissingInput,
+        RefusalReason.LocalLawUncovered => Proto.Refused.Types.Reason.LocalLawUncovered,
         _ => throw new UnreachableException(),
     };
 

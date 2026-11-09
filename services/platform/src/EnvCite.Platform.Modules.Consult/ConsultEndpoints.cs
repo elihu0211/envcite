@@ -173,6 +173,7 @@ public static partial class ConsultEndpoints
                     Refused.Types.Reason.NoEvidence => "no_authority",
                     Refused.Types.Reason.OutOfScope => "out_of_scope",
                     Refused.Types.Reason.MissingInput => "missing_input",
+                    Refused.Types.Reason.LocalLawUncovered => "local_law_uncovered",
                     _ => throw new InvalidOperationException($"Unexpected refusal reason {response.Refused.Reason}."),
                 },
                 response.Refused.Detail)),

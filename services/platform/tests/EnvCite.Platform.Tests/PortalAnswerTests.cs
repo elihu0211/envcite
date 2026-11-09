@@ -140,6 +140,22 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
         Assert.DoesNotContain("不該被呼叫", page.Html, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ALocalLawQuestionIsRefusedAsOutsideTheCorpusAndTheModelIsNeverCalled()
+    {
+        var (host, chat) = Host(_ => "不該被呼叫 [L1]");
+        using var _ = host;
+        var (browser, tenant) = await SignedInAsync(host);
+        using var __ = browser;
+
+        var page = await browser.SubmitAsync(SearchPage(tenant.Identifier), Ask(FakeConsultServer.LocalLawQuestion));
+
+        Assert.Empty(chat.Calls);
+        Assert.Contains("地方自治法規", page.Html, StringComparison.Ordinal);
+        Assert.Contains("只涵蓋中央法規", page.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("超出目前涵蓋的知識範圍", page.Html, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("在指定清除地區內不得燃燒 [L9]。", "不存在的代號")]
     [InlineData("在指定清除地區內不得燃燒 [L1] 也不得露天焚燒 [L2]。", "有一個代號不存在")]

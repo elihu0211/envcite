@@ -124,6 +124,7 @@ public partial class Ask(IPortalAccount account, ITenantDirectory directory, ILa
     {
         "no_authority" => L["找不到足以回答這個問題的法條，所以沒有回答。試試換個說法，或換一天。"],
         "out_of_scope" => L["這個問題超出目前涵蓋的知識範圍，所以沒有回答。"],
+        "local_law_uncovered" => L["這個問題問的是地方自治法規，而這裡只涵蓋中央法規，所以沒有回答。請向該地方政府查詢。"],
         "missing_input" => L["問題不夠具體，請補充後再問。"],
         "unverified_citation" => L["系統產生的回答無法對應到法條出處，已捨棄，沒有顯示。請換個說法再問一次。"],
         _ => L["這次沒有產生可以對應到法條出處的回答。請換個說法再問一次。"],

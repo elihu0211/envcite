@@ -18,6 +18,7 @@ public sealed class GroundingMetricsTests
         new Refusal(RefusalReason.NoEvidence, "detail"),
         new Refusal(RefusalReason.OutOfScope, "detail"),
         new Refusal(RefusalReason.MissingInput, "detail"),
+        new Refusal(RefusalReason.LocalLawUncovered, "detail"),
     ];
 
     [Fact]
@@ -37,7 +38,7 @@ public sealed class GroundingMetricsTests
         }
 
         var points = collector.GetMeasurementSnapshot();
-        string[] outcomeNames = ["grounded", "no_evidence", "out_of_scope", "missing_input"];
+        string[] outcomeNames = ["grounded", "no_evidence", "out_of_scope", "missing_input", "local_law_uncovered"];
         string[] markerNames = ["none", "jurisdiction", "ordinance"];
         Assert.Equal(
             [.. outcomeNames.SelectMany(o => markerNames.Select(m => (o, m))).Order()],

@@ -33,18 +33,20 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
             && r.Headers.GetValue("x-tenant-id") == tenant.Identifier);
     }
 
-    [Fact]
-    public async Task RefusalIsAResultNotAnError()
+    [Theory]
+    [InlineData(FakeConsultServer.UnrelatedQuestion, "out_of_scope")]
+    [InlineData(FakeConsultServer.LocalLawQuestion, "local_law_uncovered")]
+    public async Task RefusalIsAResultNotAnError(string question, string reason)
     {
         var (_, key) = await factory.CreateTenantWithKeyAsync("refused");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(FakeConsultServer.UnrelatedQuestion, null), cancellationToken: TestContext.Current.CancellationToken);
+        using var response = await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(question, null), cancellationToken: TestContext.Current.CancellationToken);
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("refused", json.RootElement.GetProperty("outcome").GetString());
-        Assert.Equal("out_of_scope", json.RootElement.GetProperty("refusal").GetProperty("reason").GetString());
+        Assert.Equal(reason, json.RootElement.GetProperty("refusal").GetProperty("reason").GetString());
         Assert.False(json.RootElement.TryGetProperty("authorities", out _));
     }
 

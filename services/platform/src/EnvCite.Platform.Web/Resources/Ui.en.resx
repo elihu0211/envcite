@@ -322,6 +322,7 @@
   <data name="近 30 天" xml:space="preserve"><value>Last 30 days</value></data>
   <data name="近 7 天" xml:space="preserve"><value>Last 7 days</value></data>
   <data name="近 {0} 天" xml:space="preserve"><value>Last {0} days</value></data>
+  <data name="這個問題問的是地方自治法規，而這裡只涵蓋中央法規，所以沒有回答。請向該地方政府查詢。" xml:space="preserve"><value>This question is about local self-government regulations, and only central regulations are covered here, so no answer was given. Please check with the local government.</value></data>
   <data name="這個問題超出目前涵蓋的知識範圍，所以沒有回答。" xml:space="preserve"><value>This question is outside the knowledge currently covered, so no answer was given.</value></data>
   <data name="這個帳號已被停用，或登入已失效（例如密碼或兩步驟驗證被重設）。請重新登入；仍然不行，請洽持有營運者金鑰的人。" xml:space="preserve"><value>This account has been disabled, or the session is no longer valid (for example the password or two-step verification was reset). Sign in again; if that still fails, contact whoever holds the operator key.</value></data>
   <data name="這個帳號目前沒有後台權限（可能已被停用，或登入已失效）。" xml:space="preserve"><value>This account currently has no console access (it may have been disabled, or the session is no longer valid). </value></data>

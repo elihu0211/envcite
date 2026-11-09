@@ -108,6 +108,7 @@ public sealed class GroundServiceTests(ConsultFactory factory)
     [InlineData("  ", Refused.Types.Reason.MissingInput)]
     [InlineData(FakeOntologyServer.EmptyQuery, Refused.Types.Reason.NoEvidence)]
     [InlineData(FakeOntologyServer.IrrelevantQuery, Refused.Types.Reason.OutOfScope)]
+    [InlineData("臺北市有哪些空氣污染自治條例", Refused.Types.Reason.LocalLawUncovered)]
     public async Task RefusalIsAResultNotAnError(string question, Refused.Types.Reason reason)
     {
         var response = await GroundAsync(new GroundRequest { Question = question });

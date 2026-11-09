@@ -45,13 +45,13 @@ gRPC 健康檢查協定（`grpc.health.v1.Health`）：空字串與 `envcite.con
 | 標籤 | 值 | 意義 |
 |------|----|------|
 | `outcome` | `grounded` | 回了證據 |
-| | `no_evidence`、`out_of_scope`、`missing_input` | 拒答，對應 `Refused.Reason` |
+| | `no_evidence`、`out_of_scope`、`missing_input`、`local_law_uncovered` | 拒答，對應 `Refused.Reason` |
 | `local_marker` | `none` | 問句沒有地方標記 |
 | | `jurisdiction` | 問句點名了縣市（全名，「臺」「台」皆認） |
 | | `ordinance` | 問句出現「自治條例」這類自治法規字樣；與縣市並存時取這一類 |
 
-標籤只有這兩個、值域固定；租戶、問句與命中的詞不進指標。詞表與判定規則的真值在 `LocalMarker.cs`。標記只量需求，不影響 `Ground` 的任何回應。
+標籤只有這兩個、值域固定；租戶、問句與命中的詞不進指標。詞表與判定規則的真值在 `LocalMarker.cs`。標記不影響檢索與接地；它影響回應的只有一處：沒有達標條文、又是 `ordinance` 時，拒答原因是 `local_law_uncovered`，不是 `no_evidence` 或 `out_of_scope`。有達標條文就照常回證據，因為中央條文可能正是答案。
 
-**怎麼讀**：看 `local_marker` 不是 `none` 的結果。其中 `outcome` 為 `no_evidence` 或 `out_of_scope` 的次數，除以全部結果（所有標籤加總），是「問了地方，語料沒有」占總提問的比率；除以 `local_marker` 不是 `none` 的結果，則是地方提問中落空的比率。`ordinance` 是明白在問地方規定，語料沒有，不論 `outcome` 都沒拿到地方規定；`jurisdiction` 可能只是提問者說明所在地，是較弱的訊號。要不要進縣市試點的門檻是產品決策，不在本文訂。
+**怎麼讀**：看 `local_marker` 不是 `none` 的結果。其中 `outcome` 為 `no_evidence`、`out_of_scope` 或 `local_law_uncovered` 的次數，除以全部結果（所有標籤加總），是「問了地方，語料沒有」占總提問的比率；除以 `local_marker` 不是 `none` 的結果，則是地方提問中落空的比率。`ordinance` 是明白在問地方規定，語料沒有，不論 `outcome` 都沒拿到地方規定；`jurisdiction` 可能只是提問者說明所在地，是較弱的訊號。要不要進縣市試點的門檻是產品決策，不在本文訂。
 
 開發指令與實作規範見 [`AGENTS.md`](AGENTS.md)。

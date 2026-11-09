@@ -64,8 +64,35 @@ public sealed class GroundingTests
     {
         Article[] irrelevant = [Law(1, 0.1)];
 
-        Assert.Equal(RefusalReason.NoEvidence, Grounding.Assess([], [])?.Reason);
-        Assert.Equal(RefusalReason.OutOfScope, Grounding.Assess(Grounding.Ground(irrelevant, Relevance), irrelevant)?.Reason);
+        Assert.Equal(RefusalReason.NoEvidence, Grounding.Assess([], [], LocalMarker.None)?.Reason);
+        Assert.Equal(RefusalReason.OutOfScope, Grounding.Assess(Grounding.Ground(irrelevant, Relevance), irrelevant, LocalMarker.None)?.Reason);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NoEvidenceForAnOrdinanceQuestionIsRefusedAsLocalLawNotAsNotFound(bool retrievedSomething)
+    {
+        Article[] articles = retrievedSomething ? [Law(1, 0.1)] : [];
+
+        var refusal = Grounding.Assess(Grounding.Ground(articles, Relevance), articles, LocalMarker.Ordinance);
+
+        Assert.Equal(RefusalReason.LocalLawUncovered, refusal?.Reason);
+    }
+
+    [Fact]
+    public void AJurisdictionNameAloneKeepsTheRetrievalReason()
+    {
+        // 縣市可能只是提問者所在地：只有自治法規字樣才改變拒答原因。
+        Assert.Equal(RefusalReason.NoEvidence, Grounding.Assess([], [], LocalMarker.Jurisdiction)?.Reason);
+    }
+
+    [Fact]
+    public void RelevantEvidenceIsNeverReplacedByTheLocalLawRefusal()
+    {
+        Article[] articles = [Law(1, 9)];
+
+        Assert.Null(Grounding.Assess(Grounding.Ground(articles, Relevance), articles, LocalMarker.Ordinance));
     }
 
     [Fact]
@@ -89,6 +116,17 @@ public sealed class GroundingTests
 
         Assert.Equal(RefusalReason.MissingInput, Assert.IsType<Refusal>(outcome).Reason);
         Assert.Empty(ontology.Searches);
+    }
+
+    [Fact]
+    public async Task AnOrdinanceQuestionWithNothingRelevantIsRefusedAsLocalLawAfterRetrieval()
+    {
+        var ontology = new FakeOntology();
+
+        var outcome = await Pipeline(ontology).RunAsync("臺北市有哪些空氣污染自治條例", "", TestContext.Current.CancellationToken);
+
+        Assert.Equal(RefusalReason.LocalLawUncovered, Assert.IsType<Refusal>(outcome).Reason);
+        Assert.Single(ontology.Searches);
     }
 
     [Fact]

@@ -17,6 +17,7 @@ internal enum RefusalReason
     NoEvidence,
     OutOfScope,
     MissingInput,
+    LocalLawUncovered,
 }
 
 internal sealed record Citation(
@@ -68,17 +69,28 @@ internal static class Grounding
         [.. articles.Where(relevance.IsRelevant).Take(MaxCitations)
             .Select((a, i) => new Citation($"{CodePrefix[Law]}{i + 1}", a.Iri, a.Label, a.Text, Law, a.LawIdentifier))];
 
-    /// <summary>依檢索結果決定是否作答：回傳拒答，或回傳 null 表示繼續。</summary>
-    public static Refusal? Assess(IReadOnlyList<Citation> grounding, IReadOnlyList<Article> articles)
+    /// <summary>
+    /// 依檢索結果決定是否作答：回傳拒答，或回傳 null 表示繼續。沒有達標的條文時，問句明白在問地方自治法規
+    /// （<see cref="LocalMarker.Ordinance"/>）的拒答原因是範圍，不是檢索結果：語料只涵蓋中央法規，
+    /// 「查無」會被讀成地方沒有規定。有達標的條文就照常作答，中央條文可能正是答案。
+    /// </summary>
+    public static Refusal? Assess(IReadOnlyList<Citation> grounding, IReadOnlyList<Article> articles, LocalMarker marker)
     {
-        if (articles.Count == 0)
+        if (grounding.Count > 0)
         {
-            return new Refusal(RefusalReason.NoEvidence, "檢索無任何結果");
+            return null;
         }
 
-        // 有檢索到東西，但沒有任何一筆超過下界。這與什麼都沒檢索到是不同的失敗，呼叫端應能加以區分：
+        if (marker == LocalMarker.Ordinance)
+        {
+            return new Refusal(RefusalReason.LocalLawUncovered, "問句指向地方自治法規，語料只涵蓋中央法規");
+        }
+
+        // 什麼都沒檢索到，與有檢索到東西但沒有任何一筆超過下界，是不同的失敗，呼叫端應能加以區分：
         // 前者表示語料缺漏，後者表示問題談的是別的事。
-        return grounding.Count == 0 ? new Refusal(RefusalReason.OutOfScope, "檢索結果皆未達相關性下界") : null;
+        return articles.Count == 0
+            ? new Refusal(RefusalReason.NoEvidence, "檢索無任何結果")
+            : new Refusal(RefusalReason.OutOfScope, "檢索結果皆未達相關性下界");
     }
 
     public static Confidence ConfidenceOf(IReadOnlyList<Citation> grounding, IReadOnlyList<Article> articles, RelevanceOptions relevance)
@@ -101,7 +113,7 @@ internal sealed class GroundingPipeline(IOntologySearch ontology, IOptions<Relev
 
         var articles = await ontology.SearchAsync(question, asOf, cancellationToken);
         var grounding = Grounding.Ground(articles, relevance.Value);
-        return Grounding.Assess(grounding, articles)
+        return Grounding.Assess(grounding, articles, LocalMarkers.Classify(question))
             ?? (GroundingOutcome)new Evidence(grounding, Grounding.ConfidenceOf(grounding, articles, relevance.Value));
     }
 }

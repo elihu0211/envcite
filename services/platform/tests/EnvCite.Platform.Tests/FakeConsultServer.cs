@@ -18,6 +18,7 @@ public sealed class FakeConsultServer : IAsyncDisposable
     public const string AnswerableQuestion = "露天燃燒如何處罰";
     public const string UnrelatedQuestion = "量子電腦";
     public const string UnavailableQuestion = "trigger-unavailable";
+    public const string LocalLawQuestion = "臺北市有哪些空氣污染自治條例";
 
     private WebApplication? _app;
 
@@ -58,6 +59,10 @@ public sealed class FakeConsultServer : IAsyncDisposable
             return request.Question switch
             {
                 UnavailableQuestion => throw new RpcException(new Status(StatusCode.Unavailable, "down")),
+                LocalLawQuestion => Task.FromResult(new GroundResponse
+                {
+                    Refused = new Refused { Reason = Refused.Types.Reason.LocalLawUncovered, Detail = "問句指向地方自治法規，語料只涵蓋中央法規" },
+                }),
                 AnswerableQuestion => Task.FromResult(new GroundResponse
                 {
                     Evidence = new Evidence

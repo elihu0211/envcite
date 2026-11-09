@@ -120,9 +120,9 @@ public sealed class HostingTests(ConsultFactory factory)
             [
                 ("grounded", "jurisdiction"),
                 ("grounded", "none"),
+                ("local_law_uncovered", "ordinance"),
                 ("missing_input", "none"),
                 ("no_evidence", "none"),
-                ("no_evidence", "ordinance"),
                 ("out_of_scope", "none"),
             ],
             [.. points.Select(p => ((string)p.Tags["outcome"]!, (string)p.Tags["local_marker"]!)).Order()]);
