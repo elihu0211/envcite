@@ -18,11 +18,12 @@ from envcite_ontology import history_sync
 from envcite_ontology.acquire import moenv_law
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.history_sources import Moenv
-from envcite_ontology.ingest import backfill, importer
+from envcite_ontology.ingest import audit, backfill, importer
 from tests.fake_web import FakeWeb
 from tests.moenv_site import current_page, site
 from tests.sample import stored_snapshot
 from tests.test_import import _law
+from tests.test_incremental import _next
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -48,6 +49,7 @@ POLICY = Policy(name="test", max_attempts=1, backoff_base_seconds=0.0)
 @pytest.fixture(autouse=True)
 def _no_batch_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     """一部法規就是一整批：任何比例都是 0 或 100%，沒有意義。"""
+    monkeypatch.setattr(audit, "LIMITS", {k: (d, 1.0) for k, (d, _) in audit.LIMITS.items()})
     monkeypatch.setattr(
         history_sync, "LIMITS", {k: (d, 1.0) for k, (d, _) in history_sync.LIMITS.items()}
     )
@@ -290,6 +292,7 @@ def test_an_older_last_article_does_not_date_a_past_version() -> None:
         version_date=V3,
         latest_date=V3,
         starts={"art_1": V3 + DAY3, "art_2": V3},
+        after=[],
         articles={"第 1 條": "丙。", "第 2 條": last},
         latest_articles={"第 1 條": "丙。", "第 2 條": last},
         events=list(history),
@@ -326,3 +329,50 @@ def test_a_law_never_amended_is_acquired_and_has_no_past_versions(
         1,
     )
     assert {d for _, d, _, _ in _rows(conn)} == {V3}
+
+
+V4 = date(2026, 10, 18)  # 回推之前，每日同步已經入庫的新版本
+HISTORY_UNSTATED = (
+    HISTORY.rsplit("\r\n", 1)[0] + "\r\n"
+    "3.中華民國一百零九年三月一日總統令修正公布第 2 條條文"  # 沒寫施行日：第 2 條待確認
+)
+HISTORY_V4 = (
+    HISTORY_UNSTATED + "\r\n4.中華民國一百十五年十月十八日總統令修正公布第 2 條條文；並自公布日施行"
+)
+V3_UNSTATED = [("1", "甲。"), ("2", "丁。"), ("3", "戊。")]
+V4_TEXT = [("1", "甲。"), ("2", "己。"), ("3", "戊。")]
+
+
+def _official(history: str, modified: str, text: list[tuple[str, str]]) -> dict[str, Any]:
+    articles = [
+        {"ArticleType": "A", "ArticleNo": f"第 {n} 條", "ArticleContent": t} for n, t in text
+    ]
+    return _law(
+        PCODE,
+        TITLE,
+        LawLevel="命令",
+        LawHistories=history,
+        LawModifiedDate=modified,
+        LawArticles=articles,
+    )
+
+
+def test_a_unit_unstated_at_the_anchor_ends_where_a_later_corpus_version_starts_it(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """錨點的起點待確認，錨點之後又入庫了同一條有起點的新版本：更舊的版本止於那個起點。
+
+    只看錨點的話這一條找不到上界，舊版的區間開放，與新版同一條的現行列重疊。
+    """
+    stored_snapshot(conn, tmp_path, [_official(HISTORY_UNSTATED, "20200301", V3_UNSTATED)])
+    importer.run(conn, tmp_path, Moj())
+    conn.commit()
+    _next(conn, tmp_path, _official(HISTORY_V4, "20261018", V4_TEXT))  # 每日同步的新版本
+    pages = _full_site(current=(V4, V4_TEXT), past={13: (V3, V3_UNSTATED)})
+
+    assert _sync(conn, tmp_path, pages) == 0
+
+    art_2 = {d: f for p, d, f, _ in _rows(conn) if p == "art_2"}
+    assert art_2[V2] == Range(V2 + DAY3, V4 + DAY3, "[)")  # 錨點待確認，往更新的版本找
+    assert art_2[V3] is None  # 錨點本身不動
+    assert art_2[V4] == Range(V4 + DAY3, None, "[)")

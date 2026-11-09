@@ -12,7 +12,8 @@
 3. **效力**：每一版當作「那時的現行版本」交給 `law.parse` 推導生效日——沿革截到下一次公布之前，
    所以施行命令只及於它所屬的那一版。各單元的效力止於較新版本同路徑單元的起點；較新版本沒有該路徑
    （條被刪）者止於那一版的法規層起點（各條已知起點的最小值），與增量匯入的規則相同（02-03 §8）。
-   較新版本起點未知者往更新的版本找；起點不早於下一版者從未生效，不寫列。
+   較新版本起點未知者往更新的版本找，找到錨點之後已入庫的官方資料庫版本為止（錨點的起點待確認、
+   之後的版本又給了同一條起點時，上界取後者）；起點不早於下一版者從未生效，不寫列。
 
 寫入（`write`）一部法規一個交易：版本列與目標相同者不動，不同者以新列取代舊列（記錄時間只增不改）；
 已寫入的歷史版本日不在這次的目標裡（來源的歷次版本改變了），整部不寫，記 error 待人查看。
@@ -82,6 +83,9 @@ class Anchor:
     latest_date: date
     #: 錨點各單元現行列的效力起點（未知為 None）
     starts: dict[str, date | None]
+    #: 錨點之後每個官方資料庫版本各單元現行列的效力起點，由舊到新。每日同步在回推之前已經入庫
+    #: 的新版本：錨點的起點待確認而新版本有起點時，更舊的版本要止於它，否則區間開放而與它重疊。
+    after: list[dict[str, date | None]]
     #: 錨點各條的全文（條號 `第 N 條` → 文字）
     articles: dict[str, str]
     #: 最新版本各條的全文，用來核對還原的轉錄
@@ -312,7 +316,7 @@ def _end(later: list[_Later], path: str) -> date | None:
 
 def _intervals(anchor: Anchor, accepted: list[tuple[Version, ParsedLaw]]) -> list[Planned]:
     """由新往舊定每一版各單元的效力上界（`accepted` 是新到舊）。"""
-    later = [_Later(dict(anchor.starts), set())]
+    later = [_Later(dict(s), set()) for s in (anchor.starts, *anchor.after)]
     planned: list[Planned] = []
     until = anchor.version_date
     for version, parsed in accepted:
@@ -356,16 +360,18 @@ def load_anchor(conn: Conn, pcode: str) -> Anchor | None:
         return None
     resource, kind, repealed_on, first, latest = row
     assert isinstance(resource, int) and isinstance(first, date) and isinstance(latest, date)
-    starts: dict[str, date | None] = {}
-    for path, force in conn.execute(
-        "SELECT p.path, v.force_period FROM corpus.provision_version AS v"
+    starts_by_version: dict[date, dict[str, date | None]] = {}
+    for version, path, force in conn.execute(
+        "SELECT e.version_date, p.path, v.force_period FROM corpus.provision_version AS v"
         "  JOIN corpus.provision AS p ON p.id = v.provision_id"
         "  JOIN corpus.legal_expression AS e ON e.id = v.expression_id"
-        " WHERE e.resource_id = %s AND e.language = 'zho' AND e.version_date = %s"
+        " WHERE e.resource_id = %s AND e.language = 'zho' AND e.text_authority = 'official_db'"
         "   AND v.superseded_at IS NULL",
-        (resource, first),
+        (resource,),
     ):
-        starts[cast(str, path)] = cast(Range[date], force).lower if force is not None else None
+        starts_by_version.setdefault(cast(date, version), {})[cast(str, path)] = (
+            cast(Range[date], force).lower if force is not None else None
+        )
     events = [
         cast(str, text)
         for (text,) in conn.execute(
@@ -381,7 +387,8 @@ def load_anchor(conn: Conn, pcode: str) -> Anchor | None:
         repealed_on=cast(date | None, repealed_on),
         version_date=first,
         latest_date=latest,
-        starts=starts,
+        starts=starts_by_version.get(first, {}),
+        after=[starts_by_version[d] for d in sorted(starts_by_version) if d > first],
         articles=_articles(conn, resource, first),
         latest_articles=_articles(conn, resource, latest),
         events=events,
