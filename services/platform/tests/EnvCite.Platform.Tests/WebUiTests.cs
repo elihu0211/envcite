@@ -15,6 +15,17 @@ public sealed class WebUiTests(PlatformFactory factory)
         factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
     [Fact]
+    public async Task RootRedirectsToUi()
+    {
+        using var client = CreateUiClient();
+
+        using var response = await client.GetAsync(new Uri("/", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/ui", response.Headers.Location?.OriginalString);
+    }
+
+    [Fact]
     public async Task UnauthenticatedUiRedirectsToLogin()
     {
         using var client = CreateUiClient();

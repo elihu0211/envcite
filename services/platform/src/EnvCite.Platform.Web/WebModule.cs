@@ -121,6 +121,11 @@ public static class WebModule
             return app;
         }
 
+        if (operatorUi)
+        {
+            app.MapGet("/", () => Results.Redirect("/ui"));
+        }
+
         app.MapStaticAssets();
         app.MapUiAuthEndpoints();
         app.MapPortalAuthEndpoints();

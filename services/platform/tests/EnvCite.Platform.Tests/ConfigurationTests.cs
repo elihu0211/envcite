@@ -62,11 +62,13 @@ public sealed class ConfigurationTests(PlatformFactory factory)
         using var api = await client.GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
         using var ui = await client.GetAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken);
         using var login = await client.GetAsync(new Uri("/ui/login", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var root = await client.GetAsync(new Uri("/", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(System.Net.HttpStatusCode.OK, health.StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.Unauthorized, api.StatusCode); // API 在，只是沒帶 key
         Assert.Equal(System.Net.HttpStatusCode.NotFound, ui.StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.NotFound, login.StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, root.StatusCode);
     }
 
     // 與入口對稱：什麼都不設就是關。
@@ -88,9 +90,11 @@ public sealed class ConfigurationTests(PlatformFactory factory)
 
         using var login = await client.GetAsync(new Uri("/ui/login", UriKind.Relative), TestContext.Current.CancellationToken);
         using var ui = await client.GetAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken);
+        using var root = await client.GetAsync(new Uri("/", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(System.Net.HttpStatusCode.OK, login.StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.Redirect, ui.StatusCode); // 沒登入 → 導去登入，不是 404
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, root.StatusCode); // 根路徑 → 導去 /ui
     }
 
     [Fact]
