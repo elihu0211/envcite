@@ -65,7 +65,7 @@ uv run --env-file .env envcite-ontology
   義務的 duty 或 scope 借用本法已定義的泛稱（約定 G）也送回修復輪，但修不好不丟，交給驗證閘門。
   規範性陳述的引文缺了助動詞而單元原文有（從規範句切下的子句）是形狀問題，修不好就丟；
   義務引文裡助動詞前後有字沒被 scope、主體或 duty 要件涵蓋（漏了期限、對象、限定語）只送回修復，不丟。
-- **重抽**：義務沒有定論的單元（`annotation.reextraction_due`）帶審查者指出的問題重抽；輪數上限是 `extraction_attempt.round` 的 CHECK，不是程式裡的常數，該不該重抽由資料推得、不另存佇列，所以中斷後重跑自己收斂。重抽只改變誰被抽到、不放寬閘門：確認仍要所有必要方法通過。量測與已知缺口見 `eval/duty-reextraction-2026-11-06.md`。
+- **重抽**：義務沒有定論的單元（`annotation.reextraction_due`）帶審查者指出的問題重抽；輪數上限是 `extraction_attempt.round` 的 CHECK，不是程式裡的常數，該不該重抽由資料推得、不另存佇列，所以中斷後重跑自己收斂。重抽只改變誰被抽到、不放寬閘門：確認仍要所有必要方法通過。量測與已知缺口見 `eval/duty-reextraction-2026-11-06.md`，兩型瑕疵修復的獨立量測見 `eval/duty-fix-effect-2026-11-09.md`。
 - 本體的約定（只有規範性陳述有義務方向、授權不是許可、罰則一個效果一個陳述且引文只取該效果的子句、刑罰不是罰則、按次處罰是另一個帶「屆期仍未改善」要件的陳述）寫在 `verification/conventions.py` 一處，各提示都由它組成。
 - **管線**可重跑、每個陳述 commit；`--pending` 的待辦由資料推得，所以重跑收斂；同一時間只跑一個（PostgreSQL 諮詢鎖）。保留樣本評估看過的法就用掉了，只報第一次看的計數，不報準確度。
 - **行政規則**（`guidance` schema）：函釋、裁量基準另立一軸，**不進語料的位階、不是推論的前提**（行政程序法第 159 條），只附在推論結果旁（`Outcome.guidance`）。公文不可改，由人或規則載入（`derivation.method` 不得為 `llm`）；「解釋」錨定（單元，內容雜湊），條文文字改了就不再附上。取得（`envcite-guidance sync`）只經 `guidance.load` 寫入，**改變寫入內容或錨定規則要遞增 `guidance_sync.RULE_VERSION`**。

@@ -1,0 +1,323 @@
+{
+ "pre-1": {
+  "attempts_by_round": {
+   "0": 322,
+   "1": 96,
+   "2": 85,
+   "3": 80
+  },
+  "attempts_total": 583,
+  "by_round": {
+   "0": {
+    "statements": 112,
+    "confirmed": 20,
+    "verifications": 1136,
+    "redundant": 0
+   },
+   "1": {
+    "statements": 67,
+    "confirmed": 15,
+    "verifications": 628,
+    "redundant": 6
+   },
+   "2": {
+    "statements": 45,
+    "confirmed": 10,
+    "verifications": 483,
+    "redundant": 6
+   },
+   "3": {
+    "statements": 38,
+    "confirmed": 8,
+    "verifications": 362,
+    "redundant": 8
+   }
+  },
+  "duty_statements": 262,
+  "confirmed": 53,
+  "verification_rows": 2609,
+  "reextract_statements": 150,
+  "reextract_verification_rows": 1473,
+  "redundant_statements": 20,
+  "redundant_confirmed": 8,
+  "redundant_verification_rows": 190,
+  "redundant_share_of_reextract_verifications": 0.129,
+  "log": {
+   "extract_calls": 557,
+   "repairs": 253,
+   "tokens": {
+    "prompt": 6331914,
+    "completion": 620066
+   },
+   "rounds": 21,
+   "seconds": 35923
+  }
+ },
+ "pre-2": {
+  "attempts_by_round": {
+   "0": 322,
+   "1": 89,
+   "2": 77,
+   "3": 71
+  },
+  "attempts_total": 559,
+  "by_round": {
+   "0": {
+    "statements": 111,
+    "confirmed": 23,
+    "verifications": 1103,
+    "redundant": 0
+   },
+   "1": {
+    "statements": 66,
+    "confirmed": 15,
+    "verifications": 768,
+    "redundant": 3
+   },
+   "2": {
+    "statements": 45,
+    "confirmed": 11,
+    "verifications": 422,
+    "redundant": 4
+   },
+   "3": {
+    "statements": 36,
+    "confirmed": 6,
+    "verifications": 337,
+    "redundant": 6
+   }
+  },
+  "duty_statements": 258,
+  "confirmed": 55,
+  "verification_rows": 2630,
+  "reextract_statements": 147,
+  "reextract_verification_rows": 1527,
+  "redundant_statements": 13,
+  "redundant_confirmed": 4,
+  "redundant_verification_rows": 119,
+  "redundant_share_of_reextract_verifications": 0.078,
+  "log": {
+   "extract_calls": 551,
+   "repairs": 247,
+   "tokens": {
+    "prompt": 5970868,
+    "completion": 578753
+   },
+   "rounds": 20,
+   "seconds": 35992
+  }
+ },
+ "pre-3": {
+  "attempts_by_round": {
+   "0": 322,
+   "1": 101,
+   "2": 87,
+   "3": 80
+  },
+  "attempts_total": 590,
+  "by_round": {
+   "0": {
+    "statements": 116,
+    "confirmed": 19,
+    "verifications": 1168,
+    "redundant": 0
+   },
+   "1": {
+    "statements": 69,
+    "confirmed": 17,
+    "verifications": 727,
+    "redundant": 4
+   },
+   "2": {
+    "statements": 52,
+    "confirmed": 13,
+    "verifications": 569,
+    "redundant": 5
+   },
+   "3": {
+    "statements": 44,
+    "confirmed": 4,
+    "verifications": 416,
+    "redundant": 5
+   }
+  },
+  "duty_statements": 281,
+  "confirmed": 53,
+  "verification_rows": 2880,
+  "reextract_statements": 165,
+  "reextract_verification_rows": 1712,
+  "redundant_statements": 14,
+  "redundant_confirmed": 6,
+  "redundant_verification_rows": 138,
+  "redundant_share_of_reextract_verifications": 0.081,
+  "log": {
+   "extract_calls": 547,
+   "repairs": 243,
+   "tokens": {
+    "prompt": 6445630,
+    "completion": 640962
+   },
+   "rounds": 23,
+   "seconds": 36438
+  }
+ },
+ "post-1": {
+  "attempts_by_round": {
+   "0": 322,
+   "1": 94,
+   "2": 86,
+   "3": 75
+  },
+  "attempts_total": 577,
+  "by_round": {
+   "0": {
+    "statements": 114,
+    "confirmed": 25,
+    "verifications": 1274,
+    "redundant": 0
+   },
+   "1": {
+    "statements": 72,
+    "confirmed": 17,
+    "verifications": 861,
+    "redundant": 6
+   },
+   "2": {
+    "statements": 54,
+    "confirmed": 18,
+    "verifications": 662,
+    "redundant": 11
+   },
+   "3": {
+    "statements": 44,
+    "confirmed": 9,
+    "verifications": 462,
+    "redundant": 14
+   }
+  },
+  "duty_statements": 284,
+  "confirmed": 69,
+  "verification_rows": 3259,
+  "reextract_statements": 170,
+  "reextract_verification_rows": 1985,
+  "redundant_statements": 31,
+  "redundant_confirmed": 14,
+  "redundant_verification_rows": 303,
+  "redundant_share_of_reextract_verifications": 0.153,
+  "log": {
+   "extract_calls": 543,
+   "repairs": 239,
+   "tokens": {
+    "prompt": 6297658,
+    "completion": 628637
+   },
+   "rounds": 24,
+   "seconds": 40838
+  }
+ },
+ "post-2": {
+  "attempts_by_round": {
+   "0": 322,
+   "1": 93,
+   "2": 81,
+   "3": 72
+  },
+  "attempts_total": 568,
+  "by_round": {
+   "0": {
+    "statements": 118,
+    "confirmed": 29,
+    "verifications": 1369,
+    "redundant": 0
+   },
+   "1": {
+    "statements": 69,
+    "confirmed": 18,
+    "verifications": 809,
+    "redundant": 6
+   },
+   "2": {
+    "statements": 55,
+    "confirmed": 13,
+    "verifications": 631,
+    "redundant": 5
+   },
+   "3": {
+    "statements": 48,
+    "confirmed": 13,
+    "verifications": 520,
+    "redundant": 9
+   }
+  },
+  "duty_statements": 290,
+  "confirmed": 73,
+  "verification_rows": 3329,
+  "reextract_statements": 172,
+  "reextract_verification_rows": 1960,
+  "redundant_statements": 20,
+  "redundant_confirmed": 11,
+  "redundant_verification_rows": 163,
+  "redundant_share_of_reextract_verifications": 0.083,
+  "log": {
+   "extract_calls": null,
+   "repairs": null,
+   "tokens": null,
+   "rounds": null,
+   "seconds": 21495
+  }
+ },
+ "post-3": {
+  "attempts_by_round": {
+   "0": 322,
+   "1": 90,
+   "2": 80,
+   "3": 68
+  },
+  "attempts_total": 560,
+  "by_round": {
+   "0": {
+    "statements": 111,
+    "confirmed": 30,
+    "verifications": 1173,
+    "redundant": 0
+   },
+   "1": {
+    "statements": 69,
+    "confirmed": 15,
+    "verifications": 706,
+    "redundant": 6
+   },
+   "2": {
+    "statements": 56,
+    "confirmed": 16,
+    "verifications": 618,
+    "redundant": 9
+   },
+   "3": {
+    "statements": 41,
+    "confirmed": 8,
+    "verifications": 431,
+    "redundant": 6
+   }
+  },
+  "duty_statements": 277,
+  "confirmed": 69,
+  "verification_rows": 2928,
+  "reextract_statements": 166,
+  "reextract_verification_rows": 1755,
+  "redundant_statements": 21,
+  "redundant_confirmed": 11,
+  "redundant_verification_rows": 192,
+  "redundant_share_of_reextract_verifications": 0.109,
+  "log": {
+   "extract_calls": 550,
+   "repairs": 246,
+   "tokens": {
+    "prompt": 6184029,
+    "completion": 603370
+   },
+   "rounds": 22,
+   "seconds": 41137
+  }
+ }
+}

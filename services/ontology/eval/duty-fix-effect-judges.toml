@@ -1,0 +1,23 @@
+# 量測 MR 339 效果的獨立判定池。端點與金鑰解析同 models.toml（金鑰不寫在這裡）。
+#
+# 判定者與被測的抽取者（mistral）不同家族。ornith（qwen）在標註管線的任何角色裡都沒有出現；
+# nemotron（nvidia）是管線的往返驗證與評審團成員，所以另報「只看 ornith」的結果，檢查放行過這些陳述的
+# 模型是否讓判定偏向「沒有瑕疵」。家族依端點路由表宣告（見 models.toml 的說明）。
+[endpoint.llm]
+base_url = "https://api.ithu.tw/v1"
+
+[model.ornith]
+endpoint = "llm"
+name = "ornith-35b"
+family = "qwen"
+max_tokens = 4096
+
+[model.nemotron]
+endpoint = "llm"
+name = "nemotron-3.5-super-vl"
+family = "nvidia"
+max_tokens = 16384
+
+[relevance]
+judges = ["ornith", "nemotron"]
+system_families = ["mistral"]

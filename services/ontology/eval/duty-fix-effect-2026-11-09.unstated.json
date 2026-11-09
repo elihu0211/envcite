@@ -1,0 +1,2819 @@
+{
+ "runs": {
+  "pre-1": {
+   "confirmed_duties": 53,
+   "unstated_duties": 0,
+   "unstated_units": 0,
+   "unstated_on_penalty_chain": 0,
+   "unstated_chain_units": 0,
+   "confirmed_penalties": 24,
+   "penalties_with_liability_basis": 0,
+   "penalties_with_unstated_subject": 0
+  },
+  "pre-2": {
+   "confirmed_duties": 55,
+   "unstated_duties": 0,
+   "unstated_units": 0,
+   "unstated_on_penalty_chain": 0,
+   "unstated_chain_units": 0,
+   "confirmed_penalties": 35,
+   "penalties_with_liability_basis": 0,
+   "penalties_with_unstated_subject": 0
+  },
+  "pre-3": {
+   "confirmed_duties": 53,
+   "unstated_duties": 0,
+   "unstated_units": 0,
+   "unstated_on_penalty_chain": 0,
+   "unstated_chain_units": 0,
+   "confirmed_penalties": 35,
+   "penalties_with_liability_basis": 0,
+   "penalties_with_unstated_subject": 0
+  },
+  "post-1": {
+   "confirmed_duties": 69,
+   "unstated_duties": 17,
+   "unstated_units": 14,
+   "unstated_on_penalty_chain": 5,
+   "unstated_chain_units": 5,
+   "confirmed_penalties": 32,
+   "penalties_with_liability_basis": 0,
+   "penalties_with_unstated_subject": 0
+  },
+  "post-2": {
+   "confirmed_duties": 73,
+   "unstated_duties": 23,
+   "unstated_units": 21,
+   "unstated_on_penalty_chain": 4,
+   "unstated_chain_units": 4,
+   "confirmed_penalties": 22,
+   "penalties_with_liability_basis": 0,
+   "penalties_with_unstated_subject": 0
+  },
+  "post-3": {
+   "confirmed_duties": 69,
+   "unstated_duties": 20,
+   "unstated_units": 19,
+   "unstated_on_penalty_chain": 7,
+   "unstated_chain_units": 7,
+   "confirmed_penalties": 51,
+   "penalties_with_liability_basis": 0,
+   "penalties_with_unstated_subject": 0
+  }
+ },
+ "bearer": {
+  "judges": [
+   "qwen:ornith-35b",
+   "nvidia:nemotron-3.5-super-vl"
+  ],
+  "summary": {
+   "n": 32,
+   "both_specific": 9,
+   "both_general": 7,
+   "other": 16,
+   "chain_n": 9,
+   "chain_both_specific": 1,
+   "chain_both_general": 6,
+   "chain_other": 2
+  },
+  "rows": [
+   {
+    "unit": "O0040001 art_10/para_3",
+    "quote": "水質監測採樣之地點、項目及頻率，應考量水域環境地理特性、水體水質特性及現況",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "各級主管機關",
+      "bearer_claimed": "各級主管機關"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "各級主管機關",
+      "bearer_claimed": "各級主管機關"
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_11/para_4",
+    "quote": "前項第一款第五目及第二款第六目之支用比例不得高於各類別之百分之十。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_11/para_8",
+    "quote": "水污染防治執行績效應逐年重新檢討並向立法院報告及備查。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "中央主管機關",
+      "bearer_claimed": "中央主管機關"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "中央主管機關",
+      "bearer_claimed": "中央主管機關"
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-1"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_14-1/para_4",
+    "quote": "第二項污染物項目經各級主管機關評估有必要者，應於放流水標準新增管制項目。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "各級主管機關",
+      "bearer_claimed": "各級主管機關"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "各級主管機關",
+      "bearer_claimed": "各級主管機關"
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_15/para_1",
+    "quote": "每次展延，不得超過五年。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "期滿仍繼續使用者",
+      "bearer_claimed": "期滿仍繼續使用者"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_18-1/para_1",
+    "quote": "不得繞流排放",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "事業或污水下水道系統",
+      "bearer_claimed": "事業或污水下水道系統"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-2",
+     "post-3"
+    ],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_18-1/para_2",
+    "quote": "前項廢（污）水須經處理始能符合本法所定管制標準者，不得於排放（入）前，與無需處理即能符合標準之水混合稀釋",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_18-1/para_2",
+    "quote": "前項廢（污）水須經處理始能符合本法所定管制標準者，不得於排放（入）前，與無需處理即能符合標準之水混合稀釋。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [
+     "post-2"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9845,
+      "effect": "fine",
+      "min": "60000",
+      "max": "20000000",
+      "per_occasion": false,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9850,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_18-1/para_4",
+    "quote": "事業或污水下水道系統設置之廢（污）水（前）處理設施應具備足夠之功能與設備，並維持正常操作",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     }
+    },
+    "runs": [
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-3"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9831,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_25/para_2",
+    "quote": "前項建築物污水處理設施之建造、管理及清理，應符合中央主管機關及目的事業主管機關之規定",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_25/para_2",
+    "quote": "前項建築物污水處理設施之建造、管理及清理，應符合中央主管機關及目的事業主管機關之規定。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_26/para_3",
+    "quote": "對於前二項查證，不得規避、妨礙或拒絕。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_30/para_1",
+    "quote": "在水污染管制區內，不得有下列行為：",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_30/para_1/pt_1",
+    "quote": "一、使用農藥或化學肥料，致有污染主管機關指定之水體之虞。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1"
+    ],
+    "chain_runs": [
+     "post-1"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9851,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_30/para_1/pt_2",
+    "quote": "在水體或其沿岸規定距離內棄置垃圾、水肥、污泥、酸鹼廢液、建築廢料或其他污染物",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-1",
+     "post-3"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9848,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_30/para_1/pt_4",
+    "quote": "在主管機關指定之水體或其沿岸規定距離內飼養家禽、家畜。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-1",
+     "post-3"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9850,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_30/para_1/pt_5",
+    "quote": "其他經主管機關公告禁止足使水污染之行為。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-3"
+    ],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_32/para_1",
+    "quote": "廢（污）水不得注入於地下水體或排放於土壤。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9873,
+      "effect": "fine",
+      "min": "60000",
+      "max": "6000000",
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9875,
+      "effect": "deprivation",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9876,
+      "effect": "fine",
+      "min": "60000",
+      "max": "6000000",
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9877,
+      "effect": "order",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9878,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9879,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9902,
+      "effect": "deprivation",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9907,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9908,
+      "effect": "deprivation",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_32/para_5",
+    "quote": "每次展延，不得超過三年。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "期滿仍繼續使用者",
+      "bearer_claimed": "期滿仍繼續使用者"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_33/para_2",
+    "quote": "前項監測設備應依主管機關規定之格式、內容、頻率、方式，監測、記錄及申報",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_59/para_1/pt_2",
+    "quote": "並記錄報備發話人、受話人姓名、職稱",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_59/para_1/pt_2",
+    "quote": "立即於故障紀錄簿中記錄故障設施名稱及故障時間",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_59/para_2",
+    "quote": "前項第四款書面報告內容，應包括下列事項：",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_61",
+    "quote": "依本法通知限期補正、改善或申報者，其補正、改善或申報期間，不得超過九十日。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_63/para_2",
+    "quote": "且應於試車期限屆滿前，申請復工（業）",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     }
+    },
+    "runs": [
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_63/para_2",
+    "quote": "且應於試車期限屆滿前，申請復工（業）。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_63/para_2",
+    "quote": "前項試車之期限不得超過三個月",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_63/para_4",
+    "quote": "經查驗及評鑑不合格，未經核准復工（業）者，應停止操作，並進行改善",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "經查驗及評鑑不合格，未經核准復工（業）者",
+      "bearer_claimed": "經查驗及評鑑不合格，未經核准復工（業）者"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "經查驗及評鑑不合格，未經核准復工（業）者",
+      "bearer_claimed": "經查驗及評鑑不合格，未經核准復工（業）者"
+     }
+    },
+    "runs": [
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_66-3/para_2",
+    "quote": "前項基金來源屬追繳之所得利益及依本法裁處之罰鍰者，應優先支用於該違反本法義務者所污染水體之整治。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040010 art_10",
+    "quote": "經中央主管機關指定公告之飲用水設備，應符合國家標準",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040010 art_29",
+    "quote": "依第八條規定公告之公私場所，其於公告前已設置連續供水固定設備者，應自公告之日起六個月內，依第八條規定申請登記",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "specific",
+      "bearer": "依第八條規定公告之公私場所，其於公告前已設置連續供水固定設備者",
+      "bearer_claimed": "依第八條規定公告之公私場所，其於公告前已設置連續供水固定設備者"
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "公私場所",
+      "bearer_claimed": "公私場所"
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040010 art_5/para_1",
+    "quote": "在飲用水水源水質保護區或飲用水取水口一定距離內之地區，不得有污染水源水質之行為。",
+    "answers": {
+     "qwen:ornith-35b": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "penalties": []
+   }
+  ]
+ },
+ "bearer_backup_pool": {
+  "judges": [
+   "nvidia:nemotron-3.5-super-vl",
+   "meta:muse-spark-open"
+  ],
+  "summary": {
+   "n": 32,
+   "both_specific": 9,
+   "both_general": 7,
+   "other": 16,
+   "chain_n": 9,
+   "chain_both_specific": 2,
+   "chain_both_general": 6,
+   "chain_other": 1
+  },
+  "rows": [
+   {
+    "unit": "O0040001 art_10/para_3",
+    "quote": "水質監測採樣之地點、項目及頻率，應考量水域環境地理特性、水體水質特性及現況",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "各級主管機關",
+      "bearer_claimed": "各級主管機關"
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "各級主管機關",
+      "bearer_claimed": "各級主管機關"
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_11/para_4",
+    "quote": "前項第一款第五目及第二款第六目之支用比例不得高於各類別之百分之十。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_11/para_8",
+    "quote": "水污染防治執行績效應逐年重新檢討並向立法院報告及備查。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "中央主管機關",
+      "bearer_claimed": "中央主管機關"
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "中央主管機關",
+      "bearer_claimed": "中央主管機關"
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-1"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_14-1/para_4",
+    "quote": "第二項污染物項目經各級主管機關評估有必要者，應於放流水標準新增管制項目。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "各級主管機關",
+      "bearer_claimed": "各級主管機關"
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_15/para_1",
+    "quote": "每次展延，不得超過五年。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "直轄市、縣（市）主管機關",
+      "bearer_claimed": "直轄市、縣（市）主管機關"
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_18-1/para_1",
+    "quote": "不得繞流排放",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "事業或污水下水道系統",
+      "bearer_claimed": "事業或污水下水道系統"
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-2",
+     "post-3"
+    ],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_18-1/para_2",
+    "quote": "前項廢（污）水須經處理始能符合本法所定管制標準者，不得於排放（入）前，與無需處理即能符合標準之水混合稀釋",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_18-1/para_2",
+    "quote": "前項廢（污）水須經處理始能符合本法所定管制標準者，不得於排放（入）前，與無需處理即能符合標準之水混合稀釋。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [
+     "post-2"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9845,
+      "effect": "fine",
+      "min": "60000",
+      "max": "20000000",
+      "per_occasion": false,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9850,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_18-1/para_4",
+    "quote": "事業或污水下水道系統設置之廢（污）水（前）處理設施應具備足夠之功能與設備，並維持正常操作",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "事業或污水下水道系統",
+      "bearer_claimed": "事業或污水下水道系統"
+     }
+    },
+    "runs": [
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-3"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9831,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_25/para_2",
+    "quote": "前項建築物污水處理設施之建造、管理及清理，應符合中央主管機關及目的事業主管機關之規定",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_25/para_2",
+    "quote": "前項建築物污水處理設施之建造、管理及清理，應符合中央主管機關及目的事業主管機關之規定。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_26/para_3",
+    "quote": "對於前二項查證，不得規避、妨礙或拒絕。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_30/para_1",
+    "quote": "在水污染管制區內，不得有下列行為：",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_30/para_1/pt_1",
+    "quote": "一、使用農藥或化學肥料，致有污染主管機關指定之水體之虞。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1"
+    ],
+    "chain_runs": [
+     "post-1"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9851,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_30/para_1/pt_2",
+    "quote": "在水體或其沿岸規定距離內棄置垃圾、水肥、污泥、酸鹼廢液、建築廢料或其他污染物",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-1",
+     "post-3"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9848,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_30/para_1/pt_4",
+    "quote": "在主管機關指定之水體或其沿岸規定距離內飼養家禽、家畜。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-1",
+     "post-3"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9850,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_30/para_1/pt_5",
+    "quote": "其他經主管機關公告禁止足使水污染之行為。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-3"
+    ],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_32/para_1",
+    "quote": "廢（污）水不得注入於地下水體或排放於土壤。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "penalties": [
+     {
+      "penalty_id": 9873,
+      "effect": "fine",
+      "min": "60000",
+      "max": "6000000",
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9875,
+      "effect": "deprivation",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9876,
+      "effect": "fine",
+      "min": "60000",
+      "max": "6000000",
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9877,
+      "effect": "order",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9878,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9879,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9902,
+      "effect": "deprivation",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9907,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9908,
+      "effect": "deprivation",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "unit": "O0040001 art_32/para_5",
+    "quote": "每次展延，不得超過三年。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "直轄市、縣（市）主管機關",
+      "bearer_claimed": "直轄市、縣（市）主管機關"
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_33/para_2",
+    "quote": "前項監測設備應依主管機關規定之格式、內容、頻率、方式，監測、記錄及申報",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_59/para_1/pt_2",
+    "quote": "並記錄報備發話人、受話人姓名、職稱",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_59/para_1/pt_2",
+    "quote": "立即於故障紀錄簿中記錄故障設施名稱及故障時間",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_59/para_2",
+    "quote": "前項第四款書面報告內容，應包括下列事項：",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_61",
+    "quote": "依本法通知限期補正、改善或申報者，其補正、改善或申報期間，不得超過九十日。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_63/para_2",
+    "quote": "且應於試車期限屆滿前，申請復工（業）",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     }
+    },
+    "runs": [
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_63/para_2",
+    "quote": "且應於試車期限屆滿前，申請復工（業）。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_63/para_2",
+    "quote": "前項試車之期限不得超過三個月",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": "事業"
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_63/para_4",
+    "quote": "經查驗及評鑑不合格，未經核准復工（業）者，應停止操作，並進行改善",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "經查驗及評鑑不合格，未經核准復工（業）者",
+      "bearer_claimed": "經查驗及評鑑不合格，未經核准復工（業）者"
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040001 art_66-3/para_2",
+    "quote": "前項基金來源屬追繳之所得利益及依本法裁處之罰鍰者，應優先支用於該違反本法義務者所污染水體之整治。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040010 art_10",
+    "quote": "經中央主管機關指定公告之飲用水設備，應符合國家標準",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "unclear",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040010 art_29",
+    "quote": "依第八條規定公告之公私場所，其於公告前已設置連續供水固定設備者，應自公告之日起六個月內，依第八條規定申請登記",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "specific",
+      "bearer": "公私場所",
+      "bearer_claimed": "公私場所"
+     },
+     "meta:muse-spark-open": {
+      "kind": "specific",
+      "bearer": "依第八條規定公告之公私場所，其於公告前已設置連續供水固定設備者",
+      "bearer_claimed": "依第八條規定公告之公私場所，其於公告前已設置連續供水固定設備者"
+     }
+    },
+    "runs": [
+     "post-2"
+    ],
+    "chain_runs": [],
+    "penalties": []
+   },
+   {
+    "unit": "O0040010 art_5/para_1",
+    "quote": "在飲用水水源水質保護區或飲用水取水口一定距離內之地區，不得有污染水源水質之行為。",
+    "answers": {
+     "nvidia:nemotron-3.5-super-vl": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     },
+     "meta:muse-spark-open": {
+      "kind": "general",
+      "bearer": "",
+      "bearer_claimed": ""
+     }
+    },
+    "runs": [
+     "post-1",
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "chain_runs": [
+     "post-1",
+     "post-2",
+     "post-3"
+    ],
+    "penalties": []
+   }
+  ]
+ },
+ "items": {
+  "pre-1": [],
+  "pre-2": [],
+  "pre-3": [],
+  "post-1": [
+   {
+    "id": 9351,
+    "unit": "O0040001 art_25/para_2",
+    "round": 0,
+    "deontic": "obligation",
+    "quote": "前項建築物污水處理設施之建造、管理及清理，應符合中央主管機關及目的事業主管機關之規定",
+    "penalties": []
+   },
+   {
+    "id": 9357,
+    "unit": "O0040001 art_26/para_3",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "對於前二項查證，不得規避、妨礙或拒絕。",
+    "penalties": []
+   },
+   {
+    "id": 9370,
+    "unit": "O0040001 art_30/para_1",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "在水污染管制區內，不得有下列行為：",
+    "penalties": []
+   },
+   {
+    "id": 9372,
+    "unit": "O0040001 art_30/para_1/pt_2",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "在水體或其沿岸規定距離內棄置垃圾、水肥、污泥、酸鹼廢液、建築廢料或其他污染物",
+    "penalties": [
+     {
+      "penalty_id": 9848,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9374,
+    "unit": "O0040001 art_30/para_1/pt_4",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "在主管機關指定之水體或其沿岸規定距離內飼養家禽、家畜。",
+    "penalties": [
+     {
+      "penalty_id": 9850,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9388,
+    "unit": "O0040001 art_33/para_2",
+    "round": 0,
+    "deontic": "obligation",
+    "quote": "前項監測設備應依主管機關規定之格式、內容、頻率、方式，監測、記錄及申報",
+    "penalties": []
+   },
+   {
+    "id": 9567,
+    "unit": "O0040001 art_18-1/para_1",
+    "round": 1,
+    "deontic": "prohibition",
+    "quote": "不得繞流排放",
+    "penalties": []
+   },
+   {
+    "id": 9585,
+    "unit": "O0040001 art_30/para_1/pt_1",
+    "round": 1,
+    "deontic": "prohibition",
+    "quote": "一、使用農藥或化學肥料，致有污染主管機關指定之水體之虞。",
+    "penalties": [
+     {
+      "penalty_id": 9851,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9622,
+    "unit": "O0040010 art_5/para_1",
+    "round": 1,
+    "deontic": "prohibition",
+    "quote": "在飲用水水源水質保護區或飲用水取水口一定距離內之地區，不得有污染水源水質之行為。",
+    "penalties": []
+   },
+   {
+    "id": 9650,
+    "unit": "O0040001 art_11/para_8",
+    "round": 2,
+    "deontic": "obligation",
+    "quote": "水污染防治執行績效應逐年重新檢討並向立法院報告及備查。",
+    "penalties": []
+   },
+   {
+    "id": 9657,
+    "unit": "O0040001 art_14-1/para_4",
+    "round": 2,
+    "deontic": "obligation",
+    "quote": "第二項污染物項目經各級主管機關評估有必要者，應於放流水標準新增管制項目。",
+    "penalties": []
+   },
+   {
+    "id": 9673,
+    "unit": "O0040001 art_25/para_2",
+    "round": 2,
+    "deontic": "obligation",
+    "quote": "前項建築物污水處理設施之建造、管理及清理，應符合中央主管機關及目的事業主管機關之規定。",
+    "penalties": []
+   },
+   {
+    "id": 9687,
+    "unit": "O0040001 art_32/para_1",
+    "round": 2,
+    "deontic": "prohibition",
+    "quote": "廢（污）水不得注入於地下水體或排放於土壤。",
+    "penalties": [
+     {
+      "penalty_id": 9873,
+      "effect": "fine",
+      "min": "60000",
+      "max": "6000000",
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9875,
+      "effect": "deprivation",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9876,
+      "effect": "fine",
+      "min": "60000",
+      "max": "6000000",
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9877,
+      "effect": "order",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9878,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9879,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9902,
+      "effect": "deprivation",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9907,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9908,
+      "effect": "deprivation",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9701,
+    "unit": "O0040001 art_63/para_2",
+    "round": 2,
+    "deontic": "prohibition",
+    "quote": "前項試車之期限不得超過三個月",
+    "penalties": []
+   },
+   {
+    "id": 9720,
+    "unit": "O0040010 art_10",
+    "round": 2,
+    "deontic": "obligation",
+    "quote": "經中央主管機關指定公告之飲用水設備，應符合國家標準",
+    "penalties": []
+   },
+   {
+    "id": 9736,
+    "unit": "O0040001 art_11/para_8",
+    "round": 3,
+    "deontic": "obligation",
+    "quote": "水污染防治執行績效應逐年重新檢討並向立法院報告及備查。",
+    "penalties": []
+   },
+   {
+    "id": 9789,
+    "unit": "O0040010 art_5/para_1",
+    "round": 3,
+    "deontic": "prohibition",
+    "quote": "在飲用水水源水質保護區或飲用水取水口一定距離內之地區，不得有污染水源水質之行為。",
+    "penalties": [
+     {
+      "penalty_id": 9894,
+      "effect": "fine",
+      "min": "100000",
+      "max": "1000000",
+      "per_occasion": false,
+      "text": "違反第五條第一項規定者，處新臺幣十萬元以上一百萬元以下罰鍰，並通知禁止該行為。",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9895,
+      "effect": "order",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第五條第一項規定者，處新臺幣十萬元以上一百萬元以下罰鍰，並通知禁止該行為。",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   }
+  ],
+  "post-2": [
+   {
+    "id": 9319,
+    "unit": "O0040001 art_15/para_1",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "每次展延，不得超過五年。",
+    "penalties": []
+   },
+   {
+    "id": 9349,
+    "unit": "O0040001 art_25/para_2",
+    "round": 0,
+    "deontic": "obligation",
+    "quote": "前項建築物污水處理設施之建造、管理及清理，應符合中央主管機關及目的事業主管機關之規定",
+    "penalties": []
+   },
+   {
+    "id": 9355,
+    "unit": "O0040001 art_26/para_3",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "對於前二項查證，不得規避、妨礙或拒絕。",
+    "penalties": []
+   },
+   {
+    "id": 9368,
+    "unit": "O0040001 art_30/para_1",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "在水污染管制區內，不得有下列行為：",
+    "penalties": []
+   },
+   {
+    "id": 9370,
+    "unit": "O0040001 art_30/para_1/pt_2",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "在水體或其沿岸規定距離內棄置垃圾、水肥、污泥、酸鹼廢液、建築廢料或其他污染物",
+    "penalties": []
+   },
+   {
+    "id": 9376,
+    "unit": "O0040001 art_32/para_1",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "廢（污）水不得注入於地下水體或排放於土壤。",
+    "penalties": [
+     {
+      "penalty_id": 9894,
+      "effect": "fine",
+      "min": "60000",
+      "max": "6000000",
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9897,
+      "effect": "fine",
+      "min": "60000",
+      "max": "6000000",
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9898,
+      "effect": "order",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9899,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9921,
+      "effect": "deprivation",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9385,
+    "unit": "O0040001 art_33/para_2",
+    "round": 0,
+    "deontic": "obligation",
+    "quote": "前項監測設備應依主管機關規定之格式、內容、頻率、方式，監測、記錄及申報",
+    "penalties": []
+   },
+   {
+    "id": 9485,
+    "unit": "O0040010 art_5/para_1",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "在飲用水水源水質保護區或飲用水取水口一定距離內之地區，不得有污染水源水質之行為。",
+    "penalties": [
+     {
+      "penalty_id": 9911,
+      "effect": "fine",
+      "min": "100000",
+      "max": "1000000",
+      "per_occasion": false,
+      "text": "違反第五條第一項規定者，處新臺幣十萬元以上一百萬元以下罰鍰，並通知禁止該行為。",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9548,
+    "unit": "O0040001 art_10/para_3",
+    "round": 1,
+    "deontic": "obligation",
+    "quote": "水質監測採樣之地點、項目及頻率，應考量水域環境地理特性、水體水質特性及現況",
+    "penalties": []
+   },
+   {
+    "id": 9567,
+    "unit": "O0040001 art_18-1/para_1",
+    "round": 1,
+    "deontic": "prohibition",
+    "quote": "不得繞流排放",
+    "penalties": [
+     {
+      "penalty_id": 9844,
+      "effect": "fine",
+      "min": "60000",
+      "max": "20000000",
+      "per_occasion": false,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9848,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9568,
+    "unit": "O0040001 art_18-1/para_2",
+    "round": 1,
+    "deontic": "prohibition",
+    "quote": "前項廢（污）水須經處理始能符合本法所定管制標準者，不得於排放（入）前，與無需處理即能符合標準之水混合稀釋。",
+    "penalties": [
+     {
+      "penalty_id": 9845,
+      "effect": "fine",
+      "min": "60000",
+      "max": "20000000",
+      "per_occasion": false,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9850,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9589,
+    "unit": "O0040001 art_30/para_1/pt_5",
+    "round": 1,
+    "deontic": "prohibition",
+    "quote": "其他經主管機關公告禁止足使水污染之行為。",
+    "penalties": []
+   },
+   {
+    "id": 9594,
+    "unit": "O0040001 art_32/para_5",
+    "round": 1,
+    "deontic": "prohibition",
+    "quote": "每次展延，不得超過三年。",
+    "penalties": []
+   },
+   {
+    "id": 9614,
+    "unit": "O0040001 art_63/para_2",
+    "round": 1,
+    "deontic": "prohibition",
+    "quote": "前項試車之期限不得超過三個月",
+    "penalties": []
+   },
+   {
+    "id": 9618,
+    "unit": "O0040001 art_63/para_4",
+    "round": 1,
+    "deontic": "obligation",
+    "quote": "經查驗及評鑑不合格，未經核准復工（業）者，應停止操作，並進行改善",
+    "penalties": []
+   },
+   {
+    "id": 9647,
+    "unit": "O0040010 art_29",
+    "round": 1,
+    "deontic": "obligation",
+    "quote": "依第八條規定公告之公私場所，其於公告前已設置連續供水固定設備者，應自公告之日起六個月內，依第八條規定申請登記",
+    "penalties": []
+   },
+   {
+    "id": 9660,
+    "unit": "O0040001 art_14-1/para_4",
+    "round": 2,
+    "deontic": "obligation",
+    "quote": "第二項污染物項目經各級主管機關評估有必要者，應於放流水標準新增管制項目。",
+    "penalties": []
+   },
+   {
+    "id": 9704,
+    "unit": "O0040001 art_61",
+    "round": 2,
+    "deontic": "prohibition",
+    "quote": "依本法通知限期補正、改善或申報者，其補正、改善或申報期間，不得超過九十日。",
+    "penalties": []
+   },
+   {
+    "id": 9713,
+    "unit": "O0040001 art_11/para_4",
+    "round": 3,
+    "deontic": "prohibition",
+    "quote": "前項第一款第五目及第二款第六目之支用比例不得高於各類別之百分之十。",
+    "penalties": []
+   },
+   {
+    "id": 9758,
+    "unit": "O0040001 art_59/para_1/pt_2",
+    "round": 3,
+    "deontic": "obligation",
+    "quote": "立即於故障紀錄簿中記錄故障設施名稱及故障時間",
+    "penalties": []
+   },
+   {
+    "id": 9760,
+    "unit": "O0040001 art_59/para_1/pt_2",
+    "round": 3,
+    "deontic": "obligation",
+    "quote": "並記錄報備發話人、受話人姓名、職稱",
+    "penalties": []
+   },
+   {
+    "id": 9766,
+    "unit": "O0040001 art_63/para_2",
+    "round": 2,
+    "deontic": "obligation",
+    "quote": "且應於試車期限屆滿前，申請復工（業）。",
+    "penalties": []
+   },
+   {
+    "id": 9783,
+    "unit": "O0040010 art_10",
+    "round": 2,
+    "deontic": "obligation",
+    "quote": "經中央主管機關指定公告之飲用水設備，應符合國家標準",
+    "penalties": []
+   }
+  ],
+  "post-3": [
+   {
+    "id": 9348,
+    "unit": "O0040001 art_25/para_2",
+    "round": 0,
+    "deontic": "obligation",
+    "quote": "前項建築物污水處理設施之建造、管理及清理，應符合中央主管機關及目的事業主管機關之規定",
+    "penalties": []
+   },
+   {
+    "id": 9355,
+    "unit": "O0040001 art_26/para_3",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "對於前二項查證，不得規避、妨礙或拒絕。",
+    "penalties": []
+   },
+   {
+    "id": 9368,
+    "unit": "O0040001 art_30/para_1",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "在水污染管制區內，不得有下列行為：",
+    "penalties": []
+   },
+   {
+    "id": 9370,
+    "unit": "O0040001 art_30/para_1/pt_2",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "在水體或其沿岸規定距離內棄置垃圾、水肥、污泥、酸鹼廢液、建築廢料或其他污染物",
+    "penalties": [
+     {
+      "penalty_id": 9862,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9867,
+      "effect": "order",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9868,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9877,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9372,
+    "unit": "O0040001 art_30/para_1/pt_4",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "在主管機關指定之水體或其沿岸規定距離內飼養家禽、家畜。",
+    "penalties": [
+     {
+      "penalty_id": 9864,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9871,
+      "effect": "order",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9872,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9879,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9383,
+    "unit": "O0040001 art_33/para_2",
+    "round": 0,
+    "deontic": "obligation",
+    "quote": "前項監測設備應依主管機關規定之格式、內容、頻率、方式，監測、記錄及申報",
+    "penalties": []
+   },
+   {
+    "id": 9406,
+    "unit": "O0040001 art_59/para_2",
+    "round": 0,
+    "deontic": "obligation",
+    "quote": "前項第四款書面報告內容，應包括下列事項：",
+    "penalties": []
+   },
+   {
+    "id": 9479,
+    "unit": "O0040010 art_5/para_1",
+    "round": 0,
+    "deontic": "prohibition",
+    "quote": "在飲用水水源水質保護區或飲用水取水口一定距離內之地區，不得有污染水源水質之行為。",
+    "penalties": [
+     {
+      "penalty_id": 9896,
+      "effect": "fine",
+      "min": "100000",
+      "max": "1000000",
+      "per_occasion": false,
+      "text": "違反第五條第一項規定者，處新臺幣十萬元以上一百萬元以下罰鍰，並通知禁止該行為。",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9549,
+    "unit": "O0040001 art_14-1/para_4",
+    "round": 1,
+    "deontic": "obligation",
+    "quote": "第二項污染物項目經各級主管機關評估有必要者，應於放流水標準新增管制項目。",
+    "penalties": []
+   },
+   {
+    "id": 9557,
+    "unit": "O0040001 art_18-1/para_2",
+    "round": 1,
+    "deontic": "prohibition",
+    "quote": "前項廢（污）水須經處理始能符合本法所定管制標準者，不得於排放（入）前，與無需處理即能符合標準之水混合稀釋",
+    "penalties": []
+   },
+   {
+    "id": 9576,
+    "unit": "O0040001 art_30/para_1/pt_5",
+    "round": 1,
+    "deontic": "prohibition",
+    "quote": "其他經主管機關公告禁止足使水污染之行為。",
+    "penalties": [
+     {
+      "penalty_id": 9865,
+      "effect": "fine",
+      "min": "30000",
+      "max": "3000000",
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9873,
+      "effect": "order",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9874,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9880,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十條第一項各款情形之一或第三十一條第一項規定者，處新臺幣三萬元以上三百萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其停止",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9597,
+    "unit": "O0040001 art_63/para_2",
+    "round": 1,
+    "deontic": "obligation",
+    "quote": "且應於試車期限屆滿前，申請復工（業）",
+    "penalties": []
+   },
+   {
+    "id": 9600,
+    "unit": "O0040001 art_63/para_4",
+    "round": 1,
+    "deontic": "obligation",
+    "quote": "經查驗及評鑑不合格，未經核准復工（業）者，應停止操作，並進行改善",
+    "penalties": []
+   },
+   {
+    "id": 9648,
+    "unit": "O0040001 art_18-1/para_1",
+    "round": 2,
+    "deontic": "prohibition",
+    "quote": "不得繞流排放",
+    "penalties": [
+     {
+      "penalty_id": 9829,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9672,
+    "unit": "O0040001 art_32/para_1",
+    "round": 2,
+    "deontic": "prohibition",
+    "quote": "廢（污）水不得注入於地下水體或排放於土壤。",
+    "penalties": [
+     {
+      "penalty_id": 9887,
+      "effect": "fine",
+      "min": "60000",
+      "max": "6000000",
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9890,
+      "effect": "fine",
+      "min": "60000",
+      "max": "6000000",
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9891,
+      "effect": "order",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9892,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9893,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項未依排放土壤處理許可證之登記事項運作者，處新臺幣六萬元以上六百萬元以下罰鍰，並通知限期補正，屆期仍未補正者，按次處罰；情節重大者，得令其停工",
+      "subject_unstated": false,
+      "subject_bases": []
+     },
+     {
+      "penalty_id": 9915,
+      "effect": "restriction",
+      "min": null,
+      "max": null,
+      "per_occasion": false,
+      "text": "違反第三十二條第一項規定，將廢（污）水注入地下水體或未取得排放土壤處理許可證而排放廢（污）水於土壤者，處新臺幣六萬元以上六百萬元以下罰鍰；主管機關並應令事業全部",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9688,
+    "unit": "O0040001 art_61",
+    "round": 2,
+    "deontic": "prohibition",
+    "quote": "依本法通知限期補正、改善或申報者，其補正、改善或申報期間，不得超過九十日。",
+    "penalties": []
+   },
+   {
+    "id": 9690,
+    "unit": "O0040001 art_63/para_2",
+    "round": 2,
+    "deontic": "prohibition",
+    "quote": "前項試車之期限不得超過三個月",
+    "penalties": []
+   },
+   {
+    "id": 9710,
+    "unit": "O0040010 art_10",
+    "round": 2,
+    "deontic": "obligation",
+    "quote": "經中央主管機關指定公告之飲用水設備，應符合國家標準",
+    "penalties": []
+   },
+   {
+    "id": 9741,
+    "unit": "O0040001 art_18-1/para_4",
+    "round": 3,
+    "deontic": "obligation",
+    "quote": "事業或污水下水道系統設置之廢（污）水（前）處理設施應具備足夠之功能與設備，並維持正常操作",
+    "penalties": [
+     {
+      "penalty_id": 9831,
+      "effect": "fine",
+      "min": null,
+      "max": null,
+      "per_occasion": true,
+      "text": "排放廢（污）水違反第十八條之一第一項、第二項或第四項規定者，處新臺幣六萬元以上二千萬元以下罰鍰，並通知限期改善，屆期仍未完成改善者，按次處罰；情節重大者，得令其",
+      "subject_unstated": false,
+      "subject_bases": []
+     }
+    ]
+   },
+   {
+    "id": 9781,
+    "unit": "O0040001 art_66-3/para_2",
+    "round": 3,
+    "deontic": "obligation",
+    "quote": "前項基金來源屬追繳之所得利益及依本法裁處之罰鍰者，應優先支用於該違反本法義務者所污染水體之整治。",
+    "penalties": []
+   }
+  ]
+ }
+}

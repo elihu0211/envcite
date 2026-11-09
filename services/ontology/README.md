@@ -53,7 +53,9 @@ uv run --env-file .env envcite-pipeline --law <pcode> --models models.toml --ree
 
 **主體與上位的適用情形**（確定性程式，不靠抽取者，見 `verification/subject.py`、`verification/carry.py`）：義務與禁止陳述的主體槽位，每個值都要是原文寫出的行為人——字由單元與上層原文拼成，而且以人、者、機關、事業…結尾，或後面接著一段行為，或與行為人並列；否則整個槽位記為「未明示」（`statement_slot.unstated`：只屬主體，沒有值與責任基礎，與其他擇一值互斥，由 CHECK 與觸發器強制；契約沒有這種槽位，呼叫端看到的是沒有主體槽位）。引文之前、同一句或上位導言（「…，不得有下列行為：」）助動詞之前的條件子句，陳述的 scope 與主體沒涵蓋就補成 scope 要件，標為承自上位（`statement_condition.carried`：只能是成立與否的 scope，由 CHECK 強制；概念代碼是 `ctx_` 加原文雜湊）。引文停在並列的行為或替代方式之前則送回抽取者修復，不丟。`tools/duty_defects.py <dsn> <抽取版本>…` 唯讀，量這些規則在一個版本上擋下多少；`tools/duty_audit.py` 以兩位判定者量語意上的主體與適用範圍瑕疵，先以抽查報告的人工判斷校準。
 
-**「未明示」主體的推論語意（限制，未量測）**：推論只比對主體槽位的責任基礎（`rules.lp` 的 `subject_basis`），「未明示」的槽位沒有責任基礎，所以該義務對任何行為人都適用——這是「視為主體不受限制」的實際意思。原文省略義務人而實際只約束特定行為人的義務，因此可能被放大成誤違規判定；放大了多少、佔多少義務至今沒有量測，`tools/duty_defects.py` 量的是規則在寫入前擋下多少，不是這個影響。
+**「未明示」主體不進推論**：推論讀的主體槽位只有罰則陳述的（責任基礎：`facts.py` 的 `_SUBJECTS`、`rules.lp` 的 `subj/2`）。被處罰的義務的主體槽位——寫了什麼、是否「未明示」——不參與涵攝，所以「視為主體不受限制」不改變罰則鏈的候選結果，和把主體寫成被規範的物或行為人一樣；`tests/test_unstated_subject_neutral.py` 守住。罰則自己的主體槽位沒有責任基礎（含「未明示」）才是不受責任基礎限制。義務的主體槽位只出現在 `ListStatements` 回給呼叫端的陳述與稽核裡，所以主體瑕疵影響的是引用的忠實，不是候選罰則。
+
+**修復效果的量測**（`tools/duty_effect.py`、`tools/duty_cost.py`，結果與限制見 [`eval/duty-fix-effect-2026-11-09.md`](eval/duty-fix-effect-2026-11-09.md)）：`duty_effect.py collect` 把各執行已確認的義務陳述去掉條件標記後匿名、打亂，`judge` 由兩位與抽取者不同家族的判定者（`eval/duty-fix-effect-judges.toml`）各回答固定的窄問題，`report` 才對回條件，輸出判定者間一致性 κ 與輪間範圍檢定；`bearer` 問未明示的義務實際由誰負擔。`duty_cost.py cost` 數重抽的嘗試數、驗證紀錄列數、日誌回報的抽取呼叫數，與重抽輪裡引文和已確認區間重疊的陳述（重複確認的浪費）；`unstated` 數未明示的義務與其罰則鏈。
 
 ### 模型配置（`models.toml`）
 

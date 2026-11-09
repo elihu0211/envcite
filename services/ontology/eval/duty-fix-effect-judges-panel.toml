@@ -1,0 +1,20 @@
+# 備用判定池：ornith 的端點在量測時段多次逾時（HTTP 524、無回應）時，用管線的兩位驗證者家族當判定者。
+# 與抽取者（mistral）不同家族，但 nemotron、muse 都是管線評審團的成員，所以不能當作獨立於管線的判定；
+# 只用來檢查 ornith 缺席時結論是否一致。端點與金鑰解析同 models.toml。
+[endpoint.llm]
+base_url = "https://api.ithu.tw/v1"
+
+[model.nemotron]
+endpoint = "llm"
+name = "nemotron-3.5-super-vl"
+family = "nvidia"
+max_tokens = 16384
+
+[model.muse]
+endpoint = "llm"
+name = "muse-spark-open"
+family = "meta"
+
+[relevance]
+judges = ["nemotron", "muse"]
+system_families = ["mistral"]
