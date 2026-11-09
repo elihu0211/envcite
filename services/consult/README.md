@@ -1,7 +1,7 @@
 ---
 type: reference
 applies-to: all
-owns: [consult-surfaces]
+owns: [consult-surfaces, local-demand-metric]
 ---
 
 # EnvCite.Consult
@@ -35,5 +35,23 @@ owns: [consult-surfaces]
 ## 健康檢查
 
 gRPC 健康檢查協定（`grpc.health.v1.Health`）：空字串與 `envcite.consult.v2.ConsultationService` 平時都是 `SERVING`。收到 SIGTERM 後兩者都回 `NOT_SERVING`，排空數秒後才停止接受連線。不查本體的狀態。
+
+## 地方自治法規的需求計數
+
+語料不含地方自治法規（[語料範圍](../platform/README.md#語料範圍)），要不要做、怎麼逐縣市取得，取決於真實的提問，所以由本計數在上線後累積，不用合成題庫量。
+
+`envcite.consult.ground.outcomes` 是計數器：每次 `Ground` 得出結果就加一，證據與拒答都計，所以能算比率。沒有結果的呼叫（缺租戶、參數錯誤、本體不可用）不計，它們看 RED 指標（見 [`proto/README.md`](../../proto/README.md)）。
+
+| 標籤 | 值 | 意義 |
+|------|----|------|
+| `outcome` | `grounded` | 回了證據 |
+| | `no_evidence`、`out_of_scope`、`missing_input` | 拒答，對應 `Refused.Reason` |
+| `local_marker` | `none` | 問句沒有地方標記 |
+| | `jurisdiction` | 問句點名了縣市（全名，「臺」「台」皆認） |
+| | `ordinance` | 問句出現「自治條例」這類自治法規字樣；與縣市並存時取這一類 |
+
+標籤只有這兩個、值域固定；租戶、問句與命中的詞不進指標。詞表與判定規則的真值在 `LocalMarker.cs`。標記只量需求，不影響 `Ground` 的任何回應。
+
+**怎麼讀**：看 `local_marker` 不是 `none` 的結果。其中 `outcome` 為 `no_evidence` 或 `out_of_scope` 的次數，除以全部結果（所有標籤加總），是「問了地方，語料沒有」占總提問的比率；除以 `local_marker` 不是 `none` 的結果，則是地方提問中落空的比率。`ordinance` 是明白在問地方規定，語料沒有，不論 `outcome` 都沒拿到地方規定；`jurisdiction` 可能只是提問者說明所在地，是較弱的訊號。要不要進縣市試點的門檻是產品決策，不在本文訂。
 
 開發指令與實作規範見 [`AGENTS.md`](AGENTS.md)。

@@ -90,6 +90,47 @@ public sealed class HostingTests(ConsultFactory factory)
     }
 
     [Fact]
+    public async Task EachGroundResultIsCountedByOutcomeAndLocalMarkerButFailedCallsAreNot()
+    {
+        using var collector = new MetricCollector<long>(
+            factory.Services.GetRequiredService<IMeterFactory>(), GroundingMetrics.MeterName, GroundingMetrics.OutcomesMetric);
+        var client = factory.CreateClient();
+
+        foreach (var question in new[]
+        {
+            FakeOntologyServer.AnswerableQuery,
+            FakeOntologyServer.DualTrackQuery,
+            FakeOntologyServer.IrrelevantQuery,
+            FakeOntologyServer.EmptyQuery,
+            "臺北市有哪些空氣污染自治條例",
+            "  ",
+        })
+        {
+            await client.GroundAsync(new GroundRequest { Question = question }, ConsultFactory.CallMetadata, cancellationToken: Ct);
+        }
+
+        // 沒有結果的呼叫：沒帶租戶、本體不可用；它們看 RED 指標，不進這個計數。
+        await Assert.ThrowsAsync<RpcException>(async () => await client.GroundAsync(
+            new GroundRequest { Question = FakeOntologyServer.AnswerableQuery }, cancellationToken: Ct));
+        await Assert.ThrowsAsync<RpcException>(async () => await client.GroundAsync(
+            new GroundRequest { Question = FakeOntologyServer.UnavailableQuery }, ConsultFactory.CallMetadata, cancellationToken: Ct));
+
+        var points = collector.GetMeasurementSnapshot();
+        Assert.Equal(
+            [
+                ("grounded", "jurisdiction"),
+                ("grounded", "none"),
+                ("missing_input", "none"),
+                ("no_evidence", "none"),
+                ("no_evidence", "ordinance"),
+                ("out_of_scope", "none"),
+            ],
+            [.. points.Select(p => ((string)p.Tags["outcome"]!, (string)p.Tags["local_marker"]!)).Order()]);
+        // 標籤全是有限集合：租戶與問句不在其中。
+        Assert.All(points, p => Assert.Equal(2, p.Tags.Count));
+    }
+
+    [Fact]
     public void AnOutOfRangeRelevanceFloorStopsTheHostFromStarting()
     {
         using var host = factory.WithWebHostBuilder(b => b.UseSetting("Relevance:SemanticFloor", "0"));

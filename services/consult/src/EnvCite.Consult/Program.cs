@@ -16,9 +16,12 @@ builder.WebHost.ConfigureKestrel(kestrel =>
 builder.Services.Configure<HostOptions>(host => host.ShutdownTimeout = TimeSpan.FromSeconds(25));
 builder.Services.AddSingleton(TimeProvider.System);
 
-builder.AddServiceTelemetry().WithMetrics(metrics => metrics.AddMeter(GrpcServerMetrics.MeterName));
+builder.AddServiceTelemetry().WithMetrics(metrics => metrics
+    .AddMeter(GrpcServerMetrics.MeterName)
+    .AddMeter(GroundingMetrics.MeterName));
 
 builder.Services.AddSingleton<GrpcServerMetrics>();
+builder.Services.AddSingleton<GroundingMetrics>();
 builder.Services.AddGrpc().AddServiceOptions<ConsultationGrpcService>(o => o.Interceptors.Add<GrpcServerMetrics>());
 
 // 呼叫端的期限與取消隨 call context 帶到本體，與自己的上限取小者（見 OntologySearch）。
