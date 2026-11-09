@@ -12,12 +12,11 @@ import logging
 import psycopg
 
 from envcite_ontology.acquire.engine import InvalidSnapshot, Source, acquire
-from envcite_ontology.acquire.local_glrs import LocalGlrs
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.settings import SnapshotSettings, load
 
 #: 新來源在此登記。
-SOURCES: dict[str, Source] = {s.name: s for s in (Moj(), LocalGlrs())}
+SOURCES: dict[str, Source] = {s.name: s for s in (Moj(),)}
 
 EXIT_INVALID = 2
 

@@ -83,7 +83,7 @@ sequenceDiagram
 | `x-tenant-id` | consult 必填 | 配額與稽核；ontology 只用於日誌。consult 缺少 → `INVALID_ARGUMENT` |
 | `x-request-id` | 否 | 只用於日誌 |
 
-**法規識別**：法規以複合自然鍵 `LawIdentifier`（`jurisdiction`、`id_scheme`、`local_id`）標識，ontology 的請求與回應都用它，不用單一字串的法規代號；三個欄位的取值與語意見 `ontology.proto` 的註解。三個欄位都必填，沒有預設管轄或方案：缺任一個回 `INVALID_ARGUMENT`（欄位原因 `EMPTY`），值不在 `.proto` 註解列的封閉集合內也是 `INVALID_ARGUMENT`（`UNKNOWN_VALUE`）。管轄與方案的配對由資料庫強制（中央方案只配 `TW-CENTRAL`、地方方案只配縣市），不合法的配對不存在於語料，查詢回 `LAW_NOT_FOUND`。`SearchArticles.jurisdiction` 是過濾條件：留空為全部管轄，有值須是合法管轄。
+**法規識別**：法規以複合自然鍵 `LawIdentifier`（`jurisdiction`、`id_scheme`、`local_id`）標識，ontology 的請求與回應都用它，不用單一字串的法規代號；三個欄位的取值與語意見 `ontology.proto` 的註解。三個欄位都必填，沒有預設管轄或方案：缺任一個回 `INVALID_ARGUMENT`（欄位原因 `EMPTY`），值不在 `.proto` 註解列的封閉集合內也是 `INVALID_ARGUMENT`（`UNKNOWN_VALUE`）。管轄與方案的配對由資料庫強制（中央方案只配 `TW-CENTRAL`、地方方案只配縣市），不合法的配對不存在於語料，查詢回 `LAW_NOT_FOUND`。地方方案與縣市管轄是契約預留，目前沒有取得來源。`SearchArticles.jurisdiction` 是過濾條件：留空為全部管轄，有值須是合法管轄。
 
 **`as_of`**：ISO 8601 日期，依哪一天施行的條文；空字串為現行。沒有任何版本涵蓋該日時回**查無**，不回現行條文。
 

@@ -104,7 +104,7 @@ def test_the_upgrade_keeps_the_laws_and_the_name_view(dsn: str, tmp_path: Path) 
         with _at(dsn, name, tmp_path, "0060") as conn:
             conn.execute(_LEGAL_ROW)
             conn.commit()
-            assert apply_all(conn) == ["0060_jurisdiction_scheme_pairing.sql"]
+            assert apply_all(conn)[0] == "0060_jurisdiction_scheme_pairing.sql"
 
             assert conn.execute(
                 "SELECT jurisdiction::text, id_scheme::text, local_id FROM corpus.legal_resource"

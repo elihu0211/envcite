@@ -51,11 +51,11 @@ class LawIdentifier(_message.Message):
     """管轄代號：'TW-CENTRAL'（中央）或 ISO 3166-2:TW 的 22 個縣市代碼（'TW-TPE'、'TW-NWT'、
     'TW-TAO'、'TW-TXG'、'TW-TNN'、'TW-KHH'、'TW-KEE'、'TW-HSZ'、'TW-CYI'、'TW-HSQ'、'TW-MIA'、
     'TW-CHA'、'TW-NAN'、'TW-YUN'、'TW-CYQ'、'TW-PIF'、'TW-ILA'、'TW-HUA'、'TW-TTT'、'TW-PEN'、
-    'TW-KIN'、'TW-LIE'）。
+    'TW-KIN'、'TW-LIE'）。縣市管轄是契約預留，目前沒有取得來源。
     """
     id_scheme: _builtins.str
     """方案代號：'moj_pcode'（全國法規資料庫 pcode，只配 'TW-CENTRAL'）或 'local_glrs'（地方法規，
-    只配縣市）。不合法的配對不存在於語料，查詢回 NOT_FOUND。
+    只配縣市；契約預留，目前沒有取得來源）。不合法的配對不存在於語料，查詢回 NOT_FOUND。
     """
     local_id: _builtins.str
     """在地識別碼，在（管轄，方案）之內唯一。"""

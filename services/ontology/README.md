@@ -157,7 +157,7 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 
 **格式**（JSON 文件都帶 `sha256`：自身去掉該欄後的正規化 JSON（鍵排序、緊湊分隔、UTF-8）的雜湊；`golden_set.read` 不符即停）：
 
-- **條文代號**：`<pcode>-art-<條號>`，條號同 `corpus.article_number`（如 `O0020001-art-15-1`）。管轄是中央（`corpus.legal_resource.jurisdiction` 的 `TW-CENTRAL`，工具裡的 `golden_set.CENTRAL`）時不帶前綴，地方法規帶管轄前綴：`<管轄>/<在地識別碼>-art-<條號>`（如 `TW-TPE/01-02-1001-art-5`）。工具讀對應與命中時，管轄一律取自資料庫列，不假設。
+- **條文代號**：`<pcode>-art-<條號>`，條號同 `corpus.article_number`（如 `O0020001-art-15-1`）。管轄是中央（`corpus.legal_resource.jurisdiction` 的 `TW-CENTRAL`，工具裡的 `golden_set.CENTRAL`）時不帶前綴，地方法規（契約預留，目前沒有取得來源）帶管轄前綴：`<管轄>/<在地識別碼>-art-<條號>`（如 `TW-TPE/01-02-1001-art-5`）。工具讀對應與命中時，管轄一律取自資料庫列，不假設。
 - **qrels**：`qrels` 為題號 → 條文代號 → 分數 0–3（UMBRELA 的分級；`scale`）；分數 ≥ `relevant_from` 為相關，任何分數都是已判定。只含可答且對得到語料的題。`upstream` 是題庫給定的期望條文，以 `golden_set.UPSTREAM_GRADE` 進入，模型的分數只能把它往上調。`graded_by` 為題號 → 條文代號 → 判定檔的 `tag`（模型判定過的條）。另記 `golden_sha256`、對應時的語料快照 `snapshots`（量測時資料庫快照不同即停，要重建 qrels 再重新併入判定檔）、`unmapped`（題號 → 對不到的原因）與 `judgements`（每份併入的判定檔：檔名、雜湊、`tag`、判定者、日期、提示雜湊、子集、新增數）。無答案題不進 qrels。
 - **切分**：`dev`、`test` 兩份題號清單（含無答案題），依桶分層、固定種子；記 `golden_sha256`、`seed`、`test_fraction`。選下界、調融合與候選池只用 `dev`；`test` 在定案後報告。
 - **run**：`ranking` 為題號 → 前 k 條的條文代號（依名次）；記臂、`golden_sha256`、切分雜湊與子集、commit、語料快照、檢索設定。run 不綁 qrels，補判後可對新 qrels 重算。
