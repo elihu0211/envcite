@@ -25,7 +25,11 @@ gRPC 契約，`buf` 單一模組（根為本目錄）；欄位與方法的語意
 ## 服務如何組合
 
 ```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
+---
+config:
+  flowchart:
+    curve: basis
+---
 flowchart LR
     subgraph caller["呼叫端（系統之外）"]
         direction TB
@@ -64,7 +68,12 @@ flowchart LR
 ### 一次接地請求
 
 ```mermaid
-%%{init: {"sequence": {"mirrorActors": false, "showSequenceNumbers": true}}}%%
+---
+config:
+  sequence:
+    mirrorActors: false
+    showSequenceNumbers: true
+---
 sequenceDiagram
     autonumber
     actor C as 用戶端
