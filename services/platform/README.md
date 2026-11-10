@@ -77,7 +77,7 @@ flowchart LR
 
 ## 營運者帳號
 
-營運者後台（`/ui`）的帳號不開放自助註冊；除本機 Development 的種子帳號外，一律以營運者金鑰經 `/admin` 建立。本機順序見 [`CONTRIBUTING.md`](../../CONTRIBUTING.md#第一組資料platform僅本機)。staging 順序在部署庫，入口是容器層 `core-env-saas/AGENTS.md` 的任務表。
+營運者後台（`/ui`）的帳號不開放自助註冊；除本機 Development 的種子帳號外，一律以營運者金鑰經 `/admin` 建立。本機順序與其他環境的入口見 [`CONTRIBUTING.md`「索引」](../../CONTRIBUTING.md#索引)。
 
 **營運者金鑰**：任意字串，呼叫 `/admin` 時放在 `X-Admin-Key`。服務只持有它的雜湊：
 

@@ -27,6 +27,7 @@ owns: [service-map]
 |------|-----|
 | 確認語料範圍 | [`services/platform/README.md`](services/platform/README.md#語料範圍) |
 | 看服務如何組合、呼叫端如何接上 | [`proto/README.md`](proto/README.md) |
-| 在本機開發、取得種子帳號 | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+| 在本機開發 | [`CONTRIBUTING.md`](CONTRIBUTING.md#概論) |
+| 建立營運者 | [`CONTRIBUTING.md`](CONTRIBUTING.md#索引) |
 | 查環境變數命名與機密來源 | [`CONFIGURATION.md`](CONFIGURATION.md) |
 | 改代理的作業規範 | [`AGENTS.md`](AGENTS.md) |
