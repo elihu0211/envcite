@@ -1,8 +1,8 @@
----
+<!--
 type: reference
 applies-to: all
 owns: [dotnet-service-defaults]
----
+-->
 
 # libs/dotnet
 

@@ -1,8 +1,8 @@
----
+<!--
 type: reference
 applies-to: all
 owns: [tokenizer-identity]
----
+-->
 
 # envcite-segmenter
 

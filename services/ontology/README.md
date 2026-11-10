@@ -1,8 +1,8 @@
----
+<!--
 type: reference
 applies-to: all
 owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations, competency-registry, golden-test-collection]
----
+-->
 
 # envcite-ontology
 

@@ -1,8 +1,8 @@
----
+<!--
 type: reference
 applies-to: all
 owns: [envcite-proto-generated]
----
+-->
 
 # envcite-proto
 

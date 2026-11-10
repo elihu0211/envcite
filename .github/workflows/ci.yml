@@ -96,6 +96,7 @@ jobs:
           sh ci/test-restore-dotnet.sh
           sh ci/test-check-generated.sh
           sh ci/test-platform-neutral.sh
+          sh ci/test-check-docs.sh
 
   docs:
     needs: changes

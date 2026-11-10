@@ -1,8 +1,8 @@
----
+<!--
 type: reference
 applies-to: all
 owns: [config-naming, secret-sources]
----
+-->
 
 # 設定與金鑰
 
