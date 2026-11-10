@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from envcite_ontology.answer_quality import (
+from tools.answer_quality import (
     FINAL_ANSWERED,
     FINAL_MODEL_ERROR,
     FINAL_MODEL_INSUFFICIENT,

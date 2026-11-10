@@ -18,6 +18,7 @@ from envcite_jobkit import Policy
 from envcite_ontology.acquire import cli
 from envcite_ontology.acquire.engine import Feed, InvalidSnapshot, Outcome, acquire
 from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.http import HttpStatus
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -189,7 +190,7 @@ def test_a_client_error_on_download_is_not_retried(
         _publish(tmp_path / "feed.zip", "2026/9/18 上午 12:00:00", [_law("A0000001")])
     )
 
-    with pytest.raises(urllib.error.HTTPError):
+    with pytest.raises(HttpStatus):
         acquire(source, tmp_path / "snapshots", conn, NO_WAIT)
 
     assert len(tried) == 1

@@ -7,16 +7,15 @@
 from __future__ import annotations
 
 import hashlib
-import ssl
 import time
 import urllib.error
 import urllib.parse
-import urllib.request
 from http.client import HTTPException
 from pathlib import Path
 from typing import Any, cast
 
 from envcite_jobkit import EndpointError, ItemError, raise_for_status
+from envcite_ontology.http import HttpStatus, tls_context, urlopen
 
 USER_AGENT = "envcite-ontology (+https://github.com/elihu0211/envcite)"
 
@@ -28,11 +27,7 @@ class Http:
         """`legacy_tls`：站台不支援安全重新協商（RFC 5746）時才開；憑證照常驗證。"""
         self._pause = pause
         self._last = 0.0
-        # 這幾站的憑證都缺少 Subject Key Identifier（同全國法規資料庫），只清除這一個旗標
-        self._tls = ssl.create_default_context()
-        self._tls.verify_flags &= ~ssl.VERIFY_X509_STRICT
-        if legacy_tls:
-            self._tls.options |= ssl.OP_LEGACY_SERVER_CONNECT
+        self._tls = tls_context(legacy=legacy_tls)
 
     def text(self, url: str) -> str:
         with self._open(url) as r:
@@ -60,11 +55,12 @@ class Http:
         if wait > 0:
             time.sleep(wait)
         self._last = time.monotonic()
-        request = urllib.request.Request(url, data=data, headers={"User-Agent": USER_AGENT})
         try:
-            return urllib.request.urlopen(request, context=self._tls, timeout=60)
-        except urllib.error.HTTPError as e:
-            raise_for_status(e.code, f"{url}: {e}")
+            return urlopen(
+                url, data=data, headers={"User-Agent": USER_AGENT}, timeout=60, context=self._tls
+            )
+        except HttpStatus as e:
+            raise_for_status(e.status, f"{url}: {e}")
             raise
         except (urllib.error.URLError, TimeoutError, ConnectionError, HTTPException) as e:
             raise EndpointError(f"{url}: {e}") from e

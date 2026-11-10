@@ -28,6 +28,7 @@ import unicodedata
 from dataclasses import dataclass
 from datetime import date
 
+from envcite_ontology.acquire.markup import visible_text
 from envcite_ontology.ingest.backfill import Article, UnreadablePage, Version
 from envcite_ontology.ingest.numerals import CN_NUMERALS
 
@@ -229,4 +230,4 @@ def _roc(text: str) -> date | None:
 
 
 def _text(fragment: str) -> str:
-    return " ".join(html.unescape(_TAG.sub(" ", fragment)).split())
+    return visible_text(fragment)

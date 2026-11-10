@@ -40,7 +40,7 @@ from typing import Any, cast
 
 import psycopg
 
-from envcite_ontology.annotate import AnnotationError, anchor
+from envcite_ontology.claims import AnnotationError, anchor
 from envcite_ontology.settings import DatabaseSettings, SnapshotSettings
 from envcite_ontology.settings import load as load_settings
 

@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from envcite_ontology.acquire.engine import Contents, Feed, InvalidSnapshot, NotAnArchive
+from envcite_ontology.http import tls_context
 
 _BASE = "https://law.moj.gov.tw/api/ch"
 _PCODE = re.compile(r"[?&]pcode=([A-Z][0-9]{7})(?:&|$)")
@@ -33,11 +34,7 @@ class Moj:
     )
 
     def tls(self) -> ssl.SSLContext:
-        # 該站憑證缺少 Subject Key Identifier，Python 3.13 起的嚴格檢查會拒絕它。只清除
-        # 這一個旗標；憑證鏈與主機名稱照常驗證（02-01 §4）。
-        context = ssl.create_default_context()
-        context.verify_flags &= ~ssl.VERIFY_X509_STRICT
-        return context
+        return tls_context()
 
     def read(self, path: Path) -> Contents:
         data_date, laws = load_laws(path)

@@ -33,7 +33,7 @@ from psycopg.types.range import Range
 
 from envcite_ontology.ingest import history, law
 from envcite_ontology.ingest.law import ParsedLaw, ParsedUnit, Problem
-from envcite_ontology.ingest.write import _ensure_provisions, _insert_versions, _sha
+from envcite_ontology.ingest.write import add_unit_versions, content_sha, force_period
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -476,7 +476,7 @@ def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> 
         new = [
             u
             for p, u in wanted.items()
-            if p not in rows or rows[p][1:] != (_sha(u.content), _range(u), u.rule)
+            if p not in rows or rows[p][1:] != (content_sha(u.content), force_period(u), u.rule)
         ]
         replaced = {u.path for u in new}
         ended += [i for p, (i, *_) in rows.items() if p not in wanted or p in replaced]
@@ -488,8 +488,7 @@ def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> 
             "UPDATE corpus.provision_version SET superseded_at = now() WHERE id = ANY(%s)", (ended,)
         )
     for expression, units in inserts:
-        _ensure_provisions(conn, anchor.resource, units)
-        _insert_versions(conn, anchor.resource, expression, units, repeal=None)
+        add_unit_versions(conn, anchor.resource, expression, units, repeal=None)
     conn.execute(
         "UPDATE corpus.lifecycle_event AS ev SET expression_id = e.id"
         "  FROM corpus.legal_expression AS e"
@@ -501,7 +500,3 @@ def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> 
     if not existing:
         return "added" if target else "unchanged"
     return "updated" if changed or ended or inserts else "unchanged"
-
-
-def _range(u: ParsedUnit) -> Range[date] | None:
-    return None if u.starts is None else Range(u.starts, u.ends, "[)")

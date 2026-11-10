@@ -15,7 +15,7 @@ from typing import Any, cast
 
 import psycopg
 
-from envcite_ontology.annotate import (
+from envcite_ontology.claims import (
     LEGAL_EFFECTS,
     LIABILITY_BASES,
     TRIGGER_KINDS,

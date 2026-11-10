@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import golden_set as gs
 
-from envcite_ontology.answer_quality import (
+from tools.answer_quality import (
     InputError,
     evaluate_records,
     format_markdown_report,

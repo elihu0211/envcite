@@ -32,7 +32,8 @@ from typing import Any, cast
 
 import psycopg
 
-from envcite_ontology.annotate import AnnotationError, _provision
+from envcite_ontology.claims import AnnotationError
+from envcite_ontology.corpus_ref import UnknownProvision, provision_id
 from envcite_ontology.settings import DatabaseSettings
 from envcite_ontology.settings import load as load_settings
 
@@ -73,7 +74,7 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> LoadedRulings:
         return _rulings(conn, doc)
     except RulingError:
         raise
-    except AnnotationError as e:
+    except (AnnotationError, UnknownProvision) as e:
         raise RulingError(str(e)) from e
     except (KeyError, TypeError, AttributeError, ValueError) as e:
         raise RulingError(f"文件欄位缺漏或型別不合：{e!r}") from e
@@ -92,7 +93,7 @@ def _rulings(conn: Conn, doc: Mapping[str, Any]) -> LoadedRulings:
         ruling_id, again = _ruling(conn, r)
         repeated += again
         for i in r["invalidates"]:
-            provision_id = _provision(conn, i["law"], i["path"])
+            unit = provision_id(conn, i["law"], i["path"])
             invalidations += conn.execute(
                 "INSERT INTO corpus.ruling_invalidation"
                 " (ruling_id, resource_id, provision_id, invalid_from, partial)"
@@ -102,7 +103,7 @@ def _rulings(conn: Conn, doc: Mapping[str, Any]) -> LoadedRulings:
                     ruling_id,
                     date.fromisoformat(str(i["invalid_from"])),
                     bool(i.get("partial", False)),
-                    provision_id,
+                    unit,
                 ),
             ).rowcount
     return LoadedRulings(count, repeated, invalidations)

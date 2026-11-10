@@ -21,11 +21,11 @@
 
 from __future__ import annotations
 
-import html
 import re
 from dataclasses import dataclass
 from datetime import date
 
+from envcite_ontology.acquire.markup import parse, visible_text
 from envcite_ontology.ingest.backfill import Article, UnreadablePage, Version
 from envcite_ontology.ingest.numerals import CN_NUMERALS, parse_int
 
@@ -36,8 +36,6 @@ ATTRIBUTION = (
     "比照立法院網站資料開放宣告註明出處"
 )
 
-_FORM = re.compile(r'<form[^>]*action="([^"]+)"')
-_HIDDEN = re.compile(r"<input type=hidden name=([^ >]+) value=[\"']?([^\"' >]*)")
 _HIT = re.compile(
     r"<td class=sumtd2_TI>\s*<a href=(/lglawc/lawsingle\?[^ >]+)[^>]*>(.*?)</a>.*?"
     r"<td class=sumtd2_PD>\s*(\d{7})\s*</td>\s*<td class=sumtd2_AD>\s*(\d{7})",
@@ -56,7 +54,6 @@ _PART = re.compile(
 )
 _ARTICLE_NO = re.compile(rf"^第([{CN_NUMERALS}]+)條((?:之[{CN_NUMERALS}]+)*)$")
 _ROC = re.compile(r"民國\s*(\d{1,3})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
-_TAG = re.compile(r"<[^>]+>")
 _SESSION = re.compile(r"(lawsingle\?)[0-9A-F]+")
 _NOTE = re.compile(r"[（(][^（）()]*[）)]$")
 
@@ -89,12 +86,18 @@ def name(title: str) -> str:
 
 def search_form(home: str, title: str) -> tuple[str, dict[str, str]]:
     """首頁表單的送出位址與欄位：以法名稱檢索（欄位照首頁給的，改了站台不認）。"""
-    action = _FORM.search(home)
-    fields = dict(_HIDDEN.findall(home))
-    if action is None or "INFO" not in fields:
+    root = parse(home)
+    form = root if root.tag == "form" else root.find(".//form")
+    action = None if form is None else form.get("action")
+    fields = {
+        name: el.get("value") or ""
+        for el in ([] if form is None else form.findall(".//input"))
+        if (el.get("type") or "").lower() == "hidden" and (name := el.get("name"))
+    }
+    if not action or "INFO" not in fields:
         raise UnreadablePage("不是檢索首頁")
     fields.update({"_1_6_T": title, "_1_5_T": "", "_IMG_檢索.x": "1", "_IMG_檢索.y": "1"})
-    return html.unescape(action.group(1)), fields
+    return action, fields
 
 
 def hits(page: str) -> list[Hit]:
@@ -167,4 +170,4 @@ def _roc(text: str) -> date | None:
 
 
 def _text(fragment: str) -> str:
-    return " ".join(html.unescape(_TAG.sub(" ", fragment)).split())
+    return visible_text(fragment)

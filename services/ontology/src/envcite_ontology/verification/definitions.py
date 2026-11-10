@@ -18,7 +18,7 @@ from typing import Any
 
 import psycopg
 
-from envcite_ontology.annotate import AnnotationError, Loaded, load
+from envcite_ontology.claims import AnnotationError, Loaded, load
 from envcite_ontology.verification.context import ancestors_text, context_block
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, ModelError
