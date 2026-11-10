@@ -8,7 +8,7 @@ owns: [service-map]
 
 [![ci](https://github.com/elihu0211/envcite/actions/workflows/ci.yml/badge.svg)](https://github.com/elihu0211/envcite/actions/workflows/ci.yml)
 
-envcite 處理臺灣環境知識的檢索與引用接地。它把可引用的材料收成封閉證據集，交給呼叫端的語言模型；證據不足時拒答。語料範圍見 [platform README「語料範圍」](services/platform/README.md#語料範圍)；服務如何組合、呼叫流程見 [proto README](proto/README.md#概念)。
+envcite 處理臺灣環境知識的檢索與引用接地。它把可引用的材料收成封閉證據集，交給呼叫端；證據不足時拒答。寫成回答的是呼叫端自己的模型。語料範圍見 [platform README「語料範圍」](services/platform/README.md#語料範圍)；服務如何組合、呼叫流程見 [proto README](proto/README.md#概念)。
 
 ## 目錄
 
