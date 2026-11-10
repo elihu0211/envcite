@@ -178,10 +178,10 @@ flowchart LR
 flowchart LR
     key["自訂一把 key"] --> hash["SHA-256 寫進環境變數"]
     hash --> run["同一個終端機 wt platform"]
-    run --> call["X-Admin-Key 呼叫 /admin"]
+    run --> admin["X-Admin-Key 呼叫 /admin"]
 
     classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    class key,hash,run,call step
+    class key,hash,run,admin step
 ```
 
 | 用途 | 呼叫 |
