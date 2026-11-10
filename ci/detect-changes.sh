@@ -29,7 +29,7 @@ pr=0
 [ "$event" = pull_request ] && pr=1
 
 ci=0
-if [ "$pr" = 1 ] && has '^\.github/workflows/|^ci/(build-image|restore-dotnet|detect-changes)\.sh$'; then
+if [ "$pr" = 1 ] && has '^\.github/(workflows|actions)/|^ci/(build-image|restore-dotnet|detect-changes)\.sh$'; then
   ci=1
 fi
 
@@ -67,7 +67,7 @@ docs=0 renovate=0 ci_scripts=0
 if [ "$pr" = 1 ]; then
   has '(^|/)[^/]+\.md$|^ci/check-docs\.py$' && docs=1 || docs=0
   has '^renovate\.json$' && renovate=1 || renovate=0
-  has '^ci/.*\.sh$|^\.githooks/|^\.github/workflows/' && ci_scripts=1 || ci_scripts=0
+  has '^ci/.*\.sh$|^\.githooks/|^\.github/(workflows|actions)/' && ci_scripts=1 || ci_scripts=0
 fi
 
 {

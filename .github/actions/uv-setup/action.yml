@@ -1,0 +1,30 @@
+# uv、uv 快取與受管 Python 的唯一定義。
+# 依賴只在 deps-python 下載一次並存回（save: true）；其餘 job 只還原，再 `uv sync --locked` 從快取建環境。
+# 快取鍵由 setup-uv 依 uv.lock、uv 與 Python 版本產生；快取目錄固定在工作區 .uv-cache，
+# 因為 ontology 映像以它當 build context 離線建置。
+name: uv 與依賴
+description: 安裝 uv，還原 uv 快取與受管的 Python；save 為 true 的 job 在結束時存回。
+
+inputs:
+  uv-version:
+    description: uv 版本。
+    required: true
+  python-version:
+    description: Python 版本，設為 UV_PYTHON。
+    required: true
+  save:
+    description: 是否在 job 結束時存回快取。
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v10.3.3
+      with:
+        version: ${{ inputs.uv-version }}
+        python-version: ${{ inputs.python-version }}
+        enable-cache: true
+        cache-dependency-glob: uv.lock
+        cache-local-path: ${{ github.workspace }}/.uv-cache
+        cache-python: true
+        save-cache: ${{ inputs.save }}

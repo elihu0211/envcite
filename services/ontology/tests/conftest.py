@@ -5,6 +5,8 @@ from pathlib import Path
 import grpc
 import psycopg
 import pytest
+from psycopg import sql
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from testcontainers.community.postgres import PostgresContainer
 
 from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc, reasoning_pb2_grpc
@@ -14,6 +16,20 @@ from envcite_ontology.migrate import apply_all
 from envcite_ontology.server import build_server
 from envcite_ontology.store import OntologyStore
 from tests.sample import sample_laws, stored_snapshot
+
+
+def _worker_database(server_dsn: str) -> str:
+    """The DSN itself, or under xdist a fresh database named after the worker."""
+    worker = os.environ.get("PYTEST_XDIST_WORKER")
+    if not worker:
+        return server_dsn
+    name = f"{conninfo_to_dict(server_dsn)['dbname']}_{worker}"
+    with psycopg.connect(server_dsn, autocommit=True) as admin:
+        admin.execute(
+            sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(name))
+        )
+        admin.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
+    return make_conninfo(server_dsn, dbname=name)
 
 
 @pytest.fixture(scope="session")
@@ -27,12 +43,16 @@ def dsn() -> Iterator[str]:
     `ENVCITE_ONTOLOGY_TEST_DSN` points at an already-running server (CI attaches one as a
     job service; locally it can be anything). Without it, a container is started,
     which needs a Docker daemon.
+
+    Under pytest-xdist each worker gets its own database on that server: tests clean
+    up by deleting rows, so workers sharing one database would see each other's.
     """
     external = os.environ.get("ENVCITE_ONTOLOGY_TEST_DSN")
     if external:
-        with psycopg.connect(external) as conn:
+        url = _worker_database(external)
+        with psycopg.connect(url) as conn:
             apply_all(conn)
-        yield external
+        yield url
         return
 
     with PostgresContainer("pgvector/pgvector:pg18") as pg:
