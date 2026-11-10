@@ -16,7 +16,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, cast
 
-from envcite_ontology.annotate import AnnotationError, load
+from envcite_ontology.claims import AnnotationError, load
 from envcite_ontology.verification.gates import Conn, unit_of
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, ModelError

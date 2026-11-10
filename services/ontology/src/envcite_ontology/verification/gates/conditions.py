@@ -68,14 +68,10 @@ def statement_as_of(conn: Conn, statement_id: int) -> date | None:
 
 def load_conditions(conn: Conn, statement_id: int) -> list[Cond]:
     rows = conn.execute(
-        "SELECT c.id, c.condition_role::text, c.disjunct_no, k.code, c.comparator::text, c.negated,"
-        "       c.threshold, c.delegate_provision_id IS NOT NULL,"
-        "       vk.code, pk.code"
-        "  FROM annotation.statement_condition AS c"
-        "  JOIN vocab.concept AS k ON k.id = c.concept_id"
-        "  LEFT JOIN vocab.concept AS vk ON vk.id = c.value_concept_id"
-        "  LEFT JOIN vocab.concept AS pk ON pk.id = c.delegate_permit_concept_id"
-        " WHERE c.statement_id = %s AND c.condition_role <> 'limit' ORDER BY c.id",
+        "SELECT id, condition_role, disjunct_no, concept_code, comparator, negated,"
+        "       threshold, delegated, value_code, permit_code"
+        "  FROM annotation.conditions_of(ARRAY[%s]::bigint[])"
+        " WHERE condition_role <> 'limit' ORDER BY id",
         (statement_id,),
     ).fetchall()
     return [

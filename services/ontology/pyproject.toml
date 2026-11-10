@@ -16,6 +16,7 @@ dependencies = [
     "grpcio-health-checking",
     "grpcio-reflection",
     "grpcio-status",
+    "lxml",
     "psycopg-pool",
     "psycopg[binary]",
     "pydantic-settings",

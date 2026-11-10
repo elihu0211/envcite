@@ -57,14 +57,38 @@ def apply(conn: Conn, law: ParsedLaw, *, first_import: bool) -> Applied:
     return result
 
 
-def _interval(u: ParsedUnit, *, repeal: date | None = None) -> Interval:
-    if u.starts is None:
+def content_sha(content: str | None) -> bytes:
+    """單元文字的 SHA-256。空內容以空字串計，與 `corpus.provision_version_hash` 相同。"""
+    return hashlib.sha256((content or "").encode("utf-8")).digest()
+
+
+def force_period(unit: ParsedUnit, *, repeal: date | None = None) -> Interval:
+    """將寫入的效力區間。起點未知為空。
+
+    廢止生效日是各單元效力上界的來源。先收到這個上界，資源列的觸發器才放得過。
+    """
+    if unit.starts is None:
         return None
-    end = u.ends
-    # 廢止生效日是各單元效力上界的來源。先收到這個上界，資源列的觸發器才放得過。
-    if repeal is not None and u.starts < repeal and (end is None or end > repeal):
+    end = unit.ends
+    if repeal is not None and unit.starts < repeal and (end is None or end > repeal):
         end = repeal
-    return Range(u.starts, end, "[)")
+    return Range(unit.starts, end, "[)")
+
+
+def add_unit_versions(
+    conn: Conn,
+    resource: int,
+    expression: int,
+    units: list[ParsedUnit],
+    *,
+    repeal: date | None,
+) -> None:
+    """為這一版新增這些單元的現行文字。路徑不存在就補上。
+
+    不結束舊列：呼叫端先標 `superseded_at`，不重疊約束才看得到新列。
+    """
+    _ensure_provisions(conn, resource, units)
+    _insert_versions(conn, resource, expression, units, repeal=repeal)
 
 
 def _set_repeal(conn: Conn, resource: int, repeal: date | None) -> None:
@@ -73,10 +97,6 @@ def _set_repeal(conn: Conn, resource: int, repeal: date | None) -> None:
         " WHERE id = %s AND repealed_on IS DISTINCT FROM %s",
         (repeal, resource, repeal),
     )
-
-
-def _sha(content: str | None) -> bytes:
-    return hashlib.sha256((content or "").encode("utf-8")).digest()
 
 
 def _upsert_resource(conn: Conn, law: ParsedLaw) -> int:
@@ -208,7 +228,7 @@ def _insert_versions(
                     expression,
                     resource,
                     u.content,
-                    _interval(u, repeal=repeal),
+                    force_period(u, repeal=repeal),
                     u.rule,
                 )
                 for u in units
@@ -227,8 +247,7 @@ def _replace_all(conn: Conn, resource: int, law: ParsedLaw) -> None:
         conn.execute(f"DELETE FROM corpus.{table} WHERE resource_id = %s", (resource,))
     expression = _insert_expression(conn, resource, law)
     _replace_events(conn, resource, law)
-    _ensure_provisions(conn, resource, law.units)
-    _insert_versions(conn, resource, expression, law.units, repeal=law.abandoned_on)
+    add_unit_versions(conn, resource, expression, law.units, repeal=law.abandoned_on)
 
 
 def _add_version(conn: Conn, resource: int, previous: int, law: ParsedLaw) -> None:
@@ -241,8 +260,7 @@ def _add_version(conn: Conn, resource: int, previous: int, law: ParsedLaw) -> No
     _close_previous(conn, previous, law.units)
     expression = _insert_expression(conn, resource, law)
     _replace_events(conn, resource, law)
-    _ensure_provisions(conn, resource, law.units)
-    _insert_versions(conn, resource, expression, law.units, repeal=law.abandoned_on)
+    add_unit_versions(conn, resource, expression, law.units, repeal=law.abandoned_on)
 
 
 def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
@@ -251,7 +269,7 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
     新版同路徑單元的起點已知者止於該起點；新版沒有該路徑者止於新版各單元已知起點的最小
     值；新版起點未知者不動，待起點確定時由 `_sync_current` 補上。
     """
-    target = {u.path: _interval(u) for u in units}
+    target = {u.path: force_period(u) for u in units}
     starts = [t.lower for t in target.values() if t is not None and t.lower is not None]
     law_start = min(starts) if starts else None
 
@@ -292,7 +310,7 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
 
 def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) -> Applied:
     current: dict[str, tuple[int, bytes, Interval, str]] = {}
-    for version_id, path, sha, force_period, rule in conn.execute(
+    for version_id, path, sha, period, rule in conn.execute(
         "SELECT v.id, p.path, v.content_sha256, v.force_period, v.commencement_rule::text"
         "  FROM corpus.provision_version AS v"
         "  JOIN corpus.provision AS p ON p.id = v.provision_id"
@@ -302,20 +320,20 @@ def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) ->
         current[cast(str, path)] = (
             cast(int, version_id),
             cast(bytes, sha),
-            cast(Interval, force_period),
+            cast(Interval, period),
             cast(str, rule),
         )
     parsed = {u.path: u for u in law.units}
 
     text_changed = [
-        p for p in parsed if p not in current or current[p][1] != _sha(parsed[p].content)
+        p for p in parsed if p not in current or current[p][1] != content_sha(parsed[p].content)
     ] + [p for p in current if p not in parsed]
     derived_changed = [
         p
         for p, u in parsed.items()
         if p in current
         and p not in text_changed
-        and (current[p][2] != _interval(u, repeal=law.abandoned_on) or current[p][3] != u.rule)
+        and (current[p][2] != force_period(u, repeal=law.abandoned_on) or current[p][3] != u.rule)
     ]
 
     previous = conn.execute(
@@ -337,8 +355,7 @@ def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) ->
                 "UPDATE corpus.provision_version SET superseded_at = now() WHERE id = ANY(%s)",
                 (ended,),
             )
-        _ensure_provisions(conn, resource, [parsed[p] for p in replace])
-        _insert_versions(
+        add_unit_versions(
             conn, resource, expression, [parsed[p] for p in replace], repeal=law.abandoned_on
         )
 

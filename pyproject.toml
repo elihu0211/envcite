@@ -30,6 +30,7 @@ dev = [
     "types-grpcio-health-checking",
     "types-grpcio-reflection",
     "types-grpcio-status",
+    "types-lxml",
     "types-protobuf",
     "types-pyyaml",
 ]

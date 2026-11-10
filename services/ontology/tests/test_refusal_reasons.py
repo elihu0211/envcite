@@ -4,7 +4,7 @@
 """
 
 from envcite.consult.v2 import consult_pb2
-from envcite_ontology.answer_quality import (
+from tools.answer_quality import (
     FINALS,
     KNOWN_FINALS,
     REFUSAL_FINAL,

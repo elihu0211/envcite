@@ -12,12 +12,12 @@ from __future__ import annotations
 import json
 import logging
 import urllib.error
-import urllib.request
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from http.client import HTTPException
 
 from envcite_jobkit import Disposition, EndpointError, FatalError, ItemError, classify_http_status
 from envcite_ontology.endpoint import json_headers
+from envcite_ontology.http import HttpStatus, urlopen
 from envcite_ontology.settings import ModelsSettings
 
 log = logging.getLogger(__name__)
@@ -104,10 +104,7 @@ class Embedder:
     def _request(self, texts: Sequence[str]) -> list[list[float]]:
         headers = json_headers(self._api_key)
         body = json.dumps({"model": self.model, "input": list(texts)}).encode()
-        request = urllib.request.Request(
-            f"{self._base_url}/embeddings", body, headers, method="POST"
-        )
-        data = self._post(request).get("data")
+        data = self._post(f"{self._base_url}/embeddings", body, headers).get("data")
         if not isinstance(data, list) or len(data) != len(texts):
             raise EndpointUnavailable(f"{self.model}: expected {len(texts)} embeddings")
         vectors: list[list[float]] = []
@@ -120,12 +117,14 @@ class Embedder:
             vectors.append([float(x) for x in vector])
         return vectors
 
-    def _post(self, request: urllib.request.Request) -> dict[str, object]:
+    def _post(self, url: str, body: bytes, headers: Mapping[str, str]) -> dict[str, object]:
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            with urlopen(
+                url, data=body, headers=headers, timeout=self.timeout, method="POST"
+            ) as response:
                 payload = json.loads(response.read())
-        except urllib.error.HTTPError as e:
-            raise _http_error(self.model, e.code) from e
+        except HttpStatus as e:
+            raise _http_error(self.model, e.status) from e
         except (
             urllib.error.URLError,
             TimeoutError,

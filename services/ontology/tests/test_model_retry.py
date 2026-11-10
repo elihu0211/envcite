@@ -96,6 +96,24 @@ def test_it_gives_up_after_the_allowed_retries(served: Any, waits: list[float]) 
     assert s.requests == 3 and len(waits) == 2
 
 
+def test_conflict_and_too_early_are_not_retried(served: Any, waits: list[float]) -> None:
+    for status in (409, 425):
+        s = Scripted((status, {}, {}))
+        served.append(s)
+        with pytest.raises(ModelError, match=f"HTTP {status}"):
+            model(s.url, waits).complete("問")
+        assert s.requests == 1
+    assert waits == []
+
+
+def test_a_cdn_status_is_retried(served: Any, waits: list[float]) -> None:
+    s = Scripted((520, {}, {}), (200, {}, GOOD))
+    served.append(s)
+
+    assert model(s.url, waits).complete("問") == "答"
+    assert s.requests == 2 and len(waits) == 1
+
+
 def test_a_client_error_is_not_retried(served: Any, waits: list[float]) -> None:
     s = Scripted((401, {}, {"error": "bad key"}))
     served.append(s)

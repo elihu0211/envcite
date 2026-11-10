@@ -104,16 +104,12 @@ _LINKS = """
 LAWS = ("constitution", "statute")
 
 _CONDITIONS = """
-    SELECT c.id, c.statement_id, c.condition_role::text, c.disjunct_no, k.code,
-           c.comparator::text, c.negated,
-           c.needs_assessment, c.threshold, c.delegate_provision_id IS NOT NULL,
-           vk.code, pk.code
-      FROM annotation.statement_condition AS c
-      JOIN vocab.concept AS k ON k.id = c.concept_id
-      LEFT JOIN vocab.concept AS vk ON vk.id = c.value_concept_id
-      LEFT JOIN vocab.concept AS pk ON pk.id = c.delegate_permit_concept_id
-     WHERE c.statement_id = ANY(%(ids)s) AND c.condition_role <> 'limit'
-     ORDER BY c.id
+    SELECT id, statement_id, condition_role, disjunct_no, concept_code,
+           comparator, negated, needs_assessment, threshold, delegated,
+           value_code, permit_code
+      FROM annotation.conditions_of(%(ids)s::bigint[])
+     WHERE condition_role <> 'limit'
+     ORDER BY id
 """
 
 _DEFINITIONS = """
@@ -166,17 +162,16 @@ _MATCHES = """
 """
 
 _ACTIONS = """
-    SELECT sl.statement_id, coalesce(k.code, sl.literal)
-      FROM annotation.statement_slot AS sl
-      LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id
-     WHERE sl.slot_role = 'action' AND sl.statement_id = ANY(%(ids)s)
+    SELECT statement_id, coalesce(concept_code, literal)
+      FROM annotation.slots_of(%(ids)s::bigint[])
+     WHERE slot_role = 'action'
 """
 
 # 主體槽位的責任基礎：每個擇一的值一列；沒有標註的值（NULL）使主體不受責任基礎限制。
 _SUBJECTS = """
-    SELECT statement_id, liability_basis::text
-      FROM annotation.statement_slot
-     WHERE slot_role = 'subject' AND statement_id = ANY(%(ids)s)
+    SELECT statement_id, liability_basis
+      FROM annotation.slots_of(%(ids)s::bigint[])
+     WHERE slot_role = 'subject'
 """
 
 _EXCEPTIONS = """
@@ -190,10 +185,10 @@ _OVERRIDES = """
 """
 
 _SANCTIONS = """
-    SELECT statement_id, punished_statement_id, legal_effect::text, min_amount, max_amount,
+    SELECT statement_id, punished_statement_id, legal_effect, min_amount, max_amount,
            per_occasion
-      FROM annotation.sanction
-     WHERE statement_id = ANY(%(ids)s) AND punished_statement_id = ANY(%(ids)s)
+      FROM annotation.sanctions_of(%(ids)s::bigint[])
+     WHERE punished_statement_id = ANY(%(ids)s)
 """
 
 # 被觸發者不論前提是否在當日的陳述裡都標出：前提不在（未確認、文字已改、法規未施行）就不列。

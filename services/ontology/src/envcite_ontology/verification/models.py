@@ -19,9 +19,7 @@ from http.client import HTTPException
 from typing import Any, Protocol
 
 from envcite_ontology.endpoint import json_headers
-
-#: 值得重試的 HTTP 狀態（暫時性錯誤）；其餘 4xx 重試不會好，直接報。
-RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
+from envcite_ontology.http import HttpStatus, endpoint, urlopen
 
 
 class ModelError(RuntimeError):
@@ -149,19 +147,27 @@ class ChatCompletionsModel:
         return content
 
     def _post(self, request: urllib.request.Request) -> dict[str, Any]:
-        """送出請求；暫時性失敗以指數退避重試，其餘直接報。"""
+        """送出請求。端點問題（408／429／5xx 與連線失敗）退避重試，其餘狀態直接報。"""
+        body = request.data if isinstance(request.data, bytes) else b""
         for attempt in range(self.max_retries + 1):
             try:
-                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                with urlopen(
+                    request.full_url,
+                    data=body,
+                    headers=dict(request.header_items()),
+                    timeout=self.timeout,
+                    method=request.get_method(),
+                ) as response:
                     payload = json.loads(response.read())
                 if not isinstance(payload, dict):
                     raise ModelError(f"{self.name}: the reply is not a JSON object")
                 return payload
-            except urllib.error.HTTPError as e:
-                detail = f"{self.name}: HTTP {e.code}: {e.read()[:200]!r}"
-                if e.code not in RETRYABLE_STATUS or attempt == self.max_retries:
+            except HttpStatus as e:
+                detail = f"{self.name}: HTTP {e.status}: {e.body[:200]!r}"
+                retry_after = e.headers.get("Retry-After") if e.headers is not None else None
+                if not endpoint(e) or attempt == self.max_retries:
                     raise ModelError(detail) from e
-                wait = self._wait(attempt, e.headers.get("Retry-After"))
+                wait = self._wait(attempt, retry_after)
             except (
                 urllib.error.URLError,
                 TimeoutError,

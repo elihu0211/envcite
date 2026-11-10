@@ -18,6 +18,7 @@ import re
 from dataclasses import dataclass
 from datetime import date
 
+from envcite_ontology.acquire.markup import visible_text
 from envcite_ontology.ingest.numerals import CN_NUMERALS, parse_int
 
 BASE = "https://oaout.moenv.gov.tw/law/"
@@ -213,10 +214,7 @@ def _letter(fragment: str) -> tuple[str, str]:
 
 
 def _text(fragment: str, *, keep_lines: bool = False) -> str:
-    text = html.unescape(re.sub(r"<[^>]+>", " " if not keep_lines else "", fragment))
-    if keep_lines:
-        return text.replace("\xa0", " ")
-    return " ".join(text.split())
+    return visible_text(fragment, keep_lines=keep_lines)
 
 
 def _dotted(text: str) -> date:

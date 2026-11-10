@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Literal
 
 from envcite_ontology.acquire.engine import InvalidSnapshot, NotAnArchive
+from envcite_ontology.acquire.markup import visible_text
 from envcite_ontology.ingest import numerals
 
 BASE = "https://gazette.nat.gov.tw/egFront/"
@@ -174,7 +175,7 @@ def body_text(content: str) -> str:
     for attrs, inner in _PARAGRAPH.findall(content):
         if "attachment" in attrs or 'class="title"' in inner:
             continue
-        text = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", inner)).split())
+        text = visible_text(inner)
         if text:
             paragraphs.append(text)
     return "\n".join(paragraphs)

@@ -14,7 +14,6 @@ import os
 import ssl
 import time
 import urllib.error
-import urllib.request
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date
@@ -24,7 +23,8 @@ from typing import Protocol
 
 from psycopg import Connection
 
-from envcite_jobkit import Disposition, Policy, backoff_delay, classify_http_status
+from envcite_jobkit import Policy, backoff_delay
+from envcite_ontology.http import HttpStatus, endpoint, urlopen
 
 log = logging.getLogger(__name__)
 
@@ -140,8 +140,8 @@ def _download(url: str, dest: Path, context: ssl.SSLContext, policy: Policy) -> 
     for attempt in range(1, policy.max_attempts + 1):
         try:
             return _fetch(url, dest, context)
-        except urllib.error.HTTPError as e:
-            if classify_http_status(e.code) is not Disposition.ENDPOINT:
+        except HttpStatus as e:
+            if not endpoint(e):
                 raise
             error: Exception = e
         except (urllib.error.URLError, TimeoutError, ConnectionError, HTTPException) as e:
@@ -159,7 +159,7 @@ def _download(url: str, dest: Path, context: ssl.SSLContext, policy: Policy) -> 
 def _fetch(url: str, dest: Path, context: ssl.SSLContext) -> tuple[bytes, int]:
     h = hashlib.sha256()
     size = 0
-    with urllib.request.urlopen(url, context=context, timeout=300) as r, dest.open("wb") as f:
+    with urlopen(url, timeout=300, context=context) as r, dest.open("wb") as f:
         while chunk := r.read(_CHUNK):
             h.update(chunk)
             f.write(chunk)

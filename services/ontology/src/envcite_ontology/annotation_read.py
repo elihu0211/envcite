@@ -31,27 +31,19 @@ _INVALIDATED = """
 """
 
 _SLOTS = """
-    SELECT sl.statement_id, sl.slot_role::text, k.code, sl.literal, sl.liability_basis::text
-      FROM annotation.statement_slot AS sl
-      LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id
-     WHERE sl.statement_id = ANY(%(ids)s) AND NOT sl.unstated
-     ORDER BY sl.statement_id, sl.slot_role, sl.alternative
+    SELECT statement_id, slot_role, concept_code, literal, liability_basis
+      FROM annotation.slots_of(%(ids)s::bigint[])
+     WHERE NOT unstated
+     ORDER BY statement_id, slot_role, alternative
 """
 
 _CONDITIONS = """
-    SELECT c.id, c.statement_id, c.condition_role::text, c.disjunct_no, k.code, c.comparator::text,
-           c.threshold, c.measure_unit, c.negated, c.needs_assessment,
-           vk.code, dl.jurisdiction, dl.id_scheme, dl.local_id, dp.path, pk.code, mk.code, ak.code
-      FROM annotation.statement_condition AS c
-      JOIN vocab.concept AS k ON k.id = c.concept_id
-      LEFT JOIN vocab.concept AS vk ON vk.id = c.value_concept_id
-      LEFT JOIN vocab.concept AS pk ON pk.id = c.delegate_permit_concept_id
-      LEFT JOIN vocab.concept AS mk ON mk.id = c.measurement_method_concept_id
-      LEFT JOIN vocab.concept AS ak ON ak.id = c.averaging_period_concept_id
-      LEFT JOIN corpus.provision AS dp ON dp.id = c.delegate_provision_id
-      LEFT JOIN corpus.legal_resource AS dl ON dl.id = dp.resource_id
-     WHERE c.statement_id = ANY(%(ids)s)
-     ORDER BY c.statement_id, c.condition_role, c.disjunct_no, c.id
+    SELECT id, statement_id, condition_role, disjunct_no, concept_code, comparator,
+           threshold, measure_unit, negated, needs_assessment,
+           value_code, delegate_jurisdiction, delegate_id_scheme, delegate_local_id, delegate_path,
+           permit_code, method_code, averaging_code
+      FROM annotation.conditions_of(%(ids)s::bigint[])
+     ORDER BY statement_id, condition_role, disjunct_no, id
 """
 
 _EXCEPTIONS = """
@@ -67,10 +59,9 @@ _OVERRIDES = """
 """
 
 _SANCTIONS = """
-    SELECT statement_id, punished_statement_id, legal_effect::text, amount_text,
+    SELECT statement_id, punished_statement_id, legal_effect, amount_text,
            min_amount, max_amount, per_occasion, discretionary
-      FROM annotation.sanction
-     WHERE statement_id = ANY(%(ids)s)
+      FROM annotation.sanctions_of(%(ids)s::bigint[])
 """
 
 _TRIGGERS = """

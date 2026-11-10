@@ -10,12 +10,17 @@
 
 from __future__ import annotations
 
-import html
 import re
 import ssl
 from dataclasses import dataclass
 from datetime import date
 from typing import Literal
+
+from lxml.html import HtmlElement, tostring
+
+from envcite_ontology.acquire.markup import parse as parse_html
+from envcite_ontology.acquire.markup import visible_text
+from envcite_ontology.http import tls_context
 
 BASE = "https://cons.judicial.gov.tw"
 
@@ -23,13 +28,7 @@ BASE = "https://cons.judicial.gov.tw"
 INTERPRETATION_LIST = f"{BASE}/judcurrent.aspx?fid=2195&page={{page}}&tab=1"
 JUDGMENT_LIST = f"{BASE}/judcurrentNew1.aspx?fid=38"
 
-_DOC_LINK = re.compile(r'href="(/docdata\.aspx\?fid=(?:100|38)&(?:amp;)?id=\d+)"')
-_FIELD = re.compile(
-    r'<li class="title"[^>]*>\s*(?P<label>[^<]*?)\s*</li>\s*'
-    r'<li[^>]*class="text"[^>]*>(?P<body>.*?)</li>\s*</ul>',
-    re.S,
-)
-_PRE = re.compile(r"<pre[^>]*>(.*?)</pre>", re.S)
+_DOC_HREF = re.compile(r"^/docdata\.aspx\?fid=(?:100|38)&id=\d+$")
 _ROC_DATE = re.compile(r"(\d{1,3})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
 _INTERPRETATION_NO = re.compile(r"釋字第\s*(\d+)\s*號")
 _JUDGMENT_NO = re.compile(r"(\d{2,3})\s*年\s*憲判字第\s*(\d+)\s*號")
@@ -51,10 +50,7 @@ class RulingPage:
 
 
 def tls() -> ssl.SSLContext:
-    # 該站憑證同樣缺少 Subject Key Identifier（與全國法規資料庫相同），只清除這一個旗標。
-    context = ssl.create_default_context()
-    context.verify_flags &= ~ssl.VERIFY_X509_STRICT
-    return context
+    return tls_context()
 
 
 def roc_date(text: str) -> date:
@@ -71,7 +67,11 @@ def roc_date(text: str) -> date:
 
 def document_links(listing: str, base: str = BASE) -> list[str]:
     """清單頁裡每則裁判頁的絕對位址，依出現順序、去重。"""
-    found = (html.unescape(m.group(1)) for m in _DOC_LINK.finditer(listing))
+    found = (
+        href
+        for a in parse_html(listing).iter("a")
+        if (href := a.get("href")) is not None and _DOC_HREF.match(href)
+    )
     return [base + path for path in dict.fromkeys(found)]
 
 
@@ -83,9 +83,7 @@ def last_page(listing: str) -> int:
 
 def parse(page: str, url: str) -> RulingPage:
     """解析一則解釋或判決頁；格式不合拋 `UnreadablePage`。"""
-    fields: dict[str, str] = {}
-    for m in _FIELD.finditer(page):
-        fields.setdefault(m.group("label"), m.group("body"))
+    fields = _fields(page)
     if "解釋字號" in fields:
         number = _INTERPRETATION_NO.search(_text(fields["解釋字號"]))
         if number is None:
@@ -98,7 +96,7 @@ def parse(page: str, url: str) -> RulingPage:
             kind="interpretation",
             decided_on=roc_date(_text(stamp)),
             source_url=url,
-            main_text=_paragraphs(fields.get("解釋文", "")),
+            main_text=_paragraphs(fields.get("解釋文")),
         )
     if "判決字號" in fields:
         number = _JUDGMENT_NO.search(_text(fields["判決字號"]))
@@ -112,15 +110,30 @@ def parse(page: str, url: str) -> RulingPage:
             kind="judgment",
             decided_on=roc_date(_text(stamp)),
             source_url=url,
-            main_text=_paragraphs(fields.get("主文", "")),
+            main_text=_paragraphs(fields.get("主文")),
         )
     raise UnreadablePage(f"{url}: 不是解釋或判決頁")
 
 
-def _text(fragment: str) -> str:
-    return " ".join(html.unescape(re.sub(r"<[^>]+>", " ", fragment)).split())
+def _fields(page: str) -> dict[str, HtmlElement]:
+    """欄位名對到它的 `<li class="text">`。同名只留第一個。"""
+    fields: dict[str, HtmlElement] = {}
+    for li in parse_html(page).iter("li"):
+        if "title" not in (li.get("class") or "").split():
+            continue
+        nxt = li.getnext()
+        if nxt is None or nxt.tag != "li" or "text" not in (nxt.get("class") or "").split():
+            continue
+        fields.setdefault("".join((li.text_content() or "").split()), nxt)
+    return fields
 
 
-def _paragraphs(body: str) -> str:
-    paragraphs = [html.unescape(p).replace("　", "").strip() for p in _PRE.findall(body)]
+def _text(fragment: HtmlElement) -> str:
+    return visible_text(tostring(fragment, encoding=str))
+
+
+def _paragraphs(body: HtmlElement | None) -> str:
+    if body is None:
+        return ""
+    paragraphs = [(pre.text_content() or "").replace("　", "").strip() for pre in body.iter("pre")]
     return "\n".join(p for p in paragraphs if p)

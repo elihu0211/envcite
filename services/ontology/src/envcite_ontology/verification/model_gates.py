@@ -97,27 +97,22 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
     u = unit_of(conn, statement_id)
     lines = [f"陳述種類：{_KIND.get((u.kind, u.deontic), u.kind)}"]
     for slot, value, liability in conn.execute(
-        "SELECT sl.slot_role::text,"
-        "       CASE WHEN sl.unstated THEN %s ELSE coalesce(k.code, sl.literal) END,"
-        "       sl.liability_basis::text"
-        "  FROM annotation.statement_slot AS sl"
-        "  LEFT JOIN vocab.concept AS k ON k.id = sl.concept_id"
-        " WHERE sl.statement_id = %s ORDER BY sl.slot_role, sl.alternative",
+        "SELECT slot_role,"
+        "       CASE WHEN unstated THEN %s ELSE coalesce(concept_code, literal) END,"
+        "       liability_basis"
+        "  FROM annotation.slots_of(ARRAY[%s]::bigint[])"
+        " ORDER BY slot_role, alternative",
         (UNSTATED, statement_id),
     ):
         basis = f"（責任基礎：{_LIABILITY.get(str(liability), liability)}）" if liability else ""
         lines.append(f"{_SLOT.get(str(slot), slot)}：{value}{basis}")
     by_role: dict[str, list[str]] = {}
     for found in conn.execute(
-        "SELECT c.condition_role::text, k.code, k.name, c.comparator::text,"
-        "       c.threshold, c.measure_unit,"
-        "       c.negated, c.needs_assessment, c.delegate_provision_id IS NOT NULL,"
-        "       pk.code, mk.code, ak.code, c.carried"
-        "  FROM annotation.statement_condition AS c JOIN vocab.concept AS k ON k.id = c.concept_id"
-        "  LEFT JOIN vocab.concept AS pk ON pk.id = c.delegate_permit_concept_id"
-        "  LEFT JOIN vocab.concept AS mk ON mk.id = c.measurement_method_concept_id"
-        "  LEFT JOIN vocab.concept AS ak ON ak.id = c.averaging_period_concept_id"
-        " WHERE c.statement_id = %s ORDER BY c.id",
+        "SELECT condition_role, concept_code, concept_name, comparator,"
+        "       threshold, measure_unit, negated, needs_assessment, delegated,"
+        "       permit_code, method_code, averaging_code, carried"
+        "  FROM annotation.conditions_of(ARRAY[%s]::bigint[])"
+        " ORDER BY id",
         (statement_id,),
     ):
         role, code, label, cmp, threshold, unit, negated, judgement, delegated = found[:9]
@@ -148,9 +143,8 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
         if role in by_role:
             lines.append(f"{names[role]}：" + "；".join(by_role[role]))
     row = conn.execute(
-        "SELECT legal_effect::text, min_amount, max_amount, per_occasion, discretionary"
-        " FROM annotation.sanction"
-        " WHERE statement_id = %s",
+        "SELECT legal_effect, min_amount, max_amount, per_occasion, discretionary"
+        "  FROM annotation.sanctions_of(ARRAY[%s]::bigint[])",
         (statement_id,),
     ).fetchone()
     if row is not None:
@@ -213,9 +207,8 @@ def _stored_signature(conn: Conn, statement_id: int) -> dict[str, Any]:
         )
     ]
     row = conn.execute(
-        "SELECT legal_effect::text, min_amount, max_amount, per_occasion, discretionary"
-        " FROM annotation.sanction"
-        " WHERE statement_id = %s",
+        "SELECT legal_effect, min_amount, max_amount, per_occasion, discretionary"
+        "  FROM annotation.sanctions_of(ARRAY[%s]::bigint[])",
         (statement_id,),
     ).fetchone()
     sanction = None
