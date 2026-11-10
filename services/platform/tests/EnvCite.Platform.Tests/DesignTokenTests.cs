@@ -284,6 +284,78 @@ public static partial class DesignTokenTests
         Assert.NotEqual(c.Primary, c.Link);
     }
 
+    // 視覺規格與執行期 token 是同一份：企業色、十五階字級、字型堆疊、間距與圓角都寫在 DESIGN.md。
+    [Fact]
+    public static void TheDesignSpecMatchesTheSingleTokenSource()
+    {
+        var spec = File.ReadAllText(DesignSpecPath());
+        var c = DesignTokens.Light;
+        foreach (var (key, value) in new Dictionary<string, string>
+        {
+            ["primary"] = c.Primary,
+            ["on-primary"] = c.OnPrimary,
+            ["link"] = c.Link,
+            ["focus"] = c.Focus,
+            ["background"] = c.Background,
+            ["surface"] = c.Surface,
+            ["surface-raised"] = c.SurfaceRaised,
+            ["surface-muted"] = c.SurfaceMuted,
+            ["text"] = c.Text,
+            ["text-secondary"] = c.TextSecondary,
+            ["ink"] = c.Ink,
+            ["on-ink"] = c.OnInk,
+            ["accent"] = c.Accent,
+            ["success"] = c.Success,
+            ["warning"] = c.Warning,
+            ["error"] = c.Error,
+            ["info"] = c.Info,
+            ["border-subtle"] = c.BorderSubtle,
+            ["border-control"] = c.BorderControl,
+            ["scrim"] = c.Scrim,
+        })
+        {
+            Assert.Contains($"  {key}: \"{value}\"", spec, StringComparison.Ordinal);
+        }
+
+        var family = string.Join(", ", DesignTokens.FontFamily);
+        Assert.Equal(DesignTokens.Type.Count, Regex.Count(spec, Regex.Escape($"fontFamily: \"{family}\"")));
+        foreach (var (name, style) in DesignTokens.Type)
+        {
+            var block = TypeBlock(spec, name);
+            Assert.Contains($"fontSize: \"{style.Size}\"", block, StringComparison.Ordinal);
+            Assert.Contains($"fontWeight: {style.Weight}", block, StringComparison.Ordinal);
+            Assert.Contains($"lineHeight: \"{style.LineHeight}\"", block, StringComparison.Ordinal);
+            Assert.Contains($"letterSpacing: \"{style.LetterSpacing}\"", block, StringComparison.Ordinal);
+        }
+
+        foreach (var (key, value) in DesignTokens.Space)
+        {
+            Assert.Contains($"  \"{key}\": {value}", spec, StringComparison.Ordinal);
+        }
+
+        foreach (var (key, value) in DesignTokens.Radius)
+        {
+            Assert.Contains($"  {key}: {value}", spec, StringComparison.Ordinal);
+        }
+
+        var gallery = File.ReadAllText(GalleryPath());
+        foreach (var role in DesignTokens.Type.Keys)
+        {
+            Assert.Contains($"\"{role}\"", gallery, StringComparison.Ordinal);
+        }
+    }
+
+    private static string TypeBlock(string spec, string name)
+    {
+        var marker = $"\n  {name}:\n";
+        var start = spec.IndexOf(marker, StringComparison.Ordinal);
+        Assert.True(start >= 0, name);
+        var rest = spec[(start + marker.Length)..];
+        var end = Regex.Match(rest, @"\n  [a-z0-9-]+:\n|\n```").Index;
+        Assert.True(end > 0, name);
+        return rest[..end];
+    }
+
     // 字重與置中欄寬都從 token 取。字重沿用既有字級（標題、按鈕），不另開一組字重表。
     [Fact]
     public static void TheStylesheetTakesWeightAndMeasureFromTheTokens()
@@ -369,6 +441,12 @@ public static partial class DesignTokenTests
     private static string StylesheetPath([CallerFilePath] string here = "") =>
         Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.Web", "wwwroot", "design", "platform.css"));
+
+    private static string DesignSpecPath() =>
+        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "..", "..", "Design", "DESIGN.md"));
+
+    private static string GalleryPath() =>
+        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "..", "..", "Components", "Anonymous", "DesignGallery.razor"));
 
     private static readonly string[] TypeGroups = ["display", "headline", "title", "body", "label"];
 

@@ -58,6 +58,9 @@ public sealed record ColorTokens
     public required string Scrim { get; init; }
 }
 
+/// <summary>
+/// 營運後台與客戶入口的外觀。執行期只讀這裡；給代理的視覺規格是同目錄的 <c>DESIGN.md</c>，兩份由測試核對。
+/// </summary>
 public static class DesignTokens
 {
     // 中性灰階（近乎無彩度）加單一藍色強調；表面以平面為主，層次靠細邊與淡陰影，不靠色塊。全站沒有漸層。

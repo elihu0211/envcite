@@ -7,7 +7,7 @@
 <PageTitle>元件展示 · 環境知識</PageTitle>
 
 <PortalShell TenantName="展示租戶" HomeHref="/design" UserEmail="owner@example.test" RoleLabel="擁有者" AvatarText="O" ShowMenu="true" MenuItems="@_menu" NavItems="@_nav">
-    <PageHeader Title="元件展示" Description="只在 Development 看得到。改 DesignTokens.cs 之後，在這裡看每個元件在手機、平板、桌機的樣子；左側是工作區，右上角的頭像是帳號選單。" />
+    <PageHeader Title="元件展示" Description="只在 Development 看得到。配色、字級與字型都來自 DesignTokens.cs（規格見 DESIGN.md）。左側是工作區，右上角的頭像是帳號選單。" />
 
     <section class="ep-card" aria-labelledby="g-ask">
         <h2 id="g-ask" class="ep-section-title">問答</h2>
@@ -50,6 +50,7 @@
 
     <section class="ep-card" aria-labelledby="g-type">
         <h2 id="g-type" class="ep-section-title">字級</h2>
+        <p class="ep-hint">@string.Join("，", DesignTokens.FontFamily)</p>
         @foreach (var (name, sample) in _types)
         {
             <p class="ep-type-row" style="font-size: var(--ep-@(name)-size); line-height: var(--ep-@(name)-leading); letter-spacing: var(--ep-@(name)-tracking); font-weight: var(--ep-@(name)-weight)">
@@ -126,15 +127,20 @@
 @code {
     private static readonly (string Name, string Label)[] _colors =
     [
-        ("bg", "頁面底"), ("surface", "卡片"), ("surface-muted", "欄標題、展開列"), ("text", "主要文字"), ("text-secondary", "次要文字"),
-        ("primary", "主色"), ("link", "連結"), ("success", "成功"), ("warning", "警示"), ("error", "錯誤"), ("info", "資訊"),
-        ("border-subtle", "髮絲線"), ("border-control", "控制項外框"),
+        ("bg", "頁面底"), ("surface", "卡片"), ("surface-raised", "浮起表面"), ("surface-muted", "欄標題、展開列"),
+        ("text", "主要文字"), ("text-secondary", "次要文字"), ("primary", "企業藍"), ("on-primary", "企業藍上的字"),
+        ("link", "連結"), ("focus", "焦點環"), ("ink", "深色點綴"), ("on-ink", "深色上的字"), ("accent", "裝飾"),
+        ("success", "成功"), ("warning", "警示"), ("error", "錯誤"), ("info", "資訊"),
+        ("border-subtle", "髮絲線"), ("border-control", "控制項外框"), ("scrim", "遮罩"),
     ];
 
     private static readonly (string Name, string Sample)[] _types =
     [
-        ("display", "顯示"), ("h1", "頁面標題"), ("h2", "區塊標題"), ("h3", "小節標題"), ("body", "內文：臺灣環境法規的檢索與引用"),
-        ("body-sm", "小字：說明與表格"), ("caption", "註記"), ("micro", "最小字級"),
+        ("display-l", "環境知識"), ("display-m", "展示"), ("display-s", "展示小標"),
+        ("headline-l", "頁面標題"), ("headline-m", "次級頁標題"), ("headline-s", "區塊標題"),
+        ("title-l", "卡片標題"), ("title-m", "對話框標題"), ("title-s", "小標題"),
+        ("body-l", "內文：臺灣環境法規的檢索與引用"), ("body-m", "說明與表格"), ("body-s", "輔助說明"),
+        ("label-l", "按鈕"), ("label-m", "表頭"), ("label-s", "註記"),
     ];
 
     private static readonly IReadOnlyList<PortalShell.NavItem> _nav =

@@ -8,7 +8,7 @@ owns: [service-map]
 
 [![pipeline status](https://gitlab.com/thuaisse-lab/envcite/badges/main/pipeline.svg)](https://gitlab.com/thuaisse-lab/envcite/-/pipelines)
 
-臺灣環境知識的檢索與引用接地（Grounding）：為呼叫端的語言模型備妥封閉證據集，證據不足時拒答。語料只涵蓋中央法規，地方自治法規不在範圍內，見 [`services/platform/README.md`](services/platform/README.md#語料範圍)。服務如何組合、呼叫流程見 [`proto/README.md`](proto/README.md)。
+臺灣環境知識的檢索與引用接地（Grounding）：為呼叫端的語言模型備妥封閉證據集，證據不足時拒答。語料範圍的定義在 [`services/platform/README.md`](services/platform/README.md#語料範圍)；服務如何組合、呼叫流程見 [`proto/README.md`](proto/README.md)。
 
 | 路徑 | 職責 | 文件 |
 |------|------|------|
@@ -23,5 +23,5 @@ owns: [service-map]
 
 - 本機開發環境、分支與 MR 流程：[`CONTRIBUTING.md`](CONTRIBUTING.md)
 - 環境變數命名與機密來源：[`CONFIGURATION.md`](CONFIGURATION.md)
-- 架構規範與開發準則：[`AGENTS.md`](AGENTS.md)（各服務另有巢狀 `AGENTS.md`）
+- 代理作業規範：[`AGENTS.md`](AGENTS.md)（各服務另有巢狀 `AGENTS.md`）
 - 部署清單在獨立的部署庫，不在本倉庫

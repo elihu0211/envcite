@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """檢查文件 front-matter、相對連結與錨點；規範見容器層 AGENTS.md「知識文件」。
 
-每份知識文件都要有 front-matter；AGENTS.md、CLAUDE.md、skill、MR 範本與評估紀錄不是知識節點，
+每份知識文件都要有 front-matter；AGENTS.md、CLAUDE.md、DESIGN.md、skill、MR 範本與評估紀錄不是知識節點，
 不檢查 front-matter，連結照樣檢查。錨點依 GitLab 產生標題 id 的規則比對。只用標準庫。
 """
 
@@ -17,7 +17,7 @@ HEADING = re.compile(r"^#{1,6}\s+(.*?)\s*#*\s*$")
 FENCE = re.compile(r"^\s*(```|~~~)")
 # 產生物與相依套件目錄，連同 worktree、快取等點開頭目錄一併略過。
 SKIP_DIRS = {"node_modules", "bin", "obj", "__pycache__"}
-NOT_NODES = {"AGENTS.md", "CLAUDE.md", "SKILL.md"}
+NOT_NODES = {"AGENTS.md", "CLAUDE.md", "DESIGN.md", "SKILL.md"}
 NOT_NODE_DIRS = (".gitlab/", "services/ontology/eval/")
 
 

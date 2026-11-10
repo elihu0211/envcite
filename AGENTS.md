@@ -2,9 +2,6 @@
 
 ## Project
 
-- **Name:** envcite（環境知識 EnvCite）— 臺灣環境知識的檢索與引用接地服務，單一倉庫、多個獨立部署的服務
-- **Remote:** `git@gitlab.com:thuaisse-lab/envcite.git`
-
 服務、目錄與各自的 README、AGENTS 見根 [`README.md`](README.md) 的目錄表；本機開發環境見 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
 
 各服務另有巢狀 `AGENTS.md`，**該樹之內以它為準**。
@@ -15,9 +12,14 @@
 
 ## Commands
 
-各服務的指令見其 `AGENTS.md`，從**該服務目錄**執行。跨服務的從**倉庫根**執行：
+各服務的指令見其 `AGENTS.md`，從**該服務目錄**執行。跨服務的從**倉庫根**執行。
 
-- **版本集中管理**：.NET 的 SDK、套件版本、建置屬性與程式碼風格只在倉庫根（`global.json`、`Directory.Packages.props`、`Directory.Build.props`、`.editorconfig`），各 .NET 服務與 `libs/dotnet/` 共用；Python 在倉庫根 uv workspace（`pyproject.toml`、`uv.lock`），成員只列套件名稱，加依賴用 `uv add --raw <pkg>`，`uv.lock` 只經 `uv add／remove／lock` 改。有相容性理由的下界（如 `envcite-proto` 的 protobuf 執行期）例外，理由寫在旁邊。無法收成單一來源的工具與映像版本，依 `CONTRIBUTING.md`「升級版本」的表在同一次提交一起改。工具與執行期版本以 `global.json`、`.python-version`、`pyproject.toml`、`uv.lock` 為準，不寫進文件。
+版本與建置設定只在倉庫根一份，各服務共用：
+
+- .NET（含 `libs/dotnet/`）：`global.json`、`Directory.Packages.props`、`Directory.Build.props`、`.editorconfig`
+- Python：uv workspace 的 `pyproject.toml`、`uv.lock`；成員只列套件名稱；加依賴用 `uv add --raw <pkg>`；`uv.lock` 只經 `uv add`／`remove`／`lock` 改
+- 有相容性理由的下界（如 `envcite-proto` 的 protobuf 執行期）把理由寫在該下界旁邊
+- 收不進上述檔案的工具與映像版本，同一次提交改完 [`CONTRIBUTING.md`](CONTRIBUTING.md)「升級版本」表上的每一處
 
 ```bash
 # 契約
@@ -33,7 +35,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 
 ## 目錄配置與擴充判準
 
-下列判準是**新增服務時照著做的**，不是現在就要建的目錄——**空目錄不先建**。
+目錄在下表的條件命中時才建立。
 
 | 內容 | 位置 | 何時才建 |
 |------|------|----------|
@@ -49,7 +51,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 
 ## Contract
 
-- `proto/envcite/**` 是 gRPC API 的**單一真值**，各服務都由此產生程式碼，**不得各自複製一份**。
+- `proto/envcite/**` 是 gRPC API 的**單一真值**。各服務的程式碼都從這份契約產生，契約只此一份。
 - API 文件：欄位語意寫在 `.proto` 註解；跨服務的組合與呼叫端接法寫在 `proto/README.md`（buf 模組文件）。改契約時兩者一起改。
 - 現行套件必須通過 `buf breaking`（WIRE_JSON：守線路與 JSON 相容）；刪除欄位時以 `reserved` 保留其號碼與名稱。破壞性變更開新套件版本，消費者遷完後整個刪除舊版套件（含產生碼、健康名稱與部署探針），不並存、不留相容層；WIRE_JSON 不檢查整個套件的刪除，不必為此放寬 `buf breaking`。
 - 改 proto 的 MR 必須同時更新兩側產生碼，一件事一個 MR。
