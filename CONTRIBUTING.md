@@ -31,7 +31,7 @@ owns: [dev-seed-accounts, shared-dev-db]
 |----|----------|------|
 | 帳號 | [platform README「營運者帳號」](services/platform/README.md#營運者帳號) | 欄位、端點、首次登入 |
 | 帳號 | 部署庫。入口是容器層 `core-env-saas/AGENTS.md` 任務表「在 staging 建第一個營運者」 | staging 的步驟 |
-| 設定 | [`CONFIGURATION.md`](CONFIGURATION.md) | 環境變數命名與機密來源 |
+| 設定 | [`CONFIGURATION.md`](CONFIGURATION.md#概念) | 環境變數命名與機密來源 |
 | 契約 | [`proto/README.md`](proto/README.md#概念) | 服務如何組合、呼叫端如何接上 |
 | 契約 | [platform README「語料範圍」](services/platform/README.md#語料範圍) | 語料範圍 |
 | 倉庫 | [README「目錄」](README.md#目錄) | 有哪些目錄 |
