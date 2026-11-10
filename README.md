@@ -14,10 +14,10 @@ envcite 處理臺灣環境知識的檢索與引用接地。它把可引用的材
 
 | 路徑 | 職責 | 文件 |
 |------|------|------|
-| `services/platform/` | 多租戶控制平面：對外 REST、API key 授權、租戶配額與計量 | [README](services/platform/README.md) · [AGENTS](services/platform/AGENTS.md) |
-| `services/consult/` | 接地：封閉證據集、可答性判定，租戶隔離 | [README](services/consult/README.md) · [AGENTS](services/consult/AGENTS.md) |
-| `services/ontology/` | 本體：各來源知識的集中存放、檢索與推論，不分租戶 | [README](services/ontology/README.md) · [AGENTS](services/ontology/AGENTS.md) |
-| `proto/` | 服務間 gRPC 契約，唯一真值 | [README](proto/README.md) |
+| `services/platform/` | 多租戶控制平面：對外 REST、API key 授權、租戶配額與計量 | [README](services/platform/README.md#概念) · [AGENTS](services/platform/AGENTS.md) |
+| `services/consult/` | 接地：封閉證據集、可答性判定，租戶隔離 | [README](services/consult/README.md#概念) · [AGENTS](services/consult/AGENTS.md) |
+| `services/ontology/` | 本體：各來源知識的集中存放、檢索與推論，不分租戶 | [README](services/ontology/README.md#概念) · [AGENTS](services/ontology/AGENTS.md) |
+| `proto/` | 服務間 gRPC 契約，唯一真值 | [README](proto/README.md#概念) |
 | `libs/dotnet/` | .NET 服務共用的主機設定：設定繫結、內部 gRPC 用戶端、遙測，不發佈 | [README](libs/dotnet/README.md) |
 | `libs/python/` | 服務之外、可獨立測試的 Python 套件，uv workspace 成員，不發佈 | [AGENTS](libs/python/AGENTS.md) |
 
@@ -29,5 +29,5 @@ envcite 處理臺灣環境知識的檢索與引用接地。它把可引用的材
 | 看服務如何組合、呼叫端如何接上 | [`proto/README.md`](proto/README.md#概念) |
 | 在本機開發 | [`CONTRIBUTING.md`](CONTRIBUTING.md#概念) |
 | 建立營運者 | [`CONTRIBUTING.md`](CONTRIBUTING.md#本機第一個帳號) |
-| 查環境變數命名與機密來源 | [`CONFIGURATION.md`](CONFIGURATION.md) |
+| 查環境變數命名與機密來源 | [`CONFIGURATION.md`](CONFIGURATION.md#概念) |
 | 改代理的作業規範 | [`AGENTS.md`](AGENTS.md) |
