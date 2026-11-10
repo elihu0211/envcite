@@ -33,7 +33,7 @@ public static class MeteringModule
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IUsageRecorder, UsageRecorder>();
-        services.AddScoped<IUsageAdmin, UsageAdmin>();
+        services.AddSingleton<IUsageAdmin, UsageAdmin>();
         services.AddSectionOptions<IdempotencyOptions, IdempotencyOptionsValidator>();
         services.AddScoped<IIdempotencyStore, IdempotencyStore>();
         return services;

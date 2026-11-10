@@ -7,7 +7,8 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class Ask(IPortalAccount account, ITenantDirectory directory, ILawSearch laws, IGroundedAnswerer answerer)
+public partial class Ask(
+    IPortalAccount account, ITenantDirectory directory, ILawSearch laws, IGroundedAnswerer answerer, IAnswerAvailability availability)
 {
     // 範例是臺灣法規裡會出現的詞（資料庫是中文），所以英文介面也維持中文：翻成英文就搜不到。
     private static readonly string[] Examples = ["噪音管制標準", "固定污染源", "廢棄物清理", "水污染防治"];
@@ -49,7 +50,7 @@ public partial class Ask(IPortalAccount account, ITenantDirectory directory, ILa
         }
 
         // AI 回答要兩個條件：部署者設定了模型端點，而且這個租戶同意（問題會送到外部的模型服務）。
-        _aiAnswer = summary.Plan is not null && summary.AiAnswer && answerer.Available;
+        _aiAnswer = summary.Plan is not null && summary.AiAnswer && availability.Available;
         return summary.Plan is not null;
     }
 

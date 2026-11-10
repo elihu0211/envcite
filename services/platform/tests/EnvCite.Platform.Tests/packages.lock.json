@@ -1023,17 +1023,14 @@
           "EnvCite.Platform.Data": "[1.0.0, )",
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
           "Finbuckle.MultiTenant.AspNetCore": "[10.1.4, )",
-          "Finbuckle.MultiTenant.EntityFrameworkCore": "[10.1.4, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )"
+          "Finbuckle.MultiTenant.EntityFrameworkCore": "[10.1.4, )"
         }
       },
       "envcite.platform.modules.audit": {
         "type": "Project",
         "dependencies": {
           "EnvCite.Platform.Data": "[1.0.0, )",
-          "EnvCite.Platform.SharedKernel": "[1.0.0, )",
-          "Finbuckle.MultiTenant.EntityFrameworkCore": "[10.1.4, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )"
+          "EnvCite.Platform.SharedKernel": "[1.0.0, )"
         }
       },
       "envcite.platform.modules.consult": {
@@ -1051,8 +1048,7 @@
         "dependencies": {
           "EnvCite.Platform.Data": "[1.0.0, )",
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
-          "Finbuckle.MultiTenant.EntityFrameworkCore": "[10.1.4, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )"
+          "Finbuckle.MultiTenant.EntityFrameworkCore": "[10.1.4, )"
         }
       },
       "envcite.platform.modules.members": {

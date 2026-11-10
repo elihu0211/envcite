@@ -13,15 +13,23 @@ public sealed record GroundedAnswer(string? Text, IReadOnlyList<AnswerSource> So
 }
 
 /// <summary>
+/// 模型端點有沒有設定（<c>Platform:Answer:Enabled</c>）。singleton，只讀設定。
+/// 與 <see cref="IGroundedAnswerer"/> 分開：後者是 scoped（計量要目前請求的租戶與 <c>DbContext</c>），
+/// Blazor circuit 若為了這個旗標解析它，會把那個 context 抓住直到斷線。
+/// </summary>
+public interface IAnswerAvailability
+{
+    bool Available { get; }
+}
+
+/// <summary>
 /// 以封閉證據集回答法規問題：先向 consult 取得證據（沒有就拒答，不呼叫模型），再讓模型<b>只根據這些證據</b>作答，
 /// 並檢查回答引用的每個代號都在證據裡；沒有引用或引用不存在的代號，整個回答作廢、改為拒答。
 /// 以 scoped 註冊（計量需要目前請求的租戶）。呼叫端負責確認租戶有方案（完全付費制）。
+/// 端點有沒有設定看 <see cref="IAnswerAvailability"/>，不看這裡。
 /// </summary>
 public interface IGroundedAnswerer
 {
-    /// <summary>有沒有設定模型端點（<c>Platform:Answer:Enabled</c>）。沒有時呼叫端退回只列條文。</summary>
-    bool Available { get; }
-
     /// <returns>
     /// <see cref="AdminStatus.Invalid"/>：輸入錯誤；<see cref="AdminStatus.Unavailable"/>：consult 或模型暫時不可用
     /// （模型的錯誤內容不回傳，因為它可能夾帶問題文字）。拒答是成功的結果，不是錯誤。
