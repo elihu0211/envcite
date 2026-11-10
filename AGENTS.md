@@ -54,14 +54,14 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 - `proto/envcite/**` 是 gRPC API 的**單一真值**。各服務的程式碼都從這份契約產生，契約只此一份。
 - API 文件：欄位語意寫在 `.proto` 註解；跨服務的組合與呼叫端接法寫在 `proto/README.md`（buf 模組文件）。改契約時兩者一起改。
 - 現行套件必須通過 `buf breaking`（WIRE_JSON：守線路與 JSON 相容）；刪除欄位時以 `reserved` 保留其號碼與名稱。破壞性變更開新套件版本，消費者遷完後整個刪除舊版套件（含產生碼、健康名稱與部署探針），不並存、不留相容層；WIRE_JSON 不檢查整個套件的刪除，不必為此放寬 `buf breaking`。
-- 改 proto 的 MR 必須同時更新兩側產生碼，一件事一個 MR。
+- 改 proto 的 pull request 必須同時更新兩側產生碼，一件事一個 pull request。
 - 服務本身不驗證 gRPC 呼叫端；只准指定服務呼叫由部署環境執行（見 `proto/README.md`）。
 
 ## Conventions
 
 - 人讀文件 → `README.md`（每個目錄一份，總覽在根；本機開發環境在 `CONTRIBUTING.md`）；agent 作業 → 本檔與 skills。
 - **知識文件的組織**（概念節點、任務入口、front-matter）以容器層為準，見 `core-env-saas/AGENTS.md` 的「知識文件」；本檔不重述。文件 front-matter 與相對連結由 `ci/check-docs.py` 在 CI 檢查，本機從倉庫根 `python3 ci/check-docs.py`。
-- **文件只寫不會過時的**：規範、不變式、契約（端點、欄位、設定鍵、格式；寫在擁有該概念的 README）與指向真值的指標。版本、清單、預設值、事件名稱、日期、「目前／尚未」這類現況，以程式碼與測試為準，不寫進文件；決策論據寫在 MR 說明，不寫進 `AGENTS.md`（作業規範寫進論據必然過期）。
+- **文件只寫不會過時的**：規範、不變式、契約（端點、欄位、設定鍵、格式；寫在擁有該概念的 README）與指向真值的指標。版本、清單、預設值、事件名稱、日期、「目前／尚未」這類現況，以程式碼與測試為準，不寫進文件；決策論據寫在 pull request 說明，不寫進 `AGENTS.md`（作業規範寫進論據必然過期）。
 - **可觀測性各服務同一約定**：只認標準 `OTEL_*` 鍵，沒設 `OTEL_EXPORTER_OTLP_ENDPOINT` 就不匯出；指標標籤只用有限集合，租戶與請求內容不進指標。RED 指標的兩側對照見 `proto/README.md`。
 - **CI 的邏輯在 `ci/` 腳本，`.github/workflows/ci.yml` 只決定何時跑、傳什麼參數**：腳本不讀 `CI_*` 等平台變數（`ci/test-platform-neutral.sh` 擋），平台資訊由 job 轉成參數，所以同一支腳本在本機與 CI 以同一指令執行。新增會被 job 呼叫的腳本，同時補 `ci/test-*.sh` 的離線測試。
 - **配置檔與腳本的註解**：繁體中文，只寫「為什麼」與前提，不寫程式本身已說明的「做什麼」，不寫日期與事件經過；不用裝飾分隔線；JSON 沒有註解，用 `description` 欄位。
@@ -88,7 +88,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 ## Safety
 
 - 不提交機密或真實 `.env*` 值。
-- 不在 `main` 上改動或 commit：先開分支，走 MR（擋下的 hook 見 `CONTRIBUTING.md`「從開發到上線」）。
+- 不在 `main` 上改動或 commit：先開分支，走 pull request（擋下的 hook 見 `CONTRIBUTING.md`「從開發到上線」）。
 - 動手前先問：force-push、改寫歷史、正式環境部署、破壞性資料庫操作、對共用資料庫套用遷移。
 - 分支收尾（落地或交接）依容器層 `core-env-saas/AGENTS.md`。
 - 產生物與各服務專屬的禁改路徑、資料來源標示，見各巢狀 `AGENTS.md`（`envcite-proto` 的產生碼見其 README）。

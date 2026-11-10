@@ -5,7 +5,7 @@ lint:
   use:
     - STANDARD
 breaking:
-  # 所有用戶端都在本倉庫、與契約同一個 MR 重新產生；Buf 對此情境建議 WIRE／WIRE_JSON，
+  # 所有用戶端都在本倉庫、與契約同一個 pull request 重新產生；Buf 對此情境建議 WIRE／WIRE_JSON，
   # JSON 亦在傳輸之列故取後者。
   use:
     - WIRE_JSON

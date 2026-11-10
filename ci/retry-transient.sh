@@ -4,7 +4,7 @@
 # 用法：sh ci/retry-transient.sh <指令> [參數...]
 #
 # 不用「任何失敗都重跑」：那會把決定性的失敗（缺套件、
-# Dockerfile 寫錯）與分支已刪的 pipeline（`fatal: couldn't find remote ref`，exit 128）都會白跑。
+# Dockerfile 寫錯）與分支已刪的 CI（`fatal: couldn't find remote ref`，exit 128）都會白跑。
 # 這裡只認連線層逾時的特徵：registry login 逾時、拉基底層與 ghcr token 的 i/o timeout，
 # 加上常見的 5xx 與限流。「失敗」與「逾時」同時出現才算，單有一個詞不夠。
 #

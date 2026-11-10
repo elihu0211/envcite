@@ -122,7 +122,7 @@ wt platform   # 同一個終端機啟動，才讀得到上面的環境變數
 
 1. **開分支**：`wt switch --create <type>/<簡述>`，type 用 `feat`、`fix`、`docs`、`refactor`、`chore` 等。
 2. **Commit**：[Conventional Commits](https://www.conventionalcommits.org)，`type(scope): 說明`；破壞性變更加 `!`（如 `feat(consult)!: …`）。
-3. **開 MR 到 `main`**：`main` 受保護，不直接推送；本機的 `.githooks/pre-commit` 也擋下 main 上的 commit（`wt` 建樹時啟用，既有 clone 執行 `git config core.hooksPath .githooks`）。Claude Code 的 PreToolUse hook 呼叫同一支 `.githooks/block-main.sh`，依被編輯檔所在的 git 工作樹判斷分支（不看 hook 的工作目錄），測試見 `ci/test-block-main.sh`。pipeline 成功才能合併，以 squash 合併，合併後刪除來源分支。
+3. **開 pull request 到 `main`**：`main` 受保護，不直接推送；本機的 `.githooks/pre-commit` 也擋下 main 上的 commit（`wt` 建樹時啟用，既有 clone 執行 `git config core.hooksPath .githooks`）。Claude Code 的 PreToolUse hook 呼叫同一支 `.githooks/block-main.sh`，依被編輯檔所在的 git 工作樹判斷分支（不看 hook 的工作目錄），測試見 `ci/test-block-main.sh`。CI 成功才能合併，以 squash 合併，合併後刪除來源分支。
 4. **上線**：合併後 CI 把受影響服務的映像推送為 `:<commit-sha>`，之後自動部署；流程與回退見部署庫（位置見容器層 `core-env-saas/AGENTS.md`）。
 5. **收尾**：`wt remove <分支>`。
 
@@ -132,7 +132,7 @@ CI 依改動路徑分流，job 與路徑對應以 `ci/detect-changes.sh` 為準�
 
 | 改動 | 跑什麼 |
 |------|--------|
-| 任何改動 | 一個恆有的 gate（讓只改文件的 MR 也有 pipeline 可合併） |
+| 任何改動 | 一個恆有的 gate（讓只改文件的 pull request 也有 CI 可合併） |
 | [`services/platform/`](services/platform/README.md) | 該服務的測試、格式、對外 REST 規格（是否過期、是否破壞相容）與映像 |
 | [`services/consult/`](services/consult/README.md) | 該服務的建置、格式、測試與映像 |
 | [`services/ontology/`](services/ontology/README.md) | 該服務的 lint、型別、測試與映像 |
@@ -147,7 +147,7 @@ CI 依改動路徑分流，job 與路徑對應以 `ci/detect-changes.sh` 為準�
 
 依賴集中在單一檔案，由 Renovate（`renovate.json`）提 pull request 更新；`.github/workflows/ci.yml` 的 `env:` 上方的 `# renovate:` 註記是它辨識版本的依據，新增版本變數時一併加上（Dockerfile 的 `ARG` 由 Renovate 內建的 Dockerfile 解析讀取，不需註記）。手動升級時，表中各位置在同一次提交一起改。
 
-Renovate 由外部排程集中執行，本倉庫不放令牌也不跑 job。同一工具出現在多處者（python、uv、.NET SDK 與映像）已設為同一個 MR。**不自動合併**：合併進 `main` 會建置映像並自動上線，依賴更新須先看過 MR。
+Renovate 由外部排程集中執行，本倉庫不放令牌也不跑 job。同一工具出現在多處者（python、uv、.NET SDK 與映像）已設為同一個 pull request。**不自動合併**：合併進 `main` 會建置映像並自動上線，依賴更新須先看過 pull request。
 
 | 版本 | 位置 |
 |------|------|

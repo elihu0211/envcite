@@ -1,7 +1,7 @@
 #!/bin/sh
 # build-image.sh 的離線測試：假的 docker 記錄每次呼叫的參數與 stdin，不連網、不需要 docker。
 #   sh ci/test-build-image.sh
-# 推送路徑只在預設分支才會跑，MR 的 pipeline 驗不到，所以這裡逐字斷言「推送」與「只驗證」兩條路徑
+# 推送路徑只在預設分支才會跑，pull request 的 CI 驗不到，所以這裡逐字斷言「推送」與「只驗證」兩條路徑
 # 收到的完整參數，是推送路徑合併前唯一的證據；失敗情境斷言錯誤沒有被吞掉、也沒有多做後面的步驟。
 set -u
 here=$(cd "$(dirname "$0")" && pwd)

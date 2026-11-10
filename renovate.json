@@ -47,14 +47,14 @@
   ],
   "packageRules": [
     {
-      "description": "大版本升級先在 Dependency Dashboard 勾選才開 MR：多半需要程式碼遷移，照排程自動開只會是紅燈",
+      "description": "大版本升級先在 Dependency Dashboard 勾選才開 pull request：多半需要程式碼遷移，照排程自動開只會是紅燈",
       "matchUpdateTypes": [
         "major"
       ],
       "dependencyDashboardApproval": true
     },
     {
-      "description": "語言執行環境與其基底映像的 minor 也是行為變更（python 3.14→3.15、.NET 10→11）：要連同 requires-python／TargetFramework 一起評估，先勾選才開 MR",
+      "description": "語言執行環境與其基底映像的 minor 也是行為變更（python 3.14→3.15、.NET 10→11）：要連同 requires-python／TargetFramework 一起評估，先勾選才開 pull request",
       "matchDepNames": [
         "python",
         "dotnet-sdk",
@@ -83,14 +83,14 @@
       "pinDigests": false
     },
     {
-      "description": "python 在 .python-version、CI 變數與 ontology 的 Dockerfile 各有一處，同一個 MR 一起升",
+      "description": "python 在 .python-version、CI 變數與 ontology 的 Dockerfile 各有一處，同一個 pull request 一起升",
       "matchDepNames": [
         "python"
       ],
       "groupName": "python"
     },
     {
-      "description": "uv 在 CI 變數、ontology 的 Dockerfile 的映像 tag 與各 pyproject 的 uv_build 範圍各有一處，同一個 MR 一起升",
+      "description": "uv 在 CI 變數、ontology 的 Dockerfile 的映像 tag 與各 pyproject 的 uv_build 範圍各有一處，同一個 pull request 一起升",
       "matchDepNames": [
         "uv",
         "ghcr.io/astral-sh/uv",
