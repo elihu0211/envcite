@@ -3,9 +3,9 @@
 #
 # 用法：sh ci/retry-transient.sh <指令> [參數...]
 #
-# 不用 GitLab 的 `retry: when: script_failure`：它對所有 script 失敗一律重跑，決定性的失敗（缺套件、
+# 不用「任何失敗都重跑」：那會把決定性的失敗（缺套件、
 # Dockerfile 寫錯）與分支已刪的 pipeline（`fatal: couldn't find remote ref`，exit 128）都會白跑。
-# 這裡只認連線層逾時的特徵：registry.gitlab.com 的 login 逾時、拉基底層與 ghcr token 的 i/o timeout，
+# 這裡只認連線層逾時的特徵：registry login 逾時、拉基底層與 ghcr token 的 i/o timeout，
 # 加上常見的 5xx 與限流。「失敗」與「逾時」同時出現才算，單有一個詞不夠。
 #
 # 退避：預設 30、60 秒（最多 3 次）。registry 短暫中斷會讓多個 job 同時失敗，間隔太短會白重試；
@@ -44,7 +44,7 @@ while :; do
     echo "… 暫時性錯誤，已試 $n 次仍失敗，放棄" >&2
     exit "$rc"
   fi
-  echo "… 暫時性錯誤，${wait} 秒後重試（$n/$attempts）：$*" >&2
+  echo "… 暫時性錯誤，${wait} 秒後重試（${n}/${attempts}）：$*" >&2
   sleep "$wait"
   n=$((n + 1))
   wait=$((wait * 2))

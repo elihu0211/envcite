@@ -1,12 +1,12 @@
 # 換行一律 LF（Windows runner 與 macOS 一致，shell 腳本才跑得起來）
 * text=auto eol=lf
 
-# 產生物：GitLab 的 MR diff 預設收合（gitlab-generated），並不計入語言統計（linguist-generated）
-uv.lock gitlab-generated linguist-generated
-packages.lock.json gitlab-generated linguist-generated
-services/platform/openapi/openapi_v2.json gitlab-generated linguist-generated
-libs/python/envcite-proto/src/**/*_pb2*.py gitlab-generated linguist-generated
-libs/python/envcite-proto/src/**/*_pb2*.pyi gitlab-generated linguist-generated
+# 產生物：不計入語言統計。
+uv.lock linguist-generated
+packages.lock.json linguist-generated
+services/platform/openapi/openapi_v2.json linguist-generated
+libs/python/envcite-proto/src/**/*_pb2*.py linguist-generated
+libs/python/envcite-proto/src/**/*_pb2*.pyi linguist-generated
 
 # 二進位：不做換行轉換與文字 diff
 *.png binary

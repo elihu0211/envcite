@@ -1,0 +1,445 @@
+# envcite 的 CI。檢查只在 pull request；推上 main 才依路徑建映像並推到 ghcr.io。
+# 版本變數的 `# renovate:` 註記是 Renovate 的依據。腳本在 ci/，這裡只決定何時跑、傳什麼參數。
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # renovate: datasource=docker depName=docker
+  DOCKER_VERSION: "29.8.1"
+  # renovate: datasource=docker depName=bufbuild/buf
+  BUF_VERSION: "1.75.0"
+  # renovate: datasource=docker depName=tufin/oasdiff
+  OASDIFF_VERSION: "v1.35.0"
+  # renovate: datasource=docker depName=hadolint/hadolint
+  HADOLINT_VERSION: "v2.15.1"
+  # renovate: datasource=docker depName=alpine
+  ALPINE_VERSION: "3.22"
+  # renovate: datasource=docker depName=postgres
+  POSTGRES_MAJOR: "18"
+  # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
+  DOTNET_VERSION: "10.0.403"
+  # renovate: datasource=pypi depName=uv
+  UV_VERSION: "0.12.18"
+  # renovate: datasource=python-version depName=python
+  PYTHON_VERSION: "3.14"
+  # renovate: datasource=docker depName=renovate/renovate
+  RENOVATE_VERSION: "43.272.4"
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+  UV_CACHE_DIR: ${{ github.workspace }}/.uv-cache
+  UV_LINK_MODE: copy
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  NuGetAudit: "false"
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "path-specific jobs below decide what else runs"
+
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      platform: ${{ steps.d.outputs.platform }}
+      consult: ${{ steps.d.outputs.consult }}
+      dotnet: ${{ steps.d.outputs.dotnet }}
+      python: ${{ steps.d.outputs.python }}
+      segmenter: ${{ steps.d.outputs.segmenter }}
+      jobkit: ${{ steps.d.outputs.jobkit }}
+      python_proto: ${{ steps.d.outputs.python_proto }}
+      proto: ${{ steps.d.outputs.proto }}
+      dockerfile: ${{ steps.d.outputs.dockerfile }}
+      openapi: ${{ steps.d.outputs.openapi }}
+      docs: ${{ steps.d.outputs.docs }}
+      renovate: ${{ steps.d.outputs.renovate }}
+      ci_scripts: ${{ steps.d.outputs.ci_scripts }}
+      ontology_image: ${{ steps.d.outputs.ontology_image }}
+      consult_image: ${{ steps.d.outputs.consult_image }}
+      platform_image: ${{ steps.d.outputs.platform_image }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: d
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+          fi
+          sh ci/detect-changes.sh "$base" "${{ github.event_name }}" "$GITHUB_OUTPUT"
+
+  ci-scripts:
+    needs: changes
+    if: needs.changes.outputs.ci_scripts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y jq
+      - run: |
+          sh ci/test-retry-transient.sh
+          sh ci/test-block-main.sh
+          sh ci/test-check-scripts.sh
+          sh ci/test-build-image.sh
+          sh ci/test-restore-dotnet.sh
+          sh ci/test-check-generated.sh
+          sh ci/test-platform-neutral.sh
+
+  docs:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 ci/check-docs.py
+
+  dockerfile:
+    needs: changes
+    if: needs.changes.outputs.dockerfile == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker run --rm -v "$PWD:/work" -w /work \
+            "hadolint/hadolint:${HADOLINT_VERSION}-alpine" \
+            hadolint services/platform/Dockerfile services/consult/Dockerfile services/ontology/Dockerfile
+
+  proto:
+    needs: changes
+    if: needs.changes.outputs.proto == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+          curl -sSL -o /tmp/buf "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-Linux-x86_64"
+          sudo install -m 755 /tmp/buf /usr/local/bin/buf
+          sh ci/check-proto.sh "${{ github.base_ref }}"
+
+  openapi:
+    needs: changes
+    if: needs.changes.outputs.openapi == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+          asset="oasdiff_${OASDIFF_VERSION#v}_linux_amd64.tar.gz"
+          curl -sSL -o /tmp/oasdiff.tgz "https://github.com/tufin/oasdiff/releases/download/${OASDIFF_VERSION}/${asset}"
+          tar -C /tmp -xzf /tmp/oasdiff.tgz
+          sudo install -m 755 /tmp/oasdiff /usr/local/bin/oasdiff
+          allow=
+          if printf '%s\n' '${{ join(github.event.pull_request.labels.*.name, ',') }}' | grep -qx 'api-breaking'; then
+            allow=--allow-breaking
+          fi
+          sh ci/check-openapi.sh $allow "${{ github.base_ref }}" services/platform/openapi/openapi_v2.json
+
+  renovate-config:
+    needs: changes
+    if: needs.changes.outputs.renovate == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker run --rm --entrypoint "" -v "$PWD:/work" -w /work \
+            "renovate/renovate:${RENOVATE_VERSION}" \
+            renovate-config-validator --strict renovate.json
+
+  deps-dotnet:
+    needs: changes
+    if: needs.changes.outputs.dotnet == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+      - run: sh ci/restore-dotnet.sh --nuget-config ci/nuget.org.config
+
+  platform:
+    needs: [changes, deps-dotnet]
+    if: needs.changes.outputs.platform == 'true' && needs.deps-dotnet.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+      - working-directory: services/platform
+        run: |
+          dotnet restore --locked-mode --source "$(mktemp -d)"
+          dotnet build --no-restore
+          sh "$GITHUB_WORKSPACE/ci/check-no-changes.sh" openapi/ "dotnet build"
+          dotnet test --no-build \
+            --coverlet --coverlet-output-format cobertura \
+            --report-xunit-junit --report-xunit-junit-filename EnvCite.Platform.Tests-test-result.xml \
+            --results-directory "$GITHUB_WORKSPACE/artifacts"
+
+  platform-format:
+    needs: [changes, deps-dotnet]
+    if: needs.changes.outputs.platform == 'true' && needs.deps-dotnet.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+      - working-directory: services/platform
+        run: |
+          dotnet restore --locked-mode --source "$(mktemp -d)"
+          dotnet format --verify-no-changes --no-restore
+
+  consult:
+    needs: [changes, deps-dotnet]
+    if: needs.changes.outputs.consult == 'true' && needs.deps-dotnet.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+      - working-directory: services/consult
+        run: |
+          dotnet restore --locked-mode --source "$(mktemp -d)"
+          dotnet build --no-restore
+          dotnet format --verify-no-changes --no-restore
+          dotnet test --no-build \
+            --coverlet --coverlet-output-format cobertura \
+            --report-xunit-junit --report-xunit-junit-filename EnvCite.Consult.Tests-test-result.xml \
+            --results-directory "$GITHUB_WORKSPACE/artifacts"
+
+  deps-python:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .uv-cache
+          key: uv-${{ hashFiles('uv.lock') }}
+      - run: |
+          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: |
+          uv python install "$PYTHON_VERSION"
+          uv sync --locked --all-packages
+          uv cache prune
+
+  ontology:
+    needs: [changes, deps-python]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.python == 'true' && needs.deps-python.result == 'success'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg${{ env.POSTGRES_MAJOR }}
+        env:
+          POSTGRES_DB: envcite_test
+          POSTGRES_USER: envcite
+          POSTGRES_PASSWORD: envcite
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U envcite -d envcite_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      ENVCITE_ONTOLOGY_TEST_DSN: postgresql://envcite:envcite@localhost:5432/envcite_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .uv-cache
+          key: uv-${{ hashFiles('uv.lock') }}
+      - run: |
+          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - working-directory: services/ontology
+        run: |
+          uv sync --locked --all-packages
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+          uv run --no-sync mypy src tests
+          uv run --no-sync pytest --cov --cov-report=term --cov-report=xml
+
+  segmenter:
+    needs: [changes, deps-python]
+    if: needs.changes.outputs.segmenter == 'true' && needs.deps-python.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .uv-cache
+          key: uv-${{ hashFiles('uv.lock') }}
+      - run: |
+          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - working-directory: libs/python/envcite-segmenter
+        run: |
+          uv sync --locked --all-packages
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+          uv run --no-sync mypy src tests
+          uv run --no-sync pytest --cov --cov-report=term --cov-report=xml
+
+  jobkit:
+    needs: [changes, deps-python]
+    if: needs.changes.outputs.jobkit == 'true' && needs.deps-python.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .uv-cache
+          key: uv-${{ hashFiles('uv.lock') }}
+      - run: |
+          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - working-directory: libs/python/envcite-jobkit
+        run: |
+          uv sync --locked --all-packages
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+          uv run --no-sync mypy src tests
+          uv run --no-sync pytest --cov --cov-report=term --cov-report=xml
+
+  python-proto:
+    needs: [changes, deps-python]
+    if: needs.changes.outputs.python_proto == 'true' && needs.deps-python.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .uv-cache
+          key: uv-${{ hashFiles('uv.lock') }}
+      - run: |
+          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - working-directory: libs/python/envcite-proto
+        run: |
+          uv sync --locked --all-packages
+          sh "$GITHUB_WORKSPACE/ci/check-regenerated.sh" src ./scripts/generate.sh
+          uv run --no-sync mypy src
+
+  ontology-image:
+    needs: [changes, deps-python]
+    if: needs.changes.outputs.ontology_image == 'true' && needs.deps-python.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .uv-cache
+          key: uv-${{ hashFiles('uv.lock') }}
+      - name: build
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          scope=$(printf '%s' "$GITHUB_REF_NAME" | tr '/' '-')
+          push=
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then push=--push; fi
+          sh ci/build-image.sh $push --public-registries \
+            --service ontology \
+            --image "ghcr.io/${GITHUB_REPOSITORY}/ontology:${GITHUB_SHA}" \
+            --cache "ghcr.io/${GITHUB_REPOSITORY}/cache/ontology" \
+            --cache-scope "$scope" --cache-fallback-scope main \
+            --registry ghcr.io --registry-user "$GITHUB_ACTOR" \
+            -- --build-context uv-cache=.uv-cache \
+            --build-arg UV_VERSION="$UV_VERSION" \
+            --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
+            --build-arg DOTNET_VERSION="$DOTNET_VERSION"
+
+  consult-image:
+    needs: [changes, deps-dotnet]
+    if: needs.changes.outputs.consult_image == 'true' && needs.deps-dotnet.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+      - name: build
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          scope=$(printf '%s' "$GITHUB_REF_NAME" | tr '/' '-')
+          push=
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then push=--push; fi
+          sh ci/build-image.sh $push --public-registries \
+            --service consult \
+            --image "ghcr.io/${GITHUB_REPOSITORY}/consult:${GITHUB_SHA}" \
+            --cache "ghcr.io/${GITHUB_REPOSITORY}/cache/consult" \
+            --cache-scope "$scope" --cache-fallback-scope main \
+            --registry ghcr.io --registry-user "$GITHUB_ACTOR" \
+            -- --build-context nuget=.nuget/packages \
+            --build-arg UV_VERSION="$UV_VERSION" \
+            --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
+            --build-arg DOTNET_VERSION="$DOTNET_VERSION"
+
+  platform-image:
+    needs: [changes, deps-dotnet]
+    if: needs.changes.outputs.platform_image == 'true' && needs.deps-dotnet.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+      - name: build
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          scope=$(printf '%s' "$GITHUB_REF_NAME" | tr '/' '-')
+          push=
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then push=--push; fi
+          sh ci/build-image.sh $push --public-registries \
+            --service platform \
+            --image "ghcr.io/${GITHUB_REPOSITORY}/platform:${GITHUB_SHA}" \
+            --cache "ghcr.io/${GITHUB_REPOSITORY}/cache/platform" \
+            --cache-scope "$scope" --cache-fallback-scope main \
+            --registry ghcr.io --registry-user "$GITHUB_ACTOR" \
+            -- --build-context nuget=.nuget/packages \
+            --build-arg UV_VERSION="$UV_VERSION" \
+            --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
+            --build-arg DOTNET_VERSION="$DOTNET_VERSION"

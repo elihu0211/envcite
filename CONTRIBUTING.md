@@ -15,9 +15,9 @@ owns: [dev-seed-accounts, shared-dev-db]
 | Git | — | |
 | [Worktrunk](https://worktrunk.dev)（`wt`） | — | 分支與本機環境（設定在 `.config/wt.toml`） |
 | Docker | — | 測試（Testcontainers）、映像建置；可用來起開發用資料庫 |
-| PostgreSQL | `.gitlab-ci.yml` 的 `POSTGRES_MAJOR`（與正式區同主版本） | 開發用資料庫 |
+| PostgreSQL | `.github/workflows/ci.yml` 的 `POSTGRES_MAJOR`（與正式區同主版本） | 開發用資料庫 |
 | .NET SDK | [`global.json`](global.json) | [platform](services/platform/README.md)、[consult](services/consult/README.md)、[`libs/dotnet/`](libs/dotnet/README.md) |
-| [uv](https://docs.astral.sh/uv/) | `.gitlab-ci.yml` 的 `UV_VERSION` | Python workspace（[ontology](services/ontology/README.md)、[`libs/python/`](libs/python/AGENTS.md)）；Python 版本見 `.python-version`，由 uv 自動安裝 |
+| [uv](https://docs.astral.sh/uv/) | `.github/workflows/ci.yml` 的 `UV_VERSION` | Python workspace（[ontology](services/ontology/README.md)、[`libs/python/`](libs/python/AGENTS.md)）；Python 版本見 `.python-version`，由 uv 自動安裝 |
 | Node.js | — | 以 `npx` 執行 buf |
 
 ## 快速入門
@@ -128,7 +128,7 @@ wt platform   # 同一個終端機啟動，才讀得到上面的環境變數
 
 - **改契約**：規則見 [`AGENTS.md`](AGENTS.md) 的 Contract。
 
-CI 依改動路徑分流，job 與路徑對應以 `.gitlab-ci.yml` 的 `rules:changes` 為準。分流的原則：
+CI 依改動路徑分流，job 與路徑對應以 `ci/detect-changes.sh` 為準。分流的原則：
 
 | 改動 | 跑什麼 |
 |------|--------|
@@ -145,7 +145,7 @@ CI 依改動路徑分流，job 與路徑對應以 `.gitlab-ci.yml` 的 `rules:ch
 
 ## 升級版本
 
-依賴集中在單一檔案，由 Renovate（`renovate.json`）提 MR 更新；`.gitlab-ci.yml` 的 `variables:` 上方的 `# renovate:` 註記是它辨識版本的依據，新增版本變數時一併加上（Dockerfile 的 `ARG` 由 Renovate 內建的 Dockerfile 解析讀取，不需註記）。手動升級時，表中各位置在同一次提交一起改。
+依賴集中在單一檔案，由 Renovate（`renovate.json`）提 pull request 更新；`.github/workflows/ci.yml` 的 `env:` 上方的 `# renovate:` 註記是它辨識版本的依據，新增版本變數時一併加上（Dockerfile 的 `ARG` 由 Renovate 內建的 Dockerfile 解析讀取，不需註記）。手動升級時，表中各位置在同一次提交一起改。
 
 Renovate 由外部排程集中執行，本倉庫不放令牌也不跑 job。同一工具出現在多處者（python、uv、.NET SDK 與映像）已設為同一個 MR。**不自動合併**：合併進 `main` 會建置映像並自動上線，依賴更新須先看過 MR。
 
@@ -153,12 +153,12 @@ Renovate 由外部排程集中執行，本倉庫不放令牌也不跑 job。同�
 |------|------|
 | Python 套件 | 倉庫根 `uv lock --upgrade`（或 `--upgrade-package <pkg>`）；升 `grpcio-tools`、`mypy-protobuf`、`protobuf` 時重新產生 `libs/python/envcite-proto` |
 | .NET 套件 | 倉庫根 `Directory.Packages.props` |
-| .NET SDK 與映像 | `services/{platform,consult}/Dockerfile`、`.gitlab-ci.yml` 的 `DOTNET_VERSION`（`global.json` 的 `sdk.version` 只是下限，Renovate 不動它）；SDK 的 patch 決定隱含套件 `Microsoft.AspNetCore.App.Internal.Assets` 的版本，升級時以新 SDK 執行 `dotnet restore --force-evaluate` 一併更新 `packages.lock.json`，否則 CI 的 `--locked-mode` 失敗；本機 SDK 與 `DOTNET_VERSION` 同版，restore 才不會改動 lock 檔 |
-| Python | `.python-version`、`.gitlab-ci.yml` 的 `PYTHON_VERSION`、`services/ontology/Dockerfile` 的 `ARG PYTHON_VERSION` |
-| uv | `.gitlab-ci.yml` 的 `UV_VERSION`、`services/ontology/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
-| PostgreSQL | `.gitlab-ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/ontology/tools/holdout.py`、`services/platform/tests/…/PlatformFactory.cs`；主版本與正式區相同。ontology 要 pgvector，用 `pgvector/pgvector:pg<主版本>` |
-| buf | `.gitlab-ci.yml` 的 `BUF_VERSION` |
-| oasdiff | `.gitlab-ci.yml` 的 `OASDIFF_VERSION` |
-| Docker（映像建置） | `.gitlab-ci.yml` 的 `DOCKER_VERSION` |
+| .NET SDK 與映像 | `services/{platform,consult}/Dockerfile`、`.github/workflows/ci.yml` 的 `DOTNET_VERSION`（`global.json` 的 `sdk.version` 只是下限，Renovate 不動它）；SDK 的 patch 決定隱含套件 `Microsoft.AspNetCore.App.Internal.Assets` 的版本，升級時以新 SDK 執行 `dotnet restore --force-evaluate` 一併更新 `packages.lock.json`，否則 CI 的 `--locked-mode` 失敗；本機 SDK 與 `DOTNET_VERSION` 同版，restore 才不會改動 lock 檔 |
+| Python | `.python-version`、`.github/workflows/ci.yml` 的 `PYTHON_VERSION`、`services/ontology/Dockerfile` 的 `ARG PYTHON_VERSION` |
+| uv | `.github/workflows/ci.yml` 的 `UV_VERSION`、`services/ontology/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 |
+| PostgreSQL | `.github/workflows/ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/ontology/tools/holdout.py`、`services/platform/tests/…/PlatformFactory.cs`；主版本與正式區相同。ontology 要 pgvector，用 `pgvector/pgvector:pg<主版本>` |
+| buf | `.github/workflows/ci.yml` 的 `BUF_VERSION` |
+| oasdiff | `.github/workflows/ci.yml` 的 `OASDIFF_VERSION` |
+| Docker（映像建置） | `.github/workflows/ci.yml` 的 `DOCKER_VERSION` |
 | 後台字型（Inter、Noto Sans TC） | `services/platform/scripts/vendor-fonts.sh` 的 `INTER_VERSION`、`NOTO_VERSION`；改版本後從 `services/platform` 執行該腳本，與重新產生的 `wwwroot/fonts/` 一起提交。Renovate 不追蹤 |
-| hadolint | `.gitlab-ci.yml` 的 `HADOLINT_VERSION` |
+| hadolint | `.github/workflows/ci.yml` 的 `HADOLINT_VERSION` |

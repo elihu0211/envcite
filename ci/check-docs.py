@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """檢查文件 front-matter、相對連結與錨點；規範見容器層 AGENTS.md「知識文件」。
 
-每份知識文件都要有 front-matter；AGENTS.md、CLAUDE.md、DESIGN.md、skill、MR 範本與評估紀錄不是知識節點，
-不檢查 front-matter，連結照樣檢查。錨點依 GitLab 產生標題 id 的規則比對。只用標準庫。
+每份知識文件都要有 front-matter；AGENTS.md、CLAUDE.md、DESIGN.md、skill、pull request 範本與評估紀錄不是知識節點，
+不檢查 front-matter，連結照樣檢查。錨點比對標題 id（小寫、刪標點、空白轉連字號）。只用標準庫。
 """
 
 import re
@@ -18,7 +18,7 @@ FENCE = re.compile(r"^\s*(```|~~~)")
 # 產生物與相依套件目錄，連同 worktree、快取等點開頭目錄一併略過。
 SKIP_DIRS = {"node_modules", "bin", "obj", "__pycache__"}
 NOT_NODES = {"AGENTS.md", "CLAUDE.md", "DESIGN.md", "SKILL.md"}
-NOT_NODE_DIRS = (".gitlab/", "services/ontology/eval/")
+NOT_NODE_DIRS = ("services/ontology/eval/",)
 
 
 def split_front_matter(text):
@@ -65,14 +65,14 @@ def links(body):
 
 
 def slug(heading):
-    """GitLab 的標題 id：小寫、刪除標點（含全形空白），半形空白轉連字號，連續連字號併為一個。"""
+    """標題 id：小寫、刪除標點（含全形空白），半形空白轉連字號，連續連字號併為一個。"""
     text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading).replace("`", "").lower()
     text = re.sub(r"[^\w\- ]", "", text.strip())
     return re.sub(r"-+", "-", text.replace(" ", "-"))
 
 
 def anchors(body):
-    """文件的所有標題 id；重複的標題依 GitLab 加 -1、-2。"""
+    """文件的所有標題 id；重複的標題加 -1、-2。"""
     seen = {}
     for line in outside_fences(body):
         m = HEADING.match(line)
@@ -129,7 +129,7 @@ def check_links(path, rel, body, ids):
 
 
 def skipped(parts):
-    kept_dot_dirs = {".agents", ".gitlab"}
+    kept_dot_dirs = {".agents"}
     return any((x.startswith(".") and x not in kept_dot_dirs) or x in SKIP_DIRS for x in parts)
 
 

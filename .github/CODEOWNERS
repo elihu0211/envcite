@@ -1,4 +1,4 @@
-# 擁有者是 GitHub 登入名稱。GitLab 的 .gitlab/CODEOWNERS 寫的是 GitLab 帳號，兩個字串對不到同一個人就不會點名。
+# 擁有者是 GitHub 登入名稱。
 
 [Contract]
 /proto/ @elihu0211
@@ -6,7 +6,6 @@
 
 [CI and agent config]
 /.github/ @elihu0211
-/.gitlab-ci.yml @elihu0211
 /AGENTS.md @elihu0211
 /.agents/ @elihu0211
 /.claude/ @elihu0211

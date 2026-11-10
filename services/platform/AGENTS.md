@@ -156,4 +156,4 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 ## Done when
 
-- `dotnet build` 與 `dotnet test` 通過，`dotnet format --verify-no-changes` 乾淨——由 `.gitlab-ci.yml` 強制（Testcontainers 用 Docker-in-Docker）。
+- `dotnet build` 與 `dotnet test` 通過，`dotnet format --verify-no-changes` 乾淨——由 `.github/workflows/ci.yml` 強制（Testcontainers 用 runner 上的 Docker）。

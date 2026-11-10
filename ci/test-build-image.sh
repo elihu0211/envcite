@@ -170,7 +170,7 @@ check_transcript() { # 名稱 預期的呼叫記錄檔
 check_failure() { # 名稱 預期結束碼 輸出須含 預期次數
   want_rc=$2 want_out=$3 want_calls=$4
   got_calls="$(calls_of login) $(calls_of create) $(calls_of build)"
-  if [ "$rc" != "$want_rc" ]; then bad "$1：結束碼 $rc（預期 $want_rc）" "$(cat "$tmp/out")"
+  if [ "$rc" != "$want_rc" ]; then bad "$1：結束碼 ${rc}（預期 ${want_rc}）" "$(cat "$tmp/out")"
   elif [ -n "$want_out" ] && ! grep -qF -e "$want_out" "$tmp/out"; then bad "$1：輸出沒有「$want_out」" "$(cat "$tmp/out")"
   elif [ "$got_calls" != "$want_calls" ]; then bad "$1：login／create／build 呼叫次數 $got_calls（預期 $want_calls）"
   else ok "$1"
@@ -241,5 +241,19 @@ pw=
 run --push
 check_failure '沒有密碼 → 結束碼 2、不登入' 2 'REGISTRY_PASSWORD' '0 0 0'
 pw=$secret
+
+# 公開 registry：不需要 host.docker.internal，也不覆寫 Dockerfile 的基底位址。
+hosts=$tmp/hosts-without-host
+run --public-registries
+hosts=$tmp/hosts
+if [ "$rc" != 0 ]; then
+  bad '公開 registry：結束碼 '"$rc" "$(cat "$tmp/out")"
+elif grep -q 'DOCKER_HUB=' "$CALLS" || grep -q 'host.docker.internal' "$CALLS"; then
+  bad '公開 registry：仍指向 pull-through 快取' "$(cat "$CALLS")"
+elif ! grep -q 'docker-container' "$CALLS"; then
+  bad '公開 registry：沒有建立 buildx builder'
+else
+  ok '公開 registry：不使用 runner 的 pull-through 快取'
+fi
 
 exit $fail

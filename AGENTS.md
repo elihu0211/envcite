@@ -8,7 +8,7 @@
 
 ## 單一倉庫，獨立部署
 
-每個 `services/*` 是各自獨立部署的服務；各用原生工具（`dotnet`、`uv`），CI 分流靠 GitLab 的 `rules:changes`，不引入 Bazel／Pants／Nx。
+每個 `services/*` 是各自獨立部署的服務；各用原生工具（`dotnet`、`uv`），CI 分流靠 `ci/detect-changes.sh` 的路徑，不引入 Bazel／Pants／Nx。
 
 ## Commands
 
@@ -27,7 +27,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> lint
 DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#branch=main'
 ```
 
-`<BUF_VERSION>` 取 `.gitlab-ci.yml` 的 `BUF_VERSION`。
+`<BUF_VERSION>` 取 `.github/workflows/ci.yml` 的 `BUF_VERSION`。
 
 ### 平行 worktree
 
@@ -46,7 +46,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 | 部署清單 | 部署庫，**不在本倉庫** | 部署規則（含清單與程式碼一起改時的順序）見容器層 `core-env-saas/AGENTS.md` |
 
 - **契約維持單一 buf 模組**（模組根是 `proto/`，import 路徑為 `envcite/<service>/v1/...`），除非某領域需要獨立發佈到 schema registry。
-- **新增服務時 CI 要改**：job、`rules:changes` 錨點與 `proto` 觸發路徑；要部署的服務再加映像建置 job。`.gitlab-ci.yml` 維持單檔，超過三到四個服務才改用子管線。
+- **新增服務時 CI 要改**：`.github/workflows/ci.yml` 的 job、`ci/detect-changes.sh` 的路徑與 `proto` 觸發；要部署的服務再加映像 job。workflow 維持單檔，超過三到四個服務才拆檔。
 - **標籤用 `<service>/vX.Y.Z`**，不用倉庫層單一版本號。
 
 ## Contract
@@ -63,7 +63,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 - **知識文件的組織**（概念節點、任務入口、front-matter）以容器層為準，見 `core-env-saas/AGENTS.md` 的「知識文件」；本檔不重述。文件 front-matter 與相對連結由 `ci/check-docs.py` 在 CI 檢查，本機從倉庫根 `python3 ci/check-docs.py`。
 - **文件只寫不會過時的**：規範、不變式、契約（端點、欄位、設定鍵、格式；寫在擁有該概念的 README）與指向真值的指標。版本、清單、預設值、事件名稱、日期、「目前／尚未」這類現況，以程式碼與測試為準，不寫進文件；決策論據寫在 MR 說明，不寫進 `AGENTS.md`（作業規範寫進論據必然過期）。
 - **可觀測性各服務同一約定**：只認標準 `OTEL_*` 鍵，沒設 `OTEL_EXPORTER_OTLP_ENDPOINT` 就不匯出；指標標籤只用有限集合，租戶與請求內容不進指標。RED 指標的兩側對照見 `proto/README.md`。
-- **CI 的邏輯在 `ci/` 腳本，`.gitlab-ci.yml` 只決定何時跑、傳什麼參數**：腳本不讀 `CI_*` 等平台變數（`ci/test-platform-neutral.sh` 擋），平台資訊由 job 轉成參數，所以同一支腳本在本機與 CI 以同一指令執行，換 CI 平台只重寫觸發層。新增會被 job 呼叫的腳本，同時補 `ci/test-*.sh` 的離線測試。
+- **CI 的邏輯在 `ci/` 腳本，`.github/workflows/ci.yml` 只決定何時跑、傳什麼參數**：腳本不讀 `CI_*` 等平台變數（`ci/test-platform-neutral.sh` 擋），平台資訊由 job 轉成參數，所以同一支腳本在本機與 CI 以同一指令執行。新增會被 job 呼叫的腳本，同時補 `ci/test-*.sh` 的離線測試。
 - **配置檔與腳本的註解**：繁體中文，只寫「為什麼」與前提，不寫程式本身已說明的「做什麼」，不寫日期與事件經過；不用裝飾分隔線；JSON 沒有註解，用 `description` 欄位。
 - 新增或搬動目錄、服務時，同一次提交更新根 `README.md` 的目錄表與各 `AGENTS.md` 的索引。
 - 本檔保持簡短；長流程 → `.agents/skills/<name>/SKILL.md`。各服務的 `AGENTS.md` 只寫該服務獨有的，倉庫層規範以本檔為準、不重複。
@@ -95,4 +95,4 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 
 ## Done when
 
-受影響服務的 lint／typecheck／test 與 `buf lint` 通過——由 `.gitlab-ci.yml` 依路徑分流強制。
+受影響服務的 lint／typecheck／test 與 `buf lint` 通過——由 `.github/workflows/ci.yml` 依路徑分流強制。
