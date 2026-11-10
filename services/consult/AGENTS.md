@@ -12,7 +12,11 @@
 ## 管線形狀（本服務存在的理由）
 
 ```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
+---
+config:
+  flowchart:
+    curve: basis
+---
 flowchart LR
     subgraph here["consult（本服務）"]
         direction LR

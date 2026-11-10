@@ -47,7 +47,11 @@ base_url = "https://…/v1"
 每個端點都要有金鑰，缺則載入失敗。
 
 ```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
+---
+config:
+  flowchart:
+    curve: basis
+---
 flowchart TB
     key["上表的金鑰名"] --> env["1 同名環境變數"]
     env --> ring["2 鑰匙圈裡 service 同名的通用密碼"]

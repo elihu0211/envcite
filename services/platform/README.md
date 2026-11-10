@@ -36,7 +36,11 @@ owns: [operator-accounts, reasoning-rest, corpus-scope]
 ## 一次 `/v2` 請求
 
 ```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
+---
+config:
+  flowchart:
+    curve: basis
+---
 flowchart LR
     req(["用戶端<br/>Bearer API key"]) --> auth{"驗證 API key<br/>解析租戶"}
     auth -->|失敗| e401(["401"])
