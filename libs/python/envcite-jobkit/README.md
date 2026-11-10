@@ -1,8 +1,8 @@
----
+<!--
 type: reference
 applies-to: all
 owns: [jobkit-policy, jobkit-exit-codes]
----
+-->
 
 # envcite-jobkit
 

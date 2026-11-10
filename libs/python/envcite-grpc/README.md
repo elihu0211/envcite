@@ -1,8 +1,8 @@
----
+<!--
 type: reference
 applies-to: all
 owns: [grpc-connection-options]
----
+-->
 
 # envcite-grpc
 

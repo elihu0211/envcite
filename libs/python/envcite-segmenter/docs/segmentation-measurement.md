@@ -1,8 +1,8 @@
----
+<!--
 type: explanation
 applies-to: all
 owns: [segmenter-selection]
----
+-->
 
 # 分詞器選型的量測方法
 

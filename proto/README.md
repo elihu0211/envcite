@@ -1,8 +1,8 @@
----
+<!--
 type: reference
 applies-to: all
 owns: [service-composition, grpc-metadata, as-of-semantics, grpc-error-reasons, red-metrics, caller-grounding, reasoning-api]
----
+-->
 
 # envcite API
 

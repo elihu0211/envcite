@@ -60,7 +60,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 ## Conventions
 
 - 人讀文件 → `README.md`（每個目錄一份，總覽在根；本機開發環境在 `CONTRIBUTING.md`）；agent 作業 → 本檔與 skills。
-- **知識文件的組織**（概念節點、任務入口、front-matter）以容器層為準，見 `core-env-saas/AGENTS.md` 的「知識文件」；本檔不重述。文件 front-matter 與相對連結由 `ci/check-docs.py` 在 CI 檢查，本機從倉庫根 `python3 ci/check-docs.py`。
+- **知識文件的組織**（概念節點、任務入口、front-matter）以容器層為準，見 `core-env-saas/AGENTS.md` 的「知識文件」；本檔不重述。文件 front-matter 與相對連結由 `ci/check-docs.py` 在 CI 檢查，本機從倉庫根 `python3 ci/check-docs.py`。front-matter 放在檔首的 HTML 註解裡，否則 GitHub 會把檔首畫成表格。
 - **文件只寫不會過時的**：規範、不變式、契約（端點、欄位、設定鍵、格式；寫在擁有該概念的 README）與指向真值的指標。版本、清單、預設值、事件名稱、日期、「目前／尚未」這類現況，以程式碼與測試為準，不寫進文件；決策論據寫在 pull request 說明，不寫進 `AGENTS.md`（作業規範寫進論據必然過期）。
 - **可觀測性各服務同一約定**：只認標準 `OTEL_*` 鍵，沒設 `OTEL_EXPORTER_OTLP_ENDPOINT` 就不匯出；指標標籤只用有限集合，租戶與請求內容不進指標。RED 指標的兩側對照見 `proto/README.md`。
 - **CI 的邏輯在 `ci/` 腳本，`.github/workflows/ci.yml` 只決定何時跑、傳什麼參數**：腳本不讀 `CI_*` 等平台變數（`ci/test-platform-neutral.sh` 擋），平台資訊由 job 轉成參數，所以同一支腳本在本機與 CI 以同一指令執行。新增會被 job 呼叫的腳本，同時補 `ci/test-*.sh` 的離線測試。

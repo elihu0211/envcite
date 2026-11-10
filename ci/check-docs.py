@@ -21,25 +21,41 @@ NOT_NODES = {"AGENTS.md", "CLAUDE.md", "DESIGN.md", "SKILL.md"}
 NOT_NODE_DIRS = ("services/ontology/eval/",)
 
 
+def parse_meta_lines(lines):
+    """`owns` 支援行內清單與多行清單。"""
+    meta, key = {}, None
+    for line in lines:
+        item = re.match(r"^\s+-\s+(.+?)\s*$", line)
+        if item and key:
+            meta[key] = (meta[key] + "," if meta[key] else "") + item.group(1)
+            continue
+        m = re.match(r"^([A-Za-z][\w-]*)\s*:\s*(.*?)\s*(?:#.*)?$", line)
+        if m:
+            key = m.group(1)
+            meta[key] = m.group(2)
+    return meta
+
+
 def split_front_matter(text):
-    """回傳 (鍵值 dict 或 None, 內文)；`owns` 支援行內清單與多行清單。"""
+    """回傳 (鍵值 dict 或 None, 內文, 是否包在 HTML 註解)。
+
+    GitHub 把檔首以 `---` 包住的 YAML 畫成表格。知識文件改放在 HTML 註解裡，
+    註解內不能出現 `--`（會提前結束註解），所以不再用 `---` 當圍欄。
+    """
     lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None, text
+    if not lines:
+        return None, text, False
+    if lines[0].strip() == "<!--":
+        for i in range(1, len(lines)):
+            if lines[i].strip() == "-->":
+                return parse_meta_lines(lines[1:i]), "\n".join(lines[i + 1 :]), True
+        return None, text, False
+    if lines[0].strip() != "---":
+        return None, text, False
     for i in range(1, len(lines)):
         if lines[i].strip() == "---":
-            meta, key = {}, None
-            for line in lines[1:i]:
-                item = re.match(r"^\s+-\s+(.+?)\s*$", line)
-                if item and key:
-                    meta[key] = (meta[key] + "," if meta[key] else "") + item.group(1)
-                    continue
-                m = re.match(r"^([A-Za-z][\w-]*)\s*:\s*(.*?)\s*(?:#.*)?$", line)
-                if m:
-                    key = m.group(1)
-                    meta[key] = m.group(2)
-            return meta, "\n".join(lines[i + 1 :])
-    return None, text
+            return parse_meta_lines(lines[1:i]), "\n".join(lines[i + 1 :]), False
+    return None, text, False
 
 
 def parse_list(value):
@@ -85,10 +101,12 @@ def anchors(body):
     return set(seen)
 
 
-def check_front_matter(rel, meta, owners):
+def check_front_matter(rel, meta, owners, commented):
     errors = []
     if meta is None:
         return [f"{rel}: 缺少 front-matter（type、applies-to、owns）"]
+    if not commented:
+        errors.append(f"{rel}: front-matter 須包在檔首的 HTML 註解裡，否則 GitHub 會畫成表格")
     doc_type = meta.get("type")
     applies_to = meta.get("applies-to")
     types, applies = "／".join(sorted(TYPES)), "／".join(sorted(APPLIES_TO))
@@ -147,9 +165,12 @@ def main():
     errors, owners, ids = [], {}, {}
     for rel in files:
         path = root / rel
-        meta, body = split_front_matter(path.read_text(encoding="utf-8"))
+        text = path.read_text(encoding="utf-8")
+        meta, body, commented = split_front_matter(text)
         if is_node(rel):
-            errors += check_front_matter(rel, meta, owners)
+            errors += check_front_matter(rel, meta, owners, commented)
+            if commented and "--" in text.split("-->", 1)[0].split("<!--", 1)[-1]:
+                errors.append(f"{rel}: front-matter 註解內不能有 --，否則 GitHub 會提前結束註解")
         errors += check_links(path, rel, body, ids)
     for e in errors:
         print(e, file=sys.stderr)

@@ -1,8 +1,8 @@
----
+<!--
 type: reference
 applies-to: all
 owns: [operator-accounts, reasoning-rest, corpus-scope]
----
+-->
 
 # envcite-platform
 
