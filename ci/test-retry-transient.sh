@@ -15,8 +15,8 @@ cat > "$tmp/fake" <<'FAKE'
 n=$(cat "$CALLS" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$CALLS"
 case "$FAKE_MODE" in
   ok)        echo "built"; exit 0 ;;
-  login)     echo 'Error response from daemon: Get "https://registry.gitlab.com/v2/": context deadline exceeded' >&2; exit 1 ;;
-  clienttmo) echo 'Error response from daemon: Get "https://registry.gitlab.com/v2/": net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)' >&2; exit 1 ;;
+  login)     echo 'Error response from daemon: Get "https://ghcr.io/v2/": context deadline exceeded' >&2; exit 1 ;;
+  clienttmo) echo 'Error response from daemon: Get "https://ghcr.io/v2/": net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)' >&2; exit 1 ;;
   cdn)       echo 'ERROR: failed to build: failed to solve: failed to copy: httpReadSeeker: failed open: failed to do request: Get "https://production.cloudfront.docker.com/x": dial tcp 3.169.55.17:443: i/o timeout' >&2; exit 1 ;;
   ghcr)      echo '#2 ERROR: failed to authorize: failed to fetch anonymous token: Get "https://ghcr.io/token": dial tcp 140.82.113.33:443: i/o timeout' >&2; exit 1 ;;
   http503)   echo 'ERROR: failed to solve: received unexpected HTTP status: 503 Service Unavailable' >&2; exit 1 ;;

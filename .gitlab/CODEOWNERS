@@ -1,9 +1,0 @@
-[Contract]
-/proto/ @elihu
-/libs/python/envcite-proto/ @elihu
-
-[CI and agent config]
-/.gitlab-ci.yml @elihu
-/AGENTS.md @elihu
-/.agents/ @elihu
-/.claude/ @elihu

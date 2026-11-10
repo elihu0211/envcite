@@ -1,11 +1,14 @@
 #!/bin/sh
 # 映像建置：登入 registry、建立 buildx builder、建置；加 --push 才推送，否則只驗證建置。
 #
-# 用法：REGISTRY_PASSWORD=… sh ci/build-image.sh [--push] \
+# 用法：REGISTRY_PASSWORD=… sh ci/build-image.sh [--push] [--public-registries] \
 #         --service <服務名> --image <映像完整參照> --cache <層快取參照> \
 #         --cache-scope <本分支的快取範圍> --cache-fallback-scope <後備的快取範圍> \
 #         --registry <registry 位址> --registry-user <帳號> \
 #         [-- <docker buildx build 的額外參數…>]
+#
+# --public-registries：基底映像走 Dockerfile 的預設 registry（本機與 GitHub-hosted runner）。
+# 不加這個旗標時，基底映像只走 runner 主機的 pull-through 快取，沒有就失敗。
 #
 # 推不推送是呼叫端的政策（例如只有預設分支推送），腳本不判斷。`--` 之後原樣交給 docker buildx
 # build：build-context、build-arg 隨服務與版本而變，由呼叫端決定，腳本不認得 Dockerfile 的內容。
@@ -27,15 +30,16 @@ port_ghcr=5002       # ghcr.io
 port_mcr=5004        # mcr.microsoft.com
 
 usage() {
-  echo "用法：REGISTRY_PASSWORD=… build-image.sh [--push] --service <服務名> --image <映像參照> --cache <快取參照> --cache-scope <範圍> --cache-fallback-scope <範圍> --registry <位址> --registry-user <帳號> [-- buildx 額外參數…]" >&2
+  echo "用法：REGISTRY_PASSWORD=… build-image.sh [--push] [--public-registries] --service <服務名> --image <映像參照> --cache <快取參照> --cache-scope <範圍> --cache-fallback-scope <範圍> --registry <位址> --registry-user <帳號> [-- buildx 額外參數…]" >&2
   exit 2
 }
 needs_value() { [ "$2" -ge 2 ] || { echo "$1 需要一個值" >&2; usage; }; }
 
-push=0 service='' image='' cache='' scope='' fallback='' registry='' registry_user=''
+push=0 public=0 service='' image='' cache='' scope='' fallback='' registry='' registry_user=''
 while [ "$#" -gt 0 ]; do
   case $1 in
     --push) push=1; shift ;;
+    --public-registries) public=1; shift ;;
     --service) needs_value "$1" "$#"; service=$2; shift 2 ;;
     --image) needs_value "$1" "$#"; image=$2; shift 2 ;;
     --cache) needs_value "$1" "$#"; cache=$2; shift 2 ;;
@@ -55,23 +59,22 @@ done
 sh "$here/retry-transient.sh" sh -c \
   'printf "%s\n" "$REGISTRY_PASSWORD" | docker login -u "$1" --password-stdin "$2"' sh "$registry_user" "$registry"
 
-# 位址取 host.docker.internal 的解析值：buildkit 在 host 網路裡看不到 job 容器的 /etc/hosts，
-# 所以不能把名稱交給它解析。
-mirror_host=$(awk '/host\.docker\.internal/ {print $1; exit}' "${HOSTS_FILE:-/etc/hosts}")
-[ -n "$mirror_host" ] || { echo "解析不到 host.docker.internal，無法使用 runner 主機的 registry 快取" >&2; exit 1; }
+if [ "$public" = 1 ]; then
+  docker buildx create --use --driver docker-container
+else
+  mirror_host=$(awk '/host\.docker.internal/ {print $1; exit}' "${HOSTS_FILE:-/etc/hosts}")
+  [ -n "$mirror_host" ] || { echo "解析不到 host.docker.internal，無法使用 runner 主機的 registry 快取" >&2; exit 1; }
 
-# buildkitd 的設定只用來放行上面幾個 http 位址。buildx 在 create 時就讀進設定，之後不再需要這個檔。
-config=$(mktemp)
-trap 'rm -f "$config"' EXIT
-for port in "$port_docker_hub" "$port_ghcr" "$port_mcr"; do
-  printf '[registry."%s:%s"]\n  http = true\n  insecure = true\n' "$mirror_host" "$port"
-done > "$config"
+  config=$(mktemp)
+  trap 'rm -f "$config"' EXIT
+  for port in "$port_docker_hub" "$port_ghcr" "$port_mcr"; do
+    printf '[registry."%s:%s"]\n  http = true\n  insecure = true\n' "$mirror_host" "$port"
+  done > "$config"
 
-# 匯出 registry 快取需要 docker-container driver，並用 host 網路：job 容器 MTU 1360、dind 橋接網路
-# 1500，大封包被靜默丟棄（症狀：`dotnet restore` 連 api.nuget.org 逾時）。
-docker buildx create --use --driver docker-container \
-  --driver-opt "network=host,image=$mirror_host:$port_docker_hub/moby/buildkit:buildx-stable-1" \
-  --buildkitd-flags '--oci-worker-net=host' --buildkitd-config "$config"
+  docker buildx create --use --driver docker-container \
+    --driver-opt "network=host,image=$mirror_host:$port_docker_hub/moby/buildkit:buildx-stable-1" \
+    --buildkitd-flags '--oci-worker-net=host' --buildkitd-config "$config"
+fi
 
 if [ "$push" = 1 ]; then
   set -- --push "$@"
@@ -80,12 +83,15 @@ else
   set -- --output type=cacheonly "$@"
 fi
 
-# 只對暫時性逾時（拉基底層、ghcr token、推送）重試，建置失敗照舊立刻失敗；重試時層快取已在 registry。
-# 各 Dockerfile 只用部分 build-arg，多餘的只會警告。
+# 只對暫時性逾時（拉基底層、registry token、推送）重試，建置失敗照舊立刻失敗；重試時層快取已在 registry。
+# 各 Dockerfile 只用部分 build-arg，多餘的只會警告。公開 registry 不覆寫 Dockerfile 的預設基底位址。
+mirror_args=
+if [ "$public" != 1 ]; then
+  mirror_args="--build-arg DOCKER_HUB=$mirror_host:$port_docker_hub --build-arg GHCR=$mirror_host:$port_ghcr --build-arg MCR=$mirror_host:$port_mcr"
+fi
+# shellcheck disable=SC2086
 sh "$here/retry-transient.sh" docker buildx build -f "services/$service/Dockerfile" "$@" \
-  --build-arg DOCKER_HUB="$mirror_host:$port_docker_hub" \
-  --build-arg GHCR="$mirror_host:$port_ghcr" \
-  --build-arg MCR="$mirror_host:$port_mcr" \
+  $mirror_args \
   --cache-from "type=registry,ref=$cache:$scope" \
   --cache-from "type=registry,ref=$cache:$fallback" \
   --cache-to "type=registry,ref=$cache:$scope,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true" \

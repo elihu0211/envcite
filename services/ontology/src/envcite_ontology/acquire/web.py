@@ -18,7 +18,7 @@ from typing import Any, cast
 
 from envcite_jobkit import EndpointError, ItemError, raise_for_status
 
-USER_AGENT = "envcite-ontology (+https://gitlab.com/thuaisse-lab/envcite)"
+USER_AGENT = "envcite-ontology (+https://github.com/elihu0211/envcite)"
 
 
 class Http:

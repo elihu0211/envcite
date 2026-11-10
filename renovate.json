@@ -37,7 +37,7 @@
       "description": "`# renovate: datasource=… depName=…` 註記之後的變數或 ARG",
       "customType": "regex",
       "managerFilePatterns": [
-        "/(^|/)\\.gitlab-ci\\.yml$/",
+        "/(^|/)\\.github/workflows/ci\\.yml$/",
         "/(^|/)Dockerfile$/"
       ],
       "matchStrings": [

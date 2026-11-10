@@ -112,4 +112,14 @@ $platform
 $consult
 prime" 'prime failed'
 
+echo 'public-config-marker' > "$repo/ci/nuget.org.config"
+export SRC_CONFIG="$repo/ci/nuget.org.config"
+: > "$CALLS"
+rm -rf "$HOME/.nuget"
+(cd "$repo" && sh ci/restore-dotnet.sh --nuget-config ci/nuget.org.config) > "$tmp/out" 2>&1
+rc=$?
+check '指定 nuget 設定：不探測鏡像，直接 restore' 0 "$platform
+$consult
+prime"
+
 exit $fail

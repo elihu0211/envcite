@@ -6,7 +6,7 @@ owns: [service-map]
 
 # 臺灣環境知識檢索與引用接地服務 (envcite)
 
-[![pipeline status](https://gitlab.com/thuaisse-lab/envcite/badges/main/pipeline.svg)](https://gitlab.com/thuaisse-lab/envcite/-/pipelines)
+[![ci](https://github.com/elihu0211/envcite/actions/workflows/ci.yml/badge.svg)](https://github.com/elihu0211/envcite/actions/workflows/ci.yml)
 
 臺灣環境知識的檢索與引用接地（Grounding）：為呼叫端的語言模型備妥封閉證據集，證據不足時拒答。語料範圍的定義在 [`services/platform/README.md`](services/platform/README.md#語料範圍)；服務如何組合、呼叫流程見 [`proto/README.md`](proto/README.md)。
 
