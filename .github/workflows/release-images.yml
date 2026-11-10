@@ -1,0 +1,151 @@
+# 一次把三個服務映像推到 ghcr.io。路徑分流的 ci.yml 只在該服務有改動時才推，
+# 遷移當下 platform 與 consult 沒有新映像可給部署清單用。
+# 版本讀 ci.yml 的 env，避免兩處各寫一個數字。
+name: release-images
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-images.yml
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+  UV_CACHE_DIR: ${{ github.workspace }}/.uv-cache
+  UV_LINK_MODE: copy
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  NuGetAudit: "false"
+
+jobs:
+  versions:
+    runs-on: ubuntu-latest
+    outputs:
+      dotnet: ${{ steps.v.outputs.dotnet }}
+      python: ${{ steps.v.outputs.python }}
+      uv: ${{ steps.v.outputs.uv }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          field() { awk -v k="$1" '$1==k {gsub(/"/,"",$2); print $2; exit}' .github/workflows/ci.yml; }
+          echo "dotnet=$(field DOTNET_VERSION:)" >> "$GITHUB_OUTPUT"
+          echo "python=$(field PYTHON_VERSION:)" >> "$GITHUB_OUTPUT"
+          echo "uv=$(field UV_VERSION:)" >> "$GITHUB_OUTPUT"
+
+  deps-dotnet:
+    needs: versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ needs.versions.outputs.dotnet }}
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-${{ needs.versions.outputs.dotnet }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+      - run: sh ci/restore-dotnet.sh --nuget-config ci/nuget.org.config
+
+  deps-python:
+    needs: versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .uv-cache
+          key: uv-${{ hashFiles('uv.lock') }}
+      - run: |
+          curl -LsSf "https://astral.sh/uv/${{ needs.versions.outputs.uv }}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: |
+          uv python install "${{ needs.versions.outputs.python }}"
+          uv sync --locked --all-packages
+          uv cache prune
+
+  platform:
+    needs: [versions, deps-dotnet]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-${{ needs.versions.outputs.dotnet }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+      - name: push
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          DOTNET_VERSION: ${{ needs.versions.outputs.dotnet }}
+          PYTHON_VERSION: ${{ needs.versions.outputs.python }}
+          UV_VERSION: ${{ needs.versions.outputs.uv }}
+        run: |
+          sh ci/build-image.sh --push --public-registries \
+            --service platform \
+            --image "ghcr.io/${GITHUB_REPOSITORY}/platform:${GITHUB_SHA}" \
+            --cache "ghcr.io/${GITHUB_REPOSITORY}/cache/platform" \
+            --cache-scope main --cache-fallback-scope main \
+            --registry ghcr.io --registry-user "$GITHUB_ACTOR" \
+            -- --build-context nuget=.nuget/packages \
+            --build-arg UV_VERSION="$UV_VERSION" \
+            --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
+            --build-arg DOTNET_VERSION="$DOTNET_VERSION"
+
+  consult:
+    needs: [versions, deps-dotnet]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .nuget/packages
+          key: nuget-${{ needs.versions.outputs.dotnet }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+      - name: push
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          DOTNET_VERSION: ${{ needs.versions.outputs.dotnet }}
+          PYTHON_VERSION: ${{ needs.versions.outputs.python }}
+          UV_VERSION: ${{ needs.versions.outputs.uv }}
+        run: |
+          sh ci/build-image.sh --push --public-registries \
+            --service consult \
+            --image "ghcr.io/${GITHUB_REPOSITORY}/consult:${GITHUB_SHA}" \
+            --cache "ghcr.io/${GITHUB_REPOSITORY}/cache/consult" \
+            --cache-scope main --cache-fallback-scope main \
+            --registry ghcr.io --registry-user "$GITHUB_ACTOR" \
+            -- --build-context nuget=.nuget/packages \
+            --build-arg UV_VERSION="$UV_VERSION" \
+            --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
+            --build-arg DOTNET_VERSION="$DOTNET_VERSION"
+
+  ontology:
+    needs: [versions, deps-python]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .uv-cache
+          key: uv-${{ hashFiles('uv.lock') }}
+      - name: push
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          DOTNET_VERSION: ${{ needs.versions.outputs.dotnet }}
+          PYTHON_VERSION: ${{ needs.versions.outputs.python }}
+          UV_VERSION: ${{ needs.versions.outputs.uv }}
+        run: |
+          sh ci/build-image.sh --push --public-registries \
+            --service ontology \
+            --image "ghcr.io/${GITHUB_REPOSITORY}/ontology:${GITHUB_SHA}" \
+            --cache "ghcr.io/${GITHUB_REPOSITORY}/cache/ontology" \
+            --cache-scope main --cache-fallback-scope main \
+            --registry ghcr.io --registry-user "$GITHUB_ACTOR" \
+            -- --build-context uv-cache=.uv-cache \
+            --build-arg UV_VERSION="$UV_VERSION" \
+            --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
+            --build-arg DOTNET_VERSION="$DOTNET_VERSION"
