@@ -46,10 +46,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ needs.versions.outputs.dotnet }}
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/nuget-cache
         with:
-          path: .nuget/packages
-          key: nuget-${{ needs.versions.outputs.dotnet }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+          dotnet-version: ${{ needs.versions.outputs.dotnet }}
+          save: true
       - run: sh ci/restore-dotnet.sh --nuget-config ci/nuget.org.config
 
   deps-python:
@@ -57,15 +57,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/uv-setup
         with:
-          path: .uv-cache
-          key: uv-${{ hashFiles('uv.lock') }}
+          uv-version: ${{ needs.versions.outputs.uv }}
+          python-version: ${{ needs.versions.outputs.python }}
+          save: true
       - run: |
-          curl -LsSf "https://astral.sh/uv/${{ needs.versions.outputs.uv }}/install.sh" | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - run: |
-          uv python install "${{ needs.versions.outputs.python }}"
           uv sync --locked --all-packages
           uv cache prune
 
@@ -74,10 +71,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/nuget-cache
         with:
-          path: .nuget/packages
-          key: nuget-${{ needs.versions.outputs.dotnet }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+          dotnet-version: ${{ needs.versions.outputs.dotnet }}
       - name: push
         env:
           REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
@@ -101,10 +97,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/nuget-cache
         with:
-          path: .nuget/packages
-          key: nuget-${{ needs.versions.outputs.dotnet }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+          dotnet-version: ${{ needs.versions.outputs.dotnet }}
       - name: push
         env:
           REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
@@ -128,10 +123,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/uv-setup
         with:
-          path: .uv-cache
-          key: uv-${{ hashFiles('uv.lock') }}
+          uv-version: ${{ needs.versions.outputs.uv }}
+          python-version: ${{ needs.versions.outputs.python }}
       - name: push
         env:
           REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

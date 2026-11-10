@@ -87,7 +87,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y jq
       - run: |
           sh ci/test-retry-transient.sh
           sh ci/test-block-main.sh
@@ -169,10 +168,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/nuget-cache
         with:
-          path: .nuget/packages
-          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          save: true
       - run: sh ci/restore-dotnet.sh --nuget-config ci/nuget.org.config
 
   platform:
@@ -184,10 +183,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/nuget-cache
         with:
-          path: .nuget/packages
-          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - working-directory: services/platform
         run: |
           dotnet restore --locked-mode --source "$(mktemp -d)"
@@ -207,10 +205,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/nuget-cache
         with:
-          path: .nuget/packages
-          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - working-directory: services/platform
         run: |
           dotnet restore --locked-mode --source "$(mktemp -d)"
@@ -225,10 +222,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/nuget-cache
         with:
-          path: .nuget/packages
-          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - working-directory: services/consult
         run: |
           dotnet restore --locked-mode --source "$(mktemp -d)"
@@ -245,15 +241,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/uv-setup
         with:
-          path: .uv-cache
-          key: uv-${{ hashFiles('uv.lock') }}
+          uv-version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          save: true
       - run: |
-          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - run: |
-          uv python install "$PYTHON_VERSION"
           uv sync --locked --all-packages
           uv cache prune
 
@@ -280,20 +273,17 @@ jobs:
       ENVCITE_ONTOLOGY_TEST_DSN: postgresql://envcite:envcite@localhost:5432/envcite_test
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/uv-setup
         with:
-          path: .uv-cache
-          key: uv-${{ hashFiles('uv.lock') }}
-      - run: |
-          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv-version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - working-directory: services/ontology
         run: |
           uv sync --locked --all-packages
           uv run --no-sync ruff check .
           uv run --no-sync ruff format --check .
           uv run --no-sync mypy src tests
-          uv run --no-sync pytest --cov --cov-report=term --cov-report=xml
+          uv run --no-sync pytest -n auto --dist loadfile --cov --cov-report=term --cov-report=xml
 
   segmenter:
     needs: [changes, deps-python]
@@ -301,13 +291,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/uv-setup
         with:
-          path: .uv-cache
-          key: uv-${{ hashFiles('uv.lock') }}
-      - run: |
-          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv-version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - working-directory: libs/python/envcite-segmenter
         run: |
           uv sync --locked --all-packages
@@ -322,13 +309,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/uv-setup
         with:
-          path: .uv-cache
-          key: uv-${{ hashFiles('uv.lock') }}
-      - run: |
-          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv-version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - working-directory: libs/python/envcite-jobkit
         run: |
           uv sync --locked --all-packages
@@ -343,13 +327,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/uv-setup
         with:
-          path: .uv-cache
-          key: uv-${{ hashFiles('uv.lock') }}
-      - run: |
-          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv-version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - working-directory: libs/python/envcite-proto
         run: |
           uv sync --locked --all-packages
@@ -362,10 +343,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/uv-setup
         with:
-          path: .uv-cache
-          key: uv-${{ hashFiles('uv.lock') }}
+          uv-version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: build
         env:
           REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
@@ -393,10 +374,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/nuget-cache
         with:
-          path: .nuget/packages
-          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: build
         env:
           REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
@@ -424,10 +404,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - uses: actions/cache@v4
+      - uses: ./.github/actions/nuget-cache
         with:
-          path: .nuget/packages
-          key: nuget-${{ env.DOTNET_VERSION }}-${{ hashFiles('Directory.Packages.props', 'services/platform/dotnet-tools.json') }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: build
         env:
           REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

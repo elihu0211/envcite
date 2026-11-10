@@ -1,0 +1,29 @@
+# NuGet 套件快取的唯一定義：鍵與路徑只寫在這裡，各 job 不各抄一份。
+# 依賴只在 deps-dotnet 下載一次並存回（save: true）；其餘 job 只還原，以 --source 指向空目錄離線
+# restore，缺套件即失敗。鍵涵蓋決定套件集的全部輸入（與 ci/prime-dotnet-image-cache.sh 的標記同一組），
+# 不設 restore-keys：輸入一變就整份重建，快取是輸入的純函數，不會帶著舊版套件越長越大，
+# 映像建置也不會吃到過期內容。
+name: NuGet 快取
+description: 還原工作區內的 NuGet 套件快取；save 為 true 的 job 在結束時存回。
+
+inputs:
+  dotnet-version:
+    description: SDK 版本，納入快取鍵。
+    required: true
+  save:
+    description: 是否在 job 結束時存回快取。
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - if: inputs.save == 'true'
+      uses: actions/cache@v4
+      with:
+        path: .nuget/packages
+        key: nuget-${{ inputs.dotnet-version }}-${{ hashFiles('global.json', 'Directory.Build.props', 'Directory.Packages.props', 'services/platform/dotnet-tools.json', 'ci/prime-dotnet-image-cache.sh', '**/*.csproj', '**/packages.lock.json') }}
+    - if: inputs.save != 'true'
+      uses: actions/cache/restore@v4
+      with:
+        path: .nuget/packages
+        key: nuget-${{ inputs.dotnet-version }}-${{ hashFiles('global.json', 'Directory.Build.props', 'Directory.Packages.props', 'services/platform/dotnet-tools.json', 'ci/prime-dotnet-image-cache.sh', '**/*.csproj', '**/packages.lock.json') }}
