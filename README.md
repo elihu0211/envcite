@@ -8,7 +8,7 @@ owns: [service-map]
 
 [![ci](https://github.com/elihu0211/envcite/actions/workflows/ci.yml/badge.svg)](https://github.com/elihu0211/envcite/actions/workflows/ci.yml)
 
-envcite 處理臺灣環境知識的檢索與引用接地。它把可引用的材料收成封閉證據集，交給呼叫端的語言模型；證據不足時拒答。語料範圍見 [platform README「語料範圍」](services/platform/README.md#語料範圍)；服務如何組合、呼叫流程見 [proto README](proto/README.md)。
+envcite 處理臺灣環境知識的檢索與引用接地。它把可引用的材料收成封閉證據集，交給呼叫端的語言模型；證據不足時拒答。語料範圍見 [platform README「語料範圍」](services/platform/README.md#語料範圍)；服務如何組合、呼叫流程見 [proto README](proto/README.md#概念)。
 
 ## 目錄
 
@@ -26,7 +26,7 @@ envcite 處理臺灣環境知識的檢索與引用接地。它把可引用的材
 | 你要… | 去 |
 |------|-----|
 | 確認語料範圍 | [`services/platform/README.md`](services/platform/README.md#語料範圍) |
-| 看服務如何組合、呼叫端如何接上 | [`proto/README.md`](proto/README.md) |
+| 看服務如何組合、呼叫端如何接上 | [`proto/README.md`](proto/README.md#概念) |
 | 在本機開發 | [`CONTRIBUTING.md`](CONTRIBUTING.md#概念) |
 | 建立營運者 | [`CONTRIBUTING.md`](CONTRIBUTING.md#本機第一個帳號) |
 | 查環境變數命名與機密來源 | [`CONFIGURATION.md`](CONFIGURATION.md) |
