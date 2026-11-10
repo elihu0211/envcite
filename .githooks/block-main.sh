@@ -1,5 +1,5 @@
 #!/bin/sh
-# 預設分支上不改動：先開分支，走 MR（見 CONTRIBUTING.md「從開發到上線」）。
+# 預設分支上不改動：先開分支，走 pull request（見 CONTRIBUTING.md「從開發到上線」）。
 # 以 exit 2 結束：git 視為失敗，Claude Code hook 視為阻擋。
 #
 # 兩種呼叫：

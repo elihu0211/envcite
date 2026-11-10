@@ -10,7 +10,7 @@ members = ["services/ontology", "libs/python/*"]
 # Renovate 的規則，只看這裡。
 # - ruff<0.17：0.17 把 tomllib 歸到標準庫區塊，services/ontology 的
 #   verification/config.py 出現 I001（import 排序），新舊版對該檔的排序互相矛盾，無法預先修在 main。
-#   升 ruff 的同一個 MR 以 `ruff check --fix` 一併改，再放寬此上界。
+#   升 ruff 的同一個 pull request 以 `ruff check --fix` 一併改，再放寬此上界。
 constraint-dependencies = [
     "ruff<0.17",
 ]
