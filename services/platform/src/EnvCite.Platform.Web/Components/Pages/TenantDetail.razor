@@ -1,5 +1,5 @@
 @page "/ui/tenants/{TenantId}"
-@inject IGroundedAnswerer Answerer
+@inject IAnswerAvailability Availability
 
 <PageTitle>@(_tenant?.Identifier ?? L["租戶"]) · @L["環境知識"]</PageTitle>
 
@@ -300,7 +300,7 @@ else
                     {
                         <span>@L["（先指派方案。）"]</span>
                     }
-                    else if (!Answerer.Available)
+                    else if (!Availability.Available)
                     {
                         <span>@L["（這個環境沒有設定模型端點。）"]</span>
                     }

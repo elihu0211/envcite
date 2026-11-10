@@ -82,6 +82,12 @@ internal sealed class AnswerOptionsValidator : IValidateOptions<AnswerOptions>
     }
 }
 
+/// <summary>只讀 <see cref="AnswerOptions.Enabled"/>。不建立 gRPC 用戶端，也不碰資料庫。</summary>
+internal sealed class AnswerAvailability(IOptions<AnswerOptions> options) : IAnswerAvailability
+{
+    public bool Available => options.Value.Enabled;
+}
+
 public static class ConsultModule
 {
     public static IServiceCollection AddConsultModule(this IServiceCollection services)
@@ -96,6 +102,7 @@ public static class ConsultModule
                 .GetChatClient(answer.Model)
                 .AsIChatClient();
         });
+        services.AddSingleton<IAnswerAvailability, AnswerAvailability>();
         services.AddScoped<IGroundedAnswerer, GroundedAnswerer>();
         return services;
     }

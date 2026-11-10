@@ -46,11 +46,9 @@ internal sealed partial class GroundedAnswerer(
     [GeneratedRegex(@"\[(L\d+)\]")]
     private static partial Regex CodePattern();
 
-    public bool Available => options.Value.Enabled;
-
     public async Task<AdminOutcome<GroundedAnswer>> AnswerAsync(string? question, string? asOf, CancellationToken cancellationToken)
     {
-        if (!Available)
+        if (!options.Value.Enabled)
         {
             return AdminOutcome.Unavailable<GroundedAnswer>(OutcomeCodes.AnswerNotConfigured);
         }

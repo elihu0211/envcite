@@ -9,9 +9,4 @@
     <ProjectReference Include="..\EnvCite.Platform.Data\EnvCite.Platform.Data.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Finbuckle.MultiTenant.EntityFrameworkCore" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-  </ItemGroup>
-
 </Project>
