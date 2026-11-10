@@ -262,7 +262,8 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: pgvector/pgvector:pg${{ env.POSTGRES_MAJOR }}
+        # 主版本與上面的 POSTGRES_MAJOR 相同。service image 不能讀 env context。
+        image: pgvector/pgvector:pg18
         env:
           POSTGRES_DB: envcite_test
           POSTGRES_USER: envcite
