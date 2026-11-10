@@ -6,7 +6,7 @@
 
 - **Name:** envcite-ontology（Python 套件 `envcite_ontology`）
 - **Role:** 本體服務（shared, non-tenant data）：各來源的知識集中在本服務，一種來源一個本體，各有自己的 schema 與引用代號字母（呼叫端看到的規則在倉庫根 `proto/README.md`）。新增來源是新增一個本體，不另立服務；拆成獨立服務只在該本體需要獨立擴縮或發版、資料不能與共享資料同庫、或需要不同的執行環境。由 `services/platform` 與 `services/consult` 呼叫。
-- **Layout:** 共用機制（取得引擎、投影、驗證管線、gRPC 伺服器）在套件頂層；本體專屬的程式（來源、解析、規則）放進以本體 id 命名的子套件，資料表歸該本體自己的 schema。
+- **Layout:** 取得引擎、投影、驗證管線、gRPC 伺服器，以及本體的來源、解析、規則，都在套件頂層。資料表歸該本體自己的 schema。
 - **Stack:** Python · uv · gRPC（grpcio，同步伺服器）· PostgreSQL（psycopg 3）· ruff · mypy (strict) · pytest
 - **Data model:** **關聯式實表，PostgreSQL 是唯一真值**，表結構以 `migrations/*.sql` 為準。法規以（管轄，識別碼方案，在地識別碼）為鍵——管轄是封閉的列舉（中央與 22 縣市），方案與管轄的配對由 CHECK 強制（中央方案只配中央、地方方案只配縣市；地方方案是契約預留，目前沒有取得來源），兩者都沒有預設值，寫入者與呼叫端都得明說；新增識別碼方案要在同一個遷移裡說明它屬於哪一級；效力逐條文單元記載、逐單元解析；法規名稱可因修正而變，標題屬公布版本；標註錨定（單元，內容雜湊），不錨定版本列。**時間軸的不變式由綱要強制，不靠匯入後的檢查**：版本不重疊（`WITHOUT OVERLAPS`）、不留縫（文字時間的上界以延遲外鍵參照下一版的版本日）、施行規則決定起點與版本日的關係（CHECK；早於版本日只能是明文的 `retroactive`）；查不到全文的版本仍是一版（`text_status = unavailable`）。新規則先寫成約束，程式與測試跟著約束。
 
