@@ -46,5 +46,8 @@ assert any("HTML 註解" in e for e in errors), errors
 
 broken = "<!--\ntype: reference\napplies-to: all\nowns: [service-map]\n---\n-->\n"
 assert "--" in broken.split("-->", 1)[0]
+assert not mod.skipped((".github", "SECURITY.md"))
+assert not mod.skipped((".github", "ACCESSIBILITY.md"))
+assert mod.skipped((".github", "pull_request_template.md"))
 print("ok   front-matter 包在註解裡；裸的 YAML 被擋下")
 PY
