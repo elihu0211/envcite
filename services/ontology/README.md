@@ -13,6 +13,22 @@ owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations, com
 - 語料與檢索由 `envcite-sync` 依序取得、匯入、投影；標註由 `envcite-pipeline` 以語言模型抽取並經閘門驗證；推論（clingo）不用模型，只取已確認的標註，結論都是候選。
 - 共用套件：[`envcite-segmenter`](../../libs/python/envcite-segmenter/README.md)、[`envcite-grpc`](../../libs/python/envcite-grpc/README.md)、[`envcite-proto`](../../libs/python/envcite-proto/README.md)。
 
+## 概念
+
+| 層 | 節 | 這裡有 |
+|----|----|--------|
+| 入口 | [入口](#入口) | 同一映像裡的伺服器、同步、歷史、標註、行政規則、違憲失效 |
+| 標註 | [標註管線](#標註管線) | 抽取、驗證、接受 |
+| 標註 | [模型配置](#模型配置modelstoml) | 端點與金鑰名。金鑰怎麼找見 [`CONFIGURATION.md`](../../CONFIGURATION.md) |
+| 規範 | [規範關係：授權](#規範關係授權) | 命令依哪一條法律訂定 |
+| 規範 | [規範關係：罰則的連結](#規範關係罰則的連結) | 罰則連到已確認的義務 |
+| 語料 | [行政規則的取得](#行政規則的取得) | 公報與環境部函釋 |
+| 語料 | [歷史版本](#歷史版本) | 法律自立法院，命令自環境部 |
+| 語料 | [違憲失效](#違憲失效) | 憲法法庭宣告失效的條文 |
+| 評估 | [黃金測試集](#黃金測試集) | 檢索召回與拒答 |
+| 評估 | [涵攝評估](#涵攝評估) | 三值涵攝的案例 |
+| 評估 | [能力問題登記](#能力問題登記) | 每題的可答狀態在 `competency.toml` |
+
 ## 入口
 
 所有入口都在同一個映像裡：預設 command 是伺服器，其餘以 command 覆寫。入口名稱是與部署庫的契約，定義在 `pyproject.toml` 的 `[project.scripts]`。
