@@ -6,54 +6,36 @@ owns: [dev-seed-accounts, shared-dev-db]
 
 # 參與開發
 
-本機從裝好工具到 pull request 合併。這一頁先給地圖與索引，各節用圖與表展開。回[倉庫總覽](README.md)。
+本機從裝好工具到 pull request 合併。[概念](#概念)是這一頁的層次，[索引](#索引)只連獨立文件。回[倉庫總覽](README.md)。
 
-## 概論
+## 概念
 
-```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart TB
-    pre["先決條件"] --> db["開發用資料庫"]
-    db --> run["開分支並啟動"]
-    run --> seed["本機第一個帳號"]
-    seed --> cmd["常用指令"]
-    cmd --> ship["從開發到上線"]
-    ship -.-> ver["升級版本"]
+同一層由上往下。依賴層只在要升版本時走。
 
-    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    classDef later fill:#f8fafc,stroke:#94a3b8,color:#334155
-    class pre,db,run,seed,cmd,ship step
-    class ver later
-```
-
-實線是每一條分支都走的順序。虛線只在要升依賴時才走。
-
-| 順序 | 節 | 做完 |
-|------|----|------|
-| 1 | [先決條件](#先決條件) | 下表的工具都在 |
-| 2 | [開發用資料庫](#開發用資料庫) | `envcite` 與 `platform` 兩個庫在本機 |
-| 3 | [開分支並啟動](#開分支並啟動) | `wt list` 看得到本分支的 platform URL |
-| 4 | [本機第一個帳號](#本機第一個帳號) | 終端機印出一次性密碼，登入成功 |
-| 5 | [常用指令](#常用指令) | 在服務目錄跑完該改動要的檢查 |
-| 6 | [從開發到上線](#從開發到上線) | pull request 已 squash 合併，worktree 已刪 |
-| — | [升級版本](#升級版本) | 該版本在表上的每一處都在同一次提交裡 |
+| 層 | 節 | 做完 |
+|----|----|------|
+| 環境 | [先決條件](#先決條件) | 下表的工具都在 |
+| 環境 | [開發用資料庫](#開發用資料庫) | `envcite` 與 `platform` 兩個庫在本機 |
+| 工作 | [開分支並啟動](#開分支並啟動) | `wt list` 看得到本分支的 platform URL |
+| 工作 | [本機第一個帳號](#本機第一個帳號) | 終端機印出一次性密碼，登入成功 |
+| 工作 | [本機使用營運者 key](#本機使用營運者-key) | 只在要第二個營運者或重設時才做 |
+| 工作 | [常用指令](#常用指令) | 在服務目錄跑完該改動要的檢查 |
+| 收尾 | [從開發到上線](#從開發到上線) | pull request 已 squash 合併，worktree 已刪 |
+| 依賴 | [升級版本](#升級版本) | 該版本在表上的每一處都在同一次提交裡 |
 
 ## 索引
 
-本頁只寫本機順序。欄位、其他環境與各服務的完整說明在下表。
+本頁的順序在[概念](#概念)。下表是離開本頁才讀的文件。
 
-| 你要… | 完整文件 |
-|-------|----------|
-| 沿本頁做完 | [概論](#概論) |
-| 本機第一個營運者與擁有者 | [本機第一個帳號](#本機第一個帳號) |
-| 本機再加一位營運者，或重設 | [本機使用營運者 key](#本機使用營運者-key) |
-| 營運者帳號的欄位、端點、首次登入 | [platform README「營運者帳號」](services/platform/README.md#營運者帳號) |
-| staging 建立營運者 | 部署庫。入口是容器層 `core-env-saas/AGENTS.md` 任務表「在 staging 建第一個營運者」 |
-| 環境變數命名與機密來源 | [`CONFIGURATION.md`](CONFIGURATION.md) |
-| 服務如何組合、呼叫端如何接上 | [`proto/README.md`](proto/README.md) |
-| 語料範圍 | [platform README「語料範圍」](services/platform/README.md#語料範圍) |
-| 倉庫有哪些目錄 | [README「目錄」](README.md#目錄) |
-| 代理的作業規範 | [`AGENTS.md`](AGENTS.md) |
+| 層 | 完整文件 | 擁有 |
+|----|----------|------|
+| 帳號 | [platform README「營運者帳號」](services/platform/README.md#營運者帳號) | 欄位、端點、首次登入 |
+| 帳號 | 部署庫。入口是容器層 `core-env-saas/AGENTS.md` 任務表「在 staging 建第一個營運者」 | staging 的步驟 |
+| 設定 | [`CONFIGURATION.md`](CONFIGURATION.md) | 環境變數命名與機密來源 |
+| 契約 | [`proto/README.md`](proto/README.md) | 服務如何組合、呼叫端如何接上 |
+| 契約 | [platform README「語料範圍」](services/platform/README.md#語料範圍) | 語料範圍 |
+| 倉庫 | [README「目錄」](README.md#目錄) | 有哪些目錄 |
+| 倉庫 | [`AGENTS.md`](AGENTS.md) | 代理的作業規範 |
 
 ## 先決條件
 
@@ -68,16 +50,6 @@ flowchart TB
 | Node.js | 以 `npx` 執行 buf | — |
 
 ## 開發用資料庫
-
-```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart LR
-    pg["本機 PostgreSQL"] --> onto["envcite<br/>ontology"]
-    pg --> plat["platform<br/>platform 服務"]
-
-    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    class pg,onto,plat step
-```
 
 | 庫 | 誰用 | 連線 |
 |----|------|------|
@@ -103,18 +75,6 @@ docker exec envcite-pg createdb -U <帳號> platform
 ## 開分支並啟動
 
 [開發用資料庫](#開發用資料庫)的兩個庫要先在。
-
-```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart LR
-    br["wt switch --create"] --> svc["三個終端機<br/>ontology · consult · platform"]
-    svc --> imp["envcite-sync moj"]
-    imp --> restart["重啟 wt ontology"]
-    restart --> url["wt list 的 URL"]
-
-    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    class br,svc,imp,restart,url step
-```
 
 | 順序 | 做完 |
 |------|------|
@@ -144,16 +104,6 @@ flowchart LR
 
 只適用本機 Development。其他環境沒有種子帳號，見[索引](#索引)。
 
-```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart LR
-    boot["空庫第一次 wt platform"] --> out["終端機印出一次性密碼"]
-    out --> login["登入並改密碼"]
-
-    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    class boot,out,login step
-```
-
 | 何時 | 建立什麼 |
 |------|----------|
 | Development，且 `Platform:SeedDevelopmentData` 開著 | 空庫第一次 `wt platform` 建立種子租戶與擁有者 |
@@ -173,22 +123,11 @@ flowchart LR
 
 建第二個營運者，或重設，才需要這一步。
 
-```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart LR
-    key["自訂一把 key"] --> hash["SHA-256 寫進環境變數"]
-    hash --> run["同一個終端機 wt platform"]
-    run --> admin["X-Admin-Key 呼叫 /admin"]
-
-    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    class key,hash,run,admin step
-```
-
 | 用途 | 呼叫 |
 |------|------|
 | 第二個營運者、重設密碼或驗證器 | `X-Admin-Key: $ADMIN_KEY`，位址 `http://localhost:<port>/admin/...` |
 
-端點與欄位見[索引](#索引)的「營運者帳號」。key 與啟動必須在同一個終端機，環境變數才進得去：
+端點與欄位見[索引](#索引)的帳號列。key 與啟動必須在同一個終端機，環境變數才進得去：
 
 ```bash
 read -rsp '自訂一把本機用的 key: ' ADMIN_KEY; echo
@@ -223,20 +162,6 @@ wt platform
 
 分支在[開分支並啟動](#開分支並啟動)已經開好。這裡只做提交到收尾。
 
-```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart LR
-    commit["Conventional Commits"] --> pr["pull request 到 main"]
-    pr --> ci["CI 依改動路徑"]
-    ci --> merge["squash 合併"]
-    merge --> rm["wt remove"]
-
-    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    classDef end_ fill:#ecfdf5,stroke:#10b981,color:#064e3b
-    class commit,pr,ci,merge step
-    class rm end_
-```
-
 | 順序 | 做 | 要點 |
 |------|----|------|
 | 1 | Commit | [Conventional Commits](https://www.conventionalcommits.org)，`type(scope): 說明`。破壞性變更加 `!`（如 `feat(consult)!: …`） |
@@ -267,16 +192,6 @@ CI 跑什麼以 `ci/detect-changes.sh` 為準：
 ## 升級版本
 
 上一節是日常的終點。要升依賴時才做這一節。
-
-```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart LR
-    row["表上的一列"] --> cells["該列的每一處"]
-    cells --> commit["同一次提交"]
-
-    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    class row,cells,commit step
-```
 
 | 版本 | 改哪裡 | 同一次提交還要 |
 |------|--------|----------------|
