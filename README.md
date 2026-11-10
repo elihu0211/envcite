@@ -18,8 +18,10 @@ owns: [service-map]
 | `services/consult/` | 接地：封閉證據集與可答性判定，租戶隔離 | [README](services/consult/README.md#概念) · [AGENTS](services/consult/AGENTS.md) |
 | `services/ontology/` | 本體：知識的集中存放、檢索與推論，不分租戶 | [README](services/ontology/README.md#概念) · [AGENTS](services/ontology/AGENTS.md) |
 | `proto/` | 服務間 gRPC 契約，唯一真值 | [README](proto/README.md#概念) |
-| `libs/dotnet/` | .NET 服務共用的主機設定：設定繫結、gRPC 用戶端、遙測；不發佈 | [README](libs/dotnet/README.md) |
-| `libs/python/` | 可獨立測試的 Python 套件，uv workspace 成員；不發佈 | [AGENTS](libs/python/AGENTS.md) |
+| `libs/dotnet/` | .NET 服務共用的主機設定：設定繫結、gRPC 用戶端、遙測 | [README](libs/dotnet/README.md) |
+| `libs/python/` | 可獨立測試的 Python 套件，uv workspace 成員 | [AGENTS](libs/python/AGENTS.md) |
+
+`libs/` 下的套件僅供本倉庫的服務引用，不對外發佈。
 
 ## 入口
 
