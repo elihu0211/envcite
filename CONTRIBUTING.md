@@ -129,7 +129,7 @@ wt platform
 
 ## 常用指令
 
-服務已經在上一節跑著。檢查從**該服務目錄**執行；完整指令見各服務的 `AGENTS.md`，環境變數見各服務的 README。.NET 服務共用倉庫根的 `global.json`、`Directory.*.props` 與 [`libs/dotnet/`](libs/dotnet/README.md)。Python 服務與 [`libs/python/`](libs/python/AGENTS.md) 是同一個 uv workspace，依賴在倉庫根一次裝好（`uv sync --all-packages`，`wt` 建樹時已執行）。
+服務已經在上一節跑著。檢查從**該服務目錄**執行；完整指令見各服務的 `AGENTS.md`，各服務的鍵見其 README，命名與機密來源見 [`CONFIGURATION.md`](CONFIGURATION.md)。.NET 服務共用倉庫根的 `global.json`、`Directory.*.props` 與 [`libs/dotnet/`](libs/dotnet/README.md)。Python 服務與 [`libs/python/`](libs/python/AGENTS.md) 是同一個 uv workspace，依賴在倉庫根一次裝好（`uv sync --all-packages`，`wt` 建樹時已執行）。
 
 | 動作 | [platform](services/platform/AGENTS.md)、[consult](services/consult/AGENTS.md) | [ontology](services/ontology/AGENTS.md) |
 |------|------|------|
