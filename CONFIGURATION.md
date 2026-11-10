@@ -8,16 +8,6 @@ owns: [config-naming, secret-sources]
 
 先照[命名](#命名)決定環境變數的名字，再照[機密的來源](#機密的來源)決定這個名字的值放哪裡。回[倉庫總覽](README.md)；各服務的具體鍵見其 README。
 
-```mermaid
-%%{init: {"flowchart": {"curve": "basis"}}}%%
-flowchart LR
-    name["命名"] --> src["機密的來源"]
-    src --> svc["各服務 README 的具體鍵"]
-
-    classDef step fill:#eef2ff,stroke:#6366f1,color:#1e1b4b
-    class name,src,svc step
-```
-
 ## 命名
 
 | 適用 | 形式 | 例子 | 前提 |
