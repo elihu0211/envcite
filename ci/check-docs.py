@@ -146,7 +146,13 @@ def check_links(path, rel, body, ids):
     return errors
 
 
+# GitHub 社群檔放在 .github。這兩份仍是知識節點；同目錄的範本與 workflow 不是。
+COMMUNITY_NODES = {(".github", "SECURITY.md"), (".github", "ACCESSIBILITY.md")}
+
+
 def skipped(parts):
+    if tuple(parts) in COMMUNITY_NODES:
+        return False
     kept_dot_dirs = {".agents"}
     return any((x.startswith(".") and x not in kept_dot_dirs) or x in SKIP_DIRS for x in parts)
 

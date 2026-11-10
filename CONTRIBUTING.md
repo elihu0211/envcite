@@ -104,7 +104,7 @@ flowchart LR
 
 ## 第一組資料（platform，僅本機）
 
-**只適用本機 Development。** 其他環境沒有種子帳號，營運者的建立見 [platform README 的「營運者帳號」](services/platform/README.md#營運者帳號)。
+**只適用本機 Development。** 其他環境沒有種子帳號。步驟在部署庫，入口是容器層 `core-env-saas/AGENTS.md` 的任務表。欄位見 [platform README「營運者帳號」](services/platform/README.md#營運者帳號)。
 
 上一節的 `wt platform` 在空庫第一次啟動時（僅 Development，`Platform:SeedDevelopmentData`）建立種子租戶與擁有者；庫內沒有任何營運者時才另建一個營運者。帳號與一次性密碼**只印在該終端機一次**，不進日誌，程式裡沒有預設密碼。
 

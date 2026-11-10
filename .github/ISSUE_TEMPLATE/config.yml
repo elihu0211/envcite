@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 參與開發
+    url: https://github.com/elihu0211/envcite/blob/main/CONTRIBUTING.md
+    about: 本機環境、種子帳號與 pull request。
+  - name: 回報漏洞
+    url: https://github.com/elihu0211/envcite/security/advisories/new
+    about: 私密回報。不要開公開 issue。
