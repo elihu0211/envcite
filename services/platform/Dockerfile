@@ -16,7 +16,7 @@
 # SDK 版本固定，CI 的套件快取鍵也帶它：bundle 要的套件（runtime pack、ILLink tasks）隨 SDK，
 # 浮動 tag 會讓映像與快取不一致。
 # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
-ARG DOTNET_VERSION=10.0.403
+ARG DOTNET_VERSION=10.0.404
 # registry 是參數：CI 讓基底映像只走 runner 主機的 pull-through 快取，沒有就失敗，不退回上游。
 # 預設是真正的 registry，供本機建置。
 ARG MCR=mcr.microsoft.com
