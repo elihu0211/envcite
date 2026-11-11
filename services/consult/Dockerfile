@@ -10,7 +10,7 @@
 # SDK 階段在建置機的架構上執行並交叉編譯到目標（`-a`），不需要 emulation。SDK 版本與 platform 同一個，
 # 理由見 services/platform/Dockerfile。
 # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
-ARG DOTNET_VERSION=10.0.403
+ARG DOTNET_VERSION=10.0.404
 # registry 是參數：CI 讓基底映像只走 runner 主機的 pull-through 快取，沒有就失敗，不退回上游。
 # 預設是真正的 registry，供本機建置。
 ARG MCR=mcr.microsoft.com
