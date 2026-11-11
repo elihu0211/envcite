@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cached_property
 from types import TracebackType
-from typing import Any, Self, cast
+from typing import Any, Self
 
 import psycopg
 from psycopg_pool import ConnectionPool
@@ -191,13 +191,12 @@ class OntologyStore:
         if found is None:
             return None
         resource_id, _ = found
-        with self.read_connection(timeout=_remaining(deadline)) as conn:
-            rows = _rows(
-                conn,
+        with self.read_connection(timeout=_remaining(deadline)) as conn, conn.cursor() as cur:
+            cur.execute(
                 _LIST_ARTICLES,
                 {"resource": resource_id, "language": LANGUAGE, "on": _date(as_of)},
             )
-        return [ArticleRecord(iri=iri, number=number) for iri, number in rows]
+            return [ArticleRecord(iri=iri, number=number) for iri, number in cur.fetchall()]
 
     def list_invalidations(
         self,
@@ -216,9 +215,8 @@ class OntologyStore:
         if found is None:
             return None
         resource_id, _ = found
-        with self.read_connection(timeout=_remaining(deadline)) as conn:
-            rows = _rows(
-                conn,
+        with self.read_connection(timeout=_remaining(deadline)) as conn, conn.cursor() as cur:
+            cur.execute(
                 "SELECT i.ruling_no, r.ruling_kind::text, r.decided_on, r.source_url, r.excerpt,"
                 "       i.path, i.invalid_from, x.partial"
                 "  FROM corpus.invalidations_at(%(resource)s, %(language)s, %(on)s::date) AS i"
@@ -235,29 +233,26 @@ class OntologyStore:
                     "article": article_number.strip(),
                 },
             )
-        return [
-            InvalidationRecord(
-                no, kind, decided.isoformat(), url, excerpt, path, since.isoformat(), partial
-            )
-            for no, kind, decided, url, excerpt, path, since, partial in rows
-        ]
+            return [
+                InvalidationRecord(
+                    no, kind, decided.isoformat(), url, excerpt, path, since.isoformat(), partial
+                )
+                for no, kind, decided, url, excerpt, path, since, partial in cur.fetchall()
+            ]
 
     def law_exists(self, key: LawKey, *, timeout: float | None = None) -> bool:
         """法規在語料裡有沒有，不論哪一天。區分「查無此法」與「該日無版本」。"""
         if not is_valid_law_id(key.local_id):
             return False
-        with self.read_connection(timeout=timeout) as conn:
-            return (
-                _one(
-                    conn,
-                    "SELECT 1 FROM corpus.legal_resource"
-                    " WHERE jurisdiction = %s::corpus.jurisdiction"
-                    "   AND id_scheme = %s::corpus.id_scheme"
-                    "   AND local_id = %s",
-                    (key.jurisdiction, key.id_scheme, key.local_id),
-                )
-                is not None
+        with self.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM corpus.legal_resource"
+                " WHERE jurisdiction = %s::corpus.jurisdiction"
+                "   AND id_scheme = %s::corpus.id_scheme"
+                "   AND local_id = %s",
+                (key.jurisdiction, key.id_scheme, key.local_id),
             )
+            return cur.fetchone() is not None
 
     def resource_id(
         self, key: LawKey, *, as_of: str = "", timeout: float | None = None
@@ -282,7 +277,9 @@ class OntologyStore:
             return frozenset(str(value) for (value,) in cur.fetchall())
 
     @contextmanager
-    def read_connection(self, *, timeout: float | None = None) -> Iterator[Conn]:
+    def read_connection(
+        self, *, timeout: float | None = None
+    ) -> Iterator[psycopg.Connection[tuple[Any, ...]]]:
         """唯讀連線，在一個交易內（結束時一律回滾）。
 
         `timeout`（秒）同時是跟池子等待的上限與這個交易的 `statement_timeout`：呼叫的期限用完，
@@ -290,7 +287,8 @@ class OntologyStore:
         `statement_timeout`。
 
         期限已經用完時直接丟 `QueryCanceled`，不向池子要連線：等待時間不大於 0 時，psycopg
-        即使池裡有空連線也丟 `PoolTimeout`，那會被誤記成容量用盡。
+        即使池裡有空連線也丟 `PoolTimeout`，那會被誤記成容量用盡。列保持未定型，查詢在讀到的
+        地方直接組成紀錄；收成 `object` 會讓每一欄都要再轉一次。
         """
         if timeout is not None and timeout <= 0:
             raise psycopg.errors.QueryCanceled("deadline already spent")
@@ -379,9 +377,8 @@ class OntologyStore:
         jurisdiction: str | None = None,
         timeout: float | None = None,
     ) -> list[SearchHit]:
-        with self.read_connection(timeout=timeout) as conn:
-            rows = _rows(
-                conn,
+        with self.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
+            cur.execute(
                 _SEARCH,
                 {
                     "laws": list(laws),
@@ -397,39 +394,38 @@ class OntologyStore:
                     "jurisdiction": jurisdiction,
                 },
             )
-        return [
-            SearchHit(
-                iri=iri,
-                jurisdiction=jur,
-                id_scheme=scheme,
-                local_id=lid,
-                law_title=title,
-                number=number,
-                content=content,
-                lexical_score=lexical,
-                semantic_similarity=semantic,
-            )
-            for (
-                iri,
-                jur,
-                scheme,
-                lid,
-                title,
-                number,
-                content,
-                lexical,
-                semantic,
-            ) in rows
-        ]
+            return [
+                SearchHit(
+                    iri=iri,
+                    jurisdiction=jur,
+                    id_scheme=scheme,
+                    local_id=lid,
+                    law_title=title,
+                    number=number,
+                    content=content,
+                    lexical_score=lexical,
+                    semantic_similarity=semantic,
+                )
+                for (
+                    iri,
+                    jur,
+                    scheme,
+                    lid,
+                    title,
+                    number,
+                    content,
+                    lexical,
+                    semantic,
+                ) in cur.fetchall()
+            ]
 
     def _resolve(
         self, key: LawKey, as_of: str, *, timeout: float | None = None
     ) -> tuple[int, LawRecord] | None:
         if not is_valid_law_id(key.local_id):
             return None
-        with self.read_connection(timeout=timeout) as conn:
-            row = _one(
-                conn,
+        with self.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
+            cur.execute(
                 _RESOLVE,
                 {
                     "law": key.local_id,
@@ -439,6 +435,7 @@ class OntologyStore:
                     "id_scheme": key.id_scheme,
                 },
             )
+            row = cur.fetchone()
         if row is None:
             return None
         (
@@ -479,17 +476,3 @@ def _remaining(deadline: float | None) -> float | None:
     if deadline is None:
         return None
     return deadline - time.monotonic()
-
-
-def _rows(conn: Conn, query: str, params: Any) -> list[tuple[Any, ...]]:
-    """`read_connection` 的列型別是 object；查詢結果在邊界轉成 Any，呼叫端再組成紀錄。"""
-    with conn.cursor() as cur:
-        cur.execute(query, params)
-        return cast(list[tuple[Any, ...]], cur.fetchall())
-
-
-def _one(conn: Conn, query: str, params: Any) -> tuple[Any, ...] | None:
-    with conn.cursor() as cur:
-        cur.execute(query, params)
-        row = cur.fetchone()
-    return None if row is None else cast(tuple[Any, ...], row)
