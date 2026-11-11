@@ -17,8 +17,10 @@ from datetime import date
 from typing import NoReturn, TypeVar
 
 import grpc
+import psycopg
 from google.rpc import error_details_pb2, status_pb2
 from grpc_status import rpc_status
+from psycopg_pool import PoolTimeout
 
 #: ErrorInfo 的 domain：本服務自己的錯誤命名空間。
 DOMAIN = "ontology.envcite"
@@ -29,6 +31,7 @@ AS_OF_NOT_COVERED = "AS_OF_NOT_COVERED"
 INVALID_REQUEST = "INVALID_REQUEST"
 BUSY = "BUSY"
 EVALUATION_TIMEOUT = "EVALUATION_TIMEOUT"
+READ_TIMEOUT = "READ_TIMEOUT"
 
 #: BadRequest.FieldViolation.reason。
 EMPTY = "EMPTY"
@@ -88,7 +91,11 @@ Resp = TypeVar("Resp")
 def maps_errors(
     method: Callable[[S, Req, grpc.ServicerContext], Resp],
 ) -> Callable[[S, Req, grpc.ServicerContext], Resp]:
-    """servicer 方法的邊界：`ServiceError` 轉成帶 ErrorInfo 的 gRPC 狀態。"""
+    """servicer 方法的邊界：領域錯誤與讀取預算用盡，轉成帶 ErrorInfo 的 gRPC 狀態。
+
+    `QueryCanceled` 是讀取期限用完（含期限在取連線前就用盡）。`Evaluate` 在方法內先接住它，
+    改記 `EVALUATION_TIMEOUT`，所以不會走到這裡。連線池在期限內等不到連線是 `BUSY`。
+    """
 
     @functools.wraps(method)
     def wrapper(self: S, request: Req, context: grpc.ServicerContext) -> Resp:
@@ -96,6 +103,24 @@ def maps_errors(
             return method(self, request, context)
         except ServiceError as error:
             abort(context, error)
+        except psycopg.errors.QueryCanceled:
+            abort(
+                context,
+                ServiceError(
+                    grpc.StatusCode.DEADLINE_EXCEEDED,
+                    READ_TIMEOUT,
+                    "the read did not finish within the deadline",
+                ),
+            )
+        except PoolTimeout:
+            abort(
+                context,
+                ServiceError(
+                    grpc.StatusCode.RESOURCE_EXHAUSTED,
+                    BUSY,
+                    "no database connection is available",
+                ),
+            )
 
     return wrapper
 

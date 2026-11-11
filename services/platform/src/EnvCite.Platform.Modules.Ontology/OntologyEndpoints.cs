@@ -132,7 +132,9 @@ public static class OntologyEndpoints
         {
             return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [ex.Status.Detail] });
         }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable or StatusCode.DeadlineExceeded)
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable
+            or StatusCode.DeadlineExceeded
+            or StatusCode.ResourceExhausted)
         {
             return Results.Problem("Ontology service unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
         }

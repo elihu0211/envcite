@@ -115,8 +115,9 @@ sequenceDiagram
 | `INVALID_ARGUMENT` | `INVALID_REQUEST` | 參數不合法、缺 `x-tenant-id`；欄位原因在 `BadRequest`：`EMPTY`、`UNKNOWN_VALUE`、`INVALID_DATE`、`OUT_OF_RANGE`、`DATE_ORDER`、`RESERVED_CONCEPT`、`INVALID_NUMBER`、`UNSET` | 否 |
 | `NOT_FOUND` | `LAW_NOT_FOUND` | 語料沒有這部法規 | 否 |
 | `NOT_FOUND` | `AS_OF_NOT_COVERED` | 法規存在，但沒有版本涵蓋 `as_of` | 否 |
-| `RESOURCE_EXHAUSTED` | `BUSY` | `Evaluate` 在呼叫的期限內等不到名額 | 是，退避 |
-| `DEADLINE_EXCEEDED` | `EVALUATION_TIMEOUT` | 期限用完，資料庫查詢被取消 | 視預算 |
+| `RESOURCE_EXHAUSTED` | `BUSY` | `Evaluate` 在期限內等不到名額，或讀取在期限內等不到資料庫連線 | 是，退避 |
+| `DEADLINE_EXCEEDED` | `EVALUATION_TIMEOUT` | 推論期限用完，資料庫查詢被取消 | 視預算 |
+| `DEADLINE_EXCEEDED` | `READ_TIMEOUT` | 讀取期限用完，資料庫查詢被取消 | 視預算 |
 | `UNAVAILABLE`、`DEADLINE_EXCEEDED` | — | 下游不可用或逾時 | 是 |
 
 consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。

@@ -21,6 +21,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     public const string CentralLawsPath = "/v2/laws/TW-CENTRAL/moj_pcode/";
     public const string UnavailableLawId = "trigger-unavailable";
 
+    /// <summary>GetLaw 回 RESOURCE_EXHAUSTED（讀取連線用盡）。</summary>
+    public const string BusyLawId = "trigger-busy";
+
     /// <summary>每個新的請求頭一次呼叫回 UNAVAILABLE、之後成功的法規（驗證客戶端的重試）。</summary>
     public const string FlakyLawId = "trigger-flaky";
 
@@ -119,6 +122,11 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "query must not be empty"));
             }
 
+            if (request.Query == "pool-busy")
+            {
+                throw new RpcException(new Status(StatusCode.ResourceExhausted, "no database connection is available"));
+            }
+
             if (request.AsOf == "yesterday")
             {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));
@@ -161,6 +169,11 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             if (lawId == UnavailableLawId)
             {
                 throw new RpcException(new Status(StatusCode.Unavailable, "down"));
+            }
+
+            if (lawId == BusyLawId)
+            {
+                throw new RpcException(new Status(StatusCode.ResourceExhausted, "no database connection is available"));
             }
 
             if (lawId is not (KnownLawId or FlakyLawId))

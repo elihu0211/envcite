@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cached_property
 from types import TracebackType
-from typing import Self
+from typing import Any, Self, cast
 
 import psycopg
 from psycopg_pool import ConnectionPool
@@ -174,37 +175,50 @@ class OntologyStore:
     ) -> None:
         self.close()
 
-    def get_law(self, key: LawKey, *, as_of: str = "") -> LawRecord | None:
+    def get_law(
+        self, key: LawKey, *, as_of: str = "", timeout: float | None = None
+    ) -> LawRecord | None:
         """`as_of`（ISO 日期，空為今日）有效版本的法規；法規不存在或該日無版本時為 None。"""
-        found = self._resolve(key, as_of)
+        found = self._resolve(key, as_of, timeout=timeout)
         return found[1] if found else None
 
-    def list_articles(self, key: LawKey, *, as_of: str = "") -> list[ArticleRecord] | None:
+    def list_articles(
+        self, key: LawKey, *, as_of: str = "", timeout: float | None = None
+    ) -> list[ArticleRecord] | None:
         """`as_of` 當日有效的各條；法規或版本不存在為 None，有版本而無有效條為 []，兩者語意不同。"""
-        found = self._resolve(key, as_of)
+        deadline = _deadline(timeout)
+        found = self._resolve(key, as_of, timeout=_remaining(deadline))
         if found is None:
             return None
         resource_id, _ = found
-        with self._pool.connection() as conn, conn.cursor() as cur:
-            cur.execute(
+        with self.read_connection(timeout=_remaining(deadline)) as conn:
+            rows = _rows(
+                conn,
                 _LIST_ARTICLES,
                 {"resource": resource_id, "language": LANGUAGE, "on": _date(as_of)},
             )
-            return [ArticleRecord(iri=iri, number=number) for iri, number in cur.fetchall()]
+        return [ArticleRecord(iri=iri, number=number) for iri, number in rows]
 
     def list_invalidations(
-        self, key: LawKey, *, as_of: str = "", article_number: str = ""
+        self,
+        key: LawKey,
+        *,
+        as_of: str = "",
+        article_number: str = "",
+        timeout: float | None = None,
     ) -> list[InvalidationRecord] | None:
         """`as_of` 當日因違憲而失效的條文單元；法規或版本不存在為 None，沒有失效為 []。
 
         `article_number` 非空時只看該條（含其下各項）。
         """
-        found = self._resolve(key, as_of)
+        deadline = _deadline(timeout)
+        found = self._resolve(key, as_of, timeout=_remaining(deadline))
         if found is None:
             return None
         resource_id, _ = found
-        with self._pool.connection() as conn, conn.cursor() as cur:
-            cur.execute(
+        with self.read_connection(timeout=_remaining(deadline)) as conn:
+            rows = _rows(
+                conn,
                 "SELECT i.ruling_no, r.ruling_kind::text, r.decided_on, r.source_url, r.excerpt,"
                 "       i.path, i.invalid_from, x.partial"
                 "  FROM corpus.invalidations_at(%(resource)s, %(language)s, %(on)s::date) AS i"
@@ -221,30 +235,35 @@ class OntologyStore:
                     "article": article_number.strip(),
                 },
             )
-            return [
-                InvalidationRecord(
-                    no, kind, decided.isoformat(), url, excerpt, path, since.isoformat(), partial
-                )
-                for no, kind, decided, url, excerpt, path, since, partial in cur.fetchall()
-            ]
+        return [
+            InvalidationRecord(
+                no, kind, decided.isoformat(), url, excerpt, path, since.isoformat(), partial
+            )
+            for no, kind, decided, url, excerpt, path, since, partial in rows
+        ]
 
-    def law_exists(self, key: LawKey) -> bool:
+    def law_exists(self, key: LawKey, *, timeout: float | None = None) -> bool:
         """法規在語料裡有沒有，不論哪一天。區分「查無此法」與「該日無版本」。"""
         if not is_valid_law_id(key.local_id):
             return False
-        with self._pool.connection() as conn, conn.cursor() as cur:
-            cur.execute(
-                "SELECT 1 FROM corpus.legal_resource"
-                " WHERE jurisdiction = %s::corpus.jurisdiction"
-                "   AND id_scheme = %s::corpus.id_scheme"
-                "   AND local_id = %s",
-                (key.jurisdiction, key.id_scheme, key.local_id),
+        with self.read_connection(timeout=timeout) as conn:
+            return (
+                _one(
+                    conn,
+                    "SELECT 1 FROM corpus.legal_resource"
+                    " WHERE jurisdiction = %s::corpus.jurisdiction"
+                    "   AND id_scheme = %s::corpus.id_scheme"
+                    "   AND local_id = %s",
+                    (key.jurisdiction, key.id_scheme, key.local_id),
+                )
+                is not None
             )
-            return cur.fetchone() is not None
 
-    def resource_id(self, key: LawKey, *, as_of: str = "") -> int | None:
+    def resource_id(
+        self, key: LawKey, *, as_of: str = "", timeout: float | None = None
+    ) -> int | None:
         """`as_of` 有效版本的法規之內部編號；法規不存在或該日無版本時為 None。"""
-        found = self._resolve(key, as_of)
+        found = self._resolve(key, as_of, timeout=timeout)
         return found[0] if found else None
 
     @cached_property
@@ -266,10 +285,16 @@ class OntologyStore:
     def read_connection(self, *, timeout: float | None = None) -> Iterator[Conn]:
         """唯讀連線，在一個交易內（結束時一律回滾）。
 
-        `timeout`（秒）成為這個交易的 `statement_timeout`：呼叫的期限用完，資料庫端的查詢跟著被
-        取消，不佔著連線跑完。
+        `timeout`（秒）同時是跟池子等待的上限與這個交易的 `statement_timeout`：呼叫的期限用完，
+        查詢被取消，也不在池裡等到呼叫端已經離開。沒有期限時沿用池子自己的等待上限，不設
+        `statement_timeout`。
+
+        期限已經用完時直接丟 `QueryCanceled`，不向池子要連線：等待時間不大於 0 時，psycopg
+        即使池裡有空連線也丟 `PoolTimeout`，那會被誤記成容量用盡。
         """
-        with self._pool.connection() as conn, conn.transaction(force_rollback=True):
+        if timeout is not None and timeout <= 0:
+            raise psycopg.errors.QueryCanceled("deadline already spent")
+        with self._pool.connection(timeout=timeout) as conn, conn.transaction(force_rollback=True):
             if timeout is not None:
                 conn.execute(
                     "SELECT set_config('statement_timeout', %s, true)",
@@ -299,6 +324,7 @@ class OntologyStore:
         max_df: float = 0.0,
         laws: Sequence[str] = (),
         jurisdiction: str | None = None,
+        timeout: float | None = None,
     ) -> list[SearchHit]:
         """`as_of`（空為今日）有效的條，字面臂比對已分詞的 `terms`，語意臂比對 `embedding`。
 
@@ -309,13 +335,34 @@ class OntologyStore:
 
         `laws`（法規代碼）非空時兩臂只在這些法規與依其授權訂定的命令裡找
         （`retrieval.law_scope`）；範圍在 `as_of` 沒有任何可檢索的條時，改在全庫找，不回空。
+
+        `timeout`（秒）是這一次檢索剩下的預算，兩次查詢共用；沒有期限時為 None。
         """
+        deadline = _deadline(timeout)
         hits = self._search(
-            terms, tokenizer, as_of, limit, embedding, model, max_df, tuple(laws), jurisdiction
+            terms,
+            tokenizer,
+            as_of,
+            limit,
+            embedding,
+            model,
+            max_df,
+            tuple(laws),
+            jurisdiction,
+            timeout=_remaining(deadline),
         )
         if laws and not hits:
             hits = self._search(
-                terms, tokenizer, as_of, limit, embedding, model, max_df, (), jurisdiction
+                terms,
+                tokenizer,
+                as_of,
+                limit,
+                embedding,
+                model,
+                max_df,
+                (),
+                jurisdiction,
+                timeout=_remaining(deadline),
             )
         return hits
 
@@ -330,9 +377,11 @@ class OntologyStore:
         max_df: float,
         laws: tuple[str, ...],
         jurisdiction: str | None = None,
+        timeout: float | None = None,
     ) -> list[SearchHit]:
-        with self._pool.connection() as conn, conn.cursor() as cur:
-            cur.execute(
+        with self.read_connection(timeout=timeout) as conn:
+            rows = _rows(
+                conn,
                 _SEARCH,
                 {
                     "laws": list(laws),
@@ -348,36 +397,39 @@ class OntologyStore:
                     "jurisdiction": jurisdiction,
                 },
             )
-            return [
-                SearchHit(
-                    iri=iri,
-                    jurisdiction=jur,
-                    id_scheme=scheme,
-                    local_id=lid,
-                    law_title=title,
-                    number=number,
-                    content=content,
-                    lexical_score=lexical,
-                    semantic_similarity=semantic,
-                )
-                for (
-                    iri,
-                    jur,
-                    scheme,
-                    lid,
-                    title,
-                    number,
-                    content,
-                    lexical,
-                    semantic,
-                ) in cur.fetchall()
-            ]
+        return [
+            SearchHit(
+                iri=iri,
+                jurisdiction=jur,
+                id_scheme=scheme,
+                local_id=lid,
+                law_title=title,
+                number=number,
+                content=content,
+                lexical_score=lexical,
+                semantic_similarity=semantic,
+            )
+            for (
+                iri,
+                jur,
+                scheme,
+                lid,
+                title,
+                number,
+                content,
+                lexical,
+                semantic,
+            ) in rows
+        ]
 
-    def _resolve(self, key: LawKey, as_of: str) -> tuple[int, LawRecord] | None:
+    def _resolve(
+        self, key: LawKey, as_of: str, *, timeout: float | None = None
+    ) -> tuple[int, LawRecord] | None:
         if not is_valid_law_id(key.local_id):
             return None
-        with self._pool.connection() as conn, conn.cursor() as cur:
-            cur.execute(
+        with self.read_connection(timeout=timeout) as conn:
+            row = _one(
+                conn,
                 _RESOLVE,
                 {
                     "law": key.local_id,
@@ -387,7 +439,6 @@ class OntologyStore:
                     "id_scheme": key.id_scheme,
                 },
             )
-            row = cur.fetchone()
         if row is None:
             return None
         (
@@ -414,3 +465,31 @@ class OntologyStore:
 def _date(as_of: str) -> str:
     """空 `as_of` 為今日，由資料庫解析以與查詢同一時鐘。"""
     return as_of or "today"
+
+
+def _deadline(timeout: float | None) -> float | None:
+    """`timeout` 秒後的 monotonic 時刻；沒有期限為 None。"""
+    if timeout is None:
+        return None
+    return time.monotonic() + timeout
+
+
+def _remaining(deadline: float | None) -> float | None:
+    """距離 `deadline` 還剩的秒數；沒有期限為 None。"""
+    if deadline is None:
+        return None
+    return deadline - time.monotonic()
+
+
+def _rows(conn: Conn, query: str, params: Any) -> list[tuple[Any, ...]]:
+    """`read_connection` 的列型別是 object；查詢結果在邊界轉成 Any，呼叫端再組成紀錄。"""
+    with conn.cursor() as cur:
+        cur.execute(query, params)
+        return cast(list[tuple[Any, ...]], cur.fetchall())
+
+
+def _one(conn: Conn, query: str, params: Any) -> tuple[Any, ...] | None:
+    with conn.cursor() as cur:
+        cur.execute(query, params)
+        row = cur.fetchone()
+    return None if row is None else cast(tuple[Any, ...], row)

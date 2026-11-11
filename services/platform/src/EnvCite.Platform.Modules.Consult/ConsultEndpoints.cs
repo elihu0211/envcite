@@ -112,7 +112,9 @@ public static partial class ConsultEndpoints
         {
             return Results.Problem(ex.Status.Detail, statusCode: StatusCodes.Status400BadRequest);
         }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable or StatusCode.DeadlineExceeded)
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable
+            or StatusCode.DeadlineExceeded
+            or StatusCode.ResourceExhausted)
         {
             return Results.Problem("Consult service unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
         }

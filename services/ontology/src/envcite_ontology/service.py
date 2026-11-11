@@ -6,11 +6,13 @@
 from __future__ import annotations
 
 import logging
+import threading
 
 import grpc
 
 from envcite.ontology.v2 import ontology_pb2 as pb
 from envcite.ontology.v2 import ontology_pb2_grpc
+from envcite_grpc import remaining_seconds
 from envcite_ontology import errors
 from envcite_ontology.embedding import Embedder, EmbeddingError
 from envcite_ontology.identifiers import jurisdiction_filter, law_key
@@ -39,15 +41,20 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         law_names: LawNames,
         embedder: Embedder | None = None,
         lexical_max_df: float = 0.0,
+        embed_slots: int | None = None,
     ) -> None:
         self._store = store
         self._law_names = law_names
         self._lexical_max_df = lexical_max_df
         self._segmenter = segmenter
         self._embedder = embedder
+        # 名額滿了就略過語意臂。None 表示不限（測試直接建構、不走伺服器預算時）。
+        self._embed_slots = (
+            threading.BoundedSemaphore(embed_slots) if embed_slots is not None else None
+        )
 
-    def _not_found(self, key: LawKey, as_of: str) -> errors.ServiceError:
-        if self._store.law_exists(key):
+    def _not_found(self, key: LawKey, as_of: str, *, timeout: float | None) -> errors.ServiceError:
+        if self._store.law_exists(key, timeout=timeout):
             when = f"in force on {as_of}" if as_of else "in force today"
             return errors.not_found(errors.AS_OF_NOT_COVERED, f"law '{key}' has no version {when}")
         return errors.not_found(errors.LAW_NOT_FOUND, f"law '{key}' not found")
@@ -64,9 +71,9 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def GetLaw(self, request: pb.GetLawRequest, context: grpc.ServicerContext) -> pb.GetLawResponse:
         _log_call(context, "GetLaw", _identifier_subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
-        law = self._store.get_law(key, as_of=request.as_of)
+        law = self._store.get_law(key, as_of=request.as_of, timeout=remaining_seconds(context))
         if law is None:
-            raise self._not_found(key, request.as_of)
+            raise self._not_found(key, request.as_of, timeout=remaining_seconds(context))
         return pb.GetLawResponse(
             law=pb.Law(
                 identifier=pb.LawIdentifier(
@@ -87,9 +94,11 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     ) -> pb.ListArticlesResponse:
         _log_call(context, "ListArticles", _identifier_subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
-        articles = self._store.list_articles(key, as_of=request.as_of)
+        articles = self._store.list_articles(
+            key, as_of=request.as_of, timeout=remaining_seconds(context)
+        )
         if articles is None:
-            raise self._not_found(key, request.as_of)
+            raise self._not_found(key, request.as_of, timeout=remaining_seconds(context))
         return pb.ListArticlesResponse(
             articles=[pb.Article(iri=a.iri, number=a.number) for a in articles]
         )
@@ -101,10 +110,13 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         _log_call(context, "ListInvalidations", _identifier_subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         found = self._store.list_invalidations(
-            key, as_of=request.as_of, article_number=request.article_number
+            key,
+            as_of=request.as_of,
+            article_number=request.article_number,
+            timeout=remaining_seconds(context),
         )
         if found is None:
-            raise self._not_found(key, request.as_of)
+            raise self._not_found(key, request.as_of, timeout=remaining_seconds(context))
         return pb.ListInvalidationsResponse(
             invalidations=[
                 pb.Invalidation(
@@ -147,6 +159,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
             max_df=self._lexical_max_df,
             laws=self._law_names.find(request.query),
             jurisdiction=jurisdiction,
+            timeout=remaining_seconds(context),
         )
         return pb.SearchArticlesResponse(
             hits=[
@@ -170,11 +183,19 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def _query_embedding(self, query: str) -> list[float] | None:
         if self._embedder is None:
             return None
+        slots = self._embed_slots
+        # 不等待：名額滿了就改走字面臂，慢的嵌入端點不能占滿伺服器的執行緒。
+        if slots is not None and not slots.acquire(blocking=False):
+            log.warning("semantic arm skipped: embed slots are full")
+            return None
         try:
             return self._embedder.embed([query])[0]
         except EmbeddingError as e:
             log.warning("semantic arm skipped: %s", e)
             return None
+        finally:
+            if slots is not None:
+                slots.release()
 
 
 def _identifier_subject(identifier: pb.LawIdentifier) -> str:
