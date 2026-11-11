@@ -13,7 +13,7 @@ public sealed class PlatformHostOptions : ISectionOptions
 
     /// <summary>
     /// 啟動時種一個 <c>dev</c> 租戶與它的第一位擁有者（<see cref="DevelopmentSeed"/>）。只在 Development 環境有效：
-    /// 其他環境即使打開也不會執行，正式環境的第一位擁有者由營運者經 <c>/admin</c> 建立。
+    /// 其他環境即使打開也不會執行，正式環境的第一位擁有者由營運者以命令列建立。
     /// </summary>
     public bool SeedDevelopmentData { get; set; }
 }

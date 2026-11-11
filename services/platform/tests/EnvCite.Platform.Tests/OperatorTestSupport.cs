@@ -24,7 +24,7 @@ internal static partial class OperatorTestSupport
 
     public static string CodeAt(string key, DateTimeOffset at) => new Totp(Base32Encoding.ToBytes(key)).ComputeTotp(at.UtcDateTime);
 
-    /// <summary>以營運者金鑰的身分（服務）建立一位營運者；回傳初始密碼。</summary>
+    /// <summary>經服務建立一位營運者；回傳初始密碼。</summary>
     public static async Task<(string Id, string Email, string Password)> NewOperatorAsync(WebApplicationFactory<Program> app, string? email = null)
     {
         email ??= NewOperatorEmail();

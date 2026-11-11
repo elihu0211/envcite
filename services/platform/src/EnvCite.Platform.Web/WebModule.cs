@@ -102,7 +102,7 @@ public static class WebModule
         });
 
     /// <summary>
-    /// 把後台掛在 <c>/ui</c>、客戶入口掛在 <c>/portal</c>（頁面路由寫在各頁的 <c>@page</c>）。與 <c>/v2</c>、<c>/admin</c>
+    /// 把後台掛在 <c>/ui</c>、客戶入口掛在 <c>/portal</c>（頁面路由寫在各頁的 <c>@page</c>）。與 <c>/v2</c>
     /// 的路徑互不重疊，不在速率限制、計量的群組內。需要 <c>UseAntiforgery()</c>。
     /// </summary>
     public static WebApplication MapPlatformWeb(this WebApplication app)

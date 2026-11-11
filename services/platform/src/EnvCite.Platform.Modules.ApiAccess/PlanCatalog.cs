@@ -6,7 +6,7 @@ namespace EnvCite.Platform.Modules.ApiAccess;
 /// 租戶 → 方案。沒有方案就回 null，不是退回某個內建方案：完全付費制下，沒有方案就是沒有服務。
 /// </summary>
 /// <remarks>
-/// 來源依序：<b>資料庫的指派</b>（營運後台與 <c>/admin</c> 改的；<see cref="EntitlementLoader"/> 定期載入）→
+/// 來源依序：<b>資料庫的指派</b>（營運後台改的；<see cref="EntitlementLoader"/> 定期載入）→
 /// 設定的 <c>TenantPlans</c>（只讀的備援，給還沒有資料庫指派的租戶）→ 設定的 <c>DefaultPlan</c>。
 /// 每個請求都要查，所以查詢是對記憶體快照的同步讀取；本機的變更立即生效，其他副本在下一次重新載入
 /// （預設 10 秒）內看到。

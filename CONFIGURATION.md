@@ -22,7 +22,7 @@ owns: [config-naming, secret-sources]
 | 預設 | `ENVCITE_` 開頭 | — | — |
 | 第三方工具自己的標準名 | `OTEL_*`、libpq 的 `PG*`、`ASPNETCORE_*`、`DOTNET_*`、`ANTHROPIC_API_KEY` | — | 改了就不再被該工具讀到 |
 | Python | `ENVCITE_<服務>_<名稱>`，全大寫、單底線 | `ENVCITE_ONTOLOGY_DSN` | `env_prefix` 是 `ENVCITE_<服務>_`，欄位名是 `<名稱>` 小寫 |
-| .NET | `ENVCITE_` ＋ 設定路徑，`:` 寫成 `__` | `ENVCITE_Platform__AdminKeySha256` 對應 `Platform:AdminKeySha256` | 路徑沿用 `appsettings.json` 的區段與大小寫；.NET 設定不分大小寫，文件與部署清單照 `appsettings.json` 寫 |
+| .NET | `ENVCITE_` ＋ 設定路徑，`:` 寫成 `__` | `ENVCITE_Platform__DefaultPlan` 對應 `Platform:DefaultPlan` | 路徑沿用 `appsettings.json` 的區段與大小寫；.NET 設定不分大小寫，文件與部署清單照 `appsettings.json` 寫 |
 | 共用函式庫 | `ENVCITE_<套件>_<名稱>` | `ENVCITE_JOBKIT_OPEN_SECONDS` | — |
 | 工具腳本 | 沿用所屬服務的前綴 | `ENVCITE_ONTOLOGY_DEV_DSN`、`ENVCITE_ONTOLOGY_TEST_DSN` | — |
 | 機密 | 以 `_API_KEY`、`_PASSWORD` 或 `_SECRET` 結尾 | — | 非機密不用這些結尾。一看名稱就知道不能進設定檔、日誌與測試輸出 |

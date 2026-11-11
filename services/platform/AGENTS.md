@@ -7,7 +7,7 @@
 - **Name:** platform（`services/platform`；倉庫為 `envcite`）
 - **Role:** 多租戶控制平面：租戶、API key、限流、計量、對外 REST API；經 gRPC 呼叫 `services/ontology`（共享、不分租戶）與 `services/consult`（接地、租戶隔離）。
 - **Stack:** C# · .NET（SDK 版本在 `global.json`）· ASP.NET Core · PostgreSQL
-- **Auth surfaces:** 租戶 API key（`/v2`）；共用營運者金鑰（`/admin`）；營運者帳號加強制 TOTP（營運者後台 `/ui`）；客戶入口帳號（`/portal`，以設定開關）。
+- **Auth surfaces:** 租戶 API key（`/v2`）；營運者帳號加強制 TOTP（營運者後台 `/ui`）；客戶入口帳號（`/portal`，以設定開關）。
 
 ## Architecture
 
@@ -60,7 +60,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 - 設定只有一條讀法：每個設定群組是一個 `ISectionOptions` 類別（`libs/dotnet`），自己指名區段，以 `AddSectionOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `libs/dotnet` 的 `Telemetry.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
 - 新增群組：實作 `ISectionOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
-- **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`ENVCITE_Section__Key`，前綴由 `ServiceEnvironment` 套用；不帶前綴的環境變數不進設定，`OTEL_*` 除外）。機密（營運者金鑰雜湊、模型端點金鑰）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
+- **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`ENVCITE_Section__Key`，前綴由 `ServiceEnvironment` 套用；不帶前綴的環境變數不進設定，`OTEL_*` 除外）。機密（模型端點金鑰）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
 - 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
 - 部署環境不設 `DefaultPlan`（服務是全付費，沒方案的租戶在資料端點得 402）；Development 與測試設定它，讓剛建立的租戶能用。
 - Development 的種子資料（`SeedDevelopmentData`）只在 Development 生效，且只在對應表是空的時才建；一次性密碼只經 `Console.WriteLine` 印到終端機，不進 `ILogger`，沒有預設密碼。
@@ -75,8 +75,8 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 ## Auth & tenancy
 
 - **租戶 API**：`Authorization: Bearer <key>` → 以前綴查詢、SHA-256 加定時間比對 → `tenant` 宣告 → Finbuckle 解析租戶 → 租戶實體（`IsMultiTenant()`）自動過濾。
-- **營運者 API**（`/admin`）：`X-Admin-Key` 對 `Platform:AdminKeySha256`。
-- **cookie 永遠不認證 `/v2` 或 `/admin`**；每個 `/ui` 與 `/portal` 回應都是 `Cache-Control: no-store`。預設認證方案維持 ApiKey。
+- **沒有營運者 HTTP API**：營運者的建立與救援走命令列（`OperatorCli`），日常管理走 `/ui`；不再有常駐的共用金鑰。
+- **cookie 永遠不認證 `/v2`**；每個 `/ui` 與 `/portal` 回應都是 `Cache-Control: no-store`。預設認證方案維持 ApiKey。
 - 每個租戶範圍的查詢都必須以 `TenantId` 過濾；不經審查不得停用查詢過濾。只能**按名稱**繞過租戶過濾（`IgnoreQueryFilters([TenantToken])`），且只在審查過的跨租戶查詢（API key 認證、對話紀錄與冪等紀錄的保存期限清理）。
 - **一次性密碼**：隨機產生、只顯示一次、只存雜湊；不得進任何日誌或稽核。
 - 登入失敗**永遠不透露**帳號是否存在、是否鎖定或停用（一個訊息；不存在的帳號仍付一次雜湊的成本）；失敗的表單**不回填**密碼或驗證碼；稽核與日誌**不記輸入的內容**（人會把密碼貼進 email 欄；稽核表只增不改），只有形如 email 的輸入才記。
@@ -85,8 +85,8 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 ### 營運者帳號（`/ui`）
 
 - 有**自己的使用者儲存**（營運者不屬於任何租戶，不是租戶實體，無租戶過濾）；Identity 的金鑰型別選 `Guid`，是為了不與成員表的 `IdentityUser…<string>` 型別混成同一個繼承階層；儲存手動註冊。
-- **不開放自助註冊**：帳號只由 `/ui` 的營運者頁或營運者金鑰建立，兩條路都需要已被信任的身分。
-- **首次登入：強制改密碼，再綁驗證器**，順序固定（驗證因子不會設在金鑰持有者知道的密碼後面）。**TOTP 對每位營運者強制**，沒有角色豁免、不能關。
+- **不開放自助註冊**：帳號只由 `/ui` 的營運者頁或命令列建立，兩條路都需要已被信任的身分（已登入的營運者，或能在服務環境執行指令的系統管理者）。
+- **首次登入：強制改密碼，再綁驗證器**，順序固定（驗證因子不會設在系統管理者知道的密碼後面）。**TOTP 對每位營運者強制**，沒有角色豁免、不能關。
 - **授權每個請求都重查資料庫**：帳號存在、未停用、security stamp 仍有效；是否還要改密碼、是否已綁驗證器，由**資料庫**決定，不看 cookie 宣告。所以停用、重設密碼、重設驗證器在**下一個請求**生效；重新啟用也旋轉 stamp，舊 cookie 不復活。已開著的互動式電路不是 HTTP 請求，由 `RevalidatingServerAuthenticationStateProvider` 模式定期重驗。
 - **session 有絕對期限**（`Platform:Ui:SessionMaxAge`）：cookie 雖滑動續期，從登入起算超過上限一律拒絕並清掉 cookie。起點存在票的屬性（`OperatorSessionLimit.StartedAtKey`），不用 `IssuedUtc`（續期會重寫它）；沒有起點的票視為無效。時間走 `TimeProvider`。
 - 登入、第二步、改密碼與安全設定頁是靜態 SSR 的 POST 表單（`[ExcludeFromInteractiveRouting]`、antiforgery），受依來源位址的限流政策約束。
@@ -140,7 +140,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 ## 設計系統與營運者後台
 
 - 外觀只有一個來源：`Web/Design/DesignTokens.cs`。給代理看的視覺規格是同目錄的 `DESIGN.md`（企業配色、字級、字型）；改數值時兩份一起改，`DesignTokenTests` 核對它們相同。`platform.css` 只引用變數，**不得寫死**顏色、字重、時長、緩動、縮放或觸控尺寸；文字配色須符合 WCAG AA 對比；**只有淺色**，不做深色主題；視口斷點只寫在 `DesignTokens.Breakpoints`；表格卡片**不得**加 `overflow: hidden`；禁止停用縮放。以上由 `DesignTokenTests` 等測試守門。
-- 營運者頁面**不呼叫 `/admin` HTTP API**，改讀 `IAuditQuery`、`ITenantDirectory` 這類在 `SharedKernel` 的契約（與 `/admin` 端點用同一份實作）；每次呼叫開自己的 scope，因為 Blazor Server 電路的壽命遠長於一個請求，不能持有過期的 `DbContext`。
+- 營運者頁面讀 `IAuditQuery`、`ITenantDirectory` 這類在 `SharedKernel` 的契約，不經 HTTP；每次呼叫開自己的 scope，因為 Blazor Server 電路的壽命遠長於一個請求，不能持有過期的 `DbContext`。
 - 新發出的 API key 或一次性密碼只在不可由 Esc 或點背景關閉的對話框顯示一次，UI 不再重繪它；不可逆的動作（撤銷、移除方案）要確認。
 - 時間以臺北時間（固定 UTC+8）顯示；長 id 縮短時留**尾端**（UUIDv7 的開頭是時間戳）。
 - `Api.csproj` 設 `RequiresAspNetWebAssets`，因為 Razor 元件在類別庫裡、主機自己沒有 `.razor`；少了它 SDK 不會提供 `_framework/blazor.web.js`，電路不會連線，而伺服器渲染的 HTML 看不出任何問題。`DesignPageTests` 會抓取頁面引用的每個腳本以守住這點。

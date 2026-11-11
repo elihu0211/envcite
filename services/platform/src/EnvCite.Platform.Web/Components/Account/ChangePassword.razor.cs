@@ -17,7 +17,7 @@ public partial class ChangePassword(IOperatorAccount account, NavigationManager 
 
     protected override void OnInitialized() => Input ??= new();
 
-    /// <summary>這個 session 是否還在等使用者改掉營運者金鑰持有人經手的密碼。</summary>
+    /// <summary>這個 session 是否還在等使用者改掉系統管理者經手的密碼。</summary>
     private bool Pending => HttpContext.User.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is not null;
 
     private async Task ChangeAsync()

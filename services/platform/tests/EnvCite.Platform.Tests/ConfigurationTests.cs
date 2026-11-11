@@ -24,7 +24,6 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     [InlineData("Ontology:Address", "not-a-uri", "Ontology:Address must be an absolute URI")]
     [InlineData("Consult:Address", "", "Consult:Address must be an absolute URI")]
     [InlineData("Consult:Timeout", "00:00:00", "Consult:Timeout must be positive")]
-    [InlineData("Platform:AdminKeySha256", "not-hex", "Platform:AdminKeySha256 must be 64 hexadecimal")]
     [InlineData("Platform:TenantPlans:acme", "gold", "Platform:TenantPlans:acme names unknown plan 'gold'")]
     [InlineData("Platform:DefaultPlan", "gold", "Platform:DefaultPlan names unknown plan 'gold'")]
     [InlineData("Platform:EntitlementRefresh", "00:00:00", "Platform:EntitlementRefresh must be at least one second")]

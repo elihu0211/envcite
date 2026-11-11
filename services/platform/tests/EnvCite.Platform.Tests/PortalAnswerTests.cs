@@ -252,27 +252,26 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
     public async Task ConsentIsAnOperatorActionThatIsAuditedIdempotentAndNeedsAPlan()
     {
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ans-c");
-        using var admin = factory.CreateAdminClient();
-
-        var noPlan = await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true }, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.BadRequest, noPlan.StatusCode); // 同意跟著方案走
-        Assert.Equal(HttpStatusCode.NotFound, (await admin.PutAsJsonAsync("/admin/tenants/no-such/ai-answer", new { enabled = true }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
-
         var plans = factory.Services.GetRequiredService<IPlanAdmin>();
-        Assert.True((await plans.SetAsync(OperatorSession.Principal(), tenant.Id, "standard", CancellationToken.None)).IsOk);
-        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
+        var actor = OperatorSession.Principal();
+
+        Assert.Equal(AdminStatus.Invalid, (await plans.SetAiAnswerAsync(actor, tenant.Id, true, CancellationToken.None)).Status); // 同意跟著方案走
+        Assert.Equal(AdminStatus.NotFound, (await plans.SetAiAnswerAsync(actor, "no-such", true, CancellationToken.None)).Status);
+
+        Assert.True((await plans.SetAsync(actor, tenant.Id, "standard", CancellationToken.None)).IsOk);
+        Assert.True((await plans.SetAiAnswerAsync(actor, tenant.Id, true, CancellationToken.None)).IsOk);
+        Assert.True((await plans.SetAiAnswerAsync(actor, tenant.Id, true, CancellationToken.None)).IsOk);
 
         Assert.Single(await EventsAsync(tenant.Id, AuditActions.TenantAiAnswerEnabled)); // 重複開不重複記
         Assert.True((await factory.Services.GetRequiredService<ITenantDirectory>().FindAsync(tenant.Id, CancellationToken.None))!.AiAnswer);
 
-        Assert.Equal(HttpStatusCode.OK, (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = false }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
+        Assert.True((await plans.SetAiAnswerAsync(actor, tenant.Id, false, CancellationToken.None)).IsOk);
         Assert.Single(await EventsAsync(tenant.Id, AuditActions.TenantAiAnswerDisabled));
 
         // 再開一次，然後移除方案：同意跟著那一列一起消失，不會殘留到下一個方案。
-        await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/ai-answer", new { enabled = true }, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.True((await plans.SetAsync(OperatorSession.Principal(), tenant.Id, null, CancellationToken.None)).IsOk);
-        Assert.True((await plans.SetAsync(OperatorSession.Principal(), tenant.Id, "standard", CancellationToken.None)).IsOk);
+        await plans.SetAiAnswerAsync(actor, tenant.Id, true, CancellationToken.None);
+        Assert.True((await plans.SetAsync(actor, tenant.Id, null, CancellationToken.None)).IsOk);
+        Assert.True((await plans.SetAsync(actor, tenant.Id, "standard", CancellationToken.None)).IsOk);
         Assert.False((await factory.Services.GetRequiredService<ITenantDirectory>().FindAsync(tenant.Id, CancellationToken.None))!.AiAnswer);
     }
 

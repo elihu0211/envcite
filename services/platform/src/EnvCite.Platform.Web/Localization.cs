@@ -14,7 +14,7 @@ namespace EnvCite.Platform.Web;
 /// <summary>
 /// 介面語言：繁體中文（預設）與英文，用 ASP.NET Core 內建的 request localization。
 /// 順序是使用者自己選的（cookie）、瀏覽器的 <c>Accept-Language</c>、預設 zh-TW；網址不放語言前綴（後台與入口都要登入，不需要 SEO）。
-/// 只套用在後台、入口與 Blazor 連線：<c>/v2</c> 與 <c>/admin</c> 的行為不隨語言變。
+/// 只套用在後台、入口與 Blazor 連線：<c>/v2</c> 的行為不隨語言變。
 /// 語言與時區無關：時間照舊顯示臺北時間。
 /// </summary>
 public static class Localization

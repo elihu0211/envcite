@@ -115,10 +115,7 @@ public sealed class ApiKeyTests(PlatformFactory factory)
     public async Task RateLimitFollowsTheTenantsPlan()
     {
         // The exact identifier, not CreateTenantWithKeyAsync's randomised one: the plan is assigned by it.
-        using var admin = factory.CreateAdminClient();
-        using var created = await admin.PostAsJsonAsync("/admin/tenants", new CreateTenantRequest(PlatformFactory.ProTenant, "Paying"), cancellationToken: TestContext.Current.CancellationToken);
-        created.EnsureSuccessStatusCode();
-        var tenant = (await created.Content.ReadFromJsonAsync<TenantResponse>(cancellationToken: TestContext.Current.CancellationToken))!;
+        var tenant = await factory.CreateTenantAsync(PlatformFactory.ProTenant, "Paying");
         var paying = await factory.IssueKeyAsync(tenant.Id);
         using var client = factory.CreateTenantClient(paying.Key);
 

@@ -131,7 +131,7 @@ public sealed class OperatorPagesTests(PlatformFactory factory)
         Assert.Contains("建立租戶", html, StringComparison.Ordinal);
         Assert.Contains("簽發 API key", html, StringComparison.Ordinal);
         Assert.Contains(tenant.Identifier, html, StringComparison.Ordinal); // 租戶欄顯示識別碼，不是 Guid
-        Assert.Contains("營運者金鑰", html, StringComparison.Ordinal);
+        Assert.Contains(PlatformFactory.OperatorEmail, html, StringComparison.Ordinal); // 操作者欄顯示營運者的 email
         Assert.Contains(AuditLabels.Shorten(key.ApiKey.Id.ToString()), html, StringComparison.Ordinal); // 目標只顯示結尾；完整值在展開的細節
         Assert.True(
             html.IndexOf("簽發 API key", StringComparison.Ordinal) < html.IndexOf("建立租戶", StringComparison.Ordinal),

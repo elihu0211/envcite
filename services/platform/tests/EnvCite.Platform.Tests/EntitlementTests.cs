@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 
 using EnvCite.Platform.Data;
@@ -16,7 +15,7 @@ namespace EnvCite.Platform.Tests;
 /// <summary>
 /// 方案指派在資料庫、不在設定：營運者改了立即生效、留稽核，不必重新部署。
 /// 這裡的主機都清掉預設方案（正式環境的樣子）；每個主機有自己的記憶體快照，共用同一個資料庫，
-/// 所以兩個主機就是兩個副本。
+/// 所以兩個主機就是兩個副本。營運者的動作直接呼叫服務（營運後台用的就是它們）。
 /// </summary>
 [Collection(PlatformTestGroup.Name)]
 public sealed class EntitlementTests(PlatformFactory factory)
@@ -26,12 +25,9 @@ public sealed class EntitlementTests(PlatformFactory factory)
     private WebApplicationFactory<Program> Replica() =>
         factory.WithWebHostBuilder(b => b.UseSetting("Platform:DefaultPlan", string.Empty));
 
-    private static HttpClient Admin(WebApplicationFactory<Program> host)
-    {
-        var client = host.CreateClient();
-        client.DefaultRequestHeaders.Add(AdminKeyAuthenticationHandler.HeaderName, PlatformFactory.AdminKey);
-        return client;
-    }
+    private static IPlanAdmin Plans(WebApplicationFactory<Program> host) => host.Services.GetRequiredService<IPlanAdmin>();
+
+    private static IApiKeyAdmin Keys(WebApplicationFactory<Program> host) => host.Services.GetRequiredService<IApiKeyAdmin>();
 
     private static HttpClient Tenant(WebApplicationFactory<Program> host, string apiKey)
     {
@@ -49,7 +45,6 @@ public sealed class EntitlementTests(PlatformFactory factory)
     {
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("ent-a");
         await using var host = Replica();
-        using var admin = Admin(host);
         using var client = Tenant(host, key.Key);
 
         using (var before = await client.GetAsync(LawUri, TestContext.Current.CancellationToken))
@@ -57,15 +52,13 @@ public sealed class EntitlementTests(PlatformFactory factory)
             Assert.Equal(HttpStatusCode.PaymentRequired, before.StatusCode);
         }
 
-        using var assign = await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/plan", new SetPlanRequest("standard"), cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.OK, assign.StatusCode);
+        Assert.True((await Plans(host).SetAsync(OperatorSession.Principal(), tenant.Id, "standard", CancellationToken.None)).IsOk);
         using (var after = await client.GetAsync(LawUri, TestContext.Current.CancellationToken))
         {
             Assert.Equal(HttpStatusCode.OK, after.StatusCode);
         }
 
-        using var remove = await admin.DeleteAsync(new Uri($"/admin/tenants/{tenant.Id}/plan", UriKind.Relative), TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.OK, remove.StatusCode);
+        Assert.True((await Plans(host).SetAsync(OperatorSession.Principal(), tenant.Id, null, CancellationToken.None)).IsOk);
         using var removed = await client.GetAsync(LawUri, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.PaymentRequired, removed.StatusCode);
     }
@@ -75,12 +68,12 @@ public sealed class EntitlementTests(PlatformFactory factory)
     {
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ent-b");
         await using var host = Replica();
-        using var admin = Admin(host);
+        var actor = OperatorSession.Principal();
 
-        (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/plan", new SetPlanRequest("standard"), cancellationToken: TestContext.Current.CancellationToken)).Dispose();
-        (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/plan", new SetPlanRequest("standard"), cancellationToken: TestContext.Current.CancellationToken)).Dispose(); // 冪等：不再留紀錄
-        (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/plan", new SetPlanRequest("pro"), cancellationToken: TestContext.Current.CancellationToken)).Dispose();
-        (await admin.DeleteAsync(new Uri($"/admin/tenants/{tenant.Id}/plan", UriKind.Relative), TestContext.Current.CancellationToken)).Dispose();
+        await Plans(host).SetAsync(actor, tenant.Id, "standard", CancellationToken.None);
+        await Plans(host).SetAsync(actor, tenant.Id, "standard", CancellationToken.None); // 冪等：不再留紀錄
+        await Plans(host).SetAsync(actor, tenant.Id, "pro", CancellationToken.None);
+        await Plans(host).SetAsync(actor, tenant.Id, null, CancellationToken.None);
 
         var assigned = await EventsAsync(host, tenant.Id, AuditActions.TenantPlanAssigned);
         var removed = await EventsAsync(host, tenant.Id, AuditActions.TenantPlanRemoved);
@@ -89,7 +82,7 @@ public sealed class EntitlementTests(PlatformFactory factory)
         var newest = assigned[0]; // 新到舊
         Assert.Equal("standard", newest.Detail.GetProperty("previous").GetString());
         Assert.Equal("pro", newest.Detail.GetProperty("plan").GetString());
-        Assert.Equal(AuditActors.OperatorKey, newest.ActorType);
+        Assert.Equal(AuditActors.OperatorUser, newest.ActorType);
         Assert.Equal(JsonValueKind.Null, assigned[1].Detail.GetProperty("previous").ValueKind);
         Assert.Single(removed);
         Assert.Equal("pro", removed[0].Detail.GetProperty("previous").GetString());
@@ -100,16 +93,14 @@ public sealed class EntitlementTests(PlatformFactory factory)
     {
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ent-c");
         await using var host = Replica();
-        using var admin = Admin(host);
+        var actor = OperatorSession.Principal();
 
-        using var unknownPlan = await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/plan", new SetPlanRequest("gold"), cancellationToken: TestContext.Current.CancellationToken);
-        using var noPlan = await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/plan", new SetPlanRequest(null), cancellationToken: TestContext.Current.CancellationToken);
-        using var noTenant = await admin.PutAsJsonAsync("/admin/tenants/no-such-tenant/plan", new SetPlanRequest("standard"), cancellationToken: TestContext.Current.CancellationToken);
+        var unknownPlan = await Plans(host).SetAsync(actor, tenant.Id, "gold", CancellationToken.None);
+        var noTenant = await Plans(host).SetAsync(actor, "no-such-tenant", "standard", CancellationToken.None);
 
-        Assert.Equal(HttpStatusCode.BadRequest, unknownPlan.StatusCode);
-        Assert.Contains("standard", await unknownPlan.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal); // 說明有哪些方案
-        Assert.Equal(HttpStatusCode.BadRequest, noPlan.StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, noTenant.StatusCode);
+        Assert.Equal(AdminStatus.Invalid, unknownPlan.Status);
+        Assert.Equal(OutcomeCodes.PlanUnknown, unknownPlan.Code);
+        Assert.Equal(AdminStatus.NotFound, noTenant.Status);
         Assert.Empty(await EventsAsync(host, tenant.Id, AuditActions.TenantPlanAssigned));
     }
 
@@ -120,10 +111,9 @@ public sealed class EntitlementTests(PlatformFactory factory)
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("ent-d");
         await using var a = Replica();
         await using var b = Replica();
-        using var adminA = Admin(a);
         using var clientB = Tenant(b, key.Key);
 
-        (await adminA.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/plan", new SetPlanRequest("standard"), cancellationToken: TestContext.Current.CancellationToken)).Dispose();
+        Assert.True((await Plans(a).SetAsync(OperatorSession.Principal(), tenant.Id, "standard", CancellationToken.None)).IsOk);
 
         using (var stale = await clientB.GetAsync(LawUri, TestContext.Current.CancellationToken))
         {
@@ -141,9 +131,8 @@ public sealed class EntitlementTests(PlatformFactory factory)
     {
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("ent-e");
         await using var host = Replica();
-        using var admin = Admin(host);
         using var client = Tenant(host, key.Key);
-        (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/plan", new SetPlanRequest("standard"), cancellationToken: TestContext.Current.CancellationToken)).Dispose();
+        Assert.True((await Plans(host).SetAsync(OperatorSession.Principal(), tenant.Id, "standard", CancellationToken.None)).IsOk);
 
         for (var i = 0; i < PlatformFactory.RateLimitPermits; i++)
         {
@@ -156,7 +145,7 @@ public sealed class EntitlementTests(PlatformFactory factory)
             Assert.Equal(HttpStatusCode.TooManyRequests, over.StatusCode);
         }
 
-        (await admin.PutAsJsonAsync($"/admin/tenants/{tenant.Id}/plan", new SetPlanRequest("pro"), cancellationToken: TestContext.Current.CancellationToken)).Dispose();
+        Assert.True((await Plans(host).SetAsync(OperatorSession.Principal(), tenant.Id, "pro", CancellationToken.None)).IsOk);
         using var upgraded = await client.GetAsync(LawUri, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, upgraded.StatusCode);
     }
@@ -186,11 +175,9 @@ public sealed class EntitlementTests(PlatformFactory factory)
     public async Task ThePlanListShowsWhatIsDefinedInConfiguration()
     {
         await using var host = Replica();
-        using var admin = Admin(host);
 
-        var plans = await admin.GetFromJsonAsync<JsonElement>(new Uri("/admin/plans", UriKind.Relative), cancellationToken: TestContext.Current.CancellationToken);
+        var names = Plans(host).Plans.Select(p => p.Name).ToList();
 
-        var names = plans.EnumerateArray().Select(p => p.GetProperty("name").GetString()).ToList();
         Assert.Contains("standard", names);
         Assert.Contains("pro", names);
     }
@@ -203,22 +190,23 @@ public sealed class EntitlementTests(PlatformFactory factory)
         var (tenant, key) = await factory.CreateTenantWithKeyAsync("ent-g");
         var second = await factory.IssueKeyAsync(tenant.Id);
         await using var host = Replica();
-        using var admin = Admin(host);
+        var actor = OperatorSession.Principal();
 
-        var list = await admin.GetFromJsonAsync<JsonElement>(new Uri($"/admin/tenants/{tenant.Id}/api-keys", UriKind.Relative), cancellationToken: TestContext.Current.CancellationToken);
-        using var revoke = await admin.DeleteAsync(new Uri($"/admin/tenants/{tenant.Id}/api-keys/{second.ApiKey.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
-        using var again = await admin.DeleteAsync(new Uri($"/admin/tenants/{tenant.Id}/api-keys/{second.ApiKey.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
+        var list = await Keys(host).ListAsync(tenant.Id, CancellationToken.None);
+        var revoke = await Keys(host).RevokeAsync(actor, tenant.Id, second.ApiKey.Id, CancellationToken.None);
+        var again = await Keys(host).RevokeAsync(actor, tenant.Id, second.ApiKey.Id, CancellationToken.None);
         using var revokedKeyCall = await Tenant(host, second.Key).GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
         using var otherKeyCall = await Tenant(host, key.Key).GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
 
-        Assert.Equal(2, list.GetArrayLength());
-        Assert.Equal(HttpStatusCode.NoContent, revoke.StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, again.StatusCode);
+        Assert.Equal(2, list.Value!.Count);
+        Assert.True(revoke.IsOk);
+        Assert.True(again.IsOk);
+        Assert.NotNull(again.Value!.RevokedAt); // 重複撤銷仍是已撤銷；不重複記錄由下面的稽核檢查
         Assert.Equal(HttpStatusCode.Unauthorized, revokedKeyCall.StatusCode);
         Assert.Equal(HttpStatusCode.OK, otherKeyCall.StatusCode);
         var revoked = await EventsAsync(host, tenant.Id, AuditActions.ApiKeyRevoked);
         var event_ = Assert.Single(revoked); // 重複撤銷不重複記錄
-        Assert.Equal(AuditActors.OperatorKey, event_.ActorType);
+        Assert.Equal(AuditActors.OperatorUser, event_.ActorType);
         Assert.Equal(second.ApiKey.Id.ToString(), event_.TargetId);
     }
 
@@ -229,24 +217,22 @@ public sealed class EntitlementTests(PlatformFactory factory)
         var (a, _) = await factory.CreateTenantWithKeyAsync("ent-h1");
         var (b, keyOfB) = await factory.CreateTenantWithKeyAsync("ent-h2");
         await using var host = Replica();
-        using var admin = Admin(host);
 
-        using var response = await admin.DeleteAsync(new Uri($"/admin/tenants/{a.Id}/api-keys/{keyOfB.ApiKey.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
+        var response = await Keys(host).RevokeAsync(OperatorSession.Principal(), a.Id, keyOfB.ApiKey.Id, CancellationToken.None);
         using var stillWorks = await Tenant(host, keyOfB.Key).GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(AdminStatus.NotFound, response.Status);
         Assert.Equal(HttpStatusCode.OK, stillWorks.StatusCode);
         Assert.Empty(await EventsAsync(host, b.Id, AuditActions.ApiKeyRevoked));
     }
 
     [Fact]
-    public async Task ListingTheKeysOfAMissingTenantIs404()
+    public async Task ListingTheKeysOfAMissingTenantIsNotFound()
     {
         await using var host = Replica();
-        using var admin = Admin(host);
 
-        using var response = await admin.GetAsync(new Uri("/admin/tenants/no-such-tenant/api-keys", UriKind.Relative), TestContext.Current.CancellationToken);
+        var response = await Keys(host).ListAsync("no-such-tenant", CancellationToken.None);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(AdminStatus.NotFound, response.Status);
     }
 }

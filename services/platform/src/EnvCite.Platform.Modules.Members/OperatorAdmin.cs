@@ -10,9 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EnvCite.Platform.Modules.Members;
 
 /// <summary>
-/// 管理營運者帳號（<c>/admin/operators</c> 與本機開發的種子資料共用）。結構與 <see cref="MemberAdmin"/> 相同：
+/// 管理營運者帳號（後台、命令列與本機開發的種子資料共用）。結構與 <see cref="MemberAdmin"/> 相同：
 /// 一次性初始密碼只回傳一次、資料庫只存雜湊、不進日誌與稽核；每個動作留稽核。營運者沒有租戶，所以不必綁定租戶 scope。
-/// 沒有自助註冊：這是建立帳號的唯一途徑，呼叫端（持營運者金鑰的人）負責把初始密碼安全地交給對方。
+/// 沒有自助註冊：這是建立帳號的唯一途徑，呼叫端負責把初始密碼安全地交給對方。
 /// </summary>
 internal sealed class OperatorAdmin(IServiceScopeFactory scopes, TimeProvider time) : IOperatorAdmin
 {

@@ -115,19 +115,15 @@ public sealed class WebUiTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    // 後台掛上之後，API 與營運者 API 的驗證行為不變，且 cookie 不能冒充 API key。
+    // 後台掛上之後，API 的驗證行為不變，且 cookie 不能冒充 API key。
     [Fact]
     public async Task UiCookieDoesNotAuthenticateApi()
     {
         using var client = factory.SignedInClient(PlatformFactory.OperatorEmail);
 
         using var tenantApi = await client.GetAsync(new Uri("/v2/usage", UriKind.Relative), TestContext.Current.CancellationToken);
-        using var adminApi = await client.GetAsync(new Uri("/admin/tenants/any", UriKind.Relative), TestContext.Current.CancellationToken);
-        using var operatorsApi = await client.GetAsync(new Uri("/admin/operators", UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, tenantApi.StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, adminApi.StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, operatorsApi.StatusCode);
     }
 
     [Theory]

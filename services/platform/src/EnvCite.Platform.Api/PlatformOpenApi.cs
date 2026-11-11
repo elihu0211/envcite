@@ -6,7 +6,7 @@ using Microsoft.OpenApi;
 
 namespace EnvCite.Platform.Api;
 
-/// <summary>對外 REST 的 OpenAPI 規格：只收租戶可呼叫的 <c>/v2</c>，營運者的 <c>/admin</c> 不列入。</summary>
+/// <summary>對外 REST 的 OpenAPI 規格：只收租戶可呼叫的 <c>/v2</c>，營運者後台不列入。</summary>
 internal static class PlatformOpenApi
 {
     public const string ApiKeyScheme = "ApiKey";

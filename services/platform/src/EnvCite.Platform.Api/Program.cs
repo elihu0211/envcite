@@ -112,14 +112,6 @@ app.UseAntiforgery();
 
 app.MapPlatformHealth();
 
-app.MapGroup("/admin")
-    .RequireAuthorization(PlatformAuth.AdminPolicy)
-    .MapTenancyAdminEndpoints()
-    .MapApiAccessAdminEndpoints()
-    .MapAuditAdminEndpoints()
-    .MapMembersAdminEndpoints()
-    .MapOperatorsAdminEndpoints();
-
 var v2 = app.MapGroup("/v2")
     .RequireAuthorization(PlatformAuth.TenantPolicy)
     .RequireRateLimiting(PlatformAuth.PerTenantRateLimit);

@@ -126,7 +126,6 @@ public sealed class PortalSecurityTests(PlatformFactory factory)
         await SignInFullyAsync(browser, tenant.Identifier, email, initial);
 
         Assert.Equal(HttpStatusCode.Unauthorized, await browser.StatusAsync("/v2/me"));
-        Assert.Equal(HttpStatusCode.Unauthorized, await browser.StatusAsync($"/admin/tenants/{tenant.Id}"));
         var ui = await browser.GetAsync("/ui");
         Assert.Equal(HttpStatusCode.Redirect, ui.Status);
         Assert.StartsWith("/ui/login", ui.Location, StringComparison.Ordinal);

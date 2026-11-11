@@ -8,7 +8,7 @@ namespace EnvCite.ServiceDefaults;
 
 /// <summary>
 /// 環境變數進設定的方式，各服務同一個約定：自訂變數一律 <c>ENVCITE_</c> 加設定路徑（<c>:</c> 寫成 <c>__</c>），
-/// 如 <c>ENVCITE_Platform__AdminKeySha256</c>；不帶前綴的環境變數不進設定。
+/// 如 <c>ENVCITE_Platform__DefaultPlan</c>；不帶前綴的環境變數不進設定。
 /// 唯一的例外是 <c>OTEL_*</c>：它是 OpenTelemetry 的標準名稱，鍵名原樣保留，OpenTelemetry 才讀得到。
 /// </summary>
 public static class ServiceEnvironment

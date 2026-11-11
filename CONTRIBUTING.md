@@ -48,7 +48,7 @@ flowchart LR
 | 環境 | [開發用資料庫](#開發用資料庫) | `envcite`、`platform` 兩個資料庫可連線，所需擴充已啟用 |
 | 執行 | [開分支並啟動](#開分支並啟動) | `wt list` 顯示本分支 platform 的 URL |
 | 執行 | [本機第一個帳號](#本機第一個帳號) | 以終端機印出的一次性密碼登入成功 |
-| 執行 | [本機使用營運者金鑰](#本機使用營運者金鑰) | 按需：建立第二個營運者，或重設密碼與驗證器 |
+| 執行 | [本機建立與救援營運者](#本機建立與救援營運者) | 按需：建立第二個營運者，或重設密碼與驗證器 |
 | 驗證 | [常用指令](#常用指令) | 該服務要求的檢查在服務目錄通過 |
 | 交付 | [從開發到上線](#從開發到上線) | pull request 已 squash merge，worktree 已移除 |
 | 維護 | [升級版本](#升級版本) | 同一版本在表上的每一處於同一次提交更新 |
@@ -164,23 +164,20 @@ docker exec envcite-pg createdb -U <帳號> platform
 | 租戶擁有者 | `http://localhost:<port>/portal/<租戶>/login` | 變更密碼 |
 | 營運者 | `http://localhost:<port>/ui/login` | 依畫面變更密碼並綁定 TOTP，本機亦無例外 |
 
-`<port>` 取自 `wt list` 的 URL。忘記密碼時，清空 `platform` 資料庫並從[開發用資料庫](#開發用資料庫)重建，或以[營運者金鑰](#本機使用營運者金鑰)重設。欄位與端點見[索引](#索引)的「帳號」列。
+`<port>` 取自 `wt list` 的 URL。忘記密碼時，清空 `platform` 資料庫並從[開發用資料庫](#開發用資料庫)重建，或以[命令列](#本機建立與救援營運者)重設。欄位與指令見[索引](#索引)的「帳號」列。
 
-### 本機使用營運者金鑰
+### 本機建立與救援營運者
 
-建立第二個營運者，或重設密碼與驗證器時才需要。
-
-| 用途 | 呼叫 |
-|------|------|
-| 建立第二個營運者、重設密碼或驗證器 | `http://localhost:<port>/admin/...`，標頭 `X-Admin-Key: $ADMIN_KEY` |
-
-金鑰與啟動指令須在同一個終端機執行，環境變數才會傳入服務：
+建立第二個營運者，或重設密碼與驗證器時才需要；後台 `/ui/operators` 也能新增與重設。指令在 `services/platform` 目錄執行，連線沿用 `appsettings.Development.json` 的本機預設：
 
 ```bash
-printf '自訂本機用的金鑰：'; read -rs ADMIN_KEY; echo
-export ENVCITE_Platform__AdminKeySha256="$(printf %s "$ADMIN_KEY" | shasum -a 256 | cut -d' ' -f1)"
-wt platform
+cd services/platform
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- operator create <email> [顯示名稱]
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- operator reset-password <email>
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- operator reset-two-factor <email>
 ```
+
+一次性密碼只印在該終端機。指令的契約與結束碼見 [platform README「營運者帳號」](services/platform/README.md#營運者帳號)。
 
 ## 常用指令
 

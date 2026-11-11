@@ -155,34 +155,4 @@ public sealed class OutcomeCodeBehaviourTests(PlatformFactory factory)
         _ = await factory.EnsureOperatorAsync();
         AssertFailure(await operators.CreateAsync(actor, PlatformFactory.OperatorEmail, null, CancellationToken.None), AdminStatus.Conflict, OutcomeCodes.OperatorEmailTaken);
     }
-
-    // API：英文的 detail 加穩定的 code，呼叫端不必讀文字。
-    [Fact]
-    public async Task TheAdminApiAnswersWithACodeAndAnEnglishDetail()
-    {
-        using var admin = factory.CreateAdminClient();
-
-        using var response = await admin.PostAsJsonAsync(
-            new Uri("/admin/tenants", UriKind.Relative), new { identifier = "Bad Id!", name = "Name" }, TestContext.Current.CancellationToken);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal(OutcomeCodes.TenantIdentifierInvalid, body.GetProperty("code").GetString());
-        Assert.Equal(OutcomeCodes.English[OutcomeCodes.TenantIdentifierInvalid], body.GetProperty("errors").GetProperty("identifier")[0].GetString());
-    }
-
-    [Fact]
-    public async Task AnUnknownPlanOverTheApiIsCodedToo()
-    {
-        var (tenant, _) = await factory.CreateTenantWithKeyAsync("oc-api");
-        using var admin = factory.CreateAdminClient();
-
-        using var response = await admin.PutAsJsonAsync(
-            new Uri($"/admin/tenants/{tenant.Id}/plan", UriKind.Relative), new { plan = "no-such-plan" }, TestContext.Current.CancellationToken);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal(OutcomeCodes.PlanUnknown, body.GetProperty("code").GetString());
-        Assert.Contains("no-such-plan", body.GetProperty("errors").GetProperty("request")[0].GetString(), StringComparison.Ordinal);
-    }
 }

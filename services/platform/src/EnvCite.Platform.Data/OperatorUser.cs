@@ -6,7 +6,7 @@ namespace EnvCite.Platform.Data;
 /// 營運者後台的使用者：ASP.NET Core Identity，與客戶入口的 <see cref="ApplicationUser"/> 同一套機制，
 /// 但<b>另一個 user store</b>——營運者不屬於任何租戶，所以不放進隨 Finbuckle 分租戶的成員表（沒有 <c>IsMultiTenant()</c>，
 /// 沒有租戶篩選；理由同 <see cref="AuditEvent"/>）。同一個 email 只有一個帳號；登入名稱就是 email。
-/// 沒有自助註冊：帳號由持營運者金鑰的人建立（<c>IOperatorAdmin</c>）。
+/// 沒有自助註冊：帳號由已被信任的營運者或系統管理者建立（<c>IOperatorAdmin</c>）。
 /// </summary>
 /// <remarks>
 /// 主鍵是 <see cref="Guid"/>，不是成員的字串：Identity 的 EF store 要 claim／login／token 三個型別，而
@@ -19,7 +19,7 @@ public sealed class OperatorUser : IdentityUser<Guid>
 
     public string? DisplayName { get; set; }
 
-    /// <summary>初始密碼或被重設的密碼是營運者金鑰的持有人經手的，使用者第一次登入必須自己改。為 true 時後台只開放改密碼頁。</summary>
+    /// <summary>初始密碼或被重設的密碼是系統管理者經手的，使用者第一次登入必須自己改。為 true 時後台只開放改密碼頁。</summary>
     public bool MustChangePassword { get; set; }
 
     /// <summary>最近一次被接受的 TOTP 時間步（RFC 6238 §5.2）：同一組六位數碼不能用第二次。語意同 <see cref="ApplicationUser.LastTotpStep"/>。</summary>
