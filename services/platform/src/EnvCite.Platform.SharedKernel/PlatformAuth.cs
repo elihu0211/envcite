@@ -6,17 +6,11 @@ public static class PlatformAuth
     /// <summary>租戶 API key：<c>Authorization: Bearer sk_live_…</c>。</summary>
     public const string ApiKeyScheme = "ApiKey";
 
-    /// <summary>平台營運者 key：<c>X-Admin-Key</c> header。</summary>
-    public const string AdminKeyScheme = "AdminKey";
-
     /// <summary>需要已驗證的租戶 API key。</summary>
     public const string TenantPolicy = "Tenant";
 
     /// <summary>資料端點（本體、接地）：除了 <see cref="TenantPolicy"/>，租戶還要有方案；沒有方案回 402。</summary>
     public const string PaidPolicy = "Paid";
-
-    /// <summary>需要平台 admin key。</summary>
-    public const string AdminPolicy = "Admin";
 
     /// <summary>營運者後台的登入 cookie（cookie 名稱 <c>EnvCite.Ui</c>）。</summary>
     public const string UiCookieScheme = "UiCookie";

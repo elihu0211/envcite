@@ -89,10 +89,8 @@ public sealed class PaidOnlyTests(PlatformFactory factory)
     [Fact]
     public async Task AssigningAPlanTurnsTheDataEndpointsOn()
     {
-        using var admin = factory.CreateAdminClient();
         var identifier = $"paid-{Guid.NewGuid():N}"[..20];
-        using var created = await admin.PostAsJsonAsync("/admin/tenants", new CreateTenantRequest(identifier, "Paid"), cancellationToken: TestContext.Current.CancellationToken);
-        var tenant = (await created.Content.ReadFromJsonAsync<TenantResponse>(cancellationToken: TestContext.Current.CancellationToken))!;
+        var tenant = await factory.CreateTenantAsync(identifier, "Paid");
         var key = await factory.IssueKeyAsync(tenant.Id);
 
         await using (var without = HostWithoutDefaultPlan())

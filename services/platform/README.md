@@ -8,7 +8,7 @@ owns: [operator-accounts, reasoning-rest, corpus-scope]
 
 多租戶控制平面：租戶、API key、限流、計量，以及對外 REST API（`/v2`）。法規與接地請求經 gRPC 轉給 `services/ontology` 與 `services/consult`。回[倉庫總覽](../../README.md)。
 
-- 介面：`/v2` 租戶 REST API（API key）；`/admin` 營運者 API；`/ui` 營運者後台；`/portal` 客戶入口（以設定開關）。契約 [`openapi/openapi_v2.json`](openapi/openapi_v2.json)（`dotnet build` 產生、隨程式碼提交）；上游 gRPC 契約與外部呼叫端的接法見 [`proto/README.md`](../../proto/README.md)。
+- 介面：`/v2` 租戶 REST API（API key）；`/ui` 營運者後台；`/portal` 客戶入口（以設定開關）。契約 [`openapi/openapi_v2.json`](openapi/openapi_v2.json)（`dotnet build` 產生、隨程式碼提交）；上游 gRPC 契約與外部呼叫端的接法見 [`proto/README.md`](../../proto/README.md)。
 - 外部用戶端只經本服務進入系統；上游 [`ontology`](../ontology/README.md)、[`consult`](../consult/README.md)（gRPC，啟動時必須設定位址）。
 - 資料：PostgreSQL，schema `platform`；租戶隔離是執行期機制（租戶解析加查詢過濾）。
 
@@ -91,7 +91,7 @@ flowchart LR
 
 ## 營運者帳號
 
-營運者後台（`/ui`）的帳號不開放自助註冊；除本機 Development 的種子帳號外，以命令列或營運者金鑰經 `/admin` 建立。本機順序見 [`CONTRIBUTING.md`「本機第一個帳號」](../../CONTRIBUTING.md#本機第一個帳號)。staging 的步驟見 [`索引`](../../CONTRIBUTING.md#索引)。
+營運者後台（`/ui`）的帳號不開放自助註冊；除本機 Development 的種子帳號外，第一位營運者以命令列建立，之後的營運者在後台 `/ui/operators` 新增、停用、重設。本機順序見 [`CONTRIBUTING.md`「本機第一個帳號」](../../CONTRIBUTING.md#本機第一個帳號)。staging 的步驟見 [`索引`](../../CONTRIBUTING.md#索引)。
 
 **命令列**：在服務自己的環境裡執行（資料庫連線與設定取自該環境），不啟動 HTTP 伺服器，跑完就結束。一次性初始密碼只印在標準輸出，不進日誌或稽核；稽核的操作者記為 `system`。以服務的進入點執行，例如 `dotnet EnvCite.Platform.Api.dll operator create a@example.com`。
 
@@ -103,32 +103,10 @@ flowchart LR
 
 結束碼：`0` 成功、`1` 操作失敗（帳號已存在、找不到營運者）、`2` 用法錯誤。
 
-**營運者金鑰**：任意字串，呼叫 `/admin` 時放在 `X-Admin-Key`。服務只持有它的雜湊：
-
-| 設定鍵 | 格式 |
-|--------|------|
-| `ENVCITE_Platform__AdminKeySha256` | 金鑰 UTF-8 位元組的 SHA-256，64 個十六進位字元（大小寫皆可）；空字串即停用 `/admin`，格式不符則啟動失敗 |
-
-**前提**：該環境已設定上述雜湊，且 `/ui` 已開啟。
-
-**建立**：`POST /admin/operators`，JSON 本文欄位：
-
-| 欄位 | 說明 |
-|------|------|
-| `email` | 登入帳號 |
-| `displayName` | 顯示名稱 |
-
-回應含該帳號資料與**一次性初始密碼**；密碼只回這一次（資料庫只存雜湊，也不進日誌或稽核）。
+**前提**：`/ui` 已開啟。
 
 **規則**：首次登入（`/ui/login`，帳號為 email）先改密碼，再綁定 TOTP 驗證器；順序固定，TOTP 對每位營運者強制。
 
-**端點**：`{operatorId}` 取自列表。
-
-| 端點 | 用途 |
-|------|------|
-| `GET /admin/operators` | 列出營運者與狀態 |
-| `POST /admin/operators/{operatorId}/password-reset` | 重設密碼；回應含新的一次性密碼，之後須再走首次登入 |
-| `POST /admin/operators/{operatorId}/two-factor-reset` | 清除驗證器；該營運者下次登入重新綁定 |
-| `POST /admin/operators/{operatorId}/disable`、`/enable` | 停用／啟用；下一個請求生效 |
+**後台**：`/ui/operators` 列出營運者與狀態，可新增、重設密碼、重設驗證器、停用與啟用；停用在下一個請求生效。營運者不能對自己的那一列操作。
 
 不變式（授權、順序為何固定）見 [`AGENTS.md`](AGENTS.md) 的「營運者帳號」。

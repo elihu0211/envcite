@@ -20,7 +20,7 @@ public static class ApiAccessModule
     public static IServiceCollection AddEntitlementRefresh(this IServiceCollection services) =>
         services.AddHostedService(sp => sp.GetRequiredService<EntitlementLoader>());
 
-    /// <summary>註冊 ApiKey/AdminKey scheme、policy 與逐租戶的 rate limiting（API key 存於 <c>PlatformDbContext</c>）。</summary>
+    /// <summary>註冊 ApiKey scheme、policy 與逐租戶的 rate limiting（API key 存於 <c>PlatformDbContext</c>）。</summary>
     public static IServiceCollection AddApiAccessModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
@@ -35,20 +35,14 @@ public static class ApiAccessModule
 
         services.AddAuthentication(PlatformAuth.ApiKeyScheme)
             .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(
-                PlatformAuth.ApiKeyScheme, _ => { })
-            .AddScheme<AdminKeyOptions, AdminKeyAuthenticationHandler>(PlatformAuth.AdminKeyScheme, null);
-        services.AddOptions<AdminKeyOptions>(PlatformAuth.AdminKeyScheme)
-            .Configure<IOptions<ApiAccessOptions>>((scheme, api) => scheme.AdminKeySha256 = api.Value.AdminKeySha256);
+                PlatformAuth.ApiKeyScheme, _ => { });
 
         services.AddAuthorizationBuilder()
             .AddPolicy(PlatformAuth.TenantPolicy, p => p
                 .AddAuthenticationSchemes(PlatformAuth.ApiKeyScheme)
                 .RequireClaim(PlatformClaimTypes.TenantIdentifier))
             // 資料端點另外要求租戶有方案（完全付費制）；與 TenantPolicy 疊加，兩者都要過。
-            .AddPolicy(PlatformAuth.PaidPolicy, p => p.AddRequirements(new PlanRequirement()))
-            .AddPolicy(PlatformAuth.AdminPolicy, p => p
-                .AddAuthenticationSchemes(PlatformAuth.AdminKeyScheme)
-                .RequireRole("platform-admin"));
+            .AddPolicy(PlatformAuth.PaidPolicy, p => p.AddRequirements(new PlanRequirement()));
 
         services.AddRateLimiter(limiter =>
         {

@@ -65,7 +65,7 @@ internal static class OperatorUsers
 {
     /// <summary>
     /// 營運者的 Id 是 Guid，不是 Guid 的字串就是找不到。Identity 的 <c>FindByIdAsync</c> 會直接丟 <see cref="FormatException"/>，
-    /// 而這個 Id 來自網址（<c>/admin/operators/{id}</c>），不能讓一個亂打的網址變成 500。
+    /// 而這個 Id 來自使用者輸入，不能讓一個亂打的值變成 500。
     /// </summary>
     public static async Task<OperatorUser?> FindOperatorAsync(this UserManager<OperatorUser> users, string? id) =>
         Guid.TryParse(id, out _) ? await users.FindByIdAsync(id!) : null;

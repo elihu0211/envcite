@@ -56,7 +56,7 @@ public static class AdminOutcome
 public sealed record CreatedTenant(string Id, string Identifier, string? Name);
 
 /// <summary>
-/// 營運者建立租戶。營運後台與 <c>POST /admin/tenants</c> 共用這個實作。租戶 store 是另一個 DbContext，
+/// 營運者建立租戶。營運後台用這個實作。租戶 store 是另一個 DbContext，
 /// 無法與稽核同交易：建立成功後立刻記錄，記錄失敗就讓呼叫失敗（不靜默吞掉）。
 /// </summary>
 public interface ITenantProvisioner
@@ -79,7 +79,7 @@ public sealed record PlanInfo(string Name, int PermitLimit, TimeSpan Window);
 public sealed record PlanChange(string TenantId, string? Previous, string? Current);
 
 /// <summary>
-/// 營運者管理租戶的 API key。營運後台與 <c>/admin</c> 端點共用這個實作；每個動作都留稽核，
+/// 營運者管理租戶的 API key。營運後台用這個實作；每個動作都留稽核，
 /// 稽核與變更同一個交易。<paramref name="actor"/> 是做這件事的人（由已驗證的身分決定「誰」，不接受自報）。
 /// </summary>
 public interface IApiKeyAdmin

@@ -14,15 +14,12 @@ public sealed class PlanOptions
 }
 
 /// <summary>
-/// <c>Platform</c> 區段中，存取控制的部分：營運者 key、方案、各租戶所屬的方案。
-/// 區段名稱沿用 <c>Platform</c>，環境變數是 <c>ENVCITE_</c> 加設定路徑（<c>ENVCITE_Platform__AdminKeySha256</c> 等）。
+/// <c>Platform</c> 區段中，存取控制的部分：方案、各租戶所屬的方案。
+/// 區段名稱沿用 <c>Platform</c>，環境變數是 <c>ENVCITE_</c> 加設定路徑（<c>ENVCITE_Platform__DefaultPlan</c> 等）。
 /// </summary>
 public sealed class ApiAccessOptions : ISectionOptions
 {
     public static string SectionName => "Platform";
-
-    /// <summary>admin key 的十六進位 SHA-256（<c>Platform:AdminKeySha256</c>）。留空即停用 admin 存取。</summary>
-    public string AdminKeySha256 { get; set; } = string.Empty;
 
     public Dictionary<string, PlanOptions> Plans { get; set; } = [];
 
@@ -43,19 +40,13 @@ public sealed class ApiAccessOptions : ISectionOptions
 }
 
 /// <summary>
-/// 方案名稱打錯必須在啟動時失敗，而不是讓付費租戶默默落在別的層級；admin key 不是 SHA-256 十六進位也一樣。
+/// 方案名稱打錯必須在啟動時失敗，而不是讓付費租戶默默落在別的層級。
 /// </summary>
 public sealed class ApiAccessOptionsValidator : IValidateOptions<ApiAccessOptions>
 {
     public ValidateOptionsResult Validate(string? name, ApiAccessOptions options)
     {
         var failures = new List<string>();
-        if (options.AdminKeySha256.Length != 0
-            && (options.AdminKeySha256.Length != 64 || !options.AdminKeySha256.All(Uri.IsHexDigit)))
-        {
-            failures.Add("Platform:AdminKeySha256 must be 64 hexadecimal characters (a SHA-256), or empty to disable admin access.");
-        }
-
         var known = new HashSet<string>(options.Plans.Keys, StringComparer.Ordinal);
         failures.AddRange(options.TenantPlans
             .Where(t => !known.Contains(t.Value))

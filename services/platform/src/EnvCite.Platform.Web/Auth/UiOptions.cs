@@ -7,7 +7,7 @@ namespace EnvCite.Platform.Web.Auth;
 
 /// <summary>
 /// <c>Platform:Ui</c> 區段。營運者後台是可選功能，預設關閉（與 <c>Platform:Portal:Enabled</c> 對稱）；Development 一律開著。
-/// 沒開就不掛 <c>/ui</c>（回 404），API 照常啟動。後台的帳號存在資料庫（營運者金鑰的 <c>/admin/operators</c> 管理），
+/// 沒開就不掛 <c>/ui</c>（回 404），API 照常啟動。後台的帳號存在資料庫（命令列與後台管理），
 /// 不需要任何外部憑證，所以開關只是產品決定，不是 Secret 到位與否。
 /// </summary>
 public sealed class UiOptions : ISectionOptions

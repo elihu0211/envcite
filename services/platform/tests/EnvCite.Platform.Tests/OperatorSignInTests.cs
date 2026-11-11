@@ -105,7 +105,7 @@ public sealed class OperatorSignInTests(PlatformFactory factory)
         var (_, email, initial) = await NewOperatorAsync(host);
         using var browser = new PortalBrowser(host);
 
-        // 持營運者金鑰的人給的密碼：只能去改密碼，其他頁一律被導回改密碼頁（改密碼在先，註冊在後）。
+        // 系統管理者給的初始密碼：只能去改密碼，其他頁一律被導回改密碼頁（改密碼在先，註冊在後）。
         var signedIn = await browser.SubmitAsync(UiLogin, Credentials(email, initial));
         Assert.Equal(UiPassword, signedIn.Location);
         Assert.Equal(UiPassword, (await browser.GetAsync(UiHome)).Location);
@@ -160,7 +160,7 @@ public sealed class OperatorSignInTests(PlatformFactory factory)
         using var browser = new PortalBrowser(factory);
         _ = await browser.SubmitAsync(UiLogin, Credentials(email, initial));
 
-        Assert.Equal(HttpStatusCode.Unauthorized, await browser.StatusAsync("/admin/operators"));
+        Assert.Equal(HttpStatusCode.Unauthorized, await browser.StatusAsync("/v2/me"));
         var page = await browser.GetAsync(UiPassword);
         Assert.Contains("action=\"/ui/logout\"", page.Html, StringComparison.Ordinal);
     }
@@ -515,23 +515,6 @@ public sealed class OperatorSignInTests(PlatformFactory factory)
         var after = (await factory.Services.GetRequiredService<IOperatorAdmin>().ListAsync(CancellationToken.None)).Value!;
         Assert.Equal(before, after.Count);
         Assert.DoesNotContain(after, o => o.Email == stranger);
-    }
-
-    [Fact]
-    public async Task OnlyTheOperatorKeyCanCreateAccountsNotASessionNorAnApiKey()
-    {
-        var op = await factory.EnsureOperatorAsync();
-        using var session = factory.ClientFor(factory.SessionOf(op));
-        var (_, key) = await factory.CreateTenantWithKeyAsync("op-self");
-        using var tenant = factory.CreateTenantClient(key.Key);
-        using var anonymous = factory.CreateClient();
-        var body = new { email = NewOperatorEmail() };
-
-        using var bySession = await session.PostAsJsonAsync("/admin/operators", body, cancellationToken: TestContext.Current.CancellationToken);
-        using var byTenantKey = await tenant.PostAsJsonAsync("/admin/operators", body, cancellationToken: TestContext.Current.CancellationToken);
-        using var byNobody = await anonymous.PostAsJsonAsync("/admin/operators", body, cancellationToken: TestContext.Current.CancellationToken);
-
-        Assert.All(new[] { bySession, byTenantKey, byNobody }, r => Assert.Equal(HttpStatusCode.Unauthorized, r.StatusCode));
     }
 
     // ---- cookie ----------------------------------------------------------------------------------

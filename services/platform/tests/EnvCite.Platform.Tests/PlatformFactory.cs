@@ -1,10 +1,8 @@
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Security.Cryptography;
-using System.Text;
 
 using EnvCite.Platform.Modules.ApiAccess;
 using EnvCite.Platform.Modules.Tenancy;
+using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -22,7 +20,6 @@ namespace EnvCite.Platform.Tests;
 /// <summary>Boots the API against a throwaway PostgreSQL container with a controllable clock.</summary>
 public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    public const string AdminKey = "test-admin-key";
     public const int RateLimitPermits = 5;
 
     /// <summary>測試預設的營運者 email：<see cref="OperatorSession.SignedInClient"/> 在第一次用到時建立這個帳號。</summary>
@@ -58,8 +55,6 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.UseSetting("Platform:ApplyMigrationsOnStartup", "true");
         // appsettings.Development.json 開著本機的種子資料；共用資料庫不要多出一個 dev 租戶。種子由 DevelopmentSeedTests 以全新的資料庫測。
         builder.UseSetting("Platform:SeedDevelopmentData", "false");
-        builder.UseSetting("Platform:AdminKeySha256",
-            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(AdminKey))));
         builder.UseSetting("Platform:Ui:Enabled", "true");
         builder.UseSetting("Platform:Ui:SignInAttemptsPerMinute", "1000");
         // 所有測試共用同一個來源位址：預設的每分鐘 10 次會被別的測試用完。限流本身由 PortalRateLimitTests 以自己的主機（小額度）測。
@@ -92,13 +87,6 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         return new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString()) { Database = name }.ConnectionString;
     }
 
-    public HttpClient CreateAdminClient()
-    {
-        var client = CreateClient();
-        client.DefaultRequestHeaders.Add(AdminKeyAuthenticationHandler.HeaderName, AdminKey);
-        return client;
-    }
-
     public HttpClient CreateTenantClient(string apiKey)
     {
         var client = CreateClient();
@@ -106,28 +94,34 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         return client;
     }
 
+    /// <summary>Creates a tenant with exactly this identifier, the way the operator console does (for tests that assign a plan by identifier).</summary>
+    public async Task<TenantResponse> CreateTenantAsync(string identifier, string name)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        var created = await scope.ServiceProvider.GetRequiredService<ITenantProvisioner>()
+            .CreateAsync(OperatorSession.Principal(), identifier, name, CancellationToken.None);
+        Assert.True(created.IsOk, created.Message);
+        return new TenantResponse(created.Value!.Id, created.Value.Identifier, created.Value.Name);
+    }
+
     /// <summary>Creates a tenant with a unique identifier and issues one API key for it.</summary>
     public async Task<(TenantResponse Tenant, CreatedApiKey Key)> CreateTenantWithKeyAsync(
         string prefix, DateTimeOffset? expiresAt = null)
     {
-        using var admin = CreateAdminClient();
-        var identifier = $"{prefix}-{Guid.NewGuid():N}"[..30];
-
-        using var tenantResponse = await admin.PostAsJsonAsync("/admin/tenants", new CreateTenantRequest(identifier, prefix));
-        tenantResponse.EnsureSuccessStatusCode();
-        var tenant = (await tenantResponse.Content.ReadFromJsonAsync<TenantResponse>())!;
-
+        var tenant = await CreateTenantAsync($"{prefix}-{Guid.NewGuid():N}"[..30], prefix);
         var key = await IssueKeyAsync(tenant.Id, expiresAt);
         return (tenant, key);
     }
 
     public async Task<CreatedApiKey> IssueKeyAsync(string tenantId, DateTimeOffset? expiresAt = null)
     {
-        using var admin = CreateAdminClient();
-        using var response = await admin.PostAsJsonAsync(
-            $"/admin/tenants/{tenantId}/api-keys", new CreateApiKeyRequest("test", ["ontology:read"], expiresAt));
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<CreatedApiKey>())!;
+        var issued = await Services.GetRequiredService<IApiKeyAdmin>()
+            .IssueAsync(OperatorSession.Principal(), tenantId, "test", ["ontology:read"], expiresAt, CancellationToken.None);
+        Assert.True(issued.IsOk, issued.Message);
+        var info = issued.Value!.ApiKey;
+        return new CreatedApiKey(
+            issued.Value.Key,
+            new ApiKeySummary(info.Id, info.Name, info.Prefix, info.Scopes, info.CreatedAt, info.ExpiresAt, info.RevokedAt));
     }
 }
 

@@ -28,6 +28,7 @@ public interface IAuditLog
 /// <summary>稽核裡的「誰」：從已驗證的身分推得，不接受呼叫端自報。</summary>
 public static class AuditActors
 {
+    /// <summary>已移除的共用營運者金鑰所做的事件。不再有新事件，資料庫裡既有的稽核事件仍帶這個值，所以保留給稽核頁顯示。</summary>
     public const string OperatorKey = "operator-key";
     public const string OperatorUser = "operator-user";
     public const string TenantKey = "tenant-key";
@@ -40,12 +41,6 @@ public static class AuditActors
         if (user?.Identity?.IsAuthenticated != true)
         {
             return (Anonymous, null);
-        }
-
-        // 營運者 admin key：共用的一把 key，無從分辨是誰用的，所以記 key 本身。
-        if (user.IsInRole("platform-admin"))
-        {
-            return (OperatorKey, "admin-key");
         }
 
         // 程式自己做的事（例如本機開發的種子資料）：只有行程內的程式碼造得出這個角色，外部請求的身分都不會帶它。
