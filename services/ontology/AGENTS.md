@@ -82,7 +82,7 @@ uv run --env-file .env envcite-ontology
 - 資料不分租戶；`x-tenant-id`／`x-request-id` metadata 只用於日誌與稽核。
 - `ReasoningService` 唯讀。訊息強型別：列舉不用字串、數值用 `Decimal`（十進位文字，不用浮點）、`AdministrativePenaltyFacts` 用 `optional`。日期維持 ISO 8601 字串。
 - 錯誤一律 `errors.ServiceError`，由 `errors.maps_errors` 在 servicer 邊界轉成 `google.rpc.Status`；呼叫端依 `reason` 分流，不解析訊息。新增錯誤是新增常數，不改現有 reason 的意思。
-- 同步伺服器的執行緒池是固定的：`Evaluate` 有自己的並行名額，期限同時成為資料庫的 `statement_timeout`。gRPC 在呼叫沒有期限時 `time_remaining()` 回極大的數，不是 `None`，一律經 `envcite_grpc.remaining_seconds` 轉換。
+- 同步伺服器的執行緒池是固定的。請求路徑上的讀取與 `Evaluate` 把剩餘期限同時當成連線池等待上限與 `statement_timeout`；等不到連線回 `BUSY`，讀取查詢被取消回 `READ_TIMEOUT`（`Evaluate` 仍是 `EVALUATION_TIMEOUT`）。`Evaluate` 另有自己的並行名額。查詢嵌入的名額是 `server.py` 的 `QUERY_EMBED_SLOTS`，與 `WORKERS` 並列，滿了就略過語意臂。gRPC 在呼叫沒有期限時 `time_remaining()` 回極大的數，不是 `None`，一律經 `envcite_grpc.remaining_seconds` 轉換。
 - 連線選項成套放在 `envcite-grpc` 的 `connection.py`，改 keepalive／ping 前先看該套件的 README。
 
 ## Safety

@@ -33,7 +33,9 @@ internal sealed class LawSearch(
         {
             return AdminOutcome.Invalid<IReadOnlyList<LawHit>>(OutcomeCodes.UpstreamInvalidRequest, ex.Status.Detail);
         }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable or StatusCode.DeadlineExceeded)
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable
+            or StatusCode.DeadlineExceeded
+            or StatusCode.ResourceExhausted)
         {
             return AdminOutcome.Unavailable<IReadOnlyList<LawHit>>(OutcomeCodes.OntologyUnavailable);
         }

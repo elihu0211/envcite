@@ -53,6 +53,18 @@ public sealed class SearchTests(PlatformFactory factory)
     }
 
     [Fact]
+    public async Task ABusyOntologyIsUnavailable()
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync("search-busy");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        using var response = await client.PostAsJsonAsync(
+            SearchPath, new SearchRequest("pool-busy", null, null), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+    }
+
+    [Fact]
     public async Task ASuccessfulSearchIsMeteredOnceUnderItsOwnOperation()
     {
         var (_, key) = await factory.CreateTenantWithKeyAsync("search-c");

@@ -28,6 +28,9 @@ WORKERS = 10
 #: 同時進行的 RPC 上限。固定大小的執行緒池之外，超過的請求排隊；上限讓排隊有界，超過就
 #: 以 RESOURCE_EXHAUSTED 立即失敗，而不是無限等下去。
 MAX_CONCURRENT_RPCS = 2 * WORKERS
+#: 同時向嵌入端點取查詢向量的上限。必須小於 WORKERS：慢端點不能占滿執行緒，名額滿了
+#: 立刻改走字面臂，查詢仍成功。
+QUERY_EMBED_SLOTS = 2
 
 
 def build_server(
@@ -53,7 +56,10 @@ def build_server(
     segmenter = Segmenter(store.lexicon())
     law_names = store.law_names()
     ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
-        OntologyServicer(store, segmenter, law_names, embedder, lexical_max_df), server
+        OntologyServicer(
+            store, segmenter, law_names, embedder, lexical_max_df, embed_slots=QUERY_EMBED_SLOTS
+        ),
+        server,
     )
     reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(ReasoningServicer(store), server)
     reflection.enable_server_reflection(

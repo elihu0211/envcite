@@ -82,6 +82,7 @@ public sealed class OntologyGatewayTests(PlatformFactory factory)
     [Theory]
     [InlineData("unknown-act", HttpStatusCode.NotFound)]
     [InlineData(FakeOntologyServer.UnavailableLawId, HttpStatusCode.ServiceUnavailable)]
+    [InlineData(FakeOntologyServer.BusyLawId, HttpStatusCode.ServiceUnavailable)]
     public async Task GrpcErrorsMapToHttpStatus(string lawId, HttpStatusCode expected)
     {
         var (_, key) = await factory.CreateTenantWithKeyAsync("errors");

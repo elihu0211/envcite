@@ -67,9 +67,11 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         key = law_key(self._store, request.identifier, v)
         on = v.date("as_of", request.as_of)
         v.check()
-        resource_id = self._store.resource_id(key, as_of=request.as_of)
+        resource_id = self._store.resource_id(
+            key, as_of=request.as_of, timeout=remaining_seconds(context)
+        )
         if resource_id is None:
-            raise self._not_found(key, request.as_of)
+            raise self._not_found(key, request.as_of, timeout=remaining_seconds(context))
         with self._store.read_connection(timeout=remaining_seconds(context)) as conn:
             return annotation_read.list_statements(conn, resource_id, on)
 
@@ -191,8 +193,10 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                 "evaluation did not finish within the deadline",
             ) from error
 
-    def _not_found(self, key: LawKey, as_of: str) -> errors.ServiceError:
-        if self._store.law_exists(key):
+    def _not_found(
+        self, key: LawKey, as_of: str, *, timeout: float | None = None
+    ) -> errors.ServiceError:
+        if self._store.law_exists(key, timeout=timeout):
             when = f"in force on {as_of}" if as_of else "in force today"
             return errors.not_found(errors.AS_OF_NOT_COVERED, f"law '{key}' has no version {when}")
         return errors.not_found(errors.LAW_NOT_FOUND, f"law '{key}' not found")
