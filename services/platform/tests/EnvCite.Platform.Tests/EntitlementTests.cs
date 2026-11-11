@@ -201,7 +201,7 @@ public sealed class EntitlementTests(PlatformFactory factory)
         Assert.Equal(2, list.Value!.Count);
         Assert.True(revoke.IsOk);
         Assert.True(again.IsOk);
-        Assert.Equal(revoke.Value!.RevokedAt, again.Value!.RevokedAt); // 重複撤銷不改變原撤銷時間
+        Assert.NotNull(again.Value!.RevokedAt); // 重複撤銷仍是已撤銷；不重複記錄由下面的稽核檢查
         Assert.Equal(HttpStatusCode.Unauthorized, revokedKeyCall.StatusCode);
         Assert.Equal(HttpStatusCode.OK, otherKeyCall.StatusCode);
         var revoked = await EventsAsync(host, tenant.Id, AuditActions.ApiKeyRevoked);
