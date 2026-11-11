@@ -32,6 +32,26 @@ def _worker_database(server_dsn: str) -> str:
     return make_conninfo(server_dsn, dbname=name)
 
 
+# 0027 checks then creates cluster-wide roles. Applied migration files are
+# checksummed, so the race cannot be fixed there. xdist workers migrate one
+# shared server at the same moment; the lock makes that creation one at a time.
+_MIGRATE_LOCK = "envcite_ontology_test_migrate"
+
+
+def _migrate(server_dsn: str, url: str) -> None:
+    if not os.environ.get("PYTEST_XDIST_WORKER"):
+        with psycopg.connect(url) as conn:
+            apply_all(conn)
+        return
+    with psycopg.connect(server_dsn, autocommit=True) as admin:
+        admin.execute("SELECT pg_advisory_lock(hashtext(%s))", (_MIGRATE_LOCK,))
+        try:
+            with psycopg.connect(url) as conn:
+                apply_all(conn)
+        finally:
+            admin.execute("SELECT pg_advisory_unlock(hashtext(%s))", (_MIGRATE_LOCK,))
+
+
 @pytest.fixture(scope="session")
 def dsn() -> Iterator[str]:
     """A real PostgreSQL, migrated.
@@ -50,8 +70,7 @@ def dsn() -> Iterator[str]:
     external = os.environ.get("ENVCITE_ONTOLOGY_TEST_DSN")
     if external:
         url = _worker_database(external)
-        with psycopg.connect(url) as conn:
-            apply_all(conn)
+        _migrate(external, url)
         yield url
         return
 
