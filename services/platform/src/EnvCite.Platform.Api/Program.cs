@@ -86,6 +86,12 @@ if (!generatingOpenApi && app.Environment.IsDevelopment() && hostOptions.SeedDev
     }
 }
 
+// 營運者的命令列入口（建立、救援）：不啟動 HTTP 伺服器，跑完就結束。
+if (!generatingOpenApi && OperatorCli.IsCommand(args))
+{
+    return await OperatorCli.RunAsync(app.Services, args, Console.Out, Console.Error, CancellationToken.None);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -135,3 +141,4 @@ v2.MapGroup(string.Empty)
 app.MapPlatformWeb();
 
 await app.RunAsync();
+return 0;

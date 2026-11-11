@@ -91,7 +91,17 @@ flowchart LR
 
 ## 營運者帳號
 
-營運者後台（`/ui`）的帳號不開放自助註冊；除本機 Development 的種子帳號外，一律以營運者金鑰經 `/admin` 建立。本機順序見 [`CONTRIBUTING.md`「本機第一個帳號」](../../CONTRIBUTING.md#本機第一個帳號)。staging 的步驟見 [`索引`](../../CONTRIBUTING.md#索引)。
+營運者後台（`/ui`）的帳號不開放自助註冊；除本機 Development 的種子帳號外，以命令列或營運者金鑰經 `/admin` 建立。本機順序見 [`CONTRIBUTING.md`「本機第一個帳號」](../../CONTRIBUTING.md#本機第一個帳號)。staging 的步驟見 [`索引`](../../CONTRIBUTING.md#索引)。
+
+**命令列**：在服務自己的環境裡執行（資料庫連線與設定取自該環境），不啟動 HTTP 伺服器，跑完就結束。一次性初始密碼只印在標準輸出，不進日誌或稽核；稽核的操作者記為 `system`。以服務的進入點執行，例如 `dotnet EnvCite.Platform.Api.dll operator create a@example.com`。
+
+| 指令 | 用途 |
+|------|------|
+| `operator create <email> [顯示名稱]` | 建立營運者，印出一次性初始密碼 |
+| `operator reset-password <email>` | 重設密碼，印出新的一次性密碼 |
+| `operator reset-two-factor <email>` | 清除驗證器；對方下次登入重新綁定 |
+
+結束碼：`0` 成功、`1` 操作失敗（帳號已存在、找不到營運者）、`2` 用法錯誤。
 
 **營運者金鑰**：任意字串，呼叫 `/admin` 時放在 `X-Admin-Key`。服務只持有它的雜湊：
 
