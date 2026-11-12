@@ -458,8 +458,22 @@ a:where(:not([class*="mud-"])) {
 }
 
 /* 欄標題小一級、次要色；數字與代碼用等寬字型。 */
-.ep-table .mud-button-text-default {
+/* MudBlazor 文字按鈕的預設色是黑字，與連結不一致：一律用連結色（錯誤與繼承色的另有 class，不受影響；停用時 Mud 自己的規則更具體）。 */
+.mud-button-text.mud-button-text-default {
     color: var(--ep-link);
+}
+
+/* 表格卡片是空的時候：表頭、分頁沒有東西可說，收掉；計數（螢幕閱讀器的 live region）留著、只是看不到。 */
+.ep-table-card:has(.ep-empty) :is(thead, .mud-table-pagination) {
+    display: none;
+}
+
+.ep-table-card:has(.ep-empty) > .ep-status {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
 }
 
 .ep-table th,
