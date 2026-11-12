@@ -4,7 +4,7 @@
     @ChildContent
     @if (!string.IsNullOrEmpty(Hint))
     {
-        <p id="@HintId" class="ep-hint">@Hint</p>
+        <p class="ep-hint">@Hint</p>
     }
 </div>
 
@@ -20,7 +20,4 @@
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
-
-    /// <summary>說明的 id：控制項的 <c>aria-describedby</c> 指向它。</summary>
-    public string HintId => $"{For}-hint";
 }

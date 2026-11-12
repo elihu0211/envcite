@@ -13,8 +13,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
 
-public sealed record CreateApiKeyRequest(string Name, string[]? Scopes, DateTimeOffset? ExpiresAt);
-
 public sealed record ApiKeySummary(Guid Id, string Name, string Prefix, string[] Scopes,
     DateTimeOffset CreatedAt, DateTimeOffset? ExpiresAt, DateTimeOffset? RevokedAt)
 {
