@@ -42,7 +42,6 @@ Thumbs.db
 !.claude/
 
 # agent 的個人設定與本機狀態
-CLAUDE.local.md
 .claude/settings.local.json
 .claude/worktrees/
 .claude/agent-memory-local/
