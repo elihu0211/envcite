@@ -449,4 +449,59 @@
   <data name="一律使用暗色外觀" xml:space="preserve"><value>Always use the dark appearance</value></data>
   <data name="選了立即生效，只記在這個瀏覽器。" xml:space="preserve"><value>Takes effect as soon as you choose, and is remembered in this browser only.</value></data>
   <data name="無法儲存外觀。這次先套用，下次開啟會恢復原本的外觀。" xml:space="preserve"><value>Could not save the appearance. It applies for now, but will revert to the previous one the next time you open the page.</value></data>
+  <data name="1 年" xml:space="preserve"><value>1 year</value></data>
+  <data name="30 天" xml:space="preserve"><value>30 days</value></data>
+  <data name="90 天" xml:space="preserve"><value>90 days</value></data>
+  <data name="。請貼進身分來源的 SCIM 設定（Secret Token）；之後這裡只會看到它的前綴。" xml:space="preserve"><value>. Paste it into the SCIM settings of your identity provider (Secret Token); afterwards only its prefix is shown here.</value></data>
+  <data name="不會到期" xml:space="preserve"><value>Never expires</value></data>
+  <data name="久未收到請求" xml:space="preserve"><value>No requests for a while</value></data>
+  <data name="儲存設定" xml:space="preserve"><value>Save settings</value></data>
+  <data name="到期" xml:space="preserve"><value>Expires</value></data>
+  <data name="到期（台北）" xml:space="preserve"><value>Expires (Taipei)</value></data>
+  <data name="受管成員" xml:space="preserve"><value>Managed members</value></data>
+  <data name="只有擁有者能管理目錄同步。" xml:space="preserve"><value>Only owners can manage directory sync.</value></data>
+  <data name="同步次數" xml:space="preserve"><value>Changes synced</value></data>
+  <data name="客戶的身分來源（Entra ID、Okta、Google Workspace）以 SCIM 把成員推進這個租戶。停用是停用，不是刪除；帳號與稽核紀錄都保留。" xml:space="preserve"><value>The customer's identity provider (Entra ID, Okta, Google Workspace) pushes members into this tenant over SCIM. Deactivating is not deleting: the account and its audit records are kept.</value></data>
+  <data name="尚未連線" xml:space="preserve"><value>Not connected yet</value></data>
+  <data name="已儲存設定。" xml:space="preserve"><value>Settings saved.</value></data>
+  <data name="已撤銷這把 token，用它的身分來源立刻被拒絕。" xml:space="preserve"><value>Token revoked. An identity provider using it is rejected immediately.</value></data>
+  <data name="已解除 {0} 的目錄同步管理。" xml:space="preserve"><value>Released {0} from directory sync.</value></data>
+  <data name="已解除目錄同步的管理，角色與停用回到你手上。" xml:space="preserve"><value>Released from directory sync. Role and deactivation are back in your hands.</value></data>
+  <data name="已關閉" xml:space="preserve"><value>Off</value></data>
+  <data name="已關閉目錄同步。" xml:space="preserve"><value>Directory sync turned off.</value></data>
+  <data name="建立 {0}・更新 {1}・停用 {2}" xml:space="preserve"><value>Created {0} · updated {1} · deactivated {2}</value></data>
+  <data name="接受目錄同步" xml:space="preserve"><value>Accept directory sync</value></data>
+  <data name="接管既有成員" xml:space="preserve"><value>Adopt existing members</value></data>
+  <data name="新的目錄同步 token" xml:space="preserve"><value>New directory sync token</value></data>
+  <data name="最後使用" xml:space="preserve"><value>Last used</value></data>
+  <data name="最後使用（台北）" xml:space="preserve"><value>Last used (Taipei)</value></data>
+  <data name="最後收到請求" xml:space="preserve"><value>Last request received</value></data>
+  <data name="最近被拒絕：{0}" xml:space="preserve"><value>Last rejected: {0}</value></data>
+  <data name="有效期限" xml:space="preserve"><value>Validity</value></data>
+  <data name="由目錄同步管理" xml:space="preserve"><value>Managed by directory sync</value></data>
+  <data name="由身分來源管理角色與停用" xml:space="preserve"><value>Role and deactivation follow the identity provider</value></data>
+  <data name="目錄同步" xml:space="preserve"><value>Directory sync</value></data>
+  <data name="目錄同步 token" xml:space="preserve"><value>Directory sync tokens</value></data>
+  <data name="目錄同步摘要" xml:space="preserve"><value>Directory sync summary</value></data>
+  <data name="等待身分來源連線" xml:space="preserve"><value>Waiting for the identity provider</value></data>
+  <data name="簽發 token" xml:space="preserve"><value>Issue token</value></data>
+  <data name="被拒絕" xml:space="preserve"><value>Rejected</value></data>
+  <data name="複製 SCIM Base URL" xml:space="preserve"><value>Copy SCIM Base URL</value></data>
+  <data name="規則不允許的變更" xml:space="preserve"><value>Changes the rules do not allow</value></data>
+  <data name="解除 {0} 的目錄同步管理" xml:space="preserve"><value>Release {0} from directory sync</value></data>
+  <data name="解除後，{0} 的角色與停用回到人手上，身分來源要重新接管才會再動他。確定？" xml:space="preserve"><value>After releasing, {0}'s role and deactivation are back in people's hands, and the identity provider must adopt them again before it changes them. Continue?</value></data>
+  <data name="解除目錄同步的管理" xml:space="preserve"><value>Release from directory sync</value></data>
+  <data name="解除管理" xml:space="preserve"><value>Release</value></data>
+  <data name="讓你之後認得這把 token 是給誰用的，例如「Entra ID」。" xml:space="preserve"><value>So you can tell later who this token is for, for example "Entra ID".</value></data>
+  <data name="讓公司的身分來源自動建立、更新與停用成員。" xml:space="preserve"><value>Let your company's identity provider create, update and deactivate members automatically.</value></data>
+  <data name="身分來源推送的 email 在這個組織已有成員時，連結到他並由目錄同步管理（角色與停用維持原樣）。擁有者不會被接管。" xml:space="preserve"><value>When the identity provider pushes an email that already belongs to a member of this organization, link to that member and manage them through directory sync (role and deactivation stay as they are). Owners are never adopted.</value></data>
+  <data name="身分來源沒有指定角色時使用。目錄同步最高只能授予管理員，擁有者由人指派。" xml:space="preserve"><value>Used when the identity provider does not specify a role. Directory sync can grant admin at most; owners are assigned by people.</value></data>
+  <data name="這個環境沒有開啟目錄同步。" xml:space="preserve"><value>Directory sync is not enabled in this environment.</value></data>
+  <data name="這把 token" xml:space="preserve"><value>This token </value></data>
+  <data name="運作中" xml:space="preserve"><value>Working</value></data>
+  <data name="還沒有目錄同步 token。簽發一把交給身分來源，它才能連線。" xml:space="preserve"><value>There is no directory sync token yet. Issue one and give it to the identity provider so it can connect.</value></data>
+  <data name="關閉後，{0} 的身分來源推送立刻被拒絕。既有成員與 token 都不動，客戶可以自己重新開啟。確定？" xml:space="preserve"><value>After turning it off, pushes from {0}'s identity provider are rejected immediately. Existing members and tokens are untouched, and the customer can turn it back on. Continue?</value></data>
+  <data name="關閉時身分來源的請求一律被拒絕，既有成員不受影響。" xml:space="preserve"><value>While off, every request from the identity provider is rejected; existing members are not affected.</value></data>
+  <data name="關閉目錄同步" xml:space="preserve"><value>Turn off directory sync</value></data>
+  <data name="預設角色" xml:space="preserve"><value>Default role</value></data>
 </root>

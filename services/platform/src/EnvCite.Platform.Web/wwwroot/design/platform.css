@@ -1801,6 +1801,21 @@ a.ep-brand {
     font-weight: var(--ep-label-l-weight);
 }
 
+/* 勾選欄位（CheckboxField）：勾選框與標籤是同一個可點的區域，高度達觸控尺寸；勾選框的顏色跟主色。 */
+.ep-check {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
+    min-block-size: var(--ep-touch-target);
+    font-size: var(--ep-body-m-size);
+    font-weight: var(--ep-label-l-weight);
+    cursor: pointer;
+}
+
+.ep-check input {
+    accent-color: var(--ep-primary);
+}
+
 .ep-input {
     background: var(--ep-surface);
     border: 1px solid var(--ep-border-control);

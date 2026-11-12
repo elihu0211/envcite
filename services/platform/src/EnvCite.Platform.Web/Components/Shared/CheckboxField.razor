@@ -1,0 +1,33 @@
+@using System.Linq.Expressions
+@* 表單的一個勾選欄位：勾選框與右邊的標籤是同一個可點的區域，說明（選用）在下面。用 @bind-Value 接到表單模型的布林欄位。
+   頁面不自己寫 <InputCheckbox>；靜態渲染的表單裡沒勾就不會送出，所以欄位的預設與「沒送出」都是 false。 *@
+<div class="ep-field-row">
+    <label for="@For" class="ep-check">
+        <InputCheckbox id="@For" Value="Value" ValueChanged="ValueChanged" ValueExpression="ValueExpression" />
+        <span>@Label</span>
+    </label>
+    @if (!string.IsNullOrEmpty(Hint))
+    {
+        <p class="ep-hint">@Hint</p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string For { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Hint { get; set; }
+
+    [Parameter]
+    public bool Value { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ValueChanged { get; set; }
+
+    [Parameter]
+    public Expression<Func<bool>>? ValueExpression { get; set; }
+}

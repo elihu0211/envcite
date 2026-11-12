@@ -22,12 +22,7 @@ else
                 @L["這組密碼"]<strong>@L["只會顯示這一次"]</strong>@L["。請親手交給"] <strong>@_issued.Member.Email</strong>@L["（不要貼在公開的聊天室或工單裡）；"]
                 @L["對方第一次登入時必須自己改掉，之後連你也不會知道他的密碼。"]
             </FormAlert>
-            <p class="ep-secret-row">
-                <code class="ep-mono ep-secret" id="issued-password">@_issuedPassword</code>
-                <button type="button" class="ep-btn ep-btn-quiet ep-btn-icon ep-js-only" data-copy-target="issued-password" data-done="@L["已複製"]">
-                    <NavIcon Path="@Icons.Material.Outlined.ContentCopy" /><span>@L["複製"]</span>
-                </button>
-            </p>
+            <SecretReveal Id="issued-password" Value="@_issuedPassword" />
         </SectionCard>
     }
 
@@ -86,6 +81,10 @@ else
                 {
                     <StatusBadge Tone="info">@L["兩步驟"]</StatusBadge>
                 }
+                @if (row.Member.Managed)
+                {
+                    <StatusBadge Tone="info">@L["由目錄同步管理"]</StatusBadge>
+                }
             </text>,
         },
         new()
@@ -101,22 +100,40 @@ else
                                 aria-label="@(member.Invited ? L["重寄邀請給 {0}", member.Email] : L["寄驗證信給 {0}", member.Email])">@(member.Invited ? L["重寄邀請"] : L["寄驗證信"])</button>
                     }
 
-                    @if (member.Disabled)
+                    @if (member.Managed)
                     {
-                        <button type="submit" name="Input.Action" value="@($"enable:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                aria-label="@L["重新啟用 {0}", member.Email]">@L["重新啟用"]</button>
-                    }
-                    else
-                    {
-                        <button type="submit" name="Input.Action" value="@($"disable:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                aria-label="@L["停用 {0}", member.Email]">@L["停用"]</button>
+                        @* 受目錄同步管理的人：角色與停用由身分來源決定，這裡不給改；擁有者可以先解除管理。 *@
+                        @if (CanRelease)
+                        {
+                            <button type="submit" name="Input.Action" value="@($"release:{member.Id}")" class="ep-btn ep-btn-quiet"
+                                    aria-label="@L["解除 {0} 的目錄同步管理", member.Email]">@L["解除管理"]</button>
+                        }
+
                         <button type="submit" name="Input.Action" value="@($"reset:{member.Id}")" class="ep-btn ep-btn-quiet"
                                 aria-label="@L["重設 {0} 的密碼", member.Email]">@L["重設密碼"]</button>
                     }
+                    else
+                    {
+                        @if (member.Disabled)
+                        {
+                            <button type="submit" name="Input.Action" value="@($"enable:{member.Id}")" class="ep-btn ep-btn-quiet"
+                                    aria-label="@L["重新啟用 {0}", member.Email]">@L["重新啟用"]</button>
+                        }
+                        else
+                        {
+                            <button type="submit" name="Input.Action" value="@($"disable:{member.Id}")" class="ep-btn ep-btn-quiet"
+                                    aria-label="@L["停用 {0}", member.Email]">@L["停用"]</button>
+                            <button type="submit" name="Input.Action" value="@($"reset:{member.Id}")" class="ep-btn ep-btn-quiet"
+                                    aria-label="@L["重設 {0} 的密碼", member.Email]">@L["重設密碼"]</button>
+                        }
+                    }
 
-                    <OptionSelect Name="@($"role-{member.Id}")" Label="@L["{0} 的角色", member.Email]" Options="GrantableNames" Value="@member.Role" />
-                    <button type="submit" name="Input.Action" value="@($"role:{member.Id}")" class="ep-btn ep-btn-quiet"
-                            aria-label="@L["變更 {0} 的角色", member.Email]">@L["變更角色"]</button>
+                    @if (!member.Managed)
+                    {
+                        <OptionSelect Name="@($"role-{member.Id}")" Label="@L["{0} 的角色", member.Email]" Options="GrantableNames" Value="@member.Role" />
+                        <button type="submit" name="Input.Action" value="@($"role:{member.Id}")" class="ep-btn ep-btn-quiet"
+                                aria-label="@L["變更 {0} 的角色", member.Email]">@L["變更角色"]</button>
+                    }
                 }
             </text>,
         },

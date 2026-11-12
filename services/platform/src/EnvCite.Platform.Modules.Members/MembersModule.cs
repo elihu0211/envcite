@@ -110,6 +110,7 @@ public static class MembersModule
         services.AddScoped<IDirectoryProvisioning, DirectoryProvisioning>();
         services.AddScoped<IDirectorySelfService, DirectorySelfService>();
         services.AddSingleton<IDirectoryAdmin, DirectoryAdmin>();
+        services.AddSingleton<IDirectoryAvailability, DirectoryAvailability>();
 
         // 目錄同步的入口（SCIM）：token 是自己的 scheme，與 API key 互不通用；路徑只在部署者開啟時才掛（ScimEndpoints）。
         services.AddSingleton<DirectoryMetrics>();

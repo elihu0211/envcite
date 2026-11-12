@@ -12,7 +12,8 @@ using MudBlazor;
 namespace EnvCite.Platform.Web.Components.Pages;
 
 public partial class TenantDetail(
-    ITenantDirectory directory, IApiKeyAdmin keys, IPlanAdmin plans, IMemberAdmin members, IUsageAdmin usage, IAuditQuery audit, IMailSender mail)
+    ITenantDirectory directory, IApiKeyAdmin keys, IPlanAdmin plans, IMemberAdmin members, IUsageAdmin usage, IAuditQuery audit, IMailSender mail,
+    IDirectoryAdmin directorySync, IDirectoryAvailability directoryFeature)
 {
     [Parameter] public string TenantId { get; set; } = string.Empty;
 
@@ -22,6 +23,7 @@ public partial class TenantDetail(
     private IReadOnlyList<AuditRecord> _recent = [];
     private IReadOnlyList<PlanInfo> _plans = [];
     private IReadOnlyList<TenantUsageSummary> _usage = [];
+    private DirectoryStatus? _directory;
     private int _usageDays;
     private string? _selectedPlan;
     private string? _loaded;
@@ -46,13 +48,13 @@ public partial class TenantDetail(
         await LoadAsync();
         if (!RendererInfo.IsInteractive && Error is null)
         {
-            Prerendered = new(TenantId, _tenant, _keys, _members, _recent, _usage);
+            Prerendered = new(TenantId, _tenant, _keys, _members, _recent, _usage, _directory);
         }
     }
 
     public sealed record TenantSnapshot(
         string TenantId, TenantSummary? Tenant, IReadOnlyList<ApiKeyInfo> Keys, IReadOnlyList<MemberInfo> Members,
-        IReadOnlyList<AuditRecord> Recent, IReadOnlyList<TenantUsageSummary> Usage);
+        IReadOnlyList<AuditRecord> Recent, IReadOnlyList<TenantUsageSummary> Usage, DirectoryStatus? Directory);
 
     /// <summary>預先渲染查到的資料交給互動渲染，不再查一次。重新連線不還原：資料可能已經變了，要重查。</summary>
     [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
@@ -61,7 +63,7 @@ public partial class TenantDetail(
     private void Show(TenantSnapshot snapshot)
     {
         _plans = plans.Plans;
-        (_tenant, _keys, _members, _recent, _usage) = (snapshot.Tenant, snapshot.Keys, snapshot.Members, snapshot.Recent, snapshot.Usage);
+        (_tenant, _keys, _members, _recent, _usage, _directory) = (snapshot.Tenant, snapshot.Keys, snapshot.Members, snapshot.Recent, snapshot.Usage, snapshot.Directory);
         _selectedPlan = _tenant?.Plan;
         Loading = false;
     }
@@ -90,6 +92,10 @@ public partial class TenantDetail(
         _recent = page.Items;
 
         await LoadUsageAsync();
+
+        // 功能面沒開就沒有這個區塊；租戶沒開連線時仍看得到（狀態、token），營運者才知道客戶設定到哪。
+        var sync = directoryFeature.Available ? await directorySync.GetStatusAsync(TenantId, CancellationToken.None) : null;
+        _directory = sync is { IsOk: true } ? sync.Value : null;
     }
 
     private async Task LoadUsageAsync()
@@ -140,6 +146,57 @@ public partial class TenantDetail(
     /// 用 <see cref="Uri.AbsoluteUri"/>（保留百分比編碼），複製出去的網址才貼得進信件與瀏覽器。
     /// </summary>
     private string PublicUrl(string path) => new Uri(new Uri(Navigation.BaseUri), path).AbsoluteUri;
+
+    /// <summary>身分來源要填的 SCIM Base URL。</summary>
+    private string ScimUrl => PublicUrl(ScimPaths.Prefix);
+
+    private async Task DisableDirectoryAsync()
+    {
+        var confirmed = await ConfirmAsync(
+            L["關閉目錄同步"], L["關閉後，{0} 的身分來源推送立刻被拒絕。既有成員與 token 都不動，客戶可以自己重新開啟。確定？", _tenant!.Identifier],
+            L["關閉"]);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            var off = await directorySync.DisableAsync(await ActorAsync(), TenantId, CancellationToken.None);
+            if (!off.IsOk)
+            {
+                Fail(off.Localized() ?? L["關閉失敗。"]);
+                return;
+            }
+
+            await RefreshAsync();
+            Succeed(L["已關閉目錄同步。"]);
+        });
+    }
+
+    private async Task ReleaseManagedAsync(MemberInfo member)
+    {
+        var confirmed = await ConfirmAsync(
+            L["解除目錄同步的管理"], L["解除後，{0} 的角色與停用回到人手上，身分來源要重新接管才會再動他。確定？", member.Email],
+            L["解除管理"]);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            var released = await directorySync.ReleaseManagedAsync(await ActorAsync(), TenantId, member.Id, CancellationToken.None);
+            if (!released.IsOk)
+            {
+                Fail(released.Localized() ?? L["操作失敗。"]);
+                return;
+            }
+
+            await RefreshAsync();
+            Succeed(L["已解除 {0} 的目錄同步管理。", member.Email]);
+        });
+    }
 
     private async Task AddMemberAsync()
     {

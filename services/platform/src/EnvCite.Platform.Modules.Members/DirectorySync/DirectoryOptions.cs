@@ -1,3 +1,4 @@
+using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.Options;
@@ -46,4 +47,11 @@ internal sealed class DirectoryOptionsValidator : IValidateOptions<DirectoryOpti
 
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
+}
+
+internal sealed class DirectoryAvailability(IOptions<DirectoryOptions> options) : IDirectoryAvailability
+{
+    public bool Available => options.Value.Enabled;
+
+    public TimeSpan StaleAfter => options.Value.StaleAfter;
 }
