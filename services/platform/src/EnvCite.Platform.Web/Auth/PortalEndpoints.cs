@@ -43,7 +43,7 @@ public static class PortalEndpoints
         app.MapPost($"{PortalPaths.Prefix}/{{tenant}}/appearance", (HttpContext context, IAntiforgery antiforgery, IAppearancePreference preference, IPortalAccount account) =>
             account.CurrentTenant is not { } tenant
                 ? Task.FromResult(Results.NotFound())
-                : AppearanceModule.SetAsync(context, antiforgery, preference, returnUrl => SafeReturnUrl(returnUrl, tenant.Identifier))).AllowAnonymous();
+                : AppearanceModule.SetAsync(context, antiforgery, preference, SignInRoutes.Portal(tenant.Identifier).SafeReturnUrl)).AllowAnonymous();
 
         return app;
     }
