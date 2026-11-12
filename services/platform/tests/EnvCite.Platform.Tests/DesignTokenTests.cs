@@ -555,6 +555,17 @@ public static partial class DesignTokenTests
         Assert.Equal("#FFFFFF", DesignTokens.QrSurface);
     }
 
+    // 窄卡片裡操作超過一個時，整排放到卡片最下面並可換行；留在右欄會讓右欄寬度等於整排按鈕，把左邊的電子郵件擠成一行兩三個字。
+    [Fact]
+    public static void CardRowsWithSeveralActionsPutThemOnTheirOwnLine()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        Assert.Matches(
+            @"@container ep-table \(max-width: 36rem\)[\s\S]*?td:last-child:has\(> :nth-child\(2\)\) \{[^}]*grid-column: 1;[^}]*display: flex;[^}]*flex-wrap: wrap;",
+            css);
+    }
+
     [Fact]
     public static void TheLargestTypeSizesAreFluid()
     {
