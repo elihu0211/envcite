@@ -90,6 +90,9 @@ public sealed partial class InvitationTests(PlatformFactory factory)
             Assert.Contains("name=\"Input.New\"", first.Html, StringComparison.Ordinal);
             Assert.Contains("name=\"Input.New\"", second.Html, StringComparison.Ordinal);
 
+            // 設定密碼的兩個欄位都是 PasswordField：有眼睛鈕，而且仍是「新密碼」讓密碼管理員產生並記住。
+            PasswordFieldTests.AssertActivationFields(first.Html);
+
             // 權杖在網址裡，不讓它經 Referer 流到別處。
             using var client = factory.CreateClient();
             using var response = await client.GetAsync(new Uri(link, UriKind.Relative), TestContext.Current.CancellationToken);
@@ -411,7 +414,9 @@ public sealed partial class InvitationTests(PlatformFactory factory)
             using var browser = new PortalBrowser(factory);
             Assert.Null((await browser.SubmitAsync(UiLogin, Credentials(email, LongPassword))).Location); // 還沒有密碼
 
-            Assert.Contains("name=\"Input.New\"", (await browser.GetAsync(link)).Html, StringComparison.Ordinal);
+            var activation = (await browser.GetAsync(link)).Html;
+            Assert.Contains("name=\"Input.New\"", activation, StringComparison.Ordinal);
+            PasswordFieldTests.AssertActivationFields(activation);
             var done = await browser.SubmitAsync(link, ActivationForm(LongPassword, LongPassword));
             Assert.Equal($"{UiLogin}?activated=1", done.Location);
 
