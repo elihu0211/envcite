@@ -194,7 +194,8 @@ public static class DesignTokens
     /// 動態：時長依互動類別命名，不依毫秒數（fast 狀態回饋、normal 元件進出、slow 大面積位移、
     /// reveal 內容揭露）；緩動依「運動的角色」命名，與時長正交（時長講多久，曲線講怎麼動）。
     /// enter 快起慢收（眼睛在落點停得住）、exit 慢起快收（離場不搶戲）、move 兩端都緩（已在畫面上的東西換位置）。
-    /// 臨界阻尼，沒有回彈：回彈只屬於帶著動量的手勢，這個介面沒有拖曳。
+    /// 臨界阻尼，沒有回彈。手勢（抽屜的邊緣滑動）是跟手的：位置 1:1 跟著手指、放開時依速度投射到落點、
+    /// 再以放開當下的速度接續動畫；只有手勢在邊界上有橡皮筋的阻力。載入中的骨架屏用 pulse 緩緩一明一暗。
     /// </summary>
     public static IReadOnlyDictionary<string, string> Motion { get; } = new Dictionary<string, string>
     {
@@ -202,6 +203,8 @@ public static class DesignTokens
         ["normal"] = "200ms",
         ["slow"] = "300ms",
         ["reveal"] = "500ms",
+        // 骨架屏一明一暗的一個週期：慢到不搶戲，快到看得出「還在載入」。
+        ["pulse"] = "1600ms",
         ["ease-standard"] = "cubic-bezier(0.4, 0, 0.2, 1)",
         ["ease-enter"] = "cubic-bezier(0, 0.4, 0, 1)",
         ["ease-exit"] = "cubic-bezier(0.6, 0, 0.8, 0.6)",

@@ -177,6 +177,123 @@
     syncSide();
     document.addEventListener("DOMContentLoaded", syncSide);
 
+    // ---- 抽屜的手勢：左緣滑出、往左滑收起 ----------------------------------------------------------
+    // 跟手（位置 1:1）、放開時用速度投射落點、再以放開當下的速度接續動畫；隨時可以重新抓住（從目前畫面上的位置起算，
+    // 不是從邏輯上的目標值）。拖過頭的那一段有橡皮筋的阻力。只收觸控與手寫筆，滑鼠不拖。
+    const decelerationRate = 0.998;
+    const project = (velocity /* px/s */) => (velocity / 1000) * decelerationRate / (1 - decelerationRate);
+    const rubberband = (overshoot, dimension, constant = 0.55) =>
+        (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
+
+    let drag = null;
+
+    const sidePanel = () => document.querySelector(".ep-side");
+
+    document.addEventListener("pointerdown", (event) => {
+        const panel = sidePanel();
+        if (!panel || !phone.matches || event.pointerType === "mouse" || !event.isPrimary) {
+            return;
+        }
+
+        const rect = panel.getBoundingClientRect();
+        const visible = rect.right > 1; // 畫面上還看得到（包含正在滑入或滑出的途中）
+        const grabsPanel = event.target.closest?.(".ep-side, .ep-scrim") && visible;
+        if (!event.target.closest?.(".ep-edge") && !grabsPanel) {
+            return;
+        }
+
+        // 起點取目前畫面上的位置（presentation value）：抓住一個還在動的抽屜，不會跳一下。
+        drag = {
+            id: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            from: Math.min(0, rect.left),
+            width: rect.width,
+            active: false,
+            samples: [{ t: event.timeStamp, x: event.clientX }],
+            position: Math.min(0, rect.left),
+        };
+    });
+
+    document.addEventListener("pointermove", (event) => {
+        if (!drag || event.pointerId !== drag.id) {
+            return;
+        }
+
+        const dx = event.clientX - drag.startX;
+        const dy = event.clientY - drag.startY;
+        if (!drag.active) {
+            // 先看方向：垂直多於水平就是在捲動，放手給瀏覽器；水平超過一小段才接手（避免輕點被當成拖曳）。
+            if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) {
+                drag = null;
+            } else if (Math.abs(dx) > 10) {
+                drag.active = true;
+                root.setAttribute("data-dragging", "");
+                try {
+                    sidePanel().setPointerCapture(event.pointerId);
+                } catch {
+                    // 合成事件或指標已結束：不影響拖曳，只是不鎖定。
+                }
+            }
+
+            if (!drag?.active) {
+                return;
+            }
+        }
+
+        const raw = drag.from + dx;
+        drag.position = raw > 0 ? rubberband(raw, drag.width) : Math.max(-drag.width, raw);
+        root.style.setProperty("--ep-drawer-x", `${drag.position}px`);
+        root.style.setProperty("--ep-drawer-progress", String(1 + drag.position / drag.width));
+        drag.samples.push({ t: event.timeStamp, x: event.clientX });
+        drag.samples = drag.samples.filter((sample) => event.timeStamp - sample.t < 120);
+    });
+
+    const endDrag = (event) => {
+        if (!drag || event.pointerId !== drag.id) {
+            return;
+        }
+
+        const { active, position, width, samples } = drag;
+        drag = null;
+        if (!active) {
+            return;
+        }
+
+        // 放開當下的速度（px/s）：取最近一小段的位移除以時間。
+        const first = samples[0];
+        const last = samples[samples.length - 1];
+        const elapsed = Math.max(last.t - first.t, 1);
+        const velocity = ((last.x - first.x) / elapsed) * 1000;
+
+        // 依投射的落點決定開或關（越過一半就開）：很快地往右一甩，即使只拖了一點也會開。
+        const open = position + project(velocity) > -width / 2;
+        const target = open ? 0 : -width;
+        const remaining = Math.abs(target - position);
+
+        // 速度承接：剩下的距離除以放開時朝落點的速度，限制在一個舒服的範圍；沒什麼速度就用預設時長。
+        const toward = open ? Math.max(velocity, 0) : Math.max(-velocity, 0);
+        const duration = toward > 50 ? Math.min(Math.max((remaining / toward) * 2000, 160), 420) : null;
+        if (duration) {
+            root.style.setProperty("--ep-drawer-duration", `${Math.round(duration)}ms`);
+        }
+
+        root.removeAttribute("data-dragging");
+        root.toggleAttribute("data-drawer", open);
+        root.style.removeProperty("--ep-drawer-x");
+        root.style.removeProperty("--ep-drawer-progress");
+        syncSide();
+
+        // 拖曳之後瀏覽器仍會送出一次 click（落在遮罩或連結上）：吃掉它，不然抽屜剛開就被點掉、或連結被誤點。
+        const swallow = (clickEvent) => clickEvent.stopPropagation();
+        window.addEventListener("click", swallow, { capture: true, once: true });
+        setTimeout(() => window.removeEventListener("click", swallow, true), 50);
+        setTimeout(() => root.style.removeProperty("--ep-drawer-duration"), (duration ?? 200) + 80);
+    };
+
+    document.addEventListener("pointerup", endDrag);
+    document.addEventListener("pointercancel", endDrag);
+
     // ---- 六格驗證碼 --------------------------------------------------------------------------------
     // 真的輸入框在方格上面（透明）：輸入、貼上、簡訊自動填入、無障礙都走它；這裡只把值畫進方格、標出目前那一格，
     // 把游標固定在最後（點哪一格都一樣，不會在中間插入），輸滿且標了 data-autosubmit 就自動送出。
