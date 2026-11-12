@@ -1,8 +1,0 @@
-@* 外觀選項：自動（跟隨系統）、淺色、深色。選擇存在這個瀏覽器（localStorage），由 design/forms.js 套到 <html data-theme>；
-   <head> 裡的小腳本在畫第一格之前就套上，不先閃一下淺色。需要 JavaScript，沒有時不出現，頁面跟隨系統。
-   樣式沿用語言選項（同一種文字鈕列）。 *@
-<div class="ep-lang ep-theme ep-js-only" role="group" aria-label="@L["外觀"]">
-    <button type="button" class="ep-lang-option" data-theme-option="system" aria-pressed="true">@L["自動"]</button>
-    <button type="button" class="ep-lang-option" data-theme-option="light" aria-pressed="false">@L["淺色"]</button>
-    <button type="button" class="ep-lang-option" data-theme-option="dark" aria-pressed="false">@L["深色"]</button>
-</div>
