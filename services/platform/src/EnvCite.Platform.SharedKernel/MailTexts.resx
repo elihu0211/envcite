@@ -29,4 +29,22 @@
   <data name="Mail.Text.Greeting" xml:space="preserve"><value>您好，</value></data>
   <data name="Mail.Text.Intro.Invitation" xml:space="preserve"><value>已為您在「{0}」建立帳號。請開啟下列連結，設定您自己的密碼並完成信箱驗證：</value></data>
   <data name="Mail.Text.Intro.Verification" xml:space="preserve"><value>請開啟下列連結，驗證這個信箱屬於您：</value></data>
+  <data name="MailTest.InvalidRecipient" xml:space="preserve"><value>收件地址不合法：{0}</value></data>
+  <data name="MailTest.NotEnabled" xml:space="preserve"><value>寄信未啟用：Platform:Mail:Enabled 不是 true（環境變數 ENVCITE_Platform__Mail__Enabled）。</value></data>
+  <data name="MailTest.Relay" xml:space="preserve"><value>中繼：{0}:{1}</value></data>
+  <data name="MailTest.Security" xml:space="preserve"><value>加密模式：{0}（{1}）</value></data>
+  <data name="MailTest.Security.None" xml:space="preserve"><value>不加密</value></data>
+  <data name="MailTest.Security.StartTls" xml:space="preserve"><value>STARTTLS，中繼不支援就失敗</value></data>
+  <data name="MailTest.Security.StartTlsWhenAvailable" xml:space="preserve"><value>中繼公告 STARTTLS 才加密，否則不加密</value></data>
+  <data name="MailTest.Security.SslOnConnect" xml:space="preserve"><value>連上就是 SSL／TLS</value></data>
+  <data name="MailTest.Security.Auto" xml:space="preserve"><value>MailKit 依埠號決定，不保證加密</value></data>
+  <data name="MailTest.Authentication" xml:space="preserve"><value>使用帳密驗證：{0}</value></data>
+  <data name="MailTest.Yes" xml:space="preserve"><value>是</value></data>
+  <data name="MailTest.No" xml:space="preserve"><value>否</value></data>
+  <data name="MailTest.Sender" xml:space="preserve"><value>寄件者：{0}</value></data>
+  <data name="MailTest.ReplyTo" xml:space="preserve"><value>回覆位址：{0}</value></data>
+  <data name="MailTest.BaseUrl" xml:space="preserve"><value>連結來源：{0}</value></data>
+  <data name="MailTest.Warning.Clear" xml:space="preserve"><value>警告：已設帳密，但加密模式是 {0}，帳號與密碼可能以明文在網路上傳送；中繼支援時請改用 StartTls 或 SslOnConnect。</value></data>
+  <data name="MailTest.Accepted" xml:space="preserve"><value>中繼已接受這封測試信。請到 {0} 確認有收到（中繼接受不代表已投遞）。</value></data>
+  <data name="MailTest.Failed" xml:space="preserve"><value>寄信失敗（{0}）。常見原因：這個環境的來源位址不在中繼的信任名單、Host 或 Port 不對、From 的網域被中繼拒絕。已設帳密時另有兩種：SMTP 535 是帳號或密碼錯誤（Exchange 與 Google Workspace 是不同的帳號系統，要用中繼所屬系統的帳號）；SMTP 550 5.7.60 是寄件者不等於認證的帳號（From 要與 Username 相同）。細節看服務日誌的「Mail delivery failed」那一行（例外型別與 SMTP 狀態碼），排查表見 services/platform/README.md「寄信」。</value></data>
 </root>

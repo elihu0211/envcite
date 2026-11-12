@@ -21,6 +21,7 @@
 
 - `src/EnvCite.Platform.Web` 是 Razor 元件函式庫（營運者後台 `/ui`、客戶入口 `/portal`），由 `Api` 掛上；不在 `/v2` 的限流與計量群組內。
 - 測試：xUnit 加 `WebApplicationFactory` 整合測試；Testcontainers PostgreSQL，上游以行程內 h2c gRPC fake 取代。
+- 寄信的測試對行程內的 `SmtpServer`（NuGet 套件，包成 `TestSmtpServer`）進行真的 TCP 連線，不寄任何真實郵件、不連外，也不自己手寫 SMTP 伺服器。
 
 ## Commands
 
@@ -58,7 +59,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 - 設定只有一條讀法：每個設定群組是一個 `ISectionOptions` 類別（`libs/dotnet`），自己指名區段，以 `AddSectionOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `libs/dotnet` 的 `Telemetry.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`；`mail preview` 在主機建立之前把同一份設定交給一個小容器、經 `AddPlatformMail()` 繫結，不另寫讀法。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
 - 新增群組：實作 `ISectionOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
-- **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`ENVCITE_Section__Key`，前綴由 `ServiceEnvironment` 套用；不帶前綴的環境變數不進設定，`OTEL_*` 除外）。機密（模型端點金鑰）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
+- **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`ENVCITE_Section__Key`，前綴由 `ServiceEnvironment` 套用；不帶前綴的環境變數不進設定，`OTEL_*` 除外）。機密（模型端點金鑰、`Platform:Mail:Password`）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
 - 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄、寄信）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
 - **系統名稱只有一個來源**：`Platform:Brand:Name`（`BrandOptions`；不可空白、25 字內、無控制字元）。介面經 `BrandText.Name` 取，信件主旨與內文（純文字與 HTML 兩版）、`mail test`、OpenAPI 描述讀 `IOptions<BrandOptions>`；`Platform:Mail:FromName` 沒設時預設用它。不在元件、信件或描述裡寫死名稱；帶名稱的文字用格式鍵（`L["登入 · {0}", Brand.Name]`），預設名稱（`BrandOptions.DefaultName`）的英文對照是 `Ui.en.resx` 的同名一鍵，自訂名稱不查資源檔、兩種語言原樣顯示。標誌 SVG 不讀設定，改名時另外換圖（見 README〈系統名稱〉）。`BrandTests` 守住預設值下輸出不變、改名後各處一起變。
 - 部署環境不設 `DefaultPlan`（服務是全付費，沒方案的租戶在資料端點得 402）；Development 與測試設定它，讓剛建立的租戶能用。
@@ -117,6 +118,13 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 重寄：還沒有密碼的先換安全戳記（先前的連結失效，此時沒有 session 會被波及）；已有密碼的寄驗證連結，不換戳記。已啟用且已驗證則 `account.already_active`；停用的 `account.disabled`。
 - 連結與權杖不進日誌、稽核與命令列輸出；寄信失敗不使建立或重寄失敗，結果以 `MailDelivery` 回報。
 - `mail test` 失敗只指向日誌，不印例外訊息（可能回顯位址）；`Platform:Mail` 只在啟用時驗證，未啟用時其餘鍵被忽略。
+- **寄信的加密與帳密**（鍵的語意與排查在 README「寄信」，以下只記不變式）：
+  - `Platform:Mail:Password` 是機密：只經環境變數，**不得出現在日誌、稽核、例外訊息、`mail test` 輸出、選項的字串化與序列化、任何診斷端點**；`Username` 同樣不進日誌與輸出。選項驗證訊息只指名鍵、不帶值。新增任何會印出或記錄寄信設定的程式，要有測試捕捉日誌與輸出、斷言不含帳密。
+  - `Username` 與 `Password` 要嘛都設、要嘛都不設；沒設就**不送 AUTH**（即使中繼公告了它），維持現有部署的行為。`Security` 沒設維持 `None`，不因預設改變而讓既有部署寄不出信。
+  - `Security` 是 `None` 或 `StartTlsWhenAvailable` 而設了帳密：啟動記警告（`MailSettingsAdvisor`），`mail test` 同樣印警告；不停下，因為內網中繼可能就是這樣。
+  - 協商交給 MailKit：**不自己寫 SASL 或 STARTTLS，不設 `ServerCertificateValidationCallback` 放行憑證**。內部 CA 簽的憑證，做法是把 CA 放進容器信任（README「加密與帳密」）。
+  - 寄件者必須等於認證的帳號：`From` 沒設且 `Username` 是 email 時預設為 `Username`（`PostConfigure`，驗證器與使用端看到同一個值）；兩者不同只警告，因為有些中繼允許 Send As。
+  - `mail test` 的說明文字在 `MailTexts` 資源檔（`MailTest.` 鍵，經 `MailTestReport`），不在命令列程式裡；失敗訊息列出 `535` 與 `550 5.7.60` 的常見原因並指向 README 的排查表。日誌的狀態碼是數字（SMTP 狀態碼與增強狀態碼），不記例外訊息。
 - **信件分三層，各自單一職責，全部走 DI**：呼叫端只組資料（`ActivationMailModel`，或 `IActivationMailer` 的參數）；`IMailComposer` 把資料加文案、系統名稱與版型組成 `ComposedMail`（主旨、文字版、HTML 版），不寄信；`IMailSender`（`SmtpMailSender`）只管傳輸，收 `MailContent` 寄成 `multipart/alternative`（文字在前）。沒有 static 的組信工具類；新增一種信是在 `IMailComposer` 加一個方法與一個 Razor 頁面，不在呼叫端拼字串。註冊只在 `AddPlatformMail()`。
 - **文案在 `MailTexts` 資源檔，不在程式裡**：預設繁體中文、`.en.resx` 英文，鍵是領域鍵、帶參數用 `{0}`；兩個語言的鍵與參數個數一致，由 `MailComposerTests` 守住（缺鍵時組信丟例外，不會把鍵名寄出去）。信的語言取自 `MailTemplateOptions.Culture`，**不取自請求的語言**（操作者用英文介面，收信的人不一定）；組信只在同步取字串的區段暫時換文化，不跨 await。改一版的事實（連結、期限、提示、租戶）時另一版同改。
 - **版型的長相是選項（`Platform:Mail:Template`），不是程式裡的常數**：色票、寬度、內距、字型都有預設、可由設定覆寫，值會進內嵌樣式與樣式表，所以由 `MailTemplateOptionsValidator` 驗證格式（顏色只收 `#rrggbb`、字型只收安全字元）與每組色票的文字對比度（至少 4.5:1），錯了在啟動停下並指名鍵。系統名稱只經注入的 `IOptions<BrandOptions>`。

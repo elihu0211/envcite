@@ -252,6 +252,114 @@ public sealed class OperatorCliTests(PlatformFactory factory)
         }, MailDelivery.Failed);
     }
 
+    private const string LoginName = "login-name@relay.test";
+    private const string LoginSecret = "cli-s3cret-不能出現";
+
+    private async Task<(int Code, string Output, string Error, string Logs)> MailTestWithAsync(
+        Dictionary<string, string> settings, MailDelivery delivery = MailDelivery.Sent)
+    {
+        var logs = new CapturingLoggerProvider();
+        var database = await factory.CreateDatabaseAsync();
+        await using var host = factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Production");
+            builder.UseSetting("ConnectionStrings:Platform", database);
+            builder.UseSetting("Platform:Mail:Enabled", "true");
+            builder.UseSetting("Platform:Mail:Host", "relay.test");
+            builder.UseSetting("Platform:Mail:From", "envcite@relay.test");
+            foreach (var (key, value) in settings)
+            {
+                builder.UseSetting($"Platform:Mail:{key}", value);
+            }
+
+            builder.ConfigureLogging(l => l.AddProvider(logs));
+        });
+        (int Code, string Output, string Error) result = (-1, string.Empty, string.Empty);
+        await factory.WithMail(async () =>
+        {
+            result = await RunAsync(host.Services, "mail", "test", $"probe-{Guid.NewGuid():N}@example.test");
+        }, delivery);
+        return (result.Code, result.Output, result.Error, string.Join('\n', logs.Messages));
+    }
+
+    // 輸出多印加密模式與「使用帳密驗證」，但帳號與密碼一律不印（寄件者另行設定，所以帳號不會因為預設而洩漏）。
+    [Fact]
+    public async Task MailTestShowsTheSecurityModeAndWhetherCredentialsAreUsedButNeverTheCredentials()
+    {
+        var (code, output, error, logs) = await MailTestWithAsync(new()
+        {
+            ["Security"] = "StartTls",
+            ["Username"] = LoginName,
+            ["Password"] = LoginSecret,
+            ["ReplyTo"] = "support@relay.test",
+        });
+
+        Assert.Equal(0, code);
+        Assert.Empty(error);
+        Assert.Contains("中繼：relay.test:25", output, StringComparison.Ordinal);
+        Assert.Contains("加密模式：StartTls", output, StringComparison.Ordinal);
+        Assert.Contains("使用帳密驗證：是", output, StringComparison.Ordinal);
+        Assert.Contains("寄件者：envcite@relay.test", output, StringComparison.Ordinal);
+        Assert.Contains("回覆位址：support@relay.test", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("警告", output, StringComparison.Ordinal);
+        foreach (var secret in new[] { LoginSecret, "不能出現", LoginName, "login-name" })
+        {
+            Assert.DoesNotContain(secret, output + error + logs, StringComparison.Ordinal);
+        }
+    }
+
+    // 現行部署（沒設加密也沒設帳密）：照舊，只是多說明「不加密」與「沒用帳密」。
+    [Fact]
+    public async Task MailTestOfTheCurrentDeploymentSaysNoEncryptionAndNoCredentials()
+    {
+        var (code, output, _, _) = await MailTestWithAsync([]);
+
+        Assert.Equal(0, code);
+        Assert.Contains("加密模式：None（不加密）", output, StringComparison.Ordinal);
+        Assert.Contains("使用帳密驗證：否", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("回覆位址", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("警告", output, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("None")]
+    [InlineData("StartTlsWhenAvailable")]
+    public async Task MailTestWarnsWhenCredentialsMayTravelInClearText(string security)
+    {
+        var (code, output, _, _) = await MailTestWithAsync(new() { ["Security"] = security, ["Username"] = LoginName, ["Password"] = LoginSecret });
+
+        Assert.Equal(0, code);
+        Assert.Contains($"警告：已設帳密，但加密模式是 {security}", output, StringComparison.Ordinal);
+        Assert.DoesNotContain(LoginSecret, output, StringComparison.Ordinal);
+    }
+
+    // 失敗時一次列出常見原因：已有的（來源位址、Host／Port、From 網域），加上 535 與 550 5.7.60，並指向 README 的排查表。
+    [Fact]
+    public async Task MailTestFailureNamesTheCredentialCausesAndPointsAtTheTroubleshootingTable()
+    {
+        var (code, output, error, _) = await MailTestWithAsync(new() { ["Username"] = LoginName, ["Password"] = LoginSecret }, MailDelivery.Failed);
+
+        Assert.Equal(1, code);
+        Assert.DoesNotContain("已接受", output, StringComparison.Ordinal);
+        Assert.Contains("來源位址", error, StringComparison.Ordinal);
+        Assert.Contains("535", error, StringComparison.Ordinal);
+        Assert.Contains("Exchange 與 Google Workspace 是不同的帳號系統", error, StringComparison.Ordinal);
+        Assert.Contains("550 5.7.60", error, StringComparison.Ordinal);
+        Assert.Contains("README", error, StringComparison.Ordinal);
+        Assert.DoesNotContain(LoginSecret, error + output, StringComparison.Ordinal);
+    }
+
+    // 信的語言同信件（Platform:Mail:Template:Culture）：英文設定下 mail test 的說明也是英文。
+    [Fact]
+    public async Task MailTestSpeaksTheLanguageOfTheMails()
+    {
+        var (code, output, _, _) = await MailTestWithAsync(new() { ["Template:Culture"] = "en", ["Security"] = "SslOnConnect" });
+
+        Assert.Equal(0, code);
+        Assert.Contains("Security: SslOnConnect (SSL/TLS from the first byte)", output, StringComparison.Ordinal);
+        Assert.Contains("Authenticated with username and password: no", output, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task MailTestRejectsABadAddressWithoutSending()
     {

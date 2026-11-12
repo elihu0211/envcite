@@ -129,23 +129,8 @@ internal sealed class MailComposer(
             : value.Value;
     }
 
-    /// <summary>
-    /// 在信件的語言（<see cref="MailTemplateOptions.Culture"/>）下取文案。只包住同步的取字串，不跨 await，所以暫時換掉目前執行緒的文化不會影響別的工作。
-    /// </summary>
-    private T InCulture<T>(Func<T> compose)
-    {
-        var culture = CultureInfo.GetCultureInfo(template.Value.Culture);
-        var (current, currentUi) = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
-        (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = (culture, culture);
-        try
-        {
-            return compose();
-        }
-        finally
-        {
-            (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = (current, currentUi);
-        }
-    }
+    /// <summary>在信件的語言（<see cref="MailTemplateOptions.Culture"/>）下取文案，見 <see cref="MailCulture"/>。</summary>
+    private T InCulture<T>(Func<T> compose) => MailCulture.Run(template.Value.Culture, compose);
 
     private Task<string> RenderAsync(MailPage page) =>
         renderer.Dispatcher.InvokeAsync(async () =>

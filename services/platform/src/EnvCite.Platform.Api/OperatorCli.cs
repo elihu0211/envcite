@@ -64,44 +64,39 @@ public static class OperatorCli
     }
 
     /// <summary>
-    /// 寄信冒煙測試。印出實際使用的設定（主機、埠、寄件者、連結來源，都不是機密），寄一封只有說明文字的信。
+    /// 寄信冒煙測試。印出實際使用的設定（主機、埠、加密模式、是否使用帳密、寄件者、連結來源），寄一封只有說明文字的信。
+    /// <b>不印帳號與密碼</b>：帳號本身也不印，因為預設的寄件者就是它，需要核對時看寄件者那一行。文字都來自 <see cref="MailTestReport"/>（資源檔）。
     /// <see cref="MailDelivery.Sent"/> 只代表中繼接受了信，不代表投遞成功：要到收件匣確認。
-    /// 失敗的細節在日誌（例外型別與 SMTP 狀態碼，不含位址與內文）。
+    /// 失敗的細節在日誌（例外型別與 SMTP 狀態碼，不含位址、帳號與內文）。
     /// </summary>
     private static async Task<int> TestMailAsync(
         IServiceProvider services, IMailSender mail, string recipient,
         TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
+        var report = services.GetRequiredService<MailTestReport>();
         if (!System.Net.Mail.MailAddress.TryCreate(recipient, out var parsed) || parsed.Address != recipient.Trim())
         {
-            await error.WriteLineAsync($"收件地址不合法：{recipient}");
+            await error.WriteLineAsync(report.InvalidRecipient(recipient));
             return 1;
         }
 
         if (!mail.Enabled)
         {
-            await error.WriteLineAsync("寄信未啟用：Platform:Mail:Enabled 不是 true（環境變數 ENVCITE_Platform__Mail__Enabled）。");
+            await error.WriteLineAsync(report.NotEnabled());
             return 1;
         }
 
-        var settings = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<MailOptions>>().Value;
-        await output.WriteLineAsync($"""
-            中繼：{settings.Host}:{settings.Port}（不加密、免驗證）
-            寄件者：{settings.From}
-            連結來源：{settings.BaseUrl}
-            """);
+        await output.WriteLineAsync(report.Settings());
 
         var composed = await services.GetRequiredService<IMailComposer>().ComposeTestAsync(cancellationToken);
         var delivery = await mail.SendAsync(parsed.Address, composed.Subject, composed.Content, cancellationToken);
         if (delivery == MailDelivery.Sent)
         {
-            await output.WriteLineAsync($"中繼已接受這封測試信。請到 {parsed.Address} 確認有收到（中繼接受不代表已投遞）。");
+            await output.WriteLineAsync(report.Accepted(parsed.Address));
             return 0;
         }
 
-        await error.WriteLineAsync(
-            $"寄信失敗（{delivery}）。常見原因：這個環境的來源位址不在中繼的信任名單、Host 或 Port 不對、From 的網域被中繼拒絕。"
-            + "細節看服務日誌的「Mail delivery failed」那一行（例外型別與 SMTP 狀態碼）。");
+        await error.WriteLineAsync(report.Failed(delivery));
         return 1;
     }
 
