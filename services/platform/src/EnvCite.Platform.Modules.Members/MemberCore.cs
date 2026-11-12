@@ -133,6 +133,10 @@ internal sealed class MemberCore(
         return AdminOutcome.Ok(new MemberInvitation(Info(user), delivery));
     }
 
+    /// <summary>目錄同步建立（或重新啟用）一位沒有密碼的成員後寄邀請連結；先前的連結失效。結果不使呼叫端失敗，由呼叫端記稽核。</summary>
+    internal Task<MailDelivery> SendInvitationAsync(ApplicationUser user, TenantInfo tenant, CancellationToken cancellationToken) =>
+        SendActivationAsync(user, tenant, invitation: true, cancellationToken);
+
     private async Task<MailDelivery> SendActivationAsync(ApplicationUser user, TenantInfo tenant, bool invitation, CancellationToken cancellationToken)
     {
         var settings = mailOptions.Value;

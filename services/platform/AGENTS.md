@@ -147,6 +147,17 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 規則（每條都有測試）：**階層**——擁有者管理所有人；管理員只管理較低的角色，且只能授予那些角色（能管理的就是能授予的，沒有人被升到管理者之上）；**沒有人對自己操作**（停用、改角色、重設）；**操作者的角色讀資料庫，不讀 cookie 宣告**；別的租戶的成員就是找不到。
 - 停用的成員無法登入（與密碼錯誤相同的泛用失敗）、所有開著的 session 立即失效（stamp 旋轉**且** session 檢查看旗標本身）；帳號與稽核紀錄保留。啟用與停用都旋轉 stamp，舊 cookie 不復活。
 
+### 目錄同步（身分來源推送成員）
+
+- 契約與規則表由 [`README.md`](README.md)「目錄同步」擁有；以下只記不變式與其理由。程式在 `Modules.Members/DirectorySync/`，不另立模組：邀請連結、停用與階層規則都是 Members 的 internal，模組之間不互相參考。
+- **租戶只來自 token**，不收路徑、查詢字串或本文裡的租戶。服務一律在「目前請求的租戶」內執行（`IDirectoryProvisioning` 是 scoped，營運者版 `IDirectoryAdmin` 自己開 scope 綁定目標租戶，做法同 `MemberAdmin`），別的租戶的成員與 token 就是找不到。
+- **稽核的「誰」是 token**（`AuditActors.Directory`，`ActorId` 取自已認證身分的 `directory_token_id` claim，絕不取自本文）。`Detail` 不放 SCIM 本文、token、連結或身分來源送來的其他屬性（有測試）。
+- **一個請求一個交易**：成員的變更、狀態計數與稽核事件一起成功或一起失敗，稽核寫不進去就沒有變更（fail closed），身分來源收到錯誤會重送，所以每個動作都冪等；沒有變化的重送什麼都不寫。邀請信在交易內寄、不使佈建失敗，結果以 `MailDelivery` 記進稽核。計數用 SQL 的原子遞增，不讀了再寫（身分來源會平行送很多請求）。
+- **同步不擴大權限**：角色最高到管理員（`DirectoryRoles.Assignable`），擁有者只由人指派，也不接管擁有者；最後一位啟用中的擁有者不能被同步停用或降級；階層檢查之外，設定與 token 只有擁有者能管（管理員不能建立管理員，所以不能持有能這麼做的憑證）。
+- **缺席不是離職**：身分來源久沒來只在介面警示，不自動停用任何人。
+- **受管成員的角色與停用鎖在人手之外**（`MemberAdmin`、`MemberSelfService` 都擋，回 `directory.member_managed`），否則下一輪同步就悄悄蓋掉人的修改；解除管理連 `ExternalId` 一起清，身分來源之後才接管得回去。
+- token 與 API key 是兩種憑證（`BearerSecret` 共用格式與雜湊，標記不同），互不通用，不靠 `ApiKey.Scopes` 區分：scope 是同一種憑證內的能力，擋不住拿錯種類的憑證去呼叫另一邊。
+
 ## Plans & access
 
 - **方案指派是資料，不是設定**：`TenantEntitlements`（不是 Finbuckle 租戶實體）。方案**定義**（限額）在 `Platform:Plans`；**誰在哪個方案**由營運者在執行期設定，立即生效並寫入稽核。查找順序：資料庫指派 → 設定的 `TenantPlans` → `DefaultPlan`。

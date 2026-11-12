@@ -45,6 +45,18 @@ public static class AuditActions
     public const string OperatorInvited = "operator.invited";
     public const string OperatorInvitationResent = "operator.invitation_resent";
     public const string OperatorActivated = "operator.activated";
+    public const string DirectoryTokenIssued = "directory.token_issued";
+    public const string DirectoryTokenRevoked = "directory.token_revoked";
+    public const string DirectoryEnabled = "directory.enabled";
+    public const string DirectoryDisabled = "directory.disabled";
+    public const string DirectoryConfigured = "directory.configured";
+    public const string DirectorySyncRejected = "directory.sync_rejected";
+    public const string MemberProvisioned = "member.provisioned";
+    public const string MemberDeprovisioned = "member.deprovisioned";
+    public const string MemberReprovisioned = "member.reprovisioned";
+    public const string MemberAttributeSynced = "member.attribute_synced";
+    public const string MemberAdopted = "member.adopted";
+    public const string MemberReleaseManaged = "member.release_managed";
 
     /// <summary>目前會寫入的所有事件，供篩選選單使用。</summary>
     public static IReadOnlyList<string> All { get; } =
@@ -57,6 +69,8 @@ public static class AuditActions
         OperatorCreated, OperatorPasswordReset, OperatorMfaReset, OperatorDisabled, OperatorEnabled, OperatorPasswordChanged,
         OperatorMfaEnabled, OperatorRecoveryCodeUsed, OperatorRecoveryCodesRegenerated,
         MemberInvited, MemberInvitationResent, MemberActivated, OperatorInvited, OperatorInvitationResent, OperatorActivated,
+        DirectoryTokenIssued, DirectoryTokenRevoked, DirectoryEnabled, DirectoryDisabled, DirectoryConfigured, DirectorySyncRejected,
+        MemberProvisioned, MemberDeprovisioned, MemberReprovisioned, MemberAttributeSynced, MemberAdopted, MemberReleaseManaged,
     ];
 }
 

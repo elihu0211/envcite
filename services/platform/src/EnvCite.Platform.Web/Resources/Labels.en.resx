@@ -129,4 +129,30 @@
   <data name="Outcome.account.already_active" xml:space="preserve"><value>This account is already active and its email is verified.</value></data>
   <data name="Outcome.account.disabled" xml:space="preserve"><value>This account is disabled; enable it first.</value></data>
   <data name="Operator.Status.invited" xml:space="preserve"><value>Invited</value></data>
+  <data name="Audit.Action.directory.token_issued" xml:space="preserve"><value>Issue directory sync token</value></data>
+  <data name="Audit.Action.directory.token_revoked" xml:space="preserve"><value>Revoke directory sync token</value></data>
+  <data name="Audit.Action.directory.enabled" xml:space="preserve"><value>Enable directory sync</value></data>
+  <data name="Audit.Action.directory.disabled" xml:space="preserve"><value>Disable directory sync</value></data>
+  <data name="Audit.Action.directory.configured" xml:space="preserve"><value>Change directory sync settings</value></data>
+  <data name="Audit.Action.directory.sync_rejected" xml:space="preserve"><value>Directory sync change rejected</value></data>
+  <data name="Audit.Action.member.provisioned" xml:space="preserve"><value>Directory sync created member</value></data>
+  <data name="Audit.Action.member.deprovisioned" xml:space="preserve"><value>Directory sync deactivated member</value></data>
+  <data name="Audit.Action.member.reprovisioned" xml:space="preserve"><value>Directory sync reactivated member</value></data>
+  <data name="Audit.Action.member.attribute_synced" xml:space="preserve"><value>Directory sync updated member</value></data>
+  <data name="Audit.Action.member.adopted" xml:space="preserve"><value>Directory sync adopted member</value></data>
+  <data name="Audit.Action.member.release_managed" xml:space="preserve"><value>Release member from directory sync</value></data>
+  <data name="Audit.Actor.directory" xml:space="preserve"><value>Directory sync</value></data>
+  <data name="Audit.Actor.directory.id" xml:space="preserve"><value>Directory sync token {0}</value></data>
+  <data name="Outcome.directory.not_enabled" xml:space="preserve"><value>Directory sync is not enabled.</value></data>
+  <data name="Outcome.directory.owner_only" xml:space="preserve"><value>Only owners can manage directory sync.</value></data>
+  <data name="Outcome.directory.last_owner" xml:space="preserve"><value>The last active owner cannot be deactivated or demoted by directory sync.</value></data>
+  <data name="Outcome.directory.member_managed" xml:space="preserve"><value>This member is managed by directory sync. Change it in the identity provider, or release it from directory sync first.</value></data>
+  <data name="Outcome.directory.not_managed" xml:space="preserve"><value>This member is not managed by directory sync.</value></data>
+  <data name="Outcome.directory.role_not_mappable" xml:space="preserve"><value>Directory sync cannot assign this role. The highest role it can assign is admin; owners are assigned by people.</value></data>
+  <data name="Outcome.directory.email_immutable" xml:space="preserve"><value>Directory sync cannot change a member's email.</value></data>
+  <data name="Outcome.directory.external_id_taken" xml:space="preserve"><value>Another member of this tenant already has this external id.</value></data>
+  <data name="Outcome.directory.external_id_invalid" xml:space="preserve"><value>External id must be 1 to 200 characters.</value></data>
+  <data name="Outcome.directory.adopt_required" xml:space="preserve"><value>A member with this email already exists and was not created by directory sync. Enable adopting existing members to link it.</value></data>
+  <data name="Outcome.directory.token_not_found" xml:space="preserve"><value>Directory token not found.</value></data>
+  <data name="Outcome.directory.token_invalid" xml:space="preserve"><value>Name is required (max 100 chars); ExpiresAt must be in the future.</value></data>
 </root>

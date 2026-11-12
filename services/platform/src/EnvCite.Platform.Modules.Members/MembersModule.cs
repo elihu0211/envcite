@@ -1,4 +1,5 @@
 using EnvCite.Platform.Data;
+using EnvCite.Platform.Modules.Members.DirectorySync;
 using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
 
@@ -44,6 +45,7 @@ public static class MembersModule
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddSectionOptions<MembersOptions>();
+        services.AddSectionOptions<DirectoryOptions, DirectoryOptionsValidator>();
         services.AddPlatformMail();
         services.TryAddSingleton<IActivationMailer, ActivationMailer>();
         // 邀請與驗證連結的有效期限，也是 Identity 資料保護權杖（電子郵件確認）的期限；兩個 user store 共用。
@@ -104,6 +106,10 @@ public static class MembersModule
         services.AddScoped<MemberCore>();
         services.AddScoped<IMemberSelfService, MemberSelfService>();
         services.AddSingleton<IMemberAdmin, MemberAdmin>();
+        services.AddScoped<DirectoryManagement>();
+        services.AddScoped<IDirectoryProvisioning, DirectoryProvisioning>();
+        services.AddScoped<IDirectorySelfService, DirectorySelfService>();
+        services.AddSingleton<IDirectoryAdmin, DirectoryAdmin>();
 
         services.AddOperatorAccounts();
 

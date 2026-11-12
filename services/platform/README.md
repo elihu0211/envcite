@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting]
+owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting, tenant-directory-sync]
 -->
 
 # envcite-platform
@@ -22,6 +22,7 @@ owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-n
 | 入口 | [入口](#入口) | 主機，以及設定鍵的真值在哪 |
 | 帳號 | [營運者帳號](#營運者帳號) | 欄位、端點、首次登入規則 |
 | 品牌 | [系統名稱](#系統名稱platformbrand) | 名稱的唯一來源、哪些地方跟著變、改名時要另外換的 |
+| 帳號 | [目錄同步](#目錄同步platformdirectory) | 客戶的身分來源把成員推進租戶：設定鍵、規則、受管成員 |
 
 ## 語料範圍
 
@@ -211,6 +212,34 @@ sequenceDiagram
 - 密碼不符規則時連結仍有效，可以重打。啟用不簽發 session：使用者接著照常登入。
 - 操作者可在清單上對「待啟用」或「信箱未驗證」的帳號重寄：還沒有密碼的重發邀請，先前的連結隨之失效；已有密碼的寄驗證連結，開啟後只確認信箱。重設密碼（暫時密碼）是任何時候都能用的退路，寄信失敗或收不到信時用它。
 - 登入不要求信箱已驗證。信箱驗證前不得作為復原管道。
+
+## 目錄同步（`Platform:Directory`）
+
+客戶的身分來源（IdP）把成員推進自己的租戶。可選功能，**預設關閉**：部署者開了功能面，租戶的擁有者還要自己開連線才生效；關閉時一律「不存在」（`directory.not_enabled`，結果是 NotFound），既有成員不受影響。環境變數寫成 `ENVCITE_Platform__Directory__<鍵>`；錯值在啟動就停下並指名鍵。
+
+| 鍵 | 說明 |
+|----|------|
+| `Enabled` | 功能面總開關 |
+| `MaxPageSize` | 列出成員時一頁最多幾筆（1–1000） |
+| `RequestsPerMinute` | 每個 token 每分鐘最多幾次請求（1–10000） |
+| `StaleAfter` | 多久沒收到身分來源的請求，介面警示連線可能斷了（至少一分鐘） |
+
+租戶自己的設定是資料，不是設定鍵：是否開啟、推送沒指定角色時的預設角色、是否接管同 email 的既有成員。
+
+規則（服務層的行為，端點與介面依此呈現）：
+
+| 項目 | 規則 |
+|------|------|
+| 比對 | 以身分來源給的 `ExternalId`（租戶內唯一）為首要鍵，email 次之；email 不能由同步變更 |
+| 重複建立 | 同 `ExternalId` 或同 email 是衝突，不建第二筆；重送與逾時重試因此安全 |
+| 新成員 | 走邀請信（沒有密碼，開連結自己設定），所以需要寄信啟用；停用狀態的成員不需要信，重新啟用時才寄 |
+| 停用 | `active=false` 與刪除都是停用：帳號與稽核保留，所有 session 在下一個請求失效；重送得到同一個結果 |
+| 角色 | 同步最高只能授予管理員；擁有者只由人指派。最後一位啟用中的擁有者不能被同步停用或降級 |
+| 既有成員 | 同 email 的手動成員預設不動；租戶開啟「接管」才連結（只連結，角色與停用維持原樣），擁有者永遠不接管 |
+| 受管成員 | 由同步建立或接管的成員，其角色與停用在介面與管理動作上鎖住（`directory.member_managed`）；擁有者或營運者可「解除管理」，之後回到人手上 |
+| 管理 | 設定與 token 只有租戶的擁有者能管：token 能讓身分來源建立管理員，管理員不能建立管理員，所以也不能持有它。營運者只能看狀態、緊急關閉連線、解除成員的管理 |
+| token | 格式 `scim_{前綴}_{secret}`，只存雜湊、只在簽發時顯示一次；與 API key（`sk_live_`）互不通用 |
+| 稽核 | 「誰」是 token（`directory` 類型，記 token 的 Id）；稽核裡沒有 token、連結或身分來源送來的屬性。變更與稽核同一個交易，稽核寫不進去就沒有變更 |
 
 ## 系統名稱（`Platform:Brand`）
 

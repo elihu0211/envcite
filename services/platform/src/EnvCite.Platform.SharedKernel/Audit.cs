@@ -36,6 +36,9 @@ public static class AuditActors
     public const string Anonymous = "anonymous";
     public const string System = "system";
 
+    /// <summary>客戶的身分來源（IdP）以目錄同步的 token 推送的變更；<c>ActorId</c> 是 token 的 Id，不是任何一個人。</summary>
+    public const string Directory = "directory";
+
     public static (string Type, string? Id) From(ClaimsPrincipal? user)
     {
         if (user?.Identity?.IsAuthenticated != true)
@@ -47,6 +50,12 @@ public static class AuditActors
         if (user.IsInRole(System))
         {
             return (System, null);
+        }
+
+        // 目錄同步：先於 API key 判斷，兩種憑證不通用，這個身分不會同時帶 api_key_id。
+        if (user.FindFirst(PlatformClaimTypes.DirectoryTokenId)?.Value is { } directoryTokenId)
+        {
+            return (Directory, directoryTokenId);
         }
 
         // 客戶入口的人：記使用者 Id（email 可以改，Id 不會）；租戶記在事件的 TenantId。
