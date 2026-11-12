@@ -4,7 +4,7 @@
 @attribute [EnableRateLimiting(PlatformAuth.UiSignInRateLimit)]
 @attribute [Authorize(Policy = PlatformAuth.UiEnrollmentPolicy)]
 
-<PageTitle>@L["兩步驟驗證 · 環境知識"]</PageTitle>
+<PageTitle>@L["兩步驟驗證 · {0}", Brand.Name]</PageTitle>
 
 <h1 class="ep-page-title">@L["兩步驟驗證"]</h1>
 <p class="ep-page-description">@L["登入時，除了密碼，還要輸入手機驗證器上的六位數。每位營運者都必須使用。"]</p>

@@ -24,6 +24,8 @@ public static class WebModule
     /// <summary>營運者後台（Blazor Web App，全站 Interactive Server）。登入的設定見 <see cref="WebAuthModule"/>。</summary>
     public static IServiceCollection AddPlatformWeb(this IServiceCollection services)
     {
+        services.AddPlatformBrand();
+        services.AddSingleton<BrandText>();
         services.AddWebAuth();
         services.AddRazorComponents().AddInteractiveServerComponents();
         // 取代預設的 AuthenticationStateProvider：circuit 每分鐘重驗營運者帳號（見 OperatorAuthenticationStateProvider）。

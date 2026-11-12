@@ -4,7 +4,7 @@
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 @inject IConversationHistory Store
 
-<PageTitle>@L["對話紀錄 · 環境知識"]</PageTitle>
+<PageTitle>@L["對話紀錄 · {0}", Brand.Name]</PageTitle>
 
 <PageHeader Title="@L["對話紀錄"]" Description="@L["只有你看得到。"]" />
 

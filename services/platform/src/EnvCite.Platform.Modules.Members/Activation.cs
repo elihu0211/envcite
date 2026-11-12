@@ -136,7 +136,7 @@ internal static class ActivationLinks
 internal static class ActivationMail
 {
     public static Task<MailDelivery> SendAsync(
-        IMailSender mail, string recipient, Uri? link, TimeSpan lifetime, string? tenantIdentifier, bool invitation, CancellationToken cancellationToken)
+        IMailSender mail, string brand, string recipient, Uri? link, TimeSpan lifetime, string? tenantIdentifier, bool invitation, CancellationToken cancellationToken)
     {
         if (link is null)
         {
@@ -145,7 +145,7 @@ internal static class ActivationMail
 
         var tenantLine = tenantIdentifier is null ? string.Empty : $"租戶識別碼：{tenantIdentifier}\n";
         var intro = invitation
-            ? "已為您在「環境知識」建立帳號。請開啟下列連結，設定您自己的密碼並完成信箱驗證："
+            ? $"已為您在「{brand}」建立帳號。請開啟下列連結，設定您自己的密碼並完成信箱驗證："
             : "請開啟下列連結，驗證這個信箱屬於您：";
         var body = $"""
             您好，
@@ -157,7 +157,7 @@ internal static class ActivationMail
             {tenantLine}連結 {Lifetime(lifetime)}內有效，而且只能使用一次。
             如果您沒有預期收到這封信，請忽略它：在您開啟連結之前，不會有任何變更。
             """;
-        return mail.SendAsync(recipient, invitation ? "環境知識：邀請您啟用帳號" : "環境知識：請驗證您的信箱", body, cancellationToken);
+        return mail.SendAsync(recipient, invitation ? $"{brand}：邀請您啟用帳號" : $"{brand}：請驗證您的信箱", body, cancellationToken);
     }
 
     public static string Status(MailDelivery delivery) => delivery switch

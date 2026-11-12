@@ -16,7 +16,7 @@ namespace EnvCite.Platform.Modules.Members;
 /// 沒有自助註冊：這是建立帳號的唯一途徑，呼叫端負責把初始密碼安全地交給對方。
 /// </summary>
 internal sealed class OperatorAdmin(
-    IServiceScopeFactory scopes, IMailSender mail, IOptions<MailOptions> mailOptions, TimeProvider time) : IOperatorAdmin
+    IServiceScopeFactory scopes, IMailSender mail, IOptions<MailOptions> mailOptions, IOptions<BrandOptions> brand, TimeProvider time) : IOperatorAdmin
 {
     public async Task<AdminOutcome<IReadOnlyList<OperatorInfo>>> ListAsync(CancellationToken cancellationToken)
     {
@@ -160,7 +160,7 @@ internal sealed class OperatorAdmin(
         var settings = mailOptions.Value;
         var code = await Activation.NewCodeAsync(users, user, revokeOld: invitation);
         var link = ActivationLinks.ForOperator(settings, user.Id.ToString(), code);
-        return await ActivationMail.SendAsync(mail, user.Email!, link, settings.LinkLifetime, tenantIdentifier: null, invitation, cancellationToken);
+        return await ActivationMail.SendAsync(mail, brand.Value.Name, user.Email!, link, settings.LinkLifetime, tenantIdentifier: null, invitation, cancellationToken);
     }
 
     public async Task<AdminOutcome<IssuedOperatorPassword>> ResetPasswordAsync(

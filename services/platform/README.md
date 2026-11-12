@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope]
+owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-name]
 -->
 
 # envcite-platform
@@ -21,6 +21,7 @@ owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope]
 | 請求 | [推論](#推論post-v2reasoningevaluate) | `POST /v2/reasoning/evaluate` 的欄位 |
 | 入口 | [入口](#入口) | 主機，以及設定鍵的真值在哪 |
 | 帳號 | [營運者帳號](#營運者帳號) | 欄位、端點、首次登入規則 |
+| 品牌 | [系統名稱](#系統名稱platformbrand) | 名稱的唯一來源、哪些地方跟著變、改名時要另外換的 |
 
 ## 語料範圍
 
@@ -151,6 +152,21 @@ sequenceDiagram
 - 操作者可在清單上對「待啟用」或「信箱未驗證」的帳號重寄：還沒有密碼的重發邀請，先前的連結隨之失效；已有密碼的寄驗證連結，開啟後只確認信箱。重設密碼（暫時密碼）是任何時候都能用的退路，寄信失敗或收不到信時用它。
 - 登入不要求信箱已驗證。信箱驗證前不得作為復原管道。
 
+## 系統名稱（`Platform:Brand`）
+
+系統名稱只有一個來源：`Platform:Brand:Name`（環境變數 `ENVCITE_Platform__Brand__Name`）。沒設就是預設名稱（`BrandOptions.DefaultName`）；不可空白、不含換行等控制字元、最多 25 個字（寄件者顯示名稱在手機信件清單上會被截斷）。錯值在啟動就停下並指名鍵。
+
+| 地方 | 跟著設定變 |
+|------|-----------|
+| 後台與入口的標頭、頁面標題（`<title>`）、復原碼的列印標題 | 是。預設名稱在英文資源檔有對照；改了名稱，兩種語言都原樣顯示新名稱，不留英文舊名 |
+| 邀請與驗證信的主旨與內文、命令列 `mail test` 的主旨與內文 | 是 |
+| 寄件者顯示名稱 | `Platform:Mail:FromName` 有設以它為準；沒設（或空白）用系統名稱 |
+| OpenAPI 描述（`/openapi/v2.json`，僅 Development 提供） | 是；提交的 [`openapi/openapi_v2.json`](openapi/openapi_v2.json) 是預設名稱下產生的，建置環境不要設這個鍵 |
+| 標誌 SVG（`src/EnvCite.Platform.Web/wwwroot/brand/*.svg`）與內嵌的品牌圖形 | **否**。圖檔不讀設定，名稱在圖的 `<title>`；改名時另外換圖 |
+| 文件、其他服務（consult、ontology）的文字與提示詞 | 否 |
+
+介面一律經 `BrandText.Name` 取名稱，不在元件裡寫死；帶名稱的標題用格式鍵（`L["登入 · {0}", Brand.Name]`），英文資源檔的鍵同樣是 `{0}`。
+
 ## 寄信（`Platform:Mail`）
 
 可選功能，預設關閉。環境變數寫成 `ENVCITE_Platform__Mail__<鍵>`；開啟時缺漏或錯值在啟動就停下並指名鍵。
@@ -159,7 +175,7 @@ sequenceDiagram
 |----|-----------|------|
 | `Enabled` | | 開關；沒開時建立帳號走暫時密碼 |
 | `Host`、`Port` | `Host` | SMTP 中繼的主機與埠 |
-| `From`、`FromName` | `From` | 寄件者；中繼通常只收自己網域的寄件者 |
+| `From`、`FromName` | `From` | 寄件者；中繼通常只收自己網域的寄件者。`FromName` 是顯示名稱，沒設用[系統名稱](#系統名稱platformbrand)，所以改名時不必另外改它（要與系統名稱不同才設） |
 | `BaseUrl` | 是 | 信裡連結的來源：`https://主機`，不含路徑（只有 localhost 可用 `http`）。寫死在設定，不取自請求的 Host 標頭 |
 | `LinkLifetime` | | 連結的有效期限（1 小時至 14 天），也是 Identity 資料保護權杖的期限 |
 | `TimeoutSeconds` | | 連線到回應的總時限；逾時算寄信失敗 |
@@ -168,7 +184,7 @@ sequenceDiagram
 
 寄出的結果是 `Sent`（中繼接受了信，不等於已投遞）、`Failed`、`Disabled`（未啟用）或 `NotRequested`（沒有收件地址）。寄不出去不使建立或重寄失敗，帳號照樣在，畫面與命令列照實顯示。稽核只記結果（`mail`），不記連結；日誌只記例外型別與 SMTP 狀態碼，不含位址與內文。
 
-**測試**：在服務自己的環境裡執行 `mail test <email>`（見上表）。它印出實際使用的中繼、寄件者與連結來源，寄一封沒有連結、沒有密碼的測試信，並以結束碼說明結果。來源位址是否被中繼信任只能在服務實際執行的環境驗證，從別的機器測通不代表服務能寄。
+**測試**：在服務自己的環境裡執行 `mail test <email>`（見上表）。它印出實際使用的中繼、寄件者與連結來源，寄一封沒有連結、沒有密碼的測試信（主旨與內文帶系統名稱），並以結束碼說明結果。來源位址是否被中繼信任只能在服務實際執行的環境驗證，從別的機器測通不代表服務能寄。
 
 | 現象 | 常見原因 |
 |------|----------|

@@ -35,6 +35,10 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     [InlineData("Platform:Ui:SignInAttemptsPerMinute", "0", "Platform:Ui:SignInAttemptsPerMinute must be between 1 and 1000")]
     [InlineData("Platform:Ui:SessionMaxAge", "00:00:00", "Platform:Ui:SessionMaxAge must be between 1 minute and 7 days")]
     [InlineData("Platform:Ui:SessionMaxAge", "8.00:00:00", "Platform:Ui:SessionMaxAge must be between 1 minute and 7 days")]
+    [InlineData("Platform:Brand:Name", "", "Platform:Brand:Name must not be blank")]
+    [InlineData("Platform:Brand:Name", "   ", "Platform:Brand:Name must not be blank")]
+    [InlineData("Platform:Brand:Name", "一二三四五六七八九十一二三四五六七八九十一二三四五六", "Platform:Brand:Name must be at most 25 characters")]
+    [InlineData("Platform:Brand:Name", "名稱\n第二行", "Platform:Brand:Name must not contain control characters")]
     public void InvalidSettingFailsAtStartupAndNamesTheKey(string key, string value, string expected)
     {
         var message = StartFailure(factory.WithWebHostBuilder(b => b.UseSetting(key, value)));
@@ -63,6 +67,16 @@ public sealed class ConfigurationTests(PlatformFactory factory)
             .UseSetting(key, value)));
 
         Assert.Contains(expected, message, StringComparison.Ordinal);
+    }
+
+    // 系統名稱有預設值，不必設就能啟動；上限是 25 個字（以看到的字計，不是碼元），剛好 25 個字可以。
+    [Fact]
+    public void TheBrandNameDefaultsAndTheLimitIsInclusive()
+    {
+        Assert.Equal("環境知識", new BrandOptions().Name);
+
+        using var host = factory.WithWebHostBuilder(b => b.UseSetting("Platform:Brand:Name", "一二三四五六七八九十一二三四五六七八九十一二三四五")).Server;
+        Assert.Equal(25, host.Services.GetRequiredService<IOptions<BrandOptions>>().Value.Name.Length);
     }
 
     [Fact]

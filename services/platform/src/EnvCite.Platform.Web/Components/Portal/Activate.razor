@@ -5,7 +5,7 @@
 @attribute [AllowAnonymous]
 @inject IPortalAccount Account
 
-<PageTitle>@L["啟用帳號 · 環境知識"]</PageTitle>
+<PageTitle>@L["啟用帳號 · {0}", Brand.Name]</PageTitle>
 
 @if (Account.CurrentTenant is { } tenant)
 {

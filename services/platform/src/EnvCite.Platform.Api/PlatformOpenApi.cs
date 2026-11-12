@@ -2,6 +2,7 @@ using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.OpenApi;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 
 namespace EnvCite.Platform.Api;
@@ -11,17 +12,21 @@ internal static class PlatformOpenApi
 {
     public const string ApiKeyScheme = "ApiKey";
 
-    public static IServiceCollection AddPlatformOpenApi(this IServiceCollection services) =>
-        services.AddOpenApi("v2", options =>
+    public static IServiceCollection AddPlatformOpenApi(this IServiceCollection services)
+    {
+        services.AddPlatformBrand();
+        return services.AddOpenApi("v2", options =>
         {
             options.ShouldInclude = description => description.RelativePath?.StartsWith("v2/", StringComparison.Ordinal) == true;
-            options.AddDocumentTransformer((document, _, _) =>
+            options.AddDocumentTransformer((document, context, _) =>
             {
+                // 描述的第一句帶系統名稱；提交的規格是預設名稱下產生的（建置環境不設 Platform:Brand:Name）。
+                var brand = context.ApplicationServices.GetRequiredService<IOptions<BrandOptions>>().Value.Name;
                 document.Info = new OpenApiInfo
                 {
                     Title = "envcite API",
                     Version = "v2",
-                    Description = "環境知識 API。以租戶的 API key 呼叫（`Authorization: Bearer sk_live_…`）。"
+                    Description = $"{brand} API。以租戶的 API key 呼叫（`Authorization: Bearer sk_live_…`）。"
                         + "拒答是結果、不是錯誤：`POST /v2/ground` 有法源與拒答都回 200，以 `outcome` 區分。\n\n"
                         + "語料範圍只含中央法規；地方自治法規（自治條例、自治規則等）不在範圍內。"
                         + "查無結果或拒答，不代表地方法規沒有規定。",
@@ -56,4 +61,5 @@ internal static class PlatformOpenApi
                 return Task.CompletedTask;
             });
         });
+    }
 }
