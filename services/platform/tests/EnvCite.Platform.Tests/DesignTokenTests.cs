@@ -446,6 +446,20 @@ public static partial class DesignTokenTests
         Assert.Contains("localStorage.setItem(\"ep-side\"", script, StringComparison.Ordinal);
     }
 
+    // 六格驗證碼：真的輸入框疊在方格上、文字與游標透明（輸入與自動填入都走它），沒有 JavaScript 時方格不出現。
+    [Fact]
+    public static void TheOtpBoxesSitOnTopOfARealInput()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
+
+        Assert.Matches(@"\.ep-otp-slots \{\s*display: none", css);
+        Assert.Matches(@"html\[data-js\] \.ep-otp-input \{[^}]*color: transparent[^}]*caret-color: transparent", css);
+        Assert.Contains(".ep-otp-slot[data-active]", css, StringComparison.Ordinal);
+        Assert.Contains("addEventListener(\"paste\"", script, StringComparison.Ordinal);
+        Assert.Contains("autosubmit", script, StringComparison.Ordinal);
+    }
+
     [Fact]
     public static void TheLargestTypeSizesAreFluid()
     {

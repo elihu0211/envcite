@@ -1,0 +1,45 @@
+@using System.Linq.Expressions
+
+@* 六格驗證碼輸入（主流的 OTP 輸入）：畫面上是六個方格，底下疊著一個真的 <input>。方格只負責顯示，輸入、貼上、
+   簡訊或驗證器的自動填入、螢幕閱讀器、表單送出全都由那個真的欄位處理，所以瀏覽器與密碼管理員照常認得（autocomplete=
+   one-time-code）。方格的畫法與「輸滿自動送出」由 design/forms.js 做；沒有 JavaScript 時方格不出現，欄位仍是普通的輸入框。
+   標籤與說明由呼叫端的 <label for> 負責。 *@
+<div class="ep-otp" data-length="@Length" data-autosubmit="@(AutoSubmit ? "" : null)">
+    <InputText id="@Id" Value="@Value" ValueChanged="@ValueChanged" ValueExpression="@ValueExpression" class="ep-input ep-otp-input"
+               autocomplete="one-time-code" inputmode="numeric" pattern="[0-9 ]*" maxlength="10" required="@Required" autofocus="@AutoFocus"
+               spellcheck="false" autocapitalize="off" autocorrect="off" />
+    <div class="ep-otp-slots" aria-hidden="true">
+        @for (var i = 0; i < Length; i++)
+        {
+            <span class="ep-otp-slot"></span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Id { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> ValueChanged { get; set; }
+
+    [Parameter]
+    public Expression<Func<string?>>? ValueExpression { get; set; }
+
+    /// <summary>格數；驗證器的碼是六位數。</summary>
+    [Parameter]
+    public int Length { get; set; } = 6;
+
+    [Parameter]
+    public bool Required { get; set; } = true;
+
+    [Parameter]
+    public bool AutoFocus { get; set; }
+
+    /// <summary>輸滿就自動送出表單（登入的第二步）；啟用、重新產生、關閉這類要按鈕確認的不要開。</summary>
+    [Parameter]
+    public bool AutoSubmit { get; set; }
+}

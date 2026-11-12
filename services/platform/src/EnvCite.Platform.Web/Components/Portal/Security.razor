@@ -53,7 +53,7 @@ else if (_enabled)
         <EditForm Model="Regenerate" FormName="portal-mfa-regenerate" OnValidSubmit="RegenerateAsync" method="post" class="ep-form">
             <div class="ep-field-row">
                 <label for="regen-code" class="ep-label">@L["驗證碼"]</label>
-                <InputText id="regen-code" @bind-Value="Regenerate.Code" class="ep-input" required autocomplete="one-time-code" inputmode="numeric" maxlength="10" />
+                <OtpField Id="regen-code" @bind-Value="Regenerate.Code" />
             </div>
             <button type="submit" class="ep-btn ep-btn-quiet">@L["重新產生"]</button>
         </EditForm>
@@ -75,7 +75,7 @@ else if (_enabled)
                 </div>
                 <div class="ep-field-row">
                     <label for="off-code" class="ep-label">@L["驗證碼"]</label>
-                    <InputText id="off-code" @bind-Value="Disable.Code" class="ep-input" required autocomplete="one-time-code" inputmode="numeric" maxlength="10" />
+                    <OtpField Id="off-code" @bind-Value="Disable.Code" />
                 </div>
                 <button type="submit" class="ep-btn ep-btn-quiet">@L["關閉"]</button>
             </EditForm>
@@ -102,7 +102,7 @@ else if (_setup is not null)
         <EditForm Model="Input" FormName="portal-mfa-enable" OnValidSubmit="EnableAsync" method="post" class="ep-form">
             <div class="ep-field-row">
                 <label for="code" class="ep-label">@L["驗證碼"]</label>
-                <InputText id="code" @bind-Value="Input.Code" class="ep-input" required autocomplete="one-time-code" inputmode="numeric" maxlength="10" />
+                <OtpField Id="code" @bind-Value="Input.Code" />
             </div>
             <button type="submit" class="ep-btn ep-btn-primary">@L["啟用"]</button>
         </EditForm>

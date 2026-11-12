@@ -1710,6 +1710,86 @@ html[data-js] .ep-password-toggle {
     margin-block-start: calc(var(--ep-space-1) * -1);
 }
 
+/* 六格驗證碼：底下是一個真的 <input>（接輸入、貼上、自動填入、焦點），上面是六個只負責顯示的方格。
+   沒有 JavaScript 時方格不出現，輸入框維持原樣。目前要輸入的那一格用焦點色的外框與閃爍的游標標示（外框就是焦點指示，
+   所以真的輸入框自己不畫焦點環）。 */
+.ep-otp {
+    position: relative;
+}
+
+.ep-otp-slots {
+    display: none;
+}
+
+html[data-js] .ep-otp-slots {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: var(--ep-space-2);
+}
+
+.ep-otp-slot {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    min-block-size: calc(var(--ep-space-12) + var(--ep-space-2));
+    border: 1px solid var(--ep-border-control);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface);
+    color: var(--ep-text);
+    font-size: var(--ep-headline-m-size);
+    font-weight: var(--ep-label-l-weight);
+    font-variant-numeric: tabular-nums;
+    transition:
+        border-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        box-shadow var(--ep-motion-normal) var(--ep-motion-ease-standard);
+}
+
+.ep-otp-slot[data-active] {
+    border-color: var(--ep-focus);
+    box-shadow: 0 0 0 var(--ep-space-1) color-mix(in srgb, var(--ep-focus) 16%, transparent);
+}
+
+.ep-otp-slot[data-active]:not([data-filled])::after {
+    content: "";
+    inline-size: 1px;
+    block-size: 1.5em;
+    background: var(--ep-focus);
+    animation: ep-caret 1s step-end infinite;
+}
+
+@keyframes ep-caret {
+    50% {
+        opacity: 0;
+    }
+}
+
+html[data-js] .ep-otp-input {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: transparent;
+    caret-color: transparent;
+    font-size: var(--ep-body-l-size); /* 不小於 16px，iOS 才不會在聚焦時放大頁面 */
+    cursor: text;
+}
+
+html[data-js] .ep-otp-input:focus,
+html[data-js] .ep-otp-input:focus-visible {
+    border: 0;
+    outline: none;
+    box-shadow: none;
+}
+
+html[data-js] .ep-otp-input::selection {
+    background: transparent;
+}
+
 .ep-hint,
 .ep-note {
     margin: 0;
