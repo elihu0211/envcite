@@ -39,6 +39,12 @@ public static class PortalEndpoints
                 ? Task.FromResult(Results.NotFound())
                 : Localization.SwitchAsync(context, antiforgery, SignInRoutes.Portal(tenant.Identifier).SafeReturnUrl)).AllowAnonymous();
 
+        // 設定外觀：同語言，只是這個瀏覽器的偏好（cookie）；路徑上的租戶不存在就當作這個路徑不存在。
+        app.MapPost($"{PortalPaths.Prefix}/{{tenant}}/appearance", (HttpContext context, IAntiforgery antiforgery, IAppearancePreference preference, IPortalAccount account) =>
+            account.CurrentTenant is not { } tenant
+                ? Task.FromResult(Results.NotFound())
+                : AppearanceModule.SetAsync(context, antiforgery, preference, returnUrl => SafeReturnUrl(returnUrl, tenant.Identifier))).AllowAnonymous();
+
         return app;
     }
 }

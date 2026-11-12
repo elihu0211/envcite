@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-name, service-logging, tenant-access-urls]
+owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting]
 -->
 
 # envcite-platform
@@ -100,6 +100,21 @@ flowchart LR
 | 複製 API Base URL | `https://<主機>/v2` |
 
 主機取自目前請求的來源（scheme 與主機；Gateway 之後由 forwarded headers 還原），沒有對應的設定鍵：後台、入口與 API 同一個主機。`Platform:Mail:BaseUrl` 只管信裡的連結，不是通用的對外網址。複製元件的用法見 [`AGENTS.md`](AGENTS.md)「設計系統與營運者後台」。
+
+## 個人設定與外觀
+
+登入後的「個人設定」放使用者自己的偏好，目前只有外觀：**系統**（預設，跟隨裝置）、**亮色**、**暗色**。營運者後台與客戶入口各有一頁，共用同一個 `Shared/AppearanceSetting` 元件：
+
+| 面 | 頁面 | 設定外觀的端點 |
+|----|------|----------------|
+| 營運者後台 | `GET /ui/settings` | `POST /ui/appearance` |
+| 客戶入口 | `GET /portal/{租戶}/settings` | `POST /portal/{租戶}/appearance` |
+
+- **預設是「系統」**：沒有偏好時 `<html>` 不帶 `data-theme`，外觀只靠 `prefers-color-scheme`（瀏覽器與作業系統）。
+- **偏好是這個瀏覽器的 cookie**（名稱 `ep-appearance`，值 `light` 或 `dark`；名稱、有效期與屬性描述在 `AppearanceOptions.Cookie`），路徑 `/`：營運者後台、客戶入口與登入前的頁面看到同一個偏好。不跨裝置、不分帳號、不進資料庫。選回「系統」是刪掉 cookie；cookie 不存在、被清掉或值不合法一律當作「系統」。
+- **端點**：表單欄位 `appearance`（`system`、`light`、`dark`）與 `returnUrl`；需要 antiforgery，不需要登入（偏好不認證任何東西）。值不合法回 400、不寫 cookie。一般表單送出導回 `returnUrl`（只准留在該面之下）；`Accept: application/json` 的請求（個人設定頁的腳本）回 204。
+- **匿名頁面**（登入、啟用、重設、已登出、無權限）不提供切換，但一樣依 cookie 輸出偏好。
+- 設計規則與理由見 [`AGENTS.md`](AGENTS.md)「設計系統與營運者後台」。
 
 ## 日誌
 

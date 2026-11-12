@@ -71,7 +71,7 @@
 
     private IReadOnlyList<PortalShell.MenuItem> MenuItems =>
         Account.CurrentTenant is { } tenant
-            ? [new($"{PortalPaths.Home(tenant.Identifier)}/security", L["兩步驟驗證"]), new(PortalPaths.Password(tenant.Identifier), L["改密碼"])]
+            ? [new($"{PortalPaths.Home(tenant.Identifier)}/settings", L["個人設定"]), new($"{PortalPaths.Home(tenant.Identifier)}/security", L["兩步驟驗證"]), new(PortalPaths.Password(tenant.Identifier), L["改密碼"])]
             : [];
 
     protected override async Task OnInitializedAsync() =>

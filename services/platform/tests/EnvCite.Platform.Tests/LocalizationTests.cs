@@ -288,6 +288,7 @@ public sealed partial class LanguageSwitchTests(PlatformFactory factory)
     [InlineData("/ui/tenants")]
     [InlineData("/ui/operators")]
     [InlineData("/ui/audit")]
+    [InlineData("/ui/settings")]
     [InlineData("/ui/login")]
     [InlineData("/ui/denied")]
     [InlineData("/ui/signed-out")]
@@ -329,7 +330,7 @@ public sealed partial class LanguageSwitchTests(PlatformFactory factory)
 
         var pages = new Dictionary<string, string> { [login] = (await browser.GetAsync(login)).Html };
         await SignInFullyAsync(browser, tenant.Identifier, email, initial);
-        foreach (var path in new[] { home, $"{home}/account", $"{home}/members", $"{home}/security", $"{home}/history", PasswordPage(tenant.Identifier) })
+        foreach (var path in new[] { home, $"{home}/account", $"{home}/members", $"{home}/security", $"{home}/settings", $"{home}/history", PasswordPage(tenant.Identifier) })
         {
             var page = await browser.GetAsync(path);
             Assert.Equal(HttpStatusCode.OK, page.Status);

@@ -1,21 +1,26 @@
+@inject IAppearancePreference Preference
 <!DOCTYPE html>
-<html lang="@CultureInfo.CurrentUICulture.Name">
+@* 預設跟隨系統：沒有偏好時 <html> 不帶 data-theme，行為只靠 prefers-color-scheme。使用者在個人設定手動選了亮色或暗色，才由 cookie 在這裡輸出，
+   所以第一格就是對的，不需要腳本，也不會先閃一下預設再換過去。 *@
+<html lang="@CultureInfo.CurrentUICulture.Name" data-theme="@ChosenTheme">
 <head>
     <meta charset="utf-8" />
     @* viewport-fit=cover：瀏海與圓角螢幕上讓內容延伸到邊緣，再用安全區內縮（見 platform.css）。不禁用縮放。 *@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    @* 淺色與深色都支援，只跟隨瀏覽器／系統（prefers-color-scheme），沒有手動選項：使用者在作業系統或瀏覽器選一次，所有網站一致。 *@
-    <meta name="color-scheme" content="light dark" />
-    @* 瀏覽器的工具列顏色，淺色與深色各一個；顏色來自 token，不另寫。 *@
-    <meta name="theme-color" content="@DesignTokens.Light.Background" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="@DesignTokens.Dark.Background" media="(prefers-color-scheme: dark)" />
+    @* 淺色與深色都支援，預設跟隨系統（prefers-color-scheme）。手動選了就把 color-scheme 鎖到那一邊：頁面還沒套上樣式前的畫布底色也是對的。 *@
+    <meta name="color-scheme" content="@ColorScheme" data-system="@FollowSystem" />
+    @* 瀏覽器的工具列顏色，淺色與深色各一個；顏色來自 token，不另寫。跟隨系統時各自對應系統的外觀；手動選了就只留選的那一個
+       （另一個的 media 改成 not all）。data-media 與 data-scheme 給個人設定的腳本即時預覽時還原與切換用。 *@
+    <meta name="theme-color" content="@DesignTokens.Light.Background" media="@ThemeColorMedia(Appearance.Light)" data-media="(prefers-color-scheme: light)" data-scheme="light" />
+    <meta name="theme-color" content="@DesignTokens.Dark.Background" media="@ThemeColorMedia(Appearance.Dark)" data-media="(prefers-color-scheme: dark)" data-scheme="dark" />
     @* 品牌圖示：favicon 用簡化版（小尺寸只留葉片），完整版給 iOS 主畫面；色碼與 DesignTokens.Brand 由測試對齊。 *@
     <link rel="icon" href="@Assets["_content/EnvCite.Platform.Web/brand/favicon.ico"]" sizes="32x32" />
     <link rel="icon" href="@Assets["_content/EnvCite.Platform.Web/brand/icon-small.svg"]" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="@Assets["_content/EnvCite.Platform.Web/brand/apple-touch-icon.png"]" />
     <base href="/" />
     @* 側欄收合的偏好：在畫第一格之前就套上，不先閃一下預設再換過去（forms.js 負責切換與存檔）。
-       也清掉舊的手動外觀偏好（ep-theme）：外觀只跟隨系統，那個值不會再被讀，不該留在使用者的瀏覽器裡。 *@
+       也清掉舊版存在 localStorage 的外觀偏好（ep-theme）：現在的外觀偏好在伺服器端的 cookie（上面的 data-theme），
+       那個值不會再被讀，不該留在使用者的瀏覽器裡。 *@
     <script>try{var d=document.documentElement,s=localStorage;if(s.getItem("ep-side")==="collapsed")d.dataset.side="collapsed";s.removeItem("ep-theme")}catch(e){}</script>
     <style>@((MarkupString)TokenCss.Render())</style>
     @* 自己託管的字型：中文依 unicode-range 切片，瀏覽器只下載頁面上出現的字所在的那幾片（見 scripts/vendor-fonts.sh）。 *@
@@ -47,6 +52,24 @@
 @code {
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
+
+    private Appearance _appearance;
+
+    protected override void OnInitialized() => _appearance = Preference.Read(HttpContext);
+
+    /// <summary>手動選的外觀，要輸出到 <c>&lt;html data-theme&gt;</c>；跟隨系統是 null，屬性整個不輸出。</summary>
+    private string? ChosenTheme => _appearance == Appearance.System ? null : _appearance.Name();
+
+    private const string FollowSystem = "light dark";
+
+    private string ColorScheme => _appearance == Appearance.System ? FollowSystem : _appearance.Name();
+
+    /// <summary>跟隨系統時各自對應系統；手動選了，選的那一個對所有人生效、另一個關掉。</summary>
+    private string ThemeColorMedia(Appearance scheme) => _appearance switch
+    {
+        Appearance.System => $"(prefers-color-scheme: {scheme.Name()})",
+        _ => _appearance == scheme ? "all" : "not all",
+    };
 
     /// <summary>
     /// 營運後台是互動的（Interactive Server）；標了 <c>[ExcludeFromInteractiveRouting]</c> 的頁面（客戶入口）是靜態伺服器端渲染：

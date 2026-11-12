@@ -1,0 +1,59 @@
+@inherits StaticPageBase
+@inject IAppearancePreference Preference
+
+@* 個人設定裡的「外觀」：系統（預設，跟隨裝置）、亮色、暗色。營運者與客戶入口的個人設定頁共用這一個元件，
+   各自只告訴它換外觀的端點（Action）。放在登入後的個人設定；登入前的匿名頁面不放切換，但一樣尊重已存的偏好（見 App.razor）。
+   做法是 Apple 的「分段控制」：一組原生 radio（方向鍵切換、螢幕閱讀器念出選中的項目），選了就生效，不必另外按儲存。
+   沒有 JavaScript 時是普通的 POST 表單（多一顆「套用」），伺服器寫 cookie 後導回本頁；有 JavaScript 時 design/forms.js 即時預覽，
+   並用 fetch 送出同一張表單。偏好只是這個瀏覽器的 cookie，不是帳號資料，不跨裝置。 *@
+<section aria-labelledby="ep-appearance-title">
+    <h2 id="ep-appearance-title" class="ep-section-title">@L["外觀"]</h2>
+    <p class="ep-page-description">@L["選了立即生效，只記在這個瀏覽器。"]</p>
+
+    <form method="post" action="@Action" class="ep-form ep-appearance" data-appearance-form>
+        <AntiforgeryToken />
+        <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+        <fieldset class="ep-segmented" role="radiogroup" aria-labelledby="ep-appearance-title">
+            @foreach (var option in Options)
+            {
+                <label class="ep-segment">
+                    <input type="radio" name="@AppearanceNames.Field" value="@option.Value.Name()" checked="@(option.Value == _current)"
+                           aria-describedby="@HintId(option.Value)" />
+                    <NavIcon Path="@option.Icon" />
+                    <span class="ep-segment-label">@option.Label</span>
+                </label>
+            }
+        </fieldset>
+        @* 選中那一項的一行說明（其餘收起，但仍是各選項的 aria-describedby，念得出來）。 *@
+        @foreach (var option in Options)
+        {
+            <p id="@HintId(option.Value)" class="ep-hint ep-appearance-hint" data-for="@option.Value.Name()">@option.Hint</p>
+        }
+        <button type="submit" class="ep-btn ep-btn-quiet ep-no-js">@L["套用"]</button>
+        @* 腳本儲存失敗時才有字（role=status 讓螢幕閱讀器念出來）。預覽已經套上，但下次開啟會回到原本的外觀，要說實話。 *@
+        <p class="ep-hint ep-appearance-status" role="status" data-appearance-status data-failed="@L["無法儲存外觀。這次先套用，下次開啟會恢復原本的外觀。"]"></p>
+    </form>
+</section>
+
+@code {
+    private sealed record Choice(Appearance Value, string Label, string Hint, string Icon);
+
+    /// <summary>換外觀的端點（營運者後台與客戶入口各一個）。</summary>
+    [Parameter, EditorRequired]
+    public string Action { get; set; } = string.Empty;
+
+    private Appearance _current;
+
+    private string ReturnUrl => "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+
+    protected override void OnInitialized() => _current = Preference.Read(HttpContext);
+
+    private static string HintId(Appearance appearance) => $"ep-appearance-hint-{appearance.Name()}";
+
+    private Choice[] Options =>
+    [
+        new(Appearance.System, L["系統"], L["跟隨裝置的外觀"], Icons.Material.Outlined.SettingsBrightness),
+        new(Appearance.Light, L["亮色"], L["一律使用亮色外觀"], Icons.Material.Outlined.LightMode),
+        new(Appearance.Dark, L["暗色"], L["一律使用暗色外觀"], Icons.Material.Outlined.DarkMode),
+    ];
+}
