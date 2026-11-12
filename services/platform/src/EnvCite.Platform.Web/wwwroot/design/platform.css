@@ -1213,6 +1213,11 @@ html[data-js] .ep-side-toggle {
         min-inline-size: 0;
     }
 
+    /* 簡單表格的格子預設不換行（寬螢幕在容器裡橫向捲動）；窄卡片一格一列，長的電子郵件要換行，不另開橫向捲軸。 */
+    .ep-cards .ep-plain-table td {
+        white-space: normal;
+    }
+
     .ep-cards table tbody tr td[data-label]:not(:first-child)::before {
         content: attr(data-label) "：";
         color: var(--ep-text-secondary);

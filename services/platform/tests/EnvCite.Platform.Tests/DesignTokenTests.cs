@@ -566,6 +566,15 @@ public static partial class DesignTokenTests
             css);
     }
 
+    // 簡單表格的格子預設不換行；窄卡片（一格一列）要放開，否則長的電子郵件超出卡片、卡片裡多出橫向捲軸。
+    [Fact]
+    public static void PlainTableCellsWrapInNarrowCards()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        Assert.Matches(@"@container ep-table \(max-width: 36rem\)[\s\S]*?\.ep-cards \.ep-plain-table td \{\s*white-space: normal;", css);
+    }
+
     [Fact]
     public static void TheLargestTypeSizesAreFluid()
     {

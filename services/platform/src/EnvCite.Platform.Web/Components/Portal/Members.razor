@@ -85,7 +85,7 @@ else
                         {
                             var member = row.Member;
                             <tr>
-                                <td>@member.Email@(member.DisplayName is null ? "" : L["（{0}）", member.DisplayName].Value)@(row.IsYou ? L["　· 你"].Value : "")</td>
+                                <td class="ep-keep">@member.Email@(member.DisplayName is null ? "" : L["（{0}）", member.DisplayName].Value)@(row.IsYou ? L["　· 你"].Value : "")</td>
                                 <td data-label="@L["角色"]">@PortalLabels.Role(member.Role)</td>
                                 <td data-label="@L["狀態"]">
                                     <StatusBadge Tone="@StateTone(member)">@State(member)</StatusBadge>
