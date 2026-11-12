@@ -459,6 +459,7 @@ public static partial class DesignTokenTests
         Assert.Contains(".ep-otp-slot[data-active]", css, StringComparison.Ordinal);
         Assert.Contains("addEventListener(\"paste\"", script, StringComparison.Ordinal);
         Assert.Contains("autosubmit", script, StringComparison.Ordinal);
+        Assert.Contains("h1[tabindex=\"-1\"]:focus-visible", css, StringComparison.Ordinal); // iOS Safari 對程式聚焦的標題會畫焦點環
     }
 
     // 動態有四種來源（回饋、進出場、載入、手勢）。載入用骨架屏，不用進度條；頁面的區塊進場時錯開；

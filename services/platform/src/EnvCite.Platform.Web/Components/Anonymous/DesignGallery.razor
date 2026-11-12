@@ -82,6 +82,11 @@
                 <PasswordField Id="g-password" @bind-Value="_sample.Password" Autocomplete="new-password" />
                 <p class="ep-hint">右側的眼睛鈕顯示或隱藏；大寫鎖定開著時，欄位下方會出現提醒。</p>
             </div>
+            <div class="ep-field-row">
+                <label class="ep-label" for="g-otp">驗證碼</label>
+                <OtpField Id="g-otp" @bind-Value="_sample.Code" />
+                <p class="ep-hint">六格輸入：底下是一個真的輸入框；點任一格、直接輸入或貼上。登入的第二步輸滿六位會自動送出。</p>
+            </div>
         </EditForm>
     </section>
 
@@ -152,6 +157,8 @@
     private sealed class SampleForm
     {
         public string Password { get; set; } = string.Empty;
+
+        public string Code { get; set; } = string.Empty;
     }
 
     private static readonly (string Name, string Label)[] _colors =
