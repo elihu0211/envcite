@@ -1,0 +1,30 @@
+@* 單一訊息的整頁狀態（已登出、沒有權限、找不到頁面）：置中的圖示磚、標題、一句說明，與一個下一步。
+   圖示只是輔助，標題與說明才是意思；顏色是語氣（--tone）。標題維持 h1.ep-page-title，各頁的標題字級一致。 *@
+<div class="ep-status-page">
+    <span class="ep-status-icon" data-tone="@Tone" aria-hidden="true"><NavIcon Path="@Icon" /></span>
+    <h1 class="ep-page-title">@Title</h1>
+    @if (!string.IsNullOrEmpty(Description))
+    {
+        <p class="ep-page-description">@Description</p>
+    }
+    @ChildContent
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Icon { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    /// <summary>圖示磚的語氣：<c>neutral</c>（預設）、<c>success</c>、<c>warning</c>、<c>error</c>、<c>info</c>。</summary>
+    [Parameter]
+    public string Tone { get; set; } = "neutral";
+
+    /// <summary>下一步的動作（按鈕或連結）。</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

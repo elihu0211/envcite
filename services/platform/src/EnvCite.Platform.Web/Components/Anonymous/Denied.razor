@@ -4,6 +4,7 @@
 
 <PageTitle>@L["沒有權限 · 環境知識"]</PageTitle>
 
-<h1 class="ep-page-title">@L["沒有權限"]</h1>
-<p class="ep-page-description">@L["這個帳號已被停用，或登入已失效（例如密碼或兩步驟驗證被重設）。請重新登入；仍然不行，請洽系統管理者。"]</p>
-<MudButton Href="@UiEndpoints.LoginPath" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">@L["重新登入"]</MudButton>
+<StatusPage Icon="@Icons.Material.Outlined.Lock" Tone="warning" Title="@L["沒有權限"]"
+            Description="@L["這個帳號已被停用，或登入已失效（例如密碼或兩步驟驗證被重設）。請重新登入；仍然不行，請洽系統管理者。"]">
+    <a class="ep-btn ep-btn-primary" href="@UiEndpoints.LoginPath">@L["重新登入"]</a>
+</StatusPage>

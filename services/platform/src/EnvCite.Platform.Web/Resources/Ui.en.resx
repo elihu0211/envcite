@@ -419,4 +419,6 @@
   <data name="隱藏密碼" xml:space="preserve"><value>Hide password</value></data>
   <data name="環境知識的復原碼" xml:space="preserve"><value>EnvCite recovery codes</value></data>
   <data name="請存在只有你能開啟的地方，例如密碼管理員。" xml:space="preserve"><value>Keep them where only you can open them, such as a password manager.</value></data>
+  <data name="展開或收合導覽" xml:space="preserve"><value>Show or hide navigation</value></data>
+  <data name="你的工作階段已結束。要繼續使用，請重新登入。" xml:space="preserve"><value>Your session has ended. Sign in again to continue.</value></data>
 </root>

@@ -103,6 +103,80 @@
         }
     });
 
+    // ---- 側欄：桌機收合成窄欄、手機是抽屜 ----------------------------------------------------------
+    // 偏好存在 localStorage，頁面一載入就由 <head> 裡那段小腳本套上 data-side（不閃一下）。抽屜的 data-drawer 不存檔。
+    const root = document.documentElement;
+    const phone = matchMedia("(width < 48rem)");
+    const sideToggle = () => document.querySelector(".ep-side-toggle");
+
+    // 按鈕的展開狀態與窄欄時的 title 提示（展開時文字就在旁邊，不需要提示）。
+    const syncSide = () => {
+        const collapsed = !phone.matches && root.dataset.side === "collapsed";
+        sideToggle()?.setAttribute("aria-expanded", String(phone.matches ? root.hasAttribute("data-drawer") : !collapsed));
+        document.querySelectorAll(".ep-side-link").forEach((link) => {
+            const label = link.querySelector(".ep-side-label")?.textContent.trim();
+            if (collapsed && label) {
+                link.setAttribute("title", label);
+            } else {
+                link.removeAttribute("title");
+            }
+        });
+    };
+
+    const closeDrawer = (restoreFocus) => {
+        if (root.hasAttribute("data-drawer")) {
+            root.removeAttribute("data-drawer");
+            syncSide();
+            if (restoreFocus) {
+                sideToggle()?.focus();
+            }
+        }
+    };
+
+    document.addEventListener("click", (event) => {
+        if (event.target.closest?.(".ep-side-toggle")) {
+            if (phone.matches) {
+                root.toggleAttribute("data-drawer");
+                if (root.hasAttribute("data-drawer")) {
+                    document.querySelector(".ep-side-link")?.focus();
+                }
+            } else {
+                const collapsed = root.dataset.side === "collapsed";
+                if (collapsed) {
+                    delete root.dataset.side;
+                } else {
+                    root.dataset.side = "collapsed";
+                }
+
+                try {
+                    localStorage.setItem("ep-side", collapsed ? "expanded" : "collapsed");
+                } catch {
+                    // 沒有儲存空間（無痕視窗）：這次有效，下次回到展開。
+                }
+            }
+
+            syncSide();
+        } else if (event.target.closest?.(".ep-scrim")) {
+            closeDrawer(true);
+        } else if (event.target.closest?.(".ep-side a")) {
+            closeDrawer(false);
+        }
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            closeDrawer(true);
+        }
+    });
+
+    // 轉向或調整視窗跨過手機的寬度：抽屜收起，按鈕狀態與提示跟著換。
+    phone.addEventListener("change", () => {
+        root.removeAttribute("data-drawer");
+        syncSide();
+    });
+    syncSide();
+    document.addEventListener("DOMContentLoaded", syncSide);
+
     // ---- 復原碼：複製、列印 ------------------------------------------------------------------------
     const copyText = async (text) => {
         try {
