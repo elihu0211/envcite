@@ -37,30 +37,14 @@ public static class PortalEndpoints
         app.MapPost($"{PortalPaths.Prefix}/{{tenant}}/language", (HttpContext context, IAntiforgery antiforgery, IPortalAccount account) =>
             account.CurrentTenant is not { } tenant
                 ? Task.FromResult(Results.NotFound())
-                : Localization.SwitchAsync(context, antiforgery, returnUrl => SafeReturnUrl(returnUrl, tenant.Identifier))).AllowAnonymous();
+                : Localization.SwitchAsync(context, antiforgery, SignInRoutes.Portal(tenant.Identifier).SafeReturnUrl)).AllowAnonymous();
 
         // 設定外觀：同語言，只是這個瀏覽器的偏好（cookie）；路徑上的租戶不存在就當作這個路徑不存在。
         app.MapPost($"{PortalPaths.Prefix}/{{tenant}}/appearance", (HttpContext context, IAntiforgery antiforgery, IAppearancePreference preference, IPortalAccount account) =>
             account.CurrentTenant is not { } tenant
                 ? Task.FromResult(Results.NotFound())
-                : AppearanceModule.SetAsync(context, antiforgery, preference, returnUrl => SafeReturnUrl(returnUrl, tenant.Identifier))).AllowAnonymous();
+                : AppearanceModule.SetAsync(context, antiforgery, preference, SignInRoutes.Portal(tenant.Identifier).SafeReturnUrl)).AllowAnonymous();
 
         return app;
-    }
-
-    /// <summary>登入後導回的地方：只接受這個租戶入口之下的站內相對路徑，其餘回首頁（防 open redirect）。</summary>
-    public static string SafeReturnUrl(string? returnUrl, string tenantIdentifier)
-    {
-        var home = PortalPaths.Home(tenantIdentifier);
-        if (string.IsNullOrEmpty(returnUrl)
-            || !returnUrl.StartsWith(home, StringComparison.Ordinal)
-            || (returnUrl.Length > home.Length && returnUrl[home.Length] is not ('/' or '?' or '#'))
-            || returnUrl.Contains('\\', StringComparison.Ordinal)
-            || returnUrl.StartsWith($"{home}//", StringComparison.Ordinal))
-        {
-            return home;
-        }
-
-        return returnUrl;
     }
 }

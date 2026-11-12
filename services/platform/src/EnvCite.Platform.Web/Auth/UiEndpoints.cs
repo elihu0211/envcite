@@ -51,18 +51,5 @@ public static class UiEndpoints
         return app;
     }
 
-    /// <summary>只接受 <c>/ui</c> 底下的站內相對路徑；其餘一律回首頁（防 open redirect）。</summary>
-    public static string SafeReturnUrl(string? returnUrl)
-    {
-        if (string.IsNullOrEmpty(returnUrl)
-            || !returnUrl.StartsWith(HomePath, StringComparison.Ordinal)
-            || (returnUrl.Length > HomePath.Length && returnUrl[HomePath.Length] is not ('/' or '?' or '#'))
-            || returnUrl.Contains('\\', StringComparison.Ordinal)
-            || returnUrl.StartsWith("/ui//", StringComparison.Ordinal))
-        {
-            return HomePath;
-        }
-
-        return returnUrl;
-    }
+    public static string SafeReturnUrl(string? returnUrl) => SignInRoutes.Operator.SafeReturnUrl(returnUrl);
 }

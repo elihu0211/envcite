@@ -4,7 +4,7 @@
 @attribute [EnableRateLimiting(PlatformAuth.PortalSignInRateLimit)]
 @attribute [AllowAnonymous]
 @inject IPortalAccount Account
-@inherits PortalFormPageBase<LoginForm>
+@inherits PortalPageBase
 
 <DocumentTitle Text="@L["登入"]" />
 
@@ -16,26 +16,19 @@
         <p class="ep-login-tenant">@(tenant.Name ?? tenant.Identifier)</p>
       </header>
       <div>
-
-        @if (Activated == "1")
-        {
-            <FormAlert Kind="AlertKind.Info">@L["帳號已啟用，信箱已驗證。請登入。"]</FormAlert>
-        }
-
-        @* role=alert：螢幕閱讀器立刻念出來；訊息不說是帳號還是密碼錯，也不說帳號有沒有被鎖。 *@
-        <FormAlert Message="@Error" />
-
-        <PostForm Model="Input" FormName="portal-login" OnValidSubmit="SignInAsync">
-            <FormField For="email" Label="@L["電子郵件"]">
-                <InputText id="email" @bind-Value="Input.Email" type="email" class="ep-input" autocomplete="username" required autofocus />
-            </FormField>
-            <FormField For="password" Label="@L["密碼"]">
-                <PasswordField Id="password" @bind-Value="Input.Password" />
-            </FormField>
-            <SubmitButton>@L["登入"]</SubmitButton>
-        </PostForm>
-
-        <p class="ep-note">@L["沒有帳號或忘記密碼，請洽貴組織的管理員或我們的營運人員。"]</p>
+        <LoginFlow Account="Account" Routes="SignInRoutes.Portal(tenant.Identifier)" FormName="portal-login"
+                   Note="@L["沒有帳號或忘記密碼，請洽貴組織的管理員或我們的營運人員。"]" />
       </div>
     </section>
+}
+
+@code {
+    // 路徑上的租戶不存在：這個頁面就不存在。
+    protected override void OnInitialized()
+    {
+        if (Account.CurrentTenant is null)
+        {
+            Navigation.NotFound();
+        }
+    }
 }

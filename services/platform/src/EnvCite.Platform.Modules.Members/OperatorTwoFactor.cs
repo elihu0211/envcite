@@ -104,25 +104,25 @@ internal sealed class OperatorTwoFactor(
 
     public async Task<bool> HasPendingSignInAsync() => await pending.ReadAsync() is not null;
 
-    public async Task<OperatorSignInStatus> CompleteSignInAsync(string code, bool isRecoveryCode, CancellationToken cancellationToken)
+    public async Task<SignInStatus> CompleteSignInAsync(string code, bool isRecoveryCode, CancellationToken cancellationToken)
     {
         if (await pending.ReadAsync() is not { } id || await users.FindOperatorAsync(id) is not { } user)
         {
-            return OperatorSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         // 在第一步之後、第二步之前被停用或被重設了兩步驟驗證：不再給任何機會，暫存憑證收回。
         if (user.Disabled || !user.TwoFactorEnabled)
         {
             await pending.ClearAsync();
-            return OperatorSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         // 第二步的失敗與密碼失敗共用鎖定計數；已鎖定就不再給猜的機會，並丟掉暫存憑證，要從密碼重來。
         if (await users.IsLockedOutAsync(user))
         {
             await pending.ClearAsync();
-            return OperatorSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         var ok = isRecoveryCode
@@ -145,7 +145,7 @@ internal sealed class OperatorTwoFactor(
                     ["reason"] = lockedNow ? "locked_out" : isRecoveryCode ? "bad_recovery_code" : "bad_totp",
                 }),
                 cancellationToken);
-            return OperatorSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         await users.ResetAccessFailedCountAsync(user);
@@ -162,7 +162,7 @@ internal sealed class OperatorTwoFactor(
         }
 
         await account.IssueSessionAsync(user);
-        return user.MustChangePassword ? OperatorSignInStatus.MustChangePassword : OperatorSignInStatus.Succeeded;
+        return user.MustChangePassword ? SignInStatus.MustChangePassword : SignInStatus.Succeeded;
     }
 
     private async Task<OperatorUser?> UserOfAsync(ClaimsPrincipal principal) =>

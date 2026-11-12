@@ -4,98 +4,11 @@
 @attribute [EnableRateLimiting(PlatformAuth.PortalSignInRateLimit)]
 @attribute [Authorize(Policy = PlatformAuth.PortalEnrollmentPolicy)]
 @inherits PortalPageBase
+@inject IPortalTwoFactor TwoFactor
 
 <DocumentTitle Text="@L["兩步驟驗證"]" />
 
 <PageHeader Title="@L["兩步驟驗證"]" />
-
-@if (!_enabled && _required)
-{
-    <FormAlert Kind="AlertKind.Info">
-        @L["你的角色必須使用兩步驟驗證。請先完成下面的設定，才能使用入口的其他功能。"]
-    </FormAlert>
-}
-
-@if (_notice is not null)
-{
-    <FormAlert Kind="AlertKind.Info">@_notice</FormAlert>
-}
-
-@if (_recoveryCodes is not null)
-{
-    @* 只在啟用的這一個回應裡出現，之後不會再顯示（頁面重新整理就沒了）。 *@
-    <section class="ep-card" aria-labelledby="codes-title">
-        <h2 id="codes-title" class="ep-section-title">@_codesTitle</h2>
-        <FormAlert Kind="AlertKind.Info">
-            @L["這是你的復原碼。"]<strong>@L["只會顯示這一次"]</strong>@L["：請現在抄下或存進密碼管理員。"]
-            @L["手機遺失時，每一組復原碼可以代替一次驗證碼，用過就失效。"]
-        </FormAlert>
-        <RecoveryCodes Codes="_recoveryCodes" />
-        <a class="ep-btn ep-btn-primary" href="@PortalPaths.Home(Tenant)">@L["我已保存"]</a>
-    </section>
-}
-else if (_enabled)
-{
-    <section class="ep-card" aria-labelledby="on-title">
-        <h2 id="on-title" class="ep-section-title">@L["已啟用"]</h2>
-        <p class="ep-page-description">
-            @L["之後登入都會要求驗證碼。手機遺失、也沒有復原碼時，請洽貴組織的管理員或我們的營運人員為你重設。"]
-        </p>
-    </section>
-
-    <FormAlert Message="@Error" />
-
-    <section class="ep-card" aria-labelledby="regen-title">
-        <h2 id="regen-title" class="ep-section-title">@L["重新產生復原碼"]</h2>
-        <p class="ep-page-description">@L["舊的復原碼會全部作廢。輸入驗證器上現在的六位數確認是你本人。"]</p>
-        <PostForm Model="Regenerate" FormName="portal-mfa-regenerate" OnValidSubmit="RegenerateAsync">
-            <FormField For="regen-code" Label="@L["驗證碼"]">
-                <OtpField Id="regen-code" @bind-Value="Regenerate.Code" />
-            </FormField>
-            <button type="submit" class="ep-btn ep-btn-quiet">@L["重新產生"]</button>
-        </PostForm>
-    </section>
-
-    <section class="ep-card" aria-labelledby="off-title">
-        <h2 id="off-title" class="ep-section-title">@L["關閉兩步驟驗證"]</h2>
-        @if (_required)
-        {
-            <p class="ep-page-description">@L["你的角色必須使用兩步驟驗證，不能關閉。"]</p>
-        }
-        else
-        {
-            <p class="ep-page-description">@L["關閉後只靠密碼登入。需要目前的密碼"]<strong>@L["和"]</strong>@L["驗證碼。"]</p>
-            <PostForm Model="Disable" FormName="portal-mfa-disable" OnValidSubmit="DisableAsync">
-                <FormField For="off-password" Label="@L["目前的密碼"]">
-                    <PasswordField Id="off-password" @bind-Value="Disable.Password" />
-                </FormField>
-                <FormField For="off-code" Label="@L["驗證碼"]">
-                    <OtpField Id="off-code" @bind-Value="Disable.Code" />
-                </FormField>
-                <button type="submit" class="ep-btn ep-btn-quiet">@L["關閉"]</button>
-            </PostForm>
-        }
-    </section>
-}
-else if (_setup is not null)
-{
-    <section class="ep-card" aria-labelledby="setup-title">
-        <h2 id="setup-title" class="ep-section-title">@L["啟用步驟"]</h2>
-        <ol class="ep-steps">
-            <li>@L["在手機安裝驗證器 App（例如 Google Authenticator、Microsoft Authenticator、1Password 或 Authy）。"]</li>
-            <li>@L["用 App 掃描下面的 QR；掃不了就選「手動輸入」，輸入下面的金鑰。"]</li>
-            <li>@L["輸入 App 上現在顯示的六位數，按「啟用」。"]</li>
-        </ol>
-        <div class="ep-qr" role="img" aria-label="@L["驗證器 QR"]">@((MarkupString)_qrSvg)</div>
-        <p class="ep-hint">@L["金鑰（手動輸入用）："]<code class="ep-mono" id="shared-key">@_setup.SharedKey</code></p>
-
-        <FormAlert Message="@Error" />
-
-        <PostForm Model="Input" FormName="portal-mfa-enable" OnValidSubmit="EnableAsync">
-            <FormField For="code" Label="@L["驗證碼"]">
-                <OtpField Id="code" @bind-Value="Input.Code" />
-            </FormField>
-            <SubmitButton>@L["啟用"]</SubmitButton>
-        </PostForm>
-    </section>
-}
+<TwoFactorSetupFlow TwoFactor="TwoFactor" FormPrefix="portal-mfa" HomeHref="@PortalPaths.Home(Tenant)" CardClass="ep-card"
+                    RequiredText="@L["你的角色必須使用兩步驟驗證。請先完成下面的設定，才能使用入口的其他功能。"]"
+                    EnabledText="@L["之後登入都會要求驗證碼。手機遺失、也沒有復原碼時，請洽貴組織的管理員或我們的營運人員為你重設。"]" />
