@@ -5,7 +5,7 @@
 ## Project
 
 - **Role:** 多租戶控制平面：租戶、API key、限流、計量、對外 REST API；經 gRPC 呼叫 `services/ontology`（共享、不分租戶）與 `services/consult`（接地、租戶隔離）。
-- **Auth surfaces:** 租戶 API key（`/v2`）；營運者帳號加強制 TOTP（營運者後台 `/ui`）；客戶入口帳號（`/portal`，以設定開關）。
+- **Auth surfaces:** 租戶 API key（`/v2`）；營運者帳號加強制 TOTP（營運者後台 `/ui`）；客戶入口帳號（`/portal`，以設定開關）；目錄同步 token（`/scim/v2`，以設定開關）。
 
 ## Architecture
 
@@ -78,7 +78,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **租戶 API**：`Authorization: Bearer <key>` → 以前綴查詢、SHA-256 加定時間比對 → `tenant` 宣告 → Finbuckle 解析租戶 → 租戶實體（`IsMultiTenant()`）自動過濾。
 - **沒有營運者 HTTP API**：營運者的建立與救援走命令列（`OperatorCli`），日常管理走 `/ui`；不再有常駐的共用金鑰。
 - **cookie 永遠不認證 `/v2`**；每個 `/ui` 與 `/portal` 回應都是 `Cache-Control: no-store`。預設認證方案維持 ApiKey。
-- 每個租戶範圍的查詢都必須以 `TenantId` 過濾；不經審查不得停用查詢過濾。只能**按名稱**繞過租戶過濾（`IgnoreQueryFilters([TenantToken])`），且只在審查過的跨租戶查詢（API key 認證、對話紀錄與冪等紀錄的保存期限清理）。
+- 每個租戶範圍的查詢都必須以 `TenantId` 過濾；不經審查不得停用查詢過濾。只能**按名稱**繞過租戶過濾（`IgnoreQueryFilters([TenantToken])`），且只在審查過的跨租戶查詢（API key 與目錄同步 token 的認證、對話紀錄與冪等紀錄的保存期限清理）。
 - **一次性密碼**：隨機產生、只顯示一次、只存雜湊；不得進任何日誌或稽核，也不得寄信（信裡只放連結，見「邀請與信箱驗證」）。
 - 登入失敗**永遠不透露**帳號是否存在、是否鎖定或停用（一個訊息；不存在的帳號仍付一次雜湊的成本）；失敗的表單**不回填**密碼或驗證碼；稽核與日誌**不記輸入的內容**（人會把密碼貼進 email 欄；稽核表只增不改），只有形如 email 的輸入才記。
 - **密碼規則的唯一來源是 `PasswordPolicy`**（`SharedKernel`；規則表見 README「密碼規則」）：夠長、不含自己的 email、強度（zxcvbn）夠，**不強制組成、不定期換**（NIST SP 800-63B）；連續失敗鎖定帳號。營運者與客戶兩邊規則相同，`MembersModule.AddPasswordPolicy<TUser>()` 讓兩個 Identity 註冊用同一份驗證器（`PasswordPolicyValidator`，在內建長度檢查之後執行；一次性密碼也要過）。驗證器的錯誤只帶穩定代碼，經 `IdentityOutcomes` 轉成結果代碼；密碼與 email 不進日誌或錯誤描述。要調嚴或放寬，改 `PasswordPolicy` 的常數；提示與驗證同源，不要在頁面或文案裡另寫數字。
@@ -155,6 +155,9 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **一個請求一個交易**：成員的變更、狀態計數與稽核事件一起成功或一起失敗，稽核寫不進去就沒有變更（fail closed），身分來源收到錯誤會重送，所以每個動作都冪等；沒有變化的重送什麼都不寫。邀請信在交易內寄、不使佈建失敗，結果以 `MailDelivery` 記進稽核。計數用 SQL 的原子遞增，不讀了再寫（身分來源會平行送很多請求）。
 - **同步不擴大權限**：角色最高到管理員（`DirectoryRoles.Assignable`），擁有者只由人指派，也不接管擁有者；最後一位啟用中的擁有者不能被同步停用或降級；階層檢查之外，設定與 token 只有擁有者能管（管理員不能建立管理員，所以不能持有能這麼做的憑證）。
 - **缺席不是離職**：身分來源久沒來只在介面警示，不自動停用任何人。
+- **SCIM 入口（`/scim/v2`）自成一面**：token 是自己的 authentication scheme（`DirectoryToken`）。租戶解析早於授權，而它不是預設 scheme，所以 `TenancyModule` 的租戶策略對這個路徑明確驗證它；handler 把同一個請求的驗證結果放進 `HttpContext.Items`，租戶解析與授權只查一次資料庫。失敗一律同一個 401、不透露原因；功能面沒開時 handler 什麼都不認（`NoResult`），路徑也不掛。
+- **限流依 token，在授權之後**（端點過濾器，`DirectoryRateLimiter`），不用全域的 `UseRateLimiter`：全域的 `OnRejected` 只有一個，由入口的限流占用，而且沒有有效 token 的請求不該耗用額度。指標標籤只有 `operation`、`outcome`，租戶與內容不進指標。
+- 請求本文只在端點解析、用完即丟：日誌、指標與稽核都不記本文、token 或身分來源送來的屬性（`ScimEndpointTests` 捕捉所有日誌斷言）。PATCH 寬鬆接受各家寫法、略過不認得的屬性——一個多餘的屬性不該讓整個同步失敗；`userName`（email）不能變更。
 - **受管成員的角色與停用鎖在人手之外**（`MemberAdmin`、`MemberSelfService` 都擋，回 `directory.member_managed`），否則下一輪同步就悄悄蓋掉人的修改；解除管理連 `ExternalId` 一起清，身分來源之後才接管得回去。
 - token 與 API key 是兩種憑證（`BearerSecret` 共用格式與雜湊，標記不同），互不通用，不靠 `ApiKey.Scopes` 區分：scope 是同一種憑證內的能力，擋不住拿錯種類的憑證去呼叫另一邊。
 

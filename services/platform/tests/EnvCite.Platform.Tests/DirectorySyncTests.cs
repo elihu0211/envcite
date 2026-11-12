@@ -24,44 +24,8 @@ namespace EnvCite.Platform.Tests;
 /// 租戶隔離、稽核與 fail closed。端點與介面在後續切片；這裡直接呼叫服務，租戶綁定的方式與請求相同。
 /// </summary>
 [Collection(PlatformTestGroup.Name)]
-public sealed class DirectorySyncTests(PlatformFactory factory)
+public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestBase(factory)
 {
-    private sealed record Org(TenantResponse Tenant, string OwnerId, ClaimsPrincipal Owner, ClaimsPrincipal Idp, Guid TokenId, string Token);
-
-    private static CancellationToken Ct => TestContext.Current.CancellationToken;
-
-    private static ClaimsPrincipal Portal(string userId) => new(new ClaimsIdentity([new Claim(PlatformClaimTypes.PortalUserId, userId)], "portal"));
-
-    private static ClaimsPrincipal Idp(Guid tokenId) => new(new ClaimsIdentity([new Claim(PlatformClaimTypes.DirectoryTokenId, tokenId.ToString())], "directory"));
-
-    /// <summary>租戶 context 是 AsyncLocal，必須在同一個 async 流程裡綁定、解析、使用，所以整段交給 <paramref name="body"/>。</summary>
-    private async Task<T> InTenantAsync<T>(TenantResponse tenant, Func<IServiceProvider, Task<T>> body, WebApplicationFactory<Program>? host = null)
-    {
-        await using var scope = (host ?? factory).Services.CreateAsyncScope();
-        var info = (await scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>().GetAsync(tenant.Id))!;
-        Bind(scope, info);
-        return await body(scope.ServiceProvider);
-    }
-
-    private static void Bind(AsyncServiceScope scope, TenantInfo info) =>
-        scope.ServiceProvider.GetRequiredService<IMultiTenantContextSetter>().MultiTenantContext = new MultiTenantContext<TenantInfo>(info);
-
-    /// <summary>一個租戶、一位擁有者、已開啟的連線與一把 token。</summary>
-    private async Task<Org> OrgAsync(string prefix, bool adopt = false, string defaultRole = CustomerRoles.Viewer, bool enabled = true)
-    {
-        var (tenant, _) = await factory.CreateTenantWithKeyAsync(prefix);
-        var (ownerId, _) = await AddMemberAsync(factory, tenant.Id, NewEmail(), CustomerRoles.Owner);
-        var owner = Portal(ownerId);
-
-        var configured = await InTenantAsync(tenant, sp => sp.GetRequiredService<IDirectorySelfService>()
-            .ConfigureAsync(owner, new DirectorySettings(enabled, defaultRole, adopt), Ct));
-        Assert.True(configured.IsOk, configured.Message);
-
-        var issued = await InTenantAsync(tenant, sp => sp.GetRequiredService<IDirectorySelfService>().IssueTokenAsync(owner, "idp", null, Ct));
-        Assert.True(issued.IsOk, issued.Message);
-        return new Org(tenant, ownerId, owner, Idp(issued.Value!.Info.Id), issued.Value.Info.Id, issued.Value.Token);
-    }
-
     private Task<AdminOutcome<DirectoryMember>> ProvisionAsync(Org org, DirectoryProvision member) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ProvisionAsync(org.Idp, member, Ct));
 
@@ -77,19 +41,10 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     private Task<AdminOutcome<DirectoryStatus>> StatusAsync(Org org) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().GetStatusAsync(org.Owner, Ct));
 
-    private Task<ApplicationUser> UserAsync(Org org, string id) =>
-        InTenantAsync(org.Tenant, async sp => (await sp.GetRequiredService<UserManager<ApplicationUser>>().FindByIdAsync(id))!);
-
-    private async Task<IReadOnlyList<AuditRecord>> AuditAsync(Org org, string action) =>
-        (await factory.Services.GetRequiredService<IAuditQuery>().QueryAsync(new AuditFilter(Tenant: org.Tenant.Id, Action: action, Limit: 200), Ct)).Items;
-
-    private static DirectoryProvision Person(string? externalId = null, string? role = null, bool active = true, string? email = null) =>
-        new(email ?? NewEmail(), "Ann", externalId ?? $"ext-{Guid.NewGuid():N}", role, active);
-
     [Fact]
     public async Task AProvisionedMemberIsAnInvitedManagedMemberAndTheMailCarriesALinkNotAPassword()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-a");
             var person = Person();
@@ -104,7 +59,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
             Assert.Equal(CustomerRoles.Viewer, member.Role); // 沒指定角色：租戶設定的預設
             Assert.Equal(person.ExternalId, member.ExternalId);
 
-            var mail = Assert.Single(factory.Mail.Sent, m => m.Recipient == person.Email);
+            var mail = Assert.Single(Factory.Mail.Sent, m => m.Recipient == person.Email);
             Assert.Contains($"/portal/{org.Tenant.Identifier}/activate?userId={member.Id}&code=", mail.Body, StringComparison.Ordinal);
 
             // 稽核的「誰」是這把 token，不是任何一個人；內容沒有連結或密碼。
@@ -120,7 +75,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task ProvisioningTheSamePersonAgainIsAConflictNotASecondMember()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-b");
             var person = Person();
@@ -160,7 +115,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task NothingWorksWhileTheTenantConnectionIsOffAndTheStateIsKept()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-d");
             var member = (await ProvisionAsync(org, Person())).Value!;
@@ -183,7 +138,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     public async Task TheFeatureIsAbsentWhenTheOperatorOfTheDeploymentHasNotEnabledIt()
     {
         var org = await OrgAsync("dir-e");
-        using var off = factory.WithWebHostBuilder(builder => builder.UseSetting("Platform:Directory:Enabled", "false"));
+        using var off = Factory.WithWebHostBuilder(builder => builder.UseSetting("Platform:Directory:Enabled", "false"));
 
         var provisioned = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ProvisionAsync(org.Idp, Person(), Ct), off);
         var status = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().GetStatusAsync(org.Owner, Ct), off);
@@ -197,7 +152,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task ResendingAnUnchangedUpdateWritesNothing()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-f");
             var member = (await ProvisionAsync(org, Person())).Value!;
@@ -220,7 +175,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task DeactivatingKeepsTheAccountEndsSessionsAndIsIdempotent()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-g");
             var member = (await ProvisionAsync(org, Person())).Value!;
@@ -244,7 +199,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task ReactivatingAMemberWhoNeverSetAPasswordSendsTheInvitationAgain()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-h");
             var person = Person();
@@ -254,7 +209,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
             var back = await UpdateAsync(org, member.Id, new DirectoryPatch(Active: true));
 
             Assert.True(back.Value!.Active);
-            Assert.Equal(2, factory.Mail.Sent.Count(m => m.Recipient == person.Email));
+            Assert.Equal(2, Factory.Mail.Sent.Count(m => m.Recipient == person.Email));
             Assert.Single(await AuditAsync(org, AuditActions.MemberReprovisioned));
         });
     }
@@ -262,7 +217,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task TheLastActiveOwnerIsNeverDeactivatedOrDemotedByTheDirectory()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-i");
             var person = (await ProvisionAsync(org, Person(role: CustomerRoles.Admin))).Value!;
@@ -306,7 +261,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task TheDirectoryCanGrantAtMostAdminAndOwnersAreAssignedByPeople()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-j");
             var admin = await ProvisionAsync(org, Person(role: CustomerRoles.Admin));
@@ -330,15 +285,15 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task ExistingMembersAreNotTouchedUnlessTheTenantAllowsAdoptionAndOwnersAreNeverAdopted()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var closed = await OrgAsync("dir-k1");
             var open = await OrgAsync("dir-k2", adopt: true);
             var closedEmail = NewEmail();
             var openEmail = NewEmail();
-            var (closedId, _) = await AddMemberAsync(factory, closed.Tenant.Id, closedEmail, CustomerRoles.Developer);
-            var (openId, _) = await AddMemberAsync(factory, open.Tenant.Id, openEmail, CustomerRoles.Developer);
-            var (ownerOpenId, _) = await AddMemberAsync(factory, open.Tenant.Id, NewEmail(), CustomerRoles.Owner);
+            var (closedId, _) = await AddMemberAsync(Factory, closed.Tenant.Id, closedEmail, CustomerRoles.Developer);
+            var (openId, _) = await AddMemberAsync(Factory, open.Tenant.Id, openEmail, CustomerRoles.Developer);
+            var (ownerOpenId, _) = await AddMemberAsync(Factory, open.Tenant.Id, NewEmail(), CustomerRoles.Owner);
 
             var refused = await ProvisionAsync(closed, Person(email: closedEmail));
             var viaPatch = await UpdateAsync(closed, closedId, new DirectoryPatch(Role: CustomerRoles.Viewer));
@@ -365,11 +320,11 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task ManagedMembersAreLockedForPeopleUntilReleased()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-l");
             var member = (await ProvisionAsync(org, Person())).Value!;
-            var members = factory.Services.GetRequiredService<IMemberAdmin>();
+            var members = Factory.Services.GetRequiredService<IMemberAdmin>();
 
             var locked = await members.SetDisabledAsync(OperatorSession.Principal(), org.Tenant.Id, member.Id, true, Ct);
             var selfLocked = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IMemberSelfService>().ChangeRoleAsync(org.Owner, member.Id, CustomerRoles.Billing, Ct));
@@ -392,7 +347,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task EachTenantOnlySeesAndChangesItsOwnMembersAndTokens()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var a = await OrgAsync("dir-m1");
             var b = await OrgAsync("dir-m2");
@@ -424,8 +379,8 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     public async Task OnlyAnActiveOwnerManagesTheConnectionAndTheRoleIsReadFromTheDatabase()
     {
         var org = await OrgAsync("dir-n");
-        var (adminId, _) = await AddMemberAsync(factory, org.Tenant.Id, NewEmail(), CustomerRoles.Admin);
-        var (devId, _) = await AddMemberAsync(factory, org.Tenant.Id, NewEmail(), CustomerRoles.Developer);
+        var (adminId, _) = await AddMemberAsync(Factory, org.Tenant.Id, NewEmail(), CustomerRoles.Admin);
+        var (devId, _) = await AddMemberAsync(Factory, org.Tenant.Id, NewEmail(), CustomerRoles.Developer);
         // 偽造的 role claim 不算數：角色以資料庫為準。
         var forged = new ClaimsPrincipal(new ClaimsIdentity(
             [new Claim(PlatformClaimTypes.PortalUserId, devId), new Claim(ClaimTypes.Role, CustomerRoles.Owner)], "portal"));
@@ -441,7 +396,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
         Assert.True((await StatusAsync(org)).IsOk);
 
         // 被停用的擁有者也不行。
-        var disabled = await factory.Services.GetRequiredService<IMemberAdmin>().SetDisabledAsync(OperatorSession.Principal(), org.Tenant.Id, org.OwnerId, true, Ct);
+        var disabled = await Factory.Services.GetRequiredService<IMemberAdmin>().SetDisabledAsync(OperatorSession.Principal(), org.Tenant.Id, org.OwnerId, true, Ct);
         Assert.True(disabled.IsOk);
         Assert.Equal(OutcomeCodes.DirectoryOwnerOnly, (await StatusAsync(org)).Code);
     }
@@ -479,7 +434,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
         var missing = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().RevokeTokenAsync(org.Owner, Guid.NewGuid(), Ct));
         var blank = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().IssueTokenAsync(org.Owner, "  ", null, Ct));
         var past = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>()
-            .IssueTokenAsync(org.Owner, "old", factory.Time.GetUtcNow().AddMinutes(-1), Ct));
+            .IssueTokenAsync(org.Owner, "old", Factory.Time.GetUtcNow().AddMinutes(-1), Ct));
 
         Assert.NotNull(first.Value!.RevokedAt);
         Assert.Equal(first.Value.RevokedAt, second.Value!.RevokedAt);
@@ -492,7 +447,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task ListingFiltersByExactMatchAndNeverReturnsMoreThanThePageLimit()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-q");
             var people = new List<DirectoryProvision>();
@@ -506,7 +461,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
             var next = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ListAsync(org.Idp, 2, 2, null, null, Ct));
             var byExternal = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ListAsync(org.Idp, 0, 10, people[1].ExternalId, null, Ct));
             var byEmail = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ListAsync(org.Idp, 0, 10, null, people[2].Email.ToUpperInvariant(), Ct));
-            using var small = factory.WithWebHostBuilder(builder => builder.UseSetting("Platform:Directory:MaxPageSize", "2"));
+            using var small = Factory.WithWebHostBuilder(builder => builder.UseSetting("Platform:Directory:MaxPageSize", "2"));
             var capped = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ListAsync(org.Idp, 0, 100_000, null, null, Ct), small);
 
             Assert.Equal(4, all.Value!.Total); // 擁有者加三位
@@ -521,7 +476,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task WhenTheAuditCannotBeWrittenNothingChanges()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-r");
             var person = Person();
@@ -541,11 +496,11 @@ public sealed class DirectorySyncTests(PlatformFactory factory)
     [Fact]
     public async Task TheOperatorSeesTheStatusCanSwitchTheConnectionOffAndTheChangeIsAudited()
     {
-        await factory.WithMail(async () =>
+        await Factory.WithMail(async () =>
         {
             var org = await OrgAsync("dir-s");
             Assert.True((await ProvisionAsync(org, Person())).IsOk);
-            var admin = factory.Services.GetRequiredService<IDirectoryAdmin>();
+            var admin = Factory.Services.GetRequiredService<IDirectoryAdmin>();
 
             var status = await admin.GetStatusAsync(org.Tenant.Id, Ct);
             var off = await admin.DisableAsync(OperatorSession.Principal(), org.Tenant.Id, Ct);

@@ -7,6 +7,7 @@ using EnvCite.Platform.Modules.Audit;
 using EnvCite.Platform.Modules.Consult;
 using EnvCite.Platform.Modules.Conversations;
 using EnvCite.Platform.Modules.Members;
+using EnvCite.Platform.Modules.Members.DirectorySync;
 using EnvCite.Platform.Modules.Metering;
 using EnvCite.Platform.Modules.Ontology;
 using EnvCite.Platform.Modules.Tenancy;
@@ -138,6 +139,9 @@ v2.MapGroup(string.Empty)
     .MapConsultEndpoints();
 
 
+
+// 目錄同步（SCIM）：不在 /v2 之下，沒有方案與計量；部署者沒開功能面就不掛。
+app.MapDirectoryScim();
 
 app.MapPlatformWeb();
 
