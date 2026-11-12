@@ -194,5 +194,6 @@ internal sealed class MemberCore(
 
     public MemberInfo Info(ApplicationUser u) =>
         new(u.Id, u.Email ?? string.Empty, u.DisplayName, u.Role, u.MustChangePassword,
-            u.LockoutEnd is { } end && end > time.GetUtcNow(), u.TwoFactorEnabled, u.Disabled, u.EmailConfirmed, string.IsNullOrEmpty(u.PasswordHash));
+            u.LockoutEnd is { } end && end > time.GetUtcNow(), u.TwoFactorEnabled, u.Disabled, u.EmailConfirmed, string.IsNullOrEmpty(u.PasswordHash),
+            u.ManagedBy == DirectoryRoles.ManagedBy);
 }

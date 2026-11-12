@@ -54,9 +54,10 @@ public interface IPortalAccount : IAccountLifecycle
 
 /// <param name="EmailConfirmed">信箱已透過連結驗證。沒驗證的信箱不能用於復原。</param>
 /// <param name="Invited">已邀請、還沒設定密碼（尚未開啟邀請連結）。</param>
+/// <param name="Managed">由目錄同步管理：角色與停用由身分來源決定，介面與管理動作鎖住（見 <see cref="DirectoryRoles.ManagedBy"/>）。</param>
 public sealed record MemberInfo(
     string Id, string Email, string? DisplayName, string Role, bool MustChangePassword, bool LockedOut, bool TwoFactorEnabled, bool Disabled,
-    bool EmailConfirmed = false, bool Invited = false);
+    bool EmailConfirmed = false, bool Invited = false, bool Managed = false);
 
 /// <summary>邀請（或重寄）的結果：<paramref name="Mail"/> 是邀請信的寄送結果。信裡只有連結，沒有密碼。</summary>
 public sealed record MemberInvitation(MemberInfo Member, MailDelivery Mail);

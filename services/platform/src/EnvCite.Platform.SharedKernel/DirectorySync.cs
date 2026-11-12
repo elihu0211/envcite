@@ -105,3 +105,14 @@ public interface IDirectorySelfService
 
     Task<AdminOutcome<MemberInfo>> ReleaseManagedAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// 目錄同步的功能面有沒有開（<c>Platform:Directory:Enabled</c>），以及連線多久沒收到請求就該警示（<c>StaleAfter</c>）。singleton，只讀設定。
+/// 介面據此決定要不要顯示入口與區塊（同 <see cref="IAnswerAvailability"/> 的做法）；真正的存取控制在服務層，不看這裡。
+/// </summary>
+public interface IDirectoryAvailability
+{
+    bool Available { get; }
+
+    TimeSpan StaleAfter { get; }
+}

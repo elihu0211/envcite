@@ -148,6 +148,16 @@
                     </p>
                 </SectionCard>
 
+                @if (_directory is { } sync)
+                {
+                    <DirectoryStatusCard Id="directory" Status="sync" BaseUrl="@ScimUrl">
+                        <Actions>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" OnClick="DisableDirectoryAsync"
+                                       Disabled="@(Busy || !sync.Settings.Enabled)">@L["關閉目錄同步"]</MudButton>
+                        </Actions>
+                    </DirectoryStatusCard>
+                }
+
                 <SectionCard Id="audit-heading" Title="@L["最近的稽核事件"]">
                     <Actions>
                         <a href="@($"/ui/audit?tenant={Uri.EscapeDataString(tenant.Id)}")">@L["全部"]</a>
@@ -294,6 +304,10 @@
                 {
                     <StatusBadge Tone="info">@L["兩步驟"]</StatusBadge>
                 }
+                @if (member.Managed)
+                {
+                    <StatusBadge Tone="info">@L["由目錄同步管理"]</StatusBadge>
+                }
             </text>,
         },
         new()
@@ -308,9 +322,18 @@
                 }
                 <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
                            aria-label="@L["重設 {0} 的密碼", member.Email]" OnClick="() => ResetPasswordAsync(member)">@L["重設密碼"]</MudButton>
-                <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
-                           aria-label="@(member.Disabled ? L["重新啟用 {0}", member.Email] : L["停用 {0}", member.Email])"
-                           OnClick="() => SetDisabledAsync(member, !member.Disabled)">@(member.Disabled ? L["重新啟用"] : L["停用"])</MudButton>
+                @if (member.Managed)
+                {
+                    @* 受目錄同步管理：停用與啟用由身分來源決定；要由人處理，先解除管理。 *@
+                    <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
+                               aria-label="@L["解除 {0} 的目錄同步管理", member.Email]" OnClick="() => ReleaseManagedAsync(member)">@L["解除管理"]</MudButton>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
+                               aria-label="@(member.Disabled ? L["重新啟用 {0}", member.Email] : L["停用 {0}", member.Email])"
+                               OnClick="() => SetDisabledAsync(member, !member.Disabled)">@(member.Disabled ? L["重新啟用"] : L["停用"])</MudButton>
+                }
                 @if (member.TwoFactorEnabled)
                 {
                     <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"

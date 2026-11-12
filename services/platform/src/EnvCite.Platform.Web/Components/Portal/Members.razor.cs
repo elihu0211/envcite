@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class Members(IMemberSelfService team, IMailSender mail)
+public partial class Members(IMemberSelfService team, IMailSender mail, IDirectorySelfService directory, IDirectoryAvailability directoryFeature)
 {
     [SupplyParameterFromForm(FormName = "portal-member-add")] private AddForm Add { get; set; } = default!;
 
@@ -105,6 +105,10 @@ public partial class Members(IMemberSelfService team, IMailSender mail)
                 }
 
                 break;
+            case "release":
+                var released = await directory.ReleaseManagedAsync(HttpContext.User, id, HttpContext.RequestAborted);
+                Report(released, L["已解除目錄同步的管理，角色與停用回到你手上。"]);
+                break;
             case "reset":
                 var reset = await team.ResetPasswordAsync(HttpContext.User, id, HttpContext.RequestAborted);
                 if (reset.IsOk)
@@ -150,6 +154,9 @@ public partial class Members(IMemberSelfService team, IMailSender mail)
 
     private string State(MemberInfo m) =>
         m.Disabled ? L["已停用"] : m.LockedOut ? L["已鎖定"] : m.Invited ? L["待啟用"] : m.MustChangePassword ? L["待改密碼"] : L["正常"];
+
+    /// <summary>只有擁有者能解除管理（服務層也擋）；功能面沒開就沒有受管成員，也不列。</summary>
+    private bool CanRelease => directoryFeature.Available && HttpContext.User.IsInRole(CustomerRoles.Owner);
 
     private bool CanResend(MemberInfo m) => mail.Enabled && !m.Disabled && (m.Invited || !m.EmailConfirmed);
 

@@ -1,0 +1,75 @@
+@page "/portal/{Tenant}/directory"
+@layout PortalLayout
+@attribute [ExcludeFromInteractiveRouting]
+@attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+@inherits PortalPageBase
+
+<DocumentTitle Text="@L["目錄同步"]" />
+
+<PageHeader Title="@L["目錄同步"]" Description="@L["讓公司的身分來源自動建立、更新與停用成員。"]" />
+
+@if (!_available)
+{
+    <FormAlert Kind="AlertKind.Info">@L["這個環境沒有開啟目錄同步。"]</FormAlert>
+}
+else if (_status is null)
+{
+    <FormAlert Kind="AlertKind.Info">@L["只有擁有者能管理目錄同步。"]</FormAlert>
+}
+else
+{
+    @if (_issued is not null)
+    {
+        @* 只在這一個回應裡出現，重新整理就沒了；資料庫只存雜湊。 *@
+        <SectionCard Id="issued-title" Title="@L["新的目錄同步 token"]">
+            <FormAlert Kind="AlertKind.Info">
+                @L["這把 token"]<strong>@L["只會顯示這一次"]</strong>@L["。請貼進身分來源的 SCIM 設定（Secret Token）；之後這裡只會看到它的前綴。"]
+            </FormAlert>
+            <SecretReveal Id="issued-token" Value="@_issued" />
+        </SectionCard>
+    }
+
+    @if (_message is not null)
+    {
+        <FormAlert Kind="AlertKind.Info">@_message</FormAlert>
+    }
+
+    <FormAlert Message="@Error" />
+
+    @* 一個表單包住整張狀態卡：每顆撤銷鈕的 value 說明「撤銷哪一把」。 *@
+    <form method="post" @onsubmit="ActAsync" @formname="portal-directory-action">
+        <AntiforgeryToken />
+        <DirectoryStatusCard Status="_status" BaseUrl="@BaseUrl" Plain="true">
+            <TokenActions>
+                @if (context.RevokedAt is null)
+                {
+                    <button type="submit" name="Input.Action" value="@($"revoke:{context.Id}")" class="ep-btn ep-btn-quiet"
+                            aria-label="@L["撤銷 {0}", context.Name]">@L["撤銷"]</button>
+                }
+            </TokenActions>
+        </DirectoryStatusCard>
+    </form>
+
+    <SectionCard Id="settings-title" Title="@L["設定"]">
+        <PostForm Model="Settings" FormName="portal-directory-settings" OnValidSubmit="SaveSettingsAsync">
+            <CheckboxField For="settings-enabled" Label="@L["接受目錄同步"]" Hint="@L["關閉時身分來源的請求一律被拒絕，既有成員不受影響。"]"
+                           @bind-Value="Settings.Enabled" />
+            <SelectField For="settings-role" Label="@L["預設角色"]" Hint="@L["身分來源沒有指定角色時使用。目錄同步最高只能授予管理員，擁有者由人指派。"]"
+                         Options="RoleOptions" @bind-Value="Settings.DefaultRole" />
+            <CheckboxField For="settings-adopt" Label="@L["接管既有成員"]"
+                           Hint="@L["身分來源推送的 email 在這個組織已有成員時，連結到他並由目錄同步管理（角色與停用維持原樣）。擁有者不會被接管。"]"
+                           @bind-Value="Settings.Adopt" />
+            <SubmitButton>@L["儲存設定"]</SubmitButton>
+        </PostForm>
+    </SectionCard>
+
+    <SectionCard Id="token-title" Title="@L["簽發 token"]">
+        <PostForm Model="Token" FormName="portal-directory-token" OnValidSubmit="IssueAsync">
+            <FormField For="token-name" Label="@L["名稱"]" Hint="@L["讓你之後認得這把 token 是給誰用的，例如「Entra ID」。"]">
+                <InputText id="token-name" @bind-Value="Token.Name" class="ep-input" required maxlength="100" autocomplete="off" />
+            </FormField>
+            <SelectField For="token-expiry" Label="@L["有效期限"]" Options="ExpiryOptions" @bind-Value="Token.ExpiresInDays" />
+            <SubmitButton>@L["簽發 token"]</SubmitButton>
+        </PostForm>
+    </SectionCard>
+}

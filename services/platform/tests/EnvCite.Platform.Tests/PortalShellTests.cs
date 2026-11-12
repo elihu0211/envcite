@@ -52,7 +52,10 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var prefix = Home(tenant.Identifier);
         var links = SideNavHrefs(home.Html);
         Assert.Equal(seesMembers, links.Contains($"{prefix}/members"));
-        Assert.Equal([prefix, $"{prefix}/account"], links.Where(l => l != $"{prefix}/members" && l != $"{prefix}/history"));
+
+        // 目錄同步（共用的測試主機開著）只列給擁有者：設定與 token 只有擁有者能管。
+        Assert.Equal(role == CustomerRoles.Owner, links.Contains($"{prefix}/directory"));
+        Assert.Equal([prefix, $"{prefix}/account"], links.Where(l => l != $"{prefix}/members" && l != $"{prefix}/history" && l != $"{prefix}/directory"));
         // 個人設定（外觀）與個人的安全設定在帳號選單；選單也顯示目前是誰。
         Assert.Equal([$"{prefix}/settings", $"{prefix}/security", PasswordPage(tenant.Identifier)], MenuHrefs(home.Html));
         Assert.Contains(email, Menu(home.Html), StringComparison.Ordinal);

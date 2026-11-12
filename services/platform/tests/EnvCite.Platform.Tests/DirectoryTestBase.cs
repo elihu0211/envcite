@@ -20,7 +20,8 @@ public abstract class DirectoryTestBase(PlatformFactory factory)
 {
     protected PlatformFactory Factory { get; } = factory;
 
-    protected sealed record Org(TenantResponse Tenant, string OwnerId, ClaimsPrincipal Owner, ClaimsPrincipal Idp, Guid TokenId, string Token);
+    protected sealed record Org(
+        TenantResponse Tenant, string OwnerId, ClaimsPrincipal Owner, ClaimsPrincipal Idp, Guid TokenId, string Token, string OwnerEmail, string OwnerInitial);
 
     protected static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -44,7 +45,8 @@ public abstract class DirectoryTestBase(PlatformFactory factory)
     protected async Task<Org> OrgAsync(string prefix, bool adopt = false, string defaultRole = CustomerRoles.Viewer, bool enabled = true)
     {
         var (tenant, _) = await Factory.CreateTenantWithKeyAsync(prefix);
-        var (ownerId, _) = await AddMemberAsync(Factory, tenant.Id, NewEmail(), CustomerRoles.Owner);
+        var ownerEmail = NewEmail();
+        var (ownerId, ownerInitial) = await AddMemberAsync(Factory, tenant.Id, ownerEmail, CustomerRoles.Owner);
         var owner = Portal(ownerId);
 
         var configured = await InTenantAsync(tenant, sp => sp.GetRequiredService<IDirectorySelfService>()
@@ -53,7 +55,7 @@ public abstract class DirectoryTestBase(PlatformFactory factory)
 
         var issued = await InTenantAsync(tenant, sp => sp.GetRequiredService<IDirectorySelfService>().IssueTokenAsync(owner, "idp", null, Ct));
         Assert.True(issued.IsOk, issued.Message);
-        return new Org(tenant, ownerId, owner, Idp(issued.Value!.Info.Id), issued.Value.Info.Id, issued.Value.Token);
+        return new Org(tenant, ownerId, owner, Idp(issued.Value!.Info.Id), issued.Value.Info.Id, issued.Value.Token, ownerEmail, ownerInitial);
     }
 
     protected Task<ApplicationUser> UserAsync(Org org, string id) =>

@@ -1,6 +1,7 @@
 @inherits PlatformLayoutBase
 @inject IPortalAccount Account
 @inject IConversationHistory History
+@inject IDirectoryAvailability DirectoryFeature
 
 @* 客戶入口的外殼：靜態渲染（沒有 circuit、沒有互動元件），所以不用 MudBlazor 的元件。外觀與版面見 PortalShell。 *@
 <PortalShell TenantName="@(Account.CurrentTenant is { } tenant ? tenant.Name ?? tenant.Identifier : null)"
@@ -62,6 +63,12 @@
             if (CanManageMembers)
             {
                 items.Add(new($"{home}/members", L["成員"], L["組織"], Icon: Icons.Material.Outlined.Group));
+            }
+
+            // 設定與 token 只有擁有者能管（服務層也擋）；功能面沒開就不列。
+            if (DirectoryFeature.Available && _user is not null && _user.IsInRole(CustomerRoles.Owner))
+            {
+                items.Add(new($"{home}/directory", L["目錄同步"], L["組織"], Icon: Icons.Material.Outlined.SyncAlt));
             }
 
             items.Add(new($"{home}/account", L["帳號與組織"], L["組織"], Icon: Icons.Material.Outlined.ManageAccounts));

@@ -9,6 +9,10 @@ namespace EnvCite.Platform.Web.Presentation;
 /// </summary>
 public static class OutcomeText
 {
+    /// <summary>只有代碼沒有結果物件時（例如狀態裡記著的「最近一次被拒絕的代碼」）：查資源檔；查不到回代碼本身，不隱藏。</summary>
+    public static string OfCode(string code) =>
+        Text.Find($"Outcome.{code}") is { } template ? string.Format(System.Globalization.CultureInfo.CurrentCulture, template, Array.Empty<object>()) : code;
+
     public static string? Localized<T>(this AdminOutcome<T> outcome)
     {
         if (outcome.Code is { } code && Text.Find($"Outcome.{code}") is { } template)
