@@ -5,5 +5,7 @@
 
 <MudThemeProvider Theme="Theme" />
 <MudPopoverProvider />
-<MudDialogProvider />
+@* 按 Esc 關閉是對話框的預設：MudBlazor 預設不處理 Esc，要在 provider 開啟。只顯示一次的密碼與金鑰（IssueApiKeyDialog、
+   PasswordRevealDialog、OperatorPasswordDialog）各自關掉，必須按「我已保存」才離開，不會誤按 Esc 就看不到了。 *@
+<MudDialogProvider CloseOnEscapeKey="true" />
 <MudSnackbarProvider />
