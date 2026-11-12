@@ -173,11 +173,53 @@ docker exec envcite-pg createdb -U <帳號> platform
 ```bash
 cd services/platform
 ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- operator create <email> [顯示名稱]
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- operator resend-invite <email>
 ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- operator reset-password <email>
 ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- operator reset-two-factor <email>
 ```
 
 一次性密碼只印在該終端機。指令的契約與結束碼見 [platform README「營運者帳號」](services/platform/README.md#營運者帳號)。
+
+### 本機收信與寄信測試
+
+啟用寄信（`Platform:Mail`）後，新增營運者或成員改為寄邀請信，對方開啟連結自己設定密碼；沒啟用時仍是上面的一次性密碼。流程、鍵與排查見 [platform README「邀請與信箱驗證」](services/platform/README.md#邀請與信箱驗證)與[「寄信」](services/platform/README.md#寄信platformmail)。部署環境（staging）的設定與驗證步驟見[索引](#索引)的「部署」列。
+
+本機用 [Mailpit](https://github.com/axllent/mailpit) 接信：它是收信用的 SMTP 伺服器，信只留在它的網頁介面，不會寄到任何真實信箱。
+
+```bash
+docker run -d --rm --name envcite-mailpit -p 1025:1025 -p 8025:8025 axllent/mailpit
+```
+
+在 `services/platform` 以環境變數啟動 platform。`BaseUrl` 要與服務實際監聽的位址一致，信裡的連結才打得開：
+
+```bash
+cd services/platform
+ASPNETCORE_ENVIRONMENT=Development \
+ENVCITE_Platform__Mail__Enabled=true \
+ENVCITE_Platform__Mail__Host=localhost \
+ENVCITE_Platform__Mail__Port=1025 \
+ENVCITE_Platform__Mail__From=envcite@example.test \
+ENVCITE_Platform__Mail__BaseUrl=http://localhost:5080 \
+dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- --urls http://localhost:5080
+```
+
+1. 以種子營運者登入 `/ui/login`，到「營運者」新增一位（email 用 `.test` 網域），或到租戶頁新增成員。
+2. 開 <http://localhost:8025> 看邀請信，開啟信裡的連結，設定密碼。連結只能用一次；重開應顯示「連結無效或已過期」。
+3. 用新密碼登入。營運者接著綁定驗證器。
+
+只想驗證寄信設定，不建帳號：同樣的環境變數下執行 `mail test`，Mailpit 會收到一封沒有連結、沒有密碼的測試信。
+
+```bash
+ASPNETCORE_ENVIRONMENT=Development ENVCITE_Platform__Mail__Enabled=true ENVCITE_Platform__Mail__Host=localhost \
+ENVCITE_Platform__Mail__Port=1025 ENVCITE_Platform__Mail__From=envcite@example.test ENVCITE_Platform__Mail__BaseUrl=http://localhost:5080 \
+dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- mail test probe@example.test
+```
+
+**對真實中繼測試**：把 `Host`、`Port`、`From` 換成中繼的值，`BaseUrl` 換成服務的 https 位址，收件者換成自己的信箱，執行同一個 `mail test`。不加密、免驗證的中繼只信任特定來源位址，所以：
+
+- 從自己的電腦測通，只證明中繼可達；**服務實際執行的環境**（pod 的出口位址）是否被信任，要在那個環境裡執行 `mail test` 才知道。
+- 結束碼 `0` 只代表中繼接受了信；到收件匣確認有收到。失敗時依 README 的排查表，細節在服務日誌的 `Mail delivery failed` 那一行。
+- 測試信不含連結與密碼，可以放心寄到真實信箱；邀請信則會讓收件者得到一把單次的鑰匙，測試時用自己的信箱。
 
 ## 常用指令
 

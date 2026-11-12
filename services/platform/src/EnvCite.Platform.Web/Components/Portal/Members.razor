@@ -56,7 +56,7 @@ else
                     }
                 </InputSelect>
             </div>
-            <button type="submit" class="ep-btn ep-btn-primary">@L["新增成員"]</button>
+            <button type="submit" class="ep-btn ep-btn-primary">@(mail.Enabled ? L["寄出邀請"] : L["新增成員"])</button>
         </EditForm>
     </section>
 
@@ -84,6 +84,10 @@ else
                                 <td data-label="@L["角色"]">@PortalLabels.Role(member.Role)</td>
                                 <td data-label="@L["狀態"]">
                                     <StatusBadge Tone="@StateTone(member)">@State(member)</StatusBadge>
+                                    @if (!member.EmailConfirmed && !member.Invited)
+                                    {
+                                        <StatusBadge Tone="warning">@L["信箱未驗證"]</StatusBadge>
+                                    }
                                     @if (member.TwoFactorEnabled)
                                     {
                                         <StatusBadge Tone="info">@L["兩步驟"]</StatusBadge>
@@ -92,6 +96,12 @@ else
                                 <td class="ep-row-actions">
                                     @if (row.CanManage)
                                     {
+                                        @if (CanResend(member))
+                                        {
+                                            <button type="submit" name="Input.Action" value="@($"resend:{member.Id}")" class="ep-btn ep-btn-quiet"
+                                                    aria-label="@(member.Invited ? L["重寄邀請給 {0}", member.Email] : L["寄驗證信給 {0}", member.Email])">@(member.Invited ? L["重寄邀請"] : L["寄驗證信"])</button>
+                                        }
+
                                         @if (member.Disabled)
                                         {
                                             <button type="submit" name="Input.Action" value="@($"enable:{member.Id}")" class="ep-btn ep-btn-quiet"

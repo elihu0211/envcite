@@ -3,8 +3,14 @@ using System.Security.Claims;
 namespace EnvCite.Platform.SharedKernel;
 
 /// <summary>營運者帳號。營運者不屬於任何租戶，登入名稱就是 email；每位都必須使用兩步驟驗證。</summary>
+/// <param name="EmailConfirmed">信箱已透過連結驗證。沒驗證的信箱不能用於復原。</param>
+/// <param name="Invited">已邀請、還沒設定密碼（尚未開啟邀請連結）。</param>
 public sealed record OperatorInfo(
-    string Id, string Email, string? DisplayName, bool MustChangePassword, bool LockedOut, bool TwoFactorEnabled, bool Disabled);
+    string Id, string Email, string? DisplayName, bool MustChangePassword, bool LockedOut, bool TwoFactorEnabled, bool Disabled,
+    bool EmailConfirmed = false, bool Invited = false);
+
+/// <summary>邀請（或重寄）的結果：<paramref name="Mail"/> 是邀請信的寄送結果。信裡只有連結，沒有密碼。</summary>
+public sealed record OperatorInvitation(OperatorInfo Operator, MailDelivery Mail);
 
 /// <summary>初始密碼只在建立或重設當下回傳一次；資料庫只存雜湊，之後無法取回。</summary>
 public sealed record IssuedOperatorPassword(OperatorInfo Operator, string Password);
@@ -42,6 +48,16 @@ public interface IOperatorAccount
     /// <summary>登出：收回 session 與暫存憑證，並留稽核。</summary>
     Task SignOutAsync(ClaimsPrincipal user, CancellationToken cancellationToken);
 
+    /// <summary>檢視邀請／驗證連結（沒有副作用，所以信件掃描器預先開啟連結不會用掉它）。</summary>
+    Task<ActivationState> InspectActivationAsync(string? userId, string? code, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 使用連結：邀請連結要帶 <paramref name="newPassword"/>，設好密碼並驗證信箱；驗證連結只驗證信箱。
+    /// 不簽發 session：使用者接著登入，仍要依序改密碼（若是暫時密碼）與綁定驗證器。失敗一律是 <see cref="OutcomeCodes.ActivationLinkInvalid"/>，
+    /// 或密碼不符規則（連結此時仍有效，可以重打）。
+    /// </summary>
+    Task<AdminOutcome<ActivationState>> ActivateAsync(string? userId, string? code, string? newPassword, CancellationToken cancellationToken);
+
     /// <summary>驗證目前密碼後改密碼；成功會換新 cookie（其他裝置的 session 失效），並清除「必須改密碼」。</summary>
     Task<AdminOutcome<bool>> ChangePasswordAsync(
         ClaimsPrincipal user, string currentPassword, string newPassword, CancellationToken cancellationToken);
@@ -75,7 +91,8 @@ public interface IOperatorTwoFactor
 
 /// <summary>
 /// 管理營運者帳號（後台、命令列與本機開發的種子資料共用）。沒有自助註冊：
-/// 帳號只能由已被信任的營運者或系統管理者建立，並把一次性的初始密碼交給對方（對方第一次登入必須改掉，再註冊驗證器）。
+/// 帳號只能由已被信任的營運者或系統管理者建立。啟用寄信時是<b>邀請</b>（<see cref="InviteAsync"/>）：對方開啟單次、限時的連結自己設定密碼並驗證信箱，
+/// 沒有人經手密碼；沒啟用時由建立者把一次性的初始密碼親手交給對方（對方第一次登入必須改掉）。兩條路之後都要註冊驗證器。
 /// 每個動作都留稽核，<paramref name="actor"/> 由已驗證的身分決定，不接受自報。
 /// </summary>
 public interface IOperatorAdmin
@@ -84,6 +101,20 @@ public interface IOperatorAdmin
 
     Task<AdminOutcome<IssuedOperatorPassword>> CreateAsync(
         ClaimsPrincipal actor, string email, string? displayName, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 邀請：建立沒有密碼的帳號，寄單次、限時的連結讓對方自己設定密碼並驗證信箱。沒啟用寄信時回 <see cref="OutcomeCodes.MailNotEnabled"/>，
+    /// 改用 <see cref="CreateAsync"/>（暫時密碼）。寄信失敗不讓建立失敗，結果在 <see cref="OperatorInvitation.Mail"/>，可再 <see cref="ResendInvitationAsync"/>。
+    /// </summary>
+    Task<AdminOutcome<OperatorInvitation>> InviteAsync(
+        ClaimsPrincipal actor, string email, string? displayName, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 重寄：還沒設密碼的帳號重發邀請連結（先前的連結失效）；已有密碼但信箱沒驗證的帳號寄驗證連結；
+    /// 已啟用且已驗證則 <see cref="OutcomeCodes.AccountAlreadyActive"/>。
+    /// </summary>
+    Task<AdminOutcome<OperatorInvitation>> ResendInvitationAsync(
+        ClaimsPrincipal actor, string operatorId, CancellationToken cancellationToken);
 
     /// <summary>設一組新的一次性密碼、解除鎖定、讓既有 session 失效，並要求下次登入改密碼。</summary>
     Task<AdminOutcome<IssuedOperatorPassword>> ResetPasswordAsync(

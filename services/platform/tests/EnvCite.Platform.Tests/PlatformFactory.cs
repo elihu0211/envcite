@@ -36,6 +36,9 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
 
     public FakeConsultServer Consult { get; } = new();
 
+    /// <summary>取代真的 SMTP：測試從不連外，寄出的信都收在這裡。</summary>
+    public CapturingMailSender Mail { get; } = new();
+
     public async ValueTask InitializeAsync()
     {
         await Task.WhenAll(_postgres.StartAsync(), Ontology.StartAsync(), Consult.StartAsync());
@@ -53,6 +56,8 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
     {
         builder.UseSetting("ConnectionStrings:Platform", _postgres.GetConnectionString());
         builder.UseSetting("Platform:ApplyMigrationsOnStartup", "true");
+        // 信裡連結的來源（寫死在設定，不取自請求）；寄信本身由 Mail 假件取代。
+        builder.UseSetting("Platform:Mail:BaseUrl", "https://platform.test");
         // appsettings.Development.json 開著本機的種子資料；共用資料庫不要多出一個 dev 租戶。種子由 DevelopmentSeedTests 以全新的資料庫測。
         builder.UseSetting("Platform:SeedDevelopmentData", "false");
         builder.UseSetting("Platform:Ui:Enabled", "true");
@@ -72,10 +77,25 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.ConfigureServices(services =>
         {
             services.Replace(ServiceDescriptor.Singleton<TimeProvider>(Time));
+            services.Replace(ServiceDescriptor.Singleton<IMailSender>(Mail));
             // Identity 預設 PBKDF2 十萬次，每次登入、建帳號都要算；測試驗的是流程不是雜湊強度，降低迭代數
             // 以省下大半 CPU（CI 的 runner 只有 1 核）。雜湊字串自帶迭代數，正式設定不受影響。
             services.Configure<PasswordHasherOptions>(o => o.IterationCount = 1_000);
         });
+    }
+
+    /// <summary>開啟寄信（邀請流程）執行 <paramref name="body"/>，結束一律還原：共用的主機不能把狀態留給別的測試。</summary>
+    public async Task WithMail(Func<Task> body, MailDelivery result = MailDelivery.Sent)
+    {
+        (Mail.Enabled, Mail.Result) = (true, result);
+        try
+        {
+            await body();
+        }
+        finally
+        {
+            (Mail.Enabled, Mail.Result) = (false, MailDelivery.Sent);
+        }
     }
 
     /// <summary>同一個容器裡的全新資料庫，回傳它的連線字串。要從空的開始時用（共用的庫已經有別的測試的資料）。</summary>

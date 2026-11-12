@@ -128,11 +128,119 @@ public sealed class OperatorCliTests(PlatformFactory factory)
         Assert.Contains("nobody@example.com", error, StringComparison.Ordinal);
     }
 
+    // 啟用寄信後，create 是邀請：對方自己設定密碼，所以命令列不產生也不印出任何密碼，連結也不印。
+    [Fact]
+    public async Task WithMailEnabledCreateInvitesAndPrintsNoPasswordOrLink()
+    {
+        await using var host = await HostAsync();
+        var email = $"first-{Guid.NewGuid():N}@example.test";
+        await factory.WithMail(async () =>
+        {
+            var (code, output, error) = await RunAsync(host.Services, "operator", "create", email, "第一位");
+
+            Assert.Equal(0, code);
+            Assert.Empty(error);
+            Assert.Contains("邀請信已寄到", output, StringComparison.Ordinal);
+            Assert.DoesNotContain("一次性密碼", output, StringComparison.Ordinal);
+            Assert.DoesNotContain("code=", output, StringComparison.Ordinal);
+            var created = Assert.Single((await host.Services.GetRequiredService<IOperatorAdmin>().ListAsync(CancellationToken.None)).Value!);
+            Assert.True(created.Invited);
+            var mail = Assert.Single(factory.Mail.Sent, m => m.Recipient == email);
+            Assert.Contains("https://platform.test/ui/activate?userId=", mail.Body, StringComparison.Ordinal);
+
+            // 重寄（信箱不分大小寫）：先前的連結失效。
+            var (again, _, _) = await RunAsync(host.Services, "operator", "resend-invite", email.ToUpperInvariant());
+            Assert.Equal(0, again);
+            Assert.Equal(2, factory.Mail.Sent.Count(m => m.Recipient == email));
+        });
+    }
+
+    // 帳號已經建立、信沒寄出去：結束碼 1 讓腳本察覺，並說明退路（重寄，或 reset-password 取得一次性密碼）。
+    [Fact]
+    public async Task AFailedInvitationMailExitsNonZeroAndPointsToTheFallbacks()
+    {
+        await using var host = await HostAsync();
+        var email = $"first-{Guid.NewGuid():N}@example.test";
+        await factory.WithMail(async () =>
+        {
+            var (code, _, error) = await RunAsync(host.Services, "operator", "create", email);
+
+            Assert.Equal(1, code);
+            Assert.Contains("resend-invite", error, StringComparison.Ordinal);
+            Assert.Contains("reset-password", error, StringComparison.Ordinal);
+            Assert.Single((await host.Services.GetRequiredService<IOperatorAdmin>().ListAsync(CancellationToken.None)).Value!);
+        }, MailDelivery.Failed);
+    }
+
+    // 寄信冒煙測試：寄一封沒有連結、沒有密碼的信，並照實說出結果（要在服務自己的環境執行才有意義）。
+    [Fact]
+    public async Task MailTestSendsAPlainNoteAndReportsTheRelayAcceptedIt()
+    {
+        await using var host = await HostAsync();
+        var to = $"probe-{Guid.NewGuid():N}@example.test";
+        await factory.WithMail(async () =>
+        {
+            var (code, output, error) = await RunAsync(host.Services, "mail", "test", to);
+
+            Assert.Equal(0, code);
+            Assert.Empty(error);
+            var mail = Assert.Single(factory.Mail.Sent, m => m.Recipient == to);
+            Assert.DoesNotContain("http", mail.Body, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("中繼已接受", output, StringComparison.Ordinal);
+            Assert.Contains("platform.test", output, StringComparison.Ordinal); // 印出實際使用的連結來源
+        });
+    }
+
+    [Fact]
+    public async Task MailTestExplainsWhyItFailedAndNeverClaimsSuccess()
+    {
+        await using var host = await HostAsync();
+        var to = $"probe-{Guid.NewGuid():N}@example.test";
+
+        // 沒啟用：不寄，說明要開哪個設定。
+        var (disabledCode, _, disabledError) = await RunAsync(host.Services, "mail", "test", to);
+        Assert.Equal(1, disabledCode);
+        Assert.Contains("Platform:Mail:Enabled", disabledError, StringComparison.Ordinal);
+        Assert.DoesNotContain(factory.Mail.Sent, m => m.Recipient == to);
+
+        // 中繼拒絕或連不上：結束碼 1，不說成功，指出常見原因與去哪看細節。
+        await factory.WithMail(async () =>
+        {
+            var (code, output, error) = await RunAsync(host.Services, "mail", "test", to);
+
+            Assert.Equal(1, code);
+            Assert.DoesNotContain("已接受", output, StringComparison.Ordinal);
+            Assert.Contains("來源位址", error, StringComparison.Ordinal);
+            Assert.Contains("Mail delivery failed", error, StringComparison.Ordinal);
+            await Task.CompletedTask;
+        }, MailDelivery.Failed);
+    }
+
+    [Fact]
+    public async Task MailTestRejectsABadAddressWithoutSending()
+    {
+        await using var host = await HostAsync();
+        await factory.WithMail(async () =>
+        {
+            var before = factory.Mail.Sent.Count;
+
+            var (code, _, error) = await RunAsync(host.Services, "mail", "test", "not-an-address");
+
+            Assert.Equal(1, code);
+            Assert.Contains("不合法", error, StringComparison.Ordinal);
+            Assert.Equal(before, factory.Mail.Sent.Count);
+        });
+    }
+
     [Theory]
     [InlineData("operator")]
     [InlineData("operator", "create")]
     [InlineData("operator", "unknown", "a@example.com")]
     [InlineData("operator", "create", "a@example.com", "name", "extra")]
+    [InlineData("operator", "resend-invite")]
+    [InlineData("mail")]
+    [InlineData("mail", "test")]
+    [InlineData("mail", "send", "a@example.com")]
     public async Task AWrongCommandPrintsTheUsageAndChangesNothing(params string[] args)
     {
         await using var host = await HostAsync();

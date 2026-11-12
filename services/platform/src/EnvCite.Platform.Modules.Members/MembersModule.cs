@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members;
 
@@ -40,17 +41,22 @@ public static class MembersModule
     /// <summary>
     /// 客戶入口的成員：ASP.NET Core Identity 的使用者與密碼雜湊（PBKDF2），存在 <c>PlatformDbContext</c>，
     /// 隨 Finbuckle 屬於單一租戶。登入 cookie 是自己的 scheme，帶 tenant、使用者 Id、角色 claim；
-    /// 授權只讀 claim。沒有外部登入、寄信與邀請（見 07-01）。
+    /// 授權只讀 claim。沒有外部登入；邀請與驗證信走 <c>Platform:Mail</c>（見 07-01）。
     /// </summary>
     public static IServiceCollection AddMembersModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddSectionOptions<MembersOptions>();
+        services.AddPlatformMail();
+        // 邀請與驗證連結的有效期限，也是 Identity 資料保護權杖（電子郵件確認）的期限；兩個 user store 共用。
+        services.AddOptions<DataProtectionTokenProviderOptions>()
+            .Configure<IOptions<MailOptions>>((token, mail) => token.TokenLifespan = mail.Value.LinkLifetime);
 
         services.AddIdentityCore<ApplicationUser>(ConfigureIdentity)
             .AddEntityFrameworkStores<PlatformDbContext>()
             .AddSignInManager()
             .AddTokenProvider<AuthenticatorTokenProvider<ApplicationUser>>(TokenOptions.DefaultAuthenticatorProvider)
+            .AddTokenProvider<DataProtectorTokenProvider<ApplicationUser>>(TokenOptions.DefaultProvider)
             .AddClaimsPrincipalFactory<PortalClaimsPrincipalFactory>();
 
         services.AddAuthentication()
@@ -129,7 +135,8 @@ public static class MembersModule
     /// </summary>
     private static void AddOperatorAccounts(this IServiceCollection services)
     {
-        services.AddIdentityCore<OperatorUser>(ConfigureIdentity);
+        services.AddIdentityCore<OperatorUser>(ConfigureIdentity)
+            .AddTokenProvider<DataProtectorTokenProvider<OperatorUser>>(TokenOptions.DefaultProvider);
         services.AddScoped<IUserStore<OperatorUser>,
             UserOnlyStore<OperatorUser, PlatformDbContext, Guid, IdentityUserClaim<Guid>, IdentityUserLogin<Guid>, IdentityUserToken<Guid>>>();
         services.AddScoped<IUserClaimsPrincipalFactory<OperatorUser>, OperatorClaimsPrincipalFactory>();

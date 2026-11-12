@@ -13,7 +13,7 @@ namespace EnvCite.Platform.Web.Components.Pages;
 
 public partial class TenantDetail(
     ITenantDirectory directory, IApiKeyAdmin keys, IPlanAdmin plans, IMemberAdmin members, IUsageAdmin usage, IAuditQuery audit,
-    NavigationManager navigation, IDialogService dialogs, AuthenticationStateProvider auth)
+    NavigationManager navigation, IDialogService dialogs, AuthenticationStateProvider auth, IMailSender mail)
 {
     private static readonly DialogOptions Narrow = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
 
@@ -166,6 +166,46 @@ public partial class TenantDetail(
                 Succeed(L["已新增 {0}。", issued.Member.Email]);
             });
         }
+        else if (result is { Canceled: false, Data: MemberInvitation invitation })
+        {
+            await RunAsync(async () =>
+            {
+                await RefreshAsync();
+                if (invitation.Mail == MailDelivery.Sent)
+                {
+                    Succeed(L["已寄出邀請信給 {0}。", invitation.Member.Email]);
+                }
+                else
+                {
+                    Fail(L["邀請信寄送失敗，{0} 的帳號已建立。請按「重寄邀請」，或用「重設密碼」取得暫時密碼。", invitation.Member.Email]);
+                }
+            });
+        }
+    }
+
+    private bool CanResend(MemberInfo member) => mail.Enabled && !member.Disabled && (member.Invited || !member.EmailConfirmed);
+
+    private async Task ResendInvitationAsync(MemberInfo member)
+    {
+        await RunAsync(async () =>
+        {
+            var sent = await members.ResendInvitationAsync(await ActorAsync(), TenantId, member.Id, CancellationToken.None);
+            if (!sent.IsOk)
+            {
+                Fail(sent.Localized() ?? L["寄信失敗，請稍後再試。"]);
+                return;
+            }
+
+            await RefreshAsync();
+            if (sent.Value!.Mail == MailDelivery.Sent)
+            {
+                Succeed(member.Invited ? L["已重寄邀請信給 {0}。", member.Email] : L["已寄出驗證信給 {0}。", member.Email]);
+            }
+            else
+            {
+                Fail(L["寄信失敗，請稍後再試。"]);
+            }
+        });
     }
 
     private async Task ResetPasswordAsync(MemberInfo member)

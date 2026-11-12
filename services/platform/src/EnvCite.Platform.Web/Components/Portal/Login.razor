@@ -16,6 +16,11 @@
       </header>
       <div>
 
+        @if (Activated == "1")
+        {
+            <p class="ep-alert ep-alert-info" role="status">@L["帳號已啟用，信箱已驗證。請登入。"]</p>
+        }
+
         @if (_error is not null)
         {
             @* role=alert：螢幕閱讀器立刻念出來；訊息不說是帳號還是密碼錯，也不說帳號有沒有被鎖。 *@

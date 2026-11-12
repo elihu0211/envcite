@@ -219,6 +219,10 @@ else
                                         {
                                             <StatusBadge Tone="error">@L["已鎖定"]</StatusBadge>
                                         }
+                                        else if (member.Invited)
+                                        {
+                                            <StatusBadge Tone="warning">@L["待啟用"]</StatusBadge>
+                                        }
                                         else if (member.MustChangePassword)
                                         {
                                             <StatusBadge Tone="warning">@L["待改密碼"]</StatusBadge>
@@ -227,12 +231,22 @@ else
                                         {
                                             <StatusBadge Tone="success">@L["正常"]</StatusBadge>
                                         }
+                                        @if (!member.EmailConfirmed && !member.Invited)
+                                        {
+                                            <StatusBadge Tone="warning">@L["信箱未驗證"]</StatusBadge>
+                                        }
                                         @if (member.TwoFactorEnabled)
                                         {
                                             <StatusBadge Tone="info">@L["兩步驟"]</StatusBadge>
                                         }
                                     </td>
                                     <td>
+                                        @if (CanResend(member))
+                                        {
+                                            <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
+                                                       aria-label="@(member.Invited ? L["重寄邀請給 {0}", member.Email] : L["寄驗證信給 {0}", member.Email])"
+                                                       OnClick="() => ResendInvitationAsync(member)">@(member.Invited ? L["重寄邀請"] : L["寄驗證信"])</MudButton>
+                                        }
                                         <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
                                                    aria-label="@L["重設 {0} 的密碼", member.Email]" OnClick="() => ResetPasswordAsync(member)">@L["重設密碼"]</MudButton>
                                         <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"

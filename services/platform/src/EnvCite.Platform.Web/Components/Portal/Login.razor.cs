@@ -14,6 +14,8 @@ public partial class Login(NavigationManager navigation)
 
     [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
 
+    [SupplyParameterFromQuery] private string? Activated { get; set; }
+
     [SupplyParameterFromForm] private LoginForm Input { get; set; } = default!;
 
     private string? _error;

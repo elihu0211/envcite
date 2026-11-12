@@ -42,6 +42,13 @@ internal sealed partial class PortalBrowser : IDisposable
         return (response.StatusCode, WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), Location(response));
     }
 
+    /// <summary>不先 GET，直接把 <paramref name="fields"/> POST 出去：模擬一張早就取得的舊表單被重送。</summary>
+    public async Task<(HttpStatusCode Status, string Html, string? Location)> PostAsync(string path, Dictionary<string, string> fields)
+    {
+        using var response = await _client.PostAsync(new Uri(path, UriKind.Relative), new FormUrlEncodedContent(fields));
+        return (response.StatusCode, WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), Location(response));
+    }
+
     public async Task<HttpStatusCode> StatusAsync(string path)
     {
         using var response = await _client.GetAsync(new Uri(path, UriKind.Relative));
@@ -56,7 +63,7 @@ internal sealed partial class PortalBrowser : IDisposable
             ? location.IsAbsoluteUri ? location.PathAndQuery : location.OriginalString
             : null;
 
-    private static Dictionary<string, string> HiddenFields(string html)
+    internal static Dictionary<string, string> HiddenFields(string html)
     {
         var fields = new Dictionary<string, string>();
         foreach (Match input in HiddenInput().Matches(html))

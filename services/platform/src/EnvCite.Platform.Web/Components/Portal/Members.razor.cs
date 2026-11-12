@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class Members(IMemberSelfService team)
+public partial class Members(IMemberSelfService team, IMailSender mail)
 {
     [Parameter] public string Tenant { get; set; } = string.Empty;
 
@@ -41,6 +41,30 @@ public partial class Members(IMemberSelfService team)
 
     private async Task AddAsync()
     {
+        // 有寄信就邀請（對方自己設密碼）；沒有就發暫時密碼，由你親手交付。
+        if (mail.Enabled)
+        {
+            var invited = await team.InviteAsync(HttpContext.User, Add.Email, Add.DisplayName, Add.Role, HttpContext.RequestAborted);
+            if (invited.IsOk)
+            {
+                if (invited.Value!.Mail == MailDelivery.Sent)
+                {
+                    _message = L["已寄出邀請信給 {0}。", invited.Value.Member.Email];
+                }
+                else
+                {
+                    _error = L["邀請信寄送失敗，{0} 的帳號已建立。請按「重寄邀請」，或用「重設密碼」取得暫時密碼。", invited.Value.Member.Email];
+                }
+
+                Add = new() { Role = Add.Role };
+                await LoadAsync();
+                return;
+            }
+
+            _error = Describe(invited);
+            return;
+        }
+
         var created = await team.CreateAsync(HttpContext.User, Add.Email, Add.DisplayName, Add.Role, HttpContext.RequestAborted);
         if (created.IsOk)
         {
@@ -70,6 +94,22 @@ public partial class Members(IMemberSelfService team)
                 var role = HttpContext.Request.HasFormContentType ? HttpContext.Request.Form[$"role-{id}"].ToString() : string.Empty;
                 var changed = await team.ChangeRoleAsync(HttpContext.User, id, role, HttpContext.RequestAborted);
                 Report(changed, L["已變更角色。對方的舊登入已失效，下次登入才會套用新角色。"]);
+                break;
+            case "resend":
+                var resent = await team.ResendInvitationAsync(HttpContext.User, id, HttpContext.RequestAborted);
+                if (resent.IsOk && resent.Value!.Mail == MailDelivery.Sent)
+                {
+                    _message = L["已寄出信件給 {0}。", resent.Value.Member.Email];
+                }
+                else if (resent.IsOk)
+                {
+                    _error = L["寄信失敗，請稍後再試。"];
+                }
+                else
+                {
+                    _error = Describe(resent);
+                }
+
                 break;
             case "reset":
                 var reset = await team.ResetPasswordAsync(HttpContext.User, id, HttpContext.RequestAborted);
@@ -115,10 +155,12 @@ public partial class Members(IMemberSelfService team)
     };
 
     private string State(MemberInfo m) =>
-        m.Disabled ? L["已停用"] : m.LockedOut ? L["已鎖定"] : m.MustChangePassword ? L["待改密碼"] : L["正常"];
+        m.Disabled ? L["已停用"] : m.LockedOut ? L["已鎖定"] : m.Invited ? L["待啟用"] : m.MustChangePassword ? L["待改密碼"] : L["正常"];
+
+    private bool CanResend(MemberInfo m) => mail.Enabled && !m.Disabled && (m.Invited || !m.EmailConfirmed);
 
     private static string StateTone(MemberInfo m) =>
-        m.Disabled ? "neutral" : m.LockedOut ? "error" : m.MustChangePassword ? "warning" : "success";
+        m.Disabled ? "neutral" : m.LockedOut ? "error" : m.Invited || m.MustChangePassword ? "warning" : "success";
 
     public sealed class AddForm
     {

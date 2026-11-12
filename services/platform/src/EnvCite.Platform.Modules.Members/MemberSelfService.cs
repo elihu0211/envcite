@@ -68,6 +68,28 @@ internal sealed class MemberSelfService(
         return await core.CreateAsync(ActorOf(me), Tenant(), email, displayName, role, cancellationToken);
     }
 
+    public async Task<AdminOutcome<MemberInvitation>> InviteAsync(
+        ClaimsPrincipal actor, string email, string? displayName, string role, CancellationToken cancellationToken)
+    {
+        if (await ActorAsync(actor) is not { } me || !MemberPolicy.IsManager(me.Role))
+        {
+            return AdminOutcome.Forbidden<MemberInvitation>(OutcomeCodes.MemberAddForbidden);
+        }
+
+        if (!MemberPolicy.Grantable(me.Role).Contains(role))
+        {
+            return AdminOutcome.Forbidden<MemberInvitation>(OutcomeCodes.MemberAddRoleForbidden);
+        }
+
+        return await core.InviteAsync(ActorOf(me), Tenant(), email, displayName, role, cancellationToken);
+    }
+
+    public async Task<AdminOutcome<MemberInvitation>> ResendInvitationAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken)
+    {
+        var (me, target, refusal) = await ResolveAsync<MemberInvitation>(actor, userId);
+        return refusal ?? await core.ResendInvitationAsync(ActorOf(me!), Tenant(), target!, cancellationToken);
+    }
+
     public async Task<AdminOutcome<MemberInfo>> SetDisabledAsync(
         ClaimsPrincipal actor, string userId, bool disabled, CancellationToken cancellationToken)
     {

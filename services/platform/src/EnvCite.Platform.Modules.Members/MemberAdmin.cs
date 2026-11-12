@@ -48,6 +48,38 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
             .CreateAsync(actor, tenant, email, displayName, role, cancellationToken);
     }
 
+    public async Task<AdminOutcome<MemberInvitation>> InviteAsync(
+        ClaimsPrincipal actor, string tenantId, string email, string? displayName, string role, CancellationToken cancellationToken)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        if (await FindTenantAsync(scope, tenantId) is not { } tenant)
+        {
+            return AdminOutcome.NotFound<MemberInvitation>(OutcomeCodes.TenantNotFound);
+        }
+
+        Bind(scope, tenant);
+        return await scope.ServiceProvider.GetRequiredService<MemberCore>()
+            .InviteAsync(actor, tenant, email, displayName, role, cancellationToken);
+    }
+
+    public async Task<AdminOutcome<MemberInvitation>> ResendInvitationAsync(
+        ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        if (await FindTenantAsync(scope, tenantId) is not { } tenant)
+        {
+            return AdminOutcome.NotFound<MemberInvitation>(OutcomeCodes.TenantNotFound);
+        }
+
+        Bind(scope, tenant);
+
+        // 租戶的查詢濾鏡讓別的租戶的人在這裡找不到。
+        var user = await scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>().FindByIdAsync(userId);
+        return user is null
+            ? AdminOutcome.NotFound<MemberInvitation>(OutcomeCodes.MemberNotFound)
+            : await scope.ServiceProvider.GetRequiredService<MemberCore>().ResendInvitationAsync(actor, tenant, user, cancellationToken);
+    }
+
     public async Task<AdminOutcome<IssuedPassword>> ResetPasswordAsync(
         ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken)
     {

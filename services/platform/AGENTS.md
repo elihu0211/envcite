@@ -61,7 +61,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 設定只有一條讀法：每個設定群組是一個 `ISectionOptions` 類別（`libs/dotnet`），自己指名區段，以 `AddSectionOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `libs/dotnet` 的 `Telemetry.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
 - 新增群組：實作 `ISectionOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
 - **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`ENVCITE_Section__Key`，前綴由 `ServiceEnvironment` 套用；不帶前綴的環境變數不進設定，`OTEL_*` 除外）。機密（模型端點金鑰）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
-- 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
+- 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄、寄信）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
 - 部署環境不設 `DefaultPlan`（服務是全付費，沒方案的租戶在資料端點得 402）；Development 與測試設定它，讓剛建立的租戶能用。
 - Development 的種子資料（`SeedDevelopmentData`）只在 Development 生效，且只在對應表是空的時才建；一次性密碼只經 `Console.WriteLine` 印到終端機，不進 `ILogger`，沒有預設密碼。
 - 在 TLS 終止的 proxy 後面要設 `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true`，否則依來源位址限流的規則會把所有人看成同一個位址（且限流狀態是每個副本各一份）。
@@ -78,7 +78,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **沒有營運者 HTTP API**：營運者的建立與救援走命令列（`OperatorCli`），日常管理走 `/ui`；不再有常駐的共用金鑰。
 - **cookie 永遠不認證 `/v2`**；每個 `/ui` 與 `/portal` 回應都是 `Cache-Control: no-store`。預設認證方案維持 ApiKey。
 - 每個租戶範圍的查詢都必須以 `TenantId` 過濾；不經審查不得停用查詢過濾。只能**按名稱**繞過租戶過濾（`IgnoreQueryFilters([TenantToken])`），且只在審查過的跨租戶查詢（API key 認證、對話紀錄與冪等紀錄的保存期限清理）。
-- **一次性密碼**：隨機產生、只顯示一次、只存雜湊；不得進任何日誌或稽核。
+- **一次性密碼**：隨機產生、只顯示一次、只存雜湊；不得進任何日誌或稽核，也不得寄信（信裡只放連結，見「邀請與信箱驗證」）。
 - 登入失敗**永遠不透露**帳號是否存在、是否鎖定或停用（一個訊息；不存在的帳號仍付一次雜湊的成本）；失敗的表單**不回填**密碼或驗證碼；稽核與日誌**不記輸入的內容**（人會把密碼貼進 email 欄；稽核表只增不改），只有形如 email 的輸入才記。
 - 密碼規則：最小長度、無組成規則（NIST SP 800-63B）；連續失敗鎖定帳號。營運者與客戶兩邊規則相同。
 
@@ -86,7 +86,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 - 有**自己的使用者儲存**（營運者不屬於任何租戶，不是租戶實體，無租戶過濾）；Identity 的金鑰型別選 `Guid`，是為了不與成員表的 `IdentityUser…<string>` 型別混成同一個繼承階層；儲存手動註冊。
 - **不開放自助註冊**：帳號只由 `/ui` 的營運者頁或命令列建立，兩條路都需要已被信任的身分（已登入的營運者，或能在服務環境執行指令的系統管理者）。
-- **首次登入：強制改密碼，再綁驗證器**，順序固定（驗證因子不會設在系統管理者知道的密碼後面）。**TOTP 對每位營運者強制**，沒有角色豁免、不能關。
+- **先有只有本人知道的密碼，再綁驗證器**，順序固定（驗證因子不會設在系統管理者知道的密碼後面）：暫時密碼路徑，首次登入強制改密碼再綁；邀請路徑，密碼是本人自己設的，登入後直接綁。**TOTP 對每位營運者強制**，沒有角色豁免、不能關，邀請也不例外（啟用不簽發 session）。
 - **授權每個請求都重查資料庫**：帳號存在、未停用、security stamp 仍有效；是否還要改密碼、是否已綁驗證器，由**資料庫**決定，不看 cookie 宣告。所以停用、重設密碼、重設驗證器在**下一個請求**生效；重新啟用也旋轉 stamp，舊 cookie 不復活。已開著的互動式電路不是 HTTP 請求，由 `RevalidatingServerAuthenticationStateProvider` 模式定期重驗。
 - **session 有絕對期限**（`Platform:Ui:SessionMaxAge`）：cookie 雖滑動續期，從登入起算超過上限一律拒絕並清掉 cookie。起點存在票的屬性（`OperatorSessionLimit.StartedAtKey`），不用 `IssuedUtc`（續期會重寫它）；沒有起點的票視為無效。時間走 `TimeProvider`。
 - 登入、第二步、改密碼與安全設定頁是靜態 SSR 的 POST 表單（`[ExcludeFromInteractiveRouting]`、antiforgery），受依來源位址的限流政策約束。
@@ -98,7 +98,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 租戶在路徑裡，於登入前由委派策略解析（路徑優先，API key 宣告其次）。頁面是**靜態 SSR**（無電路）：每個請求自行解析租戶並認證，表單是附 antiforgery 的普通 POST。
 - 使用者是租戶實體（`MultiTenantIdentityDbContext`）：同一個 email 在兩個租戶是兩個帳號；角色是欄位，不是 Identity 角色。
 - session cookie 的授權只讀宣告；**cookie 的租戶必須等於請求路徑解析出的租戶**（此檢查被使用者表的租戶過濾端到端遮蔽，所以有獨立的單元測試，每個檢查都做過突變測試）。每個入口請求檢查 security stamp，所以改密碼或重設會立即結束成員的其他 session。
-- 三條規則：(1) 入口 cookie 由 `UsePlatformPortalAuthentication` 認證，必須在 `UseMultiTenant` **之後**，否則 scoped 的 `PlatformDbContext` 在租戶已知前就被解析，整個請求都帶著沒有租戶的 context；(2) 租戶 context 是 `AsyncLocal`，`MemberAdmin` 在呼叫它的方法內綁定，不在 async 輔助方法裡（輔助方法返回時值會被丟棄）；(3) 營運者建立的成員要先改一次性密碼才能用，之後才綁驗證器。
+- 三條規則：(1) 入口 cookie 由 `UsePlatformPortalAuthentication` 認證，必須在 `UseMultiTenant` **之後**，否則 scoped 的 `PlatformDbContext` 在租戶已知前就被解析，整個請求都帶著沒有租戶的 context；(2) 租戶 context 是 `AsyncLocal`，`MemberAdmin` 在呼叫它的方法內綁定，不在 async 輔助方法裡（輔助方法返回時值會被丟棄）；(3) 營運者建立的成員，暫時密碼路徑要先改一次性密碼才能用，之後才綁驗證器；邀請路徑的密碼是本人自己設的。
 - 依來源位址的限流刻意寬鬆（機關或顧問公司常共用一個對外位址），它擋的是自動化猜測，不是正常使用。
 
 ### 入口的 MFA（TOTP，RFC 6238）
@@ -107,6 +107,19 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 必須保持且有測試的規則：(1) 密碼與驗證碼共用一個失敗計數器，密碼正確不歸零，要第二步也過才歸零（原生行為，測試守住）；(2) 金鑰以 `GenerateNewAuthenticatorKey` 產生、`SetAuthenticationTokenAsync` 存放，**不用** `ResetAuthenticatorKeyAsync`——設定頁在渲染中執行，它旋轉 stamp 後無法刷新 cookie，會結束該 session；(3) 待驗證 cookie 不能跨租戶使用；(4) 沒有金鑰、驗證碼、復原碼或 `otpauth` URI 進稽核或日誌（測試同時捕捉兩者）。
 - QR 碼在伺服器端繪製，金鑰不交給第三方 QR 服務；復原碼只顯示一次。
 - 要對擁有者與管理員強制 MFA 須明確開啟 `Platform:Portal:RequireMfaForAdmins`；被要求的角色不能自己關閉，營運者重設會把他送回綁定流程，而不是留下無保護的帳號。順序同樣是先改一次性密碼、再綁定。
+
+### 邀請與信箱驗證
+
+- 登入名稱是 email；`EmailConfirmed` 表示信箱歸屬已由連結證明。**登入不要求已驗證**（邀請功能之前建立的帳號全是未驗證，強制會鎖人）；未驗證的信箱不得作為復原管道（目前沒有以信箱復原的流程，新增時必須先檢查）。
+- 啟用寄信時，建立帳號是**邀請**：帳號沒有密碼（`PasswordHash` 為 null），信裡只有單次、限時的連結，**不放密碼**；沒啟用寄信時才走暫時密碼（`IssuedPassword`）。兩條路都存在，呼叫端依 `IMailSender.Enabled` 選，服務層的 `InviteAsync` 在沒啟用時回 `mail.not_enabled`。
+- 連結的權杖就是 Identity 的電子郵件確認權杖（資料保護、綁使用者 Id 與安全戳記、限時 `Platform:Mail:LinkLifetime`）：**不自製、不存**。用過、過期或戳記改變就失效。連結來源 `Platform:Mail:BaseUrl` 寫死，不取自請求的 Host 標頭。
+- **GET 只檢視、不消耗**（信件掃描器會預先開啟網址），POST 才消耗。無效、過期、已用過、租戶不符、帳號停用或不存在，一律是同一句 `activation.link_invalid`，不透露帳號存在與否；頁面回 `Referrer-Policy: no-referrer`，套用登入的限流；連結已無效時頁面仍渲染一張無欄位的隱藏表單，連按兩次送出才不會掉到框架的錯誤頁。
+- 設密碼用 `AddPasswordAsync`：密碼不合規則時連結仍有效；成功會換安全戳記，連結就此失效，並發的第二次提交因為「已經有密碼」而失敗。啟用**不簽發 session**：使用者接著登入，營運者仍須綁定驗證器，入口的兩步驟規則不變。
+- 重寄：還沒有密碼的先換安全戳記（先前的連結失效，此時沒有 session 會被波及）；已有密碼的寄驗證連結，不換戳記。已啟用且已驗證則 `account.already_active`；停用的 `account.disabled`。
+- 寄信失敗不使建立或重寄失敗，結果以 `MailDelivery` 回報；連結與權杖不進日誌、稽核與命令列輸出，稽核只記 `mail` 結果。
+- **`mail test` 只寄沒有連結、沒有密碼的說明信**，並照實回報：`Sent` 只代表中繼接受，不說成「已投遞」；失敗指向日誌，不印例外訊息（可能回顯位址）。寄信設定的驗證（`Platform:Mail`）只在啟用時進行，其餘鍵在未啟用時被忽略。
+- 建立帳號的呼叫端依 `IMailSender.Enabled` 在邀請與暫時密碼兩條路中選一條，命令列、後台與客戶入口都一樣；兩條路的資料狀態不同（邀請的帳號沒有密碼，`PasswordHash` 為 null），新增登入或復原流程時要處理沒有密碼的帳號。
+- 中繼是不加密、免驗證的內網 SMTP：連結等同一次登入的鑰匙，會以明文經過內網，所以短效、單次、不放密碼。
 
 ### 成員管理（客戶自助與營運者）
 
