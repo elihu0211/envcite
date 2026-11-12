@@ -461,6 +461,27 @@ public static partial class DesignTokenTests
         Assert.Contains("autosubmit", script, StringComparison.Ordinal);
     }
 
+    // 動態有四種來源（回饋、進出場、載入、手勢）。載入用骨架屏，不用進度條；頁面的區塊進場時錯開；
+    // 表頭在寬卡片裡固定；抽屜有跟手的邊緣滑動。減少動態時的退化由既有規則（token 歸零、動畫收成瞬間）負責。
+    [Fact]
+    public static void MotionHasFourSourcesAndTheStylesheetImplementsThem()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
+
+        Assert.Equal("1600ms", DesignTokens.Motion["pulse"]);
+        Assert.Contains("animation: ep-pulse var(--ep-motion-pulse)", css, StringComparison.Ordinal);
+        Assert.Contains("@keyframes ep-pulse", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("頁面載入不做進場動畫", css, StringComparison.Ordinal);
+        Assert.Matches(@"\.ep-console-main > \*,[^{]*\{[^}]*animation: ep-rise", css); // 頁面的區塊進場
+        Assert.Matches(@"@container ep-table \(min-width: 56rem\)[^@]*position: sticky", css); // 表頭固定
+        Assert.Contains("html[data-js][data-dragging] .ep-side", css, StringComparison.Ordinal);
+        Assert.Contains("addEventListener(\"pointerdown\"", script, StringComparison.Ordinal);
+        Assert.Contains("project(velocity)", script, StringComparison.Ordinal); // 依速度投射落點
+        Assert.Contains("rubberband(", script, StringComparison.Ordinal); // 拖過頭有阻力
+        Assert.Contains("--ep-drawer-duration", script, StringComparison.Ordinal); // 速度承接
+    }
+
     [Fact]
     public static void TheLargestTypeSizesAreFluid()
     {

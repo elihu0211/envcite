@@ -12,7 +12,7 @@
 }
 else if (_loading)
 {
-    <MudProgressLinear Indeterminate="true" aria-label="@L["載入租戶中"]" />
+    <Skeleton Kind="detail" Label="@L["載入租戶中"]" />
 }
 else if (_tenant is null)
 {

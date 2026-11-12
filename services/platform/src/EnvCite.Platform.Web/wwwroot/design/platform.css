@@ -497,6 +497,21 @@ a:where(:not([class*="mud-"])) {
     border-block-end: 0;
 }
 
+/* 表頭固定：卡片夠寬、表格不需要橫向捲動時，往下捲頁面表頭停在頂欄下面（卡片是 overflow: clip，不是捲動容器，
+   sticky 才是相對於整個頁面）。卡片較窄時表格自己橫向捲動，表頭跟著捲，不固定。 */
+@container ep-table (min-width: 56rem) {
+    .ep-table-card .mud-table-container {
+        overflow: visible;
+    }
+
+    .ep-table thead th {
+        position: sticky;
+        inset-block-start: var(--ep-appbar-height);
+        z-index: 2;
+        box-shadow: 0 1px 0 var(--ep-border-subtle);
+    }
+}
+
 .ep-mono {
     font-size: var(--ep-body-m-size);
 }
@@ -975,8 +990,9 @@ html[data-js] .ep-side-toggle {
     }
 }
 
-/* 抽屜的遮罩：只有手機且有 JavaScript 才存在。 */
-.ep-scrim {
+/* 抽屜的遮罩與左緣的手勢區：只有手機且有 JavaScript 才存在。 */
+.ep-scrim,
+.ep-edge {
     display: none;
 }
 
@@ -1081,13 +1097,42 @@ html[data-js] .ep-side-toggle {
         box-shadow: var(--ep-elevation-3);
         translate: -100% 0;
         visibility: hidden;
-        transition: translate var(--ep-motion-normal) var(--ep-motion-ease-settle), visibility 0s linear var(--ep-motion-normal);
+        touch-action: pan-y; /* 垂直捲動給瀏覽器，水平拖曳給我們（forms.js 的抽屜手勢） */
+        transition: translate var(--ep-drawer-duration, var(--ep-motion-normal)) var(--ep-motion-ease-settle), visibility 0s linear var(--ep-drawer-duration, var(--ep-motion-normal));
     }
 
     html[data-js][data-drawer] .ep-side {
         translate: 0 0;
         visibility: visible;
-        transition: translate var(--ep-motion-normal) var(--ep-motion-ease-settle), visibility 0s;
+        transition: translate var(--ep-drawer-duration, var(--ep-motion-normal)) var(--ep-motion-ease-settle), visibility 0s;
+    }
+
+    /* 跟手：拖曳中位置由 --ep-drawer-x 決定、沒有過渡；放開後移除，過渡從手指放開的位置接續到落點。 */
+    html[data-js][data-dragging] .ep-side {
+        translate: var(--ep-drawer-x, -100%) 0;
+        visibility: visible;
+        transition: none;
+    }
+
+    html[data-js][data-dragging] .ep-scrim {
+        opacity: var(--ep-drawer-progress, 0);
+        pointer-events: auto;
+        transition: none;
+    }
+
+    /* 螢幕左緣的一條窄區：從這裡往右滑開抽屜（只收水平拖曳，垂直捲動照常）。 */
+    html[data-js] .ep-edge {
+        position: fixed;
+        inset-block: var(--ep-appbar-height) 0;
+        inset-inline-start: 0;
+        z-index: 15;
+        inline-size: var(--ep-space-4);
+        touch-action: pan-y;
+    }
+
+    html[data-js][data-drawer] .ep-edge,
+    html[data-js][data-dragging] .ep-edge {
+        pointer-events: none;
     }
 
     html[data-js] .ep-side-group {
@@ -1099,6 +1144,10 @@ html[data-js] .ep-side-toggle {
         overflow: visible;
     }
 
+    html[data-js] .ep-edge {
+        display: block;
+    }
+
     html[data-js] .ep-scrim {
         display: block;
         position: fixed;
@@ -1107,7 +1156,8 @@ html[data-js] .ep-side-toggle {
         background: var(--ep-scrim);
         opacity: 0;
         pointer-events: none;
-        transition: opacity var(--ep-motion-normal) var(--ep-motion-ease-standard);
+        touch-action: none;
+        transition: opacity var(--ep-drawer-duration, var(--ep-motion-normal)) var(--ep-motion-ease-standard);
     }
 
     html[data-js][data-drawer] .ep-scrim {
@@ -2213,9 +2263,10 @@ html[data-js] .ep-otp-input::selection {
 
 
 /* ---- 動態 ---------------------------------------------------------------------------------------
- * 動畫只回應操作：按下、選單開合、操作後出現的提示。頁面載入不做進場動畫——內容一到就在原位，不讓人等。
- * 提示的進場是臨界阻尼（落定曲線、無回彈），位移只有一小段。時長、曲線、位移量都來自 token；
- * 使用者要求減少動態時，上面的規則把動畫收成瞬間。跨頁用瀏覽器原生的 view transition 淡入淡出。
+ * 動態有四種來源：回饋（按下）、進出場（選單、抽屜、頁面的區塊）、載入（骨架屏）、手勢（抽屜的邊緣滑動，在 forms.js）。
+ * 進場是臨界阻尼（落定曲線、無回彈），位移只有一小段，區塊之間錯開一點點，內容一到就開始、不讓人等。
+ * 時長、曲線、位移量都來自 token；使用者要求減少動態時，上面的規則把動畫收成瞬間（位移與縮放在 token 層歸零）。
+ * 跨頁用瀏覽器原生的 view transition 淡入淡出。
  */
 @view-transition {
     navigation: auto;
@@ -2248,6 +2299,108 @@ html[data-js] .ep-otp-input::selection {
     to {
         opacity: 1;
         translate: 0 0;
+    }
+}
+
+/* 頁面的區塊進場：直接子區塊由上而下錯開，淡入並上浮一小段。只套在剛出現的元素上（換頁，或骨架屏換成內容時），
+   不影響已經在畫面上的東西。fill 只用 backwards：結束後 translate 回到 none，不留下堆疊情境影響內部的 sticky。 */
+.ep-console-main > *,
+.ep-shell-main > *,
+.ep-auth-body > * {
+    animation: ep-rise var(--ep-motion-slow) var(--ep-motion-ease-settle) backwards;
+}
+
+:is(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(2) {
+    animation-delay: calc(var(--ep-motion-fast) * 0.3);
+}
+
+:is(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(3) {
+    animation-delay: calc(var(--ep-motion-fast) * 0.6);
+}
+
+:is(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(4) {
+    animation-delay: calc(var(--ep-motion-fast) * 0.9);
+}
+
+:is(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(n + 5) {
+    animation-delay: calc(var(--ep-motion-fast) * 1.2);
+}
+
+/* 骨架屏：灰塊是目前文字色的一小撮疊在表面上，緩緩一明一暗（沒有漸層與位移，減少動態時停在靜止）。 */
+.ep-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-6);
+}
+
+.ep-skeleton-block {
+    display: block;
+    border-radius: var(--ep-radius-control);
+    background: color-mix(in srgb, var(--ep-text) 8%, var(--ep-surface));
+    animation: ep-pulse var(--ep-motion-pulse) ease-in-out infinite;
+}
+
+.ep-skeleton-card,
+.ep-skeleton-stats {
+    display: grid;
+    gap: var(--ep-space-3);
+    padding: var(--ep-space-6);
+    background: var(--ep-surface);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+}
+
+.ep-skeleton-stats {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: var(--ep-space-6);
+}
+
+.ep-skeleton-stat {
+    display: grid;
+    gap: var(--ep-space-2);
+}
+
+.ep-skeleton-label {
+    inline-size: 40%;
+    block-size: var(--ep-space-4);
+}
+
+.ep-skeleton-value {
+    inline-size: 25%;
+    block-size: var(--ep-space-8);
+}
+
+.ep-skeleton-title {
+    inline-size: 30%;
+    block-size: var(--ep-space-6);
+}
+
+.ep-skeleton-line {
+    block-size: var(--ep-space-4);
+}
+
+.ep-skeleton-line:last-child {
+    inline-size: 60%;
+}
+
+.ep-skeleton-toolbar {
+    block-size: var(--ep-touch-target);
+    inline-size: min(100%, var(--ep-measure-narrow));
+}
+
+.ep-skeleton-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: var(--ep-space-6);
+}
+
+.ep-skeleton-row > .ep-skeleton-block {
+    block-size: var(--ep-space-4);
+}
+
+@keyframes ep-pulse {
+    50% {
+        opacity: 0.45;
     }
 }
 

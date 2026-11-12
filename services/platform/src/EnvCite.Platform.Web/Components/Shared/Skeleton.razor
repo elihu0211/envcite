@@ -1,0 +1,56 @@
+@* 載入中的骨架屏：內容還沒到時，先畫出它即將出現的版面（數字卡、卡片、表格），灰色的塊緩緩一明一暗。
+   比一條進度條更說得出「要來的是什麼」，內容到了也不會整頁跳動。方塊只是形狀（aria-hidden），
+   螢幕閱讀器只聽到 role=status 上的一句「載入中」。減少動態時只剩靜止的灰塊。 *@
+<div class="ep-skeleton" role="status" aria-busy="true" aria-label="@Label">
+    @switch (Kind)
+    {
+        case "table":
+            <div class="ep-skeleton-card" aria-hidden="true">
+                <div class="ep-skeleton-block ep-skeleton-toolbar"></div>
+                @for (var i = 0; i < Rows; i++)
+                {
+                    <div class="ep-skeleton-row">
+                        <span class="ep-skeleton-block"></span>
+                        <span class="ep-skeleton-block"></span>
+                        <span class="ep-skeleton-block"></span>
+                    </div>
+                }
+            </div>
+            break;
+        default:
+            <div class="ep-skeleton-stats" aria-hidden="true">
+                @for (var i = 0; i < (Kind == "detail" ? 4 : 3); i++)
+                {
+                    <div class="ep-skeleton-stat">
+                        <span class="ep-skeleton-block ep-skeleton-label"></span>
+                        <span class="ep-skeleton-block ep-skeleton-value"></span>
+                    </div>
+                }
+            </div>
+            @for (var i = 0; i < 2; i++)
+            {
+                <div class="ep-skeleton-card" aria-hidden="true">
+                    <div class="ep-skeleton-block ep-skeleton-title"></div>
+                    @for (var j = 0; j < 3; j++)
+                    {
+                        <div class="ep-skeleton-block ep-skeleton-line"></div>
+                    }
+                </div>
+            }
+            break;
+    }
+</div>
+
+@code {
+    /// <summary><c>dashboard</c>（數字卡加兩張卡片，預設）、<c>detail</c>（四張數字卡加兩張卡片）、<c>table</c>（一張表格卡片）。</summary>
+    [Parameter]
+    public string Kind { get; set; } = "dashboard";
+
+    /// <summary>給螢幕閱讀器的一句話，例如「載入租戶中」。</summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>表格骨架的列數。</summary>
+    [Parameter]
+    public int Rows { get; set; } = 5;
+}

@@ -42,7 +42,7 @@
     }
     else if (_loading)
     {
-        <MudProgressLinear Indeterminate="true" aria-label="@L["載入稽核紀錄中"]" />
+        <Skeleton Kind="table" Rows="6" Label="@L["載入稽核紀錄中"]" />
     }
     else if (_items.Count == 0)
     {
