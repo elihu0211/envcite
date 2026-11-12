@@ -8,40 +8,11 @@
 
 <PageHeader Title="@L["總覽"]" />
 
-@if (Error is not null)
-{
-    <MudAlert Severity="Severity.Error">
-        @L["載入總覽失敗。"]
-        <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="LoadAsync">@L["重試"]</MudButton>
-    </MudAlert>
-}
-else if (_tenants is null || _operators is null)
-{
-    <Skeleton Label="@L["載入總覽中"]" />
-}
-else
-{
-    <section class="ep-stats" aria-label="@L["摘要"]">
-        <a class="ep-stat" href="/ui/tenants">
-            <span class="ep-stat-label">@L["租戶"]</span>
-            <span class="ep-stat-value">@_tenants.Count</span>
-            <span class="ep-stat-note">@(_withoutPlan.Count == 0 ? L["都有方案"] : L["{0} 個沒有方案", _withoutPlan.Count])</span>
-        </a>
-        <a class="ep-stat" href="/ui/operators">
-            <span class="ep-stat-label">@L["營運者"]</span>
-            <span class="ep-stat-value">@_operators.Count(o => !o.Disabled)</span>
-            <span class="ep-stat-note">@(_pendingOperators.Count == 0 ? L["都已完成設定"] : L["{0} 位需要處理", _pendingOperators.Count])</span>
-        </a>
-        <a class="ep-stat" href="/ui/audit">
-            <span class="ep-stat-label">@L["最近的登入失敗"]</span>
-            <span class="ep-stat-value">@_recent.Count(r => AuditLabels.ActionTone(r.Action) == "error")</span>
-            <span class="ep-stat-note">@L["最近 {0} 筆事件中", _recent.Count]</span>
-        </a>
-    </section>
+<LoadedView Loading="Loading" Error="@Error" FailedText="@L["載入總覽失敗。"]" LoadingLabel="@L["載入總覽中"]" OnRetry="LoadAsync">
+    <StatGrid Items="Stats" />
 
     <div class="ep-columns">
-        <section class="ep-card" aria-labelledby="todo-heading">
-            <h2 id="todo-heading" class="ep-section-title">@L["需要處理"]</h2>
+        <SectionCard Id="todo-heading" Title="@L["需要處理"]">
             @if (_withoutPlan.Count == 0 && _pendingOperators.Count == 0)
             {
                 <p class="ep-page-description">@L["沒有待辦。"]</p>
@@ -67,14 +38,11 @@ else
                     }
                 </ul>
             }
-        </section>
+        </SectionCard>
 
-        <section class="ep-card" aria-labelledby="recent-heading">
-            <div class="ep-toolbar">
-                <h2 id="recent-heading" class="ep-section-title">@L["最近活動"]</h2>
-                <span class="ep-spacer"></span>
-                <a href="/ui/audit">@L["稽核紀錄"]</a>
-            </div>
+        <SectionCard Id="recent-heading" Title="@L["最近活動"]">
+            <Actions><a href="/ui/audit">@L["稽核紀錄"]</a></Actions>
+            <ChildContent>
             @if (_recent.Count == 0)
             {
                 <p class="ep-page-description">@L["還沒有事件。"]</p>
@@ -92,15 +60,16 @@ else
                     }
                 </ul>
             }
-        </section>
+            </ChildContent>
+        </SectionCard>
     </div>
-}
+</LoadedView>
 
 @code {
     private const int RecentCount = 8;
 
-    private IReadOnlyList<TenantSummary>? _tenants;
-    private IReadOnlyList<OperatorInfo>? _operators;
+    private IReadOnlyList<TenantSummary> _tenants = [];
+    private IReadOnlyList<OperatorInfo> _operators = [];
     private IReadOnlyList<TenantSummary> _withoutPlan = [];
     private IReadOnlyList<OperatorInfo> _pendingOperators = [];
     private IReadOnlyList<AuditRecord> _recent = [];
@@ -123,39 +92,40 @@ else
         return LoadAsync();
     }
 
-    private async Task LoadAsync()
+    private Task LoadAsync() => LoadingAsync(async () =>
     {
-        Error = null;
-        _tenants = null;
-        _operators = null;
-        try
+        var tenants = await Directory.ListAsync(CancellationToken.None);
+        var operators = await Operators.ListAsync(CancellationToken.None);
+        if (!operators.IsOk)
         {
-            var tenants = await Directory.ListAsync(CancellationToken.None);
-            var operators = await Operators.ListAsync(CancellationToken.None);
-            if (!operators.IsOk)
-            {
-                Error = operators.Localized() ?? L["載入失敗。"];
-                return;
-            }
-
-            var recent = await AuditQuery.QueryAsync(new AuditFilter(Limit: RecentCount), CancellationToken.None);
-
-            var overview = new Overview(tenants, operators.Value!, recent.Items);
-            if (!RendererInfo.IsInteractive)
-            {
-                Prerendered = overview;
-            }
-
-            Show(overview);
+            Error = operators.Localized() ?? L["載入失敗。"];
+            return;
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+
+        var recent = await AuditQuery.QueryAsync(new AuditFilter(Limit: RecentCount), CancellationToken.None);
+
+        var overview = new Overview(tenants, operators.Value!, recent.Items);
+        if (!RendererInfo.IsInteractive)
         {
-            Error = exception.GetType().Name;
+            Prerendered = overview;
         }
-    }
+
+        Show(overview);
+    });
+
+    private IReadOnlyList<StatItem> Stats =>
+    [
+        new(L["租戶"], _tenants.Count.ToString(CultureInfo.CurrentCulture),
+            _withoutPlan.Count == 0 ? L["都有方案"] : L["{0} 個沒有方案", _withoutPlan.Count], "/ui/tenants"),
+        new(L["營運者"], _operators.Count(o => !o.Disabled).ToString(CultureInfo.CurrentCulture),
+            _pendingOperators.Count == 0 ? L["都已完成設定"] : L["{0} 位需要處理", _pendingOperators.Count], "/ui/operators"),
+        new(L["最近的登入失敗"], _recent.Count(r => AuditLabels.ActionTone(r.Action) == "error").ToString(CultureInfo.CurrentCulture),
+            L["最近 {0} 筆事件中", _recent.Count], "/ui/audit"),
+    ];
 
     private void Show(Overview overview)
     {
+        Loading = false;
         _tenants = overview.Tenants;
         _operators = overview.Operators;
         _withoutPlan = [.. overview.Tenants.Where(t => t.Plan is null).OrderBy(t => t.Identifier, StringComparer.Ordinal)];

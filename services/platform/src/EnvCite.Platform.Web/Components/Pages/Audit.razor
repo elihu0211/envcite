@@ -5,7 +5,7 @@
 
 <PageHeader Title="@L["稽核紀錄"]" />
 
-<section class="ep-card ep-table-card" aria-label="@L["稽核事件"]">
+<SectionCard Class="ep-table-card" Label="@L["稽核事件"]">
     @* 篩選在表格正上方；條件存在網址裡，所以可以分享連結，重新整理也不會丟。 *@
     <div class="ep-toolbar ep-toolbar-wrap" role="search">
         <MudSelect T="string" @bind-Value="_tenant" Label="@L["租戶"]" Placeholder="@L["全部租戶"]" Clearable="true"
@@ -41,7 +41,7 @@
             <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="() => LoadAsync(append: false)">@L["重試"]</MudButton>
         </MudAlert>
     }
-    else if (_loading)
+    else if (Loading)
     {
         <Skeleton Kind="table" Rows="6" Label="@L["載入稽核紀錄中"]" />
     }
@@ -129,4 +129,4 @@
             }
         </div>
     }
-</section>
+</SectionCard>

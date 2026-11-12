@@ -24,7 +24,6 @@ public partial class TenantDetail(
     private IReadOnlyList<TenantUsageSummary> _usage = [];
     private int _usageDays;
     private string? _selectedPlan;
-    private bool _loading = true;
     private string? _loaded;
 
     protected override async Task OnParametersSetAsync()
@@ -64,32 +63,19 @@ public partial class TenantDetail(
         _plans = plans.Plans;
         (_tenant, _keys, _members, _recent, _usage) = (snapshot.Tenant, snapshot.Keys, snapshot.Members, snapshot.Recent, snapshot.Usage);
         _selectedPlan = _tenant?.Plan;
-        _loading = false;
+        Loading = false;
     }
 
-    private async Task LoadAsync()
+    private Task LoadAsync() => LoadingAsync(async () =>
     {
-        _loading = true;
-        Error = null;
-        try
+        _plans = plans.Plans;
+        _tenant = (await directory.ListAsync(CancellationToken.None)).FirstOrDefault(t => t.Id == TenantId);
+        if (_tenant is not null)
         {
-            _plans = plans.Plans;
-            _tenant = (await directory.ListAsync(CancellationToken.None)).FirstOrDefault(t => t.Id == TenantId);
-            if (_tenant is not null)
-            {
-                _selectedPlan = _tenant.Plan;
-                await LoadDetailsAsync();
-            }
+            _selectedPlan = _tenant.Plan;
+            await LoadDetailsAsync();
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            Error = exception.GetType().Name;
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+    });
 
     // 動作之後只重載會變的部分，頁面不閃。
     private async Task LoadDetailsAsync()
@@ -213,10 +199,10 @@ public partial class TenantDetail(
 
     private async Task ResetPasswordAsync(MemberInfo member)
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await ConfirmAsync(
             L["重設密碼"], L["重設 {0} 的密碼後，這位成員在所有裝置上會立刻登出，要用新的一次性密碼登入並自己改掉。確定？", member.Email],
-            yesText: L["重設密碼"], cancelText: L["取消"]);
-        if (confirmed != true)
+            L["重設密碼"]);
+        if (!confirmed)
         {
             return;
         }
@@ -240,10 +226,10 @@ public partial class TenantDetail(
     {
         if (disabled)
         {
-            var confirmed = await Dialogs.ShowMessageBoxAsync(
+            var confirmed = await ConfirmAsync(
                 L["停用成員"], L["停用 {0} 後，他在所有裝置上立刻登出、也不能再登入；帳號與稽核紀錄都保留，之後可以重新啟用。確定？", member.Email],
-                yesText: L["停用"], cancelText: L["取消"]);
-            if (confirmed != true)
+                L["停用"]);
+            if (!confirmed)
             {
                 return;
             }
@@ -265,12 +251,12 @@ public partial class TenantDetail(
 
     private async Task ResetTwoFactorAsync(MemberInfo member)
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await ConfirmAsync(
             L["重設兩步驟驗證"],
             L["這會關掉 {0} 的兩步驟驗證、丟掉他的驗證器金鑰與復原碼，並讓他在所有裝置上登出；之後只靠密碼就能登入，直到他重新設定。", member.Email]
             + L["請先用你們原本的管道確認對方是本人（不是別人冒名來要求重設）。確定？"],
-            yesText: L["重設兩步驟"], cancelText: L["取消"]);
-        if (confirmed != true)
+            L["重設兩步驟"]);
+        if (!confirmed)
         {
             return;
         }
@@ -309,10 +295,10 @@ public partial class TenantDetail(
 
     private async Task RemovePlanAsync()
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await ConfirmAsync(
             L["移除方案"], L["移除後，{0} 立刻不能呼叫資料端點（回 402）。確定？", _tenant!.Identifier],
-            yesText: L["移除方案"], cancelText: L["取消"]);
-        if (confirmed == true)
+            L["移除方案"]);
+        if (confirmed)
         {
             await ChangePlanAsync(null);
         }
@@ -324,10 +310,10 @@ public partial class TenantDetail(
         if (enable)
         {
             // 開啟會讓這個租戶的問題離開我們的系統，所以要確認（關閉不用：它只會讓資料少流出去）。
-            var confirmed = await Dialogs.ShowMessageBoxAsync(
+            var confirmed = await ConfirmAsync(
                 L["開啟 AI 回答"], L["{0} 成員提的問題與相關條文會送到外部的模型服務。請確認租戶已同意。確定開啟？", _tenant.Identifier],
-                yesText: L["開啟"], cancelText: L["取消"]);
-            if (confirmed != true)
+                L["開啟"]);
+            if (!confirmed)
             {
                 return;
             }
@@ -380,10 +366,10 @@ public partial class TenantDetail(
 
     private async Task RevokeKeyAsync(ApiKeyInfo key)
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await ConfirmAsync(
             L["撤銷 API key"], L["撤銷「{0}」（{1}…）後，持有它的客戶立刻無法呼叫 API，且無法復原。確定？", key.Name, key.Prefix],
-            yesText: L["撤銷"], cancelText: L["取消"]);
-        if (confirmed != true)
+            L["撤銷"]);
+        if (!confirmed)
         {
             return;
         }

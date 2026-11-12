@@ -1,0 +1,62 @@
+@* 載入的四種狀態只在這裡寫一次：失敗（說明加重試）、載入中（骨架屏）、查無（空狀態）、有資料（內容）。
+   狀態由頁面的基底（PageBase 的 Loading、Error）給，頁面不自己寫這條 @if 鏈。 *@
+@if (Error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">
+        @FailedText
+        <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="OnRetry">@L["重試"]</MudButton>
+    </MudAlert>
+}
+else if (Loading)
+{
+    <Skeleton Kind="@SkeletonKind" Label="@LoadingLabel" />
+}
+else if (Missing)
+{
+    <EmptyState Icon="@MissingIcon" Title="@MissingTitle" Description="@MissingDescription">@MissingActions</EmptyState>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter]
+    public bool Loading { get; set; }
+
+    /// <summary>失敗時的技術說明（例外型別）；不是 null 就顯示失敗。</summary>
+    [Parameter]
+    public string? Error { get; set; }
+
+    /// <summary>已載入完成但找不到要看的東西（例如網址上的租戶不存在）。</summary>
+    [Parameter]
+    public bool Missing { get; set; }
+
+    [Parameter, EditorRequired]
+    public string FailedText { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string LoadingLabel { get; set; } = string.Empty;
+
+    /// <summary>骨架屏的樣式，見 <see cref="Skeleton"/>。</summary>
+    [Parameter]
+    public string SkeletonKind { get; set; } = "dashboard";
+
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+
+    [Parameter]
+    public string? MissingIcon { get; set; }
+
+    [Parameter]
+    public string MissingTitle { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? MissingDescription { get; set; }
+
+    [Parameter]
+    public RenderFragment? MissingActions { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

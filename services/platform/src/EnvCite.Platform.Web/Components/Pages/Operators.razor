@@ -30,7 +30,7 @@ else
         <MudAlert Severity="@NoticeSeverity" Class="mb-4" role="status">@Notice</MudAlert>
     }
 
-    <section class="ep-card ep-table-card" aria-label="@L["營運者清單"]">
+    <SectionCard Class="ep-table-card" Label="@L["營運者清單"]">
         <div class="ep-toolbar" role="search">
             <MudTextField @bind-Value="_search" Immediate="true" Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense"
                           Placeholder="@L["搜尋電子郵件"]" aria-label="@L["搜尋營運者"]"
@@ -91,7 +91,7 @@ else
                 }
             </NoRecordsContent>
         </MudTable>
-    </section>
+    </SectionCard>
 }
 
 @code {
@@ -197,11 +197,11 @@ else
 
     private async Task ResetPasswordAsync(OperatorInfo op)
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await ConfirmAsync(
             L["重設密碼"],
             L["這會作廢 {0} 現在的密碼，並讓他在所有裝置上登出。新的一次性密碼只顯示一次。確定？", op.Email],
-            yesText: L["重設密碼"], cancelText: L["取消"]);
-        if (confirmed != true)
+            L["重設密碼"]);
+        if (!confirmed)
         {
             return;
         }
@@ -222,11 +222,11 @@ else
 
     private async Task ResetTwoFactorAsync(OperatorInfo op)
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await ConfirmAsync(
             L["重設驗證器"],
             L["這會關掉 {0} 的兩步驟驗證、丟掉驗證器金鑰與復原碼，並讓他在所有裝置上登出。請先確認對方是本人。確定？", op.Email],
-            yesText: L["重設驗證器"], cancelText: L["取消"]);
-        if (confirmed != true)
+            L["重設驗證器"]);
+        if (!confirmed)
         {
             return;
         }
@@ -247,11 +247,11 @@ else
 
     private async Task DisableAsync(OperatorInfo op)
     {
-        var confirmed = await Dialogs.ShowMessageBoxAsync(
+        var confirmed = await ConfirmAsync(
             L["停用營運者"],
             L["{0} 的下一個請求就進不去。已經開著的頁面最多還能用一分鐘。確定停用？", op.Email],
-            yesText: L["停用"], cancelText: L["取消"]);
-        if (confirmed != true)
+            L["停用"]);
+        if (!confirmed)
         {
             return;
         }

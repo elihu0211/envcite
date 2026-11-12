@@ -1,0 +1,16 @@
+@* 一排摘要磚，由資料驅動：頁面給 StatItem 清單，不自己寫 ep-stats 與 ep-stat。 *@
+<section class="ep-stats" aria-label="@(Label ?? L["摘要"])">
+    @foreach (var item in Items)
+    {
+        <StatTile Item="item" />
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<StatItem> Items { get; set; } = [];
+
+    /// <summary>給螢幕閱讀器的區域名稱；沒給就是「摘要」。</summary>
+    [Parameter]
+    public string? Label { get; set; }
+}
