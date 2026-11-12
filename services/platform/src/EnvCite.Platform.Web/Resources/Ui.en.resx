@@ -284,7 +284,12 @@
   <data name="緊湊列高" xml:space="preserve"><value>Compact row height</value></data>
   <data name="總覽" xml:space="preserve"><value>Overview</value></data>
   <data name="總覽 · {0}" xml:space="preserve"><value>Overview · {0}</value></data>
-  <data name="至少 12 個字元。長度比符號重要：幾個不相干的詞連起來就很好。" xml:space="preserve"><value>At least 12 characters. Length matters more than symbols: a few unrelated words strung together work well.</value></data>
+  <data name="至少 {0} 個字元" xml:space="preserve"><value>At least {0} characters</value></data>
+  <data name="不含你的 email" xml:space="preserve"><value>Doesn't contain your email</value></data>
+  <data name="避開常見密碼與連續、重複的字元" xml:space="preserve"><value>Avoids common passwords and sequential or repeated characters</value></data>
+  <data name="不必混用大小寫或符號，幾個不相干的詞連起來就好。" xml:space="preserve"><value>No need to mix cases or symbols: a few unrelated words is enough.</value></data>
+  <data name="還差 {0} 個" xml:space="preserve"><value>{0} to go</value></data>
+  <data name="長度夠了" xml:space="preserve"><value>Long enough</value></data>
   <data name="舊的復原碼會全部作廢。輸入驗證器上現在的六位數確認是你本人。" xml:space="preserve"><value>All old recovery codes become invalid. Enter the six digits from your authenticator to confirm it is you.</value></data>
   <data name="複製 API key" xml:space="preserve"><value>Copy API key</value></data>
   <data name="複製一次性密碼" xml:space="preserve"><value>Copy one-time password</value></data>

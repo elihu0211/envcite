@@ -82,6 +82,7 @@
                 <PasswordField Id="g-password" @bind-Value="_sample.Password" Autocomplete="new-password" />
                 <p class="ep-hint">右側的眼睛鈕顯示或隱藏；大寫鎖定開著時，欄位下方會出現提醒。</p>
             </div>
+            <NewPasswordField Id="g-new-password" Label="新密碼" @bind-Value="_sample.NewPassword" />
             <div class="ep-field-row">
                 <label class="ep-label" for="g-otp">驗證碼</label>
                 <OtpField Id="g-otp" @bind-Value="_sample.Code" />
@@ -157,6 +158,8 @@
     private sealed class SampleForm
     {
         public string Password { get; set; } = string.Empty;
+
+        public string NewPassword { get; set; } = string.Empty;
 
         public string Code { get; set; } = string.Empty;
     }

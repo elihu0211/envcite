@@ -1795,6 +1795,54 @@ html[data-js] .ep-password-toggle {
     margin-block-start: calc(var(--ep-space-1) * -1);
 }
 
+/* 新密碼的規則清單（NewPasswordField）：三條短句，前面是記號——靜態的是圓點，長度那條在有 JavaScript 時是空心圈，
+   夠長了變成打勾與完成色（記號的形狀也變，不只靠顏色）。只改文字色與記號，不動版面；顏色的轉換在減少動態時收成瞬間。 */
+.ep-password-guide {
+    display: grid;
+    gap: var(--ep-space-2);
+}
+
+.ep-password-guide .ep-hint {
+    margin: 0;
+}
+
+.ep-password-rules {
+    display: grid;
+    gap: var(--ep-space-1);
+    padding: 0;
+    list-style: none;
+}
+
+.ep-password-rules > li {
+    display: flex;
+    gap: var(--ep-space-2);
+    transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-password-rules > li::before {
+    content: "•";
+    flex: none;
+    inline-size: 1em;
+    text-align: center;
+}
+
+html[data-js] .ep-password-rules > li[data-rule]::before {
+    content: "○";
+}
+
+.ep-password-rules > li[data-met] {
+    color: var(--ep-success);
+}
+
+.ep-password-rules > li[data-met]::before {
+    content: "✓";
+}
+
+.ep-password-remaining {
+    margin-inline-start: auto;
+    font-variant-numeric: tabular-nums;
+}
+
 /* 六格驗證碼：底下是一個真的 <input>（接輸入、貼上、自動填入、焦點），上面是六個只負責顯示的方格。
    沒有 JavaScript 時方格不出現，輸入框維持原樣。目前要輸入的那一格用焦點色的外框與閃爍的游標標示（外框就是焦點指示，
    所以真的輸入框自己不畫焦點環）。 */

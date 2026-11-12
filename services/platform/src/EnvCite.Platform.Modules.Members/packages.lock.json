@@ -27,6 +27,12 @@
         "resolved": "1.4.1",
         "contentHash": "UXjZ80T6BfVACJWmEcz4UFZ93hwX3STKojKvVpPk3qUhubjnLwIiZMsI4Hh91HhYxC0JlatNdNrVK2wkv4O9/Q=="
       },
+      "zxcvbn-core": {
+        "type": "Direct",
+        "requested": "[7.0.92, )",
+        "resolved": "7.0.92",
+        "contentHash": "3CKGKJe4SnFrks38EuF4iq1DT6IqsyNu/zMQp9GOpaipb7qdZndjjTXQa1/dkNh/OoxD0/aTcIBrRrbD4ALeGQ=="
+      },
       "Finbuckle.MultiTenant": {
         "type": "Transitive",
         "resolved": "10.1.4",
