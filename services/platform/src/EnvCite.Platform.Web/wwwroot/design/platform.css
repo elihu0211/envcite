@@ -56,6 +56,12 @@ a:where(:not([class*="mud-"])) {
     outline-offset: 2px;
 }
 
+/* 換頁後程式把焦點移到頁面標題（讓螢幕閱讀器從標題讀起，FocusOnNavigate 加上 tabindex="-1"）：標題不是控制項，
+   不畫焦點環。Chrome 對程式聚焦的元素不畫，iOS Safari 會畫成一個藍框罩住整個標題（模擬器實測）。 */
+h1[tabindex="-1"]:focus-visible {
+    outline: none;
+}
+
 /* 略過導覽：鍵盤使用者第一個 Tab 就能跳到主要內容。 */
 .ep-skip-link {
     position: absolute;
