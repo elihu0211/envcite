@@ -75,7 +75,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 | Baseline | 本檔；各服務巢狀 `AGENTS.md`（該樹之內以它為準） | 一律 |
 | Skills | `.agents/skills/<name>/SKILL.md`（[規格](https://agentskills.io/specification)） | 需要時 |
 | 共用 skills | 由 skills CLI 安裝，來源與版本釘在 `skills-lock.json` | 同上；`DISABLE_TELEMETRY=1 npx skills update -p -y` 更新 |
-| Claude 橋接 | `CLAUDE.md` → `@AGENTS.md`；`.claude/skills/<name>` → **逐 skill** symlink 至 `../../.agents/skills/<name>`（不 symlink 整個 `skills` 目錄） | 僅 Claude Code |
+| Claude Code | 原生讀本檔與巢狀 `AGENTS.md`；`.claude/skills/<name>` → **逐 skill** symlink 至 `../../.agents/skills/<name>`（不 symlink 整個 `skills` 目錄） | 僅 Claude Code |
 | Gemini 橋接 | `.gemini/settings.json` → `context.fileName: ["AGENTS.md"]` | 僅 Gemini CLI（其預設為 `GEMINI.md`） |
 | Cursor rules | `.cursor/rules/*.mdc`（有路徑限定的指引時才建） | 僅 Cursor |
 
@@ -83,7 +83,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 - 倉庫專屬 skill 寫在 `.agents/skills/`；`.claude/skills/` 內只放 symlink，**不要**另立一棵樹。
 - 列在 `skills-lock.json` 的 skill **不要手改**，改在 lock 檔所列的來源 repo，再用 `npx skills update` 更新。
 - 只服務單一服務的 skill 放 `services/<name>/.claude/skills/`（Claude Code 會巢狀探索）。
-- 基準只有本檔：不新增 `.cursorrules`、`GEMINI.md` 或其他平行基準檔；`CLAUDE.md` 只匯入本檔，另加的只有 Claude 專屬的說明。
+- 基準只有本檔：不新增 `.cursorrules`、`GEMINI.md`、`CLAUDE.md` 或其他平行基準檔。Claude Code 只在工作目錄及其上層沒有任何 `CLAUDE.md`／`CLAUDE.local.md` 時才讀 `AGENTS.md`（v2.1.277 起），所以個人覆寫放 `~/.claude/CLAUDE.md` 與 `.claude/settings.local.json`。
 
 ## Safety
 

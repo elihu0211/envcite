@@ -4,9 +4,7 @@
 
 ## Project
 
-- **Name:** platform（`services/platform`；倉庫為 `envcite`）
 - **Role:** 多租戶控制平面：租戶、API key、限流、計量、對外 REST API；經 gRPC 呼叫 `services/ontology`（共享、不分租戶）與 `services/consult`（接地、租戶隔離）。
-- **Stack:** C# · .NET（SDK 版本在 `global.json`）· ASP.NET Core · PostgreSQL
 - **Auth surfaces:** 租戶 API key（`/v2`）；營運者帳號加強制 TOTP（營運者後台 `/ui`）；客戶入口帳號（`/portal`，以設定開關）。
 
 ## Architecture
@@ -92,8 +90,6 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **session 有絕對期限**（`Platform:Ui:SessionMaxAge`）：cookie 雖滑動續期，從登入起算超過上限一律拒絕並清掉 cookie。起點存在票的屬性（`OperatorSessionLimit.StartedAtKey`），不用 `IssuedUtc`（續期會重寫它）；沒有起點的票視為無效。時間走 `TimeProvider`。
 - 登入、第二步、改密碼與安全設定頁是靜態 SSR 的 POST 表單（`[ExcludeFromInteractiveRouting]`、antiforgery），受依來源位址的限流政策約束。
 - **登入的稽核是 fail closed**：事件先於 session cookie 寫入，寫入失敗就沒有 session。
-- 營運者不能對自己的那一列操作。
-
 ### 客戶入口（`/portal/{tenant}/…`）
 
 - 租戶在路徑裡，於登入前由委派策略解析（路徑優先，API key 宣告其次）。頁面是**靜態 SSR**（無電路）：每個請求自行解析租戶並認證，表單是附 antiforgery 的普通 POST。
@@ -111,16 +107,15 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 ### 邀請與信箱驗證
 
-- 登入名稱是 email；`EmailConfirmed` 表示信箱歸屬已由連結證明。**登入不要求已驗證**（邀請功能之前建立的帳號全是未驗證，強制會鎖人）；未驗證的信箱不得作為復原管道（目前沒有以信箱復原的流程，新增時必須先檢查）。
-- 啟用寄信時，建立帳號是**邀請**：帳號沒有密碼（`PasswordHash` 為 null），信裡只有單次、限時的連結，**不放密碼**；沒啟用寄信時才走暫時密碼（`IssuedPassword`）。兩條路都存在，呼叫端依 `IMailSender.Enabled` 選，服務層的 `InviteAsync` 在沒啟用時回 `mail.not_enabled`。
-- 連結的權杖就是 Identity 的電子郵件確認權杖（資料保護、綁使用者 Id 與安全戳記、限時 `Platform:Mail:LinkLifetime`）：**不自製、不存**。用過、過期或戳記改變就失效。連結來源 `Platform:Mail:BaseUrl` 寫死，不取自請求的 Host 標頭。
-- **GET 只檢視、不消耗**（信件掃描器會預先開啟網址），POST 才消耗。無效、過期、已用過、租戶不符、帳號停用或不存在，一律是同一句 `activation.link_invalid`，不透露帳號存在與否；頁面回 `Referrer-Policy: no-referrer`，套用登入的限流；連結已無效時頁面仍渲染一張無欄位的隱藏表單，連按兩次送出才不會掉到框架的錯誤頁。
-- 設密碼用 `AddPasswordAsync`：密碼不合規則時連結仍有效；成功會換安全戳記，連結就此失效，並發的第二次提交因為「已經有密碼」而失敗。啟用**不簽發 session**：使用者接著登入，營運者仍須綁定驗證器，入口的兩步驟規則不變。
+- 流程、表格與連結規則由 [`README.md`](README.md)「邀請與信箱驗證」擁有；以下只記不變式與其理由。
+- **登入不要求信箱已驗證**（邀請功能之前建立的帳號全是未驗證，強制會鎖人）；未驗證的信箱不得作為復原管道（目前沒有以信箱復原的流程，新增時必須先檢查）。
+- 建立帳號的呼叫端（命令列、後台、客戶入口）依 `IMailSender.Enabled` 在邀請與暫時密碼兩條路中選一條；服務層的 `InviteAsync` 在沒啟用時回 `mail.not_enabled`。邀請的帳號沒有密碼（`PasswordHash` 為 null），新增登入或復原流程時要處理這種帳號。
+- 連結的權杖就是 Identity 的電子郵件確認權杖（資料保護、綁使用者 Id 與安全戳記、限時 `Platform:Mail:LinkLifetime`）：**不自製、不存**。用過、過期或戳記改變就失效。
+- **GET 只檢視、不消耗，POST 才消耗**。頁面回 `Referrer-Policy: no-referrer`，套用登入的限流；連結已無效時頁面仍渲染一張無欄位的隱藏表單，連按兩次送出才不會掉到框架的錯誤頁。
+- 設密碼用 `AddPasswordAsync`：成功會換安全戳記，連結就此失效，並發的第二次提交因為「已經有密碼」而失敗。啟用**不簽發 session**：營運者登入後仍須綁定驗證器，入口的兩步驟規則不變。
 - 重寄：還沒有密碼的先換安全戳記（先前的連結失效，此時沒有 session 會被波及）；已有密碼的寄驗證連結，不換戳記。已啟用且已驗證則 `account.already_active`；停用的 `account.disabled`。
-- 寄信失敗不使建立或重寄失敗，結果以 `MailDelivery` 回報；連結與權杖不進日誌、稽核與命令列輸出，稽核只記 `mail` 結果。
-- **`mail test` 只寄沒有連結、沒有密碼的說明信**，並照實回報：`Sent` 只代表中繼接受，不說成「已投遞」；失敗指向日誌，不印例外訊息（可能回顯位址）。寄信設定的驗證（`Platform:Mail`）只在啟用時進行，其餘鍵在未啟用時被忽略。
-- 建立帳號的呼叫端依 `IMailSender.Enabled` 在邀請與暫時密碼兩條路中選一條，命令列、後台與客戶入口都一樣；兩條路的資料狀態不同（邀請的帳號沒有密碼，`PasswordHash` 為 null），新增登入或復原流程時要處理沒有密碼的帳號。
-- 中繼是不加密、免驗證的內網 SMTP：連結等同一次登入的鑰匙，會以明文經過內網，所以短效、單次、不放密碼。
+- 連結與權杖不進日誌、稽核與命令列輸出；寄信失敗不使建立或重寄失敗，結果以 `MailDelivery` 回報。
+- `mail test` 失敗只指向日誌，不印例外訊息（可能回顯位址）；`Platform:Mail` 只在啟用時驗證，未啟用時其餘鍵被忽略。
 
 ### 成員管理（客戶自助與營運者）
 
