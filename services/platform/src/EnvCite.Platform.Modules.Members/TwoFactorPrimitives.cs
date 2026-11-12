@@ -21,13 +21,7 @@ namespace EnvCite.Platform.Modules.Members;
 /// </summary>
 internal sealed class TotpVerifier(PlatformDbContext db, TimeProvider time)
 {
-    public Task<bool> VerifyAsync(UserManager<OperatorUser> users, OperatorUser user, string? code) =>
-        VerifyAsync(users, user, code, step => db.Operators
-            .Where(u => u.Id == user.Id && u.LastTotpStep < step)
-            .ExecuteUpdateAsync(s => s.SetProperty(u => u.LastTotpStep, step)));
-
-    private async Task<bool> VerifyAsync<TUser>(UserManager<TUser> users, TUser user, string? code, Func<long, Task<int>> advanceStep)
-        where TUser : class
+    public async Task<bool> VerifyAsync(UserManager<OperatorUser> users, OperatorUser user, string? code)
     {
         var digits = Normalize(code);
         if (digits is null || await users.GetAuthenticatorKeyAsync(user) is not { } key)
@@ -42,7 +36,10 @@ internal sealed class TotpVerifier(PlatformDbContext db, TimeProvider time)
             return false;
         }
 
-        return await advanceStep(step) == 1;
+        var advanced = await db.Operators
+            .Where(u => u.Id == user.Id && u.LastTotpStep < step)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.LastTotpStep, step));
+        return advanced == 1;
     }
 
     /// <summary>六位數字；容許使用者從驗證器複製時帶的空白與連字號。</summary>

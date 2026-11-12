@@ -19,72 +19,14 @@ internal sealed class PortalTwoFactor(
     IHttpContextAccessor http,
     IMultiTenantContextAccessor<TenantInfo> tenant,
     IOptions<MembersOptions> options,
-    IAuditLog audit) : IPortalTwoFactor
+    IAuditLog audit) : TwoFactorBase<ApplicationUser, string>(users, audit), IPortalTwoFactor
 {
-    private const int RecoveryCodeCount = 10;
-
     /// <summary>Owner 與 Admin 被要求使用兩步驟驗證（設定可關閉，預設要求）。</summary>
     internal static bool RequiresTwoFactor(string role, MembersOptions options) =>
         options.RequireMfaForAdmins && role is CustomerRoles.Owner or CustomerRoles.Admin;
 
     public bool IsRequired(ClaimsPrincipal principal) =>
         principal.FindFirst(ClaimTypes.Role)?.Value is { } role && RequiresTwoFactor(role, options.Value);
-
-    public async Task<bool> IsEnabledAsync(ClaimsPrincipal principal, CancellationToken cancellationToken) =>
-        await UserOfAsync(principal) is { TwoFactorEnabled: true };
-
-    public async Task<AdminOutcome<TwoFactorSetup>> BeginSetupAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
-    {
-        if (await UserOfAsync(principal) is not { } user)
-        {
-            return AdminOutcome.NotFound<TwoFactorSetup>(OutcomeCodes.AccountNotFound);
-        }
-
-        if (user.TwoFactorEnabled)
-        {
-            return AdminOutcome.Invalid<TwoFactorSetup>(OutcomeCodes.TwoFactorAlreadyEnabled);
-        }
-
-        // 沒有金鑰才產生；有就沿用，重新整理頁面不會讓已經掃進手機的 QR 失效。
-        var key = await users.GetAuthenticatorKeyAsync(user);
-        if (string.IsNullOrEmpty(key))
-        {
-            // Identity 原生的金鑰產生與存放。不用 ResetAuthenticatorKeyAsync：它會換安全戳記，
-            // 而這裡在頁面渲染中執行，無法再刷新 cookie，使用者一打開設定頁自己的 session 就失效了。
-            key = users.GenerateNewAuthenticatorKey();
-            await users.SetAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey, key);
-        }
-
-        return AdminOutcome.Ok(TotpSetup.Create(user.Email, key!));
-    }
-
-    public async Task<AdminOutcome<IReadOnlyList<string>>> EnableAsync(ClaimsPrincipal principal, string code, CancellationToken cancellationToken)
-    {
-        var info = Tenant();
-        if (await UserOfAsync(principal) is not { } user)
-        {
-            return AdminOutcome.NotFound<IReadOnlyList<string>>(OutcomeCodes.AccountNotFound);
-        }
-
-        if (user.TwoFactorEnabled)
-        {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorAlreadyEnabled);
-        }
-
-        if (!await VerifyCodeAsync(user, code))
-        {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrectHint);
-        }
-
-        await users.SetTwoFactorEnabledAsync(user, true);
-        var codes = await users.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount) ?? [];
-
-        // 啟用會換安全戳記（其他裝置的 session 失效）；這一個要接著用。
-        await users.UpdateSecurityStampAsync(user);
-        await signIn.RefreshSignInAsync(user);
-        await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalMfaEnabled, info.Id, "member", user.Id), cancellationToken);
-        return AdminOutcome.Ok<IReadOnlyList<string>>([.. codes]);
-    }
 
     public async Task<AdminOutcome<bool>> DisableAsync(ClaimsPrincipal principal, string password, string code, CancellationToken cancellationToken)
     {
@@ -107,66 +49,36 @@ internal sealed class PortalTwoFactor(
 
         // 密碼與驗證碼都要對：只知道其中一個（看到密碼、或借到沒鎖的手機）的人，不能把保護關掉。
         // 兩者的失敗都計入鎖定，所以這裡不能成為猜測的後門。
-        if (!await ConfirmAsync(user, password, code))
+        if (!await ConfirmAsync(user, code, password))
         {
             return AdminOutcome.Invalid<bool>(OutcomeCodes.CredentialsIncorrect);
         }
 
-        await users.SetTwoFactorEnabledAsync(user, false);
-        await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey);
-        await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.RecoveryCodes);
-        await users.UpdateSecurityStampAsync(user);
+        await Users.SetTwoFactorEnabledAsync(user, false);
+        await Users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey);
+        await Users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.RecoveryCodes);
+        await Users.UpdateSecurityStampAsync(user);
         await signIn.RefreshSignInAsync(user);
-        await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalMfaDisabled, info.Id, "member", user.Id), cancellationToken);
+        await Audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalMfaDisabled, info.Id, "member", user.Id), cancellationToken);
         return AdminOutcome.Ok(true);
     }
 
-    public async Task<AdminOutcome<IReadOnlyList<string>>> RegenerateRecoveryCodesAsync(
-        ClaimsPrincipal principal, string code, CancellationToken cancellationToken)
-    {
-        var info = Tenant();
-        if (await UserOfAsync(principal) is not { TwoFactorEnabled: true } user)
-        {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorNotEnabled);
-        }
-
-        if (!await ConfirmAsync(user, password: null, code))
-        {
-            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrect);
-        }
-
-        var codes = await users.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount) ?? [];
-        await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalRecoveryCodesRegenerated, info.Id, "member", user.Id), cancellationToken);
-        return AdminOutcome.Ok<IReadOnlyList<string>>([.. codes]);
-    }
-
-    /// <summary>
-    /// 敏感動作前再確認一次本人：驗證碼（與密碼，若有給）。任何一項錯都記一次失敗並檢查鎖定，
-    /// 鎖定中就一律不過。這裡不歸零計數：歸零只在完整登入成功時。
-    /// </summary>
-    private async Task<bool> ConfirmAsync(ApplicationUser user, string? password, string code)
-    {
-        if (await users.IsLockedOutAsync(user))
-        {
-            return false;
-        }
-
-        var ok = (password is null || await users.CheckPasswordAsync(user, password)) && await VerifyCodeAsync(user, code);
-        if (!ok)
-        {
-            await users.AccessFailedAsync(user);
-        }
-
-        return ok;
-    }
-
     /// <summary>Identity 原生的驗證器 provider（RFC 6238，內建時間容許範圍）。</summary>
-    private Task<bool> VerifyCodeAsync(ApplicationUser user, string? code) =>
-        users.VerifyTwoFactorTokenAsync(user, users.Options.Tokens.AuthenticatorTokenProvider, (code ?? string.Empty).Replace(" ", string.Empty).Replace("-", string.Empty));
+    protected override Task<bool> VerifyCodeAsync(ApplicationUser user, string? code) =>
+        Users.VerifyTwoFactorTokenAsync(user, Users.Options.Tokens.AuthenticatorTokenProvider, (code ?? string.Empty).Replace(" ", string.Empty).Replace("-", string.Empty));
 
-    public async Task<bool> HasPendingSignInAsync() => await signIn.GetTwoFactorAuthenticationUserAsync() is not null;
+    protected override async Task OnEnabledAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        await signIn.RefreshSignInAsync(user);
+        await Audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalMfaEnabled, Tenant().Id, "member", user.Id), cancellationToken);
+    }
 
-    public async Task<SignInStatus> CompleteSignInAsync(string code, bool isRecoveryCode, CancellationToken cancellationToken)
+    protected override Task OnRecoveryCodesRegeneratedAsync(ApplicationUser user, CancellationToken cancellationToken) =>
+        Audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalRecoveryCodesRegenerated, Tenant().Id, "member", user.Id), cancellationToken);
+
+    public override async Task<bool> HasPendingSignInAsync() => await signIn.GetTwoFactorAuthenticationUserAsync() is not null;
+
+    public override async Task<SignInStatus> CompleteSignInAsync(string code, bool isRecoveryCode, CancellationToken cancellationToken)
     {
         var info = Tenant();
         if (await signIn.GetTwoFactorAuthenticationUserAsync() is not { } user)
@@ -193,7 +105,7 @@ internal sealed class PortalTwoFactor(
                 await ClearPendingAsync();
             }
 
-            await audit.AppendAsync(
+            await Audit.AppendAsync(
                 new ClaimsPrincipal(),
                 new AuditEntry(AuditActions.PortalSignInFailed, info.Id, "member", user.Id, new Dictionary<string, object?>
                 {
@@ -204,13 +116,13 @@ internal sealed class PortalTwoFactor(
         }
 
         // 稽核裡只記用了哪一種方式，絕不記碼本身。
-        await audit.AppendAsync(
+        await Audit.AppendAsync(
             ActorOf(user),
             new AuditEntry(AuditActions.PortalSignedIn, info.Id, "member", user.Id, new Dictionary<string, object?> { ["method"] = isRecoveryCode ? "recovery_code" : "totp" }),
             cancellationToken);
         if (isRecoveryCode)
         {
-            await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalRecoveryCodeUsed, info.Id, "member", user.Id), cancellationToken);
+            await Audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalRecoveryCodeUsed, info.Id, "member", user.Id), cancellationToken);
         }
 
         return user.MustChangePassword ? SignInStatus.MustChangePassword : SignInStatus.Succeeded;
@@ -219,8 +131,8 @@ internal sealed class PortalTwoFactor(
     private Task ClearPendingAsync() =>
         (http.HttpContext ?? throw new InvalidOperationException("No HTTP request.")).SignOutAsync(IdentityConstants.TwoFactorUserIdScheme);
 
-    private async Task<ApplicationUser?> UserOfAsync(ClaimsPrincipal principal) =>
-        principal.FindFirst(PlatformClaimTypes.PortalUserId)?.Value is { } id ? await users.FindByIdAsync(id) : null;
+    protected override async Task<ApplicationUser?> UserOfAsync(ClaimsPrincipal principal) =>
+        principal.FindFirst(PlatformClaimTypes.PortalUserId)?.Value is { } id ? await Users.FindByIdAsync(id) : null;
 
     private TenantInfo Tenant() =>
         tenant.MultiTenantContext?.TenantInfo ?? throw new InvalidOperationException("No tenant resolved for the portal request.");

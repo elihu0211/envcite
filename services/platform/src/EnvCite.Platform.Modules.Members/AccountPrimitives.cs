@@ -6,8 +6,6 @@ using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Identity;
 
-using OtpNet;
-
 namespace EnvCite.Platform.Modules.Members;
 
 // 客戶入口的成員（ApplicationUser）與後台的營運者（OperatorUser）共用的小零件：兩邊各寫一份遲早會走樣。
@@ -42,12 +40,6 @@ internal static class TwoFactorTokens
 internal static class TotpSetup
 {
     private const string Issuer = "envcite";
-
-    /// <summary>
-    /// 自己產生金鑰，不用 <c>ResetAuthenticatorKeyAsync</c>：它會順手更新安全戳記，使用者一打開設定頁，
-    /// 自己目前的 session 就失效了。20 位元組 = RFC 4226 建議的長度。
-    /// </summary>
-    public static string NewKey() => Base32Encoding.ToString(KeyGeneration.GenerateRandomKey(20));
 
     public static TwoFactorSetup Create(string? email, string key)
     {
