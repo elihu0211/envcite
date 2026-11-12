@@ -25,7 +25,7 @@ internal sealed class PortalAccount(
     public PortalTenant? CurrentTenant =>
         tenant.MultiTenantContext?.TenantInfo is { Id: { } id, Identifier: { } identifier } info ? new PortalTenant(id, identifier, info.Name) : null;
 
-    public async Task<PortalSignInStatus> SignInAsync(string email, string password, CancellationToken cancellationToken)
+    public async Task<SignInStatus> SignInAsync(string email, string password, CancellationToken cancellationToken)
     {
         var info = tenant.MultiTenantContext?.TenantInfo ?? throw new InvalidOperationException("No tenant resolved for the portal request.");
 
@@ -38,7 +38,7 @@ internal sealed class PortalAccount(
                 new ClaimsPrincipal(),
                 new AuditEntry(AuditActions.PortalSignInFailed, info.Id, Detail: new Dictionary<string, object?> { ["reason"] = "unknown_user" }),
                 cancellationToken);
-            return PortalSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         if (user.Disabled)
@@ -49,14 +49,14 @@ internal sealed class PortalAccount(
                 new ClaimsPrincipal(),
                 new AuditEntry(AuditActions.PortalSignInFailed, info.Id, "member", user.Id, new Dictionary<string, object?> { ["reason"] = "disabled" }),
                 cancellationToken);
-            return PortalSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         // Identity 原生：密碼對且啟用了兩步驟時，簽發它的待驗證 cookie 並不歸零失敗計數（要等第二步也過）。
         var result = await signIn.PasswordSignInAsync(user, password ?? string.Empty, isPersistent: false, lockoutOnFailure: true);
         if (result.RequiresTwoFactor)
         {
-            return PortalSignInStatus.RequiresTwoFactor;
+            return SignInStatus.RequiresTwoFactor;
         }
 
         if (!result.Succeeded)
@@ -68,11 +68,11 @@ internal sealed class PortalAccount(
                     ["reason"] = result.IsLockedOut ? "locked_out" : "bad_password",
                 }),
                 cancellationToken);
-            return PortalSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalSignedIn, info.Id, "member", user.Id), cancellationToken);
-        return user.MustChangePassword ? PortalSignInStatus.MustChangePassword : PortalSignInStatus.Succeeded;
+        return user.MustChangePassword ? SignInStatus.MustChangePassword : SignInStatus.Succeeded;
     }
 
     public async Task<ActivationState> InspectActivationAsync(string? userId, string? code, CancellationToken cancellationToken) =>

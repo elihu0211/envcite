@@ -1,0 +1,89 @@
+@inherits FormPageBase<CodeForm>
+@* 登入的第二步：驗證器的六位數，或一組復原碼。營運者與客戶入口共用，差別只剩外框、驗證服務（ITwoFactor）與去處（SignInRoutes）。 *@
+@if (Recovery)
+{
+    <p class="ep-page-description">@L["輸入一組復原碼。每一組只能用一次。"]</p>
+}
+else
+{
+    <p class="ep-page-description">@L["打開手機上的驗證器 App，輸入現在顯示的六位數。"]</p>
+}
+
+@* 與登入同一個原則：不說是碼錯、過期還是帳號被鎖。 *@
+<FormAlert Message="@Error" />
+
+<PostForm Model="Input" FormName="@FormName" OnValidSubmit="VerifyAsync">
+    <FormField For="code" Label="@(Recovery ? L["復原碼"] : L["驗證碼"])">
+        @if (Recovery)
+        {
+            <InputText id="code" @bind-Value="Input.Code" class="ep-input" required autofocus autocomplete="one-time-code" inputmode="text" maxlength="40" />
+        }
+        else
+        {
+            <OtpField Id="code" @bind-Value="Input.Code" AutoFocus="true" AutoSubmit="true" />
+        }
+    </FormField>
+    <SubmitButton>@L["驗證"]</SubmitButton>
+</PostForm>
+
+<p class="ep-note">
+    @if (Recovery)
+    {
+        <a href="@Routes.MfaLink(ReturnUrl)">@L["改用驗證器的六位數"]</a>
+    }
+    else
+    {
+        <a href="@Routes.MfaLink(ReturnUrl, recovery: true)">@L["手機不在身邊？用復原碼"]</a>
+    }
+    　·　<a href="@Routes.Login">@L["重新輸入密碼"]</a>
+</p>
+
+@code {
+    [Parameter, EditorRequired]
+    public ITwoFactor TwoFactor { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public SignInRoutes Routes { get; set; } = default!;
+
+    /// <summary>表單的名稱，在站內要唯一（框架靠它找到處理常式）。</summary>
+    [Parameter, EditorRequired]
+    public string FormName { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "recovery")] private string? RecoveryParam { get; set; }
+
+    private bool Recovery => RecoveryParam == "1";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 沒有（或過期的）暫存憑證：這一頁沒有東西可驗，回到輸入密碼。
+        if (!await TwoFactor.HasPendingSignInAsync())
+        {
+            Navigation.NavigateTo(Routes.Login);
+        }
+    }
+
+    private async Task VerifyAsync()
+    {
+        var code = Input.Code;
+        Input.Code = string.Empty; // 碼不寫回表單（理由同密碼）。
+        var next = await TwoFactor.CompleteSignInAsync(code, Recovery, HttpContext.RequestAborted) switch
+        {
+            SignInStatus.Succeeded => Routes.SafeReturnUrl(ReturnUrl),
+            SignInStatus.MustChangePassword => Routes.Password,
+            _ => null,
+        };
+
+        if (next is not null)
+        {
+            Navigation.NavigateTo(next);
+            return;
+        }
+
+        // 碼錯、過期、重複使用、被鎖定都是同一句話；暫存憑證在鎖定時會被收回，下一頁會回到輸入密碼。
+        Error = Recovery
+            ? L["復原碼不正確，或已經用過。多次失敗會暫時鎖定帳號。"]
+            : L["驗證碼不正確，或已經用過。請輸入驗證器上現在顯示的六位數；多次失敗會暫時鎖定帳號。"];
+    }
+}

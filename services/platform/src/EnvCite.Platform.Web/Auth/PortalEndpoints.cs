@@ -37,24 +37,8 @@ public static class PortalEndpoints
         app.MapPost($"{PortalPaths.Prefix}/{{tenant}}/language", (HttpContext context, IAntiforgery antiforgery, IPortalAccount account) =>
             account.CurrentTenant is not { } tenant
                 ? Task.FromResult(Results.NotFound())
-                : Localization.SwitchAsync(context, antiforgery, returnUrl => SafeReturnUrl(returnUrl, tenant.Identifier))).AllowAnonymous();
+                : Localization.SwitchAsync(context, antiforgery, SignInRoutes.Portal(tenant.Identifier).SafeReturnUrl)).AllowAnonymous();
 
         return app;
-    }
-
-    /// <summary>登入後導回的地方：只接受這個租戶入口之下的站內相對路徑，其餘回首頁（防 open redirect）。</summary>
-    public static string SafeReturnUrl(string? returnUrl, string tenantIdentifier)
-    {
-        var home = PortalPaths.Home(tenantIdentifier);
-        if (string.IsNullOrEmpty(returnUrl)
-            || !returnUrl.StartsWith(home, StringComparison.Ordinal)
-            || (returnUrl.Length > home.Length && returnUrl[home.Length] is not ('/' or '?' or '#'))
-            || returnUrl.Contains('\\', StringComparison.Ordinal)
-            || returnUrl.StartsWith($"{home}//", StringComparison.Ordinal))
-        {
-            return home;
-        }
-
-        return returnUrl;
     }
 }

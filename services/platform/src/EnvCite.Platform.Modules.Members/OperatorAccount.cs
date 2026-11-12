@@ -25,14 +25,14 @@ internal sealed class OperatorAccount(
     // 不存在的帳號也要花同樣的時間算一次雜湊：否則回應快慢就在告訴攻擊者哪些 email 有帳號。
     private static readonly Lazy<string> DummyHash = new(() => new PasswordHasher<OperatorUser>().HashPassword(new OperatorUser(), "dummy-password-for-timing"));
 
-    public async Task<OperatorSignInStatus> SignInAsync(string email, string password, CancellationToken cancellationToken)
+    public async Task<SignInStatus> SignInAsync(string email, string password, CancellationToken cancellationToken)
     {
         var user = string.IsNullOrWhiteSpace(email) ? null : await users.FindByEmailAsync(email.Trim());
         if (user is null)
         {
             _ = users.PasswordHasher.VerifyHashedPassword(new OperatorUser(), DummyHash.Value, password ?? string.Empty);
             await DeniedAsync(email, null, "unknown_user", cancellationToken);
-            return OperatorSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         if (user.Disabled)
@@ -40,7 +40,7 @@ internal sealed class OperatorAccount(
             // 停用的人：仍然算一次密碼雜湊（別讓回應時間洩漏「這個帳號存在而且被停用」），訊息與密碼錯相同。
             _ = users.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash ?? DummyHash.Value, password ?? string.Empty);
             await DeniedAsync(email, user, "disabled", cancellationToken);
-            return OperatorSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         if (await users.IsLockedOutAsync(user) || !await users.CheckPasswordAsync(user, password ?? string.Empty))
@@ -53,14 +53,14 @@ internal sealed class OperatorAccount(
             }
 
             await DeniedAsync(email, user, locked ? "locked_out" : "bad_password", cancellationToken);
-            return OperatorSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         if (user.TwoFactorEnabled)
         {
             // 還不簽發 session：只給一張只能用來輸入第二步驗證碼的暫存憑證。
             await pending.IssueAsync(user);
-            return OperatorSignInStatus.RequiresTwoFactor;
+            return SignInStatus.RequiresTwoFactor;
         }
 
         // 沒有兩步驟驗證：只可能是還沒註冊（每位營運者都必須使用）。給一張受限的 session，只能進改密碼頁或註冊頁。
@@ -70,7 +70,7 @@ internal sealed class OperatorAccount(
             new AuditEntry(AuditActions.OperatorSignedIn, TargetType: "operator", TargetId: user.Id.ToString(), Detail: new Dictionary<string, object?> { ["method"] = "password" }),
             cancellationToken);
         await IssueSessionAsync(user);
-        return user.MustChangePassword ? OperatorSignInStatus.MustChangePassword : OperatorSignInStatus.MustEnrollTwoFactor;
+        return user.MustChangePassword ? SignInStatus.MustChangePassword : SignInStatus.MustEnrollTwoFactor;
     }
 
     public async Task SignOutAsync(ClaimsPrincipal user, CancellationToken cancellationToken)

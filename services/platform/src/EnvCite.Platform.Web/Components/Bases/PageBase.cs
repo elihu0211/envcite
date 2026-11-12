@@ -35,7 +35,7 @@ public abstract class StaticPageBase : PageBase
 /// <summary>
 /// 有一張表單的靜態頁面：表單的內容（<see cref="Input"/>）由框架從 POST 填進來，第一次請求（GET）時建一份空的。
 /// 衍生頁面若覆寫 <c>OnInitialized</c>，要先呼叫 <c>base.OnInitialized()</c>。
-/// 一頁有多張表單的（成員、安全設定）改用 <see cref="StaticPageBase"/>，各自宣告命名的表單。
+/// 一頁有多張表單的（成員、兩步驟驗證設定），第一張用 <see cref="Input"/>，其餘自己宣告；表單之間靠 <c>FormName</c> 分辨。
 /// </summary>
 public abstract class FormPageBase<TForm> : StaticPageBase
     where TForm : class, new()

@@ -166,19 +166,19 @@ internal sealed class PortalTwoFactor(
 
     public async Task<bool> HasPendingSignInAsync() => await signIn.GetTwoFactorAuthenticationUserAsync() is not null;
 
-    public async Task<PortalSignInStatus> CompleteSignInAsync(string code, bool isRecoveryCode, CancellationToken cancellationToken)
+    public async Task<SignInStatus> CompleteSignInAsync(string code, bool isRecoveryCode, CancellationToken cancellationToken)
     {
         var info = Tenant();
         if (await signIn.GetTwoFactorAuthenticationUserAsync() is not { } user)
         {
-            return PortalSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         // 在第一步之後、第二步之前被停用：不再給任何機會，待驗證 cookie 收回。
         if (user.Disabled)
         {
             await ClearPendingAsync();
-            return PortalSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         // Identity 原生：驗證、失敗計數與鎖定、成功後歸零並簽發登入 cookie。
@@ -200,7 +200,7 @@ internal sealed class PortalTwoFactor(
                     ["reason"] = result.IsLockedOut ? "locked_out" : isRecoveryCode ? "bad_recovery_code" : "bad_totp",
                 }),
                 cancellationToken);
-            return PortalSignInStatus.Failed;
+            return SignInStatus.Failed;
         }
 
         // 稽核裡只記用了哪一種方式，絕不記碼本身。
@@ -213,7 +213,7 @@ internal sealed class PortalTwoFactor(
             await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalRecoveryCodeUsed, info.Id, "member", user.Id), cancellationToken);
         }
 
-        return user.MustChangePassword ? PortalSignInStatus.MustChangePassword : PortalSignInStatus.Succeeded;
+        return user.MustChangePassword ? SignInStatus.MustChangePassword : SignInStatus.Succeeded;
     }
 
     private Task ClearPendingAsync() =>

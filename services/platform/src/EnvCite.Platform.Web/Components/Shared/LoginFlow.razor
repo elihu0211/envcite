@@ -1,0 +1,66 @@
+@inherits FormPageBase<LoginForm>
+@* 登入的整段流程：啟用成功的提示、錯誤、表單與登入後的去向。營運者（/ui/login）與客戶入口（/portal/{租戶}/login）共用，
+   差別只剩外框（標題、卡片）、帳號服務（兩邊都是 IAccountLifecycle）、去處（SignInRoutes）與說明文字，由頁面以參數給。 *@
+@if (Activated == "1")
+{
+    <FormAlert Kind="AlertKind.Info">@L["帳號已啟用，信箱已驗證。請登入。"]</FormAlert>
+}
+
+@* role=alert：螢幕閱讀器立刻念出來；訊息不說是帳號還是密碼錯，也不說帳號有沒有被鎖。 *@
+<FormAlert Message="@Error" />
+
+<PostForm Model="Input" FormName="@FormName" OnValidSubmit="SignInAsync">
+    <FormField For="email" Label="@L["電子郵件"]">
+        <InputText id="email" @bind-Value="Input.Email" type="email" class="ep-input" autocomplete="username" required autofocus />
+    </FormField>
+    <FormField For="password" Label="@L["密碼"]">
+        <PasswordField Id="password" @bind-Value="Input.Password" />
+    </FormField>
+    <SubmitButton>@L["登入"]</SubmitButton>
+</PostForm>
+
+<p class="ep-note">@Note</p>
+
+@code {
+    [Parameter, EditorRequired]
+    public IAccountLifecycle Account { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public SignInRoutes Routes { get; set; } = default!;
+
+    /// <summary>表單的名稱，在站內要唯一（框架靠它找到處理常式）。</summary>
+    [Parameter, EditorRequired]
+    public string FormName { get; set; } = string.Empty;
+
+    /// <summary>表單下方的說明：沒有帳號、忘記密碼時該找誰。</summary>
+    [Parameter, EditorRequired]
+    public string Note { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery] private string? Activated { get; set; }
+
+    private async Task SignInAsync()
+    {
+        var next = await Account.SignInAsync(Input.Email, Input.Password, HttpContext.RequestAborted) switch
+        {
+            SignInStatus.Succeeded => Routes.SafeReturnUrl(ReturnUrl),
+            SignInStatus.MustChangePassword => Routes.Password,
+            SignInStatus.MustEnrollTwoFactor => Routes.Security,
+            // 還沒有 session，只有一張五分鐘的暫存憑證；returnUrl 帶到第二步，通過後才用它。
+            SignInStatus.RequiresTwoFactor => Routes.MfaLink(ReturnUrl),
+            _ => null,
+        };
+
+        if (next is not null)
+        {
+            Navigation.NavigateTo(next);
+            return;
+        }
+
+        // 密碼不寫回表單：重新渲染的 HTML 會帶著輸入框的值，等於把密碼又傳回瀏覽器（與任何中間的快取）一次。
+        Input.Password = string.Empty;
+        // 帳號不存在、密碼錯、被鎖定、被停用都是同一句：說得出差別，就是在告訴攻擊者哪些 email 有帳號。
+        Error = L["電子郵件或密碼不正確，或登入已被暫時停用。多次失敗會暫時鎖定帳號，請稍後再試。"];
+    }
+}

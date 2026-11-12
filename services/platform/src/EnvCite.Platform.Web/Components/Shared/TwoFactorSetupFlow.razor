@@ -1,0 +1,212 @@
+@inherits FormPageBase<CodeForm>
+@* 兩步驟驗證的設定：啟用步驟（QR 與金鑰）、復原碼（只顯示一次）、已啟用時重新產生復原碼，入口成員還可以關閉。
+   營運者與客戶入口共用，差別只剩外框、驗證服務（ITwoFactor）與說明文字，由頁面以參數給。啟用的表單是基底的 Input，其餘兩張自己宣告。
+   營運者每位都必須使用（驗證服務不是 IPortalTwoFactor），所以沒有關閉；入口成員依角色被要求與否。 *@
+@if (!_enabled && _required)
+{
+    <FormAlert Kind="AlertKind.Info">@RequiredText</FormAlert>
+}
+
+@if (_notice is not null)
+{
+    <FormAlert Kind="AlertKind.Info">@_notice</FormAlert>
+}
+
+@if (_recoveryCodes is not null)
+{
+    @* 只在啟用（或重新產生）的這一個回應裡出現，之後不會再顯示（頁面重新整理就沒了）。 *@
+    <section class="@CardClass" aria-labelledby="codes-title">
+        <h2 id="codes-title" class="ep-section-title">@_codesTitle</h2>
+        <FormAlert Kind="AlertKind.Info">
+            @L["這是你的復原碼。"]<strong>@L["只會顯示這一次"]</strong>@L["：請現在抄下或存進密碼管理員。"]
+            @L["手機遺失時，每一組復原碼可以代替一次驗證碼，用過就失效。"]
+        </FormAlert>
+        <RecoveryCodes Codes="_recoveryCodes" />
+        <a class="ep-btn ep-btn-primary" href="@HomeHref">@L["我已保存"]</a>
+    </section>
+}
+else if (_enabled)
+{
+    <section class="@CardClass" aria-labelledby="on-title">
+        <h2 id="on-title" class="ep-section-title">@L["已啟用"]</h2>
+        <p class="ep-page-description">
+            @EnabledText
+        </p>
+    </section>
+
+    <FormAlert Message="@Error" />
+
+    <section class="@CardClass" aria-labelledby="regen-title">
+        <h2 id="regen-title" class="ep-section-title">@L["重新產生復原碼"]</h2>
+        <p class="ep-page-description">@L["舊的復原碼會全部作廢。輸入驗證器上現在的六位數確認是你本人。"]</p>
+        <PostForm Model="Regenerate" FormName="@($"{FormPrefix}-regenerate")" OnValidSubmit="RegenerateAsync">
+            <FormField For="regen-code" Label="@L["驗證碼"]">
+                <OtpField Id="regen-code" @bind-Value="Regenerate.Code" />
+            </FormField>
+            <button type="submit" class="ep-btn ep-btn-quiet">@L["重新產生"]</button>
+        </PostForm>
+    </section>
+
+    @if (Switchable is not null)
+    {
+        <section class="@CardClass" aria-labelledby="off-title">
+            <h2 id="off-title" class="ep-section-title">@L["關閉兩步驟驗證"]</h2>
+            @if (_required)
+            {
+                <p class="ep-page-description">@L["你的角色必須使用兩步驟驗證，不能關閉。"]</p>
+            }
+            else
+            {
+                <p class="ep-page-description">@L["關閉後只靠密碼登入。需要目前的密碼"]<strong>@L["和"]</strong>@L["驗證碼。"]</p>
+                <PostForm Model="Disable" FormName="@($"{FormPrefix}-disable")" OnValidSubmit="DisableAsync">
+                    <FormField For="off-password" Label="@L["目前的密碼"]">
+                        <PasswordField Id="off-password" @bind-Value="Disable.Password" />
+                    </FormField>
+                    <FormField For="off-code" Label="@L["驗證碼"]">
+                        <OtpField Id="off-code" @bind-Value="Disable.Code" />
+                    </FormField>
+                    <button type="submit" class="ep-btn ep-btn-quiet">@L["關閉"]</button>
+                </PostForm>
+            }
+        </section>
+    }
+
+    @if (BackText is not null)
+    {
+        <a class="ep-btn ep-btn-primary" href="@HomeHref">@BackText</a>
+    }
+}
+else if (_setup is not null)
+{
+    <section class="@CardClass" aria-labelledby="setup-title">
+        <h2 id="setup-title" class="ep-section-title">@L["啟用步驟"]</h2>
+        <ol class="ep-steps">
+            <li>@L["在手機安裝驗證器 App（例如 Google Authenticator、Microsoft Authenticator、1Password 或 Authy）。"]</li>
+            <li>@L["用 App 掃描下面的 QR；掃不了就選「手動輸入」，輸入下面的金鑰。"]</li>
+            <li>@L["輸入 App 上現在顯示的六位數，按「啟用」。"]</li>
+        </ol>
+        <div class="ep-qr" role="img" aria-label="@L["驗證器 QR"]">@((MarkupString)_qrSvg)</div>
+        <p class="ep-hint">@L["金鑰（手動輸入用）："]<code class="ep-mono" id="shared-key">@_setup.SharedKey</code></p>
+
+        <FormAlert Message="@Error" />
+
+        <PostForm Model="Input" FormName="@($"{FormPrefix}-enable")" OnValidSubmit="EnableAsync">
+            <FormField For="code" Label="@L["驗證碼"]">
+                <OtpField Id="code" @bind-Value="Input.Code" />
+            </FormField>
+            <SubmitButton>@L["啟用"]</SubmitButton>
+        </PostForm>
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public ITwoFactor TwoFactor { get; set; } = default!;
+
+    /// <summary>三張表單名稱的前綴（<c>-enable</c>、<c>-regenerate</c>、<c>-disable</c>），在站內要唯一。</summary>
+    [Parameter, EditorRequired]
+    public string FormPrefix { get; set; } = string.Empty;
+
+    /// <summary>「我已保存」回到哪裡。</summary>
+    [Parameter, EditorRequired]
+    public string HomeHref { get; set; } = string.Empty;
+
+    /// <summary>還沒啟用、而且被要求使用時的提醒。</summary>
+    [Parameter, EditorRequired]
+    public string RequiredText { get; set; } = string.Empty;
+
+    /// <summary>已啟用時的說明：手機遺失、也沒有復原碼時該找誰。</summary>
+    [Parameter, EditorRequired]
+    public string EnabledText { get; set; } = string.Empty;
+
+    /// <summary>每一區塊的外框類別（入口是卡片）；沒給就不套。</summary>
+    [Parameter]
+    public string? CardClass { get; set; }
+
+    /// <summary>已啟用時頁尾回首頁的連結文字；沒給就沒有這個連結。</summary>
+    [Parameter]
+    public string? BackText { get; set; }
+
+    [SupplyParameterFromForm] private CodeForm Regenerate { get; set; } = default!;
+
+    [SupplyParameterFromForm] private DisableForm Disable { get; set; } = default!;
+
+    private bool _enabled;
+    private bool _required;
+    private string? _notice;
+    private string _codesTitle = string.Empty;
+    private TwoFactorSetup? _setup;
+    private string _qrSvg = string.Empty;
+    private IReadOnlyList<string>? _recoveryCodes;
+
+    private IPortalTwoFactor? Switchable => TwoFactor as IPortalTwoFactor;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _codesTitle = L["兩步驟驗證已啟用"];
+        Regenerate ??= new();
+        Disable ??= new();
+        _required = Switchable?.IsRequired(User) ?? true;
+        _enabled = await TwoFactor.IsEnabledAsync(User, HttpContext.RequestAborted);
+        if (!_enabled)
+        {
+            await LoadSetupAsync();
+        }
+    }
+
+    private async Task LoadSetupAsync()
+    {
+        var setup = await TwoFactor.BeginSetupAsync(User, HttpContext.RequestAborted);
+        if (setup.IsOk)
+        {
+            _setup = setup.Value;
+            _qrSvg = QrSvg.Render(_setup!.OtpauthUri);
+        }
+    }
+
+    private async Task EnableAsync()
+    {
+        var code = Input.Code;
+        Input.Code = string.Empty;
+        var enabled = await TwoFactor.EnableAsync(User, code, HttpContext.RequestAborted);
+        if (enabled.IsOk)
+        {
+            _recoveryCodes = enabled.Value;
+            _enabled = true;
+            return;
+        }
+
+        Error = Describe(enabled, L["啟用失敗。"]);
+    }
+
+    private async Task RegenerateAsync()
+    {
+        var code = Regenerate.Code;
+        Regenerate.Code = string.Empty;
+        var regenerated = await TwoFactor.RegenerateRecoveryCodesAsync(User, code, HttpContext.RequestAborted);
+        if (regenerated.IsOk)
+        {
+            _recoveryCodes = regenerated.Value;
+            _codesTitle = L["新的復原碼"];
+            return;
+        }
+
+        Error = Describe(regenerated, L["重新產生失敗。"]);
+    }
+
+    private async Task DisableAsync()
+    {
+        var (password, code) = (Disable.Password, Disable.Code);
+        Disable.Password = Disable.Code = string.Empty;
+        var disabled = await Switchable!.DisableAsync(User, password, code, HttpContext.RequestAborted);
+        if (!disabled.IsOk)
+        {
+            Error = Describe(disabled, L["關閉失敗。"]);
+            return;
+        }
+
+        _enabled = false;
+        _notice = L["已關閉兩步驟驗證。之後只靠密碼登入；舊的復原碼已作廢。"];
+        await LoadSetupAsync();
+    }
+}

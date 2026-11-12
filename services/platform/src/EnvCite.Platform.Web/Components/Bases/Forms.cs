@@ -17,6 +17,14 @@ public sealed class CodeForm
     public string Code { get; set; } = string.Empty;
 }
 
+/// <summary>關閉兩步驟驗證：要目前的密碼與一組驗證碼。</summary>
+public sealed class DisableForm
+{
+    public string Password { get; set; } = string.Empty;
+
+    public string Code { get; set; } = string.Empty;
+}
+
 /// <summary>改密碼：目前的密碼、新密碼、再輸入一次。</summary>
 public sealed class PasswordForm
 {
