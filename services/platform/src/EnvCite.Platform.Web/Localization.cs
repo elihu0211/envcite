@@ -49,7 +49,8 @@ public static class Localization
 
     private static bool IsUiPath(PathString path) =>
         path.StartsWithSegments("/ui") || path.StartsWithSegments(PortalPaths.Prefix)
-        || path.StartsWithSegments("/_blazor") || path.StartsWithSegments(WebModule.DesignGalleryPath);
+        || path.StartsWithSegments("/_blazor") || path.StartsWithSegments(WebModule.DesignGalleryPath)
+        || path.StartsWithSegments(WebModule.NotFoundPath);
 
     /// <summary>
     /// 依品質值由高到低取第一個認得的語言：任何 zh 開頭（zh-TW、zh-Hant、zh-HK…）都用繁體中文，en 開頭用英文，
