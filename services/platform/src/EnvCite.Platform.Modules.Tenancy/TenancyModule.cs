@@ -7,6 +7,7 @@ using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.EntityFrameworkCore.Extensions;
 using Finbuckle.MultiTenant.Extensions;
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -31,15 +32,34 @@ public static class TenancyModule
 
         services.AddMultiTenant<TenantInfo>()
             .WithEFCoreStore<TenancyDbContext, TenantInfo>()
-            .WithDelegateStrategy<HttpContext, TenantInfo>(context =>
-                // 客戶入口的租戶在路徑裡（登入前就要知道），而且路徑優先於 cookie 的 claim：
-                // 別的租戶的 cookie 帶到這個路徑，租戶仍是這個路徑的租戶，授權再發現不符。
-                Task.FromResult(PortalPaths.TenantFrom(context.Request.Path)
-                    ?? context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value));
+            .WithDelegateStrategy<HttpContext, TenantInfo>(TenantOfAsync);
 
         services.AddSingleton<ITenantProvisioner, TenantProvisioner>();
 
         return services;
+    }
+
+    /// <summary>
+    /// 這個請求的租戶識別碼。客戶入口的租戶在路徑裡（登入前就要知道），而且路徑優先於 cookie 的 claim：
+    /// 別的租戶的 cookie 帶到這個路徑，租戶仍是這個路徑的租戶，授權再發現不符。
+    /// 目錄同步的路徑（<see cref="ScimPaths.Prefix"/>）只認自己的 token：它不是預設 scheme，
+    /// <c>UseAuthentication</c> 不會替它填 <c>User</c>，所以這裡明確驗證；租戶只來自 token，不來自路徑或本文。
+    /// 其餘取自預設 scheme（API key）設定的 claim。
+    /// </summary>
+    private static async Task<string?> TenantOfAsync(HttpContext context)
+    {
+        if (PortalPaths.TenantFrom(context.Request.Path) is { } fromPath)
+        {
+            return fromPath;
+        }
+
+        if (context.Request.Path.StartsWithSegments(ScimPaths.Prefix))
+        {
+            var result = await context.AuthenticateAsync(PlatformAuth.DirectoryTokenScheme);
+            return result.Principal?.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value;
+        }
+
+        return context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value;
     }
 
     /// <summary>

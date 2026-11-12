@@ -53,4 +53,10 @@ public static class PlatformAuth
 
     /// <summary>依租戶分區的 rate limiting policy。</summary>
     public const string PerTenantRateLimit = "per-tenant";
+
+    /// <summary>目錄同步 token：<c>Authorization: Bearer scim_…</c>。與 API key 是不同的 scheme，兩種憑證互不通用。</summary>
+    public const string DirectoryTokenScheme = "DirectoryToken";
+
+    /// <summary>需要已驗證的目錄同步 token（只用在 <see cref="ScimPaths.Prefix"/> 之下）。</summary>
+    public const string DirectoryPolicy = "DirectorySync";
 }

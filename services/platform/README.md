@@ -22,7 +22,7 @@ owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-n
 | 入口 | [入口](#入口) | 主機，以及設定鍵的真值在哪 |
 | 帳號 | [營運者帳號](#營運者帳號) | 欄位、端點、首次登入規則 |
 | 品牌 | [系統名稱](#系統名稱platformbrand) | 名稱的唯一來源、哪些地方跟著變、改名時要另外換的 |
-| 帳號 | [目錄同步](#目錄同步platformdirectory) | 客戶的身分來源把成員推進租戶：設定鍵、規則、受管成員 |
+| 帳號 | [目錄同步](#目錄同步platformdirectory) | 客戶的身分來源把成員推進租戶：設定鍵、規則、受管成員、SCIM 端點 |
 
 ## 語料範圍
 
@@ -240,6 +240,23 @@ sequenceDiagram
 | 管理 | 設定與 token 只有租戶的擁有者能管：token 能讓身分來源建立管理員，管理員不能建立管理員，所以也不能持有它。營運者只能看狀態、緊急關閉連線、解除成員的管理 |
 | token | 格式 `scim_{前綴}_{secret}`，只存雜湊、只在簽發時顯示一次；與 API key（`sk_live_`）互不通用 |
 | 稽核 | 「誰」是 token（`directory` 類型，記 token 的 Id）；稽核裡沒有 token、連結或身分來源送來的屬性。變更與稽核同一個交易，稽核寫不進去就沒有變更 |
+
+### 端點（`/scim/v2`，SCIM 2.0）
+
+協定是 RFC 7643／7644，本節只記本服務的選擇。不在 `/v2` 之下：不計量、不走方案與逐租戶限流，也不進 `openapi_v2.json`（規格是 RFC 本身，能力由 `/ServiceProviderConfig` 自述）。部署者沒開功能面就不掛路徑。
+
+| 項目 | 規則 |
+|------|------|
+| 認證 | `Authorization: Bearer scim_…`；租戶只來自 token。失敗一律同一個 401（不透露 token 是不存在、已撤銷、已過期或密碼錯），帶 `WWW-Authenticate: Bearer realm="scim"`。API key 不能用在這裡，這種 token 也不能用在 `/v2` |
+| 內容型別 | 回應是 `application/scim+json`；請求的 `application/json` 與 `application/scim+json` 都收，本文上限 256 KB |
+| `GET /ServiceProviderConfig`、`/ResourceTypes`、`/Schemas`（及 `/{id}`） | 自述：支援 PATCH 與過濾；不支援 Bulk、排序、ETag、改密碼 |
+| `GET /Users` | 過濾只支援 `userName eq "…"` 與 `externalId eq "…"`（屬性與運算子不分大小寫），其他回 400 `invalidFilter`；`startIndex` 從 1、`count` 以 `MaxPageSize` 為上限，`count=0` 只回總數；包含手動建立的成員 |
+| `POST /Users` | 201 加 `Location`；重複回 409 `uniqueness`。`userName` 是 email（不是 email 時退用 `emails` 的主要位址）；`roles` 不經 SCIM 指定，角色用租戶設定的預設 |
+| `GET`／`PUT`／`PATCH`／`DELETE /Users/{id}` | PUT 是取代（沒送 `displayName` 視為清掉、沒送 `active` 視為啟用）；PATCH 接受 `add`／`replace`／`remove`、有或沒有 path（Entra、Okta 的寫法），`active` 可為布林或 `"True"`／`"False"`，不認得的屬性略過；DELETE 是停用，204，重送仍 204；`userName` 不能變更（400 `mutability`） |
+| 其他路徑 | Groups、Bulk 等回 SCIM 格式的 404（已驗證後才回，沒有 token 一律 401） |
+| 錯誤 | RFC 7644 §3.12 的格式（`schemas`、`status`、`scimType`、`detail`）加本倉庫的穩定 `code`（`OutcomeCodes`）；`detail` 永遠是英文。連線關閉：404 `directory.not_enabled`；新成員需要寄信但沒啟用：503 `mail.not_enabled`；超過額度：429 加 `Retry-After` |
+| 限流 | 每把 token 每分鐘 `RequestsPerMinute` 次（授權之後才算，沒有有效 token 的請求不耗用額度）；狀態在各副本的記憶體裡 |
+| 指標 | `envcite.platform.directory.requests`，標籤只有 `operation` 與 `outcome`；租戶與內容不進指標 |
 
 ## 系統名稱（`Platform:Brand`）
 
