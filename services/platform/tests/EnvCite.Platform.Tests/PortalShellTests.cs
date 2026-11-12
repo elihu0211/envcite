@@ -53,8 +53,8 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var links = SideNavHrefs(home.Html);
         Assert.Equal(seesMembers, links.Contains($"{prefix}/members"));
         Assert.Equal([prefix, $"{prefix}/account"], links.Where(l => l != $"{prefix}/members" && l != $"{prefix}/history"));
-        // 個人的安全設定在帳號選單；選單也顯示目前是誰。
-        Assert.Equal([$"{prefix}/security", PasswordPage(tenant.Identifier)], MenuHrefs(home.Html));
+        // 個人設定（外觀）與個人的安全設定在帳號選單；選單也顯示目前是誰。
+        Assert.Equal([$"{prefix}/settings", $"{prefix}/security", PasswordPage(tenant.Identifier)], MenuHrefs(home.Html));
         Assert.Contains(email, Menu(home.Html), StringComparison.Ordinal);
     }
 

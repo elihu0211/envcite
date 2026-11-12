@@ -27,6 +27,7 @@
                         <span>@context.User.FindFirst(ClaimTypes.Email)?.Value</span>
                     </p>
                     <nav aria-label="@L["帳號選單"]">
+                        <a class="ep-menu-item" href="@UiEndpoints.SettingsPath">@L["個人設定"]</a>
                         <a class="ep-menu-item" href="@UiEndpoints.PasswordPath">@L["改密碼"]</a>
                         <a class="ep-menu-item" href="@UiEndpoints.SecurityPath">@L["兩步驟驗證"]</a>
                     </nav>
