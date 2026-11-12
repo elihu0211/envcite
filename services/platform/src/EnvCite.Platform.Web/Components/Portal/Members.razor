@@ -17,8 +17,7 @@ else
     @if (_issued is not null)
     {
         @* 只在這一個回應裡出現，重新整理就沒了；資料庫只存雜湊。 *@
-        <section class="ep-card" aria-labelledby="issued-title">
-            <h2 id="issued-title" class="ep-section-title">@_issuedTitle</h2>
+        <SectionCard Id="issued-title" Title="@_issuedTitle">
             <FormAlert Kind="AlertKind.Info">
                 @L["這組密碼"]<strong>@L["只會顯示這一次"]</strong>@L["。請親手交給"] <strong>@_issued.Member.Email</strong>@L["（不要貼在公開的聊天室或工單裡）；"]
                 @L["對方第一次登入時必須自己改掉，之後連你也不會知道他的密碼。"]
@@ -29,7 +28,7 @@ else
                     <NavIcon Path="@Icons.Material.Outlined.ContentCopy" /><span>@L["複製"]</span>
                 </button>
             </p>
-        </section>
+        </SectionCard>
     }
 
     @if (_message is not null)
@@ -39,8 +38,7 @@ else
 
     <FormAlert Message="@Error" />
 
-    <section class="ep-card" aria-labelledby="add-title">
-        <h2 id="add-title" class="ep-section-title">@L["新增成員"]</h2>
+    <SectionCard Id="add-title" Title="@L["新增成員"]">
         <PostForm Model="Add" FormName="portal-member-add" OnValidSubmit="AddAsync">
             <FormField For="add-email" Label="@L["電子郵件"]">
                 <InputText id="add-email" @bind-Value="Add.Email" type="email" class="ep-input" required maxlength="254" autocomplete="off" />
@@ -48,88 +46,79 @@ else
             <FormField For="add-name" Label="@L["顯示名稱（選填）"]">
                 <InputText id="add-name" @bind-Value="Add.DisplayName" class="ep-input" maxlength="200" autocomplete="off" />
             </FormField>
-            <FormField For="add-role" Label="@L["角色"]">
-                <InputSelect id="add-role" @bind-Value="Add.Role" class="ep-input">
-                    @foreach (var role in _grantable)
-                    {
-                        <option value="@role">@PortalLabels.RoleWithAbilities(role)</option>
-                    }
-                </InputSelect>
-            </FormField>
+            <SelectField For="add-role" Label="@L["角色"]" Options="GrantableWithAbilities" @bind-Value="Add.Role" />
             <SubmitButton>@(mail.Enabled ? L["寄出邀請"] : L["新增成員"])</SubmitButton>
         </PostForm>
-    </section>
+    </SectionCard>
 
-    <section class="ep-card ep-table-card ep-cards" aria-labelledby="list-title">
-        <h2 id="list-title" class="ep-section-title ep-card-title">@L["目前的成員（{0}）", _team.Count]</h2>
+    <SectionCard Id="list-title" Title="@L["目前的成員（{0}）", _team.Count]" Class="ep-table-card ep-cards" TitleClass="ep-card-title">
         @* 一個表單包住整個表：每個按鈕的 value 說明「對誰做什麼」，角色的下拉選單以 role-{id} 命名。 *@
         <form method="post" @onsubmit="ActAsync" @formname="portal-member-action">
             <AntiforgeryToken />
-            <div class="ep-table-wrap">
-                <table class="ep-plain-table" aria-label="@L["成員"]">
-                    <thead>
-                        <tr>
-                            <th scope="col">@L["電子郵件"]</th>
-                            <th scope="col">@L["角色"]</th>
-                            <th scope="col">@L["狀態"]</th>
-                            <th scope="col"><span class="ep-visually-hidden">@L["操作"]</span></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var row in _team)
-                        {
-                            var member = row.Member;
-                            <tr>
-                                <td class="ep-keep">@member.Email@(member.DisplayName is null ? "" : L["（{0}）", member.DisplayName].Value)@(row.IsYou ? L["　· 你"].Value : "")</td>
-                                <td data-label="@L["角色"]">@PortalLabels.Role(member.Role)</td>
-                                <td data-label="@L["狀態"]">
-                                    <StatusBadge Tone="@StateTone(member)">@State(member)</StatusBadge>
-                                    @if (!member.EmailConfirmed && !member.Invited)
-                                    {
-                                        <StatusBadge Tone="warning">@L["信箱未驗證"]</StatusBadge>
-                                    }
-                                    @if (member.TwoFactorEnabled)
-                                    {
-                                        <StatusBadge Tone="info">@L["兩步驟"]</StatusBadge>
-                                    }
-                                </td>
-                                <td class="ep-row-actions">
-                                    @if (row.CanManage)
-                                    {
-                                        @if (CanResend(member))
-                                        {
-                                            <button type="submit" name="Input.Action" value="@($"resend:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                                    aria-label="@(member.Invited ? L["重寄邀請給 {0}", member.Email] : L["寄驗證信給 {0}", member.Email])">@(member.Invited ? L["重寄邀請"] : L["寄驗證信"])</button>
-                                        }
-
-                                        @if (member.Disabled)
-                                        {
-                                            <button type="submit" name="Input.Action" value="@($"enable:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                                    aria-label="@L["重新啟用 {0}", member.Email]">@L["重新啟用"]</button>
-                                        }
-                                        else
-                                        {
-                                            <button type="submit" name="Input.Action" value="@($"disable:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                                    aria-label="@L["停用 {0}", member.Email]">@L["停用"]</button>
-                                            <button type="submit" name="Input.Action" value="@($"reset:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                                    aria-label="@L["重設 {0} 的密碼", member.Email]">@L["重設密碼"]</button>
-                                        }
-
-                                        <select name="@($"role-{member.Id}")" class="ep-input ep-input-inline" aria-label="@L["{0} 的角色", member.Email]">
-                                            @foreach (var role in _grantable)
-                                            {
-                                                <option value="@role" selected="@(role == member.Role)">@PortalLabels.Role(role)</option>
-                                            }
-                                        </select>
-                                        <button type="submit" name="Input.Action" value="@($"role:{member.Id}")" class="ep-btn ep-btn-quiet"
-                                                aria-label="@L["變更 {0} 的角色", member.Email]">@L["變更角色"]</button>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+            <DataTable Items="_team" Columns="Columns" Label="@L["成員"]" Plain="true" />
         </form>
-    </section>
+    </SectionCard>
+}
+
+@code {
+    private IEnumerable<SelectOption> GrantableWithAbilities => _grantable.Select(role => new SelectOption(role, PortalLabels.RoleWithAbilities(role)));
+
+    private IEnumerable<SelectOption> GrantableNames => _grantable.Select(role => new SelectOption(role, PortalLabels.Role(role)));
+
+    private IReadOnlyList<ColumnDef<TeamMember>> Columns =>
+    [
+        new()
+        {
+            Title = L["電子郵件"], Class = "ep-keep", Labeled = false,
+            Cell = row => @<text>@row.Member.Email@(row.Member.DisplayName is null ? "" : L["（{0}）", row.Member.DisplayName].Value)@(row.IsYou ? L["　· 你"].Value : "")</text>,
+        },
+        new() { Title = L["角色"], Cell = row => @<text>@PortalLabels.Role(row.Member.Role)</text> },
+        new()
+        {
+            Title = L["狀態"],
+            Cell = row => @<text>
+                <StatusBadge Tone="@StateTone(row.Member)">@State(row.Member)</StatusBadge>
+                @if (!row.Member.EmailConfirmed && !row.Member.Invited)
+                {
+                    <StatusBadge Tone="warning">@L["信箱未驗證"]</StatusBadge>
+                }
+                @if (row.Member.TwoFactorEnabled)
+                {
+                    <StatusBadge Tone="info">@L["兩步驟"]</StatusBadge>
+                }
+            </text>,
+        },
+        new()
+        {
+            Title = L["操作"], HideTitle = true, Labeled = false, Class = "ep-row-actions",
+            Cell = row => @<text>
+                @if (row.CanManage)
+                {
+                    var member = row.Member;
+                    @if (CanResend(member))
+                    {
+                        <button type="submit" name="Input.Action" value="@($"resend:{member.Id}")" class="ep-btn ep-btn-quiet"
+                                aria-label="@(member.Invited ? L["重寄邀請給 {0}", member.Email] : L["寄驗證信給 {0}", member.Email])">@(member.Invited ? L["重寄邀請"] : L["寄驗證信"])</button>
+                    }
+
+                    @if (member.Disabled)
+                    {
+                        <button type="submit" name="Input.Action" value="@($"enable:{member.Id}")" class="ep-btn ep-btn-quiet"
+                                aria-label="@L["重新啟用 {0}", member.Email]">@L["重新啟用"]</button>
+                    }
+                    else
+                    {
+                        <button type="submit" name="Input.Action" value="@($"disable:{member.Id}")" class="ep-btn ep-btn-quiet"
+                                aria-label="@L["停用 {0}", member.Email]">@L["停用"]</button>
+                        <button type="submit" name="Input.Action" value="@($"reset:{member.Id}")" class="ep-btn ep-btn-quiet"
+                                aria-label="@L["重設 {0} 的密碼", member.Email]">@L["重設密碼"]</button>
+                    }
+
+                    <OptionSelect Name="@($"role-{member.Id}")" Label="@L["{0} 的角色", member.Email]" Options="GrantableNames" Value="@member.Role" />
+                    <button type="submit" name="Input.Action" value="@($"role:{member.Id}")" class="ep-btn ep-btn-quiet"
+                            aria-label="@L["變更 {0} 的角色", member.Email]">@L["變更角色"]</button>
+                }
+            </text>,
+        },
+    ];
 }

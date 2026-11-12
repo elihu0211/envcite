@@ -24,7 +24,7 @@ else if (_tenants is null)
 }
 else
 {
-    <section class="ep-card ep-table-card" aria-label="@L["租戶清單"]">
+    <SectionCard Class="ep-table-card" Label="@L["租戶清單"]">
         <div class="ep-toolbar" role="search">
             <MudTextField @bind-Value="_search" Immediate="true" Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense"
                           Placeholder="@L["搜尋名稱或識別碼"]" aria-label="@L["搜尋租戶"]"
@@ -79,7 +79,7 @@ else
                 <MudTablePager PageSizeOptions="new[] { 25, 50, 100 }" RowsPerPageString="@L["每頁筆數"]" InfoFormat="{first_item}–{last_item}／{all_items}" />
             </PagerContent>
         </MudTable>
-    </section>
+    </SectionCard>
 }
 
 @code {

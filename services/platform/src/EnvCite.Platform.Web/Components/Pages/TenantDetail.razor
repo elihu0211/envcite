@@ -4,356 +4,319 @@
 
 <DocumentTitle Text="@(_tenant?.Identifier ?? L["租戶"])" />
 
-@if (Error is not null)
-{
-    <MudAlert Severity="Severity.Error" Class="mb-4">
-        @L["載入租戶失敗。"]
-        <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="LoadAsync">@L["重試"]</MudButton>
-    </MudAlert>
-}
-else if (_loading)
-{
-    <Skeleton Kind="detail" Label="@L["載入租戶中"]" />
-}
-else if (_tenant is null)
-{
-    <EmptyState Icon="@Icons.Material.Outlined.SearchOff" Title="@L["找不到這個租戶"]" Description="@L["它可能不存在，或識別有誤。"]">
+<LoadedView Loading="Loading" Error="@Error" Missing="@(_tenant is null)" SkeletonKind="detail"
+            FailedText="@L["載入租戶失敗。"]" LoadingLabel="@L["載入租戶中"]" OnRetry="LoadAsync"
+            MissingIcon="@Icons.Material.Outlined.SearchOff" MissingTitle="@L["找不到這個租戶"]" MissingDescription="@L["它可能不存在，或識別有誤。"]">
+    <MissingActions>
         <MudButton Variant="Variant.Text" Href="/ui/tenants">@L["回到租戶清單"]</MudButton>
-    </EmptyState>
-}
-else
-{
-    <nav class="ep-breadcrumb" aria-label="@L["位置"]"><a href="/ui/tenants">@L["租戶"]</a> / @_tenant.Identifier</nav>
-    <PageHeader Title="@(_tenant.Name ?? _tenant.Identifier)">
-        <Actions>
-            <MudButton Variant="Variant.Outlined" OnClick="AddMemberAsync">@L["新增成員"]</MudButton>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="IssueKeyAsync">@L["簽發新 key"]</MudButton>
-        </Actions>
-    </PageHeader>
-    <p class="ep-meta">
-        <code class="ep-mono">@_tenant.Identifier</code>
-        @if (_tenant.Plan is { } plan)
+    </MissingActions>
+    <ChildContent>
+        @{ var tenant = _tenant!; }
+        <nav class="ep-breadcrumb" aria-label="@L["位置"]"><a href="/ui/tenants">@L["租戶"]</a> / @tenant.Identifier</nav>
+        <PageHeader Title="@(tenant.Name ?? tenant.Identifier)">
+            <Actions>
+                <MudButton Variant="Variant.Outlined" OnClick="AddMemberAsync">@L["新增成員"]</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="IssueKeyAsync">@L["簽發新 key"]</MudButton>
+            </Actions>
+        </PageHeader>
+        <p class="ep-meta">
+            <code class="ep-mono">@tenant.Identifier</code>
+            @if (tenant.Plan is { } plan)
+            {
+                <StatusBadge Tone="success">@plan</StatusBadge>
+            }
+            else
+            {
+                <StatusBadge Tone="warning">@L["沒有方案"]</StatusBadge>
+            }
+            @if (tenant.AiAnswer)
+            {
+                <StatusBadge Tone="info">@L["AI 回答"]</StatusBadge>
+            }
+        </p>
+
+        @if (Notice is not null)
         {
-            <StatusBadge Tone="success">@plan</StatusBadge>
+            <MudAlert Severity="@NoticeSeverity" role="status" ShowCloseIcon="true" CloseIconClicked="() => ClearNotice()">@Notice</MudAlert>
         }
-        else
-        {
-            <StatusBadge Tone="warning">@L["沒有方案"]</StatusBadge>
-        }
-        @if (_tenant.AiAnswer)
-        {
-            <StatusBadge Tone="info">@L["AI 回答"]</StatusBadge>
-        }
-    </p>
 
-    @if (Notice is not null)
-    {
-        <MudAlert Severity="@NoticeSeverity" role="status" ShowCloseIcon="true" CloseIconClicked="() => ClearNotice()">@Notice</MudAlert>
-    }
+        @* 存取網址：不論有沒有成員、有沒有 key 都看得到（成員區的空狀態會收掉那一區的狀態文字，所以不能放在成員區）。 *@
+        <SectionCard Id="links-heading" Title="@L["存取網址"]">
+            <div class="ep-copy-group">
+                <CopyButton Id="portal-login-url" Label="@L["複製登入網址"]" Value="@PortalLoginUrl" />
+                <CopyButton Id="api-base-url" Label="@L["複製 API Base URL"]" Value="@ApiBaseUrl" />
+            </div>
+        </SectionCard>
 
-    @* 存取網址：不論有沒有成員、有沒有 key 都看得到（成員區的空狀態會收掉那一區的狀態文字，所以不能放在成員區）。 *@
-    <section class="ep-card" aria-labelledby="links-heading">
-        <h2 id="links-heading" class="ep-section-title">@L["存取網址"]</h2>
-        <div class="ep-copy-group">
-            <CopyButton Id="portal-login-url" Label="@L["複製登入網址"]" Value="@PortalLoginUrl" />
-            <CopyButton Id="api-base-url" Label="@L["複製 API Base URL"]" Value="@ApiBaseUrl" />
-        </div>
-    </section>
+        <StatGrid Items="Stats" />
 
-    <section class="ep-stats" aria-label="@L["摘要"]">
-        <div class="ep-stat">
-            <span class="ep-stat-label">@L["呼叫次數"]</span>
-            <span class="ep-stat-value">@TotalUsageCalls.ToString("N0")</span>
-            <span class="ep-stat-note">@UsageRangeLabel</span>
-        </div>
-        <div class="ep-stat">
-            <span class="ep-stat-label">@L["計量單位"]</span>
-            <span class="ep-stat-value">@TotalUsageUnits.ToString("N0")</span>
-            <span class="ep-stat-note">@UsageRangeLabel</span>
-        </div>
-        <div class="ep-stat">
-            <span class="ep-stat-label">@L["有效 API keys"]</span>
-            <span class="ep-stat-value">@_keys.Count(k => k.RevokedAt is null && (k.ExpiresAt is not { } e || e > DateTimeOffset.UtcNow))</span>
-            <span class="ep-stat-note">@L["共 {0} 把", _keys.Count]</span>
-        </div>
-        <div class="ep-stat">
-            <span class="ep-stat-label">@L["成員"]</span>
-            <span class="ep-stat-value">@_members.Count(m => !m.Disabled)</span>
-            <span class="ep-stat-note">@(_members.Count(m => m.MustChangePassword && !m.Disabled) is var pending && pending > 0 ? L["{0} 位待改密碼", pending] : L["都已啟用"])</span>
-        </div>
-    </section>
+        <div class="ep-columns">
+            <div class="ep-stack">
+                <SectionCard Id="usage-heading" Title="@L["用量與計量"]" Class="ep-table-card" Wrap="true">
+                    <Actions>
+                        <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Class="ep-usage-filter">
+                            <MudButton Color="@(_usageDays == 0 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(0)">@L["全部"]</MudButton>
+                            <MudButton Color="@(_usageDays == 30 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(30)">@L["近 30 天"]</MudButton>
+                            <MudButton Color="@(_usageDays == 7 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(7)">@L["近 7 天"]</MudButton>
+                        </MudButtonGroup>
+                    </Actions>
+                    <ChildContent>
+                        @if (_usage.Count == 0)
+                        {
+                            <EmptyState Icon="@Icons.Material.Outlined.Insights" Title="@L["還沒有使用紀錄"]" Description="@L["租戶以 API key 呼叫 /v2 後，用量會出現在這裡。"]" />
+                        }
+                        else
+                        {
+                            <DataTable Items="_usage" Columns="UsageColumns" Label="@L["用量與計量"]" />
+                        }
+                    </ChildContent>
+                </SectionCard>
 
-    <div class="ep-columns">
-        <div class="ep-stack">
-            <section class="ep-card ep-table-card" aria-labelledby="usage-heading">
-                <div class="ep-toolbar ep-toolbar-wrap">
-                    <h2 id="usage-heading" class="ep-section-title">@L["用量與計量"]</h2>
-                    <MudSpacer />
-                    <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Class="ep-usage-filter">
-                        <MudButton Color="@(_usageDays == 0 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(0)">@L["全部"]</MudButton>
-                        <MudButton Color="@(_usageDays == 30 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(30)">@L["近 30 天"]</MudButton>
-                        <MudButton Color="@(_usageDays == 7 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(7)">@L["近 7 天"]</MudButton>
-                    </MudButtonGroup>
-                </div>
-                @if (_usage.Count == 0)
-                {
-                    <EmptyState Icon="@Icons.Material.Outlined.Insights" Title="@L["還沒有使用紀錄"]" Description="@L["租戶以 API key 呼叫 /v2 後，用量會出現在這裡。"]" />
-                }
-                else
-                {
-                    <MudSimpleTable Dense="true" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="@L["用量與計量"]">
-                        <thead>
-                            <tr>
-                                <th scope="col">@L["操作"]</th>
-                                <th scope="col">@L["分類"]</th>
-                                <th scope="col">@L["呼叫次數"]</th>
-                                <th scope="col">@L["計量單位"]</th>
-                                <th scope="col">@L["最近呼叫（台北）"]</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in _usage)
-                            {
-                                <tr>
-                                    <td class="ep-keep">
-                                        <div>@UsageLabels.Operation(item.Operation)</div>
-                                        <code class="ep-mono ep-secondary">@item.Operation</code>
-                                    </td>
-                                    <td data-label="@L["分類"]">@UsageLabels.Category(item.Operation)</td>
-                                    <td data-label="@L["呼叫次數"]" class="ep-num">@item.Calls.ToString("N0")</td>
-                                    <td data-label="@L["計量單位"]" class="ep-num">@item.Units.ToString("N0") @UsageLabels.UnitName(item.Operation)</td>
-                                    <td data-label="@L["最近呼叫"]">
-                                        @if (item.LastOccurredAt is { } last)
-                                        {
-                                            <time datetime="@TaipeiTime.Full(last)">@TaipeiTime.Format(last)</time>
-                                        }
-                                        else
-                                        {
-                                            <span>—</span>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </MudSimpleTable>
-                }
-            </section>
-
-            <section class="ep-card ep-table-card" aria-labelledby="keys-heading">
-                <div class="ep-toolbar">
-                    <h2 id="keys-heading" class="ep-section-title">API keys</h2>
-                </div>
-                @if (_keys.Count == 0)
-                {
-                    <EmptyState Icon="@Icons.Material.Outlined.VpnKey" Title="@L["還沒有 API key"]" Description="@L["簽發第一把 key 給客戶，他們才能呼叫 /v2。"]" />
-                }
-                else
-                {
-                    <MudSimpleTable Dense="true" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="API keys">
-                        <thead>
-                            <tr>
-                                <th scope="col">@L["名稱"]</th>
-                                <th scope="col">@L["前綴"]</th>
-                                <th scope="col">@L["建立（台北）"]</th>
-                                <th scope="col">@L["狀態"]</th>
-                                <th scope="col"><span class="ep-visually-hidden">@L["操作"]</span></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var key in _keys)
-                            {
-                                <tr>
-                                    <td class="ep-keep">@key.Name</td>
-                                    <td data-label="@L["前綴"]"><code class="ep-mono">@key.Prefix</code></td>
-                                    <td data-label="@L["建立"]"><time datetime="@TaipeiTime.Full(key.CreatedAt)">@TaipeiTime.Format(key.CreatedAt)</time></td>
-                                    <td data-label="@L["狀態"]">
-                                        @if (key.RevokedAt is not null)
-                                        {
-                                            <StatusBadge>@L["已撤銷"]</StatusBadge>
-                                        }
-                                        else if (key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow)
-                                        {
-                                            <StatusBadge Tone="warning">@L["已過期"]</StatusBadge>
-                                        }
-                                        else
-                                        {
-                                            <StatusBadge Tone="success">@L["有效"]</StatusBadge>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (key.RevokedAt is null)
-                                        {
-                                            <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" Disabled="Busy"
-                                                       aria-label="@L["撤銷 {0}", key.Name]" OnClick="() => RevokeKeyAsync(key)">@L["撤銷"]</MudButton>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </MudSimpleTable>
-                }
-            </section>
-
-            <section class="ep-card ep-table-card" aria-labelledby="members-heading">
-                <div class="ep-toolbar">
-                    <h2 id="members-heading" class="ep-section-title">@L["成員（客戶入口）"]</h2>
-                </div>
-                @if (_members.Count == 0)
-                {
-                    <EmptyState Icon="@Icons.Material.Outlined.Group" Title="@L["還沒有成員"]" Description="@L["新增第一位成員，客戶才能登入入口。"]" />
-                }
-                else
-                {
-                    <MudSimpleTable Dense="true" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="@L["成員"]">
-                        <thead>
-                            <tr>
-                                <th scope="col">@L["電子郵件"]</th>
-                                <th scope="col">@L["角色"]</th>
-                                <th scope="col">@L["狀態"]</th>
-                                <th scope="col"><span class="ep-visually-hidden">@L["操作"]</span></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var member in _members)
-                            {
-                                <tr>
-                                    <td class="ep-keep">@member.Email@(member.DisplayName is null ? "" : $"（{member.DisplayName}）")</td>
-                                    <td data-label="@L["角色"]">@PortalLabels.Role(member.Role)</td>
-                                    <td data-label="@L["狀態"]">
-                                        @if (member.Disabled)
-                                        {
-                                            <StatusBadge>@L["已停用"]</StatusBadge>
-                                        }
-                                        else if (member.LockedOut)
-                                        {
-                                            <StatusBadge Tone="error">@L["已鎖定"]</StatusBadge>
-                                        }
-                                        else if (member.Invited)
-                                        {
-                                            <StatusBadge Tone="warning">@L["待啟用"]</StatusBadge>
-                                        }
-                                        else if (member.MustChangePassword)
-                                        {
-                                            <StatusBadge Tone="warning">@L["待改密碼"]</StatusBadge>
-                                        }
-                                        else
-                                        {
-                                            <StatusBadge Tone="success">@L["正常"]</StatusBadge>
-                                        }
-                                        @if (!member.EmailConfirmed && !member.Invited)
-                                        {
-                                            <StatusBadge Tone="warning">@L["信箱未驗證"]</StatusBadge>
-                                        }
-                                        @if (member.TwoFactorEnabled)
-                                        {
-                                            <StatusBadge Tone="info">@L["兩步驟"]</StatusBadge>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (CanResend(member))
-                                        {
-                                            <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
-                                                       aria-label="@(member.Invited ? L["重寄邀請給 {0}", member.Email] : L["寄驗證信給 {0}", member.Email])"
-                                                       OnClick="() => ResendInvitationAsync(member)">@(member.Invited ? L["重寄邀請"] : L["寄驗證信"])</MudButton>
-                                        }
-                                        <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
-                                                   aria-label="@L["重設 {0} 的密碼", member.Email]" OnClick="() => ResetPasswordAsync(member)">@L["重設密碼"]</MudButton>
-                                        <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
-                                                   aria-label="@(member.Disabled ? L["重新啟用 {0}", member.Email] : L["停用 {0}", member.Email])"
-                                                   OnClick="() => SetDisabledAsync(member, !member.Disabled)">@(member.Disabled ? L["重新啟用"] : L["停用"])</MudButton>
-                                        @if (member.TwoFactorEnabled)
-                                        {
-                                            <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
-                                                       aria-label="@L["重設 {0} 的兩步驟驗證", member.Email]" OnClick="() => ResetTwoFactorAsync(member)">@L["重設兩步驟"]</MudButton>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </MudSimpleTable>
-                }
-            </section>
-        </div>
-
-        <div class="ep-stack">
-            <section class="ep-card" aria-labelledby="plan-heading">
-                <h2 id="plan-heading" class="ep-section-title">@L["方案"]</h2>
-                <p class="ep-page-description">@L["沒有方案時資料端點回 402。變更立即生效並寫入稽核。"]</p>
-                <MudSelect T="string" @bind-Value="_selectedPlan" Label="@L["方案"]" Variant="Variant.Outlined" Margin="Margin.Dense"
-                           Placeholder="@(_tenant.Plan is null ? L["尚未指派"].Value : null)">
-                    @foreach (var plan in _plans)
+                <SectionCard Id="keys-heading" Title="API keys" Class="ep-table-card" Toolbar="true">
+                    @if (_keys.Count == 0)
                     {
-                        <MudSelectItem T="string" Value="@plan.Name">@PlanLabel(plan)</MudSelectItem>
-                    }
-                </MudSelect>
-                <div class="ep-inline-form">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SavePlanAsync"
-                               Disabled="@(Busy || _selectedPlan is null || _selectedPlan == _tenant.Plan)">
-                        @(_tenant.Plan is null ? L["指派方案"] : L["變更方案"])
-                    </MudButton>
-                    @if (_tenant.Plan is not null)
-                    {
-                        <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="RemovePlanAsync" Disabled="Busy">@L["移除方案"]</MudButton>
-                    }
-                </div>
-                <p class="ep-status" role="status">
-                    @if (_tenant.Plan is { } current)
-                    {
-                        <span>@L["目前："]<strong>@current</strong></span>
+                        <EmptyState Icon="@Icons.Material.Outlined.VpnKey" Title="@L["還沒有 API key"]" Description="@L["簽發第一把 key 給客戶，他們才能呼叫 /v2。"]" />
                     }
                     else
                     {
-                        <span>@L["目前沒有方案。"]</span>
+                        <DataTable Items="_keys" Columns="KeyColumns" Label="API keys" />
                     }
-                </p>
-            </section>
+                </SectionCard>
 
-            <section class="ep-card" aria-labelledby="ai-heading">
-                <h2 id="ai-heading" class="ep-section-title">@L["AI 回答"]</h2>
-                <p class="ep-page-description">@L["成員的提問與相關條文會送到外部模型服務。需租戶同意；方案移除時一併關閉。"]</p>
-                <div class="ep-inline-form">
-                    <MudButton Variant="Variant.Filled" Color="@(_tenant.AiAnswer ? Color.Default : Color.Primary)" OnClick="ToggleAiAnswerAsync"
-                               Disabled="@(Busy || _tenant.Plan is null)">
-                        @(_tenant.AiAnswer ? L["關閉 AI 回答"] : L["開啟 AI 回答"])
-                    </MudButton>
-                </div>
-                <p class="ep-status" role="status">
-                    <span>@L["目前："]<strong>@(_tenant.AiAnswer ? L["已開啟"] : L["未開啟"])</strong></span>
-                    @if (_tenant.Plan is null)
+                <SectionCard Id="members-heading" Title="@L["成員（客戶入口）"]" Class="ep-table-card" Toolbar="true">
+                    @if (_members.Count == 0)
                     {
-                        <span>@L["（先指派方案。）"]</span>
+                        <EmptyState Icon="@Icons.Material.Outlined.Group" Title="@L["還沒有成員"]" Description="@L["新增第一位成員，客戶才能登入入口。"]" />
                     }
-                    else if (!Availability.Available)
+                    else
                     {
-                        <span>@L["（這個環境沒有設定模型端點。）"]</span>
+                        <DataTable Items="_members" Columns="MemberColumns" Label="@L["成員"]" />
                     }
-                </p>
-            </section>
+                </SectionCard>
+            </div>
 
-            <section class="ep-card" aria-labelledby="audit-heading">
-                <div class="ep-toolbar">
-                    <h2 id="audit-heading" class="ep-section-title">@L["最近的稽核事件"]</h2>
-                    <MudSpacer />
-                    <a href="@($"/ui/audit?tenant={Uri.EscapeDataString(_tenant.Id)}")">@L["全部"]</a>
-                </div>
-                @if (_recent.Count == 0)
+            <div class="ep-stack">
+                <SectionCard Id="plan-heading" Title="@L["方案"]">
+                    <p class="ep-page-description">@L["沒有方案時資料端點回 402。變更立即生效並寫入稽核。"]</p>
+                    <MudSelect T="string" @bind-Value="_selectedPlan" Label="@L["方案"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                               Placeholder="@(tenant.Plan is null ? L["尚未指派"].Value : null)">
+                        @foreach (var plan in _plans)
+                        {
+                            <MudSelectItem T="string" Value="@plan.Name">@PlanLabel(plan)</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <div class="ep-inline-form">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SavePlanAsync"
+                                   Disabled="@(Busy || _selectedPlan is null || _selectedPlan == tenant.Plan)">
+                            @(tenant.Plan is null ? L["指派方案"] : L["變更方案"])
+                        </MudButton>
+                        @if (tenant.Plan is not null)
+                        {
+                            <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="RemovePlanAsync" Disabled="Busy">@L["移除方案"]</MudButton>
+                        }
+                    </div>
+                    <p class="ep-status" role="status">
+                        @if (tenant.Plan is { } current)
+                        {
+                            <span>@L["目前："]<strong>@current</strong></span>
+                        }
+                        else
+                        {
+                            <span>@L["目前沒有方案。"]</span>
+                        }
+                    </p>
+                </SectionCard>
+
+                <SectionCard Id="ai-heading" Title="@L["AI 回答"]">
+                    <p class="ep-page-description">@L["成員的提問與相關條文會送到外部模型服務。需租戶同意；方案移除時一併關閉。"]</p>
+                    <div class="ep-inline-form">
+                        <MudButton Variant="Variant.Filled" Color="@(tenant.AiAnswer ? Color.Default : Color.Primary)" OnClick="ToggleAiAnswerAsync"
+                                   Disabled="@(Busy || tenant.Plan is null)">
+                            @(tenant.AiAnswer ? L["關閉 AI 回答"] : L["開啟 AI 回答"])
+                        </MudButton>
+                    </div>
+                    <p class="ep-status" role="status">
+                        <span>@L["目前："]<strong>@(tenant.AiAnswer ? L["已開啟"] : L["未開啟"])</strong></span>
+                        @if (tenant.Plan is null)
+                        {
+                            <span>@L["（先指派方案。）"]</span>
+                        }
+                        else if (!Availability.Available)
+                        {
+                            <span>@L["（這個環境沒有設定模型端點。）"]</span>
+                        }
+                    </p>
+                </SectionCard>
+
+                <SectionCard Id="audit-heading" Title="@L["最近的稽核事件"]">
+                    <Actions>
+                        <a href="@($"/ui/audit?tenant={Uri.EscapeDataString(tenant.Id)}")">@L["全部"]</a>
+                    </Actions>
+                    <ChildContent>
+                        @if (_recent.Count == 0)
+                        {
+                            <p class="ep-page-description">@L["還沒有事件。"]</p>
+                        }
+                        else
+                        {
+                            <ul class="ep-list" aria-label="@L["最近的稽核事件，新到舊"]">
+                                @foreach (var item in _recent)
+                                {
+                                    <li>
+                                        <StatusBadge Tone="@AuditLabels.ActionTone(item.Action)">@AuditLabels.Action(item.Action)</StatusBadge>
+                                        <span class="ep-keep">@AuditLabels.Actor(item.ActorType, item.ActorId)</span>
+                                        <time class="ep-secondary" datetime="@TaipeiTime.Full(item.OccurredAt)">@TaipeiTime.Format(item.OccurredAt)</time>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </ChildContent>
+                </SectionCard>
+            </div>
+        </div>
+    </ChildContent>
+</LoadedView>
+
+@code {
+    private IReadOnlyList<StatItem> Stats =>
+    [
+        new(L["呼叫次數"], TotalUsageCalls.ToString("N0"), UsageRangeLabel),
+        new(L["計量單位"], TotalUsageUnits.ToString("N0"), UsageRangeLabel),
+        new(L["有效 API keys"], _keys.Count(k => k.RevokedAt is null && (k.ExpiresAt is not { } e || e > DateTimeOffset.UtcNow)).ToString(CultureInfo.CurrentCulture),
+            L["共 {0} 把", _keys.Count]),
+        new(L["成員"], _members.Count(m => !m.Disabled).ToString(CultureInfo.CurrentCulture),
+            _members.Count(m => m.MustChangePassword && !m.Disabled) is var pending && pending > 0 ? L["{0} 位待改密碼", pending] : L["都已啟用"]),
+    ];
+
+    private IReadOnlyList<ColumnDef<TenantUsageSummary>> UsageColumns =>
+    [
+        new()
+        {
+            Title = L["操作"], Class = "ep-keep", Labeled = false,
+            Cell = item => @<text><div>@UsageLabels.Operation(item.Operation)</div><code class="ep-mono ep-secondary">@item.Operation</code></text>,
+        },
+        new() { Title = L["分類"], Cell = item => @<text>@UsageLabels.Category(item.Operation)</text> },
+        new() { Title = L["呼叫次數"], Class = "ep-num", Cell = item => @<text>@item.Calls.ToString("N0")</text> },
+        new() { Title = L["計量單位"], Class = "ep-num", Cell = item => @<text>@item.Units.ToString("N0") @UsageLabels.UnitName(item.Operation)</text> },
+        new()
+        {
+            Title = L["最近呼叫（台北）"], Label = L["最近呼叫"],
+            Cell = item => @<text>
+                @if (item.LastOccurredAt is { } last)
                 {
-                    <p class="ep-page-description">@L["還沒有事件。"]</p>
+                    <time datetime="@TaipeiTime.Full(last)">@TaipeiTime.Format(last)</time>
                 }
                 else
                 {
-                    <ul class="ep-list" aria-label="@L["最近的稽核事件，新到舊"]">
-                        @foreach (var item in _recent)
-                        {
-                            <li>
-                                <StatusBadge Tone="@AuditLabels.ActionTone(item.Action)">@AuditLabels.Action(item.Action)</StatusBadge>
-                                <span class="ep-keep">@AuditLabels.Actor(item.ActorType, item.ActorId)</span>
-                                <time class="ep-secondary" datetime="@TaipeiTime.Full(item.OccurredAt)">@TaipeiTime.Format(item.OccurredAt)</time>
-                            </li>
-                        }
-                    </ul>
+                    <span>—</span>
                 }
-            </section>
-        </div>
-    </div>
+            </text>,
+        },
+    ];
+
+    private IReadOnlyList<ColumnDef<ApiKeyInfo>> KeyColumns =>
+    [
+        new() { Title = L["名稱"], Class = "ep-keep", Labeled = false, Cell = key => @<text>@key.Name</text> },
+        new() { Title = L["前綴"], Cell = key => @<text><code class="ep-mono">@key.Prefix</code></text> },
+        new()
+        {
+            Title = L["建立（台北）"], Label = L["建立"],
+            Cell = key => @<text><time datetime="@TaipeiTime.Full(key.CreatedAt)">@TaipeiTime.Format(key.CreatedAt)</time></text>,
+        },
+        new()
+        {
+            Title = L["狀態"],
+            Cell = key => @<text>
+                @if (key.RevokedAt is not null)
+                {
+                    <StatusBadge>@L["已撤銷"]</StatusBadge>
+                }
+                else if (key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow)
+                {
+                    <StatusBadge Tone="warning">@L["已過期"]</StatusBadge>
+                }
+                else
+                {
+                    <StatusBadge Tone="success">@L["有效"]</StatusBadge>
+                }
+            </text>,
+        },
+        new()
+        {
+            Title = L["操作"], HideTitle = true, Labeled = false,
+            Cell = key => @<text>
+                @if (key.RevokedAt is null)
+                {
+                    <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" Disabled="Busy"
+                               aria-label="@L["撤銷 {0}", key.Name]" OnClick="() => RevokeKeyAsync(key)">@L["撤銷"]</MudButton>
+                }
+            </text>,
+        },
+    ];
+
+    private IReadOnlyList<ColumnDef<MemberInfo>> MemberColumns =>
+    [
+        new()
+        {
+            Title = L["電子郵件"], Class = "ep-keep", Labeled = false,
+            Cell = member => @<text>@member.Email@(member.DisplayName is null ? "" : $"（{member.DisplayName}）")</text>,
+        },
+        new() { Title = L["角色"], Cell = member => @<text>@PortalLabels.Role(member.Role)</text> },
+        new()
+        {
+            Title = L["狀態"],
+            Cell = member => @<text>
+                @if (member.Disabled)
+                {
+                    <StatusBadge>@L["已停用"]</StatusBadge>
+                }
+                else if (member.LockedOut)
+                {
+                    <StatusBadge Tone="error">@L["已鎖定"]</StatusBadge>
+                }
+                else if (member.Invited)
+                {
+                    <StatusBadge Tone="warning">@L["待啟用"]</StatusBadge>
+                }
+                else if (member.MustChangePassword)
+                {
+                    <StatusBadge Tone="warning">@L["待改密碼"]</StatusBadge>
+                }
+                else
+                {
+                    <StatusBadge Tone="success">@L["正常"]</StatusBadge>
+                }
+                @if (!member.EmailConfirmed && !member.Invited)
+                {
+                    <StatusBadge Tone="warning">@L["信箱未驗證"]</StatusBadge>
+                }
+                @if (member.TwoFactorEnabled)
+                {
+                    <StatusBadge Tone="info">@L["兩步驟"]</StatusBadge>
+                }
+            </text>,
+        },
+        new()
+        {
+            Title = L["操作"], HideTitle = true, Labeled = false,
+            Cell = member => @<text>
+                @if (CanResend(member))
+                {
+                    <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
+                               aria-label="@(member.Invited ? L["重寄邀請給 {0}", member.Email] : L["寄驗證信給 {0}", member.Email])"
+                               OnClick="() => ResendInvitationAsync(member)">@(member.Invited ? L["重寄邀請"] : L["寄驗證信"])</MudButton>
+                }
+                <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
+                           aria-label="@L["重設 {0} 的密碼", member.Email]" OnClick="() => ResetPasswordAsync(member)">@L["重設密碼"]</MudButton>
+                <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
+                           aria-label="@(member.Disabled ? L["重新啟用 {0}", member.Email] : L["停用 {0}", member.Email])"
+                           OnClick="() => SetDisabledAsync(member, !member.Disabled)">@(member.Disabled ? L["重新啟用"] : L["停用"])</MudButton>
+                @if (member.TwoFactorEnabled)
+                {
+                    <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
+                               aria-label="@L["重設 {0} 的兩步驟驗證", member.Email]" OnClick="() => ResetTwoFactorAsync(member)">@L["重設兩步驟"]</MudButton>
+                }
+            </text>,
+        },
+    ];
 }

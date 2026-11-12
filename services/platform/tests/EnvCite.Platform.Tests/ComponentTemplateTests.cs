@@ -14,6 +14,7 @@ public static partial class ComponentTemplateTests
     {
         "FormAlert", "PostForm", "FormField", "SubmitButton", "PageHeading", "DocumentTitle",
         "PageHeader", "StatusPage", "DialogError", "DialogSubmitActions",
+        "SectionCard", "StatGrid", "StatTile", "DataTable", "SelectField", "OptionSelect", "LoadedView",
     };
 
     // 標記只在模板裡寫：頁面與對話框用 <FormAlert>、<PostForm>、<FormField>、<SubmitButton>、<PageHeading>、<DocumentTitle>、<DialogError>。
@@ -26,6 +27,13 @@ public static partial class ComponentTemplateTests
     [InlineData("<button type=\"submit\" class=\"ep-btn ep-btn-primary\"", "<SubmitButton>")]
     [InlineData("class=\"ep-page-title\"", "<PageHeading> 或 <PageHeader>")]
     [InlineData("<MudAlert Severity=\"Severity.Error\" Class=\"mt-3\" role=\"alert\"", "<DialogError>")]
+    [InlineData("<section class=\"ep-card", "<SectionCard>")]
+    [InlineData("<div class=\"ep-card", "<SectionCard>")]
+    [InlineData("class=\"ep-stats\"", "<StatGrid>")]
+    [InlineData("class=\"ep-stat\"", "<StatTile>（經 <StatGrid>）")]
+    [InlineData("<table class=\"ep-plain-table\"", "<DataTable Plain=\"true\">")]
+    [InlineData("<select ", "<OptionSelect>（表單欄位用 <SelectField>）")]
+    [InlineData("<InputSelect", "<SelectField>")]
     public static void TemplateMarkupIsWrittenOnlyInTheTemplates(string markup, string useInstead)
     {
         var offenders = Razor()
@@ -48,6 +56,8 @@ public static partial class ComponentTemplateTests
     [InlineData(@"\[Parameter\][^\n]*string Tenant\b", "PortalPageBase")]
     [InlineData(@"\[CascadingParameter\][^\n]*IMudDialogInstance", "DialogBase")]
     [InlineData(@"\bbool _busy\b", "FormDialogBase／AdminPageBase 的 Busy")]
+    [InlineData(@"\bbool _loading\b", "PageBase.Loading 與 LoadingAsync")]
+    [InlineData(@"\.ShowMessageBoxAsync\(", "AdminPageBase.ConfirmAsync")]
     public static void WhatABaseProvidesIsNotDeclaredAgain(string pattern, string provider)
     {
         var offenders = Razor().Concat(CodeBehind())

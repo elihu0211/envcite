@@ -1,0 +1,24 @@
+@* 摘要磚的一格。可點時整格是連結（a），否則是 div；標記只在這裡寫，頁面用 <StatGrid> 排一排。 *@
+@if (Item.Href is { } href)
+{
+    <a class="ep-stat" href="@href">@Body</a>
+}
+else
+{
+    <div class="ep-stat">@Body</div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public StatItem Item { get; set; } = default!;
+
+    private RenderFragment Body =>
+        @<text>
+            <span class="ep-stat-label">@Item.Label</span>
+            <span class="ep-stat-value">@Item.Value</span>
+            @if (!string.IsNullOrEmpty(Item.Note))
+            {
+                <span class="ep-stat-note">@Item.Note</span>
+            }
+        </text>;
+}

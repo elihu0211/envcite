@@ -36,6 +36,13 @@ public abstract class AdminPageBase : PageBase
 
     protected void ClearNotice() => Notice = null;
 
+    /// <summary>
+    /// 不可逆或影響他人的動作之前的確認對話框：標題、說明與確定鍵的字由呼叫端給，取消鍵與版面統一在這裡。
+    /// 回傳 true 才繼續；關掉對話框或按取消都是 false。
+    /// </summary>
+    protected async Task<bool> ConfirmAsync(string title, string message, string yesText) =>
+        await Dialogs.ShowMessageBoxAsync(title, message, yesText: yesText, cancelText: L["取消"]) == true;
+
     protected async Task RunAsync(Func<Task> action)
     {
         if (Busy)
