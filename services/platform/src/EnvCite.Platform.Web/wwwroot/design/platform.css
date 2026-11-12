@@ -222,8 +222,7 @@ h1[tabindex="-1"]:focus-visible {
     cursor: pointer;
 }
 
-.ep-lang-option[aria-current="true"],
-.ep-lang-option[aria-pressed="true"] {
+.ep-lang-option[aria-current="true"] {
     color: var(--ep-link);
     font-weight: var(--ep-label-l-weight);
 }
@@ -232,10 +231,6 @@ h1[tabindex="-1"]:focus-visible {
     .ep-lang-option:hover {
         background: color-mix(in srgb, var(--ep-text) 6%, transparent);
     }
-}
-
-html[data-js] .ep-menu .ep-theme {
-    display: flex;
 }
 
 .ep-menu .ep-lang {

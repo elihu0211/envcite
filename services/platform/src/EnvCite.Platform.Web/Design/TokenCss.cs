@@ -13,22 +13,19 @@ public static class TokenCss
     {
         var css = new StringBuilder();
 
-        // 淺色是預設。深色在兩種情況下套上同一組變數：使用者選了「深色」（:root[data-theme="dark"]），或使用者沒指定、
-        // 系統是深色（prefers-color-scheme，且沒選「淺色」）。兩處的內容由同一個函式產生，只此一份。
-        // color-scheme 讓瀏覽器替表單控制項、捲軸、選取色套對應的外觀；預設 light dark 跟隨系統，明確選了就鎖定。
+        // 淺色是預設。深色只在瀏覽器／系統是深色時（prefers-color-scheme）套上同一組變數：外觀只跟隨系統，
+        // 沒有手動選項，所以 <html> 上不需要任何主題屬性。選擇器用 html:root，特異度高於 MudBlazor 在 :root 上的規則，不論先後都贏。
+        // color-scheme: light dark 讓瀏覽器替表單控制項、捲軸、選取色套對應的外觀。
         css.Append(":root{").Append(Shared()).Append(Colors(DesignTokens.Light)).Append(Elevation(DesignTokens.Elevation)).Append("color-scheme:light dark;}");
-        var dark = Colors(DesignTokens.Dark) + Elevation(DesignTokens.ElevationDark) + MudColors(DesignTokens.Dark) + "color-scheme:dark;";
-        css.Append("@media (prefers-color-scheme:dark){:root:not([data-theme=\"light\"]){").Append(dark).Append("}}");
-        css.Append(":root[data-theme=\"dark\"]{").Append(dark).Append('}');
-        css.Append(":root[data-theme=\"light\"]{color-scheme:light;}");
+        var dark = Colors(DesignTokens.Dark) + Elevation(DesignTokens.ElevationDark) + MudColors(DesignTokens.Dark);
+        css.Append("@media (prefers-color-scheme:dark){html:root{").Append(dark).Append("}}");
 
         // 使用者偏好集中在 token 這一層，不在每個元件各寫一份：要較高對比，髮絲線與次要文字加深到控制項與正文的程度
         // （兩套主題各用自己的那一對）；要減少動態，位移與縮放歸零，元件只剩淡入淡出（第三方元件的動畫在樣式表收掉）。
         var light = DesignTokens.Light;
         var night = DesignTokens.Dark;
         css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more){{:root{{--ep-border-subtle:{light.BorderControl};--ep-text-secondary:{light.Text};}}}}");
-        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more) and (prefers-color-scheme:dark){{:root:not([data-theme=\"light\"]){{--ep-border-subtle:{night.BorderControl};--ep-text-secondary:{night.Text};}}}}");
-        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more){{:root[data-theme=\"dark\"]{{--ep-border-subtle:{night.BorderControl};--ep-text-secondary:{night.Text};}}}}");
+        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more) and (prefers-color-scheme:dark){{html:root{{--ep-border-subtle:{night.BorderControl};--ep-text-secondary:{night.Text};}}}}");
         css.Append("@media (prefers-reduced-motion:reduce){:root{--ep-press-scale:1;--ep-motion-scale:1;--ep-motion-travel:0rem;--ep-motion-travel-sm:0rem;}}");
 
         return css.ToString();
@@ -55,7 +52,7 @@ public static class TokenCss
 
     /// <summary>
     /// MudBlazor 自己用 <c>--mud-palette-*</c> 畫它的元件（表格、輸入框、對話框、選單、開關）。它的主題提供者只會輸出淺色那組，
-    /// 深色時在這裡覆蓋成同一份深色調色盤；特異度比它在 <c>:root</c> 上的規則高，所以不論先後都贏。顏色全部來自
+    /// 深色時在這裡覆蓋成同一份深色調色盤；<c>html:root</c> 的特異度比它在 <c>:root</c> 上的規則高，所以不論先後都贏。顏色全部來自
     /// <see cref="ColorTokens"/>，衍生的明暗階與透明度在這裡算，不另寫色碼。
     /// </summary>
     private static string MudColors(ColorTokens c)
