@@ -29,14 +29,9 @@ internal sealed class OperatorAdmin(
     public async Task<AdminOutcome<IssuedOperatorPassword>> CreateAsync(
         ClaimsPrincipal actor, string email, string? displayName, CancellationToken cancellationToken)
     {
-        if (!EmailAddresses.IsValid(email))
+        if (NewAccountInput.Problem(email, displayName) is { } problem)
         {
-            return AdminOutcome.Invalid<IssuedOperatorPassword>(OutcomeCodes.EmailInvalid);
-        }
-
-        if (displayName is { Length: > 200 })
-        {
-            return AdminOutcome.Invalid<IssuedOperatorPassword>(OutcomeCodes.DisplayNameTooLong);
+            return AdminOutcome.Invalid<IssuedOperatorPassword>(problem);
         }
 
         await using var scope = scopes.CreateAsyncScope();
@@ -53,9 +48,7 @@ internal sealed class OperatorAdmin(
         var created = await users.CreateAsync(user, password);
         if (!created.Succeeded)
         {
-            return created.Errors.Any(e => e.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.DuplicateEmail))
-                ? AdminOutcome.Conflict<IssuedOperatorPassword>(OutcomeCodes.OperatorEmailTaken)
-                : IdentityOutcomes.Rejected<IssuedOperatorPassword>(created.Errors.First());
+            return IdentityOutcomes.CreateFailed<IssuedOperatorPassword>(created, OutcomeCodes.OperatorEmailTaken);
         }
 
         // 稽核的 Detail 只有 email，絕不放密碼（也沒有雜湊）。
@@ -75,14 +68,9 @@ internal sealed class OperatorAdmin(
             return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.MailNotEnabled);
         }
 
-        if (!EmailAddresses.IsValid(email))
+        if (NewAccountInput.Problem(email, displayName) is { } problem)
         {
-            return AdminOutcome.Invalid<OperatorInvitation>(OutcomeCodes.EmailInvalid);
-        }
-
-        if (displayName is { Length: > 200 })
-        {
-            return AdminOutcome.Invalid<OperatorInvitation>(OutcomeCodes.DisplayNameTooLong);
+            return AdminOutcome.Invalid<OperatorInvitation>(problem);
         }
 
         await using var scope = scopes.CreateAsyncScope();
@@ -98,9 +86,7 @@ internal sealed class OperatorAdmin(
         var created = await users.CreateAsync(user);
         if (!created.Succeeded)
         {
-            return created.Errors.Any(e => e.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.DuplicateEmail))
-                ? AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.OperatorEmailTaken)
-                : IdentityOutcomes.Rejected<OperatorInvitation>(created.Errors.First());
+            return IdentityOutcomes.CreateFailed<OperatorInvitation>(created, OutcomeCodes.OperatorEmailTaken);
         }
 
         var delivery = await SendActivationAsync(users, user, invitation: true, cancellationToken);

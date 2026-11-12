@@ -21,19 +21,9 @@ internal sealed class MemberCore(
     public async Task<AdminOutcome<IssuedPassword>> CreateAsync(
         ClaimsPrincipal actor, TenantInfo tenant, string email, string? displayName, string role, CancellationToken cancellationToken)
     {
-        if (!EmailAddresses.IsValid(email))
+        if (NewAccountInput.Problem(email, displayName, role) is { } problem)
         {
-            return AdminOutcome.Invalid<IssuedPassword>(OutcomeCodes.EmailInvalid);
-        }
-
-        if (!CustomerRoles.All.Contains(role))
-        {
-            return AdminOutcome.Invalid<IssuedPassword>(OutcomeCodes.RoleInvalid);
-        }
-
-        if (displayName is { Length: > 200 })
-        {
-            return AdminOutcome.Invalid<IssuedPassword>(OutcomeCodes.DisplayNameTooLong);
+            return AdminOutcome.Invalid<IssuedPassword>(problem);
         }
 
         var user = new ApplicationUser
@@ -49,9 +39,7 @@ internal sealed class MemberCore(
         var created = await users.CreateAsync(user, password);
         if (!created.Succeeded)
         {
-            return created.Errors.Any(e => e.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.DuplicateEmail))
-                ? AdminOutcome.Conflict<IssuedPassword>(OutcomeCodes.MemberEmailTaken)
-                : IdentityOutcomes.Rejected<IssuedPassword>(created.Errors.First());
+            return IdentityOutcomes.CreateFailed<IssuedPassword>(created, OutcomeCodes.MemberEmailTaken);
         }
 
         // 稽核的 Detail 只有 email 與角色，絕不放密碼（也沒有雜湊）。
@@ -79,19 +67,9 @@ internal sealed class MemberCore(
             return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.MailNotEnabled);
         }
 
-        if (!EmailAddresses.IsValid(email))
+        if (NewAccountInput.Problem(email, displayName, role) is { } problem)
         {
-            return AdminOutcome.Invalid<MemberInvitation>(OutcomeCodes.EmailInvalid);
-        }
-
-        if (!CustomerRoles.All.Contains(role))
-        {
-            return AdminOutcome.Invalid<MemberInvitation>(OutcomeCodes.RoleInvalid);
-        }
-
-        if (displayName is { Length: > 200 })
-        {
-            return AdminOutcome.Invalid<MemberInvitation>(OutcomeCodes.DisplayNameTooLong);
+            return AdminOutcome.Invalid<MemberInvitation>(problem);
         }
 
         var user = new ApplicationUser
@@ -106,9 +84,7 @@ internal sealed class MemberCore(
         var created = await users.CreateAsync(user);
         if (!created.Succeeded)
         {
-            return created.Errors.Any(e => e.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.DuplicateEmail))
-                ? AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.MemberEmailTaken)
-                : IdentityOutcomes.Rejected<MemberInvitation>(created.Errors.First());
+            return IdentityOutcomes.CreateFailed<MemberInvitation>(created, OutcomeCodes.MemberEmailTaken);
         }
 
         var delivery = await SendActivationAsync(user, tenant, invitation: true, cancellationToken);
