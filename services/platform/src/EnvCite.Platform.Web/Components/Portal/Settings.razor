@@ -2,10 +2,11 @@
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+@inherits PortalPageBase
 
 @* 客戶入口的個人設定：目前只有外觀，與營運者後台的個人設定（Account/Settings）共用同一個 AppearanceSetting，
    只有換外觀的端點不同。偏好是這個瀏覽器的 cookie，不分租戶。 *@
-<PageTitle>@L["個人設定 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["個人設定"]" />
 
 <PageHeader Title="@L["個人設定"]" />
 
@@ -14,8 +15,3 @@
         <AppearanceSetting Action="@($"{PortalPaths.Home(Tenant)}/appearance")" />
     </div>
 </div>
-
-@code {
-    [Parameter]
-    public string Tenant { get; set; } = string.Empty;
-}

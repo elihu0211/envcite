@@ -440,7 +440,6 @@
   <data name="複製 API Base URL" xml:space="preserve"><value>Copy API base URL</value></data>
   <data name="無法自動複製，已選取文字，請按 Ctrl+C（Mac 按 ⌘C）。" xml:space="preserve"><value>Couldn't copy automatically. The text is selected: press Ctrl+C (⌘C on Mac).</value></data>
   <data name="個人設定" xml:space="preserve"><value>Personal settings</value></data>
-  <data name="個人設定 · {0}" xml:space="preserve"><value>Personal settings · {0}</value></data>
   <data name="外觀" xml:space="preserve"><value>Appearance</value></data>
   <data name="系統" xml:space="preserve"><value>System</value></data>
   <data name="亮色" xml:space="preserve"><value>Light</value></data>
