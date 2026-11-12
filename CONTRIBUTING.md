@@ -207,7 +207,17 @@ dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- --urls http
 2. 開 <http://localhost:8025> 看邀請信，開啟信裡的連結，設定密碼。連結只能用一次；重開應顯示「連結無效或已過期」。
 3. 用新密碼登入。營運者接著綁定驗證器。
 
-只想驗證寄信設定，不建帳號：同樣的環境變數下執行 `mail test`，Mailpit 會收到一封沒有連結、沒有密碼的測試信。信件主旨與寄件者顯示名稱預設是系統名稱；本機想看改名的效果，加 `ENVCITE_Platform__Brand__Name=<名稱>`（哪些地方跟著變見 [platform README「系統名稱」](services/platform/README.md#系統名稱platformbrand)）。
+**預覽信件版型（不寄信）**：改了信件的版型或文字，用 `mail preview` 把五種信（邀請與驗證各有營運者與有租戶兩種，加測試信）寫成檔案，用瀏覽器開啟。它不連資料庫、不需要 Mailpit 或任何 `Platform:Mail` 設定，連結是占位值：
+
+```bash
+cd services/platform
+dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- mail preview /tmp/envcite-mail
+open /tmp/envcite-mail/invitation-tenant.html   # 每封信有 .html 與 .txt；非 macOS 用瀏覽器直接開檔
+```
+
+系統名稱與連結期限照目前的設定，想看改名加 `ENVCITE_Platform__Brand__Name=<名稱>`。窄螢幕與深色用瀏覽器開發人員工具的裝置模式與「模擬 `prefers-color-scheme`」查看。瀏覽器的預覽不等於真實客戶端：傳統 Outlook（Word 引擎）與各家深色模式要在 staging 用 `mail test` 與一封實際的邀請信寄給自己的信箱檢查。
+
+只想驗證寄信設定，不建帳號：同樣的環境變數下執行 `mail test`，Mailpit 會收到一封沒有連結、沒有密碼的測試信（與邀請信同一個版型，Mailpit 的 HTML 分頁看得到版面，Text 分頁是純文字版）。信件主旨與寄件者顯示名稱預設是系統名稱；本機想看改名的效果，加 `ENVCITE_Platform__Brand__Name=<名稱>`（哪些地方跟著變見 [platform README「系統名稱」](services/platform/README.md#系統名稱platformbrand)）。
 
 ```bash
 ASPNETCORE_ENVIRONMENT=Development ENVCITE_Platform__Mail__Enabled=true ENVCITE_Platform__Mail__Host=localhost \

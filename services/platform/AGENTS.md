@@ -56,11 +56,11 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 ## Configuration
 
-- 設定只有一條讀法：每個設定群組是一個 `ISectionOptions` 類別（`libs/dotnet`），自己指名區段，以 `AddSectionOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `libs/dotnet` 的 `Telemetry.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
+- 設定只有一條讀法：每個設定群組是一個 `ISectionOptions` 類別（`libs/dotnet`），自己指名區段，以 `AddSectionOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `libs/dotnet` 的 `Telemetry.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`；`mail preview` 在主機建立之前把同一份設定交給一個小容器，仍以 `BindConfiguration` 繫結，不另寫讀法。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
 - 新增群組：實作 `ISectionOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
 - **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`ENVCITE_Section__Key`，前綴由 `ServiceEnvironment` 套用；不帶前綴的環境變數不進設定，`OTEL_*` 除外）。機密（模型端點金鑰）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
 - 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄、寄信）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
-- **系統名稱只有一個來源**：`Platform:Brand:Name`（`BrandOptions`；不可空白、25 字內、無控制字元）。介面經 `BrandText.Name` 取，信件主旨與內文、`mail test`、OpenAPI 描述讀 `IOptions<BrandOptions>`；`Platform:Mail:FromName` 沒設時預設用它。不在元件、信件或描述裡寫死名稱；帶名稱的文字用格式鍵（`L["登入 · {0}", Brand.Name]`），預設名稱（`BrandOptions.DefaultName`）的英文對照是 `Ui.en.resx` 的同名一鍵，自訂名稱不查資源檔、兩種語言原樣顯示。標誌 SVG 不讀設定，改名時另外換圖（見 README〈系統名稱〉）。`BrandTests` 守住預設值下輸出不變、改名後各處一起變。
+- **系統名稱只有一個來源**：`Platform:Brand:Name`（`BrandOptions`；不可空白、25 字內、無控制字元）。介面經 `BrandText.Name` 取，信件主旨與內文（純文字與 HTML 兩版）、`mail test`、OpenAPI 描述讀 `IOptions<BrandOptions>`；`Platform:Mail:FromName` 沒設時預設用它。不在元件、信件或描述裡寫死名稱；帶名稱的文字用格式鍵（`L["登入 · {0}", Brand.Name]`），預設名稱（`BrandOptions.DefaultName`）的英文對照是 `Ui.en.resx` 的同名一鍵，自訂名稱不查資源檔、兩種語言原樣顯示。標誌 SVG 不讀設定，改名時另外換圖（見 README〈系統名稱〉）。`BrandTests` 守住預設值下輸出不變、改名後各處一起變。
 - 部署環境不設 `DefaultPlan`（服務是全付費，沒方案的租戶在資料端點得 402）；Development 與測試設定它，讓剛建立的租戶能用。
 - Development 的種子資料（`SeedDevelopmentData`）只在 Development 生效，且只在對應表是空的時才建；一次性密碼只經 `Console.WriteLine` 印到終端機，不進 `ILogger`，沒有預設密碼。
 - 在 TLS 終止的 proxy 後面要設 `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true`，否則依來源位址限流的規則會把所有人看成同一個位址（且限流狀態是每個副本各一份）。
@@ -116,6 +116,10 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 重寄：還沒有密碼的先換安全戳記（先前的連結失效，此時沒有 session 會被波及）；已有密碼的寄驗證連結，不換戳記。已啟用且已驗證則 `account.already_active`；停用的 `account.disabled`。
 - 連結與權杖不進日誌、稽核與命令列輸出；寄信失敗不使建立或重寄失敗，結果以 `MailDelivery` 回報。
 - `mail test` 失敗只指向日誌，不印例外訊息（可能回顯位址）；`Platform:Mail` 只在啟用時驗證，未啟用時其餘鍵被忽略。
+- **信件內容只由 `MailTemplate` 產生**（邀請、驗證、`mail test` 共用；內容在程式裡、不是樣板檔，每個插入點都經同一個編碼函式，所以沒有「漏編碼的占位符」）；`IMailSender.SendAsync` 收 `MailContent`（文字版加 HTML 版，寄成 `multipart/alternative`，文字在前）。新增一種信也走它，不在呼叫端拼字串；改一版的事實（連結、期限、提示、租戶）時另一版同改。
+- **信裡唯一的外部網址是啟用連結**：不放遠端圖片、追蹤像素、點擊追蹤轉址、腳本或外部樣式，插入的值一律 HTML 編碼。連結等同一次登入的鑰匙，經第三方或被預先載入都會洩漏或用掉它；`MailTemplateTests` 守住（含 `<` `"` `&` `'` 的名稱與租戶、四種邀請／驗證與租戶組合）。信裡不放密碼；日誌與稽核不記連結與內文。
+- **版面維持表格加內嵌樣式**（傳統 Outlook 以 Word 引擎渲染：不支援 flexbox、grid，`max-width` 要靠條件註解的後備表格），按鈕的 VML 後備與深色配色（`prefers-color-scheme`）跟著版型一起維護；配色的對比度由測試以同一份數值驗證。改版型後用 `mail preview` 看過，並請人以真實客戶端（傳統 Outlook、各家深色模式）收一封實際寄出的信。
+- **`mail preview` 在建立主機之前處理**（`Program.cs`），所以不連資料庫、不需要 `Platform:Mail`；它只繫結 `Platform:Brand` 與 `Platform:Mail:LinkLifetime`。占位連結的網域必須是保留網域（`.example`），權杖是假值：預覽檔案不得含任何真實連結。
 
 ### 成員管理（客戶自助與營運者）
 

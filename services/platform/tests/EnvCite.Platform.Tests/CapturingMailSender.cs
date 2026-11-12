@@ -18,11 +18,17 @@ public sealed class CapturingMailSender : IMailSender
 
     public IReadOnlyCollection<SentMail> Sent => _sent;
 
-    public Task<MailDelivery> SendAsync(string recipient, string subject, string body, CancellationToken cancellationToken)
+    public Task<MailDelivery> SendAsync(string recipient, string subject, MailContent content, CancellationToken cancellationToken)
     {
-        _sent.Enqueue(new SentMail(recipient, subject, body));
+        _sent.Enqueue(new SentMail(recipient, subject, content));
         return Task.FromResult(Result);
     }
 
-    public sealed record SentMail(string Recipient, string Subject, string Body);
+    /// <summary><see cref="Body"/> 是純文字版（既有測試都看它），<see cref="Html"/> 是 HTML 版。</summary>
+    public sealed record SentMail(string Recipient, string Subject, MailContent Content)
+    {
+        public string Body => Content.Text;
+
+        public string Html => Content.Html;
+    }
 }

@@ -25,6 +25,8 @@ public sealed class SmtpMailSenderTests
         return services.BuildServiceProvider();
     }
 
+    private static MailContent Content(string text) => new(text, $"<p>{text}</p>");
+
     private static Dictionary<string, string?> Settings(int port, bool enabled = true) => new()
     {
         ["Platform:Mail:Enabled"] = enabled ? "true" : "false",
@@ -37,13 +39,13 @@ public sealed class SmtpMailSenderTests
     };
 
     [Fact]
-    public async Task ItDeliversPlainTextOverAnUnencryptedUnauthenticatedConnection()
+    public async Task ItDeliversAMultipartAlternativeOverAnUnencryptedUnauthenticatedConnection()
     {
         await using var relay = new FakeRelay();
         using var provider = Sender(Settings(relay.Port));
 
         var result = await provider.GetRequiredService<IMailSender>()
-            .SendAsync("someone@recipient.test", "主旨", "連結：https://platform.test/x?code=abc", TestContext.Current.CancellationToken);
+            .SendAsync("someone@recipient.test", "主旨", Content("連結：https://platform.test/x?code=abc"), TestContext.Current.CancellationToken);
 
         Assert.Equal(MailDelivery.Sent, result);
         var mail = Assert.Single(relay.Received);
@@ -52,6 +54,11 @@ public sealed class SmtpMailSenderTests
         Assert.Equal("主旨", mail.Message.Subject);
         Assert.Contains("連結：https://platform.test/x?code=abc", mail.Message.TextBody, StringComparison.Ordinal);
         Assert.Equal("auto-generated", mail.Message.Headers["Auto-Submitted"]); // RFC 3834
+
+        // multipart/alternative：純文字在前、HTML 在後（RFC 2046：最後一個最偏好），各自的字元集完整還原。
+        var alternative = Assert.IsType<MimeKit.MultipartAlternative>(mail.Message.Body);
+        Assert.Equal(["text/plain", "text/html"], alternative.Select(part => part.ContentType.MimeType));
+        Assert.Equal("<p>連結：https://platform.test/x?code=abc</p>", mail.Message.HtmlBody);
 
         // 自報的名稱與 Message-Id 都用寄件者的網域，不洩漏執行環境的主機名稱。
         Assert.StartsWith("EHLO relay.test", relay.Commands[0], StringComparison.Ordinal);
@@ -86,7 +93,7 @@ public sealed class SmtpMailSenderTests
         using var provider = Sender(settings);
 
         var result = await provider.GetRequiredService<IMailSender>()
-            .SendAsync("someone@recipient.test", "主旨", "內文", TestContext.Current.CancellationToken);
+            .SendAsync("someone@recipient.test", "主旨", Content("內文"), TestContext.Current.CancellationToken);
 
         Assert.Equal(MailDelivery.Sent, result);
         var from = Assert.Single(Assert.Single(relay.Received).Message.From.Mailboxes);
@@ -101,7 +108,7 @@ public sealed class SmtpMailSenderTests
         using var provider = Sender(Settings(relay.Port, enabled: false));
 
         var result = await provider.GetRequiredService<IMailSender>()
-            .SendAsync("someone@recipient.test", "主旨", "內文", TestContext.Current.CancellationToken);
+            .SendAsync("someone@recipient.test", "主旨", Content("內文"), TestContext.Current.CancellationToken);
 
         Assert.Equal(MailDelivery.Disabled, result);
         Assert.Equal(0, relay.Connections);
@@ -115,7 +122,7 @@ public sealed class SmtpMailSenderTests
         using var provider = Sender(Settings(UnusedPort()), logs);
 
         var result = await provider.GetRequiredService<IMailSender>()
-            .SendAsync("someone@recipient.test", "主旨-不能進日誌", "密碼-不能進日誌", TestContext.Current.CancellationToken);
+            .SendAsync("someone@recipient.test", "主旨-不能進日誌", Content("密碼-不能進日誌"), TestContext.Current.CancellationToken);
 
         Assert.Equal(MailDelivery.Failed, result);
         var dump = string.Join('\n', logs.Messages);
@@ -131,7 +138,7 @@ public sealed class SmtpMailSenderTests
         using var provider = Sender(Settings(relay.Port));
 
         var result = await provider.GetRequiredService<IMailSender>()
-            .SendAsync("someone@recipient.test", "主旨", "內文", TestContext.Current.CancellationToken);
+            .SendAsync("someone@recipient.test", "主旨", Content("內文"), TestContext.Current.CancellationToken);
 
         Assert.Equal(MailDelivery.Failed, result);
         Assert.Empty(relay.Received);
@@ -144,7 +151,7 @@ public sealed class SmtpMailSenderTests
         using var provider = Sender(Settings(relay.Port));
 
         var result = await provider.GetRequiredService<IMailSender>()
-            .SendAsync("not an address", "主旨", "內文", TestContext.Current.CancellationToken);
+            .SendAsync("not an address", "主旨", Content("內文"), TestContext.Current.CancellationToken);
 
         Assert.Equal(MailDelivery.Failed, result);
         Assert.Equal(0, relay.Connections);
@@ -160,7 +167,7 @@ public sealed class SmtpMailSenderTests
         await cancelled.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => provider.GetRequiredService<IMailSender>()
-            .SendAsync("someone@recipient.test", "主旨", "內文", cancelled.Token));
+            .SendAsync("someone@recipient.test", "主旨", Content("內文"), cancelled.Token));
     }
 
     private static int UnusedPort()

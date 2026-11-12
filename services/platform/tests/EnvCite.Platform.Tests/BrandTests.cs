@@ -155,6 +155,25 @@ public sealed partial class BrandTests(PlatformFactory factory)
         });
     }
 
+    // HTML 版的標頭、標題、說明與頁尾也都跟著名稱走，舊名稱一個字都不留。
+    [Fact]
+    public async Task TheHtmlOfTheInvitationFollowsTheSystemName()
+    {
+        await factory.WithMail(async () =>
+        {
+            var email = NewEmail();
+            await using var host = Renamed();
+
+            var invited = await host.Services.GetRequiredService<IOperatorAdmin>()
+                .InviteAsync(OperatorSession.Principal(), email, "Op", CancellationToken.None);
+
+            Assert.True(invited.IsOk, invited.Message);
+            var mail = Assert.Single(factory.Mail.Sent, m => m.Recipient == email);
+            Assert.True(Occurrences(mail.Html, Custom) >= 4, "標題、標頭、說明與頁尾都有名稱");
+            Assert.DoesNotContain("環境知識", mail.Html, StringComparison.Ordinal);
+        });
+    }
+
     // 驗證信（帳號已有密碼、只缺信箱驗證）與邀請信是同一個函式的兩個分支。
     [Theory]
     [InlineData(true, "環境知識", "環境知識：邀請您啟用帳號")]

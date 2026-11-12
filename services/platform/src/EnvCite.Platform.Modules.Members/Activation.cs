@@ -132,7 +132,7 @@ internal static class ActivationLinks
             : null;
 }
 
-/// <summary>邀請與驗證信。信裡只有單次、限時的連結：不放密碼，也不放使用者的其他資料。</summary>
+/// <summary>邀請與驗證信（內容由 <see cref="MailTemplate"/> 產生）。信裡只有單次、限時的連結：不放密碼，也不放使用者的其他資料。</summary>
 internal static class ActivationMail
 {
     public static Task<MailDelivery> SendAsync(
@@ -143,21 +143,8 @@ internal static class ActivationMail
             return Task.FromResult(MailDelivery.Failed); // 沒有設定連結來源（Platform:Mail:BaseUrl），寄出去的連結沒用
         }
 
-        var tenantLine = tenantIdentifier is null ? string.Empty : $"租戶識別碼：{tenantIdentifier}\n";
-        var intro = invitation
-            ? $"已為您在「{brand}」建立帳號。請開啟下列連結，設定您自己的密碼並完成信箱驗證："
-            : "請開啟下列連結，驗證這個信箱屬於您：";
-        var body = $"""
-            您好，
-
-            {intro}
-
-            {link}
-
-            {tenantLine}連結 {Lifetime(lifetime)}內有效，而且只能使用一次。
-            如果您沒有預期收到這封信，請忽略它：在您開啟連結之前，不會有任何變更。
-            """;
-        return mail.SendAsync(recipient, invitation ? $"{brand}：邀請您啟用帳號" : $"{brand}：請驗證您的信箱", body, cancellationToken);
+        var content = MailTemplate.Activation(brand, link, lifetime, tenantIdentifier, invitation);
+        return mail.SendAsync(recipient, invitation ? $"{brand}：邀請您啟用帳號" : $"{brand}：請驗證您的信箱", content, cancellationToken);
     }
 
     public static string Status(MailDelivery delivery) => delivery switch
@@ -167,7 +154,4 @@ internal static class ActivationMail
         MailDelivery.Disabled => "disabled",
         _ => "not_requested",
     };
-
-    private static string Lifetime(TimeSpan lifetime) =>
-        lifetime.TotalDays >= 1 ? $"{(int)Math.Round(lifetime.TotalDays)} 天" : $"{(int)Math.Ceiling(lifetime.TotalHours)} 小時";
 }
