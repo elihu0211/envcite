@@ -1,0 +1,62 @@
+@typeparam TItem
+@* 資料表：欄位由 ColumnDef 清單宣告，標題列、窄螢幕的 data-label 與列的標記只在這裡寫。
+   兩種外觀共用同一份欄位：預設是後台的 MudSimpleTable（ep-table ep-cards）；Plain 是客戶入口的純 table（靜態渲染，也能放進表單，
+   儲存格裡的按鈕與欄位照常送出）。排序與翻頁不在這裡：需要時由頁面決定列的順序與範圍。 *@
+@if (Plain)
+{
+    <div class="ep-table-wrap">
+        <table class="ep-plain-table" aria-label="@Label">@Content</table>
+    </div>
+}
+else
+{
+    <MudSimpleTable Dense="true" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="@Label">@Content</MudSimpleTable>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<TItem> Items { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ColumnDef<TItem>> Columns { get; set; } = [];
+
+    /// <summary>表格的名稱（aria-label）。</summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>客戶入口的純 table 外觀。</summary>
+    [Parameter]
+    public bool Plain { get; set; }
+
+    private RenderFragment Content =>
+        @<text>
+            <thead>
+                <tr>
+                    @foreach (var column in Columns)
+                    {
+                        <th scope="col">
+                            @if (column.HideTitle)
+                            {
+                                <span class="ep-visually-hidden">@column.Title</span>
+                            }
+                            else
+                            {
+                                @column.Title
+                            }
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Items)
+                {
+                    <tr>
+                        @foreach (var column in Columns)
+                        {
+                            <td class="@column.Class" data-label="@(column.Labeled ? column.Label ?? column.Title : null)">@column.Cell(item)</td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </text>;
+}

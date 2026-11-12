@@ -22,7 +22,6 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory)
     private readonly List<AuditRecord> _items = [];
     private readonly HashSet<Guid> _expanded = [];
     private Guid? _next;
-    private bool _loading = true;
     private bool _loadingMore;
     private bool _dense;
     private string? _applied;
@@ -34,7 +33,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory)
 
     private bool HasFilter => !string.IsNullOrEmpty(TenantParam) || !string.IsNullOrEmpty(ActionParam) || !string.IsNullOrEmpty(ActorParam);
 
-    private string Status => Error is not null || _loading ? string.Empty
+    private string Status => Error is not null || Loading ? string.Empty
         : _items.Count == 0 ? L["沒有符合的事件"]
         : _next is null ? L["共 {0} 筆", _items.Count] : L["已載入 {0} 筆，還有更多", _items.Count];
 
@@ -43,6 +42,9 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory)
     /// <summary>預先渲染查到的租戶與第一頁交給互動渲染，不再查一次。重新連線不還原：可能已有新事件，要重查。</summary>
     [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
     public AuditSnapshot? Prerendered { get; set; }
+
+    // 第一次渲染之前就是載入中：下面的 await 讓出時會先畫一次，不能閃出「沒有事件」。
+    protected override void OnInitialized() => Loading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -77,7 +79,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory)
             Prerendered = null;
             _items.AddRange(snapshot.Page.Items);
             _next = snapshot.Page.NextCursor;
-            _loading = false;
+            Loading = false;
             return;
         }
 
@@ -117,7 +119,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory)
         }
         else
         {
-            _loading = true;
+            Loading = true;
             _items.Clear();
             _expanded.Clear();
             _next = null;
@@ -137,7 +139,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory)
         }
         finally
         {
-            _loading = false;
+            Loading = false;
             _loadingMore = false;
         }
     }

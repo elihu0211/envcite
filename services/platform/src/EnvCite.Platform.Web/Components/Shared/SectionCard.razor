@@ -1,0 +1,63 @@
+@* 一張區塊卡片：標題（h2，id 與 aria-labelledby 對上）、選用的右側動作、內容。頁面不自己寫 ep-card 與 ep-section-title，
+   區塊的標題層級與間距才會一致。沒有 Title 時是一張沒有標題的卡片（例如只包一個設定元件）。
+   有 Actions 或 Toolbar 時標題放在工具列裡（表格卡片的標題列、右側放篩選或連結）。 *@
+<section class="@CardClass" aria-labelledby="@(Title is null ? null : Id)" aria-label="@(Title is null ? Label : null)">
+    @if (Title is not null && (Actions is not null || Toolbar))
+    {
+        <div class="@ToolbarClass">
+            <h2 id="@Id" class="@TitleCss">@Title</h2>
+            @if (Actions is not null)
+            {
+                <span class="ep-spacer"></span>
+                @Actions
+            }
+        </div>
+    }
+    else if (Title is not null)
+    {
+        <h2 id="@Id" class="@TitleCss">@Title</h2>
+    }
+    @ChildContent
+</section>
+
+@code {
+    /// <summary>標題的 id，也是卡片的 <c>aria-labelledby</c>；同一頁內不可重複。</summary>
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>沒有可見標題時，給螢幕閱讀器的區域名稱（例如整張只有表格的卡片）。</summary>
+    [Parameter]
+    public string? Label { get; set; }
+
+    /// <summary>附加在 <c>ep-card</c> 之後的樣式類別，例如表格卡片的 <c>ep-table-card ep-cards</c>。</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>附加在標題之後的樣式類別，例如表格卡片的 <c>ep-card-title</c>。</summary>
+    [Parameter]
+    public string? TitleClass { get; set; }
+
+    /// <summary>標題列右側的動作（連結、篩選）；有它就會用工具列排版。</summary>
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+
+    /// <summary>沒有 <see cref="Actions"/> 也把標題放進工具列（表格卡片的標題列有底線）。</summary>
+    [Parameter]
+    public bool Toolbar { get; set; }
+
+    /// <summary>工具列放不下時換行（右側有一組按鈕時）。</summary>
+    [Parameter]
+    public bool Wrap { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private string CardClass => string.IsNullOrEmpty(Class) ? "ep-card" : $"ep-card {Class}";
+
+    private string ToolbarClass => Wrap ? "ep-toolbar ep-toolbar-wrap" : "ep-toolbar";
+
+    private string TitleCss => string.IsNullOrEmpty(TitleClass) ? "ep-section-title" : $"ep-section-title {TitleClass}";
+}

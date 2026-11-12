@@ -9,8 +9,7 @@
 <PageHeader Title="@L["帳號與組織"]" Description="@(_tenant?.Name ?? Tenant)" />
 
 <div class="ep-stack">
-    <section class="ep-card" aria-labelledby="org-title">
-        <h2 id="org-title" class="ep-section-title">@L["你的組織與帳號"]</h2>
+    <SectionCard Id="org-title" Title="@L["你的組織與帳號"]">
         <dl class="ep-detail">
             <dt>@L["組織"]</dt><dd>@(_tenant?.Name ?? Tenant)（<code class="ep-mono">@Tenant</code>）</dd>
             <dt>@L["方案"]</dt>
@@ -43,10 +42,9 @@
             </dd>
             <dt>@L["密碼"]</dt><dd><a href="@PortalPaths.Password(Tenant)">@L["改密碼"]</a></dd>
         </dl>
-    </section>
+    </SectionCard>
 
-    <section class="ep-card" aria-labelledby="keys-title">
-        <h2 id="keys-title" class="ep-section-title">API keys</h2>
+    <SectionCard Id="keys-title" Title="API keys">
         @if (!CanSeeKeys)
         {
             <p class="ep-page-description">@L["你的角色不能查看 API key。"]</p>
@@ -57,30 +55,22 @@
         }
         else
         {
-            <div class="ep-table-wrap">
-                <table class="ep-plain-table" aria-label="API keys">
-                    <thead>
-                        <tr>
-                            <th scope="col">@L["名稱"]</th>
-                            <th scope="col">@L["前綴"]</th>
-                            <th scope="col">@L["建立（台北）"]</th>
-                            <th scope="col">@L["狀態"]</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var key in _keys)
-                        {
-                            <tr>
-                                <td>@key.Name</td>
-                                <td data-label="@L["前綴"]"><code class="ep-mono">@key.Prefix</code></td>
-                                <td data-label="@L["建立"]"><time datetime="@TaipeiTime.Full(key.CreatedAt)">@TaipeiTime.Format(key.CreatedAt)</time></td>
-                                <td data-label="@L["狀態"]"><StatusBadge Tone="@StatusTone(key)">@Status(key)</StatusBadge></td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+            <DataTable Items="_keys" Columns="KeyColumns" Label="API keys" Plain="true" />
             <p class="ep-hint">@L["完整的 key 只在簽發當下出現一次，這裡只顯示前綴。"]</p>
         }
-    </section>
+    </SectionCard>
 </div>
+
+@code {
+    private IReadOnlyList<ColumnDef<ApiKeyInfo>> KeyColumns =>
+    [
+        new() { Title = L["名稱"], Labeled = false, Cell = key => @<text>@key.Name</text> },
+        new() { Title = L["前綴"], Cell = key => @<text><code class="ep-mono">@key.Prefix</code></text> },
+        new()
+        {
+            Title = L["建立（台北）"], Label = L["建立"],
+            Cell = key => @<text><time datetime="@TaipeiTime.Full(key.CreatedAt)">@TaipeiTime.Format(key.CreatedAt)</time></text>,
+        },
+        new() { Title = L["狀態"], Cell = key => @<text><StatusBadge Tone="@StatusTone(key)">@Status(key)</StatusBadge></text> },
+    ];
+}
