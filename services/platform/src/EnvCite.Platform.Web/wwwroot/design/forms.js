@@ -177,6 +177,62 @@
     syncSide();
     document.addEventListener("DOMContentLoaded", syncSide);
 
+    // ---- 外觀：自動（跟隨系統）／淺色／深色 -------------------------------------------------------
+    // 選擇存在 localStorage 的 ep-theme（沒有或 system 就是跟隨系統）。<head> 的小腳本在畫第一格之前就套上；
+    // 這裡負責切換、存檔、標出目前的選項，並同步瀏覽器工具列的顏色（theme-color 的 media）。
+    const themeChoice = () => {
+        try {
+            const saved = localStorage.getItem("ep-theme");
+            return saved === "light" || saved === "dark" ? saved : "system";
+        } catch {
+            return "system";
+        }
+    };
+
+    const applyTheme = (choice) => {
+        if (choice === "system") {
+            delete root.dataset.theme;
+        } else {
+            root.dataset.theme = choice;
+        }
+
+        document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+            meta.media = choice === "system" ? meta.dataset.media : (meta.dataset.scheme === choice ? "all" : "not all");
+        });
+        document.querySelectorAll("[data-theme-option]").forEach((button) => {
+            button.setAttribute("aria-pressed", String(button.dataset.themeOption === choice));
+        });
+    };
+
+    document.addEventListener("click", (event) => {
+        const option = event.target.closest?.("[data-theme-option]");
+        if (!option) {
+            return;
+        }
+
+        const choice = option.dataset.themeOption;
+        try {
+            if (choice === "system") {
+                localStorage.removeItem("ep-theme");
+            } else {
+                localStorage.setItem("ep-theme", choice);
+            }
+        } catch {
+            // 沒有儲存空間（無痕視窗）：這次有效，下次回到跟隨系統。
+        }
+
+        applyTheme(choice);
+    });
+
+    // 另一個分頁改了外觀，這個分頁跟著換。
+    window.addEventListener("storage", (event) => {
+        if (event.key === "ep-theme") {
+            applyTheme(themeChoice());
+        }
+    });
+    applyTheme(themeChoice());
+    document.addEventListener("DOMContentLoaded", () => applyTheme(themeChoice()));
+
     // ---- 抽屜的手勢：左緣滑出、往左滑收起 ----------------------------------------------------------
     // 跟手（位置 1:1）、放開時用速度投射落點、再以放開當下的速度接續動畫；隨時可以重新抓住（從目前畫面上的位置起算，
     // 不是從邏輯上的目標值）。拖過頭的那一段有橡皮筋的阻力。只收觸控與手寫筆，滑鼠不拖。

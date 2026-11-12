@@ -4,16 +4,18 @@
     <meta charset="utf-8" />
     @* viewport-fit=cover：瀏海與圓角螢幕上讓內容延伸到邊緣，再用安全區內縮（見 platform.css）。不禁用縮放。 *@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="color-scheme" content="light" />
-    @* 瀏覽器的工具列顏色；顏色來自 token，不另寫。 *@
-    <meta name="theme-color" content="@DesignTokens.Light.Background" />
+    @* 淺色與深色都支援，預設跟隨系統（使用者可以在選單裡自己選，見 ThemeSwitch）。 *@
+    <meta name="color-scheme" content="light dark" />
+    @* 瀏覽器的工具列顏色，淺色與深色各一個；顏色來自 token，不另寫。使用者自己選了外觀時由腳本改 media（forms.js 與下面的 head 腳本）。 *@
+    <meta name="theme-color" content="@DesignTokens.Light.Background" media="(prefers-color-scheme: light)" data-media="(prefers-color-scheme: light)" data-scheme="light" />
+    <meta name="theme-color" content="@DesignTokens.Dark.Background" media="(prefers-color-scheme: dark)" data-media="(prefers-color-scheme: dark)" data-scheme="dark" />
     @* 品牌圖示：favicon 用簡化版（小尺寸只留葉片），完整版給 iOS 主畫面；色碼與 DesignTokens.Brand 由測試對齊。 *@
     <link rel="icon" href="@Assets["_content/EnvCite.Platform.Web/brand/favicon.ico"]" sizes="32x32" />
     <link rel="icon" href="@Assets["_content/EnvCite.Platform.Web/brand/icon-small.svg"]" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="@Assets["_content/EnvCite.Platform.Web/brand/apple-touch-icon.png"]" />
     <base href="/" />
-    @* 側欄收合的偏好：在畫第一格之前就套上，不先閃一下展開再收起來（forms.js 負責切換與存檔）。 *@
-    <script>try{if(localStorage.getItem("ep-side")==="collapsed")document.documentElement.dataset.side="collapsed"}catch(e){}</script>
+    @* 側欄收合與外觀（淺色／深色）的偏好：在畫第一格之前就套上，不先閃一下預設再換過去（forms.js 負責切換與存檔）。 *@
+    <script>try{var d=document.documentElement,s=localStorage,t=s.getItem("ep-theme");if(s.getItem("ep-side")==="collapsed")d.dataset.side="collapsed";if(t==="light"||t==="dark"){d.dataset.theme=t;document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.media=m.dataset.scheme===t?"all":"not all"})}}catch(e){}</script>
     <style>@((MarkupString)TokenCss.Render())</style>
     @* 自己託管的字型：中文依 unicode-range 切片，瀏覽器只下載頁面上出現的字所在的那幾片（見 scripts/vendor-fonts.sh）。 *@
     <link rel="stylesheet" href="@Assets["_content/EnvCite.Platform.Web/fonts/fonts.css"]" />
