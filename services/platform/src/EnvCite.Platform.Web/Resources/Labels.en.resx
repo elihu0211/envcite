@@ -92,6 +92,9 @@
   <data name="Outcome.password.same_as_current" xml:space="preserve"><value>The new password must differ from the current one.</value></data>
   <data name="Outcome.password.current_incorrect" xml:space="preserve"><value>The current password is incorrect.</value></data>
   <data name="Outcome.password.too_short" xml:space="preserve"><value>The new password must be at least {0} characters.</value></data>
+  <data name="Outcome.password.too_long" xml:space="preserve"><value>The new password must be at most {0} characters.</value></data>
+  <data name="Outcome.password.too_guessable" xml:space="preserve"><value>This password is too easy to guess. Try a few unrelated words strung together.</value></data>
+  <data name="Outcome.password.contains_account_info" xml:space="preserve"><value>The new password must not contain your email.</value></data>
   <data name="Outcome.password.not_acceptable" xml:space="preserve"><value>The new password does not meet the rules.</value></data>
   <data name="Outcome.identity.rejected" xml:space="preserve"><value>{0}</value></data>
   <data name="Outcome.two_factor.already_enabled" xml:space="preserve"><value>Two-step verification is already enabled.</value></data>

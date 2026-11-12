@@ -25,11 +25,7 @@
             case ActivationState.SetPassword:
                 <p class="ep-page-description">@L["設定你自己的密碼，並完成信箱驗證。這條連結只能使用一次。"]</p>
                 <EditForm Model="Input" FormName="portal-activate" OnValidSubmit="SubmitAsync" method="post" class="ep-form">
-                    <div class="ep-field-row">
-                        <label for="new" class="ep-label">@L["新密碼"]</label>
-                        <PasswordField Id="new" @bind-Value="Input.New" Autocomplete="new-password" MinLength="12" AutoFocus="true" DescribedBy="new-hint" />
-                        <p id="new-hint" class="ep-hint">@L["至少 12 個字元。長度比符號重要：幾個不相干的詞連起來就很好。"]</p>
-                    </div>
+                    <NewPasswordField Id="new" Label="@L["新密碼"]" @bind-Value="Input.New" AutoFocus="true" />
                     <div class="ep-field-row">
                         <label for="confirm" class="ep-label">@L["再輸入一次新密碼"]</label>
                         <PasswordField Id="confirm" @bind-Value="Input.Confirm" Autocomplete="new-password" />

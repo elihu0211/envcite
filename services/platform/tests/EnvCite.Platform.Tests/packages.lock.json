@@ -1069,7 +1069,8 @@
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
           "Finbuckle.MultiTenant.AspNetCore": "[10.1.4, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.13, )",
-          "Otp.NET": "[1.4.1, )"
+          "Otp.NET": "[1.4.1, )",
+          "zxcvbn-core": "[7.0.92, )"
         }
       },
       "envcite.platform.modules.metering": {
@@ -1328,6 +1329,12 @@
         "requested": "[1.4.1, )",
         "resolved": "1.4.1",
         "contentHash": "UXjZ80T6BfVACJWmEcz4UFZ93hwX3STKojKvVpPk3qUhubjnLwIiZMsI4Hh91HhYxC0JlatNdNrVK2wkv4O9/Q=="
+      },
+      "zxcvbn-core": {
+        "type": "CentralTransitive",
+        "requested": "[7.0.92, )",
+        "resolved": "7.0.92",
+        "contentHash": "3CKGKJe4SnFrks38EuF4iq1DT6IqsyNu/zMQp9GOpaipb7qdZndjjTXQa1/dkNh/OoxD0/aTcIBrRrbD4ALeGQ=="
       }
     }
   }

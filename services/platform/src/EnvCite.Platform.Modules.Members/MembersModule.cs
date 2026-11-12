@@ -30,9 +30,6 @@ public sealed class MembersOptions : ISectionOptions
 
 public static class MembersModule
 {
-    /// <summary>密碼最短長度。依 NIST SP 800-63B：長度比組成規則（大小寫、符號）重要，不強制組成。</summary>
-    public const int MinimumPasswordLength = 12;
-
     /// <summary>連續失敗幾次後鎖定，與鎖定多久。</summary>
     public const int MaxFailedAccessAttempts = 5;
 
@@ -54,6 +51,7 @@ public static class MembersModule
             .Configure<IOptions<MailOptions>>((token, mail) => token.TokenLifespan = mail.Value.LinkLifetime);
 
         services.AddIdentityCore<ApplicationUser>(ConfigureIdentity)
+            .AddPasswordPolicy<ApplicationUser>()
             .AddEntityFrameworkStores<PlatformDbContext>()
             .AddSignInManager()
             .AddTokenProvider<AuthenticatorTokenProvider<ApplicationUser>>(TokenOptions.DefaultAuthenticatorProvider)
@@ -114,12 +112,12 @@ public static class MembersModule
 
     /// <summary>
     /// 密碼與鎖定規則。<c>IdentityOptions</c> 是全域的一份，客戶入口的成員與後台的營運者本來就適用同一套
-    /// （最短 12 字元、不強制組成、5 次失敗鎖 15 分鐘），所以兩邊共用這個方法。
+    /// （密碼規則見 <see cref="PasswordPolicy"/>，5 次失敗鎖 15 分鐘），所以兩邊共用這個方法。
     /// </summary>
     internal static void ConfigureIdentity(IdentityOptions options)
     {
         options.User.RequireUniqueEmail = true;
-        options.Password.RequiredLength = MinimumPasswordLength;
+        options.Password.RequiredLength = PasswordPolicy.MinimumLength;
         options.Password.RequireDigit = false;
         options.Password.RequireLowercase = false;
         options.Password.RequireUppercase = false;
@@ -130,6 +128,14 @@ public static class MembersModule
     }
 
     /// <summary>
+    /// 在 Identity 內建的長度檢查之後加上 <see cref="PasswordPolicy"/> 的其餘規則（<see cref="PasswordPolicyValidator{TUser}"/>）。
+    /// 成員與營運者的 <c>AddIdentityCore</c> 都經這裡，測試也用它組出同一份驗證器，規則不會兩邊各一份。
+    /// </summary>
+    internal static IdentityBuilder AddPasswordPolicy<TUser>(this IdentityBuilder builder)
+        where TUser : class =>
+        builder.AddPasswordValidator<PasswordPolicyValidator<TUser>>();
+
+    /// <summary>
     /// 後台的營運者：同一套 Identity，<b>另一個 user store</b>（<c>OperatorUser</c>，表 <c>Operators</c>，不隨租戶）。
     /// <c>AddEntityFrameworkStores</c> 會從 <c>PlatformDbContext</c> 的基底推出成員的 claim／login／token 型別，
     /// 套給營運者就會讀寫成員的表，所以 store 自己指定型別。登入 cookie 與暫存憑證的 scheme 在 Web／這裡各自註冊。
@@ -137,6 +143,7 @@ public static class MembersModule
     private static void AddOperatorAccounts(this IServiceCollection services)
     {
         services.AddIdentityCore<OperatorUser>(ConfigureIdentity)
+            .AddPasswordPolicy<OperatorUser>()
             .AddTokenProvider<DataProtectorTokenProvider<OperatorUser>>(TokenOptions.DefaultProvider);
         services.AddScoped<IUserStore<OperatorUser>,
             UserOnlyStore<OperatorUser, PlatformDbContext, Guid, IdentityUserClaim<Guid>, IdentityUserLogin<Guid>, IdentityUserToken<Guid>>>();

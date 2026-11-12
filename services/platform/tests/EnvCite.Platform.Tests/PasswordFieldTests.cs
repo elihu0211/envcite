@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
+using EnvCite.Platform.SharedKernel;
+
 namespace EnvCite.Platform.Tests;
 
 /// <summary>
@@ -19,6 +21,24 @@ public static partial class PasswordFieldTests
         AssertEyeToggle(html, "confirm");
         Assert.Equal(2, NewPasswordHint().Count(html));
         Assert.Contains("minlength=\"12\"", html, StringComparison.Ordinal);
+        AssertPasswordGuide(html, "new");
+    }
+
+    /// <summary>「新密碼」欄位的規則清單（<c>NewPasswordField</c>）：三條短句與一句提示，數字是規則的唯一來源。</summary>
+    internal static void AssertPasswordGuide(string html, string id)
+    {
+        Assert.Contains($"id=\"{id}-guide\" class=\"ep-password-guide\" data-min=\"{PasswordPolicy.MinimumLength}\"", html, StringComparison.Ordinal);
+        Assert.Contains($"maxlength=\"{PasswordPolicy.MaximumLength}\"", html, StringComparison.Ordinal);
+        Assert.Contains($"aria-describedby=\"{id}-guide\"", html, StringComparison.Ordinal);
+        Assert.Contains("data-text-short=\"還差 {0} 個\" data-text-ok=\"長度夠了\"", html, StringComparison.Ordinal);
+        Assert.Contains("<li data-rule=\"length\">", html, StringComparison.Ordinal);
+        Assert.Contains($"至少 {PasswordPolicy.MinimumLength} 個字元", html, StringComparison.Ordinal);
+        Assert.Contains("不含你的 email", html, StringComparison.Ordinal);
+        Assert.Contains("避開常見密碼與連續、重複的字元", html, StringComparison.Ordinal);
+        var rules = Regex.Match(html, "<ul class=\"ep-hint ep-password-rules\">(.*?)</ul>", RegexOptions.Singleline, TimeSpan.FromSeconds(2));
+        Assert.True(rules.Success);
+        Assert.Equal(3, Regex.Count(rules.Groups[1].Value, "<li[ >]", RegexOptions.None, TimeSpan.FromSeconds(2)));
+        Assert.Contains("role=\"status\"", html, StringComparison.Ordinal); // 只在長度剛夠時通知，不逐字念
     }
 
     internal static void AssertEyeToggle(string html, string id)
@@ -89,6 +109,60 @@ public static partial class PasswordFieldTests
         Assert.Contains("data-label-show=\"@L[\"顯示密碼\"]\" data-label-hide=\"@L[\"隱藏密碼\"]\"", source, StringComparison.Ordinal);
     }
 
+    // 設定或修改密碼的頁面一律走 NewPasswordField 模板：規則的數字與提示文字只有一處（PasswordPolicy 與模板），
+    // 頁面不自己寫 minlength 或「至少 N 個字元」，改規則時就不會有一頁漏改。
+    [Theory]
+    [InlineData("Components/Account/Activate.razor")]
+    [InlineData("Components/Portal/Activate.razor")]
+    [InlineData("Components/Account/ChangePassword.razor")]
+    [InlineData("Components/Portal/ChangePassword.razor")]
+    public static void PagesThatSetANewPasswordUseTheNewPasswordFieldTemplate(string page) =>
+        Assert.Contains("<NewPasswordField ", File.ReadAllText(Path.Combine(WebPath(), page)), StringComparison.Ordinal);
+
+    [Fact]
+    public static void NoPageHardCodesThePasswordRule()
+    {
+        var offenders = SourceFiles()
+            .Where(file => !string.Equals(Path.GetFileName(file), "NewPasswordField.razor", StringComparison.Ordinal))
+            .Where(file => HardCodedRule().IsMatch(File.ReadAllText(file)))
+            .Select(file => Path.GetRelativePath(WebPath(), file))
+            .ToList();
+
+        Assert.True(offenders.Count == 0, $"這些檔案自己寫了密碼規則的數字或提示，要改用 <NewPasswordField> 與 PasswordPolicy：{string.Join("、", offenders)}");
+    }
+
+    [Theory]
+    [InlineData("<PasswordField Id=\"new\" MinLength=\"12\" />")]
+    [InlineData("<PasswordField MaxLength=\"128\" />")]
+    [InlineData("L[\"至少 12 個字元\"]")]
+    public static void TheRuleScanRecognisesAHardCodedRule(string snippet) =>
+        Assert.Matches(HardCodedRule(), snippet);
+
+    [Fact]
+    public static void TheTemplateTakesItsNumbersFromThePolicy()
+    {
+        var source = File.ReadAllText(Path.Combine(WebPath(), "Components", "Shared", "NewPasswordField.razor"));
+
+        Assert.Contains("MinLength=\"@PasswordPolicy.MinimumLength\"", source, StringComparison.Ordinal);
+        Assert.Contains("MaxLength=\"@PasswordPolicy.MaximumLength\"", source, StringComparison.Ordinal);
+        Assert.Contains("data-min=\"@PasswordPolicy.MinimumLength\"", source, StringComparison.Ordinal);
+        Assert.DoesNotMatch(@"\b(?:12|128)\b", source.Replace("PasswordPolicy.", string.Empty, StringComparison.Ordinal));
+    }
+
+    // 進度與「還差幾個字元」是漸進增強：長度的最短值與兩段文字都由伺服器寫在 data-*，forms.js 不寫死任何一個。
+    [Fact]
+    public static void TheLengthFeedbackScriptHardCodesNeitherTheRuleNorTheWording()
+    {
+        var script = File.ReadAllText(Path.Combine(WebPath(), "wwwroot", "design", "forms.js"));
+        var section = script[script.IndexOf("// ---- 新密碼的長度回饋", StringComparison.Ordinal)..script.IndexOf("// ---- 送出中的回饋", StringComparison.Ordinal)];
+
+        Assert.Contains("dataset.min", section, StringComparison.Ordinal);
+        Assert.Contains("dataset.textShort", section, StringComparison.Ordinal);
+        Assert.Contains("dataset.textOk", section, StringComparison.Ordinal);
+        var code = string.Join('\n', section.Split('\n').Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal)));
+        Assert.DoesNotMatch(@"\b(?:12|128)\b|還差|長度夠了", code);
+    }
+
     private static bool IsPasswordField(string file) =>
         string.Equals(Path.GetFileName(file), "PasswordField.razor", StringComparison.Ordinal);
 
@@ -103,6 +177,9 @@ public static partial class PasswordFieldTests
 
     [GeneratedRegex("autocomplete=\"new-password\"", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
     private static partial Regex NewPasswordHint();
+
+    [GeneratedRegex("""<PasswordField\b[^>]*\b(?:Min|Max)Length\s*=\s*"\d+"|至少\s*\d+\s*個字元""", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex HardCodedRule();
 
     [GeneratedRegex(
         """type\s*=\s*["']password["']|InputType\s*\.\s*Password|InputType\s*=\s*"Password\b""",

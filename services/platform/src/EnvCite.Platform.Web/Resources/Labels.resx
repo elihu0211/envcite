@@ -92,6 +92,9 @@
   <data name="Outcome.password.same_as_current" xml:space="preserve"><value>新密碼不能與目前的密碼相同。</value></data>
   <data name="Outcome.password.current_incorrect" xml:space="preserve"><value>目前的密碼不正確。</value></data>
   <data name="Outcome.password.too_short" xml:space="preserve"><value>新密碼至少要 {0} 個字元。</value></data>
+  <data name="Outcome.password.too_long" xml:space="preserve"><value>新密碼最多 {0} 個字元。</value></data>
+  <data name="Outcome.password.too_guessable" xml:space="preserve"><value>這個密碼太容易被猜到。換成幾個不相干的詞連起來。</value></data>
+  <data name="Outcome.password.contains_account_info" xml:space="preserve"><value>新密碼不能包含你的 email。</value></data>
   <data name="Outcome.password.not_acceptable" xml:space="preserve"><value>新密碼不符合規則。</value></data>
   <data name="Outcome.identity.rejected" xml:space="preserve"><value>{0}</value></data>
   <data name="Outcome.two_factor.already_enabled" xml:space="preserve"><value>已經啟用了兩步驟驗證。</value></data>

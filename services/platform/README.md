@@ -140,6 +140,25 @@ env 'ENVCITE_Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command=I
 
 不變式（授權、順序為何固定）見 [`AGENTS.md`](AGENTS.md) 的「營運者帳號」。
 
+## 密碼規則
+
+營運者（`/ui`）與客戶入口的成員適用同一套，在設定與修改密碼時檢查（邀請啟用、改密碼；營運者經手的一次性密碼也經同一個驗證器）。依 NIST SP 800-63B：**長度比組成重要**，只要求夠長、不太容易被猜到，不強制大小寫、數字或符號，不要求定期換密碼；任何字元（含空白與中文）都可以。
+
+| 規則 | 說明 | 失敗代碼（`OutcomeCodes`） |
+|------|------|--------------------------|
+| 最短與最長長度 | 數字在 `PasswordPolicy`（`SharedKernel`）；長度以 UTF-16 字元數計，與瀏覽器的 `length` 同一種算法 | `password.too_short`、`password.too_long` |
+| 不含自己的 email | 完整 email 與名稱部分（名稱太短時不比對）；不分大小寫 | `password.contains_account_info` |
+| 不太容易被猜到 | 強度估算（[zxcvbn](https://github.com/dropbox/zxcvbn)，分數 0 到 4）達 `PasswordPolicy` 的最低分數：擋常見密碼、鍵盤順序、連續或重複字元、「大寫加數字加驚嘆號」這類套路；帳號資料也算已知的猜測素材 | `password.too_guessable` |
+| 與目前的密碼不同 | 只在修改時 | `password.same_as_current` |
+
+失敗的訊息依代碼取使用者的語言並說明原因，連結仍有效、可以重打；密碼不寫回表單。連續失敗鎖定帳號（見 [`AGENTS.md`](AGENTS.md)）。
+
+**提示**：設定與修改密碼的頁面（啟用、改密碼；後台與入口）共用 `NewPasswordField` 模板，數字取自 `PasswordPolicy`，頁面不自己寫：
+
+- 三條短句：至少 N 個字元、不含你的 email、避開常見密碼與連續、重複的字元；再加一句「不必混用大小寫或符號」。
+- 有 JavaScript 時，長度那條即時打勾並說還差幾個；沒有時說明與 `minlength`／`maxlength` 仍在。
+- 螢幕閱讀器只在長度剛夠時被通知一次；後兩條由伺服器檢查，失敗時說明原因。
+
 ## 邀請與信箱驗證
 
 登入名稱是 email（不分大小寫；營運者全域唯一，入口成員在租戶內唯一）。`EmailConfirmed` 表示信箱歸屬已由連結證明。

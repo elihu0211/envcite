@@ -70,6 +70,52 @@
         }
     });
 
+    // ---- 新密碼的長度回饋 --------------------------------------------------------------------------
+    // NewPasswordField 清單裡「長度」那一條：夠了就打勾，不夠就說還差幾個。長度用 value.length（UTF-16，與伺服器端同一種算法）。
+    // 畫面上每個字元都更新；螢幕閱讀器只在剛好跨過最短長度時聽到一次，不逐字念。
+    // 最短長度與兩段文字都由伺服器端寫在 data-*，這裡不寫死任何一個。
+    const guideOf = (input) => input.closest(".ep-field-row")?.querySelector(".ep-password-guide");
+
+    const updateGuide = (input, announce) => {
+        const guide = guideOf(input);
+        const min = Number(guide?.dataset.min);
+        if (!guide || !min) {
+            return;
+        }
+
+        const length = input.value.length;
+        const rule = guide.querySelector("[data-rule=length]");
+        const wasMet = rule.hasAttribute("data-met");
+        const met = length >= min;
+        rule.toggleAttribute("data-met", met);
+        rule.querySelector(".ep-password-remaining").textContent =
+            length === 0 || met ? "" : guide.dataset.textShort.replace("{0}", String(min - length));
+
+        const live = guide.querySelector(".ep-password-announce");
+        if (met && !wasMet && announce) {
+            live.textContent = guide.dataset.textOk;
+        } else if (!met) {
+            live.textContent = "";
+        }
+    };
+
+    document.addEventListener("input", (event) => {
+        if (event.target instanceof HTMLInputElement && event.target.closest(".ep-password")) {
+            updateGuide(event.target, true);
+        }
+    });
+
+    // 密碼管理員自動填入、上一頁還原：頁面載入與還原時依目前的值畫一次（不通知）。
+    const renderAllGuides = () => document.querySelectorAll(".ep-password-guide").forEach((guide) => {
+        const input = guide.closest(".ep-field-row")?.querySelector(".ep-password input");
+        if (input) {
+            updateGuide(input, false);
+        }
+    });
+    renderAllGuides();
+    document.addEventListener("DOMContentLoaded", renderAllGuides);
+    window.addEventListener("pageshow", renderAllGuides);
+
     // ---- 送出中的回饋 ------------------------------------------------------------------------------
     // 按下送出後按鈕立刻變成「處理中」，也擋掉連點的第二次送出。等一拍再看有沒有人（Blazor 的互動表單）接手：
     // 被接手的送出不會離開頁面，不能卡在處理中。

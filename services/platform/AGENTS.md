@@ -81,7 +81,8 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 每個租戶範圍的查詢都必須以 `TenantId` 過濾；不經審查不得停用查詢過濾。只能**按名稱**繞過租戶過濾（`IgnoreQueryFilters([TenantToken])`），且只在審查過的跨租戶查詢（API key 認證、對話紀錄與冪等紀錄的保存期限清理）。
 - **一次性密碼**：隨機產生、只顯示一次、只存雜湊；不得進任何日誌或稽核，也不得寄信（信裡只放連結，見「邀請與信箱驗證」）。
 - 登入失敗**永遠不透露**帳號是否存在、是否鎖定或停用（一個訊息；不存在的帳號仍付一次雜湊的成本）；失敗的表單**不回填**密碼或驗證碼；稽核與日誌**不記輸入的內容**（人會把密碼貼進 email 欄；稽核表只增不改），只有形如 email 的輸入才記。
-- 密碼規則：最小長度、無組成規則（NIST SP 800-63B）；連續失敗鎖定帳號。營運者與客戶兩邊規則相同。
+- **密碼規則的唯一來源是 `PasswordPolicy`**（`SharedKernel`；規則表見 README「密碼規則」）：夠長、不含自己的 email、強度（zxcvbn）夠，**不強制組成、不定期換**（NIST SP 800-63B）；連續失敗鎖定帳號。營運者與客戶兩邊規則相同，`MembersModule.AddPasswordPolicy<TUser>()` 讓兩個 Identity 註冊用同一份驗證器（`PasswordPolicyValidator`，在內建長度檢查之後執行；一次性密碼也要過）。驗證器的錯誤只帶穩定代碼，經 `IdentityOutcomes` 轉成結果代碼；密碼與 email 不進日誌或錯誤描述。要調嚴或放寬，改 `PasswordPolicy` 的常數；提示與驗證同源，不要在頁面或文案裡另寫數字。
+- **設定或修改密碼的欄位一律用 `Shared/NewPasswordField` 模板**（它包 `PasswordField`，加一份三條的規則清單，數字讀 `PasswordPolicy`）：頁面不自己寫 `minlength`、「至少 N 個字元」或清單。長度回饋是漸進增強（`forms.js`，文字與最短長度由伺服器寫在 `data-*`），沒有 JavaScript 時說明與 `minlength`／`maxlength` 仍在；螢幕閱讀器只在長度剛夠時被通知，不逐字念；只有長度能即時檢查，其餘由伺服器擋下，清單不假裝即時。`PasswordFieldTests` 掃原始碼守住。
 
 ### 營運者帳號（`/ui`）
 

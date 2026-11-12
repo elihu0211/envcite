@@ -11,11 +11,14 @@ internal static class IdentityOutcomes
     public static AdminOutcome<T> Rejected<T>(IdentityError error) =>
         AdminOutcome.Invalid<T>(OutcomeCodes.IdentityRejected, error.Description);
 
-    /// <summary>改密碼時 Identity 拒絕：目前的密碼不對、太短、或不符規則。</summary>
+    /// <summary>改密碼時 Identity 拒絕：目前的密碼不對、太短、太長、含有 email、太容易被猜到，或其他不符規則。</summary>
     public static AdminOutcome<T> PasswordRejected<T>(IdentityError error) => error.Code switch
     {
         nameof(IdentityErrorDescriber.PasswordMismatch) => AdminOutcome.Invalid<T>(OutcomeCodes.PasswordCurrentIncorrect),
-        nameof(IdentityErrorDescriber.PasswordTooShort) => AdminOutcome.Invalid<T>(OutcomeCodes.PasswordTooShort, MembersModule.MinimumPasswordLength),
+        nameof(IdentityErrorDescriber.PasswordTooShort) => AdminOutcome.Invalid<T>(OutcomeCodes.PasswordTooShort, PasswordPolicy.MinimumLength),
+        PasswordPolicyErrors.TooLong => AdminOutcome.Invalid<T>(OutcomeCodes.PasswordTooLong, PasswordPolicy.MaximumLength),
+        PasswordPolicyErrors.ContainsAccountInfo => AdminOutcome.Invalid<T>(OutcomeCodes.PasswordContainsAccountInfo),
+        PasswordPolicyErrors.TooGuessable => AdminOutcome.Invalid<T>(OutcomeCodes.PasswordTooGuessable),
         _ => AdminOutcome.Invalid<T>(OutcomeCodes.PasswordNotAcceptable),
     };
 }

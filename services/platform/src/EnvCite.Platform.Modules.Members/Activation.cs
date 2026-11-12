@@ -93,7 +93,7 @@ internal static class Activation
 
         if (string.IsNullOrEmpty(newPassword))
         {
-            return (AdminOutcome.Invalid<ActivationState>(OutcomeCodes.PasswordTooShort, MembersModule.MinimumPasswordLength), null);
+            return (AdminOutcome.Invalid<ActivationState>(OutcomeCodes.PasswordTooShort, PasswordPolicy.MinimumLength), null);
         }
 
         var added = await users.AddPasswordAsync(user, newPassword);

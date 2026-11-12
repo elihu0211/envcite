@@ -31,6 +31,9 @@ public static class OutcomeCodes
     public const string PasswordSameAsCurrent = "password.same_as_current";
     public const string PasswordCurrentIncorrect = "password.current_incorrect";
     public const string PasswordTooShort = "password.too_short";
+    public const string PasswordTooLong = "password.too_long";
+    public const string PasswordTooGuessable = "password.too_guessable";
+    public const string PasswordContainsAccountInfo = "password.contains_account_info";
     public const string PasswordNotAcceptable = "password.not_acceptable";
     public const string IdentityRejected = "identity.rejected";
     public const string TwoFactorAlreadyEnabled = "two_factor.already_enabled";
@@ -78,6 +81,9 @@ public static class OutcomeCodes
         [PasswordSameAsCurrent] = "The new password must differ from the current one.",
         [PasswordCurrentIncorrect] = "The current password is incorrect.",
         [PasswordTooShort] = "The new password must be at least {0} characters.",
+        [PasswordTooLong] = "The new password must be at most {0} characters.",
+        [PasswordTooGuessable] = "This password is too easy to guess. Try a few unrelated words strung together.",
+        [PasswordContainsAccountInfo] = "The new password must not contain your email.",
         [PasswordNotAcceptable] = "The new password does not meet the rules.",
         [IdentityRejected] = "{0}",
         [TwoFactorAlreadyEnabled] = "Two-step verification is already enabled.",

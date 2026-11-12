@@ -101,6 +101,33 @@ public sealed partial class InvitationTests(PlatformFactory factory)
         });
     }
 
+    // 密碼規則：太容易被猜到、含有自己的 email，都被擋下並說明原因；連結仍有效，換一個好的就成功。不強制大小寫與符號。
+    [Fact]
+    public async Task APasswordThatIsEasyToGuessOrContainsTheEmailIsRefusedWithAReasonAndTheLinkSurvives()
+    {
+        await factory.WithMail(async () =>
+        {
+            var (tenant, email, _) = await InviteMemberAsync("inv-policy");
+            var link = LinkTo(email);
+            using var browser = new PortalBrowser(factory);
+
+            var guessable = await browser.SubmitAsync(link, ActivationForm("Password123!!", "Password123!!"));
+            Assert.Null(guessable.Location);
+            Assert.Contains("太容易被猜到", guessable.Html, StringComparison.Ordinal);
+
+            var name = email[..email.IndexOf('@', StringComparison.Ordinal)];
+            var withEmail = $"{name}-purple-walrus-lamp";
+            var containsEmail = await browser.SubmitAsync(link, ActivationForm(withEmail, withEmail));
+            Assert.Null(containsEmail.Location);
+            Assert.Contains("不能包含你的 email", containsEmail.Html, StringComparison.Ordinal);
+            Assert.DoesNotContain(withEmail, containsEmail.Html, StringComparison.Ordinal); // 密碼不寫回表單
+
+            // 沒有大小寫與符號的句子照樣過。
+            var done = await browser.SubmitAsync(link, ActivationForm("blue bicycle milk tuesday", "blue bicycle milk tuesday"));
+            Assert.Equal($"{Login(tenant.Identifier)}?activated=1", done.Location);
+        });
+    }
+
     [Fact]
     public async Task SettingAPasswordThroughTheLinkActivatesVerifiesAndConsumesIt()
     {
