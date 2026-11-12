@@ -4,7 +4,7 @@
 @inject AuthenticationStateProvider Auth
 @inject IJSRuntime Js
 
-<MudDialog>
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
         @if (_issued is null)
         {

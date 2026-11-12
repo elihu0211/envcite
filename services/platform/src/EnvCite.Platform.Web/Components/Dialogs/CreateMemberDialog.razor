@@ -2,7 +2,7 @@
 @inject IMemberAdmin Members
 @inject AuthenticationStateProvider Auth
 
-<MudDialog>
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
         <MudTextField @bind-Value="_email" Label="@L["電子郵件"]" InputType="InputType.Email" Variant="Variant.Outlined" Required="true" OnlyValidateIfDirty="true"
                       Immediate="true" MaxLength="254" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp"
