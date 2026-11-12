@@ -9,8 +9,7 @@
 <PortalShell TenantName="展示租戶" HomeHref="/design" UserEmail="owner@example.test" RoleLabel="擁有者" AvatarText="O" ShowMenu="true" MenuItems="@_menu" NavItems="@_nav">
     <PageHeader Title="元件展示" Description="只在 Development 看得到。配色、字級與字型都來自 DesignTokens.cs（規格見 DESIGN.md）。左側是工作區，右上角的頭像是帳號選單。" />
 
-    <section class="ep-card" aria-labelledby="g-ask">
-        <h2 id="g-ask" class="ep-section-title">問答</h2>
+    <SectionCard Id="g-ask" Title="問答">
         <div class="ep-thread">
             <p class="ep-bubble">噪音管制標準 <span class="ep-bubble-meta">現行</span></p>
             <div class="ep-answer">
@@ -32,10 +31,9 @@
                 <button type="button" class="ep-chip">廢棄物清理</button>
             </div>
         </div>
-    </section>
+    </SectionCard>
 
-    <section class="ep-card" aria-labelledby="g-color">
-        <h2 id="g-color" class="ep-section-title">色彩</h2>
+    <SectionCard Id="g-color" Title="色彩">
         <div class="ep-swatches">
             @foreach (var (name, label) in _colors)
             {
@@ -46,10 +44,9 @@
                 </div>
             }
         </div>
-    </section>
+    </SectionCard>
 
-    <section class="ep-card" aria-labelledby="g-type">
-        <h2 id="g-type" class="ep-section-title">字級</h2>
+    <SectionCard Id="g-type" Title="字級">
         <p class="ep-hint">@string.Join("，", DesignTokens.FontFamily)</p>
         @foreach (var (name, sample) in _types)
         {
@@ -57,10 +54,9 @@
                 @sample <code class="ep-mono">@name</code>
             </p>
         }
-    </section>
+    </SectionCard>
 
-    <section class="ep-card" aria-labelledby="g-btn">
-        <h2 id="g-btn" class="ep-section-title">按鈕與表單</h2>
+    <SectionCard Id="g-btn" Title="按鈕與表單">
         <div class="ep-actions">
             <button type="button" class="ep-btn ep-btn-primary">主要動作</button>
             <button type="button" class="ep-btn ep-btn-quiet">次要動作</button>
@@ -70,7 +66,7 @@
                 <input id="g-email" class="ep-input" type="email" placeholder="name@example.com" />
             </FormField>
             <FormField For="g-role" Label="角色">
-                <select id="g-role" class="ep-input"><option>唯讀</option><option>開發者</option></select>
+                <OptionSelect Id="g-role" Name="g-role" Label="角色" Inline="false" Options="_roles" />
             </FormField>
         </div>
         <PostForm Model="_sample" FormName="design-sample">
@@ -82,16 +78,14 @@
                 <OtpField Id="g-otp" @bind-Value="_sample.Code" />
             </FormField>
         </PostForm>
-    </section>
+    </SectionCard>
 
-    <section class="ep-card" aria-labelledby="g-recovery">
-        <h2 id="g-recovery" class="ep-section-title">復原碼</h2>
+    <SectionCard Id="g-recovery" Title="復原碼">
         <p class="ep-hint">工具列：下載（文字檔）、複製、列印。</p>
         <RecoveryCodes Codes="_sampleCodes" />
-    </section>
+    </SectionCard>
 
-    <section class="ep-card" aria-labelledby="g-badge">
-        <h2 id="g-badge" class="ep-section-title">徽章與提示</h2>
+    <SectionCard Id="g-badge" Title="徽章與提示">
         <p>
             <StatusBadge>中性</StatusBadge>
             <StatusBadge Tone="success">正常</StatusBadge>
@@ -104,46 +98,58 @@
         <FormAlert Kind="AlertKind.Warning">注意：這個操作無法復原。</FormAlert>
         <FormAlert>錯誤：請稍後再試。</FormAlert>
         <FormAlert Kind="AlertKind.Info">資訊：系統將於今晚進行維護。</FormAlert>
-    </section>
+    </SectionCard>
 
-    <section class="ep-card" aria-labelledby="g-skeleton">
-        <h2 id="g-skeleton" class="ep-section-title">載入中（骨架屏）</h2>
+    <SectionCard Id="g-skeleton" Title="載入中（骨架屏）">
         <p class="ep-hint">內容還沒到時先畫出它的版面，灰塊緩緩一明一暗；內容到了取代它。</p>
         <Skeleton Kind="table" Rows="3" Label="載入中" />
-    </section>
+    </SectionCard>
 
-    <section class="ep-card ep-table-card ep-cards" aria-labelledby="g-table">
-        <h2 id="g-table" class="ep-section-title ep-card-title">表格（窄卡片時變成一列一張小卡）</h2>
-        <div class="ep-table-wrap">
-            <table class="ep-plain-table" aria-label="範例">
-                <thead>
-                    <tr><th scope="col">電子郵件</th><th scope="col">角色</th><th scope="col">狀態</th></tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>owner@example.test</td>
-                        <td data-label="角色">擁有者</td>
-                        <td data-label="狀態"><StatusBadge Tone="success">正常</StatusBadge> <StatusBadge Tone="info">兩步驟</StatusBadge></td>
-                    </tr>
-                    <tr>
-                        <td>viewer@example.test</td>
-                        <td data-label="角色">唯讀</td>
-                        <td data-label="狀態"><StatusBadge Tone="neutral">已停用</StatusBadge></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
+    <SectionCard Id="g-table" Title="表格（窄卡片時變成一列一張小卡）" Class="ep-table-card ep-cards" TitleClass="ep-card-title">
+        <DataTable Items="_rows" Columns="_columns" Label="範例" Plain="true" />
+    </SectionCard>
 
-    <section class="ep-card" aria-labelledby="g-empty">
+    <SectionCard Id="g-stats" Title="摘要磚">
+        <StatGrid Items="_stats" Label="範例摘要" />
+    </SectionCard>
+
+    <SectionCard>
         <EmptyState Icon="@Icons.Material.Outlined.Inbox" Title="還沒有資料" Description="現在是什麼狀態、下一步可以做什麼。">
             <button type="button" class="ep-btn ep-btn-primary">新增</button>
         </EmptyState>
-    </section>
+    </SectionCard>
 </PortalShell>
 
 @code {
     private readonly SampleForm _sample = new();
+
+    private sealed record SampleRow(string Email, string Role, bool Active);
+
+    private static readonly SampleRow[] _rows = [new("owner@example.test", "擁有者", true), new("viewer@example.test", "唯讀", false)];
+
+    private static readonly ColumnDef<SampleRow>[] _columns =
+    [
+        new() { Title = "電子郵件", Labeled = false, Cell = row => @<text>@row.Email</text> },
+        new() { Title = "角色", Cell = row => @<text>@row.Role</text> },
+        new()
+        {
+            Title = "狀態",
+            Cell = row => @<text>
+                @if (row.Active)
+                {
+                    <StatusBadge Tone="success">正常</StatusBadge> <StatusBadge Tone="info">兩步驟</StatusBadge>
+                }
+                else
+                {
+                    <StatusBadge Tone="neutral">已停用</StatusBadge>
+                }
+            </text>,
+        },
+    ];
+
+    private static readonly SelectOption[] _roles = [new("viewer", "唯讀"), new("developer", "開發者")];
+
+    private static readonly StatItem[] _stats = [new("租戶", "12", "都有方案", "/design"), new("呼叫次數", "3,408", "近 30 天")];
 
     private static readonly string[] _sampleCodes =
         ["G5QRJ-T8WRM", "DT2HN-WVRXY", "MGHP2-QXYFY", "6962B-99K82", "FJG9V-P68T7", "TTR3T-TGB6F", "N3TJQ-FFR2D", "Y6X6B-6H2TN", "QM3MJ-3K927", "QKHW5-2949G"];

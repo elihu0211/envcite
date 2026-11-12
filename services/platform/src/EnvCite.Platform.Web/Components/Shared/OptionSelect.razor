@@ -1,0 +1,32 @@
+@* 原生下拉選單：選項由資料給，名稱就是 POST 的欄位名稱。用在表格列裡（沒有獨立標籤，無障礙名稱放 Label）；
+   一般表單的欄位用 <SelectField>。頁面不自己寫 <select class="ep-input">。 *@
+<select id="@Id" name="@Name" class="@(Inline ? "ep-input ep-input-inline" : "ep-input")" aria-label="@Label">
+    @foreach (var option in Options)
+    {
+        <option value="@option.Value" selected="@(option.Value == Value)">@option.Text</option>
+    }
+</select>
+
+@code {
+    /// <summary>給 <c>&lt;label for&gt;</c> 對上的 id；列裡的下拉選單沒有可見標籤，不需要。</summary>
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>無障礙名稱，例如「某某的角色」。</summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public IEnumerable<SelectOption> Options { get; set; } = [];
+
+    /// <summary>目前選的值。</summary>
+    [Parameter]
+    public string? Value { get; set; }
+
+    /// <summary>放在列裡的窄版（預設）。</summary>
+    [Parameter]
+    public bool Inline { get; set; } = true;
+}

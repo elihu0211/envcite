@@ -1,0 +1,34 @@
+@using System.Linq.Expressions
+@* 表單的一個下拉欄位：<FormField>（標籤與說明）加 InputSelect，選項由資料給，用 @bind-Value 接到表單模型。
+   頁面不自己寫 <InputSelect class="ep-input"> 與 <option> 迴圈。 *@
+<FormField For="@For" Label="@Label" Hint="@Hint">
+    <InputSelect id="@For" Value="Value" ValueChanged="ValueChanged" ValueExpression="ValueExpression" class="ep-input">
+        @foreach (var option in Options)
+        {
+            <option value="@option.Value">@option.Text</option>
+        }
+    </InputSelect>
+</FormField>
+
+@code {
+    [Parameter, EditorRequired]
+    public string For { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Hint { get; set; }
+
+    [Parameter, EditorRequired]
+    public IEnumerable<SelectOption> Options { get; set; } = [];
+
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public Expression<Func<string>>? ValueExpression { get; set; }
+}

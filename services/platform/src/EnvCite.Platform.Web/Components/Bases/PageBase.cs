@@ -11,12 +11,37 @@ namespace EnvCite.Platform.Web.Components.Bases;
 /// <summary>
 /// 頁面的基底：導覽與一則頁面層級的錯誤（<see cref="Error"/>，由 <c>&lt;FormAlert&gt;</c> 顯示）。
 /// 結果代碼轉成使用者語言的文字只有一條路：<see cref="Describe{T}"/>（代碼取自資源檔，沒有代碼時退回英文說明，再退回呼叫端給的句子）。
+/// 載入資料的頁面用 <see cref="LoadingAsync"/> 包住查詢，狀態交給 <c>&lt;LoadedView&gt;</c> 畫（失敗、載入中、查無、有資料）。
 /// </summary>
 public abstract class PageBase : PlatformComponentBase
 {
     [Inject] protected NavigationManager Navigation { get; set; } = default!;
 
     protected string? Error { get; set; }
+
+    /// <summary>正在載入資料。<see cref="LoadingAsync"/> 開始時為 true、結束時為 false；已有現成資料（預先渲染的快照）時由頁面自己設為 false。</summary>
+    protected bool Loading { get; set; }
+
+    /// <summary>
+    /// 載入資料的流程：開始時清掉上一次的錯誤並標示載入中，查詢失敗不讓頁面或電路掛掉，只把例外型別放進 <see cref="Error"/>
+    /// （訊息可能帶內部細節，不顯示）。取消不算失敗，照常往外丟。
+    /// </summary>
+    protected async Task LoadingAsync(Func<Task> load)
+    {
+        (Loading, Error) = (true, null);
+        try
+        {
+            await load();
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            Error = exception.GetType().Name;
+        }
+        finally
+        {
+            Loading = false;
+        }
+    }
 
     protected static string Describe<T>(AdminOutcome<T> outcome, string fallback) => outcome.Localized() ?? fallback;
 }
