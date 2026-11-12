@@ -42,7 +42,7 @@ public static partial class DesignTokenTests
     public static TheoryData<string, string, string, double> TextPairs()
     {
         var data = new TheoryData<string, string, string, double>();
-        foreach (var (name, c) in new[] { ("light", DesignTokens.Light) })
+        foreach (var (name, c) in new[] { ("light", DesignTokens.Light), ("dark", DesignTokens.Dark) })
         {
             // 一般文字 4.5:1。
             data.Add(name, "text on background", $"{c.Text}|{c.Background}", 4.5);
@@ -51,6 +51,11 @@ public static partial class DesignTokenTests
             data.Add(name, "secondary text on surface", $"{c.TextSecondary}|{c.Surface}", 4.5);
             data.Add(name, "text on muted surface", $"{c.Text}|{c.SurfaceMuted}", 4.5);
             data.Add(name, "secondary text on muted surface", $"{c.TextSecondary}|{c.SurfaceMuted}", 4.5);
+            // 浮起的表面（對話框、選單）：深色靠更亮的底分出層次，字與外框在上面也要過關。
+            data.Add(name, "text on raised surface", $"{c.Text}|{c.SurfaceRaised}", 4.5);
+            data.Add(name, "secondary text on raised surface", $"{c.TextSecondary}|{c.SurfaceRaised}", 4.5);
+            data.Add(name, "control border on raised surface", $"{c.BorderControl}|{c.SurfaceRaised}", 3.0);
+            data.Add(name, "link on raised surface", $"{c.Link}|{c.SurfaceRaised}", 4.5);
             // 徽章與提示框：狀態色的字壓在自己一成的淡底上；選取的導覽項是主色壓在主色一成的淡底上。
             data.Add(name, "success on its tint", $"{c.Success}|{Tint(c.Success, c.Surface)}", 4.5);
             data.Add(name, "warning on its tint", $"{c.Warning}|{Tint(c.Warning, c.Surface)}", 4.5);
@@ -88,45 +93,87 @@ public static partial class DesignTokenTests
         Assert.True(ratio >= minimum, $"{scheme}: {pair} is {ratio:F2}:1, needs {minimum}:1");
     }
 
+    // 深色是同一組變數換一份值：淺色在 :root 定義一次，深色在「系統深色且沒選淺色」與「選了深色」兩處各定義一次，
+    // 兩處內容一字不差（由同一個函式產生）。
     [Fact]
     public static void TheCssDefinesEveryColorTokenForBothSchemes()
     {
         var css = TokenCss.Render();
 
         var baseBlock = css[..css.IndexOf("@media", StringComparison.Ordinal)];
+        var system = Block(css, "@media (prefers-color-scheme:dark){:root:not([data-theme=\"light\"]){");
+        var chosen = Block(css, ":root[data-theme=\"dark\"]{");
+        Assert.Equal(system, chosen);
+
         foreach (var variable in new[]
         {
-            "--ep-bg", "--ep-surface", "--ep-surface-muted", "--ep-text", "--ep-text-secondary", "--ep-primary", "--ep-on-primary",
-            "--ep-link", "--ep-success", "--ep-warning", "--ep-error", "--ep-info", "--ep-border-subtle", "--ep-border-control",
-            "--ep-focus", "--ep-scrim", "--ep-press-scale", "--ep-touch-target", "--ep-label-s-size",
+            "--ep-bg", "--ep-surface", "--ep-surface-raised", "--ep-surface-muted", "--ep-text", "--ep-text-secondary", "--ep-primary",
+            "--ep-on-primary", "--ep-ink", "--ep-on-ink", "--ep-accent", "--ep-link", "--ep-success", "--ep-warning", "--ep-error", "--ep-info",
+            "--ep-border-subtle", "--ep-border-control", "--ep-focus", "--ep-scrim", "--ep-elevation-1",
+        })
+        {
+            Assert.Equal(1, Regex.Count(baseBlock, Regex.Escape(variable + ":")));
+            Assert.Equal(1, Regex.Count(chosen, Regex.Escape(variable + ":")));
+        }
+
+        // 與配色無關的 token 只在 :root 定義一次，深色不重複。
+        foreach (var variable in new[]
+        {
+            "--ep-press-scale", "--ep-touch-target", "--ep-label-s-size", "--ep-qr-surface",
             "--ep-motion-fast", "--ep-motion-normal", "--ep-motion-slow", "--ep-motion-reveal",
             "--ep-motion-ease-standard", "--ep-motion-ease-enter", "--ep-motion-ease-exit", "--ep-motion-ease-move",
             "--ep-radius-pill",
         })
         {
-            // 只有淺色：每個變數在 :root 只定義一次（使用者偏好的覆寫另在 @media 內，見下一個測試）。
             Assert.Equal(1, Regex.Count(baseBlock, Regex.Escape(variable + ":")));
+            Assert.DoesNotContain(variable + ":", chosen, StringComparison.Ordinal);
         }
 
-        // 產品決定只做淺色：不得出現任何深色的規則，系統設成深色時頁面也維持淺色。
-        Assert.DoesNotContain("prefers-color-scheme", css, StringComparison.Ordinal);
-        Assert.DoesNotContain("data-theme", css, StringComparison.Ordinal);
-        Assert.Contains("color-scheme:light", css, StringComparison.Ordinal);
+        // 深色值逐項對得上調色盤；MudBlazor 的變數也蓋成同一份。
+        var dark = DesignTokens.Dark;
+        Assert.Contains($"--ep-bg:{dark.Background};", chosen, StringComparison.Ordinal);
+        Assert.Contains($"--ep-surface:{dark.Surface};", chosen, StringComparison.Ordinal);
+        Assert.Contains($"--ep-text:{dark.Text};", chosen, StringComparison.Ordinal);
+        Assert.Contains($"--ep-primary:{dark.Primary};", chosen, StringComparison.Ordinal);
+        Assert.Contains($"--mud-palette-surface:{dark.SurfaceRaised};", chosen, StringComparison.Ordinal);
+        Assert.Contains($"--mud-palette-text-primary:{dark.Text};", chosen, StringComparison.Ordinal);
+        Assert.Contains($"--mud-palette-primary:{dark.Primary};", chosen, StringComparison.Ordinal);
+        Assert.DoesNotContain("--mud-palette", baseBlock, StringComparison.Ordinal); // 淺色那組由 MudThemeProvider 輸出
+
+        // 瀏覽器的原生控制項、捲軸跟著配色：預設跟隨系統，選定後鎖住。
+        Assert.Contains("color-scheme:light dark;", baseBlock, StringComparison.Ordinal);
+        Assert.Contains("color-scheme:dark;", chosen, StringComparison.Ordinal);
+        Assert.Contains(":root[data-theme=\"light\"]{color-scheme:light;}", css, StringComparison.Ordinal);
         Assert.Contains("--ep-font:\"Inter Variable\",\"Noto Sans TC Variable\",sans-serif;", css, StringComparison.Ordinal);
     }
 
-    // 使用者偏好集中在 token 這一層：較高對比時髮絲線與次要文字加深，減少動態時位移與縮放歸零。
+    // 取出以 <paramref name="opening"/> 開頭的規則內文（到對應的右大括號為止）。
+    private static string Block(string css, string opening)
+    {
+        var start = css.IndexOf(opening, StringComparison.Ordinal);
+        Assert.True(start >= 0, opening);
+        var end = css.IndexOf('}', start + opening.Length);
+        return css[(start + opening.Length)..end];
+    }
+
+    // 使用者偏好集中在 token 這一層：較高對比時髮絲線與次要文字加深（兩套配色各用自己的一對），減少動態時位移與縮放歸零。
     [Fact]
     public static void UserPreferencesAreOverriddenInTheTokensNotPerComponent()
     {
         var css = TokenCss.Render();
-        var c = DesignTokens.Light;
+        var light = DesignTokens.Light;
+        var dark = DesignTokens.Dark;
 
-        Assert.Contains($"@media (prefers-contrast:more){{:root{{--ep-border-subtle:{c.BorderControl};--ep-text-secondary:{c.Text};}}}}", css, StringComparison.Ordinal);
+        Assert.Contains($"@media (prefers-contrast:more){{:root{{--ep-border-subtle:{light.BorderControl};--ep-text-secondary:{light.Text};}}}}", css, StringComparison.Ordinal);
+        Assert.Contains($"@media (prefers-contrast:more) and (prefers-color-scheme:dark){{:root:not([data-theme=\"light\"]){{--ep-border-subtle:{dark.BorderControl};--ep-text-secondary:{dark.Text};}}}}", css, StringComparison.Ordinal);
+        Assert.Contains($"@media (prefers-contrast:more){{:root[data-theme=\"dark\"]{{--ep-border-subtle:{dark.BorderControl};--ep-text-secondary:{dark.Text};}}}}", css, StringComparison.Ordinal);
         Assert.Contains("@media (prefers-reduced-motion:reduce){:root{--ep-press-scale:1;--ep-motion-scale:1;--ep-motion-travel:0rem;--ep-motion-travel-sm:0rem;}}", css, StringComparison.Ordinal);
         // 加深之後的次要文字與髮絲線也要過關。
-        Assert.True(Contrast(c.Text, c.Surface) >= 4.5);
-        Assert.True(Contrast(c.BorderControl, c.Surface) >= 3.0);
+        foreach (var c in new[] { light, dark })
+        {
+            Assert.True(Contrast(c.Text, c.Surface) >= 4.5);
+            Assert.True(Contrast(c.BorderControl, c.Surface) >= 3.0);
+        }
     }
 
     // 兩個斷點是唯一的視窗寬度分界：平板 48rem、桌機 80rem，rem 單位，由小到大。
@@ -289,32 +336,38 @@ public static partial class DesignTokenTests
     public static void TheDesignSpecMatchesTheSingleTokenSource()
     {
         var spec = File.ReadAllText(DesignSpecPath());
-        var c = DesignTokens.Light;
-        foreach (var (key, value) in new Dictionary<string, string>
+        var darkStart = spec.IndexOf("colors-dark:", StringComparison.Ordinal);
+        Assert.True(darkStart > 0, "DESIGN.md 要有 colors-dark 區塊");
+        var darkSpec = spec[darkStart..spec.IndexOf("```", darkStart, StringComparison.Ordinal)];
+        var lightSpec = spec[..darkStart];
+        foreach (var (c, block) in new[] { (DesignTokens.Light, lightSpec), (DesignTokens.Dark, darkSpec) })
         {
-            ["primary"] = c.Primary,
-            ["on-primary"] = c.OnPrimary,
-            ["link"] = c.Link,
-            ["focus"] = c.Focus,
-            ["background"] = c.Background,
-            ["surface"] = c.Surface,
-            ["surface-raised"] = c.SurfaceRaised,
-            ["surface-muted"] = c.SurfaceMuted,
-            ["text"] = c.Text,
-            ["text-secondary"] = c.TextSecondary,
-            ["ink"] = c.Ink,
-            ["on-ink"] = c.OnInk,
-            ["accent"] = c.Accent,
-            ["success"] = c.Success,
-            ["warning"] = c.Warning,
-            ["error"] = c.Error,
-            ["info"] = c.Info,
-            ["border-subtle"] = c.BorderSubtle,
-            ["border-control"] = c.BorderControl,
-            ["scrim"] = c.Scrim,
-        })
-        {
-            Assert.Contains($"  {key}: \"{value}\"", spec, StringComparison.Ordinal);
+            foreach (var (key, value) in new Dictionary<string, string>
+            {
+                ["primary"] = c.Primary,
+                ["on-primary"] = c.OnPrimary,
+                ["link"] = c.Link,
+                ["focus"] = c.Focus,
+                ["background"] = c.Background,
+                ["surface"] = c.Surface,
+                ["surface-raised"] = c.SurfaceRaised,
+                ["surface-muted"] = c.SurfaceMuted,
+                ["text"] = c.Text,
+                ["text-secondary"] = c.TextSecondary,
+                ["ink"] = c.Ink,
+                ["on-ink"] = c.OnInk,
+                ["accent"] = c.Accent,
+                ["success"] = c.Success,
+                ["warning"] = c.Warning,
+                ["error"] = c.Error,
+                ["info"] = c.Info,
+                ["border-subtle"] = c.BorderSubtle,
+                ["border-control"] = c.BorderControl,
+                ["scrim"] = c.Scrim,
+            })
+            {
+                Assert.Contains($"  {key}: \"{value}\"", block, StringComparison.Ordinal);
+            }
         }
 
         var family = string.Join(", ", DesignTokens.FontFamily);
@@ -483,6 +536,25 @@ public static partial class DesignTokenTests
         Assert.Contains("--ep-drawer-duration", script, StringComparison.Ordinal); // 速度承接
     }
 
+    // 外觀有三個選項：自動（預設，跟隨系統）、淺色、深色。選擇存在這個瀏覽器，由 forms.js 套到 <html data-theme>，
+    // 瀏覽器工具列的顏色一併換；沒有 JavaScript 時選項不出現，頁面跟隨系統。QR 固定白底，不隨主題。
+    [Fact]
+    public static void AppearanceFollowsTheSystemAndCanBeChosen()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
+
+        Assert.Contains("[data-theme-option]", script, StringComparison.Ordinal);
+        Assert.Contains("localStorage.setItem(\"ep-theme\"", script, StringComparison.Ordinal);
+        Assert.Contains("localStorage.removeItem(\"ep-theme\"", script, StringComparison.Ordinal); // 回到自動就不再記
+        Assert.Contains("root.dataset.theme", script, StringComparison.Ordinal);
+        Assert.Contains("addEventListener(\"storage\"", script, StringComparison.Ordinal); // 別的分頁換了，這一頁跟著換
+        Assert.Contains("theme-color", script, StringComparison.Ordinal);
+        Assert.Contains(".ep-lang-option[aria-pressed=\"true\"]", css, StringComparison.Ordinal);
+        Assert.Matches(@"\.ep-qr \{[^}]*background: var\(--ep-qr-surface\)", css);
+        Assert.Equal("#FFFFFF", DesignTokens.QrSurface);
+    }
+
     [Fact]
     public static void TheLargestTypeSizesAreFluid()
     {
@@ -576,9 +648,14 @@ public sealed class DesignPageTests(PlatformFactory factory)
         Assert.DoesNotContain("user-scalable", html, StringComparison.Ordinal);
         Assert.DoesNotContain("maximum-scale", html, StringComparison.Ordinal);
         Assert.Contains($"<meta name=\"theme-color\" content=\"{DesignTokens.Light.Background}\"", html, StringComparison.Ordinal);
-        Assert.Contains("<meta name=\"color-scheme\" content=\"light\"", html, StringComparison.Ordinal); // 只有淺色
-        Assert.DoesNotContain("prefers-color-scheme", html, StringComparison.Ordinal);
+        Assert.Contains($"<meta name=\"theme-color\" content=\"{DesignTokens.Dark.Background}\"", html, StringComparison.Ordinal);
+        Assert.Contains("<meta name=\"color-scheme\" content=\"light dark\"", html, StringComparison.Ordinal); // 跟隨系統，使用者可另選
         Assert.DoesNotContain("fonts.googleapis.com", html, StringComparison.Ordinal);
+        // 外觀：自動／淺色／深色三個選項；<head> 的小腳本在畫第一格之前套上已存的選擇，不先閃一下淺色。
+        Assert.Contains("data-theme-option=\"system\" aria-pressed=\"true\"", html, StringComparison.Ordinal);
+        Assert.Contains("data-theme-option=\"light\"", html, StringComparison.Ordinal);
+        Assert.Contains("data-theme-option=\"dark\"", html, StringComparison.Ordinal);
+        Assert.Contains("getItem(\"ep-theme\")", html.Replace("&quot;", "\"", StringComparison.Ordinal), StringComparison.Ordinal);
         Assert.Contains("<h1", html, StringComparison.Ordinal);
     }
 

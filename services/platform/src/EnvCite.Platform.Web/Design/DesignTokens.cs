@@ -22,7 +22,7 @@ public sealed record ColorTokens
 
     public required string Primary { get; init; }
 
-    /// <summary>深色層次：頭像等少量實心深色元素。不是深色主題，只是淺色頁面裡的深色點綴。</summary>
+    /// <summary>少量實心的強調底：頭像一類。淺色主題是深色塊，深色主題反過來是淺色塊——永遠是反差最大的那一塊。</summary>
     public required string Ink { get; init; }
 
     /// <summary>放在 <see cref="Ink"/> 上的文字。</summary>
@@ -60,6 +60,8 @@ public sealed record ColorTokens
 
 /// <summary>
 /// 營運後台與客戶入口的外觀。執行期只讀這裡；給代理的視覺規格是同目錄的 <c>DESIGN.md</c>，兩份由測試核對。
+/// 有淺色與深色兩套調色盤，角色（語意名稱）完全相同：元件只引用角色，不知道自己在哪一套；
+/// 使用者可以跟隨系統、或自己選淺色／深色（見 <c>TokenCss</c> 與 <c>ThemeSwitch</c>）。
 /// </summary>
 public static class DesignTokens
 {
@@ -95,6 +97,38 @@ public static class DesignTokens
         Focus = Brand,
         Scrim = "rgb(15 23 42 / 0.5)",
     };
+
+    // 深色：中性偏冷的深灰（M3 與 Apple 深色的做法），層次靠表面一階比一階亮（背景最暗、卡片、浮起的面最亮），
+    // 不靠陰影——深色底上陰影看不出來。企業藍在深色底上改用同色相的亮階（填色與連結共用）：實心按鈕的字改深色，
+    // 對比由測試驗證，與淺色同一套標準。狀態色同理，亮階、彩度克制，仍是文字級。
+    public static ColorTokens Dark { get; } = new()
+    {
+        Background = "#121214",
+        Surface = "#1C1C1F",
+        SurfaceRaised = "#252529",
+        SurfaceMuted = "#2A2A2F",
+        Text = "#ECECF0",
+        TextSecondary = "#A8A8B2",
+        Primary = "#8AB4F8",
+        Ink = "#ECECF0",
+        OnInk = "#121214",
+        Accent = "#2DD4BF",
+        OnPrimary = "#08234A",
+        Link = "#8AB4F8",
+        Success = "#5FD3A3",
+        Warning = "#F2A65A",
+        Error = "#FF8F88",
+        Info = "#8EB6FF",
+        BorderSubtle = "#36363C",
+        BorderControl = "#8A8A94",
+        Focus = "#8AB4F8",
+        Scrim = "rgb(0 0 0 / 0.6)",
+    };
+
+    /// <summary>
+    /// 兩步驟驗證的 QR：驗證器 App 掃的是黑碼白底，不隨主題變，所以是固定的白，不是角色色。
+    /// </summary>
+    public const string QrSurface = "#FFFFFF";
 
     // ---- 字型 ----------------------------------------------------------------------------------
     // 自己託管的開源字型（OFL），各平台看到同一套字，不隨作業系統變：拉丁字與數字用 Inter（光學尺寸軸、等寬數字），
@@ -188,6 +222,14 @@ public static class DesignTokens
         ["1"] = "0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.1)",
         ["2"] = "0 4px 8px -2px rgb(15 23 42 / 0.1), 0 2px 4px -2px rgb(15 23 42 / 0.06)",
         ["3"] = "0 12px 16px -4px rgb(15 23 42 / 0.12), 0 4px 6px -2px rgb(15 23 42 / 0.05)",
+    };
+
+    /// <summary>深色底上陰影要更重才看得出來（純黑、不透明度加倍），主要的層次由表面的亮階承擔。</summary>
+    public static IReadOnlyDictionary<string, string> ElevationDark { get; } = new Dictionary<string, string>
+    {
+        ["1"] = "0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.5)",
+        ["2"] = "0 4px 8px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4)",
+        ["3"] = "0 12px 16px -4px rgb(0 0 0 / 0.6), 0 4px 6px -2px rgb(0 0 0 / 0.4)",
     };
 
     /// <summary>

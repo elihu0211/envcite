@@ -222,7 +222,8 @@ h1[tabindex="-1"]:focus-visible {
     cursor: pointer;
 }
 
-.ep-lang-option[aria-current="true"] {
+.ep-lang-option[aria-current="true"],
+.ep-lang-option[aria-pressed="true"] {
     color: var(--ep-link);
     font-weight: var(--ep-label-l-weight);
 }
@@ -231,6 +232,10 @@ h1[tabindex="-1"]:focus-visible {
     .ep-lang-option:hover {
         background: color-mix(in srgb, var(--ep-text) 6%, transparent);
     }
+}
+
+html[data-js] .ep-menu .ep-theme {
+    display: flex;
 }
 
 .ep-menu .ep-lang {
@@ -2049,11 +2054,11 @@ html[data-js] .ep-otp-input::selection {
     overflow-wrap: anywhere;
 }
 
-/* 兩步驟驗證：QR 在白底黑碼（驗證器 App 掃得到；產品只有淺色，不必處理反白），復原碼用等寬字、兩欄。 */
+/* 兩步驟驗證：QR 在白底黑碼（驗證器 App 掃得到），復原碼用等寬字、兩欄。 */
 .ep-qr {
     inline-size: min(100%, 14rem);
     margin-block: var(--ep-space-3);
-    background: var(--ep-surface); /* 要是白底：驗證器 App 掃的是黑碼白底；表面色改成深色時這裡必須另外處理 */
+    background: var(--ep-qr-surface); /* 固定的白，不隨主題：驗證器 App 掃的是黑碼白底，深色主題時也一樣 */
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-control);
     padding: var(--ep-space-2);
@@ -2488,8 +2493,8 @@ html[data-js] .ep-otp-input::selection {
 }
 
 
-/* ---- 品牌面與深色層次 ----------------------------------------------------------------------------
- * 深色只是局部的層次（Ink）：營運頂欄與登入的品牌面板。頁面本身仍是淺色，不是深色主題。 */
+/* ---- 強調底（Ink）------------------------------------------------------------------------------
+ * 營運頂欄的頭像等少量實心的反差塊：淺色主題是深塊，深色主題是淺塊，永遠是這一頁反差最大的那一塊。 */
 .ep-console .ep-avatar {
     background: var(--ep-ink);
     border-color: transparent;

@@ -13,14 +13,22 @@ public static class TokenCss
     {
         var css = new StringBuilder();
 
-        // 只有淺色：產品決定不做深色模式。color-scheme 宣告 light，瀏覽器就不會替表單控制項、捲軸套深色，
-        // 系統設成深色時頁面也維持淺色。
-        css.Append(":root{").Append(Shared()).Append(Colors(DesignTokens.Light)).Append("color-scheme:light;}");
+        // 淺色是預設。深色在兩種情況下套上同一組變數：使用者選了「深色」（:root[data-theme="dark"]），或使用者沒指定、
+        // 系統是深色（prefers-color-scheme，且沒選「淺色」）。兩處的內容由同一個函式產生，只此一份。
+        // color-scheme 讓瀏覽器替表單控制項、捲軸、選取色套對應的外觀；預設 light dark 跟隨系統，明確選了就鎖定。
+        css.Append(":root{").Append(Shared()).Append(Colors(DesignTokens.Light)).Append(Elevation(DesignTokens.Elevation)).Append("color-scheme:light dark;}");
+        var dark = Colors(DesignTokens.Dark) + Elevation(DesignTokens.ElevationDark) + MudColors(DesignTokens.Dark) + "color-scheme:dark;";
+        css.Append("@media (prefers-color-scheme:dark){:root:not([data-theme=\"light\"]){").Append(dark).Append("}}");
+        css.Append(":root[data-theme=\"dark\"]{").Append(dark).Append('}');
+        css.Append(":root[data-theme=\"light\"]{color-scheme:light;}");
 
-        // 使用者偏好集中在 token 這一層，不在每個元件各寫一份：要較高對比，髮絲線與次要文字加深到控制項與正文的程度；
-        // 要減少動態，位移與縮放歸零，元件只剩淡入淡出（第三方元件的動畫在樣式表收掉）。
-        var c = DesignTokens.Light;
-        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more){{:root{{--ep-border-subtle:{c.BorderControl};--ep-text-secondary:{c.Text};}}}}");
+        // 使用者偏好集中在 token 這一層，不在每個元件各寫一份：要較高對比，髮絲線與次要文字加深到控制項與正文的程度
+        // （兩套主題各用自己的那一對）；要減少動態，位移與縮放歸零，元件只剩淡入淡出（第三方元件的動畫在樣式表收掉）。
+        var light = DesignTokens.Light;
+        var night = DesignTokens.Dark;
+        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more){{:root{{--ep-border-subtle:{light.BorderControl};--ep-text-secondary:{light.Text};}}}}");
+        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more) and (prefers-color-scheme:dark){{:root:not([data-theme=\"light\"]){{--ep-border-subtle:{night.BorderControl};--ep-text-secondary:{night.Text};}}}}");
+        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more){{:root[data-theme=\"dark\"]{{--ep-border-subtle:{night.BorderControl};--ep-text-secondary:{night.Text};}}}}");
         css.Append("@media (prefers-reduced-motion:reduce){:root{--ep-press-scale:1;--ep-motion-scale:1;--ep-motion-travel:0rem;--ep-motion-travel-sm:0rem;}}");
 
         return css.ToString();
@@ -33,6 +41,64 @@ public static class TokenCss
         $"--ep-ink:{c.Ink};--ep-on-ink:{c.OnInk};--ep-accent:{c.Accent};" +
         $"--ep-success:{c.Success};--ep-warning:{c.Warning};--ep-error:{c.Error};--ep-info:{c.Info};" +
         $"--ep-border-subtle:{c.BorderSubtle};--ep-border-control:{c.BorderControl};--ep-focus:{c.Focus};--ep-scrim:{c.Scrim};";
+
+    private static string Elevation(IReadOnlyDictionary<string, string> levels)
+    {
+        var css = new StringBuilder();
+        foreach (var (key, value) in levels)
+        {
+            css.Append(CultureInfo.InvariantCulture, $"--ep-elevation-{key}:{value};");
+        }
+
+        return css.ToString();
+    }
+
+    /// <summary>
+    /// MudBlazor 自己用 <c>--mud-palette-*</c> 畫它的元件（表格、輸入框、對話框、選單、開關）。它的主題提供者只會輸出淺色那組，
+    /// 深色時在這裡覆蓋成同一份深色調色盤；特異度比它在 <c>:root</c> 上的規則高，所以不論先後都贏。顏色全部來自
+    /// <see cref="ColorTokens"/>，衍生的明暗階與透明度在這裡算，不另寫色碼。
+    /// </summary>
+    private static string MudColors(ColorTokens c)
+    {
+        var css = new StringBuilder();
+
+        void Role(string name, string color)
+        {
+            css.Append(CultureInfo.InvariantCulture, $"--mud-palette-{name}:{color};--mud-palette-{name}-rgb:{Rgb(color)};--mud-palette-{name}-text:{c.OnPrimary};");
+            css.Append(CultureInfo.InvariantCulture, $"--mud-palette-{name}-darken:{Mix(color, "#000000", 0.15)};--mud-palette-{name}-lighten:{Mix(color, "#FFFFFF", 0.15)};");
+            css.Append(CultureInfo.InvariantCulture, $"--mud-palette-{name}-hover:rgba({Rgb(color)},0.12);");
+        }
+
+        Role("primary", c.Primary);
+        Role("success", c.Success);
+        Role("info", c.Info);
+        Role("warning", c.Warning);
+        Role("error", c.Error);
+
+        css.Append(CultureInfo.InvariantCulture, $"--mud-palette-background:{c.Background};--mud-palette-background-gray:{c.SurfaceMuted};--mud-palette-surface:{c.SurfaceRaised};");
+        css.Append(CultureInfo.InvariantCulture, $"--mud-palette-drawer-background:{c.Surface};--mud-palette-drawer-text:{c.Text};--mud-palette-drawer-icon:{c.TextSecondary};");
+        css.Append(CultureInfo.InvariantCulture, $"--mud-palette-appbar-background:{c.Surface};--mud-palette-appbar-text:{c.Text};");
+        css.Append(CultureInfo.InvariantCulture, $"--mud-palette-text-primary:{c.Text};--mud-palette-text-secondary:{c.TextSecondary};--mud-palette-text-disabled:rgba({Rgb(c.Text)},0.38);");
+        css.Append(CultureInfo.InvariantCulture, $"--mud-palette-action-default:{c.TextSecondary};--mud-palette-action-default-hover:rgba({Rgb(c.Text)},0.08);");
+        css.Append(CultureInfo.InvariantCulture, $"--mud-palette-action-disabled:rgba({Rgb(c.Text)},0.3);--mud-palette-action-disabled-background:rgba({Rgb(c.Text)},0.12);");
+        css.Append(CultureInfo.InvariantCulture, $"--mud-palette-divider:{c.BorderSubtle};--mud-palette-divider-light:{c.BorderSubtle};--mud-palette-lines-default:{c.BorderSubtle};--mud-palette-lines-inputs:{c.BorderControl};");
+        css.Append(CultureInfo.InvariantCulture, $"--mud-palette-table-lines:{c.BorderSubtle};--mud-palette-table-striped:rgba({Rgb(c.Text)},0.03);--mud-palette-table-hover:rgba({Rgb(c.Text)},0.05);");
+        css.Append(CultureInfo.InvariantCulture, $"--mud-palette-gray-default:{c.TextSecondary};--mud-palette-gray-light:{c.BorderControl};--mud-palette-gray-lighter:{c.SurfaceMuted};--mud-palette-gray-dark:{c.TextSecondary};--mud-palette-gray-darker:{c.Text};");
+        css.Append(CultureInfo.InvariantCulture, $"--mud-palette-overlay-dark:{c.Scrim};--mud-palette-overlay-light:rgba({Rgb(c.Background)},0.5);");
+        return css.ToString();
+    }
+
+    private static string Rgb(string hex) =>
+        string.Join(',', Enumerable.Range(0, 3).Select(i => int.Parse(hex.AsSpan(1 + (i * 2), 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture)));
+
+    /// <summary>把 <paramref name="color"/> 往 <paramref name="toward"/> 混 <paramref name="amount"/>（0～1），回傳 #RRGGBB。</summary>
+    private static string Mix(string color, string toward, double amount)
+    {
+        static int Channel(string hex, int index) => int.Parse(hex.AsSpan(1 + (index * 2), 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+
+        return "#" + string.Concat(Enumerable.Range(0, 3).Select(i =>
+            ((int)Math.Round((Channel(color, i) * (1 - amount)) + (Channel(toward, i) * amount))).ToString("X2", CultureInfo.InvariantCulture)));
+    }
 
     private static string Shared()
     {
@@ -60,11 +126,6 @@ public static class TokenCss
             css.Append(CultureInfo.InvariantCulture, $"--ep-radius-{key}:{value};");
         }
 
-        foreach (var (key, value) in DesignTokens.Elevation)
-        {
-            css.Append(CultureInfo.InvariantCulture, $"--ep-elevation-{key}:{value};");
-        }
-
         foreach (var (key, value) in DesignTokens.Motion)
         {
             css.Append(CultureInfo.InvariantCulture, $"--ep-motion-{key}:{value};");
@@ -72,6 +133,7 @@ public static class TokenCss
 
         css.Append(CultureInfo.InvariantCulture, $"--ep-press-scale:{DesignTokens.PressScale};--ep-touch-target:{DesignTokens.TouchTarget};");
         css.Append(CultureInfo.InvariantCulture, $"--ep-appbar-height:{DesignTokens.AppBarHeight};");
+        css.Append(CultureInfo.InvariantCulture, $"--ep-qr-surface:{DesignTokens.QrSurface};");
         return css.ToString();
     }
 

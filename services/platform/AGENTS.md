@@ -152,7 +152,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 ## 設計系統與營運者後台
 
-- 外觀只有一個來源：`Web/Design/DesignTokens.cs`。給代理看的視覺規格是同目錄的 `DESIGN.md`（企業配色、字級、字型）；改數值時兩份一起改，`DesignTokenTests` 核對它們相同。`platform.css` 只引用變數，**不得寫死**顏色、字重、時長、緩動、縮放或觸控尺寸；文字配色須符合 WCAG AA 對比；**只有淺色**，不做深色主題；視口斷點只寫在 `DesignTokens.Breakpoints`；表格卡片**不得**加 `overflow: hidden`；禁止停用縮放。以上由 `DesignTokenTests` 等測試守門。
+- 外觀只有一個來源：`Web/Design/DesignTokens.cs`。給代理看的視覺規格是同目錄的 `DESIGN.md`（企業配色、字級、字型）；改數值時兩份一起改，`DesignTokenTests` 核對它們相同。`platform.css` 只引用變數，**不得寫死**顏色、字重、時長、緩動、縮放或觸控尺寸；文字配色須符合 WCAG AA 對比，**淺色與深色兩套都要過**（深色是同一組變數換一份值，由 `TokenCss` 產生，元件不各寫一份）；視口斷點只寫在 `DesignTokens.Breakpoints`；表格卡片**不得**加 `overflow: hidden`；禁止停用縮放。以上由 `DesignTokenTests` 等測試守門。
 - 營運者頁面讀 `IAuditQuery`、`ITenantDirectory` 這類在 `SharedKernel` 的契約，不經 HTTP；每次呼叫開自己的 scope，因為 Blazor Server 電路的壽命遠長於一個請求，不能持有過期的 `DbContext`。
 - 新發出的 API key 或一次性密碼只在不可由 Esc 或點背景關閉的對話框顯示一次，UI 不再重繪它；不可逆的動作（撤銷、移除方案）要確認。
 - 時間以臺北時間（固定 UTC+8）顯示；長 id 縮短時留**尾端**（UUIDv7 的開頭是時間戳）。
