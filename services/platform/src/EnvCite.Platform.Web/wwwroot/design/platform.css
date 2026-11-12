@@ -389,6 +389,18 @@ a:where(:not([class*="mud-"])) {
     flex-wrap: wrap;
 }
 
+/* 期間篩選（按鈕群組）：字不換行；一列放不下時整組掉到標題下面，不把「近 30 天」擠成兩行。 */
+.ep-usage-filter .mud-button-root {
+    white-space: nowrap;
+}
+
+/* 放在一般卡片（不是表格卡片）裡的標題列：卡片本身已有內距，不再自己加一層，標題才與下面的列對齊。 */
+.ep-card:not(.ep-table-card) > .ep-toolbar {
+    padding: 0;
+    border-block-end: 0;
+    margin-block-end: var(--ep-space-2);
+}
+
 .ep-field {
     min-inline-size: 12rem;
     flex: 1 1 12rem;
@@ -400,6 +412,10 @@ a:where(:not([class*="mud-"])) {
 }
 
 /* 欄標題小一級、次要色；數字與代碼用等寬字型。 */
+.ep-table .mud-button-text-default {
+    color: var(--ep-link);
+}
+
 .ep-table th,
 .ep-plain-table th {
     background: var(--ep-surface-muted);
@@ -457,6 +473,11 @@ a:where(:not([class*="mud-"])) {
     grid-template-columns: max-content 1fr;
     gap: var(--ep-space-1) var(--ep-space-4);
     margin: 0;
+}
+
+/* 卡片標題與下面的欄位清單之間留一階，標題不黏在第一列上。 */
+.ep-section-title + .ep-detail {
+    margin-block-start: var(--ep-space-3);
 }
 
 .ep-detail dt,
@@ -517,9 +538,8 @@ a:where(:not([class*="mud-"])) {
 .ep-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-    gap: 1px;
     overflow: clip;
-    background: var(--ep-border-subtle);
+    background: var(--ep-surface);
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-card);
 }
@@ -532,6 +552,9 @@ a:where(:not([class*="mud-"])) {
     background: var(--ep-surface);
     color: var(--ep-text);
     text-decoration: none;
+    /* 分隔線畫在每格的左與上（外陰影，疊在前一格的邊緣上，因為後面的格子後畫）；第一欄與第一列的那兩條落在容器外，
+       被 overflow 裁掉，所以欄數與列數怎麼變，落單的格子都不會露出灰底。 */
+    box-shadow: -1px 0 0 0 var(--ep-border-subtle), 0 -1px 0 0 var(--ep-border-subtle);
     transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
@@ -744,6 +767,13 @@ a:where(:not([class*="mud-"])) {
 .ep-console-product {
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-m-size);
+    white-space: nowrap;
+}
+
+@media (width < 48rem) {
+    .ep-console-product {
+        display: none;
+    }
 }
 
 .ep-console-body {
@@ -849,7 +879,8 @@ a:where(:not([class*="mud-"])) {
 @container ep-table (max-width: 36rem) {
     /* class 套在 MudBlazor 的外層 div；真正的 <table> 在裡面，也要改成區塊。 */
     .ep-cards table,
-    .ep-cards tbody {
+    .ep-cards table tbody,
+    .ep-cards table tbody.mud-table-body { /* MudTable 的 .mud-table-root .mud-table-body 特異度較高 */
         display: block;
         inline-size: 100%;
     }
@@ -1762,12 +1793,24 @@ html[data-js] .ep-password-toggle {
     padding: var(--ep-space-4) var(--ep-space-4) var(--ep-space-2);
 }
 
-/* 窄的卡片：每位成員一張卡，操作按鈕整列顯示（不擠在右邊一欄、也不橫向捲動到看不到）。 */
+/* 窄的卡片：每位成員一張卡，操作按鈕整列顯示（不擠在右邊一欄、也不橫向捲動到看不到）。
+   ep-cell-actions 給 MudTable 的操作格（多顆按鈕）：同樣排到下面一整列，標籤「操作：」多餘，收掉。 */
 @container ep-table (max-width: 36rem) {
-    .ep-cards table tbody tr td.ep-row-actions {
+    .ep-cards table tbody tr td.ep-row-actions,
+    .ep-cards table tbody tr td.ep-cell-actions {
         grid-column: 1;
         grid-row: auto;
         padding-block-start: var(--ep-space-2);
+    }
+
+    .ep-cards table tbody tr td.ep-cell-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--ep-space-1);
+    }
+
+    .ep-cards table tbody tr td.ep-cell-actions[data-label]::before {
+        content: none;
     }
 }
 

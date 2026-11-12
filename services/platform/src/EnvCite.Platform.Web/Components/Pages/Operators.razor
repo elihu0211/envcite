@@ -46,7 +46,7 @@ else
             <RowTemplate>
                 <MudTd DataLabel="@L["電子郵件"]">@context.Email</MudTd>
                 <MudTd DataLabel="@L["狀態"]"><StatusBadge Tone="@OperatorLabels.Tone(context)">@OperatorLabels.Status(context)</StatusBadge></MudTd>
-                <MudTd DataLabel="@L["操作"]">
+                <MudTd DataLabel="@L["操作"]" Class="ep-cell-actions">
                     @if (IsSelf(context))
                     {
                         <span class="ep-secondary">@L["你"]</span>
