@@ -47,6 +47,7 @@ public sealed class MailOptions : ISectionOptions
     /// <summary>寄件者位址；中繼通常只收自己網域的寄件者。</summary>
     public string From { get; set; } = string.Empty;
 
+    /// <summary>寄件者顯示名稱；沒設（或空白）時用系統名稱 <see cref="BrandOptions.Name"/>。</summary>
     public string? FromName { get; set; }
 
     /// <summary>連線、傳送與等待回應的總時限（秒）。逾時算寄信失敗，不拖住建立帳號的請求。</summary>
@@ -125,7 +126,7 @@ public interface IMailSender
 /// 以 MailKit 寄信到 SMTP 中繼：純 TCP、不 STARTTLS、不驗證（<see cref="SecureSocketOptions.None"/>、沒有 Authenticate），
 /// 因為校內中繼就是這樣。日誌只記例外型別：收件者、主旨與內文（含連結權杖）都不進日誌，例外訊息也不記（可能回顯位址）。
 /// </summary>
-internal sealed partial class SmtpMailSender(IOptions<MailOptions> options, ILogger<SmtpMailSender> logger) : IMailSender
+internal sealed partial class SmtpMailSender(IOptions<MailOptions> options, IOptions<BrandOptions> brand, ILogger<SmtpMailSender> logger) : IMailSender
 {
     public bool Enabled => options.Value.Enabled;
 
@@ -143,7 +144,7 @@ internal sealed partial class SmtpMailSender(IOptions<MailOptions> options, ILog
         try
         {
             using var message = new MimeMessage();
-            var from = new MailboxAddress(settings.FromName, settings.From);
+            var from = new MailboxAddress(string.IsNullOrWhiteSpace(settings.FromName) ? brand.Value.Name : settings.FromName, settings.From);
             message.From.Add(from);
             // Message-Id 的網域用寄件者的網域，不用執行環境的主機名稱（pod 名稱會外洩，也不是中繼認得的名字）。
             message.MessageId = MimeKit.Utils.MimeUtils.GenerateMessageId(from.Domain);
@@ -179,9 +180,10 @@ internal sealed partial class SmtpMailSender(IOptions<MailOptions> options, ILog
 
 public static class MailServiceCollectionExtensions
 {
-    /// <summary>註冊 <see cref="IMailSender"/> 與 <c>Platform:Mail</c>；測試可在其後換掉 <see cref="IMailSender"/>。</summary>
+    /// <summary>註冊 <see cref="IMailSender"/> 與 <c>Platform:Mail</c>（含它預設寄件者名稱所讀的 <c>Platform:Brand</c>）；測試可在其後換掉 <see cref="IMailSender"/>。</summary>
     public static IServiceCollection AddPlatformMail(this IServiceCollection services)
     {
+        services.AddPlatformBrand();
         services.AddSectionOptions<MailOptions, MailOptionsValidator>();
         services.TryAddSingleton<IMailSender, SmtpMailSender>();
         return services;

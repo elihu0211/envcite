@@ -207,7 +207,7 @@ dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- --urls http
 2. 開 <http://localhost:8025> 看邀請信，開啟信裡的連結，設定密碼。連結只能用一次；重開應顯示「連結無效或已過期」。
 3. 用新密碼登入。營運者接著綁定驗證器。
 
-只想驗證寄信設定，不建帳號：同樣的環境變數下執行 `mail test`，Mailpit 會收到一封沒有連結、沒有密碼的測試信。
+只想驗證寄信設定，不建帳號：同樣的環境變數下執行 `mail test`，Mailpit 會收到一封沒有連結、沒有密碼的測試信。信件主旨與寄件者顯示名稱預設是系統名稱；本機想看改名的效果，加 `ENVCITE_Platform__Brand__Name=<名稱>`（哪些地方跟著變見 [platform README「系統名稱」](services/platform/README.md#系統名稱platformbrand)）。
 
 ```bash
 ASPNETCORE_ENVIRONMENT=Development ENVCITE_Platform__Mail__Enabled=true ENVCITE_Platform__Mail__Host=localhost \

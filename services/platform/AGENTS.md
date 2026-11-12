@@ -62,6 +62,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 新增群組：實作 `ISectionOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
 - **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`ENVCITE_Section__Key`，前綴由 `ServiceEnvironment` 套用；不帶前綴的環境變數不進設定，`OTEL_*` 除外）。機密（模型端點金鑰）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
 - 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄、寄信）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
+- **系統名稱只有一個來源**：`Platform:Brand:Name`（`BrandOptions`；不可空白、25 字內、無控制字元）。介面經 `BrandText.Name` 取，信件主旨與內文、`mail test`、OpenAPI 描述讀 `IOptions<BrandOptions>`；`Platform:Mail:FromName` 沒設時預設用它。不在元件、信件或描述裡寫死名稱；帶名稱的文字用格式鍵（`L["登入 · {0}", Brand.Name]`），預設名稱（`BrandOptions.DefaultName`）的英文對照是 `Ui.en.resx` 的同名一鍵，自訂名稱不查資源檔、兩種語言原樣顯示。標誌 SVG 不讀設定，改名時另外換圖（見 README〈系統名稱〉）。`BrandTests` 守住預設值下輸出不變、改名後各處一起變。
 - 部署環境不設 `DefaultPlan`（服務是全付費，沒方案的租戶在資料端點得 402）；Development 與測試設定它，讓剛建立的租戶能用。
 - Development 的種子資料（`SeedDevelopmentData`）只在 Development 生效，且只在對應表是空的時才建；一次性密碼只經 `Console.WriteLine` 印到終端機，不進 `ILogger`，沒有預設密碼。
 - 在 TLS 終止的 proxy 後面要設 `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true`，否則依來源位址限流的規則會把所有人看成同一個位址（且限流狀態是每個副本各一份）。

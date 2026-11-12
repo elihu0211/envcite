@@ -4,7 +4,7 @@
 
 @* 元件展示：只在 Development（其他環境是 404，見 WebModule），不需要登入，讓改完 token 能直接看每個元件在三種寬度的樣子。
    所有顏色、字級都取自 token（--ep-*），這裡不寫任何值。 *@
-<PageTitle>元件展示 · 環境知識</PageTitle>
+<PageTitle>元件展示 · @Brand.Name</PageTitle>
 
 <PortalShell TenantName="展示租戶" HomeHref="/design" UserEmail="owner@example.test" RoleLabel="擁有者" AvatarText="O" ShowMenu="true" MenuItems="@_menu" NavItems="@_nav">
     <PageHeader Title="元件展示" Description="只在 Development 看得到。配色、字級與字型都來自 DesignTokens.cs（規格見 DESIGN.md）。左側是工作區，右上角的頭像是帳號選單。" />
@@ -172,7 +172,7 @@
 
     private static readonly (string Name, string Sample)[] _types =
     [
-        ("display-l", "環境知識"), ("display-m", "展示"), ("display-s", "展示小標"),
+        ("display-l", "展示大標"), ("display-m", "展示"), ("display-s", "展示小標"),
         ("headline-l", "頁面標題"), ("headline-m", "次級頁標題"), ("headline-s", "區塊標題"),
         ("title-l", "卡片標題"), ("title-m", "對話框標題"), ("title-s", "小標題"),
         ("body-l", "內文：臺灣環境法規的檢索與引用"), ("body-m", "說明與表格"), ("body-s", "輔助說明"),

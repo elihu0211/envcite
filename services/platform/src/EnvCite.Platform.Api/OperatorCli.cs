@@ -89,10 +89,11 @@ public static class OperatorCli
             連結來源：{settings.BaseUrl}
             """);
 
+        var brand = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<BrandOptions>>().Value.Name;
         var delivery = await mail.SendAsync(
             parsed.Address,
-            "環境知識：寄信測試",
-            "這是一封測試信，用來確認「環境知識」的寄信設定與中繼可用。\n沒有連結，也沒有密碼；收到後不需要做任何事。",
+            $"{brand}：寄信測試",
+            $"這是一封測試信，用來確認「{brand}」的寄信設定與中繼可用。\n沒有連結，也沒有密碼；收到後不需要做任何事。",
             cancellationToken);
         if (delivery == MailDelivery.Sent)
         {

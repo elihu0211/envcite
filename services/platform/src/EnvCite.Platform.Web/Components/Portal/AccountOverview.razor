@@ -3,7 +3,7 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 
-<PageTitle>@L["帳號與組織 · 環境知識"]</PageTitle>
+<PageTitle>@L["帳號與組織 · {0}", Brand.Name]</PageTitle>
 
 <PageHeader Title="@L["帳號與組織"]" Description="@(_tenant?.Name ?? Tenant)" />
 

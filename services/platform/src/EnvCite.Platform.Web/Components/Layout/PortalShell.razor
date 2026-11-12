@@ -13,11 +13,11 @@
         }
         @if (!string.IsNullOrEmpty(HomeHref))
         {
-            <a class="ep-brand" href="@HomeHref"><BrandMark />@L["環境知識"]</a>
+            <a class="ep-brand" href="@HomeHref"><BrandMark />@Brand.Name</a>
         }
         else
         {
-            <span class="ep-brand"><BrandMark />@L["環境知識"]</span>
+            <span class="ep-brand"><BrandMark />@Brand.Name</span>
         }
         @if (!string.IsNullOrEmpty(TenantName))
         {

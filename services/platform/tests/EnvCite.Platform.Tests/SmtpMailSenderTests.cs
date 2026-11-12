@@ -60,6 +60,40 @@ public sealed class SmtpMailSenderTests
         Assert.DoesNotContain(relay.Commands, c => c.StartsWith("STARTTLS", StringComparison.OrdinalIgnoreCase));
     }
 
+    // 寄件者顯示名稱：Platform:Mail:FromName 有設就以它為準；沒設（或空白）用系統名稱 Platform:Brand:Name。
+    [Theory]
+    [InlineData(null, null, "環境知識")] // 都沒設：預設系統名稱
+    [InlineData(null, "測試系統", "測試系統")] // 改系統名稱，寄件者名稱跟著變
+    [InlineData("", "測試系統", "測試系統")] // 空字串視為沒設
+    [InlineData("   ", "測試系統", "測試系統")]
+    [InlineData("客服信箱", "測試系統", "客服信箱")] // 有設就是它，不受系統名稱影響
+    [InlineData("客服信箱", null, "客服信箱")]
+    public async Task TheSenderNameIsTheFromNameAndOtherwiseTheBrandName(string? fromName, string? brandName, string expected)
+    {
+        await using var relay = new FakeRelay();
+        var settings = Settings(relay.Port);
+        settings.Remove("Platform:Mail:FromName");
+        if (fromName is not null)
+        {
+            settings["Platform:Mail:FromName"] = fromName;
+        }
+
+        if (brandName is not null)
+        {
+            settings["Platform:Brand:Name"] = brandName;
+        }
+
+        using var provider = Sender(settings);
+
+        var result = await provider.GetRequiredService<IMailSender>()
+            .SendAsync("someone@recipient.test", "主旨", "內文", TestContext.Current.CancellationToken);
+
+        Assert.Equal(MailDelivery.Sent, result);
+        var from = Assert.Single(Assert.Single(relay.Received).Message.From.Mailboxes);
+        Assert.Equal(expected, from.Name);
+        Assert.Equal("envcite@relay.test", from.Address);
+    }
+
     [Fact]
     public async Task WhenMailIsNotEnabledItNeverConnects()
     {
