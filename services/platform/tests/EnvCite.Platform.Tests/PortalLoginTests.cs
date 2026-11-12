@@ -35,6 +35,10 @@ public sealed class PortalLoginTests(PlatformFactory factory)
         Assert.Contains("<label for=\"email\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("name=\"__RequestVerificationToken\"", page.Html, StringComparison.Ordinal);
 
+        // 密碼欄預設遮住，旁邊有「顯示密碼」鈕指向它（鈕本身靠 JavaScript 才會出現）。
+        Assert.Contains("type=\"password\"", page.Html, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-password-toggle\" aria-controls=\"password\" aria-label=\"顯示密碼\"", page.Html, StringComparison.Ordinal);
+
         // 初始密碼對：導去改密碼頁，不是首頁。
         var signedIn = await browser.SubmitAsync(Login(tenant.Identifier), Credentials(email, initial));
         Assert.Equal(HttpStatusCode.Redirect, signedIn.Status);

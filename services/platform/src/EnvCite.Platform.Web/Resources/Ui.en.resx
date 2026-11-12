@@ -409,4 +409,14 @@
   <data name="伺服器暫停了這個工作階段。" xml:space="preserve"><value>The server paused this session.</value></data>
   <data name="無法繼續這個工作階段。請重試，或重新載入頁面。" xml:space="preserve"><value>Couldn’t resume this session. Retry, or reload the page.</value></data>
   <data name="繼續" xml:space="preserve"><value>Resume</value></data>
+  <data name="Caps Lock 已開啟" xml:space="preserve"><value>Caps Lock is on</value></data>
+  <data name="你的復原碼" xml:space="preserve"><value>Your recovery codes</value></data>
+  <data name="下載" xml:space="preserve"><value>Download</value></data>
+  <data name="列印" xml:space="preserve"><value>Print</value></data>
+  <data name="複製" xml:space="preserve"><value>Copy</value></data>
+  <data name="已複製" xml:space="preserve"><value>Copied</value></data>
+  <data name="顯示密碼" xml:space="preserve"><value>Show password</value></data>
+  <data name="隱藏密碼" xml:space="preserve"><value>Hide password</value></data>
+  <data name="環境知識的復原碼" xml:space="preserve"><value>EnvCite recovery codes</value></data>
+  <data name="請存在只有你能開啟的地方，例如密碼管理員。" xml:space="preserve"><value>Keep them where only you can open them, such as a password manager.</value></data>
 </root>

@@ -29,12 +29,7 @@
             @L["這是你的復原碼。"]<strong>@L["只會顯示這一次"]</strong>@L["：請現在抄下或存進密碼管理員。"]
             @L["手機遺失時，每一組復原碼可以代替一次驗證碼，用過就失效。"]
         </p>
-        <ul class="ep-codes" aria-label="@L["復原碼"]">
-            @foreach (var recoveryCode in _recoveryCodes)
-            {
-                <li><code class="ep-mono">@recoveryCode</code></li>
-            }
-        </ul>
+        <RecoveryCodes Codes="_recoveryCodes" />
         <a class="ep-btn ep-btn-primary" href="@PortalPaths.Home(Tenant)">@L["我已保存"]</a>
     </section>
 }
@@ -76,7 +71,7 @@ else if (_enabled)
             <EditForm Model="Disable" FormName="portal-mfa-disable" OnValidSubmit="DisableAsync" method="post" class="ep-form">
                 <div class="ep-field-row">
                     <label for="off-password" class="ep-label">@L["目前的密碼"]</label>
-                    <InputText id="off-password" @bind-Value="Disable.Password" type="password" class="ep-input" required autocomplete="current-password" />
+                    <PasswordField Id="off-password" @bind-Value="Disable.Password" />
                 </div>
                 <div class="ep-field-row">
                     <label for="off-code" class="ep-label">@L["驗證碼"]</label>

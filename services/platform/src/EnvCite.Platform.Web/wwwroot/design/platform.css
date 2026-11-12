@@ -8,6 +8,26 @@ html {
     font-size: 100%; /* 跟隨使用者的瀏覽器字級；間距用 rem，字級放大時版面一起放大 */
     -webkit-text-size-adjust: 100%;
     font-optical-sizing: auto;
+    scrollbar-gutter: stable; /* 有無捲軸的頁面切換時，內容不左右跳 */
+}
+
+/* 觸控沒有雙擊縮放的等待：點一下立刻有反應，也不閃系統預設的點擊底色（回饋由元件自己給）。 */
+a, button, input, select, label, summary {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 標題左右均衡、說明避免最後一行只剩一兩個字。 */
+.ep-page-title,
+.ep-section-title,
+.ep-empty-title {
+    text-wrap: balance;
+}
+
+.ep-page-description,
+.ep-alert,
+.ep-hint {
+    text-wrap: pretty;
 }
 
 body {
@@ -244,11 +264,29 @@ a:where(:not([class*="mud-"])) {
     margin-block-start: var(--ep-space-4);
 }
 
+/* 登入與帳號卡裡：區塊之間多一階（標題、說明、區塊不再黏成一團），主要動作與登出整列滿寬，拇指好按、兩側對齊。
+   用 :where 把特異度壓到零，元件自己設的邊距照舊優先。 */
+:where(.ep-auth-body) > section {
+    margin-block-start: var(--ep-space-6);
+}
+
+:where(.ep-auth-body) > * + .ep-btn,
+:where(.ep-auth-body) > section > .ep-btn {
+    margin-block-start: var(--ep-space-3);
+}
+
+.ep-auth-body > .ep-btn,
+.ep-auth-body > section > .ep-btn,
+.ep-auth-body .ep-signout .ep-btn {
+    inline-size: 100%;
+}
+
 /* 互動回饋在按下的當下（不是放開）：按下即縮（0 時長），放開依 fast 階回彈。縮放量是 token，減少動態時為 1。
    範例 chip 另外過渡邊框色，所以不進這條 transition。 */
 .mud-button-root,
 .ep-avatar,
 .ep-send,
+.ep-password-toggle,
 .ep-btn {
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
@@ -256,6 +294,7 @@ a:where(:not([class*="mud-"])) {
 .mud-button-root:active,
 .ep-avatar:active,
 .ep-send:active,
+.ep-password-toggle:active,
 .ep-chip:active,
 .ep-btn:active {
     transform: scale(var(--ep-press-scale));
@@ -1309,6 +1348,22 @@ a.ep-brand {
         box-shadow var(--ep-motion-normal) var(--ep-motion-ease-standard);
 }
 
+.ep-input {
+    caret-color: var(--ep-primary);
+}
+
+@media (hover: hover) {
+    .ep-input:hover:not(:focus) {
+        border-color: var(--ep-text-secondary);
+    }
+}
+
+/* 欄位被碰過、而且不合規則（長度不夠、格式不對）才標紅：沒碰過的空欄位不會一開頁就滿版錯誤。邊框之外
+   還有欄位下方的說明文字，不單靠顏色。 */
+.ep-input:user-invalid {
+    border-color: var(--ep-error);
+}
+
 /* 聚焦時外圈柔光：焦點環（outline）仍在，這只是附加的視覺回饋。 */
 .ep-input:focus {
     border-color: var(--ep-focus);
@@ -1317,6 +1372,77 @@ a.ep-brand {
 
 .ep-input:focus-visible {
     outline-offset: 1px; /* 外框色與寬度用上面的 :focus-visible；輸入框貼著邊，偏移少 1px */
+}
+
+/* 密碼欄：眼睛鈕坐在輸入框裡側、觸控尺寸，圖示是「按下去會變成什麼」（顯示時畫眼睛加斜線）。
+   沒有 JavaScript 時鈕不出現、輸入框也不留位置（html[data-js] 由 forms.js 設定）。 */
+.ep-password {
+    position: relative;
+}
+
+.ep-password-toggle,
+.ep-js-only {
+    display: none;
+}
+
+html[data-js] .ep-js-only {
+    display: inline-flex;
+}
+
+html[data-js] .ep-password .ep-input {
+    padding-inline-end: var(--ep-touch-target);
+}
+
+html[data-js] .ep-password-toggle {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-touch-target);
+    padding: 0;
+    border: 0;
+    border-radius: var(--ep-radius-control);
+    background: transparent;
+    color: var(--ep-text-secondary);
+    cursor: pointer;
+}
+
+.ep-password-toggle:focus-visible {
+    outline-offset: calc(var(--ep-space-1) * -1); /* 環畫在輸入框裡面，不跑到外框外 */
+}
+
+/* 兩個圖示疊在同一格，按下時交叉淡入淡出。 */
+.ep-password-toggle > span {
+    grid-area: 1 / 1;
+    display: grid;
+    transition: opacity var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-password-eye-off,
+.ep-password-toggle[data-visible] .ep-password-eye {
+    opacity: 0;
+}
+
+.ep-password-toggle[data-visible] .ep-password-eye-off {
+    opacity: 1;
+}
+
+@media (hover: hover) {
+    .ep-password-toggle:hover {
+        color: var(--ep-text);
+    }
+}
+
+/* 大寫鎖定提醒：沒有字時收成零高（仍留在無障礙樹裡，才念得出來），並抵銷欄位間距。 */
+.ep-password-caps {
+    color: var(--ep-warning);
+}
+
+.ep-password-caps:empty {
+    block-size: 0;
+    overflow: hidden;
+    margin-block-start: calc(var(--ep-space-1) * -1);
 }
 
 .ep-hint,
@@ -1339,11 +1465,25 @@ a.ep-brand {
 }
 
 .ep-btn {
+    box-sizing: border-box; /* 滿寬的按鈕（inline-size: 100%）加上內距與邊框也不超出容器 */
     justify-content: center;
     padding: var(--ep-space-2) var(--ep-space-6);
     cursor: pointer;
     border: 1px solid transparent;
     border-radius: var(--ep-radius-control);
+}
+
+/* 帶圖示的按鈕：圖示與文字之間一階間距。 */
+.ep-btn-icon {
+    gap: var(--ep-space-2);
+    padding-inline: var(--ep-space-4);
+}
+
+/* 送出中（forms.js 設 aria-busy）：按鈕變淡、游標轉成處理中，不能再按。 */
+.ep-btn[aria-busy="true"] {
+    opacity: 0.6;
+    cursor: progress;
+    pointer-events: none;
 }
 
 .ep-btn-primary {
@@ -1511,8 +1651,85 @@ a.ep-brand {
 
 .ep-codes {
     grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-    gap: var(--ep-space-2);
+    gap: var(--ep-space-2) var(--ep-space-4);
     margin: var(--ep-space-3) 0;
+}
+
+/* 復原碼的框：上面一條工具列（標題、下載、複製、列印），下面是碼。每一組點一下就整組選取。 */
+.ep-recovery {
+    container: ep-recovery / inline-size;
+    margin-block: var(--ep-space-4);
+    overflow: clip;
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface);
+}
+
+.ep-recovery-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ep-space-2) var(--ep-space-4);
+    padding: var(--ep-space-2) var(--ep-space-4);
+    border-block-end: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface-muted);
+}
+
+.ep-recovery-title {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--ep-touch-target);
+    margin: 0;
+    font-size: var(--ep-title-s-size);
+    line-height: var(--ep-title-s-leading);
+    letter-spacing: var(--ep-title-s-tracking);
+    font-weight: var(--ep-title-s-weight);
+}
+
+.ep-recovery-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ep-space-1);
+}
+
+.ep-recovery .ep-btn-quiet {
+    border-color: transparent;
+}
+
+.ep-recovery .ep-btn-quiet[data-done-now] {
+    color: var(--ep-success);
+}
+
+@media (hover: hover) {
+    .ep-recovery .ep-btn-quiet:hover {
+        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+    }
+}
+
+.ep-recovery .ep-codes {
+    margin: 0;
+    padding: var(--ep-space-4);
+}
+
+.ep-recovery .ep-codes li {
+    user-select: all;
+}
+
+/* 窄的框（手機、窄欄）：標題一列、三個動作平分一列，圖示收掉只留字。 */
+@container ep-recovery (max-width: 24rem) {
+    .ep-recovery-actions {
+        flex: 1 1 100%;
+    }
+
+    .ep-recovery-actions > .ep-btn {
+        flex: 1;
+        padding-inline: var(--ep-space-2);
+    }
+
+    .ep-recovery .ep-btn-icon > .ep-icon {
+        display: none;
+    }
 }
 
 .ep-steps {
