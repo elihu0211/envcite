@@ -50,5 +50,5 @@ internal sealed class AuditQuery(IServiceScopeFactory scopes) : IAuditQuery
 
     private static AuditRecord ToRecord(AuditEvent e) => new(
         e.Id, e.OccurredAt, e.ActorType, e.ActorId, e.Action, e.SubjectTenantId, e.TargetType, e.TargetId,
-        JsonDocument.Parse(e.Detail).RootElement.Clone(), e.TraceId);
+        JsonElement.Parse(e.Detail), e.TraceId);
 }

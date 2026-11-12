@@ -3,7 +3,6 @@
 @inject IOperatorAdmin Admin
 @inject IMailSender Mail
 @inject IDialogService Dialogs
-@inject AuthenticationStateProvider Auth
 
 <PageTitle>@L["營運者 · {0}", Brand.Name]</PageTitle>
 
@@ -96,6 +95,8 @@ else
 }
 
 @code {
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+
     private static readonly DialogOptions Narrow = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
 
     private IReadOnlyList<OperatorInfo>? _operators;
@@ -108,7 +109,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var user = (await Auth.GetAuthenticationStateAsync()).User;
+        var user = (await AuthenticationState).User;
         _selfId = user.FindFirst(PlatformClaimTypes.OperatorId)?.Value;
         if (Prerendered is not null)
         {
@@ -156,7 +157,7 @@ else
         string.IsNullOrWhiteSpace(_search) || op.Email.Contains(_search, StringComparison.OrdinalIgnoreCase);
 
 
-    private async Task<ClaimsPrincipal> ActorAsync() => (await Auth.GetAuthenticationStateAsync()).User;
+    private async Task<ClaimsPrincipal> ActorAsync() => (await AuthenticationState).User;
 
     private async Task CreateAsync()
     {

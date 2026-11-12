@@ -1,7 +1,6 @@
 @* 建立營運者。沒有自助註冊：這裡是後台建立帳號的途徑，初始密碼在下一個對話框只顯示一次。 *@
 @inject IOperatorAdmin Operators
 @inject IMailSender Mail
-@inject AuthenticationStateProvider Auth
 
 <MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
@@ -25,6 +24,7 @@
 
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
 
     private string? _email;
     private string? _displayName;
@@ -50,7 +50,7 @@
         _error = null;
         try
         {
-            var actor = (await Auth.GetAuthenticationStateAsync()).User;
+            var actor = (await AuthenticationState).User;
             // 有寄信就邀請（對方自己設密碼）；沒有就發暫時密碼，由你親手交付。
             if (Mail.Enabled)
             {

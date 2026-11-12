@@ -1,7 +1,6 @@
 @* 簽發 API key，兩個階段：填名稱 → 顯示完整 key（只此一次）。第二階段不能用外點或 Esc 關掉，避免還沒複製就不見。 *@
 @using Microsoft.JSInterop
 @inject IApiKeyAdmin Keys
-@inject AuthenticationStateProvider Auth
 @inject IJSRuntime Js
 
 <MudDialog DefaultFocus="DefaultFocus.FirstChild">
@@ -46,6 +45,7 @@
 
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
 
     [Parameter, EditorRequired] public string TenantId { get; set; } = string.Empty;
 
@@ -69,7 +69,7 @@
         _error = null;
         try
         {
-            var actor = (await Auth.GetAuthenticationStateAsync()).User;
+            var actor = (await AuthenticationState).User;
             var issued = await Keys.IssueAsync(actor, TenantId, _name ?? string.Empty, null, null, CancellationToken.None);
             if (issued.IsOk)
             {

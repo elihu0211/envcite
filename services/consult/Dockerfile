@@ -10,12 +10,12 @@
 # SDK 階段在建置機的架構上執行並交叉編譯到目標（`-a`），不需要 emulation。SDK 版本與 platform 同一個，
 # 理由見 services/platform/Dockerfile。
 # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
-ARG DOTNET_VERSION=10.0.404
+ARG DOTNET_VERSION=11.0.100
 # registry 是參數：CI 讓基底映像只走 runner 主機的 pull-through 快取，沒有就失敗，不退回上游。
 # 預設是真正的 registry，供本機建置。
 ARG MCR=mcr.microsoft.com
 
-FROM --platform=$BUILDPLATFORM ${MCR}/dotnet/sdk:${DOTNET_VERSION}-noble AS build
+FROM --platform=$BUILDPLATFORM ${MCR}/dotnet/sdk:${DOTNET_VERSION}-resolute AS build
 ARG TARGETARCH
 ENV NUGET_PACKAGES=/nuget
 # NuGet Audit 是套件齊全時 restore 仍會有的唯一網路存取；弱點由 Renovate 監控，不在映像建置裡。
@@ -35,7 +35,7 @@ RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
     dotnet publish src/EnvCite.Consult/EnvCite.Consult.csproj -c Release -a "$TARGETARCH" --no-restore -o /app
 
 # Chiseled：沒有 shell 與套件管理員，預設非 root。沒有 ICU，專案以 InvariantGlobalization 對齊。
-FROM ${MCR}/dotnet/aspnet:10.0-noble-chiseled
+FROM ${MCR}/dotnet/aspnet:11.0-resolute-chiseled
 WORKDIR /app
 COPY --from=build /app .
 # 與部署庫 base/consult 的 containerPort 與 gRPC 探針一致。
