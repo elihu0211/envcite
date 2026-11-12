@@ -29,4 +29,22 @@
   <data name="Mail.Text.Greeting" xml:space="preserve"><value>Hello,</value></data>
   <data name="Mail.Text.Intro.Invitation" xml:space="preserve"><value>An account has been created for you in “{0}”. Open the link below to set your own password and verify your email address:</value></data>
   <data name="Mail.Text.Intro.Verification" xml:space="preserve"><value>Open the link below to confirm that this email address belongs to you:</value></data>
+  <data name="MailTest.InvalidRecipient" xml:space="preserve"><value>Invalid recipient address: {0}</value></data>
+  <data name="MailTest.NotEnabled" xml:space="preserve"><value>Mail is not enabled: Platform:Mail:Enabled is not true (environment variable ENVCITE_Platform__Mail__Enabled).</value></data>
+  <data name="MailTest.Relay" xml:space="preserve"><value>Relay: {0}:{1}</value></data>
+  <data name="MailTest.Security" xml:space="preserve"><value>Security: {0} ({1})</value></data>
+  <data name="MailTest.Security.None" xml:space="preserve"><value>no encryption</value></data>
+  <data name="MailTest.Security.StartTls" xml:space="preserve"><value>STARTTLS, fails if the relay does not offer it</value></data>
+  <data name="MailTest.Security.StartTlsWhenAvailable" xml:space="preserve"><value>encrypts only if the relay offers STARTTLS</value></data>
+  <data name="MailTest.Security.SslOnConnect" xml:space="preserve"><value>SSL/TLS from the first byte</value></data>
+  <data name="MailTest.Security.Auto" xml:space="preserve"><value>chosen by MailKit from the port, encryption is not guaranteed</value></data>
+  <data name="MailTest.Authentication" xml:space="preserve"><value>Authenticated with username and password: {0}</value></data>
+  <data name="MailTest.Yes" xml:space="preserve"><value>yes</value></data>
+  <data name="MailTest.No" xml:space="preserve"><value>no</value></data>
+  <data name="MailTest.Sender" xml:space="preserve"><value>Sender: {0}</value></data>
+  <data name="MailTest.ReplyTo" xml:space="preserve"><value>Reply-To: {0}</value></data>
+  <data name="MailTest.BaseUrl" xml:space="preserve"><value>Link origin: {0}</value></data>
+  <data name="MailTest.Warning.Clear" xml:space="preserve"><value>Warning: credentials are set but the security mode is {0}, so the username and password may travel over the network in clear text; use StartTls or SslOnConnect when the relay supports it.</value></data>
+  <data name="MailTest.Accepted" xml:space="preserve"><value>The relay accepted the test mail. Check {0} for the message (acceptance does not mean delivery).</value></data>
+  <data name="MailTest.Failed" xml:space="preserve"><value>Mail delivery failed ({0}). Common causes: the source address of this environment is not trusted by the relay, wrong Host or Port, or the relay rejects the domain of From. With credentials there are two more: SMTP 535 means a wrong username or password (Exchange and Google Workspace are different account systems, use an account of the system the relay belongs to); SMTP 550 5.7.60 means the sender is not the authenticated account (From must equal Username). See the "Mail delivery failed" line of the service log (exception type and SMTP status code) and the troubleshooting table in services/platform/README.md, "Mail".</value></data>
 </root>

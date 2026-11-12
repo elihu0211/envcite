@@ -58,6 +58,11 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     [InlineData("Platform:Mail:TimeoutSeconds", "0", "Platform:Mail:TimeoutSeconds must be between 1 and 120")]
     [InlineData("Platform:Mail:LinkLifetime", "00:10:00", "Platform:Mail:LinkLifetime must be between 1 hour and 14 days")]
     [InlineData("Platform:Mail:LinkLifetime", "15.00:00:00", "Platform:Mail:LinkLifetime must be between 1 hour and 14 days")]
+    [InlineData("Platform:Mail:Security", "42", "Platform:Mail:Security must be one of")]
+    [InlineData("Platform:Mail:Security", "Bogus", "Platform:Mail:Security")]
+    [InlineData("Platform:Mail:Username", "login@relay.test", "Platform:Mail:Password is required when Platform:Mail:Username is set")]
+    [InlineData("Platform:Mail:Password", "only-a-password", "Platform:Mail:Username is required when Platform:Mail:Password is set")]
+    [InlineData("Platform:Mail:ReplyTo", "not-a-mail", "Platform:Mail:ReplyTo must be a valid mail address")]
     public void InvalidMailSettingFailsAtStartupWhenMailIsEnabled(string key, string value, string expected)
     {
         var message = StartFailure(factory.WithWebHostBuilder(b => b

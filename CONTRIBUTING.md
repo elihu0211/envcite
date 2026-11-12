@@ -233,11 +233,34 @@ ENVCITE_Platform__Mail__Port=1025 ENVCITE_Platform__Mail__From=envcite@example.t
 dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- mail test probe@example.test
 ```
 
+**驗證帳密與加密（不寄任何真實郵件）**：自動化測試（`SmtpMailSenderTests`、`OperatorCliTests`）對行程內的測試 SMTP 伺服器（`SmtpServer` 套件）進行真的 TCP 連線：有帳密時伺服器收到 AUTH、沒帳密時不送、密碼錯誤、`Reply-To`、憑證不被信任等都在其中，不需要 Docker，也不連外：
+
+```bash
+cd services/platform
+dotnet test --project tests/EnvCite.Platform.Tests --filter-class EnvCite.Platform.Tests.SmtpMailSenderTests
+```
+
+想親眼看帳密流程，讓 Mailpit 接受任何帳密（它只收信，不認得真實帳號）。Mailpit 預設拒絕不加密連線上的 AUTH，本機的 `Security` 又是預設的 `None`，所以要允許：
+
+```bash
+docker run -d --rm --name envcite-mailpit -p 1025:1025 -p 8025:8025 \
+  -e MP_SMTP_AUTH_ACCEPT_ANY=1 -e MP_SMTP_AUTH_ALLOW_INSECURE=1 axllent/mailpit
+```
+
+然後在上面的 `mail test` 指令多加 `ENVCITE_Platform__Mail__Username=dev@example.test` 與 `ENVCITE_Platform__Mail__Password=<任意值>`（Mailpit 照單全收，不要用真實密碼）。輸出會顯示「使用帳密驗證：是」，並因為加密模式是 `None` 多一行警告；不印帳號與密碼。
+
 **對真實中繼測試**：把 `Host`、`Port`、`From` 換成中繼的值，`BaseUrl` 換成服務的 https 位址，收件者換成自己的信箱，執行同一個 `mail test`。不加密、免驗證的中繼只信任特定來源位址，所以：
 
 - 從自己的電腦測通，只證明中繼可達；**服務實際執行的環境**（pod 的出口位址）是否被信任，要在那個環境裡執行 `mail test` 才知道。
 - 結束碼 `0` 只代表中繼接受了信；到收件匣確認有收到。失敗時依 README 的排查表，細節在服務日誌的 `Mail delivery failed` 那一行。
 - 測試信不含連結與密碼，可以放心寄到真實信箱；邀請信則會讓收件者得到一把單次的鑰匙，測試時用自己的信箱。
+- 中繼要求登入或加密時，另設 `ENVCITE_Platform__Mail__Security`（`StartTls`、`SslOnConnect` 等，見 [README「加密與帳密」](services/platform/README.md#加密與帳密)）與 `Username`、`Password`。**密碼不要寫進指令、檔案或對話**：用不回顯的提示放進環境變數，只在這個終端機的行程裡存在：
+
+```bash
+read -rs ENVCITE_Platform__Mail__Password && export ENVCITE_Platform__Mail__Password
+```
+
+- 失敗時 `mail test` 一次列出常見原因（含 `535` 帳號或密碼錯誤、`550 5.7.60` 寄件者不等於認證的帳號），排查表在 [README「寄信」](services/platform/README.md#寄信platformmail)。
 
 ## 常用指令
 

@@ -190,15 +190,17 @@ sequenceDiagram
 |----|-----------|------|
 | `Enabled` | | 開關；沒開時建立帳號走暫時密碼 |
 | `Host`、`Port` | `Host` | SMTP 中繼的主機與埠 |
-| `From`、`FromName` | `From` | 寄件者；中繼通常只收自己網域的寄件者。`FromName` 是顯示名稱，沒設用[系統名稱](#系統名稱platformbrand)，所以改名時不必另外改它（要與系統名稱不同才設） |
+| `Security` | | 加密模式：`None`（沒設時的預設）、`StartTls`、`StartTlsWhenAvailable`、`SslOnConnect`、`Auto`；見[加密與帳密](#加密與帳密) |
+| `Username`、`Password` | | 登入中繼的帳密，**要嘛都設、要嘛都不設**（只設一個，啟動就停下並指名鍵）。`Password` 是機密，只經環境變數（k8s Secret）；見[加密與帳密](#加密與帳密) |
+| `From`、`FromName`、`ReplyTo` | `From`（`Username` 是 email 時可省） | `From` 是寄件者；中繼通常只收自己網域的寄件者，要求登入的中繼更要求它等於認證的帳號，所以沒設 `From` 而 `Username` 是 email 時，預設用 `Username`。`FromName` 是顯示名稱，沒設用[系統名稱](#系統名稱platformbrand)，所以改名時不必另外改它（要與系統名稱不同才設）。`ReplyTo` 選填，是 email；設了就加到信的 `Reply-To` 標頭，不影響寄件者 |
 | `BaseUrl` | 是 | 信裡連結的來源：`https://主機`，不含路徑（只有 localhost 可用 `http`）。寫死在設定，不取自請求的 Host 標頭 |
 | `LinkLifetime` | | 連結的有效期限（1 小時至 14 天），也是 Identity 資料保護權杖的期限 |
 | `TimeoutSeconds` | | 連線到回應的總時限；逾時算寄信失敗 |
 | `Template:*` | | 信件版型的可調值，全部有預設值，見下方「信件內容」；與 `Enabled` 無關，一律驗證 |
 
-連線是**不加密、免驗證**的 SMTP（沒有 TLS 與帳密鍵），只用於來源位址被信任的內網中繼；因此信裡只有連結，沒有密碼，連結短效、單次。寄信用 MailKit。
+沒設 `Security`、`Username` 與 `Password` 時，連線是**不加密、免驗證**的 SMTP，只適用於來源位址被中繼信任的內網；因此信裡只有連結，沒有密碼，連結短效、單次。寄信用 MailKit。
 
-寄出的結果是 `Sent`（中繼接受了信，不等於已投遞）、`Failed`、`Disabled`（未啟用）或 `NotRequested`（沒有收件地址）。寄不出去不使建立或重寄失敗，帳號照樣在，畫面與命令列照實顯示。稽核只記結果（`mail`），不記連結；日誌只記例外型別與 SMTP 狀態碼，不含位址與內文。
+寄出的結果是 `Sent`（中繼接受了信，不等於已投遞）、`Failed`、`Disabled`（未啟用）或 `NotRequested`（沒有收件地址）。寄不出去不使建立或重寄失敗，帳號照樣在，畫面與命令列照實顯示。稽核只記結果（`mail`），不記連結；日誌只記例外型別、SMTP 狀態碼與增強狀態碼（`Mail delivery failed: SmtpCommandException 550 5.7.60`；沒有的以 `-` 表示），不含位址、帳密與內文。
 
 **信件內容**：邀請信、驗證信與 `mail test` 是同一個版型，寄成 `multipart/alternative`：純文字在前、HTML 在後（客戶端顯示它看得懂的最後一個）。兩版事實一致：同一條連結、同樣的期限與提示、同樣的租戶識別碼；`mail test` 沒有連結也沒有密碼。一律帶 `Auto-Submitted: auto-generated`。
 
@@ -211,14 +213,41 @@ sequenceDiagram
 - **安全限制**：信裡唯一的外部網址就是啟用連結。沒有遠端圖片、追蹤像素、點擊追蹤轉址、腳本或外部樣式。理由是連結等同一次登入的鑰匙，不能經第三方，也不能被客戶端預先載入。上面的日誌與稽核規則不變：不記連結與內文。
 - **預覽**：`mail preview <輸出目錄>` 用同一個 `IMailComposer` 與選項寫出五種信（邀請與驗證各有「營運者」與「有租戶」兩種、加測試信）的 `.html` 與 `.txt`；系統名稱、`LinkLifetime` 與版型選項照目前的設定，連結是保留網域 `platform.example` 上的占位值，權杖是不能用的假值。瀏覽器的預覽不等於真實客戶端；傳統 Outlook 與各家深色模式要以實際寄出的信檢查（見 [`CONTRIBUTING.md`「本機收信與寄信測試」](../../CONTRIBUTING.md#本機收信與寄信測試)）。
 
-**測試**：在服務自己的環境裡執行 `mail test <email>`（見上表）。它印出實際使用的中繼、寄件者與連結來源，寄一封沒有連結、沒有密碼的測試信（主旨與內文帶系統名稱，與邀請信同一個版型），並以結束碼說明結果。來源位址是否被中繼信任只能在服務實際執行的環境驗證，從別的機器測通不代表服務能寄。
+**測試**：在服務自己的環境裡執行 `mail test <email>`（見上表）。它印出實際使用的中繼、加密模式、「使用帳密驗證：是／否」、寄件者、回覆位址（有設時）與連結來源（不印帳號與密碼；加密不足時多一行警告），寄一封沒有連結、沒有密碼的測試信（主旨與內文帶系統名稱，與邀請信同一個版型），並以結束碼說明結果。說明文字在 `MailTexts` 資源檔（鍵以 `MailTest.` 開頭），語言同信件。失敗時一次列出常見原因，含 `535` 與 `550 5.7.60`，並指向下表。來源位址是否被中繼信任只能在服務實際執行的環境驗證，從別的機器測通不代表服務能寄。
 
 | 現象 | 常見原因 |
 |------|----------|
 | `寄信未啟用` | `Enabled` 不是 `true` |
 | `Failed`，日誌是 `SocketException`、`IOException` 或逾時 | 連不上 `Host:Port`：DNS、防火牆、埠錯誤 |
 | `Failed`，日誌帶 `550`、`554` 之類的 SMTP 狀態碼 | 來源位址不在中繼的信任名單，或 `From`、收件者的網域被中繼拒絕 |
+| `Failed`，日誌是 `AuthenticationException`、狀態碼 `535` | 帳號或密碼錯誤。Exchange 與 Google Workspace 是不同的帳號系統：要用中繼所屬系統的帳號；改過密碼要同步更新 Secret（見[密碼錯誤的代價](#加密與帳密)） |
+| `Failed`，日誌帶 `550 5.7.60` | 寄件者不等於認證的帳號：讓 `From` 等於 `Username`，或不設 `From` 改用 `Username` |
+| `Failed`，日誌是 `SmtpServiceNotAuthenticatedException` | 中繼要求先登入：設 `Username` 與 `Password`（這類中繼通常也要求加密，一併設 `Security`） |
+| `Failed`，日誌是 `SslHandshakeException` | 憑證不被信任（內部 CA 沒放進容器信任）、主機名稱與憑證不符，或 `Security` 與埠不合（例如 `SslOnConnect` 連到 25 埠） |
+| `Failed`，日誌是 `NotSupportedException` | `Security` 是 `StartTls`，但中繼沒有公告 STARTTLS |
+| `Failed`，日誌是 `TimeoutException` | 連得上埠但沒有回應：常見於對 465 埠用 `None`（該埠一連上就要 TLS） |
 | `Failed`，日誌是 `FormatException` | 收件地址格式不合法 |
 | `Sent`，但沒收到 | 中繼接受了信但沒投遞：查垃圾信匣與中繼的郵件追蹤 |
 
 本機與正式環境的操作順序見 [`CONTRIBUTING.md`「本機收信與寄信測試」](../../CONTRIBUTING.md#本機收信與寄信測試)。
+
+### 加密與帳密
+
+`Security` 一對一對應 MailKit 的 `SecureSocketOptions`：
+
+| 值 | 行為 |
+|----|------|
+| `None`（預設） | 不使用 SSL／TLS |
+| `StartTls` | 連線後以 STARTTLS 升級；中繼不支援就失敗 |
+| `StartTlsWhenAvailable` | 中繼公告 STARTTLS 才升級，否則不加密地繼續 |
+| `SslOnConnect` | 連上就是 SSL／TLS（通常是 465 埠） |
+| `Auto` | 交給 MailKit 依埠號決定（465 為 `SslOnConnect`，其餘為 `StartTlsWhenAvailable`）；不保證加密 |
+
+- **`None` 與 `StartTlsWhenAvailable` 可能以明文傳輸**：前者從不加密，後者在中繼沒有公告 STARTTLS 時（包括公告被中間人拿掉）照樣送出，連帳號密碼也是。RFC 8314 的建議是連上就加密。能選就選 `StartTls` 或 `SslOnConnect`；`Auto` 在 465 以外的埠與 `StartTlsWhenAvailable` 相同。
+- **預設仍是 `None`** 是為了不破壞既有部署：目前的校內中繼是 25 埠、不加密、以來源位址信任，改預設會讓它們啟動後寄不出信。設了帳密卻用 `None` 或 `StartTlsWhenAvailable`，啟動記一則警告，`mail test` 也印警告（帳密會以明文在網路上傳送）。
+- **帳密驗證**：兩者都設才驗證，連線後由 MailKit 的 `AuthenticateAsync` 依中繼公告的機制協商（本服務不自己寫 SASL 或 STARTTLS）；沒設就**不送 AUTH**，即使中繼公告了它。MailKit 在不加密的連線上也會驗證（SASL PLAIN），所以 `None` 加帳密能用，代價是明文。
+- **憑證一律驗證**：用到 TLS 時照預設驗證，沒有略過驗證的設定。中繼的憑證若由內部 CA 簽發，做法是把該 CA 放進**容器信任的憑證存放區**（.NET 在 Linux 讀系統憑證目錄，也認 `SSL_CERT_FILE`、`SSL_CERT_DIR`），不是在程式裡放行。
+- **寄件者必須等於認證的帳號**：Exchange 等中繼對不同的寄件者回 `550 5.7.60 Client does not have permissions to send as this sender`。`From` 與（email 形式的）`Username` 不同時，啟動記一則警告但不停下，因為有些中繼允許 Send As。顯示名稱（`FromName`）與 `ReplyTo` 可以另外設。
+- **帳號系統要對**：Exchange 與 Google Workspace 是不同的帳號系統。中繼屬於哪一個，就用那一個的帳號，否則回 `535`。沒有服務帳號時只能用個人帳號，密碼放叢集 Secret。
+- **密碼錯誤的代價**：MailKit 會對中繼公告的每一種機制各試一次，所以一次寄信可能在中繼記下多次失敗的登入。帳號若有「連續失敗鎖定」，改密碼後要同步更新 Secret 並重啟，不要讓服務反覆嘗試舊密碼。
+- **機密不外流**：`Password` 只經環境變數，不進日誌、稽核、例外訊息、`mail test` 輸出、選項的 `ToString()` 與序列化，也不在任何診斷端點；`Username` 同樣不進日誌與輸出。`mail test` 只印「使用帳密驗證：是／否」，不印帳號；需要核對時看寄件者那一行。
