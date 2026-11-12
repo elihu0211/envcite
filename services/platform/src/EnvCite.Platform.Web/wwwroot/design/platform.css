@@ -1234,6 +1234,17 @@ html[data-js] .ep-side-toggle {
         align-self: start;
     }
 
+    /* 操作超過一個（寄驗證信、重設密碼、停用…）時放在卡片最下面整列、可換行；
+       否則右欄的寬度是那一排按鈕的總和，把電子郵件擠成一行兩三個字。 */
+    .ep-cards table tbody tr td:last-child:has(> :nth-child(2)) {
+        grid-column: 1;
+        grid-row: auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--ep-space-1) var(--ep-space-2);
+        margin-block-start: var(--ep-space-2);
+    }
+
     /* 卡片裡「目標：api_key …id」同一行。 */
     .ep-cards .ep-secondary {
         display: inline;
