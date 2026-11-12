@@ -26,6 +26,7 @@ public static class WebModule
     {
         services.AddPlatformBrand();
         services.AddSingleton<BrandText>();
+        services.AddPlatformAppearance();
         services.AddWebAuth();
         services.AddRazorComponents().AddInteractiveServerComponents();
         // 取代預設的 AuthenticationStateProvider：circuit 每分鐘重驗營運者帳號（見 OperatorAuthenticationStateProvider）。

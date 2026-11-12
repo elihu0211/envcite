@@ -167,7 +167,13 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 ## 設計系統與營運者後台
 
-- 外觀只有一個來源：`Web/Design/DesignTokens.cs`。給代理看的視覺規格是同目錄的 `DESIGN.md`（企業配色、字級、字型）；改數值時兩份一起改，`DesignTokenTests` 核對它們相同。`platform.css` 只引用變數，**不得寫死**顏色、字重、時長、緩動、縮放或觸控尺寸；文字配色須符合 WCAG AA 對比，**淺色與深色兩套都要過**（深色是同一組變數換一份值，由 `TokenCss` 產生，元件不各寫一份）；視口斷點只寫在 `DesignTokens.Breakpoints`；表格卡片**不得**加 `overflow: hidden`；禁止停用縮放。**外觀只跟隨瀏覽器／系統（`prefers-color-scheme`），沒有手動選項**：不放切換元件、不存使用者偏好、不設 `data-theme` 一類的屬性；`<meta name="color-scheme">`、淺色與深色兩個 `theme-color` 都靠 `media` 對應系統，不靠腳本改。以上由 `DesignTokenTests` 等測試守門。
+- 外觀只有一個來源：`Web/Design/DesignTokens.cs`。給代理看的視覺規格是同目錄的 `DESIGN.md`（企業配色、字級、字型）；改數值時兩份一起改，`DesignTokenTests` 核對它們相同。`platform.css` 只引用變數，**不得寫死**顏色、字重、時長、緩動、縮放或觸控尺寸；文字配色須符合 WCAG AA 對比，**淺色與深色兩套都要過**（深色是同一組變數換一份值，由 `TokenCss` 產生，元件不各寫一份）；視口斷點只寫在 `DesignTokens.Breakpoints`；表格卡片**不得**加 `overflow: hidden`；禁止停用縮放。**外觀預設跟隨瀏覽器／系統（`prefers-color-scheme`），個人設定可手動覆寫**（契約見 [`README.md`](README.md)「個人設定與外觀」）：
+  - 沒有偏好時 `<html>` 不帶 `data-theme`、不存任何東西，行為與只靠 `prefers-color-scheme` 完全相同。
+  - 偏好存在**伺服器端的 cookie**（`AppearanceOptions.Cookie`，以 `CookieBuilder` 描述，名稱與有效期不寫死在端點或元件裡），由 `App.razor` 在回應的第一格輸出 `data-theme`、鎖定 `<meta name="color-scheme">`、讓 `theme-color` 只留選的那一個；token 與原生控制項都跟著選擇。不存 localStorage、不用內嵌指令碼讀偏好、不進資料庫。
+  - **切換只放在登入後的個人設定**：營運者與客戶入口各一頁，共用 `Shared/AppearanceSetting`，不複製。**匿名頁面（登入、啟用、重設、已登出）不提供切換**：還沒有身分，沒有「個人」設定可放，作業系統與瀏覽器的選擇就是唯一來源；但它們一樣依 cookie 輸出已存的偏好，兩邊才一致。
+  - 選項是原生 radio（`role="radiogroup"`）。選了立即預覽：`forms.js` 換 `data-theme`、`color-scheme` 與 `theme-color`（用 View Transition 淡入淡出），並用 `fetch` 送出同一張表單；沒有 JavaScript 時是普通的 POST 表單。
+  - 舊的 `ThemeSwitch` 與 localStorage 的 `ep-theme` 已移除，`<head>` 的小腳本仍清掉舊值。
+  - 以上由 `DesignTokenTests`、`AppearanceTests` 等測試守門。
 - 營運者頁面讀 `IAuditQuery`、`ITenantDirectory` 這類在 `SharedKernel` 的契約，不經 HTTP；每次呼叫開自己的 scope，因為 Blazor Server 電路的壽命遠長於一個請求，不能持有過期的 `DbContext`。
 - **密碼輸入框一律用 `Shared/PasswordField`**（眼睛鈕、大寫鎖定提醒與 `autocomplete` 都由它管，營運者與客戶入口的登入、啟用、改密碼、關閉兩步驟都是）；不得在頁面或對話框直接寫 `type="password"` 或 `InputType.Password`。`PasswordFieldTests` 掃原始碼守住，並指名檢查啟用頁；啟用頁的實際輸出由 `InvitationTests` 斷言。一次性密碼的顯示框是唯讀文字，不是輸入框，不在此限。
 - **要讓人複製一段文字（網址、代碼）一律用 `Shared/CopyButton`**（參數 `Id`、`Label`、`Value`），不另寫複製鈕。它只畫按鈕，文字平常收起來、不佔畫面。複製在瀏覽器端由 `design/forms.js` 的委派處理（`data-copy-target`，靜態與互動渲染都能用，不走 JS 互通），複製的是完整文字；成功時鈕文字變「已複製」並經 `aria-live` 通知螢幕閱讀器；剪貼簿不可用時把文字顯示出來並選取；沒有 JavaScript 時鈕不出現、文字直接列出。按鈕文字就是無障礙名稱，要說明複製什麼（「複製登入網址」）。版面由 flex 換行決定（寬時並排、窄時各撐滿一列），不靠視口斷點；樣式只用設計變數。

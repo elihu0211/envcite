@@ -13,23 +13,33 @@ public static class TokenCss
     {
         var css = new StringBuilder();
 
-        // 淺色是預設。深色只在瀏覽器／系統是深色時（prefers-color-scheme）套上同一組變數：外觀只跟隨系統，
-        // 沒有手動選項，所以 <html> 上不需要任何主題屬性。選擇器用 html:root，特異度高於 MudBlazor 在 :root 上的規則，不論先後都贏。
-        // color-scheme: light dark 讓瀏覽器替表單控制項、捲軸、選取色套對應的外觀。
+        // 淺色是預設。預設跟隨系統：<html> 沒有 data-theme 時，深色只在瀏覽器／系統是深色時（prefers-color-scheme）套上同一組變數。
+        // 使用者在個人設定手動選了才有 data-theme（伺服器依 cookie 輸出，見 App.razor）：選「暗色」無論系統如何都套深色，
+        // 選「亮色」則擋住系統的深色。深色那一份變數只此一份，兩處共用同一個字串。
+        // 選擇器用 html:root，特異度高於 MudBlazor 在 :root 上的規則，不論先後都贏。
+        // color-scheme 預設 light dark，讓瀏覽器替表單控制項、捲軸、選取色跟著系統；手動選了就鎖定到同一邊，原生控制項才與 token 一致。
         css.Append(":root{").Append(Shared()).Append(Colors(DesignTokens.Light)).Append(Elevation(DesignTokens.Elevation)).Append("color-scheme:light dark;}");
         var dark = Colors(DesignTokens.Dark) + Elevation(DesignTokens.ElevationDark) + MudColors(DesignTokens.Dark);
-        css.Append("@media (prefers-color-scheme:dark){html:root{").Append(dark).Append("}}");
+        var (chosenLight, chosenDark) = (Chosen(Appearance.Light), Chosen(Appearance.Dark));
+        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-color-scheme:dark){{html:root:not({chosenLight}){{{dark}}}}}");
+        css.Append(CultureInfo.InvariantCulture, $"html:root{chosenDark}{{{dark}color-scheme:dark;}}");
+        css.Append(CultureInfo.InvariantCulture, $"html:root{chosenLight}{{color-scheme:light;}}");
 
         // 使用者偏好集中在 token 這一層，不在每個元件各寫一份：要較高對比，髮絲線與次要文字加深到控制項與正文的程度
         // （兩套主題各用自己的那一對）；要減少動態，位移與縮放歸零，元件只剩淡入淡出（第三方元件的動畫在樣式表收掉）。
         var light = DesignTokens.Light;
         var night = DesignTokens.Dark;
+        var contrastDark = $"--ep-border-subtle:{night.BorderControl};--ep-text-secondary:{night.Text};";
         css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more){{:root{{--ep-border-subtle:{light.BorderControl};--ep-text-secondary:{light.Text};}}}}");
-        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more) and (prefers-color-scheme:dark){{html:root{{--ep-border-subtle:{night.BorderControl};--ep-text-secondary:{night.Text};}}}}");
+        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more) and (prefers-color-scheme:dark){{html:root:not({chosenLight}){{{contrastDark}}}}}");
+        css.Append(CultureInfo.InvariantCulture, $"@media (prefers-contrast:more){{html:root{chosenDark}{{{contrastDark}}}}}");
         css.Append("@media (prefers-reduced-motion:reduce){:root{--ep-press-scale:1;--ep-motion-scale:1;--ep-motion-travel:0rem;--ep-motion-travel-sm:0rem;}}");
 
         return css.ToString();
     }
+
+    /// <summary>使用者手動選了這個外觀時 <c>&lt;html&gt;</c> 上的屬性選擇器；詞彙與 cookie、表單相同（<see cref="AppearanceNames.Name"/>）。</summary>
+    private static string Chosen(Appearance appearance) => $"[data-theme=\"{appearance.Name()}\"]";
 
     private static string Colors(ColorTokens c) =>
         $"--ep-bg:{c.Background};--ep-surface:{c.Surface};--ep-surface-raised:{c.SurfaceRaised};--ep-surface-muted:{c.SurfaceMuted};" +
