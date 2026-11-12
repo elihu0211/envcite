@@ -11,6 +11,12 @@ internal static class IdentityOutcomes
     public static AdminOutcome<T> Rejected<T>(IdentityError error) =>
         AdminOutcome.Invalid<T>(OutcomeCodes.IdentityRejected, error.Description);
 
+    /// <summary>建立帳號失敗：email 已被用（營運者與成員各有自己的代碼）是衝突，其他是 Identity 拒絕。</summary>
+    public static AdminOutcome<T> CreateFailed<T>(IdentityResult created, string emailTakenCode) =>
+        created.Errors.Any(e => e.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.DuplicateEmail))
+            ? AdminOutcome.Conflict<T>(emailTakenCode)
+            : Rejected<T>(created.Errors.First());
+
     /// <summary>改密碼時 Identity 拒絕：目前的密碼不對、太短、太長、含有 email、太容易被猜到，或其他不符規則。</summary>
     public static AdminOutcome<T> PasswordRejected<T>(IdentityError error) => error.Code switch
     {
