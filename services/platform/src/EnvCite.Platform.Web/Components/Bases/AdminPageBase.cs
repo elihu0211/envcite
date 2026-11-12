@@ -16,7 +16,9 @@ public abstract class AdminPageBase : PageBase
     /// <summary>後台對話框的寬度：窄、可關閉。</summary>
     protected static readonly DialogOptions Narrow = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
 
-    [Inject] protected AuthenticationStateProvider Auth { get; set; } = default!;
+    /// <summary>目前的登入狀態：由根部的 <c>CascadingAuthenticationState</c> 提供，登入狀態變動時框架會換新的值（不自己訂閱事件，也不快取）。</summary>
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+
 
     [Inject] protected IDialogService Dialogs { get; set; } = default!;
 
@@ -26,7 +28,7 @@ public abstract class AdminPageBase : PageBase
 
     protected bool Busy { get; private set; }
 
-    protected async Task<ClaimsPrincipal> ActorAsync() => (await Auth.GetAuthenticationStateAsync()).User;
+    protected async Task<ClaimsPrincipal> ActorAsync() => (await AuthenticationState).User;
 
     protected void Succeed(string message) => (Notice, NoticeSeverity) = (message, Severity.Success);
 

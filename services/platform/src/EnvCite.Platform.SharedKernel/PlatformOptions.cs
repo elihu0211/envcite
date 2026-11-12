@@ -11,7 +11,8 @@ public sealed class DatabaseOptions : ISectionOptions
 {
     public static string SectionName => "ConnectionStrings";
 
-    [Required(AllowEmptyStrings = false)]
+    // 訊息指名設定鍵：產生的驗證器預設只說「Platform field」，k8s 的 CrashLoopBackOff 裡看不出是哪個區段。
+    [Required(AllowEmptyStrings = false, ErrorMessage = "ConnectionStrings:Platform is required.")]
     public string Platform { get; set; } = string.Empty;
 }
 

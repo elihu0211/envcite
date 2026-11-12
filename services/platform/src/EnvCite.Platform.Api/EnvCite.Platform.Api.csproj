@@ -4,7 +4,7 @@
   <PropertyGroup>
     <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
     <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/../../openapi</OpenApiDocumentsDirectory>
-    <OpenApiGenerateDocumentsOptions>--file-name openapi</OpenApiGenerateDocumentsOptions>
+    <OpenApiGenerateDocumentsOptions>--file-name openapi --openapi-version OpenApi3_1</OpenApiGenerateDocumentsOptions>
   </PropertyGroup>
 
   <!--

@@ -213,7 +213,8 @@ public sealed class OperatorSignInTests(PlatformFactory factory)
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         var user = (await users.FindByIdAsync(id))!;
         Assert.True(await users.IsLockedOutAsync(user));
-        var remaining = (await users.GetLockoutEndDateAsync(user))!.Value - DateTimeOffset.UtcNow;
+        // Identity 取時間走 TimeProvider（.NET 11 起），測試主機換成了假時鐘：剩餘時間要以同一個時鐘算。
+        var remaining = (await users.GetLockoutEndDateAsync(user))!.Value - factory.Time.GetUtcNow();
         Assert.InRange(remaining.TotalMinutes, 13, 16);
         Assert.Equal(TimeSpan.FromMinutes(15), MembersModule.LockoutDuration);
 

@@ -108,6 +108,19 @@
       "groupName": ".NET SDK and images"
     },
     {
+      "description": "EF Core 與 Npgsql 提供者必須同一個大版本（提供者鎖定 EF Core 的確切版本，分開升 restore 就衝突）；Identity、DataProtection 的 EF 儲存、健康檢查與 dotnet-ef 工具跟著 EF Core，同一個 pull request 一起升",
+      "matchPackageNames": [
+        "Microsoft.EntityFrameworkCore*",
+        "Microsoft.AspNetCore.Identity.EntityFrameworkCore",
+        "Microsoft.AspNetCore.DataProtection.EntityFrameworkCore",
+        "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore",
+        "Npgsql.EntityFrameworkCore.PostgreSQL",
+        "Npgsql.OpenTelemetry",
+        "dotnet-ef"
+      ],
+      "groupName": "EF Core and Npgsql"
+    },
+    {
       "description": "global.json 的 sdk.version 是下限（搭配 rollForward: latestFeature），不是釘死的版本：升它不改變實際用的 SDK，卻會讓 Renovate 的執行環境因 SDK 不足而無法 restore；實際用的 SDK 由 CI／Dockerfile 的映像決定",
       "matchManagers": [
         "nuget"

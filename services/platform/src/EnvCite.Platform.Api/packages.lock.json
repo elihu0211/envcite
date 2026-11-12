@@ -1,7 +1,7 @@
 {
   "version": 2,
   "dependencies": {
-    "net10.0": {
+    "net11.0": {
       "Finbuckle.MultiTenant.AspNetCore": {
         "type": "Direct",
         "requested": "[10.1.4, )",
@@ -14,24 +14,24 @@
       },
       "Microsoft.AspNetCore.App.Internal.Assets": {
         "type": "Direct",
-        "requested": "[10.0.15, )",
-        "resolved": "10.0.15",
-        "contentHash": "cineG7aU2cpo+CC5rDORY4bFRya0mlaULDpzQ+ncfG0tMyZlWATyVAo2P29i0hH40EElK5O204pjT4XEYALb6g=="
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "Mc4ywjacnewbl9TPTfRaBxGpBJudLEHCpJrG4digzG5v32aJkC1PwCDHwSq0nPiuMftMVAqnlhl6nKZpW60Gwg=="
       },
       "Microsoft.AspNetCore.OpenApi": {
         "type": "Direct",
-        "requested": "[10.0.13, )",
-        "resolved": "10.0.13",
-        "contentHash": "XVuqUBGjVUVyb4DXR5BrSkrW0Br7sYKq39f723ILhQLlFHCyhAgWe1PkJBc42R/5mKBIgHiKVSY+PN5/4XtcQw==",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "B5nHzRjpd5BhKN1ijqc2X4QVuQCCbQAWL/q3wpJgUBZou60IT0wgi1eiU3fF/DAj21RgBHXYAVNCV/AJ9y1GKw==",
         "dependencies": {
-          "Microsoft.OpenApi": "[2.12.2, 3.0.0)"
+          "Microsoft.OpenApi": "[3.11.0, 4.0.0)"
         }
       },
       "Microsoft.Extensions.ApiDescription.Server": {
         "type": "Direct",
-        "requested": "[10.0.13, )",
-        "resolved": "10.0.13",
-        "contentHash": "jw1nAiGUSFFZB4Hsk9TZHTE4J1mH1FOtZiJvDI5K7hsLet+D9cV/JbGMi7LfX4hCFR2jCRWYiDquBSqei5NsxA=="
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "jWLQHPiHyyHw9CIAbfZ0bh2pdLBD3cZ+h9el1zv769cf9yeti13LBLj6i9Vp8NR1PTh1qOG4Myl7j+sfgjnlUw=="
       },
       "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": {
         "type": "Direct",
@@ -128,8 +128,8 @@
       },
       "Microsoft.Extensions.AI.Abstractions": {
         "type": "Transitive",
-        "resolved": "10.11.0",
-        "contentHash": "h4DX/TdJU4fk1GGaf19n6Kujkj6VXbGeL4UEOsQ8+ZJC5fVApPauokCtvBP684BYbczUYZQNfo1mbmyHG4WVSg=="
+        "resolved": "11.0.0",
+        "contentHash": "UYZTudmTrGykWIRzcO/TKauTx/+L/h4MYpUBODCG7aIybRVkv2y6uhVwG6UHRS6uTzRqg0K8IJprC9/QhMZGsw=="
       },
       "Microsoft.IdentityModel.Abstractions": {
         "type": "Transitive",
@@ -180,8 +180,8 @@
       },
       "Microsoft.OpenApi": {
         "type": "Transitive",
-        "resolved": "2.12.2",
-        "contentHash": "ZkT7qiJe0Kj0+DTZOZo+xrDy1kNmdsWFQVPIQLNx9ZJ0T9cB2LG7r+Bi60so8/+yg1nkS7QCPadrzsTG4VPKrA=="
+        "resolved": "3.11.0",
+        "contentHash": "kvQz+mL/fnDw2VaE8zMyQhbMv7FmOYUydIhCVNKxQdrLu9XiMT/07DHwJ5YkRO2uzcxTFvMAKFKKywxoyLKHcA=="
       },
       "MimeKit.Core": {
         "type": "Transitive",
@@ -277,7 +277,7 @@
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
           "Google.Protobuf": "[3.36.2, )",
           "Grpc.Net.ClientFactory": "[2.84.0, )",
-          "Microsoft.Extensions.AI.OpenAI": "[10.11.0, )"
+          "Microsoft.Extensions.AI.OpenAI": "[11.0.0, )"
         }
       },
       "envcite.platform.modules.conversations": {
@@ -416,11 +416,11 @@
       },
       "Microsoft.Extensions.AI.OpenAI": {
         "type": "CentralTransitive",
-        "requested": "[10.11.0, )",
-        "resolved": "10.11.0",
-        "contentHash": "p8fJdcPOrwaUPRrag5dY9SLohaouutY+bqg1Lw+8OOEFqMXvCHGNWQXv2GcUUNPBCkTR4mcBEHoP9LAV2RtxzA==",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "yZcoQnQOU/tUUy+w5/qBuiuTvUjtirVVhvMq12QP7WKH1XLg+LcUJs6GsLNCwwGk07VWbj7O8ZU/lYsGr7vlUg==",
         "dependencies": {
-          "Microsoft.Extensions.AI.Abstractions": "10.11.0",
+          "Microsoft.Extensions.AI.Abstractions": "11.0.0",
           "OpenAI": "2.14.0"
         }
       },

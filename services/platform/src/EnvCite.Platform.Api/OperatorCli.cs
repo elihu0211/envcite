@@ -58,7 +58,7 @@ public static class OperatorCli
             case ["operator", "reset-two-factor", var email]:
                 return await ResetTwoFactorAsync(admin, actor, email, output, error, cancellationToken);
             default:
-                await error.WriteLineAsync(Usage);
+                await error.WriteLineAsync(Usage, cancellationToken);
                 return 2;
         }
     }
@@ -76,27 +76,27 @@ public static class OperatorCli
         var report = services.GetRequiredService<IMailTestReport>();
         if (!System.Net.Mail.MailAddress.TryCreate(recipient, out var parsed) || parsed.Address != recipient.Trim())
         {
-            await error.WriteLineAsync(report.InvalidRecipient(recipient));
+            await error.WriteLineAsync(report.InvalidRecipient(recipient), cancellationToken);
             return 1;
         }
 
         if (!mail.Enabled)
         {
-            await error.WriteLineAsync(report.NotEnabled());
+            await error.WriteLineAsync(report.NotEnabled(), cancellationToken);
             return 1;
         }
 
-        await output.WriteLineAsync(report.Settings());
+        await output.WriteLineAsync(report.Settings(), cancellationToken);
 
         var composed = await services.GetRequiredService<IMailComposer>().ComposeTestAsync(cancellationToken);
         var delivery = await mail.SendAsync(parsed.Address, composed.Subject, composed.Content, cancellationToken);
         if (delivery == MailDelivery.Sent)
         {
-            await output.WriteLineAsync(report.Accepted(parsed.Address));
+            await output.WriteLineAsync(report.Accepted(parsed.Address), cancellationToken);
             return 0;
         }
 
-        await error.WriteLineAsync(report.Failed(delivery));
+        await error.WriteLineAsync(report.Failed(delivery), cancellationToken);
         return 1;
     }
 
@@ -112,7 +112,7 @@ public static class OperatorCli
                 return await FailAsync(error, "建立營運者", invited.Status, invited.Message);
             }
 
-            await output.WriteLineAsync($"已建立營運者 {invited.Value!.Operator.Email}（還沒有密碼）");
+            await output.WriteLineAsync($"已建立營運者 {invited.Value!.Operator.Email}（還沒有密碼）", cancellationToken);
             return await ReportInvitationAsync(output, error, invited.Value.Mail, email);
         }
 
@@ -126,7 +126,7 @@ public static class OperatorCli
             已建立營運者 {created.Value!.Operator.Email}
             一次性密碼（只顯示這一次，第一次登入必須改掉，再註冊驗證器）：{created.Value.Password}
             登入：{UiEndpoints.LoginPath}
-            """);
+            """, cancellationToken);
         return 0;
     }
 
@@ -181,7 +181,7 @@ public static class OperatorCli
         await output.WriteLineAsync($"""
             已重設營運者 {target.Email} 的密碼
             一次性密碼（只顯示這一次，下次登入必須改掉）：{reset.Value!.Password}
-            """);
+            """, cancellationToken);
         return 0;
     }
 
@@ -201,7 +201,7 @@ public static class OperatorCli
             return await FailAsync(error, "重設驗證器", reset.Status, reset.Message);
         }
 
-        await output.WriteLineAsync($"已重設營運者 {target.Email} 的驗證器；對方下次用密碼登入後必須重新註冊。");
+        await output.WriteLineAsync($"已重設營運者 {target.Email} 的驗證器；對方下次用密碼登入後必須重新註冊。", cancellationToken);
         return 0;
     }
 
