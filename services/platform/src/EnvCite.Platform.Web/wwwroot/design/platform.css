@@ -135,7 +135,7 @@ a:where(:not([class*="mud-"])) {
 
 .ep-empty {
     align-items: center;
-    padding-block: var(--ep-space-12);
+    padding-block: var(--ep-space-8);
     text-align: center;
     color: var(--ep-text-secondary);
 }
@@ -464,11 +464,23 @@ a:where(:not([class*="mud-"])) {
 
 .ep-table th,
 .ep-plain-table th {
-    background: var(--ep-surface-muted);
+    background: var(--ep-surface);
     color: var(--ep-text-secondary);
-    font-size: var(--ep-body-m-size);
+    font-size: var(--ep-label-m-size);
+    letter-spacing: var(--ep-label-m-tracking);
     font-weight: var(--ep-label-l-weight);
     white-space: nowrap;
+}
+
+/* 列：懸停時整列淡一階的底（滑鼠才有），最後一列不再多畫一條底線（卡片的邊就是結尾）。 */
+@media (hover: hover) {
+    .ep-table tbody tr:hover > td {
+        background: color-mix(in srgb, var(--ep-text) 3%, transparent);
+    }
+}
+
+.ep-table tbody tr:last-child > td {
+    border-block-end: 0;
 }
 
 .ep-mono {
@@ -530,6 +542,26 @@ a:where(:not([class*="mud-"])) {
 .ep-portal-tenant {
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-m-size);
+}
+
+/* 卡片裡的「名稱：值」清單：每一列之間一條細線，最後一列沒有；欄位名稱欄有最小寬度，值才對齊。 */
+.ep-card > .ep-detail {
+    grid-template-columns: minmax(6rem, max-content) 1fr;
+    gap: 0; /* 欄距用 dd 的內距，細線才不會在兩欄之間斷開 */
+}
+
+.ep-card > .ep-detail > dd {
+    padding-inline-start: var(--ep-space-6);
+}
+
+.ep-card > .ep-detail > dt,
+.ep-card > .ep-detail > dd {
+    padding-block: var(--ep-space-2);
+    border-block-end: 1px solid var(--ep-border-subtle);
+}
+
+.ep-card > .ep-detail > :nth-last-child(-n + 2) {
+    border-block-end: 0;
 }
 
 .ep-detail dd {
@@ -1800,11 +1832,21 @@ html[data-js] .ep-password-toggle {
 .ep-plain-table td {
     padding: var(--ep-space-2) var(--ep-space-3);
     text-align: start;
+    white-space: nowrap; /* 窄螢幕不把名稱擠成一字一行：表格在 .ep-table-wrap 裡橫向捲動 */
     border-block-end: 1px solid var(--ep-border-subtle);
 }
 
 .ep-table-wrap {
     overflow-x: auto;
+}
+
+/* 放在有內距的卡片裡的簡單表格：第一欄與最後一欄的外側不再多縮一層，文字才與卡片標題對齊。 */
+.ep-card:not(.ep-table-card) .ep-plain-table :is(th, td):first-child {
+    padding-inline-start: 0;
+}
+
+.ep-card:not(.ep-table-card) .ep-plain-table :is(th, td):last-child {
+    padding-inline-end: 0;
 }
 
 @media (hover: hover) {

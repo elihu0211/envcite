@@ -66,14 +66,14 @@ else
             <NoRecordsContent>
                 @if (string.IsNullOrWhiteSpace(_search))
                 {
-                    <EmptyState Title="@L["還沒有任何營運者"]"
+                    <EmptyState Icon="@Icons.Material.Outlined.AdminPanelSettings" Title="@L["還沒有任何營運者"]"
                                 Description="@L["建立第一個帳號，把一次性密碼交給對方。"]">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync">@L["新增營運者"]</MudButton>
                     </EmptyState>
                 }
                 else
                 {
-                    <EmptyState Title="@L["沒有符合「{0}」的營運者", _search!]"
+                    <EmptyState Icon="@Icons.Material.Outlined.SearchOff" Title="@L["沒有符合「{0}」的營運者", _search!]"
                                 Description="@L["試試其他關鍵字，或清除搜尋。"]">
                         <MudButton Variant="Variant.Text" OnClick="() => _search = null">@L["清除搜尋"]</MudButton>
                     </EmptyState>

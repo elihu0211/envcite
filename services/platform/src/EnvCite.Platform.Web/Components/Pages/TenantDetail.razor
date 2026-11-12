@@ -16,7 +16,7 @@ else if (_loading)
 }
 else if (_tenant is null)
 {
-    <EmptyState Title="@L["找不到這個租戶"]" Description="@L["它可能不存在，或識別有誤。"]">
+    <EmptyState Icon="@Icons.Material.Outlined.SearchOff" Title="@L["找不到這個租戶"]" Description="@L["它可能不存在，或識別有誤。"]">
         <MudButton Variant="Variant.Text" Href="/ui/tenants">@L["回到租戶清單"]</MudButton>
     </EmptyState>
 }
@@ -87,7 +87,7 @@ else
                 </div>
                 @if (_usage.Count == 0)
                 {
-                    <EmptyState Title="@L["還沒有使用紀錄"]" Description="@L["租戶以 API key 呼叫 /v2 後，用量會出現在這裡。"]" />
+                    <EmptyState Icon="@Icons.Material.Outlined.Insights" Title="@L["還沒有使用紀錄"]" Description="@L["租戶以 API key 呼叫 /v2 後，用量會出現在這裡。"]" />
                 }
                 else
                 {
@@ -135,7 +135,7 @@ else
                 </div>
                 @if (_keys.Count == 0)
                 {
-                    <EmptyState Title="@L["還沒有 API key"]" Description="@L["簽發第一把 key 給客戶，他們才能呼叫 /v2。"]" />
+                    <EmptyState Icon="@Icons.Material.Outlined.VpnKey" Title="@L["還沒有 API key"]" Description="@L["簽發第一把 key 給客戶，他們才能呼叫 /v2。"]" />
                 }
                 else
                 {
@@ -191,7 +191,7 @@ else
                 <p class="ep-status">@L["登入網址"] <code class="ep-mono">@PortalLoginUrl</code></p>
                 @if (_members.Count == 0)
                 {
-                    <EmptyState Title="@L["還沒有成員"]" Description="@L["新增第一位成員，客戶才能登入入口。"]" />
+                    <EmptyState Icon="@Icons.Material.Outlined.Group" Title="@L["還沒有成員"]" Description="@L["新增第一位成員，客戶才能登入入口。"]" />
                 }
                 else
                 {

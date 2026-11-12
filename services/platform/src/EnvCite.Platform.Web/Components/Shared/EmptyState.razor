@@ -1,5 +1,9 @@
-@* 沒有資料時的畫面：說明現在是什麼狀態、下一步可以做什麼，而不是一片空白。只有文字，不放裝飾圖示。 *@
+@* 沒有資料時的畫面：說明現在是什麼狀態、下一步可以做什麼，而不是一片空白。圖示磚只是輔助（aria-hidden），標題與說明才是意思。 *@
 <div class="ep-empty">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <span class="ep-status-icon" aria-hidden="true"><NavIcon Path="@Icon" /></span>
+    }
     <h2 class="ep-empty-title">@Title</h2>
     @if (!string.IsNullOrEmpty(Description))
     {
@@ -14,6 +18,10 @@
 
     [Parameter]
     public string? Description { get; set; }
+
+    /// <summary>標題上方的圖示（MudBlazor 的 Material 圖示常數）；沒有就只有文字。</summary>
+    [Parameter]
+    public string? Icon { get; set; }
 
     /// <summary>下一步的動作（按鈕或連結）。</summary>
     [Parameter]
