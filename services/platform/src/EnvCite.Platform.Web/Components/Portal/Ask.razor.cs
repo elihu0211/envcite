@@ -13,17 +13,10 @@ public partial class Ask(
     // 範例是臺灣法規裡會出現的詞（資料庫是中文），所以英文介面也維持中文：翻成英文就搜不到。
     private static readonly string[] Examples = ["噪音管制標準", "固定污染源", "廢棄物清理", "水污染防治"];
 
-    [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
-
-    [SupplyParameterFromForm] private SearchForm Input { get; set; } = default!;
-
     private bool _hasPlan;
     private bool _aiAnswer;
     private bool _asked;
     private string _question = string.Empty;
-    private string? _error;
     private string _asOfLabel = string.Empty;
     private IReadOnlyList<LawHit>? _hits;
     private GroundedAnswer? _answer;
@@ -34,7 +27,6 @@ public partial class Ask(
     protected override async Task OnInitializedAsync()
     {
         _asOfLabel = L["現行"];
-        Input ??= new();
         _hasPlan = await HasPlanAsync();
     }
 
@@ -56,7 +48,7 @@ public partial class Ask(
 
     private async Task SearchAsync()
     {
-        _error = null;
+        Error = null;
         if (!_hasPlan)
         {
             return;
@@ -95,10 +87,10 @@ public partial class Ask(
                     ? L["（拒答）{0}", RefusalLabel(_answer.RefusalReason)]
                     : $"{_answer.Text}\n{string.Join('\n', _answer.Sources.Select(s => $"[{s.Code}] {s.Citation}（{_asOfLabel}） {s.Uri}"))}";
             case AdminStatus.Invalid:
-                _error = L["查詢條件不正確：請輸入問題；日期要是有效的日期。"];
+                Error = L["查詢條件不正確：請輸入問題；日期要是有效的日期。"];
                 return null;
             default:
-                _error = L["回答服務暫時無法使用，請稍後再試。"];
+                Error = L["回答服務暫時無法使用，請稍後再試。"];
                 return null;
         }
     }
@@ -112,10 +104,10 @@ public partial class Ask(
                 _hits = result.Value;
                 return AnswerText(_hits!);
             case AdminStatus.Invalid:
-                _error = L["查詢條件不正確：請輸入關鍵字；日期要是有效的日期。"];
+                Error = L["查詢條件不正確：請輸入關鍵字；日期要是有效的日期。"];
                 return null;
             default:
-                _error = L["搜尋服務暫時無法使用，請稍後再試。"];
+                Error = L["搜尋服務暫時無法使用，請稍後再試。"];
                 return null;
         }
     }
@@ -139,16 +131,16 @@ public partial class Ask(
         hits.Count == 0
             ? L["沒有符合的條文。"]
             : string.Join('\n', hits.Select(hit => L["《{0}》第 {1} 條（{2}） {3}", hit.LawTitle, hit.Number, _asOfLabel, hit.Uri]));
+}
 
-    public sealed class SearchForm
-    {
-        /// <summary>接續哪一串對話；空 = 另開一串。內容不可信，由歷史服務確認它屬於目前的成員。</summary>
-        public string ConversationId { get; set; } = string.Empty;
+public sealed class SearchForm
+{
+    /// <summary>接續哪一串對話；空 = 另開一串。內容不可信，由歷史服務確認它屬於目前的成員。</summary>
+    public string ConversationId { get; set; } = string.Empty;
 
-        public string Query { get; set; } = string.Empty;
+    public string Query { get; set; } = string.Empty;
 
-        public string Example { get; set; } = string.Empty;
+    public string Example { get; set; } = string.Empty;
 
-        public string AsOf { get; set; } = string.Empty;
-    }
+    public string AsOf { get; set; } = string.Empty;
 }

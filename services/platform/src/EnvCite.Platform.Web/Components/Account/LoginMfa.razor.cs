@@ -6,28 +6,20 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Account;
 
-public partial class LoginMfa(IOperatorTwoFactor twoFactor, NavigationManager navigation)
+public partial class LoginMfa(IOperatorTwoFactor twoFactor)
 {
-    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
-
     [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
 
     [SupplyParameterFromQuery(Name = "recovery")] private string? RecoveryParam { get; set; }
-
-    [SupplyParameterFromForm] private CodeForm Input { get; set; } = default!;
-
-    private string? _error;
 
     private bool Recovery => RecoveryParam == "1";
 
     protected override async Task OnInitializedAsync()
     {
-        Input ??= new();
-
         // 沒有（或過期的）暫存憑證：這一頁沒有東西可驗，回到輸入密碼。
         if (!await twoFactor.HasPendingSignInAsync())
         {
-            navigation.NavigateTo(UiEndpoints.LoginPath);
+            Navigation.NavigateTo(UiEndpoints.LoginPath);
         }
     }
 
@@ -56,22 +48,17 @@ public partial class LoginMfa(IOperatorTwoFactor twoFactor, NavigationManager na
         switch (status)
         {
             case OperatorSignInStatus.Succeeded:
-                navigation.NavigateTo(UiEndpoints.SafeReturnUrl(ReturnUrl));
+                Navigation.NavigateTo(UiEndpoints.SafeReturnUrl(ReturnUrl));
                 break;
             case OperatorSignInStatus.MustChangePassword:
-                navigation.NavigateTo(UiEndpoints.PasswordPath);
+                Navigation.NavigateTo(UiEndpoints.PasswordPath);
                 break;
             default:
                 // 碼錯、過期、重複使用、被鎖定都是同一句話；暫存憑證在鎖定時會被收回，下一頁會回到輸入密碼。
-                _error = Recovery
+                Error = Recovery
                     ? L["復原碼不正確，或已經用過。多次失敗會暫時鎖定帳號。"]
                     : L["驗證碼不正確，或已經用過。請輸入驗證器上現在顯示的六位數；多次失敗會暫時鎖定帳號。"];
                 break;
         }
-    }
-
-    public sealed class CodeForm
-    {
-        public string Code { get; set; } = string.Empty;
     }
 }

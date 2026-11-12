@@ -93,7 +93,7 @@ public static partial class PasswordFieldTests
     [InlineData("Components/Portal/Login.razor")]
     [InlineData("Components/Portal/Security.razor")]
     public static void PagesThatTakeAPasswordUsePasswordField(string page) =>
-        Assert.Contains("<PasswordField ", File.ReadAllText(Path.Combine(WebPath(), page)), StringComparison.Ordinal);
+        Assert.Contains("<PasswordField ", PageWithItsFlows(page), StringComparison.Ordinal);
 
     // 元件本身的契約：按鈕有名稱、指向它控制的輸入框、兩種狀態的名稱交給 forms.js 換；
     // 不寫死 autocomplete="off"（密碼管理員靠 current-password／new-password 辨識欄位）。
@@ -117,7 +117,7 @@ public static partial class PasswordFieldTests
     [InlineData("Components/Account/ChangePassword.razor")]
     [InlineData("Components/Portal/ChangePassword.razor")]
     public static void PagesThatSetANewPasswordUseTheNewPasswordFieldTemplate(string page) =>
-        Assert.Contains("<NewPasswordField ", File.ReadAllText(Path.Combine(WebPath(), page)), StringComparison.Ordinal);
+        Assert.Contains("<NewPasswordField ", PageWithItsFlows(page), StringComparison.Ordinal);
 
     [Fact]
     public static void NoPageHardCodesThePasswordRule()
@@ -163,6 +163,17 @@ public static partial class PasswordFieldTests
         Assert.DoesNotMatch(@"\b(?:12|128)\b|還差|長度夠了", code);
     }
 
+    /// <summary>
+    /// 頁面的原始碼，加上它用到的「流程」元件（<c>&lt;XxxFlow …&gt;</c>，在 <c>Shared/</c>）的原始碼：
+    /// 營運者與客戶入口共用的流程（改密碼、啟用）把欄位收在流程裡，頁面只剩外框。
+    /// </summary>
+    private static string PageWithItsFlows(string page)
+    {
+        var source = File.ReadAllText(Path.Combine(WebPath(), page));
+        var flows = FlowComponent().Matches(source).Select(m => m.Groups[1].Value).Distinct();
+        return source + string.Concat(flows.Select(flow => File.ReadAllText(Path.Combine(WebPath(), "Components", "Shared", flow + ".razor"))));
+    }
+
     private static bool IsPasswordField(string file) =>
         string.Equals(Path.GetFileName(file), "PasswordField.razor", StringComparison.Ordinal);
 
@@ -174,6 +185,9 @@ public static partial class PasswordFieldTests
 
     private static string WebPath([CallerFilePath] string here = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.Web"));
+
+    [GeneratedRegex(@"<(\w+Flow)\b", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex FlowComponent();
 
     [GeneratedRegex("autocomplete=\"new-password\"", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
     private static partial Regex NewPasswordHint();

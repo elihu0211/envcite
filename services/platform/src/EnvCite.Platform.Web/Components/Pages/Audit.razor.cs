@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace EnvCite.Platform.Web.Components.Pages;
 
-public partial class Audit(IAuditQuery query, ITenantDirectory directory, NavigationManager navigation)
+public partial class Audit(IAuditQuery query, ITenantDirectory directory)
 {
     private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
@@ -25,7 +25,6 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory, Naviga
     private bool _loading = true;
     private bool _loadingMore;
     private bool _dense;
-    private string? _error;
     private string? _applied;
 
     // 表單欄位（尚未套用的輸入）。
@@ -35,7 +34,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory, Naviga
 
     private bool HasFilter => !string.IsNullOrEmpty(TenantParam) || !string.IsNullOrEmpty(ActionParam) || !string.IsNullOrEmpty(ActorParam);
 
-    private string Status => _error is not null || _loading ? string.Empty
+    private string Status => Error is not null || _loading ? string.Empty
         : _items.Count == 0 ? L["沒有符合的事件"]
         : _next is null ? L["共 {0} 筆", _items.Count] : L["已載入 {0} 筆，還有更多", _items.Count];
 
@@ -84,7 +83,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory, Naviga
 
         Prerendered = null;
         await LoadAsync(append: false);
-        if (!RendererInfo.IsInteractive && _error is null)
+        if (!RendererInfo.IsInteractive && Error is null)
         {
             Prerendered = new([.. _tenantsById.Values], signature, new AuditPage([.. _items], _next));
         }
@@ -93,14 +92,14 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory, Naviga
     private static Dictionary<string, TenantSummary> ById(IEnumerable<TenantSummary> tenants) =>
         tenants.ToDictionary(t => t.Id, StringComparer.Ordinal);
 
-    private void Apply() => navigation.NavigateTo(navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+    private void Apply() => Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
     {
         ["tenant"] = Nullable(_tenant),
         ["action"] = Nullable(_action),
         ["actor"] = Nullable(_actor),
     }));
 
-    private void Reset() => navigation.NavigateTo(navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+    private void Reset() => Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
     {
         ["tenant"] = null,
         ["action"] = null,
@@ -111,7 +110,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory, Naviga
 
     private async Task LoadAsync(bool append)
     {
-        _error = null;
+        Error = null;
         if (append)
         {
             _loadingMore = true;
@@ -134,7 +133,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory, Naviga
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            _error = exception.GetType().Name;
+            Error = exception.GetType().Name;
         }
         finally
         {

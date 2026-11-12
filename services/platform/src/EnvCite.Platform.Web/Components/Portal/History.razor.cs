@@ -9,18 +9,11 @@ public partial class History
 {
     private const int PageSize = 100;
 
-    [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
-
-    [SupplyParameterFromForm] private DeleteForm Input { get; set; } = default!;
-
     private IReadOnlyList<ConversationSummary> _items = [];
     private string? _message;
 
     protected override async Task OnInitializedAsync()
     {
-        Input ??= new();
         await LoadAsync();
     }
 
@@ -34,9 +27,9 @@ public partial class History
         _message = deleted ? L["已刪除。"] : L["找不到這個對話。"];
         await LoadAsync();
     }
+}
 
-    public sealed class DeleteForm
-    {
-        public string Delete { get; set; } = string.Empty;
-    }
+public sealed class DeleteForm
+{
+    public string Delete { get; set; } = string.Empty;
 }

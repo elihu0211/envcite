@@ -3,41 +3,13 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.UiSignInRateLimit)]
 @attribute [AllowAnonymous]
+@inject IOperatorAccount Account
 
-<PageTitle>@L["啟用帳號 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["啟用帳號"]" />
 
-<h1 class="ep-page-title">@Heading</h1>
-
-@if (_error is not null)
-{
-    <p class="ep-alert ep-alert-error" role="alert">@_error</p>
-}
-
-@switch (_state)
-{
-    case ActivationState.SetPassword:
-        <p class="ep-page-description">@L["設定你自己的密碼，並完成信箱驗證。這條連結只能使用一次。"]</p>
-        <p class="ep-note">@L["設好密碼後，登入時還要綁定驗證器。"]</p>
-        <EditForm Model="Input" FormName="ui-activate" OnValidSubmit="SubmitAsync" method="post" class="ep-form">
-            <NewPasswordField Id="new" Label="@L["新密碼"]" @bind-Value="Input.New" AutoFocus="true" />
-            <div class="ep-field-row">
-                <label for="confirm" class="ep-label">@L["再輸入一次新密碼"]</label>
-                <PasswordField Id="confirm" @bind-Value="Input.Confirm" Autocomplete="new-password" />
-            </div>
-            <button type="submit" class="ep-btn ep-btn-primary">@L["設定密碼"]</button>
-        </EditForm>
-        break;
-    case ActivationState.ConfirmEmail:
-        <p class="ep-page-description">@L["按下確認，表示這個信箱是你的。"]</p>
-        <EditForm Model="Input" FormName="ui-activate" OnValidSubmit="SubmitAsync" method="post" class="ep-form">
-            <button type="submit" class="ep-btn ep-btn-primary">@L["確認信箱"]</button>
-        </EditForm>
-        break;
-    default:
-        @* 表單要在 POST 時也存在，Blazor 才找得到處理常式：連結剛被用掉時重複送出（連按兩次、舊分頁），
-           就會落到這裡而不是一頁框架的錯誤訊息。這張表單沒有欄位、也不顯示。 *@
-        <EditForm Model="Input" FormName="ui-activate" OnValidSubmit="SubmitAsync" method="post" hidden="hidden"></EditForm>
-        <p class="ep-alert ep-alert-error" role="alert">@L["這個連結無效或已過期。請洽管理者重新寄送邀請。"]</p>
-        <p><a class="ep-link" href="@UiEndpoints.LoginPath">@L["回登入頁"]</a></p>
-        break;
-}
+<ActivationFlow Account="Account" FormName="ui-activate" LoginPath="@UiEndpoints.LoginPath" SetPasswordNote="@L["設好密碼後，登入時還要綁定驗證器。"]">
+    <Layout Context="view">
+        <PageHeading>@view.Heading</PageHeading>
+        @view.Body
+    </Layout>
+</ActivationFlow>

@@ -2,14 +2,15 @@
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+@inherits PortalPageBase
 
-<PageTitle>@L["成員 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["成員"]" />
 
 <PageHeader Title="@L["成員"]" />
 
 @if (_team is null)
 {
-    <p class="ep-alert ep-alert-info" role="status">@L["只有擁有者與管理員能管理成員。"]</p>
+    <FormAlert Kind="AlertKind.Info">@L["只有擁有者與管理員能管理成員。"]</FormAlert>
 }
 else
 {
@@ -18,10 +19,10 @@ else
         @* 只在這一個回應裡出現，重新整理就沒了；資料庫只存雜湊。 *@
         <section class="ep-card" aria-labelledby="issued-title">
             <h2 id="issued-title" class="ep-section-title">@_issuedTitle</h2>
-            <p class="ep-alert ep-alert-info" role="status">
+            <FormAlert Kind="AlertKind.Info">
                 @L["這組密碼"]<strong>@L["只會顯示這一次"]</strong>@L["。請親手交給"] <strong>@_issued.Member.Email</strong>@L["（不要貼在公開的聊天室或工單裡）；"]
                 @L["對方第一次登入時必須自己改掉，之後連你也不會知道他的密碼。"]
-            </p>
+            </FormAlert>
             <p class="ep-secret-row">
                 <code class="ep-mono ep-secret" id="issued-password">@_issuedPassword</code>
                 <button type="button" class="ep-btn ep-btn-quiet ep-btn-icon ep-js-only" data-copy-target="issued-password" data-done="@L["已複製"]">
@@ -33,36 +34,30 @@ else
 
     @if (_message is not null)
     {
-        <p class="ep-alert ep-alert-info" role="status">@_message</p>
+        <FormAlert Kind="AlertKind.Info">@_message</FormAlert>
     }
 
-    @if (_error is not null)
-    {
-        <p class="ep-alert ep-alert-error" role="alert">@_error</p>
-    }
+    <FormAlert Message="@Error" />
 
     <section class="ep-card" aria-labelledby="add-title">
         <h2 id="add-title" class="ep-section-title">@L["新增成員"]</h2>
-        <EditForm Model="Add" FormName="portal-member-add" OnValidSubmit="AddAsync" method="post" class="ep-form">
-            <div class="ep-field-row">
-                <label for="add-email" class="ep-label">@L["電子郵件"]</label>
+        <PostForm Model="Add" FormName="portal-member-add" OnValidSubmit="AddAsync">
+            <FormField For="add-email" Label="@L["電子郵件"]">
                 <InputText id="add-email" @bind-Value="Add.Email" type="email" class="ep-input" required maxlength="254" autocomplete="off" />
-            </div>
-            <div class="ep-field-row">
-                <label for="add-name" class="ep-label">@L["顯示名稱（選填）"]</label>
+            </FormField>
+            <FormField For="add-name" Label="@L["顯示名稱（選填）"]">
                 <InputText id="add-name" @bind-Value="Add.DisplayName" class="ep-input" maxlength="200" autocomplete="off" />
-            </div>
-            <div class="ep-field-row">
-                <label for="add-role" class="ep-label">@L["角色"]</label>
+            </FormField>
+            <FormField For="add-role" Label="@L["角色"]">
                 <InputSelect id="add-role" @bind-Value="Add.Role" class="ep-input">
                     @foreach (var role in _grantable)
                     {
                         <option value="@role">@PortalLabels.RoleWithAbilities(role)</option>
                     }
                 </InputSelect>
-            </div>
-            <button type="submit" class="ep-btn ep-btn-primary">@(mail.Enabled ? L["寄出邀請"] : L["新增成員"])</button>
-        </EditForm>
+            </FormField>
+            <SubmitButton>@(mail.Enabled ? L["寄出邀請"] : L["新增成員"])</SubmitButton>
+        </PostForm>
     </section>
 
     <section class="ep-card ep-table-card ep-cards" aria-labelledby="list-title">

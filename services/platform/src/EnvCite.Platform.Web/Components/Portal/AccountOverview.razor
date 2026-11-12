@@ -2,8 +2,9 @@
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+@inherits PortalPageBase
 
-<PageTitle>@L["帳號與組織 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["帳號與組織"]" />
 
 <PageHeader Title="@L["帳號與組織"]" Description="@(_tenant?.Name ?? Tenant)" />
 

@@ -8,10 +8,6 @@ namespace EnvCite.Platform.Web.Components.Portal;
 
 public partial class Members(IMemberSelfService team, IMailSender mail)
 {
-    [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
-
     [SupplyParameterFromForm(FormName = "portal-member-add")] private AddForm Add { get; set; } = default!;
 
     [SupplyParameterFromForm(FormName = "portal-member-action")] private ActionForm Input { get; set; } = default!;
@@ -22,8 +18,6 @@ public partial class Members(IMemberSelfService team, IMailSender mail)
     private string? _issuedPassword;
     private string _issuedTitle = string.Empty;
     private string? _message;
-    private string? _error;
-
     protected override async Task OnInitializedAsync()
     {
         Add ??= new();
@@ -53,7 +47,7 @@ public partial class Members(IMemberSelfService team, IMailSender mail)
                 }
                 else
                 {
-                    _error = L["邀請信寄送失敗，{0} 的帳號已建立。請按「重寄邀請」，或用「重設密碼」取得暫時密碼。", invited.Value.Member.Email];
+                    Error = L["邀請信寄送失敗，{0} 的帳號已建立。請按「重寄邀請」，或用「重設密碼」取得暫時密碼。", invited.Value.Member.Email];
                 }
 
                 Add = new() { Role = Add.Role };
@@ -61,7 +55,7 @@ public partial class Members(IMemberSelfService team, IMailSender mail)
                 return;
             }
 
-            _error = Describe(invited);
+            Error = Describe(invited);
             return;
         }
 
@@ -74,7 +68,7 @@ public partial class Members(IMemberSelfService team, IMailSender mail)
             return;
         }
 
-        _error = Describe(created);
+        Error = Describe(created);
     }
 
     private async Task ActAsync()
@@ -103,11 +97,11 @@ public partial class Members(IMemberSelfService team, IMailSender mail)
                 }
                 else if (resent.IsOk)
                 {
-                    _error = L["寄信失敗，請稍後再試。"];
+                    Error = L["寄信失敗，請稍後再試。"];
                 }
                 else
                 {
-                    _error = Describe(resent);
+                    Error = Describe(resent);
                 }
 
                 break;
@@ -119,12 +113,12 @@ public partial class Members(IMemberSelfService team, IMailSender mail)
                 }
                 else
                 {
-                    _error = Describe(reset);
+                    Error = Describe(reset);
                 }
 
                 break;
             default:
-                _error = L["不認得這個動作。"];
+                Error = L["不認得這個動作。"];
                 break;
         }
 
@@ -144,7 +138,7 @@ public partial class Members(IMemberSelfService team, IMailSender mail)
         }
         else
         {
-            _error = Describe(outcome);
+            Error = Describe(outcome);
         }
     }
 

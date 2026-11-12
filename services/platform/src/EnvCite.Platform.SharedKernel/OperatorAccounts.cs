@@ -41,26 +41,9 @@ public enum OperatorSignInStatus
 /// 稽核寫入失敗會讓動作失敗（fail closed）：營運者只有少數幾位，寧可登不進去也不要有一次沒留紀錄的登入。
 /// 以 scoped 註冊：登入要寫 cookie，需要目前的請求。
 /// </summary>
-public interface IOperatorAccount
+public interface IOperatorAccount : IAccountLifecycle
 {
     Task<OperatorSignInStatus> SignInAsync(string email, string password, CancellationToken cancellationToken);
-
-    /// <summary>登出：收回 session 與暫存憑證，並留稽核。</summary>
-    Task SignOutAsync(ClaimsPrincipal user, CancellationToken cancellationToken);
-
-    /// <summary>檢視邀請／驗證連結（沒有副作用，所以信件掃描器預先開啟連結不會用掉它）。</summary>
-    Task<ActivationState> InspectActivationAsync(string? userId, string? code, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// 使用連結：邀請連結要帶 <paramref name="newPassword"/>，設好密碼並驗證信箱；驗證連結只驗證信箱。
-    /// 不簽發 session：使用者接著登入，仍要依序改密碼（若是暫時密碼）與綁定驗證器。失敗一律是 <see cref="OutcomeCodes.ActivationLinkInvalid"/>，
-    /// 或密碼不符規則（連結此時仍有效，可以重打）。
-    /// </summary>
-    Task<AdminOutcome<ActivationState>> ActivateAsync(string? userId, string? code, string? newPassword, CancellationToken cancellationToken);
-
-    /// <summary>驗證目前密碼後改密碼；成功會換新 cookie（其他裝置的 session 失效），並清除「必須改密碼」。</summary>
-    Task<AdminOutcome<bool>> ChangePasswordAsync(
-        ClaimsPrincipal user, string currentPassword, string newPassword, CancellationToken cancellationToken);
 }
 
 /// <summary>

@@ -10,15 +10,9 @@ namespace EnvCite.Platform.Web.Components.Portal;
 
 public partial class AccountOverview(IPortalAccount account, ITenantDirectory directory, IApiKeyAdmin keys, IPortalTwoFactor twoFactor)
 {
-    [Parameter] public string Tenant { get; set; } = string.Empty;
-
-    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
-
     private TenantSummary? _tenant;
     private IReadOnlyList<ApiKeyInfo> _keys = [];
     private bool _twoFactor;
-
-    private ClaimsPrincipal User => HttpContext.User;
 
     private string? GivenName => User.FindFirst(ClaimTypes.GivenName)?.Value;
 

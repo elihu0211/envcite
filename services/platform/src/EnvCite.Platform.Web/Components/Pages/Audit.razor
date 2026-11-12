@@ -1,6 +1,7 @@
 @page "/ui/audit"
+@inherits PageBase
 
-<PageTitle>@L["稽核紀錄 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["稽核紀錄"]" />
 
 <PageHeader Title="@L["稽核紀錄"]" />
 
@@ -33,7 +34,7 @@
     @* 讓螢幕閱讀器知道載入了多少筆，不搶走焦點。 *@
     <p class="ep-status" role="status" aria-live="polite">@Status</p>
 
-    @if (_error is not null)
+    @if (Error is not null)
     {
         <MudAlert Severity="Severity.Error" Class="ma-4">
             @L["載入稽核紀錄失敗。"]

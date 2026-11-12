@@ -1,9 +1,10 @@
 @page "/ui/tenants/{TenantId}"
 @inject IAnswerAvailability Availability
+@inherits AdminPageBase
 
-<PageTitle>@(_tenant?.Identifier ?? L["租戶"]) · @Brand.Name</PageTitle>
+<DocumentTitle Text="@(_tenant?.Identifier ?? L["租戶"])" />
 
-@if (_error is not null)
+@if (Error is not null)
 {
     <MudAlert Severity="Severity.Error" Class="mb-4">
         @L["載入租戶失敗。"]
@@ -45,9 +46,9 @@ else
         }
     </p>
 
-    @if (_notice is not null)
+    @if (Notice is not null)
     {
-        <MudAlert Severity="@_noticeSeverity" role="status" ShowCloseIcon="true" CloseIconClicked="() => _notice = null">@_notice</MudAlert>
+        <MudAlert Severity="@NoticeSeverity" role="status" ShowCloseIcon="true" CloseIconClicked="() => ClearNotice()">@Notice</MudAlert>
     }
 
     @* 存取網址：不論有沒有成員、有沒有 key 都看得到（成員區的空狀態會收掉那一區的狀態文字，所以不能放在成員區）。 *@
@@ -182,7 +183,7 @@ else
                                     <td>
                                         @if (key.RevokedAt is null)
                                         {
-                                            <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" Disabled="_busy"
+                                            <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" Disabled="Busy"
                                                        aria-label="@L["撤銷 {0}", key.Name]" OnClick="() => RevokeKeyAsync(key)">@L["撤銷"]</MudButton>
                                         }
                                     </td>
@@ -251,18 +252,18 @@ else
                                     <td>
                                         @if (CanResend(member))
                                         {
-                                            <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
+                                            <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
                                                        aria-label="@(member.Invited ? L["重寄邀請給 {0}", member.Email] : L["寄驗證信給 {0}", member.Email])"
                                                        OnClick="() => ResendInvitationAsync(member)">@(member.Invited ? L["重寄邀請"] : L["寄驗證信"])</MudButton>
                                         }
-                                        <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
+                                        <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
                                                    aria-label="@L["重設 {0} 的密碼", member.Email]" OnClick="() => ResetPasswordAsync(member)">@L["重設密碼"]</MudButton>
-                                        <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
+                                        <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
                                                    aria-label="@(member.Disabled ? L["重新啟用 {0}", member.Email] : L["停用 {0}", member.Email])"
                                                    OnClick="() => SetDisabledAsync(member, !member.Disabled)">@(member.Disabled ? L["重新啟用"] : L["停用"])</MudButton>
                                         @if (member.TwoFactorEnabled)
                                         {
-                                            <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="_busy"
+                                            <MudButton Variant="Variant.Text" Size="Size.Small" Disabled="Busy"
                                                        aria-label="@L["重設 {0} 的兩步驟驗證", member.Email]" OnClick="() => ResetTwoFactorAsync(member)">@L["重設兩步驟"]</MudButton>
                                         }
                                     </td>
@@ -287,12 +288,12 @@ else
                 </MudSelect>
                 <div class="ep-inline-form">
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SavePlanAsync"
-                               Disabled="@(_busy || _selectedPlan is null || _selectedPlan == _tenant.Plan)">
+                               Disabled="@(Busy || _selectedPlan is null || _selectedPlan == _tenant.Plan)">
                         @(_tenant.Plan is null ? L["指派方案"] : L["變更方案"])
                     </MudButton>
                     @if (_tenant.Plan is not null)
                     {
-                        <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="RemovePlanAsync" Disabled="_busy">@L["移除方案"]</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="RemovePlanAsync" Disabled="Busy">@L["移除方案"]</MudButton>
                     }
                 </div>
                 <p class="ep-status" role="status">
@@ -312,7 +313,7 @@ else
                 <p class="ep-page-description">@L["成員的提問與相關條文會送到外部模型服務。需租戶同意；方案移除時一併關閉。"]</p>
                 <div class="ep-inline-form">
                     <MudButton Variant="Variant.Filled" Color="@(_tenant.AiAnswer ? Color.Default : Color.Primary)" OnClick="ToggleAiAnswerAsync"
-                               Disabled="@(_busy || _tenant.Plan is null)">
+                               Disabled="@(Busy || _tenant.Plan is null)">
                         @(_tenant.AiAnswer ? L["關閉 AI 回答"] : L["開啟 AI 回答"])
                     </MudButton>
                 </div>

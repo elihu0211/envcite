@@ -41,22 +41,29 @@ public static partial class DialogFieldTests
 
     // MudBlazor 預設不處理 Esc：沒在 provider 開啟，所有對話框都只能按按鈕或點背景關閉。
     // 只顯示一次的密碼與金鑰關掉 Esc，而且一併關掉點背景與右上角的關閉鈕，三者一致才擋得住誤關。
+    // 三項鎖定只在基底的 LockAsync 寫一次；顯示機密的對話框（一次性密碼、API key）必須走它，別的對話框不鎖。
     [Fact]
     public static void EscapeClosesDialogsExceptTheOnesThatShowASecretOnce()
     {
         var providers = File.ReadAllText(Path.Combine(DialogsPath(), "..", "Shared", "PlatformProviders.razor"));
+        var bases = File.ReadAllText(Path.Combine(DialogsPath(), "..", "Bases", "DialogBase.cs"));
         var secret = Directory.EnumerateFiles(DialogsPath(), "*.razor")
             .Select(file => (File: Path.GetFileName(file), Source: File.ReadAllText(file)))
-            .Where(dialog => dialog.Source.Contains("CloseOnEscapeKey = false", StringComparison.Ordinal))
+            .Where(dialog => dialog.Source.Contains("@inherits SecretDialogBase", StringComparison.Ordinal)
+                || dialog.Source.Contains("LockAsync()", StringComparison.Ordinal))
+            .Select(dialog => dialog.File)
+            .Order(StringComparer.Ordinal)
             .ToList();
 
         Assert.Contains("<MudDialogProvider CloseOnEscapeKey=\"true\" />", providers, StringComparison.Ordinal);
-        Assert.NotEmpty(secret);
-        Assert.All(secret, dialog =>
-        {
-            Assert.Contains("BackdropClick = false", dialog.Source, StringComparison.Ordinal);
-            Assert.Contains("CloseButton = false", dialog.Source, StringComparison.Ordinal);
-        });
+        Assert.Equal(["IssueApiKeyDialog.razor", "OperatorPasswordDialog.razor", "PasswordRevealDialog.razor"], secret);
+        Assert.Contains("CloseOnEscapeKey = false", bases, StringComparison.Ordinal);
+        Assert.Contains("BackdropClick = false", bases, StringComparison.Ordinal);
+        Assert.Contains("CloseButton = false", bases, StringComparison.Ordinal);
+        Assert.Equal(1, Regex.Count(bases, "CloseOnEscapeKey = false", RegexOptions.None, TimeSpan.FromSeconds(2)));
+        Assert.DoesNotContain(
+            Directory.EnumerateFiles(DialogsPath(), "*.razor").Select(File.ReadAllText),
+            source => source.Contains("CloseOnEscapeKey", StringComparison.Ordinal));
     }
 
     private static string DialogsPath([CallerFilePath] string here = "") =>

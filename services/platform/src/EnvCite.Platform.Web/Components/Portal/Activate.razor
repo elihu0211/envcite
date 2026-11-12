@@ -3,50 +3,33 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.PortalSignInRateLimit)]
 @attribute [AllowAnonymous]
+@inherits PortalPageBase
 @inject IPortalAccount Account
 
-<PageTitle>@L["啟用帳號 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["啟用帳號"]" />
 
 @if (Account.CurrentTenant is { } tenant)
 {
-    <section class="ep-login" aria-labelledby="activate-title">
-      <header>
-        <h1 id="activate-title" class="ep-display">@Heading</h1>
-        <p class="ep-login-tenant">@(tenant.Name ?? tenant.Identifier)</p>
-      </header>
-      <div>
-        @if (_error is not null)
-        {
-            <p class="ep-alert ep-alert-error" role="alert">@_error</p>
-        }
+    <ActivationFlow Account="Account" FormName="portal-activate" LoginPath="@PortalPaths.Login(tenant.Identifier)">
+        <Layout Context="view">
+            <section class="ep-login" aria-labelledby="activate-title">
+                <header>
+                    <h1 id="activate-title" class="ep-display">@view.Heading</h1>
+                    <p class="ep-login-tenant">@(tenant.Name ?? tenant.Identifier)</p>
+                </header>
+                <div>@view.Body</div>
+            </section>
+        </Layout>
+    </ActivationFlow>
+}
 
-        @switch (_state)
+@code {
+    protected override void OnInitialized()
+    {
+        // 路徑上的租戶不存在：這個頁面就不存在。
+        if (Account.CurrentTenant is null)
         {
-            case ActivationState.SetPassword:
-                <p class="ep-page-description">@L["設定你自己的密碼，並完成信箱驗證。這條連結只能使用一次。"]</p>
-                <EditForm Model="Input" FormName="portal-activate" OnValidSubmit="SubmitAsync" method="post" class="ep-form">
-                    <NewPasswordField Id="new" Label="@L["新密碼"]" @bind-Value="Input.New" AutoFocus="true" />
-                    <div class="ep-field-row">
-                        <label for="confirm" class="ep-label">@L["再輸入一次新密碼"]</label>
-                        <PasswordField Id="confirm" @bind-Value="Input.Confirm" Autocomplete="new-password" />
-                    </div>
-                    <button type="submit" class="ep-btn ep-btn-primary">@L["設定密碼"]</button>
-                </EditForm>
-                break;
-            case ActivationState.ConfirmEmail:
-                <p class="ep-page-description">@L["按下確認，表示這個信箱是你的。"]</p>
-                <EditForm Model="Input" FormName="portal-activate" OnValidSubmit="SubmitAsync" method="post" class="ep-form">
-                    <button type="submit" class="ep-btn ep-btn-primary">@L["確認信箱"]</button>
-                </EditForm>
-                break;
-            default:
-                @* 表單要在 POST 時也存在，Blazor 才找得到處理常式：連結剛被用掉時重複送出（連按兩次、舊分頁），
-                   就會落到這裡而不是一頁框架的錯誤訊息。這張表單沒有欄位、也不顯示。 *@
-                <EditForm Model="Input" FormName="portal-activate" OnValidSubmit="SubmitAsync" method="post" hidden="hidden"></EditForm>
-                <p class="ep-alert ep-alert-error" role="alert">@L["這個連結無效或已過期。請洽管理者重新寄送邀請。"]</p>
-                <p><a class="ep-link" href="@PortalPaths.Login(tenant.Identifier)">@L["回登入頁"]</a></p>
-                break;
+            Navigation.NotFound();
         }
-      </div>
-    </section>
+    }
 }

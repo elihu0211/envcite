@@ -1,0 +1,21 @@
+@* 靜態渲染頁面的表單：POST、統一的 ep-form 樣式，FormName 讓框架找得到處理常式。頁面只給模型、名稱、送出的方法與欄位。
+   沒有欄位、只為了在連結失效後仍有處理常式而存在的隱藏表單，直接用 EditForm（它不該套 ep-form 的版面）。 *@
+<EditForm Model="Model" FormName="@FormName" OnValidSubmit="OnValidSubmit" method="post" class="@Class">@ChildContent</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public object Model { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public string FormName { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<EditContext> OnValidSubmit { get; set; }
+
+    /// <summary>表單的版面類別；預設是一般表單的 <c>ep-form</c>。問答的輸入框與只有一顆鈕的表單用別的（或不套）。</summary>
+    [Parameter]
+    public string? Class { get; set; } = "ep-form";
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

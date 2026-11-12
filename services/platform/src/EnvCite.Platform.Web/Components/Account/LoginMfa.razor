@@ -3,10 +3,11 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.UiSignInRateLimit)]
 @attribute [AllowAnonymous]
+@inherits FormPageBase<CodeForm>
 
-<PageTitle>@L["第二步驗證 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["第二步驗證"]" />
 
-<h1 class="ep-page-title">@L["第二步驗證"]</h1>
+<PageHeading>@L["第二步驗證"]</PageHeading>
 @if (Recovery)
 {
     <p class="ep-page-description">@L["輸入一組復原碼。每一組只能用一次。"]</p>
@@ -16,15 +17,11 @@ else
     <p class="ep-page-description">@L["打開手機上的驗證器 App，輸入現在顯示的六位數。"]</p>
 }
 
-@if (_error is not null)
-{
-    @* 與登入同一個原則：不說是碼錯、過期還是帳號被鎖。 *@
-    <p class="ep-alert ep-alert-error" role="alert">@_error</p>
-}
+@* 與登入同一個原則：不說是碼錯、過期還是帳號被鎖。 *@
+<FormAlert Message="@Error" />
 
-<EditForm Model="Input" FormName="ui-mfa" OnValidSubmit="VerifyAsync" method="post" class="ep-form">
-    <div class="ep-field-row">
-        <label for="code" class="ep-label">@(Recovery ? L["復原碼"] : L["驗證碼"])</label>
+<PostForm Model="Input" FormName="ui-mfa" OnValidSubmit="VerifyAsync">
+    <FormField For="code" Label="@(Recovery ? L["復原碼"] : L["驗證碼"])">
         @if (Recovery)
         {
             <InputText id="code" @bind-Value="Input.Code" class="ep-input" required autofocus autocomplete="one-time-code" inputmode="text" maxlength="40" />
@@ -33,9 +30,9 @@ else
         {
             <OtpField Id="code" @bind-Value="Input.Code" AutoFocus="true" AutoSubmit="true" />
         }
-    </div>
-    <button type="submit" class="ep-btn ep-btn-primary">@L["驗證"]</button>
-</EditForm>
+    </FormField>
+    <SubmitButton>@L["驗證"]</SubmitButton>
+</PostForm>
 
 <p class="ep-note">
     @if (Recovery)

@@ -3,14 +3,15 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 @inject IConversationHistory Store
+@inherits PortalFormPageBase<DeleteForm>
 
-<PageTitle>@L["對話紀錄 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["對話紀錄"]" />
 
 <PageHeader Title="@L["對話紀錄"]" Description="@L["只有你看得到。"]" />
 
 @if (!Store.Enabled)
 {
-    <p class="ep-alert ep-alert-info" role="status">@L["這個環境沒有開啟對話紀錄。"]</p>
+    <FormAlert Kind="AlertKind.Info">@L["這個環境沒有開啟對話紀錄。"]</FormAlert>
 }
 else
 {
@@ -18,7 +19,7 @@ else
 
     @if (_message is not null)
     {
-        <p class="ep-alert ep-alert-info" role="status">@_message</p>
+        <FormAlert Kind="AlertKind.Info">@_message</FormAlert>
     }
 
     @if (_items.Count == 0)
@@ -29,7 +30,7 @@ else
     }
     else
     {
-        <EditForm Model="Input" FormName="portal-history-delete" OnValidSubmit="DeleteAsync" method="post">
+        <PostForm Model="Input" FormName="portal-history-delete" OnValidSubmit="DeleteAsync" Class="@null">
             <ul class="ep-history" aria-label="@L["對話"]">
                 @foreach (var item in _items)
                 {
@@ -43,6 +44,6 @@ else
                     </li>
                 }
             </ul>
-        </EditForm>
+        </PostForm>
     }
 }

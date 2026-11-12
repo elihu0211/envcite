@@ -2,12 +2,13 @@
 @inject ITenantDirectory Directory
 @inject IOperatorAdmin Operators
 @inject IAuditQuery AuditQuery
+@inherits PageBase
 
-<PageTitle>@L["總覽 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["總覽"]" />
 
 <PageHeader Title="@L["總覽"]" />
 
-@if (_error is not null)
+@if (Error is not null)
 {
     <MudAlert Severity="Severity.Error">
         @L["載入總覽失敗。"]
@@ -103,7 +104,6 @@ else
     private IReadOnlyList<TenantSummary> _withoutPlan = [];
     private IReadOnlyList<OperatorInfo> _pendingOperators = [];
     private IReadOnlyList<AuditRecord> _recent = [];
-    private string? _error;
 
     public sealed record Overview(IReadOnlyList<TenantSummary> Tenants, IReadOnlyList<OperatorInfo> Operators, IReadOnlyList<AuditRecord> Recent);
 
@@ -125,7 +125,7 @@ else
 
     private async Task LoadAsync()
     {
-        _error = null;
+        Error = null;
         _tenants = null;
         _operators = null;
         try
@@ -134,7 +134,7 @@ else
             var operators = await Operators.ListAsync(CancellationToken.None);
             if (!operators.IsOk)
             {
-                _error = operators.Localized() ?? L["載入失敗。"];
+                Error = operators.Localized() ?? L["載入失敗。"];
                 return;
             }
 
@@ -150,7 +150,7 @@ else
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            _error = exception.GetType().Name;
+            Error = exception.GetType().Name;
         }
     }
 

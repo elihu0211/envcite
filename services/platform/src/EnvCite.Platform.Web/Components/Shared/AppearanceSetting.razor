@@ -1,5 +1,5 @@
+@inherits StaticPageBase
 @inject IAppearancePreference Preference
-@inject NavigationManager Navigation
 
 @* 個人設定裡的「外觀」：系統（預設，跟隨裝置）、亮色、暗色。營運者與客戶入口的個人設定頁共用這一個元件，
    各自只告訴它換外觀的端點（Action）。放在登入後的個人設定；登入前的匿名頁面不放切換，但一樣尊重已存的偏好（見 App.razor）。
@@ -41,9 +41,6 @@
     /// <summary>換外觀的端點（營運者後台與客戶入口各一個）。</summary>
     [Parameter, EditorRequired]
     public string Action { get; set; } = string.Empty;
-
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
 
     private Appearance _current;
 
