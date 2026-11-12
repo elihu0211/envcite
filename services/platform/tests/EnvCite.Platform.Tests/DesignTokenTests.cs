@@ -416,6 +416,50 @@ public static partial class DesignTokenTests
         Assert.DoesNotMatch(HiddenOverflowOnCard(), css);
     }
 
+    // 眼睛鈕與復原碼的複製、列印需要 JavaScript：沒有它們也要是可用的表單，所以樣式表預設收起，
+    // 由 forms.js 在 <html> 上設 data-js 才打開（下載是 data: 連結，不需要腳本）。
+    [Fact]
+    public static void ControlsThatNeedScriptStayHiddenUntilItRuns()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
+
+        Assert.Matches(@"\.ep-password-toggle,\s*\.ep-js-only\s*\{\s*display:\s*none", css);
+        Assert.Contains("html[data-js] .ep-password-toggle", css, StringComparison.Ordinal);
+        Assert.Contains("html[data-js] .ep-js-only", css, StringComparison.Ordinal);
+        Assert.Contains("documentElement.dataset.js", script, StringComparison.Ordinal);
+    }
+
+    // 側欄：桌機收成窄欄、手機是抽屜，兩者都靠 forms.js 設在 <html> 上的屬性；窄欄寬度是 token，收起的抽屜不在 Tab 順序裡。
+    [Fact]
+    public static void TheSidebarCollapsesToARailAndBecomesADrawerOnPhones()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
+
+        Assert.Equal("4.5rem", DesignTokens.Measure["sidebar-rail"]);
+        Assert.Contains("var(--ep-measure-sidebar-rail)", css, StringComparison.Ordinal);
+        Assert.Contains("html[data-side=\"collapsed\"] .ep-side", css, StringComparison.Ordinal);
+        Assert.Contains("html[data-js][data-drawer] .ep-side", css, StringComparison.Ordinal);
+        Assert.Matches(@"html\[data-js\] \.ep-side \{[^}]*visibility: hidden", css); // 收起的抽屜不能被 Tab 到
+        Assert.Contains("data-drawer", script, StringComparison.Ordinal);
+        Assert.Contains("localStorage.setItem(\"ep-side\"", script, StringComparison.Ordinal);
+    }
+
+    // 六格驗證碼：真的輸入框疊在方格上、文字與游標透明（輸入與自動填入都走它），沒有 JavaScript 時方格不出現。
+    [Fact]
+    public static void TheOtpBoxesSitOnTopOfARealInput()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
+
+        Assert.Matches(@"\.ep-otp-slots \{\s*display: none", css);
+        Assert.Matches(@"html\[data-js\] \.ep-otp-input \{[^}]*color: transparent[^}]*caret-color: transparent", css);
+        Assert.Contains(".ep-otp-slot[data-active]", css, StringComparison.Ordinal);
+        Assert.Contains("addEventListener(\"paste\"", script, StringComparison.Ordinal);
+        Assert.Contains("autosubmit", script, StringComparison.Ordinal);
+    }
+
     [Fact]
     public static void TheLargestTypeSizesAreFluid()
     {
@@ -502,6 +546,7 @@ public sealed class DesignPageTests(PlatformFactory factory)
         Assert.Contains("--ep-primary:", html, StringComparison.Ordinal);
         Assert.Contains("design/platform", html, StringComparison.Ordinal);
         Assert.Contains("fonts/fonts", html, StringComparison.Ordinal); // 自己託管的字型
+        Assert.Contains("design/forms", html, StringComparison.Ordinal); // 表單的漸進增強（密碼顯示、復原碼保存）
         Assert.Contains("lang=\"zh-TW\"", html, StringComparison.Ordinal);
         // 手機：延伸到瀏海下（再用安全區內縮）、不禁用縮放、瀏覽器工具列顏色跟著主題（顏色來自 token）。
         Assert.Contains("viewport-fit=cover", html, StringComparison.Ordinal);

@@ -7,6 +7,7 @@ using EnvCite.Platform.Web.Presentation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -34,6 +35,45 @@ public static class WebModule
         // 外觀只有 DesignTokens 一個來源。這裡把它裝成 MudBlazor 的主題，註冊一次，元件注入，不在元件裡再建一次。
         services.AddSingleton(PlatformTheme.Create());
         return services;
+    }
+
+    /// <summary>
+    /// 後台、入口與展示頁上找不到的網址（沒有任何端點接手、回應沒有內容的 404）畫「找不到頁面」，不是一片空白。
+    /// 必須接在 <c>UsePlatformLocalization()</c> 之前，而且<b>後面要明確呼叫 <c>UseRouting()</c></b>：重新執行 <see cref="NotFoundPath"/>
+    /// 時端點已被清掉，要在這個中介層的下游重新比對路由、並再經過語言與其後的所有中介層；WebApplication 自動加的 UseRouting
+    /// 在整條管線的最前面，在下游沒有。
+    /// 只處理 404：同一個空本文的 429、403 等不能被畫成「找不到」；沒開的面不在範圍內，維持空的 404、不簽發任何 cookie。
+    /// </summary>
+    public static IApplicationBuilder UsePlatformNotFoundPage(this IApplicationBuilder app)
+    {
+        var (operatorUi, portal) = Surfaces(app.ApplicationServices);
+        var development = app.ApplicationServices.GetRequiredService<IHostEnvironment>().IsDevelopment();
+        if (!operatorUi && !portal)
+        {
+            return app;
+        }
+
+        return app.UseWhen(
+            context =>
+            {
+                var path = context.Request.Path;
+                return (operatorUi && path.StartsWithSegments("/ui"))
+                    || (portal && path.StartsWithSegments(PortalPaths.Prefix))
+                    || (development && path.StartsWithSegments(DesignGalleryPath));
+            },
+            branch =>
+            {
+                branch.UseStatusCodePagesWithReExecute(NotFoundPath, createScopeForStatusCodePages: true);
+                branch.Use(async (context, next) =>
+                {
+                    await next(context);
+                    if (context.Response.StatusCode != StatusCodes.Status404NotFound
+                        && context.Features.Get<IStatusCodePagesFeature>() is { } statusPages)
+                    {
+                        statusPages.Enabled = false;
+                    }
+                });
+            });
     }
 
     /// <summary>
@@ -135,6 +175,9 @@ public static class WebModule
 
     /// <summary>元件展示頁（只在 Development）。</summary>
     public const string DesignGalleryPath = "/design";
+
+    /// <summary>「找不到頁面」（<c>NotFound.razor</c> 的 <c>@page</c>）：Router 的 NotFoundPage，也是找不到網址時重新執行的目標。</summary>
+    public const string NotFoundPath = "/not-found";
 
     private static (bool OperatorUi, bool Portal) Surfaces(IServiceProvider services)
     {

@@ -53,18 +53,18 @@
             }
 
             var home = PortalPaths.Home(tenant.Identifier);
-            var items = new List<PortalShell.NavItem> { new(home, L["查詢"], L["服務"], Exact: true) };
+            var items = new List<PortalShell.NavItem> { new(home, L["查詢"], L["服務"], Exact: true, Icon: Icons.Material.Outlined.Search) };
             if (History.Enabled)
             {
-                items.Add(new($"{home}/history", L["對話紀錄"], L["服務"]));
+                items.Add(new($"{home}/history", L["對話紀錄"], L["服務"], Icon: Icons.Material.Outlined.Forum));
             }
 
             if (CanManageMembers)
             {
-                items.Add(new($"{home}/members", L["成員"], L["組織"]));
+                items.Add(new($"{home}/members", L["成員"], L["組織"], Icon: Icons.Material.Outlined.Group));
             }
 
-            items.Add(new($"{home}/account", L["帳號與組織"], L["組織"]));
+            items.Add(new($"{home}/account", L["帳號與組織"], L["組織"], Icon: Icons.Material.Outlined.ManageAccounts));
             return items;
         }
     }

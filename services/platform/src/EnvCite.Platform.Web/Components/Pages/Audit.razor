@@ -46,7 +46,7 @@
     }
     else if (_items.Count == 0)
     {
-        <EmptyState Title="@(HasFilter ? L["沒有符合條件的稽核事件"] : L["還沒有稽核事件"])"
+        <EmptyState Icon="@(HasFilter ? Icons.Material.Outlined.SearchOff : Icons.Material.Outlined.History)" Title="@(HasFilter ? L["沒有符合條件的稽核事件"] : L["還沒有稽核事件"])"
                     Description="@(HasFilter ? L["試試放寬條件，或重設篩選。"] : L["建立租戶、簽發或撤銷 API key、營運者登入時，會留下紀錄。"])">
             @if (HasFilter)
             {

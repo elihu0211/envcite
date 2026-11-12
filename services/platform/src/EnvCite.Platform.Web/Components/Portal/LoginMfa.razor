@@ -26,8 +26,14 @@
     <EditForm Model="Input" FormName="portal-mfa" OnValidSubmit="VerifyAsync" method="post" class="ep-form">
         <div class="ep-field-row">
             <label for="code" class="ep-label">@(Recovery ? L["復原碼"] : L["驗證碼"])</label>
-            <InputText id="code" @bind-Value="Input.Code" class="ep-input" required autofocus autocomplete="one-time-code"
-                       inputmode="@(Recovery ? "text" : "numeric")" maxlength="@(Recovery ? 40 : 10)" />
+            @if (Recovery)
+            {
+                <InputText id="code" @bind-Value="Input.Code" class="ep-input" required autofocus autocomplete="one-time-code" inputmode="text" maxlength="40" />
+            }
+            else
+            {
+                <OtpField Id="code" @bind-Value="Input.Code" AutoFocus="true" AutoSubmit="true" />
+            }
         </div>
         <button type="submit" class="ep-btn ep-btn-primary">@L["驗證"]</button>
     </EditForm>

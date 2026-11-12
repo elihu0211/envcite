@@ -8,6 +8,26 @@ html {
     font-size: 100%; /* 跟隨使用者的瀏覽器字級；間距用 rem，字級放大時版面一起放大 */
     -webkit-text-size-adjust: 100%;
     font-optical-sizing: auto;
+    scrollbar-gutter: stable; /* 有無捲軸的頁面切換時，內容不左右跳 */
+}
+
+/* 觸控沒有雙擊縮放的等待：點一下立刻有反應，也不閃系統預設的點擊底色（回饋由元件自己給）。 */
+a, button, input, select, label, summary {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 標題左右均衡、說明避免最後一行只剩一兩個字。 */
+.ep-page-title,
+.ep-section-title,
+.ep-empty-title {
+    text-wrap: balance;
+}
+
+.ep-page-description,
+.ep-alert,
+.ep-hint {
+    text-wrap: pretty;
 }
 
 body {
@@ -115,7 +135,7 @@ a:where(:not([class*="mud-"])) {
 
 .ep-empty {
     align-items: center;
-    padding-block: var(--ep-space-12);
+    padding-block: var(--ep-space-8);
     text-align: center;
     color: var(--ep-text-secondary);
 }
@@ -222,6 +242,50 @@ a:where(:not([class*="mud-"])) {
     font-size: var(--ep-headline-s-size);
 }
 
+/* 整頁的單一狀態（已登出、沒有權限、找不到頁面）：置中的圖示磚、標題、說明、一個下一步。 */
+.ep-status-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ep-space-3);
+    text-align: center;
+}
+
+.ep-status-icon {
+    --tone: var(--ep-text-secondary);
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-space-12);
+    block-size: var(--ep-space-12);
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--tone) 12%, var(--ep-surface));
+    color: var(--tone);
+}
+
+.ep-status-icon[data-tone="success"] {
+    --tone: var(--ep-success);
+}
+
+.ep-status-icon[data-tone="warning"] {
+    --tone: var(--ep-warning);
+}
+
+.ep-status-icon[data-tone="error"] {
+    --tone: var(--ep-error);
+}
+
+.ep-status-icon[data-tone="info"] {
+    --tone: var(--ep-info);
+}
+
+.ep-status-page > .ep-page-description {
+    margin: 0;
+}
+
+.ep-status-page > .ep-btn {
+    margin-block-start: var(--ep-space-3);
+}
+
 /* 後台與入口內頁的表單：欄位維持窄欄、送出鈕依內容寬，不撐滿整張卡。 */
 .ep-console-main .ep-form {
     max-inline-size: var(--ep-measure-narrow);
@@ -244,11 +308,30 @@ a:where(:not([class*="mud-"])) {
     margin-block-start: var(--ep-space-4);
 }
 
+/* 登入與帳號卡裡：區塊之間多一階（標題、說明、區塊不再黏成一團），主要動作與登出整列滿寬，拇指好按、兩側對齊。
+   用 :where 把特異度壓到零，元件自己設的邊距照舊優先。 */
+:where(.ep-auth-body) > section {
+    margin-block-start: var(--ep-space-6);
+}
+
+:where(.ep-auth-body) > * + .ep-btn,
+:where(.ep-auth-body) > section > .ep-btn {
+    margin-block-start: var(--ep-space-3);
+}
+
+.ep-auth-body > .ep-btn,
+.ep-auth-body > section > .ep-btn,
+.ep-auth-body .ep-signout .ep-btn {
+    inline-size: 100%;
+}
+
 /* 互動回饋在按下的當下（不是放開）：按下即縮（0 時長），放開依 fast 階回彈。縮放量是 token，減少動態時為 1。
    範例 chip 另外過渡邊框色，所以不進這條 transition。 */
 .mud-button-root,
 .ep-avatar,
 .ep-send,
+.ep-password-toggle,
+.ep-side-toggle,
 .ep-btn {
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
@@ -256,6 +339,8 @@ a:where(:not([class*="mud-"])) {
 .mud-button-root:active,
 .ep-avatar:active,
 .ep-send:active,
+.ep-password-toggle:active,
+.ep-side-toggle:active,
 .ep-chip:active,
 .ep-btn:active {
     transform: scale(var(--ep-press-scale));
@@ -350,6 +435,18 @@ a:where(:not([class*="mud-"])) {
     flex-wrap: wrap;
 }
 
+/* 期間篩選（按鈕群組）：字不換行；一列放不下時整組掉到標題下面，不把「近 30 天」擠成兩行。 */
+.ep-usage-filter .mud-button-root {
+    white-space: nowrap;
+}
+
+/* 放在一般卡片（不是表格卡片）裡的標題列：卡片本身已有內距，不再自己加一層，標題才與下面的列對齊。 */
+.ep-card:not(.ep-table-card) > .ep-toolbar {
+    padding: 0;
+    border-block-end: 0;
+    margin-block-end: var(--ep-space-2);
+}
+
 .ep-field {
     min-inline-size: 12rem;
     flex: 1 1 12rem;
@@ -361,13 +458,43 @@ a:where(:not([class*="mud-"])) {
 }
 
 /* 欄標題小一級、次要色；數字與代碼用等寬字型。 */
+/* MudBlazor 文字按鈕的預設色是黑字，與連結不一致：一律用連結色（錯誤與繼承色的另有 class，不受影響；停用時 Mud 自己的規則更具體）。 */
+.mud-button-text.mud-button-text-default {
+    color: var(--ep-link);
+}
+
+/* 表格卡片是空的時候：表頭、分頁沒有東西可說，收掉；計數（螢幕閱讀器的 live region）留著、只是看不到。 */
+.ep-table-card:has(.ep-empty) :is(thead, .mud-table-pagination) {
+    display: none;
+}
+
+.ep-table-card:has(.ep-empty) > .ep-status {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
 .ep-table th,
 .ep-plain-table th {
-    background: var(--ep-surface-muted);
+    background: var(--ep-surface);
     color: var(--ep-text-secondary);
-    font-size: var(--ep-body-m-size);
+    font-size: var(--ep-label-m-size);
+    letter-spacing: var(--ep-label-m-tracking);
     font-weight: var(--ep-label-l-weight);
     white-space: nowrap;
+}
+
+/* 列：懸停時整列淡一階的底（滑鼠才有），最後一列不再多畫一條底線（卡片的邊就是結尾）。 */
+@media (hover: hover) {
+    .ep-table tbody tr:hover > td {
+        background: color-mix(in srgb, var(--ep-text) 3%, transparent);
+    }
+}
+
+.ep-table tbody tr:last-child > td {
+    border-block-end: 0;
 }
 
 .ep-mono {
@@ -420,10 +547,35 @@ a:where(:not([class*="mud-"])) {
     margin: 0;
 }
 
+/* 卡片標題與下面的欄位清單之間留一階，標題不黏在第一列上。 */
+.ep-section-title + .ep-detail {
+    margin-block-start: var(--ep-space-3);
+}
+
 .ep-detail dt,
 .ep-portal-tenant {
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-m-size);
+}
+
+/* 卡片裡的「名稱：值」清單：每一列之間一條細線，最後一列沒有；欄位名稱欄有最小寬度，值才對齊。 */
+.ep-card > .ep-detail {
+    grid-template-columns: minmax(6rem, max-content) 1fr;
+    gap: 0; /* 欄距用 dd 的內距，細線才不會在兩欄之間斷開 */
+}
+
+.ep-card > .ep-detail > dd {
+    padding-inline-start: var(--ep-space-6);
+}
+
+.ep-card > .ep-detail > dt,
+.ep-card > .ep-detail > dd {
+    padding-block: var(--ep-space-2);
+    border-block-end: 1px solid var(--ep-border-subtle);
+}
+
+.ep-card > .ep-detail > :nth-last-child(-n + 2) {
+    border-block-end: 0;
 }
 
 .ep-detail dd {
@@ -478,9 +630,8 @@ a:where(:not([class*="mud-"])) {
 .ep-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-    gap: 1px;
     overflow: clip;
-    background: var(--ep-border-subtle);
+    background: var(--ep-surface);
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-card);
 }
@@ -493,6 +644,9 @@ a:where(:not([class*="mud-"])) {
     background: var(--ep-surface);
     color: var(--ep-text);
     text-decoration: none;
+    /* 分隔線畫在每格的左與上（外陰影，疊在前一格的邊緣上，因為後面的格子後畫）；第一欄與第一列的那兩條落在容器外，
+       被 overflow 裁掉，所以欄數與列數怎麼變，落單的格子都不會露出灰底。 */
+    box-shadow: -1px 0 0 0 var(--ep-border-subtle), 0 -1px 0 0 var(--ep-border-subtle);
     transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
@@ -702,9 +856,24 @@ a:where(:not([class*="mud-"])) {
     margin-block: var(--ep-space-4) 0;
 }
 
+/* 頂欄放不下時，租戶名稱先收成「…」，品牌字與語言、登出留著（不要被擠成直排的字）。 */
+.ep-shell-top .ep-portal-tenant {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .ep-console-product {
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-m-size);
+    white-space: nowrap;
+}
+
+@media (width < 48rem) {
+    .ep-console-product {
+        display: none;
+    }
 }
 
 .ep-console-body {
@@ -713,6 +882,9 @@ a:where(:not([class*="mud-"])) {
     flex-direction: column;
 }
 
+/* 側欄（雲端主控台那一型）：每項圖示加文字，目前項是整條的淡藍底，群組用小標題隔開。
+   平板起是黏在頂欄下面的左欄，桌機可收成只剩圖示的窄欄（forms.js 設 html[data-side]，偏好存在 localStorage）；
+   手機是從左側滑出的抽屜加遮罩（forms.js 設 html[data-drawer]）。沒有 JavaScript 時，手機上維持頂欄下一條可橫捲的列。 */
 .ep-side {
     display: flex;
     gap: var(--ep-space-1);
@@ -724,11 +896,15 @@ a:where(:not([class*="mud-"])) {
 
 .ep-side-group {
     display: none; /* 手機上側欄是一條橫列，群組標題只在直欄時顯示 */
-    margin: var(--ep-space-2) var(--ep-space-3) var(--ep-space-1);
+    margin: var(--ep-space-4) var(--ep-space-3) var(--ep-space-1);
     color: var(--ep-text-secondary);
     font-size: var(--ep-label-s-size);
     letter-spacing: var(--ep-label-s-tracking);
     font-weight: var(--ep-label-s-weight);
+}
+
+.ep-side-group:first-child {
+    margin-block-start: var(--ep-space-2);
 }
 
 .ep-side-nav {
@@ -741,12 +917,19 @@ a:where(:not([class*="mud-"])) {
     flex: none;
     display: flex;
     align-items: center;
+    gap: var(--ep-space-3);
     min-block-size: var(--ep-touch-target);
     padding-inline: var(--ep-space-3);
-    border-radius: var(--ep-radius-control);
+    border-radius: var(--ep-radius-pill);
     color: var(--ep-text);
     text-decoration: none;
+    white-space: nowrap;
     transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-side-link .ep-icon {
+    color: var(--ep-text-secondary);
+    transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 .ep-side-link.active {
@@ -755,10 +938,46 @@ a:where(:not([class*="mud-"])) {
     font-weight: var(--ep-label-l-weight);
 }
 
+.ep-side-link.active .ep-icon {
+    color: var(--ep-link);
+}
+
 @media (hover: hover) {
     .ep-side-link:hover:not(.active) {
         background: color-mix(in srgb, var(--ep-text) 6%, transparent);
     }
+}
+
+/* 頂欄左邊的導覽鈕（沒有 JavaScript 時不出現）：桌機收合／展開側欄，手機開關抽屜。 */
+.ep-side-toggle {
+    display: none;
+}
+
+html[data-js] .ep-side-toggle {
+    display: grid;
+    place-items: center;
+    flex: none;
+    inline-size: var(--ep-touch-target);
+    block-size: var(--ep-touch-target);
+    margin-inline-start: calc(var(--ep-space-2) * -1);
+    padding: 0;
+    border: 0;
+    border-radius: var(--ep-radius-pill);
+    background: transparent;
+    color: var(--ep-text-secondary);
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .ep-side-toggle:hover {
+        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        color: var(--ep-text);
+    }
+}
+
+/* 抽屜的遮罩：只有手機且有 JavaScript 才存在。 */
+.ep-scrim {
+    display: none;
 }
 
 .ep-console-main {
@@ -781,14 +1000,24 @@ a:where(:not([class*="mud-"])) {
         flex-direction: row;
     }
 
+    .ep-console-body {
+        align-items: flex-start;
+    }
+
+    /* 黏在頂欄下面、自己捲動；和頁面同一個底，沒有分隔線，層次靠目前項的淡藍底。 */
     .ep-side {
         display: block;
-        overflow: visible;
         flex: none;
+        box-sizing: border-box;
+        position: sticky;
+        inset-block-start: var(--ep-appbar-height);
         inline-size: var(--ep-measure-sidebar);
-        padding: var(--ep-space-4) var(--ep-space-3);
+        block-size: calc(100dvh - var(--ep-appbar-height));
+        overflow: hidden auto;
+        padding: var(--ep-space-2) var(--ep-space-3) var(--ep-space-6);
         border-block-end: 0;
-        border-inline-end: 1px solid var(--ep-border-subtle);
+        background: transparent;
+        transition: inline-size var(--ep-motion-normal) var(--ep-motion-ease-settle);
     }
 
     .ep-side-group {
@@ -803,6 +1032,88 @@ a:where(:not([class*="mud-"])) {
     .ep-console-main {
         padding-inline: var(--ep-space-8);
     }
+
+    /* 窄欄：只剩圖示（文字留給輔助技術與 title 提示），群組標題變成一條細線。 */
+    html[data-side="collapsed"] .ep-side {
+        inline-size: var(--ep-measure-sidebar-rail);
+    }
+
+    html[data-side="collapsed"] .ep-side-label {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+
+    html[data-side="collapsed"] .ep-side-link {
+        justify-content: center;
+        padding-inline: 0;
+    }
+
+    html[data-side="collapsed"] .ep-side-group {
+        block-size: 0;
+        margin-block: var(--ep-space-3);
+        overflow: hidden;
+        border-block-start: 1px solid var(--ep-border-subtle);
+    }
+
+    html[data-side="collapsed"] .ep-side-group:first-child {
+        display: none;
+    }
+}
+
+/* 手機（有 JavaScript）：側欄是從左側滑出的抽屜，後面壓暗；用 visibility 讓收起時不在 Tab 順序裡。 */
+@media (width < 48rem) {
+    html[data-js] .ep-side {
+        position: fixed;
+        inset-block: var(--ep-appbar-height) 0; /* 頂欄留在抽屜上方：導覽鈕還在，再按一次就收起 */
+        inset-inline-start: 0;
+        z-index: 30;
+        display: block;
+        box-sizing: border-box;
+        inline-size: min(calc(var(--ep-measure-sidebar) + var(--ep-space-6)), 86vw);
+        overflow: hidden auto;
+        padding: var(--ep-space-2) var(--ep-space-3) max(var(--ep-space-6), env(safe-area-inset-bottom)) max(var(--ep-space-3), env(safe-area-inset-left));
+        border-block-end: 0;
+        border-inline-end: 1px solid var(--ep-border-subtle);
+        background: var(--ep-surface);
+        box-shadow: var(--ep-elevation-3);
+        translate: -100% 0;
+        visibility: hidden;
+        transition: translate var(--ep-motion-normal) var(--ep-motion-ease-settle), visibility 0s linear var(--ep-motion-normal);
+    }
+
+    html[data-js][data-drawer] .ep-side {
+        translate: 0 0;
+        visibility: visible;
+        transition: translate var(--ep-motion-normal) var(--ep-motion-ease-settle), visibility 0s;
+    }
+
+    html[data-js] .ep-side-group {
+        display: block;
+    }
+
+    html[data-js] .ep-side-nav {
+        flex-direction: column;
+        overflow: visible;
+    }
+
+    html[data-js] .ep-scrim {
+        display: block;
+        position: fixed;
+        inset: var(--ep-appbar-height) 0 0;
+        z-index: 20;
+        background: var(--ep-scrim);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--ep-motion-normal) var(--ep-motion-ease-standard);
+    }
+
+    html[data-js][data-drawer] .ep-scrim {
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
 
 /* 窄的卡片（約手機寬）：表格改成一列一張小卡片，不橫向捲動。
@@ -810,7 +1121,8 @@ a:where(:not([class*="mud-"])) {
 @container ep-table (max-width: 36rem) {
     /* class 套在 MudBlazor 的外層 div；真正的 <table> 在裡面，也要改成區塊。 */
     .ep-cards table,
-    .ep-cards tbody {
+    .ep-cards table tbody,
+    .ep-cards table tbody.mud-table-body { /* MudTable 的 .mud-table-root .mud-table-body 特異度較高 */
         display: block;
         inline-size: 100%;
     }
@@ -1194,6 +1506,7 @@ a.ep-brand {
 
 .ep-composer-input {
     flex: 1;
+    text-overflow: ellipsis; /* 窄螢幕上提示文字放不下時收成「…」，不是被切一半 */
     min-inline-size: 0;
     min-block-size: var(--ep-touch-target);
     padding: 0;
@@ -1210,6 +1523,10 @@ a.ep-brand {
     border: 0;
     background: var(--ep-primary);
     color: var(--ep-on-primary);
+}
+
+.ep-ask[data-state="empty"] .ep-composer-options {
+    justify-content: center; /* 還沒問的時候一切置中：招呼、輸入框、日期、範例 */
 }
 
 .ep-composer-options {
@@ -1309,6 +1626,22 @@ a.ep-brand {
         box-shadow var(--ep-motion-normal) var(--ep-motion-ease-standard);
 }
 
+.ep-input {
+    caret-color: var(--ep-primary);
+}
+
+@media (hover: hover) {
+    .ep-input:hover:not(:focus) {
+        border-color: var(--ep-text-secondary);
+    }
+}
+
+/* 欄位被碰過、而且不合規則（長度不夠、格式不對）才標紅：沒碰過的空欄位不會一開頁就滿版錯誤。邊框之外
+   還有欄位下方的說明文字，不單靠顏色。 */
+.ep-input:user-invalid {
+    border-color: var(--ep-error);
+}
+
 /* 聚焦時外圈柔光：焦點環（outline）仍在，這只是附加的視覺回饋。 */
 .ep-input:focus {
     border-color: var(--ep-focus);
@@ -1317,6 +1650,157 @@ a.ep-brand {
 
 .ep-input:focus-visible {
     outline-offset: 1px; /* 外框色與寬度用上面的 :focus-visible；輸入框貼著邊，偏移少 1px */
+}
+
+/* 密碼欄：眼睛鈕坐在輸入框裡側、觸控尺寸，圖示是「按下去會變成什麼」（顯示時畫眼睛加斜線）。
+   沒有 JavaScript 時鈕不出現、輸入框也不留位置（html[data-js] 由 forms.js 設定）。 */
+.ep-password {
+    position: relative;
+}
+
+.ep-password-toggle,
+.ep-js-only {
+    display: none;
+}
+
+html[data-js] .ep-js-only {
+    display: inline-flex;
+}
+
+html[data-js] .ep-password .ep-input {
+    padding-inline-end: var(--ep-touch-target);
+}
+
+html[data-js] .ep-password-toggle {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-touch-target);
+    padding: 0;
+    border: 0;
+    border-radius: var(--ep-radius-control);
+    background: transparent;
+    color: var(--ep-text-secondary);
+    cursor: pointer;
+}
+
+.ep-password-toggle:focus-visible {
+    outline-offset: calc(var(--ep-space-1) * -1); /* 環畫在輸入框裡面，不跑到外框外 */
+}
+
+/* 兩個圖示疊在同一格，按下時交叉淡入淡出。 */
+.ep-password-toggle > span {
+    grid-area: 1 / 1;
+    display: grid;
+    transition: opacity var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-password-eye-off,
+.ep-password-toggle[data-visible] .ep-password-eye {
+    opacity: 0;
+}
+
+.ep-password-toggle[data-visible] .ep-password-eye-off {
+    opacity: 1;
+}
+
+@media (hover: hover) {
+    .ep-password-toggle:hover {
+        color: var(--ep-text);
+    }
+}
+
+/* 大寫鎖定提醒：沒有字時收成零高（仍留在無障礙樹裡，才念得出來），並抵銷欄位間距。 */
+.ep-password-caps {
+    color: var(--ep-warning);
+}
+
+.ep-password-caps:empty {
+    block-size: 0;
+    overflow: hidden;
+    margin-block-start: calc(var(--ep-space-1) * -1);
+}
+
+/* 六格驗證碼：底下是一個真的 <input>（接輸入、貼上、自動填入、焦點），上面是六個只負責顯示的方格。
+   沒有 JavaScript 時方格不出現，輸入框維持原樣。目前要輸入的那一格用焦點色的外框與閃爍的游標標示（外框就是焦點指示，
+   所以真的輸入框自己不畫焦點環）。 */
+.ep-otp {
+    position: relative;
+}
+
+.ep-otp-slots {
+    display: none;
+}
+
+html[data-js] .ep-otp-slots {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: var(--ep-space-2);
+}
+
+.ep-otp-slot {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    min-block-size: calc(var(--ep-space-12) + var(--ep-space-2));
+    border: 1px solid var(--ep-border-control);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface);
+    color: var(--ep-text);
+    font-size: var(--ep-headline-m-size);
+    font-weight: var(--ep-label-l-weight);
+    font-variant-numeric: tabular-nums;
+    transition:
+        border-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        box-shadow var(--ep-motion-normal) var(--ep-motion-ease-standard);
+}
+
+.ep-otp-slot[data-active] {
+    border-color: var(--ep-focus);
+    box-shadow: 0 0 0 var(--ep-space-1) color-mix(in srgb, var(--ep-focus) 16%, transparent);
+}
+
+.ep-otp-slot[data-active]:not([data-filled])::after {
+    content: "";
+    inline-size: 1px;
+    block-size: 1.5em;
+    background: var(--ep-focus);
+    animation: ep-caret 1s step-end infinite;
+}
+
+@keyframes ep-caret {
+    50% {
+        opacity: 0;
+    }
+}
+
+html[data-js] .ep-otp-input {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: transparent;
+    caret-color: transparent;
+    font-size: var(--ep-body-l-size); /* 不小於 16px，iOS 才不會在聚焦時放大頁面 */
+    cursor: text;
+}
+
+html[data-js] .ep-otp-input:focus,
+html[data-js] .ep-otp-input:focus-visible {
+    border: 0;
+    outline: none;
+    box-shadow: none;
+}
+
+html[data-js] .ep-otp-input::selection {
+    background: transparent;
 }
 
 .ep-hint,
@@ -1339,11 +1823,25 @@ a.ep-brand {
 }
 
 .ep-btn {
+    box-sizing: border-box; /* 滿寬的按鈕（inline-size: 100%）加上內距與邊框也不超出容器 */
     justify-content: center;
     padding: var(--ep-space-2) var(--ep-space-6);
     cursor: pointer;
     border: 1px solid transparent;
     border-radius: var(--ep-radius-control);
+}
+
+/* 帶圖示的按鈕：圖示與文字之間一階間距。 */
+.ep-btn-icon {
+    gap: var(--ep-space-2);
+    padding-inline: var(--ep-space-4);
+}
+
+/* 送出中（forms.js 設 aria-busy）：按鈕變淡、游標轉成處理中，不能再按。 */
+.ep-btn[aria-busy="true"] {
+    opacity: 0.6;
+    cursor: progress;
+    pointer-events: none;
 }
 
 .ep-btn-primary {
@@ -1441,11 +1939,21 @@ a.ep-brand {
 .ep-plain-table td {
     padding: var(--ep-space-2) var(--ep-space-3);
     text-align: start;
+    white-space: nowrap; /* 窄螢幕不把名稱擠成一字一行：表格在 .ep-table-wrap 裡橫向捲動 */
     border-block-end: 1px solid var(--ep-border-subtle);
 }
 
 .ep-table-wrap {
     overflow-x: auto;
+}
+
+/* 放在有內距的卡片裡的簡單表格：第一欄與最後一欄的外側不再多縮一層，文字才與卡片標題對齊。 */
+.ep-card:not(.ep-table-card) .ep-plain-table :is(th, td):first-child {
+    padding-inline-start: 0;
+}
+
+.ep-card:not(.ep-table-card) .ep-plain-table :is(th, td):last-child {
+    padding-inline-end: 0;
 }
 
 @media (hover: hover) {
@@ -1511,8 +2019,85 @@ a.ep-brand {
 
 .ep-codes {
     grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-    gap: var(--ep-space-2);
+    gap: var(--ep-space-2) var(--ep-space-4);
     margin: var(--ep-space-3) 0;
+}
+
+/* 復原碼的框：上面一條工具列（標題、下載、複製、列印），下面是碼。每一組點一下就整組選取。 */
+.ep-recovery {
+    container: ep-recovery / inline-size;
+    margin-block: var(--ep-space-4);
+    overflow: clip;
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface);
+}
+
+.ep-recovery-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ep-space-2) var(--ep-space-4);
+    padding: var(--ep-space-2) var(--ep-space-4);
+    border-block-end: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface-muted);
+}
+
+.ep-recovery-title {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--ep-touch-target);
+    margin: 0;
+    font-size: var(--ep-title-s-size);
+    line-height: var(--ep-title-s-leading);
+    letter-spacing: var(--ep-title-s-tracking);
+    font-weight: var(--ep-title-s-weight);
+}
+
+.ep-recovery-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ep-space-1);
+}
+
+.ep-recovery .ep-btn-quiet {
+    border-color: transparent;
+}
+
+.ep-recovery .ep-btn-quiet[data-done-now] {
+    color: var(--ep-success);
+}
+
+@media (hover: hover) {
+    .ep-recovery .ep-btn-quiet:hover {
+        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+    }
+}
+
+.ep-recovery .ep-codes {
+    margin: 0;
+    padding: var(--ep-space-4);
+}
+
+.ep-recovery .ep-codes li {
+    user-select: all;
+}
+
+/* 窄的框（手機、窄欄）：標題一列、三個動作平分一列，圖示收掉只留字。 */
+@container ep-recovery (max-width: 24rem) {
+    .ep-recovery-actions {
+        flex: 1 1 100%;
+    }
+
+    .ep-recovery-actions > .ep-btn {
+        flex: 1;
+        padding-inline: var(--ep-space-2);
+    }
+
+    .ep-recovery .ep-btn-icon > .ep-icon {
+        display: none;
+    }
 }
 
 .ep-steps {
@@ -1521,6 +2106,18 @@ a.ep-brand {
 }
 
 /* 成員管理：一次性密碼用大一點的等寬字、可整段選取；表格每列的操作按鈕可以換行。 */
+.ep-secret-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-3);
+    margin: 0;
+}
+
+.ep-secret-row .ep-btn-quiet[data-done-now] {
+    color: var(--ep-success);
+}
+
 .ep-secret {
     display: inline-block;
     padding: var(--ep-space-2) var(--ep-space-3);
@@ -1545,12 +2142,24 @@ a.ep-brand {
     padding: var(--ep-space-4) var(--ep-space-4) var(--ep-space-2);
 }
 
-/* 窄的卡片：每位成員一張卡，操作按鈕整列顯示（不擠在右邊一欄、也不橫向捲動到看不到）。 */
+/* 窄的卡片：每位成員一張卡，操作按鈕整列顯示（不擠在右邊一欄、也不橫向捲動到看不到）。
+   ep-cell-actions 給 MudTable 的操作格（多顆按鈕）：同樣排到下面一整列，標籤「操作：」多餘，收掉。 */
 @container ep-table (max-width: 36rem) {
-    .ep-cards table tbody tr td.ep-row-actions {
+    .ep-cards table tbody tr td.ep-row-actions,
+    .ep-cards table tbody tr td.ep-cell-actions {
         grid-column: 1;
         grid-row: auto;
         padding-block-start: var(--ep-space-2);
+    }
+
+    .ep-cards table tbody tr td.ep-cell-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--ep-space-1);
+    }
+
+    .ep-cards table tbody tr td.ep-cell-actions[data-label]::before {
+        content: none;
     }
 }
 

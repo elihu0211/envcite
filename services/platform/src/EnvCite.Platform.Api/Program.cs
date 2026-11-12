@@ -100,6 +100,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // 順序很重要：API key 驗證會設定租戶 claim，Finbuckle 再據此解析租戶。
+app.UsePlatformNotFoundPage();
+app.UseRouting(); // 明確呼叫，放在找不到頁面的中介層之後（原因見 UsePlatformNotFoundPage）；端點由 WebApplication 在最後自動接上
 app.UsePlatformLocalization();
 app.UseAuthentication();
 app.UsePlatformWebAuthentication();

@@ -130,6 +130,13 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Equal(["/ui", "/ui/tenants", "/ui/operators", "/ui/audit"], LinkHref().Matches(nav).Select(m => m.Groups[1].Value));
         Assert.Contains("href=\"/ui/tenants\" class=\"ep-side-link active\"", nav, StringComparison.Ordinal);
         Assert.Single(Regex.Matches(nav, "ep-side-link active"));
+
+        // 每一項是圖示加文字（窄欄時只剩圖示、文字留給輔助技術），頂欄有導覽鈕、後面有抽屜的遮罩。
+        Assert.Equal(4, Regex.Count(nav, "<svg class=\"ep-icon\""));
+        Assert.Equal(4, Regex.Count(nav, "class=\"ep-side-label\""));
+        Assert.Contains("class=\"ep-side-toggle\" aria-controls=\"ep-side\"", page, StringComparison.Ordinal);
+        Assert.Contains("<aside id=\"ep-side\" class=\"ep-side\">", page, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-scrim\"", page, StringComparison.Ordinal);
     }
 
     // 元件展示頁：只在 Development；不需要登入，三種寬度都看得到每個元件。

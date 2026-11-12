@@ -82,6 +82,9 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
         var page = await browser.GetAsync(Security(tenant.Identifier));
         Assert.Equal(HttpStatusCode.OK, page.Status);
         Assert.Contains("class=\"ep-qr\"", page.Html, StringComparison.Ordinal); // QR 在伺服器上畫好
+        // 驗證碼是六格輸入（底下是真的輸入框）；啟用要按按鈕確認，不自動送出。
+        Assert.Contains("<div class=\"ep-otp\" data-length=\"6\">", page.Html, StringComparison.Ordinal);
+        Assert.Contains("autocomplete=\"one-time-code\"", page.Html, StringComparison.Ordinal);
         var key = SharedKey().Match(page.Html).Groups[1].Value.Replace(" ", string.Empty, StringComparison.Ordinal);
         Assert.True(key.Length >= 16);
 
@@ -97,6 +100,12 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
         var codes = RecoveryCodeItem().Matches(enabled.Html).Select(m => m.Groups[1].Value).ToList();
         Assert.Equal(10, codes.Count);
         Assert.Equal(10, codes.Distinct().Count());
+
+        // 保存：下載是帶 download 的 data: 連結（沒有 JavaScript 也能用），檔案裡有全部復原碼；
+        // 下載、複製、列印都用這個回應裡已有的內容，不再回伺服器要第二次。
+        Assert.Contains("download=\"envcite-recovery-codes.txt\"", enabled.Html, StringComparison.Ordinal);
+        Assert.Contains("href=\"data:text/plain;charset=utf-8,", enabled.Html, StringComparison.Ordinal);
+        Assert.All(codes, code => Assert.Contains(Uri.EscapeDataString(code), enabled.Html, StringComparison.Ordinal));
 
         // 復原碼只在這一個回應裡：再開頁面只剩「已啟用」，沒有金鑰、沒有 QR、沒有復原碼。
         var after = await browser.GetAsync(Security(tenant.Identifier));
@@ -116,6 +125,12 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
 
         var step1 = await browser.SubmitAsync(Login(member.Tenant.Identifier), Credentials(member.Email, member.Password));
         Assert.Equal(Mfa(member.Tenant.Identifier), step1.Location);
+
+        // 登入的第二步：六格輸入、輸滿自動送出；改用復原碼時是一般的文字輸入（復原碼不是六位數字）。
+        var codePage = await browser.GetAsync(Mfa(member.Tenant.Identifier));
+        Assert.Contains("<div class=\"ep-otp\" data-length=\"6\" data-autosubmit=\"\">", codePage.Html, StringComparison.Ordinal);
+        var recoveryPage = await browser.GetAsync($"{Mfa(member.Tenant.Identifier)}?recovery=1");
+        Assert.DoesNotContain("ep-otp", recoveryPage.Html, StringComparison.Ordinal);
 
         // 暫存憑證不是登入：首頁與改密碼頁都進不去。
         Assert.Equal(HttpStatusCode.Redirect, (await browser.GetAsync(Home(member.Tenant.Identifier))).Status);

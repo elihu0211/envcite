@@ -26,7 +26,7 @@
     </div>
     <div class="ep-field-row">
         <label for="password" class="ep-label">@L["密碼"]</label>
-        <InputText id="password" @bind-Value="Input.Password" type="password" class="ep-input" autocomplete="current-password" required />
+        <PasswordField Id="password" @bind-Value="Input.Password" />
     </div>
     <button type="submit" class="ep-btn ep-btn-primary">@L["登入"]</button>
 </EditForm>

@@ -4,12 +4,12 @@
 @inject AuthenticationStateProvider Auth
 @inject IJSRuntime Js
 
-<MudDialog>
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
         @if (_issued is null)
         {
             <MudTextField @bind-Value="_name" Label="@L["名稱"]" Placeholder="@L["例如：正式環境"]" Variant="Variant.Outlined"
-                          Required="true" Immediate="true" MaxLength="100" AutoFocus="true" OnKeyUp="OnKeyUp"
+                          Required="true" OnlyValidateIfDirty="true" Immediate="true" MaxLength="100" AutoFocus="true" OnKeyUp="OnKeyUp"
                           HelperText="@L["給客戶辨認用途；之後在清單裡以名稱和前綴區分。"]" />
             @if (_error is not null)
             {

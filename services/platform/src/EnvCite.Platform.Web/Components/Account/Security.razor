@@ -23,12 +23,7 @@
             @L["這是你的復原碼。"]<strong>@L["只會顯示這一次"]</strong>@L["：請現在抄下或存進密碼管理員。"]
             @L["手機遺失時，每一組復原碼可以代替一次驗證碼，用過就失效。"]
         </p>
-        <ul class="ep-codes" aria-label="@L["復原碼"]">
-            @foreach (var recoveryCode in _recoveryCodes)
-            {
-                <li><code class="ep-mono">@recoveryCode</code></li>
-            }
-        </ul>
+        <RecoveryCodes Codes="_recoveryCodes" />
         <a class="ep-btn ep-btn-primary" href="@UiEndpoints.HomePath">@L["我已保存"]</a>
     </section>
 }
@@ -52,7 +47,7 @@ else if (_enabled)
         <EditForm Model="Regenerate" FormName="ui-mfa-regenerate" OnValidSubmit="RegenerateAsync" method="post" class="ep-form">
             <div class="ep-field-row">
                 <label for="regen-code" class="ep-label">@L["驗證碼"]</label>
-                <InputText id="regen-code" @bind-Value="Regenerate.Code" class="ep-input" required autocomplete="one-time-code" inputmode="numeric" maxlength="10" />
+                <OtpField Id="regen-code" @bind-Value="Regenerate.Code" />
             </div>
             <button type="submit" class="ep-btn ep-btn-quiet">@L["重新產生"]</button>
         </EditForm>
@@ -80,7 +75,7 @@ else if (_setup is not null)
         <EditForm Model="Input" FormName="ui-mfa-enable" OnValidSubmit="EnableAsync" method="post" class="ep-form">
             <div class="ep-field-row">
                 <label for="code" class="ep-label">@L["驗證碼"]</label>
-                <InputText id="code" @bind-Value="Input.Code" class="ep-input" required autocomplete="one-time-code" inputmode="numeric" maxlength="10" />
+                <OtpField Id="code" @bind-Value="Input.Code" />
             </div>
             <button type="submit" class="ep-btn ep-btn-primary">@L["啟用"]</button>
         </EditForm>

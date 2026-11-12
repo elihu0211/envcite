@@ -2,11 +2,11 @@
 @inject ITenantProvisioner Tenants
 @inject AuthenticationStateProvider Auth
 
-<MudDialog>
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
         <MudTextField @bind-Value="_name" Label="@L["名稱"]" Placeholder="@L["例如：某某環境顧問公司"]" Variant="Variant.Outlined"
-                      Required="true" Immediate="true" MaxLength="200" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp" />
-        <MudTextField @bind-Value="_identifier" Label="@L["識別碼"]" Variant="Variant.Outlined" Required="true" Immediate="true"
+                      Required="true" OnlyValidateIfDirty="true" Immediate="true" MaxLength="200" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp" />
+        <MudTextField @bind-Value="_identifier" Label="@L["識別碼"]" Variant="Variant.Outlined" Required="true" OnlyValidateIfDirty="true" Immediate="true"
                       MaxLength="63" HelperText="@L["3–63 字元：小寫英文、數字、連字號。建立後不能修改。"]" OnKeyUp="OnKeyUp" />
         @if (_error is not null)
         {

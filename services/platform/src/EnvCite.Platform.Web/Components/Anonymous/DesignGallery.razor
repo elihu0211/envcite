@@ -76,6 +76,19 @@
                 <select id="g-role" class="ep-input"><option>唯讀</option><option>開發者</option></select>
             </div>
         </div>
+        <EditForm Model="_sample" FormName="design-sample" class="ep-form">
+            <div class="ep-field-row">
+                <label class="ep-label" for="g-password">密碼</label>
+                <PasswordField Id="g-password" @bind-Value="_sample.Password" Autocomplete="new-password" />
+                <p class="ep-hint">右側的眼睛鈕顯示或隱藏；大寫鎖定開著時，欄位下方會出現提醒。</p>
+            </div>
+        </EditForm>
+    </section>
+
+    <section class="ep-card" aria-labelledby="g-recovery">
+        <h2 id="g-recovery" class="ep-section-title">復原碼</h2>
+        <p class="ep-hint">工具列：下載（文字檔）、複製、列印。</p>
+        <RecoveryCodes Codes="_sampleCodes" />
     </section>
 
     <section class="ep-card" aria-labelledby="g-badge">
@@ -118,13 +131,23 @@
     </section>
 
     <section class="ep-card" aria-labelledby="g-empty">
-        <EmptyState Title="還沒有資料" Description="現在是什麼狀態、下一步可以做什麼。">
+        <EmptyState Icon="@Icons.Material.Outlined.Inbox" Title="還沒有資料" Description="現在是什麼狀態、下一步可以做什麼。">
             <button type="button" class="ep-btn ep-btn-primary">新增</button>
         </EmptyState>
     </section>
 </PortalShell>
 
 @code {
+    private readonly SampleForm _sample = new();
+
+    private static readonly string[] _sampleCodes =
+        ["G5QRJ-T8WRM", "DT2HN-WVRXY", "MGHP2-QXYFY", "6962B-99K82", "FJG9V-P68T7", "TTR3T-TGB6F", "N3TJQ-FFR2D", "Y6X6B-6H2TN", "QM3MJ-3K927", "QKHW5-2949G"];
+
+    private sealed class SampleForm
+    {
+        public string Password { get; set; } = string.Empty;
+    }
+
     private static readonly (string Name, string Label)[] _colors =
     [
         ("bg", "頁面底"), ("surface", "卡片"), ("surface-raised", "浮起表面"), ("surface-muted", "欄標題、展開列"),
@@ -145,10 +168,10 @@
 
     private static readonly IReadOnlyList<PortalShell.NavItem> _nav =
     [
-        new("/design", "查詢", "服務", Exact: true),
-        new("#history", "對話紀錄", "服務"),
-        new("#members", "成員", "組織"),
-        new("#account", "帳號與組織", "組織"),
+        new("/design", "查詢", "服務", Exact: true, Icon: Icons.Material.Outlined.Search),
+        new("#history", "對話紀錄", "服務", Icon: Icons.Material.Outlined.Forum),
+        new("#members", "成員", "組織", Icon: Icons.Material.Outlined.Group),
+        new("#account", "帳號與組織", "組織", Icon: Icons.Material.Outlined.ManageAccounts),
     ];
 
     private static readonly IReadOnlyList<PortalShell.MenuItem> _menu =
