@@ -1,0 +1,14 @@
+@page "/ui/settings"
+@layout AccountLayout
+@attribute [ExcludeFromInteractiveRouting]
+@attribute [Authorize(Policy = PlatformAuth.UiPolicy)]
+
+@* 營運者的個人設定：目前只有外觀。靜態渲染（沒有 circuit）：選項是原生表單，換外觀由 /ui/appearance 寫 cookie；
+   與改密碼、兩步驟驗證同一種帳號頁（一張置中的卡）。客戶入口的同名頁（Portal/Settings）共用同一個 AppearanceSetting。 *@
+<PageTitle>@L["個人設定 · {0}", Brand.Name]</PageTitle>
+
+<h1 class="ep-page-title">@L["個人設定"]</h1>
+
+<AppearanceSetting Action="@UiEndpoints.AppearancePath" />
+
+<a class="ep-btn ep-btn-primary" href="@UiEndpoints.HomePath">@L["回後台"]</a>

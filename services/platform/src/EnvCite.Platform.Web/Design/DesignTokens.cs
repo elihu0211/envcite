@@ -61,7 +61,7 @@ public sealed record ColorTokens
 /// <summary>
 /// 營運後台與客戶入口的外觀。執行期只讀這裡；給代理的視覺規格是同目錄的 <c>DESIGN.md</c>，兩份由測試核對。
 /// 有淺色與深色兩套調色盤，角色（語意名稱）完全相同：元件只引用角色，不知道自己在哪一套；
-/// 外觀只跟隨瀏覽器／系統（<c>prefers-color-scheme</c>，見 <c>TokenCss</c>），沒有手動選項。
+/// 預設跟隨瀏覽器／系統（<c>prefers-color-scheme</c>），個人設定可以手動選亮色或暗色覆寫（見 <c>TokenCss</c> 與 <c>AppearanceSetting</c>）。
 /// </summary>
 public static class DesignTokens
 {

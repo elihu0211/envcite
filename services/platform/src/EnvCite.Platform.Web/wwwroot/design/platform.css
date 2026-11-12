@@ -51,7 +51,8 @@ a:where(:not([class*="mud-"])) {
 /* 鍵盤焦點一律可見，且不依賴顏色以外的線索（外框 + 偏移）。
    問答輸入框的環畫在容器上（子元件聚焦時），數值與這裡相同。 */
 :focus-visible,
-.ep-composer:focus-within {
+.ep-composer:focus-within,
+.ep-segment:has(> input:focus-visible) {
     outline: 2px solid var(--ep-focus);
     outline-offset: 2px;
 }
@@ -243,6 +244,115 @@ h1[tabindex="-1"]:focus-visible {
     flex: 1;
 }
 
+/* 外觀選項（分段控制，Apple 的 segmented control）：一條淺底的軌道，選中的那一格是浮起的一塊，在格子之間滑動。
+   每一格是原生 radio（透明、蓋滿整格）：點擊、方向鍵、螢幕閱讀器念出選中項目都是瀏覽器原生的；選中的塊與字色跟著 :checked 走，
+   不靠腳本。塊只動 translate（合成層，不觸發版面），動畫中途再選會從目前位置轉向；使用者要求減少動態時，全域規則把它收成瞬間。
+   選中不只靠塊的位置：字色加深、字重加粗，塊另有控制項外框（高對比模式與非文字對比 3:1）。按下當下整格縮一下（回饋在按下，不是放開）。 */
+.ep-segmented {
+    --ep-segment-index: 0;
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: var(--ep-space-1);
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-inline-size: 0;
+    margin: 0;
+    padding: var(--ep-space-1);
+    border: 0;
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface-muted);
+}
+
+.ep-segmented::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset-block: var(--ep-space-1);
+    inset-inline-start: var(--ep-space-1);
+    inline-size: calc((100% - var(--ep-space-1) * 4) / 3);
+    box-sizing: border-box;
+    border: 1px solid var(--ep-border-control);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface);
+    box-shadow: var(--ep-elevation-1);
+    translate: calc(var(--ep-segment-index) * (100% + var(--ep-space-1))) 0;
+    transition: translate var(--ep-motion-normal) var(--ep-motion-ease-move);
+}
+
+.ep-segmented:has(> .ep-segment:nth-child(2) > input:checked) {
+    --ep-segment-index: 1;
+}
+
+.ep-segmented:has(> .ep-segment:nth-child(3) > input:checked) {
+    --ep-segment-index: 2;
+}
+
+.ep-segment {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ep-space-1) var(--ep-space-2);
+    box-sizing: border-box;
+    min-block-size: var(--ep-touch-target);
+    padding: var(--ep-space-1) var(--ep-space-2);
+    border-radius: var(--ep-radius-control);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-body-m-size);
+    line-height: var(--ep-body-m-leading);
+    cursor: pointer;
+    transition:
+        color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-segment > input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: inherit;
+}
+
+.ep-segment:has(> input:checked) {
+    color: var(--ep-text);
+    font-weight: var(--ep-label-l-weight);
+}
+
+@media (hover: hover) {
+    .ep-segment:hover {
+        color: var(--ep-text);
+    }
+}
+
+/* 選中那一項的一行說明；其餘收起（仍是各選項的 aria-describedby，念得出來）。 */
+.ep-appearance-hint {
+    display: none;
+    margin: 0;
+}
+
+.ep-appearance:has(input[value="system"]:checked) .ep-appearance-hint[data-for="system"],
+.ep-appearance:has(input[value="light"]:checked) .ep-appearance-hint[data-for="light"],
+.ep-appearance:has(input[value="dark"]:checked) .ep-appearance-hint[data-for="dark"] {
+    display: block;
+}
+
+/* 儲存失敗的提醒：沒有字時收成零高（仍留在無障礙樹裡，才念得出來），並抵銷表單的間距。 */
+.ep-appearance-status {
+    margin: 0;
+    color: var(--ep-warning);
+}
+
+.ep-appearance-status:empty {
+    block-size: 0;
+    overflow: hidden;
+    margin-block-start: calc(var(--ep-space-4) * -1);
+}
+
 .ep-auth > .ep-brand {
     margin: 0;
     font-size: var(--ep-headline-s-size);
@@ -348,7 +458,8 @@ h1[tabindex="-1"]:focus-visible {
 .ep-password-toggle:active,
 .ep-side-toggle:active,
 .ep-chip:active,
-.ep-btn:active {
+.ep-btn:active,
+.ep-segment:has(> input:active) {
     transform: scale(var(--ep-press-scale));
     transition-duration: 0s;
 }
@@ -1737,6 +1848,11 @@ a.ep-brand {
 
 html[data-js] .ep-js-only {
     display: inline-flex;
+}
+
+/* 有腳本就即時套用,不需要另外按「套用」;沒有腳本時它是唯一的送出方式。 */
+html[data-js] .ep-no-js {
+    display: none;
 }
 
 html[data-js] .ep-password .ep-input {

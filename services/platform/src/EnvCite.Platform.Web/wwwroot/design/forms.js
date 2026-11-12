@@ -223,6 +223,58 @@
     syncSide();
     document.addEventListener("DOMContentLoaded", syncSide);
 
+    // ---- 外觀（個人設定）：即時預覽，並把選擇送給伺服器 ----------------------------------------------
+    // 偏好存在伺服器的 cookie，下一個請求由 App.razor 輸出 <html data-theme>（所以頁面第一格就是對的，這裡不讀不寫任何儲存）。
+    // 這裡只做兩件事：選了就立即換上（預覽，不必另外按儲存），並用 fetch 送出同一張表單。沒有 JavaScript 時，表單是普通的 POST。
+    // 「系統」＝不帶 data-theme、還原 meta 原本的 media，行為只靠 prefers-color-scheme。
+    const applyAppearance = (choice) => {
+        if (choice === "system") {
+            delete root.dataset.theme;
+        } else {
+            root.dataset.theme = choice;
+        }
+
+        const scheme = document.querySelector('meta[name="color-scheme"]');
+        scheme?.setAttribute("content", choice === "system" ? scheme.dataset.system : choice);
+        document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+            meta.media = choice === "system" ? meta.dataset.media : (meta.dataset.scheme === choice ? "all" : "not all");
+        });
+    };
+
+    document.addEventListener("change", async (event) => {
+        const radio = event.target;
+        const form = radio.closest?.("[data-appearance-form]");
+        if (!form || radio.name !== "appearance") {
+            return;
+        }
+
+        const status = form.querySelector("[data-appearance-status]");
+        status.textContent = "";
+
+        // 亮暗互換的一瞬間整頁亮度會跳一下：用瀏覽器原生的 View Transition 交叉淡入淡出（只有透明度，沒有位移；
+        // 使用者要求減少動態時，樣式表把它收短）。不支援的瀏覽器直接換。
+        const apply = () => applyAppearance(radio.value);
+        if (document.startViewTransition) {
+            document.startViewTransition(apply);
+        } else {
+            apply();
+        }
+
+        try {
+            const response = await fetch(form.action, {
+                method: "POST",
+                headers: { Accept: "application/json" },
+                body: new URLSearchParams(new FormData(form)),
+            });
+            if (!response.ok) {
+                throw new Error(String(response.status));
+            }
+        } catch {
+            // 預覽已經套上，但沒存成：下次開啟會回到原本的外觀，要讓人知道。
+            status.textContent = status.dataset.failed;
+        }
+    });
+
     // ---- 抽屜的手勢：左緣滑出、往左滑收起 ----------------------------------------------------------
     // 跟手（位置 1:1）、放開時用速度投射落點、再以放開當下的速度接續動畫；隨時可以重新抓住（從目前畫面上的位置起算，
     // 不是從邏輯上的目標值）。拖過頭的那一段有橡皮筋的阻力。只收觸控與手寫筆，滑鼠不拖。

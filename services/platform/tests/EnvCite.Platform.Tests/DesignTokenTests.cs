@@ -93,16 +93,19 @@ public static partial class DesignTokenTests
         Assert.True(ratio >= minimum, $"{scheme}: {pair} is {ratio:F2}:1, needs {minimum}:1");
     }
 
-    // 深色是同一組變數換一份值：淺色在 :root 定義一次，深色只在「系統（瀏覽器）是深色」時（prefers-color-scheme）定義一次。
-    // 外觀只跟隨系統，沒有手動選項，所以 CSS 裡不該有任何 data-theme 的選擇器。
+    // 深色是同一組變數換一份值：淺色在 :root 定義一次；深色在「使用者沒選亮色、而系統（瀏覽器）是深色」時（prefers-color-scheme）定義一次，
+    // 使用者在個人設定手動選了暗色（data-theme="dark"）時再套同一份。預設（<html> 沒有 data-theme）行為只靠 prefers-color-scheme。
     [Fact]
     public static void TheCssDefinesEveryColorTokenForBothSchemes()
     {
         var css = TokenCss.Render();
 
         var baseBlock = css[..css.IndexOf("@media", StringComparison.Ordinal)];
-        var chosen = Block(css, "@media (prefers-color-scheme:dark){html:root{");
-        Assert.DoesNotContain("data-theme", css, StringComparison.Ordinal);
+        var chosen = Block(css, "@media (prefers-color-scheme:dark){html:root:not([data-theme=\"light\"]){");
+        var chosenDark = Block(css, "html:root[data-theme=\"dark\"]{");
+        Assert.Equal(chosen + "color-scheme:dark;", chosenDark); // 手動選暗色與系統是深色套的是同一份變數，只多鎖住 color-scheme
+        Assert.Contains("html:root[data-theme=\"light\"]{color-scheme:light;}", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("data-theme=\"system\"", css, StringComparison.Ordinal); // 跟隨系統沒有屬性
 
         foreach (var variable in new[]
         {
@@ -139,10 +142,12 @@ public static partial class DesignTokenTests
         Assert.Contains($"--mud-palette-primary:{dark.Primary};", chosen, StringComparison.Ordinal);
         Assert.DoesNotContain("--mud-palette", baseBlock, StringComparison.Ordinal); // 淺色那組由 MudThemeProvider 輸出
 
-        // 瀏覽器的原生控制項、捲軸跟著系統的配色，不鎖定任何一邊。
+        // 預設，瀏覽器的原生控制項、捲軸跟著系統的配色，不鎖定任何一邊；只有手動選了才鎖到那一邊（上面兩條規則），
+        // 系統深色那一塊不碰 color-scheme。
         Assert.Contains("color-scheme:light dark;", baseBlock, StringComparison.Ordinal);
-        Assert.DoesNotContain("color-scheme:dark;", css, StringComparison.Ordinal);
-        Assert.DoesNotContain("color-scheme:light;", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("color-scheme", chosen, StringComparison.Ordinal);
+        Assert.Equal(1, Regex.Count(css, "color-scheme:dark;"));
+        Assert.Equal(1, Regex.Count(css, "color-scheme:light;"));
         Assert.Contains("--ep-font:\"Inter Variable\",\"Noto Sans TC Variable\",sans-serif;", css, StringComparison.Ordinal);
     }
 
@@ -164,7 +169,9 @@ public static partial class DesignTokenTests
         var dark = DesignTokens.Dark;
 
         Assert.Contains($"@media (prefers-contrast:more){{:root{{--ep-border-subtle:{light.BorderControl};--ep-text-secondary:{light.Text};}}}}", css, StringComparison.Ordinal);
-        Assert.Contains($"@media (prefers-contrast:more) and (prefers-color-scheme:dark){{html:root{{--ep-border-subtle:{dark.BorderControl};--ep-text-secondary:{dark.Text};}}}}", css, StringComparison.Ordinal);
+        // 較高對比：系統深色（且沒選亮色）與手動選暗色，都用深色那一對；手動選亮色時系統的深色不介入。
+        Assert.Contains($"@media (prefers-contrast:more) and (prefers-color-scheme:dark){{html:root:not([data-theme=\"light\"]){{--ep-border-subtle:{dark.BorderControl};--ep-text-secondary:{dark.Text};}}}}", css, StringComparison.Ordinal);
+        Assert.Contains($"@media (prefers-contrast:more){{html:root[data-theme=\"dark\"]{{--ep-border-subtle:{dark.BorderControl};--ep-text-secondary:{dark.Text};}}}}", css, StringComparison.Ordinal);
         Assert.Contains("@media (prefers-reduced-motion:reduce){:root{--ep-press-scale:1;--ep-motion-scale:1;--ep-motion-travel:0rem;--ep-motion-travel-sm:0rem;}}", css, StringComparison.Ordinal);
         // 加深之後的次要文字與髮絲線也要過關。
         foreach (var c in new[] { light, dark })
@@ -534,32 +541,66 @@ public static partial class DesignTokenTests
         Assert.Contains("--ep-drawer-duration", script, StringComparison.Ordinal); // 速度承接
     }
 
-    // 外觀只跟隨瀏覽器／系統（prefers-color-scheme），沒有手動選項：不提供切換元件，forms.js 不讀寫偏好、不設 data-theme，
-    // 樣式表沒有只為切換而存在的規則。以前的三選項（自動、淺色、深色）和它存的 ep-theme 都移除了；
-    // 工具列顏色（theme-color）由兩個帶 media 的 meta 各自對應，不靠腳本改。QR 固定白底，不隨主題。
+    // 預設跟隨系統（prefers-color-scheme），手動選擇只有一個入口：個人設定裡的 AppearanceSetting。偏好存在伺服器的 cookie，
+    // 由 App.razor 輸出 data-theme，所以腳本不讀寫任何儲存（沒有 localStorage 的 ep-theme）；靜態樣式表沒有 data-theme
+    // （那些選擇器由 TokenCss 產生）。腳本只做即時預覽：換 data-theme、color-scheme 與 theme-color 的 media，系統時還原。
+    // 工具列顏色（theme-color）跟著選擇走，不只改頁面背景。QR 固定白底，不隨主題。
     [Fact]
-    public static void AppearanceOnlyFollowsTheSystem()
+    public static void ManualAppearanceIsAServerSideCookieAndTheScriptOnlyPreviews()
     {
         var css = File.ReadAllText(StylesheetPath());
         var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
 
-        foreach (var leftover in new[] { "data-theme", "ep-theme", "theme-color", "localStorage.getItem(\"ep-theme" })
+        foreach (var leftover in new[] { "data-theme", "ep-theme", "theme-color" })
         {
-            Assert.DoesNotContain(leftover, script, StringComparison.Ordinal);
             Assert.DoesNotContain(leftover, css, StringComparison.Ordinal);
         }
 
+        Assert.DoesNotContain("ep-theme", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("localStorage.getItem(\"ep-theme", script, StringComparison.Ordinal);
+        // 偏好不經瀏覽器儲存：除了側欄收合，腳本沒有別的 localStorage 用途。
+        Assert.Equal(1, Regex.Count(script, @"localStorage\.setItem\("));
+        Assert.Contains("localStorage.setItem(\"ep-side\"", script, StringComparison.Ordinal);
+        // 即時預覽：選了就換、系統時還原；送出走 fetch（Accept: application/json，伺服器回 204）。
+        Assert.Contains("root.dataset.theme = choice", script, StringComparison.Ordinal);
+        Assert.Contains("delete root.dataset.theme", script, StringComparison.Ordinal);
+        Assert.Contains("scheme.dataset.system", script, StringComparison.Ordinal);
+        Assert.Contains("meta.dataset.media", script, StringComparison.Ordinal);
+        Assert.Contains("meta.dataset.scheme === choice ? \"all\" : \"not all\"", script, StringComparison.Ordinal);
+        Assert.Contains("startViewTransition", script, StringComparison.Ordinal);
+        Assert.Contains("Accept: \"application/json\"", script, StringComparison.Ordinal);
+
         Assert.DoesNotContain(".ep-theme", css, StringComparison.Ordinal);
-        Assert.DoesNotContain(".ep-lang-option[aria-pressed", css, StringComparison.Ordinal); // 只有外觀切換用 aria-pressed，語言用 aria-current
+        Assert.DoesNotContain(".ep-lang-option[aria-pressed", css, StringComparison.Ordinal); // 語言選項用 aria-current
         Assert.Contains(".ep-lang-option[aria-current=\"true\"]", css, StringComparison.Ordinal);
         Assert.Matches(@"\.ep-qr \{[^}]*background: var\(--ep-qr-surface\)", css);
         Assert.Equal("#FFFFFF", DesignTokens.QrSurface);
     }
 
-    // 沒有任何原始碼提供手動外觀：元件不存在，也沒有檔案寫 data-theme、data-theme-option 或讀 ep-theme。
-    // 唯一的例外是 App.razor 的 removeItem("ep-theme")，它清掉舊的偏好，不讀。
+    // 分段控制（外觀選項）的樣式：選中的塊只動 translate（合成層），滑動時長與緩動取自 token；選中不只靠塊（字色、字重、塊的外框）；
+    // 焦點環與按下縮放併進既有的那一條規則（各只寫一次）；沒有 JavaScript 時多一顆「套用」，有腳本才收起。
     [Fact]
-    public static void NoSourceOffersAManualAppearanceChoice()
+    public static void TheSegmentedControlMovesOnlyTranslateAndTakesMotionFromTheTokens()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        Assert.Matches(@"\.ep-segmented::before \{[^}]*translate: calc\(var\(--ep-segment-index\)[^}]*transition: translate var\(--ep-motion-normal\) var\(--ep-motion-ease-move\)", css);
+        Assert.Contains(".ep-segmented:has(> .ep-segment:nth-child(2) > input:checked)", css, StringComparison.Ordinal);
+        Assert.Contains(".ep-segmented:has(> .ep-segment:nth-child(3) > input:checked)", css, StringComparison.Ordinal);
+        Assert.Matches(@"\.ep-segmented::before \{[^}]*border: 1px solid var\(--ep-border-control\)", css); // 塊對軌道有 3:1 的外框
+        Assert.Matches(@"\.ep-segment:has\(> input:checked\) \{\s*color: var\(--ep-text\);\s*font-weight: var\(--ep-label-l-weight\)", css);
+        Assert.Matches(@"\.ep-segment > input \{[^}]*opacity: 0", css); // 原生 radio 蓋在整格上
+        Assert.Contains(".ep-segment:has(> input:focus-visible)", css, StringComparison.Ordinal);
+        Assert.Contains(".ep-segment:has(> input:active)", css, StringComparison.Ordinal);
+        Assert.Matches(@"html\[data-js\] \.ep-no-js \{\s*display: none", css);
+        // 選項的樣式不另開動態來源：減少動態時沿用全域那條規則收成瞬間。
+        Assert.Contains("transition-duration: 0.01ms !important", css, StringComparison.Ordinal);
+    }
+
+    // 手動外觀只有一個入口：AppearanceSetting 元件，且只被兩個個人設定頁使用（營運者與客戶入口各一頁）。
+    // 版面、匿名頁與其他頁面都不放切換；舊的 ThemeSwitch 不存在；data-theme 只出現在產生它的那幾個檔案。
+    [Fact]
+    public static void NoSourceOffersAManualAppearanceChoiceExceptThePersonalSettings()
     {
         var web = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "..", ".."));
         var sources = Directory.EnumerateFiles(web, "*.*", SearchOption.AllDirectories)
@@ -571,16 +612,27 @@ public static partial class DesignTokenTests
 
         Assert.True(sources.Count > 50, "掃不到原始碼，這個測試就沒有意義");
         Assert.False(File.Exists(Path.Combine(web, "Components", "Shared", "ThemeSwitch.razor")));
+        string[] settingsPages = [Path.Combine("Components", "Account", "Settings.razor"), Path.Combine("Components", "Portal", "Settings.razor")];
+        string[] mayMentionDataTheme = [Path.Combine("Components", "App.razor"), Path.Combine("Design", "TokenCss.cs"), Path.Combine("wwwroot", "design", "forms.js"), "Appearance.cs"];
+        var shown = new List<string>();
         foreach (var file in sources)
         {
             var text = File.ReadAllText(file);
             var name = Path.GetRelativePath(web, file);
-            Assert.False(text.Contains("ThemeSwitch", StringComparison.Ordinal), $"{name}：外觀只跟隨系統，不放切換元件");
-            Assert.False(text.Contains("data-theme", StringComparison.Ordinal), $"{name}：外觀只跟隨系統，沒有 data-theme");
+            Assert.False(text.Contains("ThemeSwitch", StringComparison.Ordinal), $"{name}：舊的切換元件已移除，外觀只在個人設定的 AppearanceSetting 選");
+            Assert.False(
+                text.Contains("data-theme", StringComparison.Ordinal) && !mayMentionDataTheme.Contains(name) && !name.EndsWith("AppearanceSetting.razor", StringComparison.Ordinal),
+                $"{name}：只有 App.razor、TokenCss、forms.js 與 Appearance.cs 可以處理 data-theme");
             Assert.False(
                 text.Contains("ep-theme", StringComparison.Ordinal) && Path.GetFileName(file) != "App.razor",
-                $"{name}：只有 App.razor 可以提到 ep-theme（清掉舊偏好）");
+                $"{name}：只有 App.razor 可以提到 ep-theme（清掉舊版 localStorage 的偏好）");
+            if (text.Contains("<AppearanceSetting", StringComparison.Ordinal))
+            {
+                shown.Add(name);
+            }
         }
+
+        Assert.Equal(settingsPages.Order(), shown.Order());
     }
 
     // 窄卡片裡操作超過一個時，整排放到卡片最下面並可換行；留在右欄會讓右欄寬度等於整排按鈕，把左邊的電子郵件擠成一行兩三個字。
@@ -697,20 +749,20 @@ public sealed class DesignPageTests(PlatformFactory factory)
         Assert.DoesNotContain("maximum-scale", html, StringComparison.Ordinal);
         Assert.Contains($"<meta name=\"theme-color\" content=\"{DesignTokens.Light.Background}\"", html, StringComparison.Ordinal);
         Assert.Contains($"<meta name=\"theme-color\" content=\"{DesignTokens.Dark.Background}\"", html, StringComparison.Ordinal);
-        Assert.Contains("<meta name=\"color-scheme\" content=\"light dark\"", html, StringComparison.Ordinal); // 只跟隨系統
-        Assert.Contains("media=\"(prefers-color-scheme: light)\"", html, StringComparison.Ordinal); // 工具列顏色各自對應，不靠腳本改
+        Assert.Contains("<meta name=\"color-scheme\" content=\"light dark\"", html, StringComparison.Ordinal); // 沒有偏好：跟隨系統
+        Assert.Contains("media=\"(prefers-color-scheme: light)\"", html, StringComparison.Ordinal); // 工具列顏色各自對應系統
         Assert.Contains("media=\"(prefers-color-scheme: dark)\"", html, StringComparison.Ordinal);
         Assert.DoesNotContain("fonts.googleapis.com", html, StringComparison.Ordinal);
-        // 外觀只跟隨系統：沒有切換選項，<head> 的小腳本不再讀偏好，只清掉舊的 ep-theme，頁面也不帶 data-theme。
-        Assert.DoesNotContain("data-theme", html, StringComparison.Ordinal);
+        // 沒有設定偏好（預設跟隨系統）：頁面不帶 data-theme，<head> 的小腳本不讀偏好，只清掉舊版 localStorage 的 ep-theme。
+        Assert.DoesNotContain("data-theme", PageMarkup.WithoutStyles(html), StringComparison.Ordinal); // 樣式表裡的選擇器不算，標記裡沒有
         Assert.DoesNotContain("getItem(\"ep-theme\")", html.Replace("&quot;", "\"", StringComparison.Ordinal), StringComparison.Ordinal);
         Assert.Contains("removeItem(\"ep-theme\")", html.Replace("&quot;", "\"", StringComparison.Ordinal), StringComparison.Ordinal);
         Assert.Contains("<h1", html, StringComparison.Ordinal);
     }
 
-    // 各種版面都不輸出外觀切換：登入（帳號版面）、匿名頁與展示頁（匿名版面）、營運後台（主版面，切換原本在帳號選單裡）。
-    // 客戶入口的外殼沒有 HTTP 之外的入口，由 DesignTokenTests.NoSourceOffersAManualAppearanceChoice 掃原始碼涵蓋。
-    // 兩種語言都要看：標籤（Appearance／外觀）是本地化文字，不能只在一種語言下沒出現。
+    // 各種版面都不輸出外觀切換：登入（帳號版面）、匿名頁與展示頁（匿名版面）、營運後台（主版面）。切換只在個人設定頁
+    // （見 AppearanceTests）。客戶入口的外殼沒有 HTTP 之外的入口，由 DesignTokenTests.NoSourceOffersAManualAppearanceChoiceExceptThePersonalSettings
+    // 掃原始碼涵蓋。兩種語言都要看：標籤（Appearance／外觀）是本地化文字，不能只在一種語言下沒出現。
     [Theory]
     [InlineData("/ui/login", false)]
     [InlineData("/ui/denied", false)]
@@ -730,11 +782,13 @@ public sealed class DesignPageTests(PlatformFactory factory)
             var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.DoesNotContain("data-theme", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("data-theme", PageMarkup.WithoutStyles(html), StringComparison.Ordinal);
             Assert.DoesNotContain("ep-theme\"", html.Replace("&quot;", "\"", StringComparison.Ordinal).Replace("removeItem(\"ep-theme\")", "", StringComparison.Ordinal), StringComparison.Ordinal);
             Assert.DoesNotContain("aria-label=\"Appearance\"", html, StringComparison.Ordinal);
             Assert.DoesNotContain("aria-label=\"外觀\"", html, StringComparison.Ordinal);
-            // 語言選項還在（同一種文字鈕列），只是旁邊不再有外觀；深淺色的 token 與兩個工具列顏色都在。
+            Assert.DoesNotContain("data-appearance-form", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("name=\"appearance\"", html, StringComparison.Ordinal);
+            // 語言選項還在（同一種文字鈕列），旁邊沒有外觀；深淺色的 token 與兩個工具列顏色都在。
             Assert.Contains("prefers-color-scheme:dark", html, StringComparison.Ordinal);
             Assert.Contains("name=\"theme-color\"", html, StringComparison.Ordinal);
         }
