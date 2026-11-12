@@ -39,6 +39,26 @@ public static partial class DialogFieldTests
             "<MudDialog DefaultFocus=\"DefaultFocus.FirstChild\">", dialog.Source, StringComparison.Ordinal));
     }
 
+    // MudBlazor 預設不處理 Esc：沒在 provider 開啟，所有對話框都只能按按鈕或點背景關閉。
+    // 只顯示一次的密碼與金鑰關掉 Esc，而且一併關掉點背景與右上角的關閉鈕，三者一致才擋得住誤關。
+    [Fact]
+    public static void EscapeClosesDialogsExceptTheOnesThatShowASecretOnce()
+    {
+        var providers = File.ReadAllText(Path.Combine(DialogsPath(), "..", "Shared", "PlatformProviders.razor"));
+        var secret = Directory.EnumerateFiles(DialogsPath(), "*.razor")
+            .Select(file => (File: Path.GetFileName(file), Source: File.ReadAllText(file)))
+            .Where(dialog => dialog.Source.Contains("CloseOnEscapeKey = false", StringComparison.Ordinal))
+            .ToList();
+
+        Assert.Contains("<MudDialogProvider CloseOnEscapeKey=\"true\" />", providers, StringComparison.Ordinal);
+        Assert.NotEmpty(secret);
+        Assert.All(secret, dialog =>
+        {
+            Assert.Contains("BackdropClick = false", dialog.Source, StringComparison.Ordinal);
+            Assert.Contains("CloseButton = false", dialog.Source, StringComparison.Ordinal);
+        });
+    }
+
     private static string DialogsPath([CallerFilePath] string here = "") =>
         Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.Web", "Components", "Dialogs"));
