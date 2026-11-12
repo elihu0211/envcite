@@ -19,11 +19,13 @@ public static class AuditLabels
     public static string ActionTone(string action) => action switch
     {
         AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned or AuditActions.MemberCreated or AuditActions.OperatorCreated
-            or AuditActions.DirectoryTokenIssued or AuditActions.DirectoryEnabled or AuditActions.MemberProvisioned or AuditActions.MemberReprovisioned => "success",
+            or AuditActions.DirectoryTokenIssued or AuditActions.DirectoryEnabled or AuditActions.MemberProvisioned or AuditActions.MemberReprovisioned
+            or AuditActions.DirectoryGroupCreated => "success",
         AuditActions.ApiKeyRevoked or AuditActions.TenantPlanRemoved or AuditActions.MemberPasswordReset
             or AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled or AuditActions.MemberDisabled or AuditActions.MemberRoleChanged or AuditActions.TenantAiAnswerEnabled
             or AuditActions.OperatorPasswordReset or AuditActions.OperatorMfaReset or AuditActions.OperatorDisabled or AuditActions.OperatorRecoveryCodeUsed
-            or AuditActions.DirectoryTokenRevoked or AuditActions.DirectoryDisabled or AuditActions.MemberDeprovisioned or AuditActions.MemberAdopted or AuditActions.MemberReleaseManaged => "warning",
+            or AuditActions.DirectoryTokenRevoked or AuditActions.DirectoryDisabled or AuditActions.MemberDeprovisioned or AuditActions.MemberAdopted or AuditActions.MemberReleaseManaged
+            or AuditActions.DirectoryGroupDeleted or AuditActions.DirectoryGroupRoleMapped => "warning",
         AuditActions.OperatorSignInDenied or AuditActions.PortalSignInFailed or AuditActions.DirectorySyncRejected => "error",
         _ => "neutral",
     };

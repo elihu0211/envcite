@@ -155,4 +155,12 @@
   <data name="Outcome.directory.adopt_required" xml:space="preserve"><value>A member with this email already exists and was not created by directory sync. Enable adopting existing members to link it.</value></data>
   <data name="Outcome.directory.token_not_found" xml:space="preserve"><value>Directory token not found.</value></data>
   <data name="Outcome.directory.token_invalid" xml:space="preserve"><value>Name is required (max 100 chars); ExpiresAt must be in the future.</value></data>
+  <data name="Audit.Action.directory.group_created" xml:space="preserve"><value>Directory sync created group</value></data>
+  <data name="Audit.Action.directory.group_updated" xml:space="preserve"><value>Directory sync updated group</value></data>
+  <data name="Audit.Action.directory.group_deleted" xml:space="preserve"><value>Directory sync deleted group</value></data>
+  <data name="Audit.Action.directory.group_role_mapped" xml:space="preserve"><value>Map group to role</value></data>
+  <data name="Outcome.directory.group_not_found" xml:space="preserve"><value>Group not found.</value></data>
+  <data name="Outcome.directory.group_name_taken" xml:space="preserve"><value>Another group of this tenant already has this name.</value></data>
+  <data name="Outcome.directory.group_invalid" xml:space="preserve"><value>Group name is required (max 200 chars).</value></data>
+  <data name="Outcome.directory.group_member_invalid" xml:space="preserve"><value>Group members must be members of this tenant that directory sync manages.</value></data>
 </root>

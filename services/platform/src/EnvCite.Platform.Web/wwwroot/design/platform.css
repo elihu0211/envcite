@@ -1801,6 +1801,15 @@ a.ep-brand {
     font-weight: var(--ep-label-l-weight);
 }
 
+/* 卡片裡的小標題（例如狀態卡的「群組」）：比區塊標題小一階，上方留一階間距。 */
+.ep-subsection-title {
+    margin: var(--ep-space-4) 0 0;
+    font-size: var(--ep-title-s-size);
+    line-height: var(--ep-title-s-leading);
+    letter-spacing: var(--ep-title-s-tracking);
+    font-weight: var(--ep-title-s-weight);
+}
+
 /* 勾選欄位（CheckboxField）：勾選框與標籤是同一個可點的區域，高度達觸控尺寸；勾選框的顏色跟主色。 */
 .ep-check {
     display: flex;

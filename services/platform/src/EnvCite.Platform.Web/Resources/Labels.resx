@@ -155,4 +155,12 @@
   <data name="Outcome.directory.adopt_required" xml:space="preserve"><value>這個 email 已有成員，且不是由目錄同步建立的。請開啟「接管既有成員」才能連結。</value></data>
   <data name="Outcome.directory.token_not_found" xml:space="preserve"><value>找不到這把目錄同步 token。</value></data>
   <data name="Outcome.directory.token_invalid" xml:space="preserve"><value>名稱必填（100 字內）；到期時間必須在未來。</value></data>
+  <data name="Audit.Action.directory.group_created" xml:space="preserve"><value>目錄同步建立群組</value></data>
+  <data name="Audit.Action.directory.group_updated" xml:space="preserve"><value>目錄同步更新群組</value></data>
+  <data name="Audit.Action.directory.group_deleted" xml:space="preserve"><value>目錄同步刪除群組</value></data>
+  <data name="Audit.Action.directory.group_role_mapped" xml:space="preserve"><value>設定群組對映的角色</value></data>
+  <data name="Outcome.directory.group_not_found" xml:space="preserve"><value>找不到這個群組。</value></data>
+  <data name="Outcome.directory.group_name_taken" xml:space="preserve"><value>這個租戶已有同名的群組。</value></data>
+  <data name="Outcome.directory.group_invalid" xml:space="preserve"><value>群組名稱必填（200 字內）。</value></data>
+  <data name="Outcome.directory.group_member_invalid" xml:space="preserve"><value>群組的成員必須是這個租戶裡由目錄同步管理的成員。</value></data>
 </root>

@@ -47,6 +47,11 @@ else
                             aria-label="@L["撤銷 {0}", context.Name]">@L["撤銷"]</button>
                 }
             </TokenActions>
+            <GroupActions>
+                <OptionSelect Name="@($"group-role-{context.Id}")" Label="@L["{0} 對映的角色", context.DisplayName]" Options="GroupRoleOptions" Value="@(context.Role ?? string.Empty)" />
+                <button type="submit" name="Input.Action" value="@($"group:{context.Id}")" class="ep-btn ep-btn-quiet"
+                        aria-label="@L["儲存 {0} 對映的角色", context.DisplayName]">@L["儲存"]</button>
+            </GroupActions>
         </DirectoryStatusCard>
     </form>
 

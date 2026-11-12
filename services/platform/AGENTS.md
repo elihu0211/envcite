@@ -159,6 +159,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **限流依 token，在授權之後**（端點過濾器，`DirectoryRateLimiter`），不用全域的 `UseRateLimiter`：全域的 `OnRejected` 只有一個，由入口的限流占用，而且沒有有效 token 的請求不該耗用額度。指標標籤只有 `operation`、`outcome`，租戶與內容不進指標。
 - 請求本文只在端點解析、用完即丟：日誌、指標與稽核都不記本文、token 或身分來源送來的屬性（`ScimEndpointTests` 捕捉所有日誌斷言）。PATCH 寬鬆接受各家寫法、略過不認得的屬性——一個多餘的屬性不該讓整個同步失敗；`userName`（email）不能變更。
 - **受管成員的角色與停用鎖在人手之外**（`MemberAdmin`、`MemberSelfService` 都擋，回 `directory.member_managed`），否則下一輪同步就悄悄蓋掉人的修改；解除管理連 `ExternalId` 一起清，身分來源之後才接管得回去。
+- **群組對映的角色重算只有一條路**（`DirectoryGroupRoles.RecomputeAsync`）：群組的成員變動、群組被刪、擁有者改對映都經它，而且一定在呼叫端已開的交易裡（成員的變更、狀態計數與稽核一起成功或一起失敗，稽核寫不進去角色也不變，有測試）。只動受管成員、不動擁有者；取最高而不是疊加，所以順序與重送都不影響結果。`SCIM` 不指定角色、群組也不能由身分來源對映：對映是客戶的擁有者的決定（同設定與 token 只有擁有者能管的理由——身分來源設錯一個群組不該直接變出一批管理員，而管理員的上限已在 `DirectoryRoles.Assignable`）。
 - **介面只呈現，不另立規則**（規則表由 README「目錄同步」擁有）：`Shared/DirectoryStatusCard` 是營運者的租戶頁與客戶入口共用的唯讀狀態卡，由 `SectionCard`、`StatGrid`、`DataTable`、`StatusBadge`、`CopyButton` 組成；動作（簽發、撤銷、緊急關閉）由嵌它的頁面經 `Actions`、`TokenActions`、`ChildContent` 放進來，所以靜態入口（普通表單）與互動後台（按鈕）共用一張。顯示與否看 `IDirectoryAvailability`（SharedKernel，singleton 只讀設定，同 `IAnswerAvailability`），**存取控制在服務層**：頁面藏起來不是授權，非擁有者直接送出表單一樣被 `directory.owner_only` 擋下。
 - **新簽發的 token 只在那個回應裡顯示一次**（`SecretReveal`，重新整理就沒了），不進稽核、日誌與狀態；狀態只給前綴。勾選欄位沒勾就不會送出，所以表單的預設與「沒送出」都是 false；表單的模型類別只能有一個無參數建構式（框架的表單對映遇到兩個建構式會丟「No converter registered」，且是在送出時才發現）。
 - token 與 API key 是兩種憑證（`BearerSecret` 共用格式與雜湊，標記不同），互不通用，不靠 `ApiKey.Scopes` 區分：scope 是同一種憑證內的能力，擋不住拿錯種類的憑證去呼叫另一邊。

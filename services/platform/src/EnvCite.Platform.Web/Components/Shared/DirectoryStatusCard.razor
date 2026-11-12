@@ -30,6 +30,17 @@
             <DataTable Items="Status.Tokens" Columns="TokenColumns" Label="@L["目錄同步 token"]" Plain="Plain" />
         }
 
+        <h3 class="ep-subsection-title">@L["群組"]</h3>
+        @if (Status.Groups.Count == 0)
+        {
+            <p class="ep-page-description">@L["身分來源還沒有推送群組。推送之後，在這裡決定每個群組給什麼角色。"]</p>
+        }
+        else
+        {
+            <p class="ep-hint">@L["有對映角色的群組，其成員的角色依群組決定（屬於多個時取最高）；沒有對映的群組不影響任何人。"]</p>
+            <DataTable Items="Status.Groups" Columns="GroupColumns" Label="@L["目錄同步群組"]" Plain="Plain" />
+        }
+
         @ChildContent
     </ChildContent>
 </SectionCard>
@@ -57,6 +68,10 @@
     /// <summary>每把 token 那一列的動作（例如撤銷）；沒給就沒有動作欄。</summary>
     [Parameter]
     public RenderFragment<DirectoryTokenInfo>? TokenActions { get; set; }
+
+    /// <summary>每個群組那一列的動作（例如選對映的角色）；沒給就沒有動作欄，營運者只看。</summary>
+    [Parameter]
+    public RenderFragment<DirectoryGroupInfo>? GroupActions { get; set; }
 
     /// <summary>卡片底部：設定與簽發的表單等。</summary>
     [Parameter]
@@ -87,6 +102,39 @@
         token.RevokedAt is not null ? ("neutral", L["已撤銷"])
         : token.ExpiresAt is { } expires && expires <= Now ? ("warning", L["已過期"])
         : ("success", L["有效"]);
+
+    private IReadOnlyList<ColumnDef<DirectoryGroupInfo>> GroupColumns
+    {
+        get
+        {
+            List<ColumnDef<DirectoryGroupInfo>> columns =
+            [
+                new() { Title = L["名稱"], Class = "ep-keep", Labeled = false, Cell = group => @<text>@group.DisplayName</text> },
+                new() { Title = L["成員數"], Class = "ep-num", Cell = group => @<text>@group.MemberCount.ToString("N0", System.Globalization.CultureInfo.CurrentCulture)</text> },
+                new()
+                {
+                    Title = L["對映的角色"],
+                    Cell = group => @<text>
+                        @if (group.Role is { } role)
+                        {
+                            <StatusBadge Tone="info">@PortalLabels.Role(role)</StatusBadge>
+                        }
+                        else
+                        {
+                            <StatusBadge>@L["不對映"]</StatusBadge>
+                        }
+                    </text>,
+                },
+            ];
+
+            if (GroupActions is { } actions)
+            {
+                columns.Add(new() { Title = L["操作"], HideTitle = true, Labeled = false, Class = "ep-row-actions", Cell = group => actions(group) });
+            }
+
+            return columns;
+        }
+    }
 
     private IReadOnlyList<ColumnDef<DirectoryTokenInfo>> TokenColumns
     {

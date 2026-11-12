@@ -54,13 +54,14 @@ public static class ScimEndpoints
         });
 
         MapUsers(scim);
+        MapGroups(scim);
         MapDiscovery(scim);
 
         // 沒有的資源（Groups、Bulk…）：已驗證的呼叫端得到 SCIM 格式的 404，而不是框架的空回應。
         scim.Map("/{**rest}", (DirectoryMetrics metrics) =>
         {
             metrics.Record("other", "not_found");
-            return ScimResponses.Error(StatusCodes.Status404NotFound, null, "This resource type is not supported. Supported: Users.");
+            return ScimResponses.Error(StatusCodes.Status404NotFound, null, "This resource type is not supported. Supported: Users and Groups.");
         });
 
         return app;
@@ -72,7 +73,7 @@ public static class ScimEndpoints
             HttpContext context, string? filter, int? startIndex, int? count,
             IDirectoryProvisioning directory, IOptions<DirectoryOptions> options, DirectoryMetrics metrics, CancellationToken cancellationToken) =>
         {
-            var (externalId, email, valid) = ScimInput.ParseFilter(filter);
+            var (externalId, email, valid) = ScimInput.ParseFilter(filter, "userName");
             if (!valid)
             {
                 metrics.Record("list", "invalid");
@@ -153,6 +154,94 @@ public static class ScimEndpoints
                 _ => new ScimResult(StatusCodes.Status204NoContent, null)));
     }
 
+    private static void MapGroups(RouteGroupBuilder scim)
+    {
+        scim.MapGet("/Groups", async (
+            HttpContext context, string? filter, int? startIndex, int? count,
+            IDirectoryProvisioning directory, IOptions<DirectoryOptions> options, DirectoryMetrics metrics, CancellationToken cancellationToken) =>
+        {
+            var (externalId, name, valid) = ScimInput.ParseFilter(filter, "displayName");
+            if (!valid)
+            {
+                metrics.Record("group_list", "invalid");
+                return ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidFilter", "Only 'displayName eq \"…\"' and 'externalId eq \"…\"' filters are supported.");
+            }
+
+            var skip = Math.Max(startIndex ?? 1, 1) - 1;
+            var take = Math.Max(count ?? options.Value.MaxPageSize, 0);
+            return await RunAsync(
+                metrics, "group_list", () => directory.ListGroupsAsync(context.User, skip, take, externalId, name, cancellationToken),
+                page => new ScimResult(
+                    StatusCodes.Status200OK,
+                    new ScimList<ScimGroup>([Scim.ListSchema], page.Total, skip + 1, page.Items.Count, [.. page.Items.Select(g => ToScim(g, context.Request))])));
+        });
+
+        scim.MapGet("/Groups/{id}", (
+            HttpContext context, string id, IDirectoryProvisioning directory, DirectoryMetrics metrics, CancellationToken cancellationToken) =>
+            RunGroupAsync(
+                metrics, "group_get", id, groupId => directory.FindGroupAsync(context.User, groupId, cancellationToken),
+                group => new ScimResult(StatusCodes.Status200OK, ToScim(group, context.Request))));
+
+        scim.MapPost("/Groups", async (
+            HttpContext context, IDirectoryProvisioning directory, DirectoryMetrics metrics, CancellationToken cancellationToken) =>
+        {
+            var read = await ReadGroupAsync(context, metrics, "group_create", cancellationToken);
+            if (read.Group is not { } body)
+            {
+                return read.Failure!;
+            }
+
+            return await RunAsync(
+                metrics, "group_create",
+                () => directory.CreateGroupAsync(context.User, new DirectoryGroupInput(body.DisplayName ?? string.Empty, body.ExternalId, body.Members), cancellationToken),
+                group => new ScimResult(StatusCodes.Status201Created, ToScim(group, context.Request), GroupLocation(context.Request, group.Id)));
+        });
+
+        scim.MapPut("/Groups/{id}", async (
+            HttpContext context, string id, IDirectoryProvisioning directory, DirectoryMetrics metrics, CancellationToken cancellationToken) =>
+        {
+            var read = await ReadGroupAsync(context, metrics, "group_update", cancellationToken);
+            if (read.Group is not { } body)
+            {
+                return read.Failure!;
+            }
+
+            // PUT 是取代：成員整組換成送來的（沒送就是清空）。
+            var patch = new DirectoryGroupPatch(
+                body.DisplayName, body.ExternalId, [new DirectoryGroupMemberChange(GroupMemberOp.Replace, body.Members ?? [])]);
+            return await RunGroupAsync(
+                metrics, "group_update", id, groupId => directory.UpdateGroupAsync(context.User, groupId, patch, cancellationToken),
+                group => new ScimResult(StatusCodes.Status200OK, ToScim(group, context.Request)));
+        });
+
+        scim.MapPatch("/Groups/{id}", async (
+            HttpContext context, string id, IDirectoryProvisioning directory, DirectoryMetrics metrics, CancellationToken cancellationToken) =>
+        {
+            if (await ReadBodyAsync(context, cancellationToken) is not { } body)
+            {
+                metrics.Record("group_update", "invalid");
+                return ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "The request body must be valid JSON.");
+            }
+
+            var (patch, failure) = ScimInput.ParseGroupPatch(body);
+            if (patch is null)
+            {
+                metrics.Record("group_update", "invalid");
+                return failure!;
+            }
+
+            return await RunGroupAsync(
+                metrics, "group_update", id, groupId => directory.UpdateGroupAsync(context.User, groupId, patch, cancellationToken),
+                group => new ScimResult(StatusCodes.Status200OK, ToScim(group, context.Request)));
+        });
+
+        scim.MapDelete("/Groups/{id}", (
+            HttpContext context, string id, IDirectoryProvisioning directory, DirectoryMetrics metrics, CancellationToken cancellationToken) =>
+            RunGroupAsync(
+                metrics, "group_delete", id, groupId => directory.DeleteGroupAsync(context.User, groupId, cancellationToken),
+                _ => new ScimResult(StatusCodes.Status204NoContent, null)));
+    }
+
     private static void MapDiscovery(RouteGroupBuilder scim)
     {
         scim.MapGet("/ServiceProviderConfig", (HttpContext context, IOptions<DirectoryOptions> options, DirectoryMetrics metrics) =>
@@ -185,20 +274,28 @@ public static class ScimEndpoints
         scim.MapGet("/ResourceTypes", (HttpContext context, DirectoryMetrics metrics) =>
         {
             metrics.Record("discovery", "ok");
-            return new ScimResult(StatusCodes.Status200OK, new ScimList<object>([Scim.ListSchema], 1, 1, 1, [UserResourceType(context.Request)]));
+            return new ScimResult(StatusCodes.Status200OK, new ScimList<object>([Scim.ListSchema], 2, 1, 2, [UserResourceType(context.Request), GroupResourceType(context.Request)]));
         });
 
         scim.MapGet("/ResourceTypes/{id}", (HttpContext context, string id, DirectoryMetrics metrics) =>
-            DiscoveryItem(metrics, string.Equals(id, "User", StringComparison.OrdinalIgnoreCase) ? UserResourceType(context.Request) : null));
+            DiscoveryItem(
+                metrics,
+                string.Equals(id, "User", StringComparison.OrdinalIgnoreCase) ? UserResourceType(context.Request)
+                : string.Equals(id, "Group", StringComparison.OrdinalIgnoreCase) ? GroupResourceType(context.Request)
+                : null));
 
         scim.MapGet("/Schemas", (DirectoryMetrics metrics) =>
         {
             metrics.Record("discovery", "ok");
-            return new ScimResult(StatusCodes.Status200OK, new ScimList<object>([Scim.ListSchema], 1, 1, 1, [UserSchema()]));
+            return new ScimResult(StatusCodes.Status200OK, new ScimList<object>([Scim.ListSchema], 2, 1, 2, [UserSchema(), GroupSchema()]));
         });
 
         scim.MapGet("/Schemas/{id}", (string id, DirectoryMetrics metrics) =>
-            DiscoveryItem(metrics, string.Equals(id, Scim.UserSchema, StringComparison.OrdinalIgnoreCase) ? UserSchema() : null));
+            DiscoveryItem(
+                metrics,
+                string.Equals(id, Scim.UserSchema, StringComparison.OrdinalIgnoreCase) ? UserSchema()
+                : string.Equals(id, Scim.GroupSchema, StringComparison.OrdinalIgnoreCase) ? GroupSchema()
+                : null));
     }
 
     private static IResult DiscoveryItem(DirectoryMetrics metrics, object? item)
@@ -218,6 +315,30 @@ public static class ScimEndpoints
         description = "A member of the tenant.",
         schema = Scim.UserSchema,
         meta = new { resourceType = "ResourceType", location = Absolute(request, "/ResourceTypes/User") },
+    };
+
+    private static object GroupResourceType(HttpRequest request) => new
+    {
+        schemas = new[] { Scim.ResourceTypeSchema },
+        id = "Group",
+        name = "Group",
+        endpoint = "/Groups",
+        description = "A group of members. A group the tenant's owner mapped to a role decides the role of its members.",
+        schema = Scim.GroupSchema,
+        meta = new { resourceType = "ResourceType", location = Absolute(request, "/ResourceTypes/Group") },
+    };
+
+    private static object GroupSchema() => new
+    {
+        schemas = new[] { Scim.SchemaSchema },
+        id = Scim.GroupSchema,
+        name = "Group",
+        description = "Members must be users that directory sync manages. The role a group grants is configured by the tenant's owner, not through SCIM.",
+        attributes = new object[]
+        {
+            AttributeOf("displayName", "string", required: true, mutability: "readWrite", uniqueness: "server"),
+            AttributeOf("externalId", "string", required: false, mutability: "readWrite", uniqueness: "none"),
+        },
     };
 
     private static object UserSchema() => new
@@ -266,6 +387,38 @@ public static class ScimEndpoints
         return (user, null);
     }
 
+    /// <summary>讀本文並解析成群組；失敗時回應已記進指標。</summary>
+    private static async Task<(ScimInput.GroupBody? Group, IResult? Failure)> ReadGroupAsync(
+        HttpContext context, DirectoryMetrics metrics, string operation, CancellationToken cancellationToken)
+    {
+        if (await ReadBodyAsync(context, cancellationToken) is not { } body)
+        {
+            metrics.Record(operation, "invalid");
+            return (null, ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "The request body must be valid JSON."));
+        }
+
+        if (ScimInput.ParseGroup(body) is not { DisplayName: { Length: > 0 } } group)
+        {
+            metrics.Record(operation, "invalid");
+            return (null, ScimResponses.Error(AdminOutcome.Invalid<bool>(OutcomeCodes.DirectoryGroupInvalid)));
+        }
+
+        return (group, null);
+    }
+
+    /// <summary>路徑上的群組 Id 不是 Guid 就是找不到（來自呼叫端，不能讓亂打的值變成 500）。</summary>
+    private static async Task<IResult> RunGroupAsync<T>(
+        DirectoryMetrics metrics, string operation, string id, Func<Guid, Task<AdminOutcome<T>>> action, Func<T, IResult> ok)
+    {
+        if (!Guid.TryParse(id, out var groupId))
+        {
+            metrics.Record(operation, "not_found");
+            return ScimResponses.Error(AdminOutcome.NotFound<T>(OutcomeCodes.DirectoryGroupNotFound));
+        }
+
+        return await RunAsync(metrics, operation, () => action(groupId), ok);
+    }
+
     private static async Task<JsonElement?> ReadBodyAsync(HttpContext context, CancellationToken cancellationToken)
     {
         if (context.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
@@ -302,6 +455,16 @@ public static class ScimEndpoints
         [new ScimEmail(member.Email, true, "work")],
         member.Active,
         new ScimMeta("User", member.SyncedAt, Location(request, member.Id)));
+
+    private static ScimGroup ToScim(DirectoryGroupDetail group, HttpRequest request) => new(
+        [Scim.GroupSchema],
+        group.Id.ToString(),
+        group.ExternalId,
+        group.DisplayName,
+        [.. group.Members.Select(id => new ScimGroupMember(id, Location(request, id), "User"))],
+        new ScimMeta("Group", null, GroupLocation(request, group.Id)));
+
+    private static string GroupLocation(HttpRequest request, Guid id) => Absolute(request, "/Groups/" + id);
 
     private static string Location(HttpRequest request, string id) => Absolute(request, "/Users/" + Uri.EscapeDataString(id));
 

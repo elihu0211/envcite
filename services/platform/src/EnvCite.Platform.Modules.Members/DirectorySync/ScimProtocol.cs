@@ -13,6 +13,7 @@ internal static class Scim
 {
     public const string ContentType = "application/scim+json";
     public const string UserSchema = "urn:ietf:params:scim:schemas:core:2.0:User";
+    public const string GroupSchema = "urn:ietf:params:scim:schemas:core:2.0:Group";
     public const string ListSchema = "urn:ietf:params:scim:api:messages:2.0:ListResponse";
     public const string ErrorSchema = "urn:ietf:params:scim:api:messages:2.0:Error";
     public const string PatchSchema = "urn:ietf:params:scim:api:messages:2.0:PatchOp";
@@ -34,6 +35,10 @@ internal sealed record ScimMeta(string ResourceType, DateTimeOffset? LastModifie
 
 internal sealed record ScimUser(
     string[] Schemas, string Id, string? ExternalId, string UserName, ScimName? Name, string? DisplayName, ScimEmail[] Emails, bool Active, ScimMeta Meta);
+
+internal sealed record ScimGroupMember(string Value, [property: JsonPropertyName("$ref")] string Ref, string Type);
+
+internal sealed record ScimGroup(string[] Schemas, string Id, string? ExternalId, string DisplayName, ScimGroupMember[] Members, ScimMeta Meta);
 
 internal sealed record ScimList<T>(
     string[] Schemas, int TotalResults, int StartIndex, int ItemsPerPage, [property: JsonPropertyName("Resources")] IReadOnlyList<T> Resources);
@@ -57,8 +62,8 @@ internal static class ScimResponses
     {
         var (status, scimType) = outcome.Code switch
         {
-            OutcomeCodes.DirectoryNotEnabled or OutcomeCodes.MemberNotFound or OutcomeCodes.DirectoryTokenNotFound => (StatusCodes.Status404NotFound, null),
-            OutcomeCodes.MemberEmailTaken or OutcomeCodes.DirectoryExternalIdTaken or OutcomeCodes.DirectoryAdoptRequired => (StatusCodes.Status409Conflict, "uniqueness"),
+            OutcomeCodes.DirectoryNotEnabled or OutcomeCodes.MemberNotFound or OutcomeCodes.DirectoryTokenNotFound or OutcomeCodes.DirectoryGroupNotFound => (StatusCodes.Status404NotFound, null),
+            OutcomeCodes.MemberEmailTaken or OutcomeCodes.DirectoryExternalIdTaken or OutcomeCodes.DirectoryAdoptRequired or OutcomeCodes.DirectoryGroupNameTaken => (StatusCodes.Status409Conflict, "uniqueness"),
             OutcomeCodes.DirectoryLastOwner => (StatusCodes.Status409Conflict, null),
             OutcomeCodes.DirectoryEmailImmutable => (StatusCodes.Status400BadRequest, "mutability"),
             OutcomeCodes.MailNotEnabled => (StatusCodes.Status503ServiceUnavailable, null),
@@ -302,8 +307,11 @@ internal static partial class ScimInput
         return true;
     }
 
-    /// <summary>過濾只支援 <c>userName eq "…"</c> 與 <c>externalId eq "…"</c>（身分來源比對用）；其他回 <c>invalidFilter</c>。</summary>
-    public static (string? ExternalId, string? Email, bool Valid) ParseFilter(string? filter)
+    /// <summary>
+    /// 過濾只支援對 <paramref name="primary"/>（使用者是 <c>userName</c>、群組是 <c>displayName</c>）或 <c>externalId</c> 的 <c>eq</c>
+    /// （身分來源比對用）；其他回 <c>invalidFilter</c>。回傳 externalId 的值與主要屬性的值，沒給的是 null。
+    /// </summary>
+    public static (string? ExternalId, string? Primary, bool Valid) ParseFilter(string? filter, string primary)
     {
         if (string.IsNullOrWhiteSpace(filter))
         {
@@ -311,17 +319,133 @@ internal static partial class ScimInput
         }
 
         var match = EqualityFilter().Match(filter);
-        if (!match.Success)
+        var attribute = match.Groups["attribute"].Value;
+        if (!match.Success
+            || !(string.Equals(attribute, primary, StringComparison.OrdinalIgnoreCase) || string.Equals(attribute, "externalId", StringComparison.OrdinalIgnoreCase)))
         {
             return (null, null, false);
         }
 
         var value = match.Groups["value"].Value.Replace("\\\"", "\"", StringComparison.Ordinal).Replace("\\\\", "\\", StringComparison.Ordinal);
-        return string.Equals(match.Groups["attribute"].Value, "externalId", StringComparison.OrdinalIgnoreCase)
-            ? (value, null, true)
-            : (null, value, true);
+        return string.Equals(attribute, "externalId", StringComparison.OrdinalIgnoreCase) ? (value, null, true) : (null, value, true);
     }
 
-    [GeneratedRegex("^\\s*(?<attribute>userName|externalId)\\s+eq\\s+\"(?<value>(?:[^\"\\\\]|\\\\.)*)\"\\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    public sealed record GroupBody(string? DisplayName, string? ExternalId, IReadOnlyList<string>? Members);
+
+    /// <summary>POST／PUT 的群組。<c>members</c> 沒送是 null（POST 視為沒有成員，PUT 視為清空）。</summary>
+    public static GroupBody? ParseGroup(JsonElement body)
+    {
+        if (body.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var displayName = TryGet(body, "displayName", out var d) ? Text(d)?.Trim() : null;
+        var externalId = TryGet(body, "externalId", out var e) ? Text(e) : null;
+        return new GroupBody(displayName, externalId, TryGet(body, "members", out var members) ? MemberIds(members) : null);
+    }
+
+    /// <summary>成員清單 <c>[{"value":"id"}…]</c> 的 Id；形式不對的項目略過。</summary>
+    private static List<string> MemberIds(JsonElement members)
+    {
+        List<string> ids = [];
+        if (members.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var member in members.EnumerateArray())
+            {
+                if (TryGet(member, "value", out var v) && Text(v) is { Length: > 0 } id)
+                {
+                    ids.Add(id);
+                }
+            }
+        }
+
+        return ids;
+    }
+
+    /// <summary>群組的 PATCH：改名、外部識別碼，以及成員的 add／remove／replace（Entra 用 <c>members[value eq "id"]</c> 移除，Okta 把 Id 放在 value）。</summary>
+    public static (DirectoryGroupPatch? Patch, IResult? Failure) ParseGroupPatch(JsonElement body)
+    {
+        if (!TryGet(body, "Operations", out var operations) || operations.ValueKind != JsonValueKind.Array || operations.GetArrayLength() == 0)
+        {
+            return (null, ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "Operations must be a non-empty array."));
+        }
+
+        string? displayName = null;
+        string? externalId = null;
+        List<DirectoryGroupMemberChange> changes = [];
+        foreach (var operation in operations.EnumerateArray())
+        {
+            var op = (TryGet(operation, "op", out var o) ? Text(o) : null)?.ToLowerInvariant();
+            if (op is not ("add" or "replace" or "remove"))
+            {
+                return (null, ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "op must be add, replace or remove."));
+            }
+
+            var path = TryGet(operation, "path", out var p) ? Text(p) : null;
+            TryGet(operation, "value", out var value);
+            if (string.IsNullOrEmpty(path))
+            {
+                if (value.ValueKind != JsonValueKind.Object)
+                {
+                    return (null, ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "A value object is required when path is missing."));
+                }
+
+                foreach (var property in value.EnumerateObject())
+                {
+                    ApplyGroupPath(property.Name, op, property.Value, ref displayName, ref externalId, changes);
+                }
+            }
+            else
+            {
+                ApplyGroupPath(path, op, value, ref displayName, ref externalId, changes);
+            }
+        }
+
+        return (new DirectoryGroupPatch(displayName, externalId, changes), null);
+    }
+
+    private static void ApplyGroupPath(
+        string path, string op, JsonElement value, ref string? displayName, ref string? externalId, List<DirectoryGroupMemberChange> changes)
+    {
+        var name = path.StartsWith(Scim.GroupSchema + ":", StringComparison.OrdinalIgnoreCase) ? path[(Scim.GroupSchema.Length + 1)..] : path;
+        if (name.StartsWith("members", StringComparison.OrdinalIgnoreCase))
+        {
+            // members[value eq "id"]：只移除（或加入）指名的那一位。
+            var named = MemberFilter().Match(name);
+            List<string> ids = named.Success ? [named.Groups["id"].Value] : MemberIds(value);
+            changes.Add(op switch
+            {
+                "remove" => new DirectoryGroupMemberChange(GroupMemberOp.Remove, ids),
+                "replace" when !named.Success => new DirectoryGroupMemberChange(GroupMemberOp.Replace, ids),
+                _ => new DirectoryGroupMemberChange(GroupMemberOp.Add, ids),
+            });
+            if (op == "remove" && !named.Success && value.ValueKind == JsonValueKind.Undefined)
+            {
+                // 沒指名誰、也沒給值的 remove：清空整個群組。
+                changes[^1] = new DirectoryGroupMemberChange(GroupMemberOp.Replace, []);
+            }
+
+            return;
+        }
+
+        switch (name.ToLowerInvariant())
+        {
+            case "displayname":
+                displayName = op == "remove" ? displayName : Text(value);
+                break;
+            case "externalid":
+                externalId = op == "remove" ? externalId : Text(value);
+                break;
+            default:
+                // 不認得的屬性略過，同使用者的 PATCH。
+                break;
+        }
+    }
+
+    [GeneratedRegex("^\\s*(?<attribute>userName|displayName|externalId)\\s+eq\\s+\"(?<value>(?:[^\"\\\\]|\\\\.)*)\"\\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex EqualityFilter();
+
+    [GeneratedRegex("^members\\[\\s*value\\s+eq\\s+\"(?<id>[^\"]+)\"\\s*\\]$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex MemberFilter();
 }

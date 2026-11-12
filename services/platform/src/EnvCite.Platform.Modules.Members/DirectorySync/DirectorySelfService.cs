@@ -26,6 +26,9 @@ internal sealed class DirectorySelfService(UserManager<ApplicationUser> users, D
     public Task<AdminOutcome<MemberInfo>> ReleaseManagedAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken) =>
         OwnerAsync(actor, me => management.ReleaseManagedAsync(ActorOf(me), userId, cancellationToken));
 
+    public Task<AdminOutcome<DirectoryGroupInfo>> SetGroupRoleAsync(ClaimsPrincipal actor, Guid groupId, string? role, CancellationToken cancellationToken) =>
+        OwnerAsync(actor, me => management.SetGroupRoleAsync(ActorOf(me), groupId, role, cancellationToken));
+
     /// <summary>操作者以資料庫為準（不信 cookie 的 claim），而且必須是啟用中的擁有者。</summary>
     private async Task<AdminOutcome<T>> OwnerAsync<T>(ClaimsPrincipal actor, Func<ApplicationUser, Task<AdminOutcome<T>>> action)
     {
