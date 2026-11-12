@@ -282,7 +282,10 @@
 
     // 列印只印復原碼，不印整頁：在隱藏的 iframe 裡排一份純文字再列印。
     const printText = (title, text) => {
+        // 上一次列印的 iframe 要等 afterprint 才會移除；取消、或瀏覽器沒送出事件時會留著，再印一次前先清掉。
+        document.querySelectorAll("iframe.ep-print-frame").forEach((old) => old.remove());
         const frame = document.createElement("iframe");
+        frame.className = "ep-print-frame";
         frame.setAttribute("aria-hidden", "true");
         frame.style.position = "fixed";
         frame.style.inlineSize = "0";
