@@ -1,0 +1,60 @@
+@* 信的整份 HTML。傳統 Outlook 用 Word 的引擎渲染：版面是表格加內嵌樣式，條件註解與 VML 以 MarkupString 原樣輸出
+   （只含固定文字與整數；所有使用者或設定來的值都走 Razor 的編碼）。 *@
+<!DOCTYPE html>
+<html lang="@Page.Language" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>@Page.Title</title>
+@((MarkupString)MailTheme.OutlookHead)
+<style>@((MarkupString)Theme.Css)</style>
+</head>
+<body class="bg-page" style="@Theme.Body">
+<div style="@MailTheme.Preheader">@Page.Preheader@((MarkupString)MailTheme.PreheaderFiller)</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg-page" bgcolor="@Theme.Light.Page" style="@Theme.Page">
+<tr><td align="center" class="outer" style="@MailTheme.Outer">
+@((MarkupString)Theme.GhostOpen)
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="@Theme.Table">
+<tr><td class="bg-card container tx" bgcolor="@Theme.Light.Card" style="@Theme.Card">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td class="brand ln" style="@Theme.BrandCell">@Page.Brand</td></tr>
+<tr><td style="@MailTheme.HeadingRow"><h1 class="tx" style="@Theme.Heading">@Page.Heading</h1></td></tr>
+<tr><td class="tx" style="@Theme.LeadRow">@Page.Lead</td></tr>
+@if (Page.Tenant is not null)
+{
+<tr><td style="@MailTheme.TenantRow"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="bg-soft mu" bgcolor="@Theme.Light.Soft" style="@Theme.TenantCell">@Page.Tenant</td></tr></table></td></tr>
+}
+@if (Page.Action is { } action)
+{
+<tr><td style="@MailTheme.ButtonRow"><MailButton Action="action" Theme="Theme" /></td></tr>
+<tr><td class="mu" style="@Theme.FallbackLabelRow">@action.FallbackLabel</td></tr>
+<tr><td style="@MailTheme.FallbackLinkRow"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="bg-soft tx" bgcolor="@Theme.Light.Soft" style="@Theme.FallbackLink">@action.Url</td></tr></table></td></tr>
+}
+<tr><td style="@MailTheme.NotesRow"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="ln mu" style="@Theme.Notes">@for (var i = 0; i < Page.Notes.Count; i++)
+{
+    if (i > 0)
+    {
+<br>
+    }
+@Page.Notes[i]
+}</td></tr></table></td></tr>
+</table>
+</td></tr>
+<tr><td class="mu" align="center" style="@Theme.Footer">@Page.Footer</td></tr>
+</table>
+@((MarkupString)MailTheme.GhostClose)
+</td></tr>
+</table>
+</body>
+</html>
+
+@code {
+    [Parameter, EditorRequired]
+    public MailPage Page { get; set; } = default!;
+
+    private MailTheme Theme => Page.Theme;
+}

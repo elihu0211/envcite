@@ -1,0 +1,19 @@
+@* 橋接按鈕：背景在儲存格、padding 在連結上，整塊都能點。Outlook（Word 引擎）不畫圓角與連結的 padding，
+   所以先給它 VML 圓角矩形（條件註解），其他客戶端用一般連結。 *@
+@((MarkupString)"<!--[if mso]>")
+<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="@Action.Url" style="@Theme.Vml" arcsize="17%" strokecolor="@Theme.Light.Button" fillcolor="@Theme.Light.Button">
+@((MarkupString)"<w:anchorlock/>")
+<center style="@Theme.VmlText">@Action.Label</center>
+</v:roundrect>
+@((MarkupString)"<![endif]-->")
+@((MarkupString)"<!--[if !mso]><!-->")
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="btn" bgcolor="@Theme.Light.Button" style="@Theme.ButtonCell"><a class="btn" href="@Action.Url" target="_blank" rel="noopener noreferrer" style="@Theme.ButtonLink">@Action.Label</a></td></tr></table>
+@((MarkupString)"<!--<![endif]-->")
+
+@code {
+    [Parameter, EditorRequired]
+    public MailAction Action { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public MailTheme Theme { get; set; } = default!;
+}

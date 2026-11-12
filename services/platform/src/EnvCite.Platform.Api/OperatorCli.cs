@@ -91,12 +91,8 @@ public static class OperatorCli
             連結來源：{settings.BaseUrl}
             """);
 
-        var brand = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<BrandOptions>>().Value.Name;
-        var delivery = await mail.SendAsync(
-            parsed.Address,
-            $"{brand}：寄信測試",
-            MailTemplate.Test(brand),
-            cancellationToken);
+        var composed = await services.GetRequiredService<IMailComposer>().ComposeTestAsync(cancellationToken);
+        var delivery = await mail.SendAsync(parsed.Address, composed.Subject, composed.Content, cancellationToken);
         if (delivery == MailDelivery.Sent)
         {
             await output.WriteLineAsync($"中繼已接受這封測試信。請到 {parsed.Address} 確認有收到（中繼接受不代表已投遞）。");

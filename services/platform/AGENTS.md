@@ -56,7 +56,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 
 ## Configuration
 
-- 設定只有一條讀法：每個設定群組是一個 `ISectionOptions` 類別（`libs/dotnet`），自己指名區段，以 `AddSectionOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `libs/dotnet` 的 `Telemetry.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`；`mail preview` 在主機建立之前把同一份設定交給一個小容器，仍以 `BindConfiguration` 繫結，不另寫讀法。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
+- 設定只有一條讀法：每個設定群組是一個 `ISectionOptions` 類別（`libs/dotnet`），自己指名區段，以 `AddSectionOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `libs/dotnet` 的 `Telemetry.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`；`mail preview` 在主機建立之前把同一份設定交給一個小容器、經 `AddPlatformMail()` 繫結，不另寫讀法。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
 - 新增群組：實作 `ISectionOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
 - **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`ENVCITE_Section__Key`，前綴由 `ServiceEnvironment` 套用；不帶前綴的環境變數不進設定，`OTEL_*` 除外）。機密（模型端點金鑰）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
 - 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄、寄信）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
@@ -116,10 +116,13 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 重寄：還沒有密碼的先換安全戳記（先前的連結失效，此時沒有 session 會被波及）；已有密碼的寄驗證連結，不換戳記。已啟用且已驗證則 `account.already_active`；停用的 `account.disabled`。
 - 連結與權杖不進日誌、稽核與命令列輸出；寄信失敗不使建立或重寄失敗，結果以 `MailDelivery` 回報。
 - `mail test` 失敗只指向日誌，不印例外訊息（可能回顯位址）；`Platform:Mail` 只在啟用時驗證，未啟用時其餘鍵被忽略。
-- **信件內容只由 `MailTemplate` 產生**（邀請、驗證、`mail test` 共用；內容在程式裡、不是樣板檔，每個插入點都經同一個編碼函式，所以沒有「漏編碼的占位符」）；`IMailSender.SendAsync` 收 `MailContent`（文字版加 HTML 版，寄成 `multipart/alternative`，文字在前）。新增一種信也走它，不在呼叫端拼字串；改一版的事實（連結、期限、提示、租戶）時另一版同改。
-- **信裡唯一的外部網址是啟用連結**：不放遠端圖片、追蹤像素、點擊追蹤轉址、腳本或外部樣式，插入的值一律 HTML 編碼。連結等同一次登入的鑰匙，經第三方或被預先載入都會洩漏或用掉它；`MailTemplateTests` 守住（含 `<` `"` `&` `'` 的名稱與租戶、四種邀請／驗證與租戶組合）。信裡不放密碼；日誌與稽核不記連結與內文。
-- **版面維持表格加內嵌樣式**（傳統 Outlook 以 Word 引擎渲染：不支援 flexbox、grid，`max-width` 要靠條件註解的後備表格），按鈕的 VML 後備與深色配色（`prefers-color-scheme`）跟著版型一起維護；配色的對比度由測試以同一份數值驗證。改版型後用 `mail preview` 看過，並請人以真實客戶端（傳統 Outlook、各家深色模式）收一封實際寄出的信。
-- **`mail preview` 在建立主機之前處理**（`Program.cs`），所以不連資料庫、不需要 `Platform:Mail`；它只繫結 `Platform:Brand` 與 `Platform:Mail:LinkLifetime`。占位連結的網域必須是保留網域（`.example`），權杖是假值：預覽檔案不得含任何真實連結。
+- **信件分三層，各自單一職責，全部走 DI**：呼叫端只組資料（`ActivationMailModel`，或 `IActivationMailer` 的參數）；`IMailComposer` 把資料加文案、系統名稱與版型組成 `ComposedMail`（主旨、文字版、HTML 版），不寄信；`IMailSender`（`SmtpMailSender`）只管傳輸，收 `MailContent` 寄成 `multipart/alternative`（文字在前）。沒有 static 的組信工具類；新增一種信是在 `IMailComposer` 加一個方法與一個 Razor 頁面，不在呼叫端拼字串。註冊只在 `AddPlatformMail()`。
+- **文案在 `MailTexts` 資源檔，不在程式裡**：預設繁體中文、`.en.resx` 英文，鍵是領域鍵、帶參數用 `{0}`；兩個語言的鍵與參數個數一致，由 `MailComposerTests` 守住（缺鍵時組信丟例外，不會把鍵名寄出去）。信的語言取自 `MailTemplateOptions.Culture`，**不取自請求的語言**（操作者用英文介面，收信的人不一定）；組信只在同步取字串的區段暫時換文化，不跨 await。改一版的事實（連結、期限、提示、租戶）時另一版同改。
+- **版型的長相是選項（`Platform:Mail:Template`），不是程式裡的常數**：色票、寬度、內距、字型都有預設、可由設定覆寫，值會進內嵌樣式與樣式表，所以由 `MailTemplateOptionsValidator` 驗證格式（顏色只收 `#rrggbb`、字型只收安全字元）與每組色票的文字對比度（至少 4.5:1），錯了在啟動停下並指名鍵。系統名稱只經注入的 `IOptions<BrandOptions>`。
+- **HTML 由 Razor 元件加 `HtmlRenderer` 渲染**：參數是強型別的 `MailPage`，插入的值由 Razor 編碼。`MarkupString` 只用在條件註解、VML 與樣式表，內容只能是固定文字、整數與已驗證的顏色，**不得放使用者或設定來的自由文字**。給 `HtmlRenderer` 的 `HtmlEncoder` 放行 Unicode 全範圍（預設只放行基本拉丁字母，會把整封信變成 `&#x…;`），危險字元照樣編碼。
+- **信裡唯一的外部網址是啟用連結**：不放遠端圖片、追蹤像素、點擊追蹤轉址、腳本或外部樣式。連結等同一次登入的鑰匙，經第三方或被預先載入都會洩漏或用掉它；`MailComposerTests` 守住（含 `<` `"` `&` `'` 的名稱與租戶、四種邀請／驗證與租戶組合）。信裡不放密碼；日誌與稽核不記連結與內文。
+- **版面維持表格加內嵌樣式**（傳統 Outlook 以 Word 引擎渲染：不支援 flexbox、grid，`max-width` 要靠條件註解的後備表格），按鈕的 VML 後備與深色配色（`prefers-color-scheme`）跟著版型一起維護；預設色票的對比度另有測試以獨立的算法驗證。改版型後用 `mail preview` 看過，並請人以真實客戶端（傳統 Outlook、各家深色模式）收一封實際寄出的信。
+- **`mail preview` 在建立主機之前處理**（`Program.cs`），所以不連資料庫、不需要啟用 `Platform:Mail`；它用 `AddPlatformMail()` 註冊的真實 `IMailComposer`（不解析 `IMailSender`），所以預覽與實際寄出的是同一份組信邏輯與選項。占位連結的網域必須是保留網域（`.example`），權杖是假值：預覽檔案不得含任何真實連結。
 
 ### 成員管理（客戶自助與營運者）
 

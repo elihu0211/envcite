@@ -4,6 +4,7 @@ using MailKit;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -185,11 +186,20 @@ internal sealed partial class SmtpMailSender(IOptions<MailOptions> options, IOpt
 
 public static class MailServiceCollectionExtensions
 {
-    /// <summary>註冊 <see cref="IMailSender"/> 與 <c>Platform:Mail</c>（含它預設寄件者名稱所讀的 <c>Platform:Brand</c>）；測試可在其後換掉 <see cref="IMailSender"/>。</summary>
+    /// <summary>
+    /// 寄信所需的一切，集中在這一處註冊：<c>Platform:Mail</c>（傳輸）、<c>Platform:Mail:Template</c>（版型）、<c>Platform:Brand</c>（系統名稱）、
+    /// 文案的本地化、<see cref="IMailComposer"/>（組信）與 <see cref="IMailSender"/>（只管傳輸）。
+    /// 需要 <c>AddLogging()</c>（主機本來就有）。測試可在其後換掉 <see cref="IMailSender"/>。
+    /// </summary>
     public static IServiceCollection AddPlatformMail(this IServiceCollection services)
     {
         services.AddPlatformBrand();
+        services.AddLocalization();
         services.AddSectionOptions<MailOptions, MailOptionsValidator>();
+        services.AddSectionOptions<MailTemplateOptions, MailTemplateOptionsValidator>();
+        services.TryAddSingleton<MailRenderServices>();
+        services.TryAddSingleton(provider => new HtmlRenderer(provider.GetRequiredService<MailRenderServices>(), provider.GetRequiredService<ILoggerFactory>()));
+        services.TryAddSingleton<IMailComposer, MailComposer>();
         services.TryAddSingleton<IMailSender, SmtpMailSender>();
         return services;
     }

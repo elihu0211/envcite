@@ -108,6 +108,32 @@ public sealed class MailPreviewTests : IDisposable
         Assert.False(Directory.Exists(_directory));
     }
 
+    // 預覽用的是正式環境同一個組信服務與選項：改語言、寬度、色票在預覽就看得到。
+    [Fact]
+    public async Task ItFollowsTheTemplateOptions()
+    {
+        var configuration = Settings(("Platform:Mail:Template:Culture", "en"), ("Platform:Mail:Template:Width", "560"), ("Platform:Mail:Template:Light:Button", "#0b5cad"));
+
+        var (code, _, _) = await RunAsync(configuration, "mail", "preview", _directory);
+
+        Assert.Equal(0, code);
+        var html = await File.ReadAllTextAsync(Path.Combine(_directory, "invitation-tenant.html"), TestContext.Current.CancellationToken);
+        Assert.Contains("<html lang=\"en\"", html, StringComparison.Ordinal);
+        Assert.Contains("max-width:560px", html, StringComparison.Ordinal);
+        Assert.Contains("fillcolor=\"#0b5cad\"", html, StringComparison.Ordinal);
+        Assert.StartsWith("This is a test message", await File.ReadAllTextAsync(Path.Combine(_directory, "test.txt"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ABadTemplateOptionStopsWithTheKeyNamedAndWritesNothing()
+    {
+        var (code, _, error) = await RunAsync(Settings(("Platform:Mail:Template:Light:Muted", "#c0c0c0")), "mail", "preview", _directory);
+
+        Assert.Equal(1, code);
+        Assert.Contains("Platform:Mail:Template:Light:Muted", error, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(_directory));
+    }
+
     [Theory]
     [InlineData("mail", "preview")]
     [InlineData("mail", "preview", "a", "b")]

@@ -183,9 +183,16 @@ public sealed partial class BrandTests(PlatformFactory factory)
     public async Task TheActivationMailSubjectFollowsTheName(bool invitation, string brand, string subject)
     {
         var sender = new CapturingMailSender();
+        await using var provider = MailTestServices.Build(
+            MailTestServices.With(("Platform:Brand:Name", brand)),
+            services =>
+            {
+                services.AddSingleton<IMailSender>(sender);
+                services.AddSingleton<IActivationMailer, ActivationMailer>();
+            });
 
-        await ActivationMail.SendAsync(
-            sender, brand, "someone@example.test", new Uri("https://platform.test/x"), TimeSpan.FromDays(3), "acme", invitation, CancellationToken.None);
+        await provider.GetRequiredService<IActivationMailer>().SendAsync(
+            "someone@example.test", new Uri("https://platform.test/x"), TimeSpan.FromDays(3), "acme", invitation, CancellationToken.None);
 
         var mail = Assert.Single(sender.Sent);
         Assert.Equal(subject, mail.Subject);

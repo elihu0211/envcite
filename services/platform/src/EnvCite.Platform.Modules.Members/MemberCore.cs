@@ -16,7 +16,7 @@ namespace EnvCite.Platform.Modules.Members;
 /// 呼叫端負責「誰可以做」；這裡只管「怎麼做」。必須在已經綁定租戶的 scope 裡使用。
 /// </summary>
 internal sealed class MemberCore(
-    UserManager<ApplicationUser> users, IAuditLog audit, IMailSender mail, IOptions<MailOptions> mailOptions, IOptions<BrandOptions> brand, TimeProvider time)
+    UserManager<ApplicationUser> users, IAuditLog audit, IMailSender mail, IActivationMailer activation, IOptions<MailOptions> mailOptions, TimeProvider time)
 {
     public async Task<AdminOutcome<IssuedPassword>> CreateAsync(
         ClaimsPrincipal actor, TenantInfo tenant, string email, string? displayName, string role, CancellationToken cancellationToken)
@@ -118,7 +118,7 @@ internal sealed class MemberCore(
             {
                 ["email"] = user.Email,
                 ["role"] = user.Role,
-                ["mail"] = ActivationMail.Status(delivery),
+                ["mail"] = delivery.AuditStatus(),
             }),
             cancellationToken);
         return AdminOutcome.Ok(new MemberInvitation(Info(user), delivery));
@@ -151,7 +151,7 @@ internal sealed class MemberCore(
             {
                 ["email"] = user.Email,
                 ["kind"] = invitation ? "invitation" : "verification",
-                ["mail"] = ActivationMail.Status(delivery),
+                ["mail"] = delivery.AuditStatus(),
             }),
             cancellationToken);
         return AdminOutcome.Ok(new MemberInvitation(Info(user), delivery));
@@ -162,7 +162,7 @@ internal sealed class MemberCore(
         var settings = mailOptions.Value;
         var code = await Activation.NewCodeAsync(users, user, revokeOld: invitation);
         var link = ActivationLinks.ForMember(settings, tenant.Identifier!, user.Id, code);
-        return await ActivationMail.SendAsync(mail, brand.Value.Name, user.Email!, link, settings.LinkLifetime, tenant.Identifier, invitation, cancellationToken);
+        return await activation.SendAsync(user.Email!, link, settings.LinkLifetime, tenant.Identifier, invitation, cancellationToken);
     }
 
     public async Task<AdminOutcome<IssuedPassword>> ResetPasswordAsync(

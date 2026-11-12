@@ -131,27 +131,3 @@ internal static class ActivationLinks
             ? new Uri(origin, $"{path}?userId={Uri.EscapeDataString(userId)}&code={code}")
             : null;
 }
-
-/// <summary>邀請與驗證信（內容由 <see cref="MailTemplate"/> 產生）。信裡只有單次、限時的連結：不放密碼，也不放使用者的其他資料。</summary>
-internal static class ActivationMail
-{
-    public static Task<MailDelivery> SendAsync(
-        IMailSender mail, string brand, string recipient, Uri? link, TimeSpan lifetime, string? tenantIdentifier, bool invitation, CancellationToken cancellationToken)
-    {
-        if (link is null)
-        {
-            return Task.FromResult(MailDelivery.Failed); // 沒有設定連結來源（Platform:Mail:BaseUrl），寄出去的連結沒用
-        }
-
-        var content = MailTemplate.Activation(brand, link, lifetime, tenantIdentifier, invitation);
-        return mail.SendAsync(recipient, invitation ? $"{brand}：邀請您啟用帳號" : $"{brand}：請驗證您的信箱", content, cancellationToken);
-    }
-
-    public static string Status(MailDelivery delivery) => delivery switch
-    {
-        MailDelivery.Sent => "sent",
-        MailDelivery.Failed => "failed",
-        MailDelivery.Disabled => "disabled",
-        _ => "not_requested",
-    };
-}

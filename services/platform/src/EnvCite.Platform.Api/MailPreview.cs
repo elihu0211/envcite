@@ -11,8 +11,8 @@ namespace EnvCite.Platform.Api;
 
 /// <summary>
 /// <c>mail preview &lt;輸出目錄&gt;</c>：把信件版型寫成檔案，用瀏覽器或信件客戶端的預覽查看，<b>不寄信、不連資料庫</b>。
-/// 因為不需要它們，在建立主機（遷移與種子資料）之前就處理完；只讀系統名稱（<c>Platform:Brand:Name</c>）與連結期限（<c>Platform:Mail:LinkLifetime</c>），
-/// 所以本機改了名稱就能看到效果。連結是占位值（網址的來源不是任何真實主機，權杖是不能用的假值），沒有任何真實的登入鑰匙。
+/// 因為不需要它們，在建立主機（遷移與種子資料）之前就處理完：用 <see cref="MailServiceCollectionExtensions.AddPlatformMail"/> 註冊的真實 <see cref="IMailComposer"/> 組信（不解析 <see cref="IMailSender"/>），
+/// 系統名稱、連結期限與版型選項照目前的設定，所以本機改了名稱、語言或色票就能看到效果。連結是占位值（網址的來源不是任何真實主機，權杖是不能用的假值），沒有任何真實的登入鑰匙。
 /// </summary>
 public static class MailPreview
 {
@@ -40,16 +40,25 @@ public static class MailPreview
 
         var services = new ServiceCollection();
         services.AddSingleton(configuration);
-        services.AddPlatformBrand();
-        services.AddOptions<MailOptions>().BindConfiguration(MailOptions.SectionName);
+        services.AddLogging();
+        services.AddPlatformMail();
         using var provider = services.BuildServiceProvider();
 
-        string brand;
-        TimeSpan lifetime;
+        (string Name, ComposedMail Mail)[] samples;
         try
         {
-            brand = provider.GetRequiredService<IOptions<BrandOptions>>().Value.Name;
-            lifetime = provider.GetRequiredService<IOptions<MailOptions>>().Value.LinkLifetime;
+            var composer = provider.GetRequiredService<IMailComposer>();
+            var lifetime = provider.GetRequiredService<IOptions<MailOptions>>().Value.LinkLifetime;
+            var memberLink = Placeholder("/portal/acme/activate");
+            var operatorLink = Placeholder("/ui/activate");
+            samples =
+            [
+                ("invitation", await composer.ComposeActivationAsync(new(operatorLink, lifetime, null, Invitation: true), cancellationToken)),
+                ("invitation-tenant", await composer.ComposeActivationAsync(new(memberLink, lifetime, "acme", Invitation: true), cancellationToken)),
+                ("verification", await composer.ComposeActivationAsync(new(operatorLink, lifetime, null, Invitation: false), cancellationToken)),
+                ("verification-tenant", await composer.ComposeActivationAsync(new(memberLink, lifetime, "acme", Invitation: false), cancellationToken)),
+                ("test", await composer.ComposeTestAsync(cancellationToken)),
+            ];
         }
         catch (OptionsValidationException exception)
         {
@@ -57,25 +66,14 @@ public static class MailPreview
             return 1;
         }
 
-        var memberLink = Placeholder("/portal/acme/activate");
-        var operatorLink = Placeholder("/ui/activate");
-        var samples = new (string Name, MailContent Content)[]
-        {
-            ("invitation", MailTemplate.Activation(brand, operatorLink, lifetime, tenantIdentifier: null, invitation: true)),
-            ("invitation-tenant", MailTemplate.Activation(brand, memberLink, lifetime, "acme", invitation: true)),
-            ("verification", MailTemplate.Activation(brand, operatorLink, lifetime, tenantIdentifier: null, invitation: false)),
-            ("verification-tenant", MailTemplate.Activation(brand, memberLink, lifetime, "acme", invitation: false)),
-            ("test", MailTemplate.Test(brand)),
-        };
-
         try
         {
             var target = Directory.CreateDirectory(directory);
             var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-            foreach (var (name, content) in samples)
+            foreach (var (name, mail) in samples)
             {
-                await File.WriteAllTextAsync(Path.Combine(target.FullName, $"{name}.html"), content.Html, utf8, cancellationToken);
-                await File.WriteAllTextAsync(Path.Combine(target.FullName, $"{name}.txt"), content.Text, utf8, cancellationToken);
+                await File.WriteAllTextAsync(Path.Combine(target.FullName, $"{name}.html"), mail.Content.Html, utf8, cancellationToken);
+                await File.WriteAllTextAsync(Path.Combine(target.FullName, $"{name}.txt"), mail.Content.Text, utf8, cancellationToken);
             }
 
             await output.WriteLineAsync($"已寫出 {samples.Length * 2} 個檔案到 {target.FullName}（{samples.Length} 種信，各有 .html 與 .txt）。連結是占位值，沒有寄信，也沒有連線。");

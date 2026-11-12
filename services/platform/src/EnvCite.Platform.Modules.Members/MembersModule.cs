@@ -48,6 +48,7 @@ public static class MembersModule
         services.TryAddSingleton(TimeProvider.System);
         services.AddSectionOptions<MembersOptions>();
         services.AddPlatformMail();
+        services.TryAddSingleton<IActivationMailer, ActivationMailer>();
         // 邀請與驗證連結的有效期限，也是 Identity 資料保護權杖（電子郵件確認）的期限；兩個 user store 共用。
         services.AddOptions<DataProtectionTokenProviderOptions>()
             .Configure<IOptions<MailOptions>>((token, mail) => token.TokenLifespan = mail.Value.LinkLifetime);

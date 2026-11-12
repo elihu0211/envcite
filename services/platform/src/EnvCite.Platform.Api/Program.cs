@@ -57,6 +57,7 @@ if (!generatingOpenApi)
 builder.Services.AddPlatformData();
 builder.Services.AddApiAccessModule();
 builder.Services.AddAuditModule();
+builder.Services.AddPlatformMail(); // 寄信與組信的一切（傳輸、版型、文案、系統名稱），集中在這一處註冊；邀請的模組與命令列都用它
 builder.Services.AddMembersModule();
 builder.Services.AddConversationsModule();
 builder.Services.AddSingleton<ITenantDirectory, TenantDirectory>();
