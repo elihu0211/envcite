@@ -46,5 +46,12 @@
   <data name="MailTest.BaseUrl" xml:space="preserve"><value>連結來源：{0}</value></data>
   <data name="MailTest.Warning.Clear" xml:space="preserve"><value>警告：已設帳密，但加密模式是 {0}，帳號與密碼可能以明文在網路上傳送；中繼支援時請改用 StartTls 或 SslOnConnect。</value></data>
   <data name="MailTest.Accepted" xml:space="preserve"><value>中繼已接受這封測試信。請到 {0} 確認有收到（中繼接受不代表已投遞）。</value></data>
-  <data name="MailTest.Failed" xml:space="preserve"><value>寄信失敗（{0}）。常見原因：這個環境的來源位址不在中繼的信任名單、Host 或 Port 不對、From 的網域被中繼拒絕。已設帳密時另有兩種：SMTP 535 是帳號或密碼錯誤（Exchange 與 Google Workspace 是不同的帳號系統，要用中繼所屬系統的帳號）；SMTP 550 5.7.60 是寄件者不等於認證的帳號（From 要與 Username 相同）。細節看服務日誌的「Mail delivery failed」那一行（例外型別與 SMTP 狀態碼），排查表見 services/platform/README.md「寄信」。</value></data>
+  <data name="MailTest.Failed" xml:space="preserve"><value>寄信失敗（{0}）。常見原因：</value></data>
+  <data name="MailTest.Cause.SourceNotTrusted" xml:space="preserve"><value>這個環境的來源位址不在中繼的信任名單</value></data>
+  <data name="MailTest.Cause.HostOrPort" xml:space="preserve"><value>Host 或 Port 不對</value></data>
+  <data name="MailTest.Cause.SenderDomain" xml:space="preserve"><value>From 的網域被中繼拒絕</value></data>
+  <data name="MailTest.Cause.BadCredentials" xml:space="preserve"><value>帳號或密碼錯誤（Exchange 與 Google Workspace 是不同的帳號系統，要用中繼所屬系統的帳號）</value></data>
+  <data name="MailTest.Cause.SenderNotAccount" xml:space="preserve"><value>寄件者不等於認證的帳號（From 要與 Username 相同）</value></data>
+  <data name="MailTest.Cause.WithCode" xml:space="preserve"><value>SMTP {0}：{1}</value></data>
+  <data name="MailTest.Failed.Pointer" xml:space="preserve"><value>細節看服務日誌的「Mail delivery failed」那一行（例外型別與 SMTP 狀態碼），排查表見 services/platform/README.md「寄信」。</value></data>
 </root>

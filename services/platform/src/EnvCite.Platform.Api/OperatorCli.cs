@@ -65,7 +65,7 @@ public static class OperatorCli
 
     /// <summary>
     /// 寄信冒煙測試。印出實際使用的設定（主機、埠、加密模式、是否使用帳密、寄件者、連結來源），寄一封只有說明文字的信。
-    /// <b>不印帳號與密碼</b>：帳號本身也不印，因為預設的寄件者就是它，需要核對時看寄件者那一行。文字都來自 <see cref="MailTestReport"/>（資源檔）。
+    /// <b>不印帳號與密碼</b>：帳號本身也不印，因為預設的寄件者就是它，需要核對時看寄件者那一行。文字都來自 <see cref="IMailTestReport"/>（資源檔）。
     /// <see cref="MailDelivery.Sent"/> 只代表中繼接受了信，不代表投遞成功：要到收件匣確認。
     /// 失敗的細節在日誌（例外型別與 SMTP 狀態碼，不含位址、帳號與內文）。
     /// </summary>
@@ -73,7 +73,7 @@ public static class OperatorCli
         IServiceProvider services, IMailSender mail, string recipient,
         TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
-        var report = services.GetRequiredService<MailTestReport>();
+        var report = services.GetRequiredService<IMailTestReport>();
         if (!System.Net.Mail.MailAddress.TryCreate(recipient, out var parsed) || parsed.Address != recipient.Trim())
         {
             await error.WriteLineAsync(report.InvalidRecipient(recipient));

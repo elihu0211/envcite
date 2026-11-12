@@ -250,4 +250,5 @@ sequenceDiagram
 - **寄件者必須等於認證的帳號**：Exchange 等中繼對不同的寄件者回 `550 5.7.60 Client does not have permissions to send as this sender`。`From` 與（email 形式的）`Username` 不同時，啟動記一則警告但不停下，因為有些中繼允許 Send As。顯示名稱（`FromName`）與 `ReplyTo` 可以另外設。
 - **帳號系統要對**：Exchange 與 Google Workspace 是不同的帳號系統。中繼屬於哪一個，就用那一個的帳號，否則回 `535`。沒有服務帳號時只能用個人帳號，密碼放叢集 Secret。
 - **密碼錯誤的代價**：MailKit 會對中繼公告的每一種機制各試一次，所以一次寄信可能在中繼記下多次失敗的登入。帳號若有「連續失敗鎖定」，改密碼後要同步更新 Secret 並重啟，不要讓服務反覆嘗試舊密碼。
+- **密碼的來源**：k8s 以 `secretKeyRef` 注入環境變數 `ENVCITE_Platform__Mail__Password`；程式只認設定鍵 `Platform:Mail:Password`。改密碼就是更新 Secret 並重啟 pod（設定只在啟動時讀一次）。
 - **機密不外流**：`Password` 只經環境變數，不進日誌、稽核、例外訊息、`mail test` 輸出、選項的 `ToString()` 與序列化，也不在任何診斷端點；`Username` 同樣不進日誌與輸出。`mail test` 只印「使用帳密驗證：是／否」，不印帳號；需要核對時看寄件者那一行。
