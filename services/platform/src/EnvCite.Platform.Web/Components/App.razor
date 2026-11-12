@@ -12,6 +12,8 @@
     <link rel="icon" href="@Assets["_content/EnvCite.Platform.Web/brand/icon-small.svg"]" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="@Assets["_content/EnvCite.Platform.Web/brand/apple-touch-icon.png"]" />
     <base href="/" />
+    @* 側欄收合的偏好：在畫第一格之前就套上，不先閃一下展開再收起來（forms.js 負責切換與存檔）。 *@
+    <script>try{if(localStorage.getItem("ep-side")==="collapsed")document.documentElement.dataset.side="collapsed"}catch(e){}</script>
     <style>@((MarkupString)TokenCss.Render())</style>
     @* 自己託管的字型：中文依 unicode-range 切片，瀏覽器只下載頁面上出現的字所在的那幾片（見 scripts/vendor-fonts.sh）。 *@
     <link rel="stylesheet" href="@Assets["_content/EnvCite.Platform.Web/fonts/fonts.css"]" />

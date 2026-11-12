@@ -430,6 +430,22 @@ public static partial class DesignTokenTests
         Assert.Contains("documentElement.dataset.js", script, StringComparison.Ordinal);
     }
 
+    // 側欄：桌機收成窄欄、手機是抽屜，兩者都靠 forms.js 設在 <html> 上的屬性；窄欄寬度是 token，收起的抽屜不在 Tab 順序裡。
+    [Fact]
+    public static void TheSidebarCollapsesToARailAndBecomesADrawerOnPhones()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
+
+        Assert.Equal("4.5rem", DesignTokens.Measure["sidebar-rail"]);
+        Assert.Contains("var(--ep-measure-sidebar-rail)", css, StringComparison.Ordinal);
+        Assert.Contains("html[data-side=\"collapsed\"] .ep-side", css, StringComparison.Ordinal);
+        Assert.Contains("html[data-js][data-drawer] .ep-side", css, StringComparison.Ordinal);
+        Assert.Matches(@"html\[data-js\] \.ep-side \{[^}]*visibility: hidden", css); // 收起的抽屜不能被 Tab 到
+        Assert.Contains("data-drawer", script, StringComparison.Ordinal);
+        Assert.Contains("localStorage.setItem(\"ep-side\"", script, StringComparison.Ordinal);
+    }
+
     [Fact]
     public static void TheLargestTypeSizesAreFluid()
     {

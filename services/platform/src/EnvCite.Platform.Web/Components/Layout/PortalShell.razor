@@ -1,11 +1,16 @@
 @* 客戶入口的外殼，純呈現（不讀登入狀態）：與營運後台同一套頂欄加左側欄。側欄是工作區（查詢、對話紀錄、成員、帳號），
    依群組排；個人的安全設定（兩步驟驗證、改密碼、登出）收在右上角的帳號選單。還沒登入或還有強制步驟時，只有頂欄。
+   側欄每項是圖示加文字：桌機可收成窄欄、手機是抽屜（forms.js 切換）。
    選單用瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript，入口是靜態渲染）。
    PortalLayout 依登入狀態填入；元件展示頁用假資料填入。 *@
 <a class="ep-skip-link" href="#main">@L["跳到主要內容"]</a>
 
 <div class="@(HasSideNav ? "ep-console" : "ep-shell")">
     <header class="ep-shell-top">
+        @if (HasSideNav)
+        {
+            <button type="button" class="ep-side-toggle" aria-controls="ep-side" aria-expanded="true" aria-label="@L["展開或收合導覽"]"><NavIcon Path="@Icons.Material.Outlined.Menu" /></button>
+        }
         @if (!string.IsNullOrEmpty(HomeHref))
         {
             <a class="ep-brand" href="@HomeHref"><BrandMark />@L["環境知識"]</a>
@@ -69,15 +74,23 @@
 
     @if (HasSideNav)
     {
+        <div class="ep-scrim" aria-hidden="true"></div>
+
         <div class="ep-console-body">
-            <aside class="ep-side">
+            <aside id="ep-side" class="ep-side">
                 @foreach (var group in NavItems.GroupBy(i => i.Group))
                 {
                     <p class="ep-side-group" aria-hidden="true">@group.Key</p>
                     <nav class="ep-side-nav" aria-label="@group.Key">
                         @foreach (var item in group)
                         {
-                            <NavLink class="ep-side-link" href="@item.Href" Match="@(item.Exact ? NavLinkMatch.All : NavLinkMatch.Prefix)">@item.Label</NavLink>
+                            <NavLink class="ep-side-link" href="@item.Href" Match="@(item.Exact ? NavLinkMatch.All : NavLinkMatch.Prefix)">
+                                @if (!string.IsNullOrEmpty(item.Icon))
+                                {
+                                    <NavIcon Path="@item.Icon" />
+                                }
+                                <span class="ep-side-label">@item.Label</span>
+                            </NavLink>
                         }
                     </nav>
                 }
@@ -100,7 +113,8 @@
 
     /// <param name="Group">側欄的群組標題；同一群組的項目連續排列。</param>
     /// <param name="Exact">只有網址完全相同才標成目前頁（首頁要這樣，否則每一頁都算在首頁底下）。</param>
-    public sealed record NavItem(string Href, string Label, string Group, bool Exact = false);
+    /// <param name="Icon">項目前面的圖示（MudBlazor 的 Material 圖示常數）；收成窄欄時只剩它，所以每一項都該有。</param>
+    public sealed record NavItem(string Href, string Label, string Group, bool Exact = false, string? Icon = null);
 
     [Parameter]
     public string? TenantName { get; set; }

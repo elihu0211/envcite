@@ -242,6 +242,50 @@ a:where(:not([class*="mud-"])) {
     font-size: var(--ep-headline-s-size);
 }
 
+/* 整頁的單一狀態（已登出、沒有權限、找不到頁面）：置中的圖示磚、標題、說明、一個下一步。 */
+.ep-status-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ep-space-3);
+    text-align: center;
+}
+
+.ep-status-icon {
+    --tone: var(--ep-text-secondary);
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-space-12);
+    block-size: var(--ep-space-12);
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--tone) 12%, var(--ep-surface));
+    color: var(--tone);
+}
+
+.ep-status-icon[data-tone="success"] {
+    --tone: var(--ep-success);
+}
+
+.ep-status-icon[data-tone="warning"] {
+    --tone: var(--ep-warning);
+}
+
+.ep-status-icon[data-tone="error"] {
+    --tone: var(--ep-error);
+}
+
+.ep-status-icon[data-tone="info"] {
+    --tone: var(--ep-info);
+}
+
+.ep-status-page > .ep-page-description {
+    margin: 0;
+}
+
+.ep-status-page > .ep-btn {
+    margin-block-start: var(--ep-space-3);
+}
+
 /* 後台與入口內頁的表單：欄位維持窄欄、送出鈕依內容寬，不撐滿整張卡。 */
 .ep-console-main .ep-form {
     max-inline-size: var(--ep-measure-narrow);
@@ -287,6 +331,7 @@ a:where(:not([class*="mud-"])) {
 .ep-avatar,
 .ep-send,
 .ep-password-toggle,
+.ep-side-toggle,
 .ep-btn {
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
@@ -295,6 +340,7 @@ a:where(:not([class*="mud-"])) {
 .ep-avatar:active,
 .ep-send:active,
 .ep-password-toggle:active,
+.ep-side-toggle:active,
 .ep-chip:active,
 .ep-btn:active {
     transform: scale(var(--ep-press-scale));
@@ -782,6 +828,9 @@ a:where(:not([class*="mud-"])) {
     flex-direction: column;
 }
 
+/* 側欄（雲端主控台那一型）：每項圖示加文字，目前項是整條的淡藍底，群組用小標題隔開。
+   平板起是黏在頂欄下面的左欄，桌機可收成只剩圖示的窄欄（forms.js 設 html[data-side]，偏好存在 localStorage）；
+   手機是從左側滑出的抽屜加遮罩（forms.js 設 html[data-drawer]）。沒有 JavaScript 時，手機上維持頂欄下一條可橫捲的列。 */
 .ep-side {
     display: flex;
     gap: var(--ep-space-1);
@@ -793,11 +842,15 @@ a:where(:not([class*="mud-"])) {
 
 .ep-side-group {
     display: none; /* 手機上側欄是一條橫列，群組標題只在直欄時顯示 */
-    margin: var(--ep-space-2) var(--ep-space-3) var(--ep-space-1);
+    margin: var(--ep-space-4) var(--ep-space-3) var(--ep-space-1);
     color: var(--ep-text-secondary);
     font-size: var(--ep-label-s-size);
     letter-spacing: var(--ep-label-s-tracking);
     font-weight: var(--ep-label-s-weight);
+}
+
+.ep-side-group:first-child {
+    margin-block-start: var(--ep-space-2);
 }
 
 .ep-side-nav {
@@ -810,12 +863,19 @@ a:where(:not([class*="mud-"])) {
     flex: none;
     display: flex;
     align-items: center;
+    gap: var(--ep-space-3);
     min-block-size: var(--ep-touch-target);
     padding-inline: var(--ep-space-3);
-    border-radius: var(--ep-radius-control);
+    border-radius: var(--ep-radius-pill);
     color: var(--ep-text);
     text-decoration: none;
+    white-space: nowrap;
     transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-side-link .ep-icon {
+    color: var(--ep-text-secondary);
+    transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 .ep-side-link.active {
@@ -824,10 +884,46 @@ a:where(:not([class*="mud-"])) {
     font-weight: var(--ep-label-l-weight);
 }
 
+.ep-side-link.active .ep-icon {
+    color: var(--ep-link);
+}
+
 @media (hover: hover) {
     .ep-side-link:hover:not(.active) {
         background: color-mix(in srgb, var(--ep-text) 6%, transparent);
     }
+}
+
+/* 頂欄左邊的導覽鈕（沒有 JavaScript 時不出現）：桌機收合／展開側欄，手機開關抽屜。 */
+.ep-side-toggle {
+    display: none;
+}
+
+html[data-js] .ep-side-toggle {
+    display: grid;
+    place-items: center;
+    flex: none;
+    inline-size: var(--ep-touch-target);
+    block-size: var(--ep-touch-target);
+    margin-inline-start: calc(var(--ep-space-2) * -1);
+    padding: 0;
+    border: 0;
+    border-radius: var(--ep-radius-pill);
+    background: transparent;
+    color: var(--ep-text-secondary);
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .ep-side-toggle:hover {
+        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        color: var(--ep-text);
+    }
+}
+
+/* 抽屜的遮罩：只有手機且有 JavaScript 才存在。 */
+.ep-scrim {
+    display: none;
 }
 
 .ep-console-main {
@@ -850,14 +946,24 @@ a:where(:not([class*="mud-"])) {
         flex-direction: row;
     }
 
+    .ep-console-body {
+        align-items: flex-start;
+    }
+
+    /* 黏在頂欄下面、自己捲動；和頁面同一個底，沒有分隔線，層次靠目前項的淡藍底。 */
     .ep-side {
         display: block;
-        overflow: visible;
         flex: none;
+        box-sizing: border-box;
+        position: sticky;
+        inset-block-start: var(--ep-appbar-height);
         inline-size: var(--ep-measure-sidebar);
-        padding: var(--ep-space-4) var(--ep-space-3);
+        block-size: calc(100dvh - var(--ep-appbar-height));
+        overflow: hidden auto;
+        padding: var(--ep-space-2) var(--ep-space-3) var(--ep-space-6);
         border-block-end: 0;
-        border-inline-end: 1px solid var(--ep-border-subtle);
+        background: transparent;
+        transition: inline-size var(--ep-motion-normal) var(--ep-motion-ease-settle);
     }
 
     .ep-side-group {
@@ -871,6 +977,88 @@ a:where(:not([class*="mud-"])) {
 
     .ep-console-main {
         padding-inline: var(--ep-space-8);
+    }
+
+    /* 窄欄：只剩圖示（文字留給輔助技術與 title 提示），群組標題變成一條細線。 */
+    html[data-side="collapsed"] .ep-side {
+        inline-size: var(--ep-measure-sidebar-rail);
+    }
+
+    html[data-side="collapsed"] .ep-side-label {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+
+    html[data-side="collapsed"] .ep-side-link {
+        justify-content: center;
+        padding-inline: 0;
+    }
+
+    html[data-side="collapsed"] .ep-side-group {
+        block-size: 0;
+        margin-block: var(--ep-space-3);
+        overflow: hidden;
+        border-block-start: 1px solid var(--ep-border-subtle);
+    }
+
+    html[data-side="collapsed"] .ep-side-group:first-child {
+        display: none;
+    }
+}
+
+/* 手機（有 JavaScript）：側欄是從左側滑出的抽屜，後面壓暗；用 visibility 讓收起時不在 Tab 順序裡。 */
+@media (width < 48rem) {
+    html[data-js] .ep-side {
+        position: fixed;
+        inset-block: var(--ep-appbar-height) 0; /* 頂欄留在抽屜上方：導覽鈕還在，再按一次就收起 */
+        inset-inline-start: 0;
+        z-index: 30;
+        display: block;
+        box-sizing: border-box;
+        inline-size: min(calc(var(--ep-measure-sidebar) + var(--ep-space-6)), 86vw);
+        overflow: hidden auto;
+        padding: var(--ep-space-2) var(--ep-space-3) max(var(--ep-space-6), env(safe-area-inset-bottom)) max(var(--ep-space-3), env(safe-area-inset-left));
+        border-block-end: 0;
+        border-inline-end: 1px solid var(--ep-border-subtle);
+        background: var(--ep-surface);
+        box-shadow: var(--ep-elevation-3);
+        translate: -100% 0;
+        visibility: hidden;
+        transition: translate var(--ep-motion-normal) var(--ep-motion-ease-settle), visibility 0s linear var(--ep-motion-normal);
+    }
+
+    html[data-js][data-drawer] .ep-side {
+        translate: 0 0;
+        visibility: visible;
+        transition: translate var(--ep-motion-normal) var(--ep-motion-ease-settle), visibility 0s;
+    }
+
+    html[data-js] .ep-side-group {
+        display: block;
+    }
+
+    html[data-js] .ep-side-nav {
+        flex-direction: column;
+        overflow: visible;
+    }
+
+    html[data-js] .ep-scrim {
+        display: block;
+        position: fixed;
+        inset: var(--ep-appbar-height) 0 0;
+        z-index: 20;
+        background: var(--ep-scrim);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--ep-motion-normal) var(--ep-motion-ease-standard);
+    }
+
+    html[data-js][data-drawer] .ep-scrim {
+        opacity: 1;
+        pointer-events: auto;
     }
 }
 

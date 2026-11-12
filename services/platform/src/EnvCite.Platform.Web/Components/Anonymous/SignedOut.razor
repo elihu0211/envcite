@@ -4,5 +4,6 @@
 
 <PageTitle>@L["已登出 · 環境知識"]</PageTitle>
 
-<h1 class="ep-page-title">@L["已登出"]</h1>
-<MudButton Href="@UiEndpoints.LoginPath" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">@L["重新登入"]</MudButton>
+<StatusPage Icon="@Icons.Material.Outlined.CheckCircle" Tone="success" Title="@L["已登出"]" Description="@L["你的工作階段已結束。要繼續使用，請重新登入。"]">
+    <a class="ep-btn ep-btn-primary" href="@UiEndpoints.LoginPath">@L["重新登入"]</a>
+</StatusPage>

@@ -35,6 +35,7 @@ public sealed class NotFoundPageTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.NotFound, status);
         Assert.Contains("<h1 class=\"ep-page-title\">找不到頁面</h1>", html, StringComparison.Ordinal);
         Assert.Contains("lang=\"zh-TW\"", html, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-status-icon\"", html, StringComparison.Ordinal); // 圖示磚
         Assert.Contains("--ep-primary:", html, StringComparison.Ordinal); // 有版面與樣式，不是裸文字
     }
 

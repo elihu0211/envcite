@@ -168,10 +168,10 @@
 
     private static readonly IReadOnlyList<PortalShell.NavItem> _nav =
     [
-        new("/design", "查詢", "服務", Exact: true),
-        new("#history", "對話紀錄", "服務"),
-        new("#members", "成員", "組織"),
-        new("#account", "帳號與組織", "組織"),
+        new("/design", "查詢", "服務", Exact: true, Icon: Icons.Material.Outlined.Search),
+        new("#history", "對話紀錄", "服務", Icon: Icons.Material.Outlined.Forum),
+        new("#members", "成員", "組織", Icon: Icons.Material.Outlined.Group),
+        new("#account", "帳號與組織", "組織", Icon: Icons.Material.Outlined.ManageAccounts),
     ];
 
     private static readonly IReadOnlyList<PortalShell.MenuItem> _menu =

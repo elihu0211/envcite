@@ -171,6 +171,7 @@ public static class DesignTokens
         // 營運後台：表格與兩欄的設定頁要寬，但超過這個寬度的一行就讀不完了。
         ["console"] = "76rem",
         ["sidebar"] = "15rem",
+        ["sidebar-rail"] = "4.5rem",
     };
 
     public static IReadOnlyDictionary<string, string> Radius { get; } = new Dictionary<string, string>
