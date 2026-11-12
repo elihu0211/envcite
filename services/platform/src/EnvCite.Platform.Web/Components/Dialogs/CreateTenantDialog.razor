@@ -2,7 +2,7 @@
 @inject ITenantProvisioner Tenants
 @inject AuthenticationStateProvider Auth
 
-<MudDialog>
+<MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
         <MudTextField @bind-Value="_name" Label="@L["名稱"]" Placeholder="@L["例如：某某環境顧問公司"]" Variant="Variant.Outlined"
                       Required="true" OnlyValidateIfDirty="true" Immediate="true" MaxLength="200" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp" />

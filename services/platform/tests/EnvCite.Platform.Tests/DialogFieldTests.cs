@@ -24,10 +24,28 @@ public static partial class DialogFieldTests
             $"{field.File}：必填欄位要加 OnlyValidateIfDirty，否則對話框一開就顯示「必填」"));
     }
 
+    // MudDialog 預設把焦點放在焦點陷阱自己的容器（DefaultFocus.Element），晚於欄位自己的 AutoFocus，
+    // 把焦點搶走：打開表單對話框得再點一下欄位才能打字。有輸入欄位的對話框要把焦點給第一個欄位。
+    [Fact]
+    public static void DialogsWithInputsFocusTheirFirstFieldWhenTheyOpen()
+    {
+        var forms = Directory.EnumerateFiles(DialogsPath(), "*.razor")
+            .Select(file => (File: Path.GetFileName(file), Source: File.ReadAllText(file)))
+            .Where(dialog => AutoFocusedField().IsMatch(dialog.Source))
+            .ToList();
+
+        Assert.NotEmpty(forms);
+        Assert.All(forms, dialog => Assert.Contains(
+            "<MudDialog DefaultFocus=\"DefaultFocus.FirstChild\">", dialog.Source, StringComparison.Ordinal));
+    }
+
     private static string DialogsPath([CallerFilePath] string here = "") =>
         Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.Web", "Components", "Dialogs"));
 
     [GeneratedRegex(@"<MudTextField\b.*?/>", RegexOptions.Singleline, matchTimeoutMilliseconds: 2000)]
     private static partial Regex TextField();
+
+    [GeneratedRegex(@"<MudTextField\b[^>]*AutoFocus=""true""", RegexOptions.Singleline, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex AutoFocusedField();
 }
