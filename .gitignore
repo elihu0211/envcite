@@ -6,6 +6,8 @@
 *.key
 *.pfx
 appsettings.*.local.json
+# 帳密清單（容器層的 CREDENTIALS.md 不屬於任何 repo；誤複製進來時不進版控）
+CREDENTIALS*
 
 # .NET
 bin/
