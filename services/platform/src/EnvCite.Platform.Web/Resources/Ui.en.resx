@@ -249,7 +249,6 @@
   <data name="登入" xml:space="preserve"><value>Sign in</value></data>
   <data name="登入 · {0}" xml:space="preserve"><value>Sign in · {0}</value></data>
   <data name="登入時，除了密碼，還要輸入手機驗證器上的六位數。每位營運者都必須使用。" xml:space="preserve"><value>When you sign in, besides your password you enter the six digits from your authenticator app. Every operator must use it.</value></data>
-  <data name="登入網址" xml:space="preserve"><value>Sign-in URL</value></data>
   <data name="登出" xml:space="preserve"><value>Sign out</value></data>
   <data name="目前沒有方案。" xml:space="preserve"><value>No plan at the moment.</value></data>
   <data name="目前沒有方案：資料端點會回 402。請洽我們的業務啟用。" xml:space="preserve"><value>No plan at the moment: data endpoints return 402. Contact our sales team to enable one.</value></data>
@@ -446,4 +445,8 @@
   <data name="請存在只有你能開啟的地方，例如密碼管理員。" xml:space="preserve"><value>Keep them where only you can open them, such as a password manager.</value></data>
   <data name="展開或收合導覽" xml:space="preserve"><value>Show or hide navigation</value></data>
   <data name="你的工作階段已結束。要繼續使用，請重新登入。" xml:space="preserve"><value>Your session has ended. Sign in again to continue.</value></data>
+  <data name="存取網址" xml:space="preserve"><value>Access URLs</value></data>
+  <data name="複製登入網址" xml:space="preserve"><value>Copy sign-in URL</value></data>
+  <data name="複製 API Base URL" xml:space="preserve"><value>Copy API base URL</value></data>
+  <data name="無法自動複製，已選取文字，請按 Ctrl+C（Mac 按 ⌘C）。" xml:space="preserve"><value>Couldn't copy automatically. The text is selected: press Ctrl+C (⌘C on Mac).</value></data>
 </root>

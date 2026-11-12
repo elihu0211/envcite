@@ -2190,6 +2190,56 @@ html[data-js] .ep-otp-input::selection {
     color: var(--ep-success);
 }
 
+/* 複製按鈕（CopyButton）：只列按鈕，要複製的文字平常收起來（不佔畫面、仍在文件裡當複製來源）；剪貼簿不可用時 forms.js 設
+   data-reveal 把它顯示出來並選取。沒有 JavaScript 時鈕不出現，文字直接列出。長網址在任何位置換行，窄螢幕不橫向捲動。 */
+.ep-copy-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ep-space-3);
+    margin-block-start: var(--ep-space-3);
+}
+
+/* 寬的時候並排、各佔一半但不無限拉長；窄的時候各自撐滿一列（觸控尺寸的整列按鈕）。不靠視口斷點，由 flex 換行決定。 */
+.ep-copy {
+    display: flex;
+    flex: 1 1 14rem;
+    flex-direction: column;
+    gap: var(--ep-space-2);
+    min-inline-size: 0;
+    max-inline-size: 22rem;
+}
+
+.ep-copy > .ep-btn {
+    justify-content: center;
+}
+
+.ep-copy-value {
+    min-inline-size: 0;
+    padding: var(--ep-space-2) var(--ep-space-3);
+    background: var(--ep-bg);
+    border: 1px solid var(--ep-border-control);
+    border-radius: var(--ep-radius-control);
+    user-select: all;
+    overflow-wrap: anywhere;
+}
+
+html[data-js] .ep-copy-value:not([data-reveal]) {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
+.ep-copy .ep-btn-quiet[data-done-now] {
+    color: var(--ep-success);
+}
+
+/* 狀態與失敗提示的字級與顏色沿用 .ep-hint。 */
+.ep-copy-status {
+    margin: 0;
+}
+
 .ep-secret {
     display: inline-block;
     padding: var(--ep-space-2) var(--ep-space-3);

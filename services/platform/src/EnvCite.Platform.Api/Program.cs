@@ -121,7 +121,7 @@ app.UseAntiforgery();
 
 app.MapPlatformHealth();
 
-var v2 = app.MapGroup("/v2")
+var v2 = app.MapGroup(ApiPaths.V2)
     .RequireAuthorization(PlatformAuth.TenantPolicy)
     .RequireRateLimiting(PlatformAuth.PerTenantRateLimit);
 

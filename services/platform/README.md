@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-name, service-logging]
+owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-name, service-logging, tenant-access-urls]
 -->
 
 # envcite-platform
@@ -89,6 +89,17 @@ flowchart LR
 ## 入口
 
 `src/EnvCite.Platform.Api`（長駐）：ASP.NET Core 主機，REST、後台與入口頁；Development 啟動時自動遷移。設定的鍵名、必填與預設值以各設定群組的選項類別與 `appsettings.json` 為準，規則見 [`AGENTS.md`](AGENTS.md) 的 Configuration。開發指令見 [`AGENTS.md`](AGENTS.md)。
+
+## 租戶頁的存取網址
+
+租戶頁（`/ui/tenants/{租戶}`）頁首下方的「存取網址」，有沒有成員或 API key 都顯示。只列兩顆複製按鈕（複製完整網址，不在畫面上列出）：
+
+| 按鈕 | 複製的網址 |
+|------|-----------|
+| 複製登入網址 | `https://<主機>/portal/<租戶識別碼>/login`（識別碼經百分比編碼） |
+| 複製 API Base URL | `https://<主機>/v2` |
+
+主機取自目前請求的來源（scheme 與主機；Gateway 之後由 forwarded headers 還原），沒有對應的設定鍵：後台、入口與 API 同一個主機。`Platform:Mail:BaseUrl` 只管信裡的連結，不是通用的對外網址。複製元件的用法見 [`AGENTS.md`](AGENTS.md)「設計系統與營運者後台」。
 
 ## 日誌
 
