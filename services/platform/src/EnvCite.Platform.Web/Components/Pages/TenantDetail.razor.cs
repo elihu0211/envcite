@@ -149,8 +149,18 @@ public partial class TenantDetail(
         await LoadDetailsAsync();
     }
 
-    /// <summary>給客戶的完整登入網址（用目前後台的主機位址組出來）。</summary>
-    private string PortalLoginUrl => new Uri(new Uri(navigation.BaseUri), PortalPaths.Login(_tenant?.Identifier ?? string.Empty)).ToString();
+    /// <summary>客戶入口的登入網址。</summary>
+    private string PortalLoginUrl => PublicUrl(PortalPaths.Login(_tenant?.Identifier ?? string.Empty));
+
+    /// <summary>API Base URL（<c>/v2</c> 的根）。</summary>
+    private string ApiBaseUrl => PublicUrl(ApiPaths.V2);
+
+    /// <summary>
+    /// 對外主機取自目前請求的來源（scheme 與主機），不另設設定：後台、入口與 API 同一個主機（Gateway 全部轉給 platform），
+    /// 在 Gateway 之後由 forwarded headers 還原、互動電路則取自瀏覽器自己的位址，所以就是客戶實際連得到的那一個。
+    /// 用 <see cref="Uri.AbsoluteUri"/>（保留百分比編碼），複製出去的網址才貼得進信件與瀏覽器。
+    /// </summary>
+    private string PublicUrl(string path) => new Uri(new Uri(navigation.BaseUri), path).AbsoluteUri;
 
     private async Task AddMemberAsync()
     {

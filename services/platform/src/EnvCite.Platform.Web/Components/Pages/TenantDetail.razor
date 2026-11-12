@@ -50,6 +50,15 @@ else
         <MudAlert Severity="@_noticeSeverity" role="status" ShowCloseIcon="true" CloseIconClicked="() => _notice = null">@_notice</MudAlert>
     }
 
+    @* 存取網址：不論有沒有成員、有沒有 key 都看得到（成員區的空狀態會收掉那一區的狀態文字，所以不能放在成員區）。 *@
+    <section class="ep-card" aria-labelledby="links-heading">
+        <h2 id="links-heading" class="ep-section-title">@L["存取網址"]</h2>
+        <div class="ep-copy-group">
+            <CopyButton Id="portal-login-url" Label="@L["複製登入網址"]" Value="@PortalLoginUrl" />
+            <CopyButton Id="api-base-url" Label="@L["複製 API Base URL"]" Value="@ApiBaseUrl" />
+        </div>
+    </section>
+
     <section class="ep-stats" aria-label="@L["摘要"]">
         <div class="ep-stat">
             <span class="ep-stat-label">@L["呼叫次數"]</span>
@@ -188,7 +197,6 @@ else
                 <div class="ep-toolbar">
                     <h2 id="members-heading" class="ep-section-title">@L["成員（客戶入口）"]</h2>
                 </div>
-                <p class="ep-status">@L["登入網址"] <code class="ep-mono">@PortalLoginUrl</code></p>
                 @if (_members.Count == 0)
                 {
                     <EmptyState Icon="@Icons.Material.Outlined.Group" Title="@L["還沒有成員"]" Description="@L["新增第一位成員，客戶才能登入入口。"]" />

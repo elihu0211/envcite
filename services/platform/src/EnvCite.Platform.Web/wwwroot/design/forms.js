@@ -442,12 +442,39 @@
         }, 2000);
     };
 
+    // 剪貼簿與老方法都不能用時的最後退路：把文字顯示出來（平常收起來）並選取，使用者自己按 Ctrl+C。提示文字平常只給
+    // 螢幕閱讀器，這時要讓看得到的人也讀到，所以暫時拿掉 ep-visually-hidden。
+    const selectForManualCopy = (target, button, status) => {
+        target.setAttribute("data-reveal", "");
+        const selection = getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(target);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        if (status && button.dataset.failed) {
+            status.textContent = button.dataset.failed;
+            status.classList.remove("ep-visually-hidden");
+            setTimeout(() => {
+                status.textContent = "";
+                status.classList.add("ep-visually-hidden");
+            }, 8000);
+        }
+    };
+
+    // 複製鈕：data-copy-target 指向要複製的元素；可選的 data-copy-status 指向 aria-live 區（念出「已複製」或失敗提示）、
+    // data-done 是成功時的鈕文字、data-failed 是失敗提示。複製的是元素裡的完整文字，不是畫面上換行後的樣子。
     document.addEventListener("click", async (event) => {
         const copyButton = event.target.closest?.("[data-copy-target]");
         if (copyButton) {
-            const text = document.getElementById(copyButton.dataset.copyTarget)?.textContent.trim();
-            if (text && await copyText(text)) {
-                confirmCopy(copyButton, null);
+            const target = document.getElementById(copyButton.dataset.copyTarget);
+            const status = document.getElementById(copyButton.dataset.copyStatus ?? "");
+            const text = target?.textContent.trim();
+            if (text) {
+                if (await copyText(text)) {
+                    confirmCopy(copyButton, status);
+                } else {
+                    selectForManualCopy(target, copyButton, status);
+                }
             }
 
             return;

@@ -1,0 +1,25 @@
+@* 複製按鈕：按一下把 Value 複製到剪貼簿，不在畫面上列出內容（網址、代碼這類長字串）。要讓人複製一段文字就用它，不另寫複製鈕。
+   複製在瀏覽器端完成（design/forms.js 的 data-copy-target），靜態與互動渲染都一樣，不回伺服器、不經 JS 互通；
+   複製的是完整文字。回饋：按鈕文字短暫變成「已複製」並通知螢幕閱讀器（aria-live）；剪貼簿不可用時把文字顯示出來並選取，
+   讓人自己複製。沒有 JavaScript 時鈕不顯示、文字直接列出。 *@
+<div class="ep-copy">
+    <button type="button" class="ep-btn ep-btn-quiet ep-btn-icon ep-js-only" aria-label="@Label"
+            data-copy-target="@(Id)-value" data-copy-status="@(Id)-status" data-done="@L["已複製"]" data-failed="@L["無法自動複製，已選取文字，請按 Ctrl+C（Mac 按 ⌘C）。"]">
+        <NavIcon Path="@Icons.Material.Outlined.ContentCopy" /><span>@Label</span>
+    </button>
+    <code class="ep-mono ep-copy-value" id="@(Id)-value">@Value</code>
+    <p class="ep-copy-status ep-hint ep-visually-hidden" id="@(Id)-status" role="status" aria-live="polite"></p>
+</div>
+
+@code {
+    /// <summary>頁面內唯一的識別，用來連結文字與狀態（<c>{Id}-value</c>、<c>{Id}-status</c>）。</summary>
+    [Parameter, EditorRequired]
+    public string Id { get; set; } = string.Empty;
+
+    /// <summary>按鈕文字與無障礙名稱，說明複製的是什麼（例如「複製登入網址」）。呼叫端傳入已本地化的文字。</summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Value { get; set; } = string.Empty;
+}

@@ -77,17 +77,25 @@ internal static class OperatorSession
         return cookie.TicketDataFormat.Protect(new AuthenticationTicket(session, properties ?? app.SessionProperties(), PlatformAuth.UiCookieScheme));
     }
 
-    public static HttpClient ClientFor(this WebApplicationFactory<Program> app, ClaimsPrincipal session, AuthenticationProperties? properties = null)
+    /// <summary><paramref name="baseAddress"/> 是客戶端的來源（scheme 與主機）：用來驗證頁面依請求的來源組網址。</summary>
+    public static HttpClient ClientFor(
+        this WebApplicationFactory<Program> app, ClaimsPrincipal session, AuthenticationProperties? properties = null, Uri? baseAddress = null)
     {
         var cookie = app.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>().Get(PlatformAuth.UiCookieScheme);
         var ticket = app.CookieFor(session, properties);
-        var client = app.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var options = new WebApplicationFactoryClientOptions { AllowAutoRedirect = false };
+        if (baseAddress is not null)
+        {
+            options.BaseAddress = baseAddress;
+        }
+
+        var client = app.CreateClient(options);
         client.DefaultRequestHeaders.Add("Cookie", $"{cookie.Cookie.Name}={ticket}");
         return client;
     }
 
-    public static HttpClient SignedInClient(this WebApplicationFactory<Program> app, string email = PlatformFactory.OperatorEmail) =>
-        app.ClientFor(app.SessionOf(app.EnsureOperatorAsync(email).GetAwaiter().GetResult()));
+    public static HttpClient SignedInClient(this WebApplicationFactory<Program> app, string email = PlatformFactory.OperatorEmail, Uri? baseAddress = null) =>
+        app.ClientFor(app.SessionOf(app.EnsureOperatorAsync(email).GetAwaiter().GetResult()), baseAddress: baseAddress);
 
     // Blazor 會把元件參數裡的中文輸出成數字實體；瀏覽器解碼後一樣，測試也先解碼。
     public static async Task<string> PageAsync(this HttpClient client, string path)
