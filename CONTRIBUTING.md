@@ -147,6 +147,14 @@ docker exec envcite-pg createdb -U <帳號> platform
    uv run --env-file .env envcite-sync moj
    ```
 
+**看 SQL 日誌**：platform 的主控台預設不印 EF Core 的 SQL，只留請求與命令自己的訊息。除錯查詢時，以環境變數把該類別調回 Information，只影響這一次啟動，不改檔案：
+
+```bash
+env 'ENVCITE_Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command=Information' wt platform
+```
+
+類別名稱裡的點照原樣寫；shell 的 `export` 不接受含點的名稱，所以用 `env`。[命令列](#本機建立與救援營運者)同理，在 `dotnet run` 前面加同一段 `env '…'`。鍵與其他 EF 日誌見 [platform README「日誌」](services/platform/README.md#日誌)。
+
 ## 本機第一個帳號
 
 僅適用本機 Development 環境；其他環境沒有種子（seed）帳號，見[索引](#索引)的「部署」列。

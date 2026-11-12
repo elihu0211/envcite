@@ -3,6 +3,7 @@ using EnvCite.Platform.SharedKernel;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Tests;
@@ -87,6 +88,19 @@ public sealed class ConfigurationTests(PlatformFactory factory)
         // 沒啟用就不檢查（部署庫可以先放著不完整的值）。
         using var host = factory.WithWebHostBuilder(b => b.UseSetting("Platform:Mail:Port", "0")).Server;
         Assert.NotNull(host);
+    }
+
+    // EF Core 把每條 SQL 以 Information 記在 Database.Command，一次命令列或一個請求就是一長串；預設只留 Warning 以上，
+    // 其餘的 EF 日誌（遷移進度等）不受影響。要看 SQL 的人以環境變數調回（見 CONTRIBUTING〈看 SQL 日誌〉）。
+    [Fact]
+    public void EntityFrameworkSqlIsLoggedOnlyAtWarningAndAboveWhileTheRestOfEfIsNot()
+    {
+        var loggers = factory.Services.GetRequiredService<ILoggerFactory>();
+        var sql = loggers.CreateLogger("Microsoft.EntityFrameworkCore.Database.Command");
+
+        Assert.False(sql.IsEnabled(LogLevel.Information));
+        Assert.True(sql.IsEnabled(LogLevel.Warning));
+        Assert.True(loggers.CreateLogger("Microsoft.EntityFrameworkCore.Migrations").IsEnabled(LogLevel.Information));
     }
 
     [Fact]

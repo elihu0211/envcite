@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-name]
+owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-name, service-logging]
 -->
 
 # envcite-platform
@@ -90,11 +90,25 @@ flowchart LR
 
 `src/EnvCite.Platform.Api`（長駐）：ASP.NET Core 主機，REST、後台與入口頁；Development 啟動時自動遷移。設定的鍵名、必填與預設值以各設定群組的選項類別與 `appsettings.json` 為準，規則見 [`AGENTS.md`](AGENTS.md) 的 Configuration。開發指令見 [`AGENTS.md`](AGENTS.md)。
 
+## 日誌
+
+主控台日誌的等級是標準的 `Logging:LogLevel`，真值在 [`appsettings.json`](src/EnvCite.Platform.Api/appsettings.json)。
+
+**EF Core 的 SQL**：每條 SQL 是類別 `Microsoft.EntityFrameworkCore.Database.Command` 的 Information。預設把這個類別調到 Warning，[命令列](#營運者帳號)的結果與 `kubectl logs` 才不被一長串 SQL 蓋掉；失敗的指令（Error）仍會記。只調這一個類別：遷移進度（`Microsoft.EntityFrameworkCore.Migrations`）、連線錯誤等其他 EF 日誌照一般等級。SQL 的參數值 EF 預設遮蔽為 `?`，本服務沒有開 `EnableSensitiveDataLogging`。
+
+要看 SQL 時，用環境變數把該類別調回 Information，不改檔案提交：
+
+```bash
+env 'ENVCITE_Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command=Information' <啟動指令>
+```
+
+類別名稱裡的點照原樣寫。shell 的 `export` 不接受含點的名稱，所以用 `env`；k8s 的環境變數名稱允許點。
+
 ## 營運者帳號
 
 營運者後台（`/ui`）的帳號不開放自助註冊；除本機 Development 的種子帳號外，第一位營運者以命令列建立，之後的營運者在後台 `/ui/operators` 新增、停用、重設。本機順序見 [`CONTRIBUTING.md`「本機第一個帳號」](../../CONTRIBUTING.md#本機第一個帳號)。staging 的步驟見 [`索引`](../../CONTRIBUTING.md#索引)。
 
-**命令列**：在服務自己的環境裡執行（資料庫連線與設定取自該環境），不啟動 HTTP 伺服器，跑完就結束。一次性初始密碼只印在標準輸出，不進日誌或稽核；稽核的操作者記為 `system`。以服務的進入點執行，例如 `dotnet EnvCite.Platform.Api.dll operator create a@example.com`。
+**命令列**：在服務自己的環境裡執行（資料庫連線與設定取自該環境），不啟動 HTTP 伺服器，跑完就結束。一次性初始密碼只印在標準輸出，不進日誌或稽核；稽核的操作者記為 `system`。主控台除了命令自己的訊息，只剩 Warning 以上的日誌（SQL 預設不印，見[日誌](#日誌)）。以服務的進入點執行，例如 `dotnet EnvCite.Platform.Api.dll operator create a@example.com`。
 
 | 指令 | 用途 |
 |------|------|
