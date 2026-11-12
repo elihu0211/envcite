@@ -1,11 +1,13 @@
 @* 建立營運者。沒有自助註冊：這裡是後台建立帳號的途徑，初始密碼在下一個對話框只顯示一次。 *@
 @inject IOperatorAdmin Operators
+@inject IMailSender Mail
 @inject AuthenticationStateProvider Auth
 
 <MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
         <MudTextField @bind-Value="_email" Label="@L["電子郵件"]" Variant="Variant.Outlined" Required="true" OnlyValidateIfDirty="true" Immediate="true"
-                      InputType="InputType.Email" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp" />
+                      InputType="InputType.Email" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp"
+                      HelperText="@(Mail.Enabled ? L["會寄一封連結信給對方，由對方自己設定密碼並驗證信箱；不會寄出密碼。"].Value : null)" />
         <MudTextField @bind-Value="_displayName" Label="@L["顯示名稱"]" Variant="Variant.Outlined" Immediate="true"
                       MaxLength="200" HelperText="@L["可以不填。最長 200 字元。"]" OnKeyUp="OnKeyUp" />
         @if (_error is not null)
@@ -16,7 +18,7 @@
     <DialogActions>
         <MudButton OnClick="() => MudDialog.Cancel()">@L["取消"]</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_busy">
-            @(_busy ? L["建立中…"] : L["建立"])
+            @(_busy ? L["建立中…"] : Mail.Enabled ? L["寄出邀請"] : L["建立"])
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -49,6 +51,20 @@
         try
         {
             var actor = (await Auth.GetAuthenticationStateAsync()).User;
+            // 有寄信就邀請（對方自己設密碼）；沒有就發暫時密碼，由你親手交付。
+            if (Mail.Enabled)
+            {
+                var invited = await Operators.InviteAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None);
+                if (!invited.IsOk)
+                {
+                    _error = invited.Localized() ?? L["建立失敗。"];
+                    return;
+                }
+
+                MudDialog.Close(DialogResult.Ok(invited.Value));
+                return;
+            }
+
             var created = await Operators.CreateAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None);
             if (!created.IsOk)
             {

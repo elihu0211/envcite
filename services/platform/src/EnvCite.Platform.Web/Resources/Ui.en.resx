@@ -409,6 +409,31 @@
   <data name="伺服器暫停了這個工作階段。" xml:space="preserve"><value>The server paused this session.</value></data>
   <data name="無法繼續這個工作階段。請重試，或重新載入頁面。" xml:space="preserve"><value>Couldn’t resume this session. Retry, or reload the page.</value></data>
   <data name="繼續" xml:space="preserve"><value>Resume</value></data>
+  <data name="啟用帳號 · 環境知識" xml:space="preserve"><value>Activate account · EnvCite</value></data>
+  <data name="設定密碼" xml:space="preserve"><value>Set password</value></data>
+  <data name="驗證信箱" xml:space="preserve"><value>Verify email</value></data>
+  <data name="連結無效" xml:space="preserve"><value>Link not valid</value></data>
+  <data name="設定你自己的密碼，並完成信箱驗證。這條連結只能使用一次。" xml:space="preserve"><value>Set your own password and finish verifying your email. This link works only once.</value></data>
+  <data name="設好密碼後，登入時還要綁定驗證器。" xml:space="preserve"><value>After you set your password, you will also bind an authenticator when you sign in.</value></data>
+  <data name="按下確認，表示這個信箱是你的。" xml:space="preserve"><value>Confirming tells us this email address is yours.</value></data>
+  <data name="確認信箱" xml:space="preserve"><value>Confirm email</value></data>
+  <data name="這個連結無效或已過期。請洽管理者重新寄送邀請。" xml:space="preserve"><value>This link is invalid or has expired. Ask an administrator to send a new invitation.</value></data>
+  <data name="回登入頁" xml:space="preserve"><value>Back to sign in</value></data>
+  <data name="帳號已啟用，信箱已驗證。請登入。" xml:space="preserve"><value>Your account is activated and your email is verified. Please sign in.</value></data>
+  <data name="寄出邀請" xml:space="preserve"><value>Send invitation</value></data>
+  <data name="會寄一封連結信給對方，由對方自己設定密碼並驗證信箱；不會寄出密碼。" xml:space="preserve"><value>An email with a link is sent so they set their own password and verify their email; no password is emailed.</value></data>
+  <data name="已寄出邀請信給 {0}。" xml:space="preserve"><value>Invitation emailed to {0}.</value></data>
+  <data name="邀請信寄送失敗，{0} 的帳號已建立。請按「重寄邀請」，或用「重設密碼」取得暫時密碼。" xml:space="preserve"><value>Sending the invitation failed, but the account for {0} was created. Use “Resend invitation”, or “Reset password” for a temporary password.</value></data>
+  <data name="重寄邀請" xml:space="preserve"><value>Resend invitation</value></data>
+  <data name="寄驗證信" xml:space="preserve"><value>Send verification email</value></data>
+  <data name="重寄邀請給 {0}" xml:space="preserve"><value>Resend invitation to {0}</value></data>
+  <data name="寄驗證信給 {0}" xml:space="preserve"><value>Send verification email to {0}</value></data>
+  <data name="已重寄邀請信給 {0}。" xml:space="preserve"><value>Invitation resent to {0}.</value></data>
+  <data name="已寄出驗證信給 {0}。" xml:space="preserve"><value>Verification email sent to {0}.</value></data>
+  <data name="已寄出信件給 {0}。" xml:space="preserve"><value>Email sent to {0}.</value></data>
+  <data name="寄信失敗，請稍後再試。" xml:space="preserve"><value>Sending the email failed; try again later.</value></data>
+  <data name="待啟用" xml:space="preserve"><value>Invited</value></data>
+  <data name="信箱未驗證" xml:space="preserve"><value>Email not verified</value></data>
   <data name="Caps Lock 已開啟" xml:space="preserve"><value>Caps Lock is on</value></data>
   <data name="你的復原碼" xml:space="preserve"><value>Your recovery codes</value></data>
   <data name="下載" xml:space="preserve"><value>Download</value></data>

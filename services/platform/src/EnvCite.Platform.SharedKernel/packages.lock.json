@@ -2,6 +2,15 @@
   "version": 2,
   "dependencies": {
     "net10.0": {
+      "MailKit": {
+        "type": "Direct",
+        "requested": "[5.0.0, )",
+        "resolved": "5.0.0",
+        "contentHash": "PG6hnsklTzd/iK9A6j03OxDOas9mh8zOBkbPzcsLmFOODE8Hw3HTy7HAKiJvVHXNpKc3/KMVG/4QvOAKCBbGhA==",
+        "dependencies": {
+          "MimeKit.Core": "5.0.0"
+        }
+      },
       "Grpc.Core.Api": {
         "type": "Transitive",
         "resolved": "2.84.0",
@@ -22,6 +31,11 @@
         "dependencies": {
           "Grpc.Core.Api": "2.84.0"
         }
+      },
+      "MimeKit.Core": {
+        "type": "Transitive",
+        "resolved": "5.0.0",
+        "contentHash": "0RLaVyex/BjUGqiw9xtGwzyCMaBcsu33Rth61bDCeVeQaaQK7tjcy4TA+nHKTqwUdp4OGd+gnhuq2fuR+c20qA=="
       },
       "OpenTelemetry": {
         "type": "Transitive",

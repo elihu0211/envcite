@@ -12,6 +12,8 @@ public partial class Login(IOperatorAccount account, NavigationManager navigatio
 
     [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
 
+    [SupplyParameterFromQuery] private string? Activated { get; set; }
+
     [SupplyParameterFromForm] private LoginForm Input { get; set; } = default!;
 
     private string? _error;

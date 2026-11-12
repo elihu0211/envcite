@@ -5,6 +5,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MailKit" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\..\libs\dotnet\EnvCite.ServiceDefaults\EnvCite.ServiceDefaults.csproj" />
   </ItemGroup>
 

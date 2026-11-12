@@ -115,4 +115,15 @@
   <data name="Outcome.ontology.unavailable" xml:space="preserve"><value>Ontology service unavailable.</value></data>
   <data name="Outcome.verification_code.incorrect" xml:space="preserve"><value>The verification code is incorrect.</value></data>
   <data name="Outcome.verification_code.incorrect_hint" xml:space="preserve"><value>The verification code is incorrect. Make sure your phone's time is set automatically, then enter the six digits the authenticator shows now.</value></data>
+  <data name="Audit.Action.member.invited" xml:space="preserve"><value>Invite member</value></data>
+  <data name="Audit.Action.member.invitation_resent" xml:space="preserve"><value>Resend member invitation</value></data>
+  <data name="Audit.Action.member.activated" xml:space="preserve"><value>Member activated account</value></data>
+  <data name="Audit.Action.operator.invited" xml:space="preserve"><value>Invite operator</value></data>
+  <data name="Audit.Action.operator.invitation_resent" xml:space="preserve"><value>Resend operator invitation</value></data>
+  <data name="Audit.Action.operator.activated" xml:space="preserve"><value>Operator activated account</value></data>
+  <data name="Outcome.activation.link_invalid" xml:space="preserve"><value>This link is invalid or has expired. Ask an administrator to send a new invitation.</value></data>
+  <data name="Outcome.mail.not_enabled" xml:space="preserve"><value>Sending mail is not enabled in this environment.</value></data>
+  <data name="Outcome.account.already_active" xml:space="preserve"><value>This account is already active and its email is verified.</value></data>
+  <data name="Outcome.account.disabled" xml:space="preserve"><value>This account is disabled; enable it first.</value></data>
+  <data name="Operator.Status.invited" xml:space="preserve"><value>Invited</value></data>
 </root>

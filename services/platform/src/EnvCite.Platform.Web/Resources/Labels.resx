@@ -115,4 +115,15 @@
   <data name="Outcome.ontology.unavailable" xml:space="preserve"><value>搜尋服務暫時無法使用，請稍後再試。</value></data>
   <data name="Outcome.verification_code.incorrect" xml:space="preserve"><value>驗證碼不正確。</value></data>
   <data name="Outcome.verification_code.incorrect_hint" xml:space="preserve"><value>驗證碼不正確。請確認手機的時間是自動校正的，再輸入驗證器上現在顯示的六位數。</value></data>
+  <data name="Audit.Action.member.invited" xml:space="preserve"><value>邀請成員</value></data>
+  <data name="Audit.Action.member.invitation_resent" xml:space="preserve"><value>重寄成員邀請</value></data>
+  <data name="Audit.Action.member.activated" xml:space="preserve"><value>成員啟用帳號</value></data>
+  <data name="Audit.Action.operator.invited" xml:space="preserve"><value>邀請營運者</value></data>
+  <data name="Audit.Action.operator.invitation_resent" xml:space="preserve"><value>重寄營運者邀請</value></data>
+  <data name="Audit.Action.operator.activated" xml:space="preserve"><value>營運者啟用帳號</value></data>
+  <data name="Outcome.activation.link_invalid" xml:space="preserve"><value>這個連結無效或已過期。請洽管理者重新寄送邀請。</value></data>
+  <data name="Outcome.mail.not_enabled" xml:space="preserve"><value>這個環境沒有啟用寄信。</value></data>
+  <data name="Outcome.account.already_active" xml:space="preserve"><value>這個帳號已啟用，信箱也已驗證。</value></data>
+  <data name="Outcome.account.disabled" xml:space="preserve"><value>這個帳號已停用，請先重新啟用。</value></data>
+  <data name="Operator.Status.invited" xml:space="preserve"><value>待啟用</value></data>
 </root>

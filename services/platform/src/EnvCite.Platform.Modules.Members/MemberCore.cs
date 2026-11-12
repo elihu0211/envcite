@@ -6,6 +6,7 @@ using EnvCite.Platform.SharedKernel;
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members;
 
@@ -14,7 +15,8 @@ namespace EnvCite.Platform.Modules.Members;
 /// （<see cref="MemberSelfService"/>，租戶是請求的租戶）共用，所以驗證、一次性密碼、稽核只有一份。
 /// 呼叫端負責「誰可以做」；這裡只管「怎麼做」。必須在已經綁定租戶的 scope 裡使用。
 /// </summary>
-internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog audit, TimeProvider time)
+internal sealed class MemberCore(
+    UserManager<ApplicationUser> users, IAuditLog audit, IMailSender mail, IOptions<MailOptions> mailOptions, TimeProvider time)
 {
     public async Task<AdminOutcome<IssuedPassword>> CreateAsync(
         ClaimsPrincipal actor, TenantInfo tenant, string email, string? displayName, string role, CancellationToken cancellationToken)
@@ -63,6 +65,104 @@ internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog a
             cancellationToken);
 
         return AdminOutcome.Ok(new IssuedPassword(Info(user), password));
+    }
+
+    /// <summary>
+    /// 邀請：建立沒有密碼的成員，寄單次、限時的連結。寄信失敗不讓建立失敗（成員已在，可以重寄或改用暫時密碼）。
+    /// 稽核只有信箱（登入名稱）、角色與寄信結果，沒有連結。
+    /// </summary>
+    public async Task<AdminOutcome<MemberInvitation>> InviteAsync(
+        ClaimsPrincipal actor, TenantInfo tenant, string email, string? displayName, string role, CancellationToken cancellationToken)
+    {
+        if (!mail.Enabled)
+        {
+            return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.MailNotEnabled);
+        }
+
+        if (!EmailAddresses.IsValid(email))
+        {
+            return AdminOutcome.Invalid<MemberInvitation>(OutcomeCodes.EmailInvalid);
+        }
+
+        if (!CustomerRoles.All.Contains(role))
+        {
+            return AdminOutcome.Invalid<MemberInvitation>(OutcomeCodes.RoleInvalid);
+        }
+
+        if (displayName is { Length: > 200 })
+        {
+            return AdminOutcome.Invalid<MemberInvitation>(OutcomeCodes.DisplayNameTooLong);
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = email.Trim(),
+            Email = email.Trim(),
+            DisplayName = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim(),
+            Role = role,
+        };
+
+        // 沒有密碼：在對方開啟連結設定之前，這個帳號登不進去。
+        var created = await users.CreateAsync(user);
+        if (!created.Succeeded)
+        {
+            return created.Errors.Any(e => e.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.DuplicateEmail))
+                ? AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.MemberEmailTaken)
+                : IdentityOutcomes.Rejected<MemberInvitation>(created.Errors.First());
+        }
+
+        var delivery = await SendActivationAsync(user, tenant, invitation: true, cancellationToken);
+        await audit.AppendAsync(
+            actor,
+            new AuditEntry(AuditActions.MemberInvited, tenant.Id, "member", user.Id, new Dictionary<string, object?>
+            {
+                ["email"] = user.Email,
+                ["role"] = user.Role,
+                ["mail"] = ActivationMail.Status(delivery),
+            }),
+            cancellationToken);
+        return AdminOutcome.Ok(new MemberInvitation(Info(user), delivery));
+    }
+
+    /// <summary>重寄：沒有密碼的重發邀請（舊連結失效）；有密碼但信箱沒驗證的寄驗證連結；都完成了則 Conflict。</summary>
+    public async Task<AdminOutcome<MemberInvitation>> ResendInvitationAsync(
+        ClaimsPrincipal actor, TenantInfo tenant, ApplicationUser user, CancellationToken cancellationToken)
+    {
+        if (!mail.Enabled)
+        {
+            return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.MailNotEnabled);
+        }
+
+        if (user.Disabled)
+        {
+            return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.AccountDisabled);
+        }
+
+        var invitation = !await users.HasPasswordAsync(user);
+        if (!invitation && user.EmailConfirmed)
+        {
+            return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.AccountAlreadyActive);
+        }
+
+        var delivery = await SendActivationAsync(user, tenant, invitation, cancellationToken);
+        await audit.AppendAsync(
+            actor,
+            new AuditEntry(AuditActions.MemberInvitationResent, tenant.Id, "member", user.Id, new Dictionary<string, object?>
+            {
+                ["email"] = user.Email,
+                ["kind"] = invitation ? "invitation" : "verification",
+                ["mail"] = ActivationMail.Status(delivery),
+            }),
+            cancellationToken);
+        return AdminOutcome.Ok(new MemberInvitation(Info(user), delivery));
+    }
+
+    private async Task<MailDelivery> SendActivationAsync(ApplicationUser user, TenantInfo tenant, bool invitation, CancellationToken cancellationToken)
+    {
+        var settings = mailOptions.Value;
+        var code = await Activation.NewCodeAsync(users, user, revokeOld: invitation);
+        var link = ActivationLinks.ForMember(settings, tenant.Identifier!, user.Id, code);
+        return await ActivationMail.SendAsync(mail, user.Email!, link, settings.LinkLifetime, tenant.Identifier, invitation, cancellationToken);
     }
 
     public async Task<AdminOutcome<IssuedPassword>> ResetPasswordAsync(
@@ -114,5 +214,5 @@ internal sealed class MemberCore(UserManager<ApplicationUser> users, IAuditLog a
 
     public MemberInfo Info(ApplicationUser u) =>
         new(u.Id, u.Email ?? string.Empty, u.DisplayName, u.Role, u.MustChangePassword,
-            u.LockoutEnd is { } end && end > time.GetUtcNow(), u.TwoFactorEnabled, u.Disabled);
+            u.LockoutEnd is { } end && end > time.GetUtcNow(), u.TwoFactorEnabled, u.Disabled, u.EmailConfirmed, string.IsNullOrEmpty(u.PasswordHash));
 }

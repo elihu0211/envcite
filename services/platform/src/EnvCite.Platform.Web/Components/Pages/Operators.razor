@@ -1,6 +1,7 @@
 @page "/ui/operators"
 @using EnvCite.Platform.Web.Components.Dialogs
 @inject IOperatorAdmin Admin
+@inject IMailSender Mail
 @inject IDialogService Dialogs
 @inject AuthenticationStateProvider Auth
 
@@ -45,7 +46,13 @@ else
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="@L["電子郵件"]">@context.Email</MudTd>
-                <MudTd DataLabel="@L["狀態"]"><StatusBadge Tone="@OperatorLabels.Tone(context)">@OperatorLabels.Status(context)</StatusBadge></MudTd>
+                <MudTd DataLabel="@L["狀態"]">
+                    <StatusBadge Tone="@OperatorLabels.Tone(context)">@OperatorLabels.Status(context)</StatusBadge>
+                    @if (!context.EmailConfirmed && !context.Invited)
+                    {
+                        <StatusBadge Tone="warning">@L["信箱未驗證"]</StatusBadge>
+                    }
+                </MudTd>
                 <MudTd DataLabel="@L["操作"]" Class="ep-cell-actions">
                     @if (IsSelf(context))
                     {
@@ -57,6 +64,11 @@ else
                     }
                     else
                     {
+                        @if (Mail.Enabled && (context.Invited || !context.EmailConfirmed))
+                        {
+                            <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResendAsync(context)"
+                                       aria-label="@(context.Invited ? L["重寄邀請給 {0}", context.Email] : L["寄驗證信給 {0}", context.Email])">@(context.Invited ? L["重寄邀請"] : L["寄驗證信"])</MudButton>
+                        }
                         <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResetPasswordAsync(context)">@L["重設密碼"]</MudButton>
                         <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResetTwoFactorAsync(context)">@L["重設驗證器"]</MudButton>
                         <MudButton Variant="Variant.Text" Color="Color.Error" Disabled="_busy" OnClick="() => DisableAsync(context)">@L["停用"]</MudButton>
@@ -155,6 +167,41 @@ else
             await RevealAsync(issued);
             await ReloadQuietlyAsync();
         }
+        else if (result is { Canceled: false, Data: OperatorInvitation invitation })
+        {
+            await ReloadQuietlyAsync();
+            if (invitation.Mail == MailDelivery.Sent)
+            {
+                Succeed(L["已寄出邀請信給 {0}。", invitation.Operator.Email]);
+            }
+            else
+            {
+                Fail(L["邀請信寄送失敗，{0} 的帳號已建立。請按「重寄邀請」，或用「重設密碼」取得暫時密碼。", invitation.Operator.Email]);
+            }
+        }
+    }
+
+    private async Task ResendAsync(OperatorInfo op)
+    {
+        await RunAsync(async () =>
+        {
+            var sent = await Admin.ResendInvitationAsync(await ActorAsync(), op.Id, CancellationToken.None);
+            if (!sent.IsOk)
+            {
+                Fail(sent.Localized() ?? L["寄信失敗，請稍後再試。"]);
+                return;
+            }
+
+            await ReloadQuietlyAsync();
+            if (sent.Value!.Mail == MailDelivery.Sent)
+            {
+                Succeed(op.Invited ? L["已重寄邀請信給 {0}。", op.Email] : L["已寄出驗證信給 {0}。", op.Email]);
+            }
+            else
+            {
+                Fail(L["寄信失敗，請稍後再試。"]);
+            }
+        });
     }
 
     private async Task ResetPasswordAsync(OperatorInfo op)

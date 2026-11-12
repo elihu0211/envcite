@@ -1,3 +1,5 @@
+using EnvCite.Platform.SharedKernel;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +40,39 @@ public sealed class ConfigurationTests(PlatformFactory factory)
         var message = StartFailure(factory.WithWebHostBuilder(b => b.UseSetting(key, value)));
 
         Assert.Contains(expected, message, StringComparison.Ordinal);
+    }
+
+    // 寄信預設關閉；開了就必須指名中繼、寄件者與連結來源，否則啟動就停下並指名鍵（而不是第一封信才失敗）。
+    [Theory]
+    [InlineData("Platform:Mail:Host", "", "Platform:Mail:Host is required")]
+    [InlineData("Platform:Mail:Port", "0", "Platform:Mail:Port must be between 1 and 65535")]
+    [InlineData("Platform:Mail:From", "not-a-mail", "Platform:Mail:From must be a valid mail address")]
+    [InlineData("Platform:Mail:BaseUrl", "", "Platform:Mail:BaseUrl must be an https origin")]
+    [InlineData("Platform:Mail:BaseUrl", "http://platform.example", "Platform:Mail:BaseUrl must be an https origin")]
+    [InlineData("Platform:Mail:BaseUrl", "https://platform.example/portal", "Platform:Mail:BaseUrl must be an https origin")]
+    [InlineData("Platform:Mail:TimeoutSeconds", "0", "Platform:Mail:TimeoutSeconds must be between 1 and 120")]
+    [InlineData("Platform:Mail:LinkLifetime", "00:10:00", "Platform:Mail:LinkLifetime must be between 1 hour and 14 days")]
+    [InlineData("Platform:Mail:LinkLifetime", "15.00:00:00", "Platform:Mail:LinkLifetime must be between 1 hour and 14 days")]
+    public void InvalidMailSettingFailsAtStartupWhenMailIsEnabled(string key, string value, string expected)
+    {
+        var message = StartFailure(factory.WithWebHostBuilder(b => b
+            .UseSetting("Platform:Mail:Enabled", "true")
+            .UseSetting("Platform:Mail:Host", "relay.test")
+            .UseSetting("Platform:Mail:From", "envcite@relay.test")
+            .UseSetting("Platform:Mail:BaseUrl", "https://platform.test")
+            .UseSetting(key, value)));
+
+        Assert.Contains(expected, message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MailIsOffByDefaultAndItsSettingsAreIgnoredWhileOff()
+    {
+        Assert.False(new MailOptions().Enabled);
+
+        // 沒啟用就不檢查（部署庫可以先放著不完整的值）。
+        using var host = factory.WithWebHostBuilder(b => b.UseSetting("Platform:Mail:Port", "0")).Server;
+        Assert.NotNull(host);
     }
 
     [Fact]

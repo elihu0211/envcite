@@ -22,6 +22,10 @@ public static class OutcomeCodes
     public const string QuestionRequired = "question.required";
     public const string UpstreamInvalidRequest = "upstream.invalid_request";
     public const string EmailInvalid = "email.invalid";
+    public const string ActivationLinkInvalid = "activation.link_invalid";
+    public const string MailNotEnabled = "mail.not_enabled";
+    public const string AccountAlreadyActive = "account.already_active";
+    public const string AccountDisabled = "account.disabled";
     public const string RoleInvalid = "role.invalid";
     public const string DisplayNameTooLong = "display_name.too_long";
     public const string PasswordSameAsCurrent = "password.same_as_current";
@@ -65,6 +69,10 @@ public static class OutcomeCodes
         [QuestionRequired] = "question is required",
         [UpstreamInvalidRequest] = "{0}",
         [EmailInvalid] = "Email address is not valid.",
+        [ActivationLinkInvalid] = "This link is invalid or has expired. Ask an administrator to send a new invitation.",
+        [MailNotEnabled] = "Sending mail is not enabled in this environment.",
+        [AccountAlreadyActive] = "This account is already active and its email is verified.",
+        [AccountDisabled] = "This account is disabled; enable it first.",
         [RoleInvalid] = "Role is not allowed.",
         [DisplayNameTooLong] = "Display name is limited to 200 characters.",
         [PasswordSameAsCurrent] = "The new password must differ from the current one.",

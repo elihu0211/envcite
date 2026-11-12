@@ -84,6 +84,27 @@ internal sealed class OperatorAccount(
         await Context().SignOutAsync(PlatformAuth.UiCookieScheme);
     }
 
+    public async Task<ActivationState> InspectActivationAsync(string? userId, string? code, CancellationToken cancellationToken) =>
+        await Activation.InspectAsync<OperatorUser, Guid>(users, await users.FindOperatorAsync(userId), code);
+
+    public async Task<AdminOutcome<ActivationState>> ActivateAsync(
+        string? userId, string? code, string? newPassword, CancellationToken cancellationToken)
+    {
+        var (outcome, user) = await Activation.CompleteAsync<OperatorUser, Guid>(users, await users.FindOperatorAsync(userId), code, newPassword);
+        if (outcome.IsOk && user is not null)
+        {
+            await audit.AppendAsync(
+                ActorOf(user),
+                new AuditEntry(AuditActions.OperatorActivated, TargetType: "operator", TargetId: user.Id.ToString(), Detail: new Dictionary<string, object?>
+                {
+                    ["mode"] = outcome.Value == ActivationState.SetPassword ? "set_password" : "confirm_email",
+                }),
+                cancellationToken);
+        }
+
+        return outcome;
+    }
+
     public async Task<AdminOutcome<bool>> ChangePasswordAsync(
         ClaimsPrincipal principal, string currentPassword, string newPassword, CancellationToken cancellationToken)
     {

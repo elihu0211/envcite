@@ -75,6 +75,33 @@ internal sealed class PortalAccount(
         return user.MustChangePassword ? PortalSignInStatus.MustChangePassword : PortalSignInStatus.Succeeded;
     }
 
+    public async Task<ActivationState> InspectActivationAsync(string? userId, string? code, CancellationToken cancellationToken) =>
+        await Activation.InspectAsync<ApplicationUser, string>(users, await FindAsync(userId), code);
+
+    public async Task<AdminOutcome<ActivationState>> ActivateAsync(
+        string? userId, string? code, string? newPassword, CancellationToken cancellationToken)
+    {
+        var info = tenant.MultiTenantContext?.TenantInfo ?? throw new InvalidOperationException("No tenant resolved for the portal request.");
+
+        // 連結只對路徑上的租戶有效：租戶的查詢濾鏡讓別的租戶的人在這裡找不到。
+        var (outcome, user) = await Activation.CompleteAsync<ApplicationUser, string>(users, await FindAsync(userId), code, newPassword);
+        if (outcome.IsOk && user is not null)
+        {
+            await audit.AppendAsync(
+                ActorOf(user),
+                new AuditEntry(AuditActions.MemberActivated, info.Id, "member", user.Id, new Dictionary<string, object?>
+                {
+                    ["mode"] = outcome.Value == ActivationState.SetPassword ? "set_password" : "confirm_email",
+                }),
+                cancellationToken);
+        }
+
+        return outcome;
+    }
+
+    private async Task<ApplicationUser?> FindAsync(string? userId) =>
+        string.IsNullOrWhiteSpace(userId) || userId.Length > 64 ? null : await users.FindByIdAsync(userId);
+
     public async Task SignOutAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
     {
         await signIn.SignOutAsync();

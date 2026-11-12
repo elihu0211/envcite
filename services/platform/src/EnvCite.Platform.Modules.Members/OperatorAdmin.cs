@@ -6,15 +6,17 @@ using EnvCite.Platform.SharedKernel;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members;
 
 /// <summary>
 /// 管理營運者帳號（後台、命令列與本機開發的種子資料共用）。結構與 <see cref="MemberAdmin"/> 相同：
-/// 一次性初始密碼只回傳一次、資料庫只存雜湊、不進日誌與稽核；每個動作留稽核。營運者沒有租戶，所以不必綁定租戶 scope。
+/// 一次性初始密碼只回傳一次、資料庫只存雜湊、不進日誌與稽核；邀請信只放連結、不放密碼（權杖由 Identity 即時產生，不存）；每個動作留稽核。營運者沒有租戶，所以不必綁定租戶 scope。
 /// 沒有自助註冊：這是建立帳號的唯一途徑，呼叫端負責把初始密碼安全地交給對方。
 /// </summary>
-internal sealed class OperatorAdmin(IServiceScopeFactory scopes, TimeProvider time) : IOperatorAdmin
+internal sealed class OperatorAdmin(
+    IServiceScopeFactory scopes, IMailSender mail, IOptions<MailOptions> mailOptions, TimeProvider time) : IOperatorAdmin
 {
     public async Task<AdminOutcome<IReadOnlyList<OperatorInfo>>> ListAsync(CancellationToken cancellationToken)
     {
@@ -63,6 +65,102 @@ internal sealed class OperatorAdmin(IServiceScopeFactory scopes, TimeProvider ti
             cancellationToken);
 
         return AdminOutcome.Ok(new IssuedOperatorPassword(Info(user), password));
+    }
+
+    public async Task<AdminOutcome<OperatorInvitation>> InviteAsync(
+        ClaimsPrincipal actor, string email, string? displayName, CancellationToken cancellationToken)
+    {
+        if (!mail.Enabled)
+        {
+            return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.MailNotEnabled);
+        }
+
+        if (!EmailAddresses.IsValid(email))
+        {
+            return AdminOutcome.Invalid<OperatorInvitation>(OutcomeCodes.EmailInvalid);
+        }
+
+        if (displayName is { Length: > 200 })
+        {
+            return AdminOutcome.Invalid<OperatorInvitation>(OutcomeCodes.DisplayNameTooLong);
+        }
+
+        await using var scope = scopes.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
+        var user = new OperatorUser
+        {
+            UserName = email.Trim(),
+            Email = email.Trim(),
+            DisplayName = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim(),
+        };
+
+        // 沒有密碼：在對方開啟連結設定之前，這個帳號登不進去；設好密碼後仍要依序綁定驗證器。
+        var created = await users.CreateAsync(user);
+        if (!created.Succeeded)
+        {
+            return created.Errors.Any(e => e.Code is nameof(IdentityErrorDescriber.DuplicateUserName) or nameof(IdentityErrorDescriber.DuplicateEmail))
+                ? AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.OperatorEmailTaken)
+                : IdentityOutcomes.Rejected<OperatorInvitation>(created.Errors.First());
+        }
+
+        var delivery = await SendActivationAsync(users, user, invitation: true, cancellationToken);
+        await Audit(scope).AppendAsync(
+            actor,
+            new AuditEntry(AuditActions.OperatorInvited, TargetType: "operator", TargetId: user.Id.ToString(), Detail: new Dictionary<string, object?>
+            {
+                ["email"] = user.Email,
+                ["mail"] = ActivationMail.Status(delivery),
+            }),
+            cancellationToken);
+        return AdminOutcome.Ok(new OperatorInvitation(Info(user), delivery));
+    }
+
+    public async Task<AdminOutcome<OperatorInvitation>> ResendInvitationAsync(
+        ClaimsPrincipal actor, string operatorId, CancellationToken cancellationToken)
+    {
+        if (!mail.Enabled)
+        {
+            return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.MailNotEnabled);
+        }
+
+        await using var scope = scopes.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
+        if (await users.FindOperatorAsync(operatorId) is not { } user)
+        {
+            return AdminOutcome.NotFound<OperatorInvitation>(OutcomeCodes.OperatorNotFound);
+        }
+
+        if (user.Disabled)
+        {
+            return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.AccountDisabled);
+        }
+
+        var invitation = !await users.HasPasswordAsync(user);
+        if (!invitation && user.EmailConfirmed)
+        {
+            return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.AccountAlreadyActive);
+        }
+
+        var delivery = await SendActivationAsync(users, user, invitation, cancellationToken);
+        await Audit(scope).AppendAsync(
+            actor,
+            new AuditEntry(AuditActions.OperatorInvitationResent, TargetType: "operator", TargetId: user.Id.ToString(), Detail: new Dictionary<string, object?>
+            {
+                ["email"] = user.Email,
+                ["kind"] = invitation ? "invitation" : "verification",
+                ["mail"] = ActivationMail.Status(delivery),
+            }),
+            cancellationToken);
+        return AdminOutcome.Ok(new OperatorInvitation(Info(user), delivery));
+    }
+
+    private async Task<MailDelivery> SendActivationAsync(
+        UserManager<OperatorUser> users, OperatorUser user, bool invitation, CancellationToken cancellationToken)
+    {
+        var settings = mailOptions.Value;
+        var code = await Activation.NewCodeAsync(users, user, revokeOld: invitation);
+        var link = ActivationLinks.ForOperator(settings, user.Id.ToString(), code);
+        return await ActivationMail.SendAsync(mail, user.Email!, link, settings.LinkLifetime, tenantIdentifier: null, invitation, cancellationToken);
     }
 
     public async Task<AdminOutcome<IssuedOperatorPassword>> ResetPasswordAsync(
@@ -157,5 +255,5 @@ internal sealed class OperatorAdmin(IServiceScopeFactory scopes, TimeProvider ti
 
     private OperatorInfo Info(OperatorUser u) =>
         new(u.Id.ToString(), u.Email ?? string.Empty, u.DisplayName, u.MustChangePassword,
-            u.LockoutEnd is { } end && end > time.GetUtcNow(), u.TwoFactorEnabled, u.Disabled);
+            u.LockoutEnd is { } end && end > time.GetUtcNow(), u.TwoFactorEnabled, u.Disabled, u.EmailConfirmed, string.IsNullOrEmpty(u.PasswordHash));
 }

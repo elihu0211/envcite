@@ -11,6 +11,7 @@ public static class OperatorLabels
     private static string StatusKey(OperatorInfo op) =>
         op.Disabled ? "disabled"
         : op.LockedOut ? "locked"
+        : op.Invited ? "invited"
         : op.MustChangePassword ? "must_change_password"
         : op.TwoFactorEnabled ? "active"
         : "needs_enrollment";
@@ -18,6 +19,6 @@ public static class OperatorLabels
     /// <summary><c>StatusBadge</c> 的 tone。</summary>
     public static string Tone(OperatorInfo op) =>
         op.Disabled || op.LockedOut ? "error"
-        : op.MustChangePassword || !op.TwoFactorEnabled ? "warning"
+        : op.Invited || op.MustChangePassword || !op.TwoFactorEnabled ? "warning"
         : "success";
 }

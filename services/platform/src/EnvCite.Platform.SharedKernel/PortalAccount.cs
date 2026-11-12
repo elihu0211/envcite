@@ -25,6 +25,9 @@ public static class PortalPaths
 
     public static string Password(string tenantIdentifier) => $"{Prefix}/{Uri.EscapeDataString(tenantIdentifier)}/password";
 
+    /// <summary>邀請／驗證連結的頁面；查詢字串帶 <c>userId</c> 與 <c>code</c>。</summary>
+    public static string Activate(string tenantIdentifier) => $"{Prefix}/{Uri.EscapeDataString(tenantIdentifier)}/activate";
+
     /// <summary>自請求路徑取出租戶識別碼；不是入口路徑則 null。</summary>
     public static string? TenantFrom(Microsoft.AspNetCore.Http.PathString path)
     {
@@ -73,10 +76,26 @@ public interface IPortalAccount
     /// <summary>驗證目前密碼後改密碼；成功會換新 cookie（舊的 session 失效），並清除「必須改密碼」。</summary>
     Task<AdminOutcome<bool>> ChangePasswordAsync(
         ClaimsPrincipal user, string currentPassword, string newPassword, CancellationToken cancellationToken);
+
+    /// <summary>檢視邀請／驗證連結（沒有副作用，所以信件掃描器預先開啟連結不會用掉它）。連結只對路徑上的租戶有效。</summary>
+    Task<ActivationState> InspectActivationAsync(string? userId, string? code, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 使用連結：邀請連結要帶 <paramref name="newPassword"/>，設好密碼並驗證信箱；驗證連結只驗證信箱。
+    /// 不簽發 session：使用者接著登入。失敗一律是 <see cref="OutcomeCodes.ActivationLinkInvalid"/>，
+    /// 或密碼不符規則（連結此時仍有效，可以重打）。
+    /// </summary>
+    Task<AdminOutcome<ActivationState>> ActivateAsync(string? userId, string? code, string? newPassword, CancellationToken cancellationToken);
 }
 
+/// <param name="EmailConfirmed">信箱已透過連結驗證。沒驗證的信箱不能用於復原。</param>
+/// <param name="Invited">已邀請、還沒設定密碼（尚未開啟邀請連結）。</param>
 public sealed record MemberInfo(
-    string Id, string Email, string? DisplayName, string Role, bool MustChangePassword, bool LockedOut, bool TwoFactorEnabled, bool Disabled);
+    string Id, string Email, string? DisplayName, string Role, bool MustChangePassword, bool LockedOut, bool TwoFactorEnabled, bool Disabled,
+    bool EmailConfirmed = false, bool Invited = false);
+
+/// <summary>邀請（或重寄）的結果：<paramref name="Mail"/> 是邀請信的寄送結果。信裡只有連結，沒有密碼。</summary>
+public sealed record MemberInvitation(MemberInfo Member, MailDelivery Mail);
 
 /// <param name="IsYou">這一列是目前操作的人自己：自己不能停用、不能改自己的角色。</param>
 /// <param name="CanManage">目前操作的人能不能管理這一位（依角色階層；不含「最後一位擁有者」這類狀態規則，那由動作自己擋）。</param>
@@ -86,8 +105,9 @@ public sealed record TeamMember(MemberInfo Member, bool IsYou, bool CanManage);
 public sealed record IssuedPassword(MemberInfo Member, string Password);
 
 /// <summary>
-/// 營運者管理租戶的成員。邀請與寄信的基礎設施還不存在，所以現階段由營運者建立帳號並把一次性的初始密碼
-/// 交給客戶（客戶第一次登入必須改掉）；這是過渡做法，不是終態（07-01 §1.2）。每個動作都留稽核。
+/// 營運者管理租戶的成員。啟用寄信（<c>Platform:Mail</c>）時，新增成員是<b>邀請</b>：帳號沒有密碼，信裡是單次、限時的連結，
+/// 客戶開啟後自己設定密碼並同時驗證信箱，沒有人經手密碼。沒啟用寄信時，由營運者建立帳號並把一次性的初始密碼
+/// 交給客戶（客戶第一次登入必須改掉）。每個動作都留稽核。
 /// </summary>
 public interface IMemberAdmin
 {
@@ -96,6 +116,15 @@ public interface IMemberAdmin
     Task<AdminOutcome<IssuedPassword>> CreateAsync(
         ClaimsPrincipal actor, string tenantId, string email, string? displayName, string role,
         CancellationToken cancellationToken);
+
+    /// <summary>邀請：建立沒有密碼的成員，寄連結讓對方自己設定密碼並驗證信箱。沒啟用寄信時回 <see cref="OutcomeCodes.MailNotEnabled"/>，改用 <see cref="CreateAsync"/>。</summary>
+    Task<AdminOutcome<MemberInvitation>> InviteAsync(
+        ClaimsPrincipal actor, string tenantId, string email, string? displayName, string role,
+        CancellationToken cancellationToken);
+
+    /// <summary>重寄：還沒設密碼的重發邀請連結（先前的連結失效）；已有密碼但信箱沒驗證的寄驗證連結；已啟用且已驗證則 <see cref="OutcomeCodes.AccountAlreadyActive"/>。</summary>
+    Task<AdminOutcome<MemberInvitation>> ResendInvitationAsync(
+        ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken);
 
     /// <summary>設一組新的一次性密碼、解除鎖定、讓既有 session 失效，並要求下次登入改密碼。</summary>
     Task<AdminOutcome<IssuedPassword>> ResetPasswordAsync(
@@ -178,6 +207,13 @@ public interface IMemberSelfService
     /// <summary>新增成員，回傳一次性的初始密碼（操作者親手交給對方；對方第一次登入必須改）。</summary>
     Task<AdminOutcome<IssuedPassword>> CreateAsync(
         ClaimsPrincipal actor, string email, string? displayName, string role, CancellationToken cancellationToken);
+
+    /// <summary>邀請：建立沒有密碼的成員，寄連結讓對方自己設定密碼並驗證信箱（權限規則同 <see cref="CreateAsync"/>）。沒啟用寄信時回 <see cref="OutcomeCodes.MailNotEnabled"/>。</summary>
+    Task<AdminOutcome<MemberInvitation>> InviteAsync(
+        ClaimsPrincipal actor, string email, string? displayName, string role, CancellationToken cancellationToken);
+
+    /// <summary>重寄邀請或驗證連結（規則同 <see cref="IMemberAdmin.ResendInvitationAsync"/>；要能管理對方，且不能對自己）。</summary>
+    Task<AdminOutcome<MemberInvitation>> ResendInvitationAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
 
     /// <summary>停用或重新啟用。停用會讓對方所有 session 立刻失效。</summary>
     Task<AdminOutcome<MemberInfo>> SetDisabledAsync(ClaimsPrincipal actor, string userId, bool disabled, CancellationToken cancellationToken);
