@@ -63,6 +63,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **系統名稱只有一個來源**：`Platform:Brand:Name`（`BrandOptions`；不可空白、25 字內、無控制字元）。介面經 `BrandText.Name` 取，信件主旨與內文（純文字與 HTML 兩版）、`mail test`、OpenAPI 描述讀 `IOptions<BrandOptions>`；`Platform:Mail:FromName` 沒設時預設用它。不在元件、信件或描述裡寫死名稱；帶名稱的文字用格式鍵（`L["登入 · {0}", Brand.Name]`），預設名稱（`BrandOptions.DefaultName`）的英文對照是 `Ui.en.resx` 的同名一鍵，自訂名稱不查資源檔、兩種語言原樣顯示。標誌 SVG 不讀設定，改名時另外換圖（見 README〈系統名稱〉）。`BrandTests` 守住預設值下輸出不變、改名後各處一起變。
 - 部署環境不設 `DefaultPlan`（服務是全付費，沒方案的租戶在資料端點得 402）；Development 與測試設定它，讓剛建立的租戶能用。
 - Development 的種子資料（`SeedDevelopmentData`）只在 Development 生效，且只在對應表是空的時才建；一次性密碼只經 `Console.WriteLine` 印到終端機，不進 `ILogger`，沒有預設密碼。
+- **預設日誌不得蓋掉命令列的輸出**：命令列（`OperatorCli`）在服務自己的主機裡跑，結果印在標準輸出，與主控台日誌同一個畫面；`kubectl logs` 也是同一條流。所以 EF Core 的 SQL 類別（`Microsoft.EntityFrameworkCore.Database.Command`）在 `appsettings.json` 預設為 Warning。只調這一個類別、不調整個 `Microsoft.EntityFrameworkCore`：遷移進度、其他警告與錯誤仍要看得到。`appsettings.Development.json` 不把它調回去；要看 SQL 的人用環境變數（README〈日誌〉）。新增每次命令都會印的 Information 日誌之前，先看命令列輸出是否仍乾淨；`ConfigurationTests` 與 `OperatorCliTests` 守住 SQL 這一條。
 - 在 TLS 終止的 proxy 後面要設 `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true`，否則依來源位址限流的規則會把所有人看成同一個位址（且限流狀態是每個副本各一份）。
 
 ## Observability

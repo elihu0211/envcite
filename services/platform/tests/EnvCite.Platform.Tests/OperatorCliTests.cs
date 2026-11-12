@@ -71,6 +71,21 @@ public sealed class OperatorCliTests(PlatformFactory factory)
         Assert.DoesNotContain(PasswordIn(output), dump, StringComparison.Ordinal);
     }
 
+    // 命令列在服務自己的主機裡跑，主控台日誌與命令的訊息混在同一個畫面：EF Core 的每條 SQL 不得蓋掉命令的結果。
+    // 同一批日誌裡遷移的進度（Information）仍在，證明收得到日誌，不是日誌根本沒進來。
+    [Fact]
+    public async Task CreateDoesNotFloodTheLogsWithSqlButStillLogsMigrationProgress()
+    {
+        var logs = new CapturingLoggerProvider();
+        await using var host = (await HostAsync()).WithWebHostBuilder(b => b.ConfigureLogging(l => l.AddProvider(logs)));
+
+        var (code, _, _) = await RunAsync(host.Services, "operator", "create", "first@example.com");
+
+        Assert.Equal(0, code);
+        Assert.Contains(logs.Messages, m => m.StartsWith("Applying migration", StringComparison.Ordinal));
+        Assert.DoesNotContain(logs.Messages, m => m.StartsWith("Executed DbCommand", StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task CreatingAnExistingEmailFailsAndPrintsNoPassword()
     {
