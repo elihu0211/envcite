@@ -109,8 +109,14 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
 
         Bind(scope, tenant);
         var user = await scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>().FindByIdAsync(userId);
-        return user is null
-            ? AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound)
+        if (user is null)
+        {
+            return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound);
+        }
+
+        // 受目錄同步管理的人，停用與啟用由身分來源決定；要由人處理先解除管理。
+        return user.ManagedBy == DirectoryRoles.ManagedBy
+            ? AdminOutcome.Conflict<MemberInfo>(OutcomeCodes.DirectoryMemberManaged)
             : AdminOutcome.Ok(await scope.ServiceProvider.GetRequiredService<MemberCore>().SetDisabledAsync(actor, tenant, user, disabled, cancellationToken));
     }
 

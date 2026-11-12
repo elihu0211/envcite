@@ -36,6 +36,10 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     [InlineData("Platform:Ui:SignInAttemptsPerMinute", "0", "Platform:Ui:SignInAttemptsPerMinute must be between 1 and 1000")]
     [InlineData("Platform:Ui:SessionMaxAge", "00:00:00", "Platform:Ui:SessionMaxAge must be between 1 minute and 7 days")]
     [InlineData("Platform:Ui:SessionMaxAge", "8.00:00:00", "Platform:Ui:SessionMaxAge must be between 1 minute and 7 days")]
+    [InlineData("Platform:Directory:MaxPageSize", "0", "Platform:Directory:MaxPageSize must be between 1 and 1000")]
+    [InlineData("Platform:Directory:MaxPageSize", "1001", "Platform:Directory:MaxPageSize must be between 1 and 1000")]
+    [InlineData("Platform:Directory:RequestsPerMinute", "0", "Platform:Directory:RequestsPerMinute must be between 1 and 10000")]
+    [InlineData("Platform:Directory:StaleAfter", "00:00:30", "Platform:Directory:StaleAfter must be at least one minute")]
     [InlineData("Platform:Brand:Name", "", "Platform:Brand:Name must not be blank")]
     [InlineData("Platform:Brand:Name", "   ", "Platform:Brand:Name must not be blank")]
     [InlineData("Platform:Brand:Name", "一二三四五六七八九十一二三四五六七八九十一二三四五六", "Platform:Brand:Name must be at most 25 characters")]
@@ -145,6 +149,11 @@ public sealed class ConfigurationTests(PlatformFactory factory)
         Assert.False(new Web.Auth.UiOptions().Enabled);
         Assert.False(new Web.Auth.PortalOptions().Enabled);
     }
+
+    // 目錄同步同樣預設關閉：部署者不設就沒有這個功能面（共用的測試主機為了測它才開）。
+    [Fact]
+    public void DirectorySyncIsOffUnlessEnabled() =>
+        Assert.False(new Modules.Members.DirectorySync.DirectoryOptions().Enabled);
 
     // 要明確開：Production 設了 Platform:Ui:Enabled 才掛 /ui（登入頁在，而且是公開的）。
     [Fact]

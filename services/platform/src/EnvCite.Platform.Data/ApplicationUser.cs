@@ -31,4 +31,18 @@ public sealed class ApplicationUser : IdentityUser
     /// 帳號與稽核紀錄都保留：離職的人不是被刪掉，只是進不來。
     /// </summary>
     public bool Disabled { get; set; }
+
+    /// <summary>
+    /// 身分來源（目錄同步）給這個人的穩定 Id，租戶內唯一；沒連結則 null。email 會變，這個不會，所以是同步比對的首要鍵。
+    /// </summary>
+    public string? ExternalId { get; set; }
+
+    /// <summary>
+    /// 這位成員由誰管理：null 是人，<c>directory</c> 是目錄同步。受管成員的角色與停用由身分來源決定，
+    /// 介面與管理動作鎖住（否則下一輪同步就悄悄蓋掉人的修改）。
+    /// </summary>
+    public string? ManagedBy { get; set; }
+
+    /// <summary>目錄同步最後一次改動這位成員的時間（沒有變化的重送不更新）。</summary>
+    public DateTimeOffset? SyncedAt { get; set; }
 }

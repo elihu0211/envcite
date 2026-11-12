@@ -129,4 +129,30 @@
   <data name="Outcome.account.already_active" xml:space="preserve"><value>這個帳號已啟用，信箱也已驗證。</value></data>
   <data name="Outcome.account.disabled" xml:space="preserve"><value>這個帳號已停用，請先重新啟用。</value></data>
   <data name="Operator.Status.invited" xml:space="preserve"><value>待啟用</value></data>
+  <data name="Audit.Action.directory.token_issued" xml:space="preserve"><value>簽發目錄同步 token</value></data>
+  <data name="Audit.Action.directory.token_revoked" xml:space="preserve"><value>撤銷目錄同步 token</value></data>
+  <data name="Audit.Action.directory.enabled" xml:space="preserve"><value>開啟目錄同步</value></data>
+  <data name="Audit.Action.directory.disabled" xml:space="preserve"><value>關閉目錄同步</value></data>
+  <data name="Audit.Action.directory.configured" xml:space="preserve"><value>變更目錄同步設定</value></data>
+  <data name="Audit.Action.directory.sync_rejected" xml:space="preserve"><value>目錄同步的變更被拒絕</value></data>
+  <data name="Audit.Action.member.provisioned" xml:space="preserve"><value>目錄同步建立成員</value></data>
+  <data name="Audit.Action.member.deprovisioned" xml:space="preserve"><value>目錄同步停用成員</value></data>
+  <data name="Audit.Action.member.reprovisioned" xml:space="preserve"><value>目錄同步重新啟用成員</value></data>
+  <data name="Audit.Action.member.attribute_synced" xml:space="preserve"><value>目錄同步更新成員資料</value></data>
+  <data name="Audit.Action.member.adopted" xml:space="preserve"><value>目錄同步接管既有成員</value></data>
+  <data name="Audit.Action.member.release_managed" xml:space="preserve"><value>解除成員的目錄同步管理</value></data>
+  <data name="Audit.Actor.directory" xml:space="preserve"><value>目錄同步</value></data>
+  <data name="Audit.Actor.directory.id" xml:space="preserve"><value>目錄同步 token {0}</value></data>
+  <data name="Outcome.directory.not_enabled" xml:space="preserve"><value>目錄同步尚未啟用。</value></data>
+  <data name="Outcome.directory.owner_only" xml:space="preserve"><value>只有擁有者能管理目錄同步。</value></data>
+  <data name="Outcome.directory.last_owner" xml:space="preserve"><value>目錄同步不能停用或降級最後一位啟用中的擁有者。</value></data>
+  <data name="Outcome.directory.member_managed" xml:space="preserve"><value>這位成員由目錄同步管理。請在身分來源修改，或先解除目錄同步的管理。</value></data>
+  <data name="Outcome.directory.not_managed" xml:space="preserve"><value>這位成員不是由目錄同步管理的。</value></data>
+  <data name="Outcome.directory.role_not_mappable" xml:space="preserve"><value>目錄同步不能指派這個角色。它最高只能指派管理員，擁有者由人指派。</value></data>
+  <data name="Outcome.directory.email_immutable" xml:space="preserve"><value>目錄同步不能變更成員的 email。</value></data>
+  <data name="Outcome.directory.external_id_taken" xml:space="preserve"><value>這個租戶已有成員使用這個外部識別碼。</value></data>
+  <data name="Outcome.directory.external_id_invalid" xml:space="preserve"><value>外部識別碼須為 1 到 200 個字元。</value></data>
+  <data name="Outcome.directory.adopt_required" xml:space="preserve"><value>這個 email 已有成員，且不是由目錄同步建立的。請開啟「接管既有成員」才能連結。</value></data>
+  <data name="Outcome.directory.token_not_found" xml:space="preserve"><value>找不到這把目錄同步 token。</value></data>
+  <data name="Outcome.directory.token_invalid" xml:space="preserve"><value>名稱必填（100 字內）；到期時間必須在未來。</value></data>
 </root>

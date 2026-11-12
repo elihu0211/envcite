@@ -12,6 +12,9 @@ public static class PlatformClaimTypes
     /// <summary>客戶入口使用者的 Id（<c>ApplicationUser.Id</c>）。有這個 claim 的是入口的人，不是機器。</summary>
     public const string PortalUserId = "portal_user_id";
 
+    /// <summary>目錄同步的 token Id（<c>DirectoryToken.Id</c>）。有這個 claim 的是客戶的身分來源（IdP）在推送成員，不是人。</summary>
+    public const string DirectoryTokenId = "directory_token_id";
+
     /// <summary>營運者帳號的 Id（<c>OperatorUser.Id</c>）。有這個 claim 的是後台的人。</summary>
     public const string OperatorId = "operator_id";
 

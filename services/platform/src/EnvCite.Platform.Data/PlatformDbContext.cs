@@ -38,6 +38,10 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
 
     public DbSet<OperatorUser> Operators => Set<OperatorUser>();
 
+    public DbSet<DirectoryToken> DirectoryTokens => Set<DirectoryToken>();
+
+    public DbSet<DirectoryConnection> DirectoryConnections => Set<DirectoryConnection>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -47,6 +51,27 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
         {
             user.Property(u => u.DisplayName).HasMaxLength(200);
             user.Property(u => u.Role).HasMaxLength(32).IsRequired();
+            user.Property(u => u.ExternalId).HasMaxLength(200);
+            user.Property(u => u.ManagedBy).HasMaxLength(32);
+            // 同步以 ExternalId 比對：租戶內唯一，沒連結的（null）不受限。
+            user.HasIndex("TenantId", nameof(ApplicationUser.ExternalId)).IsUnique().HasFilter("\"ExternalId\" IS NOT NULL");
+        });
+
+        builder.Entity<DirectoryToken>(token =>
+        {
+            token.IsMultiTenant();
+            token.Property(t => t.Name).HasMaxLength(100);
+            token.Property(t => t.Prefix).HasMaxLength(DirectoryToken.PrefixLength);
+            token.HasIndex(t => t.Prefix).IsUnique();
+            token.HasIndex("TenantId");
+        });
+
+        builder.Entity<DirectoryConnection>(connection =>
+        {
+            connection.IsMultiTenant();
+            connection.Property(c => c.DefaultRole).HasMaxLength(32);
+            connection.Property(c => c.LastFailureCode).HasMaxLength(64);
+            connection.HasIndex("TenantId").IsUnique();
         });
 
         builder.Entity<ApiKey>(key =>

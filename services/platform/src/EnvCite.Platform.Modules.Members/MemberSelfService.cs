@@ -99,6 +99,11 @@ internal sealed class MemberSelfService(
             return refusal;
         }
 
+        if (target!.ManagedBy == DirectoryRoles.ManagedBy)
+        {
+            return AdminOutcome.Conflict<MemberInfo>(OutcomeCodes.DirectoryMemberManaged);
+        }
+
         return AdminOutcome.Ok(await core.SetDisabledAsync(ActorOf(me!), Tenant(), target!, disabled, cancellationToken));
     }
 
@@ -109,6 +114,11 @@ internal sealed class MemberSelfService(
         if (refusal is not null)
         {
             return refusal;
+        }
+
+        if (target!.ManagedBy == DirectoryRoles.ManagedBy)
+        {
+            return AdminOutcome.Conflict<MemberInfo>(OutcomeCodes.DirectoryMemberManaged);
         }
 
         if (!CustomerRoles.All.Contains(role))

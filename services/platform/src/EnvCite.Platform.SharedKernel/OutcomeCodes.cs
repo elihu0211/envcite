@@ -57,6 +57,18 @@ public static class OutcomeCodes
     public const string OntologyUnavailable = "ontology.unavailable";
     public const string VerificationCodeIncorrect = "verification_code.incorrect";
     public const string VerificationCodeIncorrectHint = "verification_code.incorrect_hint";
+    public const string DirectoryNotEnabled = "directory.not_enabled";
+    public const string DirectoryOwnerOnly = "directory.owner_only";
+    public const string DirectoryLastOwner = "directory.last_owner";
+    public const string DirectoryMemberManaged = "directory.member_managed";
+    public const string DirectoryNotManaged = "directory.not_managed";
+    public const string DirectoryRoleNotMappable = "directory.role_not_mappable";
+    public const string DirectoryEmailImmutable = "directory.email_immutable";
+    public const string DirectoryExternalIdTaken = "directory.external_id_taken";
+    public const string DirectoryExternalIdInvalid = "directory.external_id_invalid";
+    public const string DirectoryAdoptRequired = "directory.adopt_required";
+    public const string DirectoryTokenNotFound = "directory.token_not_found";
+    public const string DirectoryTokenInvalid = "directory.token_invalid";
 
     /// <summary>所有代碼的英文說明；{0}、{1} 是 <see cref="AdminOutcome{T}.Args"/>。</summary>
     public static IReadOnlyDictionary<string, string> English { get; } = new Dictionary<string, string>
@@ -107,6 +119,18 @@ public static class OutcomeCodes
         [OntologyUnavailable] = "Ontology service unavailable.",
         [VerificationCodeIncorrect] = "The verification code is incorrect.",
         [VerificationCodeIncorrectHint] = "The verification code is incorrect. Make sure your phone's time is set automatically, then enter the six digits the authenticator shows now.",
+        [DirectoryNotEnabled] = "Directory sync is not enabled.",
+        [DirectoryOwnerOnly] = "Only owners can manage directory sync.",
+        [DirectoryLastOwner] = "The last active owner cannot be deactivated or demoted by directory sync.",
+        [DirectoryMemberManaged] = "This member is managed by directory sync. Change it in the identity provider, or release it from directory sync first.",
+        [DirectoryNotManaged] = "This member is not managed by directory sync.",
+        [DirectoryRoleNotMappable] = "Directory sync cannot assign this role. The highest role it can assign is admin; owners are assigned by people.",
+        [DirectoryEmailImmutable] = "Directory sync cannot change a member's email.",
+        [DirectoryExternalIdTaken] = "Another member of this tenant already has this external id.",
+        [DirectoryExternalIdInvalid] = "External id must be 1 to 200 characters.",
+        [DirectoryAdoptRequired] = "A member with this email already exists and was not created by directory sync. Enable adopting existing members to link it.",
+        [DirectoryTokenNotFound] = "Directory token not found.",
+        [DirectoryTokenInvalid] = "Name is required (max 100 chars); ExpiresAt must be in the future.",
     }.ToFrozenDictionary();
 
     /// <summary>代碼的英文說明（填入參數）；不認得的代碼原樣回傳。</summary>

@@ -98,6 +98,10 @@ namespace EnvCite.Platform.Data.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("ExternalId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<long>("LastTotpStep")
                         .HasColumnType("bigint");
 
@@ -106,6 +110,10 @@ namespace EnvCite.Platform.Data.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ManagedBy")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("boolean");
@@ -135,6 +143,9 @@ namespace EnvCite.Platform.Data.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset?>("SyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -154,6 +165,10 @@ namespace EnvCite.Platform.Data.Migrations
                     b.HasIndex("NormalizedUserName", "TenantId")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
+
+                    b.HasIndex("TenantId", "ExternalId")
+                        .IsUnique()
+                        .HasFilter("\"ExternalId\" IS NOT NULL");
 
                     b.ToTable("AspNetUsers", "platform");
 
@@ -279,6 +294,107 @@ namespace EnvCite.Platform.Data.Migrations
                     b.HasIndex("ConversationId", "CreatedAt");
 
                     b.ToTable("ConversationMessages", "platform");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("EnvCite.Platform.Data.DirectoryConnection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("AdoptExistingMembers")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("CreatedCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("DeactivatedCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("DefaultRole")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LastFailureCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("LastRequestAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("RejectedCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("UpdatedCount")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique();
+
+                    b.ToTable("DirectoryConnections", "platform");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("EnvCite.Platform.Data.DirectoryToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("SecretHash")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Prefix")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("DirectoryTokens", "platform");
 
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });

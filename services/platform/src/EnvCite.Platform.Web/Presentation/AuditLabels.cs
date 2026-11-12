@@ -18,11 +18,13 @@ public static class AuditLabels
     /// </summary>
     public static string ActionTone(string action) => action switch
     {
-        AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned or AuditActions.MemberCreated or AuditActions.OperatorCreated => "success",
+        AuditActions.TenantCreated or AuditActions.ApiKeyIssued or AuditActions.TenantPlanAssigned or AuditActions.MemberCreated or AuditActions.OperatorCreated
+            or AuditActions.DirectoryTokenIssued or AuditActions.DirectoryEnabled or AuditActions.MemberProvisioned or AuditActions.MemberReprovisioned => "success",
         AuditActions.ApiKeyRevoked or AuditActions.TenantPlanRemoved or AuditActions.MemberPasswordReset
             or AuditActions.PortalRecoveryCodeUsed or AuditActions.MemberMfaReset or AuditActions.PortalMfaDisabled or AuditActions.MemberDisabled or AuditActions.MemberRoleChanged or AuditActions.TenantAiAnswerEnabled
-            or AuditActions.OperatorPasswordReset or AuditActions.OperatorMfaReset or AuditActions.OperatorDisabled or AuditActions.OperatorRecoveryCodeUsed => "warning",
-        AuditActions.OperatorSignInDenied or AuditActions.PortalSignInFailed => "error",
+            or AuditActions.OperatorPasswordReset or AuditActions.OperatorMfaReset or AuditActions.OperatorDisabled or AuditActions.OperatorRecoveryCodeUsed
+            or AuditActions.DirectoryTokenRevoked or AuditActions.DirectoryDisabled or AuditActions.MemberDeprovisioned or AuditActions.MemberAdopted or AuditActions.MemberReleaseManaged => "warning",
+        AuditActions.OperatorSignInDenied or AuditActions.PortalSignInFailed or AuditActions.DirectorySyncRejected => "error",
         _ => "neutral",
     };
 
@@ -32,6 +34,7 @@ public static class AuditLabels
         AuditActors.OperatorUser => id ?? Name("operator-user"),
         AuditActors.TenantKey => id is null ? Name("tenant-key") : Text.Format("Audit.Actor.tenant-key.id", Shorten(id)),
         AuditActors.TenantUser => id is null ? Name("tenant-user") : Text.Format("Audit.Actor.tenant-user.id", Shorten(id)),
+        AuditActors.Directory => id is null ? Name("directory") : Text.Format("Audit.Actor.directory.id", Shorten(id)),
         AuditActors.System => Name("system"),
         _ => Name("anonymous"),
     };
