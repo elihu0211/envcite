@@ -3,32 +3,28 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.UiSignInRateLimit)]
 @attribute [AllowAnonymous]
+@inherits FormPageBase<LoginForm>
 
-<PageTitle>@L["登入 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["登入"]" />
 
-<h1 class="ep-page-title">@L["營運者登入"]</h1>
+<PageHeading>@L["營運者登入"]</PageHeading>
 
 @if (Activated == "1")
 {
-    <p class="ep-alert ep-alert-info" role="status">@L["帳號已啟用，信箱已驗證。請登入。"]</p>
+    <FormAlert Kind="AlertKind.Info">@L["帳號已啟用，信箱已驗證。請登入。"]</FormAlert>
 }
 
-@if (_error is not null)
-{
-    @* role=alert：螢幕閱讀器立刻念出來；訊息不說是帳號還是密碼錯，也不說帳號有沒有被鎖。 *@
-    <p class="ep-alert ep-alert-error" role="alert">@_error</p>
-}
+@* role=alert：螢幕閱讀器立刻念出來；訊息不說是帳號還是密碼錯，也不說帳號有沒有被鎖。 *@
+<FormAlert Message="@Error" />
 
-<EditForm Model="Input" FormName="ui-login" OnValidSubmit="SignInAsync" method="post" class="ep-form">
-    <div class="ep-field-row">
-        <label for="email" class="ep-label">@L["電子郵件"]</label>
+<PostForm Model="Input" FormName="ui-login" OnValidSubmit="SignInAsync">
+    <FormField For="email" Label="@L["電子郵件"]">
         <InputText id="email" @bind-Value="Input.Email" type="email" class="ep-input" autocomplete="username" required autofocus />
-    </div>
-    <div class="ep-field-row">
-        <label for="password" class="ep-label">@L["密碼"]</label>
+    </FormField>
+    <FormField For="password" Label="@L["密碼"]">
         <PasswordField Id="password" @bind-Value="Input.Password" />
-    </div>
-    <button type="submit" class="ep-btn ep-btn-primary">@L["登入"]</button>
-</EditForm>
+    </FormField>
+    <SubmitButton>@L["登入"]</SubmitButton>
+</PostForm>
 
 <p class="ep-note">@L["沒有帳號、忘記密碼或弄丟了驗證器，請洽系統管理者。"]</p>

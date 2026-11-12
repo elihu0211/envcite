@@ -4,8 +4,9 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 @inject IConversationHistory History
+@inherits PortalFormPageBase<SearchForm>
 
-<PageTitle>@L["查詢 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["查詢"]" />
 
 @* 問答為主的首頁：一個輸入框。還沒問時是置中的招呼加輸入框；問了之後是「你的問題 → 找到的條文」，輸入框留在底部接著問。
    有設定模型端點（Platform:Answer）時，回答是模型只根據 consult 的封閉證據寫的、每個論點附出處代號，加上對應的條文卡片；
@@ -13,9 +14,9 @@
 <div class="ep-ask" data-state="@(_asked ? "result" : "empty")">
     @if (!_hasPlan)
     {
-        <p class="ep-alert ep-alert-info" role="status">
+        <FormAlert Kind="AlertKind.Info">
             @L["你的組織目前沒有方案，不能使用搜尋。請洽我們的業務啟用。"]
-        </p>
+        </FormAlert>
     }
     else
     {
@@ -36,15 +37,15 @@
                 </p>
 
                 <div class="ep-answer" aria-live="polite">
-                    @if (_error is not null)
+                    @if (Error is not null)
                     {
-                        <p class="ep-alert ep-alert-error" role="alert">@_error</p>
+                        <FormAlert Message="@Error" />
                     }
                     else if (_answer is not null)
                     {
                         @if (_answer.Refused)
                         {
-                            <p class="ep-alert ep-alert-info" role="status">@RefusalLabel(_answer.RefusalReason)</p>
+                            <FormAlert Kind="AlertKind.Info">@RefusalLabel(_answer.RefusalReason)</FormAlert>
                         }
                         else
                         {
@@ -82,7 +83,7 @@
         }
 
         @* POST：查詢全文是案件內容，不放進網址（網址會被各種日誌記下來）。 *@
-        <EditForm Model="Input" FormName="portal-search" OnValidSubmit="SearchAsync" method="post" class="ep-composer-form">
+        <PostForm Model="Input" FormName="portal-search" OnValidSubmit="SearchAsync" Class="ep-composer-form">
             @if (_conversationId is { } conversation)
             {
                 <input type="hidden" name="Input.ConversationId" value="@conversation" />
@@ -123,6 +124,6 @@
             {
                 <text> @L["回答由 AI 產生：你的問題與相關條文會送到模型服務。"]</text>
             }</p>
-        </EditForm>
+        </PostForm>
     }
 </div>

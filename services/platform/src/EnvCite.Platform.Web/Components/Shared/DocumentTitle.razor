@@ -1,0 +1,8 @@
+@* 瀏覽器分頁的標題：「頁面名稱 · 系統名稱」。格式只在這裡，頁面只給名稱（已本地化）——
+   不再每頁各寫一條帶 {0} 的文字，改系統名稱或格式時只動這一處。 *@
+<PageTitle>@Text · @Brand.Name</PageTitle>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+}

@@ -4,7 +4,7 @@
 
 @* 元件展示：只在 Development（其他環境是 404，見 WebModule），不需要登入，讓改完 token 能直接看每個元件在三種寬度的樣子。
    所有顏色、字級都取自 token（--ep-*），這裡不寫任何值。 *@
-<PageTitle>元件展示 · @Brand.Name</PageTitle>
+<DocumentTitle Text="元件展示" />
 
 <PortalShell TenantName="展示租戶" HomeHref="/design" UserEmail="owner@example.test" RoleLabel="擁有者" AvatarText="O" ShowMenu="true" MenuItems="@_menu" NavItems="@_nav">
     <PageHeader Title="元件展示" Description="只在 Development 看得到。配色、字級與字型都來自 DesignTokens.cs（規格見 DESIGN.md）。左側是工作區，右上角的頭像是帳號選單。" />
@@ -66,29 +66,22 @@
             <button type="button" class="ep-btn ep-btn-quiet">次要動作</button>
         </div>
         <div class="ep-form">
-            <div class="ep-field-row">
-                <label class="ep-label" for="g-email">電子郵件</label>
+            <FormField For="g-email" Label="電子郵件" Hint="說明文字用次要色。">
                 <input id="g-email" class="ep-input" type="email" placeholder="name@example.com" />
-                <p class="ep-hint">說明文字用次要色。</p>
-            </div>
-            <div class="ep-field-row">
-                <label class="ep-label" for="g-role">角色</label>
+            </FormField>
+            <FormField For="g-role" Label="角色">
                 <select id="g-role" class="ep-input"><option>唯讀</option><option>開發者</option></select>
-            </div>
+            </FormField>
         </div>
-        <EditForm Model="_sample" FormName="design-sample" class="ep-form">
-            <div class="ep-field-row">
-                <label class="ep-label" for="g-password">密碼</label>
+        <PostForm Model="_sample" FormName="design-sample">
+            <FormField For="g-password" Label="密碼" Hint="右側的眼睛鈕顯示或隱藏；大寫鎖定開著時，欄位下方會出現提醒。">
                 <PasswordField Id="g-password" @bind-Value="_sample.Password" Autocomplete="new-password" />
-                <p class="ep-hint">右側的眼睛鈕顯示或隱藏；大寫鎖定開著時，欄位下方會出現提醒。</p>
-            </div>
+            </FormField>
             <NewPasswordField Id="g-new-password" Label="新密碼" @bind-Value="_sample.NewPassword" />
-            <div class="ep-field-row">
-                <label class="ep-label" for="g-otp">驗證碼</label>
+            <FormField For="g-otp" Label="驗證碼" Hint="六格輸入：底下是一個真的輸入框；點任一格、直接輸入或貼上。登入的第二步輸滿六位會自動送出。">
                 <OtpField Id="g-otp" @bind-Value="_sample.Code" />
-                <p class="ep-hint">六格輸入：底下是一個真的輸入框；點任一格、直接輸入或貼上。登入的第二步輸滿六位會自動送出。</p>
-            </div>
-        </EditForm>
+            </FormField>
+        </PostForm>
     </section>
 
     <section class="ep-card" aria-labelledby="g-recovery">
@@ -106,11 +99,11 @@
             <StatusBadge Tone="error">已鎖定</StatusBadge>
             <StatusBadge Tone="info">兩步驟</StatusBadge>
         </p>
-        <p class="ep-alert" role="status">中性提示：邊框與文字說明承擔語意。</p>
-        <p class="ep-alert ep-alert-success" role="status">成功：操作已完成。</p>
-        <p class="ep-alert ep-alert-warning" role="status">注意：這個操作無法復原。</p>
-        <p class="ep-alert ep-alert-error" role="alert">錯誤：請稍後再試。</p>
-        <p class="ep-alert ep-alert-info" role="status">資訊：系統將於今晚進行維護。</p>
+        <FormAlert Kind="AlertKind.Neutral">中性提示：邊框與文字說明承擔語意。</FormAlert>
+        <FormAlert Kind="AlertKind.Success">成功：操作已完成。</FormAlert>
+        <FormAlert Kind="AlertKind.Warning">注意：這個操作無法復原。</FormAlert>
+        <FormAlert>錯誤：請稍後再試。</FormAlert>
+        <FormAlert Kind="AlertKind.Info">資訊：系統將於今晚進行維護。</FormAlert>
     </section>
 
     <section class="ep-card" aria-labelledby="g-skeleton">

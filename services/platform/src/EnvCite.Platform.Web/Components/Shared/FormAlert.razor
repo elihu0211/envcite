@@ -1,0 +1,21 @@
+@* 一則訊息：錯誤是 role=alert（螢幕閱讀器立刻念出來），其他是 role=status（等手邊的念完）。外觀由 Kind 決定，頁面不自己寫 class 與 role。
+   沒有內容時什麼都不畫，所以頁面可以直接 <FormAlert Message="@Error" />；較長的內容放在 ChildContent。 *@
+@if (ChildContent is not null || !string.IsNullOrEmpty(Message))
+{
+    <p class="@Css" role="@Role">@Message@ChildContent</p>
+}
+
+@code {
+    [Parameter]
+    public AlertKind Kind { get; set; } = AlertKind.Error;
+
+    [Parameter]
+    public string? Message { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private string Css => Kind == AlertKind.Neutral ? "ep-alert" : $"ep-alert ep-alert-{Kind.ToString().ToLowerInvariant()}";
+
+    private string Role => Kind == AlertKind.Error ? "alert" : "status";
+}

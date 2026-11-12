@@ -2,10 +2,9 @@
 @using EnvCite.Platform.Web.Components.Dialogs
 @inject IOperatorAdmin Admin
 @inject IMailSender Mail
-@inject IDialogService Dialogs
-@inject AuthenticationStateProvider Auth
+@inherits AdminPageBase
 
-<PageTitle>@L["營運者 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["營運者"]" />
 
 <PageHeader Title="@L["營運者"]">
     <Actions>
@@ -13,7 +12,7 @@
     </Actions>
 </PageHeader>
 
-@if (_error is not null)
+@if (Error is not null)
 {
     <MudAlert Severity="Severity.Error" Class="mb-4">
         @L["載入營運者失敗。"]
@@ -26,9 +25,9 @@ else if (_operators is null)
 }
 else
 {
-    @if (_notice is not null)
+    @if (Notice is not null)
     {
-        <MudAlert Severity="@_noticeSeverity" Class="mb-4" role="status">@_notice</MudAlert>
+        <MudAlert Severity="@NoticeSeverity" Class="mb-4" role="status">@Notice</MudAlert>
     }
 
     <section class="ep-card ep-table-card" aria-label="@L["營運者清單"]">
@@ -60,18 +59,18 @@ else
                     }
                     else if (context.Disabled)
                     {
-                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => EnableAsync(context)">@L["啟用"]</MudButton>
+                        <MudButton Variant="Variant.Text" Disabled="Busy" OnClick="() => EnableAsync(context)">@L["啟用"]</MudButton>
                     }
                     else
                     {
                         @if (Mail.Enabled && (context.Invited || !context.EmailConfirmed))
                         {
-                            <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResendAsync(context)"
+                            <MudButton Variant="Variant.Text" Disabled="Busy" OnClick="() => ResendAsync(context)"
                                        aria-label="@(context.Invited ? L["重寄邀請給 {0}", context.Email] : L["寄驗證信給 {0}", context.Email])">@(context.Invited ? L["重寄邀請"] : L["寄驗證信"])</MudButton>
                         }
-                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResetPasswordAsync(context)">@L["重設密碼"]</MudButton>
-                        <MudButton Variant="Variant.Text" Disabled="_busy" OnClick="() => ResetTwoFactorAsync(context)">@L["重設驗證器"]</MudButton>
-                        <MudButton Variant="Variant.Text" Color="Color.Error" Disabled="_busy" OnClick="() => DisableAsync(context)">@L["停用"]</MudButton>
+                        <MudButton Variant="Variant.Text" Disabled="Busy" OnClick="() => ResetPasswordAsync(context)">@L["重設密碼"]</MudButton>
+                        <MudButton Variant="Variant.Text" Disabled="Busy" OnClick="() => ResetTwoFactorAsync(context)">@L["重設驗證器"]</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Error" Disabled="Busy" OnClick="() => DisableAsync(context)">@L["停用"]</MudButton>
                     }
                 </MudTd>
             </RowTemplate>
@@ -96,15 +95,9 @@ else
 }
 
 @code {
-    private static readonly DialogOptions Narrow = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-
     private IReadOnlyList<OperatorInfo>? _operators;
     private string? _selfId;
     private string? _search;
-    private string? _error;
-    private string? _notice;
-    private Severity _noticeSeverity = Severity.Success;
-    private bool _busy;
 
     protected override async Task OnInitializedAsync()
     {
@@ -125,14 +118,14 @@ else
 
     private async Task LoadAsync()
     {
-        _error = null;
+        Error = null;
         _operators = null;
         try
         {
             var listed = await Admin.ListAsync(CancellationToken.None);
             if (!listed.IsOk)
             {
-                _error = listed.Localized() ?? L["載入失敗。"];
+                Error = listed.Localized() ?? L["載入失敗。"];
                 _operators = [];
                 return;
             }
@@ -145,7 +138,7 @@ else
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            _error = exception.GetType().Name;
+            Error = exception.GetType().Name;
             _operators = [];
         }
     }
@@ -155,8 +148,6 @@ else
     private bool Matches(OperatorInfo op) =>
         string.IsNullOrWhiteSpace(_search) || op.Email.Contains(_search, StringComparison.OrdinalIgnoreCase);
 
-
-    private async Task<ClaimsPrincipal> ActorAsync() => (await Auth.GetAuthenticationStateAsync()).User;
 
     private async Task CreateAsync()
     {
@@ -304,36 +295,5 @@ else
         {
             _operators = listed.Value;
         }
-    }
-
-    private async Task RunAsync(Func<Task> action)
-    {
-        if (_busy)
-        {
-            return;
-        }
-
-        _busy = true;
-        _notice = null;
-        try
-        {
-            await action();
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private void Succeed(string message)
-    {
-        _noticeSeverity = Severity.Success;
-        _notice = message;
-    }
-
-    private void Fail(string message)
-    {
-        _noticeSeverity = Severity.Error;
-        _notice = message;
     }
 }

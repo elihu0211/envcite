@@ -1,0 +1,10 @@
+@* 頁面的標題（h1）。登入、啟用、改密碼這類卡片頁用它；有頁首動作與說明的頁面用 PageHeader。Id 給 aria-labelledby 用。 *@
+<h1 id="@Id" class="ep-page-title">@ChildContent</h1>
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

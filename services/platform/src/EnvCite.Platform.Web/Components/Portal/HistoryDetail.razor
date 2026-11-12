@@ -2,8 +2,9 @@
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+@inherits PortalPageBase
 
-<PageTitle>@L["對話 · {0}", Brand.Name]</PageTitle>
+<DocumentTitle Text="@L["對話"]" />
 
 @if (_conversation is null)
 {

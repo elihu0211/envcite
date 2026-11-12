@@ -1,4 +1,5 @@
 using EnvCite.Platform.SharedKernel;
+using EnvCite.Platform.Web.Components.Bases;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
@@ -8,8 +9,6 @@ namespace EnvCite.Platform.Web.Components.Account;
 
 public partial class Security(IOperatorTwoFactor twoFactor)
 {
-    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
-
     [SupplyParameterFromForm(FormName = "ui-mfa-enable")] private CodeForm Input { get; set; } = default!;
 
     [SupplyParameterFromForm(FormName = "ui-mfa-regenerate")] private CodeForm Regenerate { get; set; } = default!;
@@ -18,7 +17,6 @@ public partial class Security(IOperatorTwoFactor twoFactor)
     private string _codesTitle = string.Empty;
     private TwoFactorSetup? _setup;
     private string _qrSvg = string.Empty;
-    private string? _error;
     private IReadOnlyList<string>? _recoveryCodes;
 
     protected override async Task OnInitializedAsync()
@@ -50,7 +48,7 @@ public partial class Security(IOperatorTwoFactor twoFactor)
             return;
         }
 
-        _error = enabled.Localized() ?? L["啟用失敗。"];
+        Error = enabled.Localized() ?? L["啟用失敗。"];
     }
 
     private async Task RegenerateAsync()
@@ -65,11 +63,6 @@ public partial class Security(IOperatorTwoFactor twoFactor)
             return;
         }
 
-        _error = regenerated.Localized() ?? L["重新產生失敗。"];
-    }
-
-    public sealed class CodeForm
-    {
-        public string Code { get; set; } = string.Empty;
+        Error = regenerated.Localized() ?? L["重新產生失敗。"];
     }
 }

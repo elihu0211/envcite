@@ -1,7 +1,7 @@
 @* 建立營運者。沒有自助註冊：這裡是後台建立帳號的途徑，初始密碼在下一個對話框只顯示一次。 *@
+@inherits FormDialogBase
 @inject IOperatorAdmin Operators
 @inject IMailSender Mail
-@inject AuthenticationStateProvider Auth
 
 <MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
@@ -10,73 +10,22 @@
                       HelperText="@(Mail.Enabled ? L["會寄一封連結信給對方，由對方自己設定密碼並驗證信箱；不會寄出密碼。"].Value : null)" />
         <MudTextField @bind-Value="_displayName" Label="@L["顯示名稱"]" Variant="Variant.Outlined" Immediate="true"
                       MaxLength="200" HelperText="@L["可以不填。最長 200 字元。"]" OnKeyUp="OnKeyUp" />
-        @if (_error is not null)
-        {
-            <MudAlert Severity="Severity.Error" Class="mt-3" role="alert">@_error</MudAlert>
-        }
+        <DialogError Message="@Error" />
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="() => MudDialog.Cancel()">@L["取消"]</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_busy">
-            @(_busy ? L["建立中…"] : Mail.Enabled ? L["寄出邀請"] : L["建立"])
-        </MudButton>
+        <DialogSubmitActions Text="@(Mail.Enabled ? L["寄出邀請"] : L["建立"])" BusyText="@L["建立中…"]" Busy="Busy" OnSubmit="SubmitAsync" />
     </DialogActions>
 </MudDialog>
 
 @code {
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
-
     private string? _email;
     private string? _displayName;
-    private string? _error;
-    private bool _busy;
 
-    private async Task OnKeyUp(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" && !_busy)
-        {
-            await SubmitAsync();
-        }
-    }
-
-    private async Task SubmitAsync()
-    {
-        if (_busy)
-        {
-            return;
-        }
-
-        _busy = true;
-        _error = null;
-        try
-        {
-            var actor = (await Auth.GetAuthenticationStateAsync()).User;
-            // 有寄信就邀請（對方自己設密碼）；沒有就發暫時密碼，由你親手交付。
-            if (Mail.Enabled)
-            {
-                var invited = await Operators.InviteAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None);
-                if (!invited.IsOk)
-                {
-                    _error = invited.Localized() ?? L["建立失敗。"];
-                    return;
-                }
-
-                MudDialog.Close(DialogResult.Ok(invited.Value));
-                return;
-            }
-
-            var created = await Operators.CreateAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None);
-            if (!created.IsOk)
-            {
-                _error = created.Localized() ?? L["建立失敗。"];
-                return;
-            }
-
-            MudDialog.Close(DialogResult.Ok(created.Value));
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
+    protected override async Task SubmitAsync() =>
+        await CompleteAsync(
+            async actor => Mail.Enabled
+                // 有寄信就邀請（對方自己設密碼）；沒有就發暫時密碼，由你親手交付。
+                ? DialogOutcome.From(await Operators.InviteAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None), L["建立失敗。"])
+                : DialogOutcome.From(await Operators.CreateAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None), L["建立失敗。"]),
+            L["建立失敗，請稍後再試。"]);
 }

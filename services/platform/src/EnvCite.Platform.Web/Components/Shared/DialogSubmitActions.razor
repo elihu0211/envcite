@@ -1,0 +1,19 @@
+@* 表單對話框的按鈕列：取消與主要動作；送出期間主要動作停用並改成進行中的文字。放在 <DialogActions> 裡。 *@
+<MudButton OnClick="() => MudDialog.Cancel()">@L["取消"]</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnSubmit" Disabled="Busy">@(Busy ? BusyText : Text)</MudButton>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string BusyText { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Busy { get; set; }
+
+    [Parameter]
+    public EventCallback OnSubmit { get; set; }
+}

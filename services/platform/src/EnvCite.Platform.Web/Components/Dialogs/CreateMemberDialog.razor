@@ -1,7 +1,7 @@
 @* 新增客戶入口的成員。建立後由頁面接著顯示一次性的初始密碼（PasswordRevealDialog）。 *@
+@inherits FormDialogBase
 @inject IMemberAdmin Members
 @inject IMailSender Mail
-@inject AuthenticationStateProvider Auth
 
 <MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
@@ -16,74 +16,24 @@
                 <MudSelectItem T="string" Value="@role">@PortalLabels.RoleWithAbilities(role)</MudSelectItem>
             }
         </MudSelect>
-        @if (_error is not null)
-        {
-            <MudAlert Severity="Severity.Error" Class="mt-3" role="alert">@_error</MudAlert>
-        }
+        <DialogError Message="@Error" />
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="() => MudDialog.Cancel()">@L["取消"]</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="_busy">
-            @(_busy ? L["建立中…"] : Mail.Enabled ? L["寄出邀請"] : L["建立成員"])
-        </MudButton>
+        <DialogSubmitActions Text="@(Mail.Enabled ? L["寄出邀請"] : L["建立成員"])" BusyText="@L["建立中…"]" Busy="Busy" OnSubmit="SubmitAsync" />
     </DialogActions>
 </MudDialog>
 
 @code {
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
-
     [Parameter, EditorRequired] public string TenantId { get; set; } = string.Empty;
 
     private string? _email;
     private string? _displayName;
     private string _role = CustomerRoles.Viewer;
-    private string? _error;
-    private bool _busy;
 
-    private async Task OnKeyUp(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" && !_busy)
-        {
-            await SubmitAsync();
-        }
-    }
-
-    private async Task SubmitAsync()
-    {
-        _busy = true;
-        _error = null;
-        try
-        {
-            var actor = (await Auth.GetAuthenticationStateAsync()).User;
-            if (Mail.Enabled)
-            {
-                var invited = await Members.InviteAsync(actor, TenantId, _email ?? string.Empty, _displayName, _role, CancellationToken.None);
-                if (invited.IsOk)
-                {
-                    MudDialog.Close(DialogResult.Ok(invited.Value!));
-                    return;
-                }
-
-                _error = invited.Localized();
-                return;
-            }
-
-            var created = await Members.CreateAsync(actor, TenantId, _email ?? string.Empty, _displayName, _role, CancellationToken.None);
-            if (created.IsOk)
-            {
-                MudDialog.Close(DialogResult.Ok(created.Value!));
-                return;
-            }
-
-            _error = created.Localized();
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            _error = L["建立失敗，請稍後再試。"] + " (" + exception.GetType().Name + ")";
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
+    protected override async Task SubmitAsync() =>
+        await CompleteAsync(
+            async actor => Mail.Enabled
+                ? DialogOutcome.From(await Members.InviteAsync(actor, TenantId, _email ?? string.Empty, _displayName, _role, CancellationToken.None), L["建立失敗。"])
+                : DialogOutcome.From(await Members.CreateAsync(actor, TenantId, _email ?? string.Empty, _displayName, _role, CancellationToken.None), L["建立失敗。"]),
+            L["建立失敗，請稍後再試。"]);
 }

@@ -7,11 +7,7 @@ namespace EnvCite.Platform.Web.Components.Portal;
 
 public partial class HistoryDetail(IConversationHistory store)
 {
-    [Parameter] public string Tenant { get; set; } = string.Empty;
-
     [Parameter] public Guid Id { get; set; }
-
-    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
     private ConversationDetail? _conversation;
 

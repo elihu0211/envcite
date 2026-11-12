@@ -1,0 +1,26 @@
+@* 表單的一格：標籤、控制項與（選用的）說明。For 是控制項的 id。標籤與間距由這裡決定，頁面不自己寫 ep-field-row 與 ep-label。 *@
+<div class="ep-field-row">
+    <label for="@For" class="ep-label">@Label</label>
+    @ChildContent
+    @if (!string.IsNullOrEmpty(Hint))
+    {
+        <p id="@HintId" class="ep-hint">@Hint</p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string For { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Hint { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>說明的 id：控制項的 <c>aria-describedby</c> 指向它。</summary>
+    public string HintId => $"{For}-hint";
+}

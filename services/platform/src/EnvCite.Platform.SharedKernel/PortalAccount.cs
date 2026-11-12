@@ -64,28 +64,12 @@ public enum PortalSignInStatus
 /// 客戶入口的帳密登入。租戶是目前請求的租戶（登入前由路徑解析）；所有動作都在這個租戶內。
 /// 以 scoped 註冊：登入要寫 cookie，需要目前的請求。
 /// </summary>
-public interface IPortalAccount
+public interface IPortalAccount : IAccountLifecycle
 {
     /// <summary>這個請求（由路徑）解析出的租戶；路徑上的租戶不存在則 null，頁面據此回 404。</summary>
     PortalTenant? CurrentTenant { get; }
 
     Task<PortalSignInStatus> SignInAsync(string email, string password, CancellationToken cancellationToken);
-
-    Task SignOutAsync(ClaimsPrincipal user, CancellationToken cancellationToken);
-
-    /// <summary>驗證目前密碼後改密碼；成功會換新 cookie（舊的 session 失效），並清除「必須改密碼」。</summary>
-    Task<AdminOutcome<bool>> ChangePasswordAsync(
-        ClaimsPrincipal user, string currentPassword, string newPassword, CancellationToken cancellationToken);
-
-    /// <summary>檢視邀請／驗證連結（沒有副作用，所以信件掃描器預先開啟連結不會用掉它）。連結只對路徑上的租戶有效。</summary>
-    Task<ActivationState> InspectActivationAsync(string? userId, string? code, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// 使用連結：邀請連結要帶 <paramref name="newPassword"/>，設好密碼並驗證信箱；驗證連結只驗證信箱。
-    /// 不簽發 session：使用者接著登入。失敗一律是 <see cref="OutcomeCodes.ActivationLinkInvalid"/>，
-    /// 或密碼不符規則（連結此時仍有效，可以重打）。
-    /// </summary>
-    Task<AdminOutcome<ActivationState>> ActivateAsync(string? userId, string? code, string? newPassword, CancellationToken cancellationToken);
 }
 
 /// <param name="EmailConfirmed">信箱已透過連結驗證。沒驗證的信箱不能用於復原。</param>

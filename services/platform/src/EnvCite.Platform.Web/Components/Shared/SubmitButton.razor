@@ -1,0 +1,7 @@
+@* 表單的主要送出鈕。樣式與 type 只在這裡。 *@
+<button type="submit" class="ep-btn ep-btn-primary">@ChildContent</button>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

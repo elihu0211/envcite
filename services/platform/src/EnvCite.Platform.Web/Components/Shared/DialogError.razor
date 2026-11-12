@@ -1,0 +1,10 @@
+@* 對話框裡的錯誤訊息（role=alert）。沒有訊息時什麼都不畫。 *@
+@if (!string.IsNullOrEmpty(Message))
+{
+    <MudAlert Severity="Severity.Error" Class="mt-3" role="alert">@Message</MudAlert>
+}
+
+@code {
+    [Parameter]
+    public string? Message { get; set; }
+}
