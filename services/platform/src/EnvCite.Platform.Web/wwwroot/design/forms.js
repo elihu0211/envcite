@@ -177,6 +177,88 @@
     syncSide();
     document.addEventListener("DOMContentLoaded", syncSide);
 
+    // ---- 六格驗證碼 --------------------------------------------------------------------------------
+    // 真的輸入框在方格上面（透明）：輸入、貼上、簡訊自動填入、無障礙都走它；這裡只把值畫進方格、標出目前那一格，
+    // 把游標固定在最後（點哪一格都一樣，不會在中間插入），輸滿且標了 data-autosubmit 就自動送出。
+    const otpField = (element) => element instanceof Element ? element.closest(".ep-otp") : null;
+
+    const renderOtp = (otp) => {
+        const input = otp.querySelector("input");
+        const length = Number(otp.dataset.length) || 6;
+        const digits = input.value.replace(/\D/g, "").slice(0, length);
+        if (input.value !== digits) {
+            input.value = digits;
+        }
+
+        const active = document.activeElement === input ? Math.min(digits.length, length - 1) : -1;
+        otp.querySelectorAll(".ep-otp-slot").forEach((slot, index) => {
+            slot.textContent = digits[index] ?? "";
+            slot.toggleAttribute("data-filled", index < digits.length);
+            slot.toggleAttribute("data-active", index === active);
+        });
+        return digits.length === length;
+    };
+
+    const caretToEnd = (input) => input.setSelectionRange(input.value.length, input.value.length);
+
+    document.addEventListener("input", (event) => {
+        const otp = otpField(event.target);
+        if (otp && renderOtp(otp) && "autosubmit" in otp.dataset) {
+            const form = event.target.form;
+            if (form?.checkValidity()) {
+                form.requestSubmit();
+            }
+        }
+    });
+
+    document.addEventListener("focusin", (event) => {
+        const otp = otpField(event.target);
+        if (otp) {
+            caretToEnd(event.target);
+            renderOtp(otp);
+        }
+    });
+
+    document.addEventListener("focusout", (event) => {
+        const otp = otpField(event.target);
+        if (otp) {
+            renderOtp(otp);
+        }
+    });
+
+    document.addEventListener("mouseup", (event) => {
+        if (otpField(event.target)) {
+            caretToEnd(event.target);
+        }
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (otpField(event.target) && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+            event.preventDefault();
+            caretToEnd(event.target);
+        }
+    });
+
+    // 貼上：只取數字，整串取代目前的內容（貼六位數就填滿六格）。
+    document.addEventListener("paste", (event) => {
+        const otp = otpField(event.target);
+        const digits = (event.clipboardData?.getData("text") ?? "").replace(/\D/g, "");
+        if (otp && digits) {
+            event.preventDefault();
+            event.target.value = digits;
+            event.target.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+    });
+
+    const renderAllOtp = () => document.querySelectorAll(".ep-otp").forEach(renderOtp);
+    renderAllOtp();
+    document.addEventListener("DOMContentLoaded", renderAllOtp);
+    window.addEventListener("load", renderAllOtp);
+    window.addEventListener("pageshow", renderAllOtp);
+    // autofocus 在頁面載入之後才套用，而且頁面沒有焦點時不會有 focusin：多補兩個時機，目前那一格才一定亮起來。
+    window.addEventListener("focus", renderAllOtp);
+    requestAnimationFrame(() => requestAnimationFrame(renderAllOtp));
+
     // ---- 復原碼：複製、列印 ------------------------------------------------------------------------
     const copyText = async (text) => {
         try {
