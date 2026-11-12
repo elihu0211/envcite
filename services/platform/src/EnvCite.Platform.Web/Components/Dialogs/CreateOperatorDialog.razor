@@ -4,7 +4,7 @@
 
 <MudDialog>
     <DialogContent>
-        <MudTextField @bind-Value="_email" Label="@L["電子郵件"]" Variant="Variant.Outlined" Required="true" Immediate="true"
+        <MudTextField @bind-Value="_email" Label="@L["電子郵件"]" Variant="Variant.Outlined" Required="true" OnlyValidateIfDirty="true" Immediate="true"
                       InputType="InputType.Email" AutoFocus="true" Class="mb-3" OnKeyUp="OnKeyUp" />
         <MudTextField @bind-Value="_displayName" Label="@L["顯示名稱"]" Variant="Variant.Outlined" Immediate="true"
                       MaxLength="200" HelperText="@L["可以不填。最長 200 字元。"]" OnKeyUp="OnKeyUp" />
