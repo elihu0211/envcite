@@ -79,7 +79,9 @@ public sealed class ObservabilityTests(PlatformFactory factory)
         lock (seen)
         {
             Assert.True(HasTenantTrace(seen, tenant.Identifier));
-            Assert.DoesNotContain(seen, a => ((string?)a.GetTagItem("url.path"))?.StartsWith("/health", StringComparison.Ordinal) == true);
+            // ASP.NET Core 11 在 OpenTelemetry 的過濾器之前就把 url.path 寫上活動，所以看標籤看不出探針有沒有被追蹤；
+            // 「不追蹤」是過濾器把活動的 Recorded 旗標清掉，匯出器只處理 Recorded 的活動。
+            Assert.DoesNotContain(seen, a => a.Recorded && ((string?)a.GetTagItem("url.path"))?.StartsWith("/health", StringComparison.Ordinal) == true);
         }
     }
 

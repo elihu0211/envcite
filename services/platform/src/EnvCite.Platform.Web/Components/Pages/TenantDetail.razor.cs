@@ -13,11 +13,13 @@ namespace EnvCite.Platform.Web.Components.Pages;
 
 public partial class TenantDetail(
     ITenantDirectory directory, IApiKeyAdmin keys, IPlanAdmin plans, IMemberAdmin members, IUsageAdmin usage, IAuditQuery audit,
-    NavigationManager navigation, IDialogService dialogs, AuthenticationStateProvider auth, IMailSender mail)
+    NavigationManager navigation, IDialogService dialogs, IMailSender mail)
 {
     private static readonly DialogOptions Narrow = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
 
     [Parameter] public string TenantId { get; set; } = string.Empty;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
 
     private TenantSummary? _tenant;
     private IReadOnlyList<ApiKeyInfo> _keys = [];
@@ -307,7 +309,7 @@ public partial class TenantDetail(
         await reveal.Result;
     }
 
-    private async Task<ClaimsPrincipal> ActorAsync() => (await auth.GetAuthenticationStateAsync()).User;
+    private async Task<ClaimsPrincipal> ActorAsync() => (await AuthenticationState).User;
 
     private string PlanLabel(PlanInfo plan) => L["{0}（每 {1} {2} 次）", plan.Name, FormatWindow(plan.Window), plan.PermitLimit];
 

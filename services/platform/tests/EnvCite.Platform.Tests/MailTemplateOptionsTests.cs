@@ -97,12 +97,12 @@ public sealed class MailTemplateOptionsTests
 
     // ValidateOnStart：主機啟動時就驗證（這裡以啟動驗證器模擬），不是第一封信才失敗。
     [Fact]
-    public void TheStartupValidationCatchesABadValueBeforeAnyMailIsSent()
+    public async Task TheStartupValidationCatchesABadValueBeforeAnyMailIsSent()
     {
         using var good = Build();
-        good.GetRequiredService<IStartupValidator>().Validate();
+        await good.GetRequiredService<IAsyncStartupValidator>().ValidateAsync(TestContext.Current.CancellationToken);
 
         using var bad = Build(With(("Platform:Mail:Template:Light:Button", "blue")));
-        Assert.ThrowsAny<Exception>(() => bad.GetRequiredService<IStartupValidator>().Validate());
+        await Assert.ThrowsAnyAsync<Exception>(() => bad.GetRequiredService<IAsyncStartupValidator>().ValidateAsync(TestContext.Current.CancellationToken));
     }
 }

@@ -1,7 +1,6 @@
 @* 新增客戶入口的成員。建立後由頁面接著顯示一次性的初始密碼（PasswordRevealDialog）。 *@
 @inject IMemberAdmin Members
 @inject IMailSender Mail
-@inject AuthenticationStateProvider Auth
 
 <MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
@@ -31,6 +30,7 @@
 
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
 
     [Parameter, EditorRequired] public string TenantId { get; set; } = string.Empty;
 
@@ -54,7 +54,7 @@
         _error = null;
         try
         {
-            var actor = (await Auth.GetAuthenticationStateAsync()).User;
+            var actor = (await AuthenticationState).User;
             if (Mail.Enabled)
             {
                 var invited = await Members.InviteAsync(actor, TenantId, _email ?? string.Empty, _displayName, _role, CancellationToken.None);

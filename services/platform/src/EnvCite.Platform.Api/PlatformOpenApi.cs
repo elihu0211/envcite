@@ -18,6 +18,8 @@ internal static class PlatformOpenApi
         return services.AddOpenApi("v2", options =>
         {
             options.ShouldInclude = description => description.RelativePath?.StartsWith("v2/", StringComparison.Ordinal) == true;
+            // 規格版本是對外契約的一部分，明確指定而不隨框架的預設改變；要升版得連同用戶端產生器與 oasdiff 一起評估。
+            options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1;
             options.AddDocumentTransformer((document, context, _) =>
             {
                 // 描述的第一句帶系統名稱；提交的規格是預設名稱下產生的（建置環境不設 Platform:Brand:Name）。

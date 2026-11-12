@@ -34,7 +34,7 @@ public static class MailPreview
     {
         if (args is not ["mail", "preview", var directory] || string.IsNullOrWhiteSpace(directory))
         {
-            await error.WriteLineAsync(Usage);
+            await error.WriteLineAsync(Usage, cancellationToken);
             return 2;
         }
 
@@ -62,7 +62,7 @@ public static class MailPreview
         }
         catch (OptionsValidationException exception)
         {
-            await error.WriteLineAsync(string.Join('\n', exception.Failures));
+            await error.WriteLineAsync(string.Join('\n', exception.Failures), cancellationToken);
             return 1;
         }
 
@@ -76,12 +76,12 @@ public static class MailPreview
                 await File.WriteAllTextAsync(Path.Combine(target.FullName, $"{name}.txt"), mail.Content.Text, utf8, cancellationToken);
             }
 
-            await output.WriteLineAsync($"已寫出 {samples.Length * 2} 個檔案到 {target.FullName}（{samples.Length} 種信，各有 .html 與 .txt）。連結是占位值，沒有寄信，也沒有連線。");
+            await output.WriteLineAsync($"已寫出 {samples.Length * 2} 個檔案到 {target.FullName}（{samples.Length} 種信，各有 .html 與 .txt）。連結是占位值，沒有寄信，也沒有連線。", cancellationToken);
             return 0;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
-            await error.WriteLineAsync($"寫檔失敗（{exception.GetType().Name}）：{directory}");
+            await error.WriteLineAsync($"寫檔失敗（{exception.GetType().Name}）：{directory}", cancellationToken);
             return 1;
         }
     }
