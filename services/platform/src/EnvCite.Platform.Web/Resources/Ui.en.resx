@@ -504,4 +504,15 @@
   <data name="關閉時身分來源的請求一律被拒絕，既有成員不受影響。" xml:space="preserve"><value>While off, every request from the identity provider is rejected; existing members are not affected.</value></data>
   <data name="關閉目錄同步" xml:space="preserve"><value>Turn off directory sync</value></data>
   <data name="預設角色" xml:space="preserve"><value>Default role</value></data>
+  <data name="{0} 對映的角色" xml:space="preserve"><value>Role mapped to {0}</value></data>
+  <data name="不對映" xml:space="preserve"><value>No mapping</value></data>
+  <data name="儲存" xml:space="preserve"><value>Save</value></data>
+  <data name="儲存 {0} 對映的角色" xml:space="preserve"><value>Save the role mapped to {0}</value></data>
+  <data name="對映的角色" xml:space="preserve"><value>Mapped role</value></data>
+  <data name="已儲存群組對映的角色，成員的角色已依此重算。" xml:space="preserve"><value>Group role saved. The members' roles were recalculated.</value></data>
+  <data name="成員數" xml:space="preserve"><value>Members</value></data>
+  <data name="有對映角色的群組，其成員的角色依群組決定（屬於多個時取最高）；沒有對映的群組不影響任何人。" xml:space="preserve"><value>The role of a group's members follows the groups mapped to a role (the highest wins when a member is in several); groups without a mapping affect nobody.</value></data>
+  <data name="目錄同步群組" xml:space="preserve"><value>Directory sync groups</value></data>
+  <data name="群組" xml:space="preserve"><value>Groups</value></data>
+  <data name="身分來源還沒有推送群組。推送之後，在這裡決定每個群組給什麼角色。" xml:space="preserve"><value>The identity provider has not pushed any groups yet. Once it does, decide here which role each group grants.</value></data>
 </root>

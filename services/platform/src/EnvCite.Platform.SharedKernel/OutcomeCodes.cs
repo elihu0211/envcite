@@ -69,6 +69,10 @@ public static class OutcomeCodes
     public const string DirectoryAdoptRequired = "directory.adopt_required";
     public const string DirectoryTokenNotFound = "directory.token_not_found";
     public const string DirectoryTokenInvalid = "directory.token_invalid";
+    public const string DirectoryGroupNotFound = "directory.group_not_found";
+    public const string DirectoryGroupNameTaken = "directory.group_name_taken";
+    public const string DirectoryGroupInvalid = "directory.group_invalid";
+    public const string DirectoryGroupMemberInvalid = "directory.group_member_invalid";
 
     /// <summary>所有代碼的英文說明；{0}、{1} 是 <see cref="AdminOutcome{T}.Args"/>。</summary>
     public static IReadOnlyDictionary<string, string> English { get; } = new Dictionary<string, string>
@@ -131,6 +135,10 @@ public static class OutcomeCodes
         [DirectoryAdoptRequired] = "A member with this email already exists and was not created by directory sync. Enable adopting existing members to link it.",
         [DirectoryTokenNotFound] = "Directory token not found.",
         [DirectoryTokenInvalid] = "Name is required (max 100 chars); ExpiresAt must be in the future.",
+        [DirectoryGroupNotFound] = "Group not found.",
+        [DirectoryGroupNameTaken] = "Another group of this tenant already has this name.",
+        [DirectoryGroupInvalid] = "Group name is required (max 200 chars).",
+        [DirectoryGroupMemberInvalid] = "Group members must be members of this tenant that directory sync manages.",
     }.ToFrozenDictionary();
 
     /// <summary>代碼的英文說明（填入參數）；不認得的代碼原樣回傳。</summary>

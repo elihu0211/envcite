@@ -42,6 +42,10 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
 
     public DbSet<DirectoryConnection> DirectoryConnections => Set<DirectoryConnection>();
 
+    public DbSet<DirectoryGroup> DirectoryGroups => Set<DirectoryGroup>();
+
+    public DbSet<DirectoryGroupMember> DirectoryGroupMembers => Set<DirectoryGroupMember>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -64,6 +68,26 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
             token.Property(t => t.Prefix).HasMaxLength(DirectoryToken.PrefixLength);
             token.HasIndex(t => t.Prefix).IsUnique();
             token.HasIndex("TenantId");
+        });
+
+        builder.Entity<DirectoryGroup>(group =>
+        {
+            group.IsMultiTenant();
+            group.Property(g => g.DisplayName).HasMaxLength(200);
+            group.Property(g => g.NormalizedName).HasMaxLength(200);
+            group.Property(g => g.ExternalId).HasMaxLength(200);
+            group.Property(g => g.Role).HasMaxLength(32);
+            group.HasIndex("TenantId", nameof(DirectoryGroup.NormalizedName)).IsUnique();
+            group.HasIndex("TenantId", nameof(DirectoryGroup.ExternalId)).IsUnique().HasFilter("\"ExternalId\" IS NOT NULL");
+            group.HasMany(g => g.Members).WithOne().HasForeignKey(m => m.GroupId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<DirectoryGroupMember>(member =>
+        {
+            member.IsMultiTenant();
+            member.HasKey(m => new { m.GroupId, m.UserId });
+            member.Property(m => m.UserId).HasMaxLength(450);
+            member.HasIndex(m => m.UserId);
         });
 
         builder.Entity<DirectoryConnection>(connection =>

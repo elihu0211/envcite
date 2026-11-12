@@ -26,6 +26,10 @@ public partial class DirectorySync(IDirectorySelfService directory, IDirectoryAv
     private static IEnumerable<SelectOption> RoleOptions =>
         DirectoryRoles.Assignable.Select(role => new SelectOption(role, PortalLabels.RoleWithAbilities(role)));
 
+    /// <summary>群組對映的角色：「不對映」（空字串）加上目錄同步可授予的角色。</summary>
+    private IEnumerable<SelectOption> GroupRoleOptions =>
+        [new(string.Empty, L["不對映"]), .. RoleOptions.Select(option => new SelectOption(option.Value, PortalLabels.Role(option.Value)))];
+
     private IEnumerable<SelectOption> ExpiryOptions =>
     [
         new("0", L["不會到期"]),
@@ -93,6 +97,13 @@ public partial class DirectorySync(IDirectorySelfService directory, IDirectoryAv
         if (verb == "revoke" && Guid.TryParse(id, out var tokenId))
         {
             Report(await directory.RevokeTokenAsync(HttpContext.User, tokenId, HttpContext.RequestAborted), L["已撤銷這把 token，用它的身分來源立刻被拒絕。"]);
+        }
+        else if (verb == "group" && Guid.TryParse(id, out var groupId))
+        {
+            var role = HttpContext.Request.HasFormContentType ? HttpContext.Request.Form[$"group-role-{id}"].ToString() : string.Empty;
+            Report(
+                await directory.SetGroupRoleAsync(HttpContext.User, groupId, string.IsNullOrEmpty(role) ? null : role, HttpContext.RequestAborted),
+                L["已儲存群組對映的角色，成員的角色已依此重算。"]);
         }
         else
         {

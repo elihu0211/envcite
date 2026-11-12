@@ -20,6 +20,7 @@ internal sealed class DirectoryManagement(
     PlatformDbContext db,
     UserManager<ApplicationUser> users,
     MemberCore members,
+    DirectoryGroupRoles groupRoles,
     IOptions<DirectoryOptions> options,
     IMultiTenantContextAccessor<TenantInfo> tenantAccessor,
     TimeProvider time)
@@ -193,17 +194,77 @@ internal sealed class DirectoryManagement(
         return AdminOutcome.Ok(members.Info(user));
     }
 
+    public async Task<AdminOutcome<DirectoryGroupInfo>> SetGroupRoleAsync(
+        ClaimsPrincipal actor, Guid groupId, string? role, CancellationToken cancellationToken)
+    {
+        if (!options.Value.Enabled)
+        {
+            return AdminOutcome.NotFound<DirectoryGroupInfo>(OutcomeCodes.DirectoryNotEnabled);
+        }
+
+        if (role is not null && !CustomerRoles.All.Contains(role))
+        {
+            return AdminOutcome.Invalid<DirectoryGroupInfo>(OutcomeCodes.RoleInvalid);
+        }
+
+        if (role is not null && !DirectoryRoles.Assignable.Contains(role))
+        {
+            return AdminOutcome.Forbidden<DirectoryGroupInfo>(OutcomeCodes.DirectoryRoleNotMappable);
+        }
+
+        // 租戶的查詢濾鏡讓別的租戶的群組在這裡找不到。
+        if (await db.DirectoryGroups.Include(g => g.Members).SingleOrDefaultAsync(g => g.Id == groupId, cancellationToken) is not { } group)
+        {
+            return AdminOutcome.NotFound<DirectoryGroupInfo>(OutcomeCodes.DirectoryGroupNotFound);
+        }
+
+        if (group.Role == role)
+        {
+            return AdminOutcome.Ok(GroupInfo(group));
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var previous = group.Role;
+        group.Role = role;
+        group.UpdatedAt = time.GetUtcNow();
+        await db.SaveChangesAsync(cancellationToken);
+
+        // 成員的角色立刻依新的對映重算；每一位改了角色的人各有一筆稽核，這個動作本身也有一筆。
+        var changed = await groupRoles.RecomputeAsync(actor, group.Members.Select(m => m.UserId), cancellationToken);
+        Stage(actor, AuditActions.DirectoryGroupRoleMapped, "directory_group", group.Id.ToString(), new Dictionary<string, object?>
+        {
+            ["name"] = group.DisplayName,
+            ["previous"] = previous,
+            ["current"] = role,
+            ["members_changed"] = changed,
+        });
+        if (changed > 0)
+        {
+            await db.DirectoryConnections.ExecuteUpdateAsync(set => set.SetProperty(c => c.UpdatedCount, c => c.UpdatedCount + changed), cancellationToken);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return AdminOutcome.Ok(GroupInfo(group));
+    }
+
+    private static DirectoryGroupInfo GroupInfo(DirectoryGroup g) => new(g.Id, g.DisplayName, g.ExternalId, g.Role, g.Members.Count);
+
     private async Task<DirectoryStatus> ReadStatusAsync(CancellationToken cancellationToken)
     {
         var connection = await db.DirectoryConnections.AsNoTracking().SingleOrDefaultAsync(cancellationToken);
         var tokens = await db.DirectoryTokens.AsNoTracking().OrderByDescending(t => t.CreatedAt).ToListAsync(cancellationToken);
         var managed = await users.Users.CountAsync(u => u.ManagedBy == DirectoryRoles.ManagedBy, cancellationToken);
+        var groups = await db.DirectoryGroups.AsNoTracking()
+            .OrderBy(g => g.NormalizedName)
+            .Select(g => new DirectoryGroupInfo(g.Id, g.DisplayName, g.ExternalId, g.Role, g.Members.Count))
+            .ToListAsync(cancellationToken);
         return connection is null
-            ? new DirectoryStatus(new DirectorySettings(false, CustomerRoles.Viewer, false), null, null, 0, 0, 0, 0, managed, [.. tokens.Select(Info)])
+            ? new DirectoryStatus(new DirectorySettings(false, CustomerRoles.Viewer, false), null, null, 0, 0, 0, 0, managed, [.. tokens.Select(Info)], groups)
             : new DirectoryStatus(
                 new DirectorySettings(connection.Enabled, connection.DefaultRole, connection.AdoptExistingMembers),
                 connection.LastRequestAt, connection.LastFailureCode,
-                connection.CreatedCount, connection.UpdatedCount, connection.DeactivatedCount, connection.RejectedCount, managed, [.. tokens.Select(Info)]);
+                connection.CreatedCount, connection.UpdatedCount, connection.DeactivatedCount, connection.RejectedCount, managed, [.. tokens.Select(Info)], groups);
     }
 
     private void Stage(ClaimsPrincipal actor, string action, string targetType, string targetId, IReadOnlyDictionary<string, object?> detail) =>

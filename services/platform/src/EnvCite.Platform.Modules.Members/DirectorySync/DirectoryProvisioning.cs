@@ -17,10 +17,11 @@ namespace EnvCite.Platform.Modules.Members.DirectorySync;
 /// 身分來源收到 5xx 會重送。寄邀請信在交易之內但不使它失敗（<see cref="MailDelivery"/> 記進稽核）；
 /// 信寄出後才提交失敗的話，那封信的連結指向不存在的帳號，無害，重送時會再寄一封。
 /// </remarks>
-internal sealed class DirectoryProvisioning(
+internal sealed partial class DirectoryProvisioning(
     UserManager<ApplicationUser> users,
     PlatformDbContext db,
     MemberCore members,
+    DirectoryGroupRoles groupRoles,
     IMailSender mail,
     IOptions<DirectoryOptions> options,
     IMultiTenantContextAccessor<TenantInfo> tenantAccessor,
@@ -396,14 +397,15 @@ internal sealed class DirectoryProvisioning(
     /// 拒絕本身不改任何成員，所以這個交易只有稽核與狀態。
     /// </summary>
     private async Task<AdminOutcome<T>> RejectAsync<T>(
-        ClaimsPrincipal actor, string? email, string code, AdminStatus status, bool audit, CancellationToken cancellationToken)
+        ClaimsPrincipal actor, string? email, string code, AdminStatus status, bool audit, CancellationToken cancellationToken,
+        string subject = "email")
     {
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         if (audit)
         {
             db.StageAudit(
                 actor,
-                new AuditEntry(AuditActions.DirectorySyncRejected, TenantId(), "member", null, new Dictionary<string, object?> { ["email"] = email, ["code"] = code }),
+                new AuditEntry(AuditActions.DirectorySyncRejected, TenantId(), "member", null, new Dictionary<string, object?> { [subject] = email, ["code"] = code }),
                 time);
         }
 

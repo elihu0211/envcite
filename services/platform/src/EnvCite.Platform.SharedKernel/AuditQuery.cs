@@ -57,6 +57,10 @@ public static class AuditActions
     public const string MemberAttributeSynced = "member.attribute_synced";
     public const string MemberAdopted = "member.adopted";
     public const string MemberReleaseManaged = "member.release_managed";
+    public const string DirectoryGroupCreated = "directory.group_created";
+    public const string DirectoryGroupUpdated = "directory.group_updated";
+    public const string DirectoryGroupDeleted = "directory.group_deleted";
+    public const string DirectoryGroupRoleMapped = "directory.group_role_mapped";
 
     /// <summary>目前會寫入的所有事件，供篩選選單使用。</summary>
     public static IReadOnlyList<string> All { get; } =
@@ -71,6 +75,7 @@ public static class AuditActions
         MemberInvited, MemberInvitationResent, MemberActivated, OperatorInvited, OperatorInvitationResent, OperatorActivated,
         DirectoryTokenIssued, DirectoryTokenRevoked, DirectoryEnabled, DirectoryDisabled, DirectoryConfigured, DirectorySyncRejected,
         MemberProvisioned, MemberDeprovisioned, MemberReprovisioned, MemberAttributeSynced, MemberAdopted, MemberReleaseManaged,
+        DirectoryGroupCreated, DirectoryGroupUpdated, DirectoryGroupDeleted, DirectoryGroupRoleMapped,
     ];
 }
 

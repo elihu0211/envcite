@@ -28,6 +28,8 @@ public sealed class ScimEndpointTests(PlatformFactory factory) : DirectoryTestBa
 
     private const string UserSchema = "urn:ietf:params:scim:schemas:core:2.0:User";
 
+    private const string GroupSchema = "urn:ietf:params:scim:schemas:core:2.0:Group";
+
     private const string PatchSchema = "urn:ietf:params:scim:api:messages:2.0:PatchOp";
 
     private sealed record Reply(
@@ -95,10 +97,13 @@ public sealed class ScimEndpointTests(PlatformFactory factory) : DirectoryTestBa
         Assert.True(config.Body.GetProperty("filter").GetProperty("supported").GetBoolean());
         Assert.Equal(100, config.Body.GetProperty("filter").GetProperty("maxResults").GetInt32());
         Assert.Equal("oauthbearertoken", config.Body.GetProperty("authenticationSchemes")[0].GetProperty("type").GetString());
-        Assert.Equal("User", types.Body.GetProperty("Resources")[0].GetProperty("id").GetString());
-        Assert.Equal(UserSchema, schemas.Body.GetProperty("Resources")[0].GetProperty("id").GetString());
+        Assert.Equal(["User", "Group"], types.Body.GetProperty("Resources").EnumerateArray().Select(r => r.GetProperty("id").GetString()));
+        Assert.Equal(2, types.Body.GetProperty("totalResults").GetInt32());
+        Assert.Equal([UserSchema, GroupSchema], schemas.Body.GetProperty("Resources").EnumerateArray().Select(r => r.GetProperty("id").GetString()));
         Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, "/scim/v2/Schemas/" + UserSchema, org.Token)).Status);
-        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(HttpMethod.Get, "/scim/v2/ResourceTypes/Group", org.Token)).Status);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, "/scim/v2/Schemas/" + GroupSchema, org.Token)).Status);
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, "/scim/v2/ResourceTypes/Group", org.Token)).Status);
+        Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(HttpMethod.Get, "/scim/v2/ResourceTypes/Role", org.Token)).Status);
     }
 
     [Fact]
@@ -387,12 +392,12 @@ public sealed class ScimEndpointTests(PlatformFactory factory) : DirectoryTestBa
     {
         var org = await OrgAsync("scim-n");
 
-        var groups = await SendAsync(HttpMethod.Get, "/scim/v2/Groups", org.Token);
+        var roles = await SendAsync(HttpMethod.Get, "/scim/v2/Roles", org.Token);
         var bulk = await SendAsync(HttpMethod.Post, "/scim/v2/Bulk", org.Token, "{}");
-        var anonymous = await SendAsync(HttpMethod.Get, "/scim/v2/Groups", null);
+        var anonymous = await SendAsync(HttpMethod.Get, "/scim/v2/Roles", null);
 
-        Assert.Equal(HttpStatusCode.NotFound, groups.Status);
-        Assert.Equal("404", groups.Body.GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.NotFound, roles.Status);
+        Assert.Equal("404", roles.Body.GetProperty("status").GetString());
         Assert.Equal(HttpStatusCode.NotFound, bulk.Status);
         Assert.Equal(HttpStatusCode.Unauthorized, anonymous.Status); // 沒有 token 連「有沒有這個資源」都不透露
     }
@@ -504,6 +509,136 @@ public sealed class ScimEndpointTests(PlatformFactory factory) : DirectoryTestBa
             Assert.DoesNotContain(org.Token, everything, StringComparison.Ordinal);
             Assert.DoesNotContain(email, everything, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("ext-log", everything, StringComparison.Ordinal);
+        });
+    }
+
+    private const string Groups = "/scim/v2/Groups";
+
+    private async Task<string> UserIdAsync(Org org) => (await CreateAsync(org)).Body.GetProperty("id").GetString()!;
+
+    private static string NewGroup(string name, string? externalId = null, params string[] members)
+    {
+        var list = string.Join(',', members.Select(m => "{\"value\":\"" + m + "\"}"));
+        return "{\"schemas\":[\"" + GroupSchema + "\"],\"displayName\":\"" + name + "\",\"externalId\":\"" + (externalId ?? $"g-{Guid.NewGuid():N}") + "\",\"members\":[" + list + "]}";
+    }
+
+    [Fact]
+    public async Task GroupsCanBeCreatedReadFilteredPatchedReplacedAndDeletedInTheShapesTheProvidersUse()
+    {
+        await Factory.WithMail(async () =>
+        {
+            var org = await OrgAsync("scim-s");
+            var one = await UserIdAsync(org);
+            var two = await UserIdAsync(org);
+            var three = await UserIdAsync(org);
+
+            var created = await SendAsync(HttpMethod.Post, Groups, org.Token, NewGroup("Engineering", "ext-eng", one));
+            var id = created.Body.GetProperty("id").GetString()!;
+
+            Assert.Equal(HttpStatusCode.Created, created.Status);
+            Assert.Equal(ScimContentType, created.ContentType);
+            Assert.EndsWith($"/scim/v2/Groups/{id}", created.Location, StringComparison.Ordinal);
+            Assert.Equal("Group", created.Body.GetProperty("meta").GetProperty("resourceType").GetString());
+            var member = created.Body.GetProperty("members")[0];
+            Assert.Equal(one, member.GetProperty("value").GetString());
+            Assert.EndsWith($"/scim/v2/Users/{one}", member.GetProperty("$ref").GetString(), StringComparison.Ordinal);
+
+            Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, $"{Groups}/{id}", org.Token)).Status);
+            var byName = await SendAsync(HttpMethod.Get, $"{Groups}?filter={Uri.EscapeDataString("displayName eq \"ENGINEERING\"")}", org.Token);
+            var byExternal = await SendAsync(HttpMethod.Get, $"{Groups}?filter={Uri.EscapeDataString("externalId eq \"ext-eng\"")}", org.Token);
+            var unsupported = await SendAsync(HttpMethod.Get, $"{Groups}?filter={Uri.EscapeDataString("userName eq \"x\"")}", org.Token);
+            Assert.Equal(1, byName.Body.GetProperty("totalResults").GetInt32());
+            Assert.Equal(id, byExternal.Body.GetProperty("Resources")[0].GetProperty("id").GetString());
+            Assert.Equal("invalidFilter", unsupported.ScimType);
+
+            // Entra：大寫 Add、用 members[value eq "…"] 移除。
+            var added = await SendAsync(HttpMethod.Patch, $"{Groups}/{id}", org.Token, Patch($$"""[{"op":"Add","path":"members","value":[{"value":"{{two}}"}]}]"""));
+            Assert.Equal(2, added.Body.GetProperty("members").GetArrayLength());
+            var removed = await SendAsync(HttpMethod.Patch, $"{Groups}/{id}", org.Token, Patch($$"""[{"op":"Remove","path":"members[value eq \"{{one}}\"]"}]"""));
+            Assert.Equal([two], removed.Body.GetProperty("members").EnumerateArray().Select(m => m.GetProperty("value").GetString()));
+
+            // Okta：remove 把 Id 放在 value；沒有 path 的 replace 帶改名。
+            var okta = await SendAsync(HttpMethod.Patch, $"{Groups}/{id}", org.Token,
+                Patch($$$"""[{"op":"remove","path":"members","value":[{"value":"{{{two}}}"}]},{"op":"replace","value":{"displayName":"Eng"}}]"""));
+            Assert.Equal("Eng", okta.Body.GetProperty("displayName").GetString());
+            Assert.Equal(0, okta.Body.GetProperty("members").GetArrayLength());
+
+            // PUT 取代整組成員。
+            var put = await SendAsync(HttpMethod.Put, $"{Groups}/{id}", org.Token, NewGroup("Eng", "ext-eng", one, three));
+            Assert.Equal(2, put.Body.GetProperty("members").GetArrayLength());
+
+            Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(HttpMethod.Delete, $"{Groups}/{id}", org.Token)).Status);
+            Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(HttpMethod.Delete, $"{Groups}/{id}", org.Token)).Status);
+            Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(HttpMethod.Get, $"{Groups}/{id}", org.Token)).Status);
+        });
+    }
+
+    [Fact]
+    public async Task GroupErrorsAreScimErrorsWithTheRightTypes()
+    {
+        await Factory.WithMail(async () =>
+        {
+            var org = await OrgAsync("scim-t");
+            var (manualId, _) = await AddMemberAsync(Factory, org.Tenant.Id, NewEmail(), CustomerRoles.Developer);
+            Assert.Equal(HttpStatusCode.Created, (await SendAsync(HttpMethod.Post, Groups, org.Token, NewGroup("Taken"))).Status);
+
+            var duplicate = await SendAsync(HttpMethod.Post, Groups, org.Token, NewGroup("taken"));
+            var unmanaged = await SendAsync(HttpMethod.Post, Groups, org.Token, NewGroup("Manual", null, manualId));
+            var unknown = await SendAsync(HttpMethod.Post, Groups, org.Token, NewGroup("Ghost", null, Guid.NewGuid().ToString()));
+            var noName = await SendAsync(HttpMethod.Post, Groups, org.Token, $$"""{"schemas":["{{GroupSchema}}"]}""");
+            var notJson = await SendAsync(HttpMethod.Post, Groups, org.Token, "{ nope");
+            var notAGuid = await SendAsync(HttpMethod.Get, $"{Groups}/not-a-guid", org.Token);
+            var badOp = await SendAsync(HttpMethod.Patch, $"{Groups}/{Guid.NewGuid()}", org.Token, Patch("""[{"op":"move","path":"members"}]"""));
+
+            Assert.Equal(HttpStatusCode.Conflict, duplicate.Status);
+            Assert.Equal("uniqueness", duplicate.ScimType);
+            Assert.Equal(OutcomeCodes.DirectoryGroupNameTaken, duplicate.Code);
+            Assert.Equal(HttpStatusCode.BadRequest, unmanaged.Status);
+            Assert.Equal("invalidValue", unmanaged.ScimType);
+            Assert.Equal(OutcomeCodes.DirectoryGroupMemberInvalid, unmanaged.Code);
+            Assert.Equal(OutcomeCodes.DirectoryGroupMemberInvalid, unknown.Code);
+            Assert.Equal(OutcomeCodes.DirectoryGroupInvalid, noName.Code);
+            Assert.Equal("invalidSyntax", notJson.ScimType);
+            Assert.Equal(HttpStatusCode.NotFound, notAGuid.Status);
+            Assert.Equal("invalidSyntax", badOp.ScimType);
+        });
+    }
+
+    [Fact]
+    public async Task AGroupMappedToARoleDecidesItsMembersRoleAsTheProviderChangesMembership()
+    {
+        await Factory.WithMail(async () =>
+        {
+            var org = await OrgAsync("scim-u");
+            var member = await UserIdAsync(org);
+            var group = await SendAsync(HttpMethod.Post, Groups, org.Token, NewGroup("Engineering"));
+            var id = Guid.Parse(group.Body.GetProperty("id").GetString()!);
+            Assert.True((await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().SetGroupRoleAsync(org.Owner, id, CustomerRoles.Developer, Ct))).IsOk);
+            Assert.Equal(CustomerRoles.Viewer, (await UserAsync(org, member)).Role); // 對映只作用在成員
+
+            await SendAsync(HttpMethod.Patch, $"{Groups}/{id}", org.Token, Patch($$"""[{"op":"add","path":"members","value":[{"value":"{{member}}"}]}]"""));
+            Assert.Equal(CustomerRoles.Developer, (await UserAsync(org, member)).Role);
+
+            await SendAsync(HttpMethod.Patch, $"{Groups}/{id}", org.Token, Patch($$"""[{"op":"remove","path":"members[value eq \"{{member}}\"]"}]"""));
+            Assert.Equal(CustomerRoles.Viewer, (await UserAsync(org, member)).Role);
+        });
+    }
+
+    [Fact]
+    public async Task ATokenOnlyReachesItsOwnTenantsGroups()
+    {
+        await Factory.WithMail(async () =>
+        {
+            var a = await OrgAsync("scim-v1");
+            var b = await OrgAsync("scim-v2");
+            var created = await SendAsync(HttpMethod.Post, Groups, a.Token, NewGroup("Engineering"));
+            var id = created.Body.GetProperty("id").GetString()!;
+
+            Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(HttpMethod.Get, $"{Groups}/{id}", b.Token)).Status);
+            Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(HttpMethod.Patch, $"{Groups}/{id}", b.Token, Patch("""[{"op":"replace","path":"displayName","value":"x"}]"""))).Status);
+            Assert.Equal(HttpStatusCode.NotFound, (await SendAsync(HttpMethod.Delete, $"{Groups}/{id}", b.Token)).Status);
+            Assert.Equal(0, (await SendAsync(HttpMethod.Get, Groups, b.Token)).Body.GetProperty("totalResults").GetInt32());
+            Assert.Equal(HttpStatusCode.Created, (await SendAsync(HttpMethod.Post, Groups, b.Token, NewGroup("Engineering"))).Status); // 同名在另一個租戶沒事
         });
     }
 }

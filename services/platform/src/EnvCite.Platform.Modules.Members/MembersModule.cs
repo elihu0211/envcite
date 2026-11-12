@@ -106,6 +106,7 @@ public static class MembersModule
         services.AddScoped<MemberCore>();
         services.AddScoped<IMemberSelfService, MemberSelfService>();
         services.AddSingleton<IMemberAdmin, MemberAdmin>();
+        services.AddScoped<DirectoryGroupRoles>();
         services.AddScoped<DirectoryManagement>();
         services.AddScoped<IDirectoryProvisioning, DirectoryProvisioning>();
         services.AddScoped<IDirectorySelfService, DirectorySelfService>();

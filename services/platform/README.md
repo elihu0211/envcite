@@ -234,7 +234,7 @@ sequenceDiagram
 | 重複建立 | 同 `ExternalId` 或同 email 是衝突，不建第二筆；重送與逾時重試因此安全 |
 | 新成員 | 走邀請信（沒有密碼，開連結自己設定），所以需要寄信啟用；停用狀態的成員不需要信，重新啟用時才寄 |
 | 停用 | `active=false` 與刪除都是停用：帳號與稽核保留，所有 session 在下一個請求失效；重送得到同一個結果 |
-| 角色 | 同步最高只能授予管理員；擁有者只由人指派。最後一位啟用中的擁有者不能被同步停用或降級 |
+| 角色 | 同步最高只能授予管理員；擁有者只由人指派。最後一位啟用中的擁有者不能被同步停用或降級。成員的角色來自群組對映，沒有就是租戶的預設角色（見下方「群組」） |
 | 既有成員 | 同 email 的手動成員預設不動；租戶開啟「接管」才連結（只連結，角色與停用維持原樣），擁有者永遠不接管 |
 | 受管成員 | 由同步建立或接管的成員，其角色與停用在介面與管理動作上鎖住（`directory.member_managed`）；擁有者或營運者可「解除管理」，之後回到人手上 |
 | 管理 | 設定與 token 只有租戶的擁有者能管：token 能讓身分來源建立管理員，管理員不能建立管理員，所以也不能持有它。營運者只能看狀態、緊急關閉連線、解除成員的管理 |
@@ -253,18 +253,34 @@ sequenceDiagram
 | `GET /Users` | 過濾只支援 `userName eq "…"` 與 `externalId eq "…"`（屬性與運算子不分大小寫），其他回 400 `invalidFilter`；`startIndex` 從 1、`count` 以 `MaxPageSize` 為上限，`count=0` 只回總數；包含手動建立的成員 |
 | `POST /Users` | 201 加 `Location`；重複回 409 `uniqueness`。`userName` 是 email（不是 email 時退用 `emails` 的主要位址）；`roles` 不經 SCIM 指定，角色用租戶設定的預設 |
 | `GET`／`PUT`／`PATCH`／`DELETE /Users/{id}` | PUT 是取代（沒送 `displayName` 視為清掉、沒送 `active` 視為啟用）；PATCH 接受 `add`／`replace`／`remove`、有或沒有 path（Entra、Okta 的寫法），`active` 可為布林或 `"True"`／`"False"`，不認得的屬性略過；DELETE 是停用，204，重送仍 204；`userName` 不能變更（400 `mutability`） |
-| 其他路徑 | Groups、Bulk 等回 SCIM 格式的 404（已驗證後才回，沒有 token 一律 401） |
+| `GET`／`POST /Groups`、`GET`／`PUT`／`PATCH`／`DELETE /Groups/{id}` | 見下方「群組」。過濾只支援 `displayName eq "…"`（不分大小寫）與 `externalId eq "…"`；POST 201 加 `Location`，名稱重複回 409 `uniqueness`；DELETE 204，重送回 404 |
+| 其他路徑 | Bulk 等回 SCIM 格式的 404（已驗證後才回，沒有 token 一律 401） |
 | 錯誤 | RFC 7644 §3.12 的格式（`schemas`、`status`、`scimType`、`detail`）加本倉庫的穩定 `code`（`OutcomeCodes`）；`detail` 永遠是英文。連線關閉：404 `directory.not_enabled`；新成員需要寄信但沒啟用：503 `mail.not_enabled`；超過額度：429 加 `Retry-After` |
 | 限流 | 每把 token 每分鐘 `RequestsPerMinute` 次（授權之後才算，沒有有效 token 的請求不耗用額度）；狀態在各副本的記憶體裡 |
 | 指標 | `envcite.platform.directory.requests`，標籤只有 `operation` 與 `outcome`；租戶與內容不進指標 |
+
+### 群組
+
+身分來源推送群組與成員（SCIM Groups），**客戶的擁有者**在入口決定每個群組給什麼角色。群組本身不改任何人的角色，要有對映才算。
+
+| 項目 | 規則 |
+|------|------|
+| 成員 | 必須是這個租戶裡由目錄同步管理的成員，否則整個請求回 400 `invalidValue`（`directory.group_member_invalid`），不留半個群組；別的租戶的 Id 算不存在 |
+| 重算 | 受管成員的角色 = 他所屬、有對映的群組裡**最高**的角色（管理員 > 開發者 > 帳務 > 唯讀）；一個有對映的群組都沒有，就是租戶的預設角色。群組的成員變動、群組被刪、或擁有者改了對映時，對受影響的成員重算，改了角色的人各有一筆稽核（`member.attribute_synced`，`via` 是 `group`），舊 session 失效 |
+| 例外 | 擁有者與已解除管理的成員不受影響；租戶的預設角色改了不會回頭重算既有成員（預設角色只用於新建立的成員，以及不再屬於任何有對映群組的成員） |
+| 對映 | 只能是同步可授予的角色（最高到管理員）或「不對映」；只有擁有者能設，群組由身分來源推送、擁有者不能在這裡建立或刪除 |
+| 唯一性 | 群組名稱在租戶內唯一（不分大小寫、去前後空白），外部識別碼也是；別的租戶可以用同樣的名稱 |
+| PATCH | `members` 的 `add`／`remove`／`replace`，`remove` 可用 `members[value eq "id"]`（Entra）或把 Id 放在 `value`（Okta），不在群組裡的移除略過所以重送安全；`displayName`、`externalId` 可改；沒有變化什麼都不寫 |
+| 稽核 | `directory.group_created`／`group_updated`／`group_deleted`（名稱與人數，不記成員清單）、`directory.group_role_mapped`（誰設的、前後的角色、影響幾位） |
 
 ### 介面
 
 | 位置 | 內容 | 誰 |
 |------|------|----|
 | 客戶入口 `/portal/{租戶}/directory` | 狀態（連線是否運作、最後收到請求、同步次數、被拒絕數）、SCIM Base URL、token 清單；設定（接受與否、預設角色、接管既有成員）；簽發與撤銷 token。新簽發的 token 只在那個回應裡顯示一次，之後只看得到前綴 | 只有擁有者；導覽列也只列給擁有者 |
+| 客戶入口的目錄同步頁（群組） | 狀態卡內的群組表：名稱、成員數、對映的角色；每個群組一個角色選單（含「不對映」）與儲存鈕 | 只有擁有者 |
 | 客戶入口的成員頁 | 受目錄同步管理的成員有「由目錄同步管理」標記，角色、停用與啟用的控制項收起來，改列「解除管理」 | 解除管理只有擁有者 |
-| 營運者後台的租戶頁 | 同一張狀態卡（唯讀）加「關閉目錄同步」（緊急關閉，冪等，需確認）；成員表同樣標記受管成員並提供「解除管理」 | 營運者 |
+| 營運者後台的租戶頁 | 同一張狀態卡（唯讀，群組與對映的角色只看不能改）加「關閉目錄同步」（緊急關閉，冪等，需確認）；成員表同樣標記受管成員並提供「解除管理」 | 營運者 |
 
 部署者沒開功能面（`Platform:Directory:Enabled`）時：導覽列與營運者頁不列，入口頁只說明這個環境沒有開啟。連線指示：沒開是「已關閉」，開了但從沒收到請求是「等待身分來源連線」，超過 `StaleAfter` 沒收到是「久未收到請求」。
 

@@ -280,4 +280,64 @@ public sealed partial class DirectoryUiTests(PlatformFactory factory) : Director
         Assert.DoesNotContain("關閉目錄同步", html, StringComparison.Ordinal);
         Assert.Contains(org.Tenant.Identifier, html, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task TheOwnerMapsAGroupToARoleOnThePageAndItsMembersFollow()
+    {
+        await Factory.WithMail(async () =>
+        {
+            var (org, owner) = await OwnerSessionAsync("dui-k");
+            using var _ = owner;
+            var member = (await ProvisionAsync(org, Person())).Value!;
+            var group = (await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>()
+                .CreateGroupAsync(org.Idp, new DirectoryGroupInput("Engineering", "g-eng", [member.Id]), Ct))).Value!;
+            var path = DirectoryPage(org.Tenant.Identifier);
+
+            var page = await owner.GetAsync(path);
+            Assert.Contains("Engineering", page.Html, StringComparison.Ordinal);
+            Assert.Contains($"name=\"group-role-{group.Id}\"", page.Html, StringComparison.Ordinal);
+            Assert.Contains($"value=\"group:{group.Id}\"", page.Html, StringComparison.Ordinal);
+
+            var mapped = await owner.SubmitAsync(path, new()
+            {
+                ["_handler"] = ActionForm,
+                ["Input.Action"] = $"group:{group.Id}",
+                [$"group-role-{group.Id}"] = CustomerRoles.Admin,
+            });
+            Assert.Contains("已儲存群組對映的角色", mapped.Html, StringComparison.Ordinal);
+            Assert.Equal(CustomerRoles.Admin, (await UserAsync(org, member.Id)).Role);
+
+            // 選「不對映」（空值）：成員回到預設角色。
+            await owner.SubmitAsync(path, new() { ["_handler"] = ActionForm, ["Input.Action"] = $"group:{group.Id}", [$"group-role-{group.Id}"] = string.Empty });
+            Assert.Equal(CustomerRoles.Viewer, (await UserAsync(org, member.Id)).Role);
+
+            // 擁有者不是能對映的角色：被拒絕，原因看得懂。
+            var refused = await owner.SubmitAsync(path, new()
+            {
+                ["_handler"] = ActionForm,
+                ["Input.Action"] = $"group:{group.Id}",
+                [$"group-role-{group.Id}"] = CustomerRoles.Owner,
+            });
+            Assert.Contains("目錄同步不能指派這個角色", refused.Html, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public async Task TheOperatorSeesTheGroupsAndTheirRolesButCannotChangeThem()
+    {
+        await Factory.WithMail(async () =>
+        {
+            var org = await OrgAsync("dui-l");
+            var group = (await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>()
+                .CreateGroupAsync(org.Idp, new DirectoryGroupInput("Engineering", "g-eng"), Ct))).Value!;
+            Assert.True((await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().SetGroupRoleAsync(org.Owner, group.Id, CustomerRoles.Developer, Ct))).IsOk);
+            using var client = Factory.SignedInClient();
+
+            var html = await client.PageAsync($"/ui/tenants/{org.Tenant.Id}");
+
+            Assert.Contains("Engineering", html, StringComparison.Ordinal);
+            Assert.Contains("開發者", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("group-role-", html, StringComparison.Ordinal); // 營運者只看，對映由客戶的擁有者決定
+        });
+    }
 }
