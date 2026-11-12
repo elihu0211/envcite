@@ -103,6 +103,7 @@ flowchart LR
 | `operator reset-password <email>` | 重設密碼，印出新的一次性密碼（寄信失敗或收不到信時的退路） |
 | `operator reset-two-factor <email>` | 清除驗證器；對方下次登入重新綁定 |
 | `mail test <email>` | 用目前的 `Platform:Mail` 設定寄一封測試信，確認中繼接受；見[寄信](#寄信platformmail) |
+| `mail preview <輸出目錄>` | 把信件版型（邀請、驗證、測試信）寫成 `.html` 與 `.txt` 檔，連結是占位值；**不寄信、不連資料庫**，不需要啟用 `Platform:Mail`；見[寄信](#寄信platformmail) |
 
 結束碼：`0` 成功、`1` 操作失敗（帳號已存在、找不到營運者、帳號已建立但邀請信沒寄出，或測試信沒寄成）、`2` 用法錯誤。
 
@@ -159,7 +160,7 @@ sequenceDiagram
 | 地方 | 跟著設定變 |
 |------|-----------|
 | 後台與入口的標頭、頁面標題（`<title>`）、復原碼的列印標題 | 是。預設名稱在英文資源檔有對照；改了名稱，兩種語言都原樣顯示新名稱，不留英文舊名 |
-| 邀請與驗證信的主旨與內文、命令列 `mail test` 的主旨與內文 | 是 |
+| 邀請與驗證信、命令列 `mail test` 的主旨與內文（純文字與 HTML 兩版，HTML 的標頭、標題與頁尾也是） | 是 |
 | 寄件者顯示名稱 | `Platform:Mail:FromName` 有設以它為準；沒設（或空白）用系統名稱 |
 | OpenAPI 描述（`/openapi/v2.json`，僅 Development 提供） | 是；提交的 [`openapi/openapi_v2.json`](openapi/openapi_v2.json) 是預設名稱下產生的，建置環境不要設這個鍵 |
 | 標誌 SVG（`src/EnvCite.Platform.Web/wwwroot/brand/*.svg`）與內嵌的品牌圖形 | **否**。圖檔不讀設定，名稱在圖的 `<title>`；改名時另外換圖 |
@@ -179,12 +180,24 @@ sequenceDiagram
 | `BaseUrl` | 是 | 信裡連結的來源：`https://主機`，不含路徑（只有 localhost 可用 `http`）。寫死在設定，不取自請求的 Host 標頭 |
 | `LinkLifetime` | | 連結的有效期限（1 小時至 14 天），也是 Identity 資料保護權杖的期限 |
 | `TimeoutSeconds` | | 連線到回應的總時限；逾時算寄信失敗 |
+| `Template:*` | | 信件版型的可調值，全部有預設值，見下方「信件內容」；與 `Enabled` 無關，一律驗證 |
 
 連線是**不加密、免驗證**的 SMTP（沒有 TLS 與帳密鍵），只用於來源位址被信任的內網中繼；因此信裡只有連結，沒有密碼，連結短效、單次。寄信用 MailKit。
 
 寄出的結果是 `Sent`（中繼接受了信，不等於已投遞）、`Failed`、`Disabled`（未啟用）或 `NotRequested`（沒有收件地址）。寄不出去不使建立或重寄失敗，帳號照樣在，畫面與命令列照實顯示。稽核只記結果（`mail`），不記連結；日誌只記例外型別與 SMTP 狀態碼，不含位址與內文。
 
-**測試**：在服務自己的環境裡執行 `mail test <email>`（見上表）。它印出實際使用的中繼、寄件者與連結來源，寄一封沒有連結、沒有密碼的測試信（主旨與內文帶系統名稱），並以結束碼說明結果。來源位址是否被中繼信任只能在服務實際執行的環境驗證，從別的機器測通不代表服務能寄。
+**信件內容**：邀請信、驗證信與 `mail test` 是同一個版型，寄成 `multipart/alternative`：純文字在前、HTML 在後（客戶端顯示它看得懂的最後一個）。兩版事實一致：同一條連結、同樣的期限與提示、同樣的租戶識別碼；`mail test` 沒有連結也沒有密碼。一律帶 `Auto-Submitted: auto-generated`。
+
+資料流是「呼叫端組資料 → `IMailComposer` 組成信 → `IMailSender` 只管傳輸」：呼叫端只給收件者、連結、有效期限、租戶與「邀請或驗證」，不碰文案與版面；組信不寄信、不連網路，所以預覽與測試用的是同一個服務。全部經 `AddPlatformMail()` 註冊。
+
+- **文案**在資源檔（`SharedKernel/MailTexts.resx` 是繁體中文，`MailTexts.en.resx` 是英文，鍵是領域鍵、帶參數用 `{0}`），不在程式裡。信的語言由 `Platform:Mail:Template:Culture` 決定（`zh-TW` 或 `en`），不隨操作者的介面語言——收信的人還沒登入過，沒有「他的語言」可看。主旨是 `{系統名稱}：邀請您啟用帳號`、`{系統名稱}：請驗證您的信箱`、`{系統名稱}：寄信測試`（英文有對照）；系統名稱取自[系統名稱](#系統名稱platformbrand)。
+- **HTML** 由 Razor 元件（`SharedKernel/MailViews/`）經 `HtmlRenderer` 渲染，參數是強型別的頁面資料；所有插入的值（系統名稱、租戶識別碼、連結）由 Razor 自動 HTML 編碼，條件註解與 VML 以 `MarkupString` 輸出，內容只有固定文字與整數。純文字版由同一組資料另外產生。
+- **版面**：單欄、有最大寬度，手機縮小左右內距；表格版面加內嵌樣式（傳統 Outlook 以 Word 引擎渲染，不支援 flexbox、grid），主要按鈕是橋接按鈕，Outlook 改用 VML 圓角矩形；淺色與深色兩組配色，深色只在支援 `prefers-color-scheme` 的客戶端套用，其餘維持淺色；`lang` 隨信的語言，版面表格標 `role="presentation"`。
+- **版型選項**（`Platform:Mail:Template`，`MailTemplateOptions`）：`Culture`、`Width`、`PaddingVertical`、`PaddingHorizontal`、`CompactBreakpoint`、`CompactPaddingVertical`、`CompactPaddingHorizontal`、`FontFamily`、`MonospaceFontFamily`，以及淺色與深色兩組色票（`Light:*`、`Dark:*`，每組的鍵見 `MailPalette`）；預設值與合法範圍以 `MailTemplateOptions` 及它的驗證器為準。顏色只收 `#rrggbb`、字型只收字母數字與少數符號，每組色票的文字對比度必須至少 4.5:1；不合法就在啟動停下並指名鍵。
+- **安全限制**：信裡唯一的外部網址就是啟用連結。沒有遠端圖片、追蹤像素、點擊追蹤轉址、腳本或外部樣式。理由是連結等同一次登入的鑰匙，不能經第三方，也不能被客戶端預先載入。上面的日誌與稽核規則不變：不記連結與內文。
+- **預覽**：`mail preview <輸出目錄>` 用同一個 `IMailComposer` 與選項寫出五種信（邀請與驗證各有「營運者」與「有租戶」兩種、加測試信）的 `.html` 與 `.txt`；系統名稱、`LinkLifetime` 與版型選項照目前的設定，連結是保留網域 `platform.example` 上的占位值，權杖是不能用的假值。瀏覽器的預覽不等於真實客戶端；傳統 Outlook 與各家深色模式要以實際寄出的信檢查（見 [`CONTRIBUTING.md`「本機收信與寄信測試」](../../CONTRIBUTING.md#本機收信與寄信測試)）。
+
+**測試**：在服務自己的環境裡執行 `mail test <email>`（見上表）。它印出實際使用的中繼、寄件者與連結來源，寄一封沒有連結、沒有密碼的測試信（主旨與內文帶系統名稱，與邀請信同一個版型），並以結束碼說明結果。來源位址是否被中繼信任只能在服務實際執行的環境驗證，從別的機器測通不代表服務能寄。
 
 | 現象 | 常見原因 |
 |------|----------|

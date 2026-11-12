@@ -191,6 +191,27 @@ public sealed class OperatorCliTests(PlatformFactory factory)
         });
     }
 
+    // 測試信也是 HTML 加純文字，套同一個版型；沒有連結、沒有按鈕、沒有任何網址。
+    [Fact]
+    public async Task MailTestSendsTheSameNoteAsHtmlWithoutAnyAddress()
+    {
+        await using var host = await HostAsync();
+        var to = $"probe-{Guid.NewGuid():N}@example.test";
+        await factory.WithMail(async () =>
+        {
+            var (code, _, _) = await RunAsync(host.Services, "mail", "test", to);
+
+            Assert.Equal(0, code);
+            var mail = Assert.Single(factory.Mail.Sent, m => m.Recipient == to);
+            Assert.StartsWith("<!DOCTYPE html>", mail.Html, StringComparison.Ordinal);
+            Assert.Contains("這是一封測試信，用來確認「環境知識」的寄信設定與中繼可用。", mail.Html, StringComparison.Ordinal);
+            Assert.DoesNotContain("http", mail.Html, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("<a ", mail.Html, StringComparison.Ordinal);
+            Assert.DoesNotContain("<img", mail.Html, StringComparison.OrdinalIgnoreCase);
+            await Task.CompletedTask;
+        });
+    }
+
     [Fact]
     public async Task MailTestExplainsWhyItFailedAndNeverClaimsSuccess()
     {

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Mail.Lang" xml:space="preserve"><value>zh-Hant</value></data>
+  <data name="Mail.Subject.Invitation" xml:space="preserve"><value>{0}：邀請您啟用帳號</value></data>
+  <data name="Mail.Subject.Verification" xml:space="preserve"><value>{0}：請驗證您的信箱</value></data>
+  <data name="Mail.Subject.Test" xml:space="preserve"><value>{0}：寄信測試</value></data>
+  <data name="Mail.Heading.Invitation" xml:space="preserve"><value>邀請您啟用帳號</value></data>
+  <data name="Mail.Heading.Verification" xml:space="preserve"><value>請驗證您的信箱</value></data>
+  <data name="Mail.Heading.Test" xml:space="preserve"><value>寄信測試</value></data>
+  <data name="Mail.Lead.Invitation" xml:space="preserve"><value>已為您在「{0}」建立帳號。請按下方按鈕，設定您自己的密碼並完成信箱驗證。</value></data>
+  <data name="Mail.Lead.Verification" xml:space="preserve"><value>請按下方按鈕，驗證這個信箱屬於您。</value></data>
+  <data name="Mail.Lead.Test" xml:space="preserve"><value>這是一封測試信，用來確認「{0}」的寄信設定與中繼可用。</value></data>
+  <data name="Mail.Button.Invitation" xml:space="preserve"><value>設定密碼並啟用帳號</value></data>
+  <data name="Mail.Button.Verification" xml:space="preserve"><value>驗證信箱</value></data>
+  <data name="Mail.Fallback" xml:space="preserve"><value>按鈕無法點選時，請複製下列連結到瀏覽器：</value></data>
+  <data name="Mail.Tenant" xml:space="preserve"><value>租戶識別碼：{0}</value></data>
+  <data name="Mail.Validity" xml:space="preserve"><value>連結 {0}內有效，而且只能使用一次。</value></data>
+  <data name="Mail.Preheader" xml:space="preserve"><value>連結 {0}內有效，只能使用一次</value></data>
+  <data name="Mail.Preheader.Test" xml:space="preserve"><value>這是寄信設定的測試信，收到後不需要做任何事</value></data>
+  <data name="Mail.Ignore" xml:space="preserve"><value>如果您沒有預期收到這封信，請忽略它：在您開啟連結之前，不會有任何變更。</value></data>
+  <data name="Mail.Test.Note" xml:space="preserve"><value>沒有連結，也沒有密碼；收到後不需要做任何事。</value></data>
+  <data name="Mail.Footer" xml:space="preserve"><value>這是系統自動寄出的信 · {0}</value></data>
+  <data name="Mail.Lifetime.Days" xml:space="preserve"><value>{0} 天</value></data>
+  <data name="Mail.Lifetime.Hours" xml:space="preserve"><value>{0} 小時</value></data>
+  <data name="Mail.Text.Greeting" xml:space="preserve"><value>您好，</value></data>
+  <data name="Mail.Text.Intro.Invitation" xml:space="preserve"><value>已為您在「{0}」建立帳號。請開啟下列連結，設定您自己的密碼並完成信箱驗證：</value></data>
+  <data name="Mail.Text.Intro.Verification" xml:space="preserve"><value>請開啟下列連結，驗證這個信箱屬於您：</value></data>
+</root>

@@ -204,6 +204,55 @@ public sealed partial class InvitationTests(PlatformFactory factory)
         });
     }
 
+    // 信是 HTML 加純文字：兩版是同一條連結、同一個租戶；HTML 版沒有圖片與追蹤，唯一的外部網址是啟用連結。
+    [Fact]
+    public async Task TheMemberInvitationCarriesTheSameLinkAndTenantInTheTextAndTheHtml()
+    {
+        await factory.WithMail(async () =>
+        {
+            var (tenant, email, invitation) = await InviteMemberAsync("inv-html");
+
+            var mail = Assert.Single(factory.Mail.Sent, m => m.Recipient == email);
+            var link = Regex.Match(mail.Body, @"https://platform\.test/\S+").Value;
+            Assert.Contains($"/portal/{tenant.Identifier}/activate?userId={invitation.Member.Id}&code=", link, StringComparison.Ordinal);
+            var html = System.Net.WebUtility.HtmlDecode(mail.Html);
+            Assert.Contains(link, html, StringComparison.Ordinal);
+            Assert.Contains($"租戶識別碼：{tenant.Identifier}", html, StringComparison.Ordinal);
+            Assert.Contains("設定密碼並啟用帳號", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("<img", mail.Html, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotMatch(@"(?i)https?:", mail.Html.Replace(System.Net.WebUtility.HtmlEncode(link), string.Empty, StringComparison.Ordinal));
+        });
+    }
+
+    [Fact]
+    public async Task TheOperatorInvitationHasNoTenantLineAndTheVerificationMailHasNoPasswordButton()
+    {
+        await factory.WithMail(async () =>
+        {
+            var email = NewEmail();
+            var invited = await Operators.InviteAsync(OperatorSession.Principal(), email, "Op", CancellationToken.None);
+            Assert.True(invited.IsOk, invited.Message);
+
+            var mail = Assert.Single(factory.Mail.Sent, m => m.Recipient == email);
+            Assert.Contains("/ui/activate?userId=", mail.Html, StringComparison.Ordinal);
+            Assert.DoesNotContain("租戶識別碼", mail.Html + mail.Body, StringComparison.Ordinal);
+        });
+
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("inv-v");
+        var existing = NewEmail();
+        var (id, _) = await AddMemberAsync(factory, tenant.Id, existing);
+        await factory.WithMail(async () =>
+        {
+            var resent = await Members.ResendInvitationAsync(OperatorSession.Principal(), tenant.Id, id, CancellationToken.None);
+            Assert.True(resent.IsOk, resent.Message);
+
+            var mail = Assert.Single(factory.Mail.Sent, m => m.Recipient == existing);
+            Assert.Contains(">驗證信箱</a>", mail.Html, StringComparison.Ordinal);
+            Assert.DoesNotContain("設定密碼", mail.Html, StringComparison.Ordinal);
+            Assert.Contains($"租戶識別碼：{tenant.Identifier}", System.Net.WebUtility.HtmlDecode(mail.Html), StringComparison.Ordinal);
+        });
+    }
+
     // 已經有密碼、信箱還沒驗證（例如邀請功能上線前就存在的帳號）：寄驗證連結，開啟後只確認信箱。
     [Fact]
     public async Task AnExistingAccountGetsAVerificationLinkThatOnlyConfirmsTheEmail()

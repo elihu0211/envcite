@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Mail.Lang" xml:space="preserve"><value>en</value></data>
+  <data name="Mail.Subject.Invitation" xml:space="preserve"><value>{0}: You're invited to activate your account</value></data>
+  <data name="Mail.Subject.Verification" xml:space="preserve"><value>{0}: Please verify your email address</value></data>
+  <data name="Mail.Subject.Test" xml:space="preserve"><value>{0}: Mail delivery test</value></data>
+  <data name="Mail.Heading.Invitation" xml:space="preserve"><value>You're invited to activate your account</value></data>
+  <data name="Mail.Heading.Verification" xml:space="preserve"><value>Please verify your email address</value></data>
+  <data name="Mail.Heading.Test" xml:space="preserve"><value>Mail delivery test</value></data>
+  <data name="Mail.Lead.Invitation" xml:space="preserve"><value>An account has been created for you in “{0}”. Use the button below to set your own password and verify your email address.</value></data>
+  <data name="Mail.Lead.Verification" xml:space="preserve"><value>Use the button below to confirm that this email address belongs to you.</value></data>
+  <data name="Mail.Lead.Test" xml:space="preserve"><value>This is a test message to confirm that the mail settings and relay of “{0}” work.</value></data>
+  <data name="Mail.Button.Invitation" xml:space="preserve"><value>Set password and activate account</value></data>
+  <data name="Mail.Button.Verification" xml:space="preserve"><value>Verify email address</value></data>
+  <data name="Mail.Fallback" xml:space="preserve"><value>If the button does not work, copy this link into your browser:</value></data>
+  <data name="Mail.Tenant" xml:space="preserve"><value>Tenant identifier: {0}</value></data>
+  <data name="Mail.Validity" xml:space="preserve"><value>The link is valid for {0} and can be used only once.</value></data>
+  <data name="Mail.Preheader" xml:space="preserve"><value>Link valid for {0}, single use</value></data>
+  <data name="Mail.Preheader.Test" xml:space="preserve"><value>A mail delivery test; nothing for you to do</value></data>
+  <data name="Mail.Ignore" xml:space="preserve"><value>If you were not expecting this message, ignore it: nothing changes until you open the link.</value></data>
+  <data name="Mail.Test.Note" xml:space="preserve"><value>It contains no link and no password; nothing for you to do.</value></data>
+  <data name="Mail.Footer" xml:space="preserve"><value>This message was sent automatically · {0}</value></data>
+  <data name="Mail.Lifetime.Days" xml:space="preserve"><value>{0} day(s)</value></data>
+  <data name="Mail.Lifetime.Hours" xml:space="preserve"><value>{0} hour(s)</value></data>
+  <data name="Mail.Text.Greeting" xml:space="preserve"><value>Hello,</value></data>
+  <data name="Mail.Text.Intro.Invitation" xml:space="preserve"><value>An account has been created for you in “{0}”. Open the link below to set your own password and verify your email address:</value></data>
+  <data name="Mail.Text.Intro.Verification" xml:space="preserve"><value>Open the link below to confirm that this email address belongs to you:</value></data>
+</root>

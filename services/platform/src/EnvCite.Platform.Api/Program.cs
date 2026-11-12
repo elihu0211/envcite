@@ -22,6 +22,12 @@ using Microsoft.Extensions.Options;
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddServiceEnvironment();
 
+// 預覽信件版型：不寄信、不連資料庫，所以在建立主機（遷移、種子資料）之前就處理完。
+if (MailPreview.IsCommand(args))
+{
+    return await MailPreview.RunAsync(builder.Configuration, args, Console.Out, Console.Error, CancellationToken.None);
+}
+
 // 建置時產生 OpenAPI 規格會以模擬伺服器執行本檔（進入組件為 GetDocument.Insider）：只建出端點、
 // 不處理請求也不連線，故以占位值滿足啟動時的設定檢查。
 var generatingOpenApi = Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
@@ -51,6 +57,7 @@ if (!generatingOpenApi)
 builder.Services.AddPlatformData();
 builder.Services.AddApiAccessModule();
 builder.Services.AddAuditModule();
+builder.Services.AddPlatformMail(); // 寄信與組信的一切（傳輸、版型、文案、系統名稱），集中在這一處註冊；邀請的模組與命令列都用它
 builder.Services.AddMembersModule();
 builder.Services.AddConversationsModule();
 builder.Services.AddSingleton<ITenantDirectory, TenantDirectory>();

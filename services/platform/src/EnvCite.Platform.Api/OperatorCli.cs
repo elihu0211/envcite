@@ -22,9 +22,11 @@ public static class OperatorCli
           operator reset-password <email>
           operator reset-two-factor <email>
           mail test <email>
+          mail preview <輸出目錄>
 
         mail test 用目前的 Platform:Mail 設定寄一封沒有連結、沒有密碼的測試信，確認中繼接受（要在服務自己的環境執行，
         來源位址才是中繼認得的那個）。
+        mail preview 不寄信也不連資料庫：把信件版型（邀請、驗證、測試信）寫成 HTML 與純文字檔到輸出目錄，連結是占位值。
 
         已啟用寄信（Platform:Mail）時，create 寄邀請信，對方開啟連結自己設定密碼並驗證信箱，不產生密碼；
         沒啟用時，create 印出一次性初始密碼。reset-password 一律印出新的一次性密碼（寄信失敗或收不到信時的退路）。
@@ -89,12 +91,8 @@ public static class OperatorCli
             連結來源：{settings.BaseUrl}
             """);
 
-        var brand = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<BrandOptions>>().Value.Name;
-        var delivery = await mail.SendAsync(
-            parsed.Address,
-            $"{brand}：寄信測試",
-            $"這是一封測試信，用來確認「{brand}」的寄信設定與中繼可用。\n沒有連結，也沒有密碼；收到後不需要做任何事。",
-            cancellationToken);
+        var composed = await services.GetRequiredService<IMailComposer>().ComposeTestAsync(cancellationToken);
+        var delivery = await mail.SendAsync(parsed.Address, composed.Subject, composed.Content, cancellationToken);
         if (delivery == MailDelivery.Sent)
         {
             await output.WriteLineAsync($"中繼已接受這封測試信。請到 {parsed.Address} 確認有收到（中繼接受不代表已投遞）。");

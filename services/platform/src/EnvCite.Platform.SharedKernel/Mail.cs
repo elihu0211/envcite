@@ -4,6 +4,7 @@ using MailKit;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -113,24 +114,25 @@ internal sealed class MailOptionsValidator : IValidateOptions<MailOptions>
     }
 }
 
-/// <summary>寄一封純文字信。實作不丟例外（呼叫端自己的取消除外），失敗以 <see cref="MailDelivery.Failed"/> 回報。</summary>
+/// <summary>寄一封 multipart/alternative 信（純文字加 HTML）。實作不丟例外（呼叫端自己的取消除外），失敗以 <see cref="MailDelivery.Failed"/> 回報。</summary>
 public interface IMailSender
 {
     /// <summary>是否啟用寄信。沒啟用時，建立帳號改走「暫時密碼」，由操作者親手交付。</summary>
     bool Enabled { get; }
 
-    Task<MailDelivery> SendAsync(string recipient, string subject, string body, CancellationToken cancellationToken);
+    Task<MailDelivery> SendAsync(string recipient, string subject, MailContent content, CancellationToken cancellationToken);
 }
 
 /// <summary>
 /// 以 MailKit 寄信到 SMTP 中繼：純 TCP、不 STARTTLS、不驗證（<see cref="SecureSocketOptions.None"/>、沒有 Authenticate），
-/// 因為校內中繼就是這樣。日誌只記例外型別：收件者、主旨與內文（含連結權杖）都不進日誌，例外訊息也不記（可能回顯位址）。
+/// 因為校內中繼就是這樣。信是 multipart/alternative：純文字在前、HTML 在後（RFC 2046：最後一個是最偏好的）。
+/// 日誌只記例外型別：收件者、主旨與內文（含連結權杖）都不進日誌，例外訊息也不記（可能回顯位址）。
 /// </summary>
 internal sealed partial class SmtpMailSender(IOptions<MailOptions> options, IOptions<BrandOptions> brand, ILogger<SmtpMailSender> logger) : IMailSender
 {
     public bool Enabled => options.Value.Enabled;
 
-    public async Task<MailDelivery> SendAsync(string recipient, string subject, string body, CancellationToken cancellationToken)
+    public async Task<MailDelivery> SendAsync(string recipient, string subject, MailContent content, CancellationToken cancellationToken)
     {
         var settings = options.Value;
         if (!settings.Enabled)
@@ -152,7 +154,11 @@ internal sealed partial class SmtpMailSender(IOptions<MailOptions> options, IOpt
             message.Subject = subject;
             // RFC 3834：自動產生的信，收件端的自動回覆（休假通知等）不要回它。
             message.Headers.Add("Auto-Submitted", "auto-generated");
-            message.Body = new TextPart("plain") { Text = body };
+            message.Body = new MultipartAlternative
+            {
+                new TextPart("plain") { Text = content.Text },
+                new TextPart("html") { Text = content.Html },
+            };
 
             // EHLO 自報的名稱同理：中繼的反垃圾規則常檢查它，用寄件者的網域而不是本機主機名稱。
             using var client = new SmtpClient { Timeout = settings.TimeoutSeconds * 1000, LocalDomain = from.Domain };
@@ -180,11 +186,20 @@ internal sealed partial class SmtpMailSender(IOptions<MailOptions> options, IOpt
 
 public static class MailServiceCollectionExtensions
 {
-    /// <summary>註冊 <see cref="IMailSender"/> 與 <c>Platform:Mail</c>（含它預設寄件者名稱所讀的 <c>Platform:Brand</c>）；測試可在其後換掉 <see cref="IMailSender"/>。</summary>
+    /// <summary>
+    /// 寄信所需的一切，集中在這一處註冊：<c>Platform:Mail</c>（傳輸）、<c>Platform:Mail:Template</c>（版型）、<c>Platform:Brand</c>（系統名稱）、
+    /// 文案的本地化、<see cref="IMailComposer"/>（組信）與 <see cref="IMailSender"/>（只管傳輸）。
+    /// 需要 <c>AddLogging()</c>（主機本來就有）。測試可在其後換掉 <see cref="IMailSender"/>。
+    /// </summary>
     public static IServiceCollection AddPlatformMail(this IServiceCollection services)
     {
         services.AddPlatformBrand();
+        services.AddLocalization();
         services.AddSectionOptions<MailOptions, MailOptionsValidator>();
+        services.AddSectionOptions<MailTemplateOptions, MailTemplateOptionsValidator>();
+        services.TryAddSingleton<MailRenderServices>();
+        services.TryAddSingleton(provider => new HtmlRenderer(provider.GetRequiredService<MailRenderServices>(), provider.GetRequiredService<ILoggerFactory>()));
+        services.TryAddSingleton<IMailComposer, MailComposer>();
         services.TryAddSingleton<IMailSender, SmtpMailSender>();
         return services;
     }
