@@ -428,6 +428,7 @@ public static partial class DesignTokenTests
         Assert.Contains("html[data-js] .ep-password-toggle", css, StringComparison.Ordinal);
         Assert.Contains("html[data-js] .ep-js-only", css, StringComparison.Ordinal);
         Assert.Contains("documentElement.dataset.js", script, StringComparison.Ordinal);
+        Assert.Contains("iframe.ep-print-frame", script, StringComparison.Ordinal); // 列印用的 iframe 每次先清掉上一個
     }
 
     // 側欄：桌機收成窄欄、手機是抽屜，兩者都靠 forms.js 設在 <html> 上的屬性；窄欄寬度是 token，收起的抽屜不在 Tab 順序裡。
