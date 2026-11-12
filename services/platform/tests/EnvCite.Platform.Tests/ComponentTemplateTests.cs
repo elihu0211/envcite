@@ -79,7 +79,7 @@ public static partial class ComponentTemplateTests
         var pages = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Pages"), "*.razor").Where(file => !file.EndsWith("_Imports.razor", StringComparison.Ordinal));
         Assert.All(pages, page => Assert.Matches(@"@inherits (AdminPageBase|PageBase)\b", File.ReadAllText(page)));
         var portal = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Portal"), "*.razor");
-        Assert.All(portal, page => Assert.Matches(@"@inherits (PortalPageBase|PortalFormPageBase<\w+>)\b", File.ReadAllText(page)));
+        Assert.All(portal, page => Assert.Matches(@"@inherits (PortalPageBase|PortalFormPageBase<\w+>)(?!\w)", File.ReadAllText(page)));
     }
 
     // 營運者與客戶入口共用的流程（改密碼、啟用）只寫一份，兩邊的頁面只剩外框。
