@@ -29,7 +29,7 @@ env:
   # renovate: datasource=docker depName=postgres
   POSTGRES_MAJOR: "18"
   # renovate: datasource=docker depName=mcr.microsoft.com/dotnet/sdk
-  DOTNET_VERSION: "10.0.404"
+  DOTNET_VERSION: "11.0.100"
   # renovate: datasource=pypi depName=uv
   UV_VERSION: "0.12.18"
   # renovate: datasource=python-version depName=python

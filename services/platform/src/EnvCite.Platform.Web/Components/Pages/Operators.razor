@@ -101,7 +101,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var user = (await Auth.GetAuthenticationStateAsync()).User;
+        var user = await ActorAsync();
         _selfId = user.FindFirst(PlatformClaimTypes.OperatorId)?.Value;
         if (Prerendered is not null)
         {

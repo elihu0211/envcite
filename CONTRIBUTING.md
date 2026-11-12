@@ -324,6 +324,7 @@ CI 依變更路徑決定執行哪些 job，路由以 [`ci/detect-changes.sh`](ci
 | Python 套件 | 倉庫根 `uv lock --upgrade`（或 `--upgrade-package <pkg>`） | 升級 `grpcio-tools`、`mypy-protobuf`、`protobuf` 時，重新產生 `libs/python/envcite-proto` |
 | .NET 套件 | 倉庫根 `Directory.Packages.props` | — |
 | .NET SDK 與映像 | `services/{platform,consult}/Dockerfile`、`ci.yml` 的 `DOTNET_VERSION` | `global.json` 的 `sdk.version` 只是下限，Renovate 不動它。SDK 的 patch 版本決定隱含套件 `Microsoft.AspNetCore.App.Internal.Assets` 的版本：以新 SDK 執行 `dotnet restore --force-evaluate` 並更新 `packages.lock.json`，否則 CI 的 `--locked-mode` 失敗。本機 SDK 與 `DOTNET_VERSION` 同版，restore 才不會改動鎖檔 |
+| .NET 主版本 | 倉庫根 `Directory.Build.props` 的 `TargetFramework`、`global.json` 的 `sdk.version`（下限，主版本要手動改）、上列 SDK 與映像 | 映像 tag 的 Ubuntu 代號隨主版本而異，以 `mcr.microsoft.com/dotnet/aspnet` 與 `sdk` 實際存在的標籤為準；EF Core 家族與 Npgsql 提供者整組一起升（版本約束見 `Directory.Packages.props` 的註解）；`dotnet build` 會重新產生 `openapi_v2.json`，一併提交 |
 | Python | `.python-version`、`ci.yml` 的 `PYTHON_VERSION`、`services/ontology/Dockerfile` 的 `ARG PYTHON_VERSION` | — |
 | uv | `ci.yml` 的 `UV_VERSION`、`services/ontology/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 | — |
 | PostgreSQL | `ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/ontology/tools/holdout.py`、`services/platform/tests/…/PlatformFactory.cs` | 主版本與正式環境相同。ontology 需要 pgvector，映像用 `pgvector/pgvector:pg<主版本>` |

@@ -54,7 +54,7 @@
       "dependencyDashboardApproval": true
     },
     {
-      "description": "語言執行環境與其基底映像的 minor 也是行為變更（python 3.14→3.15、.NET 10→11）：要連同 requires-python／TargetFramework 一起評估，先勾選才開 pull request",
+      "description": "語言執行環境與其基底映像的 minor 也是行為變更（python 3.14→3.15、.NET 11→12）：要連同 requires-python／TargetFramework 一起評估，先勾選才開 pull request",
       "matchDepNames": [
         "python",
         "dotnet-sdk",

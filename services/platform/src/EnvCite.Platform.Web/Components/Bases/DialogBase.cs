@@ -56,7 +56,8 @@ public abstract class DialogBase : PlatformComponentBase
 /// </summary>
 public abstract class FormDialogBase : DialogBase
 {
-    [Inject] protected AuthenticationStateProvider Auth { get; set; } = default!;
+    /// <summary>目前的登入狀態：由根部的 <c>CascadingAuthenticationState</c> 提供，每次送出都讀最新的值。</summary>
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
 
     protected string? Error { get; set; }
 
@@ -87,7 +88,7 @@ public abstract class FormDialogBase : DialogBase
         (Busy, Error) = (true, null);
         try
         {
-            var outcome = await action((await Auth.GetAuthenticationStateAsync()).User);
+            var outcome = await action((await AuthenticationState).User);
             if (outcome.Failure is { } failure)
             {
                 Error = failure;

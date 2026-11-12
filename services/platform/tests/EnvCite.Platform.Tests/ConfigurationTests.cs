@@ -113,7 +113,7 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     {
         var message = StartFailure(factory.WithWebHostBuilder(b => b.UseSetting("ConnectionStrings:Platform", "")));
 
-        Assert.Contains("The DatabaseOptions.Platform field is required", message, StringComparison.Ordinal);
+        Assert.Contains("ConnectionStrings:Platform is required", message, StringComparison.Ordinal);
     }
 
     // 後台是可選功能，預設關閉：沒開就不掛 /ui，API 照常。

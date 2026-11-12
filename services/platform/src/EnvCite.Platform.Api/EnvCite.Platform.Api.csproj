@@ -4,7 +4,8 @@
   <PropertyGroup>
     <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
     <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)/../../openapi</OpenApiDocumentsDirectory>
-    <OpenApiGenerateDocumentsOptions>--file-name openapi</OpenApiGenerateDocumentsOptions>
+    <!-- 規格版本與 PlatformOpenApi 的 OpenApiVersion 是同一個值：建置時產生的檔案由這個選項決定，執行期的 /openapi 由程式碼決定。 -->
+    <OpenApiGenerateDocumentsOptions>--file-name openapi --openapi-version OpenApi3_1</OpenApiGenerateDocumentsOptions>
   </PropertyGroup>
 
   <!--
