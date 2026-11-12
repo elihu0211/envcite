@@ -46,5 +46,12 @@
   <data name="MailTest.BaseUrl" xml:space="preserve"><value>Link origin: {0}</value></data>
   <data name="MailTest.Warning.Clear" xml:space="preserve"><value>Warning: credentials are set but the security mode is {0}, so the username and password may travel over the network in clear text; use StartTls or SslOnConnect when the relay supports it.</value></data>
   <data name="MailTest.Accepted" xml:space="preserve"><value>The relay accepted the test mail. Check {0} for the message (acceptance does not mean delivery).</value></data>
-  <data name="MailTest.Failed" xml:space="preserve"><value>Mail delivery failed ({0}). Common causes: the source address of this environment is not trusted by the relay, wrong Host or Port, or the relay rejects the domain of From. With credentials there are two more: SMTP 535 means a wrong username or password (Exchange and Google Workspace are different account systems, use an account of the system the relay belongs to); SMTP 550 5.7.60 means the sender is not the authenticated account (From must equal Username). See the "Mail delivery failed" line of the service log (exception type and SMTP status code) and the troubleshooting table in services/platform/README.md, "Mail".</value></data>
+  <data name="MailTest.Failed" xml:space="preserve"><value>Mail delivery failed ({0}). Common causes:</value></data>
+  <data name="MailTest.Cause.SourceNotTrusted" xml:space="preserve"><value>the source address of this environment is not trusted by the relay</value></data>
+  <data name="MailTest.Cause.HostOrPort" xml:space="preserve"><value>wrong Host or Port</value></data>
+  <data name="MailTest.Cause.SenderDomain" xml:space="preserve"><value>the relay rejects the domain of From</value></data>
+  <data name="MailTest.Cause.BadCredentials" xml:space="preserve"><value>wrong username or password (Exchange and Google Workspace are different account systems, use an account of the system the relay belongs to)</value></data>
+  <data name="MailTest.Cause.SenderNotAccount" xml:space="preserve"><value>the sender is not the authenticated account (From must equal Username)</value></data>
+  <data name="MailTest.Cause.WithCode" xml:space="preserve"><value>SMTP {0}: {1}</value></data>
+  <data name="MailTest.Failed.Pointer" xml:space="preserve"><value>See the "Mail delivery failed" line of the service log (exception type and SMTP status code) and the troubleshooting table in services/platform/README.md, "Mail".</value></data>
 </root>

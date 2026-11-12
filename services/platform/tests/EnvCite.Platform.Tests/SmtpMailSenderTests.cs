@@ -19,12 +19,14 @@ namespace EnvCite.Platform.Tests;
 /// </summary>
 public sealed class SmtpMailSenderTests
 {
-    private static ServiceProvider Sender(Dictionary<string, string?> settings, CapturingLoggerProvider? logs = null)
+    // 與正式環境同一個註冊（AddPlatformMail），只換掉設定的來源與日誌；要換傳輸的測試用 configure 在其後覆寫。
+    private static ServiceProvider Sender(Dictionary<string, string?> settings, CapturingLoggerProvider? logs = null, Action<IServiceCollection>? configure = null)
     {
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddInMemoryCollection(settings).Build());
         services.AddLogging(b => b.AddProvider(logs ?? new CapturingLoggerProvider()));
         services.AddPlatformMail();
+        configure?.Invoke(services);
         return services.BuildServiceProvider();
     }
 
@@ -423,25 +425,98 @@ public sealed class SmtpMailSenderTests
         Assert.Equal("STARTTLS", relay.Commands[1]); // EHLO、STARTTLS，之後才可能有別的指令
     }
 
+    // ---- 傳輸可替換：每封信一個新的 SMTP 用戶端 ----
+
+    /// <summary>真的 SmtpClient，但記下每次建立的時間點與 EHLO 名稱：證明寄信的程式向工廠要用戶端，而不是自己 new。</summary>
+    private sealed class RecordingClientFactory(ISmtpClientFactory inner) : ISmtpClientFactory
+    {
+        public List<(MailKit.Net.Smtp.ISmtpClient Client, string LocalDomain)> Created { get; } = [];
+
+        public MailKit.Net.Smtp.ISmtpClient Create(string localDomain)
+        {
+            var client = inner.Create(localDomain);
+            Created.Add((client, localDomain));
+            return client;
+        }
+    }
+
+    [Fact]
+    public async Task EachMailGetsItsOwnClientFromTheFactoryNamedAfterTheSenderDomain()
+    {
+        await using var relay = await TestSmtpServer.StartAsync();
+        RecordingClientFactory? factory = null;
+        using var provider = Sender(Settings(relay.Port), configure: services => services.AddSingleton<ISmtpClientFactory>(p =>
+            factory = new RecordingClientFactory(ActivatorUtilities.CreateInstance<InnerFactory>(p))));
+
+        var sender = provider.GetRequiredService<IMailSender>();
+        await sender.SendAsync("one@recipient.test", "主旨", Content("內文"), TestContext.Current.CancellationToken);
+        await sender.SendAsync("two@recipient.test", "主旨", Content("內文"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, relay.Received.Count);
+        Assert.NotNull(factory);
+        Assert.Equal(2, factory.Created.Count);
+        Assert.NotSame(factory.Created[0].Client, factory.Created[1].Client); // 不共用：SmtpClient 不是執行緒安全
+        Assert.All(factory.Created, created => Assert.Equal("relay.test", created.LocalDomain)); // 來自寄件者位址，不是寫死的字串
+    }
+
+    /// <summary>取代預設工廠的測試版本，只轉到真的 <see cref="MailKit.Net.Smtp.SmtpClient"/>（保留選項的時限）。</summary>
+    private sealed class InnerFactory(IOptions<MailTransportOptions> transport) : ISmtpClientFactory
+    {
+        public MailKit.Net.Smtp.ISmtpClient Create(string localDomain) =>
+            new MailKit.Net.Smtp.SmtpClient { Timeout = transport.Value.TimeoutSeconds * 1000, LocalDomain = localDomain };
+    }
+
     // ---- 設定檢查與機密 ----
 
-    private static IOptions<MailOptions> Options(Dictionary<string, string?> settings) =>
-        Sender(settings).GetRequiredService<IOptions<MailOptions>>();
+    // 三個選項類別各自驗證，鍵都在 Platform:Mail：用真的註冊解析，錯誤在解析時才丟（主機啟動時 ValidateOnStart 會先丟）。
+    private static T Resolve<T>(Dictionary<string, string?> settings)
+        where T : class =>
+        Sender(settings).GetRequiredService<IOptions<T>>().Value;
 
     [Theory]
     [InlineData("Platform:Mail:Username", "only-user@relay.test", "Platform:Mail:Password is required when Platform:Mail:Username is set")]
     [InlineData("Platform:Mail:Password", "only-the-password-不能進訊息", "Platform:Mail:Username is required when Platform:Mail:Password is set")]
     [InlineData("Platform:Mail:Security", "42", "Platform:Mail:Security must be one of")]
-    [InlineData("Platform:Mail:ReplyTo", "not-a-mail", "Platform:Mail:ReplyTo must be a valid mail address")]
-    public void InvalidCredentialSettingsStopTheStartupAndNameTheKeyWithoutTheValue(string key, string value, string expected)
+    [InlineData("Platform:Mail:Host", "", "Platform:Mail:Host is required")]
+    [InlineData("Platform:Mail:Port", "0", "Platform:Mail:Port must be between 1 and 65535")]
+    [InlineData("Platform:Mail:TimeoutSeconds", "0", "Platform:Mail:TimeoutSeconds must be between 1 and 120")]
+    public void InvalidTransportSettingsStopTheStartupAndNameTheKeyWithoutTheValue(string key, string value, string expected)
     {
         var settings = Settings(587);
         settings[key] = value;
 
-        var failure = Assert.Throws<OptionsValidationException>(() => Options(settings).Value);
+        var failure = Assert.Throws<OptionsValidationException>(() => Resolve<MailTransportOptions>(settings));
 
         Assert.Contains(expected, failure.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain(value, failure.Message.Replace(key, string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        if (value.Length >= 4) // 帳號與密碼那幾列：值不得出現在訊息裡（數字型的列太短，無從以子字串判斷）
+        {
+            Assert.DoesNotContain(value, failure.Message.Replace(key, string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData("Platform:Mail:ReplyTo", "not-a-mail", "Platform:Mail:ReplyTo must be a valid mail address")]
+    [InlineData("Platform:Mail:From", "not-a-mail", "Platform:Mail:From must be a valid mail address")]
+    public void InvalidIdentitySettingsStopTheStartupAndNameTheKey(string key, string value, string expected)
+    {
+        var settings = Settings(587);
+        settings[key] = value;
+
+        var failure = Assert.Throws<OptionsValidationException>(() => Resolve<MailIdentityOptions>(settings));
+
+        Assert.Contains(expected, failure.Message, StringComparison.Ordinal);
+    }
+
+    // 三個類別各管各的鍵：一個類別的壞值不會被另一個類別接走，也不會讓別的類別失敗。
+    [Fact]
+    public void EachOptionsClassValidatesOnlyItsOwnKeys()
+    {
+        var settings = Settings(587);
+        settings["Platform:Mail:Security"] = "42";
+
+        Assert.Throws<OptionsValidationException>(() => Resolve<MailTransportOptions>(settings));
+        Assert.False(Resolve<MailIdentityOptions>(settings).From.Length == 0); // 寄件者不受傳輸設定影響
+        Assert.True(Resolve<MailOptions>(settings).Enabled);
     }
 
     // 列舉鍵寫錯字：綁定就失敗，訊息指名鍵。
@@ -451,22 +526,40 @@ public sealed class SmtpMailSenderTests
         var settings = Settings(587);
         settings["Platform:Mail:Security"] = "Bogus";
 
-        var failure = Assert.ThrowsAny<Exception>(() => Options(settings).Value);
+        var failure = Assert.ThrowsAny<Exception>(() => Resolve<MailTransportOptions>(settings));
 
         Assert.Contains("Platform:Mail:Security", string.Join(' ', Messages(failure)), StringComparison.Ordinal);
     }
 
-    // 兩者都沒設是現行部署：不驗證、不加密，和以前一樣。兩者都設則通過。
+    // 沒啟用就不檢查（部署庫可以先放著不完整的值）。
     [Fact]
-    public void NeitherOrBothOfUsernameAndPasswordAreValidAndSecurityDefaultsToNone()
+    public void NothingIsValidatedWhileMailIsDisabled()
     {
-        var none = Options(Settings(25)).Value;
+        var settings = Settings(0, enabled: false);
+        settings["Platform:Mail:Username"] = "only-a-user";
+        settings["Platform:Mail:Security"] = "42";
+        settings["Platform:Mail:ReplyTo"] = "not-a-mail";
+
+        using var provider = Sender(settings);
+
+        Assert.False(provider.GetRequiredService<IOptions<MailOptions>>().Value.Enabled);
+        Assert.NotNull(provider.GetRequiredService<IOptions<MailTransportOptions>>().Value);
+        Assert.NotNull(provider.GetRequiredService<IOptions<MailIdentityOptions>>().Value);
+    }
+
+    // 兩者都沒設是現行部署：不驗證、不加密，和以前一樣。兩者都設則通過。預設值只在選項類別裡。
+    [Fact]
+    public void NeitherOrBothOfUsernameAndPasswordAreValidAndTheDefaultsKeepTheCurrentBehaviour()
+    {
+        var none = Resolve<MailTransportOptions>(Settings(25));
         Assert.False(none.HasCredentials);
         Assert.Equal(MailSecurity.None, none.Security);
-        Assert.Null(none.ReplyTo);
+        Assert.Null(Resolve<MailIdentityOptions>(Settings(25)).ReplyTo);
 
-        var both = Options(WithAccount(Settings(25))).Value;
-        Assert.True(both.HasCredentials);
+        Assert.True(Resolve<MailTransportOptions>(WithAccount(Settings(25))).HasCredentials);
+
+        var defaults = new MailTransportOptions();
+        Assert.Equal((25, 10, MailSecurity.None), (defaults.Port, defaults.TimeoutSeconds, defaults.Security));
     }
 
     // From 沒設、帳號是 email：選項層就把 From 補成帳號，驗證器與所有使用端看到同一個值。
@@ -475,29 +568,53 @@ public sealed class SmtpMailSenderTests
     {
         var settings = WithAccount(Settings(25));
         settings.Remove("Platform:Mail:From");
-        Assert.Equal(Account, Options(settings).Value.From);
+        Assert.Equal(Account, Resolve<MailIdentityOptions>(settings).From);
 
         // 帳號不是 email（例如 DOMAIN\user）：不能當寄件者，From 仍是必填。
         var plain = WithAccount(Settings(25), user: "service-account");
         plain.Remove("Platform:Mail:From");
-        var failure = Assert.Throws<OptionsValidationException>(() => Options(plain).Value);
+        var failure = Assert.Throws<OptionsValidationException>(() => Resolve<MailIdentityOptions>(plain));
         Assert.Contains("Platform:Mail:From must be a valid mail address", failure.Message, StringComparison.Ordinal);
     }
 
-    // 密碼不出現在任何字串化裡：選項的 ToString、JSON 序列化。
+    // 密碼不出現在任何字串化裡：選項的 ToString、JSON 序列化（包括整個選項物件與傳輸選項）。
     [Fact]
     public void ThePasswordIsInNoStringFormOfTheOptions()
     {
-        var options = Options(WithAccount(Settings(25))).Value;
+        using var provider = Sender(WithAccount(Settings(25)));
+        var options = new object[]
+        {
+            provider.GetRequiredService<IOptions<MailTransportOptions>>().Value,
+            provider.GetRequiredService<IOptions<MailIdentityOptions>>().Value,
+            provider.GetRequiredService<IOptions<MailOptions>>().Value,
+        };
 
-        var forms = new[] { options.ToString(), JsonSerializer.Serialize(options), $"{options}", string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}", options) };
-
-        foreach (var form in forms)
+        foreach (var form in options.SelectMany(o => new[] { o.ToString()!, JsonSerializer.Serialize(o), $"{o}" }))
         {
             Assert.DoesNotContain(Secret, form, StringComparison.Ordinal);
             Assert.DoesNotContain("不能進日誌", form, StringComparison.Ordinal);
             Assert.DoesNotContain("relay-account", form, StringComparison.Ordinal);
         }
+    }
+
+    // 所有選項類別、驗證器與實作都經 AddPlatformMail 註冊：實作類別是 internal，對外只有介面與選項。
+    [Fact]
+    public void TheMailServicesAreRegisteredInOnePlaceAndTheImplementationsAreNotPublic()
+    {
+        using var provider = Sender(Settings(25));
+
+        Assert.NotNull(provider.GetRequiredService<IMailSender>());
+        Assert.NotNull(provider.GetRequiredService<ISmtpClientFactory>());
+        Assert.NotNull(provider.GetRequiredService<IMailTestReport>());
+        Assert.NotNull(provider.GetRequiredService<IMailComposer>());
+        Assert.All(
+            new object[] { provider.GetRequiredService<IMailSender>(), provider.GetRequiredService<ISmtpClientFactory>(), provider.GetRequiredService<IMailTestReport>() },
+            service => Assert.False(service.GetType().IsPublic, service.GetType().Name));
+        Assert.Equal(
+            3,
+            provider.GetServices<IValidateOptions<MailOptions>>().Count()
+            + provider.GetServices<IValidateOptions<MailTransportOptions>>().Count()
+            + provider.GetServices<IValidateOptions<MailIdentityOptions>>().Count());
     }
 
     // ---- 啟動時的提醒 ----
