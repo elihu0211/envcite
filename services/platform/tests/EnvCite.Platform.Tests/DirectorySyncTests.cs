@@ -437,7 +437,8 @@ public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestB
             .IssueTokenAsync(org.Owner, "old", Factory.Time.GetUtcNow().AddMinutes(-1), Ct));
 
         Assert.NotNull(first.Value!.RevokedAt);
-        Assert.Equal(first.Value.RevokedAt, second.Value!.RevokedAt);
+        // 第一次回的是剛設的值（100 奈秒刻度），第二次是從資料庫讀回的（Postgres 只存到微秒）：容許一個微秒的差，而不是比到最後一位。
+        Assert.Equal(first.Value.RevokedAt!.Value, second.Value!.RevokedAt!.Value, TimeSpan.FromMilliseconds(1));
         Assert.Single(await AuditAsync(org, AuditActions.DirectoryTokenRevoked));
         Assert.Equal(OutcomeCodes.DirectoryTokenNotFound, missing.Code);
         Assert.Equal(OutcomeCodes.DirectoryTokenInvalid, blank.Code);
