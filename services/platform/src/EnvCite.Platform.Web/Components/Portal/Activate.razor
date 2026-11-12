@@ -27,12 +27,12 @@
                 <EditForm Model="Input" FormName="portal-activate" OnValidSubmit="SubmitAsync" method="post" class="ep-form">
                     <div class="ep-field-row">
                         <label for="new" class="ep-label">@L["新密碼"]</label>
-                        <InputText id="new" @bind-Value="Input.New" type="password" class="ep-input" autocomplete="new-password" required minlength="12" autofocus aria-describedby="new-hint" />
+                        <PasswordField Id="new" @bind-Value="Input.New" Autocomplete="new-password" MinLength="12" AutoFocus="true" DescribedBy="new-hint" />
                         <p id="new-hint" class="ep-hint">@L["至少 12 個字元。長度比符號重要：幾個不相干的詞連起來就很好。"]</p>
                     </div>
                     <div class="ep-field-row">
                         <label for="confirm" class="ep-label">@L["再輸入一次新密碼"]</label>
-                        <InputText id="confirm" @bind-Value="Input.Confirm" type="password" class="ep-input" autocomplete="new-password" required />
+                        <PasswordField Id="confirm" @bind-Value="Input.Confirm" Autocomplete="new-password" />
                     </div>
                     <button type="submit" class="ep-btn ep-btn-primary">@L["設定密碼"]</button>
                 </EditForm>
