@@ -856,6 +856,14 @@ a:where(:not([class*="mud-"])) {
     margin-block: var(--ep-space-4) 0;
 }
 
+/* 頂欄放不下時，租戶名稱先收成「…」，品牌字與語言、登出留著（不要被擠成直排的字）。 */
+.ep-shell-top .ep-portal-tenant {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .ep-console-product {
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-m-size);
@@ -1498,6 +1506,7 @@ a.ep-brand {
 
 .ep-composer-input {
     flex: 1;
+    text-overflow: ellipsis; /* 窄螢幕上提示文字放不下時收成「…」，不是被切一半 */
     min-inline-size: 0;
     min-block-size: var(--ep-touch-target);
     padding: 0;
@@ -1514,6 +1523,10 @@ a.ep-brand {
     border: 0;
     background: var(--ep-primary);
     color: var(--ep-on-primary);
+}
+
+.ep-ask[data-state="empty"] .ep-composer-options {
+    justify-content: center; /* 還沒問的時候一切置中：招呼、輸入框、日期、範例 */
 }
 
 .ep-composer-options {
@@ -2093,6 +2106,18 @@ html[data-js] .ep-otp-input::selection {
 }
 
 /* 成員管理：一次性密碼用大一點的等寬字、可整段選取；表格每列的操作按鈕可以換行。 */
+.ep-secret-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-3);
+    margin: 0;
+}
+
+.ep-secret-row .ep-btn-quiet[data-done-now] {
+    color: var(--ep-success);
+}
+
 .ep-secret {
     display: inline-block;
     padding: var(--ep-space-2) var(--ep-space-3);

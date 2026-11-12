@@ -303,7 +303,36 @@
         frame.contentWindow.print();
     };
 
+    // 把一段文字的複製鈕做成「複製→已複製」兩秒後還原；復原碼與一次性密碼共用。
+    const confirmCopy = (button, status) => {
+        const label = button.querySelector("span");
+        const original = label.textContent;
+        label.textContent = button.dataset.done;
+        button.toggleAttribute("data-done-now", true);
+        if (status) {
+            status.textContent = button.dataset.done;
+        }
+
+        setTimeout(() => {
+            label.textContent = original;
+            button.removeAttribute("data-done-now");
+            if (status) {
+                status.textContent = "";
+            }
+        }, 2000);
+    };
+
     document.addEventListener("click", async (event) => {
+        const copyButton = event.target.closest?.("[data-copy-target]");
+        if (copyButton) {
+            const text = document.getElementById(copyButton.dataset.copyTarget)?.textContent.trim();
+            if (text && await copyText(text)) {
+                confirmCopy(copyButton, null);
+            }
+
+            return;
+        }
+
         const button = event.target.closest?.("[data-recovery]");
         const box = button?.closest(".ep-recovery");
         if (!box) {
@@ -316,16 +345,7 @@
         }
 
         if (await copyText(box.dataset.codes)) {
-            const label = button.querySelector("span");
-            const original = label.textContent;
-            label.textContent = button.dataset.done;
-            button.toggleAttribute("data-done-now", true);
-            box.querySelector("[data-recovery-status]").textContent = button.dataset.done;
-            setTimeout(() => {
-                label.textContent = original;
-                button.removeAttribute("data-done-now");
-                box.querySelector("[data-recovery-status]").textContent = "";
-            }, 2000);
+            confirmCopy(button, box.querySelector("[data-recovery-status]"));
         }
     });
 })();

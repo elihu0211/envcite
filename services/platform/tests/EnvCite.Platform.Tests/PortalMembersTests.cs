@@ -81,6 +81,7 @@ public sealed partial class PortalMembersTests(PlatformFactory factory)
         var created = await owner.SubmitAsync(MembersPage(team.Tenant.Identifier), Add(email, CustomerRoles.Viewer, "新同事"));
 
         var password = IssuedPassword().Match(created.Html).Groups[1].Value;
+        Assert.Contains("data-copy-target=\"issued-password\"", created.Html, StringComparison.Ordinal); // 一次性密碼旁有複製鈕（需要 JavaScript）
         Assert.True(password.Length >= 16);
         Assert.Contains("只會顯示這一次", created.Html, StringComparison.Ordinal);
         Assert.Contains(email, created.Html, StringComparison.Ordinal);

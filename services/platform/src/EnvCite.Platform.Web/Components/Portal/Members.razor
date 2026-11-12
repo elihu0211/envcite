@@ -22,7 +22,12 @@ else
                 @L["這組密碼"]<strong>@L["只會顯示這一次"]</strong>@L["。請親手交給"] <strong>@_issued.Member.Email</strong>@L["（不要貼在公開的聊天室或工單裡）；"]
                 @L["對方第一次登入時必須自己改掉，之後連你也不會知道他的密碼。"]
             </p>
-            <p><code class="ep-mono ep-secret" id="issued-password">@_issuedPassword</code></p>
+            <p class="ep-secret-row">
+                <code class="ep-mono ep-secret" id="issued-password">@_issuedPassword</code>
+                <button type="button" class="ep-btn ep-btn-quiet ep-btn-icon ep-js-only" data-copy-target="issued-password" data-done="@L["已複製"]">
+                    <NavIcon Path="@Icons.Material.Outlined.ContentCopy" /><span>@L["複製"]</span>
+                </button>
+            </p>
         </section>
     }
 
