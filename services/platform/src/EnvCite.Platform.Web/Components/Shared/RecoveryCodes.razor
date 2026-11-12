@@ -1,0 +1,43 @@
+@* 復原碼清單與「保存」動作：下載（文字檔）、複製、列印。復原碼只在啟用或重新產生的那一個回應裡出現，所以三個動作都在
+   瀏覽器端用頁面上已有的內容完成，不再回伺服器要一次。下載是帶 download 屬性的 data: 連結，沒有 JavaScript 也能用；
+   複製與列印要 JavaScript（design/forms.js），沒有時不顯示。 *@
+<div class="ep-recovery" data-codes="@Plain" data-document="@Document">
+    <div class="ep-recovery-bar">
+        <h3 class="ep-recovery-title">@L["你的復原碼"]</h3>
+        <div class="ep-recovery-actions">
+            <a class="ep-btn ep-btn-quiet ep-btn-icon" download="@FileName" href="@DownloadHref">
+                <NavIcon Path="@Icons.Material.Outlined.Download" />@L["下載"]
+            </a>
+            <button type="button" class="ep-btn ep-btn-quiet ep-btn-icon ep-js-only" data-recovery="copy" data-done="@L["已複製"]">
+                <NavIcon Path="@Icons.Material.Outlined.ContentCopy" /><span>@L["複製"]</span>
+            </button>
+            <button type="button" class="ep-btn ep-btn-quiet ep-btn-icon ep-js-only" data-recovery="print" data-title="@L["環境知識的復原碼"]">
+                <NavIcon Path="@Icons.Material.Outlined.Print" />@L["列印"]
+            </button>
+        </div>
+    </div>
+    <ul class="ep-codes" aria-label="@L["復原碼"]">
+        @foreach (var recoveryCode in Codes)
+        {
+            <li><code class="ep-mono">@recoveryCode</code></li>
+        }
+    </ul>
+    <p class="ep-visually-hidden" role="status" data-recovery-status></p>
+</div>
+
+@code {
+    /// <summary>下載檔的名稱：小寫、連字號、純 ASCII，各系統都能直接存。</summary>
+    private const string FileName = "envcite-recovery-codes.txt";
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<string> Codes { get; set; } = [];
+
+    /// <summary>一行一組，給「複製」。</summary>
+    private string Plain => string.Join('\n', Codes);
+
+    /// <summary>檔案內容：標題、用法、復原碼。給「下載」與「列印」，依介面語言。</summary>
+    private string Document =>
+        string.Join('\n', L["環境知識的復原碼"], string.Empty, L["手機遺失時，每一組復原碼可以代替一次驗證碼，用過就失效。"], L["請存在只有你能開啟的地方，例如密碼管理員。"], string.Empty, Plain, string.Empty);
+
+    private string DownloadHref => "data:text/plain;charset=utf-8," + Uri.EscapeDataString(Document);
+}

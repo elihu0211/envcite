@@ -23,12 +23,7 @@
             @L["這是你的復原碼。"]<strong>@L["只會顯示這一次"]</strong>@L["：請現在抄下或存進密碼管理員。"]
             @L["手機遺失時，每一組復原碼可以代替一次驗證碼，用過就失效。"]
         </p>
-        <ul class="ep-codes" aria-label="@L["復原碼"]">
-            @foreach (var recoveryCode in _recoveryCodes)
-            {
-                <li><code class="ep-mono">@recoveryCode</code></li>
-            }
-        </ul>
+        <RecoveryCodes Codes="_recoveryCodes" />
         <a class="ep-btn ep-btn-primary" href="@UiEndpoints.HomePath">@L["我已保存"]</a>
     </section>
 }

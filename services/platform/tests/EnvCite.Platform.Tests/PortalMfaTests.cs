@@ -98,6 +98,12 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
         Assert.Equal(10, codes.Count);
         Assert.Equal(10, codes.Distinct().Count());
 
+        // 保存：下載是帶 download 的 data: 連結（沒有 JavaScript 也能用），檔案裡有全部復原碼；
+        // 下載、複製、列印都用這個回應裡已有的內容，不再回伺服器要第二次。
+        Assert.Contains("download=\"envcite-recovery-codes.txt\"", enabled.Html, StringComparison.Ordinal);
+        Assert.Contains("href=\"data:text/plain;charset=utf-8,", enabled.Html, StringComparison.Ordinal);
+        Assert.All(codes, code => Assert.Contains(Uri.EscapeDataString(code), enabled.Html, StringComparison.Ordinal));
+
         // 復原碼只在這一個回應裡：再開頁面只剩「已啟用」，沒有金鑰、沒有 QR、沒有復原碼。
         var after = await browser.GetAsync(Security(tenant.Identifier));
         Assert.Contains("已啟用", after.Html, StringComparison.Ordinal);
