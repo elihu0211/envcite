@@ -328,7 +328,7 @@ CI 依變更路徑決定執行哪些 job，路由以 [`ci/detect-changes.sh`](ci
 | .NET 主版本 | 倉庫根 `Directory.Build.props` 的 `TargetFramework`、`global.json` 的 `sdk.version`（下限，主版本要手動改）、上列 SDK 與映像 | 映像 tag 的 Ubuntu 代號隨主版本而異，以 `mcr.microsoft.com/dotnet/aspnet` 與 `sdk` 實際存在的標籤為準；EF Core 家族與 Npgsql 提供者整組一起升（版本約束見 `Directory.Packages.props` 的註解）；`dotnet build` 會重新產生 `openapi_v2.json`，一併提交 |
 | Python | `.python-version`、`ci.yml` 的 `PYTHON_VERSION`、`services/ontology/Dockerfile` 的 `ARG PYTHON_VERSION` | — |
 | uv | `ci.yml` 的 `UV_VERSION`、`services/ontology/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 | — |
-| PostgreSQL | `ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/ontology/tools/holdout.py`、`services/platform/tests/…/PlatformFactory.cs` | 主版本與正式環境相同。ontology 需要 pgvector，映像用 `pgvector/pgvector:pg<主版本>` |
+| PostgreSQL | `ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs` | 主版本與正式環境相同。ontology 需要 pgvector，映像用 `pgvector/pgvector:pg<主版本>` |
 | buf | `ci.yml` 的 `BUF_VERSION` | — |
 | oasdiff | `ci.yml` 的 `OASDIFF_VERSION` | — |
 | Docker（映像建置） | `ci.yml` 的 `DOCKER_VERSION` | — |
