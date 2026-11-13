@@ -27,8 +27,6 @@
                       OnKeyUp="@(e => { if (e.Key == "Enter") Apply(); })" />
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Apply">@L["套用"]</MudButton>
         <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="@(!HasFilter)">@L["重設"]</MudButton>
-        <MudSpacer />
-        <MudSwitch T="bool" @bind-Value="_dense" Color="Color.Primary" Label="@L["緊湊"]" aria-label="@L["緊湊列高"]" />
     </div>
 
     @* 讓螢幕閱讀器知道載入了多少筆，不搶走焦點。 *@
@@ -57,7 +55,7 @@
     }
     else
     {
-        <MudSimpleTable Dense="_dense" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="@L["稽核事件，新到舊"]">
+        <MudSimpleTable Dense="true" Hover="true" Elevation="0" Class="ep-table ep-cards" aria-label="@L["稽核事件，新到舊"]">
             <thead>
                 <tr>
                     <th scope="col">@L["時間（台北）"]</th>

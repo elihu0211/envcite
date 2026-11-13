@@ -22,7 +22,6 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory)
     private readonly HashSet<Guid> _expanded = [];
     private Guid? _next;
     private bool _loadingMore;
-    private bool _dense;
     private string? _applied;
 
     // 表單欄位（尚未套用的輸入）。
