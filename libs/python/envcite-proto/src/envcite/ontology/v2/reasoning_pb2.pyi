@@ -251,6 +251,12 @@ class _OverrideBasisEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Overrid
     @_deprecated("""This enum value has been marked as deprecated using proto enum value options.""")
     def OVERRIDE_BASIS_EXCEPTION(self) -> _OverrideBasis.ValueType:   # 4
         """不再產生：但書是規則與例外的結構，見 Statement.exception_of，不是優先依據。"""
+    OVERRIDE_BASIS_MUTATIS_MUTANDIS: _OverrideBasis.ValueType  # 5
+    """中央法規標準法第 17 條：準用。"""
+    OVERRIDE_BASIS_SUBSIDIARITY: _OverrideBasis.ValueType  # 6
+    """法條競合：補充關係（subsidiarity）。"""
+    OVERRIDE_BASIS_ABSORPTION: _OverrideBasis.ValueType  # 7
+    """法條競合：吸收關係（absorption）。"""
 
 class OverrideBasis(_OverrideBasis, metaclass=_OverrideBasisEnumTypeWrapper):
     """兩則陳述衝突時，其一勝出的依據。"""
@@ -264,6 +270,12 @@ OVERRIDE_BASIS_LEX_POSTERIOR: OverrideBasis.ValueType  # 3
 """學說而非成文法，僅在標註如此記載時使用。"""
 OVERRIDE_BASIS_EXCEPTION: OverrideBasis.ValueType  # 4
 """不再產生：但書是規則與例外的結構，見 Statement.exception_of，不是優先依據。"""
+OVERRIDE_BASIS_MUTATIS_MUTANDIS: OverrideBasis.ValueType  # 5
+"""中央法規標準法第 17 條：準用。"""
+OVERRIDE_BASIS_SUBSIDIARITY: OverrideBasis.ValueType  # 6
+"""法條競合：補充關係（subsidiarity）。"""
+OVERRIDE_BASIS_ABSORPTION: OverrideBasis.ValueType  # 7
+"""法條競合：吸收關係（absorption）。"""
 Global___OverrideBasis: _TypeAlias = OverrideBasis  # noqa: Y015
 
 class _Verdict:
@@ -425,6 +437,14 @@ class _ExcuseEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Excuse.ValueTy
     """一行為同時觸犯刑事法律，依刑事法律處罰（第 26 條第 1 項）：只擋罰鍰，以及法院已宣告沒收時
     的沒入；其他種類行政罰照列。
     """
+    EXCUSE_UNAVOIDABLE_IGNORANCE: _Excuse.ValueType  # 9
+    """不知法規有正當理由且無法避免（第 8 條但書）。"""
+    EXCUSE_UNEXPECTABLE: _Excuse.ValueType  # 10
+    """欠缺期待可能性。"""
+    EXCUSE_PETTY_OFFENSE: _Excuse.ValueType  # 11
+    """微罪不罰（第 19 條）。"""
+    EXCUSE_WITHIN_CURE_PERIOD: _Excuse.ValueType  # 12
+    """尚在限期改善期間內（釋字第 604 號）。"""
 
 class Excuse(_Excuse, metaclass=_ExcuseEnumTypeWrapper):
     """行政罰法總則下不予處罰的理由。"""
@@ -441,6 +461,14 @@ EXCUSE_CRIMINAL_PRIORITY: Excuse.ValueType  # 8
 """一行為同時觸犯刑事法律，依刑事法律處罰（第 26 條第 1 項）：只擋罰鍰，以及法院已宣告沒收時
 的沒入；其他種類行政罰照列。
 """
+EXCUSE_UNAVOIDABLE_IGNORANCE: Excuse.ValueType  # 9
+"""不知法規有正當理由且無法避免（第 8 條但書）。"""
+EXCUSE_UNEXPECTABLE: Excuse.ValueType  # 10
+"""欠缺期待可能性。"""
+EXCUSE_PETTY_OFFENSE: Excuse.ValueType  # 11
+"""微罪不罰（第 19 條）。"""
+EXCUSE_WITHIN_CURE_PERIOD: Excuse.ValueType  # 12
+"""尚在限期改善期間內（釋字第 604 號）。"""
 Global___Excuse: _TypeAlias = Excuse  # noqa: Y015
 
 class _Mitigation:
@@ -938,6 +966,10 @@ class EvaluateRequest(_message.Message):
     RESULT_ON_FIELD_NUMBER: _builtins.int
     PERMIT_LIMITS_FIELD_NUMBER: _builtins.int
     ACTOR_BASES_FIELD_NUMBER: _builtins.int
+    ACT_GROUPS_FIELD_NUMBER: _builtins.int
+    TIMELINE_FIELD_NUMBER: _builtins.int
+    SCORING_INPUTS_FIELD_NUMBER: _builtins.int
+    DISPOSITION_AUDIT_FIELD_NUMBER: _builtins.int
     conduct_on: _builtins.str
     """行為日（ISO 8601）。必填。"""
     decided_on: _builtins.str
@@ -971,6 +1003,22 @@ class EvaluateRequest(_message.Message):
         或擇一的值有一個沒標，則不受限制。不得為 UNSPECIFIED。
         """
 
+    @_builtins.property
+    def act_groups(self) -> _containers.RepeatedCompositeFieldContainer[Global___ActGroup]:
+        """行為分組（行政罰法 §§24–25）：依 act_id 分組後各組獨立計算一行為從一重。"""
+
+    @_builtins.property
+    def timeline(self) -> Global___PerOccasionTimeline:
+        """按次處罰改善期限時點檢核（釋字第 604 號）。"""
+
+    @_builtins.property
+    def scoring_inputs(self) -> _containers.RepeatedCompositeFieldContainer[Global___ScoringInput]:
+        """裁罰積分／倍數／記點與環境講習確定性試算輸入。"""
+
+    @_builtins.property
+    def disposition_audit(self) -> Global___DispositionAuditInput:
+        """裁罰處分書要件與引用完備性檢核（CQ D1–D3）。"""
+
     def __init__(
         self,
         *,
@@ -982,12 +1030,23 @@ class EvaluateRequest(_message.Message):
         result_on: _builtins.str = ...,
         permit_limits: _abc.Iterable[Global___PermitLimit] | None = ...,
         actor_bases: _abc.Iterable[Global___LiabilityBasis.ValueType] | None = ...,
+        act_groups: _abc.Iterable[Global___ActGroup] | None = ...,
+        timeline: Global___PerOccasionTimeline | None = ...,
+        scoring_inputs: _abc.Iterable[Global___ScoringInput] | None = ...,
+        disposition_audit: Global___DispositionAuditInput | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["administrative_penalty_facts", b"administrative_penalty_facts"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_disposition_audit", b"_disposition_audit", "_timeline", b"_timeline", "administrative_penalty_facts", b"administrative_penalty_facts", "disposition_audit", b"disposition_audit", "timeline", b"timeline"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["actor_bases", b"actor_bases", "administrative_penalty_facts", b"administrative_penalty_facts", "conduct_ended_on", b"conduct_ended_on", "conduct_on", b"conduct_on", "decided_on", b"decided_on", "facts", b"facts", "permit_limits", b"permit_limits", "result_on", b"result_on"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_disposition_audit", b"_disposition_audit", "_timeline", b"_timeline", "act_groups", b"act_groups", "actor_bases", b"actor_bases", "administrative_penalty_facts", b"administrative_penalty_facts", "conduct_ended_on", b"conduct_ended_on", "conduct_on", b"conduct_on", "decided_on", b"decided_on", "disposition_audit", b"disposition_audit", "facts", b"facts", "permit_limits", b"permit_limits", "result_on", b"result_on", "scoring_inputs", b"scoring_inputs", "timeline", b"timeline"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    def WhichOneof(self, oneof_group: _Never) -> None: ...
+    _WhichOneofReturnType__disposition_audit: _TypeAlias = _typing.Literal["disposition_audit"]  # noqa: Y015
+    _WhichOneofArgType__disposition_audit: _TypeAlias = _typing.Literal["_disposition_audit", b"_disposition_audit"]  # noqa: Y015
+    _WhichOneofReturnType__timeline: _TypeAlias = _typing.Literal["timeline"]  # noqa: Y015
+    _WhichOneofArgType__timeline: _TypeAlias = _typing.Literal["_timeline", b"_timeline"]  # noqa: Y015
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__disposition_audit) -> _WhichOneofReturnType__disposition_audit | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__timeline) -> _WhichOneofReturnType__timeline | None: ...
 
 Global___EvaluateRequest: _TypeAlias = EvaluateRequest  # noqa: Y015
 
@@ -999,12 +1058,15 @@ class Fact(_message.Message):
     VALUES_FIELD_NUMBER: _builtins.int
     MEASUREMENT_METHOD_FIELD_NUMBER: _builtins.int
     AVERAGING_PERIOD_FIELD_NUMBER: _builtins.int
+    UNIT_FIELD_NUMBER: _builtins.int
     concept: _builtins.str
     measurement_method: _builtins.str
     """這些值的認定方式，皆為受控概念的代碼；空字串為未提供。只在限值標有認定方式時才有
     作用，見 Condition.measurement_method。
     """
     averaging_period: _builtins.str
+    unit: _builtins.str
+    """量綱單位代碼（如 mg/L、ug/L、ppm、mg/Nm3、dB(A)）；留空不進行單位換算。"""
     @_builtins.property
     def values(self) -> _containers.RepeatedCompositeFieldContainer[Global___FactValue]: ...
     def __init__(
@@ -1014,10 +1076,11 @@ class Fact(_message.Message):
         values: _abc.Iterable[Global___FactValue] | None = ...,
         measurement_method: _builtins.str = ...,
         averaging_period: _builtins.str = ...,
+        unit: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["averaging_period", b"averaging_period", "concept", b"concept", "measurement_method", b"measurement_method", "values", b"values"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["averaging_period", b"averaging_period", "concept", b"concept", "measurement_method", b"measurement_method", "unit", b"unit", "values", b"values"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -1114,6 +1177,10 @@ class AdministrativePenaltyFacts(_message.Message):
     COMMUNITY_SERVICE_HOURS_FIELD_NUMBER: _builtins.int
     MINIMUM_HOURLY_WAGE_FIELD_NUMBER: _builtins.int
     GAINED_BENEFIT_FIELD_NUMBER: _builtins.int
+    FACT_MISTAKE_FIELD_NUMBER: _builtins.int
+    IGNORANCE_UNAVOIDABLE_FIELD_NUMBER: _builtins.int
+    UNEXPECTABLE_FIELD_NUMBER: _builtins.int
+    PETTY_MINOR_FIELD_NUMBER: _builtins.int
     intent: _builtins.bool
     negligence: _builtins.bool
     agent_fault: _builtins.bool
@@ -1147,6 +1214,14 @@ class AdministrativePenaltyFacts(_message.Message):
     確定之日（ISO 8601；第 26 條第 2 項）。有此日即不再刑事優先，第 27 條三年自此日起算；留空是
     刑事程序未以這些方式確定（或未知），criminal_offense 為真時罰鍰依第 1 項不裁處。
     """
+    fact_mistake: _builtins.bool
+    """構成要件錯誤（Tatbestandsirrtum）：不知客觀構成要件事實，阻卻故意。"""
+    ignorance_unavoidable: _builtins.bool
+    """不知法規有正當理由而無法避免（第 8 條但書）。"""
+    unexpectable: _builtins.bool
+    """欠缺期待可能性。"""
+    petty_minor: _builtins.bool
+    """法定最高額 3,000 元以下且情節輕微以不處罰為適當（第 19 條）。"""
     @_builtins.property
     def criminal_payment(self) -> Global___Decimal:
         """緩起訴或緩刑命支付的金額（元；第 26 條第 3 項），自罰鍰扣抵。"""
@@ -1191,10 +1266,14 @@ class AdministrativePenaltyFacts(_message.Message):
         community_service_hours: Global___Decimal | None = ...,
         minimum_hourly_wage: Global___Decimal | None = ...,
         gained_benefit: Global___Decimal | None = ...,
+        fact_mistake: _builtins.bool | None = ...,
+        ignorance_unavoidable: _builtins.bool | None = ...,
+        unexpectable: _builtins.bool | None = ...,
+        petty_minor: _builtins.bool | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["_age", b"_age", "_agent_fault", b"_agent_fault", "_capacity_reduced", b"_capacity_reduced", "_community_service_hours", b"_community_service_hours", "_court_confiscated", b"_court_confiscated", "_criminal_offense", b"_criminal_offense", "_criminal_payment", b"_criminal_payment", "_defense_excessive", b"_defense_excessive", "_gained_benefit", b"_gained_benefit", "_ignorance_of_law", b"_ignorance_of_law", "_incapable", b"_incapable", "_intent", b"_intent", "_knew_illegal", b"_knew_illegal", "_minimum_hourly_wage", b"_minimum_hourly_wage", "_necessity", b"_necessity", "_necessity_excessive", b"_necessity_excessive", "_negligence", b"_negligence", "_pursuant_to_law", b"_pursuant_to_law", "_self_defense", b"_self_defense", "_self_induced", b"_self_induced", "_stated_opinion", b"_stated_opinion", "_superior_order", b"_superior_order", "age", b"age", "agent_fault", b"agent_fault", "capacity_reduced", b"capacity_reduced", "community_service_hours", b"community_service_hours", "court_confiscated", b"court_confiscated", "criminal_offense", b"criminal_offense", "criminal_payment", b"criminal_payment", "defense_excessive", b"defense_excessive", "gained_benefit", b"gained_benefit", "ignorance_of_law", b"ignorance_of_law", "incapable", b"incapable", "intent", b"intent", "knew_illegal", b"knew_illegal", "minimum_hourly_wage", b"minimum_hourly_wage", "necessity", b"necessity", "necessity_excessive", b"necessity_excessive", "negligence", b"negligence", "pursuant_to_law", b"pursuant_to_law", "self_defense", b"self_defense", "self_induced", b"self_induced", "stated_opinion", b"stated_opinion", "superior_order", b"superior_order"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_age", b"_age", "_agent_fault", b"_agent_fault", "_capacity_reduced", b"_capacity_reduced", "_community_service_hours", b"_community_service_hours", "_court_confiscated", b"_court_confiscated", "_criminal_offense", b"_criminal_offense", "_criminal_payment", b"_criminal_payment", "_defense_excessive", b"_defense_excessive", "_fact_mistake", b"_fact_mistake", "_gained_benefit", b"_gained_benefit", "_ignorance_of_law", b"_ignorance_of_law", "_ignorance_unavoidable", b"_ignorance_unavoidable", "_incapable", b"_incapable", "_intent", b"_intent", "_knew_illegal", b"_knew_illegal", "_minimum_hourly_wage", b"_minimum_hourly_wage", "_necessity", b"_necessity", "_necessity_excessive", b"_necessity_excessive", "_negligence", b"_negligence", "_petty_minor", b"_petty_minor", "_pursuant_to_law", b"_pursuant_to_law", "_self_defense", b"_self_defense", "_self_induced", b"_self_induced", "_stated_opinion", b"_stated_opinion", "_superior_order", b"_superior_order", "_unexpectable", b"_unexpectable", "age", b"age", "agent_fault", b"agent_fault", "capacity_reduced", b"capacity_reduced", "community_service_hours", b"community_service_hours", "court_confiscated", b"court_confiscated", "criminal_offense", b"criminal_offense", "criminal_payment", b"criminal_payment", "defense_excessive", b"defense_excessive", "fact_mistake", b"fact_mistake", "gained_benefit", b"gained_benefit", "ignorance_of_law", b"ignorance_of_law", "ignorance_unavoidable", b"ignorance_unavoidable", "incapable", b"incapable", "intent", b"intent", "knew_illegal", b"knew_illegal", "minimum_hourly_wage", b"minimum_hourly_wage", "necessity", b"necessity", "necessity_excessive", b"necessity_excessive", "negligence", b"negligence", "petty_minor", b"petty_minor", "pursuant_to_law", b"pursuant_to_law", "self_defense", b"self_defense", "self_induced", b"self_induced", "stated_opinion", b"stated_opinion", "superior_order", b"superior_order", "unexpectable", b"unexpectable"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_age", b"_age", "_agent_fault", b"_agent_fault", "_capacity_reduced", b"_capacity_reduced", "_community_service_hours", b"_community_service_hours", "_court_confiscated", b"_court_confiscated", "_criminal_offense", b"_criminal_offense", "_criminal_payment", b"_criminal_payment", "_defense_excessive", b"_defense_excessive", "_gained_benefit", b"_gained_benefit", "_ignorance_of_law", b"_ignorance_of_law", "_incapable", b"_incapable", "_intent", b"_intent", "_knew_illegal", b"_knew_illegal", "_minimum_hourly_wage", b"_minimum_hourly_wage", "_necessity", b"_necessity", "_necessity_excessive", b"_necessity_excessive", "_negligence", b"_negligence", "_pursuant_to_law", b"_pursuant_to_law", "_self_defense", b"_self_defense", "_self_induced", b"_self_induced", "_stated_opinion", b"_stated_opinion", "_superior_order", b"_superior_order", "age", b"age", "agent_fault", b"agent_fault", "capacity_reduced", b"capacity_reduced", "community_service_hours", b"community_service_hours", "court_confiscated", b"court_confiscated", "criminal_cleared_on", b"criminal_cleared_on", "criminal_offense", b"criminal_offense", "criminal_payment", b"criminal_payment", "defense_excessive", b"defense_excessive", "gained_benefit", b"gained_benefit", "ignorance_of_law", b"ignorance_of_law", "incapable", b"incapable", "intent", b"intent", "knew_illegal", b"knew_illegal", "minimum_hourly_wage", b"minimum_hourly_wage", "necessity", b"necessity", "necessity_excessive", b"necessity_excessive", "negligence", b"negligence", "pursuant_to_law", b"pursuant_to_law", "self_defense", b"self_defense", "self_induced", b"self_induced", "stated_opinion", b"stated_opinion", "superior_order", b"superior_order"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_age", b"_age", "_agent_fault", b"_agent_fault", "_capacity_reduced", b"_capacity_reduced", "_community_service_hours", b"_community_service_hours", "_court_confiscated", b"_court_confiscated", "_criminal_offense", b"_criminal_offense", "_criminal_payment", b"_criminal_payment", "_defense_excessive", b"_defense_excessive", "_fact_mistake", b"_fact_mistake", "_gained_benefit", b"_gained_benefit", "_ignorance_of_law", b"_ignorance_of_law", "_ignorance_unavoidable", b"_ignorance_unavoidable", "_incapable", b"_incapable", "_intent", b"_intent", "_knew_illegal", b"_knew_illegal", "_minimum_hourly_wage", b"_minimum_hourly_wage", "_necessity", b"_necessity", "_necessity_excessive", b"_necessity_excessive", "_negligence", b"_negligence", "_petty_minor", b"_petty_minor", "_pursuant_to_law", b"_pursuant_to_law", "_self_defense", b"_self_defense", "_self_induced", b"_self_induced", "_stated_opinion", b"_stated_opinion", "_superior_order", b"_superior_order", "_unexpectable", b"_unexpectable", "age", b"age", "agent_fault", b"agent_fault", "capacity_reduced", b"capacity_reduced", "community_service_hours", b"community_service_hours", "court_confiscated", b"court_confiscated", "criminal_cleared_on", b"criminal_cleared_on", "criminal_offense", b"criminal_offense", "criminal_payment", b"criminal_payment", "defense_excessive", b"defense_excessive", "fact_mistake", b"fact_mistake", "gained_benefit", b"gained_benefit", "ignorance_of_law", b"ignorance_of_law", "ignorance_unavoidable", b"ignorance_unavoidable", "incapable", b"incapable", "intent", b"intent", "knew_illegal", b"knew_illegal", "minimum_hourly_wage", b"minimum_hourly_wage", "necessity", b"necessity", "necessity_excessive", b"necessity_excessive", "negligence", b"negligence", "petty_minor", b"petty_minor", "pursuant_to_law", b"pursuant_to_law", "self_defense", b"self_defense", "self_induced", b"self_induced", "stated_opinion", b"stated_opinion", "superior_order", b"superior_order", "unexpectable", b"unexpectable"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     _WhichOneofReturnType__age: _TypeAlias = _typing.Literal["age"]  # noqa: Y015
     _WhichOneofArgType__age: _TypeAlias = _typing.Literal["_age", b"_age"]  # noqa: Y015
@@ -1212,10 +1291,14 @@ class AdministrativePenaltyFacts(_message.Message):
     _WhichOneofArgType__criminal_payment: _TypeAlias = _typing.Literal["_criminal_payment", b"_criminal_payment"]  # noqa: Y015
     _WhichOneofReturnType__defense_excessive: _TypeAlias = _typing.Literal["defense_excessive"]  # noqa: Y015
     _WhichOneofArgType__defense_excessive: _TypeAlias = _typing.Literal["_defense_excessive", b"_defense_excessive"]  # noqa: Y015
+    _WhichOneofReturnType__fact_mistake: _TypeAlias = _typing.Literal["fact_mistake"]  # noqa: Y015
+    _WhichOneofArgType__fact_mistake: _TypeAlias = _typing.Literal["_fact_mistake", b"_fact_mistake"]  # noqa: Y015
     _WhichOneofReturnType__gained_benefit: _TypeAlias = _typing.Literal["gained_benefit"]  # noqa: Y015
     _WhichOneofArgType__gained_benefit: _TypeAlias = _typing.Literal["_gained_benefit", b"_gained_benefit"]  # noqa: Y015
     _WhichOneofReturnType__ignorance_of_law: _TypeAlias = _typing.Literal["ignorance_of_law"]  # noqa: Y015
     _WhichOneofArgType__ignorance_of_law: _TypeAlias = _typing.Literal["_ignorance_of_law", b"_ignorance_of_law"]  # noqa: Y015
+    _WhichOneofReturnType__ignorance_unavoidable: _TypeAlias = _typing.Literal["ignorance_unavoidable"]  # noqa: Y015
+    _WhichOneofArgType__ignorance_unavoidable: _TypeAlias = _typing.Literal["_ignorance_unavoidable", b"_ignorance_unavoidable"]  # noqa: Y015
     _WhichOneofReturnType__incapable: _TypeAlias = _typing.Literal["incapable"]  # noqa: Y015
     _WhichOneofArgType__incapable: _TypeAlias = _typing.Literal["_incapable", b"_incapable"]  # noqa: Y015
     _WhichOneofReturnType__intent: _TypeAlias = _typing.Literal["intent"]  # noqa: Y015
@@ -1230,6 +1313,8 @@ class AdministrativePenaltyFacts(_message.Message):
     _WhichOneofArgType__necessity_excessive: _TypeAlias = _typing.Literal["_necessity_excessive", b"_necessity_excessive"]  # noqa: Y015
     _WhichOneofReturnType__negligence: _TypeAlias = _typing.Literal["negligence"]  # noqa: Y015
     _WhichOneofArgType__negligence: _TypeAlias = _typing.Literal["_negligence", b"_negligence"]  # noqa: Y015
+    _WhichOneofReturnType__petty_minor: _TypeAlias = _typing.Literal["petty_minor"]  # noqa: Y015
+    _WhichOneofArgType__petty_minor: _TypeAlias = _typing.Literal["_petty_minor", b"_petty_minor"]  # noqa: Y015
     _WhichOneofReturnType__pursuant_to_law: _TypeAlias = _typing.Literal["pursuant_to_law"]  # noqa: Y015
     _WhichOneofArgType__pursuant_to_law: _TypeAlias = _typing.Literal["_pursuant_to_law", b"_pursuant_to_law"]  # noqa: Y015
     _WhichOneofReturnType__self_defense: _TypeAlias = _typing.Literal["self_defense"]  # noqa: Y015
@@ -1240,6 +1325,8 @@ class AdministrativePenaltyFacts(_message.Message):
     _WhichOneofArgType__stated_opinion: _TypeAlias = _typing.Literal["_stated_opinion", b"_stated_opinion"]  # noqa: Y015
     _WhichOneofReturnType__superior_order: _TypeAlias = _typing.Literal["superior_order"]  # noqa: Y015
     _WhichOneofArgType__superior_order: _TypeAlias = _typing.Literal["_superior_order", b"_superior_order"]  # noqa: Y015
+    _WhichOneofReturnType__unexpectable: _TypeAlias = _typing.Literal["unexpectable"]  # noqa: Y015
+    _WhichOneofArgType__unexpectable: _TypeAlias = _typing.Literal["_unexpectable", b"_unexpectable"]  # noqa: Y015
     @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__age) -> _WhichOneofReturnType__age | None: ...
     @_typing.overload
@@ -1257,9 +1344,13 @@ class AdministrativePenaltyFacts(_message.Message):
     @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__defense_excessive) -> _WhichOneofReturnType__defense_excessive | None: ...
     @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__fact_mistake) -> _WhichOneofReturnType__fact_mistake | None: ...
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__gained_benefit) -> _WhichOneofReturnType__gained_benefit | None: ...
     @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__ignorance_of_law) -> _WhichOneofReturnType__ignorance_of_law | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__ignorance_unavoidable) -> _WhichOneofReturnType__ignorance_unavoidable | None: ...
     @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__incapable) -> _WhichOneofReturnType__incapable | None: ...
     @_typing.overload
@@ -1275,6 +1366,8 @@ class AdministrativePenaltyFacts(_message.Message):
     @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__negligence) -> _WhichOneofReturnType__negligence | None: ...
     @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__petty_minor) -> _WhichOneofReturnType__petty_minor | None: ...
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__pursuant_to_law) -> _WhichOneofReturnType__pursuant_to_law | None: ...
     @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__self_defense) -> _WhichOneofReturnType__self_defense | None: ...
@@ -1284,6 +1377,8 @@ class AdministrativePenaltyFacts(_message.Message):
     def WhichOneof(self, oneof_group: _WhichOneofArgType__stated_opinion) -> _WhichOneofReturnType__stated_opinion | None: ...
     @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__superior_order) -> _WhichOneofReturnType__superior_order | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__unexpectable) -> _WhichOneofReturnType__unexpectable | None: ...
 
 Global___AdministrativePenaltyFacts: _TypeAlias = AdministrativePenaltyFacts  # noqa: Y015
 
@@ -1410,6 +1505,11 @@ class Outcome(_message.Message):
     SUBJECT_MISMATCH_FIELD_NUMBER: _builtins.int
     INVALIDATED_FIELD_NUMBER: _builtins.int
     DELEGATION_BASES_FIELD_NUMBER: _builtins.int
+    ONE_ACT_GROUPS_FIELD_NUMBER: _builtins.int
+    SAME_KIND_NON_FINE_OVERLAPS_FIELD_NUMBER: _builtins.int
+    MUTATIS_APPLIED_FIELD_NUMBER: _builtins.int
+    SCORING_RESULTS_FIELD_NUMBER: _builtins.int
+    DISPOSITION_AUDIT_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def verdicts(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementVerdict]: ...
     @_builtins.property
@@ -1508,6 +1608,26 @@ class Outcome(_message.Message):
         待查）；命令的義務結論不變。法律與憲法的陳述不在此。
         """
 
+    @_builtins.property
+    def one_act_groups(self) -> _containers.RepeatedCompositeFieldContainer[Global___ActGroupFine]:
+        """多行為分組（§24/§25）：各行為群組之從一重罰鍰區間。"""
+
+    @_builtins.property
+    def same_kind_non_fine_overlaps(self) -> _containers.RepeatedCompositeFieldContainer[Global___SameKindNonFineOverlap]:
+        """行政罰法第 24 條第 2 項：同種類其他行政罰重複提示。"""
+
+    @_builtins.property
+    def mutatis_applied(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementPair]:
+        """中央法規標準法第 17 條：準用關係套用軌跡。"""
+
+    @_builtins.property
+    def scoring_results(self) -> _containers.RepeatedCompositeFieldContainer[Global___ScoringResult]:
+        """裁罰積分／倍數／記點與環境講習確定性試算結果。"""
+
+    @_builtins.property
+    def disposition_audit(self) -> Global___DispositionAuditResult:
+        """裁罰處分書要件與引用完備性檢核結果（CQ D1–D3）。"""
+
     def __init__(
         self,
         *,
@@ -1533,13 +1653,23 @@ class Outcome(_message.Message):
         subject_mismatch: _abc.Iterable[_builtins.int] | None = ...,
         invalidated: _abc.Iterable[Global___InvalidatedStatement] | None = ...,
         delegation_bases: _abc.Iterable[Global___DelegationBasis] | None = ...,
+        one_act_groups: _abc.Iterable[Global___ActGroupFine] | None = ...,
+        same_kind_non_fine_overlaps: _abc.Iterable[Global___SameKindNonFineOverlap] | None = ...,
+        mutatis_applied: _abc.Iterable[Global___StatementPair] | None = ...,
+        scoring_results: _abc.Iterable[Global___ScoringResult] | None = ...,
+        disposition_audit: Global___DispositionAuditResult | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "general", b"general", "one_act", b"one_act"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_disposition_audit", b"_disposition_audit", "_one_act", b"_one_act", "disposition_audit", b"disposition_audit", "general", b"general", "one_act", b"one_act"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_one_act", b"_one_act", "assessment_used", b"assessment_used", "defeated", b"defeated", "definitions_used", b"definitions_used", "delegation_bases", b"delegation_bases", "general", b"general", "guidance", b"guidance", "invalidated", b"invalidated", "limit_sources", b"limit_sources", "missing", b"missing", "missing_permit_limits", b"missing_permit_limits", "needs_assessment", b"needs_assessment", "one_act", b"one_act", "penalties", b"penalties", "penalty_defeated", b"penalty_defeated", "problems", b"problems", "sources", b"sources", "subject_mismatch", b"subject_mismatch", "trace", b"trace", "uncovered_law_identifiers", b"uncovered_law_identifiers", "unresolved_conflicts", b"unresolved_conflicts", "unresolved_penalty_overlaps", b"unresolved_penalty_overlaps", "verdicts", b"verdicts"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_disposition_audit", b"_disposition_audit", "_one_act", b"_one_act", "assessment_used", b"assessment_used", "defeated", b"defeated", "definitions_used", b"definitions_used", "delegation_bases", b"delegation_bases", "disposition_audit", b"disposition_audit", "general", b"general", "guidance", b"guidance", "invalidated", b"invalidated", "limit_sources", b"limit_sources", "missing", b"missing", "missing_permit_limits", b"missing_permit_limits", "mutatis_applied", b"mutatis_applied", "needs_assessment", b"needs_assessment", "one_act", b"one_act", "one_act_groups", b"one_act_groups", "penalties", b"penalties", "penalty_defeated", b"penalty_defeated", "problems", b"problems", "same_kind_non_fine_overlaps", b"same_kind_non_fine_overlaps", "scoring_results", b"scoring_results", "sources", b"sources", "subject_mismatch", b"subject_mismatch", "trace", b"trace", "uncovered_law_identifiers", b"uncovered_law_identifiers", "unresolved_conflicts", b"unresolved_conflicts", "unresolved_penalty_overlaps", b"unresolved_penalty_overlaps", "verdicts", b"verdicts"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__disposition_audit: _TypeAlias = _typing.Literal["disposition_audit"]  # noqa: Y015
+    _WhichOneofArgType__disposition_audit: _TypeAlias = _typing.Literal["_disposition_audit", b"_disposition_audit"]  # noqa: Y015
     _WhichOneofReturnType__one_act: _TypeAlias = _typing.Literal["one_act"]  # noqa: Y015
     _WhichOneofArgType__one_act: _TypeAlias = _typing.Literal["_one_act", b"_one_act"]  # noqa: Y015
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__disposition_audit) -> _WhichOneofReturnType__disposition_audit | None: ...
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__one_act) -> _WhichOneofReturnType__one_act | None: ...
 
 Global___Outcome: _TypeAlias = Outcome  # noqa: Y015
@@ -2014,6 +2144,8 @@ class GeneralPart(_message.Message):
     REDUCED_FIELD_NUMBER: _builtins.int
     RAISED_CAPS_FIELD_NUMBER: _builtins.int
     CRIMINAL_DEDUCTIONS_FIELD_NUMBER: _builtins.int
+    JUSTIFIED_FIELD_NUMBER: _builtins.int
+    EXCUSED_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def unpunished(self) -> _containers.RepeatedCompositeFieldContainer[Global___PenaltyExcuse]: ...
     @_builtins.property
@@ -2044,6 +2176,14 @@ class GeneralPart(_message.Message):
         金額。罰鍰額不選，扣抵額原樣給出。
         """
 
+    @_builtins.property
+    def justified(self) -> _containers.RepeatedCompositeFieldContainer[Global___PenaltyExcuse]:
+        """第二階阻卻違法事由（§§11–13）：行為適法。"""
+
+    @_builtins.property
+    def excused(self) -> _containers.RepeatedCompositeFieldContainer[Global___PenaltyExcuse]:
+        """第三階阻卻責任事由（§§7–9、期待可能性）：行為仍屬不法，但免予非難。"""
+
     def __init__(
         self,
         *,
@@ -2054,10 +2194,12 @@ class GeneralPart(_message.Message):
         reduced: _abc.Iterable[Global___ReducedFine] | None = ...,
         raised_caps: _abc.Iterable[Global___RaisedCap] | None = ...,
         criminal_deductions: _abc.Iterable[Global___CriminalDeduction] | None = ...,
+        justified: _abc.Iterable[Global___PenaltyExcuse] | None = ...,
+        excused: _abc.Iterable[Global___PenaltyExcuse] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["criminal_deductions", b"criminal_deductions", "mitigation", b"mitigation", "presumed_agent_fault", b"presumed_agent_fault", "raised_caps", b"raised_caps", "reduced", b"reduced", "time_barred", b"time_barred", "unpunished", b"unpunished"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["criminal_deductions", b"criminal_deductions", "excused", b"excused", "justified", b"justified", "mitigation", b"mitigation", "presumed_agent_fault", b"presumed_agent_fault", "raised_caps", b"raised_caps", "reduced", b"reduced", "time_barred", b"time_barred", "unpunished", b"unpunished"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -2196,3 +2338,456 @@ class PenaltyMitigation(_message.Message):
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___PenaltyMitigation: _TypeAlias = PenaltyMitigation  # noqa: Y015
+
+@_typing.final
+class ActGroup(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ACT_ID_FIELD_NUMBER: _builtins.int
+    STATEMENT_IDS_FIELD_NUMBER: _builtins.int
+    act_id: _builtins.str
+    @_builtins.property
+    def statement_ids(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    def __init__(
+        self,
+        *,
+        act_id: _builtins.str = ...,
+        statement_ids: _abc.Iterable[_builtins.int] | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["act_id", b"act_id", "statement_ids", b"statement_ids"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ActGroup: _TypeAlias = ActGroup  # noqa: Y015
+
+@_typing.final
+class ActGroupFine(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ACT_ID_FIELD_NUMBER: _builtins.int
+    MIN_AMOUNT_FIELD_NUMBER: _builtins.int
+    MAX_AMOUNT_FIELD_NUMBER: _builtins.int
+    act_id: _builtins.str
+    min_amount: _builtins.int
+    max_amount: _builtins.int
+    def __init__(
+        self,
+        *,
+        act_id: _builtins.str = ...,
+        min_amount: _builtins.int = ...,
+        max_amount: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["act_id", b"act_id", "max_amount", b"max_amount", "min_amount", b"min_amount"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ActGroupFine: _TypeAlias = ActGroupFine  # noqa: Y015
+
+@_typing.final
+class SameKindNonFineOverlap(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ACT_ID_FIELD_NUMBER: _builtins.int
+    PENALTY_1_FIELD_NUMBER: _builtins.int
+    PENALTY_2_FIELD_NUMBER: _builtins.int
+    act_id: _builtins.str
+    penalty_1: _builtins.int
+    penalty_2: _builtins.int
+    def __init__(
+        self,
+        *,
+        act_id: _builtins.str = ...,
+        penalty_1: _builtins.int = ...,
+        penalty_2: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["act_id", b"act_id", "penalty_1", b"penalty_1", "penalty_2", b"penalty_2"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___SameKindNonFineOverlap: _TypeAlias = SameKindNonFineOverlap  # noqa: Y015
+
+@_typing.final
+class PerOccasionTimeline(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    CURE_NOTICE_SERVED_ON_FIELD_NUMBER: _builtins.int
+    CURE_DEADLINE_FIELD_NUMBER: _builtins.int
+    EXTENSION_DEADLINE_FIELD_NUMBER: _builtins.int
+    REINSPECTION_ON_FIELD_NUMBER: _builtins.int
+    cure_notice_served_on: _builtins.str
+    cure_deadline: _builtins.str
+    extension_deadline: _builtins.str
+    reinspection_on: _builtins.str
+    def __init__(
+        self,
+        *,
+        cure_notice_served_on: _builtins.str = ...,
+        cure_deadline: _builtins.str = ...,
+        extension_deadline: _builtins.str = ...,
+        reinspection_on: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["cure_deadline", b"cure_deadline", "cure_notice_served_on", b"cure_notice_served_on", "extension_deadline", b"extension_deadline", "reinspection_on", b"reinspection_on"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___PerOccasionTimeline: _TypeAlias = PerOccasionTimeline  # noqa: Y015
+
+@_typing.final
+class ScoringFactorValue(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    FACTOR_CODE_FIELD_NUMBER: _builtins.int
+    VALUE_FIELD_NUMBER: _builtins.int
+    factor_code: _builtins.str
+    @_builtins.property
+    def value(self) -> Global___Decimal: ...
+    def __init__(
+        self,
+        *,
+        factor_code: _builtins.str = ...,
+        value: Global___Decimal | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["value", b"value"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["factor_code", b"factor_code", "value", b"value"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ScoringFactorValue: _TypeAlias = ScoringFactorValue  # noqa: Y015
+
+@_typing.final
+class ScoringInput(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    MATRIX_CODE_FIELD_NUMBER: _builtins.int
+    FACTORS_FIELD_NUMBER: _builtins.int
+    SEVERE_VIOLATION_FIELD_NUMBER: _builtins.int
+    FIRST_OFFENSE_MINOR_FACILITY_FIELD_NUMBER: _builtins.int
+    CURED_BEFORE_NOTICE_FIELD_NUMBER: _builtins.int
+    IS_STOP_WORK_FIELD_NUMBER: _builtins.int
+    REPEAT_WITHIN_YEAR_FIELD_NUMBER: _builtins.int
+    MITIGATION_DENOMINATOR_FIELD_NUMBER: _builtins.int
+    ACTIVE_BENEFIT_FIELD_NUMBER: _builtins.int
+    PASSIVE_BENEFIT_FIELD_NUMBER: _builtins.int
+    CRIMINAL_DEDUCTION_FIELD_NUMBER: _builtins.int
+    matrix_code: _builtins.str
+    severe_violation: _builtins.bool
+    first_offense_minor_facility: _builtins.bool
+    cured_before_notice: _builtins.bool
+    is_stop_work: _builtins.bool
+    repeat_within_year: _builtins.bool
+    mitigation_denominator: _builtins.int
+    @_builtins.property
+    def factors(self) -> _containers.RepeatedCompositeFieldContainer[Global___ScoringFactorValue]: ...
+    @_builtins.property
+    def active_benefit(self) -> Global___Decimal: ...
+    @_builtins.property
+    def passive_benefit(self) -> Global___Decimal: ...
+    @_builtins.property
+    def criminal_deduction(self) -> Global___Decimal: ...
+    def __init__(
+        self,
+        *,
+        matrix_code: _builtins.str = ...,
+        factors: _abc.Iterable[Global___ScoringFactorValue] | None = ...,
+        severe_violation: _builtins.bool = ...,
+        first_offense_minor_facility: _builtins.bool = ...,
+        cured_before_notice: _builtins.bool = ...,
+        is_stop_work: _builtins.bool = ...,
+        repeat_within_year: _builtins.bool = ...,
+        mitigation_denominator: _builtins.int | None = ...,
+        active_benefit: Global___Decimal | None = ...,
+        passive_benefit: Global___Decimal | None = ...,
+        criminal_deduction: Global___Decimal | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_mitigation_denominator", b"_mitigation_denominator", "active_benefit", b"active_benefit", "criminal_deduction", b"criminal_deduction", "mitigation_denominator", b"mitigation_denominator", "passive_benefit", b"passive_benefit"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_mitigation_denominator", b"_mitigation_denominator", "active_benefit", b"active_benefit", "criminal_deduction", b"criminal_deduction", "cured_before_notice", b"cured_before_notice", "factors", b"factors", "first_offense_minor_facility", b"first_offense_minor_facility", "is_stop_work", b"is_stop_work", "matrix_code", b"matrix_code", "mitigation_denominator", b"mitigation_denominator", "passive_benefit", b"passive_benefit", "repeat_within_year", b"repeat_within_year", "severe_violation", b"severe_violation"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__mitigation_denominator: _TypeAlias = _typing.Literal["mitigation_denominator"]  # noqa: Y015
+    _WhichOneofArgType__mitigation_denominator: _TypeAlias = _typing.Literal["_mitigation_denominator", b"_mitigation_denominator"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__mitigation_denominator) -> _WhichOneofReturnType__mitigation_denominator | None: ...
+
+Global___ScoringInput: _TypeAlias = ScoringInput  # noqa: Y015
+
+@_typing.final
+class FactorApplied(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    FACTOR_CODE_FIELD_NUMBER: _builtins.int
+    LABEL_ZHO_FIELD_NUMBER: _builtins.int
+    FACTOR_ROLE_FIELD_NUMBER: _builtins.int
+    STATUTORY_REF_FIELD_NUMBER: _builtins.int
+    VALUE_FIELD_NUMBER: _builtins.int
+    INTERVAL_MIN_FIELD_NUMBER: _builtins.int
+    INTERVAL_MAX_FIELD_NUMBER: _builtins.int
+    MISSING_FIELD_NUMBER: _builtins.int
+    NEEDS_JUDGEMENT_FIELD_NUMBER: _builtins.int
+    factor_code: _builtins.str
+    label_zho: _builtins.str
+    factor_role: _builtins.str
+    statutory_ref: _builtins.str
+    missing: _builtins.bool
+    needs_judgement: _builtins.bool
+    @_builtins.property
+    def value(self) -> Global___Decimal: ...
+    @_builtins.property
+    def interval_min(self) -> Global___Decimal: ...
+    @_builtins.property
+    def interval_max(self) -> Global___Decimal: ...
+    def __init__(
+        self,
+        *,
+        factor_code: _builtins.str = ...,
+        label_zho: _builtins.str = ...,
+        factor_role: _builtins.str = ...,
+        statutory_ref: _builtins.str = ...,
+        value: Global___Decimal | None = ...,
+        interval_min: Global___Decimal | None = ...,
+        interval_max: Global___Decimal | None = ...,
+        missing: _builtins.bool = ...,
+        needs_judgement: _builtins.bool = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_interval_max", b"_interval_max", "_interval_min", b"_interval_min", "_value", b"_value", "interval_max", b"interval_max", "interval_min", b"interval_min", "value", b"value"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_interval_max", b"_interval_max", "_interval_min", b"_interval_min", "_value", b"_value", "factor_code", b"factor_code", "factor_role", b"factor_role", "interval_max", b"interval_max", "interval_min", b"interval_min", "label_zho", b"label_zho", "missing", b"missing", "needs_judgement", b"needs_judgement", "statutory_ref", b"statutory_ref", "value", b"value"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__interval_max: _TypeAlias = _typing.Literal["interval_max"]  # noqa: Y015
+    _WhichOneofArgType__interval_max: _TypeAlias = _typing.Literal["_interval_max", b"_interval_max"]  # noqa: Y015
+    _WhichOneofReturnType__interval_min: _TypeAlias = _typing.Literal["interval_min"]  # noqa: Y015
+    _WhichOneofArgType__interval_min: _TypeAlias = _typing.Literal["_interval_min", b"_interval_min"]  # noqa: Y015
+    _WhichOneofReturnType__value: _TypeAlias = _typing.Literal["value"]  # noqa: Y015
+    _WhichOneofArgType__value: _TypeAlias = _typing.Literal["_value", b"_value"]  # noqa: Y015
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__interval_max) -> _WhichOneofReturnType__interval_max | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__interval_min) -> _WhichOneofReturnType__interval_min | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__value) -> _WhichOneofReturnType__value | None: ...
+
+Global___FactorApplied: _TypeAlias = FactorApplied  # noqa: Y015
+
+@_typing.final
+class ScoringResult(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    MATRIX_CODE_FIELD_NUMBER: _builtins.int
+    LAW_TITLE_FIELD_NUMBER: _builtins.int
+    NORM_KIND_FIELD_NUMBER: _builtins.int
+    FORMULA_KIND_FIELD_NUMBER: _builtins.int
+    EQUATION_SUMMARY_FIELD_NUMBER: _builtins.int
+    FACTORS_APPLIED_FIELD_NUMBER: _builtins.int
+    RAW_MIN_FIELD_NUMBER: _builtins.int
+    RAW_MAX_FIELD_NUMBER: _builtins.int
+    CLAMPED_MIN_FIELD_NUMBER: _builtins.int
+    CLAMPED_MAX_FIELD_NUMBER: _builtins.int
+    DEMERIT_TOTAL_FIELD_NUMBER: _builtins.int
+    DEMERIT_TRIGGERED_FIELD_NUMBER: _builtins.int
+    LECTURE_HOURS_MIN_FIELD_NUMBER: _builtins.int
+    LECTURE_HOURS_MAX_FIELD_NUMBER: _builtins.int
+    MISSING_FACTORS_FIELD_NUMBER: _builtins.int
+    JUDGEMENT_FACTORS_FIELD_NUMBER: _builtins.int
+    NOTES_FIELD_NUMBER: _builtins.int
+    matrix_code: _builtins.str
+    law_title: _builtins.str
+    norm_kind: _builtins.str
+    formula_kind: _builtins.str
+    equation_summary: _builtins.str
+    clamped_min: _builtins.int
+    clamped_max: _builtins.int
+    demerit_triggered: _builtins.bool
+    lecture_hours_min: _builtins.int
+    lecture_hours_max: _builtins.int
+    @_builtins.property
+    def factors_applied(self) -> _containers.RepeatedCompositeFieldContainer[Global___FactorApplied]: ...
+    @_builtins.property
+    def raw_min(self) -> Global___Decimal: ...
+    @_builtins.property
+    def raw_max(self) -> Global___Decimal: ...
+    @_builtins.property
+    def demerit_total(self) -> Global___Decimal: ...
+    @_builtins.property
+    def missing_factors(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def judgement_factors(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def notes(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    def __init__(
+        self,
+        *,
+        matrix_code: _builtins.str = ...,
+        law_title: _builtins.str = ...,
+        norm_kind: _builtins.str = ...,
+        formula_kind: _builtins.str = ...,
+        equation_summary: _builtins.str = ...,
+        factors_applied: _abc.Iterable[Global___FactorApplied] | None = ...,
+        raw_min: Global___Decimal | None = ...,
+        raw_max: Global___Decimal | None = ...,
+        clamped_min: _builtins.int | None = ...,
+        clamped_max: _builtins.int | None = ...,
+        demerit_total: Global___Decimal | None = ...,
+        demerit_triggered: _builtins.bool | None = ...,
+        lecture_hours_min: _builtins.int = ...,
+        lecture_hours_max: _builtins.int = ...,
+        missing_factors: _abc.Iterable[_builtins.str] | None = ...,
+        judgement_factors: _abc.Iterable[_builtins.str] | None = ...,
+        notes: _abc.Iterable[_builtins.str] | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_clamped_max", b"_clamped_max", "_clamped_min", b"_clamped_min", "_demerit_total", b"_demerit_total", "_demerit_triggered", b"_demerit_triggered", "_raw_max", b"_raw_max", "_raw_min", b"_raw_min", "clamped_max", b"clamped_max", "clamped_min", b"clamped_min", "demerit_total", b"demerit_total", "demerit_triggered", b"demerit_triggered", "raw_max", b"raw_max", "raw_min", b"raw_min"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_clamped_max", b"_clamped_max", "_clamped_min", b"_clamped_min", "_demerit_total", b"_demerit_total", "_demerit_triggered", b"_demerit_triggered", "_raw_max", b"_raw_max", "_raw_min", b"_raw_min", "clamped_max", b"clamped_max", "clamped_min", b"clamped_min", "demerit_total", b"demerit_total", "demerit_triggered", b"demerit_triggered", "equation_summary", b"equation_summary", "factors_applied", b"factors_applied", "formula_kind", b"formula_kind", "judgement_factors", b"judgement_factors", "law_title", b"law_title", "lecture_hours_max", b"lecture_hours_max", "lecture_hours_min", b"lecture_hours_min", "matrix_code", b"matrix_code", "missing_factors", b"missing_factors", "norm_kind", b"norm_kind", "notes", b"notes", "raw_max", b"raw_max", "raw_min", b"raw_min"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__clamped_max: _TypeAlias = _typing.Literal["clamped_max"]  # noqa: Y015
+    _WhichOneofArgType__clamped_max: _TypeAlias = _typing.Literal["_clamped_max", b"_clamped_max"]  # noqa: Y015
+    _WhichOneofReturnType__clamped_min: _TypeAlias = _typing.Literal["clamped_min"]  # noqa: Y015
+    _WhichOneofArgType__clamped_min: _TypeAlias = _typing.Literal["_clamped_min", b"_clamped_min"]  # noqa: Y015
+    _WhichOneofReturnType__demerit_total: _TypeAlias = _typing.Literal["demerit_total"]  # noqa: Y015
+    _WhichOneofArgType__demerit_total: _TypeAlias = _typing.Literal["_demerit_total", b"_demerit_total"]  # noqa: Y015
+    _WhichOneofReturnType__demerit_triggered: _TypeAlias = _typing.Literal["demerit_triggered"]  # noqa: Y015
+    _WhichOneofArgType__demerit_triggered: _TypeAlias = _typing.Literal["_demerit_triggered", b"_demerit_triggered"]  # noqa: Y015
+    _WhichOneofReturnType__raw_max: _TypeAlias = _typing.Literal["raw_max"]  # noqa: Y015
+    _WhichOneofArgType__raw_max: _TypeAlias = _typing.Literal["_raw_max", b"_raw_max"]  # noqa: Y015
+    _WhichOneofReturnType__raw_min: _TypeAlias = _typing.Literal["raw_min"]  # noqa: Y015
+    _WhichOneofArgType__raw_min: _TypeAlias = _typing.Literal["_raw_min", b"_raw_min"]  # noqa: Y015
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__clamped_max) -> _WhichOneofReturnType__clamped_max | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__clamped_min) -> _WhichOneofReturnType__clamped_min | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__demerit_total) -> _WhichOneofReturnType__demerit_total | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__demerit_triggered) -> _WhichOneofReturnType__demerit_triggered | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__raw_max) -> _WhichOneofReturnType__raw_max | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__raw_min) -> _WhichOneofReturnType__raw_min | None: ...
+
+Global___ScoringResult: _TypeAlias = ScoringResult  # noqa: Y015
+
+@_typing.final
+class DispositionCitation(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    CITATION_TEXT_FIELD_NUMBER: _builtins.int
+    ROLE_FIELD_NUMBER: _builtins.int
+    IN_FORCE_FIELD_NUMBER: _builtins.int
+    citation_text: _builtins.str
+    role: _builtins.str
+    in_force: _builtins.bool
+    def __init__(
+        self,
+        *,
+        citation_text: _builtins.str = ...,
+        role: _builtins.str = ...,
+        in_force: _builtins.bool = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["citation_text", b"citation_text", "in_force", b"in_force", "role", b"role"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___DispositionCitation: _TypeAlias = DispositionCitation  # noqa: Y015
+
+@_typing.final
+class DispositionElement(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ELEMENT_NAME_FIELD_NUMBER: _builtins.int
+    TIER_FIELD_NUMBER: _builtins.int
+    FACT_SUMMARY_FIELD_NUMBER: _builtins.int
+    EVIDENCE_KIND_FIELD_NUMBER: _builtins.int
+    CONTRADICTED_FIELD_NUMBER: _builtins.int
+    element_name: _builtins.str
+    tier: _builtins.str
+    fact_summary: _builtins.str
+    evidence_kind: _builtins.str
+    contradicted: _builtins.bool
+    def __init__(
+        self,
+        *,
+        element_name: _builtins.str = ...,
+        tier: _builtins.str = ...,
+        fact_summary: _builtins.str = ...,
+        evidence_kind: _builtins.str = ...,
+        contradicted: _builtins.bool = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["contradicted", b"contradicted", "element_name", b"element_name", "evidence_kind", b"evidence_kind", "fact_summary", b"fact_summary", "tier", b"tier"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___DispositionElement: _TypeAlias = DispositionElement  # noqa: Y015
+
+@_typing.final
+class DispositionAuditInput(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    CITATIONS_FIELD_NUMBER: _builtins.int
+    ELEMENTS_FIELD_NUMBER: _builtins.int
+    TWO_TIER_DEFENSES_ADDRESSED_FIELD_NUMBER: _builtins.int
+    STATED_FINE_FIELD_NUMBER: _builtins.int
+    SCORING_MATRIX_CODE_FIELD_NUMBER: _builtins.int
+    two_tier_defenses_addressed: _builtins.bool
+    stated_fine: _builtins.int
+    scoring_matrix_code: _builtins.str
+    @_builtins.property
+    def citations(self) -> _containers.RepeatedCompositeFieldContainer[Global___DispositionCitation]: ...
+    @_builtins.property
+    def elements(self) -> _containers.RepeatedCompositeFieldContainer[Global___DispositionElement]: ...
+    def __init__(
+        self,
+        *,
+        citations: _abc.Iterable[Global___DispositionCitation] | None = ...,
+        elements: _abc.Iterable[Global___DispositionElement] | None = ...,
+        two_tier_defenses_addressed: _builtins.bool = ...,
+        stated_fine: _builtins.int | None = ...,
+        scoring_matrix_code: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_stated_fine", b"_stated_fine", "stated_fine", b"stated_fine"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_stated_fine", b"_stated_fine", "citations", b"citations", "elements", b"elements", "scoring_matrix_code", b"scoring_matrix_code", "stated_fine", b"stated_fine", "two_tier_defenses_addressed", b"two_tier_defenses_addressed"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__stated_fine: _TypeAlias = _typing.Literal["stated_fine"]  # noqa: Y015
+    _WhichOneofArgType__stated_fine: _TypeAlias = _typing.Literal["_stated_fine", b"_stated_fine"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__stated_fine) -> _WhichOneofReturnType__stated_fine | None: ...
+
+Global___DispositionAuditInput: _TypeAlias = DispositionAuditInput  # noqa: Y015
+
+@_typing.final
+class DispositionAuditResult(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    D1_CITATIONS_COMPLETE_FIELD_NUMBER: _builtins.int
+    D2_EVIDENCE_GROUNDED_FIELD_NUMBER: _builtins.int
+    D3_DEFENSE_AND_BOUNDS_VALID_FIELD_NUMBER: _builtins.int
+    FINDINGS_FIELD_NUMBER: _builtins.int
+    d1_citations_complete: _builtins.bool
+    d2_evidence_grounded: _builtins.bool
+    d3_defense_and_bounds_valid: _builtins.bool
+    @_builtins.property
+    def findings(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    def __init__(
+        self,
+        *,
+        d1_citations_complete: _builtins.bool = ...,
+        d2_evidence_grounded: _builtins.bool = ...,
+        d3_defense_and_bounds_valid: _builtins.bool = ...,
+        findings: _abc.Iterable[_builtins.str] | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["d1_citations_complete", b"d1_citations_complete", "d2_evidence_grounded", b"d2_evidence_grounded", "d3_defense_and_bounds_valid", b"d3_defense_and_bounds_valid", "findings", b"findings"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___DispositionAuditResult: _TypeAlias = DispositionAuditResult  # noqa: Y015

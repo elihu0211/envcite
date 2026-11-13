@@ -13,13 +13,14 @@
 兩者不能混為一談，所以每一組都帶 `uncovered_laws`，列出這種法規。
 """
 
-from collections.abc import Collection
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 
 from envcite_ontology.db import Conn
+from envcite_ontology.reasoning import scoring
 from envcite_ontology.reasoning.engine import Result, evaluate
-from envcite_ontology.reasoning.facts import Case, Measurements, Permits
+from envcite_ontology.reasoning.facts import Case, Measurements, Permits, PerOccasionTimeline
 
 _APPLICABLE = """
     SELECT r.statement_id
@@ -126,6 +127,10 @@ def evaluate_across(
     measurements: Measurements | None = None,
     permits: Permits | None = None,
     actor_bases: Collection[str] | None = None,
+    fact_units: Mapping[str, str] | None = None,
+    act_groups: Mapping[str, Sequence[int]] | None = None,
+    timeline: PerOccasionTimeline | None = None,
+    scoring_inputs: Sequence[scoring.ScoringInput] = (),
 ) -> Transition:
     """裁處時之法律，加行為日到裁處日之間每組不同的陳述；裁處權時效一律對裁處日。"""
     if conduct_on > decided_on:
@@ -154,6 +159,10 @@ def evaluate_across(
                     measurements=measurements,
                     permits=permits,
                     actor_bases=actor_bases,
+                    fact_units=fact_units,
+                    act_groups=act_groups,
+                    timeline=timeline,
+                    scoring_inputs=scoring_inputs,
                 ),
                 _uncovered(conn, final, language, day),
             )
@@ -169,6 +178,10 @@ def evaluate_across(
             measurements=measurements,
             permits=permits,
             actor_bases=actor_bases,
+            fact_units=fact_units,
+            act_groups=act_groups,
+            timeline=timeline,
+            scoring_inputs=scoring_inputs,
         ),
         tuple(earlier),
         _uncovered(conn, final, language, decided_on),

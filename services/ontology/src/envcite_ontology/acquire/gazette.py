@@ -41,8 +41,15 @@ _ISSUE = re.compile(r"/eg0*(\d+?)(\d{3})/")
 _XML_DATE = re.compile(r"(\d{3})-(\d{2})-(\d{2})\.xml$")
 _PARAGRAPH = re.compile(r"<p\b([^>]*)>(.*?)</p>", re.S)
 #: 裁量基準的標題字樣（02-05 §4.3）；解釋的字樣用來判斷兩邊都沾得上的
-_DISCRETION = re.compile(r"裁罰|裁量基準|罰鍰額度")
+_DISCRETION = re.compile(r"裁罰|裁量基準|罰鍰額度|缺失記點")
 _INTERPRETATION = re.compile(r"解釋|釋示|疑義")
+#: 依法定授權訂定之法規命令（裁罰準則、辦法、標準、細則），屬行政程序法第 150 條法規命令，
+#: 不得誤歸為第 159 條第 2 項第 2 款之行政規則「裁量基準」。
+_DELEGATED_REGULATION = re.compile(r"(?:準則|辦法|標準|細則)」?$")
+
+type RuleKind = Literal["interpretation", "discretion_standard"]
+type TitleClassification = Literal["interpretation", "discretion_standard", "delegated_regulation"]
+
 #: 主旨裡的動作與其後的規則名稱：`修正「甲」、「乙」第三點，名稱並修正為「丙」`
 _ACTION = re.compile(
     r"(?P<verb>名稱並修正為|名稱修正為|訂定|修正|廢止|停止適用)"
@@ -52,7 +59,9 @@ _NAME = re.compile(r"「([^」]+)」((?:第[^，。、；「」]*?[點條項款]
 #: 停止的生效日；寫「即日」或沒寫就是發文日
 _EFFECTIVE = re.compile(r"自([^，。；]{4,24}?日)(?:起)?(?:生效|停止適用|廢止)")
 
-type RuleKind = Literal["interpretation", "discretion_standard"]
+
+class DelegatedRegulationTitle(ValueError):
+    """標題為依法授權訂定之法規命令（如裁罰準則），屬第 150 條法規命令，非行政規則。"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,16 +136,31 @@ def roc_date(text: str) -> date | None:
         return None
 
 
+def classify_title(title: str) -> TitleClassification:
+    """依標題區分法規命令（如裁罰準則）、行政規則裁量基準／記點原則，或解釋性規定。
+
+    依法定授權訂定之「準則／辦法／標準／細則」屬行政程序法第 150 條法規命令，應入語料庫，
+    不得誤歸為第 159 條第 2 項第 2 款之行政規則。
+    """
+    stripped = title.strip()
+    if _DELEGATED_REGULATION.search(stripped):
+        return "delegated_regulation"
+    discretion = _DISCRETION.search(stripped) is not None
+    if discretion and _INTERPRETATION.search(stripped):
+        raise AmbiguousKind(title)
+    return "discretion_standard" if discretion else "interpretation"
+
+
 def rule_kind(title: str) -> RuleKind:
     """依標題字樣判斷行政規則是裁量基準或解釋性規定。
 
-    標題同時有裁量基準與解釋的字樣時拋 `AmbiguousKind`，不猜；沒有裁量基準字樣的
-    一律視為解釋性規定。
+    標題屬法規命令（如「...裁罰準則」）時拋 `DelegatedRegulationTitle`；
+    同時有裁量基準與解釋字樣時拋 `AmbiguousKind`。
     """
-    discretion = _DISCRETION.search(title) is not None
-    if discretion and _INTERPRETATION.search(title):
-        raise AmbiguousKind(title)
-    return "discretion_standard" if discretion else "interpretation"
+    kind = classify_title(title)
+    if kind == "delegated_regulation":
+        raise DelegatedRegulationTitle(title)
+    return kind
 
 
 def actions(subject: str) -> Actions:

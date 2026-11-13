@@ -201,22 +201,65 @@ internal sealed class NormativeReasoningService(TenantScopes tenants, ITenantMod
         return await tenants.InByIdentifierAsync(identifier, async scope =>
         {
             var gateway = scope.Get<OntologyGateway>();
+            var facts = new List<FactDto>();
+            if (!string.IsNullOrWhiteSpace(input.PollutantCode) && !string.IsNullOrWhiteSpace(input.PollutantValue))
+            {
+                facts.Add(new FactDto(
+                    input.PollutantCode.Trim(),
+                    [input.PollutantValue.Trim()],
+                    null,
+                    Unit: string.IsNullOrWhiteSpace(input.PollutantUnit) ? null : input.PollutantUnit.Trim()));
+            }
+            if (!string.IsNullOrWhiteSpace(input.IndustryClass))
+            {
+                facts.Add(new FactDto("industry_class", null, null, [input.IndustryClass.Trim()]));
+            }
+
             var penalty = new AdministrativePenaltyFactsDto(
-                Intent: null, Negligence: null, AgentFault: null, Age: null, Incapable: null, SelfInduced: null,
-                PursuantToLaw: null, SuperiorOrder: null, KnewIllegal: null, StatedOpinion: null, SelfDefense: null,
-                DefenseExcessive: null, Necessity: null, NecessityExcessive: null, CapacityReduced: null, IgnoranceOfLaw: null,
+                Intent: input.Intent, Negligence: input.Negligence, AgentFault: null, Age: null,
+                Incapable: null, SelfInduced: input.SelfInduced,
+                PursuantToLaw: null, SuperiorOrder: null, KnewIllegal: null, StatedOpinion: null,
+                SelfDefense: input.SelfDefense, DefenseExcessive: input.DefenseExcessive,
+                Necessity: input.Necessity, NecessityExcessive: input.NecessityExcessive,
+                CapacityReduced: input.CapacityReduced, IgnoranceOfLaw: null,
                 CriminalOffense: input.CriminalOffense,
                 CourtConfiscated: input.CourtConfiscated,
                 CriminalPayment: string.IsNullOrWhiteSpace(input.CriminalPayment) ? null : input.CriminalPayment.Trim(),
-                GainedBenefit: string.IsNullOrWhiteSpace(input.GainedBenefit) ? null : input.GainedBenefit.Trim());
+                GainedBenefit: string.IsNullOrWhiteSpace(input.GainedBenefit) ? null : input.GainedBenefit.Trim(),
+                FactMistake: input.FactMistake,
+                IgnoranceUnavoidable: input.IgnoranceUnavoidable,
+                PettyMinor: input.PettyMinor);
+
+            PerOccasionTimelineDto? timeline = null;
+            if (!string.IsNullOrWhiteSpace(input.CureDeadline) || !string.IsNullOrWhiteSpace(input.ReinspectionOn))
+            {
+                timeline = new PerOccasionTimelineDto(
+                    null,
+                    string.IsNullOrWhiteSpace(input.CureDeadline) ? null : input.CureDeadline.Trim(),
+                    null,
+                    string.IsNullOrWhiteSpace(input.ReinspectionOn) ? null : input.ReinspectionOn.Trim());
+            }
+
+            var scoringInputs = new List<ScoringInputDto>();
+            if (!string.IsNullOrWhiteSpace(input.ScoringMatrixCode))
+            {
+                var factors = new List<ScoringFactorValueDto>();
+                if (!string.IsNullOrWhiteSpace(input.DemeritPoints))
+                {
+                    factors.Add(new ScoringFactorValueDto("demerit_points", input.DemeritPoints.Trim()));
+                }
+                scoringInputs.Add(new ScoringInputDto(input.ScoringMatrixCode.Trim(), factors));
+            }
 
             var request = new EvaluateReasoningRequest(
                 ConductOn: string.IsNullOrWhiteSpace(input.ConductOn) ? null : input.ConductOn.Trim(),
                 DecidedOn: string.IsNullOrWhiteSpace(input.DecidedOn) ? null : input.DecidedOn.Trim(),
-                Facts: [],
+                Facts: facts,
                 AdministrativePenalty: penalty,
                 ConductEndedOn: string.IsNullOrWhiteSpace(input.ConductEndedOn) ? null : input.ConductEndedOn.Trim(),
-                ResultOn: null);
+                ResultOn: null,
+                Timeline: timeline,
+                ScoringInputs: scoringInputs.Count > 0 ? scoringInputs : null);
 
             var outcome = await gateway.EvaluateAsync(request, cancellationToken);
             if (!outcome.IsOk)
@@ -236,12 +279,67 @@ internal sealed class NormativeReasoningService(TenantScopes tenants, ITenantMod
                     missingCounts.GetValueOrDefault(v.StatementId)))
                 .ToList();
 
+            var penalties = atDecision.Penalties
+                .Select(p => new PortalPenaltyItem(
+                    p.StatementId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    p.Effect.ToString(),
+                    p.MinAmount,
+                    p.MaxAmount,
+                    p.Conditional,
+                    p.PerOccasion,
+                    p.Discretionary))
+                .ToList();
+
+            var defenses = new List<PortalTierDefense>();
+            if (atDecision.General.Justified is { } justified)
+            {
+                defenses.AddRange(justified.Select(j => new PortalTierDefense(
+                    "Tier2_Unlawfulness",
+                    j.PenaltyStatementId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    j.Excuse.ToString())));
+            }
+            if (atDecision.General.Excused is { } excused)
+            {
+                defenses.AddRange(excused.Select(e => new PortalTierDefense(
+                    "Tier3_Culpability",
+                    e.PenaltyStatementId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    e.Excuse.ToString())));
+            }
+            defenses.AddRange(atDecision.General.Mitigation.Select(m => new PortalTierDefense(
+                "Mitigation",
+                m.PenaltyStatementId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                m.Mitigation.ToString())));
+
+            var scoringCards = (atDecision.ScoringResults ?? [])
+                .Select(s => new PortalScoringCard(
+                    s.MatrixCode,
+                    s.LawTitle,
+                    s.FormulaKind,
+                    s.EquationSummary,
+                    s.ClampedMin,
+                    s.ClampedMax,
+                    s.LectureHoursMin,
+                    s.LectureHoursMax,
+                    s.DemeritTriggered,
+                    s.DemeritTotal,
+                    s.MissingFactors,
+                    s.JudgementFactors))
+                .ToList();
+
             return AdminOutcome.Ok(new PortalReasoningOutcome(
                 verdicts,
                 dto.Earlier.Count,
                 atDecision.Invalidated.Count,
                 atDecision.DelegationBases.Count(d => !d.Rooted),
-                atDecision.UncoveredLawIdentifiers.Count));
+                atDecision.UncoveredLawIdentifiers.Count,
+                penalties,
+                defenses,
+                scoringCards,
+                [.. atDecision.Missing.Select(m => m.Concept).Distinct()],
+                [.. atDecision.NeedsAssessment.Select(n => n.Concept).Distinct()],
+                [.. atDecision.Problems.Select(p => $"{p.Kind}: {p.Concept ?? p.ConditionId?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "-"}")],
+                atDecision.OneAct?.MinAmount,
+                atDecision.OneAct?.MaxAmount));
         });
     }
 

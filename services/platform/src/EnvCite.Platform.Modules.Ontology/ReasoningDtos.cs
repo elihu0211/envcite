@@ -15,7 +15,8 @@ namespace EnvCite.Platform.Modules.Ontology;
 /// <param name="AveragingPeriod">這些值的平均時段（受控概念的代碼，如小時平均值）；規則同上。</param>
 public sealed record FactDto(
     string Concept, IReadOnlyList<string>? Numbers, IReadOnlyList<bool>? Flags,
-    IReadOnlyList<string>? Concepts = null, string? MeasurementMethod = null, string? AveragingPeriod = null);
+    IReadOnlyList<string>? Concepts = null, string? MeasurementMethod = null, string? AveragingPeriod = null,
+    string? Unit = null);
 
 /// <summary>場所持有的許可所載的量值；門檻委由個別處分的要件以它為門檻值。</summary>
 /// <param name="Permit">許可種類（受控概念的代碼，如操作許可證）。</param>
@@ -59,7 +60,30 @@ public sealed record AdministrativePenaltyFactsDto(
     bool? DefenseExcessive, bool? Necessity, bool? NecessityExcessive, bool? CapacityReduced, bool? IgnoranceOfLaw,
     bool? CriminalOffense = null, bool? CourtConfiscated = null, string? CriminalClearedOn = null,
     string? CriminalPayment = null, string? CommunityServiceHours = null, string? MinimumHourlyWage = null,
-    string? GainedBenefit = null);
+    string? GainedBenefit = null, bool? FactMistake = null, bool? IgnoranceUnavoidable = null,
+    bool? Unexpectable = null, bool? PettyMinor = null);
+
+public sealed record ActGroupDto(string ActId, IReadOnlyList<long> StatementIds);
+
+public sealed record PerOccasionTimelineDto(
+    string? CureNoticeServedOn, string? CureDeadline, string? ExtensionDeadline, string? ReinspectionOn);
+
+public sealed record ScoringFactorValueDto(string FactorCode, string Value);
+
+public sealed record ScoringInputDto(
+    string MatrixCode, IReadOnlyList<ScoringFactorValueDto>? Factors = null,
+    bool SevereViolation = false, bool FirstOffenseMinorFacility = false, bool CuredBeforeNotice = false,
+    bool IsStopWork = false, bool RepeatWithinYear = false, int? MitigationDenominator = null,
+    string? ActiveBenefit = null, string? PassiveBenefit = null, string? CriminalDeduction = null);
+
+public sealed record DispositionCitationDto(string CitationText, string Role, bool InForce = true);
+
+public sealed record DispositionElementDto(
+    string ElementName, string Tier, string FactSummary, string EvidenceKind, bool Contradicted = false);
+
+public sealed record DispositionAuditInputDto(
+    IReadOnlyList<DispositionCitationDto> Citations, IReadOnlyList<DispositionElementDto> Elements,
+    bool TwoTierDefensesAddressed, long? StatedFine = null, string? ScoringMatrixCode = null);
 
 /// <param name="ConductOn">行為日（<c>YYYY-MM-DD</c>）；必填。</param>
 /// <param name="DecidedOn">裁處日（<c>YYYY-MM-DD</c>）；必填，不早於行為日。</param>
@@ -73,7 +97,9 @@ public sealed record AdministrativePenaltyFactsDto(
 public sealed record EvaluateReasoningRequest(
     string? ConductOn, string? DecidedOn, IReadOnlyList<FactDto>? Facts,
     AdministrativePenaltyFactsDto? AdministrativePenalty, string? ConductEndedOn, string? ResultOn,
-    IReadOnlyList<PermitLimitDto>? PermitLimits = null, IReadOnlyList<LiabilityBasisDto>? ActorBases = null);
+    IReadOnlyList<PermitLimitDto>? PermitLimits = null, IReadOnlyList<LiabilityBasisDto>? ActorBases = null,
+    IReadOnlyList<ActGroupDto>? ActGroups = null, PerOccasionTimelineDto? Timeline = null,
+    IReadOnlyList<ScoringInputDto>? ScoringInputs = null, DispositionAuditInputDto? DispositionAudit = null);
 
 [JsonConverter(typeof(JsonStringEnumConverter<VerdictDto>))]
 public enum VerdictDto
@@ -162,6 +188,9 @@ public enum OverrideBasisDto
     LexSpecialis,
     /// <summary>後法優於前法（學說，只在有明文標註時採用）。但書不是優先依據，見陳述的例外。</summary>
     LexPosterior,
+    MutatisMutandis,
+    Subsidiarity,
+    Absorption,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<ConditionRoleDto>))]
@@ -187,6 +216,10 @@ public enum ExcuseDto
     Necessity,
     /// <summary>一行為同時觸犯刑事法律，依刑事法律處罰（第 26 條第 1 項）。</summary>
     CriminalPriority,
+    UnavoidableIgnorance,
+    Unexpectable,
+    PettyOffense,
+    WithinCurePeriod,
 }
 
 /// <summary>授權鏈的一環為何不成立。</summary>
@@ -296,7 +329,26 @@ public sealed record CriminalDeductionDto(long PenaltyStatementId, string Amount
 public sealed record GeneralPartDto(
     IReadOnlyList<PenaltyExcuseDto> Unpunished, IReadOnlyList<PenaltyMitigationDto> Mitigation,
     IReadOnlyList<long> PresumedAgentFault, IReadOnlyList<long> TimeBarred, IReadOnlyList<ReducedFineDto> Reduced,
-    IReadOnlyList<RaisedCapDto> RaisedCaps, IReadOnlyList<CriminalDeductionDto> CriminalDeductions);
+    IReadOnlyList<RaisedCapDto> RaisedCaps, IReadOnlyList<CriminalDeductionDto> CriminalDeductions,
+    IReadOnlyList<PenaltyExcuseDto>? Justified = null, IReadOnlyList<PenaltyExcuseDto>? Excused = null);
+
+public sealed record ActGroupFineDto(string ActId, long MinAmount, long MaxAmount);
+
+public sealed record SameKindNonFineOverlapDto(string ActId, long Penalty1, long Penalty2);
+
+public sealed record FactorAppliedDto(
+    string FactorCode, string LabelZho, string FactorRole, string StatutoryRef,
+    string? Value, string? IntervalMin, string? IntervalMax, bool Missing, bool NeedsJudgement);
+
+public sealed record ScoringResultDto(
+    string MatrixCode, string LawTitle, string NormKind, string FormulaKind, string EquationSummary,
+    IReadOnlyList<FactorAppliedDto> FactorsApplied, string? RawMin, string? RawMax,
+    long? ClampedMin, long? ClampedMax, string? DemeritTotal, bool? DemeritTriggered,
+    int LectureHoursMin, int LectureHoursMax,
+    IReadOnlyList<string> MissingFactors, IReadOnlyList<string> JudgementFactors, IReadOnlyList<string> Notes);
+
+public sealed record DispositionAuditResultDto(
+    bool D1CitationsComplete, bool D2EvidenceGrounded, bool D3DefenseAndBoundsValid, IReadOnlyList<string> Findings);
 
 /// <summary>結論所讀的條文版本。</summary>
 /// <param name="Uri">條文版本的網址。</param>
@@ -377,7 +429,12 @@ public sealed record OutcomeDto(
     IReadOnlyList<StatementSourceDto> Sources, IReadOnlyList<EnvCite.Platform.SharedKernel.LawIdentifierDto> UncoveredLawIdentifiers,
     IReadOnlyList<DefinitionUseDto> DefinitionsUsed, IReadOnlyList<GuidanceDto> Guidance,
     IReadOnlyList<PermitGapDto> MissingPermitLimits, IReadOnlyList<long> SubjectMismatch,
-    IReadOnlyList<InvalidatedStatementDto> Invalidated, IReadOnlyList<DelegationBasisDto> DelegationBases);
+    IReadOnlyList<InvalidatedStatementDto> Invalidated, IReadOnlyList<DelegationBasisDto> DelegationBases,
+    IReadOnlyList<ActGroupFineDto>? OneActGroups = null,
+    IReadOnlyList<SameKindNonFineOverlapDto>? SameKindNonFineOverlaps = null,
+    IReadOnlyList<StatementPairDto>? MutatisApplied = null,
+    IReadOnlyList<ScoringResultDto>? ScoringResults = null,
+    DispositionAuditResultDto? DispositionAudit = null);
 
 /// <param name="FirstDay">這一組陳述開始適用的第一天（<c>YYYY-MM-DD</c>）。</param>
 public sealed record EarlierOutcomeDto(string FirstDay, OutcomeDto Outcome);

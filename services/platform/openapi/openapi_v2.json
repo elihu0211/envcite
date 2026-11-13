@@ -543,6 +543,58 @@
   },
   "components": {
     "schemas": {
+      "ActGroupDto": {
+        "required": [
+          "actId",
+          "statementIds"
+        ],
+        "type": "object",
+        "properties": {
+          "actId": {
+            "type": "string"
+          },
+          "statementIds": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      },
+      "ActGroupFineDto": {
+        "required": [
+          "actId",
+          "minAmount",
+          "maxAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "actId": {
+            "type": "string"
+          },
+          "minAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "maxAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "AdministrativePenaltyFactsDto": {
         "required": [
           "intent",
@@ -703,6 +755,30 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "factMistake": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "ignoranceUnavoidable": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "unexpectable": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "pettyMinor": {
+            "type": [
+              "null",
+              "boolean"
             ]
           }
         }
@@ -980,6 +1056,118 @@
           }
         }
       },
+      "DispositionAuditInputDto": {
+        "required": [
+          "citations",
+          "elements",
+          "twoTierDefensesAddressed"
+        ],
+        "type": "object",
+        "properties": {
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispositionCitationDto"
+            }
+          },
+          "elements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispositionElementDto"
+            }
+          },
+          "twoTierDefensesAddressed": {
+            "type": "boolean"
+          },
+          "statedFine": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "scoringMatrixCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "DispositionAuditResultDto": {
+        "required": [
+          "d1CitationsComplete",
+          "d2EvidenceGrounded",
+          "d3DefenseAndBoundsValid",
+          "findings"
+        ],
+        "type": "object",
+        "properties": {
+          "d1CitationsComplete": {
+            "type": "boolean"
+          },
+          "d2EvidenceGrounded": {
+            "type": "boolean"
+          },
+          "d3DefenseAndBoundsValid": {
+            "type": "boolean"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "DispositionCitationDto": {
+        "required": [
+          "citationText",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "citationText": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "inForce": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "DispositionElementDto": {
+        "required": [
+          "elementName",
+          "tier",
+          "factSummary",
+          "evidenceKind"
+        ],
+        "type": "object",
+        "properties": {
+          "elementName": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "string"
+          },
+          "factSummary": {
+            "type": "string"
+          },
+          "evidenceKind": {
+            "type": "string"
+          },
+          "contradicted": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
       "EarlierOutcomeDto": {
         "required": [
           "firstDay",
@@ -1066,6 +1254,44 @@
             "items": {
               "$ref": "#/components/schemas/LiabilityBasisDto"
             }
+          },
+          "actGroups": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ActGroupDto"
+            }
+          },
+          "timeline": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PerOccasionTimelineDto"
+              }
+            ]
+          },
+          "scoringInputs": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ScoringInputDto"
+            }
+          },
+          "dispositionAudit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DispositionAuditInputDto"
+              }
+            ]
           }
         }
       },
@@ -1078,7 +1304,11 @@
           "SuperiorOrder",
           "SelfDefense",
           "Necessity",
-          "CriminalPriority"
+          "CriminalPriority",
+          "UnavoidableIgnorance",
+          "Unexpectable",
+          "PettyOffense",
+          "WithinCurePeriod"
         ]
       },
       "FactDto": {
@@ -1130,6 +1360,64 @@
               "null",
               "string"
             ]
+          },
+          "unit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "FactorAppliedDto": {
+        "required": [
+          "factorCode",
+          "labelZho",
+          "factorRole",
+          "statutoryRef",
+          "value",
+          "intervalMin",
+          "intervalMax",
+          "missing",
+          "needsJudgement"
+        ],
+        "type": "object",
+        "properties": {
+          "factorCode": {
+            "type": "string"
+          },
+          "labelZho": {
+            "type": "string"
+          },
+          "factorRole": {
+            "type": "string"
+          },
+          "statutoryRef": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "intervalMin": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "intervalMax": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "missing": {
+            "type": "boolean"
+          },
+          "needsJudgement": {
+            "type": "boolean"
           }
         }
       },
@@ -1240,6 +1528,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CriminalDeductionDto"
+            }
+          },
+          "justified": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PenaltyExcuseDto"
+            }
+          },
+          "excused": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PenaltyExcuseDto"
             }
           }
         }
@@ -1702,6 +2008,52 @@
             "items": {
               "$ref": "#/components/schemas/DelegationBasisDto"
             }
+          },
+          "oneActGroups": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ActGroupFineDto"
+            }
+          },
+          "sameKindNonFineOverlaps": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SameKindNonFineOverlapDto"
+            }
+          },
+          "mutatisApplied": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/StatementPairDto"
+            }
+          },
+          "scoringResults": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ScoringResultDto"
+            }
+          },
+          "dispositionAudit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DispositionAuditResultDto"
+              }
+            ]
           }
         }
       },
@@ -1709,7 +2061,10 @@
         "enum": [
           "Hierarchy",
           "LexSpecialis",
-          "LexPosterior"
+          "LexPosterior",
+          "MutatisMutandis",
+          "Subsidiarity",
+          "Absorption"
         ]
       },
       "PenaltyCandidateDto": {
@@ -1867,6 +2222,41 @@
           },
           "value": {
             "type": "string"
+          }
+        }
+      },
+      "PerOccasionTimelineDto": {
+        "required": [
+          "cureNoticeServedOn",
+          "cureDeadline",
+          "extensionDeadline",
+          "reinspectionOn"
+        ],
+        "type": "object",
+        "properties": {
+          "cureNoticeServedOn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cureDeadline": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "extensionDeadline": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reinspectionOn": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2049,6 +2439,35 @@
           }
         }
       },
+      "SameKindNonFineOverlapDto": {
+        "required": [
+          "actId",
+          "penalty1",
+          "penalty2"
+        ],
+        "type": "object",
+        "properties": {
+          "actId": {
+            "type": "string"
+          },
+          "penalty1": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "penalty2": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "SanctionTriggerDto": {
         "required": [
           "statementId",
@@ -2066,6 +2485,209 @@
           },
           "kind": {
             "$ref": "#/components/schemas/TriggerKindDto"
+          }
+        }
+      },
+      "ScoringFactorValueDto": {
+        "required": [
+          "factorCode",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "factorCode": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "ScoringInputDto": {
+        "required": [
+          "matrixCode"
+        ],
+        "type": "object",
+        "properties": {
+          "matrixCode": {
+            "type": "string"
+          },
+          "factors": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ScoringFactorValueDto"
+            }
+          },
+          "severeViolation": {
+            "type": "boolean",
+            "default": false
+          },
+          "firstOffenseMinorFacility": {
+            "type": "boolean",
+            "default": false
+          },
+          "curedBeforeNotice": {
+            "type": "boolean",
+            "default": false
+          },
+          "isStopWork": {
+            "type": "boolean",
+            "default": false
+          },
+          "repeatWithinYear": {
+            "type": "boolean",
+            "default": false
+          },
+          "mitigationDenominator": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "activeBenefit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "passiveBenefit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "criminalDeduction": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ScoringResultDto": {
+        "required": [
+          "matrixCode",
+          "lawTitle",
+          "normKind",
+          "formulaKind",
+          "equationSummary",
+          "factorsApplied",
+          "rawMin",
+          "rawMax",
+          "clampedMin",
+          "clampedMax",
+          "demeritTotal",
+          "demeritTriggered",
+          "lectureHoursMin",
+          "lectureHoursMax",
+          "missingFactors",
+          "judgementFactors",
+          "notes"
+        ],
+        "type": "object",
+        "properties": {
+          "matrixCode": {
+            "type": "string"
+          },
+          "lawTitle": {
+            "type": "string"
+          },
+          "normKind": {
+            "type": "string"
+          },
+          "formulaKind": {
+            "type": "string"
+          },
+          "equationSummary": {
+            "type": "string"
+          },
+          "factorsApplied": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FactorAppliedDto"
+            }
+          },
+          "rawMin": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawMax": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "clampedMin": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "clampedMax": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "demeritTotal": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "demeritTriggered": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "lectureHoursMin": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lectureHoursMax": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingFactors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "judgementFactors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

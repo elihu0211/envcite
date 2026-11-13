@@ -300,14 +300,20 @@ def test_gazette_pack_reads_only_administrative_rules(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("title", "kind"),
+    ("title", "classification"),
     [
         ("環境部令：訂定「放流水標準適用原則」", "interpretation"),
-        ("環境部令：修正「違反水污染防治法罰鍰額度裁罰準則」", "discretion_standard"),
+        ("環境部令：修正「違反噪音管制法案件裁罰基準」", "discretion_standard"),
+        ("環境部令：修正「違反水污染防治法罰鍰額度裁罰準則」", "delegated_regulation"),
     ],
 )
-def test_gazette_rule_kind_follows_the_title(title: str, kind: str) -> None:
-    assert gazette.rule_kind(title) == kind
+def test_gazette_rule_kind_follows_the_title(title: str, classification: str) -> None:
+    assert gazette.classify_title(title) == classification
+    if classification == "delegated_regulation":
+        with pytest.raises(gazette.DelegatedRegulationTitle):
+            gazette.rule_kind(title)
+    else:
+        assert gazette.rule_kind(title) == classification
 
 
 def test_gazette_pack_name_bounds_the_range() -> None:

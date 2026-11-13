@@ -3981,5 +3981,102 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     font-weight: var(--ep-label-l-weight);
 }
 
+/* ── Apple-Design Fluid Motion, Translucent Depth & Legal Ontology Hierarchy ── */
+
+.ep-preset-chip,
+.ep-btn,
+.ep-tree-link {
+    touch-action: manipulation;
+    transition:
+        transform var(--ep-motion-fast) var(--ep-motion-ease-settle),
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        border-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-workbench-bar,
+.ep-graph-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--ep-surface);
+}
+
+.ep-tabular {
+    font-variant-numeric: tabular-nums;
+}
+
+.ep-tier-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: var(--ep-space-3);
+    margin-block: var(--ep-space-4);
+}
+
+.ep-tier-card,
+.ep-tier-node {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+    padding: var(--ep-space-3) var(--ep-space-4);
+    border: 1px solid var(--ep-border);
+    border-radius: var(--ep-radius-m);
+    background: var(--ep-surface-raised);
+    letter-spacing: -0.01em;
+}
+
+.ep-tier-kicker {
+    font-size: var(--ep-label-s-size);
+    color: var(--ep-text-secondary);
+}
+
+.ep-tier-value {
+    font-size: var(--ep-title-s-size, 1rem);
+    font-weight: var(--ep-title-s-weight);
+    color: var(--ep-text);
+}
+
+.ep-scoring-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--ep-space-4);
+    margin-block-start: var(--ep-space-4);
+}
+
+.ep-scoring-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-2);
+    padding: var(--ep-space-4);
+    border: 1px solid var(--ep-border);
+    border-radius: var(--ep-radius-l, 12px);
+    background: var(--ep-surface-raised);
+}
+
+.ep-scoring-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--ep-space-2);
+}
+
+.ep-scoring-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ep-space-3);
+    font-size: var(--ep-label-m-size, 0.875rem);
+    font-weight: var(--ep-label-m-weight);
+}
+
+@media (prefers-contrast: more) {
+    .ep-tier-card,
+    .ep-tier-node,
+    .ep-scoring-card,
+    .ep-preset-chip {
+        border-width: 1.5px;
+    }
+}
+
+
 
 

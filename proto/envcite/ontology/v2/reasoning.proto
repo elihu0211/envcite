@@ -147,6 +147,15 @@ enum OverrideBasis {
 
   // 不再產生：但書是規則與例外的結構，見 Statement.exception_of，不是優先依據。
   OVERRIDE_BASIS_EXCEPTION = 4 [deprecated = true];
+
+  // 中央法規標準法第 17 條：準用。
+  OVERRIDE_BASIS_MUTATIS_MUTANDIS = 5;
+
+  // 法條競合：補充關係（subsidiarity）。
+  OVERRIDE_BASIS_SUBSIDIARITY = 6;
+
+  // 法條競合：吸收關係（absorption）。
+  OVERRIDE_BASIS_ABSORPTION = 7;
 }
 
 // ---- ListStatements ------------------------------------------------------------
@@ -338,6 +347,18 @@ message EvaluateRequest {
   // 罰則附條件列出，缺的事實為概念 "liability_basis"（Outcome.missing）。主體槽位沒有標註，
   // 或擇一的值有一個沒標，則不受限制。不得為 UNSPECIFIED。
   repeated LiabilityBasis actor_bases = 8;
+
+  // 行為分組（行政罰法 §§24–25）：依 act_id 分組後各組獨立計算一行為從一重。
+  repeated ActGroup act_groups = 9;
+
+  // 按次處罰改善期限時點檢核（釋字第 604 號）。
+  optional PerOccasionTimeline timeline = 10;
+
+  // 裁罰積分／倍數／記點與環境講習確定性試算輸入。
+  repeated ScoringInput scoring_inputs = 11;
+
+  // 裁罰處分書要件與引用完備性檢核（CQ D1–D3）。
+  optional DispositionAuditInput disposition_audit = 12;
 }
 
 message Fact {
@@ -348,6 +369,9 @@ message Fact {
   // 作用，見 Condition.measurement_method。
   string measurement_method = 3;
   string averaging_period = 4;
+
+  // 量綱單位代碼（如 mg/L、ug/L、ppm、mg/Nm3、dB(A)）；留空不進行單位換算。
+  string unit = 5;
 }
 
 message PermitLimit {
@@ -434,6 +458,18 @@ message AdministrativePenaltyFacts {
 
   // 因違反行政法上義務所得之利益（元；第 18 條第 2 項）。
   optional Decimal gained_benefit = 23;
+
+  // 構成要件錯誤（Tatbestandsirrtum）：不知客觀構成要件事實，阻卻故意。
+  optional bool fact_mistake = 24;
+
+  // 不知法規有正當理由而無法避免（第 8 條但書）。
+  optional bool ignorance_unavoidable = 25;
+
+  // 欠缺期待可能性。
+  optional bool unexpectable = 26;
+
+  // 法定最高額 3,000 元以下且情節輕微以不處罰為適當（第 19 條）。
+  optional bool petty_minor = 27;
 }
 
 message EvaluateResponse {
@@ -549,6 +585,21 @@ message Outcome {
   // 394、402 號）。鏈不完整的命令所定之罰則，或處罰命令所定義務的罰則，附條件列出（授權依據
   // 待查）；命令的義務結論不變。法律與憲法的陳述不在此。
   repeated DelegationBasis delegation_bases = 22;
+
+  // 多行為分組（§24/§25）：各行為群組之從一重罰鍰區間。
+  repeated ActGroupFine one_act_groups = 23;
+
+  // 行政罰法第 24 條第 2 項：同種類其他行政罰重複提示。
+  repeated SameKindNonFineOverlap same_kind_non_fine_overlaps = 24;
+
+  // 中央法規標準法第 17 條：準用關係套用軌跡。
+  repeated StatementPair mutatis_applied = 25;
+
+  // 裁罰積分／倍數／記點與環境講習確定性試算結果。
+  repeated ScoringResult scoring_results = 26;
+
+  // 裁罰處分書要件與引用完備性檢核結果（CQ D1–D3）。
+  optional DispositionAuditResult disposition_audit = 27;
 }
 
 message InvalidatedStatement {
@@ -778,6 +829,18 @@ enum Excuse {
   // 一行為同時觸犯刑事法律，依刑事法律處罰（第 26 條第 1 項）：只擋罰鍰，以及法院已宣告沒收時
   // 的沒入；其他種類行政罰照列。
   EXCUSE_CRIMINAL_PRIORITY = 8;
+
+  // 不知法規有正當理由且無法避免（第 8 條但書）。
+  EXCUSE_UNAVOIDABLE_IGNORANCE = 9;
+
+  // 欠缺期待可能性。
+  EXCUSE_UNEXPECTABLE = 10;
+
+  // 微罪不罰（第 19 條）。
+  EXCUSE_PETTY_OFFENSE = 11;
+
+  // 尚在限期改善期間內（釋字第 604 號）。
+  EXCUSE_WITHIN_CURE_PERIOD = 12;
 }
 
 // 行政罰法總則下得減輕處罰的理由。
@@ -816,6 +879,12 @@ message GeneralPart {
   // 第 26 條第 3、4 項：刑事程序已確定（criminal_cleared_on）而依第 2 項得裁處的罰鍰，應扣抵的
   // 金額。罰鍰額不選，扣抵額原樣給出。
   repeated CriminalDeduction criminal_deductions = 7;
+
+  // 第二階阻卻違法事由（§§11–13）：行為適法。
+  repeated PenaltyExcuse justified = 8;
+
+  // 第三階阻卻責任事由（§§7–9、期待可能性）：行為仍屬不法，但免予非難。
+  repeated PenaltyExcuse excused = 9;
 }
 
 // 減輕的比例：二分之一；同時有免除處罰之規定者（第 8、12、13 條）三分之一。
@@ -859,4 +928,108 @@ message PenaltyExcuse {
 message PenaltyMitigation {
   int64 penalty_statement_id = 1;
   Mitigation mitigation = 2;
+}
+
+message ActGroup {
+  string act_id = 1;
+  repeated int64 statement_ids = 2;
+}
+
+message ActGroupFine {
+  string act_id = 1;
+  int64 min_amount = 2;
+  int64 max_amount = 3;
+}
+
+message SameKindNonFineOverlap {
+  string act_id = 1;
+  int64 penalty_1 = 2;
+  int64 penalty_2 = 3;
+}
+
+message PerOccasionTimeline {
+  string cure_notice_served_on = 1;
+  string cure_deadline = 2;
+  string extension_deadline = 3;
+  string reinspection_on = 4;
+}
+
+message ScoringFactorValue {
+  string factor_code = 1;
+  Decimal value = 2;
+}
+
+message ScoringInput {
+  string matrix_code = 1;
+  repeated ScoringFactorValue factors = 2;
+  bool severe_violation = 3;
+  bool first_offense_minor_facility = 4;
+  bool cured_before_notice = 5;
+  bool is_stop_work = 6;
+  bool repeat_within_year = 7;
+  optional int32 mitigation_denominator = 8;
+  Decimal active_benefit = 9;
+  Decimal passive_benefit = 10;
+  Decimal criminal_deduction = 11;
+}
+
+message FactorApplied {
+  string factor_code = 1;
+  string label_zho = 2;
+  string factor_role = 3;
+  string statutory_ref = 4;
+  optional Decimal value = 5;
+  optional Decimal interval_min = 6;
+  optional Decimal interval_max = 7;
+  bool missing = 8;
+  bool needs_judgement = 9;
+}
+
+message ScoringResult {
+  string matrix_code = 1;
+  string law_title = 2;
+  string norm_kind = 3;
+  string formula_kind = 4;
+  string equation_summary = 5;
+  repeated FactorApplied factors_applied = 6;
+  optional Decimal raw_min = 7;
+  optional Decimal raw_max = 8;
+  optional int64 clamped_min = 9;
+  optional int64 clamped_max = 10;
+  optional Decimal demerit_total = 11;
+  optional bool demerit_triggered = 12;
+  int32 lecture_hours_min = 13;
+  int32 lecture_hours_max = 14;
+  repeated string missing_factors = 15;
+  repeated string judgement_factors = 16;
+  repeated string notes = 17;
+}
+
+message DispositionCitation {
+  string citation_text = 1;
+  string role = 2;
+  bool in_force = 3;
+}
+
+message DispositionElement {
+  string element_name = 1;
+  string tier = 2;
+  string fact_summary = 3;
+  string evidence_kind = 4;
+  bool contradicted = 5;
+}
+
+message DispositionAuditInput {
+  repeated DispositionCitation citations = 1;
+  repeated DispositionElement elements = 2;
+  bool two_tier_defenses_addressed = 3;
+  optional int64 stated_fine = 4;
+  string scoring_matrix_code = 5;
+}
+
+message DispositionAuditResult {
+  bool d1_citations_complete = 1;
+  bool d2_evidence_grounded = 2;
+  bool d3_defense_and_bounds_valid = 3;
+  repeated string findings = 4;
 }

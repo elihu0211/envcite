@@ -13,9 +13,9 @@ from typing import Literal
 from envcite.ontology.v2 import ontology_pb2 as ont_pb
 from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite_ontology import errors
-from envcite_ontology.reasoning import Result, facts
+from envcite_ontology.reasoning import Result, facts, scoring
 from envcite_ontology.reasoning.engine import Penalty
-from envcite_ontology.reasoning.facts import Chain, Measurement
+from envcite_ontology.reasoning.facts import Chain, Measurement, PerOccasionTimeline
 
 
 @dataclass(frozen=True)
@@ -93,6 +93,9 @@ OVERRIDE_BASIS = {
     "lex_specialis": pb.OVERRIDE_BASIS_LEX_SPECIALIS,
     "lex_posterior": pb.OVERRIDE_BASIS_LEX_POSTERIOR,
     "exception": pb.OVERRIDE_BASIS_EXCEPTION,
+    "mutatis_mutandis": pb.OVERRIDE_BASIS_MUTATIS_MUTANDIS,
+    "subsidiarity": pb.OVERRIDE_BASIS_SUBSIDIARITY,
+    "absorption": pb.OVERRIDE_BASIS_ABSORPTION,
 }
 VERDICT = {
     "violation": pb.VERDICT_VIOLATION,
@@ -112,6 +115,10 @@ EXCUSE = {
     "self_defense": pb.EXCUSE_SELF_DEFENSE,
     "necessity": pb.EXCUSE_NECESSITY,
     "criminal_priority": pb.EXCUSE_CRIMINAL_PRIORITY,
+    "unavoidable_ignorance": pb.EXCUSE_UNAVOIDABLE_IGNORANCE,
+    "unexpectable": pb.EXCUSE_UNEXPECTABLE,
+    "petty_offense": pb.EXCUSE_PETTY_OFFENSE,
+    "within_cure_period": pb.EXCUSE_WITHIN_CURE_PERIOD,
 }
 MITIGATION = {
     "youth": pb.MITIGATION_YOUTH,
@@ -159,6 +166,10 @@ _BooleanFact = Literal[
     "ignorance_of_law",
     "criminal_offense",
     "court_confiscated",
+    "fact_mistake",
+    "ignorance_unavoidable",
+    "unexpectable",
+    "petty_minor",
 ]
 _BOOLEAN_FACTS: tuple[_BooleanFact, ...] = (
     "intent",
@@ -178,6 +189,10 @@ _BOOLEAN_FACTS: tuple[_BooleanFact, ...] = (
     "ignorance_of_law",
     "criminal_offense",
     "court_confiscated",
+    "fact_mistake",
+    "ignorance_unavoidable",
+    "unexpectable",
+    "petty_minor",
 )
 _DecimalFact = Literal[
     "criminal_payment", "community_service_hours", "minimum_hourly_wage", "gained_benefit"
@@ -218,6 +233,8 @@ def statement_ids(result: Result) -> set[int]:
     ids |= {p for p, _ in result.general.presumed} | set(result.general.time_barred)
     ids |= {r[0] for r in result.general.reduced} | {p for p, _ in result.general.raised_caps}
     ids |= {p for p, _ in result.general.deductions}
+    ids |= {p for p, _ in result.general.justified} | {p for p, _ in result.general.excused}
+    ids |= {s for pair in result.mutatis_applied for s in pair}
     return ids
 
 
@@ -315,6 +332,7 @@ def outcome(
     uncovered: Iterable[tuple[str, str, str]] = (),
     definitions: Mapping[int, tuple[str, str, list[str]]] | None = None,
     guidance: Iterable[GuidanceRef] = (),
+    audit_result: scoring.DispositionAuditResult | None = None,
 ) -> pb.Outcome:
     """一組推論結果轉成 `Outcome` 訊息。
 
@@ -375,6 +393,14 @@ def outcome(
                 pb.CriminalDeduction(penalty_statement_id=p, amount=decimal(v))
                 for p, v in result.general.deductions
             ],
+            justified=[
+                pb.PenaltyExcuse(penalty_statement_id=p, excuse=EXCUSE[g])
+                for p, g in result.general.justified
+            ],
+            excused=[
+                pb.PenaltyExcuse(penalty_statement_id=p, excuse=EXCUSE[g])
+                for p, g in result.general.excused
+            ],
         ),
         sources=[
             pb.StatementSource(statement_id=i, version_iri=sources[i])
@@ -423,10 +449,31 @@ def outcome(
             )
             for g in guidance
         ],
+        one_act_groups=[
+            pb.ActGroupFine(act_id=act_id, min_amount=lo, max_amount=hi)
+            for act_id, (lo, hi) in sorted(result.one_act_groups.items())
+        ],
+        same_kind_non_fine_overlaps=[
+            pb.SameKindNonFineOverlap(act_id=act_id, penalty_1=p1, penalty_2=p2)
+            for act_id, p1, p2 in result.same_kind_non_fine_overlaps
+        ],
+        mutatis_applied=[
+            pb.StatementPair(first=src, second=tgt) for src, tgt in result.mutatis_applied
+        ],
+        scoring_results=[_scoring_result(sr) for sr in result.scoring_results],
     )
     if result.one_act is not None:
         out.one_act.CopyFrom(
             pb.FineInterval(min_amount=result.one_act[0], max_amount=result.one_act[1])
+        )
+    if audit_result is not None:
+        out.disposition_audit.CopyFrom(
+            pb.DispositionAuditResult(
+                d1_citations_complete=audit_result.d1_citations_complete,
+                d2_evidence_grounded=audit_result.d2_evidence_grounded,
+                d3_defense_and_bounds_valid=audit_result.d3_defense_and_bounds_valid,
+                findings=list(audit_result.findings),
+            )
         )
     return out
 
@@ -598,3 +645,162 @@ def case_facts(
         if day is not None:
             case[f"{RESERVED_PREFIX}{name}"] = _stamp(day)
     return case
+
+
+def fact_units(request: Any) -> dict[str, str]:
+    """萃取各事實所帶之量綱單位代碼。"""
+    return {
+        str(fact.concept): str(fact.unit)
+        for fact in request.facts
+        if fact.concept and getattr(fact, "unit", "")
+    }
+
+
+def act_groups(request: Any) -> dict[str, list[int]]:
+    """萃取行為分組（§24/§25）。"""
+    return {
+        str(g.act_id): [int(sid) for sid in g.statement_ids]
+        for g in getattr(request, "act_groups", ())
+        if g.act_id and g.statement_ids
+    }
+
+
+def timeline(request: Any, validator: errors.Validator) -> PerOccasionTimeline | None:
+    """萃取限期改善與複查時點（釋字第 604 號）。"""
+    if not hasattr(request, "HasField") or not request.HasField("timeline"):
+        return None
+    tl = request.timeline
+
+    def _opt_date(raw: str, field: str) -> date | None:
+        if not raw:
+            return None
+        try:
+            return date.fromisoformat(raw)
+        except ValueError:
+            validator.add(f"timeline.{field}", errors.INVALID_DATE, "must be ISO 8601 date")
+            return None
+
+    return PerOccasionTimeline(
+        cure_notice_served_on=_opt_date(tl.cure_notice_served_on, "cure_notice_served_on"),
+        cure_deadline=_opt_date(tl.cure_deadline, "cure_deadline"),
+        extension_deadline=_opt_date(tl.extension_deadline, "extension_deadline"),
+        reinspection_on=_opt_date(tl.reinspection_on, "reinspection_on"),
+    )
+
+
+def scoring_inputs(request: Any, validator: errors.Validator) -> list[scoring.ScoringInput]:
+    """將請求內的 `scoring_inputs` 轉成確定性裁罰計算引擎輸入。"""
+    out: list[scoring.ScoringInput] = []
+    for i, item in enumerate(getattr(request, "scoring_inputs", ())):
+        if not item.matrix_code:
+            validator.add(f"scoring_inputs[{i}].matrix_code", errors.EMPTY, "matrix_code required")
+            continue
+        factors: dict[str, Decimal] = {}
+        for j, fv in enumerate(item.factors):
+            num = _number(fv.value)
+            if num is None:
+                validator.add(
+                    f"scoring_inputs[{i}].factors[{j}].value",
+                    errors.INVALID_NUMBER,
+                    "must be finite decimal",
+                )
+            elif fv.factor_code:
+                factors[str(fv.factor_code)] = num
+        out.append(
+            scoring.ScoringInput(
+                matrix_code=str(item.matrix_code),
+                factors=factors,
+                severe_violation=bool(item.severe_violation),
+                first_offense_minor_facility=bool(item.first_offense_minor_facility),
+                cured_before_notice=bool(item.cured_before_notice),
+                is_stop_work=bool(item.is_stop_work),
+                repeat_within_year=bool(item.repeat_within_year),
+                mitigation_denominator=(
+                    int(item.mitigation_denominator)
+                    if item.HasField("mitigation_denominator")
+                    else None
+                ),
+                active_benefit=_number(item.active_benefit) or Decimal(0),
+                passive_benefit=_number(item.passive_benefit) or Decimal(0),
+                criminal_deduction=_number(item.criminal_deduction) or Decimal(0),
+            )
+        )
+    return out
+
+
+def disposition_audit(
+    request: Any, results: Iterable[scoring.ScoringResult]
+) -> scoring.DispositionAuditResult | None:
+    """依請求內 `disposition_audit` 與對應試算結果執行 CQ D1–D3 處分書結構檢核。"""
+    if not hasattr(request, "HasField") or not request.HasField("disposition_audit"):
+        return None
+    audit_in = request.disposition_audit
+    matched = next(
+        (r for r in results if r.matrix_code == audit_in.scoring_matrix_code),
+        None,
+    )
+    citations = [
+        scoring.DispositionCitation(
+            citation_text=str(c.citation_text),
+            role=c.role,
+            in_force=bool(c.in_force),
+        )
+        for c in audit_in.citations
+    ]
+    elements = [
+        scoring.DispositionElement(
+            element_name=str(e.element_name),
+            tier=e.tier,
+            fact_summary=str(e.fact_summary),
+            evidence_kind=e.evidence_kind,
+            contradicted=bool(e.contradicted),
+        )
+        for e in audit_in.elements
+    ]
+    return scoring.audit_disposition(
+        citations,
+        elements,
+        two_tier_defenses_addressed=bool(audit_in.two_tier_defenses_addressed),
+        stated_fine=int(audit_in.stated_fine) if audit_in.HasField("stated_fine") else None,
+        scoring_result=matched,
+    )
+
+
+def _scoring_result(sr: scoring.ScoringResult) -> pb.ScoringResult:
+    out = pb.ScoringResult(
+        matrix_code=sr.matrix_code,
+        law_title=sr.law_title,
+        norm_kind=sr.norm_kind,
+        formula_kind=sr.formula_kind,
+        equation_summary=sr.equation_summary,
+        factors_applied=[
+            pb.FactorApplied(
+                factor_code=fa.factor_code,
+                label_zho=fa.label_zho,
+                factor_role=fa.factor_role,
+                statutory_ref=fa.statutory_ref,
+                value=decimal(fa.value) if fa.value is not None else None,
+                interval_min=decimal(fa.interval_min) if fa.interval_min is not None else None,
+                interval_max=decimal(fa.interval_max) if fa.interval_max is not None else None,
+                missing=fa.missing,
+                needs_judgement=fa.needs_judgement,
+            )
+            for fa in sr.factors_applied
+        ],
+        raw_min=decimal(sr.raw_min) if sr.raw_min is not None else None,
+        raw_max=decimal(sr.raw_max) if sr.raw_max is not None else None,
+        lecture_hours_min=sr.lecture_hours_min,
+        lecture_hours_max=sr.lecture_hours_max,
+        missing_factors=list(sr.missing_factors),
+        judgement_factors=list(sr.judgement_factors),
+        notes=list(sr.notes),
+    )
+    if sr.clamped_min is not None:
+        out.clamped_min = sr.clamped_min
+    if sr.clamped_max is not None:
+        out.clamped_max = sr.clamped_max
+    if sr.demerit_total is not None:
+        out.demerit_total.CopyFrom(decimal(sr.demerit_total))
+    if sr.demerit_triggered is not None:
+        out.demerit_triggered = sr.demerit_triggered
+    return out

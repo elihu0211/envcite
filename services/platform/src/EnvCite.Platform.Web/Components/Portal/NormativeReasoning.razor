@@ -8,7 +8,7 @@
 
 <DocumentTitle Text="@L["規範推論評估"]" />
 
-<PageHeader Title="@L["規範推論評估"]" Description="@L["依行為日與裁處日有效之已驗證陳述，對案件事實進行確定性涵攝推論（僅供候選參考，系統不裁量）。"]" />
+<PageHeader Title="@L["規範推論評估"]" Description="@L["依行為日與裁處日有效之已驗證陳述，執行行政罰法三階審查、量綱正規化與裁罰／講習確定性試算（僅供候選參考，系統不裁量）。"]" />
 
 @if (!Modules.IsEnabled(Tenant, ModuleKeys.NormativeReasoning))
 {
@@ -17,37 +17,107 @@
 else
 {
     <div class="ep-stack">
-        <SectionCard Id="reasoning-form-title" Title="@L["案件事實與時點"]">
+        <SectionCard Id="reasoning-form-title" Title="@L["案件事實、三階抗辯與計分參數"]">
             <FormAlert Kind="AlertKind.Info">@L["案件事實透過加密表單送出，不會寫入網址或日誌。未填欄位視為「未知」，不會當作「否」或 0。"]</FormAlert>
             <FormAlert Message="@Error" />
             <PostForm Model="Input" FormName="portal-reasoning" OnValidSubmit="EvaluateAsync">
-                <FormField For="r-conduct-on" Label="@L["行為日"]" Hint="@L["YYYY-MM-DD（必填）"]">
-                    <input id="r-conduct-on" name="Input.ConductOn" type="date" class="ep-input" value="@Input.ConductOn" required />
-                </FormField>
-                <FormField For="r-decided-on" Label="@L["裁處日"]" Hint="@L["YYYY-MM-DD（必填，不得早於行為日）"]">
-                    <input id="r-decided-on" name="Input.DecidedOn" type="date" class="ep-input" value="@Input.DecidedOn" required />
-                </FormField>
-                <FormField For="r-conduct-ended" Label="@L["行為終了日"]" Hint="@L["YYYY-MM-DD（選填，起算裁處權時效）"]">
-                    <input id="r-conduct-ended" name="Input.ConductEndedOn" type="date" class="ep-input" value="@Input.ConductEndedOn" />
-                </FormField>
-                <SelectField For="r-criminal" Label="@L["同時觸犯刑事法律（第 26 條第 1 項）"]"
-                             Options="TriStateOptions" @bind-Value="Input.CriminalOffense" />
-                <SelectField For="r-confiscated" Label="@L["法院已宣告沒收（第 26 條第 1 項但書）"]"
-                             Options="TriStateOptions" @bind-Value="Input.CourtConfiscated" />
-                <FormField For="r-payment" Label="@L["刑事命支付金額"]" Hint="@L["元，十進位數字（選填）"]">
-                    <input id="r-payment" name="Input.CriminalPayment" class="ep-input" value="@Input.CriminalPayment" />
-                </FormField>
-                <FormField For="r-benefit" Label="@L["違法所得利益"]" Hint="@L["元，十進位數字（選填，第 18 條第 2 項）"]">
-                    <input id="r-benefit" name="Input.GainedBenefit" class="ep-input" value="@Input.GainedBenefit" />
-                </FormField>
+                <div class="ep-reasoning-grid">
+                    <FormField For="r-conduct-on" Label="@L["行為日"]" Hint="@L["YYYY-MM-DD（必填）"]">
+                        <input id="r-conduct-on" name="Input.ConductOn" type="date" class="ep-input" value="@Input.ConductOn" required />
+                    </FormField>
+                    <FormField For="r-decided-on" Label="@L["裁處日"]" Hint="@L["YYYY-MM-DD（必填，不得早於行為日）"]">
+                        <input id="r-decided-on" name="Input.DecidedOn" type="date" class="ep-input" value="@Input.DecidedOn" required />
+                    </FormField>
+                    <FormField For="r-pollutant" Label="@L["污染物／排放概念代碼"]" Hint="@L["如 cod、bod、ss、pm、noise（選填）"]">
+                        <input id="r-pollutant" name="Input.PollutantCode" class="ep-input" value="@Input.PollutantCode" placeholder="cod" />
+                    </FormField>
+                    <FormField For="r-pollutant-val" Label="@L["檢驗／量測數值"]" Hint="@L["十進位數字（選填）"]">
+                        <input id="r-pollutant-val" name="Input.PollutantValue" class="ep-input ep-tabular" value="@Input.PollutantValue" placeholder="150" />
+                    </FormField>
+                    <SelectField For="r-pollutant-unit" Label="@L["量綱單位"]"
+                                 Options="UnitOptions" @bind-Value="Input.PollutantUnit" />
+                    <FormField For="r-industry" Label="@L["業別／管制區區辨"]" Hint="@L["供多重授權限值篩選（選填）"]">
+                        <input id="r-industry" name="Input.IndustryClass" class="ep-input" value="@Input.IndustryClass" placeholder="@L["例如 電鍍業"]" />
+                    </FormField>
+                </div>
+
+                <details class="ep-tree-manual">
+                    <summary class="ep-tree-manual-toggle">@L["進階：行政罰法三階抗辯事由（§§7–27）"]</summary>
+                    <div class="ep-reasoning-grid">
+                        <SelectField For="r-intent" Label="@L["故意（第 7 條）"]" Options="TriStateOptions" @bind-Value="Input.Intent" />
+                        <SelectField For="r-negligence" Label="@L["過失（第 7 條）"]" Options="TriStateOptions" @bind-Value="Input.Negligence" />
+                        <SelectField For="r-mistake" Label="@L["構成要件錯誤"]" Options="TriStateOptions" @bind-Value="Input.FactMistake" />
+                        <SelectField For="r-self-defense" Label="@L["正當防衛（第 12 條）"]" Options="TriStateOptions" @bind-Value="Input.SelfDefense" />
+                        <SelectField For="r-defense-excess" Label="@L["防衛過當（第 12 條但書）"]" Options="TriStateOptions" @bind-Value="Input.DefenseExcessive" />
+                        <SelectField For="r-necessity" Label="@L["緊急避難（第 13 條）"]" Options="TriStateOptions" @bind-Value="Input.Necessity" />
+                        <SelectField For="r-ignorance" Label="@L["不知法規無可避免（第 8 條但書）"]" Options="TriStateOptions" @bind-Value="Input.IgnoranceUnavoidable" />
+                        <SelectField For="r-self-induced" Label="@L["原因自由行為（第 9 條第 5 項）"]" Options="TriStateOptions" @bind-Value="Input.SelfInduced" />
+                        <SelectField For="r-petty" Label="@L["情節輕微／微罪不罰（第 19 條）"]" Options="TriStateOptions" @bind-Value="Input.PettyMinor" />
+                        <FormField For="r-conduct-ended" Label="@L["行為終了日"]" Hint="@L["YYYY-MM-DD（起算三年時效）"]">
+                            <input id="r-conduct-ended" name="Input.ConductEndedOn" type="date" class="ep-input" value="@Input.ConductEndedOn" />
+                        </FormField>
+                        <SelectField For="r-criminal" Label="@L["同時觸犯刑事法律（第 26 條）"]" Options="TriStateOptions" @bind-Value="Input.CriminalOffense" />
+                        <SelectField For="r-confiscated" Label="@L["法院已宣告沒收"]" Options="TriStateOptions" @bind-Value="Input.CourtConfiscated" />
+                        <FormField For="r-payment" Label="@L["刑事命支付金額"]" Hint="@L["元（選填）"]">
+                            <input id="r-payment" name="Input.CriminalPayment" class="ep-input ep-tabular" value="@Input.CriminalPayment" />
+                        </FormField>
+                        <FormField For="r-benefit" Label="@L["違法所得利益"]" Hint="@L["元（第 18 條第 2 項）"]">
+                            <input id="r-benefit" name="Input.GainedBenefit" class="ep-input ep-tabular" value="@Input.GainedBenefit" />
+                        </FormField>
+                    </div>
+                </details>
+
+                <details class="ep-tree-manual">
+                    <summary class="ep-tree-manual-toggle">@L["進階：按次改善時點（釋字 604）與裁罰／講習計分矩陣"]</summary>
+                    <div class="ep-reasoning-grid">
+                        <FormField For="r-cure-deadline" Label="@L["限期改善屆滿日"]" Hint="@L["YYYY-MM-DD（選填）"]">
+                            <input id="r-cure-deadline" name="Input.CureDeadline" type="date" class="ep-input" value="@Input.CureDeadline" />
+                        </FormField>
+                        <FormField For="r-reinspection" Label="@L["複查日"]" Hint="@L["YYYY-MM-DD（選填）"]">
+                            <input id="r-reinspection" name="Input.ReinspectionOn" type="date" class="ep-input" value="@Input.ReinspectionOn" />
+                        </FormField>
+                        <SelectField For="r-matrix" Label="@L["裁罰計分矩陣"]" Options="MatrixOptions" @bind-Value="Input.ScoringMatrixCode" />
+                        <FormField For="r-demerit" Label="@L["營建工程累計缺失記點"]" Hint="@L["點數（>= 10 點觸發違規）"]">
+                            <input id="r-demerit" name="Input.DemeritPoints" class="ep-input ep-tabular" value="@Input.DemeritPoints" />
+                        </FormField>
+                    </div>
+                </details>
+
                 <SubmitButton>@L["執行推論評估"]</SubmitButton>
             </PostForm>
         </SectionCard>
 
         @if (_outcome is { } result)
         {
-            <SectionCard Id="reasoning-result-title" Title="@L["推論候選結果"]">
+            <SectionCard Id="reasoning-result-title" Title="@L["三階審查與推論候選結果"]">
                 <StatGrid Items="SummaryStats(result)" />
+
+                <div class="ep-tier-strip" aria-label="@L["行政罰法三階審查摘要"]">
+                    <div class="ep-tier-card">
+                        <span class="ep-tier-kicker">@L["第一階 · 構成要件該當性"]</span>
+                        <strong class="ep-tier-value ep-tabular">@result.Verdicts.Count @L["項規範結論"]</strong>
+                    </div>
+                    <div class="ep-tier-card">
+                        <span class="ep-tier-kicker">@L["第二階 · 違法性（阻卻違法 §§11–13）"]</span>
+                        <strong class="ep-tier-value ep-tabular">@((result.ThreeTierDefenses ?? []).Count(d => d.Tier == "Tier2_Unlawfulness")) @L["項阻卻違法"]</strong>
+                    </div>
+                    <div class="ep-tier-card">
+                        <span class="ep-tier-kicker">@L["第三階 · 有責性（§§7–9）"]</span>
+                        <strong class="ep-tier-value ep-tabular">@((result.ThreeTierDefenses ?? []).Count(d => d.Tier == "Tier3_Culpability")) @L["項阻卻責任"]</strong>
+                    </div>
+                </div>
+
+                @if (result.OneActMin is not null && result.OneActMax is not null)
+                {
+                    <FormAlert Kind="AlertKind.Info"
+                               Message="@L["一行為從一重罰鍰合併區間（第 24 條第 1 項）：NT$ {0:N0} ～ NT$ {1:N0}", result.OneActMin.Value, result.OneActMax.Value]" />
+                }
+
+                @if (result.Problems is { Count: > 0 })
+                {
+                    <FormAlert Kind="AlertKind.Error" Message="@string.Join("；", result.Problems)" />
+                }
+
                 @if (result.Verdicts.Count == 0)
                 {
                     <p class="ep-page-description">@L["沒有已確認的規範陳述產生裁處結論；這不代表合規。"]</p>
@@ -55,6 +125,50 @@ else
                 else
                 {
                     <DataTable Items="result.Verdicts" Columns="VerdictColumns" Label="@L["候選結論"]" Plain="true" />
+                }
+
+                @if (result.Penalties is { Count: > 0 })
+                {
+                    <div class="ep-graph-subpanel">
+                        <h3 class="ep-subpanel-title">@L["候選處分與罰則區間 ({0})", result.Penalties.Count]</h3>
+                        <DataTable Items="result.Penalties" Columns="PenaltyColumns" Label="@L["候選罰則"]" Plain="true" />
+                    </div>
+                }
+
+                @if (result.ScoringResults is { Count: > 0 })
+                {
+                    <div class="ep-scoring-grid">
+                        @foreach (var sc in result.ScoringResults)
+                        {
+                            <article class="ep-scoring-card">
+                                <header class="ep-scoring-header">
+                                    <strong>@sc.LawTitle</strong>
+                                    <code class="ep-mono">@sc.FormulaKind</code>
+                                </header>
+                                <p class="ep-hint">@sc.EquationSummary</p>
+                                <div class="ep-scoring-metrics ep-tabular">
+                                    @if (sc.ClampedMin is not null || sc.ClampedMax is not null)
+                                    {
+                                        <span>@L["裁罰區間"]：NT$ @(sc.ClampedMin?.ToString("N0") ?? "?") ～ NT$ @(sc.ClampedMax?.ToString("N0") ?? "?")</span>
+                                    }
+                                    <span>@L["環境講習"]：@sc.LectureHoursMin ～ @sc.LectureHoursMax @L["小時"]</span>
+                                    @if (sc.DemeritTotal is not null)
+                                    {
+                                        <span>@L["缺失記點"]：@sc.DemeritTotal @L["點"]（@(sc.DemeritTriggered == true ? L["已達 10 點門檻"] : L["未達 10 點"])）</span>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+
+                @if (result.MissingConcepts is { Count: > 0 })
+                {
+                    <p class="ep-hint">@L["待補充事實概念："]<code class="ep-mono">@string.Join(", ", result.MissingConcepts)</code></p>
+                }
+                @if (result.JudgementConcepts is { Count: > 0 })
+                {
+                    <p class="ep-hint">@L["須主管機關判斷之不確定概念："]<code class="ep-mono">@string.Join(", ", result.JudgementConcepts)</code></p>
                 }
             </SectionCard>
         }
@@ -71,12 +185,42 @@ else
         new("false", L["否"]),
     ];
 
+    private IReadOnlyList<SelectOption> UnitOptions =>
+    [
+        new(string.Empty, L["不指定單位"]),
+        new("mg/L", "mg/L"),
+        new("ug/L", "μg/L"),
+        new("mg/Nm3", "mg/Nm³"),
+        new("ppm", "ppm"),
+        new("dB(A)", "dB(A)"),
+        new("kg", "kg"),
+        new("ton", "ton"),
+    ];
+
+    private IReadOnlyList<SelectOption> MatrixOptions =>
+    [
+        new(string.Empty, L["不試算矩陣"]),
+        new("water_effluent", L["水污法罰鍰裁罰準則（點數×基數）"]),
+        new("air_stationary", L["空污法固定污染源裁罰準則（A×B×C×D×(1+E)）"]),
+        new("waste_disposal", L["廢清法罰鍰裁罰準則"]),
+        new("construction_demerit", L["營建工程空污設施缺失記點（10點門檻）"]),
+    ];
+
     private IReadOnlyList<ColumnDef<PortalReasoningVerdict>> VerdictColumns =>
     [
         new() { Title = L["法規"], Class = "ep-keep", Labeled = false, Cell = v => @<text>@v.LawTitle</text> },
         new() { Title = L["陳述"], Cell = v => @<text><code class="ep-mono">@v.StatementId</code></text> },
         new() { Title = L["候選判定"], Cell = v => @<text><StatusBadge Tone="@VerdictTone(v.Verdict)">@VerdictLabel(v.Verdict)</StatusBadge></text> },
-        new() { Title = L["缺漏事實數"], Cell = v => @<text>@v.MissingCount</text> },
+        new() { Title = L["缺漏事實數"], Cell = v => @<span class="ep-tabular">@v.MissingCount</span> },
+    ];
+
+    private IReadOnlyList<ColumnDef<PortalPenaltyItem>> PenaltyColumns =>
+    [
+        new() { Title = L["陳述"], Labeled = false, Cell = p => @<text><code class="ep-mono">@p.StatementId</code></text> },
+        new() { Title = L["法律效果"], Cell = p => @<text>@p.Effect</text> },
+        new() { Title = L["法定最低額"], Cell = p => @<span class="ep-tabular">@(p.MinAmount?.ToString("N0") ?? "-")</span> },
+        new() { Title = L["法定最高額"], Cell = p => @<span class="ep-tabular">@(p.MaxAmount?.ToString("N0") ?? "-")</span> },
+        new() { Title = L["性質"], Cell = p => @<text>@(p.Conditional ? L["附條件"] : L["確定觸發"]) @(p.PerOccasion ? L["· 按次"] : string.Empty)</text> },
     ];
 
     private IReadOnlyList<StatItem> SummaryStats(PortalReasoningOutcome r) =>
@@ -105,14 +249,7 @@ else
 
         var evaluated = await ReasoningService.EvaluateAsync(
             User,
-            new PortalReasoningInput(
-                Input.ConductOn,
-                Input.DecidedOn,
-                Input.ConductEndedOn,
-                ParseTriState(Input.CriminalOffense),
-                ParseTriState(Input.CourtConfiscated),
-                Input.CriminalPayment,
-                Input.GainedBenefit),
+            Input.ToInput(),
             CancellationToken.None);
 
         if (!evaluated.IsOk)
@@ -142,12 +279,5 @@ else
         "ConditionalViolation" => "warning",
         "Compliant" or "ConditionalCompliant" => "success",
         _ => "neutral",
-    };
-
-    private static bool? ParseTriState(string? value) => value switch
-    {
-        "true" => true,
-        "false" => false,
-        _ => null,
     };
 }

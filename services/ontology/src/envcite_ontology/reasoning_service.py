@@ -21,7 +21,8 @@ from envcite_ontology import annotation_read, errors, identifiers
 from envcite_ontology import reasoning_codec as codec
 from envcite_ontology.identifiers import law_key
 from envcite_ontology.reasoning import Result, evaluate_across
-from envcite_ontology.reasoning.facts import Measurements, Permits
+from envcite_ontology.reasoning.facts import Measurements, Permits, PerOccasionTimeline
+from envcite_ontology.reasoning.scoring import ScoringInput
 from envcite_ontology.store import LANGUAGE, OntologyStore
 from envcite_ontology.telemetry import ReasoningMetrics
 
@@ -105,6 +106,10 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         case = codec.case_facts(request, v, conduct_ended, result_on, cleared)
         permits = codec.permit_limits(request, v)
         actor_bases = codec.actor_bases(request, v)
+        fact_units = codec.fact_units(request)
+        act_groups = codec.act_groups(request)
+        timeline = codec.timeline(request, v)
+        scoring_inputs = codec.scoring_inputs(request, v)
         v.check()
         assert conduct_on is not None and decided_on is not None  # check() 已擋下
 
@@ -121,12 +126,17 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                 )
             return self._evaluate(
                 context,
+                request,
                 conduct_on,
                 decided_on,
                 case,
                 codec.measurements(request),
                 permits,
                 actor_bases,
+                fact_units,
+                act_groups,
+                timeline,
+                scoring_inputs,
             )
         finally:
             self._metrics.in_flight.add(-1)
@@ -135,12 +145,17 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
     def _evaluate(
         self,
         context: grpc.ServicerContext,
+        request: pb.EvaluateRequest,
         conduct_on: date,
         decided_on: date,
         case: dict[str, float | list[float | str]],
         measurements: Measurements,
         permits: Permits,
         actor_bases: list[str],
+        fact_units: dict[str, str],
+        act_groups: dict[str, list[int]],
+        timeline: PerOccasionTimeline | None,
+        scoring_inputs: list[ScoringInput],
     ) -> pb.EvaluateResponse:
         try:
             with self._store.read_connection(timeout=remaining_seconds(context)) as conn:
@@ -153,12 +168,18 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                     measurements=measurements,
                     permits=permits,
                     actor_bases=actor_bases,
+                    fact_units=fact_units or None,
+                    act_groups=act_groups or None,
+                    timeline=timeline,
+                    scoring_inputs=scoring_inputs,
                 )
 
                 def outcome(
                     result: Result,
                     on: date,
                     uncovered: tuple[tuple[str, str, str], ...],
+                    *,
+                    include_audit: bool = False,
                 ) -> pb.Outcome:
                     ids = codec.statement_ids(result)
                     where = annotation_read.sources(conn, ids, on)
@@ -167,11 +188,19 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                     )
                     # 行政規則以處分日判斷是否已發布、尚未停止（釋字第 287 號），各組陳述皆同
                     guidance = annotation_read.guidance_for(conn, ids, decided_on)
-                    return codec.outcome(result, where, uncovered, used, guidance)
+                    audit_res = (
+                        codec.disposition_audit(request, result.scoring_results)
+                        if include_audit
+                        else None
+                    )
+                    return codec.outcome(result, where, uncovered, used, guidance, audit_res)
 
                 return pb.EvaluateResponse(
                     at_decision=outcome(
-                        moved.at_decision, decided_on, moved.at_decision_uncovered_laws
+                        moved.at_decision,
+                        decided_on,
+                        moved.at_decision_uncovered_laws,
+                        include_audit=True,
                     ),
                     earlier=[
                         pb.EarlierLaw(
