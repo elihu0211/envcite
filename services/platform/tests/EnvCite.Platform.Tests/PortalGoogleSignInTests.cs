@@ -243,6 +243,11 @@ public sealed class PortalGoogleSignInTests(PlatformFactory factory)
         Assert.Contains($"""action="{PortalPaths.GoogleChallenge(tenant.Identifier)}" """.TrimEnd(), login.Html, StringComparison.Ordinal);
         Assert.Contains("method=\"post\"", login.Html, StringComparison.Ordinal);
 
+        // Google 品牌規範：四色 G 標誌加官方文字，標誌是裝飾（名稱由文字承擔）。
+        Assert.Contains("ep-google-mark", login.Html, StringComparison.Ordinal);
+        Assert.Contains("aria-hidden=\"true\"", login.Html[login.Html.IndexOf("ep-google-mark", StringComparison.Ordinal)..], StringComparison.Ordinal);
+        Assert.Contains("使用 Google 帳戶登入", login.Html, StringComparison.Ordinal);
+
         // 起點只收 POST，且要有 antiforgery：連結或別的網站送來的請求不能把人送去 Google。
         Assert.NotEqual(HttpStatusCode.Redirect, await browser.StatusAsync(PortalPaths.GoogleChallenge(tenant.Identifier)));
         Assert.Equal(HttpStatusCode.BadRequest, (await browser.PostAsync(PortalPaths.GoogleChallenge(tenant.Identifier), [])).Status);

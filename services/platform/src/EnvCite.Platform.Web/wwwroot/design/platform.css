@@ -2429,6 +2429,46 @@ html[data-js] .ep-otp-input::selection {
         border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
+/* 「使用 Google 帳戶登入」：Google 品牌規範的外框按鈕（中性底、細邊框、字重 500、圖示與文字間一階）。底色與邊框、文字全用本系統的
+   表面與文字 token，淺色與深色都跟著主題；四色 G 標誌是品牌色、不隨主題（GoogleMark）。登入卡裡滿寬。 */
+.ep-btn-google {
+    inline-size: 100%;
+    background: var(--ep-surface);
+    color: var(--ep-text);
+    border-color: var(--ep-border-control);
+    transition:
+        transform var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+@media (hover: hover) {
+    .ep-btn-google:hover {
+        background: var(--ep-surface-muted);
+    }
+}
+
+.ep-google-mark {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    flex: none;
+}
+
+/* 「或」：兩側各一條細線的分隔，把另一種登入方式與上面的表單分開。 */
+.ep-divider {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
+    margin: var(--ep-space-4) 0;
+    color: var(--ep-text-secondary);
+}
+
+.ep-divider::before,
+.ep-divider::after {
+    content: "";
+    flex: 1;
+    border-block-start: 1px solid var(--ep-border-subtle);
+}
+
 /* 提示：邊框與文字說明承擔語意，顏色只是輔助。一個語氣一個色（--tone）：淡底與邊框由它疊透明度得到。 */
 .ep-alert {
     --tone: var(--ep-border-control);

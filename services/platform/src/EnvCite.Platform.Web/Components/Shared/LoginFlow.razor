@@ -22,14 +22,14 @@
 @if (!string.IsNullOrEmpty(GoogleAction))
 {
     @* 另一種登入方式，只有部署者開啟時才有：POST 到租戶路徑下的起點（antiforgery），登入後要去的地方（returnUrl）隨表單帶去。 *@
-    <p class="ep-note">@L["或"]</p>
+    <p class="ep-divider" role="separator">@L["或"]</p>
     <form method="post" action="@GoogleAction">
         <AntiforgeryToken />
         @if (!string.IsNullOrEmpty(ReturnUrl))
         {
             <input type="hidden" name="returnUrl" value="@ReturnUrl" />
         }
-        <button type="submit" class="ep-btn">@L["使用 Google 登入"]</button>
+        <button type="submit" class="ep-btn ep-btn-icon ep-btn-google"><GoogleMark />@L["使用 Google 帳戶登入"]</button>
     </form>
 }
 
