@@ -87,9 +87,12 @@ internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modu
                 ownedArticles[hIdx].Add(new PortalLawArticle(article.Uri, article.Number));
         }
 
+        var visited = new HashSet<int>();
         PortalStructureNode ToNode(int index)
         {
             var h = headings[index];
+            if (!visited.Add(index))
+                return new PortalStructureNode(h.Kind, h.HeadingNo, h.Title, [], []);
             var children = childHeadingIndices[index].Select(ToNode).ToList();
             return new PortalStructureNode(h.Kind, h.HeadingNo, h.Title, children, ownedArticles[index]);
         }

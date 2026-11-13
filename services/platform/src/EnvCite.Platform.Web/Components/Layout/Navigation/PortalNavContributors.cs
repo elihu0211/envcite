@@ -36,7 +36,7 @@ internal sealed class OntologyWorkbenchNav(IStringLocalizer<Ui> localizer, ITena
     public override IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) =>
         context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value is { } tenant
         && (modules.IsEnabled(tenant, ModuleKeys.LawCorpus) || modules.IsEnabled(tenant, ModuleKeys.NormativeReasoning))
-            ? [new($"{context.Home}/laws", L["法規本體工作台"], ServicesGroup, Icon: Icons.Material.Outlined.AccountTree)]
+            ? [new($"{context.Home}/laws", L["法規體系與合規"], ServicesGroup, Icon: Icons.Material.Outlined.AccountTree)]
             : [];
 }
 
