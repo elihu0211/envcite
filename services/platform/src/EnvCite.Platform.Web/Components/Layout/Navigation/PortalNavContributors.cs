@@ -29,7 +29,7 @@ internal sealed class QueryNav(IStringLocalizer<Ui> localizer) : PortalNavContri
         [new(context.Home, L["查詢"], ServicesGroup, Exact: true, Icon: Icons.Material.Outlined.Search)];
 }
 
-internal sealed class HistoryNav(IStringLocalizer<Ui> localizer, IConversationHistory history) : PortalNavContributorBase(localizer)
+internal sealed class HistoryNav(IStringLocalizer<Ui> localizer, IConversationHistoryAvailability history) : PortalNavContributorBase(localizer)
 {
     public override int Order => 20;
 

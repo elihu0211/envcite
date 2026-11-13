@@ -3,19 +3,20 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 @inject IConversationHistory Store
+@inject IConversationHistoryAvailability HistoryFeature
 @inherits PortalFormPageBase<DeleteForm>
 
 <DocumentTitle Text="@L["對話紀錄"]" />
 
 <PageHeader Title="@L["對話紀錄"]" Description="@L["只有你看得到。"]" />
 
-@if (!Store.Enabled)
+@if (!HistoryFeature.Enabled)
 {
     <FormAlert Kind="AlertKind.Info">@L["這個環境沒有開啟對話紀錄。"]</FormAlert>
 }
 else
 {
-    <p class="ep-hint">@L["超過 {0} 天沒有更新的對話會自動刪除。", Store.RetentionDays]</p>
+    <p class="ep-hint">@L["超過 {0} 天沒有更新的對話會自動刪除。", HistoryFeature.RetentionDays]</p>
 
     @if (_message is not null)
     {

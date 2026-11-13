@@ -7,7 +7,8 @@ namespace EnvCite.Platform.Modules.Conversations;
 /// 在裡面解析回答、搜尋與歷史：這些服務計量與存取都吃環境租戶，靜態頁有、互動式 circuit 沒有，所以不能直接注入頁面。
 /// 租戶只取自入口成員的 claim；不是入口成員（沒有 <see cref="PlatformClaimTypes.PortalUserId"/>）一律當作沒有方案。
 /// </summary>
-internal sealed class AskService(TenantScopes tenants, ITenantDirectory directory, IAnswerAvailability availability) : IAskService
+internal sealed class AskService(
+    TenantScopes tenants, ITenantDirectory directory, IAnswerAvailability availability, IConversationHistoryAvailability history) : IAskService
 {
     private static readonly AskCapabilities None = new(HasPlan: false, AiAnswer: false);
 
@@ -46,6 +47,18 @@ internal sealed class AskService(TenantScopes tenants, ITenantDirectory director
         });
 
         return outcome.IsOk ? outcome.Value! : noPlan;
+    }
+
+    public async Task<IReadOnlyList<ConversationSummary>> RecentAsync(ClaimsPrincipal user, int limit, CancellationToken cancellationToken)
+    {
+        if (!history.Enabled || MemberTenant(user) is not { } identifier)
+            return [];
+
+        var outcome = await tenants.InByIdentifierAsync<IReadOnlyList<ConversationSummary>>(
+            identifier,
+            async scope => AdminOutcome.Ok(await scope.Get<IConversationHistory>().ListAsync(user, limit, cancellationToken)));
+
+        return outcome.IsOk ? outcome.Value! : [];
     }
 
     public async Task<Guid?> RecordAsync(ClaimsPrincipal user, Guid? conversationId, string question, string answer, CancellationToken cancellationToken)

@@ -95,6 +95,24 @@
                         }
                     </nav>
                 }
+                @* 最近的對話：只有標題，依日期分組；窄欄與沒有 JavaScript 的手機橫列不顯示（樣式表）。 *@
+                @if (Recent.Count > 0)
+                {
+                    <section class="ep-recent" aria-label="@L["最近的對話"]">
+                        @foreach (var group in Recent)
+                        {
+                            <p class="ep-side-group" aria-hidden="true">@group.Label</p>
+                            <nav class="ep-recent-nav" aria-label="@group.Label">
+                                @foreach (var item in group.Items)
+                                {
+                                    <NavLink class="ep-recent-link" href="@item.Href" title="@item.Title">
+                                        <span class="ep-side-label">@item.Title</span>
+                                    </NavLink>
+                                }
+                            </nav>
+                        }
+                    </section>
+                }
             </aside>
             <main class="ep-console-main" id="main" tabindex="-1">
                 @ChildContent
@@ -111,6 +129,15 @@
 
 @code {
     public sealed record MenuItem(string Href, string Label);
+
+    /// <param name="Title">對話的標題（第一個問題）；是使用者的資料，不翻譯。</param>
+    public sealed record RecentConversation(string Href, string Title);
+
+    public sealed record RecentGroup(string Label, IReadOnlyList<RecentConversation> Items);
+
+    /// <summary>側欄的最近對話，已依日期分好組；沒有就整段不畫（問答歷史沒開啟、還沒問過）。</summary>
+    [Parameter]
+    public IReadOnlyList<RecentGroup> Recent { get; set; } = [];
 
     /// <param name="Group">側欄的群組標題；同一群組的項目連續排列。</param>
     /// <param name="Exact">只有網址完全相同才標成目前頁（首頁要這樣，否則每一頁都算在首頁底下）。</param>

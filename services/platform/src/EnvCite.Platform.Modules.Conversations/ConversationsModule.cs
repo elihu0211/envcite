@@ -23,12 +23,21 @@ public sealed class ConversationHistoryOptions : ISectionOptions
 [OptionsValidator]
 public sealed partial class ConversationHistoryOptionsValidator : IValidateOptions<ConversationHistoryOptions>;
 
+/// <summary>只讀設定（<see cref="ConversationHistoryOptions"/>）。不碰資料庫，所以互動式 circuit 可以安心注入。</summary>
+internal sealed class ConversationHistoryAvailability(IOptions<ConversationHistoryOptions> options) : IConversationHistoryAvailability
+{
+    public bool Enabled => options.Value.Enabled;
+
+    public int RetentionDays => options.Value.RetentionDays;
+}
+
 public static class ConversationsModule
 {
     public static IServiceCollection AddConversationsModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddSectionOptions<ConversationHistoryOptions, ConversationHistoryOptionsValidator>();
+        services.AddSingleton<IConversationHistoryAvailability, ConversationHistoryAvailability>();
         services.AddScoped<IConversationHistory, ConversationHistory>();
         // 無狀態的閘門：每個操作自己開租戶 scope，所以可以是 singleton，靜態頁與互動式 circuit 都能放心注入。
         services.AddSingleton<IAskService, AskService>();

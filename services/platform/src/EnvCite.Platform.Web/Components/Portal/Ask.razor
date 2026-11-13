@@ -3,7 +3,7 @@
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
-@inject IConversationHistory History
+@inject IConversationHistoryAvailability History
 @inherits PortalFormPageBase<SearchForm>
 
 <DocumentTitle Text="@L["查詢"]" />

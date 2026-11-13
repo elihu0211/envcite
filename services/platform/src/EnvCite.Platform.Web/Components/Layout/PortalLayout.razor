@@ -2,6 +2,8 @@
 @inherits PlatformLayoutBase
 @inject IPortalAccount Account
 @inject IEnumerable<IPortalNavContributor> NavContributors
+@inject IAskService Ask
+@inject TimeProvider Time
 
 @* 客戶入口的外殼：靜態渲染（沒有 circuit、沒有互動元件），所以不用 MudBlazor 的元件。外觀與版面見 PortalShell。 *@
 <PortalShell TenantName="@(Account.CurrentTenant is { } tenant ? tenant.Name ?? tenant.Identifier : null)"
@@ -13,6 +15,7 @@
              ShowMenu="@ShowMenu"
              MenuItems="@MenuItems"
              NavItems="@NavItems"
+             Recent="@_recent"
              LanguageAction="@(Account.CurrentTenant is { } languageTenant ? $"{PortalPaths.Home(languageTenant.Identifier)}/language" : null)">
     @Body
 </PortalShell>
@@ -21,7 +24,12 @@
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationState { get; set; }
 
+    /// <summary>側欄最近對話的筆數：夠找到剛才問的，更早的在「對話紀錄」頁。</summary>
+    private const int RecentLimit = 12;
+
     private ClaimsPrincipal? _user;
+
+    private IReadOnlyList<PortalShell.RecentGroup> _recent = [];
 
     private bool Authenticated => _user?.Identity?.IsAuthenticated == true && Account.CurrentTenant is not null;
 
@@ -53,6 +61,25 @@
             ? [new($"{PortalPaths.Home(tenant.Identifier)}/settings", L["個人設定"]), new($"{PortalPaths.Home(tenant.Identifier)}/security", L["兩步驟驗證"]), new(PortalPaths.Password(tenant.Identifier), L["改密碼"])]
             : [];
 
-    protected override async Task OnInitializedAsync() =>
+    protected override async Task OnInitializedAsync()
+    {
         _user = AuthenticationState is null ? null : (await AuthenticationState).User;
+        if (ShowMenu && Account.CurrentTenant is { } tenant)
+        {
+            // 問答歷史沒開啟時服務回空的（不開 scope、不查資料庫）；只讀本人的對話標題。
+            var home = PortalPaths.Home(tenant.Identifier);
+            _recent = [.. ConversationGroups
+                .Group(await Ask.RecentAsync(_user!, RecentLimit, CancellationToken.None), c => c.UpdatedAt, Time.GetUtcNow())
+                .Select(g => new PortalShell.RecentGroup(
+                    AgeLabel(g.Age), [.. g.Items.Select(c => new PortalShell.RecentConversation($"{home}/history/{c.Id}", c.Title))]))];
+        }
+    }
+
+    private string AgeLabel(ConversationAge age) => age switch
+    {
+        ConversationAge.Today => L["今天"],
+        ConversationAge.Yesterday => L["昨天"],
+        ConversationAge.PastWeek => L["過去 7 天"],
+        _ => L["更早"],
+    };
 }

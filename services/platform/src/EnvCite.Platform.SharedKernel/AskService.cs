@@ -53,6 +53,12 @@ public interface IAskService
     Task<AskResult> AskAsync(ClaimsPrincipal user, string? question, string? asOf, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 這位成員最近更新的對話（新的在前，最多 <paramref name="limit"/> 筆）。歷史沒開啟、或身分不是入口成員時是空的。
+    /// 側欄用：不讀對話內容，只有標題與時間。
+    /// </summary>
+    Task<IReadOnlyList<ConversationSummary>> RecentAsync(ClaimsPrincipal user, int limit, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 把一問一答記進這位成員的歷史（只有本人看得到）。歷史沒開啟、或身分不是入口成員時回 null；
     /// 規則見 <see cref="IConversationHistory"/>。
     /// </summary>
