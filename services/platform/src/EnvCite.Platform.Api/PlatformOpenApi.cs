@@ -43,12 +43,13 @@ internal static class PlatformOpenApi
                 document.Security = [new OpenApiSecurityRequirement { [new OpenApiSecuritySchemeReference(ApiKeyScheme, document)] = [] }];
                 return Task.CompletedTask;
             });
-            // 每個 /v2 端點都經 API key 驗證與逐租戶限流，故兩種回應逐一列出。
+            // 每個 /v2 端點都經 API key 驗證與逐租戶限流，另有未捕捉例外的統一回應，故三種回應逐一列出。
             options.AddOperationTransformer((operation, context, _) =>
             {
                 operation.Responses ??= [];
                 operation.Responses["401"] = new OpenApiResponse { Description = "API key 缺少、無效、已過期或已撤銷。" };
                 operation.Responses["429"] = new OpenApiResponse { Description = "超過本租戶方案的速率限制。" };
+                operation.Responses["500"] = new OpenApiResponse { Description = "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。" };
                 // 資料端點（PaidPolicy）另外要求租戶有方案；管理端點不要求，所以不列 402。
                 if (context.Description.ActionDescriptor.EndpointMetadata
                     .OfType<IAuthorizeData>().Any(a => a.Policy == PlatformAuth.PaidPolicy))

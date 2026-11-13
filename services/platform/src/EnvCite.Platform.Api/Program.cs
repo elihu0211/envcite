@@ -37,7 +37,7 @@ if (generatingOpenApi)
 builder.Services.AddSectionOptions<PlatformHostOptions>();
 builder.AddPlatformObservability();
 builder.Services.AddPlatformOpenApi();
-builder.Services.AddProblemDetails();
+builder.Services.AddPlatformProblemDetails();
 builder.Services.AddTenancyModule();
 if (!generatingOpenApi)
 {
@@ -91,6 +91,10 @@ if (!generatingOpenApi && OperatorCli.IsCommand(args))
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
+
+// 最外層：之後任何中介層或端點的未捕捉例外都收在這裡。Development 保留框架的開發者例外頁（含堆疊）。
+if (!app.Environment.IsDevelopment())
+    app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
