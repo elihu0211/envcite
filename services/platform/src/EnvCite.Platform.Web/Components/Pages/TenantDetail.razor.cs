@@ -8,7 +8,7 @@ using MudBlazor;
 namespace EnvCite.Platform.Web.Components.Pages;
 
 public partial class TenantDetail(
-    ITenantDirectory directory, IApiKeyAdmin keys, IPlanAdmin plans, IMemberAdmin members, IUsageAdmin usage, IAuditQuery audit, IMailSender mail,
+    ITenantDirectory directory, IApiKeyAdmin keys, IPlanAdmin plans, IModuleAdmin moduleAdmin, IMemberAdmin members, IUsageAdmin usage, IAuditQuery audit, IMailSender mail,
     IDirectoryAdmin directorySync, IDirectoryAvailability directoryFeature)
 {
     [Parameter] public string TenantId { get; set; } = string.Empty;
@@ -21,6 +21,7 @@ public partial class TenantDetail(
     private IReadOnlyList<MemberInfo> _members = [];
     private IReadOnlyList<AuditRecord> _recent = [];
     private IReadOnlyList<PlanInfo> _plans = [];
+    private IReadOnlyList<TenantModuleStatus> _modules = [];
     private IReadOnlyList<TenantUsageSummary> _usage = [];
     private DirectoryStatus? _directory;
     private int _usageDays;
@@ -44,12 +45,13 @@ public partial class TenantDetail(
         Prerendered = null;
         await LoadAsync();
         if (!RendererInfo.IsInteractive && Error is null)
-            Prerendered = new(TenantId, _tenant, _keys, _members, _recent, _usage, _directory);
+            Prerendered = new(TenantId, _tenant, _keys, _members, _recent, _usage, _directory, _modules);
     }
 
     public sealed record TenantSnapshot(
         string TenantId, TenantSummary? Tenant, IReadOnlyList<ApiKeyInfo> Keys, IReadOnlyList<MemberInfo> Members,
-        IReadOnlyList<AuditRecord> Recent, IReadOnlyList<TenantUsageSummary> Usage, DirectoryStatus? Directory);
+        IReadOnlyList<AuditRecord> Recent, IReadOnlyList<TenantUsageSummary> Usage, DirectoryStatus? Directory,
+        IReadOnlyList<TenantModuleStatus> Modules);
 
     /// <summary>預先渲染查到的資料交給互動渲染，不再查一次。重新連線不還原：資料可能已經變了，要重查。</summary>
     [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
@@ -58,7 +60,8 @@ public partial class TenantDetail(
     private void Show(TenantSnapshot snapshot)
     {
         _plans = plans.Plans;
-        (_tenant, _keys, _members, _recent, _usage, _directory) = (snapshot.Tenant, snapshot.Keys, snapshot.Members, snapshot.Recent, snapshot.Usage, snapshot.Directory);
+        (_tenant, _keys, _members, _recent, _usage, _directory, _modules) =
+            (snapshot.Tenant, snapshot.Keys, snapshot.Members, snapshot.Recent, snapshot.Usage, snapshot.Directory, snapshot.Modules);
         _selectedPlan = _tenant?.Plan;
         Loading = false;
     }
@@ -91,6 +94,9 @@ public partial class TenantDetail(
         // 功能面沒開就沒有這個區塊；租戶沒開連線時仍看得到（狀態、token），營運者才知道客戶設定到哪。
         var sync = directoryFeature.Available ? await directorySync.GetStatusAsync(TenantId, CancellationToken.None) : null;
         _directory = sync is { IsOk: true } ? sync.Value : null;
+
+        var listedModules = await moduleAdmin.ListAsync(TenantId, CancellationToken.None);
+        _modules = listedModules.IsOk ? listedModules.Value! : [];
     }
 
     private async Task LoadUsageAsync()
@@ -358,6 +364,46 @@ public partial class TenantDetail(
 
             await RefreshAsync();
             Succeed(enable ? L["已開啟 AI 回答。"] : L["已關閉 AI 回答。"]);
+        });
+    }
+
+    private static string ModuleName(string key) => Resources.Text.Find($"Module.{key}") ?? key;
+
+    private string ModuleSourceLabel(TenantModuleSource source) => source switch
+    {
+        TenantModuleSource.OperatorEnabled => L["營運者開啟"],
+        TenantModuleSource.OperatorDisabled => L["營運者關閉"],
+        _ => L["方案預設"],
+    };
+
+    private async Task SetModuleAsync(string moduleKey, bool? enabled)
+    {
+        if (enabled == true && moduleKey == ModuleKeys.GroundedAnswer)
+        {
+            var confirmed = await ConfirmAsync(
+                L["開啟 AI 回答"], L["{0} 成員提的問題與相關條文會送到外部的模型服務。請確認租戶已同意。確定開啟？", _tenant!.Identifier],
+                L["開啟"]);
+            if (!confirmed)
+                return;
+        }
+
+        await RunAsync(async () =>
+        {
+            var result = await moduleAdmin.SetAsync(await ActorAsync(), TenantId, moduleKey, enabled, CancellationToken.None);
+            if (!result.IsOk)
+            {
+                Fail(result.Localized() ?? L["變更失敗。"]);
+                return;
+            }
+
+            await RefreshAsync();
+            var name = ModuleName(moduleKey);
+            Succeed(enabled switch
+            {
+                true => $"{name}：{L["已啟用"]}",
+                false => $"{name}：{L["已關閉"]}",
+                null => $"{name}：{L["重設為預設"]}",
+            });
         });
     }
 

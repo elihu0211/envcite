@@ -31,6 +31,9 @@ public static class AuditActions
     public const string ConversationDeleted = "conversation.deleted";
     public const string TenantAiAnswerEnabled = "tenant.ai_answer_enabled";
     public const string TenantAiAnswerDisabled = "tenant.ai_answer_disabled";
+    public const string TenantModuleEnabled = "tenant.module_enabled";
+    public const string TenantModuleDisabled = "tenant.module_disabled";
+    public const string TenantModuleReset = "tenant.module_reset";
     public const string OperatorCreated = "operator.created";
     public const string OperatorPasswordReset = "operator.password_reset";
     public const string OperatorMfaReset = "operator.mfa_reset";
@@ -71,6 +74,7 @@ public static class AuditActions
         PortalMfaEnabled, PortalRecoveryCodeUsed, MemberMfaReset,
         PortalMfaDisabled, PortalRecoveryCodesRegenerated, MemberDisabled, MemberEnabled, MemberRoleChanged,
         ConversationDeleted, TenantAiAnswerEnabled, TenantAiAnswerDisabled,
+        TenantModuleEnabled, TenantModuleDisabled, TenantModuleReset,
         OperatorCreated, OperatorPasswordReset, OperatorMfaReset, OperatorDisabled, OperatorEnabled, OperatorPasswordChanged,
         OperatorMfaEnabled, OperatorRecoveryCodeUsed, OperatorRecoveryCodesRegenerated,
         MemberInvited, MemberInvitationResent, MemberActivated, OperatorInvited, OperatorInvitationResent, OperatorActivated,

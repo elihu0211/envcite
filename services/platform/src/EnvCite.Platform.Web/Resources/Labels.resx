@@ -167,4 +167,17 @@
   <data name="Outcome.directory.group_name_taken" xml:space="preserve"><value>這個租戶已有同名的群組。</value></data>
   <data name="Outcome.directory.group_invalid" xml:space="preserve"><value>群組名稱必填（200 字內）。</value></data>
   <data name="Outcome.directory.group_member_invalid" xml:space="preserve"><value>群組的成員必須是這個租戶裡由目錄同步管理的成員。</value></data>
+  <data name="Outcome.module.unknown" xml:space="preserve"><value>不認識的模組「{0}」。</value></data>
+  <data name="Outcome.module.disabled" xml:space="preserve"><value>這個租戶尚未啟用模組「{0}」。</value></data>
+  <data name="Outcome.module.dependency_missing" xml:space="preserve"><value>啟用「{0}」前，必須先啟用前置模組「{1}」。</value></data>
+  <data name="Outcome.module.unavailable_in_environment" xml:space="preserve"><value>這個環境尚未設定模組「{0}」。</value></data>
+  <data name="Outcome.plan.required_for_module" xml:space="preserve"><value>這個租戶還沒有指派方案，請先指派方案。</value></data>
+  <data name="Audit.Action.tenant.module_enabled" xml:space="preserve"><value>開啟租戶模組</value></data>
+  <data name="Audit.Action.tenant.module_disabled" xml:space="preserve"><value>關閉租戶模組</value></data>
+  <data name="Audit.Action.tenant.module_reset" xml:space="preserve"><value>重設租戶模組為方案預設</value></data>
+  <data name="Module.law-search" xml:space="preserve"><value>法規條文檢索</value></data>
+  <data name="Module.law-corpus" xml:space="preserve"><value>法規沿革與條文瀏覽</value></data>
+  <data name="Module.evidence-grounding" xml:space="preserve"><value>法源接地</value></data>
+  <data name="Module.grounded-answer" xml:space="preserve"><value>AI 法源問答</value></data>
+  <data name="Module.normative-reasoning" xml:space="preserve"><value>規範推論評估</value></data>
 </root>

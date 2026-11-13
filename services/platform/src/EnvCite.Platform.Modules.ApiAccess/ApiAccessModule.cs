@@ -23,10 +23,13 @@ public static class ApiAccessModule
         services.TryAddSingleton(TimeProvider.System);
         services.AddSectionOptions<ApiAccessOptions, ApiAccessOptionsValidator>();
         services.AddSingleton<PlanCatalog>();
+        services.AddSingleton<TenantModuleCatalog>();
+        services.AddSingleton<ITenantModules>(sp => sp.GetRequiredService<TenantModuleCatalog>());
         services.AddSingleton<EntitlementLoader>();
         services.AddSingleton<IEntitlementRefresher>(sp => sp.GetRequiredService<EntitlementLoader>());
         services.AddSingleton<IApiKeyAdmin, ApiKeyAdmin>();
         services.AddSingleton<IPlanAdmin, PlanAdmin>();
+        services.AddSingleton<IModuleAdmin, ModuleAdmin>();
         services.AddSingleton<IAuthorizationHandler, PlanHandler>();
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, PaymentRequiredResultHandler>();
 

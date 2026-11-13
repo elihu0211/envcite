@@ -136,6 +136,19 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
             entitlement.HasIndex(e => e.TenantIdentifier).IsUnique();
         });
 
+        // 沒有 IsMultiTenant()：與 TenantEntitlement 同為營運者跨租戶管理；外鍵級聯清除確保移除方案時一併移除覆寫。
+        builder.Entity<TenantModuleOverride>(overrideEntity =>
+        {
+            overrideEntity.ToTable("TenantModuleOverrides");
+            overrideEntity.HasKey(o => new { o.TenantId, o.ModuleKey });
+            overrideEntity.Property(o => o.TenantId).HasMaxLength(100);
+            overrideEntity.Property(o => o.ModuleKey).HasMaxLength(64);
+            overrideEntity.HasOne<TenantEntitlement>()
+                .WithMany()
+                .HasForeignKey(o => o.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         builder.Entity<Conversation>(conversation =>
         {
             conversation.IsMultiTenant();

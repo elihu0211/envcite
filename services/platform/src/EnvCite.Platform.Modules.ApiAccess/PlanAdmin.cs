@@ -8,7 +8,7 @@ namespace EnvCite.Platform.Modules.ApiAccess;
 /// 指派方案：權益那一列與稽核事件在同一個交易裡寫；寫成功之後本機的快照立即更新，
 /// 其他副本在下一次重新載入內看到（見 <see cref="PlanCatalog"/>）。
 /// </summary>
-internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog, TimeProvider time) : IPlanAdmin
+internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog, TenantModuleCatalog modules, TimeProvider time) : IPlanAdmin
 {
     public IReadOnlyList<PlanInfo> Plans => catalog.Plans
         .OrderBy(p => p.Key, StringComparer.Ordinal)
@@ -41,6 +41,7 @@ internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog
                 db.StageAudit(actor, Audit(AuditActions.TenantPlanRemoved, tenant, previous, null), time);
                 await db.SaveChangesAsync(cancellationToken);
                 catalog.Set(identifier, null);
+                modules.ClearTenant(identifier);
             }
         }
         else if (existing?.Plan != plan)
@@ -85,8 +86,28 @@ internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog
 
         if (existing.AiAnswerEnabled != enabled)
         {
+            var now = time.GetUtcNow();
             existing.AiAnswerEnabled = enabled;
-            existing.UpdatedAt = time.GetUtcNow();
+            existing.UpdatedAt = now;
+
+            var ov = await db.Set<TenantModuleOverride>()
+                .SingleOrDefaultAsync(o => o.TenantId == tenant.Id && o.ModuleKey == ModuleKeys.GroundedAnswer, cancellationToken);
+            if (ov is null)
+            {
+                db.Add(new TenantModuleOverride
+                {
+                    TenantId = tenant.Id!,
+                    ModuleKey = ModuleKeys.GroundedAnswer,
+                    Enabled = enabled,
+                    UpdatedAt = now,
+                });
+            }
+            else
+            {
+                ov.Enabled = enabled;
+                ov.UpdatedAt = now;
+            }
+
             db.StageAudit(
                 actor,
                 new AuditEntry(
@@ -94,6 +115,7 @@ internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog
                     tenant.Id, "tenant", tenant.Id, new Dictionary<string, object?> { ["identifier"] = identifier }),
                 time);
             await db.SaveChangesAsync(cancellationToken);
+            modules.SetOverride(identifier, ModuleKeys.GroundedAnswer, enabled);
         }
 
         return AdminOutcome.Ok(enabled);

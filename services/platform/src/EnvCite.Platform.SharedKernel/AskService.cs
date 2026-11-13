@@ -31,7 +31,20 @@ public enum AskStatus
 /// </summary>
 public sealed record AskCapabilities(bool HasPlan, bool AiAnswer)
 {
+    public IReadOnlySet<string>? Modules { get; init; }
+
     public AskMode Mode => AiAnswer ? AskMode.Answer : AskMode.Search;
+
+    public bool HasModule(string moduleKey) =>
+        Modules is not null
+            ? Modules.Contains(moduleKey)
+            : moduleKey == ModuleKeys.GroundedAnswer ? AiAnswer : HasPlan;
+
+    public bool Equals(AskCapabilities? other) =>
+        other is not null && HasPlan == other.HasPlan && AiAnswer == other.AiAnswer
+        && (Modules is null || other.Modules is null || Modules.SetEquals(other.Modules));
+
+    public override int GetHashCode() => HashCode.Combine(HasPlan, AiAnswer);
 }
 
 /// <summary>

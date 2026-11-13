@@ -636,6 +636,27 @@ namespace EnvCite.Platform.Data.Migrations
                     b.ToTable("TenantEntitlements", "platform");
                 });
 
+            modelBuilder.Entity("EnvCite.Platform.Data.TenantModuleOverride", b =>
+                {
+                    b.Property<string>("TenantId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ModuleKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("TenantId", "ModuleKey");
+
+                    b.ToTable("TenantModuleOverrides", "platform");
+                });
+
             modelBuilder.Entity("EnvCite.Platform.Data.UsageRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -941,6 +962,15 @@ namespace EnvCite.Platform.Data.Migrations
                     b.HasOne("EnvCite.Platform.Data.DirectoryGroup", null)
                         .WithMany("Members")
                         .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EnvCite.Platform.Data.TenantModuleOverride", b =>
+                {
+                    b.HasOne("EnvCite.Platform.Data.TenantEntitlement", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

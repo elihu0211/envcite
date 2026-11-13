@@ -14,7 +14,7 @@ public interface IEntitlementRefresher
 /// （資料庫短暫不通不該讓所有租戶瞬間沒有方案）；啟動時載入失敗則記錄並重試，期間退回設定的方案。
 /// </summary>
 internal sealed partial class EntitlementLoader(
-    IServiceScopeFactory scopes, PlanCatalog catalog, IOptions<ApiAccessOptions> options, ILogger<EntitlementLoader> logger)
+    IServiceScopeFactory scopes, PlanCatalog catalog, TenantModuleCatalog modules, IOptions<ApiAccessOptions> options, ILogger<EntitlementLoader> logger)
     : BackgroundService, IEntitlementRefresher
 {
     public async Task RefreshAsync(CancellationToken cancellationToken)
@@ -22,12 +22,18 @@ internal sealed partial class EntitlementLoader(
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
         var rows = await db.Set<TenantEntitlement>().AsNoTracking().ToListAsync(cancellationToken);
+        var overrides = await db.Set<TenantModuleOverride>().AsNoTracking().ToListAsync(cancellationToken);
 
         var unknown = rows.Where(r => !catalog.Plans.ContainsKey(r.Plan)).ToList();
         foreach (var row in unknown)
             LogUnknownPlan(logger, row.TenantIdentifier, row.Plan);
 
         catalog.Replace(rows.Select(r => KeyValuePair.Create(r.TenantIdentifier, r.Plan)));
+
+        var idToIdentifier = rows.ToDictionary(r => r.TenantId, r => r.TenantIdentifier, StringComparer.Ordinal);
+        modules.Replace(overrides
+            .Where(o => idToIdentifier.ContainsKey(o.TenantId))
+            .Select(o => (idToIdentifier[o.TenantId], o.ModuleKey, o.Enabled)));
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken)

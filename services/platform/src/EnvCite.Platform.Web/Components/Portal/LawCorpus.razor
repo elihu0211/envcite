@@ -1,0 +1,96 @@
+@page "/portal/{Tenant}/laws"
+@layout PortalLayout
+@attribute [ExcludeFromInteractiveRouting]
+@attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
+@inherits PortalPageBase
+@inject ITenantModules Modules
+@inject ILawCorpusService LawCorpusService
+
+<DocumentTitle Text="@L["法規沿革與條文瀏覽"]" />
+
+<PageHeader Title="@L["法規沿革與條文瀏覽"]" Description="@L["依複合自然鍵與時點日期查閱現行或歷史條文清單。"]" />
+
+@if (!Modules.IsEnabled(Tenant, ModuleKeys.LawCorpus))
+{
+    <FormAlert Kind="AlertKind.Info">@L["這個組織尚未開啟「法規沿革與條文瀏覽」模組。"]</FormAlert>
+}
+else
+{
+    <SectionCard Id="law-query-title" Title="@L["查詢條件"]">
+        <form method="get" class="ep-form">
+            <FormField For="law-jurisdiction" Label="@L["管轄"]" Hint="@L["例如 TW-CENTRAL"]">
+                <input id="law-jurisdiction" name="jurisdiction" class="ep-input" value="@(Jurisdiction ?? "TW-CENTRAL")" />
+            </FormField>
+            <FormField For="law-scheme" Label="@L["識別碼方案"]" Hint="@L["例如 moj_pcode"]">
+                <input id="law-scheme" name="idScheme" class="ep-input" value="@(IdScheme ?? "moj_pcode")" />
+            </FormField>
+            <FormField For="law-local-id" Label="@L["法規代碼"]" Hint="@L["例如 O0020001"]">
+                <input id="law-local-id" name="localId" class="ep-input" value="@LocalId" />
+            </FormField>
+            <FormField For="law-as-of" Label="@L["哪一天有效"]" Hint="@L["YYYY-MM-DD；留空表示現行"]">
+                <input id="law-as-of" name="asOf" type="date" class="ep-input" value="@AsOf" />
+            </FormField>
+            <SubmitButton Label="@L["查詢法規"]" />
+        </form>
+    </SectionCard>
+
+    <FormAlert Message="@Error" />
+
+    @if (_result is { } law)
+    {
+        <SectionCard Id="law-detail-title" Title="@law.Title">
+            <p class="ep-page-description">
+                <code class="ep-mono">@law.Uri</code>
+                @if (law.DateDocument is { Length: > 0 } docDate)
+                {
+                    <span> · @L["制定日："]@docDate</span>
+                }
+            </p>
+            @if (law.Articles.Count == 0)
+            {
+                <p class="ep-page-description">@L["這部法規在指定日期沒有條文。"]</p>
+            }
+            else
+            {
+                <DataTable Items="law.Articles" Columns="ArticleColumns" Label="@L["條文清單"]" Plain="true" />
+            }
+        </SectionCard>
+    }
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "jurisdiction")] public string? Jurisdiction { get; set; }
+    [SupplyParameterFromQuery(Name = "idScheme")] public string? IdScheme { get; set; }
+    [SupplyParameterFromQuery(Name = "localId")] public string? LocalId { get; set; }
+    [SupplyParameterFromQuery(Name = "asOf")] public string? AsOf { get; set; }
+
+    private PortalLawCorpusResult? _result;
+
+    private IReadOnlyList<ColumnDef<PortalLawArticle>> ArticleColumns =>
+    [
+        new() { Title = L["條號"], Class = "ep-keep", Labeled = false, Cell = a => @<text>@a.Number</text> },
+        new() { Title = "URI", Cell = a => @<text><code class="ep-mono">@a.Uri</code></text> },
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Modules.IsEnabled(Tenant, ModuleKeys.LawCorpus) || string.IsNullOrWhiteSpace(LocalId))
+            return;
+
+        var outcome = await LawCorpusService.BrowseAsync(
+            User,
+            string.IsNullOrWhiteSpace(Jurisdiction) ? "TW-CENTRAL" : Jurisdiction.Trim(),
+            string.IsNullOrWhiteSpace(IdScheme) ? "moj_pcode" : IdScheme.Trim(),
+            LocalId.Trim(),
+            string.IsNullOrWhiteSpace(AsOf) ? null : AsOf.Trim(),
+            CancellationToken.None);
+
+        if (!outcome.IsOk)
+        {
+            Error = outcome.Localized() ?? L["查詢法規失敗。"];
+            return;
+        }
+
+        _result = outcome.Value;
+    }
+}

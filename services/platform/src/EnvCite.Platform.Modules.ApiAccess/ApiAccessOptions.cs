@@ -2,12 +2,15 @@ using EnvCite.ServiceDefaults;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
 
-/// <summary>方案允許的內容。目前只有請求速率；等有功能需要分級時，功能權限再加入。</summary>
+/// <summary>方案允許的內容：請求速率與預設包含的功能模組（省略時包含所有非選擇性加入的模組）。</summary>
 public sealed class PlanOptions
 {
     public int PermitLimit { get; set; } = 60;
 
     public TimeSpan Window { get; set; } = TimeSpan.FromMinutes(1);
+
+    /// <summary>此方案預設包含的模組識別碼；null 表示包含所有非 <c>OptInByDefault</c> 的模組。</summary>
+    public string[]? Modules { get; set; }
 }
 
 /// <summary>
@@ -57,6 +60,12 @@ public sealed class ApiAccessOptionsValidator : IValidateOptions<ApiAccessOption
         failures.AddRange(options.Plans
             .Where(p => p.Value.PermitLimit < 1 || p.Value.Window <= TimeSpan.Zero)
             .Select(p => $"Platform:Plans:{p.Key} needs a positive PermitLimit and Window."));
+
+        failures.AddRange(options.Plans
+            .Where(p => p.Value.Modules is not null)
+            .SelectMany(p => p.Value.Modules!
+                .Where(m => !ModuleCatalog.IsKnown(m))
+                .Select(m => $"Platform:Plans:{p.Key}:Modules names unknown module '{m}'.")));
 
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }

@@ -9,7 +9,7 @@
 @inject IConversationHistoryAvailability History
 @inject IJSRuntime JS
 
-<DocumentTitle Text="@L["查詢"]" />
+<DocumentTitle Text="@L["法規條文檢索"]" />
 
 @* 問答為主的工作區（Interactive Server）：一串對話，每個回合是「你的問題 → 回答與出處」，輸入框黏在底部接著問，
    側欄列出最近的對話。有設定模型端點、租戶也同意時，回答是模型只根據 consult 的封閉證據寫的、每個論點附出處代號，
@@ -34,6 +34,12 @@
     {
         <FormAlert Kind="AlertKind.Info">
             @L["你的組織目前沒有方案，不能使用搜尋。請洽我們的業務啟用。"]
+        </FormAlert>
+    }
+    else if (!Session.Capabilities.HasModule(ModuleKeys.LawSearch) && !Session.Capabilities.AiAnswer)
+    {
+        <FormAlert Kind="AlertKind.Info">
+            @L["目前尚未開啟任何查詢模組，請洽系統管理員。"]
         </FormAlert>
     }
     else
