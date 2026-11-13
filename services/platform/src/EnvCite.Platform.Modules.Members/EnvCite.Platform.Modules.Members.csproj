@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <PackageReference Include="Finbuckle.MultiTenant.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Otp.NET" />
     <PackageReference Include="zxcvbn-core" />

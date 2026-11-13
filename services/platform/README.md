@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [operator-accounts, mail-invitation, reasoning-rest, mcp-endpoint, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting, tenant-directory-sync]
+owns: [operator-accounts, mail-invitation, reasoning-rest, mcp-endpoint, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting, tenant-directory-sync, portal-google-signin]
 -->
 
 # envcite-platform
@@ -233,6 +233,16 @@ sequenceDiagram
 - 密碼不符規則時連結仍有效，可以重打。啟用不簽發 session：使用者接著照常登入。
 - 清單上「待啟用」或「信箱未驗證」的帳號可重寄：還沒有密碼的重發邀請，先前的連結隨之失效；已有密碼的寄驗證連結，開啟後只確認信箱。重設密碼（暫時密碼）任何時候都能用，寄信失敗或收不到信時用它。
 - 登入不要求信箱已驗證；信箱驗證前不得作為復原管道。
+
+### Google 登入（`Platform:Portal:Google`）
+
+客戶入口的另一種登入方式：成員用自己的 Google 帳號（Gmail 或 Google Workspace）登入，不必另記密碼。可選功能，**預設關閉**；關閉時登入頁沒有按鈕、相關路徑一律 404。環境變數寫成 `ENVCITE_Platform__Portal__Google__<鍵>`；`ClientSecret` 只經環境變數。啟用卻缺 `ClientId` 或 `ClientSecret`，啟動就停下並指名鍵。
+
+- **全站一個 Google 用戶端**，不是每租戶一組。Google Cloud 端：OAuth 用戶端類型「網頁應用程式」；已授權的重新導向 URI 是**對外來源加 `/signin-google`**（每個環境各登記一個，Google 要求完全相同）；同意畫面發布為正式，範圍只要 `openid`、`email`、`profile`（基本範圍不必經 Google 審查）。
+- **流程**：登入頁的按鈕 POST 到 `/portal/{租戶}/login/google`（antiforgery），導去 Google（授權碼加 PKCE，每次請使用者選帳號）；Google 回到全站固定的 `/signin-google`，再導到 `/portal/{租戶}/login/google/callback` 完成登入。租戶隨受保護的 state 與暫存 cookie 帶著，回呼時與路徑上的租戶不符就拒絕。登入後去 `returnUrl`（只准留在該租戶入口之下），沒有則首頁。
+- **只登入既有成員，不建立帳號**。首次以 Google 已驗證的 email 對到這個租戶裡已存在、**已啟用**（設過自己的密碼、沒有待改的初始密碼）的成員，並連結該 Google 帳號的 `sub`；之後以 `sub` 為準，email 變了也是同一位成員。還在邀請中的人先用信裡的連結啟用。停用的成員登不進。同一個 Google 帳號可以是不同租戶的成員（各連結一次）。
+- **失敗只有一句話**（登入頁帶 `google=failed`）：email 未驗證、找不到成員、尚未啟用、已停用、取消授權、流程不屬於這個租戶，結果相同；稽核（`portal.sign_in_failed`，`via=google`）只留原因與成員 Id，不留 Google 給的 email。
+- **兩步驟驗證與鎖定照舊**：Google 不告知對方有沒有做過 2FA，所以成員啟用了兩步驟驗證仍要走第二步；被要求註冊的角色照常被導去註冊。成功與連結各留稽核（`portal.signed_in` 帶 `via=google`、`portal.google_linked`）。登出只結束本站的 session，不登出 Google。
 
 ### 目錄同步（`Platform:Directory`）
 

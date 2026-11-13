@@ -47,6 +47,15 @@ public sealed class ConfigurationTests(PlatformFactory factory)
         Assert.Contains(expected, message, StringComparison.Ordinal);
     }
 
+    // Google 登入預設關閉；開了就必須有用戶端 Id 與金鑰，否則啟動就停下並指名鍵（而不是第一次登入才失敗）。
+    [Fact]
+    public void GoogleSignInEnabledWithoutCredentialsFailsAtStartupAndNamesTheKeys()
+    {
+        var message = StartFailure(factory.WithWebHostBuilder(b => b.UseSetting("Platform:Portal:Google:Enabled", "true")));
+
+        Assert.Contains("Platform:Portal:Google:ClientId and ClientSecret are required", message, StringComparison.Ordinal);
+    }
+
     // 寄信預設關閉；開了就必須指名中繼、寄件者與連結來源，否則啟動就停下並指名鍵（而不是第一封信才失敗）。
     [Theory]
     [InlineData("Platform:Mail:Host", "", "Platform:Mail:Host is required")]

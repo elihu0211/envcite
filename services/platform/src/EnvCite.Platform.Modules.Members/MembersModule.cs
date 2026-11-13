@@ -1,6 +1,7 @@
 using EnvCite.Platform.Modules.Members.DirectorySync;
 using EnvCite.ServiceDefaults;
 
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -33,13 +34,16 @@ public static class MembersModule
     /// <summary>
     /// 客戶入口的成員：ASP.NET Core Identity 的使用者與密碼雜湊（PBKDF2），存在 <c>PlatformDbContext</c>，
     /// 隨 Finbuckle 屬於單一租戶。登入 cookie 是自己的 scheme，帶 tenant、使用者 Id、角色 claim；
-    /// 授權只讀 claim。沒有外部登入；邀請與驗證信走 <c>Platform:Mail</c>（見 07-01）。
+    /// 授權只讀 claim。外部登入只有 Google（只對應到已存在的成員，不建立帳號）；邀請與驗證信走 <c>Platform:Mail</c>（見 07-01）。
     /// </summary>
     public static IServiceCollection AddMembersModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddSectionOptions<MembersOptions>();
         services.AddSectionOptions<DirectoryOptions, DirectoryOptionsValidator>();
+        services.AddSectionOptions<PortalGoogleOptions, PortalGoogleOptionsValidator>();
+        services.AddSingleton<IGoogleSignInAvailability, GoogleSignInAvailability>();
+        services.AddSingleton<IConfigureOptions<GoogleOptions>, ConfigurePortalGoogle>();
         services.AddPlatformMail();
         services.TryAddSingleton<IActivationMailer, ActivationMailer>();
         // 邀請與驗證連結的有效期限，也是 Identity 資料保護權杖（電子郵件確認）的期限；兩個 user store 共用。
@@ -65,6 +69,17 @@ public static class MembersModule
                 cookie.ExpireTimeSpan = TimeSpan.FromMinutes(5);
                 cookie.SlidingExpiration = false;
             })
+            .AddCookie(IdentityConstants.ExternalScheme, cookie =>
+            {
+                // Google 回來、租戶路徑下的第二段登入完成之前的暫存身分：十分鐘、不滑動，不是登入 cookie（入口的授權不認這個 scheme）。
+                cookie.Cookie.Name = "EnvCite.PortalExternal";
+                cookie.Cookie.HttpOnly = true;
+                cookie.Cookie.SameSite = SameSiteMode.Lax;
+                cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                cookie.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+                cookie.SlidingExpiration = false;
+            })
+            .AddGoogle(PlatformAuth.PortalGoogleScheme, ConfigurePortalGoogle.ConfigureHandler)
             .AddCookie(PlatformAuth.PortalCookieScheme, cookie =>
             {
                 cookie.Cookie.Name = "EnvCite.Portal";

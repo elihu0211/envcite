@@ -367,6 +367,9 @@
   <data name="關閉失敗。" xml:space="preserve"><value>Could not turn off.</value></data>
   <data name="關閉後只靠密碼登入。需要目前的密碼" xml:space="preserve"><value>Turning it off means signing in with a password only. It requires your current password </value></data>
   <data name="電子郵件" xml:space="preserve"><value>Email</value></data>
+  <data name="或" xml:space="preserve"><value>or</value></data>
+  <data name="使用 Google 帳戶登入" xml:space="preserve"><value>Sign in with Google</value></data>
+  <data name="無法用這個 Google 帳號登入。請確認它的信箱是貴組織已啟用的成員，或改用電子郵件與密碼登入。" xml:space="preserve"><value>This Google account could not be used to sign in. Check that its email address belongs to an activated member of your organisation, or sign in with your email and password.</value></data>
   <data name="電子郵件或密碼不正確，或登入已被暫時停用。多次失敗會暫時鎖定帳號，請稍後再試。" xml:space="preserve"><value>The email or password is wrong, or sign-in is temporarily disabled. Repeated failures temporarily lock the account; please try again later.</value></data>
   <data name="需要處理" xml:space="preserve"><value>Needs attention</value></data>
   <data name="顯示名稱" xml:space="preserve"><value>Display name</value></data>

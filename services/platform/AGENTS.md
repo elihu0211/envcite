@@ -115,6 +115,9 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 三條規則：(1) 入口 cookie 由 `UsePlatformPortalAuthentication` 認證，必須在 `UseMultiTenant` **之後**，否則 scoped 的 `PlatformDbContext` 在租戶已知前就被解析，整個請求都帶著沒有租戶的 context；(2) 租戶 context 是 `AsyncLocal`，`MemberAdmin` 在呼叫它的方法內綁定，不在 async 輔助方法裡（輔助方法返回時值會被丟棄）；(3) 營運者建立的成員，暫時密碼路徑要先改一次性密碼才能用，之後才綁驗證器；邀請路徑的密碼是本人自己設的。
 - 依來源位址的限流刻意寬鬆（機關或顧問公司常共用一個對外位址），它擋的是自動化猜測，不是正常使用。
 
+- **Google 登入**（契約在 [`README.md`](README.md)「Google 登入」）：用框架的 Google handler 與 Identity 原生的外部登入（`SignInManager` 的 `ExternalLoginSignInAsync`、`AspNetUserLogins`），不自製 OAuth。不變式：(1) 全站一個回呼 `/signin-google`（在 `/portal` 之外：放進去會被當成租戶識別碼），租戶只靠受保護的驗證屬性（`PortalGoogle.TenantItem`）帶到第二段，第二段比對它與路徑上的租戶；(2) **不建立帳號**，只對應到已啟用的既有成員，身分以（提供者、`sub`）為準，email 只在第一次連結時用、且要 Google 說已驗證；(3) handler 一律註冊但關閉時給佔位的 ClientId（空值會讓每個請求丟例外），起點與第二段在關閉時回 404，固定回呼的失敗（`OnRemoteFailure`）沒有租戶就回 404；(4) 失敗只有一種結果，稽核只留原因與成員 Id；(5) 本地的兩步驟驗證與鎖定照舊，不信任 Google 的 MFA。
+- **外部登入的鍵必須含租戶**：`AspNetUserLogins` 的鍵是（提供者、提供者給的 Id），不像 Identity 其他表由全域唯一的 `UserId`／`Id` 帶路，所以 `PlatformDbContext` 用 Finbuckle 原生的 `AdjustKey` 把 `TenantId` 併進主鍵（同一個 Google 帳號可以是兩個租戶的成員）；`PlatformDbContext` 因此在建構時呼叫 `EnforceMultiTenantOnTracking`。新增主鍵不含全域唯一值的租戶實體時照做。
+
 ### 入口的 MFA（TOTP，RFC 6238）
 
 - 登入走 Identity 原生的兩步驟流程（待驗證 cookie 短效、不滑動、授權不認它）。**預設關閉，由使用者在安全頁自行開啟**；驗證與復原碼全用 Identity 原生，不自製 TOTP 驗證與重放防護（Otp.NET 僅營運者後台使用）。

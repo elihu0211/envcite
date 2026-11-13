@@ -19,6 +19,7 @@ public static class AuditActions
     public const string PortalSignInFailed = "portal.sign_in_failed";
     public const string PortalPasswordChanged = "portal.password_changed";
     public const string PortalSignedOut = "portal.signed_out";
+    public const string PortalGoogleLinked = "portal.google_linked";
     public const string PortalMfaEnabled = "portal.mfa_enabled";
     public const string PortalRecoveryCodeUsed = "portal.recovery_code_used";
     public const string MemberMfaReset = "member.mfa_reset";
@@ -66,7 +67,7 @@ public static class AuditActions
     public static IReadOnlyList<string> All { get; } =
     [
         TenantCreated, TenantPlanAssigned, TenantPlanRemoved, ApiKeyIssued, ApiKeyRevoked, OperatorSignedIn, OperatorSignInDenied, OperatorSignedOut,
-        MemberCreated, MemberPasswordReset, PortalSignedIn, PortalSignInFailed, PortalPasswordChanged, PortalSignedOut,
+        MemberCreated, MemberPasswordReset, PortalSignedIn, PortalSignInFailed, PortalPasswordChanged, PortalSignedOut, PortalGoogleLinked,
         PortalMfaEnabled, PortalRecoveryCodeUsed, MemberMfaReset,
         PortalMfaDisabled, PortalRecoveryCodesRegenerated, MemberDisabled, MemberEnabled, MemberRoleChanged,
         ConversationDeleted, TenantAiAnswerEnabled, TenantAiAnswerDisabled,
