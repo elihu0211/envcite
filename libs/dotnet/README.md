@@ -15,6 +15,7 @@ owns: [dotnet-service-defaults]
 | `ISectionOptions`、`AddSectionOptions` | 設定型別自己宣告區段名稱；繫結並在主機啟動時驗證，設定錯了 pod 起不來 |
 | `InternalGrpcClientOptions`、`AddInternalGrpcClient` | 內部 gRPC 用戶端：`Address`（叢集內 `dns:///<headless service>:<port>`）、`Timeout`；round_robin、只重試 `UNAVAILABLE` 並節流、keepalive、DNS 定期重新解析、RED 指標 |
 | `GrpcClientMetrics`、`RpcMetrics` | `rpc.client.call.duration`；伺服器端的 `rpc.server.call.duration` 用同一組邊界與標籤（`rpc.system.name`、`rpc.service`、`rpc.method`、`rpc.response.status_code`） |
+| `RelevanceFloorsOptions`、`AddRelevanceFloors` | 檢索結果的字面與語意相關性下界（`Relevance` 區段），consult 與 platform 的搜尋端共用同一組；值只寫在 `relevance-floors.json` 一處，以內嵌資源作為優先序最低的設定來源載入，其他來源可覆寫，覆寫值啟動時驗證。下界是受模型制約的值，評分方式改了要以同一批問句重訂 |
 | `AddServiceTelemetry` | OpenTelemetry 的追蹤、指標與記錄：只認標準 `OTEL_*` 鍵，沒設 `OTEL_EXPORTER_OTLP_ENDPOINT` 就不匯出；探針（HTTP `/health`、gRPC 健康檢查）不進追蹤 |
 
 連線選項與 Python 伺服器成套：用戶端的 keepalive 間隔必須大於伺服器容許的最短 ping 間隔，數值與不等式見 [`envcite-grpc`](../python/envcite-grpc/README.md)，改一邊要看另一邊。
