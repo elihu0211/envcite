@@ -84,3 +84,32 @@ def test_the_report_lists_the_differences_by_kind() -> None:
     text = tool.render_live(result)
     assert "| a | 1 | 0 | 0 |" in text and "| b | 0 | 0 | 1 |" in text
     assert "q2" in text
+
+
+def test_a_pasted_key_loses_its_whitespace_and_a_stray_bearer_prefix() -> None:
+    assert tool.clean_key("  abc123\n") == "abc123"
+    assert tool.clean_key("Bearer abc123") == "abc123"
+    assert tool.clean_key("abc123") == "abc123"
+
+
+def test_the_terminals_paste_markers_and_control_characters_are_removed_from_a_key() -> None:
+    assert tool.clean_key("\x1b[200~abc123\x1b[201~") == "abc123"
+    assert tool.clean_key("abc​123\r\n") == "abc123"
+    assert tool.clean_key("Bearer \x1b[200~abc123\x1b[201~\n") == "abc123"
+    assert tool.clean_key("") == ""
+
+
+def test_a_well_formed_key_passes_and_anything_else_is_explained_without_echoing_it() -> None:
+    good = "sk_live_" + "0123456789ab" + "_" + "A" * 43
+    assert len(good) == tool.KEY_LENGTH and tool.key_problem(good) is None
+    for bad in ("", "thu-env", "sk_live_short", good[:-1], good.replace("sk_live_", "sk_test_")):
+        message = tool.key_problem(bad)
+        assert message and str(len(bad)) in message
+        assert bad == "" or bad not in message
+
+
+def test_an_http_error_is_one_sentence_that_names_the_cause_and_never_the_key() -> None:
+    assert "已撤銷或已過期" in tool.explain_http_error(401)
+    assert "方案" in tool.explain_http_error(402)
+    assert "ontology:read" in tool.explain_http_error(403)
+    assert tool.explain_http_error(500).startswith("線上回 HTTP 500")
