@@ -11,7 +11,7 @@
 
     <SectionCard Id="g-ask" Title="問答">
         <div class="ep-thread">
-            <p class="ep-bubble">噪音管制標準 <span class="ep-bubble-meta">現行</span></p>
+            <p class="ep-bubble">噪音管制標準</p>
             <div class="ep-answer">
                 <p class="ep-status">找到 1 條（相關度高的在前）。</p>
                 <article class="ep-card ep-hit">
@@ -23,11 +23,8 @@
         </div>
         <div class="ep-composer-form">
             <div class="ep-composer">
-                <input class="ep-composer-input" type="search" placeholder="輸入關鍵字，例如：噪音管制標準" aria-label="關鍵字" />
-                <div class="ep-composer-bar">
-                    <label class="ep-date-chip"><span>哪一天有效</span><input type="date" /></label>
-                    <button type="button" class="ep-send" aria-label="搜尋"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
-                </div>
+                <textarea class="ep-composer-input" rows="2" placeholder="@L["問問{0}", Brand.Name]" aria-label="關鍵字"></textarea>
+                <button type="button" class="ep-send" aria-label="搜尋"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
             </div>
             <div class="ep-examples">
                 <button type="button" class="ep-chip">固定污染源</button>

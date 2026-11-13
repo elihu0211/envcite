@@ -27,8 +27,22 @@ public sealed class PortalSearchTests(PlatformFactory factory)
         Assert.Contains("data-state=\"empty\"", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-composer\"", html, StringComparison.Ordinal);
         Assert.Contains("<label for=\"query\"", html, StringComparison.Ordinal);
-        Assert.Contains("想查哪一條法規", html, StringComparison.Ordinal);
+        // 通用的首頁（對標主流 AI 首頁）：只有一句問候與一個輸入框，不用「想查哪一條法規」這類話把用途框死成只能查法規。
+        Assert.DoesNotContain("想查哪一條法規", html, StringComparison.Ordinal);
+        Assert.Contains("placeholder=\"問問環境知識\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-ask-lead", html, StringComparison.Ordinal);
         Assert.Matches("<button[^>]*class=\"ep-chip\"[^>]*>噪音管制標準</button>", html); // 範例鈕
+
+        // 現代的 AI 輸入：多行輸入框（Enter 送出由 forms.js 處理）、沒有手動日期、首頁只有一行極簡提示；
+        // 完整說明收在原生 popover，資料外送的揭露不能消失。
+        Assert.Matches("<textarea[^>]*id=\"query\"[^>]*data-composer", html);
+        Assert.DoesNotContain("type=\"date\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("哪一天有效", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("不填日期", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-date-chip", html, StringComparison.Ordinal);
+        Assert.Matches("<button[^>]*popovertarget=\"ask-info\"[^>]*>使用說明</button>", html);
+        Assert.Matches("<div id=\"ask-info\" class=\"ep-sheet\" popover", html);
+        Assert.Contains("用條文裡會出現的詞，空白分隔。", html, StringComparison.Ordinal);
     }
 
     // 完全付費制：沒有方案不能用資料功能，畫面上沒有輸入框；服務層另外擋（AskServiceTests）。
