@@ -34,10 +34,21 @@ public sealed class TenantScopes(IServiceScopeFactory scopes)
     /// 綁定與 <paramref name="operation"/> 在同一個 async 流程裡，租戶 context 才會傳到它裡面的每一個 await；
     /// 不要把 <see cref="TenantScope"/> 傳出委派之外，也不要在別的 async 輔助方法裡另外綁定（方法一返回，值就丟掉）。
     /// </summary>
-    public async Task<AdminOutcome<T>> InAsync<T>(string tenantId, Func<TenantScope, Task<AdminOutcome<T>>> operation)
+    public Task<AdminOutcome<T>> InAsync<T>(string tenantId, Func<TenantScope, Task<AdminOutcome<T>>> operation) =>
+        RunAsync(store => store.GetAsync(tenantId), operation);
+
+    /// <summary>
+    /// 同 <see cref="InAsync{T}"/>，但租戶以識別碼（網址與登入 cookie 裡的那個，如 <c>acme</c>）而不是內部 Id 指定。
+    /// 互動式 circuit 用它：身分裡只有租戶識別碼。
+    /// </summary>
+    public Task<AdminOutcome<T>> InByIdentifierAsync<T>(string tenantIdentifier, Func<TenantScope, Task<AdminOutcome<T>>> operation) =>
+        RunAsync(store => store.GetByIdentifierAsync(tenantIdentifier), operation);
+
+    private async Task<AdminOutcome<T>> RunAsync<T>(
+        Func<IMultiTenantStore<TenantInfo>, Task<TenantInfo?>> find, Func<TenantScope, Task<AdminOutcome<T>>> operation)
     {
         await using var scope = scopes.CreateAsyncScope();
-        if (await scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>().GetAsync(tenantId) is not { } tenant)
+        if (await find(scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>()) is not { } tenant)
             return AdminOutcome.NotFound<T>(OutcomeCodes.TenantNotFound);
 
         scope.ServiceProvider.GetRequiredService<IMultiTenantContextSetter>().MultiTenantContext = new MultiTenantContext<TenantInfo>(tenant);

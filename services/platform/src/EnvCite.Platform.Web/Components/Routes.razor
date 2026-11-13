@@ -1,6 +1,8 @@
 <Router AppAssembly="typeof(Routes).Assembly" NotFoundPage="typeof(Anonymous.NotFound)">
     <Found Context="routeData">
-        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)">
+        @* Resource：把路由資料當授權資源。circuit 裡的頁面切換不是 HTTP 請求，沒有租戶解析的環境租戶，
+           入口的授權（PortalMemberHandler）靠這個資源裡的路由值取得「這一頁屬於哪個租戶」。拿掉它，入口頁在 circuit 裡一律被拒。 *@
+        <AuthorizeRouteView RouteData="routeData" Resource="routeData" DefaultLayout="typeof(MainLayout)">
             <NotAuthorized Context="auth">
                 @if (auth.User.Identity?.IsAuthenticated == true)
                 {

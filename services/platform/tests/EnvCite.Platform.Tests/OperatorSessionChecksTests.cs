@@ -111,7 +111,7 @@ public sealed class OperatorSessionChecksTests(PlatformFactory factory)
         var user = await factory.EnsureOperatorAsync(OperatorTestSupport.NewOperatorEmail());
         var session = factory.SessionOf(user);
         await using var scope = factory.Services.CreateAsyncScope();
-        var provider = Assert.IsType<Web.Auth.OperatorAuthenticationStateProvider>(scope.ServiceProvider.GetRequiredService<AuthenticationStateProvider>());
+        var provider = Assert.IsType<Web.Auth.PlatformAuthenticationStateProvider>(scope.ServiceProvider.GetRequiredService<AuthenticationStateProvider>());
 
         Assert.True(await provider.IsStillValidAsync(session, CancellationToken.None));
         Assert.True(await provider.IsStillValidAsync(new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity()), CancellationToken.None)); // 匿名沒有東西可重驗
