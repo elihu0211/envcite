@@ -16,6 +16,8 @@ from envcite_grpc import remaining_seconds
 from envcite_ontology import errors
 from envcite_ontology.coverage import term_coverage
 from envcite_ontology.embedding import Embedder, EmbeddingError
+from envcite_ontology.guidance_search import CANDIDATES as GUIDANCE_CANDIDATES
+from envcite_ontology.guidance_search import fuse, guidance_phrases
 from envcite_ontology.identifiers import jurisdiction_filter, law_key
 from envcite_ontology.law_names import LawNames
 from envcite_ontology.store import LawKey, OntologyStore
@@ -168,6 +170,19 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
             max_df=self._lexical_max_df,
             timeout=remaining_seconds(context),
         )
+        ranked = [(h, 0) for h in hits]
+        if request.include_guidance and (phrases := guidance_phrases(request.query)):
+            ranked = fuse(
+                hits,
+                self._store.guidance_hits(
+                    phrases,
+                    as_of=request.as_of,
+                    limit=GUIDANCE_CANDIDATES,
+                    jurisdiction=jurisdiction,
+                    timeout=remaining_seconds(context),
+                ),
+                limit,
+            )
         return pb.SearchArticlesResponse(
             hits=[
                 pb.ArticleHit(
@@ -183,8 +198,9 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                     lexical_score=h.lexical_score,
                     semantic_similarity=h.semantic_similarity,
                     term_coverage=term_coverage(searched, h.content, self._segmenter),
+                    guidance_documents=documents,
                 )
-                for h in hits
+                for h, documents in ranked
             ]
         )
 
