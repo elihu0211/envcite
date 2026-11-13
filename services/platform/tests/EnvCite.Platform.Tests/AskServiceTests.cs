@@ -2,9 +2,11 @@ using System.Security.Claims;
 
 using EnvCite.Platform.Modules.Tenancy;
 
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace EnvCite.Platform.Tests;
 
@@ -24,9 +26,10 @@ public sealed class AskServiceTests(PlatformFactory factory)
 
     // 測試主機預設給每個租戶一個預設方案（讓剛建立的租戶能用）；沒有方案的情形要把它清掉。
     private (WebApplicationFactory<Program> Host, FakeChat Chat) Host(
-        Func<IReadOnlyList<ChatMessage>, string> reply, bool history = false, bool defaultPlan = true)
+        Func<IReadOnlyList<ChatMessage>, string> reply, bool history = false, bool defaultPlan = true,
+        UsageDetails? usage = null, ILoggerProvider? logs = null)
     {
-        var chat = new FakeChat(reply);
+        var chat = new FakeChat(reply, usage);
         var host = factory.WithWebHostBuilder(b =>
         {
             b.UseSetting("Platform:Answer:Enabled", "true")
@@ -37,6 +40,9 @@ public sealed class AskServiceTests(PlatformFactory factory)
 
             if (!defaultPlan)
                 b.UseSetting("Platform:DefaultPlan", string.Empty);
+
+            if (logs is not null)
+                b.ConfigureLogging(l => l.AddProvider(logs));
 
             b.ConfigureServices(s => s.Replace(ServiceDescriptor.Singleton<IChatClient>(chat)));
         });
@@ -129,7 +135,112 @@ public sealed class AskServiceTests(PlatformFactory factory)
 
         Assert.Equal(AskStatus.Ok, result.Status);
         Assert.True(result.Answer!.Refused);
+        Assert.Equal("out_of_scope", result.Answer.RefusalReason);
         Assert.Empty(chat.Calls);
+    }
+
+    // 問句明白在問地方自治法規：拒答的原因是「語料只涵蓋中央法規」，不是「超出範圍」，也不呼叫模型。
+    [Fact]
+    public async Task ALocalLawQuestionIsRefusedAsOutsideTheCorpusAndTheModelIsNeverCalled()
+    {
+        var (host, chat) = Host(_ => "不該被呼叫 [L1]");
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-q");
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.LocalLawQuestion, null, Ct);
+
+        Assert.Equal("local_law_uncovered", result.Answer!.RefusalReason);
+        Assert.Empty(chat.Calls);
+    }
+
+    // 提示詞與選項：只根據證據、證據當資料不當指令、溫度 0。
+    [Fact]
+    public async Task TheModelIsAskedToUseOnlyTheEvidenceAtTemperatureZero()
+    {
+        var (host, chat) = Host(_ => Reply);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-p");
+
+        await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct);
+
+        var call = Assert.Single(chat.Calls);
+        Assert.Contains(call, m => m.Role == ChatRole.System && m.Text.Contains("只能根據", StringComparison.Ordinal));
+        Assert.Contains(call, m => m.Role == ChatRole.User
+            && m.Text.Contains("[L1] 空氣污染防制法 第 32 條：在指定清除地區內，不得從事燃燒行為。", StringComparison.Ordinal)
+            && m.Text.Contains(FakeConsultServer.AnswerableQuestion, StringComparison.Ordinal));
+        Assert.Equal(0f, chat.LastOptions!.Temperature);
+    }
+
+    // 不信任模型守規矩：引用不存在的代號、沒有引用、空回答都整個作廢，使用者看到的是拒答，不是一段沒有出處的話。
+    [Theory]
+    [InlineData("在指定清除地區內不得燃燒 [L9]。", "unverified_citation")] // 不存在的代號
+    [InlineData("在指定清除地區內不得燃燒 [L1] 也不得露天焚燒 [L2]。", "unverified_citation")] // 有一個代號不存在
+    [InlineData("在指定清除地區內不得燃燒。", "unverified_citation")] // 完全沒有引用
+    [InlineData("", "empty_answer")]
+    [InlineData("證據不足", "no_authority")] // 模型自己說不夠：是拒答，有原因
+    public async Task AnAnswerThatDoesNotMapToTheEvidenceIsDiscardedAndBecomesARefusal(string modelSaid, string reason)
+    {
+        var (host, chat) = Host(_ => modelSaid);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-r");
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct);
+
+        Assert.Equal(AskStatus.Ok, result.Status);
+        Assert.True(result.Answer!.Refused);
+        Assert.Null(result.Answer.Text); // 模型說的話不會送出去
+        Assert.Equal(reason, result.Answer.RefusalReason);
+        Assert.Single(chat.Calls);
+    }
+
+    // 模型端點的錯誤內文可能回顯提示詞（客戶案情）：日誌只記例外型別，不記內文，也不記問題。
+    [Fact]
+    public async Task AModelOutageNeverLeaksTheQuestionOrTheEndpointsEchoIntoTheLogs()
+    {
+        var logs = new CapturingLoggerProvider();
+        var (host, _) = Host(_ => throw new HttpRequestException("upstream echoed: 某客戶新北某工廠的排放爭議"), logs: logs);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-s");
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct);
+
+        Assert.Equal(AskStatus.Unavailable, result.Status);
+        Assert.Contains(logs.Messages, m => m.Contains("Answer model call failed", StringComparison.Ordinal));
+        Assert.DoesNotContain(logs.Messages, m => m.Contains("排放爭議", StringComparison.Ordinal));
+        Assert.DoesNotContain(logs.Messages, m => m.Contains(FakeConsultServer.AnswerableQuestion, StringComparison.Ordinal));
+    }
+
+    // 沒預期到的錯誤是 bug，不是「服務暫時不可用」：不能被吞成一則安靜的結果。
+    [Fact]
+    public async Task AnUnexpectedFailureIsNotSwallowed()
+    {
+        var (host, _) = Host(_ => throw new InvalidOperationException("a bug, not an outage"));
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-t");
+        var ask = host.Services.GetRequiredService<IAskService>();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => ask.AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct));
+    }
+
+    // 模型實際用掉的 token 與次數分開記（計價的依據）；端點沒回報就不記，不猜。
+    [Fact]
+    public async Task TheTokensTheEndpointReportsAreMeteredSeparatelyFromTheCallsAndNeverGuessed()
+    {
+        var (reporting, _) = Host(_ => Reply, usage: new UsageDetails { InputTokenCount = 321, OutputTokenCount = 45 });
+        var (silent, _) = Host(_ => Reply);
+        using var h1 = reporting;
+        using var h2 = silent;
+        var (counted, memberOfCounted) = await MemberOfAsync("ask-u");
+        var (uncounted, memberOfUncounted) = await MemberOfAsync("ask-v");
+
+        await reporting.Services.GetRequiredService<IAskService>().AskAsync(memberOfCounted, FakeConsultServer.AnswerableQuestion, null, Ct);
+        await silent.Services.GetRequiredService<IAskService>().AskAsync(memberOfUncounted, FakeConsultServer.AnswerableQuestion, null, Ct);
+
+        var usage = (await factory.Services.GetRequiredService<IUsageAdmin>().GetTenantUsageAsync(counted.Id, null, Ct)).Value!.ToDictionary(u => u.Operation);
+        Assert.Equal(321, usage["llm.tokens.input"].Units);
+        Assert.Equal(45, usage["llm.tokens.output"].Units);
+        Assert.Equal(1, usage["consult.answer"].Units);
+        Assert.DoesNotContain(await UsageAsync(uncounted.Id), op => op.StartsWith("llm.tokens", StringComparison.Ordinal));
     }
 
     [Fact]
