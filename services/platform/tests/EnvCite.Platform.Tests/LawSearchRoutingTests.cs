@@ -49,21 +49,61 @@ public sealed class LawSearchRoutingTests
         Assert.False(options.Passes(Shared, "露天燃燒是什麼？", 0f, 0.70f, 0f, 0));
     }
 
-    [Fact]
-    public void ARoutedQueryNeverListsLessThanTheSharedRule()
+    [Theory]
+    [InlineData("固定污染源", QueryKind.Keyword)]
+    [InlineData("露天燃燒", QueryKind.Keyword)]
+    [InlineData("液態鑲嵌式密封的定義是什麼？", QueryKind.Question)]
+    [InlineData("銀行法第120條準用了哪些條文的規定", QueryKind.Question)]
+    [InlineData("噪音管制標準", QueryKind.Name)]
+    [InlineData("空氣污染防制法？", QueryKind.Name)]
+    [InlineData("", QueryKind.Keyword)]
+    public void AQueryIsAKeywordAQuestionOrALawName(string query, QueryKind expected)
     {
-        var options = new LawSearchOptions();
-        foreach (var query in new[] { "露天燃燒", "露天燃燒是什麼？", "空氣污染防制法" })
+        Assert.Equal(expected, new LawSearchOptions().Classify(query));
+    }
+
+    // 片段命中（字面達標、覆蓋率 0.6）：關鍵字用較嚴的門檻 0.7 不列；問句與法規名稱用 0.5 列出。
+    [Theory]
+    [InlineData("露天燃燒", false)]
+    [InlineData("露天燃燒是什麼？", true)]
+    [InlineData("空氣污染防制法", true)]
+    public void AFragmentHitNeedsTheStricterCoverageOnlyForAKeyword(string query, bool expected)
+    {
+        Assert.Equal(expected, new LawSearchOptions().Passes(Shared, query, 0.8f, 0f, 0.6f, 0));
+    }
+
+    [Theory]
+    [InlineData("露天燃燒")]
+    [InlineData("露天燃燒是什麼？")]
+    [InlineData("空氣污染防制法")]
+    public void AWholeTermHitIsListedForEveryKindOfQuery(string query)
+    {
+        // 整詞命中不靠覆蓋率門檻：收緊門檻只擋片段
+        Assert.True(new LawSearchOptions().Passes(Shared, query, 0.3f, 0f, 1f, 0));
+        Assert.True(new LawSearchOptions().Passes(Shared, query, 0f, 0f, 0f, 2));
+    }
+
+    [Fact]
+    public void QuestionsAndNamesNeverListLessThanTheSharedRuleAndAKeywordNeverListsMore()
+    {
+        // 基準：關鍵字門檻與共用門檻相同、問句下界與共用下界相同，即沒有路由
+        var baseline = new LawSearchOptions { KeywordMinTermCoverage = 0.5, QuestionSemanticFloor = 0.71 };
+        var routed = new LawSearchOptions();
+        var hits = new[]
         {
-            foreach (var (lexical, semantic, coverage, guidance) in new[]
-            {
-                (0.8f, 0f, 1f, 0), (0.8f, 0f, 0.2f, 0), (0f, 0.8f, 0f, 0), (0f, 0f, 0f, 2), (0.3f, 0.5f, 1f, 0), (0.3f, 0.5f, 0.5f, 0),
-            })
-            {
-                var shared = options.Passes(Shared, string.Empty, lexical, semantic, coverage, guidance);
-                if (shared)
-                    Assert.True(options.Passes(Shared, query, lexical, semantic, coverage, guidance));
-            }
+            (0.8f, 0f, 1f, 0), (0.8f, 0f, 0.6f, 0), (0.8f, 0f, 0.2f, 0), (0f, 0.8f, 0f, 0), (0f, 0f, 0f, 2),
+            (0.3f, 0.5f, 1f, 0), (0.3f, 0.5f, 0.5f, 0), (0f, 0.69f, 0f, 0),
+        };
+        foreach (var (lexical, semantic, coverage, guidance) in hits)
+        {
+            var before = baseline.Passes(Shared, "露天燃燒是什麼？", lexical, semantic, coverage, guidance);
+            var question = routed.Passes(Shared, "露天燃燒是什麼？", lexical, semantic, coverage, guidance);
+            var name = routed.Passes(Shared, "空氣污染防制法", lexical, semantic, coverage, guidance);
+            var keyword = routed.Passes(Shared, "露天燃燒", lexical, semantic, coverage, guidance);
+
+            Assert.True(!before || question);
+            Assert.Equal(baseline.Passes(Shared, "空氣污染防制法", lexical, semantic, coverage, guidance), name);
+            Assert.True(!keyword || baseline.Passes(Shared, "露天燃燒", lexical, semantic, coverage, guidance));
         }
     }
 }

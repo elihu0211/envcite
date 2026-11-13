@@ -72,6 +72,24 @@ public sealed class SearchTests(PlatformFactory factory)
         Assert.Equal(expected, hits!.Length);
     }
 
+    // 片段命中（字面達標、覆蓋率 0.6）：關鍵字用較嚴的門檻 0.7 不列；問句與法規名稱用 0.5 列出。
+    [Theory]
+    [InlineData(1, "mid-cov", 0)]
+    [InlineData(2, "mid-cov？", 1)]
+    [InlineData(3, "mid-cov-a-long-sentence", 1)]
+    [InlineData(4, "mid-cov-空氣污染防制法", 1)]
+    public async Task AFragmentHitIsNotListedForAKeywordButIsForAQuestionOrALawName(int id, string query, int expected)
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync($"search-cover-{id}");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        using var response = await client.PostAsJsonAsync(SearchPath, new SearchRequest(query, null, null), cancellationToken: TestContext.Current.CancellationToken);
+        var hits = await response.Content.ReadFromJsonAsync<SearchHitDto[]>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(expected, hits!.Length);
+    }
+
     [Fact]
     public async Task AGuidanceArticleIsReturnedWithItsCountAndTheRequestAsksForGuidance()
     {

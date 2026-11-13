@@ -13,11 +13,14 @@ namespace EnvCite.Platform.Modules.Ontology;
 /// 字面與語意兩個共用下界不在這裡：它們與 consult 共用同一組（<see cref="RelevanceFloorsOptions"/>，值只寫在
 /// ServiceDefaults 一處），這裡只有覆蓋率門檻與問句的語意下界，它們只有搜尋端用。
 /// <para>
-/// 問句另走較低的語意下界。同一個共用語意下界對關鍵字與整句問句的鬆緊不同：問句與條文的餘弦相似度
-/// 普遍較低，共用下界（為 consult 的可答性校準）會把本來找得到的條文擋出列表。問句型查詢改用
-/// <see cref="QuestionSemanticFloor"/>；其餘查詢不變，所以這條路由對原規則是超集，只會多列、不會少列。
-/// 分類只看查詢字串，分錯的代價是少了增益或多列幾條，不會少找到。依據與量測見
-/// <c>services/ontology/eval/query-routing-2026-11-13.md</c>。
+/// 查詢依字串分三型，各用不同的鬆緊（分類只看查詢字串，見 <see cref="Classify"/>）：
+/// 問句另走較低的語意下界（<see cref="QuestionSemanticFloor"/>）：問句與條文的餘弦相似度普遍較低，共用下界
+/// （為 consult 的可答性校準）會把本來找得到的條文擋出列表，這條路由對原規則是超集，只會多列。
+/// 關鍵字另走較高的覆蓋率門檻（<see cref="KeywordMinTermCoverage"/>）：關鍵字的整詞命中不靠門檻，
+/// 門檻只決定片段命中放不放行，所以收緊它擋掉的是雜訊；這條路由比原規則嚴，不是超集，不少找到的證據是量測的，
+/// 不是規則的性質。法規名稱維持原規則：名稱與不存在的名稱在語意臂上分不開，放寬與收緊都有代價。
+/// 依據與量測見 <c>services/ontology/eval/query-routing-2026-11-13.md</c> 與
+/// <c>services/ontology/eval/keyword-coverage-2026-11-13.md</c>。
 /// </para>
 /// </summary>
 public sealed class LawSearchOptions : ISectionOptions
@@ -31,9 +34,16 @@ public sealed class LawSearchOptions : ISectionOptions
     /// </summary>
     private static readonly string[] NameSuffixes = ["法", "條例", "標準", "規則", "準則", "細則"];
 
-    /// <summary>字面達標的命中，條文含有的查詢詞至少要有這個比例（0 至 1）。</summary>
+    /// <summary>字面達標的命中，條文含有的查詢詞至少要有這個比例（0 至 1）；問句與法規名稱用這個值。</summary>
     [Range(0.0, 1.0)]
     public double MinTermCoverage { get; set; } = 0.5;
+
+    /// <summary>
+    /// 關鍵字型查詢的覆蓋率門檻（0 至 1），比 <see cref="MinTermCoverage"/> 嚴。收緊它只擋片段命中，
+    /// 整詞命中（覆蓋率 1）不受影響；名稱類用 0.7 會少找到舊名，所以不套用。
+    /// </summary>
+    [Range(0.0, 1.0)]
+    public double KeywordMinTermCoverage { get; set; } = 0.7;
 
     /// <summary>
     /// 問句型查詢的語意下界（0 至 1）。實際生效的是它與共用語意下界中較低的一個，所以不會比共用下界嚴。
@@ -46,26 +56,40 @@ public sealed class LawSearchOptions : ISectionOptions
     [Range(1, 200)]
     public int QuestionMinLength { get; set; } = 10;
 
-    /// <summary>問句：結尾是問號，或不是法規名稱而且夠長。</summary>
-    internal bool IsQuestion(string query)
+    /// <summary>
+    /// 查詢型別：結尾是類型後綴的是名稱（即使有問號）；否則結尾有問號、或字數夠長的是問句；其餘是關鍵字。
+    /// </summary>
+    internal QueryKind Classify(string query)
     {
         var text = query.Trim();
         var body = text.TrimEnd('？', '?');
         if (NameSuffixes.Any(s => body.EndsWith(s, StringComparison.Ordinal)))
-            return false;
+            return QueryKind.Name;
 
-        return body.Length < text.Length || body.Length >= QuestionMinLength;
+        return body.Length < text.Length || body.Length >= QuestionMinLength ? QueryKind.Question : QueryKind.Keyword;
     }
+
+    internal bool IsQuestion(string query) => Classify(query) == QueryKind.Question;
 
     internal bool Passes(
         RelevanceFloorsOptions floors, string query, float lexicalScore, float semanticSimilarity, float termCoverage, int guidanceDocuments)
     {
-        var semanticFloor = IsQuestion(query) ? Math.Min(floors.SemanticFloor, QuestionSemanticFloor) : floors.SemanticFloor;
+        var kind = Classify(query);
+        var semanticFloor = kind == QueryKind.Question ? Math.Min(floors.SemanticFloor, QuestionSemanticFloor) : floors.SemanticFloor;
+        var coverage = kind == QueryKind.Keyword ? KeywordMinTermCoverage : MinTermCoverage;
         return guidanceDocuments > 0
             || semanticSimilarity >= semanticFloor
-            || (lexicalScore >= floors.LexicalFloor && termCoverage >= MinTermCoverage)
+            || (lexicalScore >= floors.LexicalFloor && termCoverage >= coverage)
             || (lexicalScore > 0 && termCoverage >= 1f);
     }
+}
+
+/// <summary>搜尋查詢的型別，決定用哪一套相關性規則。</summary>
+public enum QueryKind
+{
+    Keyword,
+    Question,
+    Name,
 }
 
 [OptionsValidator]

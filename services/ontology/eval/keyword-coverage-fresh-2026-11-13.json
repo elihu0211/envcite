@@ -1,0 +1,74 @@
+{
+ "fresh_absent": {
+  "a": {
+   "answerable": 0,
+   "found": 0,
+   "size": 0,
+   "absent": 300,
+   "leak": 157
+  },
+  "b": {
+   "answerable": 0,
+   "found": 0,
+   "size": 0,
+   "absent": 300,
+   "leak": 72
+  },
+  "gain": 0,
+  "loss": 0,
+  "leak_more": 0,
+  "leak_less": 85,
+  "shorter": 128,
+  "longer": 0,
+  "p_fewer_leaks": 2.5849394142282115e-26,
+  "p_shorter": 2.938735877055719e-39
+ },
+ "fresh_definition": {
+  "a": {
+   "answerable": 300,
+   "found": 238,
+   "size": 2156,
+   "absent": 0,
+   "leak": 0
+  },
+  "b": {
+   "answerable": 300,
+   "found": 238,
+   "size": 1944,
+   "absent": 0,
+   "leak": 0
+  },
+  "gain": 0,
+  "loss": 0,
+  "leak_more": 0,
+  "leak_less": 0,
+  "shorter": 104,
+  "longer": 0,
+  "p_fewer_leaks": 1.0,
+  "p_shorter": 4.930380657631324e-32
+ },
+ "fresh_partial": {
+  "a": {
+   "answerable": 300,
+   "found": 232,
+   "size": 1850,
+   "absent": 0,
+   "leak": 0
+  },
+  "b": {
+   "answerable": 300,
+   "found": 232,
+   "size": 1645,
+   "absent": 0,
+   "leak": 0
+  },
+  "gain": 0,
+  "loss": 0,
+  "leak_more": 0,
+  "leak_less": 0,
+  "shorter": 108,
+  "longer": 0,
+  "p_fewer_leaks": 1.0,
+  "p_shorter": 3.0814879110195774e-33
+ }
+}

@@ -186,6 +186,21 @@ def test_a_record_without_a_new_name_is_not_a_rename() -> None:
     assert re.search(tool.RENAME_PATTERN, "原名稱：某某辦法，其餘從略") is None
 
 
+def test_the_hash_order_does_not_depend_on_the_input_order() -> None:
+    terms = ["固定污染源", "移動污染源", "排放標準", "空氣污染物", "噪音"]
+    assert tool.hash_order("s", terms) == tool.hash_order("s", list(reversed(terms)))
+    # 鹽不同，順序不同：新題與原生題庫（鹽 pick）不會因為同一個排序而重疊
+    assert tool.hash_order("fresh", terms) != tool.hash_order("pick", terms)
+
+
+def test_a_fresh_row_is_a_term_class_query_in_its_own_split() -> None:
+    row = tool.fresh_row("fresh_partial", "固定污染", ["O0020001-art-2"], "固定污染源")
+    assert (row["cls"], row["split"], row["level"]) == ("term", "fresh", "article")
+    assert row["term"] == "固定污染源" and row["answer"] == ["O0020001-art-2"]
+    assert row["id"] == tool.fresh_row("fresh_partial", "固定污染", [])["id"]
+    assert "term" not in tool.fresh_row("fresh_absent", "某某", [])
+
+
 def test_the_answer_of_a_renamed_item_is_its_law_and_of_a_definition_its_article() -> None:
     renamed = {"bucket": "renamed", "expected": [{"pcode": "O0020001", "law": "某法"}]}
     definition = {"bucket": "definition", "expected": [{"article": "O0020001-art-3"}]}
