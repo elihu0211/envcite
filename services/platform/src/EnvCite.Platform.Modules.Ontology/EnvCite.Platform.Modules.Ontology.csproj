@@ -5,6 +5,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="EnvCite.Platform.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\EnvCite.Platform.Data\EnvCite.Platform.Data.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.SharedKernel\EnvCite.Platform.SharedKernel.csproj" />
   </ItemGroup>
