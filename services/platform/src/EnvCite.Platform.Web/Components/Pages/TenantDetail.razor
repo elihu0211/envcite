@@ -19,83 +19,91 @@
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="IssueKeyAsync">@L["簽發新 key"]</MudButton>
             </Actions>
         </PageHeader>
-        <p class="ep-meta">
-            <code class="ep-mono">@tenant.Identifier</code>
-            @if (tenant.Plan is { } plan)
-            {
-                <StatusBadge Tone="success">@plan</StatusBadge>
-            }
-            else
-            {
-                <StatusBadge Tone="warning">@L["沒有方案"]</StatusBadge>
-            }
-            @if (tenant.AiAnswer)
-            {
-                <StatusBadge Tone="info">@L["AI 回答"]</StatusBadge>
-            }
-        </p>
+        @* 身分列：左邊是租戶識別碼與狀態，右邊是存取網址。網址是附屬的，貼在身分旁的小按鈕，不佔一張卡；
+           有沒有成員、有沒有 key 都在，所以不屬於任何一個分頁。 *@
+        <div class="ep-subbar">
+            <p class="ep-meta">
+                <code class="ep-mono">@tenant.Identifier</code>
+                @if (tenant.Plan is { } plan)
+                {
+                    <StatusBadge Tone="success">@plan</StatusBadge>
+                }
+                else
+                {
+                    <StatusBadge Tone="warning">@L["沒有方案"]</StatusBadge>
+                }
+                @if (tenant.AiAnswer)
+                {
+                    <StatusBadge Tone="info">@L["AI 回答"]</StatusBadge>
+                }
+            </p>
+            <div class="ep-copy-group" role="group" aria-label="@L["存取網址"]">
+                <CopyButton Id="portal-login-url" Label="@L["複製登入網址"]" Value="@PortalLoginUrl" />
+                <CopyButton Id="api-base-url" Label="@L["複製 API Base URL"]" Value="@ApiBaseUrl" />
+            </div>
+        </div>
 
         @if (Notice is not null)
         {
             <MudAlert Severity="@NoticeSeverity" role="status" ShowCloseIcon="true" CloseIconClicked="() => ClearNotice()">@Notice</MudAlert>
         }
 
-        @* 存取網址：不論有沒有成員、有沒有 key 都看得到（成員區的空狀態會收掉那一區的狀態文字，所以不能放在成員區）。 *@
-        <SectionCard Id="links-heading" Title="@L["存取網址"]">
-            <div class="ep-copy-group">
-                <CopyButton Id="portal-login-url" Label="@L["複製登入網址"]" Value="@PortalLoginUrl" />
-                <CopyButton Id="api-base-url" Label="@L["複製 API Base URL"]" Value="@ApiBaseUrl" />
-            </div>
-        </SectionCard>
-
         <StatGrid Items="Stats" />
 
-        <div class="ep-columns">
-            <div class="ep-stack">
-                <SectionCard Id="usage-heading" Title="@L["用量與計量"]" Class="ep-table-card" Wrap="true">
-                    <Actions>
-                        <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Class="ep-usage-filter">
-                            <MudButton Color="@(_usageDays == 0 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(0)">@L["全部"]</MudButton>
-                            <MudButton Color="@(_usageDays == 30 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(30)">@L["近 30 天"]</MudButton>
-                            <MudButton Color="@(_usageDays == 7 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(7)">@L["近 7 天"]</MudButton>
-                        </MudButtonGroup>
-                    </Actions>
-                    <ChildContent>
-                        @if (_usage.Count == 0)
-                        {
-                            <EmptyState Icon="@Icons.Material.Outlined.Insights" Title="@L["還沒有使用紀錄"]" Description="@L["租戶以 API key 呼叫 /v2 後，用量會出現在這裡。"]" />
-                        }
-                        else
-                        {
-                            <DataTable Items="_usage" Columns="UsageColumns" Label="@L["用量與計量"]" />
-                        }
-                    </ChildContent>
-                </SectionCard>
+        @* 摘要之下依主題分頁：一次只看一件事。五個面板都在文件裡（只是收起），所以切換不必再查資料。 *@
+        <PageTabs Items="Tabs" Active="@ActiveTab" />
 
-                <SectionCard Id="keys-heading" Title="API keys" Class="ep-table-card" Toolbar="true">
-                    @if (_keys.Count == 0)
+        <TabPanel Key="@UsageTab" Active="@Is(UsageTab)">
+            <SectionCard Id="usage-heading" Title="@L["用量與計量"]" Class="ep-table-card" Wrap="true">
+                <Actions>
+                    <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Class="ep-usage-filter">
+                        <MudButton Color="@(_usageDays == 0 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(0)">@L["全部"]</MudButton>
+                        <MudButton Color="@(_usageDays == 30 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(30)">@L["近 30 天"]</MudButton>
+                        <MudButton Color="@(_usageDays == 7 ? Color.Primary : Color.Default)" OnClick="() => SetUsageFilterAsync(7)">@L["近 7 天"]</MudButton>
+                    </MudButtonGroup>
+                </Actions>
+                <ChildContent>
+                    @if (_usage.Count == 0)
                     {
-                        <EmptyState Icon="@Icons.Material.Outlined.VpnKey" Title="@L["還沒有 API key"]" Description="@L["簽發第一把 key 給客戶，他們才能呼叫 /v2。"]" />
+                        <EmptyState Icon="@Icons.Material.Outlined.Insights" Title="@L["還沒有使用紀錄"]" Description="@L["租戶以 API key 呼叫 /v2 後，用量會出現在這裡。"]" />
                     }
                     else
                     {
-                        <DataTable Items="_keys" Columns="KeyColumns" Label="API keys" />
+                        <DataTable Items="_usage" Columns="UsageColumns" Label="@L["用量與計量"]" />
                     }
-                </SectionCard>
+                </ChildContent>
+            </SectionCard>
+        </TabPanel>
 
-                <SectionCard Id="members-heading" Title="@L["成員（客戶入口）"]" Class="ep-table-card" Toolbar="true">
-                    @if (_members.Count == 0)
-                    {
-                        <EmptyState Icon="@Icons.Material.Outlined.Group" Title="@L["還沒有成員"]" Description="@L["新增第一位成員，客戶才能登入入口。"]" />
-                    }
-                    else
-                    {
-                        <DataTable Items="_members" Columns="MemberColumns" Label="@L["成員"]" />
-                    }
-                </SectionCard>
-            </div>
+        <TabPanel Key="@KeysTab" Active="@Is(KeysTab)">
+            <SectionCard Id="keys-heading" Title="API keys" Class="ep-table-card" Toolbar="true">
+                @if (_keys.Count == 0)
+                {
+                    <EmptyState Icon="@Icons.Material.Outlined.VpnKey" Title="@L["還沒有 API key"]" Description="@L["簽發第一把 key 給客戶，他們才能呼叫 /v2。"]" />
+                }
+                else
+                {
+                    <DataTable Items="_keys" Columns="KeyColumns" Label="API keys" />
+                }
+            </SectionCard>
+        </TabPanel>
 
-            <div class="ep-stack">
+        <TabPanel Key="@MembersTab" Active="@Is(MembersTab)">
+            <SectionCard Id="members-heading" Title="@L["成員（客戶入口）"]" Class="ep-table-card" Toolbar="true">
+                @if (_members.Count == 0)
+                {
+                    <EmptyState Icon="@Icons.Material.Outlined.Group" Title="@L["還沒有成員"]" Description="@L["新增第一位成員，客戶才能登入入口。"]" />
+                }
+                else
+                {
+                    <DataTable Items="_members" Columns="MemberColumns" Label="@L["成員"]" />
+                }
+            </SectionCard>
+        </TabPanel>
+
+        @* 設定：方案與 AI 回答是等寬、等高的兩張；目錄同步內容多，獨佔一整列。 *@
+        <TabPanel Key="@SettingsTab" Active="@Is(SettingsTab)">
+            <div class="ep-grid">
                 <SectionCard Id="plan-heading" Title="@L["方案"]">
                     <p class="ep-page-description">@L["沒有方案時資料端點回 402。變更立即生效並寫入稽核。"]</p>
                     <MudSelect T="string" @bind-Value="_selectedPlan" Label="@L["方案"]" Variant="Variant.Outlined" Margin="Margin.Dense"
@@ -150,44 +158,69 @@
 
                 @if (_directory is { } sync)
                 {
-                    <DirectoryStatusCard Id="directory" Status="sync" BaseUrl="@ScimUrl">
-                        <Actions>
-                            <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" OnClick="DisableDirectoryAsync"
-                                       Disabled="@(Busy || !sync.Settings.Enabled)">@L["關閉目錄同步"]</MudButton>
-                        </Actions>
-                    </DirectoryStatusCard>
+                    <div class="ep-span">
+                        <DirectoryStatusCard Id="directory" Status="sync" BaseUrl="@ScimUrl">
+                            <Actions>
+                                <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" OnClick="DisableDirectoryAsync"
+                                           Disabled="@(Busy || !sync.Settings.Enabled)">@L["關閉目錄同步"]</MudButton>
+                            </Actions>
+                        </DirectoryStatusCard>
+                    </div>
                 }
-
-                <SectionCard Id="audit-heading" Title="@L["最近的稽核事件"]">
-                    <Actions>
-                        <a href="@($"/ui/audit?tenant={Uri.EscapeDataString(tenant.Id)}")">@L["全部"]</a>
-                    </Actions>
-                    <ChildContent>
-                        @if (_recent.Count == 0)
-                        {
-                            <p class="ep-page-description">@L["還沒有事件。"]</p>
-                        }
-                        else
-                        {
-                            <ul class="ep-list" aria-label="@L["最近的稽核事件，新到舊"]">
-                                @foreach (var item in _recent)
-                                {
-                                    <li>
-                                        <StatusBadge Tone="@AuditLabels.ActionTone(item.Action)">@AuditLabels.Action(item.Action)</StatusBadge>
-                                        <span class="ep-keep">@AuditLabels.Actor(item.ActorType, item.ActorId)</span>
-                                        <time class="ep-secondary" datetime="@TaipeiTime.Full(item.OccurredAt)">@TaipeiTime.Format(item.OccurredAt)</time>
-                                    </li>
-                                }
-                            </ul>
-                        }
-                    </ChildContent>
-                </SectionCard>
             </div>
-        </div>
+        </TabPanel>
+
+        <TabPanel Key="@AuditTab" Active="@Is(AuditTab)">
+            <SectionCard Id="audit-heading" Title="@L["最近的稽核事件"]">
+                <Actions>
+                    <a href="@($"/ui/audit?tenant={Uri.EscapeDataString(tenant.Id)}")">@L["全部"]</a>
+                </Actions>
+                <ChildContent>
+                    @if (_recent.Count == 0)
+                    {
+                        <p class="ep-page-description">@L["還沒有事件。"]</p>
+                    }
+                    else
+                    {
+                        <ul class="ep-list" aria-label="@L["最近的稽核事件，新到舊"]">
+                            @foreach (var item in _recent)
+                            {
+                                <li>
+                                    <StatusBadge Tone="@AuditLabels.ActionTone(item.Action)">@AuditLabels.Action(item.Action)</StatusBadge>
+                                    <span class="ep-keep">@AuditLabels.Actor(item.ActorType, item.ActorId)</span>
+                                    <time class="ep-secondary" datetime="@TaipeiTime.Full(item.OccurredAt)">@TaipeiTime.Format(item.OccurredAt)</time>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </ChildContent>
+            </SectionCard>
+        </TabPanel>
     </ChildContent>
 </LoadedView>
 
 @code {
+    private const string UsageTab = "usage";
+    private const string KeysTab = "keys";
+    private const string MembersTab = "members";
+    private const string SettingsTab = "settings";
+    private const string AuditTab = "audit";
+
+    /// <summary>分頁依「先看資料、再管理、最後設定與紀錄」排；數量只給會增減的清單。</summary>
+    private IReadOnlyList<TabItem> Tabs =>
+    [
+        new(UsageTab, L["用量"]),
+        new(KeysTab, "API keys", _keys.Count),
+        new(MembersTab, L["成員"], _members.Count),
+        new(SettingsTab, L["設定"]),
+        new(AuditTab, L["稽核紀錄"]),
+    ];
+
+    /// <summary>網址的 <c>?tab=</c> 沒給或不認得時，是第一個分頁。</summary>
+    private string ActiveTab => Tabs.Any(t => t.Key == Tab) ? Tab! : UsageTab;
+
+    private bool Is(string key) => ActiveTab == key;
+
     private IReadOnlyList<StatItem> Stats =>
     [
         new(L["呼叫次數"], TotalUsageCalls.ToString("N0"), UsageRangeLabel),

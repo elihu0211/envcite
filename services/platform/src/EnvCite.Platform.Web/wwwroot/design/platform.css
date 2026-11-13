@@ -871,6 +871,169 @@ h1[tabindex="-1"]:focus-visible {
     min-inline-size: 0;
 }
 
+/* 對稱格線：欄一樣寬、同一列一樣高。每欄至少 22rem，放不下就整列疊成一欄，不留下半寬的孤兒欄。
+   內容多的卡片用 .ep-span 獨佔一整列；卡片裡的狀態列貼底，同一列的兩張底部對齊。 */
+.ep-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: var(--ep-space-6);
+}
+
+.ep-grid > .ep-span {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+}
+
+.ep-grid > .ep-card {
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+}
+
+.ep-grid > .ep-card > .ep-status:last-child {
+    margin-block-start: auto;
+}
+
+/* 詳細頁的分頁列（Material 的 primary tabs、各家雲端主控台的資源頁）：一條底線，目前這一頁的底下長出一道主色線，
+   文字是連結色；窄螢幕橫向捲動、不換行。切換是連結，焦點環畫在內側（外側會被捲動容器裁掉）。 */
+.ep-tabs {
+    display: flex;
+    gap: var(--ep-space-1);
+    overflow-x: auto;
+    border-block-end: 1px solid var(--ep-border-subtle);
+    scrollbar-width: none;
+}
+
+.ep-tab {
+    position: relative;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    min-block-size: var(--ep-touch-target);
+    padding-inline: var(--ep-space-4);
+    border-start-start-radius: var(--ep-radius-control);
+    border-start-end-radius: var(--ep-radius-control);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-l-size);
+    line-height: var(--ep-label-l-leading);
+    letter-spacing: var(--ep-label-l-tracking);
+    font-weight: var(--ep-label-l-weight);
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+        color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-tab::after {
+    content: "";
+    position: absolute;
+    inset-inline: var(--ep-space-3);
+    inset-block-end: -1px;
+    block-size: 3px;
+    border-start-start-radius: var(--ep-radius-pill);
+    border-start-end-radius: var(--ep-radius-pill);
+    background: var(--ep-primary);
+    scale: 0 1;
+    transition: scale var(--ep-motion-normal) var(--ep-motion-ease-settle);
+}
+
+.ep-tab[aria-current="page"] {
+    color: var(--ep-link);
+}
+
+.ep-tab[aria-current="page"]::after {
+    scale: 1 1;
+}
+
+.ep-tab:focus-visible {
+    outline-offset: calc(var(--ep-space-1) * -1);
+}
+
+@media (hover: hover) {
+    .ep-tab:hover:not([aria-current="page"]) {
+        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        color: var(--ep-text);
+    }
+}
+
+/* 分頁旁的數量：小藥丸，不靠顏色以外就看得出是數字（等寬數字）；目前頁的那顆染主色。 */
+.ep-tab-count {
+    min-inline-size: 1.5rem;
+    padding-inline: var(--ep-space-2);
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--ep-text) 8%, transparent);
+    font-size: var(--ep-label-s-size);
+    line-height: var(--ep-label-s-leading);
+    letter-spacing: var(--ep-label-s-tracking);
+    font-weight: var(--ep-label-s-weight);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.ep-tab[aria-current="page"] .ep-tab-count {
+    background: color-mix(in srgb, var(--ep-primary) 14%, transparent);
+}
+
+/* 面板：選到的那一刻淡入並上浮一小段（落定曲線、無回彈）；hidden 的面板不佔版面。減少動態時由全域規則收成瞬間。 */
+.ep-tab-panel:not([hidden]) {
+    animation: ep-rise var(--ep-motion-slow) var(--ep-motion-ease-settle) backwards;
+}
+
+/* 身分列：頁首下面的一行，左邊是識別碼與狀態徽章，右邊是附屬的動作（存取網址的複製鈕）。對齊頁首（標題在左、動作在右）的
+   左右結構，但視覺上退一階：複製鈕沒有外框、字是次要色，游標移上去才浮出底色與連結色，不與頁首的主要動作爭。
+   一列放不下時，動作整組掉到下一列。 */
+.ep-subbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ep-space-2) var(--ep-space-4);
+}
+
+.ep-page-header + .ep-subbar {
+    margin-block-start: calc(var(--ep-space-4) * -1);
+}
+
+.ep-subbar > .ep-meta {
+    margin: 0;
+}
+
+.ep-subbar .ep-copy-group {
+    gap: var(--ep-space-1);
+    margin: 0;
+}
+
+.ep-subbar .ep-copy {
+    flex: 0 1 auto;
+    max-inline-size: none;
+}
+
+.ep-subbar .ep-copy > .ep-btn {
+    min-block-size: 2.25rem;
+    padding-inline: var(--ep-space-3);
+    border-color: transparent;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-m-size);
+    line-height: var(--ep-label-m-leading);
+    letter-spacing: var(--ep-label-m-tracking);
+    font-weight: var(--ep-label-m-weight);
+}
+
+@media (hover: hover) {
+    .ep-subbar .ep-copy > .ep-btn:hover {
+        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        color: var(--ep-link);
+    }
+}
+
+@media (pointer: coarse) {
+    .ep-subbar .ep-copy > .ep-btn {
+        min-block-size: var(--ep-touch-target);
+    }
+}
+
 /* ---- 響應式 ----------------------------------------------------------------------------------
  * 原生 CSS：容器查詢、邏輯屬性、rem 單位的斷點、pointer/hover 媒體查詢、安全區、dvh。
  * 斷點用 rem（不是 px）：使用者把瀏覽器字級調大時，版面比螢幕寬度更早切換成窄版，內容才不擠。

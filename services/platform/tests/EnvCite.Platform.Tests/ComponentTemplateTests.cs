@@ -14,7 +14,7 @@ public static partial class ComponentTemplateTests
     {
         "FormAlert", "PostForm", "FormField", "SubmitButton", "PageHeading", "DocumentTitle",
         "PageHeader", "StatusPage", "DialogError", "DialogSubmitActions",
-        "SectionCard", "StatGrid", "StatTile", "DataTable", "SelectField", "OptionSelect", "LoadedView", "CheckboxField", "SecretReveal",
+        "SectionCard", "StatGrid", "StatTile", "DataTable", "SelectField", "OptionSelect", "LoadedView", "CheckboxField", "SecretReveal", "PageTabs", "TabPanel",
     };
 
     // 標記只在模板裡寫：頁面與對話框用 <FormAlert>、<PostForm>、<FormField>、<SubmitButton>、<PageHeading>、<DocumentTitle>、<DialogError>。
@@ -37,6 +37,8 @@ public static partial class ComponentTemplateTests
     [InlineData("<InputCheckbox", "<CheckboxField>")]
     [InlineData("type=\"checkbox\"", "<CheckboxField>")]
     [InlineData("class=\"ep-secret-row\"", "<SecretReveal>")]
+    [InlineData("class=\"ep-tabs\"", "<PageTabs>")]
+    [InlineData("class=\"ep-tab-panel\"", "<TabPanel>")]
     public static void TemplateMarkupIsWrittenOnlyInTheTemplates(string markup, string useInstead)
     {
         var offenders = Razor()

@@ -35,17 +35,22 @@ public sealed partial class TenantUrlTests(PlatformFactory factory)
     }
 
     [Fact]
-    public async Task TheUrlsAreInTheirOwnCardNotInTheMembersTable()
+    public async Task TheUrlsAreASecondaryGroupBesideTheTenantIdentityNotACardAndNotInATab()
     {
         // 空的表格卡片會把裡面的 .ep-status 收掉（視覺隱藏）；網址曾經放在那裡，所以沒有成員時看不到。
+        // 網址是附屬的小按鈕，貼在租戶識別碼旁的身分列，不是獨立的卡片，也不屬於任何分頁。
         var (_, html) = await TenantPageAsync();
 
         var urls = html.IndexOf("id=\"portal-login-url-value\"", StringComparison.Ordinal);
         Assert.True(urls > 0, "portal URL is rendered");
+        Assert.True(urls < html.IndexOf("class=\"ep-tabs\"", StringComparison.Ordinal), "above the tabs, so it belongs to no tab");
         Assert.True(urls < html.IndexOf("id=\"members-heading\"", StringComparison.Ordinal), "above the members card");
-        var card = html.LastIndexOf("<section", urls, StringComparison.Ordinal);
-        Assert.Contains("class=\"ep-card\" aria-labelledby=\"links-heading\"", html[card..urls], StringComparison.Ordinal);
-        Assert.DoesNotContain("ep-table-card", html[card..urls], StringComparison.Ordinal);
+        var group = html.LastIndexOf("<div class=\"ep-copy-group\"", urls, StringComparison.Ordinal);
+        Assert.True(group > 0, "the buttons are one group");
+        Assert.Contains("role=\"group\" aria-label=\"存取網址\"", html[group..urls], StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-subbar\"", html[..group][^400..], StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-card", html[group..urls], StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-table-card", html[group..urls], StringComparison.Ordinal);
     }
 
     [Fact]
