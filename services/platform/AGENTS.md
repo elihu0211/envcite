@@ -9,7 +9,9 @@
 
 ## Architecture
 
-- Modular monolith：一個 solution、一個可部署單位。模組是專案，只參考 `SharedKernel` 與 `Data`，彼此不直接參考；跨模組契約放 `SharedKernel`。
+- Modular monolith：一個 solution、一個可部署單位。模組是專案，只參考 `SharedKernel` 與 `Data`，彼此不直接參考；跨模組契約放 `SharedKernel`。模組是編譯期的：每個模組以 `AddXModule()` 註冊，不做執行期載入組件的外掛。唯一的例外是 `Modules.Consult` 參考 `Modules.Ontology`：`consult.proto` 匯入 `ontology.proto`，產生的型別在後者。
+- **依賴注入的規矩由 `ArchitectureTests` 掃原始碼與專案檔守住**，違反的人在 CI 看得到是哪個檔案：(a) 上一條的專案參考；`SharedKernel` 不參考任何平台專案，`Web` 只參考 `SharedKernel`（不經模組、不碰資料層）；(b) **不用服務定位器**：除了組合根（`Api` 專案、`WebModule.cs`）與 `IServiceProvider` 自己的實作，沒有任何型別注入 `IServiceProvider` 自己解析；要惰性取得就注入 `Lazy<T>`，由模組的 `AddXModule()` 註冊；(c) **元件與 `Web` 不用 `IHttpContextAccessor`**：互動式元件沒有可靠的 `HttpContext`，身分走 `AuthenticationState`、租戶由路由參數帶入；(d) **我們自己的型別不註冊可處置（`IDisposable`／`IAsyncDisposable`）的 transient**：容器會抓著它直到 circuit 或應用程式結束（記憶體洩漏）。測試主機在 Development 環境，`ValidateScopes` 與 `ValidateOnBuild` 開著，singleton 抓 scoped 的錯在啟動就爆。
+- **入口側欄由各功能自己貢獻**：實作 `IPortalNavContributor`（`Components/Layout/Navigation/`，註冊用 `AddPortalNavContributor<T>()`，scoped）宣告項目、群組與 `Order`（服務群組 10–29、組織群組 30–59），外殼 `PortalLayout` 只經 `PortalNavigation.Collect` 排序，不認識任何功能。新功能不改外殼。項目文字經 `L`（基底 `PortalNavContributorBase` 提供），資源檔的測試才掃得到；顯示與否不是授權，頁面與服務層另有檢查。
 - **兩個 DbContext，不再增加**：`TenancyDbContext`（Finbuckle 的 EFCore 租戶儲存必須繼承 `EFCoreStoreDbContext`，無法合併）與 `PlatformDbContext`（所有租戶資料，schema `platform`）。新的租戶實體進 `PlatformDbContext`；模組不另立 context——每多一個就多一套遷移、bundle 與 Job 步驟，且失去跨模組交易。
 - Data Protection 金鑰存在 `TenancyDbContext`，不在 `PlatformDbContext`：它不屬於任何租戶，且金鑰環在主機啟動時載入、早於租戶解析。沒有共用金鑰，一個副本簽的 cookie 會被另一個副本拒絕。產生 OpenAPI 文件時不註冊（沒有資料庫）。金鑰預設以明文 XML 存放；`Platform:DataProtection:CertificatePath` 與 `CertificatePassword` 是成對的可選設定（只設一個啟動即失敗，密碼只經環境變數），設了則**新**金鑰以該憑證加密，既有明文金鑰照常可讀、不改寫；所有副本須用同一張憑證。
 - Blazor Server 電路是有狀態的 SignalR 連線：多副本需要入口的 session affinity（部署庫）或外部 backplane。

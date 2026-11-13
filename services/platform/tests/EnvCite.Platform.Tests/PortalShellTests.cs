@@ -3,6 +3,8 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 using EnvCite.Platform.Web;
+using EnvCite.Platform.Web.Components.Layout;
+using EnvCite.Platform.Web.Components.Layout.Navigation;
 using EnvCite.Platform.Web.Design;
 
 using Microsoft.AspNetCore.Hosting;
@@ -80,6 +82,28 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Single(Regex.Matches(account.Html, "ep-side-link active"));
         Assert.Contains($"href=\"{prefix}/account\" class=\"ep-side-link active\"", account.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("回總覽", account.Html, StringComparison.Ordinal);
+    }
+
+    private sealed class ExtraNav : IPortalNavContributor
+    {
+        public int Order => 25;
+
+        public IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) => [new($"{context.Home}/extra", "Extra", "服務")];
+    }
+
+    // 外殼不認識任何功能：只註冊一個來源，它的項目就出現在側欄，其餘照舊。
+    [Fact]
+    public async Task AFeatureAppearsInTheSideNavigationByRegisteringAContributor()
+    {
+        using var host = factory.WithWebHostBuilder(b => b.ConfigureServices(s => s.AddPortalNavContributor<ExtraNav>()));
+        var (tenant, email, initial) = await MemberAsync(factory, "sh-x");
+        using var browser = new PortalBrowser(host);
+        await SignInFullyAsync(browser, tenant.Identifier, email, initial);
+        var prefix = Home(tenant.Identifier);
+
+        var home = await browser.GetAsync(prefix);
+
+        Assert.Equal([prefix, $"{prefix}/extra", $"{prefix}/members", $"{prefix}/account"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history" && l != $"{prefix}/directory"));
     }
 
     // 還在改初始密碼、註冊驗證器時只開那一頁：其他連結點了也會被導回去，所以沒有選單，只留登出。

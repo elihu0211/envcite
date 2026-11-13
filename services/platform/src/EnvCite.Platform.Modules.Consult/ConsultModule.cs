@@ -88,6 +88,9 @@ public static class ConsultModule
                     .GetChatClient(answer.Model)
                     .AsIChatClient());
         });
+        // 回答服務關閉時沒有端點與金鑰可建客戶端，而入口每個請求都會建立 GroundedAnswerer：所以它拿的是惰性的，
+        // 第一次真的要呼叫模型才解析（這裡是組合根，惰性解析在這裡不算服務定位器）。
+        services.AddSingleton(provider => new Lazy<IChatClient>(() => provider.GetRequiredService<IChatClient>()));
         services.AddSingleton<IAnswerAvailability, AnswerAvailability>();
         services.AddScoped<IGroundedAnswerer, GroundedAnswerer>();
         return services;
