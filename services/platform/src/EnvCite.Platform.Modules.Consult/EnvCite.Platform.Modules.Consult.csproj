@@ -12,6 +12,8 @@
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" />
     <PackageReference Include="Grpc.Net.ClientFactory" />
+    <PackageReference Include="Microsoft.Agents.AI.Workflows" />
+    <PackageReference Include="Microsoft.Extensions.AI" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
     <PackageReference Include="Grpc.Tools">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

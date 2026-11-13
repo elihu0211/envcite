@@ -1,5 +1,6 @@
 using System.Diagnostics;
 
+using EnvCite.Platform.Modules.Consult;
 using EnvCite.Platform.Modules.Members.DirectorySync;
 using EnvCite.Platform.Modules.Tenancy;
 using EnvCite.ServiceDefaults;
@@ -21,8 +22,8 @@ internal static class Observability
     {
         // 共用的追蹤、指標與匯出約定在 ServiceDefaults；platform 另加資料庫的追蹤。
         builder.AddServiceTelemetry()
-            .WithTracing(tracing => tracing.AddNpgsql())
-            .WithMetrics(metrics => metrics.AddMeter(DirectoryMetrics.MeterName));
+            .WithTracing(tracing => tracing.AddNpgsql().AddSource(AnswerTelemetry.SourceName))
+            .WithMetrics(metrics => metrics.AddMeter(DirectoryMetrics.MeterName).AddMeter(AnswerTelemetry.SourceName));
 
         // liveness 不查任何依賴（見 MapPlatformHealth）；readiness 查資料庫，連不上就不接流量。
         // 租戶資料庫不屬於任何租戶，租戶解析之前也能建立（PlatformDbContext 不行）。
