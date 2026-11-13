@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "roboto",
+        "createdAt": "2026-11-13T07:08:57.789Z",
+        "reason": "user confirmed: asked to switch to a mainstream font and picked Roboto (Google/Material default) from the options offered"
+      }
+    ]
+  }
+}

@@ -131,17 +131,18 @@ public static class DesignTokens
     public const string QrSurface = "#FFFFFF";
 
     // ---- 字型 ----------------------------------------------------------------------------------
-    // 自己託管的開源字型（OFL），各平台看到同一套字，不隨作業系統變：拉丁字與數字用 Inter（光學尺寸軸、等寬數字），
-    // 中文用 Noto Sans TC（收字最完整，法規的罕用字也有）。字型檔與 @font-face 在 wwwroot/fonts/，由 scripts/vendor-fonts.sh
-    // 產生；名稱必須與那裡的 font-family 一致（測試守住）。sans-serif 只在字型下載完成前短暫頂替。
+    // 自己託管的開源字型（OFL），各平台看到同一套字，不隨作業系統變：拉丁字與數字用 Roboto（Google 主控台與 Material 的預設，
+    // 字重軸、可調等寬數字），中文用 Noto Sans TC（Google 的中文字型，收字最完整，法規的罕用字也有）。字型檔與 @font-face 在
+    // wwwroot/fonts/，由 scripts/vendor-fonts.sh 產生；名稱必須與那裡的 font-family 一致（測試守住）。
+    // sans-serif 只在字型下載完成前短暫頂替。
 
-    public static string[] FontFamily { get; } = ["Inter Variable", "Noto Sans TC Variable", "sans-serif"];
+    public static string[] FontFamily { get; } = ["Roboto Variable", "Noto Sans TC Variable", "sans-serif"];
 
     /// <summary>
-    /// 代碼、金鑰、識別碼不另用等寬字型：同一套 Inter 開消歧義字形（ss02：I、l、1 分得開；zero：0 帶斜線）與等寬數字。
-    /// 這些字串要逐字核對，不必縱向對齊。
+    /// 代碼、金鑰、識別碼、復原碼這類要逐字核對的字串用等寬字型：每個字元同寬，I、l、1 與 0、O 分得開（0 帶斜線）。
+    /// 夾在裡面的中文落到 Noto Sans TC。
     /// </summary>
-    public const string CodeFeatures = "\"ss02\", \"zero\", \"tnum\"";
+    public static string[] CodeFontFamily { get; } = ["Roboto Mono Variable", "Noto Sans TC Variable", "monospace"];
 
     /// <summary>
     /// 字級階層沿用 Material 3 的十五個角色（display、headline、title、body、label 各分 l、m、s），名稱是業界共通的，
