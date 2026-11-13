@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "roboto",
+        "createdAt": "2026-11-13T08:24:58.577Z",
+        "reason": "user confirmed: asked to switch to a mainstream font and picked Roboto (Google/Material default) from the options offered; same ignore as services/platform/.impeccable/config.json, repeated at the repo root so a session started from the repo root also finds it"
+      }
+    ]
+  }
+}
