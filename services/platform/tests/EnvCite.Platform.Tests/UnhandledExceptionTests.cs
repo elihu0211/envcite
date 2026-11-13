@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace EnvCite.Platform.Tests;
 
 /// <summary>未捕捉的例外：非 Development 回帶穩定代碼的 problem+json，例外的訊息不出現在回應裡。</summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class UnhandledExceptionTests(PlatformFactory factory)
 {
     private const string Secret = "Host=db.internal;Password=hunter2";
