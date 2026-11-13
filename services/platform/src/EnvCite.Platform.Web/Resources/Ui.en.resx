@@ -516,4 +516,6 @@
   <data name="群組" xml:space="preserve"><value>Groups</value></data>
   <data name="身分來源還沒有推送群組。推送之後，在這裡決定每個群組給什麼角色。" xml:space="preserve"><value>The identity provider has not pushed any groups yet. Once it does, decide here which role each group grants.</value></data>
   <data name="台北 {0}" xml:space="preserve"><value>Taipei {0}</value></data>
+  <data name="用量" xml:space="preserve"><value>Usage</value></data>
+  <data name="分頁" xml:space="preserve"><value>Tabs</value></data>
 </root>

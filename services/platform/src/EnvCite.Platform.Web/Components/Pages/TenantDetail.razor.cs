@@ -13,6 +13,9 @@ public partial class TenantDetail(
 {
     [Parameter] public string TenantId { get; set; } = string.Empty;
 
+    /// <summary>目前的分頁（網址的 <c>?tab=</c>）。分頁是連結，所以可以分享、可以上一頁；沒給或不認得就是第一個。</summary>
+    [SupplyParameterFromQuery(Name = "tab")] public string? Tab { get; set; }
+
     private TenantSummary? _tenant;
     private IReadOnlyList<ApiKeyInfo> _keys = [];
     private IReadOnlyList<MemberInfo> _members = [];

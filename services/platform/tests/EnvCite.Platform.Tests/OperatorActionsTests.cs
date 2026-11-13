@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.RegularExpressions;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -221,5 +222,78 @@ public sealed class OperatorActionsTests(PlatformFactory factory)
         Assert.Contains($"/portal/{tenant.Identifier}/login", html, StringComparison.Ordinal); // 給客戶的登入網址
         Assert.Contains($"aria-label=\"重設 {email} 的密碼\"", html, StringComparison.Ordinal);
         Assert.DoesNotContain(initial, html, StringComparison.Ordinal); // 初始密碼只在建立當下顯示一次
+    }
+
+    // 詳細頁依主題分頁：一次只看一件事。五個面板都在文件裡（沒選到的收起），所以切換不必再查資料；選哪一個由網址的 ?tab= 決定。
+    private static readonly string[] TabKeys = ["usage", "keys", "members", "settings", "audit"];
+
+    private static string PanelTag(string html, string key)
+    {
+        var match = Regex.Match(html, $"""<div class="ep-tab-panel"[^>]*aria-labelledby="ep-tab-{key}"[^>]*>""", RegexOptions.None, TimeSpan.FromSeconds(2));
+        Assert.True(match.Success, $"panel {key} is in the document");
+        return match.Value;
+    }
+
+    private static bool IsOpen(string html, string key) => !Regex.IsMatch(PanelTag(html, key), @"\shidden(\s|=|>)", RegexOptions.None, TimeSpan.FromSeconds(2));
+
+    private static bool IsCurrentTab(string html, string key) =>
+        Regex.IsMatch(html, $"""<a class="ep-tab" id="ep-tab-{key}"[^>]*aria-current="page"[^>]*>""", RegexOptions.None, TimeSpan.FromSeconds(2));
+
+    [Fact]
+    public async Task TheDetailPageOpensOnTheFirstTabAndKeepsEveryPanelInTheDocument()
+    {
+        var (tenant, key) = await factory.CreateTenantWithKeyAsync("detail-tabs");
+        using var client = factory.SignedInClient();
+
+        var html = await client.PageAsync($"/ui/tenants/{tenant.Id}");
+
+        Assert.Equal(["usage"], TabKeys.Where(k => IsOpen(html, k)));
+        Assert.Equal(["usage"], TabKeys.Where(k => IsCurrentTab(html, k)));
+        Assert.Contains(key.ApiKey.Prefix, html, StringComparison.Ordinal); // 收起的面板仍在文件裡
+        // 連結帶頁面自己的路徑（文件有 <base href="/">，只寫 ?tab= 會跳到根目錄）。
+        foreach (var tab in TabKeys)
+            Assert.Contains($"href=\"/ui/tenants/{tenant.Id}?tab={tab}\"", html, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("keys")]
+    [InlineData("members")]
+    [InlineData("settings")]
+    [InlineData("audit")]
+    public async Task TheTabInTheUrlIsTheOnlyOneOpen(string tab)
+    {
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync($"detail-tab-{tab}");
+        using var client = factory.SignedInClient();
+
+        var html = await client.PageAsync($"/ui/tenants/{tenant.Id}?tab={tab}");
+
+        Assert.Equal([tab], TabKeys.Where(k => IsOpen(html, k)));
+        Assert.Equal([tab], TabKeys.Where(k => IsCurrentTab(html, k)));
+    }
+
+    [Fact]
+    public async Task AnUnknownTabFallsBackToTheFirstOne()
+    {
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("detail-tab-unknown");
+        using var client = factory.SignedInClient();
+
+        var html = await client.PageAsync($"/ui/tenants/{tenant.Id}?tab=no-such-tab");
+
+        Assert.Equal(["usage"], TabKeys.Where(k => IsOpen(html, k)));
+    }
+
+    [Fact]
+    public async Task TheSettingsTabPutsPlanAndAiAnswerSideBySideAsEqualCards()
+    {
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("detail-tab-grid");
+        using var client = factory.SignedInClient();
+
+        var html = await client.PageAsync($"/ui/tenants/{tenant.Id}?tab=settings");
+
+        var grid = html.IndexOf("<div class=\"ep-grid\">", StringComparison.Ordinal);
+        Assert.True(grid > 0, "the settings tab is a grid");
+        var plan = html.IndexOf("id=\"plan-heading\"", grid, StringComparison.Ordinal);
+        var ai = html.IndexOf("id=\"ai-heading\"", grid, StringComparison.Ordinal);
+        Assert.True(plan > grid && ai > plan, "plan then AI answer, both directly in the grid");
     }
 }

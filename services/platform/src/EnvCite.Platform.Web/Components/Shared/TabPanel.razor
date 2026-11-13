@@ -1,0 +1,17 @@
+@* 分頁的內容面板，配合 PageTabs。沒選到的面板用 hidden 收起、但仍在文件裡（伺服器渲染的內容完整，切換不必等資料）；
+   選到的那一刻由樣式表讓它淡入並上浮一小段。 *@
+<div class="ep-tab-panel" role="region" aria-labelledby="@PageTabs.TabId(Key)" hidden="@(!Active)">
+    @ChildContent
+</div>
+
+@code {
+    /// <summary>對應 <see cref="TabItem.Key"/>。</summary>
+    [Parameter, EditorRequired]
+    public string Key { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Active { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

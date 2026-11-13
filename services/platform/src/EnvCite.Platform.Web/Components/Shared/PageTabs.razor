@@ -1,0 +1,43 @@
+@inject NavigationManager Navigation
+@* 詳細頁的分頁列：同一個資源的資訊依主題分成幾頁，一次只看一個，頁首與摘要留在分頁之上。每個分頁是連結（?tab=…），
+   所以可以分享、可以上一頁，沒有 JavaScript 也能用；目前這一個帶 aria-current。標記只在這裡寫，頁面給 TabItem 清單，
+   面板用 TabPanel。分頁最多七個，每個分頁只做一件事，不停用任何一個（內容都該看得到）。 *@
+<nav class="ep-tabs" aria-label="@(Label ?? L["分頁"])">
+    @foreach (var item in Items)
+    {
+        <a class="ep-tab" id="@TabId(item.Key)" href="@Href(item)"
+           aria-current="@(item.Key == Active ? "page" : null)">
+            <span>@item.Label</span>
+            @if (item.Count is { } count)
+            {
+                <span class="ep-tab-count">@count.ToString("N0", CultureInfo.CurrentCulture)</span>
+            }
+        </a>
+    }
+</nav>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<TabItem> Items { get; set; } = [];
+
+    /// <summary>目前分頁的 <see cref="TabItem.Key"/>。</summary>
+    [Parameter, EditorRequired]
+    public string Active { get; set; } = string.Empty;
+
+    /// <summary>網址上放分頁的查詢參數名稱。</summary>
+    [Parameter]
+    public string Query { get; set; } = "tab";
+
+    /// <summary>給螢幕閱讀器的導覽名稱；沒給就是「分頁」。</summary>
+    [Parameter]
+    public string? Label { get; set; }
+
+    /// <summary>
+    /// 連結帶目前頁面的路徑：文件有 <c>&lt;base href="/"&gt;</c>，只寫 <c>?tab=</c> 會相對於根目錄，跳到別的頁面。
+    /// 只換自己的查詢參數；這個元件所在的頁面沒有別的查詢參數需要保留。
+    /// </summary>
+    private string Href(TabItem item) => $"{new Uri(Navigation.Uri).AbsolutePath}?{Query}={Uri.EscapeDataString(item.Key)}";
+
+    /// <summary>分頁連結的 id；<see cref="TabPanel"/> 以它作為 <c>aria-labelledby</c>。</summary>
+    public static string TabId(string key) => $"ep-tab-{key}";
+}
