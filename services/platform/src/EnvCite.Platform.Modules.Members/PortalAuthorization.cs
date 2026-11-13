@@ -46,20 +46,24 @@ internal sealed class PortalClaimsPrincipalFactory(
 internal sealed record PortalMemberRequirement(bool AllowPasswordChangePending, bool AllowMfaEnrollmentPending) : IAuthorizationRequirement;
 
 /// <summary>
-/// 一個入口 session 只對它簽發時的那個租戶有效：cookie 的 tenant claim 必須等於這個請求路徑解析出的租戶。
-/// 否則 A 租戶的人帶著 cookie 打 B 租戶的路徑，會被當成沒登入。
+/// 一個入口 session 只對它簽發時的那個租戶有效：cookie 的 tenant claim 必須等於這個請求所屬的租戶。
+/// 否則 A 租戶的人帶著 cookie 打 B 租戶的路徑，會被當成沒登入。「請求所屬的租戶」有兩個來源：
+/// HTTP 請求是租戶解析的結果（環境租戶）；互動式 circuit 裡的頁面切換不是 HTTP 請求，沒有環境租戶，
+/// 由 <c>AuthorizeRouteView</c> 把路由資料當授權資源傳進來（Routes 要設 <c>Resource="routeData"</c>），租戶取自路由值 <c>Tenant</c>。
+/// 資源是路由資料時<b>只看路由值</b>、不看環境租戶；路由裡沒有租戶就拒絕。
 /// </summary>
 internal sealed class PortalMemberHandler(IMultiTenantContextAccessor<TenantInfo> tenant) : AuthorizationHandler<PortalMemberRequirement>
 {
+    /// <summary>路由裡租戶的參數名（<c>@page "/portal/{Tenant}/…"</c>）。</summary>
+    internal const string RouteTenant = "Tenant";
+
     protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, PortalMemberRequirement requirement)
     {
         var user = context.User;
-        var current = tenant.MultiTenantContext?.TenantInfo?.Identifier;
         var sessionTenant = user.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value;
 
         var valid = user.FindFirst(PlatformClaimTypes.PortalUserId) is not null
-            && current is not null
-            && string.Equals(current, sessionTenant, StringComparison.Ordinal)
+            && BelongsToRequestedTenant(context.Resource, sessionTenant)
             && (requirement.AllowPasswordChangePending || user.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is null)
             && (requirement.AllowMfaEnrollmentPending || user.FindFirst(PlatformClaimTypes.MfaEnrollmentRequired) is null);
 
@@ -67,6 +71,23 @@ internal sealed class PortalMemberHandler(IMultiTenantContextAccessor<TenantInfo
             context.Succeed(requirement);
 
         return Task.CompletedTask;
+    }
+
+    private bool BelongsToRequestedTenant(object? resource, string? sessionTenant)
+    {
+        if (sessionTenant is null)
+            return false;
+
+        if (resource is Microsoft.AspNetCore.Components.RouteData route)
+        {
+            // 路由值是使用者打的網址：識別碼只有小寫英文、數字與連字號（建立時驗證），不分大小寫比對不會讓兩個租戶相撞。
+            return route.RouteValues.TryGetValue(RouteTenant, out var value)
+                && Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) is { Length: > 0 } requested
+                && string.Equals(requested, sessionTenant, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var current = tenant.MultiTenantContext?.TenantInfo?.Identifier;
+        return current is not null && string.Equals(current, sessionTenant, StringComparison.Ordinal);
     }
 }
 
@@ -125,11 +146,40 @@ internal static class PortalSessionValidator
 
         var signIn = context.HttpContext.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>();
 
-        // 停用也直接檢查旗標，不只靠安全戳記：停用的人，每一個請求都被當作沒登入。
-        if (await signIn.ValidateSecurityStampAsync(context.Principal) is not { Disabled: false })
+        if (!await IsValidAsync(signIn, context.Principal))
         {
             context.RejectPrincipal();
             await context.HttpContext.SignOutAsync(PlatformAuth.PortalCookieScheme);
         }
+    }
+
+    /// <summary>
+    /// 帳號還在、沒停用、安全戳記沒變。停用也直接檢查旗標，不只靠安全戳記：停用的人，每一個請求都被當作沒登入。
+    /// 要在已綁好租戶的 scope 裡呼叫（使用者表有租戶過濾）：HTTP 請求是租戶解析的結果，circuit 的重驗是 <c>PortalSessions</c>。
+    /// </summary>
+    internal static async Task<bool> IsValidAsync(SignInManager<ApplicationUser> signIn, ClaimsPrincipal principal) =>
+        await signIn.ValidateSecurityStampAsync(principal) is { Disabled: false };
+}
+
+/// <summary>
+/// 互動式 circuit 的入口成員重驗（<see cref="IPortalSessions"/>）：沒有 HTTP 請求，所以依 principal 的租戶 claim 開租戶 scope，
+/// 在裡面做與 cookie 每個請求相同的檢查（<see cref="PortalSessionValidator.IsValidAsync"/>）。
+/// </summary>
+internal sealed class PortalSessions(TenantScopes tenants) : IPortalSessions
+{
+    public async Task<bool> IsStillValidAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
+    {
+        if (user.Identity?.IsAuthenticated != true
+            || user.FindFirst(PlatformClaimTypes.PortalUserId) is null
+            || user.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value is not { Length: > 0 } tenantIdentifier)
+        {
+            return false;
+        }
+
+        var outcome = await tenants.InByIdentifierAsync<bool>(
+            tenantIdentifier,
+            async scope => AdminOutcome.Ok(await PortalSessionValidator.IsValidAsync(scope.Get<SignInManager<ApplicationUser>>(), user)));
+
+        return outcome.IsOk && outcome.Value;
     }
 }

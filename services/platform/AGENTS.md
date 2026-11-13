@@ -99,7 +99,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 有**自己的使用者儲存**（營運者不屬於任何租戶，不是租戶實體，無租戶過濾）；Identity 的金鑰型別選 `Guid`，是為了不與成員表的 `IdentityUser…<string>` 型別混成同一個繼承階層；儲存手動註冊。
 - **不開放自助註冊**：帳號只由 `/ui` 的營運者頁或命令列建立，兩條路都需要已被信任的身分（已登入的營運者，或能在服務環境執行指令的系統管理者）。
 - **先有只有本人知道的密碼，再綁驗證器**，順序固定（驗證因子不會設在系統管理者知道的密碼後面）：暫時密碼路徑，首次登入強制改密碼再綁；邀請路徑，密碼是本人自己設的，登入後直接綁。**TOTP 對每位營運者強制**，沒有角色豁免、不能關，邀請也不例外（啟用不簽發 session）。
-- **授權每個請求都重查資料庫**：帳號存在、未停用、security stamp 仍有效；是否還要改密碼、是否已綁驗證器，由**資料庫**決定，不看 cookie 宣告。所以停用、重設密碼、重設驗證器在**下一個請求**生效；重新啟用也旋轉 stamp，舊 cookie 不復活。已開著的互動式電路不是 HTTP 請求，由 `RevalidatingServerAuthenticationStateProvider` 模式定期重驗。
+- **授權每個請求都重查資料庫**：帳號存在、未停用、security stamp 仍有效；是否還要改密碼、是否已綁驗證器，由**資料庫**決定，不看 cookie 宣告。所以停用、重設密碼、重設驗證器在**下一個請求**生效；重新啟用也旋轉 stamp，舊 cookie 不復活。已開著的互動式電路不是 HTTP 請求，由 `PlatformAuthenticationStateProvider`（`RevalidatingServerAuthenticationStateProvider` 模式，每分鐘）重驗，兩種身分各驗各的：入口成員（有 `PortalUserId` claim）走 `IPortalSessions`，其餘已登入者一律當營運者驗——不認得的身分是失效，不是放行。
 - **session 有絕對期限**（`Platform:Ui:SessionMaxAge`）：cookie 雖滑動續期，從登入起算超過上限一律拒絕並清掉 cookie。起點存在票的屬性（`OperatorSessionLimit.StartedAtKey`），不用 `IssuedUtc`（續期會重寫它）；沒有起點的票視為無效。時間走 `TimeProvider`。
 - 登入、第二步、改密碼與安全設定頁是靜態 SSR 的 POST 表單（`[ExcludeFromInteractiveRouting]`、antiforgery），受依來源位址的限流政策約束。
 - **登入的稽核是 fail closed**：事件先於 session cookie 寫入，寫入失敗就沒有 session。
@@ -108,6 +108,8 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 租戶在路徑裡，於登入前由委派策略解析（路徑優先，API key 宣告其次）。頁面是**靜態 SSR**（無電路）：每個請求自行解析租戶並認證，表單是附 antiforgery 的普通 POST。
 - 使用者是租戶實體（`MultiTenantIdentityDbContext`）：同一個 email 在兩個租戶是兩個帳號；角色是欄位，不是 Identity 角色。
 - session cookie 的授權只讀宣告；**cookie 的租戶必須等於請求路徑解析出的租戶**（此檢查被使用者表的租戶過濾端到端遮蔽，所以有獨立的單元測試，每個檢查都做過突變測試）。每個入口請求檢查 security stamp，所以改密碼或重設會立即結束成員的其他 session。
+- **「請求所屬的租戶」有兩個來源**（`PortalMemberHandler`）：HTTP 請求是租戶解析的結果（環境租戶，精確比對）；互動式 circuit 裡的頁面切換沒有環境租戶，由 `AuthorizeRouteView` 把路由資料當授權資源傳進來——`Routes.razor` 必須設 `Resource="routeData"`（測試掃原始碼守住；少了它，circuit 裡的入口頁一律被拒），租戶取自路由值 `Tenant`（不分大小寫：網址是使用者打的，識別碼只有小寫）。資源是路由資料時**只看路由值、不看環境租戶**，路由裡沒有租戶就拒絕。
+- **circuit 的重驗與 cookie 驗證是同一份檢查**（`PortalSessionValidator.IsValidAsync`：帳號在、沒停用、戳記沒變）；差別只在呼叫者。`PortalSessions` 沒有 HTTP 請求，依 principal 的租戶 claim 經 `TenantScopes.InByIdentifierAsync` 開租戶 scope 再檢查；沒有租戶 claim、租戶不存在、帳號在別的租戶一律無效。停用與重設都會換戳記，所以「停用旗標」那一層要用不動戳記的測試單獨證明（`PortalSessionsTests`）。
 - 三條規則：(1) 入口 cookie 由 `UsePlatformPortalAuthentication` 認證，必須在 `UseMultiTenant` **之後**，否則 scoped 的 `PlatformDbContext` 在租戶已知前就被解析，整個請求都帶著沒有租戶的 context；(2) 租戶 context 是 `AsyncLocal`，`MemberAdmin` 在呼叫它的方法內綁定，不在 async 輔助方法裡（輔助方法返回時值會被丟棄）；(3) 營運者建立的成員，暫時密碼路徑要先改一次性密碼才能用，之後才綁驗證器；邀請路徑的密碼是本人自己設的。
 - 依來源位址的限流刻意寬鬆（機關或顧問公司常共用一個對外位址），它擋的是自動化猜測，不是正常使用。
 

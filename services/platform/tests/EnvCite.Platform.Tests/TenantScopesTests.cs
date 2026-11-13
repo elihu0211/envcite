@@ -29,6 +29,20 @@ public sealed class TenantScopesTests(PlatformFactory factory)
         Assert.False(ran);
     }
 
+    // circuit 的身分裡只有租戶識別碼（網址與 cookie 裡的那個），不是內部 Id。
+    [Fact]
+    public async Task ATenantCanBeAddressedByItsIdentifierAndIsBoundJustTheSame()
+    {
+        var (a, _) = await factory.CreateTenantWithKeyAsync("ts-f");
+
+        var seen = await Scopes.InByIdentifierAsync<string?>(a.Identifier, scope =>
+            Task.FromResult(Ok(scope.Get<IMultiTenantContextAccessor<TenantInfo>>().MultiTenantContext?.TenantInfo?.Id)));
+        var unknown = await Scopes.InByIdentifierAsync<int>("no-such-tenant", _ => Task.FromResult(Ok(1)));
+
+        Assert.Equal(a.Id, seen.Value);
+        Assert.Equal(OutcomeCodes.TenantNotFound, unknown.Code);
+    }
+
     [Fact]
     public async Task InsideTheScopeOnlyTheTargetTenantsDataIsVisible()
     {

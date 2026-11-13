@@ -96,6 +96,7 @@ public static class MembersModule
         services.AddHttpContextAccessor();
         services.AddScoped<TotpVerifier>();
         services.AddScoped<IPortalAccount, PortalAccount>();
+        services.AddSingleton<IPortalSessions, PortalSessions>();
         services.AddScoped<IPortalTwoFactor, PortalTwoFactor>();
         services.AddScoped<MemberCore>();
         services.AddScoped<IMemberSelfService, MemberSelfService>();

@@ -28,8 +28,8 @@ public static class WebModule
         services.AddPortalNavigation();
         services.AddWebAuth();
         services.AddRazorComponents().AddInteractiveServerComponents();
-        // 取代預設的 AuthenticationStateProvider：circuit 每分鐘重驗營運者帳號（見 OperatorAuthenticationStateProvider）。
-        services.AddScoped<AuthenticationStateProvider, OperatorAuthenticationStateProvider>();
+        // 取代預設的 AuthenticationStateProvider：circuit 每分鐘重驗營運者與入口成員的帳號（見 PlatformAuthenticationStateProvider）。
+        services.AddScoped<AuthenticationStateProvider, PlatformAuthenticationStateProvider>();
         services.AddCascadingAuthenticationState();
         services.AddMudServices();
         // MudBlazor 內建文字的繁體中文；英文退回它內建的英文。
