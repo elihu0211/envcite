@@ -4,7 +4,7 @@
 沒有結構化的欄位；所以每則裁判附解釋文原文與出處，失效日由載入的人讀原文填。
 **裁判不可改**：同一字號再載入時內容必須相同，相同則沿用。一次載入一個交易。
 
-文件格式：
+文件格式（由 `_Document` 驗證，缺欄位或型別不合整份拒絕）：
 
     {"rulings": [
        {"ruling_no": "<釋字第N號 或 N年憲判字第M號>", "kind": "interpretation | judgment",
@@ -23,9 +23,10 @@ import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, NamedTuple
+from typing import Literal, NamedTuple
 
 import psycopg
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from envcite_ontology.claims import AnnotationError
 from envcite_ontology.corpus_ref import UnknownProvision, provision_id
@@ -36,6 +37,35 @@ log = logging.getLogger(__name__)
 
 class RulingError(AnnotationError):
     """文件不合：條文單元不在語料、同一字號內容不同、失效日早於裁判日。"""
+
+
+class _Invalidation(BaseModel):
+    """一則裁判宣告失效的一個條文單元。"""
+
+    model_config = ConfigDict(frozen=True)
+
+    #: 法規的 pcode。
+    law: str
+    path: str
+    invalid_from: date
+    partial: bool = False
+
+
+class _Ruling(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    ruling_no: str
+    kind: Literal["interpretation", "judgment"]
+    decided_on: date
+    source_url: str
+    excerpt: str
+    invalidates: list[_Invalidation]
+
+
+class _Document(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    rulings: list[_Ruling]
 
 
 class _RulingRow(NamedTuple):
@@ -58,7 +88,7 @@ class LoadedRulings:
     invalidations: int
 
 
-def load(conn: Conn, doc: Mapping[str, Any]) -> LoadedRulings:
+def load(conn: Conn, doc: Mapping[str, object]) -> LoadedRulings:
     """寫入一份裁判文件；整份成功或整份不寫入。"""
     try:
         loaded = _write(conn, doc)
@@ -70,15 +100,15 @@ def load(conn: Conn, doc: Mapping[str, Any]) -> LoadedRulings:
     return loaded
 
 
-def _write(conn: Conn, doc: Mapping[str, Any]) -> LoadedRulings:
+def _write(conn: Conn, doc: Mapping[str, object]) -> LoadedRulings:
     try:
-        return _rulings(conn, doc)
+        return _rulings(conn, _Document.model_validate(dict(doc)))
     except RulingError:
         raise
+    except ValidationError as e:
+        raise RulingError(f"文件欄位缺漏或型別不合：{e}") from e
     except (AnnotationError, UnknownProvision) as e:
         raise RulingError(str(e)) from e
-    except (KeyError, TypeError, AttributeError, ValueError) as e:
-        raise RulingError(f"文件欄位缺漏或型別不合：{e!r}") from e
     except psycopg.errors.IntegrityError as e:
         raise RulingError(f"違反資料庫約束：{e}") from e
     except psycopg.errors.DataError as e:
@@ -87,50 +117,44 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> LoadedRulings:
         raise RulingError(str(e)) from e
 
 
-def _rulings(conn: Conn, doc: Mapping[str, Any]) -> LoadedRulings:
+def _rulings(conn: Conn, doc: _Document) -> LoadedRulings:
     count = repeated = invalidations = 0
-    for r in doc["rulings"]:
+    for r in doc.rulings:
         count += 1
         ruling_id, again = _ruling(conn, r)
         repeated += again
-        for i in r["invalidates"]:
-            unit = provision_id(conn, i["law"], i["path"])
+        for i in r.invalidates:
+            unit = provision_id(conn, i.law, i.path)
             invalidations += conn.execute(
                 "INSERT INTO corpus.ruling_invalidation"
                 " (ruling_id, resource_id, provision_id, invalid_from, partial)"
                 " SELECT %s, resource_id, id, %s, %s FROM corpus.provision WHERE id = %s"
                 " ON CONFLICT (ruling_id, provision_id) DO NOTHING",
-                (
-                    ruling_id,
-                    date.fromisoformat(str(i["invalid_from"])),
-                    bool(i.get("partial", False)),
-                    unit,
-                ),
+                (ruling_id, i.invalid_from, i.partial, unit),
             ).rowcount
     return LoadedRulings(count, repeated, invalidations)
 
 
-def _ruling(conn: Conn, r: Mapping[str, Any]) -> tuple[int, int]:
+def _ruling(conn: Conn, r: _Ruling) -> tuple[int, int]:
     """寫入一則裁判；已有同一字號時內容必須相同。回傳（id，是否沿用）。"""
-    decided = date.fromisoformat(str(r["decided_on"]))
     row = fetch_one(
         conn,
         "SELECT id, ruling_kind::text, decided_on, source_url, excerpt"
         " FROM corpus.constitutional_ruling WHERE ruling_no = %s",
-        (r["ruling_no"],),
+        (r.ruling_no,),
         _RulingRow,
     )
     if row is not None:
         stored = (row.kind, row.decided_on, row.source_url, row.excerpt)
-        if stored != (r["kind"], decided, r["source_url"], r["excerpt"]):
-            raise RulingError(f"{r['ruling_no']} 已載入，內容與這次不同")
+        if stored != (r.kind, r.decided_on, r.source_url, r.excerpt):
+            raise RulingError(f"{r.ruling_no} 已載入，內容與這次不同")
         return row.id, 1
     new = scalar(
         conn,
         "INSERT INTO corpus.constitutional_ruling"
         " (ruling_no, ruling_kind, decided_on, source_url, excerpt)"
         " VALUES (%s, %s, %s, %s, %s) RETURNING id",
-        (r["ruling_no"], r["kind"], decided, r["source_url"], r["excerpt"]),
+        (r.ruling_no, r.kind, r.decided_on, r.source_url, r.excerpt),
         int,
     )
     return new, 0
