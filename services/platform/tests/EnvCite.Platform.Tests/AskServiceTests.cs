@@ -13,7 +13,9 @@ namespace EnvCite.Platform.Tests;
 /// 靜態頁與互動式 circuit（沒有 ambient tenant）呼叫的就是這一層，所以租戶隔離、計量與 fail closed 在這裡直接證明。
 /// 頁面怎麼呈現由 <c>PortalAnswerTests</c> 等守住。
 /// </summary>
-[Collection(PlatformTestGroup.Group3)]
+// 放在 Group1：這裡會呼叫 consult 的 Ground，而 gRPC 用戶端的計量器是行程內全域的；RedMetricsTests（也在 Group1，同組循序）
+// 只數自己發出的 Ground，放在別的測試組並行跑，它的指標點就會多出這裡的呼叫。
+[Collection(PlatformTestGroup.Group1)]
 public sealed class AskServiceTests(PlatformFactory factory)
 {
     private const string Reply = "在指定清除地區內不得燃燒 [L1]。";
