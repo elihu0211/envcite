@@ -12,6 +12,9 @@
   定義，這幾條都是答案。領域是專論的「收錄閉包」：既有題庫期望條文所在的法規（種子），加上依它們授權訂定的命令
   （`retrieval.law_scope`）。
 - **無答案題（`absent`）**：候選詞經掃描全部現行條文全文，沒有任何一條含有它，標準答案是「沒有」。
+- **舊名題（`renamed`）**：沿革記載「原名稱：甲；新名稱：乙」，查詢是舊名甲，答案是改名後的那部法規
+  （任一條文都算）。舊名不會出現在現行條文裡，這是「換個說法」的情形，由資料程式抽出、沒有人工維護的
+  詞表；舊名也是別部法規的名稱、或任一現行條文含有它切出的全部詞的，不收。
 
 量的是「已知項目搜尋」：標準答案是否出現在前 k 條，以及沒有答案時列表是否仍列出東西。它不量「列出的
 其他條文是不是相關」，所以雜訊以「不含查詢詞字面」的命中占比近似，標明是近似。
@@ -27,6 +30,7 @@ import re
 import sys
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -113,6 +117,12 @@ ABSENT_CANDIDATES = (
     "停車費",
     "機車排氣檢驗站",
 )
+
+#: 沿革的更名紀錄：「（原名稱：甲；新名稱：乙）」。
+RENAME_PATTERN = r"原名稱[：:]([^；;）)]+)[；;]\s*新名稱"
+
+#: 舊名題每這麼多個舊名取一個（依雜湊，與語料增減無關）。全部舊名有上千個，量測要逐題呼叫。
+RENAMED_ONE_IN = 6
 
 #: 規則的預設值，與共用下界檔、平台的覆蓋率門檻相同；`measure` 以參數覆寫。
 LEXICAL_FLOOR = 0.5
@@ -206,6 +216,94 @@ def absent_terms(conn: psycopg.Connection[Any], as_of: str) -> tuple[list[str], 
     return keep, sorted(present)
 
 
+def renamed_items(
+    conn: psycopg.Connection[Any], as_of: str
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """舊名題與被丟棄的（舊名出現在現行條文裡）：標準答案是改名後的法規。"""
+    from envcite_ontology.store import OntologyStore
+    from envcite_segmenter import Segmenter
+
+    rows = conn.execute(
+        """
+        WITH renames AS (
+            SELECT r.local_id AS pcode, r.id AS rid, btrim(m[1]) AS old_name
+              FROM corpus.lifecycle_event AS e
+              JOIN corpus.legal_resource AS r ON r.id = e.resource_id AND r.id_scheme = 'moj_pcode'
+             CROSS JOIN LATERAL regexp_matches(e.source_text, %(pattern)s, 'g') AS m
+             WHERE e.source_text LIKE '%%原名稱%%'
+        ), cur AS (
+            SELECT DISTINCT ON (x.resource_id) x.resource_id, x.title
+              FROM corpus.legal_expression AS x WHERE x.language = 'zho'
+             ORDER BY x.resource_id, x.version_date DESC
+        )
+        SELECT n.old_name, min(n.pcode), min(c.title)
+          FROM renames AS n JOIN cur AS c ON c.resource_id = n.rid
+         WHERE n.old_name <> c.title
+           AND char_length(n.old_name) BETWEEN 4 AND 30
+           AND EXISTS (SELECT 1
+                         FROM corpus.provision_version AS v
+                         JOIN corpus.provision AS p ON p.id = v.provision_id
+                        WHERE p.resource_id = n.rid AND v.superseded_at IS NULL
+                          AND v.force_period @> %(on)s::date)
+           AND NOT EXISTS (SELECT 1 FROM corpus.legal_expression AS x
+                            WHERE x.title = n.old_name AND x.resource_id <> n.rid)
+         GROUP BY n.old_name
+        HAVING count(DISTINCT n.pcode) = 1
+         ORDER BY n.old_name
+        """,
+        {"pattern": RENAME_PATTERN, "on": as_of},
+    ).fetchall()
+    chosen = [
+        (str(name), str(pcode), str(title))
+        for name, pcode, title in rows
+        if hashlib.sha256(f"renamed:{name}".encode()).digest()[1] % RENAMED_ONE_IN == 0
+    ]
+    store = OntologyStore.from_dsn(load(ServerSettings).dsn)
+    try:
+        segmenter = Segmenter(store.lexicon())
+    finally:
+        store.close()
+    items: list[dict[str, Any]] = []
+    literal: list[str] = []
+    for name, pcode, title in chosen:
+        if terms_in_one_article(conn, segmenter, name, as_of):
+            literal.append(name)
+            continue
+        items.append(
+            {
+                "id": f"kw-ren-{len(items) + 1:04d}",
+                "bucket": "renamed",
+                "query": name,
+                "split": split_of(name),
+                "expected": [{"pcode": pcode, "law": title}],
+            }
+        )
+    return items, literal
+
+
+def terms_in_one_article(
+    conn: psycopg.Connection[Any], segmenter: Any, text: str, as_of: str
+) -> bool:
+    """現行條文裡是否有一條含有查詢切出的全部詞（字面臂的 AND，比詞組相鄰更寬）。"""
+    terms = segmenter.to_tsvector_input(text)
+    if not terms:
+        return False
+    row = conn.execute(
+        """
+        SELECT EXISTS (
+            SELECT 1
+              FROM retrieval.passage AS i
+              JOIN corpus.provision_version AS v ON v.content_sha256 = i.content_sha256
+             WHERE i.tokenizer = %(tokenizer)s
+               AND i.tsv @@ plainto_tsquery('simple', %(terms)s)
+               AND v.superseded_at IS NULL
+               AND v.force_period @> %(on)s::date)
+        """,
+        {"tokenizer": segmenter.tokenizer_id, "terms": terms, "on": as_of},
+    ).fetchone()
+    return bool(row and row[0])
+
+
 def snapshots(conn: psycopg.Connection[Any]) -> list[dict[str, str]]:
     rows = conn.execute(
         "SELECT DISTINCT ON (feed) feed, data_date, encode(sha256, 'hex')"
@@ -248,6 +346,10 @@ def build(conn: psycopg.Connection[Any], as_of: str, seed_list: Sequence[str]) -
                 "expected": [],
             }
         )
+    renamed, renamed_literal = renamed_items(conn, as_of)
+    for item in renamed:
+        item["id"] = f"kw-ren-{len(items) + 1:04d}"
+        items.append(item)
     return {
         "kind": "keyword-golden",
         "as_of": as_of,
@@ -257,6 +359,7 @@ def build(conn: psycopg.Connection[Any], as_of: str, seed_list: Sequence[str]) -
         "dropped_generic_terms": dropped_generic,
         "reviewed_exclusions": REVIEWED_EXCLUSIONS,
         "dropped_absent_candidates": present,
+        "dropped_renamed_literal": renamed_literal,
         "items": items,
     }
 
@@ -271,9 +374,12 @@ def verify(conn: psycopg.Connection[Any], doc: Mapping[str, Any], sample: int) -
         now = theirs.get(item["query"])
         if now is None:
             problems.append(f"{item['id']} {item['query']}：重建時不存在")
-        elif [e["article"] for e in now["expected"]] != [e["article"] for e in item["expected"]]:
+        elif answer_ids(now) != answer_ids(item):
             problems.append(f"{item['id']} {item['query']}：答案條文與重建不同")
     for item in doc["items"]:
+        if item["bucket"] == "renamed":
+            problems.extend(check_renamed(conn, item, as_of))
+            continue
         for e in item["expected"]:
             pcode, number = e["article"].split("-art-")
             row = conn.execute(
@@ -303,6 +409,9 @@ def verify(conn: psycopg.Connection[Any], doc: Mapping[str, Any], sample: int) -
     for item in sorted(picked, key=lambda i: i["id"]):
         if item["bucket"] == "absent":
             print(f"  [{item['id']}] 無答案：「{item['query']}」", file=sys.stderr)
+        elif item["bucket"] == "renamed":
+            law = item["expected"][0]
+            print(f"  [{item['id']}] 舊名「{item['query']}」→ {law['law']}", file=sys.stderr)
         else:
             for e in item["expected"]:
                 print(
@@ -313,12 +422,43 @@ def verify(conn: psycopg.Connection[Any], doc: Mapping[str, Any], sample: int) -
     return problems
 
 
+def answer_ids(item: Mapping[str, Any]) -> list[str]:
+    """答案的識別：用語題是條文，舊名題是法規。"""
+    return [e.get("article") or e["pcode"] for e in item["expected"]]
+
+
+def check_renamed(conn: psycopg.Connection[Any], item: Mapping[str, Any], as_of: str) -> list[str]:
+    """舊名題對沿革原文核對：更名紀錄確實寫了這個舊名、舊名不是現名。"""
+    name = str(item["query"])
+    law = item["expected"][0]
+    row = conn.execute(
+        """
+        SELECT count(*)
+          FROM corpus.lifecycle_event AS e
+          JOIN corpus.legal_resource AS r ON r.id = e.resource_id
+         WHERE r.local_id = %(pcode)s
+           AND (position(%(a)s IN e.source_text) > 0 OR position(%(b)s IN e.source_text) > 0)
+        """,
+        {"pcode": law["pcode"], "a": f"原名稱：{name}", "b": f"原名稱:{name}"},
+    ).fetchone()
+    problems = []
+    if not row or not row[0]:
+        problems.append(f"{item['id']} 「{name}」：沿革沒有「原名稱：{name}」")
+    if name == law["law"]:
+        problems.append(f"{item['id']} 「{name}」：舊名等於現名")
+    return problems
+
+
 def missed_definitions(
     conn: psycopg.Connection[Any], doc: Mapping[str, Any]
 ) -> dict[str, list[str]]:
     """獨立的完整性核對：不要求「用詞，定義如下」的標題句，掃全部現行條文裡長得像定義的行，
     回傳「定義了題庫的某個詞、卻不在該題答案裡」的條文。"""
-    wanted = {i["query"]: {e["article"] for e in i["expected"]} for i in doc["items"]}
+    wanted = {
+        i["query"]: {e["article"] for e in i["expected"]}
+        for i in doc["items"]
+        if i["bucket"] == "definition"
+    }
     rows = conn.execute(
         """
         SELECT r.local_id, corpus.article_number(p.path), corpus.article_text(v.id)
@@ -396,27 +536,40 @@ def measure(doc: Mapping[str, Any], address: str, args: argparse.Namespace) -> d
     from envcite.ontology.v2 import ontology_pb2_grpc as grpc_api
 
     stub = grpc_api.OntologyServiceStub(grpc.insecure_channel(address))
+
+    def ask(key: tuple[str, bool]) -> Any:
+        query, guidance = key
+        return stub.SearchArticles(
+            pb.SearchArticlesRequest(query=query, limit=10, include_guidance=guidance), timeout=60
+        )
+
+    # 全部查詢平行取回：一輪要幾百次呼叫，循序跑得夠久，會碰上 staging 的滾動更新而前後不同版。
+    wanted = {
+        (i["query"], guided)
+        for i in doc["items"]
+        if i["split"] in args.splits
+        for guided in ((False, True) if i["bucket"] != "absent" else (True,))
+    }
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        responses = dict(zip(sorted(wanted), pool.map(ask, sorted(wanted)), strict=True))
+
     ks = (1, 5, 10)
     out: dict[str, Any] = {}
     for split in args.splits:
         items = [i for i in doc["items"] if i["split"] == split]
         defs = [i for i in items if i["bucket"] == "definition"]
         neg = [i for i in items if i["bucket"] == "absent"]
+        ren = [i for i in items if i["bucket"] == "renamed"]
         raw_hit = dict.fromkeys(ks, 0)
         rules = rule_variants(args)
         listed: dict[str, dict[str, float]] = {name: defaultdict(float) for name in rules}
         for item in defs:
             want = {e["article"] for e in item["expected"]}
-            raw = stub.SearchArticles(
-                pb.SearchArticlesRequest(query=item["query"], limit=10), timeout=60
-            )
+            raw = responses[(item["query"], False)]
             ranked = [doc_id(h.identifier.local_id, h.number) for h in raw.hits]
             for k in ks:
                 raw_hit[k] += bool(want & set(ranked[:k]))
-            guided = stub.SearchArticles(
-                pb.SearchArticlesRequest(query=item["query"], limit=10, include_guidance=True),
-                timeout=60,
-            )
+            guided = responses[(item["query"], True)]
             for name, rule in rules.items():
                 kept = [h for h in guided.hits if rule(h)]
                 ids = [doc_id(h.identifier.local_id, h.number) for h in kept]
@@ -425,15 +578,34 @@ def measure(doc: Mapping[str, Any], address: str, args: argparse.Namespace) -> d
                 acc["size"] += len(kept)
                 acc["no_literal"] += sum(item["query"] not in h.content for h in kept)
         for item in neg:
-            guided = stub.SearchArticles(
-                pb.SearchArticlesRequest(query=item["query"], limit=10, include_guidance=True),
-                timeout=60,
-            )
+            guided = responses[(item["query"], True)]
             for name, rule in rules.items():
                 if any(rule(h) for h in guided.hits):
                     listed[name]["leak"] += 1
+        renamed_raw = 0
+        renamed_found = dict.fromkeys(rules, 0)
+        renamed_size = dict.fromkeys(rules, 0)
+        for item in ren:
+            pcode = item["expected"][0]["pcode"]
+            raw = responses[(item["query"], False)]
+            renamed_raw += any(h.identifier.local_id == pcode for h in raw.hits)
+            guided = responses[(item["query"], True)]
+            for name, rule in rules.items():
+                kept = [h for h in guided.hits if rule(h)]
+                renamed_found[name] += any(h.identifier.local_id == pcode for h in kept)
+                renamed_size[name] += len(kept)
+        r = len(ren)
         n, m = len(defs), len(neg)
         out[split] = {
+            "renamed_queries": r,
+            "renamed_raw_found": renamed_raw / r if r else None,
+            "renamed_rules": {
+                name: {
+                    "law_in_list": renamed_found[name] / r if r else None,
+                    "mean_list_size": renamed_size[name] / r if r else None,
+                }
+                for name in rules
+            },
             "definition_queries": n,
             "absent_queries": m,
             "raw_hit_at": {str(k): raw_hit[k] / n for k in ks} if n else {},
@@ -477,6 +649,22 @@ def markdown(result: Mapping[str, Any]) -> str:
         f"{s}: " + "、".join(f"@{k} {v:.3f}" for k, v in r["raw_hit_at"].items())
         for s, r in result["results"].items()
     ]
+    lines += [
+        "",
+        "| 子集 | 規則 | 舊名題：改名後的法規在列表 | 平均列出條數 |",
+        "|---|---|---|---|",
+    ]
+    for split, r in result["results"].items():
+        for name, v in r.get("renamed_rules", {}).items():
+            found, size = v["law_in_list"], v["mean_list_size"]
+            cells = ["—" if x is None else f"{x:.3f}" for x in (found, size)]
+            label = f"{split}（舊名 {r['renamed_queries']}）"
+            lines.append(f"| {label} | {name} | {cells[0]} | {cells[1]} |")
+    raw += [
+        f"{s} 舊名題，未過濾的前 10 條含改名後的法規："
+        + ("—" if r.get("renamed_raw_found") is None else f"{r['renamed_raw_found']:.3f}")
+        for s, r in result["results"].items()
+    ]
     return "\n".join(lines) + "\n\n未過濾的前 k 條含答案條的比例：" + "；".join(raw) + "\n"
 
 
@@ -492,6 +680,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     m = sub.add_parser("measure")
     m.add_argument("golden", type=Path)
     m.add_argument("--address", default="localhost:50051")
+    m.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="平行呼叫數；不得超過服務的嵌入名額（2），否則語意臂被略過、數字退化成字面臂",
+    )
     m.add_argument("--lexical", type=float, default=LEXICAL_FLOOR)
     m.add_argument("--semantic", type=float, default=SEMANTIC_FLOOR)
     m.add_argument("--coverage", type=float, default=MIN_TERM_COVERAGE)
@@ -521,7 +715,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 by[(i["bucket"], i["split"])] += 1
             print(
                 f"題數：{dict(by)}；丟棄過泛的詞 {len(doc['dropped_generic_terms'])}、"
-                f"丟棄含詞的無答案候選 {doc['dropped_absent_candidates']}",
+                f"丟棄含詞的無答案候選 {doc['dropped_absent_candidates']}；"
+                f"舊名因出現在條文而丟棄 {len(doc['dropped_renamed_literal'])}",
                 file=sys.stderr,
             )
             return 0

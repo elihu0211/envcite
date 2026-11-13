@@ -1,0 +1,74 @@
+{
+ "parameters": {
+  "lexical": 0.5,
+  "semantic": 0.71,
+  "coverage": 0.5
+ },
+ "results": {
+  "test": {
+   "renamed_queries": 115,
+   "renamed_raw_found": 0.8608695652173913,
+   "renamed_rules": {
+    "consult 的規則（覆蓋率 0）": {
+     "law_in_list": 0.7652173913043478,
+     "mean_list_size": 7.034782608695652
+    },
+    "列表規則": {
+     "law_in_list": 0.7043478260869566,
+     "mean_list_size": 4.243478260869566
+    },
+    "候選 A：整詞命中放行": {
+     "law_in_list": 0.7043478260869566,
+     "mean_list_size": 4.243478260869566
+    },
+    "候選 B：語意命中要沾到字面": {
+     "law_in_list": 0.6086956521739131,
+     "mean_list_size": 3.7217391304347824
+    },
+    "候選 A＋B": {
+     "law_in_list": 0.6086956521739131,
+     "mean_list_size": 3.7217391304347824
+    }
+   },
+   "definition_queries": 319,
+   "absent_queries": 20,
+   "raw_hit_at": {
+    "1": 0.445141065830721,
+    "5": 0.6959247648902821,
+    "10": 0.768025078369906
+   },
+   "rules": {
+    "consult 的規則（覆蓋率 0）": {
+     "found_in_list": 0.6865203761755486,
+     "mean_list_size": 7.495297805642633,
+     "listed_without_the_term": 0.6390631534922626,
+     "absent_leak": 0.55
+    },
+    "列表規則": {
+     "found_in_list": 0.6865203761755486,
+     "mean_list_size": 6.241379310344827,
+     "listed_without_the_term": 0.5665494726268206,
+     "absent_leak": 0.2
+    },
+    "候選 A：整詞命中放行": {
+     "found_in_list": 0.7774294670846394,
+     "mean_list_size": 7.09717868338558,
+     "listed_without_the_term": 0.5083922261484098,
+     "absent_leak": 0.2
+    },
+    "候選 B：語意命中要沾到字面": {
+     "found_in_list": 0.6865203761755486,
+     "mean_list_size": 5.213166144200627,
+     "listed_without_the_term": 0.481659651232712,
+     "absent_leak": 0.2
+    },
+    "候選 A＋B": {
+     "found_in_list": 0.7774294670846394,
+     "mean_list_size": 6.068965517241379,
+     "listed_without_the_term": 0.4256198347107438,
+     "absent_leak": 0.2
+    }
+   }
+  }
+ }
+}
