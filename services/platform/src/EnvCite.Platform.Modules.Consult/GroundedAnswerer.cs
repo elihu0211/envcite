@@ -23,6 +23,7 @@ internal sealed partial class GroundedAnswerer(
     Lazy<IChatClient> model,
     IChatReducer reducer,
     IUsageRecorder usage,
+    AnswerMetrics metrics,
     ILogger<GroundedAnswerer> logger) : IGroundedAnswerer
 {
     public const string AnswerOperation = "consult.answer";
@@ -114,7 +115,11 @@ internal sealed partial class GroundedAnswerer(
 
         var start = new AnswerTurn(question.Trim(), asOf) { History = await PriorOfAsync(history, cancellationToken) };
         await using var run = await InProcessExecution.RunAsync(workflow, start, cancellationToken: cancellationToken);
-        return OutcomeOf(run);
+        var outcome = OutcomeOf(run);
+        if (outcome.IsOk && outcome.Value is { } answer)
+            metrics.Record(answer, BareTopic.Is(start.Question));
+
+        return outcome;
     }
 
     /// <summary>取得封閉證據集；沒有證據就以 consult 的拒答為結論（不呼叫模型）。</summary>

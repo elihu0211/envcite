@@ -110,6 +110,7 @@ public static class ConsultModule
 #pragma warning disable MEAI001
             new MessageCountingChatReducer(provider.GetRequiredService<IOptions<AnswerOptions>>().Value.HistoryTurns * 2));
 #pragma warning restore MEAI001
+        services.AddSingleton<AnswerMetrics>();
         services.AddScoped<ConsultGateway>();
         services.AddScoped<IGroundedAnswerer, GroundedAnswerer>();
         return services;
