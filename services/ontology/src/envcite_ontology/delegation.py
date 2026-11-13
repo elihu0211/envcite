@@ -44,6 +44,35 @@ class Citation:
     path: str
 
 
+def _paragraphs(cite: str, pos: int) -> tuple[list[str], int]:
+    """條之後的項、款：回傳（項號，讀完的位置）。
+
+    「第二項及第三項」逐項成一處引文；款不單獨成條文，記到所屬的項。項、款的數字寫不成整數時
+    丟 `ValueError`。
+    """
+    paragraphs: list[str] = []
+    while True:
+        skip = pos
+        while skip < len(cite) and cite[skip] in "、及":
+            skip += 1
+        unit = _UNIT.match(cite, skip)
+        if unit is None:
+            return paragraphs, pos
+        pos = unit.end()
+        if unit.group(2) == "項":
+            paragraphs.append(str(parse_int(unit.group(1))))
+
+
+def _article_paths(cite: str, art: re.Match[str]) -> tuple[list[str], int]:
+    """一個條號（連同其後的項）所指的單元路徑，與讀完的位置；數字寫不成整數時丟 `ValueError`。"""
+    number = str(parse_int(art.group(1)))
+    if art.group(2):
+        number += f"-{parse_int(art.group(2))}"
+    paragraphs, pos = _paragraphs(cite, art.end())
+    base = f"art_{number}"
+    return [f"{base}/para_{p}" for p in paragraphs] or [base], pos
+
+
 def parse(text: str) -> list[Citation]:
     """從命令首條的文字取出所有授權引文；沒有「依…訂定」或引不出條號則為空。"""
     # 舊法規的原文逐行折行、數字夾空白、「〇」寫成「○」；先正規化
@@ -70,30 +99,11 @@ def parse(text: str) -> list[Citation]:
             continue
         if not law:
             return []
-        pos = art.end()
         try:
-            number = str(parse_int(art.group(1)))
-            if art.group(2):
-                number += f"-{parse_int(art.group(2))}"
+            paths, pos = _article_paths(cite, art)
         except ValueError:
             return []
-        # 條之後的項、款：「第二項及第三項」逐項成一處引文；款不單獨成條文，記到所屬的項
-        paragraphs: list[str] = []
-        while True:
-            skip = pos
-            while skip < len(cite) and cite[skip] in "、及":
-                skip += 1
-            unit = _UNIT.match(cite, skip)
-            if unit is None:
-                break
-            pos = unit.end()
-            if unit.group(2) == "項":
-                try:
-                    paragraphs.append(str(parse_int(unit.group(1))))
-                except ValueError:
-                    return []
-        base = f"art_{number}"
-        for path in [f"{base}/para_{p}" for p in paragraphs] or [base]:
+        for path in paths:
             c = Citation(law, path)
             if c not in found:
                 found.append(c)

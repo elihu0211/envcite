@@ -489,6 +489,91 @@ def actor_bases(request: Any, validator: errors.Validator) -> list[str]:
     return out
 
 
+def _fact_value(value: Any, where: str, validator: errors.Validator) -> float | str | None:
+    """事實的一個值；不合則記在 `validator` 並回 None。"""
+    kind = value.WhichOneof("value")
+    if kind == "flag":
+        return 1.0 if value.flag else 0.0
+    if kind == "concept":
+        if not value.concept:
+            validator.add(f"{where}.concept", errors.EMPTY, "concept is required")
+            return None
+        return str(value.concept)
+    if kind == "number":
+        number = _number(value.number)
+        if number is None:
+            validator.add(
+                f"{where}.number.value", errors.INVALID_NUMBER, "must be a finite decimal number"
+            )
+            return None
+        return float(number)
+    validator.add(where, errors.UNSET, "flag, number or concept is required")
+    return None
+
+
+def _fact_values(fact: Any, where: str, validator: errors.Validator) -> list[float | str]:
+    """一筆事實的有效值；概念或值整體不合則記錯並回空。"""
+    if not fact.concept:
+        validator.add(f"{where}.concept", errors.EMPTY, "concept is required")
+        return []
+    if fact.concept.startswith(RESERVED_PREFIX):
+        validator.add(
+            f"{where}.concept",
+            errors.RESERVED_CONCEPT,
+            f"codes beginning {RESERVED_PREFIX!r} are reserved; use administrative_penalty_facts",
+        )
+        return []
+    if not fact.values:
+        validator.add(f"{where}.values", errors.EMPTY, "at least one value is required")
+        return []
+    decoded = [_fact_value(v, f"{where}.values[{j}]", validator) for j, v in enumerate(fact.values)]
+    return [v for v in decoded if v is not None]
+
+
+def _stated_facts(request: Any, validator: errors.Validator) -> dict[str, list[float | str]]:
+    """請求的 `facts`，概念 → 值；同一概念的多筆合併。"""
+    several: dict[str, list[float | str]] = {}
+    for i, fact in enumerate(request.facts):
+        values = _fact_values(fact, f"facts[{i}]", validator)
+        if values:
+            several.setdefault(fact.concept, []).extend(values)
+    return several
+
+
+def _penalty_decimal(penalty: Any, name: str, validator: errors.Validator) -> float | None:
+    """行政罰事實的一個非負十進位數；不合則記在 `validator` 並回 None。"""
+    where = f"administrative_penalty_facts.{name}"
+    number = _number(getattr(penalty, name))
+    if number is None:
+        validator.add(f"{where}.value", errors.INVALID_NUMBER, "must be a finite decimal number")
+        return None
+    if number < 0:
+        validator.add(where, errors.OUT_OF_RANGE, "must not be negative")
+        return None
+    return float(number)
+
+
+def _penalty_facts(penalty: Any, validator: errors.Validator) -> dict[str, float]:
+    """行政罰法總則的事實，鍵已加保留前綴。"""
+    out: dict[str, float] = {}
+    for name in _BOOLEAN_FACTS:
+        if penalty.HasField(name):
+            out[f"{RESERVED_PREFIX}{name}"] = 1.0 if getattr(penalty, name) else 0.0
+    if penalty.HasField("age"):
+        if penalty.age < 0:
+            validator.add(
+                "administrative_penalty_facts.age", errors.OUT_OF_RANGE, "age must not be negative"
+            )
+        else:
+            out[f"{RESERVED_PREFIX}age"] = float(penalty.age)
+    for decimal_name in _DECIMAL_FACTS:
+        if penalty.HasField(decimal_name):
+            amount = _penalty_decimal(penalty, decimal_name, validator)
+            if amount is not None:
+                out[f"{RESERVED_PREFIX}{decimal_name}"] = amount
+    return out
+
+
 def case_facts(
     request: Any,
     validator: errors.Validator,
@@ -497,79 +582,13 @@ def case_facts(
     criminal_cleared: date | None,
 ) -> dict[str, float | list[float | str]]:
     """請求的案件事實轉成推論程式的輸入。欄位錯誤記在 `validator`，不丟例外。"""
-    several: dict[str, list[float | str]] = {}
-    for i, fact in enumerate(request.facts):
-        where = f"facts[{i}]"
-        if not fact.concept:
-            validator.add(f"{where}.concept", errors.EMPTY, "concept is required")
-            continue
-        if fact.concept.startswith(RESERVED_PREFIX):
-            validator.add(
-                f"{where}.concept",
-                errors.RESERVED_CONCEPT,
-                f"codes beginning {RESERVED_PREFIX!r} are reserved;"
-                " use administrative_penalty_facts",
-            )
-            continue
-        if not fact.values:
-            validator.add(f"{where}.values", errors.EMPTY, "at least one value is required")
-            continue
-        values: list[float | str] = []
-        for j, v in enumerate(fact.values):
-            kind = v.WhichOneof("value")
-            if kind == "flag":
-                values.append(1.0 if v.flag else 0.0)
-            elif kind == "concept":
-                if not v.concept:
-                    validator.add(
-                        f"{where}.values[{j}].concept", errors.EMPTY, "concept is required"
-                    )
-                    continue
-                values.append(v.concept)
-            elif kind == "number":
-                number = _number(v.number)
-                if number is None:
-                    validator.add(
-                        f"{where}.values[{j}].number.value",
-                        errors.INVALID_NUMBER,
-                        "must be a finite decimal number",
-                    )
-                    continue
-                values.append(float(number))
-            else:
-                validator.add(
-                    f"{where}.values[{j}]", errors.UNSET, "flag, number or concept is required"
-                )
-        if values:
-            several.setdefault(fact.concept, []).extend(values)
-    case: dict[str, float | list[float | str]] = dict(several)
-    penalty = request.administrative_penalty_facts
-    for name in _BOOLEAN_FACTS:
-        if penalty.HasField(name):
-            case[f"{RESERVED_PREFIX}{name}"] = 1.0 if getattr(penalty, name) else 0.0
-    if penalty.HasField("age"):
-        if penalty.age < 0:
-            validator.add(
-                "administrative_penalty_facts.age", errors.OUT_OF_RANGE, "age must not be negative"
-            )
-        else:
-            case[f"{RESERVED_PREFIX}age"] = float(penalty.age)
-    for decimal_name in _DECIMAL_FACTS:
-        if penalty.HasField(decimal_name):
-            where = f"administrative_penalty_facts.{decimal_name}"
-            number = _number(getattr(penalty, decimal_name))
-            if number is None:
-                validator.add(
-                    f"{where}.value", errors.INVALID_NUMBER, "must be a finite decimal number"
-                )
-            elif number < 0:
-                validator.add(where, errors.OUT_OF_RANGE, "must not be negative")
-            else:
-                case[f"{RESERVED_PREFIX}{decimal_name}"] = float(number)
-    if criminal_cleared is not None:
-        case[f"{RESERVED_PREFIX}criminal_cleared"] = _stamp(criminal_cleared)
-    if conduct_ended is not None:
-        case[f"{RESERVED_PREFIX}conduct_ended"] = _stamp(conduct_ended)
-    if result_on is not None:
-        case[f"{RESERVED_PREFIX}result_on"] = _stamp(result_on)
+    case: dict[str, float | list[float | str]] = dict(_stated_facts(request, validator))
+    case.update(_penalty_facts(request.administrative_penalty_facts, validator))
+    for name, day in (
+        ("criminal_cleared", criminal_cleared),
+        ("conduct_ended", conduct_ended),
+        ("result_on", result_on),
+    ):
+        if day is not None:
+            case[f"{RESERVED_PREFIX}{name}"] = _stamp(day)
     return case

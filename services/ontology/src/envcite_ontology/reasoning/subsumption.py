@@ -5,14 +5,14 @@
 缺漏事實識別、不確定概念需判斷事項、責任主體分流與行政罰法總則阻卻之正確性。
 """
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from typing import Any
 
 from envcite_ontology.db import Conn
 from envcite_ontology.reasoning import facts
-from envcite_ontology.reasoning.engine import evaluate
+from envcite_ontology.reasoning.engine import Penalty, Result, evaluate
 
 
 @dataclass(frozen=True)
@@ -122,6 +122,190 @@ def _safe_div(numerator: int, denominator: int) -> float:
     return float(numerator) / denominator if denominator > 0 else 1.0
 
 
+@dataclass(frozen=True, slots=True)
+class _Match[Item: tuple[str | bool, ...]]:
+    """某類結果的預期與實際比對；實際已把別名（標籤與數字編號）合為一筆。"""
+
+    expected: frozenset[Item]
+    actual: frozenset[Item]
+    matched: int
+
+    @property
+    def passed(self) -> bool:
+        return self.matched == len(self.expected) == len(self.actual)
+
+    @property
+    def counts(self) -> tuple[int, int, int]:
+        return len(self.expected), len(self.actual), self.matched
+
+    def diffs(self, title: str) -> list[str]:
+        if self.passed:
+            return []
+        return [f"{title}不符: 預期 {sorted(self.expected)}，實際 {sorted(self.actual)}"]
+
+
+@dataclass(frozen=True, slots=True)
+class _General:
+    """總則（不予處罰與時效）的預期與實際；預期只需是實際的子集。"""
+
+    expected_unpunished: frozenset[str]
+    expected_time_barred: frozenset[str]
+    actual_unpunished: frozenset[str]
+    actual_time_barred: frozenset[str]
+
+    @property
+    def passed(self) -> bool:
+        return self.expected_unpunished <= self.actual_unpunished and (
+            self.expected_time_barred <= self.actual_time_barred
+        )
+
+    def diffs(self) -> list[str]:
+        if self.passed:
+            return []
+        return [
+            f"總則狀態不符: 預期不罰 {sorted(self.expected_unpunished)}"
+            f"（實際 {sorted(self.actual_unpunished)}）；"
+            f"預期時效 {sorted(self.expected_time_barred)}"
+            f"（實際 {sorted(self.actual_time_barred)}）"
+        ]
+
+
+@dataclass(slots=True)
+class _Tally:
+    """跨案例累計的預期筆數、實際筆數與命中筆數。"""
+
+    expected: int = 0
+    actual: int = 0
+    matched: int = 0
+
+    def add(self, expected: int, actual: int, matched: int) -> None:
+        self.expected += expected
+        self.actual += actual
+        self.matched += matched
+
+    @property
+    def precision(self) -> float:
+        return _safe_div(self.matched, self.actual)
+
+    @property
+    def recall(self) -> float:
+        return _safe_div(self.matched, self.expected)
+
+
+@dataclass(slots=True)
+class _Totals:
+    """各類結果的累計；判決只用命中 / 預期（準確率），不用實際筆數。"""
+
+    verdicts: _Tally = field(default_factory=_Tally)
+    missing: _Tally = field(default_factory=_Tally)
+    judgements: _Tally = field(default_factory=_Tally)
+    penalties: _Tally = field(default_factory=_Tally)
+
+
+def _labeler(id_resolver: Mapping[str, int] | Callable[[str], int] | None) -> Callable[[int], str]:
+    """陳述編號 → 解析器裡的標籤；對不到（或解析器不是對照表）則為編號本身。"""
+
+    def label(num_id: int) -> str:
+        if isinstance(id_resolver, Mapping):
+            for k, v in id_resolver.items():
+                if v == num_id:
+                    return k
+        return str(num_id)
+
+    return label
+
+
+def _verdicts_by_label(label: Callable[[int], str], verdicts: Mapping[int, str]) -> dict[str, str]:
+    by_label: dict[str, str] = {}
+    for s_id, v in verdicts.items():
+        by_label[label(s_id)] = v
+        by_label[str(s_id)] = v
+    return by_label
+
+
+def _verdict_diffs(expected: Mapping[str, str], actual: Mapping[str, str]) -> list[str]:
+    return [
+        f"判決不符 [{ref}]: 預期 {exp_v}，實際 {actual.get(ref)}"
+        for ref, exp_v in expected.items()
+        if actual.get(ref) != exp_v
+    ]
+
+
+def _match_pairs(
+    label: Callable[[int], str],
+    expected: Iterable[tuple[str, str]],
+    found: Iterable[tuple[int, str]],
+) -> _Match[tuple[str, str]]:
+    """（陳述, 概念）的比對：預期可用標籤或數字編號指稱陳述。"""
+    actual = {(label(s_id), concept) for s_id, concept in found}
+    aliased = actual | {(str(s_id), concept) for s_id, concept in found}
+    expected_set = frozenset(expected)
+    return _Match(expected_set, frozenset(actual), len(expected_set & aliased))
+
+
+def _match_penalties(
+    label: Callable[[int], str],
+    expected: Iterable[tuple[str, str, bool]],
+    found: Iterable[Penalty],
+) -> _Match[tuple[str, str, bool]]:
+    actual = {(label(p.statement_id), p.effect, p.conditional) for p in found}
+    aliased = actual | {(str(p.statement_id), p.effect, p.conditional) for p in found}
+    expected_set = frozenset(expected)
+    return _Match(expected_set, frozenset(actual), len(expected_set & aliased))
+
+
+def _grade(
+    c: SubsumptionCase, result: Result, label: Callable[[int], str], totals: _Totals
+) -> CaseResult:
+    """一個案例的推論結果與預期比對，並把命中筆數累計進 `totals`。"""
+    by_label = _verdicts_by_label(label, result.verdicts)
+    verdict_diffs = _verdict_diffs(c.expected_verdicts, by_label)
+    missing = _match_pairs(label, c.expected_missing, result.missing)
+    judgements = _match_pairs(label, c.expected_judgements, result.needs_judgement)
+    penalties = _match_penalties(label, c.expected_penalties, result.penalties)
+    general = _General(
+        expected_unpunished=frozenset(c.expected_unpunished),
+        expected_time_barred=frozenset(c.expected_time_barred),
+        actual_unpunished=frozenset(label(s_id) for s_id, _ in result.general.unpunished),
+        actual_time_barred=frozenset(label(s_id) for s_id in result.general.time_barred),
+    )
+    expected_verdicts = len(c.expected_verdicts)
+    totals.verdicts.add(expected_verdicts, 0, expected_verdicts - len(verdict_diffs))
+    totals.missing.add(*missing.counts)
+    totals.judgements.add(*judgements.counts)
+    totals.penalties.add(*penalties.counts)
+    verdict_matches = not verdict_diffs
+    return CaseResult(
+        case_id=c.case_id,
+        title=c.title,
+        passed=(
+            verdict_matches
+            and penalties.passed
+            and missing.passed
+            and judgements.passed
+            and general.passed
+        ),
+        verdict_matches=verdict_matches,
+        penalty_matches=penalties.passed,
+        missing_matches=missing.passed,
+        judgement_matches=judgements.passed,
+        general_matches=general.passed,
+        actual_verdicts={k: v for k, v in by_label.items() if not k.isdigit()},
+        actual_penalties=tuple(sorted(penalties.actual)),
+        actual_missing=tuple(sorted(missing.actual)),
+        actual_judgements=tuple(sorted(judgements.actual)),
+        actual_unpunished=tuple(sorted(general.actual_unpunished)),
+        actual_time_barred=tuple(sorted(general.actual_time_barred)),
+        diffs=(
+            *verdict_diffs,
+            *missing.diffs("缺事實"),
+            *judgements.diffs("需判斷"),
+            *penalties.diffs("罰則候選"),
+            *general.diffs(),
+        ),
+    )
+
+
 def evaluate_subsumption(
     conn: Conn,
     cases: Sequence[SubsumptionCase],
@@ -131,44 +315,10 @@ def evaluate_subsumption(
     include_unsettled: bool = False,
 ) -> SubsumptionReport:
     """執行整套涵攝測試案例並產出量測報告。"""
-
-    def resolve_id(ref: str) -> int | None:
-        if isinstance(ref, int):
-            return ref
-        if ref.isdigit():
-            return int(ref)
-        if id_resolver is None:
-            return None
-        if isinstance(id_resolver, Mapping):
-            return id_resolver.get(ref)
-        return id_resolver(ref)
-
-    def resolve_label(num_id: int) -> str:
-        if isinstance(id_resolver, Mapping):
-            for k, v in id_resolver.items():
-                if v == num_id:
-                    return k
-        return str(num_id)
-
+    label = _labeler(id_resolver)
+    totals = _Totals()
     case_results: list[CaseResult] = []
-
-    total_expected_verdicts = 0
-    correct_verdicts = 0
-
-    total_expected_missing = 0
-    total_actual_missing = 0
-    true_positive_missing = 0
-
-    total_expected_judgements = 0
-    total_actual_judgements = 0
-    true_positive_judgements = 0
-
-    total_expected_penalties = 0
-    total_actual_penalties = 0
-    true_positive_penalties = 0
-
     for c in cases:
-        diffs: list[str] = []
         result = evaluate(
             conn,
             c.as_of,
@@ -180,144 +330,7 @@ def evaluate_subsumption(
             permits=c.permits,
             actor_bases=c.actor_bases,
         )
-
-        # 1. 判決比對
-        actual_verdicts_by_label: dict[str, str] = {}
-        for s_id, v in result.verdicts.items():
-            label = resolve_label(s_id)
-            actual_verdicts_by_label[label] = v
-            actual_verdicts_by_label[str(s_id)] = v
-
-        verdict_matches = True
-        for ref, exp_v in c.expected_verdicts.items():
-            total_expected_verdicts += 1
-            act_v = actual_verdicts_by_label.get(ref)
-            if act_v != exp_v:
-                verdict_matches = False
-                diffs.append(f"判決不符 [{ref}]: 預期 {exp_v}，實際 {act_v}")
-            else:
-                correct_verdicts += 1
-
-        # 2. 缺事實比對
-        actual_missing_set: set[tuple[str, str]] = set()
-        for s_id, concept in result.missing:
-            lbl = resolve_label(s_id)
-            actual_missing_set.add((lbl, concept))
-            actual_missing_set.add((str(s_id), concept))
-
-        expected_missing_canon: set[tuple[str, str]] = set(c.expected_missing)
-        # 精準比對（以 label 或 id）
-        matched_missing = {m for m in expected_missing_canon if m in actual_missing_set}
-        total_expected_missing += len(expected_missing_canon)
-        # 實際缺事實計數（過濾別名重複計入）
-        actual_missing_canon = {(resolve_label(s_id), concept) for s_id, concept in result.missing}
-        total_actual_missing += len(actual_missing_canon)
-        true_positive_missing += len(matched_missing)
-
-        missing_matches = matched_missing == expected_missing_canon and len(
-            actual_missing_canon
-        ) == len(expected_missing_canon)
-        if not missing_matches:
-            diffs.append(
-                f"缺事實不符: 預期 {sorted(expected_missing_canon)}，"
-                f"實際 {sorted(actual_missing_canon)}"
-            )
-
-        # 3. 需判斷比對
-        actual_judgements_set: set[tuple[str, str]] = set()
-        for s_id, concept in result.needs_judgement:
-            lbl = resolve_label(s_id)
-            actual_judgements_set.add((lbl, concept))
-            actual_judgements_set.add((str(s_id), concept))
-
-        expected_judgements_canon: set[tuple[str, str]] = set(c.expected_judgements)
-        matched_judgements = {j for j in expected_judgements_canon if j in actual_judgements_set}
-        total_expected_judgements += len(expected_judgements_canon)
-        actual_judgements_canon = {
-            (resolve_label(s_id), concept) for s_id, concept in result.needs_judgement
-        }
-        total_actual_judgements += len(actual_judgements_canon)
-        true_positive_judgements += len(matched_judgements)
-
-        judgement_matches = matched_judgements == expected_judgements_canon and len(
-            actual_judgements_canon
-        ) == len(expected_judgements_canon)
-        if not judgement_matches:
-            diffs.append(
-                f"需判斷不符: 預期 {sorted(expected_judgements_canon)}，"
-                f"實際 {sorted(actual_judgements_canon)}"
-            )
-
-        # 4. 處罰效果比對
-        actual_penalties_set: set[tuple[str, str, bool]] = set()
-        actual_penalties_canon: set[tuple[str, str, bool]] = set()
-        for p in result.penalties:
-            lbl = resolve_label(p.statement_id)
-            actual_penalties_set.add((lbl, p.effect, p.conditional))
-            actual_penalties_set.add((str(p.statement_id), p.effect, p.conditional))
-            actual_penalties_canon.add((lbl, p.effect, p.conditional))
-
-        expected_penalties_canon: set[tuple[str, str, bool]] = set(c.expected_penalties)
-        matched_penalties = {p for p in expected_penalties_canon if p in actual_penalties_set}
-        total_expected_penalties += len(expected_penalties_canon)
-        total_actual_penalties += len(actual_penalties_canon)
-        true_positive_penalties += len(matched_penalties)
-
-        penalty_matches = matched_penalties == expected_penalties_canon and len(
-            actual_penalties_canon
-        ) == len(expected_penalties_canon)
-        if not penalty_matches:
-            diffs.append(
-                f"罰則候選不符: 預期 {sorted(expected_penalties_canon)}，"
-                f"實際 {sorted(actual_penalties_canon)}"
-            )
-
-        # 5. 總則比對（不予處罰與時效）
-        actual_unpunished_canon = {resolve_label(s_id) for s_id, _ in result.general.unpunished}
-        actual_time_barred_canon = {resolve_label(s_id) for s_id in result.general.time_barred}
-        expected_unpunished_canon = set(c.expected_unpunished)
-        expected_time_barred_canon = set(c.expected_time_barred)
-
-        general_matches = expected_unpunished_canon.issubset(
-            actual_unpunished_canon
-        ) and expected_time_barred_canon.issubset(actual_time_barred_canon)
-        if not general_matches:
-            diffs.append(
-                f"總則狀態不符: 預期不罰 {sorted(expected_unpunished_canon)}"
-                f"（實際 {sorted(actual_unpunished_canon)}）；"
-                f"預期時效 {sorted(expected_time_barred_canon)}"
-                f"（實際 {sorted(actual_time_barred_canon)}）"
-            )
-
-        passed = (
-            verdict_matches
-            and penalty_matches
-            and missing_matches
-            and judgement_matches
-            and general_matches
-        )
-
-        case_results.append(
-            CaseResult(
-                case_id=c.case_id,
-                title=c.title,
-                passed=passed,
-                verdict_matches=verdict_matches,
-                penalty_matches=penalty_matches,
-                missing_matches=missing_matches,
-                judgement_matches=judgement_matches,
-                general_matches=general_matches,
-                actual_verdicts={
-                    k: v for k, v in actual_verdicts_by_label.items() if not k.isdigit()
-                },
-                actual_penalties=tuple(sorted(actual_penalties_canon)),
-                actual_missing=tuple(sorted(actual_missing_canon)),
-                actual_judgements=tuple(sorted(actual_judgements_canon)),
-                actual_unpunished=tuple(sorted(actual_unpunished_canon)),
-                actual_time_barred=tuple(sorted(actual_time_barred_canon)),
-                diffs=tuple(diffs),
-            )
-        )
+        case_results.append(_grade(c, result, label, totals))
 
     passed_count = sum(1 for r in case_results if r.passed)
     total_cases = len(cases)
@@ -326,12 +339,12 @@ def evaluate_subsumption(
         total_cases=total_cases,
         passed_cases=passed_count,
         case_pass_rate=_safe_div(passed_count, total_cases),
-        verdict_accuracy=_safe_div(correct_verdicts, total_expected_verdicts),
-        missing_precision=_safe_div(true_positive_missing, total_actual_missing),
-        missing_recall=_safe_div(true_positive_missing, total_expected_missing),
-        judgement_precision=_safe_div(true_positive_judgements, total_actual_judgements),
-        judgement_recall=_safe_div(true_positive_judgements, total_expected_judgements),
-        penalty_precision=_safe_div(true_positive_penalties, total_actual_penalties),
-        penalty_recall=_safe_div(true_positive_penalties, total_expected_penalties),
+        verdict_accuracy=totals.verdicts.recall,
+        missing_precision=totals.missing.precision,
+        missing_recall=totals.missing.recall,
+        judgement_precision=totals.judgements.precision,
+        judgement_recall=totals.judgements.recall,
+        penalty_precision=totals.penalties.precision,
+        penalty_recall=totals.penalties.recall,
         results=tuple(case_results),
     )

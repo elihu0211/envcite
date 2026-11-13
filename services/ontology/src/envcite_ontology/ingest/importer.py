@@ -47,6 +47,24 @@ class Outcome:
     actions: Counter[str]
 
 
+@dataclass(frozen=True)
+class _Batch:
+    """一個來源檔最新快照的解析結果。"""
+
+    feed: str
+    snapshot_id: int
+    parsed: list[Parsed]
+
+
+@dataclass(frozen=True)
+class _Stored:
+    """來源項目已記下的匯入狀態；從未匯入者的雜湊與版本為空。"""
+
+    item_id: object
+    sha256: object
+    parser_version: object
+
+
 def run(conn: Conn, snapshot_dir: Path, source: Source, *, dry_run: bool = False) -> Outcome:
     """取每個來源最新的快照解析、驗收，通過後逐部寫入語料；回傳指標與各動作的法規數。
 
@@ -56,30 +74,11 @@ def run(conn: Conn, snapshot_dir: Path, source: Source, *, dry_run: bool = False
     """
     metrics = Metrics()
     actions: Counter[str] = Counter()
-    batches: list[tuple[str, int, list[Parsed]]] = []
+    batches: list[_Batch] = []
     for feed in source.feeds:
-        row = conn.execute(
-            "SELECT id, data_date, location FROM source.snapshot"
-            " WHERE feed = %s ORDER BY data_date DESC, id DESC LIMIT 1",
-            (feed.name,),
-        ).fetchone()
-        if row is None:
-            log.info("%s: 沒有快照", feed.name)
-            continue
-        snapshot_id, data_date, location = row
-        assert isinstance(snapshot_id, int) and isinstance(data_date, date)
-        _, laws = load_laws(snapshot_dir / str(location))  # 檔案不存在：InvalidSnapshot
-        parsed = [
-            Parsed(
-                pcode(raw),
-                content_sha256(raw),
-                parsing.parse(raw, pcode=pcode(raw), data_date=data_date),
-            )
-            for raw in laws
-        ]
-        for p in parsed:
-            metrics.add(p.law)
-        batches.append((feed.name, snapshot_id, parsed))
+        batch = _parse_feed(conn, snapshot_dir, feed.name, metrics)
+        if batch is not None:
+            batches.append(batch)
 
     for line in metrics.lines():
         log.info("%s", line)
@@ -88,45 +87,77 @@ def run(conn: Conn, snapshot_dir: Path, source: Source, *, dry_run: bool = False
     if dry_run:
         return Outcome(metrics, actions)
 
-    for feed_name, snapshot_id, parsed in batches:
-        state = {
-            str(key): (item_id, sha, version)
-            for item_id, key, sha, version in conn.execute(
-                "SELECT id, key, imported_sha256, parser_version FROM source.item WHERE feed = %s",
-                (feed_name,),
-            )
-        }
-        # 結束讀取用的交易：之後每部法規是自己的交易，不是同一個交易裡的存檔點。
-        conn.commit()
-        for p in parsed:
-            item_id, imported_sha, imported_version = state[p.key]
-            if imported_sha == p.sha256 and imported_version == PARSER_VERSION:
-                actions["skipped"] += 1
-                continue
-            with conn.transaction():
-                problems_now = list(p.law.problems)
-                applied = None
-                if p.law.ok:
-                    applied = apply(conn, p.law, first_import=imported_sha is None)
-                    if applied.action == "regressed":
-                        problems_now.append(
-                            Problem("error", "version_regressed", "版本日早於既有最新版本")
-                        )
-                    elif applied.action == "corrected":
-                        problems_now.append(
-                            Problem("warning", "corrected", f"{applied.changed} 個單元的文字改變")
-                        )
-                import_problems.replace(conn, item_id, snapshot_id, problems_now)
-                if applied is None:
-                    actions["rejected"] += 1
-                elif applied.action == "regressed":
-                    actions["regressed"] += 1
-                else:
-                    actions[applied.action] += 1
-                    conn.execute(
-                        "UPDATE source.item SET imported_sha256 = %s, parser_version = %s"
-                        " WHERE id = %s",
-                        (p.sha256, PARSER_VERSION, item_id),
-                    )
-        log.info("%s: %s", feed_name, "，".join(f"{k} {v}" for k, v in sorted(actions.items())))
+    for batch in batches:
+        _write_batch(conn, batch, actions)
     return Outcome(metrics, actions)
+
+
+def _parse_feed(conn: Conn, snapshot_dir: Path, feed_name: str, metrics: Metrics) -> _Batch | None:
+    """解析來源檔最新的快照並計入 `metrics`；沒有快照為 None。"""
+    row = conn.execute(
+        "SELECT id, data_date, location FROM source.snapshot"
+        " WHERE feed = %s ORDER BY data_date DESC, id DESC LIMIT 1",
+        (feed_name,),
+    ).fetchone()
+    if row is None:
+        log.info("%s: 沒有快照", feed_name)
+        return None
+    snapshot_id, data_date, location = row
+    assert isinstance(snapshot_id, int) and isinstance(data_date, date)
+    _, laws = load_laws(snapshot_dir / str(location))  # 檔案不存在：InvalidSnapshot
+    parsed = [
+        Parsed(
+            pcode(raw),
+            content_sha256(raw),
+            parsing.parse(raw, pcode=pcode(raw), data_date=data_date),
+        )
+        for raw in laws
+    ]
+    for p in parsed:
+        metrics.add(p.law)
+    return _Batch(feed_name, snapshot_id, parsed)
+
+
+def _write_batch(conn: Conn, batch: _Batch, actions: Counter[str]) -> None:
+    state = {
+        str(key): _Stored(item_id, sha, version)
+        for item_id, key, sha, version in conn.execute(
+            "SELECT id, key, imported_sha256, parser_version FROM source.item WHERE feed = %s",
+            (batch.feed,),
+        )
+    }
+    # 結束讀取用的交易：之後每部法規是自己的交易，不是同一個交易裡的存檔點。
+    conn.commit()
+    for p in batch.parsed:
+        _write_law(conn, p, state[p.key], batch.snapshot_id, actions)
+    log.info("%s: %s", batch.feed, "，".join(f"{k} {v}" for k, v in sorted(actions.items())))
+
+
+def _write_law(
+    conn: Conn, p: Parsed, stored: _Stored, snapshot_id: int, actions: Counter[str]
+) -> None:
+    if stored.sha256 == p.sha256 and stored.parser_version == PARSER_VERSION:
+        actions["skipped"] += 1
+        return
+    with conn.transaction():
+        problems_now = list(p.law.problems)
+        applied = None
+        if p.law.ok:
+            applied = apply(conn, p.law, first_import=stored.sha256 is None)
+            if applied.action == "regressed":
+                problems_now.append(Problem("error", "version_regressed", "版本日早於既有最新版本"))
+            elif applied.action == "corrected":
+                problems_now.append(
+                    Problem("warning", "corrected", f"{applied.changed} 個單元的文字改變")
+                )
+        import_problems.replace(conn, stored.item_id, snapshot_id, problems_now)
+        if applied is None:
+            actions["rejected"] += 1
+        elif applied.action == "regressed":
+            actions["regressed"] += 1
+        else:
+            actions[applied.action] += 1
+            conn.execute(
+                "UPDATE source.item SET imported_sha256 = %s, parser_version = %s WHERE id = %s",
+                (p.sha256, PARSER_VERSION, stored.item_id),
+            )
