@@ -16,11 +16,14 @@ namespace EnvCite.Platform.Modules.Ontology;
 /// 查詢依字串分三型，各用不同的鬆緊（分類只看查詢字串，見 <see cref="Classify"/>）：
 /// 問句另走較低的語意下界（<see cref="QuestionSemanticFloor"/>）：問句與條文的餘弦相似度普遍較低，共用下界
 /// （為 consult 的可答性校準）會把本來找得到的條文擋出列表，這條路由對原規則是超集，只會多列。
-/// 關鍵字另走較高的覆蓋率門檻（<see cref="KeywordMinTermCoverage"/>）：關鍵字的整詞命中不靠門檻，
-/// 門檻只決定片段命中放不放行，所以收緊它擋掉的是雜訊；這條路由比原規則嚴，不是超集，不少找到的證據是量測的，
-/// 不是規則的性質。法規名稱維持原規則：名稱與不存在的名稱在語意臂上分不開，放寬與收緊都有代價。
-/// 依據與量測見 <c>services/ontology/eval/query-routing-2026-11-13.md</c> 與
-/// <c>services/ontology/eval/keyword-coverage-2026-11-13.md</c>。
+/// 關鍵字另走較嚴的覆蓋率門檻（<see cref="KeywordMinTermCoverage"/>）與較高的語意下界
+/// （<see cref="KeywordSemanticFloor"/>）：關鍵字的整詞命中不靠這兩者，它們只決定片段命中與只靠語意臂的命中
+/// 放不放行，所以收緊它們擋掉的是雜訊；這兩條路由比原規則嚴，不是超集，不少找到的證據是量測的，不是規則的性質；
+/// 答案只靠語意臂列出的關鍵字題（約 2%）是最會受傷的，口語同義詞的短關鍵字量不到。
+/// 法規名稱維持原規則：名稱與不存在的名稱在語意臂上分不開，放寬與收緊都有代價。
+/// 依據與量測見 <c>services/ontology/eval/query-routing-2026-11-13.md</c>、
+/// <c>services/ontology/eval/keyword-coverage-2026-11-13.md</c> 與
+/// <c>services/ontology/eval/keyword-semantic-2026-11-13.md</c>。
 /// </para>
 /// </summary>
 public sealed class LawSearchOptions : ISectionOptions
@@ -44,6 +47,14 @@ public sealed class LawSearchOptions : ISectionOptions
     /// </summary>
     [Range(0.0, 1.0)]
     public double KeywordMinTermCoverage { get; set; } = 0.7;
+
+    /// <summary>
+    /// 關鍵字型查詢的語意下界（0 至 1）。實際生效的是它與共用語意下界中較高的一個，所以不會比共用下界鬆。
+    /// 只靠語意臂列出的命中在關鍵字上多半是雜訊：兩個被定義的詞拼起來的無答案查詢，仍誤放的命中約九成靠語意臂放行（66／72）。
+    /// 0.77 起，已看過的可答關鍵字題少找到超過 1%，所以停在 0.74。
+    /// </summary>
+    [Range(0.0, 1.0)]
+    public double KeywordSemanticFloor { get; set; } = 0.74;
 
     /// <summary>
     /// 問句型查詢的語意下界（0 至 1）。實際生效的是它與共用語意下界中較低的一個，所以不會比共用下界嚴。
@@ -84,7 +95,12 @@ public sealed class LawSearchOptions : ISectionOptions
         RelevanceFloorsOptions floors, string query, float lexicalScore, float semanticSimilarity, float termCoverage, int guidanceDocuments)
     {
         var kind = Classify(query);
-        var semanticFloor = kind == QueryKind.Question ? Math.Min(floors.SemanticFloor, QuestionSemanticFloor) : floors.SemanticFloor;
+        var semanticFloor = kind switch
+        {
+            QueryKind.Question => Math.Min(floors.SemanticFloor, QuestionSemanticFloor),
+            QueryKind.Keyword => Math.Max(floors.SemanticFloor, KeywordSemanticFloor),
+            _ => floors.SemanticFloor,
+        };
         var coverage = kind == QueryKind.Keyword ? KeywordMinTermCoverage : MinTermCoverage;
         return guidanceDocuments > 0
             || semanticSimilarity >= semanticFloor

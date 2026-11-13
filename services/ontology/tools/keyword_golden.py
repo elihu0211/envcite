@@ -327,12 +327,14 @@ def hash_order(salt: str, items: Sequence[str]) -> list[str]:
     return sorted(items, key=lambda t: hashlib.sha256(f"{salt}\x1f{t}".encode()).hexdigest())
 
 
-def fresh_row(kind: str, query: str, answer: list[str], term: str | None = None) -> dict[str, Any]:
+def fresh_row(
+    kind: str, query: str, answer: list[str], term: str | None = None, batch: str = "fresh"
+) -> dict[str, Any]:
     row: dict[str, Any] = {
-        "id": f"fresh:{kind}:{hashlib.sha256(query.encode()).hexdigest()[:10]}",
+        "id": f"{batch}:{kind}:{hashlib.sha256(query.encode()).hexdigest()[:10]}",
         "kind": kind,
         "cls": "term",
-        "split": "fresh",
+        "split": batch,
         "query": query,
         "level": "article",
         "answer": answer,
@@ -343,9 +345,16 @@ def fresh_row(kind: str, query: str, answer: list[str], term: str | None = None)
 
 
 def fresh(
-    conn: psycopg.Connection[Any], as_of: str, seen: set[str], per_kind: int = FRESH_PER_KIND
+    conn: psycopg.Connection[Any],
+    as_of: str,
+    seen: set[str],
+    per_kind: int = FRESH_PER_KIND,
+    batch: str = "fresh",
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     """沒看過的新題，全由程式從語料產生，詞不與先前任何題庫重疊（`seen`）。
+
+    `batch` 是這一批的名字，也是題的切分名：每批只能驗一次，
+    看過結果就要把它的詞與查詢加進下一批的 `seen`。
 
     - `fresh_definition`：被定義、先前沒出過的詞；答案是定義它的條文。
     - `fresh_partial`：另一批被定義的詞去掉最後一個字（使用者只打了前半），答案仍是定義
@@ -360,8 +369,8 @@ def fresh(
     )
     definition_terms = pool[:per_kind]
     partial_terms = [t for t in pool[per_kind:] if len(t) >= 5][:per_kind]
-    rows = [fresh_row("fresh_definition", t, refs[t], t) for t in definition_terms]
-    rows += [fresh_row("fresh_partial", t[:-1], refs[t], t) for t in partial_terms]
+    rows = [fresh_row("fresh_definition", t, refs[t], t, batch) for t in definition_terms]
+    rows += [fresh_row("fresh_partial", t[:-1], refs[t], t, batch) for t in partial_terms]
 
     text = corpus_text(conn, as_of)
     parts = hash_order("splice", [t for t in refs if 3 <= len(t) <= 4])
@@ -377,7 +386,7 @@ def fresh(
         absent.append(query)
         if len(absent) == per_kind:
             break
-    rows += [fresh_row("fresh_absent", q, []) for q in absent]
+    rows += [fresh_row("fresh_absent", q, [], None, batch) for q in absent]
     return rows, {"definition_pool": len(pool), "splice_present_dropped": present}
 
 
@@ -785,6 +794,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     f.add_argument("--as-of", default=date.today().isoformat())
     f.add_argument("--seen", type=Path, required=True, help="先前題庫出現過的詞與查詢（一行一個）")
     f.add_argument("--per-kind", type=int, default=FRESH_PER_KIND)
+    f.add_argument("--batch", default="fresh", help="這一批的名字（也是切分名）")
     v = sub.add_parser("verify")
     v.add_argument("golden", type=Path)
     v.add_argument("--sample", type=int, default=30)
@@ -833,7 +843,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if args.command == "fresh":
             seen = set(args.seen.read_text(encoding="utf-8").split())
-            rows, stats = fresh(conn, args.as_of, seen, args.per_kind)
+            rows, stats = fresh(conn, args.as_of, seen, args.per_kind, args.batch)
             problems = verify_fresh(conn, rows, args.as_of, 40)
             print(json.dumps(rows, ensure_ascii=False, indent=1))
             by_kind: defaultdict[str, int] = defaultdict(int)

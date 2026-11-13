@@ -124,13 +124,16 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             // 分數是為了測相關性下界：預設的命中達標；weak-match 兩個分數都不到下界；semantic-only 只有語意達標；
             // fragment 字面分數達標，但條文只含少數查詢詞；guidance-only 只有函釋帶出；whole-term 字面分數與語意都不到下界、但條文含全部查詢詞；many 回比預設多的達標命中；
             // mid-sem 開頭的查詢語意相似度 0.69，落在問句的語意下界（0.68）與共用下界（0.71）之間，字面完全沒有；
-            // mid-cov 開頭的查詢字面分數達標、覆蓋率 0.6，落在一般門檻（0.5）與關鍵字門檻（0.7）之間。
+            // mid-cov 開頭的查詢字面分數達標、覆蓋率 0.6，落在一般門檻（0.5）與關鍵字門檻（0.7）之間；
+            // hi-sem 開頭的查詢語意相似度 0.72，高過共用下界（0.71）、低於關鍵字下界（0.74），字面完全沒有。
             var key = request.Query.StartsWith("mid-sem", StringComparison.Ordinal) ? "mid-sem"
                 : request.Query.StartsWith("mid-cov", StringComparison.Ordinal) ? "mid-cov"
+                : request.Query.StartsWith("hi-sem", StringComparison.Ordinal) ? "hi-sem"
                 : request.Query;
             var (lexical, semantic, coverage, guidance) = key switch
             {
                 "mid-sem" => (0f, 0.69f, 0f, 0),
+                "hi-sem" => (0f, 0.72f, 0f, 0),
                 "mid-cov" => (0.8f, 0f, 0.6f, 0),
                 "weak-match" => (0.3f, 0.5f, 0.5f, 0),
                 "semantic-only" => (0f, 0.8f, 0f, 0),
