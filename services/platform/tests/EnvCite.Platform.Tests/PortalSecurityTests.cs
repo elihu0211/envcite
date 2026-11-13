@@ -196,6 +196,30 @@ public sealed class PortalSecurityTests(PlatformFactory factory)
     }
 
     [Fact]
+    public async Task ASignedInMemberOpeningTheLoginPageIsSentOnInsteadOfShownTheForm()
+    {
+        var (tenant, email, initial) = await MemberAsync(factory, "sec-j");
+        using var browser = new PortalBrowser(factory);
+        await SignInFullyAsync(browser, tenant.Identifier, email, initial);
+
+        // 登入網址被收藏或從信裡點開：已登入就不該再看到登入表單（外殼是已登入的樣子，表單卻要人再登入一次）。
+        var bare = await browser.GetAsync(Login(tenant.Identifier));
+        Assert.Equal(HttpStatusCode.Redirect, bare.Status);
+        Assert.Equal(Home(tenant.Identifier), bare.Location);
+
+        var withReturn = await browser.GetAsync($"{Login(tenant.Identifier)}?returnUrl={Uri.EscapeDataString(PasswordPage(tenant.Identifier))}");
+        Assert.Equal(PasswordPage(tenant.Identifier), withReturn.Location);
+
+        var evil = await browser.GetAsync($"{Login(tenant.Identifier)}?returnUrl={Uri.EscapeDataString("//evil.example/steal")}");
+        Assert.Equal(Home(tenant.Identifier), evil.Location);
+
+        // 沒登入的人照舊看到表單。
+        using var anonymous = new PortalBrowser(factory);
+        var form = await anonymous.GetAsync(Login(tenant.Identifier));
+        Assert.Equal(HttpStatusCode.OK, form.Status);
+    }
+
+    [Fact]
     public async Task AnUnknownTenantIsA404AndNeverAnInternalError()
     {
         using var browser = new PortalBrowser(factory);
