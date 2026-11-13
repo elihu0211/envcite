@@ -17,8 +17,9 @@ const scenario = process.argv[2];
 const question = process.env.E2E_QUESTION ?? "露天燃燒如何處罰";
 const timeout = 15_000;
 
-// 瀏覽器自己對跨頁轉場（@view-transition）的取消：頁面換掉時的正常現象，不是我們的錯誤。
-const knownNoise = ["Transition was skipped"];
+// 瀏覽器自己對跨頁轉場（@view-transition）的取消：頁面換掉時的正常現象，不是我們的錯誤；
+// 訊息依 Chromium 版本不同（「was skipped」「was aborted because of invalid state …」），所以整族比對。
+const knownNoise = [/^pageerror: Transition was (skipped|aborted)/];
 
 const browser = await chromium.launch({ executablePath: process.env.E2E_CHROMIUM || undefined });
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
@@ -173,7 +174,7 @@ let exitCode = 0;
 try {
     if (!scenarios[scenario]) throw new Error(`沒有這個情境：${scenario}（有 ${Object.keys(scenarios).join("、")}）`);
     await scenarios[scenario]();
-    const unexpected = problems.filter((p) => !knownNoise.some((noise) => p.includes(noise)));
+    const unexpected = problems.filter((p) => !knownNoise.some((noise) => noise.test(p)));
     if (unexpected.length > 0) throw new Error(`瀏覽器出現錯誤：\n${unexpected.join("\n")}`);
 } catch (error) {
     exitCode = 1;
