@@ -152,6 +152,91 @@ const scenarios = {
         });
     },
 
+    // 外殼換頁不動：在互動頁（工作區）與靜態頁（成員、帳號）之間來回，頂欄與側欄的位置與大小一模一樣；<html> 上由腳本管的
+    // data-js 與收合的 data-side 不被強化導覽抹掉（沒有任何一格畫面缺它們）；期間外殼的元素沒有版面位移。
+    // 靜態頁沒有 MudBlazor 的樣式表，互動頁有：這一條守的是兩種頁面的外殼是同一個，換頁不內縮、不跳。
+    async shell() {
+        await page.addInitScript(() => {
+            window.__shifts = [];
+            window.__missing = 0;
+            try {
+                new PerformanceObserver((list) => {
+                    for (const entry of list.getEntries())
+                        for (const source of entry.sources) window.__shifts.push(String(source.node?.className ?? source.node?.nodeName));
+                }).observe({ type: "layout-shift", buffered: true });
+            } catch { /* 沒有 layout-shift 的瀏覽器：只剩幾何與屬性的檢查 */ }
+            const tick = () => {
+                // 側欄已經在畫面上、而 <html> 缺 data-js：就是畫出了導覽鈕消失的那一格。
+                if (document.querySelector(".ep-side") && !document.documentElement.hasAttribute("data-js")) window.__missing++;
+                requestAnimationFrame(tick);
+            };
+            requestAnimationFrame(tick);
+        });
+
+        const geometry = () => page.evaluate(() => {
+            const box = (selector) => {
+                const r = document.querySelector(selector)?.getBoundingClientRect();
+                return r ? [r.x, r.y, r.width, r.height].map(Math.round) : null;
+            };
+            return { top: box(".ep-shell-top"), side: box(".ep-side"), js: document.documentElement.hasAttribute("data-js"), collapsed: document.documentElement.dataset.side ?? "" };
+        });
+        const sameShell = (expected, actual, where) => {
+            if (!actual.js) throw new Error(`${where}：<html> 沒有 data-js`);
+            if (actual.collapsed !== expected.collapsed) throw new Error(`${where}：收合狀態變了 ${JSON.stringify(expected.collapsed)} → ${JSON.stringify(actual.collapsed)}`);
+            if (JSON.stringify(actual.top) !== JSON.stringify(expected.top)) throw new Error(`${where}：頂欄 ${JSON.stringify(expected.top)} → ${JSON.stringify(actual.top)}`);
+            if (JSON.stringify(actual.side) !== JSON.stringify(expected.side)) throw new Error(`${where}：側欄 ${JSON.stringify(expected.side)} → ${JSON.stringify(actual.side)}`);
+        };
+        // 換到 path 後等頁面穩定（動畫收尾、串流結束），再比對外殼，並檢查沒有缺屬性的畫面與外殼元素的版面位移。
+        const visit = async (name, path, expected) => {
+            await page.click(`a.ep-side-link[href='${path}']`);
+            await until(`應換到 ${path}`, async () => new URL(page.url()).pathname === path);
+            await page.waitForTimeout(600);
+            sameShell(expected, await geometry(), name);
+            const { shifts, missing } = await page.evaluate(() => ({ shifts: window.__shifts, missing: window.__missing }));
+            if (missing > 0) throw new Error(`${name}：有 ${missing} 格畫面缺 data-js`);
+            const shell = shifts.filter((c) => /ep-shell-top|ep-side|ep-brand|ep-console-body/.test(c));
+            if (shell.length > 0) throw new Error(`${name}：外殼元素有版面位移 ${JSON.stringify(shell)}`);
+            await page.evaluate(() => { window.__shifts = []; window.__missing = 0; });
+        };
+
+        const home = `/portal/${tenant}`;
+        let expanded;
+        await step("登入後在互動的工作區：記下外殼的位置", async () => {
+            await signIn();
+            await page.waitForTimeout(600);
+            expanded = await geometry();
+            if (!expanded.js) throw new Error("工作區的 <html> 沒有 data-js");
+            if (expanded.top?.[0] !== 0 || expanded.top?.[1] !== 0) throw new Error(`頂欄沒有貼齊視窗的左上角：${JSON.stringify(expanded.top)}`);
+            if (expanded.side?.[1] !== expanded.top[3]) throw new Error(`側欄沒有接在頂欄底下：${JSON.stringify(expanded)}`);
+            await page.evaluate(() => { window.__shifts = []; window.__missing = 0; });
+        });
+        await step("工作區 → 成員 → 帳號 → 對話紀錄 → 工作區：外殼不動", async () => {
+            await visit("成員", `${home}/members`, expanded);
+            await visit("帳號", `${home}/account`, expanded);
+            await visit("對話紀錄", `${home}/history`, expanded);
+            await visit("工作區", home, expanded);
+        });
+
+        let collapsed;
+        await step("收合側欄再來回換頁：仍是窄欄，位置不動", async () => {
+            await page.click(".ep-side-toggle");
+            await until("側欄應收成窄欄", async () => (await page.evaluate(() => document.documentElement.dataset.side)) === "collapsed");
+            await page.waitForTimeout(600);
+            collapsed = await geometry();
+            if (collapsed.side[2] >= expanded.side[2]) throw new Error(`收合後側欄沒有變窄：${expanded.side[2]} → ${collapsed.side[2]}`);
+            await page.evaluate(() => { window.__shifts = []; window.__missing = 0; });
+            await visit("成員（收合）", `${home}/members`, collapsed);
+            await visit("帳號（收合）", `${home}/account`, collapsed);
+            await visit("工作區（收合）", home, collapsed);
+        });
+        await step("重新整理：偏好還在，第一格就是窄欄", async () => {
+            await page.reload();
+            await circuitConnected();
+            await page.waitForTimeout(600);
+            sameShell(collapsed, await geometry(), "重新整理");
+        });
+    },
+
     // 在 circuit 裡從自己的租戶切到別人的租戶（不是新的頁面請求）：入口的授權擋下，看不到對方的內容。
     async "cross-tenant"() {
         const other = env("E2E_OTHER_TENANT");

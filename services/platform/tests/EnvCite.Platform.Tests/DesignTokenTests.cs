@@ -549,6 +549,44 @@ public static partial class DesignTokenTests
         Assert.Contains("localStorage.setItem(\"ep-side\"", script, StringComparison.Ordinal);
     }
 
+    // 外殼換頁不能動：靜態頁沒有載入 MudBlazor 的樣式表（它的重設會清掉 body 邊距），所以邊距自己歸零，否則靜態頁的外殼比互動頁
+    // 內縮一圈；頂欄高度由導覽鈕（有 JavaScript 才出現）決定，沒有鈕的那一格也撐到同高，側欄的起點才不跟著腳本跳；
+    // Blazor 強化導覽會抹掉 <html> 上由腳本加的 data-js 與 data-side：由 MutationObserver 在畫下一格之前補回（不等 enhancedload，
+    // 換到互動頁時它要等新的樣式表載入才觸發）；enhancedload 只負責重設新側欄的 title 與 aria-expanded。
+    [Fact]
+    public static void TheShellStaysPutAcrossPageKindsScriptLoadAndEnhancedNavigation()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
+
+        Assert.Matches(@"(?m)^body \{\s*margin: 0;", css);
+        Assert.Contains(
+            "--ep-appbar-height: calc(var(--ep-touch-target) + var(--ep-space-2) * 2 + 1px)",
+            CssBlock(css, ".ep-portal"),
+            StringComparison.Ordinal);
+        Assert.Contains("new MutationObserver(applyRootState).observe(root, { attributes: true, attributeFilter: [\"data-js\", \"data-side\"] })", script, StringComparison.Ordinal);
+        Assert.Contains("addEventListener(\"enhancedload\", syncSide)", script, StringComparison.Ordinal);
+        Assert.Contains("root.dataset.js = \"\"", script, StringComparison.Ordinal);
+        Assert.Contains("root.dataset.side = \"collapsed\"", script, StringComparison.Ordinal);
+    }
+
+    // 表格裡的動作格（td.ep-row-actions）要維持 table-cell：改成 flex 它就不再隨列拉高，底線畫在自己的高度，
+    // 沒有動作的空格在列尾多出一小段線；表格儲存格預設不換行，所以要明確放開，動作放不下才會換行而不是把卡片撐出橫向捲動。
+    [Fact]
+    public static void TheRowActionsCellStaysATableCellAndLetsItsButtonsWrap()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        Assert.Matches(@"\.ep-examples,\s*\.ep-actions \{\s*display: flex", css); // 動作列（不是儲存格）仍是 flex
+        Assert.DoesNotMatch(@"\.ep-row-actions,?\s*\{[^}]*display: flex", css);
+        var cell = CssBlock(css, ".ep-plain-table td.ep-row-actions");
+        Assert.Contains("vertical-align: middle", cell, StringComparison.Ordinal);
+        Assert.Contains("white-space: normal", cell, StringComparison.Ordinal);
+        Assert.Contains("display: inline-flex", CssBlock(css, ".ep-row-actions > *"), StringComparison.Ordinal);
+        // 窄卡片（儲存格已不是表格）才改回 flex 換行。
+        Assert.Matches(@"@container ep-table \(max-width: 36rem\)[^@]*td\.ep-row-actions,\s*\.ep-cards table tbody tr td\.ep-cell-actions \{\s*display: flex", css);
+    }
+
     // 六格驗證碼：真的輸入框疊在方格上、文字與游標透明（輸入與自動填入都走它），沒有 JavaScript 時方格不出現。
     [Fact]
     public static void TheOtpBoxesSitOnTopOfARealInput()
@@ -821,6 +859,9 @@ public sealed class DesignPageTests(PlatformFactory factory)
         Assert.DoesNotContain("data-theme", PageMarkup.WithoutStyles(html), StringComparison.Ordinal); // 樣式表裡的選擇器不算，標記裡沒有
         Assert.DoesNotContain("getItem(\"ep-theme\")", html.Replace("&quot;", "\"", StringComparison.Ordinal), StringComparison.Ordinal);
         Assert.Contains("removeItem(\"ep-theme\")", html.Replace("&quot;", "\"", StringComparison.Ordinal), StringComparison.Ordinal);
+        // 有 JavaScript 的記號在 <head> 就設，早於樣式表與頁尾的 forms.js：第一格就有導覽鈕，頂欄不先矮一截、腳本一跑再長高。
+        var markup = html.Replace("&quot;", "\"", StringComparison.Ordinal);
+        Assert.InRange(markup.IndexOf("d.dataset.js=\"\"", StringComparison.Ordinal), 1, markup.IndexOf("design/platform", StringComparison.Ordinal));
         Assert.Contains("<h1", html, StringComparison.Ordinal);
     }
 
