@@ -9,7 +9,7 @@ namespace EnvCite.Platform.Tests;
 /// 授權每個請求向資料庫重查的每一項，各自單獨改資料庫、<b>不動</b>安全戳記（停用與重設會順手換戳記，把別的檢查蓋住——
 /// 拿掉某一項檢查，端對端的停用測試照樣通過）。每個測試用自己的營運者，不影響別的測試。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group3)]
 public sealed class OperatorSessionChecksTests(PlatformFactory factory)
 {
     private async Task<(HttpClient Client, string Id)> SessionAsync()

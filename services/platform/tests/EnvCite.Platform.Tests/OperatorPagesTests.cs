@@ -68,7 +68,7 @@ public static class UsagePresentationTests
         Assert.Equal(expected, UsageLabels.UnitName(op));
 }
 
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class OperatorPagesTests(PlatformFactory factory)
 {
     private HttpClient SignedInClient(WebApplicationFactory<Program>? host = null) => (host ?? factory).SignedInClient();

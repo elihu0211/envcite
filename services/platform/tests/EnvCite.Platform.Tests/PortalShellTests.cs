@@ -14,7 +14,7 @@ namespace EnvCite.Platform.Tests;
 /// 客戶入口的外殼：頂欄加左側欄（工作區），個人設定在右上角的帳號選單，兩者都依角色與狀態出現；
 /// 版面（手機／平板／桌機）由樣式表與 token 決定。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed partial class PortalShellTests(PlatformFactory factory)
 {
     private static string Menu(string html)

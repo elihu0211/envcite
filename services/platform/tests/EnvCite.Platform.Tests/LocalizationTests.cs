@@ -104,7 +104,7 @@ public static partial class LabelResourceTests
 }
 
 /// <summary>決定語言、換語言的端點、<c>&lt;html lang&gt;</c>。</summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group3)]
 public sealed partial class LanguageSwitchTests(PlatformFactory factory)
 {
     private const string CultureCookie = ".AspNetCore.Culture";
@@ -403,7 +403,7 @@ public static partial class UiTextTests
     private static partial Regex Placeholder();
 }
 /// <summary>MudBlazor 內建文字：中文介面用繁體中文，英文介面用它內建的英文。</summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class MudBlazorTextTests(PlatformFactory factory)
 {
     [Fact]
@@ -441,7 +441,7 @@ public sealed class MudBlazorTextTests(PlatformFactory factory)
 }
 
 /// <summary>後台的切換器：頂欄的按鈕、鍵盤捷徑的腳本，按鈕文字依語言。</summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group3)]
 public sealed class CommandPaletteTests(PlatformFactory factory)
 {
     private async Task<string> HomeAsync(string? language)

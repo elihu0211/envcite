@@ -12,7 +12,7 @@ namespace EnvCite.Platform.Tests;
 /// email 是登入名稱；帳號先沒有密碼，信裡只有單次、限時的連結，對方自己設定密碼並同時驗證信箱。
 /// 信裡沒有密碼、連結只對路徑上的租戶有效、只是開啟連結不會用掉它、重寄會讓舊連結失效。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed partial class InvitationTests(PlatformFactory factory)
 {
     private IMemberAdmin Members => factory.Services.GetRequiredService<IMemberAdmin>();

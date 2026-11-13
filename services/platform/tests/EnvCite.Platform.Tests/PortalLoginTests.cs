@@ -8,7 +8,7 @@ namespace EnvCite.Platform.Tests;
 /// 客戶入口的帳密登入：租戶在路徑裡、靜態渲染、真的 cookie 與 antiforgery。
 /// 營運者經手的初始密碼要在第一次登入時改掉；失敗不洩漏帳號有沒有；session 只對簽發的租戶有效。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class PortalLoginTests(PlatformFactory factory)
 {
     private Task<(TenantResponse Tenant, string Email, string Initial)> MemberAsync(string prefix, string role = CustomerRoles.Owner) =>

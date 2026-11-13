@@ -7,7 +7,7 @@ namespace EnvCite.Platform.Tests;
 /// 群組對映角色：群組由身分來源推送，角色由客戶的擁有者對映；受管成員的角色 = 所屬有對映的群組裡最高的，
 /// 一個都沒有就是預設角色。涵蓋重算的規則、擁有者與解除管理的例外、冪等、租戶隔離、稽核與 fail closed。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class DirectoryGroupTests(PlatformFactory factory) : DirectoryTestBase(factory)
 {
     private Task<AdminOutcome<DirectoryMember>> NewMemberAsync(Org org) =>

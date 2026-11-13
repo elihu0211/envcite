@@ -2,7 +2,7 @@ using System.Net;
 
 namespace EnvCite.Platform.Tests;
 
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed class HealthEndpointTests(PlatformFactory factory)
 {
     [Fact]

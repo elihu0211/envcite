@@ -6,7 +6,7 @@ using OpenTelemetry.Trace;
 
 namespace EnvCite.Platform.Tests;
 
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed class ObservabilityTests(PlatformFactory factory)
 {
     private static string? ServiceName(IServiceProvider services) =>

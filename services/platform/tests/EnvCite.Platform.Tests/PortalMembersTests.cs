@@ -12,7 +12,7 @@ namespace EnvCite.Platform.Tests;
 /// 客戶自己的管理員管理成員（不經營運者）：階層、不能動自己、停用立即生效、一次性密碼只顯示一次、租戶隔離。
 /// 共用主機不強制兩步驟，所以這裡的擁有者與管理員登入後就能用。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed partial class PortalMembersTests(PlatformFactory factory)
 {
     private const string Action = "portal-member-action";

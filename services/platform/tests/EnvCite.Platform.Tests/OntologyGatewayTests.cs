@@ -5,7 +5,7 @@ using EnvCite.Platform.Modules.Ontology;
 
 namespace EnvCite.Platform.Tests;
 
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class OntologyGatewayTests(PlatformFactory factory)
 {
     private const string LawPath = $"{FakeOntologyServer.CentralLawsPath}{FakeOntologyServer.KnownLawId}";

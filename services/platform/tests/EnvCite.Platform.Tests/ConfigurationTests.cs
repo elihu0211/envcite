@@ -7,7 +7,7 @@ namespace EnvCite.Platform.Tests;
 /// <summary>
 /// 設定錯誤要在主機啟動時失敗（k8s 看到 CrashLoopBackOff 與明確訊息），不是等到第一個請求。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class ConfigurationTests(PlatformFactory factory)
 {
     private static string StartFailure(WebApplicationFactory<Program> host)

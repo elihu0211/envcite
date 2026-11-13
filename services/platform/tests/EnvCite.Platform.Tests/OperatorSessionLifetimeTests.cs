@@ -11,7 +11,7 @@ namespace EnvCite.Platform.Tests;
 /// 後台 session 的絕對期限：cookie 會滑動續期，但從簽發起算超過 <c>Platform:Ui:SessionMaxAge</c> 一律拒絕，
 /// 被竊的 cookie 不能靠持續使用而永不過期。期限的起點存在票的屬性裡（滑動續期會重寫 <c>IssuedUtc</c>，所以不能用它）。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed class OperatorSessionLifetimeTests(PlatformFactory factory)
 {
     private static readonly TimeSpan MaxAge = TimeSpan.FromHours(12); // 與 UiOptions 預設一致

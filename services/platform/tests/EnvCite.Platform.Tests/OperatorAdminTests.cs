@@ -6,7 +6,7 @@ namespace EnvCite.Platform.Tests;
 /// 營運者帳號的管理服務（<see cref="IOperatorAdmin"/>，後台、命令列與本機種子共用）：驗證、狀態、稽核。
 /// 一次性密碼不外流由 <c>OperatorCliTests</c> 與 <c>DevelopmentSeedTests</c> 測。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class OperatorAdminTests(PlatformFactory factory)
 {
     private IOperatorAdmin Admin => factory.Services.GetRequiredService<IOperatorAdmin>();

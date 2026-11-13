@@ -6,7 +6,7 @@ using Npgsql;
 namespace EnvCite.Platform.Tests;
 
 /// <summary>營運者建立成員與重設密碼：一次性密碼、驗證、衝突、跨租戶、稽核與儲存。</summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group3)]
 public sealed class MemberAdminTests(PlatformFactory factory)
 {
     private IMemberAdmin Admin => factory.Services.GetRequiredService<IMemberAdmin>();

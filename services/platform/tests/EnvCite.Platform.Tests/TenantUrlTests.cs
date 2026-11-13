@@ -7,7 +7,7 @@ namespace EnvCite.Platform.Tests;
 /// 租戶頁的存取網址：沒有成員、沒有 key 的新租戶也看得到，主機取自請求（不是寄信用的 <c>Platform:Mail:BaseUrl</c>），
 /// 複製鈕有標籤、可由鍵盤操作、成功與失敗都有回饋。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group3)]
 public sealed partial class TenantUrlTests(PlatformFactory factory)
 {
     private async Task<(string Identifier, string Html)> TenantPageAsync(Uri? origin = null, string language = "zh-TW")

@@ -9,7 +9,7 @@ using OpenTelemetry.Metrics;
 namespace EnvCite.Platform.Tests;
 
 /// <summary>RED 指標（rate、errors、duration）：HTTP 伺服器，以及對 consult 的 gRPC 用戶端。</summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class RedMetricsTests(PlatformFactory factory)
 {
     private sealed record Point(string Metric, Dictionary<string, object?> Tags, long Count);

@@ -11,7 +11,7 @@ namespace EnvCite.Platform.Tests;
 /// 被限制時告訴對方多久後再試。額度是自己的一份（<c>Platform:Ui:SignInAttemptsPerMinute</c>），不與入口共用。
 /// 測試主機的來源位址只有一個，所以這裡證明額度與時機，不證明「不同來源各有各的額度」。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed class OperatorRateLimitTests(PlatformFactory factory)
 {
     private const int Limit = 3;

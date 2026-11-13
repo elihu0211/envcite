@@ -17,7 +17,7 @@ namespace EnvCite.Platform.Tests;
 /// 開啟強制時，Owner 與 Admin 必須啟用兩步驟驗證（07-01 §6）；一般成員可以自己關閉；任何人都能用驗證碼重新產生復原碼。
 /// 共用測試主機與預設一樣關著強制（<c>RequireMfaForAdmins=false</c>）；這裡的主機把它打開。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed partial class PortalMfaRequiredTests(PlatformFactory factory)
 {
     private static string Security(string tenant) => $"/portal/{tenant}/security";

@@ -15,7 +15,7 @@ namespace EnvCite.Platform.Tests;
 /// 問答歷史：預設關閉（問題文字是客戶案件的內容）；開啟後只有本人看得到、能刪、超過保留天數自動刪。
 /// 共用測試主機沒開，這裡的主機把它打開。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group3)]
 public sealed partial class ConversationHistoryTests(PlatformFactory factory)
 {
     private const string Question = "噪音管制標準";
