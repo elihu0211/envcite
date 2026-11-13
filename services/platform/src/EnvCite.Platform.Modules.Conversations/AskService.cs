@@ -1,5 +1,7 @@
 using System.Security.Claims;
 
+using Microsoft.Extensions.AI;
+
 namespace EnvCite.Platform.Modules.Conversations;
 
 /// <summary>
@@ -8,7 +10,7 @@ namespace EnvCite.Platform.Modules.Conversations;
 /// 租戶只取自入口成員的 claim；不是入口成員（沒有 <see cref="PlatformClaimTypes.PortalUserId"/>）一律當作沒有方案。
 /// </summary>
 internal sealed class AskService(
-    TenantScopes tenants, ITenantDirectory directory, IAnswerAvailability availability, IConversationHistoryAvailability history) : IAskService
+    TenantScopes tenants, ITenantDirectory directory, IAnswerAvailability availability, IConversationHistoryAvailability historyAvailability) : IAskService
 {
     private static readonly AskCapabilities None = new(HasPlan: false, AiAnswer: false);
 
@@ -23,7 +25,8 @@ internal sealed class AskService(
         return outcome.IsOk ? outcome.Value! : None;
     }
 
-    public async Task<AskResult> AskAsync(ClaimsPrincipal user, string? question, string? asOf, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken)
+    public async Task<AskResult> AskAsync(
+        ClaimsPrincipal user, string? question, string? asOf, IReadOnlyList<ChatMessage> history, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken)
     {
         var noPlan = new AskResult(AskMode.Search, AskStatus.NoPlan);
         if (MemberTenant(user) is not { } identifier)
@@ -38,7 +41,7 @@ internal sealed class AskService(
 
             if (capabilities.AiAnswer)
             {
-                var answered = await scope.Get<IGroundedAnswerer>().AnswerAsync(question, asOf, progress, cancellationToken);
+                var answered = await scope.Get<IGroundedAnswerer>().AnswerAsync(question, asOf, history, progress, cancellationToken);
                 return AdminOutcome.Ok(new AskResult(AskMode.Answer, StatusOf(answered.Status), answered.IsOk ? answered.Value : null));
             }
 
@@ -51,19 +54,19 @@ internal sealed class AskService(
 
     public async Task<IReadOnlyList<ConversationSummary>> RecentAsync(ClaimsPrincipal user, int limit, CancellationToken cancellationToken)
     {
-        if (!history.Enabled || MemberTenant(user) is not { } identifier)
+        if (!historyAvailability.Enabled || MemberTenant(user) is not { } identifier)
             return [];
 
         var outcome = await tenants.InByIdentifierAsync<IReadOnlyList<ConversationSummary>>(
             identifier,
-            async scope => AdminOutcome.Ok(await scope.Get<IConversationHistory>().ListAsync(user, limit, cancellationToken)));
+            async scope => AdminOutcome.Ok(await scope.Get<IConversationHistory>().ListAsync(user, limit, search: null, cancellationToken)));
 
         return outcome.IsOk ? outcome.Value! : [];
     }
 
     public async Task<ConversationDetail?> ConversationAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)
     {
-        if (!history.Enabled || MemberTenant(user) is not { } identifier)
+        if (!historyAvailability.Enabled || MemberTenant(user) is not { } identifier)
             return null;
 
         var outcome = await tenants.InByIdentifierAsync<ConversationDetail?>(
@@ -73,14 +76,14 @@ internal sealed class AskService(
         return outcome.IsOk ? outcome.Value : null;
     }
 
-    public async Task<Guid?> RecordAsync(ClaimsPrincipal user, Guid? conversationId, string question, string answer, CancellationToken cancellationToken)
+    public async Task<Guid?> RecordAsync(ClaimsPrincipal user, Guid? conversationId, ConversationTurn turn, CancellationToken cancellationToken)
     {
         if (MemberTenant(user) is not { } identifier)
             return null;
 
         var outcome = await tenants.InByIdentifierAsync<Guid?>(
             identifier,
-            async scope => AdminOutcome.Ok(await scope.Get<IConversationHistory>().AppendTurnAsync(user, conversationId, question, answer, cancellationToken)));
+            async scope => AdminOutcome.Ok(await scope.Get<IConversationHistory>().AppendTurnAsync(user, conversationId, turn, cancellationToken)));
 
         return outcome.IsOk ? outcome.Value : null;
     }

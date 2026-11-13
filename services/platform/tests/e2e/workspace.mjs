@@ -125,6 +125,73 @@ const scenarios = {
         });
     },
 
+    // 側欄的對話選單（原生 popover 加普通表單）：釘選、重新命名、點進去接續（帶著前文再問）、刪除。
+    async "history-menu"() {
+        const menuOf = () => page.locator(".ep-recent-item").first();
+        const openMenu = async () => {
+            await menuOf().locator(".ep-recent-more").click();
+            await until("選單應該打開", async () => (await page.locator(".ep-conv-menu:popover-open").count()) === 1);
+        };
+        // 表單送出後是整頁導回原來的頁面：等 circuit 重新接上。
+        const reloaded = async () => {
+            await page.waitForLoadState("load");
+            await circuitConnected();
+        };
+
+        await step("登入並問第一題", async () => {
+            await signIn();
+            await submit(question);
+            await answered(1);
+            await until("網址應是 /c/{id}", async () => /\/c\/[0-9a-f-]{36}$/.test(page.url()));
+            // 失敗時要看得到側欄實際有什麼：只回 false 看不出是沒更新還是多了一串。
+            await until("側欄應有這一串", async () => {
+                const count = await page.locator(".ep-recent-link").count();
+                return count === 1 ? true : { count, side: (await page.locator(".ep-side").innerText().catch(() => "")).slice(0, 200) };
+            });
+        });
+        const conversationUrl = page.url();
+
+        await step("釘選：側欄多一個「已釘選」群組，停留在同一頁", async () => {
+            await openMenu();
+            await page.locator(".ep-conv-menu button", { hasText: /^釘選$/ }).click();
+            await reloaded();
+            await until("應有已釘選群組", async () =>
+                (await page.locator(".ep-recent .ep-side-group", { hasText: "已釘選" }).count()) === 1);
+            if (page.url() !== conversationUrl) throw new Error(`釘選後網址變了：${conversationUrl} → ${page.url()}`);
+        });
+
+        await step("重新命名：側欄與標題換成新名字", async () => {
+            await openMenu();
+            await page.locator(".ep-conv-menu input[name='title']").fill("我的稽查案");
+            await page.locator(".ep-conv-menu input[name='title']").press("Enter");
+            await reloaded();
+            await until("側欄應顯示新標題", async () => (await page.locator(".ep-recent-link").first().innerText()).includes("我的稽查案"));
+        });
+
+        await step("離開再從側欄點回來：還原回合，接著問會帶著前文", async () => {
+            await page.click(`a.ep-side-link[href='/portal/${tenant}']`);
+            await until("應是空畫面", async () => (await page.locator(".ep-ask[data-state='empty']").count()) === 1);
+            await page.click(".ep-recent-link");
+            await until("應還原一個回合", async () => (await turns().count()) === 1);
+            await submit("那罰款多少"); // 單獨看沒有證據；有前文才會被改寫成可檢索的問句
+            await answered(2);
+            const text = await turns().last().innerText();
+            if (!text.includes("L1")) throw new Error(`追問沒有得到有出處的回答：${text}`);
+        });
+
+        await step("刪除：要先確認，刪掉後回首頁、側欄沒有這一串", async () => {
+            await openMenu();
+            await page.locator(".ep-conv-menu .ep-menu-danger").click();
+            await until("應出現確認", async () => (await page.locator(".ep-conv-confirm:popover-open").count()) === 1);
+            await page.locator(".ep-conv-confirm button[type=submit]").click();
+            await reloaded();
+            await until("應回到新對話", async () => page.url() === `${base}/portal/${tenant}`);
+            await until("側欄不該再有對話", async () => (await page.locator(".ep-recent-link").count()) === 0);
+            await page.goto(conversationUrl);
+            await until("舊網址應是找不到", async () => (await page.locator("body").innerText()).includes("找不到這個對話"));
+        });
+    },
+
     // 拒答：回合留著、說明原因，之後還能再問。
     async refusal() {
         await step("登入", signIn);

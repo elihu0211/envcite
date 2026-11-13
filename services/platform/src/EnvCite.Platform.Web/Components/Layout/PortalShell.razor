@@ -95,7 +95,9 @@
                         }
                     </nav>
                 }
-                @* 最近的對話：只有標題，依日期分組；窄欄與沒有 JavaScript 的手機橫列不顯示（樣式表）。 *@
+                @* 對話：釘選的一組在最上面，其餘依日期分組；窄欄與沒有 JavaScript 的手機橫列不顯示（樣式表）。
+                   每個項目有一顆「⋯」鈕，開原生 popover 選單：釘選、重新命名、刪除。三個動作都是附 antiforgery 的普通 POST 表單，
+                   靜態頁與互動式工作區的側欄共用這一份，不需要 JavaScript；動作完回到原來的頁面（PortalEndpoints）。 *@
                 @if (Recent.Count > 0)
                 {
                     <section class="ep-recent" aria-label="@L["最近的對話"]">
@@ -105,9 +107,16 @@
                             <nav class="ep-recent-nav" aria-label="@group.Label">
                                 @foreach (var item in group.Items)
                                 {
-                                    <NavLink class="ep-recent-link" href="@item.Href" title="@item.Title">
-                                        <span class="ep-side-label">@item.Title</span>
-                                    </NavLink>
+                                    <div class="ep-recent-item">
+                                        <NavLink class="ep-recent-link" href="@item.Href" title="@item.Title">
+                                            @if (item.Pinned)
+                                            {
+                                                <NavIcon Path="@Icons.Material.Outlined.PushPin" />
+                                            }
+                                            <span class="ep-side-label">@item.Title</span>
+                                        </NavLink>
+                                        <ConversationMenu Id="@item.Id" Href="@item.Href" Title="@item.Title" Pinned="@item.Pinned" />
+                                    </div>
                                 }
                             </nav>
                         }
@@ -130,8 +139,10 @@
 @code {
     public sealed record MenuItem(string Href, string Label);
 
-    /// <param name="Title">對話的標題（第一個問題）；是使用者的資料，不翻譯。</param>
-    public sealed record RecentConversation(string Href, string Title);
+    /// <param name="Id">選單的元素 Id 與錨點名稱用它區分項目。</param>
+    /// <param name="Href">對話頁；釘選、重新命名、刪除的表單 POST 到它底下（<c>/pin</c>、<c>/rename</c>、<c>/delete</c>）。</param>
+    /// <param name="Title">對話的標題（預設是第一個問題，可改名）；是使用者的資料，不翻譯。</param>
+    public sealed record RecentConversation(Guid Id, string Href, string Title, bool Pinned);
 
     public sealed record RecentGroup(string Label, IReadOnlyList<RecentConversation> Items);
 

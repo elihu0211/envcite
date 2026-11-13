@@ -143,6 +143,8 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
             conversation.Property(c => c.Title).HasMaxLength(Conversation.TitleLength);
             // 清單：某位成員最近更新的在前。
             conversation.HasIndex(c => new { c.UserId, c.UpdatedAt });
+            // 釘選的清單：只有少數列有值，部分索引就夠。
+            conversation.HasIndex(c => new { c.UserId, c.PinnedAt }).HasFilter("\"PinnedAt\" IS NOT NULL");
             conversation.HasIndex(c => c.UpdatedAt);
             conversation.HasMany(c => c.Messages).WithOne().HasForeignKey(m => m.ConversationId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -151,6 +153,9 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
         {
             message.IsMultiTenant();
             message.Property(m => m.Role).HasMaxLength(16);
+            message.Property(m => m.AsOf).HasMaxLength(10);
+            message.Property(m => m.Outcome).HasMaxLength(16);
+            message.OwnsMany(m => m.Citations, citations => citations.ToJson());
             message.HasIndex(m => new { m.ConversationId, m.CreatedAt });
         });
 

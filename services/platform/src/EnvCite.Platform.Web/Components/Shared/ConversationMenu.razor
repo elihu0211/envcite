@@ -1,0 +1,58 @@
+@* 一串對話的「⋯」選單：釘選、重新命名、刪除。側欄的項目與對話紀錄頁的列共用這一份，所以管理對話只有一種做法。
+   選單是瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript）；三個動作都是附 antiforgery 的普通 POST 表單，
+   送到 PortalEndpoints，所以靜態頁與互動式工作區都能用。刪除先開一個確認的 popover：不可逆的動作要確認。 *@
+<button type="button" class="ep-recent-more" popovertarget="@MenuId" style="@($"anchor-name: --ep-c{Key}")"
+        aria-label="@L["對話選項：{0}", Title]">
+    <NavIcon Path="@Icons.Material.Filled.MoreHoriz" />
+</button>
+
+<div id="@MenuId" class="ep-menu ep-conv-menu" popover style="@($"position-anchor: --ep-c{Key}")">
+    <form method="post" action="@($"{Href}/pin")">
+        <AntiforgeryToken />
+        <input type="hidden" name="pinned" value="@(Pinned ? "false" : "true")" />
+        <button type="submit" class="ep-menu-item">@(Pinned ? L["取消釘選"] : L["釘選"])</button>
+    </form>
+    <form method="post" action="@($"{Href}/rename")" class="ep-conv-rename">
+        <AntiforgeryToken />
+        <label class="ep-visually-hidden" for="@TitleId">@L["對話標題"]</label>
+        <input id="@TitleId" class="ep-input" name="title" value="@Title" maxlength="80" required autocomplete="off" />
+        <button type="submit" class="ep-menu-item">@L["重新命名"]</button>
+    </form>
+    <button type="button" class="ep-menu-item ep-menu-danger" popovertarget="@ConfirmId">@L["刪除…"]</button>
+</div>
+
+<div id="@ConfirmId" class="ep-menu ep-conv-confirm" popover style="@($"position-anchor: --ep-c{Key}")" role="alertdialog" aria-label="@L["刪除這串對話"]">
+    <p>@L["刪除這串對話？刪除後無法復原。"]</p>
+    <div class="ep-conv-confirm-actions">
+        <form method="post" action="@($"{Href}/delete")">
+            <AntiforgeryToken />
+            <SubmitButton>@L["刪除"]</SubmitButton>
+        </form>
+        <button type="button" class="ep-btn ep-btn-quiet" popovertarget="@ConfirmId" popovertargetaction="hide">@L["取消"]</button>
+    </div>
+</div>
+
+@code {
+    /// <summary>元素 Id 與錨點名稱用它區分同一頁上的多個選單。</summary>
+    [Parameter, EditorRequired]
+    public Guid Id { get; set; }
+
+    /// <summary>對話頁的網址；三個表單 POST 到它底下（<c>/pin</c>、<c>/rename</c>、<c>/delete</c>）。</summary>
+    [Parameter, EditorRequired]
+    public string Href { get; set; } = string.Empty;
+
+    /// <summary>目前的標題（使用者的資料，不翻譯）；重新命名的輸入框以它為預設值。</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Pinned { get; set; }
+
+    private string Key => Id.ToString("N");
+
+    private string MenuId => $"ep-conv-{Key}";
+
+    private string ConfirmId => $"ep-del-{Key}";
+
+    private string TitleId => $"ep-title-{Key}";
+}
