@@ -20,6 +20,10 @@
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13" />
+    <!-- Microsoft Agent Framework 1.x 只用圖式 workflow 的穩定面（AG-UI 轉接器、DevUI、託管仍是 preview，不引入）；
+         它的 MEAI 下界是 10.11，與下面的 11.0.0 相容。1.x 每週發版，升級時看變更記錄再改這個數字。 -->
+    <PackageVersion Include="Microsoft.Agents.AI.Workflows" Version="1.28.0" />
+    <PackageVersion Include="Microsoft.Extensions.AI" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.Testing" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="11.0.0" />

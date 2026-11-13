@@ -196,6 +196,22 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
         Assert.DoesNotContain(logs.Messages, m => m.Contains(FakeConsultServer.AnswerableQuestion, StringComparison.Ordinal));
     }
 
+    // 回答流程是 workflow：節點的例外會被框架包成事件。預期的失敗（上面）轉成結果代碼；
+    // 沒預期到的例外要原樣丟出去變成 500，不能被吞成一則安靜的拒答。
+    [Fact]
+    public async Task AnUnexpectedFailureInTheAnswerFlowStillSurfacesAsAServerError()
+    {
+        var (host, _) = Host(_ => throw new InvalidOperationException("a bug, not an outage"));
+        using var h = host;
+        var (browser, tenant) = await SignedInAsync(host);
+        using var b = browser;
+
+        var page = await browser.SubmitAsync(SearchPage(tenant.Identifier), Ask(FakeConsultServer.AnswerableQuestion));
+
+        Assert.Equal(System.Net.HttpStatusCode.InternalServerError, page.Status);
+        Assert.DoesNotContain("這段回答由 AI", page.Html, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task WithoutAModelEndpointThePortalStillListsArticlesAndNeverCallsAModel()
     {

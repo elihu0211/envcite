@@ -83,9 +83,10 @@ public static class ConsultModule
         services.TryAddSingleton<IChatClient>(provider =>
         {
             var answer = provider.GetRequiredService<IOptions<AnswerOptions>>().Value;
-            return new OpenAIClient(new ApiKeyCredential(answer.ApiKey), new OpenAIClientOptions { Endpoint = answer.Endpoint })
-                .GetChatClient(answer.Model)
-                .AsIChatClient();
+            return AnswerTelemetry.Wrap(
+                new OpenAIClient(new ApiKeyCredential(answer.ApiKey), new OpenAIClientOptions { Endpoint = answer.Endpoint })
+                    .GetChatClient(answer.Model)
+                    .AsIChatClient());
         });
         services.AddSingleton<IAnswerAvailability, AnswerAvailability>();
         services.AddScoped<IGroundedAnswerer, GroundedAnswerer>();
