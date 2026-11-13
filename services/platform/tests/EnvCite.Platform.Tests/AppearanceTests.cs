@@ -458,7 +458,7 @@ public sealed partial class AppearanceSettingTests(PlatformFactory factory)
         var home = Home(tenant.Identifier);
         var settings = $"{home}/settings";
         using var browser = new PortalBrowser(factory);
-        await SignInFullyAsync(browser, tenant.Identifier, email, initial);
+        var password = await SignInFullyAsync(browser, tenant.Identifier, email, initial);
 
         var chosen = await browser.SubmitAsync(settings, new() { ["appearance"] = "dark" }, $"{home}/appearance");
 
@@ -468,7 +468,11 @@ public sealed partial class AppearanceSettingTests(PlatformFactory factory)
         Assert.Contains("data-theme=\"dark\"", PageMarkup.HtmlTag(after.Html), StringComparison.Ordinal);
         Assert.Equal("dark", Radios(after.Html).Single(r => r.Checked).Value);
         Assert.Contains("data-theme=\"dark\"", PageMarkup.HtmlTag((await browser.GetAsync(home)).Html), StringComparison.Ordinal);
-        Assert.Contains("data-theme=\"dark\"", PageMarkup.HtmlTag((await browser.GetAsync(Login(tenant.Identifier))).Html), StringComparison.Ordinal); // 匿名頁也尊重
+
+        // 匿名頁也尊重：登出後的登入頁（已登入的人開登入頁會被導走，不是匿名頁）。偏好存在瀏覽器的 cookie，登出不影響。
+        await browser.SubmitAsync(home, [], $"{home}/logout");
+        Assert.Contains("data-theme=\"dark\"", PageMarkup.HtmlTag((await browser.GetAsync(Login(tenant.Identifier))).Html), StringComparison.Ordinal);
+        Assert.Equal(home, (await browser.SubmitAsync(Login(tenant.Identifier), Credentials(email, password))).Location);
 
         await browser.SubmitAsync(settings, new() { ["appearance"] = "light" }, $"{home}/appearance");
         Assert.Contains("data-theme=\"light\"", PageMarkup.HtmlTag((await browser.GetAsync(home)).Html), StringComparison.Ordinal);
