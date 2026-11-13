@@ -26,28 +26,17 @@ internal sealed class QueryNav(IStringLocalizer<Ui> localizer) : PortalNavContri
 
     // 首頁只在首頁算「目前頁」，否則其他頁都在它底下，它會一直亮著。
     public override IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) =>
-        [new(context.Home, L["法規條文檢索"], ServicesGroup, Exact: true, Icon: Icons.Material.Outlined.Search)];
+        [new(context.Home, L["法規諮詢"], ServicesGroup, Exact: true, Icon: Icons.Material.Outlined.QuestionAnswer)];
 }
 
-internal sealed class LawCorpusNav(IStringLocalizer<Ui> localizer, ITenantModules modules) : PortalNavContributorBase(localizer)
+internal sealed class OntologyWorkbenchNav(IStringLocalizer<Ui> localizer, ITenantModules modules) : PortalNavContributorBase(localizer)
 {
     public override int Order => 15;
 
     public override IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) =>
         context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value is { } tenant
-        && modules.IsEnabled(tenant, ModuleKeys.LawCorpus)
-            ? [new($"{context.Home}/laws", L["法規沿革與條文瀏覽"], ServicesGroup, Icon: Icons.Material.Outlined.MenuBook)]
-            : [];
-}
-
-internal sealed class NormativeReasoningNav(IStringLocalizer<Ui> localizer, ITenantModules modules) : PortalNavContributorBase(localizer)
-{
-    public override int Order => 18;
-
-    public override IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) =>
-        context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value is { } tenant
-        && modules.IsEnabled(tenant, ModuleKeys.NormativeReasoning)
-            ? [new($"{context.Home}/reasoning", L["規範推論評估"], ServicesGroup, Icon: Icons.Material.Outlined.Gavel)]
+        && (modules.IsEnabled(tenant, ModuleKeys.LawCorpus) || modules.IsEnabled(tenant, ModuleKeys.NormativeReasoning))
+            ? [new($"{context.Home}/laws", L["法規本體工作台"], ServicesGroup, Icon: Icons.Material.Outlined.AccountTree)]
             : [];
 }
 
