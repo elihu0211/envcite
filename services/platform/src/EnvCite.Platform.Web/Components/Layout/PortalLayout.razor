@@ -1,7 +1,7 @@
+@using EnvCite.Platform.Web.Components.Layout.Navigation
 @inherits PlatformLayoutBase
 @inject IPortalAccount Account
-@inject IConversationHistory History
-@inject IDirectoryAvailability DirectoryFeature
+@inject IEnumerable<IPortalNavContributor> NavContributors
 
 @* 客戶入口的外殼：靜態渲染（沒有 circuit、沒有互動元件），所以不用 MudBlazor 的元件。外觀與版面見 PortalShell。 *@
 <PortalShell TenantName="@(Account.CurrentTenant is { } tenant ? tenant.Name ?? tenant.Identifier : null)"
@@ -42,39 +42,11 @@
         && _user!.FindFirst(PlatformClaimTypes.PasswordChangeRequired) is null
         && _user.FindFirst(PlatformClaimTypes.MfaEnrollmentRequired) is null;
 
-    private bool CanManageMembers => _user is not null && (_user.IsInRole(CustomerRoles.Owner) || _user.IsInRole(CustomerRoles.Admin));
-
-    private IReadOnlyList<PortalShell.NavItem> NavItems
-    {
-        get
-        {
-            if (Account.CurrentTenant is not { } tenant)
-            {
-                return [];
-            }
-
-            var home = PortalPaths.Home(tenant.Identifier);
-            var items = new List<PortalShell.NavItem> { new(home, L["查詢"], L["服務"], Exact: true, Icon: Icons.Material.Outlined.Search) };
-            if (History.Enabled)
-            {
-                items.Add(new($"{home}/history", L["對話紀錄"], L["服務"], Icon: Icons.Material.Outlined.Forum));
-            }
-
-            if (CanManageMembers)
-            {
-                items.Add(new($"{home}/members", L["成員"], L["組織"], Icon: Icons.Material.Outlined.Group));
-            }
-
-            // 設定與 token 只有擁有者能管（服務層也擋）；功能面沒開就不列。
-            if (DirectoryFeature.Available && _user is not null && _user.IsInRole(CustomerRoles.Owner))
-            {
-                items.Add(new($"{home}/directory", L["目錄同步"], L["組織"], Icon: Icons.Material.Outlined.SyncAlt));
-            }
-
-            items.Add(new($"{home}/account", L["帳號與組織"], L["組織"], Icon: Icons.Material.Outlined.ManageAccounts));
-            return items;
-        }
-    }
+    /// <summary>側欄的項目由各功能的 <see cref="IPortalNavContributor"/> 貢獻，外殼不認識任何功能。</summary>
+    private IReadOnlyList<PortalShell.NavItem> NavItems =>
+        Account.CurrentTenant is { } tenant && _user is not null
+            ? PortalNavigation.Collect(NavContributors, new PortalNavContext(PortalPaths.Home(tenant.Identifier), _user))
+            : [];
 
     private IReadOnlyList<PortalShell.MenuItem> MenuItems =>
         Account.CurrentTenant is { } tenant

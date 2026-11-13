@@ -23,7 +23,7 @@ internal sealed partial class GroundedAnswerer(
     ConsultationService.ConsultationServiceClient consult,
     IOptions<ConsultOptions> consultOptions,
     IOptions<AnswerOptions> options,
-    IServiceProvider services,
+    Lazy<IChatClient> model,
     IUsageRecorder usage,
     ILogger<GroundedAnswerer> logger) : IGroundedAnswerer
 {
@@ -174,7 +174,7 @@ internal sealed partial class GroundedAnswerer(
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(options.Value.Timeout);
-        var response = await services.GetRequiredService<IChatClient>().GetResponseAsync(
+        var response = await model.Value.GetResponseAsync(
             [
                 new ChatMessage(ChatRole.System, SystemPrompt),
                 new ChatMessage(ChatRole.User, $"證據：\n{evidence}\n問題：{question}"),
