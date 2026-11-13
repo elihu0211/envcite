@@ -34,6 +34,7 @@ uv run --env-file .env envcite-ontology
   - 不寫 `from __future__ import annotations`（註解延後求值）；泛型用 PEP 695（`def f[T]`），別名用 `type X = …`。
   - 提示詞不寫在 Python 裡：模板在 `verification/templates/*.j2`（Jinja2），渲染只經 `verification/prompts.py` 的型別化函式。共同骨架用繼承（`base.j2` → `with_conventions.j2`／`definition.j2` → 各提示），「有才放」的區塊是 `macros.j2` 的巨集；改提示詞只改模板，要在開發集上量測，不憑感覺。
   - 讀資料庫列用 `db.fetch`／`fetch_one`／`scalar`，每個查詢一個私有的具名列型別（`NamedTuple`，欄位次序同 SELECT；可為 NULL 的欄位宣告 `| None`，依 `migrations/` 查證，不猜），不在用處 `cast`。
+  - 函式的大小由 ruff 守門（根 `pyproject.toml`：圈複雜度與分支各 14、語句 60）；超過就拆成有名字的小函式，不加 `noqa`、不放寬門檻。
   - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
   - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。
 - **環境變數以 `src/envcite_ontology/settings.py` 為唯一來源**；入口不直接讀 `os.environ`；加變數時同步 `.env.example`（`tests/test_settings.py` 守門）。

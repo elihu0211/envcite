@@ -453,36 +453,64 @@ def statement_facts(
     違憲失效的陳述不在其中，另列在 `invalidated`；命令陳述的授權鏈不完整者寫成 `unrooted`。
     `include_unsettled` 僅供驗證閘門（接受前的可執行性檢查）納入未接受的陳述，此時不讀失效與授權。
     """
-    out: list[str] = []
     params = {"lang": language, "on": as_of}
     resolver = "anchored_statements_at" if include_unsettled else "statement_versions_at"
     statements = fetch(conn, _STATEMENTS.format(resolver=resolver), params, _StatementRow)
-    ids = [stmt.id for stmt in statements]
-    for stmt in statements:
-        out.append(f"statement({stmt.id},{stmt.kind},{stmt.modality or 'none'}).")
-        out.append(f"src({stmt.id},{q(stmt.version_iri)}).")
-        out.append(f"stmt_law({stmt.id},{stmt.law_id}).")
+    out = _statement_lines(statements)
     invalidated: tuple[Invalidated, ...] = ()
     chains: dict[int, Chain] = {}
     if not include_unsettled:
         invalidated = tuple(fetch(conn, _INVALIDATED, params, Invalidated))
-        laws = {stmt.law_id for stmt in statements}
-        commands = [
-            row.id
-            for row in fetch(conn, _LAWS, (sorted(laws),), _LawRow)
-            if row.norm_kind not in LAWS
+        chains = _command_chains(conn, statements, language, as_of)
+        out += [
+            f"unrooted({stmt.id})."
+            for stmt in statements
+            if stmt.id in chains and not chains[stmt.id].rooted
         ]
-        by_law = {law: chain_at(conn, law, language, as_of) for law in commands}
-        for stmt in statements:
-            chain = by_law.get(stmt.law_id)
-            if chain is not None:
-                chains[stmt.id] = chain
-                if not chain.rooted:
-                    out.append(f"unrooted({stmt.id}).")
-    if not ids:
+    if not statements:
         return StatementFacts("\n".join(out), invalidated, chains)
-    ids_param = {"ids": ids}
+    ids_param = {"ids": [stmt.id for stmt in statements]}
 
+    out += _condition_facts(conn, ids_param, language, as_of)
+    out += _vocabulary_facts(conn, params, ids_param)
+    out += _slot_facts(conn, ids_param)
+    out += _relation_facts(conn, ids_param)
+    sanctions = fetch(conn, _SANCTIONS, ids_param, _SanctionRow)
+    out += _sanction_lines(sanctions)
+    out += _trigger_facts(conn, ids_param)
+    caps = {
+        sanc.statement_id: int(sanc.max_amount)
+        for sanc in sanctions
+        if sanc.effect == "fine" and sanc.max_amount is not None
+    }
+    return StatementFacts("\n".join(out), invalidated, chains, caps)
+
+
+def _statement_lines(statements: Sequence[_StatementRow]) -> list[str]:
+    out: list[str] = []
+    for stmt in statements:
+        out.append(f"statement({stmt.id},{stmt.kind},{stmt.modality or 'none'}).")
+        out.append(f"src({stmt.id},{q(stmt.version_iri)}).")
+        out.append(f"stmt_law({stmt.id},{stmt.law_id}).")
+    return out
+
+
+def _command_chains(
+    conn: Conn, statements: Sequence[_StatementRow], language: str, on: date
+) -> dict[int, Chain]:
+    """命令陳述 → 其所屬法規的授權鏈；法律、憲法的陳述不在其中。"""
+    laws = {stmt.law_id for stmt in statements}
+    commands = [
+        row.id for row in fetch(conn, _LAWS, (sorted(laws),), _LawRow) if row.norm_kind not in LAWS
+    ]
+    by_law = {law: chain_at(conn, law, language, on) for law in commands}
+    return {stmt.id: by_law[stmt.law_id] for stmt in statements if stmt.law_id in by_law}
+
+
+def _condition_facts(
+    conn: Conn, ids_param: Mapping[str, list[int]], language: str, on: date
+) -> list[str]:
+    out: list[str] = []
     for cond in fetch(conn, _CONDITIONS, ids_param, _ConditionRow):
         out.append(
             f"cond({cond.id},{cond.statement_id},{cond.role},{cond.disjunct},{q(cond.concept)},"
@@ -490,63 +518,104 @@ def statement_facts(
         )
         if cond.needs_assessment:
             out.append(f"judgement({cond.id}).")
-        if cond.value_concept is not None:
-            # 比較子只有 eq、ne（資料庫約束）
-            out.append(f"vcond({cond.id},{q(cond.value_concept)}).")
-        elif cond.threshold is not None:
-            out.append(f"thr({cond.id},{milli(cond.threshold)}).")
-        elif cond.permit is not None:
-            out.append(f"permit_cond({cond.id},{q(cond.permit)}).")  # 量值由呼叫端隨案件事實提供
-        elif cond.delegated:
-            out.append(f"delegated({cond.id}).")
-            limit = limit_at(conn, cond.id, language, as_of)
-            if limit is None and _void_limit(conn, cond.id, language, as_of):
-                out.append(f"void_limit({cond.id}).")
-            if limit is not None:  # 解析不到則不給 thr，推論程式列為問題而非缺事實
-                out.append(f"thr({cond.id},{milli(limit.threshold)}).")
-                out.append(f"thr_src({cond.id},{limit.statement_id}).")
-                if limit.method is not None:
-                    out.append(f"lim_method({cond.id},{q(limit.method)}).")
-                if limit.averaging is not None:
-                    out.append(f"lim_avg({cond.id},{q(limit.averaging)}).")
-                if limit.method is None and limit.averaging is None:
-                    out.append(f"lim_unlabeled({cond.id}).")
+        out += _condition_value_facts(conn, cond, language, on)
+    return out
 
+
+def _condition_value_facts(conn: Conn, cond: _ConditionRow, language: str, on: date) -> list[str]:
+    """要件的比較值：概念值、門檻、許可所載的量值或委由授權條文的限值，擇一。"""
+    if cond.value_concept is not None:
+        # 比較子只有 eq、ne（資料庫約束）
+        return [f"vcond({cond.id},{q(cond.value_concept)})."]
+    if cond.threshold is not None:
+        return [f"thr({cond.id},{milli(cond.threshold)})."]
+    if cond.permit is not None:
+        return [f"permit_cond({cond.id},{q(cond.permit)})."]  # 量值由呼叫端隨案件事實提供
+    if cond.delegated:
+        return _delegated_facts(conn, cond.id, language, on)
+    return []
+
+
+def _delegated_facts(conn: Conn, condition_id: int, language: str, on: date) -> list[str]:
+    out = [f"delegated({condition_id})."]
+    limit = limit_at(conn, condition_id, language, on)
+    if limit is None:  # 解析不到則不給 thr，推論程式列為問題而非缺事實
+        if _void_limit(conn, condition_id, language, on):
+            out.append(f"void_limit({condition_id}).")
+        return out
+    out.append(f"thr({condition_id},{milli(limit.threshold)}).")
+    out.append(f"thr_src({condition_id},{limit.statement_id}).")
+    if limit.method is not None:
+        out.append(f"lim_method({condition_id},{q(limit.method)}).")
+    if limit.averaging is not None:
+        out.append(f"lim_avg({condition_id},{q(limit.averaging)}).")
+    if limit.method is None and limit.averaging is None:
+        out.append(f"lim_unlabeled({condition_id}).")
+    return out
+
+
+def _vocabulary_facts(
+    conn: Conn, params: Mapping[str, object], ids_param: Mapping[str, list[int]]
+) -> list[str]:
+    """用語定義的成員與等同的概念。"""
+    out: list[str] = []
     # 用語定義只及於本法：成員關係帶法規編號，推論只在要件所屬的法規內使用。
-    definitions: set[int] = set()
-    for defn in fetch(conn, _DEFINITIONS, params, _DefinitionRow):
+    definitions = fetch(conn, _DEFINITIONS, params, _DefinitionRow)
+    for defn in definitions:
         out.append(f"defmember({defn.law_id},{q(defn.term)},{q(defn.member)}).")
         out.append(f"defsrc({defn.law_id},{q(defn.term)},{q(defn.member)},{defn.definition_id}).")
-        definitions.add(defn.definition_id)
-    matches = fetch(conn, _MATCHES, ids_param | {"definitions": sorted(definitions)}, _MatchRow)
-    for match in matches:
-        out.append(f"same({q(match.other)},{q(match.used)}).")
-    for act in fetch(conn, _ACTIONS, ids_param, _ActionRow):
-        out.append(f"action({act.statement_id},{q(act.action)}).")
+    definition_ids = sorted({defn.definition_id for defn in definitions})
+    matches = fetch(conn, _MATCHES, {**ids_param, "definitions": definition_ids}, _MatchRow)
+    out += [f"same({q(match.other)},{q(match.used)})." for match in matches]
+    return out
+
+
+def _slot_facts(conn: Conn, ids_param: Mapping[str, list[int]]) -> list[str]:
+    """行為與主體槽位。"""
+    out = [
+        f"action({act.statement_id},{q(act.action)})."
+        for act in fetch(conn, _ACTIONS, ids_param, _ActionRow)
+    ]
     for subj in fetch(conn, _SUBJECTS, ids_param, _SubjectRow):
         out.append(
             f"subject_basis({subj.statement_id},{subj.basis})."
             if subj.basis is not None
             else f"subject_any({subj.statement_id})."
         )
-    for exc in fetch(conn, _EXCEPTIONS, ids_param, _ExceptionRow):
-        out.append(f"exception({exc.exception},{exc.excluded}).")
-    for ovr in fetch(conn, _OVERRIDES, ids_param, _OverrideRow):
-        out.append(f"override({ovr.winner},{ovr.loser},{ovr.basis}).")
-    caps: dict[int, int] = {}
-    for sanc in fetch(conn, _SANCTIONS, ids_param, _SanctionRow):
+    return out
+
+
+def _relation_facts(conn: Conn, ids_param: Mapping[str, list[int]]) -> list[str]:
+    """陳述之間的但書與優先關係。"""
+    out = [
+        f"exception({exc.exception},{exc.excluded})."
+        for exc in fetch(conn, _EXCEPTIONS, ids_param, _ExceptionRow)
+    ]
+    out += [
+        f"override({ovr.winner},{ovr.loser},{ovr.basis})."
+        for ovr in fetch(conn, _OVERRIDES, ids_param, _OverrideRow)
+    ]
+    return out
+
+
+def _sanction_lines(sanctions: Sequence[_SanctionRow]) -> list[str]:
+    out: list[str] = []
+    for sanc in sanctions:
         lo = "none" if sanc.min_amount is None else str(int(sanc.min_amount))
         hi = "none" if sanc.max_amount is None else str(int(sanc.max_amount))
         out.append(f"sanction({sanc.statement_id},{sanc.punishes},{sanc.effect},{lo},{hi}).")
-        if sanc.effect == "fine" and sanc.max_amount is not None:
-            caps[sanc.statement_id] = int(sanc.max_amount)
         if sanc.per_occasion:
             out.append(f"repeating({sanc.statement_id}).")
+    return out
+
+
+def _trigger_facts(conn: Conn, ids_param: Mapping[str, list[int]]) -> list[str]:
+    out: list[str] = []
     for trig in fetch(conn, _TRIGGERS, ids_param, _TriggerRow):
         out.append(f"triggered({trig.statement_id}).")
         if trig.present:
             out.append(f"trigger({trig.statement_id},{trig.trigger},{trig.kind}).")
-    return StatementFacts("\n".join(out), invalidated, chains, caps)
+    return out
 
 
 def _void_limit(conn: Conn, condition_id: int, language: str, on: date) -> bool:

@@ -7,7 +7,7 @@
 """
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from envcite_ontology.ingest.numerals import CN_NUMERALS, parse_int
 
@@ -93,58 +93,79 @@ class _Node:
     children: list[_Node]
 
 
-def _split(article: str, content: str) -> list[Unit]:
-    paragraphs: list[_Node] = []
+def _expect(kind: str, m: re.Match[str], parent: _Node, label: str) -> _Node:
+    try:
+        n = int(m.group(1)) if m.group(1).isdigit() else parse_int(m.group(1))
+    except ValueError:
+        raise _Inconsistent(f"{label}序位無法解讀：{m.group(1)}") from None
+    if n != len(parent.children) + 1:
+        raise _Inconsistent(f"{label}序位不連續：{parent.path} 之下出現第 {n} 個")
+    node = _Node(f"{parent.path}/{kind}_{n}", [], [])
+    parent.children.append(node)
+    return node
+
+
+# 項之下的層級，由上而下。
+_LEVELS = (
+    (_SUBPARAGRAPH, "pt", "款"),
+    (_ITEM, "item", "目"),
+    (_SUBITEM, "sub", "目之 1"),
+)
+
+
+@dataclass
+class _Outline:
+    """逐行建樹的狀態：已出現的項，與目前所在的路徑。"""
+
+    article: str
+    paragraphs: list[_Node] = field(default_factory=list)
     # 由上而下目前所在的路徑：[項, 款, 目, 目之 1]。
-    stack: list[_Node] = []
+    stack: list[_Node] = field(default_factory=list)
 
-    def expect(kind: str, m: re.Match[str], parent: _Node, label: str) -> _Node:
-        try:
-            n = int(m.group(1)) if m.group(1).isdigit() else parse_int(m.group(1))
-        except ValueError:
-            raise _Inconsistent(f"{label}序位無法解讀：{m.group(1)}") from None
-        if n != len(parent.children) + 1:
-            raise _Inconsistent(f"{label}序位不連續：{parent.path} 之下出現第 {n} 個")
-        node = _Node(f"{parent.path}/{kind}_{n}", [], [])
-        parent.children.append(node)
-        return node
+    def add(self, line: str) -> None:
+        """放進一行（已去空白、不是續行）：有層級編號的接在上層之下，否則另起一項。"""
+        for depth, (pattern, kind, label) in enumerate(_LEVELS, start=1):
+            m = pattern.match(line)
+            if m is None:
+                continue
+            if depth == 1 and not self.stack:
+                # 條以款起首：項沒有導引文字，仍是第 1 項。
+                self.paragraphs.append(_Node(f"{self.article}/para_1", [], []))
+                self.stack[:] = [self.paragraphs[0]]
+            if len(self.stack) < depth:
+                raise _Inconsistent(f"{label}出現在沒有上層的位置")
+            node = _expect(kind, m, self.stack[depth - 1], label)
+            node.lines.append(line)
+            del self.stack[depth:]
+            self.stack.append(node)
+            return
+        node = _Node(f"{self.article}/para_{len(self.paragraphs) + 1}", [line], [])
+        self.paragraphs.append(node)
+        self.stack[:] = [node]
 
+
+def _paragraphs(article: str, content: str) -> list[_Node]:
+    outline = _Outline(article)
     for raw in content.split("\n"):
         line = raw.rstrip()
         if not line.strip():
             continue
-        if stack and _CONTINUATION.match(line):
-            stack[-1].lines.append(line.strip() if line[0] in " \t　" else line)
+        if outline.stack and _CONTINUATION.match(line):
+            outline.stack[-1].lines.append(line.strip() if line[0] in " \t　" else line)
             continue
-        line = line.strip()
+        outline.add(line.strip())
+    return outline.paragraphs
 
-        for depth, (pattern, kind, label) in enumerate(
-            (
-                (_SUBPARAGRAPH, "pt", "款"),
-                (_ITEM, "item", "目"),
-                (_SUBITEM, "sub", "目之 1"),
-            ),
-            start=1,
-        ):
-            m = pattern.match(line)
-            if m is None:
-                continue
-            if depth == 1 and not stack:
-                # 條以款起首：項沒有導引文字，仍是第 1 項。
-                paragraphs.append(_Node(f"{article}/para_1", [], []))
-                stack[:] = [paragraphs[0]]
-            if len(stack) < depth:
-                raise _Inconsistent(f"{label}出現在沒有上層的位置")
-            node = expect(kind, m, stack[depth - 1], label)
-            node.lines.append(line)
-            del stack[depth:]
-            stack.append(node)
-            break
-        else:
-            node = _Node(f"{article}/para_{len(paragraphs) + 1}", [line], [])
-            paragraphs.append(node)
-            stack[:] = [node]
 
+def _emit(units: list[Unit], node: _Node) -> None:
+    kind = node.path.rsplit("/", 1)[1].split("_")[0]
+    units.append(Unit(node.path, PROVISION_TYPES[kind], "\n".join(node.lines) or None))
+    for child in node.children:
+        _emit(units, child)
+
+
+def _split(article: str, content: str) -> list[Unit]:
+    paragraphs = _paragraphs(article, content)
     if not paragraphs:
         raise _Inconsistent("沒有文字")
 
@@ -152,13 +173,6 @@ def _split(article: str, content: str) -> list[Unit]:
         return [Unit(article, "article", "\n".join(paragraphs[0].lines))]
 
     units = [Unit(article, "article", None)]
-
-    def emit(node: _Node) -> None:
-        kind = node.path.rsplit("/", 1)[1].split("_")[0]
-        units.append(Unit(node.path, PROVISION_TYPES[kind], "\n".join(node.lines) or None))
-        for child in node.children:
-            emit(child)
-
     for p in paragraphs:
-        emit(p)
+        _emit(units, p)
     return units
