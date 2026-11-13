@@ -552,6 +552,7 @@ def stratified_sample(cases: Sequence[Case], n: int) -> list[Case]:
 
 def fetch_live(host: str, key: str, query: str) -> list[dict[str, Any]]:
     """對 `/v2/search` 查一次（查詢全文不寫日誌；key 只放在標頭）。"""
+    import urllib.error
     import urllib.request
 
     request = urllib.request.Request(
@@ -560,8 +561,33 @@ def fetch_live(host: str, key: str, query: str) -> list[dict[str, Any]]:
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return json.loads(response.read())
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return json.loads(response.read())
+    except urllib.error.HTTPError as error:
+        raise SystemExit(explain_http_error(error.code)) from None
+
+
+#: 線上查詢的錯誤碼對應的處理（`docs/tenants.md` 的「出錯對照」）。
+HTTP_HINTS = {
+    401: "key 不被接受：貼錯、已撤銷或已過期；到該租戶的 API keys 區確認前綴，必要時重發",
+    402: "租戶沒有方案；先在營運者後台指派方案，再簽發 key",
+    403: "key 沒有 ontology:read 範圍",
+    429: "超過用量或速率限制；稍後再試或降低 --sample",
+}
+
+
+def clean_key(raw: str) -> str:
+    """去掉貼上時夾帶的東西：貼上標記（ESC[200~）、控制字元、空白換行，與多貼的 `Bearer `。"""
+    import re
+
+    key = re.sub(r"\x1b\[[0-9;]*[~A-Za-z]", "", raw).strip().removeprefix("Bearer ")
+    return "".join(ch for ch in key if ch.isprintable() and not ch.isspace())
+
+
+def explain_http_error(code: int) -> str:
+    """一句話的錯誤說明，查詢全文與 key 都不出現在裡面。"""
+    return f"線上回 HTTP {code}：" + HTTP_HINTS.get(code, "非預期的錯誤；查 platform 日誌")
 
 
 def live_check(
@@ -722,7 +748,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"{len(rows)} 題：{dict(by)}；類型後綴 {suffixes}", file=sys.stderr)
         return 0
     if args.command == "live-check":
-        key = os.environ.get("ENVCITE_API_KEY") or getpass.getpass("API key（不會顯示）：")
+        key = clean_key(
+            os.environ.get("ENVCITE_API_KEY") or getpass.getpass("API key（不會顯示）：")
+        )
+        if not key:
+            raise SystemExit("沒有收到 API key：貼上後要按 Enter（輸入時不會顯示）")
+        print(f"收到 key，長度 {len(key)}（只印長度）", file=sys.stderr)
         meta = json.loads(args.meta.read_text(encoding="utf-8"))
         cases = [c for c in load_cases(args.queries, args.hits) if c["split"] == args.split]
         result = live_check(cases, meta["suffixes"], args.host, key, args.sample)
