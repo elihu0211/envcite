@@ -158,6 +158,12 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Equal(4, Regex.Count(nav, "<svg class=\"ep-icon\""));
         Assert.Equal(4, Regex.Count(nav, "class=\"ep-side-label\""));
         Assert.Contains("class=\"ep-side-toggle\" aria-controls=\"ep-side\"", page, StringComparison.Ordinal);
+
+        // 頂欄左邊只有品牌（點它回總覽），不掛「營運後台」之類的副標；是哪一種外殼由側欄與頁面標題說明。
+        var top = Regex.Match(page, "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;
+        Assert.Contains("<a class=\"ep-brand\" href=\"/ui\">", top, StringComparison.Ordinal);
+        Assert.DoesNotContain("營運後台", top, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-console-product", page, StringComparison.Ordinal);
         Assert.Contains("<aside id=\"ep-side\" class=\"ep-side\">", page, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-scrim\"", page, StringComparison.Ordinal);
     }

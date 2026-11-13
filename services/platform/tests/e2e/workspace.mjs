@@ -161,7 +161,7 @@ const scenarios = {
             await until("應顯示不能開啟", async () => (await page.locator("body").innerText()).includes("你目前不能開啟這個頁面"));
             if ((await page.locator("#query").count()) !== 0) throw new Error("別人的租戶仍出現了輸入框");
             const text = await page.locator("body").innerText();
-            if (text.includes("營運後台") || text.includes("稽核紀錄")) throw new Error(`客戶看到了後台的外殼：${text}`);
+            if (text.includes("稽核紀錄") || (await page.locator("a.ep-side-link[href='/ui']").count()) !== 0) throw new Error(`客戶看到了後台的外殼：${text}`);
         });
         await step("可以回到自己的組織", async () => {
             await page.click("a.ep-btn-primary");

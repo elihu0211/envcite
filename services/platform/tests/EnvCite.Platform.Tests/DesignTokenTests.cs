@@ -494,6 +494,19 @@ public static partial class DesignTokenTests
         Assert.Matches(@"\.ep-side-link,\s*\.ep-recent-link \{[^}]*white-space: nowrap", css);
     }
 
+    // 營運後台頂欄左邊的品牌（雲端主控台那一型）：常規字重、次要文字色、放大的圖形，沒有副標；入口（.ep-portal）不跟。
+    [Fact]
+    public static void TheOperatorBrandIsALightweightProductNameWithoutASubtitle()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var brand = CssBlock(css, ".ep-console:not(.ep-portal) .ep-shell-top .ep-brand");
+
+        Assert.Contains("font-weight: var(--ep-body-l-weight)", brand, StringComparison.Ordinal);
+        Assert.Contains("color: var(--ep-text-secondary)", brand, StringComparison.Ordinal);
+        Assert.Contains("inline-size: 1.5em", CssBlock(css, ".ep-console:not(.ep-portal) .ep-shell-top .ep-brand-mark"), StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-console-product", css, StringComparison.Ordinal); // 副標（「營運後台」）已移除
+    }
+
     // 側欄：桌機收成窄欄、手機是抽屜，兩者都靠 forms.js 設在 <html> 上的屬性；窄欄寬度是 token，收起的抽屜不在 Tab 順序裡。
     [Fact]
     public static void TheSidebarCollapsesToARailAndBecomesADrawerOnPhones()

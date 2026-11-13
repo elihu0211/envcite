@@ -1,6 +1,8 @@
 @inherits PlatformLayoutBase
 
 @* 營運者後台的外殼：頂欄放品牌與帳號（選單從帳號鈕長出，點外面或 Esc 收回），左側欄是導覽。
+   頂欄左邊照雲端主控台的做法：導覽鈕、品牌圖形加產品名（點它回總覽），不另掛「後台」之類的副標——
+   系統名稱就是產品名，這個外殼是哪一種由側欄與頁面標題說明。
    側欄依群組排：目前只有「平台」；服務有自己的頁面時，以同一個樣式加一組「服務」。導覽只列已經存在的頁面。
    側欄每項是圖示加文字：桌機可收成只剩圖示的窄欄、手機是從左側滑出的抽屜（forms.js 切換；沒有 JavaScript 時，
    窄螢幕上收成頂欄下方一條可橫捲的列）。 *@
@@ -11,8 +13,7 @@
 <div class="ep-console">
     <header class="ep-shell-top">
         <button type="button" class="ep-side-toggle" aria-controls="ep-side" aria-expanded="true" aria-label="@L["展開或收合導覽"]"><NavIcon Path="@Icons.Material.Outlined.Menu" /></button>
-        <span class="ep-brand"><BrandMark />@Brand.Name</span>
-        <span class="ep-console-product">@L["營運後台"]</span>
+        <a class="ep-brand" href="@UiEndpoints.HomePath"><BrandMark />@Brand.Name</a>
         <AuthorizeView>
             <Authorized>
                 <button type="button" id="ep-palette-open" class="ep-palette-open" popovertarget="ep-palette" aria-keyshortcuts="Control+K Meta+K">

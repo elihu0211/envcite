@@ -1191,15 +1191,26 @@ h1[tabindex="-1"]:focus-visible {
     white-space: nowrap;
 }
 
-.ep-console-product {
+/* 營運後台頂欄左邊的品牌（雲端主控台那一型）：圖形放大、產品名用常規字重與次要文字色，不加粗、不帶副標；
+   游標移上去才回到主要文字色。入口（.ep-portal）有自己的安靜外觀，不跟這條。 */
+.ep-console:not(.ep-portal) .ep-shell-top .ep-brand {
+    gap: var(--ep-space-2);
     color: var(--ep-text-secondary);
-    font-size: var(--ep-body-m-size);
-    white-space: nowrap;
+    font-size: var(--ep-headline-s-size);
+    font-weight: var(--ep-body-l-weight);
+    letter-spacing: 0;
+    line-height: 1;
+    transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
-@media (width < 48rem) {
-    .ep-console-product {
-        display: none;
+.ep-console:not(.ep-portal) .ep-shell-top .ep-brand-mark {
+    inline-size: 1.5em;
+    block-size: 1.5em;
+}
+
+@media (hover: hover) {
+    .ep-console:not(.ep-portal) .ep-shell-top .ep-brand:hover {
+        color: var(--ep-text);
     }
 }
 
