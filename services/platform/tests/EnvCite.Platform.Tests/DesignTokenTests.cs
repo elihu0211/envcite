@@ -677,6 +677,30 @@ public static partial class DesignTokenTests
         Assert.Contains(DesignTokens.Brand.ToUpperInvariant(), colors);
     }
 
+    // 屬性列（徽章與識別碼）往上收是為了貼著頁首的標題；放在卡片裡接在說明文字後面時，收上去會蓋住說明的第二行。
+    // 所以預設有上緣，只有緊接在頁首後面那一個才往上收。
+    [Fact]
+    public static void MetaLineOnlyPullsUpWhenItFollowsThePageHeader()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        Assert.DoesNotContain("-1", CssBlock(css, ".ep-meta"), StringComparison.Ordinal);
+        Assert.Contains("calc(var(--ep-space-4) * -1)", CssBlock(css, ".ep-page-header + .ep-meta"), StringComparison.Ordinal);
+    }
+
+    // 欄標題裡視覺隱藏的字是 position: absolute；表格的捲動容器不是它的定位基準，它就落在被裁掉的表格右端，
+    // 把整頁撐出橫向捲軸（頁面本身不該橫向捲動，只有表格在卡片裡捲）。
+    [Fact]
+    public static void TableScrollWrapContainsItsHiddenAbsoluteText() =>
+        Assert.Contains("position: relative", CssBlock(File.ReadAllText(StylesheetPath()), ".ep-table-wrap"), StringComparison.Ordinal);
+
+    private static string CssBlock(string css, string selector)
+    {
+        var match = Regex.Match(css, @"(?m)^" + Regex.Escape(selector) + @"\s*\{(?<body>[^}]*)\}");
+        Assert.True(match.Success, $"找不到規則 {selector}");
+        return match.Groups["body"].Value;
+    }
+
     private static string StylesheetPath([CallerFilePath] string here = "") =>
         Path.GetFullPath(Path.Combine(
             Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.Web", "wwwroot", "design", "platform.css"));

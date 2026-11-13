@@ -13,6 +13,13 @@ public static class TaipeiTime
     public static string Format(DateTimeOffset time) =>
         time.ToOffset(Offset).ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
+    /// <summary>只有時與分：放進大字的摘要磚（整串時間會在磚裡斷成三行），日期由磚的說明行補上。</summary>
+    public static string Clock(DateTimeOffset time) =>
+        time.ToOffset(Offset).ToString("HH:mm", CultureInfo.InvariantCulture);
+
+    public static string Date(DateTimeOffset time) =>
+        time.ToOffset(Offset).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
     public static string Full(DateTimeOffset time) =>
         time.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 }
