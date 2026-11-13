@@ -8,10 +8,13 @@
    只有換外觀的端點不同。偏好是這個瀏覽器的 cookie，不分租戶。 *@
 <DocumentTitle Text="@L["個人設定"]" />
 
-<PageHeader Title="@L["個人設定"]" />
+@* 單一任務的頁面：標題與卡片一起收在置中的窄欄。 *@
+<div class="ep-narrow">
+    <PageHeader Title="@L["個人設定"]" />
 
-<div class="ep-stack">
-    <SectionCard>
-        <AppearanceSetting Action="@($"{PortalPaths.Home(Tenant)}/appearance")" />
-    </SectionCard>
+    <div class="ep-stack">
+        <SectionCard>
+            <AppearanceSetting Action="@($"{PortalPaths.Home(Tenant)}/appearance")" />
+        </SectionCard>
+    </div>
 </div>

@@ -882,6 +882,40 @@ h1[tabindex="-1"]:focus-visible {
     justify-content: center;
 }
 
+/* 單一任務的頁面（個人設定、綁定驗證器）：標題與卡片一起收在置中的窄欄，寬螢幕上兩側留白對稱，內容不貼左。 */
+.ep-narrow {
+    inline-size: 100%;
+    max-inline-size: var(--ep-measure-ask);
+    margin-inline: auto;
+}
+
+/* 一列的表單（新增成員）：欄位依內容撐開並排，送出鈕與輸入框底部對齊；放不下才換行。
+   選擇器與「內頁表單維持窄欄」那條同階、寫在它後面，所以蓋得過它。 */
+.ep-form.ep-form-row {
+    flex-flow: row wrap;
+    align-items: flex-end;
+    max-inline-size: none;
+}
+
+.ep-form-row > .ep-field-row {
+    flex: 1 1 12rem;
+    min-inline-size: 0;
+}
+
+.ep-form.ep-form-row > .ep-btn {
+    flex: none;
+    align-self: flex-end;
+}
+
+/* 並排的表單卡：送出鈕貼卡片底部，同一列兩張的鈕對齊。 */
+.ep-grid > .ep-card > .ep-form {
+    flex: 1;
+}
+
+.ep-grid > .ep-card > .ep-form > .ep-btn:last-child {
+    margin-block-start: auto;
+}
+
 /* 詳細頁的分頁列（Material 的 primary tabs、各家雲端主控台的資源頁）：一條底線，目前這一頁的底下長出一道主色線，
    文字是連結色；窄螢幕橫向捲動、不換行。切換是連結，焦點環畫在內側（外側會被捲動容器裁掉）。 */
 .ep-tabs {

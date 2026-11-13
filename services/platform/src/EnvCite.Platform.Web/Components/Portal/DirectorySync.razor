@@ -55,6 +55,8 @@ else
         </DirectoryStatusCard>
     </form>
 
+    @* 設定與簽發 token 各是一個窄表單：並排成等寬、等高的兩張，送出鈕貼底對齊。 *@
+    <div class="ep-grid">
     <SectionCard Id="settings-title" Title="@L["設定"]">
         <PostForm Model="Settings" FormName="portal-directory-settings" OnValidSubmit="SaveSettingsAsync">
             <CheckboxField For="settings-enabled" Label="@L["接受目錄同步"]" Hint="@L["關閉時身分來源的請求一律被拒絕，既有成員不受影響。"]"
@@ -77,4 +79,5 @@ else
             <SubmitButton>@L["簽發 token"]</SubmitButton>
         </PostForm>
     </SectionCard>
+    </div>
 }

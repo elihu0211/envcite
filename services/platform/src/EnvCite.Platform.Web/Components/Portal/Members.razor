@@ -34,7 +34,8 @@ else
     <FormAlert Message="@Error" />
 
     <SectionCard Id="add-title" Title="@L["新增成員"]">
-        <PostForm Model="Add" FormName="portal-member-add" OnValidSubmit="AddAsync">
+        @* 四個控制項（電子郵件、名稱、角色、送出）排成一列，放不下才換行；不是三個欄位直排在一張滿寬卡的左邊。 *@
+        <PostForm Model="Add" FormName="portal-member-add" OnValidSubmit="AddAsync" Class="ep-form ep-form-row">
             <FormField For="add-email" Label="@L["電子郵件"]">
                 <InputText id="add-email" @bind-Value="Add.Email" type="email" class="ep-input" required maxlength="254" autocomplete="off" />
             </FormField>
