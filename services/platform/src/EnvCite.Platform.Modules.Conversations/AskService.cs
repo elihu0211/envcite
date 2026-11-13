@@ -23,7 +23,7 @@ internal sealed class AskService(
         return outcome.IsOk ? outcome.Value! : None;
     }
 
-    public async Task<AskResult> AskAsync(ClaimsPrincipal user, string? question, string? asOf, CancellationToken cancellationToken)
+    public async Task<AskResult> AskAsync(ClaimsPrincipal user, string? question, string? asOf, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken)
     {
         var noPlan = new AskResult(AskMode.Search, AskStatus.NoPlan);
         if (MemberTenant(user) is not { } identifier)
@@ -38,7 +38,7 @@ internal sealed class AskService(
 
             if (capabilities.AiAnswer)
             {
-                var answered = await scope.Get<IGroundedAnswerer>().AnswerAsync(question, asOf, cancellationToken);
+                var answered = await scope.Get<IGroundedAnswerer>().AnswerAsync(question, asOf, progress, cancellationToken);
                 return AdminOutcome.Ok(new AskResult(AskMode.Answer, StatusOf(answered.Status), answered.IsOk ? answered.Value : null));
             }
 

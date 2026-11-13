@@ -12,6 +12,18 @@ public sealed record GroundedAnswer(string? Text, IReadOnlyList<AnswerSource> So
     public bool Refused => Text is null;
 }
 
+/// <summary>回答進行到哪一步：先向 consult 取證據，再讓模型寫，最後核對引用。</summary>
+public enum AnswerStage
+{
+    Grounding,
+    Writing,
+    Verifying,
+}
+
+/// <param name="Stage">進行到哪一步。</param>
+/// <param name="Sources"><see cref="AnswerStage.Writing"/> 起才有意義：找到幾條法源。</param>
+public readonly record struct AnswerProgress(AnswerStage Stage, int Sources = 0);
+
 /// <summary>
 /// 模型端點有沒有設定（<c>Platform:Answer:Enabled</c>）。singleton，只讀設定。
 /// 與 <see cref="IGroundedAnswerer"/> 分開：後者是 scoped（計量要目前請求的租戶與 <c>DbContext</c>），
@@ -34,5 +46,6 @@ public interface IGroundedAnswerer
     /// <see cref="AdminStatus.Invalid"/>：輸入錯誤；<see cref="AdminStatus.Unavailable"/>：consult 或模型暫時不可用
     /// （模型的錯誤內容不回傳，因為它可能夾帶問題文字）。拒答是成功的結果，不是錯誤。
     /// </returns>
-    Task<AdminOutcome<GroundedAnswer>> AnswerAsync(string? question, string? asOf, CancellationToken cancellationToken);
+    /// <param name="progress">每進到下一步就回報一次（可為 null）；已有結論的回合（拒答、失敗）不會回報後面的步驟。回報不帶問題或證據的內容，只有步驟與條數。</param>
+    Task<AdminOutcome<GroundedAnswer>> AnswerAsync(string? question, string? asOf, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken);
 }

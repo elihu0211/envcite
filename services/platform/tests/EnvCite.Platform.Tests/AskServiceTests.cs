@@ -77,7 +77,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var ask = host.Services.GetRequiredService<IAskService>();
 
         Assert.Equal(new AskCapabilities(HasPlan: false, AiAnswer: false), await ask.CapabilitiesAsync(member, Ct));
-        var result = await ask.AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct);
+        var result = await ask.AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
 
         Assert.Equal(AskStatus.NoPlan, result.Status);
         Assert.Empty(chat.Calls);
@@ -94,7 +94,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var ask = host.Services.GetRequiredService<IAskService>();
 
         var capabilities = await ask.CapabilitiesAsync(member, Ct);
-        var result = await ask.AskAsync(member, "噪音管制標準", null, Ct);
+        var result = await ask.AskAsync(member, "噪音管制標準", null, null, Ct);
 
         Assert.Equal(new AskCapabilities(HasPlan: true, AiAnswer: false), capabilities);
         Assert.Equal((AskMode.Search, AskStatus.Ok), (result.Mode, result.Status));
@@ -112,7 +112,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var ask = host.Services.GetRequiredService<IAskService>();
 
         var capabilities = await ask.CapabilitiesAsync(member, Ct);
-        var result = await ask.AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct);
+        var result = await ask.AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
 
         Assert.Equal(new AskCapabilities(HasPlan: true, AiAnswer: true), capabilities);
         Assert.Equal((AskMode.Answer, AskStatus.Ok), (result.Mode, result.Status));
@@ -131,7 +131,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var (_, member) = await MemberOfAsync("ask-d");
         var ask = host.Services.GetRequiredService<IAskService>();
 
-        var result = await ask.AskAsync(member, FakeConsultServer.UnrelatedQuestion, null, Ct);
+        var result = await ask.AskAsync(member, FakeConsultServer.UnrelatedQuestion, null, null, Ct);
 
         Assert.Equal(AskStatus.Ok, result.Status);
         Assert.True(result.Answer!.Refused);
@@ -147,7 +147,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         using var h = host;
         var (_, member) = await MemberOfAsync("ask-q");
 
-        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.LocalLawQuestion, null, Ct);
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.LocalLawQuestion, null, null, Ct);
 
         Assert.Equal("local_law_uncovered", result.Answer!.RefusalReason);
         Assert.Empty(chat.Calls);
@@ -161,7 +161,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         using var h = host;
         var (_, member) = await MemberOfAsync("ask-p");
 
-        await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct);
+        await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
 
         var call = Assert.Single(chat.Calls);
         Assert.Contains(call, m => m.Role == ChatRole.System && m.Text.Contains("只能根據", StringComparison.Ordinal));
@@ -184,7 +184,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         using var h = host;
         var (_, member) = await MemberOfAsync("ask-r");
 
-        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct);
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
 
         Assert.Equal(AskStatus.Ok, result.Status);
         Assert.True(result.Answer!.Refused);
@@ -202,7 +202,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         using var h = host;
         var (_, member) = await MemberOfAsync("ask-s");
 
-        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct);
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
 
         Assert.Equal(AskStatus.Unavailable, result.Status);
         Assert.Contains(logs.Messages, m => m.Contains("Answer model call failed", StringComparison.Ordinal));
@@ -219,7 +219,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var (_, member) = await MemberOfAsync("ask-t");
         var ask = host.Services.GetRequiredService<IAskService>();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => ask.AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => ask.AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct));
     }
 
     // 模型實際用掉的 token 與次數分開記（計價的依據）；端點沒回報就不記，不猜。
@@ -233,8 +233,8 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var (counted, memberOfCounted) = await MemberOfAsync("ask-u");
         var (uncounted, memberOfUncounted) = await MemberOfAsync("ask-v");
 
-        await reporting.Services.GetRequiredService<IAskService>().AskAsync(memberOfCounted, FakeConsultServer.AnswerableQuestion, null, Ct);
-        await silent.Services.GetRequiredService<IAskService>().AskAsync(memberOfUncounted, FakeConsultServer.AnswerableQuestion, null, Ct);
+        await reporting.Services.GetRequiredService<IAskService>().AskAsync(memberOfCounted, FakeConsultServer.AnswerableQuestion, null, null, Ct);
+        await silent.Services.GetRequiredService<IAskService>().AskAsync(memberOfUncounted, FakeConsultServer.AnswerableQuestion, null, null, Ct);
 
         var usage = (await factory.Services.GetRequiredService<IUsageAdmin>().GetTenantUsageAsync(counted.Id, null, Ct)).Value!.ToDictionary(u => u.Operation);
         Assert.Equal(321, usage["llm.tokens.input"].Units);
@@ -252,9 +252,9 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var (_, searching) = await MemberOfAsync("ask-f", consent: false);
         var ask = host.Services.GetRequiredService<IAskService>();
 
-        Assert.Equal((AskMode.Answer, AskStatus.Invalid), Pair(await ask.AskAsync(answering, "  ", null, Ct)));
-        Assert.Equal((AskMode.Search, AskStatus.Invalid), Pair(await ask.AskAsync(searching, "  ", null, Ct)));
-        Assert.Equal((AskMode.Search, AskStatus.Invalid), Pair(await ask.AskAsync(searching, "噪音管制標準", "yesterday", Ct)));
+        Assert.Equal((AskMode.Answer, AskStatus.Invalid), Pair(await ask.AskAsync(answering, "  ", null, null, Ct)));
+        Assert.Equal((AskMode.Search, AskStatus.Invalid), Pair(await ask.AskAsync(searching, "  ", null, null, Ct)));
+        Assert.Equal((AskMode.Search, AskStatus.Invalid), Pair(await ask.AskAsync(searching, "噪音管制標準", "yesterday", null, Ct)));
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         using var h = host;
         var (_, member) = await MemberOfAsync("ask-g");
 
-        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, Ct);
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
 
         Assert.Equal((AskMode.Answer, AskStatus.Unavailable), Pair(result));
     }
@@ -278,7 +278,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var (a, memberOfA) = await MemberOfAsync("ask-h");
         var (b, _) = await MemberOfAsync("ask-i");
 
-        await host.Services.GetRequiredService<IAskService>().AskAsync(memberOfA, FakeConsultServer.AnswerableQuestion, null, Ct);
+        await host.Services.GetRequiredService<IAskService>().AskAsync(memberOfA, FakeConsultServer.AnswerableQuestion, null, null, Ct);
 
         Assert.NotEmpty(await UsageAsync(a.Id));
         Assert.Empty(await UsageAsync(b.Id));
@@ -301,7 +301,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         foreach (var who in new[] { new ClaimsPrincipal(new ClaimsIdentity()), OperatorSession.Principal(), withoutTenant, notAMember })
         {
             Assert.Equal(new AskCapabilities(false, false), await ask.CapabilitiesAsync(who, Ct));
-            Assert.Equal(AskStatus.NoPlan, (await ask.AskAsync(who, FakeConsultServer.AnswerableQuestion, null, Ct)).Status);
+            Assert.Equal(AskStatus.NoPlan, (await ask.AskAsync(who, FakeConsultServer.AnswerableQuestion, null, null, Ct)).Status);
             Assert.Null(await ask.RecordAsync(who, null, "問題", "答案", Ct));
         }
 
@@ -379,11 +379,11 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var (tenant, member) = await MemberOfAsync("ask-p", consent: false);
         var ask = host.Services.GetRequiredService<IAskService>();
 
-        var bad = await ask.AskAsync(member, "噪音管制標準", "yesterday", Ct);
+        var bad = await ask.AskAsync(member, "噪音管制標準", "yesterday", null, Ct);
         Assert.Equal(AskStatus.Invalid, bad.Status);
         Assert.Empty(await UsageAsync(tenant.Id));
 
-        var ok = await ask.AskAsync(member, "噪音管制標準", "2021-01-01", Ct);
+        var ok = await ask.AskAsync(member, "噪音管制標準", "2021-01-01", null, Ct);
 
         Assert.Equal((AskMode.Search, AskStatus.Ok), Pair(ok));
         Assert.Equal("2021-01-01", factory.Ontology.LastSearch!.AsOf);
@@ -403,10 +403,54 @@ public sealed class AskServiceTests(PlatformFactory factory)
         using var h = host;
         var (_, member) = await MemberOfAsync(answer ? "ask-q" : "ask-r", consent: answer);
 
-        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, Secret, null, Ct);
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, Secret, null, null, Ct);
 
         Assert.Equal(AskStatus.Ok, result.Status);
         Assert.DoesNotContain(logs.Messages, m => m.Contains(Secret, StringComparison.Ordinal));
+    }
+
+    private sealed class RecordedProgress : IProgress<AnswerProgress>
+    {
+        public List<AnswerProgress> Steps { get; } = [];
+
+        public void Report(AnswerProgress value) => Steps.Add(value);
+    }
+
+    // 回答的步驟依序回報：取證據 → 寫（帶找到幾條）→ 核對出處；回報只有步驟與條數，不帶問題或證據。
+    [Fact]
+    public async Task AnAnswerReportsItsStepsInOrderWithTheNumberOfSources()
+    {
+        var (host, _) = Host(_ => Reply);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-w");
+        var progress = new RecordedProgress();
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, progress, Ct);
+
+        Assert.Equal(AskStatus.Ok, result.Status);
+        Assert.Equal(
+            [new AnswerProgress(AnswerStage.Grounding), new AnswerProgress(AnswerStage.Writing, 1), new AnswerProgress(AnswerStage.Verifying, 1)],
+            progress.Steps);
+    }
+
+    // 沒有證據就拒答：不呼叫模型，所以不會有「寫」與「核對」。
+    [Fact]
+    public async Task ARefusalStopsAfterGroundingAndASearchHasNoSteps()
+    {
+        var (host, chat) = Host(_ => "不該被呼叫 [L1]");
+        using var h = host;
+        var (_, answering) = await MemberOfAsync("ask-x");
+        var (_, searching) = await MemberOfAsync("ask-y", consent: false);
+        var ask = host.Services.GetRequiredService<IAskService>();
+        var refused = new RecordedProgress();
+        var searched = new RecordedProgress();
+
+        await ask.AskAsync(answering, FakeConsultServer.UnrelatedQuestion, null, refused, Ct);
+        await ask.AskAsync(searching, "噪音管制標準", null, searched, Ct);
+
+        Assert.Equal([new AnswerProgress(AnswerStage.Grounding)], refused.Steps);
+        Assert.Empty(searched.Steps);
+        Assert.Empty(chat.Calls);
     }
 
     private static (AskMode, AskStatus) Pair(AskResult result) => (result.Mode, result.Status);

@@ -15,6 +15,9 @@ internal sealed class FakeAsk : IAskService
 
     public TaskCompletionSource? Gate { get; set; }
 
+    /// <summary>在 <see cref="Gate"/> 之前回報的步驟：測「等結果時說明進行到哪一步」。</summary>
+    public List<AnswerProgress> StagesBeforeGate { get; } = [];
+
     public Guid? RecordedAs { get; set; } = Guid.NewGuid();
 
     public ConversationDetail? Detail { get; set; }
@@ -33,9 +36,15 @@ internal sealed class FakeAsk : IAskService
         return Capabilities;
     }
 
-    public async Task<AskResult> AskAsync(ClaimsPrincipal user, string? question, string? asOf, CancellationToken cancellationToken)
+    public async Task<AskResult> AskAsync(
+        ClaimsPrincipal user, string? question, string? asOf, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken)
     {
         Asked.Add((question, asOf));
+        foreach (var stage in StagesBeforeGate)
+        {
+            progress?.Report(stage);
+        }
+
         if (Gate is not null)
             await Gate.Task;
 

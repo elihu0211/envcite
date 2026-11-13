@@ -37,6 +37,9 @@ public sealed class ChatTurn(string question, string? asOfLabel)
 
     public TurnState State { get; internal set; } = TurnState.Pending;
 
+    /// <summary>還在等結果時，回答進行到哪一步；只有回答模式才有，搜尋沒有步驟。</summary>
+    public AnswerProgress? Progress { get; internal set; }
+
     public GroundedAnswer? Answer { get; internal set; }
 
     public IReadOnlyList<LawHit>? Hits { get; internal set; }
@@ -135,7 +138,7 @@ public sealed partial class ChatSession(
 
         try
         {
-            var result = await ask.AskAsync(user, text, asOfValue, cancellationToken);
+            var result = await ask.AskAsync(user, text, asOfValue, new StageProgress(turn, this), cancellationToken);
             if (Present(turn, result) is { } historyText)
             {
                 ConversationId = await ask.RecordAsync(user, ConversationId, text, historyText, cancellationToken);
@@ -158,6 +161,19 @@ public sealed partial class ChatSession(
         {
             Busy = false;
             Changed?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// 回答每進到下一步就更新回合並通知頁面。同步執行，不經 <see cref="Progress{T}"/> 的 SynchronizationContext：
+    /// 回報來自 workflow 的執行緒，更新只是改回合的欄位，重畫由 <see cref="Changed"/> 的訂閱者回到畫面的執行緒做。
+    /// </summary>
+    private sealed class StageProgress(ChatTurn turn, ChatSession session) : IProgress<AnswerProgress>
+    {
+        public void Report(AnswerProgress value)
+        {
+            turn.Progress = value;
+            session.Changed?.Invoke();
         }
     }
 

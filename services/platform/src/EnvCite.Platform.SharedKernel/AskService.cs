@@ -50,7 +50,8 @@ public interface IAskService
 
     /// <param name="question">呼叫端已去頭尾空白的問題；空白視為 <see cref="AskStatus.Invalid"/>。</param>
     /// <param name="asOf">ISO 8601 日期（<c>YYYY-MM-DD</c>）；省略 = 現行。</param>
-    Task<AskResult> AskAsync(ClaimsPrincipal user, string? question, string? asOf, CancellationToken cancellationToken);
+    /// <param name="progress">回答模式每進到下一步回報一次（搜尋模式沒有步驟）；可為 null。</param>
+    Task<AskResult> AskAsync(ClaimsPrincipal user, string? question, string? asOf, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken);
 
     /// <summary>
     /// 這位成員最近更新的對話（新的在前，最多 <paramref name="limit"/> 筆）。歷史沒開啟、或身分不是入口成員時是空的。
