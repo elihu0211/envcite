@@ -150,6 +150,28 @@ def _load(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
         raise AnnotationError(f"值不合欄位型別：{e}") from e
 
 
+class _Sanctioned(NamedTuple):
+    """條件已寫、等所處罰的陳述封存後才寫罰則的陳述，與它已寫的條件數。"""
+
+    statement: Mapping[str, Any]
+    conditions: int
+
+
+class _Written(NamedTuple):
+    """陳述、時段與條件寫完後的狀態；`ids` 之後隨封存沿用既有主張而改動。"""
+
+    ids: dict[str, int]
+    conditions: int
+    duplicates: int
+    sanctioned: list[_Sanctioned]
+
+
+class _SanctionsWritten(NamedTuple):
+    sanctions: int
+    conditions: int
+    duplicates: int
+
+
 def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
     derivation = doc["derivation"]
     review = doc.get("review", "extracted")
@@ -166,32 +188,79 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
     everything: Sequence[Mapping[str, Any]] = doc.get("statements", [])
     waiting = _waiting(conn, everything, review)
     statements = [s for s in everything if str(s["id"]) not in waiting]
+    written = _write_statements(conn, statements, concepts, d_id, review)
+    ids = written.ids
+    sanctions = _write_sanctions(conn, written.sanctioned, ids)
+    # 例外、優先與罰則前提是陳述之間的關係，兩方都封存、id 確定之後才寫；沿用既有主張時關係可能已在
+    exceptions = _link_exceptions(conn, statements, ids)
+    triggers = _link_triggers(conn, written.sanctioned, ids)
+    overrides = _link_overrides(conn, doc.get("overrides", []), ids, waiting)
+    kept_back = _hold(conn, doc, [s for s in everything if str(s["id"]) in waiting], ids)
+    defined, repeated = _definitions(conn, doc.get("definitions", []), concepts, d_id, review)
+    return Loaded(
+        len(ids),
+        written.conditions + sanctions.conditions,
+        exceptions,
+        overrides,
+        sanctions.sanctions,
+        ids,
+        defined,
+        written.duplicates + sanctions.duplicates + repeated,
+        triggers,
+        kept_back,
+    )
+
+
+def _ref(ids: Mapping[str, int], key: str) -> int:
+    if key not in ids:
+        raise AnnotationError(f"引用了不存在的陳述：{key}")
+    return ids[key]
+
+
+def _seal_statement(conn: Conn, ids: dict[str, int], sid: str) -> bool:
+    """封存陳述的主張；已有內容相同的主張而改指既有的（`ids` 隨之更新）則回 False。"""
+    kept = _seal(conn, ids[sid])
+    if kept == ids[sid]:
+        return True
+    ids[sid] = kept
+    return False
+
+
+def _write_statements(
+    conn: Conn,
+    statements: Sequence[Mapping[str, Any]],
+    concepts: Mapping[str, int],
+    derivation_id: int,
+    review: str,
+) -> _Written:
+    """陳述連同其角色與條件；沒有罰則的當場封存，有罰則的留給 `_write_sanctions`。"""
     ids: dict[str, int] = {}
     conditions = duplicates = 0
-    held: list[tuple[Mapping[str, Any], int]] = []
+    sanctioned: list[_Sanctioned] = []
     for s in statements:
         sid = str(s["id"])
         if sid in ids:
             raise AnnotationError(f"陳述 id 重複：{sid}")
-        ids[sid] = _statement(conn, s, d_id, review)
+        ids[sid] = _statement(conn, s, derivation_id, review)
         _slots(conn, ids[sid], s.get("slots", {}), concepts)
         written = _conditions(conn, ids[sid], s.get("conditions", []), concepts)
         if s.get("sanction") is not None:
-            held.append((s, written))  # 罰則的內容含所處罰的陳述：等那一方封存、id 確定後再封存
+            # 罰則的內容含所處罰的陳述：等那一方封存、id 確定後再封存
+            sanctioned.append(_Sanctioned(s, written))
             continue
-        kept = _seal(conn, ids[sid])
-        if kept != ids[sid]:
-            ids[sid], duplicates = kept, duplicates + 1
-        else:
+        if _seal_statement(conn, ids, sid):
             conditions += written
+        else:
+            duplicates += 1
+    return _Written(ids, conditions, duplicates, sanctioned)
 
-    def ref(key: str) -> int:
-        if key not in ids:
-            raise AnnotationError(f"引用了不存在的陳述：{key}")
-        return ids[key]
 
-    exceptions = overrides = sanctions = triggers = 0
-    for s, written in held:
+def _write_sanctions(
+    conn: Conn, sanctioned: Sequence[_Sanctioned], ids: dict[str, int]
+) -> _SanctionsWritten:
+    """罰則的列，寫完即封存；`ids` 隨沿用既有主張而更新。"""
+    sanctions = conditions = duplicates = 0
+    for s, written in sanctioned:
         sid, sanction = str(s["id"]), s["sanction"]
         conn.execute(
             "INSERT INTO annotation.sanction"
@@ -202,7 +271,7 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
                 ids[sid],
                 int(sanction["punishes_id"])
                 if sanction.get("punishes_id") is not None
-                else ref(str(sanction["punishes"])),
+                else _ref(ids, str(sanction["punishes"])),
                 sanction["effect"],
                 sanction.get("amount_text"),
                 sanction.get("min"),
@@ -211,20 +280,32 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
                 bool(sanction.get("discretionary", False)),
             ),
         )
-        kept = _seal(conn, ids[sid])
-        if kept != ids[sid]:
-            ids[sid], duplicates = kept, duplicates + 1
-        else:
+        if _seal_statement(conn, ids, sid):
             sanctions, conditions = sanctions + 1, conditions + written
-    # 例外與優先是陳述之間的關係，兩方都封存、id 確定之後才寫；沿用既有主張時關係可能已在
+        else:
+            duplicates += 1
+    return _SanctionsWritten(sanctions, conditions, duplicates)
+
+
+def _link_exceptions(
+    conn: Conn, statements: Sequence[Mapping[str, Any]], ids: Mapping[str, int]
+) -> int:
+    """新增的例外關係數。"""
+    exceptions = 0
     for s in statements:
         if s.get("exception_of") is not None:
             exceptions += conn.execute(
                 "INSERT INTO annotation.statement_exception (exception_id, excluded_id)"
                 " VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                (ids[str(s["id"])], ref(str(s["exception_of"]))),
+                (ids[str(s["id"])], _ref(ids, str(s["exception_of"]))),
             ).rowcount
-    for s, _ in held:
+    return exceptions
+
+
+def _link_triggers(conn: Conn, sanctioned: Sequence[_Sanctioned], ids: Mapping[str, int]) -> int:
+    """新增的罰則前提數。"""
+    triggers = 0
+    for s, _ in sanctioned:
         for t in s["sanction"].get("triggers") or []:
             triggers += conn.execute(
                 "INSERT INTO annotation.sanction_trigger"
@@ -234,34 +315,32 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> Loaded:
                     ids[str(s["id"])],
                     int(t["statement_id"])
                     if t.get("statement_id") is not None
-                    else ref(str(t["statement"])),
+                    else _ref(ids, str(t["statement"])),
                     t["kind"],
                 ),
             ).rowcount
-    for o in doc.get("overrides", []):
-        overrides += conn.execute(
+    return triggers
+
+
+def _link_overrides(
+    conn: Conn,
+    overrides: Sequence[Mapping[str, Any]],
+    ids: Mapping[str, int],
+    waiting: set[str],
+) -> int:
+    """新增的優先關係數；涉及待連結罰則的優先關係拒絕。"""
+    written = 0
+    for o in overrides:
+        written += conn.execute(
             "INSERT INTO annotation.statement_override"
             " (prevailing_id, subordinate_id, priority_basis)"
             " VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-            (ref(str(o["winner"])), ref(str(o["loser"])), o["basis"]),
+            (_ref(ids, str(o["winner"])), _ref(ids, str(o["loser"])), o["basis"]),
         ).rowcount
-    for o in doc.get("overrides", []):
+    for o in overrides:
         if {str(o["winner"]), str(o["loser"])} & waiting:
             raise AnnotationError(f"優先關係涉及待連結的罰則：{o['winner']}、{o['loser']}")
-    kept_back = _hold(conn, doc, [s for s in everything if str(s["id"]) in waiting], ids)
-    defined, repeated = _definitions(conn, doc.get("definitions", []), concepts, d_id, review)
-    return Loaded(
-        len(ids),
-        conditions,
-        exceptions,
-        overrides,
-        sanctions,
-        ids,
-        defined,
-        duplicates + repeated,
-        triggers,
-        kept_back,
-    )
+    return written
 
 
 def _punished(s: Mapping[str, Any]) -> str | int | None:

@@ -262,8 +262,26 @@ def import_(
     conn: Conn, source: HistorySource, root: Path, report: Report, *, dry_run: bool = False
 ) -> None:
     """每部取最新快照回推；整批比例不過就一部都不寫（`BatchRejected`）。"""
-    prepared: list[_Prepared] = []
     metrics = audit.Metrics()
+    prepared = _prepare_all(conn, source, root, report, metrics)
+    conn.rollback()
+    _batch_gate(prepared, metrics, source, report)
+    if dry_run:
+        return
+
+    for p in prepared:
+        action = _write_unless_rejected(conn, source, p)
+        report.actions[action] += 1
+        if action not in ("rejected", "reshaped", "write_rejected"):
+            report.versions += len(p.plan.versions)
+            report.units += sum(len(v.units) for v in p.plan.versions)
+
+
+def _prepare_all(
+    conn: Conn, source: HistorySource, root: Path, report: Report, metrics: audit.Metrics
+) -> list[_Prepared]:
+    """每部最新快照的回推計畫，依鍵排序；來源判定不屬範圍的只計入 `report.skipped`。"""
+    prepared: list[_Prepared] = []
     items = fetch(
         conn,
         "SELECT i.id, s.id, s.location FROM source.item AS i"
@@ -276,31 +294,44 @@ def import_(
         path = root / item.location
         if not path.exists():
             raise BatchRejected(f"snapshot file missing: {item.location}")
-        bundle = json.loads(path.read_text())
-        problems: list[Problem] = []
-        anchor = None
-        plan = backfill.Plan(problems=problems)
         try:
-            pcode = source.resolve(conn, bundle)
-            current, past = source.versions(bundle)
+            anchor, plan = _plan_item(conn, source, json.loads(path.read_text()))
         except Skip:
             report.skipped += 1
             continue
-        except UnreadablePage as e:
-            problems.append(Problem("error", "unreadable", str(e)))
-        except Unmatched as e:
-            problems.append(Problem("error", e.code, e.detail))
-        else:
-            anchor = backfill.load_anchor(conn, pcode)
-            if anchor is None:
-                problems.append(Problem("error", "unmatched", pcode))
-            else:
-                plan = backfill.plan(anchor, current, past)
         for parsed in plan.parsed:
             metrics.add(parsed)
         prepared.append(_Prepared(item.item_id, item.snapshot_id, anchor, plan))
-    conn.rollback()
+    return prepared
 
+
+def _plan_item(
+    conn: Conn, source: HistorySource, bundle: dict[str, Any]
+) -> tuple[backfill.Anchor | None, backfill.Plan]:
+    """一部法規的回推計畫；對不到語料或頁面讀不出來的，計畫是空的、只帶 error 問題。
+
+    來源判定不屬範圍的（`Skip`）往外拋。
+    """
+    problems: list[Problem] = []
+    try:
+        pcode = source.resolve(conn, bundle)
+        current, past = source.versions(bundle)
+    except UnreadablePage as e:
+        problems.append(Problem("error", "unreadable", str(e)))
+    except Unmatched as e:
+        problems.append(Problem("error", e.code, e.detail))
+    else:
+        anchor = backfill.load_anchor(conn, pcode)
+        if anchor is not None:
+            return anchor, backfill.plan(anchor, current, past)
+        problems.append(Problem("error", "unmatched", pcode))
+    return None, backfill.Plan(problems=problems)
+
+
+def _batch_gate(
+    prepared: list[_Prepared], metrics: audit.Metrics, source: HistorySource, report: Report
+) -> None:
+    """整批驗收：計數記入報告，任一比例越線就整批不寫（`BatchRejected`）。"""
     matched = [p for p in prepared if p.anchor is not None]
     report.matched = len(matched)
     for p in prepared:
@@ -323,26 +354,20 @@ def import_(
         violations.append("沒有任何快照")
     if violations:
         raise BatchRejected("；".join(violations))
-    if dry_run:
-        return
 
-    for p in prepared:
-        try:
-            action = _write_one(conn, source, p)
-        except _REJECTED_BY_DATABASE as e:
-            # 回推規劃讀的是規劃當時的語料，寫入時資料庫仍可能擋下（約束只認寫入當下的狀態）。
-            # 只攔「資料本身不合」的一類；連線、逾時、死結這類暫時性錯誤照舊往外拋，整個 Job 重試。
-            action = "write_rejected"
-            detail = _describe(e)
-            log.error("寫入被資料庫擋下，該部不寫：%s（%s）", _label(p), detail)
-            with conn.transaction():
-                _record(
-                    conn, p, [*p.plan.problems, Problem("error", "history_write_rejected", detail)]
-                )
-        report.actions[action] += 1
-        if action not in ("rejected", "reshaped", "write_rejected"):
-            report.versions += len(p.plan.versions)
-            report.units += sum(len(v.units) for v in p.plan.versions)
+
+def _write_unless_rejected(conn: Conn, source: HistorySource, p: _Prepared) -> str:
+    """寫一部並回傳動作；被資料庫擋下的記成 `write_rejected`，該部不寫。"""
+    try:
+        return _write_one(conn, source, p)
+    except _REJECTED_BY_DATABASE as e:
+        # 回推規劃讀的是規劃當時的語料，寫入時資料庫仍可能擋下（約束只認寫入當下的狀態）。
+        # 只攔「資料本身不合」的一類；連線、逾時、死結這類暫時性錯誤照舊往外拋，整個 Job 重試。
+        detail = _describe(e)
+        log.error("寫入被資料庫擋下，該部不寫：%s（%s）", _label(p), detail)
+        with conn.transaction():
+            _record(conn, p, [*p.plan.problems, Problem("error", "history_write_rejected", detail)])
+        return "write_rejected"
 
 
 def _write_one(conn: Conn, source: HistorySource, p: _Prepared) -> str:

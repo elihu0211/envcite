@@ -675,6 +675,168 @@ def penalized_issues(statements: Sequence[Mapping[str, Any]], by: Sequence[str])
     ]
 
 
+def _located(answer: Mapping[str, Any], text: str) -> list[Mapping[str, Any]]:
+    """引文在原文裡的陳述；引文不在的，後面一律丟掉，不值得請模型修。"""
+    return [x for x in _statements_of(answer) if locate(str(x.get("quote", "")), text) >= 0]
+
+
+def _repair_issues(
+    answer: Mapping[str, Any],
+    text: str,
+    context: str,
+    defined: Mapping[str, str] | None,
+    punished_by: Sequence[str],
+) -> list[str]:
+    """該請模型修的問題；空表示這一版可以收。"""
+    here = _located(answer, text)
+    shape = shape_issues(answer, defined)
+    return (
+        completeness_issues(here)
+        + fragment_issues(here, text)
+        + borrowed_issues(here, defined)
+        + uncovered_issues(
+            here,
+            {str(c["code"]): str(c["label"]) for c in _concepts_of(answer)} | dict(defined or {}),
+        )
+        + truncated_issues(here, text)
+        + sanction_issues(here)
+        + penalized_issues(here, punished_by)
+        + [
+            f"陳述 {ident}：{reason}。刑罰（有期徒刑、拘役、罰金）不是行政罰，沒有對應的 effect"
+            "（罰金不是 fine）：這樣的罰則不要寫成 sanction 陳述。"
+            for ident, reason in criminal_penalties(here, text, context).items()
+        ]
+        + [
+            f"陳述 {ident}：{problem}"
+            for x in here
+            for ident in [str(x.get("id", "?"))]
+            for problem in shape.get(ident, [])
+        ]
+    )
+
+
+def _repair(
+    model: Model,
+    prompt: str,
+    raw: str,
+    answer: Mapping[str, Any] | None,
+    text: str,
+    context: str,
+    defined: Mapping[str, str] | None,
+    punished_by: Sequence[str],
+) -> tuple[Mapping[str, Any] | None, int]:
+    """有問題就請模型修，最多 `MAX_REPAIRS` 輪；回傳最後採用的回答與修復的輪數。
+
+    修復的呼叫失敗或回不出物件就沿用現有版本，缺的由後面的丟棄與驗證處理。
+    """
+    repairs = 0
+    for _ in range(MAX_REPAIRS):
+        if answer is None:
+            break
+        issues = _repair_issues(answer, text, context, defined, punished_by)
+        if not issues:
+            break
+        repairs += 1
+        try:
+            reply = _complete(model, prompts.repair(prompt=prompt, previous=raw, issues=issues))
+        except ModelError:
+            break
+        again = object_from(reply)
+        if again is None:
+            break
+        raw, answer = json.dumps(again, ensure_ascii=False), tidy(again, defined)
+    return answer, repairs
+
+
+def _supplemented(
+    answer: Mapping[str, Any], text: str, context: str, defined: Mapping[str, str] | None
+) -> dict[str, Any]:
+    """主體與適用情形由程式補上，不靠抽取者記得。"""
+    # 主體只留原文寫出的行為人；其餘記成未明示（不靠提示：見 `subject`）
+    answer = {**answer, "statements": normalize_subjects(_statements_of(answer), text, context)[0]}
+    # 上位項與句首的適用情形由程式補上，不靠抽取者記得（見 `carry`）
+    labels = {str(c["code"]): str(c["label"]) for c in _concepts_of(answer)} | dict(defined or {})
+    carried, new_concepts = carry(_statements_of(answer), text, context, labels)
+    return {**answer, "statements": carried, "concepts": [*_concepts_of(answer), *new_concepts]}
+
+
+def _broken_ids(
+    answer: Mapping[str, Any], text: str, context: str, defined: Mapping[str, str] | None
+) -> dict[str, str]:
+    """修復之後仍不能載入的陳述（id → 原因）。"""
+    located = _located(answer, text)
+    broken = unusable(located)
+    broken |= dict.fromkeys(fragments(located, text), "prescriptive quote without a modal")
+    broken |= criminal_penalties(located, text, context)
+    for ident in shape_issues(answer, defined):
+        broken.setdefault(ident, "malformed conditions")
+    return broken
+
+
+def _unit_statement(
+    s: Mapping[str, Any],
+    broken: Mapping[str, str],
+    law: str,
+    path: str,
+    text: str,
+    dropped: list[str],
+) -> dict[str, Any] | None:
+    """一個陳述整成要載入的樣子，並錨定在原文；要丟的回 None，原因記進 `dropped`。"""
+    ident = s.get("id", "?")
+    quote = str(s.get("quote", ""))
+    start = locate(quote, text)
+    if start < 0:
+        dropped.append(f"{ident}: quote is not in the text")
+        return None
+    if str(ident) in broken:
+        dropped.append(f"{ident}: {broken[str(ident)]} after repair")
+        return None
+    item = {k: v for k, v in s.items() if k != "quote"}
+    if item.get("kind") != "prescriptive":
+        item.pop("deontic", None)  # 只有規範性陳述有義務方向（提示規則 2）
+    sanction = item.get("sanction")
+    if not (isinstance(sanction, Mapping) and sanction.get("effect")):
+        # 模型常把罰則欄位照樣板填成空值：沒有效果就不是罰則
+        item.pop("sanction", None)
+        if item.get("kind") == "sanction":
+            dropped.append(f"{ident}: penalty without a sanction effect")
+            return None
+    elif item.get("kind") != "sanction":
+        del item["sanction"]  # 罰則只屬於 sanction
+    item |= {"law": law, "path": path, "text": text}
+    if len(quote) != len(text):
+        item["span"] = [start, start + len(quote)]
+    return item
+
+
+def _unit_statements(
+    answer: Mapping[str, Any],
+    law: str,
+    path: str,
+    text: str,
+    context: str,
+    defined: Mapping[str, str] | None,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """可載入的陳述，與被丟掉的陳述及原因。"""
+    broken = _broken_ids(answer, text, context, defined)
+    statements: list[dict[str, Any]] = []
+    dropped: list[str] = []
+    for s in _statements_of(answer):
+        item = _unit_statement(s, broken, law, path, text, dropped)
+        if item is not None:
+            statements.append(item)
+    return statements, dropped
+
+
+def _settled_sanctions(
+    statements: list[dict[str, Any]], path: str, text: str, dropped: list[str]
+) -> list[dict[str, Any]]:
+    """罰則的受罰者與觸發整理成載入器接受的樣子；丟掉的記進 `dropped`。"""
+    duties = {str(s.get("id")) for s in statements if s.get("kind") == "prescriptive"}
+    elsewhere = _cites_elsewhere(path, text)
+    return _local_triggers([_aimed(s, duties, elsewhere) for s in statements], dropped)
+
+
 def extract_unit(
     conn: Conn,
     model: Model,
@@ -709,104 +871,24 @@ def extract_unit(
     except ModelError as e:
         # 重試用盡：不寫入，下次仍是「還沒抽」
         return Extracted(None, (f"<model error: {e}>"[:300],), Counts(calls=1))
-    calls, repairs = 1, 0
     answer: Mapping[str, Any] | None = object_from(raw)
     answer = None if answer is None else tidy(answer, defined)
     syntax_failures = 1 if answer is None else 0
     shape_failures = (
         0 if answer is None else sum(len(v) for v in shape_issues(answer, defined).values())
     )
-    for _ in range(MAX_REPAIRS):
-        if answer is None:
-            break
-        here = [x for x in _statements_of(answer) if locate(str(x.get("quote", "")), text) >= 0]
-        shape = shape_issues(answer, defined)
-        issues = (
-            completeness_issues(here)
-            + fragment_issues(here, text)
-            + borrowed_issues(here, defined)
-            + uncovered_issues(
-                here,
-                {str(c["code"]): str(c["label"]) for c in _concepts_of(answer)}
-                | dict(defined or {}),
-            )
-            + truncated_issues(here, text)
-            + sanction_issues(here)
-            + penalized_issues(here, punished_by)
-            + [
-                f"陳述 {ident}：{reason}。刑罰（有期徒刑、拘役、罰金）不是行政罰，沒有對應的 effect"
-                "（罰金不是 fine）：這樣的罰則不要寫成 sanction 陳述。"
-                for ident, reason in criminal_penalties(here, text, context).items()
-            ]
-            + [
-                f"陳述 {ident}：{problem}"
-                for x in here
-                for ident in [str(x.get("id", "?"))]
-                for problem in shape.get(ident, [])
-            ]
-        )
-        if not issues:
-            break
-        calls += 1
-        repairs += 1
-        try:
-            reply = _complete(model, prompts.repair(prompt=prompt, previous=raw, issues=issues))
-        except ModelError:
-            break  # 修復失敗：沿用現有版本，缺的由後面的丟棄與驗證處理
-        again = object_from(reply)
-        if again is None:
-            break
-        raw, answer = json.dumps(again, ensure_ascii=False), tidy(again, defined)
+    answer, repairs = _repair(model, prompt, raw, answer, text, context, defined, punished_by)
     counts = Counts(
-        calls=calls,
+        calls=1 + repairs,
         repairs=repairs,
         syntax_failures=syntax_failures,
         shape_failures=shape_failures,
     )
     if answer is None:
         return Extracted(None, ("<unparseable model output>",), counts)
-    # 主體只留原文寫出的行為人；其餘記成未明示（不靠提示：見 `subject`）
-    answer = {**answer, "statements": normalize_subjects(_statements_of(answer), text, context)[0]}
-    # 上位項與句首的適用情形由程式補上，不靠抽取者記得（見 `carry`）
-    labels = {str(c["code"]): str(c["label"]) for c in _concepts_of(answer)} | dict(defined or {})
-    carried, new_concepts = carry(_statements_of(answer), text, context, labels)
-    answer = {**answer, "statements": carried, "concepts": [*_concepts_of(answer), *new_concepts]}
-    statements: list[dict[str, Any]] = []
-    dropped: list[str] = []
-    located = [x for x in _statements_of(answer) if locate(str(x.get("quote", "")), text) >= 0]
-    broken = unusable(located)
-    broken |= dict.fromkeys(fragments(located, text), "prescriptive quote without a modal")
-    broken |= criminal_penalties(located, text, context)
-    for ident in shape_issues(answer, defined):
-        broken.setdefault(ident, "malformed conditions")
-    for s in _statements_of(answer):
-        quote = str(s.get("quote", ""))
-        start = locate(quote, text)
-        if start < 0:
-            dropped.append(f"{s.get('id', '?')}: quote is not in the text")
-            continue
-        if str(s.get("id", "?")) in broken:
-            dropped.append(f"{s.get('id', '?')}: {broken[str(s.get('id', '?'))]} after repair")
-            continue
-        item = {k: v for k, v in s.items() if k != "quote"}
-        if item.get("kind") != "prescriptive":
-            item.pop("deontic", None)  # 只有規範性陳述有義務方向（提示規則 2）
-        sanction = item.get("sanction")
-        if not (isinstance(sanction, Mapping) and sanction.get("effect")):
-            # 模型常把罰則欄位照樣板填成空值：沒有效果就不是罰則
-            item.pop("sanction", None)
-            if item.get("kind") == "sanction":
-                dropped.append(f"{s.get('id', '?')}: penalty without a sanction effect")
-                continue
-        elif item.get("kind") != "sanction":
-            del item["sanction"]  # 罰則只屬於 sanction
-        item |= {"law": law, "path": path, "text": text}
-        if len(quote) != len(text):
-            item["span"] = [start, start + len(quote)]
-        statements.append(item)
-    duties = {str(s.get("id")) for s in statements if s.get("kind") == "prescriptive"}
-    elsewhere = _cites_elsewhere(path, text)
-    statements = _local_triggers([_aimed(s, duties, elsewhere) for s in statements], dropped)
+    answer = _supplemented(answer, text, context, defined)
+    statements, dropped = _unit_statements(answer, law, path, text, context, defined)
+    statements = _settled_sanctions(statements, path, text, dropped)
     base = {
         "derivation": {
             "method": "llm",
