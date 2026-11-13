@@ -1950,11 +1950,11 @@ a.ep-brand {
     max-inline-size: var(--ep-ask-width);
 }
 
-/* 招呼固定在畫面上方三分之一，不垂直置中：多行輸入長高時往下長，招呼與輸入框的上緣不跟著位移。 */
+/* 還沒問時在可用視窗高度內上下置中；safe center 避免矮螢幕或橫向手機時頂端被裁切。 */
 .ep-ask[data-state="empty"] {
-    justify-content: flex-start;
-    gap: var(--ep-space-6);
-    padding-block: 18dvh var(--ep-space-12);
+    justify-content: safe center;
+    gap: var(--ep-space-5);
+    padding-block: var(--ep-space-4) var(--ep-space-6);
 }
 
 .ep-ask-hero {
@@ -2234,6 +2234,13 @@ a.ep-brand {
     .ep-chip:hover {
         border-color: var(--ep-border-control);
         color: var(--ep-text);
+    }
+}
+
+/* 平板以上：招呼與輸入框之間的間距放寬。 */
+@media (width >= 48rem) {
+    .ep-ask[data-state="empty"] {
+        gap: var(--ep-space-6);
     }
 }
 
