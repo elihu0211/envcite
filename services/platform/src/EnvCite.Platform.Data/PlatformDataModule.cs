@@ -10,6 +10,7 @@ public static class PlatformDataModule
         services.AddSectionOptions<DatabaseOptions, DatabaseOptionsValidator>();
         services.AddDbContext<PlatformDbContext>((provider, options) =>
             Configure(options, provider.GetRequiredService<IOptions<DatabaseOptions>>().Value.Platform));
+        services.AddSingleton<TenantScopes>();
         return services;
     }
 
