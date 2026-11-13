@@ -1,0 +1,19 @@
+@* 一次回答的證據：每一條法源一張卡片（代號、條文、可複製的引用與網址）。有答案時是答案的出處；
+   找到法源但不足以回答（insufficient_evidence）時，同樣的卡片照樣列出。 *@
+@foreach (var source in Sources)
+{
+    <article class="ep-card ep-hit" aria-label="@source.Citation">
+        <h2 class="ep-section-title">[@source.Code] @source.Citation</h2>
+        <p class="ep-hit-body">@source.Text</p>
+        <p class="ep-hint">@L["引用：{0}（{1}）", source.Citation, AsOfLabel!]<code class="ep-mono">@source.Uri</code></p>
+    </article>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<AnswerSource> Sources { get; set; } = [];
+
+    /// <summary>問的是哪一天的條文（「現行」或「2026-01-01 有效」）。</summary>
+    [Parameter, EditorRequired]
+    public string? AsOfLabel { get; set; }
+}

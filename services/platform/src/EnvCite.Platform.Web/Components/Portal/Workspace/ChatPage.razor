@@ -64,6 +64,8 @@
                                     break;
                                 case TurnState.Refused:
                                     <FormAlert Kind="AlertKind.Info">@Session.RefusalLabel(turn.Answer!.RefusalReason)</FormAlert>
+                                    @* 找到法源但不足以回答時帶著條文：列出來讓人自己看，不是空白的拒答。 *@
+                                    <SourceCards Sources="turn.Answer!.Sources" AsOfLabel="@turn.AsOfLabel" />
                                     break;
                                 case TurnState.Answered when turn.StoredAnswer is not null:
                                     @* 從歷史載入的回答：當時存下來的文字（正文與出處行）。 *@
@@ -76,15 +78,7 @@
                                 case TurnState.Answered:
                                     <p class="ep-answer-text">@turn.Answer!.Text</p>
                                     <p class="ep-hint">@L["這段回答由 AI 只根據下列法條產生，請核對出處再引用。"]</p>
-                                    @foreach (var source in turn.Answer.Sources)
-                                    {
-                                        <article class="ep-card ep-hit" aria-label="@source.Citation">
-                                            <h2 class="ep-section-title">[@source.Code] @source.Citation</h2>
-                                            <p class="ep-hit-body">@source.Text</p>
-                                            <p class="ep-hint">@L["引用：{0}（{1}）", source.Citation, turn.AsOfLabel!]<code class="ep-mono">@source.Uri</code></p>
-                                        </article>
-                                    }
-
+                                    <SourceCards Sources="turn.Answer.Sources" AsOfLabel="@turn.AsOfLabel" />
                                     break;
                                 case TurnState.Listed:
                                     <p class="ep-status" role="status">

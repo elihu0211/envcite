@@ -74,6 +74,7 @@ public sealed class ChatSessionTests
     // 拒答是結果，不是錯誤：說明為什麼沒有答案，記進歷史的也是這句話。
     [Theory]
     [InlineData("no_authority", "找不到足以回答這個問題的法條，所以沒有回答。試試換個說法，或換一天。")]
+    [InlineData("insufficient_evidence", "找到了相關的法條，但不足以直接回答這個問題。下列條文供參考；試著把問題問得更具體，例如指明行為或情形。")]
     [InlineData("out_of_scope", "這個問題超出目前涵蓋的知識範圍，所以沒有回答。")]
     [InlineData("local_law_uncovered", "這個問題問的是地方自治法規，而這裡只涵蓋中央法規，所以沒有回答。請向該地方政府查詢。")]
     [InlineData("missing_input", "問題不夠具體，請補充後再問。")]
@@ -95,6 +96,25 @@ public sealed class ChatSessionTests
         Assert.Equal($"（拒答）{label}", recorded.Answer);
         Assert.Equal(ConversationOutcome.Refused, recorded.Turn.Outcome);
         Assert.Empty(recorded.Turn.Citations);
+    }
+
+    // 找到法源、模型判定不足以回答：仍是拒答（沒有回答正文），但條文留在回合上讓頁面列出，歷史也記下出處。
+    [Fact]
+    public async Task AnInsufficientEvidenceRefusalKeepsTheFoundArticlesAndRecordsTheirCitations()
+    {
+        var (session, ask, _) = await ReadyAsync(new FakeAsk
+        {
+            Result = new AskResult(AskMode.Answer, AskStatus.Ok, Answer: new GroundedAnswer(null, [FakeAsk.Source], "insufficient_evidence", "detail")),
+        });
+
+        await session.AskAsync(User, "露天燃燒", null, Ct);
+
+        var turn = Assert.Single(session.Turns);
+        Assert.Equal(TurnState.Refused, turn.State);
+        Assert.Equal(FakeAsk.Source, Assert.Single(turn.Answer!.Sources));
+        var recorded = Assert.Single(ask.Recorded);
+        Assert.Equal(ConversationOutcome.Refused, recorded.Turn.Outcome);
+        Assert.Equal(new ConversationCitation("L1", "空氣污染防制法 第 32 條", "https://example.test/law/32"), Assert.Single(recorded.Turn.Citations));
     }
 
     [Fact]
