@@ -3,6 +3,7 @@ using System.Security.Claims;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Bases;
@@ -80,4 +81,19 @@ public abstract class PortalFormPageBase<TForm> : FormPageBase<TForm>
     where TForm : class, new()
 {
     [Parameter] public string Tenant { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 客戶入口的**互動式**頁面（Interactive Server，工作區）：路徑上的租戶，與已驗證的使用者。
+/// 沒有 <c>HttpContext</c>（circuit 裡的頁面切換不是 HTTP 請求）：身分一律取自 <see cref="UserAsync"/>，
+/// 租戶只在路由用來決定「這一頁屬於哪個租戶」，所有領域動作的租戶都取自身分（見 <c>IAskService</c>）。
+/// </summary>
+public abstract class WorkspacePageBase : PageBase
+{
+    [Parameter] public string Tenant { get; set; } = string.Empty;
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    protected async Task<ClaimsPrincipal> UserAsync() =>
+        AuthenticationState is null ? new ClaimsPrincipal(new ClaimsIdentity()) : (await AuthenticationState).User;
 }

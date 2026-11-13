@@ -2,9 +2,6 @@ using System.Security.Claims;
 
 using EnvCite.Platform.Web.Components.Layout;
 using EnvCite.Platform.Web.Components.Layout.Navigation;
-using EnvCite.Platform.Web.Resources;
-
-using Microsoft.Extensions.Localization;
 
 namespace EnvCite.Platform.Tests;
 
@@ -16,15 +13,6 @@ namespace EnvCite.Platform.Tests;
 public sealed class PortalNavigationTests
 {
     private const string Home = "/portal/acme";
-
-    private sealed class KeyLocalizer : IStringLocalizer<Ui>
-    {
-        public LocalizedString this[string name] => new(name, name);
-
-        public LocalizedString this[string name, params object[] arguments] => new(name, string.Format(System.Globalization.CultureInfo.InvariantCulture, name, arguments));
-
-        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
-    }
 
     private sealed class FakeHistory(bool enabled) : IConversationHistoryAvailability
     {

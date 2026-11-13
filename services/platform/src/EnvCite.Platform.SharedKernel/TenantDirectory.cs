@@ -14,4 +14,7 @@ public interface ITenantDirectory
 
     /// <summary>以租戶 Id 取一個租戶；不存在則 null。</summary>
     Task<TenantSummary?> FindAsync(string tenantId, CancellationToken cancellationToken);
+
+    /// <summary>以租戶識別碼（網址與登入 cookie 裡的那個，如 <c>acme</c>）取一個租戶；不存在則 null。</summary>
+    Task<TenantSummary?> FindByIdentifierAsync(string tenantIdentifier, CancellationToken cancellationToken);
 }

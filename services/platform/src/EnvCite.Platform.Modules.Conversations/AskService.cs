@@ -61,6 +61,18 @@ internal sealed class AskService(
         return outcome.IsOk ? outcome.Value! : [];
     }
 
+    public async Task<ConversationDetail?> ConversationAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)
+    {
+        if (!history.Enabled || MemberTenant(user) is not { } identifier)
+            return null;
+
+        var outcome = await tenants.InByIdentifierAsync<ConversationDetail?>(
+            identifier,
+            async scope => AdminOutcome.Ok(await scope.Get<IConversationHistory>().GetAsync(user, id, cancellationToken)));
+
+        return outcome.IsOk ? outcome.Value : null;
+    }
+
     public async Task<Guid?> RecordAsync(ClaimsPrincipal user, Guid? conversationId, string question, string answer, CancellationToken cancellationToken)
     {
         if (MemberTenant(user) is not { } identifier)

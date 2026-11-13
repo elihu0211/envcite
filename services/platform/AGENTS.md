@@ -105,7 +105,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **登入的稽核是 fail closed**：事件先於 session cookie 寫入，寫入失敗就沒有 session。
 ### 客戶入口（`/portal/{tenant}/…`）
 
-- 租戶在路徑裡，於登入前由委派策略解析（路徑優先，API key 宣告其次）。頁面是**靜態 SSR**（無電路）：每個請求自行解析租戶並認證，表單是附 antiforgery 的普通 POST。
+- 租戶在路徑裡，於登入前由委派策略解析（路徑優先，API key 宣告其次）。頁面是**靜態 SSR**（無電路）：每個請求自行解析租戶並認證，表單是附 antiforgery 的普通 POST；唯一的例外是**工作區**（問答首頁與對話頁，見〈問答〉），它是 Interactive Server（保留預先渲染）。
 - 使用者是租戶實體（`MultiTenantIdentityDbContext`）：同一個 email 在兩個租戶是兩個帳號；角色是欄位，不是 Identity 角色。
 - session cookie 的授權只讀宣告；**cookie 的租戶必須等於請求路徑解析出的租戶**（此檢查被使用者表的租戶過濾端到端遮蔽，所以有獨立的單元測試，每個檢查都做過突變測試）。每個入口請求檢查 security stamp，所以改密碼或重設會立即結束成員的其他 session。
 - **「請求所屬的租戶」有兩個來源**（`PortalMemberHandler`）：HTTP 請求是租戶解析的結果（環境租戶，精確比對）；互動式 circuit 裡的頁面切換沒有環境租戶，由 `AuthorizeRouteView` 把路由資料當授權資源傳進來——`Routes.razor` 必須設 `Resource="routeData"`（測試掃原始碼守住；少了它，circuit 裡的入口頁一律被拒），租戶取自路由值 `Tenant`（不分大小寫：網址是使用者打的，識別碼只有小寫）。資源是路由資料時**只看路由值、不看環境租戶**，路由裡沒有租戶就拒絕。
@@ -187,9 +187,10 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **兩個開關都要開**：部署者的 `Platform:Answer:Enabled`，加租戶自己的同意（`TenantEntitlement.AiAnswerEnabled`，預設關，因為問題與證據會離開我們的系統）。同意由營運者設定並在同一交易稽核；它**跟著資料庫裡的方案列**：沒有指派方案的租戶開不了，移除方案連同同意一起刪除。呼叫端負責檢查「同意且可用」。
 - 模型或端點失敗是「服務不可用」，不存入對話紀錄；**例外訊息不進日誌**（端點可能回顯提示詞），只記例外型別與狀態。
 - 引用檢查證明代號存在且至少用了一個，**不證明每一句都有依據**；介面要提示讀者對照引用卡片。
-- **頁面不直接碰回答、搜尋與歷史這些領域服務，一律經 `IAskService`**（`SharedKernel` 的契約，`Modules.Conversations` 實作，singleton）：方案與同意的檢查（`AskCapabilities`）、回答或搜尋（`AskAsync`）、記進歷史（`RecordAsync`）。每個操作經 `TenantScopes.InByIdentifierAsync` 在**呼叫者的租戶**裡執行，租戶只取自入口成員的 claim；沒有 `PortalUserId` claim 的身分（匿名、營運者、API key）一律當作沒有方案，不呼叫任何服務、不計量（fail closed）。靜態頁與互動式 circuit（沒有環境租戶）用同一份，頁面只剩呈現與表單。服務回的是結果（`AskResult`：模式、狀態、回答或條文）；使用者看到的文字與記進歷史的文字由頁面組，語言是提問當下的介面語言。`AskServiceTests` 直接在服務層證明租戶隔離、計量、同意與 fail closed。
+- **頁面不直接碰回答、搜尋與歷史這些領域服務，一律經 `IAskService`**（`SharedKernel` 的契約，`Modules.Conversations` 實作，singleton）：方案與同意的檢查（`AskCapabilities`）、回答或搜尋（`AskAsync`）、記進歷史（`RecordAsync`）。每個操作經 `TenantScopes.InByIdentifierAsync` 在**呼叫者的租戶**裡執行，租戶只取自入口成員的 claim；沒有 `PortalUserId` claim 的身分（匿名、營運者、API key）一律當作沒有方案，不呼叫任何服務、不計量（fail closed）。靜態頁與互動式 circuit（沒有環境租戶）用同一份，頁面只剩呈現與表單。服務回的是結果（`AskResult`：模式、狀態、回答或條文）；使用者看到的文字與記進歷史的文字由 `ChatSession` 組，語言是提問當下的介面語言。`AskServiceTests` 直接在服務層證明租戶隔離、計量、同意與 fail closed。
 - **對話紀錄**預設關閉（問題文字是客戶案情的內容）。只存問題與**引用**（法規名稱、條號、日期、條文 URI），不存條文本文。**只有作者看得到**自己的對話——擁有者也不行；每個方法在租戶過濾之外再依使用者 id 過濾；不是自己的 id 當作「開新對話」處理，所以不能拿來探測或寫入別人的對話。刪除由作者執行並在同一交易稽核（只記 id，不記內容）。保存期限清理是跨租戶的，只刪除，只記筆數。
 - **歷史有沒有開啟與保留天數，讀 `IConversationHistoryAvailability`**（singleton，只讀設定），不讀 `IConversationHistory`：後者是 scoped（要資料庫與租戶），為了一個旗標去解析它，互動式 circuit 會把那個 `DbContext` 抓住直到斷線（同 `IAnswerAvailability`、`IDirectoryAvailability` 的做法）。側欄的「最近的對話」經 `IAskService.RecentAsync`：只有本人的標題與時間，沒開啟時服務不開 scope、不查資料庫，依台北時間的日曆日分組（今天、昨天、過去 7 天、更早；`ConversationGroups`）。
+- **工作區是客戶入口唯一的互動式頁面**（`Components/Portal/Workspace/`）：`ChatPage` 在 `/portal/{tenant}`（新對話）與 `/portal/{tenant}/c/{id}`（開啟自己的舊對話），版面是 `WorkspaceLayout`；其餘入口頁維持靜態 SSR。沒有 JavaScript 看得到預先渲染的首屏與說明，但不能送出（`<noscript>` 有提示）。四條規矩：(a) **租戶只取自已驗證的身分**（登入 cookie 的 `TenantIdentifier` 與 `PortalUserId` claim），circuit 沒有環境租戶，也不信任何元件參數；`WorkspaceLayout` 因此不用 `IPortalAccount`，租戶名稱經 `ITenantDirectory.FindByIdentifierAsync`；(b) **一串對話的狀態與流程在 `ChatSession`**（scoped，一個 circuit 一份，純 C# 類別，`ChatSessionTests` 用假的 `IAskService` 測），頁面只呈現；不預期的例外在這裡轉成通用的失敗回合（只記例外型別），不會讓 circuit 斷線；(c) **跨元件通知用 `WorkspaceState`**（記錄完一題後側欄重讀最近對話），不用靜態事件；(d) **互動式的入口元件只認 `IAskService` 與 `AuthenticationState`**：`ArchitectureTests` 禁止它們出現帳號、驗證器、登入、歷史、模型、資料庫與 `TenantScopes` 的型別，也要求入口頁只有 `Workspace/` 底下的是互動式。唯讀的舊「對話紀錄」清單（`History`）仍是靜態頁，連結到 `/c/{id}`。
 
 ## 稽核紀錄
 

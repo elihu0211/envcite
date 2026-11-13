@@ -23,6 +23,9 @@ public static class PortalPaths
 
     public static string Home(string tenantIdentifier) => $"{Prefix}/{Uri.EscapeDataString(tenantIdentifier)}";
 
+    /// <summary>一串對話（問答歷史）的頁面：可以接著問。</summary>
+    public static string Conversation(string tenantIdentifier, Guid id) => $"{Home(tenantIdentifier)}/c/{id}";
+
     public static string Password(string tenantIdentifier) => $"{Prefix}/{Uri.EscapeDataString(tenantIdentifier)}/password";
 
     /// <summary>邀請／驗證連結的頁面；查詢字串帶 <c>userId</c> 與 <c>code</c>。</summary>

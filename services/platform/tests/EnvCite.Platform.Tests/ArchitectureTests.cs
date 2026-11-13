@@ -104,6 +104,50 @@ public sealed partial class ArchitectureTests(PlatformFactory factory)
         Assert.Empty(violations);
     }
 
+    // 客戶入口只有工作區（Components/Portal/Workspace）是互動式；其餘頁面都是靜態渲染，要明說 [ExcludeFromInteractiveRouting]。
+    // 漏標的頁面會被路由到互動模式，在 circuit 裡跑著靜態頁才有的假設（HttpContext、表單 POST、Cookie）。
+    [Fact]
+    public void OnlyTheWorkspaceInTheCustomerPortalIsInteractive()
+    {
+        var portal = Path.Combine(Src, "EnvCite.Platform.Web", "Components", "Portal");
+        var workspace = Path.Combine(portal, "Workspace") + Path.DirectorySeparatorChar;
+
+        var interactive = Directory.EnumerateFiles(portal, "*.razor", SearchOption.AllDirectories)
+            .Where(f => File.ReadAllText(f).Contains("@page ", StringComparison.Ordinal))
+            .Where(f => !File.ReadAllText(f).Contains("[ExcludeFromInteractiveRouting]", StringComparison.Ordinal))
+            .ToList();
+
+        Assert.NotEmpty(interactive);
+        Assert.All(interactive, f => Assert.StartsWith(workspace, f, StringComparison.Ordinal));
+    }
+
+    // 互動式 circuit 的生命週期是整個連線：scoped 服務與 DbContext 會被抓住直到斷線，身分與租戶也不能取自 ambient。
+    // 所以互動式的入口元件只認 IAskService（它每次呼叫自己進租戶範圍）與 AuthenticationState；
+    // 帳號、驗證器、登入、歷史、模型與資料庫都留在靜態頁與服務之後。
+    [Fact]
+    public void InteractivePortalComponentsDependOnlyOnTheApplicationServiceNeverOnWhatItWraps()
+    {
+        string[] banned =
+        [
+            "IPortalAccount", "IPortalTwoFactor", "IPortalSessions", "UserManager", "SignInManager", "HttpContext",
+            "IConversationHistory", "IGroundedAnswerer", "ILawSearch", "IUsageMeter", "IUsageAdmin", "PlatformDbContext", "TenantScopes",
+        ];
+        var components = Path.Combine(Src, "EnvCite.Platform.Web", "Components");
+        var files = Directory.EnumerateFiles(Path.Combine(components, "Portal", "Workspace"), "*.*", SearchOption.AllDirectories)
+            .Append(Path.Combine(components, "Layout", "WorkspaceLayout.razor"))
+            .Append(Path.Combine(components, "Bases", "PortalLayoutBase.cs"))
+            .Where(f => f.EndsWith(".razor", StringComparison.Ordinal) || f.EndsWith(".cs", StringComparison.Ordinal))
+            .ToList();
+
+        var violations = files
+            .SelectMany(f => banned.Where(token => Regex.IsMatch(WithoutComments(File.ReadAllText(f)), $@"\b{token}\b", RegexOptions.None, TimeSpan.FromSeconds(2)))
+                .Select(token => $"{Relative(f)} → {token}"))
+            .ToList();
+
+        Assert.True(files.Count >= 5, "掃描範圍不該是空的");
+        Assert.Empty(violations);
+    }
+
     // 可處置的 transient 會被容器抓到 circuit／應用程式結束才放掉（記憶體洩漏）：我們自己的型別完全不註冊。
     // 框架與函式庫的（例如 HttpClient 的處理常式）不在範圍內。
     [Fact]
@@ -125,6 +169,13 @@ public sealed partial class ArchitectureTests(PlatformFactory factory)
         Assert.NotEmpty(registered);
         Assert.Empty(disposableTransients);
     }
+
+    // 註解可以（也該）說明「為什麼不用」那些型別；掃描只看程式。
+    private static string WithoutComments(string source) =>
+        CommentToken().Replace(source, string.Empty);
+
+    [GeneratedRegex(@"@\*.*?\*@|<!--.*?-->|//[^\n]*", RegexOptions.Singleline, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex CommentToken();
 
     [GeneratedRegex(@"\bIServiceProvider\b", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
     private static partial Regex ServiceProviderToken();

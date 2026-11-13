@@ -1,0 +1,83 @@
+@using EnvCite.Platform.Web.Components.Layout.Navigation
+@using EnvCite.Platform.Web.Components.Portal.Workspace
+@inherits PortalLayoutBase
+@implements IDisposable
+@inject IEnumerable<IPortalNavContributor> NavContributors
+@inject ITenantDirectory Directory
+@inject WorkspaceState Workspace
+
+@* 客戶入口的互動式外殼（工作區，Interactive Server）。與靜態的 PortalLayout 同一個外觀（PortalShell），差別只在身分與租戶從哪裡來：
+   circuit 裡沒有請求解析出的環境租戶，所以租戶一律取自已驗證的身分（登入 cookie 的租戶 claim），不用 IPortalAccount。
+   問答頁問完一題、對話被記進歷史，會通知這裡重新讀最近對話。 *@
+<PortalShell TenantName="@_tenantName"
+             HomeHref="@_home"
+             UserEmail="@_user?.FindFirst(ClaimTypes.Email)?.Value"
+             RoleLabel="@(PortalLabels.Role(_user?.FindFirst(ClaimTypes.Role)?.Value))"
+             AvatarText="@AvatarOf(_user)"
+             LogoutAction="@(_home is null ? null : $"{_home}/logout")"
+             ShowMenu="@_showMenu"
+             MenuItems="@_menuItems"
+             NavItems="@_navItems"
+             Recent="@_recent"
+             LanguageAction="@(_home is null ? null : $"{_home}/language")">
+    @Body
+</PortalShell>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private ClaimsPrincipal? _user;
+    private string? _tenantIdentifier;
+    private string? _tenantName;
+    private string? _home;
+    private bool _showMenu;
+    private IReadOnlyList<PortalShell.MenuItem> _menuItems = [];
+    private IReadOnlyList<PortalShell.NavItem> _navItems = [];
+    private IReadOnlyList<PortalShell.RecentGroup> _recent = [];
+    private bool _subscribed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // 登入狀態被重驗換成匿名時（帳號停用、戳記變了），這裡也要跟著變：只留頂欄。
+        _user = AuthenticationState is null ? null : (await AuthenticationState).User;
+        var identifier = _user?.Identity?.IsAuthenticated == true && _user.FindFirst(PlatformClaimTypes.PortalUserId) is not null
+            ? _user.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value
+            : null;
+        if (identifier is null)
+        {
+            (_tenantIdentifier, _tenantName, _home, _showMenu, _menuItems, _navItems, _recent) = (null, null, null, false, [], [], []);
+            return;
+        }
+
+        if (identifier != _tenantIdentifier)
+        {
+            _tenantIdentifier = identifier;
+            _home = PortalPaths.Home(identifier);
+            _tenantName = (await Directory.FindByIdentifierAsync(identifier, CancellationToken.None))?.Name ?? identifier;
+            _menuItems = MenuItemsOf(identifier);
+        }
+
+        _showMenu = CanUseMenu(_user);
+        _navItems = _showMenu ? PortalNavigation.Collect(NavContributors, new PortalNavContext(_home!, _user!)) : [];
+        _recent = _showMenu ? await RecentOfAsync(_user!, identifier) : [];
+
+        if (!_subscribed)
+        {
+            Workspace.RecentChanged += OnRecentChanged;
+            _subscribed = true;
+        }
+    }
+
+    /// <summary>問完一題、對話被記進歷史：重新讀最近對話。事件來自頁面的事件處理，要回到這個元件的同步內容再重畫。</summary>
+    private void OnRecentChanged() => _ = InvokeAsync(async () =>
+    {
+        if (_user is not null && _tenantIdentifier is not null && _showMenu)
+        {
+            _recent = await RecentOfAsync(_user, _tenantIdentifier);
+            StateHasChanged();
+        }
+    });
+
+    public void Dispose() => Workspace.RecentChanged -= OnRecentChanged;
+}

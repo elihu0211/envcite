@@ -13,7 +13,7 @@ namespace EnvCite.Platform.Tests;
 /// <summary>
 /// 入口問答的應用服務：在呼叫者的租戶裡檢查方案與同意、回答或搜尋、記進歷史。不經頁面也不經瀏覽器——
 /// 靜態頁與互動式 circuit（沒有 ambient tenant）呼叫的就是這一層，所以租戶隔離、計量與 fail closed 在這裡直接證明。
-/// 頁面怎麼呈現由 <c>PortalAnswerTests</c> 等守住。
+/// 頁面怎麼呈現由 <c>PortalSearchTests</c>、<c>ConversationHistoryTests</c> 守住，一串對話的流程由 <c>ChatSessionTests</c> 守住。
 /// </summary>
 // 放在 Group1：這裡會呼叫 consult 的 Ground，而 gRPC 用戶端的計量器是行程內全域的；RedMetricsTests（也在 Group1，同組循序）
 // 只數自己發出的 Ground，放在別的測試組並行跑，它的指標點就會多出這裡的呼叫。
@@ -368,6 +368,45 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var (_, member) = await MemberOfAsync("ask-o");
 
         Assert.Empty(await factory.Services.GetRequiredService<IAskService>().RecentAsync(member, 10, Ct));
+    }
+
+    // 搜尋模式：日期原樣交給 ontology，計量一次；日期不合格在送出前就擋下，不計量也不打 ontology。
+    [Fact]
+    public async Task ASearchPassesTheDateOnAndIsMeteredOnceAndABadDateIsNotMetered()
+    {
+        var (host, chat) = Host(_ => "不該被呼叫 [L1]");
+        using var h = host;
+        var (tenant, member) = await MemberOfAsync("ask-p", consent: false);
+        var ask = host.Services.GetRequiredService<IAskService>();
+
+        var bad = await ask.AskAsync(member, "噪音管制標準", "yesterday", Ct);
+        Assert.Equal(AskStatus.Invalid, bad.Status);
+        Assert.Empty(await UsageAsync(tenant.Id));
+
+        var ok = await ask.AskAsync(member, "噪音管制標準", "2021-01-01", Ct);
+
+        Assert.Equal((AskMode.Search, AskStatus.Ok), Pair(ok));
+        Assert.Equal("2021-01-01", factory.Ontology.LastSearch!.AsOf);
+        Assert.Equal(["ontology.search"], await UsageAsync(tenant.Id));
+        Assert.Empty(chat.Calls);
+    }
+
+    // 問題文字是客戶案件的內容：兩種模式都不能出現在日誌裡（日誌會被匯出到共用的觀測平台）。
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TheQuestionTextNeverAppearsInTheLogs(bool answer)
+    {
+        const string Secret = "某客戶新北某工廠的排放爭議";
+        var logs = new CapturingLoggerProvider();
+        var (host, _) = Host(_ => Reply, logs: logs);
+        using var h = host;
+        var (_, member) = await MemberOfAsync(answer ? "ask-q" : "ask-r", consent: answer);
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, Secret, null, Ct);
+
+        Assert.Equal(AskStatus.Ok, result.Status);
+        Assert.DoesNotContain(logs.Messages, m => m.Contains(Secret, StringComparison.Ordinal));
     }
 
     private static (AskMode, AskStatus) Pair(AskResult result) => (result.Mode, result.Status);

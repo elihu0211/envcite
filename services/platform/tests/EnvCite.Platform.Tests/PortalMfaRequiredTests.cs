@@ -85,7 +85,7 @@ public sealed partial class PortalMfaRequiredTests(PlatformFactory factory)
         var home = await browser.GetAsync(Home(tenant.Identifier));
         Assert.Equal(HttpStatusCode.Redirect, home.Status);
         Assert.Equal(Security(tenant.Identifier), home.Location);
-        Assert.Equal(Security(tenant.Identifier), (await browser.GetAsync($"/portal/{tenant.Identifier}/search")).Location);
+        Assert.Equal(Security(tenant.Identifier), (await browser.GetAsync($"/portal/{tenant.Identifier}")).Location);
 
         var page = await browser.GetAsync(Security(tenant.Identifier));
         Assert.Equal(HttpStatusCode.OK, page.Status);
