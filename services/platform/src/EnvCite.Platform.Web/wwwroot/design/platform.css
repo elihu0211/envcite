@@ -3608,3 +3608,85 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     font-size: var(--ep-body-m-size);
 }
 
+.ep-workbench-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--ep-space-3);
+    padding: var(--ep-space-3) var(--ep-space-4);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface);
+}
+
+.ep-workbench {
+    display: grid;
+    gap: var(--ep-space-4);
+    align-items: start;
+}
+
+@media (min-width: 48rem) {
+    .ep-workbench {
+        grid-template-columns: minmax(16rem, 18rem) minmax(0, 1fr);
+    }
+}
+
+@media (min-width: 80rem) {
+    .ep-workbench.has-inspector {
+        grid-template-columns: minmax(16rem, 18rem) minmax(0, 1fr) minmax(18rem, 22rem);
+    }
+}
+
+.ep-workbench-main,
+.ep-workbench-inspector {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-4);
+}
+
+.ep-graph-host {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-2);
+}
+
+.ep-graph-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ep-space-2);
+}
+
+.ep-graph-canvas {
+    width: 100%;
+    height: 22rem;
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface-sunken);
+}
+
+.ep-preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ep-space-2);
+    margin-block-end: var(--ep-space-3);
+}
+
+.ep-preset-chip {
+    padding: var(--ep-space-1) var(--ep-space-3);
+    border: 1px solid var(--ep-border);
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-surface);
+    color: var(--ep-text);
+    font-size: var(--ep-label-s-size);
+    cursor: pointer;
+}
+
+.ep-preset-chip:hover {
+    background: var(--ep-surface-hover);
+    border-color: var(--ep-accent);
+}
+
+

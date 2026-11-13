@@ -557,7 +557,6 @@
   <data name="例如 moj_pcode" xml:space="preserve"><value>e.g. moj_pcode</value></data>
   <data name="法規代碼" xml:space="preserve"><value>Law ID</value></data>
   <data name="例如 O0020001" xml:space="preserve"><value>e.g. O0020001</value></data>
-  <data name="YYYY-MM-DD；留空表示現行" xml:space="preserve"><value>YYYY-MM-DD; leave blank for current</value></data>
   <data name="查詢法規" xml:space="preserve"><value>Look up law</value></data>
   <data name="制定日：" xml:space="preserve"><value>Enacted: </value></data>
   <data name="這部法規在指定日期沒有條文。" xml:space="preserve"><value>This law has no articles on the specified date.</value></data>
@@ -598,7 +597,6 @@
   <data name="授權鏈缺口" xml:space="preserve"><value>Delegation gaps</value></data>
   <data name="語料未涵蓋法規" xml:space="preserve"><value>Uncovered laws</value></data>
   <data name="推論評估失敗，請稍後再試。" xml:space="preserve"><value>Evaluation failed; please try again shortly.</value></data>
-  <data name="哪一天有效" xml:space="preserve"><value>Effective on</value></data>
   <data name="已啟用功能模組" xml:space="preserve"><value>Enabled Feature Modules</value></data>
   <data name="未啟用" xml:space="preserve"><value>Disabled</value></data>
   <data name="前往使用" xml:space="preserve"><value>Open</value></data>
@@ -613,9 +611,7 @@
   <data name="事實不足" xml:space="preserve"><value>Undetermined</value></data>
   <data name="排除" xml:space="preserve"><value>Excluded</value></data>
   <data name="不適用" xml:space="preserve"><value>Not Applicable</value></data>
-  <data name="依法律位階與授權母法樹狀結構，瀏覽現行或指定時點之有效法規與條文。" xml:space="preserve"><value>Browse in-force or historical laws and articles organized by legal hierarchy and authorizing parent laws.</value></data>
   <data name="法律樹結構" xml:space="preserve"><value>Law Hierarchy Tree</value></data>
-  <data name="套用時點" xml:space="preserve"><value>Apply Date</value></data>
   <data name="指定日期沒有有效的法規版本。" xml:space="preserve"><value>No in-force laws found for the selected date.</value></data>
   <data name="依自然鍵直接查詢" xml:space="preserve"><value>Direct lookup by natural key</value></data>
   <data name="自然鍵" xml:space="preserve"><value>Natural key</value></data>
@@ -625,4 +621,22 @@
   <data name="法律" xml:space="preserve"><value>Statute</value></data>
   <data name="命令" xml:space="preserve"><value>Regulation</value></data>
   <data name="法規結構目錄" xml:space="preserve"><value>Law structure outline</value></data>
+  <data name="法規本體工作台" xml:space="preserve"><value>Legal Ontology Workbench</value></data>
+  <data name="整合法律位階授權知識圖譜、編章節條文瀏覽與確定性規範推論評估。" xml:space="preserve"><value>Unified workbench combining the legal delegation knowledge graph, structural law browser, and deterministic normative reasoning.</value></data>
+  <data name="篩選法規" xml:space="preserve"><value>Filter laws</value></data>
+  <data name="輸入法規名稱或代碼" xml:space="preserve"><value>Enter law title or code</value></data>
+  <data name="例如 空氣污染" xml:space="preserve"><value>e.g. Air Pollution</value></data>
+  <data name="基準日" xml:space="preserve"><value>Effective date</value></data>
+  <data name="留空表示現行" xml:space="preserve"><value>Leave blank for current</value></data>
+  <data name="套用條件" xml:space="preserve"><value>Apply</value></data>
+  <data name="法律授權知識圖譜" xml:space="preserve"><value>Legal Delegation Knowledge Graph</value></data>
+  <data name="展開或收合互動圖譜" xml:space="preserve"><value>Toggle interactive knowledge graph</value></data>
+  <data name="點選圖譜節點可直接檢視該法規條文與編章節結構。" xml:space="preserve"><value>Click any graph node to inspect its chapters, sections, and articles.</value></data>
+  <data name="適應視窗" xml:space="preserve"><value>Fit</value></data>
+  <data name="合規推論試算" xml:space="preserve"><value>Compliance Reasoning</value></data>
+  <data name="選擇常見情境或輸入事實，由確定性推論引擎評估候選風險與缺漏要件。" xml:space="preserve"><value>Select a common scenario or enter facts to evaluate candidate risks and missing elements.</value></data>
+  <data name="日常合規自評" xml:space="preserve"><value>Daily Self-Check</value></data>
+  <data name="設備異常通報" xml:space="preserve"><value>Equipment Incident</value></data>
+  <data name="超標與不法利得" xml:space="preserve"><value>Exceedance &amp; Benefit</value></data>
+  <data name="進階：裁處與時效參數" xml:space="preserve"><value>Advanced: Penalty &amp; Limitation Parameters</value></data>
 </root>
