@@ -138,6 +138,16 @@ public static partial class ComponentTemplateTests
         return EditFormTag().Matches(source).Any(tag => !tag.Value.Contains("hidden=\"hidden\"", StringComparison.Ordinal));
     }
 
+    // 客戶入口的視覺（緊湊、中性）以 .ep-portal 圈住：入口外殼帶它，營運後台的外殼不帶，所以入口的樣式規則碰不到後台。
+    [Fact]
+    public static void OnlyThePortalShellCarriesThePortalScopeClass()
+    {
+        var scope = new Regex(@"(?<![\w-])ep-portal(?![\w-])", RegexOptions.None, TimeSpan.FromSeconds(2));
+
+        Assert.Matches(scope, File.ReadAllText(Path.Combine(ComponentsPath(), "Layout", "PortalShell.razor")));
+        Assert.DoesNotMatch(scope, File.ReadAllText(Path.Combine(ComponentsPath(), "Layout", "MainLayout.razor")));
+    }
+
     private static IEnumerable<string> Razor() =>
         Directory.EnumerateFiles(ComponentsPath(), "*.razor", SearchOption.AllDirectories)
             .Where(file => !file.EndsWith("_Imports.razor", StringComparison.Ordinal));

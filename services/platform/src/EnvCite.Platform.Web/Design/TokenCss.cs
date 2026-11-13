@@ -138,7 +138,7 @@ public static class TokenCss
             css.Append(CultureInfo.InvariantCulture, $"--ep-motion-{key}:{value};");
         }
 
-        css.Append(CultureInfo.InvariantCulture, $"--ep-press-scale:{DesignTokens.PressScale};--ep-touch-target:{DesignTokens.TouchTarget};");
+        css.Append(CultureInfo.InvariantCulture, $"--ep-press-scale:{DesignTokens.PressScale};--ep-touch-target:{DesignTokens.TouchTarget};--ep-control-height:{DesignTokens.ControlHeight};");
         css.Append(CultureInfo.InvariantCulture, $"--ep-appbar-height:{DesignTokens.AppBarHeight};");
         css.Append(CultureInfo.InvariantCulture, $"--ep-qr-surface:{DesignTokens.QrSurface};");
         return css.ToString();
