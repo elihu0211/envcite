@@ -1,0 +1,19 @@
+{% extends "base.j2" %}
+
+{% block instruction %}
+下面是一則罰則條文，與它引用的條文裡的陳述（編號、所在條文與原文）。
+請列出這則罰則處罰的、違反了就受罰的全部陳述。原文引用數條（「違反第七條或第八條」）時
+可能不只一個；原文只罰引用條文的某種違反（「違反第十四條第一項未取得許可證而排放者」）時，
+只列那一種。輸出 JSON：{"punishes": [編號, ...]}；都不是則 {"punishes": []}。只輸出 JSON。
+{% endblock %}
+
+{% block material %}
+
+罰則原文：
+{{ text }}
+
+候選陳述：
+{% for c in candidates %}
+[{{ c.id }}] {{ c.path }}：{{ c.quoted }}
+{% endfor %}
+{% endblock %}

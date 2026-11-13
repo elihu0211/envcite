@@ -16,6 +16,7 @@ dependencies = [
     "grpcio-health-checking",
     "grpcio-reflection",
     "grpcio-status",
+    "jinja2",
     "lxml",
     "psycopg-pool",
     "psycopg[binary]",

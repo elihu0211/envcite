@@ -1,0 +1,14 @@
+{#- 「本法用語，定義如下」之下一款原文的提示：抽取與重讀共用開頭與材料，只差角色、任務與原文的標籤。 -#}
+{% extends "base.j2" %}
+{% from "macros.j2" import ancestors %}
+
+{% block instruction %}
+你是{% block role %}{% endblock %}。下面是「本法用語，定義如下」之下的一款原文。
+{% block task %}{% endblock %}
+{% endblock %}
+
+{% block material %}
+
+{{ ancestors(context) }}{% block label %}原文{% endblock %}：
+{{ text }}
+{% endblock %}

@@ -16,8 +16,7 @@ from typing import Any, cast
 
 from envcite_ontology.db import Conn
 from envcite_ontology.reasoning import evaluate
-from envcite_ontology.verification.context import context_block
-from envcite_ontology.verification.conventions import apply as with_conventions
+from envcite_ontology.verification import prompts
 from envcite_ontology.verification.gates import GateResult, statement_as_of, unit_of
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, family_of
@@ -256,25 +255,6 @@ def _answered_signature(answer: Mapping[str, Any]) -> dict[str, Any]:
 
 # 閘門一：往返驗證
 
-REFORMALIZE = with_conventions("""下面是對一個法規陳述的結構化描述（不是法規原文）。
-請只依這份描述，輸出一個 JSON 物件：
-{{"kind": "prescriptive|constitutive|sanction",
-  "deontic": "obligation|prohibition|permission 或 null",
-  "conditions": [{{"role": "scope|duty|limit", "code": "方括號內的代碼",
-    "comparator": "le|lt|ge|gt|eq|ne", "threshold": 數字或 null,
-    "negated": true|false, "judgement": true|false}}],
-  "sanction": {{"effect": "效果", "min": 數字或 null, "max": 數字或 null,
-    "repeating": true|false, "discretionary": true|false}} 或 null}}
-門檻值由授權命令供給時 threshold 為 null；「成立」表示 comparator 為 eq、threshold 為 1；
-「（需判斷）」表示 judgement 為 true；「非：」表示 negated 為 true；沒有提到按次處罰則 repeating
-為 false；「得（裁量）」表示 discretionary 為 true，沒有提到則為 false；
-沒有罰則則 sanction 為 null。只輸出 JSON。
-
-{conventions}
-描述：
-{description}
-""")
-
 
 @dataclass(frozen=True)
 class RoundtripGate:
@@ -306,7 +286,7 @@ class RoundtripGate:
                 "inconclusive", {"reason": "no eligible verifier", "skipped": skipped}
             )
         answer = object_from(
-            ok[0].complete(REFORMALIZE.format(description=render_annotation(conn, statement_id)))
+            ok[0].complete(prompts.reformalize(description=render_annotation(conn, statement_id)))
         )
         if answer is None:
             return GateResult("inconclusive", {"reason": "unparseable answer"})
@@ -320,22 +300,6 @@ class RoundtripGate:
 
 
 # 閘門二：獨立測試
-
-WRITE_TESTS = """你是法規測試設計者。下面是一段法規原文，與一組可用的概念（代碼與名稱）。
-請只依原文，設計 4 至 8 個案例：每個案例給一組事實（代碼對應數值；成立與否的概念給 1 或 0，
-數值概念給具體數值，型別見概念清單）與依原文你預期的結論。結論限於：violation（違反）、compliant（合規）、
-not_applicable（本條不適用）、undetermined（事實不足以判定）。涵蓋合規、違反、適用範圍不成立各
-至少一個。輸出 JSON：
-{{"cases": [{{"facts": {{"代碼": 數值}},
-  "expected": "violation|compliant|not_applicable|undetermined"}}]}}
-只輸出 JSON。
-
-原文：
-{text}
-
-可用的概念：
-{concepts}
-"""
 
 
 def _concept_line(conn: Conn, statement_id: int) -> list[str]:
@@ -400,8 +364,8 @@ class IndependentTestGate:
         as_of = statement_as_of(conn, statement_id)
         if as_of is None:
             return GateResult("inconclusive", {"reason": "no start date for the text"})
-        concepts = "\n".join(_concept_line(conn, statement_id))
-        answer = object_from(ok[0].complete(WRITE_TESTS.format(text=u.quoted, concepts=concepts)))
+        concepts = _concept_line(conn, statement_id)
+        answer = object_from(ok[0].complete(prompts.write_tests(text=u.quoted, concepts=concepts)))
         cases = [
             c
             for c in (answer or {}).get("cases") or []
@@ -435,28 +399,6 @@ class IndependentTestGate:
 
 # 閘門三：跨家族評審團
 
-JUDGE = with_conventions("""你是法規標註的審查者。
-下面是一個條文單元的原文，與一份對其中「標註對應的引文」的結構化
-標註描述。一個單元常被拆成幾個陳述，每個陳述只對應其中一段引文，其餘條件在別的陳述裡；請就這一段
-引文判斷，需要前後文時看整個單元，不要要求這個陳述涵蓋引文以外的內容。
-請判斷這份標註是否忠於引文（與它所在的單元）：種類、義務方向、要件（含門檻值與「非」）、罰則的效果與額度，是否都有
-原文依據，沒有遺漏或添加。描述裡的「成立」是要件成立之意，不是數值；沒有寫出的預設（例如沒有
-「按次處罰」字樣）不算添加。主體為「（原文未明示）」是說原文沒有寫出義務人，不算遺漏；主體若是
-被規範的物或行為而不是人，才是錯。標有「承自上位」的適用範圍要件，是程式從上層條文或句首帶入的，
-不算添加。輸出 JSON：{{"faithful": true|false, "issues": ["具體問題"]}}。
-只輸出 JSON。
-
-{conventions}
-{context}整個單元的原文：
-{text}
-
-標註對應的引文：
-{quote}
-
-標註描述：
-{description}
-""")
-
 
 @dataclass(frozen=True)
 class PanelGate:
@@ -489,8 +431,8 @@ class PanelGate:
                 {"reason": "fewer than the required model families", "skipped": skipped},
             )
         u = unit_of(conn, statement_id)
-        prompt = JUDGE.format(
-            context=context_block(u.context),
+        prompt = prompts.judge(
+            context=u.context,
             text=u.text,
             quote=u.quoted,
             description=render_annotation(conn, statement_id, for_reader=True),

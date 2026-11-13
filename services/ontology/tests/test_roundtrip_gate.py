@@ -8,9 +8,10 @@ import pytest
 
 from envcite_ontology.verification import (
     RoundtripGate,
+    prompts,
 )
 from envcite_ontology.verification.extract import extract_unit
-from envcite_ontology.verification.model_gates import REFORMALIZE, render_annotation
+from envcite_ontology.verification.model_gates import render_annotation
 from tests.model_gates_support import (
     EXTRACTOR,
     SAME_AS_ANNOTATION,
@@ -80,7 +81,7 @@ def test_a_direction_the_reader_adds_to_a_constitutive_statement_is_ignored(
 
 
 def test_the_reader_is_told_only_prescriptive_statements_have_a_direction() -> None:
-    assert "只有 kind 為 prescriptive 才有 deontic" in REFORMALIZE
+    assert "只有 kind 為 prescriptive 才有 deontic" in prompts.reformalize(description="d")
 
 
 @pytest.mark.parametrize("answer", ["not json", {"kind": None}])

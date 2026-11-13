@@ -16,7 +16,8 @@ from typing import Any
 
 from envcite_ontology.claims import AnnotationError, Loaded, load
 from envcite_ontology.db import Conn
-from envcite_ontology.verification.context import ancestors_text, context_block
+from envcite_ontology.verification import prompts
+from envcite_ontology.verification.context import ancestors_text
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, ModelError
 
@@ -24,31 +25,6 @@ from envcite_ontology.verification.models import Model, ModelError
 DEFINITION_CLAUSE = re.compile(r"(用語|用詞|名詞)[，,、]?\s*(定義|意義)如下")
 
 _CODE = re.compile(r"^[a-z][a-z0-9_]*$")
-
-PROMPT = """你是法規標註器。下面是「本法用語，定義如下」之下的一款原文。
-請只依原文，輸出一個 JSON 物件，列出這一款定義的用語與它明文涵蓋的成員：
-{{"definitions": [{{"quote": "原文中的一段，逐字複製", "term": "被定義的用語，逐字取自原文",
-  "code": "用語的英文小寫底線代碼", "members": [{{"label": "涵蓋的成員，逐字取自原文",
-  "code": "成員的英文小寫底線代碼"}}]}}]}}
-規則：
-1. 引文、用語與每個成員的名稱必須逐字出現在原文；不要輸出原文沒有的內容。
-2. 成員只列原文明文列舉、屬於這個用語的類別或事物（例如「指工廠、礦場」的工廠與礦場）。
-   原文沒有列舉成員就輸出空的 members，不要自己補。
-3. 代碼用英文小寫與底線，同一個詞在整部法規裡永遠用同一個代碼。
-只輸出 JSON。
-
-{context}原文（{law} {path}）：
-{text}
-"""
-
-REPAIR = """{prompt}
-
-你上一次的輸出：
-{previous}
-
-它有下列問題。請修正後重新輸出完整的 JSON，只輸出 JSON：
-{issues}
-"""
 
 MAX_REPAIRS = 2
 
@@ -159,8 +135,8 @@ def extract_definitions(
 ) -> ExtractedDefinitions:
     """抽取一款的用語定義並載入（extracted）。有問題先請模型修有限輪，修不好才丟。"""
     provision_id, text = _unit(conn, law, path)
-    prompt = PROMPT.format(
-        law=law, path=path, text=text, context=context_block(ancestors_text(conn, provision_id))
+    prompt = prompts.definitions(
+        law=law, path=path, text=text, context=ancestors_text(conn, provision_id)
     )
     try:
         raw = model.complete(prompt)
@@ -174,9 +150,7 @@ def extract_definitions(
         if not issues:
             break
         try:
-            reply = model.complete(
-                REPAIR.format(prompt=prompt, previous=raw, issues="\n".join(issues))
-            )
+            reply = model.complete(prompts.repair(prompt=prompt, previous=raw, issues=issues))
         except ModelError:
             break
         again = object_from(reply)

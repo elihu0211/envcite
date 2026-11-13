@@ -32,6 +32,7 @@ uv run --env-file .env envcite-ontology
 
 - **程式風格**（Python ≥3.14，ruff 的 `target-version` 在倉庫根 `pyproject.toml`，UP 規則據此要求新語法）：
   - 不寫 `from __future__ import annotations`（註解延後求值）；泛型用 PEP 695（`def f[T]`），別名用 `type X = …`。
+  - 提示詞不寫在 Python 裡：模板在 `verification/templates/*.j2`（Jinja2），渲染只經 `verification/prompts.py` 的型別化函式。共同骨架用繼承（`base.j2` → `with_conventions.j2`／`definition.j2` → 各提示），「有才放」的區塊是 `macros.j2` 的巨集；改提示詞只改模板，要在開發集上量測，不憑感覺。
   - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
   - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。
 - **環境變數以 `src/envcite_ontology/settings.py` 為唯一來源**；入口不直接讀 `os.environ`；加變數時同步 `.env.example`（`tests/test_settings.py` 守門）。
@@ -73,7 +74,7 @@ uv run --env-file .env envcite-ontology
   規範性陳述的引文缺了助動詞而單元原文有（從規範句切下的子句）是形狀問題，修不好就丟；
   義務引文裡助動詞前後有字沒被 scope、主體或 duty 要件涵蓋（漏了期限、對象、限定語）只送回修復，不丟。
 - **重抽**：義務沒有定論的單元（`annotation.reextraction_due`）帶審查者指出的問題重抽；輪數上限是 `extraction_attempt.round` 的 CHECK，不是程式裡的常數，該不該重抽由資料推得、不另存佇列，所以中斷後重跑自己收斂。重抽只改變誰被抽到、不放寬閘門：確認仍要所有必要方法通過。量測與已知缺口見 `eval/duty-reextraction-2026-11-06.md`，兩型瑕疵修復的獨立量測見 `eval/duty-fix-effect-2026-11-09.md`。
-- 本體的約定（只有規範性陳述有義務方向、授權不是許可、罰則一個效果一個陳述且引文只取該效果的子句、刑罰不是罰則、按次處罰是另一個帶「屆期仍未改善」要件的陳述）寫在 `verification/conventions.py` 一處，各提示都由它組成。
+- 本體的約定（只有規範性陳述有義務方向、授權不是許可、罰則一個效果一個陳述且引文只取該效果的子句、刑罰不是罰則、按次處罰是另一個帶「屆期仍未改善」要件的陳述）寫在 `verification/templates/conventions.j2` 一處，各提示都由它組成。
 - **管線**可重跑、每個陳述 commit；`--pending` 的待辦由資料推得，所以重跑收斂；同一時間只跑一個（PostgreSQL 諮詢鎖）。保留樣本評估看過的法就用掉了，只報第一次看的計數，不報準確度。
 - **行政規則**（`guidance` schema）：函釋、裁量基準另立一軸，**不進語料的位階、不是推論的前提**（行政程序法第 159 條），只附在推論結果旁（`Outcome.guidance`）。公文不可改，由人或規則載入（`derivation.method` 不得為 `llm`）；「解釋」錨定（單元，內容雜湊），條文文字改了就不再附上。取得（`envcite-guidance sync`）只經 `guidance.load` 寫入，**改變寫入內容或錨定規則要遞增 `guidance_sync.RULE_VERSION`**。
 - **推論**（`reasoning/`）：通用推論程式 `rules.lp`（clingo）**不含任何法條**，也不用模型；案件事實由呼叫端給。結論都是**候選**；缺的事實、需判斷的要件、矛盾的事實、未決的衝突與罰則競合分開回報。

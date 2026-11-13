@@ -1,9 +1,4 @@
-"""本體的約定：抽取者、往返重抽者、評審團讀同一份，避免約定只告訴其中一端而誤判。
-
-三個提示都以 `apply` 組成。不得含大括號：會被放進 `str.format` 的樣板。
-"""
-
-CONVENTIONS = """本體的約定（抽取、重抽與審查都依這一份）：
+本體的約定（抽取、重抽與審查都依這一份）：
 A. 只有 kind 為 prescriptive 才有 deontic（obligation、prohibition、permission）；constitutive
    （定義、適用範圍、授權）與 sanction（罰則與改善命令等不利效果）的 deontic 為 null。
    授權主管機關訂定或指定的「得」與「由…定之」是授權（constitutive），不是許可。
@@ -34,9 +29,3 @@ G. 要件的 concept 是這句話說的那件事，用引文自己的字命名�
    「水污染防治措施」「污染物」這類泛稱不是這個義務的內容。
 H. 刑罰（有期徒刑、拘役、罰金）不是行政罰，沒有對應的 effect：罰金不是 fine。上層條文處的是刑罰
    時，其下的款、目不寫成 sanction 陳述。
-"""
-
-
-def apply(template: str) -> str:
-    """把 `{conventions}` 換成約定；樣板其餘的大括號照舊留給之後的 `str.format`。"""
-    return template.replace("{conventions}", CONVENTIONS)

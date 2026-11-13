@@ -1,0 +1,9 @@
+{% extends "definition.j2" %}
+
+{% block role %}法規閱讀者{% endblock %}
+
+{% block task %}
+請只依原文，輸出一個 JSON 物件：{"term": "這一款被定義的用語，逐字取自原文",
+"members": ["原文明文列舉、屬於這個用語的成員，逐字取自原文"]}
+原文沒有列舉成員就輸出空陣列，不要自己補。只輸出 JSON。
+{% endblock %}
