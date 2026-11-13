@@ -87,6 +87,35 @@
   "房屋租金補貼",
   "機車排氣檢驗站"
  ],
+ "dropped_renamed_literal": [
+  "公立國民小學及國民中學合併或停辦準則",
+  "動員戡亂時期國家安全法",
+  "勞工作業環境空氣中有害物容許濃度標準",
+  "勞工安全衛生組織管理及自動檢查辦法",
+  "受刑人吸菸管理及戒菸獎勵辦法",
+  "司法院大法官審理案件法",
+  "固定污染源設置與操作許可證管理辦法",
+  "土地複丈費及建築改良物測量費標準",
+  "大眾捷運系統兩側公私有建築物與廣告物禁止及限制建築辦法",
+  "山坡地開發建築管理辦法",
+  "工業園區各種用地用途及使用規範辦法",
+  "延繩釣漁船赴台日漁業協議適用海域作業管理辦法",
+  "快遞貨物通關辦法",
+  "校園性侵害性騷擾或性霸凌防治準則",
+  "歷史建築登錄及輔助辦法",
+  "法官助理遴聘訓練業務管理及考核辦法",
+  "用戶建築物屋內外電信設備裝置規則",
+  "罕見疾病醫療補助辦法",
+  "肅清煙毒條例",
+  "警察人員管理條例",
+  "資源回收再利用法",
+  "身心障礙學生支持服務辦法",
+  "身心障礙福利機構設施及人員配置標準",
+  "進口貨品原產地認定標準",
+  "關務人員升等考試規則",
+  "電業供電線路裝置規則",
+  "電腦處理個人資料保護法"
+ ],
  "items": [
   {
    "id": "kw-def-0001",
@@ -10176,6 +10205,2658 @@
    "query": "地震預測",
    "split": "test",
    "expected": []
+  },
+  {
+   "id": "kw-ren-0671",
+   "bucket": "renamed",
+   "query": "不動產成交案件實際資訊申報登錄及查詢收費辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0060118",
+     "law": "不動產成交案件實際資訊申報登錄及預售屋銷售資訊備查辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0672",
+   "bucket": "renamed",
+   "query": "不適任教育人員之通報與資訊蒐集及查詢辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0150041",
+     "law": "不適任教育人員之通報資訊蒐集及查詢處理利用辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0673",
+   "bucket": "renamed",
+   "query": "中央健康保險局受託辦理職業災害保險醫療給付費用償付辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "L0060016",
+     "law": "全民健康保險保險人受託辦理職業災害保險醫療給付費用償付辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0674",
+   "bucket": "renamed",
+   "query": "中央警察大學學員生獎懲規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0080017",
+     "law": "中央警察大學學生（員）獎懲規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0675",
+   "bucket": "renamed",
+   "query": "中央銀行管理票據交換業務辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0430003",
+     "law": "票據交換及銀行間劃撥結算業務管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0676",
+   "bucket": "renamed",
+   "query": "中華民國民事訴訟法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "B0010001",
+     "law": "民事訴訟法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0677",
+   "bucket": "renamed",
+   "query": "主要農產品受進口損害救助基金收支保管及運用辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "M0020010",
+     "law": "農產品受進口損害救助基金收支保管及運用辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0678",
+   "bucket": "renamed",
+   "query": "交通助理人員設置辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0080061",
+     "law": "交通助理人員管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0679",
+   "bucket": "renamed",
+   "query": "交通工具排放空氣污染物檢驗及處理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "O0020005",
+     "law": "交通工具排放空氣污染物檢驗處理及委託辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0680",
+   "bucket": "renamed",
+   "query": "交通工具空氣污染防制設備管理規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "O0020025",
+     "law": "移動污染源空氣污染防制設備管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0681",
+   "bucket": "renamed",
+   "query": "交通部中央氣象署大武氣象站編制表",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "K0000297",
+     "law": "交通部中央氣象署古坑氣象站編制表"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0682",
+   "bucket": "renamed",
+   "query": "交通部公路總局組織條例",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "K0000058",
+     "law": "交通部公路總局組織法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0683",
+   "bucket": "renamed",
+   "query": "保險業簽證精算人員管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0390045",
+     "law": "保險業簽證精算人員及外部複核精算人員管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0684",
+   "bucket": "renamed",
+   "query": "信用卡業務管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "G0380055",
+     "law": "信用卡業務機構管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0685",
+   "bucket": "renamed",
+   "query": "信用合作社社員代表理監事暨經理人應具備資格條件及選聘辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "G0380069",
+     "law": "信用合作社社員代表理事監事經理人應具備資格條件及選聘辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0686",
+   "bucket": "renamed",
+   "query": "僑務委員會海外僑教志願服務獎勵辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "E0040022",
+     "law": "僑務委員會僑教志願服務獎勵辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0687",
+   "bucket": "renamed",
+   "query": "優先採購身心障礙福利機構或團體生產物品及服務辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0050066",
+     "law": "優先採購身心障礙福利機構團體或庇護工場生產物品及服務辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0688",
+   "bucket": "renamed",
+   "query": "優質企業進出口貨物通關辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0350061",
+     "law": "優質企業認證及管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0689",
+   "bucket": "renamed",
+   "query": "免稅或從低徵稅之進口貨物稅辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0350011",
+     "law": "減免關稅之進口貨物補稅辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0690",
+   "bucket": "renamed",
+   "query": "兒童及少年高風險家庭通報及協助辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0050181",
+     "law": "脆弱家庭之兒童及少年通報協助與資訊蒐集處理利用辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0691",
+   "bucket": "renamed",
+   "query": "兒童預防接種紀錄檢查及補種辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "L0050017",
+     "law": "預防接種作業與兒童預防接種紀錄檢查及補行接種辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0692",
+   "bucket": "renamed",
+   "query": "內政部入出國及移民署人員服制辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0080165",
+     "law": "內政部移民署人員服制辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0693",
+   "bucket": "renamed",
+   "query": "內政部入出國及移民署實施面談辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0080171",
+     "law": "內政部移民署實施面談辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0694",
+   "bucket": "renamed",
+   "query": "內政部所屬老人、身心障礙、兒童及少年福利機構組織準則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0000155",
+     "law": "衛生福利部老人身心障礙兒童及少年福利機構組織準則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0695",
+   "bucket": "renamed",
+   "query": "內政部身心障礙者權益保障事項運作及權益受損協調處理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0050158",
+     "law": "衛生福利部身心障礙者權益保障事項運作及權益受損協調處理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0696",
+   "bucket": "renamed",
+   "query": "全國原住民運動會舉辦準則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0120042",
+     "law": "全國原住民族運動會舉辦準則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0697",
+   "bucket": "renamed",
+   "query": "兩性工作平等法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "N0030014",
+     "law": "性別平等工作法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0698",
+   "bucket": "renamed",
+   "query": "公務人員保險監理委員會組織規程",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "S0070006",
+     "law": "公教人員保險監理委員會組織規程"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0699",
+   "bucket": "renamed",
+   "query": "公務人員因公傷殘死亡慰問金發給辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "S0090005",
+     "law": "公務人員執行職務意外傷亡慰問金發給辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0700",
+   "bucket": "renamed",
+   "query": "公務人員安全及衛生防護辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "A0030050",
+     "law": "公務人員執行職務安全及衛生防護辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0701",
+   "bucket": "renamed",
+   "query": "公務人員高等考試三級考試暨普通考試分試考試規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "R0030018",
+     "law": "公務人員高等考試三級考試暨普通考試規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0702",
+   "bucket": "renamed",
+   "query": "公司研究發展支出適用投資抵減辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0030113",
+     "law": "公司或有限合夥事業研究發展支出適用投資抵減辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0703",
+   "bucket": "renamed",
+   "query": "公用氣體與油料管線及輸電線路災害救助種類及標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "J0130070",
+     "law": "公用氣體與油料管線及輸電線路災害救助種類方式基準及相關事項標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0704",
+   "bucket": "renamed",
+   "query": "公立大專校院稀少性科技人員遴用資格及待遇辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0150016",
+     "law": "公立大專校院稀少性科技人員遴用資格辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0705",
+   "bucket": "renamed",
+   "query": "加工出口區更新計畫工廠拆遷停工損失補償辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0050017",
+     "law": "科技產業園區更新計畫建築物拆遷停工損失補償辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0706",
+   "bucket": "renamed",
+   "query": "加工出口區管理處業務管理規程",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0050003",
+     "law": "經濟部產業園區管理局及分局之科技產業園區業務管理規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0707",
+   "bucket": "renamed",
+   "query": "助產士法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "L0070003",
+     "law": "助產人員法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0708",
+   "bucket": "renamed",
+   "query": "動物實驗管理小組設置辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "M0060068",
+     "law": "實驗動物照護及使用委員會或小組設置及管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0709",
+   "bucket": "renamed",
+   "query": "化製場及化製原料運輸車消毒及管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "M0130007",
+     "law": "化製場及化製原料運輸車消毒及查核辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0710",
+   "bucket": "renamed",
+   "query": "北美事務協調委員會編制表",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "E0000021",
+     "law": "台灣美國事務委員會編制表"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0711",
+   "bucket": "renamed",
+   "query": "北美事務協調委員會辦事細則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "E0010025",
+     "law": "台灣美國事務委員會辦事細則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0712",
+   "bucket": "renamed",
+   "query": "受終身不得考領駕駛執照處分重新申請考驗辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "K0040061",
+     "law": "受終身不得考領駕駛執照限制重新申請考驗辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0713",
+   "bucket": "renamed",
+   "query": "古物分級登錄指定及廢止審查辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0170049",
+     "law": "古物分級指定及廢止審查辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0714",
+   "bucket": "renamed",
+   "query": "古蹟修復工程採購辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0170059",
+     "law": "古蹟歷史建築紀念建築及聚落建築群修復或再利用採購辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0715",
+   "bucket": "renamed",
+   "query": "古蹟及歷史建築重大災害應變處理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0170018",
+     "law": "古蹟歷史建築紀念建築及聚落建築群重大災害應變處理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0716",
+   "bucket": "renamed",
+   "query": "古蹟歷史建築及聚落修復或再利用採購辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0170059",
+     "law": "古蹟歷史建築紀念建築及聚落建築群修復或再利用採購辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0717",
+   "bucket": "renamed",
+   "query": "台北市大眾捷運系統旅客運送責任保險費率",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "K0120012",
+     "law": "大眾捷運系統旅客運送責任保險投保金額辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0718",
+   "bucket": "renamed",
+   "query": "各國駐華使領館及駐華外國機構聘僱外國人許可及管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "E0020007",
+     "law": "駐華使領館外國機構國際組織及其人員聘僱外國人許可及管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0719",
+   "bucket": "renamed",
+   "query": "各級法院辦理民事事件遠距訊問作業辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "B0010033",
+     "law": "各級法院辦理民事事件遠距審理及文書傳送辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0720",
+   "bucket": "renamed",
+   "query": "國史館提供政府資訊收費標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "A0020144",
+     "law": "國史館及所屬機關提供政府資訊收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0721",
+   "bucket": "renamed",
+   "query": "國家安全會議暨所屬機關訴願審議委員會審議規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "A0020035",
+     "law": "國家安全會議訴願審議委員會審議規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0722",
+   "bucket": "renamed",
+   "query": "國家文官培訓所組織條例",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "S0000009",
+     "law": "國家文官學院組織法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0723",
+   "bucket": "renamed",
+   "query": "國家運動訓練中心董事監事利益迴避範圍及違反處置準則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0120076",
+     "law": "國家運動訓練中心董事監事及執行長違反利益迴避處置準則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0724",
+   "bucket": "renamed",
+   "query": "國民中小學教學支援工作人員進用辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0070021",
+     "law": "國民中小學教學支援工作人員聘任辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0725",
+   "bucket": "renamed",
+   "query": "國民教育階段家長參與學校教育事務辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0070029",
+     "law": "國民教育階段家長參與教育事務辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0726",
+   "bucket": "renamed",
+   "query": "國民體能檢測實施辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0120013",
+     "law": "國民體適能檢測實施辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0727",
+   "bucket": "renamed",
+   "query": "國營及民營鐵路列車駕駛人員檢定委託辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "K0030019",
+     "law": "鐵路列車駕駛人員檢定委託辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0728",
+   "bucket": "renamed",
+   "query": "國立中央圖書館臺灣分館規費收費標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0020060",
+     "law": "國立臺灣圖書館規費收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0729",
+   "bucket": "renamed",
+   "query": "國立臺南社會教育館規費收費標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0020062",
+     "law": "國立臺南生活美學館場地使用規費收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0730",
+   "bucket": "renamed",
+   "query": "國立高級中等以下學校運動設施開放及管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0120027",
+     "law": "教育部主管學校運動設施設置開放管理及補助辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0731",
+   "bucket": "renamed",
+   "query": "國軍各軍事學校轉學退學開除學生賠償費用辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "F0110009",
+     "law": "軍事學校預備學校軍費生公費待遇津貼發給辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0732",
+   "bucket": "renamed",
+   "query": "國軍各軍事學校退學開除學生賠償費用辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "F0110009",
+     "law": "軍事學校預備學校軍費生公費待遇津貼發給辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0733",
+   "bucket": "renamed",
+   "query": "國軍退除役官兵就學補助及獎勵辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "F0150018",
+     "law": "國軍退除役官兵就學補助生活津貼及獎勵辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0734",
+   "bucket": "renamed",
+   "query": "國軍退除役官兵輔導委員會桃園縣榮民服務處編制表",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "F0150067",
+     "law": "國軍退除役官兵輔導委員會桃園市榮民服務處編制表"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0735",
+   "bucket": "renamed",
+   "query": "國防部空軍總司令部組織規程",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "F0000043",
+     "law": "國防部空軍司令部組織規程"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0736",
+   "bucket": "renamed",
+   "query": "土石流災害潛勢資料公開辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "M0110014",
+     "law": "土石流及大規模崩塌災害潛勢資料公開辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0737",
+   "bucket": "renamed",
+   "query": "在華外交機構與人員進口用品免稅規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "G0350008",
+     "law": "駐華外交機構及其人員進口用品免稅辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0738",
+   "bucket": "renamed",
+   "query": "地政士及不動產經紀業防制洗錢辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0060124",
+     "law": "地政士及不動產經紀業防制洗錢及打擊資恐辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0739",
+   "bucket": "renamed",
+   "query": "地方營、民營及專用鐵路監督實施辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "K0030006",
+     "law": "地方營民營及專用鐵路監督實施辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0740",
+   "bucket": "renamed",
+   "query": "報關行設置管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0350007",
+     "law": "報關業設置管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0741",
+   "bucket": "renamed",
+   "query": "外國船舶運業僱用中華民國船員許可辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "K0070024",
+     "law": "外國雇用人僱用中華民國船員許可辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0742",
+   "bucket": "renamed",
+   "query": "大學及分部設立標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0030034",
+     "law": "專科以上學校及其分校分部專科部技術型高級中等學校部設立變更停辦辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0743",
+   "bucket": "renamed",
+   "query": "大陸地區學歷檢覈及採認辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0010005",
+     "law": "大陸地區學歷採認辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0744",
+   "bucket": "renamed",
+   "query": "妨害國幣懲治暫行條例",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "C0000003",
+     "law": "妨害國幣懲治條例"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0745",
+   "bucket": "renamed",
+   "query": "客家語言能力認證考試規費收費標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0140003",
+     "law": "客語能力認證考試規費收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0746",
+   "bucket": "renamed",
+   "query": "審計部暨所屬機關訴願審議委員會組織規程",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "U0000006",
+     "law": "審計部訴願審議委員會組織規程"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0747",
+   "bucket": "renamed",
+   "query": "寵物業管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "M0060031",
+     "law": "特定寵物業管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0748",
+   "bucket": "renamed",
+   "query": "專任電氣技術人員及用電設備檢驗維護業管理規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0130018",
+     "law": "用電設備檢驗維護業管理規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0749",
+   "bucket": "renamed",
+   "query": "專利規費收費準則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0070012",
+     "law": "專利規費收費辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0750",
+   "bucket": "renamed",
+   "query": "專利電子申請實施辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "J0070037",
+     "law": "專利電子申請及電子送達實施辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0751",
+   "bucket": "renamed",
+   "query": "專科學校夜間部設立辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0030023",
+     "law": "專科學校進修部設立變更停辦辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0752",
+   "bucket": "renamed",
+   "query": "專科學校夜間部設置辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0030023",
+     "law": "專科學校進修部設立變更停辦辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0753",
+   "bucket": "renamed",
+   "query": "專科學校規程",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0040002",
+     "law": "專科學校法施行細則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0754",
+   "bucket": "renamed",
+   "query": "專門職業及技術人員特種考試保險從業人員考試規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "R0040030",
+     "law": "專門職業及技術人員普通考試保險代理人保險經紀人及保險公證人考試規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0755",
+   "bucket": "renamed",
+   "query": "專門職業及技術人員特種考試專責報關人員考試規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "R0040029",
+     "law": "專門職業及技術人員普通考試專責報關人員考試規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0756",
+   "bucket": "renamed",
+   "query": "專門職業及技術人員特種考試消防設備人員考試規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "R0040054",
+     "law": "專門職業及技術人員高等暨普通考試消防設備人員考試規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0757",
+   "bucket": "renamed",
+   "query": "專門職業及技術人員高等考試醫師牙醫師中醫師考試分試考試規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "R0040065",
+     "law": "專門職業及技術人員高等考試醫師牙醫師中醫師藥師考試分階段考試規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0758",
+   "bucket": "renamed",
+   "query": "少年法庭與司法警察機關處理少年事件聯繫辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "C0010016",
+     "law": "少年法院（庭）與司法警察機關處理少年事件聯繫辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0759",
+   "bucket": "renamed",
+   "query": "屋外供電線路裝置規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "J0030019",
+     "law": "輸配電設備裝置規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0760",
+   "bucket": "renamed",
+   "query": "工業廢棄物共同清除處理機構管理輔導辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "O0050034",
+     "law": "經濟部事業廢棄物共同清除處理機構管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0761",
+   "bucket": "renamed",
+   "query": "幼兒園教保服務實施準則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0070047",
+     "law": "幼兒教保及照顧服務實施準則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0762",
+   "bucket": "renamed",
+   "query": "廣播電視及電影業務行政規費收費標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "P0050032",
+     "law": "廣播電視出版及電影業務行政規費收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0763",
+   "bucket": "renamed",
+   "query": "後天免疫缺乏症候群防治條例",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "L0050004",
+     "law": "人類免疫缺乏病毒傳染防治及感染者權益保障條例"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0764",
+   "bucket": "renamed",
+   "query": "從事農業工作農民認定標準及資格審查辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "M0090017",
+     "law": "從事農業工作農民申請參加農民健康保險認定標準及資格審查辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0765",
+   "bucket": "renamed",
+   "query": "性侵害犯罪加害人身心治療及輔導教育辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0080083",
+     "law": "性侵害犯罪加害人身心治療輔導及教育辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0766",
+   "bucket": "renamed",
+   "query": "性別工作平等法施行細則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "N0030015",
+     "law": "性別平等工作法施行細則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0767",
+   "bucket": "renamed",
+   "query": "懲戒案件文書使用電信傳真或其他科技設備作業辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "A0030318",
+     "law": "懲戒法院訴訟文書使用科技設備傳送辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0768",
+   "bucket": "renamed",
+   "query": "戒菸諮詢服務機構獎勵辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "L0070023",
+     "law": "戒菸服務補助辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0769",
+   "bucket": "renamed",
+   "query": "投資型保險商品管理規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0390048",
+     "law": "投資型保險投資管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0770",
+   "bucket": "renamed",
+   "query": "改造或汰換旅宿業醫療社會福利機構學校燃油鍋爐補助辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "O0020109",
+     "law": "改造或汰換鍋爐補助辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0771",
+   "bucket": "renamed",
+   "query": "政風機構人員設置條例施行細則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "I0070002",
+     "law": "政風機構人員設置管理條例施行細則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0772",
+   "bucket": "renamed",
+   "query": "教育研究用品進口辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0020024",
+     "law": "教育研究用品進口免稅辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0773",
+   "bucket": "renamed",
+   "query": "教育部委託或輔導補助民間機構訂定運動產業人才職能基準辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0120079",
+     "law": "運動部委託或輔導補助民間機構訂定運動產業人才職能基準辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0774",
+   "bucket": "renamed",
+   "query": "旅客及車、船、航空器人員攜帶或經郵遞動植物檢疫物檢疫作業辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "M0130009",
+     "law": "旅客及服務於車船航空器人員攜帶動植物檢疫物檢疫作業辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0775",
+   "bucket": "renamed",
+   "query": "智慧財產法院特約通譯約聘辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "A0030217",
+     "law": "法院特約通譯約聘辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0776",
+   "bucket": "renamed",
+   "query": "會計師懲戒委員會暨懲戒覆審委員會組織規程",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0300020",
+     "law": "會計師懲戒委員會與懲戒覆審委員會組織及審議規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0777",
+   "bucket": "renamed",
+   "query": "有價證券交易所得計入個人基本所得額查核辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0340117",
+     "law": "個人有價證券交易所得或損失查核辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0778",
+   "bucket": "renamed",
+   "query": "有線電視審議委員會審議規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "P0010003",
+     "law": "有線廣播電視審議委員會審議規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0779",
+   "bucket": "renamed",
+   "query": "林務發展暨造林基金收支保管及運用辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "M0040031",
+     "law": "林務發展及造林基金收支保管及運用辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0780",
+   "bucket": "renamed",
+   "query": "核子事故分類與應變及通報辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "J0160050",
+     "law": "核子事故分類通報及應變辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0781",
+   "bucket": "renamed",
+   "query": "機械器具安全防護標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "N0060034",
+     "law": "機械設備器具安全標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0782",
+   "bucket": "renamed",
+   "query": "機關或雇主推動員工帶薪學習制度獎勵辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0080056",
+     "law": "中央政府推動建立員工學習制度獎勵辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0783",
+   "bucket": "renamed",
+   "query": "歷史建築登錄廢止審查及輔助辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0170021",
+     "law": "歷史建築紀念建築登錄廢止審查及輔助辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0784",
+   "bucket": "renamed",
+   "query": "殘留農藥安全容許量標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "L0040083",
+     "law": "農藥殘留容許量標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0785",
+   "bucket": "renamed",
+   "query": "殘障福利法施行細則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0050047",
+     "law": "身心障礙者權益保障法施行細則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0786",
+   "bucket": "renamed",
+   "query": "毒性化學物質危害預防及應變計畫作業辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "O0060035",
+     "law": "毒性及關注化學物質危害預防及應變計畫作業辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0787",
+   "bucket": "renamed",
+   "query": "毒性化學物質災害事故應變車輛管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "O0060045",
+     "law": "毒性及關注化學物質災害事故應變車輛管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0788",
+   "bucket": "renamed",
+   "query": "毒性化學物質運作獎勵辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "O0060016",
+     "law": "毒性及關注化學物質運作獎勵辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0789",
+   "bucket": "renamed",
+   "query": "民用氣象測站管理及氣象資料申請辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "K0100001",
+     "law": "專用觀測站認可辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0790",
+   "bucket": "renamed",
+   "query": "民用航空器適航檢定給證規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "K0090010",
+     "law": "航空產品與其各項裝備及零組件適航維修管理規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0791",
+   "bucket": "renamed",
+   "query": "民間參與教育設施及運動設施接管營運辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0010010",
+     "law": "民間參與教育設施接管營運辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0792",
+   "bucket": "renamed",
+   "query": "民間參與文化設施接管營運辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0170064",
+     "law": "民間參與文化及影視音設施接管營運辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0793",
+   "bucket": "renamed",
+   "query": "水災災區交通搶通或公共設施重建簡化行政程序辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0110082",
+     "law": "水災受災地區交通搶通或公共設施重建簡化行政程序辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0794",
+   "bucket": "renamed",
+   "query": "水災災區民眾安置或重建簡化行政程序辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "J0110079",
+     "law": "水災受災地區民眾安置或重建簡化行政程序辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0795",
+   "bucket": "renamed",
+   "query": "汽車駕駛人及前座乘客繫安全帶實施及宣導辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "K0040037",
+     "law": "汽車駕駛人及乘客繫安全帶實施及宣導辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0796",
+   "bucket": "renamed",
+   "query": "法務部司法官訓練所司法官訓練規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "I0010008",
+     "law": "法務部司法官學院司法官訓練規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0797",
+   "bucket": "renamed",
+   "query": "法務部監所作業基金收支保管及運用辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "I0040034",
+     "law": "法務部矯正機關作業基金收支保管及運用辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0798",
+   "bucket": "renamed",
+   "query": "法庭錄音及其利用保存辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "A0020090",
+     "law": "法庭錄音錄影及其利用保存辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0799",
+   "bucket": "renamed",
+   "query": "海洋棄置及海上焚化管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "O0040037",
+     "law": "海洋棄置許可管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0800",
+   "bucket": "renamed",
+   "query": "海軍總司令部組織規程",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "F0000042",
+     "law": "國防部海軍司令部組織規程"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0801",
+   "bucket": "renamed",
+   "query": "海關管理貨櫃辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0350026",
+     "law": "海關管理貨櫃集散站辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0802",
+   "bucket": "renamed",
+   "query": "溫室氣體排放量盤查登錄管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "O0020102",
+     "law": "溫室氣體排放量盤查登錄及查驗管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0803",
+   "bucket": "renamed",
+   "query": "營利事業所得稅結算申報查核準則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0340051",
+     "law": "營利事業所得稅查核準則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0804",
+   "bucket": "renamed",
+   "query": "營利性野生動物飼養繁殖管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "M0120004",
+     "law": "營利性野生動物飼養繁殖買賣加工管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0805",
+   "bucket": "renamed",
+   "query": "特殊境遇婦女家庭扶助條例",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0050075",
+     "law": "特殊境遇家庭扶助條例"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0806",
+   "bucket": "renamed",
+   "query": "特種考試取才困難高科技或稀少性技術人員考試辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "R0030082",
+     "law": "公務人員特種考試取才困難高科技或稀少性技術人員考試辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0807",
+   "bucket": "renamed",
+   "query": "特種考試警察人員考試規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "R0030013",
+     "law": "公務人員特種考試警察人員考試規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0808",
+   "bucket": "renamed",
+   "query": "犬貓及偶蹄類動物進出澎湖地區檢查規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "M0130030",
+     "law": "偶蹄類動物進出澎湖地區檢查規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0809",
+   "bucket": "renamed",
+   "query": "現役軍人子女就讀中等以上學校減免學費辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0020015",
+     "law": "現役軍人子女就讀中等以上學校學費減免辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0810",
+   "bucket": "renamed",
+   "query": "現役軍人子女就讀中等以上學校減免學雜費辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0020015",
+     "law": "現役軍人子女就讀中等以上學校學費減免辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0811",
+   "bucket": "renamed",
+   "query": "監察院訴願審議委員會審議規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "A0020117",
+     "law": "監察院暨所屬機關訴願審議委員會審議規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0812",
+   "bucket": "renamed",
+   "query": "監獄受刑人作業慰問金發給辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "I0040047",
+     "law": "受刑人及被告補償金發給辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0813",
+   "bucket": "renamed",
+   "query": "直轄市縣市消防機關消防指揮及救災人員遴用標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0120036",
+     "law": "各級消防機關（構）人員遴用標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0814",
+   "bucket": "renamed",
+   "query": "研發替代役員額申請案件規費收費標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0040040",
+     "law": "研發及產業訓儲替代役員額申請案件規費收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0815",
+   "bucket": "renamed",
+   "query": "研發替代役甄選訓練服役實施辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0040036",
+     "law": "研發及產業訓儲替代役甄選訓練服役實施辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0816",
+   "bucket": "renamed",
+   "query": "研發替代役研究發展費繳納標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0040037",
+     "law": "研發替代役研究發展費及產業訓儲替代役產業訓儲費繳納標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0817",
+   "bucket": "renamed",
+   "query": "礦場勞工衛生設施標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "N0060003",
+     "law": "礦場職業衛生設施標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0818",
+   "bucket": "renamed",
+   "query": "礦災災害救助種類及標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "J0020049",
+     "law": "礦災災害救助種類與方式及標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0819",
+   "bucket": "renamed",
+   "query": "社會福利機構執行身心障礙者監護職務管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0050157",
+     "law": "社會福利機構及法人執行身心障礙者監護或輔助職務管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0820",
+   "bucket": "renamed",
+   "query": "私立學校投資基金管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0020046",
+     "law": "私立學校賸餘款投資及流用辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0821",
+   "bucket": "renamed",
+   "query": "科技部南部科學園區管理局組織法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0000142",
+     "law": "國家科學及技術委員會南部科學園區管理局組織法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0822",
+   "bucket": "renamed",
+   "query": "科技部南部科學工業園區管理局處務規程",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0010062",
+     "law": "國家科學及技術委員會南部科學園區管理局處務規程"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0823",
+   "bucket": "renamed",
+   "query": "科技部新竹科學園區管理局組織法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0000140",
+     "law": "國家科學及技術委員會新竹科學園區管理局組織法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0824",
+   "bucket": "renamed",
+   "query": "科技部新竹科學工業園區管理局清潔隊設置辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0160014",
+     "law": "國家科學及技術委員會新竹科學園區管理局清潔隊設置辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0825",
+   "bucket": "renamed",
+   "query": "移民業務機構及其從業人員輔導管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0080134",
+     "law": "移民業務機構輔導管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0826",
+   "bucket": "renamed",
+   "query": "種苗業者設備及標示準則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "M0030026",
+     "law": "種苗業者應具備條件及設備標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0827",
+   "bucket": "renamed",
+   "query": "童工女工禁止從事危險性或有害性工作認定標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "N0060032",
+     "law": "妊娠與分娩後女性及未滿十八歲勞工禁止從事危險性或有害性工作認定標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0828",
+   "bucket": "renamed",
+   "query": "筵席及娛樂稅法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "G0340106",
+     "law": "娛樂稅法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0829",
+   "bucket": "renamed",
+   "query": "管制藥品管理局製藥工廠作業基金收支保管及運用辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "L0010013",
+     "law": "管制藥品製藥工廠作業基金收支保管及運用辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0830",
+   "bucket": "renamed",
+   "query": "精神疾病嚴重病人緊急安置及強制住院許可辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "L0020139",
+     "law": "精神疾病嚴重病人緊急安置辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0831",
+   "bucket": "renamed",
+   "query": "經濟發展基金收支保管及運用辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "J0010045",
+     "law": "經濟作業基金收支保管及運用辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0832",
+   "bucket": "renamed",
+   "query": "綜合商品零售業個人資料檔案安全維護管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "J0080062",
+     "law": "零售業個人資料檔案安全維護管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0833",
+   "bucket": "renamed",
+   "query": "義務監視員遴聘及違規舉發程序管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0100043",
+     "law": "度量衡器義務監視員遴聘及違規舉發程序管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0834",
+   "bucket": "renamed",
+   "query": "自來水管承裝商登記規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0110059",
+     "law": "自來水管承裝商管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0835",
+   "bucket": "renamed",
+   "query": "臺灣地區山地族籍學生升學優待辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0020031",
+     "law": "原住民學生升學保障及原住民公費留學辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0836",
+   "bucket": "renamed",
+   "query": "臺灣地區漁船海難救護互助辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "M0050035",
+     "law": "漁船海難救護互助辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0837",
+   "bucket": "renamed",
+   "query": "臺灣省農田水利會會長及會務委員考核獎懲辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "M0100003",
+     "law": "農田水利會會長及會務委員考核獎懲辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0838",
+   "bucket": "renamed",
+   "query": "臺灣高等法院民事訴訟、強制執行費用提高徵收額數標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "B0010054",
+     "law": "臺灣高等法院民事訴訟與非訟事件及強制執行費用提高徵收額數標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0839",
+   "bucket": "renamed",
+   "query": "臺閩地區勞工保險保險爭議事項審議辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "N0050012",
+     "law": "勞工保險爭議事項審議辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0840",
+   "bucket": "renamed",
+   "query": "航空器維修廠所設立檢定規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "K0090011",
+     "law": "航空產品與其各項裝備及零組件維修廠設立檢定管理規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0841",
+   "bucket": "renamed",
+   "query": "航空噪音防制經費分配及使用辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "K0090038",
+     "law": "國營航空站噪音補償金分配及使用辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0842",
+   "bucket": "renamed",
+   "query": "著作權仲介團體條例",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0070019",
+     "law": "著作權集體管理團體條例"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0843",
+   "bucket": "renamed",
+   "query": "藥師從事中藥製劑之製造、供應及調劑須修習中藥課程標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "L0020018",
+     "law": "藥師從事中藥製劑製造供應及調劑應修習中藥課程標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0844",
+   "bucket": "renamed",
+   "query": "藥物及化粧品廣告審查費收費標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "L0030043",
+     "law": "藥品廣告審查費收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0845",
+   "bucket": "renamed",
+   "query": "藥物及化粧品廣告申請案件收費標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "L0030043",
+     "law": "藥品廣告審查費收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0846",
+   "bucket": "renamed",
+   "query": "行政院主計處提供統計資訊收費標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "T0050002",
+     "law": "行政院主計總處提供普（抽）查資料處理及場地設備使用收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0847",
+   "bucket": "renamed",
+   "query": "行政院公平交易委員會委員會議資訊保密及公開辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "J0150008",
+     "law": "公平交易委員會委員會議資訊保密及公開辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0848",
+   "bucket": "renamed",
+   "query": "行政院原住民委員會專業獎章頒給辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0130005",
+     "law": "原住民族委員會獎章頒給辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0849",
+   "bucket": "renamed",
+   "query": "行政院原子能委員會場地設施使用規費收費標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0160081",
+     "law": "核能安全委員會場地設施使用規費收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0850",
+   "bucket": "renamed",
+   "query": "行政院環境保護署資源回收費率審議委員會設置辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "O0000013",
+     "law": "環境部資源回收費率審議委員會設置辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0851",
+   "bucket": "renamed",
+   "query": "行政院農業委員會及所屬各機關公務人員交代條例施行細則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "M0010033",
+     "law": "農業部及所屬各機關（構）公務人員交代條例施行細則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0852",
+   "bucket": "renamed",
+   "query": "行政院農業委員會執行疫後強化農業韌性及農漁民協助措施辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "M0020038",
+     "law": "農業部執行疫後強化農業韌性及農漁民協助措施辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0853",
+   "bucket": "renamed",
+   "query": "行政院農業委員會林業試驗所受託試驗與鑑定收費標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "M0040046",
+     "law": "農業部林業試驗所受託試驗及鑑定收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0854",
+   "bucket": "renamed",
+   "query": "行政院農業委員會農業藥物毒物試驗所技術服務收費標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "M0140041",
+     "law": "農業部農業藥物試驗所技術服務收費標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0855",
+   "bucket": "renamed",
+   "query": "行政院金融監督管理委員會檢查局編制表",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0300112",
+     "law": "金融監督管理委員會檢查局編制表"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0856",
+   "bucket": "renamed",
+   "query": "行政院金融監督管理委員會證券期貨局編制表",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "G0300111",
+     "law": "金融監督管理委員會證券期貨局編制表"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0857",
+   "bucket": "renamed",
+   "query": "行政院金融重建基金處理農會漁會信用部賠付專款運用及管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "M0070061",
+     "law": "農會漁會信用部賠付專款運用及管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0858",
+   "bucket": "renamed",
+   "query": "警察人員管理條例施行細則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "S0020006",
+     "law": "警察人員人事條例施行細則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0859",
+   "bucket": "renamed",
+   "query": "警察機關武器彈藥調配保管辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0080043",
+     "law": "各級警察機關學校武器彈藥統籌調配辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0860",
+   "bucket": "renamed",
+   "query": "警察消防海巡空勤人員及協勤民力安全基金設置管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0080167",
+     "law": "警察消防海巡移民空勤人員及協勤民力安全基金設置管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0861",
+   "bucket": "renamed",
+   "query": "警察消防海巡空勤人員及協勤民力安全金發給辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0080185",
+     "law": "警察消防海巡移民空勤人員及協勤民力安全金發給辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0862",
+   "bucket": "renamed",
+   "query": "貨櫃集散站管理辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "K0080004",
+     "law": "貨櫃集散站經營業管理規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0863",
+   "bucket": "renamed",
+   "query": "身心障礙福利服務專業人員遴用訓練及培訓辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0050061",
+     "law": "身心障礙者服務人員資格訓練及管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0864",
+   "bucket": "renamed",
+   "query": "身心障礙福利服務機構設施標準",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0050048",
+     "law": "身心障礙福利機構設置標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0865",
+   "bucket": "renamed",
+   "query": "身心障礙福利服務機構設立及獎助辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0050059",
+     "law": "私立身心障礙福利機構設立許可及管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0866",
+   "bucket": "renamed",
+   "query": "身心障礙者購買或承租商店攤販國民住宅停車位低利貸款辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "D0050067",
+     "law": "身心障礙者購買或承租商店攤販低利貸款或租金補貼辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0867",
+   "bucket": "renamed",
+   "query": "身心障礙者醫療及輔助器具費用補助辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "D0050060",
+     "law": "身心障礙者輔具費用補助辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0868",
+   "bucket": "renamed",
+   "query": "軍人自衛私槍管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "F0090014",
+     "law": "現役軍人自衛槍枝管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0869",
+   "bucket": "renamed",
+   "query": "軍用物品進口免稅規則",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0350022",
+     "law": "軍用物品進口免稅辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0870",
+   "bucket": "renamed",
+   "query": "轉讓持有毒品加重其刑之數量標準",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "I0030028",
+     "law": "轉讓毒品加重其刑之數量標準"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0871",
+   "bucket": "renamed",
+   "query": "農業廢棄物共同清除處理機構管理輔導辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "M0060049",
+     "law": "農業廢棄物共同清除處理機構管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0872",
+   "bucket": "renamed",
+   "query": "農藥使用管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "M0140018",
+     "law": "農藥使用及農產品農藥殘留抽驗辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0873",
+   "bucket": "renamed",
+   "query": "銀行存款準備金調整及查核辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "G0430002",
+     "law": "金融機構存款及其他各種負債準備金調整及查核辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0874",
+   "bucket": "renamed",
+   "query": "鐵路附屬事業經營規則",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "K0030007",
+     "law": "國營鐵路機構辦理附屬事業規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0875",
+   "bucket": "renamed",
+   "query": "離島開業醫事機構獎勵及輔導辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "L0020080",
+     "law": "離島開業醫事機構與長期照顧服務機構獎勵及輔導辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0876",
+   "bucket": "renamed",
+   "query": "電信事業處理有關機關查詢電信通話紀錄實施辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "K0060030",
+     "law": "電信事業處理有關機關查詢電信通信紀錄實施辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0877",
+   "bucket": "renamed",
+   "query": "電信管制器材審驗及認證辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "K0060036",
+     "law": "電信管制射頻器材審驗辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0878",
+   "bucket": "renamed",
+   "query": "電信終端設備技術規範及審驗辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "K0060033",
+     "law": "電信終端設備審驗辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0879",
+   "bucket": "renamed",
+   "query": "電子支付機構管理條例第二十一條第六項授權規定事項辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "G0380242",
+     "law": "電子支付機構管理條例第二十二條第五項授權規定事項辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0880",
+   "bucket": "renamed",
+   "query": "革命抗戰功勳子女就學優待辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0020016",
+     "law": "軍公教遺族就學費用優待條例"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0881",
+   "bucket": "renamed",
+   "query": "風力發電離岸系統示範獎勵辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0130063",
+     "law": "離岸風力發電示範獎勵辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0882",
+   "bucket": "renamed",
+   "query": "飛航及管制辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "K0090014",
+     "law": "飛航規則"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0883",
+   "bucket": "renamed",
+   "query": "飛航安全調查委員會組織法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "K0000146",
+     "law": "國家運輸安全調查委員會組織法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0884",
+   "bucket": "renamed",
+   "query": "食品安全衛生管理法沒收沒入追徵追繳違法所得推估計價辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "L0040139",
+     "law": "食品安全衛生管理法沒收沒入追徵追繳違法所得估算及推估計價辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0885",
+   "bucket": "renamed",
+   "query": "食品暨相關產品查驗登記暨許可證管理辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "L0040016",
+     "law": "食品與相關產品查驗登記及許可文件管理辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0886",
+   "bucket": "renamed",
+   "query": "高等法院以下各級法院及其分院檢察署主任檢察官職期調任辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "I0030035",
+     "law": "高等檢察署以下各級檢察署及其檢察分署主任檢察官職期調任辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0887",
+   "bucket": "renamed",
+   "query": "高等法院及其分院檢察署處務規程",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "I0010013",
+     "law": "高等檢察署及其檢察分署處務規程"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0888",
+   "bucket": "renamed",
+   "query": "高級中等以上學校學生助學貸款辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0020008",
+     "law": "高級中等以上學校學生就學貸款辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0889",
+   "bucket": "renamed",
+   "query": "高級中等學校學生申訴及再申訴評議委員會組織及運作辦法",
+   "split": "test",
+   "expected": [
+    {
+     "pcode": "H0000135",
+     "law": "高級中等以下學校學生申訴及再申訴評議委員會組織及運作辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0890",
+   "bucket": "renamed",
+   "query": "高級中等學校收取學生費用辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "H0060022",
+     "law": "高級中等學校向學生收取費用辦法"
+    }
+   ]
+  },
+  {
+   "id": "kw-ren-0891",
+   "bucket": "renamed",
+   "query": "鼓勵民間業者赴有邦交國家投資補助辦法",
+   "split": "dev",
+   "expected": [
+    {
+     "pcode": "J0040013",
+     "law": "鼓勵業者赴有邦交國家投資補助辦法"
+    }
+   ]
   }
  ]
 }

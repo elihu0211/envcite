@@ -2,6 +2,7 @@
 
 import argparse
 import importlib.util
+import re
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -164,3 +165,29 @@ def test_whole_term_never_drops_a_hit_the_current_rule_lists() -> None:
     for hit in hits:
         if rules["列表規則"](hit):
             assert rules["候選 A：整詞命中放行"](hit)
+
+
+@pytest.mark.parametrize(
+    ("record", "old_name"),
+    [
+        (
+            "（原名稱：空氣污染防制法施行細則；新名稱：空氣污染防制法施行細則）",
+            "空氣污染防制法施行細則",
+        ),
+        ("民國九十年修正（原名稱:廢棄物清理法;新名稱:廢棄物清理法）", "廢棄物清理法"),
+    ],
+)
+def test_the_rename_pattern_extracts_the_old_name(record: str, old_name: str) -> None:
+    found = re.search(tool.RENAME_PATTERN, record)
+    assert found and found.group(1).strip() == old_name
+
+
+def test_a_record_without_a_new_name_is_not_a_rename() -> None:
+    assert re.search(tool.RENAME_PATTERN, "原名稱：某某辦法，其餘從略") is None
+
+
+def test_the_answer_of_a_renamed_item_is_its_law_and_of_a_definition_its_article() -> None:
+    renamed = {"bucket": "renamed", "expected": [{"pcode": "O0020001", "law": "某法"}]}
+    definition = {"bucket": "definition", "expected": [{"article": "O0020001-art-3"}]}
+    assert tool.answer_ids(renamed) == ["O0020001"]
+    assert tool.answer_ids(definition) == ["O0020001-art-3"]
