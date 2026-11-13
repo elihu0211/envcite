@@ -6,6 +6,27 @@ namespace EnvCite.Platform.Modules.Ontology;
 
 internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modules) : ILawCorpusService
 {
+    public async Task<AdminOutcome<PortalLawTreeResult>> TreeAsync(
+        ClaimsPrincipal user, string? jurisdiction, string? asOf, CancellationToken cancellationToken)
+    {
+        if (PortalTenant(user) is not { } identifier)
+            return AdminOutcome.Forbidden<PortalLawTreeResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
+
+        if (!modules.IsEnabled(identifier, ModuleKeys.LawCorpus))
+            return AdminOutcome.Forbidden<PortalLawTreeResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
+
+        return await tenants.InByIdentifierAsync(identifier, async scope =>
+        {
+            var gateway = scope.Get<OntologyGateway>();
+            var outcome = await gateway.ListLawsAsync(jurisdiction, asOf, cancellationToken);
+            if (!outcome.IsOk)
+                return new AdminOutcome<PortalLawTreeResult>(outcome.Status, default, outcome.Message, outcome.Code, outcome.Args);
+
+            var (laws, available) = outcome.Value;
+            return AdminOutcome.Ok(new PortalLawTreeResult(BuildTree(laws), available));
+        });
+    }
+
     public async Task<AdminOutcome<PortalLawCorpusResult>> BrowseAsync(
         ClaimsPrincipal user, string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken)
     {
@@ -34,6 +55,50 @@ internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modu
                 dto.DateDocument,
                 [.. articles.Value!.Select(a => new PortalLawArticle(a.Uri, a.Number))]));
         });
+    }
+
+    private static IReadOnlyList<PortalLawTreeNode> BuildTree(IReadOnlyList<LawSummaryDto> laws)
+    {
+        static string KeyOf(LawIdentifierDto id) => $"{id.Jurisdiction}:{id.IdScheme}:{id.LocalId}";
+
+        var childrenByParent = new Dictionary<string, List<LawSummaryDto>>(StringComparer.Ordinal);
+        var roots = new List<LawSummaryDto>();
+        var knownKeys = new HashSet<string>(laws.Select(l => KeyOf(l.Identifier)), StringComparer.Ordinal);
+
+        foreach (var law in laws)
+        {
+            if (law.ParentIdentifier is { } parent && knownKeys.Contains(KeyOf(parent)))
+            {
+                var pKey = KeyOf(parent);
+                if (!childrenByParent.TryGetValue(pKey, out var bucket))
+                {
+                    bucket = [];
+                    childrenByParent[pKey] = bucket;
+                }
+                bucket.Add(law);
+            }
+            else
+            {
+                roots.Add(law);
+            }
+        }
+
+        PortalLawTreeNode ToNode(LawSummaryDto item)
+        {
+            var kids = childrenByParent.TryGetValue(KeyOf(item.Identifier), out var list)
+                ? list.Select(ToNode).ToList()
+                : [];
+            return new PortalLawTreeNode(
+                item.Identifier.Jurisdiction,
+                item.Identifier.IdScheme,
+                item.Identifier.LocalId,
+                item.Title,
+                item.NormKind,
+                item.DateDocument,
+                kids);
+        }
+
+        return [.. roots.Select(ToNode)];
     }
 
     private static string? PortalTenant(ClaimsPrincipal user) =>

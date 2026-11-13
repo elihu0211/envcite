@@ -115,6 +115,48 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         )
 
     @errors.maps_errors
+    def ListLaws(
+        self, request: pb.ListLawsRequest, context: grpc.ServicerContext
+    ) -> pb.ListLawsResponse:
+        _log_call(context, "ListLaws", request.jurisdiction or "all")
+        v = errors.Validator()
+        v.date("as_of", request.as_of)
+        jurisdiction = jurisdiction_filter(self._store, request.jurisdiction, v)
+        v.check()
+
+        laws = self._store.list_laws(
+            as_of=request.as_of,
+            jurisdiction=jurisdiction,
+            timeout=remaining_seconds(context),
+        )
+        items: list[pb.LawSummary] = []
+        for item in laws:
+            parent = (
+                pb.LawIdentifier(
+                    jurisdiction=item.parent_jurisdiction,
+                    id_scheme=item.parent_id_scheme,
+                    local_id=item.parent_local_id,
+                )
+                if item.parent_jurisdiction and item.parent_id_scheme and item.parent_local_id
+                else None
+            )
+            items.append(
+                pb.LawSummary(
+                    identifier=pb.LawIdentifier(
+                        jurisdiction=item.jurisdiction,
+                        id_scheme=item.id_scheme,
+                        local_id=item.local_id,
+                    ),
+                    iri=item.iri,
+                    title=item.title,
+                    norm_kind=item.norm_kind,
+                    date_document=item.date_document,
+                    parent_identifier=parent,
+                )
+            )
+        return pb.ListLawsResponse(laws=items)
+
+    @errors.maps_errors
     def ListInvalidations(
         self, request: pb.ListInvalidationsRequest, context: grpc.ServicerContext
     ) -> pb.ListInvalidationsResponse:
