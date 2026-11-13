@@ -35,6 +35,8 @@ public sealed class SearchTests(PlatformFactory factory)
     [Theory]
     [InlineData("weak-match", 0)]
     [InlineData("fragment", 0)]
+    [InlineData("whole-term", 1)]
+    [InlineData("whole-term-without-lexical", 0)]
     [InlineData("semantic-only", 1)]
     public async Task OnlyHitsAboveTheRelevanceFloorAreReturned(string query, int expected)
     {

@@ -26,7 +26,7 @@ import random
 import re
 import sys
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -353,13 +353,40 @@ def doc_id(local_id: str, number: str) -> str:
     return f"{local_id}-art-{number}"
 
 
-def passes(hit: Any, coverage_min: float, lexical: float, semantic: float) -> bool:
-    sem = hit.semantic_similarity if hit.HasField("semantic_similarity") else 0.0
-    return (
-        hit.guidance_documents > 0
-        or sem >= semantic
-        or (hit.lexical_score >= lexical and hit.term_coverage >= coverage_min)
-    )
+def similarity(hit: Any) -> float:
+    return float(hit.semantic_similarity) if hit.HasField("semantic_similarity") else 0.0
+
+
+def rule_variants(args: argparse.Namespace) -> dict[str, Callable[[Any], bool]]:
+    """並列比較的列表規則：前兩個是現行行為，其餘是候選（只量、不改系統）。"""
+    lexical, semantic, coverage = args.lexical, args.semantic, args.coverage
+
+    def current(hit: Any, theta: float) -> bool:
+        return (
+            hit.guidance_documents > 0
+            or similarity(hit) >= semantic
+            or (hit.lexical_score >= lexical and hit.term_coverage >= theta)
+        )
+
+    def whole_term(hit: Any) -> bool:
+        """條文含全部查詢詞、而且字面臂有命中：不再被字面下界擋下。"""
+        return hit.term_coverage >= 1.0 and hit.lexical_score > 0
+
+    def semantic_needs_a_term(hit: Any) -> bool:
+        """只靠語意相似度進來、卻完全不含任何查詢詞的命中不列。"""
+        return (
+            hit.guidance_documents > 0
+            or (similarity(hit) >= semantic and hit.term_coverage > 0)
+            or (hit.lexical_score >= lexical and hit.term_coverage >= coverage)
+        )
+
+    return {
+        "consult 的規則（覆蓋率 0）": lambda h: current(h, 0.0),
+        "列表規則": lambda h: current(h, coverage),
+        "候選 A：整詞命中放行": lambda h: current(h, coverage) or whole_term(h),
+        "候選 B：語意命中要沾到字面": semantic_needs_a_term,
+        "候選 A＋B": lambda h: semantic_needs_a_term(h) or whole_term(h),
+    }
 
 
 def measure(doc: Mapping[str, Any], address: str, args: argparse.Namespace) -> dict[str, Any]:
@@ -376,11 +403,8 @@ def measure(doc: Mapping[str, Any], address: str, args: argparse.Namespace) -> d
         defs = [i for i in items if i["bucket"] == "definition"]
         neg = [i for i in items if i["bucket"] == "absent"]
         raw_hit = dict.fromkeys(ks, 0)
-        listed: dict[str, dict[str, float]] = {
-            "consult 的規則（覆蓋率 0）": defaultdict(float),
-            "列表規則": defaultdict(float),
-        }
-        thresholds = {"consult 的規則（覆蓋率 0）": 0.0, "列表規則": args.coverage}
+        rules = rule_variants(args)
+        listed: dict[str, dict[str, float]] = {name: defaultdict(float) for name in rules}
         for item in defs:
             want = {e["article"] for e in item["expected"]}
             raw = stub.SearchArticles(
@@ -393,8 +417,8 @@ def measure(doc: Mapping[str, Any], address: str, args: argparse.Namespace) -> d
                 pb.SearchArticlesRequest(query=item["query"], limit=10, include_guidance=True),
                 timeout=60,
             )
-            for name, theta in thresholds.items():
-                kept = [h for h in guided.hits if passes(h, theta, args.lexical, args.semantic)]
+            for name, rule in rules.items():
+                kept = [h for h in guided.hits if rule(h)]
                 ids = [doc_id(h.identifier.local_id, h.number) for h in kept]
                 acc = listed[name]
                 acc["found"] += bool(want & set(ids))
@@ -405,8 +429,8 @@ def measure(doc: Mapping[str, Any], address: str, args: argparse.Namespace) -> d
                 pb.SearchArticlesRequest(query=item["query"], limit=10, include_guidance=True),
                 timeout=60,
             )
-            for name, theta in thresholds.items():
-                if any(passes(h, theta, args.lexical, args.semantic) for h in guided.hits):
+            for name, rule in rules.items():
+                if any(rule(h) for h in guided.hits):
                     listed[name]["leak"] += 1
         n, m = len(defs), len(neg)
         out[split] = {

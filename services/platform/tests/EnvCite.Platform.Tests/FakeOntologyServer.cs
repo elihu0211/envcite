@@ -122,13 +122,15 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));
 
             // 分數是為了測相關性下界：預設的命中達標；weak-match 兩個分數都不到下界；semantic-only 只有語意達標；
-            // fragment 字面分數達標，但條文只含少數查詢詞；guidance-only 只有函釋帶出；many 回比預設多的達標命中。
+            // fragment 字面分數達標，但條文只含少數查詢詞；guidance-only 只有函釋帶出；whole-term 字面分數與語意都不到下界、但條文含全部查詢詞；many 回比預設多的達標命中。
             var (lexical, semantic, coverage, guidance) = request.Query switch
             {
-                "weak-match" => (0.3f, 0.5f, 1f, 0),
+                "weak-match" => (0.3f, 0.5f, 0.5f, 0),
                 "semantic-only" => (0f, 0.8f, 0f, 0),
                 "fragment" => (0.8f, 0f, 0.2f, 0),
                 "guidance-only" => (0f, 0f, 0f, 2),
+                "whole-term" => (0.3f, 0.5f, 1f, 0),
+                "whole-term-without-lexical" => (0f, 0.5f, 1f, 0),
                 _ => (0.8f, 0f, 1f, 0),
             };
             var response = new SearchArticlesResponse();
