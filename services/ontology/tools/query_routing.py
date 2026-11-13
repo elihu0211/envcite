@@ -585,6 +585,25 @@ def clean_key(raw: str) -> str:
     return "".join(ch for ch in key if ch.isprintable() and not ch.isspace())
 
 
+#: key 的格式（`ApiKeyFormat`）：`sk_live_` + 12 位十六進位 + `_` + 43 字元密鑰，共 64 字。
+KEY_MARKER = "sk_live_"
+KEY_LENGTH = 64
+
+
+def key_problem(key: str) -> str | None:
+    """送出前先在本地核對格式；不符就說哪裡不對（只說長度與開頭是否對，不印內容）。"""
+    import re
+
+    if re.fullmatch(r"sk_live_[0-9a-f]{12}_[A-Za-z0-9_-]{43}", key):
+        return None
+    starts = "是" if key.startswith(KEY_MARKER) else "否"
+    return (
+        f"key 格式不對：應是 {KEY_MARKER} 開頭、共 {KEY_LENGTH} 字；目前長度 {len(key)}，"
+        f"以 {KEY_MARKER} 開頭：{starts}。貼的可能不是 API key（例如租戶識別碼、密碼），"
+        "或沒貼完整；API key 只在簽發時顯示一次，弄丟要撤銷後重發"
+    )
+
+
 def explain_http_error(code: int) -> str:
     """一句話的錯誤說明，查詢全文與 key 都不出現在裡面。"""
     return f"線上回 HTTP {code}：" + HTTP_HINTS.get(code, "非預期的錯誤；查 platform 日誌")
@@ -754,6 +773,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not key:
             raise SystemExit("沒有收到 API key：貼上後要按 Enter（輸入時不會顯示）")
         print(f"收到 key，長度 {len(key)}（只印長度）", file=sys.stderr)
+        if problem := key_problem(key):
+            raise SystemExit(problem)
         meta = json.loads(args.meta.read_text(encoding="utf-8"))
         cases = [c for c in load_cases(args.queries, args.hits) if c["split"] == args.split]
         result = live_check(cases, meta["suffixes"], args.host, key, args.sample)
