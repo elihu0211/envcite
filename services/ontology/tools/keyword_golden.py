@@ -304,6 +304,113 @@ def terms_in_one_article(
     return bool(row and row[0])
 
 
+#: 新題每一類的題數。
+FRESH_PER_KIND = 300
+
+
+def corpus_text(conn: psycopg.Connection[Any], as_of: str) -> str:
+    """`as_of` 當日有效的全部條文全文，接成一個字串（供「全文都沒有」的字串查找）。"""
+    rows = conn.execute(
+        """
+        SELECT corpus.article_text(v.id)
+          FROM corpus.provision_version AS v
+          JOIN corpus.provision AS p ON p.id = v.provision_id AND p.provision_type = 'article'
+         WHERE v.superseded_at IS NULL AND v.force_period @> %(on)s::date
+        """,
+        {"on": as_of},
+    ).fetchall()
+    return "\n".join(str(t) for (t,) in rows)
+
+
+def hash_order(salt: str, items: Sequence[str]) -> list[str]:
+    """依雜湊排序：與題庫、語料的增減無關。"""
+    return sorted(items, key=lambda t: hashlib.sha256(f"{salt}\x1f{t}".encode()).hexdigest())
+
+
+def fresh_row(kind: str, query: str, answer: list[str], term: str | None = None) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "id": f"fresh:{kind}:{hashlib.sha256(query.encode()).hexdigest()[:10]}",
+        "kind": kind,
+        "cls": "term",
+        "split": "fresh",
+        "query": query,
+        "level": "article",
+        "answer": answer,
+    }
+    if term is not None:
+        row["term"] = term
+    return row
+
+
+def fresh(
+    conn: psycopg.Connection[Any], as_of: str, seen: set[str], per_kind: int = FRESH_PER_KIND
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """沒看過的新題，全由程式從語料產生，詞不與先前任何題庫重疊（`seen`）。
+
+    - `fresh_definition`：被定義、先前沒出過的詞；答案是定義它的條文。
+    - `fresh_partial`：另一批被定義的詞去掉最後一個字（使用者只打了前半），答案仍是定義
+      那個詞的條文。這是「部分詞形」的近似，不是真實使用者的簡稱。
+    - `fresh_absent`：兩個被定義的短詞（各 3 至 4 字）接在一起，全部現行條文全文都不含，
+      但兩半各自常見：正是「露天燃燒」那種片段命中的情形。
+    """
+    found = definitions(conn, as_of)
+    refs = {t: sorted({r["article"] for r in rs}) for t, rs in found.items()}
+    pool = hash_order(
+        "fresh", [t for t, a in refs.items() if t not in seen and len(a) <= MAX_DEFINERS]
+    )
+    definition_terms = pool[:per_kind]
+    partial_terms = [t for t in pool[per_kind:] if len(t) >= 5][:per_kind]
+    rows = [fresh_row("fresh_definition", t, refs[t], t) for t in definition_terms]
+    rows += [fresh_row("fresh_partial", t[:-1], refs[t], t) for t in partial_terms]
+
+    text = corpus_text(conn, as_of)
+    parts = hash_order("splice", [t for t in refs if 3 <= len(t) <= 4])
+    present = 0
+    absent: list[str] = []
+    for a, b in zip(parts[0::2], parts[1::2], strict=False):
+        query = a + b
+        if a == b or query in seen:
+            continue
+        if query in text:
+            present += 1
+            continue
+        absent.append(query)
+        if len(absent) == per_kind:
+            break
+    rows += [fresh_row("fresh_absent", q, []) for q in absent]
+    return rows, {"definition_pool": len(pool), "splice_present_dropped": present}
+
+
+def verify_fresh(
+    conn: psycopg.Connection[Any], rows: Sequence[Mapping[str, Any]], as_of: str, sample: int
+) -> list[str]:
+    """新題的核對：答案條文原文確有那個詞的定義行；無答案題的全文查找換成資料庫的 LIKE 再核一次。"""
+    problems: list[str] = []
+    found = definitions(conn, as_of)
+    for r in rows:
+        if r["kind"] in ("fresh_definition", "fresh_partial"):
+            term = r["term"]
+            if r["kind"] == "fresh_partial" and term[:-1] != r["query"]:
+                problems.append(f"{r['id']}：部分詞形不是去掉最後一字")
+            have = sorted({d["article"] for d in found.get(term, [])})
+            if have != r["answer"]:
+                problems.append(f"{r['id']}「{term}」：答案 {r['answer']} 與原文 {have} 不同")
+    absent = [r["query"] for r in rows if r["kind"] == "fresh_absent"]
+    for q in random.Random(11).sample(absent, min(sample, len(absent))):
+        hit = conn.execute(
+            """
+            SELECT 1 FROM corpus.provision_version AS v
+              JOIN corpus.provision AS p ON p.id = v.provision_id AND p.provision_type = 'article'
+             WHERE v.superseded_at IS NULL AND v.force_period @> %(on)s::date
+               AND corpus.article_text(v.id) LIKE '%%' || %(q)s || '%%' LIMIT 1
+            """,
+            {"on": as_of, "q": q},
+        ).fetchone()
+        if hit:
+            problems.append(f"無答案題「{q}」在條文裡找得到")
+    return problems
+
+
 def snapshots(conn: psycopg.Connection[Any]) -> list[dict[str, str]]:
     rows = conn.execute(
         "SELECT DISTINCT ON (feed) feed, data_date, encode(sha256, 'hex')"
@@ -674,6 +781,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     b = sub.add_parser("build")
     b.add_argument("--as-of", default=date.today().isoformat())
     b.add_argument("--seeds", help="逗號分隔的種子法規代碼；預設取既有題庫的期望條文所在的法規")
+    f = sub.add_parser("fresh", help="沒看過的新題（驗證已定案規則的外部效度）")
+    f.add_argument("--as-of", default=date.today().isoformat())
+    f.add_argument("--seen", type=Path, required=True, help="先前題庫出現過的詞與查詢（一行一個）")
+    f.add_argument("--per-kind", type=int, default=FRESH_PER_KIND)
     v = sub.add_parser("verify")
     v.add_argument("golden", type=Path)
     v.add_argument("--sample", type=int, default=30)
@@ -720,6 +831,18 @@ def main(argv: Sequence[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 0
+        if args.command == "fresh":
+            seen = set(args.seen.read_text(encoding="utf-8").split())
+            rows, stats = fresh(conn, args.as_of, seen, args.per_kind)
+            problems = verify_fresh(conn, rows, args.as_of, 40)
+            print(json.dumps(rows, ensure_ascii=False, indent=1))
+            by_kind: defaultdict[str, int] = defaultdict(int)
+            for r in rows:
+                by_kind[r["kind"]] += 1
+            print(f"題數：{dict(by_kind)}；{stats}；核對不符 {len(problems)}", file=sys.stderr)
+            for line in problems:
+                print("不符：" + line, file=sys.stderr)
+            return 1 if problems else 0
         doc = json.loads(args.golden.read_text(encoding="utf-8"))
         problems = verify(conn, doc, args.sample)
         for line in problems:

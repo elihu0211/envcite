@@ -1,0 +1,9979 @@
+[
+ {
+  "id": "fresh:fresh_definition:c3915f448b",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "使用時間",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "使用時間"
+ },
+ {
+  "id": "fresh:fresh_definition:b8cbed0f64",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "遠端隔離控制",
+  "level": "article",
+  "answer": [
+   "J0030018-art-749"
+  ],
+  "term": "遠端隔離控制"
+ },
+ {
+  "id": "fresh:fresh_definition:f77a94cca4",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "中古汽車",
+  "level": "article",
+  "answer": [
+   "G0340140-art-2"
+  ],
+  "term": "中古汽車"
+ },
+ {
+  "id": "fresh:fresh_definition:ca42c37559",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "觀光旅客",
+  "level": "article",
+  "answer": [
+   "K0110001-art-2"
+  ],
+  "term": "觀光旅客"
+ },
+ {
+  "id": "fresh:fresh_definition:ea56ed1318",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "行動通信網路",
+  "level": "article",
+  "answer": [
+   "K0060029-art-2",
+   "K0060089-art-3",
+   "K0060127-art-2",
+   "K0060157-art-2"
+  ],
+  "term": "行動通信網路"
+ },
+ {
+  "id": "fresh:fresh_definition:56c9358144",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "直接連結機制",
+  "level": "article",
+  "answer": [
+   "G0380245-art-2"
+  ],
+  "term": "直接連結機制"
+ },
+ {
+  "id": "fresh:fresh_definition:410c154b29",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "保存期限",
+  "level": "article",
+  "answer": [
+   "M0030047-art-2"
+  ],
+  "term": "保存期限"
+ },
+ {
+  "id": "fresh:fresh_definition:148c957762",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公用天然氣導管承裝業",
+  "level": "article",
+  "answer": [
+   "J0130045-art-3"
+  ],
+  "term": "公用天然氣導管承裝業"
+ },
+ {
+  "id": "fresh:fresh_definition:e91ce58d6d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "液貨區",
+  "level": "article",
+  "answer": [
+   "K0070035-art-4"
+  ],
+  "term": "液貨區"
+ },
+ {
+  "id": "fresh:fresh_definition:371d7e2a6f",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "單項使用範圍",
+  "level": "article",
+  "answer": [
+   "M0140025-art-2"
+  ],
+  "term": "單項使用範圍"
+ },
+ {
+  "id": "fresh:fresh_definition:5a7a3021b1",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "民事事務",
+  "level": "article",
+  "answer": [
+   "A0030179-art-2"
+  ],
+  "term": "民事事務"
+ },
+ {
+  "id": "fresh:fresh_definition:1baca39834",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "可調式斷路器",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6"
+  ],
+  "term": "可調式斷路器"
+ },
+ {
+  "id": "fresh:fresh_definition:182600172c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "事業單位",
+  "level": "article",
+  "answer": [
+   "N0030001-art-2",
+   "N0060001-art-2"
+  ],
+  "term": "事業單位"
+ },
+ {
+  "id": "fresh:fresh_definition:5713b6d0ba",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "屋外電信管線設施",
+  "level": "article",
+  "answer": [
+   "K0060040-art-3",
+   "K0060159-art-3"
+  ],
+  "term": "屋外電信管線設施"
+ },
+ {
+  "id": "fresh:fresh_definition:60da1a6206",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "農業企業機構",
+  "level": "article",
+  "answer": [
+   "M0020001-art-3",
+   "M0030070-art-3"
+  ],
+  "term": "農業企業機構"
+ },
+ {
+  "id": "fresh:fresh_definition:56595760b7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "多用途支付使用",
+  "level": "article",
+  "answer": [
+   "G0380237-art-3"
+  ],
+  "term": "多用途支付使用"
+ },
+ {
+  "id": "fresh:fresh_definition:bba9b1d0f2",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "產學合作計畫",
+  "level": "article",
+  "answer": [
+   "L0010050-art-2",
+   "M0080001-art-3",
+   "N0010022-art-2"
+  ],
+  "term": "產學合作計畫"
+ },
+ {
+  "id": "fresh:fresh_definition:39543afe86",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "印刷物",
+  "level": "article",
+  "answer": [
+   "K0050001-art-4"
+  ],
+  "term": "印刷物"
+ },
+ {
+  "id": "fresh:fresh_definition:f73d149169",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "研究法官",
+  "level": "article",
+  "answer": [
+   "A0020165-art-2"
+  ],
+  "term": "研究法官"
+ },
+ {
+  "id": "fresh:fresh_definition:21471b28f8",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "租稅協定",
+  "level": "article",
+  "answer": [
+   "G0340148-art-3"
+  ],
+  "term": "租稅協定"
+ },
+ {
+  "id": "fresh:fresh_definition:60a6b27db5",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電影片映演業",
+  "level": "article",
+  "answer": [
+   "P0040002-art-3"
+  ],
+  "term": "電影片映演業"
+ },
+ {
+  "id": "fresh:fresh_definition:5721fb2966",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "空調系統器具",
+  "level": "article",
+  "answer": [
+   "J0030059-art-3"
+  ],
+  "term": "空調系統器具"
+ },
+ {
+  "id": "fresh:fresh_definition:a5edf01838",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "客家人",
+  "level": "article",
+  "answer": [
+   "D0140005-art-2"
+  ],
+  "term": "客家人"
+ },
+ {
+  "id": "fresh:fresh_definition:c2cc7a0c84",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飛航教師",
+  "level": "article",
+  "answer": [
+   "K0090008-art-2"
+  ],
+  "term": "飛航教師"
+ },
+ {
+  "id": "fresh:fresh_definition:291839db63",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公路經營業",
+  "level": "article",
+  "answer": [
+   "K0040001-art-2"
+  ],
+  "term": "公路經營業"
+ },
+ {
+  "id": "fresh:fresh_definition:2095e93854",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "營運單位",
+  "level": "article",
+  "answer": [
+   "K0040047-art-2"
+  ],
+  "term": "營運單位"
+ },
+ {
+  "id": "fresh:fresh_definition:ce104c7c5b",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "位置報告點",
+  "level": "article",
+  "answer": [
+   "K0090014-art-2"
+  ],
+  "term": "位置報告點"
+ },
+ {
+  "id": "fresh:fresh_definition:a9a1255c75",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "招牌廣告燈殼",
+  "level": "article",
+  "answer": [
+   "J0030018-art-712"
+  ],
+  "term": "招牌廣告燈殼"
+ },
+ {
+  "id": "fresh:fresh_definition:44dca6a07b",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "衛星通信業務",
+  "level": "article",
+  "answer": [
+   "K0060046-art-2"
+  ],
+  "term": "衛星通信業務"
+ },
+ {
+  "id": "fresh:fresh_definition:30828bf7d6",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "粉末填充「q」",
+  "level": "article",
+  "answer": [
+   "J0030018-art-466"
+  ],
+  "term": "粉末填充「q」"
+ },
+ {
+  "id": "fresh:fresh_definition:d8691a5005",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "海洋廢棄物",
+  "level": "article",
+  "answer": [
+   "O0040026-art-4"
+  ],
+  "term": "海洋廢棄物"
+ },
+ {
+  "id": "fresh:fresh_definition:fb7d242fb3",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "載波雜訊比",
+  "level": "article",
+  "answer": [
+   "K0060028-art-2"
+  ],
+  "term": "載波雜訊比"
+ },
+ {
+  "id": "fresh:fresh_definition:12a316561a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "年化收益率",
+  "level": "article",
+  "answer": [
+   "G0390095-art-2"
+  ],
+  "term": "年化收益率"
+ },
+ {
+  "id": "fresh:fresh_definition:cc1b2c6290",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "客貨兩用車",
+  "level": "article",
+  "answer": [
+   "K0040013-art-2"
+  ],
+  "term": "客貨兩用車"
+ },
+ {
+  "id": "fresh:fresh_definition:0efea7db1c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外國有限合夥",
+  "level": "article",
+  "answer": [
+   "J0080051-art-4"
+  ],
+  "term": "外國有限合夥"
+ },
+ {
+  "id": "fresh:fresh_definition:527927d536",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "土地開發行為",
+  "level": "article",
+  "answer": [
+   "J0020052-art-3"
+  ],
+  "term": "土地開發行為"
+ },
+ {
+  "id": "fresh:fresh_definition:20d72d9764",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "淨空高度",
+  "level": "article",
+  "answer": [
+   "K0030001-art-2"
+  ],
+  "term": "淨空高度"
+ },
+ {
+  "id": "fresh:fresh_definition:debf17c700",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "研究機構",
+  "level": "article",
+  "answer": [
+   "J0080061-art-3",
+   "M0080013-art-2"
+  ],
+  "term": "研究機構"
+ },
+ {
+  "id": "fresh:fresh_definition:8c952af6ef",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "通信費",
+  "level": "article",
+  "answer": [
+   "K0060029-art-2",
+   "K0060157-art-2"
+  ],
+  "term": "通信費"
+ },
+ {
+  "id": "fresh:fresh_definition:a21fefd4fb",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "帳務紀錄",
+  "level": "article",
+  "answer": [
+   "K0060125-art-2"
+  ],
+  "term": "帳務紀錄"
+ },
+ {
+  "id": "fresh:fresh_definition:55a9e01da2",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "臺灣地區無戶籍國民",
+  "level": "article",
+  "answer": [
+   "D0080132-art-3"
+  ],
+  "term": "臺灣地區無戶籍國民"
+ },
+ {
+  "id": "fresh:fresh_definition:2b8de1738c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "加班費",
+  "level": "article",
+  "answer": [
+   "K0070049-art-2"
+  ],
+  "term": "加班費"
+ },
+ {
+  "id": "fresh:fresh_definition:304e7931cc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "珍貴稀有野生動物",
+  "level": "article",
+  "answer": [
+   "M0120001-art-3"
+  ],
+  "term": "珍貴稀有野生動物"
+ },
+ {
+  "id": "fresh:fresh_definition:71bb985448",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "專業人員",
+  "level": "article",
+  "answer": [
+   "D0070149-art-2",
+   "H0120092-art-2"
+  ],
+  "term": "專業人員"
+ },
+ {
+  "id": "fresh:fresh_definition:d4ebb5ec6a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "農業推廣機關",
+  "level": "article",
+  "answer": [
+   "M0090024-art-3"
+  ],
+  "term": "農業推廣機關"
+ },
+ {
+  "id": "fresh:fresh_definition:63c30e9f86",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "移轉訂價",
+  "level": "article",
+  "answer": [
+   "G0340019-art-4"
+  ],
+  "term": "移轉訂價"
+ },
+ {
+  "id": "fresh:fresh_definition:79013a26d6",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "委驗機構",
+  "level": "article",
+  "answer": [
+   "L0030044-art-3"
+  ],
+  "term": "委驗機構"
+ },
+ {
+  "id": "fresh:fresh_definition:fef324d816",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "有效公斤",
+  "level": "article",
+  "answer": [
+   "J0160036-art-2"
+  ],
+  "term": "有效公斤"
+ },
+ {
+  "id": "fresh:fresh_definition:381091b13d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "日間照顧",
+  "level": "article",
+  "answer": [
+   "L0070043-art-3"
+  ],
+  "term": "日間照顧"
+ },
+ {
+  "id": "fresh:fresh_definition:6feb8bd525",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "內水水域",
+  "level": "article",
+  "answer": [
+   "K0070035-art-5"
+  ],
+  "term": "內水水域"
+ },
+ {
+  "id": "fresh:fresh_definition:a43b73ba42",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "末期病人",
+  "level": "article",
+  "answer": [
+   "L0020066-art-3"
+  ],
+  "term": "末期病人"
+ },
+ {
+  "id": "fresh:fresh_definition:55f8555dc0",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "毗鄰社區",
+  "level": "article",
+  "answer": [
+   "J0130094-art-3"
+  ],
+  "term": "毗鄰社區"
+ },
+ {
+  "id": "fresh:fresh_definition:2a0044be16",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "客家文字",
+  "level": "article",
+  "answer": [
+   "D0140019-art-2"
+  ],
+  "term": "客家文字"
+ },
+ {
+  "id": "fresh:fresh_definition:4d55ac4441",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "展覽物品",
+  "level": "article",
+  "answer": [
+   "G0350002-art-44"
+  ],
+  "term": "展覽物品"
+ },
+ {
+  "id": "fresh:fresh_definition:51f138d528",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "大改裝",
+  "level": "article",
+  "answer": [
+   "K0090010-art-2"
+  ],
+  "term": "大改裝"
+ },
+ {
+  "id": "fresh:fresh_definition:108503d7cb",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "指定產品",
+  "level": "article",
+  "answer": [
+   "K0030024-art-3"
+  ],
+  "term": "指定產品"
+ },
+ {
+  "id": "fresh:fresh_definition:4e66f01293",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "操作手冊",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "操作手冊"
+ },
+ {
+  "id": "fresh:fresh_definition:bace531a98",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "場景效果產生器",
+  "level": "article",
+  "answer": [
+   "J0030018-art-680"
+  ],
+  "term": "場景效果產生器"
+ },
+ {
+  "id": "fresh:fresh_definition:284be48b4d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "第一類儀降作業",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "第一類儀降作業"
+ },
+ {
+  "id": "fresh:fresh_definition:7e0dd35f67",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "輸電系統",
+  "level": "article",
+  "answer": [
+   "K0030001-art-2"
+  ],
+  "term": "輸電系統"
+ },
+ {
+  "id": "fresh:fresh_definition:c69ce47962",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "航路備用機場",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "航路備用機場"
+ },
+ {
+  "id": "fresh:fresh_definition:3419a53402",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "配電業務部門",
+  "level": "article",
+  "answer": [
+   "J0130081-art-3"
+  ],
+  "term": "配電業務部門"
+ },
+ {
+  "id": "fresh:fresh_definition:5bdf0c7f1d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "家用桶裝瓦斯差價",
+  "level": "article",
+  "answer": [
+   "J0020060-art-3"
+  ],
+  "term": "家用桶裝瓦斯差價"
+ },
+ {
+  "id": "fresh:fresh_definition:4699f6b894",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "集線電信設備",
+  "level": "article",
+  "answer": [
+   "K0060040-art-3"
+  ],
+  "term": "集線電信設備"
+ },
+ {
+  "id": "fresh:fresh_definition:258924018b",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "特定對象",
+  "level": "article",
+  "answer": [
+   "J0020022-art-2"
+  ],
+  "term": "特定對象"
+ },
+ {
+  "id": "fresh:fresh_definition:3bdaa042f3",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "臨時性交易",
+  "level": "article",
+  "answer": [
+   "G0380268-art-2"
+  ],
+  "term": "臨時性交易"
+ },
+ {
+  "id": "fresh:fresh_definition:9327f0b907",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "護理機構",
+  "level": "article",
+  "answer": [
+   "L0020214-art-3"
+  ],
+  "term": "護理機構"
+ },
+ {
+  "id": "fresh:fresh_definition:afb16ae4ef",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "普及服務分攤者",
+  "level": "article",
+  "answer": [
+   "K0060130-art-2"
+  ],
+  "term": "普及服務分攤者"
+ },
+ {
+  "id": "fresh:fresh_definition:ea8e9a99b4",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "就業服務機構",
+  "level": "article",
+  "answer": [
+   "N0090001-art-2"
+  ],
+  "term": "就業服務機構"
+ },
+ {
+  "id": "fresh:fresh_definition:da55ce887c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "境外帳務清算機構",
+  "level": "article",
+  "answer": [
+   "G0380239-art-2"
+  ],
+  "term": "境外帳務清算機構"
+ },
+ {
+  "id": "fresh:fresh_definition:b5a967bb33",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "立即型彩券",
+  "level": "article",
+  "answer": [
+   "G0380188-art-2"
+  ],
+  "term": "立即型彩券"
+ },
+ {
+  "id": "fresh:fresh_definition:d7196a26bc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "空勤亡故官兵",
+  "level": "article",
+  "answer": [
+   "F0030035-art-4"
+  ],
+  "term": "空勤亡故官兵"
+ },
+ {
+  "id": "fresh:fresh_definition:9c53c7a9ba",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "導管穿線匣",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6"
+  ],
+  "term": "導管穿線匣"
+ },
+ {
+  "id": "fresh:fresh_definition:d5f6e9ef0c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "接戶線",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6",
+   "J0030019-art-7"
+  ],
+  "term": "接戶線"
+ },
+ {
+  "id": "fresh:fresh_definition:d95b5feafb",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "起飛場域",
+  "level": "article",
+  "answer": [
+   "H0120092-art-2"
+  ],
+  "term": "起飛場域"
+ },
+ {
+  "id": "fresh:fresh_definition:76a71dfec3",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "多連插座",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6"
+  ],
+  "term": "多連插座"
+ },
+ {
+  "id": "fresh:fresh_definition:2e488ee73d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "法定建蔽率",
+  "level": "article",
+  "answer": [
+   "J0110110-art-2"
+  ],
+  "term": "法定建蔽率"
+ },
+ {
+  "id": "fresh:fresh_definition:7d5fe5020e",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "支持物",
+  "level": "article",
+  "answer": [
+   "J0030019-art-7"
+  ],
+  "term": "支持物"
+ },
+ {
+  "id": "fresh:fresh_definition:6b98ef4ef0",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "境外衛星廣播電視事業",
+  "level": "article",
+  "answer": [
+   "P0050013-art-2"
+  ],
+  "term": "境外衛星廣播電視事業"
+ },
+ {
+  "id": "fresh:fresh_definition:b7d03a7b77",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外國高級專業人才",
+  "level": "article",
+  "answer": [
+   "A0030295-art-4"
+  ],
+  "term": "外國高級專業人才"
+ },
+ {
+  "id": "fresh:fresh_definition:03ace43e13",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "停車服務平臺",
+  "level": "article",
+  "answer": [
+   "G0380245-art-2"
+  ],
+  "term": "停車服務平臺"
+ },
+ {
+  "id": "fresh:fresh_definition:3556e4343b",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "指配頻率",
+  "level": "article",
+  "answer": [
+   "K0070016-art-255"
+  ],
+  "term": "指配頻率"
+ },
+ {
+  "id": "fresh:fresh_definition:ad375db781",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "脫除設備後端之所有排放源",
+  "level": "article",
+  "answer": [
+   "O0020115-art-2"
+  ],
+  "term": "脫除設備後端之所有排放源"
+ },
+ {
+  "id": "fresh:fresh_definition:bd9068c444",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "緊急傷病",
+  "level": "article",
+  "answer": [
+   "L0020047-art-2"
+  ],
+  "term": "緊急傷病"
+ },
+ {
+  "id": "fresh:fresh_definition:59b30052dd",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "次分配線",
+  "level": "article",
+  "answer": [
+   "K0060028-art-2"
+  ],
+  "term": "次分配線"
+ },
+ {
+  "id": "fresh:fresh_definition:bdc48aa1dc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "遮蔽線",
+  "level": "article",
+  "answer": [
+   "J0030019-art-7"
+  ],
+  "term": "遮蔽線"
+ },
+ {
+  "id": "fresh:fresh_definition:b29c6cc1e7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公證人",
+  "level": "article",
+  "answer": [
+   "B0010063-art-2"
+  ],
+  "term": "公證人"
+ },
+ {
+  "id": "fresh:fresh_definition:9a0a520045",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "不當債務約束",
+  "level": "article",
+  "answer": [
+   "D0080177-art-2"
+  ],
+  "term": "不當債務約束"
+ },
+ {
+  "id": "fresh:fresh_definition:6e80a9e6c0",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外國公司",
+  "level": "article",
+  "answer": [
+   "J0080041-art-4"
+  ],
+  "term": "外國公司"
+ },
+ {
+  "id": "fresh:fresh_definition:19ba666906",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電子申請",
+  "level": "article",
+  "answer": [
+   "J0080058-art-2"
+  ],
+  "term": "電子申請"
+ },
+ {
+  "id": "fresh:fresh_definition:9de7ed132a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "適當飛航服務主管機關",
+  "level": "article",
+  "answer": [
+   "K0090014-art-2"
+  ],
+  "term": "適當飛航服務主管機關"
+ },
+ {
+  "id": "fresh:fresh_definition:7845df8c50",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "密閉式貨櫃",
+  "level": "article",
+  "answer": [
+   "M0140011-art-2"
+  ],
+  "term": "密閉式貨櫃"
+ },
+ {
+  "id": "fresh:fresh_definition:b8d5b07c34",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "郵政匯票",
+  "level": "article",
+  "answer": [
+   "A0030079-art-2"
+  ],
+  "term": "郵政匯票"
+ },
+ {
+  "id": "fresh:fresh_definition:a5ed0ffb95",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "試驗主持人",
+  "level": "article",
+  "answer": [
+   "L0030114-art-2"
+  ],
+  "term": "試驗主持人"
+ },
+ {
+  "id": "fresh:fresh_definition:08a122f7ee",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "金融情報中心",
+  "level": "article",
+  "answer": [
+   "I0030064-art-2"
+  ],
+  "term": "金融情報中心"
+ },
+ {
+  "id": "fresh:fresh_definition:49e48ce5a8",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "緊要回路",
+  "level": "article",
+  "answer": [
+   "J0030018-art-614"
+  ],
+  "term": "緊要回路"
+ },
+ {
+  "id": "fresh:fresh_definition:4f9e81d53b",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "岩石品質指標",
+  "level": "article",
+  "answer": [
+   "D0070115-art-261"
+  ],
+  "term": "岩石品質指標"
+ },
+ {
+  "id": "fresh:fresh_definition:f283bf634c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "高級中等教育階段學生",
+  "level": "article",
+  "answer": [
+   "H0060021-art-2"
+  ],
+  "term": "高級中等教育階段學生"
+ },
+ {
+  "id": "fresh:fresh_definition:19bcfecb0f",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "共同使用報酬率",
+  "level": "article",
+  "answer": [
+   "J0070019-art-3"
+  ],
+  "term": "共同使用報酬率"
+ },
+ {
+  "id": "fresh:fresh_definition:4cd7e3a906",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "業餘無線電人員",
+  "level": "article",
+  "answer": [
+   "K0060032-art-3",
+   "K0060145-art-2"
+  ],
+  "term": "業餘無線電人員"
+ },
+ {
+  "id": "fresh:fresh_definition:daa7e001f2",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "全系統",
+  "level": "article",
+  "answer": [
+   "F0090028-art-2"
+  ],
+  "term": "全系統"
+ },
+ {
+  "id": "fresh:fresh_definition:41b62c6fea",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "威權統治時期",
+  "level": "article",
+  "answer": [
+   "A0030335-art-3"
+  ],
+  "term": "威權統治時期"
+ },
+ {
+  "id": "fresh:fresh_definition:2c4dc2ce3c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "漁港區域",
+  "level": "article",
+  "answer": [
+   "M0050010-art-3"
+  ],
+  "term": "漁港區域"
+ },
+ {
+  "id": "fresh:fresh_definition:8f3ae475cb",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "調速驅動器",
+  "level": "article",
+  "answer": [
+   "J0030018-art-200"
+  ],
+  "term": "調速驅動器"
+ },
+ {
+  "id": "fresh:fresh_definition:a3d77249cb",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "隨時可爬登支持物",
+  "level": "article",
+  "answer": [
+   "J0030019-art-7"
+  ],
+  "term": "隨時可爬登支持物"
+ },
+ {
+  "id": "fresh:fresh_definition:e81cfdec75",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "技術協助及能力建構",
+  "level": "article",
+  "answer": [
+   "E0020014-art-2"
+  ],
+  "term": "技術協助及能力建構"
+ },
+ {
+  "id": "fresh:fresh_definition:3d55a67893",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "消費爭議",
+  "level": "article",
+  "answer": [
+   "J0170001-art-2"
+  ],
+  "term": "消費爭議"
+ },
+ {
+  "id": "fresh:fresh_definition:46267d7b7e",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "蓄電池系統",
+  "level": "article",
+  "answer": [
+   "J0030018-art-278"
+  ],
+  "term": "蓄電池系統"
+ },
+ {
+  "id": "fresh:fresh_definition:70a27077f2",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "生物保全",
+  "level": "article",
+  "answer": [
+   "L0050029-art-2"
+  ],
+  "term": "生物保全"
+ },
+ {
+  "id": "fresh:fresh_definition:a02ef96ba7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "不受規範漁撈作業",
+  "level": "article",
+  "answer": [
+   "M0050051-art-4"
+  ],
+  "term": "不受規範漁撈作業"
+ },
+ {
+  "id": "fresh:fresh_definition:f71d303b7c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "所在地區",
+  "level": "article",
+  "answer": [
+   "J0130087-art-2"
+  ],
+  "term": "所在地區"
+ },
+ {
+  "id": "fresh:fresh_definition:06d2c36af6",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "海洋設施",
+  "level": "article",
+  "answer": [
+   "K0070030-art-3",
+   "O0040026-art-4"
+  ],
+  "term": "海洋設施"
+ },
+ {
+  "id": "fresh:fresh_definition:fb8e43b82a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "整體換氣裝置",
+  "level": "article",
+  "answer": [
+   "N0060018-art-3",
+   "N0060021-art-3"
+  ],
+  "term": "整體換氣裝置"
+ },
+ {
+  "id": "fresh:fresh_definition:0aad33c973",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "長期照顧管理中心",
+  "level": "article",
+  "answer": [
+   "L0070040-art-3"
+  ],
+  "term": "長期照顧管理中心"
+ },
+ {
+  "id": "fresh:fresh_definition:efb7b0c1fe",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公共水陸道路",
+  "level": "article",
+  "answer": [
+   "G0340095-art-2"
+  ],
+  "term": "公共水陸道路"
+ },
+ {
+  "id": "fresh:fresh_definition:b078e6f8e6",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "磁羅經",
+  "level": "article",
+  "answer": [
+   "K0070016-art-228"
+  ],
+  "term": "磁羅經"
+ },
+ {
+  "id": "fresh:fresh_definition:77fbded1a0",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "性別平等教育",
+  "level": "article",
+  "answer": [
+   "H0080067-art-2"
+  ],
+  "term": "性別平等教育"
+ },
+ {
+  "id": "fresh:fresh_definition:57df135ced",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國內文化創意事業",
+  "level": "article",
+  "answer": [
+   "H0170082-art-2"
+  ],
+  "term": "國內文化創意事業"
+ },
+ {
+  "id": "fresh:fresh_definition:0819314249",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "同分組分類",
+  "level": "article",
+  "answer": [
+   "L0060038-art-2"
+  ],
+  "term": "同分組分類"
+ },
+ {
+  "id": "fresh:fresh_definition:e6445a0a39",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "警示虛擬資產帳號",
+  "level": "article",
+  "answer": [
+   "G0380271-art-2"
+  ],
+  "term": "警示虛擬資產帳號"
+ },
+ {
+  "id": "fresh:fresh_definition:016c2ff675",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "興建設備",
+  "level": "article",
+  "answer": [
+   "G0340058-art-2",
+   "K0020020-art-2"
+  ],
+  "term": "興建設備"
+ },
+ {
+  "id": "fresh:fresh_definition:9babeb3b3d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電解液",
+  "level": "article",
+  "answer": [
+   "J0030018-art-278"
+  ],
+  "term": "電解液"
+ },
+ {
+  "id": "fresh:fresh_definition:12c02f183e",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "束導線",
+  "level": "article",
+  "answer": [
+   "J0030019-art-7"
+  ],
+  "term": "束導線"
+ },
+ {
+  "id": "fresh:fresh_definition:4f0714d720",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "完全密封包裝",
+  "level": "article",
+  "answer": [
+   "M0140011-art-2"
+  ],
+  "term": "完全密封包裝"
+ },
+ {
+  "id": "fresh:fresh_definition:2d82d5c53d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "已平艙之滿載艙間",
+  "level": "article",
+  "answer": [
+   "K0070015-art-3"
+  ],
+  "term": "已平艙之滿載艙間"
+ },
+ {
+  "id": "fresh:fresh_definition:9207c9c82c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "通訊線路",
+  "level": "article",
+  "answer": [
+   "J0030019-art-7"
+  ],
+  "term": "通訊線路"
+ },
+ {
+  "id": "fresh:fresh_definition:1a56b0b88a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "基本頻道",
+  "level": "article",
+  "answer": [
+   "P0050008-art-2"
+  ],
+  "term": "基本頻道"
+ },
+ {
+  "id": "fresh:fresh_definition:f09bfe62e7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "股份有限公司",
+  "level": "article",
+  "answer": [
+   "J0130063-art-3"
+  ],
+  "term": "股份有限公司"
+ },
+ {
+  "id": "fresh:fresh_definition:c5f6d792ef",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "行動寬頻業務",
+  "level": "article",
+  "answer": [
+   "K0060091-art-2"
+  ],
+  "term": "行動寬頻業務"
+ },
+ {
+  "id": "fresh:fresh_definition:d4930655cc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "代理收付實質交易款項",
+  "level": "article",
+  "answer": [
+   "G0340163-art-2",
+   "G0380237-art-3"
+  ],
+  "term": "代理收付實質交易款項"
+ },
+ {
+  "id": "fresh:fresh_definition:3672795fb7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "移動式火化設施",
+  "level": "article",
+  "answer": [
+   "D0020040-art-2"
+  ],
+  "term": "移動式火化設施"
+ },
+ {
+  "id": "fresh:fresh_definition:345cfce4e9",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國軍作戰或因公亡故官兵",
+  "level": "article",
+  "answer": [
+   "F0030035-art-4"
+  ],
+  "term": "國軍作戰或因公亡故官兵"
+ },
+ {
+  "id": "fresh:fresh_definition:713466929c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "第一類資本比率",
+  "level": "article",
+  "answer": [
+   "G0380046-art-2"
+  ],
+  "term": "第一類資本比率"
+ },
+ {
+  "id": "fresh:fresh_definition:c261148062",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "新創之生技醫藥公司",
+  "level": "article",
+  "answer": [
+   "J0040068-art-2"
+  ],
+  "term": "新創之生技醫藥公司"
+ },
+ {
+  "id": "fresh:fresh_definition:75978772c4",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "作業場所",
+  "level": "article",
+  "answer": [
+   "L0040122-art-3"
+  ],
+  "term": "作業場所"
+ },
+ {
+  "id": "fresh:fresh_definition:cbf88efb4e",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "第三C類儀降作業",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "第三C類儀降作業"
+ },
+ {
+  "id": "fresh:fresh_definition:e0d98840d2",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國營鐵路車輛調動機",
+  "level": "article",
+  "answer": [
+   "K0030020-art-2"
+  ],
+  "term": "國營鐵路車輛調動機"
+ },
+ {
+  "id": "fresh:fresh_definition:8c4e33961a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "扁平導體電纜系統",
+  "level": "article",
+  "answer": [
+   "J0030018-art-387"
+  ],
+  "term": "扁平導體電纜系統"
+ },
+ {
+  "id": "fresh:fresh_definition:4b1b596b85",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "殘值受益人",
+  "level": "article",
+  "answer": [
+   "G0380122-art-4"
+  ],
+  "term": "殘值受益人"
+ },
+ {
+  "id": "fresh:fresh_definition:a203a2696a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "託運物品",
+  "level": "article",
+  "answer": [
+   "J0160005-art-6"
+  ],
+  "term": "託運物品"
+ },
+ {
+  "id": "fresh:fresh_definition:bc3cd929e9",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "核心資通系統",
+  "level": "article",
+  "answer": [
+   "F0090037-art-3"
+  ],
+  "term": "核心資通系統"
+ },
+ {
+  "id": "fresh:fresh_definition:1f8a58e3ff",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "漁業證照",
+  "level": "article",
+  "answer": [
+   "M0050009-art-3"
+  ],
+  "term": "漁業證照"
+ },
+ {
+  "id": "fresh:fresh_definition:571371b61e",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "勞動能率勞作金",
+  "level": "article",
+  "answer": [
+   "I0040029-art-3"
+  ],
+  "term": "勞動能率勞作金"
+ },
+ {
+  "id": "fresh:fresh_definition:05983feadd",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "頂級網域名稱註冊管理業務",
+  "level": "article",
+  "answer": [
+   "K0060117-art-3",
+   "K0060142-art-2"
+  ],
+  "term": "頂級網域名稱註冊管理業務"
+ },
+ {
+  "id": "fresh:fresh_definition:e129375596",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "料理酒",
+  "level": "article",
+  "answer": [
+   "G0330010-art-2"
+  ],
+  "term": "料理酒"
+ },
+ {
+  "id": "fresh:fresh_definition:9ad5c2d3d7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "免納營利事業所得稅",
+  "level": "article",
+  "answer": [
+   "G0340054-art-2",
+   "G0340057-art-2"
+  ],
+  "term": "免納營利事業所得稅"
+ },
+ {
+  "id": "fresh:fresh_definition:b5cc3a7705",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "露天開挖場所",
+  "level": "article",
+  "answer": [
+   "N0060014-art-1-1"
+  ],
+  "term": "露天開挖場所"
+ },
+ {
+  "id": "fresh:fresh_definition:43e00f74d8",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "保險標的",
+  "level": "article",
+  "answer": [
+   "M0070072-art-3"
+  ],
+  "term": "保險標的"
+ },
+ {
+  "id": "fresh:fresh_definition:eee0b94fe7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "標準地名",
+  "level": "article",
+  "answer": [
+   "D0060090-art-3"
+  ],
+  "term": "標準地名"
+ },
+ {
+  "id": "fresh:fresh_definition:d0c273ff11",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "家庭成員",
+  "level": "article",
+  "answer": [
+   "D0070251-art-2"
+  ],
+  "term": "家庭成員"
+ },
+ {
+  "id": "fresh:fresh_definition:3c939b6bb0",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "固定通信",
+  "level": "article",
+  "answer": [
+   "K0060050-art-2"
+  ],
+  "term": "固定通信"
+ },
+ {
+  "id": "fresh:fresh_definition:bc52369145",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "調度業務部門",
+  "level": "article",
+  "answer": [
+   "J0130081-art-3"
+  ],
+  "term": "調度業務部門"
+ },
+ {
+  "id": "fresh:fresh_definition:69040eefad",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "設備元件",
+  "level": "article",
+  "answer": [
+   "O0020115-art-2"
+  ],
+  "term": "設備元件"
+ },
+ {
+  "id": "fresh:fresh_definition:751ee5d48a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "臨時停車",
+  "level": "article",
+  "answer": [
+   "K0040012-art-3"
+  ],
+  "term": "臨時停車"
+ },
+ {
+  "id": "fresh:fresh_definition:9402c59042",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "空間情報機關",
+  "level": "article",
+  "answer": [
+   "A0020186-art-2"
+  ],
+  "term": "空間情報機關"
+ },
+ {
+  "id": "fresh:fresh_definition:4be455088e",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "資料鏈結通信",
+  "level": "article",
+  "answer": [
+   "K0090014-art-2"
+  ],
+  "term": "資料鏈結通信"
+ },
+ {
+  "id": "fresh:fresh_definition:e0fee40184",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "會計資料",
+  "level": "article",
+  "answer": [
+   "J0080029-art-2"
+  ],
+  "term": "會計資料"
+ },
+ {
+  "id": "fresh:fresh_definition:b03c137a7a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "興辦工業人",
+  "level": "article",
+  "answer": [
+   "J0040055-art-2"
+  ],
+  "term": "興辦工業人"
+ },
+ {
+  "id": "fresh:fresh_definition:42718930b5",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "關鍵基礎設施",
+  "level": "article",
+  "answer": [
+   "A0030297-art-3"
+  ],
+  "term": "關鍵基礎設施"
+ },
+ {
+  "id": "fresh:fresh_definition:adff47330d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "犯罪被害人",
+  "level": "article",
+  "answer": [
+   "I0050005-art-3"
+  ],
+  "term": "犯罪被害人"
+ },
+ {
+  "id": "fresh:fresh_definition:2d07d47073",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外籍移工匯兌公司",
+  "level": "article",
+  "answer": [
+   "G0380269-art-3"
+  ],
+  "term": "外籍移工匯兌公司"
+ },
+ {
+  "id": "fresh:fresh_definition:252d641ce2",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "漁船滅失",
+  "level": "article",
+  "answer": [
+   "M0050009-art-3"
+  ],
+  "term": "漁船滅失"
+ },
+ {
+  "id": "fresh:fresh_definition:ee5787d99c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "地政士",
+  "level": "article",
+  "answer": [
+   "D0060124-art-2"
+  ],
+  "term": "地政士"
+ },
+ {
+  "id": "fresh:fresh_definition:a872e837d1",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "動物用生物藥品",
+  "level": "article",
+  "answer": [
+   "M0130041-art-2"
+  ],
+  "term": "動物用生物藥品"
+ },
+ {
+  "id": "fresh:fresh_definition:485a2ed55b",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電信管制射頻器材",
+  "level": "article",
+  "answer": [
+   "K0060036-art-2",
+   "K0060137-art-2"
+  ],
+  "term": "電信管制射頻器材"
+ },
+ {
+  "id": "fresh:fresh_definition:a0c87d3c22",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "沿近海白帶魚",
+  "level": "article",
+  "answer": [
+   "M0050066-art-2"
+  ],
+  "term": "沿近海白帶魚"
+ },
+ {
+  "id": "fresh:fresh_definition:28c689512c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "大陸地區投資",
+  "level": "article",
+  "answer": [
+   "G0400069-art-4"
+  ],
+  "term": "大陸地區投資"
+ },
+ {
+  "id": "fresh:fresh_definition:c5d577a198",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "約定等價劑量",
+  "level": "article",
+  "answer": [
+   "J0160004-art-2"
+  ],
+  "term": "約定等價劑量"
+ },
+ {
+  "id": "fresh:fresh_definition:59502b5044",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "收容量",
+  "level": "article",
+  "answer": [
+   "M0130029-art-2"
+  ],
+  "term": "收容量"
+ },
+ {
+  "id": "fresh:fresh_definition:6c6201330f",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "自製獵槍主要組成零件",
+  "level": "article",
+  "answer": [
+   "D0080230-art-3"
+  ],
+  "term": "自製獵槍主要組成零件"
+ },
+ {
+  "id": "fresh:fresh_definition:7a415020ac",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國防產業",
+  "level": "article",
+  "answer": [
+   "F0110024-art-3"
+  ],
+  "term": "國防產業"
+ },
+ {
+  "id": "fresh:fresh_definition:ac89e1975f",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "林產業儲備樹種",
+  "level": "article",
+  "answer": [
+   "M0040043-art-2"
+  ],
+  "term": "林產業儲備樹種"
+ },
+ {
+  "id": "fresh:fresh_definition:65559fde4c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "無線寬頻接取",
+  "level": "article",
+  "answer": [
+   "K0060080-art-2"
+  ],
+  "term": "無線寬頻接取"
+ },
+ {
+  "id": "fresh:fresh_definition:8e903ac381",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "供應來源",
+  "level": "article",
+  "answer": [
+   "M0060083-art-2"
+  ],
+  "term": "供應來源"
+ },
+ {
+  "id": "fresh:fresh_definition:c4d4ad2fb1",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "持續通風",
+  "level": "article",
+  "answer": [
+   "K0070015-art-3"
+  ],
+  "term": "持續通風"
+ },
+ {
+  "id": "fresh:fresh_definition:4ce177583a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "累積特別股",
+  "level": "article",
+  "answer": [
+   "G0380046-art-2",
+   "G0380153-art-2"
+  ],
+  "term": "累積特別股"
+ },
+ {
+  "id": "fresh:fresh_definition:0b12fcea2a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "低收入戶",
+  "level": "article",
+  "answer": [
+   "J0110091-art-3"
+  ],
+  "term": "低收入戶"
+ },
+ {
+  "id": "fresh:fresh_definition:0713658a6a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "進場面",
+  "level": "article",
+  "answer": [
+   "K0090016-art-2"
+  ],
+  "term": "進場面"
+ },
+ {
+  "id": "fresh:fresh_definition:8cff366cf1",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "大陸地區學歷證件",
+  "level": "article",
+  "answer": [
+   "H0010005-art-2"
+  ],
+  "term": "大陸地區學歷證件"
+ },
+ {
+  "id": "fresh:fresh_definition:3e62e02173",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "動物用一般藥品",
+  "level": "article",
+  "answer": [
+   "M0130041-art-2"
+  ],
+  "term": "動物用一般藥品"
+ },
+ {
+  "id": "fresh:fresh_definition:ddedb41650",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "交通工具",
+  "level": "article",
+  "answer": [
+   "G0340095-art-2"
+  ],
+  "term": "交通工具"
+ },
+ {
+  "id": "fresh:fresh_definition:28dd09de4c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "新聞節目",
+  "level": "article",
+  "answer": [
+   "P0050054-art-2",
+   "P0050055-art-2"
+  ],
+  "term": "新聞節目"
+ },
+ {
+  "id": "fresh:fresh_definition:73c444ee0c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "跑道等待位置",
+  "level": "article",
+  "answer": [
+   "K0090014-art-2"
+  ],
+  "term": "跑道等待位置"
+ },
+ {
+  "id": "fresh:fresh_definition:241c3931d5",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "密閉式取樣系統",
+  "level": "article",
+  "answer": [
+   "O0020115-art-2"
+  ],
+  "term": "密閉式取樣系統"
+ },
+ {
+  "id": "fresh:fresh_definition:a17c411c6a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "語音單純轉售服務",
+  "level": "article",
+  "answer": [
+   "K0060038-art-2"
+  ],
+  "term": "語音單純轉售服務"
+ },
+ {
+  "id": "fresh:fresh_definition:394232ef6c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "土地利用型農場",
+  "level": "article",
+  "answer": [
+   "M0030010-art-2"
+  ],
+  "term": "土地利用型農場"
+ },
+ {
+  "id": "fresh:fresh_definition:f27d00afd0",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "溫泉孔",
+  "level": "article",
+  "answer": [
+   "J0110040-art-3"
+  ],
+  "term": "溫泉孔"
+ },
+ {
+  "id": "fresh:fresh_definition:43d2258f2f",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國土計畫",
+  "level": "article",
+  "answer": [
+   "D0070230-art-3"
+  ],
+  "term": "國土計畫"
+ },
+ {
+  "id": "fresh:fresh_definition:c3d9eadbb7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "短程國際航線",
+  "level": "article",
+  "answer": [
+   "K0070016-art-5"
+  ],
+  "term": "短程國際航線"
+ },
+ {
+  "id": "fresh:fresh_definition:dc4c6a18ee",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "現場調查官",
+  "level": "article",
+  "answer": [
+   "K0030023-art-2",
+   "K0040074-art-2",
+   "K0070077-art-2",
+   "K0090053-art-2"
+  ],
+  "term": "現場調查官"
+ },
+ {
+  "id": "fresh:fresh_definition:c696d41c4b",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "政務加給",
+  "level": "article",
+  "answer": [
+   "A0030227-art-2"
+  ],
+  "term": "政務加給"
+ },
+ {
+  "id": "fresh:fresh_definition:0af4962ddf",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "建議候選場址",
+  "level": "article",
+  "answer": [
+   "J0160079-art-3"
+  ],
+  "term": "建議候選場址"
+ },
+ {
+  "id": "fresh:fresh_definition:999f53bb17",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "自主監外作業",
+  "level": "article",
+  "answer": [
+   "I0040014-art-2"
+  ],
+  "term": "自主監外作業"
+ },
+ {
+  "id": "fresh:fresh_definition:c5e40416a7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "允收準則",
+  "level": "article",
+  "answer": [
+   "J0160040-art-2"
+  ],
+  "term": "允收準則"
+ },
+ {
+  "id": "fresh:fresh_definition:6d7721edbb",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "主要有害生物",
+  "level": "article",
+  "answer": [
+   "M0140025-art-2"
+  ],
+  "term": "主要有害生物"
+ },
+ {
+  "id": "fresh:fresh_definition:8ac1b76dcd",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "淨含量",
+  "level": "article",
+  "answer": [
+   "J0100066-art-2"
+  ],
+  "term": "淨含量"
+ },
+ {
+  "id": "fresh:fresh_definition:001280fc18",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "進屋線",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6"
+  ],
+  "term": "進屋線"
+ },
+ {
+  "id": "fresh:fresh_definition:ee2a5ef00f",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "相對速度",
+  "level": "article",
+  "answer": [
+   "K0070016-art-228"
+  ],
+  "term": "相對速度"
+ },
+ {
+  "id": "fresh:fresh_definition:8f4b06098b",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "安裝銷售商",
+  "level": "article",
+  "answer": [
+   "J0130036-art-3"
+  ],
+  "term": "安裝銷售商"
+ },
+ {
+  "id": "fresh:fresh_definition:e066d31f19",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "同一人",
+  "level": "article",
+  "answer": [
+   "G0380112-art-4"
+  ],
+  "term": "同一人"
+ },
+ {
+  "id": "fresh:fresh_definition:2cb71a3de0",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "子公司",
+  "level": "article",
+  "answer": [
+   "G0380112-art-4",
+   "G0380115-art-2",
+   "G0390023-art-3",
+   "Q0040005-art-3"
+  ],
+  "term": "子公司"
+ },
+ {
+  "id": "fresh:fresh_definition:da4b47e8fe",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "運動防護",
+  "level": "article",
+  "answer": [
+   "H0120026-art-2"
+  ],
+  "term": "運動防護"
+ },
+ {
+  "id": "fresh:fresh_definition:f8f71416b5",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "實驗室",
+  "level": "article",
+  "answer": [
+   "J0100063-art-2",
+   "L0050029-art-2",
+   "M0130046-art-2"
+  ],
+  "term": "實驗室"
+ },
+ {
+  "id": "fresh:fresh_definition:0bfd32dee1",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電動機控制中心",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6"
+  ],
+  "term": "電動機控制中心"
+ },
+ {
+  "id": "fresh:fresh_definition:bd84cc0744",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "用戶排水設備",
+  "level": "article",
+  "answer": [
+   "D0070058-art-2"
+  ],
+  "term": "用戶排水設備"
+ },
+ {
+  "id": "fresh:fresh_definition:ca837774fd",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "主管機關",
+  "level": "article",
+  "answer": [
+   "J0160030-art-3"
+  ],
+  "term": "主管機關"
+ },
+ {
+  "id": "fresh:fresh_definition:267c54f7fc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "分組學習",
+  "level": "article",
+  "answer": [
+   "H0070026-art-3"
+  ],
+  "term": "分組學習"
+ },
+ {
+  "id": "fresh:fresh_definition:259d779c69",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "有限合夥負責人",
+  "level": "article",
+  "answer": [
+   "J0080051-art-4"
+  ],
+  "term": "有限合夥負責人"
+ },
+ {
+  "id": "fresh:fresh_definition:676a88ce63",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "安全功能",
+  "level": "article",
+  "answer": [
+   "J0160040-art-2"
+  ],
+  "term": "安全功能"
+ },
+ {
+  "id": "fresh:fresh_definition:d89d4e2307",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "加值型營業稅",
+  "level": "article",
+  "answer": [
+   "G0340126-art-2"
+  ],
+  "term": "加值型營業稅"
+ },
+ {
+  "id": "fresh:fresh_definition:12847c3a3a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飛航作業管制",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "飛航作業管制"
+ },
+ {
+  "id": "fresh:fresh_definition:62ba4344ad",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "天然氣",
+  "level": "article",
+  "answer": [
+   "J0130045-art-3"
+  ],
+  "term": "天然氣"
+ },
+ {
+  "id": "fresh:fresh_definition:7e055c7ee4",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "貨物控制室",
+  "level": "article",
+  "answer": [
+   "K0070038-art-3"
+  ],
+  "term": "貨物控制室"
+ },
+ {
+  "id": "fresh:fresh_definition:0efcac08f8",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "航空人員",
+  "level": "article",
+  "answer": [
+   "K0090001-art-2"
+  ],
+  "term": "航空人員"
+ },
+ {
+  "id": "fresh:fresh_definition:a4baf00d10",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "映演人",
+  "level": "article",
+  "answer": [
+   "P0040002-art-3"
+  ],
+  "term": "映演人"
+ },
+ {
+  "id": "fresh:fresh_definition:b561af7d29",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "經辦人",
+  "level": "article",
+  "answer": [
+   "J0160053-art-2"
+  ],
+  "term": "經辦人"
+ },
+ {
+  "id": "fresh:fresh_definition:3a445729b8",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "主要業務",
+  "level": "article",
+  "answer": [
+   "K0060031-art-2"
+  ],
+  "term": "主要業務"
+ },
+ {
+  "id": "fresh:fresh_definition:0ec0f01bfe",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "行人友善區",
+  "level": "article",
+  "answer": [
+   "D0070302-art-2"
+  ],
+  "term": "行人友善區"
+ },
+ {
+  "id": "fresh:fresh_definition:8d56c38ef7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "師資培育",
+  "level": "article",
+  "answer": [
+   "H0050001-art-3"
+  ],
+  "term": "師資培育"
+ },
+ {
+  "id": "fresh:fresh_definition:2ab5e809a9",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "屠宰衛生檢查助理",
+  "level": "article",
+  "answer": [
+   "M0130040-art-3"
+  ],
+  "term": "屠宰衛生檢查助理"
+ },
+ {
+  "id": "fresh:fresh_definition:b5709e7e8a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "總危險電流",
+  "level": "article",
+  "answer": [
+   "J0030018-art-614"
+  ],
+  "term": "總危險電流"
+ },
+ {
+  "id": "fresh:fresh_definition:d72b554f96",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "大腸桿菌群密度",
+  "level": "article",
+  "answer": [
+   "J0110037-art-2"
+  ],
+  "term": "大腸桿菌群密度"
+ },
+ {
+  "id": "fresh:fresh_definition:df2050c414",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "創新板第一上市公司",
+  "level": "article",
+  "answer": [
+   "G0400029-art-3"
+  ],
+  "term": "創新板第一上市公司"
+ },
+ {
+  "id": "fresh:fresh_definition:1cf7f79590",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "海洋漁業資源",
+  "level": "article",
+  "answer": [
+   "M0050051-art-4"
+  ],
+  "term": "海洋漁業資源"
+ },
+ {
+  "id": "fresh:fresh_definition:09426e52cc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "氣象設施或設備",
+  "level": "article",
+  "answer": [
+   "K0100003-art-2"
+  ],
+  "term": "氣象設施或設備"
+ },
+ {
+  "id": "fresh:fresh_definition:1edb18d3db",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國際綜合性運動會",
+  "level": "article",
+  "answer": [
+   "H0120070-art-2"
+  ],
+  "term": "國際綜合性運動會"
+ },
+ {
+  "id": "fresh:fresh_definition:56f950bca2",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "日平均用量",
+  "level": "article",
+  "answer": [
+   "J0130054-art-2"
+  ],
+  "term": "日平均用量"
+ },
+ {
+  "id": "fresh:fresh_definition:4b9fa672a9",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "燃料電池",
+  "level": "article",
+  "answer": [
+   "J0130032-art-3"
+  ],
+  "term": "燃料電池"
+ },
+ {
+  "id": "fresh:fresh_definition:38c0a039d6",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飛航安全相關事件",
+  "level": "article",
+  "answer": [
+   "K0090001-art-2"
+  ],
+  "term": "飛航安全相關事件"
+ },
+ {
+  "id": "fresh:fresh_definition:dbd12c1fb5",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "包裝材料",
+  "level": "article",
+  "answer": [
+   "L0030073-art-4",
+   "L0030105-art-2",
+   "M0130031-art-3"
+  ],
+  "term": "包裝材料"
+ },
+ {
+  "id": "fresh:fresh_definition:fbe04b8c74",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "核臨界安全指數",
+  "level": "article",
+  "answer": [
+   "J0160005-art-6"
+  ],
+  "term": "核臨界安全指數"
+ },
+ {
+  "id": "fresh:fresh_definition:250f02289c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "無性生殖",
+  "level": "article",
+  "answer": [
+   "L0070024-art-2"
+  ],
+  "term": "無性生殖"
+ },
+ {
+  "id": "fresh:fresh_definition:30b63ebae3",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公設專用電信",
+  "level": "article",
+  "answer": [
+   "K0060001-art-2"
+  ],
+  "term": "公設專用電信"
+ },
+ {
+  "id": "fresh:fresh_definition:01f0910b9d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "小規模多機能",
+  "level": "article",
+  "answer": [
+   "L0070043-art-3"
+  ],
+  "term": "小規模多機能"
+ },
+ {
+  "id": "fresh:fresh_definition:2f276f2b5b",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "貨艙空間",
+  "level": "article",
+  "answer": [
+   "K0070016-art-92",
+   "K0070035-art-4",
+   "K0070036-art-2",
+   "K0070038-art-3"
+  ],
+  "term": "貨艙空間"
+ },
+ {
+  "id": "fresh:fresh_definition:455504d7c9",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "專案型電力開發協助金",
+  "level": "article",
+  "answer": [
+   "J0130087-art-2"
+  ],
+  "term": "專案型電力開發協助金"
+ },
+ {
+  "id": "fresh:fresh_definition:7bc4fa13ac",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "試驗委託者",
+  "level": "article",
+  "answer": [
+   "L0030114-art-2"
+  ],
+  "term": "試驗委託者"
+ },
+ {
+  "id": "fresh:fresh_definition:bfc17ea3cd",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "遠洋漁業",
+  "level": "article",
+  "answer": [
+   "M0050051-art-4"
+  ],
+  "term": "遠洋漁業"
+ },
+ {
+  "id": "fresh:fresh_definition:db3f4c16ac",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "小型地球電臺",
+  "level": "article",
+  "answer": [
+   "K0060046-art-2"
+  ],
+  "term": "小型地球電臺"
+ },
+ {
+  "id": "fresh:fresh_definition:c5b121a045",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "單一訂價定期票",
+  "level": "article",
+  "answer": [
+   "K0020070-art-2"
+  ],
+  "term": "單一訂價定期票"
+ },
+ {
+  "id": "fresh:fresh_definition:a4423b149f",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外國發行人",
+  "level": "article",
+  "answer": [
+   "G0400029-art-3"
+  ],
+  "term": "外國發行人"
+ },
+ {
+  "id": "fresh:fresh_definition:930f398027",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "家戶年所得",
+  "level": "article",
+  "answer": [
+   "H0070049-art-2"
+  ],
+  "term": "家戶年所得"
+ },
+ {
+  "id": "fresh:fresh_definition:1d950025c4",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公共事項",
+  "level": "article",
+  "answer": [
+   "D0130031-art-2"
+  ],
+  "term": "公共事項"
+ },
+ {
+  "id": "fresh:fresh_definition:6c6afd848d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "真空包裝即食食品",
+  "level": "article",
+  "answer": [
+   "L0040122-art-3"
+  ],
+  "term": "真空包裝即食食品"
+ },
+ {
+  "id": "fresh:fresh_definition:eff0865345",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "存託機構",
+  "level": "article",
+  "answer": [
+   "G0400029-art-3",
+   "G0400062-art-4"
+  ],
+  "term": "存託機構"
+ },
+ {
+  "id": "fresh:fresh_definition:c54f68d887",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "新制發放機關",
+  "level": "article",
+  "answer": [
+   "H0150053-art-2",
+   "S0080038-art-2"
+  ],
+  "term": "新制發放機關"
+ },
+ {
+  "id": "fresh:fresh_definition:270615e06d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "全元件長期增支成本法",
+  "level": "article",
+  "answer": [
+   "K0060157-art-2"
+  ],
+  "term": "全元件長期增支成本法"
+ },
+ {
+  "id": "fresh:fresh_definition:a8041fb154",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "生技醫藥公司",
+  "level": "article",
+  "answer": [
+   "J0040046-art-4"
+  ],
+  "term": "生技醫藥公司"
+ },
+ {
+  "id": "fresh:fresh_definition:56595a0660",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "溫泉露頭",
+  "level": "article",
+  "answer": [
+   "J0110040-art-3"
+  ],
+  "term": "溫泉露頭"
+ },
+ {
+  "id": "fresh:fresh_definition:af83fda3bf",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "作業時間短暫",
+  "level": "article",
+  "answer": [
+   "N0060018-art-3",
+   "N0060021-art-3",
+   "N0060033-art-2"
+  ],
+  "term": "作業時間短暫"
+ },
+ {
+  "id": "fresh:fresh_definition:944150c2d8",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電子簽章",
+  "level": "article",
+  "answer": [
+   "J0080037-art-2"
+  ],
+  "term": "電子簽章"
+ },
+ {
+  "id": "fresh:fresh_definition:21ab2886f6",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "釀造酒類",
+  "level": "article",
+  "answer": [
+   "G0330010-art-2"
+  ],
+  "term": "釀造酒類"
+ },
+ {
+  "id": "fresh:fresh_definition:9445470ea7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "預強調",
+  "level": "article",
+  "answer": [
+   "K0070016-art-255"
+  ],
+  "term": "預強調"
+ },
+ {
+  "id": "fresh:fresh_definition:15dba14438",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "職業傷病通報",
+  "level": "article",
+  "answer": [
+   "N0060083-art-2"
+  ],
+  "term": "職業傷病通報"
+ },
+ {
+  "id": "fresh:fresh_definition:c1408d48e6",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "金融控股公司之合格資本",
+  "level": "article",
+  "answer": [
+   "G0380115-art-2"
+  ],
+  "term": "金融控股公司之合格資本"
+ },
+ {
+  "id": "fresh:fresh_definition:8846f162f3",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "貨物區域",
+  "level": "article",
+  "answer": [
+   "K0070036-art-2",
+   "K0070038-art-3"
+  ],
+  "term": "貨物區域"
+ },
+ {
+  "id": "fresh:fresh_definition:132582b482",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "管路系統",
+  "level": "article",
+  "answer": [
+   "J0030019-art-7"
+  ],
+  "term": "管路系統"
+ },
+ {
+  "id": "fresh:fresh_definition:5a4034f1e5",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "陳設限火家具及裝潢之房間",
+  "level": "article",
+  "answer": [
+   "K0070035-art-4"
+  ],
+  "term": "陳設限火家具及裝潢之房間"
+ },
+ {
+  "id": "fresh:fresh_definition:a70c40a3b3",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "其他技術服務",
+  "level": "article",
+  "answer": [
+   "J0100036-art-2"
+  ],
+  "term": "其他技術服務"
+ },
+ {
+  "id": "fresh:fresh_definition:c73dd5231d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "屠宰從業人員",
+  "level": "article",
+  "answer": [
+   "M0060027-art-3"
+  ],
+  "term": "屠宰從業人員"
+ },
+ {
+  "id": "fresh:fresh_definition:0ab1682bcc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "技專校院",
+  "level": "article",
+  "answer": [
+   "H0040028-art-3"
+  ],
+  "term": "技專校院"
+ },
+ {
+  "id": "fresh:fresh_definition:40c26a85b5",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "生物醫學研究",
+  "level": "article",
+  "answer": [
+   "L0020164-art-3"
+  ],
+  "term": "生物醫學研究"
+ },
+ {
+  "id": "fresh:fresh_definition:87812bc9bf",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "森林火災",
+  "level": "article",
+  "answer": [
+   "D0120021-art-2"
+  ],
+  "term": "森林火災"
+ },
+ {
+  "id": "fresh:fresh_definition:2246879f8c",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "大規模崩塌災害",
+  "level": "article",
+  "answer": [
+   "M0110011-art-2"
+  ],
+  "term": "大規模崩塌災害"
+ },
+ {
+  "id": "fresh:fresh_definition:68c11e9e53",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "查核機關",
+  "level": "article",
+  "answer": [
+   "L0040114-art-2"
+  ],
+  "term": "查核機關"
+ },
+ {
+  "id": "fresh:fresh_definition:3dcbd68860",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "性霸凌",
+  "level": "article",
+  "answer": [
+   "H0080067-art-2"
+  ],
+  "term": "性霸凌"
+ },
+ {
+  "id": "fresh:fresh_definition:5c0fe9d5e7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "臨時電臺",
+  "level": "article",
+  "answer": [
+   "K0060032-art-3",
+   "K0060145-art-2"
+  ],
+  "term": "臨時電臺"
+ },
+ {
+  "id": "fresh:fresh_definition:a14ba79b42",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "安寧緩和醫療",
+  "level": "article",
+  "answer": [
+   "L0020066-art-3"
+  ],
+  "term": "安寧緩和醫療"
+ },
+ {
+  "id": "fresh:fresh_definition:d1b2c39430",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "限制性部位",
+  "level": "article",
+  "answer": [
+   "G0380164-art-4"
+  ],
+  "term": "限制性部位"
+ },
+ {
+  "id": "fresh:fresh_definition:9c4828c631",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電子式電力轉換器",
+  "level": "article",
+  "answer": [
+   "J0030018-art-863"
+  ],
+  "term": "電子式電力轉換器"
+ },
+ {
+  "id": "fresh:fresh_definition:ce37a37c32",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "船體前後突出部分",
+  "level": "article",
+  "answer": [
+   "K0070007-art-2"
+  ],
+  "term": "船體前後突出部分"
+ },
+ {
+  "id": "fresh:fresh_definition:6099ca1108",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "首次適航",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "首次適航"
+ },
+ {
+  "id": "fresh:fresh_definition:2315a170eb",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "管子接頭",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6"
+  ],
+  "term": "管子接頭"
+ },
+ {
+  "id": "fresh:fresh_definition:81f941f198",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "網路連線遊戲業者",
+  "level": "article",
+  "answer": [
+   "D0080226-art-2"
+  ],
+  "term": "網路連線遊戲業者"
+ },
+ {
+  "id": "fresh:fresh_definition:3026213c5d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "遊戲軟體",
+  "level": "article",
+  "answer": [
+   "J0030086-art-2"
+  ],
+  "term": "遊戲軟體"
+ },
+ {
+  "id": "fresh:fresh_definition:72ebd4c38a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "灌裝成本",
+  "level": "article",
+  "answer": [
+   "J0020060-art-3"
+  ],
+  "term": "灌裝成本"
+ },
+ {
+  "id": "fresh:fresh_definition:9461c4c960",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公共下水道",
+  "level": "article",
+  "answer": [
+   "D0070058-art-2"
+  ],
+  "term": "公共下水道"
+ },
+ {
+  "id": "fresh:fresh_definition:c93190f8a9",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "一般天氣預報",
+  "level": "article",
+  "answer": [
+   "K0100002-art-2"
+  ],
+  "term": "一般天氣預報"
+ },
+ {
+  "id": "fresh:fresh_definition:2bc4b260fc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "睡眠設備",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "睡眠設備"
+ },
+ {
+  "id": "fresh:fresh_definition:ebe3c74a41",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "交通寧靜區",
+  "level": "article",
+  "answer": [
+   "D0070156-art-2"
+  ],
+  "term": "交通寧靜區"
+ },
+ {
+  "id": "fresh:fresh_definition:5be401c107",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "客語為通行語地區",
+  "level": "article",
+  "answer": [
+   "D0140019-art-2"
+  ],
+  "term": "客語為通行語地區"
+ },
+ {
+  "id": "fresh:fresh_definition:861d113493",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "使用限制",
+  "level": "article",
+  "answer": [
+   "K0090055-art-2"
+  ],
+  "term": "使用限制"
+ },
+ {
+  "id": "fresh:fresh_definition:2e79d6b90d",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "新聞報導",
+  "level": "article",
+  "answer": [
+   "P0050054-art-2",
+   "P0050055-art-2"
+  ],
+  "term": "新聞報導"
+ },
+ {
+  "id": "fresh:fresh_definition:20b24650d8",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "共用部分",
+  "level": "article",
+  "answer": [
+   "D0070118-art-3"
+  ],
+  "term": "共用部分"
+ },
+ {
+  "id": "fresh:fresh_definition:da58557b2a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國際海纜登陸站",
+  "level": "article",
+  "answer": [
+   "K0060050-art-2"
+  ],
+  "term": "國際海纜登陸站"
+ },
+ {
+  "id": "fresh:fresh_definition:1ec70aa4bc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "機場交通地帶",
+  "level": "article",
+  "answer": [
+   "K0090014-art-2"
+  ],
+  "term": "機場交通地帶"
+ },
+ {
+  "id": "fresh:fresh_definition:227e717df3",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "最小厚度",
+  "level": "article",
+  "answer": [
+   "N0060055-art-2"
+  ],
+  "term": "最小厚度"
+ },
+ {
+  "id": "fresh:fresh_definition:e0f720113a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "降落場域",
+  "level": "article",
+  "answer": [
+   "H0120092-art-2"
+  ],
+  "term": "降落場域"
+ },
+ {
+  "id": "fresh:fresh_definition:acb4ae0417",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "參加人",
+  "level": "article",
+  "answer": [
+   "G0380164-art-4"
+  ],
+  "term": "參加人"
+ },
+ {
+  "id": "fresh:fresh_definition:447d026ca6",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "接地故障",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6"
+  ],
+  "term": "接地故障"
+ },
+ {
+  "id": "fresh:fresh_definition:5e98511981",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "風險性資產總額",
+  "level": "article",
+  "answer": [
+   "G0380046-art-2",
+   "G0380064-art-2",
+   "G0380153-art-2",
+   "M0070022-art-2"
+  ],
+  "term": "風險性資產總額"
+ },
+ {
+  "id": "fresh:fresh_definition:09eb9f8803",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "一級性能直昇機",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "一級性能直昇機"
+ },
+ {
+  "id": "fresh:fresh_definition:177ba6cfcc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "特殊型式放射性物質",
+  "level": "article",
+  "answer": [
+   "J0160005-art-6"
+  ],
+  "term": "特殊型式放射性物質"
+ },
+ {
+  "id": "fresh:fresh_definition:856366ae5a",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "租賃住宅服務業",
+  "level": "article",
+  "answer": [
+   "D0060125-art-3"
+  ],
+  "term": "租賃住宅服務業"
+ },
+ {
+  "id": "fresh:fresh_definition:45a37eec88",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "定型化契約條款",
+  "level": "article",
+  "answer": [
+   "J0170001-art-2"
+  ],
+  "term": "定型化契約條款"
+ },
+ {
+  "id": "fresh:fresh_definition:016654c260",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "專家會議",
+  "level": "article",
+  "answer": [
+   "A0030347-art-2"
+  ],
+  "term": "專家會議"
+ },
+ {
+  "id": "fresh:fresh_definition:c9b93b29b7",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "一定數量",
+  "level": "article",
+  "answer": [
+   "G0380252-art-2"
+  ],
+  "term": "一定數量"
+ },
+ {
+  "id": "fresh:fresh_definition:55c22806ab",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "固體散裝貨物",
+  "level": "article",
+  "answer": [
+   "K0070015-art-3"
+  ],
+  "term": "固體散裝貨物"
+ },
+ {
+  "id": "fresh:fresh_definition:4441296edc",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "陸資廠商",
+  "level": "article",
+  "answer": [
+   "F0090030-art-2"
+  ],
+  "term": "陸資廠商"
+ },
+ {
+  "id": "fresh:fresh_definition:10c1bcc7b5",
+  "kind": "fresh_definition",
+  "cls": "term",
+  "split": "fresh",
+  "query": "小水力獎勵金",
+  "level": "article",
+  "answer": [
+   "J0130100-art-3"
+  ],
+  "term": "小水力獎勵金"
+ },
+ {
+  "id": "fresh:fresh_partial:42744c2444",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "農業產銷",
+  "level": "article",
+  "answer": [
+   "M0020001-art-3"
+  ],
+  "term": "農業產銷班"
+ },
+ {
+  "id": "fresh:fresh_partial:c7f9a0c80a",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "母性健康保",
+  "level": "article",
+  "answer": [
+   "N0060065-art-2"
+  ],
+  "term": "母性健康保護"
+ },
+ {
+  "id": "fresh:fresh_partial:d3748fd188",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "原已建築使",
+  "level": "article",
+  "answer": [
+   "G0370017-art-4"
+  ],
+  "term": "原已建築使用"
+ },
+ {
+  "id": "fresh:fresh_partial:72d381e37f",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "監視性能規範需",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "監視性能規範需求"
+ },
+ {
+  "id": "fresh:fresh_partial:27c763bf4d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "行動地球電",
+  "level": "article",
+  "answer": [
+   "K0060046-art-2"
+  ],
+  "term": "行動地球電臺"
+ },
+ {
+  "id": "fresh:fresh_partial:a940f4d12d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "潮濕手術",
+  "level": "article",
+  "answer": [
+   "J0030018-art-614"
+  ],
+  "term": "潮濕手術區"
+ },
+ {
+  "id": "fresh:fresh_partial:da4b47e8fe",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "運動防護",
+  "level": "article",
+  "answer": [
+   "H0120026-art-2"
+  ],
+  "term": "運動防護員"
+ },
+ {
+  "id": "fresh:fresh_partial:911f6b9912",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "汽車或電車運輸",
+  "level": "article",
+  "answer": [
+   "K0040001-art-2"
+  ],
+  "term": "汽車或電車運輸業"
+ },
+ {
+  "id": "fresh:fresh_partial:3944deb54b",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "設備或技",
+  "level": "article",
+  "answer": [
+   "G0340058-art-2",
+   "K0020020-art-2"
+  ],
+  "term": "設備或技術"
+ },
+ {
+  "id": "fresh:fresh_partial:eacd3eccdc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "地方營鐵",
+  "level": "article",
+  "answer": [
+   "K0030001-art-2"
+  ],
+  "term": "地方營鐵路"
+ },
+ {
+  "id": "fresh:fresh_partial:4971f886de",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "PV電源電",
+  "level": "article",
+  "answer": [
+   "J0030018-art-863"
+  ],
+  "term": "PV電源電路"
+ },
+ {
+  "id": "fresh:fresh_partial:81376f11aa",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "樓板衝擊音指",
+  "level": "article",
+  "answer": [
+   "D0070115-art-46-1"
+  ],
+  "term": "樓板衝擊音指標"
+ },
+ {
+  "id": "fresh:fresh_partial:f0fe96c559",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "利用非交通工具之設",
+  "level": "article",
+  "answer": [
+   "G0340095-art-2"
+  ],
+  "term": "利用非交通工具之設備"
+ },
+ {
+  "id": "fresh:fresh_partial:e6de806d30",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "不定期航空運輸業",
+  "level": "article",
+  "answer": [
+   "K0090003-art-2"
+  ],
+  "term": "不定期航空運輸業務"
+ },
+ {
+  "id": "fresh:fresh_partial:a3349f1a76",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "資本適足",
+  "level": "article",
+  "answer": [
+   "G0380046-art-2"
+  ],
+  "term": "資本適足率"
+ },
+ {
+  "id": "fresh:fresh_partial:cfe9c3d539",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "文化創意活",
+  "level": "article",
+  "answer": [
+   "H0170082-art-2"
+  ],
+  "term": "文化創意活動"
+ },
+ {
+  "id": "fresh:fresh_partial:483c528074",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "臨時及短期照",
+  "level": "article",
+  "answer": [
+   "D0050186-art-4"
+  ],
+  "term": "臨時及短期照顧"
+ },
+ {
+  "id": "fresh:fresh_partial:a00eb99e47",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "放射性包容",
+  "level": "article",
+  "answer": [
+   "J0160005-art-6"
+  ],
+  "term": "放射性包容物"
+ },
+ {
+  "id": "fresh:fresh_partial:29c5e93b1a",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "其他精神照護機",
+  "level": "article",
+  "answer": [
+   "L0020245-art-2"
+  ],
+  "term": "其他精神照護機構"
+ },
+ {
+  "id": "fresh:fresh_partial:9ffceebb4e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "多件包裝商",
+  "level": "article",
+  "answer": [
+   "J0100066-art-2"
+  ],
+  "term": "多件包裝商品"
+ },
+ {
+  "id": "fresh:fresh_partial:166a096583",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "遙控控制作",
+  "level": "article",
+  "answer": [
+   "K0060032-art-3",
+   "K0060145-art-2"
+  ],
+  "term": "遙控控制作業"
+ },
+ {
+  "id": "fresh:fresh_partial:400386a6d0",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "賠償義務",
+  "level": "article",
+  "answer": [
+   "F0030045-art-2"
+  ],
+  "term": "賠償義務人"
+ },
+ {
+  "id": "fresh:fresh_partial:04044a1f45",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "防止摻偽包",
+  "level": "article",
+  "answer": [
+   "L0030073-art-4"
+  ],
+  "term": "防止摻偽包裝"
+ },
+ {
+  "id": "fresh:fresh_partial:907f4dc059",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "底部遮蔽",
+  "level": "article",
+  "answer": [
+   "J0030018-art-387"
+  ],
+  "term": "底部遮蔽物"
+ },
+ {
+  "id": "fresh:fresh_partial:6256298094",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "定期航空運輸業",
+  "level": "article",
+  "answer": [
+   "K0090003-art-2"
+  ],
+  "term": "定期航空運輸業務"
+ },
+ {
+  "id": "fresh:fresh_partial:9c815afec0",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "放射性廢棄",
+  "level": "article",
+  "answer": [
+   "J0160015-art-4",
+   "J0160079-art-3"
+  ],
+  "term": "放射性廢棄物"
+ },
+ {
+  "id": "fresh:fresh_partial:ddc0481601",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "固態相位控制調光",
+  "level": "article",
+  "answer": [
+   "J0030018-art-653"
+  ],
+  "term": "固態相位控制調光器"
+ },
+ {
+  "id": "fresh:fresh_partial:af64a77023",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "第三A類儀降作",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "第三A類儀降作業"
+ },
+ {
+  "id": "fresh:fresh_partial:af0ef1a6af",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "預立醫療照護諮",
+  "level": "article",
+  "answer": [
+   "L0020189-art-3"
+  ],
+  "term": "預立醫療照護諮商"
+ },
+ {
+  "id": "fresh:fresh_partial:f5cdcee2c5",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "應塗銷之少年前案資",
+  "level": "article",
+  "answer": [
+   "C0010049-art-3"
+  ],
+  "term": "應塗銷之少年前案資料"
+ },
+ {
+  "id": "fresh:fresh_partial:1775d5495e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "半製品或中間產",
+  "level": "article",
+  "answer": [
+   "L0030073-art-4",
+   "M0130031-art-3"
+  ],
+  "term": "半製品或中間產品"
+ },
+ {
+  "id": "fresh:fresh_partial:4a6ad54a11",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "其他業務部",
+  "level": "article",
+  "answer": [
+   "K0060055-art-2"
+  ],
+  "term": "其他業務部門"
+ },
+ {
+  "id": "fresh:fresh_partial:029c0926fa",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "行動通信網路業",
+  "level": "article",
+  "answer": [
+   "K0060089-art-3"
+  ],
+  "term": "行動通信網路業務"
+ },
+ {
+  "id": "fresh:fresh_partial:431da61477",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "警示虛擬帳",
+  "level": "article",
+  "answer": [
+   "G0380271-art-2"
+  ],
+  "term": "警示虛擬帳號"
+ },
+ {
+  "id": "fresh:fresh_partial:b347f87764",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "特定實驗頻",
+  "level": "article",
+  "answer": [
+   "K0060063-art-2",
+   "K0060144-art-2"
+  ],
+  "term": "特定實驗頻率"
+ },
+ {
+  "id": "fresh:fresh_partial:cad4917cae",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "憑證實務作業基",
+  "level": "article",
+  "answer": [
+   "J0080037-art-2"
+  ],
+  "term": "憑證實務作業基準"
+ },
+ {
+  "id": "fresh:fresh_partial:71a85453e3",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "兒童課後照顧服",
+  "level": "article",
+  "answer": [
+   "H0070041-art-3"
+  ],
+  "term": "兒童課後照顧服務"
+ },
+ {
+  "id": "fresh:fresh_partial:50f990b85f",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "乘客管制",
+  "level": "article",
+  "answer": [
+   "K0090061-art-2"
+  ],
+  "term": "乘客管制區"
+ },
+ {
+  "id": "fresh:fresh_partial:0b1f739cc2",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公司設立登記",
+  "level": "article",
+  "answer": [
+   "J0030144-art-2"
+  ],
+  "term": "公司設立登記日"
+ },
+ {
+  "id": "fresh:fresh_partial:5f67b54b8d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "專利電子申",
+  "level": "article",
+  "answer": [
+   "J0070037-art-2"
+  ],
+  "term": "專利電子申請"
+ },
+ {
+  "id": "fresh:fresh_partial:a8c27918ae",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "約定有效劑",
+  "level": "article",
+  "answer": [
+   "J0160004-art-2"
+  ],
+  "term": "約定有效劑量"
+ },
+ {
+  "id": "fresh:fresh_partial:649cbe6238",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國土功能分",
+  "level": "article",
+  "answer": [
+   "D0070230-art-3"
+  ],
+  "term": "國土功能分區"
+ },
+ {
+  "id": "fresh:fresh_partial:a6b1e6623c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "機械化一貫作業專用碼",
+  "level": "article",
+  "answer": [
+   "K0080035-art-2"
+  ],
+  "term": "機械化一貫作業專用碼頭"
+ },
+ {
+  "id": "fresh:fresh_partial:b41b2b77e1",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "貨物裝卸設",
+  "level": "article",
+  "answer": [
+   "K0070016-art-290"
+  ],
+  "term": "貨物裝卸設備"
+ },
+ {
+  "id": "fresh:fresh_partial:6273a21a07",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "最有效使",
+  "level": "article",
+  "answer": [
+   "D0060077-art-2"
+  ],
+  "term": "最有效使用"
+ },
+ {
+  "id": "fresh:fresh_partial:3326881b39",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "直昇機機場最低飛航限",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "直昇機機場最低飛航限度"
+ },
+ {
+  "id": "fresh:fresh_partial:ade47deeff",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "全國性體育運動團",
+  "level": "article",
+  "answer": [
+   "F0040025-art-2"
+  ],
+  "term": "全國性體育運動團體"
+ },
+ {
+  "id": "fresh:fresh_partial:1cfdae65cd",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "船舶運送",
+  "level": "article",
+  "answer": [
+   "K0070001-art-3"
+  ],
+  "term": "船舶運送業"
+ },
+ {
+  "id": "fresh:fresh_partial:b2ef86dc1b",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "生質能發電設",
+  "level": "article",
+  "answer": [
+   "J0130041-art-3"
+  ],
+  "term": "生質能發電設備"
+ },
+ {
+  "id": "fresh:fresh_partial:f4d2b7a187",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "專案發起",
+  "level": "article",
+  "answer": [
+   "H0170544-art-2",
+   "H0170545-art-2"
+  ],
+  "term": "專案發起人"
+ },
+ {
+  "id": "fresh:fresh_partial:4eb2edd4e8",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "正壓保護「pD",
+  "level": "article",
+  "answer": [
+   "J0030018-art-466"
+  ],
+  "term": "正壓保護「pD」"
+ },
+ {
+  "id": "fresh:fresh_partial:34c2c0aedc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飼料調配",
+  "level": "article",
+  "answer": [
+   "M0060019-art-2"
+  ],
+  "term": "飼料調配室"
+ },
+ {
+  "id": "fresh:fresh_partial:8b028ea203",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "探勘獎勵",
+  "level": "article",
+  "answer": [
+   "J0130097-art-3"
+  ],
+  "term": "探勘獎勵人"
+ },
+ {
+  "id": "fresh:fresh_partial:5c4aea2999",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "鄰近國有非公用建築用",
+  "level": "article",
+  "answer": [
+   "G0370017-art-4"
+  ],
+  "term": "鄰近國有非公用建築用地"
+ },
+ {
+  "id": "fresh:fresh_partial:df36bc58a3",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "原住民學",
+  "level": "article",
+  "answer": [
+   "H0030036-art-2"
+  ],
+  "term": "原住民學生"
+ },
+ {
+  "id": "fresh:fresh_partial:cc1ea3ab3c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "重合槽或聚合",
+  "level": "article",
+  "answer": [
+   "O0020115-art-2"
+  ],
+  "term": "重合槽或聚合槽"
+ },
+ {
+  "id": "fresh:fresh_partial:5883a5d5c1",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "共同裝載艙",
+  "level": "article",
+  "answer": [
+   "K0070015-art-3"
+  ],
+  "term": "共同裝載艙間"
+ },
+ {
+  "id": "fresh:fresh_partial:7ca81a4a4a",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "停機線維",
+  "level": "article",
+  "answer": [
+   "K0090011-art-3"
+  ],
+  "term": "停機線維修"
+ },
+ {
+  "id": "fresh:fresh_partial:a2fe8f4971",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "自製自用飼",
+  "level": "article",
+  "answer": [
+   "M0060080-art-2"
+  ],
+  "term": "自製自用飼料"
+ },
+ {
+  "id": "fresh:fresh_partial:29e0a1ada0",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "短期補習班人",
+  "level": "article",
+  "answer": [
+   "H0080097-art-2"
+  ],
+  "term": "短期補習班人員"
+ },
+ {
+  "id": "fresh:fresh_partial:6b05fea1dc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外送合作契",
+  "level": "article",
+  "answer": [
+   "N0020024-art-3"
+  ],
+  "term": "外送合作契約"
+ },
+ {
+  "id": "fresh:fresh_partial:a8167c6efc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "保安控制人",
+  "level": "article",
+  "answer": [
+   "K0090061-art-2"
+  ],
+  "term": "保安控制人員"
+ },
+ {
+  "id": "fresh:fresh_partial:f5927fa47e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "可望收回",
+  "level": "article",
+  "answer": [
+   "G0380019-art-4",
+   "G0380073-art-4",
+   "G0390043-art-4"
+  ],
+  "term": "可望收回者"
+ },
+ {
+  "id": "fresh:fresh_partial:8a15e738e7",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "共享頻率資料",
+  "level": "article",
+  "answer": [
+   "K0060123-art-2"
+  ],
+  "term": "共享頻率資料庫"
+ },
+ {
+  "id": "fresh:fresh_partial:fcc10883db",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "航空器乘客訂位資",
+  "level": "article",
+  "answer": [
+   "D0080225-art-2"
+  ],
+  "term": "航空器乘客訂位資訊"
+ },
+ {
+  "id": "fresh:fresh_partial:111a529add",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "行動通信網路事",
+  "level": "article",
+  "answer": [
+   "K0060029-art-2"
+  ],
+  "term": "行動通信網路事業"
+ },
+ {
+  "id": "fresh:fresh_partial:46f4061299",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "二等遊艇駕",
+  "level": "article",
+  "answer": [
+   "K0070057-art-2"
+  ],
+  "term": "二等遊艇駕駛"
+ },
+ {
+  "id": "fresh:fresh_partial:5a69f9cbd9",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "模擬槍及其主要組成零",
+  "level": "article",
+  "answer": [
+   "D0080208-art-2"
+  ],
+  "term": "模擬槍及其主要組成零件"
+ },
+ {
+  "id": "fresh:fresh_partial:a1896f0fc8",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "開放型基",
+  "level": "article",
+  "answer": [
+   "G0380169-art-4"
+  ],
+  "term": "開放型基金"
+ },
+ {
+  "id": "fresh:fresh_partial:bcd660dbb0",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "郵政服務人",
+  "level": "article",
+  "answer": [
+   "K0050001-art-4"
+  ],
+  "term": "郵政服務人員"
+ },
+ {
+  "id": "fresh:fresh_partial:dce0c267eb",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "特定實驗場",
+  "level": "article",
+  "answer": [
+   "K0060063-art-2",
+   "K0060144-art-2"
+  ],
+  "term": "特定實驗場域"
+ },
+ {
+  "id": "fresh:fresh_partial:df5626223e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "天然氣售",
+  "level": "article",
+  "answer": [
+   "J0130054-art-2"
+  ],
+  "term": "天然氣售價"
+ },
+ {
+  "id": "fresh:fresh_partial:d73f864816",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "進場及落地階",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "進場及落地階段"
+ },
+ {
+  "id": "fresh:fresh_partial:edb6576bd4",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "幼兒教育及照",
+  "level": "article",
+  "answer": [
+   "H0070031-art-3"
+  ],
+  "term": "幼兒教育及照顧"
+ },
+ {
+  "id": "fresh:fresh_partial:3ef2f451db",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "溫泉取供事",
+  "level": "article",
+  "answer": [
+   "J0110040-art-3"
+  ],
+  "term": "溫泉取供事業"
+ },
+ {
+  "id": "fresh:fresh_partial:4de86715e1",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "固態正弦波調光",
+  "level": "article",
+  "answer": [
+   "J0030018-art-653"
+  ],
+  "term": "固態正弦波調光器"
+ },
+ {
+  "id": "fresh:fresh_partial:2488053283",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "合格自有資",
+  "level": "article",
+  "answer": [
+   "G0380064-art-2",
+   "G0380153-art-2"
+  ],
+  "term": "合格自有資本"
+ },
+ {
+  "id": "fresh:fresh_partial:84e71866fe",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "固定通信網",
+  "level": "article",
+  "answer": [
+   "K0060029-art-2",
+   "K0060050-art-2",
+   "K0060127-art-2",
+   "K0060157-art-2"
+  ],
+  "term": "固定通信網路"
+ },
+ {
+  "id": "fresh:fresh_partial:41f457cb7c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "設施利用型農",
+  "level": "article",
+  "answer": [
+   "M0030010-art-2"
+  ],
+  "term": "設施利用型農場"
+ },
+ {
+  "id": "fresh:fresh_partial:4f35ae6a2f",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "義務裝置容",
+  "level": "article",
+  "answer": [
+   "J0130095-art-3"
+  ],
+  "term": "義務裝置容量"
+ },
+ {
+  "id": "fresh:fresh_partial:3555f7e1a3",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "機械類產",
+  "level": "article",
+  "answer": [
+   "N0060062-art-2"
+  ],
+  "term": "機械類產品"
+ },
+ {
+  "id": "fresh:fresh_partial:795af9018c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "離岸風力發",
+  "level": "article",
+  "answer": [
+   "J0130032-art-3"
+  ],
+  "term": "離岸風力發電"
+ },
+ {
+  "id": "fresh:fresh_partial:646275afd7",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "資訊科技設備",
+  "level": "article",
+  "answer": [
+   "J0030018-art-749"
+  ],
+  "term": "資訊科技設備室"
+ },
+ {
+  "id": "fresh:fresh_partial:66ce35fcc9",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "師對生霸",
+  "level": "article",
+  "answer": [
+   "H0020081-art-4"
+  ],
+  "term": "師對生霸凌"
+ },
+ {
+  "id": "fresh:fresh_partial:64c93089c3",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "基因轉殖水產動植",
+  "level": "article",
+  "answer": [
+   "M0050039-art-2"
+  ],
+  "term": "基因轉殖水產動植物"
+ },
+ {
+  "id": "fresh:fresh_partial:8936170c36",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外幣結算機",
+  "level": "article",
+  "answer": [
+   "G0380164-art-4"
+  ],
+  "term": "外幣結算機構"
+ },
+ {
+  "id": "fresh:fresh_partial:9face0c8af",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "不動產資產信",
+  "level": "article",
+  "answer": [
+   "G0380169-art-4"
+  ],
+  "term": "不動產資產信託"
+ },
+ {
+  "id": "fresh:fresh_partial:ed48c8bcf2",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "非引火性設",
+  "level": "article",
+  "answer": [
+   "J0030018-art-466"
+  ],
+  "term": "非引火性設備"
+ },
+ {
+  "id": "fresh:fresh_partial:15ec3ddbd2",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "水翼非客",
+  "level": "article",
+  "answer": [
+   "K0070018-art-2"
+  ],
+  "term": "水翼非客船"
+ },
+ {
+  "id": "fresh:fresh_partial:5c99a14a8f",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "變流器輸出電",
+  "level": "article",
+  "answer": [
+   "J0030018-art-863",
+   "J0030018-art-894"
+  ],
+  "term": "變流器輸出電路"
+ },
+ {
+  "id": "fresh:fresh_partial:5cd2d1c3dd",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "資通安全事",
+  "level": "article",
+  "answer": [
+   "A0030297-art-3"
+  ],
+  "term": "資通安全事件"
+ },
+ {
+  "id": "fresh:fresh_partial:8ff03293fa",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "航空測量攝影及遙感探",
+  "level": "article",
+  "answer": [
+   "D0060090-art-3"
+  ],
+  "term": "航空測量攝影及遙感探測"
+ },
+ {
+  "id": "fresh:fresh_partial:a3f8eee7fc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "儲槽排氣密閉收集系",
+  "level": "article",
+  "answer": [
+   "O0020115-art-2"
+  ],
+  "term": "儲槽排氣密閉收集系統"
+ },
+ {
+  "id": "fresh:fresh_partial:e1a521a193",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "貨物持有",
+  "level": "article",
+  "answer": [
+   "G0350002-art-3"
+  ],
+  "term": "貨物持有人"
+ },
+ {
+  "id": "fresh:fresh_partial:f3ce447032",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "緊急應變基本計",
+  "level": "article",
+  "answer": [
+   "J0160056-art-2"
+  ],
+  "term": "緊急應變基本計畫"
+ },
+ {
+  "id": "fresh:fresh_partial:0fdb1fd9c0",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "衛星廣播電",
+  "level": "article",
+  "answer": [
+   "P0050013-art-2"
+  ],
+  "term": "衛星廣播電視"
+ },
+ {
+  "id": "fresh:fresh_partial:4d50283b57",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "職業訓練機",
+  "level": "article",
+  "answer": [
+   "H0040028-art-3"
+  ],
+  "term": "職業訓練機構"
+ },
+ {
+  "id": "fresh:fresh_partial:ca338c2b1b",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "社團專職人",
+  "level": "article",
+  "answer": [
+   "S0080033-art-2"
+  ],
+  "term": "社團專職人員"
+ },
+ {
+  "id": "fresh:fresh_partial:d37f01d71c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "鐵路交通事",
+  "level": "article",
+  "answer": [
+   "K0020058-art-2"
+  ],
+  "term": "鐵路交通事故"
+ },
+ {
+  "id": "fresh:fresh_partial:15997db00d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "最小綠化面",
+  "level": "article",
+  "answer": [
+   "D0070115-art-299"
+  ],
+  "term": "最小綠化面積"
+ },
+ {
+  "id": "fresh:fresh_partial:bed933d5d6",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "航行資料紀錄",
+  "level": "article",
+  "answer": [
+   "K0070077-art-2"
+  ],
+  "term": "航行資料紀錄器"
+ },
+ {
+  "id": "fresh:fresh_partial:b7b22c3c9d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "需量反應提供",
+  "level": "article",
+  "answer": [
+   "J0130096-art-2"
+  ],
+  "term": "需量反應提供者"
+ },
+ {
+  "id": "fresh:fresh_partial:5bc67b4c7c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "臨時商務活",
+  "level": "article",
+  "answer": [
+   "G0340126-art-2"
+  ],
+  "term": "臨時商務活動"
+ },
+ {
+  "id": "fresh:fresh_partial:831e7d635d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "家庭關懷訪視及服",
+  "level": "article",
+  "answer": [
+   "D0050186-art-4"
+  ],
+  "term": "家庭關懷訪視及服務"
+ },
+ {
+  "id": "fresh:fresh_partial:e478d3dc40",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "居住臺灣地區設有戶籍國",
+  "level": "article",
+  "answer": [
+   "D0080132-art-3"
+  ],
+  "term": "居住臺灣地區設有戶籍國民"
+ },
+ {
+  "id": "fresh:fresh_partial:1cb5e5adb6",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "美容醫學手",
+  "level": "article",
+  "answer": [
+   "L0020075-art-2"
+  ],
+  "term": "美容醫學手術"
+ },
+ {
+  "id": "fresh:fresh_partial:99bc83a83c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "權證發行",
+  "level": "article",
+  "answer": [
+   "G0340168-art-2"
+  ],
+  "term": "權證發行人"
+ },
+ {
+  "id": "fresh:fresh_partial:9482f15e60",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "檔案當事",
+  "level": "article",
+  "answer": [
+   "A0030312-art-3"
+  ],
+  "term": "檔案當事人"
+ },
+ {
+  "id": "fresh:fresh_partial:ca6ec6a3f3",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "廠房附屬空",
+  "level": "article",
+  "answer": [
+   "D0070115-art-270"
+  ],
+  "term": "廠房附屬空間"
+ },
+ {
+  "id": "fresh:fresh_partial:d630ff6437",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "目睹家庭暴",
+  "level": "article",
+  "answer": [
+   "D0050071-art-2"
+  ],
+  "term": "目睹家庭暴力"
+ },
+ {
+  "id": "fresh:fresh_partial:915d1afccc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "緊急停止裝",
+  "level": "article",
+  "answer": [
+   "N0060034-art-3"
+  ],
+  "term": "緊急停止裝置"
+ },
+ {
+  "id": "fresh:fresh_partial:0385c6a670",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "探礦申請",
+  "level": "article",
+  "answer": [
+   "J0020001-art-4"
+  ],
+  "term": "探礦申請地"
+ },
+ {
+  "id": "fresh:fresh_partial:9c02be9e14",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "辦理融資性租賃業務事",
+  "level": "article",
+  "answer": [
+   "G0380259-art-2"
+  ],
+  "term": "辦理融資性租賃業務事業"
+ },
+ {
+  "id": "fresh:fresh_partial:a97b416309",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "計程車客運服務",
+  "level": "article",
+  "answer": [
+   "K0040001-art-2"
+  ],
+  "term": "計程車客運服務業"
+ },
+ {
+  "id": "fresh:fresh_partial:93945648c3",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "人體細胞組織",
+  "level": "article",
+  "answer": [
+   "L0020075-art-2"
+  ],
+  "term": "人體細胞組織物"
+ },
+ {
+  "id": "fresh:fresh_partial:a4bd8246d9",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "租賃住宅管理業",
+  "level": "article",
+  "answer": [
+   "D0060125-art-3"
+  ],
+  "term": "租賃住宅管理業務"
+ },
+ {
+  "id": "fresh:fresh_partial:9b83ce5f5b",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "依法完成使用地編",
+  "level": "article",
+  "answer": [
+   "G0340162-art-2"
+  ],
+  "term": "依法完成使用地編定"
+ },
+ {
+  "id": "fresh:fresh_partial:73c81beca7",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飛航時限規",
+  "level": "article",
+  "answer": [
+   "K0090001-art-2"
+  ],
+  "term": "飛航時限規範"
+ },
+ {
+  "id": "fresh:fresh_partial:b2ea3802f4",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "需用土地",
+  "level": "article",
+  "answer": [
+   "G0340162-art-2"
+  ],
+  "term": "需用土地人"
+ },
+ {
+  "id": "fresh:fresh_partial:eb64930177",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "合格第二類資",
+  "level": "article",
+  "answer": [
+   "G0380064-art-2",
+   "G0380153-art-2"
+  ],
+  "term": "合格第二類資本"
+ },
+ {
+  "id": "fresh:fresh_partial:8c18ca418f",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "生技醫藥產",
+  "level": "article",
+  "answer": [
+   "J0040046-art-4"
+  ],
+  "term": "生技醫藥產業"
+ },
+ {
+  "id": "fresh:fresh_partial:1b815baa79",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "生質燃料業",
+  "level": "article",
+  "answer": [
+   "J0020022-art-2"
+  ],
+  "term": "生質燃料業者"
+ },
+ {
+  "id": "fresh:fresh_partial:d9972ee6bd",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國內航線船",
+  "level": "article",
+  "answer": [
+   "K0080025-art-2"
+  ],
+  "term": "國內航線船舶"
+ },
+ {
+  "id": "fresh:fresh_partial:25eed0525e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "同儕教育人",
+  "level": "article",
+  "answer": [
+   "L0050034-art-2"
+  ],
+  "term": "同儕教育人員"
+ },
+ {
+  "id": "fresh:fresh_partial:29bc6ce1fd",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "農藥販賣業",
+  "level": "article",
+  "answer": [
+   "M0140012-art-5"
+  ],
+  "term": "農藥販賣業者"
+ },
+ {
+  "id": "fresh:fresh_partial:87025a8431",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "中壓輸氣管",
+  "level": "article",
+  "answer": [
+   "J0130046-art-2"
+  ],
+  "term": "中壓輸氣管線"
+ },
+ {
+  "id": "fresh:fresh_partial:495fb82e05",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "放射性廢棄物獨立貯存設",
+  "level": "article",
+  "answer": [
+   "J0160021-art-2"
+  ],
+  "term": "放射性廢棄物獨立貯存設施"
+ },
+ {
+  "id": "fresh:fresh_partial:ec3d812b51",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "維持生命治",
+  "level": "article",
+  "answer": [
+   "L0020189-art-3"
+  ],
+  "term": "維持生命治療"
+ },
+ {
+  "id": "fresh:fresh_partial:58bd6bb8b8",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "原住民族語言能",
+  "level": "article",
+  "answer": [
+   "D0130037-art-2"
+  ],
+  "term": "原住民族語言能力"
+ },
+ {
+  "id": "fresh:fresh_partial:652b1d6e5b",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "實際用水",
+  "level": "article",
+  "answer": [
+   "J0110105-art-2"
+  ],
+  "term": "實際用水量"
+ },
+ {
+  "id": "fresh:fresh_partial:5e2bc2f3b7",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "網路廣告平臺業",
+  "level": "article",
+  "answer": [
+   "D0080226-art-2"
+  ],
+  "term": "網路廣告平臺業者"
+ },
+ {
+  "id": "fresh:fresh_partial:326f6df662",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "本質安全系",
+  "level": "article",
+  "answer": [
+   "J0030018-art-466"
+  ],
+  "term": "本質安全系統"
+ },
+ {
+  "id": "fresh:fresh_partial:aa12f840c7",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "二級性能直昇",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "二級性能直昇機"
+ },
+ {
+  "id": "fresh:fresh_partial:d09a6cf48d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "一般統計調",
+  "level": "article",
+  "answer": [
+   "T0040001-art-3"
+  ],
+  "term": "一般統計調查"
+ },
+ {
+  "id": "fresh:fresh_partial:9687126b66",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "特定粉塵作",
+  "level": "article",
+  "answer": [
+   "N0060021-art-3"
+  ],
+  "term": "特定粉塵作業"
+ },
+ {
+  "id": "fresh:fresh_partial:f62930455a",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "重要電力系",
+  "level": "article",
+  "answer": [
+   "J0030018-art-614"
+  ],
+  "term": "重要電力系統"
+ },
+ {
+  "id": "fresh:fresh_partial:6e758d66df",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "再生能源售電",
+  "level": "article",
+  "answer": [
+   "J0030011-art-2"
+  ],
+  "term": "再生能源售電業"
+ },
+ {
+  "id": "fresh:fresh_partial:deeed771c3",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "社區性廣播事",
+  "level": "article",
+  "answer": [
+   "K0060098-art-3"
+  ],
+  "term": "社區性廣播事業"
+ },
+ {
+  "id": "fresh:fresh_partial:5bfb7dd559",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "氣象雷達天",
+  "level": "article",
+  "answer": [
+   "K0100003-art-2"
+  ],
+  "term": "氣象雷達天線"
+ },
+ {
+  "id": "fresh:fresh_partial:7a344fca74",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "全國性運動防護團",
+  "level": "article",
+  "answer": [
+   "H0120026-art-2"
+  ],
+  "term": "全國性運動防護團體"
+ },
+ {
+  "id": "fresh:fresh_partial:1350c24a7f",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "訂戶終端隔離",
+  "level": "article",
+  "answer": [
+   "K0060028-art-2"
+  ],
+  "term": "訂戶終端隔離度"
+ },
+ {
+  "id": "fresh:fresh_partial:bade424825",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "專業法官資格之認定與授",
+  "level": "article",
+  "answer": [
+   "A0030268-art-4"
+  ],
+  "term": "專業法官資格之認定與授與"
+ },
+ {
+  "id": "fresh:fresh_partial:c2a13227b1",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "教職員個人退休金專",
+  "level": "article",
+  "answer": [
+   "H0150056-art-4"
+  ],
+  "term": "教職員個人退休金專戶"
+ },
+ {
+  "id": "fresh:fresh_partial:b2bfcc896d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "技術作價投",
+  "level": "article",
+  "answer": [
+   "H0160054-art-2"
+  ],
+  "term": "技術作價投資"
+ },
+ {
+  "id": "fresh:fresh_partial:34ca761168",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "重大飛航事",
+  "level": "article",
+  "answer": [
+   "K0090053-art-2",
+   "K0090054-art-2",
+   "K0090086-art-2"
+  ],
+  "term": "重大飛航事故"
+ },
+ {
+  "id": "fresh:fresh_partial:007d69ae04",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "適職評鑑",
+  "level": "article",
+  "answer": [
+   "K0090009-art-2"
+  ],
+  "term": "適職評鑑員"
+ },
+ {
+  "id": "fresh:fresh_partial:57ed890957",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "技術標準",
+  "level": "article",
+  "answer": [
+   "K0090037-art-2"
+  ],
+  "term": "技術標準件"
+ },
+ {
+  "id": "fresh:fresh_partial:db04ba8a92",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "不可調式斷路",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6"
+  ],
+  "term": "不可調式斷路器"
+ },
+ {
+  "id": "fresh:fresh_partial:4a8455bfb0",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "個人等效劑",
+  "level": "article",
+  "answer": [
+   "J0160004-art-2"
+  ],
+  "term": "個人等效劑量"
+ },
+ {
+  "id": "fresh:fresh_partial:6746731d94",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公共藝術設置計",
+  "level": "article",
+  "answer": [
+   "H0170012-art-2"
+  ],
+  "term": "公共藝術設置計畫"
+ },
+ {
+  "id": "fresh:fresh_partial:a3877abbb6",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "未報告漁撈作",
+  "level": "article",
+  "answer": [
+   "M0050051-art-4"
+  ],
+  "term": "未報告漁撈作業"
+ },
+ {
+  "id": "fresh:fresh_partial:213b53f80a",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "直接歸屬成",
+  "level": "article",
+  "answer": [
+   "J0130055-art-3"
+  ],
+  "term": "直接歸屬成本"
+ },
+ {
+  "id": "fresh:fresh_partial:cceed23f23",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "法定資本適足比",
+  "level": "article",
+  "answer": [
+   "G0380046-art-2"
+  ],
+  "term": "法定資本適足比率"
+ },
+ {
+  "id": "fresh:fresh_partial:4a0bcc9a80",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "互連建立",
+  "level": "article",
+  "answer": [
+   "K0060157-art-2"
+  ],
+  "term": "互連建立費"
+ },
+ {
+  "id": "fresh:fresh_partial:777e8d37c9",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "個人定位無線電示",
+  "level": "article",
+  "answer": [
+   "K0060136-art-2"
+  ],
+  "term": "個人定位無線電示標"
+ },
+ {
+  "id": "fresh:fresh_partial:449177d796",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "再生能源發電設",
+  "level": "article",
+  "answer": [
+   "J0030011-art-2",
+   "J0100073-art-2",
+   "J0130032-art-3"
+  ],
+  "term": "再生能源發電設備"
+ },
+ {
+  "id": "fresh:fresh_partial:d33e25a8e8",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "全球海上遇險及安全系",
+  "level": "article",
+  "answer": [
+   "K0070016-art-255"
+  ],
+  "term": "全球海上遇險及安全系統"
+ },
+ {
+  "id": "fresh:fresh_partial:be987c8548",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "專屬經濟海",
+  "level": "article",
+  "answer": [
+   "M0050051-art-4"
+  ],
+  "term": "專屬經濟海域"
+ },
+ {
+  "id": "fresh:fresh_partial:8309784707",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "行動寬頻系",
+  "level": "article",
+  "answer": [
+   "K0060091-art-2"
+  ],
+  "term": "行動寬頻系統"
+ },
+ {
+  "id": "fresh:fresh_partial:acd44eff0c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "間歇性責",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6"
+  ],
+  "term": "間歇性責務"
+ },
+ {
+  "id": "fresh:fresh_partial:6b35606713",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "俸給總額慰助",
+  "level": "article",
+  "answer": [
+   "F0040020-art-3",
+   "S0080034-art-4",
+   "S0080045-art-4"
+  ],
+  "term": "俸給總額慰助金"
+ },
+ {
+  "id": "fresh:fresh_partial:3b69433b34",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "窗面平均日射取得",
+  "level": "article",
+  "answer": [
+   "D0070115-art-299"
+  ],
+  "term": "窗面平均日射取得量"
+ },
+ {
+  "id": "fresh:fresh_partial:289603edb4",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "特定疫病蟲害疫",
+  "level": "article",
+  "answer": [
+   "M0140011-art-2"
+  ],
+  "term": "特定疫病蟲害疫區"
+ },
+ {
+  "id": "fresh:fresh_partial:c4646e71e5",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "地方特色產",
+  "level": "article",
+  "answer": [
+   "J0030118-art-2"
+  ],
+  "term": "地方特色產業"
+ },
+ {
+  "id": "fresh:fresh_partial:a275d5a35c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公用氣體與油料管線災",
+  "level": "article",
+  "answer": [
+   "D0120021-art-2"
+  ],
+  "term": "公用氣體與油料管線災害"
+ },
+ {
+  "id": "fresh:fresh_partial:7992487bcc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外送服務契",
+  "level": "article",
+  "answer": [
+   "N0020024-art-3"
+  ],
+  "term": "外送服務契約"
+ },
+ {
+  "id": "fresh:fresh_partial:cd2f7243c6",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "再生能源發電設備認",
+  "level": "article",
+  "answer": [
+   "J0130041-art-3"
+  ],
+  "term": "再生能源發電設備認定"
+ },
+ {
+  "id": "fresh:fresh_partial:9bb1d12972",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "有課稅所得之年",
+  "level": "article",
+  "answer": [
+   "G0340057-art-2"
+  ],
+  "term": "有課稅所得之年度"
+ },
+ {
+  "id": "fresh:fresh_partial:0e4a66c8c0",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "金融機構本",
+  "level": "article",
+  "answer": [
+   "A0030079-art-2"
+  ],
+  "term": "金融機構本票"
+ },
+ {
+  "id": "fresh:fresh_partial:b4b730ffc8",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飛航資料紀錄",
+  "level": "article",
+  "answer": [
+   "K0090053-art-2"
+  ],
+  "term": "飛航資料紀錄器"
+ },
+ {
+  "id": "fresh:fresh_partial:5201818988",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "行車分隔設",
+  "level": "article",
+  "answer": [
+   "K0040009-art-3"
+  ],
+  "term": "行車分隔設施"
+ },
+ {
+  "id": "fresh:fresh_partial:6f89279954",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "職業準備教",
+  "level": "article",
+  "answer": [
+   "H0040028-art-3"
+  ],
+  "term": "職業準備教育"
+ },
+ {
+  "id": "fresh:fresh_partial:cf6bcb5776",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "個人特約機",
+  "level": "article",
+  "answer": [
+   "G0380240-art-3"
+  ],
+  "term": "個人特約機構"
+ },
+ {
+  "id": "fresh:fresh_partial:3013efa676",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "第三型再生能源發電設",
+  "level": "article",
+  "answer": [
+   "J0130041-art-3"
+  ],
+  "term": "第三型再生能源發電設備"
+ },
+ {
+  "id": "fresh:fresh_partial:6d9e679d7b",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "居家式服",
+  "level": "article",
+  "answer": [
+   "D0050186-art-4",
+   "D0050187-art-2"
+  ],
+  "term": "居家式服務"
+ },
+ {
+  "id": "fresh:fresh_partial:8b8824e355",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "車上設備單",
+  "level": "article",
+  "answer": [
+   "K0040047-art-2"
+  ],
+  "term": "車上設備單元"
+ },
+ {
+  "id": "fresh:fresh_partial:cf3ac2b3cf",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外送服務期",
+  "level": "article",
+  "answer": [
+   "N0020024-art-3"
+  ],
+  "term": "外送服務期間"
+ },
+ {
+  "id": "fresh:fresh_partial:ea57224a2c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "最低導航性能規",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "最低導航性能規範"
+ },
+ {
+  "id": "fresh:fresh_partial:1d2ffd172a",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "災害性天",
+  "level": "article",
+  "answer": [
+   "K0100003-art-2"
+  ],
+  "term": "災害性天氣"
+ },
+ {
+  "id": "fresh:fresh_partial:add4d3898d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "興建營運公",
+  "level": "article",
+  "answer": [
+   "O0050022-art-2"
+  ],
+  "term": "興建營運公司"
+ },
+ {
+  "id": "fresh:fresh_partial:34a87a55e2",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "原住民族地方通行",
+  "level": "article",
+  "answer": [
+   "D0130037-art-2"
+  ],
+  "term": "原住民族地方通行語"
+ },
+ {
+  "id": "fresh:fresh_partial:4e423cf548",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "標準耐火試",
+  "level": "article",
+  "answer": [
+   "K0070035-art-4"
+  ],
+  "term": "標準耐火試驗"
+ },
+ {
+  "id": "fresh:fresh_partial:72ebbbb5de",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "操舵磁羅",
+  "level": "article",
+  "answer": [
+   "K0070016-art-228"
+  ],
+  "term": "操舵磁羅經"
+ },
+ {
+  "id": "fresh:fresh_partial:24db979dfe",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "證券投資信託基",
+  "level": "article",
+  "answer": [
+   "G0400121-art-5"
+  ],
+  "term": "證券投資信託基金"
+ },
+ {
+  "id": "fresh:fresh_partial:3edd0c43ad",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "貨艙櫃護",
+  "level": "article",
+  "answer": [
+   "K0070038-art-3"
+  ],
+  "term": "貨艙櫃護蓋"
+ },
+ {
+  "id": "fresh:fresh_partial:9e1b09d18e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "探空儀追蹤",
+  "level": "article",
+  "answer": [
+   "K0100003-art-2"
+  ],
+  "term": "探空儀追蹤器"
+ },
+ {
+  "id": "fresh:fresh_partial:3dcb6702cf",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "液化石油",
+  "level": "article",
+  "answer": [
+   "N0070019-art-3"
+  ],
+  "term": "液化石油氣"
+ },
+ {
+  "id": "fresh:fresh_partial:f1af4c70df",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "金融輔助業",
+  "level": "article",
+  "answer": [
+   "G0320030-art-3"
+  ],
+  "term": "金融輔助業者"
+ },
+ {
+  "id": "fresh:fresh_partial:44be973bbd",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "生物技術產",
+  "level": "article",
+  "answer": [
+   "M0130031-art-3"
+  ],
+  "term": "生物技術產品"
+ },
+ {
+  "id": "fresh:fresh_partial:f129d021d6",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "非適用公約",
+  "level": "article",
+  "answer": [
+   "K0070016-art-255"
+  ],
+  "term": "非適用公約船"
+ },
+ {
+  "id": "fresh:fresh_partial:1f7e6b60ea",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "室內基地",
+  "level": "article",
+  "answer": [
+   "K0060089-art-3"
+  ],
+  "term": "室內基地臺"
+ },
+ {
+  "id": "fresh:fresh_partial:389c2a1b65",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "低擴散性放射性物",
+  "level": "article",
+  "answer": [
+   "J0160005-art-6"
+  ],
+  "term": "低擴散性放射性物質"
+ },
+ {
+  "id": "fresh:fresh_partial:519e18151e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "專用存款清算帳",
+  "level": "article",
+  "answer": [
+   "G0380241-art-2"
+  ],
+  "term": "專用存款清算帳戶"
+ },
+ {
+  "id": "fresh:fresh_partial:34403bdb17",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "鮪延繩釣漁",
+  "level": "article",
+  "answer": [
+   "M0050057-art-2",
+   "M0050058-art-2",
+   "M0050059-art-2",
+   "M0050060-art-2"
+  ],
+  "term": "鮪延繩釣漁船"
+ },
+ {
+  "id": "fresh:fresh_partial:2d0fe2b325",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "租賃住宅管理人",
+  "level": "article",
+  "answer": [
+   "D0060125-art-3"
+  ],
+  "term": "租賃住宅管理人員"
+ },
+ {
+  "id": "fresh:fresh_partial:363391bb00",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "集團合格資本淨",
+  "level": "article",
+  "answer": [
+   "G0380115-art-2"
+  ],
+  "term": "集團合格資本淨額"
+ },
+ {
+  "id": "fresh:fresh_partial:b28afa35c9",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "高壓輸氣管",
+  "level": "article",
+  "answer": [
+   "J0130046-art-2"
+  ],
+  "term": "高壓輸氣管線"
+ },
+ {
+  "id": "fresh:fresh_partial:904deb5b6e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "貨物裝卸",
+  "level": "article",
+  "answer": [
+   "K0080037-art-2"
+  ],
+  "term": "貨物裝卸量"
+ },
+ {
+  "id": "fresh:fresh_partial:5687b2f5ae",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "專營信用卡業務機",
+  "level": "article",
+  "answer": [
+   "G0380055-art-2"
+  ],
+  "term": "專營信用卡業務機構"
+ },
+ {
+  "id": "fresh:fresh_partial:85acf3e68b",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "殯葬設施經營",
+  "level": "article",
+  "answer": [
+   "D0020040-art-2"
+  ],
+  "term": "殯葬設施經營業"
+ },
+ {
+  "id": "fresh:fresh_partial:3667597533",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "直流匯流",
+  "level": "article",
+  "answer": [
+   "J0030018-art-863"
+  ],
+  "term": "直流匯流箱"
+ },
+ {
+  "id": "fresh:fresh_partial:bf9f760d38",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "非粘性物",
+  "level": "article",
+  "answer": [
+   "K0070015-art-3"
+  ],
+  "term": "非粘性物質"
+ },
+ {
+  "id": "fresh:fresh_partial:3474845245",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "原住民個",
+  "level": "article",
+  "answer": [
+   "D0130012-art-2"
+  ],
+  "term": "原住民個人"
+ },
+ {
+  "id": "fresh:fresh_partial:72799fa635",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "純氧活性污泥",
+  "level": "article",
+  "answer": [
+   "D0070071-art-2"
+  ],
+  "term": "純氧活性污泥法"
+ },
+ {
+  "id": "fresh:fresh_partial:9b370e6c95",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "不動產管理機",
+  "level": "article",
+  "answer": [
+   "G0380169-art-4"
+  ],
+  "term": "不動產管理機構"
+ },
+ {
+  "id": "fresh:fresh_partial:a92b421c27",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飛航管制",
+  "level": "article",
+  "answer": [
+   "K0090008-art-2"
+  ],
+  "term": "飛航管制員"
+ },
+ {
+  "id": "fresh:fresh_partial:4c3c4d51ab",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飛航模擬訓練設備管理",
+  "level": "article",
+  "answer": [
+   "K0090081-art-2"
+  ],
+  "term": "飛航模擬訓練設備管理人"
+ },
+ {
+  "id": "fresh:fresh_partial:67610ed702",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電子影音檔案副",
+  "level": "article",
+  "answer": [
+   "A0030087-art-2"
+  ],
+  "term": "電子影音檔案副版"
+ },
+ {
+  "id": "fresh:fresh_partial:2fa0fc305a",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "錄影節目",
+  "level": "article",
+  "answer": [
+   "P0030009-art-2"
+  ],
+  "term": "錄影節目帶"
+ },
+ {
+  "id": "fresh:fresh_partial:6cf7eed59e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "行動轉售服",
+  "level": "article",
+  "answer": [
+   "K0060038-art-2"
+  ],
+  "term": "行動轉售服務"
+ },
+ {
+  "id": "fresh:fresh_partial:01bba4171f",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "發電業部",
+  "level": "article",
+  "answer": [
+   "J0130081-art-3"
+  ],
+  "term": "發電業部門"
+ },
+ {
+  "id": "fresh:fresh_partial:5439a1bae2",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "跨距中之視在弛",
+  "level": "article",
+  "answer": [
+   "J0030019-art-7"
+  ],
+  "term": "跨距中之視在弛度"
+ },
+ {
+  "id": "fresh:fresh_partial:18fea54632",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "無線寬頻接取系",
+  "level": "article",
+  "answer": [
+   "K0060080-art-2"
+  ],
+  "term": "無線寬頻接取系統"
+ },
+ {
+  "id": "fresh:fresh_partial:4a48b53e99",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "無線寬頻接取業",
+  "level": "article",
+  "answer": [
+   "K0060080-art-2"
+  ],
+  "term": "無線寬頻接取業務"
+ },
+ {
+  "id": "fresh:fresh_partial:aa14025ffa",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "農村再生發展",
+  "level": "article",
+  "answer": [
+   "M0110017-art-3"
+  ],
+  "term": "農村再生發展區"
+ },
+ {
+  "id": "fresh:fresh_partial:a091f8fb98",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "事實發生",
+  "level": "article",
+  "answer": [
+   "G0400069-art-4"
+  ],
+  "term": "事實發生日"
+ },
+ {
+  "id": "fresh:fresh_partial:86d23d1e4d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "虛擬資產交換",
+  "level": "article",
+  "answer": [
+   "G0400162-art-2"
+  ],
+  "term": "虛擬資產交換商"
+ },
+ {
+  "id": "fresh:fresh_partial:33cae4b5db",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "集團法定資本需",
+  "level": "article",
+  "answer": [
+   "G0380115-art-2"
+  ],
+  "term": "集團法定資本需求"
+ },
+ {
+  "id": "fresh:fresh_partial:6d966e4dcb",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "套件型儲能系",
+  "level": "article",
+  "answer": [
+   "J0030018-art-894"
+  ],
+  "term": "套件型儲能系統"
+ },
+ {
+  "id": "fresh:fresh_partial:ab99331252",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "生前殯葬服務契",
+  "level": "article",
+  "answer": [
+   "D0020040-art-2"
+  ],
+  "term": "生前殯葬服務契約"
+ },
+ {
+  "id": "fresh:fresh_partial:1e892a6065",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "分路器組",
+  "level": "article",
+  "answer": [
+   "J0030018-art-653"
+  ],
+  "term": "分路器組合"
+ },
+ {
+  "id": "fresh:fresh_partial:0a7a1e98bc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "現場發電設",
+  "level": "article",
+  "answer": [
+   "J0030018-art-839"
+  ],
+  "term": "現場發電設施"
+ },
+ {
+  "id": "fresh:fresh_partial:1d7e3b00bc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "固定通信系",
+  "level": "article",
+  "answer": [
+   "K0060050-art-2",
+   "K0060127-art-2"
+  ],
+  "term": "固定通信系統"
+ },
+ {
+  "id": "fresh:fresh_partial:2036d330df",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "間接連結機",
+  "level": "article",
+  "answer": [
+   "G0380245-art-2"
+  ],
+  "term": "間接連結機制"
+ },
+ {
+  "id": "fresh:fresh_partial:13b44cd4f6",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "員生消費合作",
+  "level": "article",
+  "answer": [
+   "H0020051-art-2"
+  ],
+  "term": "員生消費合作社"
+ },
+ {
+  "id": "fresh:fresh_partial:6f3a01e06c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "動力小船駕",
+  "level": "article",
+  "answer": [
+   "K0070042-art-2"
+  ],
+  "term": "動力小船駕駛"
+ },
+ {
+  "id": "fresh:fresh_partial:a3cf53a57b",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "第二種壓力容",
+  "level": "article",
+  "answer": [
+   "N0060055-art-2"
+  ],
+  "term": "第二種壓力容器"
+ },
+ {
+  "id": "fresh:fresh_partial:bb6faccc1e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "調劑作業處",
+  "level": "article",
+  "answer": [
+   "L0030132-art-3"
+  ],
+  "term": "調劑作業處所"
+ },
+ {
+  "id": "fresh:fresh_partial:2561f5ea80",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "網際網路位",
+  "level": "article",
+  "answer": [
+   "K0060117-art-3",
+   "K0060142-art-2"
+  ],
+  "term": "網際網路位址"
+ },
+ {
+  "id": "fresh:fresh_partial:0c9208f91e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "他方締約國之企",
+  "level": "article",
+  "answer": [
+   "G0340125-art-3"
+  ],
+  "term": "他方締約國之企業"
+ },
+ {
+  "id": "fresh:fresh_partial:cc209e37ad",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "分配線網",
+  "level": "article",
+  "answer": [
+   "K0060028-art-2"
+  ],
+  "term": "分配線網路"
+ },
+ {
+  "id": "fresh:fresh_partial:0ff1972f39",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "心肺復甦",
+  "level": "article",
+  "answer": [
+   "L0020066-art-3"
+  ],
+  "term": "心肺復甦術"
+ },
+ {
+  "id": "fresh:fresh_partial:b470036e02",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "動物保護實",
+  "level": "article",
+  "answer": [
+   "M0060086-art-2"
+  ],
+  "term": "動物保護實作"
+ },
+ {
+  "id": "fresh:fresh_partial:4dee144110",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "指定實驗",
+  "level": "article",
+  "answer": [
+   "J0100063-art-2"
+  ],
+  "term": "指定實驗室"
+ },
+ {
+  "id": "fresh:fresh_partial:4ac7372b02",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "隔離壓艙",
+  "level": "article",
+  "answer": [
+   "K0070016-art-174"
+  ],
+  "term": "隔離壓艙水"
+ },
+ {
+  "id": "fresh:fresh_partial:6732b205aa",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "鰹鮪圍網漁",
+  "level": "article",
+  "answer": [
+   "M0050060-art-2"
+  ],
+  "term": "鰹鮪圍網漁船"
+ },
+ {
+  "id": "fresh:fresh_partial:d7af5a6622",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "接受海洋保育講習課程人",
+  "level": "article",
+  "answer": [
+   "D0090081-art-2"
+  ],
+  "term": "接受海洋保育講習課程人員"
+ },
+ {
+  "id": "fresh:fresh_partial:bd53159bea",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "殯葬服務",
+  "level": "article",
+  "answer": [
+   "D0020040-art-2"
+  ],
+  "term": "殯葬服務業"
+ },
+ {
+  "id": "fresh:fresh_partial:92a70bcbd3",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "基地保水指",
+  "level": "article",
+  "answer": [
+   "D0070115-art-299"
+  ],
+  "term": "基地保水指標"
+ },
+ {
+  "id": "fresh:fresh_partial:8cf8fceabe",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "訂戶分接",
+  "level": "article",
+  "answer": [
+   "K0060028-art-2"
+  ],
+  "term": "訂戶分接器"
+ },
+ {
+  "id": "fresh:fresh_partial:429e7b1f7c",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "屏壁間空",
+  "level": "article",
+  "answer": [
+   "K0070038-art-3"
+  ],
+  "term": "屏壁間空間"
+ },
+ {
+  "id": "fresh:fresh_partial:f3673e9f28",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "低污染事",
+  "level": "article",
+  "answer": [
+   "J0030118-art-2"
+  ],
+  "term": "低污染事業"
+ },
+ {
+  "id": "fresh:fresh_partial:280301cc68",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "服務成績優良年",
+  "level": "article",
+  "answer": [
+   "Q0000009-art-3"
+  ],
+  "term": "服務成績優良年資"
+ },
+ {
+  "id": "fresh:fresh_partial:8d5a3a24b6",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "動物用消毒藥",
+  "level": "article",
+  "answer": [
+   "M0130041-art-2"
+  ],
+  "term": "動物用消毒藥品"
+ },
+ {
+  "id": "fresh:fresh_partial:e35e7960cf",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "復康巴士服",
+  "level": "article",
+  "answer": [
+   "D0050187-art-2"
+  ],
+  "term": "復康巴士服務"
+ },
+ {
+  "id": "fresh:fresh_partial:18ae7d3158",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "降落決定",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "降落決定點"
+ },
+ {
+  "id": "fresh:fresh_partial:5db2c6963a",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "最小滯洪",
+  "level": "article",
+  "answer": [
+   "J0110110-art-2"
+  ],
+  "term": "最小滯洪量"
+ },
+ {
+  "id": "fresh:fresh_partial:8fda5226ad",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "溫泉礦業",
+  "level": "article",
+  "answer": [
+   "J0110040-art-3"
+  ],
+  "term": "溫泉礦業權"
+ },
+ {
+  "id": "fresh:fresh_partial:601b47219f",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "移民業務機",
+  "level": "article",
+  "answer": [
+   "D0080132-art-3"
+  ],
+  "term": "移民業務機構"
+ },
+ {
+  "id": "fresh:fresh_partial:39e894490e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "以投資為專業",
+  "level": "article",
+  "answer": [
+   "G0400069-art-4"
+  ],
+  "term": "以投資為專業者"
+ },
+ {
+  "id": "fresh:fresh_partial:1c4f9caedc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "固定通信網路事",
+  "level": "article",
+  "answer": [
+   "K0060029-art-2"
+  ],
+  "term": "固定通信網路事業"
+ },
+ {
+  "id": "fresh:fresh_partial:f753acb588",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "總設置經",
+  "level": "article",
+  "answer": [
+   "J0130089-art-3",
+   "J0130094-art-3"
+  ],
+  "term": "總設置經費"
+ },
+ {
+  "id": "fresh:fresh_partial:8ea446e857",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "低壓輸氣管",
+  "level": "article",
+  "answer": [
+   "J0130046-art-2"
+  ],
+  "term": "低壓輸氣管線"
+ },
+ {
+  "id": "fresh:fresh_partial:0178e8ef80",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "不當取得財",
+  "level": "article",
+  "answer": [
+   "A0030286-art-4"
+  ],
+  "term": "不當取得財產"
+ },
+ {
+  "id": "fresh:fresh_partial:f67513db2e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "共享頻率設",
+  "level": "article",
+  "answer": [
+   "K0060123-art-2"
+  ],
+  "term": "共享頻率設備"
+ },
+ {
+  "id": "fresh:fresh_partial:87e974ef08",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "用戶專用交換設",
+  "level": "article",
+  "answer": [
+   "K0060040-art-3"
+  ],
+  "term": "用戶專用交換設備"
+ },
+ {
+  "id": "fresh:fresh_partial:799e9cab22",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "無線充電電源轉換",
+  "level": "article",
+  "answer": [
+   "J0030018-art-848"
+  ],
+  "term": "無線充電電源轉換器"
+ },
+ {
+  "id": "fresh:fresh_partial:b3917d3a7a",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "二親等以內親",
+  "level": "article",
+  "answer": [
+   "G0340140-art-2"
+  ],
+  "term": "二親等以內親屬"
+ },
+ {
+  "id": "fresh:fresh_partial:466d6c2701",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "災害防救業務計",
+  "level": "article",
+  "answer": [
+   "D0120014-art-2"
+  ],
+  "term": "災害防救業務計畫"
+ },
+ {
+  "id": "fresh:fresh_partial:acbc66bac5",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "非營利就業服務機",
+  "level": "article",
+  "answer": [
+   "N0090002-art-2"
+  ],
+  "term": "非營利就業服務機構"
+ },
+ {
+  "id": "fresh:fresh_partial:a0fc9cc210",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "屠宰衛生檢查獸醫",
+  "level": "article",
+  "answer": [
+   "M0130040-art-3"
+  ],
+  "term": "屠宰衛生檢查獸醫師"
+ },
+ {
+  "id": "fresh:fresh_partial:5e2872b0ed",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "插播式字",
+  "level": "article",
+  "answer": [
+   "P0050008-art-2"
+  ],
+  "term": "插播式字幕"
+ },
+ {
+  "id": "fresh:fresh_partial:c1da4fd667",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "教保服務機",
+  "level": "article",
+  "answer": [
+   "H0070031-art-3",
+   "H0070049-art-2",
+   "H0070078-art-4",
+   "H0070083-art-2"
+  ],
+  "term": "教保服務機構"
+ },
+ {
+  "id": "fresh:fresh_partial:16ecf980da",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "換裝核子燃",
+  "level": "article",
+  "answer": [
+   "J0160039-art-2"
+  ],
+  "term": "換裝核子燃料"
+ },
+ {
+  "id": "fresh:fresh_partial:35aa1fcd27",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "不經濟公用電",
+  "level": "article",
+  "answer": [
+   "K0060130-art-2"
+  ],
+  "term": "不經濟公用電話"
+ },
+ {
+  "id": "fresh:fresh_partial:44753a39e0",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "本質安全電",
+  "level": "article",
+  "answer": [
+   "J0030018-art-466"
+  ],
+  "term": "本質安全電路"
+ },
+ {
+  "id": "fresh:fresh_partial:9ac4ff74be",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "航空器維護能力手",
+  "level": "article",
+  "answer": [
+   "K0090041-art-2"
+  ],
+  "term": "航空器維護能力手冊"
+ },
+ {
+  "id": "fresh:fresh_partial:82d78720be",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "普通股權益比",
+  "level": "article",
+  "answer": [
+   "G0380046-art-2"
+  ],
+  "term": "普通股權益比率"
+ },
+ {
+  "id": "fresh:fresh_partial:93ef7f0b47",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "客語為主要通行語地",
+  "level": "article",
+  "answer": [
+   "D0140019-art-2"
+  ],
+  "term": "客語為主要通行語地區"
+ },
+ {
+  "id": "fresh:fresh_partial:2ada244503",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "預先處理設",
+  "level": "article",
+  "answer": [
+   "D0070066-art-2"
+  ],
+  "term": "預先處理設施"
+ },
+ {
+  "id": "fresh:fresh_partial:1aae87d9d0",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "載波交流聲調變",
+  "level": "article",
+  "answer": [
+   "K0060028-art-2"
+  ],
+  "term": "載波交流聲調變比"
+ },
+ {
+  "id": "fresh:fresh_partial:2cc5f60d6a",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "嚴重不良事",
+  "level": "article",
+  "answer": [
+   "L0030114-art-2"
+  ],
+  "term": "嚴重不良事件"
+ },
+ {
+  "id": "fresh:fresh_partial:acb06e93e8",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "精神作用物",
+  "level": "article",
+  "answer": [
+   "K0090014-art-2"
+  ],
+  "term": "精神作用物質"
+ },
+ {
+  "id": "fresh:fresh_partial:d91ddbd1a2",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "土石採取場負責",
+  "level": "article",
+  "answer": [
+   "J0020025-art-4"
+  ],
+  "term": "土石採取場負責人"
+ },
+ {
+  "id": "fresh:fresh_partial:de8a7f1ea7",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "權利事項之勞資爭",
+  "level": "article",
+  "answer": [
+   "N0020007-art-5"
+  ],
+  "term": "權利事項之勞資爭議"
+ },
+ {
+  "id": "fresh:fresh_partial:7152d2d6e5",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "載波拍差",
+  "level": "article",
+  "answer": [
+   "K0060028-art-2"
+  ],
+  "term": "載波拍差比"
+ },
+ {
+  "id": "fresh:fresh_partial:f58ad88a0d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "非引火性現場配",
+  "level": "article",
+  "answer": [
+   "J0030018-art-466"
+  ],
+  "term": "非引火性現場配線"
+ },
+ {
+  "id": "fresh:fresh_partial:95c822ea92",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "防空識別",
+  "level": "article",
+  "answer": [
+   "K0090014-art-2"
+  ],
+  "term": "防空識別區"
+ },
+ {
+  "id": "fresh:fresh_partial:104f6d4fd8",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "漁船加油",
+  "level": "article",
+  "answer": [
+   "J0020019-art-2"
+  ],
+  "term": "漁船加油站"
+ },
+ {
+  "id": "fresh:fresh_partial:d0d6744bf1",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "信用卡公",
+  "level": "article",
+  "answer": [
+   "G0380055-art-2"
+  ],
+  "term": "信用卡公司"
+ },
+ {
+  "id": "fresh:fresh_partial:027896f08e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "共享頻率使用",
+  "level": "article",
+  "answer": [
+   "K0060123-art-2"
+  ],
+  "term": "共享頻率使用者"
+ },
+ {
+  "id": "fresh:fresh_partial:1b15825939",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "頂部遮蔽",
+  "level": "article",
+  "answer": [
+   "J0030018-art-387"
+  ],
+  "term": "頂部遮蔽物"
+ },
+ {
+  "id": "fresh:fresh_partial:0c2720582d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "附買回部",
+  "level": "article",
+  "answer": [
+   "G0380164-art-4"
+  ],
+  "term": "附買回部位"
+ },
+ {
+  "id": "fresh:fresh_partial:e49645b388",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "原住民地",
+  "level": "article",
+  "answer": [
+   "J0130089-art-3"
+  ],
+  "term": "原住民地區"
+ },
+ {
+  "id": "fresh:fresh_partial:0472a010df",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "分題平行兩",
+  "level": "article",
+  "answer": [
+   "R0020002-art-15"
+  ],
+  "term": "分題平行兩閱"
+ },
+ {
+  "id": "fresh:fresh_partial:d428f0e4c0",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "廢水回收再利用系",
+  "level": "article",
+  "answer": [
+   "O0020115-art-2"
+  ],
+  "term": "廢水回收再利用系統"
+ },
+ {
+  "id": "fresh:fresh_partial:503a927458",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "微型基地",
+  "level": "article",
+  "answer": [
+   "K0060089-art-3",
+   "K0060113-art-2"
+  ],
+  "term": "微型基地臺"
+ },
+ {
+  "id": "fresh:fresh_partial:ca5371dd60",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "危險或有毒化學液",
+  "level": "article",
+  "answer": [
+   "K0070036-art-2"
+  ],
+  "term": "危險或有毒化學液體"
+ },
+ {
+  "id": "fresh:fresh_partial:e2742cbe08",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "預防性維",
+  "level": "article",
+  "answer": [
+   "K0090010-art-2"
+  ],
+  "term": "預防性維修"
+ },
+ {
+  "id": "fresh:fresh_partial:180a739d0d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "資料處理服務業",
+  "level": "article",
+  "answer": [
+   "G0380239-art-2"
+  ],
+  "term": "資料處理服務業者"
+ },
+ {
+  "id": "fresh:fresh_partial:cd54de2e2d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "醫療照護場",
+  "level": "article",
+  "answer": [
+   "J0030018-art-614"
+  ],
+  "term": "醫療照護場所"
+ },
+ {
+  "id": "fresh:fresh_partial:df44eaeed9",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "第三者認證機",
+  "level": "article",
+  "answer": [
+   "N0060033-art-2"
+  ],
+  "term": "第三者認證機構"
+ },
+ {
+  "id": "fresh:fresh_partial:65a4bbac27",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電氣透熱或磁共振醫療設",
+  "level": "article",
+  "answer": [
+   "K0060014-art-4"
+  ],
+  "term": "電氣透熱或磁共振醫療設備"
+ },
+ {
+  "id": "fresh:fresh_partial:774cf1948d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電解生產線工作",
+  "level": "article",
+  "answer": [
+   "J0030018-art-792"
+  ],
+  "term": "電解生產線工作區"
+ },
+ {
+  "id": "fresh:fresh_partial:f255ae2a98",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外國金融控股公",
+  "level": "article",
+  "answer": [
+   "G0380112-art-4"
+  ],
+  "term": "外國金融控股公司"
+ },
+ {
+  "id": "fresh:fresh_partial:c9c6f9e49d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "系統隔離設",
+  "level": "article",
+  "answer": [
+   "J0030018-art-200"
+  ],
+  "term": "系統隔離設備"
+ },
+ {
+  "id": "fresh:fresh_partial:5454d1ee4e",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "新使用途",
+  "level": "article",
+  "answer": [
+   "L0030002-art-2"
+  ],
+  "term": "新使用途徑"
+ },
+ {
+  "id": "fresh:fresh_partial:d19068634d",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "本質安全「i",
+  "level": "article",
+  "answer": [
+   "J0030018-art-466"
+  ],
+  "term": "本質安全「i」"
+ },
+ {
+  "id": "fresh:fresh_partial:5f9e179bbc",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "設備接地導",
+  "level": "article",
+  "answer": [
+   "J0030018-art-6"
+  ],
+  "term": "設備接地導線"
+ },
+ {
+  "id": "fresh:fresh_partial:621a6f6e4b",
+  "kind": "fresh_partial",
+  "cls": "term",
+  "split": "fresh",
+  "query": "低電壓接觸限",
+  "level": "article",
+  "answer": [
+   "J0030018-art-812"
+  ],
+  "term": "低電壓接觸限制"
+ },
+ {
+  "id": "fresh:fresh_absent:e25495596b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "安全功能民族教育",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:1d0f5faff2",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "安全查核實地評鑑",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:10dc4cf2c6",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "特定目的公開口述",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:14f3bbe118",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "健康飲食合法藥物",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:704b191dda",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "末期病人市場開放",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:62363ffae4",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "協同作業全幅偏移",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:827231d2d1",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "開發行為受益憑證",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:368f7df66c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "耐氧試驗主分配線",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:cc2e07e14b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "副產品憑證機構",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:d8532cb369",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國內續航淨含量",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:d020652b3a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "露天甲板員工子女",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f1d591daa5",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "職業訓練緊急救護",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:7a8576b90f",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "合理價格熱解法",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:a5045ddbab",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "特定對象客家事務",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:d614a7acd7",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "密集區域廣告物",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:27400f891c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "有限水域運動彩券",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ed0a8c7e6a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "溫泉露頭處理效能",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:2d6dc469b3",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "稀釋率原地噪音",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:75b91c8f3b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "初檢測值試驗偏離",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e6067cb12d",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "河口區獎勵管教",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f843e9881c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "再生能源侍應品",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:7896e615de",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "權責機關友善服務",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:777b6c2bf9",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "委託人出鋼期",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:d8577fb0c5",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "複合音量服務機構",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:2788607777",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "總投資額A2海域",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:487f067478",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "汰舊噸數使用限制",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:afc73057aa",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "能見度外送員",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:aef4caeb18",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "勘估標的海上轉載",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:d6f3f61b61",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "精準醫療電子傳達",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c2d87637c0",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "會議旅遊已裝雷達",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:db217f9a6d",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "建築用地性侵害",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:7e94ed4e5c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "緊要回路受益證券",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:5565fdf854",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "中性點原始文件",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:60d898b104",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "人行道熔融法",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:1b1950aa08",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "補教機構工作人員",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:d267f86c46",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "情報工作受雇人",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:9ffd6cdd26",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "液貨區裝載操作",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b596ed4952",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "輔導教師實驗室",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:dfed18a014",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "衛哨兵農業使用",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:49fb005eef",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電解液大股東",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:63e4070ea0",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "通貨交易建教合作",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:1985e5746c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "檢驗人員飛行訓練",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:90291cb321",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "新建住宅釋放量",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:3d9c554a48",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "機關長官衛哨所",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:a85dc3376a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "檢查機構違規行為",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:0d56d0790a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "能源利用機率效應",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:a1d970cdef",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "操作機現場人員",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:863ff9fb58",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "病床位置次承租人",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:632669bc74",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "附隨組織製造事項",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:9e7ee3887d",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "保險公司產業園區",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e7ada61184",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "混附發射劣化係數",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:14323bc18b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "貨物艙間雨水管渠",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:24f880d607",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "個別認可外國公司",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:be7aa2579a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "碾製日期標稱電壓",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6076086c02",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "簡易器具絕熱空間",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:cf8179ea0d",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "受僱者支配點",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:1f735fa6ff",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "太空載具生產量",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f3bae2e30e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "資金成本個體會計",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:67c2cf47fe",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "灌裝成本正常價格",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:0a93e3f484",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "燒結礦綠建材",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:534a957f6c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "都市更新大陸地區",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:a684e40550",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "供電線路行政法院",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e03c77afaf",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "照明燈具少量作物",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:7ffb5f7da4",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "週年日工地主任",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:dda8a02445",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "有害垃圾亡故官兵",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:5fcc482dd1",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "點火時間用電器具",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:3ae15c6f37",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "主法庭專用公路",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f495a3af4e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "營養標示票券商",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e75adb293a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "其他菸品鉛合金",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ecf15a5d25",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "生物毒素側面壓力",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:193344e265",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "海岸地區摻配設備",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:5949fb4851",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "變電室標準分數",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:7431849616",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "加氣站氣閘室",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e4dac9ec50",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "擴展工業進口者",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e67a45a304",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "雜湊函式民間機構",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:aef68f661d",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "壓艙水營養成分",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e327c8e4bc",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "中性導體外源基因",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:4e7bcd8754",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飲食文化自製魚槍",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:0301ad70cd",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "調適差距開發用地",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:8d8b2aba31",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "生態補償系列產品",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ce83a54f80",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "車輛型式旅館業",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6211c4a69b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "帳務紀錄第一類",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:9ea2208d96",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "存續機構放電管燈",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:8d397f5b32",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "配電箱直昇機",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:aa3deedaf8",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公共運具資源教室",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f00895ca47",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "委託代耕碎石母岩",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:70bff2a7f2",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "核子船舶船用品",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:5645ca0bf0",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "乾洗作業檢查員",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:73c1ad1ffb",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "專責人員起落地帶",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:1231eacf96",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "地下水檢定類別",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:cfae2147c1",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "鉛化合物平均薪資",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c592723d31",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "拖曳鐵錨出具證明",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:8d8d615cdb",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "保安裝置動力帆船",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:bb28a53752",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "傳統文化國家檔案",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:badd179427",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "重大災害緩和醫療",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:bf6886e8ad",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "管制空域儲能設備",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6564a1c7bb",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "基因轉殖有效劑量",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:129787ca9a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電池槽型式認可",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6b43a244b5",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "備用機場乾式壁嵌",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:eafc909dc8",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "標準品權利人",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b7fc66835e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "商港設施熱錢包",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:319b5b89bd",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "節目頻道查驗漁港",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b03b0ef896",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "心理重建連線機關",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:52077a32d4",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "附接插頭樂齡學習",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e48ca91d7d",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "註冊人電商業者",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6a7fa6e1f1",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "輕微變更顯著差異",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:75bc9c3cae",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "貨艙櫃保密裝備",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:91ead8af0f",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電業設備特定人員",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ae0c86f39e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "初步檢驗研發成果",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e03301aff8",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "水平面轉換高度",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:99cacf3424",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "紅利積點露天開挖",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f2f82ee0d3",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "學名藥回填物",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c96c8e0034",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "嚴重疾病信用卡",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:014c7d728b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "驗證機構事業單位",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:8bd67f774f",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "領隊人員科技合作",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:afeab3083b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "主要業務顧客申訴",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b05d0ea615",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "新成分拖曳張力",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c80757efbc",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "混合物人工查驗",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:405155d979",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "上甲板資產池",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:3abcd1ffbf",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "標準畫質派遣勞工",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:fd3c56e291",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "民眾防護合格證明",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:44b534b1ff",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "藝文補助電腦軟體",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:dc72d4010c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "相容性緊急搶救",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:be74882bb8",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "連線通關非關係人",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:999ec65730",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "遊艇駕駛雙層公車",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c06b9e05b5",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "電子收費觀光旅客",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:eed1a75dfb",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "型式認證上層建築",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c320fbb843",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "燃油裝備測試線材",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:04d3ac1f38",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "醫療爭議噴水池",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:4dbdf3771e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "調度日冠名贊助",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:9043098a2c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "出租率審核量",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:63efc2bafc",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "郵政資產電子封條",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:5fd8541b5d",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "串調變癌症篩檢",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f77ba3495f",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "運輸工具管制車輛",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:75871deb2c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "廢棄物供應管制",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:8cdbf995e2",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "著作人其他給與",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:2e508b97bb",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "一般開關熱水器",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:d3b0c47317",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公費待遇山坡地",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:d17ab56916",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "基準溫度鑑價會議",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6616357032",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "避難站使用人",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:61c74aa379",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "暴險總額樹立廣告",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f4a3238dc1",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "排氣管線底塗面積",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:37b5b66210",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "植物產品微縮副片",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:dd84d4d9c3",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "穩定化法核心網路",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:0910e0047e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "確定效應電信員",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:1b9742bc03",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "權責長官特殊讀者",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c21768f26f",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "行動臺差額法",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:99593f7366",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "護理之家浮覆地",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:00d84eae43",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "礦業權者槓桿比率",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:dcdd091669",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "目視飛航標準部",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:df82323a32",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "盛裝容器固定通信",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:4b960baa8b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "封存場址委辦事項",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:9feec9a2b3",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公務部分電解槽",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:1b9f82e313",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "轉接面資源條件",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6de1cc7731",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "易燃限度離島地區",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c3b2e4bad0",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "運送狀況比活度",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:14e3c83053",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "中間產物受託銀行",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6d58ef0aba",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "延伸車型受益人",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:60921e10a8",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "義務人電子憑證",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:8cefce3305",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "主要計畫飛航指南",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:bb04436192",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "符合證書污染環境",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:66e6eb46ca",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "學務處價格管制",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e22b25f449",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "營運設備短期失能",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b21897be88",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "除草劑流當物",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:85e8dfffa1",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "礦業權封閉箱體",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:86e0077acb",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "土壤污染專用分路",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:11a2615801",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "隨機檢驗快速道路",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:3ac4c336f1",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "安培容量復學檢驗",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:a0f8977cb7",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "首次適航外送平臺",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:8f44501e70",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "正子藥品密閉設備",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:1b4f50c810",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "裂解處理中繼電臺",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b211150332",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "最高值病原體",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b5607a6fae",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "地方政府關係人",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b19fb20979",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "氟氯烴航行圖表",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:91887ea939",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "乙級船員陽性檢體",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:7a7983c065",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "保險經費電視事業",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:73ab427b1d",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "陸資銀行燃油裝置",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:a11cad09fc",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外籍移工發射底座",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:96e7a1ee84",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "緊急電話人工濕地",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:d36c2f77cd",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "災害潛勢指定產品",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f9800dd58a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "棄置營收等效劑量",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:4ea123014b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "用人成本需量反應",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:4190efe768",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "業務關係文書驗證",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:dd25f0f9dd",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "主辦機關觀測儀器",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:abb9178f59",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "監督機構傳送方",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:2efb7962ba",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "嚴重超額垃圾車",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:9dc7336534",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "防溢座再製酒類",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:5eac775052",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "加油站通訊設備",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e3ec691463",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "等價劑量特定價格",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:48f0cca6fb",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "設備回路新裝雷達",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ca654e8d41",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "主要道路連續負載",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6021931a6e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "石油原油供給管",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:4d88e93d9b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "瞬間額定濕式製程",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c7fc159eb5",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "旅遊展覽指配頻率",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f3b080d3f0",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "經營者權利變換",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:54ac550a09",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "副產物商業開發",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:a6fb5db447",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "停車場當事人",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f5fcffac33",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "邊際線轉換空層",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6c341f3298",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "低收入戶A4海域",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:44dabc4dbb",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "不予計分營業日",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:2cf5b85d39",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "關鍵群體包裝材料",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:0efc957d03",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "引擎族專用電信",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:316df714f4",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "核子保防接地導線",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:bb15fdc423",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "受送達人不良事件",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e6ef3c9b23",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "旅客人數教育業務",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:339dfe5e6b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "種苗業者總菌落數",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ced3943a6c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "再利用合格人員",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:4100e33e76",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "土壤處理訴訟文書",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:590ee54c48",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "巨大垃圾標準地名",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:0d67202564",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "野生動物水災潛勢",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:263616df1a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "膜濾法有害生物",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:11bd5581ea",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "接取網路新車檢驗",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:fe71822823",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "暴露度正式職員",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:0401416e4f",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "快速公路路基邊緣",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b80067990a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "共同鐵塔發射標識",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:0095165ef3",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "作業收入免徵比率",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:928bbb36f5",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "國營鐵路燃燒效率",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c665321e0f",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "原料藥品評估受體",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:18b87fca77",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "麻醉區域中醫藥",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:66020ead32",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "製片場景航空運輸",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:824653ecd9",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "空海聯運國產品牌",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:3f5a9e3c59",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "轉租人所屬人員",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:855f569290",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "食品器具廠房設施",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:1a17ccdc56",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "試驗室操作手冊",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:a2a468302b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "農企業原料藥",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:7f691b1f47",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "用戶配線危險物品",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:49667d1753",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "太空事故基因改造",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:126610280e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "公共設施影視攝製",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:11f8ac093b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "價格日期集氣風量",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:2c7889a588",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "危險器械補貼費率",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:02ea128bb3",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "使用時間電子申請",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:98843947e5",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "型式變更工業用地",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:5085785c39",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "運搬船證券商",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:44c097742b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "固化法建築界限",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:9b37662de3",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "特定區域電信設備",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:794c5af7eb",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "紀錄器次要道路",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:71e3fc6c2d",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "申報生效允收基準",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:300ca14845",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "溫泉水權電子票證",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:9da6026cfd",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "轉接組件代用客車",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:e65eadc20e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "高畫質評估機關",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:fe05fe1fa9",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "設備元件公開上映",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:7c9e4e9ce7",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "表面通風靠泊站",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:3200e81b03",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "庇護工場圍蔽艙間",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:1bda26a156",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "登記人均能音量",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:55a41e7141",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "種畜禽電弧爐",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:5fb0c02746",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "A3海域廢乾電池",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:641fdeb8da",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "追加私募基準利率",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ae89a116ae",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "列管產品特種空間",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:30163cafbf",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "廢輪胎補助對象",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:d265526a0b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "環境用藥國際商港",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:941086019f",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "調查報告數位醫療",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:99a6f2badd",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "實驗動物接戶點",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:985756a89a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "一定數量菸品容器",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:dc517e7994",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "河川區域科技設備",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:fd636813db",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "基準年實習生",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:0e209bc442",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "評估會議長期照顧",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:3c80eed90a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "合理抑低每筆訂單",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:549f11de69",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "課後照顧相對速度",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:13446e128d",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "通航港口整備措施",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:9cef043691",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "連線核定混齡教學",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:effcf1f98c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "休息處所風力發電",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ea3621d6b6",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "商業滅菌參與業者",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b4b1b4cac3",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "違紀行為諮詢會",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ff06a193df",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "射擊運動零點偏移",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:46832caeec",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "安全維護境外資金",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:404a9e9a20",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "銀行業性別認同",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ca2ef688b1",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "申請者自動旋轉",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:7c5a98a754",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "收費站升學優待",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b9295dcea7",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "農民團體誤碼率",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:8cfe2e1b00",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "水防道路燒成窯",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:5205e536f0",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "去連結輕質液",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6460c3aea4",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "消防人員鉛混合物",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c19e8e1daf",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "標示單位基本設施",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:fdd63177e6",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飛航時間地上儲槽",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:98614d75b3",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "飛行場營造業",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:8f03bbdae5",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "寵物食品上限稅率",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:556e8bcb67",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "過電流一般設施",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:552c787c55",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "查驗機關漁船長度",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:f69f55dc5e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "網路互連養殖活魚",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6c49c12e66",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "助航設備輕質油品",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:cfcb23183b",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "迴避成本指定機構",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:4a6421716a",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "運輸費用爭議行為",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:91ca5b3d6c",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "文化業務專業訓練",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:21dcc4f8f1",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "識別碼臨時停車",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:ae98263ef9",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "退離給與最近親屬",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6b08bc9529",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "製造量限高門",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:687f9c53df",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "有價證券潮濕場所",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:62a04f3d2f",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "就學費用日間照顧",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:cdf63471e6",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "特種飛航認可醫院",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:693975b23e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "危老基地入伍檢驗",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:33db3f7448",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "正常租金主垂直區",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:2b51bd32cc",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "年平均值菸品贊助",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:a93f9e903e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "混載船值日官",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:978ca18b4e",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "外籍旅客認證機關",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:6de781f9e4",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "對地電壓再生料",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:5ab3598664",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "發射機參加人",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:0363966eae",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "熱殺菌航空站",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:c07e49899f",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "循環利用海洋能",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:8d865b00c9",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "農藥原體效能標準",
+  "level": "article",
+  "answer": []
+ },
+ {
+  "id": "fresh:fresh_absent:b1fe15f0fc",
+  "kind": "fresh_absent",
+  "cls": "term",
+  "split": "fresh",
+  "query": "自由港區緩衝區",
+  "level": "article",
+  "answer": []
+ }
+]

@@ -496,9 +496,68 @@ def render(result: Mapping[str, Any], report_on: str) -> str:
     return "\n".join(lines)
 
 
+def compare_rules(cases: Sequence[Case], a: str, b: str) -> dict[str, Any]:
+    """同一批題上兩條規則逐題配對，分題型：找到、誤放與列出條數的增減。"""
+    out: dict[str, Any] = {}
+    for kind in sorted({c["kind"] for c in cases}):
+        group = [c for c in cases if c["kind"] == kind]
+        ra = [outcome(c, a) for c in group]
+        rb = [outcome(c, b) for c in group]
+        pairs = list(zip(ra, rb, strict=True))
+        gain = sum(1 for (x, _), (y, _) in pairs if x is False and y is True)
+        loss = sum(1 for (x, _), (y, _) in pairs if x is True and y is False)
+        leak_more = sum(1 for (x, n), (y, m) in pairs if x is None and n == 0 and m > 0)
+        leak_less = sum(1 for (x, n), (y, m) in pairs if x is None and n > 0 and m == 0)
+        shorter = sum(1 for (_, n), (_, m) in pairs if m < n)
+        longer = sum(1 for (_, n), (_, m) in pairs if m > n)
+        out[kind] = {
+            "a": tally(ra),
+            "b": tally(rb),
+            "gain": gain,
+            "loss": loss,
+            "leak_more": leak_more,
+            "leak_less": leak_less,
+            "shorter": shorter,
+            "longer": longer,
+            "p_fewer_leaks": sign_p(leak_less, leak_more),
+            "p_shorter": sign_p(shorter, longer),
+        }
+    return out
+
+
+def render_compare(result: Mapping[str, Any], a: str, b: str) -> str:
+    lines = [
+        f"| 題型 | 可答／無答案 | 找到 {a} → {b}（增／減） | 誤放 {a} → {b}（少／多） | "
+        f"平均列出 {a} → {b} | 列表變短／變長 |",
+        "|---|---|---|---|---|---|",
+    ]
+    for kind, r in result.items():
+        ta, tb = r["a"], r["b"]
+        size = (
+            "—"
+            if not ta["answerable"]
+            else f"{ta['size'] / ta['answerable']:.2f} → {tb['size'] / tb['answerable']:.2f}"
+        )
+        leak = f"{ta['leak']} → {tb['leak']}（−{r['leak_less']}／+{r['leak_more']}"
+        lines.append(
+            f"| {kind} | {ta['answerable']}／{ta['absent']} "
+            f"| {ta['found']} → {tb['found']}（+{r['gain']}／−{r['loss']}） "
+            f"| {leak}，p {r['p_fewer_leaks']:.2g}） "
+            f"| {size} | {r['shorter']}／{r['longer']}（p {r['p_shorter']:.2g}） |"
+        )
+    return "\n".join(lines)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = p.add_subparsers(dest="command", required=True)
+    cr = sub.add_parser("compare-rules", help="兩條規則在同一批題上逐題配對")
+    cr.add_argument("queries", type=Path)
+    cr.add_argument("hits", type=Path)
+    cr.add_argument("--a", default=SHIPPED)
+    cr.add_argument("--b", required=True)
+    cr.add_argument("--split", default="fresh")
+    cr.add_argument("--json-out", type=Path)
     a = sub.add_parser("prepare")
     a.add_argument("--keyword", type=Path, required=True)
     a.add_argument("--native", type=Path, required=True)
@@ -508,7 +567,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     e.add_argument("queries", type=Path)
     e.add_argument("hits", type=Path)
     e.add_argument("--meta", type=Path, required=True)
-    e.add_argument("--report-on", choices=("dev", "test"), default="dev")
+    e.add_argument("--report-on", choices=("dev", "test", "fresh"), default="dev")
     e.add_argument(
         "--classifier",
         help="只跑這一個分類器；報告測試集時必填（定案之後才量，只報一次）",
@@ -536,6 +595,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         for r in rows:
             by[(r["cls"], r["split"])] += 1
         print(f"{len(rows)} 題：{dict(by)}；類型後綴 {suffixes}", file=sys.stderr)
+        return 0
+    if args.command == "compare-rules":
+        if not {args.a, args.b} <= set(RULES):
+            p.error(f"不認得的規則：{sorted({args.a, args.b} - set(RULES))}")
+        cases = [c for c in load_cases(args.queries, args.hits) if c["split"] == args.split]
+        result = compare_rules(cases, args.a, args.b)
+        if args.json_out:
+            args.json_out.write_text(
+                json.dumps(result, ensure_ascii=False, indent=1) + "\n", "utf-8"
+            )
+        print(render_compare(result, args.a, args.b))
         return 0
     if args.command == "evaluate":
         if args.report_on == "test" and not args.classifier:
