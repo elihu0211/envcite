@@ -82,7 +82,7 @@ public static class WebModule
     /// <summary>
     /// 接在 <c>UseAuthentication()</c> 之後，要早於授權：沒開的面在這裡就回 404，不會先被導去登入。
     /// 預設 scheme 是 ApiKey，所以 <c>/ui</c> 與 Blazor 的 SignalR 連線（<c>/_blazor</c>，不經任何 policy）
-    /// 要自己用營運者 cookie 驗證，否則 circuit 裡的使用者會是匿名。客戶入口的 cookie 不在這裡驗證：
+    /// 要自己用營運者 cookie 驗證，否則 circuit 裡的使用者會是匿名。客戶入口的 cookie 不在這裡驗證（它要在租戶解析之後）：
     /// 見 <see cref="UsePlatformPortalAuthentication"/>。
     /// </summary>
     public static IApplicationBuilder UsePlatformWebAuthentication(this IApplicationBuilder app)
@@ -124,11 +124,18 @@ public static class WebModule
     /// 那要讀資料庫：<c>PlatformDbContext</c> 在建構時就捕捉當下的租戶，而且同一個請求裡的 scoped 服務只建一次，
     /// 所以若在租戶解析之前就驗證，整個請求（包括之後的登入、改密碼）都會拿到沒有租戶的 DbContext。
     /// 兩個 cookie 互不通用：營運者的通不過入口，客戶的通不過後台。
+    /// 唯一的例外是互動式 circuit 的連線（<c>/_blazor</c>）：入口的工作區是互動式頁面，連線沒有路徑上的租戶，
+    /// 所以連線也認入口的 cookie（有效與否依 cookie 自己的租戶 claim，見 <c>PortalSessionValidator</c>），
+    /// 並與營運者的 cookie 併在同一個 principal 的兩個 identity 裡，由 circuit 啟動時依第一個網址挑一個
+    /// （<see cref="CircuitIdentities"/>、<c>PlatformAuthenticationStateProvider</c>）。
     /// </summary>
-    public static IApplicationBuilder UsePlatformPortalAuthentication(this IApplicationBuilder app) =>
-        app.Use(async (context, next) =>
+    public static IApplicationBuilder UsePlatformPortalAuthentication(this IApplicationBuilder app)
+    {
+        var (_, portal) = Surfaces(app.ApplicationServices);
+        return app.Use(async (context, next) =>
         {
-            if (context.Request.Path.StartsWithSegments(PortalPaths.Prefix))
+            var path = context.Request.Path;
+            if (path.StartsWithSegments(PortalPaths.Prefix))
             {
                 // 入口的頁面含個人資料、驗證器金鑰與復原碼：瀏覽器與中間的快取都不能留。
                 context.Response.Headers.CacheControl = "no-store";
@@ -136,9 +143,16 @@ public static class WebModule
                 if (result.Principal is not null)
                     context.User = result.Principal;
             }
+            else if (portal && path.StartsWithSegments("/_blazor"))
+            {
+                var result = await context.AuthenticateAsync(PlatformAuth.PortalCookieScheme);
+                if (result.Principal is not null)
+                    context.User = CircuitIdentities.Combine(context.User, result.Principal);
+            }
 
             await next(context);
         });
+    }
 
     /// <summary>
     /// 把後台掛在 <c>/ui</c>、客戶入口掛在 <c>/portal</c>（頁面路由寫在各頁的 <c>@page</c>）。與 <c>/v2</c>

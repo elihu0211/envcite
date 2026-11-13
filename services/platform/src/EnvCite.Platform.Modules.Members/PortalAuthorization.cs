@@ -144,9 +144,17 @@ internal static class PortalSessionValidator
         if (context.Principal is null)
             return;
 
-        var signIn = context.HttpContext.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>();
+        var services = context.HttpContext.RequestServices;
 
-        if (!await IsValidAsync(signIn, context.Principal))
+        // 沒有環境租戶的請求（互動式 circuit 的連線 /_blazor：路徑上沒有租戶）不能用請求的租戶檢查：
+        // 使用者表有租戶過濾，沒有租戶就查不到任何人，每一張有效的 cookie 都會被判成失效並被登出。
+        // 這時改用 cookie 自己的租戶 claim（與 circuit 的重驗是同一條路，PortalSessions）。
+        // 先問租戶、不先解析 SignInManager：scoped 的 DbContext 在建構時就捕捉租戶，這個請求之後不能再換。
+        var valid = services.GetRequiredService<IMultiTenantContextAccessor<TenantInfo>>().MultiTenantContext?.TenantInfo is null
+            ? await services.GetRequiredService<IPortalSessions>().IsStillValidAsync(context.Principal, context.HttpContext.RequestAborted)
+            : await IsValidAsync(services.GetRequiredService<SignInManager<ApplicationUser>>(), context.Principal);
+
+        if (!valid)
         {
             context.RejectPrincipal();
             await context.HttpContext.SignOutAsync(PlatformAuth.PortalCookieScheme);
