@@ -14,7 +14,11 @@ public sealed partial class ChatPage
     // 範例是臺灣法規裡會出現的詞（資料庫是中文），所以英文介面也維持中文：翻成英文就搜不到。
     private static readonly string[] Examples = ["噪音管制標準", "固定污染源", "廢棄物清理", "水污染防治"];
 
+    // 元件會在非同步工作還沒結束時被處置（授權元件重新評估、版面換掉），那時續行還會往下跑：
+    // 權杖只取一次存起來，處置後存取 CancellationTokenSource.Token 會丟 ObjectDisposedException。
     private readonly CancellationTokenSource _cts = new();
+    private readonly CancellationToken _ct;
+    private bool _disposed;
     private ElementReference _input;
     private IJSObjectReference? _module;
     private string _query = string.Empty;
@@ -25,19 +29,27 @@ public sealed partial class ChatPage
     private bool _scroll;
     private bool _refocus;
 
+    public ChatPage() => _ct = _cts.Token;
+
     /// <summary>要開啟的對話；新對話的路由沒有這個參數（<see cref="Guid.Empty"/>）。</summary>
     [Parameter] public Guid Id { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
         var user = await UserAsync();
+        if (_disposed)
+            return;
+
         if (!_subscribed)
         {
             Session.Changed += OnChanged;
             _subscribed = true;
             _name = user.FindFirst(ClaimTypes.GivenName)?.Value ?? user.FindFirst(ClaimTypes.Email)?.Value;
-            await Session.InitializeAsync(user, _cts.Token);
+            await Session.InitializeAsync(user, _ct);
         }
+
+        if (_disposed)
+            return; // 等待期間被處置了：這個實例不會再畫，新的實例自己會開啟對話
 
         if (Id == Guid.Empty)
         {
@@ -48,7 +60,7 @@ public sealed partial class ChatPage
         }
         else if (Id != Session.ConversationId)
         {
-            _notFound = !await Session.OpenAsync(user, Id, _cts.Token);
+            _notFound = !await Session.OpenAsync(user, Id, _ct);
         }
     }
 
@@ -80,7 +92,7 @@ public sealed partial class ChatPage
     private async Task AskAsync(string question)
     {
         _query = string.Empty;
-        await Session.AskAsync(await UserAsync(), question, _asOf, _cts.Token);
+        await Session.AskAsync(await UserAsync(), question, _asOf, _ct);
         _refocus = true;
 
         // 對話被記進歷史後，網址換成這串對話的 Id：重新整理、分享給自己都回到同一串。同一個頁面，不重新載入。
@@ -106,6 +118,7 @@ public sealed partial class ChatPage
 
     public async ValueTask DisposeAsync()
     {
+        _disposed = true;
         Session.Changed -= OnChanged;
         await _cts.CancelAsync();
         _cts.Dispose();
