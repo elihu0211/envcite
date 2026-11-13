@@ -17,7 +17,8 @@
 - Blazor Server 電路是有狀態的 SignalR 連線：多副本需要入口的 session affinity（部署庫）或外部 backplane。
 - 多租戶是執行期隔離（租戶解析加 `TenantId` 查詢過濾），不是每租戶一份程式碼或倉庫。
 - **中介層順序是承重的**：`UseAuthentication` → `UseMultiTenant` → `UseAuthorization` → `UseRateLimiter`。
-- `MultiTenantDbContext` 在建構時擷取租戶：不得在租戶解析之前解析它；租戶請求之外要針對特定租戶用 `MultiTenantDbContext.Create<TContext, TenantInfo>(tenant, services)`。
+- `MultiTenantDbContext` 在建構時擷取租戶：不得在租戶解析之前解析它。
+- **沒有 ambient tenant 的地方（營運者的跨租戶操作、互動式 circuit）一律經 `TenantScopes.InAsync`**（`Data`）：它開一個 DI scope、把租戶設成目標租戶、在委派裡執行、用完處置——一個操作一個 `DbContext`。委派裡用 `scope.Get<T>()` 取服務、`scope.CreateDb()` 取明確繫結的 `PlatformDbContext`（稽核要與變更同一個 `SaveChanges` 時用它）。不要自己 `CreateAsyncScope` 加綁定，也不要把 `TenantScope` 傳出委派，或在別的 async 輔助方法裡另外綁定：租戶 context 是 `AsyncLocal`，方法一返回值就丟掉。`TenantScopesTests` 守住隔離（只看得到目標租戶、同時進行的兩個租戶不互相滲透、scope 用完即處置）。
 
 ## Layout
 
