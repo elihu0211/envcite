@@ -1,6 +1,7 @@
 using EnvCite.Platform.Web.Auth;
 using EnvCite.Platform.Web.Components;
 using EnvCite.Platform.Web.Components.Layout.Navigation;
+using EnvCite.Platform.Web.Components.Portal.Workspace;
 using EnvCite.Platform.Web.Design;
 using EnvCite.Platform.Web.Presentation;
 
@@ -26,6 +27,8 @@ public static class WebModule
         services.AddSingleton<BrandText>();
         services.AddPlatformAppearance();
         services.AddPortalNavigation();
+        services.AddScoped<WorkspaceState>();
+        services.AddScoped<ChatSession>();
         services.AddWebAuth();
         services.AddRazorComponents().AddInteractiveServerComponents();
         // 取代預設的 AuthenticationStateProvider：circuit 每分鐘重驗營運者與入口成員的帳號（見 PlatformAuthenticationStateProvider）。

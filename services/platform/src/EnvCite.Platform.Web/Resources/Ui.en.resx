@@ -80,7 +80,6 @@
   <data name="啟用" xml:space="preserve"><value>Enable</value></data>
   <data name="啟用失敗。" xml:space="preserve"><value>Could not enable.</value></data>
   <data name="啟用步驟" xml:space="preserve"><value>Set-up steps</value></data>
-  <data name="回到對話紀錄" xml:space="preserve"><value>Back to conversation history</value></data>
   <data name="回到租戶清單" xml:space="preserve"><value>Back to tenants</value></data>
   <data name="回後台" xml:space="preserve"><value>Back to console</value></data>
   <data name="回答服務暫時無法使用，請稍後再試。" xml:space="preserve"><value>The answer service is temporarily unavailable. Please try again later.</value></data>
@@ -195,7 +194,6 @@
   <data name="新的復原碼" xml:space="preserve"><value>New recovery codes</value></data>
   <data name="方案" xml:space="preserve"><value>Plan</value></data>
   <data name="時間（台北）" xml:space="preserve"><value>Time (Taipei)</value></data>
-  <data name="最後更新 {0}" xml:space="preserve"><value>Last updated {0}</value></data>
   <data name="最近 {0} 筆事件中" xml:space="preserve"><value>In the latest {0} events</value></data>
   <data name="最近呼叫" xml:space="preserve"><value>Last call</value></data>
   <data name="最近呼叫（台北）" xml:space="preserve"><value>Last call (Taipei)</value></data>
@@ -522,4 +520,7 @@
   <data name="昨天" xml:space="preserve"><value>Yesterday</value></data>
   <data name="過去 7 天" xml:space="preserve"><value>Past 7 days</value></data>
   <data name="更早" xml:space="preserve"><value>Earlier</value></data>
+  <data name="新對話" xml:space="preserve"><value>New conversation</value></data>
+  <data name="正在查找法源…" xml:space="preserve"><value>Looking up the law…</value></data>
+  <data name="這個頁面需要 JavaScript 才能使用。" xml:space="preserve"><value>This page needs JavaScript.</value></data>
 </root>

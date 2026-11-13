@@ -28,6 +28,14 @@ internal sealed class TenantDirectory(IServiceScopeFactory scopes, PlanCatalog p
         return await store.GetAsync(tenantId) is { } tenant ? Summary(tenant, await ConsentedAsync(scope, cancellationToken)) : null;
     }
 
+    public async Task<TenantSummary?> FindByIdentifierAsync(string tenantIdentifier, CancellationToken cancellationToken)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
+
+        return await store.GetByIdentifierAsync(tenantIdentifier) is { } tenant ? Summary(tenant, await ConsentedAsync(scope, cancellationToken)) : null;
+    }
+
     /// <summary>同意 AI 回答的租戶 Id（權益那一列的旗標；那張表不是租戶實體，所以可以不帶租戶讀）。</summary>
     private static async Task<HashSet<string>> ConsentedAsync(AsyncServiceScope scope, CancellationToken cancellationToken) =>
         [.. await scope.ServiceProvider.GetRequiredService<PlatformDbContext>().Set<TenantEntitlement>()

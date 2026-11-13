@@ -84,7 +84,7 @@ public static partial class ComponentTemplateTests
 
         var layouts = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Layout"), "*Layout.razor").ToList();
         Assert.NotEmpty(layouts);
-        Assert.All(layouts, layout => Assert.Contains("@inherits PlatformLayoutBase", File.ReadAllText(layout), StringComparison.Ordinal));
+        Assert.All(layouts, layout => Assert.Matches(@"@inherits (PlatformLayoutBase|PortalLayoutBase)\b", File.ReadAllText(layout)));
 
         var dialogs = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Dialogs"), "*.razor").ToList();
         Assert.NotEmpty(dialogs);
@@ -95,6 +95,11 @@ public static partial class ComponentTemplateTests
         Assert.All(pages, page => Assert.Matches(@"@inherits (AdminPageBase|PageBase)\b", File.ReadAllText(page)));
         var portal = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Portal"), "*.razor");
         Assert.All(portal, page => Assert.Matches(@"@inherits (PortalPageBase|PortalFormPageBase<\w+>)(?!\w)", File.ReadAllText(page)));
+
+        // 入口的互動式頁面（工作區，沒有 HttpContext）繼承互動式的基底。
+        var workspace = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Portal", "Workspace"), "*.razor");
+        Assert.NotEmpty(workspace);
+        Assert.All(workspace, page => Assert.Matches(@"@inherits WorkspacePageBase\b", File.ReadAllText(page)));
     }
 
     // 營運者與客戶入口共用的流程（改密碼、啟用）只寫一份，兩邊的頁面只剩外框。

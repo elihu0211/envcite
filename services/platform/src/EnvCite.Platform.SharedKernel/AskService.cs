@@ -59,6 +59,12 @@ public interface IAskService
     Task<IReadOnlyList<ConversationSummary>> RecentAsync(ClaimsPrincipal user, int limit, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 開啟這位成員自己的一串對話（含每一則問與答）。不是自己的、不存在的、已過期的、歷史沒開啟的、身分不是入口成員的，
+    /// 一律回 null——不洩漏它存不存在。
+    /// </summary>
+    Task<ConversationDetail?> ConversationAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 把一問一答記進這位成員的歷史（只有本人看得到）。歷史沒開啟、或身分不是入口成員時回 null；
     /// 規則見 <see cref="IConversationHistory"/>。
     /// </summary>

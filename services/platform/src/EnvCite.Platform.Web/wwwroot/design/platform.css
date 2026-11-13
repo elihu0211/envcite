@@ -2974,3 +2974,16 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     color: var(--ep-on-ink);
 }
 
+
+/* ---- 問答的回合 ------------------------------------------------------------------------------
+ * 一串對話由很多回合組成：你的問題（靠右的氣泡）與它的答案（回答、出處卡片或拒答），回合之間隔一階，
+ * 回合裡的問與答隔一小階。 */
+.ep-turn {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-3);
+}
+
+.ep-turn + .ep-turn {
+    margin-block-start: var(--ep-space-6);
+}
