@@ -6,6 +6,9 @@
 - **標註管線的資料面**：各狀態的陳述數、各驗證方法最近一次的結果分布，讀自 0020 的健康檢視。
   閘門通過率是這個系統最核心的健康指標：確認的陳述為零，推論就什麼也推不出。
 
+- **檢索的精排**：帶 `rerank` 的 `SearchArticles` 的結果與精排端點的耗時。降級（`busy`、`error`）的
+  比率是端點健康與逾時設定的訊號：精排是加強不是必經，降級時查詢照常成功，只靠日誌看不出比率。
+
 標籤只用有限集合（結果、狀態、方法、判定）；租戶與案件內容不進指標。
 """
 
@@ -39,6 +42,28 @@ class ReasoningMetrics:
         self.in_flight = meter.create_up_down_counter(
             "envcite.reasoning.evaluate.in_flight",
             description="正在執行（已取得名額）的 Evaluate 數。",
+        )
+
+
+class RerankMetrics:
+    """帶 `rerank` 的 `SearchArticles` 的精排結果與端點耗時。"""
+
+    def __init__(self, meter: Meter | None = None) -> None:
+        meter = meter or metrics.get_meter(METER_NAME)
+        self.outcomes = meter.create_counter(
+            "envcite.ontology.rerank.outcomes",
+            description=(
+                "帶 rerank 且有候選的 SearchArticles 各算一次：outcome 為 reranked（精排成功）、"
+                "busy（名額滿）、error（端點逾時、出錯或回應不合）、unconfigured（沒有宣告精排模型）；"
+                "後三者都退回精排前的次序，查詢仍成功。"
+            ),
+        )
+        self.duration = meter.create_histogram(
+            "envcite.ontology.rerank.duration",
+            unit="s",
+            description=(
+                "對精排端點打分的耗時（含分批），outcome 為 ok 或 error；不含名額滿與未設定。"
+            ),
         )
 
 
