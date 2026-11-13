@@ -479,6 +479,20 @@ public static partial class DesignTokenTests
         Assert.Contains("iframe.ep-print-frame", script, StringComparison.Ordinal); // 列印用的 iframe 每次先清掉上一個
     }
 
+    // 側欄在直欄時（平板起、或有 JavaScript 的手機抽屜）標籤放不下要換行，不是被邊緣切掉：英文標籤比中文長。
+    // 橫列（沒有 JavaScript 的手機）維持單行，所以換行只加在直欄的兩個選擇器上。
+    [Fact]
+    public static void TheSidebarWrapsLongLabelsInsteadOfClippingThem()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        Assert.Matches(@"html\[data-js\] \.ep-side-link \{[^}]*white-space: normal", css);
+        Assert.Matches(@"@media \(width >= 48rem\) \{\s*\.ep-side-link \{[^}]*white-space: normal", css);
+        Assert.Matches(@"html\[data-js\] \.ep-side-link \.ep-side-label \{[^}]*min-inline-size: 0", css); // flex 子項預設不肯縮到內容以下
+        // 基本規則仍是單行：橫列（沒有 JavaScript 的手機）靠它橫向捲動。
+        Assert.Matches(@"\.ep-side-link,\s*\.ep-recent-link \{[^}]*white-space: nowrap", css);
+    }
+
     // 側欄：桌機收成窄欄、手機是抽屜，兩者都靠 forms.js 設在 <html> 上的屬性；窄欄寬度是 token，收起的抽屜不在 Tab 順序裡。
     [Fact]
     public static void TheSidebarCollapsesToARailAndBecomesADrawerOnPhones()
