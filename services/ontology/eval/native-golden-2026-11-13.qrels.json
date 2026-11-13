@@ -1,0 +1,8171 @@
+{
+ "golden_sha256": "769ebefddc130c6b1d65f66a152c051ee96d0374c6865de1b021bae180fbef4f",
+ "snapshots": [
+  {
+   "feed": "moj_law",
+   "data_date": "2026-11-06",
+   "sha256": "74cd250d6d06fa7ad0e24e978c1ca3b9edef404fd673c961e622fcf767359f99"
+  },
+  {
+   "feed": "moj_order",
+   "data_date": "2026-11-06",
+   "sha256": "943c32704294ac903642c93d09332a1683dfbacdca68d64cca87fa2f769f2d4b"
+  }
+ ],
+ "rule": "原生題庫：期望條文就是條文代號（法規代碼加條號），沒有名稱對照；題庫給定的條分數為 2，模型判定只能往上調",
+ "scale": [
+  0,
+  1,
+  2,
+  3
+ ],
+ "relevant_from": 2,
+ "counts": {
+  "items": 1408,
+  "scored": 1300,
+  "unmapped": 0,
+  "negative": 108
+ },
+ "qrels": {
+  "applies_mutatis_mutandis-03270b9e19": {
+   "G0380001-art-23": 2,
+   "G0380001-art-24": 2
+  },
+  "applies_mutatis_mutandis-0586be1127": {
+   "A0030155-art-15": 2
+  },
+  "applies_mutatis_mutandis-081ba5a6fd": {
+   "G0380237-art-26": 2
+  },
+  "applies_mutatis_mutandis-08c5685394": {
+   "B0000001-art-839": 2
+  },
+  "applies_mutatis_mutandis-0e83470abe": {
+   "C0010001-art-501": 2,
+   "C0010001-art-504": 2
+  },
+  "applies_mutatis_mutandis-13cda9fc07": {
+   "J0070007-art-28": 2
+  },
+  "applies_mutatis_mutandis-16f6941a71": {
+   "B0010048-art-101": 2,
+   "B0010048-art-102": 2,
+   "B0010048-art-108": 2
+  },
+  "applies_mutatis_mutandis-187e7d9d20": {
+   "B0010001-art-42": 2,
+   "B0010001-art-44": 2
+  },
+  "applies_mutatis_mutandis-1d1466aed2": {
+   "G0380122-art-12": 2
+  },
+  "applies_mutatis_mutandis-1ffd4f6adf": {
+   "S0010008-art-9": 2
+  },
+  "applies_mutatis_mutandis-2051921242": {
+   "D0090073-art-8": 2
+  },
+  "applies_mutatis_mutandis-23a3d4a04f": {
+   "G0340115-art-3": 2
+  },
+  "applies_mutatis_mutandis-26fe25d8e0": {
+   "G0380001-art-62-2": 2
+  },
+  "applies_mutatis_mutandis-279c24cb47": {
+   "C0010001-art-202": 2
+  },
+  "applies_mutatis_mutandis-27e9d8ed2d": {
+   "J0040051-art-34": 2
+  },
+  "applies_mutatis_mutandis-28b1a07db3": {
+   "D0060089-art-6": 2,
+   "D0060089-art-7": 2,
+   "D0060089-art-9": 2
+  },
+  "applies_mutatis_mutandis-28eaeffd8e": {
+   "J0080001-art-29": 2
+  },
+  "applies_mutatis_mutandis-2a5801cbc4": {
+   "D0060007-art-29": 2
+  },
+  "applies_mutatis_mutandis-2b4cffc604": {
+   "G0400001-art-43-2": 2,
+   "G0400001-art-43-3": 2,
+   "G0400001-art-43-5": 2
+  },
+  "applies_mutatis_mutandis-2f07ca5d92": {
+   "O0040026-art-25": 2,
+   "O0040026-art-29": 2
+  },
+  "applies_mutatis_mutandis-316c54511f": {
+   "N0030001-art-16": 2
+  },
+  "applies_mutatis_mutandis-327f8f65a0": {
+   "D0070008-art-24": 2
+  },
+  "applies_mutatis_mutandis-3364259081": {
+   "B0000001-art-431": 2
+  },
+  "applies_mutatis_mutandis-3679ef56a1": {
+   "D0060089-art-9": 2
+  },
+  "applies_mutatis_mutandis-37ac85e30b": {
+   "B0010008-art-172": 2
+  },
+  "applies_mutatis_mutandis-38b74a599e": {
+   "G0380001-art-62": 2,
+   "G0380001-art-62-2": 2,
+   "G0380001-art-62-5": 2
+  },
+  "applies_mutatis_mutandis-3f64903f9c": {
+   "A0030154-art-237-8": 2
+  },
+  "applies_mutatis_mutandis-4099afa9d6": {
+   "J0030011-art-26": 2
+  },
+  "applies_mutatis_mutandis-4347d51494": {
+   "P0050013-art-42": 2
+  },
+  "applies_mutatis_mutandis-43bc30f978": {
+   "D0120068-art-6": 2
+  },
+  "applies_mutatis_mutandis-440f631236": {
+   "G0380037-art-8": 2
+  },
+  "applies_mutatis_mutandis-444479d15f": {
+   "J0070034-art-7": 2
+  },
+  "applies_mutatis_mutandis-448d9d0092": {
+   "J0080001-art-198": 2
+  },
+  "applies_mutatis_mutandis-4579a9ef52": {
+   "G0400121-art-73": 2
+  },
+  "applies_mutatis_mutandis-46f1588e9d": {
+   "O0040026-art-26": 2,
+   "O0040026-art-33": 2
+  },
+  "applies_mutatis_mutandis-4a4a322ae9": {
+   "B0010001-art-427": 2
+  },
+  "applies_mutatis_mutandis-4c0d4be9ae": {
+   "C0010001-art-28": 2,
+   "C0010001-art-32": 2
+  },
+  "applies_mutatis_mutandis-4cd7cb1f40": {
+   "S0120001-art-10": 2
+  },
+  "applies_mutatis_mutandis-4d75e28a08": {
+   "D0050084-art-43": 2,
+   "D0050084-art-44": 2
+  },
+  "applies_mutatis_mutandis-4e0b976cd8": {
+   "A0030154-art-39": 2
+  },
+  "applies_mutatis_mutandis-4e72e45219": {
+   "B0010001-art-276": 2
+  },
+  "applies_mutatis_mutandis-50ba9afa8f": {
+   "B0000001-art-1055-1": 2
+  },
+  "applies_mutatis_mutandis-51c7c971dc": {
+   "D0070008-art-53": 2
+  },
+  "applies_mutatis_mutandis-51ca61b2a1": {
+   "K0030001-art-56-4": 2
+  },
+  "applies_mutatis_mutandis-5315156334": {
+   "S0120001-art-10": 2
+  },
+  "applies_mutatis_mutandis-53b60df3bc": {
+   "J0070007-art-70": 2
+  },
+  "applies_mutatis_mutandis-56a931414f": {
+   "B0010001-art-312": 2,
+   "B0010001-art-313": 2,
+   "B0010001-art-314": 2
+  },
+  "applies_mutatis_mutandis-57c165352a": {
+   "J0070007-art-70": 2
+  },
+  "applies_mutatis_mutandis-5a82761655": {
+   "G0400001-art-64": 2
+  },
+  "applies_mutatis_mutandis-63d6619c4d": {
+   "J0070001-art-24": 2,
+   "J0070001-art-25": 2
+  },
+  "applies_mutatis_mutandis-647b7d14a6": {
+   "A0010102-art-22": 2
+  },
+  "applies_mutatis_mutandis-66c31c62ab": {
+   "O0040026-art-23": 2
+  },
+  "applies_mutatis_mutandis-676dcfaf2d": {
+   "D0020040-art-35-1": 2
+  },
+  "applies_mutatis_mutandis-6976cd42fb": {
+   "B0010008-art-195": 2
+  },
+  "applies_mutatis_mutandis-6a2837dff1": {
+   "B0010048-art-172": 2
+  },
+  "applies_mutatis_mutandis-6b428c454f": {
+   "J0160015-art-12": 2
+  },
+  "applies_mutatis_mutandis-6c9bd79723": {
+   "C0010001-art-28": 2,
+   "C0010001-art-32": 2,
+   "C0010001-art-33": 2
+  },
+  "applies_mutatis_mutandis-6d3b0070c4": {
+   "L0020143-art-7": 2
+  },
+  "applies_mutatis_mutandis-70308e457f": {
+   "G0380237-art-16": 2
+  },
+  "applies_mutatis_mutandis-731f5f2cdd": {
+   "B0000001-art-799": 2
+  },
+  "applies_mutatis_mutandis-74956223d0": {
+   "D0070008-art-53": 2
+  },
+  "applies_mutatis_mutandis-769b486f32": {
+   "J0160019-art-14": 2
+  },
+  "applies_mutatis_mutandis-790aeb11c6": {
+   "G0380169-art-15": 2
+  },
+  "applies_mutatis_mutandis-7a096f0710": {
+   "G0340003-art-5": 2
+  },
+  "applies_mutatis_mutandis-7c043c5cba": {
+   "K0030001-art-34-1": 2
+  },
+  "applies_mutatis_mutandis-7e2426c6ba": {
+   "G0390060-art-34": 2
+  },
+  "applies_mutatis_mutandis-7fc99431af": {
+   "L0030001-art-27": 2
+  },
+  "applies_mutatis_mutandis-821729e3a7": {
+   "J0160015-art-13": 2
+  },
+  "applies_mutatis_mutandis-8314894b3b": {
+   "J0070007-art-44": 2
+  },
+  "applies_mutatis_mutandis-8699255316": {
+   "G0390060-art-27": 2
+  },
+  "applies_mutatis_mutandis-8816d5110f": {
+   "B0010001-art-56": 2
+  },
+  "applies_mutatis_mutandis-89dd275f13": {
+   "C0010009-art-12": 2,
+   "C0010009-art-14": 2
+  },
+  "applies_mutatis_mutandis-8a2db88080": {
+   "C0010018-art-9": 2
+  },
+  "applies_mutatis_mutandis-8b4fa02b4e": {
+   "A0030154-art-165": 2,
+   "A0030154-art-169": 2
+  },
+  "applies_mutatis_mutandis-8ba0e24e7a": {
+   "C0010026-art-8": 2
+  },
+  "applies_mutatis_mutandis-8f19071b5b": {
+   "G0380001-art-45": 2
+  },
+  "applies_mutatis_mutandis-91571f3ac6": {
+   "G0380169-art-28": 2
+  },
+  "applies_mutatis_mutandis-92cc79d67d": {
+   "J0080001-art-181": 2
+  },
+  "applies_mutatis_mutandis-9569fb987a": {
+   "J0070007-art-44": 2
+  },
+  "applies_mutatis_mutandis-97691f2f61": {
+   "B0000001-art-761": 2
+  },
+  "applies_mutatis_mutandis-9a2fba8c40": {
+   "D0120068-art-13": 2
+  },
+  "applies_mutatis_mutandis-9eb963b3d9": {
+   "P0050013-art-12": 2
+  },
+  "applies_mutatis_mutandis-9fc288829d": {
+   "J0030022-art-43": 2
+  },
+  "applies_mutatis_mutandis-9fdfba2d8d": {
+   "H0170102-art-31": 2
+  },
+  "applies_mutatis_mutandis-a1136390dc": {
+   "A0030159-art-53": 2
+  },
+  "applies_mutatis_mutandis-a2782f5864": {
+   "H0170001-art-22": 2
+  },
+  "applies_mutatis_mutandis-a283fae7b8": {
+   "G0380169-art-15": 2
+  },
+  "applies_mutatis_mutandis-a5afe2ca2a": {
+   "B0010001-art-233": 2
+  },
+  "applies_mutatis_mutandis-a6613b3300": {
+   "B0010010-art-50": 2
+  },
+  "applies_mutatis_mutandis-aaad6b0bd5": {
+   "C0010017-art-7": 2
+  },
+  "applies_mutatis_mutandis-ad43b663b4": {
+   "D0120001-art-30": 2
+  },
+  "applies_mutatis_mutandis-af4d363417": {
+   "D0050071-art-14": 2
+  },
+  "applies_mutatis_mutandis-b00255112a": {
+   "D0060058-art-30": 2
+  },
+  "applies_mutatis_mutandis-b0969d6603": {
+   "G0340003-art-80": 2
+  },
+  "applies_mutatis_mutandis-b0b929c8f4": {
+   "P0050013-art-31": 2
+  },
+  "applies_mutatis_mutandis-b15f00dc0d": {
+   "J0030011-art-14": 2
+  },
+  "applies_mutatis_mutandis-b37b6f6f87": {
+   "J0080001-art-172": 2
+  },
+  "applies_mutatis_mutandis-b5432f552a": {
+   "G0400121-art-17": 2
+  },
+  "applies_mutatis_mutandis-b56c619507": {
+   "C0010001-art-314": 2
+  },
+  "applies_mutatis_mutandis-b7fffd55cf": {
+   "K0070001-art-13": 2
+  },
+  "applies_mutatis_mutandis-ba250d956f": {
+   "B0010008-art-186": 2,
+   "B0010008-art-187": 2
+  },
+  "applies_mutatis_mutandis-bb341d66f7": {
+   "H0170001-art-17": 2
+  },
+  "applies_mutatis_mutandis-bd02f74eec": {
+   "P0050013-art-6": 2
+  },
+  "applies_mutatis_mutandis-bd221fd768": {
+   "L0050001-art-23": 2,
+   "L0050001-art-24": 2
+  },
+  "applies_mutatis_mutandis-bd954eb456": {
+   "D0070008-art-53": 2
+  },
+  "applies_mutatis_mutandis-bec3f29d34": {
+   "J0160015-art-15": 2
+  },
+  "applies_mutatis_mutandis-bf5a0d3226": {
+   "K0030001-art-34-1": 2
+  },
+  "applies_mutatis_mutandis-c05b0ec490": {
+   "J0080001-art-48": 2
+  },
+  "applies_mutatis_mutandis-c0e1cac781": {
+   "J0070001-art-28": 2
+  },
+  "applies_mutatis_mutandis-c7f88d2045": {
+   "G0350001-art-96": 2
+  },
+  "applies_mutatis_mutandis-ce37543211": {
+   "D0070209-art-10": 2
+  },
+  "applies_mutatis_mutandis-cf161ca9fa": {
+   "G0400100-art-71": 2
+  },
+  "applies_mutatis_mutandis-d1858007b4": {
+   "A0010091-art-12": 2
+  },
+  "applies_mutatis_mutandis-d25e35e8a2": {
+   "D0060009-art-47": 2
+  },
+  "applies_mutatis_mutandis-d2e8e427cd": {
+   "C0010001-art-242": 2
+  },
+  "applies_mutatis_mutandis-d505d44b09": {
+   "P0050013-art-29": 2
+  },
+  "applies_mutatis_mutandis-d69c5689ae": {
+   "B0000001-art-291": 2
+  },
+  "applies_mutatis_mutandis-d8193d4343": {
+   "B0000001-art-877": 2
+  },
+  "applies_mutatis_mutandis-d94c640d81": {
+   "J0080051-art-20": 2,
+   "J0080051-art-21": 2,
+   "J0080051-art-24": 2
+  },
+  "applies_mutatis_mutandis-d987f8f7c6": {
+   "G0400001-art-54": 2,
+   "G0400001-art-56": 2
+  },
+  "applies_mutatis_mutandis-da94c4cda6": {
+   "J0020001-art-17": 2
+  },
+  "applies_mutatis_mutandis-db7afd5f96": {
+   "J0130032-art-19": 2
+  },
+  "applies_mutatis_mutandis-dbcb460dcd": {
+   "O0040026-art-26": 2,
+   "O0040026-art-33": 2
+  },
+  "applies_mutatis_mutandis-dc67b04376": {
+   "K0070001-art-27-1": 2
+  },
+  "applies_mutatis_mutandis-dd8216d990": {
+   "H0170001-art-20": 2
+  },
+  "applies_mutatis_mutandis-de70862ec9": {
+   "K0070042-art-69": 2
+  },
+  "applies_mutatis_mutandis-e3a934b6b5": {
+   "J0090004-art-9": 2
+  },
+  "applies_mutatis_mutandis-e45d7a9452": {
+   "B0010006-art-13": 2
+  },
+  "applies_mutatis_mutandis-e690943af1": {
+   "D0060089-art-9": 2
+  },
+  "applies_mutatis_mutandis-e7596878b7": {
+   "D0120068-art-16": 2
+  },
+  "applies_mutatis_mutandis-e7ca3e4279": {
+   "A0030159-art-54": 2
+  },
+  "applies_mutatis_mutandis-e8d2b18575": {
+   "J0070007-art-92": 2
+  },
+  "applies_mutatis_mutandis-e8e227abb1": {
+   "P0050013-art-39": 2
+  },
+  "applies_mutatis_mutandis-e90282bf0a": {
+   "G0380226-art-28": 2,
+   "G0380226-art-30": 2
+  },
+  "applies_mutatis_mutandis-e958fca234": {
+   "F0070013-art-36": 2
+  },
+  "applies_mutatis_mutandis-ea81de64cf": {
+   "F0120008-art-141": 2
+  },
+  "applies_mutatis_mutandis-ed810ae75e": {
+   "J0000100-art-26": 2
+  },
+  "applies_mutatis_mutandis-edc8a7fb5c": {
+   "J0020019-art-17": 2
+  },
+  "applies_mutatis_mutandis-ee5d703081": {
+   "G0380037-art-20": 2,
+   "G0380037-art-21-1": 2
+  },
+  "applies_mutatis_mutandis-f0763612f5": {
+   "A0030154-art-213": 2,
+   "A0030154-art-214": 2,
+   "A0030154-art-216": 2
+  },
+  "applies_mutatis_mutandis-f0adc52c0c": {
+   "P0050013-art-22": 2
+  },
+  "applies_mutatis_mutandis-f16fa8709a": {
+   "J0020001-art-56": 2
+  },
+  "applies_mutatis_mutandis-f5840136ce": {
+   "L0060042-art-11": 2
+  },
+  "applies_mutatis_mutandis-f5a90fc29d": {
+   "D0060089-art-9": 2
+  },
+  "applies_mutatis_mutandis-f5c3be2326": {
+   "G0390002-art-148": 2
+  },
+  "applies_mutatis_mutandis-f87e20c230": {
+   "B0010001-art-345": 2,
+   "B0010001-art-349": 2
+  },
+  "applies_mutatis_mutandis-f987747945": {
+   "K0070001-art-19": 2
+  },
+  "applies_mutatis_mutandis-f9db626f5e": {
+   "G0350029-art-13": 2,
+   "G0350029-art-14": 2
+  },
+  "applies_mutatis_mutandis-fad323bc7b": {
+   "B0000001-art-1082": 2,
+   "B0000001-art-1083": 2
+  },
+  "applies_mutatis_mutandis-feb2c17589": {
+   "C0010001-art-116-2": 2
+  },
+  "definition_question-00de23628c": {
+   "O0020030-art-2": 2
+  },
+  "definition_question-01de747d7f": {
+   "K0060089-art-3": 2
+  },
+  "definition_question-02d9ecf48d": {
+   "L0060001-art-2": 2
+  },
+  "definition_question-057f43444a": {
+   "O0020030-art-2": 2
+  },
+  "definition_question-06b490e6b9": {
+   "O0020068-art-2": 2
+  },
+  "definition_question-07f37c784b": {
+   "K0070069-art-2": 2
+  },
+  "definition_question-08e6816fbc": {
+   "K0090014-art-2": 2
+  },
+  "definition_question-090789aec6": {
+   "K0090061-art-2": 2
+  },
+  "definition_question-09100db5b0": {
+   "O0020127-art-2": 2
+  },
+  "definition_question-0947ba57a8": {
+   "K0070016-art-29-1": 2
+  },
+  "definition_question-0b99e4a8d9": {
+   "G0380241-art-2": 2
+  },
+  "definition_question-0f2a9e05d0": {
+   "K0060055-art-2": 2,
+   "K0060156-art-2": 2
+  },
+  "definition_question-0f6a650e32": {
+   "L0020075-art-2": 2
+  },
+  "definition_question-0fd3773ddf": {
+   "K0060091-art-2": 2
+  },
+  "definition_question-1375744444": {
+   "K0070057-art-2": 2
+  },
+  "definition_question-145a5aafc9": {
+   "K0060098-art-3": 2,
+   "P0050054-art-2": 2
+  },
+  "definition_question-14bf639f56": {
+   "K0090008-art-2": 2
+  },
+  "definition_question-1558c79918": {
+   "G0380055-art-2": 2,
+   "G0380271-art-2": 2,
+   "J0140019-art-2": 2,
+   "J0140020-art-2": 2
+  },
+  "definition_question-161c9aa7ed": {
+   "J0110037-art-2": 2
+  },
+  "definition_question-174a4a6113": {
+   "J0030018-art-466": 2
+  },
+  "definition_question-188d8ecddb": {
+   "L0050002-art-2": 2
+  },
+  "definition_question-1927aff420": {
+   "J0100066-art-2": 2
+  },
+  "definition_question-1933dea2c2": {
+   "H0120072-art-2": 2,
+   "H0120092-art-2": 2
+  },
+  "definition_question-1a5432c2cd": {
+   "G0350061-art-2": 2
+  },
+  "definition_question-1a850b7866": {
+   "D0060009-art-3": 2
+  },
+  "definition_question-1c09248cb6": {
+   "K0070035-art-4": 2
+  },
+  "definition_question-1c0ab3d155": {
+   "J0030018-art-614": 2
+  },
+  "definition_question-1cfaf3b60b": {
+   "K0060038-art-2": 2
+  },
+  "definition_question-1d2fd0df1d": {
+   "J0020001-art-4": 2
+  },
+  "definition_question-1d567f2373": {
+   "J0040051-art-2": 2
+  },
+  "definition_question-1db237c9d8": {
+   "M0060034-art-2": 2
+  },
+  "definition_question-1dd94ef29e": {
+   "C0010034-art-4": 2,
+   "F0110025-art-2": 2,
+   "L0020227-art-3": 2,
+   "L0050043-art-2": 2
+  },
+  "definition_question-1e2831ade9": {
+   "K0090057-art-2": 2
+  },
+  "definition_question-1fd81d93a8": {
+   "L0020176-art-4": 2
+  },
+  "definition_question-20931298da": {
+   "H0050001-art-3": 2
+  },
+  "definition_question-213ad10128": {
+   "M0140012-art-5": 2
+  },
+  "definition_question-214b59f9a5": {
+   "J0030011-art-2": 2
+  },
+  "definition_question-238daf6c14": {
+   "O0020138-art-2": 2
+  },
+  "definition_question-23b949fc5d": {
+   "N0060069-art-2": 2,
+   "O0060043-art-3": 2
+  },
+  "definition_question-248b9ca45b": {
+   "A0020119-art-2": 2
+  },
+  "definition_question-2496cb169a": {
+   "J0030019-art-7": 2
+  },
+  "definition_question-27f54e8a0e": {
+   "K0060028-art-2": 2
+  },
+  "definition_question-2932a8305b": {
+   "K0060119-art-2": 2
+  },
+  "definition_question-29d3b32a5b": {
+   "L0050018-art-2": 2,
+   "N0090027-art-2": 2
+  },
+  "definition_question-2b06d96746": {
+   "G0350044-art-2": 2
+  },
+  "definition_question-2b56c6f504": {
+   "M0140025-art-2": 2
+  },
+  "definition_question-2c231d23e0": {
+   "M0140001-art-3": 2
+  },
+  "definition_question-2dcdb411f2": {
+   "T0040001-art-3": 2
+  },
+  "definition_question-2e94b2e383": {
+   "M0020001-art-3": 2
+  },
+  "definition_question-2efd1c214c": {
+   "K0090041-art-2": 2
+  },
+  "definition_question-2f1dfc2622": {
+   "N0060069-art-2": 2,
+   "O0060043-art-3": 2
+  },
+  "definition_question-2fbebbfc1c": {
+   "J0160001-art-2": 2,
+   "J0160015-art-4": 2
+  },
+  "definition_question-30f2e38fb2": {
+   "O0020030-art-2": 2
+  },
+  "definition_question-310fc1132a": {
+   "K0090041-art-2": 2
+  },
+  "definition_question-33243b9085": {
+   "L0070040-art-3": 2
+  },
+  "definition_question-332a0394a7": {
+   "H0150053-art-2": 2,
+   "S0080038-art-2": 2
+  },
+  "definition_question-33fe4ad79a": {
+   "N0060069-art-2": 2,
+   "O0060043-art-3": 2
+  },
+  "definition_question-3483d4d30f": {
+   "J0030018-art-792": 2
+  },
+  "definition_question-37340da1bd": {
+   "H0060042-art-3": 2
+  },
+  "definition_question-388d4e9c40": {
+   "G0340155-art-3": 2
+  },
+  "definition_question-3954cbcb6e": {
+   "H0060042-art-3": 2
+  },
+  "definition_question-3a97a5094a": {
+   "B0010063-art-2": 2
+  },
+  "definition_question-3c3a50617a": {
+   "O0020001-art-3": 2
+  },
+  "definition_question-3cdc189b73": {
+   "S0050006-art-4": 2
+  },
+  "definition_question-3cfd486d02": {
+   "J0030018-art-387": 2
+  },
+  "definition_question-3d552c2adb": {
+   "K0060157-art-2": 2
+  },
+  "definition_question-3fbf5a4882": {
+   "O0020032-art-2": 2
+  },
+  "definition_question-3fc01b6029": {
+   "A0020041-art-3": 2
+  },
+  "definition_question-3fc68442a8": {
+   "J0030018-art-596": 2
+  },
+  "definition_question-3fc9f6539c": {
+   "A0020128-art-2": 2
+  },
+  "definition_question-417106e3ae": {
+   "O0110022-art-2": 2
+  },
+  "definition_question-41c8d02860": {
+   "L0040001-art-3": 2
+  },
+  "definition_question-4351b71770": {
+   "O0020098-art-3": 2
+  },
+  "definition_question-4424a345b0": {
+   "J0020060-art-3": 2
+  },
+  "definition_question-4525dfbf2e": {
+   "G0400121-art-5": 2,
+   "G0400138-art-3": 2
+  },
+  "definition_question-46730e8b10": {
+   "O0030018-art-2": 2
+  },
+  "definition_question-476e4d2491": {
+   "F0110025-art-2": 2,
+   "K0090038-art-3": 2
+  },
+  "definition_question-485c2564fc": {
+   "G0400121-art-5": 2
+  },
+  "definition_question-48e09fa3e7": {
+   "K0030001-art-2": 2
+  },
+  "definition_question-495c2b8e94": {
+   "J0080058-art-2": 2
+  },
+  "definition_question-49cf1523e6": {
+   "K0070016-art-5": 2
+  },
+  "definition_question-49e70b7b5c": {
+   "L0030105-art-2": 2
+  },
+  "definition_question-4b1982833b": {
+   "G0310086-art-2": 2
+  },
+  "definition_question-4cd3de578a": {
+   "D0020040-art-2": 2
+  },
+  "definition_question-4d2965ad05": {
+   "M0050062-art-2": 2
+  },
+  "definition_question-4d793e3e06": {
+   "O0110014-art-2": 2
+  },
+  "definition_question-4d89504255": {
+   "O0120009-art-2": 2
+  },
+  "definition_question-4d8d4147c1": {
+   "O0020030-art-2": 2
+  },
+  "definition_question-4d9002228a": {
+   "O0020102-art-2": 2
+  },
+  "definition_question-4db32f0daa": {
+   "J0110091-art-3": 2
+  },
+  "definition_question-4dc8cfbbc7": {
+   "O0020104-art-2": 2
+  },
+  "definition_question-4e10c14259": {
+   "N0020007-art-5": 2
+  },
+  "definition_question-4f48b87dac": {
+   "I0040014-art-2": 2
+  },
+  "definition_question-4f8640a76d": {
+   "J0030018-art-6": 2
+  },
+  "definition_question-4f8eef93fd": {
+   "D0060101-art-2": 2
+  },
+  "definition_question-4fee24d53a": {
+   "J0160038-art-2": 2
+  },
+  "definition_question-500e4c689c": {
+   "H0120044-art-2": 2
+  },
+  "definition_question-516bb9e41a": {
+   "A0030297-art-3": 2
+  },
+  "definition_question-536837482d": {
+   "K0060063-art-2": 2
+  },
+  "definition_question-53a08b126f": {
+   "D0070149-art-2": 2
+  },
+  "definition_question-53b05816de": {
+   "K0050001-art-4": 2
+  },
+  "definition_question-54185b1bfd": {
+   "J0020039-art-4": 2
+  },
+  "definition_question-542c761b60": {
+   "D0060009-art-3": 2
+  },
+  "definition_question-544d472367": {
+   "D0070115-art-299": 2
+  },
+  "definition_question-548365038b": {
+   "K0090041-art-2": 2
+  },
+  "definition_question-5538172f31": {
+   "D0070001-art-7": 2
+  },
+  "definition_question-56fa164367": {
+   "L0030073-art-61": 2
+  },
+  "definition_question-5709a048ad": {
+   "K0070016-art-174": 2
+  },
+  "definition_question-57f0545174": {
+   "A0030079-art-2": 2
+  },
+  "definition_question-589f4c1cfa": {
+   "O0030018-art-2": 2
+  },
+  "definition_question-599ae5a51c": {
+   "L0030128-art-2": 2
+  },
+  "definition_question-59fa36358d": {
+   "H0010007-art-2": 2
+  },
+  "definition_question-5ac5e86805": {
+   "G0380046-art-2": 2,
+   "G0380064-art-2": 2,
+   "G0380153-art-2": 2
+  },
+  "definition_question-5b2c4a39d8": {
+   "O0050022-art-2": 2
+  },
+  "definition_question-5dbb0cec0a": {
+   "L0030057-art-4": 2,
+   "M0130041-art-2": 2
+  },
+  "definition_question-5dbc119436": {
+   "O0020007-art-2": 2
+  },
+  "definition_question-5dc3548871": {
+   "J0030018-art-680": 2
+  },
+  "definition_question-5dfa6bd905": {
+   "K0040013-art-2": 2
+  },
+  "definition_question-5e2dfc84b4": {
+   "M0050006-art-2": 2
+  },
+  "definition_question-5f9144e83f": {
+   "G0380164-art-4": 2
+  },
+  "definition_question-60ca227812": {
+   "K0060098-art-3": 2
+  },
+  "definition_question-624d8cbac4": {
+   "O0020142-art-2": 2
+  },
+  "definition_question-64259e05b2": {
+   "K0070016-art-92": 2,
+   "K0070035-art-4": 2,
+   "K0070036-art-2": 2,
+   "K0070038-art-3": 2
+  },
+  "definition_question-642872ca93": {
+   "G0400138-art-3": 2
+  },
+  "definition_question-64ae46c7f2": {
+   "K0090014-art-2": 2
+  },
+  "definition_question-663169d0ca": {
+   "D0060077-art-2": 2
+  },
+  "definition_question-667f783edc": {
+   "K0110001-art-2": 2
+  },
+  "definition_question-68becb8c11": {
+   "D0080226-art-2": 2
+  },
+  "definition_question-6aa6faac2f": {
+   "K0090041-art-2": 2
+  },
+  "definition_question-6ccf0ba930": {
+   "H0120001-art-3": 2
+  },
+  "definition_question-6e26ddefc8": {
+   "J0160056-art-2": 2
+  },
+  "definition_question-6ec6553250": {
+   "O0040018-art-2": 2
+  },
+  "definition_question-717faff342": {
+   "G0320034-art-2": 2
+  },
+  "definition_question-71f383e4b3": {
+   "J0100052-art-2": 2
+  },
+  "definition_question-720944c63d": {
+   "M0070066-art-3": 2
+  },
+  "definition_question-73399c76db": {
+   "J0160005-art-6": 2
+  },
+  "definition_question-74cd920505": {
+   "J0030018-art-6": 2
+  },
+  "definition_question-76a4b043cd": {
+   "K0060080-art-2": 2
+  },
+  "definition_question-76bf30cbd1": {
+   "K0060130-art-2": 2
+  },
+  "definition_question-7917ddd607": {
+   "J0160004-art-2": 2
+  },
+  "definition_question-7a36316685": {
+   "M0120001-art-3": 2
+  },
+  "definition_question-7bf56baba6": {
+   "J0040034-art-2": 2
+  },
+  "definition_question-7d2cc36257": {
+   "H0120021-art-2": 2
+  },
+  "definition_question-7d6e606967": {
+   "J0030146-art-2": 2,
+   "O0070001-art-2": 2
+  },
+  "definition_question-7e43a906d7": {
+   "F0040025-art-2": 2,
+   "N0080049-art-2": 2
+  },
+  "definition_question-7fa2525c75": {
+   "O0020058-art-2": 2
+  },
+  "definition_question-7fafc6eb09": {
+   "H0070087-art-2": 2
+  },
+  "definition_question-7fb708bb07": {
+   "F0030045-art-2": 2
+  },
+  "definition_question-8116922d65": {
+   "O0050061-art-2": 2
+  },
+  "definition_question-83a673ac57": {
+   "K0070007-art-2": 2,
+   "K0070012-art-2": 2
+  },
+  "definition_question-84c5dd5011": {
+   "K0070004-art-3": 2
+  },
+  "definition_question-84ce157744": {
+   "K0090041-art-2": 2
+  },
+  "definition_question-855ce2055e": {
+   "N0030014-art-3": 2,
+   "N0090055-art-3": 2
+  },
+  "definition_question-85ccb3fb90": {
+   "O0020098-art-3": 2
+  },
+  "definition_question-86b76f0e17": {
+   "G0380122-art-4": 2
+  },
+  "definition_question-88aaacc1ba": {
+   "K0070007-art-2": 2
+  },
+  "definition_question-8919eaaf36": {
+   "D0060090-art-3": 2
+  },
+  "definition_question-8a7ea00dd5": {
+   "H0080107-art-2": 2,
+   "M0130029-art-2": 2
+  },
+  "definition_question-8b4ec2e09c": {
+   "O0020145-art-2": 2
+  },
+  "definition_question-8b5cde111f": {
+   "L0020244-art-2": 2
+  },
+  "definition_question-8b8e115ecd": {
+   "J0030018-art-614": 2
+  },
+  "definition_question-8c0b5c2c4d": {
+   "B0010050-art-2": 2
+  },
+  "definition_question-8cf647107b": {
+   "J0130081-art-3": 2
+  },
+  "definition_question-8f81228d85": {
+   "G0330010-art-2": 2
+  },
+  "definition_question-909ae20e27": {
+   "J0030018-art-6": 2
+  },
+  "definition_question-91132b8509": {
+   "K0090016-art-2": 2
+  },
+  "definition_question-914c91c359": {
+   "H0160078-art-3": 2
+  },
+  "definition_question-920804bcc4": {
+   "J0100056-art-2": 2
+  },
+  "definition_question-9227082eac": {
+   "K0060050-art-2": 2
+  },
+  "definition_question-9496af7f1c": {
+   "K0060028-art-2": 2
+  },
+  "definition_question-949ce47bd1": {
+   "L0030044-art-3": 2
+  },
+  "definition_question-9588caf146": {
+   "M0030065-art-2": 2,
+   "M0050039-art-2": 2
+  },
+  "definition_question-95d6d48613": {
+   "O0020030-art-2": 2
+  },
+  "definition_question-964bf7115c": {
+   "A0020119-art-2": 2
+  },
+  "definition_question-96726521ee": {
+   "T0040001-art-3": 2
+  },
+  "definition_question-9893ea004e": {
+   "J0030019-art-7": 2
+  },
+  "definition_question-98efdb1f4b": {
+   "K0090041-art-2": 2
+  },
+  "definition_question-99f68f1b94": {
+   "O0020052-art-2": 2
+  },
+  "definition_question-9b22606af4": {
+   "O0040029-art-2": 2
+  },
+  "definition_question-9e88d1ecd1": {
+   "G0380199-art-3": 2
+  },
+  "definition_question-9ea83cb56a": {
+   "P0040018-art-2": 2
+  },
+  "definition_question-9ece8a32b6": {
+   "J0030146-art-2": 2
+  },
+  "definition_question-9fa2381700": {
+   "D0120021-art-2": 2
+  },
+  "definition_question-a006764ae9": {
+   "J0030018-art-6": 2
+  },
+  "definition_question-a01c4e6b00": {
+   "H0070049-art-2": 2
+  },
+  "definition_question-a05dab4059": {
+   "D0070066-art-2": 2
+  },
+  "definition_question-a06bb51065": {
+   "K0090014-art-2": 2
+  },
+  "definition_question-a088500951": {
+   "J0160075-art-2": 2
+  },
+  "definition_question-a106cc8518": {
+   "S0100002-art-2": 2
+  },
+  "definition_question-a194a861f9": {
+   "K0030001-art-2": 2
+  },
+  "definition_question-a4365a1634": {
+   "G0380146-art-4": 2
+  },
+  "definition_question-a4bc3c538d": {
+   "D0070105-art-8": 2
+  },
+  "definition_question-a562d8f4fe": {
+   "I0030026-art-3": 2
+  },
+  "definition_question-a5cdb373a8": {
+   "K0110001-art-2": 2
+  },
+  "definition_question-a621efaf52": {
+   "A0020041-art-3": 2
+  },
+  "definition_question-a67acb25ec": {
+   "I0040002-art-3": 2,
+   "I0040064-art-2": 2,
+   "I0040070-art-2": 2,
+   "I0040072-art-2": 2
+  },
+  "definition_question-a69f7597f4": {
+   "M0140001-art-3": 2
+  },
+  "definition_question-a8299e2ba9": {
+   "F0080017-art-2": 2
+  },
+  "definition_question-aacec737e0": {
+   "O0020111-art-2": 2
+  },
+  "definition_question-ab984bc39d": {
+   "K0110015-art-2": 2
+  },
+  "definition_question-abdd424aa9": {
+   "J0030018-art-848": 2
+  },
+  "definition_question-ade02ff598": {
+   "J0090030-art-2": 2
+  },
+  "definition_question-ae08d54a1d": {
+   "D0060125-art-3": 2
+  },
+  "definition_question-ae26f715ff": {
+   "I0040029-art-3": 2
+  },
+  "definition_question-ae6da0ba52": {
+   "G0380241-art-2": 2
+  },
+  "definition_question-ae881ec7ca": {
+   "G0340153-art-2": 2
+  },
+  "definition_question-ae9d5e5434": {
+   "O0020001-art-3": 2
+  },
+  "definition_question-afe348856a": {
+   "D0080230-art-3": 2
+  },
+  "definition_question-b06dcb8b9f": {
+   "F0040034-art-2": 2
+  },
+  "definition_question-b2d20b60a4": {
+   "L0030114-art-2": 2
+  },
+  "definition_question-b4cd07e08c": {
+   "J0030018-art-812": 2
+  },
+  "definition_question-b592dc60ac": {
+   "H0170102-art-3": 2
+  },
+  "definition_question-b5a830a546": {
+   "I0040029-art-3": 2
+  },
+  "definition_question-b5d224c4db": {
+   "D0060077-art-2": 2
+  },
+  "definition_question-b6d6b674c1": {
+   "H0120060-art-2": 2
+  },
+  "definition_question-b92d734e52": {
+   "J0030018-art-812": 2
+  },
+  "definition_question-b9db896920": {
+   "J0030019-art-7": 2
+  },
+  "definition_question-ba9328b663": {
+   "O0020030-art-2": 2
+  },
+  "definition_question-bb248c4204": {
+   "J0030018-art-6": 2
+  },
+  "definition_question-bc15e328d0": {
+   "D0070105-art-8": 2
+  },
+  "definition_question-bc8b0dd085": {
+   "K0090009-art-2": 2
+  },
+  "definition_question-bcad73bfc0": {
+   "J0030018-art-387": 2
+  },
+  "definition_question-bd13895229": {
+   "J0020019-art-2": 2
+  },
+  "definition_question-bef989ad07": {
+   "C0010049-art-3": 2
+  },
+  "definition_question-c0e4d7595c": {
+   "O0020033-art-2": 2
+  },
+  "definition_question-c1b9d6a012": {
+   "D0050015-art-2": 2
+  },
+  "definition_question-c1e3d7f2a2": {
+   "J0030018-art-614": 2,
+   "O0060036-art-2": 2
+  },
+  "definition_question-c41c60477c": {
+   "M0140012-art-5": 2
+  },
+  "definition_question-c450647556": {
+   "M0140025-art-2": 2
+  },
+  "definition_question-c5118b161a": {
+   "G0380153-art-2": 2
+  },
+  "definition_question-c52285670c": {
+   "J0110078-art-2": 2
+  },
+  "definition_question-c53dc7b0c7": {
+   "G0380122-art-4": 2
+  },
+  "definition_question-c5eed0a698": {
+   "G0380271-art-2": 2
+  },
+  "definition_question-c656126ecf": {
+   "J0020001-art-4": 2
+  },
+  "definition_question-c6e223a7e9": {
+   "J0030018-art-848": 2
+  },
+  "definition_question-c7aa49d098": {
+   "O0110010-art-2": 2
+  },
+  "definition_question-c8d9be6443": {
+   "K0060001-art-2": 2,
+   "K0060111-art-3": 2
+  },
+  "definition_question-c92911a80f": {
+   "J0020019-art-2": 2
+  },
+  "definition_question-c988935bcf": {
+   "R0020030-art-2": 2
+  },
+  "definition_question-caaaecf46e": {
+   "J0130054-art-2": 2
+  },
+  "definition_question-cbd18b8e35": {
+   "D0070115-art-299": 2
+  },
+  "definition_question-cc003287fd": {
+   "N0020007-art-5": 2
+  },
+  "definition_question-cc1cc6e42d": {
+   "D0080090-art-2": 2,
+   "K0020058-art-2": 2
+  },
+  "definition_question-ccc6701144": {
+   "G0340120-art-2": 2
+  },
+  "definition_question-ccf125e7c0": {
+   "K0060141-art-2": 2
+  },
+  "definition_question-cdb9dc8705": {
+   "O0020030-art-2": 2,
+   "O0020071-art-2": 2
+  },
+  "definition_question-ce3e1c5a43": {
+   "H0020041-art-22": 2
+  },
+  "definition_question-cf6034df39": {
+   "K0070038-art-3": 2
+  },
+  "definition_question-cfdd3e7c01": {
+   "J0020032-art-2": 2
+  },
+  "definition_question-d086c4ccdd": {
+   "H0030050-art-2": 2
+  },
+  "definition_question-d28c4d77ca": {
+   "K0060032-art-3": 2,
+   "K0060145-art-2": 2
+  },
+  "definition_question-d2e92449f6": {
+   "G0340148-art-3": 2
+  },
+  "definition_question-d62fbea04f": {
+   "K0090061-art-2": 2
+  },
+  "definition_question-d70da6fc09": {
+   "O0050061-art-2": 2
+  },
+  "definition_question-d8d155e77d": {
+   "N0070017-art-3": 2
+  },
+  "definition_question-d960ebf9a8": {
+   "J0030018-art-6": 2
+  },
+  "definition_question-daef62232a": {
+   "G0350073-art-2": 2
+  },
+  "definition_question-dc6d5f33e4": {
+   "K0040065-art-2": 2,
+   "K0040068-art-2": 2
+  },
+  "definition_question-dd0287ac55": {
+   "J0030018-art-848": 2
+  },
+  "definition_question-dddcece742": {
+   "L0020075-art-2": 2
+  },
+  "definition_question-de6ba8c4dd": {
+   "K0090008-art-2": 2,
+   "K0090014-art-2": 2
+  },
+  "definition_question-dfca2e6bca": {
+   "J0130041-art-3": 2
+  },
+  "definition_question-e06bfd52b0": {
+   "N0060064-art-3": 2
+  },
+  "definition_question-e111787105": {
+   "K0090041-art-2": 2
+  },
+  "definition_question-e33920d936": {
+   "M0050006-art-2": 2
+  },
+  "definition_question-e399094d76": {
+   "G0380241-art-2": 2
+  },
+  "definition_question-e3af5075b8": {
+   "J0030147-art-3": 2
+  },
+  "definition_question-e3bda63e55": {
+   "O0050051-art-3": 2
+  },
+  "definition_question-e41e5fab3c": {
+   "J0110037-art-2": 2
+  },
+  "definition_question-e48fbda2cc": {
+   "G0380271-art-2": 2
+  },
+  "definition_question-e58b84f426": {
+   "D0070038-art-3": 2
+  },
+  "definition_question-e6029ff1b9": {
+   "O0020001-art-3": 2
+  },
+  "definition_question-e704f7d50e": {
+   "D0070156-art-2": 2,
+   "K0040012-art-3": 2
+  },
+  "definition_question-e79b814624": {
+   "P0030006-art-2": 2,
+   "Q0030001-art-2": 2
+  },
+  "definition_question-e8ee5dc969": {
+   "K0070016-art-92": 2,
+   "K0070036-art-2": 2,
+   "K0070038-art-3": 2
+  },
+  "definition_question-ea1f4310d9": {
+   "G0380046-art-2": 2
+  },
+  "definition_question-ea4db03c34": {
+   "D0050187-art-2": 2
+  },
+  "definition_question-eaba3a8276": {
+   "G0340019-art-4": 2
+  },
+  "definition_question-eb85e5da69": {
+   "K0070007-art-2": 2
+  },
+  "definition_question-ec77024efd": {
+   "H0070067-art-3": 2
+  },
+  "definition_question-ecac08da25": {
+   "J0030018-art-6": 2
+  },
+  "definition_question-ed0f89afea": {
+   "K0030020-art-2": 2
+  },
+  "definition_question-ef57a58ab8": {
+   "J0070037-art-2": 2
+  },
+  "definition_question-f08f54b291": {
+   "P0010005-art-2": 2
+  },
+  "definition_question-f15946d335": {
+   "O0020127-art-2": 2
+  },
+  "definition_question-f163ba5f33": {
+   "D0120074-art-3": 2
+  },
+  "definition_question-f2e9cc5d0a": {
+   "C0010044-art-2": 2,
+   "C0010048-art-2": 2
+  },
+  "definition_question-f3426858d3": {
+   "O0020127-art-2": 2
+  },
+  "definition_question-f355778c7d": {
+   "G0340140-art-2": 2
+  },
+  "definition_question-f44d32db95": {
+   "K0090067-art-3": 2
+  },
+  "definition_question-f478fb7e9a": {
+   "G0340095-art-2": 2
+  },
+  "definition_question-f845e78af0": {
+   "R0020032-art-3": 2
+  },
+  "definition_question-faa07df61e": {
+   "K0060080-art-2": 2
+  },
+  "definition_question-fb9f2c2077": {
+   "J0040046-art-4": 2
+  },
+  "definition_question-fc3286b00f": {
+   "O0020068-art-2": 2
+  },
+  "definition_question-fd2f8b3749": {
+   "K0090041-art-2": 2
+  },
+  "definition_question-fd40482b0b": {
+   "H0070082-art-2": 2
+  },
+  "definition_question-fded7fc56e": {
+   "H0170076-art-2": 2
+  },
+  "definition_question-fea4e609c5": {
+   "L0060042-art-3": 2
+  },
+  "definition_question-fee5d6b9f6": {
+   "K0070001-art-3": 2
+  },
+  "definition_term-011fb0bc05": {
+   "O0020007-art-2": 2
+  },
+  "definition_term-019abebe17": {
+   "G0400138-art-3": 2
+  },
+  "definition_term-01ddd194c7": {
+   "G0380122-art-4": 2
+  },
+  "definition_term-022e4d5c76": {
+   "J0020060-art-3": 2
+  },
+  "definition_term-0404c0981b": {
+   "D0070105-art-8": 2
+  },
+  "definition_term-047ee5817a": {
+   "G0340148-art-3": 2
+  },
+  "definition_term-04a27b8c0d": {
+   "O0020068-art-2": 2
+  },
+  "definition_term-0531561665": {
+   "J0040046-art-4": 2
+  },
+  "definition_term-05b7e53c46": {
+   "K0070016-art-5": 2
+  },
+  "definition_term-06d8b3849d": {
+   "J0030018-art-848": 2
+  },
+  "definition_term-0908258324": {
+   "D0080090-art-2": 2,
+   "K0020058-art-2": 2
+  },
+  "definition_term-0a9af44445": {
+   "K0060001-art-2": 2,
+   "K0060111-art-3": 2
+  },
+  "definition_term-0b5020caf7": {
+   "A0030079-art-2": 2
+  },
+  "definition_term-0b8de50b87": {
+   "F0040025-art-2": 2,
+   "N0080049-art-2": 2
+  },
+  "definition_term-0d5aced39b": {
+   "G0340095-art-2": 2
+  },
+  "definition_term-0deae38841": {
+   "D0070105-art-8": 2
+  },
+  "definition_term-0e3637bfc0": {
+   "G0400121-art-5": 2
+  },
+  "definition_term-101c18ae22": {
+   "H0020041-art-22": 2
+  },
+  "definition_term-112866ea04": {
+   "K0070057-art-2": 2
+  },
+  "definition_term-115f7d924f": {
+   "O0110010-art-2": 2
+  },
+  "definition_term-12c0e5f2a7": {
+   "F0080017-art-2": 2
+  },
+  "definition_term-13790757f0": {
+   "G0380241-art-2": 2
+  },
+  "definition_term-13d2382055": {
+   "J0020001-art-4": 2
+  },
+  "definition_term-13e8ae2857": {
+   "M0050006-art-2": 2
+  },
+  "definition_term-1469c7739b": {
+   "F0110025-art-2": 2,
+   "K0090038-art-3": 2
+  },
+  "definition_term-158eea1f11": {
+   "K0040013-art-2": 2
+  },
+  "definition_term-1642d704e6": {
+   "O0110014-art-2": 2
+  },
+  "definition_term-17d9d22eab": {
+   "K0070035-art-4": 2
+  },
+  "definition_term-188ce6ff5d": {
+   "K0070007-art-2": 2
+  },
+  "definition_term-18cf752829": {
+   "A0020041-art-3": 2
+  },
+  "definition_term-18db5431e7": {
+   "K0060063-art-2": 2
+  },
+  "definition_term-19bc39dd56": {
+   "J0030011-art-2": 2
+  },
+  "definition_term-1b0f6ca245": {
+   "J0100066-art-2": 2
+  },
+  "definition_term-1cf0522870": {
+   "A0020119-art-2": 2
+  },
+  "definition_term-1dab1eeaf4": {
+   "K0090041-art-2": 2
+  },
+  "definition_term-1e9eb4a9c6": {
+   "K0060038-art-2": 2
+  },
+  "definition_term-1ea5d91278": {
+   "G0380241-art-2": 2
+  },
+  "definition_term-1fc41fcce5": {
+   "G0350044-art-2": 2
+  },
+  "definition_term-1fe747a1c5": {
+   "O0050061-art-2": 2
+  },
+  "definition_term-211f8582b8": {
+   "H0010007-art-2": 2
+  },
+  "definition_term-2158c0ce18": {
+   "O0020001-art-3": 2
+  },
+  "definition_term-21dbaf219f": {
+   "A0020128-art-2": 2
+  },
+  "definition_term-21f005d8ad": {
+   "K0060098-art-3": 2
+  },
+  "definition_term-2235f91873": {
+   "J0040051-art-2": 2
+  },
+  "definition_term-224e0287ab": {
+   "K0060130-art-2": 2
+  },
+  "definition_term-23dd435b35": {
+   "O0020032-art-2": 2
+  },
+  "definition_term-240a7c0345": {
+   "J0030018-art-6": 2
+  },
+  "definition_term-243e77474e": {
+   "G0310086-art-2": 2
+  },
+  "definition_term-2447f209b4": {
+   "D0070115-art-299": 2
+  },
+  "definition_term-2701d3bae3": {
+   "D0070149-art-2": 2
+  },
+  "definition_term-270e3de2c7": {
+   "D0060101-art-2": 2
+  },
+  "definition_term-283e526d7b": {
+   "O0020138-art-2": 2
+  },
+  "definition_term-2843414523": {
+   "J0030018-art-812": 2
+  },
+  "definition_term-2898d3ce67": {
+   "D0070115-art-299": 2
+  },
+  "definition_term-28c438cb77": {
+   "D0070001-art-7": 2
+  },
+  "definition_term-2a9a37c877": {
+   "O0020068-art-2": 2
+  },
+  "definition_term-2b542e02a2": {
+   "K0070001-art-3": 2
+  },
+  "definition_term-2b597b9701": {
+   "K0090041-art-2": 2
+  },
+  "definition_term-2d1e1dc5ec": {
+   "L0020244-art-2": 2
+  },
+  "definition_term-2d3e5e4cb0": {
+   "O0020030-art-2": 2
+  },
+  "definition_term-2d48d08669": {
+   "G0380271-art-2": 2
+  },
+  "definition_term-2de54a3c4d": {
+   "O0020102-art-2": 2
+  },
+  "definition_term-2e16e2398b": {
+   "O0120009-art-2": 2
+  },
+  "definition_term-305c7c573d": {
+   "J0030018-art-6": 2
+  },
+  "definition_term-30906c5234": {
+   "K0110001-art-2": 2
+  },
+  "definition_term-39f07c8f92": {
+   "K0060098-art-3": 2,
+   "P0050054-art-2": 2
+  },
+  "definition_term-3c52428c1a": {
+   "K0070069-art-2": 2
+  },
+  "definition_term-3ca2c18e7e": {
+   "D0060009-art-3": 2
+  },
+  "definition_term-3d07f0061a": {
+   "M0060034-art-2": 2
+  },
+  "definition_term-3d1422c040": {
+   "L0030128-art-2": 2
+  },
+  "definition_term-3d29e91697": {
+   "J0100056-art-2": 2
+  },
+  "definition_term-3e133748e1": {
+   "K0040065-art-2": 2,
+   "K0040068-art-2": 2
+  },
+  "definition_term-3ecb9354cc": {
+   "P0040018-art-2": 2
+  },
+  "definition_term-3f360472b5": {
+   "O0020030-art-2": 2,
+   "O0020071-art-2": 2
+  },
+  "definition_term-3f56867728": {
+   "H0120044-art-2": 2
+  },
+  "definition_term-3fde498212": {
+   "N0020007-art-5": 2
+  },
+  "definition_term-4014d758e3": {
+   "O0110022-art-2": 2
+  },
+  "definition_term-4070dcd482": {
+   "J0030018-art-6": 2
+  },
+  "definition_term-443b608f0d": {
+   "G0380271-art-2": 2
+  },
+  "definition_term-44e03ef54d": {
+   "J0160005-art-6": 2
+  },
+  "definition_term-44fdbcc842": {
+   "H0030050-art-2": 2
+  },
+  "definition_term-4543108e60": {
+   "O0020001-art-3": 2
+  },
+  "definition_term-45ac47f75c": {
+   "O0020030-art-2": 2
+  },
+  "definition_term-45b79c065a": {
+   "D0070066-art-2": 2
+  },
+  "definition_term-46161a0144": {
+   "J0030147-art-3": 2
+  },
+  "definition_term-4709d980ad": {
+   "J0160004-art-2": 2
+  },
+  "definition_term-47e9ee1be9": {
+   "M0140012-art-5": 2
+  },
+  "definition_term-48393c9fd7": {
+   "G0340019-art-4": 2
+  },
+  "definition_term-4997ae291b": {
+   "M0140025-art-2": 2
+  },
+  "definition_term-4a43a4cb94": {
+   "L0060042-art-3": 2
+  },
+  "definition_term-4aa997fbb7": {
+   "J0110091-art-3": 2
+  },
+  "definition_term-4accab6592": {
+   "C0010049-art-3": 2
+  },
+  "definition_term-4bbd6cbd11": {
+   "K0090014-art-2": 2
+  },
+  "definition_term-4c49b6b508": {
+   "H0150053-art-2": 2,
+   "S0080038-art-2": 2
+  },
+  "definition_term-4ce5019e26": {
+   "J0030018-art-812": 2
+  },
+  "definition_term-4d07d60130": {
+   "H0060042-art-3": 2
+  },
+  "definition_term-4eb7ba285b": {
+   "J0160038-art-2": 2
+  },
+  "definition_term-4f0609d970": {
+   "G0380055-art-2": 2,
+   "G0380271-art-2": 2,
+   "J0140019-art-2": 2,
+   "J0140020-art-2": 2
+  },
+  "definition_term-4f5b3694ed": {
+   "K0090061-art-2": 2
+  },
+  "definition_term-4f9a3f17f6": {
+   "J0030018-art-848": 2
+  },
+  "definition_term-4fee0505b4": {
+   "G0400121-art-5": 2,
+   "G0400138-art-3": 2
+  },
+  "definition_term-4ffc1659be": {
+   "M0120001-art-3": 2
+  },
+  "definition_term-5245e1b85f": {
+   "J0030018-art-387": 2
+  },
+  "definition_term-5369e67bf7": {
+   "N0030014-art-3": 2,
+   "N0090055-art-3": 2
+  },
+  "definition_term-539b60f020": {
+   "O0020098-art-3": 2
+  },
+  "definition_term-53ed2f02cf": {
+   "J0160075-art-2": 2
+  },
+  "definition_term-541c86dab5": {
+   "R0020030-art-2": 2
+  },
+  "definition_term-543eef313f": {
+   "M0020001-art-3": 2
+  },
+  "definition_term-5488cd7859": {
+   "N0070017-art-3": 2
+  },
+  "definition_term-5525c5cd7e": {
+   "K0110015-art-2": 2
+  },
+  "definition_term-57ec2bf8b3": {
+   "K0070038-art-3": 2
+  },
+  "definition_term-586ecbd0fa": {
+   "O0040029-art-2": 2
+  },
+  "definition_term-58b9c73754": {
+   "G0380153-art-2": 2
+  },
+  "definition_term-5a2c3de2d1": {
+   "K0060091-art-2": 2
+  },
+  "definition_term-5b05f18820": {
+   "D0070038-art-3": 2
+  },
+  "definition_term-60734840f0": {
+   "J0030146-art-2": 2,
+   "O0070001-art-2": 2
+  },
+  "definition_term-608b5ceb8d": {
+   "G0340120-art-2": 2
+  },
+  "definition_term-630a56925e": {
+   "H0120072-art-2": 2,
+   "H0120092-art-2": 2
+  },
+  "definition_term-63515620a9": {
+   "D0050187-art-2": 2
+  },
+  "definition_term-63d82e9551": {
+   "P0010005-art-2": 2
+  },
+  "definition_term-65a1a3ddec": {
+   "J0030018-art-466": 2
+  },
+  "definition_term-66e544e172": {
+   "A0020119-art-2": 2
+  },
+  "definition_term-681c9c67f8": {
+   "N0060069-art-2": 2,
+   "O0060043-art-3": 2
+  },
+  "definition_term-686f52cebf": {
+   "K0060080-art-2": 2
+  },
+  "definition_term-68fe91df93": {
+   "J0030018-art-614": 2,
+   "O0060036-art-2": 2
+  },
+  "definition_term-6a20e506d7": {
+   "O0020033-art-2": 2
+  },
+  "definition_term-6a85c7f1a6": {
+   "K0060032-art-3": 2,
+   "K0060145-art-2": 2
+  },
+  "definition_term-6ac12e4068": {
+   "I0040029-art-3": 2
+  },
+  "definition_term-6b586a06cc": {
+   "K0070004-art-3": 2
+  },
+  "definition_term-6cd1e179c5": {
+   "D0060077-art-2": 2
+  },
+  "definition_term-6d18c676f3": {
+   "K0030001-art-2": 2
+  },
+  "definition_term-6f3f2f71f2": {
+   "A0020041-art-3": 2
+  },
+  "definition_term-706c70923b": {
+   "O0040018-art-2": 2
+  },
+  "definition_term-70ec3e9539": {
+   "O0020030-art-2": 2
+  },
+  "definition_term-7102b24a05": {
+   "H0170076-art-2": 2
+  },
+  "definition_term-71060a795e": {
+   "S0100002-art-2": 2
+  },
+  "definition_term-71aee20b7f": {
+   "G0380046-art-2": 2,
+   "G0380064-art-2": 2,
+   "G0380153-art-2": 2
+  },
+  "definition_term-73b95f822a": {
+   "L0050002-art-2": 2
+  },
+  "definition_term-7656e036a6": {
+   "K0060050-art-2": 2
+  },
+  "definition_term-769134896d": {
+   "K0090041-art-2": 2
+  },
+  "definition_term-76bbf7c090": {
+   "O0050051-art-3": 2
+  },
+  "definition_term-7799e32157": {
+   "M0050006-art-2": 2
+  },
+  "definition_term-797572ca1f": {
+   "F0030045-art-2": 2
+  },
+  "definition_term-7b1ca6d100": {
+   "M0030065-art-2": 2,
+   "M0050039-art-2": 2
+  },
+  "definition_term-7bcafbc989": {
+   "J0130054-art-2": 2
+  },
+  "definition_term-7e959ab3bf": {
+   "J0090030-art-2": 2
+  },
+  "definition_term-7ee350ad53": {
+   "K0070007-art-2": 2
+  },
+  "definition_term-807e519a5f": {
+   "K0060119-art-2": 2
+  },
+  "definition_term-80d6e5c99a": {
+   "L0030114-art-2": 2
+  },
+  "definition_term-832af48576": {
+   "M0050062-art-2": 2
+  },
+  "definition_term-8355b55a32": {
+   "G0350061-art-2": 2
+  },
+  "definition_term-838768e7b4": {
+   "D0060090-art-3": 2
+  },
+  "definition_term-8484d88d80": {
+   "G0320034-art-2": 2
+  },
+  "definition_term-84aafdc504": {
+   "K0090057-art-2": 2
+  },
+  "definition_term-85b6e9141c": {
+   "H0120060-art-2": 2
+  },
+  "definition_term-86f4551228": {
+   "D0080230-art-3": 2
+  },
+  "definition_term-873bc7ac3c": {
+   "J0020019-art-2": 2
+  },
+  "definition_term-887c63c619": {
+   "M0140025-art-2": 2
+  },
+  "definition_term-89d58c5b93": {
+   "O0020127-art-2": 2
+  },
+  "definition_term-8ac0cb9c91": {
+   "P0030006-art-2": 2,
+   "Q0030001-art-2": 2
+  },
+  "definition_term-8c4c47003e": {
+   "J0020039-art-4": 2
+  },
+  "definition_term-8ceb88684f": {
+   "J0030018-art-6": 2
+  },
+  "definition_term-8d7c163082": {
+   "K0060055-art-2": 2,
+   "K0060156-art-2": 2
+  },
+  "definition_term-8dd1e347eb": {
+   "J0110078-art-2": 2
+  },
+  "definition_term-8efaf215c7": {
+   "J0040034-art-2": 2
+  },
+  "definition_term-90700a466d": {
+   "K0090041-art-2": 2
+  },
+  "definition_term-9166b7d5e4": {
+   "D0060077-art-2": 2
+  },
+  "definition_term-9182ad93b4": {
+   "J0020001-art-4": 2
+  },
+  "definition_term-93255cce8a": {
+   "K0030001-art-2": 2
+  },
+  "definition_term-932e5eb8ec": {
+   "J0030018-art-680": 2
+  },
+  "definition_term-9356c83119": {
+   "O0050061-art-2": 2
+  },
+  "definition_term-94c61811af": {
+   "J0030018-art-6": 2
+  },
+  "definition_term-95bb9cba54": {
+   "K0060080-art-2": 2
+  },
+  "definition_term-9897aa4997": {
+   "D0070156-art-2": 2,
+   "K0040012-art-3": 2
+  },
+  "definition_term-9a1bf745ec": {
+   "K0090061-art-2": 2
+  },
+  "definition_term-9b691322ad": {
+   "L0040001-art-3": 2
+  },
+  "definition_term-9c4a47e59e": {
+   "G0380164-art-4": 2
+  },
+  "definition_term-9dbfc3d6c4": {
+   "D0020040-art-2": 2
+  },
+  "definition_term-9f25967359": {
+   "K0090067-art-3": 2
+  },
+  "definition_term-9f4346e12f": {
+   "J0110037-art-2": 2
+  },
+  "definition_term-a06097e541": {
+   "I0040014-art-2": 2
+  },
+  "definition_term-a122e96a66": {
+   "J0130081-art-3": 2
+  },
+  "definition_term-a1505cc908": {
+   "C0010034-art-4": 2,
+   "F0110025-art-2": 2,
+   "L0020227-art-3": 2,
+   "L0050043-art-2": 2
+  },
+  "definition_term-a1afe52140": {
+   "O0020111-art-2": 2
+  },
+  "definition_term-a27102495d": {
+   "H0120001-art-3": 2
+  },
+  "definition_term-a41a94dafc": {
+   "J0030146-art-2": 2
+  },
+  "definition_term-a503896b01": {
+   "O0020030-art-2": 2
+  },
+  "definition_term-a53c3b1124": {
+   "G0340153-art-2": 2
+  },
+  "definition_term-a7dfefe98d": {
+   "H0120021-art-2": 2
+  },
+  "definition_term-a86922ca75": {
+   "O0020098-art-3": 2
+  },
+  "definition_term-abeee0e32f": {
+   "G0380146-art-4": 2
+  },
+  "definition_term-ad50847126": {
+   "T0040001-art-3": 2
+  },
+  "definition_term-af6f037d8c": {
+   "J0030019-art-7": 2
+  },
+  "definition_term-b1224e7686": {
+   "K0090008-art-2": 2,
+   "K0090014-art-2": 2
+  },
+  "definition_term-b12d806614": {
+   "L0030057-art-4": 2,
+   "M0130041-art-2": 2
+  },
+  "definition_term-b1808b5f45": {
+   "F0040034-art-2": 2
+  },
+  "definition_term-b1f9a767f8": {
+   "O0020058-art-2": 2
+  },
+  "definition_term-b1fa44b497": {
+   "G0330010-art-2": 2
+  },
+  "definition_term-b3e82bb59b": {
+   "J0030018-art-614": 2
+  },
+  "definition_term-b407c733cb": {
+   "O0020001-art-3": 2
+  },
+  "definition_term-b4823db0b5": {
+   "K0110001-art-2": 2
+  },
+  "definition_term-b4c11f4160": {
+   "K0090014-art-2": 2
+  },
+  "definition_term-b4cbb2d8e3": {
+   "M0070066-art-3": 2
+  },
+  "definition_term-b5e68f25c2": {
+   "G0350073-art-2": 2
+  },
+  "definition_term-b85465cfe6": {
+   "R0020032-art-3": 2
+  },
+  "definition_term-b9658d5104": {
+   "D0060125-art-3": 2
+  },
+  "definition_term-b9d0a9a4c4": {
+   "B0010050-art-2": 2
+  },
+  "definition_term-ba06b965c5": {
+   "H0170102-art-3": 2
+  },
+  "definition_term-ba76fb1a14": {
+   "J0030018-art-792": 2
+  },
+  "definition_term-badf26be57": {
+   "J0160001-art-2": 2,
+   "J0160015-art-4": 2
+  },
+  "definition_term-bb132983e6": {
+   "J0130041-art-3": 2
+  },
+  "definition_term-bbf3508d98": {
+   "K0090009-art-2": 2
+  },
+  "definition_term-bc72024217": {
+   "J0020019-art-2": 2
+  },
+  "definition_term-bcec712a4a": {
+   "K0070016-art-92": 2,
+   "K0070035-art-4": 2,
+   "K0070036-art-2": 2,
+   "K0070038-art-3": 2
+  },
+  "definition_term-be2b43fa81": {
+   "H0070082-art-2": 2
+  },
+  "definition_term-be5f4050d0": {
+   "L0020176-art-4": 2
+  },
+  "definition_term-be77b475e5": {
+   "L0050018-art-2": 2,
+   "N0090027-art-2": 2
+  },
+  "definition_term-bf4b832869": {
+   "O0030018-art-2": 2
+  },
+  "definition_term-bf8c7eb1cc": {
+   "L0070040-art-3": 2
+  },
+  "definition_term-bf978c5b35": {
+   "J0030019-art-7": 2
+  },
+  "definition_term-c09c41c974": {
+   "O0020127-art-2": 2
+  },
+  "definition_term-c2907b5b6b": {
+   "C0010044-art-2": 2,
+   "C0010048-art-2": 2
+  },
+  "definition_term-c4ee20e027": {
+   "D0050015-art-2": 2
+  },
+  "definition_term-c6e028ab96": {
+   "N0060064-art-3": 2
+  },
+  "definition_term-c7a13da739": {
+   "G0380046-art-2": 2
+  },
+  "definition_term-c85d916a6c": {
+   "N0020007-art-5": 2
+  },
+  "definition_term-c8864f822a": {
+   "K0060028-art-2": 2
+  },
+  "definition_term-c88a516c68": {
+   "O0030018-art-2": 2
+  },
+  "definition_term-c8f14168e4": {
+   "K0050001-art-4": 2
+  },
+  "definition_term-c9ef4d1b73": {
+   "H0160078-art-3": 2
+  },
+  "definition_term-c9f405d2b2": {
+   "K0070016-art-92": 2,
+   "K0070036-art-2": 2,
+   "K0070038-art-3": 2
+  },
+  "definition_term-ca433b016a": {
+   "B0010063-art-2": 2
+  },
+  "definition_term-ca6868c111": {
+   "M0140001-art-3": 2
+  },
+  "definition_term-cafc8089dc": {
+   "L0030073-art-61": 2
+  },
+  "definition_term-cbf3771ee7": {
+   "J0030018-art-6": 2
+  },
+  "definition_term-ccda4655e3": {
+   "K0070007-art-2": 2,
+   "K0070012-art-2": 2
+  },
+  "definition_term-ce0cc3f1c9": {
+   "K0070016-art-29-1": 2
+  },
+  "definition_term-ce4e46762b": {
+   "J0030019-art-7": 2
+  },
+  "definition_term-ce9244dc97": {
+   "D0120074-art-3": 2
+  },
+  "definition_term-cec3968437": {
+   "D0060009-art-3": 2
+  },
+  "definition_term-cf02cba335": {
+   "J0030018-art-614": 2
+  },
+  "definition_term-d1699c0f4c": {
+   "K0070016-art-174": 2
+  },
+  "definition_term-d22bdfb5d9": {
+   "G0340140-art-2": 2
+  },
+  "definition_term-d2cec037e7": {
+   "J0100052-art-2": 2
+  },
+  "definition_term-d33b3e31fb": {
+   "H0060042-art-3": 2
+  },
+  "definition_term-d5db0e0d47": {
+   "N0060069-art-2": 2,
+   "O0060043-art-3": 2
+  },
+  "definition_term-d5ef512b88": {
+   "J0070037-art-2": 2
+  },
+  "definition_term-d661c2cf48": {
+   "K0090014-art-2": 2
+  },
+  "definition_term-d6dc49b66c": {
+   "T0040001-art-3": 2
+  },
+  "definition_term-d74eb71177": {
+   "H0050001-art-3": 2
+  },
+  "definition_term-d82d742438": {
+   "I0040002-art-3": 2,
+   "I0040064-art-2": 2,
+   "I0040070-art-2": 2,
+   "I0040072-art-2": 2
+  },
+  "definition_term-d8619256cc": {
+   "G0380241-art-2": 2
+  },
+  "definition_term-d913ed58e4": {
+   "K0060028-art-2": 2
+  },
+  "definition_term-d98b28ec84": {
+   "N0060069-art-2": 2,
+   "O0060043-art-3": 2
+  },
+  "definition_term-db0faec83f": {
+   "J0030018-art-6": 2
+  },
+  "definition_term-db35e22aed": {
+   "H0070049-art-2": 2
+  },
+  "definition_term-dd5acd85fa": {
+   "A0030297-art-3": 2
+  },
+  "definition_term-ddded0a47d": {
+   "H0070087-art-2": 2
+  },
+  "definition_term-dded40cc88": {
+   "K0030020-art-2": 2
+  },
+  "definition_term-de4cea4212": {
+   "L0030105-art-2": 2
+  },
+  "definition_term-dee4f37e3f": {
+   "J0160056-art-2": 2
+  },
+  "definition_term-e4136fb5b3": {
+   "K0060089-art-3": 2
+  },
+  "definition_term-e4f7fd9eb4": {
+   "G0380122-art-4": 2
+  },
+  "definition_term-e5dcd13d32": {
+   "O0050022-art-2": 2
+  },
+  "definition_term-e5e8a97bcf": {
+   "K0090041-art-2": 2
+  },
+  "definition_term-e730c19565": {
+   "S0050006-art-4": 2
+  },
+  "definition_term-e741b284e0": {
+   "O0020104-art-2": 2
+  },
+  "definition_term-e79d421dee": {
+   "O0020052-art-2": 2
+  },
+  "definition_term-e836cac0d4": {
+   "O0020030-art-2": 2
+  },
+  "definition_term-e920c61b1f": {
+   "O0020030-art-2": 2
+  },
+  "definition_term-ea7555fd90": {
+   "J0020032-art-2": 2
+  },
+  "definition_term-eaca4f78e3": {
+   "M0140001-art-3": 2
+  },
+  "definition_term-eb342a1dc6": {
+   "J0030018-art-848": 2
+  },
+  "definition_term-eb74638609": {
+   "L0060001-art-2": 2
+  },
+  "definition_term-ebbb529859": {
+   "K0090041-art-2": 2
+  },
+  "definition_term-ebda7650be": {
+   "O0020127-art-2": 2
+  },
+  "definition_term-ed9788699b": {
+   "J0080058-art-2": 2
+  },
+  "definition_term-edfa9093bc": {
+   "M0140012-art-5": 2
+  },
+  "definition_term-efb8f9263c": {
+   "D0080226-art-2": 2
+  },
+  "definition_term-efdb295921": {
+   "J0030018-art-387": 2
+  },
+  "definition_term-f087074ca8": {
+   "K0060141-art-2": 2
+  },
+  "definition_term-f0c3bd90b9": {
+   "G0380199-art-3": 2
+  },
+  "definition_term-f1e783336f": {
+   "I0040029-art-3": 2
+  },
+  "definition_term-f2009c4cda": {
+   "O0020145-art-2": 2
+  },
+  "definition_term-f2095807de": {
+   "K0090016-art-2": 2
+  },
+  "definition_term-f2da6fa1bd": {
+   "H0070067-art-3": 2
+  },
+  "definition_term-f33237ab7f": {
+   "J0030018-art-596": 2
+  },
+  "definition_term-f33db97589": {
+   "K0060157-art-2": 2
+  },
+  "definition_term-f4adb4a767": {
+   "H0080107-art-2": 2,
+   "M0130029-art-2": 2
+  },
+  "definition_term-f4e6985899": {
+   "L0030044-art-3": 2
+  },
+  "definition_term-f7596d9de8": {
+   "G0340155-art-3": 2
+  },
+  "definition_term-f774223064": {
+   "J0110037-art-2": 2
+  },
+  "definition_term-fa35703114": {
+   "O0020142-art-2": 2
+  },
+  "definition_term-fad46ee8d0": {
+   "K0090041-art-2": 2
+  },
+  "definition_term-fdbdffb440": {
+   "K0090041-art-2": 2
+  },
+  "definition_term-fdd6b08c0c": {
+   "D0120021-art-2": 2
+  },
+  "definition_term-fe67b8cdde": {
+   "L0020075-art-2": 2
+  },
+  "definition_term-febafb677b": {
+   "K0090008-art-2": 2
+  },
+  "definition_term-fed8a62201": {
+   "I0030026-art-3": 2
+  },
+  "definition_term-ffcbb62c23": {
+   "L0020075-art-2": 2
+  },
+  "delegation-003c18d6b1": {
+   "D0080081-art-22": 2
+  },
+  "delegation-03ada4a7ee": {
+   "K0060111-art-50": 2
+  },
+  "delegation-05359f8d0a": {
+   "K0090001-art-32": 2
+  },
+  "delegation-0569c39eb4": {
+   "D0120014-art-60": 2
+  },
+  "delegation-0590d2e7d8": {
+   "D0070112-art-56": 2
+  },
+  "delegation-05bf2c0a4e": {
+   "S0120001-art-23": 2
+  },
+  "delegation-084c8be08e": {
+   "S0110017-art-9": 2
+  },
+  "delegation-08fd3eaf8b": {
+   "A0030121-art-12": 2,
+   "A0030121-art-17": 2
+  },
+  "delegation-0b5ead2b0c": {
+   "N0090001-art-49": 2
+  },
+  "delegation-0ba5da7aa0": {
+   "G0340107-art-10": 2,
+   "G0340107-art-7": 2
+  },
+  "delegation-0bedf26f8b": {
+   "J0100001-art-26": 2
+  },
+  "delegation-0d40dc54f8": {
+   "O0030001-art-11": 2
+  },
+  "delegation-0d88734039": {
+   "G0350001-art-19": 2
+  },
+  "delegation-106414a7cd": {
+   "D0050046-art-57": 2
+  },
+  "delegation-10fcb03f6b": {
+   "I0000003-art-13": 2
+  },
+  "delegation-111b13c3a1": {
+   "L0030066-art-40": 2
+  },
+  "delegation-135bc3fec8": {
+   "E0030012-art-28": 2
+  },
+  "delegation-142af7fda6": {
+   "H0080048-art-13": 2
+  },
+  "delegation-14e9998b01": {
+   "O0080001-art-45": 2
+  },
+  "delegation-17395b6102": {
+   "H0060042-art-6": 2
+  },
+  "delegation-178a29e472": {
+   "G0340107-art-10": 2
+  },
+  "delegation-18e817e6cf": {
+   "J0160019-art-23": 2
+  },
+  "delegation-1d7656fb60": {
+   "D0120001-art-15-4": 2
+  },
+  "delegation-1f48369d04": {
+   "R0040001-art-18": 2
+  },
+  "delegation-23bf638422": {
+   "Q0010001-art-17": 2
+  },
+  "delegation-2575034d54": {
+   "L0030013-art-8": 2
+  },
+  "delegation-2903b20350": {
+   "M0100001-art-33": 2
+  },
+  "delegation-29dd19c01e": {
+   "F0030004-art-3-1": 2
+  },
+  "delegation-29e059f2be": {
+   "O0020001-art-43": 2
+  },
+  "delegation-2b9bd6df3e": {
+   "G0340107-art-10": 2
+  },
+  "delegation-2c390710af": {
+   "O0020001-art-23": 2
+  },
+  "delegation-2cab1f246d": {
+   "O0030001-art-17": 2
+  },
+  "delegation-2fab587277": {
+   "G0390002-art-146-3": 2
+  },
+  "delegation-31b76ca8ea": {
+   "F0070013-art-16": 2
+  },
+  "delegation-3236577bc7": {
+   "N0060001-art-19": 2
+  },
+  "delegation-342d1562a4": {
+   "H0070071-art-34": 2
+  },
+  "delegation-35c886484c": {
+   "J0110001-art-78-2": 2
+  },
+  "delegation-362781c01e": {
+   "K0070004-art-83": 2
+  },
+  "delegation-36f6e9b1e7": {
+   "K0090001-art-26": 2
+  },
+  "delegation-376b5f7221": {
+   "G0340107-art-10": 2
+  },
+  "delegation-37feff3e57": {
+   "G0340107-art-10": 2
+  },
+  "delegation-388dc4cdda": {
+   "M0070013-art-31": 2
+  },
+  "delegation-38e5802090": {
+   "H0160004-art-9": 2
+  },
+  "delegation-392bc0f5a4": {
+   "D0070046-art-33": 2
+  },
+  "delegation-394db042dd": {
+   "M0060027-art-6-2": 2
+  },
+  "delegation-39bad8d9aa": {
+   "D0080037-art-20": 2
+  },
+  "delegation-3e27509c1f": {
+   "A0030134-art-11": 2
+  },
+  "delegation-3e4c1f969e": {
+   "G0340001-art-26": 2
+  },
+  "delegation-3ff6ef5a58": {
+   "L0030001-art-57": 2
+  },
+  "delegation-418528b1a1": {
+   "N0030001-art-43": 2
+  },
+  "delegation-41ec578259": {
+   "R0030001-art-9": 2
+  },
+  "delegation-4223295b6f": {
+   "H0040028-art-7": 2
+  },
+  "delegation-4285d515ea": {
+   "R0040001-art-11": 2
+  },
+  "delegation-442059f0c0": {
+   "H0040028-art-15": 2
+  },
+  "delegation-44be0cff13": {
+   "J0070027-art-38": 2
+  },
+  "delegation-46d68169bf": {
+   "G0400001-art-18": 2
+  },
+  "delegation-4823b9c993": {
+   "H0150046-art-25": 2
+  },
+  "delegation-49a82ed603": {
+   "D0130022-art-24": 2
+  },
+  "delegation-4b57a9cd77": {
+   "J0100052-art-26": 2
+  },
+  "delegation-4bd38bfe8a": {
+   "D0070266-art-31": 2
+  },
+  "delegation-50cd0bc880": {
+   "K0120001-art-47": 2
+  },
+  "delegation-53f2e74dcb": {
+   "O0030001-art-36": 2
+  },
+  "delegation-54f1475631": {
+   "J0130045-art-47": 2
+  },
+  "delegation-56522e7a94": {
+   "M0060027-art-6-1": 2
+  },
+  "delegation-568fc39f7b": {
+   "A0030057-art-85-2": 2
+  },
+  "delegation-56f5023cde": {
+   "O0020001-art-20": 2
+  },
+  "delegation-57def80eaf": {
+   "K0090067-art-35": 2
+  },
+  "delegation-59b1af8174": {
+   "G0400001-art-37": 2
+  },
+  "delegation-5a3007c708": {
+   "A0030057-art-35": 2
+  },
+  "delegation-5b22550499": {
+   "N0020007-art-26": 2
+  },
+  "delegation-5bb2a88a9b": {
+   "J0100044-art-18": 2
+  },
+  "delegation-5ca99a4efc": {
+   "R0030001-art-27": 2
+  },
+  "delegation-5ce77852f7": {
+   "F0140013-art-11": 2
+  },
+  "delegation-5dce2cc78d": {
+   "J0110094-art-5": 2
+  },
+  "delegation-5e4f0e723b": {
+   "J0030022-art-48": 2
+  },
+  "delegation-6099bed9ab": {
+   "D0050046-art-35": 2
+  },
+  "delegation-60b9a6a1a5": {
+   "L0020099-art-16-1": 2
+  },
+  "delegation-6202d33266": {
+   "D0040017-art-60-1": 2
+  },
+  "delegation-6217354cbb": {
+   "G0340107-art-10": 2
+  },
+  "delegation-6482d60792": {
+   "G0400001-art-14": 2
+  },
+  "delegation-65cb1b5b28": {
+   "D0050046-art-52-1": 2
+  },
+  "delegation-66010ce22d": {
+   "D0070032-art-26": 2
+  },
+  "delegation-6639dc0ee4": {
+   "G0390002-art-146-6": 2
+  },
+  "delegation-66c1239e00": {
+   "G0380146-art-35": 2
+  },
+  "delegation-66f0d172f6": {
+   "M0030039-art-5": 2
+  },
+  "delegation-677f3bf4db": {
+   "D0070062-art-18": 2
+  },
+  "delegation-6855dc2550": {
+   "G0370001-art-49": 2
+  },
+  "delegation-68accab860": {
+   "S0030001-art-18": 2
+  },
+  "delegation-6a558676d6": {
+   "N0020012-art-14": 2
+  },
+  "delegation-6c74beeaf6": {
+   "J0030011-art-35": 2
+  },
+  "delegation-6e7890a07a": {
+   "D0090009-art-11": 2
+  },
+  "delegation-6eea338acc": {
+   "F0070013-art-47": 2
+  },
+  "delegation-6f1e1f7a3f": {
+   "K0080001-art-7": 2
+  },
+  "delegation-6f7d58e018": {
+   "I0010052-art-52": 2
+  },
+  "delegation-6ff0528970": {
+   "O0080001-art-43": 2
+  },
+  "delegation-7108004db2": {
+   "D0120005-art-16": 2
+  },
+  "delegation-71a7cbadde": {
+   "H0120056-art-15": 2
+  },
+  "delegation-726441b445": {
+   "K0040001-art-79": 2
+  },
+  "delegation-729f0e1d5b": {
+   "M0040001-art-15": 2
+  },
+  "delegation-7460101a93": {
+   "H0120056-art-26": 2
+  },
+  "delegation-751d588dfa": {
+   "I0020026-art-22": 2
+  },
+  "delegation-7568e7ba57": {
+   "D0070062-art-37": 2
+  },
+  "delegation-7590d0b275": {
+   "A0030243-art-69": 2
+  },
+  "delegation-75b6e0736e": {
+   "J0050001-art-17": 2
+  },
+  "delegation-774fa8918b": {
+   "J0070007-art-19": 2
+  },
+  "delegation-779d1d35d3": {
+   "O0040026-art-21": 2
+  },
+  "delegation-785d680276": {
+   "J0160015-art-8": 2
+  },
+  "delegation-78816d5521": {
+   "T0020001-art-21": 2
+  },
+  "delegation-7ad1fd49be": {
+   "K0070042-art-10-1": 2
+  },
+  "delegation-7adc5c5473": {
+   "D0120014-art-60": 2
+  },
+  "delegation-7c24df1e23": {
+   "G0340107-art-10": 2
+  },
+  "delegation-7cb320390b": {
+   "H0080002-art-27": 2
+  },
+  "delegation-7fe500727d": {
+   "J0160015-art-17": 2
+  },
+  "delegation-8051f138f2": {
+   "G0340107-art-10": 2
+  },
+  "delegation-814a0e9b53": {
+   "G0390002-art-143-1": 2
+  },
+  "delegation-817ec53947": {
+   "B0010071-art-18": 2
+  },
+  "delegation-82a9f80c9a": {
+   "G0400001-art-30": 2
+  },
+  "delegation-8344051533": {
+   "O0060012-art-23": 2,
+   "O0060012-art-29": 2
+  },
+  "delegation-83836f0acb": {
+   "D0070008-art-15": 2
+  },
+  "delegation-8413dc4997": {
+   "A0030025-art-20": 2
+  },
+  "delegation-8461b0e9cb": {
+   "M0060001-art-11-1": 2
+  },
+  "delegation-84a0c4ceb2": {
+   "C0000008-art-2-2": 2
+  },
+  "delegation-85a34382a9": {
+   "M0130015-art-12-4": 2
+  },
+  "delegation-85a8af35d7": {
+   "L0040001-art-17": 2
+  },
+  "delegation-85fcdd5b98": {
+   "K0090001-art-27-1": 2
+  },
+  "delegation-864086b7ab": {
+   "A0030121-art-7": 2
+  },
+  "delegation-864cea96ff": {
+   "D0070062-art-53": 2
+  },
+  "delegation-869001f337": {
+   "K0040033-art-11": 2
+  },
+  "delegation-8737bf1ecd": {
+   "A0030025-art-20": 2
+  },
+  "delegation-887e52a185": {
+   "L0070001-art-17": 2
+  },
+  "delegation-89d4ce1f22": {
+   "J0130045-art-34": 2
+  },
+  "delegation-8a28317c87": {
+   "H0170037-art-16-1": 2
+  },
+  "delegation-8a2cb6388d": {
+   "I0040043-art-74": 2
+  },
+  "delegation-8cc74d80f3": {
+   "T0010003-art-34": 2
+  },
+  "delegation-8df76ffe93": {
+   "G0350001-art-27": 2
+  },
+  "delegation-8eca81289b": {
+   "G0340102-art-15": 2,
+   "G0340102-art-5": 2
+  },
+  "delegation-9139a4816f": {
+   "J0020025-art-7": 2
+  },
+  "delegation-91a9d09096": {
+   "J0030011-art-52": 2
+  },
+  "delegation-93200bad7e": {
+   "D0060007-art-34": 2
+  },
+  "delegation-95a93bbf7d": {
+   "H0030067-art-4": 2
+  },
+  "delegation-969891e328": {
+   "L0040001-art-10": 2
+  },
+  "delegation-974610c05f": {
+   "O0040001-art-11": 2
+  },
+  "delegation-9892859c12": {
+   "H0080027-art-16": 2
+  },
+  "delegation-99b7a62821": {
+   "K0060001-art-46": 2
+  },
+  "delegation-9a170a59b2": {
+   "G0340107-art-10": 2
+  },
+  "delegation-9c1f17c6a0": {
+   "A0030057-art-13": 2
+  },
+  "delegation-9c2493c83e": {
+   "B0010064-art-40": 2
+  },
+  "delegation-9f02349375": {
+   "H0040028-art-14": 2
+  },
+  "delegation-9f14fe9562": {
+   "G0340107-art-10": 2
+  },
+  "delegation-a0d5d823df": {
+   "H0120001-art-14": 2,
+   "H0120001-art-18": 2
+  },
+  "delegation-a0ff9a2fa3": {
+   "J0050001-art-17": 2
+  },
+  "delegation-a11abffc76": {
+   "L0020135-art-60": 2
+  },
+  "delegation-a2308787fa": {
+   "H0040028-art-14": 2
+  },
+  "delegation-a26821849e": {
+   "D0080118-art-4": 2
+  },
+  "delegation-a27440430e": {
+   "G0340107-art-10": 2
+  },
+  "delegation-a3c5354cc1": {
+   "M0060023-art-46": 2
+  },
+  "delegation-a400f7c1e8": {
+   "G0340142-art-22": 2
+  },
+  "delegation-a4fda07206": {
+   "J0090030-art-5": 2
+  },
+  "delegation-a597ec7b07": {
+   "L0030106-art-58": 2
+  },
+  "delegation-a6fdcb9aeb": {
+   "D0070230-art-19": 2
+  },
+  "delegation-a8e785b676": {
+   "G0390002-art-138": 2
+  },
+  "delegation-a970fb3924": {
+   "M0060001-art-9": 2
+  },
+  "delegation-ab99b7c9ac": {
+   "L0060001-art-16": 2
+  },
+  "delegation-ac21a2ed77": {
+   "R0030001-art-17": 2
+  },
+  "delegation-ac6e733bbb": {
+   "J0020008-art-38": 2
+  },
+  "delegation-af13d0c9b2": {
+   "D0130053-art-20": 2
+  },
+  "delegation-b24cbf34b8": {
+   "K0090001-art-43": 2
+  },
+  "delegation-b263c46021": {
+   "M0100001-art-16": 2
+  },
+  "delegation-b5c0863312": {
+   "H0020040-art-33": 2
+  },
+  "delegation-b77b494634": {
+   "L0040001-art-49-1": 2,
+   "L0040001-art-49-2": 2
+  },
+  "delegation-b94bcd7af7": {
+   "F0030005-art-8": 2
+  },
+  "delegation-b9fe364e28": {
+   "K0000108-art-9": 2
+  },
+  "delegation-ba11074839": {
+   "G0340107-art-10": 2
+  },
+  "delegation-bb581cbcfa": {
+   "R0040001-art-11": 2
+  },
+  "delegation-bbaa70b703": {
+   "H0020001-art-4": 2
+  },
+  "delegation-bc53d65efb": {
+   "G0340107-art-10": 2
+  },
+  "delegation-bd15730549": {
+   "N0060001-art-31": 2
+  },
+  "delegation-be87d64bff": {
+   "F0080007-art-19": 2
+  },
+  "delegation-bed1bc5fca": {
+   "L0030010-art-43": 2
+  },
+  "delegation-bf7b4154aa": {
+   "A0030154-art-89": 2
+  },
+  "delegation-bfa729443b": {
+   "G0340107-art-10": 2
+  },
+  "delegation-c0056facc6": {
+   "F0040001-art-20": 2
+  },
+  "delegation-c38ff71ccf": {
+   "M0070013-art-3": 2
+  },
+  "delegation-c48e8de649": {
+   "H0120001-art-26": 2
+  },
+  "delegation-c89906a616": {
+   "M0060001-art-22-1": 2
+  },
+  "delegation-ca299a6c21": {
+   "H0170102-art-43": 2
+  },
+  "delegation-ca43f94890": {
+   "A0030243-art-10": 2
+  },
+  "delegation-cb9b77dcc0": {
+   "D0050131-art-19": 2
+  },
+  "delegation-cbb47e1e5b": {
+   "G0380001-art-45-1": 2
+  },
+  "delegation-ccfe183768": {
+   "K0070028-art-6": 2
+  },
+  "delegation-cda5a9fb0c": {
+   "D0050046-art-51": 2
+  },
+  "delegation-cdb827f202": {
+   "D0080118-art-21": 2
+  },
+  "delegation-cdefda845b": {
+   "J0120001-art-33": 2
+  },
+  "delegation-cdf4e252fd": {
+   "L0050001-art-20": 2,
+   "L0050001-art-26": 2
+  },
+  "delegation-ce1d0da340": {
+   "B0010010-art-150": 2
+  },
+  "delegation-ce8d69ee37": {
+   "D0120014-art-40": 2
+  },
+  "delegation-ce911fd981": {
+   "G0400100-art-97": 2
+  },
+  "delegation-cfa6d834db": {
+   "J0030022-art-13": 2
+  },
+  "delegation-d003713c19": {
+   "G0400001-art-36": 2
+  },
+  "delegation-d0215b9529": {
+   "G0390002-art-148-3": 2
+  },
+  "delegation-d242ef63f7": {
+   "M0140012-art-22": 2
+  },
+  "delegation-d2c3a7caf0": {
+   "G0340107-art-10": 2
+  },
+  "delegation-d3ebd7b9c2": {
+   "G0340096-art-58": 2
+  },
+  "delegation-d6e59bba04": {
+   "S0110017-art-9": 2
+  },
+  "delegation-d910ab66e7": {
+   "J0130002-art-19": 2
+  },
+  "delegation-da207f7bc5": {
+   "L0070040-art-24": 2,
+   "L0070040-art-30": 2
+  },
+  "delegation-da33d0448c": {
+   "M0040001-art-47": 2
+  },
+  "delegation-db1eb2743d": {
+   "J0080004-art-35": 2
+  },
+  "delegation-dba1f06ec7": {
+   "A0030011-art-8": 2
+  },
+  "delegation-dcdd16a2d9": {
+   "G0340107-art-10": 2
+  },
+  "delegation-dd1dea694d": {
+   "J0080037-art-21": 2
+  },
+  "delegation-dd3bc65cb2": {
+   "K0000198-art-15": 2
+  },
+  "delegation-def477a42a": {
+   "D0050084-art-6": 2
+  },
+  "delegation-df4766b0d1": {
+   "J0090030-art-7": 2
+  },
+  "delegation-e08fdfbfb1": {
+   "G0380001-art-25": 2
+  },
+  "delegation-e1490a6d00": {
+   "L0040001-art-4": 2
+  },
+  "delegation-e1ce0452fe": {
+   "M0050051-art-10": 2,
+   "M0050051-art-11": 2,
+   "M0050051-art-24": 2,
+   "M0050051-art-6": 2
+  },
+  "delegation-e1fc81ccf7": {
+   "J0160015-art-50": 2
+  },
+  "delegation-e374797cb6": {
+   "G0380226-art-13-1": 2,
+   "G0380226-art-18": 2,
+   "G0380226-art-23": 2,
+   "G0380226-art-24": 2
+  },
+  "delegation-e3a9ca0adc": {
+   "G0340107-art-10": 2
+  },
+  "delegation-e462793426": {
+   "H0170075-art-12": 2
+  },
+  "delegation-e47a2758bb": {
+   "D0130053-art-10": 2
+  },
+  "delegation-e51d8903d0": {
+   "M0050001-art-56": 2
+  },
+  "delegation-e5651caab5": {
+   "A0030025-art-20": 2
+  },
+  "delegation-e5a9020fe8": {
+   "D0120068-art-8": 2
+  },
+  "delegation-e627df2c1d": {
+   "D0120001-art-15-2": 2
+  },
+  "delegation-e63f10e16a": {
+   "M0060027-art-13": 2
+  },
+  "delegation-e86fa5a177": {
+   "N0050031-art-38": 2
+  },
+  "delegation-e8819b0787": {
+   "G0370001-art-60": 2
+  },
+  "delegation-ea06d1916f": {
+   "M0050001-art-53-1": 2
+  },
+  "delegation-eca8fb329d": {
+   "U0000002-art-14": 2,
+   "U0000002-art-5": 2
+  },
+  "delegation-ecb74bd6e7": {
+   "J0020019-art-36": 2
+  },
+  "delegation-ee48dd0af6": {
+   "A0020041-art-25": 2
+  },
+  "delegation-efdceaaf5b": {
+   "G0340107-art-10": 2
+  },
+  "delegation-f128d18db4": {
+   "K0000077-art-7": 2
+  },
+  "delegation-f1b2cfdd6f": {
+   "H0080050-art-20": 2
+  },
+  "delegation-f1d2d722fb": {
+   "D0070001-art-30": 2
+  },
+  "delegation-f252752146": {
+   "J0080065-art-4": 2
+  },
+  "delegation-f38e41a73f": {
+   "H0060043-art-34": 2
+  },
+  "delegation-f390f60e4a": {
+   "K0060001-art-7": 2
+  },
+  "delegation-f49538ea1b": {
+   "D0050078-art-5-2": 2
+  },
+  "delegation-f5c3f29c28": {
+   "U0000002-art-14": 2,
+   "U0000002-art-5": 2
+  },
+  "delegation-f69cf65735": {
+   "M0000036-art-21": 2
+  },
+  "delegation-f781fedc89": {
+   "H0080048-art-17": 2
+  },
+  "delegation-f79565c344": {
+   "H0160004-art-36": 2
+  },
+  "delegation-f80ca8a841": {
+   "H0070001-art-30": 2
+  },
+  "delegation-f96f10a4fb": {
+   "A0020041-art-28": 2
+  },
+  "delegation-fad1ff14d1": {
+   "D0020050-art-20": 2
+  },
+  "delegation-fc0abca767": {
+   "G0340107-art-10": 2
+  },
+  "delegation-ff4c0a6657": {
+   "L0030001-art-42": 2
+  },
+  "duty_penalty-003800f7c9": {
+   "D0050078-art-41": 2
+  },
+  "duty_penalty-00f897953f": {
+   "A0030297-art-31": 2
+  },
+  "duty_penalty-00fcfe3608": {
+   "L0070040-art-49": 2
+  },
+  "duty_penalty-01ce4a3373": {
+   "J0170001-art-56": 2
+  },
+  "duty_penalty-02ad205d2b": {
+   "D0020010-art-93": 2
+  },
+  "duty_penalty-036df2bf78": {
+   "L0070003-art-34": 2
+  },
+  "duty_penalty-03ba218cee": {
+   "L0020039-art-34": 2
+  },
+  "duty_penalty-042403ce82": {
+   "N0030001-art-78": 2
+  },
+  "duty_penalty-04637cddd5": {
+   "G0340001-art-43": 2
+  },
+  "duty_penalty-04f1c884d3": {
+   "L0070003-art-34": 2
+  },
+  "duty_penalty-05fd33f2d7": {
+   "L0020066-art-10": 2
+  },
+  "duty_penalty-063d06ed45": {
+   "D0020049-art-29": 2
+  },
+  "duty_penalty-064a2cf922": {
+   "G0400121-art-110": 2
+  },
+  "duty_penalty-0814ea00ee": {
+   "M0140001-art-22": 2
+  },
+  "duty_penalty-086bf03e47": {
+   "L0060042-art-22": 2
+  },
+  "duty_penalty-08d1dc56b2": {
+   "D0020040-art-90": 2
+  },
+  "duty_penalty-0a918a5adc": {
+   "L0030066-art-23": 2
+  },
+  "duty_penalty-0acabc645a": {
+   "K0070001-art-53": 2
+  },
+  "duty_penalty-0d2db12d3f": {
+   "L0020090-art-41": 2
+  },
+  "duty_penalty-0ee69dd88e": {
+   "F0070013-art-42": 2
+  },
+  "duty_penalty-124fcb7c4b": {
+   "D0080081-art-17": 2
+  },
+  "duty_penalty-136ab8b084": {
+   "D0060066-art-29": 2
+  },
+  "duty_penalty-14d3896bbd": {
+   "L0020039-art-36": 2,
+   "L0020039-art-38": 2
+  },
+  "duty_penalty-16f9229fba": {
+   "M0060027-art-25-1": 2
+  },
+  "duty_penalty-1db3a1014a": {
+   "D0050074-art-30": 2
+  },
+  "duty_penalty-1e035e8174": {
+   "J0030011-art-85": 2
+  },
+  "duty_penalty-20867095b5": {
+   "L0020149-art-34": 2
+  },
+  "duty_penalty-229da34c76": {
+   "K0070004-art-92": 2
+  },
+  "duty_penalty-22cf00ca07": {
+   "G0340106-art-13": 2
+  },
+  "duty_penalty-2350e7d7dc": {
+   "D0080075-art-30": 2
+  },
+  "duty_penalty-2366cdd0ac": {
+   "D0090073-art-22": 2
+  },
+  "duty_penalty-23eef10395": {
+   "N0040001-art-11": 2
+  },
+  "duty_penalty-245152f6cd": {
+   "K0040033-art-37": 2
+  },
+  "duty_penalty-247fa9f756": {
+   "K0070004-art-92": 2
+  },
+  "duty_penalty-272282eef4": {
+   "N0090001-art-64": 2
+  },
+  "duty_penalty-2a07549ba4": {
+   "N0020024-art-24": 2
+  },
+  "duty_penalty-2a2ac7561b": {
+   "L0020150-art-35": 2
+  },
+  "duty_penalty-2aa01cd8fb": {
+   "K0040033-art-37": 2
+  },
+  "duty_penalty-2aa63054d8": {
+   "J0160015-art-34": 2
+  },
+  "duty_penalty-2ae370d287": {
+   "L0020090-art-41": 2
+  },
+  "duty_penalty-2b20abed28": {
+   "L0020135-art-35": 2
+  },
+  "duty_penalty-2cbc9b32c1": {
+   "K0060111-art-74": 2
+  },
+  "duty_penalty-2e6ccbb00c": {
+   "L0070003-art-34": 2
+  },
+  "duty_penalty-2fe77e96d8": {
+   "I0010052-art-41": 2
+  },
+  "duty_penalty-3008cad47d": {
+   "G0400001-art-177": 2
+  },
+  "duty_penalty-301d9d54db": {
+   "D0120001-art-35-2": 2
+  },
+  "duty_penalty-31076d4581": {
+   "J0020042-art-35": 2,
+   "J0020042-art-36": 2
+  },
+  "duty_penalty-328b330e1e": {
+   "M0130001-art-37": 2
+  },
+  "duty_penalty-34ffb83a9c": {
+   "L0020045-art-48": 2
+  },
+  "duty_penalty-351c475fb0": {
+   "D0050001-art-92": 2
+  },
+  "duty_penalty-3592415e78": {
+   "G0330011-art-51": 2
+  },
+  "duty_penalty-36b315a4c7": {
+   "F0070013-art-42": 2
+  },
+  "duty_penalty-36cdcd3ef6": {
+   "G0310027-art-49": 2
+  },
+  "duty_penalty-3972812cf4": {
+   "M0130001-art-32": 2
+  },
+  "duty_penalty-39e4dc4859": {
+   "L0020135-art-32": 2,
+   "L0020135-art-35": 2
+  },
+  "duty_penalty-39e91f7c08": {
+   "D0020040-art-95": 2
+  },
+  "duty_penalty-3b0575e630": {
+   "M0130001-art-32": 2
+  },
+  "duty_penalty-3b3ed3d031": {
+   "M0040001-art-56": 2
+  },
+  "duty_penalty-3c19bf2711": {
+   "D0020049-art-32": 2
+  },
+  "duty_penalty-3dac51f6bb": {
+   "L0020021-art-107": 2
+  },
+  "duty_penalty-3dba6a3682": {
+   "D0050046-art-86": 2
+  },
+  "duty_penalty-3dc2710e25": {
+   "G0380026-art-20": 2
+  },
+  "duty_penalty-3ea844ca23": {
+   "J0080051-art-39": 2
+  },
+  "duty_penalty-3f3ec0dc43": {
+   "L0020099-art-22": 2
+  },
+  "duty_penalty-4089237b15": {
+   "K0070004-art-92": 2
+  },
+  "duty_penalty-419c8e6810": {
+   "L0020099-art-23": 2
+  },
+  "duty_penalty-41aa908fd6": {
+   "K0070004-art-91": 2,
+   "K0070004-art-97": 2
+  },
+  "duty_penalty-41dc39a677": {
+   "J0160056-art-34": 2,
+   "J0160056-art-35": 2
+  },
+  "duty_penalty-4250090a57": {
+   "L0020099-art-23": 2,
+   "L0020099-art-23-2": 2
+  },
+  "duty_penalty-42850e662f": {
+   "J0160015-art-41": 2
+  },
+  "duty_penalty-43700f7d73": {
+   "L0020090-art-37": 2
+  },
+  "duty_penalty-456c10e48b": {
+   "N0090001-art-68": 2
+  },
+  "duty_penalty-470ee69e08": {
+   "D0020078-art-38": 2
+  },
+  "duty_penalty-490bfff4a2": {
+   "L0030010-art-39": 2
+  },
+  "duty_penalty-49be714b5a": {
+   "D0050125-art-40": 2,
+   "D0050125-art-41": 2
+  },
+  "duty_penalty-4a492b0ddd": {
+   "D0070007-art-33-1": 2
+  },
+  "duty_penalty-4b815b4f8c": {
+   "L0020099-art-23-2": 2
+  },
+  "duty_penalty-4ca686785b": {
+   "D0020053-art-90-1": 2
+  },
+  "duty_penalty-4cea5e9493": {
+   "T0040001-art-25": 2
+  },
+  "duty_penalty-4d40991878": {
+   "G0390002-art-171-2": 2
+  },
+  "duty_penalty-4eaf104ab3": {
+   "L0030010-art-38": 2,
+   "L0030010-art-40": 2
+  },
+  "duty_penalty-4f24154c40": {
+   "J0070017-art-96": 2
+  },
+  "duty_penalty-51dba9a2c4": {
+   "Q0010001-art-93-3": 2
+  },
+  "duty_penalty-526f01f789": {
+   "K0070004-art-92": 2
+  },
+  "duty_penalty-52b6b23f37": {
+   "L0030010-art-39": 2
+  },
+  "duty_penalty-53585550c2": {
+   "L0020045-art-42": 2,
+   "L0020045-art-48": 2
+  },
+  "duty_penalty-53a4289693": {
+   "N0030001-art-75": 2
+  },
+  "duty_penalty-5447a6c373": {
+   "D0060090-art-53": 2
+  },
+  "duty_penalty-5517b60be8": {
+   "N0090055-art-41": 2
+  },
+  "duty_penalty-5561d6d830": {
+   "L0020044-art-39": 2
+  },
+  "duty_penalty-556a179114": {
+   "L0030001-art-93": 2
+  },
+  "duty_penalty-56f9670d75": {
+   "J0110001-art-92-4": 2
+  },
+  "duty_penalty-573747953d": {
+   "G0390060-art-48": 2
+  },
+  "duty_penalty-5781e1f58d": {
+   "D0020010-art-110": 2
+  },
+  "duty_penalty-57d2e3381f": {
+   "K0070004-art-98": 2
+  },
+  "duty_penalty-5a21b26e4a": {
+   "N0030020-art-49": 2
+  },
+  "duty_penalty-5a878758cd": {
+   "L0020190-art-46": 2
+  },
+  "duty_penalty-5c194f0e26": {
+   "N0030001-art-77": 2
+  },
+  "duty_penalty-5c6898f697": {
+   "D0050125-art-43": 2
+  },
+  "duty_penalty-5ce1d19056": {
+   "K0060111-art-79": 2
+  },
+  "duty_penalty-5ced035686": {
+   "L0020039-art-36": 2
+  },
+  "duty_penalty-5d13c871bc": {
+   "H0160078-art-21": 2
+  },
+  "duty_penalty-5d173b348b": {
+   "D0060125-art-38-2": 2
+  },
+  "duty_penalty-5dbc5cdbb6": {
+   "L0020150-art-31": 2
+  },
+  "duty_penalty-5f25e28e8d": {
+   "L0020044-art-36": 2
+  },
+  "duty_penalty-621a52d431": {
+   "D0050125-art-42": 2
+  },
+  "duty_penalty-632a590402": {
+   "D0050001-art-98": 2
+  },
+  "duty_penalty-6460c1472a": {
+   "D0020040-art-93": 2
+  },
+  "duty_penalty-64687e4ee4": {
+   "J0080024-art-29": 2,
+   "J0080024-art-30": 2
+  },
+  "duty_penalty-64ecfe5017": {
+   "L0020166-art-32": 2,
+   "L0020166-art-38": 2
+  },
+  "duty_penalty-6513d3c423": {
+   "K0060001-art-58": 2
+  },
+  "duty_penalty-6580c11eb7": {
+   "D0050125-art-40": 2
+  },
+  "duty_penalty-6593ebfe10": {
+   "Q0010001-art-90-2": 2
+  },
+  "duty_penalty-6667fedb2b": {
+   "J0110055-art-98-1": 2
+  },
+  "duty_penalty-67412839a6": {
+   "G0380001-art-129-2": 2
+  },
+  "duty_penalty-679a08ff53": {
+   "D0070222-art-36": 2
+  },
+  "duty_penalty-6a1d6eac6c": {
+   "D0050001-art-91": 2
+  },
+  "duty_penalty-6c2166e9f7": {
+   "I0010052-art-40": 2,
+   "I0010052-art-41": 2
+  },
+  "duty_penalty-7100c5a65e": {
+   "L0030001-art-93": 2
+  },
+  "duty_penalty-7281b5a09b": {
+   "A0020051-art-37": 2
+  },
+  "duty_penalty-729ca7da42": {
+   "L0020098-art-31": 2,
+   "L0020098-art-37": 2
+  },
+  "duty_penalty-72b7a1ff81": {
+   "O0020001-art-77": 2
+  },
+  "duty_penalty-73807f5228": {
+   "D0050046-art-86": 2
+  },
+  "duty_penalty-747eb22497": {
+   "L0020149-art-30": 2,
+   "L0020149-art-35": 2
+  },
+  "duty_penalty-75f022166d": {
+   "M0110001-art-33": 2
+  },
+  "duty_penalty-76ed13914d": {
+   "G0380001-art-128": 2
+  },
+  "duty_penalty-774ab5649b": {
+   "L0020089-art-41": 2
+  },
+  "duty_penalty-781f47a52c": {
+   "D0020049-art-31": 2
+  },
+  "duty_penalty-7827e177f3": {
+   "K0040033-art-37": 2
+  },
+  "duty_penalty-78445c33f3": {
+   "G0380001-art-128": 2
+  },
+  "duty_penalty-78b42fffaa": {
+   "O0040001-art-51": 2
+  },
+  "duty_penalty-78e65a0044": {
+   "L0020149-art-32": 2,
+   "L0020149-art-35": 2
+  },
+  "duty_penalty-795127eca6": {
+   "K0060044-art-31": 2
+  },
+  "duty_penalty-7954b8a57c": {
+   "D0070007-art-33": 2
+  },
+  "duty_penalty-7eb6ea007f": {
+   "L0020135-art-34": 2,
+   "L0020135-art-37": 2
+  },
+  "duty_penalty-8088e3c0bb": {
+   "G0400001-art-177": 2
+  },
+  "duty_penalty-809a62025b": {
+   "N0020012-art-19": 2
+  },
+  "duty_penalty-815fee981d": {
+   "J0030022-art-54": 2
+  },
+  "duty_penalty-82a12b5b0c": {
+   "L0020089-art-41": 2
+  },
+  "duty_penalty-8398925da1": {
+   "O0040010-art-18": 2
+  },
+  "duty_penalty-83ab1cc803": {
+   "L0020090-art-37": 2
+  },
+  "duty_penalty-83cb866192": {
+   "H0070071-art-45": 2
+  },
+  "duty_penalty-83d703ff16": {
+   "M0060027-art-24": 2,
+   "M0060027-art-29": 2
+  },
+  "duty_penalty-8433e23295": {
+   "J0150017-art-32": 2,
+   "J0150017-art-36": 2
+  },
+  "duty_penalty-8455004606": {
+   "L0020150-art-33": 2
+  },
+  "duty_penalty-85c2147e8f": {
+   "D0020040-art-85": 2
+  },
+  "duty_penalty-86254853cf": {
+   "I0050021-art-54": 2
+  },
+  "duty_penalty-8717c0ef35": {
+   "J0100052-art-54": 2
+  },
+  "duty_penalty-876baa1b3a": {
+   "D0070249-art-11": 2
+  },
+  "duty_penalty-89a0a1b6b6": {
+   "D0070109-art-91-2": 2,
+   "D0070109-art-95-2": 2
+  },
+  "duty_penalty-8b589e8665": {
+   "N0030001-art-78": 2
+  },
+  "duty_penalty-8b87969265": {
+   "L0030001-art-93": 2
+  },
+  "duty_penalty-8e5cf06b99": {
+   "Q0010001-art-93-1": 2
+  },
+  "duty_penalty-8ea106f85b": {
+   "A0030286-art-26": 2
+  },
+  "duty_penalty-8fb19241b6": {
+   "O0040010-art-24": 2
+  },
+  "duty_penalty-911bac62e7": {
+   "N0030001-art-76": 2
+  },
+  "duty_penalty-917b5b47e1": {
+   "K0070004-art-92": 2
+  },
+  "duty_penalty-9274b95c6c": {
+   "J0160056-art-38": 2
+  },
+  "duty_penalty-9350bc52f6": {
+   "K0060111-art-79": 2
+  },
+  "duty_penalty-9388c5571d": {
+   "G0330011-art-56": 2
+  },
+  "duty_penalty-9418d4b788": {
+   "H0070031-art-54": 2
+  },
+  "duty_penalty-94353f1e2d": {
+   "N0030001-art-79": 2
+  },
+  "duty_penalty-9639716f06": {
+   "D0020040-art-73": 2
+  },
+  "duty_penalty-97ae57ddbf": {
+   "N0090001-art-68": 2
+  },
+  "duty_penalty-9943190f0e": {
+   "L0020098-art-31": 2
+  },
+  "duty_penalty-9949bdf799": {
+   "F0070013-art-42": 2
+  },
+  "duty_penalty-9a67331758": {
+   "L0020135-art-32": 2
+  },
+  "duty_penalty-9ad27459d4": {
+   "K0090001-art-108": 2
+  },
+  "duty_penalty-9caf579bba": {
+   "L0070003-art-33": 2
+  },
+  "duty_penalty-9d95a9d1d5": {
+   "L0020098-art-34": 2
+  },
+  "duty_penalty-9da3416cd8": {
+   "L0020021-art-101": 2
+  },
+  "duty_penalty-9dab6d86c3": {
+   "L0020098-art-31": 2,
+   "L0020098-art-37": 2
+  },
+  "duty_penalty-9de46e6d32": {
+   "L0020039-art-38": 2
+  },
+  "duty_penalty-9ffc23c9da": {
+   "H0070071-art-43": 2
+  },
+  "duty_penalty-a0b319c430": {
+   "D0050138-art-25": 2
+  },
+  "duty_penalty-a0b6db417f": {
+   "D0020010-art-104-1": 2
+  },
+  "duty_penalty-a0fe0344df": {
+   "K0070004-art-98": 2
+  },
+  "duty_penalty-a15216fe47": {
+   "L0070040-art-48-1": 2
+  },
+  "duty_penalty-a297e29e2f": {
+   "K0070042-art-82": 2
+  },
+  "duty_penalty-a30cdf88b6": {
+   "D0020010-art-110": 2
+  },
+  "duty_penalty-a33374427f": {
+   "J0070030-art-19": 2
+  },
+  "duty_penalty-a3835c1690": {
+   "L0030023-art-24": 2
+  },
+  "duty_penalty-a3c4a60909": {
+   "G0380001-art-125": 2
+  },
+  "duty_penalty-a4b5a612a0": {
+   "D0060090-art-51": 2
+  },
+  "duty_penalty-a5467a587b": {
+   "M0130003-art-43": 2
+  },
+  "duty_penalty-a597bb08ef": {
+   "L0070051-art-38": 2
+  },
+  "duty_penalty-a68105baf9": {
+   "N0090001-art-63": 2
+  },
+  "duty_penalty-a6cef86977": {
+   "D0050001-art-90-2": 2
+  },
+  "duty_penalty-a6e923bd43": {
+   "J0070030-art-22": 2
+  },
+  "duty_penalty-a9561d5018": {
+   "Q0010001-art-79-2": 2,
+   "Q0010001-art-79-3": 2
+  },
+  "duty_penalty-ab449cc068": {
+   "D0020040-art-96": 2
+  },
+  "duty_penalty-ab71de3157": {
+   "Q0010001-art-90-2": 2
+  },
+  "duty_penalty-abc8af4424": {
+   "J0160056-art-40": 2
+  },
+  "duty_penalty-ad08ec274e": {
+   "M0130003-art-43": 2
+  },
+  "duty_penalty-ad13a89b07": {
+   "G0310027-art-50": 2,
+   "G0310027-art-55": 2
+  },
+  "duty_penalty-adf0a97c21": {
+   "K0070004-art-98": 2
+  },
+  "duty_penalty-ae29d50d46": {
+   "D0050001-art-104": 2
+  },
+  "duty_penalty-af4fc97a2a": {
+   "J0150017-art-32": 2
+  },
+  "duty_penalty-b0bdd473c5": {
+   "L0020039-art-37": 2
+  },
+  "duty_penalty-b1b63e1553": {
+   "J0080024-art-24": 2
+  },
+  "duty_penalty-b1d806327c": {
+   "L0030001-art-93": 2
+  },
+  "duty_penalty-b2c403f97f": {
+   "L0030010-art-39": 2
+  },
+  "duty_penalty-b472dcd19a": {
+   "L0020045-art-46": 2
+  },
+  "duty_penalty-b55e6524d1": {
+   "J0020019-art-41": 2
+  },
+  "duty_penalty-b620af6f7c": {
+   "K0070004-art-98": 2
+  },
+  "duty_penalty-b652e0f6cf": {
+   "K0060001-art-64": 2
+  },
+  "duty_penalty-b6cabf56d3": {
+   "D0050071-art-62": 2
+  },
+  "duty_penalty-b733ebd691": {
+   "J0080009-art-77": 2
+  },
+  "duty_penalty-b7b3eb781c": {
+   "L0050001-art-67": 2
+  },
+  "duty_penalty-b922207c7a": {
+   "N0020007-art-63": 2
+  },
+  "duty_penalty-ba4673bcc8": {
+   "M0130001-art-35": 2,
+   "M0130001-art-37": 2
+  },
+  "duty_penalty-bbc9cabaab": {
+   "L0030001-art-93": 2
+  },
+  "duty_penalty-bc23fe2004": {
+   "D0020053-art-96": 2
+  },
+  "duty_penalty-bd75e03ea1": {
+   "L0070040-art-51": 2
+  },
+  "duty_penalty-bebd5cae62": {
+   "L0020089-art-38": 2
+  },
+  "duty_penalty-bec1fb1bad": {
+   "M0130001-art-32": 2
+  },
+  "duty_penalty-bf3ba31f03": {
+   "S0020038-art-24": 2
+  },
+  "duty_penalty-bf50d18f7f": {
+   "N0020012-art-17": 2
+  },
+  "duty_penalty-bf56aac162": {
+   "J0020019-art-53": 2
+  },
+  "duty_penalty-c02e7ebbf2": {
+   "G0380237-art-53": 2
+  },
+  "duty_penalty-c1306f910a": {
+   "K0070042-art-85": 2
+  },
+  "duty_penalty-c2eda3d82e": {
+   "L0030010-art-39": 2
+  },
+  "duty_penalty-c3355f2603": {
+   "D0060066-art-29": 2
+  },
+  "duty_penalty-c39a95f583": {
+   "J0160056-art-40": 2
+  },
+  "duty_penalty-c5f0dca121": {
+   "J0150002-art-40": 2
+  },
+  "duty_penalty-c60c6da235": {
+   "J0160056-art-35": 2
+  },
+  "duty_penalty-c6ef066526": {
+   "O0040001-art-53": 2
+  },
+  "duty_penalty-c73333abb0": {
+   "L0020135-art-34": 2
+  },
+  "duty_penalty-c79b1f8f85": {
+   "D0080058-art-27": 2
+  },
+  "duty_penalty-c7d924ac37": {
+   "K0070030-art-10": 2
+  },
+  "duty_penalty-c81da3e7dc": {
+   "M0120001-art-43": 2
+  },
+  "duty_penalty-c95375bc8a": {
+   "D0050091-art-62": 2
+  },
+  "duty_penalty-cbb9bcbb5d": {
+   "L0020021-art-113": 2
+  },
+  "duty_penalty-cc15531838": {
+   "G0380001-art-127-1": 2
+  },
+  "duty_penalty-cc9e2116d7": {
+   "J0150002-art-37": 2
+  },
+  "duty_penalty-d1768a42b2": {
+   "D0070110-art-56": 2
+  },
+  "duty_penalty-d1fce612aa": {
+   "L0020098-art-35": 2
+  },
+  "duty_penalty-d237808c9a": {
+   "K0090057-art-32": 2
+  },
+  "duty_penalty-d2a55e6d39": {
+   "O0030001-art-31": 2
+  },
+  "duty_penalty-d30fd5d5ce": {
+   "L0020150-art-34": 2
+  },
+  "duty_penalty-d4f920966f": {
+   "L0030010-art-39": 2
+  },
+  "duty_penalty-d52d76be39": {
+   "L0050001-art-67": 2
+  },
+  "duty_penalty-d5a995e12e": {
+   "Q0010001-art-88": 2
+  },
+  "duty_penalty-d60ff4421b": {
+   "D0050125-art-42": 2
+  },
+  "duty_penalty-d67eee78be": {
+   "K0070004-art-92": 2
+  },
+  "duty_penalty-d881004ad7": {
+   "D0020010-art-110": 2
+  },
+  "duty_penalty-d95efe4788": {
+   "L0020021-art-107": 2
+  },
+  "duty_penalty-d9b467646b": {
+   "D0020078-art-35": 2
+  },
+  "duty_penalty-da164f0031": {
+   "L0020090-art-41": 2
+  },
+  "duty_penalty-da25b69ad3": {
+   "L0020099-art-22": 2
+  },
+  "duty_penalty-da96d55008": {
+   "L0020001-art-27": 2
+  },
+  "duty_penalty-dd7082ae00": {
+   "N0030001-art-32-1": 2
+  },
+  "duty_penalty-de0aaf069b": {
+   "D0020049-art-27": 2
+  },
+  "duty_penalty-deb31c0616": {
+   "L0020149-art-30": 2,
+   "L0020149-art-37": 2
+  },
+  "duty_penalty-df5a117351": {
+   "L0030106-art-65": 2
+  },
+  "duty_penalty-dfb51cd29c": {
+   "D0070209-art-38": 2
+  },
+  "duty_penalty-e07a40104f": {
+   "G0400001-art-177": 2
+  },
+  "duty_penalty-e0baa0b446": {
+   "H0120050-art-23-2": 2
+  },
+  "duty_penalty-e1d64f4270": {
+   "L0020021-art-103": 2
+  },
+  "duty_penalty-e1e5d2cd61": {
+   "G0400001-art-177": 2
+  },
+  "duty_penalty-e25db82ac9": {
+   "L0070003-art-34": 2
+  },
+  "duty_penalty-e3247a0be3": {
+   "D0050001-art-99": 2
+  },
+  "duty_penalty-e33c795d4e": {
+   "D0070110-art-57": 2
+  },
+  "duty_penalty-e40bee4d32": {
+   "Q0010003-art-51": 2
+  },
+  "duty_penalty-e58e3a7df6": {
+   "K0060001-art-67": 2
+  },
+  "duty_penalty-e6ad054240": {
+   "L0020150-art-34": 2
+  },
+  "duty_penalty-e7ea61e6bf": {
+   "D0020040-art-96": 2
+  },
+  "duty_penalty-e8a828dd71": {
+   "D0050074-art-26": 2
+  },
+  "duty_penalty-e972fdd37e": {
+   "G0340072-art-48": 2
+  },
+  "duty_penalty-e9e1f25875": {
+   "G0380026-art-21": 2
+  },
+  "duty_penalty-ea4994dbf9": {
+   "K0070004-art-90": 2,
+   "K0070004-art-92": 2
+  },
+  "duty_penalty-eaf68905c3": {
+   "F0090021-art-9": 2
+  },
+  "duty_penalty-ec00555b00": {
+   "J0090004-art-27-2": 2
+  },
+  "duty_penalty-ec0c3c9d5f": {
+   "G0400121-art-105": 2
+  },
+  "duty_penalty-ee4f139df1": {
+   "F0070013-art-42": 2
+  },
+  "duty_penalty-ef216b6640": {
+   "K0070004-art-96": 2
+  },
+  "duty_penalty-ef3ec08843": {
+   "L0020216-art-32": 2
+  },
+  "duty_penalty-ef5758d9ee": {
+   "Q0010001-art-85": 2
+  },
+  "duty_penalty-ef8af3abbd": {
+   "D0050125-art-38": 2
+  },
+  "duty_penalty-f044c3753a": {
+   "D0020050-art-43": 2
+  },
+  "duty_penalty-f1ae289ddc": {
+   "G0310027-art-48": 2
+  },
+  "duty_penalty-f2b7aa27ff": {
+   "J0080004-art-34": 2
+  },
+  "duty_penalty-f581a73c35": {
+   "M0120001-art-46": 2
+  },
+  "duty_penalty-f6b94b8b01": {
+   "L0030010-art-40": 2
+  },
+  "duty_penalty-f733efe3a9": {
+   "K0090001-art-119": 2
+  },
+  "duty_penalty-f8d47bc1b6": {
+   "N0030020-art-49": 2
+  },
+  "duty_penalty-f99bc4bffc": {
+   "N0020024-art-24": 2
+  },
+  "duty_penalty-fa77d29165": {
+   "L0020098-art-35": 2
+  },
+  "duty_penalty-fad67367eb": {
+   "G0340003-art-108-2": 2
+  },
+  "duty_penalty-fb09173acc": {
+   "L0020045-art-42": 2,
+   "L0020045-art-48": 2
+  },
+  "duty_penalty-fb7e085c09": {
+   "L0020044-art-36": 2
+  },
+  "duty_penalty-fc17a36aa9": {
+   "H0070031-art-55": 2
+  },
+  "duty_penalty-fd09e3673c": {
+   "G0380058-art-41": 2
+  },
+  "duty_penalty-fe0f65e199": {
+   "D0020053-art-96": 2
+  },
+  "duty_penalty-fe74522d21": {
+   "L0040006-art-30": 2
+  },
+  "duty_penalty-fec2a5c4d7": {
+   "L0020099-art-23": 2,
+   "L0020099-art-23-2": 2
+  },
+  "duty_penalty-ff47978375": {
+   "D0020040-art-83": 2
+  },
+  "duty_penalty-ff499dff90": {
+   "D0070110-art-57": 2
+  },
+  "duty_penalty-ff9a0a97ed": {
+   "J0110094-art-17": 2,
+   "J0110094-art-25": 2
+  },
+  "duty_penalty-ffc9be8b11": {
+   "L0020099-art-23": 2
+  }
+ },
+ "upstream": {
+  "applies_mutatis_mutandis-03270b9e19": [
+   "G0380001-art-23",
+   "G0380001-art-24"
+  ],
+  "applies_mutatis_mutandis-0586be1127": [
+   "A0030155-art-15"
+  ],
+  "applies_mutatis_mutandis-081ba5a6fd": [
+   "G0380237-art-26"
+  ],
+  "applies_mutatis_mutandis-08c5685394": [
+   "B0000001-art-839"
+  ],
+  "applies_mutatis_mutandis-0e83470abe": [
+   "C0010001-art-501",
+   "C0010001-art-504"
+  ],
+  "applies_mutatis_mutandis-13cda9fc07": [
+   "J0070007-art-28"
+  ],
+  "applies_mutatis_mutandis-16f6941a71": [
+   "B0010048-art-101",
+   "B0010048-art-102",
+   "B0010048-art-108"
+  ],
+  "applies_mutatis_mutandis-187e7d9d20": [
+   "B0010001-art-42",
+   "B0010001-art-44"
+  ],
+  "applies_mutatis_mutandis-1d1466aed2": [
+   "G0380122-art-12"
+  ],
+  "applies_mutatis_mutandis-1ffd4f6adf": [
+   "S0010008-art-9"
+  ],
+  "applies_mutatis_mutandis-2051921242": [
+   "D0090073-art-8"
+  ],
+  "applies_mutatis_mutandis-23a3d4a04f": [
+   "G0340115-art-3"
+  ],
+  "applies_mutatis_mutandis-26fe25d8e0": [
+   "G0380001-art-62-2"
+  ],
+  "applies_mutatis_mutandis-279c24cb47": [
+   "C0010001-art-202"
+  ],
+  "applies_mutatis_mutandis-27e9d8ed2d": [
+   "J0040051-art-34"
+  ],
+  "applies_mutatis_mutandis-28b1a07db3": [
+   "D0060089-art-6",
+   "D0060089-art-7",
+   "D0060089-art-9"
+  ],
+  "applies_mutatis_mutandis-28eaeffd8e": [
+   "J0080001-art-29"
+  ],
+  "applies_mutatis_mutandis-2a5801cbc4": [
+   "D0060007-art-29"
+  ],
+  "applies_mutatis_mutandis-2b4cffc604": [
+   "G0400001-art-43-2",
+   "G0400001-art-43-3",
+   "G0400001-art-43-5"
+  ],
+  "applies_mutatis_mutandis-2f07ca5d92": [
+   "O0040026-art-25",
+   "O0040026-art-29"
+  ],
+  "applies_mutatis_mutandis-316c54511f": [
+   "N0030001-art-16"
+  ],
+  "applies_mutatis_mutandis-327f8f65a0": [
+   "D0070008-art-24"
+  ],
+  "applies_mutatis_mutandis-3364259081": [
+   "B0000001-art-431"
+  ],
+  "applies_mutatis_mutandis-3679ef56a1": [
+   "D0060089-art-9"
+  ],
+  "applies_mutatis_mutandis-37ac85e30b": [
+   "B0010008-art-172"
+  ],
+  "applies_mutatis_mutandis-38b74a599e": [
+   "G0380001-art-62",
+   "G0380001-art-62-2",
+   "G0380001-art-62-5"
+  ],
+  "applies_mutatis_mutandis-3f64903f9c": [
+   "A0030154-art-237-8"
+  ],
+  "applies_mutatis_mutandis-4099afa9d6": [
+   "J0030011-art-26"
+  ],
+  "applies_mutatis_mutandis-4347d51494": [
+   "P0050013-art-42"
+  ],
+  "applies_mutatis_mutandis-43bc30f978": [
+   "D0120068-art-6"
+  ],
+  "applies_mutatis_mutandis-440f631236": [
+   "G0380037-art-8"
+  ],
+  "applies_mutatis_mutandis-444479d15f": [
+   "J0070034-art-7"
+  ],
+  "applies_mutatis_mutandis-448d9d0092": [
+   "J0080001-art-198"
+  ],
+  "applies_mutatis_mutandis-4579a9ef52": [
+   "G0400121-art-73"
+  ],
+  "applies_mutatis_mutandis-46f1588e9d": [
+   "O0040026-art-26",
+   "O0040026-art-33"
+  ],
+  "applies_mutatis_mutandis-4a4a322ae9": [
+   "B0010001-art-427"
+  ],
+  "applies_mutatis_mutandis-4c0d4be9ae": [
+   "C0010001-art-28",
+   "C0010001-art-32"
+  ],
+  "applies_mutatis_mutandis-4cd7cb1f40": [
+   "S0120001-art-10"
+  ],
+  "applies_mutatis_mutandis-4d75e28a08": [
+   "D0050084-art-43",
+   "D0050084-art-44"
+  ],
+  "applies_mutatis_mutandis-4e0b976cd8": [
+   "A0030154-art-39"
+  ],
+  "applies_mutatis_mutandis-4e72e45219": [
+   "B0010001-art-276"
+  ],
+  "applies_mutatis_mutandis-50ba9afa8f": [
+   "B0000001-art-1055-1"
+  ],
+  "applies_mutatis_mutandis-51c7c971dc": [
+   "D0070008-art-53"
+  ],
+  "applies_mutatis_mutandis-51ca61b2a1": [
+   "K0030001-art-56-4"
+  ],
+  "applies_mutatis_mutandis-5315156334": [
+   "S0120001-art-10"
+  ],
+  "applies_mutatis_mutandis-53b60df3bc": [
+   "J0070007-art-70"
+  ],
+  "applies_mutatis_mutandis-56a931414f": [
+   "B0010001-art-312",
+   "B0010001-art-313",
+   "B0010001-art-314"
+  ],
+  "applies_mutatis_mutandis-57c165352a": [
+   "J0070007-art-70"
+  ],
+  "applies_mutatis_mutandis-5a82761655": [
+   "G0400001-art-64"
+  ],
+  "applies_mutatis_mutandis-63d6619c4d": [
+   "J0070001-art-24",
+   "J0070001-art-25"
+  ],
+  "applies_mutatis_mutandis-647b7d14a6": [
+   "A0010102-art-22"
+  ],
+  "applies_mutatis_mutandis-66c31c62ab": [
+   "O0040026-art-23"
+  ],
+  "applies_mutatis_mutandis-676dcfaf2d": [
+   "D0020040-art-35-1"
+  ],
+  "applies_mutatis_mutandis-6976cd42fb": [
+   "B0010008-art-195"
+  ],
+  "applies_mutatis_mutandis-6a2837dff1": [
+   "B0010048-art-172"
+  ],
+  "applies_mutatis_mutandis-6b428c454f": [
+   "J0160015-art-12"
+  ],
+  "applies_mutatis_mutandis-6c9bd79723": [
+   "C0010001-art-28",
+   "C0010001-art-32",
+   "C0010001-art-33"
+  ],
+  "applies_mutatis_mutandis-6d3b0070c4": [
+   "L0020143-art-7"
+  ],
+  "applies_mutatis_mutandis-70308e457f": [
+   "G0380237-art-16"
+  ],
+  "applies_mutatis_mutandis-731f5f2cdd": [
+   "B0000001-art-799"
+  ],
+  "applies_mutatis_mutandis-74956223d0": [
+   "D0070008-art-53"
+  ],
+  "applies_mutatis_mutandis-769b486f32": [
+   "J0160019-art-14"
+  ],
+  "applies_mutatis_mutandis-790aeb11c6": [
+   "G0380169-art-15"
+  ],
+  "applies_mutatis_mutandis-7a096f0710": [
+   "G0340003-art-5"
+  ],
+  "applies_mutatis_mutandis-7c043c5cba": [
+   "K0030001-art-34-1"
+  ],
+  "applies_mutatis_mutandis-7e2426c6ba": [
+   "G0390060-art-34"
+  ],
+  "applies_mutatis_mutandis-7fc99431af": [
+   "L0030001-art-27"
+  ],
+  "applies_mutatis_mutandis-821729e3a7": [
+   "J0160015-art-13"
+  ],
+  "applies_mutatis_mutandis-8314894b3b": [
+   "J0070007-art-44"
+  ],
+  "applies_mutatis_mutandis-8699255316": [
+   "G0390060-art-27"
+  ],
+  "applies_mutatis_mutandis-8816d5110f": [
+   "B0010001-art-56"
+  ],
+  "applies_mutatis_mutandis-89dd275f13": [
+   "C0010009-art-12",
+   "C0010009-art-14"
+  ],
+  "applies_mutatis_mutandis-8a2db88080": [
+   "C0010018-art-9"
+  ],
+  "applies_mutatis_mutandis-8b4fa02b4e": [
+   "A0030154-art-165",
+   "A0030154-art-169"
+  ],
+  "applies_mutatis_mutandis-8ba0e24e7a": [
+   "C0010026-art-8"
+  ],
+  "applies_mutatis_mutandis-8f19071b5b": [
+   "G0380001-art-45"
+  ],
+  "applies_mutatis_mutandis-91571f3ac6": [
+   "G0380169-art-28"
+  ],
+  "applies_mutatis_mutandis-92cc79d67d": [
+   "J0080001-art-181"
+  ],
+  "applies_mutatis_mutandis-9569fb987a": [
+   "J0070007-art-44"
+  ],
+  "applies_mutatis_mutandis-97691f2f61": [
+   "B0000001-art-761"
+  ],
+  "applies_mutatis_mutandis-9a2fba8c40": [
+   "D0120068-art-13"
+  ],
+  "applies_mutatis_mutandis-9eb963b3d9": [
+   "P0050013-art-12"
+  ],
+  "applies_mutatis_mutandis-9fc288829d": [
+   "J0030022-art-43"
+  ],
+  "applies_mutatis_mutandis-9fdfba2d8d": [
+   "H0170102-art-31"
+  ],
+  "applies_mutatis_mutandis-a1136390dc": [
+   "A0030159-art-53"
+  ],
+  "applies_mutatis_mutandis-a2782f5864": [
+   "H0170001-art-22"
+  ],
+  "applies_mutatis_mutandis-a283fae7b8": [
+   "G0380169-art-15"
+  ],
+  "applies_mutatis_mutandis-a5afe2ca2a": [
+   "B0010001-art-233"
+  ],
+  "applies_mutatis_mutandis-a6613b3300": [
+   "B0010010-art-50"
+  ],
+  "applies_mutatis_mutandis-aaad6b0bd5": [
+   "C0010017-art-7"
+  ],
+  "applies_mutatis_mutandis-ad43b663b4": [
+   "D0120001-art-30"
+  ],
+  "applies_mutatis_mutandis-af4d363417": [
+   "D0050071-art-14"
+  ],
+  "applies_mutatis_mutandis-b00255112a": [
+   "D0060058-art-30"
+  ],
+  "applies_mutatis_mutandis-b0969d6603": [
+   "G0340003-art-80"
+  ],
+  "applies_mutatis_mutandis-b0b929c8f4": [
+   "P0050013-art-31"
+  ],
+  "applies_mutatis_mutandis-b15f00dc0d": [
+   "J0030011-art-14"
+  ],
+  "applies_mutatis_mutandis-b37b6f6f87": [
+   "J0080001-art-172"
+  ],
+  "applies_mutatis_mutandis-b5432f552a": [
+   "G0400121-art-17"
+  ],
+  "applies_mutatis_mutandis-b56c619507": [
+   "C0010001-art-314"
+  ],
+  "applies_mutatis_mutandis-b7fffd55cf": [
+   "K0070001-art-13"
+  ],
+  "applies_mutatis_mutandis-ba250d956f": [
+   "B0010008-art-186",
+   "B0010008-art-187"
+  ],
+  "applies_mutatis_mutandis-bb341d66f7": [
+   "H0170001-art-17"
+  ],
+  "applies_mutatis_mutandis-bd02f74eec": [
+   "P0050013-art-6"
+  ],
+  "applies_mutatis_mutandis-bd221fd768": [
+   "L0050001-art-23",
+   "L0050001-art-24"
+  ],
+  "applies_mutatis_mutandis-bd954eb456": [
+   "D0070008-art-53"
+  ],
+  "applies_mutatis_mutandis-bec3f29d34": [
+   "J0160015-art-15"
+  ],
+  "applies_mutatis_mutandis-bf5a0d3226": [
+   "K0030001-art-34-1"
+  ],
+  "applies_mutatis_mutandis-c05b0ec490": [
+   "J0080001-art-48"
+  ],
+  "applies_mutatis_mutandis-c0e1cac781": [
+   "J0070001-art-28"
+  ],
+  "applies_mutatis_mutandis-c7f88d2045": [
+   "G0350001-art-96"
+  ],
+  "applies_mutatis_mutandis-ce37543211": [
+   "D0070209-art-10"
+  ],
+  "applies_mutatis_mutandis-cf161ca9fa": [
+   "G0400100-art-71"
+  ],
+  "applies_mutatis_mutandis-d1858007b4": [
+   "A0010091-art-12"
+  ],
+  "applies_mutatis_mutandis-d25e35e8a2": [
+   "D0060009-art-47"
+  ],
+  "applies_mutatis_mutandis-d2e8e427cd": [
+   "C0010001-art-242"
+  ],
+  "applies_mutatis_mutandis-d505d44b09": [
+   "P0050013-art-29"
+  ],
+  "applies_mutatis_mutandis-d69c5689ae": [
+   "B0000001-art-291"
+  ],
+  "applies_mutatis_mutandis-d8193d4343": [
+   "B0000001-art-877"
+  ],
+  "applies_mutatis_mutandis-d94c640d81": [
+   "J0080051-art-20",
+   "J0080051-art-21",
+   "J0080051-art-24"
+  ],
+  "applies_mutatis_mutandis-d987f8f7c6": [
+   "G0400001-art-54",
+   "G0400001-art-56"
+  ],
+  "applies_mutatis_mutandis-da94c4cda6": [
+   "J0020001-art-17"
+  ],
+  "applies_mutatis_mutandis-db7afd5f96": [
+   "J0130032-art-19"
+  ],
+  "applies_mutatis_mutandis-dbcb460dcd": [
+   "O0040026-art-26",
+   "O0040026-art-33"
+  ],
+  "applies_mutatis_mutandis-dc67b04376": [
+   "K0070001-art-27-1"
+  ],
+  "applies_mutatis_mutandis-dd8216d990": [
+   "H0170001-art-20"
+  ],
+  "applies_mutatis_mutandis-de70862ec9": [
+   "K0070042-art-69"
+  ],
+  "applies_mutatis_mutandis-e3a934b6b5": [
+   "J0090004-art-9"
+  ],
+  "applies_mutatis_mutandis-e45d7a9452": [
+   "B0010006-art-13"
+  ],
+  "applies_mutatis_mutandis-e690943af1": [
+   "D0060089-art-9"
+  ],
+  "applies_mutatis_mutandis-e7596878b7": [
+   "D0120068-art-16"
+  ],
+  "applies_mutatis_mutandis-e7ca3e4279": [
+   "A0030159-art-54"
+  ],
+  "applies_mutatis_mutandis-e8d2b18575": [
+   "J0070007-art-92"
+  ],
+  "applies_mutatis_mutandis-e8e227abb1": [
+   "P0050013-art-39"
+  ],
+  "applies_mutatis_mutandis-e90282bf0a": [
+   "G0380226-art-28",
+   "G0380226-art-30"
+  ],
+  "applies_mutatis_mutandis-e958fca234": [
+   "F0070013-art-36"
+  ],
+  "applies_mutatis_mutandis-ea81de64cf": [
+   "F0120008-art-141"
+  ],
+  "applies_mutatis_mutandis-ed810ae75e": [
+   "J0000100-art-26"
+  ],
+  "applies_mutatis_mutandis-edc8a7fb5c": [
+   "J0020019-art-17"
+  ],
+  "applies_mutatis_mutandis-ee5d703081": [
+   "G0380037-art-20",
+   "G0380037-art-21-1"
+  ],
+  "applies_mutatis_mutandis-f0763612f5": [
+   "A0030154-art-213",
+   "A0030154-art-214",
+   "A0030154-art-216"
+  ],
+  "applies_mutatis_mutandis-f0adc52c0c": [
+   "P0050013-art-22"
+  ],
+  "applies_mutatis_mutandis-f16fa8709a": [
+   "J0020001-art-56"
+  ],
+  "applies_mutatis_mutandis-f5840136ce": [
+   "L0060042-art-11"
+  ],
+  "applies_mutatis_mutandis-f5a90fc29d": [
+   "D0060089-art-9"
+  ],
+  "applies_mutatis_mutandis-f5c3be2326": [
+   "G0390002-art-148"
+  ],
+  "applies_mutatis_mutandis-f87e20c230": [
+   "B0010001-art-345",
+   "B0010001-art-349"
+  ],
+  "applies_mutatis_mutandis-f987747945": [
+   "K0070001-art-19"
+  ],
+  "applies_mutatis_mutandis-f9db626f5e": [
+   "G0350029-art-13",
+   "G0350029-art-14"
+  ],
+  "applies_mutatis_mutandis-fad323bc7b": [
+   "B0000001-art-1082",
+   "B0000001-art-1083"
+  ],
+  "applies_mutatis_mutandis-feb2c17589": [
+   "C0010001-art-116-2"
+  ],
+  "definition_question-00de23628c": [
+   "O0020030-art-2"
+  ],
+  "definition_question-01de747d7f": [
+   "K0060089-art-3"
+  ],
+  "definition_question-02d9ecf48d": [
+   "L0060001-art-2"
+  ],
+  "definition_question-057f43444a": [
+   "O0020030-art-2"
+  ],
+  "definition_question-06b490e6b9": [
+   "O0020068-art-2"
+  ],
+  "definition_question-07f37c784b": [
+   "K0070069-art-2"
+  ],
+  "definition_question-08e6816fbc": [
+   "K0090014-art-2"
+  ],
+  "definition_question-090789aec6": [
+   "K0090061-art-2"
+  ],
+  "definition_question-09100db5b0": [
+   "O0020127-art-2"
+  ],
+  "definition_question-0947ba57a8": [
+   "K0070016-art-29-1"
+  ],
+  "definition_question-0b99e4a8d9": [
+   "G0380241-art-2"
+  ],
+  "definition_question-0f2a9e05d0": [
+   "K0060055-art-2",
+   "K0060156-art-2"
+  ],
+  "definition_question-0f6a650e32": [
+   "L0020075-art-2"
+  ],
+  "definition_question-0fd3773ddf": [
+   "K0060091-art-2"
+  ],
+  "definition_question-1375744444": [
+   "K0070057-art-2"
+  ],
+  "definition_question-145a5aafc9": [
+   "K0060098-art-3",
+   "P0050054-art-2"
+  ],
+  "definition_question-14bf639f56": [
+   "K0090008-art-2"
+  ],
+  "definition_question-1558c79918": [
+   "G0380055-art-2",
+   "G0380271-art-2",
+   "J0140019-art-2",
+   "J0140020-art-2"
+  ],
+  "definition_question-161c9aa7ed": [
+   "J0110037-art-2"
+  ],
+  "definition_question-174a4a6113": [
+   "J0030018-art-466"
+  ],
+  "definition_question-188d8ecddb": [
+   "L0050002-art-2"
+  ],
+  "definition_question-1927aff420": [
+   "J0100066-art-2"
+  ],
+  "definition_question-1933dea2c2": [
+   "H0120072-art-2",
+   "H0120092-art-2"
+  ],
+  "definition_question-1a5432c2cd": [
+   "G0350061-art-2"
+  ],
+  "definition_question-1a850b7866": [
+   "D0060009-art-3"
+  ],
+  "definition_question-1c09248cb6": [
+   "K0070035-art-4"
+  ],
+  "definition_question-1c0ab3d155": [
+   "J0030018-art-614"
+  ],
+  "definition_question-1cfaf3b60b": [
+   "K0060038-art-2"
+  ],
+  "definition_question-1d2fd0df1d": [
+   "J0020001-art-4"
+  ],
+  "definition_question-1d567f2373": [
+   "J0040051-art-2"
+  ],
+  "definition_question-1db237c9d8": [
+   "M0060034-art-2"
+  ],
+  "definition_question-1dd94ef29e": [
+   "C0010034-art-4",
+   "F0110025-art-2",
+   "L0020227-art-3",
+   "L0050043-art-2"
+  ],
+  "definition_question-1e2831ade9": [
+   "K0090057-art-2"
+  ],
+  "definition_question-1fd81d93a8": [
+   "L0020176-art-4"
+  ],
+  "definition_question-20931298da": [
+   "H0050001-art-3"
+  ],
+  "definition_question-213ad10128": [
+   "M0140012-art-5"
+  ],
+  "definition_question-214b59f9a5": [
+   "J0030011-art-2"
+  ],
+  "definition_question-238daf6c14": [
+   "O0020138-art-2"
+  ],
+  "definition_question-23b949fc5d": [
+   "N0060069-art-2",
+   "O0060043-art-3"
+  ],
+  "definition_question-248b9ca45b": [
+   "A0020119-art-2"
+  ],
+  "definition_question-2496cb169a": [
+   "J0030019-art-7"
+  ],
+  "definition_question-27f54e8a0e": [
+   "K0060028-art-2"
+  ],
+  "definition_question-2932a8305b": [
+   "K0060119-art-2"
+  ],
+  "definition_question-29d3b32a5b": [
+   "L0050018-art-2",
+   "N0090027-art-2"
+  ],
+  "definition_question-2b06d96746": [
+   "G0350044-art-2"
+  ],
+  "definition_question-2b56c6f504": [
+   "M0140025-art-2"
+  ],
+  "definition_question-2c231d23e0": [
+   "M0140001-art-3"
+  ],
+  "definition_question-2dcdb411f2": [
+   "T0040001-art-3"
+  ],
+  "definition_question-2e94b2e383": [
+   "M0020001-art-3"
+  ],
+  "definition_question-2efd1c214c": [
+   "K0090041-art-2"
+  ],
+  "definition_question-2f1dfc2622": [
+   "N0060069-art-2",
+   "O0060043-art-3"
+  ],
+  "definition_question-2fbebbfc1c": [
+   "J0160001-art-2",
+   "J0160015-art-4"
+  ],
+  "definition_question-30f2e38fb2": [
+   "O0020030-art-2"
+  ],
+  "definition_question-310fc1132a": [
+   "K0090041-art-2"
+  ],
+  "definition_question-33243b9085": [
+   "L0070040-art-3"
+  ],
+  "definition_question-332a0394a7": [
+   "H0150053-art-2",
+   "S0080038-art-2"
+  ],
+  "definition_question-33fe4ad79a": [
+   "N0060069-art-2",
+   "O0060043-art-3"
+  ],
+  "definition_question-3483d4d30f": [
+   "J0030018-art-792"
+  ],
+  "definition_question-37340da1bd": [
+   "H0060042-art-3"
+  ],
+  "definition_question-388d4e9c40": [
+   "G0340155-art-3"
+  ],
+  "definition_question-3954cbcb6e": [
+   "H0060042-art-3"
+  ],
+  "definition_question-3a97a5094a": [
+   "B0010063-art-2"
+  ],
+  "definition_question-3c3a50617a": [
+   "O0020001-art-3"
+  ],
+  "definition_question-3cdc189b73": [
+   "S0050006-art-4"
+  ],
+  "definition_question-3cfd486d02": [
+   "J0030018-art-387"
+  ],
+  "definition_question-3d552c2adb": [
+   "K0060157-art-2"
+  ],
+  "definition_question-3fbf5a4882": [
+   "O0020032-art-2"
+  ],
+  "definition_question-3fc01b6029": [
+   "A0020041-art-3"
+  ],
+  "definition_question-3fc68442a8": [
+   "J0030018-art-596"
+  ],
+  "definition_question-3fc9f6539c": [
+   "A0020128-art-2"
+  ],
+  "definition_question-417106e3ae": [
+   "O0110022-art-2"
+  ],
+  "definition_question-41c8d02860": [
+   "L0040001-art-3"
+  ],
+  "definition_question-4351b71770": [
+   "O0020098-art-3"
+  ],
+  "definition_question-4424a345b0": [
+   "J0020060-art-3"
+  ],
+  "definition_question-4525dfbf2e": [
+   "G0400121-art-5",
+   "G0400138-art-3"
+  ],
+  "definition_question-46730e8b10": [
+   "O0030018-art-2"
+  ],
+  "definition_question-476e4d2491": [
+   "F0110025-art-2",
+   "K0090038-art-3"
+  ],
+  "definition_question-485c2564fc": [
+   "G0400121-art-5"
+  ],
+  "definition_question-48e09fa3e7": [
+   "K0030001-art-2"
+  ],
+  "definition_question-495c2b8e94": [
+   "J0080058-art-2"
+  ],
+  "definition_question-49cf1523e6": [
+   "K0070016-art-5"
+  ],
+  "definition_question-49e70b7b5c": [
+   "L0030105-art-2"
+  ],
+  "definition_question-4b1982833b": [
+   "G0310086-art-2"
+  ],
+  "definition_question-4cd3de578a": [
+   "D0020040-art-2"
+  ],
+  "definition_question-4d2965ad05": [
+   "M0050062-art-2"
+  ],
+  "definition_question-4d793e3e06": [
+   "O0110014-art-2"
+  ],
+  "definition_question-4d89504255": [
+   "O0120009-art-2"
+  ],
+  "definition_question-4d8d4147c1": [
+   "O0020030-art-2"
+  ],
+  "definition_question-4d9002228a": [
+   "O0020102-art-2"
+  ],
+  "definition_question-4db32f0daa": [
+   "J0110091-art-3"
+  ],
+  "definition_question-4dc8cfbbc7": [
+   "O0020104-art-2"
+  ],
+  "definition_question-4e10c14259": [
+   "N0020007-art-5"
+  ],
+  "definition_question-4f48b87dac": [
+   "I0040014-art-2"
+  ],
+  "definition_question-4f8640a76d": [
+   "J0030018-art-6"
+  ],
+  "definition_question-4f8eef93fd": [
+   "D0060101-art-2"
+  ],
+  "definition_question-4fee24d53a": [
+   "J0160038-art-2"
+  ],
+  "definition_question-500e4c689c": [
+   "H0120044-art-2"
+  ],
+  "definition_question-516bb9e41a": [
+   "A0030297-art-3"
+  ],
+  "definition_question-536837482d": [
+   "K0060063-art-2"
+  ],
+  "definition_question-53a08b126f": [
+   "D0070149-art-2"
+  ],
+  "definition_question-53b05816de": [
+   "K0050001-art-4"
+  ],
+  "definition_question-54185b1bfd": [
+   "J0020039-art-4"
+  ],
+  "definition_question-542c761b60": [
+   "D0060009-art-3"
+  ],
+  "definition_question-544d472367": [
+   "D0070115-art-299"
+  ],
+  "definition_question-548365038b": [
+   "K0090041-art-2"
+  ],
+  "definition_question-5538172f31": [
+   "D0070001-art-7"
+  ],
+  "definition_question-56fa164367": [
+   "L0030073-art-61"
+  ],
+  "definition_question-5709a048ad": [
+   "K0070016-art-174"
+  ],
+  "definition_question-57f0545174": [
+   "A0030079-art-2"
+  ],
+  "definition_question-589f4c1cfa": [
+   "O0030018-art-2"
+  ],
+  "definition_question-599ae5a51c": [
+   "L0030128-art-2"
+  ],
+  "definition_question-59fa36358d": [
+   "H0010007-art-2"
+  ],
+  "definition_question-5ac5e86805": [
+   "G0380046-art-2",
+   "G0380064-art-2",
+   "G0380153-art-2"
+  ],
+  "definition_question-5b2c4a39d8": [
+   "O0050022-art-2"
+  ],
+  "definition_question-5dbb0cec0a": [
+   "L0030057-art-4",
+   "M0130041-art-2"
+  ],
+  "definition_question-5dbc119436": [
+   "O0020007-art-2"
+  ],
+  "definition_question-5dc3548871": [
+   "J0030018-art-680"
+  ],
+  "definition_question-5dfa6bd905": [
+   "K0040013-art-2"
+  ],
+  "definition_question-5e2dfc84b4": [
+   "M0050006-art-2"
+  ],
+  "definition_question-5f9144e83f": [
+   "G0380164-art-4"
+  ],
+  "definition_question-60ca227812": [
+   "K0060098-art-3"
+  ],
+  "definition_question-624d8cbac4": [
+   "O0020142-art-2"
+  ],
+  "definition_question-64259e05b2": [
+   "K0070016-art-92",
+   "K0070035-art-4",
+   "K0070036-art-2",
+   "K0070038-art-3"
+  ],
+  "definition_question-642872ca93": [
+   "G0400138-art-3"
+  ],
+  "definition_question-64ae46c7f2": [
+   "K0090014-art-2"
+  ],
+  "definition_question-663169d0ca": [
+   "D0060077-art-2"
+  ],
+  "definition_question-667f783edc": [
+   "K0110001-art-2"
+  ],
+  "definition_question-68becb8c11": [
+   "D0080226-art-2"
+  ],
+  "definition_question-6aa6faac2f": [
+   "K0090041-art-2"
+  ],
+  "definition_question-6ccf0ba930": [
+   "H0120001-art-3"
+  ],
+  "definition_question-6e26ddefc8": [
+   "J0160056-art-2"
+  ],
+  "definition_question-6ec6553250": [
+   "O0040018-art-2"
+  ],
+  "definition_question-717faff342": [
+   "G0320034-art-2"
+  ],
+  "definition_question-71f383e4b3": [
+   "J0100052-art-2"
+  ],
+  "definition_question-720944c63d": [
+   "M0070066-art-3"
+  ],
+  "definition_question-73399c76db": [
+   "J0160005-art-6"
+  ],
+  "definition_question-74cd920505": [
+   "J0030018-art-6"
+  ],
+  "definition_question-76a4b043cd": [
+   "K0060080-art-2"
+  ],
+  "definition_question-76bf30cbd1": [
+   "K0060130-art-2"
+  ],
+  "definition_question-7917ddd607": [
+   "J0160004-art-2"
+  ],
+  "definition_question-7a36316685": [
+   "M0120001-art-3"
+  ],
+  "definition_question-7bf56baba6": [
+   "J0040034-art-2"
+  ],
+  "definition_question-7d2cc36257": [
+   "H0120021-art-2"
+  ],
+  "definition_question-7d6e606967": [
+   "J0030146-art-2",
+   "O0070001-art-2"
+  ],
+  "definition_question-7e43a906d7": [
+   "F0040025-art-2",
+   "N0080049-art-2"
+  ],
+  "definition_question-7fa2525c75": [
+   "O0020058-art-2"
+  ],
+  "definition_question-7fafc6eb09": [
+   "H0070087-art-2"
+  ],
+  "definition_question-7fb708bb07": [
+   "F0030045-art-2"
+  ],
+  "definition_question-8116922d65": [
+   "O0050061-art-2"
+  ],
+  "definition_question-83a673ac57": [
+   "K0070007-art-2",
+   "K0070012-art-2"
+  ],
+  "definition_question-84c5dd5011": [
+   "K0070004-art-3"
+  ],
+  "definition_question-84ce157744": [
+   "K0090041-art-2"
+  ],
+  "definition_question-855ce2055e": [
+   "N0030014-art-3",
+   "N0090055-art-3"
+  ],
+  "definition_question-85ccb3fb90": [
+   "O0020098-art-3"
+  ],
+  "definition_question-86b76f0e17": [
+   "G0380122-art-4"
+  ],
+  "definition_question-88aaacc1ba": [
+   "K0070007-art-2"
+  ],
+  "definition_question-8919eaaf36": [
+   "D0060090-art-3"
+  ],
+  "definition_question-8a7ea00dd5": [
+   "H0080107-art-2",
+   "M0130029-art-2"
+  ],
+  "definition_question-8b4ec2e09c": [
+   "O0020145-art-2"
+  ],
+  "definition_question-8b5cde111f": [
+   "L0020244-art-2"
+  ],
+  "definition_question-8b8e115ecd": [
+   "J0030018-art-614"
+  ],
+  "definition_question-8c0b5c2c4d": [
+   "B0010050-art-2"
+  ],
+  "definition_question-8cf647107b": [
+   "J0130081-art-3"
+  ],
+  "definition_question-8f81228d85": [
+   "G0330010-art-2"
+  ],
+  "definition_question-909ae20e27": [
+   "J0030018-art-6"
+  ],
+  "definition_question-91132b8509": [
+   "K0090016-art-2"
+  ],
+  "definition_question-914c91c359": [
+   "H0160078-art-3"
+  ],
+  "definition_question-920804bcc4": [
+   "J0100056-art-2"
+  ],
+  "definition_question-9227082eac": [
+   "K0060050-art-2"
+  ],
+  "definition_question-9496af7f1c": [
+   "K0060028-art-2"
+  ],
+  "definition_question-949ce47bd1": [
+   "L0030044-art-3"
+  ],
+  "definition_question-9588caf146": [
+   "M0030065-art-2",
+   "M0050039-art-2"
+  ],
+  "definition_question-95d6d48613": [
+   "O0020030-art-2"
+  ],
+  "definition_question-964bf7115c": [
+   "A0020119-art-2"
+  ],
+  "definition_question-96726521ee": [
+   "T0040001-art-3"
+  ],
+  "definition_question-9893ea004e": [
+   "J0030019-art-7"
+  ],
+  "definition_question-98efdb1f4b": [
+   "K0090041-art-2"
+  ],
+  "definition_question-99f68f1b94": [
+   "O0020052-art-2"
+  ],
+  "definition_question-9b22606af4": [
+   "O0040029-art-2"
+  ],
+  "definition_question-9e88d1ecd1": [
+   "G0380199-art-3"
+  ],
+  "definition_question-9ea83cb56a": [
+   "P0040018-art-2"
+  ],
+  "definition_question-9ece8a32b6": [
+   "J0030146-art-2"
+  ],
+  "definition_question-9fa2381700": [
+   "D0120021-art-2"
+  ],
+  "definition_question-a006764ae9": [
+   "J0030018-art-6"
+  ],
+  "definition_question-a01c4e6b00": [
+   "H0070049-art-2"
+  ],
+  "definition_question-a05dab4059": [
+   "D0070066-art-2"
+  ],
+  "definition_question-a06bb51065": [
+   "K0090014-art-2"
+  ],
+  "definition_question-a088500951": [
+   "J0160075-art-2"
+  ],
+  "definition_question-a106cc8518": [
+   "S0100002-art-2"
+  ],
+  "definition_question-a194a861f9": [
+   "K0030001-art-2"
+  ],
+  "definition_question-a4365a1634": [
+   "G0380146-art-4"
+  ],
+  "definition_question-a4bc3c538d": [
+   "D0070105-art-8"
+  ],
+  "definition_question-a562d8f4fe": [
+   "I0030026-art-3"
+  ],
+  "definition_question-a5cdb373a8": [
+   "K0110001-art-2"
+  ],
+  "definition_question-a621efaf52": [
+   "A0020041-art-3"
+  ],
+  "definition_question-a67acb25ec": [
+   "I0040002-art-3",
+   "I0040064-art-2",
+   "I0040070-art-2",
+   "I0040072-art-2"
+  ],
+  "definition_question-a69f7597f4": [
+   "M0140001-art-3"
+  ],
+  "definition_question-a8299e2ba9": [
+   "F0080017-art-2"
+  ],
+  "definition_question-aacec737e0": [
+   "O0020111-art-2"
+  ],
+  "definition_question-ab984bc39d": [
+   "K0110015-art-2"
+  ],
+  "definition_question-abdd424aa9": [
+   "J0030018-art-848"
+  ],
+  "definition_question-ade02ff598": [
+   "J0090030-art-2"
+  ],
+  "definition_question-ae08d54a1d": [
+   "D0060125-art-3"
+  ],
+  "definition_question-ae26f715ff": [
+   "I0040029-art-3"
+  ],
+  "definition_question-ae6da0ba52": [
+   "G0380241-art-2"
+  ],
+  "definition_question-ae881ec7ca": [
+   "G0340153-art-2"
+  ],
+  "definition_question-ae9d5e5434": [
+   "O0020001-art-3"
+  ],
+  "definition_question-afe348856a": [
+   "D0080230-art-3"
+  ],
+  "definition_question-b06dcb8b9f": [
+   "F0040034-art-2"
+  ],
+  "definition_question-b2d20b60a4": [
+   "L0030114-art-2"
+  ],
+  "definition_question-b4cd07e08c": [
+   "J0030018-art-812"
+  ],
+  "definition_question-b592dc60ac": [
+   "H0170102-art-3"
+  ],
+  "definition_question-b5a830a546": [
+   "I0040029-art-3"
+  ],
+  "definition_question-b5d224c4db": [
+   "D0060077-art-2"
+  ],
+  "definition_question-b6d6b674c1": [
+   "H0120060-art-2"
+  ],
+  "definition_question-b92d734e52": [
+   "J0030018-art-812"
+  ],
+  "definition_question-b9db896920": [
+   "J0030019-art-7"
+  ],
+  "definition_question-ba9328b663": [
+   "O0020030-art-2"
+  ],
+  "definition_question-bb248c4204": [
+   "J0030018-art-6"
+  ],
+  "definition_question-bc15e328d0": [
+   "D0070105-art-8"
+  ],
+  "definition_question-bc8b0dd085": [
+   "K0090009-art-2"
+  ],
+  "definition_question-bcad73bfc0": [
+   "J0030018-art-387"
+  ],
+  "definition_question-bd13895229": [
+   "J0020019-art-2"
+  ],
+  "definition_question-bef989ad07": [
+   "C0010049-art-3"
+  ],
+  "definition_question-c0e4d7595c": [
+   "O0020033-art-2"
+  ],
+  "definition_question-c1b9d6a012": [
+   "D0050015-art-2"
+  ],
+  "definition_question-c1e3d7f2a2": [
+   "J0030018-art-614",
+   "O0060036-art-2"
+  ],
+  "definition_question-c41c60477c": [
+   "M0140012-art-5"
+  ],
+  "definition_question-c450647556": [
+   "M0140025-art-2"
+  ],
+  "definition_question-c5118b161a": [
+   "G0380153-art-2"
+  ],
+  "definition_question-c52285670c": [
+   "J0110078-art-2"
+  ],
+  "definition_question-c53dc7b0c7": [
+   "G0380122-art-4"
+  ],
+  "definition_question-c5eed0a698": [
+   "G0380271-art-2"
+  ],
+  "definition_question-c656126ecf": [
+   "J0020001-art-4"
+  ],
+  "definition_question-c6e223a7e9": [
+   "J0030018-art-848"
+  ],
+  "definition_question-c7aa49d098": [
+   "O0110010-art-2"
+  ],
+  "definition_question-c8d9be6443": [
+   "K0060001-art-2",
+   "K0060111-art-3"
+  ],
+  "definition_question-c92911a80f": [
+   "J0020019-art-2"
+  ],
+  "definition_question-c988935bcf": [
+   "R0020030-art-2"
+  ],
+  "definition_question-caaaecf46e": [
+   "J0130054-art-2"
+  ],
+  "definition_question-cbd18b8e35": [
+   "D0070115-art-299"
+  ],
+  "definition_question-cc003287fd": [
+   "N0020007-art-5"
+  ],
+  "definition_question-cc1cc6e42d": [
+   "D0080090-art-2",
+   "K0020058-art-2"
+  ],
+  "definition_question-ccc6701144": [
+   "G0340120-art-2"
+  ],
+  "definition_question-ccf125e7c0": [
+   "K0060141-art-2"
+  ],
+  "definition_question-cdb9dc8705": [
+   "O0020030-art-2",
+   "O0020071-art-2"
+  ],
+  "definition_question-ce3e1c5a43": [
+   "H0020041-art-22"
+  ],
+  "definition_question-cf6034df39": [
+   "K0070038-art-3"
+  ],
+  "definition_question-cfdd3e7c01": [
+   "J0020032-art-2"
+  ],
+  "definition_question-d086c4ccdd": [
+   "H0030050-art-2"
+  ],
+  "definition_question-d28c4d77ca": [
+   "K0060032-art-3",
+   "K0060145-art-2"
+  ],
+  "definition_question-d2e92449f6": [
+   "G0340148-art-3"
+  ],
+  "definition_question-d62fbea04f": [
+   "K0090061-art-2"
+  ],
+  "definition_question-d70da6fc09": [
+   "O0050061-art-2"
+  ],
+  "definition_question-d8d155e77d": [
+   "N0070017-art-3"
+  ],
+  "definition_question-d960ebf9a8": [
+   "J0030018-art-6"
+  ],
+  "definition_question-daef62232a": [
+   "G0350073-art-2"
+  ],
+  "definition_question-dc6d5f33e4": [
+   "K0040065-art-2",
+   "K0040068-art-2"
+  ],
+  "definition_question-dd0287ac55": [
+   "J0030018-art-848"
+  ],
+  "definition_question-dddcece742": [
+   "L0020075-art-2"
+  ],
+  "definition_question-de6ba8c4dd": [
+   "K0090008-art-2",
+   "K0090014-art-2"
+  ],
+  "definition_question-dfca2e6bca": [
+   "J0130041-art-3"
+  ],
+  "definition_question-e06bfd52b0": [
+   "N0060064-art-3"
+  ],
+  "definition_question-e111787105": [
+   "K0090041-art-2"
+  ],
+  "definition_question-e33920d936": [
+   "M0050006-art-2"
+  ],
+  "definition_question-e399094d76": [
+   "G0380241-art-2"
+  ],
+  "definition_question-e3af5075b8": [
+   "J0030147-art-3"
+  ],
+  "definition_question-e3bda63e55": [
+   "O0050051-art-3"
+  ],
+  "definition_question-e41e5fab3c": [
+   "J0110037-art-2"
+  ],
+  "definition_question-e48fbda2cc": [
+   "G0380271-art-2"
+  ],
+  "definition_question-e58b84f426": [
+   "D0070038-art-3"
+  ],
+  "definition_question-e6029ff1b9": [
+   "O0020001-art-3"
+  ],
+  "definition_question-e704f7d50e": [
+   "D0070156-art-2",
+   "K0040012-art-3"
+  ],
+  "definition_question-e79b814624": [
+   "P0030006-art-2",
+   "Q0030001-art-2"
+  ],
+  "definition_question-e8ee5dc969": [
+   "K0070016-art-92",
+   "K0070036-art-2",
+   "K0070038-art-3"
+  ],
+  "definition_question-ea1f4310d9": [
+   "G0380046-art-2"
+  ],
+  "definition_question-ea4db03c34": [
+   "D0050187-art-2"
+  ],
+  "definition_question-eaba3a8276": [
+   "G0340019-art-4"
+  ],
+  "definition_question-eb85e5da69": [
+   "K0070007-art-2"
+  ],
+  "definition_question-ec77024efd": [
+   "H0070067-art-3"
+  ],
+  "definition_question-ecac08da25": [
+   "J0030018-art-6"
+  ],
+  "definition_question-ed0f89afea": [
+   "K0030020-art-2"
+  ],
+  "definition_question-ef57a58ab8": [
+   "J0070037-art-2"
+  ],
+  "definition_question-f08f54b291": [
+   "P0010005-art-2"
+  ],
+  "definition_question-f15946d335": [
+   "O0020127-art-2"
+  ],
+  "definition_question-f163ba5f33": [
+   "D0120074-art-3"
+  ],
+  "definition_question-f2e9cc5d0a": [
+   "C0010044-art-2",
+   "C0010048-art-2"
+  ],
+  "definition_question-f3426858d3": [
+   "O0020127-art-2"
+  ],
+  "definition_question-f355778c7d": [
+   "G0340140-art-2"
+  ],
+  "definition_question-f44d32db95": [
+   "K0090067-art-3"
+  ],
+  "definition_question-f478fb7e9a": [
+   "G0340095-art-2"
+  ],
+  "definition_question-f845e78af0": [
+   "R0020032-art-3"
+  ],
+  "definition_question-faa07df61e": [
+   "K0060080-art-2"
+  ],
+  "definition_question-fb9f2c2077": [
+   "J0040046-art-4"
+  ],
+  "definition_question-fc3286b00f": [
+   "O0020068-art-2"
+  ],
+  "definition_question-fd2f8b3749": [
+   "K0090041-art-2"
+  ],
+  "definition_question-fd40482b0b": [
+   "H0070082-art-2"
+  ],
+  "definition_question-fded7fc56e": [
+   "H0170076-art-2"
+  ],
+  "definition_question-fea4e609c5": [
+   "L0060042-art-3"
+  ],
+  "definition_question-fee5d6b9f6": [
+   "K0070001-art-3"
+  ],
+  "definition_term-011fb0bc05": [
+   "O0020007-art-2"
+  ],
+  "definition_term-019abebe17": [
+   "G0400138-art-3"
+  ],
+  "definition_term-01ddd194c7": [
+   "G0380122-art-4"
+  ],
+  "definition_term-022e4d5c76": [
+   "J0020060-art-3"
+  ],
+  "definition_term-0404c0981b": [
+   "D0070105-art-8"
+  ],
+  "definition_term-047ee5817a": [
+   "G0340148-art-3"
+  ],
+  "definition_term-04a27b8c0d": [
+   "O0020068-art-2"
+  ],
+  "definition_term-0531561665": [
+   "J0040046-art-4"
+  ],
+  "definition_term-05b7e53c46": [
+   "K0070016-art-5"
+  ],
+  "definition_term-06d8b3849d": [
+   "J0030018-art-848"
+  ],
+  "definition_term-0908258324": [
+   "D0080090-art-2",
+   "K0020058-art-2"
+  ],
+  "definition_term-0a9af44445": [
+   "K0060001-art-2",
+   "K0060111-art-3"
+  ],
+  "definition_term-0b5020caf7": [
+   "A0030079-art-2"
+  ],
+  "definition_term-0b8de50b87": [
+   "F0040025-art-2",
+   "N0080049-art-2"
+  ],
+  "definition_term-0d5aced39b": [
+   "G0340095-art-2"
+  ],
+  "definition_term-0deae38841": [
+   "D0070105-art-8"
+  ],
+  "definition_term-0e3637bfc0": [
+   "G0400121-art-5"
+  ],
+  "definition_term-101c18ae22": [
+   "H0020041-art-22"
+  ],
+  "definition_term-112866ea04": [
+   "K0070057-art-2"
+  ],
+  "definition_term-115f7d924f": [
+   "O0110010-art-2"
+  ],
+  "definition_term-12c0e5f2a7": [
+   "F0080017-art-2"
+  ],
+  "definition_term-13790757f0": [
+   "G0380241-art-2"
+  ],
+  "definition_term-13d2382055": [
+   "J0020001-art-4"
+  ],
+  "definition_term-13e8ae2857": [
+   "M0050006-art-2"
+  ],
+  "definition_term-1469c7739b": [
+   "F0110025-art-2",
+   "K0090038-art-3"
+  ],
+  "definition_term-158eea1f11": [
+   "K0040013-art-2"
+  ],
+  "definition_term-1642d704e6": [
+   "O0110014-art-2"
+  ],
+  "definition_term-17d9d22eab": [
+   "K0070035-art-4"
+  ],
+  "definition_term-188ce6ff5d": [
+   "K0070007-art-2"
+  ],
+  "definition_term-18cf752829": [
+   "A0020041-art-3"
+  ],
+  "definition_term-18db5431e7": [
+   "K0060063-art-2"
+  ],
+  "definition_term-19bc39dd56": [
+   "J0030011-art-2"
+  ],
+  "definition_term-1b0f6ca245": [
+   "J0100066-art-2"
+  ],
+  "definition_term-1cf0522870": [
+   "A0020119-art-2"
+  ],
+  "definition_term-1dab1eeaf4": [
+   "K0090041-art-2"
+  ],
+  "definition_term-1e9eb4a9c6": [
+   "K0060038-art-2"
+  ],
+  "definition_term-1ea5d91278": [
+   "G0380241-art-2"
+  ],
+  "definition_term-1fc41fcce5": [
+   "G0350044-art-2"
+  ],
+  "definition_term-1fe747a1c5": [
+   "O0050061-art-2"
+  ],
+  "definition_term-211f8582b8": [
+   "H0010007-art-2"
+  ],
+  "definition_term-2158c0ce18": [
+   "O0020001-art-3"
+  ],
+  "definition_term-21dbaf219f": [
+   "A0020128-art-2"
+  ],
+  "definition_term-21f005d8ad": [
+   "K0060098-art-3"
+  ],
+  "definition_term-2235f91873": [
+   "J0040051-art-2"
+  ],
+  "definition_term-224e0287ab": [
+   "K0060130-art-2"
+  ],
+  "definition_term-23dd435b35": [
+   "O0020032-art-2"
+  ],
+  "definition_term-240a7c0345": [
+   "J0030018-art-6"
+  ],
+  "definition_term-243e77474e": [
+   "G0310086-art-2"
+  ],
+  "definition_term-2447f209b4": [
+   "D0070115-art-299"
+  ],
+  "definition_term-2701d3bae3": [
+   "D0070149-art-2"
+  ],
+  "definition_term-270e3de2c7": [
+   "D0060101-art-2"
+  ],
+  "definition_term-283e526d7b": [
+   "O0020138-art-2"
+  ],
+  "definition_term-2843414523": [
+   "J0030018-art-812"
+  ],
+  "definition_term-2898d3ce67": [
+   "D0070115-art-299"
+  ],
+  "definition_term-28c438cb77": [
+   "D0070001-art-7"
+  ],
+  "definition_term-2a9a37c877": [
+   "O0020068-art-2"
+  ],
+  "definition_term-2b542e02a2": [
+   "K0070001-art-3"
+  ],
+  "definition_term-2b597b9701": [
+   "K0090041-art-2"
+  ],
+  "definition_term-2d1e1dc5ec": [
+   "L0020244-art-2"
+  ],
+  "definition_term-2d3e5e4cb0": [
+   "O0020030-art-2"
+  ],
+  "definition_term-2d48d08669": [
+   "G0380271-art-2"
+  ],
+  "definition_term-2de54a3c4d": [
+   "O0020102-art-2"
+  ],
+  "definition_term-2e16e2398b": [
+   "O0120009-art-2"
+  ],
+  "definition_term-305c7c573d": [
+   "J0030018-art-6"
+  ],
+  "definition_term-30906c5234": [
+   "K0110001-art-2"
+  ],
+  "definition_term-39f07c8f92": [
+   "K0060098-art-3",
+   "P0050054-art-2"
+  ],
+  "definition_term-3c52428c1a": [
+   "K0070069-art-2"
+  ],
+  "definition_term-3ca2c18e7e": [
+   "D0060009-art-3"
+  ],
+  "definition_term-3d07f0061a": [
+   "M0060034-art-2"
+  ],
+  "definition_term-3d1422c040": [
+   "L0030128-art-2"
+  ],
+  "definition_term-3d29e91697": [
+   "J0100056-art-2"
+  ],
+  "definition_term-3e133748e1": [
+   "K0040065-art-2",
+   "K0040068-art-2"
+  ],
+  "definition_term-3ecb9354cc": [
+   "P0040018-art-2"
+  ],
+  "definition_term-3f360472b5": [
+   "O0020030-art-2",
+   "O0020071-art-2"
+  ],
+  "definition_term-3f56867728": [
+   "H0120044-art-2"
+  ],
+  "definition_term-3fde498212": [
+   "N0020007-art-5"
+  ],
+  "definition_term-4014d758e3": [
+   "O0110022-art-2"
+  ],
+  "definition_term-4070dcd482": [
+   "J0030018-art-6"
+  ],
+  "definition_term-443b608f0d": [
+   "G0380271-art-2"
+  ],
+  "definition_term-44e03ef54d": [
+   "J0160005-art-6"
+  ],
+  "definition_term-44fdbcc842": [
+   "H0030050-art-2"
+  ],
+  "definition_term-4543108e60": [
+   "O0020001-art-3"
+  ],
+  "definition_term-45ac47f75c": [
+   "O0020030-art-2"
+  ],
+  "definition_term-45b79c065a": [
+   "D0070066-art-2"
+  ],
+  "definition_term-46161a0144": [
+   "J0030147-art-3"
+  ],
+  "definition_term-4709d980ad": [
+   "J0160004-art-2"
+  ],
+  "definition_term-47e9ee1be9": [
+   "M0140012-art-5"
+  ],
+  "definition_term-48393c9fd7": [
+   "G0340019-art-4"
+  ],
+  "definition_term-4997ae291b": [
+   "M0140025-art-2"
+  ],
+  "definition_term-4a43a4cb94": [
+   "L0060042-art-3"
+  ],
+  "definition_term-4aa997fbb7": [
+   "J0110091-art-3"
+  ],
+  "definition_term-4accab6592": [
+   "C0010049-art-3"
+  ],
+  "definition_term-4bbd6cbd11": [
+   "K0090014-art-2"
+  ],
+  "definition_term-4c49b6b508": [
+   "H0150053-art-2",
+   "S0080038-art-2"
+  ],
+  "definition_term-4ce5019e26": [
+   "J0030018-art-812"
+  ],
+  "definition_term-4d07d60130": [
+   "H0060042-art-3"
+  ],
+  "definition_term-4eb7ba285b": [
+   "J0160038-art-2"
+  ],
+  "definition_term-4f0609d970": [
+   "G0380055-art-2",
+   "G0380271-art-2",
+   "J0140019-art-2",
+   "J0140020-art-2"
+  ],
+  "definition_term-4f5b3694ed": [
+   "K0090061-art-2"
+  ],
+  "definition_term-4f9a3f17f6": [
+   "J0030018-art-848"
+  ],
+  "definition_term-4fee0505b4": [
+   "G0400121-art-5",
+   "G0400138-art-3"
+  ],
+  "definition_term-4ffc1659be": [
+   "M0120001-art-3"
+  ],
+  "definition_term-5245e1b85f": [
+   "J0030018-art-387"
+  ],
+  "definition_term-5369e67bf7": [
+   "N0030014-art-3",
+   "N0090055-art-3"
+  ],
+  "definition_term-539b60f020": [
+   "O0020098-art-3"
+  ],
+  "definition_term-53ed2f02cf": [
+   "J0160075-art-2"
+  ],
+  "definition_term-541c86dab5": [
+   "R0020030-art-2"
+  ],
+  "definition_term-543eef313f": [
+   "M0020001-art-3"
+  ],
+  "definition_term-5488cd7859": [
+   "N0070017-art-3"
+  ],
+  "definition_term-5525c5cd7e": [
+   "K0110015-art-2"
+  ],
+  "definition_term-57ec2bf8b3": [
+   "K0070038-art-3"
+  ],
+  "definition_term-586ecbd0fa": [
+   "O0040029-art-2"
+  ],
+  "definition_term-58b9c73754": [
+   "G0380153-art-2"
+  ],
+  "definition_term-5a2c3de2d1": [
+   "K0060091-art-2"
+  ],
+  "definition_term-5b05f18820": [
+   "D0070038-art-3"
+  ],
+  "definition_term-60734840f0": [
+   "J0030146-art-2",
+   "O0070001-art-2"
+  ],
+  "definition_term-608b5ceb8d": [
+   "G0340120-art-2"
+  ],
+  "definition_term-630a56925e": [
+   "H0120072-art-2",
+   "H0120092-art-2"
+  ],
+  "definition_term-63515620a9": [
+   "D0050187-art-2"
+  ],
+  "definition_term-63d82e9551": [
+   "P0010005-art-2"
+  ],
+  "definition_term-65a1a3ddec": [
+   "J0030018-art-466"
+  ],
+  "definition_term-66e544e172": [
+   "A0020119-art-2"
+  ],
+  "definition_term-681c9c67f8": [
+   "N0060069-art-2",
+   "O0060043-art-3"
+  ],
+  "definition_term-686f52cebf": [
+   "K0060080-art-2"
+  ],
+  "definition_term-68fe91df93": [
+   "J0030018-art-614",
+   "O0060036-art-2"
+  ],
+  "definition_term-6a20e506d7": [
+   "O0020033-art-2"
+  ],
+  "definition_term-6a85c7f1a6": [
+   "K0060032-art-3",
+   "K0060145-art-2"
+  ],
+  "definition_term-6ac12e4068": [
+   "I0040029-art-3"
+  ],
+  "definition_term-6b586a06cc": [
+   "K0070004-art-3"
+  ],
+  "definition_term-6cd1e179c5": [
+   "D0060077-art-2"
+  ],
+  "definition_term-6d18c676f3": [
+   "K0030001-art-2"
+  ],
+  "definition_term-6f3f2f71f2": [
+   "A0020041-art-3"
+  ],
+  "definition_term-706c70923b": [
+   "O0040018-art-2"
+  ],
+  "definition_term-70ec3e9539": [
+   "O0020030-art-2"
+  ],
+  "definition_term-7102b24a05": [
+   "H0170076-art-2"
+  ],
+  "definition_term-71060a795e": [
+   "S0100002-art-2"
+  ],
+  "definition_term-71aee20b7f": [
+   "G0380046-art-2",
+   "G0380064-art-2",
+   "G0380153-art-2"
+  ],
+  "definition_term-73b95f822a": [
+   "L0050002-art-2"
+  ],
+  "definition_term-7656e036a6": [
+   "K0060050-art-2"
+  ],
+  "definition_term-769134896d": [
+   "K0090041-art-2"
+  ],
+  "definition_term-76bbf7c090": [
+   "O0050051-art-3"
+  ],
+  "definition_term-7799e32157": [
+   "M0050006-art-2"
+  ],
+  "definition_term-797572ca1f": [
+   "F0030045-art-2"
+  ],
+  "definition_term-7b1ca6d100": [
+   "M0030065-art-2",
+   "M0050039-art-2"
+  ],
+  "definition_term-7bcafbc989": [
+   "J0130054-art-2"
+  ],
+  "definition_term-7e959ab3bf": [
+   "J0090030-art-2"
+  ],
+  "definition_term-7ee350ad53": [
+   "K0070007-art-2"
+  ],
+  "definition_term-807e519a5f": [
+   "K0060119-art-2"
+  ],
+  "definition_term-80d6e5c99a": [
+   "L0030114-art-2"
+  ],
+  "definition_term-832af48576": [
+   "M0050062-art-2"
+  ],
+  "definition_term-8355b55a32": [
+   "G0350061-art-2"
+  ],
+  "definition_term-838768e7b4": [
+   "D0060090-art-3"
+  ],
+  "definition_term-8484d88d80": [
+   "G0320034-art-2"
+  ],
+  "definition_term-84aafdc504": [
+   "K0090057-art-2"
+  ],
+  "definition_term-85b6e9141c": [
+   "H0120060-art-2"
+  ],
+  "definition_term-86f4551228": [
+   "D0080230-art-3"
+  ],
+  "definition_term-873bc7ac3c": [
+   "J0020019-art-2"
+  ],
+  "definition_term-887c63c619": [
+   "M0140025-art-2"
+  ],
+  "definition_term-89d58c5b93": [
+   "O0020127-art-2"
+  ],
+  "definition_term-8ac0cb9c91": [
+   "P0030006-art-2",
+   "Q0030001-art-2"
+  ],
+  "definition_term-8c4c47003e": [
+   "J0020039-art-4"
+  ],
+  "definition_term-8ceb88684f": [
+   "J0030018-art-6"
+  ],
+  "definition_term-8d7c163082": [
+   "K0060055-art-2",
+   "K0060156-art-2"
+  ],
+  "definition_term-8dd1e347eb": [
+   "J0110078-art-2"
+  ],
+  "definition_term-8efaf215c7": [
+   "J0040034-art-2"
+  ],
+  "definition_term-90700a466d": [
+   "K0090041-art-2"
+  ],
+  "definition_term-9166b7d5e4": [
+   "D0060077-art-2"
+  ],
+  "definition_term-9182ad93b4": [
+   "J0020001-art-4"
+  ],
+  "definition_term-93255cce8a": [
+   "K0030001-art-2"
+  ],
+  "definition_term-932e5eb8ec": [
+   "J0030018-art-680"
+  ],
+  "definition_term-9356c83119": [
+   "O0050061-art-2"
+  ],
+  "definition_term-94c61811af": [
+   "J0030018-art-6"
+  ],
+  "definition_term-95bb9cba54": [
+   "K0060080-art-2"
+  ],
+  "definition_term-9897aa4997": [
+   "D0070156-art-2",
+   "K0040012-art-3"
+  ],
+  "definition_term-9a1bf745ec": [
+   "K0090061-art-2"
+  ],
+  "definition_term-9b691322ad": [
+   "L0040001-art-3"
+  ],
+  "definition_term-9c4a47e59e": [
+   "G0380164-art-4"
+  ],
+  "definition_term-9dbfc3d6c4": [
+   "D0020040-art-2"
+  ],
+  "definition_term-9f25967359": [
+   "K0090067-art-3"
+  ],
+  "definition_term-9f4346e12f": [
+   "J0110037-art-2"
+  ],
+  "definition_term-a06097e541": [
+   "I0040014-art-2"
+  ],
+  "definition_term-a122e96a66": [
+   "J0130081-art-3"
+  ],
+  "definition_term-a1505cc908": [
+   "C0010034-art-4",
+   "F0110025-art-2",
+   "L0020227-art-3",
+   "L0050043-art-2"
+  ],
+  "definition_term-a1afe52140": [
+   "O0020111-art-2"
+  ],
+  "definition_term-a27102495d": [
+   "H0120001-art-3"
+  ],
+  "definition_term-a41a94dafc": [
+   "J0030146-art-2"
+  ],
+  "definition_term-a503896b01": [
+   "O0020030-art-2"
+  ],
+  "definition_term-a53c3b1124": [
+   "G0340153-art-2"
+  ],
+  "definition_term-a7dfefe98d": [
+   "H0120021-art-2"
+  ],
+  "definition_term-a86922ca75": [
+   "O0020098-art-3"
+  ],
+  "definition_term-abeee0e32f": [
+   "G0380146-art-4"
+  ],
+  "definition_term-ad50847126": [
+   "T0040001-art-3"
+  ],
+  "definition_term-af6f037d8c": [
+   "J0030019-art-7"
+  ],
+  "definition_term-b1224e7686": [
+   "K0090008-art-2",
+   "K0090014-art-2"
+  ],
+  "definition_term-b12d806614": [
+   "L0030057-art-4",
+   "M0130041-art-2"
+  ],
+  "definition_term-b1808b5f45": [
+   "F0040034-art-2"
+  ],
+  "definition_term-b1f9a767f8": [
+   "O0020058-art-2"
+  ],
+  "definition_term-b1fa44b497": [
+   "G0330010-art-2"
+  ],
+  "definition_term-b3e82bb59b": [
+   "J0030018-art-614"
+  ],
+  "definition_term-b407c733cb": [
+   "O0020001-art-3"
+  ],
+  "definition_term-b4823db0b5": [
+   "K0110001-art-2"
+  ],
+  "definition_term-b4c11f4160": [
+   "K0090014-art-2"
+  ],
+  "definition_term-b4cbb2d8e3": [
+   "M0070066-art-3"
+  ],
+  "definition_term-b5e68f25c2": [
+   "G0350073-art-2"
+  ],
+  "definition_term-b85465cfe6": [
+   "R0020032-art-3"
+  ],
+  "definition_term-b9658d5104": [
+   "D0060125-art-3"
+  ],
+  "definition_term-b9d0a9a4c4": [
+   "B0010050-art-2"
+  ],
+  "definition_term-ba06b965c5": [
+   "H0170102-art-3"
+  ],
+  "definition_term-ba76fb1a14": [
+   "J0030018-art-792"
+  ],
+  "definition_term-badf26be57": [
+   "J0160001-art-2",
+   "J0160015-art-4"
+  ],
+  "definition_term-bb132983e6": [
+   "J0130041-art-3"
+  ],
+  "definition_term-bbf3508d98": [
+   "K0090009-art-2"
+  ],
+  "definition_term-bc72024217": [
+   "J0020019-art-2"
+  ],
+  "definition_term-bcec712a4a": [
+   "K0070016-art-92",
+   "K0070035-art-4",
+   "K0070036-art-2",
+   "K0070038-art-3"
+  ],
+  "definition_term-be2b43fa81": [
+   "H0070082-art-2"
+  ],
+  "definition_term-be5f4050d0": [
+   "L0020176-art-4"
+  ],
+  "definition_term-be77b475e5": [
+   "L0050018-art-2",
+   "N0090027-art-2"
+  ],
+  "definition_term-bf4b832869": [
+   "O0030018-art-2"
+  ],
+  "definition_term-bf8c7eb1cc": [
+   "L0070040-art-3"
+  ],
+  "definition_term-bf978c5b35": [
+   "J0030019-art-7"
+  ],
+  "definition_term-c09c41c974": [
+   "O0020127-art-2"
+  ],
+  "definition_term-c2907b5b6b": [
+   "C0010044-art-2",
+   "C0010048-art-2"
+  ],
+  "definition_term-c4ee20e027": [
+   "D0050015-art-2"
+  ],
+  "definition_term-c6e028ab96": [
+   "N0060064-art-3"
+  ],
+  "definition_term-c7a13da739": [
+   "G0380046-art-2"
+  ],
+  "definition_term-c85d916a6c": [
+   "N0020007-art-5"
+  ],
+  "definition_term-c8864f822a": [
+   "K0060028-art-2"
+  ],
+  "definition_term-c88a516c68": [
+   "O0030018-art-2"
+  ],
+  "definition_term-c8f14168e4": [
+   "K0050001-art-4"
+  ],
+  "definition_term-c9ef4d1b73": [
+   "H0160078-art-3"
+  ],
+  "definition_term-c9f405d2b2": [
+   "K0070016-art-92",
+   "K0070036-art-2",
+   "K0070038-art-3"
+  ],
+  "definition_term-ca433b016a": [
+   "B0010063-art-2"
+  ],
+  "definition_term-ca6868c111": [
+   "M0140001-art-3"
+  ],
+  "definition_term-cafc8089dc": [
+   "L0030073-art-61"
+  ],
+  "definition_term-cbf3771ee7": [
+   "J0030018-art-6"
+  ],
+  "definition_term-ccda4655e3": [
+   "K0070007-art-2",
+   "K0070012-art-2"
+  ],
+  "definition_term-ce0cc3f1c9": [
+   "K0070016-art-29-1"
+  ],
+  "definition_term-ce4e46762b": [
+   "J0030019-art-7"
+  ],
+  "definition_term-ce9244dc97": [
+   "D0120074-art-3"
+  ],
+  "definition_term-cec3968437": [
+   "D0060009-art-3"
+  ],
+  "definition_term-cf02cba335": [
+   "J0030018-art-614"
+  ],
+  "definition_term-d1699c0f4c": [
+   "K0070016-art-174"
+  ],
+  "definition_term-d22bdfb5d9": [
+   "G0340140-art-2"
+  ],
+  "definition_term-d2cec037e7": [
+   "J0100052-art-2"
+  ],
+  "definition_term-d33b3e31fb": [
+   "H0060042-art-3"
+  ],
+  "definition_term-d5db0e0d47": [
+   "N0060069-art-2",
+   "O0060043-art-3"
+  ],
+  "definition_term-d5ef512b88": [
+   "J0070037-art-2"
+  ],
+  "definition_term-d661c2cf48": [
+   "K0090014-art-2"
+  ],
+  "definition_term-d6dc49b66c": [
+   "T0040001-art-3"
+  ],
+  "definition_term-d74eb71177": [
+   "H0050001-art-3"
+  ],
+  "definition_term-d82d742438": [
+   "I0040002-art-3",
+   "I0040064-art-2",
+   "I0040070-art-2",
+   "I0040072-art-2"
+  ],
+  "definition_term-d8619256cc": [
+   "G0380241-art-2"
+  ],
+  "definition_term-d913ed58e4": [
+   "K0060028-art-2"
+  ],
+  "definition_term-d98b28ec84": [
+   "N0060069-art-2",
+   "O0060043-art-3"
+  ],
+  "definition_term-db0faec83f": [
+   "J0030018-art-6"
+  ],
+  "definition_term-db35e22aed": [
+   "H0070049-art-2"
+  ],
+  "definition_term-dd5acd85fa": [
+   "A0030297-art-3"
+  ],
+  "definition_term-ddded0a47d": [
+   "H0070087-art-2"
+  ],
+  "definition_term-dded40cc88": [
+   "K0030020-art-2"
+  ],
+  "definition_term-de4cea4212": [
+   "L0030105-art-2"
+  ],
+  "definition_term-dee4f37e3f": [
+   "J0160056-art-2"
+  ],
+  "definition_term-e4136fb5b3": [
+   "K0060089-art-3"
+  ],
+  "definition_term-e4f7fd9eb4": [
+   "G0380122-art-4"
+  ],
+  "definition_term-e5dcd13d32": [
+   "O0050022-art-2"
+  ],
+  "definition_term-e5e8a97bcf": [
+   "K0090041-art-2"
+  ],
+  "definition_term-e730c19565": [
+   "S0050006-art-4"
+  ],
+  "definition_term-e741b284e0": [
+   "O0020104-art-2"
+  ],
+  "definition_term-e79d421dee": [
+   "O0020052-art-2"
+  ],
+  "definition_term-e836cac0d4": [
+   "O0020030-art-2"
+  ],
+  "definition_term-e920c61b1f": [
+   "O0020030-art-2"
+  ],
+  "definition_term-ea7555fd90": [
+   "J0020032-art-2"
+  ],
+  "definition_term-eaca4f78e3": [
+   "M0140001-art-3"
+  ],
+  "definition_term-eb342a1dc6": [
+   "J0030018-art-848"
+  ],
+  "definition_term-eb74638609": [
+   "L0060001-art-2"
+  ],
+  "definition_term-ebbb529859": [
+   "K0090041-art-2"
+  ],
+  "definition_term-ebda7650be": [
+   "O0020127-art-2"
+  ],
+  "definition_term-ed9788699b": [
+   "J0080058-art-2"
+  ],
+  "definition_term-edfa9093bc": [
+   "M0140012-art-5"
+  ],
+  "definition_term-efb8f9263c": [
+   "D0080226-art-2"
+  ],
+  "definition_term-efdb295921": [
+   "J0030018-art-387"
+  ],
+  "definition_term-f087074ca8": [
+   "K0060141-art-2"
+  ],
+  "definition_term-f0c3bd90b9": [
+   "G0380199-art-3"
+  ],
+  "definition_term-f1e783336f": [
+   "I0040029-art-3"
+  ],
+  "definition_term-f2009c4cda": [
+   "O0020145-art-2"
+  ],
+  "definition_term-f2095807de": [
+   "K0090016-art-2"
+  ],
+  "definition_term-f2da6fa1bd": [
+   "H0070067-art-3"
+  ],
+  "definition_term-f33237ab7f": [
+   "J0030018-art-596"
+  ],
+  "definition_term-f33db97589": [
+   "K0060157-art-2"
+  ],
+  "definition_term-f4adb4a767": [
+   "H0080107-art-2",
+   "M0130029-art-2"
+  ],
+  "definition_term-f4e6985899": [
+   "L0030044-art-3"
+  ],
+  "definition_term-f7596d9de8": [
+   "G0340155-art-3"
+  ],
+  "definition_term-f774223064": [
+   "J0110037-art-2"
+  ],
+  "definition_term-fa35703114": [
+   "O0020142-art-2"
+  ],
+  "definition_term-fad46ee8d0": [
+   "K0090041-art-2"
+  ],
+  "definition_term-fdbdffb440": [
+   "K0090041-art-2"
+  ],
+  "definition_term-fdd6b08c0c": [
+   "D0120021-art-2"
+  ],
+  "definition_term-fe67b8cdde": [
+   "L0020075-art-2"
+  ],
+  "definition_term-febafb677b": [
+   "K0090008-art-2"
+  ],
+  "definition_term-fed8a62201": [
+   "I0030026-art-3"
+  ],
+  "definition_term-ffcbb62c23": [
+   "L0020075-art-2"
+  ],
+  "delegation-003c18d6b1": [
+   "D0080081-art-22"
+  ],
+  "delegation-03ada4a7ee": [
+   "K0060111-art-50"
+  ],
+  "delegation-05359f8d0a": [
+   "K0090001-art-32"
+  ],
+  "delegation-0569c39eb4": [
+   "D0120014-art-60"
+  ],
+  "delegation-0590d2e7d8": [
+   "D0070112-art-56"
+  ],
+  "delegation-05bf2c0a4e": [
+   "S0120001-art-23"
+  ],
+  "delegation-084c8be08e": [
+   "S0110017-art-9"
+  ],
+  "delegation-08fd3eaf8b": [
+   "A0030121-art-12",
+   "A0030121-art-17"
+  ],
+  "delegation-0b5ead2b0c": [
+   "N0090001-art-49"
+  ],
+  "delegation-0ba5da7aa0": [
+   "G0340107-art-10",
+   "G0340107-art-7"
+  ],
+  "delegation-0bedf26f8b": [
+   "J0100001-art-26"
+  ],
+  "delegation-0d40dc54f8": [
+   "O0030001-art-11"
+  ],
+  "delegation-0d88734039": [
+   "G0350001-art-19"
+  ],
+  "delegation-106414a7cd": [
+   "D0050046-art-57"
+  ],
+  "delegation-10fcb03f6b": [
+   "I0000003-art-13"
+  ],
+  "delegation-111b13c3a1": [
+   "L0030066-art-40"
+  ],
+  "delegation-135bc3fec8": [
+   "E0030012-art-28"
+  ],
+  "delegation-142af7fda6": [
+   "H0080048-art-13"
+  ],
+  "delegation-14e9998b01": [
+   "O0080001-art-45"
+  ],
+  "delegation-17395b6102": [
+   "H0060042-art-6"
+  ],
+  "delegation-178a29e472": [
+   "G0340107-art-10"
+  ],
+  "delegation-18e817e6cf": [
+   "J0160019-art-23"
+  ],
+  "delegation-1d7656fb60": [
+   "D0120001-art-15-4"
+  ],
+  "delegation-1f48369d04": [
+   "R0040001-art-18"
+  ],
+  "delegation-23bf638422": [
+   "Q0010001-art-17"
+  ],
+  "delegation-2575034d54": [
+   "L0030013-art-8"
+  ],
+  "delegation-2903b20350": [
+   "M0100001-art-33"
+  ],
+  "delegation-29dd19c01e": [
+   "F0030004-art-3-1"
+  ],
+  "delegation-29e059f2be": [
+   "O0020001-art-43"
+  ],
+  "delegation-2b9bd6df3e": [
+   "G0340107-art-10"
+  ],
+  "delegation-2c390710af": [
+   "O0020001-art-23"
+  ],
+  "delegation-2cab1f246d": [
+   "O0030001-art-17"
+  ],
+  "delegation-2fab587277": [
+   "G0390002-art-146-3"
+  ],
+  "delegation-31b76ca8ea": [
+   "F0070013-art-16"
+  ],
+  "delegation-3236577bc7": [
+   "N0060001-art-19"
+  ],
+  "delegation-342d1562a4": [
+   "H0070071-art-34"
+  ],
+  "delegation-35c886484c": [
+   "J0110001-art-78-2"
+  ],
+  "delegation-362781c01e": [
+   "K0070004-art-83"
+  ],
+  "delegation-36f6e9b1e7": [
+   "K0090001-art-26"
+  ],
+  "delegation-376b5f7221": [
+   "G0340107-art-10"
+  ],
+  "delegation-37feff3e57": [
+   "G0340107-art-10"
+  ],
+  "delegation-388dc4cdda": [
+   "M0070013-art-31"
+  ],
+  "delegation-38e5802090": [
+   "H0160004-art-9"
+  ],
+  "delegation-392bc0f5a4": [
+   "D0070046-art-33"
+  ],
+  "delegation-394db042dd": [
+   "M0060027-art-6-2"
+  ],
+  "delegation-39bad8d9aa": [
+   "D0080037-art-20"
+  ],
+  "delegation-3e27509c1f": [
+   "A0030134-art-11"
+  ],
+  "delegation-3e4c1f969e": [
+   "G0340001-art-26"
+  ],
+  "delegation-3ff6ef5a58": [
+   "L0030001-art-57"
+  ],
+  "delegation-418528b1a1": [
+   "N0030001-art-43"
+  ],
+  "delegation-41ec578259": [
+   "R0030001-art-9"
+  ],
+  "delegation-4223295b6f": [
+   "H0040028-art-7"
+  ],
+  "delegation-4285d515ea": [
+   "R0040001-art-11"
+  ],
+  "delegation-442059f0c0": [
+   "H0040028-art-15"
+  ],
+  "delegation-44be0cff13": [
+   "J0070027-art-38"
+  ],
+  "delegation-46d68169bf": [
+   "G0400001-art-18"
+  ],
+  "delegation-4823b9c993": [
+   "H0150046-art-25"
+  ],
+  "delegation-49a82ed603": [
+   "D0130022-art-24"
+  ],
+  "delegation-4b57a9cd77": [
+   "J0100052-art-26"
+  ],
+  "delegation-4bd38bfe8a": [
+   "D0070266-art-31"
+  ],
+  "delegation-50cd0bc880": [
+   "K0120001-art-47"
+  ],
+  "delegation-53f2e74dcb": [
+   "O0030001-art-36"
+  ],
+  "delegation-54f1475631": [
+   "J0130045-art-47"
+  ],
+  "delegation-56522e7a94": [
+   "M0060027-art-6-1"
+  ],
+  "delegation-568fc39f7b": [
+   "A0030057-art-85-2"
+  ],
+  "delegation-56f5023cde": [
+   "O0020001-art-20"
+  ],
+  "delegation-57def80eaf": [
+   "K0090067-art-35"
+  ],
+  "delegation-59b1af8174": [
+   "G0400001-art-37"
+  ],
+  "delegation-5a3007c708": [
+   "A0030057-art-35"
+  ],
+  "delegation-5b22550499": [
+   "N0020007-art-26"
+  ],
+  "delegation-5bb2a88a9b": [
+   "J0100044-art-18"
+  ],
+  "delegation-5ca99a4efc": [
+   "R0030001-art-27"
+  ],
+  "delegation-5ce77852f7": [
+   "F0140013-art-11"
+  ],
+  "delegation-5dce2cc78d": [
+   "J0110094-art-5"
+  ],
+  "delegation-5e4f0e723b": [
+   "J0030022-art-48"
+  ],
+  "delegation-6099bed9ab": [
+   "D0050046-art-35"
+  ],
+  "delegation-60b9a6a1a5": [
+   "L0020099-art-16-1"
+  ],
+  "delegation-6202d33266": [
+   "D0040017-art-60-1"
+  ],
+  "delegation-6217354cbb": [
+   "G0340107-art-10"
+  ],
+  "delegation-6482d60792": [
+   "G0400001-art-14"
+  ],
+  "delegation-65cb1b5b28": [
+   "D0050046-art-52-1"
+  ],
+  "delegation-66010ce22d": [
+   "D0070032-art-26"
+  ],
+  "delegation-6639dc0ee4": [
+   "G0390002-art-146-6"
+  ],
+  "delegation-66c1239e00": [
+   "G0380146-art-35"
+  ],
+  "delegation-66f0d172f6": [
+   "M0030039-art-5"
+  ],
+  "delegation-677f3bf4db": [
+   "D0070062-art-18"
+  ],
+  "delegation-6855dc2550": [
+   "G0370001-art-49"
+  ],
+  "delegation-68accab860": [
+   "S0030001-art-18"
+  ],
+  "delegation-6a558676d6": [
+   "N0020012-art-14"
+  ],
+  "delegation-6c74beeaf6": [
+   "J0030011-art-35"
+  ],
+  "delegation-6e7890a07a": [
+   "D0090009-art-11"
+  ],
+  "delegation-6eea338acc": [
+   "F0070013-art-47"
+  ],
+  "delegation-6f1e1f7a3f": [
+   "K0080001-art-7"
+  ],
+  "delegation-6f7d58e018": [
+   "I0010052-art-52"
+  ],
+  "delegation-6ff0528970": [
+   "O0080001-art-43"
+  ],
+  "delegation-7108004db2": [
+   "D0120005-art-16"
+  ],
+  "delegation-71a7cbadde": [
+   "H0120056-art-15"
+  ],
+  "delegation-726441b445": [
+   "K0040001-art-79"
+  ],
+  "delegation-729f0e1d5b": [
+   "M0040001-art-15"
+  ],
+  "delegation-7460101a93": [
+   "H0120056-art-26"
+  ],
+  "delegation-751d588dfa": [
+   "I0020026-art-22"
+  ],
+  "delegation-7568e7ba57": [
+   "D0070062-art-37"
+  ],
+  "delegation-7590d0b275": [
+   "A0030243-art-69"
+  ],
+  "delegation-75b6e0736e": [
+   "J0050001-art-17"
+  ],
+  "delegation-774fa8918b": [
+   "J0070007-art-19"
+  ],
+  "delegation-779d1d35d3": [
+   "O0040026-art-21"
+  ],
+  "delegation-785d680276": [
+   "J0160015-art-8"
+  ],
+  "delegation-78816d5521": [
+   "T0020001-art-21"
+  ],
+  "delegation-7ad1fd49be": [
+   "K0070042-art-10-1"
+  ],
+  "delegation-7adc5c5473": [
+   "D0120014-art-60"
+  ],
+  "delegation-7c24df1e23": [
+   "G0340107-art-10"
+  ],
+  "delegation-7cb320390b": [
+   "H0080002-art-27"
+  ],
+  "delegation-7fe500727d": [
+   "J0160015-art-17"
+  ],
+  "delegation-8051f138f2": [
+   "G0340107-art-10"
+  ],
+  "delegation-814a0e9b53": [
+   "G0390002-art-143-1"
+  ],
+  "delegation-817ec53947": [
+   "B0010071-art-18"
+  ],
+  "delegation-82a9f80c9a": [
+   "G0400001-art-30"
+  ],
+  "delegation-8344051533": [
+   "O0060012-art-23",
+   "O0060012-art-29"
+  ],
+  "delegation-83836f0acb": [
+   "D0070008-art-15"
+  ],
+  "delegation-8413dc4997": [
+   "A0030025-art-20"
+  ],
+  "delegation-8461b0e9cb": [
+   "M0060001-art-11-1"
+  ],
+  "delegation-84a0c4ceb2": [
+   "C0000008-art-2-2"
+  ],
+  "delegation-85a34382a9": [
+   "M0130015-art-12-4"
+  ],
+  "delegation-85a8af35d7": [
+   "L0040001-art-17"
+  ],
+  "delegation-85fcdd5b98": [
+   "K0090001-art-27-1"
+  ],
+  "delegation-864086b7ab": [
+   "A0030121-art-7"
+  ],
+  "delegation-864cea96ff": [
+   "D0070062-art-53"
+  ],
+  "delegation-869001f337": [
+   "K0040033-art-11"
+  ],
+  "delegation-8737bf1ecd": [
+   "A0030025-art-20"
+  ],
+  "delegation-887e52a185": [
+   "L0070001-art-17"
+  ],
+  "delegation-89d4ce1f22": [
+   "J0130045-art-34"
+  ],
+  "delegation-8a28317c87": [
+   "H0170037-art-16-1"
+  ],
+  "delegation-8a2cb6388d": [
+   "I0040043-art-74"
+  ],
+  "delegation-8cc74d80f3": [
+   "T0010003-art-34"
+  ],
+  "delegation-8df76ffe93": [
+   "G0350001-art-27"
+  ],
+  "delegation-8eca81289b": [
+   "G0340102-art-15",
+   "G0340102-art-5"
+  ],
+  "delegation-9139a4816f": [
+   "J0020025-art-7"
+  ],
+  "delegation-91a9d09096": [
+   "J0030011-art-52"
+  ],
+  "delegation-93200bad7e": [
+   "D0060007-art-34"
+  ],
+  "delegation-95a93bbf7d": [
+   "H0030067-art-4"
+  ],
+  "delegation-969891e328": [
+   "L0040001-art-10"
+  ],
+  "delegation-974610c05f": [
+   "O0040001-art-11"
+  ],
+  "delegation-9892859c12": [
+   "H0080027-art-16"
+  ],
+  "delegation-99b7a62821": [
+   "K0060001-art-46"
+  ],
+  "delegation-9a170a59b2": [
+   "G0340107-art-10"
+  ],
+  "delegation-9c1f17c6a0": [
+   "A0030057-art-13"
+  ],
+  "delegation-9c2493c83e": [
+   "B0010064-art-40"
+  ],
+  "delegation-9f02349375": [
+   "H0040028-art-14"
+  ],
+  "delegation-9f14fe9562": [
+   "G0340107-art-10"
+  ],
+  "delegation-a0d5d823df": [
+   "H0120001-art-14",
+   "H0120001-art-18"
+  ],
+  "delegation-a0ff9a2fa3": [
+   "J0050001-art-17"
+  ],
+  "delegation-a11abffc76": [
+   "L0020135-art-60"
+  ],
+  "delegation-a2308787fa": [
+   "H0040028-art-14"
+  ],
+  "delegation-a26821849e": [
+   "D0080118-art-4"
+  ],
+  "delegation-a27440430e": [
+   "G0340107-art-10"
+  ],
+  "delegation-a3c5354cc1": [
+   "M0060023-art-46"
+  ],
+  "delegation-a400f7c1e8": [
+   "G0340142-art-22"
+  ],
+  "delegation-a4fda07206": [
+   "J0090030-art-5"
+  ],
+  "delegation-a597ec7b07": [
+   "L0030106-art-58"
+  ],
+  "delegation-a6fdcb9aeb": [
+   "D0070230-art-19"
+  ],
+  "delegation-a8e785b676": [
+   "G0390002-art-138"
+  ],
+  "delegation-a970fb3924": [
+   "M0060001-art-9"
+  ],
+  "delegation-ab99b7c9ac": [
+   "L0060001-art-16"
+  ],
+  "delegation-ac21a2ed77": [
+   "R0030001-art-17"
+  ],
+  "delegation-ac6e733bbb": [
+   "J0020008-art-38"
+  ],
+  "delegation-af13d0c9b2": [
+   "D0130053-art-20"
+  ],
+  "delegation-b24cbf34b8": [
+   "K0090001-art-43"
+  ],
+  "delegation-b263c46021": [
+   "M0100001-art-16"
+  ],
+  "delegation-b5c0863312": [
+   "H0020040-art-33"
+  ],
+  "delegation-b77b494634": [
+   "L0040001-art-49-1",
+   "L0040001-art-49-2"
+  ],
+  "delegation-b94bcd7af7": [
+   "F0030005-art-8"
+  ],
+  "delegation-b9fe364e28": [
+   "K0000108-art-9"
+  ],
+  "delegation-ba11074839": [
+   "G0340107-art-10"
+  ],
+  "delegation-bb581cbcfa": [
+   "R0040001-art-11"
+  ],
+  "delegation-bbaa70b703": [
+   "H0020001-art-4"
+  ],
+  "delegation-bc53d65efb": [
+   "G0340107-art-10"
+  ],
+  "delegation-bd15730549": [
+   "N0060001-art-31"
+  ],
+  "delegation-be87d64bff": [
+   "F0080007-art-19"
+  ],
+  "delegation-bed1bc5fca": [
+   "L0030010-art-43"
+  ],
+  "delegation-bf7b4154aa": [
+   "A0030154-art-89"
+  ],
+  "delegation-bfa729443b": [
+   "G0340107-art-10"
+  ],
+  "delegation-c0056facc6": [
+   "F0040001-art-20"
+  ],
+  "delegation-c38ff71ccf": [
+   "M0070013-art-3"
+  ],
+  "delegation-c48e8de649": [
+   "H0120001-art-26"
+  ],
+  "delegation-c89906a616": [
+   "M0060001-art-22-1"
+  ],
+  "delegation-ca299a6c21": [
+   "H0170102-art-43"
+  ],
+  "delegation-ca43f94890": [
+   "A0030243-art-10"
+  ],
+  "delegation-cb9b77dcc0": [
+   "D0050131-art-19"
+  ],
+  "delegation-cbb47e1e5b": [
+   "G0380001-art-45-1"
+  ],
+  "delegation-ccfe183768": [
+   "K0070028-art-6"
+  ],
+  "delegation-cda5a9fb0c": [
+   "D0050046-art-51"
+  ],
+  "delegation-cdb827f202": [
+   "D0080118-art-21"
+  ],
+  "delegation-cdefda845b": [
+   "J0120001-art-33"
+  ],
+  "delegation-cdf4e252fd": [
+   "L0050001-art-20",
+   "L0050001-art-26"
+  ],
+  "delegation-ce1d0da340": [
+   "B0010010-art-150"
+  ],
+  "delegation-ce8d69ee37": [
+   "D0120014-art-40"
+  ],
+  "delegation-ce911fd981": [
+   "G0400100-art-97"
+  ],
+  "delegation-cfa6d834db": [
+   "J0030022-art-13"
+  ],
+  "delegation-d003713c19": [
+   "G0400001-art-36"
+  ],
+  "delegation-d0215b9529": [
+   "G0390002-art-148-3"
+  ],
+  "delegation-d242ef63f7": [
+   "M0140012-art-22"
+  ],
+  "delegation-d2c3a7caf0": [
+   "G0340107-art-10"
+  ],
+  "delegation-d3ebd7b9c2": [
+   "G0340096-art-58"
+  ],
+  "delegation-d6e59bba04": [
+   "S0110017-art-9"
+  ],
+  "delegation-d910ab66e7": [
+   "J0130002-art-19"
+  ],
+  "delegation-da207f7bc5": [
+   "L0070040-art-24",
+   "L0070040-art-30"
+  ],
+  "delegation-da33d0448c": [
+   "M0040001-art-47"
+  ],
+  "delegation-db1eb2743d": [
+   "J0080004-art-35"
+  ],
+  "delegation-dba1f06ec7": [
+   "A0030011-art-8"
+  ],
+  "delegation-dcdd16a2d9": [
+   "G0340107-art-10"
+  ],
+  "delegation-dd1dea694d": [
+   "J0080037-art-21"
+  ],
+  "delegation-dd3bc65cb2": [
+   "K0000198-art-15"
+  ],
+  "delegation-def477a42a": [
+   "D0050084-art-6"
+  ],
+  "delegation-df4766b0d1": [
+   "J0090030-art-7"
+  ],
+  "delegation-e08fdfbfb1": [
+   "G0380001-art-25"
+  ],
+  "delegation-e1490a6d00": [
+   "L0040001-art-4"
+  ],
+  "delegation-e1ce0452fe": [
+   "M0050051-art-10",
+   "M0050051-art-11",
+   "M0050051-art-24",
+   "M0050051-art-6"
+  ],
+  "delegation-e1fc81ccf7": [
+   "J0160015-art-50"
+  ],
+  "delegation-e374797cb6": [
+   "G0380226-art-13-1",
+   "G0380226-art-18",
+   "G0380226-art-23",
+   "G0380226-art-24"
+  ],
+  "delegation-e3a9ca0adc": [
+   "G0340107-art-10"
+  ],
+  "delegation-e462793426": [
+   "H0170075-art-12"
+  ],
+  "delegation-e47a2758bb": [
+   "D0130053-art-10"
+  ],
+  "delegation-e51d8903d0": [
+   "M0050001-art-56"
+  ],
+  "delegation-e5651caab5": [
+   "A0030025-art-20"
+  ],
+  "delegation-e5a9020fe8": [
+   "D0120068-art-8"
+  ],
+  "delegation-e627df2c1d": [
+   "D0120001-art-15-2"
+  ],
+  "delegation-e63f10e16a": [
+   "M0060027-art-13"
+  ],
+  "delegation-e86fa5a177": [
+   "N0050031-art-38"
+  ],
+  "delegation-e8819b0787": [
+   "G0370001-art-60"
+  ],
+  "delegation-ea06d1916f": [
+   "M0050001-art-53-1"
+  ],
+  "delegation-eca8fb329d": [
+   "U0000002-art-14",
+   "U0000002-art-5"
+  ],
+  "delegation-ecb74bd6e7": [
+   "J0020019-art-36"
+  ],
+  "delegation-ee48dd0af6": [
+   "A0020041-art-25"
+  ],
+  "delegation-efdceaaf5b": [
+   "G0340107-art-10"
+  ],
+  "delegation-f128d18db4": [
+   "K0000077-art-7"
+  ],
+  "delegation-f1b2cfdd6f": [
+   "H0080050-art-20"
+  ],
+  "delegation-f1d2d722fb": [
+   "D0070001-art-30"
+  ],
+  "delegation-f252752146": [
+   "J0080065-art-4"
+  ],
+  "delegation-f38e41a73f": [
+   "H0060043-art-34"
+  ],
+  "delegation-f390f60e4a": [
+   "K0060001-art-7"
+  ],
+  "delegation-f49538ea1b": [
+   "D0050078-art-5-2"
+  ],
+  "delegation-f5c3f29c28": [
+   "U0000002-art-14",
+   "U0000002-art-5"
+  ],
+  "delegation-f69cf65735": [
+   "M0000036-art-21"
+  ],
+  "delegation-f781fedc89": [
+   "H0080048-art-17"
+  ],
+  "delegation-f79565c344": [
+   "H0160004-art-36"
+  ],
+  "delegation-f80ca8a841": [
+   "H0070001-art-30"
+  ],
+  "delegation-f96f10a4fb": [
+   "A0020041-art-28"
+  ],
+  "delegation-fad1ff14d1": [
+   "D0020050-art-20"
+  ],
+  "delegation-fc0abca767": [
+   "G0340107-art-10"
+  ],
+  "delegation-ff4c0a6657": [
+   "L0030001-art-42"
+  ],
+  "duty_penalty-003800f7c9": [
+   "D0050078-art-41"
+  ],
+  "duty_penalty-00f897953f": [
+   "A0030297-art-31"
+  ],
+  "duty_penalty-00fcfe3608": [
+   "L0070040-art-49"
+  ],
+  "duty_penalty-01ce4a3373": [
+   "J0170001-art-56"
+  ],
+  "duty_penalty-02ad205d2b": [
+   "D0020010-art-93"
+  ],
+  "duty_penalty-036df2bf78": [
+   "L0070003-art-34"
+  ],
+  "duty_penalty-03ba218cee": [
+   "L0020039-art-34"
+  ],
+  "duty_penalty-042403ce82": [
+   "N0030001-art-78"
+  ],
+  "duty_penalty-04637cddd5": [
+   "G0340001-art-43"
+  ],
+  "duty_penalty-04f1c884d3": [
+   "L0070003-art-34"
+  ],
+  "duty_penalty-05fd33f2d7": [
+   "L0020066-art-10"
+  ],
+  "duty_penalty-063d06ed45": [
+   "D0020049-art-29"
+  ],
+  "duty_penalty-064a2cf922": [
+   "G0400121-art-110"
+  ],
+  "duty_penalty-0814ea00ee": [
+   "M0140001-art-22"
+  ],
+  "duty_penalty-086bf03e47": [
+   "L0060042-art-22"
+  ],
+  "duty_penalty-08d1dc56b2": [
+   "D0020040-art-90"
+  ],
+  "duty_penalty-0a918a5adc": [
+   "L0030066-art-23"
+  ],
+  "duty_penalty-0acabc645a": [
+   "K0070001-art-53"
+  ],
+  "duty_penalty-0d2db12d3f": [
+   "L0020090-art-41"
+  ],
+  "duty_penalty-0ee69dd88e": [
+   "F0070013-art-42"
+  ],
+  "duty_penalty-124fcb7c4b": [
+   "D0080081-art-17"
+  ],
+  "duty_penalty-136ab8b084": [
+   "D0060066-art-29"
+  ],
+  "duty_penalty-14d3896bbd": [
+   "L0020039-art-36",
+   "L0020039-art-38"
+  ],
+  "duty_penalty-16f9229fba": [
+   "M0060027-art-25-1"
+  ],
+  "duty_penalty-1db3a1014a": [
+   "D0050074-art-30"
+  ],
+  "duty_penalty-1e035e8174": [
+   "J0030011-art-85"
+  ],
+  "duty_penalty-20867095b5": [
+   "L0020149-art-34"
+  ],
+  "duty_penalty-229da34c76": [
+   "K0070004-art-92"
+  ],
+  "duty_penalty-22cf00ca07": [
+   "G0340106-art-13"
+  ],
+  "duty_penalty-2350e7d7dc": [
+   "D0080075-art-30"
+  ],
+  "duty_penalty-2366cdd0ac": [
+   "D0090073-art-22"
+  ],
+  "duty_penalty-23eef10395": [
+   "N0040001-art-11"
+  ],
+  "duty_penalty-245152f6cd": [
+   "K0040033-art-37"
+  ],
+  "duty_penalty-247fa9f756": [
+   "K0070004-art-92"
+  ],
+  "duty_penalty-272282eef4": [
+   "N0090001-art-64"
+  ],
+  "duty_penalty-2a07549ba4": [
+   "N0020024-art-24"
+  ],
+  "duty_penalty-2a2ac7561b": [
+   "L0020150-art-35"
+  ],
+  "duty_penalty-2aa01cd8fb": [
+   "K0040033-art-37"
+  ],
+  "duty_penalty-2aa63054d8": [
+   "J0160015-art-34"
+  ],
+  "duty_penalty-2ae370d287": [
+   "L0020090-art-41"
+  ],
+  "duty_penalty-2b20abed28": [
+   "L0020135-art-35"
+  ],
+  "duty_penalty-2cbc9b32c1": [
+   "K0060111-art-74"
+  ],
+  "duty_penalty-2e6ccbb00c": [
+   "L0070003-art-34"
+  ],
+  "duty_penalty-2fe77e96d8": [
+   "I0010052-art-41"
+  ],
+  "duty_penalty-3008cad47d": [
+   "G0400001-art-177"
+  ],
+  "duty_penalty-301d9d54db": [
+   "D0120001-art-35-2"
+  ],
+  "duty_penalty-31076d4581": [
+   "J0020042-art-35",
+   "J0020042-art-36"
+  ],
+  "duty_penalty-328b330e1e": [
+   "M0130001-art-37"
+  ],
+  "duty_penalty-34ffb83a9c": [
+   "L0020045-art-48"
+  ],
+  "duty_penalty-351c475fb0": [
+   "D0050001-art-92"
+  ],
+  "duty_penalty-3592415e78": [
+   "G0330011-art-51"
+  ],
+  "duty_penalty-36b315a4c7": [
+   "F0070013-art-42"
+  ],
+  "duty_penalty-36cdcd3ef6": [
+   "G0310027-art-49"
+  ],
+  "duty_penalty-3972812cf4": [
+   "M0130001-art-32"
+  ],
+  "duty_penalty-39e4dc4859": [
+   "L0020135-art-32",
+   "L0020135-art-35"
+  ],
+  "duty_penalty-39e91f7c08": [
+   "D0020040-art-95"
+  ],
+  "duty_penalty-3b0575e630": [
+   "M0130001-art-32"
+  ],
+  "duty_penalty-3b3ed3d031": [
+   "M0040001-art-56"
+  ],
+  "duty_penalty-3c19bf2711": [
+   "D0020049-art-32"
+  ],
+  "duty_penalty-3dac51f6bb": [
+   "L0020021-art-107"
+  ],
+  "duty_penalty-3dba6a3682": [
+   "D0050046-art-86"
+  ],
+  "duty_penalty-3dc2710e25": [
+   "G0380026-art-20"
+  ],
+  "duty_penalty-3ea844ca23": [
+   "J0080051-art-39"
+  ],
+  "duty_penalty-3f3ec0dc43": [
+   "L0020099-art-22"
+  ],
+  "duty_penalty-4089237b15": [
+   "K0070004-art-92"
+  ],
+  "duty_penalty-419c8e6810": [
+   "L0020099-art-23"
+  ],
+  "duty_penalty-41aa908fd6": [
+   "K0070004-art-91",
+   "K0070004-art-97"
+  ],
+  "duty_penalty-41dc39a677": [
+   "J0160056-art-34",
+   "J0160056-art-35"
+  ],
+  "duty_penalty-4250090a57": [
+   "L0020099-art-23",
+   "L0020099-art-23-2"
+  ],
+  "duty_penalty-42850e662f": [
+   "J0160015-art-41"
+  ],
+  "duty_penalty-43700f7d73": [
+   "L0020090-art-37"
+  ],
+  "duty_penalty-456c10e48b": [
+   "N0090001-art-68"
+  ],
+  "duty_penalty-470ee69e08": [
+   "D0020078-art-38"
+  ],
+  "duty_penalty-490bfff4a2": [
+   "L0030010-art-39"
+  ],
+  "duty_penalty-49be714b5a": [
+   "D0050125-art-40",
+   "D0050125-art-41"
+  ],
+  "duty_penalty-4a492b0ddd": [
+   "D0070007-art-33-1"
+  ],
+  "duty_penalty-4b815b4f8c": [
+   "L0020099-art-23-2"
+  ],
+  "duty_penalty-4ca686785b": [
+   "D0020053-art-90-1"
+  ],
+  "duty_penalty-4cea5e9493": [
+   "T0040001-art-25"
+  ],
+  "duty_penalty-4d40991878": [
+   "G0390002-art-171-2"
+  ],
+  "duty_penalty-4eaf104ab3": [
+   "L0030010-art-38",
+   "L0030010-art-40"
+  ],
+  "duty_penalty-4f24154c40": [
+   "J0070017-art-96"
+  ],
+  "duty_penalty-51dba9a2c4": [
+   "Q0010001-art-93-3"
+  ],
+  "duty_penalty-526f01f789": [
+   "K0070004-art-92"
+  ],
+  "duty_penalty-52b6b23f37": [
+   "L0030010-art-39"
+  ],
+  "duty_penalty-53585550c2": [
+   "L0020045-art-42",
+   "L0020045-art-48"
+  ],
+  "duty_penalty-53a4289693": [
+   "N0030001-art-75"
+  ],
+  "duty_penalty-5447a6c373": [
+   "D0060090-art-53"
+  ],
+  "duty_penalty-5517b60be8": [
+   "N0090055-art-41"
+  ],
+  "duty_penalty-5561d6d830": [
+   "L0020044-art-39"
+  ],
+  "duty_penalty-556a179114": [
+   "L0030001-art-93"
+  ],
+  "duty_penalty-56f9670d75": [
+   "J0110001-art-92-4"
+  ],
+  "duty_penalty-573747953d": [
+   "G0390060-art-48"
+  ],
+  "duty_penalty-5781e1f58d": [
+   "D0020010-art-110"
+  ],
+  "duty_penalty-57d2e3381f": [
+   "K0070004-art-98"
+  ],
+  "duty_penalty-5a21b26e4a": [
+   "N0030020-art-49"
+  ],
+  "duty_penalty-5a878758cd": [
+   "L0020190-art-46"
+  ],
+  "duty_penalty-5c194f0e26": [
+   "N0030001-art-77"
+  ],
+  "duty_penalty-5c6898f697": [
+   "D0050125-art-43"
+  ],
+  "duty_penalty-5ce1d19056": [
+   "K0060111-art-79"
+  ],
+  "duty_penalty-5ced035686": [
+   "L0020039-art-36"
+  ],
+  "duty_penalty-5d13c871bc": [
+   "H0160078-art-21"
+  ],
+  "duty_penalty-5d173b348b": [
+   "D0060125-art-38-2"
+  ],
+  "duty_penalty-5dbc5cdbb6": [
+   "L0020150-art-31"
+  ],
+  "duty_penalty-5f25e28e8d": [
+   "L0020044-art-36"
+  ],
+  "duty_penalty-621a52d431": [
+   "D0050125-art-42"
+  ],
+  "duty_penalty-632a590402": [
+   "D0050001-art-98"
+  ],
+  "duty_penalty-6460c1472a": [
+   "D0020040-art-93"
+  ],
+  "duty_penalty-64687e4ee4": [
+   "J0080024-art-29",
+   "J0080024-art-30"
+  ],
+  "duty_penalty-64ecfe5017": [
+   "L0020166-art-32",
+   "L0020166-art-38"
+  ],
+  "duty_penalty-6513d3c423": [
+   "K0060001-art-58"
+  ],
+  "duty_penalty-6580c11eb7": [
+   "D0050125-art-40"
+  ],
+  "duty_penalty-6593ebfe10": [
+   "Q0010001-art-90-2"
+  ],
+  "duty_penalty-6667fedb2b": [
+   "J0110055-art-98-1"
+  ],
+  "duty_penalty-67412839a6": [
+   "G0380001-art-129-2"
+  ],
+  "duty_penalty-679a08ff53": [
+   "D0070222-art-36"
+  ],
+  "duty_penalty-6a1d6eac6c": [
+   "D0050001-art-91"
+  ],
+  "duty_penalty-6c2166e9f7": [
+   "I0010052-art-40",
+   "I0010052-art-41"
+  ],
+  "duty_penalty-7100c5a65e": [
+   "L0030001-art-93"
+  ],
+  "duty_penalty-7281b5a09b": [
+   "A0020051-art-37"
+  ],
+  "duty_penalty-729ca7da42": [
+   "L0020098-art-31",
+   "L0020098-art-37"
+  ],
+  "duty_penalty-72b7a1ff81": [
+   "O0020001-art-77"
+  ],
+  "duty_penalty-73807f5228": [
+   "D0050046-art-86"
+  ],
+  "duty_penalty-747eb22497": [
+   "L0020149-art-30",
+   "L0020149-art-35"
+  ],
+  "duty_penalty-75f022166d": [
+   "M0110001-art-33"
+  ],
+  "duty_penalty-76ed13914d": [
+   "G0380001-art-128"
+  ],
+  "duty_penalty-774ab5649b": [
+   "L0020089-art-41"
+  ],
+  "duty_penalty-781f47a52c": [
+   "D0020049-art-31"
+  ],
+  "duty_penalty-7827e177f3": [
+   "K0040033-art-37"
+  ],
+  "duty_penalty-78445c33f3": [
+   "G0380001-art-128"
+  ],
+  "duty_penalty-78b42fffaa": [
+   "O0040001-art-51"
+  ],
+  "duty_penalty-78e65a0044": [
+   "L0020149-art-32",
+   "L0020149-art-35"
+  ],
+  "duty_penalty-795127eca6": [
+   "K0060044-art-31"
+  ],
+  "duty_penalty-7954b8a57c": [
+   "D0070007-art-33"
+  ],
+  "duty_penalty-7eb6ea007f": [
+   "L0020135-art-34",
+   "L0020135-art-37"
+  ],
+  "duty_penalty-8088e3c0bb": [
+   "G0400001-art-177"
+  ],
+  "duty_penalty-809a62025b": [
+   "N0020012-art-19"
+  ],
+  "duty_penalty-815fee981d": [
+   "J0030022-art-54"
+  ],
+  "duty_penalty-82a12b5b0c": [
+   "L0020089-art-41"
+  ],
+  "duty_penalty-8398925da1": [
+   "O0040010-art-18"
+  ],
+  "duty_penalty-83ab1cc803": [
+   "L0020090-art-37"
+  ],
+  "duty_penalty-83cb866192": [
+   "H0070071-art-45"
+  ],
+  "duty_penalty-83d703ff16": [
+   "M0060027-art-24",
+   "M0060027-art-29"
+  ],
+  "duty_penalty-8433e23295": [
+   "J0150017-art-32",
+   "J0150017-art-36"
+  ],
+  "duty_penalty-8455004606": [
+   "L0020150-art-33"
+  ],
+  "duty_penalty-85c2147e8f": [
+   "D0020040-art-85"
+  ],
+  "duty_penalty-86254853cf": [
+   "I0050021-art-54"
+  ],
+  "duty_penalty-8717c0ef35": [
+   "J0100052-art-54"
+  ],
+  "duty_penalty-876baa1b3a": [
+   "D0070249-art-11"
+  ],
+  "duty_penalty-89a0a1b6b6": [
+   "D0070109-art-91-2",
+   "D0070109-art-95-2"
+  ],
+  "duty_penalty-8b589e8665": [
+   "N0030001-art-78"
+  ],
+  "duty_penalty-8b87969265": [
+   "L0030001-art-93"
+  ],
+  "duty_penalty-8e5cf06b99": [
+   "Q0010001-art-93-1"
+  ],
+  "duty_penalty-8ea106f85b": [
+   "A0030286-art-26"
+  ],
+  "duty_penalty-8fb19241b6": [
+   "O0040010-art-24"
+  ],
+  "duty_penalty-911bac62e7": [
+   "N0030001-art-76"
+  ],
+  "duty_penalty-917b5b47e1": [
+   "K0070004-art-92"
+  ],
+  "duty_penalty-9274b95c6c": [
+   "J0160056-art-38"
+  ],
+  "duty_penalty-9350bc52f6": [
+   "K0060111-art-79"
+  ],
+  "duty_penalty-9388c5571d": [
+   "G0330011-art-56"
+  ],
+  "duty_penalty-9418d4b788": [
+   "H0070031-art-54"
+  ],
+  "duty_penalty-94353f1e2d": [
+   "N0030001-art-79"
+  ],
+  "duty_penalty-9639716f06": [
+   "D0020040-art-73"
+  ],
+  "duty_penalty-97ae57ddbf": [
+   "N0090001-art-68"
+  ],
+  "duty_penalty-9943190f0e": [
+   "L0020098-art-31"
+  ],
+  "duty_penalty-9949bdf799": [
+   "F0070013-art-42"
+  ],
+  "duty_penalty-9a67331758": [
+   "L0020135-art-32"
+  ],
+  "duty_penalty-9ad27459d4": [
+   "K0090001-art-108"
+  ],
+  "duty_penalty-9caf579bba": [
+   "L0070003-art-33"
+  ],
+  "duty_penalty-9d95a9d1d5": [
+   "L0020098-art-34"
+  ],
+  "duty_penalty-9da3416cd8": [
+   "L0020021-art-101"
+  ],
+  "duty_penalty-9dab6d86c3": [
+   "L0020098-art-31",
+   "L0020098-art-37"
+  ],
+  "duty_penalty-9de46e6d32": [
+   "L0020039-art-38"
+  ],
+  "duty_penalty-9ffc23c9da": [
+   "H0070071-art-43"
+  ],
+  "duty_penalty-a0b319c430": [
+   "D0050138-art-25"
+  ],
+  "duty_penalty-a0b6db417f": [
+   "D0020010-art-104-1"
+  ],
+  "duty_penalty-a0fe0344df": [
+   "K0070004-art-98"
+  ],
+  "duty_penalty-a15216fe47": [
+   "L0070040-art-48-1"
+  ],
+  "duty_penalty-a297e29e2f": [
+   "K0070042-art-82"
+  ],
+  "duty_penalty-a30cdf88b6": [
+   "D0020010-art-110"
+  ],
+  "duty_penalty-a33374427f": [
+   "J0070030-art-19"
+  ],
+  "duty_penalty-a3835c1690": [
+   "L0030023-art-24"
+  ],
+  "duty_penalty-a3c4a60909": [
+   "G0380001-art-125"
+  ],
+  "duty_penalty-a4b5a612a0": [
+   "D0060090-art-51"
+  ],
+  "duty_penalty-a5467a587b": [
+   "M0130003-art-43"
+  ],
+  "duty_penalty-a597bb08ef": [
+   "L0070051-art-38"
+  ],
+  "duty_penalty-a68105baf9": [
+   "N0090001-art-63"
+  ],
+  "duty_penalty-a6cef86977": [
+   "D0050001-art-90-2"
+  ],
+  "duty_penalty-a6e923bd43": [
+   "J0070030-art-22"
+  ],
+  "duty_penalty-a9561d5018": [
+   "Q0010001-art-79-2",
+   "Q0010001-art-79-3"
+  ],
+  "duty_penalty-ab449cc068": [
+   "D0020040-art-96"
+  ],
+  "duty_penalty-ab71de3157": [
+   "Q0010001-art-90-2"
+  ],
+  "duty_penalty-abc8af4424": [
+   "J0160056-art-40"
+  ],
+  "duty_penalty-ad08ec274e": [
+   "M0130003-art-43"
+  ],
+  "duty_penalty-ad13a89b07": [
+   "G0310027-art-50",
+   "G0310027-art-55"
+  ],
+  "duty_penalty-adf0a97c21": [
+   "K0070004-art-98"
+  ],
+  "duty_penalty-ae29d50d46": [
+   "D0050001-art-104"
+  ],
+  "duty_penalty-af4fc97a2a": [
+   "J0150017-art-32"
+  ],
+  "duty_penalty-b0bdd473c5": [
+   "L0020039-art-37"
+  ],
+  "duty_penalty-b1b63e1553": [
+   "J0080024-art-24"
+  ],
+  "duty_penalty-b1d806327c": [
+   "L0030001-art-93"
+  ],
+  "duty_penalty-b2c403f97f": [
+   "L0030010-art-39"
+  ],
+  "duty_penalty-b472dcd19a": [
+   "L0020045-art-46"
+  ],
+  "duty_penalty-b55e6524d1": [
+   "J0020019-art-41"
+  ],
+  "duty_penalty-b620af6f7c": [
+   "K0070004-art-98"
+  ],
+  "duty_penalty-b652e0f6cf": [
+   "K0060001-art-64"
+  ],
+  "duty_penalty-b6cabf56d3": [
+   "D0050071-art-62"
+  ],
+  "duty_penalty-b733ebd691": [
+   "J0080009-art-77"
+  ],
+  "duty_penalty-b7b3eb781c": [
+   "L0050001-art-67"
+  ],
+  "duty_penalty-b922207c7a": [
+   "N0020007-art-63"
+  ],
+  "duty_penalty-ba4673bcc8": [
+   "M0130001-art-35",
+   "M0130001-art-37"
+  ],
+  "duty_penalty-bbc9cabaab": [
+   "L0030001-art-93"
+  ],
+  "duty_penalty-bc23fe2004": [
+   "D0020053-art-96"
+  ],
+  "duty_penalty-bd75e03ea1": [
+   "L0070040-art-51"
+  ],
+  "duty_penalty-bebd5cae62": [
+   "L0020089-art-38"
+  ],
+  "duty_penalty-bec1fb1bad": [
+   "M0130001-art-32"
+  ],
+  "duty_penalty-bf3ba31f03": [
+   "S0020038-art-24"
+  ],
+  "duty_penalty-bf50d18f7f": [
+   "N0020012-art-17"
+  ],
+  "duty_penalty-bf56aac162": [
+   "J0020019-art-53"
+  ],
+  "duty_penalty-c02e7ebbf2": [
+   "G0380237-art-53"
+  ],
+  "duty_penalty-c1306f910a": [
+   "K0070042-art-85"
+  ],
+  "duty_penalty-c2eda3d82e": [
+   "L0030010-art-39"
+  ],
+  "duty_penalty-c3355f2603": [
+   "D0060066-art-29"
+  ],
+  "duty_penalty-c39a95f583": [
+   "J0160056-art-40"
+  ],
+  "duty_penalty-c5f0dca121": [
+   "J0150002-art-40"
+  ],
+  "duty_penalty-c60c6da235": [
+   "J0160056-art-35"
+  ],
+  "duty_penalty-c6ef066526": [
+   "O0040001-art-53"
+  ],
+  "duty_penalty-c73333abb0": [
+   "L0020135-art-34"
+  ],
+  "duty_penalty-c79b1f8f85": [
+   "D0080058-art-27"
+  ],
+  "duty_penalty-c7d924ac37": [
+   "K0070030-art-10"
+  ],
+  "duty_penalty-c81da3e7dc": [
+   "M0120001-art-43"
+  ],
+  "duty_penalty-c95375bc8a": [
+   "D0050091-art-62"
+  ],
+  "duty_penalty-cbb9bcbb5d": [
+   "L0020021-art-113"
+  ],
+  "duty_penalty-cc15531838": [
+   "G0380001-art-127-1"
+  ],
+  "duty_penalty-cc9e2116d7": [
+   "J0150002-art-37"
+  ],
+  "duty_penalty-d1768a42b2": [
+   "D0070110-art-56"
+  ],
+  "duty_penalty-d1fce612aa": [
+   "L0020098-art-35"
+  ],
+  "duty_penalty-d237808c9a": [
+   "K0090057-art-32"
+  ],
+  "duty_penalty-d2a55e6d39": [
+   "O0030001-art-31"
+  ],
+  "duty_penalty-d30fd5d5ce": [
+   "L0020150-art-34"
+  ],
+  "duty_penalty-d4f920966f": [
+   "L0030010-art-39"
+  ],
+  "duty_penalty-d52d76be39": [
+   "L0050001-art-67"
+  ],
+  "duty_penalty-d5a995e12e": [
+   "Q0010001-art-88"
+  ],
+  "duty_penalty-d60ff4421b": [
+   "D0050125-art-42"
+  ],
+  "duty_penalty-d67eee78be": [
+   "K0070004-art-92"
+  ],
+  "duty_penalty-d881004ad7": [
+   "D0020010-art-110"
+  ],
+  "duty_penalty-d95efe4788": [
+   "L0020021-art-107"
+  ],
+  "duty_penalty-d9b467646b": [
+   "D0020078-art-35"
+  ],
+  "duty_penalty-da164f0031": [
+   "L0020090-art-41"
+  ],
+  "duty_penalty-da25b69ad3": [
+   "L0020099-art-22"
+  ],
+  "duty_penalty-da96d55008": [
+   "L0020001-art-27"
+  ],
+  "duty_penalty-dd7082ae00": [
+   "N0030001-art-32-1"
+  ],
+  "duty_penalty-de0aaf069b": [
+   "D0020049-art-27"
+  ],
+  "duty_penalty-deb31c0616": [
+   "L0020149-art-30",
+   "L0020149-art-37"
+  ],
+  "duty_penalty-df5a117351": [
+   "L0030106-art-65"
+  ],
+  "duty_penalty-dfb51cd29c": [
+   "D0070209-art-38"
+  ],
+  "duty_penalty-e07a40104f": [
+   "G0400001-art-177"
+  ],
+  "duty_penalty-e0baa0b446": [
+   "H0120050-art-23-2"
+  ],
+  "duty_penalty-e1d64f4270": [
+   "L0020021-art-103"
+  ],
+  "duty_penalty-e1e5d2cd61": [
+   "G0400001-art-177"
+  ],
+  "duty_penalty-e25db82ac9": [
+   "L0070003-art-34"
+  ],
+  "duty_penalty-e3247a0be3": [
+   "D0050001-art-99"
+  ],
+  "duty_penalty-e33c795d4e": [
+   "D0070110-art-57"
+  ],
+  "duty_penalty-e40bee4d32": [
+   "Q0010003-art-51"
+  ],
+  "duty_penalty-e58e3a7df6": [
+   "K0060001-art-67"
+  ],
+  "duty_penalty-e6ad054240": [
+   "L0020150-art-34"
+  ],
+  "duty_penalty-e7ea61e6bf": [
+   "D0020040-art-96"
+  ],
+  "duty_penalty-e8a828dd71": [
+   "D0050074-art-26"
+  ],
+  "duty_penalty-e972fdd37e": [
+   "G0340072-art-48"
+  ],
+  "duty_penalty-e9e1f25875": [
+   "G0380026-art-21"
+  ],
+  "duty_penalty-ea4994dbf9": [
+   "K0070004-art-90",
+   "K0070004-art-92"
+  ],
+  "duty_penalty-eaf68905c3": [
+   "F0090021-art-9"
+  ],
+  "duty_penalty-ec00555b00": [
+   "J0090004-art-27-2"
+  ],
+  "duty_penalty-ec0c3c9d5f": [
+   "G0400121-art-105"
+  ],
+  "duty_penalty-ee4f139df1": [
+   "F0070013-art-42"
+  ],
+  "duty_penalty-ef216b6640": [
+   "K0070004-art-96"
+  ],
+  "duty_penalty-ef3ec08843": [
+   "L0020216-art-32"
+  ],
+  "duty_penalty-ef5758d9ee": [
+   "Q0010001-art-85"
+  ],
+  "duty_penalty-ef8af3abbd": [
+   "D0050125-art-38"
+  ],
+  "duty_penalty-f044c3753a": [
+   "D0020050-art-43"
+  ],
+  "duty_penalty-f1ae289ddc": [
+   "G0310027-art-48"
+  ],
+  "duty_penalty-f2b7aa27ff": [
+   "J0080004-art-34"
+  ],
+  "duty_penalty-f581a73c35": [
+   "M0120001-art-46"
+  ],
+  "duty_penalty-f6b94b8b01": [
+   "L0030010-art-40"
+  ],
+  "duty_penalty-f733efe3a9": [
+   "K0090001-art-119"
+  ],
+  "duty_penalty-f8d47bc1b6": [
+   "N0030020-art-49"
+  ],
+  "duty_penalty-f99bc4bffc": [
+   "N0020024-art-24"
+  ],
+  "duty_penalty-fa77d29165": [
+   "L0020098-art-35"
+  ],
+  "duty_penalty-fad67367eb": [
+   "G0340003-art-108-2"
+  ],
+  "duty_penalty-fb09173acc": [
+   "L0020045-art-42",
+   "L0020045-art-48"
+  ],
+  "duty_penalty-fb7e085c09": [
+   "L0020044-art-36"
+  ],
+  "duty_penalty-fc17a36aa9": [
+   "H0070031-art-55"
+  ],
+  "duty_penalty-fd09e3673c": [
+   "G0380058-art-41"
+  ],
+  "duty_penalty-fe0f65e199": [
+   "D0020053-art-96"
+  ],
+  "duty_penalty-fe74522d21": [
+   "L0040006-art-30"
+  ],
+  "duty_penalty-fec2a5c4d7": [
+   "L0020099-art-23",
+   "L0020099-art-23-2"
+  ],
+  "duty_penalty-ff47978375": [
+   "D0020040-art-83"
+  ],
+  "duty_penalty-ff499dff90": [
+   "D0070110-art-57"
+  ],
+  "duty_penalty-ff9a0a97ed": [
+   "J0110094-art-17",
+   "J0110094-art-25"
+  ],
+  "duty_penalty-ffc9be8b11": [
+   "L0020099-art-23"
+  ]
+ },
+ "graded_by": {},
+ "unmapped": {},
+ "judgements": [],
+ "sha256": "b54dae369cba318a8cea6f41d5072887d707636b9eff7e3c4ec616f792e5acf0"
+}
