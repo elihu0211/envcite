@@ -1236,7 +1236,8 @@ h1[tabindex="-1"]:focus-visible {
     overflow-x: auto;
 }
 
-.ep-side-link {
+.ep-side-link,
+.ep-recent-link {
     flex: none;
     display: flex;
     align-items: center;
@@ -1255,7 +1256,8 @@ h1[tabindex="-1"]:focus-visible {
     transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
-.ep-side-link.active {
+.ep-side-link.active,
+.ep-recent-link.active {
     background: color-mix(in srgb, var(--ep-primary) 12%, transparent);
     color: var(--ep-link);
     font-weight: var(--ep-label-l-weight);
@@ -1266,9 +1268,31 @@ h1[tabindex="-1"]:focus-visible {
 }
 
 @media (hover: hover) {
-    .ep-side-link:hover:not(.active) {
+    .ep-side-link:hover:not(.active),
+    .ep-recent-link:hover:not(.active) {
         background: color-mix(in srgb, var(--ep-text) 6%, transparent);
     }
+}
+
+/* 最近的對話：只有標題的一長串，項目的樣式沿用側欄項目；標題一行，放不下收成「…」。
+   沒有 JavaScript 的手機側欄是一條橫列，放不下這一串，所以預設不顯示，直欄時才出現。 */
+.ep-recent {
+    display: none;
+}
+
+.ep-recent-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+}
+
+.ep-recent-link {
+    min-inline-size: 0;
+}
+
+.ep-recent-link .ep-side-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* 頂欄左邊的導覽鈕（沒有 JavaScript 時不出現）：桌機收合／展開側欄，手機開關抽屜。 */
@@ -1344,7 +1368,8 @@ html[data-js] .ep-side-toggle {
         transition: inline-size var(--ep-motion-normal) var(--ep-motion-ease-settle);
     }
 
-    .ep-side-group {
+    .ep-side-group,
+    .ep-recent {
         display: block;
     }
 
@@ -1373,6 +1398,10 @@ html[data-js] .ep-side-toggle {
     html[data-side="collapsed"] .ep-side-link {
         justify-content: center;
         padding-inline: 0;
+    }
+
+    html[data-side="collapsed"] .ep-recent {
+        display: none;
     }
 
     html[data-side="collapsed"] .ep-side-group {
@@ -1443,7 +1472,8 @@ html[data-js] .ep-side-toggle {
         pointer-events: none;
     }
 
-    html[data-js] .ep-side-group {
+    html[data-js] .ep-side-group,
+    html[data-js] .ep-recent {
         display: block;
     }
 

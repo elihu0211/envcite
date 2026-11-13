@@ -26,23 +26,11 @@ public sealed class PortalNavigationTests
         public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
     }
 
-    private sealed class FakeHistory(bool enabled) : IConversationHistory
+    private sealed class FakeHistory(bool enabled) : IConversationHistoryAvailability
     {
         public bool Enabled => enabled;
 
         public int RetentionDays => 30;
-
-        public Task<Guid?> AppendTurnAsync(ClaimsPrincipal user, Guid? conversationId, string question, string answer, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-
-        public Task<IReadOnlyList<ConversationSummary>> ListAsync(ClaimsPrincipal user, int limit, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-
-        public Task<ConversationDetail?> GetAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-
-        public Task<bool> DeleteAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
     }
 
     private sealed class FakeDirectory(bool available) : IDirectoryAvailability

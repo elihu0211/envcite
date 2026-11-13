@@ -189,6 +189,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 引用檢查證明代號存在且至少用了一個，**不證明每一句都有依據**；介面要提示讀者對照引用卡片。
 - **頁面不直接碰回答、搜尋與歷史這些領域服務，一律經 `IAskService`**（`SharedKernel` 的契約，`Modules.Conversations` 實作，singleton）：方案與同意的檢查（`AskCapabilities`）、回答或搜尋（`AskAsync`）、記進歷史（`RecordAsync`）。每個操作經 `TenantScopes.InByIdentifierAsync` 在**呼叫者的租戶**裡執行，租戶只取自入口成員的 claim；沒有 `PortalUserId` claim 的身分（匿名、營運者、API key）一律當作沒有方案，不呼叫任何服務、不計量（fail closed）。靜態頁與互動式 circuit（沒有環境租戶）用同一份，頁面只剩呈現與表單。服務回的是結果（`AskResult`：模式、狀態、回答或條文）；使用者看到的文字與記進歷史的文字由頁面組，語言是提問當下的介面語言。`AskServiceTests` 直接在服務層證明租戶隔離、計量、同意與 fail closed。
 - **對話紀錄**預設關閉（問題文字是客戶案情的內容）。只存問題與**引用**（法規名稱、條號、日期、條文 URI），不存條文本文。**只有作者看得到**自己的對話——擁有者也不行；每個方法在租戶過濾之外再依使用者 id 過濾；不是自己的 id 當作「開新對話」處理，所以不能拿來探測或寫入別人的對話。刪除由作者執行並在同一交易稽核（只記 id，不記內容）。保存期限清理是跨租戶的，只刪除，只記筆數。
+- **歷史有沒有開啟與保留天數，讀 `IConversationHistoryAvailability`**（singleton，只讀設定），不讀 `IConversationHistory`：後者是 scoped（要資料庫與租戶），為了一個旗標去解析它，互動式 circuit 會把那個 `DbContext` 抓住直到斷線（同 `IAnswerAvailability`、`IDirectoryAvailability` 的做法）。側欄的「最近的對話」經 `IAskService.RecentAsync`：只有本人的標題與時間，沒開啟時服務不開 scope、不查資料庫，依台北時間的日曆日分組（今天、昨天、過去 7 天、更早；`ConversationGroups`）。
 
 ## 稽核紀錄
 

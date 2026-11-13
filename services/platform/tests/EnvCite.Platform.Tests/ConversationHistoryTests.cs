@@ -117,6 +117,47 @@ public sealed partial class ConversationHistoryTests(PlatformFactory factory)
         Assert.Contains("《空氣污染防制法》第 5-1 條", detail.Html, StringComparison.Ordinal); // 出處
     }
 
+    // 側欄的「最近的對話」：本人的、新的在前、依日期分組；別人的（連同租戶的 Owner）看不到；沒開啟就整段不畫。
+    [Fact]
+    public async Task TheSideNavigationListsOnlyMyRecentConversationsNewestFirst()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-recent");
+        using var alice = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        using var boss = await SignedInAsync(host, tenant, CustomerRoles.Owner);
+        var first = await alice.SubmitAsync(SearchPage(tenant.Identifier), Ask(Question));
+        var second = await alice.SubmitAsync(SearchPage(tenant.Identifier), Ask("固定污染源"));
+        var firstId = HiddenConversation().Match(first.Html).Groups[1].Value;
+        var secondId = HiddenConversation().Match(second.Html).Groups[1].Value;
+        Assert.NotEqual(firstId, secondId);
+
+        var mine = (await alice.GetAsync(HistoryPage(tenant.Identifier))).Html;
+        var theirs = (await boss.GetAsync(HistoryPage(tenant.Identifier))).Html;
+
+        Assert.Contains("class=\"ep-recent\"", mine, StringComparison.Ordinal);
+        Assert.Contains("今天", mine, StringComparison.Ordinal);
+        Assert.Contains($"href=\"{HistoryPage(tenant.Identifier)}/{firstId}\"", mine, StringComparison.Ordinal);
+        Assert.Contains($"href=\"{HistoryPage(tenant.Identifier)}/{secondId}\"", mine, StringComparison.Ordinal);
+        Assert.True(
+            mine.IndexOf($"/{secondId}\"", StringComparison.Ordinal) < mine.IndexOf($"/{firstId}\"", StringComparison.Ordinal),
+            "the newest conversation comes first");
+        Assert.DoesNotContain("ep-recent", theirs, StringComparison.Ordinal);
+        Assert.DoesNotContain(firstId, theirs, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WithoutHistoryTheSideNavigationHasNoRecentConversations()
+    {
+        var (tenant, email, initial) = await MemberAsync(factory, "ch-norecent");
+        using var browser = new PortalBrowser(factory);
+        await SignInFullyAsync(browser, tenant.Identifier, email, initial);
+        await browser.SubmitAsync(SearchPage(tenant.Identifier), Ask(Question));
+
+        var home = await browser.GetAsync($"/portal/{tenant.Identifier}");
+
+        Assert.DoesNotContain("ep-recent", home.Html, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task OnlyTheirOwnerCanSeeOrJoinAConversationNotEvenAnOwnerOfTheSameTenant()
     {

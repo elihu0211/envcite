@@ -11,9 +11,7 @@ internal sealed class ConversationHistory(
     IOptions<ConversationHistoryOptions> options,
     TimeProvider time) : IConversationHistory
 {
-    public bool Enabled => options.Value.Enabled;
-
-    public int RetentionDays => options.Value.RetentionDays;
+    private bool Enabled => options.Value.Enabled;
 
     public async Task<Guid?> AppendTurnAsync(
         ClaimsPrincipal user, Guid? conversationId, string question, string answer, CancellationToken cancellationToken)

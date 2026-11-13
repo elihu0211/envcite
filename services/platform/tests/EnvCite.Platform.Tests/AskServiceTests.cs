@@ -226,6 +226,39 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.Null(await factory.Services.GetRequiredService<IAskService>().RecordAsync(member, null, "問題", "答案", Ct));
     }
 
+    // 側欄的最近對話：本人的、新的在前、受筆數限制；同租戶別人的、非入口成員的、歷史關閉的都是空的。
+    [Fact]
+    public async Task RecentConversationsAreTheMembersOwnNewestFirstAndLimited()
+    {
+        var (host, _) = Host(_ => Reply, history: true);
+        using var h = host;
+        var (tenant, author) = await MemberOfAsync("ask-m");
+        var (userId, _) = await AddMemberAsync(factory, tenant.Id, NewEmail(), CustomerRoles.Owner);
+        var boss = await MemberPrincipalAsync(factory, tenant.Id, userId);
+        var (_, otherTenantMember) = await MemberOfAsync("ask-n");
+        var ask = host.Services.GetRequiredService<IAskService>();
+        var older = await ask.RecordAsync(author, null, "噪音管制標準", "答", Ct);
+        var newer = await ask.RecordAsync(author, null, "固定污染源", "答", Ct);
+        await ask.RecordAsync(otherTenantMember, null, "別的租戶的問題", "答", Ct);
+
+        var recent = await ask.RecentAsync(author, 10, Ct);
+
+        Assert.Equal([newer!.Value, older!.Value], recent.Select(c => c.Id));
+        Assert.Equal(["固定污染源", "噪音管制標準"], recent.Select(c => c.Title));
+        Assert.Single(await ask.RecentAsync(author, 1, Ct));
+        Assert.Empty(await ask.RecentAsync(boss, 10, Ct));
+        Assert.Empty(await ask.RecentAsync(new ClaimsPrincipal(new ClaimsIdentity()), 10, Ct));
+        Assert.Empty(await ask.RecentAsync(OperatorSession.Principal(), 10, Ct));
+    }
+
+    [Fact]
+    public async Task WhenHistoryIsOffThereAreNoRecentConversations()
+    {
+        var (_, member) = await MemberOfAsync("ask-o");
+
+        Assert.Empty(await factory.Services.GetRequiredService<IAskService>().RecentAsync(member, 10, Ct));
+    }
+
     private static (AskMode, AskStatus) Pair(AskResult result) => (result.Mode, result.Status);
 
     private static async Task<List<Guid>> ListAsync(WebApplicationFactory<Program> host, string tenantId, ClaimsPrincipal user)
