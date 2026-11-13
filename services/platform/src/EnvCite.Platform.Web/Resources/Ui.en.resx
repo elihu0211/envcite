@@ -620,9 +620,12 @@
   <data name="展開母法查看授權命令與子法規，點選任一法規即可檢視有效條文清單。" xml:space="preserve"><value>Expand a parent statute to view delegated regulations and click any law to inspect its articles.</value></data>
   <data name="憲法" xml:space="preserve"><value>Constitution</value></data>
   <data name="法律" xml:space="preserve"><value>Statute</value></data>
+  <data name="自治條例" xml:space="preserve"><value>Local Ordinance</value></data>
+  <data name="自治規則" xml:space="preserve"><value>Local Regulation</value></data>
+  <data name="行政規則" xml:space="preserve"><value>Administrative Rule</value></data>
   <data name="命令" xml:space="preserve"><value>Regulation</value></data>
   <data name="法規結構目錄" xml:space="preserve"><value>Law structure outline</value></data>
-  <data name="法規本體工作台" xml:space="preserve"><value>Legal Ontology Workbench</value></data>
+  <data name="法規體系與合規" xml:space="preserve"><value>Law Hierarchy &amp; Compliance</value></data>
   <data name="整合法律位階授權知識圖譜、編章節條文瀏覽與確定性規範推論評估。" xml:space="preserve"><value>Unified workbench combining the legal delegation knowledge graph, structural law browser, and deterministic normative reasoning.</value></data>
   <data name="篩選法規" xml:space="preserve"><value>Filter laws</value></data>
   <data name="輸入法規名稱或代碼" xml:space="preserve"><value>Enter law title or code</value></data>
@@ -633,6 +636,7 @@
   <data name="法律授權知識圖譜" xml:space="preserve"><value>Legal Delegation Knowledge Graph</value></data>
   <data name="展開或收合互動圖譜" xml:space="preserve"><value>Toggle interactive knowledge graph</value></data>
   <data name="點選圖譜節點可直接檢視該法規條文與編章節結構。" xml:space="preserve"><value>Click any graph node to inspect its chapters, sections, and articles.</value></data>
+  <data name="請從左側「法律樹結構」點選法規，或輸入關鍵字篩選，以檢視局部授權關聯圖譜。" xml:space="preserve"><value>Select a law from the left tree or enter a filter keyword to view its local delegation graph.</value></data>
   <data name="適應視窗" xml:space="preserve"><value>Fit</value></data>
   <data name="合規推論試算" xml:space="preserve"><value>Compliance Reasoning</value></data>
   <data name="選擇常見情境或輸入事實，由確定性推論引擎評估候選風險與缺漏要件。" xml:space="preserve"><value>Select a common scenario or enter facts to evaluate candidate risks and missing elements.</value></data>

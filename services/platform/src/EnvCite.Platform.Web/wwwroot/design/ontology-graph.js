@@ -54,7 +54,8 @@
         name: edges.length > 0 ? "breadthfirst" : "grid",
         directed: true,
         padding: 24,
-        spacingFactor: 1.25,
+        spacingFactor: 1.45,
+        nodeDimensionsIncludeLabels: true,
       },
       style: [
         {

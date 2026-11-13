@@ -8,9 +8,9 @@
 @inject ILawCorpusService LawCorpusService
 @inject INormativeReasoningService ReasoningService
 
-<DocumentTitle Text="@L["法規本體工作台"]" />
+<DocumentTitle Text="@L["法規體系與合規"]" />
 
-<PageHeader Title="@L["法規本體工作台"]" Description="@L["整合法律位階授權知識圖譜、編章節條文瀏覽與確定性規範推論評估。"]" />
+<PageHeader Title="@L["法規體系與合規"]" Description="@L["整合法律位階授權知識圖譜、編章節條文瀏覽與確定性規範推論評估。"]" />
 
 @if (!HasCorpus && !HasReasoning)
 {
@@ -107,10 +107,10 @@ else
                 </SectionCard>
 
                 <div class="ep-workbench-main">
-                    @if (_graphJson is { Length: > 0 } graphJson)
-                    {
-                        <SectionCard Id="ontology-graph-title" Title="@L["法律授權知識圖譜"]">
-                            <details open="@(_result is null)">
+                    <SectionCard Id="ontology-graph-title" Title="@L["法律授權知識圖譜"]">
+                        @if (_graphJson is { Length: > 0 } graphJson)
+                        {
+                            <details open>
                                 <summary class="ep-tree-manual-toggle">@L["展開或收合互動圖譜"]</summary>
                                 <div class="ep-graph-host" data-graph-host>
                                     <div class="ep-graph-toolbar">
@@ -124,8 +124,12 @@ else
                                     <div class="ep-graph-canvas" data-ontology-graph="@graphJson"></div>
                                 </div>
                             </details>
-                        </SectionCard>
-                    }
+                        }
+                        else
+                        {
+                            <p class="ep-page-description">@L["請從左側「法律樹結構」點選法規，或輸入關鍵字篩選，以檢視局部授權關聯圖譜。"]</p>
+                        }
+                    </SectionCard>
 
                     @if (_result is { } law)
                     {
@@ -368,6 +372,28 @@ else
         if (roots.Count == 0)
             return null;
 
+        const int maxEgoNodes = 30;
+        const int maxFilteredNodes = 35;
+
+        IReadOnlyList<PortalLawTreeNode> targetRoots;
+        if (!string.IsNullOrWhiteSpace(LocalId))
+        {
+            var matchedRoot = FindContainingRoot(roots);
+            if (matchedRoot is null)
+                return null;
+            targetRoots = [TrimEgoSubtree(matchedRoot, maxEgoNodes)];
+        }
+        else if (!string.IsNullOrWhiteSpace(Query))
+        {
+            if (CountNodes(roots) > maxFilteredNodes)
+                return null;
+            targetRoots = roots;
+        }
+        else
+        {
+            return null;
+        }
+
         var nodes = new List<object>();
         var edges = new List<object>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -392,10 +418,43 @@ else
                 Visit(child, id);
         }
 
-        foreach (var root in roots)
+        foreach (var root in targetRoots)
             Visit(root, null);
 
         return JsonSerializer.Serialize(new { nodes, edges });
+    }
+
+    private PortalLawTreeNode? FindContainingRoot(IReadOnlyList<PortalLawTreeNode> roots)
+    {
+        foreach (var root in roots)
+        {
+            if (ContainsSelected(root))
+                return root;
+        }
+        return null;
+    }
+
+    private bool ContainsSelected(PortalLawTreeNode node) =>
+        IsSelected(node) || node.Children.Any(ContainsSelected);
+
+    private PortalLawTreeNode TrimEgoSubtree(PortalLawTreeNode root, int maxNodes)
+    {
+        if (root.Children.Count <= maxNodes - 1)
+            return root;
+
+        var kept = root.Children
+            .OrderByDescending(ContainsSelected)
+            .Take(maxNodes - 1)
+            .ToList();
+        return root with { Children = kept };
+    }
+
+    private static int CountNodes(IReadOnlyList<PortalLawTreeNode> roots)
+    {
+        var count = 0;
+        foreach (var root in roots)
+            count += 1 + CountNodes(root.Children);
+        return count;
     }
 
     private static IReadOnlyList<PortalReasoningVerdict> OrderedVerdicts(PortalReasoningOutcome result) =>
@@ -428,7 +487,10 @@ else
     private string NormKindLabel(string normKind) => normKind switch
     {
         "constitution" => L["憲法"],
-        "law" => L["法律"],
+        "statute" or "law" => L["法律"],
+        "local_ordinance" => L["自治條例"],
+        "local_regulation" => L["自治規則"],
+        "administrative_rule" => L["行政規則"],
         "regulation" or "order" => L["命令"],
         _ => normKind,
     };
