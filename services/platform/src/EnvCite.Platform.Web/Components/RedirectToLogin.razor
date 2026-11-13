@@ -1,9 +1,12 @@
 @inject NavigationManager Navigation
 
 @code {
+    // 入口的頁面（工作區）登入失效時回入口自己的登入頁，不是後台的：兩邊的帳號與 cookie 互不通用。
     protected override void OnInitialized()
     {
-        var returnUrl = new Uri(Navigation.Uri).PathAndQuery;
-        Navigation.NavigateTo($"{UiEndpoints.LoginPath}?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
+        var uri = new Uri(Navigation.Uri);
+        var returnUrl = uri.PathAndQuery;
+        var login = PortalPaths.TenantFrom(new PathString(uri.AbsolutePath)) is { } tenant ? PortalPaths.Login(tenant) : UiEndpoints.LoginPath;
+        Navigation.NavigateTo($"{login}?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
     }
 }
