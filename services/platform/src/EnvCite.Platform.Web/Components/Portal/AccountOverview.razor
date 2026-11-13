@@ -3,6 +3,7 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 @inherits PortalPageBase
+@inject ITenantModules Modules
 
 <DocumentTitle Text="@L["帳號與組織"]" />
 
@@ -44,6 +45,30 @@
         </dl>
     </SectionCard>
 
+    <SectionCard Id="modules-title" Title="@L["已啟用功能模組"]">
+        <dl class="ep-detail">
+            @foreach (var module in ModuleCatalog.All)
+            {
+                var enabled = Modules.IsEnabled(Tenant, module.Key);
+                <dt>@ModuleName(module.Key)</dt>
+                <dd>
+                    @if (enabled)
+                    {
+                        <StatusBadge Tone="success">@L["已啟用"]</StatusBadge>
+                        @if (ModuleHref(module.Key) is { } href)
+                        {
+                            <span> </span><a href="@href">@L["前往使用"]</a>
+                        }
+                    }
+                    else
+                    {
+                        <StatusBadge Tone="neutral">@L["未啟用"]</StatusBadge>
+                    }
+                </dd>
+            }
+        </dl>
+    </SectionCard>
+
     <SectionCard Id="keys-title" Title="API keys">
         @if (!CanSeeKeys)
         {
@@ -73,4 +98,22 @@
         },
         new() { Title = L["狀態"], Cell = key => @<text><StatusBadge Tone="@StatusTone(key)">@Status(key)</StatusBadge></text> },
     ];
+
+    private string ModuleName(string key) => key switch
+    {
+        ModuleKeys.LawSearch => L["法規條文檢索"],
+        ModuleKeys.LawCorpus => L["法規沿革與條文瀏覽"],
+        ModuleKeys.EvidenceGrounding => L["法源接地"],
+        ModuleKeys.GroundedAnswer => L["AI 法源問答"],
+        ModuleKeys.NormativeReasoning => L["規範推論評估"],
+        _ => key,
+    };
+
+    private string? ModuleHref(string key) => key switch
+    {
+        ModuleKeys.LawSearch or ModuleKeys.EvidenceGrounding or ModuleKeys.GroundedAnswer => PortalPaths.Home(Tenant),
+        ModuleKeys.LawCorpus => $"{PortalPaths.Home(Tenant)}/laws",
+        ModuleKeys.NormativeReasoning => $"{PortalPaths.Home(Tenant)}/reasoning",
+        _ => null,
+    };
 }
