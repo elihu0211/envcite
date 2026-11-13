@@ -11,11 +11,12 @@
 <LoadedView Loading="Loading" Error="@Error" FailedText="@L["載入總覽失敗。"]" LoadingLabel="@L["載入總覽中"]" OnRetry="LoadAsync">
     <StatGrid Items="Stats" />
 
-    <div class="ep-columns">
+    @* 待辦與最近活動是等寬、等高的兩張，不是主欄加側欄：兩者同等重要，誰先看都行。 *@
+    <div class="ep-grid">
         <SectionCard Id="todo-heading" Title="@L["需要處理"]">
             @if (_withoutPlan.Count == 0 && _pendingOperators.Count == 0)
             {
-                <p class="ep-page-description">@L["沒有待辦。"]</p>
+                <EmptyState Icon="@Icons.Material.Outlined.TaskAlt" Title="@L["沒有待辦。"]" />
             }
             else
             {

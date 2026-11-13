@@ -90,6 +90,21 @@ public sealed class OperatorPagesTests(PlatformFactory factory)
     }
 
     [Fact]
+    public async Task TheOverviewPutsTheTodoAndRecentActivityCardsSideBySideAsEqualGridCells()
+    {
+        using var client = SignedInClient();
+
+        var html = await PageAsync(client, "/ui");
+
+        var grid = html.IndexOf("<div class=\"ep-grid\">", StringComparison.Ordinal);
+        Assert.True(grid > 0, "the two cards are grid cells, not a main column plus a side column");
+        var todo = html.IndexOf("id=\"todo-heading\"", grid, StringComparison.Ordinal);
+        var recent = html.IndexOf("id=\"recent-heading\"", grid, StringComparison.Ordinal);
+        Assert.True(todo > grid && recent > todo, "todo first, then recent activity, both inside the grid");
+        Assert.DoesNotContain("ep-columns", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task TheTenantListShowsEachTenantWithItsPlan()
     {
         // 租戶清單一頁 25 列、依識別碼排序；共用資料庫裡的租戶會越來越多，識別碼以 0 開頭才保證排在第一頁。
