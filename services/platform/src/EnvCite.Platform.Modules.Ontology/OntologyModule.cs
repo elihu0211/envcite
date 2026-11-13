@@ -18,6 +18,7 @@ public static class OntologyModule
     {
         services.AddPlatformGrpcClient<OntologyService.OntologyServiceClient, OntologyOptions>();
         services.AddPlatformGrpcClient<ReasoningService.ReasoningServiceClient, OntologyOptions>();
+        services.AddSectionOptions<RelevanceFloorsOptions, RelevanceFloorsOptionsValidator>();
         services.AddSectionOptions<LawSearchOptions, LawSearchOptionsValidator>();
         services.AddScoped<ILawSearch, LawSearch>();
         return services;

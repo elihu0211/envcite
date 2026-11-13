@@ -1,4 +1,5 @@
 using EnvCite.Ontology.V2;
+using EnvCite.ServiceDefaults;
 
 using Grpc.Core;
 
@@ -8,6 +9,7 @@ internal sealed class LawSearch(
     OntologyService.OntologyServiceClient client,
     IOptions<OntologyOptions> options,
     IOptions<LawSearchOptions> relevance,
+    IOptions<RelevanceFloorsOptions> floors,
     IUsageRecorder usage) : ILawSearch
 {
     // 同 ontology 的服務預設：函釋帶出的條文會讓回應多幾條，沒有指定 limit 時也截回這個數量。
@@ -24,7 +26,7 @@ internal sealed class LawSearch(
                 deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
             await usage.RecordAsync(OntologyEndpoints.SearchOperation, 1, cancellationToken);
             return AdminOutcome.Ok<IReadOnlyList<LawHit>>(
-                [.. response.Hits.Where(h => relevance.Value.Passes(h.LexicalScore, h.SemanticSimilarity, h.TermCoverage, h.GuidanceDocuments)).Select(h => new LawHit(
+                [.. response.Hits.Where(h => relevance.Value.Passes(floors.Value, h.LexicalScore, h.SemanticSimilarity, h.TermCoverage, h.GuidanceDocuments)).Select(h => new LawHit(
                     h.Iri,
                     LawIdentifiers.ToDto(h.Identifier),
                     h.LawTitle,

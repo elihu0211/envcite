@@ -16,7 +16,7 @@ using EnvCite.ServiceDefaults;
 using Finbuckle.MultiTenant.AspNetCore.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddServiceEnvironment();
+builder.Configuration.AddServiceEnvironment().AddRelevanceFloors();
 
 // 預覽信件版型不寄信也不連資料庫，在建立主機（遷移、種子資料）之前就結束。
 if (MailPreview.IsCommand(args))

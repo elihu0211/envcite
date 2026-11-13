@@ -1,0 +1,6 @@
+{
+  "Relevance": {
+    "LexicalFloor": 0.5,
+    "SemanticFloor": 0.71
+  }
+}

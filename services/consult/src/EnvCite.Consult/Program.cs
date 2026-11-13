@@ -5,7 +5,7 @@ using EnvCite.ServiceDefaults;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddServiceEnvironment();
+builder.Configuration.AddServiceEnvironment().AddRelevanceFloors();
 
 // 叢集內是明文 h2c：沒有 TLS 就沒有 ALPN 可協商，端點只能是 HTTP/2。埠由 ASPNETCORE_HTTP_PORTS 給（映像內固定）。
 builder.WebHost.ConfigureKestrel(kestrel =>
