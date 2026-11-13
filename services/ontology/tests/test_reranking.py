@@ -13,7 +13,13 @@ from typing import Any
 import pytest
 
 from envcite_ontology.http import USER_AGENT
-from envcite_ontology.reranking import MAX_DOCUMENT_CHARS, Reranker, RerankError, select
+from envcite_ontology.reranking import (
+    MAX_BATCH,
+    MAX_DOCUMENT_CHARS,
+    Reranker,
+    RerankError,
+    select,
+)
 
 
 class Endpoint:
@@ -24,6 +30,8 @@ class Endpoint:
         self.status = 200
         self.mode = "ok"
         self.delay = 0.0
+        #: 真實端點一次最多收 32 條，33 條起回 500（實測）
+        self.accepts = 32
         endpoint = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -39,8 +47,9 @@ class Endpoint:
                     }
                 )
                 time.sleep(endpoint.delay)
+                too_many = len(body["documents"]) > endpoint.accepts
                 data = json.dumps(endpoint.reply(body["documents"])).encode()
-                self.send_response(endpoint.status)
+                self.send_response(500 if too_many else endpoint.status)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
@@ -202,3 +211,36 @@ def test_select_needs_one_score_per_item() -> None:
 
 def test_select_of_nothing_is_nothing() -> None:
     assert select([], [], limit=3) == []
+
+
+def test_more_documents_than_one_request_may_carry_are_scored_in_batches(
+    endpoint: Endpoint,
+) -> None:
+    documents = ["好" * (i % 5) for i in range(MAX_BATCH * 2 + 5)]
+
+    scores = reranker(endpoint).score("問", documents)
+
+    assert scores == [d.count("好") / 10 for d in documents]  # 次序與分數都與一次打分相同
+    assert [len(r["body"]["documents"]) for r in endpoint.requests] == [MAX_BATCH, MAX_BATCH, 5]
+    assert all(len(r["body"]["documents"]) <= endpoint.accepts for r in endpoint.requests)
+
+
+def test_the_endpoints_own_limit_is_what_the_batch_size_stays_under(endpoint: Endpoint) -> None:
+    assert endpoint.accepts >= MAX_BATCH
+
+
+def test_one_failed_batch_fails_the_whole_scoring(endpoint: Endpoint) -> None:
+    """半套的分數不收：第二批失敗，整份失敗，不回只有前 30 條的分數。"""
+    endpoint.accepts = MAX_BATCH - 1  # 端點比預期的小：每一批都被拒
+    with pytest.raises(RerankError, match="HTTP 500"):
+        reranker(endpoint).score("問", ["好"] * (MAX_BATCH + 1))
+
+
+def test_the_budget_is_shared_by_all_batches(endpoint: Endpoint) -> None:
+    endpoint.delay = 0.3
+
+    started = time.monotonic()
+    with pytest.raises(RerankError):
+        reranker(endpoint, timeout=30.0).score("問", ["好"] * (MAX_BATCH * 3), timeout=0.5)
+
+    assert time.monotonic() - started < 2.0  # 沒有每批各給 0.5 秒
