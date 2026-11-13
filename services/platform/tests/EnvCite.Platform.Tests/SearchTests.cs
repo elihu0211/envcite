@@ -50,6 +50,28 @@ public sealed class SearchTests(PlatformFactory factory)
         Assert.Equal(expected, hits!.Length);
     }
 
+    // 問句另走較低的語意下界（0.68），其餘維持共用下界（0.71）。語意相似度 0.69 的命中只有問句型的查詢列出；
+    // 結尾是法規類型後綴的是名稱，即使有問號也維持共用下界（名稱與不存在的名稱在語意臂上分不開）。
+    [Theory]
+    [InlineData(1, "mid-sem", 0)]
+    [InlineData(2, "mid-sem？", 1)]
+    [InlineData(3, "mid-sem?", 1)]
+    [InlineData(4, "mid-sem-a-long-sentence", 1)]
+    [InlineData(5, "mid-sem-空氣污染防制法", 0)]
+    [InlineData(6, "mid-sem-噪音管制標準", 0)]
+    [InlineData(7, "mid-sem-空氣污染防制法？", 0)]
+    public async Task OnlyAQuestionIsListedBelowTheSharedSemanticFloor(int id, string query, int expected)
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync($"search-route-{id}");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        using var response = await client.PostAsJsonAsync(SearchPath, new SearchRequest(query, null, null), cancellationToken: TestContext.Current.CancellationToken);
+        var hits = await response.Content.ReadFromJsonAsync<SearchHitDto[]>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(expected, hits!.Length);
+    }
+
     [Fact]
     public async Task AGuidanceArticleIsReturnedWithItsCountAndTheRequestAsksForGuidance()
     {
