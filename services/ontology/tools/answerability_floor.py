@@ -100,15 +100,19 @@ def best(rows: Sequence[Row], lexicals: Sequence[float], semantics: Sequence[flo
     return max((evaluate(rows, lf, sf) for lf in lexicals for sf in semantics), key=lambda p: p.j)
 
 
-#: 下界只寫在 consult 的設定一處；「現行」一列讀它。
-CONSULT_SETTINGS = (
-    Path(__file__).resolve().parents[2] / "consult" / "src" / "EnvCite.Consult" / "appsettings.json"
+#: 下界只寫在 ServiceDefaults 的共用檔一處（consult 與平台的搜尋端都讀它）；「現行」一列讀它。
+RELEVANCE_FLOORS = (
+    Path(__file__).resolve().parents[3]
+    / "libs"
+    / "dotnet"
+    / "EnvCite.ServiceDefaults"
+    / "relevance-floors.json"
 )
 
 
 def current_floors() -> tuple[float, float]:
-    """consult 現行的（字面、語意）下界。"""
-    floors = json.loads(CONSULT_SETTINGS.read_text(encoding="utf-8"))["Relevance"]
+    """現行的（字面、語意）下界。"""
+    floors = json.loads(RELEVANCE_FLOORS.read_text(encoding="utf-8"))["Relevance"]
     return float(floors["LexicalFloor"]), float(floors["SemanticFloor"])
 
 

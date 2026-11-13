@@ -374,13 +374,13 @@ def test_ten_hit_scores_above_the_k_hit_scores_are_impossible_and_refused() -> N
         )
 
 
-def test_the_floors_are_read_from_consults_settings_and_missing_keys_stop_the_run(
+def test_the_floors_are_read_from_the_shared_file_and_missing_keys_stop_the_run(
     tmp_path: Path,
 ) -> None:
     tool = _load("threshold_calibration")
-    floors = tool.read_floors(tool.CONSULT_SETTINGS)
+    floors = tool.read_floors(tool.RELEVANCE_FLOORS)
     assert floors.lexical > 0 and 0 < floors.semantic < 1
-    bad = tmp_path / "appsettings.json"
+    bad = tmp_path / "relevance-floors.json"
     bad.write_text(json.dumps({"Relevance": {"LexicalFloor": 1}}), encoding="utf-8")
     with pytest.raises(ValueError, match="SemanticFloor"):
         tool.read_floors(bad)

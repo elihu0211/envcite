@@ -50,6 +50,15 @@ class ServerSettings(DatabaseSettings, ModelsSettings):
         le=1,
         description="字面臂略過出現在超過此比例的段落的詞；0 為不略過",
     )
+    # 預設值取自 staging 的函釋：有鑑別力的詞組（露天燃燒、噪音、繞流排放）命中約 1% 的可用函釋，
+    # 常見詞（固定污染源、水污染防治、廢棄物清理）在 7% 以上；界線落在其間。樣本小，沒有題庫可量，
+    # 改預設值要先有以函釋用語查詢的題。
+    guidance_max_df: float = Field(
+        default=0.03,
+        ge=0,
+        le=1,
+        description="函釋入口：命中的函釋占可用函釋的比例超過此值，查詢就不用函釋入口；0 為不限制",
+    )
 
 
 def load[S: BaseSettings](cls: type[S]) -> S:
