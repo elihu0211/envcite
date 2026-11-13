@@ -624,4 +624,5 @@
   <data name="憲法" xml:space="preserve"><value>Constitution</value></data>
   <data name="法律" xml:space="preserve"><value>Statute</value></data>
   <data name="命令" xml:space="preserve"><value>Regulation</value></data>
+  <data name="法規結構目錄" xml:space="preserve"><value>Law structure outline</value></data>
 </root>

@@ -72,6 +72,27 @@ message Article {
 
   // 條號，依原文書寫，例如 "1"、"5-1"（第 5 條之 1）。
   string number = 2;
+
+  // 與 StructureHeading.sort_key 共用的整數陣列排序鍵；依閱讀順序交錯組樹。
+  repeated int32 sort_key = 3;
+}
+
+enum HeadingKind {
+  HEADING_KIND_UNSPECIFIED = 0;
+  HEADING_KIND_PART = 1;
+  HEADING_KIND_CHAPTER = 2;
+  HEADING_KIND_SECTION = 3;
+  HEADING_KIND_SUBSECTION = 4;
+  HEADING_KIND_ITEM_HEADING = 5;
+}
+
+message StructureHeading {
+  HeadingKind kind = 1;
+  string heading_no = 2;
+  string title = 3;
+  repeated int32 sort_key = 4;
+  // 在 ListArticlesResponse.headings 中的父節點索引；頂層節點為 -1。
+  int32 parent_index = 5;
 }
 
 message GetLawRequest {
@@ -95,6 +116,7 @@ message ListArticlesRequest {
 
 message ListArticlesResponse {
   repeated Article articles = 1;
+  repeated StructureHeading headings = 2;
 }
 
 message SearchArticlesRequest {

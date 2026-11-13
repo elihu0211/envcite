@@ -4,6 +4,13 @@ namespace EnvCite.Platform.SharedKernel;
 
 public sealed record PortalLawArticle(string Uri, string Number);
 
+public sealed record PortalStructureNode(
+    string Kind,
+    string HeadingNo,
+    string Title,
+    IReadOnlyList<PortalStructureNode> Children,
+    IReadOnlyList<PortalLawArticle> Articles);
+
 public sealed record PortalLawTreeNode(
     string Jurisdiction,
     string IdScheme,
@@ -20,7 +27,8 @@ public sealed record PortalLawCorpusResult(
     string Language,
     string Uri,
     string? DateDocument,
-    IReadOnlyList<PortalLawArticle> Articles);
+    IReadOnlyList<PortalLawArticle> Articles,
+    IReadOnlyList<PortalStructureNode> Structure);
 
 /// <summary>客戶入口「法規沿革與條文瀏覽」應用服務（經 <c>TenantScopes</c> 綁定租戶並檢查模組權限）。</summary>
 public interface ILawCorpusService

@@ -69,6 +69,34 @@ internal sealed class OntologyGateway(
             return [.. response.Articles.Select(a => new ArticleDto(a.Iri, a.Number))];
         });
 
+    public async Task<AdminOutcome<LawStructureDto>> ListLawStructureAsync(
+        string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken) =>
+        await CallAsync(OntologyBusy, async () =>
+        {
+            var response = await ontology.ListArticlesAsync(
+                new ListArticlesRequest { Identifier = IdentifierOf(jurisdiction, idScheme, localId), AsOf = asOf ?? string.Empty },
+                deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
+            await usage.RecordAsync(OntologyEndpoints.ListArticlesOperation, 1, cancellationToken);
+            return new LawStructureDto(
+                [.. response.Articles.Select(a => new ArticleWithSortDto(a.Iri, a.Number, [.. a.SortKey]))],
+                [.. response.Headings.Select(h => new StructureHeadingDto(
+                    HeadingKindName(h.Kind),
+                    h.HeadingNo,
+                    h.Title,
+                    [.. h.SortKey],
+                    h.ParentIndex))]);
+        });
+
+    private static string HeadingKindName(HeadingKind kind) => kind switch
+    {
+        HeadingKind.Part => "part",
+        HeadingKind.Chapter => "chapter",
+        HeadingKind.Section => "section",
+        HeadingKind.Subsection => "subsection",
+        HeadingKind.ItemHeading => "item_heading",
+        _ => "chapter",
+    };
+
     public async Task<AdminOutcome<ReasoningResultDto>> EvaluateAsync(EvaluateReasoningRequest request, CancellationToken cancellationToken) =>
         await CallAsync(OutcomeCodes.ReasoningBusy, async () =>
         {

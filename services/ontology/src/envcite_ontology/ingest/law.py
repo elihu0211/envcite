@@ -10,11 +10,11 @@ from datetime import date, timedelta
 from typing import Any, NamedTuple
 
 from envcite_ontology.import_problems import Problem
-from envcite_ontology.ingest import articles, commencement, history
+from envcite_ontology.ingest import articles, commencement, headings, history
 from envcite_ontology.ingest.numerals import parse_yyyymmdd
 
 #: 解析邏輯的版本。改變輸出的修改必須遞增，快照才會以新版重匯。
-PARSER_VERSION = 3
+PARSER_VERSION = 4
 
 _KINDS = {"憲法": "constitution", "法律": "statute", "命令": "regulation"}
 
@@ -57,6 +57,7 @@ class ParsedLaw:
     # 生出現行版本的那一筆公布（events 的索引）；版本日取自來源欄位時為 None。
     version_event: int | None
     units: list[ParsedUnit] = field(default_factory=list)
+    headings: list[headings.ParsedHeading] = field(default_factory=list)
     deleted_articles: int = 0
     degraded_articles: int = 0
     problems: list[Problem] = field(default_factory=list)
@@ -117,6 +118,9 @@ def parse(law: dict[str, Any], *, pcode: str, data_date: date) -> ParsedLaw:
             note=str(law.get("LawEffectiveNote") or ""),
             effective=parse_yyyymmdd(str(law.get("LawEffectiveDate") or "")),
         )
+        if parsed.units:
+            raw = [a for a in law.get("LawArticles") or [] if isinstance(a, dict)]
+            parsed.headings = headings.extract(raw)
     return parsed
 
 

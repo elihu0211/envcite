@@ -110,9 +110,18 @@ else
                                 <dt>@L["制定日："]</dt><dd>@docDate</dd>
                             }
                         </dl>
-                        @if (law.Articles.Count == 0)
+                        @if (law.Articles.Count == 0 && law.Structure.Count == 0)
                         {
                             <p class="ep-page-description">@L["這部法規在指定日期沒有條文。"]</p>
+                        }
+                        else if (law.Structure.Count > 0)
+                        {
+                            <div class="ep-tree" role="region" aria-label="@L["法規結構目錄"]">
+                                @foreach (var heading in law.Structure)
+                                {
+                                    @RenderStructureNode(heading)
+                                }
+                            </div>
                         }
                         else
                         {
@@ -197,4 +206,24 @@ else
         "regulation" or "order" => L["命令"],
         _ => normKind,
     };
+
+    private RenderFragment RenderStructureNode(PortalStructureNode node) => @<details class="ep-tree-branch" open>
+        <summary class="ep-tree-summary">
+            <span class="ep-tree-badge">@node.HeadingNo</span>
+            @if (!string.IsNullOrWhiteSpace(node.Title))
+            {
+                <span class="ep-tree-title">@node.Title</span>
+            }
+        </summary>
+        <div class="ep-tree-children">
+            @if (node.Articles.Count > 0)
+            {
+                <DataTable Items="node.Articles" Columns="ArticleColumns" Label="@node.HeadingNo" Plain="true" />
+            }
+            @foreach (var child in node.Children)
+            {
+                @RenderStructureNode(child)
+            }
+        </div>
+    </details>;
 }
