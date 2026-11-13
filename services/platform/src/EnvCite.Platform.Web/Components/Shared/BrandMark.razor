@@ -1,6 +1,8 @@
-@* 品牌圖形（葉片加葉脈），內嵌 SVG：靜態渲染也能用，顏色跟著文字（currentColor），葉脈用遮罩挖空，放在任何底色上都成立。
+@* 品牌圖形（書頁生葉：展開的書卷化為雙葉新芽），內嵌 SVG：靜態渲染也能用，顏色跟著文字（currentColor），以透明度區分頁次與芽脈，放在任何底色上都成立。
    純裝飾，旁邊的文字（系統名稱，見 BrandText）才是名稱。這份圖形與 wwwroot/brand/ 的 SVG 不讀 Platform:Brand:Name，改名時要另外換圖。檔案版（favicon、app icon）在 wwwroot/brand/，色碼由 DesignTokenTests 對齊 Brand。 *@
-<svg class="ep-brand-mark" viewBox="22 20 28 34" aria-hidden="true" focusable="false">
-    <mask id="ep-brand-vein"><rect x="0" y="0" width="72" height="72" fill="#fff" /><path d="M36 52c0-10 3-18 10-24" stroke="#000" stroke-width="2.5" fill="none" stroke-linecap="round" /></mask>
-    <path d="M36 52C24 48 20 36 24 24c12 0 20 6 20 16 0 6-3 10-8 12z" fill="currentColor" mask="url(#ep-brand-vein)" />
+<svg class="ep-brand-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M12 19 C9.5 17.5 6.5 17.2 3.5 18 V7.5 C6.5 6.8 9.5 7.6 12 10.2 Z" fill="currentColor" fill-opacity="0.88" />
+    <path d="M12 19 C14.5 17.5 17.5 17.2 20.5 18 V7.5 C17.5 6.8 14.5 7.6 12 10.2 Z" fill="currentColor" fill-opacity="0.62" />
+    <path d="M12 10.2 C12 6.8 14.2 4.2 17.2 4 C17.2 7 14.8 9.4 12 10.2 Z" fill="currentColor" />
+    <path d="M12 10.2 C12 7.2 10 4.8 7.2 4.6 C7.2 7.4 9.4 9.5 12 10.2 Z" fill="currentColor" fill-opacity="0.72" />
 </svg>
