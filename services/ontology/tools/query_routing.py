@@ -17,6 +17,12 @@
   並行度不得超過服務的嵌入名額（2），超過時語意臂被無聲略過；一題的命中裡一條語意相似度都沒有，
   視為語意臂被略過，重試幾次，仍然沒有就在紀錄上標 `semantic_skipped`。
 - `evaluate` 只讀這兩份檔、不呼叫任何服務：把候選的路由方案套在同一批命中上，分型別報告。
+- `compare-rules` 兩條規則逐題配對；`live-check` 對線上的 `/v2/search` 逐題查詢，與離線預測比對：
+
+      ENVCITE_API_KEY 不設時會提示輸入（不顯示）；每題計入該租戶的搜尋用量。
+      uv run python tools/query_routing.py live-check eval/query-routing-queries-2026-11-13.json \\
+          eval/query-routing-hits-2026-11-13.jsonl --meta eval/query-routing-meta-2026-11-13.json \\
+          --split dev --host https://<主機> --sample 60
 
 方案只能依開發集選；測試集在定案後報一次。
 """
@@ -24,10 +30,12 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
+import os
 import sys
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -500,6 +508,110 @@ def render(result: Mapping[str, Any], report_on: str) -> str:
     return "\n".join(lines)
 
 
+#: 上線的路由：分類器與各型別的規則。與平台 `LawSearchOptions` 的預設一致
+#: （關鍵字：覆蓋率 0.7、語意下界 0.74；問句：語意下界 0.68；名稱：現行）。
+DEPLOYED_CLASSIFIER = "shape(len>=10)"
+DEPLOYED_ROUTE = {"term": "θ0.7/s0.74", "name": "θ0.5", "question": "θ0.5/s0.68"}
+LIVE_LIMIT = 10
+
+
+def predicted_ids(case: Case, classify: Callable[[Case], str]) -> list[str]:
+    """上線的路由套在離線收集的命中上，預測 `/v2/search` 會回哪些條文（依回傳順序，最多 10 條）。"""
+    theta, b, semantic = RULES[DEPLOYED_ROUTE.get(classify(case), SHIPPED)]
+    kept = [h["a"] for h in case["hits"] if passes(h, theta, b, semantic)]
+    return kept[:LIVE_LIMIT]
+
+
+def live_ids(hits: Sequence[Mapping[str, Any]]) -> list[str]:
+    """`/v2/search` 回應的條文代號，與離線的 `a` 欄同一個寫法。"""
+    return [f"{h['identifier']['localId']}-art-{h['number']}" for h in hits]
+
+
+def compare_lists(live: Sequence[str], predicted: Sequence[str]) -> str:
+    """identical：同一串；same-set：同一批、順序不同；differs：不同。"""
+    if list(live) == list(predicted):
+        return "identical"
+    return "same-set" if sorted(live) == sorted(predicted) else "differs"
+
+
+def stratified_sample(cases: Sequence[Case], n: int) -> list[Case]:
+    """依雜湊排序後，各題型輪流取，每個題型都出現；與題庫增減無關。"""
+    import hashlib
+
+    by_kind: dict[str, list[Case]] = defaultdict(list)
+    for c in sorted(cases, key=lambda c: hashlib.sha256(c["id"].encode()).hexdigest()):
+        by_kind[c["kind"]].append(c)
+    out: list[Case] = []
+    queues = [by_kind[k] for k in sorted(by_kind)]
+    while len(out) < n and any(queues):
+        for q in queues:
+            if q and len(out) < n:
+                out.append(q.pop(0))
+    return out
+
+
+def fetch_live(host: str, key: str, query: str) -> list[dict[str, Any]]:
+    """對 `/v2/search` 查一次（查詢全文不寫日誌；key 只放在標頭）。"""
+    import urllib.request
+
+    request = urllib.request.Request(
+        f"{host.rstrip('/')}/v2/search",
+        data=json.dumps({"query": query, "asOf": None, "limit": None}).encode(),
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return json.loads(response.read())
+
+
+def live_check(
+    cases: Sequence[Case], suffixes: Sequence[str], host: str, key: str, sample: int
+) -> dict[str, Any]:
+    """對線上 `/v2/search` 逐題查詢，與離線預測比對。"""
+    classify = classifiers(suffixes)[DEPLOYED_CLASSIFIER]
+    rows: list[dict[str, Any]] = []
+    for case in stratified_sample(cases, sample):
+        live = live_ids(fetch_live(host, key, case["query"]))
+        want = predicted_ids(case, classify)
+        rows.append(
+            {
+                "id": case["id"],
+                "kind": case["kind"],
+                "query": case["query"],
+                "class": classify(case),
+                "live": len(live),
+                "predicted": len(want),
+                "match": compare_lists(live, want),
+            }
+        )
+    by_match = Counter(r["match"] for r in rows)
+    return {"summary": dict(by_match), "total": len(rows), "rows": rows}
+
+
+def render_live(result: Mapping[str, Any]) -> str:
+    lines = [f"共 {result['total']} 題：{result['summary']}", ""]
+    by_kind: dict[str, Counter[str]] = defaultdict(Counter)
+    for r in result["rows"]:
+        by_kind[r["kind"]][r["match"]] += 1
+    lines += ["| 題型 | identical | same-set | differs |", "|---|---|---|---|"]
+    for kind, c in sorted(by_kind.items()):
+        lines.append(f"| {kind} | {c['identical']} | {c['same-set']} | {c['differs']} |")
+    differing = [r for r in result["rows"] if r["match"] == "differs"]
+    if differing:
+        lines += [
+            "",
+            "不同的題（前 10）：",
+            "",
+            "| 題型 | 查詢 | 線上條數 | 預測條數 |",
+            "|---|---|---|---|",
+        ]
+        lines += [
+            f"| {r['kind']} | {r['query']} | {r['live']} | {r['predicted']} |"
+            for r in differing[:10]
+        ]
+    return "\n".join(lines)
+
+
 def compare_rules(cases: Sequence[Case], a: str, b: str) -> dict[str, Any]:
     """同一批題上兩條規則逐題配對，分題型：找到、誤放與列出條數的增減。"""
     out: dict[str, Any] = {}
@@ -555,6 +667,14 @@ def render_compare(result: Mapping[str, Any], a: str, b: str) -> str:
 def main(argv: Sequence[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = p.add_subparsers(dest="command", required=True)
+    lc = sub.add_parser("live-check", help="對線上 /v2/search 查詢，與離線預測逐題比對")
+    lc.add_argument("queries", type=Path)
+    lc.add_argument("hits", type=Path)
+    lc.add_argument("--meta", type=Path, required=True)
+    lc.add_argument("--split", required=True, help="題單的切分名（dev、test、fresh2…）")
+    lc.add_argument("--host", required=True, help="如 https://主機名稱")
+    lc.add_argument("--sample", type=int, default=60)
+    lc.add_argument("--json-out", type=Path)
     cr = sub.add_parser("compare-rules", help="兩條規則在同一批題上逐題配對")
     cr.add_argument("queries", type=Path)
     cr.add_argument("hits", type=Path)
@@ -600,6 +720,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         for r in rows:
             by[(r["cls"], r["split"])] += 1
         print(f"{len(rows)} 題：{dict(by)}；類型後綴 {suffixes}", file=sys.stderr)
+        return 0
+    if args.command == "live-check":
+        key = os.environ.get("ENVCITE_API_KEY") or getpass.getpass("API key（不會顯示）：")
+        meta = json.loads(args.meta.read_text(encoding="utf-8"))
+        cases = [c for c in load_cases(args.queries, args.hits) if c["split"] == args.split]
+        result = live_check(cases, meta["suffixes"], args.host, key, args.sample)
+        if args.json_out:
+            args.json_out.write_text(
+                json.dumps(result, ensure_ascii=False, indent=1) + "\n", "utf-8"
+            )
+        print(render_live(result))
         return 0
     if args.command == "compare-rules":
         if not {args.a, args.b} <= set(RULES):
