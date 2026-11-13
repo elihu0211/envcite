@@ -8,7 +8,10 @@
 
 <DocumentTitle Text="@L["兩步驟驗證"]" />
 
+@* 單一任務的頁面：標題與卡片一起收在置中的窄欄，不是一張滿寬卡把內容全擠在左邊。 *@
+<div class="ep-narrow">
 <PageHeader Title="@L["兩步驟驗證"]" />
 <TwoFactorSetupFlow TwoFactor="TwoFactor" FormPrefix="portal-mfa" HomeHref="@PortalPaths.Home(Tenant)" CardClass="ep-card"
                     RequiredText="@L["你的角色必須使用兩步驟驗證。請先完成下面的設定，才能使用入口的其他功能。"]"
                     EnabledText="@L["之後登入都會要求驗證碼。手機遺失、也沒有復原碼時，請洽貴組織的管理員或我們的營運人員為你重設。"]" />
+</div>
