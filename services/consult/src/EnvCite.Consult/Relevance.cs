@@ -32,9 +32,13 @@ internal sealed class RelevanceOptions : ISectionOptions
 
     public double HighConfidenceLexical => LexicalFloor * HighConfidenceLexicalRatio;
 
-    /// <summary>單一條文是否通過下界：字面臂或語意臂任一臂達標。</summary>
+    /// <summary>
+    /// 單一條文是否通過下界：字面臂或語意臂任一臂達標，或有函釋提到查詢詞並解釋它。後者是第三個入口，不是分數：
+    /// 查詢用語只出現在函釋時，兩臂的分數都低（甚至根本沒有命中），函釋已指明是哪一條，所以不再要求分數達標。
+    /// 函釋只用來找條文，所以這一條只讓條文進證據集，不算高信心（<see cref="IsHighConfidence"/>）。
+    /// </summary>
     public bool IsRelevant(Article article) =>
-        article.SemanticSimilarity >= SemanticFloor || article.LexicalScore >= LexicalFloor;
+        article.SemanticSimilarity >= SemanticFloor || article.LexicalScore >= LexicalFloor || article.GuidanceDocuments > 0;
 
     /// <summary>至少有一個來源達到此強度，即表示答案建立在直接的依據上。</summary>
     public bool IsHighConfidence(Article article) =>
