@@ -25,6 +25,9 @@ service OntologyService {
 
   // 列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。
   rpc ListLaws(ListLawsRequest) returns (ListLawsResponse);
+
+  // 取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。
+  rpc GetLawGraph(GetLawGraphRequest) returns (GetLawGraphResponse);
 }
 
 // 法規的複合自然鍵（管轄，識別碼方案，在地識別碼）。三個欄位都必填，沒有預設：
@@ -236,21 +239,135 @@ message ListLawsRequest {
 
   // 可選管轄過濾；留空為全部管轄。
   string jurisdiction = 2;
+
+  // 可選全國法規分類字首（單一大寫字母，例如 "O" 環境保護）；留空為全分類。
+  string category_prefix = 3;
 }
 
 message LawSummary {
   LawIdentifier identifier = 1;
   string iri = 2;
   string title = 3;
-  // 位階種類（corpus.norm_kind），例如 "constitution"、"law"、"regulation"、"order"。
+  // 位階種類（corpus.norm_kind），例如 "constitution"、"statute"、"regulation"。
   string norm_kind = 4;
   // 制定日（ISO 8601）；語料沒有制定紀錄時為空。
   string date_document = 5;
   // 若為授權命令且已解析到授權母法，填母法的複合自然鍵；否則不設。
   LawIdentifier parent_identifier = 6;
+  // 《中央法規標準法》定名種類（corpus.legal_resource.document_type），例如「法」「條例」「細則」「辦法」「標準」。
+  string document_type = 7;
+  // 於 `as_of` 當日有效之下位授權法規總數。
+  int32 child_count = 8;
+  // 已解析之上位授權母法總數（反映多母法共同授權）。
+  int32 parent_count = 9;
+  // 解釋本法條文且於 `as_of` 當日有效之函釋件數。
+  int32 guidance_count = 10;
 }
 
 message ListLawsResponse {
   repeated LawSummary laws = 1;
+}
+
+message GetLawGraphRequest {
+  // 焦點法規；留空代表「核心母法星系總覽」，依下位授權數選出代表母法並附憲法與多層關聯。
+  LawIdentifier identifier = 1;
+
+  // 見 GetLawRequest.as_of。
+  string as_of = 2;
+
+  // 總覽模式的可選分類字首（單一大寫字母，例如 "O" 環境保護）；留空為全部類別。
+  string category_prefix = 3;
+
+  // 向上追溯授權母法鏈之最大深度（0 表示預設 2；有效範圍 1 至 4）。
+  int32 upstream_depth = 4;
+
+  // 向下展開授權子法規之最大深度（0 表示預設 2；有效範圍 1 至 4）。
+  int32 downstream_depth = 5;
+
+  // 單一母法節點最多展開之直接子法規數（0 表示預設 20；有效範圍 1 至 60）。
+  int32 child_limit = 6;
+
+  // 若指定，僅展開該 `document_type` 之下位授權法規（例如「辦法」「標準」「細則」）。
+  string child_document_type = 7;
+}
+
+message GetLawGraphResponse {
+  // 焦點法規識別碼；總覽模式為未設定。
+  LawIdentifier focus_identifier = 1;
+  repeated LawGraphNode nodes = 2;
+  repeated LawGraphEdge edges = 3;
+  // 焦點法規內部之罰則與義務條文（或授權辦法條文）連動清單。
+  repeated ArticleViolationLink violation_links = 4;
+  // 解釋焦點法規條文且於 `as_of` 當日尚未停止適用之行政函釋摘要。
+  repeated GuidanceLink guidance_links = 5;
+  // 焦點法規所有有效直接子法規依 `document_type` 統計之分組數量，供漸進展開與聚合膠囊使用。
+  repeated ChildGroupCount child_groups = 6;
+}
+
+message LawGraphNode {
+  LawIdentifier identifier = 1;
+  string iri = 2;
+  string title = 3;
+  string norm_kind = 4;
+  string document_type = 5;
+  string date_document = 6;
+  // 凱爾森位階層級（0 憲法、1 法律、2 第一層法規命令、3 再授權子規則）。
+  int32 hierarchy_tier = 7;
+  // 於 `as_of` 當日有效之直接下位授權法規總數。
+  int32 total_children = 8;
+  // 本次回應中未展開之直接下位法規數量（> 0 時前端顯示聚合膠囊節點）。
+  int32 truncated_children = 9;
+  int32 article_count = 10;
+  // 於 `as_of` 當日有效宣告違憲失效之單元數（須標示憲法法庭出處）。
+  int32 invalidation_count = 11;
+  int32 guidance_count = 12;
+}
+
+enum GraphEdgeKind {
+  GRAPH_EDGE_KIND_UNSPECIFIED = 0;
+  // 法律直接授權訂定法規命令。
+  GRAPH_EDGE_KIND_DELEGATION = 1;
+  // 授權命令進一步授權訂定之下位規則。
+  GRAPH_EDGE_KIND_SUB_DELEGATION = 2;
+}
+
+message LawGraphEdge {
+  LawIdentifier source = 1;
+  LawIdentifier target = 2;
+  GraphEdgeKind kind = 3;
+  // 母法授權依據條項路徑或格式條號清單（例如「第 38 條」「第 42 條第 2 項」）。
+  repeated string anchor_articles = 4;
+  bool all_rooted = 5;
+}
+
+enum ViolationReferenceKind {
+  VIOLATION_REFERENCE_KIND_UNSPECIFIED = 0;
+  // 罰則直接處罰所引用義務條文之違反。
+  VIOLATION_REFERENCE_KIND_DUTY = 1;
+  // 罰則處罰「違反依母法第 N 條所定辦法」。
+  VIOLATION_REFERENCE_KIND_DELEGATED_RULE = 2;
+}
+
+message ArticleViolationLink {
+  string penalty_article = 1;
+  string penalty_path = 2;
+  ViolationReferenceKind kind = 3;
+  string target_article = 4;
+  string target_path = 5;
+}
+
+message GuidanceLink {
+  string article_number = 1;
+  string path = 2;
+  string document_no = 3;
+  string issuer = 4;
+  string issued_on = 5;
+  string subject = 6;
+  string source_url = 7;
+}
+
+message ChildGroupCount {
+  string document_type = 1;
+  int32 count = 2;
 }
 

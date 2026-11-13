@@ -125,6 +125,54 @@ public sealed class TenantModulesTests(PlatformFactory factory)
         Assert.False(corpusBlocked.IsOk);
         Assert.Equal(OutcomeCodes.ModuleDisabled, corpusBlocked.Code);
 
+        var blockedGraph = await corpus.GraphAsync(
+            portalUser,
+            new PortalLawGraphQuery(new PortalLawKey("TW-CENTRAL", "moj_pcode", "O0020001")),
+            ct);
+        Assert.False(blockedGraph.IsOk);
+        Assert.Equal(OutcomeCodes.ModuleDisabled, blockedGraph.Code);
+
+        Assert.True((await moduleAdmin.SetAsync(Operator, tenant.Id, ModuleKeys.LawCorpus, true, ct)).IsOk);
+        var tree = await corpus.TreeByCategoryAsync(portalUser, null, "O", null, ct);
+        Assert.True(tree.IsOk);
+        Assert.True(tree.Value!.CatalogAvailable);
+        var root = Assert.Single(tree.Value.Roots);
+        Assert.Equal("O0020001", root.LocalId);
+        Assert.Equal("法", root.DocumentType);
+        Assert.Equal(1, root.ChildCount);
+
+        var graph = await corpus.GraphAsync(
+            portalUser,
+            new PortalLawGraphQuery(
+                new PortalLawKey("TW-CENTRAL", "moj_pcode", "O0020001"),
+                AsOf: "2025-01-01",
+                CategoryPrefix: "O",
+                UpstreamDepth: 2,
+                DownstreamDepth: 3,
+                ChildLimit: 15,
+                ChildDocumentType: "細則"),
+            ct);
+        Assert.True(graph.IsOk);
+        Assert.True(graph.Value!.Available);
+        Assert.Equal("O0020001", graph.Value.Focus!.LocalId);
+        Assert.Equal(3, graph.Value.Nodes.Count);
+        Assert.Contains(graph.Value.Edges, e => e.Kind == "sub_delegation" && e.AnchorArticles.Contains("第 5 條"));
+        Assert.Single(graph.Value.ViolationLinks);
+        Assert.Single(graph.Value.GuidanceLinks);
+        Assert.Equal(2, graph.Value.ChildGroups.Count);
+
+        try
+        {
+            factory.Ontology.ReturnUnimplementedGraph = true;
+            var fallback = await corpus.GraphAsync(portalUser, new PortalLawGraphQuery(null), ct);
+            Assert.True(fallback.IsOk);
+            Assert.False(fallback.Value!.Available);
+        }
+        finally
+        {
+            factory.Ontology.ReturnUnimplementedGraph = false;
+        }
+
         Assert.True((await moduleAdmin.SetAsync(Operator, tenant.Id, ModuleKeys.NormativeReasoning, false, ct)).IsOk);
         var reasoningBlocked = await reasoning.EvaluateAsync(
             portalUser,

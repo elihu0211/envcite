@@ -6,8 +6,12 @@ namespace EnvCite.Platform.Modules.Ontology;
 
 internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modules) : ILawCorpusService
 {
-    public async Task<AdminOutcome<PortalLawTreeResult>> TreeAsync(
-        ClaimsPrincipal user, string? jurisdiction, string? asOf, CancellationToken cancellationToken)
+    public Task<AdminOutcome<PortalLawTreeResult>> TreeAsync(
+        ClaimsPrincipal user, string? jurisdiction, string? asOf, CancellationToken cancellationToken) =>
+        TreeByCategoryAsync(user, jurisdiction, null, asOf, cancellationToken);
+
+    public async Task<AdminOutcome<PortalLawTreeResult>> TreeByCategoryAsync(
+        ClaimsPrincipal user, string? jurisdiction, string? categoryPrefix, string? asOf, CancellationToken cancellationToken)
     {
         if (PortalTenant(user) is not { } identifier)
             return AdminOutcome.Forbidden<PortalLawTreeResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
@@ -18,12 +22,28 @@ internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modu
         return await tenants.InByIdentifierAsync(identifier, async scope =>
         {
             var gateway = scope.Get<OntologyGateway>();
-            var outcome = await gateway.ListLawsAsync(jurisdiction, asOf, cancellationToken);
+            var outcome = await gateway.ListLawsAsync(jurisdiction, asOf, cancellationToken, categoryPrefix);
             if (!outcome.IsOk)
                 return new AdminOutcome<PortalLawTreeResult>(outcome.Status, default, outcome.Message, outcome.Code, outcome.Args);
 
             var (laws, available) = outcome.Value;
             return AdminOutcome.Ok(new PortalLawTreeResult(BuildTree(laws), available));
+        });
+    }
+
+    public async Task<AdminOutcome<PortalLawGraphResult>> GraphAsync(
+        ClaimsPrincipal user, PortalLawGraphQuery query, CancellationToken cancellationToken)
+    {
+        if (PortalTenant(user) is not { } identifier)
+            return AdminOutcome.Forbidden<PortalLawGraphResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
+
+        if (!modules.IsEnabled(identifier, ModuleKeys.LawCorpus))
+            return AdminOutcome.Forbidden<PortalLawGraphResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
+
+        return await tenants.InByIdentifierAsync(identifier, async scope =>
+        {
+            var gateway = scope.Get<OntologyGateway>();
+            return await gateway.GetLawGraphAsync(query, cancellationToken);
         });
     }
 
@@ -150,7 +170,11 @@ internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modu
                 item.Title,
                 item.NormKind,
                 item.DateDocument,
-                kids);
+                kids,
+                item.DocumentType,
+                item.ChildCount,
+                item.ParentCount,
+                item.GuidanceCount);
         }
 
         return [.. roots.Select(ToNode)];

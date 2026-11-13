@@ -20,7 +20,7 @@ from envcite_ontology.guidance_search import fuse, guidance_phrases
 from envcite_ontology.identifiers import jurisdiction_filter, law_key
 from envcite_ontology.law_names import LawNames
 from envcite_ontology.reranking import RerankError, Reranks, select
-from envcite_ontology.store import LawKey, OntologyStore, SearchHit
+from envcite_ontology.store import LawGraphRecord, LawKey, OntologyStore, SearchHit
 from envcite_segmenter import Segmenter
 
 log = logging.getLogger(__name__)
@@ -29,8 +29,22 @@ log = logging.getLogger(__name__)
 #: `limit` 為 0 時的預設命中數，與可請求的上限。
 DEFAULT_SEARCH_LIMIT = 10
 MAX_SEARCH_LIMIT = 50
+DEFAULT_GRAPH_DEPTH = 2
+MAX_GRAPH_DEPTH = 4
+DEFAULT_GRAPH_CHILD_LIMIT = 20
+MAX_GRAPH_CHILD_LIMIT = 60
 #: 請求帶 `rerank` 時，兩臂預設取幾條候選交給精排模型（`ServerSettings.rerank_candidates` 覆寫）。
 DEFAULT_RERANK_CANDIDATES = 30
+
+_EDGE_KINDS = {
+    "delegation": pb.GRAPH_EDGE_KIND_DELEGATION,
+    "sub_delegation": pb.GRAPH_EDGE_KIND_SUB_DELEGATION,
+}
+
+_VIOLATION_KINDS = {
+    "duty": pb.VIOLATION_REFERENCE_KIND_DUTY,
+    "delegated_rule": pb.VIOLATION_REFERENCE_KIND_DELEGATED_RULE,
+}
 
 _RULING_KINDS = {
     "interpretation": pb.RULING_KIND_INTERPRETATION,
@@ -142,11 +156,13 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         v = errors.Validator()
         v.date("as_of", request.as_of)
         jurisdiction = jurisdiction_filter(self._store, request.jurisdiction, v)
+        category_prefix = _category_prefix_filter(request.category_prefix, v)
         v.check()
 
         laws = self._store.list_laws(
             as_of=request.as_of,
             jurisdiction=jurisdiction,
+            category_prefix=category_prefix,
             timeout=remaining_seconds(context),
         )
         items: list[pb.LawSummary] = []
@@ -172,9 +188,67 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                     norm_kind=item.norm_kind,
                     date_document=item.date_document,
                     parent_identifier=parent,
+                    document_type=item.document_type,
+                    child_count=item.child_count,
+                    parent_count=item.parent_count,
+                    guidance_count=item.guidance_count,
                 )
             )
         return pb.ListLawsResponse(laws=items)
+
+    @errors.maps_errors
+    def GetLawGraph(
+        self, request: pb.GetLawGraphRequest, context: grpc.ServicerContext
+    ) -> pb.GetLawGraphResponse:
+        has_id = request.HasField("identifier")
+        subject = (
+            identifiers.subject(request.identifier)
+            if has_id
+            else f"overview:{request.category_prefix or 'all'}"
+        )
+        _log_call(context, "GetLawGraph", subject)
+
+        v = errors.Validator()
+        key = law_key(self._store, request.identifier, v) if has_id else None
+        v.date("as_of", request.as_of)
+        category_prefix = _category_prefix_filter(request.category_prefix, v)
+        upstream_depth = _bounded_int(
+            request.upstream_depth,
+            default=DEFAULT_GRAPH_DEPTH,
+            max_value=MAX_GRAPH_DEPTH,
+            field="upstream_depth",
+            v=v,
+        )
+        downstream_depth = _bounded_int(
+            request.downstream_depth,
+            default=DEFAULT_GRAPH_DEPTH,
+            max_value=MAX_GRAPH_DEPTH,
+            field="downstream_depth",
+            v=v,
+        )
+        child_limit = _bounded_int(
+            request.child_limit,
+            default=DEFAULT_GRAPH_CHILD_LIMIT,
+            max_value=MAX_GRAPH_CHILD_LIMIT,
+            field="child_limit",
+            v=v,
+        )
+        v.check()
+
+        graph = self._store.get_law_graph(
+            key,
+            as_of=request.as_of,
+            category_prefix=category_prefix,
+            upstream_depth=upstream_depth,
+            downstream_depth=downstream_depth,
+            child_limit=child_limit,
+            child_document_type=request.child_document_type,
+            timeout=remaining_seconds(context),
+        )
+        if graph is None:
+            assert key is not None
+            raise identifiers.not_found(self._store, key, request.as_of, context)
+        return _to_graph_response(graph)
 
     @errors.maps_errors
     def ListInvalidations(
@@ -357,4 +431,106 @@ def _log_call(context: grpc.ServicerContext, method: str, subject: str) -> None:
         subject,
         metadata.get("x-tenant-id", "-"),
         metadata.get("x-request-id", "-"),
+    )
+
+
+def _category_prefix_filter(prefix: str, v: errors.Validator) -> str | None:
+    """可選的全國法規分類字首（單一大寫字母 A–Z）。"""
+    if not prefix:
+        return None
+    if len(prefix) != 1 or not ("A" <= prefix <= "Z"):
+        v.add(
+            "category_prefix",
+            errors.UNKNOWN_VALUE,
+            "category_prefix must be a single uppercase letter A-Z",
+        )
+    return prefix
+
+
+def _bounded_int(
+    value: int, *, default: int, max_value: int, field: str, v: errors.Validator
+) -> int:
+    actual = default if value == 0 else value
+    if not 0 < actual <= max_value:
+        v.add(field, errors.OUT_OF_RANGE, f"{field} must be between 1 and {max_value}")
+    return actual
+
+
+def _to_graph_response(graph: LawGraphRecord) -> pb.GetLawGraphResponse:
+    focus = (
+        pb.LawIdentifier(
+            jurisdiction=graph.focus_jurisdiction,
+            id_scheme=graph.focus_id_scheme,
+            local_id=graph.focus_local_id,
+        )
+        if graph.focus_jurisdiction and graph.focus_id_scheme and graph.focus_local_id
+        else None
+    )
+    return pb.GetLawGraphResponse(
+        focus_identifier=focus,
+        nodes=[
+            pb.LawGraphNode(
+                identifier=pb.LawIdentifier(
+                    jurisdiction=n.jurisdiction,
+                    id_scheme=n.id_scheme,
+                    local_id=n.local_id,
+                ),
+                iri=n.iri,
+                title=n.title,
+                norm_kind=n.norm_kind,
+                document_type=n.document_type,
+                date_document=n.date_document,
+                hierarchy_tier=n.hierarchy_tier,
+                total_children=n.total_children,
+                truncated_children=n.truncated_children,
+                article_count=n.article_count,
+                invalidation_count=n.invalidation_count,
+                guidance_count=n.guidance_count,
+            )
+            for n in graph.nodes
+        ],
+        edges=[
+            pb.LawGraphEdge(
+                source=pb.LawIdentifier(
+                    jurisdiction=e.source_jurisdiction,
+                    id_scheme=e.source_id_scheme,
+                    local_id=e.source_local_id,
+                ),
+                target=pb.LawIdentifier(
+                    jurisdiction=e.target_jurisdiction,
+                    id_scheme=e.target_id_scheme,
+                    local_id=e.target_local_id,
+                ),
+                kind=_EDGE_KINDS.get(e.kind, pb.GRAPH_EDGE_KIND_UNSPECIFIED),
+                anchor_articles=e.anchor_articles,
+                all_rooted=e.all_rooted,
+            )
+            for e in graph.edges
+        ],
+        violation_links=[
+            pb.ArticleViolationLink(
+                penalty_article=v.penalty_article,
+                penalty_path=v.penalty_path,
+                kind=_VIOLATION_KINDS.get(v.kind, pb.VIOLATION_REFERENCE_KIND_UNSPECIFIED),
+                target_article=v.target_article,
+                target_path=v.target_path,
+            )
+            for v in graph.violation_links
+        ],
+        guidance_links=[
+            pb.GuidanceLink(
+                article_number=g.article_number,
+                path=g.path,
+                document_no=g.document_no,
+                issuer=g.issuer,
+                issued_on=g.issued_on,
+                subject=g.subject,
+                source_url=g.source_url,
+            )
+            for g in graph.guidance_links
+        ],
+        child_groups=[
+            pb.ChildGroupCount(document_type=cg.document_type, count=cg.count)
+            for cg in graph.child_groups
+        ],
     )

@@ -63,6 +63,11 @@ class OntologyServiceStub:
                 request_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsRequest.SerializeToString,
                 response_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsResponse.FromString,
                 _registered_method=True)
+        self.GetLawGraph = channel.unary_unary(
+                '/envcite.ontology.v2.OntologyService/GetLawGraph',
+                request_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphRequest.SerializeToString,
+                response_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphResponse.FromString,
+                _registered_method=True)
 
 
 class OntologyServiceServicer:
@@ -109,6 +114,13 @@ class OntologyServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetLawGraph(self, request, context):
+        """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OntologyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -136,6 +148,11 @@ def add_OntologyServiceServicer_to_server(servicer, server):
                     servicer.ListLaws,
                     request_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsRequest.FromString,
                     response_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsResponse.SerializeToString,
+            ),
+            'GetLawGraph': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetLawGraph,
+                    request_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphRequest.FromString,
+                    response_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -277,6 +294,33 @@ class OntologyService:
             '/envcite.ontology.v2.OntologyService/ListLaws',
             envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsRequest.SerializeToString,
             envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetLawGraph(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/envcite.ontology.v2.OntologyService/GetLawGraph',
+            envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphRequest.SerializeToString,
+            envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphResponse.FromString,
             options,
             channel_credentials,
             insecure,

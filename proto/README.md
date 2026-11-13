@@ -134,6 +134,10 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 
 `ListInvalidations` 回某日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效），`as_of` 語意同其他 rpc，法規不存在或該日無版本的錯誤同 `GetLaw`。回應逐筆附裁判字號、出處網址與解釋文原文；`partial` 為真時裁判只宣告條文的一部分，範圍以原文為準。**沒有列出不等於沒有失效**：失效條文由規則自解釋文提出，寫法含糊的不提（見 ontology README〈違憲失效〉），顯示這些資料須標示出處（憲法法庭）。
 
+`ListLaws` 依 `as_of` 列出有效法規摘要與首要授權母法，支援 `jurisdiction` 與全國法規分類字首 `category_prefix`（單一大寫字母，不符格式回 `INVALID_ARGUMENT`）過濾；每筆 `LawSummary` 附《中央法規標準法》定名種類 `document_type`、直接子法數 `child_count`、已解析上位母法數 `parent_count` 及當日有效函釋數 `guidance_count`。
+
+`GetLawGraph` 回傳知識圖譜子圖，供多層授權架構與跨條文連動檢視：指定 `identifier` 時依 `upstream_depth`（預設 2、上限 4）、`downstream_depth`（預設 2、上限 4）、`child_limit`（預設 20、上限 60）與可選 `child_document_type` 展開焦點法規之多母法 DAG 關聯，並附焦點法規內部的義務罰則連動（`violation_links`）、尚未停止適用之行政函釋（`guidance_links`，須依行政程序法第 159 條區分行政規則與法規命令）及直接子法規依定名種類分組計數（`child_groups`）；未指定 `identifier` 時進入總覽模式（可配 `category_prefix`），回傳憲法、核心母法與代表性高層級法規子圖。各節點之 `invalidation_count` 統計當日有效宣告違憲失效單元數（顯示時須標示憲法法庭出處）。
+
 - `question` 傳使用者原句，不要先改寫；`SearchArticles` 的 `query` 同樣傳原文，斷詞由服務做。
 - 回應的 `outcome` 恰有一個：`evidence`（有筆數上限的引用，依相關程度排序）或 `refused`（拒答）。拒答是結果，不是錯誤：呈現給使用者，不重試、不呼叫模型；拒答不代表地方法規沒有規定（語料只涵蓋中央法規；問句明白在問自治法規時的拒答原因是 `REASON_LOCAL_LAW_UNCOVERED`，見 [`platform` 的「語料範圍」](../services/platform/README.md#語料範圍)）。
 - 交給模型時，證據以代號（`L1`…）開頭，限定模型只能以 `[L1]` 引用。代號的字母是來源本體的（法規本體 `law` 為 `L`），每筆 `Citation.ontology` 標明出處；每個本體各領一個字母，序號在整份證據內連續。
