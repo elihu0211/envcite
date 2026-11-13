@@ -14,6 +14,33 @@ internal sealed class OntologyGateway(
     IOptions<OntologyOptions> options,
     IUsageRecorder usage)
 {
+    public async Task<AdminOutcome<(IReadOnlyList<LawSummaryDto> Laws, bool Available)>> ListLawsAsync(
+        string? jurisdiction, string? asOf, CancellationToken cancellationToken) =>
+        await CallAsync(OntologyBusy, async () =>
+        {
+            try
+            {
+                var response = await ontology.ListLawsAsync(
+                    new ListLawsRequest { Jurisdiction = jurisdiction ?? string.Empty, AsOf = asOf ?? string.Empty },
+                    deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
+                IReadOnlyList<LawSummaryDto> items =
+                [
+                    .. response.Laws.Select(l => new LawSummaryDto(
+                        LawIdentifiers.ToDto(l.Identifier),
+                        l.Iri,
+                        l.Title,
+                        l.NormKind,
+                        string.IsNullOrEmpty(l.DateDocument) ? null : l.DateDocument,
+                        l.ParentIdentifier is null ? null : LawIdentifiers.ToDto(l.ParentIdentifier)))
+                ];
+                return (items, true);
+            }
+            catch (RpcException ex) when (ex.StatusCode == StatusCode.Unimplemented)
+            {
+                return ((IReadOnlyList<LawSummaryDto>)[], false);
+            }
+        });
+
     public async Task<AdminOutcome<LawDto>> GetLawAsync(
         string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken) =>
         await CallAsync(OntologyBusy, async () =>
@@ -83,3 +110,11 @@ internal sealed class OntologyGateway(
         }
     }
 }
+
+internal sealed record LawSummaryDto(
+    LawIdentifierDto Identifier,
+    string Uri,
+    string Title,
+    string NormKind,
+    string? DateDocument,
+    LawIdentifierDto? ParentIdentifier);

@@ -462,3 +462,87 @@ class Invalidation(_message.Message):
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___Invalidation: _TypeAlias = Invalidation  # noqa: Y015
+
+@_typing.final
+class ListLawsRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    AS_OF_FIELD_NUMBER: _builtins.int
+    JURISDICTION_FIELD_NUMBER: _builtins.int
+    as_of: _builtins.str
+    """依哪一天施行的版本解析（ISO 8601）。留空為現行。"""
+    jurisdiction: _builtins.str
+    """可選管轄過濾；留空為全部管轄。"""
+    def __init__(
+        self,
+        *,
+        as_of: _builtins.str = ...,
+        jurisdiction: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "jurisdiction", b"jurisdiction"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ListLawsRequest: _TypeAlias = ListLawsRequest  # noqa: Y015
+
+@_typing.final
+class LawSummary(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    IDENTIFIER_FIELD_NUMBER: _builtins.int
+    IRI_FIELD_NUMBER: _builtins.int
+    TITLE_FIELD_NUMBER: _builtins.int
+    NORM_KIND_FIELD_NUMBER: _builtins.int
+    DATE_DOCUMENT_FIELD_NUMBER: _builtins.int
+    PARENT_IDENTIFIER_FIELD_NUMBER: _builtins.int
+    iri: _builtins.str
+    title: _builtins.str
+    norm_kind: _builtins.str
+    """位階種類（corpus.norm_kind），例如 "constitution"、"law"、"regulation"、"order"。"""
+    date_document: _builtins.str
+    """制定日（ISO 8601）；語料沒有制定紀錄時為空。"""
+    @_builtins.property
+    def identifier(self) -> Global___LawIdentifier: ...
+    @_builtins.property
+    def parent_identifier(self) -> Global___LawIdentifier:
+        """若為授權命令且已解析到授權母法，填母法的複合自然鍵；否則不設。"""
+
+    def __init__(
+        self,
+        *,
+        identifier: Global___LawIdentifier | None = ...,
+        iri: _builtins.str = ...,
+        title: _builtins.str = ...,
+        norm_kind: _builtins.str = ...,
+        date_document: _builtins.str = ...,
+        parent_identifier: Global___LawIdentifier | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["identifier", b"identifier", "parent_identifier", b"parent_identifier"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["date_document", b"date_document", "identifier", b"identifier", "iri", b"iri", "norm_kind", b"norm_kind", "parent_identifier", b"parent_identifier", "title", b"title"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___LawSummary: _TypeAlias = LawSummary  # noqa: Y015
+
+@_typing.final
+class ListLawsResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    LAWS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def laws(self) -> _containers.RepeatedCompositeFieldContainer[Global___LawSummary]: ...
+    def __init__(
+        self,
+        *,
+        laws: _abc.Iterable[Global___LawSummary] | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["laws", b"laws"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ListLawsResponse: _TypeAlias = ListLawsResponse  # noqa: Y015

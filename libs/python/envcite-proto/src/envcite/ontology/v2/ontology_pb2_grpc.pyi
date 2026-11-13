@@ -49,6 +49,8 @@ class OntologyServiceStub:
     """`as_of` 當日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效）。法規不存在或
     該日無施行版本的回應同 GetLaw。
     """
+    ListLaws: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.ListLawsRequest, _ontology_pb2.ListLawsResponse]
+    """列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。"""
 
 @_typing.type_check_only
 class OntologyServiceAsyncStub(OntologyServiceStub):
@@ -71,6 +73,8 @@ class OntologyServiceAsyncStub(OntologyServiceStub):
     """`as_of` 當日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效）。法規不存在或
     該日無施行版本的回應同 GetLaw。
     """
+    ListLaws: _aio.UnaryUnaryMultiCallable[_ontology_pb2.ListLawsRequest, _ontology_pb2.ListLawsResponse]  # type: ignore[assignment]
+    """列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。"""
 
 class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
     """環境法規本體的唯讀存取（關聯式，PostgreSQL）。
@@ -114,5 +118,13 @@ class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
         """`as_of` 當日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效）。法規不存在或
         該日無施行版本的回應同 GetLaw。
         """
+
+    @_abc_1.abstractmethod
+    def ListLaws(
+        self,
+        request: _ontology_pb2.ListLawsRequest,
+        context: _ServicerContext,
+    ) -> _typing.Union[_ontology_pb2.ListLawsResponse, _abc.Awaitable[_ontology_pb2.ListLawsResponse]]:
+        """列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。"""
 
 def add_OntologyServiceServicer_to_server(servicer: OntologyServiceServicer, server: _typing.Union[_grpc.Server, _aio.Server]) -> None: ...

@@ -58,6 +58,11 @@ class OntologyServiceStub:
                 request_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListInvalidationsRequest.SerializeToString,
                 response_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListInvalidationsResponse.FromString,
                 _registered_method=True)
+        self.ListLaws = channel.unary_unary(
+                '/envcite.ontology.v2.OntologyService/ListLaws',
+                request_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsRequest.SerializeToString,
+                response_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsResponse.FromString,
+                _registered_method=True)
 
 
 class OntologyServiceServicer:
@@ -97,6 +102,13 @@ class OntologyServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListLaws(self, request, context):
+        """列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OntologyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -119,6 +131,11 @@ def add_OntologyServiceServicer_to_server(servicer, server):
                     servicer.ListInvalidations,
                     request_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListInvalidationsRequest.FromString,
                     response_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListInvalidationsResponse.SerializeToString,
+            ),
+            'ListLaws': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListLaws,
+                    request_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsRequest.FromString,
+                    response_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -233,6 +250,33 @@ class OntologyService:
             '/envcite.ontology.v2.OntologyService/ListInvalidations',
             envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListInvalidationsRequest.SerializeToString,
             envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListInvalidationsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListLaws(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/envcite.ontology.v2.OntologyService/ListLaws',
+            envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsRequest.SerializeToString,
+            envcite_dot_ontology_dot_v2_dot_ontology__pb2.ListLawsResponse.FromString,
             options,
             channel_credentials,
             insecure,

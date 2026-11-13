@@ -22,6 +22,9 @@ service OntologyService {
   // `as_of` 當日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效）。法規不存在或
   // 該日無施行版本的回應同 GetLaw。
   rpc ListInvalidations(ListInvalidationsRequest) returns (ListInvalidationsResponse);
+
+  // 列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。
+  rpc ListLaws(ListLawsRequest) returns (ListLawsResponse);
 }
 
 // 法規的複合自然鍵（管轄，識別碼方案，在地識別碼）。三個欄位都必填，沒有預設：
@@ -204,3 +207,28 @@ enum RulingKind {
   RULING_KIND_INTERPRETATION = 1;
   RULING_KIND_JUDGMENT = 2;
 }
+
+message ListLawsRequest {
+  // 依哪一天施行的版本解析（ISO 8601）。留空為現行。
+  string as_of = 1;
+
+  // 可選管轄過濾；留空為全部管轄。
+  string jurisdiction = 2;
+}
+
+message LawSummary {
+  LawIdentifier identifier = 1;
+  string iri = 2;
+  string title = 3;
+  // 位階種類（corpus.norm_kind），例如 "constitution"、"law"、"regulation"、"order"。
+  string norm_kind = 4;
+  // 制定日（ISO 8601）；語料沒有制定紀錄時為空。
+  string date_document = 5;
+  // 若為授權命令且已解析到授權母法，填母法的複合自然鍵；否則不設。
+  LawIdentifier parent_identifier = 6;
+}
+
+message ListLawsResponse {
+  repeated LawSummary laws = 1;
+}
+

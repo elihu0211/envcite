@@ -8,7 +8,7 @@
 
 <DocumentTitle Text="@L["法規沿革與條文瀏覽"]" />
 
-<PageHeader Title="@L["法規沿革與條文瀏覽"]" Description="@L["依複合自然鍵與時點日期查閱現行或歷史條文清單。"]" />
+<PageHeader Title="@L["法規沿革與條文瀏覽"]" Description="@L["依法律位階與授權母法樹狀結構，瀏覽現行或指定時點之有效法規與條文。"]" />
 
 @if (!Modules.IsEnabled(Tenant, ModuleKeys.LawCorpus))
 {
@@ -17,51 +17,115 @@
 else
 {
     <div class="ep-stack">
-        <SectionCard Id="law-query-title" Title="@L["查詢條件"]">
-            <form method="get" class="ep-form">
-                <FormField For="law-jurisdiction" Label="@L["管轄"]" Hint="@L["例如 TW-CENTRAL"]">
-                    <input id="law-jurisdiction" name="jurisdiction" class="ep-input" value="@(Jurisdiction ?? "TW-CENTRAL")" />
-                </FormField>
-                <FormField For="law-scheme" Label="@L["識別碼方案"]" Hint="@L["例如 moj_pcode"]">
-                    <input id="law-scheme" name="idScheme" class="ep-input" value="@(IdScheme ?? "moj_pcode")" />
-                </FormField>
-                <FormField For="law-local-id" Label="@L["法規代碼"]" Hint="@L["例如 O0020001"]">
-                    <input id="law-local-id" name="localId" class="ep-input" value="@LocalId" />
-                </FormField>
-                <FormField For="law-as-of" Label="@L["哪一天有效"]" Hint="@L["YYYY-MM-DD；留空表示現行"]">
-                    <input id="law-as-of" name="asOf" type="date" class="ep-input" value="@AsOf" />
-                </FormField>
-                <SubmitButton>@L["查詢法規"]</SubmitButton>
-            </form>
-        </SectionCard>
-
         <FormAlert Message="@Error" />
 
-        @if (_result is { } law)
-        {
-            <SectionCard Id="law-detail-title" Title="@law.Title">
-                <dl class="ep-detail">
-                    <dt>@L["網址"]</dt><dd><code class="ep-mono">@law.Uri</code></dd>
-                    <dt>@L["語言"]</dt><dd>@law.Language</dd>
-                    @if (law.DateDocument is { Length: > 0 } docDate)
+        <div class="ep-law-layout">
+            <SectionCard Id="law-tree-title" Title="@L["法律樹結構"]">
+                <form method="get" class="ep-form">
+                    @if (!string.IsNullOrWhiteSpace(LocalId))
                     {
-                        <dt>@L["制定日："]</dt><dd>@docDate</dd>
+                        <input type="hidden" name="jurisdiction" value="@EffectiveJurisdiction" />
+                        <input type="hidden" name="idScheme" value="@EffectiveScheme" />
+                        <input type="hidden" name="localId" value="@LocalId" />
                     }
-                </dl>
-                @if (law.Articles.Count == 0)
+                    <FormField For="law-as-of" Label="@L["哪一天有效"]" Hint="@L["YYYY-MM-DD；留空表示現行"]">
+                        <input id="law-as-of" name="asOf" type="date" class="ep-input" value="@AsOf" />
+                    </FormField>
+                    <SubmitButton>@L["套用時點"]</SubmitButton>
+                </form>
+
+                @if (_tree is { CatalogAvailable: true, Roots.Count: > 0 } tree)
                 {
-                    <p class="ep-page-description">@L["這部法規在指定日期沒有條文。"]</p>
+                    <nav class="ep-law-tree" aria-label="@L["法律樹結構"]">
+                        @foreach (var root in tree.Roots)
+                        {
+                            var isRootActive = IsSelected(root);
+                            var hasActiveChild = root.Children.Any(IsSelected);
+                            @if (root.Children.Count > 0)
+                            {
+                                <details class="ep-tree-group" open="@(isRootActive || hasActiveChild || tree.Roots.Count <= 8)">
+                                    <summary class="ep-tree-summary">
+                                        <span class="ep-tree-kind">@NormKindLabel(root.NormKind)</span>
+                                        <a class="ep-tree-link" aria-current="@(isRootActive ? "page" : null)" href="@LawHref(root)">@root.Title</a>
+                                    </summary>
+                                    <ul class="ep-tree-children">
+                                        @foreach (var child in root.Children)
+                                        {
+                                            var isChildActive = IsSelected(child);
+                                            <li>
+                                                <a class="ep-tree-link" aria-current="@(isChildActive ? "page" : null)" href="@LawHref(child)">
+                                                    <span class="ep-tree-kind">@NormKindLabel(child.NormKind)</span>
+                                                    <span>@child.Title</span>
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                </details>
+                            }
+                            else
+                            {
+                                <div class="ep-tree-leaf">
+                                    <a class="ep-tree-link" aria-current="@(isRootActive ? "page" : null)" href="@LawHref(root)">
+                                        <span class="ep-tree-kind">@NormKindLabel(root.NormKind)</span>
+                                        <span>@root.Title</span>
+                                    </a>
+                                </div>
+                            }
+                        }
+                    </nav>
                 }
-                else
+                else if (_tree is { CatalogAvailable: true, Roots.Count: 0 })
                 {
-                    <DataTable Items="law.Articles" Columns="ArticleColumns" Label="@L["條文清單"]" Plain="true" />
+                    <p class="ep-page-description">@L["指定日期沒有有效的法規版本。"]</p>
                 }
+
+                <details class="ep-tree-manual" open="@(_tree is null || !_tree.CatalogAvailable)">
+                    <summary class="ep-tree-manual-toggle">@L["依自然鍵直接查詢"]</summary>
+                    <form method="get" class="ep-form">
+                        <FormField For="law-jurisdiction" Label="@L["管轄"]" Hint="@L["例如 TW-CENTRAL"]">
+                            <input id="law-jurisdiction" name="jurisdiction" class="ep-input" value="@EffectiveJurisdiction" />
+                        </FormField>
+                        <FormField For="law-scheme" Label="@L["識別碼方案"]" Hint="@L["例如 moj_pcode"]">
+                            <input id="law-scheme" name="idScheme" class="ep-input" value="@EffectiveScheme" />
+                        </FormField>
+                        <FormField For="law-local-id" Label="@L["法規代碼"]" Hint="@L["例如 O0020001"]">
+                            <input id="law-local-id" name="localId" class="ep-input" value="@LocalId" />
+                        </FormField>
+                        <input type="hidden" name="asOf" value="@AsOf" />
+                        <SubmitButton>@L["查詢法規"]</SubmitButton>
+                    </form>
+                </details>
             </SectionCard>
-        }
-        else if (string.IsNullOrWhiteSpace(LocalId) && Error is null)
-        {
-            <EmptyState Icon="@Icons.Material.Outlined.MenuBook" Title="@L["開始查詢法規"]" Description="@L["輸入法規代碼與時點日期以瀏覽條文清單。"]" />
-        }
+
+            <div class="ep-law-detail">
+                @if (_result is { } law)
+                {
+                    <SectionCard Id="law-detail-title" Title="@law.Title">
+                        <dl class="ep-detail">
+                            <dt>@L["自然鍵"]</dt><dd><code class="ep-mono">@EffectiveJurisdiction / @EffectiveScheme / @LocalId</code></dd>
+                            <dt>@L["網址"]</dt><dd><code class="ep-mono">@law.Uri</code></dd>
+                            <dt>@L["語言"]</dt><dd>@law.Language</dd>
+                            @if (law.DateDocument is { Length: > 0 } docDate)
+                            {
+                                <dt>@L["制定日："]</dt><dd>@docDate</dd>
+                            }
+                        </dl>
+                        @if (law.Articles.Count == 0)
+                        {
+                            <p class="ep-page-description">@L["這部法規在指定日期沒有條文。"]</p>
+                        }
+                        else
+                        {
+                            <DataTable Items="law.Articles" Columns="ArticleColumns" Label="@L["條文清單"]" Plain="true" />
+                        }
+                    </SectionCard>
+                }
+                else if (string.IsNullOrWhiteSpace(LocalId))
+                {
+                    <EmptyState Icon="@Icons.Material.Outlined.AccountTree" Title="@L["從左側法律樹選擇法規"]" Description="@L["展開母法查看授權命令與子法規，點選任一法規即可檢視有效條文清單。"]" />
+                }
+            </div>
+        </div>
     </div>
 }
 
@@ -71,7 +135,11 @@ else
     [SupplyParameterFromQuery(Name = "localId")] public string? LocalId { get; set; }
     [SupplyParameterFromQuery(Name = "asOf")] public string? AsOf { get; set; }
 
+    private PortalLawTreeResult? _tree;
     private PortalLawCorpusResult? _result;
+
+    private string EffectiveJurisdiction => string.IsNullOrWhiteSpace(Jurisdiction) ? "TW-CENTRAL" : Jurisdiction.Trim();
+    private string EffectiveScheme => string.IsNullOrWhiteSpace(IdScheme) ? "moj_pcode" : IdScheme.Trim();
 
     private IReadOnlyList<ColumnDef<PortalLawArticle>> ArticleColumns =>
     [
@@ -81,15 +149,24 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (!Modules.IsEnabled(Tenant, ModuleKeys.LawCorpus) || string.IsNullOrWhiteSpace(LocalId))
+        if (!Modules.IsEnabled(Tenant, ModuleKeys.LawCorpus))
+            return;
+
+        var asOf = string.IsNullOrWhiteSpace(AsOf) ? null : AsOf.Trim();
+
+        var treeOutcome = await LawCorpusService.TreeAsync(User, null, asOf, CancellationToken.None);
+        if (treeOutcome.IsOk)
+            _tree = treeOutcome.Value;
+
+        if (string.IsNullOrWhiteSpace(LocalId))
             return;
 
         var outcome = await LawCorpusService.BrowseAsync(
             User,
-            string.IsNullOrWhiteSpace(Jurisdiction) ? "TW-CENTRAL" : Jurisdiction.Trim(),
-            string.IsNullOrWhiteSpace(IdScheme) ? "moj_pcode" : IdScheme.Trim(),
+            EffectiveJurisdiction,
+            EffectiveScheme,
             LocalId.Trim(),
-            string.IsNullOrWhiteSpace(AsOf) ? null : AsOf.Trim(),
+            asOf,
             CancellationToken.None);
 
         if (!outcome.IsOk)
@@ -100,4 +177,24 @@ else
 
         _result = outcome.Value;
     }
+
+    private bool IsSelected(PortalLawTreeNode node) =>
+        !string.IsNullOrWhiteSpace(LocalId)
+        && string.Equals(node.Jurisdiction, EffectiveJurisdiction, StringComparison.Ordinal)
+        && string.Equals(node.IdScheme, EffectiveScheme, StringComparison.Ordinal)
+        && string.Equals(node.LocalId, LocalId.Trim(), StringComparison.Ordinal);
+
+    private string LawHref(PortalLawTreeNode node)
+    {
+        var baseUrl = $"{PortalPaths.Home(Tenant)}/laws?jurisdiction={Uri.EscapeDataString(node.Jurisdiction)}&idScheme={Uri.EscapeDataString(node.IdScheme)}&localId={Uri.EscapeDataString(node.LocalId)}";
+        return string.IsNullOrWhiteSpace(AsOf) ? baseUrl : $"{baseUrl}&asOf={Uri.EscapeDataString(AsOf.Trim())}";
+    }
+
+    private string NormKindLabel(string normKind) => normKind switch
+    {
+        "constitution" => L["憲法"],
+        "law" => L["法律"],
+        "regulation" or "order" => L["命令"],
+        _ => normKind,
+    };
 }

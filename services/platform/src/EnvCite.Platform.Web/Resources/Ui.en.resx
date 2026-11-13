@@ -550,9 +550,7 @@
   <data name="需先開啟前置模組" xml:space="preserve"><value>Requires prerequisite module</value></data>
   <data name="目前尚未開啟任何查詢模組，請洽系統管理員。" xml:space="preserve"><value>No query modules are currently enabled for your organization. Please contact your administrator.</value></data>
   <data name="法規沿革與條文瀏覽" xml:space="preserve"><value>Law Corpus &amp; Browser</value></data>
-  <data name="依複合自然鍵與時點日期查閱現行或歷史條文清單。" xml:space="preserve"><value>Browse current or historical law articles by natural key and point-in-time date.</value></data>
   <data name="這個組織尚未開啟「法規沿革與條文瀏覽」模組。" xml:space="preserve"><value>The Law Corpus &amp; Browser module is not enabled for this organization.</value></data>
-  <data name="查詢條件" xml:space="preserve"><value>Query criteria</value></data>
   <data name="管轄" xml:space="preserve"><value>Jurisdiction</value></data>
   <data name="例如 TW-CENTRAL" xml:space="preserve"><value>e.g. TW-CENTRAL</value></data>
   <data name="識別碼方案" xml:space="preserve"><value>ID scheme</value></data>
@@ -606,8 +604,6 @@
   <data name="前往使用" xml:space="preserve"><value>Open</value></data>
   <data name="法源接地" xml:space="preserve"><value>Evidence Grounding</value></data>
   <data name="AI 法源問答" xml:space="preserve"><value>AI Grounded Q&amp;A</value></data>
-  <data name="開始查詢法規" xml:space="preserve"><value>Browse laws and articles</value></data>
-  <data name="輸入法規代碼與時點日期以瀏覽條文清單。" xml:space="preserve"><value>Enter a law code and optional effective date to browse its articles.</value></data>
   <data name="語言" xml:space="preserve"><value>Language</value></data>
   <data name="網址" xml:space="preserve"><value>URI</value></data>
   <data name="違反" xml:space="preserve"><value>Violation</value></data>
@@ -617,4 +613,15 @@
   <data name="事實不足" xml:space="preserve"><value>Undetermined</value></data>
   <data name="排除" xml:space="preserve"><value>Excluded</value></data>
   <data name="不適用" xml:space="preserve"><value>Not Applicable</value></data>
+  <data name="依法律位階與授權母法樹狀結構，瀏覽現行或指定時點之有效法規與條文。" xml:space="preserve"><value>Browse in-force or historical laws and articles organized by legal hierarchy and authorizing parent laws.</value></data>
+  <data name="法律樹結構" xml:space="preserve"><value>Law Hierarchy Tree</value></data>
+  <data name="套用時點" xml:space="preserve"><value>Apply Date</value></data>
+  <data name="指定日期沒有有效的法規版本。" xml:space="preserve"><value>No in-force laws found for the selected date.</value></data>
+  <data name="依自然鍵直接查詢" xml:space="preserve"><value>Direct lookup by natural key</value></data>
+  <data name="自然鍵" xml:space="preserve"><value>Natural key</value></data>
+  <data name="從左側法律樹選擇法規" xml:space="preserve"><value>Select a law from the tree</value></data>
+  <data name="展開母法查看授權命令與子法規，點選任一法規即可檢視有效條文清單。" xml:space="preserve"><value>Expand a parent statute to view delegated regulations and click any law to inspect its articles.</value></data>
+  <data name="憲法" xml:space="preserve"><value>Constitution</value></data>
+  <data name="法律" xml:space="preserve"><value>Statute</value></data>
+  <data name="命令" xml:space="preserve"><value>Regulation</value></data>
 </root>

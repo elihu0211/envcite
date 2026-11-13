@@ -51,6 +51,22 @@ class LawRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class LawSummaryRecord:
+    """語料庫中某日有效的一部法規摘要，含位階與已解析之授權母法自然鍵。"""
+
+    jurisdiction: str
+    id_scheme: str
+    local_id: str
+    iri: str
+    title: str
+    norm_kind: str
+    date_document: str
+    parent_jurisdiction: str | None = None
+    parent_id_scheme: str | None = None
+    parent_local_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ArticleRecord:
     """某日有效的一條：版本 IRI 與條號。"""
 
@@ -123,6 +139,34 @@ _LIST_ARTICLES = """
 
 _JURISDICTIONS = "SELECT unnest(enum_range(NULL::corpus.jurisdiction))::text"
 _ID_SCHEMES = "SELECT unnest(enum_range(NULL::corpus.id_scheme))::text"
+
+_LIST_LAWS = """
+    SELECT r.jurisdiction::text, r.id_scheme::text, r.local_id,
+           corpus.resource_iri(r.norm_kind, r.local_id), e.title, r.norm_kind::text,
+           coalesce((SELECT min(le.event_date)::text
+                       FROM corpus.lifecycle_event AS le
+                      WHERE le.resource_id = r.id AND le.event_kind = 'enactment'), ''),
+           parent.jurisdiction::text, parent.id_scheme::text, parent.local_id
+      FROM corpus.legal_resource AS r
+      JOIN corpus.legal_expression AS e ON e.resource_id = r.id
+      LEFT JOIN LATERAL (
+          SELECT p.jurisdiction, p.id_scheme, p.local_id
+            FROM annotation.delegation AS d
+            JOIN corpus.legal_resource AS p ON p.id = d.law_resource_id
+           WHERE d.command_resource_id = r.id
+             AND d.law_resource_id IS NOT NULL
+           ORDER BY d.id
+           LIMIT 1
+      ) AS parent ON TRUE
+     WHERE e.language = %(language)s
+       AND e.text_period @> %(on)s::date
+       AND e.text_status = 'available'
+       AND (
+             %(jurisdiction)s::text IS NULL
+             OR r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction
+           )
+     ORDER BY r.norm_kind, r.local_id
+"""
 
 #: segmenter 詞典（法規名稱）；須與建索引同源，否則分詞器識別碼不符、字面檢索全落空（04-01 §5）。
 _LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression WHERE title IS NOT NULL"
@@ -206,6 +250,35 @@ class OntologyStore:
         """`as_of`（ISO 日期，空為今日）有效版本的法規；法規不存在或該日無版本時為 None。"""
         found = self._resolve(key, as_of, timeout=timeout)
         return found[1] if found else None
+
+    def list_laws(
+        self,
+        *,
+        as_of: str = "",
+        jurisdiction: str | None = None,
+        timeout: float | None = None,
+    ) -> list[LawSummaryRecord]:
+        """列出 `as_of` 當日有效且有全文的法規摘要與授權母法關聯。"""
+        with self.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
+            cur.execute(
+                _LIST_LAWS,
+                {"language": LANGUAGE, "on": _date(as_of), "jurisdiction": jurisdiction},
+            )
+            return [
+                LawSummaryRecord(
+                    jurisdiction=row[0],
+                    id_scheme=row[1],
+                    local_id=row[2],
+                    iri=row[3],
+                    title=row[4],
+                    norm_kind=row[5],
+                    date_document=row[6],
+                    parent_jurisdiction=row[7],
+                    parent_id_scheme=row[8],
+                    parent_local_id=row[9],
+                )
+                for row in cur.fetchall()
+            ]
 
     def list_articles(
         self, key: LawKey, *, as_of: str = "", timeout: float | None = None
