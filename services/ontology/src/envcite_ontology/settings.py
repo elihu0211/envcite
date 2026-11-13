@@ -59,6 +59,16 @@ class ServerSettings(DatabaseSettings, ModelsSettings):
         le=1,
         description="函釋入口：命中的函釋占可用函釋的比例超過此值，查詢就不用函釋入口；0 為不限制",
     )
+    # 精排看多深：兩臂取這麼多條候選再精排，取前 limit 條。越深越可能撈回原本在 limit 之外的
+    # 相關條文，但精排的延遲與候選數成正比（端點實測 3 條約 0.7 秒、30 條約 1.3 秒）。
+    # 上限與兩臂的候選池（`store.SEARCH_POOL`）一致，再深也沒有候選。預設值沒有題庫的量測，
+    # 改它要先用 `tools/golden_retrieval_eval.py --rerank` 在開發集量過。
+    rerank_candidates: int = Field(
+        default=30,
+        ge=1,
+        le=50,
+        description="請求帶 rerank 時，兩臂取幾條候選交給精排模型",
+    )
 
 
 def load[S: BaseSettings](cls: type[S]) -> S:

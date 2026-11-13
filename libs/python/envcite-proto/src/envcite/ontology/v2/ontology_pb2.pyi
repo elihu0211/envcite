@@ -234,6 +234,7 @@ class SearchArticlesRequest(_message.Message):
     LIMIT_FIELD_NUMBER: _builtins.int
     JURISDICTION_FIELD_NUMBER: _builtins.int
     INCLUDE_GUIDANCE_FIELD_NUMBER: _builtins.int
+    RERANK_FIELD_NUMBER: _builtins.int
     query: _builtins.str
     """查詢原文，不要自行斷詞或改寫。"""
     as_of: _builtins.str
@@ -248,6 +249,12 @@ class SearchArticlesRequest(_message.Message):
     最多比 `limit` 多回 5 條。詞組出現在太多函釋裡時（命中的函釋占可用函釋的比例超過服務的設定）指不出哪幾條，
     這個查詢不納入函釋。函釋只用來找條文，不是推論的前提；預設不納入，不影響其他呼叫端的結果。
     """
+    rerank: _builtins.bool
+    """兩臂（與函釋）取到的候選再交給交叉編碼器精排，取前 `limit` 條：比只重排前 `limit` 條多看深一些的候選，
+    所以不只改次序，也讓原本落在 `limit` 之外的相關條文進來。候選條數與名額由服務設定；服務沒有宣告精排模型、
+    名額滿了、或精排端點逾時或失敗時，退回沒有精排的次序、`rerank_score` 不設，查詢仍成功，不回錯誤。
+    精排多一次對外呼叫，延遲以秒計，所以預設不精排，不影響其他呼叫端的結果與延遲。
+    """
     def __init__(
         self,
         *,
@@ -256,10 +263,11 @@ class SearchArticlesRequest(_message.Message):
         limit: _builtins.int = ...,
         jurisdiction: _builtins.str = ...,
         include_guidance: _builtins.bool = ...,
+        rerank: _builtins.bool = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "include_guidance", b"include_guidance", "jurisdiction", b"jurisdiction", "limit", b"limit", "query", b"query"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "include_guidance", b"include_guidance", "jurisdiction", b"jurisdiction", "limit", b"limit", "query", b"query", "rerank", b"rerank"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -300,6 +308,7 @@ class ArticleHit(_message.Message):
     SEMANTIC_SIMILARITY_FIELD_NUMBER: _builtins.int
     TERM_COVERAGE_FIELD_NUMBER: _builtins.int
     GUIDANCE_DOCUMENTS_FIELD_NUMBER: _builtins.int
+    RERANK_SCORE_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     law_title: _builtins.str
     """`as_of` 當日有效版本的法規標題。"""
@@ -319,6 +328,11 @@ class ArticleHit(_message.Message):
     """
     guidance_documents: _builtins.int
     """有幾件函釋提到查詢詞並解釋這一條；只有請求 `include_guidance` 時才會大於 0。不影響 `lexical_score`。"""
+    rerank_score: _builtins.float
+    """精排模型對（查詢，這一條）給的相關機率（0 至 1），只有請求 `rerank` 且精排成功時才設。分數與查詢無關地可比較
+    （已過 sigmoid），所以能拿來跟固定的門檻比；但門檻是受模型制約的值，要在黃金題庫上量測才能訂。
+    設了之後，命中的順序就是依它由高到低（同分依精排前的名次）；沒有精排時次序是兩臂融合的結果。
+    """
     @_builtins.property
     def identifier(self) -> Global___LawIdentifier: ...
     def __init__(
@@ -333,13 +347,19 @@ class ArticleHit(_message.Message):
         semantic_similarity: _builtins.float | None = ...,
         term_coverage: _builtins.float = ...,
         guidance_documents: _builtins.int = ...,
+        rerank_score: _builtins.float | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity", "identifier", b"identifier", "semantic_similarity", b"semantic_similarity"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_rerank_score", b"_rerank_score", "_semantic_similarity", b"_semantic_similarity", "identifier", b"identifier", "rerank_score", b"rerank_score", "semantic_similarity", b"semantic_similarity"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity", "content", b"content", "guidance_documents", b"guidance_documents", "identifier", b"identifier", "iri", b"iri", "law_title", b"law_title", "lexical_score", b"lexical_score", "number", b"number", "semantic_similarity", b"semantic_similarity", "term_coverage", b"term_coverage"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_rerank_score", b"_rerank_score", "_semantic_similarity", b"_semantic_similarity", "content", b"content", "guidance_documents", b"guidance_documents", "identifier", b"identifier", "iri", b"iri", "law_title", b"law_title", "lexical_score", b"lexical_score", "number", b"number", "rerank_score", b"rerank_score", "semantic_similarity", b"semantic_similarity", "term_coverage", b"term_coverage"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__rerank_score: _TypeAlias = _typing.Literal["rerank_score"]  # noqa: Y015
+    _WhichOneofArgType__rerank_score: _TypeAlias = _typing.Literal["_rerank_score", b"_rerank_score"]  # noqa: Y015
     _WhichOneofReturnType__semantic_similarity: _TypeAlias = _typing.Literal["semantic_similarity"]  # noqa: Y015
     _WhichOneofArgType__semantic_similarity: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity"]  # noqa: Y015
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__rerank_score) -> _WhichOneofReturnType__rerank_score | None: ...
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__semantic_similarity) -> _WhichOneofReturnType__semantic_similarity | None: ...
 
 Global___ArticleHit: _TypeAlias = ArticleHit  # noqa: Y015

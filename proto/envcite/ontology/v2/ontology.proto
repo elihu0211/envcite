@@ -112,6 +112,12 @@ message SearchArticlesRequest {
   // 最多比 `limit` 多回 5 條。詞組出現在太多函釋裡時（命中的函釋占可用函釋的比例超過服務的設定）指不出哪幾條，
   // 這個查詢不納入函釋。函釋只用來找條文，不是推論的前提；預設不納入，不影響其他呼叫端的結果。
   bool include_guidance = 5;
+
+  // 兩臂（與函釋）取到的候選再交給交叉編碼器精排，取前 `limit` 條：比只重排前 `limit` 條多看深一些的候選，
+  // 所以不只改次序，也讓原本落在 `limit` 之外的相關條文進來。候選條數與名額由服務設定；服務沒有宣告精排模型、
+  // 名額滿了、或精排端點逾時或失敗時，退回沒有精排的次序、`rerank_score` 不設，查詢仍成功，不回錯誤。
+  // 精排多一次對外呼叫，延遲以秒計，所以預設不精排，不影響其他呼叫端的結果與延遲。
+  bool rerank = 6;
 }
 
 message SearchArticlesResponse {
@@ -145,6 +151,11 @@ message ArticleHit {
 
   // 有幾件函釋提到查詢詞並解釋這一條；只有請求 `include_guidance` 時才會大於 0。不影響 `lexical_score`。
   int32 guidance_documents = 9;
+
+  // 精排模型對（查詢，這一條）給的相關機率（0 至 1），只有請求 `rerank` 且精排成功時才設。分數與查詢無關地可比較
+  // （已過 sigmoid），所以能拿來跟固定的門檻比；但門檻是受模型制約的值，要在黃金題庫上量測才能訂。
+  // 設了之後，命中的順序就是依它由高到低（同分依精排前的名次）；沒有精排時次序是兩臂融合的結果。
+  optional float rerank_score = 10;
 }
 
 message ListInvalidationsRequest {

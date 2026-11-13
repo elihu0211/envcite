@@ -5,7 +5,7 @@
 - 設定檔不寫金鑰與金鑰名：名稱由端點名推導（`secret_name`），即 `ENVCITE_<端點名大寫>_API_KEY`，
   依序從同名環境變數、作業系統鑰匙圈同名 service 解析（`resolve_secret`）。
 - 語意檢索的嵌入模型也在這裡宣告（`[embedding]`），沿用同一組端點；伺服器與同步排程只讀這一段，
-  不需要標註管線的角色（`load_embedder`）。
+  不需要標註管線的角色（`load_embedder`）。查詢時的精排模型同理（`[reranker]`，`load_reranker`）。
 - 黃金測試集的相關性判定者也在這裡（`[relevance]`，`load_judges`）：至少兩個、彼此不同家族，且不與
   受測路徑上的任何家族相同（`system_families`）。
 
@@ -26,10 +26,11 @@ from typing import Any
 import tomllib
 
 from envcite_ontology.embedding import Embedder
+from envcite_ontology.reranking import Reranker
 from envcite_ontology.verification.models import AnthropicModel, ChatCompletionsModel, Model
 
 ROLES = ("extractor", "roundtrip", "independent_test", "panel")
-TOP_LEVEL = ("endpoint", "model", "roles", "embedding", "relevance")
+TOP_LEVEL = ("endpoint", "model", "roles", "embedding", "reranker", "relevance")
 
 
 class ConfigError(ValueError):
@@ -245,6 +246,37 @@ def load(
     return parse(path.read_text(encoding="utf-8"), env, keychain=keychain)
 
 
+def _declared(
+    text: str,
+    section: str,
+    env: Mapping[str, str] | None,
+    keychain: Callable[[str], str | None],
+) -> tuple[str, str, str | None] | None:
+    """`[<section>]`（`endpoint`、`name`）宣告的模型：（名稱，端點網址，金鑰）；沒有這一段為 None。
+
+    只解析它指到的端點。
+    """
+    env = os.environ if env is None else env
+    try:
+        doc = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigError(f"not valid TOML: {e}") from e
+    _only(doc, set(TOP_LEVEL), "top level")
+    table = doc.get(section)
+    if table is None:
+        return None
+    _only(table, {"endpoint", "name"}, section)
+    name = table.get("name")
+    if not isinstance(name, str) or not name:
+        raise ConfigError(f"{section}: name is required")
+    endpoint = str(table.get("endpoint"))
+    endpoints = doc.get("endpoint") or {}
+    if endpoint not in endpoints:
+        raise ConfigError(f"{section}: endpoint {endpoint!r} is not defined")
+    base, key = _endpoint(endpoint, endpoints[endpoint], env, keychain)
+    return name, base, key
+
+
 def parse_embedder(
     text: str,
     env: Mapping[str, str] | None = None,
@@ -253,25 +285,26 @@ def parse_embedder(
     keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> Embedder | None:
     """`[embedding]` 宣告的嵌入模型；沒有這一段為 None（語意臂關閉）。只解析它指到的端點。"""
-    env = os.environ if env is None else env
-    try:
-        doc = tomllib.loads(text)
-    except tomllib.TOMLDecodeError as e:
-        raise ConfigError(f"not valid TOML: {e}") from e
-    _only(doc, set(TOP_LEVEL), "top level")
-    table = doc.get("embedding")
-    if table is None:
+    declared = _declared(text, "embedding", env, keychain)
+    if declared is None:
         return None
-    _only(table, {"endpoint", "name"}, "embedding")
-    name = table.get("name")
-    if not isinstance(name, str) or not name:
-        raise ConfigError("embedding: name is required")
-    endpoint = str(table.get("endpoint"))
-    endpoints = doc.get("endpoint") or {}
-    if endpoint not in endpoints:
-        raise ConfigError(f"embedding: endpoint {endpoint!r} is not defined")
-    base, key = _endpoint(endpoint, endpoints[endpoint], env, keychain)
+    name, base, key = declared
     return Embedder(name, base_url=base, api_key=key, timeout=timeout)
+
+
+def parse_reranker(
+    text: str,
+    env: Mapping[str, str] | None = None,
+    *,
+    timeout: float,
+    keychain: Callable[[str], str | None] = keychain_lookup,
+) -> Reranker | None:
+    """`[reranker]` 宣告的精排模型；沒有這一段為 None（不精排）。只解析它指到的端點。"""
+    declared = _declared(text, "reranker", env, keychain)
+    if declared is None:
+        return None
+    name, base, key = declared
+    return Reranker(name, base_url=base, api_key=key, timeout=timeout)
 
 
 def load_embedder(
@@ -282,6 +315,16 @@ def load_embedder(
     keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> Embedder | None:
     return parse_embedder(path.read_text(encoding="utf-8"), env, timeout=timeout, keychain=keychain)
+
+
+def load_reranker(
+    path: Path,
+    env: Mapping[str, str] | None = None,
+    *,
+    timeout: float,
+    keychain: Callable[[str], str | None] = keychain_lookup,
+) -> Reranker | None:
+    return parse_reranker(path.read_text(encoding="utf-8"), env, timeout=timeout, keychain=keychain)
 
 
 @dataclass(frozen=True)
