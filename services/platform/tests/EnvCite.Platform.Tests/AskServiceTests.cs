@@ -484,6 +484,9 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var rewrite = chat.Calls[0];
         Assert.Contains(rewrite, m => m.Role == ChatRole.User && m.Text.Contains(FollowUp, StringComparison.Ordinal));
         Assert.Equal(["露天燃燒怎麼規定", "不得燃燒。"], rewrite.Skip(1).Take(2).Select(m => m.Text));
+        // 改寫的提示詞明說不帶前面回答的條號：字面檢索會被拉回上一題的條文（真實模型上看過），使用者自己指的那一條才保留。
+        Assert.Contains("條號、金額與日期不要帶進問句", rewrite[0].Text, StringComparison.Ordinal);
+        Assert.Contains("只有使用者自己明確指那一條", rewrite[0].Text, StringComparison.Ordinal);
         var write = chat.Calls[1];
         Assert.Contains(write, m => m.Role == ChatRole.System && m.Text.Contains("不是證據", StringComparison.Ordinal));
         Assert.Equal([ChatRole.System, ChatRole.User, ChatRole.Assistant, ChatRole.User], write.Select(m => m.Role));
