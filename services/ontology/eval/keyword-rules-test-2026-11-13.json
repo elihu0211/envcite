@@ -1,0 +1,50 @@
+{
+ "parameters": {
+  "lexical": 0.5,
+  "semantic": 0.71,
+  "coverage": 0.5
+ },
+ "results": {
+  "test": {
+   "definition_queries": 319,
+   "absent_queries": 20,
+   "raw_hit_at": {
+    "1": 0.44200626959247646,
+    "5": 0.6927899686520376,
+    "10": 0.7648902821316614
+   },
+   "rules": {
+    "consult 的規則（覆蓋率 0）": {
+     "found_in_list": 0.6833855799373041,
+     "mean_list_size": 7.492163009404389,
+     "listed_without_the_term": 0.6393305439330544,
+     "absent_leak": 0.55
+    },
+    "列表規則": {
+     "found_in_list": 0.6833855799373041,
+     "mean_list_size": 6.238244514106583,
+     "listed_without_the_term": 0.5668341708542713,
+     "absent_leak": 0.2
+    },
+    "候選 A：整詞命中放行": {
+     "found_in_list": 0.774294670846395,
+     "mean_list_size": 7.094043887147335,
+     "listed_without_the_term": 0.5086168802474591,
+     "absent_leak": 0.2
+    },
+    "候選 B：語意命中要沾到字面": {
+     "found_in_list": 0.6833855799373041,
+     "mean_list_size": 5.210031347962382,
+     "listed_without_the_term": 0.48194945848375453,
+     "absent_leak": 0.2
+    },
+    "候選 A＋B": {
+     "found_in_list": 0.774294670846395,
+     "mean_list_size": 6.065830721003135,
+     "listed_without_the_term": 0.4258397932816537,
+     "absent_leak": 0.2
+    }
+   }
+  }
+ }
+}

@@ -1,9 +1,12 @@
 """關鍵字題庫工具的純邏輯：定義行的抽取、標題句、切分與規則。資料庫那一半由 `verify` 對原文核對。"""
 
+import argparse
 import importlib.util
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -100,3 +103,64 @@ def test_the_split_depends_only_on_the_query() -> None:
 def test_the_item_number_prefix_is_removed_without_touching_the_term() -> None:
     assert tool.ITEM_NUMBER.sub("", "三、一般廢棄物：指…").startswith("一般廢棄物")
     assert tool.ITEM_NUMBER.sub("", "（十）十字路口：指…").startswith("十字路口")
+
+
+class _Hit:
+    """`ArticleHit` 的替身：只有規則會讀的欄位。"""
+
+    def __init__(
+        self, lexical: float, semantic: float | None, coverage: float, guidance: int = 0
+    ) -> None:
+        self.lexical_score = lexical
+        self.semantic_similarity = semantic
+        self.term_coverage = coverage
+        self.guidance_documents = guidance
+
+    def HasField(self, name: str) -> bool:  # protobuf 的方法名
+        assert name == "semantic_similarity"
+        return self.semantic_similarity is not None
+
+
+def _rules() -> dict[str, Callable[[Any], bool]]:
+    args = argparse.Namespace(lexical=0.5, semantic=0.71, coverage=0.5)
+    return tool.rule_variants(args)  # type: ignore[no-any-return]
+
+
+@pytest.mark.parametrize(
+    ("hit", "current", "whole_term", "semantic_needs_a_term"),
+    [
+        # 字面與語意都不到下界，條文含全部查詢詞：只有「整詞命中放行」列出（平台的新條件）
+        (_Hit(0.3, 0.69, 1.0), False, True, False),
+        # 整詞命中但字面臂沒命中（只由語意臂帶出）：不放行
+        (_Hit(0.0, 0.5, 1.0), False, False, False),
+        # 只含部分查詢詞、分數也不到：都不列
+        (_Hit(0.3, 0.5, 0.5), False, False, False),
+        # 語意達標但完全不含查詢詞：現行與 A 列出，B 不列
+        (_Hit(0.0, 0.8, 0.0), True, True, False),
+        # 函釋帶出：不看分數，三者都列
+        (_Hit(0.0, None, 0.0, guidance=2), True, True, True),
+    ],
+)
+def test_the_candidate_rules_differ_exactly_where_intended(
+    hit: _Hit, current: bool, whole_term: bool, semantic_needs_a_term: bool
+) -> None:
+    rules = _rules()
+
+    assert rules["列表規則"](hit) is current
+    assert rules["候選 A：整詞命中放行"](hit) is whole_term
+    assert rules["候選 B：語意命中要沾到字面"](hit) is semantic_needs_a_term
+
+
+def test_whole_term_never_drops_a_hit_the_current_rule_lists() -> None:
+    rules = _rules()
+    hits = [
+        _Hit(lexical, semantic, coverage, guidance)
+        for lexical in (0.0, 0.3, 0.6)
+        for semantic in (None, 0.5, 0.8)
+        for coverage in (0.0, 0.5, 1.0)
+        for guidance in (0, 1)
+    ]
+
+    for hit in hits:
+        if rules["列表規則"](hit):
+            assert rules["候選 A：整詞命中放行"](hit)
