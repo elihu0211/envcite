@@ -162,6 +162,7 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 ```
 
 - `[embedding]`：只需要它指名的端點備妥金鑰，伺服器不因標註管線的端點缺金鑰而起不來。
+- `[reranker]`：查詢時的精排模型（交叉編碼器，端點的 `/rerank` 路由），同樣沿用一個端點、只要那個端點的金鑰；沒有這一段就不精排，請求的 `rerank` 當作沒有。看多深由 `ENVCITE_ONTOLOGY_RERANK_CANDIDATES` 設，行為與降級見 [`proto/README.md`](../../proto/README.md) 與 `AGENTS.md`。
 - `[relevance]`：黃金測試集的相關性判定者，不參與任何管線。`judges` 列模型名稱（至少兩個、彼此不同家族），`system_families` 列受測路徑（檢索與作答）的家族；判定者不得屬於這些家族，標註管線各角色的家族不自動加入（規則見〈黃金測試集〉的判定者）。
 
 ### 規範關係：授權
@@ -203,6 +204,7 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 | 建 qrels | `uv run python tools/golden_retrieval_eval.py qrels <golden.yaml> --out eval/golden-qrels.json` | qrels（需資料庫） |
 | 切分 | `uv run python tools/golden_set.py split <golden.yaml> --out eval/golden-split.json` | 開發集與測試集 |
 | 量測 | `uv run python tools/golden_retrieval_eval.py measure <golden.yaml> --qrels … --split … --subset dev --out eval/golden-retrieval-<日期>` | 報告 `.json`／`.md`、每臂一個 `.<臂>.run.json` |
+| 量精排 | 同「量測」，加 `--rerank [--rerank-candidates N]`（需要 `[embedding]` 與 `[reranker]`） | 多一臂 `rerank`：混合臂的前 N 條交給精排模型重排、其餘接在後面；negative 桶另記精排分數的分布，是訂精排門檻的依據 |
 | 比較 | `uv run python tools/golden_retrieval_eval.py compare --qrels … <a>.run.json <b>.run.json [--out …]` | 各 run 的指標、Hole@10、兩兩的 p 值 |
 | 校準判定器 | `uv run python tools/relevance_judge.py calibrate <golden.yaml> --qrels … --split … --cache <倉庫外>/judge-cache.jsonl --out eval/golden-calibration-<日期>.json` | 開發集正例的召回、負例的誤判、κ（需資料庫與模型） |
 | 模型判定 | `uv run python tools/relevance_judge.py pool <golden.yaml> --qrels … --split … --subset dev --run <a>.run.json [--run …] --calibration … --cache … --out eval/golden-judgements-<子集>-<日期>.json` | 封存的判定檔（需資料庫與模型） |

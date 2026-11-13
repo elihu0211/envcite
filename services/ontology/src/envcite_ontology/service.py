@@ -17,10 +17,12 @@ from envcite_ontology import errors
 from envcite_ontology.coverage import term_coverage
 from envcite_ontology.embedding import Embedder, EmbeddingError
 from envcite_ontology.guidance_search import CANDIDATES as GUIDANCE_CANDIDATES
+from envcite_ontology.guidance_search import EXTRA as GUIDANCE_EXTRA
 from envcite_ontology.guidance_search import fuse, guidance_phrases
 from envcite_ontology.identifiers import jurisdiction_filter, law_key
 from envcite_ontology.law_names import LawNames
-from envcite_ontology.store import LawKey, OntologyStore
+from envcite_ontology.reranking import RerankError, Reranks, select
+from envcite_ontology.store import LawKey, OntologyStore, SearchHit
 from envcite_segmenter import Segmenter
 
 log = logging.getLogger(__name__)
@@ -29,6 +31,8 @@ log = logging.getLogger(__name__)
 #: `limit` 為 0 時的預設命中數，與可請求的上限。
 DEFAULT_SEARCH_LIMIT = 10
 MAX_SEARCH_LIMIT = 50
+#: 請求帶 `rerank` 時，兩臂預設取幾條候選交給精排模型（`ServerSettings.rerank_candidates` 覆寫）。
+DEFAULT_RERANK_CANDIDATES = 30
 
 _RULING_KINDS = {
     "interpretation": pb.RULING_KIND_INTERPRETATION,
@@ -46,6 +50,9 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         lexical_max_df: float = 0.0,
         embed_slots: int | None = None,
         guidance_max_df: float = 0.0,
+        reranker: Reranks | None = None,
+        rerank_slots: int | None = None,
+        rerank_candidates: int = DEFAULT_RERANK_CANDIDATES,
     ) -> None:
         self._store = store
         self._law_names = law_names
@@ -56,6 +63,11 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         # 名額滿了就略過語意臂。None 表示不限（測試直接建構、不走伺服器預算時）。
         self._embed_slots = (
             threading.BoundedSemaphore(embed_slots) if embed_slots is not None else None
+        )
+        self._reranker = reranker
+        self._rerank_candidates = rerank_candidates
+        self._rerank_slots = (
+            threading.BoundedSemaphore(rerank_slots) if rerank_slots is not None else None
         )
 
     def _not_found(self, key: LawKey, as_of: str, *, timeout: float | None) -> errors.ServiceError:
@@ -154,11 +166,15 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         jurisdiction = jurisdiction_filter(self._store, request.jurisdiction, v)
         v.check()
 
+        # 精排要看得比 limit 深：取較深的候選，精排後再取前 limit 條。
+        # 沒有精排模型時，請求的 rerank 當作沒有。
+        rerank = request.rerank and self._reranker is not None
+        depth = max(limit, self._rerank_candidates) if rerank else limit
         hits = self._store.search(
             terms,
             tokenizer=self._segmenter.tokenizer_id,
             as_of=request.as_of,
-            limit=limit,
+            limit=depth,
             embedding=self._query_embedding(request.query),
             model=self._embedder.model if self._embedder else "",
             max_df=self._lexical_max_df,
@@ -184,8 +200,11 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                     max_df=self._guidance_max_df,
                     timeout=remaining_seconds(context),
                 ),
-                limit,
+                depth,
             )
+        scored: list[tuple[tuple[SearchHit, int], float | None]] = [(r, None) for r in ranked]
+        if rerank:
+            scored = self._rerank(request.query, ranked, limit, remaining_seconds(context))
         return pb.SearchArticlesResponse(
             hits=[
                 pb.ArticleHit(
@@ -202,10 +221,54 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                     semantic_similarity=h.semantic_similarity,
                     term_coverage=term_coverage(searched, h.content, self._segmenter),
                     guidance_documents=documents,
+                    rerank_score=score,
                 )
-                for h, documents in ranked
+                for (h, documents), score in scored
             ]
         )
+
+    def _rerank(
+        self,
+        query: str,
+        ranked: list[tuple[SearchHit, int]],
+        limit: int,
+        timeout: float | None,
+    ) -> list[tuple[tuple[SearchHit, int], float | None]]:
+        """精排後的前 `limit` 條（加上函釋帶出而被擠出去的，最多 `GUIDANCE_EXTRA` 條）與各自的分數。
+
+        精排失敗（名額滿、逾時、端點錯誤、回應不合）時退回精排前的次序，分數不設：精排是加強，
+        不是查詢成功的條件。退回時一樣只取前 `limit` 條，所以呼叫端拿到的條數與沒要精排時相同。
+        """
+        scores = self._rerank_scores(query, [h.content for h, _ in ranked], timeout)
+        if scores is None:
+            kept = select(
+                ranked,
+                [-float(i) for i in range(len(ranked))],
+                limit=limit,
+                extra=GUIDANCE_EXTRA,
+                is_extra=_guided,
+            )
+            return [(item, None) for item, _ in kept]
+        return list(select(ranked, scores, limit=limit, extra=GUIDANCE_EXTRA, is_extra=_guided))
+
+    def _rerank_scores(
+        self, query: str, documents: list[str], timeout: float | None
+    ) -> list[float] | None:
+        reranker, slots = self._reranker, self._rerank_slots
+        if reranker is None or not documents:
+            return None
+        # 不等待：名額滿了就退回精排前的次序，慢的精排端點不能占滿伺服器的執行緒。
+        if slots is not None and not slots.acquire(blocking=False):
+            log.warning("rerank skipped: rerank slots are full")
+            return None
+        try:
+            return reranker.score(query, documents, timeout=timeout)
+        except RerankError as e:
+            log.warning("rerank skipped: %s", e)
+            return None
+        finally:
+            if slots is not None:
+                slots.release()
 
     def _query_embedding(self, query: str) -> list[float] | None:
         if self._embedder is None:
@@ -223,6 +286,11 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         finally:
             if slots is not None:
                 slots.release()
+
+
+def _guided(pair: tuple[SearchHit, int]) -> bool:
+    """函釋帶出這一條（有函釋提到查詢詞並解釋它）。"""
+    return pair[1] > 0
 
 
 def _identifier_subject(identifier: pb.LawIdentifier) -> str:

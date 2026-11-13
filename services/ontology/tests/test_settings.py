@@ -21,6 +21,7 @@ ALL_NAMES = (
     "ENVCITE_ONTOLOGY_MODELS",
     "ENVCITE_ONTOLOGY_LEXICAL_MAX_DF",
     "ENVCITE_ONTOLOGY_GUIDANCE_MAX_DF",
+    "ENVCITE_ONTOLOGY_RERANK_CANDIDATES",
 )
 
 
@@ -136,3 +137,21 @@ def test_guidance_ratio_can_be_turned_off(monkeypatch: pytest.MonkeyPatch) -> No
     assert load(ServerSettings).guidance_max_df > 0
     monkeypatch.setenv("ENVCITE_ONTOLOGY_GUIDANCE_MAX_DF", "0")
     assert load(ServerSettings).guidance_max_df == 0
+
+
+@pytest.mark.parametrize("depth", ["0", "51", "-1", "deep", ""])
+def test_invalid_rerank_candidates_are_rejected(
+    monkeypatch: pytest.MonkeyPatch, depth: str
+) -> None:
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_DSN", "postgresql://u:p@h/db")
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_RERANK_CANDIDATES", depth)
+    with pytest.raises(SystemExit, match="ENVCITE_ONTOLOGY_RERANK_CANDIDATES"):
+        load(ServerSettings)
+
+
+def test_rerank_candidates_default_fits_the_search_pool(monkeypatch: pytest.MonkeyPatch) -> None:
+    from envcite_ontology.store import SEARCH_POOL
+
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_DSN", "postgresql://u:p@h/db")
+    depth = load(ServerSettings).rerank_candidates
+    assert 1 <= depth <= SEARCH_POOL

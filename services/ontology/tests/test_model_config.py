@@ -13,8 +13,10 @@ from envcite_ontology.verification.config import (
     keychain_lookup,
     load,
     load_embedder,
+    load_reranker,
     parse,
     parse_embedder,
+    parse_reranker,
     resolve_secret,
     secret_name,
 )
@@ -266,6 +268,35 @@ def test_the_embedder_needs_only_its_own_endpoint() -> None:
             ENV,
             timeout=5.0,
         )
+
+
+def test_the_reranker_is_declared_in_the_same_file_and_reuses_an_endpoint() -> None:
+    reranker = load_reranker(EXAMPLE, ENV, timeout=3.0)
+
+    assert reranker is not None and reranker.model == "bge-m3-reranker"
+    assert "secret-value" not in repr(reranker)
+    embedder = load_embedder(EXAMPLE, ENV, timeout=5.0)  # 兩段互不影響
+    assert embedder is not None and embedder.model == "bge-m3-embedding"
+
+
+def test_no_reranker_section_means_no_reranking() -> None:
+    assert parse_reranker(MINIMAL, ENV, timeout=3.0) is None
+
+
+def test_the_reranker_needs_only_its_own_endpoint_and_known_keys() -> None:
+    text = MINIMAL + '\n[reranker]\nendpoint = "e"\nname = "rr"\n'
+
+    reranker = parse_reranker(text, ENV, timeout=3.0, keychain=no_keychain)
+
+    assert reranker is not None and reranker.model == "rr"
+    with pytest.raises(ConfigError, match="endpoint 'nope'"):
+        parse_reranker(MINIMAL + '\n[reranker]\nendpoint = "nope"\nname = "rr"\n', ENV, timeout=3.0)
+    with pytest.raises(ConfigError, match="unknown keys"):
+        parse_reranker(
+            MINIMAL + '\n[reranker]\nendpoint = "e"\nname = "rr"\ntop_n = 5\n', ENV, timeout=3.0
+        )
+    with pytest.raises(ConfigError, match="name is required"):
+        parse_reranker(MINIMAL + '\n[reranker]\nendpoint = "e"\n', ENV, timeout=3.0)
 
 
 def test_a_model_can_declare_constrained_extraction() -> None:

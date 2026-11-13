@@ -507,3 +507,82 @@ def test_runs_are_compared_with_a_paired_test_and_must_share_a_subset() -> None:
 
     with pytest.raises(SystemExit, match="切分子集"):
         tool.compared(qrels_doc, {"a": _run(tool, good), "b": _run(tool, good, "test")}, 0.05)
+
+
+class FixedReranker:
+    """給定分數的精排替身：第 i 個候選得第 i 個分數，不看文字。"""
+
+    model = "fixed"
+
+    def __init__(self, scores: Sequence[float], fail: bool = False) -> None:
+        self.scores = scores
+        self.fail = fail
+        self.asked: list[int] = []
+
+    def score(
+        self, query: str, documents: Sequence[str], *, timeout: float | None = None
+    ) -> list[float]:
+        self.asked.append(len(documents))
+        if self.fail:
+            raise RuntimeError("endpoint down")
+        return list(self.scores[: len(documents)])
+
+
+def _rerank_run(
+    corpus: tuple[ModuleType, Any, Any], reranker: FixedReranker, candidates: int
+) -> dict[str, Any]:
+    tool, _, provisions = corpus
+    gs = sys.modules["golden_set"]
+    doc = _qrels_doc(corpus)
+    rows = tool.questions(ITEMS, doc, frozenset(i["id"] for i in ITEMS))
+    hits = [provisions[(gs.CENTRAL, p, n)] for p, n in [(AIR, "1"), (DUP_A, "1"), (WATER, "40")]]
+    out = tool.search_all(
+        FakeStore(hits),
+        FakeSegmenter(),
+        rows,
+        None,
+        qrels=doc["qrels"],
+        relevant_from=2,
+        k=50,
+        on=ON,
+        reranker=reranker,
+        candidates=candidates,
+    )
+    return {r.id: r for r in out}
+
+
+def test_the_rerank_arm_moves_the_head_and_leaves_the_tail_in_place(
+    corpus: tuple[ModuleType, Any, Any],
+) -> None:
+    """候選只有前兩條：第 2 條被精排拉到第 1，第 3 條不動，所以 R@50 與沒有精排的臂相同。"""
+    got = _rerank_run(corpus, FixedReranker([0.1, 0.9]), candidates=2)
+
+    assert got["second-of-two"].ranking == [
+        f"{DUP_A}-art-1",
+        f"{AIR}-art-1",
+        f"{WATER}-art-40",
+    ]
+    assert got["second-of-two"].top_rerank == 0.9
+
+
+def test_the_rerank_arm_reads_the_negatives_scores_for_a_floor(
+    corpus: tuple[ModuleType, Any, Any],
+) -> None:
+    got = _rerank_run(corpus, FixedReranker([0.2, 0.7, 0.4]), candidates=3)
+
+    assert got["neg"].ranking == [] and got["neg"].top_rerank == 0.7
+
+
+def test_a_failed_rerank_aborts_the_measurement_instead_of_measuring_the_first_stage(
+    corpus: tuple[ModuleType, Any, Any],
+) -> None:
+    with pytest.raises(RuntimeError, match="endpoint down"):
+        _rerank_run(corpus, FixedReranker([], fail=True), candidates=3)
+
+
+def test_arms_without_a_reranker_record_no_rerank_score(
+    corpus: tuple[ModuleType, Any, Any],
+) -> None:
+    out = _measure(corpus, _qrels_doc(corpus), [(AIR, "1")])
+
+    assert all(r.top_rerank is None for r in out)

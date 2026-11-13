@@ -12,10 +12,11 @@ from grpc_reflection.v1alpha import reflection
 
 from envcite.ontology.v2 import ontology_pb2_grpc, reasoning_pb2_grpc
 from envcite_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
-from envcite_ontology import embedding
+from envcite_ontology import embedding, reranking
 from envcite_ontology.embedding import Embedder
 from envcite_ontology.reasoning_service import ReasoningServicer
-from envcite_ontology.service import OntologyServicer
+from envcite_ontology.reranking import Reranks
+from envcite_ontology.service import DEFAULT_RERANK_CANDIDATES, OntologyServicer
 from envcite_ontology.settings import ServerSettings, load
 from envcite_ontology.store import OntologyStore
 from envcite_ontology.telemetry import register_annotation_health
@@ -31,6 +32,11 @@ MAX_CONCURRENT_RPCS = 2 * WORKERS
 #: 同時向嵌入端點取查詢向量的上限。必須小於 WORKERS：慢端點不能占滿執行緒，名額滿了
 #: 立刻改走字面臂，查詢仍成功。
 QUERY_EMBED_SLOTS = 2
+#: 同時向精排端點打分的上限，同樣必須小於 WORKERS。精排一次約 1 至 2 秒，
+#: 比嵌入慢得多，所以名額較寬，但仍有界：名額滿了立刻退回精排前的次序，查詢仍成功。
+RERANK_SLOTS = 4
+#: 精排端點的單次上限（秒）。實測 30 條約 1.3 秒，留到約兩倍；比它慢就不如退回精排前的次序。
+RERANK_TIMEOUT = 3.0
 
 
 def build_server(
@@ -42,11 +48,14 @@ def build_server(
     embedder: Embedder | None = None,
     lexical_max_df: float = 0.0,
     guidance_max_df: float = 0.0,
+    reranker: Reranks | None = None,
+    rerank_candidates: int = DEFAULT_RERANK_CANDIDATES,
 ) -> tuple[grpc.Server, int]:
     """建立但不啟動；回傳伺服器與實際綁定的埠號。`health_servicer` 讓呼叫端在關閉時切換狀態。
 
     `lexical_max_df` 是字面臂略過高頻詞的段落比例上限（見 `ServerSettings`）；0 為不略過。
     `guidance_max_df` 是函釋入口容許的命中函釋占比上限；0 為不限制。
+    `reranker` 是請求帶 `rerank` 時用的精排模型（None 為不精排）；`rerank_candidates` 是它看多深。
     """
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=WORKERS),
@@ -66,6 +75,9 @@ def build_server(
             lexical_max_df,
             embed_slots=QUERY_EMBED_SLOTS,
             guidance_max_df=guidance_max_df,
+            reranker=reranker,
+            rerank_slots=RERANK_SLOTS,
+            rerank_candidates=rerank_candidates,
         ),
         server,
     )
@@ -107,6 +119,9 @@ def main() -> None:
         embedder=embedding.from_settings(settings, timeout=5.0),
         lexical_max_df=settings.lexical_max_df,
         guidance_max_df=settings.guidance_max_df,
+        # 精排同樣不重試；逾時以呼叫端剩下的期限為準，這裡只是上限
+        reranker=reranking.from_settings(settings, timeout=RERANK_TIMEOUT),
+        rerank_candidates=settings.rerank_candidates,
     )
     stop_on_sigterm(server, health_servicer)
     server.start()

@@ -45,6 +45,12 @@ max_tokens = 4096
 endpoint = "llm"
 name = "bge-m3-embedding"
 
+# 查詢時的精排模型（交叉編碼器；envcite-ontology 經 ENVCITE_ONTOLOGY_MODELS 讀這一段）。沿用上面的端點；
+# 沒有這一段就不精排。請求帶 rerank 才會用到它，家族與嵌入同為 baai，已在 [relevance] 的 system_families。
+[reranker]
+endpoint = "llm"
+name = "bge-m3-reranker"
+
 # Anthropic 的模型不經端點，金鑰取自 ANTHROPIC_API_KEY（需要 `uv sync --extra llm`）。
 # [model.claude]
 # provider = "anthropic"
