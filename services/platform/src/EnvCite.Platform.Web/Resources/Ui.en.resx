@@ -613,11 +613,8 @@
   <data name="排除" xml:space="preserve"><value>Excluded</value></data>
   <data name="不適用" xml:space="preserve"><value>Not Applicable</value></data>
   <data name="法律樹結構" xml:space="preserve"><value>Law Hierarchy Tree</value></data>
-  <data name="指定日期沒有有效的法規版本。" xml:space="preserve"><value>No in-force laws found for the selected date.</value></data>
   <data name="依自然鍵直接查詢" xml:space="preserve"><value>Direct lookup by natural key</value></data>
   <data name="自然鍵" xml:space="preserve"><value>Natural key</value></data>
-  <data name="從左側法律樹選擇法規" xml:space="preserve"><value>Select a law from the tree</value></data>
-  <data name="展開母法查看授權命令與子法規，點選任一法規即可檢視有效條文清單。" xml:space="preserve"><value>Expand a parent statute to view delegated regulations and click any law to inspect its articles.</value></data>
   <data name="憲法" xml:space="preserve"><value>Constitution</value></data>
   <data name="法律" xml:space="preserve"><value>Statute</value></data>
   <data name="自治條例" xml:space="preserve"><value>Local Ordinance</value></data>
@@ -626,7 +623,6 @@
   <data name="命令" xml:space="preserve"><value>Regulation</value></data>
   <data name="法規結構目錄" xml:space="preserve"><value>Law structure outline</value></data>
   <data name="法規體系與合規" xml:space="preserve"><value>Law Hierarchy &amp; Compliance</value></data>
-  <data name="整合法律位階授權知識圖譜、編章節條文瀏覽與確定性規範推論評估。" xml:space="preserve"><value>Unified workbench combining the legal delegation knowledge graph, structural law browser, and deterministic normative reasoning.</value></data>
   <data name="篩選法規" xml:space="preserve"><value>Filter laws</value></data>
   <data name="輸入法規名稱或代碼" xml:space="preserve"><value>Enter law title or code</value></data>
   <data name="例如 空氣污染" xml:space="preserve"><value>e.g. Air Pollution</value></data>
@@ -634,9 +630,6 @@
   <data name="留空表示現行" xml:space="preserve"><value>Leave blank for current</value></data>
   <data name="套用條件" xml:space="preserve"><value>Apply</value></data>
   <data name="法律授權知識圖譜" xml:space="preserve"><value>Legal Delegation Knowledge Graph</value></data>
-  <data name="展開或收合互動圖譜" xml:space="preserve"><value>Toggle interactive knowledge graph</value></data>
-  <data name="點選圖譜節點可直接檢視該法規條文與編章節結構。" xml:space="preserve"><value>Click any graph node to inspect its chapters, sections, and articles.</value></data>
-  <data name="請從左側「法律樹結構」點選法規，或輸入關鍵字篩選，以檢視局部授權關聯圖譜。" xml:space="preserve"><value>Select a law from the left tree or enter a filter keyword to view its local delegation graph.</value></data>
   <data name="適應視窗" xml:space="preserve"><value>Fit</value></data>
   <data name="合規推論試算" xml:space="preserve"><value>Compliance Reasoning</value></data>
   <data name="選擇常見情境或輸入事實，由確定性推論引擎評估候選風險與缺漏要件。" xml:space="preserve"><value>Select a common scenario or enter facts to evaluate candidate risks and missing elements.</value></data>
@@ -644,4 +637,96 @@
   <data name="設備異常通報" xml:space="preserve"><value>Equipment Incident</value></data>
   <data name="超標與不法利得" xml:space="preserve"><value>Exceedance &amp; Benefit</value></data>
   <data name="進階：裁處與時效參數" xml:space="preserve"><value>Advanced: Penalty &amp; Limitation Parameters</value></data>
+  <data name="A · 憲政體制" xml:space="preserve"><value>A · Constitutional</value></data>
+  <data name="D · 內政營建" xml:space="preserve"><value>D · Interior &amp; Construction</value></data>
+  <data name="G · 財政賦稅" xml:space="preserve"><value>G · Finance &amp; Tax</value></data>
+  <data name="J · 經濟能源" xml:space="preserve"><value>J · Economy &amp; Energy</value></data>
+  <data name="K · 交通運輸" xml:space="preserve"><value>K · Transportation</value></data>
+  <data name="L · 衛生食藥" xml:space="preserve"><value>L · Health &amp; Food</value></data>
+  <data name="N · 勞動職安" xml:space="preserve"><value>N · Labor &amp; OSH</value></data>
+  <data name="O · 環境保護" xml:space="preserve"><value>O · Environmental Protection</value></data>
+  <data name="Tier 0 憲法" xml:space="preserve"><value>Tier 0 Constitution</value></data>
+  <data name="Tier 1 法律／條例" xml:space="preserve"><value>Tier 1 Statute</value></data>
+  <data name="Tier 2 法規命令" xml:space="preserve"><value>Tier 2 Delegated Regulation</value></data>
+  <data name="Tier 3 再授權規則" xml:space="preserve"><value>Tier 3 Sub-delegation Rule</value></data>
+  <data name="{n} 件有效行政函釋（行政程序法第 159 條）" xml:space="preserve"><value>{n} active administrative guidances (APA Art. 159)</value></data>
+  <data name="{n} 條條文" xml:space="preserve"><value>{n} articles</value></data>
+  <data name="{n} 部子法規" xml:space="preserve"><value>{n} delegated regulations</value></data>
+  <data name="{n} 項違憲失效" xml:space="preserve"><value>{n} constitutional invalidations</value></data>
+  <data name="上下各 {0} 層" xml:space="preserve"><value>Depth ±{0}</value></data>
+  <data name="主旨" xml:space="preserve"><value>Subject</value></data>
+  <data name="以凱爾森法規範位階（Stufenbau）呈現跨母法授權知識圖譜、條文結構與確定性合規推論。" xml:space="preserve"><value>Kelsen Stufenbau multi-parent legal delegation knowledge graph, structural browser, and deterministic compliance reasoning.</value></data>
+  <data name="以此法為中心重建圖譜" xml:space="preserve"><value>Focus graph on this law</value></data>
+  <data name="位階分層（Stufenbau）" xml:space="preserve"><value>Stufenbau Tiers</value></data>
+  <data name="依定名種類篩選子法規" xml:space="preserve"><value>Filter child regulations by statutory type</value></data>
+  <data name="全部 ({0})" xml:space="preserve"><value>All ({0})</value></data>
+  <data name="全部領域" xml:space="preserve"><value>All Domains</value></data>
+  <data name="再授權" xml:space="preserve"><value>Sub-delegation</value></data>
+  <data name="函釋" xml:space="preserve"><value>Guidance</value></data>
+  <data name="含再授權鏈" xml:space="preserve"><value>Includes sub-delegation</value></data>
+  <data name="圖譜節點" xml:space="preserve"><value>Graph Nodes</value></data>
+  <data name="在授權知識圖譜檢視" xml:space="preserve"><value>View in Delegation Graph</value></data>
+  <data name="子法" xml:space="preserve"><value>Children</value></data>
+  <data name="子法上限：" xml:space="preserve"><value>Child limit:</value></data>
+  <data name="子法種類：" xml:space="preserve"><value>Child type:</value></data>
+  <data name="尚有 {n} 部下位法規未納入目前上限；點擊「展開完整」或藍色膠囊可顯示全部。" xml:space="preserve"><value>{n} more subordinate regulations exceed the current cap; click Expand or the badge in the graph to load all.</value></data>
+  <data name="展開完整 +{n} 部授權法規" xml:space="preserve"><value>Expand all +{n} delegated regulations</value></data>
+  <data name="展開深度與數量" xml:space="preserve"><value>Graph depth and limit</value></data>
+  <data name="工作台分頁" xml:space="preserve"><value>Workbench tabs</value></data>
+  <data name="已顯示前 {0} 筆母法體系（共 {1} 筆）；請輸入關鍵字或選擇單一領域縮小範圍。" xml:space="preserve"><value>Showing first {0} of {1} root trees; enter a keyword or select a domain to narrow results.</value></data>
+  <data name="從左側目錄或知識圖譜選擇法規" xml:space="preserve"><value>Select a law from the catalog or graph</value></data>
+  <data name="快速切換領域" xml:space="preserve"><value>Quick domain switch</value></data>
+  <data name="指定條件沒有符合的法規版本。" xml:space="preserve"><value>No in-force laws match the current filters.</value></data>
+  <data name="授權條文：" xml:space="preserve"><value>Authorizing articles: </value></data>
+  <data name="授權母法依據（上位規範）" xml:space="preserve"><value>Authorizing Parent Statutes</value></data>
+  <data name="授權法規命令" xml:space="preserve"><value>Delegated Regulation</value></data>
+  <data name="授權知識圖譜" xml:space="preserve"><value>Delegation Graph</value></data>
+  <data name="授權知識圖譜 · {0}" xml:space="preserve"><value>Delegation Graph · {0}</value></data>
+  <data name="授權知識圖譜 · 全域總覽" xml:space="preserve"><value>Delegation Graph · Global Overview</value></data>
+  <data name="授權訂定子法規（下位規範）" xml:space="preserve"><value>Delegated Child Regulations</value></data>
+  <data name="授權連線" xml:space="preserve"><value>Delegation Edges</value></data>
+  <data name="放大圖譜" xml:space="preserve"><value>Zoom in graph</value></data>
+  <data name="有效行政函釋" xml:space="preserve"><value>Active Guidances</value></data>
+  <data name="本焦點法規含 {0} 項宣告違憲失效單元（資料來源：憲法法庭；未列出不等於無違憲失效）。" xml:space="preserve"><value>This law has {0} constitutionally invalidated unit(s). Source: Constitutional Court; omission does not guarantee validity.</value></data>
+  <data name="條文總數" xml:space="preserve"><value>Total Articles</value></data>
+  <data name="機關與日期" xml:space="preserve"><value>Issuer &amp; Date</value></data>
+  <data name="檢視編章節條文" xml:space="preserve"><value>Inspect Structure &amp; Articles</value></data>
+  <data name="此範圍內尚無直接授權連線。" xml:space="preserve"><value>No direct delegation edges in this scope.</value></data>
+  <data name="此範圍尚無授權關聯節點" xml:space="preserve"><value>No delegation graph nodes in this scope</value></data>
+  <data name="法律樹結構 ({0})" xml:space="preserve"><value>Law Hierarchy ({0})</value></data>
+  <data name="法律直接授權" xml:space="preserve"><value>Direct statutory delegation</value></data>
+  <data name="法規位階圖例" xml:space="preserve"><value>Legal hierarchy legend</value></data>
+  <data name="法規檢索與篩選" xml:space="preserve"><value>Search and filter laws</value></data>
+  <data name="法規領域" xml:space="preserve"><value>Legal Domain</value></data>
+  <data name="焦點星系（同心圓）" xml:space="preserve"><value>Concentric Focus</value></data>
+  <data name="現行有效行政函釋" xml:space="preserve"><value>Active Administrative Guidances</value></data>
+  <data name="現行有效行政函釋錨點 ({0})" xml:space="preserve"><value>Active Administrative Guidance Anchors ({0})</value></data>
+  <data name="發文字號" xml:space="preserve"><value>Document No.</value></data>
+  <data name="目前無法取得授權知識圖譜，請稍後再試或切換至「編章節條文」分頁。" xml:space="preserve"><value>Unable to load the delegation graph right now; please retry or switch to the Structure tab.</value></data>
+  <data name="目前無法取得法規目錄，請稍後再試或改用自然鍵查詢。" xml:space="preserve"><value>Unable to load the law catalog right now; retry shortly or use direct lookup by natural key.</value></data>
+  <data name="直接授權子法" xml:space="preserve"><value>Direct Child Regulations</value></data>
+  <data name="節點法學檢視" xml:space="preserve"><value>Node Legal Inspector</value></data>
+  <data name="結構章節" xml:space="preserve"><value>Structure Headings</value></data>
+  <data name="編章節條文" xml:space="preserve"><value>Structure &amp; Articles</value></data>
+  <data name="編章節與有效條文" xml:space="preserve"><value>Structure &amp; Effective Articles</value></data>
+  <data name="縮小圖譜" xml:space="preserve"><value>Zoom out graph</value></data>
+  <data name="罰則條文連動" xml:space="preserve"><value>Penalty Links</value></data>
+  <data name="罰則與義務條文連動" xml:space="preserve"><value>Penalty-Duty &amp; Delegation Links</value></data>
+  <data name="罰則與義務／授權條文連動 ({0})" xml:space="preserve"><value>Penalty-Duty &amp; Delegation Links ({0})</value></data>
+  <data name="處罰條文" xml:space="preserve"><value>Penalty Article</value></data>
+  <data name="行政程序法第 159 條" xml:space="preserve"><value>APA Art. 159</value></data>
+  <data name="行政規則僅供參考（行政程序法第 159 條），不拘束法院審判；法規命令須經法律明確授權。" xml:space="preserve"><value>Administrative rules are interpretive guidance only (Administrative Procedure Act Art. 159) and do not bind courts; delegated regulations require explicit statutory authorization.</value></data>
+  <data name="被連動義務／規範條文" xml:space="preserve"><value>Linked Duty / Delegated Provision</value></data>
+  <data name="請切換「法規領域」、清空關鍵字，或從左側法規階層目錄點選任一部法規作為焦點。" xml:space="preserve"><value>Try switching Legal Domain, clearing the search filter, or selecting a law from the left hierarchy catalog.</value></data>
+  <data name="資料來源：憲法法庭；未列出不等於無違憲失效。" xml:space="preserve"><value>Source: Constitutional Court; omission does not guarantee validity.</value></data>
+  <data name="連動類型" xml:space="preserve"><value>Link Type</value></data>
+  <data name="違反行為義務" xml:space="preserve"><value>Duty Obligation</value></data>
+  <data name="違憲失效（憲法法庭）" xml:space="preserve"><value>Constitutional Invalidation (Constitutional Court)</value></data>
+  <data name="部授權法規（點擊展開）" xml:space="preserve"><value>more delegated regulations (click to expand)</value></data>
+  <data name="關聯條號" xml:space="preserve"><value>Article</value></data>
+  <data name="階層深度：" xml:space="preserve"><value>Hierarchy depth:</value></data>
+  <data name="預設聚焦環境保護；改選「全部領域」可跨部會探索" xml:space="preserve"><value>Defaults to Environmental Protection; choose All Domains for cross-ministry browsing</value></data>
+  <data name="顯示授權條號" xml:space="preserve"><value>Show Edge Articles</value></data>
+  <data name="點選圖譜中的任一法規範節點檢視法學位階、授權條文依據與關係細節；雙擊節點可直接以其為中心深入展開。" xml:space="preserve"><value>Single-click any node in the graph to inspect its legal tier, authorizing articles, and relationships; double-click to refocus the graph.</value></data>
+  <data name="點選左側法規階層目錄中的任一部法規，或在「授權知識圖譜」分頁中雙擊節點，即可檢視編章節結構與有效條文清單。" xml:space="preserve"><value>Select any law from the left catalog or double-click a node in the Delegation Graph tab to inspect its structure and effective articles.</value></data>
 </root>
