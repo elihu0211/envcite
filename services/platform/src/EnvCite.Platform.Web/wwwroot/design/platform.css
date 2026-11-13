@@ -853,24 +853,6 @@ h1[tabindex="-1"]:focus-visible {
     font-variant-numeric: tabular-nums;
 }
 
-/* 兩欄：主欄放表格，側欄放設定；窄的時候疊成一欄。 */
-.ep-columns {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--ep-space-6);
-    align-items: flex-start;
-}
-
-.ep-columns > :first-child {
-    flex: 2 1 36rem;
-    min-inline-size: 0;
-}
-
-.ep-columns > :last-child {
-    flex: 1 1 18rem;
-    min-inline-size: 0;
-}
-
 /* 對稱格線：欄一樣寬、同一列一樣高。每欄至少 22rem，放不下就整列疊成一欄，不留下半寬的孤兒欄。
    內容多的卡片用 .ep-span 獨佔一整列；卡片裡的狀態列貼底，同一列的兩張底部對齊。 */
 .ep-grid {
@@ -892,6 +874,12 @@ h1[tabindex="-1"]:focus-visible {
 
 .ep-grid > .ep-card > .ep-status:last-child {
     margin-block-start: auto;
+}
+
+/* 同一列另一張比較高時，空狀態在自己的卡片裡垂直置中，不貼在頂端留一大片空白。 */
+.ep-grid > .ep-card > .ep-empty {
+    flex: 1;
+    justify-content: center;
 }
 
 /* 詳細頁的分頁列（Material 的 primary tabs、各家雲端主控台的資源頁）：一條底線，目前這一頁的底下長出一道主色線，
