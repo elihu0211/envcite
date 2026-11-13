@@ -1,0 +1,9 @@
+{
+  "name": "envcite-platform-e2e",
+  "private": true,
+  "type": "module",
+  "description": "客戶入口工作區的端對端測試：由 xUnit 的 WorkspaceE2ETests 啟動伺服器後呼叫 workspace.mjs，不單獨執行。",
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}

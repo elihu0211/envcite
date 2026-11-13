@@ -47,3 +47,7 @@ Thumbs.db
 .claude/worktrees/
 .claude/agent-memory-local/
 .serena/
+
+# Node（端對端測試的 playwright）
+node_modules/
+e2e-shots/

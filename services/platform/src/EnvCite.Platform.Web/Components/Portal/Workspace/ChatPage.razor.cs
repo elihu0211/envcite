@@ -19,6 +19,9 @@ public sealed partial class ChatPage
     private readonly CancellationTokenSource _cts = new();
     private readonly CancellationToken _ct;
     private bool _disposed;
+
+    // 預先渲染的畫面先出現，circuit 連上之後才接手：之前的輸入與按鈕不會有人處理（表單會變成整頁重送、輸入的字消失），所以先停用。
+    private bool _interactive;
     private ElementReference _input;
     private IJSObjectReference? _module;
     private string _query = string.Empty;
@@ -66,6 +69,13 @@ public sealed partial class ChatPage
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            // OnAfterRender 只在互動式渲染才會跑（預先渲染沒有）：到這裡就是 circuit 已經接手。
+            _interactive = true;
+            StateHasChanged();
+        }
+
         try
         {
             if (_scroll)

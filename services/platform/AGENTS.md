@@ -24,6 +24,7 @@
 
 - `src/EnvCite.Platform.Web` 是 Razor 元件函式庫（營運者後台 `/ui`、客戶入口 `/portal`），由 `Api` 掛上；不在 `/v2` 的限流與計量群組內。
 - 測試：xUnit 加 `WebApplicationFactory` 整合測試；Testcontainers PostgreSQL，上游以行程內 h2c gRPC fake 取代。
+- **互動式的部分用真的瀏覽器測**（`WorkspaceE2ETests`：xUnit 以 `WebApplicationFactory` 的 Kestrel 模式起伺服器、建租戶與成員，`tests/e2e/workspace.mjs` 用 playwright 驅動瀏覽器）：circuit 的身分來自 SignalR 連線、連線沒有租戶路徑，這類錯誤（曾經把入口成員當匿名、整頁被導去後台登入）只有真的瀏覽器加真的伺服器驗得到，TestServer 與服務層測試都看不到。第一次執行自動 `npm ci` 並下載 playwright 指定版本的 Chromium；沒有網路用 `ENVCITE_SKIP_E2E=1` 跳過，有現成的 Chromium 用 `ENVCITE_CHROMIUM_PATH` 指過去。CI 不設這兩個，所以一定會跑。入口頁面在 circuit 裡被授權擋下（別的組織、還有必須先完成的步驟）時，用入口的版面與說明（`Routes.razor` 的 `DefaultLayout` 依網址挑），不給客戶看後台的外殼。
 - 寄信的測試對行程內的 `SmtpServer`（NuGet 套件，包成 `TestSmtpServer`）進行真的 TCP 連線，不寄任何真實郵件、不連外，也不自己手寫 SMTP 伺服器。
 
 ## Commands
