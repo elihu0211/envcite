@@ -29,8 +29,11 @@ public static class OperatorCli
         沒啟用時，create 印出一次性初始密碼。reset-password 一律印出新的一次性密碼（寄信失敗或收不到信時的退路）。
         """;
 
-    /// <summary>第一個引數是 <c>operator</c> 或 <c>mail</c> 才是這個入口；其餘照常啟動伺服器。</summary>
-    public static bool IsCommand(string[] args) => args is ["operator", ..] or ["mail", ..];
+    /// <summary>
+    /// 第一個引數是 <c>operator</c> 或 <c>mail</c> 才是這個入口；其餘照常啟動伺服器。
+    /// <c>mail preview</c> 不需要主機，由 <see cref="MailPreview"/> 先處理，這裡排除，不靠呼叫順序。
+    /// </summary>
+    public static bool IsCommand(string[] args) => args is ["operator", ..] or (["mail", ..] and not ["mail", "preview", ..]);
 
     /// <returns>結束碼：0 成功，1 操作失敗（帳號已存在、找不到等），2 用法錯誤。</returns>
     public static async Task<int> RunAsync(

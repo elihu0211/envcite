@@ -10,6 +10,8 @@ public sealed class OperatorCliEntryTests
     [InlineData(true, "operator")]
     [InlineData(true, "mail", "test", "a@example.com")]
     [InlineData(true, "mail")]
+    [InlineData(false, "mail", "preview", "out")]
+    [InlineData(false, "mail", "preview")]
     [InlineData(false)]
     [InlineData(false, "--urls=http://localhost:5000")]
     [InlineData(false, "create", "a@example.com")]
