@@ -72,6 +72,17 @@ public sealed class GroundServiceTests(ConsultFactory factory)
         Assert.Equal(1, SearchesSince(before));
         var (request, _) = factory.Ontology.Searches.Last();
         Assert.Equal((FakeOntologyServer.AnswerableQuery, "2020-01-01", OntologySearch.Limit), (request.Query, request.AsOf, request.Limit));
+        Assert.True(request.IncludeGuidance);
+    }
+
+    [Fact]
+    public async Task AnArticleOnlyGuidanceExplainsIsGroundedButNotHighConfidence()
+    {
+        var response = await GroundAsync(new GroundRequest { Question = FakeOntologyServer.GuidanceOnlyQuery });
+
+        var citation = Assert.Single(response.Evidence.Citations);
+        Assert.Equal("空氣污染防制法 第 31 條", citation.Label);
+        Assert.Equal(V2.Confidence.Low, response.Evidence.Confidence);
     }
 
     [Fact]

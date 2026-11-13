@@ -24,6 +24,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     /// <summary>同時涵蓋中央空污法與臺北市自治條例的雙軌檢索。</summary>
     public const string DualTrackQuery = "臺北市空氣污染防制與自治裁罰標準";
 
+    /// <summary>條文沒有查詢詞（只有函釋用這個詞），兩臂的分數都在下界以下，只有函釋指向它。</summary>
+    public const string GuidanceOnlyQuery = "露天燃燒";
+
     /// <summary>有命中，但都未達相關性下界。</summary>
     public const string IrrelevantQuery = "量子電腦";
 
@@ -60,8 +63,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             await _app.DisposeAsync();
     }
 
-    internal static ArticleHit Hit(int n, float lexicalScore) => new()
+    internal static ArticleHit Hit(int n, float lexicalScore, int guidanceDocuments = 0) => new()
     {
+        GuidanceDocuments = guidanceDocuments,
         Iri = $"https://envcite/tw/law/O0020001/2018-08-01/zho/art_{n}",
         Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020001" },
         LawTitle = "空氣污染防制法",
@@ -102,6 +106,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                 MappedQuery => Respond(
                     new ArticleHit { Iri = "a", Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020001" }, LawTitle = "空氣污染防制法", Number = "5-1", Content = "…", LexicalScore = 4.5F, SemanticSimilarity = 0.85F },
                     new ArticleHit { Iri = "b", Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020001" }, LawTitle = "空氣污染防制法", Number = "20", Content = "…", LexicalScore = 0.1F }),
+                GuidanceOnlyQuery => Respond(Hit(77, 0.1F), Hit(31, 0.1F, guidanceDocuments: 2)),
                 IrrelevantQuery => Respond(Hit(1, 0.1F)),
                 InvalidQuery => throw new RpcException(
                     new Status(StatusCode.InvalidArgument, InvalidDetail),

@@ -43,6 +43,28 @@ public sealed class GroundingTests
     }
 
     [Fact]
+    public void GroundKeepsAnArticleThatGuidanceExplainsEvenWhenBothScoresAreLow()
+    {
+        // 查詢用語只出現在函釋：條文本身字面與語意都不達標，函釋指向的那一條仍進證據集，沒有函釋的低分條不進。
+        var guided = Law(31, 0.1) with { GuidanceDocuments = 1 };
+
+        var grounding = Grounding.Ground([Law(77, 0.1), guided], Relevance);
+
+        Assert.Equal(guided.Iri, Assert.Single(grounding).Iri);
+    }
+
+    [Fact]
+    public void GuidanceAloneIsNotHighConfidence()
+    {
+        var guided = Law(31, 0.1) with { GuidanceDocuments = 3 };
+        Article[] articles = [guided];
+
+        var grounding = Grounding.Ground(articles, Relevance);
+
+        Assert.Equal(Confidence.Low, Grounding.ConfidenceOf(grounding, articles, Relevance));
+    }
+
+    [Fact]
     public void GroundCapsTheClosedSet()
     {
         Article[] many = [.. Enumerable.Range(1, Grounding.MaxCitations + 4).Select(n => Law(n, 9))];
