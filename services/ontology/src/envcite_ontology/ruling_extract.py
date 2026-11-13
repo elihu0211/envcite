@@ -42,10 +42,14 @@ _FROM_RULING = re.compile(r"自本(?:解釋|判決|裁判)(?:公布|公告|宣�
 
 @dataclass(frozen=True, slots=True)
 class Candidate:
+    """由解釋文提出的一處違憲失效。"""
+
     #: 法規標題（呼叫端以標題對到法規）
     law_title: str
+    #: 條文單元路徑，只到項（`art_32`、`art_32-1/para_2`）。
     path: str
     invalid_from: date
+    #: 裁判只宣告該條的一部分失效；失效仍記在整個條文單元上。
     partial: bool
 
 

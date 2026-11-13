@@ -100,6 +100,10 @@ def build_server(
 
 
 def main() -> None:
+    """`envcite-ontology`：啟動 gRPC 伺服器（法規查詢、檢索與推論），阻塞到被停止。
+
+    收到 SIGTERM 時先排空進行中的呼叫再結束。
+    """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = load(ServerSettings)
     store = OntologyStore.from_dsn(settings.dsn)

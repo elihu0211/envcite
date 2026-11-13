@@ -76,9 +76,15 @@ def assert_distinct(models: Sequence[Model]) -> None:
 
 @dataclass(frozen=True)
 class Run:
+    """一次 `run` 的結果：處理的單元、抽到與丟掉的數量、接受結果、定義與抽取過程的計數。"""
+
+    #: 處理的單元數，含略過的
     units: int
+    #: 此抽取者與版本已抽過而略過的單元數
     skipped: int
+    #: 抽到的陳述數，含事後連到被引用條文的罰則
     extracted: int
+    #: 丟掉的輸出數，含定義與沒連成的罰則
     dropped: int
     settled: Settled
     linked: int = 0  # 事後連到被引用條文的罰則數（已含在 extracted）
@@ -284,6 +290,12 @@ def run(
     definition_gates_: Sequence[DefinitionGate] | None = None,
     reextract_rounds: int = 0,
 ) -> Run:
+    """對一批法規抽取、驗證、接受：先抽用語定義與陳述，再接受、重抽、連結罰則，最後接受定義。
+
+    寫入資料庫並分段 commit；不取流程鎖，由呼叫端先 `try_lock`。`check_distinct` 為真時先對
+    所有模型做別名檢查，同一個模型的兩個名字丟 `SameModel`。`required` 只管陳述；定義的必要
+    方法固定為 `definition_gates.REQUIRED`。
+    """
     if check_distinct:
         assert_distinct([extractor, *verifiers])
     units = skipped = extracted = dropped = definitions = 0
@@ -384,6 +396,11 @@ def run(
 
 
 def main() -> None:
+    """`envcite-pipeline`：對 `--law` 指定或 `--pending` 挑出的法規跑完整流程，沒有子指令。
+
+    `--check` 只確認設定檔與每個模型都通、沒有別名，不連資料庫。另一個流程持有鎖時不處理，
+    直接結束；引數或設定檔不合以 `SystemExit` 結束。
+    """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="envcite-pipeline")
     parser.add_argument("--law", action="append", default=[], help="法規的 pcode，可重複")

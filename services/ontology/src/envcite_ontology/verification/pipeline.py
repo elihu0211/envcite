@@ -20,6 +20,8 @@ log = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class Settled:
+    """陳述的接受結果：累計升為 confirmed、rejected 的數目與跑了幾輪。"""
+
     confirmed: int
     rejected: int
     rounds: int

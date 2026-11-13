@@ -51,10 +51,15 @@ class DocumentChanged(GuidanceError):
 
 @dataclass(frozen=True)
 class LoadedGuidance:
+    """`load` 寫入一份行政規則文件的計數。"""
+
+    #: 文件裡的公文件數，含沿用的。
     documents: int
     #: 已載入過、內容相同而沿用的件數
     repeated: int
+    #: 新寫入的「解釋」（公文與所解釋條文單元的錨定）筆數。
     interpretations: int
+    #: 新寫入的停止適用筆數。
     cessations: int
 
 

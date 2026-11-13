@@ -102,6 +102,8 @@ def parse(text: str) -> list[Citation]:
 
 @dataclass(frozen=True)
 class Extracted:
+    """一次授權抽取的結果：新寫入、其中法律端對不到，以及已有主張而略過的引文數。"""
+
     written: int
     unresolved: int
     skipped: int

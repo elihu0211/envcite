@@ -68,6 +68,11 @@ class Resolver:
         return self._aliases
 
     def resolve(self, law_name: str) -> Resolved:
+        """把法規名稱解析成 pcode；解析不到時 `pcode` 為 None，`problem` 是原因。
+
+        原因是 `law_unresolved`（名稱不在名稱表）或 `law_ambiguous`（對到兩部以上法規，
+        不取第一筆）。
+        """
         key = name_key(law_name)
         if key not in self._names:
             return Resolved(None, "law_unresolved")

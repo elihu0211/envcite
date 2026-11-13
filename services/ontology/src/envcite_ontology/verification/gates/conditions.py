@@ -17,8 +17,11 @@ NOT_A_MEMBER = "__not_a_member__"
 
 @dataclass(frozen=True)
 class Cond:
+    """陳述的一個要件：對某概念的比較，及使它成立或不成立所需的事實值。"""
+
     id: int
     role: str
+    #: 析取子句編號；同一角色有數個子句即析取
     clause: int
     code: str
     comparator: str
@@ -32,6 +35,7 @@ class Cond:
 
     @property
     def by_concept(self) -> bool:
+        """是否為與概念值比較的要件，而不是數值要件。"""
         return self.value_code is not None
 
     def value(self, truth: bool, resolved: Decimal) -> Decimal:
@@ -65,6 +69,7 @@ def statement_as_of(conn: Conn, statement_id: int) -> date | None:
 
 
 def load_conditions(conn: Conn, statement_id: int) -> list[Cond]:
+    """陳述的適用範圍與義務內容要件，依編號排序；限值（`limit`）不含在內。"""
     rows = conn.execute(
         "SELECT id, condition_role, disjunct_no, concept_code, comparator, negated,"
         "       threshold, delegated, value_code, permit_code"

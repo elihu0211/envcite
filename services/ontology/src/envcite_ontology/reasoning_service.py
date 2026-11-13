@@ -41,6 +41,8 @@ SLOT_WAIT_SECONDS = 5.0
 
 
 class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
+    """`ReasoningService` 的 servicer：列出法規某日的標註陳述，與對案件事實推論（`Evaluate`）。"""
+
     def __init__(
         self,
         store: OntologyStore,

@@ -11,6 +11,8 @@ type Verdict = Literal["pass", "fail", "inconclusive"]
 
 @dataclass(frozen=True)
 class GateResult:
+    """閘門對一個被檢查物的結論；`evidence` 以 JSON 原樣寫進驗證紀錄。"""
+
     verdict: Verdict
     evidence: dict[str, Any] = field(default_factory=dict)
 
@@ -19,21 +21,30 @@ class Gate(Protocol):
     """`check` 回 None 為不適用；`verifier` 記入紀錄，不得等於抽取者。"""
 
     @property
-    def method(self) -> str: ...
+    def method(self) -> str:
+        """驗證方法名；政策的必要方法與驗證紀錄以它指名這個閘門。"""
+        ...
 
     @property
-    def verifier(self) -> str: ...
+    def verifier(self) -> str:
+        """記入驗證紀錄的驗證者識別（閘門名與版本，模型閘門再加模型名）。"""
+        ...
 
-    def check(self, conn: Conn, statement_id: int) -> GateResult | None: ...
+    def check(self, conn: Conn, statement_id: int) -> GateResult | None:
+        """檢查一個陳述；不適用回 None。丟 `ModelError` 時呼叫端記為 inconclusive。"""
+        ...
 
 
 @dataclass(frozen=True)
 class Unit:
+    """陳述與它所錨定的條文單元現行原文。"""
+
     statement_id: int
     provision_id: int
     path: str
     resource_id: int
     text: str
+    #: 引文在 `text` 內的（起，迄）區間；None 表示陳述涵蓋整段原文
     span: tuple[int, int] | None
     kind: str
     deontic: str | None
@@ -41,6 +52,7 @@ class Unit:
 
     @property
     def quoted(self) -> str:
+        """陳述的引文；沒有 `span` 時是整段原文。"""
         return self.text if self.span is None else self.text[self.span[0] : self.span[1]]
 
     @property
@@ -50,6 +62,10 @@ class Unit:
 
 
 def unit_of(conn: Conn, statement_id: int) -> Unit:
+    """讀出陳述所錨定單元的現行原文與上層條文。
+
+    陳述錨定的版本已被取代（或陳述不存在）時沒有可核對的原文，丟 `LookupError`。
+    """
     row = conn.execute(
         "SELECT s.provision_id, p.path, p.resource_id, v.content, lower(s.span), upper(s.span),"
         "       s.statement_kind::text, s.norm_modality::text"

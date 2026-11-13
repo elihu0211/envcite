@@ -37,6 +37,10 @@ EXIT_INVALID = 2
 
 
 def main() -> None:
+    """`envcite-annotate <file>`：讀一份標註 JSON，交給 `claims.load` 寫入資料庫。
+
+    文件不合（`AnnotationError`）或不是 JSON 時記錄原因，以結束碼 2 退出，不寫入。
+    """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="envcite-annotate")
     parser.add_argument("file", type=Path, help="標註文件（JSON）")

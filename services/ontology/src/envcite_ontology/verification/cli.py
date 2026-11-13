@@ -16,6 +16,10 @@ DEFAULT_REQUIRED = "numbers,references,executable,provisos,roundtrip,independent
 
 
 def main() -> None:
+    """`envcite-verify`：對 extracted 的陳述跑確定性閘門，依 `--require` 的政策接受或駁回。
+
+    沒有子指令。寫入驗證紀錄與確認狀態，結果以日誌回報。
+    """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="envcite-verify")
     parser.add_argument("--require", default=DEFAULT_REQUIRED, help="必要的驗證方法，逗號分隔")

@@ -40,6 +40,7 @@ def q(text: str) -> str:
 
 
 def milli(value: Decimal | float | int) -> int:
+    """數值轉成千分位整數；先轉成 `Decimal`，不帶入浮點誤差。"""
     return round(Decimal(str(value)) * 1000)
 
 
@@ -507,6 +508,12 @@ class Amounts:
 
 
 def amounts(case: Case) -> Amounts:
+    """第 18、26 條所需的金額：所得利益，與刑事已支付額加勞務時數乘基本工資的扣抵額。
+
+    字串（概念值）或多值的事實不當數字，視為未提供。有時數而沒有基本工資時不算扣抵額，
+    `wage_missing` 為真。
+    """
+
     def number(code: str) -> Decimal | None:
         raw = case.get(code)
         return None if raw is None or isinstance(raw, str | Sequence) else Decimal(str(raw))

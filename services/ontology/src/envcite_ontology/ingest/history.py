@@ -25,6 +25,8 @@ PROMULGATION_KINDS = ("enactment", "full_amendment", "partial_amendment")
 
 @dataclass(frozen=True)
 class Event:
+    """沿革裡的一筆事件：種類、日期、文號與原文。"""
+
     kind: str
     # 只有年月或格式不合者為 None：不以該月一日或任何日期頂替。
     date: date | None

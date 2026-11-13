@@ -72,6 +72,7 @@ def sync(
 
 
 def main() -> None:
+    """`envcite-sync <來源>`：對一個來源跑完整週期（`sync`），以它的結束碼結束。"""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="envcite-sync")
     parser.add_argument("source", choices=sorted(SOURCES))

@@ -94,6 +94,11 @@ class AnnotationError(ValueError):
 
 @dataclass(frozen=True)
 class Loaded:
+    """一次載入實際寫入的各類列數，與文件陳述 id 對資料庫陳述編號的對照。
+
+    例外、優先與罰則前提只計新增的列，已存在者不計。
+    """
+
     statements: int
     conditions: int
     exceptions: int

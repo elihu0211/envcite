@@ -37,6 +37,10 @@ class ProvisoGate:
     verifier: str = "gate:provisos@1"
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
+        """同條有未駁回的例外陳述為 pass，沒有為 inconclusive；這個閘門不會 fail。
+
+        原文沒有但書，或這個陳述本身就是某個陳述的例外，回 None。
+        """
         u = unit_of(conn, statement_id)
         if conn.execute(
             "SELECT 1 FROM annotation.statement_exception WHERE exception_id = %s", (statement_id,)

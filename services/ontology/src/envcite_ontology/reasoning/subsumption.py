@@ -74,9 +74,11 @@ class SubsumptionReport:
     results: tuple[CaseResult, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
+        """報告轉成巢狀的 dict（含各案例結果），供寫成 JSON。"""
         return asdict(self)
 
     def to_markdown(self) -> str:
+        """報告轉成 Markdown：總覽指標、案例明細表，與失敗案例的差異。"""
         cpr = self.case_pass_rate * 100
         mp, mr = self.missing_precision * 100, self.missing_recall * 100
         jp, jr = self.judgement_precision * 100, self.judgement_recall * 100

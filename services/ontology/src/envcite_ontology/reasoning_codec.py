@@ -299,6 +299,7 @@ def _problem(kind: str, subject: int | str) -> pb.Problem:
 
 
 def invalidated(i: facts.Invalidated) -> pb.InvalidatedStatement:
+    """違憲失效而不參與推論的陳述，轉成 `InvalidatedStatement` 訊息。"""
     return pb.InvalidatedStatement(
         statement_id=i.statement_id,
         version_iri=i.version_iri,
@@ -315,6 +316,10 @@ def outcome(
     definitions: Mapping[int, tuple[str, str, list[str]]] | None = None,
     guidance: Iterable[GuidanceRef] = (),
 ) -> pb.Outcome:
+    """一組推論結果轉成 `Outcome` 訊息。
+
+    陳述的來源版本只列 `sources` 有的；用語定義只列 `definitions` 查得到的。
+    """
     out = pb.Outcome(
         verdicts=[
             pb.StatementVerdict(statement_id=s, verdict=VERDICT[v])

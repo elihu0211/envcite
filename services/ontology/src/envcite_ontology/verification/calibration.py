@@ -11,6 +11,8 @@ from statistics import NormalDist, fmean, variance
 
 @dataclass(frozen=True)
 class Estimate:
+    """平均數的點估計，與它的信賴區間（`low`、`high` 為下、上界）。"""
+
     mean: float
     low: float
     high: float

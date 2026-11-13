@@ -103,6 +103,7 @@ class Rule:
 
     @property
     def source_url(self) -> str:
+        """這則行政規則在公報資訊網的詳細頁網址。"""
         return f"{BASE}detail.do?metaid={self.meta_id}"
 
 
@@ -127,6 +128,11 @@ def roc_date(text: str) -> date | None:
 
 
 def rule_kind(title: str) -> RuleKind:
+    """依標題字樣判斷行政規則是裁量基準或解釋性規定。
+
+    標題同時有裁量基準與解釋的字樣時拋 `AmbiguousKind`，不猜；沒有裁量基準字樣的
+    一律視為解釋性規定。
+    """
     discretion = _DISCRETION.search(title) is not None
     if discretion and _INTERPRETATION.search(title):
         raise AmbiguousKind(title)

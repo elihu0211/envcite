@@ -18,6 +18,8 @@ MAX_NOTE_CHARS = 240
 
 @dataclass(frozen=True)
 class Due:
+    """一個該重抽的單元：所屬法規、單元路徑，與這次重抽的輪號。"""
+
     law: str
     path: str
     round: int

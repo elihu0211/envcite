@@ -28,12 +28,18 @@ type Interval = Range[date] | None
 
 @dataclass(frozen=True)
 class Applied:
+    """寫入一部法規的結果：所做的動作，與變動的單元數。"""
+
     action: str
     # 變動的單元數（corrected、refreshed），供警告的說明。
     changed: int = 0
 
 
 def apply(conn: Conn, law: ParsedLaw, *, first_import: bool) -> Applied:
+    """把解析好的法規寫入語料；動作由已存的版本與解析結果比較決定（見模組說明）。
+
+    不 commit，由呼叫端的交易包住。`first_import` 為真時，先前的版本與事件整部取代。
+    """
     assert law.version_date is not None
     resource = _upsert_resource(conn, law)
     latest = _latest_expression(conn, resource)

@@ -43,6 +43,8 @@ class EndpointMisconfigured(EmbeddingError, FatalError):
 
 
 class Embedder:
+    """OpenAI 相容 `/embeddings` 端點的客戶端；失敗以 `EmbeddingError` 的子型別表明。"""
+
     def __init__(
         self,
         model: str,

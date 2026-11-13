@@ -86,14 +86,17 @@ class Row:
 
 
 def parent_categories(page: str) -> list[str]:
+    """分類頁列出的父分類代碼（`CategoryID`），依出現順序、去重。"""
     return list(dict.fromkeys(_PARENT.findall(page)))
 
 
 def leaf_categories(page: str) -> list[str]:
+    """分類頁列出的葉分類代碼（`CategoryID`），依出現順序、去重。"""
     return list(dict.fromkeys(_LEAF.findall(page)))
 
 
 def list_rows(page: str) -> list[Row]:
+    """葉分類清單頁的每一部法規；列上沒有法規連結拋 `UnreadablePage`。"""
     rows: list[Row] = []
     for body in _ROW.findall(page):
         link = _ROW_ID.search(body)
@@ -175,6 +178,7 @@ def _keep_bold(m: re.Match[str]) -> str:
 
 
 def display_width(s: str) -> int:
+    """字串的顯示欄寬：東亞寬字元（含寬度不定者）算 2，其餘算 1。"""
     return sum(2 if unicodedata.east_asian_width(c) in "WFA" else 1 for c in s)
 
 

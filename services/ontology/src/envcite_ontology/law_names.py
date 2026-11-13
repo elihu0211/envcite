@@ -11,6 +11,8 @@ MIN_TITLE_CHARS = 3
 
 
 class LawNames:
+    """依法規全名認出問句點名的法規；短於 `MIN_TITLE_CHARS` 的標題不收。"""
+
     def __init__(self, pcodes_by_title: Mapping[str, Sequence[str]]) -> None:
         self._pcodes = {
             t: tuple(p) for t, p in pcodes_by_title.items() if len(t) >= MIN_TITLE_CHARS

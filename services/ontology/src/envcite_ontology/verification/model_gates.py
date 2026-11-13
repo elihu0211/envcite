@@ -290,9 +290,14 @@ class RoundtripGate:
 
     @property
     def verifier(self) -> str:
+        """記入紀錄的驗證者識別，含重抽者的名稱。"""
         return f"gate:roundtrip@1:{self.reformalizer.name}"
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
+        """重抽者只看標註描述寫回的結構與標註逐項相同為 pass，有差異為 fail。
+
+        沒有合格的重抽者或答案取不出 JSON 為 inconclusive；差異列在證據的 `differences`。
+        """
         ok, skipped = eligible(
             [self.reformalizer], _extractor(conn, statement_id), self.allow_same_family
         )
@@ -373,9 +378,15 @@ class IndependentTestGate:
 
     @property
     def verifier(self) -> str:
+        """記入紀錄的驗證者識別，含測試設計者的名稱。"""
         return f"gate:independent_test@1:{self.tester.name}"
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
+        """設計者的案例與推論程式的結論全一致為 pass、全不一致為 fail，其餘為 inconclusive。
+
+        不是義務陳述回 None。沒有合格的設計者、沒有生效起日，或可用、可執行的案例各不足三個，
+        都是 inconclusive。
+        """
         u = unit_of(conn, statement_id)
         if not (u.kind == "prescriptive" and u.deontic == "obligation"):
             return None
@@ -462,9 +473,15 @@ class PanelGate:
 
     @property
     def verifier(self) -> str:
+        """記入紀錄的驗證者識別，含全體評審的名稱。"""
         return "gate:panel@1:" + "+".join(j.name for j in self.judges)
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
+        """贊成票比率達 `quorum` 為 pass，反對票比率達 `quorum` 為 fail，其餘為 inconclusive。
+
+        合格評審的家族少於 `min_families`，或有效票少於兩票，也是 inconclusive。任一評審丟
+        `ModelError` 時不在此接住，整個閘門交由呼叫端記為 inconclusive。
+        """
         ok, skipped = eligible(self.judges, _extractor(conn, statement_id), self.allow_same_family)
         if len({m.family for m in ok}) < self.min_families:
             return GateResult(

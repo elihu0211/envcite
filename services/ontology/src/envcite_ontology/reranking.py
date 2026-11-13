@@ -34,10 +34,14 @@ class Reranks(Protocol):
 
     def score(
         self, query: str, documents: Sequence[str], *, timeout: float | None = None
-    ) -> list[float]: ...
+    ) -> list[float]:
+        """依輸入次序回傳每一條對查詢的相關分數；任何失敗以 `RerankError` 表明。"""
+        ...
 
 
 class Reranker:
+    """`Reranks` 的實作：呼叫 Cohere／LiteLLM 相容的 `/rerank` 端點，不重試。"""
+
     def __init__(
         self,
         model: str,

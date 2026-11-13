@@ -37,17 +37,27 @@ REREAD = """你是法規閱讀者。下面是「本法用語，定義如下」�
 
 @dataclass(frozen=True)
 class Definition:
+    """一筆用語定義的標註，與核對它所需的原文。"""
+
     id: int
     path: str
+    #: 款的現行原文
     text: str
+    #: 標註所引的一段，應在 `text` 內
     quote: str
     term: str
     members: tuple[str, ...]
+    #: 抽取者的名稱；驗證者不得是它
     extractor: str
+    #: 上層條文，只供重讀者參考
     context: str
 
 
 def definition_of(conn: Conn, definition_id: int) -> Definition:
+    """讀出用語定義與它所在款的現行原文，成員依名稱排序。
+
+    款已改版、標註對不上現行文字時沒有可核對的原文，丟 `LookupError`。
+    """
     row = conn.execute(
         "SELECT p.id, p.path, v.content, t.definition_text, tk.name, d.producer"
         "  FROM annotation.term_definition AS t"
@@ -89,6 +99,7 @@ class LiteralGate:
     verifier: str = "gate:literal@1"
 
     def check(self, conn: Conn, definition_id: int) -> GateResult:
+        """引文、用語、成員都在原文且至少一個成員為 pass，否則為 fail；不會 inconclusive。"""
         d = definition_of(conn, definition_id)
         missing = [x for x in (d.term, *d.members) if x not in d.text]
         problems: list[str] = []
@@ -113,9 +124,15 @@ class DefinitionRoundtripGate:
 
     @property
     def verifier(self) -> str:
+        """記入紀錄的驗證者識別，含重讀者的名稱。"""
         return f"gate:definition-roundtrip@1:{self.reader.name}"
 
     def check(self, conn: Conn, definition_id: int) -> GateResult:
+        """重讀的用語與成員（忽略空白、不論順序）同標註為 pass，不同為 fail。
+
+        沒有合格的重讀者（與抽取者同名，預設也不得同家族）、答案取不出 JSON 或成員不是字串清單，
+        都是 inconclusive。
+        """
         d = definition_of(conn, definition_id)
         ok, skipped = eligible([self.reader], d.extractor, self.allow_same_family)
         if not ok:
@@ -193,6 +210,8 @@ def verify(conn: Conn, gates: Sequence[DefinitionGate]) -> int:
 
 @dataclass(frozen=True)
 class SettledDefinitions:
+    """定義的接受結果：升為 confirmed 與 rejected 的數目。"""
+
     confirmed: int
     rejected: int
 

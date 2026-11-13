@@ -85,7 +85,11 @@ RULE_VERSION = "2"
 
 
 class Client(Protocol):
-    def text(self, url: str) -> str: ...
+    """同步需要的網頁客戶端：抓文字頁與下載檔案（`acquire.web.Http`）。"""
+
+    def text(self, url: str) -> str:
+        """GET 一頁，回傳解碼後的文字。"""
+        ...
 
     def file(self, url: str, dest: Path) -> tuple[bytes, int]:
         """下載到 `dest`；回傳（SHA-256，位元組數）。"""
@@ -94,10 +98,14 @@ class Client(Protocol):
 
 @dataclass
 class Report:
+    """一次 `envcite-guidance sync` 的計數與結果；`line()` 輸出成日誌的一行 JSON。"""
+
     source: str
+    #: 這次要處理的工作項數（公報的一包、函釋的一列）；已處理過而略過的不計。
     listed: int = 0
     processed: int = 0
     dead_lettered: int = 0
+    #: 新寫入的公文件數，不含沿用的。
     documents: int = 0
     #: 已載入過、內容相同而沿用的件數
     repeated: int = 0
@@ -112,6 +120,7 @@ class Report:
     exit_code: int = 0
 
     def line(self) -> str:
+        """報告的一行 JSON（中文不跳脫），寫進日誌。"""
         return json.dumps({**asdict(self), "problems": dict(self.problems)}, ensure_ascii=False)
 
 
@@ -138,6 +147,11 @@ def sync(
     policy: Policy = POLICY,
     sleep: Callable[[float], None] = time.sleep,
 ) -> Report:
+    """取得一個來源（`gazette` 或 `moenv`）的行政規則並寫入 `guidance`，回傳報告。
+
+    逐項的失敗由 jobkit 隔離，結果在 `Report.exit_code`；清單頁的端點問題重試用盡則
+    拋出 `EndpointError`，整次失敗。來源不是這兩者拋 `ValueError`。
+    """
     started = time.monotonic()
     client = client or Http(PAUSE_SECONDS)
     report = Report(source)
@@ -396,12 +410,14 @@ class _RuleNames:
         self._documents: dict[str, set[int]] = {}
 
     def add(self, doc_id: int, names: Sequence[str], renames: Sequence[tuple[str, str]]) -> None:
+        """登記 `doc_id` 刊登了哪些規則名稱，並把其中的改名（舊名，新名）併成同一條規則。"""
         for name in names:
             self._documents.setdefault(self._root(name), set()).add(doc_id)
         for old, new in renames:
             self._union(old, new)
 
     def documents(self, name: str) -> set[int]:
+        """刊登過這條規則（含其舊名與新名）的各件；沒有則為空集合。"""
         return set(self._documents.get(self._root(name), set()))
 
     def _root(self, name: str) -> str:
@@ -491,6 +507,10 @@ class _Job:
         self._derivation = {"method": "rule", "agent": PRODUCER, "agent_version": RULE_VERSION}
 
     def pack(self, client: Client, pack: gazette.Pack) -> None:
+        """處理公報的一包：每則行政規則寫入 `guidance`，並記快照與匯入問題。
+
+        包的內容不合（`InvalidSnapshot`）轉成 `ItemError`，由 jobkit 隔離這一包。
+        """
         partial = self._partial("gazette")
         try:
             digest, size = client.file(pack.url, partial)
@@ -531,6 +551,11 @@ class _Job:
         return problems + self._load(document)
 
     def letter(self, client: Client, row: moenv.Row) -> None:
+        """處理函釋清單上的一列：抓詳細頁、寫入 `guidance`，並記快照與匯入問題。
+
+        頁面讀不出來（`UnreadablePage`）轉成 `ItemError`，由 jobkit 隔離這一列。快照存的是
+        欄位表的片段（`moenv.content`），不是整頁。
+        """
         try:
             fragment = moenv.content(client.text(row.url))
             letter = moenv.parse(fragment)

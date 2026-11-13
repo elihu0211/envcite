@@ -97,6 +97,7 @@ class _LoggedSink:
         )
 
     def record(self, entry: DeadLetter) -> None:
+        """記一行警告（哪一部、為什麼），再交給底層的去處。"""
         log.warning("隔離 %s（%s）：%s", entry.item_id, entry.kind, entry.error)
         self._sink.record(entry)
 
@@ -107,6 +108,8 @@ class BatchRejected(Exception):
 
 @dataclass
 class Report:
+    """一次 `envcite-history` 的計數；`line()` 輸出成日誌的一行 JSON。"""
+
     listed: int = 0
     fetched_pages: int = 0
     reused_pages: int = 0
@@ -114,14 +117,18 @@ class Report:
     dead_lettered: int = 0
     matched: int = 0
     skipped: int = 0
+    #: 寫入動作 → 部數：`backfill.write` 的回傳，另有沒寫的 `rejected` 與被資料庫擋下的
+    #: `write_rejected`。
     actions: Counter[str] = field(default_factory=Counter)
     versions: int = 0
     units: int = 0
+    #: 現行頁與全國法規資料庫現行文字的核對結果 → 部數。
     check: Counter[str] = field(default_factory=Counter)
     problems: Counter[str] = field(default_factory=Counter)
     seconds: float = 0.0
 
     def line(self) -> str:
+        """報告的一行 JSON（中文不跳脫），寫進日誌。"""
         return json.dumps(
             {k: dict(v) if isinstance(v, Counter) else v for k, v in self.__dict__.items()},
             ensure_ascii=False,
@@ -139,6 +146,10 @@ def acquire(
     policy: Policy = POLICY,
     sleep: Callable[[float], None] = time.sleep,
 ) -> ExitCode:
+    """取得（第一步）：列出目標，逐部抓各版存成快照；回傳結束碼。
+
+    隔離的部數超過列舉數的 1% 回 `ExitCode.FAILED`。
+    """
     listed = source.targets(conn, web)
     conn.rollback()
     report.listed = len(listed)
@@ -387,6 +398,11 @@ def sync(
     policy: Policy = POLICY,
     sleep: Callable[[float], None] = time.sleep,
 ) -> int:
+    """依 `step` 跑取得與匯入，回傳結束碼。
+
+    `sync` 兩者都跑，匯入後抽取授權並重建檢索投影。結束碼的意義見模組說明。`dry_run` 只回推
+    與驗收，不寫也不重建投影。
+    """
     started = time.monotonic()
     report = Report()
     code: int = ExitCode.OK
@@ -415,6 +431,10 @@ def sync(
 
 
 def main() -> None:
+    """`envcite-history <來源> [步驟]`：取得法規的歷史版本並補進語料。
+
+    步驟 `acquire` 只取得各版存成快照，`import` 只回推並寫入語料，預設的 `sync` 兩者都跑。
+    """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="envcite-history")
     parser.add_argument("source", choices=sorted(SOURCES))

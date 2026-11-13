@@ -20,6 +20,8 @@ class ModelError(RuntimeError):
 
 
 class Model(Protocol):
+    """語言模型：有名字與家族，並把一個 prompt 補全成一段文字。"""
+
     @property
     def name(self) -> str:
         """記入紀錄的識別 `家族:模型`，例如 `anthropic:claude-sonnet-5-5`。"""
@@ -30,7 +32,9 @@ class Model(Protocol):
         """同家族的模型共享訓練資料與偏誤，不算互相獨立。"""
         ...
 
-    def complete(self, prompt: str) -> str: ...
+    def complete(self, prompt: str) -> str:
+        """送出單輪 prompt，回傳模型回答的文字；呼叫失敗以 `ModelError` 表示。"""
+        ...
 
 
 def family_of(agent: str) -> str:
@@ -50,9 +54,14 @@ class AnthropicModel:
 
     @property
     def name(self) -> str:
+        """記入紀錄的識別 `anthropic:<模型識別>`。"""
         return f"anthropic:{self.model_id}"
 
     def complete(self, prompt: str) -> str:
+        """送出單輪 prompt，回傳回應中文字區塊串接的內容。
+
+        第一次呼叫才載入 SDK 並檢查金鑰；缺 SDK 或缺金鑰丟 `RuntimeError`，不是 `ModelError`。
+        """
         if self._client is None:
             try:
                 sdk = importlib.import_module("anthropic")
@@ -112,9 +121,14 @@ class ChatCompletionsModel:
 
     @property
     def name(self) -> str:
+        """記入紀錄的識別 `<家族>:<模型識別>`。"""
         return f"{self.family}:{self.model_id}"
 
     def complete(self, prompt: str, *, response_format: Mapping[str, Any] | None = None) -> str:
+        """送出單輪 prompt，回傳 `message.content`；請求失敗、回應不合或內容為空丟 `ModelError`。
+
+        溫度固定為 0（`assert_distinct` 的別名檢查依賴它）；回應的用量累計進 `tokens`。
+        """
         request_body: dict[str, Any] = {
             "model": self.model_id,
             "messages": [{"role": "user", "content": prompt}],
