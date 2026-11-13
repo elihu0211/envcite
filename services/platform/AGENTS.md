@@ -65,7 +65,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - 設定只有一條讀法：每個設定群組是一個 `ISectionOptions` 類別（`libs/dotnet`），自己指名區段，以 `AddSectionOptions<T>()` 註冊（綁定加 `ValidateOnStart`）；使用端注入 `IOptions<T>`。除了 `libs/dotnet` 的 `Telemetry.cs` 裡那個 `OTEL_EXPORTER_OTLP_ENDPOINT` 開關，與 `AddPlatformDataProtection` 載入金鑰環憑證（框架只接受註冊時就備妥的憑證物件；仍有 `IValidateOptions` 校驗），沒有別處碰 `IConfiguration`；`mail preview` 在主機建立之前把同一份設定交給一個小容器、經 `AddPlatformMail()` 繫結，不另寫讀法。錯值或缺值在啟動就讓主機停下並指名鍵（k8s 裡是帶清楚訊息的 CrashLoopBackOff），不是第一個請求才失敗。
 - 新增群組：實作 `ISectionOptions`、註冊、加 `IValidateOptions<T>`（屬性夠用時 `[OptionsValidator]`，跨欄位規則手寫）、在 `ConfigurationTests` 加一個案例。
 - **鍵名是與部署庫的契約**，改名是破壞性變更。k8s 以環境變數供給（`ENVCITE_Section__Key`，前綴由 `ServiceEnvironment` 套用；不帶前綴的環境變數不進設定，`OTEL_*` 除外）。機密（模型端點金鑰、`Platform:Mail:Password`）只經環境變數，不進檔案、不提交；Api 專案沒有 `UserSecretsId`。
-- 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄、寄信）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
+- 可選的功能面（營運者後台、客戶入口、有依據的回答、對話紀錄、寄信、MCP）**預設關閉**，新增的同類功能也一樣；Development 為了本機可用而開啟。關閉時對應路徑回 404，且不簽發任何 cookie。
 - **系統名稱只有一個來源**：`Platform:Brand:Name`（`BrandOptions`；不可空白、25 字內、無控制字元）。介面經 `BrandText.Name` 取，信件主旨與內文（純文字與 HTML 兩版）、`mail test`、OpenAPI 描述讀 `IOptions<BrandOptions>`；`Platform:Mail:FromName` 沒設時預設用它。不在元件、信件或描述裡寫死名稱；帶名稱的文字用格式鍵（`L["登入 · {0}", Brand.Name]`），預設名稱（`BrandOptions.DefaultName`）的英文對照是 `Ui.en.resx` 的同名一鍵，自訂名稱不查資源檔、兩種語言原樣顯示。標誌 SVG 不讀設定，改名時另外換圖（見 README〈系統名稱〉）。`BrandTests` 守住預設值下輸出不變、改名後各處一起變。
 - 部署環境不設 `DefaultPlan`（服務是全付費，沒方案的租戶在資料端點得 402）；Development 與測試設定它，讓剛建立的租戶能用。
 - Development 的種子資料（`SeedDevelopmentData`）只在 Development 生效，且只在對應表是空的時才建；一次性密碼只經 `Console.WriteLine` 印到終端機，不進 `ILogger`，沒有預設密碼。
@@ -193,6 +193,17 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 - **對話紀錄**預設關閉（問題文字是客戶案情的內容）。只存問題與**引用**（法規名稱、條號、日期、條文 URI），不存條文本文。**只有作者看得到**自己的對話——擁有者也不行；每個方法在租戶過濾之外再依使用者 id 過濾；不是自己的 id 當作「開新對話」處理，所以不能拿來探測或寫入別人的對話。刪除由作者執行並在同一交易稽核（只記 id，不記內容）。保存期限清理是跨租戶的，只刪除，只記筆數。
 - **歷史有沒有開啟與保留天數，讀 `IConversationHistoryAvailability`**（singleton，只讀設定），不讀 `IConversationHistory`：後者是 scoped（要資料庫與租戶），為了一個旗標去解析它，互動式 circuit 會把那個 `DbContext` 抓住直到斷線（同 `IAnswerAvailability`、`IDirectoryAvailability` 的做法）。側欄的「最近的對話」經 `IAskService.RecentAsync`：只有本人的標題與時間，沒開啟時服務不開 scope、不查資料庫，依台北時間的日曆日分組（今天、昨天、過去 7 天、更早；`ConversationGroups`）。
 - **工作區是客戶入口唯一的互動式頁面**（`Components/Portal/Workspace/`）：`ChatPage` 在 `/portal/{tenant}`（新對話）與 `/portal/{tenant}/c/{id}`（開啟自己的舊對話），版面是 `WorkspaceLayout`；其餘入口頁維持靜態 SSR。沒有 JavaScript 看得到預先渲染的首屏與說明，但不能送出（`<noscript>` 有提示）。四條規矩：(a) **租戶只取自已驗證的身分**（登入 cookie 的 `TenantIdentifier` 與 `PortalUserId` claim），circuit 沒有環境租戶，也不信任何元件參數；`WorkspaceLayout` 因此不用 `IPortalAccount`，租戶名稱經 `ITenantDirectory.FindByIdentifierAsync`；(b) **一串對話的狀態與流程在 `ChatSession`**（scoped，一個 circuit 一份，純 C# 類別，`ChatSessionTests` 用假的 `IAskService` 測），頁面只呈現；不預期的例外在這裡轉成通用的失敗回合（只記例外型別），不會讓 circuit 斷線；(c) **跨元件通知用 `WorkspaceState`**（記錄完一題後側欄重讀最近對話），不用靜態事件；(d) **互動式的入口元件只認 `IAskService` 與 `AuthenticationState`**：`ArchitectureTests` 禁止它們出現帳號、驗證器、登入、歷史、模型、資料庫與 `TenantScopes` 的型別，也要求入口頁只有 `Workspace/` 底下的是互動式。唯讀的舊「對話紀錄」清單（`History`）仍是靜態頁，連結到 `/c/{id}`。
+
+## MCP 入口
+
+欄位、工具與接法的契約在 README「AI 代理的入口」；這裡只放不變式。
+
+- **工具是 REST 資料端點的包裝，不另寫一份**：取得法規、列條文、推論經 `OntologyGateway`，取得法源經 `ConsultGateway`，搜尋經 `ILawSearch`；REST、MCP 與入口的回答共用它們，所以輸入檢查、錯誤與「查詢文字不進日誌」只有一個實作。新增資料端點時，先寫進閘道，再讓 REST 與 MCP 各自呈現。**閘道不計量重送**（`ConsultGateway` 不記 `consult.ground`：REST 的 `Idempotency-Key` 要與回應同一個交易記），由呼叫端記。
+- **模組各自貢獻工具，主機組合**：工具類別在擁有該能力的模組（`Modules.Ontology/Mcp`、`Modules.Consult/Mcp`），以 `WithOntologyTools()`、`WithConsultTools()` 加進 `PlatformMcp.AddPlatformMcp()`；模組之間不互相參考，MCP 的設定、`Origin` 檢查與掛載在 `Api/Mcp`。
+- **掛在 `/v2` 的資料群組裡**（`MapPlatformMcp`）：API key、方案（沒有方案 402）與每租戶限流繼承自群組，不另做一套；測試把它掛到群組外會失敗（`TheSameDoorAsRestNoKeyIs401AndNoPlanIs402`）。`Origin` 檢查在驗證之前（`UsePlatformMcpOriginCheck`）。
+- **無狀態**（`HttpServerSessionMode.Stateless`）：不要引入需要記住 session 的功能（伺服器主動推送、訂閱），那會讓多副本需要連線黏著。
+- **工具只讀**，宣告 `ReadOnly`／`Idempotent`／`OpenWorld = false` 與結構化輸出；預期的失敗以 `McpException` 回成工具錯誤（框架會把其他例外換成通用訊息，不洩漏內部細節）。工具的描述是給模型讀的：寫清楚拒答與空結果不是錯誤、證據以外的知識不能用。
+- **不實作 OAuth 授權伺服器**：身分就是 API key。託管型用戶端（要求 OAuth 的連接器）接不上是已知的取捨；要支援，是另一個要有身分提供者的決定，不在這裡順手加。
 
 ## 稽核紀錄
 

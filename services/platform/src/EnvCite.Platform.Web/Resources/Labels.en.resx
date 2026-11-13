@@ -116,6 +116,8 @@
   <data name="Outcome.consult.unavailable" xml:space="preserve"><value>Consult service unavailable.</value></data>
   <data name="Outcome.model.unavailable" xml:space="preserve"><value>Model unavailable.</value></data>
   <data name="Outcome.ontology.unavailable" xml:space="preserve"><value>Ontology service unavailable.</value></data>
+  <data name="Outcome.law.not_found" xml:space="preserve"><value>Law not found.</value></data>
+  <data name="Outcome.reasoning.busy" xml:space="preserve"><value>Reasoning capacity is in use; retry shortly.</value></data>
   <data name="Outcome.internal.error" xml:space="preserve"><value>An unexpected error occurred.</value></data>
   <data name="Outcome.verification_code.incorrect" xml:space="preserve"><value>The verification code is incorrect.</value></data>
   <data name="Outcome.verification_code.incorrect_hint" xml:space="preserve"><value>The verification code is incorrect. Make sure your phone's time is set automatically, then enter the six digits the authenticator shows now.</value></data>

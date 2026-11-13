@@ -60,6 +60,15 @@
           "OpenAI": "2.14.0"
         }
       },
+      "ModelContextProtocol": {
+        "type": "Direct",
+        "requested": "[2.3.0, )",
+        "resolved": "2.3.0",
+        "contentHash": "PHZ0q8xTAoysqUKpA5gC0RGJSfwpZhfsNz+9Sw0X0RzFFVHjIE52sx6C+ogMn+LSE+FfiYiNscPJhM6q6DMT6Q==",
+        "dependencies": {
+          "ModelContextProtocol.Core": "[2.3.0]"
+        }
+      },
       "Grpc.Core.Api": {
         "type": "Transitive",
         "resolved": "2.84.0",
@@ -142,6 +151,14 @@
         "resolved": "5.0.0",
         "contentHash": "0RLaVyex/BjUGqiw9xtGwzyCMaBcsu33Rth61bDCeVeQaaQK7tjcy4TA+nHKTqwUdp4OGd+gnhuq2fuR+c20qA=="
       },
+      "ModelContextProtocol.Core": {
+        "type": "Transitive",
+        "resolved": "2.3.0",
+        "contentHash": "EDpbQholhVWoNumb0Ab3oGv9LmXOLgaD5ixEIUkrnzpnqD0TJCSHTJ5G71/J1KlrQ98aWDclWTPMffKTnCJoMw==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.11.0"
+        }
+      },
       "OpenAI": {
         "type": "Transitive",
         "resolved": "2.14.0",
@@ -194,7 +211,8 @@
         "dependencies": {
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
           "Google.Protobuf": "[3.36.2, )",
-          "Grpc.Net.ClientFactory": "[2.84.0, )"
+          "Grpc.Net.ClientFactory": "[2.84.0, )",
+          "ModelContextProtocol": "[2.3.0, )"
         }
       },
       "envcite.platform.sharedkernel": {

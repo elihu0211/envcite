@@ -1,7 +1,3 @@
-using EnvCite.Ontology.V2;
-
-using Grpc.Core;
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -46,21 +42,8 @@ public static class OntologyEndpoints
     public static RouteGroupBuilder MapOntologyEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapGet("/laws/{jurisdiction}/{idScheme}/{localId}", async (string jurisdiction, string idScheme, string localId, string? asOf,
-            OntologyService.OntologyServiceClient client, IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
-            await CallAsync(async () =>
-            {
-                var identifier = new LawIdentifier { Jurisdiction = jurisdiction, IdScheme = idScheme, LocalId = localId };
-                var response = await client.GetLawAsync(new GetLawRequest { Identifier = identifier, AsOf = asOf ?? string.Empty },
-                    deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
-                await usage.RecordAsync(GetLawOperation, 1, ct);
-                var law = response.Law;
-                return Results.Ok(new LawDto(
-                    LawIdentifiers.ToDto(law.Identifier),
-                    law.Iri,
-                    law.Title,
-                    law.Language,
-                    string.IsNullOrEmpty(law.DateDocument) ? null : law.DateDocument));
-            }))
+            OntologyGateway gateway, CancellationToken ct) =>
+            Present(await gateway.GetLawAsync(jurisdiction, idScheme, localId, asOf, ct)))
             .WithName("GetLaw")
             .WithTags("法規")
             .WithSummary("取得法規")
@@ -73,15 +56,8 @@ public static class OntologyEndpoints
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         v1.MapGet("/laws/{jurisdiction}/{idScheme}/{localId}/articles", async (string jurisdiction, string idScheme, string localId, string? asOf,
-            OntologyService.OntologyServiceClient client, IOptions<OntologyOptions> options, IUsageRecorder usage, CancellationToken ct) =>
-            await CallAsync(async () =>
-            {
-                var identifier = new LawIdentifier { Jurisdiction = jurisdiction, IdScheme = idScheme, LocalId = localId };
-                var response = await client.ListArticlesAsync(new ListArticlesRequest { Identifier = identifier, AsOf = asOf ?? string.Empty },
-                    deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
-                await usage.RecordAsync(ListArticlesOperation, 1, ct);
-                return Results.Ok(response.Articles.Select(a => new ArticleDto(a.Iri, a.Number)));
-            }))
+            OntologyGateway gateway, CancellationToken ct) =>
+            Present(await gateway.ListArticlesAsync(jurisdiction, idScheme, localId, asOf, ct)))
             .WithName("ListArticles")
             .WithTags("法規")
             .WithSummary("列出法規某日有效的各條")
@@ -118,25 +94,12 @@ public static class OntologyEndpoints
         return v1;
     }
 
-    private static async Task<IResult> CallAsync(Func<Task<IResult>> call)
+    /// <summary>結果轉成 HTTP：找不到是 404（沒有本文），輸入錯誤是 400，內部服務暫時不可用是 503。</summary>
+    internal static IResult Present<T>(AdminOutcome<T> outcome) => outcome.Status switch
     {
-        try
-        {
-            return await call();
-        }
-        catch (RpcException ex) when (ex.StatusCode == StatusCode.NotFound)
-        {
-            return Results.NotFound();
-        }
-        catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
-        {
-            return Results.ValidationProblem(new Dictionary<string, string[]> { ["request"] = [ex.Status.Detail] });
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable
-            or StatusCode.DeadlineExceeded
-            or StatusCode.ResourceExhausted)
-        {
-            return Results.Problem("Ontology service unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
-        }
-    }
+        AdminStatus.Ok => Results.Ok(outcome.Value),
+        AdminStatus.NotFound => Results.NotFound(),
+        AdminStatus.Invalid => outcome.ValidationProblem(),
+        _ => outcome.Problem(StatusCodes.Status503ServiceUnavailable, "Ontology service unavailable."),
+    };
 }
