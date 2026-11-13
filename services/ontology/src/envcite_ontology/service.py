@@ -14,6 +14,7 @@ from envcite.ontology.v2 import ontology_pb2 as pb
 from envcite.ontology.v2 import ontology_pb2_grpc
 from envcite_grpc import remaining_seconds
 from envcite_ontology import errors
+from envcite_ontology.coverage import term_coverage
 from envcite_ontology.embedding import Embedder, EmbeddingError
 from envcite_ontology.identifiers import jurisdiction_filter, law_key
 from envcite_ontology.law_names import LawNames
@@ -161,6 +162,12 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
             jurisdiction=jurisdiction,
             timeout=remaining_seconds(context),
         )
+        searched = self._store.searched_terms(
+            terms,
+            tokenizer=self._segmenter.tokenizer_id,
+            max_df=self._lexical_max_df,
+            timeout=remaining_seconds(context),
+        )
         return pb.SearchArticlesResponse(
             hits=[
                 pb.ArticleHit(
@@ -175,6 +182,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                     content=h.content,
                     lexical_score=h.lexical_score,
                     semantic_similarity=h.semantic_similarity,
+                    term_coverage=term_coverage(searched, h.content, self._segmenter),
                 )
                 for h in hits
             ]

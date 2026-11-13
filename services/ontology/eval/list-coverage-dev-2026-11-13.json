@@ -1,0 +1,77 @@
+{
+ "meta": {
+  "subset": "dev",
+  "k": 10,
+  "floors": {
+   "lexical": 0.5,
+   "semantic": 0.71
+  },
+  "answerable": 170,
+  "negative": 47,
+  "golden_sha256": "6609967f234427579f1d1f701961bdf30628775a0fb4c60cedd9633fd5a461b0",
+  "qrels_sha256": "8a7857697f13c576765bfbfc99b349bc8ffa272a3c8191aa07cd7c854e6de852",
+  "split_sha256": "2e4dfd1335c7002d84f7ac51bce73685e13b61470705a12f4cafa417afbf055e",
+  "snapshots": [
+   {
+    "feed": "moj_law",
+    "data_date": "2026-11-06",
+    "sha256": "601d40b2fe05cb32e69648dfae4d496cc203a61ac3b5f9aa7f29b564dfba4da5"
+   },
+   {
+    "feed": "moj_order",
+    "data_date": "2026-11-06",
+    "sha256": "05a32135c190532ea0d34201ff2b6d906b25f21227918ab3b6377a2851867b96"
+   }
+  ]
+ },
+ "grid": [
+  {
+   "min_term_coverage": 0.0,
+   "answerable_listed": 0.8705882352941177,
+   "answerable_recalled": 0.17647058823529413,
+   "negative_leak": 0.7021276595744681
+  },
+  {
+   "min_term_coverage": 0.2,
+   "answerable_listed": 0.6235294117647059,
+   "answerable_recalled": 0.15294117647058825,
+   "negative_leak": 0.44680851063829785
+  },
+  {
+   "min_term_coverage": 0.34,
+   "answerable_listed": 0.4,
+   "answerable_recalled": 0.14705882352941177,
+   "negative_leak": 0.2127659574468085
+  },
+  {
+   "min_term_coverage": 0.4,
+   "answerable_listed": 0.3588235294117647,
+   "answerable_recalled": 0.1411764705882353,
+   "negative_leak": 0.2127659574468085
+  },
+  {
+   "min_term_coverage": 0.5,
+   "answerable_listed": 0.3235294117647059,
+   "answerable_recalled": 0.13529411764705881,
+   "negative_leak": 0.1702127659574468
+  },
+  {
+   "min_term_coverage": 0.6,
+   "answerable_listed": 0.3058823529411765,
+   "answerable_recalled": 0.12941176470588237,
+   "negative_leak": 0.14893617021276595
+  },
+  {
+   "min_term_coverage": 0.7,
+   "answerable_listed": 0.3,
+   "answerable_recalled": 0.12352941176470589,
+   "negative_leak": 0.1276595744680851
+  },
+  {
+   "min_term_coverage": 0.8,
+   "answerable_listed": 0.3,
+   "answerable_recalled": 0.12352941176470589,
+   "negative_leak": 0.10638297872340426
+  }
+ ]
+}

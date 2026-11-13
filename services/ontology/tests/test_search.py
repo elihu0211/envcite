@@ -147,3 +147,14 @@ def test_a_different_tokenizer_matches_nothing(
 ) -> None:
     # Lexemes from another segmenter are not the same lexemes: fewer rows, not wrong ones.
     assert store.search("噪音", tokenizer="another-segmenter", as_of="2021-01-01") == []
+
+
+def test_term_coverage_is_the_share_of_query_terms_the_article_holds(
+    search_stub: ontology_pb2_grpc.OntologyServiceStub,
+) -> None:
+    # 查詢切成 噪音 音管 管制 制標 標準；第 9 條有「噪音」「管制」「制標」「標準」，沒有「音管」。
+    response = search_stub.SearchArticles(
+        ontology_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=call_metadata()
+    )
+
+    assert response.hits[0].term_coverage == pytest.approx(0.8)

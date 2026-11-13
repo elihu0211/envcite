@@ -1,0 +1,77 @@
+{
+ "meta": {
+  "subset": "test",
+  "k": 10,
+  "floors": {
+   "lexical": 0.5,
+   "semantic": 0.71
+  },
+  "answerable": 171,
+  "negative": 47,
+  "golden_sha256": "6609967f234427579f1d1f701961bdf30628775a0fb4c60cedd9633fd5a461b0",
+  "qrels_sha256": "8a7857697f13c576765bfbfc99b349bc8ffa272a3c8191aa07cd7c854e6de852",
+  "split_sha256": "2e4dfd1335c7002d84f7ac51bce73685e13b61470705a12f4cafa417afbf055e",
+  "snapshots": [
+   {
+    "feed": "moj_law",
+    "data_date": "2026-11-06",
+    "sha256": "601d40b2fe05cb32e69648dfae4d496cc203a61ac3b5f9aa7f29b564dfba4da5"
+   },
+   {
+    "feed": "moj_order",
+    "data_date": "2026-11-06",
+    "sha256": "05a32135c190532ea0d34201ff2b6d906b25f21227918ab3b6377a2851867b96"
+   }
+  ]
+ },
+ "grid": [
+  {
+   "min_term_coverage": 0.0,
+   "answerable_listed": 0.8654970760233918,
+   "answerable_recalled": 0.15204678362573099,
+   "negative_leak": 0.8085106382978723
+  },
+  {
+   "min_term_coverage": 0.2,
+   "answerable_listed": 0.5672514619883041,
+   "answerable_recalled": 0.13450292397660818,
+   "negative_leak": 0.48936170212765956
+  },
+  {
+   "min_term_coverage": 0.34,
+   "answerable_listed": 0.3333333333333333,
+   "answerable_recalled": 0.11695906432748537,
+   "negative_leak": 0.2978723404255319
+  },
+  {
+   "min_term_coverage": 0.4,
+   "answerable_listed": 0.24561403508771928,
+   "answerable_recalled": 0.09941520467836257,
+   "negative_leak": 0.2127659574468085
+  },
+  {
+   "min_term_coverage": 0.5,
+   "answerable_listed": 0.21637426900584794,
+   "answerable_recalled": 0.0935672514619883,
+   "negative_leak": 0.1276595744680851
+  },
+  {
+   "min_term_coverage": 0.6,
+   "answerable_listed": 0.2046783625730994,
+   "answerable_recalled": 0.0935672514619883,
+   "negative_leak": 0.10638297872340426
+  },
+  {
+   "min_term_coverage": 0.7,
+   "answerable_listed": 0.2046783625730994,
+   "answerable_recalled": 0.0935672514619883,
+   "negative_leak": 0.10638297872340426
+  },
+  {
+   "min_term_coverage": 0.8,
+   "answerable_listed": 0.2046783625730994,
+   "answerable_recalled": 0.0935672514619883,
+   "negative_leak": 0.0851063829787234
+  }
+ ]
+}

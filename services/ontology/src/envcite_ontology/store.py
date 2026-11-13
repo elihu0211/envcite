@@ -310,6 +310,19 @@ class OntologyStore:
             cur.execute(_LAW_TITLES)
             return LawNames({title: pcodes for title, pcodes in cur.fetchall()})
 
+    def searched_terms(
+        self, terms: str, *, tokenizer: str, max_df: float = 0.0, timeout: float | None = None
+    ) -> list[str]:
+        """字面臂實際查的詞：`search` 以同樣的 `max_df` 略過高頻詞之後留下的詞。"""
+        with self.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT retrieval.prune_terms("
+                "%(terms)s, %(tokenizer)s, %(max_df)s::double precision)",
+                {"terms": terms, "tokenizer": tokenizer, "max_df": max_df},
+            )
+            row = cur.fetchone()
+        return str(row[0] if row else "").split()
+
     def search(
         self,
         terms: str,

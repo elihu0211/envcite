@@ -121,6 +121,15 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             if (request.AsOf == "yesterday")
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));
 
+            // 分數是為了測相關性下界：預設的命中達標；weak-match 兩個分數都不到下界；semantic-only 只有語意達標；
+            // fragment 字面分數達標，但條文只含少數查詢詞。
+            var (lexical, semantic, coverage) = request.Query switch
+            {
+                "weak-match" => (0.3f, 0.5f, 1f),
+                "semantic-only" => (0f, 0.8f, 0f),
+                "fragment" => (0.8f, 0f, 0.2f),
+                _ => (0.8f, 0f, 1f),
+            };
             return Task.FromResult(new SearchArticlesResponse
             {
                 Hits =
@@ -132,7 +141,9 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                         LawTitle = "空氣污染防制法",
                         Number = "5-1",
                         Content = "（條文內容）",
-                        LexicalScore = 0.42f,
+                        LexicalScore = lexical,
+                        SemanticSimilarity = semantic,
+                        TermCoverage = coverage,
                     },
                 },
             });
