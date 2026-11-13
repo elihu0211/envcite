@@ -48,6 +48,33 @@ public sealed class SearchTests(PlatformFactory factory)
         Assert.Equal(expected, hits!.Length);
     }
 
+    [Fact]
+    public async Task AGuidanceArticleIsReturnedWithItsCountAndTheRequestAsksForGuidance()
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync("search-guidance");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        using var response = await client.PostAsJsonAsync(SearchPath, new SearchRequest("guidance-only", null, null), cancellationToken: TestContext.Current.CancellationToken);
+        var hits = await response.Content.ReadFromJsonAsync<SearchHitDto[]>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, Assert.Single(hits!).GuidanceDocuments);
+        Assert.True(factory.Ontology.LastSearch!.IncludeGuidance);
+    }
+
+    [Theory]
+    [InlineData(null, 10)]
+    [InlineData(3, 3)]
+    public async Task TheResponseNeverExceedsTheRequestedLimit(int? limit, int expected)
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync($"search-limit-{limit}");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        using var response = await client.PostAsJsonAsync(SearchPath, new SearchRequest("many", null, limit), cancellationToken: TestContext.Current.CancellationToken);
+        var hits = await response.Content.ReadFromJsonAsync<SearchHitDto[]>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(expected, hits!.Length);
+    }
+
     [Theory]
     [InlineData(null, null, null)]
     [InlineData("   ", null, null)]

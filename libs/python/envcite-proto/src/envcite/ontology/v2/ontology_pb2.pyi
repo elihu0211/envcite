@@ -233,6 +233,7 @@ class SearchArticlesRequest(_message.Message):
     AS_OF_FIELD_NUMBER: _builtins.int
     LIMIT_FIELD_NUMBER: _builtins.int
     JURISDICTION_FIELD_NUMBER: _builtins.int
+    INCLUDE_GUIDANCE_FIELD_NUMBER: _builtins.int
     query: _builtins.str
     """查詢原文，不要自行斷詞或改寫。"""
     as_of: _builtins.str
@@ -241,6 +242,11 @@ class SearchArticlesRequest(_message.Message):
     """最多回傳幾筆；0 為服務預設值。"""
     jurisdiction: _builtins.str
     """可選管轄過濾：留空為全部管轄；有值須是 LawIdentifier.jurisdiction 的合法值，否則 INVALID_ARGUMENT。"""
+    include_guidance: _builtins.bool
+    """把函釋提到查詢詞的條文也納入：查詢以空白分成詞組（最多 5 個，每個 2 至 30 字），主旨或內文含每個詞組、
+    在 `as_of` 有效的函釋，所解釋的條文（`guidance_documents` > 0）與兩臂的結果以名次倒數融合，
+    最多比 `limit` 多回 5 條。函釋只用來找條文，不是推論的前提；預設不納入，不影響其他呼叫端的結果。
+    """
     def __init__(
         self,
         *,
@@ -248,10 +254,11 @@ class SearchArticlesRequest(_message.Message):
         as_of: _builtins.str = ...,
         limit: _builtins.int = ...,
         jurisdiction: _builtins.str = ...,
+        include_guidance: _builtins.bool = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "jurisdiction", b"jurisdiction", "limit", b"limit", "query", b"query"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "include_guidance", b"include_guidance", "jurisdiction", b"jurisdiction", "limit", b"limit", "query", b"query"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -291,6 +298,7 @@ class ArticleHit(_message.Message):
     LEXICAL_SCORE_FIELD_NUMBER: _builtins.int
     SEMANTIC_SIMILARITY_FIELD_NUMBER: _builtins.int
     TERM_COVERAGE_FIELD_NUMBER: _builtins.int
+    GUIDANCE_DOCUMENTS_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     law_title: _builtins.str
     """`as_of` 當日有效版本的法規標題。"""
@@ -308,6 +316,8 @@ class ArticleHit(_message.Message):
     只命中查詢一小部分的條文覆蓋率低；與命中是哪一臂帶出的無關，語意臂帶出的條文也有。
     不影響名次與 `lexical_score`；呼叫端想排除「只沾到一個詞」的字面命中時拿它當條件。
     """
+    guidance_documents: _builtins.int
+    """有幾件函釋提到查詢詞並解釋這一條；只有請求 `include_guidance` 時才會大於 0。不影響 `lexical_score`。"""
     @_builtins.property
     def identifier(self) -> Global___LawIdentifier: ...
     def __init__(
@@ -321,10 +331,11 @@ class ArticleHit(_message.Message):
         lexical_score: _builtins.float = ...,
         semantic_similarity: _builtins.float | None = ...,
         term_coverage: _builtins.float = ...,
+        guidance_documents: _builtins.int = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity", "identifier", b"identifier", "semantic_similarity", b"semantic_similarity"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity", "content", b"content", "identifier", b"identifier", "iri", b"iri", "law_title", b"law_title", "lexical_score", b"lexical_score", "number", b"number", "semantic_similarity", b"semantic_similarity", "term_coverage", b"term_coverage"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity", "content", b"content", "guidance_documents", b"guidance_documents", "identifier", b"identifier", "iri", b"iri", "law_title", b"law_title", "lexical_score", b"lexical_score", "number", b"number", "semantic_similarity", b"semantic_similarity", "term_coverage", b"term_coverage"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     _WhichOneofReturnType__semantic_similarity: _TypeAlias = _typing.Literal["semantic_similarity"]  # noqa: Y015
     _WhichOneofArgType__semantic_similarity: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity"]  # noqa: Y015

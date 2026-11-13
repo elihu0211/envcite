@@ -64,12 +64,14 @@ public sealed class RedMetricsTests(PlatformFactory factory)
         Assert.Equal([200, 400, 503], StatusesOf(http, "/v2/ground"));
         Assert.DoesNotContain(http, p => ((string?)p.Tags.GetValueOrDefault("http.route"))?.StartsWith("/health", StringComparison.Ordinal) == true);
 
-        var grpc = capture.Points.Where(p => p.Metric == GrpcClientMetrics.DurationMetric).ToList();
+        // 計量器是行程內全域的：同時跑的其他測試組呼叫 ontology 也會進來，所以只看這個測試自己發出的 Ground。
+        var ground = capture.Points
+            .Where(p => p.Metric == GrpcClientMetrics.DurationMetric && p.Tags.GetValueOrDefault("rpc.method") as string == "Ground")
+            .ToList();
         Assert.Equal(
             ["INVALID_ARGUMENT", "OK", "UNAVAILABLE"],
-            grpc.Where(p => p.Tags.GetValueOrDefault("rpc.method") as string == "Ground")
-                .Select(p => (string)p.Tags["rpc.response.status_code"]!).Order().ToArray());
-        Assert.All(grpc, p => Assert.Equal("envcite.consult.v2.ConsultationService", p.Tags["rpc.service"]));
+            ground.Select(p => (string)p.Tags["rpc.response.status_code"]!).Order().ToArray());
+        Assert.All(ground, p => Assert.Equal("envcite.consult.v2.ConsultationService", p.Tags["rpc.service"]));
 
         // 租戶只在追蹤上：基數不受控，不進任何指標的標籤。
         Assert.DoesNotContain(capture.Points, p => p.Tags.Keys.Any(k => k.Contains("tenant", StringComparison.OrdinalIgnoreCase))

@@ -106,6 +106,11 @@ message SearchArticlesRequest {
 
   // 可選管轄過濾：留空為全部管轄；有值須是 LawIdentifier.jurisdiction 的合法值，否則 INVALID_ARGUMENT。
   string jurisdiction = 4;
+
+  // 把函釋提到查詢詞的條文也納入：查詢以空白分成詞組（最多 5 個，每個 2 至 30 字），主旨或內文含每個詞組、
+  // 在 `as_of` 有效的函釋，所解釋的條文（`guidance_documents` > 0）與兩臂的結果以名次倒數融合，
+  // 最多比 `limit` 多回 5 條。函釋只用來找條文，不是推論的前提；預設不納入，不影響其他呼叫端的結果。
+  bool include_guidance = 5;
 }
 
 message SearchArticlesResponse {
@@ -136,6 +141,9 @@ message ArticleHit {
   // 只命中查詢一小部分的條文覆蓋率低；與命中是哪一臂帶出的無關，語意臂帶出的條文也有。
   // 不影響名次與 `lexical_score`；呼叫端想排除「只沾到一個詞」的字面命中時拿它當條件。
   float term_coverage = 8;
+
+  // 有幾件函釋提到查詢詞並解釋這一條；只有請求 `include_guidance` 時才會大於 0。不影響 `lexical_score`。
+  int32 guidance_documents = 9;
 }
 
 message ListInvalidationsRequest {

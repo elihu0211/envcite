@@ -149,6 +149,19 @@ _SEARCH = """
      ORDER BY s.rank
 """
 
+_GUIDANCE = """
+    SELECT corpus.version_iri(g.version_id), r.jurisdiction, r.id_scheme, r.local_id, e.title,
+           corpus.article_number(g.path), corpus.article_text(g.version_id), g.documents
+      FROM retrieval.guidance_articles(
+               %(phrases)s::text[], %(on)s::date, %(language)s, %(limit)s) AS g
+      JOIN corpus.legal_resource AS r ON r.id = g.resource_id
+      JOIN corpus.provision_version AS v ON v.id = g.version_id
+      JOIN corpus.legal_expression AS e ON e.id = v.expression_id
+     WHERE (%(jurisdiction)s::corpus.jurisdiction IS NULL
+            OR r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction)
+     ORDER BY g.documents DESC, g.version_id
+"""
+
 #: 每一臂的候選池（條數）。融合前各取這麼多；尚未以題庫量測，取 limit 上限的數倍。
 SEARCH_POOL = 50
 
@@ -309,6 +322,48 @@ class OntologyStore:
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(_LAW_TITLES)
             return LawNames({title: pcodes for title, pcodes in cur.fetchall()})
+
+    def guidance_hits(
+        self,
+        phrases: Sequence[str],
+        *,
+        as_of: str = "",
+        limit: int = 10,
+        jurisdiction: str | None = None,
+        timeout: float | None = None,
+    ) -> list[tuple[SearchHit, int]]:
+        """函釋（主旨或內文含每個詞組、`as_of` 有效）所解釋的條文，連同提到它的函釋件數；多的在前。
+
+        函釋只用來找條文，不是依據（`retrieval.guidance_articles`）。命中沒有字面分數與語意相似度。
+        """
+        with self.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
+            cur.execute(
+                _GUIDANCE,
+                {
+                    "phrases": list(phrases),
+                    "on": _date(as_of),
+                    "language": LANGUAGE,
+                    "limit": limit,
+                    "jurisdiction": jurisdiction,
+                },
+            )
+            return [
+                (
+                    SearchHit(
+                        iri=iri,
+                        jurisdiction=jur,
+                        id_scheme=scheme,
+                        local_id=lid,
+                        law_title=title,
+                        number=number,
+                        content=content,
+                        lexical_score=0.0,
+                        semantic_similarity=None,
+                    ),
+                    int(documents),
+                )
+                for iri, jur, scheme, lid, title, number, content, documents in cur.fetchall()
+            ]
 
     def searched_terms(
         self, terms: str, *, tokenizer: str, max_df: float = 0.0, timeout: float | None = None

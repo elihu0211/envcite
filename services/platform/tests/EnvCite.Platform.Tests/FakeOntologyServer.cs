@@ -122,31 +122,33 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));
 
             // 分數是為了測相關性下界：預設的命中達標；weak-match 兩個分數都不到下界；semantic-only 只有語意達標；
-            // fragment 字面分數達標，但條文只含少數查詢詞。
-            var (lexical, semantic, coverage) = request.Query switch
+            // fragment 字面分數達標，但條文只含少數查詢詞；guidance-only 只有函釋帶出；many 回比預設多的達標命中。
+            var (lexical, semantic, coverage, guidance) = request.Query switch
             {
-                "weak-match" => (0.3f, 0.5f, 1f),
-                "semantic-only" => (0f, 0.8f, 0f),
-                "fragment" => (0.8f, 0f, 0.2f),
-                _ => (0.8f, 0f, 1f),
+                "weak-match" => (0.3f, 0.5f, 1f, 0),
+                "semantic-only" => (0f, 0.8f, 0f, 0),
+                "fragment" => (0.8f, 0f, 0.2f, 0),
+                "guidance-only" => (0f, 0f, 0f, 2),
+                _ => (0.8f, 0f, 1f, 0),
             };
-            return Task.FromResult(new SearchArticlesResponse
+            var response = new SearchArticlesResponse();
+            for (var i = 0; i < (request.Query == "many" ? 12 : 1); i++)
             {
-                Hits =
+                response.Hits.Add(new ArticleHit
                 {
-                    new ArticleHit
-                    {
-                        Iri = "a5-1",
-                        Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = KnownLawId },
-                        LawTitle = "空氣污染防制法",
-                        Number = "5-1",
-                        Content = "（條文內容）",
-                        LexicalScore = lexical,
-                        SemanticSimilarity = semantic,
-                        TermCoverage = coverage,
-                    },
-                },
-            });
+                    Iri = $"a5-1-{i}",
+                    Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = KnownLawId },
+                    LawTitle = "空氣污染防制法",
+                    Number = "5-1",
+                    Content = "（條文內容）",
+                    LexicalScore = lexical,
+                    SemanticSimilarity = semantic,
+                    TermCoverage = coverage,
+                    GuidanceDocuments = guidance,
+                });
+            }
+
+            return Task.FromResult(response);
         }
 
         // 與真實服務同契約：不是日期 → INVALID_ARGUMENT；該日沒有有效版本 → NOT_FOUND（不退回現行）。

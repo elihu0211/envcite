@@ -32,7 +32,9 @@ public sealed record SearchRequest(string? Query, string? AsOf, int? Limit);
 /// <param name="LawTitle">查詢日有效版本的法規標題。</param>
 /// <param name="Number">條號，照來源寫法（如 <c>5-1</c>）。</param>
 /// <param name="Score">字面相關度；只在同一次回應內可比，跨查詢不可比。</param>
-public sealed record SearchHitDto(string Uri, LawIdentifierDto Identifier, string LawTitle, string Number, string Content, float Score);
+/// <param name="GuidanceDocuments">提到查詢詞並解釋這一條的函釋件數（0 = 不是函釋帶出的）；函釋只用來找到這一條，不是依據。</param>
+public sealed record SearchHitDto(
+    string Uri, LawIdentifierDto Identifier, string LawTitle, string Number, string Content, float Score, int GuidanceDocuments);
 
 public static class OntologyEndpoints
 {
@@ -97,7 +99,7 @@ public static class OntologyEndpoints
                 return result.Status switch
                 {
                     AdminStatus.Ok => Results.Ok(result.Value!.Select(h =>
-                        new SearchHitDto(h.Uri, h.Identifier, h.LawTitle, h.Number, h.Content, h.Score))),
+                        new SearchHitDto(h.Uri, h.Identifier, h.LawTitle, h.Number, h.Content, h.Score, h.GuidanceDocuments))),
                     AdminStatus.Invalid => result.ValidationProblem(),
                     _ => result.Problem(StatusCodes.Status503ServiceUnavailable, "Ontology service unavailable."),
                 };
@@ -106,7 +108,7 @@ public static class OntologyEndpoints
             .WithTags("法規")
             .WithSummary("搜尋條文")
             .WithDescription(
-                "以字面檢索查詢某日有效的條文，相關度高的在前；只回達到相關性下界的條文，查不到相關條文時回空陣列，不用不相干的條文湊數。`query` 必填，為原始文字（服務端自行分詞）；"
+                "以字面檢索查詢某日有效的條文，相關度高的在前；只回達到相關性下界的條文，查不到相關條文時回空陣列，不用不相干的條文湊數。函釋的主旨或內文提到查詢詞時，它所解釋的條文也會列出（`guidanceDocuments` 為提到的函釋件數），函釋只用來找到條文，不是依據。`query` 必填，為原始文字（服務端自行分詞）；"
                 + "`asOf` 為 ISO 8601 日期（`YYYY-MM-DD`），省略表示現行；`limit` 為 1–50，省略為 10。"
                 + "用 POST 是為了讓查詢文字不出現在網址裡；查詢文字不寫入日誌。成功計量為一次 `ontology.search`（0 筆命中也計一次）。")
             .Produces<IEnumerable<SearchHitDto>>()

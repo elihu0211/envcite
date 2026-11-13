@@ -73,6 +73,10 @@
                             <article class="ep-card ep-hit" aria-label="@L["《{0}》第 {1} 條", hit.LawTitle, hit.Number]">
                                 <h2 class="ep-section-title">@L["《{0}》第 {1} 條", hit.LawTitle, hit.Number]</h2>
                                 <p class="ep-hit-body">@hit.Content</p>
+                                @if (hit.GuidanceDocuments > 0)
+                                {
+                                    <p class="ep-hint">@L["{0} 件函釋提到這個詞並解釋這一條；函釋不是依據，請以條文為準。", hit.GuidanceDocuments]</p>
+                                }
                                 @* 可直接複製的引用：法規名、條號、查的是哪一天、條文網址。 *@
                                 <p class="ep-hint">@L["引用：《{0}》第 {1} 條（{2}）", hit.LawTitle, hit.Number, _asOfLabel]<code class="ep-mono">@hit.Uri</code></p>
                             </article>

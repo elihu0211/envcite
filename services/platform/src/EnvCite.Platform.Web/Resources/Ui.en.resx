@@ -142,6 +142,7 @@
   <data name="建立（台北）" xml:space="preserve"><value>Created (Taipei)</value></data>
   <data name="引用：{0}（{1}）" xml:space="preserve"><value>Citation: {0} ({1})</value></data>
   <data name="引用：《{0}》第 {1} 條（{2}）" xml:space="preserve"><value>Citation: {0}, Article {1} ({2})</value></data>
+  <data name="{0} 件函釋提到這個詞並解釋這一條；函釋不是依據，請以條文為準。" xml:space="preserve"><value>{0} guidance letter(s) mention this term and interpret this article. Guidance is not authority; rely on the article text.</value></data>
   <data name="待改密碼" xml:space="preserve"><value>Password change pending</value></data>
   <data name="後台登入：" xml:space="preserve"><value>Console sign-in: </value></data>
   <data name="復原碼" xml:space="preserve"><value>Recovery code</value></data>
