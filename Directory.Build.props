@@ -7,5 +7,7 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- 所有專案的 bin／obj／publish 與 MTP 測試報告集中到倉庫根的 artifacts/，專案目錄不再散落建置產物。 -->
+    <UseArtifactsOutput>true</UseArtifactsOutput>
   </PropertyGroup>
 </Project>

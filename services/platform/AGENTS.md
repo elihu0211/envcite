@@ -211,7 +211,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 ## Safety
 
 - 連線字串、計費金鑰與本機 appsettings（`appsettings.*.local.json`）的值同樣是機密，不提交。
-- 產生物不手改：`src/*/Migrations/`（用 `dotnet ef`；`.editorconfig` 標為 `generated_code`；例外是 EF 無法表達的觸發器與授權：`AuditEventsAppendOnly`、兩個 context 的 `AppRoleGrants`，其 `Sql` 呼叫是手寫的）、`obj/` 下的 gRPC 程式碼（來自倉庫根 proto）、`openapi/openapi_v2.json`（來自 `dotnet build`）。
+- 產生物不手改：`src/*/Migrations/`（用 `dotnet ef`；`.editorconfig` 標為 `generated_code`；例外是 EF 無法表達的觸發器與授權：`AuditEventsAppendOnly`、兩個 context 的 `AppRoleGrants`，其 `Sql` 呼叫是手寫的）、倉庫根 `artifacts/obj/` 下的 gRPC 程式碼（來自倉庫根 proto）、`openapi/openapi_v2.json`（來自 `dotnet build`）。
 
 ## Done when
 
