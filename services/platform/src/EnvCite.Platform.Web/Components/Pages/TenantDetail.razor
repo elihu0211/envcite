@@ -235,15 +235,15 @@
     [
         new()
         {
-            Title = L["操作"], Class = "ep-keep", Labeled = false,
+            Title = L["操作"], Class = "ep-keep", Labeled = false, SortBy = item => UsageLabels.Operation(item.Operation),
             Cell = item => @<text><div>@UsageLabels.Operation(item.Operation)</div><code class="ep-mono ep-secondary">@item.Operation</code></text>,
         },
-        new() { Title = L["分類"], Cell = item => @<text>@UsageLabels.Category(item.Operation)</text> },
-        new() { Title = L["呼叫次數"], Numeric = true, Cell = item => @<text>@item.Calls.ToString("N0")</text> },
-        new() { Title = L["計量單位"], Numeric = true, Cell = item => @<text>@item.Units.ToString("N0")<span class="ep-num-unit">@UsageLabels.UnitName(item.Operation)</span></text> },
+        new() { Title = L["分類"], SortBy = item => UsageLabels.Category(item.Operation), Cell = item => @<text>@UsageLabels.Category(item.Operation)</text> },
+        new() { Title = L["呼叫次數"], Numeric = true, SortBy = item => item.Calls, InitialSort = ColumnSort.Descending, Cell = item => @<text>@item.Calls.ToString("N0")</text> },
+        new() { Title = L["計量單位"], Numeric = true, SortBy = item => item.Units, Cell = item => @<text>@item.Units.ToString("N0")<span class="ep-num-unit">@UsageLabels.UnitName(item.Operation)</span></text> },
         new()
         {
-            Title = L["最近呼叫（台北）"], Label = L["最近呼叫"],
+            Title = L["最近呼叫（台北）"], Label = L["最近呼叫"], SortBy = item => item.LastOccurredAt,
             Cell = item => @<text>
                 @if (item.LastOccurredAt is { } last)
                 {
@@ -259,11 +259,11 @@
 
     private IReadOnlyList<ColumnDef<ApiKeyInfo>> KeyColumns =>
     [
-        new() { Title = L["名稱"], Class = "ep-keep", Labeled = false, Cell = key => @<text>@key.Name</text> },
+        new() { Title = L["名稱"], Class = "ep-keep", Labeled = false, SortBy = key => key.Name, Cell = key => @<text>@key.Name</text> },
         new() { Title = L["前綴"], Cell = key => @<text><code class="ep-mono">@key.Prefix</code></text> },
         new()
         {
-            Title = L["建立（台北）"], Label = L["建立"],
+            Title = L["建立（台北）"], Label = L["建立"], SortBy = key => key.CreatedAt,
             Cell = key => @<text><time datetime="@TaipeiTime.Full(key.CreatedAt)">@TaipeiTime.Format(key.CreatedAt)</time></text>,
         },
         new()
@@ -301,10 +301,10 @@
     [
         new()
         {
-            Title = L["電子郵件"], Class = "ep-keep", Labeled = false,
+            Title = L["電子郵件"], Class = "ep-keep", Labeled = false, SortBy = member => member.Email,
             Cell = member => @<text>@member.Email@(member.DisplayName is null ? "" : $"（{member.DisplayName}）")</text>,
         },
-        new() { Title = L["角色"], Cell = member => @<text>@PortalLabels.Role(member.Role)</text> },
+        new() { Title = L["角色"], SortBy = member => PortalLabels.Role(member.Role), Cell = member => @<text>@PortalLabels.Role(member.Role)</text> },
         new()
         {
             Title = L["狀態"],

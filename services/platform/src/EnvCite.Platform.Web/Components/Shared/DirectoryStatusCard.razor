@@ -110,8 +110,8 @@
         {
             List<ColumnDef<DirectoryGroupInfo>> columns =
             [
-                new() { Title = L["名稱"], Class = "ep-keep", Labeled = false, Cell = group => @<text>@group.DisplayName</text> },
-                new() { Title = L["成員數"], Numeric = true, Cell = group => @<text>@group.MemberCount.ToString("N0", System.Globalization.CultureInfo.CurrentCulture)</text> },
+                new() { Title = L["名稱"], Class = "ep-keep", Labeled = false, SortBy = group => group.DisplayName, Cell = group => @<text>@group.DisplayName</text> },
+                new() { Title = L["成員數"], Numeric = true, SortBy = group => group.MemberCount, Cell = group => @<text>@group.MemberCount.ToString("N0", System.Globalization.CultureInfo.CurrentCulture)</text> },
                 new()
                 {
                     Title = L["對映的角色"],
@@ -143,7 +143,7 @@
         {
             List<ColumnDef<DirectoryTokenInfo>> columns =
             [
-                new() { Title = L["名稱"], Class = "ep-keep", Labeled = false, Cell = token => @<text>@token.Name</text> },
+                new() { Title = L["名稱"], Class = "ep-keep", Labeled = false, SortBy = token => token.Name, Cell = token => @<text>@token.Name</text> },
                 new() { Title = L["前綴"], Cell = token => @<text><code class="ep-mono">@token.Prefix</code></text> },
                 new()
                 {

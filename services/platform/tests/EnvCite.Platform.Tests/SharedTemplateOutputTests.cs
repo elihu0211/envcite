@@ -66,6 +66,17 @@ public sealed class SharedTemplateOutputTests(PlatformFactory factory)
         Assert.Contains("<td>owner@example.test</td>", html, StringComparison.Ordinal);
     }
 
+    // 排序只在後台的互動式表格：靜態的純表格（客戶入口）沒有可以點的東西，所以即使欄位宣告了排序鍵也不出排序鈕與 aria-sort。
+    [Fact]
+    public async Task APlainTableIgnoresSortKeysBecauseItIsStatic()
+    {
+        var html = await GalleryAsync();
+
+        Assert.Contains("<table class=\"ep-plain-table\" aria-label=\"範例\">", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("class=\"ep-sort\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("aria-sort", html, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task AnOptionSelectIsANativeSelectNamedForThePostedForm()
     {

@@ -533,6 +533,19 @@ public static partial class DesignTokenTests
         Assert.Matches(@"\.ep-num,\s*\.ep-plain-table :is\(th, td\)\.ep-num,\s*\.ep-table :is\(th, td\)\.ep-num \{[^}]*text-align: end", css);
     }
 
+    // 可排序的欄位標題：沒有框的按鈕；沒排它時箭頭是淡的，排它時（aria-sort）變成主要文字色。
+    [Fact]
+    public static void SortableHeadersAreBorderlessButtonsWithAQuietArrowThatSharpensWhenActive()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var sort = CssBlock(css, ".ep-sort");
+
+        Assert.Contains("border: 0", sort, StringComparison.Ordinal);
+        Assert.Contains("background: transparent", sort, StringComparison.Ordinal);
+        Assert.Contains("color-mix(in srgb, var(--ep-text-secondary) 55%, transparent)", CssBlock(css, ".ep-sort .ep-icon"), StringComparison.Ordinal);
+        Assert.Matches(@"th\[aria-sort=""ascending""\] \.ep-icon,\s*th\[aria-sort=""descending""\] \.ep-icon,\s*\.ep-sort:hover \.ep-icon \{[^}]*color: var\(--ep-text\)", css);
+    }
+
     // 側欄：桌機收成窄欄、手機是抽屜，兩者都靠 forms.js 設在 <html> 上的屬性；窄欄寬度是 token，收起的抽屜不在 Tab 順序裡。
     [Fact]
     public static void TheSidebarCollapsesToARailAndBecomesADrawerOnPhones()
