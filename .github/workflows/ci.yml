@@ -186,6 +186,11 @@ jobs:
       - uses: ./.github/actions/nuget-cache
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+      # 端對端測試用的瀏覽器：版本跟著 Microsoft.Playwright，套件版本一變就重下載（測試第一次執行時下載並裝系統相依套件）。
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('Directory.Packages.props') }}
       - working-directory: services/platform
         run: |
           dotnet restore --locked-mode --source "$(mktemp -d)"

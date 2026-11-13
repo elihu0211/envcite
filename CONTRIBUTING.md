@@ -93,7 +93,7 @@ flowchart LR
 | PostgreSQL（含 pgvector） | 開發用的 `envcite`、`platform` 兩個資料庫 | `ci.yml` 的 `POSTGRES_MAJOR`，與正式環境同主版本 |
 | .NET SDK | [platform](services/platform/README.md)、[consult](services/consult/README.md)、[`libs/dotnet/`](libs/dotnet/README.md) | [`global.json`](global.json) |
 | [uv](https://docs.astral.sh/uv/) | [ontology](services/ontology/README.md)、[`libs/python/`](libs/python/AGENTS.md) | `ci.yml` 的 `UV_VERSION`；Python 版本見 `.python-version`，由 uv 自動安裝 |
-| Node.js | 以 `npx` 執行 buf | `ci.yml` 的 `BUF_VERSION` |
+| Node.js | 以 `npx` 執行 buf；platform 的端對端測試（`services/platform/tests/e2e/`，第一次 `dotnet test` 自動 `npm ci` 並下載 Chromium；沒有網路設 `ENVCITE_SKIP_E2E=1`，有現成的設 `ENVCITE_CHROMIUM_PATH`） | `ci.yml` 的 `BUF_VERSION`；playwright 版本見 `tests/e2e/package.json` |
 
 ## 開發用資料庫
 
