@@ -23,19 +23,27 @@ import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, cast
+from typing import Any, NamedTuple
 
 import psycopg
 
 from envcite_ontology.claims import AnnotationError
 from envcite_ontology.corpus_ref import UnknownProvision, provision_id
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch_one, scalar
 
 log = logging.getLogger(__name__)
 
 
 class RulingError(AnnotationError):
     """文件不合：條文單元不在語料、同一字號內容不同、失效日早於裁判日。"""
+
+
+class _RulingRow(NamedTuple):
+    id: int
+    kind: str
+    decided_on: date
+    source_url: str
+    excerpt: str
 
 
 @dataclass(frozen=True)
@@ -105,20 +113,24 @@ def _rulings(conn: Conn, doc: Mapping[str, Any]) -> LoadedRulings:
 def _ruling(conn: Conn, r: Mapping[str, Any]) -> tuple[int, int]:
     """寫入一則裁判；已有同一字號時內容必須相同。回傳（id，是否沿用）。"""
     decided = date.fromisoformat(str(r["decided_on"]))
-    row = conn.execute(
+    row = fetch_one(
+        conn,
         "SELECT id, ruling_kind::text, decided_on, source_url, excerpt"
         " FROM corpus.constitutional_ruling WHERE ruling_no = %s",
         (r["ruling_no"],),
-    ).fetchone()
+        _RulingRow,
+    )
     if row is not None:
-        if tuple(row[1:]) != (r["kind"], decided, r["source_url"], r["excerpt"]):
+        stored = (row.kind, row.decided_on, row.source_url, row.excerpt)
+        if stored != (r["kind"], decided, r["source_url"], r["excerpt"]):
             raise RulingError(f"{r['ruling_no']} 已載入，內容與這次不同")
-        return cast(int, row[0]), 1
-    new = conn.execute(
+        return row.id, 1
+    new = scalar(
+        conn,
         "INSERT INTO corpus.constitutional_ruling"
         " (ruling_no, ruling_kind, decided_on, source_url, excerpt)"
         " VALUES (%s, %s, %s, %s, %s) RETURNING id",
         (r["ruling_no"], r["kind"], decided, r["source_url"], r["excerpt"]),
-    ).fetchone()
-    assert new is not None
-    return cast(int, new[0]), 0
+        int,
+    )
+    return new, 0

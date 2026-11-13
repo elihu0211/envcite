@@ -12,13 +12,26 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Protocol, cast
+from typing import Any, NamedTuple, Protocol
 
 from envcite_ontology.acquire import ly_law, moenv_law
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch
 from envcite_ontology.ingest.backfill import UnreadablePage, Version
 
 _NORM_KINDS = {"法律": ("statute", "constitution"), "命令": ("regulation",)}
+
+
+class _TitledRow(NamedTuple):
+    # 沒有標題的只會是查不到全文的版本；它沒有名稱可對，所以兩個來源都略過
+    title: str | None
+    norm_kind: str
+    pcode: str
+    version_date: date
+
+
+class _TargetRow(NamedTuple):
+    pcode: str
+    title: str | None
 
 
 class Web(Protocol):
@@ -182,17 +195,22 @@ class Moenv:
         """（最新版本的標題，種類）→（pcode，最新版本日）；歷來改過名的法規只以現名對。"""
         if self._titles is None:
             self._titles = {}
-            for title, kind, pcode, latest in conn.execute(
+            for row in fetch(
+                conn,
                 "SELECT DISTINCT ON (r.id) e.title, r.norm_kind::text, r.local_id, e.version_date"
                 "  FROM corpus.legal_resource AS r"
                 "  JOIN corpus.legal_expression AS e ON e.resource_id = r.id AND e.language = 'zho'"
                 " WHERE r.id_scheme = 'moj_pcode'"
-                " ORDER BY r.id, e.version_date DESC"
+                " ORDER BY r.id, e.version_date DESC",
+                None,
+                _TitledRow,
             ):
+                if row.title is None:
+                    continue
                 for label, kinds in _NORM_KINDS.items():
-                    if kind in kinds:
-                        self._titles.setdefault((str(title), label), []).append(
-                            (str(pcode), cast(date, latest))
+                    if row.norm_kind in kinds:
+                        self._titles.setdefault((row.title, label), []).append(
+                            (row.pcode, row.version_date)
                         )
         return self._titles
 
@@ -212,15 +230,19 @@ class Ly:
     def targets(self, conn: Conn, web: Web) -> list[Target]:
         """語料裡現行的法律（憲法不是立法院制定的，不在內），以最新版本的標題檢索。"""
         return [
-            Target(str(pcode), str(title))
-            for pcode, title in conn.execute(
+            Target(row.pcode, row.title)
+            for row in fetch(
+                conn,
                 "SELECT DISTINCT ON (r.id) r.local_id, e.title"
                 "  FROM corpus.legal_resource AS r"
                 "  JOIN corpus.legal_expression AS e ON e.resource_id = r.id AND e.language = 'zho'"
                 " WHERE r.id_scheme = 'moj_pcode' AND r.norm_kind = 'statute'"
                 "   AND r.repealed_on IS NULL"
-                " ORDER BY r.id, e.version_date DESC"
+                " ORDER BY r.id, e.version_date DESC",
+                None,
+                _TargetRow,
             )
+            if row.title is not None
         ]
 
     def bundle(self, web: Web, target: Target, previous: dict[str, Any]) -> dict[str, Any]:

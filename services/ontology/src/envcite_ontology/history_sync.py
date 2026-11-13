@@ -30,7 +30,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 import psycopg
 
@@ -46,7 +46,7 @@ from envcite_jobkit import (
 )
 from envcite_ontology import delegation, embedding, import_problems, projection
 from envcite_ontology.acquire.web import Http
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, fetch_one, scalar
 from envcite_ontology.history_sources import (
     SOURCES,
     HistorySource,
@@ -205,35 +205,42 @@ def _acquire_one(
         ).fetchone()
         if known is not None:
             return
-        snapshot = conn.execute(
+        snapshot = scalar(
+            conn,
             "INSERT INTO source.snapshot (feed, data_date, sha256, size_bytes, location,"
             "  license_notice) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
             (source.feed, date.today(), digest, len(data), location, source.attribution),
-        ).fetchone()
-        assert snapshot is not None
+            int,
+        )
         conn.execute(
             "INSERT INTO source.item"
             " (feed, key, content_sha256, first_snapshot_id, last_snapshot_id)"
             " VALUES (%(feed)s, %(key)s, %(sha)s, %(id)s, %(id)s)"
             " ON CONFLICT (feed, key) DO UPDATE SET content_sha256 = excluded.content_sha256,"
             "   last_snapshot_id = excluded.last_snapshot_id, dropped_on = NULL",
-            {"feed": source.feed, "key": target.key, "sha": digest, "id": snapshot[0]},
+            {"feed": source.feed, "key": target.key, "sha": digest, "id": snapshot},
         )
         report.snapshots += 1
+
+
+class _LocationRow(NamedTuple):
+    location: str
 
 
 def _latest_bundle(
     conn: Conn, source: HistorySource, root: Path, key: str
 ) -> dict[str, Any] | None:
-    row = conn.execute(
+    row = fetch_one(
+        conn,
         "SELECT s.location FROM source.item AS i"
         "  JOIN source.snapshot AS s ON s.id = i.last_snapshot_id"
         " WHERE i.feed = %s AND i.key = %s",
         (source.feed, key),
-    ).fetchone()
+        _LocationRow,
+    )
     if row is None:
         return None
-    path = root / str(row[0])
+    path = root / row.location
     return cast(dict[str, Any], json.loads(path.read_text())) if path.exists() else None
 
 
@@ -245,22 +252,30 @@ class _Prepared:
     plan: backfill.Plan
 
 
+class _ItemRow(NamedTuple):
+    item_id: int
+    snapshot_id: int
+    location: str
+
+
 def import_(
     conn: Conn, source: HistorySource, root: Path, report: Report, *, dry_run: bool = False
 ) -> None:
     """每部取最新快照回推；整批比例不過就一部都不寫（`BatchRejected`）。"""
     prepared: list[_Prepared] = []
     metrics = audit.Metrics()
-    items = conn.execute(
+    items = fetch(
+        conn,
         "SELECT i.id, s.id, s.location FROM source.item AS i"
         "  JOIN source.snapshot AS s ON s.id = i.last_snapshot_id"
         " WHERE i.feed = %s ORDER BY i.key",
         (source.feed,),
-    ).fetchall()
-    for item_id, snapshot_id, location in items:
-        path = root / str(location)
+        _ItemRow,
+    )
+    for item in items:
+        path = root / item.location
         if not path.exists():
-            raise BatchRejected(f"snapshot file missing: {location}")
+            raise BatchRejected(f"snapshot file missing: {item.location}")
         bundle = json.loads(path.read_text())
         problems: list[Problem] = []
         anchor = None
@@ -283,7 +298,7 @@ def import_(
                 plan = backfill.plan(anchor, current, past)
         for parsed in plan.parsed:
             metrics.add(parsed)
-        prepared.append(_Prepared(cast(int, item_id), cast(int, snapshot_id), anchor, plan))
+        prepared.append(_Prepared(item.item_id, item.snapshot_id, anchor, plan))
     conn.rollback()
 
     matched = [p for p in prepared if p.anchor is not None]

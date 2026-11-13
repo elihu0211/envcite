@@ -37,7 +37,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any, Protocol, cast
+from typing import Any, NamedTuple, Protocol
 
 import psycopg
 
@@ -54,7 +54,7 @@ from envcite_ontology import guidance, import_problems
 from envcite_ontology.acquire import gazette, moenv
 from envcite_ontology.acquire.engine import InvalidSnapshot
 from envcite_ontology.acquire.web import Http
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, fetch_one, scalar
 from envcite_ontology.guidance_anchor import Resolver
 from envcite_ontology.import_problems import Problem
 from envcite_ontology.settings import DatabaseSettings, SnapshotSettings
@@ -299,19 +299,37 @@ class _Crawl:
     complete: bool
 
 
+class _TextRow(NamedTuple):
+    value: str
+
+
 def _origins(conn: Conn, feed: str) -> set[str]:
-    rows = conn.execute(
+    rows = fetch(
+        conn,
         "SELECT origin_name FROM source.snapshot WHERE feed = %s AND origin_name IS NOT NULL",
         (feed,),
-    ).fetchall()
+        _TextRow,
+    )
     conn.rollback()
-    return {str(r[0]) for r in rows}
+    return {r.value for r in rows}
 
 
 def _keys(conn: Conn, feed: str) -> set[str]:
-    rows = conn.execute("SELECT key FROM source.item WHERE feed = %s", (feed,)).fetchall()
+    rows = fetch(conn, "SELECT key FROM source.item WHERE feed = %s", (feed,), _TextRow)
     conn.rollback()
-    return {str(r[0]) for r in rows}
+    return {r.value for r in rows}
+
+
+class _SettledRow(NamedTuple):
+    complete: bool
+    dropped: int
+    ceased: int
+    reappeared: list[int]
+
+
+class _ItemRow(NamedTuple):
+    id: int
+    last_snapshot_id: int
 
 
 def _crawled(conn: Conn, crawl: _Crawl, report: Report) -> None:
@@ -321,44 +339,55 @@ def _crawled(conn: Conn, crawl: _Crawl, report: Report) -> None:
         log.warning("有葉分類沒走完，不推論下架")
         return
     with conn.transaction():
-        row = conn.execute(
+        row = fetch_one(
+            conn,
             "SELECT * FROM guidance.settle_crawl(%s, %s, %s)",
             (sorted(crawl.seen), date.today(), moenv.BASE),
-        ).fetchone()
+            _SettledRow,
+        )
         assert row is not None
         complete, dropped, ceased, reappeared = row
-        back = conn.execute(
-            "SELECT id, last_snapshot_id FROM source.item WHERE id = ANY(%s)", (reappeared,)
-        ).fetchall()
-        for item_id, snapshot_id in back:
+        back = fetch(
+            conn,
+            "SELECT id, last_snapshot_id FROM source.item WHERE id = ANY(%s)",
+            (reappeared,),
+            _ItemRow,
+        )
+        for item in back:
             _problems(
-                conn,
-                report,
-                cast(int, item_id),
-                cast(int, snapshot_id),
-                [Problem("warning", "reappeared", "")],
+                conn, report, item.id, item.last_snapshot_id, [Problem("warning", "reappeared", "")]
             )
-    report.crawl_complete = bool(complete)
+    report.crawl_complete = complete
     if not complete:
         log.warning("沒出現的函釋超過還在架上的 5%%，視為網站異常，不推論下架")
-    report.dropped += cast(int, dropped)
-    report.cessations += cast(int, ceased)
+    report.dropped += dropped
+    report.cessations += ceased
+
+
+class _GazetteRow(NamedTuple):
+    id: int
+    issuer: str
+    issued_on: date
+    subject: str
+    ceased: bool
 
 
 def _repeals(conn: Conn, report: Report) -> None:
     """公報的「廢止「甲」」停止此前刊登甲的各件（只在公報的行政規則之間比對名稱）。"""
-    docs = conn.execute(
+    docs = fetch(
+        conn,
         "SELECT d.id, d.issuer, d.issued_on, d.subject,"
         "       EXISTS (SELECT 1 FROM guidance.cessation AS c WHERE c.document_id = d.id)"
         "  FROM guidance.document AS d WHERE starts_with(d.source_url, %s)"
         " ORDER BY d.issued_on, d.id",
         (gazette.BASE,),
-    ).fetchall()
+        _GazetteRow,
+    )
     conn.rollback()
-    actions = {cast(int, r[0]): gazette.actions(str(r[3])) for r in docs}
-    issuer = {cast(int, r[0]): str(r[1]) for r in docs}
-    issued = {cast(int, r[0]): cast(date, r[2]) for r in docs}
-    ceased = {cast(int, r[0]) for r in docs if r[4]}
+    actions = {r.id: gazette.actions(r.subject) for r in docs}
+    issuer = {r.id: r.issuer for r in docs}
+    issued = {r.id: r.issued_on for r in docs}
+    ceased = {r.id for r in docs if r.ceased}
     rules = _RuleNames()
     for doc_id, a in actions.items():
         rules.add(doc_id, a.sets, a.renames)
@@ -433,19 +462,36 @@ class _RuleNames:
             self._documents.setdefault(ra, set()).update(self._documents.pop(rb, set()))
 
 
+class _LoadedRow(NamedTuple):
+    issuer: str
+    document_no: str
+    issued_on: date
+    kind: str
+    subject: str
+    body: str
+    published_in: str | None
+    source_url: str | None
+
+
 def _loaded(conn: Conn, document_id: int) -> dict[str, Any]:
     """已載入的一件公文，照原樣：重新載入時是同一件，只多停止適用。"""
-    row = conn.execute(
+    row = fetch_one(
+        conn,
         "SELECT issuer, document_no, issued_on, rule_kind::text, subject, body, published_in,"
         "       source_url FROM guidance.document WHERE id = %s",
         (document_id,),
-    ).fetchone()
+        _LoadedRow,
+    )
     conn.rollback()
     assert row is not None
-    keys = ("issuer", "document_no", "issued_on", "kind", "subject", "body")
-    document: dict[str, Any] = dict(zip(keys, row[:6], strict=True))
-    document["issued_on"] = cast(date, row[2]).isoformat()
-    return document
+    return {
+        "issuer": row.issuer,
+        "document_no": row.document_no,
+        "issued_on": row.issued_on.isoformat(),
+        "kind": row.kind,
+        "subject": row.subject,
+        "body": row.body,
+    }
 
 
 def _ref(conn: Conn, document_id: int) -> dict[str, str]:
@@ -472,20 +518,22 @@ def _reload(conn: Conn, report: Report, document: Mapping[str, Any]) -> int:
 def _repeal_problems(conn: Conn, report: Report, document_id: int, problems: list[Problem]) -> None:
     """廢止的對應問題記在該件公報刊登的來源項目上；每次重算，所以先清掉上一次的。"""
     with conn.transaction():
-        row = conn.execute(
+        row = fetch_one(
+            conn,
             "SELECT i.id, i.last_snapshot_id FROM guidance.document AS d"
             "  JOIN source.item AS i ON i.feed = 'gazette'"
             "   AND i.key = substring(d.source_url FROM 'metaid=([^&]+)')"
             " WHERE d.id = %s",
             (document_id,),
-        ).fetchone()
+            _ItemRow,
+        )
         if row is None:
             return
         conn.execute(
             "DELETE FROM source.import_problem WHERE item_id = %s AND problem_code = ANY(%s)",
-            (row[0], list(REPEAL_PROBLEMS)),
+            (row.id, list(REPEAL_PROBLEMS)),
         )
-        _problems(conn, report, cast(int, row[0]), cast(int, row[1]), problems)
+        _problems(conn, report, row.id, row.last_snapshot_id, problems)
 
 
 REPEAL_PROBLEMS = ("repeal_unmatched", "repeal_ambiguous", "repeal_before_issue", "repeal_rejected")
@@ -622,7 +670,8 @@ class _Job:
         os.replace(partial, self._root / location)
         conn = self._conn
         with conn.transaction():
-            row = conn.execute(
+            snapshot_id = scalar(
+                conn,
                 "INSERT INTO source.snapshot"
                 " (feed, data_date, sha256, size_bytes, location, license_notice, origin_name)"
                 " VALUES (%s, %s, %s, %s, %s, %s, %s)"
@@ -630,11 +679,11 @@ class _Job:
                 "   = coalesce(source.snapshot.origin_name, excluded.origin_name)"
                 " RETURNING id",
                 (c.feed, c.data_date, digest, size, location, c.license_notice, c.origin_name),
-            ).fetchone()
-            assert row is not None
-            snapshot_id = row[0]
+                int,
+            )
             for key, sha, problems in c.items:
-                item = conn.execute(
+                item_id = scalar(
+                    conn,
                     "INSERT INTO source.item"
                     " (feed, key, content_sha256, first_snapshot_id, last_snapshot_id)"
                     " VALUES (%(feed)s, %(key)s, %(sha)s, %(id)s, %(id)s)"
@@ -643,14 +692,14 @@ class _Job:
                     "       last_snapshot_id = excluded.last_snapshot_id"
                     " RETURNING id",
                     {"feed": c.feed, "key": key, "sha": sha, "id": snapshot_id},
-                ).fetchone()
-                assert item is not None
+                    int,
+                )
                 conn.execute(
                     "DELETE FROM source.import_problem"
                     " WHERE item_id = %s AND NOT problem_code = ANY(%s)",
-                    (item[0], list(REPEAL_PROBLEMS)),
+                    (item_id, list(REPEAL_PROBLEMS)),
                 )
-                _problems(conn, self._report, cast(int, item[0]), cast(int, snapshot_id), problems)
+                _problems(conn, self._report, item_id, snapshot_id, problems)
 
 
 def _digest(rule: gazette.Rule) -> bytes:

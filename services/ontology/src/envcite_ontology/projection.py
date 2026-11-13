@@ -19,10 +19,10 @@
 import logging
 from collections.abc import Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from typing import cast
+from typing import NamedTuple
 
 from envcite_jobkit import ExitCode, NullMetrics, Policy, RunStats, run
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, scalar
 from envcite_ontology.embedding import Embedder, to_sql
 from envcite_segmenter import Segmenter
 
@@ -68,6 +68,15 @@ _EMBED_PAGE = """
 """
 
 
+class _TitleRow(NamedTuple):
+    title: str
+
+
+class _PassageRow(NamedTuple):
+    digest: bytes
+    text: str
+
+
 class EmbeddingStopped(RuntimeError):
     """嵌入沒有走完：政策判定致命，或遇到未分類的錯誤。`code` 是 jobkit 的結束碼。"""
 
@@ -83,20 +92,23 @@ def rebuild(conn: Conn, embedder: Embedder | None = None, policy: Policy | None 
     """
     segmenter = Segmenter(
         [
-            str(t)
-            for (t,) in conn.execute(
-                "SELECT DISTINCT title FROM corpus.legal_expression WHERE title IS NOT NULL"
+            row.title
+            for row in fetch(
+                conn,
+                "SELECT DISTINCT title FROM corpus.legal_expression WHERE title IS NOT NULL",
+                None,
+                _TitleRow,
             )
         ]
     )
-    pruned = conn.execute("SELECT retrieval.prune()").fetchone()
+    pruned = scalar(conn, "SELECT retrieval.prune()", None, int)
     conn.commit()
-    if pruned and pruned[0]:
-        log.info("清理 %s 列不再被引用的文字的索引", pruned[0])
+    if pruned:
+        log.info("清理 %s 列不再被引用的文字的索引", pruned)
 
     built = _lexical(conn, segmenter)
     log.info("檢索投影：字面向量新建或重算 %d 列，分詞器 %s", built, segmenter.tokenizer_id)
-    _term_stat(conn, segmenter.tokenizer_id, changed=bool(built or (pruned and pruned[0])))
+    _term_stat(conn, segmenter.tokenizer_id, changed=bool(built or pruned))
     if embedder is not None:
         embedded = _embed(conn, embedder, policy=policy)
         log.info("檢索投影：嵌入 %d 段，模型 %s", embedded, embedder.model)
@@ -110,9 +122,9 @@ def _term_stat(conn: Conn, tokenizer: str, *, changed: bool) -> None:
     ).fetchone()
     if current and not changed:
         return
-    row = conn.execute("SELECT retrieval.refresh_term_stat(%s)", (tokenizer,)).fetchone()
+    terms = scalar(conn, "SELECT retrieval.refresh_term_stat(%s)", (tokenizer,), int)
     conn.commit()
-    log.info("檢索投影：詞頻 %s 個詞", row[0] if row else 0)
+    log.info("檢索投影：詞頻 %s 個詞", terms)
 
 
 def _lexical(conn: Conn, segmenter: Segmenter) -> int:
@@ -120,15 +132,18 @@ def _lexical(conn: Conn, segmenter: Segmenter) -> int:
     built = 0
     after = b""
     while True:
-        rows = conn.execute(
-            _LEXICAL_PAGE, {"after": after, "tokenizer": tokenizer, "limit": _PAGE}
-        ).fetchall()
+        rows = fetch(
+            conn,
+            _LEXICAL_PAGE,
+            {"after": after, "tokenizer": tokenizer, "limit": _PAGE},
+            _PassageRow,
+        )
         if not rows:
             return built
         batch = [
-            (digest, tokenizer, segmenter.to_tsvector_input(str(text)))
-            for digest, text in rows
-            if text
+            (row.digest, tokenizer, segmenter.to_tsvector_input(row.text))
+            for row in rows
+            if row.text
         ]
         with conn.cursor() as cur:
             cur.executemany(
@@ -140,7 +155,7 @@ def _lexical(conn: Conn, segmenter: Segmenter) -> int:
             )
         conn.commit()
         built += len(batch)
-        after = cast(bytes, rows[-1][0])
+        after = rows[-1].digest
 
 
 def embed_scope(
@@ -173,7 +188,8 @@ def _embed(
     def pages() -> Iterator[Page]:
         after = b""
         while True:
-            rows = conn.execute(
+            rows = fetch(
+                conn,
                 _EMBED_PAGE,
                 {
                     "after": after,
@@ -181,11 +197,12 @@ def _embed(
                     "limit": _EMBED_BATCH * _EMBED_WORKERS,
                     "pcodes": pcodes,
                 },
-            ).fetchall()
+                _PassageRow,
+            )
             if not rows:
                 return
-            yield [(cast(bytes, digest), str(text)) for digest, text in rows]
-            after = cast(bytes, rows[-1][0])
+            yield [(row.digest, row.text) for row in rows]
+            after = rows[-1].digest
 
     def embed_page(rows: Page) -> None:
         nonlocal embedded

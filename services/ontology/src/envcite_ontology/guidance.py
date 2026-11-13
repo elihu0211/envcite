@@ -31,12 +31,12 @@ import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, cast
+from typing import Any, NamedTuple
 
 import psycopg
 
 from envcite_ontology.claims import AnnotationError, anchor
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch_one, scalar
 
 log = logging.getLogger(__name__)
 
@@ -134,25 +134,34 @@ def _write(conn: Conn, doc: Mapping[str, Any]) -> LoadedGuidance:
     return LoadedGuidance(len(ids), repeated, interpretations, cessations)
 
 
+class _DocumentRow(NamedTuple):
+    id: int
+    content_sha256: bytes
+    issued_on: date
+    rule_kind: str
+
+
 def _document(
     conn: Conn, d: Mapping[str, Any], derivation_id: Callable[[], int]
 ) -> tuple[int, int]:
     """寫入一件公文；已有同一件時內容必須相同。回傳（id，是否沿用）。"""
     digest = hashlib.sha256(f"{d['subject']}\n{d['body']}".encode()).digest()
-    row = conn.execute(
+    row = fetch_one(
+        conn,
         "SELECT id, content_sha256, issued_on, rule_kind::text FROM guidance.document"
         " WHERE issuer = %s AND document_no = %s",
         (d["issuer"], d["document_no"]),
-    ).fetchone()
+        _DocumentRow,
+    )
     if row is not None:
-        same = (bytes(cast(bytes, row[1])), row[2], row[3]) == (
+        same = (row.content_sha256, row.issued_on, row.rule_kind) == (
             digest,
             date.fromisoformat(str(d["issued_on"])),
             d["kind"],
         )
         if not same:
             raise DocumentChanged(f"{d['issuer']} {d['document_no']} 已載入，內容與這次不同")
-        return cast(int, row[0]), 1
+        return row.id, 1
     return (
         _one(
             conn,
@@ -173,28 +182,43 @@ def _document(
     )
 
 
+class _IdRow(NamedTuple):
+    id: int
+
+
 def _existing(conn: Conn, ids: Mapping[tuple[str, str], int], ref: Mapping[str, Any]) -> int:
     key = (str(ref["issuer"]), str(ref["document_no"]))
     if key in ids:
         return ids[key]
-    row = conn.execute(
-        "SELECT id FROM guidance.document WHERE issuer = %s AND document_no = %s", key
-    ).fetchone()
+    row = fetch_one(
+        conn,
+        "SELECT id FROM guidance.document WHERE issuer = %s AND document_no = %s",
+        key,
+        _IdRow,
+    )
     if row is None:
         raise GuidanceError(f"引用了不存在的前函：{key[0]} {key[1]}")
-    return cast(int, row[0])
+    return row.id
+
+
+class _CessationRow(NamedTuple):
+    ceased_on: date
+    by_document_id: int | None
+    cause: str
 
 
 def _cease(conn: Conn, document_id: int, on: date, by: int | None = None) -> int:
     """記一筆停止適用（有後函為 successor，否則為來源載明的 announced）；已記過時必須相同。"""
     cause = "announced" if by is None else "successor"
-    row = conn.execute(
+    row = fetch_one(
+        conn,
         "SELECT ceased_on, by_document_id, cause::text FROM guidance.cessation"
         " WHERE document_id = %s",
         (document_id,),
-    ).fetchone()
+        _CessationRow,
+    )
     if row is not None:
-        if tuple(row) != (on, by, cause):
+        if (row.ceased_on, row.by_document_id, row.cause) != (on, by, cause):
             raise GuidanceError(f"行政規則 {document_id} 已記有不同的停止適用")
         return 0
     conn.execute(
@@ -209,6 +233,4 @@ def _cease(conn: Conn, document_id: int, on: date, by: int | None = None) -> int
 
 
 def _one(conn: Conn, sql: str, *args: object) -> int:
-    row = conn.execute(sql, args).fetchone()
-    assert row is not None
-    return cast(int, row[0])
+    return scalar(conn, sql, args, int)

@@ -24,11 +24,11 @@ import unicodedata
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from datetime import date
-from typing import cast
+from typing import NamedTuple
 
 from psycopg.types.range import Range
 
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, fetch_one, scalar
 from envcite_ontology.import_problems import Problem
 from envcite_ontology.ingest import history, law
 from envcite_ontology.ingest.law import ParsedLaw, ParsedUnit
@@ -355,9 +355,35 @@ def _intervals(anchor: Anchor, accepted: list[tuple[Version, ParsedLaw]]) -> lis
     return planned
 
 
+class _AnchorRow(NamedTuple):
+    resource: int
+    kind: str
+    repealed_on: date | None
+    #: 沒有官方資料庫版本時為 NULL（`FILTER` 沒有符合的列）
+    first: date | None
+    latest: date
+
+
+class _StartRow(NamedTuple):
+    version_date: date
+    path: str
+    force: Range[date] | None
+
+
+class _EventTextRow(NamedTuple):
+    source_text: str
+
+
+class _ArticleRow(NamedTuple):
+    path: str
+    #: 條本身沒有內容、下層也沒有內容時為 NULL
+    text: str | None
+
+
 def load_anchor(conn: Conn, pcode: str) -> Anchor | None:
     """語料裡 `pcode` 的現況；沒有官方資料庫版本時為 None。"""
-    row = conn.execute(
+    row = fetch_one(
+        conn,
         "SELECT r.id, r.norm_kind::text, r.repealed_on,"
         "       min(e.version_date) FILTER (WHERE e.text_authority = 'official_db'),"
         "       max(e.version_date)"
@@ -366,59 +392,83 @@ def load_anchor(conn: Conn, pcode: str) -> Anchor | None:
         " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s"
         " GROUP BY r.id",
         (pcode,),
-    ).fetchone()
-    if row is None or row[3] is None:
+        _AnchorRow,
+    )
+    if row is None or row.first is None:
         return None
-    resource, kind, repealed_on, first, latest = row
-    assert isinstance(resource, int) and isinstance(first, date) and isinstance(latest, date)
+    first = row.first
     starts_by_version: dict[date, dict[str, date | None]] = {}
-    for version, path, force in conn.execute(
+    for start in fetch(
+        conn,
         "SELECT e.version_date, p.path, v.force_period FROM corpus.provision_version AS v"
         "  JOIN corpus.provision AS p ON p.id = v.provision_id"
         "  JOIN corpus.legal_expression AS e ON e.id = v.expression_id"
         " WHERE e.resource_id = %s AND e.language = 'zho' AND e.text_authority = 'official_db'"
         "   AND v.superseded_at IS NULL",
-        (resource,),
+        (row.resource,),
+        _StartRow,
     ):
-        starts_by_version.setdefault(cast(date, version), {})[cast(str, path)] = (
-            cast(Range[date], force).lower if force is not None else None
+        starts_by_version.setdefault(start.version_date, {})[start.path] = (
+            start.force.lower if start.force is not None else None
         )
     events = [
-        cast(str, text)
-        for (text,) in conn.execute(
+        event.source_text
+        for event in fetch(
+            conn,
             "SELECT source_text FROM corpus.lifecycle_event"
             " WHERE resource_id = %s AND source_text IS NOT NULL ORDER BY id",
-            (resource,),
+            (row.resource,),
+            _EventTextRow,
         )
     ]
     return Anchor(
-        resource=resource,
+        resource=row.resource,
         pcode=pcode,
-        kind=str(kind),
-        repealed_on=cast(date | None, repealed_on),
+        kind=row.kind,
+        repealed_on=row.repealed_on,
         version_date=first,
-        latest_date=latest,
+        latest_date=row.latest,
         starts=starts_by_version.get(first, {}),
         after=[starts_by_version[d] for d in sorted(starts_by_version) if d > first],
-        articles=_articles(conn, resource, first),
-        latest_articles=_articles(conn, resource, latest),
+        articles=_articles(conn, row.resource, first),
+        latest_articles=_articles(conn, row.resource, row.latest),
         events=events,
     )
 
 
 def _articles(conn: Conn, resource: int, version_date: date) -> dict[str, str]:
     return {
-        f"第 {cast(str, path).removeprefix('art_')} 條": cast(str, text)
-        for path, text in conn.execute(
+        f"第 {article.path.removeprefix('art_')} 條": article.text
+        for article in fetch(
+            conn,
             "SELECT p.path, corpus.article_text(v.id) FROM corpus.provision_version AS v"
             "  JOIN corpus.provision AS p ON p.id = v.provision_id"
             "  JOIN corpus.legal_expression AS e ON e.id = v.expression_id"
             " WHERE e.resource_id = %s AND e.language = 'zho' AND e.version_date = %s"
             "   AND v.superseded_at IS NULL AND p.provision_type = 'article'",
             (resource, version_date),
+            _ArticleRow,
         )
-        if text is not None
+        if article.text is not None
     }
+
+
+class _ExpressionRow(NamedTuple):
+    id: int
+    version_date: date
+    title: str | None
+    text_period: Range[date]
+    authority: str
+    status: str
+
+
+class _VersionRow(NamedTuple):
+    id: int
+    path: str
+    sha: bytes
+    #: 起點未知（待確認、待命令）為 NULL
+    force: Range[date] | None
+    rule: str
 
 
 def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> str:
@@ -428,18 +478,14 @@ def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> 
     同日的版本列改記新的來源、條文單元依新的文字取代。
     """
     existing = {
-        cast(date, d): (
-            cast(int, i),
-            cast(str | None, t),
-            cast(Range[date], p),
-            cast(str, a),
-            cast(str, st),
-        )
-        for i, d, t, p, a, st in conn.execute(
+        e.version_date: e
+        for e in fetch(
+            conn,
             "SELECT id, version_date, title, text_period, text_authority::text, text_status::text"
             "  FROM corpus.legal_expression"
             " WHERE resource_id = %s AND language = 'zho' AND text_authority <> 'official_db'",
             (anchor.resource,),
+            _ExpressionRow,
         )
     }
     if set(existing) - {v.version_date for v in target}:
@@ -450,8 +496,14 @@ def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> 
     for v in target:
         period = Range(v.version_date, v.until, "[)")
         if v.version_date in existing:
-            expression, title, current, by, was = existing[v.version_date]
-            if (title, current, by, was) != (v.title, period, authority, v.status):
+            known = existing[v.version_date]
+            expression = known.id
+            if (known.title, known.text_period, known.authority, known.status) != (
+                v.title,
+                period,
+                authority,
+                v.status,
+            ):
                 conn.execute(
                     "UPDATE corpus.legal_expression SET title = %s, text_period = %s,"
                     "  text_authority = %s, text_status = %s WHERE id = %s",
@@ -459,14 +511,14 @@ def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> 
                 )
                 changed = True
         else:
-            row = conn.execute(
+            expression = scalar(
+                conn,
                 "INSERT INTO corpus.legal_expression (resource_id, language, version_date, title,"
                 "  text_period, text_status, text_authority)"
                 " VALUES (%s, 'zho', %s, %s, %s, %s, %s) RETURNING id",
                 (anchor.resource, v.version_date, v.title, period, v.status, authority),
-            ).fetchone()
-            assert row is not None and isinstance(row[0], int)
-            expression = row[0]
+                int,
+            )
         expressions[v.version_date] = expression
 
     ended: list[int] = []
@@ -474,23 +526,27 @@ def write(conn: Conn, anchor: Anchor, target: list[Planned], authority: str) -> 
     for v in target:
         expression = expressions[v.version_date]
         rows = {
-            cast(str, path): (cast(int, i), cast(bytes, sha), force, cast(str, rule))
-            for i, path, sha, force, rule in conn.execute(
+            r.path: r
+            for r in fetch(
+                conn,
                 "SELECT v.id, p.path, v.content_sha256, v.force_period, v.commencement_rule::text"
                 "  FROM corpus.provision_version AS v"
                 "  JOIN corpus.provision AS p ON p.id = v.provision_id"
                 " WHERE v.expression_id = %s AND v.superseded_at IS NULL",
                 (expression,),
+                _VersionRow,
             )
         }
         wanted = {u.path: u for u in v.units}
         new = [
             u
             for p, u in wanted.items()
-            if p not in rows or rows[p][1:] != (content_sha(u.content), force_period(u), u.rule)
+            if p not in rows
+            or (rows[p].sha, rows[p].force, rows[p].rule)
+            != (content_sha(u.content), force_period(u), u.rule)
         ]
         replaced = {u.path for u in new}
-        ended += [i for p, (i, *_) in rows.items() if p not in wanted or p in replaced]
+        ended += [r.id for p, r in rows.items() if p not in wanted or p in replaced]
         if new:
             inserts.append((expression, new))
     if ended:

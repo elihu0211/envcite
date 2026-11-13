@@ -12,10 +12,10 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import Any, NamedTuple
 
 from envcite_ontology.claims import AnnotationError, load
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch
 from envcite_ontology.verification import prompts
 from envcite_ontology.verification.gates import unit_of
 from envcite_ontology.verification.jsonutil import object_from
@@ -24,30 +24,39 @@ from envcite_ontology.verification.prompts import Candidate
 from envcite_ontology.violation import within
 
 
+class _CitedRow(NamedTuple):
+    path: str
+    cited_path: str
+
+
+class _PathRow(NamedTuple):
+    path: str
+
+
+_CITING = (
+    "SELECT p.path, vi.cited_path FROM annotation.current_violation AS vi"
+    "  JOIN corpus.provision AS p ON p.id = vi.provision_id"
+    "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
+    "  JOIN corpus.provision_version AS v ON v.provision_id = vi.provision_id"
+    "   AND v.content_sha256 = vi.content_sha256 AND v.superseded_at IS NULL"
+    " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND vi.violation_kind = 'duty'"
+    " ORDER BY p.sort_key, p.path"
+)
+
+_UNITS = (
+    "SELECT p.path FROM corpus.provision AS p"
+    "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
+    " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s"
+)
+
+
 def penalized(conn: Conn, law: str) -> dict[str, list[str]]:
     """法規的單元 → 以「違反」引用它（或它的上層）的處罰條文，取自依賴圖。"""
-    rows = conn.execute(
-        "SELECT p.path, vi.cited_path FROM annotation.current_violation AS vi"
-        "  JOIN corpus.provision AS p ON p.id = vi.provision_id"
-        "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
-        "  JOIN corpus.provision_version AS v ON v.provision_id = vi.provision_id"
-        "   AND v.content_sha256 = vi.content_sha256 AND v.superseded_at IS NULL"
-        " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND vi.violation_kind = 'duty'"
-        " ORDER BY p.sort_key, p.path",
-        (law,),
-    ).fetchall()
-    units = [
-        str(u)
-        for (u,) in conn.execute(
-            "SELECT p.path FROM corpus.provision AS p"
-            "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
-            " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s",
-            (law,),
-        )
-    ]
+    rows = fetch(conn, _CITING, (law,), _CitedRow)
+    units = [r.path for r in fetch(conn, _UNITS, (law,), _PathRow)]
     out: dict[str, list[str]] = {}
     for unit in units:
-        by = [str(penalty) for penalty, cited in rows if within(unit, [str(cited)])]
+        by = [r.path for r in rows if within(unit, [r.cited_path])]
         if by:
             out[unit] = list(dict.fromkeys(by))
     return out
@@ -64,14 +73,17 @@ class Linked:
     ids: Mapping[str, int] = field(default_factory=dict)
 
 
+class _StateRow(NamedTuple):
+    state: str
+    n: int
+
+
+_STATES = "SELECT state, count(*) FROM annotation.held_penalty_state GROUP BY state"
+
+
 def held_states(conn: Conn) -> dict[str, int]:
     """待連結罰則各狀態的份數。"""
-    return {
-        str(state): cast(int, n)
-        for state, n in conn.execute(
-            "SELECT state, count(*) FROM annotation.held_penalty_state GROUP BY state"
-        )
-    }
+    return {r.state: r.n for r in fetch(conn, _STATES, None, _StateRow)}
 
 
 def _choose(
@@ -117,30 +129,42 @@ def _copy_for(statements: Sequence[Mapping[str, Any]], target: int) -> list[dict
     return out
 
 
+class _HeldRow(NamedTuple):
+    id: int
+    document: Mapping[str, Any]
+
+
+class _CandidateRow(NamedTuple):
+    statement_id: int
+    path: str
+
+
+_LINKABLE = (
+    "SELECT h.id, h.document FROM annotation.held_penalty AS h"
+    "  JOIN annotation.held_penalty_state AS st ON st.id = h.id"
+    " WHERE st.state = 'linkable' ORDER BY h.id"
+)
+
+_CANDIDATES = (
+    "SELECT statement_id, path FROM annotation.penalty_candidates(%s)"
+    " WHERE confirmed ORDER BY statement_id"
+)
+
+
 def link_penalties(conn: Conn, model: Model | None) -> Linked:
     """把可連的待連結罰則寫成處罰每個被處罰義務的罰則陳述；回傳寫入的陳述數與沒連成的原因。
 
     沒有模型時，已確認的候選有數個的待連結罰則留著不連。
     """
-    rows = conn.execute(
-        "SELECT h.id, h.document FROM annotation.held_penalty AS h"
-        "  JOIN annotation.held_penalty_state AS st ON st.id = h.id"
-        " WHERE st.state = 'linkable' ORDER BY h.id"
-    ).fetchall()
     written = 0
     dropped: list[str] = []
     ids: dict[str, int] = {}
-    for hid, document in rows:
-        doc = cast(Mapping[str, Any], document)
+    for pending in fetch(conn, _LINKABLE, None, _HeldRow):
+        doc = pending.document
         held: Sequence[Mapping[str, Any]] = doc["statements"]
-        names = f"held {hid} ({', '.join(str(s['id']) for s in held)})"
+        names = f"held {pending.id} ({', '.join(str(s['id']) for s in held)})"
         found = [
-            (cast(int, sid), str(path))
-            for sid, path in conn.execute(
-                "SELECT statement_id, path FROM annotation.penalty_candidates(%s)"
-                " WHERE confirmed ORDER BY statement_id",
-                (hid,),
-            )
+            (c.statement_id, c.path) for c in fetch(conn, _CANDIDATES, (pending.id,), _CandidateRow)
         ]
         if len(found) == 1:
             targets = [found[0][0]]
@@ -154,7 +178,7 @@ def link_penalties(conn: Conn, model: Model | None) -> Linked:
             continue
         copies = [c for t in targets for c in _copy_for(held, t)]
         try:
-            loaded = load(conn, {**doc, "statements": copies}, held_penalty=cast(int, hid))
+            loaded = load(conn, {**doc, "statements": copies}, held_penalty=pending.id)
         except AnnotationError as e:
             dropped.append(f"{names}: <invalid document: {e}>")
             continue

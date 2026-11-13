@@ -2,18 +2,19 @@
 
 解析（哪一天、哪個版本列、是否已確認）留在 SQL 的 `annotation.statement_versions_at`，這裡不重做：
 和推論用的是同一個函式，所以 `ListStatements` 看到的陳述與 `Evaluate` 用的陳述不會分岔。
+每個查詢的列有一個具名型別，欄位的型別與可否為 NULL 只在那裡宣告（次序同 SELECT）。
 """
 
 from collections import defaultdict
 from collections.abc import Collection
 from datetime import date
 from decimal import Decimal
-from typing import cast
+from typing import NamedTuple
 
 from envcite.ontology.v2 import ontology_pb2 as ont_pb
 from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite_ontology import reasoning_codec as codec
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch
 from envcite_ontology.reasoning.facts import Invalidated
 from envcite_ontology.store import LANGUAGE
 
@@ -98,6 +99,109 @@ _DEFINITION_SOURCES = """
       JOIN vocab.concept AS tk ON tk.id = t.term_concept_id
      WHERE t.id = ANY(%(ids)s)
 """
+_GUIDANCE = """
+    SELECT d.issuer, d.document_no, d.issued_on, d.rule_kind::text, d.subject,
+           coalesce(d.published_in, ''), coalesce(d.source_url, ''), array_agg(g.statement_id)
+      FROM guidance.for_statements(%(ids)s, %(decided)s) AS g
+      JOIN guidance.document AS d ON d.id = g.document_id
+     GROUP BY d.id
+     ORDER BY d.issued_on, d.id
+"""
+
+
+class _StatementRow(NamedTuple):
+    id: int
+    kind: str
+    modality: str | None
+    version_iri: str
+
+
+class _InvalidatedRow(NamedTuple):
+    statement_id: int
+    version_iri: str
+    ruling_no: str
+    invalid_from: date
+    partial: bool
+
+
+class _SlotRow(NamedTuple):
+    statement_id: int
+    role: str
+    concept: str | None
+    literal: str | None
+    liability: str | None
+
+
+class _ConditionRow(NamedTuple):
+    id: int
+    statement_id: int
+    role: str
+    disjunct: int
+    concept: str
+    comparator: str
+    threshold: Decimal | None
+    unit: str | None
+    negated: bool
+    needs_assessment: bool
+    value_concept: str | None
+    delegate_jurisdiction: str | None
+    delegate_scheme: str | None
+    delegate_local_id: str | None
+    delegate_path: str | None
+    permit: str | None
+    method: str | None
+    averaging: str | None
+
+
+class _ExceptionRow(NamedTuple):
+    exception: int
+    excluded: int
+
+
+class _OverrideRow(NamedTuple):
+    prevailing: int
+    subordinate: int
+    basis: str
+
+
+class _SanctionRow(NamedTuple):
+    statement_id: int
+    punishes: int
+    effect: str
+    amount_text: str | None
+    min_amount: Decimal | None
+    max_amount: Decimal | None
+    per_occasion: bool
+    discretionary: bool
+
+
+class _TriggerRow(NamedTuple):
+    statement_id: int
+    trigger: int
+    kind: str
+
+
+class _SourceRow(NamedTuple):
+    statement_id: int
+    version_iri: str
+
+
+class _DefinitionRow(NamedTuple):
+    id: int
+    version_iri: str
+    term: str
+    members: list[str]
+
+
+class _GuidanceRow(NamedTuple):
+    issuer: str
+    document_no: str
+    issued_on: date
+    rule_kind: str
+    subject: str
+    published_in: str
+    source_url: str
+    statement_ids: list[int]
 
 
 def definition_sources(
@@ -106,12 +210,10 @@ def definition_sources(
     """定義於 `on` 的出處：（版本 IRI，用語，成員），與推論讀的是同一個 `definitions_at`。"""
     if not definition_ids:
         return {}
-    rows = conn.execute(
-        _DEFINITION_SOURCES, {"language": LANGUAGE, "on": on, "ids": sorted(definition_ids)}
-    ).fetchall()
+    params = {"language": LANGUAGE, "on": on, "ids": sorted(definition_ids)}
     return {
-        cast(int, did): (str(iri), str(term), [str(m) for m in cast("list[str]", members)])
-        for did, iri, term, members in rows
+        r.id: (r.version_iri, r.term, r.members)
+        for r in fetch(conn, _DEFINITION_SOURCES, params, _DefinitionRow)
     }
 
 
@@ -120,55 +222,53 @@ def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListSta
     params = {"resource": resource_id, "language": LANGUAGE, "on": on or date.today()}
     invalidated = [
         codec.invalidated(
-            Invalidated(cast(int, sid), str(iri), str(no), cast(date, since), bool(partial))
+            Invalidated(r.statement_id, r.version_iri, r.ruling_no, r.invalid_from, r.partial)
         )
-        for sid, iri, no, since, partial in conn.execute(_INVALIDATED, params)
+        for r in fetch(conn, _INVALIDATED, params, _InvalidatedRow)
     ]
-    rows = conn.execute(_STATEMENTS, params).fetchall()
-    ids = [cast(int, r[0]) for r in rows]
+    rows = fetch(conn, _STATEMENTS, params, _StatementRow)
+    ids = [r.id for r in rows]
     if not ids:
         return pb.ListStatementsResponse(invalidated=invalidated)
     by_id = {"ids": ids}
 
     statements: dict[int, pb.Statement] = {}
-    for sid, kind, modality, iri in rows:
+    for row in rows:
         statement = pb.Statement(
-            id=cast(int, sid), kind=codec.STATEMENT_KIND[str(kind)], version_iri=str(iri)
+            id=row.id, kind=codec.STATEMENT_KIND[row.kind], version_iri=row.version_iri
         )
-        if modality is not None:
-            statement.modality = codec.NORM_MODALITY[str(modality)]
-        statements[cast(int, sid)] = statement
+        if row.modality is not None:
+            statement.modality = codec.NORM_MODALITY[row.modality]
+        statements[row.id] = statement
 
-    for sid, slot, code, literal, liability in conn.execute(_SLOTS, by_id):
-        out = statements[cast(int, sid)].slots.add(role=codec.SLOT_ROLE[str(slot)])
-        if code is not None:
-            out.concept = str(code)
+    for slot in fetch(conn, _SLOTS, by_id, _SlotRow):
+        out = statements[slot.statement_id].slots.add(role=codec.SLOT_ROLE[slot.role])
+        if slot.concept is not None:
+            out.concept = slot.concept
         else:
-            out.literal = str(literal)
-        if liability is not None:
-            out.liability_basis = codec.LIABILITY_BASIS[str(liability)]
+            out.literal = str(slot.literal)
+        if slot.liability is not None:
+            out.liability_basis = codec.LIABILITY_BASIS[slot.liability]
 
     _conditions(conn, by_id, statements)
 
-    for exception, excluded in conn.execute(_EXCEPTIONS, by_id):
-        statements[cast(int, exception)].exception_of.append(cast(int, excluded))
-    for sid, punishes, effect, text, low, high, per_occasion, discretionary in conn.execute(
-        _SANCTIONS, by_id
-    ):
-        sanction = statements[cast(int, sid)].sanction
-        sanction.punishes = cast(int, punishes)
-        sanction.effect = codec.LEGAL_EFFECT[str(effect)]
-        sanction.amount_text = str(text or "")
-        if low is not None:
-            sanction.min_amount = int(cast(Decimal, low))
-        if high is not None:
-            sanction.max_amount = int(cast(Decimal, high))
-        sanction.per_occasion = bool(per_occasion)
-        sanction.discretionary = bool(discretionary)
+    for exc in fetch(conn, _EXCEPTIONS, by_id, _ExceptionRow):
+        statements[exc.exception].exception_of.append(exc.excluded)
+    for sanc in fetch(conn, _SANCTIONS, by_id, _SanctionRow):
+        sanction = statements[sanc.statement_id].sanction
+        sanction.punishes = sanc.punishes
+        sanction.effect = codec.LEGAL_EFFECT[sanc.effect]
+        sanction.amount_text = sanc.amount_text or ""
+        if sanc.min_amount is not None:
+            sanction.min_amount = int(sanc.min_amount)
+        if sanc.max_amount is not None:
+            sanction.max_amount = int(sanc.max_amount)
+        sanction.per_occasion = sanc.per_occasion
+        sanction.discretionary = sanc.discretionary
     # 前提可能在別的法規（環境講習以他法的處分為前提）：識別碼照列，不限於本次列出的陳述
-    for sid, trigger, kind in conn.execute(_TRIGGERS, by_id):
-        statements[cast(int, sid)].sanction.triggers.add(
-            statement_id=cast(int, trigger), kind=codec.TRIGGER_KIND[str(kind)]
+    for trig in fetch(conn, _TRIGGERS, by_id, _TriggerRow):
+        statements[trig.statement_id].sanction.triggers.add(
+            statement_id=trig.trigger, kind=codec.TRIGGER_KIND[trig.kind]
         )
 
     return pb.ListStatementsResponse(
@@ -176,11 +276,11 @@ def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListSta
         invalidated=invalidated,
         overrides=[
             pb.Override(
-                prevailing=cast(int, w),
-                subordinate=cast(int, s),
-                basis=codec.OVERRIDE_BASIS[str(b)],
+                prevailing=r.prevailing,
+                subordinate=r.subordinate,
+                basis=codec.OVERRIDE_BASIS[r.basis],
             )
-            for w, s, b in conn.execute(_OVERRIDES, by_id)
+            for r in fetch(conn, _OVERRIDES, by_id, _OverrideRow)
         ],
     )
 
@@ -192,39 +292,35 @@ def _conditions(
     grouped: dict[tuple[int, str], dict[int, list[pb.Condition]]] = defaultdict(
         lambda: defaultdict(list)
     )
-    for row in conn.execute(_CONDITIONS, by_id):
-        cid, sid, role, disjunct, code, comparator, threshold, unit, negated, needs = row[:10]
-        value_concept, dl_jur, dl_scheme, dl_local, delegate_path, permit, method, averaging = row[
-            10:
-        ]
+    for r in fetch(conn, _CONDITIONS, by_id, _ConditionRow):
         condition = pb.Condition(
-            id=cast(int, cid),
-            concept=str(code),
-            comparator=codec.COMPARATOR[str(comparator)],
-            unit=str(unit or ""),
-            negated=bool(negated),
-            needs_assessment=bool(needs),
-            measurement_method=str(method or ""),
-            averaging_period=str(averaging or ""),
+            id=r.id,
+            concept=r.concept,
+            comparator=codec.COMPARATOR[r.comparator],
+            unit=r.unit or "",
+            negated=r.negated,
+            needs_assessment=r.needs_assessment,
+            measurement_method=r.method or "",
+            averaging_period=r.averaging or "",
         )
-        if threshold is not None:
-            condition.value.CopyFrom(codec.decimal(cast(Decimal, threshold)))
-        elif value_concept is not None:
-            condition.value_concept = str(value_concept)
-        elif delegate_path is not None:
+        if r.threshold is not None:
+            condition.value.CopyFrom(codec.decimal(r.threshold))
+        elif r.value_concept is not None:
+            condition.value_concept = r.value_concept
+        elif r.delegate_path is not None:
             condition.delegate.CopyFrom(
                 pb.Delegation(
                     identifier=ont_pb.LawIdentifier(
-                        jurisdiction=str(dl_jur),
-                        id_scheme=str(dl_scheme),
-                        local_id=str(dl_local),
+                        jurisdiction=r.delegate_jurisdiction or "",
+                        id_scheme=r.delegate_scheme or "",
+                        local_id=r.delegate_local_id or "",
                     ),
-                    provision_path=str(delegate_path),
+                    provision_path=r.delegate_path,
                 )
             )
-        elif permit is not None:
-            condition.delegate_permit = str(permit)
-        grouped[(cast(int, sid), str(role))][cast(int, disjunct)].append(condition)
+        elif r.permit is not None:
+            condition.delegate_permit = r.permit
+        grouped[(r.statement_id, r.role)][r.disjunct].append(condition)
 
     for (sid, role), disjuncts in grouped.items():
         statement = statements[sid]
@@ -236,35 +332,25 @@ def _conditions(
             requirement.any_of.add(all_of=conditions)
 
 
-_GUIDANCE = """
-    SELECT d.issuer, d.document_no, d.issued_on, d.rule_kind::text, d.subject,
-           coalesce(d.published_in, ''), coalesce(d.source_url, ''), array_agg(g.statement_id)
-      FROM guidance.for_statements(%(ids)s, %(decided)s) AS g
-      JOIN guidance.document AS d ON d.id = g.document_id
-     GROUP BY d.id
-     ORDER BY d.issued_on, d.id
-"""
-
-
 def guidance_for(
     conn: Conn, statement_ids: Collection[int], decided: date
 ) -> list[codec.GuidanceRef]:
     """處分日 `decided` 可附在這些陳述旁的行政規則（`guidance.for_statements`）。"""
     if not statement_ids:
         return []
-    rows = conn.execute(_GUIDANCE, {"ids": sorted(statement_ids), "decided": decided}).fetchall()
+    params = {"ids": sorted(statement_ids), "decided": decided}
     return [
         codec.GuidanceRef(
-            str(issuer),
-            str(no),
-            cast(date, on),
-            str(kind),
-            str(subject),
-            str(gazette),
-            str(url),
-            tuple(sorted(cast("list[int]", ids))),
+            r.issuer,
+            r.document_no,
+            r.issued_on,
+            r.rule_kind,
+            r.subject,
+            r.published_in,
+            r.source_url,
+            tuple(sorted(r.statement_ids)),
         )
-        for issuer, no, on, kind, subject, gazette, url, ids in rows
+        for r in fetch(conn, _GUIDANCE, params, _GuidanceRow)
     ]
 
 
@@ -272,7 +358,5 @@ def sources(conn: Conn, statement_ids: Collection[int], on: date) -> dict[int, s
     """陳述於 `on` 的出處（版本 IRI）。"""
     if not statement_ids:
         return {}
-    rows = conn.execute(
-        _SOURCES, {"language": LANGUAGE, "on": on, "ids": sorted(statement_ids)}
-    ).fetchall()
-    return {cast(int, sid): str(iri) for sid, iri in rows}
+    params = {"language": LANGUAGE, "on": on, "ids": sorted(statement_ids)}
+    return {r.statement_id: r.version_iri for r in fetch(conn, _SOURCES, params, _SourceRow)}

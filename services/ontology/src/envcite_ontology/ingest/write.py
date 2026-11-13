@@ -15,11 +15,11 @@
 import hashlib
 from dataclasses import dataclass
 from datetime import date
-from typing import cast
+from typing import NamedTuple
 
 from psycopg.types.range import Range
 
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, fetch_one, scalar
 from envcite_ontology.ingest.law import ParsedLaw, ParsedUnit
 
 #: 條文單元版本的效力區間：[起, 訖)；兩端皆空為「待確認」或「待命令」。
@@ -102,7 +102,8 @@ def _set_repeal(conn: Conn, resource: int, repeal: date | None) -> None:
 
 
 def _upsert_resource(conn: Conn, law: ParsedLaw) -> int:
-    row = conn.execute(
+    return scalar(
+        conn,
         "INSERT INTO corpus.legal_resource"
         " (jurisdiction, id_scheme, local_id, norm_kind, document_type, repealed_on)"
         " VALUES (%s, %s, %s, %s::corpus.norm_kind, %s, %s)"
@@ -118,25 +119,28 @@ def _upsert_resource(conn: Conn, law: ParsedLaw) -> int:
             law.document_type,
             None,
         ),
-    ).fetchone()
-    assert row is not None and isinstance(row[0], int)
-    return row[0]
+        int,
+    )
+
+
+class _ExpressionRow(NamedTuple):
+    id: int
+    version_date: date
 
 
 def _latest_expression(conn: Conn, resource: int) -> tuple[int, date] | None:
-    row = conn.execute(
+    return fetch_one(
+        conn,
         "SELECT id, version_date FROM corpus.legal_expression"
         " WHERE resource_id = %s AND language = 'zho' ORDER BY version_date DESC LIMIT 1",
         (resource,),
-    ).fetchone()
-    if row is None:
-        return None
-    assert isinstance(row[0], int) and isinstance(row[1], date)
-    return row[0], row[1]
+        _ExpressionRow,
+    )
 
 
 def _insert_expression(conn: Conn, resource: int, law: ParsedLaw) -> int:
-    row = conn.execute(
+    return scalar(
+        conn,
         "INSERT INTO corpus.legal_expression"
         " (resource_id, language, version_date, title, text_period, text_status, text_authority)"
         " VALUES (%s, 'zho', %s, %s, daterange(%s, NULL), %s::corpus.text_status, 'official_db')"
@@ -148,18 +152,19 @@ def _insert_expression(conn: Conn, resource: int, law: ParsedLaw) -> int:
             law.version_date,
             "available" if law.units else "unavailable",
         ),
-    ).fetchone()
-    assert row is not None and isinstance(row[0], int)
-    return row[0]
+        int,
+    )
 
 
 def _replace_events(conn: Conn, resource: int, law: ParsedLaw) -> None:
     """事件是沿革的純函式，整部取代；公布事件依日期連到版本日相同的版本。"""
     expressions = {
-        d: i
-        for i, d in conn.execute(
+        e.version_date: e.id
+        for e in fetch(
+            conn,
             "SELECT id, version_date FROM corpus.legal_expression WHERE resource_id = %s",
             (resource,),
+            _ExpressionRow,
         )
     }
     conn.execute("DELETE FROM corpus.lifecycle_event WHERE resource_id = %s", (resource,))
@@ -265,6 +270,12 @@ def _add_version(conn: Conn, resource: int, previous: int, law: ParsedLaw) -> No
     add_unit_versions(conn, resource, expression, law.units, repeal=law.abandoned_on)
 
 
+class _InForceRow(NamedTuple):
+    id: int
+    path: str
+    force: Range[date]
+
+
 def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
     """前一版各單元的效力止於新版的起點（表 tbl:actions 的「新增版本」）。
 
@@ -275,16 +286,19 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
     starts = [t.lower for t in target.values() if t is not None and t.lower is not None]
     law_start = min(starts) if starts else None
 
-    rows = conn.execute(
+    rows = fetch(
+        conn,
         "SELECT v.id, p.path, v.force_period FROM corpus.provision_version AS v"
         " JOIN corpus.provision AS p ON p.id = v.provision_id"
         " WHERE v.expression_id = %s AND v.superseded_at IS NULL AND v.force_period IS NOT NULL",
         (previous,),
-    ).fetchall()
-    for version_id, path, in_force in rows:
-        assert isinstance(in_force, Range) and in_force.lower is not None
-        if path in target:
-            new = target[path]
+        _InForceRow,
+    )
+    for row in rows:
+        in_force = row.force
+        assert in_force.lower is not None
+        if row.path in target:
+            new = target[row.path]
             if new is None or new.lower is None:
                 continue
             end = new.lower
@@ -296,7 +310,7 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
             continue
         conn.execute(
             "UPDATE corpus.provision_version SET superseded_at = now() WHERE id = %s",
-            (version_id,),
+            (row.id,),
         )
         if end > in_force.lower:
             conn.execute(
@@ -305,53 +319,67 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
                 "  commencement_rule)"
                 " SELECT provision_id, expression_id, resource_id, content, %s, commencement_rule"
                 "   FROM corpus.provision_version WHERE id = %s",
-                (Range(in_force.lower, end, "[)"), version_id),
+                (Range(in_force.lower, end, "[)"), row.id),
             )
         # 新版的起點不晚於舊版的起點：舊版從未有效，只結束、不補新列。
 
 
+class _VersionRow(NamedTuple):
+    id: int
+    path: str
+    sha: bytes
+    force: Interval
+    rule: str
+
+
+class _IdRow(NamedTuple):
+    id: int
+
+
 def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) -> Applied:
-    current: dict[str, tuple[int, bytes, Interval, str]] = {}
-    for version_id, path, sha, period, rule in conn.execute(
-        "SELECT v.id, p.path, v.content_sha256, v.force_period, v.commencement_rule::text"
-        "  FROM corpus.provision_version AS v"
-        "  JOIN corpus.provision AS p ON p.id = v.provision_id"
-        " WHERE v.expression_id = %s AND v.superseded_at IS NULL",
-        (expression,),
-    ):
-        current[cast(str, path)] = (
-            cast(int, version_id),
-            cast(bytes, sha),
-            cast(Interval, period),
-            cast(str, rule),
+    current = {
+        r.path: r
+        for r in fetch(
+            conn,
+            "SELECT v.id, p.path, v.content_sha256, v.force_period, v.commencement_rule::text"
+            "  FROM corpus.provision_version AS v"
+            "  JOIN corpus.provision AS p ON p.id = v.provision_id"
+            " WHERE v.expression_id = %s AND v.superseded_at IS NULL",
+            (expression,),
+            _VersionRow,
         )
+    }
     parsed = {u.path: u for u in law.units}
 
     text_changed = [
-        p for p in parsed if p not in current or current[p][1] != content_sha(parsed[p].content)
+        p for p in parsed if p not in current or current[p].sha != content_sha(parsed[p].content)
     ] + [p for p in current if p not in parsed]
     derived_changed = [
         p
         for p, u in parsed.items()
         if p in current
         and p not in text_changed
-        and (current[p][2] != force_period(u, repeal=law.abandoned_on) or current[p][3] != u.rule)
+        and (
+            current[p].force != force_period(u, repeal=law.abandoned_on)
+            or current[p].rule != u.rule
+        )
     ]
 
-    previous = conn.execute(
+    previous = fetch_one(
+        conn,
         "SELECT id FROM corpus.legal_expression"
         " WHERE resource_id = %s AND language = 'zho' AND version_date < %s"
         " ORDER BY version_date DESC LIMIT 1",
         (resource, law.version_date),
-    ).fetchone()
+        _IdRow,
+    )
     if previous is not None:
-        assert isinstance(previous[0], int)
-        _close_previous(conn, previous[0], law.units)
+        _close_previous(conn, previous.id, law.units)
 
     if text_changed or derived_changed:
         touched = (*text_changed, *derived_changed)
         replace = [p for p in touched if p in parsed]
-        ended = [current[p][0] for p in touched if p in current]
+        ended = [current[p].id for p in touched if p in current]
         if ended:
             conn.execute(
                 "UPDATE corpus.provision_version SET superseded_at = now() WHERE id = ANY(%s)",

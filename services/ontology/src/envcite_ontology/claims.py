@@ -61,13 +61,13 @@ import json
 import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import Any, NamedTuple
 
 import psycopg
 from psycopg.types.range import Range
 
 from envcite_ontology.corpus_ref import UnknownProvision, provision_id
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, fetch_one, scalar
 
 log = logging.getLogger(__name__)
 
@@ -272,6 +272,10 @@ def _punished(s: Mapping[str, Any]) -> str | int | None:
     return None if sanction.get("punishes") is None else str(sanction["punishes"])
 
 
+class _ConfirmedRow(NamedTuple):
+    confirmed: bool
+
+
 def _waiting(conn: Conn, statements: Sequence[Mapping[str, Any]], review: str) -> set[str]:
     """要存成待連結罰則的陳述 id：處罰的陳述未確認或沒有指明的罰則，加上以它們為前提或為例外者。"""
     in_doc = {str(s["id"]) for s in statements}
@@ -285,11 +289,13 @@ def _waiting(conn: Conn, statements: Sequence[Mapping[str, Any]], review: str) -
                 raise AnnotationError(f"引用了不存在的陳述：{target}")
             confirmed = review == "confirmed"
         elif isinstance(target, int):
-            row = conn.execute(
+            row = fetch_one(
+                conn,
                 "SELECT confirm_state = 'confirmed' FROM annotation.assertion WHERE id = %s",
                 (target,),
-            ).fetchone()
-            confirmed = bool(row and row[0])
+                _ConfirmedRow,
+            )
+            confirmed = row is not None and row.confirmed
         else:
             confirmed = False
         if not confirmed:
@@ -402,9 +408,20 @@ def _seal(conn: Conn, claim: int) -> int:
 
 
 def _one(conn: Conn, sql: str, *args: object) -> int:
-    row = conn.execute(sql, args).fetchone()
-    assert row is not None
-    return cast(int, row[0])
+    return scalar(conn, sql, args, int)
+
+
+class _IdRow(NamedTuple):
+    id: int
+
+
+class _ScopeRow(NamedTuple):
+    scope_resource_id: int | None
+
+
+class _ConceptRow(NamedTuple):
+    code: str
+    id: int
 
 
 def _concepts(
@@ -418,13 +435,15 @@ def _concepts(
     # 方案可限定在一部法規（立法定義的用語只及於本法）；沒有 law 則是跨法共用。
     scope: int | None = None
     if scheme.get("law") is not None:
-        row = conn.execute(
+        row = fetch_one(
+            conn,
             "SELECT id FROM corpus.legal_resource WHERE id_scheme = 'moj_pcode' AND local_id = %s",
             (scheme["law"],),
-        ).fetchone()
+            _IdRow,
+        )
         if row is None:
             raise AnnotationError(f"語料裡沒有法規 {scheme['law']}")
-        scope = cast(int, row[0])
+        scope = row.id
     scheme_id = _one(
         conn,
         "INSERT INTO vocab.concept_scheme (code, title, scope_resource_id) VALUES (%s, %s, %s)"
@@ -433,10 +452,13 @@ def _concepts(
         scheme["title"],
         scope,
     )
-    existing = conn.execute(
-        "SELECT scope_resource_id FROM vocab.concept_scheme WHERE id = %s", (scheme_id,)
-    ).fetchone()
-    if existing is not None and existing[0] != scope:
+    existing = fetch_one(
+        conn,
+        "SELECT scope_resource_id FROM vocab.concept_scheme WHERE id = %s",
+        (scheme_id,),
+        _ScopeRow,
+    )
+    if existing is not None and existing.scope_resource_id != scope:
         raise AnnotationError(f"詞彙方案「{scheme['code']}」已存在，且適用範圍與文件不同")
     for c in concepts:
         if "broader" in c:
@@ -459,11 +481,18 @@ def _concepts(
             )
         _matches(conn, cid, c["code"], c.get("matches") or {})
     return {
-        str(code): int(cid)  # type: ignore[call-overload]
-        for code, cid in conn.execute(
-            "SELECT code, id FROM vocab.concept WHERE scheme_id = %s", (scheme_id,)
+        r.code: r.id
+        for r in fetch(
+            conn,
+            "SELECT code, id FROM vocab.concept WHERE scheme_id = %s",
+            (scheme_id,),
+            _ConceptRow,
         )
     }
+
+
+class _ExternalRow(NamedTuple):
+    external_id: str
 
 
 def _matches(conn: Conn, concept_id: int, code: object, matches: Mapping[str, Any]) -> None:
@@ -475,13 +504,15 @@ def _matches(conn: Conn, concept_id: int, code: object, matches: Mapping[str, An
             " VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
             (concept_id, system, external),
         )
-        row = conn.execute(
+        row = fetch_one(
+            conn,
             "SELECT external_id FROM vocab.concept_match"
             " WHERE concept_id = %s AND external_system = %s",
             (concept_id, system),
-        ).fetchone()
-        if row is None or row[0] != external:
-            known = None if row is None else row[0]
+            _ExternalRow,
+        )
+        if row is None or row.external_id != external:
+            known = None if row is None else row.external_id
             raise AnnotationError(f"概念「{code}」在 {system} 已對映到 {known}，不是 {external}")
 
 
