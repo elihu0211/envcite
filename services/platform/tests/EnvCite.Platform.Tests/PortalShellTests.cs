@@ -53,7 +53,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
 
         // 目錄同步（共用的測試主機開著）只列給擁有者：設定與 token 只有擁有者能管。
         Assert.Equal(role == CustomerRoles.Owner, links.Contains($"{prefix}/directory"));
-        Assert.Equal([prefix, $"{prefix}/account"], links.Where(l => l != $"{prefix}/members" && l != $"{prefix}/history" && l != $"{prefix}/directory"));
+        Assert.Equal([prefix, $"{prefix}/laws", $"{prefix}/reasoning", $"{prefix}/account"], links.Where(l => l != $"{prefix}/members" && l != $"{prefix}/history" && l != $"{prefix}/directory"));
         // 個人設定（外觀）與個人的安全設定在帳號選單；選單也顯示目前是誰。
         Assert.Equal([$"{prefix}/settings", $"{prefix}/security", PasswordPage(tenant.Identifier)], MenuHrefs(home.Html));
         Assert.Contains(email, Menu(home.Html), StringComparison.Ordinal);
@@ -103,7 +103,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
 
         var home = await browser.GetAsync(prefix);
 
-        Assert.Equal([prefix, $"{prefix}/extra", $"{prefix}/members", $"{prefix}/account"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history" && l != $"{prefix}/directory"));
+        Assert.Equal([prefix, $"{prefix}/laws", $"{prefix}/reasoning", $"{prefix}/extra", $"{prefix}/members", $"{prefix}/account"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history" && l != $"{prefix}/directory"));
     }
 
     // 還在改初始密碼、註冊驗證器時只開那一頁：其他連結點了也會被導回去，所以沒有選單，只留登出。

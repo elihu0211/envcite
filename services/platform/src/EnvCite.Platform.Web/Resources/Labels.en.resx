@@ -167,4 +167,17 @@
   <data name="Outcome.directory.group_name_taken" xml:space="preserve"><value>Another group of this tenant already has this name.</value></data>
   <data name="Outcome.directory.group_invalid" xml:space="preserve"><value>Group name is required (max 200 chars).</value></data>
   <data name="Outcome.directory.group_member_invalid" xml:space="preserve"><value>Group members must be members of this tenant that directory sync manages.</value></data>
+  <data name="Outcome.module.unknown" xml:space="preserve"><value>Unknown module '{0}'.</value></data>
+  <data name="Outcome.module.disabled" xml:space="preserve"><value>Module '{0}' is not enabled for this tenant.</value></data>
+  <data name="Outcome.module.dependency_missing" xml:space="preserve"><value>Module '{0}' requires '{1}' to be enabled first.</value></data>
+  <data name="Outcome.module.unavailable_in_environment" xml:space="preserve"><value>Module '{0}' is not configured in this environment.</value></data>
+  <data name="Outcome.plan.required_for_module" xml:space="preserve"><value>The tenant has no plan assigned in the database; assign one first.</value></data>
+  <data name="Audit.Action.tenant.module_enabled" xml:space="preserve"><value>Module enabled for tenant</value></data>
+  <data name="Audit.Action.tenant.module_disabled" xml:space="preserve"><value>Module disabled for tenant</value></data>
+  <data name="Audit.Action.tenant.module_reset" xml:space="preserve"><value>Module reset to plan default</value></data>
+  <data name="Module.law-search" xml:space="preserve"><value>Law &amp; Article Search</value></data>
+  <data name="Module.law-corpus" xml:space="preserve"><value>Law Corpus &amp; Browser</value></data>
+  <data name="Module.evidence-grounding" xml:space="preserve"><value>Evidence Grounding</value></data>
+  <data name="Module.grounded-answer" xml:space="preserve"><value>Grounded AI Synthesis</value></data>
+  <data name="Module.normative-reasoning" xml:space="preserve"><value>Normative Reasoning</value></data>
 </root>

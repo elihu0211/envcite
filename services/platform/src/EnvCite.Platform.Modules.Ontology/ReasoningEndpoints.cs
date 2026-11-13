@@ -22,6 +22,7 @@ public static class ReasoningEndpoints
                     extensions: new Dictionary<string, object?> { ["code"] = outcome.Code, ["retryable"] = true })
                 : OntologyEndpoints.Present(outcome);
         })
+            .RequireModule(ModuleKeys.NormativeReasoning)
             .WithName("EvaluateReasoning")
             .WithTags("推論")
             .WithSummary("對案件事實推論")

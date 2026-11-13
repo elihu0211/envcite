@@ -10,7 +10,7 @@ namespace EnvCite.Platform.Modules.Conversations;
 /// 租戶只取自入口成員的 claim；不是入口成員（沒有 <see cref="PlatformClaimTypes.PortalUserId"/>）一律當作沒有方案。
 /// </summary>
 internal sealed class AskService(
-    TenantScopes tenants, ITenantDirectory directory, IAnswerAvailability availability, IConversationHistoryAvailability historyAvailability) : IAskService
+    TenantScopes tenants, ITenantDirectory directory, ITenantModules modules, IAnswerAvailability availability, IConversationHistoryAvailability historyAvailability) : IAskService
 {
     private static readonly AskCapabilities None = new(HasPlan: false, AiAnswer: false);
 
@@ -44,6 +44,9 @@ internal sealed class AskService(
                 var answered = await scope.Get<IGroundedAnswerer>().AnswerAsync(question, asOf, history, progress, cancellationToken);
                 return AdminOutcome.Ok(new AskResult(AskMode.Answer, StatusOf(answered.Status), answered.IsOk ? answered.Value : null));
             }
+
+            if (!capabilities.HasModule(ModuleKeys.LawSearch))
+                return AdminOutcome.Ok(noPlan);
 
             var searched = await scope.Get<ILawSearch>().SearchAsync(question, asOf, limit: null, cancellationToken);
             return AdminOutcome.Ok(new AskResult(AskMode.Search, StatusOf(searched.Status), Hits: searched.IsOk ? searched.Value : null));
@@ -93,7 +96,10 @@ internal sealed class AskService(
         if (await directory.FindAsync(scope.Tenant.Id, cancellationToken) is not { Plan: not null } summary)
             return None;
 
-        return new AskCapabilities(HasPlan: true, AiAnswer: summary.AiAnswer && availability.Available);
+        var enabled = modules.EnabledModules(summary.Identifier);
+        var aiAnswer = enabled.Contains(ModuleKeys.GroundedAnswer)
+            || (summary.AiAnswer && availability.Available && enabled.Contains(ModuleKeys.EvidenceGrounding));
+        return new AskCapabilities(HasPlan: true, AiAnswer: aiAnswer) { Modules = enabled };
     }
 
     private static AskStatus StatusOf(AdminStatus status) => status switch

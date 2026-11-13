@@ -52,6 +52,7 @@ public static partial class ConsultEndpoints
     public static RouteGroupBuilder MapConsultEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapPost("/ground", GroundAsync)
+            .RequireModule(ModuleKeys.EvidenceGrounding)
             .WithName("Ground")
             .WithTags("接地")
             .WithSummary("為問句備妥可引用的法源，或拒答")

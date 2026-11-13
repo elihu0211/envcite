@@ -540,4 +540,65 @@
   <data name="使用說明" xml:space="preserve"><value>How it works</value></data>
   <data name="關閉說明" xml:space="preserve"><value>Close</value></data>
   <data name="問問{0}" xml:space="preserve"><value>Ask {0}</value></data>
+  <data name="法規條文檢索" xml:space="preserve"><value>Law &amp; Article Search</value></data>
+  <data name="功能模組" xml:space="preserve"><value>Feature Modules</value></data>
+  <data name="控制此租戶可使用的本體查詢與推論能力。變更立即生效並寫入稽核；方案終止時一併重設。" xml:space="preserve"><value>Control which ontology query and reasoning capabilities are enabled for this tenant. Changes take effect immediately and are audited; ending the plan resets overrides.</value></data>
+  <data name="方案預設" xml:space="preserve"><value>Plan default</value></data>
+  <data name="營運者開啟" xml:space="preserve"><value>Operator enabled</value></data>
+  <data name="營運者關閉" xml:space="preserve"><value>Operator disabled</value></data>
+  <data name="重設為預設" xml:space="preserve"><value>Reset to default</value></data>
+  <data name="需先開啟前置模組" xml:space="preserve"><value>Requires prerequisite module</value></data>
+  <data name="目前尚未開啟任何查詢模組，請洽系統管理員。" xml:space="preserve"><value>No query modules are currently enabled for your organization. Please contact your administrator.</value></data>
+  <data name="法規沿革與條文瀏覽" xml:space="preserve"><value>Law Corpus &amp; Browser</value></data>
+  <data name="依複合自然鍵與時點日期查閱現行或歷史條文清單。" xml:space="preserve"><value>Browse current or historical law articles by natural key and point-in-time date.</value></data>
+  <data name="這個組織尚未開啟「法規沿革與條文瀏覽」模組。" xml:space="preserve"><value>The Law Corpus &amp; Browser module is not enabled for this organization.</value></data>
+  <data name="查詢條件" xml:space="preserve"><value>Query criteria</value></data>
+  <data name="管轄" xml:space="preserve"><value>Jurisdiction</value></data>
+  <data name="例如 TW-CENTRAL" xml:space="preserve"><value>e.g. TW-CENTRAL</value></data>
+  <data name="識別碼方案" xml:space="preserve"><value>ID scheme</value></data>
+  <data name="例如 moj_pcode" xml:space="preserve"><value>e.g. moj_pcode</value></data>
+  <data name="法規代碼" xml:space="preserve"><value>Law ID</value></data>
+  <data name="例如 O0020001" xml:space="preserve"><value>e.g. O0020001</value></data>
+  <data name="YYYY-MM-DD；留空表示現行" xml:space="preserve"><value>YYYY-MM-DD; leave blank for current</value></data>
+  <data name="查詢法規" xml:space="preserve"><value>Look up law</value></data>
+  <data name="制定日：" xml:space="preserve"><value>Enacted: </value></data>
+  <data name="這部法規在指定日期沒有條文。" xml:space="preserve"><value>This law has no articles on the specified date.</value></data>
+  <data name="條文清單" xml:space="preserve"><value>Articles</value></data>
+  <data name="條號" xml:space="preserve"><value>Article</value></data>
+  <data name="查詢法規失敗。" xml:space="preserve"><value>Failed to look up the law.</value></data>
+  <data name="規範推論評估" xml:space="preserve"><value>Normative Reasoning</value></data>
+  <data name="依行為日與裁處日有效之已驗證陳述，對案件事實進行確定性涵攝推論（僅供候選參考，系統不裁量）。" xml:space="preserve"><value>Evaluate case facts against verified normative statements effective on conduct and decision dates (candidate results only; the system does not adjudicate).</value></data>
+  <data name="這個組織尚未開啟「規範推論評估」模組。" xml:space="preserve"><value>The Normative Reasoning module is not enabled for this organization.</value></data>
+  <data name="案件事實與時點" xml:space="preserve"><value>Case facts &amp; dates</value></data>
+  <data name="案件事實透過加密表單送出，不會寫入網址或日誌。未填欄位視為「未知」，不會當作「否」或 0。" xml:space="preserve"><value>Case facts are submitted via POST and are never logged or placed in the URL. Blank fields mean unknown, not false or 0.</value></data>
+  <data name="行為日" xml:space="preserve"><value>Conduct date</value></data>
+  <data name="YYYY-MM-DD（必填）" xml:space="preserve"><value>YYYY-MM-DD (required)</value></data>
+  <data name="裁處日" xml:space="preserve"><value>Decision date</value></data>
+  <data name="YYYY-MM-DD（必填，不得早於行為日）" xml:space="preserve"><value>YYYY-MM-DD (required, on or after conduct date)</value></data>
+  <data name="行為終了日" xml:space="preserve"><value>Conduct end date</value></data>
+  <data name="YYYY-MM-DD（選填，起算裁處權時效）" xml:space="preserve"><value>YYYY-MM-DD (optional, for limitation period)</value></data>
+  <data name="同時觸犯刑事法律（第 26 條第 1 項）" xml:space="preserve"><value>Concurrent criminal offense (Art. 26(1))</value></data>
+  <data name="法院已宣告沒收（第 26 條第 1 項但書）" xml:space="preserve"><value>Court confiscation ordered (Art. 26(1) proviso)</value></data>
+  <data name="刑事命支付金額" xml:space="preserve"><value>Criminal payment ordered</value></data>
+  <data name="元，十進位數字（選填）" xml:space="preserve"><value>TWD, decimal (optional)</value></data>
+  <data name="違法所得利益" xml:space="preserve"><value>Gained benefit</value></data>
+  <data name="元，十進位數字（選填，第 18 條第 2 項）" xml:space="preserve"><value>TWD, decimal (optional, Art. 18(2))</value></data>
+  <data name="執行推論評估" xml:space="preserve"><value>Run evaluation</value></data>
+  <data name="推論候選結果" xml:space="preserve"><value>Candidate evaluation results</value></data>
+  <data name="沒有已確認的規範陳述產生裁處結論；這不代表合規。" xml:space="preserve"><value>No verified normative statements produced a verdict; this does not indicate compliance.</value></data>
+  <data name="候選結論" xml:space="preserve"><value>Candidate verdicts</value></data>
+  <data name="未知（省略）" xml:space="preserve"><value>Unknown (omit)</value></data>
+  <data name="是" xml:space="preserve"><value>Yes</value></data>
+  <data name="否" xml:space="preserve"><value>No</value></data>
+  <data name="法規" xml:space="preserve"><value>Law</value></data>
+  <data name="陳述" xml:space="preserve"><value>Statement</value></data>
+  <data name="候選判定" xml:space="preserve"><value>Candidate verdict</value></data>
+  <data name="缺漏事實數" xml:space="preserve"><value>Missing facts</value></data>
+  <data name="裁處時結論" xml:space="preserve"><value>At-decision verdicts</value></data>
+  <data name="期間法律變更組" xml:space="preserve"><value>Earlier law groups</value></data>
+  <data name="違憲失效排除" xml:space="preserve"><value>Invalidated statements</value></data>
+  <data name="授權鏈缺口" xml:space="preserve"><value>Delegation gaps</value></data>
+  <data name="語料未涵蓋法規" xml:space="preserve"><value>Uncovered laws</value></data>
+  <data name="推論評估失敗，請稍後再試。" xml:space="preserve"><value>Evaluation failed; please try again shortly.</value></data>
+  <data name="哪一天有效" xml:space="preserve"><value>Effective on</value></data>
 </root>

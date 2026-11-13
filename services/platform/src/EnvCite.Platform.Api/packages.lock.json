@@ -383,6 +383,7 @@
       "envcite.platform.modules.ontology": {
         "type": "Project",
         "dependencies": {
+          "EnvCite.Platform.Data": "[1.0.0, )",
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
           "Google.Protobuf": "[3.36.2, )",
           "Grpc.Net.ClientFactory": "[2.84.0, )",

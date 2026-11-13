@@ -76,6 +76,11 @@ public static class OutcomeCodes
     public const string DirectoryGroupNameTaken = "directory.group_name_taken";
     public const string DirectoryGroupInvalid = "directory.group_invalid";
     public const string DirectoryGroupMemberInvalid = "directory.group_member_invalid";
+    public const string ModuleUnknown = "module.unknown";
+    public const string ModuleDisabled = "module.disabled";
+    public const string ModuleDependencyMissing = "module.dependency_missing";
+    public const string ModuleUnavailableInEnvironment = "module.unavailable_in_environment";
+    public const string PlanRequiredForModule = "plan.required_for_module";
 
     /// <summary>所有代碼的英文說明；{0}、{1} 是 <see cref="AdminOutcome{T}.Args"/>。</summary>
     public static IReadOnlyDictionary<string, string> English { get; } = new Dictionary<string, string>
@@ -145,6 +150,11 @@ public static class OutcomeCodes
         [DirectoryGroupNameTaken] = "Another group of this tenant already has this name.",
         [DirectoryGroupInvalid] = "Group name is required (max 200 chars).",
         [DirectoryGroupMemberInvalid] = "Group members must be members of this tenant that directory sync manages.",
+        [ModuleUnknown] = "Unknown module '{0}'.",
+        [ModuleDisabled] = "Module '{0}' is not enabled for this tenant.",
+        [ModuleDependencyMissing] = "Module '{0}' requires '{1}' to be enabled first.",
+        [ModuleUnavailableInEnvironment] = "Module '{0}' is not configured in this environment.",
+        [PlanRequiredForModule] = "The tenant has no plan assigned in the database; assign one first.",
     }.ToFrozenDictionary();
 
     /// <summary>代碼的英文說明（填入參數）；不認得的代碼原樣回傳。</summary>

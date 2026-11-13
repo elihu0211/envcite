@@ -22,6 +22,8 @@ public static class OntologyModule
         services.AddSectionOptions<LawSearchOptions, LawSearchOptionsValidator>();
         services.AddScoped<ILawSearch, LawSearch>();
         services.AddScoped<OntologyGateway>();
+        services.AddSingleton<ILawCorpusService, LawCorpusService>();
+        services.AddSingleton<INormativeReasoningService, NormativeReasoningService>();
         return services;
     }
 }

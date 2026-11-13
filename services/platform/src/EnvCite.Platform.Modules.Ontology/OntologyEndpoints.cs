@@ -44,6 +44,7 @@ public static class OntologyEndpoints
         v1.MapGet("/laws/{jurisdiction}/{idScheme}/{localId}", async (string jurisdiction, string idScheme, string localId, string? asOf,
             OntologyGateway gateway, CancellationToken ct) =>
             Present(await gateway.GetLawAsync(jurisdiction, idScheme, localId, asOf, ct)))
+            .RequireModule(ModuleKeys.LawCorpus)
             .WithName("GetLaw")
             .WithTags("法規")
             .WithSummary("取得法規")
@@ -58,6 +59,7 @@ public static class OntologyEndpoints
         v1.MapGet("/laws/{jurisdiction}/{idScheme}/{localId}/articles", async (string jurisdiction, string idScheme, string localId, string? asOf,
             OntologyGateway gateway, CancellationToken ct) =>
             Present(await gateway.ListArticlesAsync(jurisdiction, idScheme, localId, asOf, ct)))
+            .RequireModule(ModuleKeys.LawCorpus)
             .WithName("ListArticles")
             .WithTags("法規")
             .WithSummary("列出法規某日有效的各條")
@@ -80,6 +82,7 @@ public static class OntologyEndpoints
                     _ => result.Problem(StatusCodes.Status503ServiceUnavailable, "Ontology service unavailable."),
                 };
             })
+            .RequireModule(ModuleKeys.LawSearch)
             .WithName("SearchArticles")
             .WithTags("法規")
             .WithSummary("搜尋條文")
