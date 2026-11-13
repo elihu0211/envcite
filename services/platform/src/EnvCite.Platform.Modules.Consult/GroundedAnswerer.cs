@@ -298,11 +298,12 @@ internal sealed partial class GroundedAnswerer(
     /// <summary>
     /// 送給模型的「問題」。使用者只給主題詞時沒有問句可答，模型會因此回「證據不足」；改成明確的任務句，
     /// 判斷在程式裡（<see cref="BareTopic"/>），不靠提示詞。取證據仍用使用者的原詞（檢索是字面比對）。
-    /// 任務句只要求說明證據裡有的內容：證據真的沒有談到這個主題時，模型仍可回「證據不足」。
+    /// 任務句只要求說明證據裡有的內容，而且明說「缺哪一項就不寫哪一項」：先前列出「行為、義務與罰則」三項時，
+    /// 證據只涵蓋行為規定，模型仍整個回了「證據不足」。只有證據完全沒有談到這個主題時，模型才該回「證據不足」。
     /// </summary>
     internal static string TaskOf(string question) =>
         BareTopic.Is(question)
-            ? $"使用者只輸入了主題詞「{question}」，沒有提出具體問題。請依證據說明與它有關的規定：規範的行為、義務與罰則（證據裡沒有的項目不要寫）。"
+            ? $"使用者只輸入了主題詞「{question}」，沒有提出具體問題。請依證據說明與它有關的規定；證據裡有什麼就寫什麼，沒有談到的項目（例如罰則）就不寫，不要因為缺了某一項就整個回「證據不足」。只有證據完全沒有談到這個主題時，才回「證據不足」。"
             : question;
 
     private async Task<(string? Text, UsageDetails? Usage)> CompleteAsync(
