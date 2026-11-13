@@ -100,6 +100,14 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
     }
 
     [Fact]
+    public async Task TheHomeComposerGrowsSubmitsOnEnterAndKeepsItsHelpInANativeSheet()
+    {
+        var chat = await RunAsync("composer", consent: true);
+
+        Assert.Single(chat.Calls); // 只有 Enter 送出的那題有證據、呼叫了模型；範例被假的 consult 拒答；Shift+Enter、組字中、空白都沒有送出
+    }
+
+    [Fact]
     public async Task TheShellDoesNotMoveBetweenTheInteractiveWorkspaceAndTheStaticPages()
     {
         var chat = await RunAsync("shell", consent: true);

@@ -25,12 +25,12 @@ public sealed partial class ChatPage
     private ElementReference _input;
     private IJSObjectReference? _module;
     private string _query = string.Empty;
-    private string _asOf = string.Empty;
     private string? _name;
     private bool _notFound;
     private bool _subscribed;
     private bool _scroll;
     private bool _refocus;
+    private bool _focusOnReady;
 
     public ChatPage() => _ct = _cts.Token;
 
@@ -73,7 +73,13 @@ public sealed partial class ChatPage
         {
             // OnAfterRender 只在互動式渲染才會跑（預先渲染沒有）：到這裡就是 circuit 已經接手。
             _interactive = true;
+            _focusOnReady = Session.Turns.Count == 0; // 首頁一開就能打字；輸入框要等這次重畫才啟用，下一輪再聚焦
             StateHasChanged();
+        }
+        else if (_focusOnReady)
+        {
+            _focusOnReady = false;
+            await FocusComposerAsync();
         }
 
         try
@@ -105,12 +111,30 @@ public sealed partial class ChatPage
         _ => L["正在查找法源…"],
     };
 
+    /// <summary>
+    /// 桌機（有精準的指標）一開首頁就聚焦輸入框；觸控裝置不聚焦，否則鍵盤會一開頁就彈出來蓋住畫面。
+    /// 判斷在瀏覽器端（<c>pointer: fine</c>），伺服器不知道。
+    /// </summary>
+    private async Task FocusComposerAsync()
+    {
+        try
+        {
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./_content/EnvCite.Platform.Web/Components/Portal/Workspace/ChatPage.razor.js");
+            await _module.InvokeVoidAsync("focusComposer");
+        }
+        catch (JSDisconnectedException)
+        {
+            // 連線已斷：沒有畫面可以聚焦了。
+        }
+    }
+
     private Task SubmitAsync() => AskAsync(_query);
 
+    // 首頁沒有手動日期：一律查現行（asOf 為空）。時點查詢由 REST 的 asOf 與 MCP 工具提供。
     private async Task AskAsync(string question)
     {
         _query = string.Empty;
-        await Session.AskAsync(await UserAsync(), question, _asOf, _ct);
+        await Session.AskAsync(await UserAsync(), question, null, _ct);
         _refocus = true;
 
         // 對話被記進歷史後，網址換成這串對話的 Id：重新整理、分享給自己都回到同一串。同一個頁面，不重新載入。

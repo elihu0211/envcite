@@ -500,6 +500,7 @@ h1[tabindex="-1"]:focus-visible {
     }
 
     .ep-menu,
+    .ep-sheet,
     .ep-alert {
         animation-duration: var(--ep-motion-slow) !important;
         transition-duration: var(--ep-motion-fast) !important;
@@ -679,18 +680,17 @@ th[aria-sort="descending"] .ep-icon,
 }
 
 .ep-secondary,
-.ep-bubble-meta,
 .ep-status,
 .ep-hint,
 .ep-note,
-.ep-ask-note {
+.ep-ask-note,
+.ep-text-button {
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-s-size);
     letter-spacing: var(--ep-body-s-tracking);
 }
 
-.ep-secondary,
-.ep-bubble-meta {
+.ep-secondary {
     display: block;
 }
 
@@ -1950,10 +1950,11 @@ a.ep-brand {
     max-inline-size: var(--ep-ask-width);
 }
 
+/* 招呼固定在畫面上方三分之一，不垂直置中：多行輸入長高時往下長，招呼與輸入框的上緣不跟著位移。 */
 .ep-ask[data-state="empty"] {
-    justify-content: center;
+    justify-content: flex-start;
     gap: var(--ep-space-6);
-    padding-block-end: var(--ep-space-12);
+    padding-block: 18dvh var(--ep-space-12);
 }
 
 .ep-ask-hero {
@@ -1966,11 +1967,6 @@ a.ep-brand {
     line-height: var(--ep-headline-m-leading);
     letter-spacing: var(--ep-headline-m-tracking);
     font-weight: var(--ep-body-l-weight); /* 招呼不加粗：版面的重量留給內容 */
-}
-
-.ep-ask-lead {
-    margin: var(--ep-space-2) 0 0;
-    color: var(--ep-text-secondary);
 }
 
 .ep-thread {
@@ -2007,20 +2003,16 @@ a.ep-brand {
     background: color-mix(in srgb, var(--ep-bg) 85%, transparent);
 }
 
-/* 控制項外框的橫列：問答框是一張卡片，日期芯片是藥丸。外框平時是細線，游標移上去或聚焦時加深。 */
-.ep-composer,
-.ep-date-chip {
-    align-items: center;
-    gap: var(--ep-space-2);
-    border: 1px solid var(--ep-border-subtle);
-}
-
-/* 問答框：輸入在上，工具列（日期、新對話、送出）在同一張卡片的下緣。平面，沒有陰影。 */
+/* 問答框：輸入在左、圓形送出鈕貼在右下角，同一張卡片。多行輸入自動長高（上限約八行，再多在框內捲動），
+   長高時送出鈕留在最後一行旁邊。平面，沒有陰影；外框平時是細線，游標移上去或聚焦時加深。
+   --ep-composer-row 是單行的高度（觸控 44px、滑鼠收成緊湊），輸入的內距與送出鈕的尺寸都由它推得。 */
 .ep-composer {
+    --ep-composer-row: var(--ep-touch-target);
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    padding: var(--ep-space-2) var(--ep-space-3);
+    align-items: flex-end;
+    gap: var(--ep-space-2);
+    padding: var(--ep-space-1) var(--ep-space-1) var(--ep-space-1) var(--ep-space-4);
+    border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-sheet);
     background: var(--ep-surface);
     transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
@@ -2036,20 +2028,22 @@ a.ep-brand {
     border-color: var(--ep-border-control);
 }
 
-/* 外框裡的裸輸入：問答框與日期芯片。環畫在外框上，這裡不畫。 */
-.ep-composer-input,
-.ep-date-chip input {
+/* 外框裡的裸輸入（多行 textarea）：環畫在外框上，這裡不畫。單行時文字在 --ep-composer-row 的正中（上下內距由行高推得）。
+   field-sizing: content 讓它依內容長高，不支援的瀏覽器由 forms.js 補；沒有 JavaScript 時維持 rows 指定的行數。 */
+.ep-composer-input {
+    flex: 1;
+    min-inline-size: 0;
+    box-sizing: border-box;
+    max-block-size: calc(7lh + var(--ep-composer-row));
+    margin: 0;
+    padding: calc((var(--ep-composer-row) - 1lh) / 2) 0;
     border: 0;
     background: transparent;
     color: var(--ep-text);
     font: inherit;
-}
-
-.ep-composer-input {
-    min-inline-size: 0;
-    text-overflow: ellipsis; /* 窄螢幕上提示文字放不下時收成「…」，不是被切一半 */
-    min-block-size: var(--ep-touch-target);
-    padding: 0;
+    resize: none;
+    overflow-y: auto;
+    field-sizing: content;
 }
 
 .ep-composer-input:focus,
@@ -2057,11 +2051,10 @@ a.ep-brand {
     outline: none; /* 焦點環畫在整個輸入框容器上（:focus-within） */
 }
 
-.ep-composer-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--ep-space-2);
+/* 首頁（還沒問）：輸入框是主角，從兩行高開始；問了之後收成單行貼在底部。
+   field-sizing: content 會忽略 rows，所以最小高度寫在這裡（rows 只給不支援它的瀏覽器）。 */
+.ep-ask[data-state="empty"] .ep-composer-input {
+    min-block-size: calc(var(--ep-composer-row) + 1lh);
 }
 
 /* 送出：實心的反差塊（淺色主題是深色、深色主題是淺色），靠右；彩色只留給焦點與連結。 */
@@ -2073,13 +2066,23 @@ a.ep-brand {
     color: var(--ep-on-ink);
 }
 
-.ep-composer-bar .ep-send {
-    margin-inline-start: auto;
-}
-
 .ep-send:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+/* 「新對話」：問了之後輸入框上面的一顆藥丸，靠起始邊。 */
+.ep-composer-form > .ep-new-chat {
+    align-self: flex-start;
+}
+
+/* 輸入框底下只有一行極簡提示加一顆開「使用說明」的小鈕；完整說明收在原生 popover（點外面或按 Esc 就關，不需要 JavaScript）。 */
+.ep-ask-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    column-gap: var(--ep-space-1);
 }
 
 .ep-ask-note {
@@ -2088,9 +2091,95 @@ a.ep-brand {
     text-align: center;
 }
 
-.ep-date-chip {
-    display: inline-flex;
-    padding-inline: var(--ep-space-3);
+.ep-text-button {
+    min-block-size: var(--ep-touch-target);
+    padding-inline: var(--ep-space-2);
+    border: 0;
+    background: transparent;
+    color: var(--ep-link); /* 字級與字距來自上面小字的共用規則；這裡只換成連結色 */
+    font-family: inherit;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .ep-text-button:hover {
+        text-decoration: underline;
+    }
+}
+
+/* 說明面板：置中的小卡片，原生 popover（頂層、Esc 與點外面關閉）。進出場與選單同一套（淡入加輕微縮放），
+   底下的畫面壓暗；使用者要求減少動態時由全域規則收成淡入淡出。 */
+.ep-sheet {
+    position: fixed;
+    inset: 0;
+    box-sizing: border-box;
+    inline-size: min(calc(100% - var(--ep-space-4) * 2), var(--ep-measure-narrow));
+    block-size: fit-content;
+    max-block-size: calc(100dvh - var(--ep-space-8));
+    margin: auto;
+    padding: var(--ep-space-4) var(--ep-space-6);
+    overflow-y: auto;
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-sheet);
+    background: var(--ep-surface);
+    color: var(--ep-text);
+    box-shadow: var(--ep-elevation-3);
+    opacity: 0;
+    scale: var(--ep-motion-scale);
+    transition:
+        opacity var(--ep-motion-fast) var(--ep-motion-ease-exit),
+        scale var(--ep-motion-fast) var(--ep-motion-ease-exit),
+        display var(--ep-motion-fast) allow-discrete,
+        overlay var(--ep-motion-fast) allow-discrete;
+}
+
+.ep-sheet:popover-open {
+    opacity: 1;
+    scale: 1;
+    transition-timing-function: var(--ep-motion-ease-enter);
+}
+
+.ep-sheet::backdrop {
+    background-color: transparent;
+    transition:
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-exit),
+        display var(--ep-motion-fast) allow-discrete,
+        overlay var(--ep-motion-fast) allow-discrete;
+}
+
+.ep-sheet:popover-open::backdrop {
+    background-color: var(--ep-scrim);
+}
+
+@starting-style {
+    .ep-sheet:popover-open {
+        opacity: 0;
+        scale: var(--ep-motion-scale);
+    }
+
+    .ep-sheet:popover-open::backdrop {
+        background-color: transparent;
+    }
+}
+
+.ep-sheet-title {
+    margin: 0 0 var(--ep-space-3);
+}
+
+.ep-sheet-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-2);
+    margin: 0;
+    padding-inline-start: var(--ep-space-4);
+    font-size: var(--ep-body-m-size);
+    line-height: var(--ep-body-m-leading);
+}
+
+.ep-sheet-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-block-start: var(--ep-space-3);
 }
 
 /* 可換行的動作列，間距二階：範例芯片置中，其餘靠左。 */
@@ -2116,7 +2205,6 @@ a.ep-brand {
 }
 
 /* 字級寫在 font 簡寫之後，藥丸才不會被繼承字型蓋掉。 */
-.ep-date-chip,
 .ep-chip {
     min-block-size: var(--ep-touch-target);
     border-radius: var(--ep-radius-pill);
@@ -2125,21 +2213,20 @@ a.ep-brand {
     font-size: var(--ep-label-m-size);
 }
 
-/* 滑鼠操作：工具列與芯片收成緊湊高度；觸控裝置維持 44px。 */
+/* 滑鼠操作：輸入框的單行、送出鈕與芯片收成緊湊高度；觸控裝置維持 44px。 */
 @media (pointer: fine) {
-    .ep-date-chip,
     .ep-chip,
-    .ep-composer-bar .ep-send {
+    .ep-text-button {
         min-block-size: var(--ep-control-height);
     }
 
-    .ep-composer-bar .ep-send {
+    .ep-composer {
+        --ep-composer-row: var(--ep-control-height);
+    }
+
+    .ep-composer .ep-send {
         inline-size: var(--ep-control-height);
         block-size: var(--ep-control-height);
-    }
-
-    .ep-composer-input {
-        min-block-size: var(--ep-control-height);
     }
 }
 

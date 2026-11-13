@@ -1,5 +1,12 @@
 // 新的一個回合出現時，把它的開頭捲進畫面（問題在上、答案在下方展開），而不是停在舊的位置或硬捲到最底。
 // 使用者要求減少動態時不做捲動動畫。
+// 桌機一開首頁就聚焦輸入框（指標精準、有滑鼠）；觸控裝置不聚焦，鍵盤不會一開頁就彈出來。
+export function focusComposer() {
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+        document.getElementById("query")?.focus({ preventScroll: true });
+    }
+}
+
 export function scrollToLastTurn() {
     const turns = document.querySelectorAll(".ep-turn");
     const last = turns[turns.length - 1];

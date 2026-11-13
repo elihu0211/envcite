@@ -42,7 +42,6 @@
         {
             <header class="ep-ask-hero">
                 <h1 class="ep-ask-title">@(_name is null ? L["你好"] : L["你好，{0}", _name])</h1>
-                <p class="ep-ask-lead">@L["想查哪一條法規？"]</p>
             </header>
         }
         else
@@ -52,13 +51,7 @@
                 @foreach (var turn in Session.Turns)
                 {
                     <div class="ep-turn">
-                        <p class="ep-bubble">
-                            @turn.Question
-                            @if (!string.IsNullOrEmpty(turn.AsOfLabel))
-                            {
-                                <span class="ep-bubble-meta">@turn.AsOfLabel</span>
-                            }
-                        </p>
+                        <p class="ep-bubble">@turn.Question</p>
 
                         <div class="ep-answer" aria-live="polite">
                             @switch (turn.State)
@@ -95,7 +88,7 @@
                                     break;
                                 case TurnState.Listed:
                                     <p class="ep-status" role="status">
-                                        @(turn.Hits!.Count == 0 ? L["沒有符合的條文。試試其他說法，或換一天。"] : L["找到 {0} 條（相關度高的在前）。", turn.Hits.Count])
+                                        @(turn.Hits!.Count == 0 ? L["沒有符合的條文。試試其他說法。"] : L["找到 {0} 條（相關度高的在前）。", turn.Hits.Count])
                                     </p>
                                     @foreach (var hit in turn.Hits)
                                     {
@@ -119,47 +112,63 @@
             </div>
         }
 
+        @* 輸入框：多行、自動長高；Enter 送出、Shift+Enter 換行（桌機；觸控裝置的 Enter 是換行），輸入法組字中的 Enter 不送出
+           ——這些由 forms.js 的 data-composer 處理，沒有它時仍是一般的表單。送出鈕在有字之前停用。 *@
         <form class="ep-composer-form" @onsubmit="SubmitAsync">
+            @if (Session.Turns.Count > 0)
+            {
+                <button type="button" class="ep-chip ep-new-chat" @onclick="NewConversation">@L["新對話"]</button>
+            }
+
             <div class="ep-composer">
                 <label for="query" class="ep-visually-hidden">@L["關鍵字"]</label>
-                <input id="query" type="search" class="ep-composer-input" maxlength="500" required autocomplete="off" enterkeyhint="search"
-                       placeholder="@L["輸入關鍵字，例如：噪音管制標準"]" aria-describedby="query-hint"
-                       @ref="_input" @bind="_query" @bind:event="oninput" disabled="@(Session.Busy || !_interactive)" />
-                <div class="ep-composer-bar">
-                    <label class="ep-date-chip" for="asof">
-                        <span>@L["哪一天有效"]</span>
-                        <input id="asof" type="date" value="@_asOf" @onchange="e => _asOf = e.Value?.ToString() ?? string.Empty" aria-describedby="query-hint" />
-                    </label>
-                    @if (Session.Turns.Count > 0)
-                    {
-                        <button type="button" class="ep-chip" @onclick="NewConversation">@L["新對話"]</button>
-                    }
-                    <button type="submit" class="ep-send" aria-label="@L["搜尋"]" disabled="@(Session.Busy || !_interactive)"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
-                </div>
+                <textarea id="query" class="ep-composer-input" data-composer rows="@(Session.Turns.Count == 0 ? 2 : 1)" maxlength="500" required autocomplete="off" enterkeyhint="enter"
+                          placeholder="@L["問問{0}", Brand.Name]"
+                          @ref="_input" @bind="_query" @bind:event="oninput" disabled="@(Session.Busy || !_interactive)"></textarea>
+                <button type="submit" class="ep-send" aria-label="@L["搜尋"]" disabled="@(Session.Busy || !_interactive || string.IsNullOrWhiteSpace(_query))"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
             </div>
 
             @if (Session.Turns.Count == 0)
             {
-                <div class="ep-examples" aria-label="@L["範例"]">
+                <div class="ep-examples" role="group" aria-label="@L["範例"]">
                     @foreach (var example in Examples)
                     {
                         <button type="button" class="ep-chip" @onclick="() => AskAsync(example)" disabled="@(Session.Busy || !_interactive)">@example</button>
                     }
                 </div>
-            }
 
-            <p id="query-hint" class="ep-ask-note">@L["用條文裡會出現的詞，空白分隔。不填日期就是現行；查行為發生當時適用的條文，請填那一天。"]@if (History.Enabled)
-            {
-                <text>@L["你的提問會存在"]<a href="@($"{PortalPaths.Home(Tenant)}/history")">@L["對話紀錄"]</a>@L["，只有你看得到，{0} 天後自動刪除，也可以隨時自己刪。", History.RetentionDays]</text>
+                @* 首頁只留一行極簡提示；完整說明（怎麼輸入、紀錄、資料送到哪裡）收在原生 popover，點「使用說明」才開。
+                   資料外送的揭露不能消失，所以在面板裡；每則 AI 回答自己另有「請核對出處」的提示。 *@
+                <div class="ep-ask-foot">
+                    @if (Session.Capabilities.AiAnswer)
+                    {
+                        <p class="ep-ask-note">@L["回答由 AI 產生，請核對出處。"]</p>
+                    }
+                    <button type="button" class="ep-text-button" popovertarget="ask-info">@L["使用說明"]</button>
+                </div>
+
+                <div id="ask-info" class="ep-sheet" popover role="dialog" aria-labelledby="ask-info-title">
+                    <h2 id="ask-info-title" class="ep-section-title ep-sheet-title">@L["使用說明"]</h2>
+                    <ul class="ep-sheet-list">
+                        <li>@L["用條文裡會出現的詞，空白分隔。"]</li>
+                        @if (History.Enabled)
+                        {
+                            <li>@L["你的提問會存在"]<a href="@($"{PortalPaths.Home(Tenant)}/history")">@L["對話紀錄"]</a>@L["，只有你看得到，{0} 天後自動刪除，也可以隨時自己刪。", History.RetentionDays]</li>
+                        }
+                        else
+                        {
+                            <li>@L["查詢文字不會被記錄，只記一次搜尋的次數。"]</li>
+                        }
+                        @if (Session.Capabilities.AiAnswer)
+                        {
+                            <li>@L["回答由 AI 產生：你的問題與相關條文會送到模型服務。"]</li>
+                        }
+                    </ul>
+                    <div class="ep-sheet-actions">
+                        <button type="button" class="ep-btn ep-btn-quiet" popovertarget="ask-info" popovertargetaction="hide">@L["關閉說明"]</button>
+                    </div>
+                </div>
             }
-            else
-            {
-                <text>@L["查詢文字不會被記錄，只記一次搜尋的次數。"]</text>
-            }
-            @if (Session.Capabilities.AiAnswer)
-            {
-                <text> @L["回答由 AI 產生：你的問題與相關條文會送到模型服務。"]</text>
-            }</p>
         </form>
     }
 </div>

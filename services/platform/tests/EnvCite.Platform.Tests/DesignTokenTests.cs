@@ -600,6 +600,38 @@ public static partial class DesignTokenTests
         Assert.Matches(@"@container ep-table \(max-width: 36rem\)[^@]*td\.ep-row-actions,\s*\.ep-cards table tbody tr td\.ep-cell-actions \{\s*display: flex", css);
     }
 
+    // 首頁的 AI 輸入：多行輸入依內容長高（原生 field-sizing，Firefox 由 forms.js 補）、有上限；單行的高度（觸控 44px、滑鼠緊湊）
+    // 是一個變數，輸入的內距與送出鈕都由它推；沒有日期芯片；說明面板是原生 popover，進出場與選單同一套。
+    // Enter 送出、Shift+Enter 換行、組字中不送出，由 forms.js 守住。
+    [Fact]
+    public static void TheAskComposerGrowsWithItsTextAndKeepsItsHelpInANativeSheet()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
+
+        var input = CssBlock(css, ".ep-composer-input");
+        Assert.Contains("field-sizing: content", input, StringComparison.Ordinal);
+        Assert.Contains("resize: none", input, StringComparison.Ordinal);
+        Assert.Contains("max-block-size: calc(7lh + var(--ep-composer-row))", input, StringComparison.Ordinal);
+        Assert.Contains("--ep-composer-row: var(--ep-touch-target)", CssBlock(css, ".ep-composer"), StringComparison.Ordinal);
+        Assert.Matches(@"@media \(pointer: fine\) \{[^@]*\.ep-composer \{\s*--ep-composer-row: var\(--ep-control-height\)", css);
+        Assert.DoesNotContain("ep-date-chip", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-composer-bar", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-bubble-meta", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-ask-lead", css, StringComparison.Ordinal); // 首頁沒有第二行說明
+
+        var sheet = CssBlock(css, ".ep-sheet");
+        Assert.Contains("allow-discrete", sheet, StringComparison.Ordinal); // popover 開關是 display 的離散切換
+        Assert.Contains(".ep-sheet:popover-open", css, StringComparison.Ordinal);
+        Assert.Matches(@"@media \(prefers-reduced-motion: reduce\) \{[^@]*\.ep-sheet,", css);
+
+        Assert.Contains("textarea[data-composer]", script, StringComparison.Ordinal);
+        Assert.Contains("event.isComposing || event.keyCode === 229", script, StringComparison.Ordinal);
+        Assert.Contains("requestSubmit()", script, StringComparison.Ordinal);
+        Assert.Contains("(hover: hover) and (pointer: fine)", script, StringComparison.Ordinal); // 觸控裝置的 Enter 是換行
+        Assert.Contains("CSS.supports(\"field-sizing\", \"content\")", script, StringComparison.Ordinal);
+    }
+
     // 六格驗證碼：真的輸入框疊在方格上、文字與游標透明（輸入與自動填入都走它），沒有 JavaScript 時方格不出現。
     [Fact]
     public static void TheOtpBoxesSitOnTopOfARealInput()

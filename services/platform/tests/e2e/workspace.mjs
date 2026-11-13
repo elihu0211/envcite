@@ -237,6 +237,78 @@ const scenarios = {
         });
     },
 
+    // 首頁的輸入區：一開就聚焦、沒有日期欄與長段說明；多行輸入自動長高；Enter 送出，Shift+Enter 換行，
+    // 輸入法組字中的 Enter 與空白都不送出；範例點了就送出；說明收在原生 popover（可開、可用 Esc 關）。
+    async composer() {
+        const area = page.locator("textarea#query");
+        const send = page.locator("button.ep-send");
+        const home = `${base}/portal/${tenant}`;
+
+        await step("首頁：輸入框已聚焦、沒有日期欄與長段說明、空白時送出鈕停用", async () => {
+            await signIn();
+            await until("輸入框應已聚焦", async () => (await page.evaluate(() => document.activeElement?.id)) === "query");
+            if ((await page.locator("input[type=date]").count()) !== 0) throw new Error("首頁還有日期欄");
+            const text = await page.locator(".ep-ask").innerText();
+            if (text.includes("哪一天有效") || text.includes("不填日期")) throw new Error(`首頁還有日期的說明：${text}`);
+            if (text.includes("想查哪一條法規")) throw new Error(`首頁把用途框死成只能查法規：${text}`);
+            if (!(await send.isDisabled())) throw new Error("空白時送出鈕應停用");
+            if ((await page.locator(".ep-examples .ep-chip").count()) < 1) throw new Error("沒有範例");
+        });
+        await step("Shift+Enter 換行、輸入框跟著長高、不送出、送出鈕啟用", async () => {
+            const before = (await area.boundingBox()).height;
+            await page.keyboard.type("噪音");
+            await page.keyboard.press("Shift+Enter");
+            await page.keyboard.type("管制");
+            await page.keyboard.press("Shift+Enter");
+            await page.keyboard.type("標準");
+            await until("輸入框應含換行", async () => (await area.inputValue()).includes("\n"));
+            const after = (await area.boundingBox()).height;
+            if (after <= before) throw new Error(`輸入框沒有長高：${before} → ${after}`);
+            await until("有字之後送出鈕應啟用", async () => await send.isEnabled());
+            await page.waitForTimeout(300);
+            if ((await turns().count()) !== 0) throw new Error("Shift+Enter 不該送出");
+        });
+        await step("輸入法組字中的 Enter 不送出", async () => {
+            const prevented = await area.evaluate((element) => {
+                const event = new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true, cancelable: true });
+                element.dispatchEvent(event);
+                return event.defaultPrevented;
+            });
+            if (prevented) throw new Error("組字中的 Enter 被攔下了（會吃掉選字）");
+            await page.waitForTimeout(300);
+            if ((await turns().count()) !== 0) throw new Error("組字中的 Enter 不該送出");
+        });
+        await step("空白按 Enter 不送出", async () => {
+            await area.fill("   ");
+            await page.keyboard.press("Enter");
+            await page.waitForTimeout(300);
+            if ((await turns().count()) !== 0) throw new Error("空白不該送出");
+        });
+        await step("Enter 送出：得到回答、輸入框清空", async () => {
+            await area.fill(question);
+            await page.keyboard.press("Enter");
+            await answered(1);
+            await until("輸入框應清空", async () => (await area.inputValue()) === "");
+        });
+        await step("新對話的範例：點了就送出", async () => {
+            await page.goto(home);
+            await circuitConnected();
+            await page.locator(".ep-examples .ep-chip").first().click();
+            await answered(1);
+        });
+        await step("說明收在原生 popover：點開看得到資料送出的揭露，Esc 關閉", async () => {
+            await page.goto(home);
+            await circuitConnected();
+            await page.click("button[popovertarget=ask-info]");
+            const open = () => page.evaluate(() => document.getElementById("ask-info")?.matches(":popover-open") === true);
+            await until("說明面板應開啟", open);
+            const text = await page.locator("#ask-info").innerText();
+            if (!text.includes("用條文裡會出現的詞") || !text.includes("模型服務")) throw new Error(`說明缺內容：${text}`);
+            await page.keyboard.press("Escape");
+            await until("Esc 後說明面板應關閉", async () => !(await open()));
+        });
+    },
+
     // 在 circuit 裡從自己的租戶切到別人的租戶（不是新的頁面請求）：入口的授權擋下，看不到對方的內容。
     async "cross-tenant"() {
         const other = env("E2E_OTHER_TENANT");

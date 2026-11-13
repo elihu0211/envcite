@@ -244,6 +244,56 @@
     // 強化導覽換完頁（Blazor 的 enhancedload，串流渲染時每次更新都會觸發）：伺服器渲染的側欄不帶 title 與 aria-expanded，重設一次。
     globalThis.Blazor?.addEventListener("enhancedload", syncSide);
 
+    // ---- 問答輸入框（textarea[data-composer]）：Enter 送出、自動長高 --------------------------------------
+    // 事件委派在 document：互動頁的畫面由 Blazor 重畫，掛在元素上的監聽器會跟著消失。沒有這段，它仍是一般的多行輸入加送出鈕。
+    // Enter 送出、Shift+Enter 換行；輸入法組字中（選字用的 Enter）絕不送出。觸控裝置的 Enter 是換行（和主流聊天介面一致，
+    // 送出用按鈕），Ctrl／⌘+Enter 在哪裡都送出。空白不送。不看送出鈕的停用狀態：它跟著伺服器重畫，剛貼上文字就按 Enter
+    // 時還沒更新；輸入與送出的事件在同一條連線上依序處理，送出時伺服器已經有最新的文字。
+    const hoverDevice = matchMedia("(hover: hover) and (pointer: fine)");
+
+    document.addEventListener("keydown", (event) => {
+        const area = event.target;
+        if (!area.matches?.("textarea[data-composer]") || event.key !== "Enter" || event.shiftKey || event.altKey) {
+            return;
+        }
+
+        // keyCode 229 是 Safari 在組字結束的那一下送出的 Enter：isComposing 已經是 false，只能靠它認出來。
+        if (event.isComposing || event.keyCode === 229) {
+            return;
+        }
+
+        const withModifier = event.ctrlKey || event.metaKey;
+        if (!hoverDevice.matches && !withModifier) {
+            return;
+        }
+
+        event.preventDefault();
+        if (area.value.trim() === "") {
+            return;
+        }
+
+        area.form.requestSubmit();
+    });
+
+    // 依內容長高：瀏覽器支援 CSS 的 field-sizing: content 就由樣式表處理；不支援的（Firefox）在這裡補，上限由 max-block-size 管。
+    if (!CSS.supports("field-sizing", "content")) {
+        const grow = (area) => {
+            area.style.blockSize = "auto";
+            area.style.blockSize = `${area.scrollHeight}px`;
+        };
+
+        document.addEventListener("input", (event) => {
+            if (event.target.matches?.("textarea[data-composer]")) {
+                grow(event.target);
+            }
+        });
+
+        // 送出後內容被清空（沒有 input 事件）：還原成預設高度。
+        document.addEventListener("submit", (event) => {
+            event.target.querySelector?.("textarea[data-composer]")?.style.removeProperty("block-size");
+        });
+    }
+
     // ---- 外觀（個人設定）：即時預覽，並把選擇送給伺服器 ----------------------------------------------
     // 偏好存在伺服器的 cookie，下一個請求由 App.razor 輸出 <html data-theme>（所以頁面第一格就是對的，這裡不讀不寫任何儲存）。
     // 這裡只做兩件事：選了就立即換上（預覽，不必另外按儲存），並用 fetch 送出同一張表單。沒有 JavaScript 時，表單是普通的 POST。
