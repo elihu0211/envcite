@@ -79,3 +79,26 @@ def test_text_amended_after_the_ruling_is_not_invalidated(conn: Conn, tmp_path: 
 
     assert _invalid(conn, date(2020, 3, 2)) == [("釋字第1號", "art_2")]
     assert _invalid(conn, date(2020, 3, 5)) == []
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        pytest.param({"kind": "decree"}, id="unknown-kind"),
+        pytest.param({"decided_on": "not-a-date"}, id="bad-date"),
+        pytest.param({"invalidates": [{"law": LAW, "path": "art_1"}]}, id="missing-invalid-from"),
+        pytest.param({"excerpt": None}, id="null-excerpt"),
+    ],
+)
+def test_a_document_of_the_wrong_shape_is_rejected_before_anything_is_written(
+    conn: Conn, tmp_path: Path, bad: dict[str, Any]
+) -> None:
+    _first(conn, tmp_path, _law_v1())
+    with pytest.raises(RulingError, match="文件欄位缺漏或型別不合"):
+        load(conn, {"rulings": [_ruling(**bad)]})
+    assert _scalar(conn, "SELECT count(*) FROM corpus.constitutional_ruling") == 0
+
+
+def test_a_document_without_rulings_is_rejected(conn: Conn) -> None:
+    with pytest.raises(RulingError, match="文件欄位缺漏或型別不合"):
+        load(conn, {})

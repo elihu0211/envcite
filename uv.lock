@@ -690,6 +690,7 @@ dependencies = [
     { name = "lxml" },
     { name = "psycopg", extra = ["binary"] },
     { name = "psycopg-pool" },
+    { name = "pydantic" },
     { name = "pydantic-settings" },
 ]
 
@@ -713,6 +714,7 @@ requires-dist = [
     { name = "lxml" },
     { name = "psycopg", extras = ["binary"] },
     { name = "psycopg-pool" },
+    { name = "pydantic" },
     { name = "pydantic-settings" },
 ]
 provides-extras = ["llm"]
