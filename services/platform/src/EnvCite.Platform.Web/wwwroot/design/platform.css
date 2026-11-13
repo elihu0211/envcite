@@ -838,7 +838,13 @@ h1[tabindex="-1"]:focus-visible {
     flex-wrap: wrap;
     align-items: center;
     gap: var(--ep-space-2);
-    margin: calc(var(--ep-space-4) * -1) 0 0;
+    margin: var(--ep-space-2) 0 0;
+}
+
+/* 頁首自己有 space-6 的下緣；緊接在頁首後面的那一行往上收 space-4，才貼著標題。
+   在卡片裡接在說明文字後面時沒有這個下緣，不能往上收（會蓋住說明的第二行）。 */
+.ep-page-header + .ep-meta {
+    margin-block-start: calc(var(--ep-space-4) * -1);
 }
 
 /* 數字欄靠右、等寬數字，上下列才對得齊。 */
@@ -2205,6 +2211,9 @@ html[data-js] .ep-otp-input::selection {
 
 .ep-table-wrap {
     overflow-x: auto;
+    /* 欄標題裡視覺隱藏的字（.ep-visually-hidden 是 position: absolute）要以這裡為定位基準：
+       否則它落在被捲動區裁掉的表格右端，把整頁撐出橫向捲軸。 */
+    position: relative;
 }
 
 /* 放在有內距的卡片裡的簡單表格：第一欄與最後一欄的外側不再多縮一層，文字才與卡片標題對齊。 */

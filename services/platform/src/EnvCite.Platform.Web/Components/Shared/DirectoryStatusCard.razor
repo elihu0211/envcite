@@ -92,7 +92,8 @@
     private IReadOnlyList<StatItem> Stats =>
     [
         new(L["受管成員"], Status.ManagedMembers.ToString("N0", System.Globalization.CultureInfo.CurrentCulture), L["由身分來源管理角色與停用"]),
-        new(L["最後收到請求"], Status.LastRequestAt is { } last ? TaipeiTime.Format(last) : "—", Status.LastRequestAt is null ? L["尚未連線"].Value : null),
+        new(L["最後收到請求"], Status.LastRequestAt is { } last ? TaipeiTime.Clock(last) : "—",
+            Status.LastRequestAt is { } at ? L["台北 {0}", TaipeiTime.Date(at)].Value : L["尚未連線"].Value),
         new(L["同步次數"], (Status.Created + Status.Updated + Status.Deactivated).ToString("N0", System.Globalization.CultureInfo.CurrentCulture),
             L["建立 {0}・更新 {1}・停用 {2}", Status.Created, Status.Updated, Status.Deactivated]),
         new(L["被拒絕"], Status.Rejected.ToString("N0", System.Globalization.CultureInfo.CurrentCulture), L["規則不允許的變更"]),
