@@ -39,8 +39,8 @@ else
 
         <MudTable Items="_operators" Filter="Matches" Dense="true" Hover="true" Elevation="0" Breakpoint="Breakpoint.None" Class="ep-table ep-cards">
             <HeaderContent>
-                <MudTh>@L["電子郵件"]</MudTh>
-                <MudTh>@L["狀態"]</MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<OperatorInfo, object>(o => o.Email)" InitialDirection="SortDirection.Ascending">@L["電子郵件"]</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<OperatorInfo, object>(o => OperatorLabels.Status(o))">@L["狀態"]</MudTableSortLabel></MudTh>
                 <MudTh>@L["操作"]</MudTh>
             </HeaderContent>
             <RowTemplate>

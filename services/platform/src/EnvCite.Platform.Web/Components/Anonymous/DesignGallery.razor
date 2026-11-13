@@ -132,7 +132,7 @@
 
     private static readonly ColumnDef<SampleRow>[] _columns =
     [
-        new() { Title = "電子郵件", Labeled = false, Cell = row => @<text>@row.Email</text> },
+        new() { Title = "電子郵件", Labeled = false, SortBy = row => row.Email, Cell = row => @<text>@row.Email</text> },
         new() { Title = "角色", Cell = row => @<text>@row.Role</text> },
         new()
         {

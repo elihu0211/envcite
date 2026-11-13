@@ -606,6 +606,45 @@ h1[tabindex="-1"]:focus-visible {
     white-space: nowrap;
 }
 
+/* 可排序的欄位標題（ColumnDef.SortBy）：一顆沒有框的按鈕，文字加一個小箭頭。沒排它時箭頭是淡的（上下箭頭，提示可以點），
+   游標移上去變深；排它時換成朝上或朝下的箭頭、用主要文字色。數字欄的標題靠右，按鈕跟著靠右。 */
+.ep-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-1);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+}
+
+.ep-sort .ep-icon {
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+    color: color-mix(in srgb, var(--ep-text-secondary) 55%, transparent);
+}
+
+th[aria-sort="ascending"] .ep-sort,
+th[aria-sort="descending"] .ep-sort,
+.ep-sort:hover {
+    color: var(--ep-text);
+}
+
+th[aria-sort="ascending"] .ep-icon,
+th[aria-sort="descending"] .ep-icon,
+.ep-sort:hover .ep-icon {
+    color: var(--ep-text);
+}
+
+@media (pointer: coarse) {
+    .ep-sort {
+        min-block-size: var(--ep-touch-target);
+    }
+}
+
 /* 列：懸停時整列淡一階的底（滑鼠才有），最後一列不再多畫一條底線（卡片的邊就是結尾）。 */
 @media (hover: hover) {
     .ep-table tbody tr:hover > td {

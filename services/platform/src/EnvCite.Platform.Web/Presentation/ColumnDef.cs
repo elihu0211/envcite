@@ -29,4 +29,22 @@ public sealed class ColumnDef<TItem>
 
     /// <summary>窄螢幕時要不要帶標籤；列首（不需要標籤）與動作欄設 false。</summary>
     public bool Labeled { get; init; } = true;
+
+    /// <summary>
+    /// 排序鍵。有它的欄位，標題是一顆可以點的排序鈕（升冪、降冪、回到原順序），標題上帶 <c>aria-sort</c>。
+    /// 只有後台（互動式）的表格會排；客戶入口的純表格是靜態的，沒有排序鈕。鍵為 <c>null</c> 的列永遠排在最後，
+    /// 不論方向。字串依目前的語言排序。
+    /// </summary>
+    public Func<TItem, IComparable?>? SortBy { get; init; }
+
+    /// <summary>表格一出現就依這一欄排序（同一張表只有一欄設）。</summary>
+    public ColumnSort InitialSort { get; init; }
+}
+
+/// <summary>欄位的排序狀態。</summary>
+public enum ColumnSort
+{
+    None,
+    Ascending,
+    Descending,
 }

@@ -28,6 +28,43 @@ else
     [Parameter]
     public bool Plain { get; set; }
 
+    // 排序：只在後台（互動式）的表格。點標題依序切換 升冪 → 降冪 → 回到原順序；沒有點過就依 InitialSort。
+    private ColumnDef<TItem>? _sortColumn;
+    private bool _descending;
+    private bool _sortTouched;
+
+    protected override void OnParametersSet()
+    {
+        if (_sortTouched || Plain)
+            return;
+
+        var initial = Columns.FirstOrDefault(column => column.SortBy is not null && column.InitialSort != ColumnSort.None);
+        (_sortColumn, _descending) = initial is null ? (null, false) : (initial, initial.InitialSort == ColumnSort.Descending);
+    }
+
+    private bool Sortable(ColumnDef<TItem> column) => !Plain && column.SortBy is not null && !column.HideTitle;
+
+    private void ToggleSort(ColumnDef<TItem> column)
+    {
+        _sortTouched = true;
+        if (!ReferenceEquals(_sortColumn, column))
+            (_sortColumn, _descending) = (column, false);
+        else if (!_descending)
+            _descending = true;
+        else
+            (_sortColumn, _descending) = (null, false);
+    }
+
+    private string? AriaSort(ColumnDef<TItem> column) =>
+        !Sortable(column) ? null : !ReferenceEquals(_sortColumn, column) ? "none" : _descending ? "descending" : "ascending";
+
+    private string SortIcon(ColumnDef<TItem> column) =>
+        !ReferenceEquals(_sortColumn, column) ? Icons.Material.Filled.UnfoldMore
+            : _descending ? Icons.Material.Filled.ArrowDownward : Icons.Material.Filled.ArrowUpward;
+
+    /// <summary>目前要畫的列（排序見 <see cref="ColumnSorter"/>）。</summary>
+    private IEnumerable<TItem> Rows => _sortColumn?.SortBy is { } sortBy ? ColumnSorter.Order(Items, sortBy, _descending) : Items;
+
     private static string? CellClass(ColumnDef<TItem> column) =>
         column.Numeric ? (column.Class is null ? "ep-num" : $"{column.Class} ep-num") : column.Class;
 
@@ -37,10 +74,16 @@ else
                 <tr>
                     @foreach (var column in Columns)
                     {
-                        <th scope="col" class="@(column.Numeric ? "ep-num" : null)">
+                        <th scope="col" class="@(column.Numeric ? "ep-num" : null)" aria-sort="@AriaSort(column)">
                             @if (column.HideTitle)
                             {
                                 <span class="ep-visually-hidden">@column.Title</span>
+                            }
+                            else if (Sortable(column))
+                            {
+                                <button type="button" class="ep-sort" @onclick="() => ToggleSort(column)">
+                                    <span>@column.Title</span><NavIcon Path="@SortIcon(column)" />
+                                </button>
                             }
                             else
                             {
@@ -51,7 +94,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Items)
+                @foreach (var item in Rows)
                 {
                     <tr>
                         @foreach (var column in Columns)
