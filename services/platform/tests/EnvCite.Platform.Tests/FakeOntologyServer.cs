@@ -50,6 +50,12 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     /// <summary>最近一次 GetLaw／ListArticles 收到的法規識別碼（測試用，驗證路徑三段原樣傳到內部服務）。</summary>
     public LawIdentifier? LastIdentifier { get; private set; }
 
+    /// <summary>最近一次 GetLawGraph 收到的請求（測試用）。</summary>
+    public GetLawGraphRequest? LastLawGraph { get; private set; }
+
+    /// <summary>設為 true 時，GetLawGraph 回 Unimplemented 以驗證平台滾動升級相容性。</summary>
+    public bool ReturnUnimplementedGraph { get; set; }
+
     public async Task StartAsync()
     {
         var builder = WebApplication.CreateSlimBuilder();
@@ -160,6 +166,165 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                 });
             }
 
+            return Task.FromResult(response);
+        }
+
+        public override Task<ListLawsResponse> ListLaws(ListLawsRequest request, ServerCallContext context)
+        {
+            Authorize(context, KnownLawId);
+            CheckAsOf(request.AsOf);
+            var airId = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = KnownLawId };
+            LawSummary[] all =
+            [
+                new LawSummary
+                {
+                    Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "A0000001" },
+                    Iri = "https://envcite/tw/law/A0000001",
+                    Title = "中華民國憲法",
+                    NormKind = "constitution",
+                    DateDocument = "1947-01-01",
+                    DocumentType = "憲法",
+                },
+                new LawSummary
+                {
+                    Identifier = airId,
+                    Iri = $"https://envcite/tw/law/{KnownLawId}",
+                    Title = "空氣污染防制法",
+                    NormKind = "statute",
+                    DateDocument = "2018-08-01",
+                    DocumentType = "法",
+                    ChildCount = 1,
+                    GuidanceCount = 1,
+                },
+                new LawSummary
+                {
+                    Identifier = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020002" },
+                    Iri = "https://envcite/tw/law/O0020002",
+                    Title = "空氣污染防制法施行細則",
+                    NormKind = "regulation",
+                    DateDocument = "2020-01-01",
+                    ParentIdentifier = airId,
+                    DocumentType = "細則",
+                    ParentCount = 1,
+                },
+            ];
+            var response = new ListLawsResponse();
+            foreach (var item in all)
+            {
+                if (!string.IsNullOrEmpty(request.CategoryPrefix)
+                    && !item.Identifier.LocalId.StartsWith(request.CategoryPrefix, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                response.Laws.Add(item);
+            }
+            return Task.FromResult(response);
+        }
+
+        public override Task<GetLawGraphResponse> GetLawGraph(GetLawGraphRequest request, ServerCallContext context)
+        {
+            if (server.ReturnUnimplementedGraph)
+                throw new RpcException(new Status(StatusCode.Unimplemented, "GetLawGraph not implemented yet"));
+
+            server.LastLawGraph = request;
+            Authorize(context, request.Identifier?.LocalId ?? KnownLawId);
+            CheckAsOf(request.AsOf);
+
+            var airId = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = KnownLawId };
+            var ruleId = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020002" };
+            var subId = new LawIdentifier { Jurisdiction = "TW-CENTRAL", IdScheme = "moj_pcode", LocalId = "O0020099" };
+
+            var response = new GetLawGraphResponse
+            {
+                Nodes =
+                {
+                    new LawGraphNode
+                    {
+                        Identifier = airId,
+                        Iri = $"https://envcite/tw/law/{KnownLawId}",
+                        Title = "空氣污染防制法",
+                        NormKind = "statute",
+                        DocumentType = "法",
+                        DateDocument = "2018-08-01",
+                        HierarchyTier = 1,
+                        TotalChildren = 25,
+                        TruncatedChildren = 24,
+                        ArticleCount = 100,
+                        InvalidationCount = 1,
+                        GuidanceCount = 2,
+                    },
+                    new LawGraphNode
+                    {
+                        Identifier = ruleId,
+                        Iri = "https://envcite/tw/law/O0020002",
+                        Title = "空氣污染防制法施行細則",
+                        NormKind = "regulation",
+                        DocumentType = "細則",
+                        DateDocument = "2020-01-01",
+                        HierarchyTier = 2,
+                        TotalChildren = 1,
+                    },
+                    new LawGraphNode
+                    {
+                        Identifier = subId,
+                        Iri = "https://envcite/tw/law/O0020099",
+                        Title = "空氣污染檢測作業準則",
+                        NormKind = "regulation",
+                        DocumentType = "準則",
+                        HierarchyTier = 3,
+                    },
+                },
+                Edges =
+                {
+                    new LawGraphEdge
+                    {
+                        Source = airId,
+                        Target = ruleId,
+                        Kind = GraphEdgeKind.Delegation,
+                        AnchorArticles = { "第 42 條" },
+                        AllRooted = true,
+                    },
+                    new LawGraphEdge
+                    {
+                        Source = ruleId,
+                        Target = subId,
+                        Kind = GraphEdgeKind.SubDelegation,
+                        AnchorArticles = { "第 5 條" },
+                        AllRooted = true,
+                    },
+                },
+                ViolationLinks =
+                {
+                    new ArticleViolationLink
+                    {
+                        PenaltyArticle = "62",
+                        PenaltyPath = "art_62",
+                        Kind = ViolationReferenceKind.Duty,
+                        TargetArticle = "20",
+                        TargetPath = "art_20/para_1",
+                    },
+                },
+                GuidanceLinks =
+                {
+                    new GuidanceLink
+                    {
+                        ArticleNumber = "20",
+                        Path = "art_20/para_1",
+                        DocumentNo = "環空字第100號",
+                        Issuer = "環境部",
+                        IssuedOn = "2021-03-01",
+                        Subject = "固定污染源排放檢驗疑義",
+                        SourceUrl = "https://oaout.moenv.gov.tw/Law/100",
+                    },
+                },
+                ChildGroups =
+                {
+                    new ChildGroupCount { DocumentType = "細則", Count = 1 },
+                    new ChildGroupCount { DocumentType = "辦法", Count = 24 },
+                },
+            };
+            if (request.Identifier is not null)
+                response.FocusIdentifier = request.Identifier;
             return Task.FromResult(response);
         }
 

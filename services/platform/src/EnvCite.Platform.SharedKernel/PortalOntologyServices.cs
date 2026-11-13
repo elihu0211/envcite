@@ -18,9 +18,72 @@ public sealed record PortalLawTreeNode(
     string Title,
     string NormKind,
     string? DateDocument,
-    IReadOnlyList<PortalLawTreeNode> Children);
+    IReadOnlyList<PortalLawTreeNode> Children,
+    string DocumentType = "",
+    int ChildCount = 0,
+    int ParentCount = 0,
+    int GuidanceCount = 0);
 
 public sealed record PortalLawTreeResult(IReadOnlyList<PortalLawTreeNode> Roots, bool CatalogAvailable);
+
+public sealed record PortalLawKey(string Jurisdiction, string IdScheme, string LocalId);
+
+public sealed record PortalLawGraphNode(
+    PortalLawKey Key,
+    string Uri,
+    string Title,
+    string NormKind,
+    string DocumentType,
+    string? DateDocument,
+    int HierarchyTier,
+    int TotalChildren,
+    int TruncatedChildren,
+    int ArticleCount,
+    int InvalidationCount,
+    int GuidanceCount);
+
+public sealed record PortalLawGraphEdge(
+    PortalLawKey Source,
+    PortalLawKey Target,
+    string Kind,
+    IReadOnlyList<string> AnchorArticles,
+    bool AllRooted);
+
+public sealed record PortalArticleViolationLink(
+    string PenaltyArticle,
+    string PenaltyPath,
+    string Kind,
+    string TargetArticle,
+    string TargetPath);
+
+public sealed record PortalGuidanceLink(
+    string ArticleNumber,
+    string Path,
+    string DocumentNo,
+    string Issuer,
+    string IssuedOn,
+    string Subject,
+    string SourceUrl);
+
+public sealed record PortalChildGroupCount(string DocumentType, int Count);
+
+public sealed record PortalLawGraphQuery(
+    PortalLawKey? Focus,
+    string? AsOf = null,
+    string? CategoryPrefix = null,
+    int UpstreamDepth = 2,
+    int DownstreamDepth = 2,
+    int ChildLimit = 20,
+    string? ChildDocumentType = null);
+
+public sealed record PortalLawGraphResult(
+    bool Available,
+    PortalLawKey? Focus,
+    IReadOnlyList<PortalLawGraphNode> Nodes,
+    IReadOnlyList<PortalLawGraphEdge> Edges,
+    IReadOnlyList<PortalArticleViolationLink> ViolationLinks,
+    IReadOnlyList<PortalGuidanceLink> GuidanceLinks,
+    IReadOnlyList<PortalChildGroupCount> ChildGroups);
 
 public sealed record PortalLawCorpusResult(
     string Title,
@@ -35,6 +98,12 @@ public interface ILawCorpusService
 {
     Task<AdminOutcome<PortalLawTreeResult>> TreeAsync(
         ClaimsPrincipal user, string? jurisdiction, string? asOf, CancellationToken cancellationToken);
+
+    Task<AdminOutcome<PortalLawTreeResult>> TreeByCategoryAsync(
+        ClaimsPrincipal user, string? jurisdiction, string? categoryPrefix, string? asOf, CancellationToken cancellationToken);
+
+    Task<AdminOutcome<PortalLawGraphResult>> GraphAsync(
+        ClaimsPrincipal user, PortalLawGraphQuery query, CancellationToken cancellationToken);
 
     Task<AdminOutcome<PortalLawCorpusResult>> BrowseAsync(
         ClaimsPrincipal user, string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken);

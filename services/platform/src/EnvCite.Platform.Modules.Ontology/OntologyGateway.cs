@@ -15,13 +15,18 @@ internal sealed class OntologyGateway(
     IUsageRecorder usage)
 {
     public async Task<AdminOutcome<(IReadOnlyList<LawSummaryDto> Laws, bool Available)>> ListLawsAsync(
-        string? jurisdiction, string? asOf, CancellationToken cancellationToken) =>
+        string? jurisdiction, string? asOf, CancellationToken cancellationToken, string? categoryPrefix = null) =>
         await CallAsync(OntologyBusy, async () =>
         {
             try
             {
                 var response = await ontology.ListLawsAsync(
-                    new ListLawsRequest { Jurisdiction = jurisdiction ?? string.Empty, AsOf = asOf ?? string.Empty },
+                    new ListLawsRequest
+                    {
+                        Jurisdiction = jurisdiction ?? string.Empty,
+                        AsOf = asOf ?? string.Empty,
+                        CategoryPrefix = categoryPrefix ?? string.Empty,
+                    },
                     deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
                 IReadOnlyList<LawSummaryDto> items =
                 [
@@ -31,13 +36,47 @@ internal sealed class OntologyGateway(
                         l.Title,
                         l.NormKind,
                         string.IsNullOrEmpty(l.DateDocument) ? null : l.DateDocument,
-                        l.ParentIdentifier is null ? null : LawIdentifiers.ToDto(l.ParentIdentifier)))
+                        l.ParentIdentifier is null ? null : LawIdentifiers.ToDto(l.ParentIdentifier),
+                        l.DocumentType,
+                        l.ChildCount,
+                        l.ParentCount,
+                        l.GuidanceCount))
                 ];
                 return (items, true);
             }
             catch (RpcException ex) when (ex.StatusCode == StatusCode.Unimplemented)
             {
                 return ((IReadOnlyList<LawSummaryDto>)[], false);
+            }
+        });
+
+    public async Task<AdminOutcome<PortalLawGraphResult>> GetLawGraphAsync(
+        PortalLawGraphQuery query, CancellationToken cancellationToken) =>
+        await CallAsync(OntologyBusy, async () =>
+        {
+            try
+            {
+                var request = new GetLawGraphRequest
+                {
+                    AsOf = query.AsOf ?? string.Empty,
+                    CategoryPrefix = query.CategoryPrefix ?? string.Empty,
+                    UpstreamDepth = query.UpstreamDepth,
+                    DownstreamDepth = query.DownstreamDepth,
+                    ChildLimit = query.ChildLimit,
+                    ChildDocumentType = query.ChildDocumentType ?? string.Empty,
+                };
+                if (query.Focus is { } focus)
+                    request.Identifier = IdentifierOf(focus.Jurisdiction, focus.IdScheme, focus.LocalId);
+
+                var response = await ontology.GetLawGraphAsync(
+                    request,
+                    deadline: DateTime.UtcNow.Add(options.Value.Timeout),
+                    cancellationToken: cancellationToken);
+                return MapGraph(response);
+            }
+            catch (RpcException ex) when (ex.StatusCode == StatusCode.Unimplemented)
+            {
+                return new PortalLawGraphResult(false, query.Focus, [], [], [], [], []);
             }
         });
 
@@ -86,6 +125,64 @@ internal sealed class OntologyGateway(
                     [.. h.SortKey],
                     h.ParentIndex))]);
         });
+
+    private static PortalLawKey ToPortalKey(LawIdentifier id) =>
+        new(id.Jurisdiction, id.IdScheme, id.LocalId);
+
+    private static PortalLawGraphResult MapGraph(GetLawGraphResponse response)
+    {
+        IReadOnlyList<PortalLawGraphNode> nodes =
+        [
+            .. response.Nodes.Select(n => new PortalLawGraphNode(
+                ToPortalKey(n.Identifier),
+                n.Iri,
+                n.Title,
+                n.NormKind,
+                n.DocumentType,
+                string.IsNullOrEmpty(n.DateDocument) ? null : n.DateDocument,
+                n.HierarchyTier,
+                n.TotalChildren,
+                n.TruncatedChildren,
+                n.ArticleCount,
+                n.InvalidationCount,
+                n.GuidanceCount))
+        ];
+        IReadOnlyList<PortalLawGraphEdge> edges =
+        [
+            .. response.Edges.Select(e => new PortalLawGraphEdge(
+                ToPortalKey(e.Source),
+                ToPortalKey(e.Target),
+                e.Kind == GraphEdgeKind.SubDelegation ? "sub_delegation" : "delegation",
+                [.. e.AnchorArticles],
+                e.AllRooted))
+        ];
+        IReadOnlyList<PortalArticleViolationLink> violations =
+        [
+            .. response.ViolationLinks.Select(v => new PortalArticleViolationLink(
+                v.PenaltyArticle,
+                v.PenaltyPath,
+                v.Kind == ViolationReferenceKind.DelegatedRule ? "delegated_rule" : "duty",
+                v.TargetArticle,
+                v.TargetPath))
+        ];
+        IReadOnlyList<PortalGuidanceLink> guidances =
+        [
+            .. response.GuidanceLinks.Select(g => new PortalGuidanceLink(
+                g.ArticleNumber,
+                g.Path,
+                g.DocumentNo,
+                g.Issuer,
+                g.IssuedOn,
+                g.Subject,
+                g.SourceUrl))
+        ];
+        IReadOnlyList<PortalChildGroupCount> childGroups =
+        [
+            .. response.ChildGroups.Select(c => new PortalChildGroupCount(c.DocumentType, c.Count))
+        ];
+        var focus = response.FocusIdentifier is null ? null : ToPortalKey(response.FocusIdentifier);
+        return new PortalLawGraphResult(true, focus, nodes, edges, violations, guidances, childGroups);
+    }
 
     private static string HeadingKindName(HeadingKind kind) => kind switch
     {
@@ -145,4 +242,8 @@ internal sealed record LawSummaryDto(
     string Title,
     string NormKind,
     string? DateDocument,
-    LawIdentifierDto? ParentIdentifier);
+    LawIdentifierDto? ParentIdentifier,
+    string DocumentType = "",
+    int ChildCount = 0,
+    int ParentCount = 0,
+    int GuidanceCount = 0);

@@ -59,6 +59,48 @@ RULING_KIND_INTERPRETATION: RulingKind.ValueType  # 1
 RULING_KIND_JUDGMENT: RulingKind.ValueType  # 2
 Global___RulingKind: _TypeAlias = RulingKind  # noqa: Y015
 
+class _GraphEdgeKind:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _GraphEdgeKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_GraphEdgeKind.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    GRAPH_EDGE_KIND_UNSPECIFIED: _GraphEdgeKind.ValueType  # 0
+    GRAPH_EDGE_KIND_DELEGATION: _GraphEdgeKind.ValueType  # 1
+    """法律直接授權訂定法規命令。"""
+    GRAPH_EDGE_KIND_SUB_DELEGATION: _GraphEdgeKind.ValueType  # 2
+    """授權命令進一步授權訂定之下位規則。"""
+
+class GraphEdgeKind(_GraphEdgeKind, metaclass=_GraphEdgeKindEnumTypeWrapper): ...
+
+GRAPH_EDGE_KIND_UNSPECIFIED: GraphEdgeKind.ValueType  # 0
+GRAPH_EDGE_KIND_DELEGATION: GraphEdgeKind.ValueType  # 1
+"""法律直接授權訂定法規命令。"""
+GRAPH_EDGE_KIND_SUB_DELEGATION: GraphEdgeKind.ValueType  # 2
+"""授權命令進一步授權訂定之下位規則。"""
+Global___GraphEdgeKind: _TypeAlias = GraphEdgeKind  # noqa: Y015
+
+class _ViolationReferenceKind:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _ViolationReferenceKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_ViolationReferenceKind.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    VIOLATION_REFERENCE_KIND_UNSPECIFIED: _ViolationReferenceKind.ValueType  # 0
+    VIOLATION_REFERENCE_KIND_DUTY: _ViolationReferenceKind.ValueType  # 1
+    """罰則直接處罰所引用義務條文之違反。"""
+    VIOLATION_REFERENCE_KIND_DELEGATED_RULE: _ViolationReferenceKind.ValueType  # 2
+    """罰則處罰「違反依母法第 N 條所定辦法」。"""
+
+class ViolationReferenceKind(_ViolationReferenceKind, metaclass=_ViolationReferenceKindEnumTypeWrapper): ...
+
+VIOLATION_REFERENCE_KIND_UNSPECIFIED: ViolationReferenceKind.ValueType  # 0
+VIOLATION_REFERENCE_KIND_DUTY: ViolationReferenceKind.ValueType  # 1
+"""罰則直接處罰所引用義務條文之違反。"""
+VIOLATION_REFERENCE_KIND_DELEGATED_RULE: ViolationReferenceKind.ValueType  # 2
+"""罰則處罰「違反依母法第 N 條所定辦法」。"""
+Global___ViolationReferenceKind: _TypeAlias = ViolationReferenceKind  # noqa: Y015
+
 @_typing.final
 class LawIdentifier(_message.Message):
     """法規的複合自然鍵（管轄，識別碼方案，在地識別碼）。三個欄位都必填，沒有預設：
@@ -535,19 +577,23 @@ class ListLawsRequest(_message.Message):
 
     AS_OF_FIELD_NUMBER: _builtins.int
     JURISDICTION_FIELD_NUMBER: _builtins.int
+    CATEGORY_PREFIX_FIELD_NUMBER: _builtins.int
     as_of: _builtins.str
     """依哪一天施行的版本解析（ISO 8601）。留空為現行。"""
     jurisdiction: _builtins.str
     """可選管轄過濾；留空為全部管轄。"""
+    category_prefix: _builtins.str
+    """可選全國法規分類字首（單一大寫字母，例如 "O" 環境保護）；留空為全分類。"""
     def __init__(
         self,
         *,
         as_of: _builtins.str = ...,
         jurisdiction: _builtins.str = ...,
+        category_prefix: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "jurisdiction", b"jurisdiction"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "category_prefix", b"category_prefix", "jurisdiction", b"jurisdiction"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -563,12 +609,24 @@ class LawSummary(_message.Message):
     NORM_KIND_FIELD_NUMBER: _builtins.int
     DATE_DOCUMENT_FIELD_NUMBER: _builtins.int
     PARENT_IDENTIFIER_FIELD_NUMBER: _builtins.int
+    DOCUMENT_TYPE_FIELD_NUMBER: _builtins.int
+    CHILD_COUNT_FIELD_NUMBER: _builtins.int
+    PARENT_COUNT_FIELD_NUMBER: _builtins.int
+    GUIDANCE_COUNT_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     title: _builtins.str
     norm_kind: _builtins.str
-    """位階種類（corpus.norm_kind），例如 "constitution"、"law"、"regulation"、"order"。"""
+    """位階種類（corpus.norm_kind），例如 "constitution"、"statute"、"regulation"。"""
     date_document: _builtins.str
     """制定日（ISO 8601）；語料沒有制定紀錄時為空。"""
+    document_type: _builtins.str
+    """《中央法規標準法》定名種類（corpus.legal_resource.document_type），例如「法」「條例」「細則」「辦法」「標準」。"""
+    child_count: _builtins.int
+    """於 `as_of` 當日有效之下位授權法規總數。"""
+    parent_count: _builtins.int
+    """已解析之上位授權母法總數（反映多母法共同授權）。"""
+    guidance_count: _builtins.int
+    """解釋本法條文且於 `as_of` 當日有效之函釋件數。"""
     @_builtins.property
     def identifier(self) -> Global___LawIdentifier: ...
     @_builtins.property
@@ -584,10 +642,14 @@ class LawSummary(_message.Message):
         norm_kind: _builtins.str = ...,
         date_document: _builtins.str = ...,
         parent_identifier: Global___LawIdentifier | None = ...,
+        document_type: _builtins.str = ...,
+        child_count: _builtins.int = ...,
+        parent_count: _builtins.int = ...,
+        guidance_count: _builtins.int = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["identifier", b"identifier", "parent_identifier", b"parent_identifier"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["date_document", b"date_document", "identifier", b"identifier", "iri", b"iri", "norm_kind", b"norm_kind", "parent_identifier", b"parent_identifier", "title", b"title"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["child_count", b"child_count", "date_document", b"date_document", "document_type", b"document_type", "guidance_count", b"guidance_count", "identifier", b"identifier", "iri", b"iri", "norm_kind", b"norm_kind", "parent_count", b"parent_count", "parent_identifier", b"parent_identifier", "title", b"title"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -612,3 +674,280 @@ class ListLawsResponse(_message.Message):
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___ListLawsResponse: _TypeAlias = ListLawsResponse  # noqa: Y015
+
+@_typing.final
+class GetLawGraphRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    IDENTIFIER_FIELD_NUMBER: _builtins.int
+    AS_OF_FIELD_NUMBER: _builtins.int
+    CATEGORY_PREFIX_FIELD_NUMBER: _builtins.int
+    UPSTREAM_DEPTH_FIELD_NUMBER: _builtins.int
+    DOWNSTREAM_DEPTH_FIELD_NUMBER: _builtins.int
+    CHILD_LIMIT_FIELD_NUMBER: _builtins.int
+    CHILD_DOCUMENT_TYPE_FIELD_NUMBER: _builtins.int
+    as_of: _builtins.str
+    """見 GetLawRequest.as_of。"""
+    category_prefix: _builtins.str
+    """總覽模式的可選分類字首（單一大寫字母，例如 "O" 環境保護）；留空為全部類別。"""
+    upstream_depth: _builtins.int
+    """向上追溯授權母法鏈之最大深度（0 表示預設 2；有效範圍 1 至 4）。"""
+    downstream_depth: _builtins.int
+    """向下展開授權子法規之最大深度（0 表示預設 2；有效範圍 1 至 4）。"""
+    child_limit: _builtins.int
+    """單一母法節點最多展開之直接子法規數（0 表示預設 20；有效範圍 1 至 60）。"""
+    child_document_type: _builtins.str
+    """若指定，僅展開該 `document_type` 之下位授權法規（例如「辦法」「標準」「細則」）。"""
+    @_builtins.property
+    def identifier(self) -> Global___LawIdentifier:
+        """焦點法規；留空代表「核心母法星系總覽」，依下位授權數選出代表母法並附憲法與多層關聯。"""
+
+    def __init__(
+        self,
+        *,
+        identifier: Global___LawIdentifier | None = ...,
+        as_of: _builtins.str = ...,
+        category_prefix: _builtins.str = ...,
+        upstream_depth: _builtins.int = ...,
+        downstream_depth: _builtins.int = ...,
+        child_limit: _builtins.int = ...,
+        child_document_type: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["identifier", b"identifier"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "category_prefix", b"category_prefix", "child_document_type", b"child_document_type", "child_limit", b"child_limit", "downstream_depth", b"downstream_depth", "identifier", b"identifier", "upstream_depth", b"upstream_depth"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___GetLawGraphRequest: _TypeAlias = GetLawGraphRequest  # noqa: Y015
+
+@_typing.final
+class GetLawGraphResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    FOCUS_IDENTIFIER_FIELD_NUMBER: _builtins.int
+    NODES_FIELD_NUMBER: _builtins.int
+    EDGES_FIELD_NUMBER: _builtins.int
+    VIOLATION_LINKS_FIELD_NUMBER: _builtins.int
+    GUIDANCE_LINKS_FIELD_NUMBER: _builtins.int
+    CHILD_GROUPS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def focus_identifier(self) -> Global___LawIdentifier:
+        """焦點法規識別碼；總覽模式為未設定。"""
+
+    @_builtins.property
+    def nodes(self) -> _containers.RepeatedCompositeFieldContainer[Global___LawGraphNode]: ...
+    @_builtins.property
+    def edges(self) -> _containers.RepeatedCompositeFieldContainer[Global___LawGraphEdge]: ...
+    @_builtins.property
+    def violation_links(self) -> _containers.RepeatedCompositeFieldContainer[Global___ArticleViolationLink]:
+        """焦點法規內部之罰則與義務條文（或授權辦法條文）連動清單。"""
+
+    @_builtins.property
+    def guidance_links(self) -> _containers.RepeatedCompositeFieldContainer[Global___GuidanceLink]:
+        """解釋焦點法規條文且於 `as_of` 當日尚未停止適用之行政函釋摘要。"""
+
+    @_builtins.property
+    def child_groups(self) -> _containers.RepeatedCompositeFieldContainer[Global___ChildGroupCount]:
+        """焦點法規所有有效直接子法規依 `document_type` 統計之分組數量，供漸進展開與聚合膠囊使用。"""
+
+    def __init__(
+        self,
+        *,
+        focus_identifier: Global___LawIdentifier | None = ...,
+        nodes: _abc.Iterable[Global___LawGraphNode] | None = ...,
+        edges: _abc.Iterable[Global___LawGraphEdge] | None = ...,
+        violation_links: _abc.Iterable[Global___ArticleViolationLink] | None = ...,
+        guidance_links: _abc.Iterable[Global___GuidanceLink] | None = ...,
+        child_groups: _abc.Iterable[Global___ChildGroupCount] | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["focus_identifier", b"focus_identifier"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["child_groups", b"child_groups", "edges", b"edges", "focus_identifier", b"focus_identifier", "guidance_links", b"guidance_links", "nodes", b"nodes", "violation_links", b"violation_links"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___GetLawGraphResponse: _TypeAlias = GetLawGraphResponse  # noqa: Y015
+
+@_typing.final
+class LawGraphNode(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    IDENTIFIER_FIELD_NUMBER: _builtins.int
+    IRI_FIELD_NUMBER: _builtins.int
+    TITLE_FIELD_NUMBER: _builtins.int
+    NORM_KIND_FIELD_NUMBER: _builtins.int
+    DOCUMENT_TYPE_FIELD_NUMBER: _builtins.int
+    DATE_DOCUMENT_FIELD_NUMBER: _builtins.int
+    HIERARCHY_TIER_FIELD_NUMBER: _builtins.int
+    TOTAL_CHILDREN_FIELD_NUMBER: _builtins.int
+    TRUNCATED_CHILDREN_FIELD_NUMBER: _builtins.int
+    ARTICLE_COUNT_FIELD_NUMBER: _builtins.int
+    INVALIDATION_COUNT_FIELD_NUMBER: _builtins.int
+    GUIDANCE_COUNT_FIELD_NUMBER: _builtins.int
+    iri: _builtins.str
+    title: _builtins.str
+    norm_kind: _builtins.str
+    document_type: _builtins.str
+    date_document: _builtins.str
+    hierarchy_tier: _builtins.int
+    """凱爾森位階層級（0 憲法、1 法律、2 第一層法規命令、3 再授權子規則）。"""
+    total_children: _builtins.int
+    """於 `as_of` 當日有效之直接下位授權法規總數。"""
+    truncated_children: _builtins.int
+    """本次回應中未展開之直接下位法規數量（> 0 時前端顯示聚合膠囊節點）。"""
+    article_count: _builtins.int
+    invalidation_count: _builtins.int
+    """於 `as_of` 當日有效宣告違憲失效之單元數（須標示憲法法庭出處）。"""
+    guidance_count: _builtins.int
+    @_builtins.property
+    def identifier(self) -> Global___LawIdentifier: ...
+    def __init__(
+        self,
+        *,
+        identifier: Global___LawIdentifier | None = ...,
+        iri: _builtins.str = ...,
+        title: _builtins.str = ...,
+        norm_kind: _builtins.str = ...,
+        document_type: _builtins.str = ...,
+        date_document: _builtins.str = ...,
+        hierarchy_tier: _builtins.int = ...,
+        total_children: _builtins.int = ...,
+        truncated_children: _builtins.int = ...,
+        article_count: _builtins.int = ...,
+        invalidation_count: _builtins.int = ...,
+        guidance_count: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["identifier", b"identifier"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["article_count", b"article_count", "date_document", b"date_document", "document_type", b"document_type", "guidance_count", b"guidance_count", "hierarchy_tier", b"hierarchy_tier", "identifier", b"identifier", "invalidation_count", b"invalidation_count", "iri", b"iri", "norm_kind", b"norm_kind", "title", b"title", "total_children", b"total_children", "truncated_children", b"truncated_children"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___LawGraphNode: _TypeAlias = LawGraphNode  # noqa: Y015
+
+@_typing.final
+class LawGraphEdge(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    SOURCE_FIELD_NUMBER: _builtins.int
+    TARGET_FIELD_NUMBER: _builtins.int
+    KIND_FIELD_NUMBER: _builtins.int
+    ANCHOR_ARTICLES_FIELD_NUMBER: _builtins.int
+    ALL_ROOTED_FIELD_NUMBER: _builtins.int
+    kind: Global___GraphEdgeKind.ValueType
+    all_rooted: _builtins.bool
+    @_builtins.property
+    def source(self) -> Global___LawIdentifier: ...
+    @_builtins.property
+    def target(self) -> Global___LawIdentifier: ...
+    @_builtins.property
+    def anchor_articles(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
+        """母法授權依據條項路徑或格式條號清單（例如「第 38 條」「第 42 條第 2 項」）。"""
+
+    def __init__(
+        self,
+        *,
+        source: Global___LawIdentifier | None = ...,
+        target: Global___LawIdentifier | None = ...,
+        kind: Global___GraphEdgeKind.ValueType = ...,
+        anchor_articles: _abc.Iterable[_builtins.str] | None = ...,
+        all_rooted: _builtins.bool = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["source", b"source", "target", b"target"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["all_rooted", b"all_rooted", "anchor_articles", b"anchor_articles", "kind", b"kind", "source", b"source", "target", b"target"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___LawGraphEdge: _TypeAlias = LawGraphEdge  # noqa: Y015
+
+@_typing.final
+class ArticleViolationLink(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    PENALTY_ARTICLE_FIELD_NUMBER: _builtins.int
+    PENALTY_PATH_FIELD_NUMBER: _builtins.int
+    KIND_FIELD_NUMBER: _builtins.int
+    TARGET_ARTICLE_FIELD_NUMBER: _builtins.int
+    TARGET_PATH_FIELD_NUMBER: _builtins.int
+    penalty_article: _builtins.str
+    penalty_path: _builtins.str
+    kind: Global___ViolationReferenceKind.ValueType
+    target_article: _builtins.str
+    target_path: _builtins.str
+    def __init__(
+        self,
+        *,
+        penalty_article: _builtins.str = ...,
+        penalty_path: _builtins.str = ...,
+        kind: Global___ViolationReferenceKind.ValueType = ...,
+        target_article: _builtins.str = ...,
+        target_path: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["kind", b"kind", "penalty_article", b"penalty_article", "penalty_path", b"penalty_path", "target_article", b"target_article", "target_path", b"target_path"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ArticleViolationLink: _TypeAlias = ArticleViolationLink  # noqa: Y015
+
+@_typing.final
+class GuidanceLink(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ARTICLE_NUMBER_FIELD_NUMBER: _builtins.int
+    PATH_FIELD_NUMBER: _builtins.int
+    DOCUMENT_NO_FIELD_NUMBER: _builtins.int
+    ISSUER_FIELD_NUMBER: _builtins.int
+    ISSUED_ON_FIELD_NUMBER: _builtins.int
+    SUBJECT_FIELD_NUMBER: _builtins.int
+    SOURCE_URL_FIELD_NUMBER: _builtins.int
+    article_number: _builtins.str
+    path: _builtins.str
+    document_no: _builtins.str
+    issuer: _builtins.str
+    issued_on: _builtins.str
+    subject: _builtins.str
+    source_url: _builtins.str
+    def __init__(
+        self,
+        *,
+        article_number: _builtins.str = ...,
+        path: _builtins.str = ...,
+        document_no: _builtins.str = ...,
+        issuer: _builtins.str = ...,
+        issued_on: _builtins.str = ...,
+        subject: _builtins.str = ...,
+        source_url: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["article_number", b"article_number", "document_no", b"document_no", "issued_on", b"issued_on", "issuer", b"issuer", "path", b"path", "source_url", b"source_url", "subject", b"subject"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___GuidanceLink: _TypeAlias = GuidanceLink  # noqa: Y015
+
+@_typing.final
+class ChildGroupCount(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    DOCUMENT_TYPE_FIELD_NUMBER: _builtins.int
+    COUNT_FIELD_NUMBER: _builtins.int
+    document_type: _builtins.str
+    count: _builtins.int
+    def __init__(
+        self,
+        *,
+        document_type: _builtins.str = ...,
+        count: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["count", b"count", "document_type", b"document_type"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ChildGroupCount: _TypeAlias = ChildGroupCount  # noqa: Y015
