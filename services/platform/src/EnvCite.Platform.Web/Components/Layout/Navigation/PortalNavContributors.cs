@@ -26,7 +26,7 @@ internal sealed class QueryNav(IStringLocalizer<Ui> localizer) : PortalNavContri
 
     // 首頁只在首頁算「目前頁」，否則其他頁都在它底下，它會一直亮著。
     public override IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) =>
-        [new(context.Home, L["AI 法規問答"], ServicesGroup, Exact: true, Icon: Icons.Material.Outlined.QuestionAnswer)];
+        [new(context.Home, L["法規諮詢"], ServicesGroup, Exact: true, Icon: Icons.Material.Outlined.QuestionAnswer)];
 }
 
 internal sealed class OntologyWorkbenchNav(IStringLocalizer<Ui> localizer, ITenantModules modules) : PortalNavContributorBase(localizer)
