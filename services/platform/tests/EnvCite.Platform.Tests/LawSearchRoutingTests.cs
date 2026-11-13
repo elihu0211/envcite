@@ -34,10 +34,22 @@ public sealed class LawSearchRoutingTests
     [InlineData("露天燃燒", 0.69f, false)]
     [InlineData("露天燃燒是什麼？", 0.69f, true)]
     [InlineData("露天燃燒是什麼？", 0.67f, false)]
-    [InlineData("露天燃燒", 0.72f, true)]
+    [InlineData("露天燃燒", 0.72f, false)]
+    [InlineData("露天燃燒", 0.75f, true)]
+    [InlineData("空氣污染防制法", 0.72f, true)]
+    [InlineData("空氣污染防制法", 0.69f, false)]
     public void ASemanticOnlyHitPassesAtTheFloorOfItsQueryType(string query, float similarity, bool expected)
     {
         Assert.Equal(expected, new LawSearchOptions().Passes(Shared, query, 0f, similarity, 0f, 0));
+    }
+
+    [Fact]
+    public void TheKeywordFloorIsNeverLooserThanTheSharedFloor()
+    {
+        var options = new LawSearchOptions { KeywordSemanticFloor = 0.5 };
+
+        Assert.False(options.Passes(Shared, "露天燃燒", 0f, 0.70f, 0f, 0));
+        Assert.True(options.Passes(Shared, "露天燃燒", 0f, 0.72f, 0f, 0));
     }
 
     [Fact]
@@ -87,12 +99,12 @@ public sealed class LawSearchRoutingTests
     public void QuestionsAndNamesNeverListLessThanTheSharedRuleAndAKeywordNeverListsMore()
     {
         // 基準：關鍵字門檻與共用門檻相同、問句下界與共用下界相同，即沒有路由
-        var baseline = new LawSearchOptions { KeywordMinTermCoverage = 0.5, QuestionSemanticFloor = 0.71 };
+        var baseline = new LawSearchOptions { KeywordMinTermCoverage = 0.5, KeywordSemanticFloor = 0.71, QuestionSemanticFloor = 0.71 };
         var routed = new LawSearchOptions();
         var hits = new[]
         {
             (0.8f, 0f, 1f, 0), (0.8f, 0f, 0.6f, 0), (0.8f, 0f, 0.2f, 0), (0f, 0.8f, 0f, 0), (0f, 0f, 0f, 2),
-            (0.3f, 0.5f, 1f, 0), (0.3f, 0.5f, 0.5f, 0), (0f, 0.69f, 0f, 0),
+            (0.3f, 0.5f, 1f, 0), (0.3f, 0.5f, 0.5f, 0), (0f, 0.69f, 0f, 0), (0f, 0.72f, 0f, 0),
         };
         foreach (var (lexical, semantic, coverage, guidance) in hits)
         {

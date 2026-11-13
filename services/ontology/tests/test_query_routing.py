@@ -108,6 +108,15 @@ def test_the_grid_has_no_candidate_b() -> None:
     assert all(not b for _, b, _ in tool.RULES.values())
 
 
+def test_the_strict_semantic_floors_are_compared_pairwise_and_never_searched() -> None:
+    assert {tool.RULES[f"θ0.7/s{x:g}"][2] for x in tool.STRICT_SEMANTIC_GRID} == set(
+        tool.STRICT_SEMANTIC_GRID
+    )
+    # 找到答案只靠 0.8 的語意相似度：選規則時不搜尋更嚴的下界，所以不會挑到 0.74 以上
+    c = case([hit("A-art-1", se=0.8)], ["A-art-1"])
+    assert tool.RULES[tool.choose([c])][2] <= tool.SEMANTIC_FLOOR
+
+
 def test_a_lowered_semantic_floor_must_clear_the_absent_maximum_by_the_margin() -> None:
     found_only_at_a_low_floor = case([hit("A-art-1", se=0.65)], ["A-art-1"])
     # 無答案題的最高語意相似度 0.649：0.65 的下界沒有誤放，卻只高 0.001，不得選

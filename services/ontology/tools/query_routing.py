@@ -221,6 +221,8 @@ def _record(
 
 #: 語意下界的格子：共用的 0.71 與往下放寬的幾檔。
 SEMANTIC_GRID = (SEMANTIC_FLOOR, 0.68, 0.65, 0.6)
+#: 比共用下界更嚴的幾檔：只用 `compare-rules` 兩兩比較預先登記的候選，`choose` 不搜尋它們。
+STRICT_SEMANTIC_GRID = (0.74, 0.77, 0.8, 0.85)
 
 
 def _rule_name(theta: float, b: bool, semantic: float) -> str:
@@ -234,7 +236,7 @@ def _rule_name(theta: float, b: bool, semantic: float) -> str:
 #: `passes` 仍保留這個參數，供重現先前的比較。
 RULES: dict[str, tuple[float, bool, float]] = {
     _rule_name(theta, False, semantic): (theta, False, semantic)
-    for semantic in SEMANTIC_GRID
+    for semantic in (*SEMANTIC_GRID, *STRICT_SEMANTIC_GRID)
     for theta in (0.0, 0.2, 0.34, 0.5, 0.7)
 }
 #: 現行上線的規則：覆蓋率 0.5，加整詞命中放行。
@@ -314,6 +316,8 @@ def choose(cases: Sequence[Case]) -> str:
     top = absent_top_similarity(cases)
     admissible: list[tuple[str, dict[str, int]]] = []
     for rule, (_, _, semantic) in RULES.items():
+        if semantic > SEMANTIC_FLOOR:
+            continue
         if semantic < SEMANTIC_FLOOR and semantic < top + SEMANTIC_MARGIN:
             continue
         t = tally([outcome(c, rule) for c in cases])
@@ -557,6 +561,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     cr.add_argument("--a", default=SHIPPED)
     cr.add_argument("--b", required=True)
     cr.add_argument("--split", default="fresh")
+    cr.add_argument("--cls", help="只比較這一型（term、question、name）")
     cr.add_argument("--json-out", type=Path)
     a = sub.add_parser("prepare")
     a.add_argument("--keyword", type=Path, required=True)
@@ -567,7 +572,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     e.add_argument("queries", type=Path)
     e.add_argument("hits", type=Path)
     e.add_argument("--meta", type=Path, required=True)
-    e.add_argument("--report-on", choices=("dev", "test", "fresh"), default="dev")
+    e.add_argument("--report-on", default="dev", help="dev、test，或新題批次名（fresh、fresh2…）")
     e.add_argument(
         "--classifier",
         help="只跑這一個分類器；報告測試集時必填（定案之後才量，只報一次）",
@@ -599,7 +604,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "compare-rules":
         if not {args.a, args.b} <= set(RULES):
             p.error(f"不認得的規則：{sorted({args.a, args.b} - set(RULES))}")
-        cases = [c for c in load_cases(args.queries, args.hits) if c["split"] == args.split]
+        cases = [
+            c
+            for c in load_cases(args.queries, args.hits)
+            if c["split"] == args.split and (not args.cls or c["cls"] == args.cls)
+        ]
         result = compare_rules(cases, args.a, args.b)
         if args.json_out:
             args.json_out.write_text(

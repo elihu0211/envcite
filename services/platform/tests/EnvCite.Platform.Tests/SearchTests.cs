@@ -90,6 +90,24 @@ public sealed class SearchTests(PlatformFactory factory)
         Assert.Equal(expected, hits!.Length);
     }
 
+    // 只靠語意臂的命中（相似度 0.72，高過共用下界、低於關鍵字下界 0.74）：關鍵字不列；問句與法規名稱列出。
+    [Theory]
+    [InlineData(1, "hi-sem", 0)]
+    [InlineData(2, "hi-sem？", 1)]
+    [InlineData(3, "hi-sem-a-long-sentence", 1)]
+    [InlineData(4, "hi-sem-空氣污染防制法", 1)]
+    public async Task ASemanticOnlyHitBelowTheKeywordFloorIsListedOnlyForAQuestionOrALawName(int id, string query, int expected)
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync($"search-hisem-{id}");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        using var response = await client.PostAsJsonAsync(SearchPath, new SearchRequest(query, null, null), cancellationToken: TestContext.Current.CancellationToken);
+        var hits = await response.Content.ReadFromJsonAsync<SearchHitDto[]>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(expected, hits!.Length);
+    }
+
     [Fact]
     public async Task AGuidanceArticleIsReturnedWithItsCountAndTheRequestAsksForGuidance()
     {

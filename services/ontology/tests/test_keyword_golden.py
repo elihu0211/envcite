@@ -201,6 +201,15 @@ def test_a_fresh_row_is_a_term_class_query_in_its_own_split() -> None:
     assert "term" not in tool.fresh_row("fresh_absent", "某某", [])
 
 
+def test_a_fresh_batch_names_its_ids_and_its_split() -> None:
+    first = tool.fresh_row("fresh_absent", "某某拼接", [])
+    second = tool.fresh_row("fresh_absent", "某某拼接", [], None, "fresh2")
+    assert first["split"] == "fresh" and second["split"] == "fresh2"
+    assert first["id"].startswith("fresh:") and second["id"].startswith("fresh2:")
+    # 同一個查詢在不同批的題號不同：兩批的結果檔不會互相蓋掉
+    assert first["id"] != second["id"]
+
+
 def test_the_answer_of_a_renamed_item_is_its_law_and_of_a_definition_its_article() -> None:
     renamed = {"bucket": "renamed", "expected": [{"pcode": "O0020001", "law": "某法"}]}
     definition = {"bucket": "definition", "expected": [{"article": "O0020001-art-3"}]}
