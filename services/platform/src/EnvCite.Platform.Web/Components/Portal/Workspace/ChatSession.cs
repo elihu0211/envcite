@@ -1,7 +1,9 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 using EnvCite.Platform.Web.Resources;
 
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 
@@ -33,7 +35,7 @@ public sealed class ChatTurn(string question, string? asOfLabel)
 {
     public string Question { get; } = question;
 
-    public string? AsOfLabel { get; } = asOfLabel;
+    public string? AsOfLabel { get; internal set; } = asOfLabel;
 
     public TurnState State { get; internal set; } = TurnState.Pending;
 
@@ -48,6 +50,14 @@ public sealed class ChatTurn(string question, string? asOfLabel)
 
     /// <summary>從歷史載入的回答：只有當時存下來的文字（正文與出處行），沒有條文卡片。</summary>
     public string? StoredAnswer { get; internal set; }
+
+    /// <summary>
+    /// 接續對話時當作前文的回答正文（<c>[L1]</c> 還在）與它的引用；沒有答案（拒答、只列條文、失敗）就是 null。
+    /// 新答出來的回合與從歷史載入的回合都填這兩個，記憶只看這裡，不分回合從哪來。
+    /// </summary>
+    internal string? MemoryText { get; set; }
+
+    internal IReadOnlyList<ConversationCitation> MemoryCitations { get; set; } = [];
 }
 
 /// <summary>
@@ -96,17 +106,28 @@ public sealed partial class ChatSession(
 
         ConversationId = detail.Id;
         ChatTurn? current = null;
+        string? asOf = null;
         foreach (var message in detail.Messages)
         {
             if (message.Role == "user")
             {
                 current = new ChatTurn(message.Content, asOfLabel: null);
+                asOf = message.AsOf;
                 _turns.Add(current);
             }
             else if (current is not null)
             {
-                current.StoredAnswer = message.Content;
+                // 新格式的回答帶結果種類，所以問題的日期是明確的（null 是現行）；舊資料沒有，就不標。
+                if (message.Outcome is not null)
+                    current.AsOfLabel = AsOfLabelOf(asOf);
+
+                current.StoredAnswer = StoredText(message, current.AsOfLabel);
                 current.State = TurnState.Answered;
+                if (message.Outcome == ConversationOutcome.Answered)
+                {
+                    current.MemoryText = message.Content;
+                    current.MemoryCitations = message.Citations ?? [];
+                }
             }
         }
 
@@ -131,17 +152,19 @@ public sealed partial class ChatSession(
             return;
 
         var asOfValue = string.IsNullOrWhiteSpace(asOf) ? null : asOf.Trim();
-        var turn = new ChatTurn(text, asOfValue is null ? L["現行"] : L["{0} 有效", asOfValue]);
+        var turn = new ChatTurn(text, AsOfLabelOf(asOfValue));
+        var history = HistoryOf();
         _turns.Add(turn);
         Busy = true;
         Changed?.Invoke();
 
         try
         {
-            var result = await ask.AskAsync(user, text, asOfValue, new StageProgress(turn, this), cancellationToken);
-            if (Present(turn, result) is { } historyText)
+            var result = await ask.AskAsync(user, text, asOfValue, history, new StageProgress(turn, this), cancellationToken);
+            if (Present(turn, result) is { } recorded)
             {
-                ConversationId = await ask.RecordAsync(user, ConversationId, text, historyText, cancellationToken);
+                ConversationId = await ask.RecordAsync(
+                    user, ConversationId, new ConversationTurn(text, recorded.Answer, recorded.Outcome, recorded.Citations, asOfValue), cancellationToken);
                 if (ConversationId is not null)
                     workspace.NotifyRecentChanged();
             }
@@ -188,11 +211,52 @@ public sealed partial class ChatSession(
         _ => L["這次沒有產生可以對應到法條出處的回答。請換個說法再問一次。"],
     };
 
+    /// <summary>問題的日期標籤：「現行」或「2026-01-01 有效」；語言是當下的介面語言。</summary>
+    private string AsOfLabelOf(string? asOf) => asOf is null ? L["現行"] : L["{0} 有效", asOf];
+
     /// <summary>
-    /// 把結果放進回合，並回傳要記進歷史的文字（沒有結果時 null）。歷史只存有出處的文字（法規名、條號、條文網址），
+    /// 這串對話前面的幾輪，帶給模型當前文（.NET 通用的 <see cref="ChatMessage"/>）：每個有結果的回合是一則使用者的問題，
+    /// 有答案的再接一則助理的回答，其中的 <c>[L1]</c> 換成法規名——代號只在那一輪的證據集裡有意義，換掉才不會和這一輪的代號混。
+    /// 失敗的、只列條文的回合不算（沒有可接續的答案）；拒答的只留問題，使用者多半是換個說法再問。
+    /// 裁成幾輪、每則多長由服務端決定，這裡全給。
+    /// </summary>
+    private List<ChatMessage> HistoryOf()
+    {
+        List<ChatMessage> messages = [];
+        foreach (var turn in _turns)
+        {
+            if (turn.State is not (TurnState.Answered or TurnState.Refused))
+                continue;
+
+            messages.Add(new ChatMessage(ChatRole.User, turn.Question));
+            if (turn.MemoryText is { } answer)
+                messages.Add(new ChatMessage(ChatRole.Assistant, WithLabels(answer, turn.MemoryCitations)));
+        }
+
+        return messages;
+    }
+
+    /// <summary>把正文裡的代號換成法規名；對不上的代號直接拿掉。</summary>
+    private static string WithLabels(string text, IReadOnlyList<ConversationCitation> citations) =>
+        CodePattern().Replace(text, match =>
+            citations.FirstOrDefault(c => c.Code == match.Groups[1].Value) is { } citation ? $"（{citation.Label}）" : string.Empty);
+
+    /// <summary>從歷史載入的回答要顯示的文字：正文，接著每個出處一行（舊資料的出處行已經寫在正文裡）。</summary>
+    private static string StoredText(ConversationMessageView message, string? asOfLabel) =>
+        message.Citations is not { Count: > 0 } citations
+            ? message.Content
+            : $"{message.Content}\n{string.Join('\n', citations.Select(c => $"[{c.Code}] {c.Label}（{asOfLabel}） {c.Uri}"))}";
+
+    [GeneratedRegex(@"\[(L\d+)\]")]
+    private static partial Regex CodePattern();
+
+    private sealed record Recorded(string Answer, string Outcome, IReadOnlyList<ConversationCitation> Citations);
+
+    /// <summary>
+    /// 把結果放進回合，並回傳要記進歷史的內容（沒有結果時 null）。歷史只存有出處的文字與引用（法規名、條號、條文網址），
     /// 不存條文全文：全文隨時可以由出處再查，而且查的是哪一天的版本已經寫在問題的日期裡。
     /// </summary>
-    private string? Present(ChatTurn turn, AskResult result)
+    private Recorded? Present(ChatTurn turn, AskResult result)
     {
         var answering = result.Mode == AskMode.Answer;
         switch (result.Status)
@@ -202,17 +266,23 @@ public sealed partial class ChatSession(
                 if (turn.Answer!.Refused)
                 {
                     turn.State = TurnState.Refused;
-                    return L["（拒答）{0}", RefusalLabel(turn.Answer.RefusalReason)];
+                    return new Recorded(L["（拒答）{0}", RefusalLabel(turn.Answer.RefusalReason)], ConversationOutcome.Refused, []);
                 }
 
                 turn.State = TurnState.Answered;
-                return $"{turn.Answer.Text}\n{string.Join('\n', turn.Answer.Sources.Select(s => $"[{s.Code}] {s.Citation}（{turn.AsOfLabel}） {s.Uri}"))}";
+                IReadOnlyList<ConversationCitation> citations = [.. turn.Answer.Sources.Select(s => new ConversationCitation(s.Code, s.Citation, s.Uri))];
+                turn.MemoryText = turn.Answer.Text;
+                turn.MemoryCitations = citations;
+                return new Recorded(turn.Answer.Text!, ConversationOutcome.Answered, citations);
             case AskStatus.Ok:
                 turn.Hits = result.Hits;
                 turn.State = TurnState.Listed;
-                return result.Hits!.Count == 0
-                    ? L["沒有符合的條文。"]
-                    : string.Join('\n', result.Hits.Select(hit => L["《{0}》第 {1} 條（{2}） {3}", hit.LawTitle, hit.Number, turn.AsOfLabel!, hit.Uri]));
+                return new Recorded(
+                    result.Hits!.Count == 0
+                        ? L["沒有符合的條文。"]
+                        : string.Join('\n', result.Hits.Select(hit => L["《{0}》第 {1} 條（{2}） {3}", hit.LawTitle, hit.Number, turn.AsOfLabel!, hit.Uri])),
+                    ConversationOutcome.Listed,
+                    []);
             case AskStatus.Invalid:
                 turn.State = TurnState.Failed;
                 turn.Error = answering

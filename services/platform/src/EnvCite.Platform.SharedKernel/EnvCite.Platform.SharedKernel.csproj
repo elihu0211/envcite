@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <PackageReference Include="MailKit" />
+    <!-- 對話記憶用 .NET 的通用訊息型別（ChatMessage）在層與層之間傳遞，不另訂一套。 -->
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>

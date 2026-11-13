@@ -236,6 +236,9 @@ namespace EnvCite.Platform.Data.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("PinnedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -257,6 +260,9 @@ namespace EnvCite.Platform.Data.Migrations
 
                     b.HasIndex("UpdatedAt");
 
+                    b.HasIndex("UserId", "PinnedAt")
+                        .HasFilter("\"PinnedAt\" IS NOT NULL");
+
                     b.HasIndex("UserId", "UpdatedAt");
 
                     b.ToTable("Conversations", "platform");
@@ -270,6 +276,10 @@ namespace EnvCite.Platform.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AsOf")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("text");
@@ -279,6 +289,10 @@ namespace EnvCite.Platform.Data.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Outcome")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -890,6 +904,36 @@ namespace EnvCite.Platform.Data.Migrations
                         .HasForeignKey("ConversationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsMany("EnvCite.Platform.Data.StoredCitation", "Citations", b1 =>
+                        {
+                            b1.Property<Guid>("ConversationMessageId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
+
+                            b1.Property<string>("Code")
+                                .IsRequired();
+
+                            b1.Property<string>("Label")
+                                .IsRequired();
+
+                            b1.Property<string>("Uri")
+                                .IsRequired();
+
+                            b1.HasKey("ConversationMessageId", "__synthesizedOrdinal");
+
+                            b1.ToTable("ConversationMessages", "platform");
+
+                            b1
+                                .ToJson("Citations")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConversationMessageId");
+                        });
+
+                    b.Navigation("Citations");
                 });
 
             modelBuilder.Entity("EnvCite.Platform.Data.DirectoryGroupMember", b =>

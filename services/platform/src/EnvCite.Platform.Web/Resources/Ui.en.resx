@@ -64,7 +64,6 @@
   <data name="分類" xml:space="preserve"><value>Category</value></data>
   <data name="初始密碼" xml:space="preserve"><value>Initial password</value></data>
   <data name="刪除" xml:space="preserve"><value>Delete</value></data>
-  <data name="刪除對話：{0}" xml:space="preserve"><value>Delete conversation: {0}</value></data>
   <data name="前綴" xml:space="preserve"><value>Prefix</value></data>
   <data name="取消" xml:space="preserve"><value>Cancel</value></data>
   <data name="只會顯示這一次" xml:space="preserve"><value>Shown only once</value></data>
@@ -102,7 +101,6 @@
   <data name="已停用" xml:space="preserve"><value>Disabled</value></data>
   <data name="已停用 {0}。" xml:space="preserve"><value>{0} disabled.</value></data>
   <data name="已停用，對方所有登入立刻失效。" xml:space="preserve"><value>Disabled; all of their sign-ins stop working immediately.</value></data>
-  <data name="已刪除。" xml:space="preserve"><value>Deleted.</value></data>
   <data name="已啟用" xml:space="preserve"><value>Enabled</value></data>
   <data name="已指派方案 {0}。" xml:space="preserve"><value>Plan {0} assigned.</value></data>
   <data name="已撤銷" xml:space="preserve"><value>Revoked</value></data>
@@ -158,7 +156,6 @@
   <data name="找不到足以回答這個問題的法條，所以沒有回答。試試換個說法，或換一天。" xml:space="preserve"><value>No article was found that is sufficient to answer this question, so no answer was given. Try rephrasing, or pick another date.</value></data>
   <data name="找不到這位成員。" xml:space="preserve"><value>Member not found.</value></data>
   <data name="找不到這個對話" xml:space="preserve"><value>Conversation not found</value></data>
-  <data name="找不到這個對話。" xml:space="preserve"><value>Conversation not found.</value></data>
   <data name="找不到這個租戶" xml:space="preserve"><value>Tenant not found</value></data>
   <data name="找到 {0} 條（相關度高的在前）。" xml:space="preserve"><value>Found {0} articles (most relevant first).</value></data>
   <data name="指派方案" xml:space="preserve"><value>Assign plan</value></data>
@@ -525,6 +522,19 @@
   <data name="過去 7 天" xml:space="preserve"><value>Past 7 days</value></data>
   <data name="更早" xml:space="preserve"><value>Earlier</value></data>
   <data name="新對話" xml:space="preserve"><value>New conversation</value></data>
+  <data name="正在理解你的追問…" xml:space="preserve"><value>Understanding your follow-up…</value></data>
+  <data name="已釘選" xml:space="preserve"><value>Pinned</value></data>
+  <data name="對話選項：{0}" xml:space="preserve"><value>Conversation options: {0}</value></data>
+  <data name="釘選" xml:space="preserve"><value>Pin</value></data>
+  <data name="取消釘選" xml:space="preserve"><value>Unpin</value></data>
+  <data name="對話標題" xml:space="preserve"><value>Conversation title</value></data>
+  <data name="重新命名" xml:space="preserve"><value>Rename</value></data>
+  <data name="刪除…" xml:space="preserve"><value>Delete…</value></data>
+  <data name="刪除這串對話" xml:space="preserve"><value>Delete this conversation</value></data>
+  <data name="刪除這串對話？刪除後無法復原。" xml:space="preserve"><value>Delete this conversation? This cannot be undone.</value></data>
+  <data name="搜尋對話標題" xml:space="preserve"><value>Search conversation titles</value></data>
+  <data name="沒有符合的對話" xml:space="preserve"><value>No matching conversations</value></data>
+  <data name="換個詞試試；只比對標題，不比對內容。" xml:space="preserve"><value>Try another word. Only titles are searched, not the conversations themselves.</value></data>
   <data name="找到 {0} 條法源，正在撰寫回答…" xml:space="preserve"><value>Found {0} sources, writing the answer…</value></data>
   <data name="正在核對出處…" xml:space="preserve"><value>Checking the citations…</value></data>
   <data name="正在查找法源…" xml:space="preserve"><value>Looking up the law…</value></data>

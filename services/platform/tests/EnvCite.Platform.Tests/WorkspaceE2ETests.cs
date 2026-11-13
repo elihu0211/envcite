@@ -24,7 +24,10 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
         Assert.SkipWhen(E2EToolchain.Skipped, "ENVCITE_SKIP_E2E=1");
         await E2EToolchain.EnsureAsync(Ct);
 
-        var chat = new FakeChat(_ => "在指定清除地區內不得燃燒 [L1]。");
+        // 有前文的提問會先請模型改寫成獨立的問句：改寫那一次回原問題（它已經完整），作答那一次回有引用的答案。
+        var chat = new FakeChat(messages => messages[0].Text.Contains("查詢改寫器", StringComparison.Ordinal)
+            ? FakeConsultServer.AnswerableQuestion
+            : "在指定清除地區內不得燃燒 [L1]。");
         using var host = factory.WithWebHostBuilder(b =>
         {
             b.UseSetting("Platform:Answer:Enabled", consent ? "true" : "false")
@@ -80,7 +83,7 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
     {
         var chat = await RunAsync("flow", consent: true);
 
-        Assert.Equal(2, chat.Calls.Count); // 兩題各問一次模型
+        Assert.Equal(3, chat.Calls.Count); // 第一題作答一次；接著問是追問：改寫、作答各一次
     }
 
     [Fact]
@@ -88,7 +91,18 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
     {
         var chat = await RunAsync("refusal", consent: true);
 
-        Assert.Single(chat.Calls); // 被拒答的那題沒有呼叫模型，之後的那題才有
+        Assert.Equal(2, chat.Calls.Count); // 被拒答的那題沒有呼叫模型；之後那題有前文，所以是改寫加作答
+    }
+
+    // 側欄的選單在真的瀏覽器裡能用（原生 popover、普通表單、整頁導回），而且點進舊對話能接續前文。
+    [Fact]
+    public async Task TheSidebarMenuPinsRenamesDeletesAndAConversationResumesWithItsMemory()
+    {
+        var chat = await RunAsync("history-menu", consent: true);
+
+        Assert.Equal(3, chat.Calls.Count); // 第一題一次；接續後的追問：改寫、作答
+        Assert.Contains(chat.Calls[1], m => m.Text.Contains("那罰款多少", StringComparison.Ordinal));
+        Assert.Contains(chat.Calls[2], m => m.Role == ChatRole.Assistant); // 作答那次帶著前一輪的回答
     }
 
     [Fact]

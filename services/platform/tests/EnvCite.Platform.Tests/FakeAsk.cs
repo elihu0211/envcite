@@ -1,5 +1,7 @@
 using System.Security.Claims;
 
+using Microsoft.Extensions.AI;
+
 namespace EnvCite.Platform.Tests;
 
 /// <summary>可程式化的 <see cref="IAskService"/>：測 <c>ChatSession</c> 與入口元件時，把領域動作換成它。</summary>
@@ -24,7 +26,10 @@ internal sealed class FakeAsk : IAskService
 
     public List<(string? Question, string? AsOf)> Asked { get; } = [];
 
-    public List<(Guid? Conversation, string Question, string Answer)> Recorded { get; } = [];
+    /// <summary>每次提問帶進來的前文，與 <see cref="Asked"/> 同序。</summary>
+    public List<IReadOnlyList<ChatMessage>> Histories { get; } = [];
+
+    public List<RecordedTurn> Recorded { get; } = [];
 
     public TaskCompletionSource? CapabilitiesGate { get; set; }
 
@@ -37,9 +42,10 @@ internal sealed class FakeAsk : IAskService
     }
 
     public async Task<AskResult> AskAsync(
-        ClaimsPrincipal user, string? question, string? asOf, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken)
+        ClaimsPrincipal user, string? question, string? asOf, IReadOnlyList<ChatMessage> history, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken)
     {
         Asked.Add((question, asOf));
+        Histories.Add(history);
         foreach (var stage in StagesBeforeGate)
         {
             progress?.Report(stage);
@@ -57,9 +63,17 @@ internal sealed class FakeAsk : IAskService
     public Task<ConversationDetail?> ConversationAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken) =>
         Task.FromResult(Detail);
 
-    public Task<Guid?> RecordAsync(ClaimsPrincipal user, Guid? conversationId, string question, string answer, CancellationToken cancellationToken)
+    public Task<Guid?> RecordAsync(ClaimsPrincipal user, Guid? conversationId, ConversationTurn turn, CancellationToken cancellationToken)
     {
-        Recorded.Add((conversationId, question, answer));
+        Recorded.Add(new RecordedTurn(conversationId, turn));
         return Task.FromResult(RecordedAs);
+    }
+
+    /// <summary>記進歷史的一回合；<see cref="Question"/> 與 <see cref="Answer"/> 是常看的兩欄。</summary>
+    public sealed record RecordedTurn(Guid? Conversation, ConversationTurn Turn)
+    {
+        public string Question => Turn.Question;
+
+        public string Answer => Turn.Answer;
     }
 }

@@ -38,6 +38,12 @@ public sealed class AnswerOptions : ISectionOptions
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(60);
 
     public int MaxOutputTokens { get; set; } = 800;
+
+    /// <summary>追問帶進模型的前文輪數（一問一答算一輪）：越多越能接續，也越貴、越容易被舊話題帶偏。</summary>
+    public int HistoryTurns { get; set; } = 4;
+
+    /// <summary>前文每則訊息最多幾個字（超過截斷）；答案是長文，不需要整篇帶回去。</summary>
+    public int HistoryChars { get; set; } = 600;
 }
 
 internal sealed class AnswerOptionsValidator : IValidateOptions<AnswerOptions>
@@ -62,6 +68,12 @@ internal sealed class AnswerOptionsValidator : IValidateOptions<AnswerOptions>
 
         if (options.MaxOutputTokens is < 1 or > 8000)
             errors.Add("Platform:Answer:MaxOutputTokens must be between 1 and 8000.");
+
+        if (options.HistoryTurns is < 1 or > 10)
+            errors.Add("Platform:Answer:HistoryTurns must be between 1 and 10.");
+
+        if (options.HistoryChars is < 50 or > 4000)
+            errors.Add("Platform:Answer:HistoryChars must be between 50 and 4000.");
 
         return errors.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(errors);
     }
@@ -92,6 +104,12 @@ public static class ConsultModule
         // 第一次真的要呼叫模型才解析（這裡是組合根，惰性解析在這裡不算服務定位器）。
         services.AddSingleton(provider => new Lazy<IChatClient>(() => provider.GetRequiredService<IChatClient>()));
         services.AddSingleton<IAnswerAvailability, AnswerAvailability>();
+        // 前文的長度交給 .NET 內建的 reducer：只留最近的幾則（一輪是兩則），不自己切。這個類別在 MEAI 11.0 仍標為
+        // 評估用（MEAI001）；介面 IChatReducer 是穩定的，所以只在這一行建構處放行，日後換成別的 reducer 只改這裡。
+        services.TryAddSingleton<IChatReducer>(provider =>
+#pragma warning disable MEAI001
+            new MessageCountingChatReducer(provider.GetRequiredService<IOptions<AnswerOptions>>().Value.HistoryTurns * 2));
+#pragma warning restore MEAI001
         services.AddScoped<ConsultGateway>();
         services.AddScoped<IGroundedAnswerer, GroundedAnswerer>();
         return services;
