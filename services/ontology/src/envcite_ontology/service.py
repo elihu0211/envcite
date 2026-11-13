@@ -45,10 +45,12 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         embedder: Embedder | None = None,
         lexical_max_df: float = 0.0,
         embed_slots: int | None = None,
+        guidance_max_df: float = 0.0,
     ) -> None:
         self._store = store
         self._law_names = law_names
         self._lexical_max_df = lexical_max_df
+        self._guidance_max_df = guidance_max_df
         self._segmenter = segmenter
         self._embedder = embedder
         # 名額滿了就略過語意臂。None 表示不限（測試直接建構、不走伺服器預算時）。
@@ -179,6 +181,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                     as_of=request.as_of,
                     limit=GUIDANCE_CANDIDATES,
                     jurisdiction=jurisdiction,
+                    max_df=self._guidance_max_df,
                     timeout=remaining_seconds(context),
                 ),
                 limit,

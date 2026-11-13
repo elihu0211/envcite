@@ -20,6 +20,7 @@ ALL_NAMES = (
     "ENVCITE_ONTOLOGY_GRPC_PORT",
     "ENVCITE_ONTOLOGY_MODELS",
     "ENVCITE_ONTOLOGY_LEXICAL_MAX_DF",
+    "ENVCITE_ONTOLOGY_GUIDANCE_MAX_DF",
 )
 
 
@@ -120,3 +121,18 @@ def test_env_example_matches_settings() -> None:
     hint = "settings.py 與 .env.example 不一致，請更新 .env.example"
     assert expected_required <= keys, f"{hint}：缺 {sorted(expected_required - keys)}"
     assert keys <= names, f"{hint}：多出 {sorted(keys - names)}"
+
+
+@pytest.mark.parametrize("ratio", ["-0.1", "1.5", "many", ""])
+def test_invalid_guidance_ratio_is_rejected(monkeypatch: pytest.MonkeyPatch, ratio: str) -> None:
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_DSN", "postgresql://u:p@h/db")
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_GUIDANCE_MAX_DF", ratio)
+    with pytest.raises(SystemExit, match="ENVCITE_ONTOLOGY_GUIDANCE_MAX_DF"):
+        load(ServerSettings)
+
+
+def test_guidance_ratio_can_be_turned_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_DSN", "postgresql://u:p@h/db")
+    assert load(ServerSettings).guidance_max_df > 0
+    monkeypatch.setenv("ENVCITE_ONTOLOGY_GUIDANCE_MAX_DF", "0")
+    assert load(ServerSettings).guidance_max_df == 0

@@ -30,11 +30,13 @@ def _burning(no: str, issued_on: str, **over: Any) -> dict[str, Any]:
     return _letter(no, issued_on, subject=f"有關{PHRASE}之認定", **over)
 
 
-def _articles(conn: Conn, phrases: list[str], on: str = ON) -> list[tuple[str, int]]:
+def _articles(
+    conn: Conn, phrases: list[str], on: str = ON, max_df: float = 0.0
+) -> list[tuple[str, int]]:
     rows = conn.execute(
         "SELECT corpus.article_number(g.path), g.documents"
-        "  FROM retrieval.guidance_articles(%s, %s, 'zho', 10) AS g ORDER BY 1",
-        (phrases, on),
+        "  FROM retrieval.guidance_articles(%s, %s, 'zho', 10, %s) AS g ORDER BY 1",
+        (phrases, on, max_df),
     ).fetchall()
     return [(str(number), int(documents)) for number, documents in rows]  # type: ignore[call-overload]
 
@@ -75,6 +77,45 @@ def test_an_amended_text_no_longer_brings_the_article_out(conn: Conn, tmp_path: 
 
     assert _articles(conn, [PHRASE], "2019-06-01") == [("2", 1)]
     assert _articles(conn, [PHRASE], "2020-06-01") == []
+
+
+def test_a_phrase_in_too_many_letters_is_not_an_entrance(conn: Conn, tmp_path: Path) -> None:
+    """命中的函釋占可用函釋的比例超過上限，就指不出哪幾條：整個不用，不挑其中幾件。"""
+    _first(conn, tmp_path, _law_v1())
+    # 四件可用函釋，兩件提到「露天燃燒」（占 50%）、四件都提到「說明」。
+    load(
+        conn,
+        _doc(
+            _burning("甲字第1號", "2019-03-01"),
+            _burning("甲字第2號", "2019-03-02"),
+            _letter("甲字第3號", "2019-03-03", subject="另一件的主旨"),
+            _letter("甲字第4號", "2019-03-04", subject="再一件的主旨"),
+        ),
+    )
+
+    assert _articles(conn, [PHRASE], max_df=0.5) == [("1", 2)]  # 剛好在上限：照常
+    assert _articles(conn, [PHRASE], max_df=0.49) == []  # 超過上限：不用
+    assert _articles(conn, ["說明"], max_df=0.99) == []  # 四件都提到：太常見
+    assert _articles(conn, ["說明"], max_df=1.0) == [("1", 4)]
+    assert _articles(conn, [PHRASE], max_df=0.0) == [("1", 2)]  # 0 為不限制
+
+
+def test_the_ratio_counts_only_letters_in_effect(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1())
+    load(
+        conn,
+        _doc(
+            _burning("甲字第1號", "2019-03-01"),
+            _letter("甲字第2號", "2019-03-02", subject="停止適用", ceased_on="2019-04-01"),
+        ),
+    )
+
+    # 5 月只剩一件可用函釋（停止適用的那件不在分母裡），它提到詞組：占 100%，超過 0.99 就不用。
+    assert _articles(conn, [PHRASE], "2019-05-01", max_df=0.99) == []
+    assert _articles(conn, [PHRASE], "2019-05-01", max_df=1.0) == [("1", 1)]
+    # 3 月兩件都可用：一件提到，占 50%。
+    assert _articles(conn, [PHRASE], "2019-03-15", max_df=0.5) == [("1", 1)]
+    assert _articles(conn, [PHRASE], "2019-03-15", max_df=0.49) == []
 
 
 @pytest.fixture
