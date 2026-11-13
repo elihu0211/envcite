@@ -5,8 +5,6 @@
 robots.txt 為 `Disallow: /`，API 是唯一管道。
 """
 
-from __future__ import annotations
-
 import hashlib
 import json
 import re

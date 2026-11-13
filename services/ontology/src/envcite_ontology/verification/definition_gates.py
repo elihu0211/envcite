@@ -7,23 +7,19 @@
 方法最近一次失敗才確認；有失敗就駁回。成員漏列與多列都算不同——漏列的成員會被推論當成「不屬於」。
 """
 
-from __future__ import annotations
-
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import cast
 
-import psycopg
 from psycopg.types.json import Jsonb
 
+from envcite_ontology.db import Conn
 from envcite_ontology.verification.context import ancestors_text, context_block
 from envcite_ontology.verification.gates.base import GateResult
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.model_gates import eligible
 from envcite_ontology.verification.models import Model, ModelError
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 log = logging.getLogger(__name__)
 
@@ -152,7 +148,7 @@ def _norm(text: str) -> str:
     return "".join(text.split())
 
 
-DefinitionGate = LiteralGate | DefinitionRoundtripGate
+type DefinitionGate = LiteralGate | DefinitionRoundtripGate
 
 
 def gates_for(reader: Model | None, allow_same_family: bool = False) -> tuple[DefinitionGate, ...]:

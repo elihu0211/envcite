@@ -4,8 +4,6 @@
 解析規則跟不上，整批不寫入。上限取自 2026-09-18 全量檔（11,798 部）的實測再放寬。
 """
 
-from __future__ import annotations
-
 from collections import Counter
 from dataclasses import dataclass, field
 
@@ -48,7 +46,7 @@ class Metrics:
                     self.live_articles += 1
                     self.unconfirmed_articles += u.rule == "unconfirmed"
                 self.by_order_articles += u.rule == "by_order"
-        self.problems.update((p.level, p.code) for p in law.problems)
+        self.problems.update((p.severity, p.code) for p in law.problems)
 
     def ratio(self, name: str) -> float:
         denominator = {

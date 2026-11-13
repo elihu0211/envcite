@@ -6,8 +6,6 @@ consult 的相關性下界（`Relevance`）校準的對象，乘上覆蓋率會�
 下大幅下降，而可答與無答案的取捨沒有改善（開發集量測）。
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 
 from envcite_segmenter import Segmenter

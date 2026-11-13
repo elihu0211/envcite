@@ -7,8 +7,6 @@
 文字與效力，不是事件。
 """
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 from datetime import date

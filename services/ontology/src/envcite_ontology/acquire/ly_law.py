@@ -19,8 +19,6 @@
 - 連結中的代碼每個連線階段不同，所以快照只存內容部分（`fragment`），版本以法律編號與通過日識別。
 """
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 from datetime import date

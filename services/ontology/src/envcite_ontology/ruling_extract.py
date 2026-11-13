@@ -16,8 +16,6 @@
 `partial`，失效仍記在整個條文單元上，核對時看原文。
 """
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 from datetime import date

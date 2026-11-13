@@ -315,7 +315,7 @@ def test_an_older_last_article_does_not_date_a_past_version() -> None:
     }
     assert rows[(V1, "art_1")] == ("specified", date(1991, 7, 1), V3 + DAY3)
     assert rows[(V2, "art_1")] == ("unconfirmed", None, None)
-    assert ("warning", "stale_last_article") in {(p.level, p.code) for p in plan.problems}
+    assert ("warning", "stale_last_article") in {(p.severity, p.code) for p in plan.problems}
 
 
 def test_a_law_never_amended_is_acquired_and_has_no_past_versions(

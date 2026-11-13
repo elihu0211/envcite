@@ -3,13 +3,9 @@
 標註、裁判與行政規則都要這一步。查詢只認全國法規資料庫的代碼，不猜其他方案。
 """
 
-from __future__ import annotations
-
 from typing import cast
 
-import psycopg
-
-Conn = psycopg.Connection[tuple[object, ...]]
+from envcite_ontology.db import Conn
 
 
 class UnknownProvision(LookupError):

@@ -111,7 +111,7 @@ def test_a_date_left_in_an_untouched_last_article_is_not_this_versions() -> None
     p = _parse(LawHistories=histories, LawArticles=articles)
     rules = {u.path: (u.rule, u.starts) for u in p.units if u.type == "article"}
     assert rules == {"art_1": ("unconfirmed", None), "art_3-1": ("unchanged", date(2018, 8, 1))}
-    assert ("warning", "stale_last_article") in {(x.level, x.code) for x in p.problems}
+    assert ("warning", "stale_last_article") in {(x.severity, x.code) for x in p.problems}
 
     # 同一次修正也改了末條：末條的日期就是這一版的，早於公布日是明文的溯及既往
     p = _parse(LawHistories=histories.replace("第 1 條", "第 1、3-1 條"), LawArticles=articles)
@@ -146,7 +146,7 @@ def test_a_later_commencement_order_dates_the_articles_awaiting_it() -> None:
 
 def test_problems_are_reported_per_law_without_raising() -> None:
     p = _parse(LawLevel="判例", LawName="", LawHistories="", LawModifiedDate="")
-    codes = {(x.level, x.code) for x in p.problems}
+    codes = {(x.severity, x.code) for x in p.problems}
     assert not p.ok
     assert {("error", "law_level"), ("error", "title"), ("error", "version_date")} <= codes
 
@@ -156,7 +156,7 @@ def test_duplicate_article_numbers_reject_the_law() -> None:
         {"ArticleType": "A", "ArticleNo": "第 1 條", "ArticleContent": "重複。"}
     ]
     p = _parse(LawArticles=articles)
-    assert not p.ok and ("error", "article_duplicate") in {(x.level, x.code) for x in p.problems}
+    assert not p.ok and ("error", "article_duplicate") in {(x.severity, x.code) for x in p.problems}
 
 
 def test_an_article_that_cannot_be_split_keeps_its_whole_text() -> None:
@@ -177,7 +177,7 @@ def test_a_law_without_article_text_is_kept_with_a_warning() -> None:
     assert (
         p.ok
         and not p.units
-        and ("warning", "no_article_text") in {(x.level, x.code) for x in p.problems}
+        and ("warning", "no_article_text") in {(x.severity, x.code) for x in p.problems}
     )
 
 

@@ -1,11 +1,10 @@
 """宣告式政策：所有門檻都來自設定檔或環境變數，不寫死在程式。"""
 
 import os
+import tomllib
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, fields, replace
 from typing import Any, Literal
-
-import tomllib
 
 OpenAction = Literal["exit", "wait"]
 
@@ -109,8 +108,8 @@ class Policy:
         environ: Mapping[str, str] | None = None,
         *,
         prefix: str = "ENVCITE_JOBKIT_",
-        base: "Policy | None" = None,
-    ) -> "Policy":
+        base: Policy | None = None,
+    ) -> Policy:
         """`<prefix><欄位名大寫>`，如 `ENVCITE_JOBKIT_OPEN_SECONDS`。空字串視為未設定。"""
         env = os.environ if environ is None else environ
         values: dict[str, Any] = {}
@@ -121,7 +120,7 @@ class Policy:
         return replace(base or cls(), **values)
 
     @classmethod
-    def from_file(cls, path: str | os.PathLike[str], *, base: "Policy | None" = None) -> "Policy":
+    def from_file(cls, path: str | os.PathLike[str], *, base: Policy | None = None) -> Policy:
         """TOML；欄位在頂層或 `[jobkit]` 表。未知欄位報錯，避免拼錯而安靜失效。"""
         with open(path, "rb") as f:
             data = tomllib.load(f)
@@ -138,8 +137,8 @@ class Policy:
         environ: Mapping[str, str] | None = None,
         *,
         prefix: str = "ENVCITE_JOBKIT_",
-        defaults: "Policy | None" = None,
-    ) -> "Policy":
+        defaults: Policy | None = None,
+    ) -> Policy:
         """優先序：環境變數 > 設定檔 > `defaults` > 內建預設。"""
         policy = defaults or cls()
         if path is not None:

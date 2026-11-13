@@ -8,22 +8,17 @@
 載入狀態是 extracted；確認由定義自己的驗證閘門決定（`definition_gates`），沒通過的不進推論。
 """
 
-from __future__ import annotations
-
 import json
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-import psycopg
-
 from envcite_ontology.claims import AnnotationError, Loaded, load
+from envcite_ontology.db import Conn
 from envcite_ontology.verification.context import ancestors_text, context_block
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, ModelError
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 #: 條文的用語定義項：「本法用語，定義如下」「本法所用名詞，定義如下」。
 DEFINITION_CLAUSE = re.compile(r"(用語|用詞|名詞)[，,、]?\s*(定義|意義)如下")

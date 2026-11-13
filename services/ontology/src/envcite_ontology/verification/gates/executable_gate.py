@@ -1,15 +1,14 @@
 """閘門三：標註可被推論程式評估，且結論如要件所預期地翻轉。"""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from typing import Any, cast
 
+from envcite_ontology.db import Conn
 from envcite_ontology.reasoning import Result, evaluate
 from envcite_ontology.reasoning.facts import CaseValue, Measurement, limit_at
-from envcite_ontology.verification.gates.base import Conn, GateResult, Unit, unit_of
+from envcite_ontology.verification.gates.base import GateResult, Unit, unit_of
 from envcite_ontology.verification.gates.conditions import (
     Cond,
     exception_facts,

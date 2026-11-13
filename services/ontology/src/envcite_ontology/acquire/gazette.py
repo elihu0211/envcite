@@ -12,8 +12,6 @@ XML 每則刊登一個 `<Record>`；行政規則是 `Doc_Style_LName` 為「行�
 的路徑推出（`eg032182` 為第 32 卷第 182 期）。
 """
 
-from __future__ import annotations
-
 import html
 import re
 import xml.etree.ElementTree as ET
@@ -54,7 +52,7 @@ _NAME = re.compile(r"「([^」]+)」((?:第[^，。、；「」]*?[點條項款]
 #: 停止的生效日；寫「即日」或沒寫就是發文日
 _EFFECTIVE = re.compile(r"自([^，。；]{4,24}?日)(?:起)?(?:生效|停止適用|廢止)")
 
-RuleKind = Literal["interpretation", "discretion_standard"]
+type RuleKind = Literal["interpretation", "discretion_standard"]
 
 
 @dataclass(frozen=True, slots=True)

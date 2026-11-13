@@ -1,7 +1,5 @@
 """模型的回答常把 JSON 包在 ```json 圍欄或前後的說明裡：取出第一個 JSON 物件。"""
 
-from __future__ import annotations
-
 import json
 from typing import Any
 

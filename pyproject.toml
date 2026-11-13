@@ -38,6 +38,8 @@ dev = [
 
 [tool.ruff]
 line-length = 100
+# 工作區根沒有 [project]，ruff 推不出版本；各成員都要求 >=3.14，在這裡明說，UP 規則才會要求新語法。
+target-version = "py314"
 # 第一方套件的位置，import 排序據此區分第一方與第三方
 src = ["services/*/src", "services/*", "libs/python/*/src", "libs/python/*"]
 extend-exclude = ["libs/python/envcite-proto/src"]

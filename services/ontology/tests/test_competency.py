@@ -6,10 +6,10 @@
 """
 
 import re
+import tomllib
 from pathlib import Path
 
 import psycopg
-import tomllib
 
 SERVICE = Path(__file__).resolve().parent.parent
 REGISTRY = SERVICE / "competency.toml"

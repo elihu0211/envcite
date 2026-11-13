@@ -1,7 +1,5 @@
 """讀中文與阿拉伯數字、金額及其限定詞（以上、以下）；數字與引用閘門共用。"""
 
-from __future__ import annotations
-
 import re
 from collections.abc import Sequence
 from decimal import Decimal

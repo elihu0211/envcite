@@ -3,8 +3,6 @@
 不用框架：只需要版本表。已套用的檔案不可修改，由 checksum 比對強制。
 """
 
-from __future__ import annotations
-
 import hashlib
 from pathlib import Path
 

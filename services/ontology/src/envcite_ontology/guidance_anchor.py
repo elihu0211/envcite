@@ -15,20 +15,15 @@
 寫成「法名第幾條」的引用，法名須是解析得到的名稱；其餘提到的條號不一定是被解釋或所依據的，不取。
 """
 
-from __future__ import annotations
-
 import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import date
 
-import psycopg
-
 from envcite_ontology.acquire import moenv
+from envcite_ontology.db import Conn
+from envcite_ontology.import_problems import Problem
 from envcite_ontology.ingest import numerals
-
-Conn = psycopg.Connection[tuple[object, ...]]
-Problem = tuple[str, str, str]  # （severity，problem_code，detail）
 
 #: 內文中寫出依據的字樣，緊接在法名之前（引號與空白已去掉）：解釋的對象，或訂定的依據
 _INTERPRETS = re.compile(r"核釋$")
@@ -90,9 +85,9 @@ class Resolver:
         resolved = self.resolve(c.law_name)
         if resolved.pcode is None:
             assert resolved.problem is not None
-            return [], [("warning", resolved.problem, cited)]
+            return [], [Problem("warning", resolved.problem, cited)]
         if c.path is None:
-            return [], [("warning", "no_article", cited)]
+            return [], [Problem("warning", "no_article", cited)]
         rows = self._conn.execute(
             """
             SELECT p.path, v.content
@@ -108,14 +103,14 @@ class Resolver:
             {"pcode": resolved.pcode, "path": c.path, "on": on},
         ).fetchall()
         if not rows:
-            return [], [("warning", "provision_unresolved", cited)]
+            return [], [Problem("warning", "provision_unresolved", cited)]
         found = [
             {"law": resolved.pcode, "path": str(path), "text": str(text)}
             for path, text in rows
             if text is not None
         ]
         if not found:
-            return [], [("warning", "no_version_at_issue", f"{cited}（{on}）")]
+            return [], [Problem("warning", "no_version_at_issue", f"{cited}（{on}）")]
         return found, []
 
     def basis(self, body: str) -> list[tuple[str, moenv.Citation]]:

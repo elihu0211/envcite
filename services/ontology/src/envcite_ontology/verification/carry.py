@@ -14,8 +14,6 @@
 主體同理：被補的那一段是行為人（詞尾是人、機關、事業…）而陳述的主體未明示，就成為它的主體。
 """
 
-from __future__ import annotations
-
 import re
 from collections.abc import Mapping, Sequence
 from hashlib import sha1

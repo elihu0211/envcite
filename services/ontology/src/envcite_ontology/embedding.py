@@ -7,18 +7,11 @@
 客戶的問題悄悄送到未指定的第三方。
 """
 
-from __future__ import annotations
-
-import json
 import logging
-import urllib.error
 from collections.abc import Mapping, Sequence
-from http.client import HTTPException
 
 from envcite_jobkit import Disposition, EndpointError, FatalError, ItemError, classify_http_status
-from envcite_ontology.endpoint import json_headers
-from envcite_ontology.http import HttpStatus, urlopen
-from envcite_ontology.settings import ModelsSettings
+from envcite_ontology.http import HttpStatus, TransportError, post_json
 
 log = logging.getLogger(__name__)
 
@@ -102,9 +95,7 @@ class Embedder:
         raise PayloadTooLarge(f"{self.model}: HTTP 413 even for a single character")
 
     def _request(self, texts: Sequence[str]) -> list[list[float]]:
-        headers = json_headers(self._api_key)
-        body = json.dumps({"model": self.model, "input": list(texts)}).encode()
-        data = self._post(f"{self._base_url}/embeddings", body, headers).get("data")
+        data = self._post({"model": self.model, "input": list(texts)}).get("data")
         if not isinstance(data, list) or len(data) != len(texts):
             raise EndpointUnavailable(f"{self.model}: expected {len(texts)} embeddings")
         vectors: list[list[float]] = []
@@ -117,22 +108,15 @@ class Embedder:
             vectors.append([float(x) for x in vector])
         return vectors
 
-    def _post(self, url: str, body: bytes, headers: Mapping[str, str]) -> dict[str, object]:
+    def _post(self, body: Mapping[str, object]) -> dict[str, object]:
         try:
-            with urlopen(
-                url, data=body, headers=headers, timeout=self.timeout, method="POST"
-            ) as response:
-                payload = json.loads(response.read())
+            payload = post_json(
+                f"{self._base_url}/embeddings", body, api_key=self._api_key, timeout=self.timeout
+            )
         except HttpStatus as e:
             raise _http_error(self.model, e.status) from e
-        except (
-            urllib.error.URLError,
-            TimeoutError,
-            ConnectionError,
-            HTTPException,
-            json.JSONDecodeError,
-        ) as e:
-            raise EndpointUnavailable(f"{self.model}: {type(e).__name__}: {e}") from e
+        except TransportError as e:
+            raise EndpointUnavailable(f"{self.model}: {e}") from e
         if not isinstance(payload, dict):
             raise EndpointUnavailable(f"{self.model}: the reply is not a JSON object")
         return payload
@@ -150,15 +134,6 @@ def _http_error(model: str, status: int) -> EmbeddingError:
             return EndpointMisconfigured(message)
         case _:
             return EmbeddingRejected(message)
-
-
-def from_settings(settings: ModelsSettings, *, timeout: float) -> Embedder | None:
-    """`models.toml` 的 `[embedding]`；沒有設定檔或沒有這一段時為 None，檢索只用字面臂。"""
-    if settings.models is None:
-        return None
-    from envcite_ontology.verification import config  # 延後匯入：verification 套件會回頭用到 store
-
-    return config.load_embedder(settings.models, timeout=timeout)
 
 
 def to_sql(vector: Sequence[float]) -> str:

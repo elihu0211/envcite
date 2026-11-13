@@ -20,8 +20,6 @@
 來源與授權見 `history_sources.py`；顯示這些文字時須標示出處（快照的 `license_notice`）。
 """
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json
@@ -46,8 +44,9 @@ from envcite_jobkit import (
     RunStats,
     run,
 )
-from envcite_ontology import delegation, embedding, projection
+from envcite_ontology import delegation, embedding, import_problems, projection
 from envcite_ontology.acquire.web import Http
+from envcite_ontology.db import Conn
 from envcite_ontology.history_sources import (
     SOURCES,
     HistorySource,
@@ -56,14 +55,14 @@ from envcite_ontology.history_sources import (
     Unmatched,
     Web,
 )
+from envcite_ontology.import_problems import Problem
 from envcite_ontology.ingest import audit, backfill, law
 from envcite_ontology.ingest.backfill import UnreadablePage
-from envcite_ontology.ingest.law import Problem
 from envcite_ontology.settings import SnapshotSettings, load
+from envcite_ontology.verification import config
 
 log = logging.getLogger(__name__)
 
-Conn = psycopg.Connection[tuple[object, ...]]
 
 POLICY = Policy(
     name="history",
@@ -279,7 +278,7 @@ def import_(
     matched = [p for p in prepared if p.anchor is not None]
     report.matched = len(matched)
     for p in prepared:
-        report.problems.update(f"{x.level} {x.code}" for x in p.plan.problems)
+        report.problems.update(f"{x.severity} {x.code}" for x in p.plan.problems)
         report.check.update(p.plan.check)
     limits = LIMITS | {"unmatched": ("對不到語料法規的占列舉數", source.unmatched_limit)}
     ratios = {
@@ -340,14 +339,7 @@ def _write_one(conn: Conn, source: HistorySource, p: _Prepared) -> str:
 
 def _record(conn: Conn, p: _Prepared, problems: list[Problem]) -> None:
     """這部法規這次匯入的問題（每次重寫一份）與匯入記錄。"""
-    conn.execute("DELETE FROM source.import_problem WHERE item_id = %s", (p.item_id,))
-    with conn.cursor() as cur:
-        cur.executemany(
-            "INSERT INTO source.import_problem"
-            " (item_id, snapshot_id, severity, problem_code, detail)"
-            " VALUES (%s, %s, %s, %s, %s)",
-            [(p.item_id, p.snapshot_id, x.level, x.code, x.detail) for x in problems],
-        )
+    import_problems.replace(conn, p.item_id, p.snapshot_id, problems)
     conn.execute(
         "UPDATE source.item SET imported_sha256 = content_sha256, parser_version = %s"
         " WHERE id = %s",
@@ -434,7 +426,7 @@ def main() -> None:
     source = SOURCES[args.source]()
     settings = load(SnapshotSettings)
     with psycopg.connect(settings.dsn) as conn:
-        embedder = embedding.from_settings(settings, timeout=60.0)
+        embedder = config.embedder_from_settings(settings, timeout=60.0)
         policy = Policy.load(defaults=POLICY)
         raise SystemExit(
             sync(

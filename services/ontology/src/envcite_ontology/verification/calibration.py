@@ -3,8 +3,6 @@
 標準答案取自既有資料集，不為本系統另請人標；代理越差區間越寬，不會變成錯的。
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from math import sqrt

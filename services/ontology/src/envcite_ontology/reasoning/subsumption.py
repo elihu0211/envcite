@@ -5,19 +5,14 @@
 缺漏事實識別、不確定概念需判斷事項、責任主體分流與行政罰法總則阻卻之正確性。
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from typing import Any
 
-import psycopg
-
+from envcite_ontology.db import Conn
 from envcite_ontology.reasoning import facts
 from envcite_ontology.reasoning.engine import evaluate
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 
 @dataclass(frozen=True)

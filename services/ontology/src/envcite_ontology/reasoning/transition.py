@@ -13,18 +13,13 @@
 兩者不能混為一談，所以每一組都帶 `uncovered_laws`，列出這種法規。
 """
 
-from __future__ import annotations
-
 from collections.abc import Collection
 from dataclasses import dataclass
 from datetime import date
 
-import psycopg
-
+from envcite_ontology.db import Conn
 from envcite_ontology.reasoning.engine import Result, evaluate
 from envcite_ontology.reasoning.facts import Case, Measurements, Permits
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 _APPLICABLE = """
     SELECT r.statement_id

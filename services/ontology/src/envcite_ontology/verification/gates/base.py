@@ -1,16 +1,12 @@
 """閘門共用型別與陳述所在條文單元的讀取。"""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol, cast
 
-import psycopg
-
+from envcite_ontology.db import Conn
 from envcite_ontology.verification.context import ancestors_text
 
-Conn = psycopg.Connection[tuple[object, ...]]
-Verdict = Literal["pass", "fail", "inconclusive"]
+type Verdict = Literal["pass", "fail", "inconclusive"]
 
 
 @dataclass(frozen=True)

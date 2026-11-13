@@ -3,8 +3,6 @@
 版本解析、閱讀順序、IRI、條文全文都由 SQL 決定，本模組不重算，以免兩處答案分岔。
 """
 
-from __future__ import annotations
-
 import time
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
@@ -21,9 +19,6 @@ from envcite_ontology.law_names import LawNames
 
 #: 語料目前只有中文版本。
 LANGUAGE = "zho"
-
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 
 @dataclass(frozen=True, slots=True)

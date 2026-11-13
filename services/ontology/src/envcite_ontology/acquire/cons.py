@@ -8,8 +8,6 @@
 `<li class="text">…</li>`；解釋文與主文的段落在 `<pre>` 裡。
 """
 
-from __future__ import annotations
-
 import re
 import ssl
 from dataclasses import dataclass

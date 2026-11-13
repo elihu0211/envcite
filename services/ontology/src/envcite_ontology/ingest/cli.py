@@ -4,8 +4,6 @@
 `--dry-run` 只解析與驗收；寫入後重建檢索投影。
 """
 
-from __future__ import annotations
-
 import argparse
 import logging
 

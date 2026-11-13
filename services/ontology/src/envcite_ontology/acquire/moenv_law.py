@@ -20,8 +20,6 @@
 - 歷史清單 `LawContentHistoryList.aspx?id=`：每列一個 `hid` 與異動日期，新到舊。
 """
 
-from __future__ import annotations
-
 import html
 import re
 import unicodedata

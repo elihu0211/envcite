@@ -3,8 +3,6 @@
 錯誤一律丟 `errors.ServiceError`，由 `errors.maps_errors` 轉成帶 ErrorInfo 的狀態。
 """
 
-from __future__ import annotations
-
 import logging
 import threading
 
@@ -13,7 +11,7 @@ import grpc
 from envcite.ontology.v2 import ontology_pb2 as pb
 from envcite.ontology.v2 import ontology_pb2_grpc
 from envcite_grpc import remaining_seconds
-from envcite_ontology import errors
+from envcite_ontology import errors, identifiers
 from envcite_ontology.coverage import term_coverage
 from envcite_ontology.embedding import Embedder, EmbeddingError
 from envcite_ontology.guidance_search import CANDIDATES as GUIDANCE_CANDIDATES
@@ -70,12 +68,6 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
             threading.BoundedSemaphore(rerank_slots) if rerank_slots is not None else None
         )
 
-    def _not_found(self, key: LawKey, as_of: str, *, timeout: float | None) -> errors.ServiceError:
-        if self._store.law_exists(key, timeout=timeout):
-            when = f"in force on {as_of}" if as_of else "in force today"
-            return errors.not_found(errors.AS_OF_NOT_COVERED, f"law '{key}' has no version {when}")
-        return errors.not_found(errors.LAW_NOT_FOUND, f"law '{key}' not found")
-
     def _request_key(self, identifier: pb.LawIdentifier, as_of: str) -> LawKey:
         """必填的自然鍵與 `as_of` 一次驗證，違規一次回報。"""
         v = errors.Validator()
@@ -86,11 +78,11 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
 
     @errors.maps_errors
     def GetLaw(self, request: pb.GetLawRequest, context: grpc.ServicerContext) -> pb.GetLawResponse:
-        _log_call(context, "GetLaw", _identifier_subject(request.identifier))
+        _log_call(context, "GetLaw", identifiers.subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         law = self._store.get_law(key, as_of=request.as_of, timeout=remaining_seconds(context))
         if law is None:
-            raise self._not_found(key, request.as_of, timeout=remaining_seconds(context))
+            raise identifiers.not_found(self._store, key, request.as_of, context)
         return pb.GetLawResponse(
             law=pb.Law(
                 identifier=pb.LawIdentifier(
@@ -109,13 +101,13 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def ListArticles(
         self, request: pb.ListArticlesRequest, context: grpc.ServicerContext
     ) -> pb.ListArticlesResponse:
-        _log_call(context, "ListArticles", _identifier_subject(request.identifier))
+        _log_call(context, "ListArticles", identifiers.subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         articles = self._store.list_articles(
             key, as_of=request.as_of, timeout=remaining_seconds(context)
         )
         if articles is None:
-            raise self._not_found(key, request.as_of, timeout=remaining_seconds(context))
+            raise identifiers.not_found(self._store, key, request.as_of, context)
         return pb.ListArticlesResponse(
             articles=[pb.Article(iri=a.iri, number=a.number) for a in articles]
         )
@@ -124,7 +116,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def ListInvalidations(
         self, request: pb.ListInvalidationsRequest, context: grpc.ServicerContext
     ) -> pb.ListInvalidationsResponse:
-        _log_call(context, "ListInvalidations", _identifier_subject(request.identifier))
+        _log_call(context, "ListInvalidations", identifiers.subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         found = self._store.list_invalidations(
             key,
@@ -133,7 +125,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
             timeout=remaining_seconds(context),
         )
         if found is None:
-            raise self._not_found(key, request.as_of, timeout=remaining_seconds(context))
+            raise identifiers.not_found(self._store, key, request.as_of, context)
         return pb.ListInvalidationsResponse(
             invalidations=[
                 pb.Invalidation(
@@ -291,10 +283,6 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
 def _guided(pair: tuple[SearchHit, int]) -> bool:
     """函釋帶出這一條（有函釋提到查詢詞並解釋它）。"""
     return pair[1] > 0
-
-
-def _identifier_subject(identifier: pb.LawIdentifier) -> str:
-    return f"{identifier.jurisdiction}:{identifier.id_scheme}:{identifier.local_id}"
 
 
 def _log_call(context: grpc.ServicerContext, method: str, subject: str) -> None:

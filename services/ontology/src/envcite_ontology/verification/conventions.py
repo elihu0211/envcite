@@ -3,8 +3,6 @@
 三個提示都以 `apply` 組成。不得含大括號：會被放進 `str.format` 的樣板。
 """
 
-from __future__ import annotations
-
 CONVENTIONS = """本體的約定（抽取、重抽與審查都依這一份）：
 A. 只有 kind 為 prescriptive 才有 deontic（obligation、prohibition、permission）；constitutive
    （定義、適用範圍、授權）與 sanction（罰則與改善命令等不利效果）的 deontic 為 null。

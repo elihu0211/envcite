@@ -4,8 +4,6 @@
 法規稀釋，期望條文常落在前 50 條之外。名稱取自資料庫所有版本的標題，所以舊名稱也認得。
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 
 #: 二字的名稱（民法、刑法）常是別的詞的一部分，不當作點名。

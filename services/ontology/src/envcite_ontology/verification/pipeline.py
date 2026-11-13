@@ -4,20 +4,16 @@
 接受一批可能讓另一批的無法判定閘門變得可判定，故重複到沒有進展。
 """
 
-from __future__ import annotations
-
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import cast
 
-import psycopg
 from psycopg.types.json import Jsonb
 
+from envcite_ontology.db import Conn
 from envcite_ontology.verification.gates import DEFAULT_GATES, Gate, GateResult
 from envcite_ontology.verification.models import ModelError
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 log = logging.getLogger(__name__)
 

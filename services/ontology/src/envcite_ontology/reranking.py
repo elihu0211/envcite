@@ -9,27 +9,18 @@
 逾時短，任何失敗都以 `RerankError` 表明，由呼叫端退回精排前的次序，查詢不因此失敗。
 """
 
-from __future__ import annotations
-
-import json
 import logging
 import math
-import urllib.error
 from collections.abc import Callable, Sequence
-from http.client import HTTPException
-from typing import Protocol, TypeVar
+from typing import Protocol
 
-from envcite_ontology.endpoint import json_headers
-from envcite_ontology.http import HttpStatus, urlopen
-from envcite_ontology.settings import ModelsSettings
+from envcite_ontology.http import HttpStatus, TransportError, post_json
 
 log = logging.getLogger(__name__)
 
 #: 送給精排模型的單條上限（字）。模型能讀的長度遠大於此，但條文開頭就帶著主題，截短不傷判斷，
 #: 又讓整批請求的大小與延遲有界。
 MAX_DOCUMENT_CHARS = 2000
-
-T = TypeVar("T")
 
 
 class RerankError(RuntimeError):
@@ -77,34 +68,21 @@ class Reranker:
         budget = self.timeout if timeout is None else min(self.timeout, timeout)
         if budget <= 0:
             raise RerankError(f"{self.model}: no time left")
-        body = json.dumps(
-            {
-                "model": self.model,
-                "query": query,
-                # 空字串端點未必收，換成一個空白
-                "documents": [d[:MAX_DOCUMENT_CHARS] or " " for d in documents],
-                "top_n": len(documents),
-            }
-        ).encode()
+        body = {
+            "model": self.model,
+            "query": query,
+            # 空字串端點未必收，換成一個空白
+            "documents": [d[:MAX_DOCUMENT_CHARS] or " " for d in documents],
+            "top_n": len(documents),
+        }
         try:
-            with urlopen(
-                f"{self._base_url}/rerank",
-                data=body,
-                headers=json_headers(self._api_key),
-                timeout=budget,
-                method="POST",
-            ) as response:
-                payload = json.loads(response.read())
+            payload = post_json(
+                f"{self._base_url}/rerank", body, api_key=self._api_key, timeout=budget
+            )
         except HttpStatus as e:
             raise RerankError(f"{self.model}: HTTP {e.status}") from e
-        except (
-            urllib.error.URLError,
-            TimeoutError,
-            ConnectionError,
-            HTTPException,
-            json.JSONDecodeError,
-        ) as e:
-            raise RerankError(f"{self.model}: {type(e).__name__}: {e}") from e
+        except TransportError as e:
+            raise RerankError(f"{self.model}: {e}") from e
         return self._scores(payload, len(documents))
 
     def _scores(self, payload: object, count: int) -> list[float]:
@@ -129,7 +107,7 @@ class Reranker:
         return [s for s in scores if s is not None]
 
 
-def select(
+def select[T](
     ranked: Sequence[T],
     scores: Sequence[float],
     *,
@@ -150,12 +128,3 @@ def select(
     kept = order[:limit]
     kept += [i for i in order[limit:] if is_extra(ranked[i])][:extra]
     return [(ranked[i], scores[i]) for i in kept]
-
-
-def from_settings(settings: ModelsSettings, *, timeout: float) -> Reranker | None:
-    """`models.toml` 的 `[reranker]`；沒有設定檔或沒有這一段時為 None，檢索不精排。"""
-    if settings.models is None:
-        return None
-    from envcite_ontology.verification import config  # 延後匯入：verification 套件會回頭用到 store
-
-    return config.load_reranker(settings.models, timeout=timeout)

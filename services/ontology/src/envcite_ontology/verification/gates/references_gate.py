@@ -1,10 +1,9 @@
 """閘門二：罰則所處罰的陳述，必須是原文引用的那一條（項）。"""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
-from envcite_ontology.verification.gates.base import Conn, GateResult, unit_of
+from envcite_ontology.db import Conn
+from envcite_ontology.verification.gates.base import GateResult, unit_of
 from envcite_ontology.violation import citations, within
 
 

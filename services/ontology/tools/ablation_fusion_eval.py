@@ -45,10 +45,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import golden_retrieval_eval as gre
 import golden_set as gs
 
-from envcite_ontology import embedding
 from envcite_ontology.embedding import to_sql
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
 from envcite_ontology.store import LANGUAGE, SEARCH_POOL, OntologyStore
+from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
 
 POOLS = (30, 50, 100)
@@ -246,7 +246,7 @@ def cmd_arms(args: argparse.Namespace) -> None:
         if r.status == "scored"
     ]
     db = load(DatabaseSettings)
-    embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0)
+    embedder = config.embedder_from_settings(load(ModelsSettings), timeout=30.0)
     if embedder is None:
         raise SystemExit("沒有設定嵌入端點（ENVCITE_ONTOLOGY_MODELS 的 [embedding]）")
     on = date.today().isoformat()

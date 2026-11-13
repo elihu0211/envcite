@@ -338,7 +338,7 @@ def probe(*cmd: str) -> str | None:
     """外部指令的輸出；指令不存在或失敗是未知（None），不以空字串或預設值代替。"""
     try:
         out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
-    except (FileNotFoundError, subprocess.CalledProcessError):
+    except FileNotFoundError, subprocess.CalledProcessError:
         return None
     return out or None
 

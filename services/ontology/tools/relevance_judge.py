@@ -58,7 +58,6 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
-from urllib.request import Request
 
 import psycopg
 import yaml
@@ -277,8 +276,8 @@ class Judge(ChatCompletionsModel):
         self._lock = threading.Lock()
         self.usage = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "failures": 0}
 
-    def _post(self, request: Request) -> dict[str, Any]:
-        payload = super()._post(request)
+    def _post(self, body: Mapping[str, Any]) -> dict[str, Any]:
+        payload = super()._post(body)
         served = payload.get("model")
         usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
         with self._lock:

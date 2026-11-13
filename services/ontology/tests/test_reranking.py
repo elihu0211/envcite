@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 
-from envcite_ontology.endpoint import USER_AGENT
+from envcite_ontology.http import USER_AGENT
 from envcite_ontology.reranking import MAX_DOCUMENT_CHARS, Reranker, RerankError, select
 
 

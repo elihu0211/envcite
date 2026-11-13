@@ -56,8 +56,6 @@
 未給則列為需判斷；限值不得標記。效果面裁量不是要件，用罰則的 `discretionary`。
 """
 
-from __future__ import annotations
-
 import hashlib
 import json
 import logging
@@ -69,10 +67,10 @@ import psycopg
 from psycopg.types.range import Range
 
 from envcite_ontology.corpus_ref import UnknownProvision, provision_id
+from envcite_ontology.db import Conn
 
 log = logging.getLogger(__name__)
 
-Conn = psycopg.Connection[tuple[object, ...]]
 
 #: 文件裡可寫的列舉值，與資料庫的同名列舉一致（`tests/test_environmental_annotation.py` 守門）；
 #: 抽取器的提示與解碼期 Schema 由這裡組成。

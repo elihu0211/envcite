@@ -5,21 +5,14 @@
 後者讓開放權重的其他家族也能當驗證者。
 """
 
-from __future__ import annotations
-
 import importlib
-import json
 import os
 import random
 import time
-import urllib.error
-import urllib.request
 from collections.abc import Callable, Mapping
-from http.client import HTTPException
 from typing import Any, Protocol
 
-from envcite_ontology.endpoint import json_headers
-from envcite_ontology.http import HttpStatus, endpoint, urlopen
+from envcite_ontology.http import HttpStatus, TransportError, endpoint, post_json
 
 
 class ModelError(RuntimeError):
@@ -122,8 +115,6 @@ class ChatCompletionsModel:
         return f"{self.family}:{self.model_id}"
 
     def complete(self, prompt: str, *, response_format: Mapping[str, Any] | None = None) -> str:
-        base = self._base_url.rstrip("/")
-        headers = json_headers(self._api_key)
         request_body: dict[str, Any] = {
             "model": self.model_id,
             "messages": [{"role": "user", "content": prompt}],
@@ -132,9 +123,7 @@ class ChatCompletionsModel:
         }
         if response_format is not None:
             request_body["response_format"] = dict(response_format)
-        body = json.dumps(request_body).encode()
-        request = urllib.request.Request(f"{base}/chat/completions", body, headers, method="POST")
-        payload = self._post(request)
+        payload = self._post(request_body)
         usage = payload.get("usage")
         if isinstance(usage, dict):
             self.tokens["prompt"] += int(usage.get("prompt_tokens") or 0)
@@ -146,38 +135,26 @@ class ChatCompletionsModel:
             )
         return content
 
-    def _post(self, request: urllib.request.Request) -> dict[str, Any]:
+    def _post(self, body: Mapping[str, Any]) -> dict[str, Any]:
         """送出請求。端點問題（408／429／5xx 與連線失敗）退避重試，其餘狀態直接報。"""
-        body = request.data if isinstance(request.data, bytes) else b""
+        url = f"{self._base_url.rstrip('/')}/chat/completions"
         for attempt in range(self.max_retries + 1):
             try:
-                with urlopen(
-                    request.full_url,
-                    data=body,
-                    headers=dict(request.header_items()),
-                    timeout=self.timeout,
-                    method=request.get_method(),
-                ) as response:
-                    payload = json.loads(response.read())
-                if not isinstance(payload, dict):
-                    raise ModelError(f"{self.name}: the reply is not a JSON object")
-                return payload
+                payload = post_json(url, body, api_key=self._api_key, timeout=self.timeout)
             except HttpStatus as e:
                 detail = f"{self.name}: HTTP {e.status}: {e.body[:200]!r}"
                 retry_after = e.headers.get("Retry-After") if e.headers is not None else None
                 if not endpoint(e) or attempt == self.max_retries:
                     raise ModelError(detail) from e
                 wait = self._wait(attempt, retry_after)
-            except (
-                urllib.error.URLError,
-                TimeoutError,
-                ConnectionError,
-                HTTPException,
-                json.JSONDecodeError,
-            ) as e:
+            except TransportError as e:
                 if attempt == self.max_retries:
-                    raise ModelError(f"{self.name}: {type(e).__name__}: {e}") from e
+                    raise ModelError(f"{self.name}: {e}") from e
                 wait = self._wait(attempt, None)
+            else:
+                if not isinstance(payload, dict):
+                    raise ModelError(f"{self.name}: the reply is not a JSON object")
+                return payload
             self._sleep(wait)
         raise AssertionError("unreachable")  # pragma: no cover
 

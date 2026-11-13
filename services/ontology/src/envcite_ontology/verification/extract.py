@@ -4,16 +4,12 @@
 模型常把原文的字寫成異體字（污→汙），定位時兩邊一併歸一，span 仍取自原文。
 """
 
-from __future__ import annotations
-
 import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from itertools import groupby
 from typing import Any, cast
-
-import psycopg
 
 from envcite_ontology.claims import (
     LEGAL_EFFECTS,
@@ -23,6 +19,7 @@ from envcite_ontology.claims import (
     Loaded,
     load,
 )
+from envcite_ontology.db import Conn
 from envcite_ontology.verification.carry import carry, truncated_issues
 from envcite_ontology.verification.context import ancestors_text, context_block
 from envcite_ontology.verification.conventions import apply as with_conventions
@@ -30,8 +27,6 @@ from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, ModelError
 from envcite_ontology.verification.subject import normalize as normalize_subjects
 from envcite_ontology.violation import citations
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 PROMPT = (
     with_conventions("""你是法規標註器。下面是一個條文單元的原文。

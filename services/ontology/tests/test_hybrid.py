@@ -22,7 +22,7 @@ from envcite_ontology.embedding import (
     EndpointUnavailable,
     PayloadTooLarge,
 )
-from envcite_ontology.endpoint import USER_AGENT
+from envcite_ontology.http import USER_AGENT
 from envcite_ontology.store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.test_import import _scalar
@@ -168,7 +168,7 @@ def test_the_client_reads_openai_embeddings_and_checks_the_dimension(
         def __init__(self, body: dict[str, Any]) -> None:
             self.body = json.dumps(body).encode()
 
-        def __enter__(self) -> "Reply":
+        def __enter__(self) -> Reply:
             return self
 
         def __exit__(self, *args: object) -> None:
@@ -217,7 +217,7 @@ class _Reply:
             {"data": [{"index": i, "embedding": [float(i)] * DIMENSION} for i in range(count)]}
         ).encode()
 
-    def __enter__(self) -> "_Reply":
+    def __enter__(self) -> _Reply:
         return self
 
     def __exit__(self, *args: object) -> None:

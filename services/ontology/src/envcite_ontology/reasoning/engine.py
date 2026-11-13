@@ -22,8 +22,6 @@
 （`criminal_priority`），刑事程序以不起訴等確定後照列並給扣抵額（`General.deductions`）。
 """
 
-from __future__ import annotations
-
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
 from datetime import date
@@ -32,11 +30,9 @@ from importlib import resources
 from typing import Any
 
 import clingo
-import psycopg
 
+from envcite_ontology.db import Conn
 from envcite_ontology.reasoning import facts
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 _RULES = resources.files(__package__).joinpath("rules.lp").read_text(encoding="utf-8")
 

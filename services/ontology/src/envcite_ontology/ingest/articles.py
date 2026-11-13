@@ -6,8 +6,6 @@
 序位不連續或下層無上層時不猜，整條退回為單一單元、全文保留，並回報原因。
 """
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 

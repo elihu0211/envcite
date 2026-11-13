@@ -7,20 +7,16 @@
 （駁回是人的決定，不因下次同步而復活）。改了解析規則要遞增 `RULE_VERSION`。
 """
 
-from __future__ import annotations
-
 import logging
 import re
 from dataclasses import dataclass
 from typing import cast
 
-import psycopg
-
+from envcite_ontology.db import Conn
 from envcite_ontology.ingest.numerals import CN_NUMERALS, parse_int
 
 log = logging.getLogger(__name__)
 
-Conn = psycopg.Connection[tuple[object, ...]]
 
 RULE_VERSION = "1"
 PRODUCER = "envcite-delegation-rule"
