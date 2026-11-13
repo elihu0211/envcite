@@ -12,6 +12,7 @@
 import logging
 import math
 from collections.abc import Callable, Sequence
+from time import monotonic
 from typing import Protocol
 
 from envcite_ontology.http import HttpStatus, TransportError, post_json
@@ -21,6 +22,11 @@ log = logging.getLogger(__name__)
 #: 送給精排模型的單條上限（字）。模型能讀的長度遠大於此，但條文開頭就帶著主題，截短不傷判斷，
 #: 又讓整批請求的大小與延遲有界。
 MAX_DOCUMENT_CHARS = 2000
+
+#: 一次請求最多送幾條。端點實測：32 條可以，33 條起 HTTP 500（不論每條多長；
+#: 33 條時還可能掛住直到逾時），超過就分批。交叉編碼器逐對打分，各批互不影響，
+#: 所以分批的分數與一次打分相同；取比上限小一點留餘裕。
+MAX_BATCH = 30
 
 
 class RerankError(RuntimeError):
@@ -63,15 +69,25 @@ class Reranker:
     ) -> list[float]:
         """依輸入次序回傳每一條對查詢的相關機率（0 至 1）。
 
-        `timeout`（秒）是呼叫端剩下的預算，與自己的上限取小者；沒有剩餘就不發請求。端點回的是依分數排序的
-        `results`（每筆帶 `index` 指回輸入的位置），這裡依 `index` 還原次序，
-        並要求每一條恰有一個有限的分數，缺一或重複都不收：半套的分數會讓次序悄悄偏掉，比退回精排前的次序更糟。
+        `timeout`（秒）是呼叫端剩下的預算，與自己的上限取小者，分批時整體共用；沒有剩餘就不發請求。
+        超過 `MAX_BATCH` 條依序分批，任一批失敗整份失敗：
+        半套的分數會讓次序悄悄偏掉，比退回精排前的次序更糟。
         """
         if not documents:
             return []  # 端點對空清單回 500
         budget = self.timeout if timeout is None else min(self.timeout, timeout)
-        if budget <= 0:
-            raise RerankError(f"{self.model}: no time left")
+        deadline = monotonic() + budget
+        scores: list[float] = []
+        for start in range(0, len(documents), MAX_BATCH):
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise RerankError(f"{self.model}: no time left")
+            scores += self._score_batch(query, documents[start : start + MAX_BATCH], remaining)
+        return scores
+
+    def _score_batch(self, query: str, documents: Sequence[str], budget: float) -> list[float]:
+        """一次請求。端點回的是依分數排序的 `results`（每筆帶 `index` 指回輸入的位置），
+        這裡依 `index` 還原次序，並要求每一條恰有一個有限的分數，缺一或重複都不收。"""
         body = {
             "model": self.model,
             "query": query,

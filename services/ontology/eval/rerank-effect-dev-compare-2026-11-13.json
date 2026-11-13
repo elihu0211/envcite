@@ -1,0 +1,400 @@
+{
+ "qrels_sha256": "b54dae369cba318a8cea6f41d5072887d707636b9eff7e3c4ec616f792e5acf0",
+ "split_sha256": "79bc76ff26d5ecdf9ea6b376b0bfc4ff4bba653c87fc75b41bfb3322e1666b1b",
+ "subset": "dev",
+ "questions": 633,
+ "alpha": 0.05,
+ "test": "Fisher 隨機化檢定（ranx compare，成對、雙尾，10000 次置換，種子 0）",
+ "runs": {
+  "rerank-effect-dev-2026-11-13.lexical": {
+   "sha256": "9d50f3dc6cb054286d9b6ec980003f307cca7144783e166e6fa685cd1d3f1906",
+   "scores": {
+    "hit_rate@1": 0.0853,
+    "hit_rate@5": 0.3065,
+    "hit_rate@10": 0.4313,
+    "hit_rate@20": 0.5245,
+    "hit_rate@50": 0.6272,
+    "mrr": 0.186,
+    "ndcg@10": 0.2309
+   },
+   "hole@10": 0.9455491544322616
+  },
+  "rerank-effect-dev-2026-11-13.lexical_rerank_d10": {
+   "sha256": "be0b6f3dea884e5f8329fee037d37455e17207e734be9aeed25edff1a1e55eaa",
+   "scores": {
+    "hit_rate@1": 0.2796,
+    "hit_rate@5": 0.4044,
+    "hit_rate@10": 0.4313,
+    "hit_rate@20": 0.5245,
+    "hit_rate@50": 0.6272,
+    "mrr": 0.3373,
+    "ndcg@10": 0.3447
+   },
+   "hole@10": 0.9455491544322616
+  },
+  "rerank-effect-dev-2026-11-13.lexical_rerank_d20": {
+   "sha256": "f7ea801f72c97f1d15290da8f1b5261f218bf5838e63985864c5feb992c3896a",
+   "scores": {
+    "hit_rate@1": 0.3128,
+    "hit_rate@5": 0.4581,
+    "hit_rate@10": 0.5039,
+    "hit_rate@20": 0.5245,
+    "hit_rate@50": 0.6272,
+    "mrr": 0.379,
+    "ndcg@10": 0.3986
+   },
+   "hole@10": 0.9360713622003345
+  },
+  "rerank-effect-dev-2026-11-13.lexical_rerank_d30": {
+   "sha256": "393b9316b2e8d62e511e6528d74a422ec99e4044ca4570fb5679615f9480162d",
+   "scores": {
+    "hit_rate@1": 0.3397,
+    "hit_rate@5": 0.4961,
+    "hit_rate@10": 0.5419,
+    "hit_rate@20": 0.5687,
+    "hit_rate@50": 0.6272,
+    "mrr": 0.4083,
+    "ndcg@10": 0.4325
+   },
+   "hole@10": 0.930682029362572
+  }
+ },
+ "pairs": [
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "metric": "hit_rate@1",
+   "difference": 0.1943,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "metric": "hit_rate@5",
+   "difference": 0.0979,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "metric": "hit_rate@10",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "metric": "hit_rate@20",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "metric": "hit_rate@50",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "metric": "mrr",
+   "difference": 0.1514,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "metric": "ndcg@10",
+   "difference": 0.1138,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "hit_rate@1",
+   "difference": 0.2275,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "hit_rate@5",
+   "difference": 0.1517,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "hit_rate@10",
+   "difference": 0.0727,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "hit_rate@20",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "hit_rate@50",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "mrr",
+   "difference": 0.193,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "ndcg@10",
+   "difference": 0.1677,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@1",
+   "difference": 0.2543,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@5",
+   "difference": 0.1896,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@10",
+   "difference": 0.1106,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@20",
+   "difference": 0.0442,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@50",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "mrr",
+   "difference": 0.2224,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "ndcg@10",
+   "difference": 0.2016,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "hit_rate@1",
+   "difference": 0.0332,
+   "p": 0.0035,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "hit_rate@5",
+   "difference": 0.0537,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "hit_rate@10",
+   "difference": 0.0727,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "hit_rate@20",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "hit_rate@50",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "mrr",
+   "difference": 0.0416,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "metric": "ndcg@10",
+   "difference": 0.0539,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@1",
+   "difference": 0.06,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@5",
+   "difference": 0.0916,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@10",
+   "difference": 0.1106,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@20",
+   "difference": 0.0442,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@50",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "mrr",
+   "difference": 0.071,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d10",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "ndcg@10",
+   "difference": 0.0878,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@1",
+   "difference": 0.0269,
+   "p": 0.0013,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@5",
+   "difference": 0.0379,
+   "p": 0.0001,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@10",
+   "difference": 0.0379,
+   "p": 0.0002,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@20",
+   "difference": 0.0442,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "hit_rate@50",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "mrr",
+   "difference": 0.0294,
+   "p": 0.0,
+   "significant": true
+  },
+  {
+   "a": "rerank-effect-dev-2026-11-13.lexical_rerank_d20",
+   "b": "rerank-effect-dev-2026-11-13.lexical_rerank_d30",
+   "metric": "ndcg@10",
+   "difference": 0.0339,
+   "p": 0.0,
+   "significant": true
+  }
+ ]
+}

@@ -204,7 +204,7 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 | 建 qrels | `uv run python tools/golden_retrieval_eval.py qrels <golden.yaml> --out eval/golden-qrels.json` | qrels（需資料庫） |
 | 切分 | `uv run python tools/golden_set.py split <golden.yaml> --out eval/golden-split.json` | 開發集與測試集 |
 | 量測 | `uv run python tools/golden_retrieval_eval.py measure <golden.yaml> --qrels … --split … --subset dev --out eval/golden-retrieval-<日期>` | 報告 `.json`／`.md`、每臂一個 `.<臂>.run.json` |
-| 量精排 | 同「量測」，加 `--rerank [--rerank-candidates N]`（需要 `[embedding]` 與 `[reranker]`） | 多一臂 `rerank`：混合臂的前 N 條交給精排模型重排、其餘接在後面；negative 桶另記精排分數的分布，是訂精排門檻的依據 |
+| 量精排 | 同「量測」，加 `--rerank [--rerank-depths 10,20,30,50]`（需要 `[reranker]`；有 `[embedding]` 時以混合臂為底，否則以字面臂為底） | 每個深度多一臂 `<底>_rerank_d<N>`：底臂的前 N 條交給精排模型重排、其餘接在後面；各深度共用同一次打分（每題呼叫一次端點）；另記精排的延遲，以及 negative 桶精排分數的分布（訂精排門檻的依據） |
 | 比較 | `uv run python tools/golden_retrieval_eval.py compare --qrels … <a>.run.json <b>.run.json [--out …]` | 各 run 的指標、Hole@10、兩兩的 p 值 |
 | 校準判定器 | `uv run python tools/relevance_judge.py calibrate <golden.yaml> --qrels … --split … --cache <倉庫外>/judge-cache.jsonl --out eval/golden-calibration-<日期>.json` | 開發集正例的召回、負例的誤判、κ（需資料庫與模型） |
 | 模型判定 | `uv run python tools/relevance_judge.py pool <golden.yaml> --qrels … --split … --subset dev --run <a>.run.json [--run …] --calibration … --cache … --out eval/golden-judgements-<子集>-<日期>.json` | 封存的判定檔（需資料庫與模型） |
