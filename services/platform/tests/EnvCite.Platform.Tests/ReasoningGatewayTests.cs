@@ -6,7 +6,7 @@ using EnvCite.Platform.Modules.Ontology;
 
 namespace EnvCite.Platform.Tests;
 
-[Collection(PlatformTestGroup.Group2)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class ReasoningGatewayTests(PlatformFactory factory)
 {
     private const string Path = "/v2/reasoning/evaluate";

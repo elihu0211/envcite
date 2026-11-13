@@ -8,7 +8,7 @@ namespace EnvCite.Platform.Tests;
 /// 登入的速率限制：帳號鎖定擋不了「一個來源試很多帳號」，這一道才是。依來源位址，只限制 POST，成功與失敗都算。
 /// 測試主機的來源位址只有一個，所以這裡證明額度與時機，不證明「不同來源各有各的額度」。
 /// </summary>
-[Collection(PlatformTestGroup.Group4)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class PortalRateLimitTests(PlatformFactory factory)
 {
     private const int Limit = 3;

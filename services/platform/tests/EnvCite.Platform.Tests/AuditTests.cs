@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace EnvCite.Platform.Tests;
 
-[Collection(PlatformTestGroup.Group2)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed class AuditTests(PlatformFactory factory)
 {
     private async Task<AuditPage> PageAsync(AuditFilter filter) =>

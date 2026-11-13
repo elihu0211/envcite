@@ -6,7 +6,7 @@ using EnvCite.Platform.Modules.Metering;
 
 namespace EnvCite.Platform.Tests;
 
-[Collection(PlatformTestGroup.Group2)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class ConsultGatewayTests(PlatformFactory factory)
 {
     private static readonly Uri GroundPath = new("/v2/ground", UriKind.Relative);

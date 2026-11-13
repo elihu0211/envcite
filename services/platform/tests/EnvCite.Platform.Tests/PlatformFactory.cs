@@ -147,8 +147,10 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
 
 /// <summary>
 /// 需要 <see cref="PlatformFactory"/> 的測試類別分成幾組：每組有自己的主機、PostgreSQL 容器與時鐘，組與組並行；
-/// 同一組內的類別依序執行、共用資料。新類別放進哪一組都行，各組耗時要接近才能縮短總時間
+/// 同一組內的類別依序執行、共用資料。各組耗時要接近才能縮短總時間
 /// （<c>dotnet test --report-xunit-junit</c> 的報告可加總各類別耗時）。
+/// 例外：<c>RedMetricsTests</c> 的指標讀取器會收到同一個行程裡所有主機的 <c>Ground</c> 呼叫，
+/// 所以會呼叫 <c>Ground</c> 的類別（<c>/v2/ground</c> 與入口頁的問答）都放在 <see cref="Group1"/>，不與它並行。
 /// </summary>
 public static class PlatformTestGroup
 {

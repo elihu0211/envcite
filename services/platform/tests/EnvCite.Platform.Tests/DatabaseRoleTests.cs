@@ -3,7 +3,7 @@ using Npgsql;
 namespace EnvCite.Platform.Tests;
 
 // 部署時執行期以群組 envcite_platform_app 的登入身分連線，不是資料庫擁有者；權限由遷移授予。
-[Collection(PlatformTestGroup.Group3)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed class DatabaseRoleTests(PlatformFactory factory)
 {
     private const string AppRole = "envcite_platform_app";

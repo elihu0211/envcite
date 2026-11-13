@@ -6,7 +6,7 @@ namespace EnvCite.Platform.Tests;
 /// 共用模板輸出的標記：頁面不再自己寫它們（見 <see cref="ComponentTemplateTests"/>），所以這裡鎖住模板的輸出，
 /// 改標記時所有頁面一起變、也一起被測到。用元件展示頁（<c>/design</c>）當樣本：每個模板在那裡至少用一次。
 /// </summary>
-[Collection(PlatformTestGroup.Group3)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class SharedTemplateOutputTests(PlatformFactory factory)
 {
     private async Task<string> GalleryAsync()

@@ -8,7 +8,7 @@ namespace EnvCite.Platform.Tests;
 /// （看狀態、緊急關閉）。服務層的規則在 <see cref="DirectorySyncTests"/>，端點在 <see cref="ScimEndpointTests"/>；
 /// 這裡驗頁面把規則如實呈現，而且只給該看的人。
 /// </summary>
-[Collection(PlatformTestGroup.Group3)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed partial class DirectoryUiTests(PlatformFactory factory) : DirectoryTestBase(factory)
 {
     private const string SettingsForm = "portal-directory-settings";

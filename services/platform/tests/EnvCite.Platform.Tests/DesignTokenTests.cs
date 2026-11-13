@@ -736,7 +736,7 @@ public static partial class DesignTokenTests
     private static partial Regex HiddenOverflowOnCard();
 }
 
-[Collection(PlatformTestGroup.Group4)]
+[Collection(PlatformTestGroup.Group3)]
 public sealed class DesignPageTests(PlatformFactory factory)
 {
     [Fact]

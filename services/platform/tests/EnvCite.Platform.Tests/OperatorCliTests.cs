@@ -9,7 +9,7 @@ namespace EnvCite.Platform.Tests;
 /// <summary>
 /// 營運者的命令列入口：正式環境沒有種子帳號，第一位營運者與救援都走這裡。每個測試用自己的全新資料庫。
 /// </summary>
-[Collection(PlatformTestGroup.Group1)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class OperatorCliTests(PlatformFactory factory)
 {
     private async Task<WebApplicationFactory<Program>> HostAsync()

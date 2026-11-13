@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 namespace EnvCite.Platform.Tests;
 
 /// <summary>客戶入口的條文搜尋：與 <c>POST /v2/search</c> 共用同一個服務，所以計量、錯誤與「查詢不進日誌」一致。</summary>
-[Collection(PlatformTestGroup.Group2)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed class PortalSearchTests(PlatformFactory factory)
 {
     private static string SearchPage(string tenant) => $"/portal/{tenant}/search";

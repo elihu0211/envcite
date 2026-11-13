@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace EnvCite.Platform.Tests;
 
-[Collection(PlatformTestGroup.Group4)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class DataProtectionTests(PlatformFactory factory)
 {
     private (string Name, string Value) SignInCookie(IServiceProvider services)

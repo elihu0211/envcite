@@ -12,7 +12,7 @@ namespace EnvCite.Platform.Tests;
 /// 目錄同步的核心（身分來源把成員推進租戶）：冪等、停用不刪、最後一位擁有者、角色上限、接管、受管鎖定、
 /// 租戶隔離、稽核與 fail closed。端點與介面在後續切片；這裡直接呼叫服務，租戶綁定的方式與請求相同。
 /// </summary>
-[Collection(PlatformTestGroup.Group2)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestBase(factory)
 {
     private Task<AdminOutcome<DirectoryMember>> ProvisionAsync(Org org, DirectoryProvision member) =>
