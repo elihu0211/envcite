@@ -20,90 +20,13 @@ from envcite_ontology.claims import (
     load,
 )
 from envcite_ontology.db import Conn
+from envcite_ontology.verification import prompts
 from envcite_ontology.verification.carry import carry, truncated_issues
-from envcite_ontology.verification.context import ancestors_text, context_block
-from envcite_ontology.verification.conventions import apply as with_conventions
+from envcite_ontology.verification.context import ancestors_text
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, ModelError
 from envcite_ontology.verification.subject import normalize as normalize_subjects
 from envcite_ontology.violation import citations
-
-PROMPT = (
-    with_conventions("""你是法規標註器。下面是一個條文單元的原文。
-請只依原文，輸出一個 JSON 物件：
-{{"concepts": [{{"code": "英文小寫底線的代碼", "label": "中文名稱"}}],
-  "statements": [{{"id": "短識別", "quote": "原文中的一段，逐字複製", "kind":
-  "prescriptive|constitutive|sanction", "deontic": "obligation|prohibition|permission 或省略",
-  "slots": {{"subject|action|object|medium": {{"literal": "…"}} 或 [{{"literal": "…"}}, …]}},
-  "conditions": [{{"role": "scope|duty|limit", "clause": 1, "concept": "代碼", "comparator":
-  "le|lt|ge|gt|eq|ne", "threshold": 數字, "unit": "單位或省略", "negated": false,
-  "judgement": false, "value_concept": "本法用語的代碼（見下方清單），沒有就省略",
-  "permit": "許可種類的代碼（門檻值是個別許可所載的量值時），沒有就省略",
-  "method": "檢測方法的代碼（只有 limit），沒有就省略",
-  "averaging": "平均時段的代碼（只有 limit），沒有就省略"}}],
-  "sanction": {{"effect": "{effects}",
-  "min": 數字或省略, "max": 數字或省略, "amount_text": "原文或省略", "repeating": false,
-  "discretionary": false,
-  "punishes": "同一個單元裡受罰的那個陳述的 id，沒有就省略",
-  "triggers": [{{"statement": "同一個單元裡作為前提的罰則 id", "kind": "{trigger_kinds}"}}]}}}}]}}
-{conventions}規則：
-1. 引文必須逐字出現在原文；不要輸出原文沒有的內容。
-2. 只有 kind 為 prescriptive 的陳述才有 deontic；constitutive（定義、適用範圍、授權）與
-   sanction（罰則與其他不利效果）不要寫 deontic。
-3. 義務（應…、不得…）的要件分兩種：scope 是誰、在什麼情形下適用；duty 是義務本身的內容。
-   「…者，應…」的句型：「者」之前的條件（誰、做什麼事、在哪裡）每個子條件各一個 scope 要件，
-   「應」之後是 duty 要件；沒有 scope 的義務會被判成對任何人都適用，沒有 duty 的義務無法被評估。
-4. 罰則（sanction）要有 sanction 物件，effect 只能選一個值。受罰的陳述就在這個單元裡時，
-   punishes 填它的 id；受罰的是原文引用的別條（例如「違反第七條規定者」）時省略 punishes，
-   程式會連到被引用條文的陳述。非 sanction 的陳述不要寫 sanction 物件。
-5. 每個要件都要有 threshold：成立與否的要件（是否排放、是否符合標準）寫 comparator "eq"、
-   threshold 1；「非」「不」用 negated: true 表示；原文有數值門檻時才寫它的數字與單位。
-6. 構成要件的不確定法律概念（情節重大、必要時）的要件 judgement 設為 true。效果面的「得」
-   （得處、得命）不是要件：sanction 的 discretionary 設為 true，「應」為 false。
-7. conditions 是一個平面清單，義務本身也是其中 role 為 duty 的一項；不要另外寫 duty 欄位。clause
-   是「或」的分組：同一個 clause 裡的要件必須全部成立，不同 clause 之間是「或」，一般都用 1。
-8. 主體的列舉（甲、乙或丙）寫成 slots.subject 的清單，每個主體一項（彼此是「或」），不要把每一個
-   主體各寫成一個要件；客體等其他槽位的列舉同理。
-9. 原文是款或目（半句話）時，主體與處罰的種類、額度常寫在「上層條文」：罰則照上層條文寫
-   sanction（amount_text 逐字取自上層條文），quote 仍取自原文。沒有上層條文的單元不適用。
-10. 要件在判斷「主體或對象是否屬於本法定義的某個用語」時，concept 寫該主體或對象的類別概念，
-   comparator 用 eq，value_concept 填下方清單裡那個用語的代碼，且不要寫 threshold。只能用清單裡的
-   代碼；清單沒有的就不要寫 value_concept（用原本的 threshold 寫法）。
-   清單只給 value_concept 用；要件的 concept 要依約定 G 自己宣告。
-11. 主體的責任基礎寫在 slots.subject 的項目上（"liability"）：因自己的作為或不作為負責為 act，
-   因對物（土地、設施）的支配負責為 state，代表或受指派而承擔（有代表權之人、負責人員）為
-   representative；原文看不出來就省略。只有 subject 可以寫 liability。
-12. 門檻值不是寫在條文裡、而是許可證或核定的配額所載（「依許可證內容」「超過許可排放量」）時，
-   該要件寫 permit：許可種類的概念代碼（在 concepts 宣告），不要寫 threshold。
-13. 限值（約定 F）寫成 role 為 limit 的要件：concept 是受管制的項目，comparator、threshold、unit
-   照原文，judgement 為 false。原文（或上層條文）寫明認定方式時，檢測方法（連續自動監測、人工採樣
-   檢測…）寫 method，平均時段（即時值、一小時平均值、日平均值、數次採樣的算術平均值…）寫 averaging，
-   兩者都是在 concepts 宣告的代碼；原文沒寫就省略。只有 limit 可以寫 method 與 averaging。
-14. 規範性陳述的引文是一個完整的規範句：從主體與適用情形（「…者」「…時」）起，含「應」「不得」
-   「得」等助動詞，到這個義務的最後一個行為。同一個「應」之下以頓號、「並」接的幾個行為是同一個
-   陳述的幾個 duty 要件，不拆成幾個陳述；不要只引「並於…通知」「始得…」這類缺了助動詞或適用情形的
-   子句。「應…，不得…」是兩個陳述。
-15. slots.subject 是負有這個義務的人或組織，必須是原文寫出的字。原文沒有寫出義務人時（被動式、
-   「某設備應符合標準」這類以物為主題的句子、代名詞「其」指前句的物），寫 {{"unstated": true}}：
-   不要拿被規範的設施、物質或行為當主體，也不要自行補「任何人」「行為人」。
-只輸出 JSON。
-
-{terms}{context}{punished}{review}原文（{law} {path}）：
-{text}
-""")
-    .replace("{effects}", "|".join(LEGAL_EFFECTS))
-    .replace("{trigger_kinds}", "|".join(TRIGGER_KINDS))
-)
-
-
-REPAIR = """{prompt}
-
-你上一次的輸出：
-{previous}
-
-它有下列問題。請修正後重新輸出完整的 JSON，只輸出 JSON：
-{issues}
-"""
 
 MAX_REPAIRS = 2
 
@@ -378,14 +301,6 @@ def _concepts_of(answer: Mapping[str, Any]) -> list[Mapping[str, Any]]:
         for c in (items if isinstance(items, list) else [])
         if isinstance(c, Mapping) and c.get("code") and c.get("label")
     ]
-
-
-def terms_block(defined: Mapping[str, str] | None) -> str:
-    """放進提示的本法用語清單；沒有已定義的用語就什麼都不放。"""
-    if not defined:
-        return ""
-    lines = "\n".join(f"- {code}：{name}" for code, name in defined.items())
-    return f"本法已定義的用語（代碼：名稱）：\n{lines}\n\n"
 
 
 def _literal(value: Any) -> Any:
@@ -740,30 +655,6 @@ def _local_triggers(statements: list[dict[str, Any]], dropped: list[str]) -> lis
         statements = kept
 
 
-def punished_block(by: Sequence[str]) -> str:
-    """單元被處罰條文以「違反」引用時的提示：行政罰以違反義務為前提，這裡必有義務或禁止。"""
-    if not by:
-        return ""
-    return (
-        f"本單元被同法的處罰條文（{'、'.join(by)}）以「違反」引用。行政罰以違反行政法上義務為前提"
-        "（行政罰法第 1、4 條），所以本單元至少有一個 obligation 或 prohibition 的陳述。"
-        "「應…經許可（核准、登記）後，始得…」是義務（先取得許可）或禁止（未經許可不得為之），"
-        "不是許可（permission）。\n\n"
-    )
-
-
-def review_block(notes: Sequence[str]) -> str:
-    """重抽時帶上審查者對上一輪的意見：同一個單元上一輪抽的義務沒被接受，這一輪要補上缺的。"""
-    if not notes:
-        return ""
-    return (
-        "本單元上一輪抽出的義務沒有被接受，審查意見如下。請對照原文，補上被指出遺漏的"
-        "適用情形、對象、期限與限定語，不要添加原文沒有的內容，引文仍須是完整的規範句：\n"
-        + "\n".join(f"- {n}" for n in notes)
-        + "\n\n"
-    )
-
-
 def penalized_issues(statements: Sequence[Mapping[str, Any]], by: Sequence[str]) -> list[str]:
     """被處罰條文以「違反」引用的單元，卻沒有任何義務或禁止陳述：送回修復，修不好不丟。"""
     if not by or any(
@@ -796,16 +687,15 @@ def extract_unit(
     `review` 是重抽時審查者對上一輪的意見。
     """
     provision_id, text = _unit_text(conn, law, path)
-    terms = terms_block(defined)
     context = ancestors_text(conn, provision_id)
-    prompt = PROMPT.format(
+    prompt = prompts.extract(
         law=law,
         path=path,
         text=text,
-        terms=terms,
-        context=context_block(context),
-        punished=punished_block(punished_by),
-        review=review_block(review),
+        context=context,
+        defined=defined,
+        punished_by=punished_by,
+        review=review,
     )
     try:
         raw = _complete(model, prompt)
@@ -853,9 +743,7 @@ def extract_unit(
         calls += 1
         repairs += 1
         try:
-            reply = _complete(
-                model, REPAIR.format(prompt=prompt, previous=raw, issues="\n".join(issues))
-            )
+            reply = _complete(model, prompts.repair(prompt=prompt, previous=raw, issues=issues))
         except ModelError:
             break  # 修復失敗：沿用現有版本，缺的由後面的丟棄與驗證處理
         again = object_from(reply)

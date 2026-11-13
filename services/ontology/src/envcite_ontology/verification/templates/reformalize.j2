@@ -1,0 +1,24 @@
+{% extends "with_conventions.j2" %}
+
+{% block instruction %}
+下面是對一個法規陳述的結構化描述（不是法規原文）。
+請只依這份描述，輸出一個 JSON 物件：
+{"kind": "prescriptive|constitutive|sanction",
+  "deontic": "obligation|prohibition|permission 或 null",
+  "conditions": [{"role": "scope|duty|limit", "code": "方括號內的代碼",
+    "comparator": "le|lt|ge|gt|eq|ne", "threshold": 數字或 null,
+    "negated": true|false, "judgement": true|false}],
+  "sanction": {"effect": "效果", "min": 數字或 null, "max": 數字或 null,
+    "repeating": true|false, "discretionary": true|false} 或 null}
+門檻值由授權命令供給時 threshold 為 null；「成立」表示 comparator 為 eq、threshold 為 1；
+「（需判斷）」表示 judgement 為 true；「非：」表示 negated 為 true；沒有提到按次處罰則 repeating
+為 false；「得（裁量）」表示 discretionary 為 true，沒有提到則為 false；
+沒有罰則則 sanction 為 null。只輸出 JSON。
+
+{% endblock %}
+
+{% block material %}
+
+描述：
+{{ description }}
+{% endblock %}

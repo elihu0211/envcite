@@ -16,22 +16,12 @@ from typing import Any, cast
 
 from envcite_ontology.claims import AnnotationError, load
 from envcite_ontology.db import Conn
+from envcite_ontology.verification import prompts
 from envcite_ontology.verification.gates import unit_of
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, ModelError
+from envcite_ontology.verification.prompts import Candidate
 from envcite_ontology.violation import within
-
-CHOOSE = """下面是一則罰則條文，與它引用的條文裡的陳述（編號、所在條文與原文）。
-請列出這則罰則處罰的、違反了就受罰的全部陳述。原文引用數條（「違反第七條或第八條」）時
-可能不只一個；原文只罰引用條文的某種違反（「違反第十四條第一項未取得許可證而排放者」）時，
-只列那一種。輸出 JSON：{{"punishes": [編號, ...]}}；都不是則 {{"punishes": []}}。只輸出 JSON。
-
-罰則原文：
-{text}
-
-候選陳述：
-{candidates}
-"""
 
 
 def penalized(conn: Conn, law: str) -> dict[str, list[str]]:
@@ -88,9 +78,9 @@ def _choose(
     conn: Conn, model: Model, text: str, candidates: Sequence[tuple[int, str]]
 ) -> list[int]:
     """多個候選時請模型挑出全部被處罰的；挑出的必須都是候選，有一個不是就整個不採。"""
-    listed = "\n".join(f"[{sid}] {path}：{unit_of(conn, sid).quoted}" for sid, path in candidates)
+    listed = [Candidate(sid, path, unit_of(conn, sid).quoted) for sid, path in candidates]
     try:
-        reply = model.complete(CHOOSE.format(text=text, candidates=listed))
+        reply = model.complete(prompts.choose(text=text, candidates=listed))
     except ModelError:
         return []
     chosen = (object_from(reply) or {}).get("punishes")

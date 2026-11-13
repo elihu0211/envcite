@@ -23,12 +23,3 @@ SELECT DISTINCT ON (up.depth) v.content
 def ancestors_text(conn: Conn, provision_id: int) -> str:
     """單元所有上層的現行文字，由外到內，換行相接；頂層單元（或上層沒有文字）是空字串。"""
     return "\n".join(str(row[0]) for row in conn.execute(_UP, (provision_id,)))
-
-
-def context_block(context: str) -> str:
-    """放進提示的上層條文區塊；沒有上層就什麼都不放。"""
-    if not context:
-        return ""
-    return (
-        f"上層條文（只供理解，不是要標註的單元；引文仍須逐字取自單元自己的原文）：\n{context}\n\n"
-    )

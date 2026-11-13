@@ -1,0 +1,21 @@
+{% extends "base.j2" %}
+
+{% block instruction %}
+你是法規測試設計者。下面是一段法規原文，與一組可用的概念（代碼與名稱）。
+請只依原文，設計 4 至 8 個案例：每個案例給一組事實（代碼對應數值；成立與否的概念給 1 或 0，
+數值概念給具體數值，型別見概念清單）與依原文你預期的結論。結論限於：violation（違反）、compliant（合規）、
+not_applicable（本條不適用）、undetermined（事實不足以判定）。涵蓋合規、違反、適用範圍不成立各
+至少一個。輸出 JSON：
+{"cases": [{"facts": {"代碼": 數值},
+  "expected": "violation|compliant|not_applicable|undetermined"}]}
+只輸出 JSON。
+{% endblock %}
+
+{% block material %}
+
+原文：
+{{ text }}
+
+可用的概念：
+{{ concepts | join("\n") }}
+{% endblock %}

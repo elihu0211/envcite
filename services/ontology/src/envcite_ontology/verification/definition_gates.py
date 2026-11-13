@@ -15,7 +15,8 @@ from typing import cast
 from psycopg.types.json import Jsonb
 
 from envcite_ontology.db import Conn
-from envcite_ontology.verification.context import ancestors_text, context_block
+from envcite_ontology.verification import prompts
+from envcite_ontology.verification.context import ancestors_text
 from envcite_ontology.verification.gates.base import GateResult
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.model_gates import eligible
@@ -24,15 +25,6 @@ from envcite_ontology.verification.models import Model, ModelError
 log = logging.getLogger(__name__)
 
 REQUIRED = ("literal", "roundtrip")
-
-REREAD = """你是法規閱讀者。下面是「本法用語，定義如下」之下的一款原文。
-請只依原文，輸出一個 JSON 物件：{{"term": "這一款被定義的用語，逐字取自原文",
-"members": ["原文明文列舉、屬於這個用語的成員，逐字取自原文"]}}
-原文沒有列舉成員就輸出空陣列，不要自己補。只輸出 JSON。
-
-{context}原文：
-{text}
-"""
 
 
 @dataclass(frozen=True)
@@ -139,9 +131,7 @@ class DefinitionRoundtripGate:
             return GateResult(
                 "inconclusive", {"reason": "no eligible verifier", "skipped": skipped}
             )
-        answer = object_from(
-            ok[0].complete(REREAD.format(text=d.text, context=context_block(d.context)))
-        )
+        answer = object_from(ok[0].complete(prompts.reread(text=d.text, context=d.context)))
         if answer is None:
             return GateResult("inconclusive", {"reason": "unparseable answer"})
         raw_members = answer.get("members")

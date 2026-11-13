@@ -1,0 +1,36 @@
+{#- 提示詞裡「有才放」的區塊；沒有內容就什麼都不輸出，含結尾的空行。 -#}
+
+{% macro ancestors(context) %}
+{% if context %}
+上層條文（只供理解，不是要標註的單元；引文仍須逐字取自單元自己的原文）：
+{{ context }}
+
+{% endif %}
+{% endmacro %}
+
+{% macro terms(defined) %}
+{% if defined %}
+本法已定義的用語（代碼：名稱）：
+{% for code, name in defined.items() %}
+- {{ code }}：{{ name }}
+{% endfor %}
+
+{% endif %}
+{% endmacro %}
+
+{% macro punished(by) %}
+{% if by %}
+本單元被同法的處罰條文（{{ by | join("、") }}）以「違反」引用。行政罰以違反行政法上義務為前提（行政罰法第 1、4 條），所以本單元至少有一個 obligation 或 prohibition 的陳述。「應…經許可（核准、登記）後，始得…」是義務（先取得許可）或禁止（未經許可不得為之），不是許可（permission）。
+
+{% endif %}
+{% endmacro %}
+
+{% macro review(notes) %}
+{% if notes %}
+本單元上一輪抽出的義務沒有被接受，審查意見如下。請對照原文，補上被指出遺漏的適用情形、對象、期限與限定語，不要添加原文沒有的內容，引文仍須是完整的規範句：
+{% for note in notes %}
+- {{ note }}
+{% endfor %}
+
+{% endif %}
+{% endmacro %}
