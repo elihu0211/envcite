@@ -143,7 +143,11 @@ const scenarios = {
             await submit(question);
             await answered(1);
             await until("網址應是 /c/{id}", async () => /\/c\/[0-9a-f-]{36}$/.test(page.url()));
-            await until("側欄應有這一串", async () => (await page.locator(".ep-recent-link").count()) === 1);
+            // 失敗時要看得到側欄實際有什麼：只回 false 看不出是沒更新還是多了一串。
+            await until("側欄應有這一串", async () => {
+                const count = await page.locator(".ep-recent-link").count();
+                return count === 1 ? true : { count, side: (await page.locator(".ep-side").innerText().catch(() => "")).slice(0, 200) };
+            });
         });
         const conversationUrl = page.url();
 
