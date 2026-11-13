@@ -133,4 +133,18 @@ public sealed class TenantModulesTests(PlatformFactory factory)
         Assert.False(reasoningBlocked.IsOk);
         Assert.Equal(OutcomeCodes.ModuleDisabled, reasoningBlocked.Code);
     }
+
+    [Fact]
+    public async Task PortalLawCorpusAndReasoningPagesRenderSuccessfully()
+    {
+        var (tenant, email, initial) = await MemberAsync(factory, "mod-pg");
+        using var browser = new PortalBrowser(factory);
+        await SignInFullyAsync(browser, tenant.Identifier, email, initial);
+
+        var laws = await browser.GetAsync($"{Home(tenant.Identifier)}/laws");
+        Assert.Equal(System.Net.HttpStatusCode.OK, laws.Status);
+
+        var reasoning = await browser.GetAsync($"{Home(tenant.Identifier)}/reasoning");
+        Assert.Equal(System.Net.HttpStatusCode.OK, reasoning.Status);
+    }
 }

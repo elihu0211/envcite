@@ -16,47 +16,49 @@
 }
 else
 {
-    <SectionCard Id="reasoning-form-title" Title="@L["案件事實與時點"]">
-        <FormAlert Kind="AlertKind.Info">@L["案件事實透過加密表單送出，不會寫入網址或日誌。未填欄位視為「未知」，不會當作「否」或 0。"]</FormAlert>
-        <FormAlert Message="@Error" />
-        <PostForm Model="Input" FormName="portal-reasoning" OnValidSubmit="EvaluateAsync">
-            <FormField For="r-conduct-on" Label="@L["行為日"]" Hint="@L["YYYY-MM-DD（必填）"]">
-                <input id="r-conduct-on" name="Input.ConductOn" type="date" class="ep-input" value="@Input.ConductOn" required />
-            </FormField>
-            <FormField For="r-decided-on" Label="@L["裁處日"]" Hint="@L["YYYY-MM-DD（必填，不得早於行為日）"]">
-                <input id="r-decided-on" name="Input.DecidedOn" type="date" class="ep-input" value="@Input.DecidedOn" required />
-            </FormField>
-            <FormField For="r-conduct-ended" Label="@L["行為終了日"]" Hint="@L["YYYY-MM-DD（選填，起算裁處權時效）"]">
-                <input id="r-conduct-ended" name="Input.ConductEndedOn" type="date" class="ep-input" value="@Input.ConductEndedOn" />
-            </FormField>
-            <SelectField For="r-criminal" Label="@L["同時觸犯刑事法律（第 26 條第 1 項）"]"
-                         Options="TriStateOptions" @bind-Value="Input.CriminalOffense" />
-            <SelectField For="r-confiscated" Label="@L["法院已宣告沒收（第 26 條第 1 項但書）"]"
-                         Options="TriStateOptions" @bind-Value="Input.CourtConfiscated" />
-            <FormField For="r-payment" Label="@L["刑事命支付金額"]" Hint="@L["元，十進位數字（選填）"]">
-                <input id="r-payment" name="Input.CriminalPayment" class="ep-input" value="@Input.CriminalPayment" />
-            </FormField>
-            <FormField For="r-benefit" Label="@L["違法所得利益"]" Hint="@L["元，十進位數字（選填，第 18 條第 2 項）"]">
-                <input id="r-benefit" name="Input.GainedBenefit" class="ep-input" value="@Input.GainedBenefit" />
-            </FormField>
-            <SubmitButton Label="@L["執行推論評估"]" />
-        </PostForm>
-    </SectionCard>
-
-    @if (_outcome is { } result)
-    {
-        <SectionCard Id="reasoning-result-title" Title="@L["推論候選結果"]">
-            <StatGrid Items="SummaryStats(result)" />
-            @if (result.Verdicts.Count == 0)
-            {
-                <p class="ep-page-description">@L["沒有已確認的規範陳述產生裁處結論；這不代表合規。"]</p>
-            }
-            else
-            {
-                <DataTable Items="result.Verdicts" Columns="VerdictColumns" Label="@L["候選結論"]" Plain="true" />
-            }
+    <div class="ep-stack">
+        <SectionCard Id="reasoning-form-title" Title="@L["案件事實與時點"]">
+            <FormAlert Kind="AlertKind.Info">@L["案件事實透過加密表單送出，不會寫入網址或日誌。未填欄位視為「未知」，不會當作「否」或 0。"]</FormAlert>
+            <FormAlert Message="@Error" />
+            <PostForm Model="Input" FormName="portal-reasoning" OnValidSubmit="EvaluateAsync">
+                <FormField For="r-conduct-on" Label="@L["行為日"]" Hint="@L["YYYY-MM-DD（必填）"]">
+                    <input id="r-conduct-on" name="Input.ConductOn" type="date" class="ep-input" value="@Input.ConductOn" required />
+                </FormField>
+                <FormField For="r-decided-on" Label="@L["裁處日"]" Hint="@L["YYYY-MM-DD（必填，不得早於行為日）"]">
+                    <input id="r-decided-on" name="Input.DecidedOn" type="date" class="ep-input" value="@Input.DecidedOn" required />
+                </FormField>
+                <FormField For="r-conduct-ended" Label="@L["行為終了日"]" Hint="@L["YYYY-MM-DD（選填，起算裁處權時效）"]">
+                    <input id="r-conduct-ended" name="Input.ConductEndedOn" type="date" class="ep-input" value="@Input.ConductEndedOn" />
+                </FormField>
+                <SelectField For="r-criminal" Label="@L["同時觸犯刑事法律（第 26 條第 1 項）"]"
+                             Options="TriStateOptions" @bind-Value="Input.CriminalOffense" />
+                <SelectField For="r-confiscated" Label="@L["法院已宣告沒收（第 26 條第 1 項但書）"]"
+                             Options="TriStateOptions" @bind-Value="Input.CourtConfiscated" />
+                <FormField For="r-payment" Label="@L["刑事命支付金額"]" Hint="@L["元，十進位數字（選填）"]">
+                    <input id="r-payment" name="Input.CriminalPayment" class="ep-input" value="@Input.CriminalPayment" />
+                </FormField>
+                <FormField For="r-benefit" Label="@L["違法所得利益"]" Hint="@L["元，十進位數字（選填，第 18 條第 2 項）"]">
+                    <input id="r-benefit" name="Input.GainedBenefit" class="ep-input" value="@Input.GainedBenefit" />
+                </FormField>
+                <SubmitButton>@L["執行推論評估"]</SubmitButton>
+            </PostForm>
         </SectionCard>
-    }
+
+        @if (_outcome is { } result)
+        {
+            <SectionCard Id="reasoning-result-title" Title="@L["推論候選結果"]">
+                <StatGrid Items="SummaryStats(result)" />
+                @if (result.Verdicts.Count == 0)
+                {
+                    <p class="ep-page-description">@L["沒有已確認的規範陳述產生裁處結論；這不代表合規。"]</p>
+                }
+                else
+                {
+                    <DataTable Items="result.Verdicts" Columns="VerdictColumns" Label="@L["候選結論"]" Plain="true" />
+                }
+            </SectionCard>
+        }
+    </div>
 }
 
 @code {
@@ -73,7 +75,7 @@ else
     [
         new() { Title = L["法規"], Class = "ep-keep", Labeled = false, Cell = v => @<text>@v.LawTitle</text> },
         new() { Title = L["陳述"], Cell = v => @<text><code class="ep-mono">@v.StatementId</code></text> },
-        new() { Title = L["候選判定"], Cell = v => @<text>@v.Verdict</text> },
+        new() { Title = L["候選判定"], Cell = v => @<text><StatusBadge Tone="@VerdictTone(v.Verdict)">@VerdictLabel(v.Verdict)</StatusBadge></text> },
         new() { Title = L["缺漏事實數"], Cell = v => @<text>@v.MissingCount</text> },
     ];
 
@@ -88,6 +90,7 @@ else
 
     protected override void OnInitialized()
     {
+        base.OnInitialized();
         var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8)).ToString("yyyy-MM-dd");
         if (string.IsNullOrEmpty(Input.ConductOn))
             Input.ConductOn = today;
@@ -120,6 +123,26 @@ else
 
         _outcome = evaluated.Value;
     }
+
+    private string VerdictLabel(string verdict) => verdict switch
+    {
+        "Violation" => L["違反"],
+        "ConditionalViolation" => L["附條件違反"],
+        "Compliant" => L["合規"],
+        "ConditionalCompliant" => L["附條件合規"],
+        "Undetermined" => L["事實不足"],
+        "Excluded" => L["排除"],
+        "NotApplicable" => L["不適用"],
+        _ => verdict,
+    };
+
+    private static string VerdictTone(string verdict) => verdict switch
+    {
+        "Violation" => "error",
+        "ConditionalViolation" => "warning",
+        "Compliant" or "ConditionalCompliant" => "success",
+        _ => "neutral",
+    };
 
     private static bool? ParseTriState(string? value) => value switch
     {

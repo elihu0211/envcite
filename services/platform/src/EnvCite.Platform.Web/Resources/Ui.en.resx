@@ -201,7 +201,6 @@
   <data name="有效 API keys" xml:space="preserve"><value>Active API keys</value></data>
   <data name="服務" xml:space="preserve"><value>Services</value></data>
   <data name="未開啟" xml:space="preserve"><value>Off</value></data>
-  <data name="查詢" xml:space="preserve"><value>Search</value></data>
   <data name="查詢文字不會被記錄，只記一次搜尋的次數。" xml:space="preserve"><value>Search text is not recorded, only the number of searches.</value></data>
   <data name="查詢條件不正確：請輸入問題；日期要是有效的日期。" xml:space="preserve"><value>Invalid search: enter a question, and make sure the date is a valid date.</value></data>
   <data name="查詢條件不正確：請輸入關鍵字；日期要是有效的日期。" xml:space="preserve"><value>Invalid search: enter keywords, and make sure the date is a valid date.</value></data>
@@ -602,4 +601,20 @@
   <data name="語料未涵蓋法規" xml:space="preserve"><value>Uncovered laws</value></data>
   <data name="推論評估失敗，請稍後再試。" xml:space="preserve"><value>Evaluation failed; please try again shortly.</value></data>
   <data name="哪一天有效" xml:space="preserve"><value>Effective on</value></data>
+  <data name="已啟用功能模組" xml:space="preserve"><value>Enabled Feature Modules</value></data>
+  <data name="未啟用" xml:space="preserve"><value>Disabled</value></data>
+  <data name="前往使用" xml:space="preserve"><value>Open</value></data>
+  <data name="法源接地" xml:space="preserve"><value>Evidence Grounding</value></data>
+  <data name="AI 法源問答" xml:space="preserve"><value>AI Grounded Q&amp;A</value></data>
+  <data name="開始查詢法規" xml:space="preserve"><value>Browse laws and articles</value></data>
+  <data name="輸入法規代碼與時點日期以瀏覽條文清單。" xml:space="preserve"><value>Enter a law code and optional effective date to browse its articles.</value></data>
+  <data name="語言" xml:space="preserve"><value>Language</value></data>
+  <data name="網址" xml:space="preserve"><value>URI</value></data>
+  <data name="違反" xml:space="preserve"><value>Violation</value></data>
+  <data name="附條件違反" xml:space="preserve"><value>Conditional Violation</value></data>
+  <data name="合規" xml:space="preserve"><value>Compliant</value></data>
+  <data name="附條件合規" xml:space="preserve"><value>Conditional Compliant</value></data>
+  <data name="事實不足" xml:space="preserve"><value>Undetermined</value></data>
+  <data name="排除" xml:space="preserve"><value>Excluded</value></data>
+  <data name="不適用" xml:space="preserve"><value>Not Applicable</value></data>
 </root>
