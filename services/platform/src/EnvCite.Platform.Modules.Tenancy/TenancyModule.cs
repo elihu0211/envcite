@@ -1,6 +1,5 @@
 using System.Security.Cryptography.X509Certificates;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
 
 using Finbuckle.MultiTenant.Abstractions;
@@ -10,10 +9,7 @@ using Finbuckle.MultiTenant.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Tenancy;
 
@@ -49,9 +45,7 @@ public static class TenancyModule
     private static async Task<string?> TenantOfAsync(HttpContext context)
     {
         if (PortalPaths.TenantFrom(context.Request.Path) is { } fromPath)
-        {
             return fromPath;
-        }
 
         if (context.Request.Path.StartsWithSegments(ScimPaths.Prefix))
         {

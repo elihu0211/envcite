@@ -1,12 +1,8 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace EnvCite.Platform.Modules.Members;
 
@@ -43,9 +39,7 @@ internal sealed class MemberSelfService(
     public async Task<AdminOutcome<IReadOnlyList<TeamMember>>> ListAsync(ClaimsPrincipal actor, CancellationToken cancellationToken)
     {
         if (await ActorAsync(actor) is not { } me || !MemberPolicy.IsManager(me.Role))
-        {
             return AdminOutcome.Forbidden<IReadOnlyList<TeamMember>>(OutcomeCodes.MemberManageForbidden);
-        }
 
         var list = await users.Users.AsNoTracking().OrderBy(u => u.Email).ToListAsync(cancellationToken);
         return AdminOutcome.Ok<IReadOnlyList<TeamMember>>(
@@ -56,14 +50,10 @@ internal sealed class MemberSelfService(
         ClaimsPrincipal actor, string email, string? displayName, string role, CancellationToken cancellationToken)
     {
         if (await ActorAsync(actor) is not { } me || !MemberPolicy.IsManager(me.Role))
-        {
             return AdminOutcome.Forbidden<IssuedPassword>(OutcomeCodes.MemberAddForbidden);
-        }
 
         if (!MemberPolicy.Grantable(me.Role).Contains(role))
-        {
             return AdminOutcome.Forbidden<IssuedPassword>(OutcomeCodes.MemberAddRoleForbidden);
-        }
 
         return await core.CreateAsync(ActorOf(me), Tenant(), email, displayName, role, cancellationToken);
     }
@@ -72,14 +62,10 @@ internal sealed class MemberSelfService(
         ClaimsPrincipal actor, string email, string? displayName, string role, CancellationToken cancellationToken)
     {
         if (await ActorAsync(actor) is not { } me || !MemberPolicy.IsManager(me.Role))
-        {
             return AdminOutcome.Forbidden<MemberInvitation>(OutcomeCodes.MemberAddForbidden);
-        }
 
         if (!MemberPolicy.Grantable(me.Role).Contains(role))
-        {
             return AdminOutcome.Forbidden<MemberInvitation>(OutcomeCodes.MemberAddRoleForbidden);
-        }
 
         return await core.InviteAsync(ActorOf(me), Tenant(), email, displayName, role, cancellationToken);
     }
@@ -95,14 +81,10 @@ internal sealed class MemberSelfService(
     {
         var (me, target, refusal) = await ResolveAsync<MemberInfo>(actor, userId);
         if (refusal is not null)
-        {
             return refusal;
-        }
 
         if (target!.ManagedBy == DirectoryRoles.ManagedBy)
-        {
             return AdminOutcome.Conflict<MemberInfo>(OutcomeCodes.DirectoryMemberManaged);
-        }
 
         return AdminOutcome.Ok(await core.SetDisabledAsync(ActorOf(me!), Tenant(), target!, disabled, cancellationToken));
     }
@@ -112,30 +94,20 @@ internal sealed class MemberSelfService(
     {
         var (me, target, refusal) = await ResolveAsync<MemberInfo>(actor, userId);
         if (refusal is not null)
-        {
             return refusal;
-        }
 
         if (target!.ManagedBy == DirectoryRoles.ManagedBy)
-        {
             return AdminOutcome.Conflict<MemberInfo>(OutcomeCodes.DirectoryMemberManaged);
-        }
 
         if (!CustomerRoles.All.Contains(role))
-        {
             return AdminOutcome.Invalid<MemberInfo>(OutcomeCodes.RoleInvalid);
-        }
 
         // 能管理對方現在的角色，也只能放到自己能指派的角色：管理員不能把人升成管理員或擁有者。
         if (!MemberPolicy.Grantable(me!.Role).Contains(role))
-        {
             return AdminOutcome.Forbidden<MemberInfo>(OutcomeCodes.MemberAssignRoleForbidden);
-        }
 
         if (target!.Role == role)
-        {
             return AdminOutcome.Ok(core.Info(target));
-        }
 
         var previous = target.Role;
         target.Role = role;
@@ -161,25 +133,17 @@ internal sealed class MemberSelfService(
     private async Task<(ApplicationUser? Me, ApplicationUser? Target, AdminOutcome<T>? Refusal)> ResolveAsync<T>(ClaimsPrincipal actor, string userId)
     {
         if (await ActorAsync(actor) is not { } me || !MemberPolicy.IsManager(me.Role))
-        {
             return (null, null, AdminOutcome.Forbidden<T>(OutcomeCodes.MemberManageForbidden));
-        }
 
         // 租戶的查詢濾鏡讓別的租戶的人在這裡找不到。
         if (await users.FindByIdAsync(userId) is not { } target)
-        {
             return (me, null, AdminOutcome.NotFound<T>(OutcomeCodes.MemberNotFound));
-        }
 
         if (target.Id == me.Id)
-        {
             return (me, target, AdminOutcome.Forbidden<T>(OutcomeCodes.MemberManageSelfForbidden));
-        }
 
         if (!MemberPolicy.CanManage(me.Role, target.Role))
-        {
             return (me, target, AdminOutcome.Forbidden<T>(OutcomeCodes.MemberManageTargetForbidden));
-        }
 
         return (me, target, null);
     }

@@ -1,8 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Identity;
 
 namespace EnvCite.Platform.Modules.Members.DirectorySync;

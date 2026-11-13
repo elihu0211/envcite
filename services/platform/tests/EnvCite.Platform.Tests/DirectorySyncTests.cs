@@ -1,21 +1,10 @@
 using System.Security.Claims;
 using System.Text.Json;
 
-using EnvCite.Platform.Api;
-using EnvCite.Platform.Data;
 using EnvCite.Platform.Modules.ApiAccess;
 using EnvCite.Platform.Modules.Members.DirectorySync;
-using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
-
-using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 

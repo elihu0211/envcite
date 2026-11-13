@@ -1,12 +1,8 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
 
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Web.Auth;
 
@@ -52,9 +48,7 @@ internal static class PortalRateLimit
     private static RateLimitPartition<string> Partition(HttpContext context, int permits)
     {
         if (!HttpMethods.IsPost(context.Request.Method))
-        {
             return RateLimitPartition.GetNoLimiter("not-a-submission");
-        }
 
         return RateLimitPartition.GetSlidingWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",

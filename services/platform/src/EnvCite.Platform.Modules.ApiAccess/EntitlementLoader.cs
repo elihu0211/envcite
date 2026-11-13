@@ -1,10 +1,5 @@
-using EnvCite.Platform.Data;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
 
@@ -30,9 +25,7 @@ internal sealed partial class EntitlementLoader(
 
         var unknown = rows.Where(r => !catalog.Plans.ContainsKey(r.Plan)).ToList();
         foreach (var row in unknown)
-        {
             LogUnknownPlan(logger, row.TenantIdentifier, row.Plan);
-        }
 
         catalog.Replace(rows.Select(r => KeyValuePair.Create(r.TenantIdentifier, r.Plan)));
     }

@@ -2,19 +2,14 @@ using System.Net;
 using System.Text.RegularExpressions;
 
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
 
 using Finbuckle.MultiTenant.Abstractions;
 
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 
 using OtpNet;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 

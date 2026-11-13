@@ -1,14 +1,10 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members;
 
@@ -32,27 +28,19 @@ internal sealed class PortalTwoFactor(
     {
         var info = Tenant();
         if (await UserOfAsync(principal) is not { } user)
-        {
             return AdminOutcome.NotFound<bool>(OutcomeCodes.AccountNotFound);
-        }
 
         if (!user.TwoFactorEnabled)
-        {
             return AdminOutcome.Invalid<bool>(OutcomeCodes.TwoFactorNotEnabled);
-        }
 
         // 角色要求的就不能關：能關，等於這個要求只是個建議。要關得由營運者改角色或設定。
         if (RequiresTwoFactor(user.Role, options.Value))
-        {
             return AdminOutcome.Invalid<bool>(OutcomeCodes.TwoFactorRequiredForRole);
-        }
 
         // 密碼與驗證碼都要對：只知道其中一個（看到密碼、或借到沒鎖的手機）的人，不能把保護關掉。
         // 兩者的失敗都計入鎖定，所以這裡不能成為猜測的後門。
         if (!await ConfirmAsync(user, code, password))
-        {
             return AdminOutcome.Invalid<bool>(OutcomeCodes.CredentialsIncorrect);
-        }
 
         await Users.SetTwoFactorEnabledAsync(user, false);
         await Users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey);
@@ -82,9 +70,7 @@ internal sealed class PortalTwoFactor(
     {
         var info = Tenant();
         if (await signIn.GetTwoFactorAuthenticationUserAsync() is not { } user)
-        {
             return SignInStatus.Failed;
-        }
 
         // 在第一步之後、第二步之前被停用：不再給任何機會，待驗證 cookie 收回。
         if (user.Disabled)
@@ -101,9 +87,7 @@ internal sealed class PortalTwoFactor(
         {
             // 鎖定後不再給猜的機會，收回待驗證 cookie，要從密碼重來。
             if (result.IsLockedOut)
-            {
                 await ClearPendingAsync();
-            }
 
             await Audit.AppendAsync(
                 new ClaimsPrincipal(),
@@ -121,9 +105,7 @@ internal sealed class PortalTwoFactor(
             new AuditEntry(AuditActions.PortalSignedIn, info.Id, "member", user.Id, new Dictionary<string, object?> { ["method"] = isRecoveryCode ? "recovery_code" : "totp" }),
             cancellationToken);
         if (isRecoveryCode)
-        {
             await Audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalRecoveryCodeUsed, info.Id, "member", user.Id), cancellationToken);
-        }
 
         return user.MustChangePassword ? SignInStatus.MustChangePassword : SignInStatus.Succeeded;
     }

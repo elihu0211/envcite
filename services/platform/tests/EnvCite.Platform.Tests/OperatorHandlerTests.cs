@@ -1,6 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Auth;
 
 using Microsoft.AspNetCore.Authorization;

@@ -1,12 +1,9 @@
 using System.Net;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Auth;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Tests;
 

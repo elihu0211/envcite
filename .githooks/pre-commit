@@ -1,2 +1,4 @@
 #!/bin/sh
-exec "$(dirname "$0")/block-main.sh" commit
+dir=$(dirname "$0")
+"$dir/block-main.sh" commit || exit $?
+exec "$dir/format-staged.sh"

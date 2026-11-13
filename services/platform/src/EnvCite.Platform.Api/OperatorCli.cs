@@ -1,9 +1,6 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Auth;
-
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Api;
 
@@ -108,9 +105,7 @@ public static class OperatorCli
         {
             var invited = await admin.InviteAsync(actor, email, displayName, cancellationToken);
             if (!invited.IsOk)
-            {
                 return await FailAsync(error, "建立營運者", invited.Status, invited.Message);
-            }
 
             await output.WriteLineAsync($"已建立營運者 {invited.Value!.Operator.Email}（還沒有密碼）", cancellationToken);
             return await ReportInvitationAsync(output, error, invited.Value.Mail, email);
@@ -118,9 +113,7 @@ public static class OperatorCli
 
         var created = await admin.CreateAsync(actor, email, displayName, cancellationToken);
         if (!created.IsOk)
-        {
             return await FailAsync(error, "建立營運者", created.Status, created.Message);
-        }
 
         await output.WriteLineAsync($"""
             已建立營運者 {created.Value!.Operator.Email}
@@ -136,15 +129,11 @@ public static class OperatorCli
     {
         var target = await FindAsync(admin, email, cancellationToken);
         if (target is null)
-        {
             return await NotFoundAsync(error, email);
-        }
 
         var sent = await admin.ResendInvitationAsync(actor, target.Id, cancellationToken);
         if (!sent.IsOk)
-        {
             return await FailAsync(error, "重寄邀請", sent.Status, sent.Message);
-        }
 
         return await ReportInvitationAsync(output, error, sent.Value!.Mail, target.Email);
     }
@@ -168,15 +157,11 @@ public static class OperatorCli
     {
         var target = await FindAsync(admin, email, cancellationToken);
         if (target is null)
-        {
             return await NotFoundAsync(error, email);
-        }
 
         var reset = await admin.ResetPasswordAsync(actor, target.Id, cancellationToken);
         if (!reset.IsOk)
-        {
             return await FailAsync(error, "重設密碼", reset.Status, reset.Message);
-        }
 
         await output.WriteLineAsync($"""
             已重設營運者 {target.Email} 的密碼
@@ -191,15 +176,11 @@ public static class OperatorCli
     {
         var target = await FindAsync(admin, email, cancellationToken);
         if (target is null)
-        {
             return await NotFoundAsync(error, email);
-        }
 
         var reset = await admin.ResetTwoFactorAsync(actor, target.Id, cancellationToken);
         if (!reset.IsOk)
-        {
             return await FailAsync(error, "重設驗證器", reset.Status, reset.Message);
-        }
 
         await output.WriteLineAsync($"已重設營運者 {target.Email} 的驗證器；對方下次用密碼登入後必須重新註冊。", cancellationToken);
         return 0;

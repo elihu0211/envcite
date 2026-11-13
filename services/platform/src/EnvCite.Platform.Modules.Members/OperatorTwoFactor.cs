@@ -1,8 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Identity;
 
 namespace EnvCite.Platform.Modules.Members;
@@ -41,9 +38,7 @@ internal sealed class OperatorTwoFactor(
     public override async Task<SignInStatus> CompleteSignInAsync(string code, bool isRecoveryCode, CancellationToken cancellationToken)
     {
         if (await pending.ReadAsync() is not { } id || await Users.FindOperatorAsync(id) is not { } user)
-        {
             return SignInStatus.Failed;
-        }
 
         // 在第一步之後、第二步之前被停用或被重設了兩步驟驗證：不再給任何機會，暫存憑證收回。
         if (user.Disabled || !user.TwoFactorEnabled)
@@ -67,9 +62,7 @@ internal sealed class OperatorTwoFactor(
             await Users.AccessFailedAsync(user);
             var lockedNow = await Users.IsLockedOutAsync(user);
             if (lockedNow)
-            {
                 await pending.ClearAsync();
-            }
 
             await Audit.AppendAsync(
                 new ClaimsPrincipal(),
@@ -91,9 +84,7 @@ internal sealed class OperatorTwoFactor(
             new AuditEntry(AuditActions.OperatorSignedIn, TargetType: "operator", TargetId: user.Id.ToString(), Detail: new Dictionary<string, object?> { ["method"] = isRecoveryCode ? "recovery_code" : "totp" }),
             cancellationToken);
         if (isRecoveryCode)
-        {
             await Audit.AppendAsync(OperatorAccount.ActorOf(user), new AuditEntry(AuditActions.OperatorRecoveryCodeUsed, TargetType: "operator", TargetId: user.Id.ToString()), cancellationToken);
-        }
 
         await account.IssueSessionAsync(user);
         return user.MustChangePassword ? SignInStatus.MustChangePassword : SignInStatus.Succeeded;

@@ -1,14 +1,4 @@
-using System.Security.Claims;
-
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
-using Finbuckle.MultiTenant.Abstractions;
-
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 using OtpNet;
 
@@ -25,16 +15,12 @@ internal sealed class TotpVerifier(PlatformDbContext db, TimeProvider time)
     {
         var digits = Normalize(code);
         if (digits is null || await users.GetAuthenticatorKeyAsync(user) is not { } key)
-        {
             return false;
-        }
 
         var totp = new Totp(Base32Encoding.ToBytes(key));
         // 時間來自 TimeProvider（測試可以撥動它，才測得到「下一個時間步」）。
         if (!totp.VerifyTotp(time.GetUtcNow().UtcDateTime, digits, out var step, VerificationWindow.RfcSpecifiedNetworkDelay))
-        {
             return false;
-        }
 
         var advanced = await db.Operators
             .Where(u => u.Id == user.Id && u.LastTotpStep < step)

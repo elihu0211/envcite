@@ -1,9 +1,6 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Auth;
-
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Api;
 
@@ -47,9 +44,7 @@ public static class DevelopmentSeed
         }
 
         if (Required(await members.ListAsync(tenantId, cancellationToken), "list the members").Count > 0)
-        {
             return null;
-        }
 
         var issued = Required(
             await members.CreateAsync(actor, tenantId, ownerEmail, "開發者", CustomerRoles.Owner, cancellationToken),
@@ -70,9 +65,7 @@ public static class DevelopmentSeed
     {
         var operators = services.GetRequiredService<IOperatorAdmin>();
         if (Required(await operators.ListAsync(cancellationToken), "list the operators").Count > 0)
-        {
             return null;
-        }
 
         var actor = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Role, AuditActors.System)], "development-seed"));
         var issued = Required(await operators.CreateAsync(actor, operatorEmail, "開發者", cancellationToken), "create the operator");

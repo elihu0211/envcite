@@ -1,12 +1,7 @@
-using EnvCite.Platform.Data;
-
 using Finbuckle.MultiTenant.Abstractions;
 
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Conversations;
 
@@ -43,9 +38,7 @@ public sealed partial class ConversationRetention(
     public async Task<int> PurgeAsync(CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-        {
             return 0;
-        }
 
         var cutoff = time.GetUtcNow().AddDays(-options.Value.RetentionDays);
         await using var scope = scopes.CreateAsyncScope();
@@ -55,9 +48,7 @@ public sealed partial class ConversationRetention(
             .Where(c => c.UpdatedAt < cutoff)
             .ExecuteDeleteAsync(cancellationToken);
         if (deleted > 0)
-        {
             Deleted(logger, deleted, options.Value.RetentionDays);
-        }
 
         return deleted;
     }

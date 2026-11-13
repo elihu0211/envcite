@@ -1,12 +1,10 @@
 using EnvCite.Ontology.V2;
-using EnvCite.Platform.SharedKernel;
 
 using Grpc.Core;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Ontology;
 

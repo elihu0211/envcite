@@ -1,4 +1,3 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Auth;
 using EnvCite.Platform.Web.Components;
 using EnvCite.Platform.Web.Design;
@@ -9,10 +8,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using MudBlazor;
 using MudBlazor.Services;
@@ -52,9 +49,7 @@ public static class WebModule
         var (operatorUi, portal) = Surfaces(app.ApplicationServices);
         var development = app.ApplicationServices.GetRequiredService<IHostEnvironment>().IsDevelopment();
         if (!operatorUi && !portal)
-        {
             return app;
-        }
 
         return app.UseWhen(
             context =>
@@ -112,9 +107,7 @@ public static class WebModule
             {
                 var result = await context.AuthenticateAsync(PlatformAuth.UiCookieScheme);
                 if (result.Principal is not null)
-                {
                     context.User = result.Principal;
-                }
             }
 
             await next(context);
@@ -136,9 +129,7 @@ public static class WebModule
                 context.Response.Headers.CacheControl = "no-store";
                 var result = await context.AuthenticateAsync(PlatformAuth.PortalCookieScheme);
                 if (result.Principal is not null)
-                {
                     context.User = result.Principal;
-                }
             }
 
             await next(context);
@@ -155,19 +146,13 @@ public static class WebModule
         var (operatorUi, portal) = Surfaces(app.Services);
         var log = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("EnvCite.Platform.Web");
         if (!operatorUi)
-        {
             WebLog.UiDisabled(log);
-        }
 
         if (!operatorUi && !portal)
-        {
             return app;
-        }
 
         if (operatorUi)
-        {
             app.MapGet("/", () => Results.Redirect("/ui"));
-        }
 
         app.MapStaticAssets();
         app.MapUiAuthEndpoints();

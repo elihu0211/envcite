@@ -1,13 +1,7 @@
 using System.Globalization;
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Conversations;
 
@@ -25,9 +19,7 @@ internal sealed class ConversationHistory(
         ClaimsPrincipal user, Guid? conversationId, string question, string answer, CancellationToken cancellationToken)
     {
         if (!Enabled || UserId(user) is not { } userId || string.IsNullOrWhiteSpace(question))
-        {
             return null;
-        }
 
         var now = time.GetUtcNow();
         // 別人的、不存在的對話 Id 都當作另開一串：不回報它存不存在。
@@ -62,9 +54,7 @@ internal sealed class ConversationHistory(
     public async Task<IReadOnlyList<ConversationSummary>> ListAsync(ClaimsPrincipal user, int limit, CancellationToken cancellationToken)
     {
         if (!Enabled || UserId(user) is not { } userId)
-        {
             return [];
-        }
 
         return await db.Conversations
             .Where(c => c.UserId == userId)
@@ -78,18 +68,14 @@ internal sealed class ConversationHistory(
     public async Task<ConversationDetail?> GetAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)
     {
         if (!Enabled || UserId(user) is not { } userId)
-        {
             return null;
-        }
 
         var conversation = await db.Conversations
             .Where(c => c.Id == id && c.UserId == userId)
             .Select(c => new { c.Id, c.Title, c.UpdatedAt })
             .FirstOrDefaultAsync(cancellationToken);
         if (conversation is null)
-        {
             return null;
-        }
 
         var messages = await db.ConversationMessages
             .Where(m => m.ConversationId == id)
@@ -102,15 +88,11 @@ internal sealed class ConversationHistory(
     public async Task<bool> DeleteAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)
     {
         if (!Enabled || UserId(user) is not { } userId)
-        {
             return false;
-        }
 
         var conversation = await db.Conversations.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId, cancellationToken);
         if (conversation is null)
-        {
             return false;
-        }
 
         // 訊息由資料庫的 cascade 一起刪；稽核與刪除同一個交易，且只記對話 Id，不記任何內容。
         db.Conversations.Remove(conversation);

@@ -1,10 +1,4 @@
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-
 using static EnvCite.Platform.Tests.OperatorTestSupport;
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 

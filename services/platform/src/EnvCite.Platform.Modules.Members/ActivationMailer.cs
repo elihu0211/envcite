@@ -1,5 +1,3 @@
-using EnvCite.Platform.SharedKernel;
-
 namespace EnvCite.Platform.Modules.Members;
 
 /// <summary>寄邀請信與信箱驗證信：呼叫端只給收件者與連結的資料，不碰文案、版面與傳輸。</summary>
@@ -20,9 +18,7 @@ internal sealed class ActivationMailer(IMailComposer composer, IMailSender sende
         string recipient, Uri? link, TimeSpan lifetime, string? tenantIdentifier, bool invitation, CancellationToken cancellationToken)
     {
         if (link is null)
-        {
             return MailDelivery.Failed;
-        }
 
         var mail = await composer.ComposeActivationAsync(new ActivationMailModel(link, lifetime, tenantIdentifier, invitation), cancellationToken);
         return await sender.SendAsync(recipient, mail.Subject, mail.Content, cancellationToken);

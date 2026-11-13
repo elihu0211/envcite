@@ -1,10 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.EntityFrameworkCore;
-
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
 // 群組（SCIM Groups）：身分來源推送群組與成員，客戶的擁有者決定群組對映的角色（DirectoryManagement.SetGroupRoleAsync）。
@@ -17,15 +12,11 @@ internal sealed partial class DirectoryProvisioning
         ClaimsPrincipal actor, int skip, int take, string? externalId, string? displayName, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryGroupPage>(cancellationToken) is { } closed)
-        {
             return closed;
-        }
 
         var query = db.DirectoryGroups.AsNoTracking();
         if (!string.IsNullOrEmpty(externalId))
-        {
             query = query.Where(g => g.ExternalId == externalId);
-        }
 
         if (!string.IsNullOrWhiteSpace(displayName))
         {
@@ -44,9 +35,7 @@ internal sealed partial class DirectoryProvisioning
     public async Task<AdminOutcome<DirectoryGroupDetail>> FindGroupAsync(ClaimsPrincipal actor, Guid groupId, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryGroupDetail>(cancellationToken) is { } closed)
-        {
             return closed;
-        }
 
         await SeenAsync(cancellationToken);
         return await db.DirectoryGroups.AsNoTracking().Include(g => g.Members).SingleOrDefaultAsync(g => g.Id == groupId, cancellationToken) is { } group
@@ -58,38 +47,26 @@ internal sealed partial class DirectoryProvisioning
         ClaimsPrincipal actor, DirectoryGroupInput input, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryGroupDetail>(cancellationToken) is { } closed)
-        {
             return closed;
-        }
 
         var name = (input.DisplayName ?? string.Empty).Trim();
         var externalId = NormalizeExternalId(input.ExternalId);
         if (name.Length is 0 or > NameLength)
-        {
             return await RejectAsync<DirectoryGroupDetail>(actor, null, OutcomeCodes.DirectoryGroupInvalid, AdminStatus.Invalid, audit: false, cancellationToken, "group");
-        }
 
         if (externalId is { Length: 0 } or { Length: > 200 })
-        {
             return await RejectAsync<DirectoryGroupDetail>(actor, name, OutcomeCodes.DirectoryExternalIdInvalid, AdminStatus.Invalid, audit: false, cancellationToken, "group");
-        }
 
         var memberIds = (input.Members ?? []).Distinct(StringComparer.Ordinal).ToList();
         if (!await AllManagedAsync(memberIds, cancellationToken))
-        {
             return await RejectAsync<DirectoryGroupDetail>(actor, name, OutcomeCodes.DirectoryGroupMemberInvalid, AdminStatus.Invalid, audit: true, cancellationToken, "group");
-        }
 
         var normalized = DirectoryGroup.Normalize(name);
         if (await db.DirectoryGroups.AnyAsync(g => g.NormalizedName == normalized, cancellationToken))
-        {
             return await RejectAsync<DirectoryGroupDetail>(actor, name, OutcomeCodes.DirectoryGroupNameTaken, AdminStatus.Conflict, audit: true, cancellationToken, "group");
-        }
 
         if (externalId is not null && await db.DirectoryGroups.AnyAsync(g => g.ExternalId == externalId, cancellationToken))
-        {
             return await RejectAsync<DirectoryGroupDetail>(actor, name, OutcomeCodes.DirectoryExternalIdTaken, AdminStatus.Conflict, audit: true, cancellationToken, "group");
-        }
 
         return await InTransactionAsync(async () =>
         {
@@ -116,32 +93,22 @@ internal sealed partial class DirectoryProvisioning
         ClaimsPrincipal actor, Guid groupId, DirectoryGroupPatch patch, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryGroupDetail>(cancellationToken) is { } closed)
-        {
             return closed;
-        }
 
         if (await db.DirectoryGroups.Include(g => g.Members).SingleOrDefaultAsync(g => g.Id == groupId, cancellationToken) is not { } group)
-        {
             return AdminOutcome.NotFound<DirectoryGroupDetail>(OutcomeCodes.DirectoryGroupNotFound);
-        }
 
         var name = patch.DisplayName is null ? group.DisplayName : patch.DisplayName.Trim();
         var externalId = NormalizeExternalId(patch.ExternalId);
         if (name.Length is 0 or > NameLength)
-        {
             return await RejectAsync<DirectoryGroupDetail>(actor, group.DisplayName, OutcomeCodes.DirectoryGroupInvalid, AdminStatus.Invalid, audit: false, cancellationToken, "group");
-        }
 
         if (externalId is { Length: 0 } or { Length: > 200 })
-        {
             return await RejectAsync<DirectoryGroupDetail>(actor, group.DisplayName, OutcomeCodes.DirectoryExternalIdInvalid, AdminStatus.Invalid, audit: false, cancellationToken, "group");
-        }
 
         var normalized = DirectoryGroup.Normalize(name);
         if (normalized != group.NormalizedName && await db.DirectoryGroups.AnyAsync(g => g.NormalizedName == normalized && g.Id != group.Id, cancellationToken))
-        {
             return await RejectAsync<DirectoryGroupDetail>(actor, name, OutcomeCodes.DirectoryGroupNameTaken, AdminStatus.Conflict, audit: true, cancellationToken, "group");
-        }
 
         if (externalId is not null && externalId != group.ExternalId
             && await db.DirectoryGroups.AnyAsync(g => g.ExternalId == externalId && g.Id != group.Id, cancellationToken))
@@ -174,9 +141,7 @@ internal sealed partial class DirectoryProvisioning
         // 只有「這次新加入」的才需要是受管成員：已經在群組裡的人之後被解除管理，不該讓整個更新失敗。
         var added = next.Except(current).ToList();
         if (!await AllManagedAsync(added, cancellationToken))
-        {
             return await RejectAsync<DirectoryGroupDetail>(actor, group.DisplayName, OutcomeCodes.DirectoryGroupMemberInvalid, AdminStatus.Invalid, audit: true, cancellationToken, "group");
-        }
 
         var removed = current.Except(next).ToList();
         var renamed = name != group.DisplayName;
@@ -200,9 +165,7 @@ internal sealed partial class DirectoryProvisioning
             }
 
             foreach (var id in added)
-            {
                 group.Members.Add(new DirectoryGroupMember { GroupId = group.Id, UserId = id });
-            }
 
             await db.SaveChangesAsync(cancellationToken);
 
@@ -228,14 +191,10 @@ internal sealed partial class DirectoryProvisioning
     public async Task<AdminOutcome<bool>> DeleteGroupAsync(ClaimsPrincipal actor, Guid groupId, CancellationToken cancellationToken)
     {
         if (await GateAsync<bool>(cancellationToken) is { } closed)
-        {
             return closed;
-        }
 
         if (await db.DirectoryGroups.Include(g => g.Members).SingleOrDefaultAsync(g => g.Id == groupId, cancellationToken) is not { } group)
-        {
             return AdminOutcome.NotFound<bool>(OutcomeCodes.DirectoryGroupNotFound);
-        }
 
         return await InTransactionAsync(async () =>
         {
@@ -264,9 +223,7 @@ internal sealed partial class DirectoryProvisioning
     private async Task<bool> AllManagedAsync(List<string> ids, CancellationToken cancellationToken)
     {
         if (ids.Count == 0)
-        {
             return true;
-        }
 
         var managed = await users.Users.CountAsync(u => ids.Contains(u.Id) && u.ManagedBy == DirectoryRoles.ManagedBy, cancellationToken);
         return managed == ids.Count;

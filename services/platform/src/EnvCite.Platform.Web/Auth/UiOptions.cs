@@ -1,7 +1,4 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
-
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Web.Auth;
 
@@ -34,9 +31,7 @@ internal sealed class UiOptionsValidator : IValidateOptions<UiOptions>
     public ValidateOptionsResult Validate(string? name, UiOptions options)
     {
         if (options.SignInAttemptsPerMinute is < 1 or > 1000)
-        {
             return ValidateOptionsResult.Fail("Platform:Ui:SignInAttemptsPerMinute must be between 1 and 1000.");
-        }
 
         return options.SessionMaxAge < TimeSpan.FromMinutes(1) || options.SessionMaxAge > TimeSpan.FromDays(7)
             ? ValidateOptionsResult.Fail("Platform:Ui:SessionMaxAge must be between 1 minute and 7 days.")

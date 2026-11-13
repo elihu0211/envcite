@@ -1,6 +1,3 @@
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EnvCite.Platform.Modules.Audit;

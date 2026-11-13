@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
 
-using EnvCite.Platform.SharedKernel;
-
 namespace EnvCite.Platform.Tests;
 
 /// <summary>

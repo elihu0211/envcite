@@ -1,4 +1,3 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Authentication;
@@ -6,9 +5,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Web.Auth;
 

@@ -4,10 +4,7 @@ using System.Security.Cryptography.X509Certificates;
 using EnvCite.Platform.Modules.Tenancy;
 
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Tests;
 
@@ -41,14 +38,10 @@ public sealed class DataProtectionCertificateTests(PlatformFactory factory) : ID
         {
             b.UseSetting("ConnectionStrings:Platform", database);
             if (certificatePath is not null)
-            {
                 b.UseSetting("Platform:DataProtection:CertificatePath", certificatePath);
-            }
 
             if (password is not null)
-            {
                 b.UseSetting("Platform:DataProtection:CertificatePassword", password);
-            }
         });
     }
 

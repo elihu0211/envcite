@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.SharedKernel;
 
@@ -19,15 +18,11 @@ internal sealed partial class MailSettingsAdvisor(
     public Task StartAsync(CancellationToken cancellationToken)
     {
         if (!mail.Value.Enabled)
-        {
             return Task.CompletedTask;
-        }
 
         var connection = transport.Value;
         if (connection.SendsCredentialsInClear)
-        {
             CredentialsMayTravelInClear(logger, connection.Security);
-        }
 
         if (connection.HasCredentials && MailAddresses.IsValid(connection.Username)
             && !string.Equals(identity.Value.From.Trim(), connection.Username!.Trim(), StringComparison.OrdinalIgnoreCase))

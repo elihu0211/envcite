@@ -1,9 +1,5 @@
-using EnvCite.Platform.Data;
-
 using Finbuckle.MultiTenant.Abstractions;
 
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -48,9 +44,7 @@ public sealed partial class IdempotencyRetention(
             .Where(r => r.ExpiresAt <= now)
             .ExecuteDeleteAsync(cancellationToken);
         if (deleted > 0)
-        {
             Deleted(logger, deleted);
-        }
 
         return deleted;
     }

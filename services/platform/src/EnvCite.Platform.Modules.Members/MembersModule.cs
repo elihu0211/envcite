@@ -1,17 +1,11 @@
-using EnvCite.Platform.Data;
 using EnvCite.Platform.Modules.Members.DirectorySync;
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
 
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members;
 

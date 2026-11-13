@@ -1,12 +1,8 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members;
 
@@ -22,9 +18,7 @@ internal sealed class MemberCore(
         ClaimsPrincipal actor, TenantInfo tenant, string email, string? displayName, string role, CancellationToken cancellationToken)
     {
         if (NewAccountInput.Problem(email, displayName, role) is { } problem)
-        {
             return AdminOutcome.Invalid<IssuedPassword>(problem);
-        }
 
         var user = new ApplicationUser
         {
@@ -38,9 +32,7 @@ internal sealed class MemberCore(
         var password = OneTimePassword.New();
         var created = await users.CreateAsync(user, password);
         if (!created.Succeeded)
-        {
             return IdentityOutcomes.CreateFailed<IssuedPassword>(created, OutcomeCodes.MemberEmailTaken);
-        }
 
         // 稽核的 Detail 只有 email 與角色，絕不放密碼（也沒有雜湊）。
         await audit.AppendAsync(
@@ -63,14 +55,10 @@ internal sealed class MemberCore(
         ClaimsPrincipal actor, TenantInfo tenant, string email, string? displayName, string role, CancellationToken cancellationToken)
     {
         if (!mail.Enabled)
-        {
             return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.MailNotEnabled);
-        }
 
         if (NewAccountInput.Problem(email, displayName, role) is { } problem)
-        {
             return AdminOutcome.Invalid<MemberInvitation>(problem);
-        }
 
         var user = new ApplicationUser
         {
@@ -83,9 +71,7 @@ internal sealed class MemberCore(
         // 沒有密碼：在對方開啟連結設定之前，這個帳號登不進去。
         var created = await users.CreateAsync(user);
         if (!created.Succeeded)
-        {
             return IdentityOutcomes.CreateFailed<MemberInvitation>(created, OutcomeCodes.MemberEmailTaken);
-        }
 
         var delivery = await SendActivationAsync(user, tenant, invitation: true, cancellationToken);
         await audit.AppendAsync(
@@ -105,20 +91,14 @@ internal sealed class MemberCore(
         ClaimsPrincipal actor, TenantInfo tenant, ApplicationUser user, CancellationToken cancellationToken)
     {
         if (!mail.Enabled)
-        {
             return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.MailNotEnabled);
-        }
 
         if (user.Disabled)
-        {
             return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.AccountDisabled);
-        }
 
         var invitation = !await users.HasPasswordAsync(user);
         if (!invitation && user.EmailConfirmed)
-        {
             return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.AccountAlreadyActive);
-        }
 
         var delivery = await SendActivationAsync(user, tenant, invitation, cancellationToken);
         await audit.AppendAsync(
@@ -155,9 +135,7 @@ internal sealed class MemberCore(
         user.LockoutEnd = null;
         var updated = await users.UpdateAsync(user);
         if (!updated.Succeeded)
-        {
             return IdentityOutcomes.Rejected<IssuedPassword>(updated.Errors.First());
-        }
 
         // 讓既有的 session 失效：被重設通常是因為帳號可能已經不安全。
         await users.UpdateSecurityStampAsync(user);

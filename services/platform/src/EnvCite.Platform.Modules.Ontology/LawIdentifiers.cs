@@ -1,5 +1,4 @@
 using EnvCite.Ontology.V2;
-using EnvCite.Platform.SharedKernel;
 
 namespace EnvCite.Platform.Modules.Ontology;
 

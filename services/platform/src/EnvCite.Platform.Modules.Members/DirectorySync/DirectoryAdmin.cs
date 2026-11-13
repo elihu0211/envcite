@@ -1,10 +1,6 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
-
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
@@ -27,9 +23,7 @@ internal sealed class DirectoryAdmin(IServiceScopeFactory scopes) : IDirectoryAd
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>().GetAsync(tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<T>(OutcomeCodes.TenantNotFound);
-        }
 
         Bind(scope, tenant);
         return await action(scope.ServiceProvider.GetRequiredService<DirectoryManagement>());

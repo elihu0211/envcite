@@ -1,12 +1,7 @@
 using System.Net;
-using System.Net.Http.Json;
 
 using EnvCite.Platform.Modules.Consult;
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
-
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
@@ -30,15 +25,11 @@ public sealed class RedMetricsTests(PlatformFactory factory)
                 foreach (var point in metric.GetMetricPoints())
                 {
                     if (metric.MetricType != MetricType.Histogram)
-                    {
                         continue;
-                    }
 
                     var tags = new Dictionary<string, object?>();
                     foreach (var tag in point.Tags)
-                    {
                         tags[tag.Key] = tag.Value;
-                    }
 
                     Points.Add(new Point(metric.Name, tags, point.GetHistogramCount()));
                 }

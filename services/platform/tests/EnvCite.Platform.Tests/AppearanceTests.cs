@@ -6,9 +6,6 @@ using EnvCite.Platform.Web;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -41,9 +38,7 @@ public static class AppearancePreferenceTests
     {
         var services = new ServiceCollection().AddPlatformAppearance();
         if (configure is not null)
-        {
             services.Configure(configure);
-        }
 
         return services.BuildServiceProvider().GetRequiredService<IAppearancePreference>();
     }
@@ -53,9 +48,7 @@ public static class AppearancePreferenceTests
         var context = new DefaultHttpContext();
         context.Request.IsHttps = https;
         if (cookie is not null)
-        {
             context.Request.Headers.Cookie = cookie;
-        }
 
         return context;
     }
@@ -147,9 +140,7 @@ public static class AppearancePreferenceTests
     {
         Assert.Equal(expected, AppearanceNames.Parse(word));
         if (expected is { } known)
-        {
             Assert.Equal(known.Name(), AppearanceNames.Parse(known.Name())!.Value.Name());
-        }
     }
 }
 
@@ -168,14 +159,10 @@ public sealed partial class AppearanceSettingTests(PlatformFactory factory)
         // 已登入的用戶端把登入 cookie 放在預設標頭；請求自己的標頭會取代預設的，所以把兩者合成一條。
         var cookies = new List<string>();
         if (client.DefaultRequestHeaders.TryGetValues("Cookie", out var existing))
-        {
             cookies.AddRange(existing);
-        }
 
         if (appearanceCookie is not null)
-        {
             cookies.Add(appearanceCookie);
-        }
 
         if (cookies.Count > 0)
         {
@@ -184,9 +171,7 @@ public sealed partial class AppearanceSettingTests(PlatformFactory factory)
         }
 
         if (language is not null)
-        {
             request.Headers.AcceptLanguage.ParseAdd(language);
-        }
 
         using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

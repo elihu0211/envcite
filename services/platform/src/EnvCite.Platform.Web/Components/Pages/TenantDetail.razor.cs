@@ -1,11 +1,7 @@
-using System.Security.Claims;
-
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Components.Dialogs;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 
 using MudBlazor;
 
@@ -31,9 +27,7 @@ public partial class TenantDetail(
     protected override async Task OnParametersSetAsync()
     {
         if (_loaded == TenantId)
-        {
             return;
-        }
 
         _loaded = TenantId;
         ClearNotice();
@@ -47,9 +41,7 @@ public partial class TenantDetail(
         Prerendered = null;
         await LoadAsync();
         if (!RendererInfo.IsInteractive && Error is null)
-        {
             Prerendered = new(TenantId, _tenant, _keys, _members, _recent, _usage, _directory);
-        }
     }
 
     public sealed record TenantSnapshot(
@@ -113,9 +105,7 @@ public partial class TenantDetail(
     private async Task SetUsageFilterAsync(int days)
     {
         if (_usageDays == days)
-        {
             return;
-        }
 
         _usageDays = days;
         await LoadUsageAsync();
@@ -156,9 +146,7 @@ public partial class TenantDetail(
             L["關閉目錄同步"], L["關閉後，{0} 的身分來源推送立刻被拒絕。既有成員與 token 都不動，客戶可以自己重新開啟。確定？", _tenant!.Identifier],
             L["關閉"]);
         if (!confirmed)
-        {
             return;
-        }
 
         await RunAsync(async () =>
         {
@@ -180,9 +168,7 @@ public partial class TenantDetail(
             L["解除目錄同步的管理"], L["解除後，{0} 的角色與停用回到人手上，身分來源要重新接管才會再動他。確定？", member.Email],
             L["解除管理"]);
         if (!confirmed)
-        {
             return;
-        }
 
         await RunAsync(async () =>
         {
@@ -218,13 +204,9 @@ public partial class TenantDetail(
             {
                 await RefreshAsync();
                 if (invitation.Mail == MailDelivery.Sent)
-                {
                     Succeed(L["已寄出邀請信給 {0}。", invitation.Member.Email]);
-                }
                 else
-                {
                     Fail(L["邀請信寄送失敗，{0} 的帳號已建立。請按「重寄邀請」，或用「重設密碼」取得暫時密碼。", invitation.Member.Email]);
-                }
             });
         }
     }
@@ -244,13 +226,9 @@ public partial class TenantDetail(
 
             await RefreshAsync();
             if (sent.Value!.Mail == MailDelivery.Sent)
-            {
                 Succeed(member.Invited ? L["已重寄邀請信給 {0}。", member.Email] : L["已寄出驗證信給 {0}。", member.Email]);
-            }
             else
-            {
                 Fail(L["寄信失敗，請稍後再試。"]);
-            }
         });
     }
 
@@ -260,9 +238,7 @@ public partial class TenantDetail(
             L["重設密碼"], L["重設 {0} 的密碼後，這位成員在所有裝置上會立刻登出，要用新的一次性密碼登入並自己改掉。確定？", member.Email],
             L["重設密碼"]);
         if (!confirmed)
-        {
             return;
-        }
 
         await RunAsync(async () =>
         {
@@ -287,9 +263,7 @@ public partial class TenantDetail(
                 L["停用成員"], L["停用 {0} 後，他在所有裝置上立刻登出、也不能再登入；帳號與稽核紀錄都保留，之後可以重新啟用。確定？", member.Email],
                 L["停用"]);
             if (!confirmed)
-            {
                 return;
-            }
         }
 
         await RunAsync(async () =>
@@ -314,9 +288,7 @@ public partial class TenantDetail(
             + L["請先用你們原本的管道確認對方是本人（不是別人冒名來要求重設）。確定？"],
             L["重設兩步驟"]);
         if (!confirmed)
-        {
             return;
-        }
 
         await RunAsync(async () =>
         {
@@ -356,9 +328,7 @@ public partial class TenantDetail(
             L["移除方案"], L["移除後，{0} 立刻不能呼叫資料端點（回 402）。確定？", _tenant!.Identifier],
             L["移除方案"]);
         if (confirmed)
-        {
             await ChangePlanAsync(null);
-        }
     }
 
     private async Task ToggleAiAnswerAsync()
@@ -371,9 +341,7 @@ public partial class TenantDetail(
                 L["開啟 AI 回答"], L["{0} 成員提的問題與相關條文會送到外部的模型服務。請確認租戶已同意。確定開啟？", _tenant.Identifier],
                 L["開啟"]);
             if (!confirmed)
-            {
                 return;
-            }
         }
 
         await RunAsync(async () =>
@@ -427,9 +395,7 @@ public partial class TenantDetail(
             L["撤銷 API key"], L["撤銷「{0}」（{1}…）後，持有它的客戶立刻無法呼叫 API，且無法復原。確定？", key.Name, key.Prefix],
             L["撤銷"]);
         if (!confirmed)
-        {
             return;
-        }
 
         await RunAsync(async () =>
         {

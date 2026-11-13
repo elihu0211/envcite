@@ -1,12 +1,6 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members;
 
@@ -30,9 +24,7 @@ internal sealed class OperatorAdmin(
         ClaimsPrincipal actor, string email, string? displayName, CancellationToken cancellationToken)
     {
         if (NewAccountInput.Problem(email, displayName) is { } problem)
-        {
             return AdminOutcome.Invalid<IssuedOperatorPassword>(problem);
-        }
 
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
@@ -47,9 +39,7 @@ internal sealed class OperatorAdmin(
         var password = OneTimePassword.New();
         var created = await users.CreateAsync(user, password);
         if (!created.Succeeded)
-        {
             return IdentityOutcomes.CreateFailed<IssuedOperatorPassword>(created, OutcomeCodes.OperatorEmailTaken);
-        }
 
         // 稽核的 Detail 只有 email，絕不放密碼（也沒有雜湊）。
         await Audit(scope).AppendAsync(
@@ -64,14 +54,10 @@ internal sealed class OperatorAdmin(
         ClaimsPrincipal actor, string email, string? displayName, CancellationToken cancellationToken)
     {
         if (!mail.Enabled)
-        {
             return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.MailNotEnabled);
-        }
 
         if (NewAccountInput.Problem(email, displayName) is { } problem)
-        {
             return AdminOutcome.Invalid<OperatorInvitation>(problem);
-        }
 
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
@@ -85,9 +71,7 @@ internal sealed class OperatorAdmin(
         // 沒有密碼：在對方開啟連結設定之前，這個帳號登不進去；設好密碼後仍要依序綁定驗證器。
         var created = await users.CreateAsync(user);
         if (!created.Succeeded)
-        {
             return IdentityOutcomes.CreateFailed<OperatorInvitation>(created, OutcomeCodes.OperatorEmailTaken);
-        }
 
         var delivery = await SendActivationAsync(users, user, invitation: true, cancellationToken);
         await Audit(scope).AppendAsync(
@@ -105,27 +89,19 @@ internal sealed class OperatorAdmin(
         ClaimsPrincipal actor, string operatorId, CancellationToken cancellationToken)
     {
         if (!mail.Enabled)
-        {
             return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.MailNotEnabled);
-        }
 
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
-        {
             return AdminOutcome.NotFound<OperatorInvitation>(OutcomeCodes.OperatorNotFound);
-        }
 
         if (user.Disabled)
-        {
             return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.AccountDisabled);
-        }
 
         var invitation = !await users.HasPasswordAsync(user);
         if (!invitation && user.EmailConfirmed)
-        {
             return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.AccountAlreadyActive);
-        }
 
         var delivery = await SendActivationAsync(users, user, invitation, cancellationToken);
         await Audit(scope).AppendAsync(
@@ -155,9 +131,7 @@ internal sealed class OperatorAdmin(
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
-        {
             return AdminOutcome.NotFound<IssuedOperatorPassword>(OutcomeCodes.OperatorNotFound);
-        }
 
         var password = OneTimePassword.New();
         user.PasswordHash = users.PasswordHasher.HashPassword(user, password);
@@ -166,9 +140,7 @@ internal sealed class OperatorAdmin(
         user.LockoutEnd = null;
         var updated = await users.UpdateAsync(user);
         if (!updated.Succeeded)
-        {
             return IdentityOutcomes.Rejected<IssuedOperatorPassword>(updated.Errors.First());
-        }
 
         // 讓既有的 session 失效：被重設通常是因為帳號可能已經不安全。
         await users.UpdateSecurityStampAsync(user);
@@ -186,9 +158,7 @@ internal sealed class OperatorAdmin(
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
-        {
             return AdminOutcome.NotFound<OperatorInfo>(OutcomeCodes.OperatorNotFound);
-        }
 
         await users.SetTwoFactorEnabledAsync(user, false);
         await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey);
@@ -214,9 +184,7 @@ internal sealed class OperatorAdmin(
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
-        {
             return AdminOutcome.NotFound<OperatorInfo>(OutcomeCodes.OperatorNotFound);
-        }
 
         if (user.Disabled == disabled)
         {

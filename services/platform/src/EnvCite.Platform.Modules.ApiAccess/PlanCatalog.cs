@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Options;
-
 namespace EnvCite.Platform.Modules.ApiAccess;
 
 /// <summary>
@@ -56,13 +54,9 @@ public sealed class PlanCatalog
         {
             var next = new Dictionary<string, string>(_assigned, StringComparer.Ordinal);
             if (plan is null)
-            {
                 next.Remove(tenantIdentifier);
-            }
             else
-            {
                 next[tenantIdentifier] = plan;
-            }
 
             _assigned = next;
         }

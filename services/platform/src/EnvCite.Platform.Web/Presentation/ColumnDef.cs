@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components;
 namespace EnvCite.Platform.Web.Presentation;
 
 /// <summary>
-/// <see cref="DataTable{TItem}"/> 的一欄：標題與儲存格怎麼畫。頁面以清單宣告欄位，表格的標記（thead、data-label、窄螢幕卡片）只在模板裡寫。
+/// <c>DataTable</c> 元件的一欄：標題與儲存格怎麼畫。頁面以清單宣告欄位，表格的標記（thead、data-label、窄螢幕卡片）只在模板裡寫。
 /// </summary>
 /// <typeparam name="TItem">一列的資料。</typeparam>
 public sealed class ColumnDef<TItem>

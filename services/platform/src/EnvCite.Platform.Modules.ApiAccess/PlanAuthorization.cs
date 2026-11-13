@@ -1,5 +1,3 @@
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Http;

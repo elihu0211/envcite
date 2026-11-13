@@ -3,14 +3,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 using Npgsql;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -32,9 +26,7 @@ public sealed partial class PortalMembersTests(PlatformFactory factory)
     {
         var fields = new Dictionary<string, string> { ["_handler"] = Action, ["Input.Action"] = action };
         if (role is not null && roleFor is not null)
-        {
             fields[$"role-{roleFor}"] = role;
-        }
 
         return fields;
     }

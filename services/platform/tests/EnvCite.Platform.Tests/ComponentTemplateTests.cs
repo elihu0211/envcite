@@ -126,9 +126,7 @@ public static partial class ComponentTemplateTests
     private static bool ContainsOutsideAllowedForms(string source, string markup)
     {
         if (markup != "<EditForm")
-        {
             return source.Contains(markup, StringComparison.Ordinal);
-        }
 
         return EditFormTag().Matches(source).Any(tag => !tag.Value.Contains("hidden=\"hidden\"", StringComparison.Ordinal));
     }

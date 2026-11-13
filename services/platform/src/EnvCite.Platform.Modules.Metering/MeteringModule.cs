@@ -1,14 +1,9 @@
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Metering;
 

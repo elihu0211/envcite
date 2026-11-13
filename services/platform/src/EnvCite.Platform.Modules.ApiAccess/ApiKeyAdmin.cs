@@ -1,13 +1,7 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.EntityFrameworkCore;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
 
@@ -21,9 +15,7 @@ internal sealed class ApiKeyAdmin(IServiceScopeFactory scopes, TimeProvider time
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await TenantAsync(scope, tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<IReadOnlyList<ApiKeyInfo>>(OutcomeCodes.TenantNotFound);
-        }
 
         await using var db = MultiTenantDbContext.Create<PlatformDbContext, TenantInfo>(tenant, scope.ServiceProvider);
         var keys = await db.ApiKeys.AsNoTracking().OrderBy(k => k.CreatedAt).ToListAsync(cancellationToken);
@@ -36,15 +28,11 @@ internal sealed class ApiKeyAdmin(IServiceScopeFactory scopes, TimeProvider time
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await TenantAsync(scope, tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<IssuedApiKey>(OutcomeCodes.TenantNotFound);
-        }
 
         var now = time.GetUtcNow();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 100 || expiresAt <= now)
-        {
             return AdminOutcome.Invalid<IssuedApiKey>(OutcomeCodes.ApiKeyInvalid);
-        }
 
         var (fullKey, prefix, hash) = ApiKeyFormat.Generate();
         var apiKey = new ApiKey
@@ -79,17 +67,13 @@ internal sealed class ApiKeyAdmin(IServiceScopeFactory scopes, TimeProvider time
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await TenantAsync(scope, tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<ApiKeyInfo>(OutcomeCodes.TenantNotFound);
-        }
 
         // 租戶的查詢濾鏡讓別的租戶的 key 在這裡找不到：不能用 A 租戶的 id 撤銷 B 租戶的 key。
         await using var db = MultiTenantDbContext.Create<PlatformDbContext, TenantInfo>(tenant, scope.ServiceProvider);
         var key = await db.ApiKeys.SingleOrDefaultAsync(k => k.Id == keyId, cancellationToken);
         if (key is null)
-        {
             return AdminOutcome.NotFound<ApiKeyInfo>(OutcomeCodes.ApiKeyNotFound);
-        }
 
         if (key.RevokedAt is null)
         {

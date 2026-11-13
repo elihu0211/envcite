@@ -1,16 +1,12 @@
 using System.Net;
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Auth;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Tests;
 
@@ -35,9 +31,7 @@ internal static class OperatorSession
             await using var scope = app.Services.CreateAsyncScope();
             var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
             if (await users.FindByEmailAsync(email) is { } existing)
-            {
                 return existing;
-            }
 
             var created = await app.Services.GetRequiredService<IOperatorAdmin>().CreateAsync(Principal(email), email, null, CancellationToken.None);
             Assert.True(created.IsOk, $"建立營運者失敗：{created.Status}");
@@ -85,9 +79,7 @@ internal static class OperatorSession
         var ticket = app.CookieFor(session, properties);
         var options = new WebApplicationFactoryClientOptions { AllowAutoRedirect = false };
         if (baseAddress is not null)
-        {
             options.BaseAddress = baseAddress;
-        }
 
         var client = app.CreateClient(options);
         client.DefaultRequestHeaders.Add("Cookie", $"{cookie.Cookie.Name}={ticket}");

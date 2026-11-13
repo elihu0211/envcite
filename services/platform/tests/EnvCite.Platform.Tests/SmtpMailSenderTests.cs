@@ -2,13 +2,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Tests;
 
@@ -86,14 +82,10 @@ public sealed class SmtpMailSenderTests
         var settings = Settings(relay.Port);
         settings.Remove("Platform:Mail:FromName");
         if (fromName is not null)
-        {
             settings["Platform:Mail:FromName"] = fromName;
-        }
 
         if (brandName is not null)
-        {
             settings["Platform:Brand:Name"] = brandName;
-        }
 
         using var provider = Sender(settings);
 
@@ -253,9 +245,7 @@ public sealed class SmtpMailSenderTests
         Assert.Contains("Mail delivery failed", dump, StringComparison.Ordinal);
         Assert.Contains("535", dump, StringComparison.Ordinal);
         foreach (var secret in new[] { Secret, "wrong-密碼-也不能進日誌", "不能進日誌", Account, "relay-account", "someone@recipient.test" })
-        {
             Assert.DoesNotContain(secret, dump, StringComparison.Ordinal);
-        }
     }
 
     // Exchange 的 550 5.7.60：寄件者必須等於認證的帳號。日誌認得增強狀態碼，但不帶位址。
@@ -489,9 +479,7 @@ public sealed class SmtpMailSenderTests
 
         Assert.Contains(expected, failure.Message, StringComparison.Ordinal);
         if (value.Length >= 4) // 帳號與密碼那幾列：值不得出現在訊息裡（數字型的列太短，無從以子字串判斷）
-        {
             Assert.DoesNotContain(value, failure.Message.Replace(key, string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
-        }
     }
 
     [Theory]
@@ -624,9 +612,7 @@ public sealed class SmtpMailSenderTests
         var logs = new CapturingLoggerProvider();
         using var provider = Sender(settings, logs);
         foreach (var service in provider.GetServices<IHostedService>())
-        {
             await service.StartAsync(TestContext.Current.CancellationToken);
-        }
 
         return string.Join('\n', logs.Messages);
     }
@@ -673,9 +659,7 @@ public sealed class SmtpMailSenderTests
     private static IEnumerable<string> Messages(Exception exception)
     {
         for (var current = exception; current is not null; current = current.InnerException!)
-        {
             yield return current.Message;
-        }
     }
 
     private static int UnusedPort()

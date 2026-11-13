@@ -1,6 +1,3 @@
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;

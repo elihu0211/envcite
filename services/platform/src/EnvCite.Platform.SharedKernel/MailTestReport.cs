@@ -1,7 +1,6 @@
 using System.Globalization;
 
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.SharedKernel;
 
@@ -68,15 +67,11 @@ internal sealed class MailTestReport(
             T("MailTest.Sender", sender.From),
         };
         if (!string.IsNullOrWhiteSpace(sender.ReplyTo))
-        {
             lines.Add(T("MailTest.ReplyTo", sender.ReplyTo));
-        }
 
         lines.Add(T("MailTest.BaseUrl", mail.Value.BaseUrl));
         if (connection.SendsCredentialsInClear)
-        {
             lines.Add(T("MailTest.Warning.Clear", connection.Security));
-        }
 
         return string.Join('\n', lines);
     });

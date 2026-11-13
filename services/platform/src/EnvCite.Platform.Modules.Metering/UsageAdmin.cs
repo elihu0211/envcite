@@ -1,11 +1,5 @@
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.EntityFrameworkCore;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Modules.Metering;
 
@@ -19,16 +13,12 @@ internal sealed class UsageAdmin(IServiceScopeFactory scopes) : IUsageAdmin
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await TenantAsync(scope, tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<IReadOnlyList<TenantUsageSummary>>(OutcomeCodes.TenantNotFound);
-        }
 
         await using var db = MultiTenantDbContext.Create<PlatformDbContext, TenantInfo>(tenant, scope.ServiceProvider);
         var query = db.UsageRecords.AsNoTracking();
         if (since is { } from)
-        {
             query = query.Where(r => r.OccurredAt >= from);
-        }
 
         var rows = await query
             .GroupBy(r => r.Operation)

@@ -1,8 +1,5 @@
 using System.Text;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 
@@ -22,9 +19,7 @@ internal static class Activation
         where TUser : class
     {
         if (revokeOld)
-        {
             await users.UpdateSecurityStampAsync(user);
-        }
 
         var token = await users.GenerateEmailConfirmationTokenAsync(user);
         return WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
@@ -34,9 +29,7 @@ internal static class Activation
     public static string? Decode(string? code)
     {
         if (string.IsNullOrEmpty(code) || code.Length > 2048)
-        {
             return null;
-        }
 
         try
         {
@@ -54,16 +47,12 @@ internal static class Activation
         where TKey : IEquatable<TKey>
     {
         if (user is null || IsDisabled(user) || Decode(code) is not { } token)
-        {
             return ActivationState.Invalid;
-        }
 
         var valid = await users.VerifyUserTokenAsync(
             user, users.Options.Tokens.EmailConfirmationTokenProvider, UserManager<TUser>.ConfirmEmailTokenPurpose, token);
         if (!valid)
-        {
             return ActivationState.Invalid;
-        }
 
         return await users.HasPasswordAsync(user) ? ActivationState.ConfirmEmail : ActivationState.SetPassword;
     }
@@ -79,9 +68,7 @@ internal static class Activation
     {
         var state = await InspectAsync<TUser, TKey>(users, user, code);
         if (state == ActivationState.Invalid || user is null)
-        {
             return (AdminOutcome.Invalid<ActivationState>(OutcomeCodes.ActivationLinkInvalid), null);
-        }
 
         if (state == ActivationState.ConfirmEmail)
         {
@@ -92,15 +79,11 @@ internal static class Activation
         }
 
         if (string.IsNullOrEmpty(newPassword))
-        {
             return (AdminOutcome.Invalid<ActivationState>(OutcomeCodes.PasswordTooShort, PasswordPolicy.MinimumLength), null);
-        }
 
         var added = await users.AddPasswordAsync(user, newPassword);
         if (!added.Succeeded)
-        {
             return (IdentityOutcomes.PasswordRejected<ActivationState>(added.Errors.First()), null);
-        }
 
         user.EmailConfirmed = true;
         var saved = await users.UpdateAsync(user);

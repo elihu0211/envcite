@@ -1,12 +1,8 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
@@ -48,9 +44,7 @@ internal sealed class DirectoryGroupRoles(
         foreach (var id in userIds.Distinct(StringComparer.Ordinal))
         {
             if (await users.FindByIdAsync(id) is not { ManagedBy: DirectoryRoles.ManagedBy } user || user.Role == CustomerRoles.Owner)
-            {
                 continue;
-            }
 
             var mapped = await db.DirectoryGroupMembers
                 .Where(m => m.UserId == id)
@@ -58,18 +52,14 @@ internal sealed class DirectoryGroupRoles(
                 .ToListAsync(cancellationToken);
             var role = mapped.Count == 0 ? defaultRole : mapped.OrderByDescending(Rank).First()!;
             if (role == user.Role)
-            {
                 continue;
-            }
 
             var previous = user.Role;
             user.Role = role;
             user.SyncedAt = time.GetUtcNow();
             var updated = await users.UpdateAsync(user);
             if (!updated.Succeeded)
-            {
                 throw new InvalidOperationException("Could not update a member's role from a group mapping.");
-            }
 
             await users.UpdateSecurityStampAsync(user);
             db.StageAudit(

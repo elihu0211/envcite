@@ -1,7 +1,6 @@
 using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.SharedKernel;
 
@@ -24,9 +23,7 @@ public static class PlatformGrpcClient
                 {
                     metadata.Add("x-request-id", httpContext.TraceIdentifier);
                     if (httpContext.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value is { } tenant)
-                    {
                         metadata.Add("x-tenant-id", tenant);
-                    }
                 }
 
                 return Task.CompletedTask;

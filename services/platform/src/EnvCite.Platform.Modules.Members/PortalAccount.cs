@@ -1,8 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
@@ -55,9 +52,7 @@ internal sealed class PortalAccount(
         // Identity 原生：密碼對且啟用了兩步驟時，簽發它的待驗證 cookie 並不歸零失敗計數（要等第二步也過）。
         var result = await signIn.PasswordSignInAsync(user, password ?? string.Empty, isPersistent: false, lockoutOnFailure: true);
         if (result.RequiresTwoFactor)
-        {
             return SignInStatus.RequiresTwoFactor;
-        }
 
         if (!result.Succeeded)
         {
@@ -106,9 +101,7 @@ internal sealed class PortalAccount(
     {
         await signIn.SignOutAsync();
         if (user.FindFirst(PlatformClaimTypes.PortalUserId)?.Value is { } id && tenant.MultiTenantContext?.TenantInfo is { } info)
-        {
             await audit.AppendAsync(user, new AuditEntry(AuditActions.PortalSignedOut, info.Id, "member", id), cancellationToken);
-        }
     }
 
     public async Task<AdminOutcome<bool>> ChangePasswordAsync(
@@ -118,20 +111,14 @@ internal sealed class PortalAccount(
         var id = principal.FindFirst(PlatformClaimTypes.PortalUserId)?.Value;
         var user = id is null ? null : await users.FindByIdAsync(id);
         if (user is null)
-        {
             return AdminOutcome.NotFound<bool>(OutcomeCodes.AccountNotFound);
-        }
 
         if (string.Equals(currentPassword, newPassword, StringComparison.Ordinal))
-        {
             return AdminOutcome.Invalid<bool>(OutcomeCodes.PasswordSameAsCurrent);
-        }
 
         var changed = await users.ChangePasswordAsync(user, currentPassword ?? string.Empty, newPassword ?? string.Empty);
         if (!changed.Succeeded)
-        {
             return IdentityOutcomes.PasswordRejected<bool>(changed.Errors.First());
-        }
 
         user.MustChangePassword = false;
         await users.UpdateAsync(user);

@@ -1,18 +1,9 @@
-using System.Net;
-using System.Net.Http.Json;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
-using EnvCite.Platform.Modules.Members;
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Presentation;
-
-using Microsoft.Extensions.DependencyInjection;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 

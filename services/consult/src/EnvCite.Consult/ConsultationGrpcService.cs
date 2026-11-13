@@ -19,18 +19,14 @@ internal sealed partial class ConsultationGrpcService(GroundingPipeline pipeline
     {
         var tenant = context.RequestHeaders.GetValue("x-tenant-id");
         if (string.IsNullOrEmpty(tenant))
-        {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "x-tenant-id is required"));
-        }
 
         var requestId = context.RequestHeaders.GetValue("x-request-id") ?? "-";
         LogGround(logger, tenant, requestId);
 
         string[] unknown = [.. request.Ontologies.Where(o => !Grounding.CodePrefix.ContainsKey(o)).Distinct().Order(StringComparer.Ordinal)];
         if (unknown.Length > 0)
-        {
             throw new RpcException(new Status(StatusCode.InvalidArgument, $"unknown ontology: {string.Join(", ", unknown)}"));
-        }
 
         // 本體的 RpcException 不攔：伺服器以它的狀態與 trailer 原樣回給呼叫端。無效的 as_of 仍是 INVALID_ARGUMENT、
         // 本體不可用仍是 UNAVAILABLE（可重試）；吞成 UNKNOWN，呼叫端就無從區分參數錯誤與可重試的不可用。

@@ -1,4 +1,3 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Resources;
 
 namespace EnvCite.Platform.Web.Presentation;

@@ -1,12 +1,6 @@
 using System.Net;
 using System.Text.RegularExpressions;
 
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.Extensions.DependencyInjection;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
-
 namespace EnvCite.Platform.Tests;
 
 /// <summary>

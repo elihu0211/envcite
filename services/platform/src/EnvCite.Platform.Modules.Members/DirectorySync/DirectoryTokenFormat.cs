@@ -1,6 +1,3 @@
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
 /// <summary>

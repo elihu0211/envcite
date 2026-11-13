@@ -1,8 +1,6 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Resources;
 
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Web.Components;
 

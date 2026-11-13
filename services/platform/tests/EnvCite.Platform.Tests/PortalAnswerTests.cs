@@ -1,18 +1,11 @@
-using System.Net;
-using System.Net.Http.Json;
-
 using EnvCite.Platform.Modules.Metering;
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -64,9 +57,7 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
             .ConfigureLogging(l =>
             {
                 if (logs is not null)
-                {
                     l.AddProvider(logs);
-                }
             })
             .ConfigureServices(s => s.Replace(ServiceDescriptor.Singleton<IChatClient>(chat))));
         return (host, chat);
@@ -76,9 +67,7 @@ public sealed class PortalAnswerTests(PlatformFactory factory)
     {
         var (tenant, email, initial) = await MemberAsync(factory, "ans");
         if (consent)
-        {
             await ConsentAsync(tenant.Id);
-        }
 
         var browser = new PortalBrowser(host);
         await SignInFullyAsync(browser, tenant.Identifier, email, initial);

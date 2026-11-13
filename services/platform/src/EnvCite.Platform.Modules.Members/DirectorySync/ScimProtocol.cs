@@ -2,8 +2,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
@@ -99,14 +97,10 @@ internal sealed class ScimResult(int status, object? body, string? location = nu
     {
         httpContext.Response.StatusCode = status;
         if (location is not null)
-        {
             httpContext.Response.Headers.Location = location;
-        }
 
         if (body is not null)
-        {
             await httpContext.Response.WriteAsJsonAsync(body, body.GetType(), Scim.Json, Scim.ContentType);
-        }
     }
 }
 
@@ -149,16 +143,12 @@ internal static partial class ScimInput
     public static User? ParseUser(JsonElement body)
     {
         if (body.ValueKind != JsonValueKind.Object)
-        {
             return null;
-        }
 
         var userName = TryGet(body, "userName", out var u) ? Text(u)?.Trim() : null;
         var email = EmailAddresses.IsValid(userName ?? string.Empty) ? userName : FirstEmail(body);
         if (email is null)
-        {
             return null;
-        }
 
         var active = TryGet(body, "active", out var a) ? Bool(a) : null;
         var externalId = TryGet(body, "externalId", out var e) ? Text(e) : null;
@@ -168,23 +158,17 @@ internal static partial class ScimInput
     private static string? FirstEmail(JsonElement body)
     {
         if (!TryGet(body, "emails", out var emails) || emails.ValueKind != JsonValueKind.Array)
-        {
             return null;
-        }
 
         string? first = null;
         foreach (var entry in emails.EnumerateArray())
         {
             if (!TryGet(entry, "value", out var v) || Text(v)?.Trim() is not { } value || !EmailAddresses.IsValid(value))
-            {
                 continue;
-            }
 
             first ??= value;
             if (TryGet(entry, "primary", out var p) && Bool(p) == true)
-            {
                 return value;
-            }
         }
 
         return first;
@@ -194,9 +178,7 @@ internal static partial class ScimInput
     public static string? DisplayNameOf(JsonElement body)
     {
         if (TryGet(body, "displayName", out var display) && Text(display) is { Length: > 0 } shown)
-        {
             return shown;
-        }
 
         return TryGet(body, "name", out var name) ? NameText(name) : null;
     }
@@ -204,9 +186,7 @@ internal static partial class ScimInput
     private static string? NameText(JsonElement name)
     {
         if (TryGet(name, "formatted", out var formatted) && Text(formatted) is { Length: > 0 } text)
-        {
             return text;
-        }
 
         var given = TryGet(name, "givenName", out var g) ? Text(g) : null;
         var family = TryGet(name, "familyName", out var f) ? Text(f) : null;
@@ -218,9 +198,7 @@ internal static partial class ScimInput
     public static (DirectoryPatch? Patch, IResult? Failure) ParsePatch(JsonElement body)
     {
         if (!TryGet(body, "Operations", out var operations) || operations.ValueKind != JsonValueKind.Array || operations.GetArrayLength() == 0)
-        {
             return (null, ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "Operations must be a non-empty array."));
-        }
 
         string? displayName = null;
         bool? active = null;
@@ -231,25 +209,19 @@ internal static partial class ScimInput
         {
             var op = (TryGet(operation, "op", out var o) ? Text(o) : null)?.ToLowerInvariant();
             if (op is not ("add" or "replace" or "remove"))
-            {
                 return (null, ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "op must be add, replace or remove."));
-            }
 
             var path = TryGet(operation, "path", out var p) ? Text(p) : null;
             TryGet(operation, "value", out var value);
             if (string.IsNullOrEmpty(path))
             {
                 if (value.ValueKind != JsonValueKind.Object)
-                {
                     return (null, ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "A value object is required when path is missing."));
-                }
 
                 foreach (var property in value.EnumerateObject())
                 {
                     if (!Apply(property.Name, op, property.Value, ref displayName, ref active, ref externalId, ref email, out var failure))
-                    {
                         return (null, failure);
-                    }
                 }
             }
             else if (!Apply(path, op, value, ref displayName, ref active, ref externalId, ref email, out var failure))
@@ -314,9 +286,7 @@ internal static partial class ScimInput
     public static (string? ExternalId, string? Primary, bool Valid) ParseFilter(string? filter, string primary)
     {
         if (string.IsNullOrWhiteSpace(filter))
-        {
             return (null, null, true);
-        }
 
         var match = EqualityFilter().Match(filter);
         var attribute = match.Groups["attribute"].Value;
@@ -336,9 +306,7 @@ internal static partial class ScimInput
     public static GroupBody? ParseGroup(JsonElement body)
     {
         if (body.ValueKind != JsonValueKind.Object)
-        {
             return null;
-        }
 
         var displayName = TryGet(body, "displayName", out var d) ? Text(d)?.Trim() : null;
         var externalId = TryGet(body, "externalId", out var e) ? Text(e) : null;
@@ -354,9 +322,7 @@ internal static partial class ScimInput
             foreach (var member in members.EnumerateArray())
             {
                 if (TryGet(member, "value", out var v) && Text(v) is { Length: > 0 } id)
-                {
                     ids.Add(id);
-                }
             }
         }
 
@@ -367,9 +333,7 @@ internal static partial class ScimInput
     public static (DirectoryGroupPatch? Patch, IResult? Failure) ParseGroupPatch(JsonElement body)
     {
         if (!TryGet(body, "Operations", out var operations) || operations.ValueKind != JsonValueKind.Array || operations.GetArrayLength() == 0)
-        {
             return (null, ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "Operations must be a non-empty array."));
-        }
 
         string? displayName = null;
         string? externalId = null;
@@ -378,23 +342,17 @@ internal static partial class ScimInput
         {
             var op = (TryGet(operation, "op", out var o) ? Text(o) : null)?.ToLowerInvariant();
             if (op is not ("add" or "replace" or "remove"))
-            {
                 return (null, ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "op must be add, replace or remove."));
-            }
 
             var path = TryGet(operation, "path", out var p) ? Text(p) : null;
             TryGet(operation, "value", out var value);
             if (string.IsNullOrEmpty(path))
             {
                 if (value.ValueKind != JsonValueKind.Object)
-                {
                     return (null, ScimResponses.Error(StatusCodes.Status400BadRequest, "invalidSyntax", "A value object is required when path is missing."));
-                }
 
                 foreach (var property in value.EnumerateObject())
-                {
                     ApplyGroupPath(property.Name, op, property.Value, ref displayName, ref externalId, changes);
-                }
             }
             else
             {

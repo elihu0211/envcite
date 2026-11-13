@@ -8,7 +8,6 @@ using Grpc.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Tests;
 
@@ -67,9 +66,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         if (_app is not null)
-        {
             await _app.DisposeAsync();
-        }
     }
 
     private sealed class Service(FakeOntologyServer server) : OntologyService.OntologyServiceBase
@@ -83,9 +80,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             CheckAsOf(request.AsOf);
             var calls = server.GetLawCalls.AddOrUpdate(id, 1, (_, n) => n + 1);
             if (id == FlakyLawId && calls == 1)
-            {
                 throw new RpcException(new Status(StatusCode.Unavailable, "restarting"));
-            }
 
             return Task.FromResult(new GetLawResponse
             {
@@ -118,19 +113,13 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             Authorize(context, KnownLawId);
             server.LastSearch = request;
             if (string.IsNullOrWhiteSpace(request.Query))
-            {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "query must not be empty"));
-            }
 
             if (request.Query == "pool-busy")
-            {
                 throw new RpcException(new Status(StatusCode.ResourceExhausted, "no database connection is available"));
-            }
 
             if (request.AsOf == "yesterday")
-            {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));
-            }
 
             return Task.FromResult(new SearchArticlesResponse
             {
@@ -153,33 +142,23 @@ public sealed class FakeOntologyServer : IAsyncDisposable
         private static void CheckAsOf(string asOf)
         {
             if (asOf == "yesterday")
-            {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));
-            }
 
             if (asOf == NotInForceDate)
-            {
                 throw new RpcException(new Status(StatusCode.NotFound, "no version in force"));
-            }
         }
 
         private void Authorize(ServerCallContext context, string lawId)
         {
             server.ReceivedMetadata.Enqueue(context.RequestHeaders);
             if (lawId == UnavailableLawId)
-            {
                 throw new RpcException(new Status(StatusCode.Unavailable, "down"));
-            }
 
             if (lawId == BusyLawId)
-            {
                 throw new RpcException(new Status(StatusCode.ResourceExhausted, "no database connection is available"));
-            }
 
             if (lawId is not (KnownLawId or FlakyLawId))
-            {
                 throw new RpcException(new Status(StatusCode.NotFound, "no such law"));
-            }
         }
     }
 
@@ -193,14 +172,10 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             server.ReceivedMetadata.Enqueue(context.RequestHeaders);
             server.LastEvaluate = request;
             if (request.ConductOn == "yesterday")
-            {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "conduct_on must be an ISO 8601 date"));
-            }
 
             if (request.ConductOn == BusyDate)
-            {
                 throw new RpcException(new Status(StatusCode.ResourceExhausted, "evaluation capacity is in use"));
-            }
 
             var outcome = new Outcome
             {

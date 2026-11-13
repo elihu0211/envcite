@@ -28,7 +28,7 @@ public interface IOperatorTwoFactor : ITwoFactor;
 /// 管理營運者帳號（後台、命令列與本機開發的種子資料共用）。沒有自助註冊：
 /// 帳號只能由已被信任的營運者或系統管理者建立。啟用寄信時是<b>邀請</b>（<see cref="InviteAsync"/>）：對方開啟單次、限時的連結自己設定密碼並驗證信箱，
 /// 沒有人經手密碼；沒啟用時由建立者把一次性的初始密碼親手交給對方（對方第一次登入必須改掉）。兩條路之後都要註冊驗證器。
-/// 每個動作都留稽核，<paramref name="actor"/> 由已驗證的身分決定，不接受自報。
+/// 每個動作都留稽核，<c>actor</c> 由已驗證的身分決定，不接受自報。
 /// </summary>
 public interface IOperatorAdmin
 {

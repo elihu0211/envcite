@@ -46,9 +46,7 @@ public abstract class AdminPageBase : PageBase
     protected async Task RunAsync(Func<Task> action)
     {
         if (Busy)
-        {
             return;
-        }
 
         (Busy, Notice) = (true, null);
         try

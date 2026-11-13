@@ -1,6 +1,3 @@
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 namespace EnvCite.Platform.Modules.ApiAccess;
 
 /// <summary>Key 格式：<c>sk_live_{prefix:12 hex}_{secret:base64url(32 bytes)}</c>。格式本身在 <see cref="BearerSecret"/>，與目錄同步的 token 共用。</summary>

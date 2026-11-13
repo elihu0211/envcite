@@ -39,13 +39,9 @@ public static class ServiceEnvironment
         {
             var name = (string)entry.Key;
             if (name.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            {
                 data[name[Prefix.Length..].Replace("__", ":", StringComparison.Ordinal)] = entry.Value?.ToString();
-            }
             else if (name.StartsWith("OTEL_", StringComparison.Ordinal))
-            {
                 data[name] = entry.Value?.ToString();
-            }
         }
 
         configuration.Sources.Insert(at, new MemoryConfigurationSource { InitialData = data });

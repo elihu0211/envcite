@@ -3,13 +3,9 @@ using System.Text.RegularExpressions;
 
 using EnvCite.Platform.Api;
 using EnvCite.Platform.Modules.Members;
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -30,9 +26,7 @@ public sealed partial class BrandTests(PlatformFactory factory)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(path, UriKind.Relative));
         if (language is not null)
-        {
             request.Headers.AcceptLanguage.ParseAdd(language);
-        }
 
         using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -197,9 +191,7 @@ public sealed partial class BrandTests(PlatformFactory factory)
         var mail = Assert.Single(sender.Sent);
         Assert.Equal(subject, mail.Subject);
         if (invitation)
-        {
             Assert.Contains($"已為您在「{brand}」建立帳號", mail.Body, StringComparison.Ordinal);
-        }
     }
 
     private async Task<(int Code, string Output, string Mail, string Subject)> MailTestAsync(string? brand)
@@ -210,9 +202,7 @@ public sealed partial class BrandTests(PlatformFactory factory)
             builder.UseEnvironment("Production");
             builder.UseSetting("ConnectionStrings:Platform", database);
             if (brand is not null)
-            {
                 builder.UseSetting("Platform:Brand:Name", brand);
-            }
         });
         var to = $"probe-{Guid.NewGuid():N}@example.test";
         (int Code, string Output, string Mail, string Subject) result = default;

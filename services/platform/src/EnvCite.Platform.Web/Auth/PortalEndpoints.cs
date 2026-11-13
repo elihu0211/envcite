@@ -1,5 +1,3 @@
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -25,9 +23,7 @@ public static class PortalEndpoints
 
             // 路徑上的租戶不存在，就當作這個路徑不存在。
             if (account.CurrentTenant is not { } tenant)
-            {
                 return Results.NotFound();
-            }
 
             await account.SignOutAsync(context.User, context.RequestAborted);
             return Results.Redirect(PortalPaths.Login(tenant.Identifier));

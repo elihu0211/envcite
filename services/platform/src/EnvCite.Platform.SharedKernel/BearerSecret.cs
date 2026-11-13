@@ -23,9 +23,7 @@ public static class BearerSecret
         prefix = secret = string.Empty;
         var minLength = marker.Length + prefixLength + 2;
         if (key.Length < minLength || !key.StartsWith(marker, StringComparison.Ordinal) || key[marker.Length + prefixLength] != '_')
-        {
             return false;
-        }
 
         prefix = key.Substring(marker.Length, prefixLength);
         secret = key[(marker.Length + prefixLength + 1)..];

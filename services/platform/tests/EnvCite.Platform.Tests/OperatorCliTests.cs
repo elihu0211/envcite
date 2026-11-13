@@ -1,12 +1,8 @@
 using EnvCite.Platform.Api;
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -303,9 +299,7 @@ public sealed class OperatorCliTests(PlatformFactory factory)
         Assert.Contains("回覆位址：support@relay.test", output, StringComparison.Ordinal);
         Assert.DoesNotContain("警告", output, StringComparison.Ordinal);
         foreach (var secret in new[] { LoginSecret, "不能出現", LoginName, "login-name" })
-        {
             Assert.DoesNotContain(secret, output + error + logs, StringComparison.Ordinal);
-        }
     }
 
     // 現行部署（沒設加密也沒設帳密）：照舊，只是多說明「不加密」與「沒用帳密」。

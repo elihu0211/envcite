@@ -1,10 +1,6 @@
 using System.Net;
 
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Tests;
 

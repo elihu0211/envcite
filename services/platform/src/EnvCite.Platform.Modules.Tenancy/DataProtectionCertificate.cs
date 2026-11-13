@@ -1,7 +1,4 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
-
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Tenancy;
 

@@ -2,13 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
-using EnvCite.Platform.Data;
 using EnvCite.Platform.Modules.ApiAccess;
-using EnvCite.Platform.SharedKernel;
 
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Tests;
 

@@ -1,8 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
-using EnvCite.Platform.SharedKernel;
-
 namespace EnvCite.Platform.Tests;
 
 /// <summary>

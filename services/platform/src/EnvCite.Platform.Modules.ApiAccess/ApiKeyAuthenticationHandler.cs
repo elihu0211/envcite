@@ -2,16 +2,10 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Encodings.Web;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
 
@@ -30,14 +24,10 @@ public sealed class ApiKeyAuthenticationHandler(
     {
         string? header = Request.Headers.Authorization;
         if (header is null || !header.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase))
-        {
             return AuthenticateResult.NoResult();
-        }
 
         if (!ApiKeyFormat.TryParse(header[BearerPrefix.Length..].Trim(), out var prefix, out var secret))
-        {
             return AuthenticateResult.Fail("Malformed API key.");
-        }
 
         // 另開 scope：request-scoped 的 PlatformDbContext 只能在租戶解析之後建立。
         await using var scope = scopeFactory.CreateAsyncScope();
@@ -52,20 +42,14 @@ public sealed class ApiKeyAuthenticationHandler(
             .SingleOrDefaultAsync(Context.RequestAborted);
 
         if (match is null || !CryptographicOperations.FixedTimeEquals(match.Key.SecretHash, ApiKeyFormat.Hash(secret)))
-        {
             return AuthenticateResult.Fail("Invalid API key.");
-        }
 
         if (!match.Key.IsActive(timeProvider.GetUtcNow()))
-        {
             return AuthenticateResult.Fail("API key revoked or expired.");
-        }
 
         var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
         if (await store.GetAsync(match.TenantId) is not { } tenant)
-        {
             return AuthenticateResult.Fail("Tenant not found.");
-        }
 
         List<Claim> claims =
         [

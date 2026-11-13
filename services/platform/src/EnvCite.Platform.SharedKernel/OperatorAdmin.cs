@@ -80,7 +80,7 @@ public sealed record PlanChange(string TenantId, string? Previous, string? Curre
 
 /// <summary>
 /// 營運者管理租戶的 API key。營運後台用這個實作；每個動作都留稽核，
-/// 稽核與變更同一個交易。<paramref name="actor"/> 是做這件事的人（由已驗證的身分決定「誰」，不接受自報）。
+/// 稽核與變更同一個交易。<c>actor</c> 是做這件事的人（由已驗證的身分決定「誰」，不接受自報）。
 /// </summary>
 public interface IApiKeyAdmin
 {

@@ -1,8 +1,4 @@
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.OpenApi;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 
 namespace EnvCite.Platform.Api;

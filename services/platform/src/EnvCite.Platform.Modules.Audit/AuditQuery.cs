@@ -1,11 +1,5 @@
 using System.Text.Json;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-
 namespace EnvCite.Platform.Modules.Audit;
 
 /// <summary>
@@ -23,24 +17,16 @@ internal sealed class AuditQuery(IServiceScopeFactory scopes) : IAuditQuery
 
         var query = db.Set<AuditEvent>().AsNoTracking();
         if (!string.IsNullOrEmpty(filter.Tenant))
-        {
             query = query.Where(e => e.SubjectTenantId == filter.Tenant);
-        }
 
         if (!string.IsNullOrEmpty(filter.Action))
-        {
             query = query.Where(e => e.Action == filter.Action);
-        }
 
         if (!string.IsNullOrEmpty(filter.Actor))
-        {
             query = query.Where(e => e.ActorId == filter.Actor);
-        }
 
         if (filter.Before is { } cursor)
-        {
             query = query.Where(e => e.Id.CompareTo(cursor) < 0);
-        }
 
         // 多取一筆，才知道有沒有下一頁。
         var rows = await query.OrderByDescending(e => e.Id).Take(size + 1).ToListAsync(cancellationToken);

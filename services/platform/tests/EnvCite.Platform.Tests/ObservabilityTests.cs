@@ -1,9 +1,6 @@
 using System.Diagnostics;
 using System.Net;
 
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 
@@ -72,9 +69,7 @@ public sealed class ObservabilityTests(PlatformFactory factory)
 
         var deadline = DateTime.UtcNow.AddSeconds(5);
         while (DateTime.UtcNow < deadline && !HasTenantTrace(seen, tenant.Identifier))
-        {
             await Task.Delay(20, TestContext.Current.CancellationToken);
-        }
 
         lock (seen)
         {

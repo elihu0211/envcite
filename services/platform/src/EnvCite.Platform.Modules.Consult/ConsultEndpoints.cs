@@ -5,7 +5,6 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 using EnvCite.Consult.V2;
-using EnvCite.Platform.SharedKernel;
 
 using Grpc.Core;
 
@@ -13,7 +12,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Consult;
 
@@ -96,9 +94,7 @@ public static partial class ConsultEndpoints
             fingerprint = Fingerprint(body);
             var seen = await idempotency.LookupAsync(GroundOperation, idempotencyKey, fingerprint, ct);
             if (seen.State != IdempotencyState.Fresh)
-            {
                 return Seen(http, seen);
-            }
         }
 
         GroundResponse response;

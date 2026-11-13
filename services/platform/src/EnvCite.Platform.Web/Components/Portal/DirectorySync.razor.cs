@@ -1,6 +1,5 @@
 using System.Globalization;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
@@ -45,15 +44,11 @@ public partial class DirectorySync(IDirectorySelfService directory, IDirectoryAv
         Input ??= new();
         _available = availability.Available;
         if (!_available)
-        {
             return;
-        }
 
         await LoadAsync();
         if (_status is not null && !HttpContext.Request.HasFormContentType)
-        {
             Settings = new() { Enabled = _status.Settings.Enabled, DefaultRole = _status.Settings.DefaultRole, Adopt = _status.Settings.AdoptExistingMembers };
-        }
     }
 
     /// <summary>不是擁有者（或功能面沒開）時 <c>_status</c> 是 null，頁面只說明，不露出任何租戶的設定。</summary>
@@ -116,13 +111,9 @@ public partial class DirectorySync(IDirectorySelfService directory, IDirectoryAv
     private void Report<T>(AdminOutcome<T> outcome, string success)
     {
         if (outcome.IsOk)
-        {
             _message = success;
-        }
         else
-        {
             Error = Describe(outcome);
-        }
     }
 
     private string Describe<T>(AdminOutcome<T> outcome) => outcome.Localized() ?? L["操作失敗。"];

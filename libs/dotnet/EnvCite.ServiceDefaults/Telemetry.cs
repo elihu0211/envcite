@@ -36,9 +36,7 @@ public static class Telemetry
             .WithLogging();
 
         if (!string.IsNullOrEmpty(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
-        {
             telemetry.UseOtlpExporter();
-        }
 
         return telemetry;
     }

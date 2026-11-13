@@ -49,19 +49,13 @@ internal sealed class RelevanceOptionsValidator : IValidateOptions<RelevanceOpti
         var failures = new List<string>();
         var section = RelevanceOptions.SectionName;
         if (!(options.LexicalFloor > 0))
-        {
             failures.Add($"{section}:LexicalFloor must be positive.");
-        }
 
         if (!(options.SemanticFloor > 0 && options.SemanticFloor < 1))
-        {
             failures.Add($"{section}:SemanticFloor must be between 0 and 1.");
-        }
 
         if (!(options.HighConfidenceSemantic > options.SemanticFloor && options.HighConfidenceSemantic <= 1))
-        {
             failures.Add($"{section}:HighConfidenceSemantic must be above SemanticFloor and at most 1.");
-        }
 
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }

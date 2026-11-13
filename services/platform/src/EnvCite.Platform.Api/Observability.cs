@@ -2,15 +2,9 @@ using System.Diagnostics;
 
 using EnvCite.Platform.Modules.Members.DirectorySync;
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
 
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-
 using Npgsql;
-
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 
 namespace EnvCite.Platform.Api;
 
@@ -47,9 +41,7 @@ internal static class Observability
         {
             var tenant = context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value;
             if (tenant is not null)
-            {
                 Activity.Current?.SetTag("tenant.id", tenant);
-            }
 
             return next(context);
         });

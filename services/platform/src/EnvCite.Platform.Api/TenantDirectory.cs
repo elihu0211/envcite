@@ -1,10 +1,6 @@
-using EnvCite.Platform.Data;
 using EnvCite.Platform.Modules.ApiAccess;
-using EnvCite.Platform.SharedKernel;
 
 using Finbuckle.MultiTenant.Abstractions;
-
-using Microsoft.EntityFrameworkCore;
 
 namespace EnvCite.Platform.Api;
 

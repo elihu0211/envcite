@@ -1,9 +1,7 @@
 using System.Net;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Presentation;
 
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace EnvCite.Platform.Tests;
