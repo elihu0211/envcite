@@ -155,6 +155,28 @@
     const phone = matchMedia("(width < 48rem)");
     const sideToggle = () => document.querySelector(".ep-side-toggle");
 
+    // 收合與否的真值在這裡（起點是 <head> 的小腳本套上的 data-side）：沒有儲存空間時，這次造訪內仍記得。
+    let sideCollapsed = root.dataset.side === "collapsed";
+
+    // <html> 上由腳本管的屬性（data-js、data-side）。只在不一致時才寫：觀察者自己的寫入不會再觸發下一輪。
+    const applyRootState = () => {
+        if (root.dataset.js !== "") {
+            root.dataset.js = "";
+        }
+
+        if (sideCollapsed && root.dataset.side !== "collapsed") {
+            root.dataset.side = "collapsed";
+        } else if (!sideCollapsed && "side" in root.dataset) {
+            delete root.dataset.side;
+        }
+    };
+
+    // Blazor 的強化導覽（靜態頁之間的換頁、換到互動頁）會把 <html> 的屬性對齊伺服器回的文件，腳本加的 data-js 與 data-side
+    // 因此被抹掉：導覽鈕消失、頂欄變矮、收合的側欄彈回展開（側欄的寬度有過渡，看起來是縮放跳動）。伺服器不知道這兩個值
+    // （一個是「腳本有跑」，一個在 localStorage），所以由瀏覽器原生的 MutationObserver 補回：回呼是微任務，在畫下一格之前就跑，
+    // 不會有缺屬性的那一格；換頁若要等新的樣式表載入（靜態頁換到互動頁），那一格可以長達數百毫秒。
+    new MutationObserver(applyRootState).observe(root, { attributes: true, attributeFilter: ["data-js", "data-side"] });
+
     // 按鈕的展開狀態與窄欄時的 title 提示（展開時文字就在旁邊，不需要提示）。
     const syncSide = () => {
         const collapsed = !phone.matches && root.dataset.side === "collapsed";
@@ -187,15 +209,11 @@
                     document.querySelector(".ep-side-link")?.focus();
                 }
             } else {
-                const collapsed = root.dataset.side === "collapsed";
-                if (collapsed) {
-                    delete root.dataset.side;
-                } else {
-                    root.dataset.side = "collapsed";
-                }
+                sideCollapsed = !sideCollapsed;
+                applyRootState();
 
                 try {
-                    localStorage.setItem("ep-side", collapsed ? "expanded" : "collapsed");
+                    localStorage.setItem("ep-side", sideCollapsed ? "collapsed" : "expanded");
                 } catch {
                     // 沒有儲存空間（無痕視窗）：這次有效，下次回到展開。
                 }
@@ -222,6 +240,9 @@
     });
     syncSide();
     document.addEventListener("DOMContentLoaded", syncSide);
+
+    // 強化導覽換完頁（Blazor 的 enhancedload，串流渲染時每次更新都會觸發）：伺服器渲染的側欄不帶 title 與 aria-expanded，重設一次。
+    globalThis.Blazor?.addEventListener("enhancedload", syncSide);
 
     // ---- 外觀（個人設定）：即時預覽，並把選擇送給伺服器 ----------------------------------------------
     // 偏好存在伺服器的 cookie，下一個請求由 App.razor 輸出 <html data-theme>（所以頁面第一格就是對的，這裡不讀不寫任何儲存）。

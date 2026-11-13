@@ -30,7 +30,10 @@ a, button, input, select, label, summary {
     text-wrap: pretty;
 }
 
+/* 邊距自己歸零：互動頁載入 MudBlazor 的樣式表（它的重設會清掉邊距），靜態頁不載入，瀏覽器預設的 8px 就會讓
+   同一個外殼在兩種頁面之間內縮一圈、換頁時跳一下。基底不依賴任何第三方樣式表。 */
 body {
+    margin: 0;
     background: var(--ep-bg);
     color: var(--ep-text);
     font-size: var(--ep-body-l-size);
@@ -2092,8 +2095,7 @@ a.ep-brand {
 
 /* 可換行的動作列，間距二階：範例芯片置中，其餘靠左。 */
 .ep-examples,
-.ep-actions,
-.ep-row-actions {
+.ep-actions {
     display: flex;
     flex-wrap: wrap;
     gap: var(--ep-space-2);
@@ -2862,8 +2864,20 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     overflow-wrap: anywhere;
 }
 
-.ep-row-actions {
+/* 表格裡的動作格（td）：維持 table-cell。把儲存格改成 flex 它就不再隨列拉高，底線畫在自己的高度、垂直置中也跑掉——
+   沒有動作的空格尤其明顯，列尾多出一小段線。裡面的按鈕用 inline-flex 並排、放不下就換行（表格儲存格預設不換行，
+   動作格明確放開，選擇器要比 .ep-plain-table td 的特異度高）；窄卡片時儲存格已不是表格（見下方的容器查詢），改回 flex 換行。 */
+.ep-plain-table td.ep-row-actions {
+    vertical-align: middle;
+    white-space: normal;
+}
+
+.ep-row-actions > * {
+    display: inline-flex;
     align-items: center;
+    vertical-align: middle;
+    margin-block: calc(var(--ep-space-1) / 2);
+    margin-inline-end: var(--ep-space-2);
 }
 
 .ep-input-inline {
@@ -2885,10 +2899,15 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         padding-block-start: var(--ep-space-2);
     }
 
+    .ep-cards table tbody tr td.ep-row-actions,
     .ep-cards table tbody tr td.ep-cell-actions {
         display: flex;
         flex-wrap: wrap;
         gap: var(--ep-space-1);
+    }
+
+    .ep-cards table tbody tr td.ep-row-actions > * {
+        margin: 0;
     }
 
     .ep-cards table tbody tr td.ep-cell-actions[data-label]::before {
@@ -3191,9 +3210,11 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 /* ---- 客戶入口的外殼 -------------------------------------------------------------------------------
  * 安靜、緊湊、中性：側欄是一個平面（比頁面高一階的表面加一條細線），項目依目前頁以中性的淡底標示、不上色，
  * 彩色只留給焦點環與連結。頂欄矮一階，頭像不用反差塊。營運後台不帶 .ep-portal，維持原樣。
- * 緊湊高度只給滑鼠；觸控裝置的項目仍是 44px。 */
+ * 緊湊高度只給滑鼠；觸控裝置的項目仍是 44px。
+ * 頂欄高度是觸控目標加上下內距與底線：導覽鈕（有 JavaScript 才出現）是頂欄裡最高的一項，高度由它決定，
+ * 沒有鈕時（登入頁、還沒執行腳本的那一格）也撐到同高，換頁與腳本載入前後頂欄與側欄的起點都不動。 */
 .ep-portal {
-    --ep-appbar-height: 3.5rem;
+    --ep-appbar-height: calc(var(--ep-touch-target) + var(--ep-space-2) * 2 + 1px);
 }
 
 .ep-portal .ep-avatar {

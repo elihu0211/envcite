@@ -18,10 +18,12 @@
     <link rel="icon" href="@Assets["_content/EnvCite.Platform.Web/brand/icon-small.svg"]" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="@Assets["_content/EnvCite.Platform.Web/brand/apple-touch-icon.png"]" />
     <base href="/" />
-    @* 側欄收合的偏好：在畫第一格之前就套上，不先閃一下預設再換過去（forms.js 負責切換與存檔）。
+    @* 有 JavaScript 的記號（data-js）與側欄收合的偏好：在畫第一格之前就套上，不先閃一下預設再換過去
+       （forms.js 負責切換、存檔，以及強化導覽換頁後補回）。data-js 若等到頁尾的 forms.js 才設，第一格的頂欄沒有導覽鈕、
+       腳本一跑才長出來，整個版面往下推。
        也清掉舊版存在 localStorage 的外觀偏好（ep-theme）：現在的外觀偏好在伺服器端的 cookie（上面的 data-theme），
        那個值不會再被讀，不該留在使用者的瀏覽器裡。 *@
-    <script>try{var d=document.documentElement,s=localStorage;if(s.getItem("ep-side")==="collapsed")d.dataset.side="collapsed";s.removeItem("ep-theme")}catch(e){}</script>
+    <script>var d=document.documentElement;d.dataset.js="";try{var s=localStorage;if(s.getItem("ep-side")==="collapsed")d.dataset.side="collapsed";s.removeItem("ep-theme")}catch(e){}</script>
     <style>@((MarkupString)TokenCss.Render())</style>
     @* 自己託管的字型：中文依 unicode-range 切片，瀏覽器只下載頁面上出現的字所在的那幾片（見 scripts/vendor-fonts.sh）。 *@
     <link rel="stylesheet" href="@Assets["_content/EnvCite.Platform.Web/fonts/fonts.css"]" />

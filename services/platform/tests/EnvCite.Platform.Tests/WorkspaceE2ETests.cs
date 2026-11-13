@@ -100,6 +100,14 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
     }
 
     [Fact]
+    public async Task TheShellDoesNotMoveBetweenTheInteractiveWorkspaceAndTheStaticPages()
+    {
+        var chat = await RunAsync("shell", consent: true);
+
+        Assert.Empty(chat.Calls); // 只換頁，不問問題
+    }
+
+    [Fact]
     public async Task AMemberCannotReachAnotherTenantsWorkspaceFromInsideTheCircuit()
     {
         var chat = await RunAsync("cross-tenant", consent: true, otherTenant: true);
