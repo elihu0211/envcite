@@ -111,7 +111,7 @@
             List<ColumnDef<DirectoryGroupInfo>> columns =
             [
                 new() { Title = L["名稱"], Class = "ep-keep", Labeled = false, Cell = group => @<text>@group.DisplayName</text> },
-                new() { Title = L["成員數"], Class = "ep-num", Cell = group => @<text>@group.MemberCount.ToString("N0", System.Globalization.CultureInfo.CurrentCulture)</text> },
+                new() { Title = L["成員數"], Numeric = true, Cell = group => @<text>@group.MemberCount.ToString("N0", System.Globalization.CultureInfo.CurrentCulture)</text> },
                 new()
                 {
                     Title = L["對映的角色"],

@@ -28,13 +28,16 @@ else
     [Parameter]
     public bool Plain { get; set; }
 
+    private static string? CellClass(ColumnDef<TItem> column) =>
+        column.Numeric ? (column.Class is null ? "ep-num" : $"{column.Class} ep-num") : column.Class;
+
     private RenderFragment Content =>
         @<text>
             <thead>
                 <tr>
                     @foreach (var column in Columns)
                     {
-                        <th scope="col">
+                        <th scope="col" class="@(column.Numeric ? "ep-num" : null)">
                             @if (column.HideTitle)
                             {
                                 <span class="ep-visually-hidden">@column.Title</span>
@@ -53,7 +56,7 @@ else
                     <tr>
                         @foreach (var column in Columns)
                         {
-                            <td class="@column.Class" data-label="@(column.Labeled ? column.Label ?? column.Title : null)">@column.Cell(item)</td>
+                            <td class="@CellClass(column)" data-label="@(column.Labeled ? column.Label ?? column.Title : null)">@column.Cell(item)</td>
                         }
                     </tr>
                 }

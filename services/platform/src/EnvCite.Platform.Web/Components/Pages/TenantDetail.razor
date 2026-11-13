@@ -239,8 +239,8 @@
             Cell = item => @<text><div>@UsageLabels.Operation(item.Operation)</div><code class="ep-mono ep-secondary">@item.Operation</code></text>,
         },
         new() { Title = L["分類"], Cell = item => @<text>@UsageLabels.Category(item.Operation)</text> },
-        new() { Title = L["呼叫次數"], Class = "ep-num", Cell = item => @<text>@item.Calls.ToString("N0")</text> },
-        new() { Title = L["計量單位"], Class = "ep-num", Cell = item => @<text>@item.Units.ToString("N0") @UsageLabels.UnitName(item.Operation)</text> },
+        new() { Title = L["呼叫次數"], Numeric = true, Cell = item => @<text>@item.Calls.ToString("N0")</text> },
+        new() { Title = L["計量單位"], Numeric = true, Cell = item => @<text>@item.Units.ToString("N0")<span class="ep-num-unit">@UsageLabels.UnitName(item.Operation)</span></text> },
         new()
         {
             Title = L["最近呼叫（台北）"], Label = L["最近呼叫"],

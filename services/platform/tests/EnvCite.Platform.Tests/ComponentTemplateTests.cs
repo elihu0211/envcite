@@ -148,6 +148,19 @@ public static partial class ComponentTemplateTests
         Assert.DoesNotMatch(scope, File.ReadAllText(Path.Combine(ComponentsPath(), "Layout", "MainLayout.razor")));
     }
 
+    // 數字欄用 ColumnDef.Numeric：標題與儲存格一起靠右、等寬數字。自己在 Class 寫 ep-num 只會讓儲存格靠右，標題還留在左邊，離它的數字很遠。
+    [Fact]
+    public static void NumericColumnsAreDeclaredWithTheNumericFlagNotAClass()
+    {
+        var offenders = Razor().Concat(CodeBehind())
+            .Where(file => Regex.IsMatch(File.ReadAllText(file), @"Class\s*=\s*""[^""]*\bep-num\b", RegexOptions.None, TimeSpan.FromSeconds(2)))
+            .Select(RelativePath)
+            .ToList();
+
+        Assert.Empty(offenders);
+        Assert.Contains("column.Numeric", File.ReadAllText(Path.Combine(ComponentsPath(), "Shared", "DataTable.razor")), StringComparison.Ordinal);
+    }
+
     private static IEnumerable<string> Razor() =>
         Directory.EnumerateFiles(ComponentsPath(), "*.razor", SearchOption.AllDirectories)
             .Where(file => !file.EndsWith("_Imports.razor", StringComparison.Ordinal));

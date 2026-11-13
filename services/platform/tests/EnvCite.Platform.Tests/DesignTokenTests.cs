@@ -508,6 +508,31 @@ public static partial class DesignTokenTests
         Assert.DoesNotContain("ep-console-product", css, StringComparison.Ordinal); // 副標（「營運後台」）已移除
     }
 
+    // 搜尋鈕（雲端主控台那一型）：整條膠囊、沒有邊框、底色比頂欄深一階；手機收成只剩圖示的圓鈕。
+    [Fact]
+    public static void TheSearchButtonIsABorderlessPillAndShrinksToAnIconOnPhones()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+        var pill = CssBlock(css, ".ep-palette-open");
+
+        Assert.Contains("border-radius: var(--ep-radius-pill)", pill, StringComparison.Ordinal);
+        Assert.Contains("border: 0", pill, StringComparison.Ordinal);
+        Assert.Contains("flex: 0 1 var(--ep-measure-ask)", pill, StringComparison.Ordinal);
+        Assert.Matches(@"@media \(width < 48rem\) \{[^@]*\.ep-palette-open \{[^}]*inline-size: var\(--ep-touch-target\)", css);
+    }
+
+    // 數字對齊：表格裡的儲存格與時間一律等寬數字；數字後面的單位（次、tokens）占固定寬度，靠右的數字右緣才在同一條線上。
+    [Fact]
+    public static void NumbersInTablesAreTabularAndUnitsTakeAFixedSlot()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        Assert.Matches(@"\.mud-table-cell,\s*\.ep-plain-table td,\s*time \{[^}]*font-variant-numeric: tabular-nums", css);
+        Assert.Contains("min-inline-size: var(--ep-space-12)", CssBlock(css, ".ep-num-unit"), StringComparison.Ordinal);
+        // 純表格與 Mud 表格各自把儲存格設成靠左，數字欄的靠右要在表格底下再寫一次才壓得過；標題也靠右。
+        Assert.Matches(@"\.ep-num,\s*\.ep-plain-table :is\(th, td\)\.ep-num,\s*\.ep-table :is\(th, td\)\.ep-num \{[^}]*text-align: end", css);
+    }
+
     // 側欄：桌機收成窄欄、手機是抽屜，兩者都靠 forms.js 設在 <html> 上的屬性；窄欄寬度是 token，收起的抽屜不在 Tab 順序裡。
     [Fact]
     public static void TheSidebarCollapsesToARailAndBecomesADrawerOnPhones()
