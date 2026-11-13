@@ -219,6 +219,28 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
 
 判定的順序：在開發集 `calibrate`（提示只依它調），提示定案後對 `dev`、`test` 各跑一次 `pool`（同一份校準檔），再依序以 `judge` 匯回。`pool` 與 `calibrate` 另收 `--as-of`（條文版本日，預設今天）、`--workers`（每位判定者的並行數）與 `--no-distinct-check`（略過別名探測，只供除錯）；中斷後以同一個 `--cache` 重跑會略過已判的條，只重問失敗的。
 
+#### 原生題庫
+
+題庫可以不靠任何外部檔：`tools/native_golden.py` 由語料自己的條文結構產生題目與答案，題庫本體在 `eval/native-golden-<日期>.json`，與倉庫同版本。條文以語料的法規代碼加條號為鍵，沒有法規名稱對照、領域種子或外部題庫的依賴；答案取自原文結構，不來自被測的檢索系統，也不用模型出題。
+
+| 題型（`kind`） | 桶 | 查詢 | 標準答案 |
+|------|------|------|------|
+| `definition_term`、`definition_question` | exact_id | 法規定義的詞，或「X的定義是什麼」 | 全部現行條文裡定義這個詞的條 |
+| `duty_penalty` | multi_hop | 違反某法第 N 條會受什麼處罰 | 寫著「違反第 N 條規定者，處…」的罰則條 |
+| `delegation` | multi_hop | 某命令依哪一部法律的哪一條訂定 | 命令第一條所寫的母法授權條 |
+| `applies_mutatis_mutandis` | multi_hop | 某條準用了哪一條 | 該條寫著「準用第 M 條之規定」的被準用條 |
+| `absent_term`、`absent_question` | negative | 候選詞 | 沒有：全部現行條文全文都不含 |
+
+| 步驟 | 指令（在本目錄） | 產出 |
+|------|------|------|
+| 建題 | `uv run --env-file .env python tools/native_golden.py build --as-of <日期> --out eval/native-golden-<日期>.json` | 題庫；記語料快照雜湊與每題的證據句 |
+| 查證 | `uv run --env-file .env python tools/native_golden.py verify eval/native-golden-<日期>.json` | 重建比對、證據句核對、獨立的罰則完整性掃描、固定種子抽樣；不符即結束碼 1 |
+| 衍生 | `uv run python tools/native_golden.py derive eval/native-golden-<日期>.json` | 同目錄的 `.qrels.json` 與 `.split.json`，格式同上，之後用「量測」「比較」 |
+
+- 建題只讀語料：要有已匯入的資料庫（`envcite-sync moj`），不需要嵌入；同一份快照與 `--as-of` 建出的題庫逐位元相同（`verify` 重建比對）。
+- 切分依題的分組鍵（詞、條文）的雜湊，同一個詞或條文的題一定在同一邊；題庫增減不改變既有題的歸屬。
+- 規則與題句的限制：條文引用只收本法自己的、文法能完整讀懂的句子（寧缺勿濫，所以不是完整清單，`verify` 另用寬鬆的規則掃描找遺漏）；題句是模板，比真實問句整齊；沒有 paraphrase 桶（改寫需要模型，沒有獨立於被測系統的來源前不做）。改任何產生規則的輸出要遞增 `native_golden.GENERATOR_VERSION` 並重建題庫。
+
 #### 格式
 
 JSON 文件都帶 `sha256`：自身去掉該欄後的正規化 JSON（鍵排序、緊湊分隔、UTF-8）的雜湊；`golden_set.read` 不符即停。
