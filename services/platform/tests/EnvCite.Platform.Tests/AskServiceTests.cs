@@ -249,7 +249,10 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var call = Assert.Single(chat.Calls);
         Assert.Contains(call, m => m.Role == ChatRole.User
             && m.Text.Contains("[L1] 空氣污染防制法 第 32 條", StringComparison.Ordinal)
-            && m.Text.Contains("使用者只輸入了主題詞「露天燃燒」，沒有提出具體問題", StringComparison.Ordinal));
+            && m.Text.Contains("使用者只輸入了主題詞「露天燃燒」，沒有提出具體問題", StringComparison.Ordinal)
+            // 缺哪一項就不寫哪一項：任務句不列一串必答項目，也明說不要因為缺一項就整個不答。
+            && m.Text.Contains("不要因為缺了某一項就整個回「證據不足」", StringComparison.Ordinal)
+            && !m.Text.Contains("行為、義務與罰則", StringComparison.Ordinal));
         Assert.Contains(factory.Consult.Received, r => r.Request.Question == FakeConsultServer.BareTopicQuestion);
     }
 
