@@ -64,13 +64,13 @@ public sealed class RedMetricsTests(PlatformFactory factory)
         Assert.Equal([200, 400, 503], StatusesOf(http, "/v2/ground"));
         Assert.DoesNotContain(http, p => ((string?)p.Tags.GetValueOrDefault("http.route"))?.StartsWith("/health", StringComparison.Ordinal) == true);
 
-        // 計量器是行程內全域的：同時跑的其他測試組呼叫 ontology 也會進來，所以只看這個測試自己發出的 Ground。
+        // 計量器是行程內全域的：同時跑的其他測試組（各有自己的主機與 Meter）呼叫 consult 也會進來，成為標籤相同的另一筆資料點。
+        // 所以只看 Ground，並確認這個測試自己送出的三種結果都被量到；不數資料點的個數，也不要求「只有」這三種。
         var ground = capture.Points
             .Where(p => p.Metric == GrpcClientMetrics.DurationMetric && p.Tags.GetValueOrDefault("rpc.method") as string == "Ground")
             .ToList();
-        Assert.Equal(
-            ["INVALID_ARGUMENT", "OK", "UNAVAILABLE"],
-            ground.Select(p => (string)p.Tags["rpc.response.status_code"]!).Order().ToArray());
+        var statuses = ground.Select(p => (string)p.Tags["rpc.response.status_code"]!).ToHashSet(StringComparer.Ordinal);
+        Assert.Superset(new HashSet<string>(["INVALID_ARGUMENT", "OK", "UNAVAILABLE"], StringComparer.Ordinal), statuses);
         Assert.All(ground, p => Assert.Equal("envcite.consult.v2.ConsultationService", p.Tags["rpc.service"]));
 
         // 租戶只在追蹤上：基數不受控，不進任何指標的標籤。
