@@ -43,11 +43,23 @@ internal sealed class OntologySearch(OntologyService.OntologyServiceClient clien
 {
     public const int Limit = 10;
 
+    /// <summary>
+    /// 對本體的 <c>SearchArticles</c> 要什麼，只在這裡決定：檢索選項都加在這一個建構點（例如之後的精排 <c>Rerank</c>），
+    /// 不在呼叫的地方零散加旗標，所以一次請求帶了哪些選項，看這個方法就知道，測試也只需要守它。
+    /// </summary>
+    public static SearchArticlesRequest BuildRequest(string query, string asOf) => new()
+    {
+        Query = query,
+        AsOf = asOf,
+        Limit = Limit,
+        // 使用者查的詞常是函釋的用語（函釋寫「露天燃燒」、條文寫「燃燒」），兩臂都找不到；函釋只用來找條文，不進證據。
+        IncludeGuidance = true,
+    };
+
     public async Task<IReadOnlyList<Article>> SearchAsync(string query, string asOf, CancellationToken cancellationToken)
     {
         var response = await client.SearchArticlesAsync(
-            // 使用者查的詞常是函釋的用語（函釋寫「露天燃燒」、條文寫「燃燒」），兩臂都找不到；函釋只用來找條文，不進證據。
-            new SearchArticlesRequest { Query = query, AsOf = asOf, Limit = Limit, IncludeGuidance = true },
+            BuildRequest(query, asOf),
             deadline: DateTime.UtcNow.Add(options.Value.Timeout),
             cancellationToken: cancellationToken);
         return [.. response.Hits.Select(hit => new Article(
