@@ -1,4 +1,8 @@
+using System.Security.Claims;
+
 using EnvCite.Platform.Modules.Tenancy;
+
+using Microsoft.AspNetCore.Identity;
 
 namespace EnvCite.Platform.Tests;
 
@@ -31,6 +35,21 @@ internal static class PortalTestSupport
             .CreateAsync(OperatorSession.Principal(), tenantId, email, name, role, CancellationToken.None);
         Assert.True(created.IsOk, created.Message);
         return (created.Value!.Member.Id, created.Value.Password);
+    }
+
+    /// <summary>
+    /// 這位成員登入後 cookie 裡的 principal，由真正的 claims 工廠在他的租戶 scope 裡簽發：不經瀏覽器，
+    /// 給直接呼叫服務的測試用（互動式 circuit 與服務層吃的就是這個 principal）。
+    /// </summary>
+    public static async Task<ClaimsPrincipal> MemberPrincipalAsync(PlatformFactory factory, string tenantId, string userId)
+    {
+        var issued = await factory.Services.GetRequiredService<TenantScopes>().InAsync<ClaimsPrincipal>(tenantId, async scope =>
+        {
+            var user = await scope.Get<UserManager<ApplicationUser>>().FindByIdAsync(userId);
+            return AdminOutcome.Ok(await scope.Get<IUserClaimsPrincipalFactory<ApplicationUser>>().CreateAsync(user!));
+        });
+        Assert.True(issued.IsOk, issued.Message);
+        return issued.Value!;
     }
 
     /// <summary>建立租戶與一位成員。</summary>

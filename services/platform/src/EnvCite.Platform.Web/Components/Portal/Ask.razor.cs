@@ -4,8 +4,11 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class Ask(
-    IPortalAccount account, ITenantDirectory directory, ILawSearch laws, IGroundedAnswerer answerer, IAnswerAvailability availability)
+/// <summary>
+/// 入口的問答頁：只管呈現與表單。方案與同意的檢查、回答或搜尋、記進歷史都在 <see cref="IAskService"/>
+/// （在呼叫者的租戶裡執行），這裡不碰任何領域服務。
+/// </summary>
+public partial class Ask(IAskService ask)
 {
     // 範例是臺灣法規裡會出現的詞（資料庫是中文），所以英文介面也維持中文：翻成英文就搜不到。
     private static readonly string[] Examples = ["噪音管制標準", "固定污染源", "廢棄物清理", "水污染防治"];
@@ -24,26 +27,16 @@ public partial class Ask(
     protected override async Task OnInitializedAsync()
     {
         _asOfLabel = L["現行"];
-        _hasPlan = await HasPlanAsync();
-    }
 
-    /// <summary>
-    /// 完全付費制：沒有方案不能用資料功能。這裡再擋一次（不只是不顯示表單），因為表單可以被直接 POST。
-    /// 租戶取自請求路徑解析出的租戶（授權已確認 cookie 的租戶就是它），不取自使用者輸入。
-    /// </summary>
-    private async Task<bool> HasPlanAsync()
-    {
-        if (account.CurrentTenant is not { } tenant || await directory.FindAsync(tenant.Id, HttpContext.RequestAborted) is not { } summary)
-            return false;
-
-        // AI 回答要兩個條件：部署者設定了模型端點，而且這個租戶同意（問題會送到外部的模型服務）。
-        _aiAnswer = summary.Plan is not null && summary.AiAnswer && availability.Available;
-        return summary.Plan is not null;
+        // AI 回答要三個條件：租戶有方案、租戶同意（問題會送到外部的模型服務）、部署者設定了模型端點。
+        var capabilities = await ask.CapabilitiesAsync(User, HttpContext.RequestAborted);
+        (_hasPlan, _aiAnswer) = (capabilities.HasPlan, capabilities.AiAnswer);
     }
 
     private async Task SearchAsync()
     {
         Error = null;
+        // 完全付費制：沒有方案不能用資料功能。這裡再擋一次（不只是不顯示表單），因為表單可以被直接 POST；服務層也會擋。
         if (!_hasPlan)
             return;
 
@@ -61,46 +54,41 @@ public partial class Ask(
         Input.Example = string.Empty;
 
         // 有設定模型端點就回答（只根據封閉證據、附出處，不然拒答）；沒有就只列條文。
-        var answerText = _aiAnswer ? await AnswerAsync(query, asOf) : await ListAsync(query, asOf);
-        if (answerText is not null)
+        var result = await ask.AskAsync(User, query, asOf, HttpContext.RequestAborted);
+        if (Present(result) is { } historyText)
         {
-            _conversationId = await History.AppendTurnAsync(
-                HttpContext.User, Guid.TryParse(Input.ConversationId, out var id) ? id : null, _question, answerText, HttpContext.RequestAborted);
+            _conversationId = await ask.RecordAsync(
+                User, Guid.TryParse(Input.ConversationId, out var id) ? id : null, _question, historyText, HttpContext.RequestAborted);
         }
     }
 
-    private async Task<string?> AnswerAsync(string query, string? asOf)
+    /// <summary>
+    /// 把結果放進頁面的狀態，並回傳要記進歷史的文字（沒有結果時 null）。歷史只存有出處的文字，語言是提問當下的介面語言。
+    /// </summary>
+    private string? Present(AskResult result)
     {
-        var result = await answerer.AnswerAsync(query, asOf, HttpContext.RequestAborted);
+        var answering = result.Mode == AskMode.Answer;
         switch (result.Status)
         {
-            case AdminStatus.Ok:
-                _answer = result.Value;
+            case AskStatus.Ok when answering:
+                _answer = result.Answer;
                 return _answer!.Refused
                     ? L["（拒答）{0}", RefusalLabel(_answer.RefusalReason)]
                     : $"{_answer.Text}\n{string.Join('\n', _answer.Sources.Select(s => $"[{s.Code}] {s.Citation}（{_asOfLabel}） {s.Uri}"))}";
-            case AdminStatus.Invalid:
-                Error = L["查詢條件不正確：請輸入問題；日期要是有效的日期。"];
-                return null;
-            default:
-                Error = L["回答服務暫時無法使用，請稍後再試。"];
-                return null;
-        }
-    }
-
-    private async Task<string?> ListAsync(string query, string? asOf)
-    {
-        var result = await laws.SearchAsync(query, asOf, limit: null, HttpContext.RequestAborted);
-        switch (result.Status)
-        {
-            case AdminStatus.Ok:
-                _hits = result.Value;
+            case AskStatus.Ok:
+                _hits = result.Hits;
                 return AnswerText(_hits!);
-            case AdminStatus.Invalid:
-                Error = L["查詢條件不正確：請輸入關鍵字；日期要是有效的日期。"];
+            case AskStatus.Invalid:
+                Error = answering
+                    ? L["查詢條件不正確：請輸入問題；日期要是有效的日期。"]
+                    : L["查詢條件不正確：請輸入關鍵字；日期要是有效的日期。"];
+                return null;
+            case AskStatus.NoPlan:
                 return null;
             default:
-                Error = L["搜尋服務暫時無法使用，請稍後再試。"];
+                Error = answering
+                    ? L["回答服務暫時無法使用，請稍後再試。"]
+                    : L["搜尋服務暫時無法使用，請稍後再試。"];
                 return null;
         }
     }

@@ -30,6 +30,8 @@ public static class ConversationsModule
         services.TryAddSingleton(TimeProvider.System);
         services.AddSectionOptions<ConversationHistoryOptions, ConversationHistoryOptionsValidator>();
         services.AddScoped<IConversationHistory, ConversationHistory>();
+        // 無狀態的閘門：每個操作自己開租戶 scope，所以可以是 singleton，靜態頁與互動式 circuit 都能放心注入。
+        services.AddSingleton<IAskService, AskService>();
         return services;
     }
 

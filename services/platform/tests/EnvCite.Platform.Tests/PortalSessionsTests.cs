@@ -22,12 +22,7 @@ public sealed class PortalSessionsTests(PlatformFactory factory)
     {
         var (tenant, _) = await factory.CreateTenantWithKeyAsync(slug);
         var (userId, _) = await AddMemberAsync(factory, tenant.Id, NewEmail(), CustomerRoles.Viewer);
-        var issued = await factory.Services.GetRequiredService<TenantScopes>().InAsync<ClaimsPrincipal>(tenant.Id, async scope =>
-        {
-            var user = await scope.Get<UserManager<ApplicationUser>>().FindByIdAsync(userId);
-            return AdminOutcome.Ok(await scope.Get<IUserClaimsPrincipalFactory<ApplicationUser>>().CreateAsync(user!));
-        });
-        return (tenant, userId, issued.Value!);
+        return (tenant, userId, await MemberPrincipalAsync(factory, tenant.Id, userId));
     }
 
     private static ClaimsPrincipal WithTenantClaim(ClaimsPrincipal session, string? tenant)
