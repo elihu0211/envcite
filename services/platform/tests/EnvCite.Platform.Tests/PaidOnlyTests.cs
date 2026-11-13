@@ -13,7 +13,7 @@ namespace EnvCite.Platform.Tests;
 /// 完全付費制：沒有方案的租戶不能呼叫資料端點（402），但仍能管理自己的帳號。
 /// 測試用的主機設了預設方案（為了動態建立的租戶），這裡的主機把它清掉，才是正式環境的樣子。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class PaidOnlyTests(PlatformFactory factory)
 {
     private static readonly Uri LawUri = new($"{FakeOntologyServer.CentralLawsPath}{FakeOntologyServer.KnownLawId}", UriKind.Relative);

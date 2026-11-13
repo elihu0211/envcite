@@ -12,7 +12,7 @@ namespace EnvCite.Platform.Tests;
 /// 金鑰環的靜態加密（<c>Platform:DataProtection:CertificatePath／CertificatePassword</c>）：兩者都設才加密、都不設維持明文、
 /// 只設一個啟動就失敗；加密之前產生的明文金鑰仍可讀取。每個測試用全新的資料庫，才看得到「新產生」的金鑰。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group3)]
 public sealed class DataProtectionCertificateTests(PlatformFactory factory) : IDisposable
 {
     private const string Password = "test-only-pfx-password";

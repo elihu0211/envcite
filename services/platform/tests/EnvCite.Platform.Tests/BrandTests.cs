@@ -14,7 +14,7 @@ namespace EnvCite.Platform.Tests;
 /// 設了別的名稱，介面標頭與標題、信件主旨與內文、命令列的測試信、OpenAPI 描述一起跟著變，不留一半舊名稱。
 /// （寄件者顯示名稱的預設在 <see cref="SmtpMailSenderTests"/>，啟動驗證在 <see cref="ConfigurationTests"/>。）
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group3)]
 public sealed partial class BrandTests(PlatformFactory factory)
 {
     private const string Custom = "測試系統";

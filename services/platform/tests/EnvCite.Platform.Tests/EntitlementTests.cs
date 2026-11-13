@@ -13,7 +13,7 @@ namespace EnvCite.Platform.Tests;
 /// 這裡的主機都清掉預設方案（正式環境的樣子）；每個主機有自己的記憶體快照，共用同一個資料庫，
 /// 所以兩個主機就是兩個副本。營運者的動作直接呼叫服務（營運後台用的就是它們）。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class EntitlementTests(PlatformFactory factory)
 {
     private static readonly Uri LawUri = new($"{FakeOntologyServer.CentralLawsPath}{FakeOntologyServer.KnownLawId}", UriKind.Relative);

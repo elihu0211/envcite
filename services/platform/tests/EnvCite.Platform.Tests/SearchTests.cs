@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace EnvCite.Platform.Tests;
 
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed class SearchTests(PlatformFactory factory)
 {
     private const string SearchPath = "/v2/search";

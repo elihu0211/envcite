@@ -89,7 +89,7 @@ public static partial class OutcomeCodeCatalogTests
 }
 
 /// <summary>服務層的失敗回傳預期的代碼，英文訊息，沒有中文；API 的錯誤回應帶 <c>code</c>。</summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class OutcomeCodeBehaviourTests(PlatformFactory factory)
 {
     private T Service<T>() where T : notnull => factory.Services.GetRequiredService<T>();

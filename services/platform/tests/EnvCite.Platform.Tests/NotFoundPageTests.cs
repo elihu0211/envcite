@@ -12,7 +12,7 @@ namespace EnvCite.Platform.Tests;
 /// 後台、入口與展示頁上找不到的網址要畫「找不到頁面」（維持 404），不是空白；
 /// 只有 404 才畫，沒開的面與 API 維持原樣。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed class NotFoundPageTests(PlatformFactory factory)
 {
     private static async Task<(HttpStatusCode Status, string Html)> GetAsync(HttpClient client, string path)

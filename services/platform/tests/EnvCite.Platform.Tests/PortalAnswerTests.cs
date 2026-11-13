@@ -13,7 +13,7 @@ namespace EnvCite.Platform.Tests;
 /// 入口的回答：先向 consult 取封閉證據（沒有就拒答、不呼叫模型），模型只根據證據作答，回答引用的每個代號都要在證據裡，
 /// 否則作廢改為拒答。模型以假的 <see cref="IChatClient"/> 取代，所以測的是我們的流程與檢查，不是某個模型的行為。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class PortalAnswerTests(PlatformFactory factory)
 {
     private static string SearchPage(string tenant) => $"/portal/{tenant}/search";

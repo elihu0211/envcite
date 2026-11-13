@@ -9,7 +9,7 @@ namespace EnvCite.Platform.Tests;
 /// <summary>
 /// 本機開發的第一組資料。每個測試用自己的全新資料庫（共用的庫已經有別的測試的資料，也不該多出一個 dev 租戶）。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed class DevelopmentSeedTests(PlatformFactory factory)
 {
     private async Task<WebApplicationFactory<Program>> HostAsync(string environment, bool seed)

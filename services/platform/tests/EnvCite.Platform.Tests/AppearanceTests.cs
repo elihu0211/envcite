@@ -148,7 +148,7 @@ public static class AppearancePreferenceTests
 /// 個人設定的外觀：預設「系統」不輸出 <c>data-theme</c>；手動選了亮色或暗色，由伺服器依 cookie 在第一格就輸出；
 /// 營運者與客戶入口各有個人設定頁，共用同一個元件；匿名頁面不放切換，但尊重已存的偏好。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed partial class AppearanceSettingTests(PlatformFactory factory)
 {
     private const string Cookie = "ep-appearance";

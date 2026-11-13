@@ -20,7 +20,7 @@ namespace EnvCite.Platform.Tests;
 /// 營運者後台的登入，全部走真的表單（有 cookie 罐、antiforgery、https 的瀏覽器）：帳密、強制改密碼、強制註冊驗證器、
 /// 第二步、鎖定、停用立即生效、稽核。需要撥動「下一個三十秒」的測試用自己的主機與假時鐘。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group3)]
 public sealed class OperatorSignInTests(PlatformFactory factory)
 {
     private const string GenericLoginError = "電子郵件或密碼不正確";

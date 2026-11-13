@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 namespace EnvCite.Platform.Tests;
 
 /// <summary>客戶入口帳密登入的防線：不洩漏、會鎖定、session 綁租戶、兩種 cookie 不互通、稽核不含密碼。</summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class PortalSecurityTests(PlatformFactory factory)
 {
     private const string GenericError = "電子郵件或密碼不正確，或登入已被暫時停用";

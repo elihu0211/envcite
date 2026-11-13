@@ -5,7 +5,7 @@ using EnvCite.Platform.Modules.Tenancy;
 
 namespace EnvCite.Platform.Tests;
 
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class ApiKeyTests(PlatformFactory factory)
 {
     [Fact]

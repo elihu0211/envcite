@@ -19,7 +19,7 @@ namespace EnvCite.Platform.Tests;
 /// TOTP 兩步驟驗證：註冊、登入的第二步、復原碼、重放、鎖定的共用計數、營運者重設。
 /// 每個測試用自己的主機與自己的假時鐘，才能撥動「下一個三十秒」而不影響其他測試。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group4)]
 public sealed partial class PortalMfaTests(PlatformFactory factory)
 {
     private const string GenericMfaError = "驗證碼不正確，或已經用過";

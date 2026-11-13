@@ -9,7 +9,7 @@ namespace EnvCite.Platform.Tests;
 /// 所以這裡直接測服務，並確認「誰做的」來自已登入的營運者；頁面測的是伺服器端渲染出的內容與語意。
 /// 對話框的點擊流程沒有自動化測試（這個專案沒有瀏覽器測試），改以手動在瀏覽器驗證。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group2)]
 public sealed class OperatorActionsTests(PlatformFactory factory)
 {
     private static string Unique(string prefix) => $"{prefix}-{Guid.NewGuid().ToString("N")[..8]}";

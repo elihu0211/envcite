@@ -15,7 +15,7 @@ namespace EnvCite.Platform.Tests;
 /// 目錄同步的入口（SCIM 2.0，RFC 7643／7644）：token 認證、錯誤格式、冪等、過濾與分頁、PATCH 的各家寫法、
 /// 跨租戶、限流與指標。成員規則本身（角色上限、最後一位擁有者…）在 <see cref="DirectorySyncTests"/>，這裡只驗 HTTP 面。
 /// </summary>
-[Collection(PlatformTestGroup.Name)]
+[Collection(PlatformTestGroup.Group1)]
 public sealed class ScimEndpointTests(PlatformFactory factory) : DirectoryTestBase(factory)
 {
     private const string Users = "/scim/v2/Users";
