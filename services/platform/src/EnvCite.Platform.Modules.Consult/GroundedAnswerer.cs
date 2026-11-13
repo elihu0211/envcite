@@ -285,10 +285,20 @@ internal sealed partial class GroundedAnswerer(
 
         // 前文只出現在證據之前、以對話的角色帶入；證據與本輪的問題是最後一則使用者訊息。
         return await CompleteAsync(
-            [new ChatMessage(ChatRole.System, SystemPrompt), .. history, new ChatMessage(ChatRole.User, $"證據：\n{evidence}\n問題：{question}")],
+            [new ChatMessage(ChatRole.System, SystemPrompt), .. history, new ChatMessage(ChatRole.User, $"證據：\n{evidence}\n問題：{TaskOf(question)}")],
             options.Value.MaxOutputTokens,
             cancellationToken);
     }
+
+    /// <summary>
+    /// 送給模型的「問題」。使用者只給主題詞時沒有問句可答，模型會因此回「證據不足」；改成明確的任務句，
+    /// 判斷在程式裡（<see cref="BareTopic"/>），不靠提示詞。取證據仍用使用者的原詞（檢索是字面比對）。
+    /// 任務句只要求說明證據裡有的內容：證據真的沒有談到這個主題時，模型仍可回「證據不足」。
+    /// </summary>
+    internal static string TaskOf(string question) =>
+        BareTopic.Is(question)
+            ? $"使用者只輸入了主題詞「{question}」，沒有提出具體問題。請依證據說明與它有關的規定：規範的行為、義務與罰則（證據裡沒有的項目不要寫）。"
+            : question;
 
     private async Task<(string? Text, UsageDetails? Usage)> CompleteAsync(
         IList<ChatMessage> messages, int maxOutputTokens, CancellationToken cancellationToken)
@@ -313,8 +323,10 @@ internal sealed partial class GroundedAnswerer(
         var cited = CodePattern().Matches(answer).Select(m => m.Groups[1].Value).Distinct().ToList();
         if (cited.Count == 0)
         {
+            // 模型說證據不足：法源是找到的（consult 有給證據），只是模型判定不足以回答。與「一條都沒找到」（no_authority）是兩回事，
+            // 所以另立原因，並把找到的條文帶著：它們是封閉證據集裡、有出處的條文，呈現出來比空白的拒答有用。
             return answer.StartsWith(Insufficient, StringComparison.Ordinal)
-                ? Refuse("no_authority", "找到的法源不足以回答這個問題。")
+                ? new GroundedAnswer(null, sources, "insufficient_evidence", "找到了相關法源，但模型判定不足以回答這個問題。")
                 : Refuse("unverified_citation", "回答沒有標明出處，已捨棄。");
         }
 

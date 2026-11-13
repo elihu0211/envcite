@@ -204,6 +204,7 @@ public sealed partial class ChatSession(
     public string RefusalLabel(string? reason) => reason switch
     {
         "no_authority" => L["找不到足以回答這個問題的法條，所以沒有回答。試試換個說法，或換一天。"],
+        "insufficient_evidence" => L["找到了相關的法條，但不足以直接回答這個問題。下列條文供參考；試著把問題問得更具體，例如指明行為或情形。"],
         "out_of_scope" => L["這個問題超出目前涵蓋的知識範圍，所以沒有回答。"],
         "local_law_uncovered" => L["這個問題問的是地方自治法規，而這裡只涵蓋中央法規，所以沒有回答。請向該地方政府查詢。"],
         "missing_input" => L["問題不夠具體，請補充後再問。"],
@@ -266,7 +267,11 @@ public sealed partial class ChatSession(
                 if (turn.Answer!.Refused)
                 {
                     turn.State = TurnState.Refused;
-                    return new Recorded(L["（拒答）{0}", RefusalLabel(turn.Answer.RefusalReason)], ConversationOutcome.Refused, []);
+                    // 多半沒有引用；找到法源但不足以回答時，條文照樣呈現，也一併記下出處（回頭看時才知道當時給了哪些條文）。
+                    return new Recorded(
+                        L["（拒答）{0}", RefusalLabel(turn.Answer.RefusalReason)],
+                        ConversationOutcome.Refused,
+                        [.. turn.Answer.Sources.Select(s => new ConversationCitation(s.Code, s.Citation, s.Uri))]);
                 }
 
                 turn.State = TurnState.Answered;

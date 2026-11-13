@@ -8,6 +8,8 @@ public sealed record AnswerSource(string Code, string Uri, string Citation, stri
 /// <summary>
 /// 有出處的回答，或拒答。<see cref="Text"/> 為 null 就是拒答（<see cref="RefusalReason"/> 說明原因）。
 /// 回答裡的 <c>[L1]</c> 標記一定對得上 <see cref="Sources"/>：對不上的回答不會送到這裡，而是變成拒答。
+/// 拒答多半沒有法源；只有 <c>insufficient_evidence</c>（找到了法源、模型判定不足以回答）會帶著 <see cref="Sources"/>：
+/// 它們是 consult 給的封閉證據集，有出處、可核對，呈現給使用者比空白的拒答有用。
 /// </summary>
 public sealed record GroundedAnswer(string? Text, IReadOnlyList<AnswerSource> Sources, string? RefusalReason = null, string? RefusalDetail = null)
 {

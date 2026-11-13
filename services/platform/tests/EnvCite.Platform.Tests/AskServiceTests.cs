@@ -180,7 +180,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
     [InlineData("在指定清除地區內不得燃燒 [L1] 也不得露天焚燒 [L2]。", "unverified_citation")] // 有一個代號不存在
     [InlineData("在指定清除地區內不得燃燒。", "unverified_citation")] // 完全沒有引用
     [InlineData("", "empty_answer")]
-    [InlineData("證據不足", "no_authority")] // 模型自己說不夠：是拒答，有原因
+    [InlineData("證據不足", "insufficient_evidence")] // 模型自己說不夠：是拒答，有原因（找到了法源，與「一條都沒找到」不同）
     public async Task AnAnswerThatDoesNotMapToTheEvidenceIsDiscardedAndBecomesARefusal(string modelSaid, string reason)
     {
         var (host, chat) = Host(_ => modelSaid);
@@ -194,6 +194,75 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.Null(result.Answer.Text); // 模型說的話不會送出去
         Assert.Equal(reason, result.Answer.RefusalReason);
         Assert.Single(chat.Calls);
+    }
+
+    // 模型說「證據不足」但 consult 其實給了法源：拒答照舊（模型的話不送出），法源帶著走，介面把條文列出來；
+    // 只有 consult 一條都沒找到才是 no_authority。
+    [Fact]
+    public async Task WhenTheModelSaysTheEvidenceIsInsufficientTheFoundArticlesAreKept()
+    {
+        var (host, chat) = Host(_ => "證據不足");
+        using var h = host;
+        var (tenant, member) = await MemberOfAsync("ask-i");
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
+
+        Assert.True(result.Answer!.Refused);
+        Assert.Equal("insufficient_evidence", result.Answer.RefusalReason);
+        var source = Assert.Single(result.Answer.Sources);
+        Assert.Equal(("L1", "空氣污染防制法 第 32 條"), (source.Code, source.Citation));
+        Assert.Single(chat.Calls);
+        Assert.Equal(["consult.answer", "consult.ground"], await UsageAsync(tenant.Id)); // 模型與 consult 都真的用了，照常計量
+    }
+
+    // 其餘作廢的原因（引用對不上、空回答）不帶法源：那是模型的輸出有問題，不是「證據不夠」。
+    [Theory]
+    [InlineData("不得燃燒 [L9]。")]
+    [InlineData("")]
+    public async Task OtherDiscardedAnswersCarryNoSources(string modelSaid)
+    {
+        var (host, _) = Host(_ => modelSaid);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-n");
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
+
+        Assert.True(result.Answer!.Refused);
+        Assert.Empty(result.Answer.Sources);
+    }
+
+    // 只打了主題詞：沒有問句可答，模型會因此回「證據不足」。程式把送給模型的問題換成明確的任務句；
+    // 取證據仍用使用者打的原詞（檢索是字面比對），也不影響引用核驗。
+    [Fact]
+    public async Task ABareTopicIsPutToTheModelAsATaskButRetrievedWithTheTypedWords()
+    {
+        var (host, chat) = Host(_ => Reply);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-u");
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.BareTopicQuestion, null, null, Ct);
+
+        Assert.False(result.Answer!.Refused);
+        Assert.Equal(Reply, result.Answer.Text);
+        var call = Assert.Single(chat.Calls);
+        Assert.Contains(call, m => m.Role == ChatRole.User
+            && m.Text.Contains("[L1] 空氣污染防制法 第 32 條", StringComparison.Ordinal)
+            && m.Text.Contains("使用者只輸入了主題詞「露天燃燒」，沒有提出具體問題", StringComparison.Ordinal));
+        Assert.Contains(factory.Consult.Received, r => r.Request.Question == FakeConsultServer.BareTopicQuestion);
+    }
+
+    // 有問句就原樣送，不加任務句。
+    [Fact]
+    public async Task AQuestionIsPutToTheModelAsItWasAsked()
+    {
+        var (host, chat) = Host(_ => Reply);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-v");
+
+        await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
+
+        var call = Assert.Single(chat.Calls);
+        Assert.DoesNotContain(call, m => m.Text.Contains("沒有提出具體問題", StringComparison.Ordinal));
     }
 
     // 模型端點的錯誤內文可能回顯提示詞（客戶案情）：日誌只記例外型別，不記內文，也不記問題。

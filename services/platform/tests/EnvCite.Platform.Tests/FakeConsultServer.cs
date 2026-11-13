@@ -15,6 +15,9 @@ namespace EnvCite.Platform.Tests;
 public sealed class FakeConsultServer : IAsyncDisposable
 {
     public const string AnswerableQuestion = "露天燃燒如何處罰";
+
+    /// <summary>只有主題詞、沒有問句的輸入；證據與 <see cref="AnswerableQuestion"/> 相同。</summary>
+    public const string BareTopicQuestion = "露天燃燒";
     public const string UnrelatedQuestion = "量子電腦";
     public const string UnavailableQuestion = "trigger-unavailable";
     public const string LocalLawQuestion = "臺北市有哪些空氣污染自治條例";
@@ -58,7 +61,7 @@ public sealed class FakeConsultServer : IAsyncDisposable
                 {
                     Refused = new Refused { Reason = Refused.Types.Reason.LocalLawUncovered, Detail = "問句指向地方自治法規，語料只涵蓋中央法規" },
                 }),
-                AnswerableQuestion => Task.FromResult(new GroundResponse
+                AnswerableQuestion or BareTopicQuestion => Task.FromResult(new GroundResponse
                 {
                     Evidence = new Evidence
                     {

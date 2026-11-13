@@ -151,6 +151,7 @@
   <data name="手機不在身邊？用復原碼" xml:space="preserve"><value>Phone not with you? Use a recovery code</value></data>
   <data name="手機遺失時，每一組復原碼可以代替一次驗證碼，用過就失效。" xml:space="preserve"><value>If you lose your phone, each recovery code can replace one verification code and expires once used.</value></data>
   <data name="打開手機上的驗證器 App，輸入現在顯示的六位數。" xml:space="preserve"><value>Open the authenticator app on your phone and enter the six digits it shows now.</value></data>
+  <data name="找到了相關的法條，但不足以直接回答這個問題。下列條文供參考；試著把問題問得更具體，例如指明行為或情形。" xml:space="preserve"><value>Relevant articles were found, but they are not enough to answer this question directly. They are listed below for reference; try asking more specifically, for example by naming the conduct or situation.</value></data>
   <data name="找不到足以回答這個問題的法條，所以沒有回答。試試換個說法，或換一天。" xml:space="preserve"><value>No article was found that is sufficient to answer this question, so no answer was given. Try rephrasing, or pick another date.</value></data>
   <data name="找不到這位成員。" xml:space="preserve"><value>Member not found.</value></data>
   <data name="找不到這個對話" xml:space="preserve"><value>Conversation not found</value></data>
