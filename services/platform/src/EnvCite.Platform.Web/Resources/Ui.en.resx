@@ -523,6 +523,8 @@
   <data name="過去 7 天" xml:space="preserve"><value>Past 7 days</value></data>
   <data name="更早" xml:space="preserve"><value>Earlier</value></data>
   <data name="新對話" xml:space="preserve"><value>New conversation</value></data>
+  <data name="找到 {0} 條法源，正在撰寫回答…" xml:space="preserve"><value>Found {0} sources, writing the answer…</value></data>
+  <data name="正在核對出處…" xml:space="preserve"><value>Checking the citations…</value></data>
   <data name="正在查找法源…" xml:space="preserve"><value>Looking up the law…</value></data>
   <data name="這個頁面需要 JavaScript 才能使用。" xml:space="preserve"><value>This page needs JavaScript.</value></data>
 </root>

@@ -204,6 +204,27 @@ public sealed class ChatSessionTests
         Assert.Single(ask.Recorded);
     }
 
+    // 等結果的時候，回合上看得到進行到哪一步，每一步都通知頁面重畫。
+    [Fact]
+    public async Task WhileWaitingTheTurnShowsWhichStepTheAnswerIsAtAndEveryStepIsAnnounced()
+    {
+        var gate = new TaskCompletionSource();
+        var ask = new FakeAsk { Gate = gate };
+        ask.StagesBeforeGate.AddRange([new AnswerProgress(AnswerStage.Grounding), new AnswerProgress(AnswerStage.Writing, 3)]);
+        var (session, _, _) = await ReadyAsync(ask);
+        var changes = 0;
+        session.Changed += () => changes++;
+
+        var pending = session.AskAsync(User, "問題", null, Ct);
+
+        var turn = Assert.Single(session.Turns);
+        Assert.Equal((TurnState.Pending, new AnswerProgress(AnswerStage.Writing, 3)), (turn.State, turn.Progress));
+        Assert.True(changes >= 3); // 送出、兩個步驟
+        gate.SetResult();
+        await pending;
+        Assert.Equal(TurnState.Answered, turn.State);
+    }
+
     [Fact]
     public async Task AFollowUpContinuesTheSameConversationAndNewStartsAFreshOne()
     {

@@ -47,7 +47,7 @@ internal sealed partial class GroundedAnswerer(
     [GeneratedRegex(@"\[(L\d+)\]")]
     private static partial Regex CodePattern();
 
-    public async Task<AdminOutcome<GroundedAnswer>> AnswerAsync(string? question, string? asOf, CancellationToken cancellationToken)
+    public async Task<AdminOutcome<GroundedAnswer>> AnswerAsync(string? question, string? asOf, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
             return AdminOutcome.Unavailable<GroundedAnswer>(OutcomeCodes.AnswerNotConfigured);
@@ -56,9 +56,25 @@ internal sealed partial class GroundedAnswerer(
             return AdminOutcome.Invalid<GroundedAnswer>(OutcomeCodes.QuestionRequired);
 
         // 節點每次呼叫現建：它們捕捉的是這一次請求的租戶與 scoped 服務（計量要目前租戶的 DbContext）。
-        Func<AnswerTurn, IWorkflowContext, CancellationToken, ValueTask<AnswerTurn>> groundStage = GroundAsync;
-        Func<AnswerTurn, IWorkflowContext, CancellationToken, ValueTask<AnswerTurn>> writeStage = WriteAsync;
-        Func<AnswerTurn, IWorkflowContext, CancellationToken, ValueTask<AnswerTurn>> verifyStage = VerifyAsync;
+        Func<AnswerTurn, IWorkflowContext, CancellationToken, ValueTask<AnswerTurn>> groundStage = (turn, context, token) =>
+        {
+            progress?.Report(new AnswerProgress(AnswerStage.Grounding));
+            return GroundAsync(turn, context, token);
+        };
+        Func<AnswerTurn, IWorkflowContext, CancellationToken, ValueTask<AnswerTurn>> writeStage = (turn, context, token) =>
+        {
+            if (turn.Done is null)
+                progress?.Report(new AnswerProgress(AnswerStage.Writing, turn.Sources.Count));
+
+            return WriteAsync(turn, context, token);
+        };
+        Func<AnswerTurn, IWorkflowContext, CancellationToken, ValueTask<AnswerTurn>> verifyStage = (turn, context, token) =>
+        {
+            if (turn.Done is null)
+                progress?.Report(new AnswerProgress(AnswerStage.Verifying, turn.Sources.Count));
+
+            return VerifyAsync(turn, context, token);
+        };
         var ground = groundStage.BindAsExecutor("ground");
         var write = writeStage.BindAsExecutor("write");
         var verify = verifyStage.BindAsExecutor("verify");
