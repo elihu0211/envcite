@@ -266,6 +266,9 @@ public static class DesignTokens
     /// <summary>可點的東西在觸控裝置上至少 44×44。</summary>
     public const string TouchTarget = "2.75rem";
 
+    /// <summary>滑鼠操作時的緊湊控制項高度（入口的側欄項目、輸入框的工具列）；觸控裝置仍走 <see cref="TouchTarget"/>。</summary>
+    public const string ControlHeight = "2.25rem";
+
     /// <summary>
     /// 三種版面：手機（&lt; <see cref="Tablet"/>）、平板（<see cref="Tablet"/> 起）、桌機（<see cref="Desktop"/> 起），
     /// 對應 768px 與 1280px 的常見裝置寬度。用 rem 不用 px：使用者把字級調大時，版面比螢幕寬度更早切成窄版。

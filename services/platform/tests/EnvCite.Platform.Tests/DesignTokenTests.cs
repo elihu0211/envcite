@@ -121,7 +121,7 @@ public static partial class DesignTokenTests
         // 與配色無關的 token 只在 :root 定義一次，深色不重複。
         foreach (var variable in new[]
         {
-            "--ep-press-scale", "--ep-touch-target", "--ep-label-s-size", "--ep-qr-surface",
+            "--ep-press-scale", "--ep-touch-target", "--ep-control-height", "--ep-label-s-size", "--ep-qr-surface",
             "--ep-motion-fast", "--ep-motion-normal", "--ep-motion-slow", "--ep-motion-reveal",
             "--ep-motion-ease-standard", "--ep-motion-ease-enter", "--ep-motion-ease-exit", "--ep-motion-ease-move",
             "--ep-radius-pill",
@@ -459,6 +459,7 @@ public static partial class DesignTokenTests
         Assert.Contains("env(safe-area-inset-left)", css, StringComparison.Ordinal);
         Assert.Contains("var(--ep-touch-target)", css, StringComparison.Ordinal); // 觸控目標至少 44px
         Assert.Equal("2.75rem", DesignTokens.TouchTarget);
+        Assert.Equal("2.25rem", DesignTokens.ControlHeight); // 緊湊高度只給滑鼠，觸控仍是 44px
         Assert.DoesNotMatch(PixelBreakpoint(), css);
         // 表格卡片不能是 overflow: hidden：會把寬表格的右半邊裁掉，看不到也捲不到。
         Assert.DoesNotMatch(HiddenOverflowOnCard(), css);

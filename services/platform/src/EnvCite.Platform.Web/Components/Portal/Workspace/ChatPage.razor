@@ -125,17 +125,17 @@
                 <input id="query" type="search" class="ep-composer-input" maxlength="500" required autocomplete="off" enterkeyhint="search"
                        placeholder="@L["輸入關鍵字，例如：噪音管制標準"]" aria-describedby="query-hint"
                        @ref="_input" @bind="_query" @bind:event="oninput" disabled="@Session.Busy" />
-                <button type="submit" class="ep-send" aria-label="@L["搜尋"]" disabled="@Session.Busy"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
-            </div>
-            <div class="ep-composer-options">
-                <label class="ep-date-chip" for="asof">
-                    <span>@L["哪一天有效"]</span>
-                    <input id="asof" type="date" value="@_asOf" @onchange="e => _asOf = e.Value?.ToString() ?? string.Empty" aria-describedby="query-hint" />
-                </label>
-                @if (Session.Turns.Count > 0)
-                {
-                    <button type="button" class="ep-chip" @onclick="NewConversation">@L["新對話"]</button>
-                }
+                <div class="ep-composer-bar">
+                    <label class="ep-date-chip" for="asof">
+                        <span>@L["哪一天有效"]</span>
+                        <input id="asof" type="date" value="@_asOf" @onchange="e => _asOf = e.Value?.ToString() ?? string.Empty" aria-describedby="query-hint" />
+                    </label>
+                    @if (Session.Turns.Count > 0)
+                    {
+                        <button type="button" class="ep-chip" @onclick="NewConversation">@L["新對話"]</button>
+                    }
+                    <button type="submit" class="ep-send" aria-label="@L["搜尋"]" disabled="@Session.Busy"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
+                </div>
             </div>
 
             @if (Session.Turns.Count == 0)

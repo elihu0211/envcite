@@ -476,10 +476,14 @@ h1[tabindex="-1"]:focus-visible {
     }
 }
 
-/* 主色的一成淡底：頭像與問句氣泡。文字不跟著變淡。 */
-.ep-avatar,
-.ep-bubble {
+/* 頭像的淡底。文字不跟著變淡。 */
+.ep-avatar {
     background: color-mix(in srgb, var(--ep-primary) 10%, var(--ep-surface));
+}
+
+/* 問句氣泡：中性的次要面，不帶色相。 */
+.ep-bubble {
+    background: var(--ep-surface-muted);
 }
 
 /* 使用者要求減少動態：改成不位移的淡入淡出，不留彈跳或縮放。位移量與縮放量已在 token 層歸零，
@@ -1864,10 +1868,10 @@ a.ep-brand {
 
 .ep-ask-title {
     margin: 0;
-    font-size: var(--ep-display-l-size);
-    line-height: var(--ep-display-l-leading);
-    letter-spacing: var(--ep-display-l-tracking);
-    font-weight: var(--ep-display-l-weight);
+    font-size: var(--ep-headline-m-size);
+    line-height: var(--ep-headline-m-leading);
+    letter-spacing: var(--ep-headline-m-tracking);
+    font-weight: var(--ep-body-l-weight); /* 招呼不加粗：版面的重量留給內容 */
 }
 
 .ep-ask-lead {
@@ -1909,20 +1913,33 @@ a.ep-brand {
     background: color-mix(in srgb, var(--ep-bg) 85%, transparent);
 }
 
-/* 控制項外框的橫列：問答框是一張卡片，日期芯片是藥丸。 */
+/* 控制項外框的橫列：問答框是一張卡片，日期芯片是藥丸。外框平時是細線，游標移上去或聚焦時加深。 */
 .ep-composer,
 .ep-date-chip {
     align-items: center;
     gap: var(--ep-space-2);
-    border: 1px solid var(--ep-border-control);
+    border: 1px solid var(--ep-border-subtle);
 }
 
+/* 問答框：輸入在上，工具列（日期、新對話、送出）在同一張卡片的下緣。平面，沒有陰影。 */
 .ep-composer {
     display: flex;
-    padding: var(--ep-space-2) var(--ep-space-2) var(--ep-space-2) var(--ep-space-4);
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--ep-space-2) var(--ep-space-3);
     border-radius: var(--ep-radius-sheet);
     background: var(--ep-surface);
-    box-shadow: var(--ep-elevation-1);
+    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+@media (hover: hover) {
+    .ep-composer:hover {
+        border-color: var(--ep-border-control);
+    }
+}
+
+.ep-composer:focus-within {
+    border-color: var(--ep-border-control);
 }
 
 /* 外框裡的裸輸入：問答框與日期芯片。環畫在外框上，這裡不畫。 */
@@ -1935,9 +1952,8 @@ a.ep-brand {
 }
 
 .ep-composer-input {
-    flex: 1;
-    text-overflow: ellipsis; /* 窄螢幕上提示文字放不下時收成「…」，不是被切一半 */
     min-inline-size: 0;
+    text-overflow: ellipsis; /* 窄螢幕上提示文字放不下時收成「…」，不是被切一半 */
     min-block-size: var(--ep-touch-target);
     padding: 0;
 }
@@ -1947,23 +1963,29 @@ a.ep-brand {
     outline: none; /* 焦點環畫在整個輸入框容器上（:focus-within） */
 }
 
+.ep-composer-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+}
+
+/* 送出：實心的反差塊（淺色主題是深色、深色主題是淺色），靠右；彩色只留給焦點與連結。 */
 .ep-send {
     display: grid;
     place-items: center;
     border: 0;
-    background: var(--ep-primary);
-    color: var(--ep-on-primary);
+    background: var(--ep-ink);
+    color: var(--ep-on-ink);
 }
 
-.ep-ask[data-state="empty"] .ep-composer-options {
-    justify-content: center; /* 還沒問的時候一切置中：招呼、輸入框、日期、範例 */
+.ep-composer-bar .ep-send {
+    margin-inline-start: auto;
 }
 
-.ep-composer-options {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--ep-space-2) var(--ep-space-3);
+.ep-send:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .ep-ask-note {
@@ -2005,13 +2027,33 @@ a.ep-brand {
 .ep-chip {
     min-block-size: var(--ep-touch-target);
     border-radius: var(--ep-radius-pill);
-    background: var(--ep-surface);
-    font-size: var(--ep-body-m-size);
+    background: transparent;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-m-size);
+}
+
+/* 滑鼠操作：工具列與芯片收成緊湊高度；觸控裝置維持 44px。 */
+@media (pointer: fine) {
+    .ep-date-chip,
+    .ep-chip,
+    .ep-composer-bar .ep-send {
+        min-block-size: var(--ep-control-height);
+    }
+
+    .ep-composer-bar .ep-send {
+        inline-size: var(--ep-control-height);
+        block-size: var(--ep-control-height);
+    }
+
+    .ep-composer-input {
+        min-block-size: var(--ep-control-height);
+    }
 }
 
 @media (hover: hover) {
     .ep-chip:hover {
-        border-color: var(--ep-primary);
+        border-color: var(--ep-border-control);
+        color: var(--ep-text);
     }
 }
 
@@ -3012,4 +3054,91 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 .ep-turn + .ep-turn {
     margin-block-start: var(--ep-space-6);
+}
+
+
+/* ---- 客戶入口的外殼 -------------------------------------------------------------------------------
+ * 安靜、緊湊、中性：側欄是一個平面（比頁面高一階的表面加一條細線），項目依目前頁以中性的淡底標示、不上色，
+ * 彩色只留給焦點環與連結。頂欄矮一階，頭像不用反差塊。營運後台不帶 .ep-portal，維持原樣。
+ * 緊湊高度只給滑鼠；觸控裝置的項目仍是 44px。 */
+.ep-portal {
+    --ep-appbar-height: 3.5rem;
+}
+
+.ep-portal .ep-avatar {
+    background: var(--ep-surface-muted);
+    border-color: var(--ep-border-subtle);
+    color: var(--ep-text);
+}
+
+.ep-portal .ep-shell-top .ep-brand-mark {
+    color: var(--ep-text);
+}
+
+.ep-portal .ep-portal-tenant {
+    color: var(--ep-text-secondary);
+}
+
+.ep-portal.ep-console .ep-side-link,
+.ep-portal.ep-console .ep-recent-link {
+    border-radius: var(--ep-radius-control);
+    font-size: var(--ep-label-m-size);
+    font-weight: var(--ep-body-l-weight);
+}
+
+.ep-portal.ep-console .ep-side-link.active,
+.ep-portal.ep-console .ep-recent-link.active {
+    background: color-mix(in srgb, var(--ep-text) 10%, transparent);
+    color: var(--ep-text);
+    font-weight: var(--ep-label-m-weight);
+}
+
+.ep-portal.ep-console .ep-side-link.active .ep-icon {
+    color: var(--ep-text);
+}
+
+/* 最近的對話是次要的清單：比主要導覽淡一階，目前那一則與游標移上去的才回到主要文字色。 */
+.ep-portal.ep-console .ep-recent-link {
+    color: var(--ep-text-secondary);
+}
+
+.ep-portal.ep-console .ep-recent-link.active {
+    color: var(--ep-text);
+}
+
+@media (hover: hover) {
+    .ep-portal.ep-console .ep-recent-link:hover:not(.active) {
+        color: var(--ep-text);
+    }
+}
+
+@media (pointer: fine) {
+    .ep-portal.ep-console .ep-side-link,
+    .ep-portal.ep-console .ep-recent-link {
+        min-block-size: var(--ep-control-height);
+        padding-block: 0;
+    }
+
+    .ep-portal .ep-avatar {
+        inline-size: var(--ep-control-height);
+        block-size: var(--ep-control-height);
+    }
+}
+
+@media (width >= 48rem) {
+    .ep-portal.ep-console .ep-side {
+        background: var(--ep-surface);
+        border-inline-end: 1px solid var(--ep-border-subtle);
+    }
+}
+
+/* 問答頁填滿可用高度：還沒問時招呼與輸入框垂直置中，問了之後輸入框貼在底部（.ep-ask 自己是 flex:1 的直欄）。 */
+.ep-portal .ep-console-main:has(> .ep-ask) {
+    display: flex;
+    flex-direction: column;
+    min-block-size: calc(100dvh - var(--ep-appbar-height));
+}
+
+.ep-portal.ep-console .ep-recent {
+    margin-block-start: var(--ep-space-2);
 }

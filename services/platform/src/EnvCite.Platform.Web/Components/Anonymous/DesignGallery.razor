@@ -24,7 +24,10 @@
         <div class="ep-composer-form">
             <div class="ep-composer">
                 <input class="ep-composer-input" type="search" placeholder="輸入關鍵字，例如：噪音管制標準" aria-label="關鍵字" />
-                <button type="button" class="ep-send" aria-label="搜尋"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
+                <div class="ep-composer-bar">
+                    <label class="ep-date-chip"><span>哪一天有效</span><input type="date" /></label>
+                    <button type="button" class="ep-send" aria-label="搜尋"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
+                </div>
             </div>
             <div class="ep-examples">
                 <button type="button" class="ep-chip">固定污染源</button>
