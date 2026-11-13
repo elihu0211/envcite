@@ -586,3 +586,51 @@ def test_arms_without_a_reranker_record_no_rerank_score(
     out = _measure(corpus, _qrels_doc(corpus), [(AIR, "1")])
 
     assert all(r.top_rerank is None for r in out)
+
+
+def test_depth_arms_share_one_scoring_pass_per_question(
+    corpus: tuple[ModuleType, Any, Any],
+) -> None:
+    """打分只呼叫一次（涵蓋最深的深度）；較淺的深度只重排自己的前 N 條，排名與各自單獨呼叫相同。"""
+    tool, _, provisions = corpus
+    gs = sys.modules["golden_set"]
+    doc = _qrels_doc(corpus)
+    rows = tool.questions(ITEMS, doc, frozenset(i["id"] for i in ITEMS))
+    hits = [provisions[(gs.CENTRAL, p, n)] for p, n in [(AIR, "1"), (DUP_A, "1"), (WATER, "40")]]
+    reranker = FixedReranker([0.1, 0.9, 0.5])
+    cache: dict[str, Any] = {}
+
+    def arm(depth: int) -> dict[str, Any]:
+        out = tool.search_all(
+            FakeStore(hits),
+            FakeSegmenter(),
+            rows,
+            None,
+            qrels=doc["qrels"],
+            relevant_from=2,
+            k=50,
+            on=ON,
+            reranker=reranker,
+            candidates=depth,
+            rerank_pool=3,
+            rerank_cache=cache,
+        )
+        return {r.id: r for r in out}
+
+    shallow, deep = arm(2), arm(3)
+
+    assert reranker.asked == [3, 3, 3, 3]  # 四題各一次，且都問了最深的 3 條
+    assert shallow["second-of-two"].ranking == [
+        f"{DUP_A}-art-1",
+        f"{AIR}-art-1",
+        f"{WATER}-art-40",
+    ]
+    assert deep["second-of-two"].ranking == [
+        f"{DUP_A}-art-1",
+        f"{WATER}-art-40",
+        f"{AIR}-art-1",
+    ]
+    assert shallow["neg"].top_rerank == 0.9 and deep["neg"].top_rerank == 0.9
+    assert deep["first"].rerank_ms == shallow["first"].rerank_ms is not None  # 共用同一次呼叫
+    standalone = _rerank_run(corpus, FixedReranker([0.1, 0.9, 0.5]), candidates=2)
+    assert shallow["second-of-two"].ranking == standalone["second-of-two"].ranking

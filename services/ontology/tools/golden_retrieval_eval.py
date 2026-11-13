@@ -40,13 +40,17 @@ chosen before the filter, so a lexical pool crowded by out-of-scope laws yields 
 in-scope hits; the number dropped per question is recorded. The embedding completion of the
 scope is part of the meta.
 
-`--rerank` adds an arm `rerank`: the hybrid hits, with the top `--rerank-candidates` of them
-re-ordered by the cross-encoder declared in `models.toml` `[reranker]` (the service's `rerank`
-request, at the same depth), the rest kept in their order after them. R@k beyond the depth is
-therefore the hybrid arm's, and only the head moves. A failed call aborts the run: a measurement
-that quietly fell back to the first-stage order would not be a measurement of reranking. The
-arm also records the highest rerank score per question, so the negatives give the distribution a
-rerank-score floor would be chosen from.
+`--rerank` adds one arm per depth in `--rerank-depths` (default: the service's depth), named
+`<base>_rerank_d<depth>`: the arm's hits (hybrid when an embedding model is declared, otherwise
+lexical), with the top `<depth>` of them re-ordered by the cross-encoder declared in `models.toml`
+`[reranker]` (the service's `rerank` request, at the same depth), the rest kept in their order
+after them. The cross-encoder scores each (query, article) pair on its own, so one call over the
+deepest depth's articles gives every shallower depth's order too: the questions are scored once
+and the depths share the scores. R@k beyond a depth is the base arm's, and only the head moves.
+A failed call aborts the run: a measurement that quietly fell back to the first-stage order would
+not be a measurement of reranking. The arms also record the highest rerank score per question,
+so the negatives give the distribution a rerank-score floor would be chosen from, and the
+latency of the scoring call.
 """
 
 from __future__ import annotations
@@ -62,6 +66,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, date, datetime
 from pathlib import Path
+from time import monotonic
 from typing import Any
 
 import psycopg
@@ -79,7 +84,7 @@ from envcite_ontology.law_names import LawNames
 from envcite_ontology.reranking import Reranks
 from envcite_ontology.service import DEFAULT_RERANK_CANDIDATES
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
-from envcite_ontology.store import SEARCH_POOL, OntologyStore
+from envcite_ontology.store import SEARCH_POOL, OntologyStore, SearchHit
 from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
 
@@ -298,6 +303,8 @@ class Measured:
     top10_semantic: float | None = None
     #: 精排臂：被精排的候選裡最高的相關機率；沒有精排的臂為 None。
     top_rerank: float | None = None
+    #: 精排打分那一次呼叫的毫秒數（各深度的臂共用同一次呼叫）。
+    rerank_ms: float | None = None
     out_of_scope_dropped: int | None = None
 
 
@@ -341,6 +348,59 @@ def publishable(r: Measured) -> dict[str, Any]:
     return row
 
 
+def _retrieve(
+    store: OntologyStore,
+    segmenter: Segmenter,
+    r: Measured,
+    embedder: Embeds | None,
+    *,
+    k: int,
+    on: str,
+    scope: frozenset[str] | None,
+    pool: tuple[psycopg.Connection[Any], list[int]] | None,
+    law_names: LawNames | None,
+    cache: dict[tuple[str, str], tuple[list[SearchHit], int | None]] | None,
+) -> tuple[list[SearchHit], int | None]:
+    """一題的檢索結果與範圍外丟棄的條數。同一個嵌入模型、同一題只檢索一次：
+    字面臂與各深度的精排臂的底是同一份命中，重複檢索只是白花時間。"""
+    key = (embedder.model if embedder else "", r.id)
+    if cache is not None and key in cache:
+        return cache[key]
+    vector = embedder.embed([r.question])[0] if embedder else None
+    terms = segmenter.to_tsvector_input(r.question)
+    if pool is not None:
+        hits = scoped_search(
+            pool[0],
+            terms,
+            tokenizer=segmenter.tokenizer_id,
+            as_of=on,
+            limit=k,
+            embedding=vector,
+            model=embedder.model if embedder else "",
+            scope=pool[1],
+        )
+    else:
+        hits = store.search(
+            terms,
+            tokenizer=segmenter.tokenizer_id,
+            as_of=on,
+            limit=2 * SEARCH_POOL if scope is not None else k,
+            embedding=vector,
+            model=embedder.model if embedder else "",
+            laws=law_names.find(r.question) if law_names else (),
+        )
+    dropped = None
+    if scope is not None:
+        kept = [h for h in hits if h.local_id in scope]
+        dropped = len(hits) - len(kept)
+        hits = kept[:k]
+    if pool is not None:
+        assert dropped == 0, "候選池應只含範圍內的法規"
+    if cache is not None:
+        cache[key] = (hits, dropped)
+    return hits, dropped
+
+
 def search_all(
     store: OntologyStore,
     segmenter: Segmenter,
@@ -356,11 +416,16 @@ def search_all(
     law_names: LawNames | None = None,
     reranker: Reranks | None = None,
     candidates: int = DEFAULT_RERANK_CANDIDATES,
+    rerank_pool: int | None = None,
+    rerank_cache: dict[str, tuple[list[float], float]] | None = None,
+    hits_cache: dict[tuple[str, str], tuple[list[SearchHit], int | None]] | None = None,
 ) -> list[Measured]:
     """逐題檢索前 k 條，回傳填了排序、第一個相關條的名次與最高分的新列；negative 只記最高分。
 
     有 `reranker` 時，前 `candidates` 條交給它重排、其餘接在後面（深度與服務的 `rerank` 請求一致）；
-    精排失敗就整個中止，不退回精排前的次序。
+    精排失敗就整個中止，不退回精排前的次序。打分一次涵蓋前 `rerank_pool`（至少 `candidates`）條，
+    結果記在 `rerank_cache`（題號 → 分數與毫秒數）：各深度的臂共用同一份，每題只呼叫一次端點。
+    `hits_cache` 同理共用各臂的檢索結果。
 
     有 `scope`（pcode 集合）時向檢索要它能給的全部候選，丟掉範圍外法規的命中後再取前 k 條。
     有 `pool`（連線，範圍內的法規內部編號）時改走 `scoped_search`：兩臂的候選池在取候選之前就
@@ -371,42 +436,35 @@ def search_all(
         if r.status == "unmapped":
             out.append(r)
             continue
-        vector = embedder.embed([r.question])[0] if embedder else None
-        terms = segmenter.to_tsvector_input(r.question)
-        if pool is not None:
-            hits = scoped_search(
-                pool[0],
-                terms,
-                tokenizer=segmenter.tokenizer_id,
-                as_of=on,
-                limit=k,
-                embedding=vector,
-                model=embedder.model if embedder else "",
-                scope=pool[1],
-            )
-        else:
-            hits = store.search(
-                terms,
-                tokenizer=segmenter.tokenizer_id,
-                as_of=on,
-                limit=2 * SEARCH_POOL if scope is not None else k,
-                embedding=vector,
-                model=embedder.model if embedder else "",
-                laws=law_names.find(r.question) if law_names else (),
-            )
-        dropped = None
-        if scope is not None:
-            kept = [h for h in hits if h.local_id in scope]
-            dropped = len(hits) - len(kept)
-            hits = kept[:k]
-        if pool is not None:
-            assert dropped == 0, "候選池應只含範圍內的法規"
-        top_rerank = None
+        hits, dropped = _retrieve(
+            store,
+            segmenter,
+            r,
+            embedder,
+            k=k,
+            on=on,
+            scope=scope,
+            pool=pool,
+            law_names=law_names,
+            cache=hits_cache,
+        )
+        top_rerank = rerank_ms = None
         if reranker is not None and hits:
             head, tail = hits[:candidates], hits[candidates:]
-            scores = reranker.score(r.question, [h.content for h in head])
-            hits = [h for h, _ in reranking.select(head, scores, limit=len(head))] + tail
-            top_rerank = max(scores)
+            cached = rerank_cache.get(r.id) if rerank_cache is not None else None
+            if cached is None:
+                pool_size = max(candidates, rerank_pool or 0)
+                started = monotonic()
+                scored = reranker.score(r.question, [h.content for h in hits[:pool_size]])
+                cached = (scored, (monotonic() - started) * 1000)
+                if rerank_cache is not None:
+                    rerank_cache[r.id] = cached
+            scores, rerank_ms = cached
+            if len(scores) < len(head):
+                raise SystemExit(f"{r.id}: 精排的分數比候選少（打分池比深度淺？）")
+            head_scores = scores[: len(head)]
+            hits = [h for h, _ in reranking.select(head, head_scores, limit=len(head))] + tail
+            top_rerank = max(head_scores)
         semantic = [h.semantic_similarity for h in hits if h.semantic_similarity is not None]
         seen = hits[:CONSULT_LIMIT]
         seen_semantic = [h.semantic_similarity for h in seen if h.semantic_similarity is not None]
@@ -426,6 +484,7 @@ def search_all(
                 top10_lexical=max((h.lexical_score for h in seen), default=0.0),
                 top10_semantic=max(seen_semantic, default=None),
                 top_rerank=top_rerank,
+                rerank_ms=rerank_ms,
                 out_of_scope_dropped=dropped,
             )
         )
@@ -481,6 +540,7 @@ def _distribution(values: Sequence[float | None]) -> dict[str, float | int] | No
         "p25": pick(0.25),
         "median": pick(0.5),
         "p75": pick(0.75),
+        "p95": pick(0.95),
         "max": xs[-1],
     }
 
@@ -519,6 +579,7 @@ def summarize(rows: Sequence[Measured], qrels: gs.Qrels, relevant_from: int) -> 
             "top_semantic": _distribution([r.top_semantic for r in neg]),
             "top_rerank": _distribution([r.top_rerank for r in neg]),
         },
+        "rerank_ms": _distribution([r.rerank_ms for r in rows]),
     }
 
 
@@ -564,6 +625,12 @@ def markdown(meta: dict[str, Any], arm: str, s: dict[str, Any]) -> str:
         lines.append(
             f"- {key}：" + (", ".join(f"{k}={v:.4g}" for k, v in d.items()) if d else "無")
         )
+    if d := s.get("rerank_ms"):
+        lines += [
+            "",
+            "精排打分的延遲（毫秒，每題一次呼叫，各深度共用）："
+            + ", ".join(f"{k}={v:.4g}" for k, v in d.items()),
+        ]
     header = [
         "# 黃金題庫條文檢索召回（envcite）",
         "",
@@ -717,8 +784,11 @@ def cmd_measure(args: argparse.Namespace) -> None:
     reranker = (
         config.reranker_from_settings(load(ModelsSettings), timeout=30.0) if args.rerank else None
     )
-    if args.rerank and (reranker is None or embedder is None):
-        raise SystemExit("--rerank 需要 models.toml 的 [embedding] 與 [reranker]")
+    if args.rerank and reranker is None:
+        raise SystemExit("--rerank 需要 models.toml 的 [reranker]")
+    depths = sorted({int(d) for d in args.rerank_depths.split(",") if d.strip()})
+    if args.rerank and (not depths or depths[0] < 1 or depths[-1] > SEARCH_POOL):
+        raise SystemExit(f"--rerank-depths 要在 1 到 {SEARCH_POOL} 之間：{args.rerank_depths}")
     on = date.today().isoformat()
     scope_doc = load_scope(args.scope) if args.scope else None
     scope = frozenset(e["pcode"] for e in scope_doc["laws"]) if scope_doc else None
@@ -740,11 +810,14 @@ def cmd_measure(args: argparse.Namespace) -> None:
             equivalence = check_equivalence(store, rconn, segmenter, rows, embedder, on=on)
             if equivalence["identical"] != equivalence["comparisons"]:
                 raise SystemExit(f"scoped_search 與 OntologyStore.search 不等價：{equivalence}")
-        specs: list[tuple[str, Embeds | None, Reranks | None]] = [
-            ("lexical", None, None),
-            ("hybrid", embedder, None),
-            ("rerank", embedder, reranker),
-        ]
+        base = "hybrid" if embedder else "lexical"
+        specs: list[tuple[str, Embeds | None, int | None]] = [("lexical", None, None)]
+        if embedder:
+            specs.append(("hybrid", embedder, None))
+        if reranker:
+            specs += [(f"{base}_rerank_d{d}", embedder, d) for d in depths]
+        rerank_cache: dict[str, tuple[list[float], float]] = {}
+        hits_cache: dict[tuple[str, str], tuple[list[SearchHit], int | None]] = {}
         arms = {
             name: search_all(
                 store,
@@ -758,11 +831,13 @@ def cmd_measure(args: argparse.Namespace) -> None:
                 scope=scope,
                 pool=pool,
                 law_names=law_names,
-                reranker=rr,
-                candidates=args.rerank_candidates,
+                reranker=reranker if depth else None,
+                candidates=depth or DEFAULT_RERANK_CANDIDATES,
+                rerank_pool=depths[-1] if depth else None,
+                rerank_cache=rerank_cache,
+                hits_cache=hits_cache,
             )
-            for name, e, rr in specs
-            if (name == "lexical" or e is not None) and (name != "rerank" or rr is not None)
+            for name, e, depth in specs
         }
         tokenizer = segmenter.tokenizer_id
 
@@ -787,12 +862,11 @@ def cmd_measure(args: argparse.Namespace) -> None:
         "corpus": counts,
         "retrieval": {
             "arms": (
-                ("字面 + 混合" + (" + 精排" if reranker else ""))
-                if embedder
-                else "僅字面（未設定嵌入端點）"
+                ("字面 + 混合" if embedder else "僅字面（未設定嵌入端點）")
+                + (f" + 精排（{base}，深度 {','.join(map(str, depths))}）" if reranker else "")
             ),
             "reranker_model": reranker.model if reranker else None,
-            "rerank_candidates": args.rerank_candidates if reranker else None,
+            "rerank_depths": depths if reranker else None,
             "passages_with_embedding": counts["passages_with_embedding"],
             "tokenizer": tokenizer,
             "k": args.k,
@@ -982,13 +1056,13 @@ def main() -> None:
     m.add_argument(
         "--rerank",
         action="store_true",
-        help="多量一臂 rerank：混合臂的前 --rerank-candidates 條交給 [reranker] 重排",
+        help="多量 rerank 臂：基底臂（有嵌入為混合，否則字面）的前 N 條交給 [reranker] 重排",
     )
     m.add_argument(
-        "--rerank-candidates",
-        type=int,
-        default=DEFAULT_RERANK_CANDIDATES,
-        help="精排看多深（服務的 ENVCITE_ONTOLOGY_RERANK_CANDIDATES）",
+        "--rerank-depths",
+        default=str(DEFAULT_RERANK_CANDIDATES),
+        help="精排看多深，逗號分隔，每個深度一臂（服務的 ENVCITE_ONTOLOGY_RERANK_CANDIDATES）；"
+        "各深度共用同一次打分",
     )
     c = sub.add_parser("compare", help="同一子集的 run 兩兩檢定")
     c.add_argument("--qrels", type=Path, required=True)
