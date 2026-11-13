@@ -1,7 +1,7 @@
 """How much of the answerability floor's pass rate depends on seeing 10 hits instead of k.
 
     uv run python tools/threshold_calibration.py --eval eval/golden-retrieval-dev-<date>.json \\
-        [--arm hybrid] [--consult-settings ../consult/src/EnvCite.Consult/appsettings.json] \\
+        [--arm hybrid] [--floors ../../libs/dotnet/EnvCite.ServiceDefaults/relevance-floors.json] \\
         --out eval/golden-truncation-dev-<date>.json
 
 Input is the report `golden_retrieval_eval.py measure` writes: per question the highest lexical and
@@ -10,8 +10,9 @@ semantic score among the first k hits (`top_lexical`, `top_semantic`) and among 
 without those fields, or one whose floors cannot be read, stops the run: nothing is defaulted, since
 a missing field read as "same as the other depth" shows a gap of zero for every input.
 
-The floors are consult's (`Relevance` in its appsettings.json), the one place they are set. A
-question passes when any hit reaches the lexical floor or the semantic floor, which is exactly
+The floors are the shared ones (`Relevance` in ServiceDefaults' relevance-floors.json), the one
+place they are set and the one consult and the platform's search both read. A question passes
+when any hit reaches the lexical floor or the semantic floor, which is exactly
 `Relevance.IsRelevant` over a list of articles.
 
 Isolated: the questions that pass on the first k hits and fail on the first 10 (`truncation gap`;
@@ -37,8 +38,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import golden_set as gs
 
-CONSULT_SETTINGS = (
-    Path(__file__).resolve().parents[2] / "consult" / "src" / "EnvCite.Consult" / "appsettings.json"
+RELEVANCE_FLOORS = (
+    Path(__file__).resolve().parents[3]
+    / "libs"
+    / "dotnet"
+    / "EnvCite.ServiceDefaults"
+    / "relevance-floors.json"
 )
 
 LEXICAL_GRID = (0.3, 0.5, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0)
@@ -65,7 +70,7 @@ class Floors:
 
 
 def read_floors(path: Path) -> Floors:
-    """consult 的 `Relevance` 區段；缺任一鍵就停，不補預設。"""
+    """共用下界檔的 `Relevance` 區段；缺任一鍵就停，不補預設。"""
     section = json.loads(path.read_text(encoding="utf-8")).get("Relevance")
     if not isinstance(section, Mapping):
         raise ValueError(f"{path} 沒有 Relevance 區段")
@@ -214,12 +219,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="可答性下界：前 10 條與前 k 條的落差隔離")
     parser.add_argument("--eval", type=Path, required=True, help="measure 寫的報告 JSON")
     parser.add_argument("--arm", default="hybrid", help="報告裡的臂；下界用在混合檢索上")
-    parser.add_argument("--consult-settings", type=Path, default=CONSULT_SETTINGS)
+    parser.add_argument("--floors", type=Path, default=RELEVANCE_FLOORS)
     parser.add_argument("--out", type=Path, help="輸出 JSON；省略只印出")
     args = parser.parse_args()
 
     report = json.loads(args.eval.read_text(encoding="utf-8"))
-    floors = read_floors(args.consult_settings)
+    floors = read_floors(args.floors)
     qs, unmapped = questions_of(report, args.arm)
     meta = report["meta"]
     out = {
@@ -236,7 +241,7 @@ def main() -> None:
         "floors": {
             "lexical": floors.lexical,
             "semantic": floors.semantic,
-            "source": str(args.consult_settings.name) + " 的 Relevance 區段",
+            "source": str(args.floors.name) + " 的 Relevance 區段",
         },
         "total_questions": len(qs),
         "truncation": analyze_truncation_gap(qs, floors),
