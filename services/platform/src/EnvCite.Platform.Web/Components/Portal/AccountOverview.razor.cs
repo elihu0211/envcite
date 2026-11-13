@@ -1,9 +1,7 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Presentation;
 
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
@@ -29,9 +27,7 @@ public partial class AccountOverview(IPortalAccount account, ITenantDirectory di
     {
         // 租戶 Id 取自這個請求解析出的租戶（authorization 已確認 cookie 的租戶就是它），不取自使用者的輸入。
         if (account.CurrentTenant is not { } current)
-        {
             return;
-        }
 
         _twoFactor = await twoFactor.IsEnabledAsync(User, HttpContext.RequestAborted);
         _tenant = await directory.FindAsync(current.Id, HttpContext.RequestAborted);

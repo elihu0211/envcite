@@ -1,13 +1,8 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
@@ -36,19 +31,13 @@ internal sealed class DirectoryManagement(
         ClaimsPrincipal actor, DirectorySettings settings, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-        {
             return AdminOutcome.NotFound<DirectoryStatus>(OutcomeCodes.DirectoryNotEnabled);
-        }
 
         if (!CustomerRoles.All.Contains(settings.DefaultRole))
-        {
             return AdminOutcome.Invalid<DirectoryStatus>(OutcomeCodes.RoleInvalid);
-        }
 
         if (!DirectoryRoles.Assignable.Contains(settings.DefaultRole))
-        {
             return AdminOutcome.Forbidden<DirectoryStatus>(OutcomeCodes.DirectoryRoleNotMappable);
-        }
 
         var connection = await db.DirectoryConnections.SingleOrDefaultAsync(cancellationToken);
         if (connection is null)
@@ -63,9 +52,7 @@ internal sealed class DirectoryManagement(
         connection.UpdatedAt = time.GetUtcNow();
 
         if (previous.Enabled != settings.Enabled)
-        {
             Stage(actor, settings.Enabled ? AuditActions.DirectoryEnabled : AuditActions.DirectoryDisabled, "connection", connection.Id.ToString(), new Dictionary<string, object?>());
-        }
 
         if (previous.DefaultRole != settings.DefaultRole || previous.AdoptExistingMembers != settings.AdoptExistingMembers)
         {
@@ -86,9 +73,7 @@ internal sealed class DirectoryManagement(
     public async Task<AdminOutcome<DirectoryStatus>> DisableAsync(ClaimsPrincipal actor, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-        {
             return AdminOutcome.NotFound<DirectoryStatus>(OutcomeCodes.DirectoryNotEnabled);
-        }
 
         if (await db.DirectoryConnections.SingleOrDefaultAsync(cancellationToken) is { Enabled: true } connection)
         {
@@ -105,16 +90,12 @@ internal sealed class DirectoryManagement(
         ClaimsPrincipal actor, string name, DateTimeOffset? expiresAt, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-        {
             return AdminOutcome.NotFound<IssuedDirectoryToken>(OutcomeCodes.DirectoryNotEnabled);
-        }
 
         var now = time.GetUtcNow();
         var trimmed = (name ?? string.Empty).Trim();
         if (trimmed.Length is 0 or > NameLength || expiresAt <= now)
-        {
             return AdminOutcome.Invalid<IssuedDirectoryToken>(OutcomeCodes.DirectoryTokenInvalid);
-        }
 
         var (token, prefix, secretHash) = DirectoryTokenFormat.Generate();
         var entity = new DirectoryToken { Name = trimmed, Prefix = prefix, SecretHash = secretHash, CreatedAt = now, ExpiresAt = expiresAt };
@@ -134,15 +115,11 @@ internal sealed class DirectoryManagement(
     public async Task<AdminOutcome<DirectoryTokenInfo>> RevokeTokenAsync(ClaimsPrincipal actor, Guid tokenId, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-        {
             return AdminOutcome.NotFound<DirectoryTokenInfo>(OutcomeCodes.DirectoryNotEnabled);
-        }
 
         // 租戶的查詢濾鏡讓別的租戶的 token 在這裡找不到。
         if (await db.DirectoryTokens.SingleOrDefaultAsync(t => t.Id == tokenId, cancellationToken) is not { } token)
-        {
             return AdminOutcome.NotFound<DirectoryTokenInfo>(OutcomeCodes.DirectoryTokenNotFound);
-        }
 
         if (token.RevokedAt is null)
         {
@@ -161,19 +138,13 @@ internal sealed class DirectoryManagement(
     public async Task<AdminOutcome<MemberInfo>> ReleaseManagedAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-        {
             return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.DirectoryNotEnabled);
-        }
 
         if (await users.FindByIdAsync(userId) is not { } user)
-        {
             return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound);
-        }
 
         if (user.ManagedBy != DirectoryRoles.ManagedBy)
-        {
             return AdminOutcome.Conflict<MemberInfo>(OutcomeCodes.DirectoryNotManaged);
-        }
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
@@ -181,9 +152,7 @@ internal sealed class DirectoryManagement(
         (user.ManagedBy, user.ExternalId) = (null, null);
         var updated = await users.UpdateAsync(user);
         if (!updated.Succeeded)
-        {
             return IdentityOutcomes.Rejected<MemberInfo>(updated.Errors.First());
-        }
 
         db.StageAudit(
             actor,
@@ -198,30 +167,20 @@ internal sealed class DirectoryManagement(
         ClaimsPrincipal actor, Guid groupId, string? role, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-        {
             return AdminOutcome.NotFound<DirectoryGroupInfo>(OutcomeCodes.DirectoryNotEnabled);
-        }
 
         if (role is not null && !CustomerRoles.All.Contains(role))
-        {
             return AdminOutcome.Invalid<DirectoryGroupInfo>(OutcomeCodes.RoleInvalid);
-        }
 
         if (role is not null && !DirectoryRoles.Assignable.Contains(role))
-        {
             return AdminOutcome.Forbidden<DirectoryGroupInfo>(OutcomeCodes.DirectoryRoleNotMappable);
-        }
 
         // 租戶的查詢濾鏡讓別的租戶的群組在這裡找不到。
         if (await db.DirectoryGroups.Include(g => g.Members).SingleOrDefaultAsync(g => g.Id == groupId, cancellationToken) is not { } group)
-        {
             return AdminOutcome.NotFound<DirectoryGroupInfo>(OutcomeCodes.DirectoryGroupNotFound);
-        }
 
         if (group.Role == role)
-        {
             return AdminOutcome.Ok(GroupInfo(group));
-        }
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var previous = group.Role;
@@ -239,9 +198,7 @@ internal sealed class DirectoryManagement(
             ["members_changed"] = changed,
         });
         if (changed > 0)
-        {
             await db.DirectoryConnections.ExecuteUpdateAsync(set => set.SetProperty(c => c.UpdatedCount, c => c.UpdatedCount + changed), cancellationToken);
-        }
 
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);

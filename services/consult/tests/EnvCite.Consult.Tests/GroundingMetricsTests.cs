@@ -32,9 +32,7 @@ public sealed class GroundingMetricsTests
         foreach (var outcome in Outcomes)
         {
             foreach (var question in new[] { NoMarker, WithJurisdiction, WithOrdinance })
-            {
                 metrics.Record(question, outcome);
-            }
         }
 
         var points = collector.GetMeasurementSnapshot();

@@ -1,13 +1,8 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
@@ -33,15 +28,11 @@ internal sealed partial class DirectoryProvisioning(
         ClaimsPrincipal actor, int skip, int take, string? externalId, string? email, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryPage>(cancellationToken) is { } closed)
-        {
             return closed;
-        }
 
         var query = users.Users.AsNoTracking();
         if (!string.IsNullOrEmpty(externalId))
-        {
             query = query.Where(u => u.ExternalId == externalId);
-        }
 
         if (!string.IsNullOrEmpty(email))
         {
@@ -59,9 +50,7 @@ internal sealed partial class DirectoryProvisioning(
     public async Task<AdminOutcome<DirectoryMember>> FindAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryMember>(cancellationToken) is { } closed)
-        {
             return closed;
-        }
 
         await SeenAsync(cancellationToken);
 
@@ -75,45 +64,31 @@ internal sealed partial class DirectoryProvisioning(
         ClaimsPrincipal actor, DirectoryProvision member, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryMember>(cancellationToken) is { } closed)
-        {
             return closed;
-        }
 
         var connection = await ConnectionAsync(cancellationToken);
         var role = member.Role ?? connection.DefaultRole;
         var email = (member.Email ?? string.Empty).Trim();
         var externalId = NormalizeExternalId(member.ExternalId);
         if (NewAccountInput.Problem(email, member.DisplayName, role) is { } problem)
-        {
             return await RejectAsync<DirectoryMember>(actor, null, problem, AdminStatus.Invalid, audit: false, cancellationToken);
-        }
 
         if (externalId is { Length: 0 } or { Length: > 200 })
-        {
             return await RejectAsync<DirectoryMember>(actor, null, OutcomeCodes.DirectoryExternalIdInvalid, AdminStatus.Invalid, audit: false, cancellationToken);
-        }
 
         if (!DirectoryRoles.Assignable.Contains(role))
-        {
             return await RejectAsync<DirectoryMember>(actor, email, OutcomeCodes.DirectoryRoleNotMappable, AdminStatus.Forbidden, audit: true, cancellationToken);
-        }
 
         // 重複建立是衝突，不是第二筆：身分來源重送、逾時後重試都會走到這裡。
         if (externalId is not null && await users.Users.AnyAsync(u => u.ExternalId == externalId, cancellationToken))
-        {
             return await RejectAsync<DirectoryMember>(actor, email, OutcomeCodes.DirectoryExternalIdTaken, AdminStatus.Conflict, audit: true, cancellationToken);
-        }
 
         if (await users.FindByEmailAsync(email) is { } existing)
-        {
             return await AdoptAsync(actor, connection, existing, externalId, member, cancellationToken);
-        }
 
         // 新成員走邀請信，沒有寄信能力就建不起來；不建一個沒人登得進去的帳號。
         if (member.Active && !mail.Enabled)
-        {
             return await RejectAsync<DirectoryMember>(actor, email, OutcomeCodes.MailNotEnabled, AdminStatus.Conflict, audit: true, cancellationToken);
-        }
 
         return await InTransactionAsync(async () =>
         {
@@ -133,9 +108,7 @@ internal sealed partial class DirectoryProvisioning(
             // 沒有密碼：在對方開啟邀請連結設定之前，這個帳號登不進去。
             var created = await users.CreateAsync(user);
             if (!created.Succeeded)
-            {
                 return IdentityOutcomes.CreateFailed<DirectoryMember>(created, OutcomeCodes.MemberEmailTaken);
-            }
 
             var delivery = member.Active ? await members.SendInvitationAsync(user, tenantAccessor.TenantInfo(), cancellationToken) : MailDelivery.NotRequested;
             StageAudit(actor, AuditActions.MemberProvisioned, user, new Dictionary<string, object?>
@@ -155,14 +128,10 @@ internal sealed partial class DirectoryProvisioning(
         ClaimsPrincipal actor, string userId, DirectoryPatch patch, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryMember>(cancellationToken) is { } closed)
-        {
             return closed;
-        }
 
         if (await users.FindByIdAsync(userId) is not { } user)
-        {
             return AdminOutcome.NotFound<DirectoryMember>(OutcomeCodes.MemberNotFound);
-        }
 
         return await ApplyAsync(actor, user, patch, deleting: false, cancellationToken);
     }
@@ -170,14 +139,10 @@ internal sealed partial class DirectoryProvisioning(
     public async Task<AdminOutcome<DirectoryMember>> DeactivateAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryMember>(cancellationToken) is { } closed)
-        {
             return closed;
-        }
 
         if (await users.FindByIdAsync(userId) is not { } user)
-        {
             return AdminOutcome.NotFound<DirectoryMember>(OutcomeCodes.MemberNotFound);
-        }
 
         return await ApplyAsync(actor, user, new DirectoryPatch(Active: false), deleting: true, cancellationToken);
     }
@@ -188,20 +153,14 @@ internal sealed partial class DirectoryProvisioning(
     {
         // 已經是同步建立的：同 email 再建一次是重複。
         if (existing.ManagedBy == DirectoryRoles.ManagedBy)
-        {
             return await RejectAsync<DirectoryMember>(actor, existing.Email, OutcomeCodes.MemberEmailTaken, AdminStatus.Conflict, audit: true, cancellationToken);
-        }
 
         if (!connection.AdoptExistingMembers)
-        {
             return await RejectAsync<DirectoryMember>(actor, existing.Email, OutcomeCodes.DirectoryAdoptRequired, AdminStatus.Conflict, audit: true, cancellationToken);
-        }
 
         // 擁有者只由人指派，也就不交給身分來源管：接管等於讓下一輪同步能停用他。
         if (existing.Role == CustomerRoles.Owner)
-        {
             return await RejectAsync<DirectoryMember>(actor, existing.Email, OutcomeCodes.DirectoryRoleNotMappable, AdminStatus.Forbidden, audit: true, cancellationToken);
-        }
 
         return await InTransactionAsync(async () =>
         {
@@ -211,9 +170,7 @@ internal sealed partial class DirectoryProvisioning(
             existing.SyncedAt = time.GetUtcNow();
             var updated = await users.UpdateAsync(existing);
             if (!updated.Succeeded)
-            {
                 return IdentityOutcomes.Rejected<DirectoryMember>(updated.Errors.First());
-            }
 
             StageAudit(actor, AuditActions.MemberAdopted, existing, new Dictionary<string, object?>
             {
@@ -231,37 +188,25 @@ internal sealed partial class DirectoryProvisioning(
     {
         // 不是同步管理的人，同步不能動：要先經 POST 接管（租戶允許時）。
         if (user.ManagedBy != DirectoryRoles.ManagedBy)
-        {
             return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryAdoptRequired, AdminStatus.Conflict, audit: true, cancellationToken);
-        }
 
         if (patch.Email is { } email && !string.Equals(email.Trim(), user.Email, StringComparison.OrdinalIgnoreCase))
-        {
             return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryEmailImmutable, AdminStatus.Conflict, audit: true, cancellationToken);
-        }
 
         var externalId = NormalizeExternalId(patch.ExternalId);
         if (externalId is { Length: 0 } or { Length: > 200 })
-        {
             return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryExternalIdInvalid, AdminStatus.Invalid, audit: false, cancellationToken);
-        }
 
         if (patch.DisplayName is { Length: > 200 })
-        {
             return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DisplayNameTooLong, AdminStatus.Invalid, audit: false, cancellationToken);
-        }
 
         if (patch.Role is { } role)
         {
             if (!CustomerRoles.All.Contains(role))
-            {
                 return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.RoleInvalid, AdminStatus.Invalid, audit: false, cancellationToken);
-            }
 
             if (!DirectoryRoles.Assignable.Contains(role))
-            {
                 return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryRoleNotMappable, AdminStatus.Forbidden, audit: true, cancellationToken);
-            }
         }
 
         if (externalId is not null && externalId != user.ExternalId
@@ -273,27 +218,19 @@ internal sealed partial class DirectoryProvisioning(
         var leavesOwner = user.Role == CustomerRoles.Owner && (patch.Role is { } r && r != CustomerRoles.Owner);
         var disables = patch.Active == false && !user.Disabled;
         if ((leavesOwner || (disables && user.Role == CustomerRoles.Owner)) && !await AnotherActiveOwnerAsync(user, cancellationToken))
-        {
             return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryLastOwner, AdminStatus.Conflict, audit: true, cancellationToken);
-        }
 
         var enables = patch.Active == true && user.Disabled;
         var displayName = patch.DisplayName is null ? user.DisplayName : Clean(patch.DisplayName);
         var changedAttributes = new List<string>();
         if (displayName != user.DisplayName)
-        {
             changedAttributes.Add("display_name");
-        }
 
         if (externalId is not null && externalId != user.ExternalId)
-        {
             changedAttributes.Add("external_id");
-        }
 
         if (patch.Role is { } newRole && newRole != user.Role)
-        {
             changedAttributes.Add("role");
-        }
 
         if (changedAttributes.Count == 0 && !disables && !enables)
         {
@@ -310,25 +247,17 @@ internal sealed partial class DirectoryProvisioning(
             user.Role = patch.Role ?? user.Role;
             user.SyncedAt = time.GetUtcNow();
             if (disables)
-            {
                 user.Disabled = true;
-            }
             else if (enables)
-            {
                 user.Disabled = false;
-            }
 
             var updated = await users.UpdateAsync(user);
             if (!updated.Succeeded)
-            {
                 return IdentityOutcomes.Rejected<DirectoryMember>(updated.Errors.First());
-            }
 
             // 角色在 cookie 的 claim 裡，停用要立刻擋下、重新啟用要從乾淨狀態開始：都換安全戳記，舊 session 失效。
             if (disables || enables || changedAttributes.Contains("role"))
-            {
                 await users.UpdateSecurityStampAsync(user);
-            }
 
             // 重新啟用一個還沒設過密碼的人，把邀請信補上；寄信沒啟用就只啟用，不拒絕（營運者可以改用暫時密碼），結果記在稽核。
             var mailStatus = (string?)null;
@@ -360,9 +289,7 @@ internal sealed partial class DirectoryProvisioning(
                     ["current_role"] = changedAttributes.Contains("role") ? user.Role : null,
                 });
                 if (!disables && !enables)
-                {
                     await RecordAsync(updated: 1, cancellationToken: cancellationToken);
-                }
             }
 
             await db.SaveChangesAsync(cancellationToken);
@@ -381,9 +308,7 @@ internal sealed partial class DirectoryProvisioning(
     private async Task<AdminOutcome<T>?> GateAsync<T>(CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-        {
             return AdminOutcome.NotFound<T>(OutcomeCodes.DirectoryNotEnabled);
-        }
 
         var connection = await db.DirectoryConnections.AsNoTracking().SingleOrDefaultAsync(cancellationToken);
         return connection is { Enabled: true } ? null : AdminOutcome.NotFound<T>(OutcomeCodes.DirectoryNotEnabled);

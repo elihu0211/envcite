@@ -8,6 +8,7 @@ proto/**/*.md
 !.editorconfig
 !libs/dotnet
 !services/platform/.editorconfig
+!services/platform/Directory.Build.props
 !services/platform/dotnet-tools.json
 !services/platform/src
 **/bin

@@ -1,5 +1,3 @@
-using EnvCite.Platform.SharedKernel;
-
 namespace EnvCite.Platform.Web.Auth;
 
 /// <summary>
@@ -37,14 +35,10 @@ public sealed record SignInRoutes(string Login, string Mfa, string Password, str
     {
         var parameters = new List<string>();
         if (recovery)
-        {
             parameters.Add("recovery=1");
-        }
 
         if (!string.IsNullOrEmpty(returnUrl))
-        {
             parameters.Add($"returnUrl={Uri.EscapeDataString(returnUrl)}");
-        }
 
         return parameters.Count == 0 ? Mfa : $"{Mfa}?{string.Join('&', parameters)}";
     }

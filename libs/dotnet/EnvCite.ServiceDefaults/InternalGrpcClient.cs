@@ -1,7 +1,6 @@
 using Grpc.Core;
 using Grpc.Net.Client.Balancer;
 using Grpc.Net.Client.Configuration;
-using Grpc.Net.ClientFactory;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -29,14 +28,10 @@ public sealed class InternalGrpcClientOptionsValidator<TOptions> : IValidateOpti
     {
         var failures = new List<string>();
         if (!Uri.TryCreate(options.Address, UriKind.Absolute, out _))
-        {
             failures.Add($"{TOptions.SectionName}:Address must be an absolute URI.");
-        }
 
         if (options.Timeout <= TimeSpan.Zero)
-        {
             failures.Add($"{TOptions.SectionName}:Timeout must be positive.");
-        }
 
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }

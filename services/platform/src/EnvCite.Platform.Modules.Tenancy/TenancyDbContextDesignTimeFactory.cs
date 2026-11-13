@@ -1,6 +1,3 @@
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace EnvCite.Platform.Modules.Tenancy;

@@ -1,7 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Identity;
 
 namespace EnvCite.Platform.Modules.Members;
@@ -44,14 +42,10 @@ internal abstract class TwoFactorBase<TUser, TKey>(UserManager<TUser> users, IAu
     public async Task<AdminOutcome<TwoFactorSetup>> BeginSetupAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
     {
         if (await UserOfAsync(principal) is not { } user)
-        {
             return AdminOutcome.NotFound<TwoFactorSetup>(OutcomeCodes.AccountNotFound);
-        }
 
         if (user.TwoFactorEnabled)
-        {
             return AdminOutcome.Invalid<TwoFactorSetup>(OutcomeCodes.TwoFactorAlreadyEnabled);
-        }
 
         // 沒有金鑰才產生；有就沿用，重新整理頁面不會讓已經掃進手機的 QR 失效。
         var key = await Users.GetAuthenticatorKeyAsync(user);
@@ -67,19 +61,13 @@ internal abstract class TwoFactorBase<TUser, TKey>(UserManager<TUser> users, IAu
     public async Task<AdminOutcome<IReadOnlyList<string>>> EnableAsync(ClaimsPrincipal principal, string code, CancellationToken cancellationToken)
     {
         if (await UserOfAsync(principal) is not { } user)
-        {
             return AdminOutcome.NotFound<IReadOnlyList<string>>(OutcomeCodes.AccountNotFound);
-        }
 
         if (user.TwoFactorEnabled)
-        {
             return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorAlreadyEnabled);
-        }
 
         if (!await VerifyCodeAsync(user, code))
-        {
             return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrectHint);
-        }
 
         await Users.SetTwoFactorEnabledAsync(user, true);
         var codes = await NewRecoveryCodesAsync(user);
@@ -94,14 +82,10 @@ internal abstract class TwoFactorBase<TUser, TKey>(UserManager<TUser> users, IAu
         ClaimsPrincipal principal, string code, CancellationToken cancellationToken)
     {
         if (await UserOfAsync(principal) is not { TwoFactorEnabled: true } user)
-        {
             return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorNotEnabled);
-        }
 
         if (!await ConfirmAsync(user, code))
-        {
             return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrect);
-        }
 
         var codes = await NewRecoveryCodesAsync(user);
         await OnRecoveryCodesRegeneratedAsync(user, cancellationToken);
@@ -115,15 +99,11 @@ internal abstract class TwoFactorBase<TUser, TKey>(UserManager<TUser> users, IAu
     protected async Task<bool> ConfirmAsync(TUser user, string? code, string? password = null)
     {
         if (await Users.IsLockedOutAsync(user))
-        {
             return false;
-        }
 
         var ok = (password is null || await Users.CheckPasswordAsync(user, password)) && await VerifyCodeAsync(user, code);
         if (!ok)
-        {
             await Users.AccessFailedAsync(user);
-        }
 
         return ok;
     }

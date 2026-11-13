@@ -1,13 +1,10 @@
 using System.Globalization;
 
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Headers;
 using Microsoft.AspNetCore.Localization;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Web;
 
@@ -63,19 +60,13 @@ public static class Localization
         {
             var tag = language.Value.Value;
             if (tag is null)
-            {
                 continue;
-            }
 
             if (tag.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
-            {
                 return Task.FromResult<ProviderCultureResult?>(new ProviderCultureResult(Default));
-            }
 
             if (tag.StartsWith("en", StringComparison.OrdinalIgnoreCase))
-            {
                 return Task.FromResult<ProviderCultureResult?>(new ProviderCultureResult("en"));
-            }
         }
 
         return Task.FromResult<ProviderCultureResult?>(null);
@@ -99,9 +90,7 @@ public static class Localization
         var form = await context.Request.ReadFormAsync(context.RequestAborted);
         string? culture = form["culture"];
         if (!IsSupported(culture))
-        {
             return Results.BadRequest();
-        }
 
         // 只是偏好，不認證任何東西；HttpOnly 因為只有伺服器讀。一年後過期。
         context.Response.Cookies.Append(

@@ -1,4 +1,3 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
 
 namespace EnvCite.Platform.Api;

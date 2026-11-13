@@ -1,5 +1,4 @@
 using EnvCite.Platform.Modules.Members;
-using EnvCite.Platform.SharedKernel;
 
 namespace EnvCite.Platform.Tests;
 
@@ -35,9 +34,7 @@ public sealed class MemberPolicyTests
         foreach (var actor in CustomerRoles.All)
         {
             foreach (var role in CustomerRoles.All)
-            {
                 Assert.Equal(MemberPolicy.CanManage(actor, role), MemberPolicy.Grantable(actor).Contains(role));
-            }
         }
     }
 

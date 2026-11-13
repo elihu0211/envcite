@@ -1,10 +1,6 @@
 using System.Net;
 
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
-
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 

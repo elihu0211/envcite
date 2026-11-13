@@ -2,14 +2,11 @@ using System.Globalization;
 
 using EnvCite.ServiceDefaults;
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-
 namespace EnvCite.Platform.SharedKernel;
 
 /// <summary>
 /// <c>Platform:Brand</c> 區段：系統名稱的唯一來源。介面標頭與頁面標題、信件主旨與內文、命令列的測試信、
-/// OpenAPI 描述與寄件者顯示名稱（<see cref="MailOptions.FromName"/> 沒設時）都讀這裡，改名只改這一個鍵。
+/// OpenAPI 描述與寄件者顯示名稱（<see cref="MailIdentityOptions.FromName"/> 沒設時）都讀這裡，改名只改這一個鍵。
 /// 圖檔標誌（<c>wwwroot/brand/*.svg</c>）與文件不讀設定，改名時另外換。
 /// </summary>
 public sealed class BrandOptions : ISectionOptions
@@ -33,15 +30,11 @@ internal sealed class BrandOptionsValidator : IValidateOptions<BrandOptions>
     public ValidateOptionsResult Validate(string? name, BrandOptions options)
     {
         if (string.IsNullOrWhiteSpace(options.Name))
-        {
             return ValidateOptionsResult.Fail("Platform:Brand:Name must not be blank.");
-        }
 
         // 名稱會進信件的標頭（主旨、寄件者）：換行或其他控制字元不是名稱的一部分。
         if (options.Name.Any(char.IsControl))
-        {
             return ValidateOptionsResult.Fail("Platform:Brand:Name must not contain control characters.");
-        }
 
         return new StringInfo(options.Name).LengthInTextElements > BrandOptions.MaxNameLength
             ? ValidateOptionsResult.Fail($"Platform:Brand:Name must be at most {BrandOptions.MaxNameLength} characters.")

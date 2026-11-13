@@ -240,9 +240,7 @@ public static partial class DesignTokenTests
 
         Assert.Equal(roles.Order(), DesignTokens.Type.Keys.Order());
         foreach (var role in roles)
-        {
             Assert.Contains($"--ep-{role}-size:", TokenCss.Render(), StringComparison.Ordinal);
-        }
     }
 
     // 中文長時間閱讀：沒有小於 12px 的字，內文至少 15px、行高 1.6 以上。clamp 取下限。
@@ -256,14 +254,10 @@ public static partial class DesignTokenTests
 
         Assert.All(DesignTokens.Type.Values, style => Assert.True(Rem(style.Size) * 16 >= 12, style.Size));
         foreach (var role in new[] { "body-l", "body-m" })
-        {
             Assert.True(Rem(DesignTokens.Type[role].Size) * 16 >= 15, role);
-        }
 
         foreach (var role in new[] { "body-l", "body-m", "body-s" })
-        {
             Assert.True(double.Parse(DesignTokens.Type[role].LineHeight, CultureInfo.InvariantCulture) >= 1.6, role);
-        }
     }
 
     // 字型自己託管：token 的字型名稱都在 fonts.css 宣告過、每個字型檔都在、沒有外部網址；樣式表只用變數，不寫字型名稱。
@@ -281,9 +275,7 @@ public static partial class DesignTokenTests
 
         Assert.DoesNotContain("http", fonts, StringComparison.OrdinalIgnoreCase);
         foreach (Match url in FontUrl().Matches(fonts))
-        {
             Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(FontsPath())!, url.Groups[1].Value)), url.Value);
-        }
 
         // 字型只從變數來；代碼、金鑰沿用外層的字型（inherit），不另開等寬字型。
         Assert.All(FontFamilyDeclaration().Matches(css), m => Assert.True(
@@ -398,9 +390,7 @@ public static partial class DesignTokenTests
 
         var gallery = File.ReadAllText(GalleryPath());
         foreach (var role in DesignTokens.Type.Keys)
-        {
             Assert.Contains($"\"{role}\"", gallery, StringComparison.Ordinal);
-        }
     }
 
     private static string TypeBlock(string spec, string name)
@@ -552,9 +542,7 @@ public static partial class DesignTokenTests
         var script = File.ReadAllText(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "forms.js"));
 
         foreach (var leftover in new[] { "data-theme", "ep-theme", "theme-color" })
-        {
             Assert.DoesNotContain(leftover, css, StringComparison.Ordinal);
-        }
 
         Assert.DoesNotContain("ep-theme", script, StringComparison.Ordinal);
         Assert.DoesNotContain("localStorage.getItem(\"ep-theme", script, StringComparison.Ordinal);
@@ -627,9 +615,7 @@ public static partial class DesignTokenTests
                 text.Contains("ep-theme", StringComparison.Ordinal) && Path.GetFileName(file) != "App.razor",
                 $"{name}：只有 App.razor 可以提到 ep-theme（清掉舊版 localStorage 的偏好）");
             if (text.Contains("<AppearanceSetting", StringComparison.Ordinal))
-            {
                 shown.Add(name);
-            }
         }
 
         Assert.Equal(settingsPages.Order(), shown.Order());

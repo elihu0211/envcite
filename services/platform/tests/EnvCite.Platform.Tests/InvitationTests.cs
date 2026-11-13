@@ -2,13 +2,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 using static EnvCite.Platform.Tests.OperatorTestSupport;
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -404,9 +399,7 @@ public sealed partial class InvitationTests(PlatformFactory factory)
             Assert.Contains(invitation.Member.Id, activated, StringComparison.Ordinal);
             Assert.Contains("set_password", activated, StringComparison.Ordinal);
             foreach (var secret in new[] { code, LongPassword })
-            {
                 Assert.DoesNotContain(secret, invited + activated, StringComparison.Ordinal);
-            }
 
             Assert.NotNull(tenant);
         });

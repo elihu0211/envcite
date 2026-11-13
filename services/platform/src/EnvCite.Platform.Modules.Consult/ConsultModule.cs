@@ -1,13 +1,10 @@
 using System.ClientModel;
 
 using EnvCite.Consult.V2;
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 
 using OpenAI;
 
@@ -48,35 +45,23 @@ internal sealed class AnswerOptionsValidator : IValidateOptions<AnswerOptions>
     public ValidateOptionsResult Validate(string? name, AnswerOptions options)
     {
         if (!options.Enabled)
-        {
             return ValidateOptionsResult.Success;
-        }
 
         var errors = new List<string>();
         if (options.Endpoint is not { IsAbsoluteUri: true })
-        {
             errors.Add("Platform:Answer:Endpoint must be an absolute URL when the answer service is enabled.");
-        }
 
         if (string.IsNullOrWhiteSpace(options.ApiKey))
-        {
             errors.Add("Platform:Answer:ApiKey is required when the answer service is enabled.");
-        }
 
         if (string.IsNullOrWhiteSpace(options.Model))
-        {
             errors.Add("Platform:Answer:Model is required when the answer service is enabled.");
-        }
 
         if (options.Timeout <= TimeSpan.Zero)
-        {
             errors.Add("Platform:Answer:Timeout must be positive.");
-        }
 
         if (options.MaxOutputTokens is < 1 or > 8000)
-        {
             errors.Add("Platform:Answer:MaxOutputTokens must be between 1 and 8000.");
-        }
 
         return errors.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(errors);
     }

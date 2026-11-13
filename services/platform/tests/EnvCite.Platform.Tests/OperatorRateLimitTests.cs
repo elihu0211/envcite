@@ -1,10 +1,8 @@
 using System.Net;
 
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 using static EnvCite.Platform.Tests.OperatorTestSupport;
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -101,9 +99,7 @@ public sealed class OperatorRateLimitTests(PlatformFactory factory)
         await using var host = Limited();
         using var browser = new PortalBrowser(host);
         for (var i = 0; i < Limit; i++)
-        {
             _ = await browser.SubmitAsync(UiLogin, Credentials(NewOperatorEmail(), $"wrong-guess-{i}-number"));
-        }
 
         var consoleBlocked = await browser.SubmitAsync(UiLogin, Credentials(NewOperatorEmail(), "one-guess-too-many"));
         var portal = await browser.SubmitAsync(Login(tenant.Identifier), Credentials(member, "wrong-guess-number-one"));

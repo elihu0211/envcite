@@ -1,14 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
-
 namespace EnvCite.Platform.Tests;
 
 /// <summary>

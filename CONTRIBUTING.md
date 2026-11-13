@@ -298,6 +298,7 @@ read -rs ENVCITE_Platform__Mail__Password && export ENVCITE_Platform__Mail__Pass
 | 對象 | 機制 |
 |------|------|
 | commit | `.githooks/pre-commit`。`wt` 建立 worktree 時啟用；既有 clone 執行 `git config core.hooksPath .githooks` |
+| commit 前自動修正 | `.githooks/format-staged.sh`（由 pre-commit 呼叫）：對暫存的 `services/platform`、`services/consult` 的 `.cs` 修掉多餘的 using（IDE0005）與必要的大括號（IDE0011），修完重新暫存；有未暫存修改的檔案不碰。失敗不擋提交，閘門是 CI 的 `dotnet format --verify-no-changes` |
 | 代理編輯 | `.githooks/block-main.sh`，依被編輯檔所在的 worktree 判斷分支，不看 hook 的工作目錄。測試見 `ci/test-block-main.sh` |
 
 ### CI 分流

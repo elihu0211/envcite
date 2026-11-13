@@ -32,9 +32,7 @@ public static class PortalPaths
     public static string? TenantFrom(Microsoft.AspNetCore.Http.PathString path)
     {
         if (!path.StartsWithSegments(Prefix, out var remaining))
-        {
             return null;
-        }
 
         var segments = remaining.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries);
         return segments is { Length: > 0 } ? Uri.UnescapeDataString(segments[0]) : null;

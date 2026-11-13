@@ -1,15 +1,10 @@
 using System.Globalization;
-using System.Security.Claims;
 using System.Text.Json;
-
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
@@ -30,9 +25,7 @@ public static class ScimEndpoints
     public static IEndpointRouteBuilder MapDirectoryScim(this IEndpointRouteBuilder app)
     {
         if (!app.ServiceProvider.GetRequiredService<IOptions<DirectoryOptions>>().Value.Enabled)
-        {
             return app;
-        }
 
         var scim = app.MapGroup(ScimPaths.Prefix)
             .RequireAuthorization(PlatformAuth.DirectoryPolicy)
@@ -44,9 +37,7 @@ public static class ScimEndpoints
             var context = invocation.HttpContext;
             var limiter = context.RequestServices.GetRequiredService<DirectoryRateLimiter>();
             if (limiter.TryAcquire(context.User.FindFirst(PlatformClaimTypes.DirectoryTokenId)?.Value ?? "anonymous", out var retryAfter))
-            {
                 return await next(invocation);
-            }
 
             context.RequestServices.GetRequiredService<DirectoryMetrics>().Record("other", "rate_limited");
             context.Response.Headers.RetryAfter = retryAfter.ToString(CultureInfo.InvariantCulture);
@@ -100,9 +91,7 @@ public static class ScimEndpoints
         {
             var read = await ReadUserAsync(context, metrics, "create", cancellationToken);
             if (read.User is not { } user)
-            {
                 return read.Failure!;
-            }
 
             return await RunAsync(
                 metrics, "create",
@@ -115,9 +104,7 @@ public static class ScimEndpoints
         {
             var read = await ReadUserAsync(context, metrics, "update", cancellationToken);
             if (read.User is not { } user)
-            {
                 return read.Failure!;
-            }
 
             // PUT 是取代：沒送的顯示名稱視為清掉，沒送 active 視為啟用。email 與外部識別碼不能清。
             var patch = new DirectoryPatch(user.DisplayName ?? string.Empty, user.Active ?? true, null, user.ExternalId, user.Email);
@@ -187,9 +174,7 @@ public static class ScimEndpoints
         {
             var read = await ReadGroupAsync(context, metrics, "group_create", cancellationToken);
             if (read.Group is not { } body)
-            {
                 return read.Failure!;
-            }
 
             return await RunAsync(
                 metrics, "group_create",
@@ -202,9 +187,7 @@ public static class ScimEndpoints
         {
             var read = await ReadGroupAsync(context, metrics, "group_update", cancellationToken);
             if (read.Group is not { } body)
-            {
                 return read.Failure!;
-            }
 
             // PUT 是取代：成員整組換成送來的（沒送就是清空）。
             var patch = new DirectoryGroupPatch(
@@ -422,9 +405,7 @@ public static class ScimEndpoints
     private static async Task<JsonElement?> ReadBodyAsync(HttpContext context, CancellationToken cancellationToken)
     {
         if (context.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
-        {
             limit.MaxRequestBodySize = MaxBodyBytes;
-        }
 
         try
         {

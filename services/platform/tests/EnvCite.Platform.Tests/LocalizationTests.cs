@@ -4,14 +4,9 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
-using EnvCite.Platform.SharedKernel;
-using EnvCite.Platform.Web;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -119,14 +114,10 @@ public sealed partial class LanguageSwitchTests(PlatformFactory factory)
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(path, UriKind.Relative));
         if (acceptLanguage is not null)
-        {
             request.Headers.AcceptLanguage.ParseAdd(acceptLanguage);
-        }
 
         if (cookie is not null)
-        {
             request.Headers.Add("Cookie", $"{CultureCookie}={cookie}");
-        }
 
         using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
         var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
@@ -457,9 +448,7 @@ public sealed class CommandPaletteTests(PlatformFactory factory)
     {
         using var client = factory.SignedInClient();
         if (language is not null)
-        {
             client.DefaultRequestHeaders.AcceptLanguage.ParseAdd(language);
-        }
 
         return WebUtility.HtmlDecode(await client.GetStringAsync(new Uri("/ui", UriKind.Relative), TestContext.Current.CancellationToken));
     }

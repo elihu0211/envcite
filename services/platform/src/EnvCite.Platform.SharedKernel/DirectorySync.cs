@@ -63,7 +63,7 @@ public sealed record DirectoryGroupPatch(string? DisplayName = null, string? Ext
 public sealed record DirectoryGroupInfo(Guid Id, string DisplayName, string? ExternalId, string? Role, int MemberCount);
 
 /// <summary>
-/// 身分來源推進來的變更，在<b>目前請求的租戶</b>內執行（租戶來自 token，不是參數）。<paramref name="actor"/> 是帶
+/// 身分來源推進來的變更，在<b>目前請求的租戶</b>內執行（租戶來自 token，不是參數）。<c>actor</c> 是帶
 /// <see cref="PlatformClaimTypes.DirectoryTokenId"/> 的身分，稽核的「誰」由它推得。每個動作的規則見 <c>services/platform/AGENTS.md</c>
 /// 「目錄同步」：冪等、停用不刪、不碰最後一位擁有者、角色最高到管理員、稽核寫不進去就不改成員。
 /// 部署者沒開功能或租戶沒開連線時一律 <see cref="OutcomeCodes.DirectoryNotEnabled"/>（NotFound）。以 scoped 註冊。

@@ -1,24 +1,18 @@
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 
-using EnvCite.Platform.Data;
 using EnvCite.Platform.Modules.Members;
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 
 using static EnvCite.Platform.Tests.OperatorTestSupport;
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -634,16 +628,12 @@ public sealed class OperatorSignInTests(PlatformFactory factory)
 
         var all = new List<AuditRecord>();
         foreach (var action in AuditActions.All)
-        {
             all.AddRange(await EventsAsync(host, action));
-        }
 
         var dump = JsonSerializer.Serialize(all) + string.Join('\n', logs.Messages);
         Assert.NotEmpty(logs.Messages);
         Assert.Contains(AuditActions.OperatorMfaEnabled, dump, StringComparison.Ordinal); // 傾倒的內容確實含這次的事件
         foreach (var secret in new[] { initial, NewPassword, reset.Value!.Password, key, enrolCode, typedCode, "otpauth" }.Concat(recovery))
-        {
             Assert.DoesNotContain(secret, dump, StringComparison.Ordinal);
-        }
     }
 }

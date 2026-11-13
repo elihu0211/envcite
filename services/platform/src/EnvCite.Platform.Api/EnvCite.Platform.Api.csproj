@@ -41,4 +41,16 @@
     <ProjectReference Include="..\EnvCite.Platform.Web\EnvCite.Platform.Web.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="EnvCite.Platform.Data" />
+    <Using Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <!-- 根目錄為了 IDE0005 開了 GenerateDocumentationFile；OpenAPI 的契約檔不該因此多出 XML 註解。 -->
+  <Target Name="DropOpenApiXmlComments" AfterTargets="ResolveLockFileAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Microsoft.AspNetCore.OpenApi.SourceGenerators'" />
+    </ItemGroup>
+  </Target>
+
 </Project>

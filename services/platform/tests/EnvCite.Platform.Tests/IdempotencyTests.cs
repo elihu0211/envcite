@@ -1,11 +1,7 @@
 using System.Net;
-using System.Net.Http.Json;
 
 using EnvCite.Platform.Modules.Consult;
 using EnvCite.Platform.Modules.Metering;
-
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Tests;
 
@@ -22,9 +18,7 @@ public sealed class IdempotencyTests(PlatformFactory factory)
             Content = JsonContent.Create(new GroundRequestDto(question, pointInTime)),
         };
         if (key is not null)
-        {
             request.Headers.TryAddWithoutValidation(ConsultEndpoints.IdempotencyKeyHeader, key);
-        }
 
         return await client.SendAsync(request);
     }
@@ -146,9 +140,7 @@ public sealed class IdempotencyTests(PlatformFactory factory)
         var responses = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => GroundAsync(client, "race")));
         var bodies = await Task.WhenAll(responses.Select(r => r.Content.ReadAsStringAsync()));
         foreach (var r in responses)
-        {
             r.Dispose();
-        }
 
         Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
         Assert.Single(bodies.Distinct());

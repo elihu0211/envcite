@@ -57,9 +57,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         if (_app is not null)
-        {
             await _app.DisposeAsync();
-        }
     }
 
     internal static ArticleHit Hit(int n, float lexicalScore) => new()

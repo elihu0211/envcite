@@ -1,7 +1,5 @@
 using System.Threading.RateLimiting;
 
-using Microsoft.Extensions.Options;
-
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
 /// <summary>

@@ -1,8 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Authentication;
@@ -10,8 +7,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members;
 
@@ -30,29 +25,19 @@ internal sealed class PortalClaimsPrincipalFactory(
         identity.AddClaim(new Claim(PlatformClaimTypes.PortalUserId, user.Id));
         identity.AddClaim(new Claim(ClaimTypes.Role, user.Role));
         if (user.Email is { } email)
-        {
             identity.AddClaim(new Claim(ClaimTypes.Email, email));
-        }
 
         if (!string.IsNullOrWhiteSpace(user.DisplayName))
-        {
             identity.AddClaim(new Claim(ClaimTypes.GivenName, user.DisplayName));
-        }
 
         if (tenant.MultiTenantContext?.TenantInfo?.Identifier is { } identifier)
-        {
             identity.AddClaim(new Claim(PlatformClaimTypes.TenantIdentifier, identifier));
-        }
 
         if (user.MustChangePassword)
-        {
             identity.AddClaim(new Claim(PlatformClaimTypes.PasswordChangeRequired, "true"));
-        }
 
         if (PortalTwoFactor.RequiresTwoFactor(user.Role, members.Value) && !user.TwoFactorEnabled)
-        {
             identity.AddClaim(new Claim(PlatformClaimTypes.MfaEnrollmentRequired, "true"));
-        }
 
         return identity;
     }
@@ -79,9 +64,7 @@ internal sealed class PortalMemberHandler(IMultiTenantContextAccessor<TenantInfo
             && (requirement.AllowMfaEnrollmentPending || user.FindFirst(PlatformClaimTypes.MfaEnrollmentRequired) is null);
 
         if (valid)
-        {
             context.Succeed(requirement);
-        }
 
         return Task.CompletedTask;
     }
@@ -138,9 +121,7 @@ internal static class PortalSessionValidator
     public static async Task ValidateAsync(CookieValidatePrincipalContext context)
     {
         if (context.Principal is null)
-        {
             return;
-        }
 
         var signIn = context.HttpContext.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>();
 

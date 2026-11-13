@@ -1,7 +1,4 @@
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Tests;
 

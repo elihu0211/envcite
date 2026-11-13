@@ -2,7 +2,6 @@ using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.EntityFrameworkCore.Stores;
 
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
 
 namespace EnvCite.Platform.Modules.Tenancy;
 

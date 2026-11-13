@@ -1,6 +1,5 @@
 using System.Text.Json;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
@@ -68,9 +67,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory)
     {
         var signature = $"{TenantParam}|{ActionParam}|{ActorParam}";
         if (signature == _applied)
-        {
             return;
-        }
 
         _applied = signature;
         (_tenant, _action, _actor) = (TenantParam, ActionParam, ActorParam);
@@ -86,9 +83,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory)
         Prerendered = null;
         await LoadAsync(append: false);
         if (!RendererInfo.IsInteractive && Error is null)
-        {
             Prerendered = new([.. _tenantsById.Values], signature, new AuditPage([.. _items], _next));
-        }
     }
 
     private static Dictionary<string, TenantSummary> ById(IEnumerable<TenantSummary> tenants) =>
@@ -147,9 +142,7 @@ public partial class Audit(IAuditQuery query, ITenantDirectory directory)
     private void Toggle(Guid id)
     {
         if (!_expanded.Remove(id))
-        {
             _expanded.Add(id);
-        }
     }
 
     private string TenantLabel(string? tenantId) =>

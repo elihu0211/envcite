@@ -8,7 +8,6 @@ using MimeKit;
 
 using SmtpServer;
 using SmtpServer.Authentication;
-using SmtpServer.ComponentModel;
 using SmtpServer.Mail;
 using SmtpServer.Protocol;
 using SmtpServer.Storage;
@@ -68,17 +67,13 @@ internal sealed class TestSmtpServer : IAsyncDisposable
             .AuthenticationRequired(options.RequireAuthentication)
             .SessionTimeout(TimeSpan.FromSeconds(15));
         if (options.Certificate is not null)
-        {
             endpoint.Certificate(options.Certificate);
-        }
 
         var services = new SmtpServer.ComponentModel.ServiceProvider();
         services.Add((IMessageStore)new Store(this));
         services.Add((IMailboxFilter)new Filter(options));
         if (options.Credentials is { } credentials)
-        {
             services.Add((IUserAuthenticator)new Authenticator(this, credentials));
-        }
 
         _server = new SmtpHost(new SmtpServerOptionsBuilder().ServerName("relay.test").Endpoint(endpoint.Build()).Build(), services);
         _server.SessionCreated += (_, e) =>
@@ -164,9 +159,7 @@ internal sealed class TestSmtpServer : IAsyncDisposable
         while (true)
         {
             if (_running.IsFaulted)
-            {
                 await _running;
-            }
 
             try
             {
@@ -181,9 +174,7 @@ internal sealed class TestSmtpServer : IAsyncDisposable
         }
 
         while (Volatile.Read(ref _sessions) < 1 && DateTime.UtcNow < deadline)
-        {
             await Task.Delay(10);
-        }
     }
 
     private void Record(SmtpCommand command)
@@ -215,9 +206,7 @@ internal sealed class TestSmtpServer : IAsyncDisposable
             await using var stream = new MemoryStream();
             var position = buffer.GetPosition(0);
             while (buffer.TryGet(ref position, out var memory))
-            {
                 await stream.WriteAsync(memory, cancellationToken);
-            }
 
             stream.Position = 0;
             var message = await MimeMessage.LoadAsync(stream, cancellationToken);

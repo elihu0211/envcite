@@ -1,8 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
@@ -37,9 +34,7 @@ public partial class Ask(
     private async Task<bool> HasPlanAsync()
     {
         if (account.CurrentTenant is not { } tenant || await directory.FindAsync(tenant.Id, HttpContext.RequestAborted) is not { } summary)
-        {
             return false;
-        }
 
         // AI 回答要兩個條件：部署者設定了模型端點，而且這個租戶同意（問題會送到外部的模型服務）。
         _aiAnswer = summary.Plan is not null && summary.AiAnswer && availability.Available;
@@ -50,9 +45,7 @@ public partial class Ask(
     {
         Error = null;
         if (!_hasPlan)
-        {
             return;
-        }
 
         // 範例鈕送的是 Example（它們不需要先填輸入框）；自己打的字優先。
         var query = string.IsNullOrWhiteSpace(Input.Query) ? Input.Example : Input.Query;

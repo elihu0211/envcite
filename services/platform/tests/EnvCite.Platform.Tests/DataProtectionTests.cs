@@ -1,14 +1,9 @@
 using System.Net;
 
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
 
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Tests;
 

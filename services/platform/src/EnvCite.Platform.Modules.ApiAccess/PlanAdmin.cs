@@ -1,12 +1,6 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
 
@@ -27,9 +21,7 @@ internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog
         await using var scope = scopes.CreateAsyncScope();
         var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
         if (await store.GetAsync(tenantId) is not { Identifier: { } identifier } tenant)
-        {
             return AdminOutcome.NotFound<PlanChange>(OutcomeCodes.TenantNotFound);
-        }
 
         if (plan is not null && !catalog.Plans.ContainsKey(plan))
         {
@@ -84,16 +76,12 @@ internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog
         await using var scope = scopes.CreateAsyncScope();
         var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
         if (await store.GetAsync(tenantId) is not { Identifier: { } identifier } tenant)
-        {
             return AdminOutcome.NotFound<bool>(OutcomeCodes.TenantNotFound);
-        }
 
         var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
         var existing = await db.Set<TenantEntitlement>().SingleOrDefaultAsync(e => e.TenantId == tenant.Id, cancellationToken);
         if (existing is null)
-        {
             return AdminOutcome.Invalid<bool>(OutcomeCodes.PlanRequiredForConsent);
-        }
 
         if (existing.AiAnswerEnabled != enabled)
         {

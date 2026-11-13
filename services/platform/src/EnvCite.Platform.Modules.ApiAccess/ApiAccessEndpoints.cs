@@ -1,15 +1,11 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.AspNetCore.Extensions;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
 
@@ -39,9 +35,7 @@ public static class ApiAccessEndpoints
         {
             var key = await db.ApiKeys.SingleOrDefaultAsync(k => k.Id == id, ct);
             if (key is null)
-            {
                 return Results.NotFound();
-            }
 
             // 重複撤銷不改變原撤銷時間，也不重複記錄。
             if (key.RevokedAt is null)

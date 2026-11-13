@@ -4,11 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-
 using static EnvCite.Platform.Tests.MailTestServices;
 
 namespace EnvCite.Platform.Tests;
@@ -292,9 +287,7 @@ public sealed partial class MailComposerTests
         Assert.Contains(":root { color-scheme: light dark;", html, StringComparison.Ordinal);
         var darkCss = html[html.IndexOf("@media (prefers-color-scheme: dark)", StringComparison.Ordinal)..];
         foreach (var color in new[] { "#16191d", "#1f242a", "#e6e9ec", "#a3adb8", "#343b43", "#85b7eb", "#042c53", "#2a3038" })
-        {
             Assert.Contains(color, darkCss, StringComparison.Ordinal);
-        }
 
         // 不用純黑純白：深色的每個顏色，與淺色的頁面、文字（淺色的卡片與按鈕字是白色）。
         await using var provider = Build();

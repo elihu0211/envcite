@@ -4,15 +4,10 @@ using System.Text.RegularExpressions;
 
 using EnvCite.Platform.Modules.Conversations;
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 using Npgsql;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -38,9 +33,7 @@ public sealed partial class ConversationHistoryTests(PlatformFactory factory)
     {
         var form = new Dictionary<string, string> { ["Input.Query"] = text };
         if (conversationId is not null)
-        {
             form["Input.ConversationId"] = conversationId;
-        }
 
         return form;
     }

@@ -1,8 +1,3 @@
-using EnvCite.Platform.Data;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-
 using Npgsql;
 
 namespace EnvCite.Platform.Tests;
@@ -42,9 +37,7 @@ public sealed class DatabaseRoleTests(PlatformFactory factory)
         await using (var reader = await command.ExecuteReaderAsync(TestContext.Current.CancellationToken))
         {
             while (await reader.ReadAsync(TestContext.Current.CancellationToken))
-            {
                 tables[reader.GetString(0)] = (reader.GetBoolean(1), reader.GetBoolean(2), reader.GetBoolean(3), reader.GetBoolean(4), reader.GetBoolean(5));
-            }
         }
 
         Assert.Contains("tenancy.TenantInfo", tables.Keys);

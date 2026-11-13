@@ -1,8 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -76,9 +73,7 @@ internal sealed class OperatorAccount(
     public async Task SignOutAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
     {
         if (user.FindFirst(PlatformClaimTypes.OperatorId)?.Value is { } id)
-        {
             await audit.AppendAsync(user, new AuditEntry(AuditActions.OperatorSignedOut, TargetType: "operator", TargetId: id), cancellationToken);
-        }
 
         await pending.ClearAsync();
         await Context().SignOutAsync(PlatformAuth.UiCookieScheme);
@@ -110,20 +105,14 @@ internal sealed class OperatorAccount(
     {
         var user = await users.FindOperatorAsync(principal.FindFirst(PlatformClaimTypes.OperatorId)?.Value);
         if (user is null)
-        {
             return AdminOutcome.NotFound<bool>(OutcomeCodes.AccountNotFound);
-        }
 
         if (string.Equals(currentPassword, newPassword, StringComparison.Ordinal))
-        {
             return AdminOutcome.Invalid<bool>(OutcomeCodes.PasswordSameAsCurrent);
-        }
 
         var changed = await users.ChangePasswordAsync(user, currentPassword ?? string.Empty, newPassword ?? string.Empty);
         if (!changed.Succeeded)
-        {
             return IdentityOutcomes.PasswordRejected<bool>(changed.Errors.First());
-        }
 
         user.MustChangePassword = false;
         await users.UpdateAsync(user);

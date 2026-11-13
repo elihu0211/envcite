@@ -1,7 +1,6 @@
 using System.Security.Claims;
 
 using EnvCite.Platform.Modules.Members;
-using EnvCite.Platform.SharedKernel;
 
 using Finbuckle.MultiTenant.Abstractions;
 
@@ -27,24 +26,16 @@ public sealed class PortalMemberHandlerTests
     {
         var claims = new List<Claim>();
         if (withUserId)
-        {
             claims.Add(new Claim(PlatformClaimTypes.PortalUserId, "user-1"));
-        }
 
         if (tenant is not null)
-        {
             claims.Add(new Claim(PlatformClaimTypes.TenantIdentifier, tenant));
-        }
 
         if (passwordChangePending)
-        {
             claims.Add(new Claim(PlatformClaimTypes.PasswordChangeRequired, "true"));
-        }
 
         if (mfaEnrollmentPending)
-        {
             claims.Add(new Claim(PlatformClaimTypes.MfaEnrollmentRequired, "true"));
-        }
 
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
     }

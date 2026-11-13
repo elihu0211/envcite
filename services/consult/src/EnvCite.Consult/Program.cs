@@ -4,8 +4,6 @@ using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
-using OpenTelemetry.Metrics;
-
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddServiceEnvironment();
 

@@ -2,15 +2,11 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web;
 using EnvCite.Platform.Web.Design;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -158,9 +154,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Contains("ep-account-menu", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-composer\"", html, StringComparison.Ordinal);
         foreach (var tone in new[] { "neutral", "success", "warning", "error", "info" })
-        {
             Assert.Contains($"data-tone=\"{tone}\"", html, StringComparison.Ordinal);
-        }
 
         // 圖示是真的 <path>，不是把整段 SVG 內容塞進 d 屬性（MudBlazor 的圖示常數是 SVG 內容，不是路徑資料）。
         Assert.Matches("<svg class=\"ep-icon\"[^>]*><path d=\"M[^\"]+\"", html);

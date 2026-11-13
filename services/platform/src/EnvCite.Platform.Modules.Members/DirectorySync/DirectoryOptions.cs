@@ -1,7 +1,4 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
-
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
@@ -31,19 +28,13 @@ internal sealed class DirectoryOptionsValidator : IValidateOptions<DirectoryOpti
     {
         List<string> failures = [];
         if (options.MaxPageSize is < 1 or > 1000)
-        {
             failures.Add("Platform:Directory:MaxPageSize must be between 1 and 1000.");
-        }
 
         if (options.RequestsPerMinute is < 1 or > 10000)
-        {
             failures.Add("Platform:Directory:RequestsPerMinute must be between 1 and 10000.");
-        }
 
         if (options.StaleAfter < TimeSpan.FromMinutes(1))
-        {
             failures.Add("Platform:Directory:StaleAfter must be at least one minute.");
-        }
 
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }

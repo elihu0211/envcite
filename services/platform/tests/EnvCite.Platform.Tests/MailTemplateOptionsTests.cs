@@ -1,8 +1,3 @@
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-
 using static EnvCite.Platform.Tests.MailTestServices;
 
 namespace EnvCite.Platform.Tests;

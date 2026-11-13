@@ -5,7 +5,6 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using MimeKit;
 
@@ -48,9 +47,7 @@ internal sealed partial class SmtpMailSender(
     public async Task<MailDelivery> SendAsync(string recipient, string subject, MailContent content, CancellationToken cancellationToken)
     {
         if (!Enabled)
-        {
             return MailDelivery.Disabled;
-        }
 
         var connection = transport.Value;
         var sender = identity.Value;
@@ -63,9 +60,7 @@ internal sealed partial class SmtpMailSender(
             var from = new MailboxAddress(string.IsNullOrWhiteSpace(sender.FromName) ? brand.Value.Name : sender.FromName, sender.From);
             message.From.Add(from);
             if (!string.IsNullOrWhiteSpace(sender.ReplyTo))
-            {
                 message.ReplyTo.Add(MailboxAddress.Parse(sender.ReplyTo));
-            }
 
             // Message-Id 的網域用寄件者的網域，不用執行環境的主機名稱。
             message.MessageId = MimeKit.Utils.MimeUtils.GenerateMessageId(from.Domain);
@@ -124,9 +119,7 @@ internal static partial class SmtpFailure
         // 登入失敗時 MailKit 把伺服器的 SMTP 回應包在 AuthenticationException 裡。
         var command = exception as SmtpCommandException ?? exception.InnerException as SmtpCommandException;
         if (command is null)
-        {
             return (null, null);
-        }
 
         var match = EnhancedStatus().Match(command.Message);
         return ((int)command.StatusCode, match.Success ? match.Groups["code"].Value : null);

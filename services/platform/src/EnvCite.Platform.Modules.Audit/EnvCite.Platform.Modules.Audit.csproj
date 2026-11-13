@@ -9,4 +9,9 @@
     <ProjectReference Include="..\EnvCite.Platform.Data\EnvCite.Platform.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="EnvCite.Platform.Data" />
+    <Using Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+
 </Project>

@@ -1,5 +1,3 @@
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Authorization;
 
 namespace EnvCite.Platform.Web.Auth;

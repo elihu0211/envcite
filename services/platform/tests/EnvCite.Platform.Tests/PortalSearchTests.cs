@@ -1,16 +1,11 @@
 using System.Net;
-using System.Net.Http.Json;
 
 using EnvCite.Platform.Modules.Metering;
 using EnvCite.Platform.Modules.Ontology;
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Logging;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 

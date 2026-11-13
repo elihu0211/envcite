@@ -1,12 +1,5 @@
 using System.Text;
 
-using EnvCite.Platform.SharedKernel;
-using EnvCite.ServiceDefaults;
-
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-
 namespace EnvCite.Platform.Api;
 
 /// <summary>

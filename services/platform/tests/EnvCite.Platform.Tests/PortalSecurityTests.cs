@@ -2,12 +2,8 @@ using System.Net;
 using System.Text.Json;
 
 using EnvCite.Platform.Modules.Members;
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -69,9 +65,7 @@ public sealed class PortalSecurityTests(PlatformFactory factory)
         using var attacker = new PortalBrowser(factory);
 
         for (var i = 0; i < MembersModule.MaxFailedAccessAttempts; i++)
-        {
             _ = await attacker.SubmitAsync(Login(tenant.Identifier), Credentials(email, $"guess-number-{i}-wrong"));
-        }
 
         // 鎖定了：連對的密碼也進不去，而且訊息與一般失敗一樣（不告訴對方帳號存在、也不告訴他被鎖了）。
         var locked = await attacker.SubmitAsync(Login(tenant.Identifier), Credentials(email, initial));
@@ -260,9 +254,7 @@ public sealed class PortalSecurityTests(PlatformFactory factory)
 
         var all = new List<AuditRecord>();
         foreach (var action in new[] { AuditActions.PortalSignInFailed, AuditActions.PortalSignedIn, AuditActions.PortalPasswordChanged, AuditActions.MemberCreated })
-        {
             all.AddRange(await EventsAsync(tenant.Id, action));
-        }
 
         var dump = JsonSerializer.Serialize(all);
         Assert.DoesNotContain(typedIntoTheEmailField, dump, StringComparison.Ordinal);

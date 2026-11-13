@@ -1,5 +1,3 @@
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Identity;
 
 namespace EnvCite.Platform.Modules.Members;

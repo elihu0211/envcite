@@ -1,9 +1,6 @@
 using System.Text.RegularExpressions;
 
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 
 using OtpNet;
 

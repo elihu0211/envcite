@@ -77,14 +77,10 @@ internal static class Grounding
     public static Refusal? Assess(IReadOnlyList<Citation> grounding, IReadOnlyList<Article> articles, LocalMarker marker)
     {
         if (grounding.Count > 0)
-        {
             return null;
-        }
 
         if (marker == LocalMarker.Ordinance)
-        {
             return new Refusal(RefusalReason.LocalLawUncovered, "問句指向地方自治法規，語料只涵蓋中央法規");
-        }
 
         // 什麼都沒檢索到，與有檢索到東西但沒有任何一筆超過下界，是不同的失敗，呼叫端應能加以區分：
         // 前者表示語料缺漏，後者表示問題談的是別的事。
@@ -107,9 +103,7 @@ internal sealed class GroundingPipeline(IOntologySearch ontology, IOptions<Relev
     {
         // 空白問句在檢索之前就拒答：本體對空查詢回 INVALID_ARGUMENT，而這是使用者少給了輸入，不是呼叫端的錯誤。
         if (string.IsNullOrWhiteSpace(question))
-        {
             return new Refusal(RefusalReason.MissingInput, "問句為空");
-        }
 
         var articles = await ontology.SearchAsync(question, asOf, cancellationToken);
         var grounding = Grounding.Ground(articles, relevance.Value);

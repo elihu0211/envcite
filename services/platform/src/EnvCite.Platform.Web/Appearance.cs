@@ -1,10 +1,5 @@
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Web;
 
@@ -127,9 +122,7 @@ public static class AppearanceModule
 
         var form = await context.Request.ReadFormAsync(context.RequestAborted);
         if (AppearanceNames.Parse(form[AppearanceNames.Field]) is not { } appearance)
-        {
             return Results.BadRequest();
-        }
 
         preference.Write(context, appearance);
         return FromScript(context.Request) ? Results.NoContent() : Results.Redirect(safeReturnUrl(form["returnUrl"]));

@@ -17,6 +17,9 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="EnvCite.Platform.Data" />
+    <Using Include="Microsoft.EntityFrameworkCore" />
+    <Using Include="EnvCite.Platform.Tests.PortalTestSupport" Static="True" />
   </ItemGroup>
 
   <ItemGroup>

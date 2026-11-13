@@ -1,0 +1,10 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- 只放每個專案都解析得到的命名空間；只有部分專案參考的（如 EF Core）寫在各自的 csproj。 -->
+  <ItemGroup>
+    <Using Include="EnvCite.Platform.SharedKernel" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+</Project>

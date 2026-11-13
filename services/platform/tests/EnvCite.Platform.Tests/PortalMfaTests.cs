@@ -4,18 +4,14 @@ using System.Text.RegularExpressions;
 
 using EnvCite.Platform.Modules.Members;
 using EnvCite.Platform.Modules.Tenancy;
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
 using OtpNet;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -295,9 +291,7 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
         Assert.DoesNotContain("otpauth", dump, StringComparison.Ordinal);
         Assert.DoesNotContain(typedCode, dump, StringComparison.Ordinal);
         foreach (var recovery in member.RecoveryCodes)
-        {
             Assert.DoesNotContain(recovery, dump, StringComparison.Ordinal);
-        }
 
         Assert.Contains(all, e => e.Action == AuditActions.PortalMfaEnabled);
         Assert.Contains(all, e => e.Action == AuditActions.PortalRecoveryCodeUsed);
@@ -313,9 +307,7 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
         using var protectedPage = await client.GetAsync(new Uri(Security(tenant.Identifier), UriKind.Relative), TestContext.Current.CancellationToken);
 
         foreach (var response in new[] { login, protectedPage })
-        {
             Assert.True(response.Headers.CacheControl?.NoStore, response.RequestMessage!.RequestUri!.AbsolutePath);
-        }
     }
 
     [Theory]

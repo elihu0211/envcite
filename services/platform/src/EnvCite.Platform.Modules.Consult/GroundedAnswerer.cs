@@ -3,14 +3,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using EnvCite.Consult.V2;
-using EnvCite.Platform.SharedKernel;
 
 using Grpc.Core;
 
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Consult;
 
@@ -49,14 +46,10 @@ internal sealed partial class GroundedAnswerer(
     public async Task<AdminOutcome<GroundedAnswer>> AnswerAsync(string? question, string? asOf, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-        {
             return AdminOutcome.Unavailable<GroundedAnswer>(OutcomeCodes.AnswerNotConfigured);
-        }
 
         if (string.IsNullOrWhiteSpace(question))
-        {
             return AdminOutcome.Invalid<GroundedAnswer>(OutcomeCodes.QuestionRequired);
-        }
 
         GroundResponse grounded;
         try
@@ -101,14 +94,10 @@ internal sealed partial class GroundedAnswerer(
         await usage.RecordAsync(AnswerOperation, 1, cancellationToken);
         // 端點沒回報用量就不記（不猜）。
         if (tokens?.InputTokenCount is > 0 and var input)
-        {
             await usage.RecordAsync(InputTokensOperation, (int)Math.Min(input, int.MaxValue), cancellationToken);
-        }
 
         if (tokens?.OutputTokenCount is > 0 and var output)
-        {
             await usage.RecordAsync(OutputTokensOperation, (int)Math.Min(output, int.MaxValue), cancellationToken);
-        }
 
         return AdminOutcome.Ok(Verify(text, sources));
     }
@@ -117,9 +106,7 @@ internal sealed partial class GroundedAnswerer(
     {
         var evidence = new StringBuilder();
         foreach (var source in sources)
-        {
             evidence.Append('[').Append(source.Code).Append("] ").Append(source.Citation).Append('：').Append(source.Text).Append('\n');
-        }
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(options.Value.Timeout);
@@ -141,9 +128,7 @@ internal sealed partial class GroundedAnswerer(
     {
         var answer = text?.Trim() ?? string.Empty;
         if (answer.Length == 0)
-        {
             return Refuse("empty_answer", "模型沒有產生回答。");
-        }
 
         var cited = CodePattern().Matches(answer).Select(m => m.Groups[1].Value).Distinct().ToList();
         if (cited.Count == 0)
@@ -155,9 +140,7 @@ internal sealed partial class GroundedAnswerer(
 
         var known = sources.ToDictionary(s => s.Code);
         if (cited.Any(code => !known.ContainsKey(code)))
-        {
             return Refuse("unverified_citation", "回答引用了不存在的出處，已捨棄。");
-        }
 
         return new GroundedAnswer(answer, [.. cited.Select(code => known[code])]);
     }

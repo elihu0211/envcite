@@ -1,6 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
@@ -69,9 +68,7 @@ public abstract class FormDialogBase : DialogBase
     protected async Task OnKeyUp(KeyboardEventArgs e)
     {
         if (e.Key == "Enter" && !Busy)
-        {
             await SubmitAsync();
-        }
     }
 
     /// <param name="action">以目前的操作者呼叫服務，回傳 <see cref="DialogOutcome"/>（用 <see cref="DialogOutcome.From{T}"/> 轉換服務的結果）。</param>
@@ -81,9 +78,7 @@ public abstract class FormDialogBase : DialogBase
     protected async Task<DialogOutcome?> CompleteAsync(Func<ClaimsPrincipal, Task<DialogOutcome>> action, string exceptionText, bool close = true)
     {
         if (Busy)
-        {
             return null;
-        }
 
         (Busy, Error) = (true, null);
         try
@@ -96,9 +91,7 @@ public abstract class FormDialogBase : DialogBase
             }
 
             if (close)
-            {
                 MudDialog.Close(DialogResult.Ok(outcome.Value));
-            }
 
             return outcome;
         }

@@ -8,7 +8,6 @@ using Grpc.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Tests;
 
@@ -41,9 +40,7 @@ public sealed class FakeConsultServer : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         if (_app is not null)
-        {
             await _app.DisposeAsync();
-        }
     }
 
     private sealed class Service(FakeConsultServer server) : ConsultationService.ConsultationServiceBase
@@ -52,9 +49,7 @@ public sealed class FakeConsultServer : IAsyncDisposable
         {
             server.Received.Enqueue((request, context.RequestHeaders));
             if (request.AsOf is { Length: > 0 } && !DateOnly.TryParseExact(request.AsOf, "yyyy-MM-dd", out _))
-            {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));
-            }
 
             return request.Question switch
             {

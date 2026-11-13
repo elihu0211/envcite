@@ -1,4 +1,3 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Resources;
 
 namespace EnvCite.Platform.Web.Presentation;
@@ -16,9 +15,7 @@ public static class OutcomeText
     public static string? Localized<T>(this AdminOutcome<T> outcome)
     {
         if (outcome.Code is { } code && Text.Find($"Outcome.{code}") is { } template)
-        {
             return string.Format(System.Globalization.CultureInfo.CurrentCulture, template, [.. outcome.Args ?? []]);
-        }
 
         return outcome.Message;
     }

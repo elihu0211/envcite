@@ -1,7 +1,4 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
-
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
 
@@ -52,14 +49,10 @@ public sealed class ApiAccessOptionsValidator : IValidateOptions<ApiAccessOption
             .Where(t => !known.Contains(t.Value))
             .Select(t => $"Platform:TenantPlans:{t.Key} names unknown plan '{t.Value}'."));
         if (!string.IsNullOrEmpty(options.DefaultPlan) && !known.Contains(options.DefaultPlan))
-        {
             failures.Add($"Platform:DefaultPlan names unknown plan '{options.DefaultPlan}'.");
-        }
 
         if (options.EntitlementRefresh < TimeSpan.FromSeconds(1))
-        {
             failures.Add("Platform:EntitlementRefresh must be at least one second.");
-        }
 
         failures.AddRange(options.Plans
             .Where(p => p.Value.PermitLimit < 1 || p.Value.Window <= TimeSpan.Zero)

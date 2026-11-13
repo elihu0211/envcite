@@ -1,7 +1,5 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.Extensions.Logging;

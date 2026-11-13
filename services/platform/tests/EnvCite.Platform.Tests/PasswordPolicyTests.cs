@@ -1,9 +1,6 @@
-using EnvCite.Platform.Data;
 using EnvCite.Platform.Modules.Members;
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Tests;
 
@@ -95,9 +92,7 @@ public sealed class PasswordPolicyTests
     public async Task EveryGeneratedOneTimePasswordIsAcceptable()
     {
         for (var i = 0; i < 200; i++)
-        {
             Assert.Empty(await ErrorsAsync(OneTimePassword.New()));
-        }
     }
 
     // 每個驗證器錯誤都有穩定的結果代碼與參數；介面依代碼取使用者的語言。

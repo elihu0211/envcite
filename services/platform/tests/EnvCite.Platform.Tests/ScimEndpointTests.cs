@@ -5,13 +5,9 @@ using System.Text;
 using System.Text.Json;
 
 using EnvCite.Platform.Modules.Members.DirectorySync;
-using EnvCite.Platform.SharedKernel;
 
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -48,14 +44,10 @@ public sealed class ScimEndpointTests(PlatformFactory factory) : DirectoryTestBa
         client ??= Factory.CreateClient();
         using var request = new HttpRequestMessage(method, path);
         if (token is not null)
-        {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        }
 
         if (json is not null)
-        {
             request.Content = new StringContent(json, Encoding.UTF8, ScimContentType);
-        }
 
         using var response = await client.SendAsync(request, Ct);
         var text = await response.Content.ReadAsStringAsync(Ct);
@@ -218,9 +210,7 @@ public sealed class ScimEndpointTests(PlatformFactory factory) : DirectoryTestBa
             var org = await OrgAsync("scim-g");
             var emails = new[] { NewEmail(), NewEmail(), NewEmail() };
             for (var i = 0; i < emails.Length; i++)
-            {
                 Assert.Equal(HttpStatusCode.Created, (await CreateAsync(org, emails[i], $"ext-{i}")).Status);
-            }
 
             var all = await SendAsync(HttpMethod.Get, Users, org.Token);
             var paged = await SendAsync(HttpMethod.Get, $"{Users}?startIndex=3&count=2", org.Token);
@@ -410,14 +400,10 @@ public sealed class ScimEndpointTests(PlatformFactory factory) : DirectoryTestBa
         using var client = small.CreateClient();
 
         for (var i = 0; i < 6; i++)
-        {
             Assert.Equal(HttpStatusCode.Unauthorized, (await SendAsync(HttpMethod.Get, Users, "scim_nonsense", client: client)).Status);
-        }
 
         for (var i = 0; i < 3; i++)
-        {
             Assert.Equal(HttpStatusCode.OK, (await SendAsync(HttpMethod.Get, Users, org.Token, client: client)).Status);
-        }
 
         var limited = await SendAsync(HttpMethod.Get, Users, org.Token, client: client);
 
@@ -449,9 +435,7 @@ public sealed class ScimEndpointTests(PlatformFactory factory) : DirectoryTestBa
         listener.InstrumentPublished = (instrument, l) =>
         {
             if (instrument.Meter.Name == DirectoryMetrics.MeterName)
-            {
                 l.EnableMeasurementEvents(instrument);
-            }
         };
         listener.SetMeasurementEventCallback<long>((_, _, tags, _) =>
         {

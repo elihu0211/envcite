@@ -2,17 +2,11 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Encodings.Web;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
@@ -41,14 +35,10 @@ internal sealed partial class DirectoryTokenAuthenticationHandler(
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!options.Value.Enabled)
-        {
             return AuthenticateResult.NoResult();
-        }
 
         if (Context.Items.TryGetValue(CacheKey, out var cached) && cached is AuthenticateResult known)
-        {
             return known;
-        }
 
         var result = await AuthenticateTokenAsync();
         Context.Items[CacheKey] = result;
@@ -73,14 +63,10 @@ internal sealed partial class DirectoryTokenAuthenticationHandler(
     {
         string? header = Request.Headers.Authorization;
         if (header is null || !header.StartsWith(BearerPrefix, StringComparison.OrdinalIgnoreCase))
-        {
             return AuthenticateResult.NoResult();
-        }
 
         if (!DirectoryTokenFormat.TryParse(header[BearerPrefix.Length..].Trim(), out var prefix, out var secret))
-        {
             return AuthenticateResult.Fail("Malformed token.");
-        }
 
         // 另開 scope：request-scoped 的 PlatformDbContext 只能在租戶解析之後建立（這裡正是在解析租戶）。
         await using var scope = scopeFactory.CreateAsyncScope();
@@ -104,9 +90,7 @@ internal sealed partial class DirectoryTokenAuthenticationHandler(
 
         var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
         if (await store.GetAsync(match.TenantId) is not { } tenant)
-        {
             return AuthenticateResult.Fail("Invalid token.");
-        }
 
         await TouchAsync(db, match.Token, now);
 
@@ -123,9 +107,7 @@ internal sealed partial class DirectoryTokenAuthenticationHandler(
     private async Task TouchAsync(PlatformDbContext db, DirectoryToken token, DateTimeOffset now)
     {
         if (token.LastUsedAt is { } last && now - last < UsedThrottle)
-        {
             return;
-        }
 
         try
         {

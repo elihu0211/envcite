@@ -3,8 +3,6 @@ using System.Text.RegularExpressions;
 
 using EnvCite.ServiceDefaults;
 
-using Microsoft.Extensions.Options;
-
 namespace EnvCite.Platform.SharedKernel;
 
 /// <summary>
@@ -125,9 +123,7 @@ internal sealed class MailTemplateOptionsValidator : IValidateOptions<MailTempla
     {
         var failures = new List<string>();
         if (options.Culture is not (MailTemplateOptions.TraditionalChinese or MailTemplateOptions.English))
-        {
             failures.Add($"{Section}:Culture must be '{MailTemplateOptions.TraditionalChinese}' or '{MailTemplateOptions.English}'.");
-        }
 
         Range(failures, nameof(options.Width), options.Width, 320, 800);
         Range(failures, nameof(options.PaddingVertical), options.PaddingVertical, 0, 64);
@@ -136,9 +132,7 @@ internal sealed class MailTemplateOptionsValidator : IValidateOptions<MailTempla
         Range(failures, nameof(options.CompactPaddingVertical), options.CompactPaddingVertical, 0, 64);
         Range(failures, nameof(options.CompactPaddingHorizontal), options.CompactPaddingHorizontal, 0, 64);
         if (options.ButtonWidth < 240)
-        {
             failures.Add($"{Section}:Width minus twice {Section}:PaddingHorizontal must be at least 240.");
-        }
 
         Font(failures, nameof(options.FontFamily), options.FontFamily);
         Font(failures, nameof(options.MonospaceFontFamily), options.MonospaceFontFamily);
@@ -151,17 +145,13 @@ internal sealed class MailTemplateOptionsValidator : IValidateOptions<MailTempla
     private static void Range(List<string> failures, string key, int value, int min, int max)
     {
         if (value < min || value > max)
-        {
             failures.Add($"{Section}:{key} must be between {min} and {max}.");
-        }
     }
 
     private static void Font(List<string> failures, string key, string value)
     {
         if (!MailTemplateOptions.FontStack().IsMatch(value ?? string.Empty))
-        {
             failures.Add($"{Section}:{key} must be a font list of letters, digits, spaces, commas, hyphens, underscores and single quotes (at most 200 characters).");
-        }
     }
 
     private static void Palette(List<string> failures, string key, MailPalette palette)
@@ -177,9 +167,7 @@ internal sealed class MailTemplateOptionsValidator : IValidateOptions<MailTempla
         }
 
         if (!valid)
-        {
             return;
-        }
 
         (string Text, string Foreground, string Background)[] pairs =
         [

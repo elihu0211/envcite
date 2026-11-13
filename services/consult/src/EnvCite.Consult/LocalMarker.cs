@@ -39,9 +39,7 @@ internal static class LocalMarkers
     {
         var text = question.Replace('台', '臺');
         if (OrdinanceTerms.Any(term => text.Contains(term, StringComparison.Ordinal)))
-        {
             return LocalMarker.Ordinance;
-        }
 
         return Jurisdictions.Any(name => text.Contains(name, StringComparison.Ordinal)) ? LocalMarker.Jurisdiction : LocalMarker.None;
     }

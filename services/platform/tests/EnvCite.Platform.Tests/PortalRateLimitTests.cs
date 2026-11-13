@@ -1,9 +1,6 @@
 using System.Net;
 
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-
-using static EnvCite.Platform.Tests.PortalTestSupport;
 
 namespace EnvCite.Platform.Tests;
 
@@ -106,9 +103,7 @@ public sealed class PortalRateLimitTests(PlatformFactory factory)
 
         var statuses = new List<HttpStatusCode>();
         for (var i = 0; i < Limit; i++)
-        {
             statuses.Add((await browser.SubmitAsync(PasswordPage(tenant.Identifier), PasswordChange($"guess-{i}-of-current", NewPassword))).Status);
-        }
 
         Assert.Equal(HttpStatusCode.TooManyRequests, statuses[^1]); // 登入占了 1 次，所以第 3 次改密碼就超額
         Assert.DoesNotContain(HttpStatusCode.TooManyRequests, statuses[..^1]);

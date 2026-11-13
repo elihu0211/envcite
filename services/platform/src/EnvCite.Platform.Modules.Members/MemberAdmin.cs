@@ -1,13 +1,8 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Platform.Modules.Members;
 
@@ -22,9 +17,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } found)
-        {
             return AdminOutcome.NotFound<IReadOnlyList<MemberInfo>>(OutcomeCodes.TenantNotFound);
-        }
 
         Bind(scope, found);
 
@@ -39,9 +32,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<IssuedPassword>(OutcomeCodes.TenantNotFound);
-        }
 
         Bind(scope, tenant);
         return await scope.ServiceProvider.GetRequiredService<MemberCore>()
@@ -53,9 +44,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<MemberInvitation>(OutcomeCodes.TenantNotFound);
-        }
 
         Bind(scope, tenant);
         return await scope.ServiceProvider.GetRequiredService<MemberCore>()
@@ -67,9 +56,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<MemberInvitation>(OutcomeCodes.TenantNotFound);
-        }
 
         Bind(scope, tenant);
 
@@ -85,9 +72,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<IssuedPassword>(OutcomeCodes.TenantNotFound);
-        }
 
         Bind(scope, tenant);
 
@@ -103,16 +88,12 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.TenantNotFound);
-        }
 
         Bind(scope, tenant);
         var user = await scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>().FindByIdAsync(userId);
         if (user is null)
-        {
             return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound);
-        }
 
         // 受目錄同步管理的人，停用與啟用由身分來源決定；要由人處理先解除管理。
         return user.ManagedBy == DirectoryRoles.ManagedBy
@@ -125,9 +106,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
     {
         await using var scope = scopes.CreateAsyncScope();
         if (await FindTenantAsync(scope, tenantId) is not { } tenant)
-        {
             return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.TenantNotFound);
-        }
 
         Bind(scope, tenant);
 
@@ -135,9 +114,7 @@ internal sealed class MemberAdmin(IServiceScopeFactory scopes) : IMemberAdmin
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var user = await users.FindByIdAsync(userId);
         if (user is null)
-        {
             return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound);
-        }
 
         await users.SetTwoFactorEnabledAsync(user, false);
         await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey);

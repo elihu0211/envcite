@@ -5,7 +5,6 @@ using EnvCite.Consult.V2;
 using Grpc.Core;
 using Grpc.Health.V1;
 
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.Metrics.Testing;
@@ -52,9 +51,7 @@ public sealed class HostingTests(ConsultFactory factory)
         var deadline = DateTime.UtcNow.AddSeconds(5);
         var status = HealthCheckResponse.Types.ServingStatus.Serving;
         while (status == HealthCheckResponse.Types.ServingStatus.Serving && DateTime.UtcNow < deadline)
-        {
             status = await StatusAsync(health, "");
-        }
 
         Assert.Equal(HealthCheckResponse.Types.ServingStatus.NotServing, status);
         Assert.Equal(HealthCheckResponse.Types.ServingStatus.NotServing, await StatusAsync(health, ConsultationGrpcService.ServiceName));

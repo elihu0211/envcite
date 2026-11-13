@@ -4,8 +4,6 @@ using EnvCite.ServiceDefaults;
 
 using MailKit.Security;
 
-using Microsoft.Extensions.Options;
-
 namespace EnvCite.Platform.SharedKernel;
 
 /// <summary>
@@ -137,9 +135,7 @@ public sealed class MailIdentityOptions : ISectionOptions
     internal static void DefaultFromUsername(MailIdentityOptions identity, IOptions<MailTransportOptions> transport)
     {
         if (string.IsNullOrWhiteSpace(identity.From) && MailAddresses.IsValid(transport.Value.Username))
-        {
             identity.From = transport.Value.Username!.Trim();
-        }
     }
 }
 

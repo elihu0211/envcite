@@ -71,9 +71,7 @@ internal sealed partial class PortalBrowser : IDisposable
             var name = Attribute(input.Value, "name");
             var value = Attribute(input.Value, "value");
             if (name is not null)
-            {
                 fields[name] = value ?? string.Empty;
-            }
         }
 
         return fields;

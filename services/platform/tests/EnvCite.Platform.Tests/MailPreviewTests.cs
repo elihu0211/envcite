@@ -18,9 +18,7 @@ public sealed class MailPreviewTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_directory))
-        {
             Directory.Delete(_directory, recursive: true);
-        }
     }
 
     private static IConfiguration Settings(params (string Key, string Value)[] values) =>
@@ -88,9 +86,7 @@ public sealed class MailPreviewTests : IDisposable
         {
             var content = await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
             if (!Path.GetFileName(file).StartsWith("verification", StringComparison.Ordinal) || file.EndsWith(".html", StringComparison.Ordinal))
-            {
                 Assert.Contains("測試系統", content, StringComparison.Ordinal);
-            }
 
             Assert.DoesNotContain("環境知識", content, StringComparison.Ordinal);
         }

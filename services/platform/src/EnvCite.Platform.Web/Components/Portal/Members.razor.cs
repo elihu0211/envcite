@@ -1,4 +1,3 @@
-using EnvCite.Platform.SharedKernel;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
@@ -42,13 +41,9 @@ public partial class Members(IMemberSelfService team, IMailSender mail, IDirecto
             if (invited.IsOk)
             {
                 if (invited.Value!.Mail == MailDelivery.Sent)
-                {
                     _message = L["已寄出邀請信給 {0}。", invited.Value.Member.Email];
-                }
                 else
-                {
                     Error = L["邀請信寄送失敗，{0} 的帳號已建立。請按「重寄邀請」，或用「重設密碼」取得暫時密碼。", invited.Value.Member.Email];
-                }
 
                 Add = new() { Role = Add.Role };
                 await LoadAsync();
@@ -92,17 +87,11 @@ public partial class Members(IMemberSelfService team, IMailSender mail, IDirecto
             case "resend":
                 var resent = await team.ResendInvitationAsync(HttpContext.User, id, HttpContext.RequestAborted);
                 if (resent.IsOk && resent.Value!.Mail == MailDelivery.Sent)
-                {
                     _message = L["已寄出信件給 {0}。", resent.Value.Member.Email];
-                }
                 else if (resent.IsOk)
-                {
                     Error = L["寄信失敗，請稍後再試。"];
-                }
                 else
-                {
                     Error = Describe(resent);
-                }
 
                 break;
             case "release":
@@ -112,13 +101,9 @@ public partial class Members(IMemberSelfService team, IMailSender mail, IDirecto
             case "reset":
                 var reset = await team.ResetPasswordAsync(HttpContext.User, id, HttpContext.RequestAborted);
                 if (reset.IsOk)
-                {
                     Reveal(L["新的一次性密碼"], reset.Value!);
-                }
                 else
-                {
                     Error = Describe(reset);
-                }
 
                 break;
             default:
@@ -137,13 +122,9 @@ public partial class Members(IMemberSelfService team, IMailSender mail, IDirecto
     private void Report<T>(AdminOutcome<T> outcome, string success)
     {
         if (outcome.IsOk)
-        {
             _message = success;
-        }
         else
-        {
             Error = Describe(outcome);
-        }
     }
 
     private string Describe<T>(AdminOutcome<T> outcome) => outcome.Status switch

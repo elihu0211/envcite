@@ -79,6 +79,9 @@ dotnet_code_quality_unused_parameters = all:suggestion
 # 抑制
 dotnet_remove_unnecessary_suppression_exclusions = none
 
+# 多餘的 using（建置時要生效，需 Directory.Build.props 的 GenerateDocumentationFile）
+dotnet_diagnostic.IDE0005.severity = warning
+
 # C# 程式碼慣例
 [*.cs]
 
@@ -116,7 +119,7 @@ csharp_style_prefer_readonly_struct = true:suggestion
 csharp_style_prefer_readonly_struct_member = true:suggestion
 
 # 程式區塊
-csharp_prefer_braces = true:silent
+csharp_prefer_braces = when_multiline:warning
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_style_namespace_declarations = file_scoped:suggestion
 csharp_style_prefer_method_group_conversion = true:silent

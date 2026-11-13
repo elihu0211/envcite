@@ -2,8 +2,6 @@ using System.Diagnostics;
 using System.Security.Claims;
 using System.Text.Json;
 
-using EnvCite.Platform.SharedKernel;
-
 namespace EnvCite.Platform.Data;
 
 /// <summary>

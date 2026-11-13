@@ -1,9 +1,4 @@
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
 using EnvCite.ServiceDefaults;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 using Npgsql;
 
@@ -39,9 +34,7 @@ internal sealed class IdempotencyStore(PlatformDbContext db, TimeProvider time, 
         var existing = await db.IdempotencyRecords.AsNoTracking()
             .SingleOrDefaultAsync(r => r.Operation == operation && r.Key == key, cancellationToken);
         if (existing is null)
-        {
             return new IdempotencyResult(IdempotencyState.Fresh);
-        }
 
         if (existing.ExpiresAt <= time.GetUtcNow())
         {
@@ -81,9 +74,7 @@ internal sealed class IdempotencyStore(PlatformDbContext db, TimeProvider time, 
             db.ChangeTracker.Clear();
             var winner = await LookupAsync(operation, key, fingerprint, cancellationToken);
             if (winner.State == IdempotencyState.Fresh)
-            {
                 throw;
-            }
 
             return winner;
         }

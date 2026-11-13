@@ -1,12 +1,6 @@
 using System.Net;
 using System.Text.Json;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-
 namespace EnvCite.Platform.Tests;
 
 [Collection(PlatformTestGroup.Name)]

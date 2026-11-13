@@ -1,9 +1,6 @@
 using System.Net.Mail;
 using System.Security.Cryptography;
 
-using EnvCite.Platform.Data;
-using EnvCite.Platform.SharedKernel;
-
 using Microsoft.AspNetCore.Identity;
 
 namespace EnvCite.Platform.Modules.Members;
@@ -29,7 +26,7 @@ internal static class EmailAddresses
         && parsed.Address == email.Trim();
 }
 
-/// <summary>建立營運者或成員時的輸入檢查（兩邊同一份，順序也相同）：回傳第一個不合格的結果代碼，都合格則 null。<paramref name="role"/> 只有成員要檢查。</summary>
+/// <summary>建立營運者或成員時的輸入檢查（兩邊同一份，順序也相同）：回傳第一個不合格的結果代碼，都合格則 null。<c>role</c> 只有成員要檢查。</summary>
 internal static class NewAccountInput
 {
     public static string? Problem(string email, string? displayName, string? role = null) =>

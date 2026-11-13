@@ -9,5 +9,12 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <!-- 所有專案的 bin／obj／publish 與 MTP 測試報告集中到倉庫根的 artifacts/，專案目錄不再散落建置產物。 -->
     <UseArtifactsOutput>true</UseArtifactsOutput>
+    <!--
+      IDE0005（多餘的 using）要在建置時回報，Roslyn 要求產生 XML 文件。內部程式碼不要求每個成員都有文件：
+      CS1591 無註解；CS1573 是 record 主建構函式只替部分參數寫 param。
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishDocumentationFile>false</PublishDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
   </PropertyGroup>
 </Project>
