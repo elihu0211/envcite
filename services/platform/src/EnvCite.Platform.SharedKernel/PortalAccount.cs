@@ -26,6 +26,12 @@ public static class PortalPaths
     /// <summary>一串對話（問答歷史）的頁面：可以接著問。</summary>
     public static string Conversation(string tenantIdentifier, Guid id) => $"{Home(tenantIdentifier)}/c/{id}";
 
+    /// <summary>以 Google 登入的起點（POST）：把使用者送去 Google。</summary>
+    public static string GoogleChallenge(string tenantIdentifier) => $"{Login(tenantIdentifier)}/google";
+
+    /// <summary>Google 登入的第二段（GET）：從 Google 回來、經固定回呼收下身分之後，在租戶的路徑下完成登入。</summary>
+    public static string GoogleCallback(string tenantIdentifier) => $"{Login(tenantIdentifier)}/google/callback";
+
     public static string Password(string tenantIdentifier) => $"{Prefix}/{Uri.EscapeDataString(tenantIdentifier)}/password";
 
     /// <summary>邀請／驗證連結的頁面；查詢字串帶 <c>userId</c> 與 <c>code</c>。</summary>
@@ -42,6 +48,24 @@ public static class PortalPaths
     }
 }
 
+/// <summary>Google 登入的固定部分。</summary>
+public static class PortalGoogle
+{
+    /// <summary>
+    /// Google 用戶端登記的回呼位址（各環境一個）。刻意在 <c>/portal</c> 之外：它沒有租戶，放進去會被當成一個叫 signin-google 的租戶。
+    /// </summary>
+    public const string CallbackPath = "/signin-google";
+
+    /// <summary>起點把租戶識別碼放進（受保護的）驗證屬性的鍵；第二段比對它與路徑上的租戶，擋下被挪用到別的租戶的流程。</summary>
+    public const string TenantItem = "envcite.tenant";
+}
+
+/// <summary>是否開啟 Google 登入（<c>Platform:Portal:Google</c>）：登入頁據此顯示按鈕，端點關閉時回 404。</summary>
+public interface IGoogleSignInAvailability
+{
+    bool Enabled { get; }
+}
+
 public sealed record PortalTenant(string Id, string Identifier, string? Name);
 
 /// <summary>
@@ -51,6 +75,19 @@ public interface IPortalAccount : IAccountLifecycle
 {
     /// <summary>這個請求（由路徑）解析出的租戶；路徑上的租戶不存在則 null，頁面據此回 404。</summary>
     PortalTenant? CurrentTenant { get; }
+
+    /// <summary>
+    /// Google 登入的起點要送出的驗證屬性：登入完成後回 <paramref name="callbackUrl"/>，並記下這個流程屬於目前的租戶。
+    /// 每次都請使用者選帳號（共用電腦上不靜默沿用上一個人的 Google 登入）。
+    /// </summary>
+    Microsoft.AspNetCore.Authentication.AuthenticationProperties GoogleChallenge(string callbackUrl);
+
+    /// <summary>
+    /// Google 登入的第二段：讀 Google 回來的身分，對應到<b>這個租戶裡已啟用的成員</b>並簽發 session；不建立帳號。
+    /// 對應先看（提供者、<c>sub</c>），沒有再以已驗證的 email 找成員並連結；停用、還沒啟用（沒設過密碼或還要改初始密碼）、
+    /// 或流程不屬於這個租戶，一律是 <see cref="SignInStatus.Failed"/>。成員有兩步驟驗證時是 <see cref="SignInStatus.RequiresTwoFactor"/>。
+    /// </summary>
+    Task<SignInStatus> SignInWithGoogleAsync(CancellationToken cancellationToken);
 }
 
 /// <param name="EmailConfirmed">信箱已透過連結驗證。沒驗證的信箱不能用於復原。</param>

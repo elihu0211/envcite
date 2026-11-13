@@ -12,6 +12,12 @@
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "10.0.12"
         }
       },
+      "Microsoft.AspNetCore.Authentication.Google": {
+        "type": "Direct",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "blHeqaFdgt2ohSjIykclAPffkzByD+B1apc4NgSXsuJ2j8Dajj5+SejP8VTo14OmGlq+GVRguH4Ugq6jnFjwCA=="
+      },
       "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
         "type": "Direct",
         "requested": "[10.0.13, )",

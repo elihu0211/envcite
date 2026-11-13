@@ -370,6 +370,7 @@
           "EnvCite.Platform.Data": "[1.0.0, )",
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
           "Finbuckle.MultiTenant.AspNetCore": "[10.1.4, )",
+          "Microsoft.AspNetCore.Authentication.Google": "[11.0.0, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.13, )",
           "Otp.NET": "[1.4.1, )",
           "zxcvbn-core": "[7.0.92, )"
@@ -489,6 +490,12 @@
           "Microsoft.ML.Tokenizers": "2.0.0",
           "OpenTelemetry.Api": "1.18.0"
         }
+      },
+      "Microsoft.AspNetCore.Authentication.Google": {
+        "type": "CentralTransitive",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "blHeqaFdgt2ohSjIykclAPffkzByD+B1apc4NgSXsuJ2j8Dajj5+SejP8VTo14OmGlq+GVRguH4Ugq6jnFjwCA=="
       },
       "Microsoft.AspNetCore.DataProtection.EntityFrameworkCore": {
         "type": "CentralTransitive",

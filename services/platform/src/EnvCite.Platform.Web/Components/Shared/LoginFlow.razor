@@ -6,8 +6,8 @@
     <FormAlert Kind="AlertKind.Info">@L["帳號已啟用，信箱已驗證。請登入。"]</FormAlert>
 }
 
-@* role=alert：螢幕閱讀器立刻念出來；訊息不說是帳號還是密碼錯，也不說帳號有沒有被鎖。 *@
-<FormAlert Message="@Error" />
+@* role=alert：螢幕閱讀器立刻念出來；訊息不說是帳號還是密碼錯，也不說帳號有沒有被鎖。Google 登入失敗也只有一句話。 *@
+<FormAlert Message="@(Error ?? GoogleError)" />
 
 <PostForm Model="Input" FormName="@FormName" OnValidSubmit="SignInAsync">
     <FormField For="email" Label="@L["電子郵件"]">
@@ -18,6 +18,20 @@
     </FormField>
     <SubmitButton>@L["登入"]</SubmitButton>
 </PostForm>
+
+@if (!string.IsNullOrEmpty(GoogleAction))
+{
+    @* 另一種登入方式，只有部署者開啟時才有：POST 到租戶路徑下的起點（antiforgery），登入後要去的地方（returnUrl）隨表單帶去。 *@
+    <p class="ep-note">@L["或"]</p>
+    <form method="post" action="@GoogleAction">
+        <AntiforgeryToken />
+        @if (!string.IsNullOrEmpty(ReturnUrl))
+        {
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+        }
+        <button type="submit" class="ep-btn">@L["使用 Google 登入"]</button>
+    </form>
+}
 
 <p class="ep-note">@Note</p>
 
@@ -36,9 +50,18 @@
     [Parameter, EditorRequired]
     public string Note { get; set; } = string.Empty;
 
+    /// <summary>「使用 Google 登入」表單送去的位址；沒有就不畫（營運者後台沒有，入口也要部署者開啟）。</summary>
+    [Parameter]
+    public string? GoogleAction { get; set; }
+
     [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
 
+    [SupplyParameterFromQuery] private string? Google { get; set; }
+
     [SupplyParameterFromQuery] private string? Activated { get; set; }
+
+    private string? GoogleError =>
+        Google == "failed" ? L["無法用這個 Google 帳號登入。請確認它的信箱是貴組織已啟用的成員，或改用電子郵件與密碼登入。"].Value : null;
 
     private async Task SignInAsync()
     {

@@ -18,6 +18,7 @@
   <data name="Audit.Action.portal.sign_in_failed" xml:space="preserve"><value>成員登入失敗</value></data>
   <data name="Audit.Action.portal.password_changed" xml:space="preserve"><value>成員改密碼</value></data>
   <data name="Audit.Action.portal.signed_out" xml:space="preserve"><value>成員登出</value></data>
+  <data name="Audit.Action.portal.google_linked" xml:space="preserve"><value>成員連結 Google 帳號</value></data>
   <data name="Audit.Action.portal.mfa_enabled" xml:space="preserve"><value>成員啟用兩步驟驗證</value></data>
   <data name="Audit.Action.portal.recovery_code_used" xml:space="preserve"><value>成員使用復原碼</value></data>
   <data name="Audit.Action.member.mfa_reset" xml:space="preserve"><value>重設成員的兩步驟驗證</value></data>

@@ -5,6 +5,7 @@
 @attribute [AllowAnonymous]
 @inject IPortalAccount Account
 @inject IAuthorizationService Authorization
+@inject IGoogleSignInAvailability GoogleSignIn
 @inherits PortalPageBase
 
 <DocumentTitle Text="@L["登入"]" />
@@ -18,6 +19,7 @@
       </header>
       <div>
         <LoginFlow Account="Account" Routes="SignInRoutes.Portal(tenant.Identifier)" FormName="portal-login"
+                   GoogleAction="@(GoogleSignIn.Enabled ? PortalPaths.GoogleChallenge(tenant.Identifier) : null)"
                    Note="@L["沒有帳號或忘記密碼，請洽貴組織的管理員或我們的營運人員。"]" />
       </div>
     </section>

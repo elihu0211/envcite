@@ -12,6 +12,7 @@
     <PackageVersion Include="Grpc.Net.ClientFactory" Version="2.84.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.84.0" />
     <PackageVersion Include="MailKit" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="11.0.0" />
     <!-- EF Core 家族（EF Core、Design、Identity／DataProtection／HealthChecks 的 EF 套件，及 Npgsql 與 Npgsql.EntityFrameworkCore.PostgreSQL）
          留在 10.x：Npgsql.EntityFrameworkCore.PostgreSQL 目前最新的穩定版 10.0.3 要求 Microsoft.EntityFrameworkCore [10.0.4, 11.0.0)，
          沒有支援 EF Core 11 的穩定版。這些套件的 net10.0 資產可在 net11.0 上使用；提供者有 11.x 穩定版時整組一起升。 -->

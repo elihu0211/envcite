@@ -22,6 +22,8 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
     public PlatformDbContext(IMultiTenantContextAccessor accessor, DbContextOptions<PlatformDbContext> options)
         : base(accessor, options)
     {
+        // 主鍵含租戶的實體（見 OnModelCreating 的外部登入）在加入追蹤時就要有 TenantId，否則鍵是空的。
+        this.EnforceMultiTenantOnTracking();
     }
 
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
@@ -169,6 +171,11 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
             // 過期清理依此掃描。
             record.HasIndex(r => r.ExpiresAt);
         });
+
+        // 外部登入（Google）的鍵是（提供者、提供者給的 Id），不像 Identity 的其他表由全域唯一的 UserId 或 Id 帶路：
+        // 同一個 Google 帳號可以是兩個租戶的成員，鍵不含租戶就會在第二個租戶連結時撞鍵。Finbuckle 原生的 AdjustKey 把 TenantId 併進主鍵。
+        builder.Entity<IdentityUserLogin<string>>(login =>
+            login.IsMultiTenant().AdjustKey(login.Metadata.FindPrimaryKey()!, builder));
 
         ConfigureOperators(builder);
     }

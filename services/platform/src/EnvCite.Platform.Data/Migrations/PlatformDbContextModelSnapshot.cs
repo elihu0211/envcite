@@ -799,18 +799,17 @@ namespace EnvCite.Platform.Data.Migrations
                     b.Property<string>("ProviderKey")
                         .HasColumnType("text");
 
-                    b.Property<string>("ProviderDisplayName")
+                    b.Property<string>("TenantId")
                         .HasColumnType("text");
 
-                    b.Property<string>("TenantId")
-                        .IsRequired()
+                    b.Property<string>("ProviderDisplayName")
                         .HasColumnType("text");
 
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("LoginProvider", "ProviderKey");
+                    b.HasKey("LoginProvider", "ProviderKey", "TenantId");
 
                     b.HasIndex("UserId");
 

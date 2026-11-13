@@ -36,6 +36,12 @@ public static class PlatformAuth
     /// </summary>
     public const string PortalCookieScheme = "Identity.Application";
 
+    /// <summary>
+    /// 客戶入口的 Google 登入（OAuth 2.0，授權碼加 PKCE）。全站只有這一個用戶端，回呼位址固定為 <see cref="PortalGoogle.CallbackPath"/>
+    /// （Google 要求事先登記完全相同的位址，所以不放租戶；租戶由受保護的 state 帶著）。
+    /// </summary>
+    public const string PortalGoogleScheme = "Google";
+
     /// <summary>客戶入口的有效 session（已登入、cookie 的租戶就是目前路徑的租戶）；改密碼頁用這個。</summary>
     public const string PortalSessionPolicy = "PortalSession";
 
