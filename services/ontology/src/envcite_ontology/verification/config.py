@@ -227,8 +227,8 @@ def parse(
     if missing:
         raise ConfigError(f"roles: missing {missing}")
 
-    def ref(alias: Any, where: str) -> Model:
-        if alias not in models:
+    def ref(alias: object, where: str) -> Model:
+        if not isinstance(alias, str) or alias not in models:
             raise ConfigError(f"roles.{where}: model {alias!r} is not defined")
         return models[alias]
 

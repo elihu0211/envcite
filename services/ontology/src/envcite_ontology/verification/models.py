@@ -9,8 +9,8 @@ import importlib
 import os
 import random
 import time
-from collections.abc import Callable, Mapping
-from typing import Any, Protocol
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any, Protocol, runtime_checkable
 
 from envcite_ontology.http import HttpStatus, TransportError, endpoint, post_json
 
@@ -42,6 +42,47 @@ def family_of(agent: str) -> str:
     return agent.split(":", 1)[0]
 
 
+@runtime_checkable
+class ConstrainedModel(Model, Protocol):
+    """解碼期可帶 JSON Schema 約束的模型；`constrained_extraction` 為真時，抽取才帶 Schema。"""
+
+    constrained_extraction: bool
+
+    def complete(self, prompt: str, *, response_format: Mapping[str, object] | None = None) -> str:
+        """同 `Model.complete`，另可帶解碼期的回應格式約束。"""
+        ...
+
+
+class _AnthropicClient(Protocol):
+    """Anthropic SDK 用到的部分；SDK 是選用依賴，執行期才以 importlib 載入。"""
+
+    @property
+    def messages(self) -> _AnthropicMessages:
+        """Messages API。"""
+        ...
+
+
+class _AnthropicMessages(Protocol):
+    def create(
+        self, *, model: str, max_tokens: int, messages: list[dict[str, str]]
+    ) -> _AnthropicReply:
+        """送出一輪對話。"""
+        ...
+
+
+class _AnthropicReply(Protocol):
+    @property
+    def content(self) -> Sequence[_AnthropicBlock]:
+        """回應的內容區塊。"""
+        ...
+
+
+class _AnthropicBlock(Protocol):
+    #: 區塊種類；只有 `text` 的區塊才有 `text` 欄位。
+    type: str
+    text: str
+
+
 class AnthropicModel:
     """Anthropic Messages API；金鑰取自 `ANTHROPIC_API_KEY`，需 `llm` 選用依賴。"""
 
@@ -50,7 +91,7 @@ class AnthropicModel:
     def __init__(self, model_id: str, max_tokens: int = 4096) -> None:
         self.model_id = model_id
         self.max_tokens = max_tokens
-        self._client: Any = None
+        self._client: _AnthropicClient | None = None
 
     @property
     def name(self) -> str:
@@ -75,7 +116,7 @@ class AnthropicModel:
             max_tokens=self.max_tokens,
             messages=[{"role": "user", "content": prompt}],
         )
-        return "".join(b.text for b in message.content if getattr(b, "type", "") == "text")
+        return "".join(b.text for b in message.content if b.type == "text")
 
 
 class ChatCompletionsModel:

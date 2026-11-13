@@ -36,6 +36,7 @@ uv run --env-file .env envcite-ontology
   - 讀資料庫列用 `db.fetch`／`fetch_one`／`scalar`，每個查詢一個私有的具名列型別（`NamedTuple`，欄位次序同 SELECT；可為 NULL 的欄位宣告 `| None`，依 `migrations/` 查證，不猜），不在用處 `cast`。
   - `verification/__init__.py` 不匯出任何名稱：從定義它的子模組匯入（匯出會讓匯入任何一個子模組都載入整條驗證管線）。
   - 函式的大小由 ruff 守門（根 `pyproject.toml`：圈複雜度與分支各 14、語句 60）；超過就拆成有名字的小函式，不加 `noqa`、不放寬門檻。
+  - `Any` 只留在動態的邊界（JSON 文件、clingo 的答案集原子、唯讀連線的列），並在原處說明；其餘用精確的型別，protobuf 訊息標註實際的 `pb.*` 類別，不用 `Any`。
   - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
   - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。
 - **環境變數以 `src/envcite_ontology/settings.py` 為唯一來源**；入口不直接讀 `os.environ`；加變數時同步 `.env.example`（`tests/test_settings.py` 守門）。

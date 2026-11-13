@@ -5,7 +5,7 @@
 """
 
 from dataclasses import dataclass
-from typing import Any, NamedTuple
+from typing import NamedTuple
 
 from psycopg.types.range import Range
 
@@ -49,7 +49,7 @@ def due_units(conn: Conn, agent: str, version: str, law: str) -> list[Due]:
     ]
 
 
-def _reasons(method: str, evidence: Any) -> list[str]:
+def _reasons(method: str, evidence: object) -> list[str]:
     """一次失敗的驗證裡，審查者說的問題。"""
     if not isinstance(evidence, dict):
         return []
