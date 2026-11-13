@@ -30,6 +30,9 @@
           },
           "429": {
             "description": "超過本租戶方案的速率限制。"
+          },
+          "500": {
+            "description": "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。"
           }
         }
       }
@@ -61,6 +64,9 @@
           },
           "429": {
             "description": "超過本租戶方案的速率限制。"
+          },
+          "500": {
+            "description": "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。"
           }
         }
       }
@@ -96,6 +102,9 @@
           },
           "429": {
             "description": "超過本租戶方案的速率限制。"
+          },
+          "500": {
+            "description": "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。"
           }
         }
       }
@@ -127,6 +136,9 @@
           },
           "429": {
             "description": "超過本租戶方案的速率限制。"
+          },
+          "500": {
+            "description": "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。"
           }
         }
       }
@@ -211,6 +223,9 @@
           },
           "429": {
             "description": "超過本租戶方案的速率限制。"
+          },
+          "500": {
+            "description": "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。"
           },
           "402": {
             "description": "本租戶目前沒有有效的方案（完全付費制）。請聯絡業務啟用。"
@@ -302,6 +317,9 @@
           "429": {
             "description": "超過本租戶方案的速率限制。"
           },
+          "500": {
+            "description": "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。"
+          },
           "402": {
             "description": "本租戶目前沒有有效的方案（完全付費制）。請聯絡業務啟用。"
           }
@@ -366,6 +384,9 @@
           "429": {
             "description": "超過本租戶方案的速率限制。"
           },
+          "500": {
+            "description": "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。"
+          },
           "402": {
             "description": "本租戶目前沒有有效的方案（完全付費制）。請聯絡業務啟用。"
           }
@@ -426,6 +447,9 @@
           },
           "429": {
             "description": "超過本租戶方案的速率限制。"
+          },
+          "500": {
+            "description": "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。"
           },
           "402": {
             "description": "本租戶目前沒有有效的方案（完全付費制）。請聯絡業務啟用。"
@@ -506,6 +530,9 @@
           },
           "429": {
             "description": "超過本租戶方案的速率限制。"
+          },
+          "500": {
+            "description": "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。"
           },
           "402": {
             "description": "本租戶目前沒有有效的方案（完全付費制）。請聯絡業務啟用。"
