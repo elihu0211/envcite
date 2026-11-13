@@ -1,5 +1,7 @@
+using System.Diagnostics.Metrics;
 using System.Security.Claims;
 
+using EnvCite.Platform.Modules.Consult;
 using EnvCite.Platform.Modules.Tenancy;
 
 using Microsoft.AspNetCore.Hosting;
@@ -263,6 +265,50 @@ public sealed class AskServiceTests(PlatformFactory factory)
 
         var call = Assert.Single(chat.Calls);
         Assert.DoesNotContain(call, m => m.Text.Contains("沒有提出具體問題", StringComparison.Ordinal));
+    }
+
+    // 入口每次作答得出結果就計一次：回答、模型說證據不足、consult 拒答各有自己的 outcome，並標出是不是主題詞。
+    // 標籤只有這兩個：租戶、問句與命中的詞都不進指標。計數器是行程內全域的，所以只斷言「有這幾筆」，不斷言總數。
+    [Fact]
+    public async Task EachAnswerOutcomeIsCountedWithOnlyTheOutcomeAndBareTopicTags()
+    {
+        var measurements = new List<(string? Outcome, string? BareTopic, string Keys)>();
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, l) =>
+        {
+            if (instrument.Meter.Name == AnswerTelemetry.SourceName && instrument.Name == "envcite.platform.answer.outcomes")
+                l.EnableMeasurementEvents(instrument);
+        };
+        listener.SetMeasurementEventCallback<long>((_, _, tags, _) =>
+        {
+            var pairs = tags.ToArray();
+            lock (measurements)
+            {
+                measurements.Add((
+                    pairs.FirstOrDefault(t => t.Key == "outcome").Value as string,
+                    pairs.FirstOrDefault(t => t.Key == "bare_topic").Value as string,
+                    string.Join(",", pairs.Select(t => t.Key).Order())));
+            }
+        });
+        listener.Start();
+
+        // 主題詞的任務句送進去時，模型說證據不足；其他問題照常引用。
+        var (host, _) = Host(messages => messages[^1].Text.Contains("沒有提出具體問題", StringComparison.Ordinal) ? "證據不足" : Reply);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-m");
+        var ask = host.Services.GetRequiredService<IAskService>();
+
+        await ask.AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
+        await ask.AskAsync(member, FakeConsultServer.BareTopicQuestion, null, null, Ct);
+        await ask.AskAsync(member, FakeConsultServer.UnrelatedQuestion, null, null, Ct);
+
+        lock (measurements)
+        {
+            Assert.Contains(("answered", "false", "bare_topic,outcome"), measurements);
+            Assert.Contains(("insufficient_evidence", "true", "bare_topic,outcome"), measurements);
+            Assert.Contains(("out_of_scope", "true", "bare_topic,outcome"), measurements); // 「量子電腦」只是個詞，也算主題詞
+            Assert.All(measurements, m => Assert.Equal("bare_topic,outcome", m.Keys));
+        }
     }
 
     // 模型端點的錯誤內文可能回顯提示詞（客戶案情）：日誌只記例外型別，不記內文，也不記問題。

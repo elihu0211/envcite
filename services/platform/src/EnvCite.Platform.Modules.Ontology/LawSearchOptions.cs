@@ -52,21 +52,30 @@ public sealed class LawSearchOptions : ISectionOptions
     [Range(0.0, 1.0)]
     public double QuestionSemanticFloor { get; set; } = 0.68;
 
+    /// <summary><see cref="QuestionMinLength"/> 的預設值；入口的主題詞判準（<c>BareTopic</c>）用同一個切點，不另訂。</summary>
+    public const int DefaultQuestionMinLength = 10;
+
     /// <summary>沒有問號的查詢，字數達到這個數就當問句（關鍵字與法規用語多在這個長度以下）。</summary>
     [Range(1, 200)]
-    public int QuestionMinLength { get; set; } = 10;
+    public int QuestionMinLength { get; set; } = DefaultQuestionMinLength;
 
     /// <summary>
     /// 查詢型別：結尾是類型後綴的是名稱（即使有問號）；否則結尾有問號、或字數夠長的是問句；其餘是關鍵字。
     /// </summary>
-    internal QueryKind Classify(string query)
+    internal QueryKind Classify(string query) => Shape(query, QuestionMinLength);
+
+    /// <summary>
+    /// <see cref="Classify"/> 的判準本身，只看查詢字串。靜態公開，是為了讓入口的主題詞判準與搜尋端讀同一份：
+    /// 同一個輸入不能在搜尋端是問句、在入口卻是主題詞。
+    /// </summary>
+    public static QueryKind Shape(string query, int questionMinLength = DefaultQuestionMinLength)
     {
         var text = query.Trim();
         var body = text.TrimEnd('？', '?');
         if (NameSuffixes.Any(s => body.EndsWith(s, StringComparison.Ordinal)))
             return QueryKind.Name;
 
-        return body.Length < text.Length || body.Length >= QuestionMinLength ? QueryKind.Question : QueryKind.Keyword;
+        return body.Length < text.Length || body.Length >= questionMinLength ? QueryKind.Question : QueryKind.Keyword;
     }
 
     internal bool IsQuestion(string query) => Classify(query) == QueryKind.Question;
