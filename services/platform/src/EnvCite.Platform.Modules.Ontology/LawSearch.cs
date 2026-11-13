@@ -5,7 +5,10 @@ using Grpc.Core;
 namespace EnvCite.Platform.Modules.Ontology;
 
 internal sealed class LawSearch(
-    OntologyService.OntologyServiceClient client, IOptions<OntologyOptions> options, IUsageRecorder usage) : ILawSearch
+    OntologyService.OntologyServiceClient client,
+    IOptions<OntologyOptions> options,
+    IOptions<LawSearchOptions> relevance,
+    IUsageRecorder usage) : ILawSearch
 {
     public async Task<AdminOutcome<IReadOnlyList<LawHit>>> SearchAsync(
         string? query, string? asOf, int? limit, CancellationToken cancellationToken)
@@ -18,7 +21,7 @@ internal sealed class LawSearch(
                 deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
             await usage.RecordAsync(OntologyEndpoints.SearchOperation, 1, cancellationToken);
             return AdminOutcome.Ok<IReadOnlyList<LawHit>>(
-                [.. response.Hits.Select(h => new LawHit(
+                [.. response.Hits.Where(h => relevance.Value.Passes(h.LexicalScore, h.SemanticSimilarity, h.TermCoverage)).Select(h => new LawHit(
                     h.Iri,
                     LawIdentifiers.ToDto(h.Identifier),
                     h.LawTitle,

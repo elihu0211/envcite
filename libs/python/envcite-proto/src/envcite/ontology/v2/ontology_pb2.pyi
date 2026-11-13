@@ -290,6 +290,7 @@ class ArticleHit(_message.Message):
     CONTENT_FIELD_NUMBER: _builtins.int
     LEXICAL_SCORE_FIELD_NUMBER: _builtins.int
     SEMANTIC_SIMILARITY_FIELD_NUMBER: _builtins.int
+    TERM_COVERAGE_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     law_title: _builtins.str
     """`as_of` 當日有效版本的法規標題。"""
@@ -301,6 +302,11 @@ class ArticleHit(_message.Message):
     semantic_similarity: _builtins.float
     """語意臂的餘弦相似度（-1 至 1）；語意臂沒有命中這一條、或服務沒有啟用語意臂時不設。
     命中的順序是兩臂名次倒數融合的結果，不是任何一個分數。
+    """
+    term_coverage: _builtins.float
+    """這一條的全文含有多少比例的查詢詞（0 至 1）：字面臂實際查的詞（已略過高頻詞、去重）有幾個也出現在條文裡。
+    只命中查詢一小部分的條文覆蓋率低；與命中是哪一臂帶出的無關，語意臂帶出的條文也有。
+    不影響名次與 `lexical_score`；呼叫端想排除「只沾到一個詞」的字面命中時拿它當條件。
     """
     @_builtins.property
     def identifier(self) -> Global___LawIdentifier: ...
@@ -314,10 +320,11 @@ class ArticleHit(_message.Message):
         content: _builtins.str = ...,
         lexical_score: _builtins.float = ...,
         semantic_similarity: _builtins.float | None = ...,
+        term_coverage: _builtins.float = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity", "identifier", b"identifier", "semantic_similarity", b"semantic_similarity"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity", "content", b"content", "identifier", b"identifier", "iri", b"iri", "law_title", b"law_title", "lexical_score", b"lexical_score", "number", b"number", "semantic_similarity", b"semantic_similarity"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity", "content", b"content", "identifier", b"identifier", "iri", b"iri", "law_title", b"law_title", "lexical_score", b"lexical_score", "number", b"number", "semantic_similarity", b"semantic_similarity", "term_coverage", b"term_coverage"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     _WhichOneofReturnType__semantic_similarity: _TypeAlias = _typing.Literal["semantic_similarity"]  # noqa: Y015
     _WhichOneofArgType__semantic_similarity: _TypeAlias = _typing.Literal["_semantic_similarity", b"_semantic_similarity"]  # noqa: Y015

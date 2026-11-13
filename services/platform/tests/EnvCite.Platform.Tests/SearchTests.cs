@@ -33,6 +33,22 @@ public sealed class SearchTests(PlatformFactory factory)
     }
 
     [Theory]
+    [InlineData("weak-match", 0)]
+    [InlineData("fragment", 0)]
+    [InlineData("semantic-only", 1)]
+    public async Task OnlyHitsAboveTheRelevanceFloorAreReturned(string query, int expected)
+    {
+        var (_, key) = await factory.CreateTenantWithKeyAsync($"search-floor-{query}");
+        using var client = factory.CreateTenantClient(key.Key);
+
+        using var response = await client.PostAsJsonAsync(SearchPath, new SearchRequest(query, null, null), cancellationToken: TestContext.Current.CancellationToken);
+        var hits = await response.Content.ReadFromJsonAsync<SearchHitDto[]>(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(expected, hits!.Length);
+    }
+
+    [Theory]
     [InlineData(null, null, null)]
     [InlineData("   ", null, null)]
     [InlineData("噪音", "yesterday", null)]

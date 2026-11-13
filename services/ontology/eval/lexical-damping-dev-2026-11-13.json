@@ -1,0 +1,94 @@
+{
+ "qrels_sha256": "8a7857697f13c576765bfbfc99b349bc8ffa272a3c8191aa07cd7c854e6de852",
+ "split_sha256": "2e4dfd1335c7002d84f7ac51bce73685e13b61470705a12f4cafa417afbf055e",
+ "subset": "dev",
+ "questions": 170,
+ "alpha": 0.05,
+ "test": "Fisher 隨機化檢定（ranx compare，成對、雙尾，10000 次置換，種子 0）",
+ "runs": {
+  "base-dev.hybrid": {
+   "sha256": "f6dcedcaa7339bac9a5159f9fde5f878020469e10523353d27d5761e01ca167a",
+   "scores": {
+    "hit_rate@1": 0.0941,
+    "hit_rate@5": 0.3,
+    "hit_rate@10": 0.3412,
+    "hit_rate@20": 0.3706,
+    "hit_rate@50": 0.4765,
+    "mrr": 0.174,
+    "ndcg@10": 0.1995
+   },
+   "hole@10": 0.9622863877430761
+  },
+  "cov-dev.hybrid": {
+   "sha256": "708809d759da31e5291d58d01f9b432dcdd771196e19e7647f45060caf3f3767",
+   "scores": {
+    "hit_rate@1": 0.1118,
+    "hit_rate@5": 0.3,
+    "hit_rate@10": 0.3412,
+    "hit_rate@20": 0.3706,
+    "hit_rate@50": 0.4824,
+    "mrr": 0.1841,
+    "ndcg@10": 0.2092
+   },
+   "hole@10": 0.9616971125515615
+  }
+ },
+ "pairs": [
+  {
+   "a": "base-dev.hybrid",
+   "b": "cov-dev.hybrid",
+   "metric": "hit_rate@1",
+   "difference": 0.0176,
+   "p": 0.3797,
+   "significant": false
+  },
+  {
+   "a": "base-dev.hybrid",
+   "b": "cov-dev.hybrid",
+   "metric": "hit_rate@5",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "base-dev.hybrid",
+   "b": "cov-dev.hybrid",
+   "metric": "hit_rate@10",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "base-dev.hybrid",
+   "b": "cov-dev.hybrid",
+   "metric": "hit_rate@20",
+   "difference": 0.0,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "base-dev.hybrid",
+   "b": "cov-dev.hybrid",
+   "metric": "hit_rate@50",
+   "difference": 0.0059,
+   "p": 1.0,
+   "significant": false
+  },
+  {
+   "a": "base-dev.hybrid",
+   "b": "cov-dev.hybrid",
+   "metric": "mrr",
+   "difference": 0.0101,
+   "p": 0.283,
+   "significant": false
+  },
+  {
+   "a": "base-dev.hybrid",
+   "b": "cov-dev.hybrid",
+   "metric": "ndcg@10",
+   "difference": 0.0097,
+   "p": 0.1549,
+   "significant": false
+  }
+ ]
+}

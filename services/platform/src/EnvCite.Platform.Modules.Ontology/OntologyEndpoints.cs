@@ -106,7 +106,7 @@ public static class OntologyEndpoints
             .WithTags("法規")
             .WithSummary("搜尋條文")
             .WithDescription(
-                "以字面檢索查詢某日有效的條文，相關度高的在前。`query` 必填，為原始文字（服務端自行分詞）；"
+                "以字面檢索查詢某日有效的條文，相關度高的在前；只回達到相關性下界的條文，查不到相關條文時回空陣列，不用不相干的條文湊數。`query` 必填，為原始文字（服務端自行分詞）；"
                 + "`asOf` 為 ISO 8601 日期（`YYYY-MM-DD`），省略表示現行；`limit` 為 1–50，省略為 10。"
                 + "用 POST 是為了讓查詢文字不出現在網址裡；查詢文字不寫入日誌。成功計量為一次 `ontology.search`（0 筆命中也計一次）。")
             .Produces<IEnumerable<SearchHitDto>>()
