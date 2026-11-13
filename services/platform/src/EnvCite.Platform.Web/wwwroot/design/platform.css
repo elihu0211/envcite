@@ -1274,6 +1274,32 @@ h1[tabindex="-1"]:focus-visible {
     }
 }
 
+/* 直欄（有 JavaScript 的任何寬度，或平板起）：標籤放不下就換行，整個名稱都讀得到。英文標籤比中文長
+   （「Account and organisation」），單行時會被側欄邊緣切掉。橫列（手機、沒有 JavaScript）維持單行、橫向捲動。 */
+html[data-js] .ep-side-link {
+    box-sizing: border-box; /* 觸控高度含上下內距：單行維持 44px，兩行才長高 */
+    padding-block: var(--ep-space-2);
+    white-space: normal;
+}
+
+html[data-js] .ep-side-link .ep-side-label {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (width >= 48rem) {
+    .ep-side-link {
+        box-sizing: border-box;
+        padding-block: var(--ep-space-2);
+        white-space: normal;
+    }
+
+    .ep-side-link .ep-side-label {
+        min-inline-size: 0;
+        overflow-wrap: anywhere;
+    }
+}
+
 /* 最近的對話：只有標題的一長串，項目的樣式沿用側欄項目；標題一行，放不下收成「…」。
    沒有 JavaScript 的手機側欄是一條橫列，放不下這一串，所以預設不顯示，直欄時才出現。 */
 .ep-recent {
