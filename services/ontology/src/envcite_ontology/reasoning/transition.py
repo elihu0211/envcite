@@ -97,6 +97,7 @@ class Transition:
 
     @property
     def changed(self) -> bool:
+        """行為日到裁處日之間適用的陳述組有變動（`earlier` 非空）。"""
         return bool(self.earlier)
 
 

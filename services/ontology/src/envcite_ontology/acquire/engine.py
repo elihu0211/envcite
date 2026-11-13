@@ -54,18 +54,25 @@ class Feed:
 
 @dataclass(frozen=True, slots=True)
 class Contents:
+    """`Source.read` 從一份已下載的檔案讀出的內容：資料日期與其中各項。"""
+
+    #: 來源檔自己宣告的資料日期，不是下載日；寫入 `source.snapshot.data_date`。
     data_date: date
     #: （來源內的鍵，內容的 SHA-256）。
     items: Sequence[tuple[str, bytes]]
 
 
 class Source(Protocol):
+    """取得引擎要求來源實作的介面：從哪裡下載、這份檔案裡有什麼。"""
+
     name: str
     #: 寫入每份快照的出處標示。
     attribution: str
     feeds: Sequence[Feed]
 
-    def tls(self) -> ssl.SSLContext: ...
+    def tls(self) -> ssl.SSLContext:
+        """下載這個來源用的 TLS 設定；各站對憑證的要求不同。"""
+        ...
 
     def read(self, path: Path) -> Contents:
         """解析已下載的檔案；內容不合預期時拋出 `InvalidSnapshot`。"""
@@ -74,6 +81,8 @@ class Source(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class Outcome:
+    """`acquire` 對一個全量檔（feed）的處理結果。"""
+
     feed: str
     #: 新存入的快照；檔案與上次相同時為 None。
     snapshot_id: int | None
@@ -85,6 +94,10 @@ def acquire(
     conn: Connection[tuple[object, ...]],
     policy: Policy | None = None,
 ) -> list[Outcome]:
+    """逐一取得來源的每個全量檔並存成快照；回傳各檔的結果，依 `source.feeds` 的次序。
+
+    一個 feed 一個交易：後面的 feed 失敗時，前面已存的快照保留。
+    """
     policy = policy or Policy()
     return [_acquire_feed(source, feed, root, conn, policy) for feed in source.feeds]
 

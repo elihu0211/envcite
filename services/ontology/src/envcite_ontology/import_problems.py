@@ -15,6 +15,8 @@ type Severity = Literal["error", "warning"]
 
 @dataclass(frozen=True, slots=True)
 class Problem:
+    """解析或寫入時發現的一筆資料問題，掛在來源項目上。"""
+
     severity: Severity
     #: 問題代碼，彙總與查詢都以它分組。
     code: str

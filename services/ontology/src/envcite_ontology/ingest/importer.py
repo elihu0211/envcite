@@ -30,6 +30,8 @@ class BatchRejected(Exception):
 
 @dataclass(frozen=True)
 class Parsed:
+    """一部解析過的法規，連同來源項目的鍵與內容雜湊（用來判斷是否已匯入）。"""
+
     key: str
     sha256: bytes
     law: ParsedLaw
@@ -37,6 +39,8 @@ class Parsed:
 
 @dataclass
 class Outcome:
+    """一次匯入的結果：整批指標與各動作的法規數。"""
+
     metrics: Metrics
     # 各動作的法規數：added、versioned、corrected、refreshed、unchanged、regressed；
     # skipped 是內容雜湊與解析器版本皆同者，rejected 是解析出 error 者。
@@ -44,6 +48,12 @@ class Outcome:
 
 
 def run(conn: Conn, snapshot_dir: Path, source: Source, *, dry_run: bool = False) -> Outcome:
+    """取每個來源最新的快照解析、驗收，通過後逐部寫入語料；回傳指標與各動作的法規數。
+
+    整批比例越線丟 `BatchRejected`，此時一部都不寫；快照檔不存在丟 `InvalidSnapshot`。
+    `dry_run` 只解析與驗收。每部法規在自己的交易內寫入並更新來源項目的匯入狀態，
+    所以中途失敗只重做未完成的部分。
+    """
     metrics = Metrics()
     actions: Counter[str] = Counter()
     batches: list[tuple[str, int, list[Parsed]]] = []

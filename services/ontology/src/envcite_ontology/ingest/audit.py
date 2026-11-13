@@ -21,6 +21,8 @@ LIMITS = {
 
 @dataclass
 class Metrics:
+    """整批匯入的累計計數；整批驗收看它與 `LIMITS` 的比例。"""
+
     laws: int = 0
     rejected_laws: int = 0
     articles: int = 0
@@ -33,6 +35,7 @@ class Metrics:
     problems: Counter[tuple[str, str]] = field(default_factory=Counter)
 
     def add(self, law: ParsedLaw) -> None:
+        """把一部解析後的法規計入。"""
         self.laws += 1
         self.rejected_laws += not law.ok
         self.events += len(law.events)
@@ -49,6 +52,7 @@ class Metrics:
         self.problems.update((p.severity, p.code) for p in law.problems)
 
     def ratio(self, name: str) -> float:
+        """`LIMITS` 中 `name` 這一項的比例；分母為 0 時為 0.0。"""
         denominator = {
             "rejected_laws": self.laws,
             "degraded_articles": self.articles,
@@ -58,6 +62,10 @@ class Metrics:
         return getattr(self, name) / denominator if denominator else 0.0
 
     def violations(self) -> list[str]:
+        """越過 `LIMITS` 上限的項目說明；空清單表示驗收通過。
+
+        沒有任何法規時也算違規。
+        """
         if self.laws == 0:
             return ["沒有任何法規"]
         return [
@@ -67,6 +75,7 @@ class Metrics:
         ]
 
     def lines(self) -> list[str]:
+        """摘要的逐行文字：各項計數與比例，再接各問題代碼的件數。"""
         out = [
             f"法規 {self.laws}，條 {self.articles}，事件 {self.events}",
             *(f"{LIMITS[n][0]} {getattr(self, n)}（{self.ratio(n):.2%}）" for n in LIMITS),

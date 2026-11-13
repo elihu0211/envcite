@@ -55,6 +55,8 @@ MAX_REPAIRS = 2
 
 @dataclass(frozen=True)
 class ExtractedDefinitions:
+    """一款用語定義的抽取結果；`loaded` 為 None 表示什麼都沒載入，原因在 `dropped`。"""
+
     loaded: Loaded | None
     #: 丟掉的輸出與原因
     dropped: tuple[str, ...]

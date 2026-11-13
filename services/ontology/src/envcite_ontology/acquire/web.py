@@ -28,6 +28,7 @@ class Http:
         self._tls = tls_context(legacy=legacy_tls)
 
     def text(self, url: str) -> str:
+        """GET 一頁，回傳解碼後的文字（UTF-8，容忍 BOM）。"""
         with self._open(url) as r:
             return cast(bytes, r.read()).decode("utf-8-sig")
 
@@ -37,6 +38,7 @@ class Http:
             return cast(bytes, r.read()).decode("utf-8-sig")
 
     def file(self, url: str, dest: Path) -> tuple[bytes, int]:
+        """GET 並串流存到 `dest`；回傳（SHA-256，位元組數）。回應是空的拋 `ItemError`。"""
         h = hashlib.sha256()
         size = 0
         with self._open(url) as r, dest.open("wb") as f:

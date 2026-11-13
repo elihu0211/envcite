@@ -38,23 +38,30 @@ class LawKey:
 
 @dataclass(frozen=True, slots=True)
 class LawRecord:
+    """某日有效的法規版本：自然鍵、IRI、標題、語言與制定日。"""
+
     jurisdiction: str
     id_scheme: str
     local_id: str
     iri: str
     title: str
     language: str
+    #: 制定日（ISO 日期）；語料沒有制定事件則為空字串。
     date_document: str
 
 
 @dataclass(frozen=True, slots=True)
 class ArticleRecord:
+    """某日有效的一條：版本 IRI 與條號。"""
+
     iri: str
     number: str
 
 
 @dataclass(frozen=True, slots=True)
 class InvalidationRecord:
+    """某日因違憲失效的一個條文單元，連同使它失效的裁判。"""
+
     ruling_no: str
     #: `corpus.ruling_kind` 的值：interpretation 或 judgment
     ruling_kind: str
@@ -63,11 +70,14 @@ class InvalidationRecord:
     excerpt: str
     path: str
     invalid_from: str
+    #: 裁判只宣告條文的一部分；失效仍記在整個條文單元上。
     partial: bool
 
 
 @dataclass(frozen=True, slots=True)
 class SearchHit:
+    """一筆檢索命中的條文及其分數。"""
+
     iri: str
     jurisdiction: str
     id_scheme: str
@@ -76,10 +86,12 @@ class SearchHit:
     number: str
     content: str
     lexical_score: float
+    #: 語意臂的餘弦相似度；語意臂沒有命中這一條、或沒有啟用語意臂時為 None。
     semantic_similarity: float | None = None
 
 
 def is_valid_law_id(value: str) -> bool:
+    """法規識別碼是否可查：非空且不超過 64 字元。"""
     return bool(value and len(value) <= 64)
 
 
@@ -163,14 +175,18 @@ SEARCH_POOL = 50
 
 
 class OntologyStore:
+    """法規語料（PostgreSQL）的唯讀查詢入口，持有連線池；可用 `with` 在結束時關閉。"""
+
     def __init__(self, pool: ConnectionPool) -> None:
         self._pool = pool
 
     @classmethod
     def from_dsn(cls, dsn: str, *, min_size: int = 1, max_size: int = 8) -> Self:
+        """以 DSN 建立並開啟連線池，回傳 store。"""
         return cls(ConnectionPool(dsn, min_size=min_size, max_size=max_size, open=True))
 
     def close(self) -> None:
+        """關閉連線池。"""
         self._pool.close()
 
     def __enter__(self) -> Self:
@@ -310,11 +326,13 @@ class OntologyStore:
             yield conn
 
     def lexicon(self) -> list[str]:
+        """segmenter 的詞典：語料所有版本的法規標題（不重複）。"""
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(_LEXICON)
             return [title for (title,) in cur.fetchall()]
 
     def law_names(self) -> LawNames:
+        """法規標題（含各版本的舊名稱）對法規代碼的對照，供問句點名法規用。"""
         with self._pool.connection() as conn, conn.cursor() as cur:
             cur.execute(_LAW_TITLES)
             return LawNames({title: pcodes for title, pcodes in cur.fetchall()})

@@ -46,6 +46,8 @@ PROMULGATION_DAYS = 2  # 「自公布或發布之日起算至第三日」：公�
 
 @dataclass(frozen=True)
 class Commencement:
+    """一條的生效日判定：適用的規則與生效起點。"""
+
     # unchanged | promulgation | specified | retroactive | by_order | unconfirmed；
     # stale 是待確認的一種，只在推導時區分（呼叫端記為 unconfirmed 並計數）。
     rule: str

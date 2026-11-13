@@ -66,16 +66,21 @@ class Row:
 
     @property
     def url(self) -> str:
+        """這件函釋詳細頁的網址。"""
         return DETAIL.format(id=self.site_id)
 
 
 @dataclass(frozen=True, slots=True)
 class Letter:
+    """環境部函釋詳細頁解析出的一件公文。"""
+
     title: str
     issuer: str
     document_no: str
     issued_on: date
+    #: 主旨；原文沒有主旨（早年的函只有說明）時取標題。
     subject: str
+    #: 說明各段，以換行相接；沒有說明時取主旨。
     body: str
     #: 「相關法規」欄的連結文字，照原文（如 `空氣污染防制法第32條第1項第1款`）
     related: tuple[str, ...]
@@ -83,6 +88,8 @@ class Letter:
 
 @dataclass(frozen=True, slots=True)
 class Citation:
+    """一處法規引用拆出的法名與條文路徑。"""
+
     law_name: str
     #: 正規化的條文路徑（`art_32/para_1/pt_1`）；只寫法名、沒有條號為 None
     path: str | None
@@ -94,6 +101,7 @@ def normalize_document_no(no: str) -> str:
 
 
 def parents(query_page: str) -> list[str]:
+    """查詢頁列出的父分類代碼（`feid`），依出現順序、去重。"""
     return list(dict.fromkeys(_FEID.findall(query_page)))
 
 
@@ -104,6 +112,7 @@ def leaves(parent_page: str) -> list[str]:
 
 
 def rows(listing: str) -> list[Row]:
+    """葉分類清單頁的每一列；列上缺字號、日期或詳細頁連結時拋 `UnreadablePage`。"""
     found = []
     for m in _ROW.finditer(listing):
         cell = m.group(1)

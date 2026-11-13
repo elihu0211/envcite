@@ -25,6 +25,10 @@ class NumbersGate:
     verifier: str = "gate:numbers@1"
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
+        """額度與門檻值都核對得上原文為 pass，有不符為 fail，原文有而標註沒有為 inconclusive。
+
+        沒有可核對的罰則額度或帶單位的門檻值回 None。
+        """
         u = unit_of(conn, statement_id)
         checks: list[dict[str, Any]] = []
         sanction = conn.execute(

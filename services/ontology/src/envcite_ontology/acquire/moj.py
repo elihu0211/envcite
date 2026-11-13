@@ -24,6 +24,8 @@ _UPDATE_DATE = re.compile(r"^(\d{4})/(\d{1,2})/(\d{1,2})\b")
 
 
 class Moj:
+    """全國法規資料庫的 `Source`：法律與命令各一個全量檔。"""
+
     name = "moj"
     attribution = "全國法規資料庫（法務部）；政府資料開放授權條款－第1版"
     feeds: Sequence[Feed] = (
@@ -32,9 +34,11 @@ class Moj:
     )
 
     def tls(self) -> ssl.SSLContext:
+        """連全國法規資料庫的 TLS 設定。"""
         return tls_context()
 
     def read(self, path: Path) -> Contents:
+        """回傳 `UpdateDate` 與每部法規的（pcode，內容雜湊）。"""
         data_date, laws = load_laws(path)
         return Contents(
             data_date=data_date, items=[(pcode(law), content_sha256(law)) for law in laws]
@@ -66,6 +70,7 @@ def load_laws(path: Path) -> tuple[date, list[dict[str, Any]]]:
 
 
 def pcode(law: object) -> str:
+    """一部法規的 pcode，取自 `LawURL` 的 `pcode` 參數；取不到拋 `InvalidSnapshot`。"""
     url = law.get("LawURL", "") if isinstance(law, dict) else ""
     match = _PCODE.search(str(url))
     if match is None:
@@ -74,6 +79,7 @@ def pcode(law: object) -> str:
 
 
 def content_sha256(law: object) -> bytes:
+    """一部法規的內容雜湊：鍵排序、緊湊正規化後的 JSON 的 SHA-256。"""
     # 正規化後再雜湊：鍵的順序不同不算內容改變。
     canonical = json.dumps(law, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).digest()

@@ -45,6 +45,8 @@ EXIT_INVALID = 2
 
 @dataclass(frozen=True)
 class SyncResult:
+    """一次 `envcite-ruling fetch` 的計數。"""
+
     #: 這次抓了幾頁
     fetched: int
     #: 主文宣告失效而入庫的裁判（含先前已入庫者）
@@ -75,6 +77,11 @@ def sync(
     base: str = cons.BASE,
     pause: float = PAUSE_SECONDS,
 ) -> SyncResult:
+    """掃描憲法法庭的裁判並入庫，再對庫裡每則裁判重抽失效條文。
+
+    只入庫主文宣告失效的裁判。已掃描過（記錄的抽取規則版本等於現行）的頁面略過，`rescan`
+    時全抓；抓到卻不是解釋或判決頁的只計入 `unreadable`，不中斷。網路只在掃描這一步。
+    """
     fetched = unreadable = 0
     for url in _urls(fetch, interpretation_list, judgment_list, base, pause):
         if not rescan and _scanned(conn, url):

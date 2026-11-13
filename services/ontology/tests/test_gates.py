@@ -12,6 +12,7 @@ from envcite_ontology.verification import (
     ExecutableGate,
     NumbersGate,
     ReferencesGate,
+    gates,
     settle,
 )
 from envcite_ontology.verification.gates import amounts, cn_number
@@ -392,3 +393,8 @@ def test_text_without_a_proviso_does_not_apply(conn: Conn, tmp_path: Path) -> No
     sid = load(conn, _doc(_plain_duty())).ids["duty"]
 
     assert ProvisoGate().check(conn, sid) is None
+
+
+def test_every_exported_gate_name_exists() -> None:
+    """`__all__` 列的名稱都要真的存在，`import *` 才不會失敗。"""
+    assert [n for n in gates.__all__ if not hasattr(gates, n)] == []

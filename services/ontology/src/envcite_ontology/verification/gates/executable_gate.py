@@ -51,6 +51,11 @@ class ExecutableGate:
     language: str = "zho"
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
+        """造一組案件事實送進推論程式，每個案件的結論都如預期為 pass，有不符為 fail。
+
+        要件形狀評估不了、門檻值無從解析、沒有生效起日或造不出案件為 inconclusive；
+        規範性陳述以外的種類（罰則除外），或沒有義務方向者回 None。
+        """
         u = unit_of(conn, statement_id)
         if u.kind == "sanction":
             return self._penalty(conn, u)

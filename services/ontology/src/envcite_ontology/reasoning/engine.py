@@ -85,6 +85,8 @@ class Trace:
 
 @dataclass(frozen=True)
 class Result:
+    """一次推論的結果：各陳述的候選結論與罰則、缺的事實、需判斷處，及推導的依據。"""
+
     verdicts: Mapping[int, str]
     penalties: tuple[Penalty, ...]
     one_act: tuple[int, int] | None

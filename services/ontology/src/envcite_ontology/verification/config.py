@@ -37,6 +37,8 @@ class ConfigError(ValueError):
 
 @dataclass(frozen=True)
 class ModelSet:
+    """標註管線的角色對模型：抽取者、往返重抽者、獨立測試設計者與評審團。"""
+
     extractor: Model
     roundtrip: Model
     independent_test: Model
@@ -52,6 +54,7 @@ class ModelSet:
 
     @property
     def everyone(self) -> tuple[Model, ...]:
+        """管線用到的全部模型：抽取者在前，其後是所有驗證者。"""
         return (self.extractor, *self.verifiers)
 
 
@@ -203,6 +206,11 @@ def parse(
     *,
     keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> ModelSet:
+    """解析 `models.toml` 的內容為 `ModelSet`；設定不合一律 `ConfigError`。
+
+    `[endpoint.*]` 宣告的每個端點都要解得出金鑰，沒有模型用它也一樣。`[embedding]` 等其他區段
+    在這裡只檢查鍵名，內容由各自的解析函式讀。
+    """
     env = os.environ if env is None else env
     try:
         doc = tomllib.loads(text)
@@ -241,6 +249,7 @@ def load(
     *,
     keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> ModelSet:
+    """讀取模型配置檔並解析為 `ModelSet`，規則同 `parse`。"""
     return parse(path.read_text(encoding="utf-8"), env, keychain=keychain)
 
 
@@ -312,6 +321,7 @@ def load_embedder(
     timeout: float,
     keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> Embedder | None:
+    """讀取模型配置檔的 `[embedding]` 嵌入模型，規則同 `parse_embedder`；沒有這一段為 None。"""
     return parse_embedder(path.read_text(encoding="utf-8"), env, timeout=timeout, keychain=keychain)
 
 
@@ -322,6 +332,7 @@ def load_reranker(
     timeout: float,
     keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> Reranker | None:
+    """讀取模型配置檔的 `[reranker]` 精排模型，規則同 `parse_reranker`；沒有這一段為 None。"""
     return parse_reranker(path.read_text(encoding="utf-8"), env, timeout=timeout, keychain=keychain)
 
 
@@ -398,4 +409,5 @@ def load_judges(
     *,
     keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> Judges:
+    """讀取模型配置檔的 `[relevance]` 判定者，規則同 `parse_judges`；沒有這一段報錯。"""
     return parse_judges(path.read_text(encoding="utf-8"), env, keychain=keychain)

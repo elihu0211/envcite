@@ -22,15 +22,25 @@ _NORM_KINDS = {"法律": ("statute", "constitution"), "命令": ("regulation",)}
 
 
 class Web(Protocol):
-    def text(self, url: str) -> str: ...
+    """來源需要的網頁客戶端：GET 與 POST 表單（`acquire.web.Http`）。"""
 
-    def form(self, url: str, fields: dict[str, str]) -> str: ...
+    def text(self, url: str) -> str:
+        """GET 一頁，回傳解碼後的文字。"""
+        ...
+
+    def form(self, url: str, fields: dict[str, str]) -> str:
+        """POST 表單，回傳回應的文字。"""
+        ...
 
 
 @dataclass(frozen=True, slots=True)
 class Target:
+    """來源列出的、要取得歷史的一部法規。"""
+
+    #: 來源內的法規代碼，是 `source.item` 的鍵。
     key: str
     title: str
+    #: 種類（法律、命令）；以標題檢索的來源不用，為空字串。
     kind: str = ""
 
 
@@ -39,6 +49,8 @@ class Skip(Exception):
 
 
 class Unmatched(Exception):
+    """快照的法規對不到語料：`code` 是匯入問題代碼，`detail` 是指出是哪一部的人讀說明。"""
+
     def __init__(self, code: str, detail: str) -> None:
         super().__init__(f"{code}: {detail}")
         self.code = code
@@ -46,6 +58,11 @@ class Unmatched(Exception):
 
 
 class HistorySource(Protocol):
+    """一個歷史來源要實作的介面（`Ly`、`Moenv`），在 `SOURCES` 登記。
+
+    `feed` 是快照的來源名稱，`authority` 是寫入歷史版本的 `text_authority`。
+    """
+
     feed: str
     authority: str
     attribution: str
@@ -55,7 +72,9 @@ class HistorySource(Protocol):
     #: 整批驗收：對不到語料法規的占列舉數上限
     unmatched_limit: float
 
-    def targets(self, conn: Conn, web: Web) -> list[Target]: ...
+    def targets(self, conn: Conn, web: Web) -> list[Target]:
+        """列出這次要取得歷史的法規。"""
+        ...
 
     def bundle(self, web: Web, target: Target, previous: dict[str, Any]) -> dict[str, Any]:
         """一部法規的快照內容。
@@ -68,10 +87,14 @@ class HistorySource(Protocol):
         """語料的法規代碼；對不到拋 `Unmatched`，不屬範圍拋 `Skip`。"""
         ...
 
-    def versions(self, bundle: dict[str, Any]) -> tuple[Version, list[Version]]: ...
+    def versions(self, bundle: dict[str, Any]) -> tuple[Version, list[Version]]:
+        """快照內容解出（現行版本，過去各版）；頁面讀不出來拋 `UnreadablePage`。"""
+        ...
 
 
 class Moenv:
+    """命令的歷史來源：環境部主管法規查詢系統（主管機關）。"""
+
     feed = "moenv_law"
     authority = "competent_authority"
     attribution = moenv_law.ATTRIBUTION
@@ -108,6 +131,7 @@ class Moenv:
         return list(found.values())
 
     def bundle(self, web: Web, target: Target, previous: dict[str, Any]) -> dict[str, Any]:
+        """現行頁與歷史清單上每個 `hid` 的頁面內容；`previous` 已有的 `hid` 沿用不重抓。"""
         listing = web.text(moenv_law.HISTORY_LIST.format(site_id=target.key))
         current = web.text(moenv_law.CURRENT.format(site_id=target.key))
         versions: dict[str, str] = {}
@@ -132,6 +156,11 @@ class Moenv:
         }
 
     def resolve(self, conn: Conn, bundle: dict[str, Any]) -> str:
+        """以（現行版本標題，種類）對到語料的法規代碼。
+
+        種類不在 `KINDS` 拋 `Skip`；同名的數部以現行版本日分辨，仍不是唯一一部拋
+        `Unmatched`（`unmatched` 或 `ambiguous_title`）。
+        """
         if bundle["kind"] not in self.KINDS:
             raise Skip
         current = moenv_law.parse_version(bundle["current"])
@@ -145,6 +174,7 @@ class Moenv:
         return pcodes[0]
 
     def versions(self, bundle: dict[str, Any]) -> tuple[Version, list[Version]]:
+        """解析現行頁與每個歷史頁。"""
         current = moenv_law.parse_version(bundle["current"])
         return current, [moenv_law.parse_version(p) for p in bundle["versions"].values()]
 
@@ -168,6 +198,8 @@ class Moenv:
 
 
 class Ly:
+    """法律的歷史來源：立法院法律系統（制定機關）。"""
+
     feed = "ly_law"
     authority = "legislature"
     attribution = ly_law.ATTRIBUTION
@@ -192,6 +224,11 @@ class Ly:
         ]
 
     def bundle(self, web: Web, target: Target, previous: dict[str, Any]) -> dict[str, Any]:
+        """一部法律的現行一版與過去各版的頁面內容；`previous` 已有的版本沿用不重抓。
+
+        檢索結果沒有恰好一部同名的法律時，只記檢索到的標題（`hits`），不抓頁面。法律頁的
+        最新一版與檢索結果不符拋 `UnreadablePage`。
+        """
         name = ly_law.name(target.title)
         action, fields = ly_law.search_form(web.text(ly_law.HOME), name)
         hits = ly_law.hits(web.form(ly_law.BASE + action, fields))
@@ -228,12 +265,15 @@ class Ly:
         return out | {"_fetched": fetched, "_reused": reused}
 
     def resolve(self, conn: Conn, bundle: dict[str, Any]) -> str:
+        """目標本身的 pcode；檢索沒有對到同名的現行法拋 `Unmatched`。"""
         if "current" not in bundle:
             hits = "、".join(bundle["hits"]) or "無"
             raise Unmatched("unmatched", f"{bundle['title']}：檢索結果的現行法為 {hits}")
         return str(bundle["pcode"])
 
     def versions(self, bundle: dict[str, Any]) -> tuple[Version, list[Version]]:
+        """解析現行一版與過去各版；同日公布的數版只取後通過的一版。"""
+
         def parse(v: dict[str, str]) -> Version:
             return ly_law.parse_version(v["page"], date.fromisoformat(v["promulgated"]))
 

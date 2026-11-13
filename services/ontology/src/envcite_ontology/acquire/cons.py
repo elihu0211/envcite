@@ -39,8 +39,12 @@ class UnreadablePage(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class RulingPage:
+    """從憲法法庭網站解析出的一則解釋或判決。"""
+
+    #: 字號，寫法同 `ruling` 載入文件的 `ruling_no`（`釋字第N號`、`N年憲判字第M號`）。
     ruling_no: str
     kind: Literal["interpretation", "judgment"]
+    #: 解釋為公布院令的日期，判決為宣判日。
     decided_on: date
     source_url: str
     #: 解釋文（判決主文）全文，段落以換行相接。
@@ -48,6 +52,7 @@ class RulingPage:
 
 
 def tls() -> ssl.SSLContext:
+    """連憲法法庭網站的 TLS 設定（見 `http.tls_context`）。"""
     return tls_context()
 
 

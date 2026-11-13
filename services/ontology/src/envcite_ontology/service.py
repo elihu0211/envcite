@@ -39,6 +39,8 @@ _RULING_KINDS = {
 
 
 class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
+    """`OntologyService` 的 servicer：取法規、列條文與失效條文、混合檢索條文。"""
+
     def __init__(
         self,
         store: OntologyStore,

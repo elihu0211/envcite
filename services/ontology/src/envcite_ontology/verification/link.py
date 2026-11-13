@@ -65,6 +65,8 @@ def penalized(conn: Conn, law: str) -> dict[str, list[str]]:
 
 @dataclass(frozen=True)
 class Linked:
+    """`link_penalties` 的結果：寫入的陳述數、沒連成的原因與寫成的陳述編號。"""
+
     statements: int
     #: 這次沒能寫成陳述的待連結罰則與原因
     dropped: tuple[str, ...]

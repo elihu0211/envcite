@@ -28,6 +28,8 @@ OTHER_DOCUMENT_TYPE = "其他"
 
 @dataclass(frozen=True)
 class ParsedUnit:
+    """解析出的一個條文單元：路徑、類型、文字，與推導出的效力規則和區間。"""
+
     path: str
     type: str
     content: str | None
@@ -40,6 +42,8 @@ class ParsedUnit:
 
 @dataclass
 class ParsedLaw:
+    """一部解析過的法規：自然鍵、版本日、沿革事件、條文單元，與解析時發現的問題。"""
+
     # 法規的自然鍵；解析器產出什麼來源的法規就明寫什麼，沒有預設。
     jurisdiction: str
     id_scheme: str
@@ -59,14 +63,20 @@ class ParsedLaw:
 
     @property
     def ok(self) -> bool:
+        """可寫入：沒有 `error` 等級的問題。"""
         return not any(p.severity == "error" for p in self.problems)
 
 
 def document_type(name: str) -> str:
+    """依法規名稱的結尾判定文件類型（條例、辦法…）；都不符為「其他」。"""
     return next((t for t in _DOCUMENT_TYPES if name.endswith(t)), OTHER_DOCUMENT_TYPE)
 
 
 def parse(law: dict[str, Any], *, pcode: str, data_date: date) -> ParsedLaw:
+    """把 `Laws` 陣列的一個元素解析成 `ParsedLaw`；問題記在 `problems`，不丟例外。
+
+    `data_date` 是快照的資料日，沿革事件晚於它記為警告。
+    """
     problems: list[Problem] = []
 
     def error(code: str, detail: str = "") -> None:

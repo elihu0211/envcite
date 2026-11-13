@@ -647,6 +647,8 @@ class Counts:
 
 @dataclass(frozen=True)
 class Extracted:
+    """一個單元的陳述抽取結果；`loaded` 為 None 表示什麼都沒載入，原因在 `dropped`。"""
+
     loaded: Loaded | None
     #: 丟掉的輸出：引文不在原文的陳述，或違反資料庫約束的整份文件
     dropped: tuple[str, ...]

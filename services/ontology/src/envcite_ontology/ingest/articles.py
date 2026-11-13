@@ -32,13 +32,18 @@ PROVISION_TYPES = {
 
 @dataclass(frozen=True)
 class Unit:
+    """切出的一個條文單元：路徑、層級類型與文字。"""
+
     path: str
     type: str
+    #: 單元自己的文字；沒有則為 None，例如條下切出了項時，條本身沒有文字。
     content: str | None
 
 
 @dataclass(frozen=True)
 class Split:
+    """一條切分的結果：單元清單，與切不乾淨時的原因。"""
+
     units: list[Unit]
     # 切不乾淨的原因；None 表示照法定層級切成。
     degraded: str | None = None
@@ -53,6 +58,7 @@ def article_path(article_no: str) -> str | None:
 
 
 def is_deleted(content: str) -> bool:
+    """內容是否為「（刪除）」標記，即該條已被刪除。"""
     return _DELETED.match(content.strip()) is not None
 
 

@@ -40,9 +40,13 @@ class RulingError(AnnotationError):
 
 @dataclass(frozen=True)
 class LoadedRulings:
+    """`load` 寫入一份裁判文件的計數。"""
+
+    #: 文件裡的裁判數，含沿用的。
     rulings: int
     #: 已載入過、內容相同而沿用的件數
     repeated: int
+    #: 新寫入的失效條文單元數。
     invalidations: int
 
 

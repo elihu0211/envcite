@@ -18,6 +18,10 @@ class ReferencesGate:
     verifier: str = "gate:references@2"
 
     def check(self, conn: Conn, statement_id: int) -> GateResult | None:
+        """所處罰陳述的條（項）在原文引用之內為 pass，否則為 fail；不是罰則回 None。
+
+        原文沒有任何引用、所處罰的陳述就在同一單元時，視同引用自己。
+        """
         row = conn.execute(
             "SELECT pp.path FROM annotation.sanction AS sn"
             "  JOIN annotation.statement AS t ON t.id = sn.punished_statement_id"

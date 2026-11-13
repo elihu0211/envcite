@@ -43,6 +43,8 @@ class UnreadablePage(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class Article:
+    """來源版本裡的一條：條號、各項款目的全文，與轉錄品質標記。"""
+
     article_no: str  # 「第 N 條」「第 N-M 條」
     #: 項、款、目各一行
     content: str
@@ -93,6 +95,8 @@ class Anchor:
 
 @dataclass(frozen=True)
 class Planned:
+    """回推要寫入的一個歷史版本；查不到全文的版本沒有標題與條文單元。"""
+
     version_date: date
     #: 查不到全文的版本（`units` 為空）不知道當時的標題
     title: str | None
@@ -102,11 +106,14 @@ class Planned:
 
     @property
     def status(self) -> str:
+        """寫入 `text_status` 的值：有標題（查得到全文）為 `available`，否則 `unavailable`。"""
         return "available" if self.title is not None else "unavailable"
 
 
 @dataclass
 class Plan:
+    """回推計畫：要寫入的各版本、沿途發現的問題，與現行頁的核對結果。"""
+
     versions: list[Planned] = field(default_factory=list)  # 舊到新
     problems: list[Problem] = field(default_factory=list)
     #: 每一版當作現行版解析的結果，供整批驗收
@@ -117,10 +124,16 @@ class Plan:
 
     @property
     def ok(self) -> bool:
+        """可寫入：沒有 `error` 等級的問題。"""
         return not any(p.severity == "error" for p in self.problems)
 
 
 def plan(anchor: Anchor, current: Version, past: list[Version]) -> Plan:
+    """以錨點為終點往舊回推，算出要寫入的各歷史版本與沿途的問題。
+
+    純函式。接不上的那一次公布與更早的每一次，寫成查不到全文的版本；
+    有 `error` 問題（`Plan.ok` 為假）時不應寫入。
+    """
     out = Plan()
     # 已廢止者的現行頁不帶最後一版的日期，最後一版在歷史清單裡。
     same_day = [v for v in (current, *past) if v.version_date == anchor.latest_date]
@@ -294,6 +307,7 @@ class _Later:
 
     @property
     def law_start(self) -> date | None:
+        """法規層的起點：各條已知起點的最小值，都未知為 None。"""
         known = [s for s in self.starts.values() if s is not None]
         return min(known) if known else None
 

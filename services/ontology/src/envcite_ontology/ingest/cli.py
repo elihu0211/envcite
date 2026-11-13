@@ -17,6 +17,10 @@ from envcite_ontology.settings import SnapshotSettings, load
 
 
 def main() -> None:
+    """`envcite-import <來源> [--dry-run]`：解析來源的最新快照並寫入語料，寫完重建檢索投影。
+
+    `--dry-run` 只解析與驗收，不寫入也不重建。整批比例越線或快照不合時記錄原因，以結束碼 2 退出。
+    """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="envcite-import")
     parser.add_argument("source", choices=sorted(SOURCES))
