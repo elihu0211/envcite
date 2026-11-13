@@ -1,0 +1,32 @@
+{
+ "parameters": {
+  "lexical": 0.5,
+  "semantic": 0.71,
+  "coverage": 0.5
+ },
+ "results": {
+  "dev": {
+   "definition_queries": 316,
+   "absent_queries": 15,
+   "raw_hit_at": {
+    "1": 0.38924050632911394,
+    "5": 0.6677215189873418,
+    "10": 0.7626582278481012
+   },
+   "rules": {
+    "consult 的規則（覆蓋率 0）": {
+     "found_in_list": 0.6772151898734177,
+     "mean_list_size": 7.768987341772152,
+     "listed_without_the_term": 0.6338085539714867,
+     "absent_leak": 0.4666666666666667
+    },
+    "列表規則": {
+     "found_in_list": 0.6772151898734177,
+     "mean_list_size": 6.477848101265823,
+     "listed_without_the_term": 0.5608207132388862,
+     "absent_leak": 0.06666666666666667
+    }
+   }
+  }
+ }
+}
