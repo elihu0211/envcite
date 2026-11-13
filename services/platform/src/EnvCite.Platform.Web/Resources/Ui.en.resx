@@ -541,6 +541,7 @@
   <data name="關閉說明" xml:space="preserve"><value>Close</value></data>
   <data name="問問{0}" xml:space="preserve"><value>Ask {0}</value></data>
   <data name="法規條文檢索" xml:space="preserve"><value>Law &amp; Article Search</value></data>
+  <data name="AI 法規問答" xml:space="preserve"><value>AI Law Q&amp;A</value></data>
   <data name="功能模組" xml:space="preserve"><value>Feature Modules</value></data>
   <data name="控制此租戶可使用的本體查詢與推論能力。變更立即生效並寫入稽核；方案終止時一併重設。" xml:space="preserve"><value>Control which ontology query and reasoning capabilities are enabled for this tenant. Changes take effect immediately and are audited; ending the plan resets overrides.</value></data>
   <data name="方案預設" xml:space="preserve"><value>Plan default</value></data>
