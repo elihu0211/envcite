@@ -850,10 +850,29 @@ h1[tabindex="-1"]:focus-visible {
     margin-block-start: calc(var(--ep-space-4) * -1);
 }
 
-/* 數字欄靠右、等寬數字，上下列才對得齊。 */
-.ep-num {
+/* 數字欄靠右、等寬數字，上下列才對得齊。標題與儲存格都帶這個類別（ColumnDef.Numeric）；
+   純表格與 Mud 表格各自把儲存格設成靠左，所以要在表格底下再寫一次，選擇器才壓得過它們。 */
+.ep-num,
+.ep-plain-table :is(th, td).ep-num,
+.ep-table :is(th, td).ep-num {
     text-align: end;
     font-variant-numeric: tabular-nums;
+}
+
+/* 表格裡的儲存格與時間一律等寬數字（時間戳、次數、筆數），不靠字型的預設：換字型或退回備用字型時上下列照樣對得齊。 */
+.mud-table-cell,
+.ep-plain-table td,
+time {
+    font-variant-numeric: tabular-nums;
+}
+
+/* 數字後面接單位（次、tokens）：單位占一個固定寬的位置，每一列的數字右緣才在同一條線上；
+   不固定的話，單位長短不同（「次」與「tokens」）會把靠右的數字各推開一截。 */
+.ep-num-unit {
+    display: inline-block;
+    min-inline-size: var(--ep-space-12);
+    margin-inline-start: var(--ep-space-1);
+    text-align: start;
 }
 
 /* 對稱格線：欄一樣寬、同一列一樣高。每欄至少 22rem，放不下就整列疊成一欄，不留下半寬的孤兒欄。
@@ -1080,23 +1099,35 @@ h1[tabindex="-1"]:focus-visible {
     flex-direction: column;
 }
 
-/* 頂欄中間的切換器按鈕：看起來像搜尋框，點下去（或 ⌘K）開切換器。 */
+/* 頂欄中間的切換器按鈕：看起來像搜尋框（雲端主控台那一型：整條膠囊、沒有邊框、左邊一個搜尋圖示，
+   底色比頂欄深一階），點下去（或 ⌘K）開切換器。寬度走問答欄的 measure，頂欄放不下時先縮它。 */
 .ep-palette-open {
     display: flex;
     align-items: center;
-    gap: var(--ep-space-2);
-    flex: 0 1 var(--ep-measure-narrow);
+    gap: var(--ep-space-3);
+    flex: 0 1 var(--ep-measure-ask);
     min-inline-size: 0;
     margin-inline: auto;
-    min-block-size: 2.25rem;
-    padding-inline: var(--ep-space-3);
-    border: 1px solid var(--ep-border-subtle);
-    border-radius: var(--ep-radius-control);
-    background: var(--ep-surface-muted);
+    min-block-size: var(--ep-touch-target);
+    padding-inline: var(--ep-space-4) var(--ep-space-3);
+    border: 0;
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--ep-text) 7%, transparent);
     color: var(--ep-text-secondary);
     font: inherit;
-    font-size: var(--ep-body-m-size);
+    font-size: var(--ep-body-l-size);
     cursor: pointer;
+    transition: background var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-palette-open > .ep-icon {
+    color: var(--ep-text-secondary);
+}
+
+/* 切換器開著的時候，搜尋鈕換成頁面的底色加一圈細線，像是搜尋框被「按進去」。 */
+.ep-palette-open:has(+ .ep-palette:popover-open) {
+    background: var(--ep-surface);
+    box-shadow: inset 0 0 0 1px var(--ep-border-control);
 }
 
 .ep-palette-open > span {
@@ -1119,19 +1150,30 @@ h1[tabindex="-1"]:focus-visible {
 
 @media (hover: hover) {
     .ep-palette-open:hover {
-        border-color: var(--ep-border-control);
+        background: color-mix(in srgb, var(--ep-text) 11%, transparent);
     }
 }
 
-@media (pointer: coarse) {
-    .ep-palette-open {
-        min-block-size: var(--ep-touch-target);
-    }
-}
-
+/* 手機：頂欄放不下一整條搜尋框，收成只剩圖示的圓鈕（文字留給輔助技術）；切換器仍從它往下長出來。 */
 @media (width < 48rem) {
     .ep-kbd {
         display: none;
+    }
+
+    .ep-palette-open {
+        flex: none;
+        justify-content: center;
+        inline-size: var(--ep-touch-target);
+        padding-inline: 0;
+    }
+
+    .ep-palette-open > span {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
     }
 }
 

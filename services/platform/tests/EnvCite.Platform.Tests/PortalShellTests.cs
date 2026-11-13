@@ -164,6 +164,9 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Contains("<a class=\"ep-brand\" href=\"/ui\">", top, StringComparison.Ordinal);
         Assert.DoesNotContain("營運後台", top, StringComparison.Ordinal);
         Assert.DoesNotContain("ep-console-product", page, StringComparison.Ordinal);
+
+        // 搜尋鈕左邊有搜尋圖示（純裝飾，文字才是名稱）。
+        Assert.Matches("class=\"ep-palette-open\"[^>]*><svg class=\"ep-icon\"", page);
         Assert.Contains("<aside id=\"ep-side\" class=\"ep-side\">", page, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-scrim\"", page, StringComparison.Ordinal);
     }

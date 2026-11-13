@@ -15,8 +15,14 @@ public sealed class ColumnDef<TItem>
     /// <summary>窄螢幕（卡片）時顯示在值前面的標籤；沒給就用 <see cref="Title"/>。</summary>
     public string? Label { get; init; }
 
-    /// <summary>儲存格的樣式類別，例如列首的 <c>ep-keep</c>、數字的 <c>ep-num</c>、動作欄的 <c>ep-row-actions</c>。</summary>
+    /// <summary>儲存格的樣式類別，例如列首的 <c>ep-keep</c>、動作欄的 <c>ep-row-actions</c>。數字欄用 <see cref="Numeric"/>，不自己寫 <c>ep-num</c>。</summary>
     public string? Class { get; init; }
+
+    /// <summary>
+    /// 數字欄：標題與儲存格都靠右、等寬數字，上下列與標題才對得齊。標題也要靠右：數字靠右、標題靠左，
+    /// 欄一寬就會讓標題離它的數字很遠。
+    /// </summary>
+    public bool Numeric { get; init; }
 
     /// <summary>標題只給螢幕閱讀器（動作欄）。</summary>
     public bool HideTitle { get; init; }
