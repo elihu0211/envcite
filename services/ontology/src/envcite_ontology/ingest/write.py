@@ -20,6 +20,7 @@ from typing import NamedTuple
 from psycopg.types.range import Range
 
 from envcite_ontology.db import Conn, fetch, fetch_one, scalar
+from envcite_ontology.ingest.headings import ParsedHeading
 from envcite_ontology.ingest.law import ParsedLaw, ParsedUnit
 
 #: 條文單元版本的效力區間：[起, 訖)；兩端皆空為「待確認」或「待命令」。
@@ -254,6 +255,7 @@ def _replace_all(conn: Conn, resource: int, law: ParsedLaw) -> None:
         conn.execute(f"DELETE FROM corpus.{table} WHERE resource_id = %s", (resource,))
     expression = _insert_expression(conn, resource, law)
     _replace_events(conn, resource, law)
+    _replace_headings(conn, resource, expression, law.headings)
     add_unit_versions(conn, resource, expression, law.units, repeal=law.abandoned_on)
 
 
@@ -267,6 +269,7 @@ def _add_version(conn: Conn, resource: int, previous: int, law: ParsedLaw) -> No
     _close_previous(conn, previous, law.units)
     expression = _insert_expression(conn, resource, law)
     _replace_events(conn, resource, law)
+    _replace_headings(conn, resource, expression, law.headings)
     add_unit_versions(conn, resource, expression, law.units, repeal=law.abandoned_on)
 
 
@@ -354,6 +357,7 @@ def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) ->
     text_changed = [
         p for p in parsed if p not in current or current[p].sha != content_sha(parsed[p].content)
     ] + [p for p in current if p not in parsed]
+    _sync_headings(conn, resource, expression, law.headings)
     derived_changed = [
         p
         for p, u in parsed.items()
@@ -400,3 +404,60 @@ def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) ->
     if derived_changed:
         return Applied("refreshed", len(derived_changed))
     return Applied("unchanged")
+
+
+class _HeadingRow(NamedTuple):
+    id: int
+    parent_id: int | None
+    kind: str
+    heading_no: str
+    title: str
+    sort_key: list[int]
+
+
+def _sync_headings(
+    conn: Conn, resource: int, expression: int, headings: list[ParsedHeading]
+) -> None:
+    existing = fetch(
+        conn,
+        "SELECT id, parent_id, heading_kind::text, heading_no, title, sort_key"
+        "  FROM corpus.structure_heading"
+        " WHERE expression_id = %s ORDER BY sort_key",
+        (expression,),
+        _HeadingRow,
+    )
+    id_to_index = {row.id: i for i, row in enumerate(existing)}
+    current_shape = [
+        (
+            row.kind,
+            row.heading_no,
+            row.title,
+            row.sort_key,
+            id_to_index.get(row.parent_id) if row.parent_id is not None else None,
+        )
+        for row in existing
+    ]
+    target_shape = [(h.kind, h.heading_no, h.title, h.sort_key, h.parent_index) for h in headings]
+    if current_shape != target_shape:
+        _replace_headings(conn, resource, expression, headings)
+
+
+def _replace_headings(
+    conn: Conn, resource: int, expression: int, headings: list[ParsedHeading]
+) -> None:
+    conn.execute("DELETE FROM corpus.structure_heading WHERE expression_id = %s", (expression,))
+    if not headings:
+        return
+    inserted_ids: list[int] = []
+    for h in headings:
+        parent_id = inserted_ids[h.parent_index] if h.parent_index is not None else None
+        row_id = scalar(
+            conn,
+            "INSERT INTO corpus.structure_heading"
+            " (resource_id, expression_id, parent_id, heading_kind, heading_no, title, sort_key)"
+            " VALUES (%s, %s, %s, %s::corpus.heading_kind, %s, %s, %s)"
+            " RETURNING id",
+            (resource, expression, parent_id, h.kind, h.heading_no, h.title, h.sort_key),
+            int,
+        )
+        inserted_ids.append(row_id)

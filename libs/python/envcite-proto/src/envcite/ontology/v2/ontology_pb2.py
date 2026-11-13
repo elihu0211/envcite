@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"envcite/ontology/v2/ontology.proto\x12\x13\x65nvcite.ontology.v2\"J\n\rLawIdentifier\x12\x14\n\x0cjurisdiction\x18\x01 \x01(\t\x12\x11\n\tid_scheme\x18\x02 \x01(\t\x12\x10\n\x08local_id\x18\x03 \x01(\t\"\xdd\x01\n\x03Law\x12\x36\n\nidentifier\x18\x01 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\x0b\n\x03iri\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x10\n\x08language\x18\x04 \x01(\t\x12\x15\n\rdate_document\x18\x05 \x01(\tJ\x04\x08\x06\x10\x0bR\x12\x61pproval_authorityR\x0f\x61pproval_doc_noR\x0bratified_atR\x0einvalidated_byR\x11invalidation_date\"&\n\x07\x41rticle\x12\x0b\n\x03iri\x18\x01 \x01(\t\x12\x0e\n\x06number\x18\x02 \x01(\t\"V\n\rGetLawRequest\x12\x36\n\nidentifier\x18\x01 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\"7\n\x0eGetLawResponse\x12%\n\x03law\x18\x01 \x01(\x0b\x32\x18.envcite.ontology.v2.Law\"\\\n\x13ListArticlesRequest\x12\x36\n\nidentifier\x18\x01 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\"F\n\x14ListArticlesResponse\x12.\n\x08\x61rticles\x18\x01 \x03(\x0b\x32\x1c.envcite.ontology.v2.Article\"\x84\x01\n\x15SearchArticlesRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\x12\r\n\x05limit\x18\x03 \x01(\x05\x12\x14\n\x0cjurisdiction\x18\x04 \x01(\t\x12\x18\n\x10include_guidance\x18\x05 \x01(\x08\x12\x0e\n\x06rerank\x18\x06 \x01(\x08\"G\n\x16SearchArticlesResponse\x12-\n\x04hits\x18\x01 \x03(\x0b\x32\x1f.envcite.ontology.v2.ArticleHit\"\xb5\x02\n\nArticleHit\x12\x0b\n\x03iri\x18\x01 \x01(\t\x12\x36\n\nidentifier\x18\x02 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\x11\n\tlaw_title\x18\x03 \x01(\t\x12\x0e\n\x06number\x18\x04 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x05 \x01(\t\x12\x15\n\rlexical_score\x18\x06 \x01(\x02\x12 \n\x13semantic_similarity\x18\x07 \x01(\x02H\x00\x88\x01\x01\x12\x15\n\rterm_coverage\x18\x08 \x01(\x02\x12\x1a\n\x12guidance_documents\x18\t \x01(\x05\x12\x19\n\x0crerank_score\x18\n \x01(\x02H\x01\x88\x01\x01\x42\x16\n\x14_semantic_similarityB\x0f\n\r_rerank_score\"y\n\x18ListInvalidationsRequest\x12\x36\n\nidentifier\x18\x01 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\x12\x16\n\x0e\x61rticle_number\x18\x03 \x01(\t\"U\n\x19ListInvalidationsResponse\x12\x38\n\rinvalidations\x18\x01 \x03(\x0b\x32!.envcite.ontology.v2.Invalidation\"\xc5\x01\n\x0cInvalidation\x12\x11\n\truling_no\x18\x01 \x01(\t\x12\x34\n\x0bruling_kind\x18\x02 \x01(\x0e\x32\x1f.envcite.ontology.v2.RulingKind\x12\x12\n\ndecided_on\x18\x03 \x01(\t\x12\x12\n\nsource_url\x18\x04 \x01(\t\x12\x0f\n\x07\x65xcerpt\x18\x05 \x01(\t\x12\x0c\n\x04path\x18\x06 \x01(\t\x12\x14\n\x0cinvalid_from\x18\x07 \x01(\t\x12\x0f\n\x07partial\x18\x08 \x01(\x08\"6\n\x0fListLawsRequest\x12\r\n\x05\x61s_of\x18\x01 \x01(\t\x12\x14\n\x0cjurisdiction\x18\x02 \x01(\t\"\xc9\x01\n\nLawSummary\x12\x36\n\nidentifier\x18\x01 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\x0b\n\x03iri\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x11\n\tnorm_kind\x18\x04 \x01(\t\x12\x15\n\rdate_document\x18\x05 \x01(\t\x12=\n\x11parent_identifier\x18\x06 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\"A\n\x10ListLawsResponse\x12-\n\x04laws\x18\x01 \x03(\x0b\x32\x1f.envcite.ontology.v2.LawSummary*c\n\nRulingKind\x12\x1b\n\x17RULING_KIND_UNSPECIFIED\x10\x00\x12\x1e\n\x1aRULING_KIND_INTERPRETATION\x10\x01\x12\x18\n\x14RULING_KIND_JUDGMENT\x10\x02\x32\x81\x04\n\x0fOntologyService\x12Q\n\x06GetLaw\x12\".envcite.ontology.v2.GetLawRequest\x1a#.envcite.ontology.v2.GetLawResponse\x12\x63\n\x0cListArticles\x12(.envcite.ontology.v2.ListArticlesRequest\x1a).envcite.ontology.v2.ListArticlesResponse\x12i\n\x0eSearchArticles\x12*.envcite.ontology.v2.SearchArticlesRequest\x1a+.envcite.ontology.v2.SearchArticlesResponse\x12r\n\x11ListInvalidations\x12-.envcite.ontology.v2.ListInvalidationsRequest\x1a..envcite.ontology.v2.ListInvalidationsResponse\x12W\n\x08ListLaws\x12$.envcite.ontology.v2.ListLawsRequest\x1a%.envcite.ontology.v2.ListLawsResponseB\x16\xaa\x02\x13\x45nvCite.Ontology.V2b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"envcite/ontology/v2/ontology.proto\x12\x13\x65nvcite.ontology.v2\"J\n\rLawIdentifier\x12\x14\n\x0cjurisdiction\x18\x01 \x01(\t\x12\x11\n\tid_scheme\x18\x02 \x01(\t\x12\x10\n\x08local_id\x18\x03 \x01(\t\"\xdd\x01\n\x03Law\x12\x36\n\nidentifier\x18\x01 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\x0b\n\x03iri\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x10\n\x08language\x18\x04 \x01(\t\x12\x15\n\rdate_document\x18\x05 \x01(\tJ\x04\x08\x06\x10\x0bR\x12\x61pproval_authorityR\x0f\x61pproval_doc_noR\x0bratified_atR\x0einvalidated_byR\x11invalidation_date\"8\n\x07\x41rticle\x12\x0b\n\x03iri\x18\x01 \x01(\t\x12\x0e\n\x06number\x18\x02 \x01(\t\x12\x10\n\x08sort_key\x18\x03 \x03(\x05\"\x8d\x01\n\x10StructureHeading\x12.\n\x04kind\x18\x01 \x01(\x0e\x32 .envcite.ontology.v2.HeadingKind\x12\x12\n\nheading_no\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x10\n\x08sort_key\x18\x04 \x03(\x05\x12\x14\n\x0cparent_index\x18\x05 \x01(\x05\"V\n\rGetLawRequest\x12\x36\n\nidentifier\x18\x01 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\"7\n\x0eGetLawResponse\x12%\n\x03law\x18\x01 \x01(\x0b\x32\x18.envcite.ontology.v2.Law\"\\\n\x13ListArticlesRequest\x12\x36\n\nidentifier\x18\x01 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\"\x7f\n\x14ListArticlesResponse\x12.\n\x08\x61rticles\x18\x01 \x03(\x0b\x32\x1c.envcite.ontology.v2.Article\x12\x37\n\x08headings\x18\x02 \x03(\x0b\x32%.envcite.ontology.v2.StructureHeading\"\x84\x01\n\x15SearchArticlesRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\x12\r\n\x05limit\x18\x03 \x01(\x05\x12\x14\n\x0cjurisdiction\x18\x04 \x01(\t\x12\x18\n\x10include_guidance\x18\x05 \x01(\x08\x12\x0e\n\x06rerank\x18\x06 \x01(\x08\"G\n\x16SearchArticlesResponse\x12-\n\x04hits\x18\x01 \x03(\x0b\x32\x1f.envcite.ontology.v2.ArticleHit\"\xb5\x02\n\nArticleHit\x12\x0b\n\x03iri\x18\x01 \x01(\t\x12\x36\n\nidentifier\x18\x02 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\x11\n\tlaw_title\x18\x03 \x01(\t\x12\x0e\n\x06number\x18\x04 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x05 \x01(\t\x12\x15\n\rlexical_score\x18\x06 \x01(\x02\x12 \n\x13semantic_similarity\x18\x07 \x01(\x02H\x00\x88\x01\x01\x12\x15\n\rterm_coverage\x18\x08 \x01(\x02\x12\x1a\n\x12guidance_documents\x18\t \x01(\x05\x12\x19\n\x0crerank_score\x18\n \x01(\x02H\x01\x88\x01\x01\x42\x16\n\x14_semantic_similarityB\x0f\n\r_rerank_score\"y\n\x18ListInvalidationsRequest\x12\x36\n\nidentifier\x18\x01 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\x12\x16\n\x0e\x61rticle_number\x18\x03 \x01(\t\"U\n\x19ListInvalidationsResponse\x12\x38\n\rinvalidations\x18\x01 \x03(\x0b\x32!.envcite.ontology.v2.Invalidation\"\xc5\x01\n\x0cInvalidation\x12\x11\n\truling_no\x18\x01 \x01(\t\x12\x34\n\x0bruling_kind\x18\x02 \x01(\x0e\x32\x1f.envcite.ontology.v2.RulingKind\x12\x12\n\ndecided_on\x18\x03 \x01(\t\x12\x12\n\nsource_url\x18\x04 \x01(\t\x12\x0f\n\x07\x65xcerpt\x18\x05 \x01(\t\x12\x0c\n\x04path\x18\x06 \x01(\t\x12\x14\n\x0cinvalid_from\x18\x07 \x01(\t\x12\x0f\n\x07partial\x18\x08 \x01(\x08\"6\n\x0fListLawsRequest\x12\r\n\x05\x61s_of\x18\x01 \x01(\t\x12\x14\n\x0cjurisdiction\x18\x02 \x01(\t\"\xc9\x01\n\nLawSummary\x12\x36\n\nidentifier\x18\x01 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\x12\x0b\n\x03iri\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x11\n\tnorm_kind\x18\x04 \x01(\t\x12\x15\n\rdate_document\x18\x05 \x01(\t\x12=\n\x11parent_identifier\x18\x06 \x01(\x0b\x32\".envcite.ontology.v2.LawIdentifier\"A\n\x10ListLawsResponse\x12-\n\x04laws\x18\x01 \x03(\x0b\x32\x1f.envcite.ontology.v2.LawSummary*\xb2\x01\n\x0bHeadingKind\x12\x1c\n\x18HEADING_KIND_UNSPECIFIED\x10\x00\x12\x15\n\x11HEADING_KIND_PART\x10\x01\x12\x18\n\x14HEADING_KIND_CHAPTER\x10\x02\x12\x18\n\x14HEADING_KIND_SECTION\x10\x03\x12\x1b\n\x17HEADING_KIND_SUBSECTION\x10\x04\x12\x1d\n\x19HEADING_KIND_ITEM_HEADING\x10\x05*c\n\nRulingKind\x12\x1b\n\x17RULING_KIND_UNSPECIFIED\x10\x00\x12\x1e\n\x1aRULING_KIND_INTERPRETATION\x10\x01\x12\x18\n\x14RULING_KIND_JUDGMENT\x10\x02\x32\x81\x04\n\x0fOntologyService\x12Q\n\x06GetLaw\x12\".envcite.ontology.v2.GetLawRequest\x1a#.envcite.ontology.v2.GetLawResponse\x12\x63\n\x0cListArticles\x12(.envcite.ontology.v2.ListArticlesRequest\x1a).envcite.ontology.v2.ListArticlesResponse\x12i\n\x0eSearchArticles\x12*.envcite.ontology.v2.SearchArticlesRequest\x1a+.envcite.ontology.v2.SearchArticlesResponse\x12r\n\x11ListInvalidations\x12-.envcite.ontology.v2.ListInvalidationsRequest\x1a..envcite.ontology.v2.ListInvalidationsResponse\x12W\n\x08ListLaws\x12$.envcite.ontology.v2.ListLawsRequest\x1a%.envcite.ontology.v2.ListLawsResponseB\x16\xaa\x02\x13\x45nvCite.Ontology.V2b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,40 +32,44 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'envcite.ontology.v2.ontolog
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\252\002\023EnvCite.Ontology.V2'
-  _globals['_RULINGKIND']._serialized_start=1967
-  _globals['_RULINGKIND']._serialized_end=2066
+  _globals['_HEADINGKIND']._serialized_start=2187
+  _globals['_HEADINGKIND']._serialized_end=2365
+  _globals['_RULINGKIND']._serialized_start=2367
+  _globals['_RULINGKIND']._serialized_end=2466
   _globals['_LAWIDENTIFIER']._serialized_start=59
   _globals['_LAWIDENTIFIER']._serialized_end=133
   _globals['_LAW']._serialized_start=136
   _globals['_LAW']._serialized_end=357
   _globals['_ARTICLE']._serialized_start=359
-  _globals['_ARTICLE']._serialized_end=397
-  _globals['_GETLAWREQUEST']._serialized_start=399
-  _globals['_GETLAWREQUEST']._serialized_end=485
-  _globals['_GETLAWRESPONSE']._serialized_start=487
-  _globals['_GETLAWRESPONSE']._serialized_end=542
-  _globals['_LISTARTICLESREQUEST']._serialized_start=544
-  _globals['_LISTARTICLESREQUEST']._serialized_end=636
-  _globals['_LISTARTICLESRESPONSE']._serialized_start=638
-  _globals['_LISTARTICLESRESPONSE']._serialized_end=708
-  _globals['_SEARCHARTICLESREQUEST']._serialized_start=711
-  _globals['_SEARCHARTICLESREQUEST']._serialized_end=843
-  _globals['_SEARCHARTICLESRESPONSE']._serialized_start=845
-  _globals['_SEARCHARTICLESRESPONSE']._serialized_end=916
-  _globals['_ARTICLEHIT']._serialized_start=919
-  _globals['_ARTICLEHIT']._serialized_end=1228
-  _globals['_LISTINVALIDATIONSREQUEST']._serialized_start=1230
-  _globals['_LISTINVALIDATIONSREQUEST']._serialized_end=1351
-  _globals['_LISTINVALIDATIONSRESPONSE']._serialized_start=1353
-  _globals['_LISTINVALIDATIONSRESPONSE']._serialized_end=1438
-  _globals['_INVALIDATION']._serialized_start=1441
-  _globals['_INVALIDATION']._serialized_end=1638
-  _globals['_LISTLAWSREQUEST']._serialized_start=1640
-  _globals['_LISTLAWSREQUEST']._serialized_end=1694
-  _globals['_LAWSUMMARY']._serialized_start=1697
-  _globals['_LAWSUMMARY']._serialized_end=1898
-  _globals['_LISTLAWSRESPONSE']._serialized_start=1900
-  _globals['_LISTLAWSRESPONSE']._serialized_end=1965
-  _globals['_ONTOLOGYSERVICE']._serialized_start=2069
-  _globals['_ONTOLOGYSERVICE']._serialized_end=2582
+  _globals['_ARTICLE']._serialized_end=415
+  _globals['_STRUCTUREHEADING']._serialized_start=418
+  _globals['_STRUCTUREHEADING']._serialized_end=559
+  _globals['_GETLAWREQUEST']._serialized_start=561
+  _globals['_GETLAWREQUEST']._serialized_end=647
+  _globals['_GETLAWRESPONSE']._serialized_start=649
+  _globals['_GETLAWRESPONSE']._serialized_end=704
+  _globals['_LISTARTICLESREQUEST']._serialized_start=706
+  _globals['_LISTARTICLESREQUEST']._serialized_end=798
+  _globals['_LISTARTICLESRESPONSE']._serialized_start=800
+  _globals['_LISTARTICLESRESPONSE']._serialized_end=927
+  _globals['_SEARCHARTICLESREQUEST']._serialized_start=930
+  _globals['_SEARCHARTICLESREQUEST']._serialized_end=1062
+  _globals['_SEARCHARTICLESRESPONSE']._serialized_start=1064
+  _globals['_SEARCHARTICLESRESPONSE']._serialized_end=1135
+  _globals['_ARTICLEHIT']._serialized_start=1138
+  _globals['_ARTICLEHIT']._serialized_end=1447
+  _globals['_LISTINVALIDATIONSREQUEST']._serialized_start=1449
+  _globals['_LISTINVALIDATIONSREQUEST']._serialized_end=1570
+  _globals['_LISTINVALIDATIONSRESPONSE']._serialized_start=1572
+  _globals['_LISTINVALIDATIONSRESPONSE']._serialized_end=1657
+  _globals['_INVALIDATION']._serialized_start=1660
+  _globals['_INVALIDATION']._serialized_end=1857
+  _globals['_LISTLAWSREQUEST']._serialized_start=1859
+  _globals['_LISTLAWSREQUEST']._serialized_end=1913
+  _globals['_LAWSUMMARY']._serialized_start=1916
+  _globals['_LAWSUMMARY']._serialized_end=2117
+  _globals['_LISTLAWSRESPONSE']._serialized_start=2119
+  _globals['_LISTLAWSRESPONSE']._serialized_end=2184
+  _globals['_ONTOLOGYSERVICE']._serialized_start=2469
+  _globals['_ONTOLOGYSERVICE']._serialized_end=2982
 # @@protoc_insertion_point(module_scope)

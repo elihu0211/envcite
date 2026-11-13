@@ -37,6 +37,14 @@ _RULING_KINDS = {
     "judgment": pb.RULING_KIND_JUDGMENT,
 }
 
+_HEADING_KINDS = {
+    "part": pb.HEADING_KIND_PART,
+    "chapter": pb.HEADING_KIND_CHAPTER,
+    "section": pb.HEADING_KIND_SECTION,
+    "subsection": pb.HEADING_KIND_SUBSECTION,
+    "item_heading": pb.HEADING_KIND_ITEM_HEADING,
+}
+
 
 class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     """`OntologyService` 的 servicer：取法規、列條文與失效條文、混合檢索條文。"""
@@ -105,13 +113,25 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     ) -> pb.ListArticlesResponse:
         _log_call(context, "ListArticles", identifiers.subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
-        articles = self._store.list_articles(
-            key, as_of=request.as_of, timeout=remaining_seconds(context)
-        )
+        timeout = remaining_seconds(context)
+        articles = self._store.list_articles(key, as_of=request.as_of, timeout=timeout)
         if articles is None:
             raise identifiers.not_found(self._store, key, request.as_of, context)
+        headings = self._store.list_headings(key, as_of=request.as_of, timeout=timeout) or []
         return pb.ListArticlesResponse(
-            articles=[pb.Article(iri=a.iri, number=a.number) for a in articles]
+            articles=[
+                pb.Article(iri=a.iri, number=a.number, sort_key=a.sort_key) for a in articles
+            ],
+            headings=[
+                pb.StructureHeading(
+                    kind=_HEADING_KINDS.get(h.kind, pb.HEADING_KIND_UNSPECIFIED),
+                    heading_no=h.heading_no,
+                    title=h.title,
+                    sort_key=h.sort_key,
+                    parent_index=h.parent_index,
+                )
+                for h in headings
+            ],
         )
 
     @errors.maps_errors

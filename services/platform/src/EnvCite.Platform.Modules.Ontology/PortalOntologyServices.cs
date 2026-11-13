@@ -43,18 +43,70 @@ internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modu
             if (!law.IsOk)
                 return AdminOutcome.NotFound<PortalLawCorpusResult>(law.Code ?? OutcomeCodes.LawNotFound);
 
-            var articles = await gateway.ListArticlesAsync(jurisdiction, idScheme, localId, asOf, cancellationToken);
-            if (!articles.IsOk)
-                return AdminOutcome.Unavailable<PortalLawCorpusResult>(articles.Code ?? OutcomeCodes.OntologyUnavailable);
+            var structure = await gateway.ListLawStructureAsync(jurisdiction, idScheme, localId, asOf, cancellationToken);
+            if (!structure.IsOk)
+                return AdminOutcome.Unavailable<PortalLawCorpusResult>(structure.Code ?? OutcomeCodes.OntologyUnavailable);
 
             var dto = law.Value!;
+            var data = structure.Value!;
             return AdminOutcome.Ok(new PortalLawCorpusResult(
                 dto.Title,
                 dto.Language,
                 dto.Uri,
                 dto.DateDocument,
-                [.. articles.Value!.Select(a => new PortalLawArticle(a.Uri, a.Number))]));
+                [.. data.Articles.Select(a => new PortalLawArticle(a.Uri, a.Number))],
+                BuildStructure(data.Headings, data.Articles)));
         });
+    }
+
+    private static IReadOnlyList<PortalStructureNode> BuildStructure(
+        IReadOnlyList<StructureHeadingDto> headings,
+        IReadOnlyList<ArticleWithSortDto> articles)
+    {
+        if (headings.Count == 0)
+            return [];
+
+        var childHeadingIndices = Enumerable.Range(0, headings.Count).Select(_ => new List<int>()).ToArray();
+        var rootIndices = new List<int>();
+        for (var i = 0; i < headings.Count; i++)
+        {
+            var parent = headings[i].ParentIndex;
+            if (parent >= 0 && parent < headings.Count && parent != i)
+                childHeadingIndices[parent].Add(i);
+            else
+                rootIndices.Add(i);
+        }
+
+        var ownedArticles = Enumerable.Range(0, headings.Count).Select(_ => new List<PortalLawArticle>()).ToArray();
+        var hIdx = 0;
+        foreach (var article in articles)
+        {
+            while (hIdx + 1 < headings.Count && CompareSortKeys(headings[hIdx + 1].SortKey, article.SortKey) <= 0)
+                hIdx++;
+            if (CompareSortKeys(headings[hIdx].SortKey, article.SortKey) <= 0)
+                ownedArticles[hIdx].Add(new PortalLawArticle(article.Uri, article.Number));
+        }
+
+        PortalStructureNode ToNode(int index)
+        {
+            var h = headings[index];
+            var children = childHeadingIndices[index].Select(ToNode).ToList();
+            return new PortalStructureNode(h.Kind, h.HeadingNo, h.Title, children, ownedArticles[index]);
+        }
+
+        return [.. rootIndices.Select(ToNode)];
+    }
+
+    private static int CompareSortKeys(IReadOnlyList<int> left, IReadOnlyList<int> right)
+    {
+        var min = Math.Min(left.Count, right.Count);
+        for (var i = 0; i < min; i++)
+        {
+            var cmp = left[i].CompareTo(right[i]);
+            if (cmp != 0)
+                return cmp;
+        }
+        return left.Count.CompareTo(right.Count);
     }
 
     private static IReadOnlyList<PortalLawTreeNode> BuildTree(IReadOnlyList<LawSummaryDto> laws)

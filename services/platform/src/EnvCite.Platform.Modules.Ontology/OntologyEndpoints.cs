@@ -18,6 +18,19 @@ public sealed record LawDto(
 /// <param name="Number">條號，照來源寫法（如 <c>5-1</c>）。</param>
 public sealed record ArticleDto(string Uri, string Number);
 
+public sealed record ArticleWithSortDto(string Uri, string Number, IReadOnlyList<int> SortKey);
+
+public sealed record StructureHeadingDto(
+    string Kind,
+    string HeadingNo,
+    string Title,
+    IReadOnlyList<int> SortKey,
+    int ParentIndex);
+
+public sealed record LawStructureDto(
+    IReadOnlyList<ArticleWithSortDto> Articles,
+    IReadOnlyList<StructureHeadingDto> Headings);
+
 /// <param name="Query">要查的原始文字；服務端以建索引時的同一個分詞器分詞。</param>
 /// <param name="AsOf">查詢哪一天有效的條文（<c>YYYY-MM-DD</c>）；省略表示現行。</param>
 /// <param name="Limit">最多幾筆，1–50；省略為 10。</param>

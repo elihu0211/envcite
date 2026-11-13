@@ -68,10 +68,22 @@ class LawSummaryRecord:
 
 @dataclass(frozen=True, slots=True)
 class ArticleRecord:
-    """某日有效的一條：版本 IRI 與條號。"""
+    """某日有效的一條：版本 IRI、條號與排序鍵。"""
 
     iri: str
     number: str
+    sort_key: tuple[int, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class StructureHeadingRecord:
+    """某版本的一筆結構章節（編、章、節、款、目）。"""
+
+    kind: str
+    heading_no: str
+    title: str
+    sort_key: tuple[int, ...]
+    parent_index: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,11 +142,22 @@ _RESOLVE = """
 
 #: 該日有效的條，含 `text_unavailable`（有效，只是無文字）。
 _LIST_ARTICLES = """
-    SELECT corpus.version_iri(s.version_id), corpus.article_number(s.path)
+    SELECT corpus.version_iri(s.version_id), corpus.article_number(s.path), s.sort_key
       FROM corpus.provisions_at(%(resource)s, %(language)s, %(on)s::date) AS s
      WHERE s.provision_type = 'article'
        AND s.status IN ('in_force', 'text_unavailable')
      ORDER BY s.sort_key
+"""
+
+_LIST_HEADINGS = """
+    SELECT h.id, h.parent_id, h.heading_kind::text, h.heading_no, h.title, h.sort_key
+      FROM corpus.structure_heading AS h
+      JOIN corpus.legal_expression AS e ON e.id = h.expression_id
+     WHERE h.resource_id = %(resource)s
+       AND e.language = %(language)s
+       AND e.text_period @> %(on)s::date
+       AND e.text_status = 'available'
+     ORDER BY h.sort_key
 """
 
 _JURISDICTIONS = "SELECT unnest(enum_range(NULL::corpus.jurisdiction))::text"
@@ -294,7 +317,37 @@ class OntologyStore:
                 _LIST_ARTICLES,
                 {"resource": resource_id, "language": LANGUAGE, "on": _date(as_of)},
             )
-            return [ArticleRecord(iri=iri, number=number) for iri, number in cur.fetchall()]
+            return [
+                ArticleRecord(iri=iri, number=number, sort_key=tuple(sort_key))
+                for iri, number, sort_key in cur.fetchall()
+            ]
+
+    def list_headings(
+        self, key: LawKey, *, as_of: str = "", timeout: float | None = None
+    ) -> list[StructureHeadingRecord] | None:
+        """`as_of` 當日有效版本的結構章節；法規或版本不存在為 None。"""
+        deadline = _deadline(timeout)
+        found = self._resolve(key, as_of, timeout=_remaining(deadline))
+        if found is None:
+            return None
+        resource_id, _ = found
+        with self.read_connection(timeout=_remaining(deadline)) as conn, conn.cursor() as cur:
+            cur.execute(
+                _LIST_HEADINGS,
+                {"resource": resource_id, "language": LANGUAGE, "on": _date(as_of)},
+            )
+            rows = cur.fetchall()
+        id_to_index = {row[0]: i for i, row in enumerate(rows)}
+        return [
+            StructureHeadingRecord(
+                kind=row[2],
+                heading_no=row[3],
+                title=row[4],
+                sort_key=tuple(row[5]),
+                parent_index=id_to_index.get(row[1], -1) if row[1] is not None else -1,
+            )
+            for row in rows
+        ]
 
     def list_invalidations(
         self,

@@ -19,6 +19,29 @@ else:
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
+class _HeadingKind:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _HeadingKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_HeadingKind.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    HEADING_KIND_UNSPECIFIED: _HeadingKind.ValueType  # 0
+    HEADING_KIND_PART: _HeadingKind.ValueType  # 1
+    HEADING_KIND_CHAPTER: _HeadingKind.ValueType  # 2
+    HEADING_KIND_SECTION: _HeadingKind.ValueType  # 3
+    HEADING_KIND_SUBSECTION: _HeadingKind.ValueType  # 4
+    HEADING_KIND_ITEM_HEADING: _HeadingKind.ValueType  # 5
+
+class HeadingKind(_HeadingKind, metaclass=_HeadingKindEnumTypeWrapper): ...
+
+HEADING_KIND_UNSPECIFIED: HeadingKind.ValueType  # 0
+HEADING_KIND_PART: HeadingKind.ValueType  # 1
+HEADING_KIND_CHAPTER: HeadingKind.ValueType  # 2
+HEADING_KIND_SECTION: HeadingKind.ValueType  # 3
+HEADING_KIND_SUBSECTION: HeadingKind.ValueType  # 4
+HEADING_KIND_ITEM_HEADING: HeadingKind.ValueType  # 5
+Global___HeadingKind: _TypeAlias = HeadingKind  # noqa: Y015
+
 class _RulingKind:
     ValueType = _typing.NewType("ValueType", _builtins.int)
     V: _TypeAlias = ValueType  # noqa: Y015
@@ -118,22 +141,61 @@ class Article(_message.Message):
 
     IRI_FIELD_NUMBER: _builtins.int
     NUMBER_FIELD_NUMBER: _builtins.int
+    SORT_KEY_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     number: _builtins.str
     """條號，依原文書寫，例如 "1"、"5-1"（第 5 條之 1）。"""
+    @_builtins.property
+    def sort_key(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]:
+        """與 StructureHeading.sort_key 共用的整數陣列排序鍵；依閱讀順序交錯組樹。"""
+
     def __init__(
         self,
         *,
         iri: _builtins.str = ...,
         number: _builtins.str = ...,
+        sort_key: _abc.Iterable[_builtins.int] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["iri", b"iri", "number", b"number"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["iri", b"iri", "number", b"number", "sort_key", b"sort_key"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___Article: _TypeAlias = Article  # noqa: Y015
+
+@_typing.final
+class StructureHeading(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    KIND_FIELD_NUMBER: _builtins.int
+    HEADING_NO_FIELD_NUMBER: _builtins.int
+    TITLE_FIELD_NUMBER: _builtins.int
+    SORT_KEY_FIELD_NUMBER: _builtins.int
+    PARENT_INDEX_FIELD_NUMBER: _builtins.int
+    kind: Global___HeadingKind.ValueType
+    heading_no: _builtins.str
+    title: _builtins.str
+    parent_index: _builtins.int
+    """在 ListArticlesResponse.headings 中的父節點索引；頂層節點為 -1。"""
+    @_builtins.property
+    def sort_key(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    def __init__(
+        self,
+        *,
+        kind: Global___HeadingKind.ValueType = ...,
+        heading_no: _builtins.str = ...,
+        title: _builtins.str = ...,
+        sort_key: _abc.Iterable[_builtins.int] | None = ...,
+        parent_index: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["heading_no", b"heading_no", "kind", b"kind", "parent_index", b"parent_index", "sort_key", b"sort_key", "title", b"title"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___StructureHeading: _TypeAlias = StructureHeading  # noqa: Y015
 
 @_typing.final
 class GetLawRequest(_message.Message):
@@ -210,16 +272,20 @@ class ListArticlesResponse(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
     ARTICLES_FIELD_NUMBER: _builtins.int
+    HEADINGS_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def articles(self) -> _containers.RepeatedCompositeFieldContainer[Global___Article]: ...
+    @_builtins.property
+    def headings(self) -> _containers.RepeatedCompositeFieldContainer[Global___StructureHeading]: ...
     def __init__(
         self,
         *,
         articles: _abc.Iterable[Global___Article] | None = ...,
+        headings: _abc.Iterable[Global___StructureHeading] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["articles", b"articles"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["articles", b"articles", "headings", b"headings"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
