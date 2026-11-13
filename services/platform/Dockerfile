@@ -30,7 +30,7 @@ ENV NuGetAudit=false
 # 對應倉庫的目錄結構：各模組的 .csproj 以相對路徑找 proto/ 與 libs/dotnet/，Directory.*.props 在根。
 WORKDIR /repo/services/platform
 COPY global.json Directory.Build.props Directory.Packages.props .editorconfig /repo/
-COPY services/platform/.editorconfig services/platform/dotnet-tools.json ./
+COPY services/platform/.editorconfig services/platform/Directory.Build.props services/platform/dotnet-tools.json ./
 # 只用專案檔 restore，純原始碼變動時沿用這一層。--parents 保留各專案的路徑，glob 涵蓋 Api 專案
 # 引用的所有專案。restore 與 publish 的 `-a` 要一致，否則 publish 會再 restore 一次。
 COPY --parents services/platform/src/*/*.csproj libs/dotnet/*/*.csproj /repo/
