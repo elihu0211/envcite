@@ -9,10 +9,10 @@ import psycopg
 import pytest
 
 from envcite_ontology.annotate import Loaded, load
-from envcite_ontology.verification import PanelGate
 from envcite_ontology.verification.context import ancestors_text
 from envcite_ontology.verification.extract import extract_unit
 from envcite_ontology.verification.gates import NumbersGate
+from envcite_ontology.verification.model_gates import PanelGate
 from tests.model_gates_support import EXTRACTOR, Scripted
 from tests.test_annotation import LAW, _doc, _duty
 from tests.test_incremental import _articles, _first, _law_v1

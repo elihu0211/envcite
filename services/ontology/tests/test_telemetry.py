@@ -106,7 +106,7 @@ def test_an_evaluation_that_cannot_get_a_slot_in_time_is_counted_as_busy(
 def test_the_annotation_health_views_count_states_and_latest_gate_results(
     conn: Conn, sample: None, store: OntologyStore
 ) -> None:
-    from envcite_ontology.verification import verify
+    from envcite_ontology.verification.pipeline import verify
 
     _water_draft(conn, sample)
     verify(conn)

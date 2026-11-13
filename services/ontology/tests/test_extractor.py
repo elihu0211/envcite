@@ -3,12 +3,10 @@
 from pathlib import Path
 
 from envcite_ontology.reasoning import evaluate
-from envcite_ontology.verification import (
-    settle,
-)
 from envcite_ontology.verification.extract import (
     extract_unit,
 )
+from envcite_ontology.verification.pipeline import settle
 from tests.test_annotation import BEFORE, LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1

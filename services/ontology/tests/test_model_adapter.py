@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from envcite_ontology.verification import AnthropicModel
+from envcite_ontology.verification.models import AnthropicModel
 from envcite_ontology.verification.run import (
     PROBES,
     SameModel,
