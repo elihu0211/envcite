@@ -6,12 +6,9 @@ from typing import Any
 
 import pytest
 
-from envcite_ontology.verification import (
-    RoundtripGate,
-    prompts,
-)
+from envcite_ontology.verification import prompts
 from envcite_ontology.verification.extract import extract_unit
-from envcite_ontology.verification.model_gates import render_annotation
+from envcite_ontology.verification.model_gates import RoundtripGate, render_annotation
 from tests.model_gates_support import (
     EXTRACTOR,
     SAME_AS_ANNOTATION,

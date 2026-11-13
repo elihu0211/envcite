@@ -8,16 +8,17 @@ from typing import Any
 import pytest
 
 from envcite_ontology.annotate import load
-from envcite_ontology.verification import (
+from envcite_ontology.verification import gates
+from envcite_ontology.verification.gates import (
     ExecutableGate,
     NumbersGate,
     ReferencesGate,
-    gates,
-    settle,
+    amounts,
+    cn_number,
 )
-from envcite_ontology.verification.gates import amounts, cn_number
 from envcite_ontology.verification.gates.cn_number import numbers_in, qualified_numbers
 from envcite_ontology.verification.gates.proviso_gate import ProvisoGate, provisos
+from envcite_ontology.verification.pipeline import settle
 from envcite_ontology.violation import citations, delegated_rules, violations
 from tests.reasoning_support import _plain_duty, _scope, _with
 from tests.test_annotation import LAW, _doc, _limit

@@ -7,10 +7,6 @@ from typing import Any
 
 import pytest
 
-from envcite_ontology.verification import (
-    NumbersGate,
-    verify,
-)
 from envcite_ontology.verification.extract import (
     MAX_REPAIRS,
     STATEMENTS_FORMAT,
@@ -23,6 +19,8 @@ from envcite_ontology.verification.extract import (
     sanction_issues,
     uncovered_issues,
 )
+from envcite_ontology.verification.gates import NumbersGate
+from envcite_ontology.verification.pipeline import verify
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1

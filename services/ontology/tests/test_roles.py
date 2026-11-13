@@ -9,8 +9,8 @@ import psycopg
 import pytest
 
 from envcite_ontology.annotate import load
-from envcite_ontology.verification import settle
 from envcite_ontology.verification.link import link_penalties
+from envcite_ontology.verification.pipeline import settle
 from tests.test_annotation import _doc, _duty
 from tests.test_import import _scalar
 from tests.test_incremental import _first, _law_v1

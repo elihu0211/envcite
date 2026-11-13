@@ -4,13 +4,9 @@ docs 03-04 §3.3)."""
 import pytest
 
 from envcite_ontology.reasoning import evaluate
-from envcite_ontology.verification import (
-    DEFAULT_GATES,
-    settle,
-    verify,
-)
-from envcite_ontology.verification.gates import GateResult
+from envcite_ontology.verification.gates import DEFAULT_GATES, GateResult
 from envcite_ontology.verification.link import link_penalties
+from envcite_ontology.verification.pipeline import settle, verify
 from tests.reasoning_support import WATER_DAY
 from tests.test_import import _scalar
 from tests.verification_support import (

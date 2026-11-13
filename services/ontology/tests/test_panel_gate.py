@@ -3,9 +3,7 @@
 from pathlib import Path
 from typing import Any
 
-from envcite_ontology.verification import (
-    PanelGate,
-)
+from envcite_ontology.verification.model_gates import PanelGate
 from tests.model_gates_support import (
     FAITHFUL,
     UNFAITHFUL,
