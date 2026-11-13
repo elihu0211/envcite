@@ -4,7 +4,7 @@
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 @inject IConversationHistory Store
 @inject IConversationHistoryAvailability HistoryFeature
-@inherits PortalFormPageBase<DeleteForm>
+@inherits PortalPageBase
 
 <DocumentTitle Text="@L["對話紀錄"]" />
 
@@ -18,12 +18,18 @@ else
 {
     <p class="ep-hint">@L["超過 {0} 天沒有更新的對話會自動刪除。", HistoryFeature.RetentionDays]</p>
 
-    @if (_message is not null)
-    {
-        <FormAlert Kind="AlertKind.Info">@_message</FormAlert>
-    }
+    @* 只比對標題：內容是客戶案情，不建索引。 *@
+    <form method="get" role="search" class="ep-conv-search">
+        <label class="ep-visually-hidden" for="history-q">@L["搜尋對話標題"]</label>
+        <input id="history-q" class="ep-input" type="search" name="q" value="@Query" maxlength="80" autocomplete="off" placeholder="@L["搜尋對話標題"]" />
+        <button type="submit" class="ep-btn ep-btn-quiet">@L["搜尋"]</button>
+    </form>
 
-    @if (_items.Count == 0)
+    @if (_items.Count == 0 && !string.IsNullOrWhiteSpace(Query))
+    {
+        <EmptyState Icon="@Icons.Material.Outlined.SearchOff" Title="@L["沒有符合的對話"]" Description="@L["換個詞試試；只比對標題，不比對內容。"]" />
+    }
+    else if (_items.Count == 0)
     {
         <EmptyState Icon="@Icons.Material.Outlined.Forum" Title="@L["還沒有對話"]" Description="@L["在首頁問一個問題，它就會出現在這裡。"]">
             <a class="ep-btn ep-btn-primary" href="@PortalPaths.Home(Tenant)">@L["查詢"]</a>
@@ -31,20 +37,23 @@ else
     }
     else
     {
-        <PostForm Model="Input" FormName="portal-history-delete" OnValidSubmit="DeleteAsync" Class="@null">
-            <ul class="ep-history" aria-label="@L["對話"]">
-                @foreach (var item in _items)
-                {
-                    <li class="ep-card ep-history-item">
-                        <a class="ep-history-link" href="@PortalPaths.Conversation(Tenant, item.Id)">
-                            <span class="ep-history-title">@item.Title</span>
-                            <time class="ep-secondary" datetime="@TaipeiTime.Full(item.UpdatedAt)">@TaipeiTime.Format(item.UpdatedAt)</time>
-                        </a>
-                        <button type="submit" name="Input.Delete" value="@item.Id" formnovalidate class="ep-btn ep-btn-quiet"
-                                aria-label="@L["刪除對話：{0}", item.Title]">@L["刪除"]</button>
-                    </li>
-                }
-            </ul>
-        </PostForm>
+        <ul class="ep-history" aria-label="@L["對話"]">
+            @foreach (var item in _items)
+            {
+                <li class="ep-card ep-history-item">
+                    <a class="ep-history-link" href="@PortalPaths.Conversation(Tenant, item.Id)">
+                        <span class="ep-history-title">
+                            @if (item.Pinned)
+                            {
+                                <NavIcon Path="@Icons.Material.Outlined.PushPin" />
+                            }
+                            @item.Title
+                        </span>
+                        <time class="ep-secondary" datetime="@TaipeiTime.Full(item.UpdatedAt)">@TaipeiTime.Format(item.UpdatedAt)</time>
+                    </a>
+                    <ConversationMenu Id="@item.Id" Href="@PortalPaths.Conversation(Tenant, item.Id)" Title="@item.Title" Pinned="@item.Pinned" />
+                </li>
+            }
+        </ul>
     }
 }

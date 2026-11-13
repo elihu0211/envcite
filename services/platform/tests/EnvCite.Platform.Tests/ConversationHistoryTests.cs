@@ -21,6 +21,8 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
 {
     private const string Question = "噪音管制標準";
 
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
     private static readonly JsonSerializerOptions Unescaped = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     private WebApplicationFactory<Program> Enabled() =>
@@ -30,8 +32,20 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
 
     private static string ConversationPage(string tenant, Guid id) => PortalPaths.Conversation(tenant, id);
 
-    // 表單名稱要明說（靜態 SSR 的 POST 靠 _handler 分辨是哪個表單）。
-    private static Dictionary<string, string> Delete(Guid id) => new() { ["_handler"] = "portal-history-delete", ["Input.Delete"] = id.ToString() };
+    // 釘選、重新命名、刪除是 POST 到對話底下的端點（側欄與對話紀錄頁的選單表單），做完導回原來的頁面。
+    private static string Manage(string tenant, Guid id, string action) => $"{ConversationPage(tenant, id)}/{action}";
+
+    private static Task<(HttpStatusCode Status, string Html, string? Location)> PinAsync(PortalBrowser who, string tenant, Guid id, bool pinned) =>
+        who.SubmitAsync(HistoryPage(tenant), new() { ["pinned"] = pinned ? "true" : "false" }, Manage(tenant, id, "pin"));
+
+    private static Task<(HttpStatusCode Status, string Html, string? Location)> RenameAsync(PortalBrowser who, string tenant, Guid id, string title) =>
+        who.SubmitAsync(HistoryPage(tenant), new() { ["title"] = title }, Manage(tenant, id, "rename"));
+
+    private static Task<(HttpStatusCode Status, string Html, string? Location)> DeleteAsync(PortalBrowser who, string tenant, Guid id) =>
+        who.SubmitAsync(HistoryPage(tenant), [], Manage(tenant, id, "delete"));
+
+    private static async Task<ConversationDetail?> OpenAsync(WebApplicationFactory<Program> host, ClaimsPrincipal who, Guid id) =>
+        await host.Services.GetRequiredService<IAskService>().ConversationAsync(who, id, TestContext.Current.CancellationToken);
 
     private const string Citation = "《空氣污染防制法》第 5-1 條（現行） https://example.test/law/5-1";
 
@@ -211,14 +225,14 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         using var b = bossBrowser;
         var id = (await RecordAsync(host, alice, "要被刪掉的問題"))!.Value;
 
-        // 刪除表單只在有自己的對話時才出現，所以老闆先有一串自己的。
+        // 同組織的老闆送來別人的 Id：和「不存在」一樣只是導回，什麼也沒刪。
         await RecordAsync(host, boss, "老闆自己的問題");
-        var refused = await bossBrowser.SubmitAsync(HistoryPage(tenant.Identifier), Delete(id));
-        Assert.Contains("找不到這個對話", refused.Html, StringComparison.Ordinal);
+        var refused = await DeleteAsync(bossBrowser, tenant.Identifier, id);
+        Assert.Equal(HttpStatusCode.Redirect, refused.Status);
         Assert.Equal(2, await CountAsync(tenant.Id));
 
-        var deleted = await aliceBrowser.SubmitAsync(HistoryPage(tenant.Identifier), Delete(id));
-        Assert.Contains("已刪除", deleted.Html, StringComparison.Ordinal);
+        var deleted = await DeleteAsync(aliceBrowser, tenant.Identifier, id);
+        Assert.Equal(HttpStatusCode.Redirect, deleted.Status);
         Assert.Equal(1, await CountAsync(tenant.Id)); // 只少了她那一串
         var gone = await aliceBrowser.GetAsync(ConversationPage(tenant.Identifier, id));
         Assert.Contains("找不到這個對話", gone.Html, StringComparison.Ordinal);
@@ -230,6 +244,125 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         // 稽核不存內容。預設的 JSON 編碼會把中文轉成 \uXXXX，那樣比對永遠找不到，所以改用不跳脫的編碼。
         var written = JsonSerializer.Serialize(evt, Unescaped);
         Assert.DoesNotContain("要被刪掉的問題", written, StringComparison.Ordinal);
+    }
+
+    // 釘選與改名：釘選的在側欄自成一組、排在最上面；兩者都不算新的活動（不改最後更新時間，所以不改排序也不延長保存）。
+    [Fact]
+    public async Task PinnedConversationsFloatToTheirOwnGroupAndRenamingChangesOnlyTheTitle()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-pin");
+        var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        using var b = browser;
+        var t = tenant.Identifier;
+        var older = (await RecordAsync(host, alice, Question))!.Value;
+        var newer = (await RecordAsync(host, alice, "固定污染源"))!.Value;
+        var before = (await OpenAsync(host, alice, older))!;
+
+        Assert.Equal(HttpStatusCode.Redirect, (await PinAsync(browser, t, older, pinned: true)).Status);
+
+        var page = (await browser.GetAsync(HistoryPage(t))).Html;
+        Assert.Contains("已釘選", page, StringComparison.Ordinal);
+        Assert.True(
+            page.IndexOf($"href=\"{ConversationPage(t, older)}\"", StringComparison.Ordinal) < page.IndexOf($"href=\"{ConversationPage(t, newer)}\"", StringComparison.Ordinal),
+            "the pinned conversation comes first even though it is the older one");
+        // 選單是原生 popover 加普通表單：沒有 JavaScript 也能用。
+        Assert.Contains($"popovertarget=\"ep-conv-{older:N}\"", page, StringComparison.Ordinal);
+        Assert.Contains($"action=\"{Manage(t, older, "rename")}\"", page, StringComparison.Ordinal);
+        Assert.Contains($"action=\"{Manage(t, older, "delete")}\"", page, StringComparison.Ordinal);
+
+        Assert.Equal(HttpStatusCode.Redirect, (await RenameAsync(browser, t, older, "  環境\n 稽查  ")).Status);
+        await RenameAsync(browser, t, older, "   "); // 空白的標題不接受，維持原樣
+        var after = (await OpenAsync(host, alice, older))!;
+        Assert.Equal(("環境 稽查", true), (after.Title, after.Pinned));
+        Assert.Equal(before.UpdatedAt, after.UpdatedAt);
+
+        await PinAsync(browser, t, older, pinned: false);
+        Assert.DoesNotContain("已釘選", (await browser.GetAsync(HistoryPage(t))).Html, StringComparison.Ordinal);
+        Assert.False((await OpenAsync(host, alice, older))!.Pinned);
+    }
+
+    [Fact]
+    public async Task SomeoneElsesConversationCannotBePinnedOrRenamedNotEvenByAnOwnerOrAnotherTenant()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-pin-iso");
+        var (other, _) = await factory.CreateTenantWithKeyAsync("ch-pin-iso2");
+        var (aliceBrowser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        var (bossBrowser, _) = await SignedInAsync(host, tenant, CustomerRoles.Owner);
+        var (strangerBrowser, _) = await SignedInAsync(host, other);
+        using var a = aliceBrowser;
+        using var b = bossBrowser;
+        using var s = strangerBrowser;
+        var id = (await RecordAsync(host, alice, Question))!.Value;
+
+        await PinAsync(bossBrowser, tenant.Identifier, id, pinned: true);
+        await RenameAsync(bossBrowser, tenant.Identifier, id, "被改名");
+        await DeleteAsync(bossBrowser, tenant.Identifier, id);
+        var crossTenant = await PinAsync(strangerBrowser, tenant.Identifier, id, pinned: true);
+
+        var detail = (await OpenAsync(host, alice, id))!;
+        Assert.Equal((Question, false), (detail.Title, detail.Pinned));
+        Assert.NotEqual(HttpStatusCode.OK, crossTenant.Status);
+    }
+
+    // 搜尋只比對標題（內容是客戶案情，不建索引）；使用者打的 % 與 _ 是文字，不是萬用字元；不分大小寫。
+    [Fact]
+    public async Task TitleSearchMatchesTitlesOnlyAndWildcardsAreJustText()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-find");
+        var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        using var b = browser;
+        var ask = host.Services.GetRequiredService<IAskService>();
+        foreach (var title in new[] { "噪音管制標準", "固定污染源", "達成率 100% 的做法", "PM2.5 管制" })
+        {
+            await ask.RecordAsync(alice, null, title, "答案", Ct);
+        }
+
+        await ask.RecordAsync(alice, null, "別的問題", "只在答案裡的詞", Ct);
+
+        // 側欄永遠列最近的對話，所以只看主要內容區。
+        async Task<string> Found(string query)
+        {
+            var html = (await browser.GetAsync($"{HistoryPage(tenant.Identifier)}?q={Uri.EscapeDataString(query)}")).Html;
+            return html[html.IndexOf("<main", StringComparison.Ordinal)..];
+        }
+
+        var noise = await Found("噪音");
+        Assert.Contains("噪音管制標準", noise, StringComparison.Ordinal);
+        Assert.DoesNotContain("固定污染源", noise, StringComparison.Ordinal);
+
+        var percent = await Found("%");
+        Assert.Contains("達成率 100% 的做法", percent, StringComparison.Ordinal);
+        Assert.DoesNotContain("噪音管制標準", percent, StringComparison.Ordinal);
+
+        Assert.Contains("沒有符合的對話", await Found("_"), StringComparison.Ordinal);
+        Assert.Contains("沒有符合的對話", await Found("只在答案裡的詞"), StringComparison.Ordinal);
+        Assert.Contains("PM2.5 管制", await Found("pm2"), StringComparison.Ordinal);
+    }
+
+    // 引用以結構存下來（代號、法規名、網址；不存條文本文），開啟舊對話時連同問的是哪一天一起還原。
+    [Fact]
+    public async Task CitationsAreStoredStructuredAndAStoredConversationShowsThemWithTheDateAskedAbout()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-cite");
+        var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        using var b = browser;
+        var citation = new ConversationCitation("L1", "空氣污染防制法 第 5-1 條", "https://example.test/law/5-1");
+
+        var id = (await host.Services.GetRequiredService<IAskService>().RecordAsync(
+            alice, null, new ConversationTurn(Question, "不得露天燃燒 [L1]。", ConversationOutcome.Answered, [citation], "2021-01-01"), Ct))!.Value;
+
+        var detail = (await OpenAsync(host, alice, id))!;
+        Assert.Equal("2021-01-01", detail.Messages[0].AsOf);
+        Assert.Equal(("不得露天燃燒 [L1]。", ConversationOutcome.Answered), (detail.Messages[1].Content, detail.Messages[1].Outcome));
+        Assert.Equal(citation, Assert.Single(detail.Messages[1].Citations!));
+
+        var opened = await browser.GetAsync(ConversationPage(tenant.Identifier, id));
+        Assert.Contains("不得露天燃燒 [L1]。", opened.Html, StringComparison.Ordinal);
+        Assert.Contains("[L1] 空氣污染防制法 第 5-1 條（2021-01-01 有效） https://example.test/law/5-1", opened.Html, StringComparison.Ordinal);
     }
 
     [Fact]

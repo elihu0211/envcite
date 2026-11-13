@@ -1,5 +1,7 @@
 using System.Security.Claims;
 
+using Microsoft.Extensions.AI;
+
 namespace EnvCite.Platform.SharedKernel;
 
 /// <summary>入口的問答給出什麼：只列條文（<see cref="Search"/>），或有出處的回答（<see cref="Answer"/>）。</summary>
@@ -50,12 +52,17 @@ public interface IAskService
 
     /// <param name="question">呼叫端已去頭尾空白的問題；空白視為 <see cref="AskStatus.Invalid"/>。</param>
     /// <param name="asOf">ISO 8601 日期（<c>YYYY-MM-DD</c>）；省略 = 現行。</param>
+    /// <param name="history">
+    /// 這串對話前面的幾輪（User 是問題、Assistant 是答案，由舊到新），第一次提問給空的。只有回答模式用它：
+    /// 追問先被改寫成獨立的問句再取證據，前文是理解問題用的，不是證據。搜尋模式忽略。長度由服務端裁。
+    /// </param>
     /// <param name="progress">回答模式每進到下一步回報一次（搜尋模式沒有步驟）；可為 null。</param>
-    Task<AskResult> AskAsync(ClaimsPrincipal user, string? question, string? asOf, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken);
+    Task<AskResult> AskAsync(
+        ClaimsPrincipal user, string? question, string? asOf, IReadOnlyList<ChatMessage> history, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 這位成員最近更新的對話（新的在前，最多 <paramref name="limit"/> 筆）。歷史沒開啟、或身分不是入口成員時是空的。
-    /// 側欄用：不讀對話內容，只有標題與時間。
+    /// 這位成員的對話：釘選的在前，其後是最近更新的（新的在前，最多 <paramref name="limit"/> 筆）。
+    /// 歷史沒開啟、或身分不是入口成員時是空的。側欄用：不讀對話內容，只有標題與時間。
     /// </summary>
     Task<IReadOnlyList<ConversationSummary>> RecentAsync(ClaimsPrincipal user, int limit, CancellationToken cancellationToken);
 
@@ -69,5 +76,5 @@ public interface IAskService
     /// 把一問一答記進這位成員的歷史（只有本人看得到）。歷史沒開啟、或身分不是入口成員時回 null；
     /// 規則見 <see cref="IConversationHistory"/>。
     /// </summary>
-    Task<Guid?> RecordAsync(ClaimsPrincipal user, Guid? conversationId, string question, string answer, CancellationToken cancellationToken);
+    Task<Guid?> RecordAsync(ClaimsPrincipal user, Guid? conversationId, ConversationTurn turn, CancellationToken cancellationToken);
 }

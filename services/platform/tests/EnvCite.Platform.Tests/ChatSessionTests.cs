@@ -50,7 +50,10 @@ public sealed class ChatSessionTests
         var recorded = Assert.Single(ask.Recorded);
         Assert.Null(recorded.Conversation);
         Assert.Equal("露天燃燒如何處罰", recorded.Question);
-        Assert.Equal("答 [L1]\n[L1] 空氣污染防制法 第 32 條（現行） https://example.test/law/32", recorded.Answer);
+        // 正文與引用分開存：引用是結構化的（代號、法規名、網址），不存條文全文。
+        Assert.Equal("答 [L1]", recorded.Answer);
+        Assert.Equal(ConversationOutcome.Answered, recorded.Turn.Outcome);
+        Assert.Equal(new ConversationCitation("L1", "空氣污染防制法 第 32 條", "https://example.test/law/32"), Assert.Single(recorded.Turn.Citations));
         Assert.Equal(ask.RecordedAs, session.ConversationId);
         Assert.Equal(1, notified); // 側欄的最近對話要重新讀
         Assert.False(session.Busy);
@@ -65,7 +68,7 @@ public sealed class ChatSessionTests
 
         Assert.Equal("2021-01-01 有效", session.Turns[0].AsOfLabel);
         Assert.Equal([("問題", (string?)"2021-01-01")], ask.Asked);
-        Assert.Contains("（2021-01-01 有效）", ask.Recorded[0].Answer, StringComparison.Ordinal);
+        Assert.Equal("2021-01-01", ask.Recorded[0].Turn.AsOf); // 問的是哪一天，跟著問題存下來
     }
 
     // 拒答是結果，不是錯誤：說明為什麼沒有答案，記進歷史的也是這句話。
@@ -88,7 +91,10 @@ public sealed class ChatSessionTests
         var turn = Assert.Single(session.Turns);
         Assert.Equal(TurnState.Refused, turn.State);
         Assert.Equal(label, session.RefusalLabel(reason));
-        Assert.Equal($"（拒答）{label}", Assert.Single(ask.Recorded).Answer);
+        var recorded = Assert.Single(ask.Recorded);
+        Assert.Equal($"（拒答）{label}", recorded.Answer);
+        Assert.Equal(ConversationOutcome.Refused, recorded.Turn.Outcome);
+        Assert.Empty(recorded.Turn.Citations);
     }
 
     [Fact]
@@ -283,6 +289,62 @@ public sealed class ChatSessionTests
         Assert.Equal(["答\n[L1] 出處 https://x", "（拒答）原因"], session.Turns.Select(t => t.StoredAnswer));
         Assert.All(session.Turns, t => Assert.Equal(TurnState.Answered, t.State));
         Assert.All(session.Turns, t => Assert.Null(t.AsOfLabel));
+    }
+
+    // 側欄點進去接續：問題的日期、引用與「可以當前文」的回答都從存下來的結構重建，下一題帶著它們問。
+    [Fact]
+    public async Task OpeningAStoredConversationRestoresItsDatesAndCitationsAndItsMemoryForTheNextQuestion()
+    {
+        var id = Guid.NewGuid();
+        var at = DateTimeOffset.UtcNow;
+        var citation = new ConversationCitation("L1", "空氣污染防制法 第 32 條", "https://example.test/law/32");
+        var (session, ask, _) = await ReadyAsync(new FakeAsk
+        {
+            Detail = new ConversationDetail(id, "露天燃燒如何處罰", at,
+            [
+                new ConversationMessageView("user", "露天燃燒如何處罰", at, AsOf: "2021-01-01"),
+                new ConversationMessageView("assistant", "不得露天燃燒 [L1]。", at, [citation], Outcome: ConversationOutcome.Answered),
+                new ConversationMessageView("user", "怎麼辦", at),
+                new ConversationMessageView("assistant", "（拒答）原因", at, Outcome: ConversationOutcome.Refused),
+            ]),
+        });
+
+        Assert.True(await session.OpenAsync(User, id, Ct));
+
+        Assert.Equal(["2021-01-01 有效", "現行"], session.Turns.Select(t => t.AsOfLabel));
+        Assert.Equal(
+            "不得露天燃燒 [L1]。\n[L1] 空氣污染防制法 第 32 條（2021-01-01 有效） https://example.test/law/32",
+            session.Turns[0].StoredAnswer);
+
+        await session.AskAsync(User, "那罰款多少", null, Ct);
+
+        // 回答的代號換成法規名；拒答的只留問題（說明文字不是答案）。
+        Assert.Equal(
+            [("user", "露天燃燒如何處罰"), ("assistant", "不得露天燃燒 （空氣污染防制法 第 32 條）。"), ("user", "怎麼辦")],
+            Assert.Single(ask.Histories).Select(m => (m.Role.Value, m.Text)));
+        Assert.Equal(id, ask.Recorded[0].Conversation); // 接在同一串後面
+    }
+
+    // 前文是「這串對話前面有結果的回合」：第一題沒有；失敗的回合沒有可接續的答案，不算。
+    [Fact]
+    public async Task EachQuestionCarriesTheEarlierAnsweredTurnsAsMemoryWithCodesReplacedByLawNames()
+    {
+        var (session, ask, _) = await ReadyAsync();
+
+        await session.AskAsync(User, "第一題", null, Ct);
+        await session.AskAsync(User, "第二題", null, Ct);
+        ask.Result = new AskResult(AskMode.Answer, AskStatus.Unavailable);
+        await session.AskAsync(User, "壞掉的一題", null, Ct);
+        ask.Result = new AskResult(AskMode.Answer, AskStatus.Ok, Answer: new GroundedAnswer("再答 [L1]", [FakeAsk.Source]));
+        await session.AskAsync(User, "第四題", null, Ct);
+
+        Assert.Empty(ask.Histories[0]);
+        Assert.Equal(
+            [("user", "第一題"), ("assistant", "答 （空氣污染防制法 第 32 條）")],
+            ask.Histories[1].Select(m => (m.Role.Value, m.Text)));
+        Assert.Equal(
+            [("user", "第一題"), ("assistant", "答 （空氣污染防制法 第 32 條）"), ("user", "第二題"), ("assistant", "答 （空氣污染防制法 第 32 條）")],
+            ask.Histories[3].Select(m => (m.Role.Value, m.Text))); // 壞掉的那題不在裡面
     }
 
     // 不是自己的、已刪除、已過期：同一個結果，而且舊的畫面不留下來。

@@ -36,6 +36,7 @@
     private IReadOnlyList<PortalShell.NavItem> _navItems = [];
     private IReadOnlyList<PortalShell.RecentGroup> _recent = [];
     private bool _subscribed;
+    private int _recentRead;
 
     /// <summary>預先渲染查到的租戶名稱與最近對話，交給互動渲染的第一次繪製：不必先畫沒有名稱、沒有最近對話的外殼，等資料庫回來再補。
     /// 重新連線不還原：資料可能已經變了，要重查。</summary>
@@ -82,14 +83,16 @@
         {
             // 互動渲染接手預先渲染的結果：名稱與最近對話已經有了，不再查一次。
             Prerendered = null;
-            _recent = _showMenu ? carried.Recent : [];
+            if (_recentRead == 0) // 已經有人重新讀過了，預先渲染時查到的舊清單就不要再蓋上去
+                _recent = _showMenu ? carried.Recent : [];
+
             return;
         }
 
         if (tenantChanged)
             _tenantName = (await Directory.FindByIdentifierAsync(identifier, CancellationToken.None))?.Name ?? identifier;
 
-        _recent = _showMenu ? await RecentOfAsync(_user!, identifier) : [];
+        _recent = _showMenu ? await LatestRecentAsync(_user!, identifier) : [];
 
         if (!RendererInfo.IsInteractive)
             Prerendered = new Prerender(_tenantName!, _recent);
@@ -100,10 +103,21 @@
     {
         if (_user is not null && _tenantIdentifier is not null && _showMenu)
         {
-            _recent = await RecentOfAsync(_user, _tenantIdentifier);
+            _recent = await LatestRecentAsync(_user, _tenantIdentifier);
             StateHasChanged();
         }
     });
+
+    /// <summary>
+    /// 讀最近對話。版面初始化、換頁與「問完一題」的通知各自發一次讀取，可能反序完成：只採用最新發出的那一次，
+    /// 晚到的舊結果（例如問之前讀的空清單）不蓋掉新的，否則側欄會停在舊的狀態。
+    /// </summary>
+    private async Task<IReadOnlyList<PortalShell.RecentGroup>> LatestRecentAsync(ClaimsPrincipal user, string identifier)
+    {
+        var read = ++_recentRead;
+        var recent = await RecentOfAsync(user, identifier);
+        return read == _recentRead ? recent : _recent;
+    }
 
     public void Dispose() => Workspace.RecentChanged -= OnRecentChanged;
 }

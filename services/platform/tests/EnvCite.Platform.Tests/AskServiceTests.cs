@@ -27,7 +27,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
     // 測試主機預設給每個租戶一個預設方案（讓剛建立的租戶能用）；沒有方案的情形要把它清掉。
     private (WebApplicationFactory<Program> Host, FakeChat Chat) Host(
         Func<IReadOnlyList<ChatMessage>, string> reply, bool history = false, bool defaultPlan = true,
-        UsageDetails? usage = null, ILoggerProvider? logs = null)
+        UsageDetails? usage = null, ILoggerProvider? logs = null, int? historyTurns = null)
     {
         var chat = new FakeChat(reply, usage);
         var host = factory.WithWebHostBuilder(b =>
@@ -37,6 +37,9 @@ public sealed class AskServiceTests(PlatformFactory factory)
                 .UseSetting("Platform:Answer:ApiKey", "test-key");
             if (history)
                 b.UseSetting("Platform:ConversationHistory:Enabled", "true");
+
+            if (historyTurns is { } turns)
+                b.UseSetting("Platform:Answer:HistoryTurns", turns.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
             if (!defaultPlan)
                 b.UseSetting("Platform:DefaultPlan", string.Empty);
@@ -453,12 +456,96 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.Empty(chat.Calls);
     }
 
+    // 單獨看，consult 找不到任何證據（問的是「那」，不是法規用語）：要靠前文才問得出來。
+    private const string FollowUp = "那罰款多少";
+
+    private static bool IsRewrite(IReadOnlyList<ChatMessage> messages) => messages[0].Text.Contains("查詢改寫器", StringComparison.Ordinal);
+
+    // 追問：先把問題改寫成獨立的問句，取證據用改寫後的；作答仍用使用者的原句，前文以對話的角色帶進去。
+    [Fact]
+    public async Task AFollowUpIsRewrittenIntoAStandaloneQuestionAndOnlyThenGrounded()
+    {
+        var (host, chat) = Host(messages => IsRewrite(messages) ? FakeConsultServer.AnswerableQuestion : Reply);
+        using var h = host;
+        var (tenant, member) = await MemberOfAsync("ask-m1");
+        var ask = host.Services.GetRequiredService<IAskService>();
+
+        var alone = await ask.AskAsync(member, FollowUp, null, null, Ct);
+        Assert.True(alone.Answer!.Refused); // 沒有前文：找不到證據，拒答，模型一次都沒呼叫
+        Assert.Empty(chat.Calls);
+
+        var progress = new RecordedProgress();
+        var history = new List<ChatMessage> { new(ChatRole.User, "露天燃燒怎麼規定"), new(ChatRole.Assistant, "不得燃燒。") };
+        var result = await ask.AskAsync(member, FollowUp, null, history, progress, Ct);
+
+        Assert.False(result.Answer!.Refused);
+        Assert.Equal("L1", Assert.Single(result.Answer.Sources).Code);
+        Assert.Equal(2, chat.Calls.Count); // 改寫、作答
+        var rewrite = chat.Calls[0];
+        Assert.Contains(rewrite, m => m.Role == ChatRole.User && m.Text.Contains(FollowUp, StringComparison.Ordinal));
+        Assert.Equal(["露天燃燒怎麼規定", "不得燃燒。"], rewrite.Skip(1).Take(2).Select(m => m.Text));
+        var write = chat.Calls[1];
+        Assert.Contains(write, m => m.Role == ChatRole.System && m.Text.Contains("不是證據", StringComparison.Ordinal));
+        Assert.Equal([ChatRole.System, ChatRole.User, ChatRole.Assistant, ChatRole.User], write.Select(m => m.Role));
+        Assert.Contains($"問題：{FollowUp}", write[^1].Text, StringComparison.Ordinal); // 作答用使用者的原句
+        Assert.Equal(
+            [new AnswerProgress(AnswerStage.Rewriting), new AnswerProgress(AnswerStage.Grounding), new AnswerProgress(AnswerStage.Writing, 1), new AnswerProgress(AnswerStage.Verifying, 1)],
+            progress.Steps);
+        // 改寫不是另一次回答：兩次提問各取一次證據，只有一次作答（改寫的 token 另記在 token 用量上，不是次數）。
+        var usage = (await factory.Services.GetRequiredService<IUsageAdmin>().GetTenantUsageAsync(tenant.Id, null, Ct)).Value!;
+        Assert.Equal(
+            [("consult.answer", 1), ("consult.ground", 2)],
+            usage.OrderBy(u => u.Operation, StringComparer.Ordinal).Select(u => (u.Operation, u.Calls)));
+    }
+
+    // 前文不是證據：前一輪的代號會被剝掉（它們只在那一輪的證據集裡有意義，這一輪的 L1 可能是別的條文），
+    // 而且只留最近的幾輪（交給 MEAI 的 reducer，不自己切）。
+    [Fact]
+    public async Task EarlierCodesAreStrippedAndOnlyTheMostRecentTurnsAreKept()
+    {
+        var (host, chat) = Host(messages => IsRewrite(messages) ? FakeConsultServer.AnswerableQuestion : Reply, historyTurns: 1);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-m2");
+        List<ChatMessage> history =
+        [
+            new(ChatRole.User, "第一輪問題"),
+            new(ChatRole.Assistant, "第一輪答案 [L1]"),
+            new(ChatRole.User, "第二輪問題"),
+            new(ChatRole.Assistant, "第二輪答案 [L1][L7]。"),
+        ];
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FollowUp, null, history, null, Ct);
+
+        Assert.False(result.Answer!.Refused);
+        var prior = chat.Calls[1].Skip(1).SkipLast(1).ToList(); // 作答那次：去掉系統提示與最後一則（證據加問題）
+        Assert.Equal(["第二輪問題", "第二輪答案 。"], prior.Select(m => m.Text));
+        Assert.DoesNotContain(prior, m => m.Text.Contains("[L", StringComparison.Ordinal));
+    }
+
+    // 改寫失敗不讓整個回合失敗：用使用者的原句繼續，日誌只記例外型別。
+    [Fact]
+    public async Task AFailedRewriteFallsBackToTheOriginalQuestion()
+    {
+        var logs = new CapturingLoggerProvider();
+        var (host, chat) = Host(messages => IsRewrite(messages) ? throw new HttpRequestException("echo: 某客戶案情") : Reply, logs: logs);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-m3");
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(
+            member, FakeConsultServer.AnswerableQuestion, null, [new ChatMessage(ChatRole.User, "前一題")], null, Ct);
+
+        Assert.False(result.Answer!.Refused);
+        Assert.Equal(2, chat.Calls.Count);
+        Assert.Contains(logs.Messages, m => m.Contains("Question rewrite failed", StringComparison.Ordinal));
+        Assert.DoesNotContain(logs.Messages, m => m.Contains("某客戶案情", StringComparison.Ordinal));
+    }
+
     private static (AskMode, AskStatus) Pair(AskResult result) => (result.Mode, result.Status);
 
     private static async Task<List<Guid>> ListAsync(WebApplicationFactory<Program> host, string tenantId, ClaimsPrincipal user)
     {
         var listed = await host.Services.GetRequiredService<TenantScopes>().InAsync<List<Guid>>(tenantId, async scope =>
-            AdminOutcome.Ok((await scope.Get<IConversationHistory>().ListAsync(user, 10, Ct)).Select(c => c.Id).ToList()));
+            AdminOutcome.Ok((await scope.Get<IConversationHistory>().ListAsync(user, 10, search: null, Ct)).Select(c => c.Id).ToList()));
         return listed.Value!;
     }
 }

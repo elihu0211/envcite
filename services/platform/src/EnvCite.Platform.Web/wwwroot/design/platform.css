@@ -3294,3 +3294,120 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 .ep-portal.ep-console .ep-recent {
     margin-block-start: var(--ep-space-2);
 }
+
+/* ---- 側欄對話項目的選單（釘選、重新命名、刪除） --------------------------------------------------
+ * 項目是連結加一顆「⋯」鈕；選單是原生 popover（同帳號選單：點外面或按 Esc 就關，不需要 JavaScript）。
+ * 有 CSS 錨點定位的瀏覽器把選單貼在按鈕旁，沒有的固定在側欄頂端。游標裝置平常把鈕淡掉，移上去或鍵盤聚焦才出現；觸控裝置一直都在。 */
+.ep-recent-item {
+    display: flex;
+    align-items: center;
+    min-inline-size: 0;
+}
+
+.ep-recent-item .ep-recent-link {
+    flex: 1;
+}
+
+.ep-recent-more {
+    flex: none;
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-touch-target);
+    block-size: var(--ep-touch-target);
+    padding: 0;
+    border: 0;
+    border-radius: var(--ep-radius-control);
+    background: transparent;
+    color: var(--ep-text-secondary);
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .ep-recent-more {
+        opacity: 0;
+    }
+
+    .ep-recent-item:hover .ep-recent-more,
+    .ep-recent-item:focus-within .ep-recent-more,
+    .ep-recent-more[aria-expanded="true"] {
+        opacity: 1;
+    }
+
+    .ep-recent-more:hover {
+        background: color-mix(in srgb, var(--ep-text) 8%, transparent);
+    }
+}
+
+@media (pointer: fine) {
+    .ep-recent-more {
+        inline-size: var(--ep-control-height);
+        block-size: var(--ep-control-height);
+    }
+}
+
+/* 對話紀錄頁的列：選單鈕一直都在（那裡沒有側欄的空間壓力）。 */
+.ep-history-item .ep-recent-more {
+    opacity: 1;
+}
+
+.ep-recent-link .ep-icon {
+    flex: none;
+    color: var(--ep-text-secondary);
+}
+
+.ep-conv-menu,
+.ep-conv-confirm {
+    inset-block-start: calc(var(--ep-appbar-height) + var(--ep-space-2));
+    inset-inline: var(--ep-space-3) auto;
+    inline-size: min(18rem, calc(100vw - var(--ep-space-6)));
+    min-inline-size: 0;
+}
+
+@supports (anchor-name: --ep-anchor) {
+    .ep-conv-menu,
+    .ep-conv-confirm {
+        inset-block-start: anchor(end);
+        inset-inline-start: anchor(start);
+        margin-block-start: var(--ep-space-1);
+        position-try-fallbacks: flip-block, flip-inline;
+    }
+}
+
+.ep-conv-rename {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+    padding-block: var(--ep-space-1);
+}
+
+.ep-conv-rename .ep-menu-item {
+    color: var(--ep-text);
+}
+
+.ep-menu-danger {
+    color: var(--ep-error);
+}
+
+.ep-conv-confirm p {
+    margin: 0;
+    padding: var(--ep-space-2) var(--ep-space-3);
+    font-size: var(--ep-body-m-size);
+}
+
+.ep-conv-confirm-actions {
+    display: flex;
+    gap: var(--ep-space-2);
+    padding: var(--ep-space-1) var(--ep-space-3) var(--ep-space-2);
+}
+
+.ep-conv-search {
+    display: flex;
+    gap: var(--ep-space-2);
+    margin-block-end: var(--ep-space-3);
+}
+
+.ep-conv-search .ep-input {
+    flex: 1;
+    border: 1px solid var(--ep-border-control);
+    background: var(--ep-surface);
+}

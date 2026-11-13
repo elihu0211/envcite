@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [operator-accounts, mail-invitation, reasoning-rest, mcp-endpoint, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting, tenant-directory-sync, portal-google-signin]
+owns: [operator-accounts, mail-invitation, reasoning-rest, mcp-endpoint, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting, tenant-directory-sync, portal-google-signin, conversation-history]
 -->
 
 # envcite-platform
@@ -22,6 +22,7 @@ owns: [operator-accounts, mail-invitation, reasoning-rest, mcp-endpoint, corpus-
 | 入口與介面 | [入口](#入口) | 主機，以及設定鍵的真值在哪 |
 | 入口與介面 | [租戶頁的存取網址](#租戶頁的存取網址) | 複製登入網址與 API Base URL |
 | 入口與介面 | [個人設定與外觀](#個人設定與外觀) | 系統／亮色／暗色，兩個面共用一個元件 |
+| 入口與介面 | [對話歷史與接續](#對話歷史與接續) | 側欄的對話、釘選、重新命名、刪除、搜尋，以及接續時帶進模型的前文 |
 | 帳號與存取 | [營運者帳號](#營運者帳號) | 欄位、命令列、首次登入規則 |
 | 帳號與存取 | [密碼規則](#密碼規則) | 營運者與入口成員共用的密碼檢查 |
 | 帳號與存取 | [邀請與信箱驗證](#邀請與信箱驗證) | 邀請連結、暫時密碼、重寄 |
@@ -147,6 +148,24 @@ flowchart LR
 - **端點**：表單欄位 `appearance`（`system`、`light`、`dark`）與 `returnUrl`；需要 antiforgery，不需要登入。值不合法回 400、不寫 cookie。一般表單送出導回 `returnUrl`（只准留在該面之下）；`Accept: application/json` 的請求（個人設定頁的腳本）回 204。
 - **匿名頁面**（登入、啟用、重設、已登出、無權限）不提供切換，但依 cookie 輸出偏好。
 - 設計規則見 [`AGENTS.md`](AGENTS.md)「設計系統與營運者後台」。
+
+### 對話歷史與接續
+
+客戶入口的問答可以存成對話，之後從側欄點回去**接續**：還原先前的問答，再問時前文一併帶進模型。預設關閉（問題文字是客戶案情），`Platform:ConversationHistory:Enabled` 開啟；只有作者看得到自己的對話，同租戶的擁有者也不行。關閉時側欄沒有對話、下列端點與頁面都不讀不寫；前文仍只存在這次連線的記憶體裡，關了頁面就沒有。
+
+| 動作 | 入口 | 說明 |
+|------|------|------|
+| 開啟並接續 | `GET /portal/{租戶}/c/{id}` | 工作區；不是自己的、不存在、已過期、沒開啟，都是同一個「找不到」畫面 |
+| 列表與搜尋 | `GET /portal/{租戶}/history?q=` | 只比對標題（不分大小寫，`%` 與 `_` 當文字），不比對內容 |
+| 釘選／取消 | `POST /portal/{租戶}/c/{id}/pin` | 表單欄位 `pinned`（`true`、`false`） |
+| 重新命名 | `POST /portal/{租戶}/c/{id}/rename` | 表單欄位 `title`；去頭尾空白、換行與控制字元合成空白、截到 80 字，空白不接受 |
+| 刪除 | `POST /portal/{租戶}/c/{id}/delete` | 連同訊息一起刪，稽核只記 Id；介面先確認 |
+
+- **端點**：需要入口登入與 antiforgery；做完導回送出表單的那一頁（Referer，只准留在該租戶入口之下），刪掉的正是正在看的那串就回首頁。不是自己的、不存在的結果相同（只是導回），不洩漏它存不存在。選單在側欄與列表頁共用，是原生 popover 加普通表單，沒有 JavaScript 也能用。
+- **排序**：釘選的在側欄最上面（釘得晚的在前，筆數有上限），其餘依最後更新、依台北時間的日曆日分組。釘選與重新命名都不算新的活動：不改最後更新時間，所以不改排序、也不延長保存；超過保留天數的對話連同釘選一起刪除（`Platform:ConversationHistory:RetentionDays`）。
+- **存什麼**：問題（連同問的是哪一天的條文）、回答正文，以及引用（代號、法規名、條文網址）與結果種類（回答、拒答、只列條文）；不存條文本文，全文隨時可由網址再查。
+- **前文**：接續時，前面有結果的回合以對話的形式（使用者的問題、助理的回答）帶進模型。回答裡的代號換成法規名——代號只在那一輪的證據集裡有意義；拒答的回合只留問題。前文**不是證據**：回答仍只能引用這一輪證據集的代號，核驗不變（見 [`AGENTS.md`](AGENTS.md)「有依據的回答與對話紀錄」）。有前文的提問會先把問題改寫成不看前文也看得懂的一句，用它取證據；改寫失敗就用原句。帶幾輪、每則多長由 `Platform:Answer:HistoryTurns` 與 `Platform:Answer:HistoryChars` 決定，鍵的範圍與預設值以 `AnswerOptions` 為準。
+- **計量**：一次提問仍是一次作答；改寫用掉的 token 與作答一起記在同樣兩個 token 操作上，不另算次數。
 
 ## 帳號與存取
 

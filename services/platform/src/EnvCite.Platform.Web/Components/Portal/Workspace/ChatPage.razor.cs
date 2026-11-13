@@ -100,6 +100,7 @@ public sealed partial class ChatPage
     /// <summary>等結果時說明進行到哪一步：找到幾條法源、正在寫、正在核對出處。搜尋沒有步驟，維持「正在查找法源」。</summary>
     private string PendingText(ChatTurn turn) => turn.Progress switch
     {
+        { Stage: AnswerStage.Rewriting } => L["正在理解你的追問…"],
         { Stage: AnswerStage.Writing } progress => L["找到 {0} 條法源，正在撰寫回答…", progress.Sources],
         { Stage: AnswerStage.Verifying } => L["正在核對出處…"],
         _ => L["正在查找法源…"],

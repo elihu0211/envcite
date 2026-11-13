@@ -370,7 +370,8 @@
         "type": "Project",
         "dependencies": {
           "EnvCite.ServiceDefaults": "[1.0.0, )",
-          "MailKit": "[5.0.0, )"
+          "MailKit": "[5.0.0, )",
+          "Microsoft.Extensions.AI.Abstractions": "[11.0.0, )"
         }
       },
       "envcite.servicedefaults": {
@@ -401,6 +402,12 @@
         "dependencies": {
           "MimeKit.Core": "5.0.0"
         }
+      },
+      "Microsoft.Extensions.AI.Abstractions": {
+        "type": "CentralTransitive",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "UYZTudmTrGykWIRzcO/TKauTx/+L/h4MYpUBODCG7aIybRVkv2y6uhVwG6UHRS6uTzRqg0K8IJprC9/QhMZGsw=="
       },
       "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
         "type": "CentralTransitive",
