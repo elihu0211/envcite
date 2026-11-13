@@ -1,7 +1,9 @@
 # services/*/Dockerfile 以倉庫根為建置情境。主機的建置產物不進來：
 # obj/ 會蓋掉映像內的 restore 結果，.venv 是主機的直譯器，不是映像的。
+# .NET 的 bin／obj 都在根的 artifacts/ 下，不在各專案目錄。
 .git
 .venv
+artifacts/
 **/bin/
 **/obj/
 **/__pycache__/

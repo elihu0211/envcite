@@ -80,7 +80,7 @@ ENVCITE_Ontology__Address=http://localhost:<ontology 埠> dotnet run --project s
 ## Safety
 
 - 設定一律由環境變數或 `appsettings.json` 供給，不提交機密。
-- 產生物不手改：`obj/` 下的 gRPC 程式碼（來自倉庫根 proto）；`packages.lock.json` 只經 `dotnet restore` 改。
+- 產生物不手改：倉庫根 `artifacts/obj/` 下的 gRPC 程式碼（來自倉庫根 proto）；`packages.lock.json` 只經 `dotnet restore` 改。
 
 ## Done when
 
