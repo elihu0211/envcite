@@ -38,6 +38,7 @@ owns: [consult-surfaces, local-demand-metric]
 |----|------|
 | `Ontology:Address` | 本體的 gRPC 位址；叢集內為 `dns:///<headless service>:<port>`，本機為 `http://localhost:<port>`。格式錯誤時啟動即失敗 |
 | `Ontology:Timeout` | 呼叫本體的上限；實際期限是它與呼叫端剩下的期限取小者 |
+| `Ontology:Rerank` | 檢索要不要請本體精排（`SearchArticles` 的 `rerank`），預設 `false`。精排多一次對外呼叫（秒級），開了之後 `Ontology:Timeout` 要容得下檢索加精排；本體沒有宣告精排模型、名額滿或端點逾時時退回精排前的次序，查詢不失敗。精排只改次序，不改字面分數與語意相似度，相關性下界照舊 |
 | `Relevance:LexicalFloor`、`Relevance:SemanticFloor` | 相關性下界：一條檢索結果字面分數或語意相似度任一達標，或有函釋提到查詢詞並解釋它（檢索帶 `include_guidance`，見 [`ontology` 的 `SearchArticles`](../../proto/envcite/ontology/v2/ontology.proto)），才進證據集；函釋指向的條文不算高信心；字面高信心線固定為下界的 1.5 倍。值**不在本服務的設定檔**：它與 platform 的搜尋端是同一組，只寫在 [`relevance-floors.json`](../../libs/dotnet/EnvCite.ServiceDefaults/relevance-floors.json) 一處，作為優先序最低的設定來源載入；設定檔、環境變數與命令列可覆寫，覆寫值超出範圍時啟動即失敗。只想讓本服務不同於 platform 時才覆寫，並知道兩邊就此不一致 |
 | `Relevance:HighConfidenceSemantic` | 語意臂的高信心線；須高於語意下界、不超過 1 |
 | `ASPNETCORE_HTTP_PORTS` | 監聽的埠；映像內固定為 `50052` |

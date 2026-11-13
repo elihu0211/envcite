@@ -32,6 +32,13 @@ internal interface IOntologySearch
 internal sealed class OntologyOptions : InternalGrpcClientOptions, ISectionOptions
 {
     public static string SectionName => "Ontology";
+
+    /// <summary>
+    /// 檢索要不要請本體精排（<c>SearchArticles</c> 的 <c>rerank</c>）。預設關：精排多一次對外呼叫（秒級），
+    /// 本體沒有宣告精排模型、名額滿或端點逾時時退回精排前的次序，查詢不失敗。開了之後 <see cref="InternalGrpcClientOptions.Timeout"/>
+    /// 要容得下檢索加精排。精排只改次序，不改 <see cref="Article.LexicalScore"/> 與語意相似度，相關性下界照舊。
+    /// </summary>
+    public bool Rerank { get; init; }
 }
 
 /// <summary>
@@ -44,22 +51,24 @@ internal sealed class OntologySearch(OntologyService.OntologyServiceClient clien
     public const int Limit = 10;
 
     /// <summary>
-    /// 對本體的 <c>SearchArticles</c> 要什麼，只在這裡決定：檢索選項都加在這一個建構點（例如之後的精排 <c>Rerank</c>），
+    /// 對本體的 <c>SearchArticles</c> 要什麼，只在這裡決定：檢索選項都加在這一個建構點，
     /// 不在呼叫的地方零散加旗標，所以一次請求帶了哪些選項，看這個方法就知道，測試也只需要守它。
+    /// 由設定決定的選項（<paramref name="rerank"/>）以參數傳進來，不在這裡讀設定。
     /// </summary>
-    public static SearchArticlesRequest BuildRequest(string query, string asOf) => new()
+    public static SearchArticlesRequest BuildRequest(string query, string asOf, bool rerank) => new()
     {
         Query = query,
         AsOf = asOf,
         Limit = Limit,
         // 使用者查的詞常是函釋的用語（函釋寫「露天燃燒」、條文寫「燃燒」），兩臂都找不到；函釋只用來找條文，不進證據。
         IncludeGuidance = true,
+        Rerank = rerank,
     };
 
     public async Task<IReadOnlyList<Article>> SearchAsync(string query, string asOf, CancellationToken cancellationToken)
     {
         var response = await client.SearchArticlesAsync(
-            BuildRequest(query, asOf),
+            BuildRequest(query, asOf, options.Value.Rerank),
             deadline: DateTime.UtcNow.Add(options.Value.Timeout),
             cancellationToken: cancellationToken);
         return [.. response.Hits.Select(hit => new Article(

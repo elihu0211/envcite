@@ -73,6 +73,22 @@ public sealed class GroundServiceTests(ConsultFactory factory)
         var (request, _) = factory.Ontology.Searches.Last();
         Assert.Equal((FakeOntologyServer.AnswerableQuery, "2020-01-01", OntologySearch.Limit), (request.Query, request.AsOf, request.Limit));
         Assert.True(request.IncludeGuidance);
+        Assert.False(request.Rerank); // 預設不精排
+    }
+
+    [Fact]
+    public async Task TheRerankSettingReachesTheOntologyRequest()
+    {
+        await using var host = factory.WithWebHostBuilder(b => b.UseSetting("Ontology:Rerank", "true"));
+        var before = factory.Ontology.Searches.Count;
+
+        var response = await factory.CreateClient(host)
+            .GroundAsync(new GroundRequest { Question = FakeOntologyServer.AnswerableQuery }, ConsultFactory.CallMetadata, cancellationToken: Ct)
+            .ResponseAsync;
+
+        Assert.Equal(1, SearchesSince(before));
+        Assert.True(factory.Ontology.Searches.Last().Request.Rerank);
+        Assert.Equal(GroundResponse.OutcomeOneofCase.Evidence, response.OutcomeCase); // 精排只加選項，接地照常
     }
 
     [Fact]
