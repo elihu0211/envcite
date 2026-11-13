@@ -21,6 +21,7 @@ public static class OntologyModule
         services.AddSectionOptions<RelevanceFloorsOptions, RelevanceFloorsOptionsValidator>();
         services.AddSectionOptions<LawSearchOptions, LawSearchOptionsValidator>();
         services.AddScoped<ILawSearch, LawSearch>();
+        services.AddScoped<OntologyGateway>();
         return services;
     }
 }

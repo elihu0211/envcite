@@ -5,8 +5,6 @@ using System.Text.RegularExpressions;
 
 using EnvCite.Consult.V2;
 
-using Grpc.Core;
-
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -20,8 +18,7 @@ namespace EnvCite.Platform.Modules.Consult;
 /// 節點內預期的失敗一律轉成結果代碼，不丟例外（框架會把節點的例外包成事件，語意就變了）。
 /// </summary>
 internal sealed partial class GroundedAnswerer(
-    ConsultationService.ConsultationServiceClient consult,
-    IOptions<ConsultOptions> consultOptions,
+    ConsultGateway consult,
     IOptions<AnswerOptions> options,
     Lazy<IChatClient> model,
     IUsageRecorder usage,
@@ -94,24 +91,11 @@ internal sealed partial class GroundedAnswerer(
     /// <summary>取得封閉證據集；沒有證據就以 consult 的拒答為結論（不呼叫模型）。</summary>
     private async ValueTask<AnswerTurn> GroundAsync(AnswerTurn turn, IWorkflowContext context, CancellationToken cancellationToken)
     {
-        GroundResponse grounded;
-        try
-        {
-            grounded = await consult.GroundAsync(
-                new GroundRequest { Question = turn.Question, AsOf = turn.AsOf ?? string.Empty },
-                deadline: DateTime.UtcNow.Add(consultOptions.Value.Timeout), cancellationToken: cancellationToken);
-        }
-        catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
-        {
-            return turn with { Done = AdminOutcome.Invalid<GroundedAnswer>(OutcomeCodes.UpstreamInvalidRequest, ex.Status.Detail) };
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable
-            or StatusCode.DeadlineExceeded
-            or StatusCode.ResourceExhausted)
-        {
-            return turn with { Done = AdminOutcome.Unavailable<GroundedAnswer>(OutcomeCodes.ConsultUnavailable) };
-        }
+        var outcome = await consult.GroundAsync(turn.Question, turn.AsOf, cancellationToken);
+        if (!outcome.IsOk)
+            return turn with { Done = new AdminOutcome<GroundedAnswer>(outcome.Status, null, outcome.Message, outcome.Code, outcome.Args) };
 
+        var grounded = outcome.Value!;
         await usage.RecordAsync(ConsultEndpoints.GroundOperation, 1, cancellationToken);
 
         if (grounded.OutcomeCase != GroundResponse.OutcomeOneofCase.Evidence)

@@ -92,6 +92,7 @@ public static class ConsultModule
         // 第一次真的要呼叫模型才解析（這裡是組合根，惰性解析在這裡不算服務定位器）。
         services.AddSingleton(provider => new Lazy<IChatClient>(() => provider.GetRequiredService<IChatClient>()));
         services.AddSingleton<IAnswerAvailability, AnswerAvailability>();
+        services.AddScoped<ConsultGateway>();
         services.AddScoped<IGroundedAnswerer, GroundedAnswerer>();
         return services;
     }

@@ -55,6 +55,8 @@ public static class OutcomeCodes
     public const string ConsultUnavailable = "consult.unavailable";
     public const string ModelUnavailable = "model.unavailable";
     public const string OntologyUnavailable = "ontology.unavailable";
+    public const string LawNotFound = "law.not_found";
+    public const string ReasoningBusy = "reasoning.busy";
     public const string InternalError = "internal.error";
     public const string VerificationCodeIncorrect = "verification_code.incorrect";
     public const string VerificationCodeIncorrectHint = "verification_code.incorrect_hint";
@@ -122,6 +124,8 @@ public static class OutcomeCodes
         [ConsultUnavailable] = "Consult service unavailable.",
         [ModelUnavailable] = "Model unavailable.",
         [OntologyUnavailable] = "Ontology service unavailable.",
+        [LawNotFound] = "Law not found.",
+        [ReasoningBusy] = "Reasoning capacity is in use; retry shortly.",
         [InternalError] = "An unexpected error occurred.",
         [VerificationCodeIncorrect] = "The verification code is incorrect.",
         [VerificationCodeIncorrectHint] = "The verification code is incorrect. Make sure your phone's time is set automatically, then enter the six digits the authenticator shows now.",

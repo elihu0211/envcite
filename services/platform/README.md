@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [operator-accounts, mail-invitation, reasoning-rest, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting, tenant-directory-sync]
+owns: [operator-accounts, mail-invitation, reasoning-rest, mcp-endpoint, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting, tenant-directory-sync]
 -->
 
 # envcite-platform
@@ -94,6 +94,27 @@ flowchart LR
 | `general.unpunished[].excuse` 的 `CriminalPriority` | 第 26 條第 1 項刑事優先，罰鍰不列出 |
 | `problems[].kind` 的 `InvalidatedDelegation`（`conditionId`） | 授權的限值所在條文已違憲失效，要件為未知 |
 | 請求 `administrativePenalty`：`criminalOffense`、`courtConfiscated`、`criminalClearedOn`、`criminalPayment`、`communityServiceHours`、`minimumHourlyWage`、`gainedBenefit` | 第 18、26 條所依的事實 |
+
+### AI 代理的入口（MCP，`/v2/mcp`）
+
+同一批資料能力的第二個入口，給會自己呼叫工具的 AI 代理（Claude Code、Cursor、VS Code 等）。協定是 [MCP](https://modelcontextprotocol.io) 的 Streamable HTTP，**無狀態**：每個請求獨立，沒有 session 放在某個副本的記憶體裡，多副本之間不需要連線黏著。工具是 REST 資料端點的包裝，共用同一份實作，所以輸入檢查、錯誤與計量與 REST 相同。
+
+- **身分與額度與 REST 同一道門**：`Authorization: Bearer <API key>`；沒有 key 是 401，沒有方案是 402；每租戶限流與 `/v2` 其餘端點共用同一個額度，握手（`initialize`）、列舉與每次工具呼叫各算一個請求。不實作 OAuth 授權伺服器，所以只有能設定標頭的用戶端（開發者工具）接得上。
+- **預設關閉**（`Platform:Mcp:Enabled`），沒開就不掛；不在 [`openapi/openapi_v2.json`](openapi/openapi_v2.json)，因為它是另一個協定。
+- **`Origin` 檢查**（MCP 規範要求，防 DNS rebinding）：請求帶了 `Origin` 而不在 `Platform:Mcp:AllowedOrigins` 就回 403，而且在驗證之前；CLI 與桌面用戶端不送 `Origin`，不受影響。清單要填成 `https://host`，不含路徑與結尾斜線，啟動時驗證。
+- **工具**全部唯讀、確定性，宣告 `readOnlyHint`、`idempotentHint` 與輸出結構；成功才計量，單位同 REST。查詢文字與案件事實不進任何日誌。
+
+| 工具 | 對應 REST | 計量 |
+|------|-----------|------|
+| `search_articles`（`query`、`pointInTime`、`limit`） | `POST /v2/search` | `ontology.search` |
+| `ground_question`（`question`、`pointInTime`） | `POST /v2/ground` | `consult.ground`（拒答也計一次） |
+| `get_law`（`jurisdiction`、`idScheme`、`localId`、`pointInTime`） | `GET /v2/laws/{…}` | `ontology.get_law` |
+| `list_articles`（同上） | `GET /v2/laws/{…}/articles` | `ontology.list_articles` |
+| `evaluate_reasoning`（`request`：同 `POST /v2/reasoning/evaluate` 的本文） | `POST /v2/reasoning/evaluate` | `reasoning.evaluate` |
+
+- **資源**：`envcite://laws/{jurisdiction}/{idScheme}/{localId}`，一部法規現行的標題、基本資料與各條清單（JSON）；讀一次等於 `get_law` 加 `list_articles`，各計量一次。**提示**：`grounded_answer`（`question`、`pointInTime`），把「先 `ground_question`、只根據法源作答、以代號標明出處、證據不足就明說」交給用戶端的模型。
+- **錯誤**：預期的失敗（輸入錯誤、找不到、內部服務暫時不可用）是工具錯誤（`isError`），訊息是英文的穩定說明，不含內部細節；拒答與空結果是結果，不是錯誤。
+- **接上用戶端**：Claude Code 為 `claude mcp add --transport http envcite https://<主機>/v2/mcp --header "Authorization: Bearer <API key>"`；其他用戶端在 MCP 伺服器設定裡填網址與同一個標頭。
 
 ## 入口與介面
 

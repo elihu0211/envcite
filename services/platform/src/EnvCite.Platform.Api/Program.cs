@@ -1,6 +1,7 @@
 using System.Reflection;
 
 using EnvCite.Platform.Api;
+using EnvCite.Platform.Api.Mcp;
 using EnvCite.Platform.Modules.ApiAccess;
 using EnvCite.Platform.Modules.Audit;
 using EnvCite.Platform.Modules.Consult;
@@ -61,6 +62,7 @@ builder.Services.AddMeteringModule();
 builder.Services.AddOntologyModule();
 builder.Services.AddConsultModule();
 builder.Services.AddPlatformWeb();
+builder.Services.AddPlatformMcp();
 builder.Services.AddPlatformLocalization();
 
 var app = builder.Build();
@@ -104,6 +106,7 @@ app.UsePlatformNotFoundPage();
 // 明確呼叫 UseRouting，且要在找不到頁面的中介層之後（原因見 UsePlatformNotFoundPage）；端點由 WebApplication 在最後接上。
 app.UseRouting();
 app.UsePlatformLocalization();
+app.UsePlatformMcpOriginCheck();
 app.UseAuthentication();
 app.UsePlatformWebAuthentication();
 app.UseTenantTrace();
@@ -125,11 +128,14 @@ v2.MapTenancyEndpoints()
     .MapMeteringEndpoints();
 
 // 資料端點：完全付費制，租戶要有方案，否則 402。
-v2.MapGroup(string.Empty)
-    .RequireAuthorization(PlatformAuth.PaidPolicy)
-    .MapOntologyEndpoints()
+var paid = v2.MapGroup(string.Empty)
+    .RequireAuthorization(PlatformAuth.PaidPolicy);
+paid.MapOntologyEndpoints()
     .MapReasoningEndpoints()
     .MapConsultEndpoints();
+
+// 給 AI 代理的 MCP 入口：同一批資料能力，同一個群組的 API key、方案與限流。預設關閉。
+paid.MapPlatformMcp(app.Services.GetRequiredService<IOptions<McpOptions>>().Value.Enabled);
 
 // 目錄同步（SCIM）：不在 /v2 之下，沒有方案與計量；部署者沒開功能面就不掛。
 app.MapDirectoryScim();

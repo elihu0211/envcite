@@ -42,6 +42,15 @@
           "Microsoft.EntityFrameworkCore.Relational": "10.0.13"
         }
       },
+      "ModelContextProtocol.AspNetCore": {
+        "type": "Direct",
+        "requested": "[2.3.0, )",
+        "resolved": "2.3.0",
+        "contentHash": "YaRK007jAIFYAGH65I2SPsXVHzaFDRBx+d3swxLCziRYysmk9zGCWm+Lqdt5geHq0wDwCcvwYkMzAOSUWLpajw==",
+        "dependencies": {
+          "ModelContextProtocol": "[2.3.0]"
+        }
+      },
       "Npgsql.OpenTelemetry": {
         "type": "Direct",
         "requested": "[10.0.3, )",
@@ -239,6 +248,14 @@
         "resolved": "5.0.0",
         "contentHash": "0RLaVyex/BjUGqiw9xtGwzyCMaBcsu33Rth61bDCeVeQaaQK7tjcy4TA+nHKTqwUdp4OGd+gnhuq2fuR+c20qA=="
       },
+      "ModelContextProtocol.Core": {
+        "type": "Transitive",
+        "resolved": "2.3.0",
+        "contentHash": "EDpbQholhVWoNumb0Ab3oGv9LmXOLgaD5ixEIUkrnzpnqD0TJCSHTJ5G71/J1KlrQ98aWDclWTPMffKTnCJoMw==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.11.0"
+        }
+      },
       "Npgsql": {
         "type": "Transitive",
         "resolved": "10.0.3",
@@ -335,7 +352,8 @@
           "Grpc.Net.ClientFactory": "[2.84.0, )",
           "Microsoft.Agents.AI.Workflows": "[1.28.0, )",
           "Microsoft.Extensions.AI": "[11.0.0, )",
-          "Microsoft.Extensions.AI.OpenAI": "[11.0.0, )"
+          "Microsoft.Extensions.AI.OpenAI": "[11.0.0, )",
+          "ModelContextProtocol": "[2.3.0, )"
         }
       },
       "envcite.platform.modules.conversations": {
@@ -371,7 +389,8 @@
         "dependencies": {
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
           "Google.Protobuf": "[3.36.2, )",
-          "Grpc.Net.ClientFactory": "[2.84.0, )"
+          "Grpc.Net.ClientFactory": "[2.84.0, )",
+          "ModelContextProtocol": "[2.3.0, )"
         }
       },
       "envcite.platform.modules.tenancy": {
@@ -507,6 +526,15 @@
         "dependencies": {
           "Microsoft.Extensions.AI.Abstractions": "11.0.0",
           "OpenAI": "2.14.0"
+        }
+      },
+      "ModelContextProtocol": {
+        "type": "CentralTransitive",
+        "requested": "[2.3.0, )",
+        "resolved": "2.3.0",
+        "contentHash": "PHZ0q8xTAoysqUKpA5gC0RGJSfwpZhfsNz+9Sw0X0RzFFVHjIE52sx6C+ogMn+LSE+FfiYiNscPJhM6q6DMT6Q==",
+        "dependencies": {
+          "ModelContextProtocol.Core": "[2.3.0]"
         }
       },
       "MudBlazor": {

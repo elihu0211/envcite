@@ -6,8 +6,6 @@ using System.Text.RegularExpressions;
 
 using EnvCite.Consult.V2;
 
-using Grpc.Core;
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -74,8 +72,7 @@ public static partial class ConsultEndpoints
         GroundRequestDto body,
         [FromHeader(Name = IdempotencyKeyHeader)] string? idempotencyKey,
         HttpContext http,
-        ConsultationService.ConsultationServiceClient client,
-        IOptions<ConsultOptions> options,
+        ConsultGateway gateway,
         IUsageRecorder usage,
         IIdempotencyStore idempotency,
         IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions> json,
@@ -97,24 +94,15 @@ public static partial class ConsultEndpoints
                 return Seen(http, seen);
         }
 
-        GroundResponse response;
-        try
+        var grounded = await gateway.GroundAsync(body.Question, body.PointInTime, ct);
+        if (!grounded.IsOk)
         {
-            response = await client.GroundAsync(
-                new GroundRequest { Question = body.Question ?? string.Empty, AsOf = body.PointInTime ?? string.Empty },
-                deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: ct);
-        }
-        catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
-        {
-            return Results.Problem(ex.Status.Detail, statusCode: StatusCodes.Status400BadRequest);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable
-            or StatusCode.DeadlineExceeded
-            or StatusCode.ResourceExhausted)
-        {
-            return Results.Problem("Consult service unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+            return grounded.Status == AdminStatus.Invalid
+                ? grounded.Problem(StatusCodes.Status400BadRequest)
+                : grounded.Problem(StatusCodes.Status503ServiceUnavailable);
         }
 
+        var response = grounded.Value!;
         var dto = ToDto(response);
         if (idempotencyKey is null)
         {
@@ -149,7 +137,7 @@ public static partial class ConsultEndpoints
     [GeneratedRegex(@"^[A-Za-z0-9_.:~-]{1,255}$")]
     private static partial Regex ValidKey();
 
-    private static GroundResultDto ToDto(GroundResponse response) => response.OutcomeCase switch
+    internal static GroundResultDto ToDto(GroundResponse response) => response.OutcomeCase switch
     {
         GroundResponse.OutcomeOneofCase.Evidence => new GroundResultDto(
             "grounded",
