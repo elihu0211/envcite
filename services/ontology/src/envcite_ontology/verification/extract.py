@@ -9,7 +9,7 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from itertools import groupby
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 from envcite_ontology.claims import (
     LEGAL_EFFECTS,
@@ -19,7 +19,7 @@ from envcite_ontology.claims import (
     Loaded,
     load,
 )
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch_one
 from envcite_ontology.verification import prompts
 from envcite_ontology.verification.carry import carry, truncated_issues
 from envcite_ontology.verification.context import ancestors_text
@@ -570,19 +570,26 @@ class Extracted:
     counts: Counts = Counts()
 
 
+class _UnitTextRow(NamedTuple):
+    provision_id: int
+    content: str
+
+
+_UNIT_TEXT = (
+    "SELECT p.id, v.content FROM corpus.provision AS p"
+    "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
+    "  JOIN corpus.provision_version AS v ON v.provision_id = p.id AND v.superseded_at IS NULL"
+    " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND p.path = %s"
+    "   AND v.content IS NOT NULL ORDER BY v.id DESC LIMIT 1"
+)
+
+
 def _unit_text(conn: Conn, law: str, path: str) -> tuple[int, str]:
     """單元的 provision id 與現行文字。"""
-    row = conn.execute(
-        "SELECT p.id, v.content FROM corpus.provision AS p"
-        "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
-        "  JOIN corpus.provision_version AS v ON v.provision_id = p.id AND v.superseded_at IS NULL"
-        " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND p.path = %s"
-        "   AND v.content IS NOT NULL ORDER BY v.id DESC LIMIT 1",
-        (law, path),
-    ).fetchone()
+    row = fetch_one(conn, _UNIT_TEXT, (law, path), _UnitTextRow)
     if row is None:
         raise LookupError(f"no current text for {law} {path}")
-    return int(str(row[0])), str(row[1])
+    return row.provision_id, row.content
 
 
 def _cites_elsewhere(path: str, text: str) -> bool:

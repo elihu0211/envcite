@@ -12,9 +12,10 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, cast
+from decimal import Decimal
+from typing import Any, NamedTuple, cast
 
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, fetch_one
 from envcite_ontology.reasoning import evaluate
 from envcite_ontology.verification import prompts
 from envcite_ontology.verification.gates import GateResult, statement_as_of, unit_of
@@ -48,16 +49,22 @@ _VERDICTS = {
 }
 
 
+class _ProducerRow(NamedTuple):
+    producer: str
+
+
+_SQL_PRODUCER = (
+    "SELECT d.producer FROM annotation.statement AS s"
+    "  JOIN annotation.assertion AS sc ON sc.id = s.id"
+    "  JOIN annotation.derivation AS d ON d.id = sc.derivation_id WHERE s.id = %s"
+)
+
+
 def _extractor(conn: Conn, statement_id: int) -> str:
-    row = conn.execute(
-        "SELECT d.producer FROM annotation.statement AS s"
-        "  JOIN annotation.assertion AS sc ON sc.id = s.id"
-        "  JOIN annotation.derivation AS d ON d.id = sc.derivation_id WHERE s.id = %s",
-        (statement_id,),
-    ).fetchone()
+    row = fetch_one(conn, _SQL_PRODUCER, (statement_id,), _ProducerRow)
     if row is None:
         raise LookupError(f"no such statement: {statement_id}")
-    return str(row[0])
+    return row.producer
 
 
 def eligible(
@@ -87,6 +94,71 @@ UNSTATED = "（原文未明示）"
 _TRIGGER = {"order_lapsed": "屆期未履行", "sanction_imposed": "已作成"}
 
 
+class _SlotRow(NamedTuple):
+    role: str
+    #: 未明示的槽位是 `UNSTATED`；其餘是概念代碼或字面值（資料庫約束保證二者有一）
+    value: str
+    liability: str | None
+
+
+class _ConditionRow(NamedTuple):
+    role: str
+    code: str
+    label: str
+    comparator: str
+    threshold: Decimal | None
+    unit: str | None
+    negated: bool
+    needs_assessment: bool
+    delegated: bool
+    permit: str | None
+    method: str | None
+    averaging: str | None
+    carried: bool
+
+
+class _SanctionRow(NamedTuple):
+    effect: str
+    low: Decimal | None
+    high: Decimal | None
+    per_occasion: bool
+    discretionary: bool
+
+
+class _TriggerRow(NamedTuple):
+    effect: str
+    kind: str
+
+
+_SQL_SLOTS = (
+    "SELECT slot_role,"
+    "       CASE WHEN unstated THEN %s ELSE coalesce(concept_code, literal) END,"
+    "       liability_basis"
+    "  FROM annotation.slots_of(ARRAY[%s]::bigint[])"
+    " ORDER BY slot_role, alternative"
+)
+
+_SQL_CONDITIONS = (
+    "SELECT condition_role, concept_code, concept_name, comparator,"
+    "       threshold, measure_unit, negated, needs_assessment, delegated,"
+    "       permit_code, method_code, averaging_code, carried"
+    "  FROM annotation.conditions_of(ARRAY[%s]::bigint[])"
+    " ORDER BY id"
+)
+
+_SQL_SANCTION = (
+    "SELECT legal_effect, min_amount, max_amount, per_occasion, discretionary"
+    "  FROM annotation.sanctions_of(ARRAY[%s]::bigint[])"
+)
+
+_SQL_TRIGGERS = (
+    "SELECT n.legal_effect::text, t.trigger_kind::text"
+    "  FROM annotation.sanction_trigger AS t"
+    "  JOIN annotation.sanction AS n ON n.statement_id = t.trigger_statement_id"
+    " WHERE t.statement_id = %s ORDER BY n.legal_effect, t.trigger_kind"
+)
+
+
 def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False) -> str:
     """標註的結構化描述（種類、行為槽、要件、罰則）；同一標註永遠得到同一段文字。
 
@@ -94,79 +166,66 @@ def render_annotation(conn: Conn, statement_id: int, *, for_reader: bool = False
     """
     u = unit_of(conn, statement_id)
     lines = [f"陳述種類：{_KIND.get((u.kind, u.deontic), u.kind)}"]
-    for slot, value, liability in conn.execute(
-        "SELECT slot_role,"
-        "       CASE WHEN unstated THEN %s ELSE coalesce(concept_code, literal) END,"
-        "       liability_basis"
-        "  FROM annotation.slots_of(ARRAY[%s]::bigint[])"
-        " ORDER BY slot_role, alternative",
-        (UNSTATED, statement_id),
-    ):
-        basis = f"（責任基礎：{_LIABILITY.get(str(liability), liability)}）" if liability else ""
-        lines.append(f"{_SLOT.get(str(slot), slot)}：{value}{basis}")
+    for slot in fetch(conn, _SQL_SLOTS, (UNSTATED, statement_id), _SlotRow):
+        basis = (
+            f"（責任基礎：{_LIABILITY.get(slot.liability, slot.liability)}）"
+            if slot.liability
+            else ""
+        )
+        lines.append(f"{_SLOT.get(slot.role, slot.role)}：{slot.value}{basis}")
     by_role: dict[str, list[str]] = {}
-    for found in conn.execute(
-        "SELECT condition_role, concept_code, concept_name, comparator,"
-        "       threshold, measure_unit, negated, needs_assessment, delegated,"
-        "       permit_code, method_code, averaging_code, carried"
-        "  FROM annotation.conditions_of(ARRAY[%s]::bigint[])"
-        " ORDER BY id",
-        (statement_id,),
-    ):
-        role, code, label, cmp, threshold, unit, negated, judgement, delegated = found[:9]
-        permit, method, averaging, carried = found[9:]
-        if cmp == "eq" and threshold == 1 and not unit and not delegated:
-            text = f"[{code}] {label} 成立"  # 不寫成原文沒有的數值
+    for cond in fetch(conn, _SQL_CONDITIONS, (statement_id,), _ConditionRow):
+        if cond.comparator == "eq" and cond.threshold == 1 and not cond.unit and not cond.delegated:
+            text = f"[{cond.code}] {cond.label} 成立"  # 不寫成原文沒有的數值
         else:
             value = (
                 "門檻值由授權命令供給"
-                if delegated
-                else f"門檻值由個別許可（{permit}）所載"
-                if permit is not None
+                if cond.delegated
+                else f"門檻值由個別許可（{cond.permit}）所載"
+                if cond.permit is not None
                 else "（另一個概念）"
-                if threshold is None
-                else f"{threshold:g}{unit or ''}"
+                if cond.threshold is None
+                else f"{cond.threshold:g}{cond.unit or ''}"
             )
-            text = f"[{code}] {label} {_CMP[str(cmp)]} {value}"
-        if method is not None or averaging is not None:
-            text += f"（檢測方法：{method or '未標註'}；平均時段：{averaging or '未標註'}）"
-        by_role.setdefault(str(role), []).append(
-            ("非：" if negated else "")
+            text = f"[{cond.code}] {cond.label} {_CMP[cond.comparator]} {value}"
+        if cond.method is not None or cond.averaging is not None:
+            text += (
+                f"（檢測方法：{cond.method or '未標註'}；平均時段：{cond.averaging or '未標註'}）"
+            )
+        by_role.setdefault(cond.role, []).append(
+            ("非：" if cond.negated else "")
             + text
-            + ("（需判斷）" if judgement else "")
-            + ("（承自上位）" if carried else "")
+            + ("（需判斷）" if cond.needs_assessment else "")
+            + ("（承自上位）" if cond.carried else "")
         )
     names = {"scope": "適用範圍（皆須成立）", "duty": "義務內容（皆須成立）", "limit": "限值"}
     for role in ("scope", "duty", "limit"):
         if role in by_role:
             lines.append(f"{names[role]}：" + "；".join(by_role[role]))
-    row = conn.execute(
-        "SELECT legal_effect, min_amount, max_amount, per_occasion, discretionary"
-        "  FROM annotation.sanctions_of(ARRAY[%s]::bigint[])",
-        (statement_id,),
-    ).fetchone()
-    if row is not None:
-        effect, low, high, repeating, discretionary = row
+    sanction = fetch_one(conn, _SQL_SANCTION, (statement_id,), _SanctionRow)
+    if sanction is not None:
         amount = (
             ""
-            if low is None and high is None
-            else f"；額度 {low or '無下限'} 至 {high or '無上限'}"
+            if sanction.low is None and sanction.high is None
+            else f"；額度 {sanction.low or '無下限'} 至 {sanction.high or '無上限'}"
         )
-        shown = f"{effect}（{_EFFECT.get(str(effect), effect)}）" if for_reader else effect
+        shown = (
+            f"{sanction.effect}（{_EFFECT.get(sanction.effect, sanction.effect)}）"
+            if for_reader
+            else sanction.effect
+        )
         lines.append(
             f"罰則效果：{shown}{amount}"
-            + ("；按次處罰" if repeating else "")
-            + ("；得（裁量）" if discretionary else "")
+            + ("；按次處罰" if sanction.per_occasion else "")
+            + ("；得（裁量）" if sanction.discretionary else "")
         )
-        for effect, kind in conn.execute(
-            "SELECT n.legal_effect::text, t.trigger_kind::text"
-            "  FROM annotation.sanction_trigger AS t"
-            "  JOIN annotation.sanction AS n ON n.statement_id = t.trigger_statement_id"
-            " WHERE t.statement_id = %s ORDER BY n.legal_effect, t.trigger_kind",
-            (statement_id,),
-        ):
-            shown = f"{effect}（{_EFFECT.get(str(effect), effect)}）" if for_reader else effect
-            lines.append(f"前提：另一罰則 {shown} {_TRIGGER.get(str(kind), kind)}")
+        for trigger in fetch(conn, _SQL_TRIGGERS, (statement_id,), _TriggerRow):
+            shown = (
+                f"{trigger.effect}（{_EFFECT.get(trigger.effect, trigger.effect)}）"
+                if for_reader
+                else trigger.effect
+            )
+            lines.append(f"前提：另一罰則 {shown} {_TRIGGER.get(trigger.kind, trigger.kind)}")
     return "\n".join(lines)
 
 
@@ -184,39 +243,43 @@ def _signature(
     }
 
 
+class _StoredConditionRow(NamedTuple):
+    role: str
+    code: str
+    comparator: str
+    threshold: Decimal | None
+    negated: bool
+    needs_assessment: bool
+
+
+_SQL_STORED_CONDITIONS = (
+    "SELECT c.condition_role::text, k.code, c.comparator::text, c.threshold,"
+    "       c.negated, c.needs_assessment"
+    "  FROM annotation.statement_condition AS c"
+    "  JOIN vocab.concept AS k ON k.id = c.concept_id"
+    " WHERE c.statement_id = %s"
+)
+
+
+def _float(value: Decimal | None) -> float | None:
+    return None if value is None else float(value)
+
+
 def _stored_signature(conn: Conn, statement_id: int) -> dict[str, Any]:
     u = unit_of(conn, statement_id)
     conds = [
-        (
-            str(r[0]),
-            str(r[1]),
-            str(r[2]),
-            None if r[3] is None else float(cast(float, r[3])),
-            bool(r[4]),
-            bool(r[5]),
-        )
-        for r in conn.execute(
-            "SELECT c.condition_role::text, k.code, c.comparator::text, c.threshold,"
-            "       c.negated, c.needs_assessment"
-            "  FROM annotation.statement_condition AS c"
-            "  JOIN vocab.concept AS k ON k.id = c.concept_id"
-            " WHERE c.statement_id = %s",
-            (statement_id,),
-        )
+        (c.role, c.code, c.comparator, _float(c.threshold), c.negated, c.needs_assessment)
+        for c in fetch(conn, _SQL_STORED_CONDITIONS, (statement_id,), _StoredConditionRow)
     ]
-    row = conn.execute(
-        "SELECT legal_effect, min_amount, max_amount, per_occasion, discretionary"
-        "  FROM annotation.sanctions_of(ARRAY[%s]::bigint[])",
-        (statement_id,),
-    ).fetchone()
+    row = fetch_one(conn, _SQL_SANCTION, (statement_id,), _SanctionRow)
     sanction = None
     if row is not None:
         sanction = (
-            str(row[0]),
-            None if row[1] is None else float(cast(float, row[1])),
-            None if row[2] is None else float(cast(float, row[2])),
-            bool(row[3]),
-            bool(row[4]),
+            row.effect,
+            _float(row.low),
+            _float(row.high),
+            row.per_occasion,
+            row.discretionary,
         )
     return _signature(u.kind, u.deontic, conds, sanction)
 
@@ -302,26 +365,35 @@ class RoundtripGate:
 # 閘門二：獨立測試
 
 
+class _ConceptRow(NamedTuple):
+    code: str
+    label: str
+    comparator: str
+    threshold: Decimal | None
+    unit: str | None
+
+
+_SQL_CONCEPTS = (
+    "SELECT k.code, k.name, c.comparator::text, c.threshold, c.measure_unit"
+    "  FROM annotation.statement_condition AS c"
+    "  JOIN vocab.concept AS k ON k.id = c.concept_id"
+    " WHERE c.statement_id = %s ORDER BY k.code, c.id"
+)
+
+
 def _concept_line(conn: Conn, statement_id: int) -> list[str]:
     """給測試設計者的概念清單，附型別（取自標註的要件；無單位的 eq 1 是成立與否）。
 
     不說明型別，設計者會對成立與否的概念編出數值，那是型別歧義，不是標註錯。
     """
-    rows = conn.execute(
-        "SELECT k.code, k.name, c.comparator::text, c.threshold, c.measure_unit"
-        "  FROM annotation.statement_condition AS c"
-        "  JOIN vocab.concept AS k ON k.id = c.concept_id"
-        " WHERE c.statement_id = %s ORDER BY k.code, c.id",
-        (statement_id,),
-    )
     lines: dict[str, tuple[str, set[str]]] = {}
-    for code, label, cmp, threshold, unit in rows:
-        presence = cmp == "eq" and threshold == 1 and not unit
-        kind = lines.setdefault(str(code), (str(label), set()))[1]
+    for concept in fetch(conn, _SQL_CONCEPTS, (statement_id,), _ConceptRow):
+        presence = concept.comparator == "eq" and concept.threshold == 1 and not concept.unit
+        kind = lines.setdefault(concept.code, (concept.label, set()))[1]
         kind.add(
             "成立與否，成立為 1、不成立為 0"
             if presence
-            else f"數值{f'，單位 {unit}' if unit else ''}"
+            else f"數值{f'，單位 {concept.unit}' if concept.unit else ''}"
         )
     return [
         f"{code}：{label}（{'；'.join(sorted(kinds))}）" for code, (label, kinds) in lines.items()

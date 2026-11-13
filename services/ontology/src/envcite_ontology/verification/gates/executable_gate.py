@@ -3,9 +3,9 @@
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any, NamedTuple
 
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch_one
 from envcite_ontology.reasoning import Result, evaluate
 from envcite_ontology.reasoning.facts import CaseValue, Measurement, limit_at
 from envcite_ontology.verification.gates.base import GateResult, Unit, unit_of
@@ -26,6 +26,29 @@ _POLARITY: dict[str, tuple[str, str]] = {
 
 #: 委由個別處分的要件：許可不在語料裡，以一個假設的許可量值檢查結論是否翻轉。
 _PERMITTED = Decimal(100)
+
+
+class _PunishedRow(NamedTuple):
+    punished: int
+
+
+class _TriggerRow(NamedTuple):
+    statement_id: int
+    punished: int
+    #: 前提的罰則自己也有前提
+    has_trigger: bool
+
+
+_PUNISHED = "SELECT punished_statement_id FROM annotation.sanction WHERE statement_id = %s"
+
+_TRIGGER = (
+    "SELECT t.trigger_statement_id, n.punished_statement_id,"
+    "       EXISTS (SELECT 1 FROM annotation.sanction_trigger AS tt"
+    "                WHERE tt.statement_id = t.trigger_statement_id)"
+    "  FROM annotation.sanction_trigger AS t"
+    "  JOIN annotation.sanction AS n ON n.statement_id = t.trigger_statement_id"
+    " WHERE t.statement_id = %s ORDER BY t.trigger_statement_id LIMIT 1"
+)
 
 
 @dataclass(frozen=True)
@@ -87,13 +110,10 @@ class ExecutableGate:
         return self._verdicts(conn, ready, u.statement_id, cases)
 
     def _penalty(self, conn: Conn, u: Unit) -> GateResult:
-        row = conn.execute(
-            "SELECT punished_statement_id FROM annotation.sanction WHERE statement_id = %s",
-            (u.statement_id,),
-        ).fetchone()
-        if row is None or row[0] is None:
+        row = fetch_one(conn, _PUNISHED, (u.statement_id,), _PunishedRow)
+        if row is None:
             return GateResult("inconclusive", {"reason": "penalty punishes nothing"})
-        punished = unit_of(conn, cast(int, row[0]))
+        punished = unit_of(conn, row.punished)
         pair = _POLARITY.get(punished.deontic or "")
         if punished.kind != "prescriptive" or pair is None or pair[0] == pair[1]:
             return GateResult("inconclusive", {"reason": "punished statement cannot be a breach"})
@@ -124,21 +144,13 @@ class ExecutableGate:
         # 以另一個效果為前提的罰則：前提也要列出。取第一個前提，使它的適用範圍成立；前提處罰的
         # 是別的陳述（例如跨法的環境講習）時，這裡造不出案件。
         inputs = [breach_ready, pen_ready]
-        trigger = conn.execute(
-            "SELECT t.trigger_statement_id, n.punished_statement_id,"
-            "       EXISTS (SELECT 1 FROM annotation.sanction_trigger AS tt"
-            "                WHERE tt.statement_id = t.trigger_statement_id)"
-            "  FROM annotation.sanction_trigger AS t"
-            "  JOIN annotation.sanction AS n ON n.statement_id = t.trigger_statement_id"
-            " WHERE t.statement_id = %s ORDER BY t.trigger_statement_id LIMIT 1",
-            (u.statement_id,),
-        ).fetchone()
+        trigger = fetch_one(conn, _TRIGGER, (u.statement_id,), _TriggerRow)
         if trigger is not None:
-            if trigger[1] != punished.statement_id:
+            if trigger.punished != punished.statement_id:
                 return GateResult("inconclusive", {"reason": "trigger punishes another statement"})
-            if trigger[2]:
+            if trigger.has_trigger:
                 return GateResult("inconclusive", {"reason": "trigger has a trigger of its own"})
-            trigger_ready = self._ready(conn, unit_of(conn, cast(int, trigger[0])))
+            trigger_ready = self._ready(conn, unit_of(conn, trigger.statement_id))
             if isinstance(trigger_ready, GateResult):
                 return trigger_ready
             inputs.append(trigger_ready)

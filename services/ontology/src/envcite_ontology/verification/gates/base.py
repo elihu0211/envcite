@@ -1,9 +1,9 @@
 """閘門共用型別與陳述所在條文單元的讀取。"""
 
 from dataclasses import dataclass, field
-from typing import Any, Literal, Protocol, cast
+from typing import Any, Literal, NamedTuple, Protocol
 
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch_one
 from envcite_ontology.verification.context import ancestors_text
 
 type Verdict = Literal["pass", "fail", "inconclusive"]
@@ -61,33 +61,48 @@ class Unit:
         return f"{self.context}\n{self.quoted}" if self.context else self.quoted
 
 
+_UNIT = (
+    "SELECT s.provision_id, p.path, p.resource_id, v.content, lower(s.span), upper(s.span),"
+    "       s.statement_kind::text, s.norm_modality::text"
+    "  FROM annotation.statement AS s"
+    "  JOIN corpus.provision AS p ON p.id = s.provision_id"
+    "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
+    "   AND v.content_sha256 = s.content_sha256 AND v.superseded_at IS NULL"
+    " WHERE s.id = %s LIMIT 1"
+)
+
+
+class _UnitRow(NamedTuple):
+    provision_id: int
+    path: str
+    resource_id: int
+    text: str
+    #: 引文的區間；陳述涵蓋整段原文時兩端皆 NULL
+    span_start: int | None
+    span_end: int | None
+    kind: str
+    deontic: str | None
+
+
 def unit_of(conn: Conn, statement_id: int) -> Unit:
     """讀出陳述所錨定單元的現行原文與上層條文。
 
     陳述錨定的版本已被取代（或陳述不存在）時沒有可核對的原文，丟 `LookupError`。
     """
-    row = conn.execute(
-        "SELECT s.provision_id, p.path, p.resource_id, v.content, lower(s.span), upper(s.span),"
-        "       s.statement_kind::text, s.norm_modality::text"
-        "  FROM annotation.statement AS s"
-        "  JOIN corpus.provision AS p ON p.id = s.provision_id"
-        "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
-        "   AND v.content_sha256 = s.content_sha256 AND v.superseded_at IS NULL"
-        " WHERE s.id = %s LIMIT 1",
-        (statement_id,),
-    ).fetchone()
+    row = fetch_one(conn, _UNIT, (statement_id,), _UnitRow)
     if row is None:
         raise LookupError(f"statement {statement_id} has no current text to check against")
-    pid, path, rid, text, lo, hi, kind, deontic = row
-    span = None if lo is None else (cast(int, lo), cast(int, hi))
+    span = (
+        None if row.span_start is None or row.span_end is None else (row.span_start, row.span_end)
+    )
     return Unit(
         statement_id,
-        cast(int, pid),
-        cast(str, path),
-        cast(int, rid),
-        cast(str, text),
+        row.provision_id,
+        row.path,
+        row.resource_id,
+        row.text,
         span,
-        cast(str, kind),
-        cast("str | None", deontic),
-        ancestors_text(conn, cast(int, pid)),
+        row.kind,
+        row.deontic,
+        ancestors_text(conn, row.provision_id),
     )

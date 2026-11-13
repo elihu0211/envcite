@@ -7,11 +7,11 @@
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import cast
+from typing import NamedTuple
 
 from psycopg.types.json import Jsonb
 
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, fetch_one
 from envcite_ontology.verification.gates import DEFAULT_GATES, Gate, GateResult
 from envcite_ontology.verification.models import ModelError
 
@@ -27,27 +27,43 @@ class Settled:
     rounds: int
 
 
+class _IdRow(NamedTuple):
+    id: int
+
+
+class _ResultRow(NamedTuple):
+    result: str
+
+
+class _SettleRow(NamedTuple):
+    confirmed: int
+    rejected: int
+
+
+_EXTRACTED = (
+    "SELECT id FROM annotation.assertion"
+    " WHERE assertion_kind = 'statement' AND confirm_state = 'extracted' ORDER BY id"
+)
+
+_LATEST = (
+    "SELECT result::text FROM annotation.verification"
+    " WHERE assertion_id = %s AND method = %s ORDER BY id DESC LIMIT 1"
+)
+
+_SETTLE = "SELECT confirmed, rejected FROM annotation.settle('statement', %s)"
+
+
 def verify(conn: Conn, gates: Sequence[Gate] = DEFAULT_GATES) -> int:
     """對每個 extracted 陳述跑尚無定論的閘門並記錄；回傳新寫入的驗證列數。
 
     最近一次非 inconclusive 即有定論。每個陳述跑完就 commit：模型呼叫昂貴，崩潰不丟答案且進度可見。
     """
     written = 0
-    ids = [
-        cast(int, row[0])
-        for row in conn.execute(
-            "SELECT id FROM annotation.assertion"
-            " WHERE assertion_kind = 'statement' AND confirm_state = 'extracted' ORDER BY id"
-        )
-    ]
+    ids = [r.id for r in fetch(conn, _EXTRACTED, None, _IdRow)]
     for done, sid in enumerate(ids, 1):
         for gate in gates:
-            latest = conn.execute(
-                "SELECT result::text FROM annotation.verification"
-                " WHERE assertion_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
-                (sid, gate.method),
-            ).fetchone()
-            if latest is not None and latest[0] != "inconclusive":
+            latest = fetch_one(conn, _LATEST, (sid, gate.method), _ResultRow)
+            if latest is not None and latest.result != "inconclusive":
                 continue
             try:
                 result = gate.check(conn, sid)
@@ -77,13 +93,11 @@ def settle(
     for _ in range(max_rounds):
         rounds += 1
         verify(conn, gates)
-        row = conn.execute(
-            "SELECT confirmed, rejected FROM annotation.settle('statement', %s)", (list(required),)
-        ).fetchone()
+        row = fetch_one(conn, _SETTLE, (list(required),), _SettleRow)
         conn.commit()
         assert row is not None
-        confirmed += cast(int, row[0])
-        rejected += cast(int, row[1])
-        if row[0] == 0 and row[1] == 0:
+        confirmed += row.confirmed
+        rejected += row.rejected
+        if row.confirmed == 0 and row.rejected == 0:
             break
     return Settled(confirmed, rejected, rounds)

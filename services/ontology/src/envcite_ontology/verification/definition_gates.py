@@ -10,11 +10,11 @@
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import cast
+from typing import NamedTuple
 
 from psycopg.types.json import Jsonb
 
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, fetch_one
 from envcite_ontology.verification import prompts
 from envcite_ontology.verification.context import ancestors_text
 from envcite_ontology.verification.gates.base import GateResult
@@ -45,41 +45,56 @@ class Definition:
     context: str
 
 
+class _DefinitionRow(NamedTuple):
+    provision_id: int
+    path: str
+    text: str
+    quote: str
+    term: str
+    producer: str
+
+
+class _NameRow(NamedTuple):
+    name: str
+
+
+_DEFINITION = (
+    "SELECT p.id, p.path, v.content, t.definition_text, tk.name, d.producer"
+    "  FROM annotation.term_definition AS t"
+    "  JOIN corpus.provision AS p ON p.id = t.provision_id"
+    "  JOIN corpus.provision_version AS v ON v.provision_id = t.provision_id"
+    "   AND v.content_sha256 = t.content_sha256 AND v.superseded_at IS NULL"
+    "  JOIN vocab.concept AS tk ON tk.id = t.term_concept_id"
+    "  JOIN annotation.assertion AS tc ON tc.id = t.id"
+    "  JOIN annotation.derivation AS d ON d.id = tc.derivation_id"
+    " WHERE t.id = %s LIMIT 1"
+)
+
+_MEMBERS = (
+    "SELECT mk.name FROM annotation.term_definition_member AS m"
+    "  JOIN vocab.concept AS mk ON mk.id = m.member_concept_id"
+    " WHERE m.definition_id = %s ORDER BY mk.name"
+)
+
+
 def definition_of(conn: Conn, definition_id: int) -> Definition:
     """讀出用語定義與它所在款的現行原文，成員依名稱排序。
 
     款已改版、標註對不上現行文字時沒有可核對的原文，丟 `LookupError`。
     """
-    row = conn.execute(
-        "SELECT p.id, p.path, v.content, t.definition_text, tk.name, d.producer"
-        "  FROM annotation.term_definition AS t"
-        "  JOIN corpus.provision AS p ON p.id = t.provision_id"
-        "  JOIN corpus.provision_version AS v ON v.provision_id = t.provision_id"
-        "   AND v.content_sha256 = t.content_sha256 AND v.superseded_at IS NULL"
-        "  JOIN vocab.concept AS tk ON tk.id = t.term_concept_id"
-        "  JOIN annotation.assertion AS tc ON tc.id = t.id"
-        "  JOIN annotation.derivation AS d ON d.id = tc.derivation_id"
-        " WHERE t.id = %s LIMIT 1",
-        (definition_id,),
-    ).fetchone()
+    row = fetch_one(conn, _DEFINITION, (definition_id,), _DefinitionRow)
     if row is None:
         raise LookupError(f"definition {definition_id} has no current text to check against")
-    members = conn.execute(
-        "SELECT mk.name FROM annotation.term_definition_member AS m"
-        "  JOIN vocab.concept AS mk ON mk.id = m.member_concept_id"
-        " WHERE m.definition_id = %s ORDER BY mk.name",
-        (definition_id,),
-    ).fetchall()
-    pid, path, text, quote, term, producer = row
+    members = fetch(conn, _MEMBERS, (definition_id,), _NameRow)
     return Definition(
         definition_id,
-        str(path),
-        str(text),
-        str(quote),
-        str(term),
-        tuple(str(m[0]) for m in members),
-        str(producer),
-        ancestors_text(conn, cast(int, pid)),
+        row.path,
+        row.text,
+        row.quote,
+        row.term,
+        tuple(m.name for m in members),
+        row.producer,
+        ancestors_text(conn, row.provision_id),
     )
 
 
@@ -165,24 +180,40 @@ def gates_for(reader: Model | None, allow_same_family: bool = False) -> tuple[De
     return (LiteralGate(), DefinitionRoundtripGate(reader, allow_same_family))
 
 
+class _IdRow(NamedTuple):
+    id: int
+
+
+class _ResultRow(NamedTuple):
+    result: str
+
+
+class _SettleRow(NamedTuple):
+    confirmed: int
+    rejected: int
+
+
+_EXTRACTED = (
+    "SELECT id FROM annotation.assertion"
+    " WHERE assertion_kind = 'definition' AND confirm_state = 'extracted' ORDER BY id"
+)
+
+_LATEST = (
+    "SELECT result::text FROM annotation.verification"
+    " WHERE assertion_id = %s AND method = %s ORDER BY id DESC LIMIT 1"
+)
+
+_SETTLE = "SELECT confirmed, rejected FROM annotation.settle('definition', %s)"
+
+
 def verify(conn: Conn, gates: Sequence[DefinitionGate]) -> int:
     """對每個 extracted 的定義跑尚無定論的閘門並記錄；回傳新寫入的驗證列數。"""
     written = 0
-    ids = [
-        cast(int, row[0])
-        for row in conn.execute(
-            "SELECT id FROM annotation.assertion"
-            " WHERE assertion_kind = 'definition' AND confirm_state = 'extracted' ORDER BY id"
-        )
-    ]
+    ids = [r.id for r in fetch(conn, _EXTRACTED, None, _IdRow)]
     for did in ids:
         for gate in gates:
-            latest = conn.execute(
-                "SELECT result::text FROM annotation.verification"
-                " WHERE assertion_id = %s AND method = %s ORDER BY id DESC LIMIT 1",
-                (did, gate.method),
-            ).fetchone()
-            if latest is not None and latest[0] != "inconclusive":
+            latest = fetch_one(conn, _LATEST, (did, gate.method), _ResultRow)
+            if latest is not None and latest.result != "inconclusive":
                 continue
             try:
                 result = gate.check(conn, did)
@@ -211,10 +242,8 @@ def settle(
 ) -> SettledDefinitions:
     """驗證、接受。定義之間沒有相依，一輪就夠。"""
     verify(conn, gates)
-    row = conn.execute(
-        "SELECT confirmed, rejected FROM annotation.settle('definition', %s)", (list(required),)
-    ).fetchone()
+    row = fetch_one(conn, _SETTLE, (list(required),), _SettleRow)
     conn.commit()
     assert row is not None
-    log.info("定義：%d 個確認、%d 個駁回", row[0], row[1])
-    return SettledDefinitions(cast(int, row[0]), cast(int, row[1]))
+    log.info("定義：%d 個確認、%d 個駁回", row.confirmed, row.rejected)
+    return SettledDefinitions(row.confirmed, row.rejected)

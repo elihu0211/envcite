@@ -11,9 +11,9 @@ from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import cast
+from typing import NamedTuple
 
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, fetch_one, scalar
 
 # 案件事實的值：數字，或概念代碼（概念取某個值概念）；同一概念可帶多個值。
 type CaseValue = float | str
@@ -197,9 +197,111 @@ _TRIGGERS = """
 """
 
 
+class _ResourceRow(NamedTuple):
+    jurisdiction: str
+    id_scheme: str
+    local_id: str
+
+
+class _StatementRow(NamedTuple):
+    id: int
+    kind: str
+    modality: str | None
+    version_iri: str
+    law_id: int
+
+
+class _LawRow(NamedTuple):
+    id: int
+    local_id: str
+    norm_kind: str
+
+
+class _LinkRow(NamedTuple):
+    cited_law_name: str
+    cited_path: str
+    # 引不到法規（或條文）時以下各欄為 NULL：LEFT JOIN 與 `delegations_at` 的外連接
+    law_id: int | None
+    law_local_id: str | None
+    law_provision_id: int | None
+    law_status: str | None
+    law_norm_kind: str | None
+    version_iri: str | None
+    version_invalidated: bool
+    law_jurisdiction: str | None
+    law_id_scheme: str | None
+
+
+class _ConditionRow(NamedTuple):
+    id: int
+    statement_id: int
+    role: str
+    disjunct: int
+    concept: str
+    comparator: str
+    negated: bool
+    needs_assessment: bool
+    threshold: Decimal | None
+    delegated: bool
+    value_concept: str | None
+    permit: str | None
+
+
+class _DefinitionRow(NamedTuple):
+    law_id: int
+    term: str
+    member: str
+    definition_id: int
+
+
+class _MatchRow(NamedTuple):
+    other: str
+    used: str
+
+
+class _ActionRow(NamedTuple):
+    statement_id: int
+    action: str
+
+
+class _SubjectRow(NamedTuple):
+    statement_id: int
+    basis: str | None
+
+
+class _ExceptionRow(NamedTuple):
+    exception: int
+    excluded: int
+
+
+class _OverrideRow(NamedTuple):
+    winner: int
+    loser: int
+    basis: str
+
+
+class _SanctionRow(NamedTuple):
+    statement_id: int
+    punishes: int
+    effect: str
+    min_amount: Decimal | None
+    max_amount: Decimal | None
+    per_occasion: bool
+
+
+class _TriggerRow(NamedTuple):
+    statement_id: int
+    trigger: int
+    kind: str
+    present: bool
+
+
 @dataclass(frozen=True)
 class Invalidated:
-    """因違憲失效而不參與推論的陳述：所讀的版本、裁判字號、失效日、是否只宣告一部分。"""
+    """因違憲失效而不參與推論的陳述：所讀的版本、裁判字號、失效日、是否只宣告一部分。
+
+    欄位次序同 `_INVALIDATED`，它直接是該查詢的列型別。
+    """
 
     statement_id: int
     version_iri: str
@@ -261,22 +363,22 @@ def _chain(
     path: tuple[int, ...],
 ) -> Chain:
     # 不跨起點快取：在環上被截斷的鏈只對那個起點成立。
-    (cmd_jur, cmd_scheme, local_id) = cast(
-        tuple[str, str, str],
-        conn.execute(
-            "SELECT jurisdiction, id_scheme, local_id FROM corpus.legal_resource WHERE id = %s",
-            (law,),
-        ).fetchone(),
+    command = fetch_one(
+        conn,
+        "SELECT jurisdiction, id_scheme, local_id FROM corpus.legal_resource WHERE id = %s",
+        (law,),
+        _ResourceRow,
     )
-    rows = conn.execute(_LINKS, {"law": law, "lang": language, "on": on}).fetchall()
+    assert command is not None
+    rows = fetch(conn, _LINKS, {"law": law, "lang": language, "on": on}, _LinkRow)
     if not rows:
         return Chain(
             False,
             (
                 Link(
-                    command_jurisdiction=str(cmd_jur),
-                    command_id_scheme=str(cmd_scheme),
-                    command_local_id=str(local_id),
+                    command_jurisdiction=command.jurisdiction,
+                    command_id_scheme=command.id_scheme,
+                    command_local_id=command.local_id,
                     cited_law_name="",
                     cited_path="",
                     target_jurisdiction=None,
@@ -289,45 +391,33 @@ def _chain(
         )
     links: list[Link] = []
     rooted = False
-    for (
-        name,
-        cited,
-        parent,
-        parent_id,
-        provision,
-        status,
-        kind,
-        iri,
-        void,
-        p_jur,
-        p_scheme,
-    ) in rows:
+    for row in rows:
         here = Link(
-            command_jurisdiction=str(cmd_jur),
-            command_id_scheme=str(cmd_scheme),
-            command_local_id=str(local_id),
-            cited_law_name=str(name),
-            cited_path=str(cited),
-            target_jurisdiction=None if p_jur is None else str(p_jur),
-            target_id_scheme=None if p_scheme is None else str(p_scheme),
-            target_local_id=None if parent_id is None else str(parent_id),
-            version_iri=None if iri is None else str(iri),
+            command_jurisdiction=command.jurisdiction,
+            command_id_scheme=command.id_scheme,
+            command_local_id=command.local_id,
+            cited_law_name=row.cited_law_name,
+            cited_path=row.cited_path,
+            target_jurisdiction=row.law_jurisdiction,
+            target_id_scheme=row.law_id_scheme,
+            target_local_id=row.law_local_id,
+            version_iri=row.version_iri,
             gap=None,
         )
-        if parent is None or provision is None:
+        if row.law_id is None or row.law_provision_id is None:
             links.append(_gap(here, "unresolved_law"))
-        elif status != "in_force":
+        elif row.law_status != "in_force":
             links.append(_gap(here, "law_not_in_force"))
-        elif void:
+        elif row.version_invalidated:
             links.append(_gap(here, "law_invalidated"))
-        elif kind in LAWS:
+        elif row.law_norm_kind in LAWS:
             links.append(here)
             rooted = True
-        elif cast(int, parent) in path or parent == law:
+        elif row.law_id in path or row.law_id == law:
             links.append(_gap(here, "cycle"))
         else:
             links.append(here)
-            above = _chain(conn, cast(int, parent), language, on, (*path, law))
+            above = _chain(conn, row.law_id, language, on, (*path, law))
             links.extend(above.links)
             rooted = rooted or above.rooted
     return Chain(rooted, tuple(links))
@@ -339,7 +429,10 @@ def _gap(link: Link, gap: str) -> Link:
 
 @dataclass(frozen=True)
 class Limit:
-    """委由授權條文的要件在某日所取得的限值：門檻值、提供它的陳述與它的認定方式（概念代碼）。"""
+    """委由授權條文的要件在某日所取得的限值：門檻值、提供它的陳述與它的認定方式（概念代碼）。
+
+    欄位次序同 `_LIMIT`，它直接是該查詢的列型別。
+    """
 
     threshold: Decimal
     statement_id: int
@@ -349,16 +442,7 @@ class Limit:
 
 def limit_at(conn: Conn, condition_id: int, language: str, on: date) -> Limit | None:
     """授權的限值；解析不到為 None。同一條文對同一概念有數個限值時取要件編號最小的。"""
-    row = conn.execute(_LIMIT, (condition_id, language, on)).fetchone()
-    if row is None:
-        return None
-    threshold, statement_id, method, averaging = row
-    return Limit(
-        cast(Decimal, threshold),
-        cast(int, statement_id),
-        None if method is None else str(method),
-        None if averaging is None else str(averaging),
-    )
+    return fetch_one(conn, _LIMIT, (condition_id, language, on), Limit)
 
 
 def statement_facts(
@@ -372,114 +456,101 @@ def statement_facts(
     out: list[str] = []
     params = {"lang": language, "on": as_of}
     resolver = "anchored_statements_at" if include_unsettled else "statement_versions_at"
-    statements = conn.execute(_STATEMENTS.format(resolver=resolver), params).fetchall()
-    ids = [cast(int, row[0]) for row in statements]
-    for sid, kind, deontic, iri, law_id in statements:
-        out.append(f"statement({sid},{kind},{deontic or 'none'}).")
-        out.append(f"src({sid},{q(str(iri))}).")
-        out.append(f"stmt_law({sid},{law_id}).")
+    statements = fetch(conn, _STATEMENTS.format(resolver=resolver), params, _StatementRow)
+    ids = [stmt.id for stmt in statements]
+    for stmt in statements:
+        out.append(f"statement({stmt.id},{stmt.kind},{stmt.modality or 'none'}).")
+        out.append(f"src({stmt.id},{q(stmt.version_iri)}).")
+        out.append(f"stmt_law({stmt.id},{stmt.law_id}).")
     invalidated: tuple[Invalidated, ...] = ()
     chains: dict[int, Chain] = {}
     if not include_unsettled:
-        invalidated = tuple(
-            Invalidated(cast(int, sid), str(iri), str(no), cast(date, since), bool(partial))
-            for sid, iri, no, since, partial in conn.execute(_INVALIDATED, params)
-        )
-        laws = {cast(int, row[4]) for row in statements}
+        invalidated = tuple(fetch(conn, _INVALIDATED, params, Invalidated))
+        laws = {stmt.law_id for stmt in statements}
         commands = [
-            cast(int, law)
-            for law, _, kind in conn.execute(_LAWS, (sorted(laws),))
-            if kind not in LAWS
+            row.id
+            for row in fetch(conn, _LAWS, (sorted(laws),), _LawRow)
+            if row.norm_kind not in LAWS
         ]
         by_law = {law: chain_at(conn, law, language, as_of) for law in commands}
-        for sid, _, _, _, law_id in statements:
-            chain = by_law.get(cast(int, law_id))
+        for stmt in statements:
+            chain = by_law.get(stmt.law_id)
             if chain is not None:
-                chains[cast(int, sid)] = chain
+                chains[stmt.id] = chain
                 if not chain.rooted:
-                    out.append(f"unrooted({sid}).")
+                    out.append(f"unrooted({stmt.id}).")
     if not ids:
         return StatementFacts("\n".join(out), invalidated, chains)
     ids_param = {"ids": ids}
 
-    for row in conn.execute(_CONDITIONS, ids_param).fetchall():
-        (
-            cid,
-            sid,
-            role,
-            clause,
-            code,
-            comparator,
-            negated,
-            judgement,
-            threshold,
-            delegated,
-            value_concept,
-            permit,
-        ) = row
+    for cond in fetch(conn, _CONDITIONS, ids_param, _ConditionRow):
         out.append(
-            f"cond({cid},{sid},{role},{clause},{q(str(code))},{comparator},{int(bool(negated))})."
+            f"cond({cond.id},{cond.statement_id},{cond.role},{cond.disjunct},{q(cond.concept)},"
+            f"{cond.comparator},{int(cond.negated)})."
         )
-        if judgement:
-            out.append(f"judgement({cid}).")
-        if value_concept is not None:
-            out.append(f"vcond({cid},{q(str(value_concept))}).")  # 比較子只有 eq、ne（資料庫約束）
-        elif threshold is not None:
-            out.append(f"thr({cid},{milli(cast(Decimal, threshold))}).")
-        elif permit is not None:
-            out.append(f"permit_cond({cid},{q(str(permit))}).")  # 量值由呼叫端隨案件事實提供
-        elif delegated:
-            out.append(f"delegated({cid}).")
-            limit = limit_at(conn, cast(int, cid), language, as_of)
-            if limit is None and _void_limit(conn, cast(int, cid), language, as_of):
-                out.append(f"void_limit({cid}).")
+        if cond.needs_assessment:
+            out.append(f"judgement({cond.id}).")
+        if cond.value_concept is not None:
+            # 比較子只有 eq、ne（資料庫約束）
+            out.append(f"vcond({cond.id},{q(cond.value_concept)}).")
+        elif cond.threshold is not None:
+            out.append(f"thr({cond.id},{milli(cond.threshold)}).")
+        elif cond.permit is not None:
+            out.append(f"permit_cond({cond.id},{q(cond.permit)}).")  # 量值由呼叫端隨案件事實提供
+        elif cond.delegated:
+            out.append(f"delegated({cond.id}).")
+            limit = limit_at(conn, cond.id, language, as_of)
+            if limit is None and _void_limit(conn, cond.id, language, as_of):
+                out.append(f"void_limit({cond.id}).")
             if limit is not None:  # 解析不到則不給 thr，推論程式列為問題而非缺事實
-                out.append(f"thr({cid},{milli(limit.threshold)}).")
-                out.append(f"thr_src({cid},{limit.statement_id}).")
+                out.append(f"thr({cond.id},{milli(limit.threshold)}).")
+                out.append(f"thr_src({cond.id},{limit.statement_id}).")
                 if limit.method is not None:
-                    out.append(f"lim_method({cid},{q(limit.method)}).")
+                    out.append(f"lim_method({cond.id},{q(limit.method)}).")
                 if limit.averaging is not None:
-                    out.append(f"lim_avg({cid},{q(limit.averaging)}).")
+                    out.append(f"lim_avg({cond.id},{q(limit.averaging)}).")
                 if limit.method is None and limit.averaging is None:
-                    out.append(f"lim_unlabeled({cid}).")
+                    out.append(f"lim_unlabeled({cond.id}).")
 
     # 用語定義只及於本法：成員關係帶法規編號，推論只在要件所屬的法規內使用。
     definitions: set[int] = set()
-    for law_id, term, member, definition_id in conn.execute(_DEFINITIONS, params):
-        out.append(f"defmember({law_id},{q(str(term))},{q(str(member))}).")
-        out.append(f"defsrc({law_id},{q(str(term))},{q(str(member))},{definition_id}).")
-        definitions.add(cast(int, definition_id))
-    for other, used in conn.execute(_MATCHES, ids_param | {"definitions": sorted(definitions)}):
-        out.append(f"same({q(str(other))},{q(str(used))}).")
-    for sid, action in conn.execute(_ACTIONS, ids_param):
-        out.append(f"action({sid},{q(str(action))}).")
-    for sid, basis in conn.execute(_SUBJECTS, ids_param):
+    for defn in fetch(conn, _DEFINITIONS, params, _DefinitionRow):
+        out.append(f"defmember({defn.law_id},{q(defn.term)},{q(defn.member)}).")
+        out.append(f"defsrc({defn.law_id},{q(defn.term)},{q(defn.member)},{defn.definition_id}).")
+        definitions.add(defn.definition_id)
+    matches = fetch(conn, _MATCHES, ids_param | {"definitions": sorted(definitions)}, _MatchRow)
+    for match in matches:
+        out.append(f"same({q(match.other)},{q(match.used)}).")
+    for act in fetch(conn, _ACTIONS, ids_param, _ActionRow):
+        out.append(f"action({act.statement_id},{q(act.action)}).")
+    for subj in fetch(conn, _SUBJECTS, ids_param, _SubjectRow):
         out.append(
-            f"subject_basis({sid},{basis})." if basis is not None else f"subject_any({sid})."
+            f"subject_basis({subj.statement_id},{subj.basis})."
+            if subj.basis is not None
+            else f"subject_any({subj.statement_id})."
         )
-    for exception, excluded in conn.execute(_EXCEPTIONS, ids_param):
-        out.append(f"exception({exception},{excluded}).")
-    for winner, loser, basis in conn.execute(_OVERRIDES, ids_param):
-        out.append(f"override({winner},{loser},{basis}).")
+    for exc in fetch(conn, _EXCEPTIONS, ids_param, _ExceptionRow):
+        out.append(f"exception({exc.exception},{exc.excluded}).")
+    for ovr in fetch(conn, _OVERRIDES, ids_param, _OverrideRow):
+        out.append(f"override({ovr.winner},{ovr.loser},{ovr.basis}).")
     caps: dict[int, int] = {}
-    for sid, punishes, effect, low, high, repeating in conn.execute(_SANCTIONS, ids_param):
-        lo = "none" if low is None else str(int(cast(Decimal, low)))
-        hi = "none" if high is None else str(int(cast(Decimal, high)))
-        out.append(f"sanction({sid},{punishes},{effect},{lo},{hi}).")
-        if effect == "fine" and high is not None:
-            caps[cast(int, sid)] = int(cast(Decimal, high))
-        if repeating:
-            out.append(f"repeating({sid}).")
-    for sid, trigger, kind, present in conn.execute(_TRIGGERS, ids_param):
-        out.append(f"triggered({sid}).")
-        if present:
-            out.append(f"trigger({sid},{trigger},{kind}).")
+    for sanc in fetch(conn, _SANCTIONS, ids_param, _SanctionRow):
+        lo = "none" if sanc.min_amount is None else str(int(sanc.min_amount))
+        hi = "none" if sanc.max_amount is None else str(int(sanc.max_amount))
+        out.append(f"sanction({sanc.statement_id},{sanc.punishes},{sanc.effect},{lo},{hi}).")
+        if sanc.effect == "fine" and sanc.max_amount is not None:
+            caps[sanc.statement_id] = int(sanc.max_amount)
+        if sanc.per_occasion:
+            out.append(f"repeating({sanc.statement_id}).")
+    for trig in fetch(conn, _TRIGGERS, ids_param, _TriggerRow):
+        out.append(f"triggered({trig.statement_id}).")
+        if trig.present:
+            out.append(f"trigger({trig.statement_id},{trig.trigger},{trig.kind}).")
     return StatementFacts("\n".join(out), invalidated, chains, caps)
 
 
 def _void_limit(conn: Conn, condition_id: int, language: str, on: date) -> bool:
-    row = conn.execute(_VOID_LIMIT, (language, on, condition_id)).fetchone()
-    return bool(row and row[0])
+    return scalar(conn, _VOID_LIMIT, (language, on, condition_id), bool)
 
 
 # 裁處權時效的起算日；值為 YYYYMMDD，不走千分位。刑事程序以不起訴等確定之日（第 26 條第 2 項）

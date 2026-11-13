@@ -10,9 +10,9 @@
 import logging
 import re
 from dataclasses import dataclass
-from typing import cast
+from typing import NamedTuple
 
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch, scalar
 from envcite_ontology.ingest.numerals import CN_NUMERALS, parse_int
 
 log = logging.getLogger(__name__)
@@ -109,11 +109,42 @@ class Extracted:
     skipped: int
 
 
+class _CommandRow(NamedTuple):
+    resource_id: int
+    provision_id: int
+    sha: bytes
+    #: 單元本身沒有內容、也沒有子單元可串接時，`corpus.article_text` 回 NULL
+    text: str | None
+
+
+class _TitleRow(NamedTuple):
+    title: str | None
+    resource_id: int
+
+
+class _ProvisionRow(NamedTuple):
+    resource_id: int
+    path: str
+    id: int
+
+
+class _ExistingRow(NamedTuple):
+    resource_id: int
+    #: 查詢限定 `command_provision_id IS NOT NULL`，約束 `delegation_anchor_whole` 使雜湊同時非 NULL
+    provision_id: int
+    sha: bytes
+    law_name: str
+    path: str
+    law_resource_id: int | None
+    law_provision_id: int | None
+
+
 def extract(conn: Conn) -> Extracted:
     """從語料內所有命令的首條抽取授權，寫成 `annotation.delegation`（規則推導、待用）。"""
     titles = _titles(conn)
     existing = _existing(conn)
-    commands = conn.execute(
+    commands = fetch(
+        conn,
         """
         SELECT p.resource_id, p.id, v.content_sha256, corpus.article_text(v.id)
           FROM corpus.provision AS p
@@ -122,20 +153,19 @@ def extract(conn: Conn) -> Extracted:
          WHERE p.path = %s AND r.norm_kind <> ALL (%s::corpus.norm_kind[])
         """,
         (COMMAND_PATH, list(_NOT_COMMANDS)),
-    ).fetchall()
+        _CommandRow,
+    )
 
     wanted: list[tuple[int, int, bytes, Citation, int | None]] = []
     seen: set[tuple[int, int, bytes, Citation]] = set()
-    for resource_id, provision_id, sha, text in commands:
-        assert isinstance(resource_id, int) and isinstance(provision_id, int)
-        assert isinstance(sha, bytes)
-        for c in parse(str(text or "")):
-            key = (resource_id, provision_id, sha, c)
+    for command in commands:
+        for c in parse(command.text or ""):
+            key = (command.resource_id, command.provision_id, command.sha, c)
             if key in seen:
                 continue
             seen.add(key)
             law = titles.get(c.law_name)
-            wanted.append((resource_id, provision_id, sha, c, law))
+            wanted.append((command.resource_id, command.provision_id, command.sha, c, law))
     paths = _provisions(conn, {(law, c.path) for _, _, _, c, law in wanted if law is not None})
 
     derivation: int | None = None
@@ -181,10 +211,11 @@ def extract(conn: Conn) -> Extracted:
 def _titles(conn: Conn) -> dict[str, int]:
     """法規名稱（任一版本的標題）→ 法規；同名對到數部的不收，法律端因而留空。"""
     by_title: dict[str, set[int]] = {}
-    for title, resource_id in conn.execute(
-        "SELECT DISTINCT title, resource_id FROM corpus.legal_expression"
+    for t in fetch(
+        conn, "SELECT DISTINCT title, resource_id FROM corpus.legal_expression", None, _TitleRow
     ):
-        by_title.setdefault(str(title), set()).add(int(str(resource_id)))
+        if t.title is not None:
+            by_title.setdefault(t.title, set()).add(t.resource_id)
     return {t: next(iter(ids)) for t, ids in by_title.items() if len(ids) == 1}
 
 
@@ -194,31 +225,39 @@ def _provisions(
     pairs = sorted((r, p) for r, p in wanted if r is not None)
     if not pairs:
         return {}
-    rows = conn.execute(
+    rows = fetch(
+        conn,
         "SELECT resource_id, path, id FROM corpus.provision"
         " WHERE (resource_id, path) IN (SELECT * FROM unnest(%s::bigint[], %s::text[]))",
         ([r for r, _ in pairs], [p for _, p in pairs]),
-    ).fetchall()
-    return {(int(str(r)), str(p)): int(str(i)) for r, p, i in rows}
+        _ProvisionRow,
+    )
+    return {(r.resource_id, r.path): r.id for r in rows}
 
 
 def _existing(conn: Conn) -> set[tuple[int, int, bytes, str, str, int | None, int | None]]:
     """已有主張的引文（含駁回的），鍵同寫入的欄位。"""
+    rows = fetch(
+        conn,
+        "SELECT command_resource_id, command_provision_id, command_content_sha256,"
+        " cited_law_name, cited_path, law_resource_id, law_provision_id"
+        " FROM annotation.delegation WHERE command_provision_id IS NOT NULL",
+        None,
+        _ExistingRow,
+    )
     return {
-        (int(str(r)), int(str(p)), cast(bytes, s), str(n), str(c), _opt(lr), _opt(lp))
-        for r, p, s, n, c, lr, lp in conn.execute(
-            "SELECT command_resource_id, command_provision_id, command_content_sha256,"
-            " cited_law_name, cited_path, law_resource_id, law_provision_id"
-            " FROM annotation.delegation WHERE command_provision_id IS NOT NULL"
+        (
+            r.resource_id,
+            r.provision_id,
+            r.sha,
+            r.law_name,
+            r.path,
+            r.law_resource_id,
+            r.law_provision_id,
         )
+        for r in rows
     }
 
 
-def _opt(v: object) -> int | None:
-    return None if v is None else int(str(v))
-
-
 def _one(conn: Conn, sql: str, *args: object) -> int:
-    row = conn.execute(sql, args).fetchone()
-    assert row is not None
-    return int(str(row[0]))
+    return scalar(conn, sql, args, int)
