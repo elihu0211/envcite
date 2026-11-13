@@ -89,6 +89,22 @@ public sealed class OperatorPagesTests(PlatformFactory factory)
         Assert.Equal("/ui/login", response.Headers.Location?.AbsolutePath);
     }
 
+    [Theory]
+    [InlineData("/ui/tenants")]
+    [InlineData("/ui/operators")]
+    [InlineData("/ui/audit")]
+    public async Task EveryTableIsCompactAndThereIsNoDensitySwitch(string path)
+    {
+        // 租戶頁要有一列資料才有表格；其他兩頁的種子資料（營運者、稽核事件）本來就有。
+        using var client = SignedInClient();
+
+        var html = await PageAsync(client, path);
+
+        Assert.Contains("mud-table-dense", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("mud-switch", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("緊湊", html, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task TheOverviewPutsTheTodoAndRecentActivityCardsSideBySideAsEqualGridCells()
     {

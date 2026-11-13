@@ -268,8 +268,6 @@
   <data name="系統產生的回答無法對應到法條出處，已捨棄，沒有顯示。請換個說法再問一次。" xml:space="preserve"><value>The generated answer could not be matched to an article source, so it was discarded and not shown. Please rephrase and ask again.</value></data>
   <data name="組織" xml:space="preserve"><value>Organisation</value></data>
   <data name="給客戶辨認用途；之後在清單裡以名稱和前綴區分。" xml:space="preserve"><value>Helps the customer recognise its purpose; later the list tells keys apart by name and prefix.</value></data>
-  <data name="緊湊" xml:space="preserve"><value>Compact</value></data>
-  <data name="緊湊列高" xml:space="preserve"><value>Compact row height</value></data>
   <data name="總覽" xml:space="preserve"><value>Overview</value></data>
   <data name="至少 {0} 個字元" xml:space="preserve"><value>At least {0} characters</value></data>
   <data name="不含你的 email" xml:space="preserve"><value>Doesn't contain your email</value></data>

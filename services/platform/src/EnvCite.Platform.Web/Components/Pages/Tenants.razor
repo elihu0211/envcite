@@ -29,11 +29,9 @@ else
             <MudTextField @bind-Value="_search" Immediate="true" Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense"
                           Placeholder="@L["搜尋名稱或識別碼"]" aria-label="@L["搜尋租戶"]"
                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
-            <MudSpacer />
-            <MudSwitch T="bool" @bind-Value="_dense" Color="Color.Primary" Label="@L["緊湊"]" aria-label="@L["緊湊列高"]" />
         </div>
 
-        <MudTable Items="_tenants" Filter="Matches" Dense="_dense" Hover="true" Elevation="0" Breakpoint="Breakpoint.None"
+        <MudTable Items="_tenants" Filter="Matches" Dense="true" Hover="true" Elevation="0" Breakpoint="Breakpoint.None"
                   RowsPerPage="25" Class="ep-table ep-cards">
             <HeaderContent>
                 <MudTh><MudTableSortLabel SortBy="new Func<TenantSummary, object>(t => t.Name ?? string.Empty)">@L["名稱"]</MudTableSortLabel></MudTh>
@@ -85,7 +83,6 @@ else
 @code {
     private IReadOnlyList<TenantSummary>? _tenants;
     private string? _search;
-    private bool _dense;
 
     /// <summary>預先渲染查到的清單交給互動渲染，不再查一次。重新連線不還原：資料可能已經變了，要重查。</summary>
     [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
