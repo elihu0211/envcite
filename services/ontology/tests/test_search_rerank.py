@@ -6,10 +6,14 @@
 
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import AbstractContextManager, contextmanager
+from typing import Any
 
 import grpc
 import psycopg
 import pytest
+from opentelemetry.metrics import Meter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
 from envcite_ontology.law_names import LawNames
@@ -103,9 +107,11 @@ def serve(conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore) ->
     conn.commit()
 
     @contextmanager
-    def serving(reranker: FakeReranker | None, candidates: int = 30) -> Iterator[Stub]:
+    def serving(
+        reranker: FakeReranker | None, candidates: int = 30, meter: Meter | None = None
+    ) -> Iterator[Stub]:
         server, port = build_server(
-            store, "127.0.0.1:0", reranker=reranker, rerank_candidates=candidates
+            store, "127.0.0.1:0", reranker=reranker, rerank_candidates=candidates, meter=meter
         )
         server.start()
         try:
@@ -220,3 +226,98 @@ def test_full_rerank_slots_fall_back_instead_of_waiting(store: OntologyStore, se
     assert reranker.calls == []
     assert _numbers(response) == ["11", "12"]
     assert not any(h.HasField("rerank_score") for h in response.hits)
+
+
+def _metered() -> tuple[InMemoryMetricReader, Meter]:
+    reader = InMemoryMetricReader()
+    return reader, MeterProvider(metric_readers=[reader]).get_meter("test")
+
+
+def _by_outcome(reader: InMemoryMetricReader, name: str) -> dict[str, int]:
+    """指標各 outcome 的次數（計數器取值，直方圖取筆數）。"""
+    data = reader.get_metrics_data()
+    out: dict[str, int] = {}
+    for resource in data.resource_metrics if data else []:
+        for scope in resource.scope_metrics:
+            for metric in scope.metrics:
+                if metric.name == name:
+                    for point in metric.data.data_points:
+                        value: Any = getattr(point, "count", None) or getattr(point, "value", 0)
+                        out[str((point.attributes or {})["outcome"])] = int(value)
+    return out
+
+
+OUTCOMES = "envcite.ontology.rerank.outcomes"
+DURATION = "envcite.ontology.rerank.duration"
+
+
+def test_a_successful_rerank_is_counted_and_its_endpoint_time_recorded(serve: Serve) -> None:
+    reader, meter = _metered()
+    with serve(FakeReranker(), meter=meter) as stub:
+        _search(stub, rerank=True)
+
+    assert _by_outcome(reader, OUTCOMES) == {"reranked": 1}
+    assert _by_outcome(reader, DURATION) == {"ok": 1}
+
+
+def test_a_failed_rerank_is_counted_as_an_error_with_its_time(serve: Serve) -> None:
+    """降級的比率是端點健康的訊號：日誌看不出比率，指標看得出。"""
+    reader, meter = _metered()
+    with serve(FakeReranker(fail=True), meter=meter) as stub:
+        _search(stub, rerank=True)
+
+    assert _by_outcome(reader, OUTCOMES) == {"error": 1}
+    assert _by_outcome(reader, DURATION) == {"error": 1}
+
+
+def test_asking_without_a_configured_reranker_is_counted_as_unconfigured(serve: Serve) -> None:
+    reader, meter = _metered()
+    with serve(None, meter=meter) as stub:
+        _search(stub, rerank=True)
+
+    assert _by_outcome(reader, OUTCOMES) == {"unconfigured": 1}
+    assert _by_outcome(reader, DURATION) == {}  # 沒打端點，沒有耗時
+
+
+def test_nothing_is_counted_when_rerank_was_not_asked_for_or_there_is_nothing_to_rerank(
+    serve: Serve,
+) -> None:
+    reader, meter = _metered()
+    with serve(FakeReranker(), meter=meter) as stub:
+        _search(stub)  # 沒要精排
+        stub.SearchArticles(  # 要精排，但沒有任何候選
+            ontology_pb2.SearchArticlesRequest(query="量子電腦", rerank=True),
+            metadata=call_metadata(),
+            timeout=10,
+        )
+
+    assert _by_outcome(reader, OUTCOMES) == {}
+
+
+def test_full_slots_are_counted_as_busy_without_an_endpoint_time(
+    store: OntologyStore, serve: Serve
+) -> None:
+    class Context:
+        def invocation_metadata(self) -> tuple[()]:
+            return ()
+
+        def time_remaining(self) -> float:
+            return 5.0
+
+    reader, meter = _metered()
+    servicer = OntologyServicer(
+        store,
+        Segmenter(store.lexicon()),
+        LawNames({}),
+        reranker=FakeReranker(),
+        rerank_slots=0,
+        meter=meter,
+    )
+
+    servicer.SearchArticles(
+        ontology_pb2.SearchArticlesRequest(query="噪音", rerank=True, limit=2),
+        Context(),  # type: ignore[arg-type]
+    )
+
+    assert _by_outcome(reader, OUTCOMES) == {"busy": 1}
+    assert _by_outcome(reader, DURATION) == {}

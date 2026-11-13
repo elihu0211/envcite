@@ -7,6 +7,7 @@ from concurrent import futures
 import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
+from opentelemetry.metrics import Meter
 
 from envcite.ontology.v2 import ontology_pb2_grpc, reasoning_pb2_grpc
 from envcite_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
@@ -48,12 +49,14 @@ def build_server(
     guidance_max_df: float = 0.0,
     reranker: Reranks | None = None,
     rerank_candidates: int = DEFAULT_RERANK_CANDIDATES,
+    meter: Meter | None = None,
 ) -> tuple[grpc.Server, int]:
     """建立但不啟動；回傳伺服器與實際綁定的埠號。`health_servicer` 讓呼叫端在關閉時切換狀態。
 
     `lexical_max_df` 是字面臂略過高頻詞的段落比例上限（見 `ServerSettings`）；0 為不略過。
     `guidance_max_df` 是函釋入口容許的命中函釋占比上限；0 為不限制。
     `reranker` 是請求帶 `rerank` 時用的精排模型（None 為不精排）；`rerank_candidates` 是它看多深。
+    `meter` 是指標的 Meter（None 為全域的；測試注入記憶體內的讀取器）。
     """
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=WORKERS),
@@ -76,6 +79,7 @@ def build_server(
             reranker=reranker,
             rerank_slots=RERANK_SLOTS,
             rerank_candidates=rerank_candidates,
+            meter=meter,
         ),
         server,
     )

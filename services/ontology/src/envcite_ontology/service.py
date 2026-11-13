@@ -5,8 +5,10 @@
 
 import logging
 import threading
+import time
 
 import grpc
+from opentelemetry.metrics import Meter
 
 from envcite.ontology.v2 import ontology_pb2 as pb
 from envcite.ontology.v2 import ontology_pb2_grpc
@@ -21,6 +23,7 @@ from envcite_ontology.identifiers import jurisdiction_filter, law_key
 from envcite_ontology.law_names import LawNames
 from envcite_ontology.reranking import RerankError, Reranks, select
 from envcite_ontology.store import LawGraphRecord, LawKey, OntologyStore, SearchHit
+from envcite_ontology.telemetry import RerankMetrics
 from envcite_segmenter import Segmenter
 
 log = logging.getLogger(__name__)
@@ -75,6 +78,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         reranker: Reranks | None = None,
         rerank_slots: int | None = None,
         rerank_candidates: int = DEFAULT_RERANK_CANDIDATES,
+        meter: Meter | None = None,
     ) -> None:
         self._store = store
         self._law_names = law_names
@@ -91,6 +95,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         self._rerank_slots = (
             threading.BoundedSemaphore(rerank_slots) if rerank_slots is not None else None
         )
+        self._rerank_metrics = RerankMetrics(meter)
 
     def _request_key(self, identifier: pb.LawIdentifier, as_of: str) -> LawKey:
         """必填的自然鍵與 `as_of` 一次驗證，違規一次回報。"""
@@ -333,6 +338,8 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                 depth,
             )
         scored: list[tuple[tuple[SearchHit, int], float | None]] = [(r, None) for r in ranked]
+        if request.rerank and not rerank and ranked:
+            self._rerank_metrics.outcomes.add(1, {"outcome": "unconfigured"})
         if rerank:
             scored = self._rerank(request.query, ranked, limit, remaining_seconds(context))
         return pb.SearchArticlesResponse(
@@ -384,21 +391,28 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def _rerank_scores(
         self, query: str, documents: list[str], timeout: float | None
     ) -> list[float] | None:
-        reranker, slots = self._reranker, self._rerank_slots
+        reranker, slots, recorded = self._reranker, self._rerank_slots, self._rerank_metrics
         if reranker is None or not documents:
             return None
         # 不等待：名額滿了就退回精排前的次序，慢的精排端點不能占滿伺服器的執行緒。
         if slots is not None and not slots.acquire(blocking=False):
             log.warning("rerank skipped: rerank slots are full")
+            recorded.outcomes.add(1, {"outcome": "busy"})
             return None
+        started = time.monotonic()
         try:
-            return reranker.score(query, documents, timeout=timeout)
+            scores = reranker.score(query, documents, timeout=timeout)
         except RerankError as e:
             log.warning("rerank skipped: %s", e)
+            recorded.duration.record(time.monotonic() - started, {"outcome": "error"})
+            recorded.outcomes.add(1, {"outcome": "error"})
             return None
         finally:
             if slots is not None:
                 slots.release()
+        recorded.duration.record(time.monotonic() - started, {"outcome": "ok"})
+        recorded.outcomes.add(1, {"outcome": "reranked"})
+        return scores
 
     def _query_embedding(self, query: str) -> list[float] | None:
         if self._embedder is None:
