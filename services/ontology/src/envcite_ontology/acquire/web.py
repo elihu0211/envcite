@@ -8,9 +8,8 @@ import hashlib
 import time
 import urllib.error
 import urllib.parse
-from http.client import HTTPException
+from http.client import HTTPException, HTTPResponse
 from pathlib import Path
-from typing import Any, cast
 
 from envcite_jobkit import EndpointError, ItemError, raise_for_status
 from envcite_ontology.http import HttpStatus, tls_context, urlopen
@@ -30,12 +29,12 @@ class Http:
     def text(self, url: str) -> str:
         """GET 一頁，回傳解碼後的文字（UTF-8，容忍 BOM）。"""
         with self._open(url) as r:
-            return cast(bytes, r.read()).decode("utf-8-sig")
+            return r.read().decode("utf-8-sig")
 
     def form(self, url: str, fields: dict[str, str]) -> str:
         """POST 表單（`application/x-www-form-urlencoded`，UTF-8）。"""
         with self._open(url, urllib.parse.urlencode(fields).encode()) as r:
-            return cast(bytes, r.read()).decode("utf-8-sig")
+            return r.read().decode("utf-8-sig")
 
     def file(self, url: str, dest: Path) -> tuple[bytes, int]:
         """GET 並串流存到 `dest`；回傳（SHA-256，位元組數）。回應是空的拋 `ItemError`。"""
@@ -50,7 +49,7 @@ class Http:
             raise ItemError(f"{url}: empty response")
         return h.digest(), size
 
-    def _open(self, url: str, data: bytes | None = None) -> Any:
+    def _open(self, url: str, data: bytes | None = None) -> HTTPResponse:
         wait = self._last + self._pause - time.monotonic()
         if wait > 0:
             time.sleep(wait)

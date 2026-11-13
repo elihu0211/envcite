@@ -114,6 +114,8 @@ class Result:
 
 
 def _py(symbol: clingo.Symbol) -> Any:
+    """clingo 符號轉成 Python 值。答案集的原子是動態型別，各述詞的引數型別由 `rules.lp` 決定，
+    所以這裡是 `Any`：型別在 `Result` 建出時才確定。"""
     if symbol.type == clingo.SymbolType.Number:
         return symbol.number
     if symbol.type == clingo.SymbolType.String:

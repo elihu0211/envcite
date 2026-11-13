@@ -13,12 +13,12 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, NamedTuple, cast
+from typing import Any, NamedTuple
 
 from envcite_ontology.db import Conn, fetch, fetch_one
 from envcite_ontology.reasoning import evaluate
 from envcite_ontology.verification import prompts
-from envcite_ontology.verification.gates import GateResult, statement_as_of, unit_of
+from envcite_ontology.verification.gates import GateResult, Verdict, statement_as_of, unit_of
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, family_of
 
@@ -463,10 +463,10 @@ class IndependentTestGate:
         if len(results) < 3:
             return GateResult("inconclusive", {"reason": "fewer than three runnable cases"})
         agree = sum(r["agree"] for r in results)
-        verdict = "pass" if agree == len(results) else ("fail" if agree == 0 else "inconclusive")
-        return GateResult(
-            cast(Any, verdict), {"verifier": ok[0].name, "agree": agree, "cases": results}
+        verdict: Verdict = (
+            "pass" if agree == len(results) else ("fail" if agree == 0 else "inconclusive")
         )
+        return GateResult(verdict, {"verifier": ok[0].name, "agree": agree, "cases": results})
 
 
 # 閘門三：跨家族評審團

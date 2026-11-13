@@ -9,7 +9,7 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from itertools import groupby
-from typing import Any, NamedTuple, cast
+from typing import Any, NamedTuple
 
 from envcite_ontology.claims import (
     LEGAL_EFFECTS,
@@ -24,7 +24,7 @@ from envcite_ontology.verification import prompts
 from envcite_ontology.verification.carry import carry, truncated_issues
 from envcite_ontology.verification.context import ancestors_text
 from envcite_ontology.verification.jsonutil import object_from
-from envcite_ontology.verification.models import Model, ModelError
+from envcite_ontology.verification.models import ConstrainedModel, Model, ModelError
 from envcite_ontology.verification.subject import normalize as normalize_subjects
 from envcite_ontology.violation import citations
 
@@ -140,9 +140,8 @@ STATEMENTS_FORMAT: dict[str, Any] = {
 
 def _complete(model: Model, prompt: str) -> str:
     """送出一次抽取呼叫；模型宣告要解碼期約束時才帶 Schema，其餘與原本相同。"""
-    if getattr(model, "constrained_extraction", False):
-        complete = cast(Any, model).complete
-        return str(complete(prompt, response_format=STATEMENTS_FORMAT))
+    if isinstance(model, ConstrainedModel) and model.constrained_extraction:
+        return model.complete(prompt, response_format=STATEMENTS_FORMAT)
     return model.complete(prompt)
 
 
@@ -303,7 +302,7 @@ def _concepts_of(answer: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     ]
 
 
-def _literal(value: Any) -> Any:
+def _literal(value: object) -> object:
     """槽位值裡的字串是字面；清單逐項處理。"""
     if isinstance(value, str):
         return {"literal": value}
@@ -312,7 +311,7 @@ def _literal(value: Any) -> Any:
     return value
 
 
-def _liability(role: str, value: Any) -> Any:
+def _liability(role: str, value: object) -> object:
     """責任基礎只屬主體、只取列舉值；別處或別的值當作沒寫（載入器會因它拒絕整份文件）。
 
     「未明示」同樣只屬主體；別的槽位寫它等於沒有值，整個槽位值去掉。

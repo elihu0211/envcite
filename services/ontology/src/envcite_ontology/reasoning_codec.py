@@ -8,7 +8,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
-from typing import Any, Literal
+from typing import Literal
 
 from envcite.ontology.v2 import ontology_pb2 as ont_pb
 from envcite.ontology.v2 import reasoning_pb2 as pb
@@ -435,18 +435,16 @@ def _stamp(day: date) -> float:
     return float(day.year * 10000 + day.month * 100 + day.day)
 
 
-def _number(value: Any) -> Decimal | None:
+def _number(value: pb.Decimal) -> Decimal | None:
     """有限的十進位數；不是則 None。"""
     try:
         number = Decimal(value.value)
-    except InvalidOperation, AttributeError:
+    except InvalidOperation:
         return None
     return number if number.is_finite() else None
 
 
-def measurements(
-    request: Any,
-) -> dict[str, list[Measurement]]:
+def measurements(request: pb.EvaluateRequest) -> dict[str, list[Measurement]]:
     """事實的認定方式；兩者都沒給的事實不列（未提供）。"""
     out: dict[str, list[Measurement]] = {}
     for fact in request.facts:
@@ -457,7 +455,9 @@ def measurements(
     return out
 
 
-def permit_limits(request: Any, validator: errors.Validator) -> dict[tuple[str, str], list[float]]:
+def permit_limits(
+    request: pb.EvaluateRequest, validator: errors.Validator
+) -> dict[tuple[str, str], list[float]]:
     """許可所載的量值，（許可種類，概念）→ 值。欄位錯誤記在 `validator`。"""
     out: dict[tuple[str, str], list[float]] = {}
     for i, limit in enumerate(request.permit_limits):
@@ -476,7 +476,7 @@ def permit_limits(request: Any, validator: errors.Validator) -> dict[tuple[str, 
     return out
 
 
-def actor_bases(request: Any, validator: errors.Validator) -> list[str]:
+def actor_bases(request: pb.EvaluateRequest, validator: errors.Validator) -> list[str]:
     """行為人所屬的責任基礎，推論程式用的名稱。欄位錯誤記在 `validator`。"""
     names: dict[int, str] = {int(value): name for name, value in LIABILITY_BASIS.items()}
     out: list[str] = []
@@ -489,7 +489,7 @@ def actor_bases(request: Any, validator: errors.Validator) -> list[str]:
     return out
 
 
-def _fact_value(value: Any, where: str, validator: errors.Validator) -> float | str | None:
+def _fact_value(value: pb.FactValue, where: str, validator: errors.Validator) -> float | str | None:
     """事實的一個值；不合則記在 `validator` 並回 None。"""
     kind = value.WhichOneof("value")
     if kind == "flag":
@@ -511,7 +511,7 @@ def _fact_value(value: Any, where: str, validator: errors.Validator) -> float | 
     return None
 
 
-def _fact_values(fact: Any, where: str, validator: errors.Validator) -> list[float | str]:
+def _fact_values(fact: pb.Fact, where: str, validator: errors.Validator) -> list[float | str]:
     """一筆事實的有效值；概念或值整體不合則記錯並回空。"""
     if not fact.concept:
         validator.add(f"{where}.concept", errors.EMPTY, "concept is required")
@@ -530,7 +530,9 @@ def _fact_values(fact: Any, where: str, validator: errors.Validator) -> list[flo
     return [v for v in decoded if v is not None]
 
 
-def _stated_facts(request: Any, validator: errors.Validator) -> dict[str, list[float | str]]:
+def _stated_facts(
+    request: pb.EvaluateRequest, validator: errors.Validator
+) -> dict[str, list[float | str]]:
     """請求的 `facts`，概念 → 值；同一概念的多筆合併。"""
     several: dict[str, list[float | str]] = {}
     for i, fact in enumerate(request.facts):
@@ -540,7 +542,9 @@ def _stated_facts(request: Any, validator: errors.Validator) -> dict[str, list[f
     return several
 
 
-def _penalty_decimal(penalty: Any, name: str, validator: errors.Validator) -> float | None:
+def _penalty_decimal(
+    penalty: pb.AdministrativePenaltyFacts, name: str, validator: errors.Validator
+) -> float | None:
     """行政罰事實的一個非負十進位數；不合則記在 `validator` 並回 None。"""
     where = f"administrative_penalty_facts.{name}"
     number = _number(getattr(penalty, name))
@@ -553,7 +557,9 @@ def _penalty_decimal(penalty: Any, name: str, validator: errors.Validator) -> fl
     return float(number)
 
 
-def _penalty_facts(penalty: Any, validator: errors.Validator) -> dict[str, float]:
+def _penalty_facts(
+    penalty: pb.AdministrativePenaltyFacts, validator: errors.Validator
+) -> dict[str, float]:
     """行政罰法總則的事實，鍵已加保留前綴。"""
     out: dict[str, float] = {}
     for name in _BOOLEAN_FACTS:
@@ -575,7 +581,7 @@ def _penalty_facts(penalty: Any, validator: errors.Validator) -> dict[str, float
 
 
 def case_facts(
-    request: Any,
+    request: pb.EvaluateRequest,
     validator: errors.Validator,
     conduct_ended: date | None,
     result_on: date | None,
