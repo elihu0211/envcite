@@ -161,7 +161,10 @@ _LIST_LAWS = """
      WHERE e.language = %(language)s
        AND e.text_period @> %(on)s::date
        AND e.text_status = 'available'
-       AND (%(jurisdiction)s::text IS NULL OR r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction)
+       AND (
+             %(jurisdiction)s::text IS NULL
+             OR r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction
+           )
      ORDER BY r.norm_kind, r.local_id
 """
 
