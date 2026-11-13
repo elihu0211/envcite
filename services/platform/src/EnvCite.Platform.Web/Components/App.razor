@@ -26,7 +26,7 @@
     @* 自己託管的字型：中文依 unicode-range 切片，瀏覽器只下載頁面上出現的字所在的那幾片（見 scripts/vendor-fonts.sh）。 *@
     <link rel="stylesheet" href="@Assets["_content/EnvCite.Platform.Web/fonts/fonts.css"]" />
     @* 拉丁字型先下載：每一頁都用得到，換字型時版面才不跳。路徑與 fonts.css 裡的 url 相同（不加指紋），瀏覽器才不會重抓一次。 *@
-    <link rel="preload" href="@InterLatin" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="@RobotoLatin" as="font" type="font/woff2" crossorigin />
     @if (PageRenderMode is not null)
     {
         @* MudBlazor 只給互動的營運後台；靜態頁（入口、登入、說明頁）沒有它的元件，不下載它的樣式與腳本。 *@
@@ -75,7 +75,7 @@
     /// 營運後台是互動的（Interactive Server）；標了 <c>[ExcludeFromInteractiveRouting]</c> 的頁面（客戶入口）是靜態伺服器端渲染：
     /// 每個請求自己解析租戶、自己驗證，不開 circuit，登入表單就是一個普通的 POST。
     /// </summary>
-    internal const string InterLatin = "_content/EnvCite.Platform.Web/fonts/inter/inter-latin-opsz-normal.woff2";
+    internal const string RobotoLatin = "_content/EnvCite.Platform.Web/fonts/roboto/roboto-latin-wght-normal.woff2";
 
     private IComponentRenderMode? PageRenderMode => HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
 }

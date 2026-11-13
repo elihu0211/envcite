@@ -37,10 +37,9 @@ body {
     line-height: var(--ep-body-l-leading);
 }
 
-/* 代碼、金鑰、識別碼不換等寬字，同一套 Inter 開消歧義字形（0 有斜線、I／l／1 分得開）與等寬數字。 */
+/* 代碼、金鑰、識別碼用等寬字：每個字元同寬、0 有斜線、I／l／1 分得開，逐字核對不會看錯。 */
 code, kbd, pre {
-    font-family: inherit;
-    font-feature-settings: var(--ep-code-features);
+    font-family: var(--ep-font-mono);
 }
 
 /* 文字連結用較亮的 link 色（深色背景上，填色的藍當文字太暗）；按鈕與導覽由元件自己著色。 */

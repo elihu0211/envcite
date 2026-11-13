@@ -148,7 +148,8 @@ public static partial class DesignTokenTests
         Assert.DoesNotContain("color-scheme", chosen, StringComparison.Ordinal);
         Assert.Equal(1, Regex.Count(css, "color-scheme:dark;"));
         Assert.Equal(1, Regex.Count(css, "color-scheme:light;"));
-        Assert.Contains("--ep-font:\"Inter Variable\",\"Noto Sans TC Variable\",sans-serif;", css, StringComparison.Ordinal);
+        Assert.Contains("--ep-font:\"Roboto Variable\",\"Noto Sans TC Variable\",sans-serif;", css, StringComparison.Ordinal);
+        Assert.Contains("--ep-font-mono:\"Roboto Mono Variable\",\"Noto Sans TC Variable\",monospace;", css, StringComparison.Ordinal);
     }
 
     // 取出以 <paramref name="opening"/> 開頭的規則內文（到對應的右大括號為止）。
@@ -267,7 +268,7 @@ public static partial class DesignTokenTests
         var fonts = File.ReadAllText(FontsPath());
         var css = File.ReadAllText(StylesheetPath());
 
-        foreach (var family in DesignTokens.FontFamily.Where(f => f != "sans-serif"))
+        foreach (var family in DesignTokens.FontFamily.Concat(DesignTokens.CodeFontFamily).Where(f => f is not ("sans-serif" or "monospace")).Distinct())
         {
             Assert.Contains($"font-family: '{family}';", fonts, StringComparison.Ordinal);
             Assert.DoesNotContain(family, css, StringComparison.Ordinal);
@@ -277,12 +278,12 @@ public static partial class DesignTokenTests
         foreach (Match url in FontUrl().Matches(fonts))
             Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(FontsPath())!, url.Groups[1].Value)), url.Value);
 
-        // 字型只從變數來；代碼、金鑰沿用外層的字型（inherit），不另開等寬字型。
+        // 字型只從變數來：內文是 --ep-font，代碼、金鑰、識別碼是 --ep-font-mono。
         Assert.All(FontFamilyDeclaration().Matches(css), m => Assert.True(
             m.Groups[1].Value.StartsWith("var(--ep-font", StringComparison.Ordinal) || m.Groups[1].Value == "inherit", m.Value));
     }
 
-    // Inter 排在中文字型前面，所以它要讓出中文排版的標點：引號、破折號、刪節號、間隔號落到 Noto Sans TC，排成全形。
+    // Roboto 排在中文字型前面，所以它要讓出中文排版的標點：引號、破折號、刪節號、間隔號落到 Noto Sans TC，排成全形。
     [Theory]
     [InlineData(0x00B7)]
     [InlineData(0x2014)]
@@ -290,17 +291,17 @@ public static partial class DesignTokenTests
     [InlineData(0x201C)]
     [InlineData(0x201D)]
     [InlineData(0x2026)]
-    public static void InterLeavesChinesePunctuationToTheChineseFont(int codePoint)
+    public static void RobotoLeavesChinesePunctuationToTheChineseFont(int codePoint)
     {
         var fonts = File.ReadAllText(FontsPath());
-        var interRanges = Regex.Matches(fonts, @"font-family: 'Inter Variable';[^}]*unicode-range: ([^;]+);")
+        var robotoRanges = Regex.Matches(fonts, @"font-family: 'Roboto Variable';[^}]*unicode-range: ([^;]+);")
             .SelectMany(m => m.Groups[1].Value.Split(','))
             .Select(range => range.Trim()[2..].Split('-'))
             .Select(bounds => (Low: Convert.ToInt32(bounds[0], 16), High: Convert.ToInt32(bounds[^1], 16)))
             .ToList();
 
-        Assert.NotEmpty(interRanges);
-        Assert.DoesNotContain(interRanges, r => r.Low <= codePoint && codePoint <= r.High);
+        Assert.NotEmpty(robotoRanges);
+        Assert.DoesNotContain(robotoRanges, r => r.Low <= codePoint && codePoint <= r.High);
     }
 
     [Fact]
@@ -853,12 +854,12 @@ public sealed class DesignPageTests(PlatformFactory factory)
         Assert.Matches(@"_content/MudBlazor/MudBlazor\.min\.[\w.]*css", interactivePage);
         Assert.Matches(@"_content/MudBlazor/MudBlazor\.min\.[\w.]*js", interactivePage);
 
-        var preload = $"<link rel=\"preload\" href=\"{EnvCite.Platform.Web.Components.App.InterLatin}\" as=\"font\" type=\"font/woff2\" crossorigin";
+        var preload = $"<link rel=\"preload\" href=\"{EnvCite.Platform.Web.Components.App.RobotoLatin}\" as=\"font\" type=\"font/woff2\" crossorigin";
         Assert.Contains(preload, staticPage, StringComparison.Ordinal);
         Assert.Contains(preload, interactivePage, StringComparison.Ordinal);
         var fonts = await client.GetStringAsync(new Uri("_content/EnvCite.Platform.Web/fonts/fonts.css", UriKind.Relative), TestContext.Current.CancellationToken);
-        Assert.Contains($"url({EnvCite.Platform.Web.Components.App.InterLatin["_content/EnvCite.Platform.Web/fonts/".Length..]})", fonts, StringComparison.Ordinal);
-        using var font = await client.GetAsync(new Uri(EnvCite.Platform.Web.Components.App.InterLatin, UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Contains($"url({EnvCite.Platform.Web.Components.App.RobotoLatin["_content/EnvCite.Platform.Web/fonts/".Length..]})", fonts, StringComparison.Ordinal);
+        using var font = await client.GetAsync(new Uri(EnvCite.Platform.Web.Components.App.RobotoLatin, UriKind.Relative), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, font.StatusCode);
     }
 }

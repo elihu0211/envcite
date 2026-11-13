@@ -83,98 +83,98 @@ colors-dark:
 
 ## Typography
 
-全站一支字型堆疊。拉丁字母、數字與光學尺寸用 Inter Variable；中文（含法規罕用字）用 Noto Sans TC Variable。兩支都自己託管，各平台看到同一套字。`sans-serif` 只在字型檔還沒到的瞬間頂替。代碼、金鑰與識別碼不換等寬字，沿用 Inter，打開 `ss02`、`zero`、`tnum`，讓 0、I、l、1 分得開。
+全站一支字型堆疊。拉丁字母與數字用 Roboto Variable（Google 主控台與 Material 的預設）；中文（含法規罕用字）用 Noto Sans TC Variable（Google 的中文字型）。兩支都自己託管，各平台看到同一套字。`sans-serif` 只在字型檔還沒到的瞬間頂替。代碼、金鑰、識別碼與復原碼用等寬字 Roboto Mono Variable（`--ep-font-mono`，同樣自己託管）：每個字元同寬，0 有斜線，I、l、1 分得開，逐字核對不會看錯。表格與統計的數字用 `tabular-nums` 對齊。
 
 字級是一張表、十五個角色：display、headline、title、body、label，各有 l、m、s。大字收緊字距、收緊行高；小字略放寬。內文至少 15px、行高至少 1.6；全站沒有小於 12px 的階。單位用 rem，瀏覽器字級放大時版面一起放大。`display-l` 與 `headline-l` 用 `clamp`，窄螢幕上不撐破版面。
 
 ```yaml
 typography:
   display-l:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "clamp(2rem, 1.4rem + 2vw, 2.25rem)"
     fontWeight: 700
     lineHeight: "1.15"
     letterSpacing: "-0.02em"
   display-m:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "2rem"
     fontWeight: 700
     lineHeight: "1.15"
     letterSpacing: "-0.02em"
   display-s:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "1.75rem"
     fontWeight: 700
     lineHeight: "1.2"
     letterSpacing: "-0.015em"
   headline-l:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "clamp(1.5rem, 1.25rem + 1vw, 1.75rem)"
     fontWeight: 700
     lineHeight: "1.25"
     letterSpacing: "-0.015em"
   headline-m:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "1.5rem"
     fontWeight: 600
     lineHeight: "1.3"
     letterSpacing: "-0.01em"
   headline-s:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "1.25rem"
     fontWeight: 600
     lineHeight: "1.4"
     letterSpacing: "-0.005em"
   title-l:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "1.125rem"
     fontWeight: 600
     lineHeight: "1.45"
     letterSpacing: "0"
   title-m:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "1rem"
     fontWeight: 600
     lineHeight: "1.5"
     letterSpacing: "0"
   title-s:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "0.9375rem"
     fontWeight: 600
     lineHeight: "1.5"
     letterSpacing: "0.005em"
   body-l:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: "1.625"
     letterSpacing: "0"
   body-m:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "0.9375rem"
     fontWeight: 400
     lineHeight: "1.6"
     letterSpacing: "0.005em"
   body-s:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "0.8125rem"
     fontWeight: 400
     lineHeight: "1.6"
     letterSpacing: "0.01em"
   label-l:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "0.9375rem"
     fontWeight: 600
     lineHeight: "1.3"
     letterSpacing: "0.005em"
   label-m:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "0.8125rem"
     fontWeight: 500
     lineHeight: "1.4"
     letterSpacing: "0.01em"
   label-s:
-    fontFamily: "Inter Variable, Noto Sans TC Variable, sans-serif"
+    fontFamily: "Roboto Variable, Noto Sans TC Variable, sans-serif"
     fontSize: "0.75rem"
     fontWeight: 500
     lineHeight: "1.4"
