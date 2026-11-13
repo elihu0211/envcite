@@ -16,22 +16,18 @@
 模型換了同理，只重算嵌入。服務端詞典啟動時讀一次，重建後須重啟才採用新識別碼。
 """
 
-from __future__ import annotations
-
 import logging
 from collections.abc import Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from typing import cast
 
-import psycopg
-
 from envcite_jobkit import ExitCode, NullMetrics, Policy, RunStats, run
+from envcite_ontology.db import Conn
 from envcite_ontology.embedding import Embedder, to_sql
 from envcite_segmenter import Segmenter
 
 log = logging.getLogger(__name__)
 
-Conn = psycopg.Connection[tuple[object, ...]]
 
 _PAGE = 2000
 #: 一次送給嵌入端點的段落數
@@ -39,7 +35,7 @@ _EMBED_BATCH = 32
 #: 同時送出的請求數；一個工作項是這麼多批，一起嵌入、一起 commit
 _EMBED_WORKERS = 8
 #: 一批：（內容雜湊，段落文字）
-Page = list[tuple[bytes, str]]
+type Page = list[tuple[bytes, str]]
 
 # 一頁要重算字面向量的文字：沒有列，或分詞器不符。以雜湊鍵分頁，現行列雜湊的部分索引可自
 # `after` 起依序走（不用一次性的「全部缺列」查詢：逐頁呼叫會變成頁數乘以全表掃描）。

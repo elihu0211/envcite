@@ -5,12 +5,11 @@
 待查。整批的驗收看比例，不看單一法規（`audit.py`）。
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Any
 
+from envcite_ontology.import_problems import Problem
 from envcite_ontology.ingest import articles, commencement, history
 from envcite_ontology.ingest.numerals import parse_yyyymmdd
 
@@ -25,13 +24,6 @@ _DOCUMENT_TYPES = (
     "編制表", "憲法", "法", "律",
 )  # fmt: skip
 OTHER_DOCUMENT_TYPE = "其他"
-
-
-@dataclass(frozen=True)
-class Problem:
-    level: str  # error | warning
-    code: str
-    detail: str = ""
 
 
 @dataclass(frozen=True)
@@ -67,7 +59,7 @@ class ParsedLaw:
 
     @property
     def ok(self) -> bool:
-        return not any(p.level == "error" for p in self.problems)
+        return not any(p.severity == "error" for p in self.problems)
 
 
 def document_type(name: str) -> str:

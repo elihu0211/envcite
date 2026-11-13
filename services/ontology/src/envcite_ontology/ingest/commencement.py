@@ -18,8 +18,6 @@
 印證不了者，被觸及的條待確認。
 """
 
-from __future__ import annotations
-
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass

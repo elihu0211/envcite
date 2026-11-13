@@ -26,8 +26,7 @@
 結束碼沿用 jobkit：0 完成；75 斷路器開啟；2 資料不合預期；1 其他暫時性失敗（含覆蓋率不足）。
 """
 
-from __future__ import annotations
-
+import argparse
 import hashlib
 import json
 import logging
@@ -51,15 +50,20 @@ from envcite_jobkit import (
     backoff_delay,
     run,
 )
-from envcite_ontology import guidance
+from envcite_ontology import guidance, import_problems
 from envcite_ontology.acquire import gazette, moenv
 from envcite_ontology.acquire.engine import InvalidSnapshot
 from envcite_ontology.acquire.web import Http
-from envcite_ontology.guidance_anchor import Problem, Resolver
+from envcite_ontology.db import Conn
+from envcite_ontology.guidance_anchor import Resolver
+from envcite_ontology.import_problems import Problem
+from envcite_ontology.settings import DatabaseSettings, SnapshotSettings
+from envcite_ontology.settings import load as load_settings
 
 log = logging.getLogger(__name__)
 
-Conn = psycopg.Connection[tuple[object, ...]]
+
+EXIT_INVALID = 2
 POLICY = Policy(
     name="guidance",
     open_action="exit",
@@ -318,7 +322,7 @@ def _crawled(conn: Conn, crawl: _Crawl, report: Report) -> None:
                 report,
                 cast(int, item_id),
                 cast(int, snapshot_id),
-                [("warning", "reappeared", "")],
+                [Problem("warning", "reappeared", "")],
             )
     report.crawl_complete = bool(complete)
     if not complete:
@@ -354,14 +358,14 @@ def _repeals(conn: Conn, report: Report) -> None:
                 d for d in rules.documents(name) if issued[d] <= issued[doc_id] and d != doc_id
             }
             if not found:
-                problems.append(("warning", "repeal_unmatched", name))
+                problems.append(Problem("warning", "repeal_unmatched", name))
             elif len({issuer[d] for d in found}) > 1:
-                problems.append(("warning", "repeal_ambiguous", name))
+                problems.append(Problem("warning", "repeal_ambiguous", name))
             else:
                 earlier |= found
         on = a.effective_on
         if on is not None and on < issued[doc_id]:
-            problems.append(("warning", "repeal_before_issue", on.isoformat()))
+            problems.append(Problem("warning", "repeal_before_issue", on.isoformat()))
             on = None
         pending = sorted(earlier - ceased)
         if pending:
@@ -373,7 +377,7 @@ def _repeals(conn: Conn, report: Report) -> None:
             }
             loaded = _reload(conn, report, document)
             if loaded < 0:
-                problems.append(("warning", "repeal_rejected", "、".join(a.repeals)))
+                problems.append(Problem("warning", "repeal_rejected", "、".join(a.repeals)))
             else:
                 # 同一條規則再被後一件廢止時，已停止的不再寫（停止適用只記最早的一次）
                 ceased.update(pending)
@@ -474,14 +478,8 @@ REPEAL_PROBLEMS = ("repeal_unmatched", "repeal_ambiguous", "repeal_before_issue"
 def _problems(
     conn: Conn, report: Report, item_id: int, snapshot_id: int, problems: Sequence[Problem]
 ) -> None:
-    for severity, code, detail in problems:
-        report.problems[code] += 1
-        conn.execute(
-            "INSERT INTO source.import_problem"
-            " (item_id, snapshot_id, severity, problem_code, detail)"
-            " VALUES (%s, %s, %s, %s, %s)",
-            (item_id, snapshot_id, severity, code, detail),
-        )
+    report.problems.update(p.code for p in problems)
+    import_problems.record(conn, item_id, snapshot_id, problems)
 
 
 class _Job:
@@ -510,9 +508,9 @@ class _Job:
         try:
             kind = gazette.rule_kind(r.title)
         except gazette.AmbiguousKind:
-            return [("error", "kind_ambiguous", r.title)]
+            return [Problem("error", "kind_ambiguous", r.title)]
         if r.issued_on is None or not r.body or not r.document_no or not r.issuer:
-            return [("error", "incomplete", r.title)]
+            return [Problem("error", "incomplete", r.title)]
         problems: list[Problem] = []
         interprets: list[dict[str, str]] = []
         for cited, citation in self._resolver.basis(r.body):
@@ -559,9 +557,9 @@ class _Job:
                 "interprets": interprets,
             }
             if row.ceased and row.ceased_on is None:
-                problems.append(("warning", "ceased_without_date", row.url))
+                problems.append(Problem("warning", "ceased_without_date", row.url))
             elif row.ceased_on is not None and row.ceased_on < letter.issued_on:
-                problems.append(("warning", "ceased_before_issue", f"{row.ceased_on}"))
+                problems.append(Problem("warning", "ceased_before_issue", f"{row.ceased_on}"))
             elif row.ceased_on is not None:
                 document["ceased_on"] = row.ceased_on.isoformat()
             problems += self._load(document)
@@ -578,9 +576,9 @@ class _Job:
                 self._conn, {"derivation": self._derivation, "documents": [document]}
             )
         except guidance.DocumentChanged as e:
-            return [("warning", "content_changed", str(e))]
+            return [Problem("warning", "content_changed", str(e))]
         except guidance.GuidanceError as e:
-            return [("error", "rejected", str(e))]
+            return [Problem("error", "rejected", str(e))]
         self._report.documents += loaded.documents - loaded.repeated
         self._report.repeated += loaded.repeated
         self._report.interpretations += loaded.interpretations
@@ -633,3 +631,42 @@ class _Job:
 def _digest(rule: gazette.Rule) -> bytes:
     canonical = json.dumps(asdict(rule), ensure_ascii=False, sort_keys=True, default=str)
     return hashlib.sha256(canonical.encode()).digest()
+
+
+def main() -> None:
+    """`envcite-guidance`：`load` 載入人寫的文件，`sync` 自公報或環境部取得。"""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    parser = argparse.ArgumentParser(prog="envcite-guidance")
+    commands = parser.add_subparsers(dest="command", required=True)
+    load_cmd = commands.add_parser("load", help="載入一份人寫的行政規則文件（JSON）")
+    load_cmd.add_argument("file", type=Path)
+    sync_cmd = commands.add_parser("sync", help="自公報或環境部函釋取得行政規則並寫入")
+    sync_cmd.add_argument("source", choices=("gazette", "moenv"))
+    sync_cmd.add_argument(
+        "--since", type=date.fromisoformat, help="只取此日（含）以後的刊登或發文；YYYY-MM-DD"
+    )
+    sync_cmd.add_argument(
+        "--rescan", action="store_true", help="已處理過的也重抓，用來發現網站內容的改變"
+    )
+    args = parser.parse_args()
+
+    if args.command == "sync":
+        raise SystemExit(_run(args.source, since=args.since, rescan=args.rescan))
+    settings = load_settings(DatabaseSettings)
+    try:
+        doc = json.loads(args.file.read_text(encoding="utf-8"))
+        with psycopg.connect(settings.dsn) as conn:
+            guidance.load(conn, doc)
+    except (guidance.GuidanceError, json.JSONDecodeError) as e:
+        log.error("guidance rejected: %s", e)
+        raise SystemExit(EXIT_INVALID) from e
+
+
+def _run(source: str, *, since: date | None, rescan: bool) -> int:
+    settings = load_settings(SnapshotSettings)
+    policy = Policy.load(defaults=POLICY)
+    with psycopg.connect(settings.dsn) as conn:
+        report = sync(
+            conn, source, settings.snapshot_dir, since=since, rescan=rescan, policy=policy
+        )
+    return report.exit_code

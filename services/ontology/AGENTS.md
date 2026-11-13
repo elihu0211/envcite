@@ -30,6 +30,10 @@ uv run --env-file .env envcite-sync moj
 uv run --env-file .env envcite-ontology
 ```
 
+- **程式風格**（Python ≥3.14，ruff 的 `target-version` 在倉庫根 `pyproject.toml`，UP 規則據此要求新語法）：
+  - 不寫 `from __future__ import annotations`（註解延後求值）；泛型用 PEP 695（`def f[T]`），別名用 `type X = …`。
+  - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
+  - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。
 - **環境變數以 `src/envcite_ontology/settings.py` 為唯一來源**；入口不直接讀 `os.environ`；加變數時同步 `.env.example`（`tests/test_settings.py` 守門）。
 - 測試用**真實的 PostgreSQL**：設 `ENVCITE_ONTOLOGY_TEST_DSN`，或留空讓 testcontainers 起一個（需要 Docker daemon）。不用替身，因為本服務一半的讀取邏輯在 SQL 裡。
 - **綱要由 `migrations/*.sql` 依檔名順序套用。已套用的檔案不可修改**——要改就新增一個檔，由 `schema_migration` 的雜湊比對強制。

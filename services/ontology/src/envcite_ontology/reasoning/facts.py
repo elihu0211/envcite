@@ -7,21 +7,17 @@
 數值一律為千分位整數（clingo 無浮點數，`numeric(18,3)` 乘一千不損失）；字串以引號輸出。
 """
 
-from __future__ import annotations
-
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import cast
 
-import psycopg
-
-Conn = psycopg.Connection[tuple[object, ...]]
+from envcite_ontology.db import Conn
 
 # 案件事實的值：數字，或概念代碼（概念取某個值概念）；同一概念可帶多個值。
-CaseValue = float | str
-Case = Mapping[str, CaseValue | Sequence[CaseValue]]
+type CaseValue = float | str
+type Case = Mapping[str, CaseValue | Sequence[CaseValue]]
 
 
 @dataclass(frozen=True)
@@ -33,9 +29,9 @@ class Measurement:
 
 
 #: 事實概念 → 它的值所用的認定方式（同一概念可由數筆事實提供，各帶認定方式）。
-Measurements = Mapping[str, Sequence[Measurement]]
+type Measurements = Mapping[str, Sequence[Measurement]]
 #: （許可種類，概念）→ 該場所持有的這種許可所載、這個概念的量值（委由個別處分的門檻值）。
-Permits = Mapping[tuple[str, str], Sequence[float]]
+type Permits = Mapping[tuple[str, str], Sequence[float]]
 
 
 def q(text: str) -> str:

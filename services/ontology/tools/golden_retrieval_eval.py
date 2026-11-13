@@ -74,12 +74,13 @@ import golden_set as gs
 from retrieval_eval import Embeds
 from scoped_search import resource_ids, scoped_search
 
-from envcite_ontology import embedding, reranking
+from envcite_ontology import reranking
 from envcite_ontology.law_names import LawNames
 from envcite_ontology.reranking import Reranks
 from envcite_ontology.service import DEFAULT_RERANK_CANDIDATES
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
 from envcite_ontology.store import SEARCH_POOL, OntologyStore
+from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
 
 KS = (1, 5, 10, 20, 50)
@@ -712,8 +713,10 @@ def cmd_measure(args: argparse.Namespace) -> None:
     floor = int(qrels_doc["relevant_from"])
     rows = questions(items, qrels_doc, gs.subset_ids(split_doc, args.subset))
     db = load(DatabaseSettings)
-    embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0)
-    reranker = reranking.from_settings(load(ModelsSettings), timeout=30.0) if args.rerank else None
+    embedder = config.embedder_from_settings(load(ModelsSettings), timeout=30.0)
+    reranker = (
+        config.reranker_from_settings(load(ModelsSettings), timeout=30.0) if args.rerank else None
+    )
     if args.rerank and (reranker is None or embedder is None):
         raise SystemExit("--rerank 需要 models.toml 的 [embedding] 與 [reranker]")
     on = date.today().isoformat()

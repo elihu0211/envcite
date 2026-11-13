@@ -5,8 +5,6 @@
 同 `retrieval.search_hybrid`），帶出的條文本身仍是現行條文，來源與其他命中相同。
 """
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 
 from envcite_ontology.store import SearchHit

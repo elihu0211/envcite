@@ -5,26 +5,23 @@
 動作（新增、新增版本、更正、更新、拒絕）見 `write.apply`。
 """
 
-from __future__ import annotations
-
 import logging
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-import psycopg
-
+from envcite_ontology import import_problems
 from envcite_ontology.acquire.engine import Source
 from envcite_ontology.acquire.moj import content_sha256, load_laws, pcode
+from envcite_ontology.db import Conn
+from envcite_ontology.import_problems import Problem
 from envcite_ontology.ingest import law as parsing
 from envcite_ontology.ingest.audit import Metrics
-from envcite_ontology.ingest.law import PARSER_VERSION, ParsedLaw, Problem
+from envcite_ontology.ingest.law import PARSER_VERSION, ParsedLaw
 from envcite_ontology.ingest.write import apply
 
 log = logging.getLogger(__name__)
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 
 class BatchRejected(Exception):
@@ -109,7 +106,7 @@ def run(conn: Conn, snapshot_dir: Path, source: Source, *, dry_run: bool = False
                         problems_now.append(
                             Problem("warning", "corrected", f"{applied.changed} 個單元的文字改變")
                         )
-                _replace_problems(conn, item_id, snapshot_id, problems_now)
+                import_problems.replace(conn, item_id, snapshot_id, problems_now)
                 if applied is None:
                     actions["rejected"] += 1
                 elif applied.action == "regressed":
@@ -123,16 +120,3 @@ def run(conn: Conn, snapshot_dir: Path, source: Source, *, dry_run: bool = False
                     )
         log.info("%s: %s", feed_name, "，".join(f"{k} {v}" for k, v in sorted(actions.items())))
     return Outcome(metrics, actions)
-
-
-def _replace_problems(
-    conn: Conn, item_id: object, snapshot_id: int, problems: list[Problem]
-) -> None:
-    conn.execute("DELETE FROM source.import_problem WHERE item_id = %s", (item_id,))
-    with conn.cursor() as cur:
-        cur.executemany(
-            "INSERT INTO source.import_problem"
-            " (item_id, snapshot_id, severity, problem_code, detail)"
-            " VALUES (%s, %s, %s, %s, %s)",
-            [(item_id, snapshot_id, p.level, p.code, p.detail) for p in problems],
-        )

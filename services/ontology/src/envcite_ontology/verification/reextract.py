@@ -4,15 +4,12 @@
 （`extraction_attempt.round`），不在這裡。
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Any, cast
 
-import psycopg
 from psycopg.types.range import Range
 
-Conn = psycopg.Connection[tuple[object, ...]]
+from envcite_ontology.db import Conn
 
 #: 一個陳述最多帶幾條審查意見、每條最多多長：太長會蓋過原文。
 MAX_NOTES = 6

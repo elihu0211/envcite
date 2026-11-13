@@ -12,8 +12,6 @@
 不合的值整個丟掉；一個也不剩，主體記為未明示。這是正規化，不是駁回：陳述本身仍交給驗證。
 """
 
-from __future__ import annotations
-
 import re
 from collections.abc import Mapping, Sequence
 from typing import Any

@@ -4,8 +4,6 @@
 其餘標籤拿掉、不補空白：函釋內文是一行一項。法條句式的正規式不在這裡。
 """
 
-from __future__ import annotations
-
 from lxml import html
 from lxml.html import HtmlElement
 

@@ -3,11 +3,7 @@
 抽取者與審查者都讀得到上層，但錨點仍在單元自己的文字上：引文只能取自單元本身，上層只供理解。
 """
 
-from __future__ import annotations
-
-import psycopg
-
-Conn = psycopg.Connection[tuple[object, ...]]
+from envcite_ontology.db import Conn
 
 _UP = """
 WITH RECURSIVE up(id, parent_id, depth) AS (

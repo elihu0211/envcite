@@ -11,8 +11,6 @@
 折行的轉錄，數字前後夾空白，解析時還原成段落。
 """
 
-from __future__ import annotations
-
 import html
 import re
 from dataclasses import dataclass

@@ -6,8 +6,6 @@
 `envcite_jobkit` 政策的次數與退避重試。
 """
 
-from __future__ import annotations
-
 import hashlib
 import logging
 import os
@@ -101,7 +99,7 @@ def _acquire_feed(
     partial = root / ".partial" / feed.name
     partial.parent.mkdir(parents=True, exist_ok=True)
     try:
-        digest, size = _download(feed.url, partial, source.tls(), policy)
+        digest, size = download(feed.url, partial, source.tls(), policy)
         if _known(conn, feed.name, digest):
             log.info("%s: unchanged (%s)", feed.name, digest.hex()[:12])
             return Outcome(feed.name, None)
@@ -135,7 +133,7 @@ def _acquire_feed(
     return Outcome(feed.name, snapshot_id)
 
 
-def _download(url: str, dest: Path, context: ssl.SSLContext, policy: Policy) -> tuple[bytes, int]:
+def download(url: str, dest: Path, context: ssl.SSLContext, policy: Policy) -> tuple[bytes, int]:
     """端點問題重試到 `policy.max_attempts` 次；其餘失敗（含 4xx）直接拋出。"""
     for attempt in range(1, policy.max_attempts + 1):
         try:

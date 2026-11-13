@@ -8,13 +8,11 @@
 `context.abort`。
 """
 
-from __future__ import annotations
-
 import functools
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import NoReturn, TypeVar
+from typing import NoReturn
 
 import grpc
 import psycopg
@@ -46,6 +44,8 @@ UNKNOWN_VALUE = "UNKNOWN_VALUE"
 
 @dataclass(frozen=True, slots=True)
 class FieldViolation:
+    """BadRequest 裡的一筆欄位違規。"""
+
     #: 以點與索引寫成的欄位路徑，例如 `facts[2].values[0].number.value`。
     field: str
     reason: str
@@ -53,6 +53,8 @@ class FieldViolation:
 
 
 class ServiceError(Exception):
+    """領域錯誤：`maps_errors` 在 servicer 邊界轉成 gRPC 狀態，呼叫端依 `reason` 分流。"""
+
     def __init__(
         self,
         code: grpc.StatusCode,
@@ -68,10 +70,12 @@ class ServiceError(Exception):
 
 
 def not_found(reason: str, message: str) -> ServiceError:
+    """NOT_FOUND；`reason` 區分是哪一種找不到（法規不存在，或該日沒有版本）。"""
     return ServiceError(grpc.StatusCode.NOT_FOUND, reason, message)
 
 
 def abort(context: grpc.ServicerContext, error: ServiceError) -> NoReturn:
+    """把錯誤寫成 ErrorInfo（引數錯誤另加 BadRequest）並中止呼叫，不會回傳。"""
     detail = status_pb2.Status(code=error.code.value[0], message=error.message)
     detail.details.add().Pack(error_details_pb2.ErrorInfo(reason=error.reason, domain=DOMAIN))
     if error.violations:
@@ -83,12 +87,7 @@ def abort(context: grpc.ServicerContext, error: ServiceError) -> NoReturn:
     raise AssertionError("unreachable: abort_with_status raises")  # pragma: no cover
 
 
-S = TypeVar("S")
-Req = TypeVar("Req")
-Resp = TypeVar("Resp")
-
-
-def maps_errors(
+def maps_errors[S, Req, Resp](
     method: Callable[[S, Req, grpc.ServicerContext], Resp],
 ) -> Callable[[S, Req, grpc.ServicerContext], Resp]:
     """servicer 方法的邊界：領域錯誤與讀取預算用盡，轉成帶 ErrorInfo 的 gRPC 狀態。
@@ -132,6 +131,7 @@ class Validator:
         self._violations: list[FieldViolation] = []
 
     def add(self, field: str, reason: str, description: str) -> None:
+        """記一筆欄位違規。"""
         self._violations.append(FieldViolation(field, reason, description))
 
     def date(self, field: str, value: str, *, required: bool = False) -> date | None:
@@ -147,6 +147,7 @@ class Validator:
             return None
 
     def check(self) -> None:
+        """有違規就一次丟出 INVALID_ARGUMENT，沒有則什麼也不做。"""
         if self._violations:
             raise ServiceError(
                 grpc.StatusCode.INVALID_ARGUMENT,

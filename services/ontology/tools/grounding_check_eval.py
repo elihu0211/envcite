@@ -34,6 +34,7 @@ import hashlib
 import json
 import re
 import sys
+import tomllib
 import urllib.error
 import urllib.request
 from collections import Counter
@@ -44,7 +45,6 @@ from typing import Any
 
 import grpc
 import psycopg
-import tomllib
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -54,7 +54,7 @@ import golden_set as gs
 from golden_retrieval_eval import NEGATIVE, git, require_snapshots, snapshots
 
 from envcite.consult.v2 import consult_pb2, consult_pb2_grpc
-from envcite_ontology.endpoint import json_headers
+from envcite_ontology.http import json_headers
 from envcite_ontology.settings import DatabaseSettings, load
 from envcite_ontology.verification.config import ConfigError, resolve_secret, secret_name
 from tools.answer_quality import FINALS, FLOOR_REFUSALS, REFUSAL_FINAL

@@ -10,14 +10,13 @@
 連結不是接受，罰則仍要過各閘門。
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, cast
 
 from envcite_ontology.claims import AnnotationError, load
-from envcite_ontology.verification.gates import Conn, unit_of
+from envcite_ontology.db import Conn
+from envcite_ontology.verification.gates import unit_of
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, ModelError
 from envcite_ontology.violation import within

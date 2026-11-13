@@ -26,29 +26,19 @@
 `kind`：`interpretation`（解釋性規定）、`discretion_standard`（裁量基準）、`operational`（作業性規定）。
 """
 
-from __future__ import annotations
-
-import argparse
 import hashlib
-import json
 import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
 from typing import Any, cast
 
 import psycopg
 
 from envcite_ontology.claims import AnnotationError, anchor
-from envcite_ontology.settings import DatabaseSettings, SnapshotSettings
-from envcite_ontology.settings import load as load_settings
+from envcite_ontology.db import Conn
 
 log = logging.getLogger(__name__)
-
-Conn = psycopg.Connection[tuple[object, ...]]
-
-EXIT_INVALID = 2
 
 
 class GuidanceError(AnnotationError):
@@ -217,44 +207,3 @@ def _one(conn: Conn, sql: str, *args: object) -> int:
     row = conn.execute(sql, args).fetchone()
     assert row is not None
     return cast(int, row[0])
-
-
-def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(prog="envcite-guidance")
-    commands = parser.add_subparsers(dest="command", required=True)
-    load_cmd = commands.add_parser("load", help="載入一份人寫的行政規則文件（JSON）")
-    load_cmd.add_argument("file", type=Path)
-    sync_cmd = commands.add_parser("sync", help="自公報或環境部函釋取得行政規則並寫入")
-    sync_cmd.add_argument("source", choices=("gazette", "moenv"))
-    sync_cmd.add_argument(
-        "--since", type=date.fromisoformat, help="只取此日（含）以後的刊登或發文；YYYY-MM-DD"
-    )
-    sync_cmd.add_argument(
-        "--rescan", action="store_true", help="已處理過的也重抓，用來發現網站內容的改變"
-    )
-    args = parser.parse_args()
-
-    if args.command == "sync":
-        raise SystemExit(_sync(args.source, since=args.since, rescan=args.rescan))
-    settings = load_settings(DatabaseSettings)
-    try:
-        doc = json.loads(args.file.read_text(encoding="utf-8"))
-        with psycopg.connect(settings.dsn) as conn:
-            load(conn, doc)
-    except (GuidanceError, json.JSONDecodeError) as e:
-        log.error("guidance rejected: %s", e)
-        raise SystemExit(EXIT_INVALID) from e
-
-
-def _sync(source: str, *, since: date | None, rescan: bool) -> int:
-    from envcite_jobkit import Policy
-    from envcite_ontology import guidance_sync
-
-    settings = load_settings(SnapshotSettings)
-    policy = Policy.load(defaults=guidance_sync.POLICY)
-    with psycopg.connect(settings.dsn) as conn:
-        report = guidance_sync.sync(
-            conn, source, settings.snapshot_dir, since=since, rescan=rescan, policy=policy
-        )
-    return report.exit_code

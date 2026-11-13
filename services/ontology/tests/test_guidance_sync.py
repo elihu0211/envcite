@@ -15,6 +15,7 @@ from envcite_jobkit import EndpointError, ExitCode, Policy
 from envcite_ontology import guidance_anchor, guidance_sync
 from envcite_ontology.acquire import gazette, moenv
 from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.import_problems import Problem
 from envcite_ontology.ingest import importer
 from tests.sample import WATER, sample_laws, stored_snapshot
 
@@ -392,7 +393,7 @@ def test_an_old_name_that_is_another_laws_title_resolves_to_neither(
     assert resolver.resolve("水污染防治法") == guidance_anchor.Resolved(None, "law_ambiguous")
     assert resolver.anchors("水污染防治法第7條", date(2019, 5, 1)) == (
         [],
-        [("warning", "law_ambiguous", "水污染防治法第7條")],
+        [Problem("warning", "law_ambiguous", "水污染防治法第7條")],
     )
 
 

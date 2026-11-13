@@ -11,9 +11,9 @@
 來源與授權見 `acquire/cons.py`；顯示這些資料時須標示出處（憲法法庭）。
 """
 
-from __future__ import annotations
-
+import argparse
 import hashlib
+import json
 import logging
 import tempfile
 import time
@@ -26,16 +26,21 @@ import psycopg
 from envcite_jobkit import Policy
 from envcite_ontology import ruling
 from envcite_ontology.acquire import cons
-from envcite_ontology.acquire.engine import _download
+from envcite_ontology.acquire.engine import download as download_file
+from envcite_ontology.db import Conn
 from envcite_ontology.ruling_extract import EXTRACTOR_VERSION, extract, should_keep
+from envcite_ontology.settings import DatabaseSettings
+from envcite_ontology.settings import load as load_settings
 
 log = logging.getLogger(__name__)
 
-Conn = psycopg.Connection[tuple[object, ...]]
-Fetch = Callable[[str], str]
+type Fetch = Callable[[str], str]
 
 #: 對來源網站的禮貌間隔（秒）；同一次執行逐頁循序抓。
 PAUSE_SECONDS = 0.5
+
+EXIT_TRANSIENT = 1
+EXIT_INVALID = 2
 
 
 @dataclass(frozen=True)
@@ -56,7 +61,7 @@ def download(url: str, policy: Policy | None = None) -> str:
     """下載一頁（端點問題依 jobkit 政策重試）。`file://` 也可，供測試。"""
     with tempfile.TemporaryDirectory() as tmp:
         dest = Path(tmp) / "page"
-        _download(url, dest, cons.tls(), policy or Policy())
+        download_file(url, dest, cons.tls(), policy or Policy())
         return dest.read_text(encoding="utf-8-sig")
 
 
@@ -196,3 +201,37 @@ def _titles(conn: Conn) -> dict[str, str | None]:
         found[key] = str(pcode) if key not in found or found[key] == pcode else None
     conn.rollback()
     return found
+
+
+def main() -> None:
+    """`envcite-ruling`：`load` 載入人寫的文件，`fetch` 自憲法法庭網站取得。"""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    parser = argparse.ArgumentParser(prog="envcite-ruling")
+    commands = parser.add_subparsers(dest="command", required=True)
+    load_cmd = commands.add_parser("load", help="載入違憲失效裁判文件（JSON）")
+    load_cmd.add_argument("file", type=Path)
+    fetch_cmd = commands.add_parser("fetch", help="自憲法法庭網站取得裁判並提出失效")
+    fetch_cmd.add_argument(
+        "--rescan", action="store_true", help="已掃描過的頁面也重抓（網站內容有疑義時）"
+    )
+    args = parser.parse_args()
+
+    settings = load_settings(DatabaseSettings)
+    try:
+        with psycopg.connect(settings.dsn) as conn:
+            if args.command == "load":
+                ruling.load(conn, json.loads(args.file.read_text(encoding="utf-8")))
+            else:
+                raise SystemExit(_fetch(conn, rescan=args.rescan))
+    except (ruling.RulingError, json.JSONDecodeError) as e:
+        log.error("ruling rejected: %s", e)
+        raise SystemExit(EXIT_INVALID) from e
+
+
+def _fetch(conn: Conn, *, rescan: bool) -> int:
+    try:
+        result = sync(conn, rescan=rescan)
+    except OSError as e:
+        log.error("ruling fetch failed: %s", e)
+        return EXIT_TRANSIENT
+    return EXIT_INVALID if result.unreadable else 0

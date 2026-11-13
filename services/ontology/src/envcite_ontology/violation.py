@@ -7,20 +7,16 @@
 **改解析規則要遞增 `RULE_VERSION`**，`annotation.current_violation` 只看最新版本。
 """
 
-from __future__ import annotations
-
 import logging
 import re
 import time
 from collections.abc import Sequence
 
-import psycopg
-
+from envcite_ontology.db import Conn
 from envcite_ontology.ingest.numerals import CN_NUMERALS, parse_int
 
 log = logging.getLogger(__name__)
 
-Conn = psycopg.Connection[tuple[object, ...]]
 
 RULE_VERSION = 1
 

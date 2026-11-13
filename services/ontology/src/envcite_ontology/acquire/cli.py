@@ -4,8 +4,6 @@
 2 資料不合預期，重試不會改變結果——部署清單的 podFailurePolicy 據此直接判定失敗。
 """
 
-from __future__ import annotations
-
 import argparse
 import logging
 

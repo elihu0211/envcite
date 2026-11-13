@@ -9,19 +9,14 @@
   寫成 `text_authority = competent_authority`。
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Protocol, cast
 
-import psycopg
-
 from envcite_ontology.acquire import ly_law, moenv_law
+from envcite_ontology.db import Conn
 from envcite_ontology.ingest.backfill import UnreadablePage, Version
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 _NORM_KINDS = {"法律": ("statute", "constitution"), "命令": ("regulation",)}
 

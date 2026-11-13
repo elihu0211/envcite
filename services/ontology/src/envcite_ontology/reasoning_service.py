@@ -5,8 +5,6 @@
 的執行緒池是固定大小的，不限制的話幾個推論就能占滿，連查一條法規都排不到。
 """
 
-from __future__ import annotations
-
 import logging
 import threading
 import time
@@ -19,12 +17,12 @@ from opentelemetry.metrics import Meter
 from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite.ontology.v2 import reasoning_pb2_grpc
 from envcite_grpc import remaining_seconds
-from envcite_ontology import annotation_read, errors
+from envcite_ontology import annotation_read, errors, identifiers
 from envcite_ontology import reasoning_codec as codec
 from envcite_ontology.identifiers import law_key
 from envcite_ontology.reasoning import Result, evaluate_across
 from envcite_ontology.reasoning.facts import Measurements, Permits
-from envcite_ontology.store import LANGUAGE, LawKey, OntologyStore
+from envcite_ontology.store import LANGUAGE, OntologyStore
 from envcite_ontology.telemetry import ReasoningMetrics
 
 log = logging.getLogger(__name__)
@@ -57,12 +55,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
     def ListStatements(
         self, request: pb.ListStatementsRequest, context: grpc.ServicerContext
     ) -> pb.ListStatementsResponse:
-        _log_call(
-            context,
-            "ListStatements",
-            f"{request.identifier.jurisdiction}:{request.identifier.id_scheme}:"
-            f"{request.identifier.local_id}",
-        )
+        _log_call(context, "ListStatements", identifiers.subject(request.identifier))
         v = errors.Validator()
         key = law_key(self._store, request.identifier, v)
         on = v.date("as_of", request.as_of)
@@ -71,7 +64,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
             key, as_of=request.as_of, timeout=remaining_seconds(context)
         )
         if resource_id is None:
-            raise self._not_found(key, request.as_of, timeout=remaining_seconds(context))
+            raise identifiers.not_found(self._store, key, request.as_of, context)
         with self._store.read_connection(timeout=remaining_seconds(context)) as conn:
             return annotation_read.list_statements(conn, resource_id, on)
 
@@ -192,14 +185,6 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                 errors.EVALUATION_TIMEOUT,
                 "evaluation did not finish within the deadline",
             ) from error
-
-    def _not_found(
-        self, key: LawKey, as_of: str, *, timeout: float | None = None
-    ) -> errors.ServiceError:
-        if self._store.law_exists(key, timeout=timeout):
-            when = f"in force on {as_of}" if as_of else "in force today"
-            return errors.not_found(errors.AS_OF_NOT_COVERED, f"law '{key}' has no version {when}")
-        return errors.not_found(errors.LAW_NOT_FOUND, f"law '{key}' not found")
 
 
 def _log_call(context: grpc.ServicerContext, method: str, subject: str) -> None:

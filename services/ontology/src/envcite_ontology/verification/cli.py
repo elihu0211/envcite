@@ -4,8 +4,6 @@
 僅以確定性閘門接受須明寫 `--require`，且只保證與原文的數字、引用、推論程式一致，不保證語意。
 """
 
-from __future__ import annotations
-
 import argparse
 import logging
 

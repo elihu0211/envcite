@@ -6,12 +6,11 @@
 只看有沒有承接，不看承接得對不對；排除法律效果的但書，目前的例外表達不了，會停在 `inconclusive`。
 """
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 
-from envcite_ontology.verification.gates.base import Conn, GateResult, unit_of
+from envcite_ontology.db import Conn
+from envcite_ontology.verification.gates.base import GateResult, unit_of
 
 #: 以「但」開頭的句子（句首、段首、分號之後），與「不在此限」。
 _PROVISO = re.compile(r"(?:^|[。；\n])\s*(但[^。]*。?)|([^。；\n]*不在此限)")

@@ -8,7 +8,7 @@
 語意、種類、義務方向是否忠於原文須由模型閘門（`model_gates`）判定。
 """
 
-from envcite_ontology.verification.gates.base import Conn, Gate, GateResult, Unit, Verdict, unit_of
+from envcite_ontology.verification.gates.base import Gate, GateResult, Unit, Verdict, unit_of
 from envcite_ontology.verification.gates.cn_number import NUMBER, amounts, cn_number, numbers_in
 from envcite_ontology.verification.gates.conditions import statement_as_of
 from envcite_ontology.verification.gates.executable_gate import ExecutableGate
@@ -21,7 +21,6 @@ DEFAULT_GATES: tuple[Gate, ...] = (NumbersGate(), ReferencesGate(), ExecutableGa
 __all__ = [
     "DEFAULT_GATES",
     "NUMBER",
-    "Conn",
     "ExecutableGate",
     "Gate",
     "GateResult",

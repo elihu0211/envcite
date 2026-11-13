@@ -19,30 +19,19 @@
 自憲法法庭網站取得裁判並由規則提出失效（`ruling_sync`），兩者可並存：抽取流程只刪改自己寫的列。
 """
 
-from __future__ import annotations
-
-import argparse
-import json
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
 from typing import Any, cast
 
 import psycopg
 
 from envcite_ontology.claims import AnnotationError
 from envcite_ontology.corpus_ref import UnknownProvision, provision_id
-from envcite_ontology.settings import DatabaseSettings
-from envcite_ontology.settings import load as load_settings
+from envcite_ontology.db import Conn
 
 log = logging.getLogger(__name__)
-
-Conn = psycopg.Connection[tuple[object, ...]]
-
-EXIT_INVALID = 2
-EXIT_TRANSIENT = 1
 
 
 class RulingError(AnnotationError):
@@ -129,38 +118,3 @@ def _ruling(conn: Conn, r: Mapping[str, Any]) -> tuple[int, int]:
     ).fetchone()
     assert new is not None
     return cast(int, new[0]), 0
-
-
-def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(prog="envcite-ruling")
-    commands = parser.add_subparsers(dest="command", required=True)
-    load_cmd = commands.add_parser("load", help="載入違憲失效裁判文件（JSON）")
-    load_cmd.add_argument("file", type=Path)
-    fetch_cmd = commands.add_parser("fetch", help="自憲法法庭網站取得裁判並提出失效")
-    fetch_cmd.add_argument(
-        "--rescan", action="store_true", help="已掃描過的頁面也重抓（網站內容有疑義時）"
-    )
-    args = parser.parse_args()
-
-    settings = load_settings(DatabaseSettings)
-    try:
-        with psycopg.connect(settings.dsn) as conn:
-            if args.command == "load":
-                load(conn, json.loads(args.file.read_text(encoding="utf-8")))
-            else:
-                raise SystemExit(_fetch(conn, rescan=args.rescan))
-    except (RulingError, json.JSONDecodeError) as e:
-        log.error("ruling rejected: %s", e)
-        raise SystemExit(EXIT_INVALID) from e
-
-
-def _fetch(conn: Conn, *, rescan: bool) -> int:
-    from envcite_ontology import ruling_sync
-
-    try:
-        result = ruling_sync.sync(conn, rescan=rescan)
-    except OSError as e:
-        log.error("ruling fetch failed: %s", e)
-        return EXIT_TRANSIENT
-    return EXIT_INVALID if result.unreadable else 0

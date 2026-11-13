@@ -3,8 +3,6 @@
 全程無人。重跑冪等：同抽取者與版本已抽過的單元（以現行文字為準）不再抽，已有定論的閘門不再跑。
 """
 
-from __future__ import annotations
-
 import argparse
 import logging
 from collections.abc import Sequence
@@ -14,6 +12,7 @@ from typing import cast
 
 import psycopg
 
+from envcite_ontology.db import Conn
 from envcite_ontology.settings import DatabaseSettings
 from envcite_ontology.settings import load as load_settings
 from envcite_ontology.verification import definition_gates
@@ -40,7 +39,6 @@ from envcite_ontology.verification.reextract import due_units, review_notes
 
 log = logging.getLogger(__name__)
 
-Conn = psycopg.Connection[tuple[object, ...]]
 
 ALL_METHODS = (
     "numbers",

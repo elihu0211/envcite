@@ -1,7 +1,5 @@
 """gRPC 伺服器啟動；環境變數：ENVCITE_ONTOLOGY_DSN（必填）、ENVCITE_ONTOLOGY_GRPC_PORT。"""
 
-from __future__ import annotations
-
 import logging
 from collections.abc import Sequence
 from concurrent import futures
@@ -12,7 +10,6 @@ from grpc_reflection.v1alpha import reflection
 
 from envcite.ontology.v2 import ontology_pb2_grpc, reasoning_pb2_grpc
 from envcite_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
-from envcite_ontology import embedding, reranking
 from envcite_ontology.embedding import Embedder
 from envcite_ontology.reasoning_service import ReasoningServicer
 from envcite_ontology.reranking import Reranks
@@ -20,6 +17,7 @@ from envcite_ontology.service import DEFAULT_RERANK_CANDIDATES, OntologyServicer
 from envcite_ontology.settings import ServerSettings, load
 from envcite_ontology.store import OntologyStore
 from envcite_ontology.telemetry import register_annotation_health
+from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
 
 SERVICE_NAME = "envcite.ontology.v2.OntologyService"
@@ -116,11 +114,11 @@ def main() -> None:
         interceptors=interceptors,
         health_servicer=health_servicer,
         # 查詢路徑上不重試、逾時短：取不到向量就只用字面臂，不拖慢查詢
-        embedder=embedding.from_settings(settings, timeout=5.0),
+        embedder=config.embedder_from_settings(settings, timeout=5.0),
         lexical_max_df=settings.lexical_max_df,
         guidance_max_df=settings.guidance_max_df,
         # 精排同樣不重試；逾時以呼叫端剩下的期限為準，這裡只是上限
-        reranker=reranking.from_settings(settings, timeout=RERANK_TIMEOUT),
+        reranker=config.reranker_from_settings(settings, timeout=RERANK_TIMEOUT),
         rerank_candidates=settings.rerank_candidates,
     )
     stop_on_sigterm(server, health_servicer)

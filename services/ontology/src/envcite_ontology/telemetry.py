@@ -9,8 +9,6 @@
 標籤只用有限集合（結果、狀態、方法、判定）；租戶與案件內容不進指標。
 """
 
-from __future__ import annotations
-
 import logging
 from collections.abc import Iterable
 from typing import Any

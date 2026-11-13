@@ -12,22 +12,18 @@
 - `unchanged`：解析結果與已存的一致（來源改的是本系統不用的欄位）。
 """
 
-from __future__ import annotations
-
 import hashlib
 from dataclasses import dataclass
 from datetime import date
 from typing import cast
 
-import psycopg
 from psycopg.types.range import Range
 
+from envcite_ontology.db import Conn
 from envcite_ontology.ingest.law import ParsedLaw, ParsedUnit
 
-Conn = psycopg.Connection[tuple[object, ...]]
-
 #: 條文單元版本的效力區間：[起, 訖)；兩端皆空為「待確認」或「待命令」。
-Interval = Range[date] | None
+type Interval = Range[date] | None
 
 
 @dataclass(frozen=True)

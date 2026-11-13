@@ -1,12 +1,11 @@
 """閘門一：罰則的額度與帶單位的門檻值，與原文的數字一致，且比較符號含不含本數與原文的詞一致。"""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
-from envcite_ontology.verification.gates.base import Conn, GateResult, Unit, Verdict, unit_of
+from envcite_ontology.db import Conn
+from envcite_ontology.verification.gates.base import GateResult, Unit, Verdict, unit_of
 from envcite_ontology.verification.gates.cn_number import (
     QUALIFIER_COMPARATOR,
     amounts,

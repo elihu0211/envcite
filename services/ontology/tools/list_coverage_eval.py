@@ -30,10 +30,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import golden_retrieval_eval as gre
 import golden_set as gs
 
-from envcite_ontology import embedding
 from envcite_ontology.coverage import term_coverage
 from envcite_ontology.settings import ModelsSettings, ServerSettings, load
 from envcite_ontology.store import OntologyStore
+from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
 
 GRID = (0.0, 0.2, 0.34, 0.4, 0.5, 0.6, 0.7, 0.8)
@@ -63,7 +63,7 @@ def main() -> None:
         if r.status in ("scored", "negative")
     ]
     settings = load(ServerSettings)
-    embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0)
+    embedder = config.embedder_from_settings(load(ModelsSettings), timeout=30.0)
     on = date.today().isoformat()
     counts: dict[float, dict[str, int]] = {t: {} for t in GRID}
 

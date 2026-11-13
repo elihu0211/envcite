@@ -5,8 +5,6 @@
 「百」後只剩一位數字即個位數處理，並靠呼叫端以來源另給的日期交叉核對。
 """
 
-from __future__ import annotations
-
 import re
 from datetime import date
 

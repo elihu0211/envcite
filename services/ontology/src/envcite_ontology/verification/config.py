@@ -12,21 +12,19 @@
 不認得的鍵與指向不存在者的參照一律報錯。
 """
 
-from __future__ import annotations
-
 import os
 import re
 import subprocess
 import sys
+import tomllib
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import tomllib
-
 from envcite_ontology.embedding import Embedder
 from envcite_ontology.reranking import Reranker
+from envcite_ontology.settings import ModelsSettings
 from envcite_ontology.verification.models import AnthropicModel, ChatCompletionsModel, Model
 
 ROLES = ("extractor", "roundtrip", "independent_test", "panel")
@@ -90,7 +88,7 @@ def keychain_lookup(
             text=True,
             timeout=KEYCHAIN_TIMEOUT if timeout is None else timeout,
         )
-    except (OSError, subprocess.SubprocessError):
+    except OSError, subprocess.SubprocessError:
         return None
     return (done.stdout.strip() or None) if done.returncode == 0 else None
 
@@ -325,6 +323,16 @@ def load_reranker(
     keychain: Callable[[str], str | None] = keychain_lookup,
 ) -> Reranker | None:
     return parse_reranker(path.read_text(encoding="utf-8"), env, timeout=timeout, keychain=keychain)
+
+
+def embedder_from_settings(settings: ModelsSettings, *, timeout: float) -> Embedder | None:
+    """`[embedding]` 的嵌入模型；沒有設定檔或沒有這一段為 None，檢索只用字面臂。"""
+    return load_embedder(settings.models, timeout=timeout) if settings.models else None
+
+
+def reranker_from_settings(settings: ModelsSettings, *, timeout: float) -> Reranker | None:
+    """`[reranker]` 的精排模型；沒有設定檔或沒有這一段為 None，檢索不精排。"""
+    return load_reranker(settings.models, timeout=timeout) if settings.models else None
 
 
 @dataclass(frozen=True)

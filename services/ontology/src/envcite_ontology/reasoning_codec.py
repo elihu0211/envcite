@@ -4,8 +4,6 @@
 不悄悄落到 UNSPECIFIED。
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
@@ -436,7 +434,7 @@ def _number(value: Any) -> Decimal | None:
     """有限的十進位數；不是則 None。"""
     try:
         number = Decimal(value.value)
-    except (InvalidOperation, AttributeError):
+    except InvalidOperation, AttributeError:
         return None
     return number if number.is_finite() else None
 

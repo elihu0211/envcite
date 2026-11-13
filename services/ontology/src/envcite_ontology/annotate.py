@@ -4,8 +4,6 @@
 既有的 `from envcite_ontology.annotate import load` 不用改。
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import logging

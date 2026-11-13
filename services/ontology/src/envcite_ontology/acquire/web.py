@@ -4,8 +4,6 @@
 分類：連線、逾時、408／429／5xx 是端點問題，可退避重試；其餘 4xx 隔離該項；401／403 致命。
 """
 
-from __future__ import annotations
-
 import hashlib
 import time
 import urllib.error

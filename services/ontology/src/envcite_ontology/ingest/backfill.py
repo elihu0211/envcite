@@ -19,8 +19,6 @@
 已寫入的歷史版本日不在這次的目標裡（來源的歷次版本改變了），整部不寫，記 error 待人查看。
 """
 
-from __future__ import annotations
-
 import re
 import unicodedata
 from collections import Counter
@@ -28,14 +26,13 @@ from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import cast
 
-import psycopg
 from psycopg.types.range import Range
 
+from envcite_ontology.db import Conn
+from envcite_ontology.import_problems import Problem
 from envcite_ontology.ingest import history, law
-from envcite_ontology.ingest.law import ParsedLaw, ParsedUnit, Problem
+from envcite_ontology.ingest.law import ParsedLaw, ParsedUnit
 from envcite_ontology.ingest.write import add_unit_versions, content_sha, force_period
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 _LEVELS = {"constitution": "憲法", "statute": "法律", "regulation": "命令"}
 
@@ -120,7 +117,7 @@ class Plan:
 
     @property
     def ok(self) -> bool:
-        return not any(p.level == "error" for p in self.problems)
+        return not any(p.severity == "error" for p in self.problems)
 
 
 def plan(anchor: Anchor, current: Version, past: list[Version]) -> Plan:
@@ -206,7 +203,7 @@ def plan(anchor: Anchor, current: Version, past: list[Version]) -> Plan:
         }
         parsed = law.parse(raw, pcode=anchor.pcode, data_date=until)
         if not parsed.ok or parsed.version_date != when or not parsed.units:
-            codes = "、".join(p.code for p in parsed.problems if p.level == "error") or "無條文"
+            codes = "、".join(p.code for p in parsed.problems if p.severity == "error") or "無條文"
             out.problems.append(
                 Problem("warning", "history_unparsable", f"{when}：{codes}，更早的不寫")
             )
@@ -217,7 +214,7 @@ def plan(anchor: Anchor, current: Version, past: list[Version]) -> Plan:
                 Problem("warning", "paragraph_ambiguous", f"{when}：{ambiguous} 處")
             )
         out.problems.extend(
-            Problem(p.level, p.code, f"{when}：{p.detail}")
+            Problem(p.severity, p.code, f"{when}：{p.detail}")
             for p in parsed.problems
             if p.code == "stale_last_article"
         )

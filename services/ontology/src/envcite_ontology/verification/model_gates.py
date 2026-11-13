@@ -10,16 +10,15 @@
 任何閘門都不單獨構成接受；政策要求多個獨立方法同時通過。
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, cast
 
+from envcite_ontology.db import Conn
 from envcite_ontology.reasoning import evaluate
 from envcite_ontology.verification.context import context_block
 from envcite_ontology.verification.conventions import apply as with_conventions
-from envcite_ontology.verification.gates import Conn, GateResult, statement_as_of, unit_of
+from envcite_ontology.verification.gates import GateResult, statement_as_of, unit_of
 from envcite_ontology.verification.jsonutil import object_from
 from envcite_ontology.verification.models import Model, family_of
 
@@ -403,7 +402,7 @@ class IndependentTestGate:
         for c in cases:
             try:
                 facts = {str(k): float(v) for k, v in dict(c.get("facts") or {}).items()}
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 continue
             got = evaluate(conn, as_of, facts, include_unsettled=True).verdicts.get(statement_id)
             results.append(

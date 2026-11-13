@@ -25,6 +25,7 @@ from golden_retrieval_eval import load_scope
 
 from envcite_ontology import embedding, projection
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
+from envcite_ontology.verification import config
 
 log = logging.getLogger("embed_scope")
 
@@ -55,7 +56,7 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", stream=sys.stdout)
 
     pcodes = sorted(e["pcode"] for e in load_scope(args.scope)["laws"])
-    embedder = embedding.from_settings(load(ModelsSettings), timeout=120.0)
+    embedder = config.embedder_from_settings(load(ModelsSettings), timeout=120.0)
     if embedder is None:
         raise SystemExit("沒有設定嵌入端點（ENVCITE_ONTOLOGY_MODELS 的 [embedding]）")
     started = time.monotonic()

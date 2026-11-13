@@ -9,8 +9,6 @@
 半開，重試用盡的批次跳過、下次再補。
 """
 
-from __future__ import annotations
-
 import argparse
 import logging
 from pathlib import Path
@@ -18,18 +16,19 @@ from pathlib import Path
 import psycopg
 
 from envcite_jobkit import Policy
-from envcite_ontology import delegation, embedding, projection, violation
+from envcite_ontology import delegation, projection, violation
 from envcite_ontology.acquire.cli import EXIT_INVALID, SOURCES
 from envcite_ontology.acquire.engine import InvalidSnapshot, Source, acquire
+from envcite_ontology.db import Conn
 from envcite_ontology.embedding import Embedder
 from envcite_ontology.ingest import importer
 from envcite_ontology.ingest.importer import BatchRejected
 from envcite_ontology.projection import EmbeddingStopped
 from envcite_ontology.settings import SnapshotSettings, load
+from envcite_ontology.verification import config
 
 log = logging.getLogger(__name__)
 
-Conn = psycopg.Connection[tuple[object, ...]]
 
 EXIT_TRANSIENT = 1
 
@@ -81,6 +80,6 @@ def main() -> None:
     settings = load(SnapshotSettings)
 
     with psycopg.connect(settings.dsn) as conn:
-        embedder = embedding.from_settings(settings, timeout=60.0)
+        embedder = config.embedder_from_settings(settings, timeout=60.0)
         policy = Policy.load(defaults=POLICY)
         raise SystemExit(sync(conn, SOURCES[args.source], settings.snapshot_dir, embedder, policy))

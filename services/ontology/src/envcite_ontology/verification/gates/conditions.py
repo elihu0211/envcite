@@ -1,14 +1,12 @@
 """可執行閘門讀取的要件、使要件成立或不成立的事實值、但書與評估日期。"""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from typing import cast
 
+from envcite_ontology.db import Conn
 from envcite_ontology.reasoning.facts import CaseValue
-from envcite_ontology.verification.gates.base import Conn
 
 _RAW_TRUE = {"le": 0, "lt": -1, "ge": 0, "gt": 1, "eq": 0, "ne": 1}
 _RAW_FALSE = {"le": 1, "lt": 0, "ge": -1, "gt": 0, "eq": 1, "ne": 0}

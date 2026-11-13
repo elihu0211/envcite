@@ -37,7 +37,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import golden_set as gs
 
-from envcite_ontology import embedding
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
 from envcite_ontology.store import OntologyStore
 from envcite_ontology.verification import config
@@ -277,7 +276,7 @@ def main() -> None:
     items = [
         json.loads(line) for line in args.dataset.read_text(encoding="utf-8").splitlines() if line
     ]
-    embedder = embedding.from_settings(load(ModelsSettings), timeout=30.0)
+    embedder = config.embedder_from_settings(load(ModelsSettings), timeout=30.0)
     with OntologyStore.from_dsn(db.dsn) as store:
         segmenter = Segmenter(store.lexicon())
         lexical = search_all(store, segmenter, items, None, k=args.k, on=on.isoformat())
