@@ -32,11 +32,18 @@
     [Parameter]
     public string? Label { get; set; }
 
+    /// <summary>自訂各分頁連結產生器（例如工作台需保留其他查詢參數時使用）；未指定則只保留本頁路徑與 <see cref="Query"/>。</summary>
+    [Parameter]
+    public Func<TabItem, string>? HrefSelector { get; set; }
+
     /// <summary>
     /// 連結帶目前頁面的路徑：文件有 <c>&lt;base href="/"&gt;</c>，只寫 <c>?tab=</c> 會相對於根目錄，跳到別的頁面。
-    /// 只換自己的查詢參數；這個元件所在的頁面沒有別的查詢參數需要保留。
+    /// 預設只換自己的查詢參數；工作台頁面可透過 <see cref="HrefSelector"/> 保留脈絡參數。
     /// </summary>
-    private string Href(TabItem item) => $"{new Uri(Navigation.Uri).AbsolutePath}?{Query}={Uri.EscapeDataString(item.Key)}";
+    private string Href(TabItem item) =>
+        HrefSelector is not null
+            ? HrefSelector(item)
+            : $"{new Uri(Navigation.Uri).AbsolutePath}?{Query}={Uri.EscapeDataString(item.Key)}";
 
     /// <summary>分頁連結的 id；<see cref="TabPanel"/> 以它作為 <c>aria-labelledby</c>。</summary>
     public static string TabId(string key) => $"ep-tab-{key}";

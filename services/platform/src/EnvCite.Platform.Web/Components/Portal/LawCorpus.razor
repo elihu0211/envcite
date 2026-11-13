@@ -10,7 +10,7 @@
 
 <DocumentTitle Text="@L["法規體系與合規"]" />
 
-<PageHeader Title="@L["法規體系與合規"]" Description="@L["整合法律位階授權知識圖譜、編章節條文瀏覽與確定性規範推論評估。"]" />
+<PageHeader Title="@L["法規體系與合規"]" Description="@L["以凱爾森法規範位階（Stufenbau）呈現跨母法授權知識圖譜、條文結構與確定性合規推論。"]" />
 
 @if (!HasCorpus && !HasReasoning)
 {
@@ -18,243 +18,412 @@
 }
 else
 {
-    <div class="ep-stack">
-        <FormAlert Message="@Error" />
+    <div class="ep-workbench-shell">
+        @if (HasCorpus)
+        {
+            <form method="get" class="ep-workbench-bar" role="search" aria-label="@L["法規檢索與篩選"]">
+                <input type="hidden" name="tab" value="@ResolvedTab" />
+                <FormField For="f-law-cat" Label="@L["法規領域"]" Hint="@L["預設聚焦環境保護；改選「全部領域」可跨部會探索"]">
+                    <OptionSelect Id="f-law-cat" Name="cat" Label="@L["法規領域"]" Inline="false"
+                                  Options="CategoryOptions" Value="@SelectedCategoryValue" />
+                </FormField>
+                <FormField For="f-law-q" Label="@L["篩選法規"]" Hint="@L["輸入法規名稱或代碼"]">
+                    <input id="f-law-q" name="q" class="ep-input" value="@Query" placeholder="@L["例如 空氣污染"]" />
+                </FormField>
+                <FormField For="f-law-as-of" Label="@L["基準日"]" Hint="@L["留空表示現行"]">
+                    <input id="f-law-as-of" name="asOf" type="date" class="ep-input" value="@AsOf" />
+                </FormField>
+                <SubmitButton>@L["套用條件"]</SubmitButton>
+            </form>
+        }
 
-        <form method="get" class="ep-workbench-bar">
-            @if (!string.IsNullOrWhiteSpace(LocalId))
-            {
-                <input type="hidden" name="jurisdiction" value="@EffectiveJurisdiction" />
-                <input type="hidden" name="idScheme" value="@EffectiveScheme" />
-                <input type="hidden" name="localId" value="@LocalId" />
-            }
-            <FormField For="wb-query" Label="@L["篩選法規"]" Hint="@L["輸入法規名稱或代碼"]">
-                <input id="wb-query" name="q" class="ep-input" value="@Query" placeholder="@L["例如 空氣污染"]" />
-            </FormField>
-            <FormField For="law-as-of" Label="@L["基準日"]" Hint="@L["留空表示現行"]">
-                <input id="law-as-of" name="asOf" type="date" class="ep-input" value="@AsOf" />
-            </FormField>
-            <SubmitButton>@L["套用條件"]</SubmitButton>
-        </form>
-
-        <div class="ep-workbench @(HasReasoning ? "has-inspector" : "")">
+        <div class="ep-workbench @(HasCorpus ? "has-catalog" : "no-catalog")">
             @if (HasCorpus)
             {
-                <SectionCard Id="law-tree-title" Title="@L["法律樹結構"]">
-                    @if (_filteredRoots.Count > 0)
-                    {
-                        <nav class="ep-law-tree" aria-label="@L["法律樹結構"]">
-                            @foreach (var root in _filteredRoots)
+                <aside class="ep-workbench-catalog" aria-label="@L["法律樹結構"]">
+                    <SectionCard Id="law-tree-title" Title="@CatalogTitle">
+                        <div class="ep-facet-pills" aria-label="@L["快速切換領域"]">
+                            @foreach (var cat in QuickCategoryLinks)
                             {
-                                var isRootActive = IsSelected(root);
-                                var hasActiveChild = root.Children.Any(IsSelected);
-                                @if (root.Children.Count > 0)
-                                {
-                                    <details class="ep-tree-group" open="@(isRootActive || hasActiveChild || !string.IsNullOrWhiteSpace(Query))">
-                                        <summary class="ep-tree-summary">
-                                            <a class="ep-tree-link" href="@LawHref(root)" aria-current="@(isRootActive ? "page" : null)">
-                                                <span>@root.Title</span>
-                                                <span class="ep-tree-kind">@NormKindLabel(root.NormKind)</span>
-                                            </a>
-                                        </summary>
-                                        <ul class="ep-tree-children">
-                                            @foreach (var child in root.Children)
-                                            {
-                                                var isChildActive = IsSelected(child);
-                                                <li class="ep-tree-leaf">
-                                                    <a class="ep-tree-link" href="@LawHref(child)" aria-current="@(isChildActive ? "page" : null)">
-                                                        <span>@child.Title</span>
-                                                        <span class="ep-tree-kind">@NormKindLabel(child.NormKind)</span>
-                                                    </a>
-                                                </li>
-                                            }
-                                        </ul>
-                                    </details>
-                                }
-                                else
-                                {
-                                    <div class="ep-tree-leaf">
-                                        <a class="ep-tree-link" href="@LawHref(root)" aria-current="@(isRootActive ? "page" : null)">
-                                            <span>@root.Title</span>
-                                            <span class="ep-tree-kind">@NormKindLabel(root.NormKind)</span>
-                                        </a>
-                                    </div>
-                                }
+                                var active = string.Equals(SelectedCategoryValue, cat.Code, StringComparison.Ordinal);
+                                <a class="ep-preset-chip @(active ? "is-active" : string.Empty)"
+                                   href="@CategoryHref(cat.Code)"
+                                   aria-current="@(active ? "page" : null)">@cat.Label</a>
                             }
-                        </nav>
-                    }
-                    else if (_tree is { CatalogAvailable: true })
-                    {
-                        <p class="ep-page-description">@L["指定日期沒有有效的法規版本。"]</p>
-                    }
+                        </div>
 
-                    <details class="ep-tree-manual" open="@(_tree is null || !_tree.CatalogAvailable)">
-                        <summary class="ep-tree-manual-toggle">@L["依自然鍵直接查詢"]</summary>
-                        <form method="get" class="ep-form">
-                            <FormField For="law-jurisdiction" Label="@L["管轄"]" Hint="@L["例如 TW-CENTRAL"]">
-                                <input id="law-jurisdiction" name="jurisdiction" class="ep-input" value="@EffectiveJurisdiction" />
-                            </FormField>
-                            <FormField For="law-scheme" Label="@L["識別碼方案"]" Hint="@L["例如 moj_pcode"]">
-                                <input id="law-scheme" name="idScheme" class="ep-input" value="@EffectiveScheme" />
-                            </FormField>
-                            <FormField For="law-local-id" Label="@L["法規代碼"]" Hint="@L["例如 O0020001"]">
-                                <input id="law-local-id" name="localId" class="ep-input" value="@LocalId" />
-                            </FormField>
-                            <input type="hidden" name="asOf" value="@AsOf" />
-                            <SubmitButton>@L["查詢法規"]</SubmitButton>
-                        </form>
-                    </details>
-                </SectionCard>
-
-                <div class="ep-workbench-main">
-                    <SectionCard Id="ontology-graph-title" Title="@L["法律授權知識圖譜"]">
-                        @if (_graphJson is { Length: > 0 } graphJson)
+                        @if (!string.IsNullOrEmpty(_treeError))
                         {
-                            <details open>
-                                <summary class="ep-tree-manual-toggle">@L["展開或收合互動圖譜"]</summary>
-                                <div class="ep-graph-host" data-graph-host>
-                                    <div class="ep-graph-toolbar">
-                                        <span class="ep-page-description">@L["點選圖譜節點可直接檢視該法規條文與編章節結構。"]</span>
-                                        <div>
-                                            <button type="button" class="ep-preset-chip" data-graph-action="zoom-in">+</button>
-                                            <button type="button" class="ep-preset-chip" data-graph-action="zoom-out">-</button>
-                                            <button type="button" class="ep-preset-chip" data-graph-action="fit">@L["適應視窗"]</button>
-                                        </div>
-                                    </div>
-                                    <div class="ep-graph-canvas" data-ontology-graph="@graphJson"></div>
-                                </div>
-                            </details>
+                            <FormAlert Message="@_treeError" />
+                        }
+                        else if (!_treeLoaded)
+                        {
+                            <FormAlert Kind="AlertKind.Info" Message="@L["目前無法取得法規目錄，請稍後再試或改用自然鍵查詢。"]" />
+                        }
+                        else if (_filteredRoots.Count == 0)
+                        {
+                            <FormAlert Kind="AlertKind.Info" Message="@L["指定條件沒有符合的法規版本。"]" />
                         }
                         else
                         {
-                            <p class="ep-page-description">@L["請從左側「法律樹結構」點選法規，或輸入關鍵字篩選，以檢視局部授權關聯圖譜。"]</p>
-                        }
-                    </SectionCard>
-
-                    @if (_result is { } law)
-                    {
-                        <SectionCard Id="law-detail-title" Title="@law.Title">
-                            <dl class="ep-detail">
-                                <dt>@L["自然鍵"]</dt><dd><code class="ep-mono">@EffectiveJurisdiction / @EffectiveScheme / @LocalId</code></dd>
-                                <dt>@L["網址"]</dt><dd><code class="ep-mono">@law.Uri</code></dd>
-                                <dt>@L["語言"]</dt><dd>@law.Language</dd>
-                                @if (law.DateDocument is { Length: > 0 } docDate)
+                            <nav class="ep-law-tree" aria-label="@L["法規結構目錄"]">
+                                @foreach (var root in _visibleRoots)
                                 {
-                                    <dt>@L["制定日："]</dt><dd>@docDate</dd>
+                                    @RenderTreeNode(root)
                                 }
-                            </dl>
-                            @if (law.Articles.Count == 0 && law.Structure.Count == 0)
+                            </nav>
+                            @if (_filteredRoots.Count > MaxVisibleTreeRoots)
                             {
-                                <p class="ep-page-description">@L["這部法規在指定日期沒有條文。"]</p>
+                                <p class="ep-hint">@L["已顯示前 {0} 筆母法體系（共 {1} 筆）；請輸入關鍵字或選擇單一領域縮小範圍。", MaxVisibleTreeRoots, _filteredRoots.Count]</p>
                             }
-                            else if (law.Structure.Count > 0)
+                        }
+
+                        <details class="ep-tree-manual">
+                            <summary class="ep-tree-manual-toggle">@L["依自然鍵直接查詢"]</summary>
+                            <form method="get" class="ep-form">
+                                <input type="hidden" name="cat" value="ALL" />
+                                <input type="hidden" name="tab" value="@ResolvedTab" />
+                                <FormField For="f-jurisdiction" Label="@L["管轄"]" Hint="@L["例如 TW-CENTRAL"]">
+                                    <input id="f-jurisdiction" name="jurisdiction" class="ep-input" value="@(Jurisdiction ?? "TW-CENTRAL")" required />
+                                </FormField>
+                                <FormField For="f-scheme" Label="@L["識別碼方案"]" Hint="@L["例如 moj_pcode"]">
+                                    <input id="f-scheme" name="idScheme" class="ep-input" value="@(IdScheme ?? "moj_pcode")" required />
+                                </FormField>
+                                <FormField For="f-local-id" Label="@L["法規代碼"]" Hint="@L["例如 O0020001"]">
+                                    <input id="f-local-id" name="localId" class="ep-input" value="@LocalId" placeholder="O0020001" required />
+                                </FormField>
+                                <FormField For="f-manual-as-of" Label="@L["基準日"]" Hint="@L["留空表示現行"]">
+                                    <input id="f-manual-as-of" name="asOf" type="date" class="ep-input" value="@AsOf" />
+                                </FormField>
+                                <SubmitButton>@L["查詢法規"]</SubmitButton>
+                            </form>
+                        </details>
+                    </SectionCard>
+                </aside>
+            }
+
+            <div class="ep-workbench-main">
+                @if (HasCorpus)
+                {
+                    <PageTabs Items="WorkbenchTabs" Active="@ResolvedTab" Query="tab" HrefSelector="TabHref" Label="@L["工作台分頁"]" />
+
+                    <TabPanel Key="graph" Active="@(ResolvedTab == "graph")">
+                        <SectionCard Id="ontology-graph-title" Title="@GraphSectionTitle">
+                            @if (_graphResult is { Available: true } graph && graph.Nodes.Count > 0)
                             {
-                                <div class="ep-tree" role="region" aria-label="@L["法規結構目錄"]">
-                                    @foreach (var heading in law.Structure)
+                                var focusNode = FindFocusNode(graph);
+                                <div class="ep-graph-summary-wrap">
+                                    @if (focusNode is { InvalidationCount: > 0 })
                                     {
-                                        @RenderStructureNode(heading)
+                                        <FormAlert Kind="AlertKind.Error"
+                                                   Message="@L["本焦點法規含 {0} 項宣告違憲失效單元（資料來源：憲法法庭；未列出不等於無違憲失效）。", focusNode.InvalidationCount]" />
+                                    }
+
+                                    <StatGrid Items="GraphStats(graph, focusNode)" />
+
+                                    <div class="ep-graph-legend" aria-label="@L["法規位階圖例"]">
+                                        <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="0"></span>@L["Tier 0 憲法"]</span>
+                                        <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="1"></span>@L["Tier 1 法律／條例"]</span>
+                                        <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="2"></span>@L["Tier 2 法規命令"]</span>
+                                        <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="3"></span>@L["Tier 3 再授權規則"]</span>
+                                        <span class="ep-legend-item"><span class="ep-legend-line" data-kind="delegation"></span>@L["法律直接授權"]</span>
+                                        <span class="ep-legend-item"><span class="ep-legend-line" data-kind="sub"></span>@L["再授權"]</span>
+                                        <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="invalid"></span>@L["違憲失效（憲法法庭）"]</span>
+                                    </div>
+
+                                    @if (graph.Focus is not null)
+                                    {
+                                        <div class="ep-graph-filters">
+                                            @if (graph.ChildGroups.Count > 0)
+                                            {
+                                                <div class="ep-chip-row" aria-label="@L["依定名種類篩選子法規"]">
+                                                    <span class="ep-hint">@L["子法種類："]</span>
+                                                    <a class="ep-preset-chip @(string.IsNullOrEmpty(DocType) ? "is-active" : string.Empty)"
+                                                       href="@BuildFocusUrl(graph.Focus, docType: string.Empty)">
+                                                        @L["全部 ({0})", graph.ChildGroups.Sum(g => g.Count)]
+                                                    </a>
+                                                    @foreach (var grp in graph.ChildGroups)
+                                                    {
+                                                        var activeDoc = string.Equals(DocType, grp.DocumentType, StringComparison.Ordinal);
+                                                        <a class="ep-preset-chip @(activeDoc ? "is-active" : string.Empty)"
+                                                           href="@BuildFocusUrl(graph.Focus, docType: grp.DocumentType)">
+                                                            @($"{grp.DocumentType} ({grp.Count})")
+                                                        </a>
+                                                    }
+                                                </div>
+                                            }
+                                            <div class="ep-chip-row" aria-label="@L["展開深度與數量"]">
+                                                <span class="ep-hint">@L["子法上限："]</span>
+                                                @foreach (var cap in new[] { 20, 40, 60 })
+                                                {
+                                                    <a class="ep-preset-chip @(ResolvedChildLimit == cap ? "is-active" : string.Empty)"
+                                                       href="@BuildFocusUrl(graph.Focus, childLimit: cap)">@cap</a>
+                                                }
+                                                <span class="ep-hint">@L["階層深度："]</span>
+                                                @foreach (var depth in new[] { 1, 2, 4 })
+                                                {
+                                                    <a class="ep-preset-chip @(ResolvedUpDepth == depth && ResolvedDownDepth == depth ? "is-active" : string.Empty)"
+                                                       href="@BuildFocusUrl(graph.Focus, upDepth: depth, downDepth: depth)">
+                                                        @L["上下各 {0} 層", depth]
+                                                    </a>
+                                                }
+                                            </div>
+                                        </div>
                                     }
                                 </div>
+
+                                <div class="ep-graph-host" data-graph-host="true">
+                                    <div class="ep-graph-toolbar">
+                                        <div class="ep-chip-row">
+                                            <button type="button" class="ep-preset-chip" data-graph-action="layout-stufenbau" aria-pressed="true">@L["位階分層（Stufenbau）"]</button>
+                                            <button type="button" class="ep-preset-chip" data-graph-action="layout-concentric" aria-pressed="false">@L["焦點星系（同心圓）"]</button>
+                                            <button type="button" class="ep-preset-chip" data-graph-action="toggle-edge-labels" aria-pressed="false">@L["顯示授權條號"]</button>
+                                        </div>
+                                        <div class="ep-graph-zoom-actions">
+                                            <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-in" aria-label="@L["放大圖譜"]">+</button>
+                                            <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-out" aria-label="@L["縮小圖譜"]">-</button>
+                                            <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fit">@L["適應視窗"]</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="ep-graph-canvas" data-ontology-graph="@BuildGraphJson(graph)"
+                                         role="region" aria-label="@L["法律授權知識圖譜"]"></div>
+
+                                    <section class="ep-graph-inspector" data-graph-inspector="true" aria-live="polite" aria-label="@L["節點法學檢視"]">
+                                        <p class="ep-page-description">@L["點選圖譜中的任一法規範節點檢視法學位階、授權條文依據與關係細節；雙擊節點可直接以其為中心深入展開。"]</p>
+                                    </section>
+                                </div>
+
+                                @if (graph.ViolationLinks.Count > 0)
+                                {
+                                    <div class="ep-graph-subpanel">
+                                        <h3 class="ep-subpanel-title">@L["罰則與義務／授權條文連動 ({0})", graph.ViolationLinks.Count]</h3>
+                                        <DataTable Items="graph.ViolationLinks" Columns="ViolationColumns" Label="@L["罰則與義務條文連動"]" Plain="true" />
+                                    </div>
+                                }
+
+                                @if (graph.GuidanceLinks.Count > 0)
+                                {
+                                    <div class="ep-graph-subpanel">
+                                        <h3 class="ep-subpanel-title">@L["現行有效行政函釋錨點 ({0})", graph.GuidanceLinks.Count]</h3>
+                                        <FormAlert Kind="AlertKind.Info" Message="@L["行政規則僅供參考（行政程序法第 159 條），不拘束法院審判；法規命令須經法律明確授權。"]" />
+                                        <DataTable Items="graph.GuidanceLinks" Columns="GuidanceColumns" Label="@L["現行有效行政函釋"]" Plain="true" />
+                                    </div>
+                                }
+                            }
+                            else if (_graphResult is { Available: false })
+                            {
+                                <FormAlert Kind="AlertKind.Info" Message="@L["目前無法取得授權知識圖譜，請稍後再試或切換至「編章節條文」分頁。"]" />
                             }
                             else
                             {
-                                <DataTable Items="law.Articles" Columns="ArticleColumns" Label="@L["條文清單"]" Plain="true" />
+                                <EmptyState Icon="@Icons.Material.Outlined.AccountTree"
+                                            Title="@L["此範圍尚無授權關聯節點"]"
+                                            Description="@L["請切換「法規領域」、清空關鍵字，或從左側法規階層目錄點選任一部法規作為焦點。"]" />
                             }
                         </SectionCard>
-                    }
-                    else if (string.IsNullOrWhiteSpace(LocalId))
-                    {
-                        <EmptyState Icon="@Icons.Material.Outlined.AccountTree" Title="@L["從左側法律樹選擇法規"]" Description="@L["展開母法查看授權命令與子法規，點選任一法規即可檢視有效條文清單。"]" />
-                    }
-                </div>
-            }
+                    </TabPanel>
 
-            @if (HasReasoning)
-            {
-                <div class="ep-workbench-inspector">
-                    <SectionCard Id="reasoning-inspector-title" Title="@L["合規推論試算"]">
-                        <p class="ep-page-description">@L["選擇常見情境或輸入事實，由確定性推論引擎評估候選風險與缺漏要件。"]</p>
-                        <div class="ep-preset-row">
-                            <button type="button" class="ep-preset-chip" data-reasoning-preset="daily">@L["日常合規自評"]</button>
-                            <button type="button" class="ep-preset-chip" data-reasoning-preset="incident">@L["設備異常通報"]</button>
-                            <button type="button" class="ep-preset-chip" data-reasoning-preset="benefit">@L["超標與不法利得"]</button>
-                        </div>
-
-                        <PostForm Model="Input" FormName="portal-reasoning" OnValidSubmit="EvaluateAsync">
-                            <div data-reasoning-form>
-                                <FormField For="r-conduct-on" Label="@L["行為日"]" Hint="@L["YYYY-MM-DD（必填）"]">
-                                    <input id="r-conduct-on" name="Input.ConductOn" type="date" class="ep-input" value="@Input.ConductOn" required />
-                                </FormField>
-                                <FormField For="r-decided-on" Label="@L["裁處日"]" Hint="@L["YYYY-MM-DD（必填，不得早於行為日）"]">
-                                    <input id="r-decided-on" name="Input.DecidedOn" type="date" class="ep-input" value="@Input.DecidedOn" required />
-                                </FormField>
-                                <FormField For="r-benefit" Label="@L["違法所得利益"]" Hint="@L["元，十進位數字（選填，第 18 條第 2 項）"]">
-                                    <input id="r-benefit" name="Input.GainedBenefit" class="ep-input" value="@Input.GainedBenefit" />
-                                </FormField>
-
-                                <details class="ep-tree-manual">
-                                    <summary class="ep-tree-manual-toggle">@L["進階：裁處與時效參數"]</summary>
-                                    <FormField For="r-conduct-ended" Label="@L["行為終了日"]" Hint="@L["YYYY-MM-DD（選填，起算裁處權時效）"]">
-                                        <input id="r-conduct-ended" name="Input.ConductEndedOn" type="date" class="ep-input" value="@Input.ConductEndedOn" />
-                                    </FormField>
-                                    <SelectField For="r-criminal" Label="@L["同時觸犯刑事法律（第 26 條第 1 項）"]"
-                                                 Options="TriStateOptions" @bind-Value="Input.CriminalOffense" />
-                                    <SelectField For="r-confiscated" Label="@L["法院已宣告沒收（第 26 條第 1 項但書）"]"
-                                                 Options="TriStateOptions" @bind-Value="Input.CourtConfiscated" />
-                                    <FormField For="r-payment" Label="@L["刑事命支付金額"]" Hint="@L["元，十進位數字（選填）"]">
-                                        <input id="r-payment" name="Input.CriminalPayment" class="ep-input" value="@Input.CriminalPayment" />
-                                    </FormField>
-                                </details>
-
-                                <SubmitButton>@L["執行推論評估"]</SubmitButton>
-                            </div>
-                        </PostForm>
-                    </SectionCard>
-
-                    @if (_outcome is { } result)
-                    {
-                        <SectionCard Id="reasoning-result-title" Title="@L["推論候選結果"]">
-                            <StatGrid Items="SummaryStats(result)" />
-                            @if (result.Verdicts.Count == 0)
+                    <TabPanel Key="structure" Active="@(ResolvedTab == "structure")">
+                        @if (!string.IsNullOrEmpty(_lookupError))
+                        {
+                            <FormAlert Message="@_lookupError" />
+                        }
+                        else if (_result is { } law)
+                        {
+                            var focusNode = _graphResult is not null ? FindFocusNode(_graphResult) : null;
+                            if (focusNode is { InvalidationCount: > 0 })
                             {
-                                <p class="ep-page-description">@L["沒有已確認的規範陳述產生裁處結論；這不代表合規。"]</p>
+                                <FormAlert Kind="AlertKind.Error"
+                                           Message="@L["本焦點法規含 {0} 項宣告違憲失效單元（資料來源：憲法法庭；未列出不等於無違憲失效）。", focusNode.InvalidationCount]" />
                             }
-                            else
-                            {
-                                <DataTable Items="OrderedVerdicts(result)" Columns="VerdictColumns" Label="@L["候選結論"]" Plain="true" />
-                            }
-                        </SectionCard>
+                            <SectionCard Id="law-detail-title" Title="@law.Title">
+                                <div class="ep-structure-header">
+                                    <p class="ep-page-description">
+                                        @if (!string.IsNullOrEmpty(law.DateDocument))
+                                        {
+                                            <span>@L["制定日："]@law.DateDocument</span>
+                                            <span> · </span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(law.Language))
+                                        {
+                                            <span>@L["語言"]：@law.Language</span>
+                                            <span> · </span>
+                                        }
+                                        @if (HasSelectedLaw)
+                                        {
+                                            <span>@L["自然鍵"]：<code class="ep-mono">@($"{Jurisdiction}/{IdScheme}/{LocalId}")</code></span>
+                                            <span> · </span>
+                                        }
+                                        <span class="ep-mono">@law.Uri</span>
+                                    </p>
+                                    @if (_graphResult?.Focus is not null)
+                                    {
+                                        <a class="ep-btn ep-btn-quiet" href="@BuildFocusUrl(_graphResult.Focus, tab: "graph")">@L["在授權知識圖譜檢視"]</a>
+                                    }
+                                </div>
+
+                                <StatGrid Items="StructureStats(law, focusNode)" />
+
+                                @if (law.Articles.Count == 0)
+                                {
+                                    <FormAlert Kind="AlertKind.Info" Message="@L["這部法規在指定日期沒有條文。"]" />
+                                }
+                                else
+                                {
+                                    @if (law.Structure.Count > 0)
+                                    {
+                                        <details class="ep-structure-box" open>
+                                            <summary class="ep-tree-manual-toggle">@L["法規結構目錄"]</summary>
+                                            <ul class="ep-structure-list">
+                                                @foreach (var heading in law.Structure)
+                                                {
+                                                    @RenderStructureNode(heading, 0)
+                                                }
+                                            </ul>
+                                        </details>
+                                    }
+                                    <DataTable Items="law.Articles" Columns="ArticleColumns" Label="@L["條文清單"]" Plain="true" />
+                                }
+                            </SectionCard>
+                        }
+                        else
+                        {
+                            <SectionCard Id="law-detail-empty" Title="@L["編章節與有效條文"]">
+                                <EmptyState Icon="@Icons.Material.Outlined.MenuBook"
+                                            Title="@L["從左側目錄或知識圖譜選擇法規"]"
+                                            Description="@L["點選左側法規階層目錄中的任一部法規，或在「授權知識圖譜」分頁中雙擊節點，即可檢視編章節結構與有效條文清單。"]" />
+                            </SectionCard>
+                        }
+                    </TabPanel>
+
+                    @if (HasReasoning)
+                    {
+                        <TabPanel Key="reasoning" Active="@(ResolvedTab == "reasoning")">
+                            @RenderReasoningWorkspace()
+                        </TabPanel>
                     }
-                </div>
-            }
+                }
+                else if (HasReasoning)
+                {
+                    @RenderReasoningWorkspace()
+                }
+            </div>
         </div>
     </div>
 }
 
 @code {
+    private const int MaxVisibleTreeRoots = 250;
+
+    private static readonly string[] DomainCodes = ["O", "ALL", "A", "D", "G", "J", "K", "L", "N"];
+
     [SupplyParameterFromQuery(Name = "jurisdiction")] public string? Jurisdiction { get; set; }
     [SupplyParameterFromQuery(Name = "idScheme")] public string? IdScheme { get; set; }
     [SupplyParameterFromQuery(Name = "localId")] public string? LocalId { get; set; }
     [SupplyParameterFromQuery(Name = "asOf")] public string? AsOf { get; set; }
     [SupplyParameterFromQuery(Name = "q")] public string? Query { get; set; }
+    [SupplyParameterFromQuery(Name = "cat")] public string? Category { get; set; }
+    [SupplyParameterFromQuery(Name = "upDepth")] public int? UpDepth { get; set; }
+    [SupplyParameterFromQuery(Name = "downDepth")] public int? DownDepth { get; set; }
+    [SupplyParameterFromQuery(Name = "childLimit")] public int? ChildLimit { get; set; }
+    [SupplyParameterFromQuery(Name = "docType")] public string? DocType { get; set; }
+    [SupplyParameterFromQuery(Name = "tab")] public string? ActiveTabQuery { get; set; }
 
-    private PortalLawTreeResult? _tree;
+    private bool _treeLoaded;
+    private string? _treeError;
+    private IReadOnlyList<PortalLawTreeNode> _treeRoots = [];
     private IReadOnlyList<PortalLawTreeNode> _filteredRoots = [];
-    private string? _graphJson;
+    private IReadOnlyList<PortalLawTreeNode> _visibleRoots = [];
+    private PortalLawGraphResult? _graphResult;
     private PortalLawCorpusResult? _result;
-    private PortalReasoningOutcome? _outcome;
+    private PortalReasoningOutcome? _reasoningOutcome;
+    private string? _lookupError;
+    private readonly HashSet<string> _activeBranchKeys = new(StringComparer.Ordinal);
 
     private bool HasCorpus => Modules.IsEnabled(Tenant, ModuleKeys.LawCorpus);
     private bool HasReasoning => Modules.IsEnabled(Tenant, ModuleKeys.NormativeReasoning);
+    private bool HasSelectedLaw =>
+        !string.IsNullOrWhiteSpace(Jurisdiction)
+        && !string.IsNullOrWhiteSpace(IdScheme)
+        && !string.IsNullOrWhiteSpace(LocalId);
 
-    private string EffectiveJurisdiction => string.IsNullOrWhiteSpace(Jurisdiction) ? "TW-CENTRAL" : Jurisdiction.Trim();
-    private string EffectiveScheme => string.IsNullOrWhiteSpace(IdScheme) ? "moj_pcode" : IdScheme.Trim();
+    private int ResolvedUpDepth => Math.Clamp(UpDepth ?? 2, 1, 4);
+    private int ResolvedDownDepth => Math.Clamp(DownDepth ?? 2, 1, 4);
+    private int ResolvedChildLimit => Math.Clamp(ChildLimit ?? 20, 1, 60);
 
-    private IReadOnlyList<ColumnDef<PortalLawArticle>> ArticleColumns =>
-    [
-        new() { Title = L["條號"], Class = "ep-keep", Labeled = false, Cell = a => @<text>@a.Number</text> },
-        new() { Title = "URI", Cell = a => @<text><code class="ep-mono">@a.Uri</code></text> },
-    ];
+    private string SelectedCategoryValue
+    {
+        get
+        {
+            if (string.Equals(Category, "ALL", StringComparison.OrdinalIgnoreCase))
+                return "ALL";
+            if (!string.IsNullOrWhiteSpace(Category) && Category.Trim().Length == 1 && char.IsAsciiLetterUpper(Category.Trim()[0]))
+                return Category.Trim();
+            if (!string.IsNullOrWhiteSpace(Query) || HasSelectedLaw)
+                return "ALL";
+            return "O";
+        }
+    }
+
+    private string? EffectiveCategoryPrefix => SelectedCategoryValue == "ALL" ? null : SelectedCategoryValue;
+
+    private string ResolvedTab
+    {
+        get
+        {
+            if (_reasoningOutcome is not null || !string.IsNullOrEmpty(Error))
+                return HasReasoning ? "reasoning" : "graph";
+            if (string.Equals(ActiveTabQuery, "structure", StringComparison.OrdinalIgnoreCase))
+                return "structure";
+            if (string.Equals(ActiveTabQuery, "reasoning", StringComparison.OrdinalIgnoreCase) && HasReasoning)
+                return "reasoning";
+            return "graph";
+        }
+    }
+
+    private string CatalogTitle => L["法律樹結構 ({0})", _filteredRoots.Count];
+
+    private string GraphSectionTitle => _graphResult?.Focus is not null && FindFocusNode(_graphResult) is { } focus
+        ? L["授權知識圖譜 · {0}", focus.Title]
+        : SelectedCategoryValue == "ALL"
+            ? L["授權知識圖譜 · 全域總覽"]
+            : L["授權知識圖譜 · {0}", DomainLabel(SelectedCategoryValue)];
+
+    private string DomainLabel(string code) => code switch
+    {
+        "O" => L["O · 環境保護"],
+        "ALL" => L["全部領域"],
+        "A" => L["A · 憲政體制"],
+        "D" => L["D · 內政營建"],
+        "G" => L["G · 財政賦稅"],
+        "J" => L["J · 經濟能源"],
+        "K" => L["K · 交通運輸"],
+        "L" => L["L · 衛生食藥"],
+        "N" => L["N · 勞動職安"],
+        _ => code,
+    };
+
+    private IReadOnlyList<SelectOption> CategoryOptions =>
+        [.. DomainCodes.Select(code => new SelectOption(code, DomainLabel(code)))];
+
+    private IReadOnlyList<(string Code, string Label)> QuickCategoryLinks =>
+        [.. DomainCodes.Select(code => (code, DomainLabel(code)))];
+
+    private IReadOnlyList<TabItem> WorkbenchTabs
+    {
+        get
+        {
+            var items = new List<TabItem>
+            {
+                new("graph", L["授權知識圖譜"], _graphResult?.Nodes.Count),
+                new("structure", L["編章節條文"], _result?.Articles.Count),
+            };
+            if (HasReasoning)
+                items.Add(new("reasoning", L["合規推論試算"], _reasoningOutcome?.Verdicts.Count));
+            return items;
+        }
+    }
 
     private IReadOnlyList<SelectOption> TriStateOptions =>
     [
@@ -263,80 +432,211 @@ else
         new("false", L["否"]),
     ];
 
+    private IReadOnlyList<ColumnDef<PortalLawArticle>> ArticleColumns =>
+    [
+        new() { Title = L["條號"], Class = "ep-keep", Labeled = false, Cell = a => @<text><code class="ep-mono">@a.Number</code></text> },
+        new() { Title = L["網址"], Cell = a => @<text><code class="ep-mono">@a.Uri</code></text> },
+    ];
+
+    private IReadOnlyList<ColumnDef<PortalArticleViolationLink>> ViolationColumns =>
+    [
+        new() { Title = L["處罰條文"], Class = "ep-keep", Labeled = false, Cell = v => @<text><code class="ep-mono">@v.PenaltyArticle</code></text> },
+        new()
+        {
+            Title = L["連動類型"],
+            Cell = v => @<text><StatusBadge Tone="@(v.Kind == "duty" ? "warning" : "info")">@ViolationKindLabel(v.Kind)</StatusBadge></text>,
+        },
+        new() { Title = L["被連動義務／規範條文"], Cell = v => @<text><code class="ep-mono">@v.TargetArticle</code> <span class="ep-hint">@v.TargetPath</span></text> },
+    ];
+
+    private IReadOnlyList<ColumnDef<PortalGuidanceLink>> GuidanceColumns =>
+    [
+        new() { Title = L["關聯條號"], Class = "ep-keep", Labeled = false, Cell = g => @<text><code class="ep-mono">@g.ArticleNumber</code></text> },
+        new() { Title = L["發文字號"], Cell = g => @<text><code class="ep-mono">@g.DocumentNo</code></text> },
+        new() { Title = L["機關與日期"], Cell = g => @<text>@g.Issuer · @g.IssuedOn</text> },
+        new()
+        {
+            Title = L["主旨"],
+            Cell = g => @<text>
+                @if (!string.IsNullOrEmpty(g.SourceUrl))
+                {
+                    <a class="ep-link" href="@g.SourceUrl" target="_blank" rel="noopener noreferrer">@g.Subject</a>
+                }
+                else
+                {
+                    @g.Subject
+                }
+            </text>,
+        },
+    ];
+
     private IReadOnlyList<ColumnDef<PortalReasoningVerdict>> VerdictColumns =>
     [
         new() { Title = L["法規"], Class = "ep-keep", Labeled = false, Cell = v => @<text>@v.LawTitle</text> },
+        new() { Title = L["陳述"], Cell = v => @<text><code class="ep-mono">@v.StatementId</code></text> },
         new() { Title = L["候選判定"], Cell = v => @<text><StatusBadge Tone="@VerdictTone(v.Verdict)">@VerdictLabel(v.Verdict)</StatusBadge></text> },
-        new() { Title = L["缺漏事實數"], Cell = v => @<text>@v.MissingCount</text> },
+        new() { Title = L["缺漏事實數"], Numeric = true, Cell = v => @<text>@v.MissingCount</text> },
+    ];
+
+    private IReadOnlyList<StatItem> GraphStats(PortalLawGraphResult g, PortalLawGraphNode? focus) =>
+    [
+        new(L["圖譜節點"], g.Nodes.Count.ToString(CultureInfo.CurrentCulture), focus?.DocumentType),
+        new(L["授權連線"], g.Edges.Count.ToString(CultureInfo.CurrentCulture), g.Edges.Any(e => e.Kind == "sub_delegation") ? L["含再授權鏈"].Value : null),
+        new(L["罰則條文連動"], g.ViolationLinks.Count.ToString(CultureInfo.CurrentCulture)),
+        new(L["有效行政函釋"], (focus?.GuidanceCount ?? g.GuidanceLinks.Count).ToString(CultureInfo.CurrentCulture), L["行政程序法第 159 條"]),
+    ];
+
+    private IReadOnlyList<StatItem> StructureStats(PortalLawCorpusResult law, PortalLawGraphNode? focus) =>
+    [
+        new(L["條文總數"], law.Articles.Count.ToString(CultureInfo.CurrentCulture)),
+        new(L["結構章節"], law.Structure.Count.ToString(CultureInfo.CurrentCulture)),
+        new(L["直接授權子法"], (focus?.TotalChildren ?? 0).ToString(CultureInfo.CurrentCulture)),
+        new(L["有效行政函釋"], (focus?.GuidanceCount ?? 0).ToString(CultureInfo.CurrentCulture)),
     ];
 
     private IReadOnlyList<StatItem> SummaryStats(PortalReasoningOutcome r) =>
     [
-        new(L["裁處時結論"], r.Verdicts.Count.ToString()),
-        new(L["期間法律變更組"], r.EarlierCount.ToString()),
-        new(L["違憲失效排除"], r.InvalidatedCount.ToString()),
-        new(L["授權鏈缺口"], r.DelegationGapCount.ToString()),
-        new(L["語料未涵蓋法規"], r.UncoveredLawCount.ToString()),
+        new(L["裁處時結論"], r.Verdicts.Count.ToString(CultureInfo.CurrentCulture)),
+        new(L["期間法律變更組"], r.EarlierCount.ToString(CultureInfo.CurrentCulture)),
+        new(L["違憲失效排除"], r.InvalidatedCount.ToString(CultureInfo.CurrentCulture)),
+        new(L["授權鏈缺口"], r.DelegationGapCount.ToString(CultureInfo.CurrentCulture)),
+        new(L["語料未涵蓋法規"], r.UncoveredLawCount.ToString(CultureInfo.CurrentCulture)),
     ];
 
     protected override async Task OnInitializedAsync()
     {
         base.OnInitialized();
-        var defaultDate = !string.IsNullOrWhiteSpace(AsOf)
-            ? AsOf.Trim()
-            : DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8)).ToString("yyyy-MM-dd");
-        if (string.IsNullOrEmpty(Input.ConductOn))
-            Input.ConductOn = defaultDate;
-        if (string.IsNullOrEmpty(Input.DecidedOn))
-            Input.DecidedOn = defaultDate;
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        if (string.IsNullOrEmpty(Input.ConductOn)) Input.ConductOn = today;
+        if (string.IsNullOrEmpty(Input.DecidedOn)) Input.DecidedOn = today;
 
-        if (!HasCorpus)
-            return;
+        if (!HasCorpus) return;
 
         var asOf = string.IsNullOrWhiteSpace(AsOf) ? null : AsOf.Trim();
-        var treeOutcome = await LawCorpusService.TreeAsync(User, null, asOf, CancellationToken.None);
-        if (treeOutcome is { IsOk: true, Value: { } tree })
+        var treeOutcome = await LawCorpusService.TreeByCategoryAsync(User, null, EffectiveCategoryPrefix, asOf, CancellationToken.None);
+        if (treeOutcome.IsOk && treeOutcome.Value is { } tree)
         {
-            _tree = tree;
-            _filteredRoots = FilterTree(tree.Roots, Query);
-            _graphJson = BuildGraphJson(_filteredRoots);
+            _treeLoaded = tree.CatalogAvailable;
+            _treeRoots = tree.Roots;
+            _filteredRoots = FilterNodes(_treeRoots, Query);
+            _visibleRoots = _filteredRoots.Count > MaxVisibleTreeRoots
+                ? [.. _filteredRoots.Take(MaxVisibleTreeRoots)]
+                : _filteredRoots;
+        }
+        else if (!treeOutcome.IsOk)
+        {
+            _treeError = treeOutcome.Localized() ?? L["查詢法規失敗。"].Value;
         }
 
-        if (string.IsNullOrWhiteSpace(LocalId))
-            return;
-
-        var outcome = await LawCorpusService.BrowseAsync(
-            User,
-            EffectiveJurisdiction,
-            EffectiveScheme,
-            LocalId.Trim(),
-            asOf,
-            CancellationToken.None);
-
-        if (!outcome.IsOk)
+        if (HasSelectedLaw)
         {
-            Error = outcome.Localized() ?? L["查詢法規失敗。"];
-            return;
-        }
+            var focusKey = new PortalLawKey(Jurisdiction!, IdScheme!, LocalId!);
+            var graphOutcome = await LawCorpusService.GraphAsync(
+                User,
+                new PortalLawGraphQuery(
+                    focusKey,
+                    asOf,
+                    CategoryPrefix: null,
+                    UpstreamDepth: ResolvedUpDepth,
+                    DownstreamDepth: ResolvedDownDepth,
+                    ChildLimit: ResolvedChildLimit,
+                    ChildDocumentType: string.IsNullOrWhiteSpace(DocType) ? null : DocType.Trim()),
+                CancellationToken.None);
+            if (graphOutcome.IsOk && graphOutcome.Value is { } graph)
+                _graphResult = graph;
 
-        _result = outcome.Value;
+            var outcome = await LawCorpusService.BrowseAsync(
+                User, Jurisdiction, IdScheme, LocalId, asOf, CancellationToken.None);
+            if (outcome.IsOk)
+                _result = outcome.Value;
+            else
+                _lookupError = outcome.Localized() ?? L["查詢法規失敗。"];
+
+            CollectActiveBranch(NodeKey(Jurisdiction!, IdScheme!, LocalId!));
+        }
+        else
+        {
+            var graphOutcome = await LawCorpusService.GraphAsync(
+                User,
+                new PortalLawGraphQuery(
+                    Focus: null,
+                    AsOf: asOf,
+                    CategoryPrefix: EffectiveCategoryPrefix,
+                    UpstreamDepth: 2,
+                    DownstreamDepth: 2,
+                    ChildLimit: 24),
+                CancellationToken.None);
+            if (graphOutcome.IsOk && graphOutcome.Value is { } graph)
+                _graphResult = graph;
+        }
     }
+
+    private RenderFragment RenderReasoningWorkspace() =>
+        @<SectionCard Id="reasoning-panel-title" Title="@L["合規推論試算"]">
+            <p class="ep-page-description">@L["選擇常見情境或輸入事實，由確定性推論引擎評估候選風險與缺漏要件。"]</p>
+            <div class="ep-preset-row">
+                <button type="button" class="ep-preset-chip" data-reasoning-preset="daily">@L["日常合規自評"]</button>
+                <button type="button" class="ep-preset-chip" data-reasoning-preset="incident">@L["設備異常通報"]</button>
+                <button type="button" class="ep-preset-chip" data-reasoning-preset="benefit">@L["超標與不法利得"]</button>
+            </div>
+            <FormAlert Message="@Error" />
+            <PostForm Model="Input" FormName="portal-reasoning" OnValidSubmit="EvaluateAsync">
+                <div class="ep-reasoning-grid">
+                    <FormField For="r-conduct-on" Label="@L["行為日"]" Hint="@L["YYYY-MM-DD（必填）"]">
+                        <input id="r-conduct-on" name="Input.ConductOn" type="date" class="ep-input" value="@Input.ConductOn" required />
+                    </FormField>
+                    <FormField For="r-decided-on" Label="@L["裁處日"]" Hint="@L["YYYY-MM-DD（必填，不得早於行為日）"]">
+                        <input id="r-decided-on" name="Input.DecidedOn" type="date" class="ep-input" value="@Input.DecidedOn" required />
+                    </FormField>
+                    <FormField For="r-benefit" Label="@L["違法所得利益"]" Hint="@L["元，十進位數字（選填，第 18 條第 2 項）"]">
+                        <input id="r-benefit" name="Input.GainedBenefit" class="ep-input" value="@Input.GainedBenefit" />
+                    </FormField>
+                </div>
+                <details class="ep-tree-manual">
+                    <summary class="ep-tree-manual-toggle">@L["進階：裁處與時效參數"]</summary>
+                    <div class="ep-reasoning-grid">
+                        <FormField For="r-conduct-ended" Label="@L["行為終了日"]" Hint="@L["YYYY-MM-DD（選填，起算裁處權時效）"]">
+                            <input id="r-conduct-ended" name="Input.ConductEndedOn" type="date" class="ep-input" value="@Input.ConductEndedOn" />
+                        </FormField>
+                        <SelectField For="r-criminal" Label="@L["同時觸犯刑事法律（第 26 條第 1 項）"]"
+                                     Options="TriStateOptions" @bind-Value="Input.CriminalOffense" />
+                        <SelectField For="r-confiscated" Label="@L["法院已宣告沒收（第 26 條第 1 項但書）"]"
+                                     Options="TriStateOptions" @bind-Value="Input.CourtConfiscated" />
+                        <FormField For="r-payment" Label="@L["刑事命支付金額"]" Hint="@L["元，十進位數字（選填）"]">
+                            <input id="r-payment" name="Input.CriminalPayment" class="ep-input" value="@Input.CriminalPayment" />
+                        </FormField>
+                    </div>
+                </details>
+                <SubmitButton>@L["執行推論評估"]</SubmitButton>
+            </PostForm>
+
+            @if (_reasoningOutcome is { } result)
+            {
+                <div class="ep-reasoning-result">
+                    <StatGrid Items="SummaryStats(result)" />
+                    @if (result.Verdicts.Count == 0)
+                    {
+                        <p class="ep-page-description">@L["沒有已確認的規範陳述產生裁處結論；這不代表合規。"]</p>
+                    }
+                    else
+                    {
+                        <DataTable Items="result.Verdicts" Columns="VerdictColumns" Label="@L["候選結論"]" Plain="true" />
+                    }
+                </div>
+            }
+        </SectionCard>;
 
     private async Task EvaluateAsync()
     {
-        if (!HasReasoning)
-            return;
+        if (!HasReasoning) return;
 
         var evaluated = await ReasoningService.EvaluateAsync(
             User,
             new PortalReasoningInput(
-                Input.ConductOn,
-                Input.DecidedOn,
-                Input.ConductEndedOn,
+                Input.ConductOn, Input.DecidedOn, Input.ConductEndedOn,
                 ParseTriState(Input.CriminalOffense),
                 ParseTriState(Input.CourtConfiscated),
-                Input.CriminalPayment,
-                Input.GainedBenefit),
+                Input.CriminalPayment, Input.GainedBenefit),
             CancellationToken.None);
 
         if (!evaluated.IsOk)
@@ -344,144 +644,285 @@ else
             Error = evaluated.Localized() ?? L["推論評估失敗，請稍後再試。"];
             return;
         }
-
-        _outcome = evaluated.Value;
+        _reasoningOutcome = evaluated.Value;
     }
 
-    private static IReadOnlyList<PortalLawTreeNode> FilterTree(IReadOnlyList<PortalLawTreeNode> roots, string? query)
+    private string BuildGraphJson(PortalLawGraphResult graph)
     {
-        if (string.IsNullOrWhiteSpace(query))
-            return roots;
-        var q = query.Trim();
-        bool Matches(PortalLawTreeNode n) =>
-            n.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
-            || n.LocalId.Contains(q, StringComparison.OrdinalIgnoreCase);
-
-        var filtered = new List<PortalLawTreeNode>();
-        foreach (var root in roots)
+        var nodes = graph.Nodes.Select(n => new
         {
-            var kids = root.Children.Where(Matches).ToList();
-            if (Matches(root) || kids.Count > 0)
-                filtered.Add(root with { Children = kids.Count > 0 ? kids : root.Children });
-        }
-        return filtered;
+            id = NodeKey(n.Key.Jurisdiction, n.Key.IdScheme, n.Key.LocalId),
+            jurisdiction = n.Key.Jurisdiction,
+            idScheme = n.Key.IdScheme,
+            localId = n.Key.LocalId,
+            title = n.Title,
+            uri = n.Uri,
+            normKind = n.NormKind,
+            documentType = n.DocumentType,
+            dateDocument = n.DateDocument ?? string.Empty,
+            hierarchyTier = n.HierarchyTier,
+            totalChildren = n.TotalChildren,
+            truncatedChildren = n.TruncatedChildren,
+            articleCount = n.ArticleCount,
+            invalidationCount = n.InvalidationCount,
+            guidanceCount = n.GuidanceCount,
+            focus = graph.Focus is not null
+                && string.Equals(graph.Focus.Jurisdiction, n.Key.Jurisdiction, StringComparison.Ordinal)
+                && string.Equals(graph.Focus.IdScheme, n.Key.IdScheme, StringComparison.Ordinal)
+                && string.Equals(graph.Focus.LocalId, n.Key.LocalId, StringComparison.Ordinal),
+            focusHref = BuildFocusUrl(n.Key, tab: "graph", childLimit: 20, docType: string.Empty),
+            structureHref = BuildFocusUrl(n.Key, tab: "structure"),
+            expandHref = n.TruncatedChildren > 0 ? BuildFocusUrl(n.Key, tab: "graph", childLimit: 60) : null,
+        });
+
+        var edges = graph.Edges.Select(e => new
+        {
+            source = NodeKey(e.Source.Jurisdiction, e.Source.IdScheme, e.Source.LocalId),
+            target = NodeKey(e.Target.Jurisdiction, e.Target.IdScheme, e.Target.LocalId),
+            kind = e.Kind,
+            anchorArticles = e.AnchorArticles,
+            allRooted = e.AllRooted,
+        });
+
+        var labels = new
+        {
+            tier0 = L["Tier 0 憲法"].Value,
+            tier1 = L["Tier 1 法律／條例"].Value,
+            tier2 = L["Tier 2 法規命令"].Value,
+            tier3 = L["Tier 3 再授權規則"].Value,
+            guidanceMarker = L["函釋"].Value,
+            childMarker = L["子法"].Value,
+            clusterSuffix = L["部授權法規（點擊展開）"].Value,
+            focusButton = L["以此法為中心重建圖譜"].Value,
+            structureButton = L["檢視編章節條文"].Value,
+            expandButton = L["展開完整 +{n} 部授權法規"].Value,
+            parentsHeading = L["授權母法依據（上位規範）"].Value,
+            childrenHeading = L["授權訂定子法規（下位規範）"].Value,
+            delegationKind = L["法律直接授權"].Value,
+            subDelegationKind = L["再授權"].Value,
+            anchorPrefix = L["授權條文："].Value,
+            invalidationBadge = L["{n} 項違憲失效"].Value,
+            invalidationSource = L["資料來源：憲法法庭；未列出不等於無違憲失效。"].Value,
+            guidanceCountText = L["{n} 件有效行政函釋（行政程序法第 159 條）"].Value,
+            articlesText = L["{n} 條條文"].Value,
+            childrenCountText = L["{n} 部子法規"].Value,
+            truncatedNote = L["尚有 {n} 部下位法規未納入目前上限；點擊「展開完整」或藍色膠囊可顯示全部。"].Value,
+            noEdgesText = L["此範圍內尚無直接授權連線。"].Value,
+            selectPrompt = L["點選圖譜中的任一法規範節點檢視法學位階、授權條文依據與關係細節；雙擊節點可直接以其為中心深入展開。"].Value,
+        };
+
+        return JsonSerializer.Serialize(new { nodes, edges, labels });
     }
 
-    private string? BuildGraphJson(IReadOnlyList<PortalLawTreeNode> roots)
+    private RenderFragment RenderTreeNode(PortalLawTreeNode node) => __builder =>
     {
-        if (roots.Count == 0)
-            return null;
+        var key = NodeKey(node.Jurisdiction, node.IdScheme, node.LocalId);
+        var active = string.Equals(Jurisdiction, node.Jurisdiction, StringComparison.Ordinal)
+            && string.Equals(IdScheme, node.IdScheme, StringComparison.Ordinal)
+            && string.Equals(LocalId, node.LocalId, StringComparison.Ordinal);
+        var href = BuildNodeHref(node);
+        var kindText = string.IsNullOrEmpty(node.DocumentType) ? NormKindLabel(node.NormKind) : node.DocumentType;
 
-        const int maxEgoNodes = 30;
-        const int maxFilteredNodes = 35;
-
-        IReadOnlyList<PortalLawTreeNode> targetRoots;
-        if (!string.IsNullOrWhiteSpace(LocalId))
+        if (node.Children.Count > 0)
         {
-            var matchedRoot = FindContainingRoot(roots);
-            if (matchedRoot is null)
-                return null;
-            targetRoots = [TrimEgoSubtree(matchedRoot, maxEgoNodes)];
-        }
-        else if (!string.IsNullOrWhiteSpace(Query))
-        {
-            if (CountNodes(roots) > maxFilteredNodes)
-                return null;
-            targetRoots = roots;
+            <details class="ep-tree-group" open="@IsBranchOpen(key)">
+                <summary class="ep-tree-summary">
+                    <a class="ep-tree-link" href="@href" aria-current="@(active ? "page" : null)">
+                        <span>@node.Title</span>
+                        <span class="ep-tree-kind">@kindText</span>
+                        @if (node.ChildCount > 0 || node.Children.Count > 0)
+                        {
+                            <span class="ep-tree-count">@(node.ChildCount > 0 ? node.ChildCount : node.Children.Count)</span>
+                        }
+                    </a>
+                </summary>
+                <ul class="ep-tree-children">
+                    @foreach (var child in node.Children)
+                    {
+                        <li>@RenderTreeNode(child)</li>
+                    }
+                </ul>
+            </details>
         }
         else
         {
-            return null;
+            <div class="ep-tree-leaf">
+                <a class="ep-tree-link" href="@href" aria-current="@(active ? "page" : null)">
+                    <span>@node.Title</span>
+                    <span class="ep-tree-kind">@kindText</span>
+                    @if (node.ChildCount > 0)
+                    {
+                        <span class="ep-tree-count">@node.ChildCount</span>
+                    }
+                </a>
+            </div>
         }
+    };
 
-        var nodes = new List<object>();
-        var edges = new List<object>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-
-        void Visit(PortalLawTreeNode node, string? parentId)
-        {
-            var id = $"{node.Jurisdiction}:{node.IdScheme}:{node.LocalId}";
-            if (seen.Add(id))
-            {
-                nodes.Add(new
+    private RenderFragment RenderStructureNode(PortalStructureNode node, int depth) => __builder =>
+    {
+        <li class="ep-structure-item">
+            <details open="@(depth <= 1)">
+                <summary class="ep-structure-heading">@($"{node.HeadingNo} {node.Title}".Trim())</summary>
+                @if (node.Articles.Count > 0)
                 {
-                    id,
-                    label = node.Title,
-                    kind = node.NormKind,
-                    href = LawHref(node),
-                    active = IsSelected(node),
-                });
-            }
-            if (parentId is not null)
-                edges.Add(new { source = parentId, target = id });
-            foreach (var child in node.Children)
-                Visit(child, id);
-        }
+                    <div class="ep-structure-articles">
+                        @foreach (var art in node.Articles)
+                        {
+                            <code class="ep-mono ep-article-chip">@art.Number</code>
+                        }
+                    </div>
+                }
+                @if (node.Children.Count > 0)
+                {
+                    <ul class="ep-structure-list">
+                        @foreach (var child in node.Children)
+                        {
+                            @RenderStructureNode(child, depth + 1)
+                        }
+                    </ul>
+                }
+            </details>
+        </li>
+    };
 
-        foreach (var root in targetRoots)
-            Visit(root, null);
-
-        return JsonSerializer.Serialize(new { nodes, edges });
-    }
-
-    private PortalLawTreeNode? FindContainingRoot(IReadOnlyList<PortalLawTreeNode> roots)
+    private IReadOnlyList<PortalLawTreeNode> FilterNodes(IReadOnlyList<PortalLawTreeNode> nodes, string? q)
     {
-        foreach (var root in roots)
+        if (string.IsNullOrWhiteSpace(q)) return nodes;
+        var term = q.Trim();
+        var matched = new List<PortalLawTreeNode>();
+        foreach (var n in nodes)
         {
-            if (ContainsSelected(root))
-                return root;
+            var filteredChildren = FilterNodes(n.Children, term);
+            var selfMatches = n.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || n.LocalId.Contains(term, StringComparison.OrdinalIgnoreCase);
+            if (selfMatches || filteredChildren.Count > 0)
+                matched.Add(n with { Children = selfMatches && filteredChildren.Count == 0 ? n.Children : filteredChildren });
         }
-        return null;
+        return matched;
     }
 
-    private bool ContainsSelected(PortalLawTreeNode node) =>
-        IsSelected(node) || node.Children.Any(ContainsSelected);
+    private string BuildNodeHref(PortalLawTreeNode node) =>
+        BuildUrl(
+            node.Jurisdiction,
+            node.IdScheme,
+            node.LocalId,
+            tab: ResolvedTab == "reasoning" ? "graph" : ResolvedTab,
+            cat: SelectedCategoryValue,
+            upDepth: ResolvedUpDepth,
+            downDepth: ResolvedDownDepth,
+            childLimit: 20,
+            docType: string.Empty);
 
-    private PortalLawTreeNode TrimEgoSubtree(PortalLawTreeNode root, int maxNodes)
+    private string BuildFocusUrl(
+        PortalLawKey key,
+        string? tab = null,
+        int? upDepth = null,
+        int? downDepth = null,
+        int? childLimit = null,
+        string? docType = null) =>
+        BuildUrl(
+            key.Jurisdiction,
+            key.IdScheme,
+            key.LocalId,
+            tab: tab ?? "graph",
+            cat: SelectedCategoryValue,
+            upDepth: upDepth ?? ResolvedUpDepth,
+            downDepth: downDepth ?? ResolvedDownDepth,
+            childLimit: childLimit ?? ResolvedChildLimit,
+            docType: docType ?? DocType);
+
+    private string CategoryHref(string code) =>
+        BuildUrl(
+            jurisdiction: null,
+            idScheme: null,
+            localId: null,
+            tab: ResolvedTab == "structure" ? "graph" : ResolvedTab,
+            cat: code,
+            upDepth: ResolvedUpDepth,
+            downDepth: ResolvedDownDepth,
+            childLimit: ResolvedChildLimit,
+            docType: string.Empty);
+
+    private string TabHref(TabItem item) =>
+        BuildUrl(
+            HasSelectedLaw ? Jurisdiction : null,
+            HasSelectedLaw ? IdScheme : null,
+            HasSelectedLaw ? LocalId : null,
+            tab: item.Key,
+            cat: SelectedCategoryValue,
+            upDepth: ResolvedUpDepth,
+            downDepth: ResolvedDownDepth,
+            childLimit: ResolvedChildLimit,
+            docType: DocType);
+
+    private string BuildUrl(
+        string? jurisdiction,
+        string? idScheme,
+        string? localId,
+        string tab,
+        string cat,
+        int upDepth,
+        int downDepth,
+        int childLimit,
+        string? docType)
     {
-        if (root.Children.Count <= maxNodes - 1)
-            return root;
-
-        var kept = root.Children
-            .OrderByDescending(ContainsSelected)
-            .Take(maxNodes - 1)
-            .ToList();
-        return root with { Children = kept };
-    }
-
-    private static int CountNodes(IReadOnlyList<PortalLawTreeNode> roots)
-    {
-        var count = 0;
-        foreach (var root in roots)
-            count += 1 + CountNodes(root.Children);
-        return count;
-    }
-
-    private static IReadOnlyList<PortalReasoningVerdict> OrderedVerdicts(PortalReasoningOutcome result) =>
-        [.. result.Verdicts.OrderBy(v => v.Verdict switch
+        var qs = new List<string>
         {
-            "Violation" => 0,
-            "ConditionalViolation" => 1,
-            "Undetermined" => 2,
-            "ConditionalCompliant" => 3,
-            "Compliant" => 4,
-            _ => 5,
-        })];
-
-    private bool IsSelected(PortalLawTreeNode node) =>
-        !string.IsNullOrWhiteSpace(LocalId)
-        && string.Equals(node.Jurisdiction, EffectiveJurisdiction, StringComparison.Ordinal)
-        && string.Equals(node.IdScheme, EffectiveScheme, StringComparison.Ordinal)
-        && string.Equals(node.LocalId, LocalId.Trim(), StringComparison.Ordinal);
-
-    private string LawHref(PortalLawTreeNode node)
-    {
-        var baseUrl = $"{PortalPaths.Home(Tenant)}/laws?jurisdiction={Uri.EscapeDataString(node.Jurisdiction)}&idScheme={Uri.EscapeDataString(node.IdScheme)}&localId={Uri.EscapeDataString(node.LocalId)}";
-        if (!string.IsNullOrWhiteSpace(AsOf))
-            baseUrl = $"{baseUrl}&asOf={Uri.EscapeDataString(AsOf.Trim())}";
+            $"cat={Uri.EscapeDataString(cat)}",
+            $"tab={Uri.EscapeDataString(tab)}",
+        };
+        if (!string.IsNullOrWhiteSpace(jurisdiction) && !string.IsNullOrWhiteSpace(idScheme) && !string.IsNullOrWhiteSpace(localId))
+        {
+            qs.Add($"jurisdiction={Uri.EscapeDataString(jurisdiction)}");
+            qs.Add($"idScheme={Uri.EscapeDataString(idScheme)}");
+            qs.Add($"localId={Uri.EscapeDataString(localId)}");
+        }
         if (!string.IsNullOrWhiteSpace(Query))
-            baseUrl = $"{baseUrl}&q={Uri.EscapeDataString(Query.Trim())}";
-        return baseUrl;
+            qs.Add($"q={Uri.EscapeDataString(Query)}");
+        if (!string.IsNullOrWhiteSpace(AsOf))
+            qs.Add($"asOf={Uri.EscapeDataString(AsOf)}");
+        if (upDepth != 2)
+            qs.Add($"upDepth={upDepth}");
+        if (downDepth != 2)
+            qs.Add($"downDepth={downDepth}");
+        if (childLimit != 20)
+            qs.Add($"childLimit={childLimit}");
+        if (!string.IsNullOrWhiteSpace(docType))
+            qs.Add($"docType={Uri.EscapeDataString(docType)}");
+
+        return $"{PortalPaths.Home(Tenant)}/laws?{string.Join("&", qs)}";
+    }
+
+    private static PortalLawGraphNode? FindFocusNode(PortalLawGraphResult graph) =>
+        graph.Focus is null
+            ? null
+            : graph.Nodes.FirstOrDefault(n =>
+                string.Equals(n.Key.Jurisdiction, graph.Focus.Jurisdiction, StringComparison.Ordinal)
+                && string.Equals(n.Key.IdScheme, graph.Focus.IdScheme, StringComparison.Ordinal)
+                && string.Equals(n.Key.LocalId, graph.Focus.LocalId, StringComparison.Ordinal));
+
+    private static string NodeKey(string j, string s, string l) => $"{j}|{s}|{l}";
+
+    private bool IsBranchOpen(string key) =>
+        !string.IsNullOrWhiteSpace(Query) || _activeBranchKeys.Contains(key);
+
+    private void CollectActiveBranch(string targetKey)
+    {
+        bool Walk(PortalLawTreeNode node)
+        {
+            var self = NodeKey(node.Jurisdiction, node.IdScheme, node.LocalId) == targetKey;
+            var childHit = false;
+            foreach (var c in node.Children)
+                if (Walk(c)) childHit = true;
+            if (self || childHit)
+            {
+                _activeBranchKeys.Add(NodeKey(node.Jurisdiction, node.IdScheme, node.LocalId));
+                return true;
+            }
+            return false;
+        }
+        foreach (var root in _filteredRoots) Walk(root);
     }
 
     private string NormKindLabel(string normKind) => normKind switch
@@ -491,8 +932,14 @@ else
         "local_ordinance" => L["自治條例"],
         "local_regulation" => L["自治規則"],
         "administrative_rule" => L["行政規則"],
-        "regulation" or "order" => L["命令"],
-        _ => normKind,
+        _ => L["命令"],
+    };
+
+    private string ViolationKindLabel(string kind) => kind switch
+    {
+        "duty" => L["違反行為義務"],
+        "delegated_rule" => L["授權法規命令"],
+        _ => kind,
     };
 
     private string VerdictLabel(string verdict) => verdict switch
@@ -509,9 +956,9 @@ else
 
     private static string VerdictTone(string verdict) => verdict switch
     {
-        "Violation" or "ConditionalViolation" => "danger",
-        "Compliant" or "ConditionalCompliant" => "ok",
-        "Undetermined" => "warn",
+        "Violation" => "error",
+        "ConditionalViolation" => "warning",
+        "Compliant" or "ConditionalCompliant" => "success",
         _ => "neutral",
     };
 
@@ -521,24 +968,4 @@ else
         "false" => false,
         _ => null,
     };
-
-    private RenderFragment RenderStructureNode(PortalStructureNode node) => @<details class="ep-tree-branch" open>
-        <summary class="ep-tree-summary">
-            <span class="ep-tree-badge">@node.HeadingNo</span>
-            @if (!string.IsNullOrWhiteSpace(node.Title))
-            {
-                <span class="ep-tree-title">@node.Title</span>
-            }
-        </summary>
-        <div class="ep-tree-children">
-            @if (node.Articles.Count > 0)
-            {
-                <DataTable Items="node.Articles" Columns="ArticleColumns" Label="@node.HeadingNo" Plain="true" />
-            }
-            @foreach (var child in node.Children)
-            {
-                @RenderStructureNode(child)
-            }
-        </div>
-    </details>;
 }
