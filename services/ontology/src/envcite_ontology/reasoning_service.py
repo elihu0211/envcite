@@ -19,6 +19,7 @@ from envcite.ontology.v2 import reasoning_pb2_grpc
 from envcite_grpc import remaining_seconds
 from envcite_ontology import annotation_read, errors, identifiers
 from envcite_ontology import reasoning_codec as codec
+from envcite_ontology.endpoints.common import log_call
 from envcite_ontology.identifiers import law_key
 from envcite_ontology.reasoning import Result, evaluate_across
 from envcite_ontology.reasoning.facts import Measurements, Permits, PerOccasionTimeline
@@ -62,7 +63,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         self, request: pb.ListStatementsRequest, context: grpc.ServicerContext
     ) -> pb.ListStatementsResponse:
         """列出資源在 `as_of` 當日有效、已確認的陳述。"""
-        _log_call(context, "ListStatements", identifiers.subject(request.identifier))
+        log_call(log, context, "ListStatements", identifiers.subject(request.identifier))
         v = errors.Validator()
         key = law_key(self._laws, request.identifier, v)
         on = v.date("as_of", request.as_of)
@@ -96,7 +97,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         self, request: pb.EvaluateRequest, context: grpc.ServicerContext
     ) -> pb.EvaluateResponse:
         # 案件事實是客戶的案件內容：日誌只記數量。
-        _log_call(context, "Evaluate", f"facts={len(request.facts)}")
+        log_call(log, context, "Evaluate", f"facts={len(request.facts)}")
         v = errors.Validator()
         conduct_on = v.date("conduct_on", request.conduct_on, required=True)
         decided_on = v.date("decided_on", request.decided_on, required=True)
@@ -221,14 +222,3 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                 errors.EVALUATION_TIMEOUT,
                 "evaluation did not finish within the deadline",
             ) from error
-
-
-def _log_call(context: grpc.ServicerContext, method: str, subject: str) -> None:
-    metadata = dict(context.invocation_metadata())
-    log.info(
-        "%s subject=%s tenant=%s request_id=%s",
-        method,
-        subject,
-        metadata.get("x-tenant-id", "-"),
-        metadata.get("x-request-id", "-"),
-    )

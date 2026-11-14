@@ -20,7 +20,7 @@ from envcite_ontology.law_names import LawNames
 from envcite_ontology.reranking import RerankError
 from envcite_ontology.search_tuning import SearchTuning
 from envcite_ontology.server import build_server
-from envcite_ontology.service import OntologyServicer
+from envcite_ontology.service import build_servicer
 from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 
@@ -211,7 +211,7 @@ def test_full_rerank_slots_fall_back_instead_of_waiting(store: OntologyStore, se
             return 5.0
 
     reranker = FakeReranker()
-    servicer = OntologyServicer(
+    servicer = build_servicer(
         store.laws,
         store.graph,
         store.retrieval,
@@ -308,7 +308,7 @@ def test_full_slots_are_counted_as_busy_without_an_endpoint_time(
             return 5.0
 
     reader, meter = _metered()
-    servicer = OntologyServicer(
+    servicer = build_servicer(
         store.laws,
         store.graph,
         store.retrieval,

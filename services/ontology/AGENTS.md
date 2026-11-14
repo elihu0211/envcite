@@ -42,6 +42,7 @@ uv run --env-file .env envcite-ontology
   - 公開的模組、類別與函式都有 docstring（ruff `D100`–`D103`）；不用 `Any` 標註（`ANN401`），動態邊界例外在根 `pyproject.toml` 的 `per-file-ignores` 列出並說明。
   - 每個指令入口（`[project.scripts]`）都要解析得到、`--help` 可用（`tests/test_cli_entry_points.py` 守門）。
   - 資料層（`store/`）一個職責一個儲存庫（`laws`、`graph`、`retrieval`），連線池與期限在 `connections`，`OntologyStore` 只負責把它們接起來。消費端用 `store/ports.py` 的 Protocol 標註它用到的那一塊（`LawReader`、`LawGraphReader`、`Retrieval`、`ReadConnections`），不認得具體的儲存庫類別。
+  - gRPC 的端點按功能分組（`endpoints/laws`、`graph`、`search`），各自只拿它要的儲存庫介面；`service.OntologyServicer` 只在 gRPC 邊界轉交並以 `errors.maps_errors` 映射錯誤，`build_servicer` 把它們接起來。
   - 依賴注入：接線只在組合根（`server.py` 與各 CLI 的 `main`）；servicer 與推論從建構子拿依賴（儲存庫、嵌入、精排、斷詞，與調校旋鈕 `SearchTuning`），不自己建連線、不讀設定。「今日」由 SQL 的 `as_of` 決定，不在 Python 取時鐘。
   - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
   - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。
