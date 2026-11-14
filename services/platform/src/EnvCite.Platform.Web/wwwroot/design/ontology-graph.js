@@ -1232,12 +1232,16 @@
   }
 
   function initPresets() {
-    document.querySelectorAll("[data-reasoning-preset]").forEach((btn) => {
+    const presetButtons = Array.from(document.querySelectorAll("[data-reasoning-preset]"));
+    presetButtons.forEach((btn) => {
       if (btn.dataset.presetBound === "1") return;
       btn.dataset.presetBound = "1";
       btn.addEventListener("click", () => {
-        const form = btn.closest("form") || document.querySelector("[data-reasoning-form]");
+        const form = btn.closest("form") || document.querySelector("[data-reasoning-form]") || btn.closest(".ep-card")?.querySelector("form");
         if (!form) return;
+        presetButtons.forEach((other) => {
+          other.setAttribute("aria-pressed", other === btn ? "true" : "false");
+        });
         const preset = btn.dataset.reasoningPreset;
         const today = new Date().toISOString().slice(0, 10);
         const setVal = (name, val) => {
@@ -1256,12 +1260,61 @@
           setVal("Input.CriminalOffense", "");
           setVal("Input.CourtConfiscated", "");
           setVal("Input.GainedBenefit", "");
+          const details = form.querySelector("details.ep-tree-manual");
+          if (details) details.open = true;
         } else if (preset === "benefit") {
           setVal("Input.ConductEndedOn", today);
           setVal("Input.CriminalOffense", "false");
           setVal("Input.CourtConfiscated", "false");
           setVal("Input.GainedBenefit", "50000");
         }
+      });
+    });
+  }
+
+  function initStructureFilter() {
+    document.querySelectorAll("[data-structure-workspace]").forEach((workspace) => {
+      if (workspace.dataset.filterBound === "1") return;
+      workspace.dataset.filterBound = "1";
+      const input = workspace.querySelector("[data-structure-filter]");
+      const rows = Array.from(workspace.querySelectorAll(".ep-structure-table-wrap tbody tr"));
+      const chips = Array.from(workspace.querySelectorAll(".ep-structure-box .ep-article-chip"));
+      if (!input) return;
+
+      const applyFilter = () => {
+        const term = (input.value || "").trim().toLowerCase();
+        rows.forEach((row) => {
+          const text = (row.textContent || "").toLowerCase();
+          row.hidden = Boolean(term) && !text.includes(term);
+        });
+        chips.forEach((chip) => {
+          const text = (chip.textContent || "").toLowerCase();
+          const matched = Boolean(term) && text.includes(term);
+          chip.classList.toggle("is-match", matched);
+          chip.classList.toggle("is-dim", Boolean(term) && !matched);
+          if (matched) {
+            let parent = chip.closest("details");
+            while (parent && workspace.contains(parent)) {
+              parent.open = true;
+              parent = parent.parentElement?.closest("details");
+            }
+          }
+        });
+      };
+
+      let timer = 0;
+      input.addEventListener("input", () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(applyFilter, 80);
+      });
+
+      workspace.addEventListener("click", (evt) => {
+        const chip = evt.target.closest(".ep-article-chip");
+        if (!chip) return;
+        const label = (chip.textContent || "").trim();
+        if (!label) return;
+        input.value = input.value.trim() === label ? "" : label;
+        applyFilter();
       });
     });
   }
@@ -1302,6 +1355,7 @@
   function boot() {
     document.querySelectorAll("[data-ontology-graph]").forEach(initGraph);
     initPresets();
+    initStructureFilter();
     initDrawerToggles();
   }
 
