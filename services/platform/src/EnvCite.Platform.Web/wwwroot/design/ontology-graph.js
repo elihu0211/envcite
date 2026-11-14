@@ -1279,8 +1279,7 @@
     };
 
     if (!root.dataset.catalogOpen) {
-      const isDesktop = window.matchMedia && window.matchMedia("(min-width: 58rem)").matches;
-      setOpen(Boolean(isDesktop));
+      setOpen(false);
     }
 
     document.querySelectorAll('[data-workbench-toggle="catalog"]').forEach((btn) => {
