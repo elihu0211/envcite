@@ -2556,4 +2556,10 @@
   <data name="Enter 送出 · Shift+Enter 換行" xml:space="preserve">
     <value>Enter to send · Shift+Enter for new line</value>
   </data>
+  <data name="全螢幕" xml:space="preserve">
+    <value>Fullscreen</value>
+  </data>
+  <data name="點擊節點檢視詳情 · 雙擊以此法為中心 · 右鍵快捷選單 · 滾輪縮放 · Esc 收起面板" xml:space="preserve">
+    <value>Click node for details · Double-click to focus · Right-click for menu · Scroll to zoom · Esc to close</value>
+  </data>
 </root>
