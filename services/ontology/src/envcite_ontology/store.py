@@ -53,6 +53,22 @@ class LawRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class ArticleDetailRecord:
+    """依條文版本標準 IRI（索引）查得的單一條文全文與中繼資料。"""
+
+    iri: str
+    jurisdiction: str
+    id_scheme: str
+    local_id: str
+    law_title: str
+    number: str
+    content: str
+    language: str
+    date_document: str
+    norm_kind: str
+
+
+@dataclass(frozen=True, slots=True)
 class LawSummaryRecord:
     """語料庫中某日有效的一部法規摘要，含位階與已解析之授權母法自然鍵。"""
 
@@ -225,6 +241,28 @@ _RESOLVE = """
        AND e.language = %(language)s
        AND e.text_period @> %(on)s::date
        AND e.text_status = 'available'
+"""
+
+#: 依條文版本標準 IRI 直接命中唯一索引，毫秒級取得單一條文全文。
+_GET_ARTICLE_BY_IRI = """
+    SELECT corpus.version_iri(v.id), r.jurisdiction::text, r.id_scheme::text, r.local_id,
+           e.title, coalesce(corpus.article_number(p.path), p.path),
+           coalesce(v.content, ''), e.language, e.version_date::text, r.norm_kind::text
+      FROM corpus.legal_resource AS r
+      JOIN corpus.legal_expression AS e
+        ON e.resource_id = r.id
+       AND e.language = %(language)s
+       AND e.version_date = %(version_date)s::date
+      JOIN corpus.provision AS p
+        ON p.resource_id = r.id
+       AND p.path = %(path)s
+      JOIN corpus.provision_version AS v
+        ON v.provision_id = p.id
+       AND v.expression_id = e.id
+       AND v.superseded_at IS NULL
+     WHERE r.local_id = %(local_id)s
+       AND corpus.version_iri(v.id) = %(iri)s
+     LIMIT 1
 """
 
 #: 該日有效的條，含 `text_unavailable`（有效，只是無文字）。
@@ -611,6 +649,41 @@ class OntologyStore:
         """`as_of`（ISO 日期，空為今日）有效版本的法規；法規不存在或該日無版本時為 None。"""
         found = self._resolve(key, as_of, timeout=timeout)
         return found[1] if found else None
+
+    def get_article_by_iri(
+        self, iri: str, *, timeout: float | None = None
+    ) -> ArticleDetailRecord | None:
+        """依條文版本標準 IRI 查詢單一條文全文與中繼資料；格式不符或不存在時回 None。"""
+        m = _VERSION_IRI_RE.match(iri.strip())
+        if m is None:
+            return None
+        local_id, version_date, language, path = m.groups()
+        with self.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
+            cur.execute(
+                _GET_ARTICLE_BY_IRI,
+                {
+                    "local_id": local_id,
+                    "version_date": version_date,
+                    "language": language,
+                    "path": path,
+                    "iri": iri.strip(),
+                },
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            return ArticleDetailRecord(
+                iri=str(row[0]),
+                jurisdiction=str(row[1]),
+                id_scheme=str(row[2]),
+                local_id=str(row[3]),
+                law_title=str(row[4]),
+                number=str(row[5]),
+                content=str(row[6]),
+                language=str(row[7]),
+                date_document=str(row[8]),
+                norm_kind=str(row[9]),
+            )
 
     def list_laws(
         self,
@@ -1170,6 +1243,9 @@ def _remaining(deadline: float | None) -> float | None:
     return deadline - time.monotonic()
 
 
+_VERSION_IRI_RE = re.compile(
+    r"^https://envcite/tw/(?:law|order)/([^/]+)/(\d{4}-\d{2}-\d{2})/([^/]+)/(.+)$"
+)
 _CITED_PATH_RE = re.compile(r"^art_(\d+)(?:-(\d+))?(?:/para_(\d+))?(?:/pt_(\d+))?$")
 
 

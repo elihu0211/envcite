@@ -1,0 +1,78 @@
+@* 右側滑出式法條抽屜：點擊回答中的法條名稱後，依索引（IRI）按需載入條文全文並套用排版模板引擎。 *@
+@if (IsOpen)
+{
+    <div class="ep-drawer-backdrop" @onclick="CloseAsync" aria-hidden="true"></div>
+    <aside class="ep-drawer-panel"
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="ep-citation-drawer-title"
+           tabindex="-1"
+           @onkeydown="OnKeyDownAsync">
+        <header class="ep-drawer-header">
+            <div class="ep-drawer-title-group">
+                @if (!string.IsNullOrWhiteSpace(Code))
+                {
+                    <span class="ep-citation-badge">[@Code]</span>
+                }
+                <h2 id="ep-citation-drawer-title" class="ep-drawer-title">@Title</h2>
+                @if (!string.IsNullOrWhiteSpace(AsOfLabel))
+                {
+                    <span class="ep-chip ep-drawer-asof">@AsOfLabel</span>
+                }
+            </div>
+            <button type="button"
+                    class="ep-drawer-close"
+                    aria-label="@L["關閉"]"
+                    @onclick="CloseAsync">
+                <span aria-hidden="true">✕</span>
+            </button>
+        </header>
+
+        <div class="ep-drawer-body">
+            @if (IsLoading)
+            {
+                <div class="ep-drawer-loading" role="status" aria-live="polite">
+                    <span class="ep-spinner" aria-hidden="true"></span>
+                    <span>@L["正在依索引載入條文內容…"]</span>
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(ErrorMessage) && string.IsNullOrWhiteSpace(Content))
+            {
+                <FormAlert Kind="AlertKind.Error">@ErrorMessage</FormAlert>
+            }
+            else if (!string.IsNullOrWhiteSpace(Content))
+            {
+                <FormattedArticleView Content="@Content" />
+            }
+            else
+            {
+                <p class="ep-hint">@L["目前沒有可顯示的條文內容。"]</p>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Uri))
+        {
+            <footer class="ep-drawer-footer">
+                <span class="ep-hint">@L["索引位置"]</span>
+                <code class="ep-mono ep-drawer-iri">@Uri</code>
+            </footer>
+        }
+    </aside>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public string? Code { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Uri { get; set; }
+    [Parameter] public string? AsOfLabel { get; set; }
+    [Parameter] public string? Content { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private Task OnKeyDownAsync(KeyboardEventArgs args) =>
+        args.Key == "Escape" ? CloseAsync() : Task.CompletedTask;
+}

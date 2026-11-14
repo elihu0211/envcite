@@ -24,6 +24,7 @@ public static class OntologyModule
         services.AddScoped<ILawSearch, LawSearch>();
         services.AddScoped<OntologyGateway>();
         services.AddSingleton<ILawCorpusService, LawCorpusService>();
+        services.AddSingleton<ICitationArticleService, CitationArticleService>();
         services.AddSingleton<INormativeReasoningService, NormativeReasoningService>();
         return services;
     }

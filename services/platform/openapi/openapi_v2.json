@@ -326,6 +326,73 @@
         }
       }
     },
+    "/v2/articles/by-iri": {
+      "get": {
+        "tags": [
+          "法規"
+        ],
+        "summary": "依條文索引（IRI）取得單一條文全文",
+        "description": "以引用出處中的條文版本標準 `iri` 查詢單一條文全文與中繼資料；`iri` 為空回 400，查無回 404。",
+        "operationId": "GetArticleByIri",
+        "parameters": [
+          {
+            "name": "iri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key 缺少、無效、已過期或已撤銷。"
+          },
+          "429": {
+            "description": "超過本租戶方案的速率限制。"
+          },
+          "500": {
+            "description": "未預期的伺服器錯誤。本文是 problem+json，`code` 為 `internal.error`，不含例外細節；回報時附上 `traceId`。"
+          },
+          "402": {
+            "description": "本租戶目前沒有有效的方案（完全付費制）。請聯絡業務啟用。"
+          }
+        }
+      }
+    },
     "/v2/search": {
       "post": {
         "tags": [
@@ -828,6 +895,48 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "ArticleDetailDto": {
+        "required": [
+          "uri",
+          "identifier",
+          "lawTitle",
+          "number",
+          "content",
+          "language",
+          "dateDocument",
+          "normKind"
+        ],
+        "type": "object",
+        "properties": {
+          "uri": {
+            "type": "string"
+          },
+          "identifier": {
+            "$ref": "#/components/schemas/LawIdentifierDto"
+          },
+          "lawTitle": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "dateDocument": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "normKind": {
+            "type": "string"
           }
         }
       },

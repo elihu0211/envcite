@@ -68,6 +68,11 @@ class OntologyServiceStub:
                 request_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphRequest.SerializeToString,
                 response_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphResponse.FromString,
                 _registered_method=True)
+        self.GetArticleByIri = channel.unary_unary(
+                '/envcite.ontology.v2.OntologyService/GetArticleByIri',
+                request_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetArticleByIriRequest.SerializeToString,
+                response_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetArticleByIriResponse.FromString,
+                _registered_method=True)
 
 
 class OntologyServiceServicer:
@@ -121,6 +126,13 @@ class OntologyServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetArticleByIri(self, request, context):
+        """依條文版本標準 IRI（索引）取得單一條文全文與中繼資料；IRI 格式錯誤回 INVALID_ARGUMENT，查無回 NOT_FOUND。
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OntologyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -153,6 +165,11 @@ def add_OntologyServiceServicer_to_server(servicer, server):
                     servicer.GetLawGraph,
                     request_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphRequest.FromString,
                     response_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphResponse.SerializeToString,
+            ),
+            'GetArticleByIri': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetArticleByIri,
+                    request_deserializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetArticleByIriRequest.FromString,
+                    response_serializer=envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetArticleByIriResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -321,6 +338,33 @@ class OntologyService:
             '/envcite.ontology.v2.OntologyService/GetLawGraph',
             envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphRequest.SerializeToString,
             envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetLawGraphResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetArticleByIri(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/envcite.ontology.v2.OntologyService/GetArticleByIri',
+            envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetArticleByIriRequest.SerializeToString,
+            envcite_dot_ontology_dot_v2_dot_ontology__pb2.GetArticleByIriResponse.FromString,
             options,
             channel_credentials,
             insecure,

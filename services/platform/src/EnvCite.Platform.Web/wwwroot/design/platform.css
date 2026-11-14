@@ -4072,9 +4072,240 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     .ep-tier-card,
     .ep-tier-node,
     .ep-scoring-card,
-    .ep-preset-chip {
+    .ep-preset-chip,
+    .ep-citation-chip,
+    .ep-drawer-panel {
         border-width: 1.5px;
     }
+}
+
+/* ── 問答引用名稱索引列、滑出式條文抽屜與結構化排版模板 ─────────────── */
+
+.ep-citation-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ep-space-2);
+    margin-block-start: var(--ep-space-2);
+}
+
+.ep-citation-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    padding: 0.45rem 0.8rem;
+    border-radius: var(--ep-radius-pill);
+    border: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface-raised);
+    color: var(--ep-text);
+    font: inherit;
+    font-size: var(--ep-label-m-size);
+    font-weight: var(--ep-label-m-weight);
+    cursor: pointer;
+    transition:
+        border-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-citation-chip:hover {
+    border-color: var(--ep-primary);
+    background: var(--ep-surface-muted);
+}
+
+.ep-citation-chip:active {
+    opacity: 0.85;
+}
+
+.ep-citation-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.1rem 0.45rem;
+    border-radius: var(--ep-radius-s, 6px);
+    background: var(--ep-surface-muted);
+    color: var(--ep-primary);
+    font-family: var(--ep-font-mono);
+    font-size: var(--ep-label-s-size);
+    font-weight: var(--ep-label-l-weight);
+}
+
+.ep-citation-name {
+    line-height: 1.3;
+}
+
+.ep-citation-chevron {
+    color: var(--ep-text-secondary);
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.ep-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: color-mix(in srgb, var(--ep-bg) 48%, transparent);
+    animation: ep-fade-in var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-drawer-panel {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-end: 0;
+    z-index: 91;
+    width: min(560px, 100vw);
+    display: flex;
+    flex-direction: column;
+    background: var(--ep-surface-raised);
+    border-inline-start: 1px solid var(--ep-border-subtle);
+    box-shadow: var(--ep-elevation-2);
+    animation: ep-drawer-slide-in var(--ep-motion-normal) var(--ep-motion-ease-move);
+}
+
+@keyframes ep-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes ep-drawer-slide-in {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ep-drawer-backdrop,
+    .ep-drawer-panel,
+    .ep-citation-chip {
+        animation: none;
+        transition: none;
+    }
+}
+
+.ep-drawer-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--ep-space-3);
+    padding: var(--ep-space-4) var(--ep-space-5);
+    border-block-end: 1px solid var(--ep-border-subtle);
+}
+
+.ep-drawer-title-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+    min-width: 0;
+}
+
+.ep-drawer-title {
+    margin: 0;
+    font-size: var(--ep-label-l-size);
+    font-weight: var(--ep-label-l-weight);
+    line-height: 1.35;
+    color: var(--ep-text);
+}
+
+.ep-drawer-asof {
+    font-size: var(--ep-label-s-size);
+}
+
+.ep-drawer-close {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--ep-radius-pill);
+    border: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface);
+    color: var(--ep-text-secondary);
+    cursor: pointer;
+}
+
+.ep-drawer-close:hover {
+    color: var(--ep-text);
+    background: var(--ep-surface-muted);
+}
+
+.ep-drawer-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: var(--ep-space-5);
+}
+
+.ep-drawer-loading {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    color: var(--ep-text-secondary);
+    padding-block: var(--ep-space-4);
+}
+
+.ep-drawer-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: var(--ep-space-3) var(--ep-space-5);
+    border-block-start: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface);
+}
+
+.ep-drawer-iri {
+    font-size: 0.75rem;
+    word-break: break-all;
+    color: var(--ep-text-secondary);
+}
+
+/* ── 條文結構化排版模板引擎（項／款／目／細目與但書）───────────────────── */
+
+.ep-article-template {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-3);
+    line-height: 1.75;
+    color: var(--ep-text);
+}
+
+.ep-clause-paragraph {
+    margin: 0;
+    text-wrap: pretty;
+}
+
+.ep-clause-paragraph.is-proviso {
+    padding-inline-start: var(--ep-space-3);
+    border-inline-start: 2px solid var(--ep-warning);
+}
+
+.ep-clause-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--ep-space-2);
+    align-items: baseline;
+}
+
+.ep-clause-row[data-level="1"] {
+    padding-inline-start: var(--ep-space-2);
+}
+
+.ep-clause-row[data-level="2"] {
+    padding-inline-start: var(--ep-space-5);
+}
+
+.ep-clause-row[data-level="3"] {
+    padding-inline-start: calc(var(--ep-space-5) + var(--ep-space-4));
+}
+
+.ep-clause-marker {
+    font-weight: var(--ep-label-l-weight);
+    color: var(--ep-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.ep-clause-body {
+    min-width: 0;
+    text-wrap: pretty;
 }
 
 

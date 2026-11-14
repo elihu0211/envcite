@@ -53,6 +53,8 @@ class OntologyServiceStub:
     """列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。"""
     GetLawGraph: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.GetLawGraphRequest, _ontology_pb2.GetLawGraphResponse]
     """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。"""
+    GetArticleByIri: _grpc.UnaryUnaryMultiCallable[_ontology_pb2.GetArticleByIriRequest, _ontology_pb2.GetArticleByIriResponse]
+    """依條文版本標準 IRI（索引）取得單一條文全文與中繼資料；IRI 格式錯誤回 INVALID_ARGUMENT，查無回 NOT_FOUND。"""
 
 @_typing.type_check_only
 class OntologyServiceAsyncStub(OntologyServiceStub):
@@ -79,6 +81,8 @@ class OntologyServiceAsyncStub(OntologyServiceStub):
     """列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。"""
     GetLawGraph: _aio.UnaryUnaryMultiCallable[_ontology_pb2.GetLawGraphRequest, _ontology_pb2.GetLawGraphResponse]  # type: ignore[assignment]
     """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。"""
+    GetArticleByIri: _aio.UnaryUnaryMultiCallable[_ontology_pb2.GetArticleByIriRequest, _ontology_pb2.GetArticleByIriResponse]  # type: ignore[assignment]
+    """依條文版本標準 IRI（索引）取得單一條文全文與中繼資料；IRI 格式錯誤回 INVALID_ARGUMENT，查無回 NOT_FOUND。"""
 
 class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
     """環境法規本體的唯讀存取（關聯式，PostgreSQL）。
@@ -138,5 +142,13 @@ class OntologyServiceServicer(metaclass=_abc_1.ABCMeta):
         context: _ServicerContext,
     ) -> _typing.Union[_ontology_pb2.GetLawGraphResponse, _abc.Awaitable[_ontology_pb2.GetLawGraphResponse]]:
         """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。"""
+
+    @_abc_1.abstractmethod
+    def GetArticleByIri(
+        self,
+        request: _ontology_pb2.GetArticleByIriRequest,
+        context: _ServicerContext,
+    ) -> _typing.Union[_ontology_pb2.GetArticleByIriResponse, _abc.Awaitable[_ontology_pb2.GetArticleByIriResponse]]:
+        """依條文版本標準 IRI（索引）取得單一條文全文與中繼資料；IRI 格式錯誤回 INVALID_ARGUMENT，查無回 NOT_FOUND。"""
 
 def add_OntologyServiceServicer_to_server(servicer: OntologyServiceServicer, server: _typing.Union[_grpc.Server, _aio.Server]) -> None: ...

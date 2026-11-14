@@ -202,6 +202,36 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         return pb.ListLawsResponse(laws=items)
 
     @errors.maps_errors
+    def GetArticleByIri(
+        self, request: pb.GetArticleByIriRequest, context: grpc.ServicerContext
+    ) -> pb.GetArticleByIriResponse:
+        iri = request.iri.strip()
+        _log_call(context, "GetArticleByIri", iri or "<empty>")
+        v = errors.Validator()
+        if not iri:
+            v.add("iri", errors.EMPTY, "iri is required")
+        v.check()
+        record = self._store.get_article_by_iri(iri, timeout=remaining_seconds(context))
+        if record is None:
+            raise errors.not_found("NOT_FOUND", f"article not found: {iri}")
+        return pb.GetArticleByIriResponse(
+            article=pb.ArticleDetail(
+                iri=record.iri,
+                identifier=pb.LawIdentifier(
+                    jurisdiction=record.jurisdiction,
+                    id_scheme=record.id_scheme,
+                    local_id=record.local_id,
+                ),
+                law_title=record.law_title,
+                number=record.number,
+                content=record.content,
+                language=record.language,
+                date_document=record.date_document,
+                norm_kind=record.norm_kind,
+            )
+        )
+
+    @errors.maps_errors
     def GetLawGraph(
         self, request: pb.GetLawGraphRequest, context: grpc.ServicerContext
     ) -> pb.GetLawGraphResponse:
