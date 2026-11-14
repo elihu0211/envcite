@@ -1,14 +1,13 @@
 @page "/ui/activate"
 @layout AccountLayout
-@inherits StaticPageBase
+@inherits StaticPageBase<IOperatorAccount>
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.UiSignInRateLimit)]
 @attribute [AllowAnonymous]
-@inject IOperatorAccount Account
 
 <DocumentTitle Text="@L["啟用帳號"]" />
 
-<ActivationFlow Account="Account" FormName="ui-activate" LoginPath="@UiEndpoints.LoginPath" SetPasswordNote="@L["設好密碼後，登入時還要綁定驗證器。"]">
+<ActivationFlow Account="Service" FormName="ui-activate" LoginPath="@UiEndpoints.LoginPath" SetPasswordNote="@L["設好密碼後，登入時還要綁定驗證器。"]">
     <Layout Context="view">
         <PageHeading>@view.Heading</PageHeading>
         @view.Body

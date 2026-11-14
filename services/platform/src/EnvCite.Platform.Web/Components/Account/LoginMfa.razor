@@ -1,12 +1,11 @@
 @page "/ui/login/mfa"
 @layout AccountLayout
-@inherits StaticPageBase
+@inherits StaticPageBase<IOperatorTwoFactor>
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.UiSignInRateLimit)]
 @attribute [AllowAnonymous]
-@inject IOperatorTwoFactor TwoFactor
 
 <DocumentTitle Text="@L["第二步驗證"]" />
 
 <PageHeading>@L["第二步驗證"]</PageHeading>
-<TwoFactorSignInFlow TwoFactor="TwoFactor" Routes="SignInRoutes.Operator" FormName="ui-mfa" />
+<TwoFactorSignInFlow TwoFactor="Service" Routes="SignInRoutes.Operator" FormName="ui-mfa" />

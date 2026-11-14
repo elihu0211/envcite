@@ -3,8 +3,6 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.PortalSignInRateLimit)]
 @attribute [AllowAnonymous]
-@inject IPortalAccount Account
-@inject IPortalTwoFactor TwoFactor
 @inherits PortalPageBase
 
 <DocumentTitle Text="@L["第二步驗證"]" />
@@ -15,15 +13,4 @@
         <PageHeading Id="mfa-title">@L["第二步驗證"]</PageHeading>
         <TwoFactorSignInFlow TwoFactor="TwoFactor" Routes="SignInRoutes.Portal(tenant.Identifier)" FormName="portal-mfa" />
     </section>
-}
-
-@code {
-    // 路徑上的租戶不存在：這個頁面就不存在。
-    protected override void OnInitialized()
-    {
-        if (Account.CurrentTenant is null)
-        {
-            Navigation.NotFound();
-        }
-    }
 }

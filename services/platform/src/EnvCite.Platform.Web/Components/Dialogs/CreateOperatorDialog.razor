@@ -1,7 +1,5 @@
 @* 建立營運者。沒有自助註冊：這裡是後台建立帳號的途徑，初始密碼在下一個對話框只顯示一次。 *@
 @inherits FormDialogBase
-@inject IOperatorAdmin Operators
-@inject IMailSender Mail
 
 <MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
@@ -16,16 +14,3 @@
         <DialogSubmitActions Text="@(Mail.Enabled ? L["寄出邀請"] : L["建立"])" BusyText="@L["建立中…"]" Busy="Busy" OnSubmit="SubmitAsync" />
     </DialogActions>
 </MudDialog>
-
-@code {
-    private string? _email;
-    private string? _displayName;
-
-    protected override async Task SubmitAsync() =>
-        await CompleteAsync(
-            async actor => Mail.Enabled
-                // 有寄信就邀請（對方自己設密碼）；沒有就發暫時密碼，由你親手交付。
-                ? DialogOutcome.From(await Operators.InviteAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None), L["建立失敗。"])
-                : DialogOutcome.From(await Operators.CreateAsync(actor, _email ?? string.Empty, _displayName, CancellationToken.None), L["建立失敗。"]),
-            L["建立失敗，請稍後再試。"]);
-}

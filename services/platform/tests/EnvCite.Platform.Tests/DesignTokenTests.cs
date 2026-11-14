@@ -755,7 +755,7 @@ public static partial class DesignTokenTests
         Assert.True(sources.Count > 50, "掃不到原始碼，這個測試就沒有意義");
         Assert.False(File.Exists(Path.Combine(web, "Components", "Shared", "ThemeSwitch.razor")));
         string[] settingsPages = [Path.Combine("Components", "Account", "Settings.razor"), Path.Combine("Components", "Portal", "Settings.razor")];
-        string[] mayMentionDataTheme = [Path.Combine("Components", "App.razor"), Path.Combine("Design", "TokenCss.cs"), Path.Combine("wwwroot", "design", "forms.js"), "Appearance.cs"];
+        string[] mayMentionDataTheme = [Path.Combine("Components", "App.razor"), Path.Combine("Components", "App.razor.cs"), Path.Combine("Design", "TokenCss.cs"), Path.Combine("wwwroot", "design", "forms.js"), "Appearance.cs"];
         var shown = new List<string>();
         foreach (var file in sources)
         {

@@ -1,7 +1,6 @@
 @* 主題與 MudBlazor 的各個 provider。全站互動，所以放在版面裡；MudBlazor 要求它們與使用者元件在同一個 render mode。
    主題由 AddPlatformWeb 註冊（來源是 DesignTokens），這裡注入。MudBlazor 的主題提供者只輸出淺色那組變數；深色時由 TokenCss 以更高的特異度覆蓋（同一份調色盤），
    所以不需要讓它觀察系統的深色設定，也不必在電路裡同步外觀。 *@
-@inject MudTheme Theme
 
 <MudThemeProvider Theme="Theme" />
 <MudPopoverProvider />

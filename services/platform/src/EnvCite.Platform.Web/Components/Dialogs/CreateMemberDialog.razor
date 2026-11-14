@@ -1,7 +1,5 @@
 @* 新增客戶入口的成員。建立後由頁面接著顯示一次性的初始密碼（PasswordRevealDialog）。 *@
 @inherits FormDialogBase
-@inject IMemberAdmin Members
-@inject IMailSender Mail
 
 <MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
@@ -22,18 +20,3 @@
         <DialogSubmitActions Text="@(Mail.Enabled ? L["寄出邀請"] : L["建立成員"])" BusyText="@L["建立中…"]" Busy="Busy" OnSubmit="SubmitAsync" />
     </DialogActions>
 </MudDialog>
-
-@code {
-    [Parameter, EditorRequired] public string TenantId { get; set; } = string.Empty;
-
-    private string? _email;
-    private string? _displayName;
-    private string _role = CustomerRoles.Viewer;
-
-    protected override async Task SubmitAsync() =>
-        await CompleteAsync(
-            async actor => Mail.Enabled
-                ? DialogOutcome.From(await Members.InviteAsync(actor, TenantId, _email ?? string.Empty, _displayName, _role, CancellationToken.None), L["建立失敗。"])
-                : DialogOutcome.From(await Members.CreateAsync(actor, TenantId, _email ?? string.Empty, _displayName, _role, CancellationToken.None), L["建立失敗。"]),
-            L["建立失敗，請稍後再試。"]);
-}
