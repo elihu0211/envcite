@@ -7,6 +7,9 @@
    互動式的工作區用 WorkspaceLayout（沒有環境租戶，租戶取自身分）。外觀與版面見 PortalShell。 *@
 <PortalShell TenantName="@(Account.CurrentTenant is { } tenant ? tenant.Name ?? tenant.Identifier : null)"
              HomeHref="@(Account.CurrentTenant is { } home && Authenticated ? PortalPaths.Home(home.Identifier) : null)"
+             HistoryEnabled="@HistoryAvailability.Enabled"
+             HistoryHref="@HistoryHrefOf(Account.CurrentTenant?.Identifier)"
+             UserDisplayName="@DisplayNameOf(_user)"
              UserEmail="@Email"
              RoleLabel="@(PortalLabels.Role(_user?.FindFirst(ClaimTypes.Role)?.Value))"
              AvatarText="@AvatarOf(_user)"

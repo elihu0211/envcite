@@ -13,8 +13,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace EnvCite.Platform.Tests;
 
 /// <summary>
-/// 客戶入口的外殼：頂欄加左側欄（工作區），個人設定在右上角的帳號選單，兩者都依角色與狀態出現；
-/// 版面（手機／平板／桌機）由樣式表與 token 決定。
+/// 客戶入口的外殼：AI 瀏覽器雙欄版面（全高左側欄：品牌與收合控制、功能模塊、原生對話歷史、左下角帳號資料與向上彈出選單；
+/// 右側主舞台），還沒登入或有強制步驟時只有頂欄；版面（手機／平板／桌機）由樣式表與 token 決定。
 /// </summary>
 [Collection(PlatformTestGroup.Group1)]
 public sealed partial class PortalShellTests(PlatformFactory factory)
@@ -82,6 +82,32 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Single(Regex.Matches(account.Html, "ep-side-link active"));
         Assert.Contains($"href=\"{prefix}/account\" class=\"ep-side-link active\"", account.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("回總覽", account.Html, StringComparison.Ordinal);
+
+        // AI 瀏覽器側欄順序：功能模塊在前、左下角帳號資料在後，且頂欄沒有頭像鈕。
+        var sideStart = home.Html.IndexOf("<aside id=\"ep-side\"", StringComparison.Ordinal);
+        var stageStart = home.Html.IndexOf("class=\"ep-portal-stage\"", StringComparison.Ordinal);
+        var modulesPos = home.Html.IndexOf("class=\"ep-side-modules\"", StringComparison.Ordinal);
+        var footPos = home.Html.IndexOf("class=\"ep-side-foot\"", StringComparison.Ordinal);
+        Assert.True(sideStart > 0 && modulesPos > sideStart && footPos > modulesPos && stageStart > footPos);
+        var stageTop = Regex.Match(home.Html[stageStart..], "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;
+        Assert.DoesNotContain("popovertarget=\"ep-account-menu\"", stageTop, StringComparison.Ordinal);
+    }
+
+    // 問答歷史開啟時即使還沒有對話，側欄的功能模塊下方仍渲染原生歷史區；功能模塊在前、歷史在後、帳號資料在最底。
+    [Fact]
+    public async Task WhenHistoryIsEnabledTheNativeHistorySectionAppearsBelowModulesEvenWhenEmpty()
+    {
+        using var host = factory.WithWebHostBuilder(b => b.UseSetting("Platform:ConversationHistory:Enabled", "true"));
+        var (tenant, email, initial) = await MemberAsync(factory, "sh-hist");
+        using var browser = new PortalBrowser(host);
+        await SignInFullyAsync(browser, tenant.Identifier, email, initial);
+
+        var home = await browser.GetAsync(Home(tenant.Identifier));
+
+        var modulesPos = home.Html.IndexOf("class=\"ep-side-modules\"", StringComparison.Ordinal);
+        var historyPos = home.Html.IndexOf("class=\"ep-history-empty\"", StringComparison.Ordinal);
+        var footPos = home.Html.IndexOf("class=\"ep-side-foot\"", StringComparison.Ordinal);
+        Assert.True(modulesPos > 0 && historyPos > modulesPos && footPos > historyPos);
     }
 
     private sealed class ExtraNav : IPortalNavContributor

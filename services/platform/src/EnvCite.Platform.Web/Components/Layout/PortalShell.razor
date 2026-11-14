@@ -1,47 +1,226 @@
-@* 客戶入口的外殼，純呈現（不讀登入狀態）：與營運後台同一套頂欄加左側欄。側欄是工作區（查詢、對話紀錄、成員、帳號），
-   依群組排；個人的安全設定（兩步驟驗證、改密碼、登出）收在右上角的帳號選單。還沒登入或還有強制步驟時，只有頂欄。
-   側欄每項是圖示加文字：桌機可收成窄欄、手機是抽屜（forms.js 切換）。
-   選單用瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript，入口是靜態渲染）。
-   PortalLayout 依登入狀態填入；元件展示頁用假資料填入。 *@
+@* 客戶入口的外殼，純呈現（不讀登入狀態）：已登入進入工作區時採用現代 AI 瀏覽器雙欄版面——
+   左側為全高導覽欄（頂部為品牌與搜尋／收合控制、上方為功能模塊、中間為原生可捲動對話歷史、左下角為帳號選單並向上彈出）；
+   右側為主工作區舞台（精簡頂欄與置中問答／內容區）。還沒登入或還有強制步驟時，只有頂欄。
+   側欄每項是圖示加文字：桌機可收成窄欄、手機為全高滑出抽屜（forms.js 切換）。
+   帳號與對話選單均使用瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript）。
+   PortalLayout／WorkspaceLayout 依登入狀態填入；元件展示頁用假資料填入。 *@
 <a class="ep-skip-link" href="#main">@L["跳到主要內容"]</a>
 
 <div class="@(HasSideNav ? "ep-console ep-portal" : "ep-shell ep-portal")">
-    <header class="ep-shell-top">
-        @if (HasSideNav)
-        {
-            <button type="button" class="ep-side-toggle" aria-controls="ep-side" aria-expanded="true" aria-label="@L["展開或收合導覽"]"><NavIcon Path="@Icons.Material.Outlined.Menu" /></button>
-        }
-        @if (!string.IsNullOrEmpty(HomeHref))
-        {
-            <a class="ep-brand" href="@HomeHref"><BrandMark />@Brand.Name</a>
-        }
-        else
-        {
-            <span class="ep-brand"><BrandMark />@Brand.Name</span>
-        }
-        @if (!string.IsNullOrEmpty(TenantName))
-        {
-            <span class="ep-portal-tenant">@TenantName</span>
-        }
-        <span class="ep-spacer"></span>
+    @if (HasSideNav)
+    {
+        <div class="ep-scrim" aria-hidden="true"></div>
+        <div class="ep-edge" aria-hidden="true"></div>
 
-        @if (ShowMenu)
-        {
-            <button type="button" class="ep-avatar" popovertarget="ep-account-menu" aria-label="@L["帳號選單"]">@AvatarText</button>
-            <div id="ep-account-menu" class="ep-menu" popover>
-                <p class="ep-menu-who">
-                    <span>@UserEmail</span>
-                    @if (!string.IsNullOrEmpty(RoleLabel))
+        <div class="ep-console-body">
+            <aside id="ep-side" class="ep-side">
+                <div class="ep-side-head">
+                    @if (!string.IsNullOrEmpty(HomeHref))
                     {
-                        <span class="ep-secondary">@RoleLabel</span>
+                        <a class="ep-brand" href="@HomeHref"><BrandMark /><span class="ep-side-label">@Brand.Name</span></a>
                     }
-                </p>
-                <nav aria-label="@L["帳號選單"]">
-                    @foreach (var item in MenuItems)
+                    else
                     {
-                        <a class="ep-menu-item" href="@item.Href">@item.Label</a>
+                        <span class="ep-brand"><BrandMark /><span class="ep-side-label">@Brand.Name</span></span>
                     }
-                </nav>
+                    <span class="ep-spacer"></span>
+                    @if (HistoryEnabled && !string.IsNullOrEmpty(HistoryHref))
+                    {
+                        <a class="ep-side-icon-btn" href="@HistoryHref" aria-label="@L["搜尋對話標題"]" title="@L["搜尋對話標題"]"><NavIcon Path="@Icons.Material.Outlined.Search" /></a>
+                    }
+                    <button type="button" class="ep-side-toggle" aria-controls="ep-side" aria-expanded="true" aria-label="@L["展開或收合導覽"]" title="@L["展開或收合導覽"]"><NavIcon Path="@Icons.Material.Outlined.Menu" /></button>
+                </div>
+
+                <div class="ep-side-body">
+                    <div class="ep-side-modules">
+                        @foreach (var group in NavItems.GroupBy(i => i.Group))
+                        {
+                            <p class="ep-side-group" aria-hidden="true">@group.Key</p>
+                            <nav class="ep-side-nav" aria-label="@group.Key">
+                                @foreach (var item in group)
+                                {
+                                    <NavLink class="ep-side-link" href="@item.Href" Match="@(item.Exact ? NavLinkMatch.All : NavLinkMatch.Prefix)">
+                                        @if (!string.IsNullOrEmpty(item.Icon))
+                                        {
+                                            <NavIcon Path="@item.Icon" />
+                                        }
+                                        <span class="ep-side-label">@item.Label</span>
+                                    </NavLink>
+                                }
+                            </nav>
+                        }
+                    </div>
+
+                    @* 原生對話紀錄：功能模塊在上方，這裡接續在後並獨立捲動；釘選的一組在最上面，其餘依日期分組。
+                       問答歷史開啟時一律渲染原生歷史區（有對話時用 ep-recent，尚無對話時用 ep-history-empty 顯示引導提示）；關閉時完全不渲染。 *@
+                    @if (Recent.Count > 0)
+                    {
+                        <section class="ep-recent" aria-label="@L["最近的對話"]">
+                            <div class="ep-history-head">
+                                <span class="ep-history-heading">@L["最近的對話"]</span>
+                            </div>
+                            @foreach (var group in Recent)
+                            {
+                                <p class="ep-side-group" aria-hidden="true">@group.Label</p>
+                                <nav class="ep-recent-nav" aria-label="@group.Label">
+                                    @foreach (var item in group.Items)
+                                    {
+                                        <div class="ep-recent-item">
+                                            <NavLink class="ep-recent-link" href="@item.Href" title="@item.Title">
+                                                @if (item.Pinned)
+                                                {
+                                                    <NavIcon Path="@Icons.Material.Outlined.PushPin" />
+                                                }
+                                                <span class="ep-side-label">@item.Title</span>
+                                            </NavLink>
+                                            <ConversationMenu Id="@item.Id" Href="@item.Href" Title="@item.Title" Pinned="@item.Pinned" />
+                                        </div>
+                                    }
+                                </nav>
+                            }
+                        </section>
+                    }
+                    else if (HistoryEnabled)
+                    {
+                        <section class="ep-history-empty" aria-label="@L["最近的對話"]">
+                            <div class="ep-history-head">
+                                <span class="ep-history-heading">@L["最近的對話"]</span>
+                            </div>
+                            <p class="ep-history-empty-note">@L["在首頁問一個問題，它就會出現在這裡。"]</p>
+                        </section>
+                    }
+                </div>
+
+                @if (ShowMenu)
+                {
+                    <div class="ep-side-foot">
+                        <button type="button" class="ep-portal-user" popovertarget="ep-account-menu" aria-label="@L["帳號選單"]">
+                            <span class="ep-avatar" aria-hidden="true">@AvatarText</span>
+                            <span class="ep-portal-user-info">
+                                <span class="ep-portal-user-name">@(UserDisplayName ?? UserEmail)</span>
+                                @if (!string.IsNullOrEmpty(UserSecondaryLine))
+                                {
+                                    <span class="ep-portal-user-meta">@UserSecondaryLine</span>
+                                }
+                            </span>
+                            <span class="ep-portal-user-icon" aria-hidden="true"><NavIcon Path="@Icons.Material.Outlined.Settings" /></span>
+                        </button>
+                        <div id="ep-account-menu" class="ep-menu" popover>
+                            <p class="ep-menu-who">
+                                @if (!string.IsNullOrEmpty(UserDisplayName) && !string.Equals(UserDisplayName, UserEmail, StringComparison.Ordinal))
+                                {
+                                    <strong>@UserDisplayName</strong>
+                                }
+                                <span>@UserEmail</span>
+                                @if (!string.IsNullOrEmpty(RoleLabel))
+                                {
+                                    <span class="ep-secondary">@RoleLabel</span>
+                                }
+                            </p>
+                            <nav aria-label="@L["帳號選單"]">
+                                @foreach (var item in MenuItems)
+                                {
+                                    <a class="ep-menu-item" href="@item.Href">@item.Label</a>
+                                }
+                            </nav>
+                            @if (!string.IsNullOrEmpty(LanguageAction))
+                            {
+                                <LanguageSwitch Action="@LanguageAction" />
+                            }
+                            @if (!string.IsNullOrEmpty(LogoutAction))
+                            {
+                                <form method="post" action="@LogoutAction">
+                                    <AntiforgeryToken />
+                                    <button type="submit" class="ep-menu-item">@L["登出"]</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+            </aside>
+
+            <div class="ep-portal-stage">
+                <header class="ep-shell-top">
+                    <button type="button" class="ep-side-toggle ep-portal-mobile-toggle" aria-controls="ep-side" aria-expanded="true" aria-label="@L["展開或收合導覽"]"><NavIcon Path="@Icons.Material.Outlined.Menu" /></button>
+                    @if (!string.IsNullOrEmpty(HomeHref))
+                    {
+                        <a class="ep-brand" href="@HomeHref"><BrandMark />@Brand.Name</a>
+                    }
+                    else
+                    {
+                        <span class="ep-brand"><BrandMark />@Brand.Name</span>
+                    }
+                    @if (!string.IsNullOrEmpty(TenantName))
+                    {
+                        <span class="ep-portal-tenant">@TenantName</span>
+                    }
+                    <span class="ep-spacer"></span>
+                    @if (!string.IsNullOrEmpty(HomeHref))
+                    {
+                        <a class="ep-portal-new-chat" href="@HomeHref"><NavIcon Path="@Icons.Material.Outlined.Add" /><span>@L["新對話"]</span></a>
+                    }
+                </header>
+
+                <main class="ep-console-main" id="main" tabindex="-1">
+                    @ChildContent
+                </main>
+            </div>
+        </div>
+    }
+    else
+    {
+        <header class="ep-shell-top">
+            @if (!string.IsNullOrEmpty(HomeHref))
+            {
+                <a class="ep-brand" href="@HomeHref"><BrandMark />@Brand.Name</a>
+            }
+            else
+            {
+                <span class="ep-brand"><BrandMark />@Brand.Name</span>
+            }
+            @if (!string.IsNullOrEmpty(TenantName))
+            {
+                <span class="ep-portal-tenant">@TenantName</span>
+            }
+            <span class="ep-spacer"></span>
+
+            @if (ShowMenu)
+            {
+                <button type="button" class="ep-avatar" popovertarget="ep-account-menu" aria-label="@L["帳號選單"]">@AvatarText</button>
+                <div id="ep-account-menu" class="ep-menu" popover>
+                    <p class="ep-menu-who">
+                        @if (!string.IsNullOrEmpty(UserDisplayName) && !string.Equals(UserDisplayName, UserEmail, StringComparison.Ordinal))
+                        {
+                            <strong>@UserDisplayName</strong>
+                        }
+                        <span>@UserEmail</span>
+                        @if (!string.IsNullOrEmpty(RoleLabel))
+                        {
+                            <span class="ep-secondary">@RoleLabel</span>
+                        }
+                    </p>
+                    <nav aria-label="@L["帳號選單"]">
+                        @foreach (var item in MenuItems)
+                        {
+                            <a class="ep-menu-item" href="@item.Href">@item.Label</a>
+                        }
+                    </nav>
+                    @if (!string.IsNullOrEmpty(LanguageAction))
+                    {
+                        <LanguageSwitch Action="@LanguageAction" />
+                    }
+                    @if (!string.IsNullOrEmpty(LogoutAction))
+                    {
+                        <form method="post" action="@LogoutAction">
+                            <AntiforgeryToken />
+                            <button type="submit" class="ep-menu-item">@L["登出"]</button>
+                        </form>
+                    }
+                </div>
+            }
+            else
+            {
+                @* 還沒登入，或還在改初始密碼、註冊驗證器（只開那一頁，沒有選單）：頂欄只留語言與登出。 *@
                 @if (!string.IsNullOrEmpty(LanguageAction))
                 {
                     <LanguageSwitch Action="@LanguageAction" />
@@ -50,86 +229,12 @@
                 {
                     <form method="post" action="@LogoutAction">
                         <AntiforgeryToken />
-                        <button type="submit" class="ep-menu-item">@L["登出"]</button>
+                        <button type="submit" class="ep-btn ep-btn-quiet">@L["登出"]</button>
                     </form>
                 }
-            </div>
-        }
-        else
-        {
-            @* 還沒登入，或還在改初始密碼、註冊驗證器（只開那一頁，沒有選單）：頂欄只留語言與登出。 *@
-            @if (!string.IsNullOrEmpty(LanguageAction))
-            {
-                <LanguageSwitch Action="@LanguageAction" />
             }
-            @if (!string.IsNullOrEmpty(LogoutAction))
-            {
-                <form method="post" action="@LogoutAction">
-                    <AntiforgeryToken />
-                    <button type="submit" class="ep-btn ep-btn-quiet">@L["登出"]</button>
-                </form>
-            }
-        }
-    </header>
+        </header>
 
-    @if (HasSideNav)
-    {
-        <div class="ep-scrim" aria-hidden="true"></div>
-        <div class="ep-edge" aria-hidden="true"></div>
-
-        <div class="ep-console-body">
-            <aside id="ep-side" class="ep-side">
-                @foreach (var group in NavItems.GroupBy(i => i.Group))
-                {
-                    <p class="ep-side-group" aria-hidden="true">@group.Key</p>
-                    <nav class="ep-side-nav" aria-label="@group.Key">
-                        @foreach (var item in group)
-                        {
-                            <NavLink class="ep-side-link" href="@item.Href" Match="@(item.Exact ? NavLinkMatch.All : NavLinkMatch.Prefix)">
-                                @if (!string.IsNullOrEmpty(item.Icon))
-                                {
-                                    <NavIcon Path="@item.Icon" />
-                                }
-                                <span class="ep-side-label">@item.Label</span>
-                            </NavLink>
-                        }
-                    </nav>
-                }
-                @* 對話：釘選的一組在最上面，其餘依日期分組；窄欄與沒有 JavaScript 的手機橫列不顯示（樣式表）。
-                   每個項目有一顆「⋯」鈕，開原生 popover 選單：釘選、重新命名、刪除。三個動作都是附 antiforgery 的普通 POST 表單，
-                   靜態頁與互動式工作區的側欄共用這一份，不需要 JavaScript；動作完回到原來的頁面（PortalEndpoints）。 *@
-                @if (Recent.Count > 0)
-                {
-                    <section class="ep-recent" aria-label="@L["最近的對話"]">
-                        @foreach (var group in Recent)
-                        {
-                            <p class="ep-side-group" aria-hidden="true">@group.Label</p>
-                            <nav class="ep-recent-nav" aria-label="@group.Label">
-                                @foreach (var item in group.Items)
-                                {
-                                    <div class="ep-recent-item">
-                                        <NavLink class="ep-recent-link" href="@item.Href" title="@item.Title">
-                                            @if (item.Pinned)
-                                            {
-                                                <NavIcon Path="@Icons.Material.Outlined.PushPin" />
-                                            }
-                                            <span class="ep-side-label">@item.Title</span>
-                                        </NavLink>
-                                        <ConversationMenu Id="@item.Id" Href="@item.Href" Title="@item.Title" Pinned="@item.Pinned" />
-                                    </div>
-                                }
-                            </nav>
-                        }
-                    </section>
-                }
-            </aside>
-            <main class="ep-console-main" id="main" tabindex="-1">
-                @ChildContent
-            </main>
-        </div>
-    }
-    else
-    {
         <main class="ep-shell-main" id="main" tabindex="-1">
             @ChildContent
         </main>
@@ -162,11 +267,30 @@
     [Parameter]
     public string? HomeHref { get; set; }
 
+    /// <summary>問答歷史是否開啟；開啟時即使尚未有對話也會顯示原生對話歷史區。</summary>
+    [Parameter]
+    public bool HistoryEnabled { get; set; }
+
+    /// <summary>對話紀錄與搜尋頁的路徑（歷史開啟時帶入）。</summary>
+    [Parameter]
+    public string? HistoryHref { get; set; }
+
+    [Parameter]
+    public string? UserDisplayName { get; set; }
+
     [Parameter]
     public string? UserEmail { get; set; }
 
     [Parameter]
     public string? RoleLabel { get; set; }
+
+    private string? UserSecondaryLine => (TenantName, RoleLabel) switch
+    {
+        ({ Length: > 0 } tenant, { Length: > 0 } role) => $"{tenant} · {role}",
+        ({ Length: > 0 } tenant, _) => tenant,
+        (_, { Length: > 0 } role) => role,
+        _ => null,
+    };
 
     /// <summary>頭像圓鈕上的一個字（名字或 email 的第一個字）。</summary>
     [Parameter]
