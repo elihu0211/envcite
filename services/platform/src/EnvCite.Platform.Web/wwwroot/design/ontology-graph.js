@@ -842,8 +842,8 @@
     let activeTierFilter = null;
 
     function syncFilterButtons() {
-      const scope = host?.closest("[data-tab-panel]") || document;
-      scope.querySelectorAll("[data-graph-filter-tier]").forEach((btn) => {
+      if (!host) return;
+      host.querySelectorAll("[data-graph-filter-tier]").forEach((btn) => {
         btn.setAttribute("aria-pressed", btn.dataset.graphFilterTier === activeTierFilter ? "true" : "false");
       });
     }
@@ -883,20 +883,18 @@
 
     function renderSwimlanes() {
       if (!swimlanesEl) return;
-      if (currentLayout !== "stufenbau") {
-        swimlanesEl.hidden = true;
-        return;
-      }
       swimlanesEl.hidden = false;
       clearEl(swimlanesEl);
       const tierCounts = new Map();
+      let invalidatedTotal = 0;
       nodes.forEach((n) => {
         const t = Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1;
         tierCounts.set(t, (tierCounts.get(t) || 0) + 1);
+        if (n.invalidationCount > 0) invalidatedTotal += 1;
       });
       const activeTiers = Array.from(tierCounts.keys()).sort((a, b) => a - b);
       activeTiers.forEach((tier, idx) => {
-        if (idx > 0) {
+        if (idx > 0 && currentLayout === "stufenbau") {
           addEl(swimlanesEl, "span", "ep-hint", "→");
         }
         const pill = addEl(swimlanesEl, "button", "ep-swimlane-pill", `${tierName(tier, labels)} (${tierCounts.get(tier)})`);
@@ -905,6 +903,15 @@
         pill.dataset.graphFilterTier = String(tier);
         pill.setAttribute("aria-pressed", activeTierFilter === String(tier) ? "true" : "false");
       });
+      if (invalidatedTotal > 0) {
+        const invPill = addEl(swimlanesEl, "button", "ep-swimlane-pill", `⚠ ${invalidatedTotal}`);
+        invPill.type = "button";
+        invPill.dataset.graphFilterTier = "invalid";
+        invPill.setAttribute("aria-pressed", activeTierFilter === "invalid" ? "true" : "false");
+      }
+      if (swimlanesEl.dataset.graphSummary) {
+        addEl(swimlanesEl, "span", "ep-swimlane-summary", swimlanesEl.dataset.graphSummary);
+      }
     }
 
     function updateToolbarState() {
@@ -1114,14 +1121,12 @@
       host.dataset.graphBound = "1";
       let isFullscreen = false;
 
-      const scopePanel = host.closest("[data-tab-panel]") || host;
-      scopePanel.addEventListener("click", (evt) => {
-        const filterBtn = evt.target.closest("[data-graph-filter-tier]");
-        if (!filterBtn) return;
-        applyTierFilter(filterBtn.dataset.graphFilterTier);
-      });
-
       host.addEventListener("click", (evt) => {
+        const filterBtn = evt.target.closest("[data-graph-filter-tier]");
+        if (filterBtn) {
+          applyTierFilter(filterBtn.dataset.graphFilterTier);
+          return;
+        }
         const closeBtn = evt.target.closest("[data-inspector-close]");
         if (closeBtn) {
           host.dataset.inspectorOpen = "false";
@@ -1272,6 +1277,11 @@
         btn.setAttribute("aria-expanded", open ? "true" : "false");
       });
     };
+
+    if (!root.dataset.catalogOpen) {
+      const isDesktop = window.matchMedia && window.matchMedia("(min-width: 58rem)").matches;
+      setOpen(Boolean(isDesktop));
+    }
 
     document.querySelectorAll('[data-workbench-toggle="catalog"]').forEach((btn) => {
       btn.addEventListener("click", () => {
