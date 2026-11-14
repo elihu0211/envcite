@@ -18,7 +18,9 @@ from envcite_ontology import history_sync
 from envcite_ontology.acquire import moenv_law
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.history_sources import Moenv
-from envcite_ontology.ingest import audit, backfill, importer
+from envcite_ontology.ingest import audit, importer
+from envcite_ontology.ingest.backfill import planner
+from envcite_ontology.ingest.backfill.models import Anchor, Article, Version
 from tests.fake_web import FakeWeb
 from tests.moenv_site import current_page, site
 from tests.sample import stored_snapshot
@@ -284,7 +286,7 @@ def test_an_older_last_article_does_not_date_a_past_version() -> None:
         "3.中華民國一百零九年三月一日總統令修正公布第 1 條條文；並自公布日施行",
     )
     last = "本法自中華民國八十年七月一日施行。"
-    anchor = backfill.Anchor(
+    anchor = Anchor(
         resource=1,
         pcode=PCODE,
         kind="regulation",
@@ -298,17 +300,17 @@ def test_an_older_last_article_does_not_date_a_past_version() -> None:
         events=list(history),
     )
 
-    def version(when: date, first: str) -> backfill.Version:
-        return backfill.Version(
+    def version(when: date, first: str) -> Version:
+        return Version(
             TITLE,
             when,
             [
-                backfill.Article("第 1 條", first, False, 0),
-                backfill.Article("第 2 條", last, False, 0),
+                Article("第 1 條", first, False, 0),
+                Article("第 2 條", last, False, 0),
             ],
         )
 
-    plan = backfill.plan(anchor, version(V3, "丙。"), [version(V2, "乙。"), version(V1, "甲。")])
+    plan = planner.plan(anchor, version(V3, "丙。"), [version(V2, "乙。"), version(V1, "甲。")])
 
     rows = {
         (v.version_date, u.path): (u.rule, u.starts, u.ends) for v in plan.versions for u in v.units

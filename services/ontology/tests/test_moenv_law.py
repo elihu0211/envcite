@@ -5,7 +5,8 @@ from datetime import date
 import pytest
 
 from envcite_ontology.acquire import moenv_law
-from envcite_ontology.ingest import backfill
+from envcite_ontology.ingest.backfill.models import UnreadablePage
+from envcite_ontology.ingest.backfill.texts import fold
 from tests.moenv_site import current_page, history_list, history_page, listing
 
 #: 行寬 64（全形 32 字）的轉錄，取自空氣污染防制法民國 101 年版第 2 條與 107 年版第 8 條的寫法。
@@ -108,7 +109,7 @@ def test_listing_history_and_fragment() -> None:
     ]
     assert moenv_law.history_ids(history_list("FL000001", [12, 11])) == [12, 11]
     assert moenv_law.history_ids(history_list("FL000001", [])) == []  # 從未修正
-    with pytest.raises(backfill.UnreadablePage):
+    with pytest.raises(UnreadablePage):
         moenv_law.history_ids("<html>維護中</html>")
     # 瀏覽人數每次不同：不在片段裡，同一份內容的雜湊才不變。
     assert "瀏覽人數" not in moenv_law.fragment(page)
@@ -116,12 +117,12 @@ def test_listing_history_and_fragment() -> None:
 
 
 def test_a_page_of_another_shape_is_unreadable() -> None:
-    with pytest.raises(backfill.UnreadablePage):
+    with pytest.raises(UnreadablePage):
         moenv_law.parse_version("<html>維護中</html>")
 
 
 def test_fold_ignores_width_and_spacing_differences_between_the_two_systems() -> None:
-    assert backfill.fold("縣 (市) 低於 10-10  公分") == backfill.fold("縣（市）低於10-10公分")
+    assert fold("縣 (市) 低於 10-10  公分") == fold("縣（市）低於10-10公分")
 
 
 def test_pages_edited_with_the_rich_text_editor_use_strong_and_spans() -> None:

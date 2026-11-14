@@ -17,7 +17,9 @@ from envcite_ontology import history_sync
 from envcite_ontology.acquire import moenv_law
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.history_sources import Moenv
-from envcite_ontology.ingest import backfill, importer
+from envcite_ontology.ingest import importer
+from envcite_ontology.ingest.backfill import writer
+from envcite_ontology.ingest.backfill.models import Anchor
 from tests.fake_web import FakeWeb
 from tests.moenv_site import listing, site
 from tests.sample import stored_snapshot
@@ -86,9 +88,9 @@ def _sync(conn: Conn, root: Path, source: Moenv | None = None) -> int:
 
 def _race(monkeypatch: pytest.MonkeyPatch, pcode: str) -> None:
     """規劃之後、寫入之前，另一個作業把同版本日的官方版本入了庫。"""
-    real = backfill.write
+    real = writer.write
 
-    def write(conn: Conn, anchor: backfill.Anchor, target: Any, authority: str) -> str:
+    def write(conn: Conn, anchor: Anchor, target: Any, authority: str) -> str:
         if anchor.pcode == pcode:
             conn.execute(
                 "INSERT INTO corpus.legal_expression (resource_id, language, version_date, title,"
@@ -98,7 +100,7 @@ def _race(monkeypatch: pytest.MonkeyPatch, pcode: str) -> None:
             )
         return real(conn, anchor, target, authority)
 
-    monkeypatch.setattr(backfill, "write", write)
+    monkeypatch.setattr(writer, "write", write)
 
 
 def _versions(conn: Conn, pcode: str) -> set[date]:
@@ -189,12 +191,12 @@ def test_a_transient_database_error_still_stops_the_job_for_a_retry(
 ) -> None:
     _anchors(conn, tmp_path)
 
-    def write(conn: Conn, anchor: backfill.Anchor, target: Any, authority: str) -> str:
+    def write(conn: Conn, anchor: Anchor, target: Any, authority: str) -> str:
         conn.execute("SET LOCAL statement_timeout = '1ms'")
         conn.execute("SELECT pg_sleep(1)")
         raise AssertionError("unreachable")
 
-    monkeypatch.setattr(backfill, "write", write)
+    monkeypatch.setattr(writer, "write", write)
 
     with pytest.raises(psycopg.errors.QueryCanceled):
         _sync(conn, tmp_path)

@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from envcite_ontology.acquire import ly_law, moenv_law
 from envcite_ontology.db import Conn, fetch
-from envcite_ontology.ingest.backfill import UnreadablePage, Version
+from envcite_ontology.ingest.backfill.models import UnreadablePage, Version
 
 _NORM_KINDS = {"法律": ("statute", "constitution"), "命令": ("regulation",)}
 

@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from envcite_ontology.acquire.markup import visible_text
-from envcite_ontology.ingest.backfill import Article, UnreadablePage, Version
+from envcite_ontology.ingest.backfill.models import Article, UnreadablePage, Version
 from envcite_ontology.ingest.numerals import CN_NUMERALS
 
 BASE = "https://oaout.moenv.gov.tw/law/"
