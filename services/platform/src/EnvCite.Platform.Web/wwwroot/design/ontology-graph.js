@@ -21,8 +21,18 @@
     return computed || fallback;
   }
 
-  function themePalette() {
-    return {
+  let cachedPaletteKey = null;
+  let cachedPaletteValue = null;
+
+  function themePalette(forceRefresh = false) {
+    const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const themeAttr = document.documentElement ? (document.documentElement.dataset.theme || "") : "";
+    const key = `${themeAttr}|${isDark ? "dark" : "light"}`;
+    if (!forceRefresh && cachedPaletteValue && cachedPaletteKey === key) {
+      return cachedPaletteValue;
+    }
+    cachedPaletteKey = key;
+    cachedPaletteValue = {
       text: resolveColor("var(--ep-text)", "#1D1D1F"),
       textSecondary: resolveColor("var(--ep-text-secondary)", "#55555B"),
       surface: resolveColor("var(--ep-surface)", "#FFFFFF"),
@@ -42,6 +52,7 @@
       accent: resolveColor("var(--ep-accent)", "#14B8A6"),
       accentTint: resolveColor("color-mix(in srgb, var(--ep-accent) 14%, var(--ep-surface))", "#E6F8F5"),
     };
+    return cachedPaletteValue;
   }
 
   function truncateTitle(title, maxChars) {
@@ -483,9 +494,12 @@
       minZoom: 0.25,
       maxZoom: 2.0,
       wheelSensitivity: 0.18,
+      textureOnViewport: true,
+      motionBlur: false,
       layout: { name: "preset", fit: false },
       style: buildStylesheet(themePalette(), showEdgeLabels),
     });
+    container._cyInstance = cy;
 
     function fitViewport() {
       cy.resize();
@@ -519,9 +533,11 @@
         }).run();
       } else {
         const updated = computeStufenbauPositions(nodes, edges, container.clientWidth, labels);
-        cy.nodes().forEach((ele) => {
-          const p = updated.positions.get(ele.id());
-          if (p) ele.position(p);
+        cy.batch(() => {
+          cy.nodes().forEach((ele) => {
+            const p = updated.positions.get(ele.id());
+            if (p) ele.position(p);
+          });
         });
       }
       fitViewport();
@@ -529,17 +545,20 @@
     }
 
     function selectNodeById(nodeId) {
-      cy.elements().removeClass("is-selected is-highlighted is-dimmed");
       const ele = cy.getElementById(nodeId);
       if (!ele || ele.empty()) {
+        cy.batch(() => cy.elements().removeClass("is-selected is-highlighted is-dimmed"));
         renderInspector(inspectorEl, null, nodes, edges, labels);
         return;
       }
       if (ele.data("isCluster") === "yes") return;
-      ele.addClass("is-selected");
       const hood = ele.closedNeighborhood();
-      cy.elements().difference(hood).addClass("is-dimmed");
-      ele.connectedEdges().addClass("is-highlighted");
+      cy.batch(() => {
+        cy.elements().removeClass("is-selected is-highlighted is-dimmed");
+        ele.addClass("is-selected");
+        cy.elements().difference(hood).addClass("is-dimmed");
+        ele.connectedEdges().addClass("is-highlighted");
+      });
       renderInspector(inspectorEl, ele.data("raw"), nodes, edges, labels);
     }
 
@@ -574,7 +593,7 @@
 
     cy.on("tap", (evt) => {
       if (evt.target === cy) {
-        cy.elements().removeClass("is-selected is-highlighted is-dimmed");
+        cy.batch(() => cy.elements().removeClass("is-selected is-highlighted is-dimmed"));
         const initial = nodes.find((n) => n.focus) || nodes[0] || null;
         renderInspector(inspectorEl, initial, nodes, edges, labels);
       }
@@ -587,19 +606,21 @@
     fitViewport();
     updateToolbarState();
 
-    if (host) {
+    if (host && host.dataset.graphBound !== "1") {
+      host.dataset.graphBound = "1";
       host.addEventListener("click", (evt) => {
         const btn = evt.target.closest("[data-graph-action]");
         if (!btn) return;
+        const activeCy = container._cyInstance || cy;
         const action = btn.dataset.graphAction;
         if (action === "fit") fitViewport();
-        else if (action === "zoom-in") cy.zoom({ level: cy.zoom() * 1.2, renderedPosition: { x: container.clientWidth / 2, y: container.clientHeight / 2 } });
-        else if (action === "zoom-out") cy.zoom({ level: cy.zoom() * 0.84, renderedPosition: { x: container.clientWidth / 2, y: container.clientHeight / 2 } });
+        else if (action === "zoom-in") activeCy.zoom({ level: activeCy.zoom() * 1.2, renderedPosition: { x: container.clientWidth / 2, y: container.clientHeight / 2 } });
+        else if (action === "zoom-out") activeCy.zoom({ level: activeCy.zoom() * 0.84, renderedPosition: { x: container.clientWidth / 2, y: container.clientHeight / 2 } });
         else if (action === "layout-stufenbau") applyLayout("stufenbau");
         else if (action === "layout-concentric") applyLayout("concentric");
         else if (action === "toggle-edge-labels") {
           showEdgeLabels = !showEdgeLabels;
-          cy.style(buildStylesheet(themePalette(), showEdgeLabels));
+          activeCy.style(buildStylesheet(themePalette(), showEdgeLabels));
           updateToolbarState();
         }
       });
@@ -607,23 +628,28 @@
 
     if (typeof ResizeObserver === "function") {
       let lastWidth = container.clientWidth;
+      let resizeRaf = 0;
       const observer = new ResizeObserver(() => {
-        const w = container.clientWidth;
-        if (Math.abs(w - lastWidth) > 32) {
-          lastWidth = w;
-          if (currentLayout === "stufenbau") {
-            applyLayout("stufenbau");
-          } else {
-            fitViewport();
+        if (resizeRaf) return;
+        resizeRaf = window.requestAnimationFrame(() => {
+          resizeRaf = 0;
+          const w = container.clientWidth;
+          if (Math.abs(w - lastWidth) > 32) {
+            lastWidth = w;
+            if (currentLayout === "stufenbau") {
+              applyLayout("stufenbau");
+            } else {
+              fitViewport();
+            }
           }
-        }
+        });
       });
       observer.observe(container);
     }
 
     if (window.matchMedia) {
       const mql = window.matchMedia("(prefers-color-scheme: dark)");
-      const refreshTheme = () => cy.style(buildStylesheet(themePalette(), showEdgeLabels));
+      const refreshTheme = () => cy.style(buildStylesheet(themePalette(true), showEdgeLabels));
       if (typeof mql.addEventListener === "function") mql.addEventListener("change", refreshTheme);
     }
   }

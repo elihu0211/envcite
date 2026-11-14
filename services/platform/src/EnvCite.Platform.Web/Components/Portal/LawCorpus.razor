@@ -513,7 +513,68 @@ else
         if (!HasCorpus) return;
 
         var asOf = string.IsNullOrWhiteSpace(AsOf) ? null : AsOf.Trim();
-        var treeOutcome = await LawCorpusService.TreeByCategoryAsync(User, null, EffectiveCategoryPrefix, asOf, CancellationToken.None);
+        var treeTask = LawCorpusService.TreeByCategoryAsync(User, null, EffectiveCategoryPrefix, asOf, CancellationToken.None);
+
+        if (HasSelectedLaw)
+        {
+            var focusKey = new PortalLawKey(Jurisdiction!, IdScheme!, LocalId!);
+            var graphTask = LawCorpusService.GraphAsync(
+                User,
+                new PortalLawGraphQuery(
+                    focusKey,
+                    asOf,
+                    CategoryPrefix: null,
+                    UpstreamDepth: ResolvedUpDepth,
+                    DownstreamDepth: ResolvedDownDepth,
+                    ChildLimit: ResolvedChildLimit,
+                    ChildDocumentType: string.IsNullOrWhiteSpace(DocType) ? null : DocType.Trim()),
+                CancellationToken.None);
+            var browseTask = LawCorpusService.BrowseAsync(
+                User, Jurisdiction, IdScheme, LocalId, asOf, CancellationToken.None);
+
+            await Task.WhenAll(treeTask, graphTask, browseTask);
+
+            var treeOutcome = await treeTask;
+            ApplyTreeOutcome(treeOutcome);
+
+            var graphOutcome = await graphTask;
+            if (graphOutcome.IsOk && graphOutcome.Value is { } graph)
+                _graphResult = graph;
+
+            var outcome = await browseTask;
+            if (outcome.IsOk)
+                _result = outcome.Value;
+            else
+                _lookupError = outcome.Localized() ?? L["查詢法規失敗。"];
+
+            CollectActiveBranch(NodeKey(Jurisdiction!, IdScheme!, LocalId!));
+        }
+        else
+        {
+            var graphTask = LawCorpusService.GraphAsync(
+                User,
+                new PortalLawGraphQuery(
+                    Focus: null,
+                    AsOf: asOf,
+                    CategoryPrefix: EffectiveCategoryPrefix,
+                    UpstreamDepth: 2,
+                    DownstreamDepth: 2,
+                    ChildLimit: 24),
+                CancellationToken.None);
+
+            await Task.WhenAll(treeTask, graphTask);
+
+            var treeOutcome = await treeTask;
+            ApplyTreeOutcome(treeOutcome);
+
+            var graphOutcome = await graphTask;
+            if (graphOutcome.IsOk && graphOutcome.Value is { } graph)
+                _graphResult = graph;
+        }
+    }
+
+    private void ApplyTreeOutcome(AdminOutcome<PortalLawTreeResult> treeOutcome)
+    {
         if (treeOutcome.IsOk && treeOutcome.Value is { } tree)
         {
             _treeLoaded = tree.CatalogAvailable;
@@ -526,48 +587,6 @@ else
         else if (!treeOutcome.IsOk)
         {
             _treeError = treeOutcome.Localized() ?? L["查詢法規失敗。"].Value;
-        }
-
-        if (HasSelectedLaw)
-        {
-            var focusKey = new PortalLawKey(Jurisdiction!, IdScheme!, LocalId!);
-            var graphOutcome = await LawCorpusService.GraphAsync(
-                User,
-                new PortalLawGraphQuery(
-                    focusKey,
-                    asOf,
-                    CategoryPrefix: null,
-                    UpstreamDepth: ResolvedUpDepth,
-                    DownstreamDepth: ResolvedDownDepth,
-                    ChildLimit: ResolvedChildLimit,
-                    ChildDocumentType: string.IsNullOrWhiteSpace(DocType) ? null : DocType.Trim()),
-                CancellationToken.None);
-            if (graphOutcome.IsOk && graphOutcome.Value is { } graph)
-                _graphResult = graph;
-
-            var outcome = await LawCorpusService.BrowseAsync(
-                User, Jurisdiction, IdScheme, LocalId, asOf, CancellationToken.None);
-            if (outcome.IsOk)
-                _result = outcome.Value;
-            else
-                _lookupError = outcome.Localized() ?? L["查詢法規失敗。"];
-
-            CollectActiveBranch(NodeKey(Jurisdiction!, IdScheme!, LocalId!));
-        }
-        else
-        {
-            var graphOutcome = await LawCorpusService.GraphAsync(
-                User,
-                new PortalLawGraphQuery(
-                    Focus: null,
-                    AsOf: asOf,
-                    CategoryPrefix: EffectiveCategoryPrefix,
-                    UpstreamDepth: 2,
-                    DownstreamDepth: 2,
-                    ChildLimit: 24),
-                CancellationToken.None);
-            if (graphOutcome.IsOk && graphOutcome.Value is { } graph)
-                _graphResult = graph;
         }
     }
 
