@@ -218,9 +218,9 @@ def definition_sources(
     }
 
 
-def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListStatementsResponse:
-    """資源 `resource_id` 在 `on`（None 為今日）有效、已確認的陳述。"""
-    params = {"resource": resource_id, "language": LANGUAGE, "on": on or date.today()}
+def list_statements(conn: Conn, resource_id: int, on: date) -> pb.ListStatementsResponse:
+    """資源 `resource_id` 在 `on` 有效、已確認的陳述。"""
+    params = {"resource": resource_id, "language": LANGUAGE, "on": on}
     invalidated = [
         outcome_codec.invalidated(
             Invalidated(r.statement_id, r.version_iri, r.ruling_no, r.invalid_from, r.partial)

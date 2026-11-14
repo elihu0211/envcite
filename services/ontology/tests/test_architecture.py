@@ -4,6 +4,7 @@
 上限是目前的行數（取整到 50）：只能縮、不能增。拆完就從清單刪掉；新模組一律以 `MAX_LINES` 為限。
 """
 
+import ast
 from pathlib import Path
 
 import pytest
@@ -48,3 +49,27 @@ def test_a_module_that_was_split_leaves_the_oversized_list(rel: str) -> None:
 
     assert path.exists(), f"{rel} 已不存在：從 `OVERSIZED` 刪掉"
     assert _lines(path) > MAX_LINES, f"{rel} 已在 {MAX_LINES} 行以內：從 `OVERSIZED` 刪掉"
+
+
+def _clock_reads(path: Path) -> list[int]:
+    """程式裡直接呼叫系統時鐘（`date.today()`、`datetime.now()` 等）的行號。"""
+    reads = {"today", "now", "utcnow"}
+    return [
+        node.lineno
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr in reads
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id in {"date", "datetime"}
+    ]
+
+
+def test_logic_takes_today_instead_of_reading_the_clock() -> None:
+    reads = {
+        rel: lines
+        for path in _modules()
+        if (lines := _clock_reads(path)) and (rel := path.relative_to(SRC).as_posix())
+    }
+
+    assert not reads, f"直接讀系統時鐘：{reads}。改收注入的 `clock.Today`（預設 `date.today`）。"

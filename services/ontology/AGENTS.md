@@ -49,7 +49,8 @@ uv run --env-file .env envcite-ontology
   - 行政規則的取得（`guidance_sync/`）按階段分：`run.sync` 串接列舉（`listing`）、逐項（`job`）、覆蓋率與停止適用（`settle` 函釋下架、`repeals` 公報廢止），`cli` 是指令列；套件不匯出，從定義它的模組匯入。
   - 裁罰計算（`reasoning/scoring/`）按層分：`models`（規格與結果型別，不含計算）、`formulas`（三種公式）、`adjustments`（一般調整與講習時數）、`evaluate`、`matrices`（載入）、`audit`（處分書檢核）；套件不匯出，從定義它的模組匯入。
   - 歷史版本回推（`ingest/backfill/`）按步驟分：`models`（來源版本、錨點、計畫型別）、`anchors`（載入錨點）、`planner`（`plan` 純函式）連同 `texts`、`intervals`，`writer`（寫入，一部一個交易）；套件不匯出，從定義它的模組匯入。
-  - 邏輯不直接讀系統時鐘：今天的日期收注入的 `clock.Today`（預設 `date.today`），測試傳固定值；指令列的 `main` 是組合根，才可以呼叫 `psycopg.connect` 與 `settings.load`。
+  - 邏輯不直接讀系統時鐘（`date.today()`、`datetime.now()`；`tests/test_architecture.py` 守門）：今天的日期收注入的 `clock.Today`（預設 `date.today`），測試傳固定值；指令列的 `main` 是組合根，才可以呼叫 `psycopg.connect` 與 `settings.load`。
+  - 歷史版本的取得（`history_sync/`）按步驟分：`run.sync` 串接 `acquire` 與 `importing`，`policy` 放重試政策與整批驗收上限，`report`、`cli`；測試要放寬上限用 `tests/history_support.relax_limits`；套件不匯出，從定義它的模組匯入。
   - 依賴注入：接線只在組合根（`server.py` 與各 CLI 的 `main`）；servicer 與推論從建構子拿依賴（儲存庫、嵌入、精排、斷詞，與調校旋鈕 `SearchTuning`），不自己建連線、不讀設定。「今日」由 SQL 的 `as_of` 決定，不在 Python 取時鐘。
   - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
   - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。
