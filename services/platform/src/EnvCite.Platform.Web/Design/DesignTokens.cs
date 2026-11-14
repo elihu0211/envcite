@@ -76,53 +76,53 @@ public static class DesignTokens
 
     public static ColorTokens Light { get; } = new()
     {
-        Background = "#F5F5F7",
+        Background = "#F8FAFC",
         Surface = "#FFFFFF",
         SurfaceRaised = "#FFFFFF",
-        SurfaceMuted = "#F0F0F3",
-        Text = "#1D1D1F",
-        TextSecondary = "#55555B",
+        SurfaceMuted = "#F1F5F9",
+        Text = "#0F172A",
+        TextSecondary = "#475569",
         Primary = Brand,
-        Ink = "#1D1D1F",
+        Ink = "#0F172A",
         OnInk = "#FFFFFF",
-        Accent = "#14B8A6",
+        Accent = "#0D9488",
         OnPrimary = "#FFFFFF",
         Link = BrandText,
-        Success = "#0B7857",
-        Warning = "#AC5107",
-        Error = "#AC312C",
-        Info = "#1D52AF",
-        BorderSubtle = "#E3E3E8",
-        BorderControl = "#86868B",
+        Success = "#047857",
+        Warning = "#A14A07",
+        Error = "#B91C1C",
+        Info = "#4338CA",
+        BorderSubtle = "#E2E8F0",
+        BorderControl = "#64748B",
         Focus = Brand,
         Scrim = "rgb(15 23 42 / 0.5)",
     };
 
-    // 深色：中性偏冷的深灰（M3 與 Apple 深色的做法），層次靠表面一階比一階亮（背景最暗、卡片、浮起的面最亮），
-    // 不靠陰影——深色底上陰影看不出來。企業藍在深色底上改用同色相的亮階（填色與連結共用）：實心按鈕的字改深色，
-    // 對比由測試驗證，與淺色同一套標準。狀態色同理，亮階、彩度克制，仍是文字級。
+    // 深色：企業級深藍灰板岩階層（Obsidian Slate，#0B1120 往上），層次靠表面一階比一階亮（背景最暗、卡片、浮起的面最亮），
+    // 不靠陰影——深色底上陰影看不出來。企業藍在深色底上改用高可讀亮藍階：實心按鈕的字改深藍黑，
+    // 對比由測試驗證，與淺色同一套標準。狀態色同理，明度清晰、文字級對比。
     public static ColorTokens Dark { get; } = new()
     {
-        Background = "#121214",
-        Surface = "#1C1C1F",
-        SurfaceRaised = "#252529",
-        SurfaceMuted = "#2A2A2F",
-        Text = "#ECECF0",
-        TextSecondary = "#A8A8B2",
-        Primary = "#8AB4F8",
-        Ink = "#ECECF0",
-        OnInk = "#121214",
+        Background = "#0B1120",
+        Surface = "#111827",
+        SurfaceRaised = "#1E293B",
+        SurfaceMuted = "#273449",
+        Text = "#F8FAFC",
+        TextSecondary = "#CBD5E1",
+        Primary = "#60A5FA",
+        Ink = "#F8FAFC",
+        OnInk = "#0B1120",
         Accent = "#2DD4BF",
-        OnPrimary = "#08234A",
-        Link = "#8AB4F8",
-        Success = "#5FD3A3",
-        Warning = "#F2A65A",
-        Error = "#FF8F88",
-        Info = "#8EB6FF",
-        BorderSubtle = "#36363C",
-        BorderControl = "#8A8A94",
-        Focus = "#8AB4F8",
-        Scrim = "rgb(0 0 0 / 0.6)",
+        OnPrimary = "#0B1120",
+        Link = "#93C5FD",
+        Success = "#34D399",
+        Warning = "#FBBF24",
+        Error = "#F87171",
+        Info = "#A78BFA",
+        BorderSubtle = "#334155",
+        BorderControl = "#94A3B8",
+        Focus = "#60A5FA",
+        Scrim = "rgb(2 6 23 / 0.72)",
     };
 
     /// <summary>

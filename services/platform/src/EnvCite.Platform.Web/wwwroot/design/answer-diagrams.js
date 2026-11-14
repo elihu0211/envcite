@@ -43,14 +43,14 @@
     function buildThemeVariables() {
         const resolveColor = (expr, fallback) => resolveCssValue("color", expr, fallback);
         const surface = resolveColor("var(--ep-surface)", "#FFFFFF");
-        const surfaceMuted = resolveColor("var(--ep-surface-muted)", "#F0F0F3");
+        const surfaceMuted = resolveColor("var(--ep-surface-muted)", "#F1F5F9");
         const surfaceRaised = resolveColor("var(--ep-surface-raised)", "#FFFFFF");
-        const text = resolveColor("var(--ep-text)", "#1D1D1F");
-        const textSecondary = resolveColor("var(--ep-text-secondary)", "#55555B");
+        const text = resolveColor("var(--ep-text)", "#0F172A");
+        const textSecondary = resolveColor("var(--ep-text-secondary)", "#475569");
         const primary = resolveColor("var(--ep-primary)", "#005FC4");
         const primaryTint = resolveColor("color-mix(in srgb, var(--ep-primary) 12%, var(--ep-surface))", "#E8F1FB");
-        const borderSubtle = resolveColor("var(--ep-border-subtle)", "#E3E3E8");
-        const borderControl = resolveColor("var(--ep-border-control)", "#86868B");
+        const borderSubtle = resolveColor("var(--ep-border-subtle)", "#E2E8F0");
+        const borderControl = resolveColor("var(--ep-border-control)", "#64748B");
         const dark = isDarkScheme();
 
         return {

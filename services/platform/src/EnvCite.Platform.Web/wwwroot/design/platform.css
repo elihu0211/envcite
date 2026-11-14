@@ -2943,6 +2943,10 @@ html[data-js] .ep-otp-input::selection {
     --tone: var(--ep-error);
 }
 
+.ep-badge[data-tone="primary"] {
+    --tone: var(--ep-primary);
+}
+
 .ep-badge[data-tone="info"] {
     --tone: var(--ep-info);
 }
@@ -4922,8 +4926,9 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 .ep-graph-canvas .g6-minimap {
     background: var(--ep-surface) !important;
-    border: 1px solid var(--ep-border-subtle) !important;
+    border: 1px solid var(--ep-border-control) !important;
     border-radius: var(--ep-radius-control) !important;
+    box-shadow: var(--ep-elevation-1) !important;
     overflow: hidden;
 }
 
@@ -4933,9 +4938,9 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 .ep-graph-canvas .g6-contextmenu {
     background: var(--ep-surface-raised) !important;
-    border: 1px solid var(--ep-border-subtle) !important;
+    border: 1px solid var(--ep-border-control) !important;
     border-radius: var(--ep-radius-control) !important;
-    box-shadow: 0 12px 28px color-mix(in srgb, var(--ep-text) 20%, transparent) !important;
+    box-shadow: var(--ep-elevation-2) !important;
     padding: var(--ep-space-1) !important;
     color: var(--ep-text) !important;
     font-size: var(--ep-label-s-size) !important;
@@ -4973,10 +4978,10 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     align-items: center;
     gap: var(--ep-space-1);
     padding: var(--ep-space-1) var(--ep-space-2);
-    border: 1px solid var(--ep-border-subtle);
+    border: 1px solid var(--ep-border-control);
     border-radius: var(--ep-radius-control);
-    background: color-mix(in srgb, var(--ep-surface) 92%, transparent);
-    box-shadow: 0 6px 20px color-mix(in srgb, var(--ep-text) 14%, transparent);
+    background: color-mix(in srgb, var(--ep-surface-raised) 94%, transparent);
+    box-shadow: var(--ep-elevation-2);
 }
 
 .ep-graph-floating-controls .ep-btn,
@@ -5005,16 +5010,19 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 .ep-swimlane-pill[data-graph-filter-tier] {
     cursor: pointer;
     font: inherit;
-    color: inherit;
+    color: var(--ep-text);
 }
 
+.ep-graph-canvas .tooltip,
 .ep-graph-canvas .g6-tooltip {
     background: var(--ep-surface-raised) !important;
-    border: 1px solid var(--ep-border-subtle) !important;
+    background-color: var(--ep-surface-raised) !important;
+    border: 1px solid var(--ep-border-control) !important;
     border-radius: var(--ep-radius-control) !important;
     color: var(--ep-text) !important;
+    font-family: var(--ep-font) !important;
     padding: var(--ep-space-2) var(--ep-space-3) !important;
-    box-shadow: 0 10px 28px color-mix(in srgb, var(--ep-text) 18%, transparent) !important;
+    box-shadow: var(--ep-elevation-2) !important;
     max-inline-size: 20rem;
     pointer-events: none;
 }
