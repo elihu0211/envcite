@@ -4523,7 +4523,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     display: none;
 }
 
-@container workbench (width < 60rem) {
+@container workbench (width < 58rem) {
     .ep-workbench.has-catalog .ep-workbench-catalog {
         position: fixed;
         inset-block: 0;
@@ -4535,19 +4535,19 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         padding: var(--ep-space-3);
         background: var(--ep-surface);
         border-inline-end: 1px solid var(--ep-border-subtle);
-        box-shadow: 0 18px 42px color-mix(in srgb, #000 32%, transparent);
+        box-shadow: 0 18px 42px color-mix(in srgb, var(--ep-text) 24%, transparent);
         transform: translateX(-105%);
         visibility: hidden;
         transition:
-            transform var(--ep-motion-base, 220ms) var(--ep-motion-ease-settle, cubic-bezier(0.22, 1, 0.36, 1)),
-            visibility 0s linear var(--ep-motion-base, 220ms);
+            transform var(--ep-motion-fast) var(--ep-motion-ease-settle),
+            visibility 0s linear var(--ep-motion-fast);
     }
 
     .ep-workbench.has-catalog[data-catalog-open="true"] .ep-workbench-catalog {
         transform: translateX(0);
         visibility: visible;
         transition:
-            transform var(--ep-motion-base, 220ms) var(--ep-motion-ease-settle, cubic-bezier(0.22, 1, 0.36, 1)),
+            transform var(--ep-motion-fast) var(--ep-motion-ease-settle),
             visibility 0s linear 0s;
     }
 
@@ -4556,8 +4556,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         position: fixed;
         inset: 0;
         z-index: 59;
-        background: color-mix(in srgb, #000 45%, transparent);
-        backdrop-filter: blur(2px);
+        background: color-mix(in srgb, var(--ep-text) 36%, transparent);
     }
 
     .ep-workbench-catalog-drawer-head {
@@ -4571,13 +4570,13 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     }
 
     .ep-workbench-catalog-drawer-title {
-        font-size: var(--ep-title-s-size, 0.95rem);
-        font-weight: 600;
+        font-size: var(--ep-title-m-size);
+        font-weight: var(--ep-title-m-weight);
         color: var(--ep-text);
     }
 }
 
-@container workbench (width >= 60rem) {
+@container workbench (width >= 58rem) {
     .ep-workbench.has-catalog {
         grid-template-columns: minmax(17.5rem, 20rem) minmax(0, 1fr);
         gap: var(--ep-space-5);
@@ -4836,7 +4835,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     position: relative;
     overflow: hidden;
     inline-size: 100%;
-    min-block-size: clamp(22rem, 56dvh, 46rem);
+    min-block-size: clamp(22rem, 56dvh, 48rem);
     block-size: 62dvh;
     max-block-size: 48rem;
     border: 1px solid var(--ep-border-subtle);
