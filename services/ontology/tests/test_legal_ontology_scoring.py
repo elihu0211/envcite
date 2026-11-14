@@ -9,18 +9,16 @@ from envcite_ontology.annotate import load
 from envcite_ontology.db import Conn
 from envcite_ontology.reasoning import evaluate
 from envcite_ontology.reasoning.facts.case_inputs import PerOccasionTimeline
-from envcite_ontology.reasoning.scoring import (
+from envcite_ontology.reasoning.scoring.adjustments import compute_lecture_hours
+from envcite_ontology.reasoning.scoring.audit import (
     DispositionAuditResult,
     DispositionCitation,
     DispositionElement,
-    FactorSpec,
-    PenaltyMatrixSpec,
-    ScoringInput,
     audit_disposition,
-    compute_lecture_hours,
-    evaluate_matrix,
-    load_matrices,
 )
+from envcite_ontology.reasoning.scoring.evaluate import evaluate_matrix
+from envcite_ontology.reasoning.scoring.matrices import load_matrices
+from envcite_ontology.reasoning.scoring.models import FactorSpec, PenaltyMatrixSpec, ScoringInput
 from envcite_ontology.reasoning.units import canonical_unit_name, normalize_value
 from envcite_ontology.reasoning_codec import disposition as disposition_codec
 from envcite_ontology.reasoning_codec import outcome as outcome_codec

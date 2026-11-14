@@ -22,7 +22,7 @@ from envcite_ontology.endpoints.common import log_call
 from envcite_ontology.identifiers import law_key
 from envcite_ontology.reasoning import Result, evaluate_across
 from envcite_ontology.reasoning.facts.case_inputs import Measurements, Permits, PerOccasionTimeline
-from envcite_ontology.reasoning.scoring import ScoringInput
+from envcite_ontology.reasoning.scoring.models import ScoringInput
 from envcite_ontology.reasoning_codec import disposition as disposition_codec
 from envcite_ontology.reasoning_codec import outcome as outcome_codec
 from envcite_ontology.reasoning_codec import request as request_codec
