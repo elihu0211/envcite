@@ -153,7 +153,8 @@
     // 偏好存在 localStorage，頁面一載入就由 <head> 裡那段小腳本套上 data-side（不閃一下）。抽屜的 data-drawer 不存檔。
     const root = document.documentElement;
     const phone = matchMedia("(width < 48rem)");
-    const sideToggle = () => document.querySelector(".ep-side-toggle");
+    const sideToggles = () => document.querySelectorAll(".ep-side-toggle");
+    const visibleSideToggle = () => [...sideToggles()].find((button) => button.getClientRects().length > 0);
 
     // 收合與否的真值在這裡（起點是 <head> 的小腳本套上的 data-side）：沒有儲存空間時，這次造訪內仍記得。
     let sideCollapsed = root.dataset.side === "collapsed";
@@ -180,7 +181,8 @@
     // 按鈕的展開狀態與窄欄時的 title 提示（展開時文字就在旁邊，不需要提示）。
     const syncSide = () => {
         const collapsed = !phone.matches && root.dataset.side === "collapsed";
-        sideToggle()?.setAttribute("aria-expanded", String(phone.matches ? root.hasAttribute("data-drawer") : !collapsed));
+        const expanded = String(phone.matches ? root.hasAttribute("data-drawer") : !collapsed);
+        sideToggles().forEach((toggle) => toggle.setAttribute("aria-expanded", expanded));
         document.querySelectorAll(".ep-side-link").forEach((link) => {
             const label = link.querySelector(".ep-side-label")?.textContent.trim();
             if (collapsed && label) {
@@ -196,7 +198,7 @@
             root.removeAttribute("data-drawer");
             syncSide();
             if (restoreFocus) {
-                sideToggle()?.focus();
+                visibleSideToggle()?.focus();
             }
         }
     };

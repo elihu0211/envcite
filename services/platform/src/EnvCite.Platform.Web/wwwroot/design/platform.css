@@ -450,6 +450,9 @@ h1[tabindex="-1"]:focus-visible {
 .ep-send,
 .ep-password-toggle,
 .ep-side-toggle,
+.ep-side-icon-btn,
+.ep-portal-user,
+.ep-portal-new-chat,
 .ep-btn {
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
@@ -459,6 +462,9 @@ h1[tabindex="-1"]:focus-visible {
 .ep-send:active,
 .ep-password-toggle:active,
 .ep-side-toggle:active,
+.ep-side-icon-btn:active,
+.ep-portal-user:active,
+.ep-portal-new-chat:active,
 .ep-chip:active,
 .ep-btn:active,
 .ep-segment:has(> input:active) {
@@ -684,7 +690,9 @@ th[aria-sort="descending"] .ep-icon,
 .ep-hint,
 .ep-note,
 .ep-ask-note,
-.ep-text-button {
+.ep-text-button,
+.ep-history-empty-note,
+.ep-portal-user-meta {
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-s-size);
     letter-spacing: var(--ep-body-s-tracking);
@@ -3317,12 +3325,238 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     color: var(--ep-text);
 }
 
-.ep-portal .ep-shell-top .ep-brand-mark {
-    color: var(--ep-text);
+.ep-portal .ep-shell-top .ep-brand-mark,
+.ep-portal .ep-side-head .ep-brand-mark {
+    color: var(--ep-primary);
 }
 
 .ep-portal .ep-portal-tenant {
     color: var(--ep-text-secondary);
+}
+
+/* ---- 客戶入口 AI 瀏覽器版面：全高左側欄（頭：品牌與收合＋上方：功能模塊＋中間：原生對話紀錄＋左下角：帳號資料與選單）＋右側舞台 ---- */
+.ep-portal-stage {
+    flex: 1;
+    min-inline-size: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.ep-portal.ep-console .ep-shell-top {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
+    background: color-mix(in srgb, var(--ep-bg) 82%, transparent);
+}
+
+.ep-portal.ep-console .ep-shell-top .ep-portal-tenant {
+    font-size: var(--ep-label-m-size);
+    font-weight: var(--ep-label-m-weight);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ep-portal-new-chat {
+    box-sizing: border-box;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-1);
+    min-block-size: var(--ep-touch-target);
+    padding-inline: var(--ep-space-3);
+    border-radius: var(--ep-radius-pill);
+    color: var(--ep-text-secondary);
+    text-decoration: none;
+    font-size: var(--ep-label-m-size);
+    font-weight: var(--ep-label-m-weight);
+    white-space: nowrap;
+    transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-portal-new-chat .ep-icon {
+    inline-size: calc(var(--ep-space-4) + var(--ep-space-1));
+    block-size: calc(var(--ep-space-4) + var(--ep-space-1));
+}
+
+.ep-side-head {
+    display: none;
+}
+
+.ep-side-head .ep-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    min-inline-size: 0;
+    padding-inline-start: var(--ep-space-2);
+    font-size: var(--ep-title-s-size);
+    line-height: var(--ep-title-s-leading);
+    font-weight: var(--ep-label-l-weight);
+}
+
+.ep-side-head .ep-side-toggle {
+    margin-inline-start: 0;
+}
+
+.ep-side-icon-btn {
+    box-sizing: border-box;
+    flex: none;
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-touch-target);
+    block-size: var(--ep-touch-target);
+    padding: 0;
+    border: 0;
+    border-radius: var(--ep-radius-pill);
+    background: transparent;
+    color: var(--ep-text-secondary);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-portal.ep-console .ep-side-body {
+    box-sizing: border-box;
+    flex: 1;
+    min-inline-size: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    overflow-x: auto;
+}
+
+.ep-portal.ep-console .ep-side-modules {
+    box-sizing: border-box;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--ep-space-1);
+}
+
+.ep-history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ep-space-2);
+    padding: 0 var(--ep-space-3) var(--ep-space-1);
+}
+
+.ep-history-heading {
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-m-size);
+    line-height: var(--ep-label-m-leading);
+    font-weight: var(--ep-label-m-weight);
+}
+
+.ep-history-empty-note {
+    margin: var(--ep-space-2) var(--ep-space-3);
+    line-height: var(--ep-body-s-leading);
+}
+
+.ep-history-empty {
+    display: none;
+}
+
+.ep-portal.ep-console .ep-side-foot {
+    box-sizing: border-box;
+    flex: none;
+    display: flex;
+    align-items: center;
+}
+
+.ep-portal-user {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
+    inline-size: 100%;
+    min-inline-size: 0;
+    min-block-size: var(--ep-touch-target);
+    padding: var(--ep-space-1) var(--ep-space-2);
+    border: 0;
+    border-radius: var(--ep-radius-control);
+    background: transparent;
+    color: var(--ep-text);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    anchor-name: --ep-portal-user;
+    transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-portal-user .ep-avatar {
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--ep-border-subtle);
+    font-weight: var(--ep-label-l-weight);
+    line-height: 1;
+}
+
+.ep-portal-user-info {
+    display: none;
+    flex: 1;
+    min-inline-size: 0;
+    flex-direction: column;
+}
+
+.ep-portal-user-name {
+    font-size: var(--ep-label-m-size);
+    line-height: var(--ep-label-m-leading);
+    font-weight: var(--ep-label-l-weight);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ep-portal-user-meta {
+    line-height: var(--ep-body-s-leading);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ep-portal-user-icon {
+    display: none;
+    flex: none;
+    color: var(--ep-text-secondary);
+}
+
+.ep-portal-user-icon .ep-icon {
+    inline-size: calc(var(--ep-space-4) + var(--ep-space-1));
+    block-size: calc(var(--ep-space-4) + var(--ep-space-1));
+}
+
+/* 左下角帳號選單：從左下角用戶卡片往上展開。 */
+.ep-portal.ep-console .ep-menu {
+    inset-block: auto calc(var(--ep-touch-target) + var(--ep-space-4) + var(--ep-space-1));
+    inset-inline: var(--ep-space-3) auto;
+    inline-size: min(17rem, calc(100vw - var(--ep-space-6)));
+    min-inline-size: 0;
+    transform-origin: bottom left;
+    translate: 0 var(--ep-motion-travel-sm);
+}
+
+.ep-portal.ep-console .ep-menu:popover-open {
+    translate: 0 0;
+}
+
+@starting-style {
+    .ep-portal.ep-console .ep-menu:popover-open {
+        translate: 0 var(--ep-motion-travel-sm);
+    }
+}
+
+@supports (anchor-name: --ep-anchor) {
+    .ep-portal.ep-console .ep-menu {
+        position-anchor: --ep-portal-user;
+        inset-block: auto;
+        inset-inline: auto;
+        inset-block-end: anchor(start);
+        inset-inline-start: anchor(start);
+        margin-block-end: var(--ep-space-2);
+        position-try-fallbacks: flip-block, flip-inline;
+    }
 }
 
 .ep-portal.ep-console .ep-side-link,
@@ -3356,6 +3590,13 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     .ep-portal.ep-console .ep-recent-link:hover:not(.active) {
         color: var(--ep-text);
     }
+
+    .ep-side-icon-btn:hover,
+    .ep-portal-user:hover,
+    .ep-portal-new-chat:hover {
+        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        color: var(--ep-text);
+    }
 }
 
 @media (pointer: fine) {
@@ -3369,12 +3610,191 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         inline-size: var(--ep-control-height);
         block-size: var(--ep-control-height);
     }
+
+    .ep-side-icon-btn,
+    .ep-portal-new-chat {
+        min-block-size: var(--ep-control-height);
+    }
+
+    .ep-side-icon-btn {
+        inline-size: var(--ep-control-height);
+        block-size: var(--ep-control-height);
+    }
+}
+
+@media (width < 48rem) {
+    html[data-js] .ep-portal.ep-console .ep-side {
+        display: flex;
+        flex-direction: column;
+        inset-block: 0;
+        padding: 0;
+        overflow: hidden;
+        inline-size: min(calc(var(--ep-measure-sidebar) + var(--ep-space-6)), 86vw);
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-scrim,
+    html[data-js] .ep-portal.ep-console .ep-edge {
+        inset-block: 0;
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-side-head {
+        display: flex;
+        align-items: center;
+        gap: var(--ep-space-1);
+        flex: none;
+        min-block-size: var(--ep-appbar-height);
+        box-sizing: border-box;
+        padding: var(--ep-space-2) var(--ep-space-3);
+        padding-block-start: max(var(--ep-space-2), env(safe-area-inset-top));
+        padding-inline-start: max(var(--ep-space-3), env(safe-area-inset-left));
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-side-body {
+        flex: 1;
+        min-block-size: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        overflow: hidden auto;
+        overscroll-behavior: contain;
+        padding: var(--ep-space-2) var(--ep-space-3) var(--ep-space-4) max(var(--ep-space-3), env(safe-area-inset-left));
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-side-modules {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding-block-end: var(--ep-space-3);
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-history-empty {
+        display: block;
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-side-foot {
+        padding: var(--ep-space-2) var(--ep-space-3) max(var(--ep-space-3), env(safe-area-inset-bottom)) max(var(--ep-space-3), env(safe-area-inset-left));
+        border-block-start: 1px solid var(--ep-border-subtle);
+        background: var(--ep-surface);
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-portal-user-info {
+        display: flex;
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-portal-user-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 }
 
 @media (width >= 48rem) {
     .ep-portal.ep-console .ep-side {
+        display: flex;
+        flex-direction: column;
+        inset-block-start: 0;
+        inline-size: calc(var(--ep-measure-sidebar) + var(--ep-space-4));
+        block-size: 100dvh;
+        overflow: hidden;
+        padding: 0;
         background: var(--ep-surface);
         border-inline-end: 1px solid var(--ep-border-subtle);
+    }
+
+    .ep-portal.ep-console .ep-side-head {
+        display: flex;
+        align-items: center;
+        gap: var(--ep-space-1);
+        flex: none;
+        min-block-size: var(--ep-appbar-height);
+        box-sizing: border-box;
+        padding: var(--ep-space-2) var(--ep-space-3);
+    }
+
+    .ep-portal.ep-console .ep-side-body {
+        flex: 1;
+        min-block-size: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        overflow: hidden auto;
+        scrollbar-gutter: stable;
+        overscroll-behavior: contain;
+        padding: var(--ep-space-2) var(--ep-space-3) var(--ep-space-4);
+    }
+
+    .ep-portal.ep-console .ep-side-modules {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding-block-end: var(--ep-space-3);
+    }
+
+    .ep-portal.ep-console .ep-side-foot {
+        padding: var(--ep-space-2) var(--ep-space-3) max(var(--ep-space-3), env(safe-area-inset-bottom));
+        border-block-start: 1px solid var(--ep-border-subtle);
+        background: var(--ep-surface);
+    }
+
+    .ep-portal.ep-console .ep-portal-user-info {
+        display: flex;
+    }
+
+    .ep-portal.ep-console .ep-history-empty {
+        display: block;
+    }
+
+    .ep-portal.ep-console .ep-portal-user-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    html[data-js] .ep-portal-mobile-toggle,
+    .ep-portal.ep-console .ep-shell-top .ep-brand {
+        display: none;
+    }
+
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side {
+        inline-size: var(--ep-measure-sidebar-rail);
+    }
+
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-head {
+        justify-content: center;
+        padding-inline: var(--ep-space-2);
+    }
+
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-head .ep-brand,
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-head .ep-spacer,
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-head .ep-side-icon-btn {
+        display: none;
+    }
+
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-body {
+        scrollbar-gutter: auto;
+        padding-inline: var(--ep-space-2);
+    }
+
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-modules {
+        padding-block-end: 0;
+    }
+
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-history-empty {
+        display: none;
+    }
+
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-foot {
+        padding-inline: var(--ep-space-2);
+    }
+
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-portal-user {
+        justify-content: center;
+        padding: var(--ep-space-1);
+    }
+
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-portal-user-info,
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-portal-user-icon {
+        display: none;
     }
 }
 
@@ -3385,8 +3805,12 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     min-block-size: calc(100dvh - var(--ep-appbar-height));
 }
 
-.ep-portal.ep-console .ep-recent {
-    margin-block-start: var(--ep-space-2);
+.ep-portal.ep-console .ep-recent,
+.ep-portal.ep-console .ep-history-empty {
+    flex: 1;
+    margin-block-start: var(--ep-space-1);
+    padding-block-start: var(--ep-space-3);
+    border-block-start: 1px solid var(--ep-border-subtle);
 }
 
 /* ---- 側欄對話項目的選單（釘選、重新命名、刪除） --------------------------------------------------

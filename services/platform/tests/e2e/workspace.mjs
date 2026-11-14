@@ -245,13 +245,20 @@ const scenarios = {
                 const r = document.querySelector(selector)?.getBoundingClientRect();
                 return r ? [r.x, r.y, r.width, r.height].map(Math.round) : null;
             };
-            return { top: box(".ep-shell-top"), side: box(".ep-side"), js: document.documentElement.hasAttribute("data-js"), collapsed: document.documentElement.dataset.side ?? "" };
+            return {
+                top: box(".ep-shell-top"),
+                side: box(".ep-side"),
+                foot: box(".ep-side-foot"),
+                js: document.documentElement.hasAttribute("data-js"),
+                collapsed: document.documentElement.dataset.side ?? "",
+            };
         });
         const sameShell = (expected, actual, where) => {
             if (!actual.js) throw new Error(`${where}：<html> 沒有 data-js`);
             if (actual.collapsed !== expected.collapsed) throw new Error(`${where}：收合狀態變了 ${JSON.stringify(expected.collapsed)} → ${JSON.stringify(actual.collapsed)}`);
             if (JSON.stringify(actual.top) !== JSON.stringify(expected.top)) throw new Error(`${where}：頂欄 ${JSON.stringify(expected.top)} → ${JSON.stringify(actual.top)}`);
             if (JSON.stringify(actual.side) !== JSON.stringify(expected.side)) throw new Error(`${where}：側欄 ${JSON.stringify(expected.side)} → ${JSON.stringify(actual.side)}`);
+            if (JSON.stringify(actual.foot) !== JSON.stringify(expected.foot)) throw new Error(`${where}：左下角帳號列 ${JSON.stringify(expected.foot)} → ${JSON.stringify(actual.foot)}`);
         };
         // 換到 path 後等頁面穩定（動畫收尾、串流結束），再比對外殼，並檢查沒有缺屬性的畫面與外殼元素的版面位移。
         const visit = async (name, path, expected) => {
@@ -273,8 +280,18 @@ const scenarios = {
             await page.waitForTimeout(600);
             expanded = await geometry();
             if (!expanded.js) throw new Error("工作區的 <html> 沒有 data-js");
-            if (expanded.top?.[0] !== 0 || expanded.top?.[1] !== 0) throw new Error(`頂欄沒有貼齊視窗的左上角：${JSON.stringify(expanded.top)}`);
-            if (expanded.side?.[1] !== expanded.top[3]) throw new Error(`側欄沒有接在頂欄底下：${JSON.stringify(expanded)}`);
+            if (expanded.side?.[0] !== 0 || expanded.side?.[1] !== 0) throw new Error(`側欄沒有從視窗左上角展開：${JSON.stringify(expanded.side)}`);
+            if (expanded.top?.[0] !== expanded.side?.[2] || expanded.top?.[1] !== 0) throw new Error(`頂欄沒有接在側欄右側頂端：${JSON.stringify(expanded)}`);
+            if (!expanded.foot || expanded.foot[1] < expanded.side[3] / 2) throw new Error(`帳號資料沒有位於左下角：${JSON.stringify(expanded)}`);
+            const openUserMenu = await page.evaluate(async () => {
+                document.querySelector(".ep-portal-user")?.click();
+                const menu = document.getElementById("ep-account-menu");
+                const open = menu?.matches(":popover-open") === true;
+                const rect = menu?.getBoundingClientRect();
+                menu?.hidePopover?.();
+                return { open, left: rect?.x ?? -1, bottom: rect?.bottom ?? -1 };
+            });
+            if (!openUserMenu.open || openUserMenu.left > expanded.side[2]) throw new Error(`左下角帳號選單沒有從左下角展開：${JSON.stringify(openUserMenu)}`);
             await page.evaluate(() => { window.__shifts = []; window.__missing = 0; });
         });
         await step("工作區 → 成員 → 帳號 → 對話紀錄 → 工作區：外殼不動", async () => {

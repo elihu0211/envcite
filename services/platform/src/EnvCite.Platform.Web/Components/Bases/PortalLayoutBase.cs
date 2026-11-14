@@ -19,7 +19,19 @@ public abstract class PortalLayoutBase : PlatformLayoutBase
 
     [Inject] protected IAskService Ask { get; set; } = default!;
 
+    [Inject] protected IConversationHistoryAvailability HistoryAvailability { get; set; } = default!;
+
     [Inject] protected TimeProvider Time { get; set; } = default!;
+
+    /// <summary>左下角帳號卡片的主標題（名字，沒有則退回 email）。</summary>
+    protected static string? DisplayNameOf(ClaimsPrincipal? user) =>
+        user?.FindFirst(ClaimTypes.GivenName)?.Value ?? user?.FindFirst(ClaimTypes.Email)?.Value;
+
+    /// <summary>對話搜尋／歷史頁路徑（只有問答歷史開啟時才有）。</summary>
+    protected string? HistoryHrefOf(string? tenantIdentifier) =>
+        HistoryAvailability.Enabled && !string.IsNullOrEmpty(tenantIdentifier)
+            ? $"{PortalPaths.Home(tenantIdentifier)}/history"
+            : null;
 
     /// <summary>頭像圓鈕上的一個字（名字或 email 的第一個字）。</summary>
     protected static string AvatarOf(ClaimsPrincipal? user)
