@@ -4152,7 +4152,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     inset-block: 0;
     inset-inline-end: 0;
     z-index: 91;
-    width: min(560px, 100vw);
+    width: min(680px, 100vw);
     display: flex;
     flex-direction: column;
     background: var(--ep-surface-raised);
@@ -4307,6 +4307,259 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     min-width: 0;
     text-wrap: pretty;
 }
+
+.ep-para-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-end: var(--ep-space-2);
+    padding: 0.06rem var(--ep-space-2);
+    border-radius: var(--ep-radius-control);
+    border: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface-muted);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-s-size);
+    line-height: var(--ep-label-s-leading);
+    font-weight: var(--ep-label-s-weight);
+    font-variant-numeric: tabular-nums;
+    vertical-align: baseline;
+    user-select: none;
+}
+
+/* ── 抽屜層級導覽、公文引述複製與官方出處資訊卡─────────────────────────────── */
+
+.ep-drawer-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ep-space-2);
+    padding: var(--ep-space-2) var(--ep-space-5);
+    border-block-end: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface-muted);
+    font-size: var(--ep-label-m-size);
+}
+
+.ep-breadcrumb-path {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.ep-breadcrumb-statute,
+.ep-breadcrumb-article {
+    font-weight: var(--ep-label-m-weight);
+    color: var(--ep-text);
+}
+
+.ep-breadcrumb-sep {
+    color: var(--ep-text-secondary);
+}
+
+.ep-copy-citation-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-block-size: 1.75rem;
+    padding: 0 var(--ep-space-2);
+    border-radius: var(--ep-radius-pill);
+    border: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-s-size);
+    font-weight: var(--ep-label-s-weight);
+    cursor: pointer;
+    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+                color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+                background var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-copy-citation-btn:hover {
+    color: var(--ep-text);
+    border-color: var(--ep-border-control);
+    background: var(--ep-surface-raised);
+}
+
+.ep-copy-citation-btn.is-copied {
+    color: var(--ep-primary);
+    border-color: var(--ep-primary);
+}
+
+.ep-copy-icon,
+.ep-external-icon,
+.ep-provenance-chevron {
+    inline-size: 0.875rem;
+    block-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.ep-provenance-card {
+    margin-block-end: var(--ep-space-4);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface);
+}
+
+.ep-provenance-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+    padding: var(--ep-space-2) var(--ep-space-3);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.ep-provenance-summary::-webkit-details-marker {
+    display: none;
+}
+
+.ep-provenance-chevron {
+    color: var(--ep-text-secondary);
+    transform: rotate(-90deg);
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-provenance-card[open] > .ep-provenance-summary .ep-provenance-chevron {
+    transform: rotate(0deg);
+}
+
+.ep-provenance-heading {
+    font-size: var(--ep-label-m-size);
+    font-weight: var(--ep-label-m-weight);
+    color: var(--ep-text);
+}
+
+.ep-provenance-date {
+    margin-inline-start: auto;
+    font-size: var(--ep-label-s-size);
+    color: var(--ep-text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.ep-provenance-body {
+    border-block-start: 1px solid var(--ep-border-subtle);
+}
+
+.ep-provenance-table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: var(--ep-label-m-size);
+}
+
+.ep-provenance-table tr {
+    border-block-end: 1px solid var(--ep-border-subtle);
+}
+
+.ep-provenance-table tr:last-child {
+    border-block-end: 0;
+}
+
+.ep-provenance-table th {
+    width: 7rem;
+    padding: var(--ep-space-2) var(--ep-space-3);
+    text-align: start;
+    font-weight: var(--ep-label-s-weight);
+    color: var(--ep-text-secondary);
+    white-space: nowrap;
+}
+
+.ep-provenance-table td {
+    padding: var(--ep-space-2) var(--ep-space-3);
+    color: var(--ep-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.ep-provenance-status.is-active {
+    color: var(--ep-success);
+    font-weight: var(--ep-label-m-weight);
+}
+
+.ep-provenance-status.is-repealed {
+    color: var(--ep-error);
+    font-weight: var(--ep-label-m-weight);
+}
+
+.ep-provenance-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--ep-link);
+    text-decoration: none;
+    font-weight: var(--ep-label-m-weight);
+}
+
+.ep-provenance-link:hover {
+    text-decoration: underline;
+}
+
+/* ── 結構化條文附表（合併表頭、窄寬橫向捲動與等寬數字）───────────────────────── */
+
+.ep-legal-table-wrap {
+    inline-size: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface);
+}
+
+.ep-legal-table {
+    inline-size: 100%;
+    min-inline-size: max-content;
+    border-collapse: collapse;
+    font-size: var(--ep-label-m-size);
+    line-height: 1.5;
+}
+
+.ep-legal-table th,
+.ep-legal-table td {
+    padding: var(--ep-space-2) var(--ep-space-3);
+    border-inline-end: 1px solid var(--ep-border-subtle);
+    border-block-end: 1px solid var(--ep-border-subtle);
+    text-align: center;
+    vertical-align: middle;
+}
+
+.ep-legal-table :is(th, td):last-child {
+    border-inline-end: 0;
+}
+
+.ep-legal-table tbody tr:last-child :is(th, td) {
+    border-block-end: 0;
+}
+
+.ep-legal-table thead th {
+    background: var(--ep-surface-muted);
+    color: var(--ep-text);
+    font-weight: var(--ep-label-m-weight);
+}
+
+.ep-legal-table tbody th[scope="row"] {
+    background: color-mix(in srgb, var(--ep-surface-muted) 45%, var(--ep-surface));
+    color: var(--ep-text);
+    font-weight: var(--ep-label-m-weight);
+    text-align: start;
+    white-space: nowrap;
+}
+
+.ep-legal-table tbody td {
+    color: var(--ep-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.ep-legal-table tbody tr:hover td {
+    background: color-mix(in srgb, var(--ep-surface-muted) 55%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ep-copy-citation-btn,
+    .ep-provenance-chevron {
+        transition: none;
+    }
+}
+
 
 
 

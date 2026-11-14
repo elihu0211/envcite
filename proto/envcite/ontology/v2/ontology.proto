@@ -388,6 +388,8 @@ message ArticleDetail {
   string language = 6;
   string date_document = 7;
   string norm_kind = 8;
+  string document_type = 9;
+  string repealed_on = 10;
 }
 
 message GetArticleByIriResponse {

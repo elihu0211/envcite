@@ -397,7 +397,9 @@ internal sealed class CitationArticleService(TenantScopes tenants) : ICitationAr
                 dto.Content,
                 dto.Language,
                 dto.DateDocument,
-                dto.NormKind));
+                dto.NormKind,
+                dto.DocumentType,
+                dto.RepealedOn));
         });
     }
 }

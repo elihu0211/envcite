@@ -1,5 +1,7 @@
 using System.Security.Claims;
 
+using EnvCite.Platform.Web.Presentation;
+
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -156,6 +158,7 @@ public sealed partial class ChatPage
     private string? _drawerUri;
     private string? _drawerAsOfLabel;
     private string? _drawerContent;
+    private PortalArticleDetail? _drawerArticle;
     private string? _drawerError;
 
     private async Task OpenDrawerAsync(AnswerSource source, string? asOfLabel)
@@ -166,6 +169,7 @@ public sealed partial class ChatPage
         _drawerUri = source.Uri;
         _drawerAsOfLabel = asOfLabel;
         _drawerContent = null;
+        _drawerArticle = null;
         _drawerError = null;
         _drawerLoading = true;
         StateHasChanged();
@@ -174,9 +178,11 @@ public sealed partial class ChatPage
         {
             var outcome = await CitationArticles.GetByIriAsync(await UserAsync(), source.Uri, _ct);
             if (_disposed) return;
-            if (outcome.IsOk && outcome.Value is { } detail && !string.IsNullOrWhiteSpace(detail.Content))
+            if (outcome.IsOk && outcome.Value is { } detail)
             {
-                _drawerContent = detail.Content;
+                _drawerArticle = detail;
+                _drawerTitle = $"{detail.LawTitle} {LegalCitationFormat.FormatArticleNumber(detail.Number)}";
+                _drawerContent = !string.IsNullOrWhiteSpace(detail.Content) ? detail.Content : source.Text;
             }
             else if (!string.IsNullOrWhiteSpace(source.Text))
             {

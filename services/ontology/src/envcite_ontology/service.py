@@ -228,6 +228,8 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
                 language=record.language,
                 date_document=record.date_document,
                 norm_kind=record.norm_kind,
+                document_type=record.document_type,
+                repealed_on=record.repealed_on or "",
             )
         )
 

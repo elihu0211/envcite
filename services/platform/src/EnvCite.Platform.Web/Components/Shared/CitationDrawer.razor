@@ -1,6 +1,22 @@
-@* 右側滑出式法條抽屜：點擊回答中的法條名稱後，依索引（IRI）按需載入條文全文並套用排版模板引擎。 *@
+@* 右側滑出式法條抽屜：點擊回答中的法條名稱後，依索引（IRI）按需載入條文全文、官方出處與排版模板。 *@
+@using System.Threading
+@using EnvCite.Platform.SharedKernel
+@using EnvCite.Platform.Web.Presentation
+@using Microsoft.JSInterop
+@inject IJSRuntime Js
+@implements IDisposable
+
 @if (IsOpen)
 {
+    var effectiveTitle = Article is not null
+        ? $"{Article.LawTitle} {LegalCitationFormat.FormatArticleNumber(Article.Number)}"
+        : Title;
+    var effectiveContent = Article?.Content ?? Content;
+    var effectiveUri = Article?.Uri ?? Uri;
+    var effectiveArticleLabel = Article is not null
+        ? LegalCitationFormat.FormatArticleNumber(Article.Number)
+        : null;
+
     <div class="ep-drawer-backdrop" @onclick="CloseAsync" aria-hidden="true"></div>
     <aside class="ep-drawer-panel"
            role="dialog"
@@ -14,8 +30,8 @@
                 {
                     <span class="ep-citation-badge">[@Code]</span>
                 }
-                <h2 id="ep-citation-drawer-title" class="ep-drawer-title">@Title</h2>
-                @if (!string.IsNullOrWhiteSpace(AsOfLabel))
+                <h2 id="ep-citation-drawer-title" class="ep-drawer-title">@effectiveTitle</h2>
+                @if (!string.IsNullOrWhiteSpace(AsOfLabel) && Article is null)
                 {
                     <span class="ep-chip ep-drawer-asof">@AsOfLabel</span>
                 }
@@ -28,6 +44,42 @@
             </button>
         </header>
 
+        @if (Article is not null)
+        {
+            var officialCitation = LegalCitationFormat.FormatOfficialCitation(Article.LawTitle, Article.Number);
+            <nav class="ep-drawer-breadcrumb" aria-label="@L["條文層級導航"]">
+                <div class="ep-breadcrumb-path">
+                    <span class="ep-breadcrumb-statute">@Article.LawTitle</span>
+                    @if (!string.IsNullOrEmpty(effectiveArticleLabel))
+                    {
+                        <span class="ep-breadcrumb-sep" aria-hidden="true">›</span>
+                        <span class="ep-breadcrumb-article">@effectiveArticleLabel</span>
+                    }
+                </div>
+                <button type="button"
+                        class="ep-btn ep-btn-quiet ep-copy-citation-btn @(_copied ? "is-copied" : string.Empty)"
+                        title="@officialCitation"
+                        aria-label="@L["複製公文引述 {0}", officialCitation]"
+                        @onclick="() => CopyCitationAsync(officialCitation)">
+                    @if (_copied)
+                    {
+                        <svg class="ep-copy-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span>@L["已複製"]</span>
+                    }
+                    else
+                    {
+                        <svg class="ep-copy-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                            <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
+                            <path d="M10.5 5.5V3.5A1.5 1.5 0 0 0 9 2H3.5A1.5 1.5 0 0 0 2 3.5V9A1.5 1.5 0 0 0 3.5 10.5H5.5" />
+                        </svg>
+                        <span>@L["複製公文引述"]</span>
+                    }
+                </button>
+            </nav>
+        }
+
         <div class="ep-drawer-body">
             @if (IsLoading)
             {
@@ -36,25 +88,109 @@
                     <span>@L["正在依索引載入條文內容…"]</span>
                 </div>
             }
-            else if (!string.IsNullOrWhiteSpace(ErrorMessage) && string.IsNullOrWhiteSpace(Content))
+            else if (!string.IsNullOrWhiteSpace(ErrorMessage) && string.IsNullOrWhiteSpace(effectiveContent))
             {
                 <FormAlert Kind="AlertKind.Error">@ErrorMessage</FormAlert>
             }
-            else if (!string.IsNullOrWhiteSpace(Content))
-            {
-                <FormattedArticleView Content="@Content" />
-            }
             else
             {
-                <p class="ep-hint">@L["目前沒有可顯示的條文內容。"]</p>
+                @if (Article is not null)
+                {
+                    var isRepealed = !string.IsNullOrWhiteSpace(Article.RepealedOn);
+                    var (sourceLabelKey, sourceUrl) = LegalCitationFormat.BuildOfficialSource(Article.Identifier, Article.Number);
+                    var versionDate = Article.DateDocument ?? AsOfLabel;
+
+                    <details class="ep-provenance-card" open>
+                        <summary class="ep-provenance-summary">
+                            <svg class="ep-provenance-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path d="M4.5 6L8 9.5L11.5 6" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <span class="ep-provenance-heading">@L["文件資訊"]</span>
+                            @if (isRepealed)
+                            {
+                                <span class="ep-badge" data-tone="error">@L["已廢止"]</span>
+                            }
+                            else
+                            {
+                                <span class="ep-badge" data-tone="success">@L["現行有效"]</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(versionDate))
+                            {
+                                <span class="ep-provenance-date">@versionDate</span>
+                            }
+                        </summary>
+                        <div class="ep-provenance-body">
+                            <table class="ep-provenance-table">
+                                <tbody>
+                                    <tr>
+                                        <th scope="row">@L["法規類別"]</th>
+                                        <td>@FormatCategoryLabel(Article.NormKind, Article.DocumentType)</td>
+                                    </tr>
+                                    @if (!string.IsNullOrWhiteSpace(versionDate))
+                                    {
+                                        <tr>
+                                            <th scope="row">@L["版本日期"]</th>
+                                            <td><time>@versionDate</time></td>
+                                        </tr>
+                                    }
+                                    <tr>
+                                        <th scope="row">@L["狀態"]</th>
+                                        <td>
+                                            @if (isRepealed)
+                                            {
+                                                <span class="ep-provenance-status is-repealed">@L["已廢止（{0}）", Article.RepealedOn!]</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="ep-provenance-status is-active">@L["現行有效"]</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">@L["資料來源"]</th>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(sourceUrl))
+                                            {
+                                                <a class="ep-provenance-link"
+                                                   href="@sourceUrl"
+                                                   target="_blank"
+                                                   rel="noopener noreferrer">
+                                                    <span>@(sourceLabelKey == "全國法規資料庫" ? L["全國法規資料庫"] : sourceLabelKey)</span>
+                                                    <svg class="ep-external-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                                        <path d="M6.5 3.5H3.5A1.5 1.5 0 0 0 2 5V12.5A1.5 1.5 0 0 0 3.5 14H11A1.5 1.5 0 0 0 12.5 12.5V9.5" stroke-linecap="round" />
+                                                        <path d="M9.5 2H14V6.5" stroke-linecap="round" stroke-linejoin="round" />
+                                                        <path d="M7.5 8.5L14 2" stroke-linecap="round" />
+                                                    </svg>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span>@Article.Identifier.LocalId</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(effectiveContent))
+                {
+                    <FormattedArticleView Content="@effectiveContent" />
+                }
+                else
+                {
+                    <p class="ep-hint">@L["目前沒有可顯示的條文內容。"]</p>
+                }
             }
         </div>
 
-        @if (!string.IsNullOrWhiteSpace(Uri))
+        @if (!string.IsNullOrWhiteSpace(effectiveUri))
         {
             <footer class="ep-drawer-footer">
                 <span class="ep-hint">@L["索引位置"]</span>
-                <code class="ep-mono ep-drawer-iri">@Uri</code>
+                <code class="ep-mono ep-drawer-iri">@effectiveUri</code>
             </footer>
         }
     </aside>
@@ -67,12 +203,76 @@
     [Parameter] public string? Uri { get; set; }
     [Parameter] public string? AsOfLabel { get; set; }
     [Parameter] public string? Content { get; set; }
+    [Parameter] public PortalArticleDetail? Article { get; set; }
     [Parameter] public bool IsLoading { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+
+    private bool _copied;
+    private CancellationTokenSource? _copyResetCts;
 
     private Task CloseAsync() => OnClose.InvokeAsync();
 
     private Task OnKeyDownAsync(KeyboardEventArgs args) =>
         args.Key == "Escape" ? CloseAsync() : Task.CompletedTask;
+
+    private async Task CopyCitationAsync(string citation)
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", citation);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or TaskCanceledException)
+        {
+            return;
+        }
+
+        _copied = true;
+        StateHasChanged();
+
+        var previousCts = _copyResetCts;
+        _copyResetCts = new CancellationTokenSource();
+        if (previousCts is not null)
+        {
+            await previousCts.CancelAsync();
+            previousCts.Dispose();
+        }
+
+        var token = _copyResetCts.Token;
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1.8), token);
+            _copied = false;
+            StateHasChanged();
+        }
+        catch (OperationCanceledException)
+        {
+            // 已開啟新一輪複製或抽屜處置時安靜結束
+        }
+    }
+
+    private string FormatCategoryLabel(string normKind, string documentType)
+    {
+        var kindLabel = normKind switch
+        {
+            "constitution" => L["憲法"].Value,
+            "statute" or "law" => L["法律"].Value,
+            "local_ordinance" => L["自治條例"].Value,
+            "local_regulation" => L["自治規則"].Value,
+            "administrative_rule" => L["行政規則"].Value,
+            "regulation" => L["命令"].Value,
+            _ => normKind,
+        };
+
+        if (string.IsNullOrWhiteSpace(documentType) || documentType is "其他" or "法")
+            return kindLabel;
+
+        return $"{kindLabel}・{documentType}";
+    }
+
+    public void Dispose()
+    {
+        _copyResetCts?.Cancel();
+        _copyResetCts?.Dispose();
+    }
 }

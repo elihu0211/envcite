@@ -66,6 +66,8 @@ class ArticleDetailRecord:
     language: str
     date_document: str
     norm_kind: str
+    document_type: str = ""
+    repealed_on: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -247,7 +249,8 @@ _RESOLVE = """
 _GET_ARTICLE_BY_IRI = """
     SELECT corpus.version_iri(v.id), r.jurisdiction::text, r.id_scheme::text, r.local_id,
            e.title, coalesce(corpus.article_number(p.path), p.path),
-           coalesce(v.content, ''), e.language, e.version_date::text, r.norm_kind::text
+           coalesce(v.content, ''), e.language, e.version_date::text, r.norm_kind::text,
+           r.document_type, r.repealed_on::text
       FROM corpus.legal_resource AS r
       JOIN corpus.legal_expression AS e
         ON e.resource_id = r.id
@@ -683,6 +686,8 @@ class OntologyStore:
                 language=str(row[7]),
                 date_document=str(row[8]),
                 norm_kind=str(row[9]),
+                document_type=str(row[10]),
+                repealed_on=str(row[11]) if row[11] is not None else None,
             )
 
     def list_laws(

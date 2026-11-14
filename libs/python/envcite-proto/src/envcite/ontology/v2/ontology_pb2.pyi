@@ -984,6 +984,8 @@ class ArticleDetail(_message.Message):
     LANGUAGE_FIELD_NUMBER: _builtins.int
     DATE_DOCUMENT_FIELD_NUMBER: _builtins.int
     NORM_KIND_FIELD_NUMBER: _builtins.int
+    DOCUMENT_TYPE_FIELD_NUMBER: _builtins.int
+    REPEALED_ON_FIELD_NUMBER: _builtins.int
     iri: _builtins.str
     law_title: _builtins.str
     number: _builtins.str
@@ -991,6 +993,8 @@ class ArticleDetail(_message.Message):
     language: _builtins.str
     date_document: _builtins.str
     norm_kind: _builtins.str
+    document_type: _builtins.str
+    repealed_on: _builtins.str
     @_builtins.property
     def identifier(self) -> Global___LawIdentifier: ...
     def __init__(
@@ -1004,10 +1008,12 @@ class ArticleDetail(_message.Message):
         language: _builtins.str = ...,
         date_document: _builtins.str = ...,
         norm_kind: _builtins.str = ...,
+        document_type: _builtins.str = ...,
+        repealed_on: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["identifier", b"identifier"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["content", b"content", "date_document", b"date_document", "identifier", b"identifier", "iri", b"iri", "language", b"language", "law_title", b"law_title", "norm_kind", b"norm_kind", "number", b"number"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["content", b"content", "date_document", b"date_document", "document_type", b"document_type", "identifier", b"identifier", "iri", b"iri", "language", b"language", "law_title", b"law_title", "norm_kind", b"norm_kind", "number", b"number", "repealed_on", b"repealed_on"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

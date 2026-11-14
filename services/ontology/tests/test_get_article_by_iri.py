@@ -27,6 +27,9 @@ def test_get_article_by_iri_returns_article_detail(
     assert resp.article.number == first.number
     assert resp.article.law_title == "空氣污染防制法"
     assert resp.article.identifier.local_id == "O0020001"
+    assert resp.article.norm_kind == "statute"
+    assert resp.article.document_type == "法"
+    assert resp.article.repealed_on == ""
     assert resp.article.content
 
 

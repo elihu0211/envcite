@@ -2418,4 +2418,43 @@
   <data name="無法依索引載入條文內容。" xml:space="preserve">
     <value>Unable to load provision content by index.</value>
   </data>
+  <data name="第 {0} 項" xml:space="preserve">
+    <value>Para. {0}</value>
+  </data>
+  <data name="附表內容" xml:space="preserve">
+    <value>Schedule table</value>
+  </data>
+  <data name="條文層級導航" xml:space="preserve">
+    <value>Provision hierarchy</value>
+  </data>
+  <data name="複製公文引述" xml:space="preserve">
+    <value>Copy citation</value>
+  </data>
+  <data name="複製公文引述 {0}" xml:space="preserve">
+    <value>Copy official citation {0}</value>
+  </data>
+  <data name="文件資訊" xml:space="preserve">
+    <value>Document provenance</value>
+  </data>
+  <data name="現行有效" xml:space="preserve">
+    <value>In force</value>
+  </data>
+  <data name="已廢止" xml:space="preserve">
+    <value>Repealed</value>
+  </data>
+  <data name="已廢止（{0}）" xml:space="preserve">
+    <value>Repealed ({0})</value>
+  </data>
+  <data name="法規類別" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="版本日期" xml:space="preserve">
+    <value>Version date</value>
+  </data>
+  <data name="資料來源" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="全國法規資料庫" xml:space="preserve">
+    <value>Laws &amp; Regulations Database (MOJ)</value>
+  </data>
 </root>
