@@ -178,9 +178,7 @@ def _write(conn: Conn, doc: _Document) -> LoadedGuidance:
     for d in doc.documents:
         did = ids[(d.issuer, d.document_no)]
         for i in d.interprets:
-            provision_id, digest = anchor(
-                conn, "函釋", {"law": i.law, "path": i.path, "text": i.text, "id": d.document_no}
-            )
+            provision_id, digest = anchor(conn, "函釋", d.document_no, i.law, i.path, i.text)
             interpretations += conn.execute(
                 "INSERT INTO guidance.interpretation (document_id, provision_id, content_sha256)"
                 " VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
