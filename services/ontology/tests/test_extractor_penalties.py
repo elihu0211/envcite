@@ -5,9 +5,7 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
-from envcite_ontology.verification.extract import (
-    extract_unit,
-)
+from envcite_ontology.verification.extract import extract_unit
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1

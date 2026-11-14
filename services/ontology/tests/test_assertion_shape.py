@@ -8,7 +8,7 @@ import psycopg
 import pytest
 
 from envcite_ontology.annotate import load
-from envcite_ontology.verification.extract import tidy
+from envcite_ontology.verification.checks.shape import tidy
 from tests.test_annotation import LAW, _definition_doc, _doc, _duty, _limit
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1

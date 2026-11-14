@@ -4,7 +4,7 @@
 
 「關鍵義務」是被最多罰則條文以「違反」引用的條文單元（`current_violation` 的 `duty` 型）；
 單元有已確認的義務或禁止陳述，該關鍵義務算確認。涵蓋率是 duty 要件標籤涵蓋「應」之後原文的比例，
-與抽取端的確定性檢查（`extract._gaps`）同一個算法。
+與抽取端的確定性檢查（`checks.coverage.coverage_gaps`）同一個算法。
 """
 
 from __future__ import annotations
@@ -20,7 +20,8 @@ from typing import Any
 
 import psycopg
 
-from envcite_ontology.verification.extract import _MODAL, _gaps
+from envcite_ontology.verification.checks.coverage import coverage_gaps
+from envcite_ontology.verification.checks.fragments import MODAL
 
 LAWS = ("O0040001", "O0040010")
 KEYWORDS = {"遺漏": "遺漏", "添加": "添加", "命名": "命名", "種類": "種類"}
@@ -88,11 +89,11 @@ def duties(conn: Any, version: str) -> list[dict[str, Any]]:
             else "SELECT 0 WHERE %s IS NOT NULL",
             sid,
         )
-        modal = _MODAL.search(quote)
+        modal = MODAL.search(quote)
         after = quote[modal.end() :] if modal else ""
         covered = 1.0
         if after:
-            covered = 1 - sum(len(g) for g in _gaps(after, labels)) / len(after)
+            covered = 1 - sum(len(g) for g in coverage_gaps(after, labels)) / len(after)
         out.append(
             {
                 "id": sid,
@@ -102,7 +103,7 @@ def duties(conn: Any, version: str) -> list[dict[str, Any]]:
                 "law": law,
                 "path": path,
                 "quote": quote,
-                "unit_has_modal": bool(_MODAL.search(text)),
+                "unit_has_modal": bool(MODAL.search(text)),
                 "quote_has_modal": modal is not None,
                 "coverage": covered,
                 "reasons": reasons,

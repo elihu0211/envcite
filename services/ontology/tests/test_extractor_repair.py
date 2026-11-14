@@ -7,20 +7,18 @@ from typing import Any
 
 import pytest
 
-from envcite_ontology.verification.extract import (
-    MAX_REPAIRS,
-    STATEMENTS_FORMAT,
-    borrowed_issues,
+from envcite_ontology.verification.checks.coverage import uncovered_issues
+from envcite_ontology.verification.checks.fragments import (
     completeness_issues,
-    criminal_penalties,
-    extract_unit,
     fragment_issues,
     fragments,
-    sanction_issues,
-    uncovered_issues,
 )
+from envcite_ontology.verification.checks.sanctions import criminal_penalties, sanction_issues
+from envcite_ontology.verification.checks.shape import borrowed_issues
+from envcite_ontology.verification.extract import MAX_REPAIRS, extract_unit
 from envcite_ontology.verification.gates import NumbersGate
 from envcite_ontology.verification.pipeline import verify
+from envcite_ontology.verification.statements_format import STATEMENTS_FORMAT
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1

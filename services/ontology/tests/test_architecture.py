@@ -16,7 +16,6 @@ MAX_LINES = 500
 
 #: 已知過大的模組 → 上限（行）。拆分時刪掉對應的項目，不要調高。
 OVERSIZED = {
-    "verification/extract.py": 950,
     "verification/model_gates.py": 550,
     "verification/run.py": 550,
 }

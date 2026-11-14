@@ -6,13 +6,10 @@ from typing import Any
 import pytest
 
 from envcite_ontology.annotate import AnnotationError, load
-from envcite_ontology.verification.extract import (
-    STATEMENTS_FORMAT,
-    extract_unit,
-    shape_issues,
-    tidy,
-)
+from envcite_ontology.verification.checks.shape import shape_issues, tidy
+from envcite_ontology.verification.extract import extract_unit
 from envcite_ontology.verification.link import link_penalties
+from envcite_ontology.verification.statements_format import STATEMENTS_FORMAT
 from tests.test_annotation import LAW, _doc
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1

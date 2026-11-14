@@ -4,10 +4,8 @@ conditions, missing directions."""
 import json
 from pathlib import Path
 
-from envcite_ontology.verification.extract import (
-    completeness_issues,
-    extract_unit,
-)
+from envcite_ontology.verification.checks.fragments import completeness_issues
+from envcite_ontology.verification.extract import extract_unit
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
