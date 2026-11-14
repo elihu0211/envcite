@@ -8,7 +8,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
-from typing import Literal
+from typing import Literal, cast
 
 from envcite.ontology.v2 import ontology_pb2 as ont_pb
 from envcite.ontology.v2 import reasoning_pb2 as pb
@@ -647,7 +647,7 @@ def case_facts(
     return case
 
 
-def fact_units(request: Any) -> dict[str, str]:
+def fact_units(request: pb.EvaluateRequest) -> dict[str, str]:
     """萃取各事實所帶之量綱單位代碼。"""
     return {
         str(fact.concept): str(fact.unit)
@@ -656,7 +656,7 @@ def fact_units(request: Any) -> dict[str, str]:
     }
 
 
-def act_groups(request: Any) -> dict[str, list[int]]:
+def act_groups(request: pb.EvaluateRequest) -> dict[str, list[int]]:
     """萃取行為分組（§24/§25）。"""
     return {
         str(g.act_id): [int(sid) for sid in g.statement_ids]
@@ -665,7 +665,9 @@ def act_groups(request: Any) -> dict[str, list[int]]:
     }
 
 
-def timeline(request: Any, validator: errors.Validator) -> PerOccasionTimeline | None:
+def timeline(
+    request: pb.EvaluateRequest, validator: errors.Validator
+) -> PerOccasionTimeline | None:
     """萃取限期改善與複查時點（釋字第 604 號）。"""
     if not hasattr(request, "HasField") or not request.HasField("timeline"):
         return None
@@ -688,7 +690,9 @@ def timeline(request: Any, validator: errors.Validator) -> PerOccasionTimeline |
     )
 
 
-def scoring_inputs(request: Any, validator: errors.Validator) -> list[scoring.ScoringInput]:
+def scoring_inputs(
+    request: pb.EvaluateRequest, validator: errors.Validator
+) -> list[scoring.ScoringInput]:
     """將請求內的 `scoring_inputs` 轉成確定性裁罰計算引擎輸入。"""
     out: list[scoring.ScoringInput] = []
     for i, item in enumerate(getattr(request, "scoring_inputs", ())):
@@ -729,7 +733,7 @@ def scoring_inputs(request: Any, validator: errors.Validator) -> list[scoring.Sc
 
 
 def disposition_audit(
-    request: Any, results: Iterable[scoring.ScoringResult]
+    request: pb.EvaluateRequest, results: Iterable[scoring.ScoringResult]
 ) -> scoring.DispositionAuditResult | None:
     """依請求內 `disposition_audit` 與對應試算結果執行 CQ D1–D3 處分書結構檢核。"""
     if not hasattr(request, "HasField") or not request.HasField("disposition_audit"):
@@ -742,7 +746,16 @@ def disposition_audit(
     citations = [
         scoring.DispositionCitation(
             citation_text=str(c.citation_text),
-            role=c.role,
+            role=cast(
+                Literal[
+                    "duty_basis",
+                    "delegated_command",
+                    "sanction_basis",
+                    "discretion_criteria",
+                    "general_part",
+                ],
+                c.role,
+            ),
             in_force=bool(c.in_force),
         )
         for c in audit_in.citations
@@ -750,9 +763,23 @@ def disposition_audit(
     elements = [
         scoring.DispositionElement(
             element_name=str(e.element_name),
-            tier=e.tier,
+            tier=cast(
+                Literal["tier1_elements", "tier2_unlawfulness", "tier3_culpability"],
+                e.tier,
+            ),
             fact_summary=str(e.fact_summary),
-            evidence_kind=e.evidence_kind,
+            evidence_kind=cast(
+                Literal[
+                    "sampling_report",
+                    "cems_record",
+                    "inspection_record",
+                    "permit_document",
+                    "declaration_record",
+                    "admission_or_statement",
+                    "none",
+                ],
+                e.evidence_kind,
+            ),
             contradicted=bool(e.contradicted),
         )
         for e in audit_in.elements

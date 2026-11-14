@@ -175,7 +175,7 @@ internal static class ReasoningMapper
             t.Threshold?.Value ?? string.Empty, Map(t.Role)))],
         [.. o.LimitSources.OrderBy(kv => kv.Key).Select(kv => new LimitSourceDto(kv.Key, kv.Value))],
         new GeneralPartDto(
-            [.. general.Unpunished.Select(u => new PenaltyExcuseDto(u.PenaltyStatementId, Map(u.Excuse)))],
+            [.. general.Unpunished.Select(u => TryMapLegacyExcuse(u.Excuse) is { } dto ? new PenaltyExcuseDto(u.PenaltyStatementId, dto) : null).OfType<PenaltyExcuseDto>()],
             [.. general.Mitigation.Select(m => new PenaltyMitigationDto(m.PenaltyStatementId, Map(m.Mitigation)))],
             [.. general.PresumedAgentFault],
             [.. general.TimeBarred],
@@ -184,8 +184,8 @@ internal static class ReasoningMapper
                 f.HasMinAmount ? f.MinAmount : null, f.HasMaxAmount ? f.MaxAmount : null))],
             [.. general.RaisedCaps.Select(c => new RaisedCapDto(c.PenaltyStatementId, c.MaxAmount?.Value ?? string.Empty))],
             [.. general.CriminalDeductions.Select(d => new CriminalDeductionDto(d.PenaltyStatementId, d.Amount?.Value ?? string.Empty))],
-            [.. general.Justified.Select(u => new PenaltyExcuseDto(u.PenaltyStatementId, Map(u.Excuse)))],
-            [.. general.Excused.Select(u => new PenaltyExcuseDto(u.PenaltyStatementId, Map(u.Excuse)))]),
+            [.. general.Justified.Select(u => new TierExcuseDto(u.PenaltyStatementId, u.Excuse.ToString()))],
+            [.. general.Excused.Select(u => new TierExcuseDto(u.PenaltyStatementId, u.Excuse.ToString()))]),
         [.. o.Sources.Select(s => new StatementSourceDto(s.StatementId, s.VersionIri))],
         [.. o.UncoveredLawIdentifiers.Select(LawIdentifiers.ToDto)],
         [.. o.DefinitionsUsed.Select(d => new DefinitionUseDto(
@@ -331,7 +331,7 @@ internal static class ReasoningMapper
         _ => throw Unknown(r),
     };
 
-    private static ExcuseDto Map(Excuse e) => e switch
+    private static ExcuseDto? TryMapLegacyExcuse(Excuse e) => e switch
     {
         Excuse.NoFault => ExcuseDto.NoFault,
         Excuse.UnderFourteen => ExcuseDto.UnderFourteen,
@@ -341,10 +341,10 @@ internal static class ReasoningMapper
         Excuse.SelfDefense => ExcuseDto.SelfDefense,
         Excuse.Necessity => ExcuseDto.Necessity,
         Excuse.CriminalPriority => ExcuseDto.CriminalPriority,
-        Excuse.UnavoidableIgnorance => ExcuseDto.UnavoidableIgnorance,
-        Excuse.Unexpectable => ExcuseDto.Unexpectable,
-        Excuse.PettyOffense => ExcuseDto.PettyOffense,
-        Excuse.WithinCurePeriod => ExcuseDto.WithinCurePeriod,
+        Excuse.UnavoidableIgnorance
+            or Excuse.Unexpectable
+            or Excuse.PettyOffense
+            or Excuse.WithinCurePeriod => null,
         _ => throw Unknown(e),
     };
 

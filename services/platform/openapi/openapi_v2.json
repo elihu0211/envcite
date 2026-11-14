@@ -1304,11 +1304,7 @@
           "SuperiorOrder",
           "SelfDefense",
           "Necessity",
-          "CriminalPriority",
-          "UnavoidableIgnorance",
-          "Unexpectable",
-          "PettyOffense",
-          "WithinCurePeriod"
+          "CriminalPriority"
         ]
       },
       "FactDto": {
@@ -1536,7 +1532,7 @@
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/PenaltyExcuseDto"
+              "$ref": "#/components/schemas/TierExcuseDto"
             }
           },
           "excused": {
@@ -1545,7 +1541,7 @@
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/PenaltyExcuseDto"
+              "$ref": "#/components/schemas/TierExcuseDto"
             }
           }
         }
@@ -2851,6 +2847,26 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "TierExcuseDto": {
+        "required": [
+          "penaltyStatementId",
+          "excuse"
+        ],
+        "type": "object",
+        "properties": {
+          "penaltyStatementId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "excuse": {
+            "type": "string"
           }
         }
       },

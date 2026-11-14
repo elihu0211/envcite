@@ -216,10 +216,6 @@ public enum ExcuseDto
     Necessity,
     /// <summary>一行為同時觸犯刑事法律，依刑事法律處罰（第 26 條第 1 項）。</summary>
     CriminalPriority,
-    UnavoidableIgnorance,
-    Unexpectable,
-    PettyOffense,
-    WithinCurePeriod,
 }
 
 /// <summary>授權鏈的一環為何不成立。</summary>
@@ -320,6 +316,8 @@ public sealed record RaisedCapDto(long PenaltyStatementId, string MaxAmount);
 /// <param name="Amount">支付的金額加上勞務時數乘以基本工資（元，十進位文字）。</param>
 public sealed record CriminalDeductionDto(long PenaltyStatementId, string Amount);
 
+public sealed record TierExcuseDto(long PenaltyStatementId, string Excuse);
+
 /// <summary>行政罰法總則對罰則的標記。排除事由成立者不在 <c>penalties</c>，而在 <c>unpunished</c>。</summary>
 /// <param name="PresumedAgentFault">依代表人等之過失推定的罰則。</param>
 /// <param name="TimeBarred">三年時效已過的罰則：罰則仍是候選，是否適用時效由呼叫端決定。</param>
@@ -330,7 +328,7 @@ public sealed record GeneralPartDto(
     IReadOnlyList<PenaltyExcuseDto> Unpunished, IReadOnlyList<PenaltyMitigationDto> Mitigation,
     IReadOnlyList<long> PresumedAgentFault, IReadOnlyList<long> TimeBarred, IReadOnlyList<ReducedFineDto> Reduced,
     IReadOnlyList<RaisedCapDto> RaisedCaps, IReadOnlyList<CriminalDeductionDto> CriminalDeductions,
-    IReadOnlyList<PenaltyExcuseDto>? Justified = null, IReadOnlyList<PenaltyExcuseDto>? Excused = null);
+    IReadOnlyList<TierExcuseDto>? Justified = null, IReadOnlyList<TierExcuseDto>? Excused = null);
 
 public sealed record ActGroupFineDto(string ActId, long MinAmount, long MaxAmount);
 
