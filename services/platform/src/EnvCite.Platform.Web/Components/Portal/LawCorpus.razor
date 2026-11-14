@@ -138,13 +138,13 @@ else
                                             <StatGrid Items="GraphStats(graph, focusNode)" />
 
                                             <div class="ep-graph-legend" aria-label="@L["法規位階圖例"]">
-                                                <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="0"></span>@L["Tier 0 憲法"]</span>
-                                                <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="1"></span>@L["Tier 1 法律／條例"]</span>
-                                                <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="2"></span>@L["Tier 2 法規命令"]</span>
-                                                <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="3"></span>@L["Tier 3 再授權規則"]</span>
+                                                <button type="button" class="ep-legend-item ep-legend-btn" data-graph-filter-tier="0" aria-pressed="false"><span class="ep-legend-swatch" data-tier="0"></span>@L["Tier 0 憲法"]</button>
+                                                <button type="button" class="ep-legend-item ep-legend-btn" data-graph-filter-tier="1" aria-pressed="false"><span class="ep-legend-swatch" data-tier="1"></span>@L["Tier 1 法律／條例"]</button>
+                                                <button type="button" class="ep-legend-item ep-legend-btn" data-graph-filter-tier="2" aria-pressed="false"><span class="ep-legend-swatch" data-tier="2"></span>@L["Tier 2 法規命令"]</button>
+                                                <button type="button" class="ep-legend-item ep-legend-btn" data-graph-filter-tier="3" aria-pressed="false"><span class="ep-legend-swatch" data-tier="3"></span>@L["Tier 3 再授權規則"]</button>
                                                 <span class="ep-legend-item"><span class="ep-legend-line" data-kind="delegation"></span>@L["法律直接授權"]</span>
                                                 <span class="ep-legend-item"><span class="ep-legend-line" data-kind="sub"></span>@L["再授權"]</span>
-                                                <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="invalid"></span>@L["違憲失效（憲法法庭）"]</span>
+                                                <button type="button" class="ep-legend-item ep-legend-btn" data-graph-filter-tier="invalid" aria-pressed="false"><span class="ep-legend-swatch" data-tier="invalid"></span>@L["違憲失效（憲法法庭）"]</button>
                                             </div>
                                         </div>
                                     </details>
@@ -190,7 +190,7 @@ else
                                     }
                                 </div>
 
-                                <div class="ep-graph-host" data-graph-host="true">
+                                <div class="ep-graph-host" data-graph-host="true" data-inspector-open="false">
                                     <div class="ep-graph-stage">
                                         <div class="ep-graph-toolbar">
                                             <div class="ep-chip-row">
@@ -206,9 +206,12 @@ else
                                                     <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-in" aria-label="@L["放大圖譜"]">+</button>
                                                     <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-out" aria-label="@L["縮小圖譜"]">-</button>
                                                     <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fit">@L["適應視窗"]</button>
+                                                    <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fullscreen">@L["全螢幕"]</button>
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <p class="ep-graph-guide ep-hint">@L["點擊節點檢視詳情 · 雙擊以此法為中心 · 右鍵快捷選單 · 滾輪縮放 · Esc 收起面板"]</p>
 
                                         <div class="ep-graph-canvas-wrap">
                                             <div class="ep-graph-swimlanes" data-graph-swimlanes="true" aria-hidden="true"></div>

@@ -155,9 +155,11 @@
   function computeStufenbauPositions(nodes, edges, containerWidth, labels) {
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const parentsMap = new Map(nodes.map((n) => [n.id, []]));
+    const childrenMap = new Map(nodes.map((n) => [n.id, []]));
     edges.forEach((e) => {
       if (byId.has(e.source) && byId.has(e.target)) {
         parentsMap.get(e.target).push(e.source);
+        childrenMap.get(e.source).push(e.target);
       }
     });
 
@@ -169,6 +171,7 @@
     const rowGapY = 86;
     const positions = new Map();
     const yLookup = new Map();
+    const tierBuckets = new Map();
 
     tiers.forEach((tier, tierIdx) => {
       const tierNodes = nodes.filter(
@@ -189,6 +192,7 @@
       const totalHeight = (tierNodes.length - 1) * rowGapY;
       const startY = -totalHeight / 2;
       const x = (tierIdx - (tiers.length - 1) / 2) * tierGapX;
+      tierBuckets.set(tier, { x, nodes: tierNodes });
 
       tierNodes.forEach((n, idx) => {
         const y = startY + idx * rowGapY;
@@ -196,6 +200,32 @@
         yLookup.set(n.id, y);
       });
     });
+
+    // Bottom-up barycenter pass: align parent nodes to the vertical midpoint of their children
+    for (let i = tiers.length - 2; i >= 0; i--) {
+      const bucket = tierBuckets.get(tiers[i]);
+      if (!bucket || bucket.nodes.length === 0) continue;
+      const desired = bucket.nodes.map((n) => {
+        const kids = (childrenMap.get(n.id) || []).filter((cid) => yLookup.has(cid));
+        const base = yLookup.get(n.id) || 0;
+        const targetY = kids.length > 0
+          ? kids.reduce((sum, cid) => sum + yLookup.get(cid), 0) / kids.length
+          : base;
+        return { node: n, targetY };
+      });
+      desired.sort((a, b) => a.targetY - b.targetY);
+      for (let idx = 1; idx < desired.length; idx++) {
+        if (desired[idx].targetY - desired[idx - 1].targetY < rowGapY) {
+          desired[idx].targetY = desired[idx - 1].targetY + rowGapY;
+        }
+      }
+      const meanY = desired.reduce((sum, d) => sum + d.targetY, 0) / desired.length;
+      desired.forEach((d) => {
+        const y = d.targetY - meanY;
+        positions.set(d.node.id, { x: bucket.x, y });
+        yLookup.set(d.node.id, y);
+      });
+    }
 
     if (nodes.length === 0) return { positions, clusters: [] };
     const clusters = nodes
@@ -727,6 +757,9 @@
           key: "ontology-minimap",
           size: [148, 92],
           position: "bottom-right",
+          containerStyle: {
+            background: palette.surface,
+          },
           maskStyle: {
             fill: palette.primaryTint,
             stroke: palette.primary,
@@ -738,6 +771,48 @@
           key: "ontology-tooltip",
           enable: (e) => e.targetType === "node",
           getContent: (e, items) => buildTooltipContent(items?.[0], labels),
+        },
+        {
+          type: "fullscreen",
+          key: "ontology-fullscreen",
+        },
+        {
+          type: "contextmenu",
+          key: "ontology-contextmenu",
+          enable: (e) => e.targetType === "node",
+          getItems: (e) => {
+            const nodeId = e?.target?.id;
+            const datum = nodeId ? graph.getNodeData(nodeId) : null;
+            const raw = datum?.data?.raw;
+            const items = [{ name: "檢視法學詳情", value: "inspect" }];
+            if (raw?.focusHref && !raw.focus) {
+              items.push({ name: "以此法為中心重建圖譜", value: "focus" });
+            }
+            if (raw?.structureHref) {
+              items.push({ name: "檢視編章節條文", value: "structure" });
+            }
+            items.push({ name: "複製法規名稱", value: "copy" });
+            return items;
+          },
+          onClick: (value, target, current) => {
+            const nodeId = current?.id;
+            if (!nodeId) return;
+            const datum = graph.getNodeData(nodeId);
+            const raw = datum?.data?.raw;
+            if (value === "inspect") {
+              selectNodeById(nodeId);
+              if (host) host.dataset.inspectorOpen = "true";
+            } else if (value === "focus" && raw?.focusHref) {
+              window.location.assign(raw.focusHref);
+            } else if (value === "structure" && raw?.structureHref) {
+              window.location.assign(raw.structureHref);
+            } else if (value === "copy") {
+              const title = raw?.title || datum?.style?.labelText || nodeId;
+              if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(title).catch(() => {});
+              }
+            }
+          },
         },
       ],
     });
@@ -764,6 +839,48 @@
     const swimlanesEl = host ? host.querySelector("[data-graph-swimlanes]") : null;
     const searchEl = host ? host.querySelector("[data-graph-search]") : null;
 
+    let activeTierFilter = null;
+
+    function syncFilterButtons() {
+      const scope = host?.closest("[data-tab-panel]") || document;
+      scope.querySelectorAll("[data-graph-filter-tier]").forEach((btn) => {
+        btn.setAttribute("aria-pressed", btn.dataset.graphFilterTier === activeTierFilter ? "true" : "false");
+      });
+    }
+
+    function applyTierFilter(filterKey) {
+      activeTierFilter = activeTierFilter === filterKey ? null : filterKey;
+      syncFilterButtons();
+      if (!activeTierFilter) {
+        if (selectedNodeId && graph.getNodeData(selectedNodeId)) {
+          selectNodeById(selectedNodeId);
+        } else {
+          clearSelectionStates();
+        }
+        return;
+      }
+
+      const matchedIds = new Set();
+      graph.getNodeData().forEach((n) => {
+        const raw = n.data?.raw;
+        if (!raw) return;
+        const tierStr = String(Number.isFinite(raw.hierarchyTier) ? raw.hierarchyTier : 1);
+        const matches = activeTierFilter === "invalid"
+          ? raw.invalidationCount > 0
+          : tierStr === activeTierFilter;
+        if (matches) matchedIds.add(n.id);
+      });
+
+      const states = {};
+      graph.getNodeData().forEach((n) => {
+        states[n.id] = matchedIds.has(n.id) ? ["active"] : ["inactive"];
+      });
+      graph.getEdgeData().forEach((e) => {
+        states[e.id] = (matchedIds.has(e.source) || matchedIds.has(e.target)) ? ["active"] : ["inactive"];
+      });
+      graph.setElementState(states, false);
+    }
+
     function renderSwimlanes() {
       if (!swimlanesEl) return;
       if (currentLayout !== "stufenbau") {
@@ -782,8 +899,11 @@
         if (idx > 0) {
           addEl(swimlanesEl, "span", "ep-hint", "→");
         }
-        const pill = addEl(swimlanesEl, "span", "ep-swimlane-pill", `${tierName(tier, labels)} (${tierCounts.get(tier)})`);
+        const pill = addEl(swimlanesEl, "button", "ep-swimlane-pill", `${tierName(tier, labels)} (${tierCounts.get(tier)})`);
+        pill.type = "button";
         pill.dataset.tier = String(Math.min(tier, 3));
+        pill.dataset.graphFilterTier = String(tier);
+        pill.setAttribute("aria-pressed", activeTierFilter === String(tier) ? "true" : "false");
       });
     }
 
@@ -992,6 +1112,15 @@
 
     if (host && host.dataset.graphBound !== "1") {
       host.dataset.graphBound = "1";
+      let isFullscreen = false;
+
+      const scopePanel = host.closest("[data-tab-panel]") || host;
+      scopePanel.addEventListener("click", (evt) => {
+        const filterBtn = evt.target.closest("[data-graph-filter-tier]");
+        if (!filterBtn) return;
+        applyTierFilter(filterBtn.dataset.graphFilterTier);
+      });
+
       host.addEventListener("click", (evt) => {
         const closeBtn = evt.target.closest("[data-inspector-close]");
         if (closeBtn) {
@@ -1005,6 +1134,19 @@
         if (action === "fit") fitViewport({ forceFitAll: true });
         else if (action === "zoom-in") activeGraph.zoomBy(1.2).catch(() => {});
         else if (action === "zoom-out") activeGraph.zoomBy(0.84).catch(() => {});
+        else if (action === "fullscreen") {
+          const fsPlugin = activeGraph.getPluginInstance?.("ontology-fullscreen");
+          if (fsPlugin) {
+            if (isFullscreen || document.fullscreenElement) {
+              fsPlugin.exit();
+              isFullscreen = false;
+            } else {
+              fsPlugin.request();
+              isFullscreen = true;
+            }
+            btn.setAttribute("aria-pressed", isFullscreen ? "true" : "false");
+          }
+        }
         else if (action === "layout-stufenbau") applyLayout("stufenbau");
         else if (action === "layout-concentric") applyLayout("concentric");
         else if (action === "layout-indented") applyLayout("indented");
@@ -1016,6 +1158,28 @@
           });
           activeGraph.draw().catch(() => {});
           updateToolbarState();
+        }
+      });
+
+      document.addEventListener("keydown", (evt) => {
+        if (!container.isConnected) return;
+        const tag = evt.target?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || evt.target?.isContentEditable) {
+          return;
+        }
+        const activeGraph = container._g6Instance || graph;
+        if (evt.key === "Escape") {
+          host.dataset.inspectorOpen = "false";
+          selectedNodeId = null;
+          activeTierFilter = null;
+          syncFilterButtons();
+          clearSelectionStates();
+        } else if (evt.key === "0") {
+          fitViewport({ forceFitAll: true });
+        } else if (evt.key === "+" || evt.key === "=") {
+          activeGraph.zoomBy(1.2).catch(() => {});
+        } else if (evt.key === "-") {
+          activeGraph.zoomBy(0.84).catch(() => {});
         }
       });
     }

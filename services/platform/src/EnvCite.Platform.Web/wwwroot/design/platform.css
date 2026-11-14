@@ -4852,8 +4852,29 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 @container workbench (width >= 68rem) {
     .ep-graph-host {
-        grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem);
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ep-graph-host:not([data-inspector-open="true"]) .ep-graph-inspector {
+        display: none;
+    }
+
+    .ep-graph-host[data-inspector-open="true"] {
+        grid-template-columns: minmax(0, 1fr) minmax(18rem, 21rem);
         gap: var(--ep-space-4);
+    }
+
+    .ep-graph-host[data-inspector-open="true"] .ep-inspector-sheet-bar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-block-end: var(--ep-space-2);
+        margin-block-end: var(--ep-space-2);
+        border-block-end: 1px solid var(--ep-border-subtle);
+    }
+
+    .ep-graph-host[data-inspector-open="true"] .ep-inspector-sheet-handle {
+        display: none;
     }
 
     .ep-graph-inspector {
@@ -5040,6 +5061,77 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     border: 1px solid var(--ep-border-subtle) !important;
     border-radius: var(--ep-radius-control) !important;
     overflow: hidden;
+}
+
+.ep-graph-canvas .g6-minimap canvas {
+    background: var(--ep-surface) !important;
+}
+
+.ep-graph-canvas .g6-contextmenu {
+    background: var(--ep-surface-raised) !important;
+    border: 1px solid var(--ep-border-subtle) !important;
+    border-radius: var(--ep-radius-control) !important;
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--ep-text) 20%, transparent) !important;
+    padding: var(--ep-space-1) !important;
+    color: var(--ep-text) !important;
+    font-size: var(--ep-label-s-size) !important;
+}
+
+.ep-graph-canvas .g6-contextmenu-ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+}
+
+.ep-graph-canvas .g6-contextmenu-li {
+    padding: var(--ep-space-1) var(--ep-space-3);
+    border-radius: var(--ep-radius-control);
+    cursor: pointer;
+    color: var(--ep-text);
+    white-space: nowrap;
+}
+
+.ep-graph-canvas .g6-contextmenu-li:hover {
+    background: var(--ep-surface-muted);
+    color: var(--ep-primary);
+}
+
+.ep-graph-guide {
+    margin: 0;
+    font-size: var(--ep-label-s-size);
+    color: var(--ep-text-secondary);
+}
+
+.ep-legend-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--ep-radius-pill);
+    padding: var(--ep-space-1) var(--ep-space-2);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.ep-legend-btn:hover,
+.ep-swimlane-pill[data-graph-filter-tier]:hover {
+    border-color: var(--ep-primary);
+    color: var(--ep-text);
+}
+
+.ep-legend-btn[aria-pressed="true"],
+.ep-swimlane-pill[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--ep-primary) 16%, var(--ep-surface));
+    border-color: var(--ep-primary);
+    color: var(--ep-text);
+}
+
+.ep-swimlane-pill[data-graph-filter-tier] {
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
 }
 
 .ep-graph-canvas .g6-tooltip {
