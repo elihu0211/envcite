@@ -4845,7 +4845,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-control);
     overflow: hidden;
-    background: var(--ep-surface-muted);
+    background: var(--ep-bg);
 }
 
 .ep-graph-swimlanes {
@@ -4855,7 +4855,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     gap: var(--ep-space-2);
     padding: var(--ep-space-2) var(--ep-space-3);
     border-block-end: 1px solid var(--ep-border-subtle);
-    background: color-mix(in srgb, var(--ep-surface) 88%, transparent);
+    background: color-mix(in srgb, var(--ep-surface) 92%, transparent);
     font-size: var(--ep-label-s-size);
     color: var(--ep-text-secondary);
 }
@@ -4871,25 +4871,37 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     padding: var(--ep-space-1) var(--ep-space-2);
     border-radius: var(--ep-radius-pill);
     border: 1px solid var(--ep-border-subtle);
-    background: var(--ep-surface);
+    border-inline-start-width: 4px;
+    background: var(--ep-surface-raised);
+    color: var(--ep-text);
     white-space: nowrap;
 }
 
 .ep-swimlane-pill[data-tier="0"] {
     border-color: var(--ep-warning);
+    background: color-mix(in srgb, var(--ep-warning) 14%, var(--ep-surface-raised));
 }
 
 .ep-swimlane-pill[data-tier="1"] {
     border-color: var(--ep-primary);
+    background: color-mix(in srgb, var(--ep-primary) 14%, var(--ep-surface-raised));
 }
 
 .ep-swimlane-pill[data-tier="2"] {
-    border-color: var(--ep-info);
+    border-color: var(--ep-success);
+    background: color-mix(in srgb, var(--ep-success) 14%, var(--ep-surface-raised));
 }
 
 .ep-swimlane-pill[data-tier="3"] {
     border-color: var(--ep-accent);
     border-style: dashed;
+    border-inline-start-style: solid;
+    background: color-mix(in srgb, var(--ep-accent) 14%, var(--ep-surface-raised));
+}
+
+.ep-swimlane-pill[data-graph-filter-tier="invalid"] {
+    border-color: var(--ep-error);
+    background: color-mix(in srgb, var(--ep-error) 14%, var(--ep-surface-raised));
 }
 
 .ep-graph-canvas {
@@ -4899,7 +4911,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     min-block-size: clamp(22rem, 56dvh, 48rem);
     block-size: 62dvh;
     max-block-size: 48rem;
-    background: var(--ep-surface-muted);
+    background: var(--ep-bg);
 }
 
 @container workbench (width >= 68rem) {

@@ -12,13 +12,300 @@
     return el;
   };
 
+  function parseRgb(str) {
+    if (!str || typeof str !== "string") return null;
+    const s = str.trim();
+    const rgbMatch = s.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,/\s]+([\d.]+%?))?\s*\)$/i);
+    if (rgbMatch) {
+      return {
+        r: Math.round(Number(rgbMatch[1])),
+        g: Math.round(Number(rgbMatch[2])),
+        b: Math.round(Number(rgbMatch[3])),
+      };
+    }
+    const srgbMatch = s.match(/^color\(\s*srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/i);
+    if (srgbMatch) {
+      return {
+        r: Math.round(Math.min(1, Math.max(0, Number(srgbMatch[1]))) * 255),
+        g: Math.round(Math.min(1, Math.max(0, Number(srgbMatch[2]))) * 255),
+        b: Math.round(Math.min(1, Math.max(0, Number(srgbMatch[3]))) * 255),
+      };
+    }
+    const hex = s.replace(/^#/, "");
+    if (/^[0-9a-f]{3}$/i.test(hex)) {
+      return {
+        r: parseInt(hex[0] + hex[0], 16),
+        g: parseInt(hex[1] + hex[1], 16),
+        b: parseInt(hex[2] + hex[2], 16),
+      };
+    }
+    if (/^[0-9a-f]{6}$/i.test(hex)) {
+      return {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16),
+      };
+    }
+    return null;
+  }
+
+  function rgbString(c) {
+    return `rgb(${c.r}, ${c.g}, ${c.b})`;
+  }
+
+  function mixRgb(fgCss, bgCss, weight) {
+    const fg = parseRgb(fgCss);
+    const bg = parseRgb(bgCss);
+    if (!fg || !bg) return fgCss || bgCss;
+    const w = Math.max(0, Math.min(1, weight));
+    return rgbString({
+      r: Math.round(fg.r * w + bg.r * (1 - w)),
+      g: Math.round(fg.g * w + bg.g * (1 - w)),
+      b: Math.round(fg.b * w + bg.b * (1 - w)),
+    });
+  }
+
   function resolveColor(expr, fallback) {
     const el = probeEl();
-    if (!el) return fallback;
+    if (!el) {
+      const fb = parseRgb(fallback);
+      return fb ? rgbString(fb) : fallback;
+    }
     el.style.color = "";
     el.style.color = expr;
     const computed = getComputedStyle(el).color;
-    return computed || fallback;
+    const parsed = parseRgb(computed) || parseRgb(fallback);
+    return parsed ? rgbString(parsed) : (computed || fallback);
+  }
+
+  function charDisplayUnits(ch) {
+    const code = ch.codePointAt(0) || 0;
+    return code > 0x2E7F ? 1 : 0.56;
+  }
+
+  function wrapTitleLines(text, maxUnits = 17.5, maxLines = 2) {
+    const str = String(text || "").trim();
+    if (!str) return "";
+    const lines = [];
+    let current = "";
+    let units = 0;
+    const chars = Array.from(str);
+    for (let i = 0; i < chars.length; i++) {
+      const ch = chars[i];
+      if (ch === "\n") {
+        lines.push(current.trimEnd());
+        current = "";
+        units = 0;
+        if (lines.length >= maxLines) break;
+        continue;
+      }
+      const u = charDisplayUnits(ch);
+      if (units + u > maxUnits && current.length > 0) {
+        const spaceIdx = current.lastIndexOf(" ");
+        if (spaceIdx > current.length * 0.45 && /[\x20-\x7E]$/.test(ch)) {
+          lines.push(current.slice(0, spaceIdx).trimEnd());
+          const rest = current.slice(spaceIdx + 1) + ch;
+          current = rest;
+          units = Array.from(rest).reduce((acc, c) => acc + charDisplayUnits(c), 0);
+        } else {
+          lines.push(current.trimEnd());
+          current = ch === " " ? "" : ch;
+          units = ch === " " ? 0 : u;
+        }
+        if (lines.length === maxLines - 1) {
+          let tail = current;
+          let tailUnits = units;
+          let j = i + 1;
+          while (j < chars.length && tailUnits + charDisplayUnits(chars[j]) <= maxUnits - 1.1) {
+            tail += chars[j];
+            tailUnits += charDisplayUnits(chars[j]);
+            j++;
+          }
+          if (j < chars.length) {
+            tail = `${tail.trimEnd()}…`;
+          }
+          lines.push(tail);
+          return lines.join("\n");
+        }
+      } else {
+        current += ch;
+        units += u;
+      }
+    }
+    if (current && lines.length < maxLines) {
+      lines.push(current.trimEnd());
+    }
+    return lines.join("\n");
+  }
+
+  let palantirNodeRegistered = false;
+  function ensurePalantirNodeRegistered() {
+    if (palantirNodeRegistered) return true;
+    if (!window.G6 || typeof window.G6.register !== "function" || typeof window.G6.Rect !== "function" || !window.G6.Label || !window.G6.ExtensionCategory) {
+      return false;
+    }
+
+    class PalantirLawNode extends window.G6.Rect {
+      render(attributes = this.parsedAttributes, container = this) {
+        super.render(attributes, container);
+        const RectShape = this.getShape("key")?.constructor;
+        const LabelShape = window.G6.Label;
+        if (!RectShape || !LabelShape) return;
+
+        const [width, height] = this.getSize(attributes);
+        const left = -width / 2;
+        const top = -height / 2;
+        const r = Number.isFinite(attributes.radius) ? attributes.radius : 10;
+        const innerR = Math.max(0, r - 1);
+        const nodeOpacity = attributes.opacity ?? 1;
+        const headerHeight = 26;
+        const accentColor = attributes.accentColor || attributes.stroke;
+
+        this.upsert(
+          "header-bg",
+          RectShape,
+          {
+            x: left + 1,
+            y: top + 1,
+            width: width - 2,
+            height: headerHeight,
+            radius: [innerR, innerR, 0, 0],
+            fill: attributes.headerFill || attributes.fill,
+            opacity: nodeOpacity,
+            zIndex: 1,
+          },
+          container,
+        );
+
+        this.upsert(
+          "header-divider",
+          RectShape,
+          {
+            x: left + 1,
+            y: top + headerHeight + 1,
+            width: width - 2,
+            height: 1,
+            fill: accentColor,
+            opacity: nodeOpacity * 0.42,
+            zIndex: 2,
+          },
+          container,
+        );
+
+        this.upsert(
+          "accent-rail",
+          RectShape,
+          {
+            x: left + 1,
+            y: top + 1,
+            width: 5,
+            height: height - 2,
+            radius: [innerR, 0, 0, innerR],
+            fill: accentColor,
+            opacity: nodeOpacity,
+            zIndex: 3,
+          },
+          container,
+        );
+
+        this.upsert(
+          "type-dot",
+          RectShape,
+          {
+            x: left + 13,
+            y: top + 11,
+            width: 6,
+            height: 6,
+            radius: 3,
+            fill: accentColor,
+            opacity: nodeOpacity,
+            zIndex: 4,
+          },
+          container,
+        );
+
+        const typeLabel = attributes.typeLabel || "";
+        this.upsert(
+          "type-tag",
+          LabelShape,
+          typeLabel
+            ? {
+                x: left + 23,
+                y: top + headerHeight / 2 + 1,
+                text: typeLabel,
+                fill: attributes.headerLabelFill || accentColor,
+                fontSize: 10.5,
+                fontWeight: 700,
+                textAlign: "left",
+                textBaseline: "middle",
+                maxLines: 1,
+                wordWrap: false,
+                wordWrapWidth: width - 118,
+                background: false,
+                opacity: nodeOpacity,
+                zIndex: 4,
+              }
+            : false,
+          container,
+        );
+
+        const metricLabel = attributes.metricLabel || "";
+        this.upsert(
+          "metric-tag",
+          LabelShape,
+          metricLabel
+            ? {
+                x: left + width - 11,
+                y: top + headerHeight / 2 + 1,
+                text: metricLabel,
+                fill: attributes.metricFill || attributes.headerLabelFill || accentColor,
+                fontSize: 10,
+                fontWeight: 600,
+                textAlign: "right",
+                textBaseline: "middle",
+                maxLines: 1,
+                wordWrap: false,
+                wordWrapWidth: 98,
+                background: false,
+                opacity: nodeOpacity,
+                zIndex: 4,
+              }
+            : false,
+          container,
+        );
+
+        const bodyTitle = attributes.bodyTitle || "";
+        const bodyCenterY = top + headerHeight + 1 + (height - headerHeight - 2) / 2;
+        this.upsert(
+          "title-text",
+          LabelShape,
+          bodyTitle
+            ? {
+                x: left + 14,
+                y: bodyCenterY,
+                text: bodyTitle,
+                fill: attributes.bodyLabelFill || attributes.labelFill,
+                fontSize: 12.5,
+                fontWeight: attributes.titleFontWeight || 600,
+                lineHeight: 17,
+                textAlign: "left",
+                textBaseline: "middle",
+                maxLines: 2,
+                wordWrap: false,
+                wordWrapWidth: width - 26,
+                background: false,
+                opacity: nodeOpacity,
+                zIndex: 4,
+              }
+            : false,
+          container,
+        );
+      }
+    }
+
+    window.G6.register(window.G6.ExtensionCategory.NODE, "palantir-law-node", PalantirLawNode);
+    palantirNodeRegistered = true;
+    return true;
   }
 
   let cachedPaletteKey = null;
@@ -32,25 +319,51 @@
       return cachedPaletteValue;
     }
     cachedPaletteKey = key;
+    const effectiveDark = isDark ? themeAttr !== "light" : themeAttr === "dark";
+    const bg = resolveColor("var(--ep-bg)", effectiveDark ? "#121214" : "#F5F5F7");
+    const surface = resolveColor("var(--ep-surface)", effectiveDark ? "#1C1C1F" : "#FFFFFF");
+    const surfaceRaised = resolveColor("var(--ep-surface-raised)", effectiveDark ? "#252529" : "#FFFFFF");
+    const surfaceMuted = resolveColor("var(--ep-surface-muted)", effectiveDark ? "#2A2A2F" : "#F0F0F3");
+    const primary = resolveColor("var(--ep-primary)", effectiveDark ? "#8AB4F8" : "#005FC4");
+    const success = resolveColor("var(--ep-success)", effectiveDark ? "#5FD3A3" : "#0B7857");
+    const info = resolveColor("var(--ep-info)", effectiveDark ? "#8EB6FF" : "#1D52AF");
+    const warning = resolveColor("var(--ep-warning)", effectiveDark ? "#F2A65A" : "#AC5107");
+    const error = resolveColor("var(--ep-error)", effectiveDark ? "#FF8F88" : "#AC312C");
+    const accent = resolveColor("var(--ep-accent)", effectiveDark ? "#2DD4BF" : "#14B8A6");
+    const borderSubtle = resolveColor("var(--ep-border-subtle)", effectiveDark ? "#2A2A2F" : "#E3E3E8");
+    const borderControl = resolveColor("var(--ep-border-control)", effectiveDark ? "#8E8E98" : "#86868B");
+    const text = resolveColor("var(--ep-text)", effectiveDark ? "#ECECF0" : "#1D1D1F");
+    const textSecondary = resolveColor("var(--ep-text-secondary)", effectiveDark ? "#A8A8B2" : "#55555B");
+    const onPrimary = resolveColor("var(--ep-on-primary)", effectiveDark ? "#08234A" : "#FFFFFF");
+
     cachedPaletteValue = {
-      text: resolveColor("var(--ep-text)", "#1D1D1F"),
-      textSecondary: resolveColor("var(--ep-text-secondary)", "#55555B"),
-      surface: resolveColor("var(--ep-surface)", "#FFFFFF"),
-      surfaceRaised: resolveColor("var(--ep-surface-raised)", "#FFFFFF"),
-      surfaceMuted: resolveColor("var(--ep-surface-muted)", "#F0F0F3"),
-      borderSubtle: resolveColor("var(--ep-border-subtle)", "#E3E3E8"),
-      borderControl: resolveColor("var(--ep-border-control)", "#86868B"),
-      primary: resolveColor("var(--ep-primary)", "#005FC4"),
-      onPrimary: resolveColor("var(--ep-on-primary)", "#FFFFFF"),
-      primaryTint: resolveColor("color-mix(in srgb, var(--ep-primary) 14%, var(--ep-surface))", "#E8F1FB"),
-      info: resolveColor("var(--ep-info)", "#1D52AF"),
-      infoTint: resolveColor("color-mix(in srgb, var(--ep-info) 12%, var(--ep-surface))", "#EAF0FA"),
-      warning: resolveColor("var(--ep-warning)", "#AC5107"),
-      warningTint: resolveColor("color-mix(in srgb, var(--ep-warning) 12%, var(--ep-surface))", "#FDF2E9"),
-      error: resolveColor("var(--ep-error)", "#AC312C"),
-      errorTint: resolveColor("color-mix(in srgb, var(--ep-error) 12%, var(--ep-surface))", "#FCECEB"),
-      accent: resolveColor("var(--ep-accent)", "#14B8A6"),
-      accentTint: resolveColor("color-mix(in srgb, var(--ep-accent) 14%, var(--ep-surface))", "#E6F8F5"),
+      isDark: effectiveDark,
+      bg,
+      text,
+      textSecondary,
+      surface,
+      surfaceRaised,
+      surfaceMuted,
+      borderSubtle,
+      borderControl,
+      primary,
+      onPrimary,
+      primaryTint: mixRgb(primary, surfaceRaised, effectiveDark ? 0.15 : 0.06),
+      primaryHeader: mixRgb(primary, surfaceRaised, effectiveDark ? 0.28 : 0.13),
+      success,
+      successTint: mixRgb(success, surfaceRaised, effectiveDark ? 0.15 : 0.06),
+      successHeader: mixRgb(success, surfaceRaised, effectiveDark ? 0.28 : 0.13),
+      info,
+      infoTint: mixRgb(info, surfaceRaised, effectiveDark ? 0.14 : 0.06),
+      warning,
+      warningTint: mixRgb(warning, surfaceRaised, effectiveDark ? 0.16 : 0.07),
+      warningHeader: mixRgb(warning, surfaceRaised, effectiveDark ? 0.30 : 0.15),
+      error,
+      errorTint: mixRgb(error, surfaceRaised, effectiveDark ? 0.18 : 0.07),
+      errorHeader: mixRgb(error, surfaceRaised, effectiveDark ? 0.30 : 0.15),
+      accent,
+      accentTint: mixRgb(accent, surfaceRaised, effectiveDark ? 0.15 : 0.06),
+      accentHeader: mixRgb(accent, surfaceRaised, effectiveDark ? 0.28 : 0.14),
     };
     return cachedPaletteValue;
   }
@@ -218,8 +531,8 @@
       new Set(layoutNodes.map((n) => (Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1))),
     ).sort((a, b) => a - b);
 
-    const tierGapX = 360;
-    const rowGapY = 104;
+    const tierGapX = 416;
+    const rowGapY = 108;
     const positions = new Map();
     const yLookup = new Map();
     const tierBuckets = new Map();
@@ -312,22 +625,68 @@
       .sort(byTierThenTitle);
 
     const visited = new Set();
-    let row = 0;
+    const subtrees = [];
 
-    function visit(id, depth) {
+    function collectSubtree(id, depth, acc) {
       if (visited.has(id)) return;
       visited.add(id);
-      positions.set(id, { x: depth * 124, y: row * 94 });
-      row += 1;
+      acc.push({ id, depth });
       const children = (childrenByParent.get(id) || []).slice().sort(byTierThenTitle);
       for (const childId of children) {
-        visit(childId, depth + 1);
+        collectSubtree(childId, depth + 1, acc);
       }
     }
 
-    for (const rootId of roots) visit(rootId, 0);
+    for (const rootId of roots) {
+      if (visited.has(rootId)) continue;
+      const acc = [];
+      collectSubtree(rootId, 0, acc);
+      if (acc.length > 0) subtrees.push(acc);
+    }
     for (const n of nodes) {
-      if (!visited.has(n.id)) visit(n.id, 0);
+      if (visited.has(n.id)) continue;
+      const acc = [];
+      collectSubtree(n.id, 0, acc);
+      if (acc.length > 0) subtrees.push(acc);
+    }
+
+    const totalRows = subtrees.reduce((sum, s) => sum + s.length, 0);
+    const numCols = subtrees.length >= 3 && totalRows > 22
+      ? 3
+      : subtrees.length >= 2 && totalRows > 8
+        ? 2
+        : 1;
+
+    const colSlots = Array.from({ length: numCols }, () => []);
+    const colRows = new Array(numCols).fill(0);
+    for (const subtree of subtrees) {
+      let targetCol = 0;
+      for (let c = 1; c < numCols; c++) {
+        if (colRows[c] < colRows[targetCol]) targetCol = c;
+      }
+      const gap = colSlots[targetCol].length > 0 ? 0.25 : 0;
+      const startRow = colRows[targetCol] + gap;
+      colSlots[targetCol].push({ subtree, startRow });
+      colRows[targetCol] = startRow + subtree.length;
+    }
+
+    const indentStepX = 52;
+    const colGapX = 460;
+    const rowGapY = 104;
+    const maxColRows = Math.max(...colRows, 1);
+    const startX = -((numCols - 1) * colGapX) / 2;
+    const startY = -((maxColRows - 1) * rowGapY) / 2;
+
+    for (let c = 0; c < numCols; c++) {
+      const baseX = startX + c * colGapX;
+      for (const entry of colSlots[c]) {
+        entry.subtree.forEach((item, idx) => {
+          positions.set(item.id, {
+            x: baseX + Math.min(item.depth, 3) * indentStepX,
+            y: startY + (entry.startRow + idx) * rowGapY,
+          });
+        });
+      }
     }
 
     return positions;
@@ -338,7 +697,7 @@
     const root = document.createElement("div");
     root.className = "ep-graph-tooltip";
     if (!raw) {
-      const fallbackTitle = item?.style?.labelText || item?.data?.label || item?.id || "";
+      const fallbackTitle = item?.data?.cardLabel || item?.style?.labelText || item?.data?.label || item?.id || "";
       addEl(root, "div", "ep-graph-tooltip-title", fallbackTitle);
       return root;
     }
@@ -364,55 +723,129 @@
     return root;
   }
 
+  function formatCardSlots(n, labels) {
+    const tier = Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1;
+    const tierTag = tier <= 0 ? "T0" : tier === 1 ? "T1" : tier === 2 ? "T2" : "T3";
+    const defaultType = tier <= 0
+      ? (labels.tier0Short || "憲法")
+      : tier === 1
+        ? (labels.tier1Short || "法律")
+        : tier === 2
+          ? (labels.tier2Short || "法規命令")
+          : (labels.tier3Short || "再授權");
+    const docLabel = n.documentType || defaultType;
+    const prefix = n.invalidationCount > 0 ? "⚠ " : n.focus ? "★ " : "";
+    const typeLabel = `${prefix}${tierTag} · ${docLabel}`;
+
+    const metrics = [];
+    if (n.invalidationCount > 0) metrics.push(`⚠ ${n.invalidationCount}`);
+    if (n.articleCount > 0) metrics.push(`${n.articleCount} 條`);
+    if (n.totalChildren > 0 && metrics.length < 2) metrics.push(`${n.totalChildren} ${labels.childMarker || "子法"}`);
+    if (n.guidanceCount > 0 && metrics.length < 2) metrics.push(`${labels.guidanceMarker || "函釋"} ${n.guidanceCount}`);
+
+    return {
+      typeLabel,
+      metricLabel: metrics.join(" · "),
+      bodyTitle: wrapTitleLines(n.title || n.id, 17.5, 2),
+    };
+  }
+
   function nodeColors(d, palette) {
     if (d.isCluster === "yes") {
+      if (d.isGroupCapsule === "yes") {
+        const capFill = d.isExpanded
+          ? palette.successTint
+          : mixRgb(palette.success, palette.surfaceRaised, palette.isDark ? 0.14 : 0.06);
+        return {
+          fill: capFill,
+          stroke: palette.success,
+          lineWidth: 1.8,
+          lineDash: d.isExpanded ? undefined : [5, 4],
+          labelFill: palette.isDark ? palette.success : mixRgb(palette.success, palette.text, 0.35),
+          fontWeight: 600,
+        };
+      }
       return {
-        fill: d.isExpanded ? palette.primaryTint : palette.surfaceRaised,
-        stroke: palette.primary,
+        fill: mixRgb(palette.accent, palette.surfaceRaised, palette.isDark ? 0.14 : 0.06),
+        stroke: palette.accent,
         lineWidth: 1.8,
-        lineDash: d.isExpanded ? undefined : [5, 4],
-        labelFill: palette.primary,
+        lineDash: [5, 4],
+        labelFill: palette.isDark ? palette.accent : mixRgb(palette.accent, palette.text, 0.42),
         fontWeight: 600,
       };
     }
-    if (d.isFocus === "yes") {
-      return {
-        fill: palette.primary,
-        stroke: palette.text,
-        lineWidth: 2.5,
-        labelFill: palette.onPrimary,
-        fontWeight: 700,
-      };
-    }
+
+    let accentColor;
+    let baseFill;
+    let headerFill;
+    let lineWidth = 2.0;
+    let lineDash;
+
     if ((d.invalidations || 0) > 0) {
-      return {
-        fill: palette.surfaceRaised,
-        stroke: palette.error,
-        lineWidth: 2.4,
-        labelFill: palette.text,
-        fontWeight: 600,
-      };
+      accentColor = palette.error;
+      baseFill = palette.errorTint;
+      headerFill = palette.errorHeader;
+      lineWidth = 2.4;
+    } else if (d.tier === 0) {
+      accentColor = palette.warning;
+      baseFill = palette.warningTint;
+      headerFill = palette.warningHeader;
+      lineWidth = 2.2;
+    } else if (d.tier === 1) {
+      accentColor = palette.primary;
+      baseFill = palette.primaryTint;
+      headerFill = palette.primaryHeader;
+      lineWidth = 2.2;
+    } else if (d.tier === 2) {
+      accentColor = palette.success;
+      baseFill = palette.successTint;
+      headerFill = palette.successHeader;
+      lineWidth = 2.0;
+    } else {
+      accentColor = palette.accent;
+      baseFill = palette.accentTint;
+      headerFill = palette.accentHeader;
+      lineWidth = 1.8;
+      lineDash = [6, 3];
     }
-    if (d.tier === 0) {
-      return { fill: palette.surfaceRaised, stroke: palette.warning, lineWidth: 2.2, labelFill: palette.text, fontWeight: 600 };
-    }
-    if (d.tier === 1) {
-      return { fill: palette.surfaceRaised, stroke: palette.primary, lineWidth: 2.2, labelFill: palette.text, fontWeight: 600 };
-    }
-    if (d.tier === 2) {
-      return { fill: palette.surfaceRaised, stroke: palette.info, lineWidth: 1.8, labelFill: palette.text, fontWeight: 500 };
-    }
+
+    const isFocus = d.isFocus === "yes";
+    const fill = isFocus
+      ? mixRgb(accentColor, palette.surfaceRaised, palette.isDark ? 0.24 : 0.11)
+      : baseFill;
+    const focusHeader = isFocus
+      ? mixRgb(accentColor, palette.surfaceRaised, palette.isDark ? 0.36 : 0.18)
+      : headerFill;
+    const stroke = isFocus
+      ? (palette.isDark ? mixRgb(palette.primary, palette.text, 0.25) : palette.primary)
+      : accentColor;
+    const headerLabelFill = palette.isDark
+      ? mixRgb(accentColor, palette.text, 0.28)
+      : mixRgb(accentColor, palette.text, 0.32);
+
     return {
-      fill: palette.surfaceRaised,
-      stroke: palette.accent,
-      lineWidth: 1.8,
-      lineDash: [5, 3],
+      fill,
+      stroke,
+      accentColor,
+      headerFill: focusHeader,
+      headerLabelFill,
+      metricFill: palette.textSecondary,
+      bodyLabelFill: palette.text,
       labelFill: palette.text,
-      fontWeight: 500,
+      lineWidth: isFocus ? 2.8 : lineWidth,
+      lineDash,
+      fontWeight: isFocus ? 700 : 600,
+      titleFontWeight: isFocus ? 700 : 600,
     };
   }
 
   function buildG6Data(nodes, edges, clusters, positions, palette, labels) {
+    const usePalantirCard = ensurePalantirNodeRegistered();
+    const sharedPorts = [
+      { key: "in", placement: [0, 0.5] },
+      { key: "out", placement: [1, 0.5] },
+      { key: "bottom", placement: [0.09, 1] },
+    ];
     const g6Nodes = [
       ...nodes.map((n) => {
         const pos = positions.get(n.id) || { x: 0, y: 0 };
@@ -431,22 +864,24 @@
           const c = nodeColors(data, palette);
           return {
             id: n.id,
+            type: "rect",
             data,
             style: {
               x: pos.x,
               y: pos.y,
-              size: [232, 42],
-              radius: 21,
+              size: [240, 44],
+              radius: 22,
+              halo: false,
               fill: c.fill,
               stroke: c.stroke,
               lineWidth: c.lineWidth,
               lineDash: c.lineDash,
-              ports: [{ key: "in", placement: [0, 0.5] }, { key: "out", placement: [1, 0.5] }],
+              ports: sharedPorts,
               labelText: n.title,
               labelFill: c.labelFill,
               labelFontSize: 12,
               labelFontWeight: 600,
-              labelMaxWidth: 212,
+              labelMaxWidth: 216,
               labelWordWrap: true,
               labelPlacement: "center",
               labelTextAlign: "center",
@@ -456,6 +891,7 @@
           };
         }
 
+        const slots = formatCardSlots(n, labels);
         const data = {
           cardLabel: formatNodeCardLabel(n, labels),
           tier: Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1,
@@ -467,26 +903,37 @@
         const c = nodeColors(data, palette);
         return {
           id: n.id,
+          type: usePalantirCard ? "palantir-law-node" : "rect",
           data,
           style: {
             x: pos.x,
             y: pos.y,
-            size: n.focus ? [264, 82] : [252, 76],
+            size: n.focus ? [284, 92] : [276, 88],
             radius: 10,
+            halo: false,
             fill: c.fill,
             stroke: c.stroke,
             lineWidth: c.lineWidth,
             lineDash: c.lineDash || undefined,
-            ports: [{ key: "in", placement: [0, 0.5] }, { key: "out", placement: [1, 0.5] }],
-            shadowColor: "rgba(0, 0, 0, 0.18)",
+            accentColor: c.accentColor,
+            headerFill: c.headerFill,
+            headerLabelFill: c.headerLabelFill,
+            metricFill: c.metricFill,
+            bodyLabelFill: c.bodyLabelFill,
+            titleFontWeight: c.titleFontWeight,
+            typeLabel: slots.typeLabel,
+            metricLabel: slots.metricLabel,
+            bodyTitle: slots.bodyTitle,
+            ports: sharedPorts,
+            shadowColor: palette.isDark ? "rgba(0, 0, 0, 0.42)" : "rgba(18, 18, 24, 0.10)",
             shadowBlur: n.focus ? 18 : 10,
             shadowOffsetY: 3,
-            labelText: data.cardLabel,
+            labelText: usePalantirCard ? "" : data.cardLabel,
             labelFill: c.labelFill,
-            labelFontSize: 12,
+            labelFontSize: 12.5,
             labelFontWeight: c.fontWeight,
-            labelLineHeight: 16,
-            labelMaxWidth: 228,
+            labelLineHeight: 17,
+            labelMaxWidth: 248,
             labelMaxLines: 3,
             labelWordWrap: true,
             labelPlacement: "center",
@@ -509,22 +956,24 @@
         const c = nodeColors(data, palette);
         return {
           id: cl.id,
+          type: "rect",
           data,
           style: {
             x: pos.x,
             y: pos.y,
-            size: [232, 42],
-            radius: 21,
+            size: [240, 44],
+            radius: 22,
+            halo: false,
             fill: c.fill,
             stroke: c.stroke,
             lineWidth: c.lineWidth,
             lineDash: c.lineDash,
-            ports: [{ key: "in", placement: [0, 0.5] }, { key: "out", placement: [1, 0.5] }],
+            ports: sharedPorts,
             labelText: cl.label,
             labelFill: c.labelFill,
             labelFontSize: 12,
             labelFontWeight: 600,
-            labelMaxWidth: 212,
+            labelMaxWidth: 216,
             labelWordWrap: true,
             labelPlacement: "center",
             labelTextAlign: "center",
@@ -590,7 +1039,13 @@
     const head = addEl(inspectorEl, "div", "ep-inspector-head");
     const badges = addEl(head, "div", "ep-inspector-badges");
     const tierBadge = addEl(badges, "span", "ep-badge", tierName(rawNode.hierarchyTier, labels));
-    tierBadge.dataset.tone = rawNode.hierarchyTier === 0 ? "warning" : rawNode.hierarchyTier === 1 ? "info" : "neutral";
+    tierBadge.dataset.tone = rawNode.hierarchyTier === 0
+      ? "warning"
+      : rawNode.hierarchyTier === 1
+        ? "info"
+        : rawNode.hierarchyTier === 2
+          ? "success"
+          : "neutral";
     if (rawNode.documentType) {
       addEl(badges, "span", "ep-badge", rawNode.documentType);
     }
@@ -722,21 +1177,31 @@
 
     const graphData = computeCurrentGraphData();
 
+    const usePalantirCard = ensurePalantirNodeRegistered();
+
     const edgeStyleMapper = (d) => {
       const kind = d.data?.kind || "delegation";
       const isSub = kind === "sub_delegation";
       const isClusterLink = kind === "cluster_link" || kind === "group_link";
       const pal = themePalette();
-      const usePorts = currentLayout === "stufenbau";
+      const useStufenbauPorts = currentLayout === "stufenbau";
+      const useIndentedPorts = currentLayout === "indented";
+      const baseStroke = isSub
+        ? pal.accent
+        : isClusterLink
+          ? pal.success
+          : mixRgb(pal.primary, pal.borderControl, pal.isDark ? 0.45 : 0.38);
       return {
-        stroke: isSub ? pal.warning : isClusterLink ? pal.primary : pal.borderControl,
+        stroke: baseStroke,
         lineWidth: isClusterLink ? 1.6 : 1.9,
         lineDash: isSub ? [6, 4] : isClusterLink ? [5, 4] : undefined,
         endArrow: !isClusterLink,
         endArrowSize: 7,
-        sourcePort: usePorts ? "out" : undefined,
-        targetPort: usePorts ? "in" : undefined,
-        opacity: isClusterLink ? 0.72 : 0.65,
+        sourcePort: useStufenbauPorts ? "out" : useIndentedPorts ? "bottom" : undefined,
+        targetPort: (useStufenbauPorts || useIndentedPorts) ? "in" : undefined,
+        router: useIndentedPorts ? { type: "orth", padding: 8 } : undefined,
+        radius: useIndentedPorts ? 6 : undefined,
+        opacity: isClusterLink ? 0.78 : 0.80,
         labelText: showEdgeLabels ? (d.data?.anchorLabel || "") : "",
         labelFill: pal.text,
         labelFontSize: 11,
@@ -747,16 +1212,45 @@
         labelBackground: true,
         labelBackgroundFill: pal.surfaceRaised,
         labelBackgroundFillOpacity: 0.94,
-        labelBackgroundStroke: isSub ? pal.warning : pal.borderSubtle,
+        labelBackgroundStroke: isSub ? pal.accent : pal.borderSubtle,
         labelBackgroundLineWidth: 1,
         labelPadding: [2, 6],
         labelBackgroundRadius: 4,
       };
     };
 
+    function buildNodeConfig(pal) {
+      return {
+        type: (d) => (d?.data?.isCluster === "yes" || !usePalantirCard ? "rect" : "palantir-law-node"),
+        style: {
+          halo: false,
+        },
+        state: {
+          selected: {
+            lineWidth: 3.2,
+            stroke: pal.primary,
+            halo: true,
+            haloStroke: pal.primary,
+            haloLineWidth: 6,
+            haloStrokeOpacity: 0.42,
+            haloLineDash: [],
+            shadowColor: pal.isDark ? "rgba(0, 0, 0, 0.52)" : "rgba(18, 18, 24, 0.24)",
+            shadowBlur: 22,
+          },
+          active: {
+            lineWidth: 2.6,
+            stroke: pal.primary,
+          },
+          inactive: {
+            opacity: 0.36,
+          },
+        },
+      };
+    }
+
     function buildEdgeConfig(mode, pal) {
       return {
-        type: mode === "concentric" ? "quadratic" : "cubic-horizontal",
+        type: mode === "concentric" ? "quadratic" : mode === "indented" ? "polyline" : "cubic-horizontal",
         style: edgeStyleMapper,
         state: {
           active: {
@@ -788,24 +1282,7 @@
       autoFit: "view",
       padding: 28,
       zoomRange: [0.25, 2.2],
-      node: {
-        type: "rect",
-        state: {
-          selected: {
-            lineWidth: 3.4,
-            stroke: palette.primary,
-            shadowColor: "rgba(0, 0, 0, 0.34)",
-            shadowBlur: 20,
-          },
-          active: {
-            lineWidth: 2.6,
-            stroke: palette.primary,
-          },
-          inactive: {
-            opacity: 0.45,
-          },
-        },
-      },
+      node: buildNodeConfig(palette),
       edge: buildEdgeConfig(currentLayout, palette),
       behaviors: [
         "drag-canvas",
@@ -896,7 +1373,7 @@
             } else if (value === "structure" && raw?.structureHref) {
               window.location.assign(raw.structureHref);
             } else if (value === "copy") {
-              const title = raw?.title || datum?.style?.labelText || nodeId;
+              const title = raw?.title || datum?.data?.raw?.title || datum?.data?.cardLabel || datum?.style?.labelText || nodeId;
               if (navigator.clipboard?.writeText) {
                 navigator.clipboard.writeText(title).catch(() => {});
               }
@@ -911,8 +1388,10 @@
     async function fitViewport({ forceFitAll = false, focusTargetId = null } = {}) {
       try {
         await graph.fitView(undefined, false);
-        if (!forceFitAll && graph.getZoom() < 0.56) {
-          await graph.zoomTo(0.68, false);
+        const minZoom = currentLayout === "indented" ? 0.72 : 0.56;
+        const targetZoom = currentLayout === "indented" ? 0.80 : 0.68;
+        if (!forceFitAll && graph.getZoom() < minZoom) {
+          await graph.zoomTo(targetZoom, false);
           const target = focusTargetId
             || selectedNodeId
             || (nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0])?.id;
@@ -1131,8 +1610,8 @@
         graph.setLayout({
           type: "concentric",
           preventOverlap: true,
-          nodeSize: [264, 88],
-          minNodeSpacing: 52,
+          nodeSize: [284, 96],
+          minNodeSpacing: 56,
           sortBy: (d) => {
             if (d.data?.isCluster === "yes") return 1;
             const raw = d.data?.raw;
@@ -1176,7 +1655,7 @@
       }
       const focusNode = nodes.find((n) => n.focus);
       await fitViewport({
-        forceFitAll: (visibleModelCache?.visibleNodes.length || 0) <= 28 && !focusNode && !focusTargetId,
+        forceFitAll: mode !== "indented" && (visibleModelCache?.visibleNodes.length || 0) <= 28 && !focusNode && !focusTargetId,
         focusTargetId,
       });
       updateToolbarState();
@@ -1262,11 +1741,11 @@
         renderInspector(inspectorEl, initialNode, nodes, edges, labels, inspectorCallbacks);
       }
       clearSelectionStates();
-      if (currentLayout === "concentric") {
-        await applyLayout("concentric", focusNode?.id || null);
+      if (currentLayout === "concentric" || currentLayout === "indented") {
+        await applyLayout(currentLayout, focusNode?.id || null);
       } else {
         await fitViewport({
-          forceFitAll: (visibleModelCache?.visibleNodes.length || 0) <= 28 && !focusNode,
+          forceFitAll: currentLayout !== "indented" && (visibleModelCache?.visibleNodes.length || 0) <= 28 && !focusNode,
           focusTargetId: (focusNode || initialNode)?.id || null,
         });
         updateToolbarState();
@@ -1360,27 +1839,52 @@
       observer.observe(container);
     }
 
+    const refreshTheme = () => {
+      if (!container.isConnected) return;
+      const nextPalette = themePalette(true);
+      const nodeUpdates = graph.getNodeData().map((n) => {
+        const c = nodeColors(n.data || {}, nextPalette);
+        return {
+          id: n.id,
+          style: {
+            fill: c.fill,
+            stroke: c.stroke,
+            accentColor: c.accentColor,
+            headerFill: c.headerFill,
+            headerLabelFill: c.headerLabelFill,
+            metricFill: c.metricFill,
+            bodyLabelFill: c.bodyLabelFill,
+            labelFill: c.labelFill,
+            shadowColor: nextPalette.isDark ? "rgba(0, 0, 0, 0.42)" : "rgba(18, 18, 24, 0.10)",
+          },
+        };
+      });
+      graph.setNode(buildNodeConfig(nextPalette));
+      graph.updateNodeData(nodeUpdates);
+      graph.setEdge(buildEdgeConfig(currentLayout, nextPalette));
+      graph.draw().catch(() => {});
+      if (selectedNodeId) selectNodeById(selectedNodeId);
+    };
+
     if (window.matchMedia) {
       const mql = window.matchMedia("(prefers-color-scheme: dark)");
-      const refreshTheme = () => {
-        const nextPalette = themePalette(true);
-        const nodeUpdates = graph.getNodeData().map((n) => {
-          const c = nodeColors(n.data || {}, nextPalette);
-          return {
-            id: n.id,
-            style: {
-              fill: c.fill,
-              stroke: c.stroke,
-              labelFill: c.labelFill,
-            },
-          };
-        });
-        graph.updateNodeData(nodeUpdates);
-        graph.setEdge(buildEdgeConfig(currentLayout, nextPalette));
-        graph.draw().catch(() => {});
-        if (selectedNodeId) selectNodeById(selectedNodeId);
-      };
       if (typeof mql.addEventListener === "function") mql.addEventListener("change", refreshTheme);
+    }
+
+    if (typeof MutationObserver !== "undefined" && document.documentElement) {
+      let lastThemeAttr = document.documentElement.dataset.theme || "";
+      const themeObserver = new MutationObserver(() => {
+        if (!container.isConnected) {
+          themeObserver.disconnect();
+          return;
+        }
+        const currentThemeAttr = document.documentElement.dataset.theme || "";
+        if (currentThemeAttr !== lastThemeAttr) {
+          lastThemeAttr = currentThemeAttr;
+          refreshTheme();
+        }
+      });
+      themeObserver.observe(document.documentElement, { attributes: true });
     }
   }
 
