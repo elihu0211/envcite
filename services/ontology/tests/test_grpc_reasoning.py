@@ -12,7 +12,7 @@ from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc, reasoning_pb2, 
 from envcite_ontology import errors
 from envcite_ontology.annotate import load
 from envcite_ontology.reasoning_service import ReasoningServicer
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from tests.conftest import call_metadata, identifier
 from tests.reasoning_support import Conn, _plain_duty
 from tests.test_annotation import LAW, _doc, _duty, _limit
@@ -301,7 +301,7 @@ class _Context:
 
 
 def test_a_call_that_cannot_get_a_slot_in_its_budget_fails_fast(store: OntologyStore) -> None:
-    servicer = ReasoningServicer(store, evaluate_slots=1)
+    servicer = ReasoningServicer(store.connections, store.laws, evaluate_slots=1)
     assert servicer._slots.acquire()  # 名額被占著
 
     with pytest.raises(_Aborted) as aborted:

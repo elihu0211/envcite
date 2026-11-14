@@ -22,7 +22,9 @@ from envcite_ontology.guidance_search import fuse, guidance_phrases
 from envcite_ontology.identifiers import jurisdiction_filter, law_key
 from envcite_ontology.law_names import LawNames
 from envcite_ontology.reranking import RerankError, Reranks, select
-from envcite_ontology.store import LawGraphRecord, LawKey, OntologyStore, SearchHit
+from envcite_ontology.search_tuning import SearchTuning
+from envcite_ontology.store.ports import LawGraphReader, LawReader, Retrieval
+from envcite_ontology.store.records import LawGraphRecord, LawKey, SearchHit
 from envcite_ontology.telemetry import RerankMetrics
 from envcite_segmenter import Segmenter
 
@@ -36,8 +38,6 @@ DEFAULT_GRAPH_DEPTH = 2
 MAX_GRAPH_DEPTH = 4
 DEFAULT_GRAPH_CHILD_LIMIT = 20
 MAX_GRAPH_CHILD_LIMIT = 60
-#: 請求帶 `rerank` 時，兩臂預設取幾條候選交給精排模型（`ServerSettings.rerank_candidates` 覆寫）。
-DEFAULT_RERANK_CANDIDATES = 30
 
 _EDGE_KINDS = {
     "delegation": pb.GRAPH_EDGE_KIND_DELEGATION,
@@ -68,39 +68,43 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
 
     def __init__(
         self,
-        store: OntologyStore,
+        laws: LawReader,
+        graph: LawGraphReader,
+        retrieval: Retrieval,
         segmenter: Segmenter,
         law_names: LawNames,
+        *,
         embedder: Embedder | None = None,
-        lexical_max_df: float = 0.0,
-        embed_slots: int | None = None,
-        guidance_max_df: float = 0.0,
         reranker: Reranks | None = None,
-        rerank_slots: int | None = None,
-        rerank_candidates: int = DEFAULT_RERANK_CANDIDATES,
+        tuning: SearchTuning | None = None,
         meter: Meter | None = None,
     ) -> None:
-        self._store = store
+        tuning = tuning or SearchTuning()
+        self._laws = laws
+        self._graph = graph
+        self._retrieval = retrieval
         self._law_names = law_names
-        self._lexical_max_df = lexical_max_df
-        self._guidance_max_df = guidance_max_df
+        self._tuning = tuning
         self._segmenter = segmenter
         self._embedder = embedder
         # 名額滿了就略過語意臂。None 表示不限（測試直接建構、不走伺服器預算時）。
         self._embed_slots = (
-            threading.BoundedSemaphore(embed_slots) if embed_slots is not None else None
+            threading.BoundedSemaphore(tuning.embed_slots)
+            if tuning.embed_slots is not None
+            else None
         )
         self._reranker = reranker
-        self._rerank_candidates = rerank_candidates
         self._rerank_slots = (
-            threading.BoundedSemaphore(rerank_slots) if rerank_slots is not None else None
+            threading.BoundedSemaphore(tuning.rerank_slots)
+            if tuning.rerank_slots is not None
+            else None
         )
         self._rerank_metrics = RerankMetrics(meter)
 
     def _request_key(self, identifier: pb.LawIdentifier, as_of: str) -> LawKey:
         """必填的自然鍵與 `as_of` 一次驗證，違規一次回報。"""
         v = errors.Validator()
-        key = law_key(self._store, identifier, v)
+        key = law_key(self._laws, identifier, v)
         v.date("as_of", as_of)
         v.check()
         return key
@@ -110,9 +114,9 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         """依自然鍵取得一部法規；不存在回 `LAW_NOT_FOUND`。"""
         _log_call(context, "GetLaw", identifiers.subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
-        law = self._store.get_law(key, as_of=request.as_of, timeout=remaining_seconds(context))
+        law = self._laws.get_law(key, as_of=request.as_of, timeout=remaining_seconds(context))
         if law is None:
-            raise identifiers.not_found(self._store, key, request.as_of, context)
+            raise identifiers.not_found(self._laws, key, request.as_of, context)
         return pb.GetLawResponse(
             law=pb.Law(
                 identifier=pb.LawIdentifier(
@@ -135,10 +139,10 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         _log_call(context, "ListArticles", identifiers.subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         timeout = remaining_seconds(context)
-        articles = self._store.list_articles(key, as_of=request.as_of, timeout=timeout)
+        articles = self._laws.list_articles(key, as_of=request.as_of, timeout=timeout)
         if articles is None:
-            raise identifiers.not_found(self._store, key, request.as_of, context)
-        headings = self._store.list_headings(key, as_of=request.as_of, timeout=timeout) or []
+            raise identifiers.not_found(self._laws, key, request.as_of, context)
+        headings = self._laws.list_headings(key, as_of=request.as_of, timeout=timeout) or []
         return pb.ListArticlesResponse(
             articles=[
                 pb.Article(iri=a.iri, number=a.number, sort_key=a.sort_key) for a in articles
@@ -163,11 +167,11 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         _log_call(context, "ListLaws", request.jurisdiction or "all")
         v = errors.Validator()
         v.date("as_of", request.as_of)
-        jurisdiction = jurisdiction_filter(self._store, request.jurisdiction, v)
+        jurisdiction = jurisdiction_filter(self._laws, request.jurisdiction, v)
         category_prefix = _category_prefix_filter(request.category_prefix, v)
         v.check()
 
-        laws = self._store.list_laws(
+        laws = self._laws.list_laws(
             as_of=request.as_of,
             jurisdiction=jurisdiction,
             category_prefix=category_prefix,
@@ -215,7 +219,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         if not iri:
             v.add("iri", errors.EMPTY, "iri is required")
         v.check()
-        record = self._store.get_article_by_iri(iri, timeout=remaining_seconds(context))
+        record = self._laws.get_article_by_iri(iri, timeout=remaining_seconds(context))
         if record is None:
             raise errors.not_found("NOT_FOUND", f"article not found: {iri}")
         return pb.GetArticleByIriResponse(
@@ -251,7 +255,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         _log_call(context, "GetLawGraph", subject)
 
         v = errors.Validator()
-        key = law_key(self._store, request.identifier, v) if has_id else None
+        key = law_key(self._laws, request.identifier, v) if has_id else None
         v.date("as_of", request.as_of)
         category_prefix = _category_prefix_filter(request.category_prefix, v)
         upstream_depth = _bounded_int(
@@ -277,7 +281,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         )
         v.check()
 
-        graph = self._store.get_law_graph(
+        graph = self._graph.get_law_graph(
             key,
             as_of=request.as_of,
             category_prefix=category_prefix,
@@ -289,7 +293,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         )
         if graph is None:
             assert key is not None
-            raise identifiers.not_found(self._store, key, request.as_of, context)
+            raise identifiers.not_found(self._laws, key, request.as_of, context)
         return _to_graph_response(graph)
 
     @errors.maps_errors
@@ -299,14 +303,14 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         """列出 `as_of` 當日因違憲而失效的條文單元。"""
         _log_call(context, "ListInvalidations", identifiers.subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
-        found = self._store.list_invalidations(
+        found = self._laws.list_invalidations(
             key,
             as_of=request.as_of,
             article_number=request.article_number,
             timeout=remaining_seconds(context),
         )
         if found is None:
-            raise identifiers.not_found(self._store, key, request.as_of, context)
+            raise identifiers.not_found(self._laws, key, request.as_of, context)
         return pb.ListInvalidationsResponse(
             invalidations=[
                 pb.Invalidation(
@@ -337,41 +341,41 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
         if not 0 < limit <= MAX_SEARCH_LIMIT:
             v.add("limit", errors.OUT_OF_RANGE, f"limit must be between 1 and {MAX_SEARCH_LIMIT}")
         v.date("as_of", request.as_of)
-        jurisdiction = jurisdiction_filter(self._store, request.jurisdiction, v)
+        jurisdiction = jurisdiction_filter(self._laws, request.jurisdiction, v)
         v.check()
 
         # 精排要看得比 limit 深：取較深的候選，精排後再取前 limit 條。
         # 沒有精排模型時，請求的 rerank 當作沒有。
         rerank = request.rerank and self._reranker is not None
-        depth = max(limit, self._rerank_candidates) if rerank else limit
-        hits = self._store.search(
+        depth = max(limit, self._tuning.rerank_candidates) if rerank else limit
+        hits = self._retrieval.search(
             terms,
             tokenizer=self._segmenter.tokenizer_id,
             as_of=request.as_of,
             limit=depth,
             embedding=self._query_embedding(request.query),
             model=self._embedder.model if self._embedder else "",
-            max_df=self._lexical_max_df,
+            max_df=self._tuning.lexical_max_df,
             laws=self._law_names.find(request.query),
             jurisdiction=jurisdiction,
             timeout=remaining_seconds(context),
         )
-        searched = self._store.searched_terms(
+        searched = self._retrieval.searched_terms(
             terms,
             tokenizer=self._segmenter.tokenizer_id,
-            max_df=self._lexical_max_df,
+            max_df=self._tuning.lexical_max_df,
             timeout=remaining_seconds(context),
         )
         ranked = [(h, 0) for h in hits]
         if request.include_guidance and (phrases := guidance_phrases(request.query)):
             ranked = fuse(
                 hits,
-                self._store.guidance_hits(
+                self._retrieval.guidance_hits(
                     phrases,
                     as_of=request.as_of,
                     limit=GUIDANCE_CANDIDATES,
                     jurisdiction=jurisdiction,
-                    max_df=self._guidance_max_df,
+                    max_df=self._tuning.guidance_max_df,
                     timeout=remaining_seconds(context),
                 ),
                 depth,

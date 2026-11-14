@@ -11,9 +11,11 @@ from psycopg_pool import ConnectionPool
 from envcite.ontology.v2 import ontology_pb2
 from envcite_ontology import errors, projection
 from envcite_ontology.embedding import EmbeddingError
+from envcite_ontology.search_tuning import SearchTuning
 from envcite_ontology.server import QUERY_EMBED_SLOTS, WORKERS
 from envcite_ontology.service import OntologyServicer
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.connections import Connections
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 
 
@@ -65,16 +67,18 @@ def test_a_spent_deadline_does_not_take_a_connection(
     def fail(*_args: object, **_kwargs: object) -> None:
         raise AssertionError("checked out a connection after the deadline")
 
-    monkeypatch.setattr(store._pool, "connection", fail)
+    monkeypatch.setattr(store.connections._pool, "connection", fail)
     with pytest.raises(psycopg.errors.QueryCanceled):
-        store.search("噪音", tokenizer="simple", timeout=0)
+        store.retrieval.search("噪音", tokenizer="simple", timeout=0)
 
 
 def test_a_short_deadline_cancels_the_search_query(
     store: OntologyStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr("envcite_ontology.store._SEARCH", "SELECT pg_sleep(5)")
-    servicer = OntologyServicer(store, Segmenter([]), store.law_names())
+    monkeypatch.setattr("envcite_ontology.store.retrieval._SEARCH", "SELECT pg_sleep(5)")
+    servicer = OntologyServicer(
+        store.laws, store.graph, store.retrieval, Segmenter([]), store.retrieval.law_names()
+    )
     with pytest.raises(_Aborted) as aborted:
         servicer.SearchArticles(
             ontology_pb2.SearchArticlesRequest(query="噪音"),
@@ -88,8 +92,10 @@ def test_a_short_deadline_cancels_the_search_query(
 def test_an_exhausted_pool_is_busy(dsn: str) -> None:
     pool = ConnectionPool(dsn, min_size=1, max_size=1, open=True)
     try:
-        local = OntologyStore(pool)
-        servicer = OntologyServicer(local, Segmenter([]), local.law_names())
+        local = OntologyStore.over(Connections(pool))
+        servicer = OntologyServicer(
+            local.laws, local.graph, local.retrieval, Segmenter([]), local.retrieval.law_names()
+        )
         with pool.connection(), pytest.raises(_Aborted) as aborted:
             servicer.SearchArticles(
                 ontology_pb2.SearchArticlesRequest(query="噪音"),
@@ -108,11 +114,13 @@ def test_a_full_embed_slot_still_returns_lexical_hits(
     conn.commit()
     embedder = _CountingEmbedder()
     servicer = OntologyServicer(
-        store,
-        Segmenter(store.lexicon()),
-        store.law_names(),
-        embedder,  # type: ignore[arg-type]
-        embed_slots=1,
+        store.laws,
+        store.graph,
+        store.retrieval,
+        Segmenter(store.retrieval.lexicon()),
+        store.retrieval.law_names(),
+        embedder=embedder,  # type: ignore[arg-type]
+        tuning=SearchTuning(embed_slots=1),
     )
     assert servicer._embed_slots is not None
     assert servicer._embed_slots.acquire(blocking=False)
@@ -129,11 +137,13 @@ def test_a_full_embed_slot_still_returns_lexical_hits(
 def test_an_embed_slot_is_released_for_the_next_query(store: OntologyStore) -> None:
     embedder = _CountingEmbedder()
     servicer = OntologyServicer(
-        store,
+        store.laws,
+        store.graph,
+        store.retrieval,
         Segmenter([]),
-        store.law_names(),
-        embedder,  # type: ignore[arg-type]
-        embed_slots=1,
+        store.retrieval.law_names(),
+        embedder=embedder,  # type: ignore[arg-type]
+        tuning=SearchTuning(embed_slots=1),
     )
     request = ontology_pb2.SearchArticlesRequest(query="噪音")
     servicer.SearchArticles(request, _Context(remaining=5))  # type: ignore[arg-type]

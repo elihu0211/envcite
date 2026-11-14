@@ -6,7 +6,7 @@
 列表（platform 的搜尋頁與 `POST /v2/search`）一條命中要通過下界才列出：語意相似度達
 `semantic_floor`，或字面分數達 `lexical_floor` 且 `SearchArticles` 回的 `term_coverage` 達門檻
 （0 = 不看覆蓋率，即 consult 的規則）。這支工具以服務自己的取候選與覆蓋率
-（`OntologyStore.search`、`searched_terms`、`term_coverage`），對子集的每題取前 `--k` 條，
+（`RetrievalRepository.search`、`searched_terms`、`term_coverage`），對子集的每題取前 `--k` 條，
 算各門檻下：
 
 - 可答題：列得出至少一條（有結果）、列出的有相關條（qrels 的相關分數以上，召回）。
@@ -32,7 +32,7 @@ import golden_set as gs
 
 from envcite_ontology.coverage import term_coverage
 from envcite_ontology.settings import ModelsSettings, ServerSettings, load
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
 
@@ -72,11 +72,11 @@ def main() -> None:
 
     answerable = negative = 0
     with OntologyStore.from_dsn(settings.dsn) as store:
-        segmenter = Segmenter(store.lexicon())
-        law_names = store.law_names()
+        segmenter = Segmenter(store.retrieval.lexicon())
+        law_names = store.retrieval.law_names()
         for r in rows:
             terms = segmenter.to_tsvector_input(r.question)
-            hits = store.search(
+            hits = store.retrieval.search(
                 terms,
                 tokenizer=segmenter.tokenizer_id,
                 as_of=on,
@@ -86,7 +86,7 @@ def main() -> None:
                 max_df=settings.lexical_max_df,
                 laws=law_names.find(r.question),
             )
-            searched = store.searched_terms(
+            searched = store.retrieval.searched_terms(
                 terms, tokenizer=segmenter.tokenizer_id, max_df=settings.lexical_max_df
             )
             coverage = [term_coverage(searched, h.content, segmenter) for h in hits]

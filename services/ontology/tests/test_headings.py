@@ -5,7 +5,8 @@ from datetime import date
 import psycopg
 
 from envcite_ontology.ingest import articles, headings, law, write
-from envcite_ontology.store import LawKey, OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
+from envcite_ontology.store.records import LawKey
 
 
 def test_extract_builds_hierarchy_and_interleaved_sort_keys() -> None:
@@ -87,8 +88,8 @@ def test_write_and_list_headings_round_trip(
         write.apply(conn, parsed, first_import=True)
 
     key = LawKey("TW-CENTRAL", "moj_pcode", "O0099001")
-    listed_headings = store.list_headings(key, as_of="2024-06-01")
-    listed_articles = store.list_articles(key, as_of="2024-06-01")
+    listed_headings = store.laws.list_headings(key, as_of="2024-06-01")
+    listed_articles = store.laws.list_articles(key, as_of="2024-06-01")
 
     assert listed_headings is not None
     assert listed_articles is not None

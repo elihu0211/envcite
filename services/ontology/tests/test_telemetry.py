@@ -12,7 +12,7 @@ from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite.ontology.v2 import reasoning_pb2_grpc
 from envcite_grpc import configure_telemetry
 from envcite_ontology.reasoning_service import ReasoningServicer
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_ontology.telemetry import register_annotation_health
 from tests.test_import import _scalar
 from tests.verification_support import Conn, _water_draft
@@ -47,7 +47,7 @@ def served(
     meter = MeterProvider(metric_readers=[reader]).get_meter("test")
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
     reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(
-        ReasoningServicer(store, meter=meter), server
+        ReasoningServicer(store.connections, store.laws, meter=meter), server
     )
     port = server.add_insecure_port("127.0.0.1:0")
     server.start()
@@ -84,7 +84,7 @@ def test_an_evaluation_that_cannot_get_a_slot_in_time_is_counted_as_busy(
     meter = MeterProvider(metric_readers=[reader]).get_meter("test")
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
     reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(
-        ReasoningServicer(store, evaluate_slots=0, meter=meter),
+        ReasoningServicer(store.connections, store.laws, evaluate_slots=0, meter=meter),
         server,  # 沒有任何名額
     )
     port = server.add_insecure_port("127.0.0.1:0")
@@ -126,7 +126,9 @@ def test_the_health_gauges_report_what_the_views_hold(
 ) -> None:
     _water_draft(conn, sample)
     reader = InMemoryMetricReader()
-    register_annotation_health(store, MeterProvider(metric_readers=[reader]).get_meter("test"))
+    register_annotation_health(
+        store.connections, MeterProvider(metric_readers=[reader]).get_meter("test")
+    )
 
     points = _points(reader, "envcite.annotation.statements")
 

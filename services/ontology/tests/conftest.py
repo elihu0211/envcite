@@ -14,7 +14,7 @@ from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.ingest import importer
 from envcite_ontology.migrate import apply_all
 from envcite_ontology.server import build_server
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from tests.sample import sample_laws, stored_snapshot
 
 

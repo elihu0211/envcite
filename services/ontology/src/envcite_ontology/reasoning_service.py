@@ -23,7 +23,8 @@ from envcite_ontology.identifiers import law_key
 from envcite_ontology.reasoning import Result, evaluate_across
 from envcite_ontology.reasoning.facts import Measurements, Permits, PerOccasionTimeline
 from envcite_ontology.reasoning.scoring import ScoringInput
-from envcite_ontology.store import LANGUAGE, OntologyStore
+from envcite_ontology.store.ports import LawReader, ReadConnections
+from envcite_ontology.store.records import LANGUAGE
 from envcite_ontology.telemetry import ReasoningMetrics
 
 log = logging.getLogger(__name__)
@@ -46,11 +47,13 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
 
     def __init__(
         self,
-        store: OntologyStore,
+        connections: ReadConnections,
+        laws: LawReader,
         evaluate_slots: int = EVALUATE_SLOTS,
         meter: Meter | None = None,
     ) -> None:
-        self._store = store
+        self._connections = connections
+        self._laws = laws
         self._metrics = ReasoningMetrics(meter)
         self._slots = threading.BoundedSemaphore(evaluate_slots)
 
@@ -61,15 +64,15 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         """列出資源在 `as_of` 當日有效、已確認的陳述。"""
         _log_call(context, "ListStatements", identifiers.subject(request.identifier))
         v = errors.Validator()
-        key = law_key(self._store, request.identifier, v)
+        key = law_key(self._laws, request.identifier, v)
         on = v.date("as_of", request.as_of)
         v.check()
-        resource_id = self._store.resource_id(
+        resource_id = self._laws.resource_id(
             key, as_of=request.as_of, timeout=remaining_seconds(context)
         )
         if resource_id is None:
-            raise identifiers.not_found(self._store, key, request.as_of, context)
-        with self._store.read_connection(timeout=remaining_seconds(context)) as conn:
+            raise identifiers.not_found(self._laws, key, request.as_of, context)
+        with self._connections.read_connection(timeout=remaining_seconds(context)) as conn:
             return annotation_read.list_statements(conn, resource_id, on)
 
     @errors.maps_errors
@@ -160,7 +163,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         scoring_inputs: list[ScoringInput],
     ) -> pb.EvaluateResponse:
         try:
-            with self._store.read_connection(timeout=remaining_seconds(context)) as conn:
+            with self._connections.read_connection(timeout=remaining_seconds(context)) as conn:
                 moved = evaluate_across(
                     conn,
                     conduct_on,

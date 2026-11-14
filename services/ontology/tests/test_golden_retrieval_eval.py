@@ -14,7 +14,8 @@ import psycopg
 import pytest
 
 from envcite_ontology import projection
-from envcite_ontology.store import OntologyStore, SearchHit
+from envcite_ontology.store.ontology_store import OntologyStore
+from envcite_ontology.store.records import SearchHit
 from envcite_segmenter import Segmenter
 from tests.sample import AIR, WATER
 
@@ -207,7 +208,7 @@ def test_unmapped_questions_are_set_aside_and_negatives_are_not_scored(
     assert got["none"].unmapped_reasons == ["題目沒有期望條文"]
 
 
-class FakeStore:
+class FakeRetrieval:
     """檢索的替身，但回的是真的 `SearchHit`，身分欄位取自從資料庫讀到的條。"""
 
     def __init__(self, hits: Sequence[Any]) -> None:
@@ -298,7 +299,7 @@ def _measure(
     rows = tool.questions(ITEMS, doc, frozenset(i["id"] for i in ITEMS))
     return list(
         tool.search_all(
-            FakeStore([provisions[(gs.CENTRAL, p, n)] for p, n in hits]),
+            FakeRetrieval([provisions[(gs.CENTRAL, p, n)] for p, n in hits]),
             FakeSegmenter(),
             rows,
             None,
@@ -370,7 +371,7 @@ def test_a_scope_drops_hits_of_other_laws_before_the_first_k_are_taken(
     gs = sys.modules["golden_set"]
     doc = _qrels_doc(corpus)
     rows = tool.questions(ITEMS[:1], doc, frozenset({"first"}))
-    store = FakeStore(
+    store = FakeRetrieval(
         [provisions[(gs.CENTRAL, DUP_A, str(i))] for i in range(1, 6)]
         + [provisions[(gs.CENTRAL, AIR, "1")]]
     )
@@ -391,7 +392,7 @@ def test_the_top_scores_are_kept_for_the_first_k_hits_and_for_the_ten_consult_re
     doc = _qrels_doc(corpus)
     rows = tool.questions(ITEMS[:1], doc, frozenset({"first"}))
 
-    class Rising(FakeStore):
+    class Rising(FakeRetrieval):
         def search(self, terms: str, **kw: Any) -> list[SearchHit]:
             hits = super().search(terms, **kw)
             return [
@@ -422,7 +423,7 @@ def test_a_real_search_hit_lands_on_the_qrels_doc_id_of_the_article_it_was_mappe
     """從資料庫讀對應、真實的混合檢索、命中轉條文代號、對 qrels：中央與地方各一題。"""
     tool, by_title, provisions = corpus
     projection.rebuild(conn)
-    segmenter = Segmenter(store.lexicon())
+    segmenter = Segmenter(store.retrieval.lexicon())
     items = [
         {
             "id": "central",
@@ -445,7 +446,7 @@ def test_a_real_search_hit_lands_on_the_qrels_doc_id_of_the_article_it_was_mappe
     out = {
         r.id: r
         for r in tool.search_all(
-            store, segmenter, rows, None, qrels=qrels, relevant_from=2, k=10, on=ON
+            store.retrieval, segmenter, rows, None, qrels=qrels, relevant_from=2, k=10, on=ON
         )
     }
 
@@ -537,7 +538,7 @@ def _rerank_run(
     rows = tool.questions(ITEMS, doc, frozenset(i["id"] for i in ITEMS))
     hits = [provisions[(gs.CENTRAL, p, n)] for p, n in [(AIR, "1"), (DUP_A, "1"), (WATER, "40")]]
     out = tool.search_all(
-        FakeStore(hits),
+        FakeRetrieval(hits),
         FakeSegmenter(),
         rows,
         None,
@@ -602,7 +603,7 @@ def test_depth_arms_share_one_scoring_pass_per_question(
 
     def arm(depth: int) -> dict[str, Any]:
         out = tool.search_all(
-            FakeStore(hits),
+            FakeRetrieval(hits),
             FakeSegmenter(),
             rows,
             None,

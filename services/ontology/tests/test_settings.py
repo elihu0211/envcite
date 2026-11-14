@@ -150,7 +150,7 @@ def test_invalid_rerank_candidates_are_rejected(
 
 
 def test_rerank_candidates_default_fits_the_search_pool(monkeypatch: pytest.MonkeyPatch) -> None:
-    from envcite_ontology.store import SEARCH_POOL
+    from envcite_ontology.store.retrieval import SEARCH_POOL
 
     monkeypatch.setenv("ENVCITE_ONTOLOGY_DSN", "postgresql://u:p@h/db")
     depth = load(ServerSettings).rerank_candidates

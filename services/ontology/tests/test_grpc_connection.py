@@ -16,7 +16,7 @@ from envcite_grpc.connection import (
     client_options,
 )
 from envcite_ontology.server import build_server
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 
 
 def test_the_servers_ping_floor_is_below_the_clients_ping_interval() -> None:

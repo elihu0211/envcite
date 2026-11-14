@@ -14,9 +14,10 @@ from envcite_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
 from envcite_ontology.embedding import Embedder
 from envcite_ontology.reasoning_service import ReasoningServicer
 from envcite_ontology.reranking import Reranks
-from envcite_ontology.service import DEFAULT_RERANK_CANDIDATES, OntologyServicer
+from envcite_ontology.search_tuning import DEFAULT_RERANK_CANDIDATES, SearchTuning
+from envcite_ontology.service import OntologyServicer
 from envcite_ontology.settings import ServerSettings, load
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_ontology.telemetry import register_annotation_health
 from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
@@ -65,25 +66,31 @@ def build_server(
         options=options,
     )
     # lexicon 啟動時只讀一次：新匯入的用語須重啟才進入查詢。
-    segmenter = Segmenter(store.lexicon())
-    law_names = store.law_names()
+    segmenter = Segmenter(store.retrieval.lexicon())
+    law_names = store.retrieval.law_names()
     ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
         OntologyServicer(
-            store,
+            store.laws,
+            store.graph,
+            store.retrieval,
             segmenter,
             law_names,
-            embedder,
-            lexical_max_df,
-            embed_slots=QUERY_EMBED_SLOTS,
-            guidance_max_df=guidance_max_df,
+            embedder=embedder,
             reranker=reranker,
-            rerank_slots=RERANK_SLOTS,
-            rerank_candidates=rerank_candidates,
+            tuning=SearchTuning(
+                lexical_max_df=lexical_max_df,
+                guidance_max_df=guidance_max_df,
+                rerank_candidates=rerank_candidates,
+                embed_slots=QUERY_EMBED_SLOTS,
+                rerank_slots=RERANK_SLOTS,
+            ),
             meter=meter,
         ),
         server,
     )
-    reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(ReasoningServicer(store), server)
+    reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(
+        ReasoningServicer(store.connections, store.laws), server
+    )
     reflection.enable_server_reflection(
         (
             SERVICE_NAME,
@@ -114,7 +121,7 @@ def main() -> None:
 
     # 沒設 OTEL_EXPORTER_OTLP_ENDPOINT 時什麼都不做（見 envcite_grpc.telemetry）。
     interceptors = configure_telemetry("envcite-ontology")
-    register_annotation_health(store)
+    register_annotation_health(store.connections)
     health_servicer = health.HealthServicer()
     server, bound = build_server(
         store,

@@ -7,7 +7,7 @@ import psycopg
 from envcite_ontology import delegation, projection, violation
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.ingest import importer
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 
@@ -63,7 +63,7 @@ def _corpus(conn: Conn, tmp_path: Path) -> None:
 
 def _ids(store: OntologyStore, segmenter: Segmenter, query: str) -> list[str]:
     terms = segmenter.to_tsvector_input(query)
-    hits = store.search(terms, tokenizer=segmenter.tokenizer_id, as_of=ON, limit=10)
+    hits = store.retrieval.search(terms, tokenizer=segmenter.tokenizer_id, as_of=ON, limit=10)
     return [f"{h.local_id}-{h.number}" for h in hits]
 
 
@@ -72,7 +72,7 @@ def test_a_duty_hit_brings_its_sanction_right_after_it(
 ) -> None:
     _corpus(conn, tmp_path)
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         assert _ids(store, segmenter, "排放口暢通") == ["T0000001-3", "T0000001-9"]
 
 
@@ -81,7 +81,7 @@ def test_a_command_hit_brings_the_sanction_for_its_authorizing_article(
 ) -> None:
     _corpus(conn, tmp_path)
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         assert _ids(store, segmenter, "水質水量資料") == ["T0000002-2", "T0000001-8"]
 
 
@@ -90,7 +90,9 @@ def test_the_brought_sanction_carries_the_score_of_what_brought_it(
 ) -> None:
     _corpus(conn, tmp_path)
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         terms = segmenter.to_tsvector_input("排放口暢通")
-        duty, sanction = store.search(terms, tokenizer=segmenter.tokenizer_id, as_of=ON, limit=10)
+        duty, sanction = store.retrieval.search(
+            terms, tokenizer=segmenter.tokenizer_id, as_of=ON, limit=10
+        )
         assert sanction.lexical_score == duty.lexical_score > 0

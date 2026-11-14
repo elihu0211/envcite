@@ -7,7 +7,7 @@
 
 from collections.abc import Sequence
 
-from envcite_ontology.store import SearchHit
+from envcite_ontology.store.records import SearchHit
 
 #: 詞組的數量與長度（字）。更短的詞幾乎每件函釋都有，更長的不會是使用者打的關鍵字。
 MAX_PHRASES = 5
