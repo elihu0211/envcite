@@ -29,12 +29,14 @@ else
                 <FormField For="f-law-as-of" Label="@L["基準日"]" Hint="@L["留空表示現行"]">
                     <input id="f-law-as-of" name="asOf" type="date" class="ep-input" value="@AsOf" />
                 </FormField>
-                <SubmitButton>@L["套用條件"]</SubmitButton>
-                <button type="button" class="ep-btn ep-btn-quiet ep-workbench-catalog-toggle"
-                        data-workbench-toggle="catalog" aria-expanded="false" aria-controls="ep-workbench-catalog">
-                    <NavIcon Path="@Icons.Material.Outlined.AccountTree" />
-                    <span>@CatalogTitle</span>
-                </button>
+                <div class="ep-workbench-bar-actions">
+                    <SubmitButton>@L["套用條件"]</SubmitButton>
+                    <button type="button" class="ep-btn ep-btn-quiet ep-workbench-catalog-toggle"
+                            data-workbench-toggle="catalog" aria-expanded="false" aria-controls="ep-workbench-catalog">
+                        <NavIcon Path="@Icons.Material.Outlined.AccountTree" />
+                        <span>@CatalogTitle</span>
+                    </button>
+                </div>
             </form>
         }
 
@@ -128,17 +130,24 @@ else
                                                    Message="@L["本焦點法規含 {0} 項宣告違憲失效單元（資料來源：憲法法庭；未列出不等於無違憲失效）。", focusNode.InvalidationCount]" />
                                     }
 
-                                    <StatGrid Items="GraphStats(graph, focusNode)" />
+                                    <details class="ep-graph-meta">
+                                        <summary class="ep-graph-meta-toggle">
+                                            <span>@($"{L["圖譜節點"]} {graph.Nodes.Count} · {L["授權連線"]} {graph.Edges.Count}")</span>
+                                        </summary>
+                                        <div class="ep-graph-meta-body">
+                                            <StatGrid Items="GraphStats(graph, focusNode)" />
 
-                                    <div class="ep-graph-legend" aria-label="@L["法規位階圖例"]">
-                                        <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="0"></span>@L["Tier 0 憲法"]</span>
-                                        <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="1"></span>@L["Tier 1 法律／條例"]</span>
-                                        <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="2"></span>@L["Tier 2 法規命令"]</span>
-                                        <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="3"></span>@L["Tier 3 再授權規則"]</span>
-                                        <span class="ep-legend-item"><span class="ep-legend-line" data-kind="delegation"></span>@L["法律直接授權"]</span>
-                                        <span class="ep-legend-item"><span class="ep-legend-line" data-kind="sub"></span>@L["再授權"]</span>
-                                        <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="invalid"></span>@L["違憲失效（憲法法庭）"]</span>
-                                    </div>
+                                            <div class="ep-graph-legend" aria-label="@L["法規位階圖例"]">
+                                                <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="0"></span>@L["Tier 0 憲法"]</span>
+                                                <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="1"></span>@L["Tier 1 法律／條例"]</span>
+                                                <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="2"></span>@L["Tier 2 法規命令"]</span>
+                                                <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="3"></span>@L["Tier 3 再授權規則"]</span>
+                                                <span class="ep-legend-item"><span class="ep-legend-line" data-kind="delegation"></span>@L["法律直接授權"]</span>
+                                                <span class="ep-legend-item"><span class="ep-legend-line" data-kind="sub"></span>@L["再授權"]</span>
+                                                <span class="ep-legend-item"><span class="ep-legend-swatch" data-tier="invalid"></span>@L["違憲失效（憲法法庭）"]</span>
+                                            </div>
+                                        </div>
+                                    </details>
 
                                     @if (graph.Focus is not null)
                                     {
