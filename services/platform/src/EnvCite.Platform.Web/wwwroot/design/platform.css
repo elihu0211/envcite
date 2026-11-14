@@ -4276,17 +4276,16 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     min-block-size: calc(100dvh - var(--ep-appbar-height));
 }
 
-/* 對話歷史區：與功能區分開的一塊凹進去的面板（底色比側欄深一階，同頁面的底），區頭固定、清單自己捲動。
+/* 對話歷史區：與功能區分開，但不是另一張卡片——沒有邊框與底色，和側欄同一個底，只用一條細線與一個小標題接在功能區下面。
+   區頭固定、清單自己捲動；列與功能入口同寬、同縮排，所以看起來是同一欄的下半段。
    有對話的 .ep-recent 占側欄剩下的高度（最少留得出標題、篩選與幾列）；空的 .ep-history-empty 只有一句引導，不撐滿。 */
 .ep-portal.ep-console .ep-recent,
 .ep-portal.ep-console .ep-history-empty {
     box-sizing: border-box;
     min-block-size: 0;
-    margin-block: var(--ep-space-1) var(--ep-space-3);
-    padding: var(--ep-space-3) 0 0;
-    border: 1px solid var(--ep-border-subtle);
-    border-radius: var(--ep-radius-card);
-    background: var(--ep-bg);
+    margin-block-end: var(--ep-space-2);
+    padding-block-start: var(--ep-space-3);
+    border-block-start: 1px solid var(--ep-border-subtle);
 }
 
 .ep-portal.ep-console .ep-recent {
@@ -4295,23 +4294,20 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 .ep-portal.ep-console .ep-history-empty {
     flex: none;
-    padding: var(--ep-space-3) var(--ep-space-2);
 }
 
 .ep-portal.ep-console .ep-recent-head {
     flex: none;
-    padding-inline: var(--ep-space-2);
 }
 
-.ep-portal.ep-console .ep-recent-head .ep-history-head,
-.ep-portal.ep-console .ep-history-empty .ep-history-head,
-.ep-portal.ep-console .ep-history-empty .ep-history-empty-note {
-    margin-inline: 0;
-    padding-inline: var(--ep-space-1);
-}
-
+/* 篩選框是安靜的一格淡底，沒有框線，點進去才出現；不另外搶一條邊。 */
 .ep-portal.ep-console .ep-recent .ep-recent-search {
-    background: var(--ep-surface);
+    border-color: transparent;
+    background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+}
+
+.ep-portal.ep-console .ep-recent .ep-recent-search:focus-visible {
+    border-color: var(--ep-border-control);
 }
 
 .ep-portal.ep-console .ep-recent-scroll {
@@ -4320,12 +4316,12 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
-    padding: 0 var(--ep-space-1) var(--ep-space-2);
+    padding-block-end: var(--ep-space-2);
 }
 
-/* 日期分組的小標題在清單裡，頂端不需要再留後台式的大間距。 */
+/* 日期分組的小標題與列的文字左緣對齊，頂端不需要再留後台式的大間距。 */
 .ep-portal.ep-console .ep-recent-scroll .ep-side-group {
-    margin: var(--ep-space-3) var(--ep-space-2) var(--ep-space-1);
+    margin: var(--ep-space-3) var(--ep-space-3) var(--ep-space-1);
 }
 
 .ep-portal.ep-console .ep-recent-scroll .ep-side-group:first-child {
@@ -4377,12 +4373,12 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
     /* 側欄裡游標裝置的「⋯」浮在標題尾端，不再占一格寬度：標題多得一個按鈕的寬度。鈕的底色等於該列此刻的底色，蓋住底下被截的字。 */
     .ep-recent-scroll .ep-recent-item {
-        --ep-row-fill: color-mix(in srgb, var(--ep-text) 6%, var(--ep-bg));
+        --ep-row-fill: color-mix(in srgb, var(--ep-text) 6%, var(--ep-surface));
         position: relative;
     }
 
     .ep-recent-scroll .ep-recent-item:has(> .ep-recent-link.active) {
-        --ep-row-fill: color-mix(in srgb, var(--ep-text) 10%, var(--ep-bg));
+        --ep-row-fill: color-mix(in srgb, var(--ep-text) 10%, var(--ep-surface));
     }
 
     .ep-recent-scroll .ep-recent-item .ep-recent-more {
@@ -4391,7 +4387,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         inset-inline-end: var(--ep-space-1);
         margin-block: auto;
         background: var(--ep-row-fill);
-        box-shadow: 0 0 var(--ep-space-2) var(--ep-space-2) var(--ep-row-fill);
     }
 
     .ep-recent-scroll .ep-recent-item .ep-recent-more:hover {
