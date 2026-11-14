@@ -188,7 +188,7 @@
 
       const totalHeight = (tierNodes.length - 1) * rowGapY;
       const startY = -totalHeight / 2;
-      const x = tierIdx * tierGapX;
+      const x = (tierIdx - (tiers.length - 1) / 2) * tierGapX;
 
       tierNodes.forEach((n, idx) => {
         const y = startY + idx * rowGapY;
@@ -639,14 +639,14 @@
 
     async function fitViewport({ forceFitAll = false, focusTargetId = null } = {}) {
       try {
-        await graph.fitView();
+        await graph.fitView(undefined, false);
         if (!forceFitAll && graph.getZoom() < 0.72) {
-          await graph.zoomTo(0.78);
+          await graph.zoomTo(0.78, false);
           const target = focusTargetId
             || selectedNodeId
             || (nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0])?.id;
           if (target && graph.getNodeData(target)) {
-            await graph.focusElement(target);
+            await graph.focusElement(target, false);
           }
         }
       } catch {
@@ -911,11 +911,7 @@
           if (Math.abs(w - lastWidth) > 32) {
             lastWidth = w;
             graph.resize();
-            if (currentLayout === "stufenbau") {
-              applyLayout("stufenbau");
-            } else {
-              fitViewport();
-            }
+            fitViewport();
           }
         });
       });
