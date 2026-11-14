@@ -63,8 +63,6 @@ max-statements = 60
 "**/tests/**" = ["D1", "ANN401"]
 "libs/**" = ["D1", "ANN401"]
 "ci/**" = ["D1", "ANN401"]
-# 已知過長、尚未拆開的函式：新的程式碼不得再加入這個清單。
-"libs/python/envcite-jobkit/src/envcite_jobkit/runner.py" = ["C901", "PLR0912", "PLR0915"]
 # 評估腳本是一次性的量測工具，不在服務的執行路徑上。
 "services/ontology/tools/**" = ["C901", "PLR0912", "PLR0915", "D1", "ANN401"]
 # 動態邊界：clingo 的答案集原子，各述詞的引數型別由 rules.lp 決定（見 `_py` 的說明）。
