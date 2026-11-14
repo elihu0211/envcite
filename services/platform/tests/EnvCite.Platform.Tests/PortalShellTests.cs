@@ -93,8 +93,17 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var stageTop = Regex.Match(home.Html[stageStart..], "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;
         Assert.DoesNotContain("popovertarget=\"ep-account-menu\"", stageTop, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-portal-route\"", stageTop, StringComparison.Ordinal);
-        var accountStageTop = Regex.Match(account.Html[account.Html.IndexOf("class=\"ep-portal-stage\"", StringComparison.Ordinal)..], "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;
+        Assert.NotNull(tenant.Name);
+        Assert.Contains(tenant.Name, stageTop, StringComparison.Ordinal);
+        var sideFoot = home.Html[footPos..stageStart];
+        var userMeta = Regex.Match(sideFoot, "<span class=\"ep-portal-user-meta\">(.*?)</span>", RegexOptions.Singleline);
+        Assert.True(userMeta.Success);
+        Assert.DoesNotContain(tenant.Name, userMeta.Groups[1].Value, StringComparison.Ordinal);
+        var accountStageStart = account.Html.IndexOf("class=\"ep-portal-stage\"", StringComparison.Ordinal);
+        var accountStageTop = Regex.Match(account.Html[accountStageStart..], "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;
         Assert.Contains(">帳號與組織</span>", accountStageTop, StringComparison.Ordinal);
+        var accountPageHead = Regex.Match(account.Html[accountStageStart..], "<header class=\"ep-page-header\".*?</header>", RegexOptions.Singleline).Value;
+        Assert.DoesNotContain(tenant.Name, accountPageHead, StringComparison.Ordinal);
     }
 
     // 問答歷史開啟時即使還沒有對話，側欄的功能模塊下方仍渲染原生歷史區；功能模塊在前、歷史在後、帳號資料在最底。

@@ -247,7 +247,20 @@
     globalThis.Blazor?.addEventListener("enhancedload", syncSide);
 
     // ---- 側欄對話即時篩選（input[data-recent-filter]） ---------------------------------------------
-    // 在工作區側欄依標題即時過濾最近對話，不必跳離目前問答；按 Esc 清空並還原全部。沒有腳本時仍可在 /history 搜尋。
+    // ---- 對話標題即時篩選（側欄 data-recent-filter 與紀錄頁 data-history-filter） ---------------------
+    // 依標題即時過濾，按 Esc 清空並還原全部；沒有腳本時仍可在 /history 送出表單搜尋。
+    const filterTitleItems = (items, query, titleOf) => {
+        let visible = 0;
+        items.forEach((item) => {
+            const matched = query === "" || titleOf(item).toLowerCase().includes(query);
+            item.hidden = !matched;
+            if (matched) {
+                visible++;
+            }
+        });
+        return visible;
+    };
+
     const filterRecent = (input) => {
         const recent = input?.closest?.(".ep-recent");
         if (!recent) {
@@ -257,17 +270,12 @@
         const query = input.value.trim().toLowerCase();
         let visible = 0;
         recent.querySelectorAll(".ep-recent-nav").forEach((nav) => {
-            let groupVisible = 0;
-            nav.querySelectorAll(".ep-recent-item").forEach((item) => {
-                const title = item.querySelector(".ep-recent-link")?.textContent?.toLowerCase() ?? "";
-                const matched = query === "" || title.includes(query);
-                item.hidden = !matched;
-                if (matched) {
-                    groupVisible++;
-                    visible++;
-                }
-            });
-
+            const groupVisible = filterTitleItems(
+                nav.querySelectorAll(".ep-recent-item"),
+                query,
+                (item) => item.querySelector(".ep-recent-link")?.textContent ?? "",
+            );
+            visible += groupVisible;
             nav.hidden = groupVisible === 0;
             if (nav.previousElementSibling?.classList.contains("ep-side-group")) {
                 nav.previousElementSibling.hidden = groupVisible === 0;
@@ -280,18 +288,53 @@
         }
     };
 
-    document.addEventListener("input", (event) => {
-        if (event.target.matches?.("input[data-recent-filter]")) {
-            filterRecent(event.target);
+    const filterHistory = (input) => {
+        const shell = input?.closest?.(".ep-history-shell");
+        if (!shell) {
+            return;
         }
-    });
+
+        const query = input.value.trim().toLowerCase();
+        const list = shell.querySelector(".ep-history");
+        if (!list) {
+            return;
+        }
+
+        const visible = filterTitleItems(
+            list.querySelectorAll("[data-history-item]"),
+            query,
+            (item) => item.dataset.title ?? item.querySelector(".ep-history-title")?.textContent ?? "",
+        );
+        list.hidden = visible === 0;
+        const empty = shell.querySelector("[data-history-empty]");
+        if (empty) {
+            empty.hidden = query === "" || visible > 0;
+        }
+    };
+
+    const applyFilter = (input) => {
+        if (input?.matches?.("input[data-recent-filter]")) {
+            filterRecent(input);
+        } else if (input?.matches?.("input[data-history-filter]")) {
+            filterHistory(input);
+        }
+    };
+
+    document.addEventListener("input", (event) => applyFilter(event.target));
 
     document.addEventListener("keydown", (event) => {
         const input = event.target;
-        if (input.matches?.("input[data-recent-filter]") && event.key === "Escape" && input.value !== "") {
+        if (event.key === "Escape" && input?.value !== "" && input?.matches?.("input[data-recent-filter], input[data-history-filter]")) {
             event.preventDefault();
             input.value = "";
-            filterRecent(input);
+            applyFilter(input);
+        }
+    });
+
+    // 點擊對話選單裡的重新命名輸入框時全選既有標題，方便直接改名。
+    document.addEventListener("focusin", (event) => {
+        if (event.target.matches?.(".ep-conv-rename .ep-input")) {
+            event.target.select();
         }
     });
 

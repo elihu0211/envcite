@@ -311,13 +311,11 @@
     [Parameter]
     public string? RoleLabel { get; set; }
 
-    private string? UserSecondaryLine => (TenantName, RoleLabel) switch
-    {
-        ({ Length: > 0 } tenant, { Length: > 0 } role) => $"{tenant} · {role}",
-        ({ Length: > 0 } tenant, _) => tenant,
-        (_, { Length: > 0 } role) => role,
-        _ => null,
-    };
+    private string? UserSecondaryLine => !string.IsNullOrEmpty(RoleLabel)
+        ? RoleLabel
+        : !string.IsNullOrEmpty(UserDisplayName) && !string.Equals(UserDisplayName, UserEmail, StringComparison.Ordinal)
+            ? UserEmail
+            : null;
 
     /// <summary>頭像圓鈕上的一個字（名字或 email 的第一個字）。</summary>
     [Parameter]

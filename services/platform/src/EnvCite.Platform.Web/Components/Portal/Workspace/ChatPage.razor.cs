@@ -160,10 +160,15 @@ public sealed partial class ChatPage
     private string? _drawerContent;
     private PortalArticleDetail? _drawerArticle;
     private string? _drawerError;
+    private IReadOnlyList<AnswerSource> _drawerSources = [];
 
-    private async Task OpenDrawerAsync(AnswerSource source, string? asOfLabel)
+    private Task SelectDrawerSourceAsync(AnswerSource source) =>
+        OpenDrawerAsync(source, _drawerAsOfLabel, _drawerSources);
+
+    private async Task OpenDrawerAsync(AnswerSource source, string? asOfLabel, IReadOnlyList<AnswerSource>? sources = null)
     {
         _drawerOpen = true;
+        _drawerSources = sources is { Count: > 0 } ? sources : [source];
         _drawerCode = source.Code;
         _drawerTitle = source.Citation;
         _drawerUri = source.Uri;
@@ -177,7 +182,7 @@ public sealed partial class ChatPage
         try
         {
             var outcome = await CitationArticles.GetByIriAsync(await UserAsync(), source.Uri, _ct);
-            if (_disposed) return;
+            if (_disposed || !_drawerOpen || !string.Equals(_drawerUri, source.Uri, StringComparison.Ordinal)) return;
             if (outcome.IsOk && outcome.Value is { } detail)
             {
                 _drawerArticle = detail;
@@ -197,6 +202,14 @@ public sealed partial class ChatPage
         {
             return;
         }
+        catch (Exception ex) when (ex is Grpc.Core.RpcException or HttpRequestException or TimeoutException)
+        {
+            if (_disposed || !_drawerOpen || !string.Equals(_drawerUri, source.Uri, StringComparison.Ordinal)) return;
+            if (!string.IsNullOrWhiteSpace(source.Text))
+                _drawerContent = source.Text;
+            else
+                _drawerError = L["無法依索引載入條文內容。"].Value;
+        }
         finally
         {
             _drawerLoading = false;
@@ -213,6 +226,17 @@ public sealed partial class ChatPage
 
     private static IReadOnlyList<AnswerSource> StoredSourcesOf(ChatTurn turn) =>
         [.. turn.MemoryCitations.Select(c => new AnswerSource(c.Code, c.Uri, c.Label, string.Empty))];
+
+    private static IReadOnlyList<AnswerSource> TurnSourcesOf(ChatTurn turn) =>
+        turn.Answer?.Sources is { Count: > 0 } liveSources
+            ? liveSources
+            : StoredSourcesOf(turn);
+
+    private static string? CopyTextOf(ChatTurn turn) => turn.State switch
+    {
+        TurnState.Answered => turn.MemoryText ?? turn.Answer?.Text ?? turn.StoredAnswer,
+        _ => null,
+    };
 
     private readonly record struct StoredSegment(bool IsCitation, string Text);
 

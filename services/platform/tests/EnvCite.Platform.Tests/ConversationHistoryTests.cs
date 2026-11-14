@@ -123,11 +123,15 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         var list = await browser.GetAsync(HistoryPage(tenant.Identifier));
         Assert.Contains(Question, list.Html, StringComparison.Ordinal); // 標題是第一個問題
         Assert.Contains("對話紀錄", list.Html, StringComparison.Ordinal); // 選單項
+        Assert.Contains("class=\"ep-history-shell\"", list.Html, StringComparison.Ordinal);
+        Assert.Contains("data-history-filter", list.Html, StringComparison.Ordinal);
 
         // 開啟那一串：兩個問題與出處都在，可以接著問。
         var opened = await browser.GetAsync(ConversationPage(tenant.Identifier, id!.Value));
         Assert.Equal(HttpStatusCode.OK, opened.Status);
         Assert.Equal(2, Regex.Count(opened.Html, "class=\"ep-turn\""));
+        Assert.Contains("class=\"ep-answer-head\"", opened.Html, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-answer-actions\"", opened.Html, StringComparison.Ordinal);
         Assert.Contains(Question, opened.Html, StringComparison.Ordinal);
         Assert.Contains("固定污染源", opened.Html, StringComparison.Ordinal);
         Assert.Contains("《空氣污染防制法》第 5-1 條", opened.Html, StringComparison.Ordinal); // 出處

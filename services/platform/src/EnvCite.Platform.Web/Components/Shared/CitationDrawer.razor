@@ -33,7 +33,7 @@
                 <h2 id="ep-citation-drawer-title" class="ep-drawer-title">@effectiveTitle</h2>
                 @if (!string.IsNullOrWhiteSpace(AsOfLabel) && Article is null)
                 {
-                    <span class="ep-chip ep-drawer-asof">@AsOfLabel</span>
+                    <span class="ep-drawer-asof">@AsOfLabel</span>
                 }
             </div>
             <button type="button"
@@ -43,6 +43,25 @@
                 <span aria-hidden="true">✕</span>
             </button>
         </header>
+
+        @if (Sources.Count > 1)
+        {
+            <nav class="ep-drawer-sources" aria-label="@L["切換引用法條"]">
+                @foreach (var src in Sources)
+                {
+                    var isCurrent = string.Equals(src.Uri, effectiveUri, StringComparison.Ordinal) ||
+                                    (!string.IsNullOrEmpty(Code) && string.Equals(src.Code, Code, StringComparison.OrdinalIgnoreCase));
+                    <button type="button"
+                            class="ep-drawer-source-pill @(isCurrent ? "is-active" : string.Empty)"
+                            aria-current="@(isCurrent ? "true" : null)"
+                            title="@src.Citation"
+                            @onclick="() => OnSelectSource.InvokeAsync(src)">
+                        <span class="ep-citation-badge">[@src.Code]</span>
+                        <span class="ep-drawer-source-label">@src.Citation</span>
+                    </button>
+                }
+            </nav>
+        }
 
         @if (Article is not null)
         {
@@ -206,6 +225,8 @@
     [Parameter] public PortalArticleDetail? Article { get; set; }
     [Parameter] public bool IsLoading { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public IReadOnlyList<AnswerSource> Sources { get; set; } = [];
+    [Parameter] public EventCallback<AnswerSource> OnSelectSource { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
     private bool _copied;
