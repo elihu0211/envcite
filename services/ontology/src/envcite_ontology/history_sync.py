@@ -8,8 +8,8 @@
    目標（`targets`），逐部抓它的各版打包成一份 JSON 快照（內容定址，只存頁面的內容部分），記
    `source.snapshot` 與 `source.item`（鍵見各來源），一部一個交易。過去的版本不會再變，上一份快照
    已有的同一版沿用、不重抓；`--rescan` 全部重抓。
-2. **匯入**：每部取最新的快照，對到語料的法規（`resolve`），`backfill.plan` 回推出歷史版本；整批
-   比例過驗收才寫，一部一個交易（`backfill.write`），問題記入 `source.import_problem`。寫入時被
+2. **匯入**：每部取最新的快照，對到語料的法規（`resolve`），`planner.plan` 回推出歷史版本；整批
+   比例過驗收才寫，一部一個交易（`writer.write`），問題記入 `source.import_problem`。寫入時被
    資料庫的約束或型別擋下的那一部（`IntegrityError`、`DataError`）整部不寫、記 error
    `history_write_rejected`，其餘照寫；占對到的法規超過上限，其餘都寫完之後以 2 結束。全國法規
    資料庫的匯入要先跑過：錨點是它寫入的版本。
@@ -56,8 +56,9 @@ from envcite_ontology.history_sources import (
     Web,
 )
 from envcite_ontology.import_problems import Problem
-from envcite_ontology.ingest import audit, backfill, law
-from envcite_ontology.ingest.backfill import UnreadablePage
+from envcite_ontology.ingest import audit, law
+from envcite_ontology.ingest.backfill import anchors, planner, writer
+from envcite_ontology.ingest.backfill.models import Anchor, Plan, UnreadablePage
 from envcite_ontology.settings import SnapshotSettings, load
 from envcite_ontology.verification import config
 
@@ -117,7 +118,7 @@ class Report:
     dead_lettered: int = 0
     matched: int = 0
     skipped: int = 0
-    #: 寫入動作 → 部數：`backfill.write` 的回傳，另有沒寫的 `rejected` 與被資料庫擋下的
+    #: 寫入動作 → 部數：`writer.write` 的回傳，另有沒寫的 `rejected` 與被資料庫擋下的
     #: `write_rejected`。
     actions: Counter[str] = field(default_factory=Counter)
     versions: int = 0
@@ -246,8 +247,8 @@ def _latest_snapshot(conn: Conn, source: HistorySource, root: Path, key: str) ->
 class _Prepared:
     item_id: int
     snapshot_id: int
-    anchor: backfill.Anchor | None
-    plan: backfill.Plan
+    anchor: Anchor | None
+    plan: Plan
 
 
 class _ItemRow(NamedTuple):
@@ -303,9 +304,7 @@ def _prepare_all(
     return prepared
 
 
-def _plan_item(
-    conn: Conn, source: HistorySource, snapshot: str
-) -> tuple[backfill.Anchor | None, backfill.Plan]:
+def _plan_item(conn: Conn, source: HistorySource, snapshot: str) -> tuple[Anchor | None, Plan]:
     """一部法規的回推計畫；對不到語料或頁面讀不出來的，計畫是空的、只帶 error 問題。
 
     來源判定不屬範圍的（`Skip`）往外拋。
@@ -318,11 +317,11 @@ def _plan_item(
     except Unmatched as e:
         problems.append(Problem("error", e.code, e.detail))
     else:
-        anchor = backfill.load_anchor(conn, pcode)
+        anchor = anchors.load_anchor(conn, pcode)
         if anchor is not None:
-            return anchor, backfill.plan(anchor, current, past)
+            return anchor, planner.plan(anchor, current, past)
         problems.append(Problem("error", "unmatched", pcode))
-    return None, backfill.Plan(problems=problems)
+    return None, Plan(problems=problems)
 
 
 def _batch_gate(
@@ -368,7 +367,7 @@ def _write_unless_rejected(conn: Conn, source: HistorySource, p: _Prepared) -> s
 
 
 def _write_one(conn: Conn, source: HistorySource, p: _Prepared) -> str:
-    """一部一個交易；回傳動作（`backfill.write` 的回傳，或沒有寫的 `rejected`）。
+    """一部一個交易；回傳動作（`writer.write` 的回傳，或沒有寫的 `rejected`）。
 
     延遲的約束在提交時才檢查，所以提交也在 `try` 之內。
     """
@@ -376,7 +375,7 @@ def _write_one(conn: Conn, source: HistorySource, p: _Prepared) -> str:
     action = "rejected"
     with conn.transaction():
         if p.anchor is not None and p.plan.ok:
-            action = backfill.write(conn, p.anchor, p.plan.versions, source.authority)
+            action = writer.write(conn, p.anchor, p.plan.versions, source.authority)
             if action == "reshaped":
                 problems.append(
                     Problem("error", "history_reshaped", "已寫入的歷史版本日不在這次的目標裡")

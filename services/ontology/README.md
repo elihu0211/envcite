@@ -71,7 +71,7 @@ owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations, com
   - `moenv`：走分類樹列出命令，抓歷史清單、現行頁與各歷史頁。
 - **匯入**：`envcite-history <來源> import`，須先跑過 `envcite-sync moj`。
   - 對到語料的法規（`ly` 以鍵、`moenv` 以名稱與種類），來源的現行版本日要與語料最新版本同日。
-  - 由語料最早的官方資料庫版本往舊回推（[`ingest/backfill.py`](src/envcite_ontology/ingest/backfill.py)），版本日是公布或發布日；效力上界的規則同增量匯入，相鄰兩版同一單元的區間首尾相接。
+  - 由語料最早的官方資料庫版本往舊回推（[`ingest/backfill/`](src/envcite_ontology/ingest/backfill/)），版本日是公布或發布日；效力上界的規則同增量匯入，相鄰兩版同一單元的區間首尾相接。
   - 沿革的每一次公布都要有同日的全文。缺一版（或條文只在附件、解析不出）就停在那裡：那一版與更早的每一次公布寫成查不到全文的版本（`text_status = unavailable`，標題不詳、沒有條文單元版本；`GetLaw` 在這些日子查無），時間軸照樣接到制定。
   - 改由另一個來源提供的法規，同日的版本列改記新來源、條文依新來源的文字取代；已寫入的版本日不在新目標裡時整部不寫（`history_reshaped`）。
   - 寫入時被資料庫的約束或型別擋下的那一部（規劃之後語料才變動）整部不寫、記 error `history_write_rejected`（原因逐字留在 `detail`），其餘法規照寫；連線、逾時這類暫時性錯誤不在此列，照舊使整個 Job 以 1 結束。
