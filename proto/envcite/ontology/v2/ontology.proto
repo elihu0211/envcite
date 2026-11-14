@@ -28,6 +28,9 @@ service OntologyService {
 
   // 取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。
   rpc GetLawGraph(GetLawGraphRequest) returns (GetLawGraphResponse);
+
+  // 依條文版本標準 IRI（索引）取得單一條文全文與中繼資料；IRI 格式錯誤回 INVALID_ARGUMENT，查無回 NOT_FOUND。
+  rpc GetArticleByIri(GetArticleByIriRequest) returns (GetArticleByIriResponse);
 }
 
 // 法規的複合自然鍵（管轄，識別碼方案，在地識別碼）。三個欄位都必填，沒有預設：
@@ -369,5 +372,25 @@ message GuidanceLink {
 message ChildGroupCount {
   string document_type = 1;
   int32 count = 2;
+}
+
+message GetArticleByIriRequest {
+  // 條文版本的標準 IRI（例如 https://envcite/tw/law/O0020001/2023-11-29/zho/art_11）。
+  string iri = 1;
+}
+
+message ArticleDetail {
+  string iri = 1;
+  LawIdentifier identifier = 2;
+  string law_title = 3;
+  string number = 4;
+  string content = 5;
+  string language = 6;
+  string date_document = 7;
+  string norm_kind = 8;
+}
+
+message GetArticleByIriResponse {
+  ArticleDetail article = 1;
 }
 

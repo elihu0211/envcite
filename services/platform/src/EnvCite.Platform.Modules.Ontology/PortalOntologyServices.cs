@@ -208,7 +208,6 @@ internal sealed class LawCorpusService(
             : null;
 }
 
-
 internal sealed class NormativeReasoningService(TenantScopes tenants, ITenantModules modules) : INormativeReasoningService
 {
     public async Task<AdminOutcome<PortalReasoningOutcome>> EvaluateAsync(
@@ -369,4 +368,36 @@ internal sealed class NormativeReasoningService(TenantScopes tenants, ITenantMod
         user.Identity?.IsAuthenticated == true && user.FindFirst(PlatformClaimTypes.PortalUserId) is not null
             ? user.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value is { Length: > 0 } tenant ? tenant : null
             : null;
+}
+
+internal sealed class CitationArticleService(TenantScopes tenants) : ICitationArticleService
+{
+    public async Task<AdminOutcome<PortalArticleDetail>> GetByIriAsync(
+        ClaimsPrincipal user, string? iri, CancellationToken cancellationToken)
+    {
+        if (user.Identity?.IsAuthenticated != true
+            || user.FindFirst(PlatformClaimTypes.PortalUserId) is null
+            || user.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value is not { Length: > 0 } identifier)
+        {
+            return AdminOutcome.Forbidden<PortalArticleDetail>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
+        }
+
+        return await tenants.InByIdentifierAsync(identifier, async scope =>
+        {
+            var gateway = scope.Get<OntologyGateway>();
+            var outcome = await gateway.GetArticleByIriAsync(iri, cancellationToken);
+            if (!outcome.IsOk || outcome.Value is not { } dto)
+                return new AdminOutcome<PortalArticleDetail>(outcome.Status, default, outcome.Message, outcome.Code, outcome.Args);
+
+            return AdminOutcome.Ok(new PortalArticleDetail(
+                dto.Uri,
+                new PortalLawKey(dto.Identifier.Jurisdiction, dto.Identifier.IdScheme, dto.Identifier.LocalId),
+                dto.LawTitle,
+                dto.Number,
+                dto.Content,
+                dto.Language,
+                dto.DateDocument,
+                dto.NormKind));
+        });
+    }
 }

@@ -113,6 +113,20 @@ public static class PortalEndpoints
         app.MapPost($"{route}/delete", (HttpContext context, IAntiforgery antiforgery, IPortalAccount account, IConversationHistory history, Guid id) =>
             ManageConversationAsync(context, antiforgery, account, id, deletes: true, (user, _, ct) => history.DeleteAsync(user, id, ct)))
             .RequireAuthorization(PlatformAuth.PortalPolicy);
+
+        app.MapGet($"{PortalPaths.Prefix}/{{tenant}}/citations/article", async (
+            HttpContext context, string? iri, ICitationArticleService citations, CancellationToken ct) =>
+        {
+            var outcome = await citations.GetByIriAsync(context.User, iri, ct);
+            return outcome.Status switch
+            {
+                AdminStatus.Ok => Results.Ok(outcome.Value),
+                AdminStatus.Invalid => Results.ValidationProblem(new Dictionary<string, string[]> { ["iri"] = [outcome.Message ?? "Invalid IRI"] }),
+                AdminStatus.NotFound => Results.NotFound(),
+                AdminStatus.Forbidden => Results.Forbid(),
+                _ => Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, detail: outcome.Message),
+            };
+        }).RequireAuthorization(PlatformAuth.PortalPolicy);
     }
 
     private static async Task<IResult> ManageConversationAsync(

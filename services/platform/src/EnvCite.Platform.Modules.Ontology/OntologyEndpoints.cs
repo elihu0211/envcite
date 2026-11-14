@@ -45,10 +45,21 @@ public sealed record SearchRequest(string? Query, string? AsOf, int? Limit);
 public sealed record SearchHitDto(
     string Uri, LawIdentifierDto Identifier, string LawTitle, string Number, string Content, float Score, int GuidanceDocuments);
 
+public sealed record ArticleDetailDto(
+    string Uri,
+    LawIdentifierDto Identifier,
+    string LawTitle,
+    string Number,
+    string Content,
+    string Language,
+    string? DateDocument,
+    string NormKind);
+
 public static class OntologyEndpoints
 {
     public const string GetLawOperation = "ontology.get_law";
     public const string ListArticlesOperation = "ontology.list_articles";
+    public const string GetArticleByIriOperation = "ontology.get_article_by_iri";
     public const string SearchOperation = "ontology.search";
 
     /// <summary>包在內部 gRPC 服務外的對外 REST facade；成功的呼叫會被計量。</summary>
@@ -79,6 +90,17 @@ public static class OntologyEndpoints
             .WithDescription("法規的指定方式同「取得法規」。依條次排序；`number` 照來源寫法（如 `5-1`）。省略 `asOf`（`YYYY-MM-DD`）表示現行；該日沒有有效的版本回 404，不會退回現行版本。"
                 + "成功計量為一次 `ontology.list_articles`。")
             .Produces<IEnumerable<ArticleDto>>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+
+        v1.MapGet("/articles/by-iri", async (string iri, OntologyGateway gateway, CancellationToken ct) =>
+            Present(await gateway.GetArticleByIriAsync(iri, ct)))
+            .WithName("GetArticleByIri")
+            .WithTags("法規")
+            .WithSummary("依條文索引（IRI）取得單一條文全文")
+            .WithDescription("以引用出處中的條文版本標準 `iri` 查詢單一條文全文與中繼資料；`iri` 為空回 400，查無回 404。")
+            .Produces<ArticleDetailDto>()
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);

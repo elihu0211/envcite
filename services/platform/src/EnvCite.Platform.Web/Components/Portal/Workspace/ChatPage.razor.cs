@@ -149,6 +149,62 @@ public sealed partial class ChatPage
         Navigation.NavigateTo(PortalPaths.Home(Tenant));
     }
 
+    private bool _drawerOpen;
+    private bool _drawerLoading;
+    private string? _drawerCode;
+    private string? _drawerTitle;
+    private string? _drawerUri;
+    private string? _drawerAsOfLabel;
+    private string? _drawerContent;
+    private string? _drawerError;
+
+    private async Task OpenDrawerAsync(AnswerSource source, string? asOfLabel)
+    {
+        _drawerOpen = true;
+        _drawerCode = source.Code;
+        _drawerTitle = source.Citation;
+        _drawerUri = source.Uri;
+        _drawerAsOfLabel = asOfLabel;
+        _drawerContent = null;
+        _drawerError = null;
+        _drawerLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var outcome = await CitationArticles.GetByIriAsync(await UserAsync(), source.Uri, _ct);
+            if (_disposed) return;
+            if (outcome.IsOk && outcome.Value is { } detail && !string.IsNullOrWhiteSpace(detail.Content))
+            {
+                _drawerContent = detail.Content;
+            }
+            else if (!string.IsNullOrWhiteSpace(source.Text))
+            {
+                _drawerContent = source.Text;
+            }
+            else
+            {
+                _drawerError = outcome.Message ?? L["無法依索引載入條文內容。"].Value;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        finally
+        {
+            _drawerLoading = false;
+            if (!_disposed)
+                StateHasChanged();
+        }
+    }
+
+    private void CloseDrawer()
+    {
+        _drawerOpen = false;
+        _drawerLoading = false;
+    }
+
     /// <summary>歷史裡存的答案是「正文，接著每個出處一行」；出處行用小字，正文是回答。</summary>
     private static bool IsCitationLine(string line) =>
         line.StartsWith('《') || (line.StartsWith("[L", StringComparison.Ordinal) && line.Contains("] ", StringComparison.Ordinal));

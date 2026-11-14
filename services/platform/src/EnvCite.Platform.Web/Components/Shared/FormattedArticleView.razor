@@ -1,0 +1,24 @@
+@using EnvCite.Platform.Web.Presentation
+
+@* 條文結構化排版模板：依項／款／目／細目階層呈現，支援懸掛縮排與但書語義標記。 *@
+<div class="ep-article-template">
+    @foreach (var clause in LegalArticleFormatter.Parse(Content))
+    {
+        if (clause.Marker is not null)
+        {
+            <div class="ep-clause-row" data-level="@clause.Level" data-kind="@clause.Kind.ToString().ToLowerInvariant()">
+                <span class="ep-clause-marker">@clause.Marker</span>
+                <span class="ep-clause-body">@clause.Body</span>
+            </div>
+        }
+        else
+        {
+            <p class="ep-clause-paragraph @(clause.StartsProviso ? "is-proviso" : string.Empty)">@clause.Body</p>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Content { get; set; }
+}

@@ -2,6 +2,8 @@ using EnvCite.Ontology.V2;
 
 using Grpc.Core;
 
+using Microsoft.Extensions.Caching.Memory;
+
 namespace EnvCite.Platform.Modules.Ontology;
 
 /// <summary>
@@ -12,8 +14,10 @@ internal sealed class OntologyGateway(
     OntologyService.OntologyServiceClient ontology,
     ReasoningService.ReasoningServiceClient reasoning,
     IOptions<OntologyOptions> options,
-    IUsageRecorder usage)
+    IUsageRecorder usage,
+    IMemoryCache cache)
 {
+    private static readonly TimeSpan ArticleIriCacheTtl = TimeSpan.FromMinutes(5);
     public async Task<AdminOutcome<(IReadOnlyList<LawSummaryDto> Laws, bool Available)>> ListLawsAsync(
         string? jurisdiction, string? asOf, CancellationToken cancellationToken, string? categoryPrefix = null) =>
         await CallAsync(OntologyBusy, async () =>
@@ -79,6 +83,39 @@ internal sealed class OntologyGateway(
                 return new PortalLawGraphResult(false, query.Focus, [], [], [], [], []);
             }
         });
+
+    public async Task<AdminOutcome<ArticleDetailDto>> GetArticleByIriAsync(
+        string? iri, CancellationToken cancellationToken)
+    {
+        var trimmed = iri?.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(trimmed))
+            return AdminOutcome.Invalid<ArticleDetailDto>(OutcomeCodes.UpstreamInvalidRequest, "iri is required");
+
+        var cacheKey = $"ontology:article-iri:{trimmed}";
+        if (cache.TryGetValue(cacheKey, out ArticleDetailDto? cached) && cached is not null)
+            return AdminOutcome.Ok(cached);
+
+        var outcome = await CallAsync(OntologyBusy, async () =>
+        {
+            var response = await ontology.GetArticleByIriAsync(
+                new GetArticleByIriRequest { Iri = trimmed },
+                deadline: DateTime.UtcNow.Add(options.Value.Timeout),
+                cancellationToken: cancellationToken);
+            var a = response.Article;
+            return new ArticleDetailDto(
+                a.Iri,
+                LawIdentifiers.ToDto(a.Identifier),
+                a.LawTitle,
+                a.Number,
+                a.Content,
+                a.Language,
+                string.IsNullOrEmpty(a.DateDocument) ? null : a.DateDocument,
+                a.NormKind);
+        });
+        if (outcome.IsOk && outcome.Value is not null)
+            cache.Set(cacheKey, outcome.Value, ArticleIriCacheTtl);
+        return outcome;
+    }
 
     public async Task<AdminOutcome<LawDto>> GetLawAsync(
         string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken) =>

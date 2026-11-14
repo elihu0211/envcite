@@ -951,3 +951,84 @@ class ChildGroupCount(_message.Message):
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___ChildGroupCount: _TypeAlias = ChildGroupCount  # noqa: Y015
+
+@_typing.final
+class GetArticleByIriRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    IRI_FIELD_NUMBER: _builtins.int
+    iri: _builtins.str
+    """條文版本的標準 IRI（例如 https://envcite/tw/law/O0020001/2023-11-29/zho/art_11）。"""
+    def __init__(
+        self,
+        *,
+        iri: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["iri", b"iri"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___GetArticleByIriRequest: _TypeAlias = GetArticleByIriRequest  # noqa: Y015
+
+@_typing.final
+class ArticleDetail(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    IRI_FIELD_NUMBER: _builtins.int
+    IDENTIFIER_FIELD_NUMBER: _builtins.int
+    LAW_TITLE_FIELD_NUMBER: _builtins.int
+    NUMBER_FIELD_NUMBER: _builtins.int
+    CONTENT_FIELD_NUMBER: _builtins.int
+    LANGUAGE_FIELD_NUMBER: _builtins.int
+    DATE_DOCUMENT_FIELD_NUMBER: _builtins.int
+    NORM_KIND_FIELD_NUMBER: _builtins.int
+    iri: _builtins.str
+    law_title: _builtins.str
+    number: _builtins.str
+    content: _builtins.str
+    language: _builtins.str
+    date_document: _builtins.str
+    norm_kind: _builtins.str
+    @_builtins.property
+    def identifier(self) -> Global___LawIdentifier: ...
+    def __init__(
+        self,
+        *,
+        iri: _builtins.str = ...,
+        identifier: Global___LawIdentifier | None = ...,
+        law_title: _builtins.str = ...,
+        number: _builtins.str = ...,
+        content: _builtins.str = ...,
+        language: _builtins.str = ...,
+        date_document: _builtins.str = ...,
+        norm_kind: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["identifier", b"identifier"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["content", b"content", "date_document", b"date_document", "identifier", b"identifier", "iri", b"iri", "language", b"language", "law_title", b"law_title", "norm_kind", b"norm_kind", "number", b"number"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ArticleDetail: _TypeAlias = ArticleDetail  # noqa: Y015
+
+@_typing.final
+class GetArticleByIriResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ARTICLE_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def article(self) -> Global___ArticleDetail: ...
+    def __init__(
+        self,
+        *,
+        article: Global___ArticleDetail | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["article", b"article"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["article", b"article"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___GetArticleByIriResponse: _TypeAlias = GetArticleByIriResponse  # noqa: Y015

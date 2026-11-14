@@ -408,9 +408,6 @@
   <data name="建立（台北）" xml:space="preserve">
     <value>Created (Taipei)</value>
   </data>
-  <data name="引用：{0}（{1}）" xml:space="preserve">
-    <value>Citation: {0} ({1})</value>
-  </data>
   <data name="引用：《{0}》第 {1} 條（{2}）" xml:space="preserve">
     <value>Citation: {0}, Article {1} ({2})</value>
   </data>
@@ -2402,5 +2399,23 @@
   </data>
   <data name="點數（&gt;= 10 點觸發違規）" xml:space="preserve">
     <value>Points (&gt;= 10 triggers violation)</value>
+  </data>
+  <data name="引用法條清單" xml:space="preserve">
+    <value>Cited provisions</value>
+  </data>
+  <data name="檢視 {0} 條文內容" xml:space="preserve">
+    <value>View content of {0}</value>
+  </data>
+  <data name="正在依索引載入條文內容…" xml:space="preserve">
+    <value>Loading provision content by index…</value>
+  </data>
+  <data name="目前沒有可顯示的條文內容。" xml:space="preserve">
+    <value>No provision content available.</value>
+  </data>
+  <data name="索引位置" xml:space="preserve">
+    <value>Index IRI</value>
+  </data>
+  <data name="無法依索引載入條文內容。" xml:space="preserve">
+    <value>Unable to load provision content by index.</value>
   </data>
 </root>
