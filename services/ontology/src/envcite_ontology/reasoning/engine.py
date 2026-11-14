@@ -32,7 +32,22 @@ from typing import Any
 import clingo
 
 from envcite_ontology.db import Conn
-from envcite_ontology.reasoning import facts, scoring
+from envcite_ontology.reasoning import scoring
+from envcite_ontology.reasoning.facts.case_inputs import (
+    Case,
+    Measurements,
+    Permits,
+    PerOccasionTimeline,
+    act_group_facts,
+    amount_facts,
+    amounts,
+    case_facts,
+    limitation,
+    normalize_case_units,
+    per_occasion_facts,
+)
+from envcite_ontology.reasoning.facts.chains import Chain
+from envcite_ontology.reasoning.facts.statements import Invalidated, statement_facts
 
 _RULES = resources.files(__package__).joinpath("rules.lp").read_text(encoding="utf-8")
 
@@ -112,9 +127,9 @@ class Result:
     #: 其餘要件成立或未知、但主體的責任基礎與行為人所屬不符而不列出的罰則
     subject_mismatch: tuple[int, ...] = ()
     #: 該日因違憲失效而不參與推論的陳述
-    invalidated: tuple[facts.Invalidated, ...] = ()
+    invalidated: tuple[Invalidated, ...] = ()
     #: 命令陳述 → 其命令的授權鏈
-    delegation: Mapping[int, facts.Chain] = field(default_factory=dict)
+    delegation: Mapping[int, Chain] = field(default_factory=dict)
     #: 多行為分組（§24/§25）：act_id -> (min_fine, max_fine)
     one_act_groups: Mapping[str, tuple[int, int]] = field(default_factory=dict)
     #: 第 24 條第 2 項同種類非罰鍰處分重複提示：(act_id, penalty_1, penalty_2)
@@ -138,17 +153,17 @@ def _py(symbol: clingo.Symbol) -> Any:
 def evaluate(
     conn: Conn,
     as_of: date,
-    case: facts.Case,
+    case: Case,
     language: str = "zho",
     *,
     include_unsettled: bool = False,
     decided_on: date | None = None,
-    measurements: facts.Measurements | None = None,
-    permits: facts.Permits | None = None,
+    measurements: Measurements | None = None,
+    permits: Permits | None = None,
     actor_bases: Collection[str] | None = None,
     fact_units: Mapping[str, str] | None = None,
     act_groups: Mapping[str, Sequence[int]] | None = None,
-    timeline: facts.PerOccasionTimeline | None = None,
+    timeline: PerOccasionTimeline | None = None,
     scoring_inputs: Sequence[scoring.ScoringInput] = (),
 ) -> Result:
     """對 `as_of` 當日有效的陳述與案件事實推論。
@@ -156,18 +171,18 @@ def evaluate(
     `decided_on` 只用於裁處權時效，預設同 `as_of`；跨法律變更見 `transition.evaluate_across`。
     `include_unsettled` 僅供驗證閘門在接受前評估陳述，推論呼叫端不可用。
     """
-    statements = facts.statement_facts(conn, as_of, language, include_unsettled=include_unsettled)
-    norm_case, unit_problems = facts.normalize_case_units(conn, case, measurements, fact_units)
-    given = facts.amounts(norm_case)
+    statements = statement_facts(conn, as_of, language, include_unsettled=include_unsettled)
+    norm_case, unit_problems = normalize_case_units(conn, case, measurements, fact_units)
+    given = amounts(norm_case)
     program = "\n".join(
         [
             statements.program,
-            facts.case_facts(norm_case, measurements, permits, actor_bases),
-            facts.act_group_facts(act_groups),
-            facts.per_occasion_facts(timeline),
+            case_facts(norm_case, measurements, permits, actor_bases),
+            act_group_facts(act_groups),
+            per_occasion_facts(timeline),
             "\n".join(unit_problems),
-            facts.limitation(decided_on or as_of, norm_case),
-            facts.amount_facts(given, statements.fine_caps),
+            limitation(decided_on or as_of, norm_case),
+            amount_facts(given, statements.fine_caps),
         ]
     )
     ctl = clingo.Control(["--warn=none"])

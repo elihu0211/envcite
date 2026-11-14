@@ -5,13 +5,16 @@ from decimal import Decimal
 
 import pytest
 
-from envcite_ontology.reasoning import facts
+from envcite_ontology.reasoning.facts import chains
+from envcite_ontology.reasoning.facts import condition_facts as condition_module
+from envcite_ontology.reasoning.facts.chains import DelegatedLimitRow, VoidLimitRow
+from envcite_ontology.reasoning.facts.condition_facts import ConditionRow, condition_facts
 
 
 def test_condition_facts_batches_delegated_limits(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     conds = [
-        facts._ConditionRow(
+        ConditionRow(
             id=100 + i,
             statement_id=1,
             role="obligation",
@@ -28,7 +31,7 @@ def test_condition_facts_batches_delegated_limits(monkeypatch: pytest.MonkeyPatc
         for i in range(20)
     ]
     limits = [
-        facts._DelegatedLimitRow(
+        DelegatedLimitRow(
             condition_id=100 + i,
             threshold=Decimal("10.5"),
             statement_id=200 + i,
@@ -37,21 +40,22 @@ def test_condition_facts_batches_delegated_limits(monkeypatch: pytest.MonkeyPatc
         )
         for i in range(15)
     ]
-    void_rows = [facts._VoidLimitRow(condition_id=119)]
+    void_rows = [VoidLimitRow(condition_id=119)]
 
     def fake_fetch(conn: object, sql: str, params: object, row_type: object) -> list[object]:
         calls.append(sql)
-        if row_type is facts._ConditionRow:
+        if row_type is ConditionRow:
             return list(conds)
-        if row_type is facts._DelegatedLimitRow:
+        if row_type is DelegatedLimitRow:
             return list(limits)
-        if row_type is facts._VoidLimitRow:
+        if row_type is VoidLimitRow:
             return list(void_rows)
         raise AssertionError(f"unexpected row_type: {row_type}")
 
-    monkeypatch.setattr(facts, "fetch", fake_fetch)
+    monkeypatch.setattr(condition_module, "fetch", fake_fetch)
+    monkeypatch.setattr(chains, "fetch", fake_fetch)
 
-    lines = facts._condition_facts(
+    lines = condition_facts(
         object(),  # type: ignore[arg-type]
         {"ids": [1]},
         "zh-Hant",

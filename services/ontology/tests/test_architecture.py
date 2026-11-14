@@ -15,7 +15,6 @@ MAX_LINES = 500
 
 #: 已知過大的模組 → 上限（行）。拆分時刪掉對應的項目，不要調高。
 OVERSIZED = {
-    "reasoning/facts.py": 1000,
     "verification/extract.py": 950,
     "reasoning_codec.py": 850,
     "claims.py": 800,

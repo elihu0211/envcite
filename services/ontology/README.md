@@ -140,7 +140,7 @@ uv run --env-file .env envcite-pipeline --law <pcode> --models models.toml --ree
 - 引文之前、同一句或上位導言（「…，不得有下列行為：」）助動詞之前的條件子句，陳述的 scope 與主體沒涵蓋就補成 scope 要件，標為承自上位（`statement_condition.carried`：只能是成立與否的 scope，由 CHECK 強制；概念代碼是 `ctx_` 加原文雜湊）。
 - 引文停在並列的行為或替代方式之前則送回抽取者修復，不丟。
 
-**「未明示」主體不進推論**：推論讀的主體槽位只有罰則陳述的（責任基礎：`facts.py` 的 `_SUBJECTS`、`rules.lp` 的 `subj/2`）。被處罰的義務的主體槽位不參與涵攝，所以「未明示」不改變罰則鏈的候選結果，和把主體寫成被規範的物或行為人一樣；`tests/test_unstated_subject_neutral.py` 守住。罰則自己的主體槽位沒有責任基礎（含「未明示」）才是不受責任基礎限制。義務的主體槽位只出現在 `ListStatements` 回給呼叫端的陳述與稽核裡，所以主體瑕疵影響的是引用的忠實，不是候選罰則。
+**「未明示」主體不進推論**：推論讀的主體槽位只有罰則陳述的（責任基礎：`reasoning/facts/relation_facts.py` 的 `_SUBJECTS`、`rules.lp` 的 `subj/2`）。被處罰的義務的主體槽位不參與涵攝，所以「未明示」不改變罰則鏈的候選結果，和把主體寫成被規範的物或行為人一樣；`tests/test_unstated_subject_neutral.py` 守住。罰則自己的主體槽位沒有責任基礎（含「未明示」）才是不受責任基礎限制。義務的主體槽位只出現在 `ListStatements` 回給呼叫端的陳述與稽核裡，所以主體瑕疵影響的是引用的忠實，不是候選罰則。
 
 **量測工具**（`tools/`，唯讀）：
 
@@ -176,7 +176,7 @@ uv run --env-file .env envcite-pipeline --models models.toml --check   # 對每�
   - `annotation.delegations_at(命令法規 id, 語文, 日期)`：某命令在該日的授權依據（B1、B5）。
   - `annotation.delegated_by(法律法規 id, 語文, 日期)`：某法在該日的授權命令。
   - 兩者都回報法律端條文在該日的 `law_status`；`law_resource_id`／`law_provision_id` 為空、`law_status` 不是 `in_force`、或命令一列也沒有，都是授權不明。
-- **推論**：命令陳述的授權鏈由 [`reasoning/facts.py`](src/envcite_ontology/reasoning/facts.py) 的 `chain_at` 沿 `delegations_at` 往上走到法律（授權者又是命令就接著走）；授權條文該日已違憲失效也算斷。鏈的每一環與缺口在 `Outcome.delegation_bases`；鏈到不了法律時，命令所定的罰則與處罰命令義務的罰則附條件，義務的結論不變。
+- **推論**：命令陳述的授權鏈由 [`reasoning/facts/chains.py`](src/envcite_ontology/reasoning/facts/chains.py) 的 `chain_at` 沿 `delegations_at` 往上走到法律（授權者又是命令就接著走）；授權條文該日已違憲失效也算斷。鏈的每一環與缺口在 `Outcome.delegation_bases`；鏈到不了法律時，命令所定的罰則與處罰命令義務的罰則附條件，義務的結論不變。
 - **守門**：只回已確認或規則推導的授權，駁回的不回；模型抽取而未確認的不回（同陳述與用語定義）。
 
 ### 規範關係：罰則的連結

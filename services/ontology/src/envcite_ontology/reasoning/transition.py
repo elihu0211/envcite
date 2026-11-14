@@ -20,7 +20,12 @@ from datetime import date
 from envcite_ontology.db import Conn
 from envcite_ontology.reasoning import scoring
 from envcite_ontology.reasoning.engine import Result, evaluate
-from envcite_ontology.reasoning.facts import Case, Measurements, Permits, PerOccasionTimeline
+from envcite_ontology.reasoning.facts.case_inputs import (
+    Case,
+    Measurements,
+    Permits,
+    PerOccasionTimeline,
+)
 
 _APPLICABLE = """
     SELECT r.statement_id
@@ -30,8 +35,9 @@ _APPLICABLE = """
      CROSS JOIN LATERAL (SELECT * FROM annotation.statement_versions_at(lr.id, %(lang)s, %(on)s)
                          OFFSET 0) AS r
 """
-# 只對有陳述的法規解析時點，且以 `OFFSET 0` 擋住函式內聯後的重排：與 `facts.py` 的 `_STATEMENTS`
-# 同一個原因（內聯後規劃器排出對 `provision_version` 的二次方巢狀迴圈），理由與數字見那裡。
+# 只對有陳述的法規解析時點，且以 `OFFSET 0` 擋住函式內聯後的重排：與 `reasoning/facts/statements.py`
+# 的 `_STATEMENTS` 同一個原因（內聯後規劃器排出對 `provision_version` 的二次方巢狀迴圈），
+# 理由與數字見那裡。
 # 這條每個變更日跑一次，成本會乘上日數。
 
 # 帶陳述單元的效力起訖、法規廢止日與違憲失效日：適用的陳述組只可能在這些日子改變。

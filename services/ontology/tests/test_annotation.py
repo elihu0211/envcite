@@ -11,7 +11,7 @@ import pytest
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.annotate import AnnotationError, load
 from envcite_ontology.ingest import importer
-from envcite_ontology.reasoning.facts import limit_at
+from envcite_ontology.reasoning.facts.chains import limit_at
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
 from tests.test_incremental import (

@@ -13,9 +13,11 @@ from typing import Literal, cast
 from envcite.ontology.v2 import ontology_pb2 as ont_pb
 from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite_ontology import errors
-from envcite_ontology.reasoning import Result, facts, scoring
+from envcite_ontology.reasoning import Result, scoring
 from envcite_ontology.reasoning.engine import Penalty
-from envcite_ontology.reasoning.facts import Chain, Measurement, PerOccasionTimeline
+from envcite_ontology.reasoning.facts.case_inputs import Measurement, PerOccasionTimeline
+from envcite_ontology.reasoning.facts.chains import Chain
+from envcite_ontology.reasoning.facts.statements import Invalidated
 
 
 @dataclass(frozen=True)
@@ -315,7 +317,7 @@ def _problem(kind: str, subject: int | str) -> pb.Problem:
     return out
 
 
-def invalidated(i: facts.Invalidated) -> pb.InvalidatedStatement:
+def invalidated(i: Invalidated) -> pb.InvalidatedStatement:
     """違憲失效而不參與推論的陳述，轉成 `InvalidatedStatement` 訊息。"""
     return pb.InvalidatedStatement(
         statement_id=i.statement_id,
