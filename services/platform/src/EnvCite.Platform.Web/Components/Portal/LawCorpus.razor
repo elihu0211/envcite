@@ -257,10 +257,19 @@ else
                                         }
                                         <span class="ep-mono">@law.Uri</span>
                                     </p>
-                                    @if (_graphResult?.Focus is not null)
-                                    {
-                                        <a class="ep-btn ep-btn-quiet" href="@BuildFocusUrl(_graphResult.Focus, tab: "graph")">@L["在授權知識圖譜檢視"]</a>
-                                    }
+                                    <div class="ep-structure-actions">
+                                        @if (Modules.IsEnabled(Tenant, ModuleKeys.LawSearch) || Modules.IsEnabled(Tenant, ModuleKeys.GroundedAnswer))
+                                        {
+                                            <a class="ep-btn ep-btn-quiet ep-structure-ask" href="@AskLawHref(law.Title)">
+                                                <NavIcon Path="@Icons.Material.Outlined.Forum" />
+                                                <span>@L["問問 AI"]</span>
+                                            </a>
+                                        }
+                                        @if (_graphResult?.Focus is not null)
+                                        {
+                                            <a class="ep-btn ep-btn-quiet" href="@BuildFocusUrl(_graphResult.Focus, tab: "graph")">@L["在授權知識圖譜檢視"]</a>
+                                        }
+                                    </div>
                                 </div>
 
                                 <StatGrid Items="StructureStats(law, focusNode)" />
@@ -960,6 +969,9 @@ else
 
         return $"{PortalPaths.Home(Tenant)}/laws?{string.Join("&", qs)}";
     }
+
+    private string AskLawHref(string lawTitle) =>
+        $"{PortalPaths.Home(Tenant)}?q={Uri.EscapeDataString(L["請說明「{0}」的主要規範重點。", lawTitle].Value)}";
 
     private static PortalLawGraphNode? FindFocusNode(PortalLawGraphResult graph) =>
         graph.Focus is null

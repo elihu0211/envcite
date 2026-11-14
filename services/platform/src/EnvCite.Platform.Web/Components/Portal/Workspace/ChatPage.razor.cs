@@ -28,6 +28,7 @@ public sealed partial class ChatPage
     private IJSObjectReference? _module;
     private string _query = string.Empty;
     private string? _name;
+    private string? _appliedInitialQuery;
     private bool _notFound;
     private bool _subscribed;
     private bool _scroll;
@@ -38,6 +39,9 @@ public sealed partial class ChatPage
 
     /// <summary>要開啟的對話；新對話的路由沒有這個參數（<see cref="Guid.Empty"/>）。</summary>
     [Parameter] public Guid Id { get; set; }
+
+    /// <summary>從法規工作台帶入的初始提問文字（僅預填於輸入框並聚焦，不自動送出）。</summary>
+    [SupplyParameterFromQuery(Name = "q")] public string? InitialQuery { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -62,6 +66,16 @@ public sealed partial class ChatPage
             _notFound = false;
             if (Session.ConversationId is not null)
                 Session.StartNew();
+
+            if (!string.IsNullOrWhiteSpace(InitialQuery)
+                && !string.Equals(_appliedInitialQuery, InitialQuery, StringComparison.Ordinal))
+            {
+                var trimmed = InitialQuery.Trim();
+                _appliedInitialQuery = InitialQuery;
+                _query = trimmed.Length > 500 ? trimmed[..500] : trimmed;
+                _focusOnReady = true;
+                _refocus = _interactive;
+            }
         }
         else if (Id != Session.ConversationId)
         {
@@ -222,6 +236,14 @@ public sealed partial class ChatPage
     {
         _drawerOpen = false;
         _drawerLoading = false;
+    }
+
+    private void FollowUpFromDrawer(string title)
+    {
+        CloseDrawer();
+        var prompt = L["請說明「{0}」的適用範圍與要件。", title].Value;
+        _query = prompt.Length > 500 ? prompt[..500] : prompt;
+        _refocus = true;
     }
 
     private static IReadOnlyList<AnswerSource> StoredSourcesOf(ChatTurn turn) =>

@@ -203,6 +203,41 @@
         }
     };
 
+    const setSideCollapsed = (collapsed) => {
+        sideCollapsed = collapsed;
+        applyRootState();
+
+        try {
+            localStorage.setItem("ep-side", sideCollapsed ? "collapsed" : "expanded");
+        } catch {
+            // 沒有儲存空間（無痕視窗）：這次有效，下次回到展開。
+        }
+    };
+
+    const focusConversationSearch = () => {
+        const recentInput = document.querySelector("input[data-recent-filter]");
+        if (recentInput) {
+            if (phone.matches) {
+                root.setAttribute("data-drawer", "");
+            } else if (sideCollapsed) {
+                setSideCollapsed(false);
+            }
+            syncSide();
+            recentInput.focus();
+            recentInput.select();
+            return;
+        }
+
+        const historyInput = document.querySelector("input[data-history-filter]");
+        if (historyInput) {
+            historyInput.focus();
+            historyInput.select();
+            return;
+        }
+
+        document.querySelector(".ep-side-head a.ep-side-icon-btn")?.click();
+    };
+
     document.addEventListener("click", (event) => {
         if (event.target.closest?.(".ep-side-toggle")) {
             if (phone.matches) {
@@ -211,17 +246,12 @@
                     document.querySelector(".ep-side-link")?.focus();
                 }
             } else {
-                sideCollapsed = !sideCollapsed;
-                applyRootState();
-
-                try {
-                    localStorage.setItem("ep-side", sideCollapsed ? "collapsed" : "expanded");
-                } catch {
-                    // 沒有儲存空間（無痕視窗）：這次有效，下次回到展開。
-                }
+                setSideCollapsed(!sideCollapsed);
             }
 
             syncSide();
+        } else if (event.target.closest?.(".ep-recent-jump")) {
+            focusConversationSearch();
         } else if (event.target.closest?.(".ep-scrim")) {
             closeDrawer(true);
         } else if (event.target.closest?.(".ep-side a")) {
@@ -232,6 +262,13 @@
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
             closeDrawer(true);
+        } else if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "k") {
+            event.preventDefault();
+            focusConversationSearch();
+        } else if (event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey
+            && !event.target.closest?.("input, textarea, select, [contenteditable='true']")) {
+            event.preventDefault();
+            focusConversationSearch();
         }
     });
 

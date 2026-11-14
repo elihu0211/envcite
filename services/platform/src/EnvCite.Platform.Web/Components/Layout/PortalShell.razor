@@ -40,6 +40,13 @@
                             <span class="ep-side-label">@L["新對話"]</span>
                         </a>
                     }
+                    @if (Recent.Count > 0)
+                    {
+                        <button type="button" class="ep-side-link ep-recent-jump" aria-label="@L["搜尋對話（⌘K）"]" title="@L["搜尋對話（⌘K）"]">
+                            <NavIcon Path="@Icons.Material.Outlined.Search" />
+                            <span class="ep-side-label">@L["篩選對話"]</span>
+                        </button>
+                    }
 
                     <div class="ep-side-modules">
                         @foreach (var group in NavItems.GroupBy(i => i.Group))
@@ -76,6 +83,7 @@
                                 <label class="ep-visually-hidden" for="ep-recent-filter">@L["篩選對話"]</label>
                                 <NavIcon Path="@Icons.Material.Outlined.Search" />
                                 <input id="ep-recent-filter" class="ep-recent-search" type="search" data-recent-filter maxlength="80" autocomplete="off" placeholder="@L["篩選對話"]" />
+                                <kbd class="ep-kbd" aria-hidden="true">/</kbd>
                             </div>
                             @foreach (var group in Recent)
                             {

@@ -205,11 +205,25 @@
             }
         </div>
 
-        @if (!string.IsNullOrWhiteSpace(effectiveUri))
+        @if (!string.IsNullOrWhiteSpace(effectiveUri) || (OnAskFollowUp.HasDelegate && !string.IsNullOrWhiteSpace(effectiveTitle)))
         {
             <footer class="ep-drawer-footer">
-                <span class="ep-hint">@L["索引位置"]</span>
-                <code class="ep-mono ep-drawer-iri">@effectiveUri</code>
+                @if (!string.IsNullOrWhiteSpace(effectiveUri))
+                {
+                    <div class="ep-drawer-iri-row">
+                        <span class="ep-hint">@L["索引位置"]</span>
+                        <code class="ep-mono ep-drawer-iri">@effectiveUri</code>
+                    </div>
+                }
+                @if (OnAskFollowUp.HasDelegate && !string.IsNullOrWhiteSpace(effectiveTitle))
+                {
+                    <button type="button"
+                            class="ep-btn ep-btn-quiet ep-drawer-followup"
+                            @onclick="() => FollowUpAsync(effectiveTitle!)">
+                        <NavIcon Path="@Icons.Material.Outlined.Forum" />
+                        <span>@L["針對本條追問"]</span>
+                    </button>
+                }
             </footer>
         }
     </aside>
@@ -227,12 +241,15 @@
     [Parameter] public string? ErrorMessage { get; set; }
     [Parameter] public IReadOnlyList<AnswerSource> Sources { get; set; } = [];
     [Parameter] public EventCallback<AnswerSource> OnSelectSource { get; set; }
+    [Parameter] public EventCallback<string> OnAskFollowUp { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
     private bool _copied;
     private CancellationTokenSource? _copyResetCts;
 
     private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private Task FollowUpAsync(string title) => OnAskFollowUp.InvokeAsync(title);
 
     private Task OnKeyDownAsync(KeyboardEventArgs args) =>
         args.Key == "Escape" ? CloseAsync() : Task.CompletedTask;

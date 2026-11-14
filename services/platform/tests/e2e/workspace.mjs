@@ -168,8 +168,14 @@ const scenarios = {
             await until("側欄應顯示新標題", async () => (await page.locator(".ep-recent-link").first().innerText()).includes("我的稽查案"));
         });
 
-        await step("側欄即時篩選：過濾不符的對話並用 Esc 還原", async () => {
+        await step("側欄即時篩選：過濾不符的對話並用 Esc 還原，收合後點搜尋鈕可展開聚焦", async () => {
             const filter = page.locator("input[data-recent-filter]");
+            await page.locator(".ep-side-head .ep-side-toggle").click();
+            await until("側欄應收合", async () => (await page.evaluate(() => document.documentElement.dataset.side)) === "collapsed");
+            await page.locator(".ep-recent-jump").click();
+            await until("點搜尋鈕應展開側欄並聚焦篩選框", async () =>
+                (await page.evaluate(() => document.documentElement.dataset.side)) === undefined &&
+                (await page.evaluate(() => document.activeElement?.id)) === "ep-recent-filter");
             await filter.fill("不存在的關鍵字");
             await until("不符時應隱藏對話並顯示空狀態", async () =>
                 (await page.locator(".ep-recent-item:visible").count()) === 0 && await page.locator("[data-recent-empty]").isVisible());
@@ -189,7 +195,7 @@ const scenarios = {
             if (!text.includes("L1")) throw new Error(`追問沒有得到有出處的回答：${text}`);
         });
 
-        await step("追問前檢查回答工具列：複製回答與法源依據抽屜", async () => {
+        await step("追問前檢查回答工具列：複製回答、法源依據抽屜與針對本條追問", async () => {
             const lastTurn = turns().last();
             const copyBtn = lastTurn.locator(".ep-answer-action[data-copy-target]");
             await copyBtn.click();
@@ -198,9 +204,16 @@ const scenarios = {
             await until("點工具列應開啟右側條文抽屜", async () => (await page.locator(".ep-drawer-panel").count()) === 1);
             await page.click(".ep-drawer-close");
             await until("關閉後抽屜應收起", async () => (await page.locator(".ep-drawer-panel").count()) === 0);
+            await lastTurn.locator(".ep-answer-action", { hasText: "法源依據" }).click();
+            await until("再次開啟右側條文抽屜", async () => (await page.locator(".ep-drawer-panel").count()) === 1);
+            await page.click(".ep-drawer-followup");
+            await until("針對本條追問應收起抽屜並預填輸入框", async () =>
+                (await page.locator(".ep-drawer-panel").count()) === 0 &&
+                (await page.inputValue("#query")).includes("空氣污染防制法"));
+            await page.fill("#query", "");
         });
 
-        await step("對話紀錄頁即時篩選與 Esc 還原", async () => {
+        await step("對話紀錄頁即時篩選、Esc 還原與網址 ?q= 預填", async () => {
             await page.goto(`${base}/portal/${tenant}/history`);
             const historyFilter = page.locator("input[data-history-filter]");
             await historyFilter.fill("不存在的關鍵字");
@@ -209,6 +222,9 @@ const scenarios = {
             await historyFilter.press("Escape");
             await until("Esc 應還原紀錄清單", async () =>
                 (await page.locator("[data-history-item]:visible").count()) === 1 && !(await page.locator("[data-history-empty]").isVisible()));
+            await page.goto(`${base}/portal/${tenant}?q=${encodeURIComponent("噪音管制標準第5條")}`);
+            await circuitConnected();
+            await until("網址 ?q= 應預填輸入框", async () => (await page.inputValue("#query")) === "噪音管制標準第5條");
             await page.goto(conversationUrl);
             await circuitConnected();
         });

@@ -1605,6 +1605,27 @@
   <data name="共 {0} 筆對話" xml:space="preserve">
     <value>{0} conversations</value>
   </data>
+  <data name="搜尋對話（⌘K）" xml:space="preserve">
+    <value>Search conversations (⌘K)</value>
+  </data>
+  <data name="針對本條追問" xml:space="preserve">
+    <value>Ask follow-up on this article</value>
+  </data>
+  <data name="請說明「{0}」的適用範圍與要件。" xml:space="preserve">
+    <value>Explain the scope and legal elements of "{0}".</value>
+  </data>
+  <data name="問問 AI" xml:space="preserve">
+    <value>Ask AI</value>
+  </data>
+  <data name="請說明「{0}」的主要規範重點。" xml:space="preserve">
+    <value>Summarize the key regulatory points of "{0}".</value>
+  </data>
+  <data name="AI 法源接地問答 · 中央環境法規" xml:space="preserve">
+    <value>AI Grounded Q&amp;A · Central Environmental Regulations</value>
+  </data>
+  <data name="中央法規檢索" xml:space="preserve">
+    <value>Central Regulatory Search</value>
+  </data>
   <data name="換個詞試試；只比對標題，不比對內容。" xml:space="preserve">
     <value>Try another word. Only titles are searched, not the conversations themselves.</value>
   </data>
