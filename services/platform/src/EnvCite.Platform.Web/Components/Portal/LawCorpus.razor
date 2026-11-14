@@ -123,15 +123,16 @@ else
                             @if (_graphResult is { Available: true } graph && graph.Nodes.Count > 0)
                             {
                                 var focusNode = FindFocusNode(graph);
-                                <div class="ep-graph-summary-wrap">
-                                    @if (focusNode is { InvalidationCount: > 0 })
-                                    {
-                                        <FormAlert Kind="AlertKind.Error"
-                                                   Message="@L["本焦點法規含 {0} 項宣告違憲失效單元（資料來源：憲法法庭；未列出不等於無違憲失效）。", focusNode.InvalidationCount]" />
-                                    }
+                                @if (focusNode is { InvalidationCount: > 0 })
+                                {
+                                    <FormAlert Kind="AlertKind.Error"
+                                               Message="@L["本焦點法規含 {0} 項宣告違憲失效單元（資料來源：憲法法庭；未列出不等於無違憲失效）。", focusNode.InvalidationCount]" />
+                                }
 
-                                    @if (graph.Focus is not null)
-                                    {
+                                @if (graph.Focus is not null)
+                                {
+                                    <details class="ep-graph-filters-drawer">
+                                        <summary class="ep-graph-filters-toggle">@L["展開深度與數量"]</summary>
                                         <div class="ep-graph-filters">
                                             @if (graph.ChildGroups.Count > 0)
                                             {
@@ -168,8 +169,8 @@ else
                                                 }
                                             </div>
                                         </div>
-                                    }
-                                </div>
+                                    </details>
+                                }
 
                                 <div class="ep-graph-host" data-graph-host="true" data-inspector-open="false">
                                     <div class="ep-graph-stage">

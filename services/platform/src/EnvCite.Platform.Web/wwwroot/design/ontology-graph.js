@@ -842,8 +842,8 @@
     let activeTierFilter = null;
 
     function syncFilterButtons() {
-      const scope = host?.closest("[data-tab-panel]") || document;
-      scope.querySelectorAll("[data-graph-filter-tier]").forEach((btn) => {
+      if (!host) return;
+      host.querySelectorAll("[data-graph-filter-tier]").forEach((btn) => {
         btn.setAttribute("aria-pressed", btn.dataset.graphFilterTier === activeTierFilter ? "true" : "false");
       });
     }
@@ -1121,14 +1121,12 @@
       host.dataset.graphBound = "1";
       let isFullscreen = false;
 
-      const scopePanel = host.closest("[data-tab-panel]") || host;
-      scopePanel.addEventListener("click", (evt) => {
-        const filterBtn = evt.target.closest("[data-graph-filter-tier]");
-        if (!filterBtn) return;
-        applyTierFilter(filterBtn.dataset.graphFilterTier);
-      });
-
       host.addEventListener("click", (evt) => {
+        const filterBtn = evt.target.closest("[data-graph-filter-tier]");
+        if (filterBtn) {
+          applyTierFilter(filterBtn.dataset.graphFilterTier);
+          return;
+        }
         const closeBtn = evt.target.closest("[data-inspector-close]");
         if (closeBtn) {
           host.dataset.inspectorOpen = "false";
