@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """檢查文件 front-matter、相對連結與錨點；規範見容器層 AGENTS.md「知識文件」。
 
-每份知識文件都要有 front-matter；AGENTS.md、DESIGN.md、skill、pull request 範本與評估紀錄不是知識節點，
-不檢查 front-matter，連結照樣檢查。錨點比對標題 id（小寫、刪標點、空白轉連字號）。只用標準庫。
+每份知識文件都要有 front-matter；AGENTS.md、DESIGN.md、skill、pull request 範本與評估紀錄
+不是知識節點，不檢查 front-matter，連結照樣檢查。錨點比對標題 id（小寫、刪標點、空白轉連字號）。
+只用標準庫。
 """
 
 import re
