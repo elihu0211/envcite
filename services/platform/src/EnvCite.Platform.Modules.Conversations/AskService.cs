@@ -10,7 +10,7 @@ namespace EnvCite.Platform.Modules.Conversations;
 /// 租戶只取自入口成員的 claim；不是入口成員（沒有 <see cref="PlatformClaimTypes.PortalUserId"/>）一律當作沒有方案。
 /// </summary>
 internal sealed class AskService(
-    TenantScopes tenants, ITenantDirectory directory, ITenantModules modules, IAnswerAvailability availability, IConversationHistoryAvailability historyAvailability) : IAskService
+    TenantScopes tenants, ITenantDirectory directory, ITenantModules modules, IAnswerAvailability availability) : IAskService
 {
     private static readonly AskCapabilities None = new(HasPlan: false, AiAnswer: false);
 
@@ -57,7 +57,7 @@ internal sealed class AskService(
 
     public async Task<IReadOnlyList<ConversationSummary>> RecentAsync(ClaimsPrincipal user, int limit, CancellationToken cancellationToken)
     {
-        if (!historyAvailability.Enabled || MemberTenant(user) is not { } identifier)
+        if (MemberTenant(user) is not { } identifier)
             return [];
 
         var outcome = await tenants.InByIdentifierAsync<IReadOnlyList<ConversationSummary>>(
@@ -69,7 +69,7 @@ internal sealed class AskService(
 
     public async Task<ConversationDetail?> ConversationAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)
     {
-        if (!historyAvailability.Enabled || MemberTenant(user) is not { } identifier)
+        if (MemberTenant(user) is not { } identifier)
             return null;
 
         var outcome = await tenants.InByIdentifierAsync<ConversationDetail?>(

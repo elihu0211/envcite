@@ -14,13 +14,6 @@ public sealed class PortalNavigationTests
 {
     private const string Home = "/portal/acme";
 
-    private sealed class FakeHistory(bool enabled) : IConversationHistoryAvailability
-    {
-        public bool Enabled => enabled;
-
-        public int RetentionDays => 30;
-    }
-
     private sealed class FakeDirectory(bool available) : IDirectoryAvailability
     {
         public bool Available => available;
@@ -30,7 +23,7 @@ public sealed class PortalNavigationTests
 
     private static ClaimsPrincipal In(string role) => new(new ClaimsIdentity([new Claim(ClaimTypes.Role, role)], "test"));
 
-    private static IReadOnlyList<PortalShell.NavItem> Sidebar(string role, bool history = true, bool directory = true)
+    private static IReadOnlyList<PortalShell.NavItem> Sidebar(string role, bool directory = true)
     {
         var localizer = new KeyLocalizer();
         // 故意不照 Order 排：Collect 必須自己排。
@@ -39,7 +32,7 @@ public sealed class PortalNavigationTests
             new AccountNav(localizer),
             new DirectoryNav(localizer, new FakeDirectory(directory)),
             new MembersNav(localizer),
-            new HistoryNav(localizer, new FakeHistory(history)),
+            new HistoryNav(localizer),
             new QueryNav(localizer),
         ];
         return PortalNavigation.Collect(contributors, new PortalNavContext(Home, In(role)));
@@ -71,9 +64,9 @@ public sealed class PortalNavigationTests
     [Fact]
     public void FeaturesThatAreSwitchedOffAreNotListedEvenForTheOwner()
     {
-        var items = Sidebar(CustomerRoles.Owner, history: false, directory: false);
+        var items = Sidebar(CustomerRoles.Owner, directory: false);
 
-        Assert.Equal([Home, $"{Home}/members", $"{Home}/account"], items.Select(i => i.Href));
+        Assert.Equal([Home, $"{Home}/history", $"{Home}/members", $"{Home}/account"], items.Select(i => i.Href));
     }
 
     [Fact]

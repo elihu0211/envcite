@@ -26,7 +26,7 @@
                         <span class="ep-brand"><BrandMark /><span class="ep-side-label">@Brand.Name</span></span>
                     }
                     <span class="ep-spacer"></span>
-                    @if (Recent.Count == 0 && HistoryEnabled && !string.IsNullOrEmpty(HistoryHref))
+                    @if (Recent.Count == 0 && !string.IsNullOrEmpty(HistoryHref))
                     {
                         <a class="ep-side-icon-btn" href="@HistoryHref" aria-label="@L["搜尋對話標題"]" title="@L["搜尋對話標題"]"><NavIcon Path="@Icons.Material.Outlined.Search" /></a>
                     }
@@ -114,7 +114,7 @@
                             </div>
                         </section>
                     }
-                    else if (HistoryEnabled)
+                    else if (!string.IsNullOrEmpty(HistoryHref))
                     {
                         <section class="ep-history-empty" aria-label="@L["最近的對話"]">
                             <div class="ep-history-head">
@@ -309,11 +309,7 @@
     [Parameter]
     public string? HomeHref { get; set; }
 
-    /// <summary>問答歷史是否開啟；開啟時即使尚未有對話也會顯示原生對話歷史區。</summary>
-    [Parameter]
-    public bool HistoryEnabled { get; set; }
-
-    /// <summary>對話紀錄與搜尋頁的路徑（歷史開啟時帶入）。</summary>
+    /// <summary>對話紀錄與搜尋頁的路徑；有它就顯示對話歷史區，即使尚未有對話也會顯示引導提示。已登入的入口成員一定帶入，展示頁用假資料。</summary>
     [Parameter]
     public string? HistoryHref { get; set; }
 

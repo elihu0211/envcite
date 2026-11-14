@@ -60,8 +60,6 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.UseSetting("Platform:SeedDevelopmentData", "false");
         // 目錄同步的功能面預設關閉；共用主機開著，關閉時的行為由 DirectorySyncTests 以自己的主機測。
         builder.UseSetting("Platform:Directory:Enabled", "true");
-        // 問答歷史預設關閉；共用測試主機維持關閉（appsettings.Development.json 只為本機開啟），開啟的行為由 ConversationHistoryTests 以自己的主機測。
-        builder.UseSetting("Platform:ConversationHistory:Enabled", "false");
         builder.UseSetting("Platform:Ui:Enabled", "true");
         builder.UseSetting("Platform:Ui:SignInAttemptsPerMinute", "1000");
         // 所有測試共用同一個來源位址：預設的每分鐘 10 次會被別的測試用完。限流本身由 PortalRateLimitTests 以自己的主機（小額度）測。

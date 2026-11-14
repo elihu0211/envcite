@@ -34,12 +34,9 @@ public sealed partial class ConversationRetention(
         while (await timer.WaitForNextTickAsync(stoppingToken));
     }
 
-    /// <summary>刪掉過期的，回傳刪了幾串。沒開啟問答歷史時不動資料。</summary>
+    /// <summary>刪掉過期的，回傳刪了幾串。</summary>
     public async Task<int> PurgeAsync(CancellationToken cancellationToken)
     {
-        if (!options.Value.Enabled)
-            return 0;
-
         var cutoff = time.GetUtcNow().AddDays(-options.Value.RetentionDays);
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();

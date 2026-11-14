@@ -6,7 +6,6 @@
    問答頁問完一題、對話被記進歷史，會通知這裡重新讀最近對話。 *@
 <PortalShell TenantName="@_tenantName"
              HomeHref="@_home"
-             HistoryEnabled="@HistoryAvailability.Enabled"
              HistoryHref="@HistoryHrefOf(_tenantIdentifier)"
              UserDisplayName="@DisplayNameOf(_user)"
              UserEmail="@_user?.FindFirst(ClaimTypes.Email)?.Value"

@@ -106,13 +106,12 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.DoesNotContain(tenant.Name, accountPageHead, StringComparison.Ordinal);
     }
 
-    // 問答歷史開啟時即使還沒有對話，側欄的功能模塊下方仍渲染原生歷史區；功能模塊在前、歷史在後、帳號資料在最底。
+    // 即使還沒有對話，側欄的功能模塊下方仍渲染原生歷史區；功能模塊在前、歷史在後、帳號資料在最底。
     [Fact]
-    public async Task WhenHistoryIsEnabledTheNativeHistorySectionAppearsBelowModulesEvenWhenEmpty()
+    public async Task TheNativeHistorySectionAppearsBelowModulesEvenWhenEmpty()
     {
-        using var host = factory.WithWebHostBuilder(b => b.UseSetting("Platform:ConversationHistory:Enabled", "true"));
         var (tenant, email, initial) = await MemberAsync(factory, "sh-hist");
-        using var browser = new PortalBrowser(host);
+        using var browser = new PortalBrowser(factory);
         await SignInFullyAsync(browser, tenant.Identifier, email, initial);
 
         var home = await browser.GetAsync(Home(tenant.Identifier));
@@ -128,9 +127,8 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
     [Fact]
     public async Task TheFunctionRegionAndTheHistoryRegionAreSeparateBlocks()
     {
-        using var host = factory.WithWebHostBuilder(b => b.UseSetting("Platform:ConversationHistory:Enabled", "true"));
         var (tenant, email, initial) = await MemberAsync(factory, "sh-zone");
-        using var browser = new PortalBrowser(host);
+        using var browser = new PortalBrowser(factory);
         await SignInFullyAsync(browser, tenant.Identifier, email, initial);
 
         var home = await browser.GetAsync(Home(tenant.Identifier));

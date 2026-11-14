@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class History(IConversationHistory store, IConversationHistoryAvailability historyFeature)
+public partial class History(IConversationHistory store, IConversationHistorySettings settings)
 {
     private const int PageSize = 100;
 
@@ -18,7 +18,7 @@ public partial class History(IConversationHistory store, IConversationHistoryAva
 
     private IReadOnlyList<TabItem> _views = [];
 
-    private IConversationHistoryAvailability HistoryFeature => historyFeature;
+    private IConversationHistorySettings Settings => settings;
 
     /// <summary>標題搜尋（<c>?q=</c>）；空白是全部。</summary>
     [SupplyParameterFromQuery(Name = "q")]

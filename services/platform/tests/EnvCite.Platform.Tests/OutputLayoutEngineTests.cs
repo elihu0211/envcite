@@ -38,10 +38,8 @@ public sealed class OutputLayoutEngineTests
         }
     }
 
-    private sealed class HistoryOn : IConversationHistoryAvailability
+    private sealed class FixedRetention : IConversationHistorySettings
     {
-        public bool Enabled => true;
-
         public int RetentionDays => 30;
     }
 
@@ -350,7 +348,7 @@ public sealed class OutputLayoutEngineTests
             .AddSingleton<IAskService>(ask)
             .AddSingleton<IStringLocalizer<Ui>>(localizer)
             .AddOutputLayoutEngine()
-            .AddSingleton<IConversationHistoryAvailability>(new HistoryOn())
+            .AddSingleton<IConversationHistorySettings>(new FixedRetention())
             .AddSingleton<ICitationArticleService>(new FakeCitationArticleService())
             .AddSingleton<IJSRuntime>(new NoJs())
             .AddSingleton<BrandText>(new BrandText(Options.Create(new BrandOptions()), localizer))

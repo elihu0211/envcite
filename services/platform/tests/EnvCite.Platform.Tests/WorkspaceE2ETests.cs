@@ -32,8 +32,7 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
         {
             b.UseSetting("Platform:Answer:Enabled", consent ? "true" : "false")
                 .UseSetting("Platform:Answer:Endpoint", "https://models.example.test/v1")
-                .UseSetting("Platform:Answer:ApiKey", "test-key")
-                .UseSetting("Platform:ConversationHistory:Enabled", "true");
+                .UseSetting("Platform:Answer:ApiKey", "test-key");
             b.ConfigureServices(s => s.Replace(ServiceDescriptor.Singleton<IChatClient>(chat)));
         });
         host.UseKestrel(0);

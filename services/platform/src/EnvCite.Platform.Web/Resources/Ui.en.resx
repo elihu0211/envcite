@@ -600,9 +600,6 @@
   <data name="未開啟" xml:space="preserve">
     <value>Off</value>
   </data>
-  <data name="查詢文字不會被記錄，只記一次搜尋的次數。" xml:space="preserve">
-    <value>Search text is not recorded, only the number of searches.</value>
-  </data>
   <data name="查詢條件不正確：請輸入問題；日期要是有效的日期。" xml:space="preserve">
     <value>Invalid search: enter a question, and make sure the date is a valid date.</value>
   </data>
@@ -914,9 +911,6 @@
   </data>
   <data name="回到我的組織" xml:space="preserve">
     <value>Back to my organisation</value>
-  </data>
-  <data name="這個環境沒有開啟對話紀錄。" xml:space="preserve">
-    <value>Conversation history is not enabled in this environment.</value>
   </data>
   <data name="這是你的復原碼。" xml:space="preserve">
     <value>These are your recovery codes. </value>
