@@ -3265,19 +3265,19 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     animation: ep-rise var(--ep-motion-slow) var(--ep-motion-ease-settle) backwards;
 }
 
-:is(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(2) {
+:where(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(2) {
     animation-delay: calc(var(--ep-motion-fast) * 0.3);
 }
 
-:is(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(3) {
+:where(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(3) {
     animation-delay: calc(var(--ep-motion-fast) * 0.6);
 }
 
-:is(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(4) {
+:where(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(4) {
     animation-delay: calc(var(--ep-motion-fast) * 0.9);
 }
 
-:is(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(n + 5) {
+:where(.ep-console-main, .ep-shell-main, .ep-auth-body) > :nth-child(n + 5) {
     animation-delay: calc(var(--ep-motion-fast) * 1.2);
 }
 

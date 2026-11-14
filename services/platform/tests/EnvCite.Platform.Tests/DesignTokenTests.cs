@@ -219,6 +219,21 @@ public static partial class DesignTokenTests
         Assert.DoesNotContain("2.75rem", css, StringComparison.Ordinal); // 觸控目標走 --ep-touch-target
     }
 
+    // 頁面進場的錯開（直接子元素的 animation-delay）不得壓過元件自己的 animation：右側抽屜與背景是主區的直接子元素，
+    // 優先權更高的 :is() 會把延遲強加給它們，延遲期間（無 fill）面板停在全開位置，延遲結束才跳出畫面外重新滑入。
+    [Fact]
+    public static void TheEntranceStaggerNeverOutranksAComponentsOwnAnimation()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        var selectors = Regex.Matches(css, @"(?m)^([^\n{]*> :nth-child\([^\n{]*)\{[^}]*animation-delay")
+            .Select(m => m.Groups[1].Value.Trim())
+            .ToList();
+
+        Assert.NotEmpty(selectors); // 至少有一條，守門才不是空轉
+        Assert.All(selectors, selector => Assert.StartsWith(":where(", selector, StringComparison.Ordinal));
+    }
+
     [Fact]
     public static void LargeTextTightensTrackingAndSmallTextLoosensIt()
     {
