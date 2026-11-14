@@ -80,7 +80,7 @@ owns: [ontology-entrypoints, sync-exit-codes, models-config, norm-relations, com
 
 ### 行政規則的取得
 
-`envcite-guidance sync <gazette|moenv> [--since YYYY-MM-DD] [--rescan]`，實作在 [`guidance_sync.py`](src/envcite_ontology/guidance_sync.py)。每個工作項（公報的一包、函釋的一頁）是一個 jobkit 工作項：端點錯誤退避重試、斷路器、單項隔離，政策以 `ENVCITE_JOBKIT_<欄位>` 覆寫，預設值以該模組的 `POLICY` 為準；每件公文一個交易，可重跑。
+`envcite-guidance sync <gazette|moenv> [--since YYYY-MM-DD] [--rescan]`，實作在 [`guidance_sync/`](src/envcite_ontology/guidance_sync/)。每個工作項（公報的一包、函釋的一頁）是一個 jobkit 工作項：端點錯誤退避重試、斷路器、單項隔離，政策以 `ENVCITE_JOBKIT_<欄位>` 覆寫，預設值以 [`guidance_sync/run.py`](src/envcite_ontology/guidance_sync/run.py) 的 `POLICY` 為準；每件公文一個交易，可重跑。
 
 | 來源 | 取得 | 出處標示 | 錨定 |
 |------|------|----------|------|

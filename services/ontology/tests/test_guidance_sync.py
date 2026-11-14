@@ -12,9 +12,11 @@ import psycopg
 import pytest
 
 from envcite_jobkit import EndpointError, ExitCode, Policy
-from envcite_ontology import guidance_anchor, guidance_sync
+from envcite_ontology import guidance_anchor
 from envcite_ontology.acquire import gazette, moenv
 from envcite_ontology.acquire.moj import Moj
+from envcite_ontology.guidance_sync.report import Report
+from envcite_ontology.guidance_sync.run import sync
 from envcite_ontology.import_problems import Problem
 from envcite_ontology.ingest import importer
 from tests.sample import WATER, sample_laws, stored_snapshot
@@ -22,6 +24,7 @@ from tests.sample import WATER, sample_laws, stored_snapshot
 Conn = psycopg.Connection[tuple[object, ...]]
 
 POLICY = Policy(name="test", max_attempts=1, backoff_base_seconds=0.0)
+TODAY = date(2026, 11, 14)
 
 
 def _no_sleep(_: float) -> None:
@@ -160,9 +163,7 @@ def test_moenv_sync_anchors_to_the_text_in_force_on_the_issue_date(
     conn: Conn, sample: None, tmp_path: Path
 ) -> None:
     site = _moenv_site()
-    report = guidance_sync.sync(
-        conn, "moenv", tmp_path, client=site, policy=POLICY, sleep=_no_sleep
-    )
+    report = sync(conn, "moenv", tmp_path, client=site, policy=POLICY, sleep=_no_sleep)
     assert report.exit_code == ExitCode.OK
     assert (report.listed, report.documents, report.cessations) == (2, 2, 1)
     # 108 年的函：第 7 條展開為兩項各一列；99 年的函：當時沒有現行版本（語料只有 107 年起的文字）
@@ -184,7 +185,7 @@ def test_moenv_sync_anchors_to_the_text_in_force_on_the_issue_date(
     ).fetchone()
     assert snapshot is not None and "瀏覽人數" not in (tmp_path / str(snapshot[0])).read_text()
 
-    again = guidance_sync.sync(conn, "moenv", tmp_path, client=site, policy=POLICY, sleep=_no_sleep)
+    again = sync(conn, "moenv", tmp_path, client=site, policy=POLICY, sleep=_no_sleep)
     assert (again.listed, again.documents) == (0, 0)
 
 
@@ -192,15 +193,13 @@ def test_moenv_rescan_never_rewrites_a_loaded_letter(
     conn: Conn, sample: None, tmp_path: Path
 ) -> None:
     site = _moenv_site()
-    guidance_sync.sync(conn, "moenv", tmp_path, client=site, policy=POLICY, sleep=_no_sleep)
+    sync(conn, "moenv", tmp_path, client=site, policy=POLICY, sleep=_no_sleep)
     derivations = conn.execute("SELECT count(*) FROM annotation.derivation").fetchone()
 
     site.pages[moenv.DETAIL.format(id="12")] = _detail(
         "環署水字第0990000002號", "民國 99 年 03 月 01 日", [], subject="網站改了轉錄"
     )
-    report = guidance_sync.sync(
-        conn, "moenv", tmp_path, rescan=True, client=site, policy=POLICY, sleep=_no_sleep
-    )
+    report = sync(conn, "moenv", tmp_path, rescan=True, client=site, policy=POLICY, sleep=_no_sleep)
     assert (report.documents, report.repeated) == (0, 1)
     assert report.problems["content_changed"] == 1
     assert conn.execute(
@@ -215,9 +214,7 @@ def test_moenv_isolated_pages_beyond_tolerance_fail_the_run(
 ) -> None:
     site = _moenv_site()
     site.fail.add(moenv.DETAIL.format(id="12"))
-    report = guidance_sync.sync(
-        conn, "moenv", tmp_path, client=site, policy=POLICY, sleep=_no_sleep
-    )
+    report = sync(conn, "moenv", tmp_path, client=site, policy=POLICY, sleep=_no_sleep)
     assert (report.dead_lettered, report.documents) == (1, 1)
     assert report.exit_code == ExitCode.FAILED
 
@@ -326,7 +323,7 @@ def test_gazette_sync_writes_rules_and_reports_what_it_could_not(
     conn: Conn, tmp_path: Path
 ) -> None:
     site = _gazette_site()
-    report = guidance_sync.sync(
+    report = sync(
         conn,
         "gazette",
         tmp_path,
@@ -354,7 +351,7 @@ def test_gazette_sync_writes_rules_and_reports_what_it_could_not(
         "SELECT origin_name FROM source.snapshot WHERE feed = 'gazette'"
     ).fetchall() == [("115-10-01.zip",)]
 
-    again = guidance_sync.sync(
+    again = sync(
         conn,
         "gazette",
         tmp_path,
@@ -459,7 +456,7 @@ def test_gazette_rule_is_anchored_to_its_basis_in_force_on_the_issue_date(
         ),
     )
     site = _gazette_site(pack)
-    report = guidance_sync.sync(
+    report = sync(
         conn,
         "gazette",
         tmp_path,
@@ -513,7 +510,7 @@ def test_a_gazette_repeal_ceases_every_earlier_publication_of_the_rule(
         _rule("4", "115年10月1日", "廢止「丙要點」，並自即日生效。", "甲字第4號"),
         _rule("5", "115年10月1日", "廢止「乙要點」第五點，並自即日生效。", "甲字第5號"),
     )
-    report = guidance_sync.sync(
+    report = sync(
         conn,
         "gazette",
         tmp_path,
@@ -531,7 +528,7 @@ def test_a_gazette_repeal_ceases_every_earlier_publication_of_the_rule(
     # 丙要點從沒刊登過；只廢止其中一點的不停止整部
     assert report.problems == {"repeal_unmatched": 1}
 
-    again = guidance_sync.sync(
+    again = sync(
         conn,
         "gazette",
         tmp_path,
@@ -555,7 +552,7 @@ def test_a_repeal_loaded_before_the_rule_it_ends_is_matched_later(
     """回填比每日更新晚跑：先載入的廢止在舊規則載入後補上停止適用。"""
     repeal = _pack(_rule("3", "115年10月1日", "廢止「甲要點」，並自即日生效。", "甲字第3號"))
     site = _gazette_site(repeal)
-    guidance_sync.sync(
+    sync(
         conn,
         "gazette",
         tmp_path,
@@ -568,7 +565,7 @@ def test_a_repeal_loaded_before_the_rule_it_ends_is_matched_later(
 
     earlier = _pack(_rule("1", "114年1月2日", "訂定「甲要點」，並自即日生效。", "甲字第1號"))
     _add_pack(site, "114-01_01.zip", earlier)
-    report = guidance_sync.sync(
+    report = sync(
         conn,
         "gazette",
         tmp_path,
@@ -595,7 +592,7 @@ def test_a_repeal_matching_rules_of_two_issuers_ceases_nothing(conn: Conn, tmp_p
         ).replace("<![CDATA[環境部]]>", "<![CDATA[經濟部]]>"),
         _rule("3", "115年10月1日", "廢止「作業要點」，並自即日生效。", "甲字第3號"),
     )
-    report = guidance_sync.sync(
+    report = sync(
         conn,
         "gazette",
         tmp_path,
@@ -632,9 +629,9 @@ def _hide(site: FakeClient, i: int) -> None:
     )
 
 
-def _crawl(conn: Conn, root: Path, site: FakeClient, **kw: Any) -> guidance_sync.Report:
-    return guidance_sync.sync(
-        conn, "moenv", root, client=site, policy=POLICY, sleep=_no_sleep, **kw
+def _crawl(conn: Conn, root: Path, site: FakeClient, **kw: Any) -> Report:
+    return sync(
+        conn, "moenv", root, client=site, policy=POLICY, sleep=_no_sleep, today=lambda: TODAY, **kw
     )
 
 
@@ -652,8 +649,8 @@ def test_a_letter_missing_from_two_complete_crawls_is_dropped_and_ceases(
     assert (second.dropped, second.cessations) == (1, 1)
     assert conn.execute(
         "SELECT key, dropped_on, missed_crawls FROM source.item WHERE dropped_on IS NOT NULL"
-    ).fetchall() == [("環署水字第1080000100號", date.today(), 2)]
-    assert _ceased(conn) == [("環署水字第1080000100號", date.today(), None)]
+    ).fetchall() == [("環署水字第1080000100號", TODAY, 2)]
+    assert _ceased(conn) == [("環署水字第1080000100號", TODAY, None)]
     assert conn.execute("SELECT cause::text, dropped_key FROM guidance.cessation").fetchall() == [
         ("taken_down", "環署水字第1080000100號")
     ]
@@ -669,7 +666,7 @@ def test_a_letter_missing_from_two_complete_crawls_is_dropped_and_ceases(
     # 下架是終態：再出現也不歸零、不撤銷
     assert conn.execute(
         "SELECT missed_crawls, dropped_on FROM source.item WHERE dropped_on IS NOT NULL"
-    ).fetchall() == [(2, date.today())]
+    ).fetchall() == [(2, TODAY)]
 
 
 def test_a_crawl_missing_too_many_letters_infers_nothing(
@@ -716,7 +713,7 @@ def test_a_rule_repealed_twice_ceases_at_the_first_repeal(conn: Conn, tmp_path: 
         _rule("3", "115年1月5日", "廢止「甲要點」，並自即日生效。", "甲字第3號"),
         _rule("4", "115年10月1日", "廢止「甲要點」及「乙要點」，並自即日生效。", "甲字第4號"),
     )
-    report = guidance_sync.sync(
+    report = sync(
         conn,
         "gazette",
         tmp_path,
@@ -730,3 +727,23 @@ def test_a_rule_repealed_twice_ceases_at_the_first_repeal(conn: Conn, tmp_path: 
         ("甲字第2號", date(2026, 10, 1), "甲字第4號"),
     ]
     assert report.problems == {}
+
+
+def test_the_default_gazette_window_starts_on_the_first_of_last_month(
+    conn: Conn, tmp_path: Path
+) -> None:
+    site = FakeClient({})
+    sync(
+        conn,
+        "gazette",
+        tmp_path,
+        client=site,
+        policy=POLICY,
+        sleep=_no_sleep,
+        today=lambda: date(2026, 1, 15),
+    )
+    assert site.requested == [
+        gazette.MONTH_LIST,
+        gazette.YEAR_LIST.format(year=114),
+        gazette.YEAR_LIST.format(year=115),
+    ]

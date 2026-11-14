@@ -46,6 +46,8 @@ uv run --env-file .env envcite-ontology
   - 推論的輸入事實（`reasoning/facts/`）按職責分：陳述端讀資料庫（`statements` 組裝、`chains` 授權鏈、`condition_facts`、`vocabulary_facts`、`relation_facts`，各自持有自己的 SQL 與列型別），案件端只讀請求（`case_inputs`），共用的 ASP 寫法在 `asp`；套件不匯出，從定義它的模組匯入。
   - gRPC 訊息與領域型別的轉換（`reasoning_codec/`）按方向分：`request`（請求 → 推論輸入）、`outcome`（推論結果 → 回應）、`disposition`（處分稽核）、`enums`（列舉對照表）；套件不匯出，從定義它的模組匯入。
   - 標註的寫入（`claims/`）按責任分：`loader` 是入口與交易邊界，`statements`／`sanctions`／`links` 寫陳述、罰則與兩者之間的關係，`definitions`、`vocabulary`、`held`（待連結罰則）、`anchoring`（錨定）各管一塊，`rows` 是共用的寫入原語；套件不匯出，從定義它的模組匯入。
+  - 行政規則的取得（`guidance_sync/`）按階段分：`run.sync` 串接列舉（`listing`）、逐項（`job`）、覆蓋率與停止適用（`settle` 函釋下架、`repeals` 公報廢止），`cli` 是指令列；套件不匯出，從定義它的模組匯入。
+  - 邏輯不直接讀系統時鐘：今天的日期收注入的 `clock.Today`（預設 `date.today`），測試傳固定值；指令列的 `main` 是組合根，才可以呼叫 `psycopg.connect` 與 `settings.load`。
   - 依賴注入：接線只在組合根（`server.py` 與各 CLI 的 `main`）；servicer 與推論從建構子拿依賴（儲存庫、嵌入、精排、斷詞，與調校旋鈕 `SearchTuning`），不自己建連線、不讀設定。「今日」由 SQL 的 `as_of` 決定，不在 Python 取時鐘。
   - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
   - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。
@@ -91,7 +93,7 @@ uv run --env-file .env envcite-ontology
 - **重抽**：義務沒有定論的單元（`annotation.reextraction_due`）帶審查者指出的問題重抽；輪數上限是 `extraction_attempt.round` 的 CHECK，不是程式裡的常數，該不該重抽由資料推得、不另存佇列，所以中斷後重跑自己收斂。重抽只改變誰被抽到、不放寬閘門：確認仍要所有必要方法通過。量測與已知缺口見 `eval/duty-reextraction-2026-11-06.md`，兩型瑕疵修復的獨立量測見 `eval/duty-fix-effect-2026-11-09.md`。
 - 本體的約定（只有規範性陳述有義務方向、授權不是許可、罰則一個效果一個陳述且引文只取該效果的子句、刑罰不是罰則、按次處罰是另一個帶「屆期仍未改善」要件的陳述）寫在 `verification/templates/conventions.j2` 一處，各提示都由它組成。
 - **管線**可重跑、每個陳述 commit；`--pending` 的待辦由資料推得，所以重跑收斂；同一時間只跑一個（PostgreSQL 諮詢鎖）。保留樣本評估看過的法就用掉了，只報第一次看的計數，不報準確度。
-- **行政規則**（`guidance` schema）：函釋、裁量基準另立一軸，**不進語料的位階、不是推論的前提**（行政程序法第 159 條），只附在推論結果旁（`Outcome.guidance`）。公文不可改，由人或規則載入（`derivation.method` 不得為 `llm`）；「解釋」錨定（單元，內容雜湊），條文文字改了就不再附上。取得（`envcite-guidance sync`）只經 `guidance.load` 寫入，**改變寫入內容或錨定規則要遞增 `guidance_sync.RULE_VERSION`**。
+- **行政規則**（`guidance` schema）：函釋、裁量基準另立一軸，**不進語料的位階、不是推論的前提**（行政程序法第 159 條），只附在推論結果旁（`Outcome.guidance`）。公文不可改，由人或規則載入（`derivation.method` 不得為 `llm`）；「解釋」錨定（單元，內容雜湊），條文文字改了就不再附上。取得（`envcite-guidance sync`）只經 `guidance.load` 寫入，**改變寫入內容或錨定規則要遞增 `guidance_sync.provenance.RULE_VERSION`**。
 - **推論**（`reasoning/`）：通用推論程式 `rules.lp`（clingo）**不含任何法條**，也不用模型；案件事實由呼叫端給。結論都是**候選**；缺的事實、需判斷的要件、矛盾的事實、未決的衝突與罰則競合分開回報。
   - `order`（預防性處分）與 `disgorgement`（不法利得的追繳）不是行政罰，行政罰法總則的排除、減輕、時效與一行為都不適用；罰則的 `discretionary` 與要件的 `judgement` 是兩個層次。以另一效果為前提的罰則（`sanction_trigger`），前提列出才列出，前提附條件則它也附條件。
   - 呼叫端看得到的語意（未給的許可量值是未知、認定方式不符不逕判、`evaluate_across` 不選「最有利」、`uncovered_laws`）以倉庫根 `proto/README.md`〈標註與推論〉為準，改推論時一起看。
