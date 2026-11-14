@@ -18,12 +18,14 @@ from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite.ontology.v2 import reasoning_pb2_grpc
 from envcite_grpc import remaining_seconds
 from envcite_ontology import annotation_read, errors, identifiers
-from envcite_ontology import reasoning_codec as codec
 from envcite_ontology.endpoints.common import log_call
 from envcite_ontology.identifiers import law_key
 from envcite_ontology.reasoning import Result, evaluate_across
 from envcite_ontology.reasoning.facts.case_inputs import Measurements, Permits, PerOccasionTimeline
 from envcite_ontology.reasoning.scoring import ScoringInput
+from envcite_ontology.reasoning_codec import disposition as disposition_codec
+from envcite_ontology.reasoning_codec import outcome as outcome_codec
+from envcite_ontology.reasoning_codec import request as request_codec
 from envcite_ontology.store.ports import LawReader, ReadConnections
 from envcite_ontology.store.records import LANGUAGE
 from envcite_ontology.telemetry import ReasoningMetrics
@@ -109,13 +111,13 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         )
         if conduct_on is not None and decided_on is not None and conduct_on > decided_on:
             v.add("conduct_on", errors.DATE_ORDER, "conduct_on must not be after decided_on")
-        case = codec.case_facts(request, v, conduct_ended, result_on, cleared)
-        permits = codec.permit_limits(request, v)
-        actor_bases = codec.actor_bases(request, v)
-        fact_units = codec.fact_units(request)
-        act_groups = codec.act_groups(request)
-        timeline = codec.timeline(request, v)
-        scoring_inputs = codec.scoring_inputs(request, v)
+        case = request_codec.case_facts(request, v, conduct_ended, result_on, cleared)
+        permits = request_codec.permit_limits(request, v)
+        actor_bases = request_codec.actor_bases(request, v)
+        fact_units = request_codec.fact_units(request)
+        act_groups = request_codec.act_groups(request)
+        timeline = request_codec.timeline(request, v)
+        scoring_inputs = disposition_codec.scoring_inputs(request, v)
         v.check()
         assert conduct_on is not None and decided_on is not None  # check() 已擋下
 
@@ -136,7 +138,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                 conduct_on,
                 decided_on,
                 case,
-                codec.measurements(request),
+                request_codec.measurements(request),
                 permits,
                 actor_bases,
                 fact_units,
@@ -187,7 +189,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                     *,
                     include_audit: bool = False,
                 ) -> pb.Outcome:
-                    ids = codec.statement_ids(result)
+                    ids = outcome_codec.statement_ids(result)
                     where = annotation_read.sources(conn, ids, on)
                     used = annotation_read.definition_sources(
                         conn, {d for _, d in result.definitions_used}, on
@@ -195,11 +197,13 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                     # 行政規則以處分日判斷是否已發布、尚未停止（釋字第 287 號），各組陳述皆同
                     guidance = annotation_read.guidance_for(conn, ids, decided_on)
                     audit_res = (
-                        codec.disposition_audit(request, result.scoring_results)
+                        disposition_codec.disposition_audit(request, result.scoring_results)
                         if include_audit
                         else None
                     )
-                    return codec.outcome(result, where, uncovered, used, guidance, audit_res)
+                    return outcome_codec.outcome(
+                        result, where, uncovered, used, guidance, audit_res
+                    )
 
                 return pb.EvaluateResponse(
                     at_decision=outcome(

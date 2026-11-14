@@ -13,9 +13,10 @@ from typing import NamedTuple
 
 from envcite.ontology.v2 import ontology_pb2 as ont_pb
 from envcite.ontology.v2 import reasoning_pb2 as pb
-from envcite_ontology import reasoning_codec as codec
 from envcite_ontology.db import Conn, fetch
 from envcite_ontology.reasoning.facts.statements import Invalidated
+from envcite_ontology.reasoning_codec import enums
+from envcite_ontology.reasoning_codec import outcome as outcome_codec
 from envcite_ontology.store.records import LANGUAGE
 
 _STATEMENTS = """
@@ -221,7 +222,7 @@ def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListSta
     """資源 `resource_id` 在 `on`（None 為今日）有效、已確認的陳述。"""
     params = {"resource": resource_id, "language": LANGUAGE, "on": on or date.today()}
     invalidated = [
-        codec.invalidated(
+        outcome_codec.invalidated(
             Invalidated(r.statement_id, r.version_iri, r.ruling_no, r.invalid_from, r.partial)
         )
         for r in fetch(conn, _INVALIDATED, params, _InvalidatedRow)
@@ -235,20 +236,20 @@ def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListSta
     statements: dict[int, pb.Statement] = {}
     for row in rows:
         statement = pb.Statement(
-            id=row.id, kind=codec.STATEMENT_KIND[row.kind], version_iri=row.version_iri
+            id=row.id, kind=enums.STATEMENT_KIND[row.kind], version_iri=row.version_iri
         )
         if row.modality is not None:
-            statement.modality = codec.NORM_MODALITY[row.modality]
+            statement.modality = enums.NORM_MODALITY[row.modality]
         statements[row.id] = statement
 
     for slot in fetch(conn, _SLOTS, by_id, _SlotRow):
-        out = statements[slot.statement_id].slots.add(role=codec.SLOT_ROLE[slot.role])
+        out = statements[slot.statement_id].slots.add(role=enums.SLOT_ROLE[slot.role])
         if slot.concept is not None:
             out.concept = slot.concept
         else:
             out.literal = str(slot.literal)
         if slot.liability is not None:
-            out.liability_basis = codec.LIABILITY_BASIS[slot.liability]
+            out.liability_basis = enums.LIABILITY_BASIS[slot.liability]
 
     _conditions(conn, by_id, statements)
 
@@ -257,7 +258,7 @@ def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListSta
     for sanc in fetch(conn, _SANCTIONS, by_id, _SanctionRow):
         sanction = statements[sanc.statement_id].sanction
         sanction.punishes = sanc.punishes
-        sanction.effect = codec.LEGAL_EFFECT[sanc.effect]
+        sanction.effect = enums.LEGAL_EFFECT[sanc.effect]
         sanction.amount_text = sanc.amount_text or ""
         if sanc.min_amount is not None:
             sanction.min_amount = int(sanc.min_amount)
@@ -268,7 +269,7 @@ def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListSta
     # 前提可能在別的法規（環境講習以他法的處分為前提）：識別碼照列，不限於本次列出的陳述
     for trig in fetch(conn, _TRIGGERS, by_id, _TriggerRow):
         statements[trig.statement_id].sanction.triggers.add(
-            statement_id=trig.trigger, kind=codec.TRIGGER_KIND[trig.kind]
+            statement_id=trig.trigger, kind=enums.TRIGGER_KIND[trig.kind]
         )
 
     return pb.ListStatementsResponse(
@@ -278,7 +279,7 @@ def list_statements(conn: Conn, resource_id: int, on: date | None) -> pb.ListSta
             pb.Override(
                 prevailing=r.prevailing,
                 subordinate=r.subordinate,
-                basis=codec.OVERRIDE_BASIS[r.basis],
+                basis=enums.OVERRIDE_BASIS[r.basis],
             )
             for r in fetch(conn, _OVERRIDES, by_id, _OverrideRow)
         ],
@@ -296,7 +297,7 @@ def _conditions(
         condition = pb.Condition(
             id=r.id,
             concept=r.concept,
-            comparator=codec.COMPARATOR[r.comparator],
+            comparator=enums.COMPARATOR[r.comparator],
             unit=r.unit or "",
             negated=r.negated,
             needs_assessment=r.needs_assessment,
@@ -304,7 +305,7 @@ def _conditions(
             averaging_period=r.averaging or "",
         )
         if r.threshold is not None:
-            condition.value.CopyFrom(codec.decimal(r.threshold))
+            condition.value.CopyFrom(outcome_codec.decimal(r.threshold))
         elif r.value_concept is not None:
             condition.value_concept = r.value_concept
         elif r.delegate_path is not None:
@@ -334,13 +335,13 @@ def _conditions(
 
 def guidance_for(
     conn: Conn, statement_ids: Collection[int], decided: date
-) -> list[codec.GuidanceRef]:
+) -> list[outcome_codec.GuidanceRef]:
     """處分日 `decided` 可附在這些陳述旁的行政規則（`guidance.for_statements`）。"""
     if not statement_ids:
         return []
     params = {"ids": sorted(statement_ids), "decided": decided}
     return [
-        codec.GuidanceRef(
+        outcome_codec.GuidanceRef(
             r.issuer,
             r.document_no,
             r.issued_on,

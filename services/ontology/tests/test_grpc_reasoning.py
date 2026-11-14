@@ -12,6 +12,7 @@ from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc, reasoning_pb2, 
 from envcite_ontology import errors
 from envcite_ontology.annotate import load
 from envcite_ontology.reasoning.facts.chains import Chain, Link
+from envcite_ontology.reasoning_codec import outcome as outcome_codec
 from envcite_ontology.reasoning_service import ReasoningServicer
 from envcite_ontology.store.ontology_store import OntologyStore
 from tests.conftest import call_metadata, identifier
@@ -519,7 +520,6 @@ def test_an_unparseable_number_is_reported_with_its_path(reasoning_stub: Stub) -
 
 def test_codec_carries_the_identifiers_of_central_and_local_laws() -> None:
     """測試推論編碼器原生支援中央與地方雙軌授權鏈與未涵蓋法規識別碼。"""
-    from envcite_ontology import reasoning_codec as codec
     from envcite_ontology.reasoning import Result
 
     central_act = Link(
@@ -535,7 +535,7 @@ def test_codec_carries_the_identifiers_of_central_and_local_laws() -> None:
         gap=None,
     )
     chain = Chain(rooted=True, links=(central_act,))
-    basis = codec._delegation(statement_id=101, chain=chain)
+    basis = outcome_codec._delegation(statement_id=101, chain=chain)
 
     assert basis.statement_id == 101
     assert basis.rooted is True
@@ -574,7 +574,7 @@ def test_codec_carries_the_identifiers_of_central_and_local_laws() -> None:
         ("TW-CENTRAL", "moj_pcode", "O0020001"),
         ("TW-TPE", "local_glrs", "TPE-ENV-001"),
     )
-    out = codec.outcome(result, sources={101: "https://iri"}, uncovered=uncovered)
+    out = outcome_codec.outcome(result, sources={101: "https://iri"}, uncovered=uncovered)
     assert len(out.uncovered_law_identifiers) == 2
     assert out.uncovered_law_identifiers[0].jurisdiction == "TW-CENTRAL"
     assert out.uncovered_law_identifiers[0].local_id == "O0020001"
