@@ -130,25 +130,6 @@ else
                                                    Message="@L["本焦點法規含 {0} 項宣告違憲失效單元（資料來源：憲法法庭；未列出不等於無違憲失效）。", focusNode.InvalidationCount]" />
                                     }
 
-                                    <details class="ep-graph-meta">
-                                        <summary class="ep-graph-meta-toggle">
-                                            <span>@($"{L["圖譜節點"]} {graph.Nodes.Count} · {L["授權連線"]} {graph.Edges.Count}")</span>
-                                        </summary>
-                                        <div class="ep-graph-meta-body">
-                                            <StatGrid Items="GraphStats(graph, focusNode)" />
-
-                                            <div class="ep-graph-legend" aria-label="@L["法規位階圖例"]">
-                                                <button type="button" class="ep-legend-item ep-legend-btn" data-graph-filter-tier="0" aria-pressed="false"><span class="ep-legend-swatch" data-tier="0"></span>@L["Tier 0 憲法"]</button>
-                                                <button type="button" class="ep-legend-item ep-legend-btn" data-graph-filter-tier="1" aria-pressed="false"><span class="ep-legend-swatch" data-tier="1"></span>@L["Tier 1 法律／條例"]</button>
-                                                <button type="button" class="ep-legend-item ep-legend-btn" data-graph-filter-tier="2" aria-pressed="false"><span class="ep-legend-swatch" data-tier="2"></span>@L["Tier 2 法規命令"]</button>
-                                                <button type="button" class="ep-legend-item ep-legend-btn" data-graph-filter-tier="3" aria-pressed="false"><span class="ep-legend-swatch" data-tier="3"></span>@L["Tier 3 再授權規則"]</button>
-                                                <span class="ep-legend-item"><span class="ep-legend-line" data-kind="delegation"></span>@L["法律直接授權"]</span>
-                                                <span class="ep-legend-item"><span class="ep-legend-line" data-kind="sub"></span>@L["再授權"]</span>
-                                                <button type="button" class="ep-legend-item ep-legend-btn" data-graph-filter-tier="invalid" aria-pressed="false"><span class="ep-legend-swatch" data-tier="invalid"></span>@L["違憲失效（憲法法庭）"]</button>
-                                            </div>
-                                        </div>
-                                    </details>
-
                                     @if (graph.Focus is not null)
                                     {
                                         <div class="ep-graph-filters">
@@ -197,26 +178,25 @@ else
                                                 <button type="button" class="ep-preset-chip" data-graph-action="layout-stufenbau" aria-pressed="true">@L["位階分層（Stufenbau）"]</button>
                                                 <button type="button" class="ep-preset-chip" data-graph-action="layout-indented" aria-pressed="false">@L["法律樹結構"]</button>
                                                 <button type="button" class="ep-preset-chip" data-graph-action="layout-concentric" aria-pressed="false">@L["焦點星系（同心圓）"]</button>
-                                                <button type="button" class="ep-preset-chip" data-graph-action="toggle-edge-labels" aria-pressed="false">@L["顯示授權條號"]</button>
                                             </div>
                                             <div class="ep-graph-toolbar-end">
                                                 <input type="search" class="ep-input ep-graph-search" data-graph-search="true"
                                                        placeholder="@L["篩選法規"]" aria-label="@L["篩選法規"]" />
-                                                <div class="ep-graph-zoom-actions">
-                                                    <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-in" aria-label="@L["放大圖譜"]">+</button>
-                                                    <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-out" aria-label="@L["縮小圖譜"]">-</button>
-                                                    <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fit">@L["適應視窗"]</button>
-                                                    <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fullscreen">@L["全螢幕"]</button>
-                                                </div>
                                             </div>
                                         </div>
 
-                                        <p class="ep-graph-guide ep-hint">@L["點擊節點檢視詳情 · 雙擊以此法為中心 · 右鍵快捷選單 · 滾輪縮放 · Esc 收起面板"]</p>
-
                                         <div class="ep-graph-canvas-wrap">
-                                            <div class="ep-graph-swimlanes" data-graph-swimlanes="true" aria-hidden="true"></div>
+                                            <div class="ep-graph-swimlanes" data-graph-swimlanes="true"
+                                                 data-graph-summary="@($"{L["圖譜節點"]} {graph.Nodes.Count} · {L["授權連線"]} {graph.Edges.Count}")"></div>
                                             <div class="ep-graph-canvas" data-ontology-graph="@BuildGraphJson(graph)"
                                                  role="region" aria-label="@L["法律授權知識圖譜"]"></div>
+                                            <div class="ep-graph-floating-controls" role="toolbar" aria-label="@L["圖譜視角控制"]">
+                                                <button type="button" class="ep-preset-chip" data-graph-action="toggle-edge-labels" aria-pressed="false">@L["顯示授權條號"]</button>
+                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-in" aria-label="@L["放大圖譜"]">+</button>
+                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-out" aria-label="@L["縮小圖譜"]">-</button>
+                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fit">@L["適應視窗"]</button>
+                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fullscreen">@L["全螢幕"]</button>
+                                            </div>
                                         </div>
                                     </div>
 
