@@ -366,6 +366,14 @@ public sealed partial class LawCorpus(
             truncatedNote = L["尚有 {n} 部下位法規未納入目前上限；點擊「展開完整」或藍色膠囊可顯示全部。"].Value,
             noEdgesText = L["此範圍內尚無直接授權連線。"].Value,
             selectPrompt = L["點選圖譜中的任一法規範節點檢視法學位階、授權條文依據與關係細節；雙擊節點可直接以其為中心深入展開。"].Value,
+            otherDocType = L["其他授權子法"].Value,
+            expandGroupSuffix = L["點擊展開"].Value,
+            collapseGroupSuffix = L["收合"].Value,
+            inspectAction = L["檢視法學詳情"].Value,
+            copyNameAction = L["複製法規名稱"].Value,
+            toggleGroupAction = L["展開／收合授權子法"].Value,
+            expandAllGroupsAction = L["展開全部子法分組 (+{n})"].Value,
+            collapseAllGroupsAction = L["收合子法分組"].Value,
         };
 
         return JsonSerializer.Serialize(new { nodes, edges, labels });

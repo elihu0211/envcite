@@ -62,7 +62,7 @@
   }
 
   function formatNodeCardLabel(n, labels) {
-    const shortTitle = truncateTitle(n.title, 22);
+    const shortTitle = truncateTitle(n.title, 34);
     const metaParts = [];
     if (n.documentType) metaParts.push(n.documentType);
     if (n.invalidationCount > 0) metaParts.push(`⚠ ${n.invalidationCount}`);
@@ -83,8 +83,12 @@
       outgoingBySource.get(e.source).push(e);
     });
 
-    const shouldGroup = nodes.length > 14;
+    const shouldGroup = nodes.length > 12;
+    const hasFocus = nodes.some((n) => n.focus);
+    const minTotalLeaves = hasFocus && nodes.length <= 22 ? 4 : 2;
     const hiddenNodeIds = new Set();
+    const groupMembership = new Map();
+    const childGroupMap = new Map();
     const groupNodes = [];
     const groupEdges = [];
 
@@ -101,24 +105,17 @@
             return tier >= 2 && childOut.length === 0 && childIn.length === 1;
           });
 
-        if (leafChildren.length <= 5) return;
+        if (leafChildren.length < minTotalLeaves) return;
 
-        const byDocType = new Map();
-        leafChildren.forEach((child) => {
-          const docType = (child.documentType || labels.otherDocType || "其他子法").trim();
-          if (!byDocType.has(docType)) byDocType.set(docType, []);
-          byDocType.get(docType).push(child);
-        });
-
-        byDocType.forEach((groupItems, docType) => {
-          if (groupItems.length < 2) return;
-          const groupId = `grp__${parent.id}__${docType}`;
+        const parentTier = Number.isFinite(parent.hierarchyTier) ? parent.hierarchyTier : 1;
+        const addGroupCapsule = (groupId, displayType, groupItems) => {
           const isExpanded = expandedGroups.has(groupId);
-          const parentTier = Number.isFinite(parent.hierarchyTier) ? parent.hierarchyTier : 1;
+          const expandTxt = labels.expandGroupSuffix || "點擊展開";
+          const collapseTxt = labels.collapseGroupSuffix || "收合";
           groupNodes.push({
             id: groupId,
-            title: `${isExpanded ? "▼" : "▶"} ${docType} (${groupItems.length})`,
-            documentType: docType,
+            title: `${isExpanded ? "▼" : "▶"} ${displayType} (${groupItems.length}) · ${isExpanded ? collapseTxt : expandTxt}`,
+            documentType: displayType,
             hierarchyTier: Math.min(3, parentTier + 1),
             isGroupCapsule: true,
             isExpanded,
@@ -132,10 +129,41 @@
             kind: "group_link",
             anchorArticles: [],
           });
-          if (!isExpanded) {
-            groupItems.forEach((item) => hiddenNodeIds.add(item.id));
+          if (!childGroupMap.has(parent.id)) childGroupMap.set(parent.id, []);
+          childGroupMap.get(parent.id).push({
+            groupId,
+            count: groupItems.length,
+            isExpanded,
+          });
+          groupItems.forEach((item) => {
+            groupMembership.set(item.id, groupId);
+            if (!isExpanded) hiddenNodeIds.add(item.id);
+          });
+        };
+
+        const byDocType = new Map();
+        leafChildren.forEach((child) => {
+          const docType = (child.documentType || labels.otherDocType || "其他授權子法").trim();
+          if (!byDocType.has(docType)) byDocType.set(docType, []);
+          byDocType.get(docType).push(child);
+        });
+
+        const remainingSingletons = [];
+        byDocType.forEach((groupItems, docType) => {
+          if (groupItems.length >= 2) {
+            addGroupCapsule(`grp__${parent.id}__${docType}`, docType, groupItems);
+          } else if (groupItems.length === 1) {
+            remainingSingletons.push(groupItems[0]);
           }
         });
+
+        if (remainingSingletons.length >= 2) {
+          addGroupCapsule(
+            `grp__${parent.id}__OTHER`,
+            labels.otherDocType || "其他授權子法",
+            remainingSingletons,
+          );
+        }
       });
     }
 
@@ -149,14 +177,37 @@
       ...groupEdges,
     ];
 
-    return { visibleNodes, visibleEdges };
+    return { visibleNodes, visibleEdges, groupMembership, childGroupMap };
   }
 
   function computeStufenbauPositions(nodes, edges, containerWidth, labels) {
-    const byId = new Map(nodes.map((n) => [n.id, n]));
-    const parentsMap = new Map(nodes.map((n) => [n.id, []]));
-    const childrenMap = new Map(nodes.map((n) => [n.id, []]));
-    edges.forEach((e) => {
+    if (!nodes || nodes.length === 0) return { positions: new Map(), clusters: [] };
+
+    const clusters = nodes
+      .filter((n) => !n.isGroupCapsule && n.truncatedChildren > 0 && n.expandHref)
+      .map((n) => {
+        const parentTier = Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1;
+        return {
+          id: `cluster__${n.id}`,
+          parentId: n.id,
+          hierarchyTier: Math.min(3, parentTier + 1),
+          localId: `~cluster__${n.localId || n.id}`,
+          label: `+${n.truncatedChildren} ${labels.clusterSuffix || "部授權法規（點擊展開）"}`,
+          expandHref: n.expandHref,
+          isClusterStub: true,
+        };
+      });
+
+    const layoutNodes = [...nodes, ...clusters];
+    const layoutEdges = [
+      ...edges,
+      ...clusters.map((c) => ({ source: c.parentId, target: c.id })),
+    ];
+
+    const byId = new Map(layoutNodes.map((n) => [n.id, n]));
+    const parentsMap = new Map(layoutNodes.map((n) => [n.id, []]));
+    const childrenMap = new Map(layoutNodes.map((n) => [n.id, []]));
+    layoutEdges.forEach((e) => {
       if (byId.has(e.source) && byId.has(e.target)) {
         parentsMap.get(e.target).push(e.source);
         childrenMap.get(e.source).push(e.target);
@@ -164,26 +215,28 @@
     });
 
     const tiers = Array.from(
-      new Set(nodes.map((n) => (Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1))),
+      new Set(layoutNodes.map((n) => (Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1))),
     ).sort((a, b) => a - b);
 
-    const tierGapX = 320;
-    const rowGapY = 86;
+    const tierGapX = 360;
+    const rowGapY = 104;
     const positions = new Map();
     const yLookup = new Map();
     const tierBuckets = new Map();
 
     tiers.forEach((tier, tierIdx) => {
-      const tierNodes = nodes.filter(
+      const tierNodes = layoutNodes.filter(
         (n) => (Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1) === tier,
       );
+      const kindRank = (n) => (n.isClusterStub ? 2 : n.isGroupCapsule ? 1 : 0);
       tierNodes.sort((a, b) => {
         const pA = parentsMap.get(a.id).filter((pid) => yLookup.has(pid));
         const pB = parentsMap.get(b.id).filter((pid) => yLookup.has(pid));
         const avgA = pA.length > 0 ? pA.reduce((sum, pid) => sum + yLookup.get(pid), 0) / pA.length : 0;
         const avgB = pB.length > 0 ? pB.reduce((sum, pid) => sum + yLookup.get(pid), 0) / pB.length : 0;
         if (Math.abs(avgA - avgB) > 1) return avgA - avgB;
-        if (Boolean(a.isGroupCapsule) !== Boolean(b.isGroupCapsule)) return a.isGroupCapsule ? -1 : 1;
+        const rankDiff = kindRank(a) - kindRank(b);
+        if (rankDiff !== 0) return rankDiff;
         if (Boolean(a.focus) !== Boolean(b.focus)) return a.focus ? -1 : 1;
         if ((b.totalChildren || 0) !== (a.totalChildren || 0)) return (b.totalChildren || 0) - (a.totalChildren || 0);
         return (a.localId || a.id || "").localeCompare(b.localId || b.id || "");
@@ -227,20 +280,6 @@
       });
     }
 
-    if (nodes.length === 0) return { positions, clusters: [] };
-    const clusters = nodes
-      .filter((n) => !n.isGroupCapsule && n.truncatedChildren > 0 && n.expandHref)
-      .map((n) => {
-        const pPos = positions.get(n.id) || { x: 0, y: 0 };
-        const clusterId = `cluster__${n.id}`;
-        positions.set(clusterId, { x: pPos.x + tierGapX, y: pPos.y });
-        return {
-          id: clusterId,
-          parentId: n.id,
-          label: `+${n.truncatedChildren} ${labels.clusterSuffix || "部授權法規（點擊展開）"}`,
-          expandHref: n.expandHref,
-        };
-      });
     return { positions, clusters };
   }
 
@@ -264,7 +303,7 @@
       const b = nodeMap.get(bId);
       const tierDiff = (a?.hierarchyTier ?? 99) - (b?.hierarchyTier ?? 99);
       if (tierDiff !== 0) return tierDiff;
-      return String(a?.title || aId).localeCompare(String(b?.title || bId), "zh-Hant");
+      return String(a?.title || a?.label || aId).localeCompare(String(b?.title || b?.label || bId), "zh-Hant");
     };
 
     const roots = nodes
@@ -278,7 +317,7 @@
     function visit(id, depth) {
       if (visited.has(id)) return;
       visited.add(id);
-      positions.set(id, { x: depth * 110, y: row * 82 });
+      positions.set(id, { x: depth * 124, y: row * 94 });
       row += 1;
       const children = (childrenByParent.get(id) || []).slice().sort(byTierThenTitle);
       for (const childId of children) {
@@ -328,10 +367,10 @@
   function nodeColors(d, palette) {
     if (d.isCluster === "yes") {
       return {
-        fill: palette.surfaceMuted,
+        fill: d.isExpanded ? palette.primaryTint : palette.surfaceRaised,
         stroke: palette.primary,
-        lineWidth: 1.5,
-        lineDash: [5, 4],
+        lineWidth: 1.8,
+        lineDash: d.isExpanded ? undefined : [5, 4],
         labelFill: palette.primary,
         fontWeight: 600,
       };
@@ -347,26 +386,26 @@
     }
     if ((d.invalidations || 0) > 0) {
       return {
-        fill: palette.errorTint,
+        fill: palette.surfaceRaised,
         stroke: palette.error,
-        lineWidth: 2.2,
+        lineWidth: 2.4,
         labelFill: palette.text,
         fontWeight: 600,
       };
     }
     if (d.tier === 0) {
-      return { fill: palette.warningTint, stroke: palette.warning, lineWidth: 2, labelFill: palette.text, fontWeight: 600 };
+      return { fill: palette.surfaceRaised, stroke: palette.warning, lineWidth: 2.2, labelFill: palette.text, fontWeight: 600 };
     }
     if (d.tier === 1) {
-      return { fill: palette.primaryTint, stroke: palette.primary, lineWidth: 2, labelFill: palette.text, fontWeight: 600 };
+      return { fill: palette.surfaceRaised, stroke: palette.primary, lineWidth: 2.2, labelFill: palette.text, fontWeight: 600 };
     }
     if (d.tier === 2) {
-      return { fill: palette.infoTint, stroke: palette.info, lineWidth: 1.5, labelFill: palette.text, fontWeight: 500 };
+      return { fill: palette.surfaceRaised, stroke: palette.info, lineWidth: 1.8, labelFill: palette.text, fontWeight: 500 };
     }
     return {
-      fill: palette.accentTint,
+      fill: palette.surfaceRaised,
       stroke: palette.accent,
-      lineWidth: 1.5,
+      lineWidth: 1.8,
       lineDash: [5, 3],
       labelFill: palette.text,
       fontWeight: 500,
@@ -396,17 +435,19 @@
             style: {
               x: pos.x,
               y: pos.y,
-              size: [204, 42],
-              radius: 20,
-              fill: n.isExpanded ? palette.primaryTint : c.fill,
+              size: [232, 42],
+              radius: 21,
+              fill: c.fill,
               stroke: c.stroke,
               lineWidth: c.lineWidth,
-              lineDash: n.isExpanded ? undefined : c.lineDash,
+              lineDash: c.lineDash,
               ports: [{ key: "in", placement: [0, 0.5] }, { key: "out", placement: [1, 0.5] }],
               labelText: n.title,
               labelFill: c.labelFill,
               labelFontSize: 12,
               labelFontWeight: 600,
+              labelMaxWidth: 212,
+              labelWordWrap: true,
               labelPlacement: "center",
               labelTextAlign: "center",
               labelTextBaseline: "middle",
@@ -430,22 +471,23 @@
           style: {
             x: pos.x,
             y: pos.y,
-            size: n.focus ? [220, 72] : [208, 66],
+            size: n.focus ? [264, 82] : [252, 76],
             radius: 10,
             fill: c.fill,
             stroke: c.stroke,
             lineWidth: c.lineWidth,
             lineDash: c.lineDash || undefined,
             ports: [{ key: "in", placement: [0, 0.5] }, { key: "out", placement: [1, 0.5] }],
-            shadowColor: "rgba(0, 0, 0, 0.14)",
-            shadowBlur: n.focus ? 16 : 8,
+            shadowColor: "rgba(0, 0, 0, 0.18)",
+            shadowBlur: n.focus ? 18 : 10,
             shadowOffsetY: 3,
             labelText: data.cardLabel,
             labelFill: c.labelFill,
             labelFontSize: 12,
             labelFontWeight: c.fontWeight,
-            labelLineHeight: 17,
-            labelMaxWidth: 186,
+            labelLineHeight: 16,
+            labelMaxWidth: 228,
+            labelMaxLines: 3,
             labelWordWrap: true,
             labelPlacement: "center",
             labelTextAlign: "center",
@@ -471,8 +513,8 @@
           style: {
             x: pos.x,
             y: pos.y,
-            size: [204, 40],
-            radius: 20,
+            size: [232, 42],
+            radius: 21,
             fill: c.fill,
             stroke: c.stroke,
             lineWidth: c.lineWidth,
@@ -482,6 +524,8 @@
             labelFill: c.labelFill,
             labelFontSize: 12,
             labelFontWeight: 600,
+            labelMaxWidth: 212,
+            labelWordWrap: true,
             labelPlacement: "center",
             labelTextAlign: "center",
             labelTextBaseline: "middle",
@@ -534,7 +578,7 @@
     return el;
   }
 
-  function renderInspector(inspectorEl, rawNode, allNodes, allEdges, labels) {
+  function renderInspector(inspectorEl, rawNode, allNodes, allEdges, labels, callbacks) {
     if (!inspectorEl) return;
     clearEl(inspectorEl);
 
@@ -579,8 +623,20 @@
     }
 
     const actions = addEl(inspectorEl, "div", "ep-inspector-actions");
+    const nodeGroups = callbacks?.getNodeGroups ? callbacks.getNodeGroups(rawNode.id) : [];
+    if (nodeGroups.length > 0 && callbacks?.toggleNodeGroups) {
+      const hiddenCount = nodeGroups.reduce((sum, g) => sum + (g.isExpanded ? 0 : g.count), 0);
+      const toggleLabel = hiddenCount > 0
+        ? (labels.expandAllGroupsAction || "展開全部子法分組 (+{n})").replace("{n}", String(hiddenCount))
+        : (labels.collapseAllGroupsAction || "收合子法分組");
+      const toggleBtn = addEl(actions, "button", "ep-btn ep-btn-primary", toggleLabel);
+      toggleBtn.type = "button";
+      toggleBtn.addEventListener("click", () => {
+        callbacks.toggleNodeGroups(rawNode.id);
+      });
+    }
     if (rawNode.focusHref && !rawNode.focus) {
-      const focusLink = addEl(actions, "a", "ep-btn ep-btn-primary", labels.focusButton || "以此法為中心重建圖譜");
+      const focusLink = addEl(actions, "a", nodeGroups.length > 0 ? "ep-btn ep-btn-quiet" : "ep-btn ep-btn-primary", labels.focusButton || "以此法為中心重建圖譜");
       focusLink.href = rawNode.focusHref;
     }
     if (rawNode.structureHref) {
@@ -653,11 +709,13 @@
     let showEdgeLabels = edges.length <= 16;
     let selectedNodeId = null;
     const expandedGroups = new Set();
+    let visibleModelCache = null;
 
     const palette = themePalette();
 
     function computeCurrentGraphData() {
-      const { visibleNodes, visibleEdges } = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+      visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+      const { visibleNodes, visibleEdges } = visibleModelCache;
       const { positions, clusters } = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
       return buildG6Data(visibleNodes, visibleEdges, clusters, positions, themePalette(), labels);
     }
@@ -672,23 +730,56 @@
       const usePorts = currentLayout === "stufenbau";
       return {
         stroke: isSub ? pal.warning : isClusterLink ? pal.primary : pal.borderControl,
-        lineWidth: isClusterLink ? 1.5 : 1.8,
-        lineDash: isSub ? [6, 4] : isClusterLink ? [4, 4] : undefined,
+        lineWidth: isClusterLink ? 1.6 : 1.9,
+        lineDash: isSub ? [6, 4] : isClusterLink ? [5, 4] : undefined,
         endArrow: !isClusterLink,
         endArrowSize: 7,
         sourcePort: usePorts ? "out" : undefined,
         targetPort: usePorts ? "in" : undefined,
-        opacity: isClusterLink ? 0.55 : 0.42,
+        opacity: isClusterLink ? 0.72 : 0.65,
         labelText: showEdgeLabels ? (d.data?.anchorLabel || "") : "",
-        labelFill: pal.textSecondary,
+        labelFill: pal.text,
         labelFontSize: 11,
+        labelFontWeight: 600,
+        labelAutoRotate: false,
+        labelWordWrap: true,
+        labelMaxWidth: 128,
         labelBackground: true,
-        labelBackgroundFill: pal.surface,
-        labelBackgroundOpacity: 0.9,
-        labelPadding: [2, 5],
+        labelBackgroundFill: pal.surfaceRaised,
+        labelBackgroundFillOpacity: 0.94,
+        labelBackgroundStroke: isSub ? pal.warning : pal.borderSubtle,
+        labelBackgroundLineWidth: 1,
+        labelPadding: [2, 6],
         labelBackgroundRadius: 4,
       };
     };
+
+    function buildEdgeConfig(mode, pal) {
+      return {
+        type: mode === "concentric" ? "quadratic" : "cubic-horizontal",
+        style: edgeStyleMapper,
+        state: {
+          active: {
+            lineWidth: 2.8,
+            stroke: pal.primary,
+            opacity: 1,
+            labelText: (d) => d.data?.anchorLabel || "",
+            labelFill: pal.text,
+            labelAutoRotate: false,
+            labelWordWrap: true,
+            labelMaxWidth: 128,
+            labelBackground: true,
+            labelBackgroundFill: pal.surfaceRaised,
+            labelBackgroundFillOpacity: 0.96,
+            labelBackgroundRadius: 4,
+            labelPadding: [2, 6],
+          },
+          inactive: {
+            opacity: 0.22,
+          },
+        },
+      };
+    }
 
     const graph = new window.G6.Graph({
       container,
@@ -701,35 +792,21 @@
         type: "rect",
         state: {
           selected: {
-            lineWidth: 3.2,
-            stroke: palette.text,
-            shadowColor: "rgba(0, 0, 0, 0.28)",
-            shadowBlur: 18,
+            lineWidth: 3.4,
+            stroke: palette.primary,
+            shadowColor: "rgba(0, 0, 0, 0.34)",
+            shadowBlur: 20,
           },
           active: {
             lineWidth: 2.6,
             stroke: palette.primary,
           },
           inactive: {
-            opacity: 0.28,
+            opacity: 0.45,
           },
         },
       },
-      edge: {
-        type: currentLayout === "stufenbau" ? "cubic-horizontal" : "quadratic",
-        style: edgeStyleMapper,
-        state: {
-          active: {
-            lineWidth: 2.8,
-            stroke: palette.primary,
-            opacity: 1,
-            labelText: (d) => d.data?.anchorLabel || "",
-          },
-          inactive: {
-            opacity: 0.14,
-          },
-        },
-      },
+      edge: buildEdgeConfig(currentLayout, palette),
       behaviors: [
         "drag-canvas",
         "zoom-canvas",
@@ -747,6 +824,8 @@
             if (e?.view?.setCursor) e.view.setCursor("default");
             if (selectedNodeId) {
               selectNodeById(selectedNodeId);
+            } else {
+              clearSelectionStates();
             }
           },
         },
@@ -783,23 +862,33 @@
           getItems: (e) => {
             const nodeId = e?.target?.id;
             const datum = nodeId ? graph.getNodeData(nodeId) : null;
+            if (datum?.data?.isGroupCapsule === "yes") {
+              return [{ name: labels.toggleGroupAction || "展開／收合授權子法", value: "toggle-capsule" }];
+            }
             const raw = datum?.data?.raw;
-            const items = [{ name: "檢視法學詳情", value: "inspect" }];
+            const items = [{ name: labels.inspectAction || "檢視法學詳情", value: "inspect" }];
+            if (raw && (visibleModelCache?.childGroupMap.get(raw.id)?.length || 0) > 0) {
+              items.push({ name: labels.toggleGroupAction || "展開／收合授權子法", value: "toggle-groups" });
+            }
             if (raw?.focusHref && !raw.focus) {
-              items.push({ name: "以此法為中心重建圖譜", value: "focus" });
+              items.push({ name: labels.focusButton || "以此法為中心重建圖譜", value: "focus" });
             }
             if (raw?.structureHref) {
-              items.push({ name: "檢視編章節條文", value: "structure" });
+              items.push({ name: labels.structureButton || "檢視編章節條文", value: "structure" });
             }
-            items.push({ name: "複製法規名稱", value: "copy" });
+            items.push({ name: labels.copyNameAction || "複製法規名稱", value: "copy" });
             return items;
           },
-          onClick: (value, target, current) => {
+          onClick: async (value, target, current) => {
             const nodeId = current?.id;
             if (!nodeId) return;
             const datum = graph.getNodeData(nodeId);
             const raw = datum?.data?.raw;
-            if (value === "inspect") {
+            if (value === "toggle-capsule" && datum?.data?.groupId) {
+              await toggleSingleGroup(datum.data.groupId, datum.data.parentId);
+            } else if (value === "toggle-groups") {
+              await toggleGroupsForNode(nodeId);
+            } else if (value === "inspect") {
               selectNodeById(nodeId);
               if (host) host.dataset.inspectorOpen = "true";
             } else if (value === "focus" && raw?.focusHref) {
@@ -822,8 +911,8 @@
     async function fitViewport({ forceFitAll = false, focusTargetId = null } = {}) {
       try {
         await graph.fitView(undefined, false);
-        if (!forceFitAll && graph.getZoom() < 0.72) {
-          await graph.zoomTo(0.78, false);
+        if (!forceFitAll && graph.getZoom() < 0.56) {
+          await graph.zoomTo(0.68, false);
           const target = focusTargetId
             || selectedNodeId
             || (nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0])?.id;
@@ -928,10 +1017,53 @@
     }
 
     function clearSelectionStates() {
+      const focusNode = nodes.find((n) => n.focus) || null;
       const states = {};
-      graph.getNodeData().forEach((n) => { states[n.id] = []; });
+      graph.getNodeData().forEach((n) => {
+        states[n.id] = (focusNode && n.id === focusNode.id) ? ["selected"] : [];
+      });
       graph.getEdgeData().forEach((e) => { states[e.id] = []; });
       graph.setElementState(states, false);
+    }
+
+    const inspectorCallbacks = {
+      getNodeGroups: (id) => visibleModelCache?.childGroupMap.get(id) || [],
+      toggleNodeGroups: (id) => { toggleGroupsForNode(id); },
+    };
+
+    function collectLineage(rootId) {
+      const inAdj = new Map();
+      const outAdj = new Map();
+      graph.getEdgeData().forEach((e) => {
+        if (!inAdj.has(e.target)) inAdj.set(e.target, []);
+        inAdj.get(e.target).push(e);
+        if (!outAdj.has(e.source)) outAdj.set(e.source, []);
+        outAdj.get(e.source).push(e);
+      });
+
+      const connectedEdgeIds = new Set();
+      const lineageNodeIds = new Set([rootId]);
+
+      const walk = (startId, adj, nextKey) => {
+        const visited = new Set([startId]);
+        const queue = [startId];
+        while (queue.length > 0) {
+          const cur = queue.shift();
+          for (const edge of adj.get(cur) || []) {
+            connectedEdgeIds.add(edge.id);
+            const next = edge[nextKey];
+            lineageNodeIds.add(next);
+            if (!visited.has(next)) {
+              visited.add(next);
+              queue.push(next);
+            }
+          }
+        }
+      };
+
+      walk(rootId, inAdj, "source");
+      walk(rootId, outAdj, "target");
+      return { connectedEdgeIds, lineageNodeIds };
     }
 
     function selectNodeById(nodeId) {
@@ -939,48 +1071,68 @@
       if (!nodeDatum) {
         selectedNodeId = null;
         clearSelectionStates();
-        renderInspector(inspectorEl, null, nodes, edges, labels);
+        renderInspector(inspectorEl, null, nodes, edges, labels, inspectorCallbacks);
         return;
       }
       if (nodeDatum.data?.isCluster === "yes") return;
 
       selectedNodeId = nodeId;
-      const connectedEdgeIds = new Set();
-      const neighborNodeIds = new Set([nodeId]);
-      graph.getEdgeData().forEach((e) => {
-        if (e.source === nodeId || e.target === nodeId) {
-          connectedEdgeIds.add(e.id);
-          neighborNodeIds.add(e.source);
-          neighborNodeIds.add(e.target);
-        }
-      });
+      const { connectedEdgeIds, lineageNodeIds } = collectLineage(nodeId);
 
       const states = {};
       graph.getNodeData().forEach((n) => {
         if (n.id === nodeId) states[n.id] = ["selected"];
-        else if (neighborNodeIds.has(n.id)) states[n.id] = ["active"];
+        else if (lineageNodeIds.has(n.id)) states[n.id] = ["active"];
         else states[n.id] = ["inactive"];
       });
       graph.getEdgeData().forEach((e) => {
         states[e.id] = connectedEdgeIds.has(e.id) ? ["active"] : ["inactive"];
       });
       graph.setElementState(states, false);
-      renderInspector(inspectorEl, nodeDatum.data?.raw || null, nodes, edges, labels);
+      renderInspector(inspectorEl, nodeDatum.data?.raw || null, nodes, edges, labels, inspectorCallbacks);
+    }
+
+    async function toggleSingleGroup(groupId, parentId) {
+      if (!groupId) return;
+      if (expandedGroups.has(groupId)) {
+        expandedGroups.delete(groupId);
+      } else {
+        expandedGroups.add(groupId);
+      }
+      graph.setData(computeCurrentGraphData());
+      await graph.render();
+      await applyLayout(currentLayout, groupId || parentId);
+      if (parentId && graph.getNodeData(parentId)) {
+        selectNodeById(parentId);
+      }
+    }
+
+    async function toggleGroupsForNode(nodeId) {
+      const groups = visibleModelCache?.childGroupMap.get(nodeId) || [];
+      if (groups.length === 0) return;
+      const anyCollapsed = groups.some((g) => !expandedGroups.has(g.groupId));
+      groups.forEach((g) => {
+        if (anyCollapsed) expandedGroups.add(g.groupId);
+        else expandedGroups.delete(g.groupId);
+      });
+      graph.setData(computeCurrentGraphData());
+      await graph.render();
+      await applyLayout(currentLayout, nodeId);
+      if (graph.getNodeData(nodeId)) {
+        selectNodeById(nodeId);
+      }
     }
 
     async function applyLayout(mode, focusTargetId = null) {
       currentLayout = mode;
-      graph.setEdge({
-        type: mode === "concentric" ? "quadratic" : "cubic-horizontal",
-        style: edgeStyleMapper,
-      });
+      graph.setEdge(buildEdgeConfig(mode, themePalette()));
       if (mode === "concentric") {
         const focusNode = nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0];
         graph.setLayout({
           type: "concentric",
           preventOverlap: true,
-          nodeSize: [216, 76],
-          minNodeSpacing: 44,
+          nodeSize: [264, 88],
+          minNodeSpacing: 52,
           sortBy: (d) => {
             if (d.data?.isCluster === "yes") return 1;
             const raw = d.data?.raw;
@@ -992,8 +1144,13 @@
         });
         await graph.layout();
       } else if (mode === "indented") {
-        const { visibleNodes, visibleEdges } = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
-        const positions = computeIndentedPositions(visibleNodes, visibleEdges);
+        visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+        const { visibleNodes, visibleEdges } = visibleModelCache;
+        const { clusters } = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
+        const positions = computeIndentedPositions(
+          [...visibleNodes, ...clusters],
+          [...visibleEdges, ...clusters.map((c) => ({ source: c.parentId, target: c.id }))],
+        );
         const updates = [];
         graph.getNodeData().forEach((n) => {
           const p = positions.get(n.id);
@@ -1004,7 +1161,8 @@
           await graph.draw();
         }
       } else {
-        const { visibleNodes, visibleEdges } = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+        visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+        const { visibleNodes, visibleEdges } = visibleModelCache;
         const updated = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
         const updates = [];
         graph.getNodeData().forEach((n) => {
@@ -1016,7 +1174,11 @@
           await graph.draw();
         }
       }
-      await fitViewport({ focusTargetId });
+      const focusNode = nodes.find((n) => n.focus);
+      await fitViewport({
+        forceFitAll: (visibleModelCache?.visibleNodes.length || 0) <= 28 && !focusNode && !focusTargetId,
+        focusTargetId,
+      });
       updateToolbarState();
     }
 
@@ -1025,19 +1187,7 @@
       if (!id) return;
       const nodeDatum = graph.getNodeData(id);
       if (nodeDatum?.data?.isGroupCapsule === "yes") {
-        const groupId = nodeDatum.data.groupId;
-        const parentId = nodeDatum.data.parentId;
-        if (expandedGroups.has(groupId)) {
-          expandedGroups.delete(groupId);
-        } else {
-          expandedGroups.add(groupId);
-        }
-        graph.setData(computeCurrentGraphData());
-        await graph.render();
-        await applyLayout(currentLayout, groupId || parentId);
-        if (parentId && graph.getNodeData(parentId)) {
-          selectNodeById(parentId);
-        }
+        await toggleSingleGroup(nodeDatum.data.groupId, nodeDatum.data.parentId);
         return;
       }
       if (nodeDatum?.data?.isCluster === "yes") {
@@ -1062,8 +1212,9 @@
       selectedNodeId = null;
       if (host) host.dataset.inspectorOpen = "false";
       clearSelectionStates();
-      const initial = nodes.find((n) => n.focus) || nodes[0] || null;
-      renderInspector(inspectorEl, initial, nodes, edges, labels);
+      const focusNode = nodes.find((n) => n.focus) || null;
+      const initial = focusNode || nodes.find((n) => n.hierarchyTier === 1) || nodes[0] || null;
+      renderInspector(inspectorEl, initial, nodes, edges, labels, inspectorCallbacks);
     });
 
     if (searchEl) {
@@ -1073,6 +1224,7 @@
         searchTimer = window.setTimeout(async () => {
           const term = (searchEl.value || "").trim().toLowerCase();
           if (!term) {
+            selectedNodeId = null;
             clearSelectionStates();
             return;
           }
@@ -1083,10 +1235,9 @@
           if (!match) return;
 
           if (!graph.getNodeData(match.id)) {
-            const parentEdge = edges.find((e) => e.target === match.id);
-            const docType = (match.documentType || labels.otherDocType || "其他子法").trim();
-            if (parentEdge) {
-              expandedGroups.add(`grp__${parentEdge.source}__${docType}`);
+            const targetGroupId = visibleModelCache?.groupMembership.get(match.id);
+            if (targetGroupId) {
+              expandedGroups.add(targetGroupId);
               graph.setData(computeCurrentGraphData());
               await graph.render();
               await applyLayout(currentLayout, match.id);
@@ -1104,15 +1255,20 @@
       });
     }
 
-    graph.render().then(() => {
-      const initialNode = nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0] || null;
+    graph.render().then(async () => {
+      const focusNode = nodes.find((n) => n.focus) || null;
+      const initialNode = focusNode || nodes.find((n) => n.hierarchyTier === 1) || nodes[0] || null;
       if (initialNode) {
-        selectNodeById(initialNode.id);
+        renderInspector(inspectorEl, initialNode, nodes, edges, labels, inspectorCallbacks);
       }
+      clearSelectionStates();
       if (currentLayout === "concentric") {
-        applyLayout("concentric");
+        await applyLayout("concentric", focusNode?.id || null);
       } else {
-        fitViewport();
+        await fitViewport({
+          forceFitAll: (visibleModelCache?.visibleNodes.length || 0) <= 28 && !focusNode,
+          focusTargetId: (focusNode || initialNode)?.id || null,
+        });
         updateToolbarState();
       }
     }).catch(() => {});
@@ -1157,10 +1313,7 @@
         else if (action === "layout-indented") applyLayout("indented");
         else if (action === "toggle-edge-labels") {
           showEdgeLabels = !showEdgeLabels;
-          activeGraph.setEdge({
-            type: currentLayout === "concentric" ? "quadratic" : "cubic-horizontal",
-            style: edgeStyleMapper,
-          });
+          activeGraph.setEdge(buildEdgeConfig(currentLayout, themePalette()));
           activeGraph.draw().catch(() => {});
           updateToolbarState();
         }
@@ -1223,7 +1376,7 @@
           };
         });
         graph.updateNodeData(nodeUpdates);
-        graph.setEdge({ type: "quadratic", style: edgeStyleMapper });
+        graph.setEdge(buildEdgeConfig(currentLayout, nextPalette));
         graph.draw().catch(() => {});
         if (selectedNodeId) selectNodeById(selectedNodeId);
       };

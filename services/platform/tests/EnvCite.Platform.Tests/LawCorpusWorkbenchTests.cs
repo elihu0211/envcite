@@ -38,6 +38,9 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.OK, script.Status);
         Assert.Contains("computeStufenbauPositions", script.Html, StringComparison.Ordinal);
         Assert.Contains("renderInspector", script.Html, StringComparison.Ordinal);
+        Assert.Contains("buildVisibleGraphModel", script.Html, StringComparison.Ordinal);
+        Assert.Contains("collectLineage", script.Html, StringComparison.Ordinal);
+        Assert.Contains("labelAutoRotate: false", script.Html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -110,6 +113,7 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("Concentric Focus", page.Html, StringComparison.Ordinal);
         Assert.Contains("Delegation Graph", page.Html, StringComparison.Ordinal);
         Assert.Contains("Structure & Articles", page.Html, StringComparison.Ordinal);
+        Assert.Contains("Expand All Sub-Groups", page.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("授權知識圖譜", page.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("法規體系與合規", page.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("位階分層", page.Html, StringComparison.Ordinal);
