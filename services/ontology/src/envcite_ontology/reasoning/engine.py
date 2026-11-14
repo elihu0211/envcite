@@ -32,7 +32,6 @@ from typing import Any
 import clingo
 
 from envcite_ontology.db import Conn
-from envcite_ontology.reasoning import scoring
 from envcite_ontology.reasoning.facts.case_inputs import (
     Case,
     Measurements,
@@ -48,6 +47,9 @@ from envcite_ontology.reasoning.facts.case_inputs import (
 )
 from envcite_ontology.reasoning.facts.chains import Chain
 from envcite_ontology.reasoning.facts.statements import Invalidated, statement_facts
+from envcite_ontology.reasoning.scoring.evaluate import evaluate_matrix
+from envcite_ontology.reasoning.scoring.matrices import load_matrices
+from envcite_ontology.reasoning.scoring.models import ScoringInput, ScoringResult
 
 _RULES = resources.files(__package__).joinpath("rules.lp").read_text(encoding="utf-8")
 
@@ -137,7 +139,7 @@ class Result:
     #: 準用關係套用軌跡：(source_statement_id, target_statement_id)
     mutatis_applied: tuple[tuple[int, int], ...] = ()
     #: 裁罰積分／倍數／記點與環境講習試算結果
-    scoring_results: tuple[scoring.ScoringResult, ...] = ()
+    scoring_results: tuple[ScoringResult, ...] = ()
 
 
 def _py(symbol: clingo.Symbol) -> Any:
@@ -164,7 +166,7 @@ def evaluate(
     fact_units: Mapping[str, str] | None = None,
     act_groups: Mapping[str, Sequence[int]] | None = None,
     timeline: PerOccasionTimeline | None = None,
-    scoring_inputs: Sequence[scoring.ScoringInput] = (),
+    scoring_inputs: Sequence[ScoringInput] = (),
 ) -> Result:
     """對 `as_of` 當日有效的陳述與案件事實推論。
 
@@ -250,11 +252,11 @@ def evaluate(
         if given.deduction is None
         else tuple((int(p), given.deduction) for (p,) in get("deduct"))
     )
-    scoring_results: tuple[scoring.ScoringResult, ...] = ()
+    scoring_results: tuple[ScoringResult, ...] = ()
     if scoring_inputs:
-        matrices = scoring.load_matrices(conn, as_of, language)
+        matrices = load_matrices(conn, as_of, language)
         scoring_results = tuple(
-            scoring.evaluate_matrix(matrices[si.matrix_code], si)
+            evaluate_matrix(matrices[si.matrix_code], si)
             for si in scoring_inputs
             if si.matrix_code in matrices
         )

@@ -7,10 +7,12 @@ from decimal import Decimal
 
 from envcite.ontology.v2 import ontology_pb2 as ont_pb
 from envcite.ontology.v2 import reasoning_pb2 as pb
-from envcite_ontology.reasoning import Result, scoring
+from envcite_ontology.reasoning import Result
 from envcite_ontology.reasoning.engine import Penalty
 from envcite_ontology.reasoning.facts.chains import Chain
 from envcite_ontology.reasoning.facts.statements import Invalidated
+from envcite_ontology.reasoning.scoring.audit import DispositionAuditResult
+from envcite_ontology.reasoning.scoring.models import ScoringResult
 from envcite_ontology.reasoning_codec.enums import (
     CONDITION_ROLE,
     DELEGATION_GAP,
@@ -168,7 +170,7 @@ def outcome(
     uncovered: Iterable[tuple[str, str, str]] = (),
     definitions: Mapping[int, tuple[str, str, list[str]]] | None = None,
     guidance: Iterable[GuidanceRef] = (),
-    audit_result: scoring.DispositionAuditResult | None = None,
+    audit_result: DispositionAuditResult | None = None,
 ) -> pb.Outcome:
     """一組推論結果轉成 `Outcome` 訊息。
 
@@ -314,7 +316,7 @@ def outcome(
     return out
 
 
-def scoring_result(sr: scoring.ScoringResult) -> pb.ScoringResult:
+def scoring_result(sr: ScoringResult) -> pb.ScoringResult:
     """處分的評分結果：矩陣、適用的因子與區間、算式摘要。"""
     out = pb.ScoringResult(
         matrix_code=sr.matrix_code,

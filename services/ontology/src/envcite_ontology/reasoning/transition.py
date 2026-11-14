@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from datetime import date
 
 from envcite_ontology.db import Conn
-from envcite_ontology.reasoning import scoring
 from envcite_ontology.reasoning.engine import Result, evaluate
 from envcite_ontology.reasoning.facts.case_inputs import (
     Case,
@@ -26,6 +25,7 @@ from envcite_ontology.reasoning.facts.case_inputs import (
     Permits,
     PerOccasionTimeline,
 )
+from envcite_ontology.reasoning.scoring.models import ScoringInput
 
 _APPLICABLE = """
     SELECT r.statement_id
@@ -136,7 +136,7 @@ def evaluate_across(
     fact_units: Mapping[str, str] | None = None,
     act_groups: Mapping[str, Sequence[int]] | None = None,
     timeline: PerOccasionTimeline | None = None,
-    scoring_inputs: Sequence[scoring.ScoringInput] = (),
+    scoring_inputs: Sequence[ScoringInput] = (),
 ) -> Transition:
     """裁處時之法律，加行為日到裁處日之間每組不同的陳述；裁處權時效一律對裁處日。"""
     if conduct_on > decided_on:

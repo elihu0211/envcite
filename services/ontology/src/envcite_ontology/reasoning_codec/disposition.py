@@ -6,15 +6,19 @@ from typing import Literal, cast
 
 from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite_ontology import errors
-from envcite_ontology.reasoning import scoring
+from envcite_ontology.reasoning.scoring.audit import (
+    DispositionAuditResult,
+    DispositionCitation,
+    DispositionElement,
+    audit_disposition,
+)
+from envcite_ontology.reasoning.scoring.models import ScoringInput, ScoringResult
 from envcite_ontology.reasoning_codec.request import finite_number
 
 
-def scoring_inputs(
-    request: pb.EvaluateRequest, validator: errors.Validator
-) -> list[scoring.ScoringInput]:
+def scoring_inputs(request: pb.EvaluateRequest, validator: errors.Validator) -> list[ScoringInput]:
     """將請求內的 `scoring_inputs` 轉成確定性裁罰計算引擎輸入。"""
-    out: list[scoring.ScoringInput] = []
+    out: list[ScoringInput] = []
     for i, item in enumerate(getattr(request, "scoring_inputs", ())):
         if not item.matrix_code:
             validator.add(f"scoring_inputs[{i}].matrix_code", errors.EMPTY, "matrix_code required")
@@ -31,7 +35,7 @@ def scoring_inputs(
             elif fv.factor_code:
                 factors[str(fv.factor_code)] = num
         out.append(
-            scoring.ScoringInput(
+            ScoringInput(
                 matrix_code=str(item.matrix_code),
                 factors=factors,
                 severe_violation=bool(item.severe_violation),
@@ -53,8 +57,8 @@ def scoring_inputs(
 
 
 def disposition_audit(
-    request: pb.EvaluateRequest, results: Iterable[scoring.ScoringResult]
-) -> scoring.DispositionAuditResult | None:
+    request: pb.EvaluateRequest, results: Iterable[ScoringResult]
+) -> DispositionAuditResult | None:
     """依請求內 `disposition_audit` 與對應試算結果執行 CQ D1–D3 處分書結構檢核。"""
     if not hasattr(request, "HasField") or not request.HasField("disposition_audit"):
         return None
@@ -64,7 +68,7 @@ def disposition_audit(
         None,
     )
     citations = [
-        scoring.DispositionCitation(
+        DispositionCitation(
             citation_text=str(c.citation_text),
             role=cast(
                 Literal[
@@ -81,7 +85,7 @@ def disposition_audit(
         for c in audit_in.citations
     ]
     elements = [
-        scoring.DispositionElement(
+        DispositionElement(
             element_name=str(e.element_name),
             tier=cast(
                 Literal["tier1_elements", "tier2_unlawfulness", "tier3_culpability"],
@@ -104,7 +108,7 @@ def disposition_audit(
         )
         for e in audit_in.elements
     ]
-    return scoring.audit_disposition(
+    return audit_disposition(
         citations,
         elements,
         two_tier_defenses_addressed=bool(audit_in.two_tier_defenses_addressed),
