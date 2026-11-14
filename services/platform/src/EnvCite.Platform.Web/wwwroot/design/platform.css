@@ -5042,6 +5042,35 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     overflow: hidden;
 }
 
+.ep-graph-canvas .g6-tooltip {
+    background: var(--ep-surface-raised) !important;
+    border: 1px solid var(--ep-border-subtle) !important;
+    border-radius: var(--ep-radius-control) !important;
+    color: var(--ep-text) !important;
+    padding: var(--ep-space-2) var(--ep-space-3) !important;
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--ep-text) 18%, transparent) !important;
+    max-inline-size: 20rem;
+    pointer-events: none;
+}
+
+.ep-graph-tooltip {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+    font-size: var(--ep-label-s-size);
+    color: var(--ep-text);
+}
+
+.ep-graph-tooltip-title {
+    font-weight: var(--ep-title-m-weight);
+    color: var(--ep-text);
+}
+
+.ep-graph-tooltip-meta {
+    font-size: var(--ep-label-s-size);
+    color: var(--ep-text-secondary);
+}
+
 @container workbench (width < 48rem) {
     .ep-graph-canvas .g6-minimap {
         display: none !important;
