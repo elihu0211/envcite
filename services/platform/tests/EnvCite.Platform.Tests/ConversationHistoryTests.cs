@@ -155,7 +155,8 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         var theirs = (await bossBrowser.GetAsync(HistoryPage(tenant.Identifier))).Html;
 
         Assert.Contains("class=\"ep-recent\"", mine, StringComparison.Ordinal);
-        Assert.Contains("今天", mine, StringComparison.Ordinal);
+        Assert.DoesNotContain("class=\"ep-side-group\"", mine, StringComparison.Ordinal); // 平面清單，沒有日期分組
+        Assert.DoesNotContain("data-recent-filter", mine, StringComparison.Ordinal);
         Assert.Contains($"href=\"{ConversationPage(tenant.Identifier, first!.Value)}\"", mine, StringComparison.Ordinal);
         Assert.Contains($"href=\"{ConversationPage(tenant.Identifier, second!.Value)}\"", mine, StringComparison.Ordinal);
         Assert.True(

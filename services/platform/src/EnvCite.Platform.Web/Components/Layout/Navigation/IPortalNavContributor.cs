@@ -42,7 +42,6 @@ public static class PortalNavigation
     internal static IServiceCollection AddPortalNavigation(this IServiceCollection services) => services
         .AddPortalNavContributor<QueryNav>()
         .AddPortalNavContributor<OntologyWorkbenchNav>()
-        .AddPortalNavContributor<HistoryNav>()
         .AddPortalNavContributor<MembersNav>()
         .AddPortalNavContributor<DirectoryNav>()
         .AddPortalNavContributor<AccountNav>();

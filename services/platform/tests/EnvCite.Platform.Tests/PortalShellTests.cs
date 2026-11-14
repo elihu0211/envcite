@@ -145,6 +145,11 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
 
         var side = home.Html[actionsPos..footPos];
         Assert.DoesNotContain("class=\"ep-side-group\"", side, StringComparison.Ordinal);
+        Assert.DoesNotContain("data-recent-filter", side, StringComparison.Ordinal); // Claude 式：沒有篩選框
+        // 搜尋是功能區的一列，連到對話紀錄頁（那裡有標題搜尋）；它在功能區裡，不是歷史區的篩選框。
+        var searchPos = side.IndexOf("ep-side-search", StringComparison.Ordinal);
+        Assert.True(searchPos > 0 && searchPos < side.IndexOf("<section class=\"ep-history-empty\"", StringComparison.Ordinal));
+        Assert.Contains($"href=\"{Home(tenant.Identifier)}/history\"", side, StringComparison.Ordinal);
         Assert.Contains("<nav class=\"ep-side-nav\" aria-label=\"服務\"", side, StringComparison.Ordinal);
     }
 
@@ -250,9 +255,8 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.OK, shown.StatusCode);
         Assert.Contains("ep-account-menu", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-composer\"", html, StringComparison.Ordinal);
-        Assert.Contains("data-recent-filter", html, StringComparison.Ordinal);
-        Assert.Contains("ep-recent-jump", html, StringComparison.Ordinal);
-        Assert.Contains("class=\"ep-kbd\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("data-recent-filter", html, StringComparison.Ordinal); // 側欄沒有篩選框，搜尋在對話紀錄頁
+        Assert.Contains("ep-side-search", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-side-new-chat\"", html, StringComparison.Ordinal);
         foreach (var tone in new[] { "neutral", "success", "warning", "error", "info" })
             Assert.Contains($"data-tone=\"{tone}\"", html, StringComparison.Ordinal);

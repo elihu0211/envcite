@@ -19,13 +19,13 @@ public sealed partial class WorkspaceLayout(ITenantDirectory directory, Workspac
     private bool _showMenu;
     private IReadOnlyList<PortalShell.MenuItem> _menuItems = [];
     private IReadOnlyList<PortalShell.NavItem> _navItems = [];
-    private IReadOnlyList<PortalShell.RecentGroup> _recent = [];
+    private IReadOnlyList<PortalShell.RecentConversation> _recent = [];
     private bool _subscribed;
     private int _recentRead;
 
     /// <summary>預先渲染查到的租戶名稱與最近對話，交給互動渲染的第一次繪製：不必先畫沒有名稱、沒有最近對話的外殼，等資料庫回來再補。
     /// 重新連線不還原：資料可能已經變了，要重查。</summary>
-    public sealed record Prerender(string TenantName, IReadOnlyList<PortalShell.RecentGroup> Recent);
+    public sealed record Prerender(string TenantName, IReadOnlyList<PortalShell.RecentConversation> Recent);
 
     [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
     public Prerender? Prerendered { get; set; }
@@ -103,7 +103,7 @@ public sealed partial class WorkspaceLayout(ITenantDirectory directory, Workspac
     /// 讀最近對話。版面初始化、換頁與「問完一題」的通知各自發一次讀取，可能反序完成：只採用最新發出的那一次，
     /// 晚到的舊結果（例如問之前讀的空清單）不蓋掉新的，否則側欄會停在舊的狀態。
     /// </summary>
-    private async Task<IReadOnlyList<PortalShell.RecentGroup>> LatestRecentAsync(ClaimsPrincipal user, string identifier)
+    private async Task<IReadOnlyList<PortalShell.RecentConversation>> LatestRecentAsync(ClaimsPrincipal user, string identifier)
     {
         var read = ++_recentRead;
         var recent = await RecentOfAsync(user, identifier);

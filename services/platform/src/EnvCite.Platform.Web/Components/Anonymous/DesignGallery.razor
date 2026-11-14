@@ -176,8 +176,7 @@
 
     private static readonly IReadOnlyList<PortalShell.NavItem> _nav =
     [
-        new("/design", "查詢", "服務", Exact: true, Icon: Icons.Material.Outlined.Search),
-        new("#history", "對話紀錄", "服務", Icon: Icons.Material.Outlined.Forum),
+        new("/design", "查詢", "服務", Exact: true, Icon: Icons.Material.Outlined.QuestionAnswer),
         new("#members", "成員", "組織", Icon: Icons.Material.Outlined.Group),
         new("#account", "帳號與組織", "組織", Icon: Icons.Material.Outlined.ManageAccounts),
     ];
@@ -188,8 +187,10 @@
         new("#password", "改密碼"),
     ];
 
-    private static readonly IReadOnlyList<PortalShell.RecentGroup> _recent =
+    private static readonly IReadOnlyList<PortalShell.RecentConversation> _recent =
     [
-        new("今天", [new(Guid.Empty, "#chat-1", "固定污染源排放標準查詢", false)]),
+        new(Guid.Empty, "#chat-0", "水污染防治法的罰則", true),
+        new(Guid.Empty, "#chat-1", "固定污染源排放標準查詢", false),
+        new(Guid.Empty, "#chat-2", "事業廢棄物清理計畫書", false),
     ];
 }

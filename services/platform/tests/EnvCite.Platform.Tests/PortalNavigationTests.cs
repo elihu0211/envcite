@@ -32,7 +32,6 @@ public sealed class PortalNavigationTests
             new AccountNav(localizer),
             new DirectoryNav(localizer, new FakeDirectory(directory)),
             new MembersNav(localizer),
-            new HistoryNav(localizer),
             new QueryNav(localizer),
         ];
         return PortalNavigation.Collect(contributors, new PortalNavContext(Home, In(role)));
@@ -43,7 +42,7 @@ public sealed class PortalNavigationTests
     {
         var items = Sidebar(CustomerRoles.Owner);
 
-        Assert.Equal([Home, $"{Home}/history", $"{Home}/members", $"{Home}/directory", $"{Home}/account"], items.Select(i => i.Href));
+        Assert.Equal([Home, $"{Home}/members", $"{Home}/directory", $"{Home}/account"], items.Select(i => i.Href));
         Assert.Equal(["服務", "組織"], items.Select(i => i.Group).Distinct());
     }
 
@@ -66,7 +65,7 @@ public sealed class PortalNavigationTests
     {
         var items = Sidebar(CustomerRoles.Owner, directory: false);
 
-        Assert.Equal([Home, $"{Home}/history", $"{Home}/members", $"{Home}/account"], items.Select(i => i.Href));
+        Assert.Equal([Home, $"{Home}/members", $"{Home}/account"], items.Select(i => i.Href));
     }
 
     [Fact]

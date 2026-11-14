@@ -12,7 +12,7 @@ public sealed partial class PortalLayout(IPortalAccount account)
 
     private ClaimsPrincipal? _user;
 
-    private IReadOnlyList<PortalShell.RecentGroup> _recent = [];
+    private IReadOnlyList<PortalShell.RecentConversation> _recent = [];
 
     private IPortalAccount Account => account;
 
