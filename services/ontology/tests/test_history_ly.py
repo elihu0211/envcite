@@ -15,7 +15,7 @@ from envcite_jobkit import Policy
 from envcite_ontology import history_sync
 from envcite_ontology.acquire import ly_law
 from envcite_ontology.acquire.moj import Moj
-from envcite_ontology.history_sources import Ly, Moenv
+from envcite_ontology.history_sources import Ly, Moenv, Target
 from envcite_ontology.ingest import importer
 from tests import ly_site, moenv_site
 from tests.fake_web import FakeWeb
@@ -131,6 +131,21 @@ def test_a_rerun_in_a_new_session_fetches_only_the_search_and_the_law_page(
     assert conn.execute(
         "SELECT count(*) FROM source.snapshot WHERE feed = 'ly_law'"
     ).fetchone() == (1,)
+
+
+def test_pages_are_reused_only_from_a_previous_snapshot_that_can_be_read() -> None:
+    target = Target(PCODE, TITLE)
+    first = Ly().fetch(_web(), target, None)
+    assert (first.fetched, first.reused) == (5, 0)  # 首頁、檢索、法律頁與過去兩版
+
+    again = Ly().fetch(_web(), target, first.snapshot)
+    assert (again.fetched, again.reused) == (3, 2)
+    assert again.snapshot == first.snapshot
+
+    for unreadable in ('{"title": "an older format"}', "not json"):
+        refetched = Ly().fetch(_web(), target, unreadable)
+        assert (refetched.fetched, refetched.reused) == (5, 0)
+        assert refetched.snapshot == first.snapshot
 
 
 def test_a_law_not_found_by_name_is_unmatched_and_not_written(conn: Conn, tmp_path: Path) -> None:

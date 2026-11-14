@@ -30,7 +30,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any, NamedTuple, cast
+from typing import NamedTuple
 
 import psycopg
 
@@ -180,18 +180,17 @@ def _acquire_one(
     *,
     rescan: bool,
 ) -> None:
-    previous: dict[str, Any] = {}
+    previous: str | None = None
     if not rescan:
-        latest = _latest_bundle(conn, source, root, target.key)
+        previous = _latest_snapshot(conn, source, root, target.key)
         conn.rollback()
-        previous = cast(dict[str, Any], latest.get("versions", {})) if latest else {}
     try:
-        bundle = source.bundle(web, target, previous)
+        fetched = source.fetch(web, target, previous)
     except UnreadablePage as e:
         raise ItemError(f"{target.key}: {e}") from e
-    report.fetched_pages += bundle.pop("_fetched")
-    report.reused_pages += bundle.pop("_reused")
-    data = json.dumps(bundle, ensure_ascii=False, sort_keys=True).encode()
+    report.fetched_pages += fetched.fetched
+    report.reused_pages += fetched.reused
+    data = fetched.snapshot.encode()
     digest = hashlib.sha256(data).digest()
     location = f"{source.feed}/{digest.hex()}"
     path = root / location
@@ -227,9 +226,8 @@ class _LocationRow(NamedTuple):
     location: str
 
 
-def _latest_bundle(
-    conn: Conn, source: HistorySource, root: Path, key: str
-) -> dict[str, Any] | None:
+def _latest_snapshot(conn: Conn, source: HistorySource, root: Path, key: str) -> str | None:
+    """這部法規上一次的快照文字；沒有（或檔案不在）為 None。"""
     row = fetch_one(
         conn,
         "SELECT s.location FROM source.item AS i"
@@ -241,7 +239,7 @@ def _latest_bundle(
     if row is None:
         return None
     path = root / row.location
-    return cast(dict[str, Any], json.loads(path.read_text())) if path.exists() else None
+    return path.read_text() if path.exists() else None
 
 
 @dataclass
@@ -295,7 +293,7 @@ def _prepare_all(
         if not path.exists():
             raise BatchRejected(f"snapshot file missing: {item.location}")
         try:
-            anchor, plan = _plan_item(conn, source, json.loads(path.read_text()))
+            anchor, plan = _plan_item(conn, source, path.read_text())
         except Skip:
             report.skipped += 1
             continue
@@ -306,7 +304,7 @@ def _prepare_all(
 
 
 def _plan_item(
-    conn: Conn, source: HistorySource, bundle: dict[str, Any]
+    conn: Conn, source: HistorySource, snapshot: str
 ) -> tuple[backfill.Anchor | None, backfill.Plan]:
     """一部法規的回推計畫；對不到語料或頁面讀不出來的，計畫是空的、只帶 error 問題。
 
@@ -314,8 +312,7 @@ def _plan_item(
     """
     problems: list[Problem] = []
     try:
-        pcode = source.resolve(conn, bundle)
-        current, past = source.versions(bundle)
+        pcode, current, past = source.read(conn, snapshot)
     except UnreadablePage as e:
         problems.append(Problem("error", "unreadable", str(e)))
     except Unmatched as e:
