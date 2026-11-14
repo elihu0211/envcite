@@ -21,7 +21,7 @@ from envcite_ontology.reasoning import evaluate
 from envcite_ontology.reasoning.facts.case_inputs import Measurement
 from envcite_ontology.reasoning_codec import enums
 from envcite_ontology.verification.gates import ExecutableGate
-from envcite_ontology.verification.model_gates import render_annotation
+from envcite_ontology.verification.model_gates.render import render_annotation
 from tests.reasoning_support import Conn, _plain_duty, _scope, _with
 from tests.test_annotation import BEFORE, LAW, _doc, _duty, _limit
 from tests.test_import import _scalar

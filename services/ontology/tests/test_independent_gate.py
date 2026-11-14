@@ -4,7 +4,7 @@ them."""
 from pathlib import Path
 
 from envcite_ontology.verification.extract import extract_unit
-from envcite_ontology.verification.model_gates import IndependentTestGate
+from envcite_ontology.verification.model_gates.independent import IndependentTestGate
 from tests.model_gates_support import (
     CASES,
     EXTRACTOR,

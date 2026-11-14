@@ -19,7 +19,7 @@ from envcite_ontology.verification import prompts
 from envcite_ontology.verification.context import ancestors_text
 from envcite_ontology.verification.gates.base import GateResult
 from envcite_ontology.verification.jsonutil import object_from
-from envcite_ontology.verification.model_gates import eligible
+from envcite_ontology.verification.model_gates.common import eligible
 from envcite_ontology.verification.models import Model, ModelError
 
 log = logging.getLogger(__name__)

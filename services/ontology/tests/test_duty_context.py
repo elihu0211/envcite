@@ -11,7 +11,7 @@ import pytest
 from envcite_ontology import annotation_read
 from envcite_ontology.annotate import AnnotationError, load
 from envcite_ontology.verification.extract import extract_unit
-from envcite_ontology.verification.model_gates import render_annotation
+from envcite_ontology.verification.model_gates.render import render_annotation
 from tests.test_annotation import LAW, _doc, _duty
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_id, _law_v1

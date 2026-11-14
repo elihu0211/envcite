@@ -70,8 +70,8 @@ import golden_set as gs
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
 from envcite_ontology.verification.config import load as load_models
 from envcite_ontology.verification.config import load_judges
+from envcite_ontology.verification.distinct import assert_distinct
 from envcite_ontology.verification.models import ChatCompletionsModel, Model, ModelError
-from envcite_ontology.verification.run import assert_distinct
 
 PROMPT = """\
 給定一個關於臺灣法規的問題與一條法規條文，你必須以 0 到 3 的整數評分，意義如下：

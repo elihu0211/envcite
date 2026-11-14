@@ -20,7 +20,9 @@ from envcite_ontology.verification.config import (
     resolve_secret,
     secret_name,
 )
-from envcite_ontology.verification.run import SameModel, gates_from, main
+from envcite_ontology.verification.distinct import SameModel
+from envcite_ontology.verification.methods import gates_from
+from envcite_ontology.verification.run import main
 from tests.test_chat_adapter import Endpoint
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "models.toml"

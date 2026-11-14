@@ -38,7 +38,7 @@ uv run --env-file .env envcite-ontology
   - 函式的大小由 ruff 守門（根 `pyproject.toml`：圈複雜度與分支各 14、語句 60）；超過就拆成有名字的小函式，不加 `noqa`、不放寬門檻。
   - `Any` 只留在動態的邊界（JSON 文件、clingo 的答案集原子、唯讀連線的列），並在原處說明；其餘用精確的型別，protobuf 訊息標註實際的 `pb.*` 類別，不用 `Any`。
   - 人寫的 JSON 文件在邊界以 pydantic 模型驗證並解碼成型別化的結構，內部不傳 `Mapping[str, Any]`；新增的文件載入器照 `ruling.py` 的做法。
-  - 模組不超過 500 行（`tests/test_architecture.py` 守門）；已過大的列在它的 `OVERSIZED`，上限只能縮、不能增，拆完就從清單刪掉。一個模組一個職責，過長就按職責拆。
+  - 模組不超過 500 行（`tests/test_architecture.py` 守門，沒有例外清單）。一個模組一個職責，過長就按職責拆，不調高上限。
   - 公開的模組、類別與函式都有 docstring（ruff `D100`–`D103`）；不用 `Any` 標註（`ANN401`），動態邊界例外在根 `pyproject.toml` 的 `per-file-ignores` 列出並說明。
   - 每個指令入口（`[project.scripts]`）都要解析得到、`--help` 可用（`tests/test_cli_entry_points.py` 守門）。
   - 資料層（`store/`）一個職責一個儲存庫（`laws`、`graph`、`retrieval`），連線池與期限在 `connections`，`OntologyStore` 只負責把它們接起來。消費端用 `store/ports.py` 的 Protocol 標註它用到的那一塊（`LawReader`、`LawGraphReader`、`Retrieval`、`ReadConnections`），不認得具體的儲存庫類別。
@@ -52,6 +52,7 @@ uv run --env-file .env envcite-ontology
   - 邏輯不直接讀系統時鐘（`date.today()`、`datetime.now()`；`tests/test_architecture.py` 守門）：今天的日期收注入的 `clock.Today`（預設 `date.today`），測試傳固定值；指令列的 `main` 是組合根，才可以呼叫 `psycopg.connect` 與 `settings.load`。
   - 歷史版本的取得（`history_sync/`）按步驟分：`run.sync` 串接 `acquire` 與 `importing`，`policy` 放重試政策與整批驗收上限，`report`、`cli`；測試要放寬上限用 `tests/history_support.relax_limits`；套件不匯出，從定義它的模組匯入。
   - 抽取（`verification/extract.py`）只串接：取單元文字、呼叫模型、修復迴圈、載入；模型輸出的確定性檢查按類別放 `verification/checks/`（`locate` 定位、`fragments` 完整性、`sanctions` 罰則、`shape` 整形與結構、`coverage` 涵蓋），輸出格式在 `statements_format`；新增一種檢查放進對應的模組，不放回 `extract.py`。檢查要接進修復迴圈才算數：改了檢查或提示，先在開發集上量測。
+  - 模型閘門（`verification/model_gates/`）一個閘門一個模組（`roundtrip`、`independent`、`panel`），共用的描述在 `render`、抽取者與驗證資格在 `common`；整條流程（`verification/run.py`）只串接與指令列，選什麼處理（`selection`）、方法組合（`methods`）、抽取紀錄與重抽（`attempts`）、抽取者與驗證者不同（`distinct`）各自一個模組；套件不匯出，從定義它的模組匯入。
   - 依賴注入：接線只在組合根（`server.py` 與各 CLI 的 `main`）；servicer 與推論從建構子拿依賴（儲存庫、嵌入、精排、斷詞，與調校旋鈕 `SearchTuning`），不自己建連線、不讀設定。「今日」由 SQL 的 `as_of` 決定，不在 Python 取時鐘。
   - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
   - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。
@@ -81,7 +82,7 @@ uv run --env-file .env envcite-ontology
 - **沒有人審核標註**：陳述以 `extracted` 進入，經驗證閘門後依政策升為 `confirmed`，**只有已確認（或規則推導）的陳述參與推論**。
 - **詞彙沒有上下位**（不借用 SKOS，載入帶 `broader` 的概念整份拒絕）：「甲屬於乙」的法律依據是立法定義或授權命令，不是詞彙的階層。立法定義用 `annotation.term_definition`，與陳述同為 `annotation.assertion` 的子型別；定義只在要件所屬的法規內使用，不支援準用。定義的確認要兩個互相獨立的方法都通過，任一失敗就駁回，沒有重讀者就不確認任何定義。外部對映（`vocab.concept_match`）是唯一的例外，只記「等同」：對到同一個外部識別碼的兩個概念，推論視為同一個。
 - **載入規則**：每個陳述附它所讀的條文原文，載入時要求該單元現行的某個版本列確有這個雜湊，否則整份拒絕（結束碼 2）；狀態預設 `extracted`，載入不接受任何陳述；不確定法律概念或裁量的要件標 `judgement: true`（限值不得標）；門檻值的來源（字面值、授權條文、受控值、個別處分）恰有其一；責任基礎只屬主體槽位，認定方式只屬限值；一個罰則陳述一個效果，罰則陳述的種類必須是 `sanction`、所處罰的必須是已確認的 `prescriptive`（連不上的存成待連結罰則，見 README「規範關係：罰則的連結」），「命令屆期未履行」的前提必須是 `order`；一次載入是一個交易；每個主張寫完內容即封存（`annotation.seal`），封存後內容不可再補，修正是以 `set_confirm_state` 駁回再載入。
-- **驗證**（`verification/`）：一個確定性閘門一個模組（`gates/`），模型閘門在 `model_gates.py`；每次結果寫一列 `annotation.verification`。`annotation.settle` 在必要方法最近一次都 pass 或 not_applicable、至少一個 pass、且沒有 fail 時升為 `confirmed`，有 fail 則 `rejected`。**審核狀態不論由哪條路徑改變都記一列 `policy`**。
+- **驗證**（`verification/`）：一個確定性閘門一個模組（`gates/`），模型閘門在 `model_gates/`；每次結果寫一列 `annotation.verification`。`annotation.settle` 在必要方法最近一次都 pass 或 not_applicable、至少一個 pass、且沒有 fail 時升為 `confirmed`，有 fail 則 `rejected`。**審核狀態不論由哪條路徑改變都記一列 `policy`**。
   - **抽取者不得驗證自己的主張**（觸發器強制）；驗證者**預設也不得與抽取者同一家族**，合格者不足則 `inconclusive`。
   - **確定性閘門不證明語意忠於原文**。`envcite-verify` 用預設政策不接受任何陳述；只用確定性閘門接受要明說 `--require`。
   - 閘門失敗、逾時或模型無答案是 `inconclusive`，不是駁回、也不中斷。

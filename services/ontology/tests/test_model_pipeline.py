@@ -4,11 +4,9 @@ import json
 from pathlib import Path
 
 from envcite_ontology.reasoning import evaluate
-from envcite_ontology.verification.run import (
-    ALL_METHODS,
-    run,
-    units_of,
-)
+from envcite_ontology.verification.methods import ALL_METHODS
+from envcite_ontology.verification.run import run
+from envcite_ontology.verification.selection import units_of
 from tests.model_gates_support import (
     CASES,
     EXTRACTOR,

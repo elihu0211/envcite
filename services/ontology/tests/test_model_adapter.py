@@ -6,13 +6,9 @@ from typing import Any
 
 import pytest
 
+from envcite_ontology.verification.distinct import PROBES, SameModel, assert_distinct
 from envcite_ontology.verification.models import AnthropicModel, ModelError
-from envcite_ontology.verification.run import (
-    PROBES,
-    SameModel,
-    assert_distinct,
-    run,
-)
+from envcite_ontology.verification.run import run
 from tests.model_gates_support import (
     TEXT,
     Conn,

@@ -1049,7 +1049,7 @@ def cmd_judge(args: argparse.Namespace) -> None:
     judges: list[Model] = [Judge(m) for m in config.models]  # type: ignore[arg-type]
     if not args.no_distinct_check:
         from envcite_ontology.verification.config import load as load_pipeline
-        from envcite_ontology.verification.run import assert_distinct
+        from envcite_ontology.verification.distinct import assert_distinct
 
         pipeline = load_pipeline(Path(args.pipeline_models))
         assert_distinct([*judges, *pipeline.everyone])
