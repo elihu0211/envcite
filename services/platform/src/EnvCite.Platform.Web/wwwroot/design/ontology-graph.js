@@ -654,6 +654,32 @@
       }
     }
 
+    const swimlanesEl = host ? host.querySelector("[data-graph-swimlanes]") : null;
+    const searchEl = host ? host.querySelector("[data-graph-search]") : null;
+
+    function renderSwimlanes() {
+      if (!swimlanesEl) return;
+      if (currentLayout !== "stufenbau") {
+        swimlanesEl.hidden = true;
+        return;
+      }
+      swimlanesEl.hidden = false;
+      clearEl(swimlanesEl);
+      const tierCounts = new Map();
+      nodes.forEach((n) => {
+        const t = Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1;
+        tierCounts.set(t, (tierCounts.get(t) || 0) + 1);
+      });
+      const activeTiers = Array.from(tierCounts.keys()).sort((a, b) => a - b);
+      activeTiers.forEach((tier, idx) => {
+        if (idx > 0) {
+          addEl(swimlanesEl, "span", "ep-hint", "→");
+        }
+        const pill = addEl(swimlanesEl, "span", "ep-swimlane-pill", `${tierName(tier, labels)} (${tierCounts.get(tier)})`);
+        pill.dataset.tier = String(Math.min(tier, 3));
+      });
+    }
+
     function updateToolbarState() {
       if (!host) return;
       host.querySelectorAll('[data-graph-action^="layout-"]').forEach((btn) => {
@@ -664,6 +690,7 @@
       if (edgeToggle) {
         edgeToggle.setAttribute("aria-pressed", showEdgeLabels ? "true" : "false");
       }
+      renderSwimlanes();
     }
 
     function clearSelectionStates() {
@@ -773,6 +800,7 @@
         return;
       }
       selectNodeById(id);
+      if (host) host.dataset.inspectorOpen = "true";
     });
 
     graph.on("node:dblclick", (evt) => {
@@ -786,10 +814,49 @@
 
     graph.on("canvas:click", () => {
       selectedNodeId = null;
+      if (host) host.dataset.inspectorOpen = "false";
       clearSelectionStates();
       const initial = nodes.find((n) => n.focus) || nodes[0] || null;
       renderInspector(inspectorEl, initial, nodes, edges, labels);
     });
+
+    if (searchEl) {
+      let searchTimer = 0;
+      searchEl.addEventListener("input", () => {
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(async () => {
+          const term = (searchEl.value || "").trim().toLowerCase();
+          if (!term) {
+            clearSelectionStates();
+            return;
+          }
+          const match = nodes.find((n) =>
+            (n.title || "").toLowerCase().includes(term)
+            || (n.localId || "").toLowerCase().includes(term),
+          );
+          if (!match) return;
+
+          if (!graph.getNodeData(match.id)) {
+            const parentEdge = edges.find((e) => e.target === match.id);
+            const docType = (match.documentType || labels.otherDocType || "其他子法").trim();
+            if (parentEdge) {
+              expandedGroups.add(`grp__${parentEdge.source}__${docType}`);
+              graph.setData(computeCurrentGraphData());
+              await graph.render();
+              await applyLayout(currentLayout, match.id);
+            }
+          }
+
+          if (graph.getNodeData(match.id)) {
+            selectNodeById(match.id);
+            if (graph.getZoom() < 0.72) {
+              await graph.zoomTo(0.82);
+            }
+            await graph.focusElement(match.id).catch(() => {});
+          }
+        }, 140);
+      });
+    }
 
     graph.render().then(() => {
       const initialNode = nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0] || null;
@@ -807,6 +874,11 @@
     if (host && host.dataset.graphBound !== "1") {
       host.dataset.graphBound = "1";
       host.addEventListener("click", (evt) => {
+        const closeBtn = evt.target.closest("[data-inspector-close]");
+        if (closeBtn) {
+          host.dataset.inspectorOpen = "false";
+          return;
+        }
         const btn = evt.target.closest("[data-graph-action]");
         if (!btn) return;
         const activeGraph = container._g6Instance || graph;
