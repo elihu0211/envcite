@@ -63,7 +63,9 @@ def test_law_parse_populates_headings() -> None:
     assert parsed.headings[0].title == "總則"
 
 
-def test_write_and_list_headings_round_trip(dsn: str, store: OntologyStore) -> None:
+def test_write_and_list_headings_round_trip(
+    conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore
+) -> None:
     payload = {
         "LawLevel": "法律",
         "LawName": "結構章節測試法",
@@ -80,7 +82,8 @@ def test_write_and_list_headings_round_trip(dsn: str, store: OntologyStore) -> N
     parsed = law.parse(payload, pcode="O0099001", data_date=date(2024, 1, 2))
     assert parsed.ok
 
-    with psycopg.connect(dsn) as conn, conn.transaction():
+    # 經 `conn` fixture 寫入，測試結束時它才會清掉這部法規；自己另開連線會留給之後的測試。
+    with conn.transaction():
         write.apply(conn, parsed, first_import=True)
 
     key = LawKey("TW-CENTRAL", "moj_pcode", "O0099001")
