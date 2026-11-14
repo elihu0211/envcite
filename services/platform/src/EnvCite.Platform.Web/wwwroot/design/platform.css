@@ -4555,9 +4555,203 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 @media (prefers-reduced-motion: reduce) {
     .ep-copy-citation-btn,
-    .ep-provenance-chevron {
+    .ep-provenance-chevron,
+    .ep-cite-inline {
         transition: none;
     }
+}
+
+/* ── AI 回答排版引擎（Markdown、行內法源徽章、Mermaid 流程圖與管線表格）─────────────────── */
+
+.ep-md-body {
+    display: grid;
+    gap: var(--ep-space-3);
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+}
+
+.ep-md-body > :first-child {
+    margin-block-start: 0;
+}
+
+.ep-md-body > :last-child {
+    margin-block-end: 0;
+}
+
+.ep-md-heading {
+    margin: var(--ep-space-2) 0 0;
+    color: var(--ep-text);
+    font-size: var(--ep-title-s-size);
+    font-weight: var(--ep-title-s-weight);
+    line-height: 1.45;
+}
+
+.ep-md-p {
+    margin: 0;
+    line-height: 1.65;
+}
+
+.ep-md-list {
+    margin: 0;
+    padding-inline-start: var(--ep-space-6);
+    display: grid;
+    gap: var(--ep-space-2);
+}
+
+.ep-md-list li {
+    line-height: 1.6;
+}
+
+.ep-md-list li.ep-md-task {
+    list-style: none;
+    margin-inline-start: calc(-1 * var(--ep-space-4));
+    display: flex;
+    align-items: baseline;
+    gap: var(--ep-space-2);
+}
+
+.ep-md-task-marker {
+    flex: none;
+    color: var(--ep-primary);
+    font-size: var(--ep-label-l-size);
+    line-height: 1;
+}
+
+.ep-md-quote {
+    margin: 0;
+    padding: var(--ep-space-2) var(--ep-space-3);
+    border-inline-start: 3px solid var(--ep-primary);
+    background: color-mix(in srgb, var(--ep-surface-muted) 65%, transparent);
+    border-radius: 0 var(--ep-radius-control) var(--ep-radius-control) 0;
+    color: var(--ep-text-secondary);
+    display: grid;
+    gap: var(--ep-space-2);
+}
+
+.ep-md-hr {
+    border: 0;
+    border-block-start: 1px solid var(--ep-border-subtle);
+    margin: var(--ep-space-1) 0;
+}
+
+.ep-md-inline-code {
+    font-family: var(--ep-font-mono);
+    font-size: var(--ep-label-m-size);
+    padding: 0.1em 0.35em;
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface-muted);
+    color: var(--ep-text);
+}
+
+.ep-md-code-wrap {
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface-muted);
+    overflow-x: auto;
+}
+
+.ep-md-code-lang {
+    display: block;
+    padding: var(--ep-space-1) var(--ep-space-3);
+    border-block-end: 1px solid var(--ep-border-subtle);
+    font-family: var(--ep-font-mono);
+    font-size: var(--ep-label-s-size);
+    color: var(--ep-text-secondary);
+    text-transform: uppercase;
+}
+
+.ep-md-code,
+.ep-mermaid-fallback {
+    margin: 0;
+    padding: var(--ep-space-3);
+    font-family: var(--ep-font-mono);
+    font-size: var(--ep-label-m-size);
+    line-height: 1.55;
+    color: var(--ep-text);
+    overflow-x: auto;
+}
+
+.ep-md-link {
+    color: var(--ep-link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.ep-cite-inline {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: baseline;
+    margin-inline: 0.15em;
+    padding: 0.05em 0.4em;
+    border: 1px solid color-mix(in srgb, var(--ep-primary) 28%, var(--ep-border-subtle));
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--ep-primary) 8%, var(--ep-surface));
+    color: var(--ep-link);
+    font-family: var(--ep-font-mono);
+    font-size: var(--ep-label-s-size);
+    font-weight: var(--ep-label-m-weight);
+    line-height: 1.3;
+    cursor: pointer;
+    transition: background var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-cite-inline.ep-cite-static {
+    cursor: default;
+    color: var(--ep-text-secondary);
+    border-color: var(--ep-border-subtle);
+    background: var(--ep-surface-muted);
+}
+
+@media (hover: hover) {
+    .ep-cite-inline:not(.ep-cite-static):hover {
+        background: color-mix(in srgb, var(--ep-primary) 16%, var(--ep-surface));
+        border-color: var(--ep-primary);
+    }
+}
+
+.ep-md-table th,
+.ep-md-table td {
+    text-align: start;
+}
+
+.ep-md-table tbody th[scope="row"] {
+    white-space: normal;
+    min-inline-size: 6rem;
+    max-inline-size: 16rem;
+}
+
+.ep-md-table :is(th, td).ep-align-center {
+    text-align: center;
+}
+
+.ep-md-table :is(th, td).ep-align-right {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+}
+
+.ep-mermaid-card {
+    margin: 0;
+    padding: var(--ep-space-3);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface);
+    overflow-x: auto;
+}
+
+.ep-mermaid-canvas {
+    display: flex;
+    justify-content: center;
+    min-inline-size: 0;
+}
+
+.ep-mermaid-canvas[hidden] {
+    display: none;
+}
+
+.ep-mermaid-canvas svg {
+    max-inline-size: 100%;
+    block-size: auto;
+    font-family: var(--ep-font);
 }
 
 

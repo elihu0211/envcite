@@ -1,0 +1,252 @@
+@using EnvCite.Platform.Web.Presentation.Output
+@inject IOutputLayoutEngine LayoutEngine
+
+@if (!string.IsNullOrWhiteSpace(Content))
+{
+    var document = LayoutEngine.Parse(Content);
+    if (document.Blocks.Count > 0)
+    {
+        <div class="ep-md-body">
+            @RenderBlocks(document.Blocks)
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public string? Content { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<AnswerSource> Sources { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<AnswerSource> OnCitationSelect { get; set; }
+
+    private IReadOnlyDictionary<string, AnswerSource> SourceLookup =>
+        _cachedSources == Sources && _lookup is not null
+            ? _lookup
+            : BuildLookup();
+
+    private IReadOnlyList<AnswerSource>? _cachedSources;
+    private Dictionary<string, AnswerSource>? _lookup;
+
+    private Dictionary<string, AnswerSource> BuildLookup()
+    {
+        _cachedSources = Sources;
+        var map = new Dictionary<string, AnswerSource>(StringComparer.OrdinalIgnoreCase);
+        foreach (var source in Sources)
+            map.TryAdd(source.Code, source);
+        _lookup = map;
+        return map;
+    }
+
+    private RenderFragment RenderBlocks(IReadOnlyList<OutputBlock> blocks) => @<text>
+        @foreach (var block in blocks)
+        {
+            @switch (block)
+            {
+                case OutputHeadingBlock heading:
+                    @RenderHeading(heading)
+                    break;
+                case OutputParagraphBlock paragraph:
+                    <p class="ep-md-p">@RenderInlines(paragraph.Inlines)</p>
+                    break;
+                case OutputListBlock list:
+                    @RenderList(list)
+                    break;
+                case OutputQuoteBlock quote:
+                    <blockquote class="ep-md-quote">@RenderBlocks(quote.Blocks)</blockquote>
+                    break;
+                case OutputTableBlock table:
+                    @RenderTable(table)
+                    break;
+                case OutputDiagramBlock diagram:
+                    <figure class="ep-mermaid-card" aria-label="@L["流程與結構圖表"]">
+                        <div class="ep-mermaid"
+                             data-mermaid-source="@diagram.Source"
+                             data-diagram-state="pending">
+                            <div class="ep-mermaid-canvas" role="img" aria-label="@L["流程與結構圖表"]" hidden></div>
+                            <pre class="ep-mermaid-fallback"><code>@diagram.Source</code></pre>
+                        </div>
+                    </figure>
+                    break;
+                case OutputCodeBlock codeBlock:
+                    <div class="ep-md-code-wrap">
+                        @if (!string.IsNullOrEmpty(codeBlock.Language))
+                        {
+                            <span class="ep-md-code-lang">@codeBlock.Language</span>
+                        }
+                        <pre class="ep-md-code"><code>@codeBlock.Code</code></pre>
+                    </div>
+                    break;
+                case OutputThematicBreakBlock:
+                    <hr class="ep-md-hr" />
+                    break;
+            }
+        }
+    </text>;
+
+    private RenderFragment RenderHeading(OutputHeadingBlock heading) => builder =>
+    {
+        // 聊天泡泡內不搶頁面 <h1> 主標題，標題層級對應為 h2–h4。
+        var tag = Math.Clamp(heading.Level + 1, 2, 4) switch
+        {
+            2 => "h2",
+            3 => "h3",
+            _ => "h4",
+        };
+        builder.OpenElement(0, tag);
+        builder.AddAttribute(1, "class", "ep-md-heading");
+        builder.AddContent(2, RenderInlines(heading.Inlines));
+        builder.CloseElement();
+    };
+
+    private RenderFragment RenderList(OutputListBlock list) => @<text>
+        @if (list.Ordered)
+        {
+            <ol class="ep-md-list" start="@(list.Start > 1 ? list.Start : null)">
+                @foreach (var item in list.Items)
+                {
+                    @RenderListItem(item)
+                }
+            </ol>
+        }
+        else
+        {
+            <ul class="ep-md-list">
+                @foreach (var item in list.Items)
+                {
+                    @RenderListItem(item)
+                }
+            </ul>
+        }
+    </text>;
+
+    private RenderFragment RenderListItem(OutputListItem item) => @<text>
+        <li class="@(item.IsChecked is not null ? "ep-md-task" : null)">
+            @if (item.IsChecked is bool checkedState)
+            {
+                <span class="ep-md-task-marker"
+                      role="img"
+                      aria-label="@(checkedState ? L["已完成"] : L["未完成"])">@(checkedState ? "☑" : "☐")</span>
+            }
+            @if (item.Blocks.Count == 1 && item.Blocks[0] is OutputParagraphBlock singleParagraph)
+            {
+                @RenderInlines(singleParagraph.Inlines)
+            }
+            else
+            {
+                @RenderBlocks(item.Blocks)
+            }
+        </li>
+    </text>;
+
+    private RenderFragment RenderTable(OutputTableBlock table) => @<text>
+        <div class="ep-legal-table-wrap" role="region" aria-label="@L["資料表格"]" tabindex="0">
+            <table class="ep-legal-table ep-md-table">
+                @if (table.HeaderRows.Count > 0)
+                {
+                    <thead>
+                        @foreach (var row in table.HeaderRows)
+                        {
+                            <tr>
+                                @foreach (var cell in row)
+                                {
+                                    <th class="@AlignmentClass(cell.Alignment)"
+                                        scope="@(cell.Colspan > 1 ? "colgroup" : "col")"
+                                        colspan="@(cell.Colspan > 1 ? cell.Colspan : null)"
+                                        rowspan="@(cell.Rowspan > 1 ? cell.Rowspan : null)">
+                                        @RenderInlines(cell.Inlines)
+                                    </th>
+                                }
+                            </tr>
+                        }
+                    </thead>
+                }
+                @if (table.BodyRows.Count > 0)
+                {
+                    <tbody>
+                        @foreach (var row in table.BodyRows)
+                        {
+                            <tr>
+                                @for (var c = 0; c < row.Count; c++)
+                                {
+                                    var cell = row[c];
+                                    if (c == 0 && row.Count > 1)
+                                    {
+                                        <th class="@AlignmentClass(cell.Alignment)"
+                                            scope="row"
+                                            colspan="@(cell.Colspan > 1 ? cell.Colspan : null)"
+                                            rowspan="@(cell.Rowspan > 1 ? cell.Rowspan : null)">
+                                            @RenderInlines(cell.Inlines)
+                                        </th>
+                                    }
+                                    else
+                                    {
+                                        <td class="@AlignmentClass(cell.Alignment)"
+                                            colspan="@(cell.Colspan > 1 ? cell.Colspan : null)"
+                                            rowspan="@(cell.Rowspan > 1 ? cell.Rowspan : null)">
+                                            @RenderInlines(cell.Inlines)
+                                        </td>
+                                    }
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                }
+            </table>
+        </div>
+    </text>;
+
+    private RenderFragment RenderInlines(IReadOnlyList<OutputInline> inlines) => @<text>
+        @foreach (var inline in inlines)
+        {
+            @switch (inline)
+            {
+                case OutputTextInline text:
+                    @text.Text
+                    break;
+                case OutputStrongInline strong:
+                    <strong>@RenderInlines(strong.Children)</strong>
+                    break;
+                case OutputEmphasisInline emphasis:
+                    <em>@RenderInlines(emphasis.Children)</em>
+                    break;
+                case OutputCodeInline codeSpan:
+                    <code class="ep-md-inline-code">@codeSpan.Code</code>
+                    break;
+                case OutputLinkInline link:
+                    <a class="ep-md-link" href="@link.Href" target="_blank" rel="noopener noreferrer">@RenderInlines(link.Children)</a>
+                    break;
+                case OutputCitationInline citation:
+                    @RenderCitation(citation)
+                    break;
+                case OutputLineBreakInline:
+                    <br />
+                    break;
+            }
+        }
+    </text>;
+
+    private RenderFragment RenderCitation(OutputCitationInline citation) => @<text>
+        @if (OnCitationSelect.HasDelegate && SourceLookup.TryGetValue(citation.Code, out var matched))
+        {
+            <button type="button"
+                    class="ep-cite-inline"
+                    title="@matched.Citation"
+                    aria-label="@L["檢視 {0} 條文內容", $"{citation.Code} {matched.Citation}"]"
+                    @onclick="() => OnCitationSelect.InvokeAsync(matched)">[@citation.Code]</button>
+        }
+        else
+        {
+            <span class="ep-cite-inline ep-cite-static">[@citation.Code]</span>
+        }
+    </text>;
+
+    private static string? AlignmentClass(OutputCellAlignment alignment) => alignment switch
+    {
+        OutputCellAlignment.Center => "ep-align-center",
+        OutputCellAlignment.Right => "ep-align-right",
+        _ => null,
+    };
+}
