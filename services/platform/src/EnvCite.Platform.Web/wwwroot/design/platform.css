@@ -4849,6 +4849,19 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     }
 }
 
+.ep-graph-canvas .g6-minimap {
+    background: var(--ep-surface) !important;
+    border: 1px solid var(--ep-border-subtle) !important;
+    border-radius: var(--ep-radius-control) !important;
+    overflow: hidden;
+}
+
+@container workbench (width < 48rem) {
+    .ep-graph-canvas .g6-minimap {
+        display: none !important;
+    }
+}
+
 .ep-graph-inspector {
     display: flex;
     flex-direction: column;

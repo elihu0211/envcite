@@ -71,13 +71,88 @@
     return metaParts.length > 0 ? `${shortTitle}\n${metaParts.join(" · ")}` : shortTitle;
   }
 
-  function computeStufenbauPositions(nodes, edges, containerWidth, labels) {
-    const width = Math.max(containerWidth || 760, 320);
-    const colPitch = 236;
-    const subRowPitch = 96;
-    const tierGap = 72;
-    const maxCols = Math.max(1, Math.min(5, Math.floor((width - 32) / colPitch)));
+  function buildVisibleGraphModel(nodes, edges, expandedGroups, labels) {
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const incomingByTarget = new Map();
+    const outgoingBySource = new Map();
+    edges.forEach((e) => {
+      if (!byId.has(e.source) || !byId.has(e.target)) return;
+      if (!incomingByTarget.has(e.target)) incomingByTarget.set(e.target, []);
+      incomingByTarget.get(e.target).push(e);
+      if (!outgoingBySource.has(e.source)) outgoingBySource.set(e.source, []);
+      outgoingBySource.get(e.source).push(e);
+    });
 
+    const shouldGroup = nodes.length > 14;
+    const hiddenNodeIds = new Set();
+    const groupNodes = [];
+    const groupEdges = [];
+
+    if (shouldGroup) {
+      nodes.forEach((parent) => {
+        const outEdges = outgoingBySource.get(parent.id) || [];
+        const leafChildren = outEdges
+          .map((e) => byId.get(e.target))
+          .filter((child) => {
+            if (!child || child.focus) return false;
+            const tier = Number.isFinite(child.hierarchyTier) ? child.hierarchyTier : 1;
+            const childOut = outgoingBySource.get(child.id) || [];
+            const childIn = incomingByTarget.get(child.id) || [];
+            return tier >= 2 && childOut.length === 0 && childIn.length === 1;
+          });
+
+        if (leafChildren.length <= 5) return;
+
+        const byDocType = new Map();
+        leafChildren.forEach((child) => {
+          const docType = (child.documentType || labels.otherDocType || "其他子法").trim();
+          if (!byDocType.has(docType)) byDocType.set(docType, []);
+          byDocType.get(docType).push(child);
+        });
+
+        byDocType.forEach((groupItems, docType) => {
+          if (groupItems.length < 2) return;
+          const groupId = `grp__${parent.id}__${docType}`;
+          const isExpanded = expandedGroups.has(groupId);
+          const parentTier = Number.isFinite(parent.hierarchyTier) ? parent.hierarchyTier : 1;
+          groupNodes.push({
+            id: groupId,
+            title: `${isExpanded ? "▼" : "▶"} ${docType} (${groupItems.length})`,
+            documentType: docType,
+            hierarchyTier: Math.min(3, parentTier + 1),
+            isGroupCapsule: true,
+            isExpanded,
+            groupId,
+            parentId: parent.id,
+            count: groupItems.length,
+          });
+          groupEdges.push({
+            source: parent.id,
+            target: groupId,
+            kind: "group_link",
+            anchorArticles: [],
+          });
+          if (!isExpanded) {
+            groupItems.forEach((item) => hiddenNodeIds.add(item.id));
+          }
+        });
+      });
+    }
+
+    const visibleNodes = [
+      ...nodes.filter((n) => !hiddenNodeIds.has(n.id)),
+      ...groupNodes,
+    ];
+    const visibleIds = new Set(visibleNodes.map((n) => n.id));
+    const visibleEdges = [
+      ...edges.filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target)),
+      ...groupEdges,
+    ];
+
+    return { visibleNodes, visibleEdges };
+  }
+
+  function computeStufenbauPositions(nodes, edges, containerWidth, labels) {
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const parentsMap = new Map(nodes.map((n) => [n.id, []]));
     edges.forEach((e) => {
@@ -86,65 +161,56 @@
       }
     });
 
-    const tiers = Array.from(new Set(nodes.map((n) => Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1))).sort((a, b) => a - b);
-    const positions = new Map();
-    const xLookup = new Map();
-    let currentY = 64;
+    const tiers = Array.from(
+      new Set(nodes.map((n) => (Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1))),
+    ).sort((a, b) => a - b);
 
-    tiers.forEach((tier) => {
-      const tierNodes = nodes.filter((n) => (Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1) === tier);
+    const tierGapX = 320;
+    const rowGapY = 86;
+    const positions = new Map();
+    const yLookup = new Map();
+
+    tiers.forEach((tier, tierIdx) => {
+      const tierNodes = nodes.filter(
+        (n) => (Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1) === tier,
+      );
       tierNodes.sort((a, b) => {
-        const pA = parentsMap.get(a.id).filter((pid) => xLookup.has(pid));
-        const pB = parentsMap.get(b.id).filter((pid) => xLookup.has(pid));
-        const avgA = pA.length > 0 ? pA.reduce((sum, pid) => sum + xLookup.get(pid), 0) / pA.length : 0;
-        const avgB = pB.length > 0 ? pB.reduce((sum, pid) => sum + xLookup.get(pid), 0) / pB.length : 0;
+        const pA = parentsMap.get(a.id).filter((pid) => yLookup.has(pid));
+        const pB = parentsMap.get(b.id).filter((pid) => yLookup.has(pid));
+        const avgA = pA.length > 0 ? pA.reduce((sum, pid) => sum + yLookup.get(pid), 0) / pA.length : 0;
+        const avgB = pB.length > 0 ? pB.reduce((sum, pid) => sum + yLookup.get(pid), 0) / pB.length : 0;
         if (Math.abs(avgA - avgB) > 1) return avgA - avgB;
-        if (a.focus !== b.focus) return a.focus ? -1 : 1;
+        if (Boolean(a.isGroupCapsule) !== Boolean(b.isGroupCapsule)) return a.isGroupCapsule ? -1 : 1;
+        if (Boolean(a.focus) !== Boolean(b.focus)) return a.focus ? -1 : 1;
         if ((b.totalChildren || 0) !== (a.totalChildren || 0)) return (b.totalChildren || 0) - (a.totalChildren || 0);
-        return (a.localId || "").localeCompare(b.localId || "");
+        return (a.localId || a.id || "").localeCompare(b.localId || b.id || "");
       });
 
-      const subRowCount = Math.max(1, Math.ceil(tierNodes.length / maxCols));
-      const perRow = Math.ceil(tierNodes.length / subRowCount);
+      const totalHeight = (tierNodes.length - 1) * rowGapY;
+      const startY = -totalHeight / 2;
+      const x = tierIdx * tierGapX;
 
-      for (let r = 0; r < subRowCount; r++) {
-        const slice = tierNodes.slice(r * perRow, (r + 1) * perRow);
-        const startX = -((slice.length - 1) * colPitch) / 2;
-        slice.forEach((n, idx) => {
-          const x = startX + idx * colPitch;
-          const y = currentY;
-          positions.set(n.id, { x, y });
-          xLookup.set(n.id, x);
-        });
-        currentY += subRowPitch;
-      }
-
-      const capsulesInTier = tierNodes.filter((n) => n.truncatedChildren > 0);
-      if (capsulesInTier.length > 0) {
-        capsulesInTier.forEach((parentNode) => {
-          const parentPos = positions.get(parentNode.id);
-          if (parentPos) {
-            positions.set(`cluster__${parentNode.id}`, {
-              x: parentPos.x,
-              y: currentY - 8,
-            });
-          }
-        });
-        currentY += 68;
-      }
-
-      currentY += tierGap - 20;
+      tierNodes.forEach((n, idx) => {
+        const y = startY + idx * rowGapY;
+        positions.set(n.id, { x, y });
+        yLookup.set(n.id, y);
+      });
     });
 
     if (nodes.length === 0) return { positions, clusters: [] };
     const clusters = nodes
-      .filter((n) => n.truncatedChildren > 0 && n.expandHref)
-      .map((n) => ({
-        id: `cluster__${n.id}`,
-        parentId: n.id,
-        label: `+${n.truncatedChildren} ${labels.clusterSuffix || "部授權法規（點擊展開）"}`,
-        expandHref: n.expandHref,
-      }));
+      .filter((n) => !n.isGroupCapsule && n.truncatedChildren > 0 && n.expandHref)
+      .map((n) => {
+        const pPos = positions.get(n.id) || { x: 0, y: 0 };
+        const clusterId = `cluster__${n.id}`;
+        positions.set(clusterId, { x: pPos.x + tierGapX, y: pPos.y });
+        return {
+          id: clusterId,
+          parentId: n.id,
+          label: `+${n.truncatedChildren} ${labels.clusterSuffix || "部授權法規（點擊展開）"}`,
+          expandHref: n.expandHref,
+        };
+      });
     return { positions, clusters };
   }
 
@@ -200,6 +266,44 @@
     const g6Nodes = [
       ...nodes.map((n) => {
         const pos = positions.get(n.id) || { x: 0, y: 0 };
+        if (n.isGroupCapsule) {
+          const data = {
+            cardLabel: n.title,
+            tier: n.hierarchyTier || 2,
+            invalidations: 0,
+            isFocus: "no",
+            isCluster: "yes",
+            isGroupCapsule: "yes",
+            groupId: n.groupId,
+            parentId: n.parentId,
+            isExpanded: n.isExpanded,
+          };
+          const c = nodeColors(data, palette);
+          return {
+            id: n.id,
+            data,
+            style: {
+              x: pos.x,
+              y: pos.y,
+              size: [204, 42],
+              radius: 20,
+              fill: n.isExpanded ? palette.primaryTint : c.fill,
+              stroke: c.stroke,
+              lineWidth: c.lineWidth,
+              lineDash: n.isExpanded ? undefined : c.lineDash,
+              ports: [{ key: "in", placement: [0, 0.5] }, { key: "out", placement: [1, 0.5] }],
+              labelText: n.title,
+              labelFill: c.labelFill,
+              labelFontSize: 12,
+              labelFontWeight: 600,
+              labelPlacement: "center",
+              labelTextAlign: "center",
+              labelTextBaseline: "middle",
+              cursor: "pointer",
+            },
+          };
+        }
+
         const data = {
           cardLabel: formatNodeCardLabel(n, labels),
           tier: Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1,
@@ -221,6 +325,7 @@
             stroke: c.stroke,
             lineWidth: c.lineWidth,
             lineDash: c.lineDash || undefined,
+            ports: [{ key: "in", placement: [0, 0.5] }, { key: "out", placement: [1, 0.5] }],
             shadowColor: "rgba(0, 0, 0, 0.14)",
             shadowBlur: n.focus ? 16 : 8,
             shadowOffsetY: 3,
@@ -255,12 +360,13 @@
           style: {
             x: pos.x,
             y: pos.y,
-            size: [200, 38],
-            radius: 18,
+            size: [204, 40],
+            radius: 20,
             fill: c.fill,
             stroke: c.stroke,
             lineWidth: c.lineWidth,
             lineDash: c.lineDash,
+            ports: [{ key: "in", placement: [0, 0.5] }, { key: "out", placement: [1, 0.5] }],
             labelText: cl.label,
             labelFill: c.labelFill,
             labelFontSize: 12,
@@ -433,25 +539,35 @@
     const inspectorEl = host ? host.querySelector("[data-graph-inspector]") : null;
 
     let currentLayout = payload.mode === "concentric" ? "concentric" : "stufenbau";
-    let showEdgeLabels = edges.length <= 20;
+    let showEdgeLabels = edges.length <= 16;
     let selectedNodeId = null;
+    const expandedGroups = new Set();
 
     const palette = themePalette();
-    const { positions, clusters } = computeStufenbauPositions(nodes, edges, container.clientWidth, labels);
-    const graphData = buildG6Data(nodes, edges, clusters, positions, palette, labels);
+
+    function computeCurrentGraphData() {
+      const { visibleNodes, visibleEdges } = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+      const { positions, clusters } = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
+      return buildG6Data(visibleNodes, visibleEdges, clusters, positions, themePalette(), labels);
+    }
+
+    const graphData = computeCurrentGraphData();
 
     const edgeStyleMapper = (d) => {
       const kind = d.data?.kind || "delegation";
       const isSub = kind === "sub_delegation";
-      const isClusterLink = kind === "cluster_link";
+      const isClusterLink = kind === "cluster_link" || kind === "group_link";
       const pal = themePalette();
+      const usePorts = currentLayout === "stufenbau";
       return {
         stroke: isSub ? pal.warning : isClusterLink ? pal.primary : pal.borderControl,
-        lineWidth: isClusterLink ? 1.4 : 1.8,
-        lineDash: isSub ? [6, 4] : isClusterLink ? [3, 4] : undefined,
+        lineWidth: isClusterLink ? 1.5 : 1.8,
+        lineDash: isSub ? [6, 4] : isClusterLink ? [4, 4] : undefined,
         endArrow: !isClusterLink,
         endArrowSize: 7,
-        opacity: 0.82,
+        sourcePort: usePorts ? "out" : undefined,
+        targetPort: usePorts ? "in" : undefined,
+        opacity: isClusterLink ? 0.55 : 0.42,
         labelText: showEdgeLabels ? (d.data?.anchorLabel || "") : "",
         labelFill: pal.textSecondary,
         labelFontSize: 11,
@@ -489,7 +605,7 @@
         },
       },
       edge: {
-        type: "quadratic",
+        type: currentLayout === "stufenbau" ? "cubic-horizontal" : "quadratic",
         style: edgeStyleMapper,
         state: {
           active: {
@@ -499,7 +615,7 @@
             labelText: (d) => d.data?.anchorLabel || "",
           },
           inactive: {
-            opacity: 0.18,
+            opacity: 0.14,
           },
         },
       },
@@ -510,14 +626,32 @@
           key: "ontology-minimap",
           size: [148, 92],
           position: "bottom-right",
+          maskStyle: {
+            fill: palette.primaryTint,
+            stroke: palette.primary,
+            fillOpacity: 0.35,
+          },
         },
       ],
     });
 
     container._g6Instance = graph;
 
-    function fitViewport() {
-      graph.fitView().catch(() => {});
+    async function fitViewport({ forceFitAll = false, focusTargetId = null } = {}) {
+      try {
+        await graph.fitView();
+        if (!forceFitAll && graph.getZoom() < 0.72) {
+          await graph.zoomTo(0.78);
+          const target = focusTargetId
+            || selectedNodeId
+            || (nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0])?.id;
+          if (target && graph.getNodeData(target)) {
+            await graph.focusElement(target);
+          }
+        }
+      } catch {
+        // ignore transient viewport errors during unmount
+      }
     }
 
     function updateToolbarState() {
@@ -573,8 +707,12 @@
       renderInspector(inspectorEl, nodeDatum.data?.raw || null, nodes, edges, labels);
     }
 
-    async function applyLayout(mode) {
+    async function applyLayout(mode, focusTargetId = null) {
       currentLayout = mode;
+      graph.setEdge({
+        type: mode === "stufenbau" ? "cubic-horizontal" : "quadratic",
+        style: edgeStyleMapper,
+      });
       if (mode === "concentric") {
         const focusNode = nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0];
         graph.setLayout({
@@ -593,7 +731,8 @@
         });
         await graph.layout();
       } else {
-        const updated = computeStufenbauPositions(nodes, edges, container.clientWidth, labels);
+        const { visibleNodes, visibleEdges } = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+        const updated = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
         const updates = [];
         graph.getNodeData().forEach((n) => {
           const p = updated.positions.get(n.id);
@@ -604,14 +743,30 @@
           await graph.draw();
         }
       }
-      fitViewport();
+      await fitViewport({ focusTargetId });
       updateToolbarState();
     }
 
-    graph.on("node:click", (evt) => {
+    graph.on("node:click", async (evt) => {
       const id = evt.target?.id;
       if (!id) return;
       const nodeDatum = graph.getNodeData(id);
+      if (nodeDatum?.data?.isGroupCapsule === "yes") {
+        const groupId = nodeDatum.data.groupId;
+        const parentId = nodeDatum.data.parentId;
+        if (expandedGroups.has(groupId)) {
+          expandedGroups.delete(groupId);
+        } else {
+          expandedGroups.add(groupId);
+        }
+        graph.setData(computeCurrentGraphData());
+        await graph.render();
+        await applyLayout(currentLayout, groupId || parentId);
+        if (parentId && graph.getNodeData(parentId)) {
+          selectNodeById(parentId);
+        }
+        return;
+      }
       if (nodeDatum?.data?.isCluster === "yes") {
         const href = nodeDatum.data?.expandHref;
         if (href) window.location.assign(href);
@@ -656,14 +811,17 @@
         if (!btn) return;
         const activeGraph = container._g6Instance || graph;
         const action = btn.dataset.graphAction;
-        if (action === "fit") activeGraph.fitView().catch(() => {});
+        if (action === "fit") fitViewport({ forceFitAll: true });
         else if (action === "zoom-in") activeGraph.zoomBy(1.2).catch(() => {});
         else if (action === "zoom-out") activeGraph.zoomBy(0.84).catch(() => {});
         else if (action === "layout-stufenbau") applyLayout("stufenbau");
         else if (action === "layout-concentric") applyLayout("concentric");
         else if (action === "toggle-edge-labels") {
           showEdgeLabels = !showEdgeLabels;
-          activeGraph.setEdge({ type: "quadratic", style: edgeStyleMapper });
+          activeGraph.setEdge({
+            type: currentLayout === "stufenbau" ? "cubic-horizontal" : "quadratic",
+            style: edgeStyleMapper,
+          });
           activeGraph.draw().catch(() => {});
           updateToolbarState();
         }
