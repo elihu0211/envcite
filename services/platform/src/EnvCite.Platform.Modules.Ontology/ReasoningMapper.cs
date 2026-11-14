@@ -167,9 +167,9 @@ internal static class ReasoningMapper
             Map(p.Kind), p.SubjectCase == Problem.SubjectOneofCase.Concept ? p.Concept : null,
             p.SubjectCase == Problem.SubjectOneofCase.ConditionId ? p.ConditionId : null))],
         [.. o.UnresolvedConflicts.Select(c => new StatementPairDto(c.First, c.Second))],
-        [.. o.Defeated.Select(d => new DefeatDto(d.Loser, d.Winner, Map(d.Basis)))],
+        [.. o.Defeated.Select(d => new DefeatDto(d.Loser, d.Winner, Map(d.Basis), DetailBasis(d.Basis)))],
         [.. o.UnresolvedPenaltyOverlaps.Select(c => new StatementPairDto(c.First, c.Second))],
-        [.. o.PenaltyDefeated.Select(d => new DefeatDto(d.Loser, d.Winner, Map(d.Basis)))],
+        [.. o.PenaltyDefeated.Select(d => new DefeatDto(d.Loser, d.Winner, Map(d.Basis), DetailBasis(d.Basis)))],
         [.. o.Trace.Select(t => new TraceEntryDto(
             t.ConditionId, t.StatementId, t.Concept, t.Fact?.Value ?? string.Empty,
             t.Threshold?.Value ?? string.Empty, Map(t.Role)))],
@@ -317,10 +317,18 @@ internal static class ReasoningMapper
         OverrideBasis.Hierarchy => OverrideBasisDto.Hierarchy,
         OverrideBasis.LexSpecialis => OverrideBasisDto.LexSpecialis,
         OverrideBasis.LexPosterior => OverrideBasisDto.LexPosterior,
-        OverrideBasis.MutatisMutandis => OverrideBasisDto.MutatisMutandis,
-        OverrideBasis.Subsidiarity => OverrideBasisDto.Subsidiarity,
-        OverrideBasis.Absorption => OverrideBasisDto.Absorption,
+        OverrideBasis.MutatisMutandis
+            or OverrideBasis.Subsidiarity
+            or OverrideBasis.Absorption => OverrideBasisDto.LexSpecialis,
         _ => throw Unknown(b),
+    };
+
+    private static string? DetailBasis(OverrideBasis b) => b switch
+    {
+        OverrideBasis.MutatisMutandis
+            or OverrideBasis.Subsidiarity
+            or OverrideBasis.Absorption => b.ToString(),
+        _ => null,
     };
 
     private static ConditionRoleDto Map(ConditionRole r) => r switch

@@ -922,6 +922,12 @@
           },
           "basis": {
             "$ref": "#/components/schemas/OverrideBasisDto"
+          },
+          "detailBasis": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2057,10 +2063,7 @@
         "enum": [
           "Hierarchy",
           "LexSpecialis",
-          "LexPosterior",
-          "MutatisMutandis",
-          "Subsidiarity",
-          "Absorption"
+          "LexPosterior"
         ]
       },
       "PenaltyCandidateDto": {

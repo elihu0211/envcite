@@ -188,9 +188,6 @@ public enum OverrideBasisDto
     LexSpecialis,
     /// <summary>後法優於前法（學說，只在有明文標註時採用）。但書不是優先依據，見陳述的例外。</summary>
     LexPosterior,
-    MutatisMutandis,
-    Subsidiarity,
-    Absorption,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<ConditionRoleDto>))]
@@ -288,7 +285,7 @@ public sealed record ProblemDto(ProblemKindDto Kind, string? Concept, long? Cond
 
 public sealed record StatementPairDto(long First, long Second);
 
-public sealed record DefeatDto(long Loser, long Winner, OverrideBasisDto Basis);
+public sealed record DefeatDto(long Loser, long Winner, OverrideBasisDto Basis, string? DetailBasis = null);
 
 /// <param name="Fact">實際比較的事實值（十進位文字）。</param>
 /// <param name="Threshold">門檻值（十進位文字）。</param>
