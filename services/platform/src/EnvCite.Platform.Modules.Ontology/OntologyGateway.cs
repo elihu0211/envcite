@@ -110,7 +110,9 @@ internal sealed class OntologyGateway(
                 a.Content,
                 a.Language,
                 string.IsNullOrEmpty(a.DateDocument) ? null : a.DateDocument,
-                a.NormKind);
+                a.NormKind,
+                a.DocumentType,
+                string.IsNullOrEmpty(a.RepealedOn) ? null : a.RepealedOn);
         });
         if (outcome.IsOk && outcome.Value is not null)
             cache.Set(cacheKey, outcome.Value, ArticleIriCacheTtl);

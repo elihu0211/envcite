@@ -1,24 +1,93 @@
 @using EnvCite.Platform.Web.Presentation
 
-@* 條文結構化排版模板：依項／款／目／細目階層呈現，支援懸掛縮排與但書語義標記。 *@
-<div class="ep-article-template">
-    @foreach (var clause in LegalArticleFormatter.Parse(Content))
-    {
-        if (clause.Marker is not null)
+@if (string.IsNullOrWhiteSpace(Content))
+{
+    <p class="ep-hint">@L["目前沒有可顯示的條文內容。"]</p>
+}
+else
+{
+    <div class="ep-article-template">
+        @foreach (var block in LegalArticleFormatter.ParseBlocks(Content))
         {
-            <div class="ep-clause-row" data-level="@clause.Level" data-kind="@clause.Kind.ToString().ToLowerInvariant()">
-                <span class="ep-clause-marker">@clause.Marker</span>
-                <span class="ep-clause-body">@clause.Body</span>
-            </div>
+            if (block is ArticleTableBlock table)
+            {
+                <div class="ep-legal-table-wrap" role="region" aria-label="@L["附表內容"]" tabindex="0">
+                    <table class="ep-legal-table">
+                        @if (table.HeaderRows.Count > 0)
+                        {
+                            <thead>
+                                @foreach (var row in table.HeaderRows)
+                                {
+                                    <tr>
+                                        @foreach (var cell in row)
+                                        {
+                                            <th scope="@(cell.Colspan > 1 ? "colgroup" : "col")"
+                                                colspan="@(cell.Colspan > 1 ? cell.Colspan : null)"
+                                                rowspan="@(cell.Rowspan > 1 ? cell.Rowspan : null)">
+                                                @cell.Text
+                                            </th>
+                                        }
+                                    </tr>
+                                }
+                            </thead>
+                        }
+                        @if (table.BodyRows.Count > 0)
+                        {
+                            <tbody>
+                                @foreach (var row in table.BodyRows)
+                                {
+                                    <tr>
+                                        @for (var c = 0; c < row.Count; c++)
+                                        {
+                                            var cell = row[c];
+                                            if (c == 0)
+                                            {
+                                                <th scope="row"
+                                                    colspan="@(cell.Colspan > 1 ? cell.Colspan : null)"
+                                                    rowspan="@(cell.Rowspan > 1 ? cell.Rowspan : null)">
+                                                    @cell.Text
+                                                </th>
+                                            }
+                                            else
+                                            {
+                                                <td colspan="@(cell.Colspan > 1 ? cell.Colspan : null)"
+                                                    rowspan="@(cell.Rowspan > 1 ? cell.Rowspan : null)">
+                                                    @cell.Text
+                                                </td>
+                                            }
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        }
+                    </table>
+                </div>
+            }
+            else if (block is ArticleClauseBlock clauseBlock)
+            {
+                var clause = clauseBlock.Clause;
+                if (clause.Kind == ArticleClauseKind.Paragraph)
+                {
+                    <p class="ep-clause-paragraph @(clause.StartsProviso ? "is-proviso" : string.Empty) @(clauseBlock.IsNote ? "ep-note" : string.Empty)">
+                        @if (clauseBlock.ShowParagraphBadge && clauseBlock.ParagraphOrdinal is { } ordinal)
+                        {
+                            <span class="ep-para-badge">@L["第 {0} 項", ordinal]</span>
+                        }
+                        <span>@clause.Body</span>
+                    </p>
+                }
+                else
+                {
+                    <div class="ep-clause-row" data-level="@clause.Level">
+                        <span class="ep-clause-marker">@clause.Marker</span>
+                        <span class="ep-clause-body">@clause.Body</span>
+                    </div>
+                }
+            }
         }
-        else
-        {
-            <p class="ep-clause-paragraph @(clause.StartsProviso ? "is-proviso" : string.Empty)">@clause.Body</p>
-        }
-    }
-</div>
+    </div>
+}
 
 @code {
-    [Parameter]
-    public string? Content { get; set; }
+    [Parameter] public string? Content { get; set; }
 }

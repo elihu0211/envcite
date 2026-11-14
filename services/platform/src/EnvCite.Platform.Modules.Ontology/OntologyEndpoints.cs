@@ -53,7 +53,9 @@ public sealed record ArticleDetailDto(
     string Content,
     string Language,
     string? DateDocument,
-    string NormKind);
+    string NormKind,
+    string DocumentType = "",
+    string? RepealedOn = null);
 
 public static class OntologyEndpoints
 {
