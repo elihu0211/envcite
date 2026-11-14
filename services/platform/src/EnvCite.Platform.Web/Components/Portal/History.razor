@@ -24,6 +24,9 @@
 else
 {
     <div class="ep-history-shell">
+        @* 對話與已封存是同一份清單的兩個檢視（?view=archived）：封存的不在側欄與預設列表，只在這裡找得回來。 *@
+        <PageTabs Items="@_views" Active="@(_archived ? ArchivedView : ActiveView)" Query="view" Label="@L["對話檢視"]" />
+
         <div class="ep-history-meta">
             <span class="ep-hint">@L["共 {0} 筆對話", _items.Count]</span>
             <span class="ep-hint">@L["超過 {0} 天沒有更新的對話會自動刪除。", HistoryFeature.RetentionDays]</span>
@@ -31,6 +34,10 @@ else
 
         @* 只比對標題：內容是客戶案情，不建索引。 *@
         <form method="get" role="search" class="ep-conv-search">
+            @if (_archived)
+            {
+                <input type="hidden" name="view" value="@ArchivedView" />
+            }
             <label class="ep-visually-hidden" for="history-q">@L["搜尋對話標題"]</label>
             <div class="ep-conv-search-field">
                 <NavIcon Path="@Icons.Material.Outlined.Search" />
@@ -42,6 +49,10 @@ else
         @if (_items.Count == 0 && !string.IsNullOrWhiteSpace(Query))
         {
             <EmptyState Icon="@Icons.Material.Outlined.SearchOff" Title="@L["沒有符合的對話"]" Description="@L["換個詞試試；只比對標題，不比對內容。"]" />
+        }
+        else if (_items.Count == 0 && _archived)
+        {
+            <EmptyState Icon="@Icons.Material.Outlined.Archive" Title="@L["沒有封存的對話"]" Description="@L["在對話的「⋯」選單選「封存」，它就會從側欄移到這裡；在封存的對話接著問，它會自動回到側欄。"]" />
         }
         else if (_items.Count == 0)
         {
@@ -69,7 +80,7 @@ else
                             </span>
                             <time class="ep-secondary" datetime="@TaipeiTime.Full(item.UpdatedAt)">@TaipeiTime.Format(item.UpdatedAt)</time>
                         </a>
-                        <ConversationMenu Id="@item.Id" Href="@PortalPaths.Conversation(Tenant, item.Id)" Title="@item.Title" Pinned="@item.Pinned" />
+                        <ConversationMenu Id="@item.Id" Href="@PortalPaths.Conversation(Tenant, item.Id)" Title="@item.Title" Pinned="@item.Pinned" Archived="@_archived" />
                     </li>
                 }
             </ul>

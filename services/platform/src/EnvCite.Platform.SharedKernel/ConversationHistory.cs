@@ -72,9 +72,13 @@ public interface IConversationHistory
 
     /// <summary>
     /// 釘選的在前（釘得晚的在前，最多 <see cref="MaxPinned"/> 筆），其後是最近更新的在前（最多 <paramref name="limit"/> 筆）。
+    /// 已封存的不列（見 <see cref="ListArchivedAsync"/>）。
     /// <paramref name="search"/> 只比對標題（不分大小寫、不是萬用字元），不比對內容：內容是客戶案情，不建索引。
     /// </summary>
     Task<IReadOnlyList<ConversationSummary>> ListAsync(ClaimsPrincipal user, int limit, string? search, CancellationToken cancellationToken);
+
+    /// <summary>已封存的對話，封存得晚的在前（最多 <paramref name="limit"/> 筆）；<paramref name="search"/> 同 <see cref="ListAsync"/>。</summary>
+    Task<IReadOnlyList<ConversationSummary>> ListArchivedAsync(ClaimsPrincipal user, int limit, string? search, CancellationToken cancellationToken);
 
     /// <summary>不是呼叫者自己的對話（或不存在）一律 null。</summary>
     Task<ConversationDetail?> GetAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken);
@@ -87,6 +91,20 @@ public interface IConversationHistory
 
     /// <summary>釘選或取消釘選自己的對話；同樣不動 <c>UpdatedAt</c>。回傳有沒有改到。</summary>
     Task<bool> PinAsync(ClaimsPrincipal user, Guid id, bool pinned, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 封存或取消封存自己的對話。封存的從側欄與預設列表消失、只在已封存的列表；封存時一併取消釘選。
+    /// 同樣不動 <c>UpdatedAt</c>：封存不是新的活動，不延長保存。回傳有沒有改到。
+    /// 在封存的對話接著問（<see cref="AppendTurnAsync"/>）會自動取消封存。
+    /// </summary>
+    Task<bool> ArchiveAsync(ClaimsPrincipal user, Guid id, bool archived, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 把自己的一串對話整串複製成新的一串（分叉）：訊息、引用與問的日期原樣複製，之後兩串各自發展。
+    /// 新的一串以 <paramref name="title"/>（同改名的正規化）為標題、不釘選、不封存，<c>UpdatedAt</c> 是現在：
+    /// 這是新的活動，保存期限從現在起算。回傳新對話的 Id；不是自己的、不存在、標題空白、關閉時都是 null。
+    /// </summary>
+    Task<Guid?> ForkAsync(ClaimsPrincipal user, Guid id, string title, CancellationToken cancellationToken);
 
     /// <summary>刪除呼叫者自己的一串對話（連同訊息），並記稽核；回傳有沒有刪到。稽核只記 Id，不記內容。</summary>
     Task<bool> DeleteAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken);

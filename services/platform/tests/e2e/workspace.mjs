@@ -128,8 +128,8 @@ const scenarios = {
     // 側欄的對話選單（原生 popover 加普通表單）：釘選、重新命名、點進去接續（帶著前文再問）、刪除。
     async "history-menu"() {
         const menuOf = () => page.locator(".ep-recent-item").first();
-        const openMenu = async () => {
-            await menuOf().locator(".ep-recent-more").click();
+        const openMenu = async (item = menuOf()) => {
+            await item.locator(".ep-recent-more").click();
             await until("選單應該打開", async () => (await page.locator(".ep-conv-menu:popover-open").count()) === 1);
         };
         // 表單送出後是整頁導回原來的頁面：等 circuit 重新接上。
@@ -162,10 +162,46 @@ const scenarios = {
 
         await step("重新命名：側欄與標題換成新名字", async () => {
             await openMenu();
-            await page.locator(".ep-conv-menu input[name='title']").fill("我的稽查案");
-            await page.locator(".ep-conv-menu input[name='title']").press("Enter");
+            await page.locator(".ep-conv-rename input[name='title']").fill("我的稽查案");
+            await page.locator(".ep-conv-rename input[name='title']").press("Enter");
             await reloaded();
             await until("側欄應顯示新標題", async () => (await page.locator(".ep-recent-link").first().innerText()).includes("我的稽查案"));
+        });
+
+        await step("分叉：前往複製出來的新一串，側欄多一筆、標題帶（分叉）", async () => {
+            await openMenu();
+            await page.locator(".ep-conv-menu button", { hasText: /^分叉$/ }).click();
+            await reloaded();
+            await until("網址應是另一串 /c/{id}", async () => /\/c\/[0-9a-f-]{36}$/.test(page.url()) && page.url() !== conversationUrl);
+            await until("新的一串應有同樣的一個回合", async () => (await turns().count()) === 1);
+            await until("側欄應有兩串，其中一串帶（分叉）", async () =>
+                (await page.locator(".ep-recent-link").count()) === 2 && (await page.locator(".ep-recent-link", { hasText: "（分叉）" }).count()) === 1);
+        });
+
+        await step("封存：從側欄移到已封存檢視，取消封存就回來", async () => {
+            const forkItem = () => page.locator(".ep-recent-item", { hasText: "（分叉）" });
+            await openMenu(forkItem());
+            await page.locator(".ep-conv-menu:popover-open button", { hasText: /^封存$/ }).click();
+            await reloaded();
+            await until("封存正在看的那串應回首頁", async () => page.url() === `${base}/portal/${tenant}`);
+            await until("側欄應只剩原本那串", async () => (await page.locator(".ep-recent-link").count()) === 1);
+
+            await page.goto(`${base}/portal/${tenant}/history?view=archived`);
+            await until("已封存檢視應列出分叉", async () => (await page.locator(".ep-history-link", { hasText: "（分叉）" }).count()) === 1);
+            await page.locator(".ep-history-item .ep-recent-more").first().click();
+            await page.locator(".ep-conv-menu:popover-open button", { hasText: /^取消封存$/ }).click();
+            await page.waitForLoadState("load");
+            await until("取消封存後已封存檢視應是空的", async () => (await page.locator(".ep-history-link").count()) === 0);
+
+            await page.goto(`${base}/portal/${tenant}/history`);
+            await until("取消封存後預設列表應有兩串", async () => (await page.locator(".ep-history-link").count()) === 2);
+            // 把分叉再封存起來，後面的步驟仍是只有一串的側欄。
+            await page.locator(".ep-history-item", { hasText: "（分叉）" }).locator(".ep-recent-more").click();
+            await page.locator(".ep-conv-menu:popover-open button", { hasText: /^封存$/ }).click();
+            await page.waitForLoadState("load");
+            await page.goto(conversationUrl);
+            await circuitConnected();
+            await until("側欄應只剩原本那串", async () => (await page.locator(".ep-recent-link").count()) === 1);
         });
 
         await step("側欄即時篩選：過濾不符的對話並用 Esc 還原，收合後點搜尋鈕可展開聚焦", async () => {

@@ -1,22 +1,37 @@
-@* 一串對話的「⋯」選單：釘選、重新命名、刪除。側欄的項目與對話紀錄頁的列共用這一份，所以管理對話只有一種做法。
-   選單是瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript）；三個動作都是附 antiforgery 的普通 POST 表單，
-   送到 PortalEndpoints，所以靜態頁與互動式工作區都能用。刪除先開一個確認的 popover：不可逆的動作要確認。 *@
+@* 一串對話的「⋯」選單：釘選、重新命名、分叉、封存、刪除。側欄的項目與對話紀錄頁的列共用這一份，所以管理對話只有一種做法。
+   選單是瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript）；每個動作都是附 antiforgery 的普通 POST 表單，
+   送到 PortalEndpoints，所以靜態頁與互動式工作區都能用。刪除先開一個確認的 popover：不可逆的動作要確認；封存可以還原，不必確認。
+   已封存的列（已封存列表）沒有釘選（封存時已取消），封存換成「取消封存」。 *@
 <button type="button" class="ep-recent-more" popovertarget="@MenuId" style="@($"anchor-name: --ep-c{Key}")"
         aria-label="@L["對話選項：{0}", Title]">
     <NavIcon Path="@Icons.Material.Filled.MoreHoriz" />
 </button>
 
 <div id="@MenuId" class="ep-menu ep-conv-menu" popover style="@($"position-anchor: --ep-c{Key}")">
-    <form method="post" action="@($"{Href}/pin")">
-        <AntiforgeryToken />
-        <input type="hidden" name="pinned" value="@(Pinned ? "false" : "true")" />
-        <button type="submit" class="ep-menu-item"><NavIcon Path="@Icons.Material.Outlined.PushPin" /><span>@(Pinned ? L["取消釘選"] : L["釘選"])</span></button>
-    </form>
+    @if (!Archived)
+    {
+        <form method="post" action="@($"{Href}/pin")">
+            <AntiforgeryToken />
+            <input type="hidden" name="pinned" value="@(Pinned ? "false" : "true")" />
+            <button type="submit" class="ep-menu-item"><NavIcon Path="@Icons.Material.Outlined.PushPin" /><span>@(Pinned ? L["取消釘選"] : L["釘選"])</span></button>
+        </form>
+    }
     <form method="post" action="@($"{Href}/rename")" class="ep-conv-rename">
         <AntiforgeryToken />
         <label class="ep-visually-hidden" for="@TitleId">@L["對話標題"]</label>
         <input id="@TitleId" class="ep-input" name="title" value="@Title" maxlength="80" required autocomplete="off" />
         <button type="submit" class="ep-menu-item">@L["重新命名"]</button>
+    </form>
+    @* 分叉：整串複製成新的一串並前往它；標題帶「（分叉）」，使用者的標題不翻譯，只有後綴依介面語言。 *@
+    <form method="post" action="@($"{Href}/fork")">
+        <AntiforgeryToken />
+        <input type="hidden" name="title" value="@L["{0}（分叉）", Title]" />
+        <button type="submit" class="ep-menu-item"><NavIcon Path="@Icons.Material.Outlined.CallSplit" /><span>@L["分叉"]</span></button>
+    </form>
+    <form method="post" action="@($"{Href}/archive")">
+        <AntiforgeryToken />
+        <input type="hidden" name="archived" value="@(Archived ? "false" : "true")" />
+        <button type="submit" class="ep-menu-item"><NavIcon Path="@(Archived ? Icons.Material.Outlined.Unarchive : Icons.Material.Outlined.Archive)" /><span>@(Archived ? L["取消封存"] : L["封存"])</span></button>
     </form>
     <button type="button" class="ep-menu-item ep-menu-danger" popovertarget="@ConfirmId">@L["刪除…"]</button>
 </div>
@@ -37,7 +52,7 @@
     [Parameter, EditorRequired]
     public Guid Id { get; set; }
 
-    /// <summary>對話頁的網址；三個表單 POST 到它底下（<c>/pin</c>、<c>/rename</c>、<c>/delete</c>）。</summary>
+    /// <summary>對話頁的網址；表單 POST 到它底下（<c>/pin</c>、<c>/rename</c>、<c>/fork</c>、<c>/archive</c>、<c>/delete</c>）。</summary>
     [Parameter, EditorRequired]
     public string Href { get; set; } = string.Empty;
 
@@ -47,6 +62,10 @@
 
     [Parameter]
     public bool Pinned { get; set; }
+
+    /// <summary>已封存列表裡的列：沒有釘選，封存換成取消封存。</summary>
+    [Parameter]
+    public bool Archived { get; set; }
 
     private string Key => Id.ToString("N");
 
