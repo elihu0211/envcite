@@ -202,6 +202,10 @@ const scenarios = {
             await until("複製後應顯示已複製", async () => (await copyBtn.innerText()).includes("已複製"));
             await lastTurn.locator(".ep-answer-action", { hasText: "法源依據" }).click();
             await until("點工具列應開啟右側條文抽屜", async () => (await page.locator(".ep-drawer-panel").count()) === 1);
+            await page.click(".ep-drawer-iri-btn");
+            await until("點擊條文索引碼膠囊應顯示已複製", async () =>
+                await page.locator(".ep-drawer-iri-btn[data-done-now]").count() === 1 &&
+                (await page.locator(".ep-drawer-iri-btn").innerText()).includes("已複製"));
             await page.click(".ep-drawer-close");
             await until("關閉後抽屜應收起", async () => (await page.locator(".ep-drawer-panel").count()) === 0);
             await lastTurn.locator(".ep-answer-action", { hasText: "法源依據" }).click();

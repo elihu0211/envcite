@@ -454,6 +454,8 @@ h1[tabindex="-1"]:focus-visible {
 .ep-portal-new-chat,
 .ep-answer-action,
 .ep-drawer-source-pill,
+.ep-drawer-step-btn,
+.ep-drawer-iri-btn,
 .ep-btn {
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
@@ -469,6 +471,8 @@ h1[tabindex="-1"]:focus-visible {
 .ep-portal-new-chat:active,
 .ep-answer-action:active,
 .ep-drawer-source-pill:active,
+.ep-drawer-step-btn:active,
+.ep-drawer-iri-btn:active,
 .ep-chip:active,
 .ep-btn:active,
 .ep-segment:has(> input:active) {
@@ -4776,6 +4780,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 .ep-structure-ask,
 .ep-drawer-followup {
     gap: var(--ep-space-2);
+    padding-inline: var(--ep-space-4);
 }
 
 .ep-structure-ask .ep-icon,
@@ -5049,8 +5054,8 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     flex-direction: column;
     background: var(--ep-surface-raised);
     border-inline-start: 1px solid var(--ep-border-subtle);
-    box-shadow: var(--ep-elevation-2);
-    animation: ep-drawer-slide-in var(--ep-motion-normal) var(--ep-motion-ease-move);
+    box-shadow: var(--ep-elevation-3);
+    animation: ep-drawer-slide-in var(--ep-motion-slow) var(--ep-motion-ease-settle);
 }
 
 @keyframes ep-fade-in {
@@ -5066,6 +5071,9 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 @media (prefers-reduced-motion: reduce) {
     .ep-drawer-backdrop,
     .ep-drawer-panel,
+    .ep-drawer-source-pill,
+    .ep-drawer-step-btn,
+    .ep-drawer-iri-btn,
     .ep-citation-chip {
         animation: none;
         transition: none;
@@ -5081,38 +5089,120 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     border-block-end: 1px solid var(--ep-border-subtle);
 }
 
+/* ── 引用法源切換軌（隱藏原生滾動條 + 明確計數 + 前後步進器）──────────────────── */
 .ep-drawer-sources {
     display: flex;
-    align-items: center;
-    gap: var(--ep-space-2);
+    flex-direction: column;
+    gap: var(--ep-space-1);
     padding: var(--ep-space-2) var(--ep-space-6);
     border-block-end: 1px solid var(--ep-border-subtle);
     background: var(--ep-surface);
+}
+
+.ep-drawer-sources-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ep-space-3);
+    min-inline-size: 0;
+}
+
+.ep-drawer-sources-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    min-inline-size: 0;
+}
+
+.ep-drawer-sources-heading {
+    font-size: var(--ep-label-s-size);
+    line-height: var(--ep-label-s-leading);
+    letter-spacing: var(--ep-label-s-tracking);
+    font-weight: var(--ep-label-m-weight);
+    color: var(--ep-text-secondary);
+}
+
+.ep-drawer-sources-count {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 var(--ep-space-2);
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--ep-primary) 12%, var(--ep-surface-raised));
+    color: var(--ep-text);
+    font-size: var(--ep-label-s-size);
+    line-height: var(--ep-label-s-leading);
+    font-weight: var(--ep-label-m-weight);
+    font-variant-numeric: tabular-nums;
+}
+
+.ep-drawer-source-steppers {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-1);
+    flex-shrink: 0;
+}
+
+.ep-drawer-step-btn {
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--ep-radius-pill);
+    border: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface-raised);
+    color: var(--ep-text);
+    font: inherit;
+    font-size: var(--ep-body-l-size);
+    line-height: 1;
+    cursor: pointer;
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), opacity var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-drawer-step-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.ep-drawer-sources-track {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    padding-block: var(--ep-space-1);
+    padding-inline: 2px;
     overflow-x: auto;
-    scrollbar-width: thin;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+}
+
+.ep-drawer-sources-track::-webkit-scrollbar {
+    display: none;
 }
 
 .ep-drawer-source-pill {
     flex: none;
+    scroll-snap-align: center;
     display: inline-flex;
     align-items: center;
     gap: var(--ep-space-1);
-    max-inline-size: 16rem;
-    min-block-size: var(--ep-control-height);
+    max-inline-size: 14rem;
+    min-block-size: 2rem;
     padding: var(--ep-space-1) var(--ep-space-3);
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-pill);
-    background: var(--ep-bg);
+    background: var(--ep-surface-raised);
     color: var(--ep-text-secondary);
     font: inherit;
     font-size: var(--ep-label-m-size);
+    line-height: var(--ep-label-m-leading);
     cursor: pointer;
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 .ep-drawer-source-pill.is-active {
     border-color: var(--ep-primary);
-    background: color-mix(in srgb, var(--ep-primary) 12%, var(--ep-surface));
+    background: color-mix(in srgb, var(--ep-primary) 14%, var(--ep-surface-raised));
     color: var(--ep-text);
     font-weight: var(--ep-label-l-weight);
 }
@@ -5121,6 +5211,15 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+@media (hover: hover) {
+    .ep-drawer-step-btn:not(:disabled):hover,
+    .ep-drawer-source-pill:not(.is-active):hover {
+        border-color: var(--ep-border-control);
+        color: var(--ep-text);
+        background: var(--ep-surface-muted);
+    }
 }
 
 .ep-drawer-title-group {
@@ -5175,7 +5274,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 .ep-drawer-footer {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: var(--ep-space-3);
     padding: var(--ep-space-3) var(--ep-space-6);
@@ -5188,13 +5287,120 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     flex-direction: column;
     gap: var(--ep-space-1);
     min-inline-size: 0;
-    flex: 1;
+    flex: 1 1 18rem;
+}
+
+.ep-drawer-iri-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--ep-space-1) var(--ep-space-2);
+}
+
+.ep-drawer-iri-title {
+    font-size: var(--ep-label-s-size);
+    line-height: var(--ep-label-s-leading);
+    letter-spacing: var(--ep-label-s-tracking);
+    font-weight: var(--ep-label-l-weight);
+    color: var(--ep-text);
+}
+
+.ep-drawer-iri-purpose {
+    font-size: var(--ep-label-s-size);
+    line-height: var(--ep-label-s-leading);
+    color: var(--ep-text-secondary);
+}
+
+.ep-drawer-iri-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    inline-size: 100%;
+    max-inline-size: 100%;
+    min-block-size: var(--ep-touch-target);
+    padding: var(--ep-space-1) var(--ep-space-2);
+    border-radius: var(--ep-radius-control);
+    border: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface-raised);
+    color: var(--ep-text-secondary);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-drawer-iri-btn[data-done-now] {
+    border-color: var(--ep-primary);
+    background: color-mix(in srgb, var(--ep-primary) 12%, var(--ep-surface-raised));
+    color: var(--ep-text);
+}
+
+.ep-drawer-iri-icon {
+    inline-size: 0.875rem;
+    block-size: 0.875rem;
+    flex-shrink: 0;
+    color: var(--ep-text-secondary);
 }
 
 .ep-drawer-iri {
-    font-size: 0.75rem;
-    word-break: break-all;
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--ep-label-s-size);
+    line-height: var(--ep-label-s-leading);
+    color: var(--ep-text);
+}
+
+.ep-drawer-iri-action {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-1);
+    font-size: var(--ep-label-s-size);
+    font-weight: var(--ep-label-m-weight);
     color: var(--ep-text-secondary);
+}
+
+.ep-drawer-iri-btn[data-done-now] .ep-drawer-iri-action,
+.ep-drawer-iri-btn[data-done-now] .ep-drawer-iri-icon {
+    color: var(--ep-primary);
+}
+
+.ep-copy-citation-btn .is-done,
+.ep-drawer-iri-btn .is-done,
+.ep-copy-citation-btn[data-done-now] .is-idle,
+.ep-drawer-iri-btn[data-done-now] .is-idle {
+    display: none;
+}
+
+.ep-copy-citation-btn[data-done-now] .is-done,
+.ep-drawer-iri-btn[data-done-now] .is-done {
+    display: inline;
+}
+
+@media (hover: hover) {
+    .ep-drawer-iri-btn:hover {
+        border-color: var(--ep-border-control);
+        background: var(--ep-surface-muted);
+    }
+
+    .ep-drawer-iri-btn:hover .ep-drawer-iri-action {
+        color: var(--ep-text);
+    }
+}
+
+@media (pointer: coarse) {
+    .ep-drawer-step-btn {
+        inline-size: var(--ep-touch-target);
+        block-size: var(--ep-touch-target);
+    }
+
+    .ep-drawer-source-pill,
+    .ep-drawer-iri-btn {
+        min-block-size: var(--ep-touch-target);
+    }
 }
 
 /* ── 條文結構化排版模板引擎（項／款／目／細目與但書）───────────────────── */
@@ -5273,7 +5479,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     align-items: center;
     justify-content: space-between;
     gap: var(--ep-space-2);
-    padding: var(--ep-space-2) var(--ep-space-5);
+    padding: var(--ep-space-2) var(--ep-space-6);
     border-block-end: 1px solid var(--ep-border-subtle);
     background: var(--ep-surface-muted);
     font-size: var(--ep-label-m-size);
@@ -5321,7 +5527,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     background: var(--ep-surface-raised);
 }
 
-.ep-copy-citation-btn.is-copied {
+.ep-copy-citation-btn[data-done-now] {
     color: var(--ep-primary);
     border-color: var(--ep-primary);
 }
