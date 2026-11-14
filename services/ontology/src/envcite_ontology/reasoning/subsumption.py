@@ -11,8 +11,8 @@ from datetime import date
 from typing import Any
 
 from envcite_ontology.db import Conn
-from envcite_ontology.reasoning import facts
 from envcite_ontology.reasoning.engine import Penalty, Result, evaluate
+from envcite_ontology.reasoning.facts.case_inputs import Measurements, Permits
 
 
 @dataclass(frozen=True)
@@ -30,8 +30,8 @@ class SubsumptionCase:
     expected_unpunished: tuple[str, ...] = ()
     expected_time_barred: tuple[str, ...] = ()
     decided_on: date | None = None
-    measurements: facts.Measurements | None = None
-    permits: facts.Permits | None = None
+    measurements: Measurements | None = None
+    permits: Permits | None = None
     actor_bases: tuple[str, ...] | None = None
     description: str = ""
 

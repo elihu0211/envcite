@@ -15,7 +15,7 @@ from envcite.ontology.v2 import ontology_pb2 as ont_pb
 from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite_ontology import reasoning_codec as codec
 from envcite_ontology.db import Conn, fetch
-from envcite_ontology.reasoning.facts import Invalidated
+from envcite_ontology.reasoning.facts.statements import Invalidated
 from envcite_ontology.store.records import LANGUAGE
 
 _STATEMENTS = """

@@ -19,7 +19,7 @@ from envcite_ontology.annotate import (
 )
 from envcite_ontology.annotation_read import list_statements
 from envcite_ontology.reasoning import evaluate
-from envcite_ontology.reasoning.facts import Measurement
+from envcite_ontology.reasoning.facts.case_inputs import Measurement
 from envcite_ontology.verification.gates import ExecutableGate
 from envcite_ontology.verification.model_gates import render_annotation
 from tests.reasoning_support import Conn, _plain_duty, _scope, _with

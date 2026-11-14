@@ -8,7 +8,7 @@ from typing import Any
 from envcite_ontology.annotate import load
 from envcite_ontology.db import Conn
 from envcite_ontology.reasoning import evaluate
-from envcite_ontology.reasoning.facts import PerOccasionTimeline
+from envcite_ontology.reasoning.facts.case_inputs import PerOccasionTimeline
 from envcite_ontology.reasoning.scoring import (
     DispositionAuditResult,
     DispositionCitation,

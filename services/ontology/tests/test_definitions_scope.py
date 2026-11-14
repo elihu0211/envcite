@@ -1,6 +1,7 @@
 """定義的查詢只對「有定義的法規」解析時點，結果與對全部法規解析完全相同。
 
-涵蓋兩條：推論讀的 `facts._DEFINITIONS`，與回報出處的 `annotation_read._DEFINITION_SOURCES`。
+涵蓋兩條：推論讀的 `vocabulary_facts._DEFINITIONS`，
+與回報出處的 `annotation_read._DEFINITION_SOURCES`。
 事故背景與夾具見 `tests/scope_support.py`。
 """
 
@@ -10,7 +11,7 @@ import psycopg
 import pytest
 
 from envcite_ontology.annotation_read import _DEFINITION_SOURCES
-from envcite_ontology.reasoning.facts import _DEFINITIONS
+from envcite_ontology.reasoning.facts.vocabulary_facts import _DEFINITIONS
 from envcite_ontology.verification import definition_gates as dg
 from tests.model_gates_support import Scripted
 from tests.scope_support import (

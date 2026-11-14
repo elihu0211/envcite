@@ -11,7 +11,7 @@ import psycopg
 import pytest
 
 from envcite_ontology.annotate import load
-from envcite_ontology.reasoning.facts import _STATEMENTS, statement_facts
+from envcite_ontology.reasoning.facts.statements import _STATEMENTS, statement_facts
 from tests.scope_support import (
     FILLER_LAWS,
     ON,

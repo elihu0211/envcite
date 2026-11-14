@@ -7,7 +7,8 @@ from typing import Any, NamedTuple
 
 from envcite_ontology.db import Conn, fetch_one
 from envcite_ontology.reasoning import Result, evaluate
-from envcite_ontology.reasoning.facts import CaseValue, Measurement, limit_at
+from envcite_ontology.reasoning.facts.case_inputs import CaseValue, Measurement
+from envcite_ontology.reasoning.facts.chains import limit_at
 from envcite_ontology.verification.gates.base import GateResult, Unit, unit_of
 from envcite_ontology.verification.gates.conditions import (
     Cond,

@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import NamedTuple
 
 from envcite_ontology.db import Conn, fetch, fetch_one
-from envcite_ontology.reasoning.facts import CaseValue
+from envcite_ontology.reasoning.facts.case_inputs import CaseValue
 
 _RAW_TRUE = {"le": 0, "lt": -1, "ge": 0, "gt": 1, "eq": 0, "ne": 1}
 _RAW_FALSE = {"le": 1, "lt": 0, "ge": -1, "gt": 0, "eq": 1, "ne": 0}

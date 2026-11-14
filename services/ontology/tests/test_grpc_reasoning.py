@@ -11,6 +11,7 @@ from grpc_status import rpc_status
 from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc, reasoning_pb2, reasoning_pb2_grpc
 from envcite_ontology import errors
 from envcite_ontology.annotate import load
+from envcite_ontology.reasoning.facts.chains import Chain, Link
 from envcite_ontology.reasoning_service import ReasoningServicer
 from envcite_ontology.store.ontology_store import OntologyStore
 from tests.conftest import call_metadata, identifier
@@ -520,7 +521,6 @@ def test_codec_carries_the_identifiers_of_central_and_local_laws() -> None:
     """測試推論編碼器原生支援中央與地方雙軌授權鏈與未涵蓋法規識別碼。"""
     from envcite_ontology import reasoning_codec as codec
     from envcite_ontology.reasoning import Result
-    from envcite_ontology.reasoning.facts import Chain, Link
 
     central_act = Link(
         command_jurisdiction="TW-TPE",
