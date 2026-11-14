@@ -168,6 +168,16 @@ const scenarios = {
             await until("側欄應顯示新標題", async () => (await page.locator(".ep-recent-link").first().innerText()).includes("我的稽查案"));
         });
 
+        await step("側欄即時篩選：過濾不符的對話並用 Esc 還原", async () => {
+            const filter = page.locator("input[data-recent-filter]");
+            await filter.fill("不存在的關鍵字");
+            await until("不符時應隱藏對話並顯示空狀態", async () =>
+                (await page.locator(".ep-recent-item:visible").count()) === 0 && await page.locator("[data-recent-empty]").isVisible());
+            await filter.press("Escape");
+            await until("Esc 應還原側欄對話清單", async () =>
+                (await page.locator(".ep-recent-item:visible").count()) === 1 && !(await page.locator("[data-recent-empty]").isVisible()));
+        });
+
         await step("離開再從側欄點回來：還原回合，接著問會帶著前文", async () => {
             await page.click(`a.ep-side-link[href='/portal/${tenant}']`);
             await until("應是空畫面", async () => (await page.locator(".ep-ask[data-state='empty']").count()) === 1);

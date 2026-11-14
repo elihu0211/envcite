@@ -78,19 +78,23 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
             Assert.Single(Regex.Matches(page, "id=\"main\""));
         }
 
-        // 目前頁標示：首頁只在首頁算數，不因為其他頁都在它底下就一直亮著。
+        // 目前頁標示：首頁只在首頁算數，不因為其他頁都在它底下就一直亮著；舞台頂欄跟著呈現目前頁面脈絡。
         Assert.Single(Regex.Matches(account.Html, "ep-side-link active"));
-        Assert.Contains($"href=\"{prefix}/account\" class=\"ep-side-link active\"", account.Html, StringComparison.Ordinal);
+        Assert.Matches($"href=\"{Regex.Escape($"{prefix}/account")}\"[^>]*class=\"ep-side-link active\"", account.Html);
         Assert.DoesNotContain("回總覽", account.Html, StringComparison.Ordinal);
 
-        // AI 瀏覽器側欄順序：功能模塊在前、左下角帳號資料在後，且頂欄沒有頭像鈕。
+        // AI 瀏覽器側欄順序：頂端快速新對話鈕在前、功能模塊居中、左下角帳號資料在後，且頂欄沒有頭像鈕、改為上下文脈絡。
         var sideStart = home.Html.IndexOf("<aside id=\"ep-side\"", StringComparison.Ordinal);
+        var newChatPos = home.Html.IndexOf("class=\"ep-side-new-chat\"", StringComparison.Ordinal);
         var stageStart = home.Html.IndexOf("class=\"ep-portal-stage\"", StringComparison.Ordinal);
         var modulesPos = home.Html.IndexOf("class=\"ep-side-modules\"", StringComparison.Ordinal);
         var footPos = home.Html.IndexOf("class=\"ep-side-foot\"", StringComparison.Ordinal);
-        Assert.True(sideStart > 0 && modulesPos > sideStart && footPos > modulesPos && stageStart > footPos);
+        Assert.True(sideStart > 0 && newChatPos > sideStart && modulesPos > newChatPos && footPos > modulesPos && stageStart > footPos);
         var stageTop = Regex.Match(home.Html[stageStart..], "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;
         Assert.DoesNotContain("popovertarget=\"ep-account-menu\"", stageTop, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-portal-route\"", stageTop, StringComparison.Ordinal);
+        var accountStageTop = Regex.Match(account.Html[account.Html.IndexOf("class=\"ep-portal-stage\"", StringComparison.Ordinal)..], "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;
+        Assert.Contains(">帳號與組織</span>", accountStageTop, StringComparison.Ordinal);
     }
 
     // 問答歷史開啟時即使還沒有對話，側欄的功能模塊下方仍渲染原生歷史區；功能模塊在前、歷史在後、帳號資料在最底。
@@ -212,6 +216,8 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.OK, shown.StatusCode);
         Assert.Contains("ep-account-menu", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-composer\"", html, StringComparison.Ordinal);
+        Assert.Contains("data-recent-filter", html, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-side-new-chat\"", html, StringComparison.Ordinal);
         foreach (var tone in new[] { "neutral", "success", "warning", "error", "info" })
             Assert.Contains($"data-tone=\"{tone}\"", html, StringComparison.Ordinal);
 

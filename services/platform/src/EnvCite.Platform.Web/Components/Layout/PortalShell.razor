@@ -1,9 +1,10 @@
 @* 客戶入口的外殼，純呈現（不讀登入狀態）：已登入進入工作區時採用現代 AI 瀏覽器雙欄版面——
-   左側為全高導覽欄（頂部為品牌與搜尋／收合控制、上方為功能模塊、中間為原生可捲動對話歷史、左下角為帳號選單並向上彈出）；
-   右側為主工作區舞台（精簡頂欄與置中問答／內容區）。還沒登入或還有強制步驟時，只有頂欄。
+   左側為全高導覽欄（頂部為品牌與搜尋／收合控制、快速新對話鈕、上方為功能模塊、中間為原生可捲動及即時篩選對話歷史、左下角為帳號選單並向上彈出）；
+   右側為主工作區舞台（精簡上下文頂欄與置中問答／內容區）。還沒登入或還有強制步驟時，只有頂欄。
    側欄每項是圖示加文字：桌機可收成窄欄、手機為全高滑出抽屜（forms.js 切換）。
    帳號與對話選單均使用瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript）。
    PortalLayout／WorkspaceLayout 依登入狀態填入；元件展示頁用假資料填入。 *@
+@inject NavigationManager Nav
 <a class="ep-skip-link" href="#main">@L["跳到主要內容"]</a>
 
 <div class="@(HasSideNav ? "ep-console ep-portal" : "ep-shell ep-portal")">
@@ -24,7 +25,7 @@
                         <span class="ep-brand"><BrandMark /><span class="ep-side-label">@Brand.Name</span></span>
                     }
                     <span class="ep-spacer"></span>
-                    @if (HistoryEnabled && !string.IsNullOrEmpty(HistoryHref))
+                    @if (Recent.Count == 0 && HistoryEnabled && !string.IsNullOrEmpty(HistoryHref))
                     {
                         <a class="ep-side-icon-btn" href="@HistoryHref" aria-label="@L["搜尋對話標題"]" title="@L["搜尋對話標題"]"><NavIcon Path="@Icons.Material.Outlined.Search" /></a>
                     }
@@ -32,6 +33,14 @@
                 </div>
 
                 <div class="ep-side-body">
+                    @if (!string.IsNullOrEmpty(HomeHref))
+                    {
+                        <a class="ep-side-new-chat" href="@HomeHref" title="@L["新對話"]">
+                            <NavIcon Path="@Icons.Material.Outlined.Add" />
+                            <span class="ep-side-label">@L["新對話"]</span>
+                        </a>
+                    }
+
                     <div class="ep-side-modules">
                         @foreach (var group in NavItems.GroupBy(i => i.Group))
                         {
@@ -39,7 +48,7 @@
                             <nav class="ep-side-nav" aria-label="@group.Key">
                                 @foreach (var item in group)
                                 {
-                                    <NavLink class="ep-side-link" href="@item.Href" Match="@(item.Exact ? NavLinkMatch.All : NavLinkMatch.Prefix)">
+                                    <NavLink class="ep-side-link" href="@item.Href" Match="@(item.Exact ? NavLinkMatch.All : NavLinkMatch.Prefix)" title="@item.Label">
                                         @if (!string.IsNullOrEmpty(item.Icon))
                                         {
                                             <NavIcon Path="@item.Icon" />
@@ -52,12 +61,21 @@
                     </div>
 
                     @* 原生對話紀錄：功能模塊在上方，這裡接續在後並獨立捲動；釘選的一組在最上面，其餘依日期分組。
-                       問答歷史開啟時一律渲染原生歷史區（有對話時用 ep-recent，尚無對話時用 ep-history-empty 顯示引導提示）；關閉時完全不渲染。 *@
+                       問答歷史開啟時一律渲染原生歷史區（有對話時用 ep-recent 並附側欄即時篩選，尚無對話時用 ep-history-empty 顯示引導提示）；關閉時完全不渲染。 *@
                     @if (Recent.Count > 0)
                     {
                         <section class="ep-recent" aria-label="@L["最近的對話"]">
                             <div class="ep-history-head">
                                 <span class="ep-history-heading">@L["最近的對話"]</span>
+                                @if (!string.IsNullOrEmpty(HistoryHref))
+                                {
+                                    <a class="ep-history-all" href="@HistoryHref">@L["查看全部"]</a>
+                                }
+                            </div>
+                            <div class="ep-recent-filter">
+                                <label class="ep-visually-hidden" for="ep-recent-filter">@L["篩選對話"]</label>
+                                <NavIcon Path="@Icons.Material.Outlined.Search" />
+                                <input id="ep-recent-filter" class="ep-recent-search" type="search" data-recent-filter maxlength="80" autocomplete="off" placeholder="@L["篩選對話"]" />
                             </div>
                             @foreach (var group in Recent)
                             {
@@ -78,6 +96,7 @@
                                     }
                                 </nav>
                             }
+                            <p class="ep-recent-none ep-hint" data-recent-empty hidden>@L["沒有符合的對話"]</p>
                         </section>
                     }
                     else if (HistoryEnabled)
@@ -153,6 +172,14 @@
                     @if (!string.IsNullOrEmpty(TenantName))
                     {
                         <span class="ep-portal-tenant">@TenantName</span>
+                    }
+                    @if (CurrentStageTitle() is { Length: > 0 } stageTitle)
+                    {
+                        @if (!string.IsNullOrEmpty(TenantName))
+                        {
+                            <span class="ep-portal-crumb-sep" aria-hidden="true">/</span>
+                        }
+                        <span class="ep-portal-route" title="@stageTitle">@stageTitle</span>
                     }
                     <span class="ep-spacer"></span>
                     @if (!string.IsNullOrEmpty(HomeHref))
@@ -318,4 +345,43 @@
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
+
+    private string? CurrentStageTitle()
+    {
+        if (!Uri.TryCreate(Nav.Uri, UriKind.Absolute, out var current))
+            return null;
+
+        var path = NormalizePath(current.AbsolutePath);
+
+        foreach (var group in Recent)
+        {
+            foreach (var conv in group.Items)
+            {
+                if (string.Equals(NormalizePath(conv.Href), path, StringComparison.OrdinalIgnoreCase))
+                    return conv.Title;
+            }
+        }
+
+        foreach (var item in NavItems.Where(i => i.Exact))
+        {
+            if (string.Equals(NormalizePath(item.Href), path, StringComparison.OrdinalIgnoreCase))
+                return item.Label;
+        }
+
+        var prefixMatch = NavItems
+            .Where(i => !i.Exact && path.StartsWith(NormalizePath(i.Href), StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(i => i.Href.Length)
+            .FirstOrDefault();
+        if (prefixMatch is not null)
+            return prefixMatch.Label;
+
+        return MenuItems.FirstOrDefault(m => path.StartsWith(NormalizePath(m.Href), StringComparison.OrdinalIgnoreCase))?.Label;
+    }
+
+    private static string NormalizePath(string href)
+    {
+        var cut = href.IndexOfAny(['?', '#']);
+        var path = cut >= 0 ? href[..cut] : href;
+        return path.Length > 1 ? path.TrimEnd('/') : path;
+    }
 }
