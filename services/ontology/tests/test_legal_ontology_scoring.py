@@ -22,6 +22,9 @@ from envcite_ontology.reasoning.scoring import (
     load_matrices,
 )
 from envcite_ontology.reasoning.units import canonical_unit_name, normalize_value
+from envcite_ontology.reasoning_codec import disposition as disposition_codec
+from envcite_ontology.reasoning_codec import outcome as outcome_codec
+from envcite_ontology.reasoning_codec import request as request_codec
 from tests.reasoning_support import _scope
 from tests.test_annotation import BEFORE, LAW, _doc, _duty, _limit
 from tests.test_incremental import _first, _law_v1
@@ -532,7 +535,6 @@ def test_disposition_audit_d1_d2_d3_and_db_matrix_roundtrip(conn: Conn, tmp_path
 def test_reasoning_codec_roundtrips_new_proto_fields(conn: Conn, tmp_path: Path) -> None:
     from envcite.ontology.v2 import reasoning_pb2 as pb
     from envcite_ontology import errors
-    from envcite_ontology import reasoning_codec as codec
 
     _first(conn, tmp_path, _law_v1())
     prov = conn.execute(
@@ -596,10 +598,10 @@ def test_reasoning_codec_roundtrips_new_proto_fields(conn: Conn, tmp_path: Path)
         ),
     )
     v = errors.Validator()
-    case = codec.case_facts(req, v, None, None, None)
-    units = codec.fact_units(req)
-    tl = codec.timeline(req, v)
-    sc = codec.scoring_inputs(req, v)
+    case = request_codec.case_facts(req, v, None, None, None)
+    units = request_codec.fact_units(req)
+    tl = request_codec.timeline(req, v)
+    sc = disposition_codec.scoring_inputs(req, v)
     v.check()
     assert case["ap_fact_mistake"] == 1.0
     assert units == {"cod": "ug/L"}
@@ -612,8 +614,8 @@ def test_reasoning_codec_roundtrips_new_proto_fields(conn: Conn, tmp_path: Path)
         timeline=tl,
         scoring_inputs=sc,
     )
-    audit = codec.disposition_audit(req, res.scoring_results)
-    out = codec.outcome(res, {}, audit_result=audit)
+    audit = disposition_codec.disposition_audit(req, res.scoring_results)
+    out = outcome_codec.outcome(res, {}, audit_result=audit)
     assert len(out.scoring_results) == 1
     assert out.HasField("disposition_audit")
     assert out.disposition_audit.d1_citations_complete is True

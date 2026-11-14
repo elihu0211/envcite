@@ -9,7 +9,6 @@ from typing import Any
 import pytest
 
 from envcite.ontology.v2 import reasoning_pb2 as pb
-from envcite_ontology import reasoning_codec as codec
 from envcite_ontology.annotate import (
     LEGAL_EFFECTS,
     LIABILITY_BASES,
@@ -20,6 +19,7 @@ from envcite_ontology.annotate import (
 from envcite_ontology.annotation_read import list_statements
 from envcite_ontology.reasoning import evaluate
 from envcite_ontology.reasoning.facts.case_inputs import Measurement
+from envcite_ontology.reasoning_codec import enums
 from envcite_ontology.verification.gates import ExecutableGate
 from envcite_ontology.verification.model_gates import render_annotation
 from tests.reasoning_support import Conn, _plain_duty, _scope, _with
@@ -575,9 +575,9 @@ def test_a_permit_value_under_an_equal_concept_counts(conn: Conn, tmp_path: Path
 @pytest.mark.parametrize(
     ("enum", "document", "contract"),
     [
-        ("legal_effect", LEGAL_EFFECTS, codec.LEGAL_EFFECT),
-        ("liability_basis", LIABILITY_BASES, codec.LIABILITY_BASIS),
-        ("trigger_kind", TRIGGER_KINDS, codec.TRIGGER_KIND),
+        ("legal_effect", LEGAL_EFFECTS, enums.LEGAL_EFFECT),
+        ("liability_basis", LIABILITY_BASES, enums.LIABILITY_BASIS),
+        ("trigger_kind", TRIGGER_KINDS, enums.TRIGGER_KIND),
     ],
 )
 def test_each_enum_has_one_list_of_values(
