@@ -361,7 +361,10 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         Assert.Equal(citation, Assert.Single(detail.Messages[1].Citations!));
 
         var opened = await browser.GetAsync(ConversationPage(tenant.Identifier, id));
-        Assert.Contains("不得露天燃燒 [L1]。", opened.Html, StringComparison.Ordinal);
+        // 正文裡的 [L1] 已由排版引擎轉成可點擊徽章（<button class="ep-cite-inline">[L1]</button>），純文字還原應一致。
+        var plainText = System.Text.RegularExpressions.Regex.Replace(opened.Html, "<[^>]+>", string.Empty);
+        Assert.Contains("不得露天燃燒 [L1]。", plainText, StringComparison.Ordinal);
+        Assert.Contains("ep-cite-inline", opened.Html, StringComparison.Ordinal);
         Assert.Contains("[L1] 空氣污染防制法 第 5-1 條（2021-01-01 有效） https://example.test/law/5-1", opened.Html, StringComparison.Ordinal);
     }
 

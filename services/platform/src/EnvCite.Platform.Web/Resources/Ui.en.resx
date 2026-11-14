@@ -2457,4 +2457,16 @@
   <data name="全國法規資料庫" xml:space="preserve">
     <value>Laws &amp; Regulations Database (MOJ)</value>
   </data>
+  <data name="已完成" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="未完成" xml:space="preserve">
+    <value>Not completed</value>
+  </data>
+  <data name="資料表格" xml:space="preserve">
+    <value>Data table</value>
+  </data>
+  <data name="流程與結構圖表" xml:space="preserve">
+    <value>Diagram</value>
+  </data>
 </root>

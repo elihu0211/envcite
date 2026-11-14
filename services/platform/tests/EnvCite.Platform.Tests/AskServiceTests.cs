@@ -661,6 +661,40 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.DoesNotContain(logs.Messages, m => m.Contains("某客戶案情", StringComparison.Ordinal));
     }
 
+    // 系統提示引導模型視內容輸出 Markdown 表格與 Mermaid 流程圖，且含正確 [L1] 引用的結構化回答通過核驗。
+    [Fact]
+    public async Task StructuredMarkdownTableAndMermaidOutputsPassCitationVerification()
+    {
+        const string structuredReply = """
+            ### 管制結論 [L1]
+
+            | 項目 | 規定 | 出處 |
+            | :--- | :--- | :--- |
+            | 管制行為 | 不得從事燃燒行為 | [L1] |
+
+            ```mermaid
+            flowchart TD
+              A[露天燃燒檢舉] --> B[查核是否位於清除地區]
+            ```
+            """;
+
+        var (host, chat) = Host(_ => structuredReply);
+        using var h = host;
+        var (_, member) = await MemberOfAsync("ask-md");
+
+        var result = await host.Services.GetRequiredService<IAskService>().AskAsync(
+            member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
+
+        Assert.Equal(AskStatus.Ok, result.Status);
+        Assert.False(result.Answer!.Refused);
+        Assert.Equal(structuredReply.Trim(), result.Answer.Text);
+        Assert.Single(result.Answer.Sources, s => s.Code == "L1");
+
+        var systemPrompt = chat.Calls.Single().First(m => m.Role == ChatRole.System).Text;
+        Assert.Contains("Markdown 表格", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("```mermaid", systemPrompt, StringComparison.Ordinal);
+    }
+
     private static (AskMode, AskStatus) Pair(AskResult result) => (result.Mode, result.Status);
 
     private static async Task<List<Guid>> ListAsync(WebApplicationFactory<Program> host, string tenantId, ClaimsPrincipal user)

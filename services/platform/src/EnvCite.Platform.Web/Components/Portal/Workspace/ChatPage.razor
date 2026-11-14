@@ -75,21 +75,50 @@
                                     <SourceCards Sources="turn.Answer!.Sources" AsOfLabel="@turn.AsOfLabel" OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
                                     break;
                                 case TurnState.Answered when turn.StoredAnswer is not null:
-                                    @* 從歷史載入的回答：當時存下來的文字（正文與出處行），並附上可開啟抽屜的法條名稱清單。 *@
-                                    @foreach (var line in turn.StoredAnswer.Split('\n'))
+                                    @* 從歷史載入的回答：新格式帶著原始 Markdown／圖表本文與引用清單，以排版引擎還原；舊資料拆出正文與出處行。 *@
+                                    @if (turn.MemoryText is not null)
                                     {
-                                        <p class="@(IsCitationLine(line) ? "ep-hint" : "ep-answer-text")">@line</p>
+                                        var storedSources = StoredSourcesOf(turn);
+                                        <FormattedAnswerView Content="@turn.MemoryText"
+                                                            Sources="@storedSources"
+                                                            OnCitationSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
+                                        @foreach (var line in turn.StoredAnswer.Split('\n').Where(IsCitationLine))
+                                        {
+                                            <p class="ep-hint">@line</p>
+                                        }
+                                        @if (storedSources.Count > 0)
+                                        {
+                                            <SourceCards Sources="@storedSources"
+                                                         AsOfLabel="@turn.AsOfLabel"
+                                                         OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
+                                        }
                                     }
-                                    @if (turn.MemoryCitations.Count > 0)
+                                    else
                                     {
-                                        <SourceCards Sources="@([.. turn.MemoryCitations.Select(c => new AnswerSource(c.Code, c.Uri, c.Label, string.Empty))])"
-                                                     AsOfLabel="@turn.AsOfLabel"
-                                                     OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
+                                        @foreach (var segment in LegacySegmentsOf(turn.StoredAnswer))
+                                        {
+                                            if (segment.IsCitation)
+                                            {
+                                                <p class="ep-hint">@segment.Text</p>
+                                            }
+                                            else
+                                            {
+                                                <FormattedAnswerView Content="@segment.Text" />
+                                            }
+                                        }
+                                        @if (turn.MemoryCitations.Count > 0)
+                                        {
+                                            <SourceCards Sources="@StoredSourcesOf(turn)"
+                                                         AsOfLabel="@turn.AsOfLabel"
+                                                         OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
+                                        }
                                     }
 
                                     break;
                                 case TurnState.Answered:
-                                    <p class="ep-answer-text">@turn.Answer!.Text</p>
+                                    <FormattedAnswerView Content="@turn.Answer!.Text"
+                                                        Sources="turn.Answer.Sources"
+                                                        OnCitationSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
                                     <p class="ep-hint">@L["這段回答由 AI 只根據下列法條產生，請核對出處再引用。"]</p>
                                     <SourceCards Sources="turn.Answer.Sources" AsOfLabel="@turn.AsOfLabel" OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
                                     break;

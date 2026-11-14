@@ -4,6 +4,7 @@ using EnvCite.Platform.Web.Components.Layout.Navigation;
 using EnvCite.Platform.Web.Components.Portal.Workspace;
 using EnvCite.Platform.Web.Design;
 using EnvCite.Platform.Web.Presentation;
+using EnvCite.Platform.Web.Presentation.Output;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
@@ -26,6 +27,7 @@ public static class WebModule
         services.AddPlatformBrand();
         services.AddSingleton<BrandText>();
         services.AddPlatformAppearance();
+        services.AddOutputLayoutEngine();
         services.AddPortalNavigation();
         services.AddScoped<WorkspaceState>();
         services.AddScoped<ChatSession>();

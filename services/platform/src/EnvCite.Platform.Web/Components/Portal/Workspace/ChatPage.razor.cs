@@ -211,6 +211,42 @@ public sealed partial class ChatPage
         _drawerLoading = false;
     }
 
+    private static IReadOnlyList<AnswerSource> StoredSourcesOf(ChatTurn turn) =>
+        [.. turn.MemoryCitations.Select(c => new AnswerSource(c.Code, c.Uri, c.Label, string.Empty))];
+
+    private readonly record struct StoredSegment(bool IsCitation, string Text);
+
+    /// <summary>將舊版 StoredAnswer 的連續正文與出處行分組，保持 Markdown 多行結構完整同時保留出處小字。</summary>
+    private static List<StoredSegment> LegacySegmentsOf(string storedAnswer)
+    {
+        var segments = new List<StoredSegment>();
+        var proseLines = new List<string>();
+
+        void FlushProse()
+        {
+            if (proseLines.Count == 0)
+                return;
+            segments.Add(new StoredSegment(false, string.Join('\n', proseLines)));
+            proseLines.Clear();
+        }
+
+        foreach (var line in storedAnswer.Split('\n'))
+        {
+            if (IsCitationLine(line))
+            {
+                FlushProse();
+                segments.Add(new StoredSegment(true, line));
+            }
+            else
+            {
+                proseLines.Add(line);
+            }
+        }
+
+        FlushProse();
+        return segments;
+    }
+
     /// <summary>歷史裡存的答案是「正文，接著每個出處一行」；出處行用小字，正文是回答。</summary>
     private static bool IsCitationLine(string line) =>
         line.StartsWith('《') || (line.StartsWith("[L", StringComparison.Ordinal) && line.Contains("] ", StringComparison.Ordinal));
