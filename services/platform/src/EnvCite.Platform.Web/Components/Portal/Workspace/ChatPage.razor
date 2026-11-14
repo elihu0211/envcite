@@ -56,16 +56,43 @@
         {
             <h1 class="ep-visually-hidden">@L["查詢結果"]</h1>
             <div class="ep-thread">
-                @foreach (var turn in Session.Turns)
+                @for (var turnIndex = 0; turnIndex < Session.Turns.Count; turnIndex++)
                 {
+                    var turn = Session.Turns[turnIndex];
+                    var turnSources = TurnSourcesOf(turn);
+                    var copyText = CopyTextOf(turn);
+                    var copyId = $"ep-turn-copy-{turnIndex}";
+                    var copyStatusId = $"ep-turn-copy-status-{turnIndex}";
                     <div class="ep-turn">
                         <p class="ep-bubble">@turn.Question</p>
 
                         <div class="ep-answer" aria-live="polite">
+                            @if (turn.State != TurnState.Pending)
+                            {
+                                <div class="ep-answer-head">
+                                    <span class="ep-answer-badge" aria-hidden="true"><BrandMark /></span>
+                                    <span class="ep-answer-brand">@Brand.Name</span>
+                                    @if (!string.IsNullOrEmpty(turn.AsOfLabel))
+                                    {
+                                        <span class="ep-answer-asof">@turn.AsOfLabel</span>
+                                    }
+                                </div>
+                            }
+
                             @switch (turn.State)
                             {
                                 case TurnState.Pending:
-                                    <p class="ep-status" role="status">@PendingText(turn)</p>
+                                    <div class="ep-turn-pending">
+                                        <div class="ep-answer-head">
+                                            <span class="ep-answer-badge" aria-hidden="true"><BrandMark /></span>
+                                            <span class="ep-answer-brand">@Brand.Name</span>
+                                        </div>
+                                        <p class="ep-status" role="status">@PendingText(turn)</p>
+                                        <div class="ep-turn-skeleton" aria-hidden="true">
+                                            <span class="ep-skeleton-block ep-skeleton-line"></span>
+                                            <span class="ep-skeleton-block ep-skeleton-line"></span>
+                                        </div>
+                                    </div>
                                     break;
                                 case TurnState.Failed:
                                     <FormAlert Message="@turn.Error" />
@@ -73,25 +100,24 @@
                                 case TurnState.Refused:
                                     <FormAlert Kind="AlertKind.Info">@Session.RefusalLabel(turn.Answer!.RefusalReason)</FormAlert>
                                     @* 找到法源但不足以回答時帶著法條名稱清單：點擊後於右側抽屜依索引 API 載入全文。 *@
-                                    <SourceCards Sources="turn.Answer!.Sources" AsOfLabel="@turn.AsOfLabel" OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
+                                    <SourceCards Sources="turn.Answer!.Sources" AsOfLabel="@turn.AsOfLabel" OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel, turnSources))" />
                                     break;
                                 case TurnState.Answered when turn.StoredAnswer is not null:
                                     @* 從歷史載入的回答：新格式帶著原始 Markdown／圖表本文與引用清單，以排版引擎還原；舊資料拆出正文與出處行。 *@
                                     @if (turn.MemoryText is not null)
                                     {
-                                        var storedSources = StoredSourcesOf(turn);
                                         <FormattedAnswerView Content="@turn.MemoryText"
-                                                            Sources="@storedSources"
-                                                            OnCitationSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
+                                                            Sources="@turnSources"
+                                                            OnCitationSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel, turnSources))" />
                                         @foreach (var line in turn.StoredAnswer.Split('\n').Where(IsCitationLine))
                                         {
                                             <p class="ep-hint">@line</p>
                                         }
-                                        @if (storedSources.Count > 0)
+                                        @if (turnSources.Count > 0)
                                         {
-                                            <SourceCards Sources="@storedSources"
+                                            <SourceCards Sources="@turnSources"
                                                          AsOfLabel="@turn.AsOfLabel"
-                                                         OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
+                                                         OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel, turnSources))" />
                                         }
                                     }
                                     else
@@ -109,9 +135,9 @@
                                         }
                                         @if (turn.MemoryCitations.Count > 0)
                                         {
-                                            <SourceCards Sources="@StoredSourcesOf(turn)"
+                                            <SourceCards Sources="@turnSources"
                                                          AsOfLabel="@turn.AsOfLabel"
-                                                         OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
+                                                         OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel, turnSources))" />
                                         }
                                     }
 
@@ -119,9 +145,9 @@
                                 case TurnState.Answered:
                                     <FormattedAnswerView Content="@turn.Answer!.Text"
                                                         Sources="turn.Answer.Sources"
-                                                        OnCitationSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
+                                                        OnCitationSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel, turnSources))" />
                                     <p class="ep-hint">@L["這段回答由 AI 只根據下列法條產生，請核對出處再引用。"]</p>
-                                    <SourceCards Sources="turn.Answer.Sources" AsOfLabel="@turn.AsOfLabel" OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
+                                    <SourceCards Sources="turn.Answer.Sources" AsOfLabel="@turn.AsOfLabel" OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel, turnSources))" />
                                     break;
                                 case TurnState.Listed:
                                     <p class="ep-status" role="status">
@@ -142,6 +168,35 @@
                                     }
 
                                     break;
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(copyText) || turnSources.Count > 0)
+                            {
+                                <div class="ep-answer-actions">
+                                    @if (!string.IsNullOrWhiteSpace(copyText))
+                                    {
+                                        <button type="button"
+                                                class="ep-answer-action ep-js-only"
+                                                data-copy-target="@copyId"
+                                                data-copy-status="@copyStatusId"
+                                                data-done="@L["已複製"]"
+                                                data-failed="@L["無法自動複製，已選取文字，請按 Ctrl+C（Mac 按 ⌘C）。"]">
+                                            <NavIcon Path="@Icons.Material.Outlined.ContentCopy" />
+                                            <span>@L["複製回答"]</span>
+                                        </button>
+                                        <span id="@copyId" class="ep-visually-hidden">@copyText</span>
+                                        <span id="@copyStatusId" class="ep-visually-hidden" role="status" aria-live="polite"></span>
+                                    }
+                                    @if (turnSources.Count > 0)
+                                    {
+                                        <button type="button"
+                                                class="ep-answer-action"
+                                                @onclick="() => OpenDrawerAsync(turnSources[0], turn.AsOfLabel, turnSources)">
+                                            <NavIcon Path="@Icons.Material.Outlined.MenuBook" />
+                                            <span>@L["法源依據（{0}）", turnSources.Count]</span>
+                                        </button>
+                                    }
+                                </div>
                             }
                         </div>
                     </div>
@@ -219,4 +274,6 @@
                 Article="@_drawerArticle"
                 IsLoading="@_drawerLoading"
                 ErrorMessage="@_drawerError"
+                Sources="@_drawerSources"
+                OnSelectSource="SelectDrawerSourceAsync"
                 OnClose="CloseDrawer" />

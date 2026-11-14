@@ -452,6 +452,8 @@ h1[tabindex="-1"]:focus-visible {
 .ep-side-new-chat,
 .ep-portal-user,
 .ep-portal-new-chat,
+.ep-answer-action,
+.ep-drawer-source-pill,
 .ep-btn {
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
@@ -465,6 +467,8 @@ h1[tabindex="-1"]:focus-visible {
 .ep-side-new-chat:active,
 .ep-portal-user:active,
 .ep-portal-new-chat:active,
+.ep-answer-action:active,
+.ep-drawer-source-pill:active,
 .ep-chip:active,
 .ep-btn:active,
 .ep-segment:has(> input:active) {
@@ -1998,7 +2002,7 @@ a.ep-brand {
 
 .ep-thread {
     flex: 1;
-    padding-block-end: var(--ep-space-4);
+    padding-block-end: var(--ep-space-6);
 }
 
 /* 你的問題：靠右的氣泡，主色一成的淡底，文字仍是主要文字色。 */
@@ -2007,8 +2011,111 @@ a.ep-brand {
     max-inline-size: 85%;
     margin: 0;
     padding: var(--ep-space-3) var(--ep-space-4);
+    border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-sheet) var(--ep-radius-sheet) var(--ep-radius-control) var(--ep-radius-sheet);
     overflow-wrap: anywhere;
+}
+
+.ep-answer-head {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+}
+
+.ep-answer-badge {
+    display: inline-grid;
+    place-items: center;
+    inline-size: var(--ep-space-6);
+    block-size: var(--ep-space-6);
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--ep-primary) 12%, transparent);
+    color: var(--ep-primary);
+}
+
+.ep-answer-badge .ep-brand-mark {
+    inline-size: calc(var(--ep-space-3) + var(--ep-space-1));
+    block-size: calc(var(--ep-space-3) + var(--ep-space-1));
+}
+
+.ep-answer-brand {
+    font-size: var(--ep-label-m-size);
+    font-weight: var(--ep-label-l-weight);
+    color: var(--ep-text);
+}
+
+.ep-answer-asof,
+.ep-drawer-asof {
+    padding: var(--ep-space-1) var(--ep-space-2);
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-surface-muted);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-s-size);
+    line-height: 1.2;
+}
+
+.ep-turn-pending {
+    display: grid;
+    gap: var(--ep-space-2);
+}
+
+.ep-turn-skeleton {
+    display: grid;
+    gap: var(--ep-space-2);
+    max-inline-size: var(--ep-measure-narrow);
+}
+
+.ep-turn-skeleton > .ep-skeleton-line:first-child {
+    inline-size: 88%;
+}
+
+.ep-answer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+    padding-block-start: var(--ep-space-1);
+}
+
+.ep-answer-action {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-1);
+    min-block-size: var(--ep-touch-target);
+    padding: 0 var(--ep-space-3);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-surface);
+    color: var(--ep-text-secondary);
+    font: inherit;
+    font-size: var(--ep-label-m-size);
+    line-height: var(--ep-label-m-leading);
+    cursor: pointer;
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-answer-action[data-done-now] {
+    border-color: color-mix(in srgb, var(--ep-success) 35%, var(--ep-border-subtle));
+    color: var(--ep-success);
+}
+
+.ep-answer-action .ep-icon {
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+}
+
+@media (pointer: fine) {
+    .ep-answer-action {
+        min-block-size: var(--ep-control-height);
+    }
+}
+
+@media (hover: hover) {
+    .ep-answer-action:hover {
+        border-color: var(--ep-border-control);
+        background: var(--ep-surface-raised);
+        color: var(--ep-text);
+    }
 }
 
 .ep-answer > .ep-alert,
@@ -4026,6 +4133,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
     .ep-recent-item:hover .ep-recent-more,
     .ep-recent-item:focus-within .ep-recent-more,
+    .ep-recent-item:has(> .ep-recent-link.active) .ep-recent-more,
     .ep-recent-more[aria-expanded="true"] {
         opacity: 1;
     }
@@ -4058,6 +4166,19 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     inset-inline: var(--ep-space-3) auto;
     inline-size: min(18rem, calc(100vw - var(--ep-space-6)));
     min-inline-size: 0;
+}
+
+.ep-conv-menu .ep-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+}
+
+.ep-conv-menu .ep-menu-item .ep-icon {
+    flex: none;
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+    color: var(--ep-text-secondary);
 }
 
 @supports (anchor-name: --ep-anchor) {
@@ -4097,16 +4218,120 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     padding: var(--ep-space-1) var(--ep-space-3) var(--ep-space-2);
 }
 
-.ep-conv-search {
-    display: flex;
-    gap: var(--ep-space-2);
-    margin-block-end: var(--ep-space-3);
+/* ---- 客戶入口其餘頁面統一版型與原生對話紀錄頁 ---------------------------------------------------- */
+.ep-portal .ep-console-main:not(:has(> .ep-workbench-shell)):not(:has(> .ep-ask)) {
+    max-inline-size: var(--ep-measure-page);
 }
 
-.ep-conv-search .ep-input {
-    flex: 1;
-    border: 1px solid var(--ep-border-control);
+.ep-portal .ep-console-main:has(> .ep-history-shell) {
+    max-inline-size: var(--ep-measure-ask-desktop);
+}
+
+.ep-portal .ep-narrow {
+    max-inline-size: var(--ep-measure-ask-desktop);
+}
+
+.ep-portal .ep-console-main > .ep-page-header,
+.ep-portal .ep-narrow > .ep-page-header {
+    padding-block-end: var(--ep-space-4);
+    border-block-end: 1px solid var(--ep-border-subtle);
+    margin-block-end: var(--ep-space-6);
+}
+
+.ep-portal .ep-console-main > .ep-page-header .ep-page-title,
+.ep-portal .ep-narrow > .ep-page-header .ep-page-title {
+    font-size: var(--ep-headline-m-size);
+    line-height: var(--ep-headline-m-leading);
+    letter-spacing: var(--ep-headline-m-tracking);
+    font-weight: var(--ep-headline-m-weight);
+}
+
+.ep-history-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-4);
+}
+
+.ep-history-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ep-space-2);
+}
+
+.ep-history-meta .ep-hint {
+    margin: 0;
+}
+
+.ep-conv-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+    margin: 0;
+}
+
+.ep-conv-search-field {
+    position: relative;
+    flex: 1 1 16rem;
+    min-inline-size: 0;
+    display: flex;
+    align-items: center;
+}
+
+.ep-conv-search-field .ep-icon {
+    position: absolute;
+    inset-inline-start: var(--ep-space-3);
+    inline-size: calc(var(--ep-space-4) + var(--ep-space-1));
+    block-size: calc(var(--ep-space-4) + var(--ep-space-1));
+    color: var(--ep-text-secondary);
+    pointer-events: none;
+}
+
+.ep-conv-search-field .ep-input {
+    inline-size: 100%;
+    padding-inline-start: calc(var(--ep-space-3) + var(--ep-space-4) + var(--ep-space-3));
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-pill);
     background: var(--ep-surface);
+}
+
+.ep-history-item {
+    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+@media (hover: hover) {
+    .ep-history-item:hover {
+        border-color: var(--ep-border-control);
+        background: var(--ep-surface-raised);
+    }
+}
+
+.ep-history-title {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+    font-weight: var(--ep-label-l-weight);
+}
+
+.ep-history-title .ep-icon {
+    flex: none;
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+    color: var(--ep-text-secondary);
+}
+
+.ep-history[hidden],
+.ep-history-item[hidden],
+.ep-history-filter-empty[hidden] {
+    display: none;
+}
+
+.ep-history-filter-empty {
+    margin: var(--ep-space-4) 0;
+    text-align: center;
 }
 
 /* ---- 法規體系與合規工作台：雙欄目錄 + 寬幅 Stufenbau 授權知識圖譜 ------------------------------------- */
@@ -4788,8 +5013,50 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--ep-space-3);
-    padding: var(--ep-space-4) var(--ep-space-5);
+    padding: var(--ep-space-4) var(--ep-space-6);
     border-block-end: 1px solid var(--ep-border-subtle);
+}
+
+.ep-drawer-sources {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-2);
+    padding: var(--ep-space-2) var(--ep-space-6);
+    border-block-end: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface);
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.ep-drawer-source-pill {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-1);
+    max-inline-size: 16rem;
+    min-block-size: var(--ep-control-height);
+    padding: var(--ep-space-1) var(--ep-space-3);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-bg);
+    color: var(--ep-text-secondary);
+    font: inherit;
+    font-size: var(--ep-label-m-size);
+    cursor: pointer;
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-drawer-source-pill.is-active {
+    border-color: var(--ep-primary);
+    background: color-mix(in srgb, var(--ep-primary) 12%, var(--ep-surface));
+    color: var(--ep-text);
+    font-weight: var(--ep-label-l-weight);
+}
+
+.ep-drawer-source-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .ep-drawer-title-group {
@@ -4806,10 +5073,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     font-weight: var(--ep-label-l-weight);
     line-height: 1.35;
     color: var(--ep-text);
-}
-
-.ep-drawer-asof {
-    font-size: var(--ep-label-s-size);
 }
 
 .ep-drawer-close {
@@ -4834,7 +5097,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 .ep-drawer-body {
     flex: 1 1 auto;
     overflow-y: auto;
-    padding: var(--ep-space-5);
+    padding: var(--ep-space-4) var(--ep-space-6);
 }
 
 .ep-drawer-loading {
@@ -4848,8 +5111,8 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 .ep-drawer-footer {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    padding: var(--ep-space-3) var(--ep-space-5);
+    gap: var(--ep-space-1);
+    padding: var(--ep-space-3) var(--ep-space-6);
     border-block-start: 1px solid var(--ep-border-subtle);
     background: var(--ep-surface);
 }

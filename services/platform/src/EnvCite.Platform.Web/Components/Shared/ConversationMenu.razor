@@ -10,7 +10,7 @@
     <form method="post" action="@($"{Href}/pin")">
         <AntiforgeryToken />
         <input type="hidden" name="pinned" value="@(Pinned ? "false" : "true")" />
-        <button type="submit" class="ep-menu-item">@(Pinned ? L["取消釘選"] : L["釘選"])</button>
+        <button type="submit" class="ep-menu-item"><NavIcon Path="@Icons.Material.Outlined.PushPin" /><span>@(Pinned ? L["取消釘選"] : L["釘選"])</span></button>
     </form>
     <form method="post" action="@($"{Href}/rename")" class="ep-conv-rename">
         <AntiforgeryToken />

@@ -1590,6 +1590,21 @@
   <data name="查看全部" xml:space="preserve">
     <value>View all</value>
   </data>
+  <data name="組織方案、個人身分與已啟用模組。" xml:space="preserve">
+    <value>Organization plan, personal identity, and enabled modules.</value>
+  </data>
+  <data name="複製回答" xml:space="preserve">
+    <value>Copy answer</value>
+  </data>
+  <data name="法源依據（{0}）" xml:space="preserve">
+    <value>Cited sources ({0})</value>
+  </data>
+  <data name="切換引用法條" xml:space="preserve">
+    <value>Switch cited article</value>
+  </data>
+  <data name="共 {0} 筆對話" xml:space="preserve">
+    <value>{0} conversations</value>
+  </data>
   <data name="換個詞試試；只比對標題，不比對內容。" xml:space="preserve">
     <value>Try another word. Only titles are searched, not the conversations themselves.</value>
   </data>

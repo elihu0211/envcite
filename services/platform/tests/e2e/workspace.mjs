@@ -189,6 +189,30 @@ const scenarios = {
             if (!text.includes("L1")) throw new Error(`追問沒有得到有出處的回答：${text}`);
         });
 
+        await step("追問前檢查回答工具列：複製回答與法源依據抽屜", async () => {
+            const lastTurn = turns().last();
+            const copyBtn = lastTurn.locator(".ep-answer-action[data-copy-target]");
+            await copyBtn.click();
+            await until("複製後應顯示已複製", async () => (await copyBtn.innerText()).includes("已複製"));
+            await lastTurn.locator(".ep-answer-action", { hasText: "法源依據" }).click();
+            await until("點工具列應開啟右側條文抽屜", async () => (await page.locator(".ep-drawer-panel").count()) === 1);
+            await page.click(".ep-drawer-close");
+            await until("關閉後抽屜應收起", async () => (await page.locator(".ep-drawer-panel").count()) === 0);
+        });
+
+        await step("對話紀錄頁即時篩選與 Esc 還原", async () => {
+            await page.goto(`${base}/portal/${tenant}/history`);
+            const historyFilter = page.locator("input[data-history-filter]");
+            await historyFilter.fill("不存在的關鍵字");
+            await until("不符時應隱藏清單並顯示空狀態", async () =>
+                (await page.locator("[data-history-item]:visible").count()) === 0 && await page.locator("[data-history-empty]").isVisible());
+            await historyFilter.press("Escape");
+            await until("Esc 應還原紀錄清單", async () =>
+                (await page.locator("[data-history-item]:visible").count()) === 1 && !(await page.locator("[data-history-empty]").isVisible()));
+            await page.goto(conversationUrl);
+            await circuitConnected();
+        });
+
         await step("刪除：要先確認，刪掉後回首頁、側欄沒有這一串", async () => {
             await openMenu();
             await page.locator(".ep-conv-menu .ep-menu-danger").click();
