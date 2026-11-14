@@ -9,16 +9,60 @@
   寫成 `text_authority = competent_authority`。
 """
 
+import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, NamedTuple, Protocol
+from typing import NamedTuple, Protocol
+
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from envcite_ontology.acquire import ly_law, moenv_law
 from envcite_ontology.db import Conn, fetch
 from envcite_ontology.ingest.backfill import UnreadablePage, Version
 
 _NORM_KINDS = {"法律": ("statute", "constitution"), "命令": ("regulation",)}
+
+
+class _Frozen(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+
+class _Bundle(_Frozen):
+    """一部法規的快照內容：各來源自己的格式，來源自己解析與序列化。
+
+    快照以內容的 SHA-256 定址，所以序列化要穩定：鍵排序、不輸出沒有的欄位。
+    """
+
+    def dump(self) -> str:
+        """快照的 JSON 文字。"""
+        document = self.model_dump(mode="json", exclude_none=True)
+        return json.dumps(document, ensure_ascii=False, sort_keys=True)
+
+
+class _MoenvBundle(_Bundle):
+    site_id: str
+    title: str
+    kind: str
+    #: 現行頁的內容部分。
+    current: str
+    history_ids: list[str]
+    #: 歷史清單上每個 `hid` 的頁面內容部分；鍵跨次不變，下次沿用不重抓。
+    versions: dict[str, str]
+
+
+class _LyVersion(_Frozen):
+    promulgated: date
+    page: str
+
+
+class _LyBundle(_Bundle):
+    pcode: str
+    title: str
+    #: 檢索結果沒有恰好一部同名的法律時，只記檢索到的標題，沒有 `current` 與 `versions`。
+    hits: list[str] | None = None
+    current: _LyVersion | None = None
+    versions: dict[str, _LyVersion] | None = None
 
 
 class _TitledRow(NamedTuple):
@@ -57,6 +101,24 @@ class Target:
     kind: str = ""
 
 
+@dataclass(frozen=True, slots=True)
+class Fetched:
+    """`HistorySource.fetch` 的結果：快照的內容，與這次實際抓了幾頁、沿用幾頁。"""
+
+    #: 快照的 JSON 文字（內容定址）。
+    snapshot: str
+    fetched: int
+    reused: int
+
+
+class Reading(NamedTuple):
+    """快照解出的結果：語料的法規代碼、現行版本與過去各版。"""
+
+    pcode: str
+    current: Version
+    past: list[Version]
+
+
 class Skip(Exception):
     """快照不屬這個來源現在的範圍（如舊快照的種類），不匯入也不記問題。"""
 
@@ -89,19 +151,19 @@ class HistorySource(Protocol):
         """列出這次要取得歷史的法規。"""
         ...
 
-    def bundle(self, web: Web, target: Target, previous: dict[str, Any]) -> dict[str, Any]:
+    def fetch(self, web: Web, target: Target, previous: str | None) -> Fetched:
         """一部法規的快照內容。
 
-        `versions` 是過去各版（鍵跨次不變）；`_fetched`、`_reused` 是頁數，不進快照。
+        `previous` 是這部法規上一次的快照文字（沒有或讀不懂就整部重抓）；過去各版的鍵跨次不變，
+        已有的沿用不重抓。頁面讀不出來拋 `UnreadablePage`。
         """
         ...
 
-    def resolve(self, conn: Conn, bundle: dict[str, Any]) -> str:
-        """語料的法規代碼；對不到拋 `Unmatched`，不屬範圍拋 `Skip`。"""
-        ...
+    def read(self, conn: Conn, snapshot: str) -> Reading:
+        """快照解出（語料的法規代碼，現行版本，過去各版）。
 
-    def versions(self, bundle: dict[str, Any]) -> tuple[Version, list[Version]]:
-        """快照內容解出（現行版本，過去各版）；頁面讀不出來拋 `UnreadablePage`。"""
+        對不到語料拋 `Unmatched`，不屬範圍拋 `Skip`，頁面讀不出來拋 `UnreadablePage`。
+        """
         ...
 
 
@@ -143,53 +205,50 @@ class Moenv:
                 page += 1
         return list(found.values())
 
-    def bundle(self, web: Web, target: Target, previous: dict[str, Any]) -> dict[str, Any]:
+    def fetch(self, web: Web, target: Target, previous: str | None) -> Fetched:
         """現行頁與歷史清單上每個 `hid` 的頁面內容；`previous` 已有的 `hid` 沿用不重抓。"""
+        earlier = _earlier_moenv(previous)
         listing = web.text(moenv_law.HISTORY_LIST.format(site_id=target.key))
         current = web.text(moenv_law.CURRENT.format(site_id=target.key))
         versions: dict[str, str] = {}
         fetched, reused = 2, 0
         for hid in moenv_law.history_ids(listing):
-            if str(hid) in previous:
-                versions[str(hid)] = previous[str(hid)]
+            if str(hid) in earlier:
+                versions[str(hid)] = earlier[str(hid)]
                 reused += 1
                 continue
             page = web.text(moenv_law.HISTORY.format(hid=hid, site_id=target.key))
             versions[str(hid)] = moenv_law.fragment(page)
             fetched += 1
-        return {
-            "site_id": target.key,
-            "title": target.title,
-            "kind": target.kind,
-            "current": moenv_law.fragment(current),
-            "history_ids": list(versions),
-            "versions": versions,
-            "_fetched": fetched,
-            "_reused": reused,
-        }
+        bundle = _MoenvBundle(
+            site_id=target.key,
+            title=target.title,
+            kind=target.kind,
+            current=moenv_law.fragment(current),
+            history_ids=list(versions),
+            versions=versions,
+        )
+        return Fetched(bundle.dump(), fetched, reused)
 
-    def resolve(self, conn: Conn, bundle: dict[str, Any]) -> str:
-        """以（現行版本標題，種類）對到語料的法規代碼。
+    def read(self, conn: Conn, snapshot: str) -> Reading:
+        """以（現行版本標題，種類）對到語料的法規代碼，再解析現行頁與每個歷史頁。
 
         種類不在 `KINDS` 拋 `Skip`；同名的數部以現行版本日分辨，仍不是唯一一部拋
         `Unmatched`（`unmatched` 或 `ambiguous_title`）。
         """
-        if bundle["kind"] not in self.KINDS:
+        bundle = _MoenvBundle.model_validate_json(snapshot)
+        if bundle.kind not in self.KINDS:
             raise Skip
-        current = moenv_law.parse_version(bundle["current"])
+        current = moenv_law.parse_version(bundle.current)
         # 同名的數部（廢止後另立同名法規）以現行版本日分辨。
-        named = self._named(conn).get((current.title, bundle["kind"]), [])
+        named = self._named(conn).get((current.title, bundle.kind), [])
         pcodes = [c for c, d in named if d == current.version_date] if len(named) > 1 else []
         pcodes = pcodes or [c for c, _ in named]
         if len(pcodes) != 1:
             code = "unmatched" if not pcodes else "ambiguous_title"
-            raise Unmatched(code, f"{current.title}（{bundle['kind']}）")
-        return pcodes[0]
-
-    def versions(self, bundle: dict[str, Any]) -> tuple[Version, list[Version]]:
-        """解析現行頁與每個歷史頁。"""
-        current = moenv_law.parse_version(bundle["current"])
-        return current, [moenv_law.parse_version(p) for p in bundle["versions"].values()]
+            raise Unmatched(code, f"{current.title}（{bundle.kind}）")
+        past = [moenv_law.parse_version(p) for p in bundle.versions.values()]
+        return Reading(pcodes[0], current, past)
 
     def _named(self, conn: Conn) -> dict[tuple[str, str], list[tuple[str, date]]]:
         """（最新版本的標題，種類）→（pcode，最新版本日）；歷來改過名的法規只以現名對。"""
@@ -245,21 +304,23 @@ class Ly:
             if row.title is not None
         ]
 
-    def bundle(self, web: Web, target: Target, previous: dict[str, Any]) -> dict[str, Any]:
+    def fetch(self, web: Web, target: Target, previous: str | None) -> Fetched:
         """一部法律的現行一版與過去各版的頁面內容；`previous` 已有的版本沿用不重抓。
 
         檢索結果沒有恰好一部同名的法律時，只記檢索到的標題（`hits`），不抓頁面。法律頁的
         最新一版與檢索結果不符拋 `UnreadablePage`。
         """
+        earlier = _earlier_ly(previous)
         name = ly_law.name(target.title)
         action, fields = ly_law.search_form(web.text(ly_law.HOME), name)
         hits = ly_law.hits(web.form(ly_law.BASE + action, fields))
         same = [h for h in hits if h.title == name]
-        out: dict[str, Any] = {"pcode": target.key, "title": target.title}
         fetched, reused = 2, 0
         if len(same) != 1:
-            out["hits"] = [h.title for h in hits]
-            return out | {"_fetched": fetched, "_reused": reused}
+            unmatched = _LyBundle(
+                pcode=target.key, title=target.title, hits=[h.title for h in hits]
+            )
+            return Fetched(unmatched.dump(), fetched, reused)
         page = web.text(ly_law.BASE + same[0].link)
         fetched += 1
         entries = ly_law.entries(page)
@@ -268,40 +329,60 @@ class Ly:
             raise UnreadablePage(
                 f"法律頁的最新一版 {latest.passed} 不是檢索結果的 {same[0].passed}"
             )
-        versions: dict[str, Any] = {}
+        versions: dict[str, _LyVersion] = {}
         for e in past:
-            if e.key in previous:
-                versions[e.key] = previous[e.key]
+            if e.key in earlier:
+                versions[e.key] = earlier[e.key]
                 reused += 1
                 continue
-            versions[e.key] = {
-                "promulgated": e.promulgated.isoformat(),
-                "page": ly_law.fragment(web.text(ly_law.BASE + e.link)),
-            }
+            versions[e.key] = _LyVersion(
+                promulgated=e.promulgated, page=ly_law.fragment(web.text(ly_law.BASE + e.link))
+            )
             fetched += 1
-        out["current"] = {
-            "promulgated": latest.promulgated.isoformat(),
-            "page": ly_law.fragment(page),
-        }
-        out["versions"] = versions
-        return out | {"_fetched": fetched, "_reused": reused}
+        bundle = _LyBundle(
+            pcode=target.key,
+            title=target.title,
+            current=_LyVersion(promulgated=latest.promulgated, page=ly_law.fragment(page)),
+            versions=versions,
+        )
+        return Fetched(bundle.dump(), fetched, reused)
 
-    def resolve(self, conn: Conn, bundle: dict[str, Any]) -> str:
-        """目標本身的 pcode；檢索沒有對到同名的現行法拋 `Unmatched`。"""
-        if "current" not in bundle:
-            hits = "、".join(bundle["hits"]) or "無"
-            raise Unmatched("unmatched", f"{bundle['title']}：檢索結果的現行法為 {hits}")
-        return str(bundle["pcode"])
+    def read(self, conn: Conn, snapshot: str) -> Reading:
+        """目標本身的 pcode，現行一版與過去各版；同日公布的數版只取後通過的一版。
 
-    def versions(self, bundle: dict[str, Any]) -> tuple[Version, list[Version]]:
-        """解析現行一版與過去各版；同日公布的數版只取後通過的一版。"""
+        檢索沒有對到同名的現行法拋 `Unmatched`。
+        """
+        bundle = _LyBundle.model_validate_json(snapshot)
+        if bundle.current is None:
+            hits = "、".join(bundle.hits or []) or "無"
+            raise Unmatched("unmatched", f"{bundle.title}：檢索結果的現行法為 {hits}")
 
-        def parse(v: dict[str, str]) -> Version:
-            return ly_law.parse_version(v["page"], date.fromisoformat(v["promulgated"]))
+        def parse(v: _LyVersion) -> Version:
+            return ly_law.parse_version(v.page, v.promulgated)
 
         # 同日公布的數版（分別三讀、同日公布）是累積的：後通過的一版已含先通過者的修正，取後者。
-        by_day = {v.version_date: v for v in map(parse, bundle["versions"].values())}
-        return parse(bundle["current"]), list(by_day.values())
+        by_day = {v.version_date: v for v in map(parse, (bundle.versions or {}).values())}
+        return Reading(bundle.pcode, parse(bundle.current), list(by_day.values()))
+
+
+def _previous[B: _Bundle](kind: type[B], snapshot: str | None) -> B | None:
+    """上一次的快照；沒有，或格式改過讀不懂，就當沒有，整部重抓。"""
+    if snapshot is None:
+        return None
+    try:
+        return kind.model_validate_json(snapshot)
+    except ValidationError:
+        return None
+
+
+def _earlier_moenv(snapshot: str | None) -> dict[str, str]:
+    bundle = _previous(_MoenvBundle, snapshot)
+    return {} if bundle is None else dict(bundle.versions)
+
+
+def _earlier_ly(snapshot: str | None) -> dict[str, _LyVersion]:
+    bundle = _previous(_LyBundle, snapshot)
+    return {} if bundle is None else dict(bundle.versions or {})
 
 
 SOURCES: dict[str, Callable[[], HistorySource]] = {"ly": Ly, "moenv": Moenv}
