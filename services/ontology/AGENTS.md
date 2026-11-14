@@ -45,6 +45,7 @@ uv run --env-file .env envcite-ontology
   - gRPC 的端點按功能分組（`endpoints/laws`、`graph`、`search`），各自只拿它要的儲存庫介面；`service.OntologyServicer` 只在 gRPC 邊界轉交並以 `errors.maps_errors` 映射錯誤，`build_servicer` 把它們接起來。
   - 推論的輸入事實（`reasoning/facts/`）按職責分：陳述端讀資料庫（`statements` 組裝、`chains` 授權鏈、`condition_facts`、`vocabulary_facts`、`relation_facts`，各自持有自己的 SQL 與列型別），案件端只讀請求（`case_inputs`），共用的 ASP 寫法在 `asp`；套件不匯出，從定義它的模組匯入。
   - gRPC 訊息與領域型別的轉換（`reasoning_codec/`）按方向分：`request`（請求 → 推論輸入）、`outcome`（推論結果 → 回應）、`disposition`（處分稽核）、`enums`（列舉對照表）；套件不匯出，從定義它的模組匯入。
+  - 標註的寫入（`claims/`）按責任分：`loader` 是入口與交易邊界，`statements`／`sanctions`／`links` 寫陳述、罰則與兩者之間的關係，`definitions`、`vocabulary`、`held`（待連結罰則）、`anchoring`（錨定）各管一塊，`rows` 是共用的寫入原語；套件不匯出，從定義它的模組匯入。
   - 依賴注入：接線只在組合根（`server.py` 與各 CLI 的 `main`）；servicer 與推論從建構子拿依賴（儲存庫、嵌入、精排、斷詞，與調校旋鈕 `SearchTuning`），不自己建連線、不讀設定。「今日」由 SQL 的 `as_of` 決定，不在 Python 取時鐘。
   - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
   - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。

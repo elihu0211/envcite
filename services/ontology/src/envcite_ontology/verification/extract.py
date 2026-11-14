@@ -11,14 +11,9 @@ from dataclasses import dataclass
 from itertools import groupby
 from typing import Any, NamedTuple
 
-from envcite_ontology.claims import (
-    LEGAL_EFFECTS,
-    LIABILITY_BASES,
-    TRIGGER_KINDS,
-    AnnotationError,
-    Loaded,
-    load,
-)
+from envcite_ontology.claims.enums import LEGAL_EFFECTS, LIABILITY_BASES, TRIGGER_KINDS
+from envcite_ontology.claims.errors import AnnotationError
+from envcite_ontology.claims.loader import Loaded, load
 from envcite_ontology.db import Conn, fetch_one
 from envcite_ontology.verification import prompts
 from envcite_ontology.verification.carry import carry, truncated_issues

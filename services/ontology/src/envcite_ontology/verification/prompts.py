@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from jinja2 import Environment, PackageLoader, StrictUndefined
 
-from envcite_ontology.claims import LEGAL_EFFECTS, TRIGGER_KINDS
+from envcite_ontology.claims.enums import LEGAL_EFFECTS, TRIGGER_KINDS
 
 _env = Environment(
     loader=PackageLoader("envcite_ontology.verification", "templates"),

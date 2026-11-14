@@ -36,7 +36,8 @@ from typing import Literal, NamedTuple
 import psycopg
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from envcite_ontology.claims import AnnotationError, anchor
+from envcite_ontology.claims.anchoring import anchor
+from envcite_ontology.claims.errors import AnnotationError
 from envcite_ontology.db import Conn, fetch_one, scalar
 
 log = logging.getLogger(__name__)

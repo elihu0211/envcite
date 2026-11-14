@@ -14,7 +14,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from envcite_ontology.claims import AnnotationError, Loaded, load
+from envcite_ontology.claims.errors import AnnotationError
+from envcite_ontology.claims.loader import Loaded, load
 from envcite_ontology.db import Conn
 from envcite_ontology.verification import prompts
 from envcite_ontology.verification.context import ancestors_text

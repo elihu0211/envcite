@@ -2,7 +2,7 @@
 
 import pytest
 
-from envcite_ontology.claims import LEGAL_EFFECTS, TRIGGER_KINDS
+from envcite_ontology.claims.enums import LEGAL_EFFECTS, TRIGGER_KINDS
 from envcite_ontology.verification import prompts
 
 TEXT = "原文 {braces} 與 {{double}} {% raw %}"
