@@ -252,3 +252,58 @@ def test_a_dropped_letter_has_missed_two_crawls(
             (feed, snapshot, snapshot, missed, dropped_on),
         )
     conn.rollback()
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        pytest.param({"kind": "decree"}, id="unknown-kind"),
+        pytest.param({"subject": None}, id="null-subject"),
+        pytest.param(
+            {"interprets": [{"law": LAW, "path": "art_1"}]}, id="interpretation-without-text"
+        ),
+        pytest.param({"ceased_on": "soon"}, id="bad-ceased-on"),
+    ],
+)
+def test_a_document_of_the_wrong_shape_is_rejected_before_anything_is_written(
+    conn: Conn, tmp_path: Path, bad: dict[str, Any]
+) -> None:
+    _first(conn, tmp_path, _law_v1())
+    with pytest.raises(GuidanceError, match="文件欄位缺漏或型別不合"):
+        load(conn, _doc(_letter("甲字第1號", "2019-03-01", **bad)))
+    assert _scalar(conn, "SELECT count(*) FROM guidance.document") == 0
+
+
+def test_a_document_without_derivation_or_documents_is_rejected(conn: Conn) -> None:
+    broken: list[dict[str, Any]] = [
+        {},
+        {"documents": []},
+        {"derivation": {"method": "human"}, "documents": []},
+    ]
+    for doc in broken:
+        with pytest.raises(GuidanceError, match="文件欄位缺漏或型別不合"):
+            load(conn, doc)
+
+
+def test_a_blank_repeal_date_means_the_successors_issue_date(conn: Conn, tmp_path: Path) -> None:
+    duty, _ = _committed(conn, tmp_path)
+    earlier = {"issuer": "環境部", "document_no": "甲字第1號"}
+    load(
+        conn,
+        _doc(
+            _letter("甲字第1號", "2019-03-01"),
+            _letter("甲字第2號", "2019-05-01", supersedes=[{**earlier, "from": ""}]),
+        ),
+    )
+
+    assert _attached(conn, duty, date(2019, 4, 30)) == ["甲字第1號"]
+    assert _attached(conn, duty, date(2019, 5, 1)) == ["甲字第2號"]
+
+
+def test_a_bad_issue_date_is_rejected_before_anything_is_written(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(conn, tmp_path, _law_v1())
+    with pytest.raises(GuidanceError, match="文件欄位缺漏或型別不合"):
+        load(conn, _doc(_letter("甲字第1號", "someday")))
+    assert _scalar(conn, "SELECT count(*) FROM guidance.document") == 0
