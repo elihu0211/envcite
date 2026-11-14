@@ -491,3 +491,55 @@ def test_a_forced_first_import_keeps_the_annotations_on_unchanged_text(
 
     assert _scalar(conn, "SELECT count(*) FROM annotation.assertion") == claims
     assert _facts(conn, BEFORE) == 2
+
+
+@pytest.mark.parametrize(
+    "break_it",
+    [
+        pytest.param(lambda d: d.pop("derivation"), id="no-derivation"),
+        pytest.param(lambda d: d["statements"][0].pop("kind"), id="statement-without-kind"),
+        pytest.param(lambda d: d["statements"][0].update(id=None), id="statement-id-is-null"),
+        pytest.param(lambda d: d["statements"][0].update(id=True), id="statement-id-is-a-bool"),
+        pytest.param(lambda d: d["statements"][0].update(span=[1]), id="span-with-one-end"),
+        pytest.param(
+            lambda d: d["statements"][0]["conditions"][0].update(threshold="a lot"),
+            id="threshold-is-not-a-number",
+        ),
+        pytest.param(
+            lambda d: d["statements"][0]["conditions"][0].update(negated="maybe"),
+            id="negated-is-not-a-boolean",
+        ),
+        pytest.param(lambda d: d.update(concepts=[{"code": "x"}]), id="concept-without-label"),
+    ],
+)
+def test_a_document_of_the_wrong_shape_is_refused_before_anything_is_written(
+    conn: Conn, tmp_path: Path, break_it: Any
+) -> None:
+    _first(conn, tmp_path, _law_v1())
+    doc = _doc(_duty())
+    break_it(doc)
+
+    with pytest.raises(AnnotationError, match="文件欄位缺漏或型別不合"):
+        load(conn, doc)
+
+    assert _scalar(conn, "SELECT count(*) FROM annotation.derivation") == 0
+
+
+def test_a_statement_id_may_be_an_integer_and_is_keyed_as_text(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1())
+    duty = _duty()
+    duty["id"] = 7
+
+    loaded = load(conn, _doc(duty))
+
+    assert list(loaded.ids) == ["7"]
+
+
+def test_an_empty_span_means_no_span(conn: Conn, tmp_path: Path) -> None:
+    _first(conn, tmp_path, _law_v1())
+    duty = _duty()
+    duty["span"] = []
+
+    load(conn, _doc(duty))
+
+    assert _scalar(conn, "SELECT count(*) FROM annotation.statement WHERE span IS NULL") == 1
