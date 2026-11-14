@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class AccountOverview(IPortalAccount account, ITenantDirectory directory, IApiKeyAdmin keys, IPortalTwoFactor twoFactor)
+public partial class AccountOverview(IPortalAccount account, ITenantDirectory directory, IApiKeyAdmin keys, IPortalTwoFactor twoFactor, ITenantModules modules)
 {
     private TenantSummary? _tenant;
     private IReadOnlyList<ApiKeyInfo> _keys = [];
     private bool _twoFactor;
+
+    private ITenantModules Modules => modules;
 
     private string? GivenName => User.FindFirst(ClaimTypes.GivenName)?.Value;
 

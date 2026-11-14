@@ -13,10 +13,8 @@ namespace EnvCite.Platform.Web.Components.Bases;
 /// 結果代碼轉成使用者語言的文字只有一條路：<see cref="Describe{T}"/>（代碼取自資源檔，沒有代碼時退回英文說明，再退回呼叫端給的句子）。
 /// 載入資料的頁面用 <see cref="LoadingAsync"/> 包住查詢，狀態交給 <c>&lt;LoadedView&gt;</c> 畫（失敗、載入中、查無、有資料）。
 /// </summary>
-public abstract class PageBase : PlatformComponentBase
+public abstract class PageBase : NavigableComponentBase
 {
-    [Inject] protected NavigationManager Navigation { get; set; } = default!;
-
     protected string? Error { get; set; }
 
     /// <summary>正在載入資料。<see cref="LoadingAsync"/> 開始時為 true、結束時為 false；已有現成資料（預先渲染的快照）時由頁面自己設為 false。</summary>

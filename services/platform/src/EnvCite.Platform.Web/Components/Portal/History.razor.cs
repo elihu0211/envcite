@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public partial class History
+public partial class History(IConversationHistory store, IConversationHistoryAvailability historyFeature)
 {
     private const int PageSize = 100;
 
@@ -17,6 +17,8 @@ public partial class History
     private bool _archived;
 
     private IReadOnlyList<TabItem> _views = [];
+
+    private IConversationHistoryAvailability HistoryFeature => historyFeature;
 
     /// <summary>標題搜尋（<c>?q=</c>）；空白是全部。</summary>
     [SupplyParameterFromQuery(Name = "q")]
@@ -31,7 +33,7 @@ public partial class History
         _archived = string.Equals(View, ArchivedView, StringComparison.Ordinal);
         _views = [new TabItem(ActiveView, L["對話"]), new TabItem(ArchivedView, L["已封存"])];
         _items = _archived
-            ? await Store.ListArchivedAsync(HttpContext.User, PageSize, Query, HttpContext.RequestAborted)
-            : await Store.ListAsync(HttpContext.User, PageSize, Query, HttpContext.RequestAborted);
+            ? await store.ListArchivedAsync(HttpContext.User, PageSize, Query, HttpContext.RequestAborted)
+            : await store.ListAsync(HttpContext.User, PageSize, Query, HttpContext.RequestAborted);
     }
 }

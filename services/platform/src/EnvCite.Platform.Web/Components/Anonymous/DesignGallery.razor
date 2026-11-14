@@ -1,5 +1,6 @@
 @page "/design"
 @layout BareLayout
+@inherits PageBase
 @attribute [ExcludeFromInteractiveRouting]
 
 @* 元件展示：只在 Development（其他環境是 404，見 WebModule），不需要登入，讓改完 token 能直接看每個元件在三種寬度的樣子。
@@ -21,16 +22,8 @@
                 </article>
             </div>
         </div>
-        <div class="ep-composer-form">
-            <div class="ep-composer">
-                <textarea class="ep-composer-input" rows="2" placeholder="@L["問問{0}", Brand.Name]" aria-label="關鍵字"></textarea>
-                <button type="button" class="ep-send" aria-label="搜尋"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
-            </div>
-            <div class="ep-examples">
-                <button type="button" class="ep-chip">固定污染源</button>
-                <button type="button" class="ep-chip">廢棄物清理</button>
-            </div>
-        </div>
+        <AskComposer Interactive="false" Rows="2" Placeholder="@L["問問{0}", Brand.Name]" InputLabel="關鍵字" SendLabel="搜尋"
+                     Examples="@(["固定污染源", "廢棄物清理"])" />
     </SectionCard>
 
     <SectionCard Id="g-color" Title="色彩">

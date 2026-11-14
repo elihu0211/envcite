@@ -1,5 +1,6 @@
 @page "/ui/security"
 @layout AccountLayout
+@inherits StaticPageBase
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.UiSignInRateLimit)]
 @attribute [Authorize(Policy = PlatformAuth.UiEnrollmentPolicy)]

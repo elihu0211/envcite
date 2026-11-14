@@ -630,6 +630,8 @@ public static partial class DesignTokenTests
         Assert.Contains("max-block-size: calc(7lh + var(--ep-composer-row))", input, StringComparison.Ordinal);
         Assert.Contains("--ep-composer-row: var(--ep-touch-target)", CssBlock(css, ".ep-composer"), StringComparison.Ordinal);
         Assert.Matches(@"@media \(pointer: fine\) \{[^@]*\.ep-composer \{\s*--ep-composer-row: var\(--ep-control-height\)", css);
+        Assert.Contains(".ep-composer-footer", css, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-new-chat", css, StringComparison.Ordinal);
         Assert.DoesNotContain("ep-date-chip", css, StringComparison.Ordinal);
         Assert.DoesNotContain("ep-composer-bar", css, StringComparison.Ordinal);
         Assert.DoesNotContain("ep-bubble-meta", css, StringComparison.Ordinal);

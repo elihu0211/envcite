@@ -14,7 +14,7 @@ public static partial class ComponentTemplateTests
     {
         "FormAlert", "PostForm", "FormField", "SubmitButton", "PageHeading", "DocumentTitle",
         "PageHeader", "StatusPage", "DialogError", "DialogSubmitActions",
-        "SectionCard", "StatGrid", "StatTile", "DataTable", "SelectField", "OptionSelect", "LoadedView", "CheckboxField", "SecretReveal", "PageTabs", "TabPanel",
+        "SectionCard", "StatGrid", "StatTile", "DataTable", "SelectField", "OptionSelect", "LoadedView", "CheckboxField", "SecretReveal", "PageTabs", "TabPanel", "AskComposer",
     };
 
     // 標記只在模板裡寫：頁面與對話框用 <FormAlert>、<PostForm>、<FormField>、<SubmitButton>、<PageHeading>、<DocumentTitle>、<DialogError>。
@@ -39,6 +39,7 @@ public static partial class ComponentTemplateTests
     [InlineData("class=\"ep-secret-row\"", "<SecretReveal>")]
     [InlineData("class=\"ep-tabs\"", "<PageTabs>")]
     [InlineData("class=\"ep-tab-panel\"", "<TabPanel>")]
+    [InlineData("class=\"ep-composer", "<AskComposer>")]
     public static void TemplateMarkupIsWrittenOnlyInTheTemplates(string markup, string useInstead)
     {
         var offenders = Razor()
@@ -55,6 +56,7 @@ public static partial class ComponentTemplateTests
     [Theory]
     [InlineData(@"@inject IStringLocalizer<Ui>", "PlatformComponentBase")]
     [InlineData(@"@inject BrandText", "PlatformComponentBase")]
+    [InlineData(@"@inject NavigationManager", "NavigableComponentBase／PlatformLayoutBase")]
     [InlineData(@"\[CascadingParameter\][^\n]*\bHttpContext\b", "StaticPageBase")]
     [InlineData(@"\[SupplyParameterFromForm\][^\n]* Input\b", "FormPageBase<TForm>")]
     [InlineData(@"\bstring\? _error\b", "PageBase.Error")]
@@ -100,6 +102,20 @@ public static partial class ComponentTemplateTests
         var workspace = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Portal", "Workspace"), "*.razor");
         Assert.NotEmpty(workspace);
         Assert.All(workspace, page => Assert.Matches(@"@inherits WorkspacePageBase\b", File.ReadAllText(page)));
+
+        // 營運者帳號頁（靜態渲染）與匿名頁各自繼承統一的頁面基底。
+        var account = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Account"), "*.razor");
+        Assert.NotEmpty(account);
+        Assert.All(account, page => Assert.Matches(@"@inherits StaticPageBase\b", File.ReadAllText(page)));
+        var anonymous = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Anonymous"), "*.razor");
+        Assert.NotEmpty(anonymous);
+        Assert.All(anonymous, page => Assert.Matches(@"@inherits PageBase\b", File.ReadAllText(page)));
+
+        // 有程式碼後置檔（.razor.cs）的元件改用建構子注入，不在 .razor 重複寫 @inject。
+        var codeBehindPages = CodeBehind()
+            .Select(file => Path.ChangeExtension(file, null))
+            .Where(File.Exists);
+        Assert.All(codeBehindPages, page => Assert.DoesNotContain("@inject ", File.ReadAllText(page), StringComparison.Ordinal));
     }
 
     // 營運者與客戶入口共用的流程（改密碼、啟用）只寫一份，兩邊的頁面只剩外框。

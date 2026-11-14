@@ -1,5 +1,6 @@
 @page "/ui/login"
 @layout AccountLayout
+@inherits StaticPageBase
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.UiSignInRateLimit)]
 @attribute [AllowAnonymous]

@@ -2553,4 +2553,7 @@
   <data name="流程與結構圖表" xml:space="preserve">
     <value>Diagram</value>
   </data>
+  <data name="Enter 送出 · Shift+Enter 換行" xml:space="preserve">
+    <value>Enter to send · Shift+Enter for new line</value>
+  </data>
 </root>

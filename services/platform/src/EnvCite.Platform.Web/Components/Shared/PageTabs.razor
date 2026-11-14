@@ -1,4 +1,4 @@
-@inject NavigationManager Navigation
+@inherits NavigableComponentBase
 @* 詳細頁的分頁列：同一個資源的資訊依主題分成幾頁，一次只看一個，頁首與摘要留在分頁之上。每個分頁是連結（?tab=…），
    所以可以分享、可以上一頁，沒有 JavaScript 也能用；目前這一個帶 aria-current。標記只在這裡寫，頁面給 TabItem 清單，
    面板用 TabPanel。分頁最多七個，每個分頁只做一件事，不停用任何一個（內容都該看得到）。 *@
