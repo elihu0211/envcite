@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from envcite_ontology.verification.models import AnthropicModel
+from envcite_ontology.verification.models import AnthropicModel, ModelError
 from envcite_ontology.verification.run import (
     PROBES,
     SameModel,
@@ -61,6 +61,43 @@ def test_the_anthropic_adapter_sends_one_user_message_and_joins_the_text_blocks(
         "max_tokens": 100,
         "messages": [{"role": "user", "content": "問題"}],
     }
+
+
+class _ApiError(Exception):
+    """替身 SDK 的 `anthropic.APIError`。"""
+
+
+def _failing_sdk(monkeypatch: pytest.MonkeyPatch, error: Exception) -> None:
+    class Messages:
+        def create(self, **kwargs: Any) -> Any:
+            raise error
+
+    fake_sdk = types.SimpleNamespace(
+        APIError=_ApiError, Anthropic=lambda: types.SimpleNamespace(messages=Messages())
+    )
+    monkeypatch.setattr(
+        "envcite_ontology.verification.models.importlib",
+        types.SimpleNamespace(import_module=lambda name: fake_sdk),
+    )
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+
+
+def test_an_sdk_api_error_is_a_model_error_so_the_pipeline_records_it_and_goes_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _failing_sdk(monkeypatch, _ApiError("overloaded"))
+
+    with pytest.raises(ModelError, match="anthropic:claude-sonnet-5-5: _ApiError: overloaded"):
+        AnthropicModel("claude-sonnet-5-5").complete("x")
+
+
+def test_a_programming_error_inside_the_call_is_not_swallowed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _failing_sdk(monkeypatch, ValueError("bad arguments"))
+
+    with pytest.raises(ValueError, match="bad arguments"):
+        AnthropicModel("claude-sonnet-5-5").complete("x")
 
 
 def test_the_anthropic_adapter_refuses_to_run_without_a_key(
