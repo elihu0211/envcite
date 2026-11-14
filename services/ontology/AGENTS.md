@@ -51,6 +51,7 @@ uv run --env-file .env envcite-ontology
   - 歷史版本回推（`ingest/backfill/`）按步驟分：`models`（來源版本、錨點、計畫型別）、`anchors`（載入錨點）、`planner`（`plan` 純函式）連同 `texts`、`intervals`，`writer`（寫入，一部一個交易）；套件不匯出，從定義它的模組匯入。
   - 邏輯不直接讀系統時鐘（`date.today()`、`datetime.now()`；`tests/test_architecture.py` 守門）：今天的日期收注入的 `clock.Today`（預設 `date.today`），測試傳固定值；指令列的 `main` 是組合根，才可以呼叫 `psycopg.connect` 與 `settings.load`。
   - 歷史版本的取得（`history_sync/`）按步驟分：`run.sync` 串接 `acquire` 與 `importing`，`policy` 放重試政策與整批驗收上限，`report`、`cli`；測試要放寬上限用 `tests/history_support.relax_limits`；套件不匯出，從定義它的模組匯入。
+  - 抽取（`verification/extract.py`）只串接：取單元文字、呼叫模型、修復迴圈、載入；模型輸出的確定性檢查按類別放 `verification/checks/`（`locate` 定位、`fragments` 完整性、`sanctions` 罰則、`shape` 整形與結構、`coverage` 涵蓋），輸出格式在 `statements_format`；新增一種檢查放進對應的模組，不放回 `extract.py`。檢查要接進修復迴圈才算數：改了檢查或提示，先在開發集上量測。
   - 依賴注入：接線只在組合根（`server.py` 與各 CLI 的 `main`）；servicer 與推論從建構子拿依賴（儲存庫、嵌入、精排、斷詞，與調校旋鈕 `SearchTuning`），不自己建連線、不讀設定。「今日」由 SQL 的 `as_of` 決定，不在 Python 取時鐘。
   - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
   - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。

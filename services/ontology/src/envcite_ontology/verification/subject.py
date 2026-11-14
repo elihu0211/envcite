@@ -16,7 +16,7 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-#: 異體字一對一歸一，與 `extract.locate` 同義（污→汙），這裡自己持有以免循環匯入。
+#: 異體字一對一歸一，與 `checks.locate.locate` 同義（污→汙），這裡自己持有以免循環匯入。
 _VARIANTS = str.maketrans({"汙": "污", "巿": "市"})
 
 #: 行為人名詞的詞尾。「設施」「系統」不在其中：它們可以是行為人，也可以是被規範的物，

@@ -35,16 +35,16 @@ _LEAD_IN = re.compile(
     r"^(?P<pre>.+?)(?:應|不得|禁止|(?<![取獲所心])得(?!以|到|知|悉))(?P<post>[^。；]*下列[^。；]*)[：:]\s*$",
     re.DOTALL,
 )
-#: 標點、連接詞與助詞：與 `extract._FILLER` 同義，這裡自己持有以免循環匯入。
+#: 標點、連接詞與助詞：與 `checks.coverage._FILLER` 同義，這裡自己持有以免循環匯入。
 _FILLER = re.compile(r"[，、。；：「」（）()\s]|並|及|或|與|之|其|者|時|於|以|為|應|不得")
 #: 去掉填充字後至少這麼長的子句才值得帶入。
 _MIN_CLAUSE = 3
-#: 共同字串至少這麼長才算涵蓋（與 `extract._MIN_SHARED` 同義）。
+#: 共同字串至少這麼長才算涵蓋（與 `checks.coverage._MIN_SHARED` 同義）。
 _MIN_RUN = 2
 _CONTINUATION = re.compile(r"^[，、]\s*(並|或|及|且|另)")
 
 
-#: 異體字一對一歸一（污→汙），與 `extract.locate` 同義；引文在原文的位置兩邊歸一再找。
+#: 異體字一對一歸一（污→汙），與 `checks.locate.locate` 同義；引文在原文的位置兩邊歸一再找。
 _VARIANTS = str.maketrans({"汙": "污", "巿": "市"})
 
 
