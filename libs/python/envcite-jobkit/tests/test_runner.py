@@ -266,6 +266,25 @@ def test_open_action_wait_sleeps_until_half_open_then_recovers(
     assert stats.succeeded == 1
 
 
+def test_open_action_wait_stops_with_ok_when_the_budget_runs_out_while_waiting(
+    clock: FakeClock, policy: Policy
+) -> None:
+    policy = Policy(
+        **{**policy.__dict__, "open_action": "wait", "max_attempts": 10, "budget_seconds": 10}
+    )
+    calls: list[int] = []
+
+    def handler(n: int) -> None:
+        calls.append(n)
+        raise EndpointError("down")
+
+    stats = RunStats()
+    assert call(clock, [1], handler, policy, stats=stats) == ExitCode.OK
+    assert len(calls) == policy.min_calls
+    assert clock.sleeps[-1] == policy.open_seconds  # 等到一半預算就用完，不等到半開
+    assert (stats.processed, stats.succeeded, stats.dead_lettered) == (0, 0, 0)
+
+
 def test_item_id_and_jsonl_sink(clock: FakeClock, policy: Policy, tmp_path: Path) -> None:
     path = tmp_path / "dl.jsonl"
 
