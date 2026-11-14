@@ -155,12 +155,13 @@ const scenarios = {
         });
         const conversationUrl = page.url();
 
-        await step("釘選：側欄多一個「已釘選」群組，停留在同一頁", async () => {
+        await step("釘選：側欄那一列多一個圖釘（沒有分組），停留在同一頁", async () => {
             await openMenu();
             await page.locator(".ep-conv-menu button", { hasText: /^釘選$/ }).click();
             await reloaded();
-            await until("應有已釘選群組", async () =>
-                (await page.locator(".ep-recent .ep-side-group", { hasText: "已釘選" }).count()) === 1);
+            await until("應有已釘選的列", async () =>
+                (await page.locator(".ep-recent-link .ep-icon").count()) === 1 &&
+                (await page.locator(".ep-recent .ep-side-group").count()) === 0);
             if (page.url() !== conversationUrl) throw new Error(`釘選後網址變了：${conversationUrl} → ${page.url()}`);
         });
 
@@ -208,20 +209,14 @@ const scenarios = {
             await until("側欄應只剩原本那串", async () => (await page.locator(".ep-recent-link").count()) === 1);
         });
 
-        await step("側欄即時篩選：過濾不符的對話並用 Esc 還原，收合後點搜尋鈕可展開聚焦", async () => {
-            const filter = page.locator("input[data-recent-filter]");
-            await page.locator(".ep-side-head .ep-side-toggle").click();
-            await until("側欄應收合", async () => (await page.evaluate(() => document.documentElement.dataset.side)) === "collapsed");
-            await page.locator(".ep-recent-jump").click();
-            await until("點搜尋鈕應展開側欄並聚焦篩選框", async () =>
-                (await page.evaluate(() => document.documentElement.dataset.side)) === undefined &&
-                (await page.evaluate(() => document.activeElement?.id)) === "ep-recent-filter");
-            await filter.fill("不存在的關鍵字");
-            await until("不符時應隱藏對話並顯示空狀態", async () =>
-                (await page.locator(".ep-recent-item:visible").count()) === 0 && await page.locator("[data-recent-empty]").isVisible());
-            await filter.press("Escape");
-            await until("Esc 應還原側欄對話清單", async () =>
-                (await page.locator(".ep-recent-item:visible").count()) === 1 && !(await page.locator("[data-recent-empty]").isVisible()));
+        await step("搜尋：側欄沒有篩選框；點「搜尋對話」到紀錄頁，/ 鍵聚焦標題搜尋框", async () => {
+            if ((await page.locator("input[data-recent-filter]").count()) !== 0) throw new Error("側欄不該有篩選框");
+            await page.locator(".ep-side-search").click();
+            await until("應到對話紀錄頁", async () => page.url().endsWith("/history"));
+            await page.locator("body").click({ position: { x: 5, y: 300 } });
+            await page.keyboard.press("/");
+            await until("按 / 應聚焦標題搜尋框", async () =>
+                (await page.evaluate(() => document.activeElement?.id)) === "history-q");
         });
 
         await step("離開再從側欄點回來：還原回合，接著問會帶著前文", async () => {

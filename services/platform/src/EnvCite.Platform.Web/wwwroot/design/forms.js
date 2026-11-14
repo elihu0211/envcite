@@ -214,20 +214,8 @@
         }
     };
 
+    // ⌘K 與 /：已在對話紀錄頁就聚焦標題搜尋框，否則走側欄的「搜尋對話」連結（側欄沒有篩選框，搜尋在紀錄頁）。
     const focusConversationSearch = () => {
-        const recentInput = document.querySelector("input[data-recent-filter]");
-        if (recentInput) {
-            if (phone.matches) {
-                root.setAttribute("data-drawer", "");
-            } else if (sideCollapsed) {
-                setSideCollapsed(false);
-            }
-            syncSide();
-            recentInput.focus();
-            recentInput.select();
-            return;
-        }
-
         const historyInput = document.querySelector("input[data-history-filter]");
         if (historyInput) {
             historyInput.focus();
@@ -235,7 +223,7 @@
             return;
         }
 
-        document.querySelector(".ep-side-head a.ep-side-icon-btn")?.click();
+        document.querySelector(".ep-side-search")?.click();
     };
 
     document.addEventListener("click", (event) => {
@@ -250,8 +238,6 @@
             }
 
             syncSide();
-        } else if (event.target.closest?.(".ep-recent-jump")) {
-            focusConversationSearch();
         } else if (event.target.closest?.(".ep-scrim")) {
             closeDrawer(true);
         } else if (event.target.closest?.(".ep-side a")) {
@@ -283,8 +269,7 @@
     // 強化導覽換完頁（Blazor 的 enhancedload，串流渲染時每次更新都會觸發）：伺服器渲染的側欄不帶 title 與 aria-expanded，重設一次。
     globalThis.Blazor?.addEventListener("enhancedload", syncSide);
 
-    // ---- 側欄對話即時篩選（input[data-recent-filter]） ---------------------------------------------
-    // ---- 對話標題即時篩選（側欄 data-recent-filter 與紀錄頁 data-history-filter） ---------------------
+    // ---- 對話標題即時篩選（紀錄頁 data-history-filter） --------------------------------------------------
     // 依標題即時過濾，按 Esc 清空並還原全部；沒有腳本時仍可在 /history 送出表單搜尋。
     const filterTitleItems = (items, query, titleOf) => {
         let visible = 0;
@@ -296,33 +281,6 @@
             }
         });
         return visible;
-    };
-
-    const filterRecent = (input) => {
-        const recent = input?.closest?.(".ep-recent");
-        if (!recent) {
-            return;
-        }
-
-        const query = input.value.trim().toLowerCase();
-        let visible = 0;
-        recent.querySelectorAll(".ep-recent-nav").forEach((nav) => {
-            const groupVisible = filterTitleItems(
-                nav.querySelectorAll(".ep-recent-item"),
-                query,
-                (item) => item.querySelector(".ep-recent-link")?.textContent ?? "",
-            );
-            visible += groupVisible;
-            nav.hidden = groupVisible === 0;
-            if (nav.previousElementSibling?.classList.contains("ep-side-group")) {
-                nav.previousElementSibling.hidden = groupVisible === 0;
-            }
-        });
-
-        const empty = recent.querySelector("[data-recent-empty]");
-        if (empty) {
-            empty.hidden = query === "" || visible > 0;
-        }
     };
 
     const filterHistory = (input) => {
@@ -350,9 +308,7 @@
     };
 
     const applyFilter = (input) => {
-        if (input?.matches?.("input[data-recent-filter]")) {
-            filterRecent(input);
-        } else if (input?.matches?.("input[data-history-filter]")) {
+        if (input?.matches?.("input[data-history-filter]")) {
             filterHistory(input);
         }
     };
@@ -361,7 +317,7 @@
 
     document.addEventListener("keydown", (event) => {
         const input = event.target;
-        if (event.key === "Escape" && input?.value !== "" && input?.matches?.("input[data-recent-filter], input[data-history-filter]")) {
+        if (event.key === "Escape" && input?.value !== "" && input?.matches?.("input[data-history-filter]")) {
             event.preventDefault();
             input.value = "";
             applyFilter(input);

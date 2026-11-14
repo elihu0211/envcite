@@ -448,7 +448,6 @@ h1[tabindex="-1"]:focus-visible {
 .ep-send,
 .ep-password-toggle,
 .ep-side-toggle,
-.ep-side-icon-btn,
 .ep-side-new-chat,
 .ep-portal-user,
 .ep-portal-new-chat,
@@ -465,7 +464,6 @@ h1[tabindex="-1"]:focus-visible {
 .ep-send:active,
 .ep-password-toggle:active,
 .ep-side-toggle:active,
-.ep-side-icon-btn:active,
 .ep-side-new-chat:active,
 .ep-portal-user:active,
 .ep-portal-new-chat:active,
@@ -3619,6 +3617,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     flex: none;
     inline-size: calc(var(--ep-space-4) + var(--ep-space-1));
     block-size: calc(var(--ep-space-4) + var(--ep-space-1));
+    color: var(--ep-text-secondary);
 }
 
 .ep-portal-new-chat {
@@ -3662,23 +3661,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     margin-inline-start: 0;
 }
 
-.ep-side-icon-btn {
-    box-sizing: border-box;
-    flex: none;
-    display: grid;
-    place-items: center;
-    inline-size: var(--ep-touch-target);
-    block-size: var(--ep-touch-target);
-    padding: 0;
-    border: 0;
-    border-radius: var(--ep-radius-pill);
-    background: transparent;
-    color: var(--ep-text-secondary);
-    text-decoration: none;
-    cursor: pointer;
-    transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), color var(--ep-motion-fast) var(--ep-motion-ease-standard);
-}
-
 .ep-portal.ep-console .ep-side-body {
     box-sizing: border-box;
     flex: 1;
@@ -3706,95 +3688,14 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     gap: var(--ep-space-1);
 }
 
-.ep-history-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--ep-space-2);
-    padding: 0 var(--ep-space-3) var(--ep-space-1);
-}
-
+/* 「最近的對話」小標題：安靜的次要文字，左緣與列的文字對齊。 */
 .ep-history-heading {
+    margin: 0;
+    padding: 0 var(--ep-space-3) var(--ep-space-1);
     color: var(--ep-text-secondary);
     font-size: var(--ep-label-m-size);
     line-height: var(--ep-label-m-leading);
     font-weight: var(--ep-label-m-weight);
-}
-
-.ep-history-all {
-    font-size: var(--ep-label-m-size);
-    line-height: var(--ep-label-m-leading);
-    text-decoration: none;
-    white-space: nowrap;
-}
-
-.ep-recent-filter {
-    position: relative;
-    display: flex;
-    align-items: center;
-    margin: var(--ep-space-1) 0 var(--ep-space-2);
-}
-
-.ep-recent-filter .ep-icon {
-    position: absolute;
-    inset-inline-start: var(--ep-space-3);
-    inline-size: var(--ep-space-4);
-    block-size: var(--ep-space-4);
-    color: var(--ep-text-secondary);
-    pointer-events: none;
-}
-
-.ep-recent-search {
-    box-sizing: border-box;
-    inline-size: 100%;
-    min-block-size: var(--ep-touch-target);
-    padding: 0 var(--ep-space-8) 0 calc(var(--ep-space-3) + var(--ep-space-4) + var(--ep-space-2));
-    border: 1px solid var(--ep-border-subtle);
-    border-radius: var(--ep-radius-pill);
-    background: var(--ep-bg);
-    color: var(--ep-text);
-    font-family: inherit;
-    font-size: var(--ep-label-m-size);
-    line-height: var(--ep-label-m-leading);
-    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
-}
-
-.ep-kbd {
-    position: absolute;
-    inset-inline-end: var(--ep-space-3);
-    padding: 0 var(--ep-space-2);
-    border: 1px solid var(--ep-border-subtle);
-    border-radius: var(--ep-radius-control);
-    background: var(--ep-surface);
-    color: var(--ep-text-secondary);
-    font-family: var(--ep-font-mono);
-    font-size: var(--ep-label-s-size);
-    line-height: 1.4;
-    pointer-events: none;
-    transition: opacity var(--ep-motion-fast) var(--ep-motion-ease-standard);
-}
-
-.ep-recent-filter:focus-within .ep-kbd,
-.ep-recent-filter:has(.ep-recent-search:not(:placeholder-shown)) .ep-kbd {
-    opacity: 0;
-}
-
-.ep-recent-jump {
-    display: none;
-    inline-size: 100%;
-    border: 0;
-    background: transparent;
-    font: inherit;
-    text-align: start;
-    cursor: pointer;
-}
-
-.ep-recent-search::placeholder {
-    color: var(--ep-text-secondary);
-}
-
-.ep-recent-none {
-    margin: var(--ep-space-2) var(--ep-space-3);
 }
 
 .ep-history-empty-note {
@@ -3940,7 +3841,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         color: var(--ep-text);
     }
 
-    .ep-side-icon-btn:hover,
     .ep-side-new-chat:hover,
     .ep-portal-user:hover,
     .ep-portal-new-chat:hover {
@@ -3948,19 +3848,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         color: var(--ep-text);
     }
 
-    .ep-side-new-chat:hover {
-        border-color: var(--ep-border-control);
-        background: var(--ep-surface-raised);
-        color: var(--ep-text);
-    }
-
-    .ep-history-all:hover {
-        text-decoration: underline;
-    }
-
-    .ep-recent-search:hover {
-        border-color: var(--ep-border-control);
-    }
 }
 
 @media (pointer: fine) {
@@ -3975,16 +3862,9 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         block-size: var(--ep-control-height);
     }
 
-    .ep-side-icon-btn,
     .ep-side-new-chat,
-    .ep-portal-new-chat,
-    .ep-recent-search {
+    .ep-portal-new-chat {
         min-block-size: var(--ep-control-height);
-    }
-
-    .ep-side-icon-btn {
-        inline-size: var(--ep-control-height);
-        block-size: var(--ep-control-height);
     }
 }
 
@@ -4044,17 +3924,14 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         flex: none;
         inline-size: 100%;
         min-block-size: var(--ep-touch-target);
-        margin: var(--ep-space-1) 0 var(--ep-space-2);
         padding-inline: var(--ep-space-3);
-        border: 1px solid var(--ep-border-subtle);
-        border-radius: var(--ep-radius-pill);
-        background: var(--ep-bg);
+        border-radius: var(--ep-radius-control);
         color: var(--ep-text);
         text-decoration: none;
         font-size: var(--ep-label-m-size);
-        font-weight: var(--ep-label-m-weight);
+        font-weight: var(--ep-body-l-weight);
         white-space: nowrap;
-        transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+        transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
     }
 
     html[data-js] .ep-portal.ep-console .ep-side-modules {
@@ -4066,8 +3943,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
     html[data-js] .ep-portal.ep-console .ep-side-nav + .ep-side-nav {
         margin-block-start: var(--ep-space-2);
-        padding-block-start: var(--ep-space-2);
-        border-block-start: 1px solid var(--ep-border-subtle);
     }
 
     html[data-js] .ep-portal.ep-console .ep-recent {
@@ -4148,17 +4023,14 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         flex: none;
         inline-size: 100%;
         min-block-size: var(--ep-control-height);
-        margin: var(--ep-space-1) 0 var(--ep-space-2);
         padding-inline: var(--ep-space-3);
-        border: 1px solid var(--ep-border-subtle);
-        border-radius: var(--ep-radius-pill);
-        background: var(--ep-bg);
+        border-radius: var(--ep-radius-control);
         color: var(--ep-text);
         text-decoration: none;
         font-size: var(--ep-label-m-size);
-        font-weight: var(--ep-label-m-weight);
+        font-weight: var(--ep-body-l-weight);
         white-space: nowrap;
-        transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+        transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
     }
 
     .ep-portal.ep-console .ep-side-modules {
@@ -4170,8 +4042,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
     .ep-portal.ep-console .ep-side-nav + .ep-side-nav {
         margin-block-start: var(--ep-space-2);
-        padding-block-start: var(--ep-space-2);
-        border-block-start: 1px solid var(--ep-border-subtle);
     }
 
     .ep-portal.ep-console .ep-recent {
@@ -4223,8 +4093,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     }
 
     html[data-side="collapsed"] .ep-portal.ep-console .ep-side-head .ep-brand,
-    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-head .ep-spacer,
-    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-head .ep-side-icon-btn {
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-head .ep-spacer {
         display: none;
     }
 
@@ -4233,16 +4102,11 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         padding-inline: var(--ep-space-2);
     }
 
-    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-new-chat,
-    html[data-side="collapsed"] .ep-portal.ep-console .ep-recent-jump {
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-new-chat {
         inline-size: var(--ep-control-height);
         margin-inline: auto;
         padding-inline: 0;
         justify-content: center;
-    }
-
-    html[data-side="collapsed"] .ep-portal.ep-console .ep-recent-jump {
-        display: flex;
     }
 
     html[data-side="collapsed"] .ep-portal.ep-console .ep-side-modules {
@@ -4276,16 +4140,14 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     min-block-size: calc(100dvh - var(--ep-appbar-height));
 }
 
-/* 對話歷史區：與功能區分開，但不是另一張卡片——沒有邊框與底色，和側欄同一個底，只用一條細線與一個小標題接在功能區下面。
-   區頭固定、清單自己捲動；列與功能入口同寬、同縮排，所以看起來是同一欄的下半段。
-   有對話的 .ep-recent 占側欄剩下的高度（最少留得出標題、篩選與幾列）；空的 .ep-history-empty 只有一句引導，不撐滿。 */
+/* 最近的對話（Claude 式）：和功能入口同一欄、同一個底，沒有框、沒有分隔線、沒有篩選框、沒有日期分組——
+   一個安靜的小標題，下面是一張平面的清單，列與功能入口同寬、同縮排。只有清單自己捲動。
+   有對話的 .ep-recent 占側欄剩下的高度（最少留得出標題與幾列）；空的 .ep-history-empty 只有一句引導，不撐滿。 */
 .ep-portal.ep-console .ep-recent,
 .ep-portal.ep-console .ep-history-empty {
     box-sizing: border-box;
     min-block-size: 0;
-    margin-block-end: var(--ep-space-2);
-    padding-block-start: var(--ep-space-3);
-    border-block-start: 1px solid var(--ep-border-subtle);
+    margin-block: var(--ep-space-4) var(--ep-space-2);
 }
 
 .ep-portal.ep-console .ep-recent {
@@ -4296,20 +4158,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     flex: none;
 }
 
-.ep-portal.ep-console .ep-recent-head {
-    flex: none;
-}
-
-/* 篩選框是安靜的一格淡底，沒有框線，點進去才出現；不另外搶一條邊。 */
-.ep-portal.ep-console .ep-recent .ep-recent-search {
-    border-color: transparent;
-    background: color-mix(in srgb, var(--ep-text) 6%, transparent);
-}
-
-.ep-portal.ep-console .ep-recent .ep-recent-search:focus-visible {
-    border-color: var(--ep-border-control);
-}
-
 .ep-portal.ep-console .ep-recent-scroll {
     flex: 1;
     min-block-size: 0;
@@ -4317,15 +4165,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     overscroll-behavior: contain;
     scrollbar-width: thin;
     padding-block-end: var(--ep-space-2);
-}
-
-/* 日期分組的小標題與列的文字左緣對齊，頂端不需要再留後台式的大間距。 */
-.ep-portal.ep-console .ep-recent-scroll .ep-side-group {
-    margin: var(--ep-space-3) var(--ep-space-3) var(--ep-space-1);
-}
-
-.ep-portal.ep-console .ep-recent-scroll .ep-side-group:first-child {
-    margin-block-start: var(--ep-space-1);
 }
 
 /* ---- 側欄對話項目的選單（釘選、重新命名、刪除） --------------------------------------------------
@@ -4406,8 +4245,16 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     opacity: 1;
 }
 
+.ep-recent-link .ep-side-label {
+    flex: 1;
+    min-inline-size: 0;
+}
+
+/* 釘選的圖釘在列尾、比功能入口的圖示小一階：不改變標題的左緣。 */
 .ep-recent-link .ep-icon {
     flex: none;
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
     color: var(--ep-text-secondary);
 }
 

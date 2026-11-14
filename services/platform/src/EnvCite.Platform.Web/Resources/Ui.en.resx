@@ -1527,18 +1527,6 @@
   <data name="最近的對話" xml:space="preserve">
     <value>Recent conversations</value>
   </data>
-  <data name="今天" xml:space="preserve">
-    <value>Today</value>
-  </data>
-  <data name="昨天" xml:space="preserve">
-    <value>Yesterday</value>
-  </data>
-  <data name="過去 7 天" xml:space="preserve">
-    <value>Past 7 days</value>
-  </data>
-  <data name="更早" xml:space="preserve">
-    <value>Earlier</value>
-  </data>
   <data name="新對話" xml:space="preserve">
     <value>New conversation</value>
   </data>
@@ -1602,12 +1590,6 @@
   <data name="沒有符合的對話" xml:space="preserve">
     <value>No matching conversations</value>
   </data>
-  <data name="篩選對話" xml:space="preserve">
-    <value>Filter conversations</value>
-  </data>
-  <data name="查看全部" xml:space="preserve">
-    <value>View all</value>
-  </data>
   <data name="組織方案、個人身分與已啟用模組。" xml:space="preserve">
     <value>Organization plan, personal identity, and enabled modules.</value>
   </data>
@@ -1622,6 +1604,9 @@
   </data>
   <data name="共 {0} 筆對話" xml:space="preserve">
     <value>{0} conversations</value>
+  </data>
+  <data name="搜尋對話" xml:space="preserve">
+    <value>Search conversations</value>
   </data>
   <data name="搜尋對話（⌘K）" xml:space="preserve">
     <value>Search conversations (⌘K)</value>

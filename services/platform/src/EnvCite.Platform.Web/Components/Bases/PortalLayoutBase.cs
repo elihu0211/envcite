@@ -2,7 +2,6 @@ using System.Security.Claims;
 
 using EnvCite.Platform.Web.Components.Layout;
 using EnvCite.Platform.Web.Components.Layout.Navigation;
-using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
 
@@ -19,8 +18,6 @@ public abstract class PortalLayoutBase : PlatformLayoutBase
     private const int RecentLimit = 12;
 
     [Inject] protected IAskService Ask { get; set; } = default!;
-
-    [Inject] protected TimeProvider Time { get; set; } = default!;
 
     [Inject] protected IEnumerable<IPortalNavContributor> NavContributors { get; set; } = default!;
 
@@ -59,31 +56,13 @@ public abstract class PortalLayoutBase : PlatformLayoutBase
     ];
 
     /// <summary>
-    /// 側欄的對話：釘選的在最上面成一組，其餘依日期分組（標題是使用者的資料、不翻譯）。問答歷史沒開啟時服務回空的
-    /// （不開 scope、不查資料庫）；只讀本人的對話標題。
+    /// 側欄的對話：一張平面的清單，服務已把釘選的排在最前、其餘新的在前（標題是使用者的資料、不翻譯）；
+    /// 只讀本人的對話標題。
     /// </summary>
-    protected async Task<IReadOnlyList<PortalShell.RecentGroup>> RecentOfAsync(ClaimsPrincipal user, string tenantIdentifier)
+    protected async Task<IReadOnlyList<PortalShell.RecentConversation>> RecentOfAsync(ClaimsPrincipal user, string tenantIdentifier)
     {
         var conversations = await Ask.RecentAsync(user, RecentLimit, CancellationToken.None);
-        PortalShell.RecentConversation Item(ConversationSummary c) =>
-            new(c.Id, PortalPaths.Conversation(tenantIdentifier, c.Id), c.Title, c.Pinned);
-
-        List<PortalShell.RecentGroup> groups = [];
-        if (conversations.Where(c => c.Pinned).Select(Item).ToList() is { Count: > 0 } pinned)
-            groups.Add(new PortalShell.RecentGroup(L["已釘選"], pinned));
-
-        groups.AddRange(
-            ConversationGroups
-                .Group(conversations.Where(c => !c.Pinned), c => c.UpdatedAt, Time.GetUtcNow())
-                .Select(g => new PortalShell.RecentGroup(AgeLabel(g.Age), [.. g.Items.Select(Item)])));
-        return groups;
+        return [.. conversations.Select(c =>
+            new PortalShell.RecentConversation(c.Id, PortalPaths.Conversation(tenantIdentifier, c.Id), c.Title, c.Pinned))];
     }
-
-    private string AgeLabel(ConversationAge age) => age switch
-    {
-        ConversationAge.Today => L["今天"],
-        ConversationAge.Yesterday => L["昨天"],
-        ConversationAge.PastWeek => L["過去 7 天"],
-        _ => L["更早"],
-    };
 }
