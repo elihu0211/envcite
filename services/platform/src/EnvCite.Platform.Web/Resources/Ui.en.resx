@@ -2538,4 +2538,25 @@
   <data name="篩選條號或章節" xml:space="preserve">
     <value>Filter article or chapter</value>
   </data>
+  <data name="其他授權子法" xml:space="preserve">
+    <value>Other Regulations</value>
+  </data>
+  <data name="點擊展開" xml:space="preserve">
+    <value>expand</value>
+  </data>
+  <data name="檢視法學詳情" xml:space="preserve">
+    <value>Inspect Object</value>
+  </data>
+  <data name="複製法規名稱" xml:space="preserve">
+    <value>Copy Name</value>
+  </data>
+  <data name="展開／收合授權子法" xml:space="preserve">
+    <value>Expand / Collapse Sub-Groups</value>
+  </data>
+  <data name="展開全部子法分組 (+{n})" xml:space="preserve">
+    <value>Expand All Sub-Groups (+{n})</value>
+  </data>
+  <data name="收合子法分組" xml:space="preserve">
+    <value>Collapse Sub-Groups</value>
+  </data>
 </root>
