@@ -2454,8 +2454,26 @@
   <data name="目前沒有可顯示的條文內容。" xml:space="preserve">
     <value>No provision content available.</value>
   </data>
-  <data name="索引位置" xml:space="preserve">
-    <value>Index IRI</value>
+  <data name="引用法源切換" xml:space="preserve">
+    <value>Cited sources</value>
+  </data>
+  <data name="第 {0} / {1} 筆" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="上一筆引用法源" xml:space="preserve">
+    <value>Previous cited source</value>
+  </data>
+  <data name="下一筆引用法源" xml:space="preserve">
+    <value>Next cited source</value>
+  </data>
+  <data name="條文唯一索引碼（IRI）" xml:space="preserve">
+    <value>Canonical Provision IRI</value>
+  </data>
+  <data name="固定標記此版本條文，供稽核比對或 API 引用" xml:space="preserve">
+    <value>Version-pinned ID for audit verification or API reference</value>
+  </data>
+  <data name="複製條文唯一索引碼 {0}" xml:space="preserve">
+    <value>Copy provision IRI {0}</value>
   </data>
   <data name="無法依索引載入條文內容。" xml:space="preserve">
     <value>Unable to load provision content by index.</value>

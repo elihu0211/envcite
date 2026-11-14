@@ -723,18 +723,21 @@
         frame.contentWindow.print();
     };
 
-    // 把一段文字的複製鈕做成「複製→已複製」兩秒後還原；復原碼與一次性密碼共用。
+    // 把一段文字的複製鈕做成「複製→已複製」兩秒後還原；復原碼、一次性密碼、法條引述與 IRI 共用。
     const confirmCopy = (button, status) => {
-        const label = button.querySelector("span");
-        const original = label.textContent;
+        const label = button.querySelector("[data-copy-label]") ?? button.querySelector("span");
+        const original = button.dataset.originalLabel ?? label.textContent;
+        button.dataset.originalLabel = original;
         label.textContent = button.dataset.done;
         button.toggleAttribute("data-done-now", true);
         if (status) {
             status.textContent = button.dataset.done;
         }
 
-        setTimeout(() => {
+        clearTimeout(button._copyTimer);
+        button._copyTimer = setTimeout(() => {
             label.textContent = original;
+            delete button.dataset.originalLabel;
             button.removeAttribute("data-done-now");
             if (status) {
                 status.textContent = "";
@@ -795,4 +798,49 @@
             confirmCopy(button, box.querySelector("[data-recovery-status]"));
         }
     });
+
+    // ---- 法條抽屜頂部引用軌道：將選中的法條平滑置中，支援垂直滾輪轉橫向捲動 ------------------------------
+    let activeDrawerPill = null;
+    let drawerSyncFrame = 0;
+
+    const syncDrawerSourcesTrack = () => {
+        drawerSyncFrame = 0;
+        const track = document.querySelector("[data-drawer-sources-track]");
+        if (!track) {
+            activeDrawerPill = null;
+            return;
+        }
+
+        const pill = track.querySelector(".ep-drawer-source-pill.is-active");
+        if (pill && pill !== activeDrawerPill) {
+            activeDrawerPill = pill;
+            const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+            pill.scrollIntoView({ behavior, block: "nearest", inline: "center" });
+        }
+    };
+
+    const scheduleDrawerSync = () => {
+        if (!drawerSyncFrame && document.querySelector("[data-drawer-sources-track]")) {
+            drawerSyncFrame = requestAnimationFrame(syncDrawerSourcesTrack);
+        }
+    };
+
+    new MutationObserver(scheduleDrawerSync).observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["class", "aria-current"],
+    });
+
+    document.addEventListener("wheel", (event) => {
+        const track = event.target.closest?.("[data-drawer-sources-track]");
+        if (!track || event.ctrlKey || track.scrollWidth <= track.clientWidth) {
+            return;
+        }
+
+        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+            track.scrollLeft += event.deltaY;
+            event.preventDefault();
+        }
+    }, { passive: false });
 })();
