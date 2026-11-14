@@ -8,70 +8,37 @@ import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple
 
 import psycopg
 
-from envcite_ontology.db import Conn, fetch, fetch_one, scalar
+from envcite_ontology.db import Conn
 from envcite_ontology.settings import DatabaseSettings
 from envcite_ontology.settings import load as load_settings
 from envcite_ontology.verification import definition_gates
-from envcite_ontology.verification.config import ConfigError, ModelSet
+from envcite_ontology.verification.attempts import record_attempt, reextract
+from envcite_ontology.verification.config import ConfigError
 from envcite_ontology.verification.config import load as load_models
 from envcite_ontology.verification.definition_gates import DefinitionGate
 from envcite_ontology.verification.definitions import (
-    ExtractedDefinitions,
     defined_terms,
     definition_paths,
     extract_definitions,
 )
-from envcite_ontology.verification.extract import Extracted, extract_unit
-from envcite_ontology.verification.gates import DEFAULT_GATES, Gate
-from envcite_ontology.verification.link import (
-    held_states,
-    link_penalties,
-    penalized,
-)
-from envcite_ontology.verification.model_gates import IndependentTestGate, PanelGate, RoundtripGate
+from envcite_ontology.verification.distinct import assert_distinct
+from envcite_ontology.verification.extract import extract_unit
+from envcite_ontology.verification.gates import Gate
+from envcite_ontology.verification.link import held_states, link_penalties, penalized
+from envcite_ontology.verification.methods import ALL_METHODS, gates_for, gates_from
 from envcite_ontology.verification.models import Model
 from envcite_ontology.verification.pipeline import Settled, settle
-from envcite_ontology.verification.reextract import due_units, review_notes
-
-log = logging.getLogger(__name__)
-
-
-ALL_METHODS = (
-    "numbers",
-    "references",
-    "executable",
-    "provisos",
-    "roundtrip",
-    "independent_test",
-    "panel",
+from envcite_ontology.verification.selection import (
+    already_extracted,
+    pending_laws,
+    try_lock,
+    units_of,
 )
 
-
-#: 溫度 0 下逐字相同的回答，幾乎必定是同一個模型的兩個名字。
-PROBES = ("用兩句話說明什麼是法律的位階，要有你自己的措辭。", "寫一首四句的詩，主題是河川。")
-
-
-class SameModel(ValueError):
-    """兩個名字背後是同一個模型，不獨立，不能互相驗證。"""
-
-
-def assert_distinct(models: Sequence[Model]) -> None:
-    """對每個模型問同樣的開放式問題，逐字相同即同一模型（託管服務常有別名）。
-
-    只抓得到完全相同的別名，抓不到同基礎模型的微調；僅在溫度為 0 的轉接器上有效。
-    """
-    answers = {m.name: tuple(m.complete(p) for p in PROBES) for m in models}
-    names = list(answers)
-    for i, a in enumerate(names):
-        for b in names[i + 1 :]:
-            if answers[a] == answers[b]:
-                raise SameModel(
-                    f"{a} and {b} answered every probe identically: same model under two names"
-                )
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -96,199 +63,6 @@ class Run:
     repairs: int = 0
     syntax_failures: int = 0
     shape_failures: int = 0
-
-
-class _PathRow(NamedTuple):
-    path: str
-
-
-class _LawRow(NamedTuple):
-    local_id: str
-
-
-class _ProvisionRow(NamedTuple):
-    id: int
-    content_sha256: bytes
-
-
-_UNITS = (
-    "SELECT p.path FROM corpus.provision AS p"
-    "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
-    " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND EXISTS ("
-    "   SELECT 1 FROM corpus.provision_version AS v"
-    "    WHERE v.provision_id = p.id AND v.superseded_at IS NULL AND v.content IS NOT NULL)"
-    " ORDER BY p.sort_key, p.path"
-)
-
-
-def units_of(conn: Conn, law: str) -> list[str]:
-    """法規現行、有文字的單元路徑，依閱讀順序。"""
-    return [r.path for r in fetch(conn, _UNITS, (law,), _PathRow)]
-
-
-#: 同一時間只讓一個流程花模型費用；鍵是任意固定常數，跨連線共用。
-_LOCK_KEY = 0x656E764C  # "envL"
-
-
-def try_lock(conn: Conn) -> bool:
-    """取得流程的諮詢鎖；已有另一個流程在跑時回 False。鎖隨連線結束釋放。"""
-    return scalar(conn, "SELECT pg_try_advisory_lock(%s)", (_LOCK_KEY,), bool)
-
-
-_PENDING_LAWS = (
-    "SELECT r.local_id FROM corpus.legal_resource AS r"
-    " WHERE r.id_scheme = 'moj_pcode' AND r.repealed_on IS NULL AND EXISTS ("
-    "   SELECT 1 FROM corpus.provision AS p"
-    "     JOIN corpus.provision_version AS v ON v.provision_id = p.id"
-    "    WHERE p.resource_id = r.id AND v.superseded_at IS NULL AND v.content IS NOT NULL"
-    "      AND NOT EXISTS ("
-    "        SELECT 1 FROM annotation.statement AS s"
-    "          JOIN annotation.assertion AS sc ON sc.id = s.id"
-    "          JOIN annotation.derivation AS d ON d.id = sc.derivation_id"
-    "         WHERE s.provision_id = p.id AND s.content_sha256 = v.content_sha256"
-    "           AND d.producer = %(agent)s AND d.producer_version = %(version)s)"
-    "      AND NOT EXISTS ("
-    "        SELECT 1 FROM annotation.extraction_attempt AS a"
-    "         WHERE a.provision_id = p.id AND a.content_sha256 = v.content_sha256"
-    "           AND a.producer = %(agent)s AND a.producer_version = %(version)s))"
-    " ORDER BY r.local_id LIMIT %(limit)s"
-)
-
-
-def pending_laws(conn: Conn, agent: str, version: str, limit: int | None = None) -> list[str]:
-    """還有單元未被此抽取者與版本抽過的現行法規 pcode，依 pcode 排序。
-
-    待辦由資料推得，不另存佇列：單元的現行文字被抽過（有同抽取者與版本的陳述錨在它的雜湊上）
-    就不算待辦，所以文字更新後單元自動回到待辦。`limit` 限制一次處理幾部法規，用來控制費用。
-    """
-    params = {"agent": agent, "version": version, "limit": limit}
-    return [r.local_id for r in fetch(conn, _PENDING_LAWS, params, _LawRow)]
-
-
-def _already_extracted(conn: Conn, law: str, path: str, agent: str, version: str) -> bool:
-    """此抽取者與版本已對單元的現行文字答過：有陳述錨在它，或留有抽取紀錄（可能一個陳述也沒有）。"""
-    row = conn.execute(
-        "SELECT 1 FROM corpus.provision AS p"
-        "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
-        "  JOIN corpus.provision_version AS v ON v.provision_id = p.id AND v.superseded_at IS NULL"
-        " WHERE r.local_id = %(law)s AND p.path = %(path)s AND ("
-        "   EXISTS (SELECT 1 FROM annotation.statement AS s"
-        "             JOIN annotation.assertion AS sc ON sc.id = s.id"
-        "             JOIN annotation.derivation AS d ON d.id = sc.derivation_id"
-        "            WHERE s.provision_id = p.id AND s.content_sha256 = v.content_sha256"
-        "              AND d.producer = %(agent)s AND d.producer_version = %(version)s)"
-        "   OR EXISTS (SELECT 1 FROM annotation.extraction_attempt AS a"
-        "               WHERE a.provision_id = p.id AND a.content_sha256 = v.content_sha256"
-        "                 AND a.producer = %(agent)s AND a.producer_version = %(version)s))"
-        " LIMIT 1",
-        {"law": law, "path": path, "agent": agent, "version": version},
-    ).fetchone()
-    return row is not None
-
-
-#: 沒有答案可記的結果：模型沒回或答不成 JSON，下次再試。
-_NO_ANSWER = ("<model error", "<unparseable model output>")
-
-
-def _record_attempt(
-    conn: Conn,
-    law: str,
-    path: str,
-    agent: str,
-    version: str,
-    out: Extracted | ExtractedDefinitions,
-    round: int = 0,
-) -> None:
-    if any(reason.startswith(_NO_ANSWER) for reason in out.dropped):
-        return
-    conn.execute(
-        "INSERT INTO annotation.extraction_attempt"
-        "  (provision_id, content_sha256, producer, producer_version,"
-        "   statement_count, dropped_count, round)"
-        " SELECT p.id, v.content_sha256, %s, %s, %s, %s, %s"
-        "   FROM corpus.provision AS p"
-        "   JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
-        "   JOIN corpus.provision_version AS v ON v.provision_id = p.id AND v.superseded_at IS NULL"
-        "  WHERE r.local_id = %s AND p.path = %s"
-        " ON CONFLICT DO NOTHING",
-        (agent, version, _count(out), len(out.dropped), round, law, path),
-    )
-    conn.commit()
-
-
-def _count(out: Extracted | ExtractedDefinitions) -> int:
-    if out.loaded is None:
-        return 0
-    return out.loaded.statements if isinstance(out, Extracted) else out.loaded.definitions
-
-
-_PROVISION = (
-    "SELECT p.id, v.content_sha256 FROM corpus.provision AS p"
-    "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
-    "  JOIN corpus.provision_version AS v ON v.provision_id = p.id"
-    "   AND v.superseded_at IS NULL"
-    " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND p.path = %s"
-)
-
-
-def reextract(
-    conn: Conn, extractor: Model, laws: Sequence[str], agent_version: str, max_round: int
-) -> tuple[int, int]:
-    """義務沒有定論的單元各再抽一輪（帶審查意見）；回傳（重抽的單元數，寫入的陳述數）。
-
-    `annotation.reextraction_due` 決定單元與各自的輪號（中斷後續跑，各單元停在不同輪也各自接著做）；
-    只抽輪號不超過 `max_round` 的。輪數上限在資料庫（`extraction_attempt.round`）。
-    """
-    units = statements = 0
-    for law in laws:
-        todo = [
-            d for d in due_units(conn, extractor.name, agent_version, law) if d.round <= max_round
-        ]
-        if not todo:
-            continue
-        terms = defined_terms(conn, law)
-        punished = penalized(conn, law)
-        for due in todo:
-            provision = fetch_one(conn, _PROVISION, (law, due.path), _ProvisionRow)
-            assert provision is not None
-            out = extract_unit(
-                conn,
-                extractor,
-                law,
-                due.path,
-                agent_version=agent_version,
-                defined=terms,
-                punished_by=punished.get(due.path, ()),
-                review=review_notes(conn, provision.id, provision.content_sha256),
-            )
-            _record_attempt(conn, law, due.path, extractor.name, agent_version, out, due.round)
-            units += 1
-            statements += out.loaded.statements if out.loaded else 0
-            for reason in out.dropped:
-                log.warning("重抽第 %d 輪丟掉 %s %s：%s", due.round, law, due.path, reason[:300])
-    return units, statements
-
-
-def gates_for(verifiers: Sequence[Model], allow_same_family: bool = False) -> tuple[Gate, ...]:
-    """確定性閘門加模型閘門：往返用第一個驗證者，獨立測試用最後一個，評審團用全部。"""
-    if not verifiers:
-        return DEFAULT_GATES
-    return (
-        *DEFAULT_GATES,
-        RoundtripGate(verifiers[0], allow_same_family),
-        IndependentTestGate(verifiers[-1], allow_same_family),
-        PanelGate(tuple(verifiers), allow_same_family=allow_same_family),
-    )
-
-
-def gates_from(models: ModelSet, allow_same_family: bool = False) -> tuple[Gate, ...]:
-    """確定性閘門加模型閘門，角色（重抽、設計測試、評審團）由設定檔明定。"""
-    return (
-        *DEFAULT_GATES,
-        RoundtripGate(models.roundtrip, allow_same_family),
-        IndependentTestGate(models.independent_test, allow_same_family),
-        PanelGate(models.panel, allow_same_family=allow_same_family),
-    )
 
 
 def run(
@@ -323,11 +97,11 @@ def run(
             if path not in in_definitions:
                 continue
             units += 1
-            if _already_extracted(conn, law, path, extractor.name, agent_version):
+            if already_extracted(conn, law, path, extractor.name, agent_version):
                 skipped += 1
                 continue
             found = extract_definitions(conn, extractor, law, path, agent_version=agent_version)
-            _record_attempt(conn, law, path, extractor.name, agent_version, found)
+            record_attempt(conn, law, path, extractor.name, agent_version, found)
             definitions += found.loaded.definitions if found.loaded else 0
             dropped += len(found.dropped)
             for reason in found.dropped:
@@ -338,7 +112,7 @@ def run(
             if path in in_definitions:
                 continue
             units += 1
-            if _already_extracted(conn, law, path, extractor.name, agent_version):
+            if already_extracted(conn, law, path, extractor.name, agent_version):
                 skipped += 1
                 continue
             out = extract_unit(
@@ -350,7 +124,7 @@ def run(
                 defined=terms,
                 punished_by=punished.get(path, ()),
             )
-            _record_attempt(conn, law, path, extractor.name, agent_version, out)
+            record_attempt(conn, law, path, extractor.name, agent_version, out)
             extracted += out.loaded.statements if out.loaded else 0
             calls += out.counts.calls
             repairs += out.counts.repairs

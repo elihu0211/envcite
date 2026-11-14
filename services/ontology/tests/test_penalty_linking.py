@@ -16,11 +16,10 @@ from envcite_ontology.annotate import load
 from envcite_ontology.verification.extract import extract_unit
 from envcite_ontology.verification.gates import GateResult, ReferencesGate
 from envcite_ontology.verification.link import link_penalties, penalized
-from envcite_ontology.verification.model_gates import PanelGate, render_annotation
+from envcite_ontology.verification.model_gates.panel import PanelGate
+from envcite_ontology.verification.model_gates.render import render_annotation
 from envcite_ontology.verification.pipeline import settle
-from envcite_ontology.verification.run import (
-    run,
-)
+from envcite_ontology.verification.run import run
 from tests.model_gates_support import (
     EXTRACTOR,
     TEXT,

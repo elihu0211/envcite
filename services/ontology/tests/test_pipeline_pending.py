@@ -5,7 +5,8 @@ from pathlib import Path
 
 import psycopg
 
-from envcite_ontology.verification.run import pending_laws, run, try_lock
+from envcite_ontology.verification.run import run
+from envcite_ontology.verification.selection import pending_laws, try_lock
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
