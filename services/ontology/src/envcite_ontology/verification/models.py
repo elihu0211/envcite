@@ -92,6 +92,7 @@ class AnthropicModel:
         self.model_id = model_id
         self.max_tokens = max_tokens
         self._client: _AnthropicClient | None = None
+        self._api_errors: tuple[type[Exception], ...] = ()
 
     @property
     def name(self) -> str:
@@ -101,7 +102,9 @@ class AnthropicModel:
     def complete(self, prompt: str) -> str:
         """送出單輪 prompt，回傳回應中文字區塊串接的內容。
 
-        第一次呼叫才載入 SDK 並檢查金鑰；缺 SDK 或缺金鑰丟 `RuntimeError`，不是 `ModelError`。
+        第一次呼叫才載入 SDK 並檢查金鑰；缺 SDK 或缺金鑰是設定錯誤，丟 `RuntimeError`。
+        SDK 的 API 錯誤（連線、逾時、狀態碼）與 `ChatCompletionsModel` 一樣丟 `ModelError`，
+        驗證管線才會記為無法判定而不中斷；其他例外是程式的錯，照常往外拋。
         """
         if self._client is None:
             try:
@@ -111,11 +114,15 @@ class AnthropicModel:
             if not os.environ.get("ANTHROPIC_API_KEY"):
                 raise RuntimeError("ANTHROPIC_API_KEY is required")
             self._client = sdk.Anthropic()
-        message = self._client.messages.create(
-            model=self.model_id,
-            max_tokens=self.max_tokens,
-            messages=[{"role": "user", "content": prompt}],
-        )
+            self._api_errors = (sdk.APIError,) if hasattr(sdk, "APIError") else ()
+        try:
+            message = self._client.messages.create(
+                model=self.model_id,
+                max_tokens=self.max_tokens,
+                messages=[{"role": "user", "content": prompt}],
+            )
+        except self._api_errors as e:
+            raise ModelError(f"{self.name}: {type(e).__name__}: {e}") from e
         return "".join(b.text for b in message.content if b.type == "text")
 
 
