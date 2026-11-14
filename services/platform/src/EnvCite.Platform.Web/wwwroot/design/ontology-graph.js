@@ -72,11 +72,11 @@
   }
 
   function computeStufenbauPositions(nodes, edges, containerWidth, labels) {
-    const width = Math.max(containerWidth || 760, 600);
-    const colPitch = 232;
+    const width = Math.max(containerWidth || 760, 320);
+    const colPitch = 236;
     const subRowPitch = 96;
     const tierGap = 72;
-    const maxCols = Math.max(2, Math.min(5, Math.floor((width - 40) / colPitch)));
+    const maxCols = Math.max(1, Math.min(5, Math.floor((width - 32) / colPitch)));
 
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const parentsMap = new Map(nodes.map((n) => [n.id, []]));
@@ -148,160 +148,154 @@
     return { positions, clusters };
   }
 
-  function buildStylesheet(palette, showEdgeLabels) {
-    return [
-      {
-        selector: "node",
-        style: {
-          shape: "round-rectangle",
-          width: 204,
-          height: 64,
-          padding: "8px",
-          label: "data(cardLabel)",
-          color: palette.text,
-          "font-size": "12px",
-          "font-weight": 500,
-          "line-height": 1.32,
-          "text-valign": "center",
-          "text-halign": "center",
-          "text-wrap": "wrap",
-          "text-max-width": "184px",
-          "background-color": palette.surfaceRaised,
-          "border-width": 1.5,
-          "border-color": palette.borderControl,
-          "transition-property": "border-color, border-width, opacity, background-color",
-          "transition-duration": "0.15s",
-        },
-      },
-      {
-        selector: "node[tier = 0]",
-        style: {
-          "background-color": palette.warningTint,
-          "border-color": palette.warning,
-          "border-width": 2,
-        },
-      },
-      {
-        selector: "node[tier = 1]",
-        style: {
-          "background-color": palette.primaryTint,
-          "border-color": palette.primary,
-          "border-width": 2,
-        },
-      },
-      {
-        selector: "node[tier = 2]",
-        style: {
-          "background-color": palette.infoTint,
-          "border-color": palette.info,
-          "border-width": 1.5,
-        },
-      },
-      {
-        selector: "node[tier >= 3]",
-        style: {
-          "background-color": palette.accentTint,
-          "border-color": palette.accent,
-          "border-style": "dashed",
-          "border-width": 1.5,
-        },
-      },
-      {
-        selector: "node[invalidations > 0]",
-        style: {
-          "background-color": palette.errorTint,
-          "border-color": palette.error,
-          "border-width": 2.5,
-        },
-      },
-      {
-        selector: 'node[isFocus = "yes"]',
-        style: {
-          "background-color": palette.primary,
-          color: palette.onPrimary,
-          "border-color": palette.text,
-          "border-width": 3,
-          "font-weight": 700,
-          width: 216,
-          height: 70,
-        },
-      },
-      {
-        selector: 'node[isCluster = "yes"]',
-        style: {
-          shape: "round-rectangle",
-          width: 196,
-          height: 36,
-          "background-color": palette.surfaceMuted,
-          "border-color": palette.primary,
-          "border-style": "dashed",
-          "border-width": 1.5,
-          color: palette.primary,
-          "font-size": "12px",
-          "font-weight": 600,
-        },
-      },
-      {
-        selector: "node.is-selected",
-        style: {
-          "border-color": palette.text,
-          "border-width": 3.5,
-        },
-      },
-      {
-        selector: "edge",
-        style: {
-          width: 1.8,
-          "line-color": palette.borderControl,
-          "target-arrow-color": palette.borderControl,
-          "target-arrow-shape": "triangle",
-          "arrow-scale": 0.9,
-          "curve-style": "bezier",
-          "control-point-step-size": 36,
-          opacity: 0.78,
-          label: showEdgeLabels ? "data(anchorLabel)" : "",
-          "font-size": "11px",
-          color: palette.textSecondary,
-          "text-background-color": palette.surface,
-          "text-background-opacity": 0.9,
-          "text-background-padding": "2px",
-          "text-rotation": "autorotate",
-        },
-      },
-      {
-        selector: 'edge[kind = "sub_delegation"]',
-        style: {
-          "line-style": "dashed",
-          "line-color": palette.warning,
-          "target-arrow-color": palette.warning,
-        },
-      },
-      {
-        selector: 'edge[kind = "cluster_link"]',
-        style: {
-          "line-style": "dotted",
-          "line-color": palette.primary,
-          "target-arrow-shape": "none",
-          opacity: 0.75,
-        },
-      },
-      {
-        selector: "edge.is-highlighted",
-        style: {
-          width: 2.8,
-          "line-color": palette.primary,
-          "target-arrow-color": palette.primary,
-          opacity: 1,
-          label: "data(anchorLabel)",
-        },
-      },
-      {
-        selector: ".is-dimmed",
-        style: {
-          opacity: 0.25,
-        },
-      },
+  function nodeColors(d, palette) {
+    if (d.isCluster === "yes") {
+      return {
+        fill: palette.surfaceMuted,
+        stroke: palette.primary,
+        lineWidth: 1.5,
+        lineDash: [5, 4],
+        labelFill: palette.primary,
+        fontWeight: 600,
+      };
+    }
+    if (d.isFocus === "yes") {
+      return {
+        fill: palette.primary,
+        stroke: palette.text,
+        lineWidth: 2.5,
+        labelFill: palette.onPrimary,
+        fontWeight: 700,
+      };
+    }
+    if ((d.invalidations || 0) > 0) {
+      return {
+        fill: palette.errorTint,
+        stroke: palette.error,
+        lineWidth: 2.2,
+        labelFill: palette.text,
+        fontWeight: 600,
+      };
+    }
+    if (d.tier === 0) {
+      return { fill: palette.warningTint, stroke: palette.warning, lineWidth: 2, labelFill: palette.text, fontWeight: 600 };
+    }
+    if (d.tier === 1) {
+      return { fill: palette.primaryTint, stroke: palette.primary, lineWidth: 2, labelFill: palette.text, fontWeight: 600 };
+    }
+    if (d.tier === 2) {
+      return { fill: palette.infoTint, stroke: palette.info, lineWidth: 1.5, labelFill: palette.text, fontWeight: 500 };
+    }
+    return {
+      fill: palette.accentTint,
+      stroke: palette.accent,
+      lineWidth: 1.5,
+      lineDash: [5, 3],
+      labelFill: palette.text,
+      fontWeight: 500,
+    };
+  }
+
+  function buildG6Data(nodes, edges, clusters, positions, palette, labels) {
+    const g6Nodes = [
+      ...nodes.map((n) => {
+        const pos = positions.get(n.id) || { x: 0, y: 0 };
+        const data = {
+          cardLabel: formatNodeCardLabel(n, labels),
+          tier: Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1,
+          invalidations: n.invalidationCount || 0,
+          isFocus: n.focus ? "yes" : "no",
+          isCluster: "no",
+          raw: n,
+        };
+        const c = nodeColors(data, palette);
+        return {
+          id: n.id,
+          data,
+          style: {
+            x: pos.x,
+            y: pos.y,
+            size: n.focus ? [220, 72] : [208, 66],
+            radius: 10,
+            fill: c.fill,
+            stroke: c.stroke,
+            lineWidth: c.lineWidth,
+            lineDash: c.lineDash || undefined,
+            shadowColor: "rgba(0, 0, 0, 0.14)",
+            shadowBlur: n.focus ? 16 : 8,
+            shadowOffsetY: 3,
+            labelText: data.cardLabel,
+            labelFill: c.labelFill,
+            labelFontSize: 12,
+            labelFontWeight: c.fontWeight,
+            labelLineHeight: 17,
+            labelMaxWidth: 186,
+            labelWordWrap: true,
+            labelPlacement: "center",
+            labelTextAlign: "center",
+            labelTextBaseline: "middle",
+            cursor: "pointer",
+          },
+        };
+      }),
+      ...clusters.map((cl) => {
+        const pos = positions.get(cl.id) || { x: 0, y: 0 };
+        const data = {
+          cardLabel: cl.label,
+          tier: 9,
+          invalidations: 0,
+          isFocus: "no",
+          isCluster: "yes",
+          expandHref: cl.expandHref,
+        };
+        const c = nodeColors(data, palette);
+        return {
+          id: cl.id,
+          data,
+          style: {
+            x: pos.x,
+            y: pos.y,
+            size: [200, 38],
+            radius: 18,
+            fill: c.fill,
+            stroke: c.stroke,
+            lineWidth: c.lineWidth,
+            lineDash: c.lineDash,
+            labelText: cl.label,
+            labelFill: c.labelFill,
+            labelFontSize: 12,
+            labelFontWeight: 600,
+            labelPlacement: "center",
+            labelTextAlign: "center",
+            labelTextBaseline: "middle",
+            cursor: "pointer",
+          },
+        };
+      }),
     ];
+
+    const g6Edges = [
+      ...edges.map((e, i) => ({
+        id: `e_${i}`,
+        source: e.source,
+        target: e.target,
+        data: {
+          kind: e.kind || "delegation",
+          anchorLabel: Array.isArray(e.anchorArticles) && e.anchorArticles.length > 0 ? e.anchorArticles.join("、") : "",
+        },
+      })),
+      ...clusters.map((c, i) => ({
+        id: `ec_${i}`,
+        source: c.parentId,
+        target: c.id,
+        data: {
+          kind: "cluster_link",
+          anchorLabel: "",
+        },
+      })),
+    ];
+
+    return { nodes: g6Nodes, edges: g6Edges };
   }
 
   function tierName(tier, labels) {
@@ -418,7 +412,7 @@
   }
 
   function initGraph(container) {
-    if (!container || container.dataset.graphReady === "1" || typeof window.cytoscape !== "function") {
+    if (!container || container.dataset.graphReady === "1" || !window.G6 || typeof window.G6.Graph !== "function") {
       return;
     }
     let payload;
@@ -440,126 +434,90 @@
 
     let currentLayout = payload.mode === "concentric" ? "concentric" : "stufenbau";
     let showEdgeLabels = edges.length <= 20;
+    let selectedNodeId = null;
 
+    const palette = themePalette();
     const { positions, clusters } = computeStufenbauPositions(nodes, edges, container.clientWidth, labels);
+    const graphData = buildG6Data(nodes, edges, clusters, positions, palette, labels);
 
-    const elements = [
-      ...nodes.map((n) => ({
-        data: {
-          id: n.id,
-          cardLabel: formatNodeCardLabel(n, labels),
-          tier: Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1,
-          invalidations: n.invalidationCount || 0,
-          isFocus: n.focus ? "yes" : "no",
-          isCluster: "no",
-          raw: n,
-        },
-        position: positions.get(n.id) || { x: 0, y: 0 },
-      })),
-      ...clusters.map((c) => ({
-        data: {
-          id: c.id,
-          cardLabel: c.label,
-          tier: 9,
-          invalidations: 0,
-          isFocus: "no",
-          isCluster: "yes",
-          expandHref: c.expandHref,
-        },
-        position: positions.get(c.id) || { x: 0, y: 0 },
-      })),
-      ...edges.map((e, i) => ({
-        data: {
-          id: `e_${i}`,
-          source: e.source,
-          target: e.target,
-          kind: e.kind || "delegation",
-          anchorLabel: Array.isArray(e.anchorArticles) && e.anchorArticles.length > 0 ? e.anchorArticles.join("、") : "",
-        },
-      })),
-      ...clusters.map((c, i) => ({
-        data: {
-          id: `ec_${i}`,
-          source: c.parentId,
-          target: c.id,
-          kind: "cluster_link",
-          anchorLabel: "",
-        },
-      })),
-    ];
+    const edgeStyleMapper = (d) => {
+      const kind = d.data?.kind || "delegation";
+      const isSub = kind === "sub_delegation";
+      const isClusterLink = kind === "cluster_link";
+      const pal = themePalette();
+      return {
+        stroke: isSub ? pal.warning : isClusterLink ? pal.primary : pal.borderControl,
+        lineWidth: isClusterLink ? 1.4 : 1.8,
+        lineDash: isSub ? [6, 4] : isClusterLink ? [3, 4] : undefined,
+        endArrow: !isClusterLink,
+        endArrowSize: 7,
+        opacity: 0.82,
+        labelText: showEdgeLabels ? (d.data?.anchorLabel || "") : "",
+        labelFill: pal.textSecondary,
+        labelFontSize: 11,
+        labelBackground: true,
+        labelBackgroundFill: pal.surface,
+        labelBackgroundOpacity: 0.9,
+        labelPadding: [2, 5],
+        labelBackgroundRadius: 4,
+      };
+    };
 
-    const cy = window.cytoscape({
+    const graph = new window.G6.Graph({
       container,
-      elements,
-      minZoom: 0.25,
-      maxZoom: 2.0,
-      wheelSensitivity: 0.18,
-      textureOnViewport: true,
-      motionBlur: false,
-      layout: { name: "preset", fit: false },
-      style: buildStylesheet(themePalette(), showEdgeLabels),
+      data: graphData,
+      autoResize: true,
+      autoFit: "view",
+      padding: 28,
+      zoomRange: [0.25, 2.2],
+      node: {
+        type: "rect",
+        state: {
+          selected: {
+            lineWidth: 3.2,
+            stroke: palette.text,
+            shadowColor: "rgba(0, 0, 0, 0.28)",
+            shadowBlur: 18,
+          },
+          active: {
+            lineWidth: 2.6,
+            stroke: palette.primary,
+          },
+          inactive: {
+            opacity: 0.28,
+          },
+        },
+      },
+      edge: {
+        type: "quadratic",
+        style: edgeStyleMapper,
+        state: {
+          active: {
+            lineWidth: 2.8,
+            stroke: palette.primary,
+            opacity: 1,
+            labelText: (d) => d.data?.anchorLabel || "",
+          },
+          inactive: {
+            opacity: 0.18,
+          },
+        },
+      },
+      behaviors: ["drag-canvas", "zoom-canvas", "drag-element"],
+      plugins: [
+        {
+          type: "minimap",
+          key: "ontology-minimap",
+          size: [148, 92],
+          position: "bottom-right",
+        },
+      ],
     });
-    container._cyInstance = cy;
+
+    container._g6Instance = graph;
 
     function fitViewport() {
-      cy.resize();
-      cy.fit(undefined, 28);
-      if (cy.zoom() > 1.05) {
-        cy.zoom(1.0);
-        cy.center();
-      }
-    }
-
-    function applyLayout(mode) {
-      currentLayout = mode;
-      if (mode === "concentric") {
-        const focusNode = nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0];
-        cy.layout({
-          name: "concentric",
-          fit: true,
-          padding: 36,
-          minNodeSpacing: 52,
-          avoidOverlap: true,
-          concentric: (ele) => {
-            if (ele.data("isCluster") === "yes") return 1;
-            const raw = ele.data("raw");
-            if (!raw) return 2;
-            if (focusNode && raw.id === focusNode.id) return 10;
-            if (raw.hierarchyTier <= 1) return 7;
-            return 4;
-          },
-          levelWidth: () => 2,
-          animate: false,
-        }).run();
-      } else {
-        const updated = computeStufenbauPositions(nodes, edges, container.clientWidth, labels);
-        cy.batch(() => {
-          cy.nodes().forEach((ele) => {
-            const p = updated.positions.get(ele.id());
-            if (p) ele.position(p);
-          });
-        });
-      }
-      fitViewport();
-      updateToolbarState();
-    }
-
-    function selectNodeById(nodeId) {
-      const ele = cy.getElementById(nodeId);
-      if (!ele || ele.empty()) {
-        cy.batch(() => cy.elements().removeClass("is-selected is-highlighted is-dimmed"));
-        renderInspector(inspectorEl, null, nodes, edges, labels);
-        return;
-      }
-      if (ele.data("isCluster") === "yes") return;
-      const hood = ele.closedNeighborhood();
-      cy.batch(() => {
-        cy.elements().removeClass("is-selected is-highlighted is-dimmed");
-        ele.addClass("is-selected");
-        cy.elements().difference(hood).addClass("is-dimmed");
-        ele.connectedEdges().addClass("is-highlighted");
-      });
-      renderInspector(inspectorEl, ele.data("raw"), nodes, edges, labels);
+      graph.fitView().catch(() => {});
     }
 
     function updateToolbarState() {
@@ -574,53 +532,139 @@
       }
     }
 
-    cy.on("tap", "node", (evt) => {
-      const target = evt.target;
-      if (target.data("isCluster") === "yes") {
-        const href = target.data("expandHref");
+    function clearSelectionStates() {
+      const states = {};
+      graph.getNodeData().forEach((n) => { states[n.id] = []; });
+      graph.getEdgeData().forEach((e) => { states[e.id] = []; });
+      graph.setElementState(states, false);
+    }
+
+    function selectNodeById(nodeId) {
+      const nodeDatum = graph.getNodeData(nodeId);
+      if (!nodeDatum) {
+        selectedNodeId = null;
+        clearSelectionStates();
+        renderInspector(inspectorEl, null, nodes, edges, labels);
+        return;
+      }
+      if (nodeDatum.data?.isCluster === "yes") return;
+
+      selectedNodeId = nodeId;
+      const connectedEdgeIds = new Set();
+      const neighborNodeIds = new Set([nodeId]);
+      graph.getEdgeData().forEach((e) => {
+        if (e.source === nodeId || e.target === nodeId) {
+          connectedEdgeIds.add(e.id);
+          neighborNodeIds.add(e.source);
+          neighborNodeIds.add(e.target);
+        }
+      });
+
+      const states = {};
+      graph.getNodeData().forEach((n) => {
+        if (n.id === nodeId) states[n.id] = ["selected"];
+        else if (neighborNodeIds.has(n.id)) states[n.id] = ["active"];
+        else states[n.id] = ["inactive"];
+      });
+      graph.getEdgeData().forEach((e) => {
+        states[e.id] = connectedEdgeIds.has(e.id) ? ["active"] : ["inactive"];
+      });
+      graph.setElementState(states, false);
+      renderInspector(inspectorEl, nodeDatum.data?.raw || null, nodes, edges, labels);
+    }
+
+    async function applyLayout(mode) {
+      currentLayout = mode;
+      if (mode === "concentric") {
+        const focusNode = nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0];
+        graph.setLayout({
+          type: "concentric",
+          preventOverlap: true,
+          nodeSize: [216, 76],
+          minNodeSpacing: 44,
+          sortBy: (d) => {
+            if (d.data?.isCluster === "yes") return 1;
+            const raw = d.data?.raw;
+            if (!raw) return 2;
+            if (focusNode && raw.id === focusNode.id) return 100;
+            if (raw.hierarchyTier <= 1) return 50;
+            return 10;
+          },
+        });
+        await graph.layout();
+      } else {
+        const updated = computeStufenbauPositions(nodes, edges, container.clientWidth, labels);
+        const updates = [];
+        graph.getNodeData().forEach((n) => {
+          const p = updated.positions.get(n.id);
+          if (p) updates.push({ id: n.id, style: { x: p.x, y: p.y } });
+        });
+        if (updates.length > 0) {
+          graph.updateNodeData(updates);
+          await graph.draw();
+        }
+      }
+      fitViewport();
+      updateToolbarState();
+    }
+
+    graph.on("node:click", (evt) => {
+      const id = evt.target?.id;
+      if (!id) return;
+      const nodeDatum = graph.getNodeData(id);
+      if (nodeDatum?.data?.isCluster === "yes") {
+        const href = nodeDatum.data?.expandHref;
         if (href) window.location.assign(href);
         return;
       }
-      selectNodeById(target.id());
+      selectNodeById(id);
     });
 
-    cy.on("dbltap", "node", (evt) => {
-      const raw = evt.target.data("raw");
-      if (raw && raw.focusHref) {
+    graph.on("node:dblclick", (evt) => {
+      const id = evt.target?.id;
+      if (!id) return;
+      const raw = graph.getNodeData(id)?.data?.raw;
+      if (raw?.focusHref) {
         window.location.assign(raw.focusHref);
       }
     });
 
-    cy.on("tap", (evt) => {
-      if (evt.target === cy) {
-        cy.batch(() => cy.elements().removeClass("is-selected is-highlighted is-dimmed"));
-        const initial = nodes.find((n) => n.focus) || nodes[0] || null;
-        renderInspector(inspectorEl, initial, nodes, edges, labels);
-      }
+    graph.on("canvas:click", () => {
+      selectedNodeId = null;
+      clearSelectionStates();
+      const initial = nodes.find((n) => n.focus) || nodes[0] || null;
+      renderInspector(inspectorEl, initial, nodes, edges, labels);
     });
 
-    const initialNode = nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0] || null;
-    if (initialNode) {
-      selectNodeById(initialNode.id);
-    }
-    fitViewport();
-    updateToolbarState();
+    graph.render().then(() => {
+      const initialNode = nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0] || null;
+      if (initialNode) {
+        selectNodeById(initialNode.id);
+      }
+      if (currentLayout === "concentric") {
+        applyLayout("concentric");
+      } else {
+        fitViewport();
+        updateToolbarState();
+      }
+    }).catch(() => {});
 
     if (host && host.dataset.graphBound !== "1") {
       host.dataset.graphBound = "1";
       host.addEventListener("click", (evt) => {
         const btn = evt.target.closest("[data-graph-action]");
         if (!btn) return;
-        const activeCy = container._cyInstance || cy;
+        const activeGraph = container._g6Instance || graph;
         const action = btn.dataset.graphAction;
-        if (action === "fit") fitViewport();
-        else if (action === "zoom-in") activeCy.zoom({ level: activeCy.zoom() * 1.2, renderedPosition: { x: container.clientWidth / 2, y: container.clientHeight / 2 } });
-        else if (action === "zoom-out") activeCy.zoom({ level: activeCy.zoom() * 0.84, renderedPosition: { x: container.clientWidth / 2, y: container.clientHeight / 2 } });
+        if (action === "fit") activeGraph.fitView().catch(() => {});
+        else if (action === "zoom-in") activeGraph.zoomBy(1.2).catch(() => {});
+        else if (action === "zoom-out") activeGraph.zoomBy(0.84).catch(() => {});
         else if (action === "layout-stufenbau") applyLayout("stufenbau");
         else if (action === "layout-concentric") applyLayout("concentric");
         else if (action === "toggle-edge-labels") {
           showEdgeLabels = !showEdgeLabels;
-          activeCy.style(buildStylesheet(themePalette(), showEdgeLabels));
+          activeGraph.setEdge({ type: "quadratic", style: edgeStyleMapper });
+          activeGraph.draw().catch(() => {});
           updateToolbarState();
         }
       });
@@ -636,6 +680,7 @@
           const w = container.clientWidth;
           if (Math.abs(w - lastWidth) > 32) {
             lastWidth = w;
+            graph.resize();
             if (currentLayout === "stufenbau") {
               applyLayout("stufenbau");
             } else {
@@ -649,7 +694,24 @@
 
     if (window.matchMedia) {
       const mql = window.matchMedia("(prefers-color-scheme: dark)");
-      const refreshTheme = () => cy.style(buildStylesheet(themePalette(true), showEdgeLabels));
+      const refreshTheme = () => {
+        const nextPalette = themePalette(true);
+        const nodeUpdates = graph.getNodeData().map((n) => {
+          const c = nodeColors(n.data || {}, nextPalette);
+          return {
+            id: n.id,
+            style: {
+              fill: c.fill,
+              stroke: c.stroke,
+              labelFill: c.labelFill,
+            },
+          };
+        });
+        graph.updateNodeData(nodeUpdates);
+        graph.setEdge({ type: "quadratic", style: edgeStyleMapper });
+        graph.draw().catch(() => {});
+        if (selectedNodeId) selectNodeById(selectedNodeId);
+      };
       if (typeof mql.addEventListener === "function") mql.addEventListener("change", refreshTheme);
     }
   }
@@ -689,9 +751,39 @@
     });
   }
 
+  function initDrawerToggles() {
+    const root = document.querySelector("[data-workbench-root]");
+    if (!root || root.dataset.drawerBound === "1") return;
+    root.dataset.drawerBound = "1";
+
+    const setOpen = (open) => {
+      root.dataset.catalogOpen = open ? "true" : "false";
+      document.querySelectorAll('[data-workbench-toggle="catalog"]').forEach((btn) => {
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    };
+
+    document.querySelectorAll('[data-workbench-toggle="catalog"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setOpen(root.dataset.catalogOpen !== "true");
+      });
+    });
+
+    document.querySelectorAll('[data-workbench-close="catalog"]').forEach((el) => {
+      el.addEventListener("click", () => setOpen(false));
+    });
+
+    document.addEventListener("keydown", (evt) => {
+      if (evt.key === "Escape" && root.dataset.catalogOpen === "true") {
+        setOpen(false);
+      }
+    });
+  }
+
   function boot() {
     document.querySelectorAll("[data-ontology-graph]").forEach(initGraph);
     initPresets();
+    initDrawerToggles();
   }
 
   if (document.readyState === "loading") {

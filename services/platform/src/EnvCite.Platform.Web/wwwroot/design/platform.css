@@ -4474,9 +4474,12 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 }
 
 .ep-workbench-shell {
+    container-type: inline-size;
+    container-name: workbench;
     display: flex;
     flex-direction: column;
     gap: var(--ep-space-4);
+    min-inline-size: 0;
 }
 
 .ep-workbench-bar {
@@ -4484,15 +4487,28 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     flex-wrap: wrap;
     align-items: flex-end;
     gap: var(--ep-space-3);
-    padding: var(--ep-space-4);
+    padding: var(--ep-space-3) var(--ep-space-4);
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-card);
     background: var(--ep-surface);
+    min-inline-size: 0;
 }
 
 .ep-workbench-bar > .ep-field-row {
-    flex: 1 1 13rem;
+    flex: 1 1 12rem;
+    min-inline-size: 0;
     margin-block-end: 0;
+}
+
+.ep-workbench-bar .ep-input,
+.ep-workbench-bar .ep-select {
+    inline-size: 100%;
+    min-inline-size: 0;
+}
+
+.ep-workbench-bar .ep-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .ep-workbench {
@@ -4502,16 +4518,73 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     align-items: start;
 }
 
-@media (width >= 48rem) {
-    .ep-workbench.has-catalog {
-        grid-template-columns: minmax(17rem, 19.5rem) minmax(0, 1fr);
+.ep-workbench-backdrop,
+.ep-workbench-catalog-drawer-head {
+    display: none;
+}
+
+@container workbench (width < 60rem) {
+    .ep-workbench.has-catalog .ep-workbench-catalog {
+        position: fixed;
+        inset-block: 0;
+        inset-inline-start: 0;
+        z-index: 60;
+        inline-size: min(22rem, 88vw);
+        max-block-size: 100dvh;
+        overflow-y: auto;
+        padding: var(--ep-space-3);
+        background: var(--ep-surface);
+        border-inline-end: 1px solid var(--ep-border-subtle);
+        box-shadow: 0 18px 42px color-mix(in srgb, #000 32%, transparent);
+        transform: translateX(-105%);
+        visibility: hidden;
+        transition:
+            transform var(--ep-motion-base, 220ms) var(--ep-motion-ease-settle, cubic-bezier(0.22, 1, 0.36, 1)),
+            visibility 0s linear var(--ep-motion-base, 220ms);
+    }
+
+    .ep-workbench.has-catalog[data-catalog-open="true"] .ep-workbench-catalog {
+        transform: translateX(0);
+        visibility: visible;
+        transition:
+            transform var(--ep-motion-base, 220ms) var(--ep-motion-ease-settle, cubic-bezier(0.22, 1, 0.36, 1)),
+            visibility 0s linear 0s;
+    }
+
+    .ep-workbench.has-catalog[data-catalog-open="true"] .ep-workbench-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 59;
+        background: color-mix(in srgb, #000 45%, transparent);
+        backdrop-filter: blur(2px);
+    }
+
+    .ep-workbench-catalog-drawer-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--ep-space-2);
+        padding-block-end: var(--ep-space-2);
+        margin-block-end: var(--ep-space-2);
+        border-block-end: 1px solid var(--ep-border-subtle);
+    }
+
+    .ep-workbench-catalog-drawer-title {
+        font-size: var(--ep-title-s-size, 0.95rem);
+        font-weight: 600;
+        color: var(--ep-text);
     }
 }
 
-@media (width >= 80rem) {
+@container workbench (width >= 60rem) {
     .ep-workbench.has-catalog {
-        grid-template-columns: minmax(18rem, 21rem) minmax(0, 1fr);
-        gap: var(--ep-space-6);
+        grid-template-columns: minmax(17.5rem, 20rem) minmax(0, 1fr);
+        gap: var(--ep-space-5);
+    }
+
+    .ep-workbench-catalog-toggle {
+        display: none;
     }
 }
 
@@ -4641,11 +4714,36 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 }
 
 .ep-graph-summary-wrap,
-.ep-graph-filters,
-.ep-graph-host {
+.ep-graph-filters {
     display: flex;
     flex-direction: column;
     gap: var(--ep-space-3);
+}
+
+.ep-graph-host {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ep-space-3);
+    align-items: stretch;
+}
+
+.ep-graph-stage {
+    min-inline-size: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-2);
+}
+
+@container workbench (width >= 68rem) {
+    .ep-graph-host {
+        grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem);
+        gap: var(--ep-space-4);
+    }
+
+    .ep-graph-inspector {
+        max-block-size: 48rem;
+        overflow-y: auto;
+    }
 }
 
 .ep-graph-legend {
@@ -4718,17 +4816,27 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     align-items: center;
     justify-content: space-between;
     gap: var(--ep-space-2);
+    min-inline-size: 0;
+}
+
+.ep-graph-toolbar .ep-preset-chip,
+.ep-graph-toolbar .ep-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .ep-graph-zoom-actions {
     display: inline-flex;
     align-items: center;
     gap: var(--ep-space-1);
+    flex-shrink: 0;
 }
 
 .ep-graph-canvas {
+    position: relative;
+    overflow: hidden;
     inline-size: 100%;
-    min-block-size: 32rem;
+    min-block-size: clamp(22rem, 56dvh, 46rem);
     block-size: 62dvh;
     max-block-size: 48rem;
     border: 1px solid var(--ep-border-subtle);
@@ -4736,7 +4844,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     background: var(--ep-surface-muted);
 }
 
-@media (width >= 80rem) {
+@container workbench (width >= 68rem) {
     .ep-graph-canvas {
         min-block-size: 36rem;
     }
@@ -4973,14 +5081,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         background-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
         border-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
         color var(--ep-motion-fast) var(--ep-motion-ease-standard);
-}
-
-.ep-workbench-bar,
-.ep-graph-toolbar {
-    position: sticky;
-    top: 0;
-    z-index: 6;
-    background: var(--ep-surface);
 }
 
 .ep-tabular {
