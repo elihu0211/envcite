@@ -2,9 +2,9 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
+from typing import Any, NamedTuple
 
-from envcite_ontology.db import Conn
+from envcite_ontology.db import Conn, fetch_one
 from envcite_ontology.verification.gates.base import GateResult, Unit, Verdict, unit_of
 from envcite_ontology.verification.gates.cn_number import (
     QUALIFIER_COMPARATOR,
@@ -15,6 +15,12 @@ from envcite_ontology.verification.gates.cn_number import (
 )
 
 _COMPLEMENT = {"ge": "lt", "lt": "ge", "le": "gt", "gt": "le", "eq": "ne", "ne": "eq"}
+
+
+class _AmountRow(NamedTuple):
+    amount_text: str | None
+    min_amount: Decimal | None
+    max_amount: Decimal | None
 
 
 @dataclass(frozen=True)
@@ -31,11 +37,13 @@ class NumbersGate:
         """
         u = unit_of(conn, statement_id)
         checks: list[dict[str, Any]] = []
-        sanction = conn.execute(
+        sanction = fetch_one(
+            conn,
             "SELECT amount_text, min_amount, max_amount FROM annotation.sanction"
             " WHERE statement_id = %s",
             (statement_id,),
-        ).fetchone()
+            _AmountRow,
+        )
         if sanction is not None and any(v is not None for v in sanction):
             checks.extend(self._sanction(u, *sanction))
         for value, comparator, negated in conn.execute(
@@ -89,7 +97,9 @@ class NumbersGate:
         }
 
     @staticmethod
-    def _sanction(u: Unit, amount_text: Any, low: Any, high: Any) -> list[dict[str, Any]]:
+    def _sanction(
+        u: Unit, amount_text: str | None, low: float | Decimal | None, high: float | Decimal | None
+    ) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         if amount_text is not None:
             out.append(

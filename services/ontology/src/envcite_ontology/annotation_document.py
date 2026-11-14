@@ -49,6 +49,8 @@ class Scheme(_Part):
 
 
 class Concept(_Part):
+    """方案下的一個概念：代碼、名稱、別名與外部對映。"""
+
     code: str
     label: str
     aliases: list[str] = []
@@ -59,6 +61,8 @@ class Concept(_Part):
 
 
 class Slot(_Part):
+    """陳述的一個角色槽位的值：概念或字面，主體可附責任基礎，或標為未明示。"""
+
     concept: str | None = None
     literal: str | None = None
     liability: str | None = None
@@ -73,6 +77,8 @@ class Delegate(_Part):
 
 
 class Condition(_Part):
+    """陳述的一個要件：角色、析取編號、概念與比較；門檻值恰有一個來源。"""
+
     role: str
     #: 析取編號：同一個 clause 的要件全部成立，不同 clause 之間是「或」。
     clause: int
@@ -100,6 +106,8 @@ class Trigger(_Part):
 
 class Sanction(_Part):
     #: 所處罰的陳述：文件裡的 id（`punishes`）或資料庫的編號（`punishes_id`）；都沒有是沒指明。
+    """罰則：所處罰的陳述、效果、額度與前提。"""
+
     punishes: Id | None = None
     punishes_id: int | None = None
     effect: str
@@ -112,6 +120,8 @@ class Sanction(_Part):
 
 
 class Statement(_Part):
+    """文件裡的一個陳述：錨在條文單元的原文上，附角色、要件、例外與罰則。"""
+
     id: Id
     law: str
     path: str
@@ -127,6 +137,8 @@ class Statement(_Part):
 
 
 class Definition(_Part):
+    """立法定義的一個用語：錨在定義條文上，附明文涵蓋的成員概念。"""
+
     id: Id
     law: str
     path: str
@@ -138,12 +150,16 @@ class Definition(_Part):
 
 
 class Override(_Part):
+    """陳述之間的優先關係：`winner` 優先於 `loser`。"""
+
     winner: Id
     loser: Id
     basis: str
 
 
 class Document(_Part):
+    """一份標註文件：推導、詞彙、陳述、用語定義與優先關係。"""
+
     derivation: Derivation
     #: 狀態預設 `extracted`；載入不接受任何陳述。
     review: str = "extracted"

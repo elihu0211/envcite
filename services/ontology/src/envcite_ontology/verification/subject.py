@@ -109,7 +109,7 @@ def acceptable(literal: str, quote: str, source: str, peers: Sequence[str] = ())
     return "is the regulated thing, not the one who must act"
 
 
-def _values(slot: Any) -> list[Mapping[str, Any]]:
+def _values(slot: object) -> list[Mapping[str, Any]]:
     items = slot if isinstance(slot, list) else [slot]
     return [v for v in items if isinstance(v, Mapping)]
 

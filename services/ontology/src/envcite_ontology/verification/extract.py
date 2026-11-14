@@ -613,7 +613,7 @@ def _aimed(s: dict[str, Any], duties: set[str], elsewhere: bool) -> dict[str, An
 
 
 def _trigger_problem(
-    ident: str, trigger: Any, effects: Mapping[str, Any]
+    ident: str, trigger: object, effects: Mapping[str, Any]
 ) -> tuple[str | None, dict[str, str] | None]:
     """一個觸發的問題（沒有則 None），與整形後的觸發。"""
     if not isinstance(trigger, Mapping) or trigger.get("kind") not in TRIGGER_KINDS:
