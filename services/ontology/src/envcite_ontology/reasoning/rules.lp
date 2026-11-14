@@ -37,10 +37,17 @@ problem(contradictory_fact, M) :- conflicting_c(M).
 given(M) :- fact_in(M,_).
 given(M) :- cfact_in(M,_).
 
-% 「甲屬於乙」的依據只有該法現行的用語定義（定義只及於本法）；詞彙沒有上下位可用。
+% 「甲屬於乙」的依據：本法現行用語定義，以及受控詞彙法定上位關係（vocab.concept_relation）。
 isa(L,X,X) :- stmt_law(_,L), cfact_in(_,X).
 isa(L,X,Y) :- isa(L,X,Z), same(Z,Y).
 isa(L,X,T) :- defmember(L,T,Y), isa(L,X,Y).
+isa(L,X,T) :- concept_broader(Y,T), isa(L,X,Y).
+% 受控上位詞彙（broader）：子概念正向成立時，上位概念事實一併成立（例如甲苯排放 -> 揮發性有機物排放）。
+fact_in(T,V) :- concept_broader(C,T), fact_in(C,V), V > 0.
+
+% 準用關係（中央法規標準法第 17 條）：source 準用 target 時，將 target 的條件結構視為可映射至 source。
+mutatis_applied(Src,Tgt) :- mutatis_mutandis(Src,Tgt), outcome(Tgt,violation).
+mutatis_applied(Src,Tgt) :- mutatis_mutandis(Src,Tgt), outcome(Tgt,conditional_violation).
 
 % 依據軌跡：某個值之所以屬於比較的用語，所經過的每一則定義（可能是遞移的）。
 contrib(L,X,T,D) :- defsrc(L,T,Y,D), isa(L,X,Y).
@@ -50,6 +57,17 @@ used_def(C,D)    :- vcond(C,V), cond(C,S,_,_,M,_,_), cfact(M,X), stmt_law(S,L),
 
 prescriptive(S) :- statement(S,prescriptive,_).
 deontic(S,D)    :- statement(S,prescriptive,D).
+
+% ---- 多維適用條件之授權限值解析（取代取 min(condition_id) 單筆猜測） ----
+limit_ok(C,Lim) :- limit_cand(C,Lim,_), pv(Lim,scope,t).
+limit_ambiguous(C) :- limit_ok(C,L1), limit_ok(C,L2), L1 < L2.
+limit_chosen(C,Lim,T) :- limit_cand(C,Lim,T), limit_ok(C,Lim), not limit_ambiguous(C).
+thr(C,T)          :- limit_chosen(C,_,T).
+thr_src(C,Lim)    :- limit_chosen(C,Lim,_).
+lim_method(C,X)   :- limit_chosen(C,Lim,_), cand_lim_method(C,Lim,X).
+lim_avg(C,X)      :- limit_chosen(C,Lim,_), cand_lim_avg(C,Lim,X).
+lim_unlabeled(C)  :- limit_chosen(C,Lim,_), cand_lim_unlabeled(C,Lim).
+problem(ambiguous_limit, C) :- limit_ambiguous(C).
 
 % ---- 委由個別處分：門檻值是呼叫端提供的許可量值；沒提供則要件未知，矛盾則不擇一 ----
 conflicting_p(K,M) :- permit_in(K,M,V1), permit_in(K,M,V2), V1 < V2.
@@ -203,7 +221,13 @@ needs_judgement(S,M) :- verdict(S,conditional_violation), exception(E,S), unk_co
 missing(P,M)          :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), not judgement(C), not given(M).
 needs_judgement(P,M)  :- pen_live(P), pv(P,scope,u), unk_concept(P,M,C), judgement(C), not given(M).
 missing(P,"liability_basis") :- pen_live(P), pv(P,scope,Y), live(Y), subj(P,u).
-problem(unresolved_delegation, C) :- delegated(C), not thr(C,_), not void_limit(C).
+missing(S,M) :- verdict(S,undetermined), cond(C,S,_,_,_,_,_), limit_cand(C,Lim,_),
+                not limit_ok(C,_), pv(Lim,scope,u), unk_concept(Lim,M,KC),
+                not judgement(KC), not given(M).
+needs_judgement(S,M) :- verdict(S,undetermined), cond(C,S,_,_,_,_,_), limit_cand(C,Lim,_),
+                        not limit_ok(C,_), pv(Lim,scope,u), unk_concept(Lim,M,KC),
+                        judgement(KC), not given(M).
+problem(unresolved_delegation, C) :- delegated(C), not limit_cand(C,_,_), not thr(C,_), not void_limit(C).
 problem(invalidated_delegation, C) :- void_limit(C).
 % 許可量值沒提供：缺的是（許可，概念）這筆事實，不是概念本身，另列。
 unk_permit(S,K,M) :- cond(C,S,R,Kl,M,_,_), permit_cond(C,K), unk(C), not clause_f(S,R,Kl),
@@ -228,37 +252,52 @@ judgement_used(S,M) :- exception(E,S), cond(C,E,_,_,M,_,_), judgement(C), cfact(
 non_penal(order). non_penal(disgorgement).
 penal(E) :- sanction(_,_,E,_,_), not non_penal(E).
 
-% ---- 行政罰法總則：排除的是處罰，不是義務（03-04 §5.3） ----
-% 案件事實用保留代碼。布林以正值為是、0 為否；年齡是歲。未提供不等於否定，
-% 只有條文寫明「有事實才排除」或「未知則不套用」的，才依該句。
+% ---- 行政罰法三階審查與總則：構成要件該當性 → 違法性（阻卻違法 §§11–13）→ 有責性（§§7–9） ----
+% 案件事實用保留代碼。布林以正值為是、0 為否；年齡是歲。未提供不等於否定。
 yes(C) :- fact(C,V), V > 0.
 no(C)  :- fact(C,0).
-culpable :- yes("ap_intent").
+
+% 構成要件錯誤（Tatbestandsirrtum）：不知客觀構成要件事實時，阻卻故意；惟過失仍可依過失處罰（§7）。
+intent_negated_by_mistake :- yes("ap_fact_mistake").
+culpable :- yes("ap_intent"), not intent_negated_by_mistake.
 culpable :- yes("ap_negligence").
 culpable :- yes("ap_agent_fault").
+
+% 第二階：阻卻違法事由（§§11–13）— 行為適法（justified），不同於有責性免罰
+justify(pursuant_to_law) :- yes("ap_pursuant_to_law").
+justify(superior_order) :- yes("ap_superior_order"), no("ap_knew_illegal").
+justify(superior_order) :- yes("ap_superior_order"), yes("ap_knew_illegal"), yes("ap_stated_opinion").
+justify(self_defense) :- yes("ap_self_defense"), not yes("ap_defense_excessive").
+justify(necessity) :- yes("ap_necessity"), not yes("ap_necessity_excessive").
+
+% 第三階：阻卻責任事由（§§7–9、期待可能性）— 行為仍屬不法，但免予非難（excuse）
+% 原因自由行為（§9 V）：因故意或過失自行招致者（ap_self_induced），不適用 §9 減免。
 excuse(no_fault) :- no("ap_intent"), no("ap_negligence"), not yes("ap_agent_fault").
+excuse(no_fault) :- intent_negated_by_mistake, not yes("ap_negligence"), not yes("ap_agent_fault").
 excuse(under_fourteen) :- fact("ap_age",V), V < 14000.
 excuse(incapable) :- yes("ap_incapable"), no("ap_self_induced").
-excuse(pursuant_to_law) :- yes("ap_pursuant_to_law").
-excuse(superior_order) :- yes("ap_superior_order"), no("ap_knew_illegal").
-excuse(superior_order) :- yes("ap_superior_order"), yes("ap_knew_illegal"), yes("ap_stated_opinion").
-excuse(self_defense) :- yes("ap_self_defense"), not yes("ap_defense_excessive").
-excuse(necessity) :- yes("ap_necessity"), not yes("ap_necessity_excessive").
+excuse(unavoidable_ignorance) :- yes("ap_ignorance_unavoidable").
+excuse(unexpectable) :- yes("ap_unexpectable").
+
+withheld :- justify(_).
 withheld :- excuse(_).
-% 刑事優先（第 26 條第 1 項）：一行為同時觸犯刑事法律，依刑事法律處罰，罰鍰不裁處；其他種類行政罰
-% 照列；得沒入之物，法院已宣告沒收則不沒入，未知則附條件。刑事程序以不起訴、無罪等確定（第 2 項）
-% 即不再優先。是否觸犯刑事法律未提供，不套用。
+
+% 刑事優先（第 26 條第 1 項）與微罪不罰（第 19 條：法定最高額 3,000 元以下且情節輕微）
 criminal :- yes("ap_criminal_offense").
 criminal :- criminal_cleared.
 criminal_first :- criminal, not criminal_cleared.
 blocked(P) :- criminal_first, sanction(P,_,fine,_,_).
 blocked(P) :- criminal_first, sanction(P,_,confiscation,_,_), yes("ap_court_confiscated").
+blocked(P) :- sanction(P,_,fine,_,Max), Max != none, Max <= 3000, yes("ap_petty_minor").
+% 按次處罰時點檢核（釋字 604 號）：尚在限期改善或展延期間內複查者，阻卻「屆期未履行」按次罰則
+blocked(P) :- within_cure_grace_period, trigger(P,_,order_lapsed).
 seizure_open(P) :- criminal_first, sanction(P,_,confiscation,_,_),
                    not yes("ap_court_confiscated"), not no("ap_court_confiscated").
+
 % 有責性未知，或職務命令而已知與否未知：罰則改為附條件，不當成可罰。
 soften :- not culpable, not excuse(no_fault).
 soften :- yes("ap_superior_order"), not yes("ap_knew_illegal"), not no("ap_knew_illegal").
-% 不是行政罰的效果不要有責性，不受總則的排除、減輕、時效與一行為約束。
+% 不是行政罰的效果（order、disgorgement）不要有責性；惟若行為具阻卻違法事由，基於不法前階之處分應另行區別。
 listed(P,S,E,Min,Max)      :- candidate_penalty(P,S,E,Min,Max), non_penal(E).
 listed_cond(P,S,E,Min,Max) :- candidate_penalty_cond(P,S,E,Min,Max), non_penal(E).
 listed(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), penal(E), culpable, not withheld, not soften,
@@ -269,12 +308,19 @@ listed_cond(P,S,E,Min,Max) :- candidate_penalty(P,S,E,Min,Max), penal(E), not wi
 listed_cond(P,S,E,Min,Max) :- candidate_penalty_cond(P,S,E,Min,Max), penal(E), not withheld, not blocked(P).
 open(P) :- candidate_penalty(P,_,E,_,_), penal(E).
 open(P) :- candidate_penalty_cond(P,_,E,_,_), penal(E).
-barred(P,G) :- open(P), excuse(G).
-barred(P,criminal_priority) :- open(P), blocked(P).
+justified_out(P,J) :- open(P), justify(J).
+excused_out(P,R)   :- open(P), excuse(R).
+barred(P,J) :- justified_out(P,J).
+barred(P,R) :- excused_out(P,R).
+barred(P,criminal_priority) :- open(P), criminal_first, sanction(P,_,fine,_,_).
+barred(P,criminal_priority) :- open(P), criminal_first, sanction(P,_,confiscation,_,_), yes("ap_court_confiscated").
+barred(P,petty_offense) :- open(P), sanction(P,_,fine,_,Max), Max != none, Max <= 3000, yes("ap_petty_minor").
+barred(P,within_cure_period) :- open(P), within_cure_grace_period, trigger(P,_,order_lapsed).
 active(P) :- open(P), not withheld, not blocked(P).
-mitigation(P,youth) :- active(P), fact("ap_age",V), V >= 14000, V < 18000.
+mitigation(P,youth) :- active(P), fact("ap_age",V), V >= 14000, V < 18000, no("ap_self_induced").
+mitigation(P,youth) :- active(P), fact("ap_age",V), V >= 14000, V < 18000, not yes("ap_self_induced"), not no("ap_self_induced").
 mitigation(P,reduced_capacity) :- active(P), yes("ap_capacity_reduced"), no("ap_self_induced").
-mitigation(P,ignorance) :- active(P), yes("ap_ignorance_of_law").
+mitigation(P,ignorance) :- active(P), yes("ap_ignorance_of_law"), not yes("ap_ignorance_unavoidable").
 mitigation(P,excessive_defense) :- active(P), yes("ap_self_defense"), yes("ap_defense_excessive").
 mitigation(P,excessive_necessity) :- active(P), yes("ap_necessity"), yes("ap_necessity_excessive").
 presumed(P,agent_fault) :- active(P), yes("ap_agent_fault"), not yes("ap_intent"), not yes("ap_negligence").
@@ -322,16 +368,29 @@ penalty_defeated(L,W,B) :- penalty_overlap(P1,P2), override(P1,P2,B), W = P1, L 
 penalty_defeated(L,W,B) :- penalty_overlap(P1,P2), override(P2,P1,B), W = P2, L = P1.
 unresolved_penalty_overlap(P1,P2) :- penalty_overlap(P1,P2), not penalty_resolved(P1,P2).
 
-% 一行為數法與數行為（行政罰法第 24、25 條）。數行為就是各則罰鍰自己的額度，不在這裡合併。
-% 一行為只對確定列出、上下限都有、且不是按次的罰鍰算一個區間：上限是法定最高額中的最高者，
-% 下限是各最低額中的最高者。附條件的不進來；有一則缺額度就不給合併區間。是否為一行為不選。
-bounded_fine(P,Min,Max) :- listed(P,_,fine,Min,Max), Min != none, Max != none, not repeating(P).
-open_fine :- listed(P,_,fine,Min,_), Min = none, not repeating(P).
-open_fine :- listed(P,_,fine,_,Max), Max = none, not repeating(P).
-some_fine :- bounded_fine(_,_,_).
-one_floor(M) :- some_fine, M = #max{ Min,P : bounded_fine(P,Min,_) }.
-one_cap(M) :- some_fine, M = #max{ Max,P : bounded_fine(P,_,Max) }.
-one_act(Lo,Hi) :- one_floor(Lo), one_cap(Hi), not open_fine.
+% 一行為數法與數行為（行政罰法第 24、25 條）。以 act_stmt(ActId, S) 區分各個行為，未指定者歸入 "default"。
+% 一行為內依第 24 條第 1 項從一重並守各最低額之最高者；不同 act_id 依第 25 條分別處罰。
+has_act_stmt(S) :- act_stmt(_, S).
+pen_act(P, ActId) :- listed(P,S,fine,_,_), act_stmt(ActId, S), not repeating(P).
+pen_act(P, "default") :- listed(P,S,fine,_,_), not has_act_stmt(S), not repeating(P).
+bounded_fine_act(ActId,P,Min,Max) :- pen_act(P,ActId), listed(P,_,fine,Min,Max), Min != none, Max != none.
+open_fine_act(ActId) :- pen_act(P,ActId), listed(P,_,fine,none,_).
+open_fine_act(ActId) :- pen_act(P,ActId), listed(P,_,fine,_,none).
+some_fine_act(ActId) :- bounded_fine_act(ActId,_,_,_).
+one_floor_act(ActId,M) :- some_fine_act(ActId), M = #max{ Min,P : bounded_fine_act(ActId,P,Min,_) }.
+one_cap_act(ActId,M)   :- some_fine_act(ActId), M = #max{ Max,P : bounded_fine_act(ActId,P,_,Max) }.
+one_act_group(ActId,Lo,Hi) :- one_floor_act(ActId,Lo), one_cap_act(ActId,Hi), not open_fine_act(ActId).
+% 向下相容：僅存在單一行為分組（或未分組）時照舊輸出 one_act/2。
+multi_act_groups :- one_act_group(A1,_,_), one_act_group(A2,_,_), A1 < A2.
+one_act(Lo,Hi) :- one_act_group(_,Lo,Hi), not multi_act_groups.
+
+% 行政罰法第 24 條第 2 項：一行為除罰鍰外另有同種類其他行政罰，從一重已足達成目的者不得重複裁處。
+stmt_act(S,ActId) :- act_stmt(ActId,S).
+stmt_act(S,"default") :- listed(_,S,_,_,_), not has_act_stmt(S).
+
+same_kind_non_fine_overlap(ActId,P1,P2) :-
+    listed(P1,S1,Eff,_,_), listed(P2,S2,Eff,_,_), Eff != fine, penal(Eff), P1 < P2,
+    stmt_act(S1,ActId), stmt_act(S2,ActId).
 
 % ---- 輸出 ----
 #show verdict/2.
@@ -340,6 +399,8 @@ one_act(Lo,Hi) :- one_floor(Lo), one_cap(Hi), not open_fine.
 #show subject_basis/2.
 #show subject_mismatch/1.
 #show barred/2.
+#show justified_out/2.
+#show excused_out/2.
 #show mitigation/2.
 #show presumed/2.
 #show time_barred/1.
@@ -360,3 +421,6 @@ one_act(Lo,Hi) :- one_floor(Lo), one_cap(Hi), not open_fine.
 #show penalty_defeated/3.
 #show unresolved_penalty_overlap/2.
 #show one_act/2.
+#show one_act_group/3.
+#show same_kind_non_fine_overlap/3.
+#show mutatis_applied/2.

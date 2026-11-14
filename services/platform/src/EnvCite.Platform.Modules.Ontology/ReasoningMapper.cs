@@ -25,6 +25,7 @@ internal static class ReasoningMapper
                 Concept = fact.Concept ?? string.Empty,
                 MeasurementMethod = fact.MeasurementMethod ?? string.Empty,
                 AveragingPeriod = fact.AveragingPeriod ?? string.Empty,
+                Unit = fact.Unit ?? string.Empty,
             };
             f.Values.AddRange((fact.Numbers ?? []).Select(n => new FactValue { Number = Number(n) }));
             f.Values.AddRange((fact.Flags ?? []).Select(flag => new FactValue { Flag = flag }));
@@ -67,7 +68,76 @@ internal static class ReasoningMapper
             if (a.CommunityServiceHours is { } hours) { p.CommunityServiceHours = Number(hours); }
             if (a.MinimumHourlyWage is { } wage) { p.MinimumHourlyWage = Number(wage); }
             if (a.GainedBenefit is { } benefit) { p.GainedBenefit = Number(benefit); }
+            if (a.FactMistake is { } factMistake) { p.FactMistake = factMistake; }
+            if (a.IgnoranceUnavoidable is { } ignUnavoidable) { p.IgnoranceUnavoidable = ignUnavoidable; }
+            if (a.Unexpectable is { } unexpectable) { p.Unexpectable = unexpectable; }
+            if (a.PettyMinor is { } pettyMinor) { p.PettyMinor = pettyMinor; }
             request.AdministrativePenaltyFacts = p;
+        }
+
+        foreach (var ag in r.ActGroups ?? [])
+        {
+            var g = new ActGroup { ActId = ag.ActId ?? string.Empty };
+            g.StatementIds.AddRange(ag.StatementIds);
+            request.ActGroups.Add(g);
+        }
+
+        if (r.Timeline is { } tl)
+        {
+            request.Timeline = new PerOccasionTimeline
+            {
+                CureNoticeServedOn = tl.CureNoticeServedOn ?? string.Empty,
+                CureDeadline = tl.CureDeadline ?? string.Empty,
+                ExtensionDeadline = tl.ExtensionDeadline ?? string.Empty,
+                ReinspectionOn = tl.ReinspectionOn ?? string.Empty,
+            };
+        }
+
+        foreach (var si in r.ScoringInputs ?? [])
+        {
+            var item = new ScoringInput
+            {
+                MatrixCode = si.MatrixCode ?? string.Empty,
+                SevereViolation = si.SevereViolation,
+                FirstOffenseMinorFacility = si.FirstOffenseMinorFacility,
+                CuredBeforeNotice = si.CuredBeforeNotice,
+                IsStopWork = si.IsStopWork,
+                RepeatWithinYear = si.RepeatWithinYear,
+                ActiveBenefit = Number(si.ActiveBenefit ?? "0"),
+                PassiveBenefit = Number(si.PassiveBenefit ?? "0"),
+                CriminalDeduction = Number(si.CriminalDeduction ?? "0"),
+            };
+            if (si.MitigationDenominator is { } md) { item.MitigationDenominator = md; }
+            foreach (var fv in si.Factors ?? [])
+            {
+                item.Factors.Add(new ScoringFactorValue { FactorCode = fv.FactorCode ?? string.Empty, Value = Number(fv.Value) });
+            }
+            request.ScoringInputs.Add(item);
+        }
+
+        if (r.DispositionAudit is { } da)
+        {
+            var audit = new DispositionAuditInput
+            {
+                TwoTierDefensesAddressed = da.TwoTierDefensesAddressed,
+                ScoringMatrixCode = da.ScoringMatrixCode ?? string.Empty,
+            };
+            if (da.StatedFine is { } sf) { audit.StatedFine = sf; }
+            audit.Citations.AddRange(da.Citations.Select(c => new DispositionCitation
+            {
+                CitationText = c.CitationText ?? string.Empty,
+                Role = c.Role ?? string.Empty,
+                InForce = c.InForce,
+            }));
+            audit.Elements.AddRange(da.Elements.Select(e => new DispositionElement
+            {
+                ElementName = e.ElementName ?? string.Empty,
+                Tier = e.Tier ?? string.Empty,
+                FactSummary = e.FactSummary ?? string.Empty,
+                EvidenceKind = e.EvidenceKind ?? string.Empty,
+                Contradicted = e.Contradicted,
+            }));
+            request.DispositionAudit = audit;
         }
 
         return request;
@@ -97,15 +167,15 @@ internal static class ReasoningMapper
             Map(p.Kind), p.SubjectCase == Problem.SubjectOneofCase.Concept ? p.Concept : null,
             p.SubjectCase == Problem.SubjectOneofCase.ConditionId ? p.ConditionId : null))],
         [.. o.UnresolvedConflicts.Select(c => new StatementPairDto(c.First, c.Second))],
-        [.. o.Defeated.Select(d => new DefeatDto(d.Loser, d.Winner, Map(d.Basis)))],
+        [.. o.Defeated.Select(d => new DefeatDto(d.Loser, d.Winner, Map(d.Basis), DetailBasis(d.Basis)))],
         [.. o.UnresolvedPenaltyOverlaps.Select(c => new StatementPairDto(c.First, c.Second))],
-        [.. o.PenaltyDefeated.Select(d => new DefeatDto(d.Loser, d.Winner, Map(d.Basis)))],
+        [.. o.PenaltyDefeated.Select(d => new DefeatDto(d.Loser, d.Winner, Map(d.Basis), DetailBasis(d.Basis)))],
         [.. o.Trace.Select(t => new TraceEntryDto(
             t.ConditionId, t.StatementId, t.Concept, t.Fact?.Value ?? string.Empty,
             t.Threshold?.Value ?? string.Empty, Map(t.Role)))],
         [.. o.LimitSources.OrderBy(kv => kv.Key).Select(kv => new LimitSourceDto(kv.Key, kv.Value))],
         new GeneralPartDto(
-            [.. general.Unpunished.Select(u => new PenaltyExcuseDto(u.PenaltyStatementId, Map(u.Excuse)))],
+            [.. general.Unpunished.Select(u => TryMapLegacyExcuse(u.Excuse) is { } dto ? new PenaltyExcuseDto(u.PenaltyStatementId, dto) : null).OfType<PenaltyExcuseDto>()],
             [.. general.Mitigation.Select(m => new PenaltyMitigationDto(m.PenaltyStatementId, Map(m.Mitigation)))],
             [.. general.PresumedAgentFault],
             [.. general.TimeBarred],
@@ -113,7 +183,9 @@ internal static class ReasoningMapper
                 f.PenaltyStatementId, Map(f.Mitigation), Map(f.Share),
                 f.HasMinAmount ? f.MinAmount : null, f.HasMaxAmount ? f.MaxAmount : null))],
             [.. general.RaisedCaps.Select(c => new RaisedCapDto(c.PenaltyStatementId, c.MaxAmount?.Value ?? string.Empty))],
-            [.. general.CriminalDeductions.Select(d => new CriminalDeductionDto(d.PenaltyStatementId, d.Amount?.Value ?? string.Empty))]),
+            [.. general.CriminalDeductions.Select(d => new CriminalDeductionDto(d.PenaltyStatementId, d.Amount?.Value ?? string.Empty))],
+            [.. general.Justified.Select(u => new TierExcuseDto(u.PenaltyStatementId, u.Excuse.ToString()))],
+            [.. general.Excused.Select(u => new TierExcuseDto(u.PenaltyStatementId, u.Excuse.ToString()))]),
         [.. o.Sources.Select(s => new StatementSourceDto(s.StatementId, s.VersionIri))],
         [.. o.UncoveredLawIdentifiers.Select(LawIdentifiers.ToDto)],
         [.. o.DefinitionsUsed.Select(d => new DefinitionUseDto(
@@ -124,7 +196,29 @@ internal static class ReasoningMapper
         [.. o.MissingPermitLimits.Select(g => new PermitGapDto(g.StatementId, g.Permit, g.Concept))],
         [.. o.SubjectMismatch],
         [.. o.Invalidated.Select(i => new InvalidatedStatementDto(i.StatementId, i.VersionIri, i.RulingNo, i.InvalidFrom, i.Partial))],
-        [.. o.DelegationBases.Select(b => new DelegationBasisDto(b.StatementId, b.Rooted, [.. b.Links.Select(Map)]))]);
+        [.. o.DelegationBases.Select(b => new DelegationBasisDto(b.StatementId, b.Rooted, [.. b.Links.Select(Map)]))],
+        [.. o.OneActGroups.Select(g => new ActGroupFineDto(g.ActId, g.MinAmount, g.MaxAmount))],
+        [.. o.SameKindNonFineOverlaps.Select(s => new SameKindNonFineOverlapDto(s.ActId, s.Penalty1, s.Penalty2))],
+        [.. o.MutatisApplied.Select(p => new StatementPairDto(p.First, p.Second))],
+        [.. o.ScoringResults.Select(MapScoring)],
+        o.DispositionAudit is { } auditRes
+            ? new DispositionAuditResultDto(
+                auditRes.D1CitationsComplete,
+                auditRes.D2EvidenceGrounded,
+                auditRes.D3DefenseAndBoundsValid,
+                [.. auditRes.Findings])
+            : null);
+
+    private static ScoringResultDto MapScoring(ScoringResult sr) => new(
+        sr.MatrixCode, sr.LawTitle, sr.NormKind, sr.FormulaKind, sr.EquationSummary,
+        [.. sr.FactorsApplied.Select(fa => new FactorAppliedDto(
+            fa.FactorCode, fa.LabelZho, fa.FactorRole, fa.StatutoryRef,
+            fa.Value?.Value, fa.IntervalMin?.Value, fa.IntervalMax?.Value, fa.Missing, fa.NeedsJudgement))],
+        sr.RawMin?.Value, sr.RawMax?.Value,
+        sr.HasClampedMin ? sr.ClampedMin : null, sr.HasClampedMax ? sr.ClampedMax : null,
+        sr.DemeritTotal?.Value, sr.HasDemeritTriggered ? sr.DemeritTriggered : null,
+        sr.LectureHoursMin, sr.LectureHoursMax,
+        [.. sr.MissingFactors], [.. sr.JudgementFactors], [.. sr.Notes]);
 
     // 空字串是 proto3 的「沒有」，對外寫成 null；gap 的零值是「這一環成立」，不是契約之外的值。
     private static DelegationLinkDto Map(DelegationLink l) => new(
@@ -223,7 +317,18 @@ internal static class ReasoningMapper
         OverrideBasis.Hierarchy => OverrideBasisDto.Hierarchy,
         OverrideBasis.LexSpecialis => OverrideBasisDto.LexSpecialis,
         OverrideBasis.LexPosterior => OverrideBasisDto.LexPosterior,
+        OverrideBasis.MutatisMutandis
+            or OverrideBasis.Subsidiarity
+            or OverrideBasis.Absorption => OverrideBasisDto.LexSpecialis,
         _ => throw Unknown(b),
+    };
+
+    private static string? DetailBasis(OverrideBasis b) => b switch
+    {
+        OverrideBasis.MutatisMutandis
+            or OverrideBasis.Subsidiarity
+            or OverrideBasis.Absorption => b.ToString(),
+        _ => null,
     };
 
     private static ConditionRoleDto Map(ConditionRole r) => r switch
@@ -234,7 +339,7 @@ internal static class ReasoningMapper
         _ => throw Unknown(r),
     };
 
-    private static ExcuseDto Map(Excuse e) => e switch
+    private static ExcuseDto? TryMapLegacyExcuse(Excuse e) => e switch
     {
         Excuse.NoFault => ExcuseDto.NoFault,
         Excuse.UnderFourteen => ExcuseDto.UnderFourteen,
@@ -244,6 +349,10 @@ internal static class ReasoningMapper
         Excuse.SelfDefense => ExcuseDto.SelfDefense,
         Excuse.Necessity => ExcuseDto.Necessity,
         Excuse.CriminalPriority => ExcuseDto.CriminalPriority,
+        Excuse.UnavoidableIgnorance
+            or Excuse.Unexpectable
+            or Excuse.PettyOffense
+            or Excuse.WithinCurePeriod => null,
         _ => throw Unknown(e),
     };
 

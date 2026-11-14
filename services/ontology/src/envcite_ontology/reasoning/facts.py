@@ -14,6 +14,7 @@ from decimal import Decimal
 from typing import NamedTuple
 
 from envcite_ontology.db import Conn, fetch, fetch_one, scalar
+from envcite_ontology.reasoning import units
 
 # 案件事實的值：數字，或概念代碼（概念取某個值概念）；同一概念可帶多個值。
 type CaseValue = float | str
@@ -22,10 +23,21 @@ type Case = Mapping[str, CaseValue | Sequence[CaseValue]]
 
 @dataclass(frozen=True)
 class Measurement:
-    """案件事實的認定方式：檢測方法與平均時段，都是概念代碼；None 是未提供。"""
+    """案件事實的認定方式與物理單位：檢測方法、平均時段與量測單位；None 是未提供。"""
 
     method: str | None = None
     averaging: str | None = None
+    unit: str | None = None
+
+
+@dataclass(frozen=True)
+class PerOccasionTimeline:
+    """按次處罰與限期改善狀態機時點（釋字第 604 號）。"""
+
+    cure_notice_served_on: date | None = None
+    cure_deadline: date | None = None
+    extension_deadline: date | None = None
+    reinspection_on: date | None = None
 
 
 #: 事實概念 → 它的值所用的認定方式（同一概念可由數筆事實提供，各帶認定方式）。
@@ -131,6 +143,29 @@ _LIMIT = """
       LEFT JOIN vocab.concept AS mk ON mk.id = lim.measurement_method_concept_id
       LEFT JOIN vocab.concept AS ak ON ak.id = lim.averaging_period_concept_id
      ORDER BY s.condition_id
+"""
+
+# 多維適用條件之所有已確認限值候選（取代只取 min(condition_id) 單一列）。
+_LIMITS = """
+    SELECT threshold, statement_id, measurement_method, averaging_period
+      FROM annotation.threshold_sources_at(%s, %s, %s)
+"""
+
+# 跨法受控詞彙上位／等同關係（vocab.concept_relation）。
+_CONCEPT_RELATIONS = """
+    SELECT src.code, tgt.code, r.relation_kind::text
+      FROM vocab.concept_relation AS r
+      JOIN vocab.concept AS src ON src.id = r.source_concept_id
+      JOIN vocab.concept AS tgt ON tgt.id = r.target_concept_id
+     ORDER BY src.code, tgt.code
+"""
+
+# 準用關係（annotation.mutatis_mutandis）。
+_MUTATIS = """
+    SELECT source_statement_id, target_statement_id
+      FROM annotation.mutatis_mutandis
+     WHERE source_statement_id = ANY(%(ids)s) AND target_statement_id = ANY(%(ids)s)
+     ORDER BY source_statement_id, target_statement_id
 """
 
 # 對到同一個外部識別碼的概念視為同一個（只記等同）：要件、概念值與定義成員所用的概念，
@@ -257,6 +292,17 @@ class _DefinitionRow(NamedTuple):
 class _MatchRow(NamedTuple):
     other: str
     used: str
+
+
+class _ConceptRelRow(NamedTuple):
+    source: str
+    target: str
+    kind: str
+
+
+class _MutatisRow(NamedTuple):
+    source: int
+    target: int
 
 
 class _ActionRow(NamedTuple):
@@ -538,26 +584,26 @@ def _condition_value_facts(conn: Conn, cond: _ConditionRow, language: str, on: d
 
 def _delegated_facts(conn: Conn, condition_id: int, language: str, on: date) -> list[str]:
     out = [f"delegated({condition_id})."]
-    limit = limit_at(conn, condition_id, language, on)
-    if limit is None:  # 解析不到則不給 thr，推論程式列為問題而非缺事實
+    limits = fetch(conn, _LIMITS, (condition_id, language, on), Limit)
+    if not limits:  # 解析不到則不給 thr，推論程式列為問題而非缺事實
         if _void_limit(conn, condition_id, language, on):
             out.append(f"void_limit({condition_id}).")
         return out
-    out.append(f"thr({condition_id},{milli(limit.threshold)}).")
-    out.append(f"thr_src({condition_id},{limit.statement_id}).")
-    if limit.method is not None:
-        out.append(f"lim_method({condition_id},{q(limit.method)}).")
-    if limit.averaging is not None:
-        out.append(f"lim_avg({condition_id},{q(limit.averaging)}).")
-    if limit.method is None and limit.averaging is None:
-        out.append(f"lim_unlabeled({condition_id}).")
+    for limit in limits:
+        out.append(f"limit_cand({condition_id},{limit.statement_id},{milli(limit.threshold)}).")
+        if limit.method is not None:
+            out.append(f"cand_lim_method({condition_id},{limit.statement_id},{q(limit.method)}).")
+        if limit.averaging is not None:
+            out.append(f"cand_lim_avg({condition_id},{limit.statement_id},{q(limit.averaging)}).")
+        if limit.method is None and limit.averaging is None:
+            out.append(f"cand_lim_unlabeled({condition_id},{limit.statement_id}).")
     return out
 
 
 def _vocabulary_facts(
     conn: Conn, params: Mapping[str, object], ids_param: Mapping[str, list[int]]
 ) -> list[str]:
-    """用語定義的成員與等同的概念。"""
+    """用語定義的成員、等同的概念與跨法受控詞彙階層關係。"""
     out: list[str] = []
     # 用語定義只及於本法：成員關係帶法規編號，推論只在要件所屬的法規內使用。
     definitions = fetch(conn, _DEFINITIONS, params, _DefinitionRow)
@@ -567,6 +613,9 @@ def _vocabulary_facts(
     definition_ids = sorted({defn.definition_id for defn in definitions})
     matches = fetch(conn, _MATCHES, {**ids_param, "definitions": definition_ids}, _MatchRow)
     out += [f"same({q(match.other)},{q(match.used)})." for match in matches]
+    for rel in fetch(conn, _CONCEPT_RELATIONS, (), _ConceptRelRow):
+        pred = "same" if rel.kind == "exact_match" else "concept_broader"
+        out.append(f"{pred}({q(rel.source)},{q(rel.target)}).")
     return out
 
 
@@ -594,6 +643,10 @@ def _relation_facts(conn: Conn, ids_param: Mapping[str, list[int]]) -> list[str]
     out += [
         f"override({ovr.winner},{ovr.loser},{ovr.basis})."
         for ovr in fetch(conn, _OVERRIDES, ids_param, _OverrideRow)
+    ]
+    out += [
+        f"mutatis_mutandis({m.source},{m.target})."
+        for m in fetch(conn, _MUTATIS, ids_param, _MutatisRow)
     ]
     return out
 
@@ -682,6 +735,70 @@ def amount_facts(given: Amounts, fine_caps: Mapping[int, int]) -> str:
     if given.wage_missing:
         out.append("wage_missing.")
     return "\n".join(out)
+
+
+def normalize_case_units(
+    conn: Conn,
+    case: Case,
+    measurements: Measurements | None = None,
+    fact_units: Mapping[str, str] | None = None,
+) -> tuple[Case, list[str]]:
+    """依詞彙標準量綱單位換算案件數值；物理量綱不相容者排除該數值並回報 `unit_mismatch` 問題。"""
+    if not measurements and not fact_units:
+        return case, []
+    canonical = {
+        str(code): str(unit)
+        for code, unit in conn.execute(
+            "SELECT code, canonical_unit FROM vocab.concept WHERE canonical_unit IS NOT NULL"
+        )
+    }
+    if not canonical:
+        return case, []
+    normalized: dict[str, CaseValue | Sequence[CaseValue]] = dict(case)
+    problems: list[str] = []
+    for code, target_unit in canonical.items():
+        if code not in normalized:
+            continue
+        raw = normalized[code]
+        if isinstance(raw, str | Sequence) and not isinstance(raw, int | float):
+            continue
+        src_unit = (fact_units or {}).get(code)
+        if src_unit is None and measurements and code in measurements:
+            unit_candidates = [m.unit for m in measurements[code] if m.unit is not None]
+            if unit_candidates:
+                src_unit = unit_candidates[0]
+        if src_unit is None:
+            continue
+        converted, ok = units.normalize_value(raw, src_unit, target_unit)
+        if not ok or converted is None:
+            problems.append(f"problem(unit_mismatch,{q(code)}).")
+            normalized.pop(code)
+        else:
+            normalized[code] = float(converted)
+    return normalized, problems
+
+
+def act_group_facts(act_groups: Mapping[str, Sequence[int]] | None) -> str:
+    """行為分組（行政罰法 §§24、25）：將陳述編號歸屬至具體行為識別碼 `act_id`。"""
+    if not act_groups:
+        return ""
+    lines: list[str] = []
+    for act_id, stmt_ids in sorted(act_groups.items()):
+        for sid in stmt_ids:
+            lines.append(f"act_stmt({q(act_id)},{int(sid)}).")
+    return "\n".join(lines)
+
+
+def per_occasion_facts(timeline: PerOccasionTimeline | None) -> str:
+    """按次處罰與限期改善狀態機事實（釋字第 604 號）。"""
+    if timeline is None or timeline.reinspection_on is None:
+        return ""
+    effective_deadline = timeline.extension_deadline or timeline.cure_deadline
+    if effective_deadline is None:
+        return ""
+    if timeline.reinspection_on > effective_deadline:
+        return "order_lapsed_verified."
+    return "within_cure_grace_period."
 
 
 def case_facts(

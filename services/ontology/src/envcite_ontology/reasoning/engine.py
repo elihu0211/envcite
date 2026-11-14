@@ -22,7 +22,7 @@
 （`criminal_priority`），刑事程序以不起訴等確定後照列並給扣抵額（`General.deductions`）。
 """
 
-from collections.abc import Collection, Mapping
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
@@ -32,7 +32,7 @@ from typing import Any
 import clingo
 
 from envcite_ontology.db import Conn
-from envcite_ontology.reasoning import facts
+from envcite_ontology.reasoning import facts, scoring
 
 _RULES = resources.files(__package__).joinpath("rules.lp").read_text(encoding="utf-8")
 
@@ -69,6 +69,10 @@ class General:
     raised_caps: tuple[tuple[int, Decimal], ...] = ()
     #: （罰則，扣抵額）：第 26 條第 3、4 項
     deductions: tuple[tuple[int, Decimal], ...] = ()
+    #: （罰則，阻卻違法事由 §§11–13）：第二階違法性排除
+    justified: tuple[tuple[int, str], ...] = ()
+    #: （罰則，阻卻責任事由 §§7–9、期待可能性）：第三階有責性排除
+    excused: tuple[tuple[int, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -111,6 +115,14 @@ class Result:
     invalidated: tuple[facts.Invalidated, ...] = ()
     #: 命令陳述 → 其命令的授權鏈
     delegation: Mapping[int, facts.Chain] = field(default_factory=dict)
+    #: 多行為分組（§24/§25）：act_id -> (min_fine, max_fine)
+    one_act_groups: Mapping[str, tuple[int, int]] = field(default_factory=dict)
+    #: 第 24 條第 2 項同種類非罰鍰處分重複提示：(act_id, penalty_1, penalty_2)
+    same_kind_non_fine_overlaps: tuple[tuple[str, int, int], ...] = ()
+    #: 準用關係套用軌跡：(source_statement_id, target_statement_id)
+    mutatis_applied: tuple[tuple[int, int], ...] = ()
+    #: 裁罰積分／倍數／記點與環境講習試算結果
+    scoring_results: tuple[scoring.ScoringResult, ...] = ()
 
 
 def _py(symbol: clingo.Symbol) -> Any:
@@ -134,6 +146,10 @@ def evaluate(
     measurements: facts.Measurements | None = None,
     permits: facts.Permits | None = None,
     actor_bases: Collection[str] | None = None,
+    fact_units: Mapping[str, str] | None = None,
+    act_groups: Mapping[str, Sequence[int]] | None = None,
+    timeline: facts.PerOccasionTimeline | None = None,
+    scoring_inputs: Sequence[scoring.ScoringInput] = (),
 ) -> Result:
     """對 `as_of` 當日有效的陳述與案件事實推論。
 
@@ -141,12 +157,16 @@ def evaluate(
     `include_unsettled` 僅供驗證閘門在接受前評估陳述，推論呼叫端不可用。
     """
     statements = facts.statement_facts(conn, as_of, language, include_unsettled=include_unsettled)
-    given = facts.amounts(case)
+    norm_case, unit_problems = facts.normalize_case_units(conn, case, measurements, fact_units)
+    given = facts.amounts(norm_case)
     program = "\n".join(
         [
             statements.program,
-            facts.case_facts(case, measurements, permits, actor_bases),
-            facts.limitation(decided_on or as_of, case),
+            facts.case_facts(norm_case, measurements, permits, actor_bases),
+            facts.act_group_facts(act_groups),
+            facts.per_occasion_facts(timeline),
+            "\n".join(unit_problems),
+            facts.limitation(decided_on or as_of, norm_case),
             facts.amount_facts(given, statements.fine_caps),
         ]
     )
@@ -215,6 +235,14 @@ def evaluate(
         if given.deduction is None
         else tuple((int(p), given.deduction) for (p,) in get("deduct"))
     )
+    scoring_results: tuple[scoring.ScoringResult, ...] = ()
+    if scoring_inputs:
+        matrices = scoring.load_matrices(conn, as_of, language)
+        scoring_results = tuple(
+            scoring.evaluate_matrix(matrices[si.matrix_code], si)
+            for si in scoring_inputs
+            if si.matrix_code in matrices
+        )
     return Result(
         verdicts={s: v for s, v in get("verdict")},
         penalties=tuple(sorted(penalties, key=lambda x: (x.statement_id, x.punishes_id))),
@@ -240,10 +268,18 @@ def evaluate(
             ),
             raised_caps=raised,
             deductions=deductions,
+            justified=tuple((int(p), str(j)) for p, j in get("justified_out")),
+            excused=tuple((int(p), str(r)) for p, r in get("excused_out")),
         ),
         definitions_used=tuple((int(c), int(d)) for c, d in get("used_def")),
         missing_permits=tuple((int(s), str(k), str(m)) for s, k, m in get("missing_permit")),
         subject_mismatch=tuple(int(p) for (p,) in get("subject_mismatch")),
         invalidated=statements.invalidated,
         delegation=statements.chains,
+        one_act_groups={str(a): (int(lo), int(hi)) for a, lo, hi in get("one_act_group")},
+        same_kind_non_fine_overlaps=tuple(
+            (str(a), int(p1), int(p2)) for a, p1, p2 in get("same_kind_non_fine_overlap")
+        ),
+        mutatis_applied=tuple((int(src), int(tgt)) for src, tgt in get("mutatis_applied")),
+        scoring_results=scoring_results,
     )

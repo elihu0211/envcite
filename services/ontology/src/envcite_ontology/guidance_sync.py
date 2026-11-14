@@ -575,6 +575,8 @@ class _Job:
     def _gazette_rule(self, r: gazette.Rule) -> list[Problem]:
         try:
             kind = gazette.rule_kind(r.title)
+        except gazette.DelegatedRegulationTitle:
+            return [Problem("warning", "delegated_regulation", r.title)]
         except gazette.AmbiguousKind:
             return [Problem("error", "kind_ambiguous", r.title)]
         if r.issued_on is None or not r.body or not r.document_no or not r.issuer:
