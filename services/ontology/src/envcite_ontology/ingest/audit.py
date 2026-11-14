@@ -1,7 +1,7 @@
 """整批驗收。
 
 單一法規的問題只讓該部不寫入、記入問題清單；整批看比例，越線代表來源格式改了、
-解析規則跟不上，整批不寫入。上限取自 2026-09-18 全量檔（11,798 部）的實測再放寬。
+解析規則跟不上，整批不寫入。上限是量過全量資料的實際比例後再放寬的；改它要先在全量資料上重量。
 """
 
 from collections import Counter
@@ -9,8 +9,7 @@ from dataclasses import dataclass, field
 
 from envcite_ontology.ingest.law import ParsedLaw
 
-#: 名稱 → (分母說明, 上限)。實測：不可寫入 0.01%、切分退回 0.23%、認不得的事件 1.3%、
-#: 待確認 4.0%。
+#: 名稱 → (分母說明, 上限)。上限都比全量資料的實際比例寬。
 LIMITS = {
     "rejected_laws": ("不可寫入的法規占法規", 0.005),
     "degraded_articles": ("切分退回整條的條占條", 0.01),
