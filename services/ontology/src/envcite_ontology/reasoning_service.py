@@ -18,6 +18,7 @@ from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite.ontology.v2 import reasoning_pb2_grpc
 from envcite_grpc import remaining_seconds
 from envcite_ontology import annotation_read, errors, identifiers
+from envcite_ontology.clock import Today
 from envcite_ontology.endpoints.common import log_call
 from envcite_ontology.identifiers import law_key
 from envcite_ontology.reasoning import Result, evaluate_across
@@ -54,7 +55,9 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         laws: LawReader,
         evaluate_slots: int = EVALUATE_SLOTS,
         meter: Meter | None = None,
+        today: Today = date.today,
     ) -> None:
+        self._today = today
         self._connections = connections
         self._laws = laws
         self._metrics = ReasoningMetrics(meter)
@@ -68,7 +71,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         log_call(log, context, "ListStatements", identifiers.subject(request.identifier))
         v = errors.Validator()
         key = law_key(self._laws, request.identifier, v)
-        on = v.date("as_of", request.as_of)
+        as_of = v.date("as_of", request.as_of)
         v.check()
         resource_id = self._laws.resource_id(
             key, as_of=request.as_of, timeout=remaining_seconds(context)
@@ -76,7 +79,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         if resource_id is None:
             raise identifiers.not_found(self._laws, key, request.as_of, context)
         with self._connections.read_connection(timeout=remaining_seconds(context)) as conn:
-            return annotation_read.list_statements(conn, resource_id, on)
+            return annotation_read.list_statements(conn, resource_id, as_of or self._today())
 
     @errors.maps_errors
     def Evaluate(

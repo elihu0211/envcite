@@ -1,5 +1,6 @@
 """ReasoningService 與錯誤模型：強型別的訊息、ErrorInfo／BadRequest、期限與名額。"""
 
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -583,3 +584,16 @@ def test_codec_carries_the_identifiers_of_central_and_local_laws() -> None:
     assert len(out.delegation_bases) == 1
     assert out.delegation_bases[0].links[0].command_identifier.jurisdiction == "TW-TPE"
     assert out.delegation_bases[0].links[0].identifier.jurisdiction == "TW-CENTRAL"
+
+
+def test_the_default_day_of_a_listing_is_the_injected_today(
+    conn: Conn, tmp_path: Path, store: OntologyStore
+) -> None:
+    _committed(conn, tmp_path)
+    request = reasoning_pb2.ListStatementsRequest(identifier=identifier(LAW))
+
+    now = ReasoningServicer(store.connections, store.laws)
+    long_ago = ReasoningServicer(store.connections, store.laws, today=lambda: date(1900, 1, 1))
+
+    assert now.ListStatements(request, _Context(remaining=5.0)).statements  # type: ignore[arg-type]
+    assert not long_ago.ListStatements(request, _Context(remaining=5.0)).statements  # type: ignore[arg-type]

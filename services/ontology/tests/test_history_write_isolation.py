@@ -1,4 +1,4 @@
-"""歷史版本匯入：一部法規的寫入被資料庫擋下，不拖垮整批（`history_sync.import_`）。
+"""歷史版本匯入：一部法規的寫入被資料庫擋下，不拖垮整批（`history_sync.importing.import_`）。
 
 兩部命令，鍵排在前的第一部寫入被擋下、第二部照寫。規劃讀的是規劃當時的語料，寫入之前另一個
 作業入庫的版本規劃看不到，所以擋下的方式是在寫入前植入同版本日的官方版本，對真實的綱要。
@@ -13,14 +13,16 @@ import pytest
 from psycopg.types.range import Range
 
 from envcite_jobkit import Policy
-from envcite_ontology import history_sync
 from envcite_ontology.acquire import moenv_law
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.history_sources import Moenv
+from envcite_ontology.history_sync.policy import LIMITS
+from envcite_ontology.history_sync.run import sync
 from envcite_ontology.ingest import importer
 from envcite_ontology.ingest.backfill import writer
 from envcite_ontology.ingest.backfill.models import Anchor
 from tests.fake_web import FakeWeb
+from tests.history_support import relax_limits
 from tests.moenv_site import listing, site
 from tests.sample import stored_snapshot
 from tests.test_backfill import HISTORY, V1, V1_TEXT, V2, V2_TEXT, V3, V3_TEXT
@@ -36,9 +38,7 @@ POLICY = Policy(name="test", max_attempts=1, backoff_base_seconds=0.0)
 @pytest.fixture(autouse=True)
 def _no_batch_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     """兩部法規的比例沒有意義；個別測試自己設要驗的上限。"""
-    monkeypatch.setattr(
-        history_sync, "LIMITS", {k: (d, 1.0) for k, (d, _) in history_sync.LIMITS.items()}
-    )
+    relax_limits(monkeypatch)
 
 
 def _anchors(conn: Conn, root: Path) -> None:
@@ -76,7 +76,7 @@ def _pages() -> dict[str, str]:
 
 
 def _sync(conn: Conn, root: Path, source: Moenv | None = None) -> int:
-    return history_sync.sync(
+    return sync(
         conn,
         source or Moenv(),
         root,
@@ -164,8 +164,8 @@ def test_refusals_over_the_limit_end_with_fatal_after_the_rest_are_written(
     conn: Conn, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _anchors(conn, tmp_path)
-    description, _ = history_sync.LIMITS["write_rejected"]
-    monkeypatch.setitem(history_sync.LIMITS, "write_rejected", (description, 0.4))
+    description, _ = LIMITS["write_rejected"]
+    monkeypatch.setitem(LIMITS, "write_rejected", (description, 0.4))
     _race(monkeypatch, FIRST[0])
 
     assert _sync(conn, tmp_path) == 2  # 兩部有一部被擋下：50%，超過 40%

@@ -14,14 +14,15 @@ import pytest
 from psycopg.types.range import Range
 
 from envcite_jobkit import Policy
-from envcite_ontology import history_sync
 from envcite_ontology.acquire import moenv_law
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.history_sources import Moenv
+from envcite_ontology.history_sync.run import sync
 from envcite_ontology.ingest import audit, importer
 from envcite_ontology.ingest.backfill import planner
 from envcite_ontology.ingest.backfill.models import Anchor, Article, Version
 from tests.fake_web import FakeWeb
+from tests.history_support import relax_limits
 from tests.moenv_site import current_page, site
 from tests.sample import stored_snapshot
 from tests.test_import import _law
@@ -52,9 +53,7 @@ POLICY = Policy(name="test", max_attempts=1, backoff_base_seconds=0.0)
 def _no_batch_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     """一部法規就是一整批：任何比例都是 0 或 100%，沒有意義。"""
     monkeypatch.setattr(audit, "LIMITS", {k: (d, 1.0) for k, (d, _) in audit.LIMITS.items()})
-    monkeypatch.setattr(
-        history_sync, "LIMITS", {k: (d, 1.0) for k, (d, _) in history_sync.LIMITS.items()}
-    )
+    relax_limits(monkeypatch)
 
 
 def _anchor(conn: Conn, root: Path) -> None:
@@ -80,9 +79,7 @@ def _anchor(conn: Conn, root: Path) -> None:
 
 
 def _sync(conn: Conn, root: Path, pages: dict[str, str], **kw: Any) -> int:
-    return history_sync.sync(
-        conn, Moenv(), root, FakeWeb(pages), policy=POLICY, sleep=lambda _: None, **kw
-    )
+    return sync(conn, Moenv(), root, FakeWeb(pages), policy=POLICY, sleep=lambda _: None, **kw)
 
 
 def _full_site(**over: Any) -> dict[str, str]:

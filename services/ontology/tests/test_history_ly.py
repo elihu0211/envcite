@@ -12,13 +12,14 @@ import pytest
 from psycopg.types.range import Range
 
 from envcite_jobkit import Policy
-from envcite_ontology import history_sync
 from envcite_ontology.acquire import ly_law
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.history_sources import Ly, Moenv, Target
+from envcite_ontology.history_sync.run import sync
 from envcite_ontology.ingest import importer
 from tests import ly_site, moenv_site
 from tests.fake_web import FakeWeb
+from tests.history_support import relax_limits
 from tests.sample import stored_snapshot
 from tests.test_import import _law
 
@@ -45,9 +46,7 @@ POLICY = Policy(name="test", max_attempts=1, backoff_base_seconds=0.0)
 @pytest.fixture(autouse=True)
 def _no_batch_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     """一部法規就是一整批：任何比例都是 0 或 100%，沒有意義。"""
-    monkeypatch.setattr(
-        history_sync, "LIMITS", {k: (d, 1.0) for k, (d, _) in history_sync.LIMITS.items()}
-    )
+    relax_limits(monkeypatch)
     monkeypatch.setattr(Ly, "unmatched_limit", 1.0)
 
 
@@ -75,7 +74,7 @@ def _web(**over: Any) -> FakeWeb:
 
 
 def _sync(conn: Conn, root: Path, web: FakeWeb, source: Any = None) -> int:
-    return history_sync.sync(conn, source or Ly(), root, web, policy=POLICY, sleep=lambda _: None)
+    return sync(conn, source or Ly(), root, web, policy=POLICY, sleep=lambda _: None)
 
 
 def _expressions(conn: Conn) -> list[tuple[date, Range[date], str]]:
@@ -173,9 +172,7 @@ def test_the_legislature_takes_over_a_statute_written_from_the_competent_authori
         {12: (V2, [(str(n), t) for n, t in V2_TEXT]), 11: (V1, [("1", "甲 舊。")])},
         kind="法律",
     )
-    monkeypatch.setattr(
-        history_sync, "LIMITS", {k: (d, 1.0) for k, (d, _) in history_sync.LIMITS.items()}
-    )
+    relax_limits(monkeypatch)
     monkeypatch.setattr(Moenv, "unmatched_limit", 1.0)
     assert _sync(conn, tmp_path, FakeWeb(moenv_pages), Moenv()) == 0
     assert [a for _, _, a in _expressions(conn)][:2] == ["competent_authority"] * 2
@@ -224,3 +221,15 @@ def test_versions_promulgated_on_the_same_day_take_the_later_passed(
     assert _sync(conn, tmp_path, FakeWeb(pages, forms)) == 0
 
     assert _article(conn, "art_2", date(2019, 1, 1)) == "丙。"
+
+
+def test_the_snapshot_is_dated_by_the_injected_clock(conn: Conn, tmp_path: Path) -> None:
+    _anchor(conn, tmp_path)
+    today = date(2026, 1, 15)
+    code = sync(
+        conn, Ly(), tmp_path, _web(), policy=POLICY, sleep=lambda _: None, today=lambda: today
+    )
+    assert code == 0
+    assert conn.execute(
+        "SELECT DISTINCT data_date FROM source.snapshot WHERE feed = 'ly_law'"
+    ).fetchall() == [(today,)]
