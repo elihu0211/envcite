@@ -1584,6 +1584,12 @@
   <data name="沒有符合的對話" xml:space="preserve">
     <value>No matching conversations</value>
   </data>
+  <data name="篩選對話" xml:space="preserve">
+    <value>Filter conversations</value>
+  </data>
+  <data name="查看全部" xml:space="preserve">
+    <value>View all</value>
+  </data>
   <data name="換個詞試試；只比對標題，不比對內容。" xml:space="preserve">
     <value>Try another word. Only titles are searched, not the conversations themselves.</value>
   </data>

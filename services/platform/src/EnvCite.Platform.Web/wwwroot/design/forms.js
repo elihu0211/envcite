@@ -246,6 +246,55 @@
     // 強化導覽換完頁（Blazor 的 enhancedload，串流渲染時每次更新都會觸發）：伺服器渲染的側欄不帶 title 與 aria-expanded，重設一次。
     globalThis.Blazor?.addEventListener("enhancedload", syncSide);
 
+    // ---- 側欄對話即時篩選（input[data-recent-filter]） ---------------------------------------------
+    // 在工作區側欄依標題即時過濾最近對話，不必跳離目前問答；按 Esc 清空並還原全部。沒有腳本時仍可在 /history 搜尋。
+    const filterRecent = (input) => {
+        const recent = input?.closest?.(".ep-recent");
+        if (!recent) {
+            return;
+        }
+
+        const query = input.value.trim().toLowerCase();
+        let visible = 0;
+        recent.querySelectorAll(".ep-recent-nav").forEach((nav) => {
+            let groupVisible = 0;
+            nav.querySelectorAll(".ep-recent-item").forEach((item) => {
+                const title = item.querySelector(".ep-recent-link")?.textContent?.toLowerCase() ?? "";
+                const matched = query === "" || title.includes(query);
+                item.hidden = !matched;
+                if (matched) {
+                    groupVisible++;
+                    visible++;
+                }
+            });
+
+            nav.hidden = groupVisible === 0;
+            if (nav.previousElementSibling?.classList.contains("ep-side-group")) {
+                nav.previousElementSibling.hidden = groupVisible === 0;
+            }
+        });
+
+        const empty = recent.querySelector("[data-recent-empty]");
+        if (empty) {
+            empty.hidden = query === "" || visible > 0;
+        }
+    };
+
+    document.addEventListener("input", (event) => {
+        if (event.target.matches?.("input[data-recent-filter]")) {
+            filterRecent(event.target);
+        }
+    });
+
+    document.addEventListener("keydown", (event) => {
+        const input = event.target;
+        if (input.matches?.("input[data-recent-filter]") && event.key === "Escape" && input.value !== "") {
+            event.preventDefault();
+            input.value = "";
+            filterRecent(input);
+        }
+    });
+
     // ---- 問答輸入框（textarea[data-composer]）：Enter 送出、自動長高 --------------------------------------
     // 事件委派在 document：互動頁的畫面由 Blazor 重畫，掛在元素上的監聽器會跟著消失。沒有這段，它仍是一般的多行輸入加送出鈕。
     // Enter 送出、Shift+Enter 換行；輸入法組字中（選字用的 Enter）絕不送出。觸控裝置的 Enter 是換行（和主流聊天介面一致，

@@ -48,6 +48,7 @@
         @if (Session.Turns.Count == 0)
         {
             <header class="ep-ask-hero">
+                <span class="ep-ask-mark" aria-hidden="true"><BrandMark /></span>
                 <h1 class="ep-ask-title">@(_name is null ? L["你好"] : L["你好，{0}", _name])</h1>
             </header>
         }

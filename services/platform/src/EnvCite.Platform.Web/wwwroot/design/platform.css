@@ -50,10 +50,8 @@ a:where(:not([class*="mud-"])) {
     color: var(--ep-link);
 }
 
-/* 鍵盤焦點一律可見，且不依賴顏色以外的線索（外框 + 偏移）。
-   問答輸入框的環畫在容器上（子元件聚焦時），數值與這裡相同。 */
+/* 鍵盤焦點一律可見，且不依賴顏色以外的線索（外框 + 偏移）。 */
 :focus-visible,
-.ep-composer:focus-within,
 .ep-segment:has(> input:focus-visible) {
     outline: 2px solid var(--ep-focus);
     outline-offset: 2px;
@@ -451,6 +449,7 @@ h1[tabindex="-1"]:focus-visible {
 .ep-password-toggle,
 .ep-side-toggle,
 .ep-side-icon-btn,
+.ep-side-new-chat,
 .ep-portal-user,
 .ep-portal-new-chat,
 .ep-btn {
@@ -463,6 +462,7 @@ h1[tabindex="-1"]:focus-visible {
 .ep-password-toggle:active,
 .ep-side-toggle:active,
 .ep-side-icon-btn:active,
+.ep-side-new-chat:active,
 .ep-portal-user:active,
 .ep-portal-new-chat:active,
 .ep-chip:active,
@@ -1961,20 +1961,39 @@ a.ep-brand {
 /* 還沒問時在可用視窗高度內上下置中；safe center 避免矮螢幕或橫向手機時頂端被裁切。 */
 .ep-ask[data-state="empty"] {
     justify-content: safe center;
-    gap: var(--ep-space-5);
+    gap: var(--ep-space-4);
     padding-block: var(--ep-space-4) var(--ep-space-6);
 }
 
 .ep-ask-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ep-space-3);
     text-align: center;
+}
+
+.ep-ask-mark {
+    display: inline-grid;
+    place-items: center;
+    inline-size: var(--ep-space-8);
+    block-size: var(--ep-space-8);
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--ep-primary) 12%, transparent);
+    color: var(--ep-primary);
+}
+
+.ep-ask-mark .ep-brand-mark {
+    inline-size: calc(var(--ep-space-4) + var(--ep-space-1));
+    block-size: calc(var(--ep-space-4) + var(--ep-space-1));
 }
 
 .ep-ask-title {
     margin: 0;
-    font-size: var(--ep-headline-m-size);
-    line-height: var(--ep-headline-m-leading);
-    letter-spacing: var(--ep-headline-m-tracking);
-    font-weight: var(--ep-body-l-weight); /* 招呼不加粗：版面的重量留給內容 */
+    font-size: var(--ep-headline-l-size);
+    line-height: var(--ep-headline-l-leading);
+    letter-spacing: var(--ep-headline-l-tracking);
+    font-weight: var(--ep-headline-m-weight);
 }
 
 .ep-thread {
@@ -2008,22 +2027,23 @@ a.ep-brand {
     position: sticky;
     inset-block-end: 0;
     padding-block: var(--ep-space-3) max(var(--ep-space-3), env(safe-area-inset-bottom));
-    background: color-mix(in srgb, var(--ep-bg) 85%, transparent);
+    background: color-mix(in srgb, var(--ep-bg) 94%, transparent);
 }
 
 /* 問答框：輸入在左、圓形送出鈕貼在右下角，同一張卡片。多行輸入自動長高（上限約八行，再多在框內捲動），
-   長高時送出鈕留在最後一行旁邊。平面，沒有陰影；外框平時是細線，游標移上去或聚焦時加深。
+   長高時送出鈕留在最後一行旁邊。輕微舉升加細框；游標移上去或聚焦時外框加深與抬升。
    --ep-composer-row 是單行的高度（觸控 44px、滑鼠收成緊湊），輸入的內距與送出鈕的尺寸都由它推得。 */
 .ep-composer {
     --ep-composer-row: var(--ep-touch-target);
     display: flex;
     align-items: flex-end;
     gap: var(--ep-space-2);
-    padding: var(--ep-space-1) var(--ep-space-1) var(--ep-space-1) var(--ep-space-4);
+    padding: var(--ep-space-2) var(--ep-space-2) var(--ep-space-2) var(--ep-space-4);
     border: 1px solid var(--ep-border-subtle);
-    border-radius: var(--ep-radius-sheet);
+    border-radius: calc(var(--ep-radius-sheet) + var(--ep-space-1));
     background: var(--ep-surface);
-    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+    box-shadow: var(--ep-elevation-1);
+    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), box-shadow var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 @media (hover: hover) {
@@ -2034,6 +2054,7 @@ a.ep-brand {
 
 .ep-composer:focus-within {
     border-color: var(--ep-border-control);
+    box-shadow: var(--ep-elevation-2);
 }
 
 /* 外框裡的裸輸入（多行 textarea）：環畫在外框上，這裡不畫。單行時文字在 --ep-composer-row 的正中（上下內距由行高推得）。
@@ -2221,6 +2242,13 @@ a.ep-brand {
     font-size: var(--ep-label-m-size);
 }
 
+.ep-examples .ep-chip {
+    background: var(--ep-surface);
+    box-shadow: var(--ep-elevation-1);
+    color: var(--ep-text-secondary);
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
 /* 滑鼠操作：輸入框的單行、送出鈕與芯片收成緊湊高度；觸控裝置維持 44px。 */
 @media (pointer: fine) {
     .ep-chip,
@@ -2241,6 +2269,7 @@ a.ep-brand {
 @media (hover: hover) {
     .ep-chip:hover {
         border-color: var(--ep-border-control);
+        background: var(--ep-surface-raised);
         color: var(--ep-text);
     }
 }
@@ -3357,6 +3386,35 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     white-space: nowrap;
 }
 
+.ep-portal-crumb-sep {
+    display: none;
+    flex: none;
+    color: var(--ep-text-secondary);
+    opacity: 0.6;
+    font-size: var(--ep-label-m-size);
+}
+
+.ep-portal-route {
+    display: none;
+    min-inline-size: 0;
+    color: var(--ep-text);
+    font-size: var(--ep-label-m-size);
+    font-weight: var(--ep-label-l-weight);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ep-side-new-chat {
+    display: none;
+}
+
+.ep-side-new-chat .ep-icon {
+    flex: none;
+    inline-size: calc(var(--ep-space-4) + var(--ep-space-1));
+    block-size: calc(var(--ep-space-4) + var(--ep-space-1));
+}
+
 .ep-portal-new-chat {
     box-sizing: border-box;
     flex: none;
@@ -3446,6 +3504,52 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     font-size: var(--ep-label-m-size);
     line-height: var(--ep-label-m-leading);
     font-weight: var(--ep-label-m-weight);
+}
+
+.ep-history-all {
+    font-size: var(--ep-label-m-size);
+    line-height: var(--ep-label-m-leading);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.ep-recent-filter {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: var(--ep-space-1) 0 var(--ep-space-2);
+}
+
+.ep-recent-filter .ep-icon {
+    position: absolute;
+    inset-inline-start: var(--ep-space-3);
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+    color: var(--ep-text-secondary);
+    pointer-events: none;
+}
+
+.ep-recent-search {
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-block-size: var(--ep-touch-target);
+    padding: 0 var(--ep-space-3) 0 calc(var(--ep-space-3) + var(--ep-space-4) + var(--ep-space-2));
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-bg);
+    color: var(--ep-text);
+    font-family: inherit;
+    font-size: var(--ep-label-m-size);
+    line-height: var(--ep-label-m-leading);
+    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-recent-search::placeholder {
+    color: var(--ep-text-secondary);
+}
+
+.ep-recent-none {
+    margin: var(--ep-space-2) var(--ep-space-3);
 }
 
 .ep-history-empty-note {
@@ -3592,10 +3696,25 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     }
 
     .ep-side-icon-btn:hover,
+    .ep-side-new-chat:hover,
     .ep-portal-user:hover,
     .ep-portal-new-chat:hover {
         background: color-mix(in srgb, var(--ep-text) 6%, transparent);
         color: var(--ep-text);
+    }
+
+    .ep-side-new-chat:hover {
+        border-color: var(--ep-border-control);
+        background: var(--ep-surface-raised);
+        color: var(--ep-text);
+    }
+
+    .ep-history-all:hover {
+        text-decoration: underline;
+    }
+
+    .ep-recent-search:hover {
+        border-color: var(--ep-border-control);
     }
 }
 
@@ -3612,7 +3731,9 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     }
 
     .ep-side-icon-btn,
-    .ep-portal-new-chat {
+    .ep-side-new-chat,
+    .ep-portal-new-chat,
+    .ep-recent-search {
         min-block-size: var(--ep-control-height);
     }
 
@@ -3658,6 +3779,27 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         overflow: hidden auto;
         overscroll-behavior: contain;
         padding: var(--ep-space-2) var(--ep-space-3) var(--ep-space-4) max(var(--ep-space-3), env(safe-area-inset-left));
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-side-new-chat {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: var(--ep-space-3);
+        flex: none;
+        inline-size: 100%;
+        min-block-size: var(--ep-touch-target);
+        margin: var(--ep-space-1) 0 var(--ep-space-2);
+        padding-inline: var(--ep-space-3);
+        border: 1px solid var(--ep-border-subtle);
+        border-radius: var(--ep-radius-pill);
+        background: var(--ep-bg);
+        color: var(--ep-text);
+        text-decoration: none;
+        font-size: var(--ep-label-m-size);
+        font-weight: var(--ep-label-m-weight);
+        white-space: nowrap;
+        transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
     }
 
     html[data-js] .ep-portal.ep-console .ep-side-modules {
@@ -3723,6 +3865,27 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         padding: var(--ep-space-2) var(--ep-space-3) var(--ep-space-4);
     }
 
+    .ep-portal.ep-console .ep-side-new-chat {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: var(--ep-space-3);
+        flex: none;
+        inline-size: 100%;
+        min-block-size: var(--ep-control-height);
+        margin: var(--ep-space-1) 0 var(--ep-space-2);
+        padding-inline: var(--ep-space-3);
+        border: 1px solid var(--ep-border-subtle);
+        border-radius: var(--ep-radius-pill);
+        background: var(--ep-bg);
+        color: var(--ep-text);
+        text-decoration: none;
+        font-size: var(--ep-label-m-size);
+        font-weight: var(--ep-label-m-weight);
+        white-space: nowrap;
+        transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+    }
+
     .ep-portal.ep-console .ep-side-modules {
         flex-direction: column;
         align-items: stretch;
@@ -3751,8 +3914,17 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     }
 
     html[data-js] .ep-portal-mobile-toggle,
-    .ep-portal.ep-console .ep-shell-top .ep-brand {
+    .ep-portal.ep-console .ep-shell-top .ep-brand,
+    .ep-portal.ep-console .ep-portal-new-chat {
         display: none;
+    }
+
+    .ep-portal-crumb-sep {
+        display: inline;
+    }
+
+    .ep-portal-route {
+        display: block;
     }
 
     html[data-side="collapsed"] .ep-portal.ep-console .ep-side {
@@ -3773,6 +3945,13 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     html[data-side="collapsed"] .ep-portal.ep-console .ep-side-body {
         scrollbar-gutter: auto;
         padding-inline: var(--ep-space-2);
+    }
+
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-side-new-chat {
+        inline-size: var(--ep-control-height);
+        margin-inline: auto;
+        padding-inline: 0;
+        justify-content: center;
     }
 
     html[data-side="collapsed"] .ep-portal.ep-console .ep-side-modules {
