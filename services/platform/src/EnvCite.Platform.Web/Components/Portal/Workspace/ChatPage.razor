@@ -50,6 +50,9 @@
             <header class="ep-ask-hero">
                 <span class="ep-ask-mark" aria-hidden="true"><BrandMark /></span>
                 <h1 class="ep-ask-title">@(_name is null ? L["你好"] : L["你好，{0}", _name])</h1>
+                <p class="ep-ask-scope">
+                    @(Session.Capabilities.AiAnswer ? L["AI 法源接地問答 · 中央環境法規"] : L["中央法規檢索"])
+                </p>
             </header>
         }
         else
@@ -276,4 +279,5 @@
                 ErrorMessage="@_drawerError"
                 Sources="@_drawerSources"
                 OnSelectSource="SelectDrawerSourceAsync"
+                OnAskFollowUp="FollowUpFromDrawer"
                 OnClose="CloseDrawer" />

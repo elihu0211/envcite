@@ -226,6 +226,8 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Contains("ep-account-menu", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-composer\"", html, StringComparison.Ordinal);
         Assert.Contains("data-recent-filter", html, StringComparison.Ordinal);
+        Assert.Contains("ep-recent-jump", html, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-kbd\"", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-side-new-chat\"", html, StringComparison.Ordinal);
         foreach (var tone in new[] { "neutral", "success", "warning", "error", "info" })
             Assert.Contains($"data-tone=\"{tone}\"", html, StringComparison.Ordinal);

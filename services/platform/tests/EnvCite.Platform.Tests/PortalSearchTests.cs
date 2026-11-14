@@ -26,6 +26,7 @@ public sealed class PortalSearchTests(PlatformFactory factory)
         var html = Html(page.Html);
         Assert.Contains("data-state=\"empty\"", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-composer\"", html, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-ask-scope\"", html, StringComparison.Ordinal);
         Assert.Contains("<label for=\"query\"", html, StringComparison.Ordinal);
         // 通用的首頁（對標主流 AI 首頁）：只有一句問候與一個輸入框，不用「想查哪一條法規」這類話把用途框死成只能查法規。
         Assert.DoesNotContain("想查哪一條法規", html, StringComparison.Ordinal);
@@ -43,6 +44,22 @@ public sealed class PortalSearchTests(PlatformFactory factory)
         Assert.Matches("<button[^>]*popovertarget=\"ask-info\"[^>]*>使用說明</button>", html);
         Assert.Matches("<div id=\"ask-info\" class=\"ep-sheet\" popover", html);
         Assert.Contains("用條文裡會出現的詞，空白分隔。", html, StringComparison.Ordinal);
+    }
+
+    // 從法規工作台點擊「問問 AI」帶 ?q= 進來時，預填於輸入框而不自動送出。
+    [Fact]
+    public async Task QueryStringPrefillsTheComposerWithoutAutoSubmitting()
+    {
+        var (tenant, email, initial) = await MemberAsync(factory, "ps-prefill");
+        using var browser = new PortalBrowser(factory);
+        await SignInFullyAsync(browser, tenant.Identifier, email, initial);
+
+        var page = await browser.GetAsync($"{Home(tenant.Identifier)}?q={Uri.EscapeDataString("空氣污染防制法第32條")}");
+
+        Assert.Equal(HttpStatusCode.OK, page.Status);
+        var html = Html(page.Html);
+        Assert.Contains("空氣污染防制法第32條", html, StringComparison.Ordinal);
+        Assert.Contains("data-state=\"empty\"", html, StringComparison.Ordinal);
     }
 
     // 完全付費制：沒有方案不能用資料功能，畫面上沒有輸入框；服務層另外擋（AskServiceTests）。
