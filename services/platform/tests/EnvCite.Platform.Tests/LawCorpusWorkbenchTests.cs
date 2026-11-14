@@ -42,12 +42,16 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("collectLineage", script.Html, StringComparison.Ordinal);
         Assert.Contains("labelAutoRotate: false", script.Html, StringComparison.Ordinal);
         Assert.Contains("palantir-law-node", script.Html, StringComparison.Ordinal);
+        Assert.Contains("ExtensionCategory.THEME", script.Html, StringComparison.Ordinal);
+        Assert.Contains("labelFillOpacity: 0.94", script.Html, StringComparison.Ordinal);
         Assert.Contains("mixRgb", script.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("color-mix(", script.Html, StringComparison.Ordinal);
 
         var stylesheet = await browser.GetAsync("/_content/EnvCite.Platform.Web/design/platform.css");
         Assert.Equal(HttpStatusCode.OK, stylesheet.Status);
         Assert.Contains(".ep-swimlane-pill[data-tier=\"2\"]", stylesheet.Html, StringComparison.Ordinal);
+        Assert.Contains(".ep-graph-canvas .tooltip", stylesheet.Html, StringComparison.Ordinal);
+        Assert.Contains("background-color: var(--ep-surface-raised) !important;", stylesheet.Html, StringComparison.Ordinal);
         Assert.Contains("--ep-success", stylesheet.Html, StringComparison.Ordinal);
     }
 

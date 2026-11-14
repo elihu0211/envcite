@@ -308,6 +308,56 @@
     return true;
   }
 
+  let envciteThemeRegistered = false;
+  function ensureEnvciteThemeRegistered() {
+    if (envciteThemeRegistered) return true;
+    if (!window.G6 || typeof window.G6.register !== "function" || !window.G6.ExtensionCategory?.THEME) {
+      return false;
+    }
+    window.G6.register(window.G6.ExtensionCategory.THEME, "envcite", {
+      background: "transparent",
+      node: {
+        style: {
+          halo: false,
+        },
+        state: {},
+        animation: {
+          enter: "fade",
+          exit: "fade",
+          show: "fade",
+          hide: "fade",
+          expand: "node-expand",
+          collapse: "node-collapse",
+          update: [{ fields: ["x", "y", "fill", "stroke"] }],
+          translate: [{ fields: ["x", "y"] }],
+        },
+      },
+      edge: {
+        style: {
+          halo: false,
+          increasedLineWidthForHitTesting: 2,
+        },
+        state: {},
+        animation: {
+          enter: "fade",
+          exit: "fade",
+          expand: "path-in",
+          collapse: "path-out",
+          show: "fade",
+          hide: "fade",
+          update: [{ fields: ["sourceNode", "targetNode"] }, { fields: ["stroke"], shape: "key" }],
+          translate: [{ fields: ["sourceNode", "targetNode"] }],
+        },
+      },
+      combo: {
+        style: {},
+        state: {},
+      },
+    });
+    envciteThemeRegistered = true;
+    return true;
+  }
+
   let cachedPaletteKey = null;
   let cachedPaletteValue = null;
 
@@ -320,21 +370,21 @@
     }
     cachedPaletteKey = key;
     const effectiveDark = isDark ? themeAttr !== "light" : themeAttr === "dark";
-    const bg = resolveColor("var(--ep-bg)", effectiveDark ? "#121214" : "#F5F5F7");
-    const surface = resolveColor("var(--ep-surface)", effectiveDark ? "#1C1C1F" : "#FFFFFF");
-    const surfaceRaised = resolveColor("var(--ep-surface-raised)", effectiveDark ? "#252529" : "#FFFFFF");
-    const surfaceMuted = resolveColor("var(--ep-surface-muted)", effectiveDark ? "#2A2A2F" : "#F0F0F3");
-    const primary = resolveColor("var(--ep-primary)", effectiveDark ? "#8AB4F8" : "#005FC4");
-    const success = resolveColor("var(--ep-success)", effectiveDark ? "#5FD3A3" : "#0B7857");
-    const info = resolveColor("var(--ep-info)", effectiveDark ? "#8EB6FF" : "#1D52AF");
-    const warning = resolveColor("var(--ep-warning)", effectiveDark ? "#F2A65A" : "#AC5107");
-    const error = resolveColor("var(--ep-error)", effectiveDark ? "#FF8F88" : "#AC312C");
-    const accent = resolveColor("var(--ep-accent)", effectiveDark ? "#2DD4BF" : "#14B8A6");
-    const borderSubtle = resolveColor("var(--ep-border-subtle)", effectiveDark ? "#2A2A2F" : "#E3E3E8");
-    const borderControl = resolveColor("var(--ep-border-control)", effectiveDark ? "#8E8E98" : "#86868B");
-    const text = resolveColor("var(--ep-text)", effectiveDark ? "#ECECF0" : "#1D1D1F");
-    const textSecondary = resolveColor("var(--ep-text-secondary)", effectiveDark ? "#A8A8B2" : "#55555B");
-    const onPrimary = resolveColor("var(--ep-on-primary)", effectiveDark ? "#08234A" : "#FFFFFF");
+    const bg = resolveColor("var(--ep-bg)", effectiveDark ? "#0B1120" : "#F8FAFC");
+    const surface = resolveColor("var(--ep-surface)", effectiveDark ? "#111827" : "#FFFFFF");
+    const surfaceRaised = resolveColor("var(--ep-surface-raised)", effectiveDark ? "#1E293B" : "#FFFFFF");
+    const surfaceMuted = resolveColor("var(--ep-surface-muted)", effectiveDark ? "#273449" : "#F1F5F9");
+    const primary = resolveColor("var(--ep-primary)", effectiveDark ? "#60A5FA" : "#005FC4");
+    const success = resolveColor("var(--ep-success)", effectiveDark ? "#34D399" : "#047857");
+    const info = resolveColor("var(--ep-info)", effectiveDark ? "#A78BFA" : "#4338CA");
+    const warning = resolveColor("var(--ep-warning)", effectiveDark ? "#FBBF24" : "#A14A07");
+    const error = resolveColor("var(--ep-error)", effectiveDark ? "#F87171" : "#B91C1C");
+    const accent = resolveColor("var(--ep-accent)", effectiveDark ? "#2DD4BF" : "#0D9488");
+    const borderSubtle = resolveColor("var(--ep-border-subtle)", effectiveDark ? "#334155" : "#E2E8F0");
+    const borderControl = resolveColor("var(--ep-border-control)", effectiveDark ? "#94A3B8" : "#64748B");
+    const text = resolveColor("var(--ep-text)", effectiveDark ? "#F8FAFC" : "#0F172A");
+    const textSecondary = resolveColor("var(--ep-text-secondary)", effectiveDark ? "#CBD5E1" : "#475569");
+    const onPrimary = resolveColor("var(--ep-on-primary)", effectiveDark ? "#0B1120" : "#FFFFFF");
 
     cachedPaletteValue = {
       isDark: effectiveDark,
@@ -348,21 +398,21 @@
       borderControl,
       primary,
       onPrimary,
-      primaryTint: mixRgb(primary, surfaceRaised, effectiveDark ? 0.15 : 0.06),
-      primaryHeader: mixRgb(primary, surfaceRaised, effectiveDark ? 0.28 : 0.13),
+      primaryTint: mixRgb(primary, surfaceRaised, effectiveDark ? 0.14 : 0.06),
+      primaryHeader: mixRgb(primary, surfaceRaised, effectiveDark ? 0.28 : 0.14),
       success,
-      successTint: mixRgb(success, surfaceRaised, effectiveDark ? 0.15 : 0.06),
-      successHeader: mixRgb(success, surfaceRaised, effectiveDark ? 0.28 : 0.13),
+      successTint: mixRgb(success, surfaceRaised, effectiveDark ? 0.14 : 0.06),
+      successHeader: mixRgb(success, surfaceRaised, effectiveDark ? 0.28 : 0.14),
       info,
       infoTint: mixRgb(info, surfaceRaised, effectiveDark ? 0.14 : 0.06),
       warning,
-      warningTint: mixRgb(warning, surfaceRaised, effectiveDark ? 0.16 : 0.07),
-      warningHeader: mixRgb(warning, surfaceRaised, effectiveDark ? 0.30 : 0.15),
+      warningTint: mixRgb(warning, surfaceRaised, effectiveDark ? 0.15 : 0.07),
+      warningHeader: mixRgb(warning, surfaceRaised, effectiveDark ? 0.29 : 0.15),
       error,
-      errorTint: mixRgb(error, surfaceRaised, effectiveDark ? 0.18 : 0.07),
-      errorHeader: mixRgb(error, surfaceRaised, effectiveDark ? 0.30 : 0.15),
+      errorTint: mixRgb(error, surfaceRaised, effectiveDark ? 0.16 : 0.07),
+      errorHeader: mixRgb(error, surfaceRaised, effectiveDark ? 0.29 : 0.15),
       accent,
-      accentTint: mixRgb(accent, surfaceRaised, effectiveDark ? 0.15 : 0.06),
+      accentTint: mixRgb(accent, surfaceRaised, effectiveDark ? 0.14 : 0.06),
       accentHeader: mixRgb(accent, surfaceRaised, effectiveDark ? 0.28 : 0.14),
     };
     return cachedPaletteValue;
@@ -755,22 +805,26 @@
       if (d.isGroupCapsule === "yes") {
         const capFill = d.isExpanded
           ? palette.successTint
-          : mixRgb(palette.success, palette.surfaceRaised, palette.isDark ? 0.14 : 0.06);
+          : mixRgb(palette.success, palette.surfaceRaised, palette.isDark ? 0.15 : 0.07);
         return {
           fill: capFill,
           stroke: palette.success,
           lineWidth: 1.8,
           lineDash: d.isExpanded ? undefined : [5, 4],
-          labelFill: palette.isDark ? palette.success : mixRgb(palette.success, palette.text, 0.35),
+          labelFill: palette.isDark
+            ? mixRgb(palette.success, palette.text, 0.36)
+            : mixRgb(palette.success, palette.text, 0.44),
           fontWeight: 600,
         };
       }
       return {
-        fill: mixRgb(palette.accent, palette.surfaceRaised, palette.isDark ? 0.14 : 0.06),
+        fill: mixRgb(palette.accent, palette.surfaceRaised, palette.isDark ? 0.15 : 0.07),
         stroke: palette.accent,
         lineWidth: 1.8,
         lineDash: [5, 4],
-        labelFill: palette.isDark ? palette.accent : mixRgb(palette.accent, palette.text, 0.42),
+        labelFill: palette.isDark
+          ? mixRgb(palette.accent, palette.text, 0.36)
+          : mixRgb(palette.accent, palette.text, 0.48),
         fontWeight: 600,
       };
     }
@@ -811,17 +865,17 @@
 
     const isFocus = d.isFocus === "yes";
     const fill = isFocus
-      ? mixRgb(accentColor, palette.surfaceRaised, palette.isDark ? 0.24 : 0.11)
+      ? mixRgb(accentColor, palette.surfaceRaised, palette.isDark ? 0.22 : 0.10)
       : baseFill;
     const focusHeader = isFocus
-      ? mixRgb(accentColor, palette.surfaceRaised, palette.isDark ? 0.36 : 0.18)
+      ? mixRgb(accentColor, palette.surfaceRaised, palette.isDark ? 0.34 : 0.17)
       : headerFill;
     const stroke = isFocus
-      ? (palette.isDark ? mixRgb(palette.primary, palette.text, 0.25) : palette.primary)
+      ? (palette.isDark ? mixRgb(palette.primary, palette.text, 0.22) : palette.primary)
       : accentColor;
     const headerLabelFill = palette.isDark
-      ? mixRgb(accentColor, palette.text, 0.28)
-      : mixRgb(accentColor, palette.text, 0.32);
+      ? mixRgb(accentColor, palette.text, 0.38)
+      : mixRgb(accentColor, palette.text, 0.36);
 
     return {
       fill,
@@ -841,6 +895,7 @@
 
   function buildG6Data(nodes, edges, clusters, positions, palette, labels) {
     const usePalantirCard = ensurePalantirNodeRegistered();
+    const useEnvciteTheme = ensureEnvciteThemeRegistered();
     const sharedPorts = [
       { key: "in", placement: [0, 0.5] },
       { key: "out", placement: [1, 0.5] },
@@ -925,7 +980,7 @@
             metricLabel: slots.metricLabel,
             bodyTitle: slots.bodyTitle,
             ports: sharedPorts,
-            shadowColor: palette.isDark ? "rgba(0, 0, 0, 0.42)" : "rgba(18, 18, 24, 0.10)",
+            shadowColor: palette.isDark ? "rgba(2, 6, 23, 0.56)" : "rgba(15, 23, 42, 0.12)",
             shadowBlur: n.focus ? 18 : 10,
             shadowOffsetY: 3,
             labelText: usePalantirCard ? "" : data.cardLabel,
@@ -1042,10 +1097,10 @@
     tierBadge.dataset.tone = rawNode.hierarchyTier === 0
       ? "warning"
       : rawNode.hierarchyTier === 1
-        ? "info"
+        ? "primary"
         : rawNode.hierarchyTier === 2
           ? "success"
-          : "neutral";
+          : "info";
     if (rawNode.documentType) {
       addEl(badges, "span", "ep-badge", rawNode.documentType);
     }
@@ -1178,6 +1233,7 @@
     const graphData = computeCurrentGraphData();
 
     const usePalantirCard = ensurePalantirNodeRegistered();
+    const useEnvciteTheme = ensureEnvciteThemeRegistered();
 
     const edgeStyleMapper = (d) => {
       const kind = d.data?.kind || "delegation";
@@ -1227,6 +1283,14 @@
         },
         state: {
           selected: {
+            opacity: 1,
+            fillOpacity: 1,
+            strokeOpacity: 1,
+            labelFill: pal.text,
+            labelFillOpacity: 1,
+            labelOpacity: 1,
+            bodyLabelFill: pal.text,
+            metricFill: pal.textSecondary,
             lineWidth: 3.2,
             stroke: pal.primary,
             halo: true,
@@ -1234,15 +1298,32 @@
             haloLineWidth: 6,
             haloStrokeOpacity: 0.42,
             haloLineDash: [],
-            shadowColor: pal.isDark ? "rgba(0, 0, 0, 0.52)" : "rgba(18, 18, 24, 0.24)",
+            shadowColor: pal.isDark ? "rgba(2, 6, 23, 0.72)" : "rgba(15, 23, 42, 0.24)",
             shadowBlur: 22,
           },
           active: {
-            lineWidth: 2.6,
+            opacity: 1,
+            fillOpacity: 1,
+            strokeOpacity: 1,
+            labelFill: pal.text,
+            labelFillOpacity: 1,
+            labelOpacity: 1,
+            bodyLabelFill: pal.text,
+            metricFill: pal.textSecondary,
+            lineWidth: 2.8,
             stroke: pal.primary,
+            halo: false,
           },
           inactive: {
-            opacity: 0.36,
+            opacity: 0.86,
+            fillOpacity: 0.94,
+            strokeOpacity: 0.72,
+            labelFill: pal.text,
+            labelFillOpacity: 0.94,
+            labelOpacity: 0.94,
+            bodyLabelFill: pal.text,
+            metricFill: pal.textSecondary,
+            halo: false,
           },
         },
       };
@@ -1256,9 +1337,13 @@
           active: {
             lineWidth: 2.8,
             stroke: pal.primary,
+            strokeOpacity: 1,
             opacity: 1,
+            halo: false,
             labelText: (d) => d.data?.anchorLabel || "",
             labelFill: pal.text,
+            labelFillOpacity: 1,
+            labelOpacity: 1,
             labelAutoRotate: false,
             labelWordWrap: true,
             labelMaxWidth: 128,
@@ -1269,7 +1354,10 @@
             labelPadding: [2, 6],
           },
           inactive: {
-            opacity: 0.22,
+            opacity: 0.36,
+            strokeOpacity: 0.45,
+            labelOpacity: 0.45,
+            labelFill: pal.textSecondary,
           },
         },
       };
@@ -1277,6 +1365,7 @@
 
     const graph = new window.G6.Graph({
       container,
+      theme: useEnvciteTheme ? "envcite" : undefined,
       data: graphData,
       autoResize: true,
       autoFit: "view",
@@ -1855,7 +1944,7 @@
             metricFill: c.metricFill,
             bodyLabelFill: c.bodyLabelFill,
             labelFill: c.labelFill,
-            shadowColor: nextPalette.isDark ? "rgba(0, 0, 0, 0.42)" : "rgba(18, 18, 24, 0.10)",
+            shadowColor: nextPalette.isDark ? "rgba(2, 6, 23, 0.56)" : "rgba(15, 23, 42, 0.12)",
           },
         };
       });
