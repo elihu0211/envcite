@@ -3,14 +3,13 @@
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.PortalSignInRateLimit)]
 @attribute [AllowAnonymous]
-@inherits PortalPageBase
-@inject IPortalAccount Account
+@inherits PortalPageBase<IPortalAccount>
 
 <DocumentTitle Text="@L["啟用帳號"]" />
 
-@if (Account.CurrentTenant is { } tenant)
+@if (Service.CurrentTenant is { } tenant)
 {
-    <ActivationFlow Account="Account" FormName="portal-activate" LoginPath="@PortalPaths.Login(tenant.Identifier)">
+    <ActivationFlow Account="Service" FormName="portal-activate" LoginPath="@PortalPaths.Login(tenant.Identifier)">
         <Layout Context="view">
             <section class="ep-login" aria-labelledby="activate-title">
                 <header>
@@ -27,7 +26,7 @@
     protected override void OnInitialized()
     {
         // 路徑上的租戶不存在：這個頁面就不存在。
-        if (Account.CurrentTenant is null)
+        if (Service.CurrentTenant is null)
         {
             Navigation.NotFound();
         }

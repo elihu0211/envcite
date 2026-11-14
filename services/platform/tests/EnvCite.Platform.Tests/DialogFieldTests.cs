@@ -48,7 +48,9 @@ public static partial class DialogFieldTests
         var providers = File.ReadAllText(Path.Combine(DialogsPath(), "..", "Shared", "PlatformProviders.razor"));
         var bases = File.ReadAllText(Path.Combine(DialogsPath(), "..", "Bases", "DialogBase.cs"));
         var secret = Directory.EnumerateFiles(DialogsPath(), "*.razor")
-            .Select(file => (File: Path.GetFileName(file), Source: File.ReadAllText(file)))
+            .Select(file => (
+                File: Path.GetFileName(file),
+                Source: File.ReadAllText(file) + (File.Exists(file + ".cs") ? "\n" + File.ReadAllText(file + ".cs") : string.Empty)))
             .Where(dialog => dialog.Source.Contains("@inherits SecretDialogBase", StringComparison.Ordinal)
                 || dialog.Source.Contains("LockAsync()", StringComparison.Ordinal))
             .Select(dialog => dialog.File)
@@ -62,7 +64,7 @@ public static partial class DialogFieldTests
         Assert.Contains("CloseButton = false", bases, StringComparison.Ordinal);
         Assert.Equal(1, Regex.Count(bases, "CloseOnEscapeKey = false", RegexOptions.None, TimeSpan.FromSeconds(2)));
         Assert.DoesNotContain(
-            Directory.EnumerateFiles(DialogsPath(), "*.razor").Select(File.ReadAllText),
+            Directory.EnumerateFiles(DialogsPath(), "*.razor*").Select(File.ReadAllText),
             source => source.Contains("CloseOnEscapeKey", StringComparison.Ordinal));
     }
 

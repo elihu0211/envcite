@@ -82,6 +82,11 @@ dotnet_remove_unnecessary_suppression_exclusions = none
 # 多餘的 using（建置時要生效，需 Directory.Build.props 的 GenerateDocumentationFile）
 dotnet_diagnostic.IDE0005.severity = warning
 
+# Blazor Components/Shared/ 資料夾既有命名空間為 .Components.Shared（已有元件與測試引用），
+# 為其中 .razor.cs 程式碼後置檔保留一致命名空間而僅局部排除 CA1716。
+[**/Components/Shared/*.cs]
+dotnet_diagnostic.CA1716.severity = none
+
 # C# 程式碼慣例
 [*.cs]
 

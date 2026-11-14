@@ -1,6 +1,5 @@
 @* 建立租戶。識別碼建立後不能改（API 與稽核都用它），所以在欄位下直接說明規則。 *@
 @inherits FormDialogBase
-@inject ITenantProvisioner Tenants
 
 <MudDialog DefaultFocus="DefaultFocus.FirstChild">
     <DialogContent>
@@ -14,13 +13,3 @@
         <DialogSubmitActions Text="@L["建立租戶"]" BusyText="@L["建立中…"]" Busy="Busy" OnSubmit="SubmitAsync" />
     </DialogActions>
 </MudDialog>
-
-@code {
-    private string? _name;
-    private string? _identifier;
-
-    protected override async Task SubmitAsync() =>
-        await CompleteAsync(
-            async actor => DialogOutcome.From(await Tenants.CreateAsync(actor, _identifier?.Trim() ?? string.Empty, _name ?? string.Empty, CancellationToken.None), L["建立失敗。"]),
-            L["建立失敗，請稍後再試。"]);
-}

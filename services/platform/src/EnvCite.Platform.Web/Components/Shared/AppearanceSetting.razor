@@ -1,5 +1,4 @@
 @inherits StaticPageBase
-@inject IAppearancePreference Preference
 
 @* 個人設定裡的「外觀」：系統（預設，跟隨裝置）、亮色、暗色。營運者與客戶入口的個人設定頁共用這一個元件，
    各自只告訴它換外觀的端點（Action）。放在登入後的個人設定；登入前的匿名頁面不放切換，但一樣尊重已存的偏好（見 App.razor）。
@@ -34,26 +33,3 @@
         <p class="ep-hint ep-appearance-status" role="status" data-appearance-status data-failed="@L["無法儲存外觀。這次先套用，下次開啟會恢復原本的外觀。"]"></p>
     </form>
 </section>
-
-@code {
-    private sealed record Choice(Appearance Value, string Label, string Hint, string Icon);
-
-    /// <summary>換外觀的端點（營運者後台與客戶入口各一個）。</summary>
-    [Parameter, EditorRequired]
-    public string Action { get; set; } = string.Empty;
-
-    private Appearance _current;
-
-    private string ReturnUrl => "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
-
-    protected override void OnInitialized() => _current = Preference.Read(HttpContext);
-
-    private static string HintId(Appearance appearance) => $"ep-appearance-hint-{appearance.Name()}";
-
-    private Choice[] Options =>
-    [
-        new(Appearance.System, L["系統"], L["跟隨裝置的外觀"], Icons.Material.Outlined.SettingsBrightness),
-        new(Appearance.Light, L["亮色"], L["一律使用亮色外觀"], Icons.Material.Outlined.LightMode),
-        new(Appearance.Dark, L["暗色"], L["一律使用暗色外觀"], Icons.Material.Outlined.DarkMode),
-    ];
-}

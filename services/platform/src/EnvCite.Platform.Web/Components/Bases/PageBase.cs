@@ -55,6 +55,13 @@ public abstract class StaticPageBase : PageBase
     protected ClaimsPrincipal User => HttpContext.User;
 }
 
+/// <summary>只需要單一注入服務的靜態請求頁面基底（免去純傳遞依賴的 @inject 與 .razor.cs）。</summary>
+public abstract class StaticPageBase<TService> : StaticPageBase
+    where TService : notnull
+{
+    [Inject] protected TService Service { get; set; } = default!;
+}
+
 /// <summary>
 /// 有一張表單的靜態頁面：表單的內容（<see cref="Input"/>）由框架從 POST 填進來，第一次請求（GET）時建一份空的。
 /// 衍生頁面若覆寫 <c>OnInitialized</c>，要先呼叫 <c>base.OnInitialized()</c>。
@@ -72,6 +79,13 @@ public abstract class FormPageBase<TForm> : StaticPageBase
 public abstract class PortalPageBase : StaticPageBase
 {
     [Parameter] public string Tenant { get; set; } = string.Empty;
+}
+
+/// <summary>只需要單一注入服務的租戶入口頁面基底（免去共用流程頁的 @inject 與 .razor.cs）。</summary>
+public abstract class PortalPageBase<TService> : PortalPageBase
+    where TService : notnull
+{
+    [Inject] protected TService Service { get; set; } = default!;
 }
 
 /// <summary>客戶入口、有一張表單的頁面。</summary>

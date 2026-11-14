@@ -1,13 +1,12 @@
 @page "/ui/login"
 @layout AccountLayout
-@inherits StaticPageBase
+@inherits StaticPageBase<IOperatorAccount>
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [EnableRateLimiting(PlatformAuth.UiSignInRateLimit)]
 @attribute [AllowAnonymous]
-@inject IOperatorAccount Account
 
 <DocumentTitle Text="@L["登入"]" />
 
 <PageHeading>@L["營運者登入"]</PageHeading>
-<LoginFlow Account="Account" Routes="SignInRoutes.Operator" FormName="ui-login"
+<LoginFlow Account="Service" Routes="SignInRoutes.Operator" FormName="ui-login"
            Note="@L["沒有帳號、忘記密碼或弄丟了驗證器，請洽系統管理者。"]" />

@@ -96,7 +96,7 @@ public static partial class ComponentTemplateTests
         var pages = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Pages"), "*.razor").Where(file => !file.EndsWith("_Imports.razor", StringComparison.Ordinal));
         Assert.All(pages, page => Assert.Matches(@"@inherits (AdminPageBase|PageBase)\b", File.ReadAllText(page)));
         var portal = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Portal"), "*.razor");
-        Assert.All(portal, page => Assert.Matches(@"@inherits (PortalPageBase|PortalFormPageBase<\w+>)(?!\w)", File.ReadAllText(page)));
+        Assert.All(portal, page => Assert.Matches(@"@inherits (PortalPageBase(?:<\w+>)?|PortalFormPageBase<\w+>)(?!\w)", File.ReadAllText(page)));
 
         // 入口的互動式頁面（工作區，沒有 HttpContext）繼承互動式的基底。
         var workspace = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Portal", "Workspace"), "*.razor");
@@ -106,16 +106,17 @@ public static partial class ComponentTemplateTests
         // 營運者帳號頁（靜態渲染）與匿名頁各自繼承統一的頁面基底。
         var account = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Account"), "*.razor");
         Assert.NotEmpty(account);
-        Assert.All(account, page => Assert.Matches(@"@inherits StaticPageBase\b", File.ReadAllText(page)));
+        Assert.All(account, page => Assert.Matches(@"@inherits StaticPageBase(?:<\w+>)?\b", File.ReadAllText(page)));
         var anonymous = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Anonymous"), "*.razor");
         Assert.NotEmpty(anonymous);
         Assert.All(anonymous, page => Assert.Matches(@"@inherits PageBase\b", File.ReadAllText(page)));
 
-        // 有程式碼後置檔（.razor.cs）的元件改用建構子注入，不在 .razor 重複寫 @inject。
-        var codeBehindPages = CodeBehind()
-            .Select(file => Path.ChangeExtension(file, null))
-            .Where(File.Exists);
-        Assert.All(codeBehindPages, page => Assert.DoesNotContain("@inject ", File.ReadAllText(page), StringComparison.Ordinal));
+        // 所有 .razor 元件一律透過繼承基底或 .razor.cs 主建構子（Primary Constructor）注入，全面禁止在 .razor 寫 @inject。
+        var razorWithInject = Razor()
+            .Where(file => File.ReadAllText(file).Contains("@inject ", StringComparison.Ordinal))
+            .Select(RelativePath)
+            .ToList();
+        Assert.True(razorWithInject.Count == 0, $"這些 .razor 元件仍使用 @inject，請改用基底繼承或 .razor.cs 主建構子注入：{string.Join("、", razorWithInject)}");
     }
 
     // 營運者與客戶入口共用的流程（改密碼、啟用）只寫一份，兩邊的頁面只剩外框。

@@ -1,7 +1,6 @@
 @* 切換器：搜尋後台的頁面與租戶，Enter 開啟第一筆，Esc 或點外面關閉。外層是 MainLayout 裡的原生 popover，
    頂欄的按鈕或 ⌘K／Ctrl+K 開啟；點了結果就收起、Enter 等於點第一筆（見 wwwroot/design/shortcuts.js）。
    租戶在每次打開（搜尋框取得焦點）時重讀。只用現有的資料（頁面清單與租戶目錄），沒有動作與假資料。 *@
-@inject ITenantDirectory Directory
 
 <input class="ep-input" type="search" autofocus @bind="_query" @bind:event="oninput" @onfocus="LoadAsync"
        placeholder="@L["搜尋頁面與租戶"]" aria-label="@L["搜尋頁面與租戶"]" />
@@ -38,41 +37,4 @@ else
             }
         </ul>
     }
-}
-
-@code {
-    private const int MaxTenants = 8;
-
-    private sealed record PageLink(string Href, string Label);
-
-    private IReadOnlyList<TenantSummary> _all = [];
-    private string? _query;
-
-    private async Task LoadAsync()
-    {
-        try
-        {
-            _all = await Directory.ListAsync(CancellationToken.None);
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            _all = []; // 租戶載入失敗時，頁面仍然可以搜尋。
-        }
-    }
-
-    private bool HasQuery => !string.IsNullOrWhiteSpace(_query);
-
-    private bool Match(string? text) => !HasQuery || (text?.Contains(_query!.Trim(), StringComparison.OrdinalIgnoreCase) ?? false);
-
-    private IReadOnlyList<PageLink> Pages =>
-        [.. new PageLink[]
-        {
-            new("/ui", L["總覽"]), new("/ui/tenants", L["租戶"]), new("/ui/operators", L["營運者"]), new("/ui/audit", L["稽核紀錄"]),
-            new(UiEndpoints.PasswordPath, L["改密碼"]), new(UiEndpoints.SecurityPath, L["兩步驟驗證"]),
-        }.Where(p => Match(p.Label))];
-
-    private IReadOnlyList<TenantSummary> Tenants =>
-        [.. _all.Where(t => Match(t.Name) || Match(t.Identifier)).OrderBy(t => t.Identifier, StringComparer.Ordinal).Take(MaxTenants)];
-
-    private static string TenantHref(TenantSummary tenant) => $"/ui/tenants/{Uri.EscapeDataString(tenant.Id)}";
 }

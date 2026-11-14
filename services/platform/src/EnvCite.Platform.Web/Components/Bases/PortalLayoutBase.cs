@@ -1,6 +1,7 @@
 using System.Security.Claims;
 
 using EnvCite.Platform.Web.Components.Layout;
+using EnvCite.Platform.Web.Components.Layout.Navigation;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
@@ -22,6 +23,12 @@ public abstract class PortalLayoutBase : PlatformLayoutBase
     [Inject] protected IConversationHistoryAvailability HistoryAvailability { get; set; } = default!;
 
     [Inject] protected TimeProvider Time { get; set; } = default!;
+
+    [Inject] protected IEnumerable<IPortalNavContributor> NavContributors { get; set; } = default!;
+
+    /// <summary>依目前租戶與登入者身分組裝入口側欄項目。</summary>
+    protected IReadOnlyList<PortalShell.NavItem> CollectNavItems(string tenantIdentifier, ClaimsPrincipal user) =>
+        PortalNavigation.Collect(NavContributors, new PortalNavContext(PortalPaths.Home(tenantIdentifier), user));
 
     /// <summary>左下角帳號卡片的主標題（名字，沒有則退回 email）。</summary>
     protected static string? DisplayNameOf(ClaimsPrincipal? user) =>
