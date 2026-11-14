@@ -2535,4 +2535,7 @@
   <data name="圖譜視角控制" xml:space="preserve">
     <value>Graph viewport controls</value>
   </data>
+  <data name="篩選條號或章節" xml:space="preserve">
+    <value>Filter article or chapter</value>
+  </data>
 </root>

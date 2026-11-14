@@ -299,19 +299,29 @@ else
                                 }
                                 else
                                 {
-                                    @if (law.Structure.Count > 0)
-                                    {
-                                        <details class="ep-structure-box" open>
-                                            <summary class="ep-tree-manual-toggle">@L["法規結構目錄"]</summary>
-                                            <ul class="ep-structure-list">
-                                                @foreach (var heading in law.Structure)
-                                                {
-                                                    @RenderStructureNode(heading, 0)
-                                                }
-                                            </ul>
-                                        </details>
-                                    }
-                                    <DataTable Items="law.Articles" Columns="ArticleColumns" Label="@L["條文清單"]" Plain="true" />
+                                    <div class="ep-structure-workspace" data-structure-workspace="true">
+                                        <div class="ep-structure-filter-bar">
+                                            <input type="search" class="ep-input ep-structure-filter" data-structure-filter="true"
+                                                   placeholder="@L["篩選條號或章節"]" aria-label="@L["篩選條號或章節"]" />
+                                        </div>
+                                        <div class="@(law.Structure.Count > 0 ? "ep-structure-split" : string.Empty)">
+                                            @if (law.Structure.Count > 0)
+                                            {
+                                                <details class="ep-structure-box" open>
+                                                    <summary class="ep-tree-manual-toggle">@L["法規結構目錄"]</summary>
+                                                    <ul class="ep-structure-list">
+                                                        @foreach (var heading in law.Structure)
+                                                        {
+                                                            @RenderStructureNode(heading, 0)
+                                                        }
+                                                    </ul>
+                                                </details>
+                                            }
+                                            <div class="ep-structure-table-wrap">
+                                                <DataTable Items="law.Articles" Columns="ArticleColumns" Label="@L["條文清單"]" Plain="true" />
+                                            </div>
+                                        </div>
+                                    </div>
                                 }
                             </SectionCard>
                         }
@@ -320,7 +330,12 @@ else
                             <SectionCard Id="law-detail-empty" Title="@L["編章節與有效條文"]">
                                 <EmptyState Icon="@Icons.Material.Outlined.MenuBook"
                                             Title="@L["從左側目錄或知識圖譜選擇法規"]"
-                                            Description="@L["點選左側法規階層目錄中的任一部法規，或在「授權知識圖譜」分頁中雙擊節點，即可檢視編章節結構與有效條文清單。"]" />
+                                            Description="@L["點選左側法規階層目錄中的任一部法規，或在「授權知識圖譜」分頁中雙擊節點，即可檢視編章節結構與有效條文清單。"]">
+                                    <button type="button" class="ep-btn ep-btn-primary" data-workbench-toggle="catalog"
+                                            aria-expanded="false" aria-controls="ep-workbench-catalog">
+                                        @CatalogTitle
+                                    </button>
+                                </EmptyState>
                             </SectionCard>
                         }
                     </TabPanel>
@@ -392,9 +407,9 @@ else
         @<SectionCard Id="reasoning-panel-title" Title="@L["合規推論試算"]">
             <p class="ep-page-description">@L["選擇常見情境或輸入事實，由確定性推論引擎評估候選風險與缺漏要件。"]</p>
             <div class="ep-preset-row">
-                <button type="button" class="ep-preset-chip" data-reasoning-preset="daily">@L["日常合規自評"]</button>
-                <button type="button" class="ep-preset-chip" data-reasoning-preset="incident">@L["設備異常通報"]</button>
-                <button type="button" class="ep-preset-chip" data-reasoning-preset="benefit">@L["超標與不法利得"]</button>
+                <button type="button" class="ep-preset-chip" data-reasoning-preset="daily" aria-pressed="false">@L["日常合規自評"]</button>
+                <button type="button" class="ep-preset-chip" data-reasoning-preset="incident" aria-pressed="false">@L["設備異常通報"]</button>
+                <button type="button" class="ep-preset-chip" data-reasoning-preset="benefit" aria-pressed="false">@L["超標與不法利得"]</button>
             </div>
             <FormAlert Message="@Error" />
             <PostForm Model="Input" FormName="portal-reasoning" OnValidSubmit="EvaluateAsync">
