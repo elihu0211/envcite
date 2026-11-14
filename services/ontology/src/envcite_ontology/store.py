@@ -19,7 +19,7 @@ from psycopg_pool import ConnectionPool
 from envcite_ontology.embedding import to_sql
 from envcite_ontology.law_names import LawNames
 
-#: 語料目前只有中文版本。
+#: 查詢與推論讀的語言版本（ISO 639-3）。
 LANGUAGE = "zho"
 
 
@@ -566,7 +566,8 @@ _GUIDANCE = """
      ORDER BY g.documents DESC, g.version_id
 """
 
-#: 每一臂的候選池（條數）。融合前各取這麼多；尚未以題庫量測，取 limit 上限的數倍。
+#: 每一臂的候選池（條數）。融合前各取這麼多；取 `limit` 上限的數倍。
+#: 改它要用 `tools/golden_retrieval_eval.py` 在開發集量過。
 SEARCH_POOL = 50
 
 
