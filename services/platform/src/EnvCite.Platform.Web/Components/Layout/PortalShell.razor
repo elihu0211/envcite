@@ -4,7 +4,7 @@
    側欄每項是圖示加文字：桌機可收成窄欄、手機為全高滑出抽屜（forms.js 切換）。
    帳號與對話選單均使用瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript）。
    PortalLayout／WorkspaceLayout 依登入狀態填入；元件展示頁用假資料填入。 *@
-@inject NavigationManager Nav
+@inherits NavigableComponentBase
 <a class="ep-skip-link" href="#main">@L["跳到主要內容"]</a>
 
 <div class="@(HasSideNav ? "ep-console ep-portal" : "ep-shell ep-portal")">
@@ -354,7 +354,7 @@
 
     private string? CurrentStageTitle()
     {
-        if (!Uri.TryCreate(Nav.Uri, UriKind.Absolute, out var current))
+        if (!Uri.TryCreate(Navigation.Uri, UriKind.Absolute, out var current))
             return null;
 
         var path = NormalizePath(current.AbsolutePath);

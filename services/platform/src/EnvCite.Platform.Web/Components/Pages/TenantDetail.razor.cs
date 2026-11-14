@@ -9,8 +9,10 @@ namespace EnvCite.Platform.Web.Components.Pages;
 
 public partial class TenantDetail(
     ITenantDirectory directory, IApiKeyAdmin keys, IPlanAdmin plans, IModuleAdmin moduleAdmin, IMemberAdmin members, IUsageAdmin usage, IAuditQuery audit, IMailSender mail,
-    IDirectoryAdmin directorySync, IDirectoryAvailability directoryFeature)
+    IDirectoryAdmin directorySync, IDirectoryAvailability directoryFeature, IAnswerAvailability availability)
 {
+    private IAnswerAvailability Availability => availability;
+
     [Parameter] public string TenantId { get; set; } = string.Empty;
 
     /// <summary>目前的分頁（網址的 <c>?tab=</c>）。分頁是連結，所以可以分享、可以上一頁；沒給或不認得就是第一個。</summary>

@@ -486,7 +486,7 @@ h1[tabindex="-1"]:focus-visible {
 }
 
 @media (hover: hover) {
-    .ep-send:hover,
+    .ep-send:not(:disabled):hover,
     .ep-btn-primary:hover {
         background: color-mix(in srgb, var(--ep-primary) 88%, var(--ep-text));
     }
@@ -2138,63 +2138,74 @@ a.ep-brand {
     margin: 0;
 }
 
-/* 輸入框：一個大圓角的容器，右側圓形送出鈕。問了之後黏在底部，內容從底下捲過。 */
+/* 輸入框：雕塑感圓角卡片，底部整合提示與送出鈕；問了之後黏在底部，對話從毛玻璃後方滑過。 */
 .ep-composer-form {
     display: flex;
     flex-direction: column;
-    gap: var(--ep-space-2);
+    gap: var(--ep-space-3);
 }
 
 .ep-ask[data-state="result"] .ep-composer-form {
     position: sticky;
     inset-block-end: 0;
-    padding-block: var(--ep-space-3) max(var(--ep-space-3), env(safe-area-inset-bottom));
-    background: color-mix(in srgb, var(--ep-bg) 94%, transparent);
+    padding-block: var(--ep-space-3) max(var(--ep-space-4), env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--ep-bg) 88%, transparent);
 }
 
-/* 問答框：輸入在左、圓形送出鈕貼在右下角，同一張卡片。多行輸入自動長高（上限約八行，再多在框內捲動），
-   長高時送出鈕留在最後一行旁邊。輕微舉升加細框；游標移上去或聚焦時外框加深與抬升。
-   --ep-composer-row 是單行的高度（觸控 44px、滑鼠收成緊湊），輸入的內距與送出鈕的尺寸都由它推得。 */
+/* 問答框：上方多行輸入（依內容長高，上限約八行，再多在框內捲動），底部列放鍵盤提示／字數計數與圓形送出鈕。
+   表面升一階並加細緻焦點光暈，停用時保持柔和中性，有字時送出鈕轉為高對比就緒態。
+   --ep-composer-row 是單行的高度（觸控 44px、滑鼠收成緊湊），輸入的最大高度與送出鈕的尺寸都由它推得。 */
 .ep-composer {
     --ep-composer-row: var(--ep-touch-target);
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
+    align-items: stretch;
     gap: var(--ep-space-2);
-    padding: var(--ep-space-2) var(--ep-space-2) var(--ep-space-2) var(--ep-space-4);
-    border: 1px solid var(--ep-border-subtle);
-    border-radius: calc(var(--ep-radius-sheet) + var(--ep-space-1));
-    background: var(--ep-surface);
+    padding: var(--ep-space-3) var(--ep-space-3) var(--ep-space-2) var(--ep-space-4);
+    border: 1px solid color-mix(in srgb, var(--ep-border-control) 36%, var(--ep-border-subtle));
+    border-radius: calc(var(--ep-radius-sheet) + var(--ep-space-2));
+    background: var(--ep-surface-raised);
     box-shadow: var(--ep-elevation-1);
-    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), box-shadow var(--ep-motion-fast) var(--ep-motion-ease-standard);
+    transition: border-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        box-shadow var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 @media (hover: hover) {
     .ep-composer:hover {
-        border-color: var(--ep-border-control);
+        border-color: color-mix(in srgb, var(--ep-border-control) 75%, var(--ep-border-subtle));
+        box-shadow: var(--ep-elevation-2);
     }
 }
 
 .ep-composer:focus-within {
-    border-color: var(--ep-border-control);
-    box-shadow: var(--ep-elevation-2);
+    border-color: var(--ep-focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ep-focus) 14%, transparent), var(--ep-elevation-2);
 }
 
-/* 外框裡的裸輸入（多行 textarea）：環畫在外框上，這裡不畫。單行時文字在 --ep-composer-row 的正中（上下內距由行高推得）。
+/* 外框裡的裸輸入（多行 textarea）：光暈與邊框畫在外層容器上，這裡保持乾淨。
    field-sizing: content 讓它依內容長高，不支援的瀏覽器由 forms.js 補；沒有 JavaScript 時維持 rows 指定的行數。 */
 .ep-composer-input {
-    flex: 1;
+    inline-size: 100%;
     min-inline-size: 0;
+    min-block-size: var(--ep-composer-row);
     box-sizing: border-box;
     max-block-size: calc(7lh + var(--ep-composer-row));
     margin: 0;
-    padding: calc((var(--ep-composer-row) - 1lh) / 2) 0;
+    padding: var(--ep-space-1) var(--ep-space-1) 0 0;
     border: 0;
     background: transparent;
     color: var(--ep-text);
     font: inherit;
+    line-height: var(--ep-body-l-leading);
     resize: none;
     overflow-y: auto;
     field-sizing: content;
+}
+
+.ep-composer-input::placeholder {
+    color: var(--ep-text-secondary);
+    opacity: 0.78;
 }
 
 .ep-composer-input:focus,
@@ -2202,29 +2213,97 @@ a.ep-brand {
     outline: none; /* 焦點環畫在整個輸入框容器上（:focus-within） */
 }
 
-/* 首頁（還沒問）：輸入框是主角，從兩行高開始；問了之後收成單行貼在底部。
+/* 首頁（還沒問）：輸入框是主角，保留較充裕的起手高度；問了之後收成緊湊單行貼在底部。
    field-sizing: content 會忽略 rows，所以最小高度寫在這裡（rows 只給不支援它的瀏覽器）。 */
 .ep-ask[data-state="empty"] .ep-composer-input {
-    min-block-size: calc(var(--ep-composer-row) + 1lh);
+    min-block-size: calc(var(--ep-composer-row) + 1.5lh);
 }
 
-/* 送出：實心的反差塊（淺色主題是深色、深色主題是淺色），靠右；彩色只留給焦點與連結。 */
+.ep-composer-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ep-space-3);
+}
+
+.ep-composer-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
+    min-inline-size: 0;
+}
+
+.ep-composer-hint {
+    display: none;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-s-size);
+    letter-spacing: var(--ep-label-s-tracking);
+    opacity: 0.75;
+    white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) and (width >= 48rem) {
+    .ep-composer-hint {
+        display: inline;
+    }
+}
+
+.ep-composer-count {
+    font-size: var(--ep-label-s-size);
+    letter-spacing: var(--ep-label-s-tracking);
+    color: var(--ep-text-secondary);
+}
+
+.ep-composer-count[data-tone="warning"] {
+    color: var(--ep-warning);
+}
+
+.ep-composer-count[data-tone="error"] {
+    color: var(--ep-error);
+}
+
+/* 送出：有輸入時為高對比實心反差圓鈕，無內容時沉靜地融於卡片中；進行中顯示細旋轉環。 */
 .ep-send {
     display: grid;
     place-items: center;
     border: 0;
     background: var(--ep-ink);
     color: var(--ep-on-ink);
+    box-shadow: var(--ep-elevation-1);
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        box-shadow var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        opacity var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 .ep-send:disabled {
-    opacity: 0.4;
+    background: var(--ep-surface-muted);
+    color: var(--ep-text-secondary);
+    box-shadow: none;
+    opacity: 0.72;
     cursor: not-allowed;
 }
 
-/* 「新對話」：問了之後輸入框上面的一顆藥丸，靠起始邊。 */
-.ep-composer-form > .ep-new-chat {
-    align-self: flex-start;
+.ep-send[data-busy="true"] {
+    background: var(--ep-ink);
+    color: var(--ep-on-ink);
+    opacity: 1;
+}
+
+.ep-send-spinner {
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+    border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+    border-block-start-color: currentColor;
+    border-radius: var(--ep-radius-pill);
+    animation: ep-spin var(--ep-motion-pulse) linear infinite;
+}
+
+@keyframes ep-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* 輸入框底下只有一行極簡提示加一顆開「使用說明」的小鈕；完整說明收在原生 popover（點外面或按 Esc 就關，不需要 JavaScript）。 */
@@ -2365,10 +2444,15 @@ a.ep-brand {
 }
 
 .ep-examples .ep-chip {
+    border-color: color-mix(in srgb, var(--ep-border-subtle) 90%, transparent);
     background: var(--ep-surface);
     box-shadow: var(--ep-elevation-1);
     color: var(--ep-text-secondary);
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard), border-color var(--ep-motion-fast) var(--ep-motion-ease-standard), background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-ask[data-state="empty"] .ep-examples {
+    justify-content: center;
 }
 
 /* 滑鼠操作：輸入框的單行、送出鈕與芯片收成緊湊高度；觸控裝置維持 44px。 */

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 
+using EnvCite.Platform.Web.Components.Shared;
 using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Components;
@@ -11,20 +12,23 @@ namespace EnvCite.Platform.Web.Components.Portal.Workspace;
 /// 入口的問答頁（互動式）：只管呈現與輸入。流程與狀態在 <see cref="ChatSession"/>，領域動作經 <see cref="IAskService"/>。
 /// 沒有 <c>HttpContext</c>：身分取自基底的 <c>UserAsync</c>，租戶取自身分。
 /// </summary>
-public sealed partial class ChatPage
+public sealed partial class ChatPage(
+    ChatSession session,
+    IConversationHistoryAvailability history,
+    ICitationArticleService citationArticles,
+    IJSRuntime js)
 {
     // 範例是臺灣法規裡會出現的詞（資料庫是中文），所以英文介面也維持中文：翻成英文就搜不到。
     private static readonly string[] Examples = ["噪音管制標準", "固定污染源", "廢棄物清理", "水污染防治"];
 
     // 元件會在非同步工作還沒結束時被處置（授權元件重新評估、版面換掉），那時續行還會往下跑：
     // 權杖只取一次存起來，處置後存取 CancellationTokenSource.Token 會丟 ObjectDisposedException。
-    private readonly CancellationTokenSource _cts = new();
-    private readonly CancellationToken _ct;
+    private readonly (CancellationTokenSource Source, CancellationToken Token) _lifetime = CreateLifetime();
     private bool _disposed;
 
     // 預先渲染的畫面先出現，circuit 連上之後才接手：之前的輸入與按鈕不會有人處理（表單會變成整頁重送、輸入的字消失），所以先停用。
     private bool _interactive;
-    private ElementReference _input;
+    private AskComposer? _composer;
     private IJSObjectReference? _module;
     private string _query = string.Empty;
     private string? _name;
@@ -35,7 +39,15 @@ public sealed partial class ChatPage
     private bool _refocus;
     private bool _focusOnReady;
 
-    public ChatPage() => _ct = _cts.Token;
+    private ChatSession Session => session;
+
+    private IConversationHistoryAvailability History => history;
+
+    private static (CancellationTokenSource, CancellationToken) CreateLifetime()
+    {
+        var cts = new CancellationTokenSource();
+        return (cts, cts.Token);
+    }
 
     /// <summary>要開啟的對話；新對話的路由沒有這個參數（<see cref="Guid.Empty"/>）。</summary>
     [Parameter] public Guid Id { get; set; }
@@ -54,7 +66,7 @@ public sealed partial class ChatPage
             Session.Changed += OnChanged;
             _subscribed = true;
             _name = user.FindFirst(ClaimTypes.GivenName)?.Value ?? user.FindFirst(ClaimTypes.Email)?.Value;
-            await Session.InitializeAsync(user, _ct);
+            await Session.InitializeAsync(user, _lifetime.Token);
         }
 
         if (_disposed)
@@ -79,7 +91,7 @@ public sealed partial class ChatPage
         }
         else if (Id != Session.ConversationId)
         {
-            _notFound = !await Session.OpenAsync(user, Id, _ct);
+            _notFound = !await Session.OpenAsync(user, Id, _lifetime.Token);
         }
     }
 
@@ -103,14 +115,14 @@ public sealed partial class ChatPage
             if (_scroll)
             {
                 _scroll = false;
-                _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./_content/EnvCite.Platform.Web/Components/Portal/Workspace/ChatPage.razor.js");
+                _module ??= await js.InvokeAsync<IJSObjectReference>("import", "./_content/EnvCite.Platform.Web/Components/Portal/Workspace/ChatPage.razor.js");
                 await _module.InvokeVoidAsync("scrollToLastTurn");
             }
 
-            if (_refocus && !Session.Busy)
+            if (_refocus && !Session.Busy && _composer is not null)
             {
                 _refocus = false;
-                await _input.FocusAsync();
+                await _composer.FocusAsync();
             }
         }
         catch (JSDisconnectedException)
@@ -136,7 +148,7 @@ public sealed partial class ChatPage
     {
         try
         {
-            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./_content/EnvCite.Platform.Web/Components/Portal/Workspace/ChatPage.razor.js");
+            _module ??= await js.InvokeAsync<IJSObjectReference>("import", "./_content/EnvCite.Platform.Web/Components/Portal/Workspace/ChatPage.razor.js");
             await _module.InvokeVoidAsync("focusComposer");
         }
         catch (JSDisconnectedException)
@@ -151,18 +163,12 @@ public sealed partial class ChatPage
     private async Task AskAsync(string question)
     {
         _query = string.Empty;
-        await Session.AskAsync(await UserAsync(), question, null, _ct);
+        await Session.AskAsync(await UserAsync(), question, null, _lifetime.Token);
         _refocus = true;
 
         // 對話被記進歷史後，網址換成這串對話的 Id：重新整理、分享給自己都回到同一串。同一個頁面，不重新載入。
         if (Session.ConversationId is { } id && Id != id)
             Navigation.NavigateTo(PortalPaths.Conversation(Tenant, id), new NavigationOptions { ReplaceHistoryEntry = true });
-    }
-
-    private void NewConversation()
-    {
-        Session.StartNew();
-        Navigation.NavigateTo(PortalPaths.Home(Tenant));
     }
 
     private bool _drawerOpen;
@@ -195,7 +201,7 @@ public sealed partial class ChatPage
 
         try
         {
-            var outcome = await CitationArticles.GetByIriAsync(await UserAsync(), source.Uri, _ct);
+            var outcome = await citationArticles.GetByIriAsync(await UserAsync(), source.Uri, _lifetime.Token);
             if (_disposed || !_drawerOpen || !string.Equals(_drawerUri, source.Uri, StringComparison.Ordinal)) return;
             if (outcome.IsOk && outcome.Value is { } detail)
             {
@@ -307,8 +313,8 @@ public sealed partial class ChatPage
     {
         _disposed = true;
         Session.Changed -= OnChanged;
-        await _cts.CancelAsync();
-        _cts.Dispose();
+        await _lifetime.Source.CancelAsync();
+        _lifetime.Source.Dispose();
         if (_module is not null)
         {
             try

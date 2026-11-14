@@ -5,10 +5,6 @@
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 @implements IAsyncDisposable
 @inherits WorkspacePageBase
-@inject ChatSession Session
-@inject IConversationHistoryAvailability History
-@inject ICitationArticleService CitationArticles
-@inject IJSRuntime JS
 
 <DocumentTitle Text="@L["法規諮詢"]" />
 
@@ -207,64 +203,55 @@
             </div>
         }
 
-        @* 輸入框：多行、自動長高；Enter 送出、Shift+Enter 換行（桌機；觸控裝置的 Enter 是換行），輸入法組字中的 Enter 不送出
-           ——這些由 forms.js 的 data-composer 處理，沒有它時仍是一般的表單。送出鈕在有字之前停用。 *@
-        <form class="ep-composer-form" @onsubmit="SubmitAsync">
-            @if (Session.Turns.Count > 0)
-            {
-                <button type="button" class="ep-chip ep-new-chat" @onclick="NewConversation">@L["新對話"]</button>
-            }
-
-            <div class="ep-composer">
-                <label for="query" class="ep-visually-hidden">@L["關鍵字"]</label>
-                <textarea id="query" class="ep-composer-input" data-composer rows="@(Session.Turns.Count == 0 ? 2 : 1)" maxlength="500" required autocomplete="off" enterkeyhint="enter"
-                          placeholder="@L["問問{0}", Brand.Name]"
-                          @ref="_input" @bind="_query" @bind:event="oninput" disabled="@(Session.Busy || !_interactive)"></textarea>
-                <button type="submit" class="ep-send" aria-label="@L["搜尋"]" disabled="@(Session.Busy || !_interactive || string.IsNullOrWhiteSpace(_query))"><NavIcon Path="@Icons.Material.Filled.ArrowUpward" /></button>
-            </div>
-
-            @if (Session.Turns.Count == 0)
-            {
-                <div class="ep-examples" role="group" aria-label="@L["範例"]">
-                    @foreach (var example in Examples)
-                    {
-                        <button type="button" class="ep-chip" @onclick="() => AskAsync(example)" disabled="@(Session.Busy || !_interactive)">@example</button>
-                    }
-                </div>
-
-                @* 首頁只留一行極簡提示；完整說明（怎麼輸入、紀錄、資料送到哪裡）收在原生 popover，點「使用說明」才開。
-                   資料外送的揭露不能消失，所以在面板裡；每則 AI 回答自己另有「請核對出處」的提示。 *@
-                <div class="ep-ask-foot">
-                    @if (Session.Capabilities.AiAnswer)
-                    {
-                        <p class="ep-ask-note">@L["回答由 AI 產生，請核對出處。"]</p>
-                    }
-                    <button type="button" class="ep-text-button" popovertarget="ask-info">@L["使用說明"]</button>
-                </div>
-
-                <div id="ask-info" class="ep-sheet" popover role="dialog" aria-labelledby="ask-info-title">
-                    <h2 id="ask-info-title" class="ep-section-title ep-sheet-title">@L["使用說明"]</h2>
-                    <ul class="ep-sheet-list">
-                        <li>@L["用條文裡會出現的詞，空白分隔。"]</li>
-                        @if (History.Enabled)
-                        {
-                            <li>@L["你的提問會存在"]<a href="@($"{PortalPaths.Home(Tenant)}/history")">@L["對話紀錄"]</a>@L["，只有你看得到，{0} 天後自動刪除，也可以隨時自己刪。", History.RetentionDays]</li>
-                        }
-                        else
-                        {
-                            <li>@L["查詢文字不會被記錄，只記一次搜尋的次數。"]</li>
-                        }
+        @* 輸入框交由共用 AskComposer 模板渲染；首頁另有「使用說明」原生 popover 與 AI 提示。 *@
+        <AskComposer @ref="_composer"
+                     @bind-Value="_query"
+                     Placeholder="@L["問問{0}", Brand.Name]"
+                     InputLabel="@L["關鍵字"]"
+                     SendLabel="@L["搜尋"]"
+                     Rows="@(Session.Turns.Count == 0 ? 2 : 1)"
+                     Disabled="@(Session.Busy || !_interactive)"
+                     Busy="@Session.Busy"
+                     Examples="@(Session.Turns.Count == 0 ? Examples : [])"
+                     OnExampleSelect="AskAsync"
+                     OnSubmit="SubmitAsync">
+            <FooterContent>
+                @if (Session.Turns.Count == 0)
+                {
+                    @* 首頁只留一行極簡提示；完整說明（怎麼輸入、紀錄、資料送到哪裡）收在原生 popover，點「使用說明」才開。
+                       資料外送的揭露不能消失，所以在面板裡；每則 AI 回答自己另有「請核對出處」的提示。 *@
+                    <div class="ep-ask-foot">
                         @if (Session.Capabilities.AiAnswer)
                         {
-                            <li>@L["回答由 AI 產生：你的問題與相關條文會送到模型服務。"]</li>
+                            <p class="ep-ask-note">@L["回答由 AI 產生，請核對出處。"]</p>
                         }
-                    </ul>
-                    <div class="ep-sheet-actions">
-                        <button type="button" class="ep-btn ep-btn-quiet" popovertarget="ask-info" popovertargetaction="hide">@L["關閉說明"]</button>
+                        <button type="button" class="ep-text-button" popovertarget="ask-info">@L["使用說明"]</button>
                     </div>
-                </div>
-            }
-        </form>
+
+                    <div id="ask-info" class="ep-sheet" popover role="dialog" aria-labelledby="ask-info-title">
+                        <h2 id="ask-info-title" class="ep-section-title ep-sheet-title">@L["使用說明"]</h2>
+                        <ul class="ep-sheet-list">
+                            <li>@L["用條文裡會出現的詞，空白分隔。"]</li>
+                            @if (History.Enabled)
+                            {
+                                <li>@L["你的提問會存在"]<a href="@($"{PortalPaths.Home(Tenant)}/history")">@L["對話紀錄"]</a>@L["，只有你看得到，{0} 天後自動刪除，也可以隨時自己刪。", History.RetentionDays]</li>
+                            }
+                            else
+                            {
+                                <li>@L["查詢文字不會被記錄，只記一次搜尋的次數。"]</li>
+                            }
+                            @if (Session.Capabilities.AiAnswer)
+                            {
+                                <li>@L["回答由 AI 產生：你的問題與相關條文會送到模型服務。"]</li>
+                            }
+                        </ul>
+                        <div class="ep-sheet-actions">
+                            <button type="button" class="ep-btn ep-btn-quiet" popovertarget="ask-info" popovertargetaction="hide">@L["關閉說明"]</button>
+                        </div>
+                    </div>
+                }
+            </FooterContent>
+        </AskComposer>
     }
 </div>
 

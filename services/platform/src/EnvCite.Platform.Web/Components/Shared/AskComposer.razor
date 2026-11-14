@@ -1,0 +1,148 @@
+@* 問答輸入框模板：問答工作區（ChatPage）與設計展示（DesignGallery）共用這份標記。
+   多行自動長高、桌機 Enter 送出／Shift+Enter 換行、組字中不送出（forms.js 的 data-composer），
+   字數接近上限時顯示即時字數，送出鈕依輸入內容啟用並在等待回答時顯示進行中回饋。 *@
+@if (Interactive)
+{
+    <form class="ep-composer-form" @onsubmit="HandleSubmitAsync">
+        @RenderBody()
+    </form>
+}
+else
+{
+    <div class="ep-composer-form">
+        @RenderBody()
+    </div>
+}
+
+@code {
+    private ElementReference _input;
+
+    /// <summary>輸入框目前的文字。</summary>
+    [Parameter] public string Value { get; set; } = string.Empty;
+
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    /// <summary>true 為互動工作區表單；false 為靜態設計展示。</summary>
+    [Parameter] public bool Interactive { get; set; } = true;
+
+    [Parameter] public string? Placeholder { get; set; }
+
+    [Parameter] public string? InputLabel { get; set; }
+
+    [Parameter] public string? SendLabel { get; set; }
+
+    [Parameter] public int Rows { get; set; } = 2;
+
+    [Parameter] public int MaxLength { get; set; } = 500;
+
+    [Parameter] public bool Disabled { get; set; }
+
+    [Parameter] public bool Busy { get; set; }
+
+    [Parameter] public IReadOnlyList<string> Examples { get; set; } = [];
+
+    [Parameter] public EventCallback OnSubmit { get; set; }
+
+    [Parameter] public EventCallback<string> OnExampleSelect { get; set; }
+
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+
+    /// <summary>將瀏覽器焦點移回輸入文字框。</summary>
+    public ValueTask FocusAsync() => _input.FocusAsync();
+
+    private string ResolvedPlaceholder => Placeholder ?? L["問問{0}", Brand.Name];
+
+    private string ResolvedInputLabel => InputLabel ?? L["關鍵字"];
+
+    private string ResolvedSendLabel => SendLabel ?? L["搜尋"];
+
+    private int CountWarningThreshold => Math.Max(0, MaxLength - 150);
+
+    private int CountDangerThreshold => Math.Max(0, MaxLength - 50);
+
+    private string CountTone =>
+        Value.Length >= MaxLength ? "error"
+        : Value.Length >= CountDangerThreshold ? "warning"
+        : "neutral";
+
+    private bool SendDisabled => Interactive && (Disabled || Busy || string.IsNullOrWhiteSpace(Value));
+
+    private Task HandleInputAsync(ChangeEventArgs args)
+    {
+        var next = args.Value?.ToString() ?? string.Empty;
+        Value = next;
+        return ValueChanged.InvokeAsync(next);
+    }
+
+    private Task HandleSubmitAsync() =>
+        Interactive && !SendDisabled ? OnSubmit.InvokeAsync() : Task.CompletedTask;
+
+    private Task HandleExampleClickAsync(string example) =>
+        Interactive && !Disabled && !Busy ? OnExampleSelect.InvokeAsync(example) : Task.CompletedTask;
+
+    private RenderFragment RenderBody() => __builder =>
+    {
+        <div class="ep-composer">
+            @if (Interactive)
+            {
+                <label for="query" class="ep-visually-hidden">@ResolvedInputLabel</label>
+            }
+            <textarea id="@(Interactive ? "query" : null)"
+                      class="ep-composer-input"
+                      data-composer="@Interactive"
+                      rows="@Rows"
+                      maxlength="@MaxLength"
+                      required="@Interactive"
+                      autocomplete="off"
+                      enterkeyhint="enter"
+                      placeholder="@ResolvedPlaceholder"
+                      aria-label="@(!Interactive ? ResolvedInputLabel : null)"
+                      @ref="_input"
+                      value="@Value"
+                      @oninput="HandleInputAsync"
+                      disabled="@(Interactive && Disabled)"></textarea>
+            <div class="ep-composer-footer">
+                <div class="ep-composer-meta">
+                    @if (Interactive)
+                    {
+                        <span class="ep-composer-hint" aria-hidden="true">@L["Enter 送出 · Shift+Enter 換行"]</span>
+                        @if (Value.Length >= CountWarningThreshold)
+                        {
+                            <span class="ep-composer-count ep-tabular" data-tone="@CountTone">@($"{Value.Length} / {MaxLength}")</span>
+                        }
+                    }
+                </div>
+                <button type="@(Interactive ? "submit" : "button")"
+                        class="ep-send"
+                        aria-label="@ResolvedSendLabel"
+                        aria-busy="@(Interactive && Busy ? "true" : null)"
+                        data-busy="@(Interactive && Busy)"
+                        disabled="@SendDisabled">
+                    @if (Interactive && Busy)
+                    {
+                        <span class="ep-send-spinner" aria-hidden="true"></span>
+                    }
+                    else
+                    {
+                        <NavIcon Path="@Icons.Material.Filled.ArrowUpward" />
+                    }
+                </button>
+            </div>
+        </div>
+
+        @if (Examples.Count > 0)
+        {
+            <div class="ep-examples" role="group" aria-label="@L["範例"]">
+                @foreach (var example in Examples)
+                {
+                    <button type="button"
+                            class="ep-chip"
+                            @onclick="() => HandleExampleClickAsync(example)"
+                            disabled="@(Interactive && Disabled)">@example</button>
+                }
+            </div>
+        }
+
+        @FooterContent
+    };
+}

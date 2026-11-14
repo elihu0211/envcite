@@ -88,10 +88,14 @@ const scenarios = {
             if (page.url().includes("/ui/login")) throw new Error(`被導去後台登入：${page.url()}`);
             await until("應是還沒問的空畫面", async () => (await page.locator(".ep-ask[data-state='empty']").count()) === 1);
         });
-        await step("問第一題：回答帶出處，網址換成這串對話", async () => {
+        await step("問第一題：回答帶出處，網址換成這串對話，且輸入框上方不再出現「新對話」按鈕", async () => {
             await submit(question);
             await answered(1);
             await until("網址應是 /c/{id}", async () => /\/c\/[0-9a-f-]{36}$/.test(page.url()));
+            if ((await page.locator(".ep-composer-form .ep-new-chat").count()) !== 0)
+                throw new Error("輸入框上方不應再渲染「新對話」按鈕");
+            if ((await page.locator(".ep-composer-footer").count()) !== 1)
+                throw new Error("輸入框應渲染整合底部列（.ep-composer-footer）");
             const text = await turns().first().innerText();
             if (!text.includes(question) || !text.includes("L1")) throw new Error(`回合內容不對：${text}`);
         });

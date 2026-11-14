@@ -2,8 +2,6 @@
 @layout PortalLayout
 @attribute [ExcludeFromInteractiveRouting]
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
-@inject IConversationHistory Store
-@inject IConversationHistoryAvailability HistoryFeature
 @inherits PortalPageBase
 
 <DocumentTitle Text="@L["對話紀錄"]" />
