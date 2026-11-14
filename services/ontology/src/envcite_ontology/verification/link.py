@@ -14,7 +14,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, NamedTuple
 
-from envcite_ontology.claims import AnnotationError, load
+from envcite_ontology.claims.errors import AnnotationError
+from envcite_ontology.claims.loader import load
 from envcite_ontology.db import Conn, fetch
 from envcite_ontology.verification import prompts
 from envcite_ontology.verification.gates import unit_of

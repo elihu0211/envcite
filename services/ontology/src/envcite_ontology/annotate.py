@@ -11,15 +11,10 @@ from pathlib import Path
 
 import psycopg
 
-from envcite_ontology.claims import (
-    LEGAL_EFFECTS,
-    LIABILITY_BASES,
-    TRIGGER_KINDS,
-    AnnotationError,
-    Loaded,
-    anchor,
-    load,
-)
+from envcite_ontology.claims.anchoring import anchor
+from envcite_ontology.claims.enums import LEGAL_EFFECTS, LIABILITY_BASES, TRIGGER_KINDS
+from envcite_ontology.claims.errors import AnnotationError
+from envcite_ontology.claims.loader import Loaded, load
 from envcite_ontology.settings import DatabaseSettings
 from envcite_ontology.settings import load as load_settings
 

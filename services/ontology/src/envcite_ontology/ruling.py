@@ -28,7 +28,7 @@ from typing import Literal, NamedTuple
 import psycopg
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from envcite_ontology.claims import AnnotationError
+from envcite_ontology.claims.errors import AnnotationError
 from envcite_ontology.corpus_ref import UnknownProvision, provision_id
 from envcite_ontology.db import Conn, fetch_one, scalar
 
