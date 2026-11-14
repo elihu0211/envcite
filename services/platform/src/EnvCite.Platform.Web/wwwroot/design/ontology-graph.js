@@ -214,6 +214,87 @@
     return { positions, clusters };
   }
 
+  function computeIndentedPositions(nodes, edges) {
+    const positions = new Map();
+    if (!nodes || nodes.length === 0) return positions;
+
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    const childrenByParent = new Map();
+    const inDegree = new Map(nodes.map((n) => [n.id, 0]));
+
+    for (const e of edges || []) {
+      if (!nodeMap.has(e.source) || !nodeMap.has(e.target) || e.source === e.target) continue;
+      if (!childrenByParent.has(e.source)) childrenByParent.set(e.source, []);
+      childrenByParent.get(e.source).push(e.target);
+      inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
+    }
+
+    const byTierThenTitle = (aId, bId) => {
+      const a = nodeMap.get(aId);
+      const b = nodeMap.get(bId);
+      const tierDiff = (a?.hierarchyTier ?? 99) - (b?.hierarchyTier ?? 99);
+      if (tierDiff !== 0) return tierDiff;
+      return String(a?.title || aId).localeCompare(String(b?.title || bId), "zh-Hant");
+    };
+
+    const roots = nodes
+      .filter((n) => (inDegree.get(n.id) || 0) === 0)
+      .map((n) => n.id)
+      .sort(byTierThenTitle);
+
+    const visited = new Set();
+    let row = 0;
+
+    function visit(id, depth) {
+      if (visited.has(id)) return;
+      visited.add(id);
+      positions.set(id, { x: depth * 110, y: row * 82 });
+      row += 1;
+      const children = (childrenByParent.get(id) || []).slice().sort(byTierThenTitle);
+      for (const childId of children) {
+        visit(childId, depth + 1);
+      }
+    }
+
+    for (const rootId of roots) visit(rootId, 0);
+    for (const n of nodes) {
+      if (!visited.has(n.id)) visit(n.id, 0);
+    }
+
+    return positions;
+  }
+
+  function buildTooltipContent(item, labels) {
+    const raw = item?.data?.raw;
+    const root = document.createElement("div");
+    root.className = "ep-graph-tooltip";
+    if (!raw) {
+      const fallbackTitle = item?.style?.labelText || item?.data?.label || item?.id || "";
+      addEl(root, "div", "ep-graph-tooltip-title", fallbackTitle);
+      return root;
+    }
+
+    addEl(root, "div", "ep-graph-tooltip-title", raw.title || item?.id || "");
+    const tierText = tierName(raw.hierarchyTier, labels);
+    const idPart = raw.localId ? ` · ${raw.localId}` : "";
+    addEl(root, "div", "ep-graph-tooltip-meta", `${tierText}${idPart}`);
+
+    const parts = [];
+    if (Number.isFinite(raw.articleCount)) {
+      parts.push((labels.articlesText || "{n} 條條文").replace("{n}", String(raw.articleCount)));
+    }
+    if (Number.isFinite(raw.totalChildren) && raw.totalChildren > 0) {
+      parts.push((labels.childrenCountText || "{n} 部子法規").replace("{n}", String(raw.totalChildren)));
+    }
+    if (Number.isFinite(raw.invalidationCount) && raw.invalidationCount > 0) {
+      parts.push((labels.invalidationBadge || "{n} 項違憲失效").replace("{n}", String(raw.invalidationCount)));
+    }
+    if (parts.length > 0) {
+      addEl(root, "div", "ep-graph-tooltip-meta", parts.join(" · "));
+    }
+    return root;
+  }
+
   function nodeColors(d, palette) {
     if (d.isCluster === "yes") {
       return {
@@ -619,7 +700,27 @@
           },
         },
       },
-      behaviors: ["drag-canvas", "zoom-canvas", "drag-element"],
+      behaviors: [
+        "drag-canvas",
+        "zoom-canvas",
+        "drag-element",
+        {
+          type: "hover-activate",
+          enable: (e) => e.targetType === "node",
+          degree: 1,
+          state: "active",
+          inactiveState: "inactive",
+          onHover: (e) => {
+            if (e?.view?.setCursor) e.view.setCursor("pointer");
+          },
+          onHoverEnd: (e) => {
+            if (e?.view?.setCursor) e.view.setCursor("default");
+            if (selectedNodeId) {
+              selectNodeById(selectedNodeId);
+            }
+          },
+        },
+      ],
       plugins: [
         {
           type: "minimap",
@@ -631,6 +732,12 @@
             stroke: palette.primary,
             fillOpacity: 0.35,
           },
+        },
+        {
+          type: "tooltip",
+          key: "ontology-tooltip",
+          enable: (e) => e.targetType === "node",
+          getContent: (e, items) => buildTooltipContent(items?.[0], labels),
         },
       ],
     });
@@ -737,7 +844,7 @@
     async function applyLayout(mode, focusTargetId = null) {
       currentLayout = mode;
       graph.setEdge({
-        type: mode === "stufenbau" ? "cubic-horizontal" : "quadratic",
+        type: mode === "concentric" ? "quadratic" : "cubic-horizontal",
         style: edgeStyleMapper,
       });
       if (mode === "concentric") {
@@ -757,6 +864,18 @@
           },
         });
         await graph.layout();
+      } else if (mode === "indented") {
+        const { visibleNodes, visibleEdges } = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+        const positions = computeIndentedPositions(visibleNodes, visibleEdges);
+        const updates = [];
+        graph.getNodeData().forEach((n) => {
+          const p = positions.get(n.id);
+          if (p) updates.push({ id: n.id, style: { x: p.x, y: p.y } });
+        });
+        if (updates.length > 0) {
+          graph.updateNodeData(updates);
+          await graph.draw();
+        }
       } else {
         const { visibleNodes, visibleEdges } = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
         const updated = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
@@ -888,10 +1007,11 @@
         else if (action === "zoom-out") activeGraph.zoomBy(0.84).catch(() => {});
         else if (action === "layout-stufenbau") applyLayout("stufenbau");
         else if (action === "layout-concentric") applyLayout("concentric");
+        else if (action === "layout-indented") applyLayout("indented");
         else if (action === "toggle-edge-labels") {
           showEdgeLabels = !showEdgeLabels;
           activeGraph.setEdge({
-            type: currentLayout === "stufenbau" ? "cubic-horizontal" : "quadratic",
+            type: currentLayout === "concentric" ? "quadratic" : "cubic-horizontal",
             style: edgeStyleMapper,
           });
           activeGraph.draw().catch(() => {});
