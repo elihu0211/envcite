@@ -13,7 +13,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import NamedTuple
 
-from envcite_ontology.db import Conn, fetch, fetch_one, scalar
+from envcite_ontology.db import Conn, fetch, fetch_one
 from envcite_ontology.reasoning import units
 
 # 案件事實的值：數字，或概念代碼（概念取某個值概念）；同一概念可帶多個值。
@@ -85,12 +85,16 @@ _INVALIDATED = """
 """
 
 # 委由授權條文的限值，條文版本在該日已違憲失效（threshold_source_at 因而解析不到）。
-_VOID_LIMIT = """
-    SELECT EXISTS (
-        SELECT 1 FROM annotation.statement_condition AS c
-          JOIN corpus.provision AS dp ON dp.id = c.delegate_provision_id
-          JOIN corpus.invalidations_at(dp.resource_id, %s, %s) AS i ON i.provision_id = dp.id
-         WHERE c.id = %s)
+_VOID_LIMITS_BATCH = """
+    SELECT c.id
+      FROM annotation.statement_condition AS c
+      JOIN corpus.provision AS dp ON dp.id = c.delegate_provision_id
+     WHERE c.id = ANY(%(ids)s::bigint[])
+       AND EXISTS (
+           SELECT 1
+             FROM corpus.invalidations_at(dp.resource_id, %(lang)s, %(on)s) AS i
+            WHERE i.provision_id = dp.id
+       )
 """
 
 _LAWS = """
@@ -145,10 +149,12 @@ _LIMIT = """
      ORDER BY s.condition_id
 """
 
-# 多維適用條件之所有已確認限值候選（取代只取 min(condition_id) 單一列）。
-_LIMITS = """
-    SELECT threshold, statement_id, measurement_method, averaging_period
-      FROM annotation.threshold_sources_at(%s, %s, %s)
+# 多維適用條件之所有已確認限值候選（批次查詢，避免 N+1 round-trip）。
+_LIMITS_BATCH = """
+    SELECT c.id, s.threshold, s.statement_id, s.measurement_method, s.averaging_period
+      FROM unnest(%(ids)s::bigint[]) AS c(id)
+     CROSS JOIN LATERAL annotation.threshold_sources_at(c.id, %(lang)s, %(on)s) AS s
+     ORDER BY c.id, s.statement_id, s.condition_id
 """
 
 # 跨法受控詞彙上位／等同關係（vocab.concept_relation）。
@@ -553,22 +559,75 @@ def _command_chains(
     return {stmt.id: by_law[stmt.law_id] for stmt in statements if stmt.law_id in by_law}
 
 
+@dataclass(frozen=True)
+class _DelegatedLimitRow:
+    condition_id: int
+    threshold: Decimal
+    statement_id: int
+    method: str | None
+    averaging: str | None
+
+
+@dataclass(frozen=True)
+class _VoidLimitRow:
+    condition_id: int
+
+
+def _batch_delegated_limits(
+    conn: Conn, delegated_ids: list[int], language: str, on: date
+) -> tuple[dict[int, list[_DelegatedLimitRow]], set[int]]:
+    if not delegated_ids:
+        return {}, set()
+    limits_by_cond: dict[int, list[_DelegatedLimitRow]] = {}
+    for row in fetch(
+        conn,
+        _LIMITS_BATCH,
+        {"ids": delegated_ids, "lang": language, "on": on},
+        _DelegatedLimitRow,
+    ):
+        limits_by_cond.setdefault(row.condition_id, []).append(row)
+    missing_ids = [cid for cid in delegated_ids if cid not in limits_by_cond]
+    if not missing_ids:
+        return limits_by_cond, set()
+    void_rows = fetch(
+        conn,
+        _VOID_LIMITS_BATCH,
+        {"ids": missing_ids, "lang": language, "on": on},
+        _VoidLimitRow,
+    )
+    return limits_by_cond, {row.condition_id for row in void_rows}
+
+
 def _condition_facts(
     conn: Conn, ids_param: Mapping[str, list[int]], language: str, on: date
 ) -> list[str]:
+    conditions = fetch(conn, _CONDITIONS, ids_param, _ConditionRow)
+    delegated_ids = [
+        cond.id
+        for cond in conditions
+        if cond.value_concept is None
+        and cond.threshold is None
+        and cond.permit is None
+        and cond.delegated
+    ]
+    limits_by_cond, void_ids = _batch_delegated_limits(conn, delegated_ids, language, on)
     out: list[str] = []
-    for cond in fetch(conn, _CONDITIONS, ids_param, _ConditionRow):
+    for cond in conditions:
         out.append(
             f"cond({cond.id},{cond.statement_id},{cond.role},{cond.disjunct},{q(cond.concept)},"
             f"{cond.comparator},{int(cond.negated)})."
         )
         if cond.needs_assessment:
             out.append(f"judgement({cond.id}).")
-        out += _condition_value_facts(conn, cond, language, on)
+        out += _condition_value_facts(cond, limits_by_cond, void_ids)
     return out
 
 
-def _condition_value_facts(conn: Conn, cond: _ConditionRow, language: str, on: date) -> list[str]:
+def _condition_value_facts(
+    cond: _ConditionRow,
+    limits_by_cond: Mapping[int, list[_DelegatedLimitRow]],
+    void_ids: set[int],
+) -> list[str]:
     """要件的比較值：概念值、門檻、許可所載的量值或委由授權條文的限值，擇一。"""
     if cond.value_concept is not None:
         # 比較子只有 eq、ne（資料庫約束）
@@ -578,15 +637,16 @@ def _condition_value_facts(conn: Conn, cond: _ConditionRow, language: str, on: d
     if cond.permit is not None:
         return [f"permit_cond({cond.id},{q(cond.permit)})."]  # 量值由呼叫端隨案件事實提供
     if cond.delegated:
-        return _delegated_facts(conn, cond.id, language, on)
+        return _delegated_facts(cond.id, limits_by_cond.get(cond.id, ()), cond.id in void_ids)
     return []
 
 
-def _delegated_facts(conn: Conn, condition_id: int, language: str, on: date) -> list[str]:
+def _delegated_facts(
+    condition_id: int, limits: Sequence[_DelegatedLimitRow], is_void: bool
+) -> list[str]:
     out = [f"delegated({condition_id})."]
-    limits = fetch(conn, _LIMITS, (condition_id, language, on), Limit)
     if not limits:  # 解析不到則不給 thr，推論程式列為問題而非缺事實
-        if _void_limit(conn, condition_id, language, on):
+        if is_void:
             out.append(f"void_limit({condition_id}).")
         return out
     for limit in limits:
@@ -669,10 +729,6 @@ def _trigger_facts(conn: Conn, ids_param: Mapping[str, list[int]]) -> list[str]:
         if trig.present:
             out.append(f"trigger({trig.statement_id},{trig.trigger},{trig.kind}).")
     return out
-
-
-def _void_limit(conn: Conn, condition_id: int, language: str, on: date) -> bool:
-    return scalar(conn, _VOID_LIMIT, (language, on, condition_id), bool)
 
 
 # 裁處權時效的起算日；值為 YYYYMMDD，不走千分位。刑事程序以不起訴等確定之日（第 26 條第 2 項）

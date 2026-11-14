@@ -2,10 +2,17 @@ using System.Security.Claims;
 
 using EnvCite.Platform.Data;
 
+using Microsoft.Extensions.Caching.Memory;
+
 namespace EnvCite.Platform.Modules.Ontology;
 
-internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modules) : ILawCorpusService
+internal sealed class LawCorpusService(
+    TenantScopes tenants,
+    ITenantModules modules,
+    IMemoryCache cache) : ILawCorpusService
 {
+    private static readonly TimeSpan ReadCacheTtl = TimeSpan.FromSeconds(30);
+
     public Task<AdminOutcome<PortalLawTreeResult>> TreeAsync(
         ClaimsPrincipal user, string? jurisdiction, string? asOf, CancellationToken cancellationToken) =>
         TreeByCategoryAsync(user, jurisdiction, null, asOf, cancellationToken);
@@ -19,7 +26,11 @@ internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modu
         if (!modules.IsEnabled(identifier, ModuleKeys.LawCorpus))
             return AdminOutcome.Forbidden<PortalLawTreeResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
 
-        return await tenants.InByIdentifierAsync(identifier, async scope =>
+        var cacheKey = $"corpus:tree:{jurisdiction}:{categoryPrefix}:{asOf}";
+        if (cache.TryGetValue(cacheKey, out AdminOutcome<PortalLawTreeResult>? cached) && cached is not null)
+            return cached;
+
+        var result = await tenants.InByIdentifierAsync(identifier, async scope =>
         {
             var gateway = scope.Get<OntologyGateway>();
             var outcome = await gateway.ListLawsAsync(jurisdiction, asOf, cancellationToken, categoryPrefix);
@@ -29,6 +40,9 @@ internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modu
             var (laws, available) = outcome.Value;
             return AdminOutcome.Ok(new PortalLawTreeResult(BuildTree(laws), available));
         });
+        if (result.IsOk && result.Value is { CatalogAvailable: true })
+            cache.Set(cacheKey, result, ReadCacheTtl);
+        return result;
     }
 
     public async Task<AdminOutcome<PortalLawGraphResult>> GraphAsync(
@@ -40,11 +54,19 @@ internal sealed class LawCorpusService(TenantScopes tenants, ITenantModules modu
         if (!modules.IsEnabled(identifier, ModuleKeys.LawCorpus))
             return AdminOutcome.Forbidden<PortalLawGraphResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
 
-        return await tenants.InByIdentifierAsync(identifier, async scope =>
+        var focus = query.Focus;
+        var cacheKey = $"corpus:graph:{focus?.Jurisdiction}:{focus?.IdScheme}:{focus?.LocalId}:{query.AsOf}:{query.CategoryPrefix}:{query.UpstreamDepth}:{query.DownstreamDepth}:{query.ChildLimit}:{query.ChildDocumentType}";
+        if (cache.TryGetValue(cacheKey, out AdminOutcome<PortalLawGraphResult>? cached) && cached is not null)
+            return cached;
+
+        var result = await tenants.InByIdentifierAsync(identifier, async scope =>
         {
             var gateway = scope.Get<OntologyGateway>();
             return await gateway.GetLawGraphAsync(query, cancellationToken);
         });
+        if (result.IsOk && result.Value is { Available: true })
+            cache.Set(cacheKey, result, ReadCacheTtl);
+        return result;
     }
 
     public async Task<AdminOutcome<PortalLawCorpusResult>> BrowseAsync(

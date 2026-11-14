@@ -20,6 +20,7 @@ public static class OntologyModule
         services.AddPlatformGrpcClient<ReasoningService.ReasoningServiceClient, OntologyOptions>();
         services.AddSectionOptions<RelevanceFloorsOptions, RelevanceFloorsOptionsValidator>();
         services.AddSectionOptions<LawSearchOptions, LawSearchOptionsValidator>();
+        services.AddMemoryCache();
         services.AddScoped<ILawSearch, LawSearch>();
         services.AddScoped<OntologyGateway>();
         services.AddSingleton<ILawCorpusService, LawCorpusService>();

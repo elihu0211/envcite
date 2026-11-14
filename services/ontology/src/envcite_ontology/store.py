@@ -579,7 +579,15 @@ class OntologyStore:
     @classmethod
     def from_dsn(cls, dsn: str, *, min_size: int = 1, max_size: int = 8) -> Self:
         """以 DSN 建立並開啟連線池，回傳 store。"""
-        return cls(ConnectionPool(dsn, min_size=min_size, max_size=max_size, open=True))
+        return cls(
+            ConnectionPool(
+                dsn,
+                min_size=min_size,
+                max_size=max_size,
+                open=True,
+                kwargs={"prepare_threshold": 1},
+            )
+        )
 
     def close(self) -> None:
         """關閉連線池。"""
@@ -664,36 +672,36 @@ class OntologyStore:
             focus_id = found[0]
 
         on = _date(as_of)
-        res_info, parents_of, children_of = self._load_graph_topology(
-            on, timeout=_remaining(deadline)
-        )
-        tiers = _compute_tiers(res_info, children_of, parents_of)
-        selected = _select_subgraph_nodes(
-            focus_id=focus_id,
-            res_info=res_info,
-            parents_of=parents_of,
-            children_of=children_of,
-            category_prefix=category_prefix,
-            upstream_depth=upstream_depth,
-            downstream_depth=downstream_depth,
-            child_limit=child_limit,
-            child_document_type=child_document_type,
-        )
-        return self._assemble_graph(
-            focus_id=focus_id,
-            selected=selected,
-            res_info=res_info,
-            children_of=children_of,
-            tiers=tiers,
-            on=on,
-            deadline=deadline,
-        )
+        with self.read_connection(timeout=_remaining(deadline)) as conn:
+            res_info, parents_of, children_of = self._load_graph_topology(conn, on)
+            tiers = _compute_tiers(res_info, children_of, parents_of)
+            selected = _select_subgraph_nodes(
+                focus_id=focus_id,
+                res_info=res_info,
+                parents_of=parents_of,
+                children_of=children_of,
+                category_prefix=category_prefix,
+                upstream_depth=upstream_depth,
+                downstream_depth=downstream_depth,
+                child_limit=child_limit,
+                child_document_type=child_document_type,
+            )
+            return self._assemble_graph(
+                conn=conn,
+                focus_id=focus_id,
+                selected=selected,
+                res_info=res_info,
+                children_of=children_of,
+                tiers=tiers,
+                on=on,
+            )
 
+    @staticmethod
     def _load_graph_topology(
-        self, on: str, *, timeout: float | None
+        conn: psycopg.Connection[tuple[Any, ...]], on: str
     ) -> tuple[dict[int, tuple[str, str, str]], dict[int, list[int]], dict[int, list[int]]]:
         params = {"language": LANGUAGE, "on": on}
-        with self.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
+        with conn.cursor() as cur:
             cur.execute(_GRAPH_RESOURCES, params)
             res_info: dict[int, tuple[str, str, str]] = {
                 int(rid): (str(nk), str(dt), str(lid)) for rid, nk, dt, lid in cur.fetchall()
@@ -707,23 +715,23 @@ class OntologyStore:
                 parents_of[dst].append(src)
         return res_info, parents_of, children_of
 
+    @staticmethod
     def _assemble_graph(
-        self,
         *,
+        conn: psycopg.Connection[tuple[Any, ...]],
         focus_id: int | None,
         selected: set[int],
         res_info: dict[int, tuple[str, str, str]],
         children_of: dict[int, list[int]],
         tiers: dict[int, int],
         on: str,
-        deadline: float | None,
     ) -> LawGraphRecord:
         ids = sorted(selected)
         node_map: dict[int, LawGraphNodeRecord] = {}
         edges: list[LawGraphEdgeRecord] = []
         violations: list[ArticleViolationLinkRecord] = []
         guidances: list[GuidanceLinkRecord] = []
-        with self.read_connection(timeout=_remaining(deadline)) as conn, conn.cursor() as cur:
+        with conn.cursor() as cur:
             if ids:
                 cur.execute(_GRAPH_NODE_DETAILS, {"ids": ids, "language": LANGUAGE, "on": on})
                 node_map = _build_node_map(cur.fetchall(), children_of, selected, tiers)
