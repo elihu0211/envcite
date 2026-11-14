@@ -2139,9 +2139,6 @@
   <data name="法律直接授權" xml:space="preserve">
     <value>Direct statutory delegation</value>
   </data>
-  <data name="法規位階圖例" xml:space="preserve">
-    <value>Legal hierarchy legend</value>
-  </data>
   <data name="法規檢索與篩選" xml:space="preserve">
     <value>Search and filter laws</value>
   </data>
@@ -2216,9 +2213,6 @@
   </data>
   <data name="違反行為義務" xml:space="preserve">
     <value>Duty Obligation</value>
-  </data>
-  <data name="違憲失效（憲法法庭）" xml:space="preserve">
-    <value>Constitutional Invalidation (Constitutional Court)</value>
   </data>
   <data name="部授權法規（點擊展開）" xml:space="preserve">
     <value>more delegated regulations (click to expand)</value>
@@ -2559,7 +2553,7 @@
   <data name="全螢幕" xml:space="preserve">
     <value>Fullscreen</value>
   </data>
-  <data name="點擊節點檢視詳情 · 雙擊以此法為中心 · 右鍵快捷選單 · 滾輪縮放 · Esc 收起面板" xml:space="preserve">
-    <value>Click node for details · Double-click to focus · Right-click for menu · Scroll to zoom · Esc to close</value>
+  <data name="圖譜視角控制" xml:space="preserve">
+    <value>Graph viewport controls</value>
   </data>
 </root>
