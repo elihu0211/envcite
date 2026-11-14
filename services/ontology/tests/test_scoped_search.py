@@ -11,7 +11,7 @@ import psycopg
 from envcite_ontology import projection
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.ingest import importer
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 from tests.test_hybrid import FakeEmbedder
@@ -63,11 +63,11 @@ def test_without_a_scope_it_returns_exactly_what_the_store_returns(
     queries = [f"{a}{b}" for a in THEMES for b in THEMES if a != b][:40]
     assert len(queries) >= 30
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         for query in queries:
             terms = segmenter.to_tsvector_input(query)
             for vector, model in ((None, ""), (embedder.embed([query])[0], embedder.model)):
-                expected = store.search(
+                expected = store.retrieval.search(
                     terms,
                     tokenizer=segmenter.tokenizer_id,
                     as_of=ON,
@@ -90,7 +90,7 @@ def test_without_a_scope_it_returns_exactly_what_the_store_returns(
 def test_a_scope_limits_the_pool_before_candidates_are_taken(
     conn: Conn, tmp_path: Path, store: OntologyStore
 ) -> None:
-    lexicon = store.lexicon()
+    lexicon = store.retrieval.lexicon()
     tool = _tool()
     _import(conn, tmp_path)
     embedder = FakeEmbedder()

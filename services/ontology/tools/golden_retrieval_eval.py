@@ -16,7 +16,7 @@ is `unmapped`: listed with the reason, never in the qrels, never scored as a mis
 not in the qrels either; they measure refusal. The qrels records the golden set's sha256 and the
 corpus snapshots it was mapped against; a measurement on other snapshots stops (map again).
 
-`measure` searches the questions of one split subset with the same `OntologyStore.search` the
+`measure` searches the questions of one split subset with the same `RetrievalRepository.search` the
 service uses, writes one run per arm (`<out>.<arm>.run.json`) and a report scored from qrels and
 run by ranx: R@k is ranx `hit_rate@k` (any article of relevance ≥ `relevant_from` within the
 top k), MRR is ranx `mrr`, nDCG@10 is ranx `ndcg@10` on the graded relevance. Hole@10 is the share
@@ -82,9 +82,12 @@ from scoped_search import resource_ids, scoped_search
 from envcite_ontology import reranking
 from envcite_ontology.law_names import LawNames
 from envcite_ontology.reranking import Reranks
-from envcite_ontology.service import DEFAULT_RERANK_CANDIDATES
+from envcite_ontology.search_tuning import DEFAULT_RERANK_CANDIDATES
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
-from envcite_ontology.store import SEARCH_POOL, OntologyStore, SearchHit
+from envcite_ontology.store.ontology_store import OntologyStore
+from envcite_ontology.store.ports import Retrieval
+from envcite_ontology.store.records import SearchHit
+from envcite_ontology.store.retrieval import SEARCH_POOL
 from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
 
@@ -349,7 +352,7 @@ def publishable(r: Measured) -> dict[str, Any]:
 
 
 def _retrieve(
-    store: OntologyStore,
+    retrieval: Retrieval,
     segmenter: Segmenter,
     r: Measured,
     embedder: Embeds | None,
@@ -380,7 +383,7 @@ def _retrieve(
             scope=pool[1],
         )
     else:
-        hits = store.search(
+        hits = retrieval.search(
             terms,
             tokenizer=segmenter.tokenizer_id,
             as_of=on,
@@ -402,7 +405,7 @@ def _retrieve(
 
 
 def search_all(
-    store: OntologyStore,
+    retrieval: Retrieval,
     segmenter: Segmenter,
     rows: Sequence[Measured],
     embedder: Embeds | None,
@@ -437,7 +440,7 @@ def search_all(
             out.append(r)
             continue
         hits, dropped = _retrieve(
-            store,
+            retrieval,
             segmenter,
             r,
             embedder,
@@ -496,7 +499,7 @@ def ranking_of(rows: Iterable[Measured]) -> gs.Ranking:
 
 
 def check_equivalence(
-    store: OntologyStore,
+    retrieval: Retrieval,
     conn: psycopg.Connection[Any],
     segmenter: Segmenter,
     results: Sequence[Measured],
@@ -505,7 +508,7 @@ def check_equivalence(
     on: str,
     n: int = 40,
 ) -> dict[str, Any]:
-    """不加範圍時，`scoped_search` 與 `OntologyStore.search` 對 n 題（等距抽樣）的輸出
+    """不加範圍時，`scoped_search` 與 `RetrievalRepository.search` 對 n 題（等距抽樣）的輸出
     是否完全相同。"""
     rows = [r for r in results if r.status != "unmapped"]
     sample = rows[:: max(1, len(rows) // n)][:n]
@@ -522,7 +525,7 @@ def check_equivalence(
                 "model": embedder.model if (embedder and emb is not None) else "",
             }
             compared += 1
-            identical += store.search(terms, **args) == scoped_search(conn, terms, **args)
+            identical += retrieval.search(terms, **args) == scoped_search(conn, terms, **args)
     return {"questions": len(sample), "comparisons": compared, "identical": identical}
 
 
@@ -803,13 +806,17 @@ def cmd_measure(args: argparse.Namespace) -> None:
         psycopg.connect(db.dsn) as rconn,
     ):
         rconn.read_only = True
-        segmenter = Segmenter(store.lexicon())
-        law_names = None if args.no_law_names else store.law_names()
+        segmenter = Segmenter(store.retrieval.lexicon())
+        law_names = None if args.no_law_names else store.retrieval.law_names()
         pool = (rconn, resource_ids(rconn, sorted(scope))) if args.scope_in_pool and scope else None
         if pool:
-            equivalence = check_equivalence(store, rconn, segmenter, rows, embedder, on=on)
+            equivalence = check_equivalence(
+                store.retrieval, rconn, segmenter, rows, embedder, on=on
+            )
             if equivalence["identical"] != equivalence["comparisons"]:
-                raise SystemExit(f"scoped_search 與 OntologyStore.search 不等價：{equivalence}")
+                raise SystemExit(
+                    f"scoped_search 與 RetrievalRepository.search 不等價：{equivalence}"
+                )
         base = "hybrid" if embedder else "lexical"
         specs: list[tuple[str, Embeds | None, int | None]] = [("lexical", None, None)]
         if embedder:
@@ -820,7 +827,7 @@ def cmd_measure(args: argparse.Namespace) -> None:
         hits_cache: dict[tuple[str, str], tuple[list[SearchHit], int | None]] = {}
         arms = {
             name: search_all(
-                store,
+                store.retrieval,
                 segmenter,
                 rows,
                 e,

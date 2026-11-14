@@ -6,7 +6,7 @@
     # 比對兩次的結果：名次、IRI、字面分數逐一相同才算一致
     uv run python tools/lexical_latency.py compare <before.json> <after.json>
 
-只走字面臂（不設嵌入）：`OntologyStore.search` 與服務同一條路徑，`limit` 取服務上限 50。
+只走字面臂（不設嵌入）：`RetrievalRepository.search` 與服務同一條路徑，`limit` 取服務上限 50。
 資料庫由 ENVCITE_ONTOLOGY_DSN 給。輸出不含題目文字，只有題號與結果。
 """
 
@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from envcite_ontology.service import MAX_SEARCH_LIMIT
 from envcite_ontology.settings import DatabaseSettings, ServerSettings, load
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 
 
@@ -45,10 +45,10 @@ def run(args: argparse.Namespace) -> None:
     )
     db = load(DatabaseSettings)
     with OntologyStore.from_dsn(db.dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
 
         def search(terms: str) -> list[dict[str, object]]:
-            hits = store.search(
+            hits = store.retrieval.search(
                 terms,
                 tokenizer=segmenter.tokenizer_id,
                 limit=MAX_SEARCH_LIMIT,

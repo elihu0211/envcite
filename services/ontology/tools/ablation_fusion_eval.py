@@ -47,7 +47,9 @@ import golden_set as gs
 
 from envcite_ontology.embedding import to_sql
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
-from envcite_ontology.store import LANGUAGE, SEARCH_POOL, OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
+from envcite_ontology.store.records import LANGUAGE
+from envcite_ontology.store.retrieval import SEARCH_POOL
 from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
 
@@ -219,7 +221,7 @@ def collect(
 
 
 def service_relation(service: Sequence[str], fused: Sequence[str]) -> str:
-    """服務對外的清單（`store.search`）與同一候選池的融合清單的關係。
+    """服務對外的清單（`store.retrieval.search`）與同一候選池的融合清單的關係。
 
     服務在融合清單之後做罰則帶出（`search_expanded`）：處罰某一條的罰則條緊接在它之後插入；
     若那條本來也在融合清單的後段，就被拉到前面。清單長度上限再把尾端（含被拉走之處以後的條）截掉。
@@ -269,8 +271,8 @@ def cmd_arms(args: argparse.Namespace) -> None:
         if args.ef_search is not None:
             conn.execute("SELECT '[1]'::vector")
             conn.execute("SELECT set_config('hnsw.ef_search', %s, false)", (str(args.ef_search),))
-        segmenter = Segmenter(store.lexicon())
-        law_names = store.law_names()
+        segmenter = Segmenter(store.retrieval.lexicon())
+        law_names = store.retrieval.law_names()
         for done, r in enumerate(rows, 1):
             if done % 20 == 0:
                 print(f"{done}/{len(rows)} 題", file=sys.stderr, flush=True)
@@ -292,7 +294,7 @@ def cmd_arms(args: argparse.Namespace) -> None:
             if args.ef_search is None and SEARCH_POOL in pools:
                 service = [
                     gs.doc_id(h.local_id, h.number, h.jurisdiction)
-                    for h in store.search(
+                    for h in store.retrieval.search(
                         terms,
                         tokenizer=segmenter.tokenizer_id,
                         as_of=on,
@@ -331,7 +333,7 @@ def cmd_arms(args: argparse.Namespace) -> None:
                 "hnsw_ef_search_is_service_setting": args.ef_search is None,
                 "near_probe": probe,
             },
-            #: 候選池 = 服務現行值時，服務對外的 `store.search` 與這裡的融合清單逐題比對關係
+            #: 候選池 = 服務現行值時，服務對外的 `retrieval.search` 與這裡的融合清單逐題比對關係
             #: （`service_relation`）；改了 ef_search 的收集不走服務的連線，不比對。
             "service_path_check": (
                 {

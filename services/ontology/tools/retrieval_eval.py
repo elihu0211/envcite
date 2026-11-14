@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import golden_set as gs
 
 from envcite_ontology.settings import DatabaseSettings, ModelsSettings, load
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_ontology.verification import config
 from envcite_segmenter import Segmenter
 
@@ -162,7 +162,7 @@ def search_all(
     out = []
     for item in items:
         vector = embedder.embed([item["question"]])[0] if embedder else None
-        hits = store.search(
+        hits = store.retrieval.search(
             segmenter.to_tsvector_input(item["question"]),
             tokenizer=segmenter.tokenizer_id,
             as_of=on,
@@ -278,7 +278,7 @@ def main() -> None:
     ]
     embedder = config.embedder_from_settings(load(ModelsSettings), timeout=30.0)
     with OntologyStore.from_dsn(db.dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         lexical = search_all(store, segmenter, items, None, k=args.k, on=on.isoformat())
         hybrid = (
             search_all(store, segmenter, items, embedder, k=args.k, on=on.isoformat())

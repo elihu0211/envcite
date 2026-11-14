@@ -10,19 +10,20 @@ import grpc
 from envcite.ontology.v2 import ontology_pb2 as pb
 from envcite_grpc import remaining_seconds
 from envcite_ontology import errors
-from envcite_ontology.store import LawKey, OntologyStore
+from envcite_ontology.store.ports import LawReader
+from envcite_ontology.store.records import LawKey
 
 
 def law_key(
-    store: OntologyStore,
+    laws: LawReader,
     identifier: pb.LawIdentifier,
     v: errors.Validator,
     field: str = "identifier",
 ) -> LawKey:
     """驗證並取出自然鍵；違規加進 `v`，由呼叫端 `v.check()` 一次回報。"""
     for name, value, known in (
-        ("jurisdiction", identifier.jurisdiction, store.jurisdictions),
-        ("id_scheme", identifier.id_scheme, store.id_schemes),
+        ("jurisdiction", identifier.jurisdiction, laws.jurisdictions),
+        ("id_scheme", identifier.id_scheme, laws.id_schemes),
         ("local_id", identifier.local_id, None),
     ):
         path = f"{field}.{name}"
@@ -34,16 +35,16 @@ def law_key(
 
 
 def jurisdiction_filter(
-    store: OntologyStore, jurisdiction: str, v: errors.Validator, field: str = "jurisdiction"
+    laws: LawReader, jurisdiction: str, v: errors.Validator, field: str = "jurisdiction"
 ) -> str | None:
     """可選的管轄過濾：留空為全部管轄（不是預設某一管轄）；有值則必須是綱要接受的。"""
     if not jurisdiction:
         return None
-    if jurisdiction not in store.jurisdictions:
+    if jurisdiction not in laws.jurisdictions:
         v.add(
             field,
             errors.UNKNOWN_VALUE,
-            f"{field} must be one of: {', '.join(sorted(store.jurisdictions))}",
+            f"{field} must be one of: {', '.join(sorted(laws.jurisdictions))}",
         )
     return jurisdiction
 
@@ -54,10 +55,10 @@ def subject(identifier: pb.LawIdentifier) -> str:
 
 
 def not_found(
-    store: OntologyStore, key: LawKey, as_of: str, context: grpc.ServicerContext
+    laws: LawReader, key: LawKey, as_of: str, context: grpc.ServicerContext
 ) -> errors.ServiceError:
     """查無結果時的錯誤：法規存在但 `as_of` 當天沒有版本，與法規本身不存在，原因不同。"""
-    if store.law_exists(key, timeout=remaining_seconds(context)):
+    if laws.law_exists(key, timeout=remaining_seconds(context)):
         when = f"in force on {as_of}" if as_of else "in force today"
         return errors.not_found(errors.AS_OF_NOT_COVERED, f"law '{key}' has no version {when}")
     return errors.not_found(errors.LAW_NOT_FOUND, f"law '{key}' not found")

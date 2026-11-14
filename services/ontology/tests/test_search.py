@@ -13,7 +13,7 @@ import pytest
 
 from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
 from envcite_ontology.server import build_server
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 
 from .conftest import call_metadata
@@ -39,7 +39,7 @@ def search_stub(
     assert expression is not None
     conn.commit()
 
-    segmenter = Segmenter(store.lexicon())
+    segmenter = Segmenter(store.retrieval.lexicon())
     for number, content in (
         ("9", "工廠不得發出超過管制標準之噪音。"),
         ("10", "主管機關應定期檢查。"),
@@ -146,7 +146,7 @@ def test_a_different_tokenizer_matches_nothing(
     search_stub: ontology_pb2_grpc.OntologyServiceStub, store: OntologyStore
 ) -> None:
     # Lexemes from another segmenter are not the same lexemes: fewer rows, not wrong ones.
-    assert store.search("噪音", tokenizer="another-segmenter", as_of="2021-01-01") == []
+    assert store.retrieval.search("噪音", tokenizer="another-segmenter", as_of="2021-01-01") == []
 
 
 def test_term_coverage_is_the_share_of_query_terms_the_article_holds(

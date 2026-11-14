@@ -11,7 +11,8 @@ import psycopg
 from envcite_ontology import projection
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.ingest import importer
-from envcite_ontology.store import SEARCH_POOL, OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
+from envcite_ontology.store.retrieval import SEARCH_POOL
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 from tests.test_hybrid import FakeEmbedder
@@ -59,7 +60,7 @@ def test_without_a_scope_nothing_changes(conn: Conn, tmp_path: Path, dsn: str) -
     embedder = _corpus(conn, tmp_path)
     _previous(conn)
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         for query in ("廢水 檢查", "噪音", "地震 建物", "檢查"):
             terms = segmenter.to_tsvector_input(query)
             for vector, model in ((None, ""), (embedder.embed([query])[0], embedder.model)):
@@ -92,7 +93,7 @@ def test_both_arms_stay_inside_the_scope(conn: Conn, tmp_path: Path, dsn: str) -
     embedder = _corpus(conn, tmp_path)
     scope = [_resource(conn, "T0000002")]
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         # 「檢查」三部法規都有；「廢水」只在另一部：字面臂在範圍內找不到它
         for query in ("檢查", "廢水"):
             vector = embedder.embed([query])[0]
@@ -122,15 +123,15 @@ def test_the_search_follows_the_named_laws_and_falls_back_to_everything(
 ) -> None:
     _corpus(conn, tmp_path)
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         tokenizer = segmenter.tokenizer_id
         terms = segmenter.to_tsvector_input("檢查")
-        assert {h.local_id for h in store.search(terms, tokenizer=tokenizer, as_of=ON)} == {
-            p for p, *_ in LAWS
-        }
-        scoped = store.search(terms, tokenizer=tokenizer, as_of=ON, laws=["T0000003"])
+        assert {
+            h.local_id for h in store.retrieval.search(terms, tokenizer=tokenizer, as_of=ON)
+        } == {p for p, *_ in LAWS}
+        scoped = store.retrieval.search(terms, tokenizer=tokenizer, as_of=ON, laws=["T0000003"])
         assert {h.local_id for h in scoped} == {"T0000003"}
         # 點名的法規裡沒有任何命中（字面臂找不到、沒有向量）：改在全庫找，不回空
         elsewhere = segmenter.to_tsvector_input("廢水")
-        hits = store.search(elsewhere, tokenizer=tokenizer, as_of=ON, laws=["T0000002"])
+        hits = store.retrieval.search(elsewhere, tokenizer=tokenizer, as_of=ON, laws=["T0000002"])
         assert {h.local_id for h in hits} == {"T0000001"}

@@ -19,7 +19,7 @@ from typing import Any
 from opentelemetry import metrics
 from opentelemetry.metrics import CallbackOptions, Meter, Observation
 
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ports import ReadConnections
 
 log = logging.getLogger(__name__)
 
@@ -67,19 +67,19 @@ class RerankMetrics:
         )
 
 
-def register_annotation_health(store: OntologyStore, meter: Meter | None = None) -> None:
+def register_annotation_health(connections: ReadConnections, meter: Meter | None = None) -> None:
     """標註管線的資料面：每次收集時讀兩個健康檢視（兩個小聚合，成本可忽略）。"""
     meter = meter or metrics.get_meter(METER_NAME)
 
     def statements(_: CallbackOptions) -> Iterable[Observation]:
         for state, count in _rows(
-            store, "SELECT state, statements FROM annotation.statement_health"
+            connections, "SELECT state, statements FROM annotation.statement_health"
         ):
             yield Observation(count, {"state": state})
 
     def gates(_: CallbackOptions) -> Iterable[Observation]:
         for method, verdict, count in _rows(
-            store, "SELECT method, verdict, statements FROM annotation.gate_health"
+            connections, "SELECT method, verdict, statements FROM annotation.gate_health"
         ):
             yield Observation(int(count), {"method": str(method), "verdict": str(verdict)})
 
@@ -95,9 +95,9 @@ def register_annotation_health(store: OntologyStore, meter: Meter | None = None)
     )
 
 
-def _rows(store: OntologyStore, sql: str) -> list[tuple[Any, ...]]:
+def _rows(connections: ReadConnections, sql: str) -> list[tuple[Any, ...]]:
     try:
-        with store.read_connection(timeout=5.0) as conn:
+        with connections.read_connection(timeout=5.0) as conn:
             return [tuple(row) for row in conn.execute(sql)]
     except Exception:  # 指標回呼不能拖垮服務：資料庫暫時查不到就這一輪沒有資料
         log.warning("annotation health metrics unavailable", exc_info=True)

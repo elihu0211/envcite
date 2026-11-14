@@ -5,7 +5,7 @@ import psycopg
 from envcite_ontology import projection
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.ingest import importer
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
@@ -25,8 +25,8 @@ def _tokenizers(conn: Conn) -> set[str]:
 
 def _found(dsn: str, query: str) -> set[tuple[str, str]]:
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
-        hits = store.search(
+        segmenter = Segmenter(store.retrieval.lexicon())
+        hits = store.retrieval.search(
             segmenter.to_tsvector_input(query),
             tokenizer=segmenter.tokenizer_id,
             as_of="2020-01-01",

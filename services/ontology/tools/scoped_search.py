@@ -4,7 +4,7 @@
 
 服務端的函式不動、不遷移：這裡逐字重現 0039_hybrid_tiebreak.sql 的 `search_hybrid`（同一個
 `ts_rank_cd`、`terms_to_tsquery`、候選池與同分次序、名次倒數融合 k = 60）與
-`OntologyStore.search` 的外層查詢，只在兩臂取候選的 WHERE 加 `resource_id = ANY(範圍)`。
+`RetrievalRepository.search` 的外層查詢，只在兩臂取候選的 WHERE 加 `resource_id = ANY(範圍)`。
 `scope=None` 時查詢與服務端相同，`tests/test_scoped_search.py` 以同一語料比對兩者的輸出完全相同。
 
 語意臂的 HNSW 近鄰（`near`）不加範圍條件：近似最近鄰只能先排序後過濾，加在其後的 `sem` 才是
@@ -19,7 +19,8 @@ from typing import Any
 import psycopg
 
 from envcite_ontology.embedding import to_sql
-from envcite_ontology.store import LANGUAGE, SEARCH_POOL, SearchHit
+from envcite_ontology.store.records import LANGUAGE, SearchHit
+from envcite_ontology.store.retrieval import SEARCH_POOL
 
 _SQL = """
 WITH q AS (SELECT retrieval.terms_to_tsquery(%(terms)s) AS query),
@@ -123,7 +124,7 @@ def scoped_search(
     model: str = "",
     scope: Sequence[int] | None = None,
 ) -> list[SearchHit]:
-    """與 `OntologyStore.search` 同簽章；`scope`（內部法規編號）給定時兩臂的候選池只含範圍內。"""
+    """與 `RetrievalRepository.search` 同簽章；`scope`（內部法規編號）給定時候選池只含範圍內。"""
     fragment = _IN_SCOPE if scope is not None else ""
     rows = conn.execute(
         _SQL.format(scope=fragment),

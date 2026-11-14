@@ -23,7 +23,7 @@ from envcite_ontology.embedding import (
     PayloadTooLarge,
 )
 from envcite_ontology.http import USER_AGENT
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
@@ -68,8 +68,8 @@ def _corpus(conn: Conn, tmp_path: Path) -> None:
 
 def _search(dsn: str, query: str, embedder: FakeEmbedder | None) -> list[tuple[str, float, Any]]:
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
-        hits = store.search(
+        segmenter = Segmenter(store.retrieval.lexicon())
+        hits = store.retrieval.search(
             segmenter.to_tsvector_input(query),
             tokenizer=segmenter.tokenizer_id,
             as_of=ON,
@@ -154,7 +154,13 @@ def test_without_a_query_vector_only_the_words_count(conn: Conn, tmp_path: Path,
 def test_a_failing_embedder_does_not_fail_the_search(store: OntologyStore) -> None:
     from envcite_ontology.service import OntologyServicer
 
-    servicer = OntologyServicer(store, Segmenter([]), Broken())  # type: ignore[arg-type]
+    servicer = OntologyServicer(
+        store.laws,
+        store.graph,
+        store.retrieval,
+        Segmenter([]),
+        Broken(),  # type: ignore[arg-type]
+    )
 
     assert servicer._query_embedding("噪音") is None
 

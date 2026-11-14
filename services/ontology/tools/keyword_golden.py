@@ -220,7 +220,7 @@ def renamed_items(
     conn: psycopg.Connection[Any], as_of: str
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """舊名題與被丟棄的（舊名出現在現行條文裡）：標準答案是改名後的法規。"""
-    from envcite_ontology.store import OntologyStore
+    from envcite_ontology.store.ontology_store import OntologyStore
     from envcite_segmenter import Segmenter
 
     rows = conn.execute(
@@ -260,7 +260,7 @@ def renamed_items(
     ]
     store = OntologyStore.from_dsn(load(ServerSettings).dsn)
     try:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
     finally:
         store.close()
     items: list[dict[str, Any]] = []

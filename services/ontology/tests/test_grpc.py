@@ -16,7 +16,7 @@ from envcite_grpc import stop_on_sigterm
 from envcite_ontology import errors, projection
 from envcite_ontology.ruling import load
 from envcite_ontology.server import build_server
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 
 from .conftest import call_metadata, identifier
 

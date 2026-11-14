@@ -16,7 +16,7 @@ from envcite.ontology.v2 import reasoning_pb2 as pb
 from envcite_ontology import reasoning_codec as codec
 from envcite_ontology.db import Conn, fetch
 from envcite_ontology.reasoning.facts import Invalidated
-from envcite_ontology.store import LANGUAGE
+from envcite_ontology.store.records import LANGUAGE
 
 _STATEMENTS = """
     SELECT s.id, s.statement_kind::text, s.norm_modality::text, corpus.version_iri(r.version_id)

@@ -12,7 +12,7 @@ import psycopg
 from envcite_ontology import projection
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.ingest import importer
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.sample import stored_snapshot
 from tests.test_hybrid import FakeEmbedder
@@ -104,7 +104,7 @@ def test_the_report_measures_both_arms(conn: Conn, tmp_path: Path, dsn: str) -> 
         {"id": "n1", "kind": "out_of_scope", "question": "紅燒肉"},
     ]
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         lexical = tool.search_all(store, segmenter, items, None, k=10, on="2019-06-01")
         hybrid = tool.search_all(store, segmenter, items, embedder, k=10, on="2019-06-01")
 

@@ -12,7 +12,8 @@ from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
 from envcite_ontology.guidance import load
 from envcite_ontology.guidance_search import EXTRA, fuse, guidance_phrases
 from envcite_ontology.server import build_server
-from envcite_ontology.store import OntologyStore, SearchHit
+from envcite_ontology.store.ontology_store import OntologyStore
+from envcite_ontology.store.records import SearchHit
 from tests.conftest import call_metadata
 from tests.test_annotation import LAW
 from tests.test_guidance import _doc, _letter

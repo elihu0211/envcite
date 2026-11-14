@@ -14,7 +14,7 @@ from envcite_ontology import projection
 from envcite_ontology.acquire.moj import Moj, content_sha256, pcode
 from envcite_ontology.ingest import audit, importer
 from envcite_ontology.ingest.importer import Outcome
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
@@ -274,10 +274,10 @@ def test_a_correction_below_the_article_reaches_the_search_index(
     projection.rebuild(conn)
 
     with OntologyStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
 
         def found(query: str) -> bool:
-            hits = store.search(
+            hits = store.retrieval.search(
                 segmenter.to_tsvector_input(query),
                 tokenizer=segmenter.tokenizer_id,
                 as_of="2020-01-01",

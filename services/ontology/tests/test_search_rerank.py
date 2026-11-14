@@ -18,9 +18,10 @@ from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
 from envcite_ontology.law_names import LawNames
 from envcite_ontology.reranking import RerankError
+from envcite_ontology.search_tuning import SearchTuning
 from envcite_ontology.server import build_server
 from envcite_ontology.service import OntologyServicer
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 
 from .conftest import call_metadata
@@ -73,7 +74,7 @@ def serve(conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore) ->
     assert expression is not None
     conn.commit()
 
-    segmenter = Segmenter(store.lexicon())
+    segmenter = Segmenter(store.retrieval.lexicon())
     for number, content in ARTICLES:
         conn.execute(
             """
@@ -211,11 +212,13 @@ def test_full_rerank_slots_fall_back_instead_of_waiting(store: OntologyStore, se
 
     reranker = FakeReranker()
     servicer = OntologyServicer(
-        store,
-        Segmenter(store.lexicon()),
+        store.laws,
+        store.graph,
+        store.retrieval,
+        Segmenter(store.retrieval.lexicon()),
         LawNames({}),
         reranker=reranker,
-        rerank_slots=0,
+        tuning=SearchTuning(rerank_slots=0),
     )
 
     response = servicer.SearchArticles(
@@ -306,11 +309,13 @@ def test_full_slots_are_counted_as_busy_without_an_endpoint_time(
 
     reader, meter = _metered()
     servicer = OntologyServicer(
-        store,
-        Segmenter(store.lexicon()),
+        store.laws,
+        store.graph,
+        store.retrieval,
+        Segmenter(store.retrieval.lexicon()),
         LawNames({}),
         reranker=FakeReranker(),
-        rerank_slots=0,
+        tuning=SearchTuning(rerank_slots=0),
         meter=meter,
     )
 

@@ -19,7 +19,7 @@ import pytest
 from envcite_ontology import projection
 from envcite_ontology.acquire.moj import Moj
 from envcite_ontology.ingest import importer
-from envcite_ontology.store import OntologyStore
+from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 from tests.test_hybrid import FakeEmbedder
@@ -124,7 +124,7 @@ def test_offline_fusion_returns_the_very_list_the_service_returns(
     conn.commit()
     queries = [f"{a}{b}" for a in THEMES for b in THEMES if a != b][:30]
     with OntologyStore.from_dsn(dsn) as store, psycopg.connect(dsn) as read:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         for query in queries:
             got = tool.collect(
                 read,
@@ -153,7 +153,7 @@ def test_the_semantic_arm_runs_without_the_lexical_arm_and_the_lexical_arm_witho
     projection.rebuild(conn, embedder)  # type: ignore[arg-type]
     conn.commit()
     with OntologyStore.from_dsn(dsn) as store, psycopg.connect(dsn) as read:
-        segmenter = Segmenter(store.lexicon())
+        segmenter = Segmenter(store.retrieval.lexicon())
         common = {
             "tokenizer": segmenter.tokenizer_id,
             "on": ON,
