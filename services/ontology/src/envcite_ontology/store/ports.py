@@ -6,10 +6,9 @@
 
 from collections.abc import Sequence
 from contextlib import AbstractContextManager
-from typing import Any, Protocol
+from typing import Protocol
 
-import psycopg
-
+from envcite_ontology.db import Conn
 from envcite_ontology.law_names import LawNames
 from envcite_ontology.store.records import (
     ArticleDetailRecord,
@@ -23,16 +22,11 @@ from envcite_ontology.store.records import (
     StructureHeadingRecord,
 )
 
-#: 唯讀連線的列保持未定型（`read_connection` 的說明）。
-type ReadConnection = psycopg.Connection[tuple[Any, ...]]
-
 
 class ReadConnections(Protocol):
     """唯讀連線的來源：期限同時是等連線的上限與 `statement_timeout`。"""
 
-    def read_connection(
-        self, *, timeout: float | None = None
-    ) -> AbstractContextManager[ReadConnection]:
+    def read_connection(self, *, timeout: float | None = None) -> AbstractContextManager[Conn]:
         """唯讀連線，在一個交易內（結束時一律回滾）。"""
         ...
 
@@ -40,7 +34,7 @@ class ReadConnections(Protocol):
 class ConnectionSource(ReadConnections, Protocol):
     """唯讀連線之外，還能給啟動時讀一次的查詢（詞典、法規名稱、列舉）一條普通連線。"""
 
-    def connection(self) -> AbstractContextManager[ReadConnection]:
+    def connection(self) -> AbstractContextManager[Conn]:
         """池裡的一條連線，沒有交易外的限制。"""
         ...
 

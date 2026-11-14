@@ -1,7 +1,9 @@
 """混合檢索：字面臂與語意臂的候選、函釋入口、問句點名的法規，與斷詞用的詞典。"""
 
 from collections.abc import Sequence
+from typing import NamedTuple
 
+from envcite_ontology.db import fetch, fetch_one
 from envcite_ontology.embedding import to_sql
 from envcite_ontology.law_names import LawNames
 from envcite_ontology.store.params import as_of_param, expiry, time_left
@@ -62,6 +64,30 @@ _GUIDANCE = """
 SEARCH_POOL = 50
 
 
+class _TitleRow(NamedTuple):
+    title: str
+
+
+class _LawTitleRow(NamedTuple):
+    title: str
+    pcodes: list[str]
+
+
+class _GuidanceRow(NamedTuple):
+    iri: str
+    jurisdiction: str
+    id_scheme: str
+    local_id: str
+    law_title: str
+    number: str
+    content: str
+    documents: int
+
+
+class _PrunedRow(NamedTuple):
+    terms: str
+
+
 class RetrievalRepository:
     """檢索的唯讀查詢；連線由外面給（見 `ports.ConnectionSource`）。"""
 
@@ -70,15 +96,15 @@ class RetrievalRepository:
 
     def lexicon(self) -> list[str]:
         """segmenter 的詞典：語料所有版本的法規標題（不重複）。"""
-        with self._connections.connection() as conn, conn.cursor() as cur:
-            cur.execute(_LEXICON)
-            return [title for (title,) in cur.fetchall()]
+        with self._connections.connection() as conn:
+            return [row.title for row in fetch(conn, _LEXICON, None, _TitleRow)]
 
     def law_names(self) -> LawNames:
         """法規標題（含各版本的舊名稱）對法規代碼的對照，供問句點名法規用。"""
-        with self._connections.connection() as conn, conn.cursor() as cur:
-            cur.execute(_LAW_TITLES)
-            return LawNames({title: pcodes for title, pcodes in cur.fetchall()})
+        with self._connections.connection() as conn:
+            return LawNames(
+                {r.title: r.pcodes for r in fetch(conn, _LAW_TITLES, None, _LawTitleRow)}
+            )
 
     def guidance_hits(
         self,
@@ -96,8 +122,9 @@ class RetrievalRepository:
         命中的函釋占可用函釋的比例超過 `max_df` 時不回任何條：詞組出現在那麼多函釋裡，指不出哪幾條
         （0 為不限制）。
         """
-        with self._connections.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
-            cur.execute(
+        with self._connections.read_connection(timeout=timeout) as conn:
+            rows = fetch(
+                conn,
                 _GUIDANCE,
                 {
                     "phrases": list(phrases),
@@ -107,37 +134,39 @@ class RetrievalRepository:
                     "jurisdiction": jurisdiction,
                     "max_df": max_df,
                 },
+                _GuidanceRow,
             )
-            return [
-                (
-                    SearchHit(
-                        iri=iri,
-                        jurisdiction=jur,
-                        id_scheme=scheme,
-                        local_id=lid,
-                        law_title=title,
-                        number=number,
-                        content=content,
-                        lexical_score=0.0,
-                        semantic_similarity=None,
-                    ),
-                    int(documents),
-                )
-                for iri, jur, scheme, lid, title, number, content, documents in cur.fetchall()
-            ]
+        return [
+            (
+                SearchHit(
+                    iri=r.iri,
+                    jurisdiction=r.jurisdiction,
+                    id_scheme=r.id_scheme,
+                    local_id=r.local_id,
+                    law_title=r.law_title,
+                    number=r.number,
+                    content=r.content,
+                    lexical_score=0.0,
+                    semantic_similarity=None,
+                ),
+                int(r.documents),
+            )
+            for r in rows
+        ]
 
     def searched_terms(
         self, terms: str, *, tokenizer: str, max_df: float = 0.0, timeout: float | None = None
     ) -> list[str]:
         """字面臂實際查的詞：`search` 以同樣的 `max_df` 略過高頻詞之後留下的詞。"""
-        with self._connections.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
-            cur.execute(
+        with self._connections.read_connection(timeout=timeout) as conn:
+            row = fetch_one(
+                conn,
                 "SELECT retrieval.prune_terms("
                 "%(terms)s, %(tokenizer)s, %(max_df)s::double precision)",
                 {"terms": terms, "tokenizer": tokenizer, "max_df": max_df},
+                _PrunedRow,
             )
-            row = cur.fetchone()
-        return str(row[0] if row else "").split()
+        return str(row.terms if row else "").split()
 
     def search(
         self,
@@ -206,8 +235,9 @@ class RetrievalRepository:
         jurisdiction: str | None = None,
         timeout: float | None = None,
     ) -> list[SearchHit]:
-        with self._connections.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
-            cur.execute(
+        with self._connections.read_connection(timeout=timeout) as conn:
+            return fetch(
+                conn,
                 _SEARCH,
                 {
                     "laws": list(laws),
@@ -222,28 +252,5 @@ class RetrievalRepository:
                     "pool": SEARCH_POOL,
                     "jurisdiction": jurisdiction,
                 },
+                SearchHit,
             )
-            return [
-                SearchHit(
-                    iri=iri,
-                    jurisdiction=jur,
-                    id_scheme=scheme,
-                    local_id=lid,
-                    law_title=title,
-                    number=number,
-                    content=content,
-                    lexical_score=lexical,
-                    semantic_similarity=semantic,
-                )
-                for (
-                    iri,
-                    jur,
-                    scheme,
-                    lid,
-                    title,
-                    number,
-                    content,
-                    lexical,
-                    semantic,
-                ) in cur.fetchall()
-            ]

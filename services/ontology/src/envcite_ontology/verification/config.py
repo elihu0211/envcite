@@ -58,7 +58,7 @@ class ModelSet:
         return (self.extractor, *self.verifiers)
 
 
-def _only(table: Mapping[str, Any], allowed: set[str], where: str) -> None:
+def _only(table: Mapping[str, object], allowed: set[str], where: str) -> None:
     extra = set(table) - allowed
     if extra:
         raise ConfigError(f"{where}: unknown keys {sorted(extra)}")

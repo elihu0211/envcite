@@ -6,7 +6,7 @@
 """
 
 from decimal import Decimal
-from typing import Annotated, Any
+from typing import Annotated
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
@@ -57,7 +57,7 @@ class Concept(_Part):
     #: 外部對映（外部體系 → 識別碼），只記等同。
     matches: dict[str, Text] | None = None
     #: 詞彙沒有上下位：帶了就拒絕（見 `claims.vocabulary.write_concepts`），所以只需要知道有沒有寫。
-    broader: Any = None
+    broader: object = None
 
 
 class Slot(_Part):
