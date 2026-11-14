@@ -31,6 +31,7 @@ internal sealed class ConversationHistory(
         }
 
         conversation.UpdatedAt = now;
+        conversation.ArchivedAt = null; // 在封存的對話接著問是新的活動：它回到側欄，不留在看不見的地方
         db.ConversationMessages.Add(new ConversationMessage
         {
             ConversationId = conversation.Id,
@@ -59,14 +60,7 @@ internal sealed class ConversationHistory(
         if (!Enabled || UserId(user) is not { } userId)
             return [];
 
-        var mine = db.Conversations.Where(c => c.UserId == userId);
-        if (search?.Trim() is { Length: > 0 } term)
-        {
-            // 使用者打的字不是萬用字元：先跳脫 \ % _，再交給資料庫做不分大小寫的比對。
-            var escaped = term.Replace(@"\", @"\\", StringComparison.Ordinal).Replace("%", @"\%", StringComparison.Ordinal).Replace("_", @"\_", StringComparison.Ordinal);
-            var pattern = $"%{escaped}%";
-            mine = mine.Where(c => EF.Functions.ILike(c.Title, pattern, @"\"));
-        }
+        var mine = Mine(userId, search).Where(c => c.ArchivedAt == null);
 
         // 釘選的與最近的分開查：釘選的不佔「最近」的筆數，最近的也不會被一長串釘選擠掉。
         var pinned = await mine
@@ -84,6 +78,36 @@ internal sealed class ConversationHistory(
             .Select(c => new ConversationSummary(c.Id, c.Title, c.UpdatedAt, false))
             .ToListAsync(cancellationToken);
         return [.. pinned, .. recent];
+    }
+
+    public async Task<IReadOnlyList<ConversationSummary>> ListArchivedAsync(
+        ClaimsPrincipal user, int limit, string? search, CancellationToken cancellationToken)
+    {
+        if (!Enabled || UserId(user) is not { } userId)
+            return [];
+
+        return await Mine(userId, search)
+            .Where(c => c.ArchivedAt != null)
+            .OrderByDescending(c => c.ArchivedAt)
+            .ThenByDescending(c => c.Id)
+            .Take(Math.Clamp(limit, 1, 200))
+            .Select(c => new ConversationSummary(c.Id, c.Title, c.UpdatedAt, false))
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>某位成員自己的對話；<paramref name="search"/> 只比對標題。</summary>
+    private IQueryable<Conversation> Mine(string userId, string? search)
+    {
+        var mine = db.Conversations.Where(c => c.UserId == userId);
+        if (search?.Trim() is { Length: > 0 } term)
+        {
+            // 使用者打的字不是萬用字元：先跳脫 \ % _，再交給資料庫做不分大小寫的比對。
+            var escaped = term.Replace(@"\", @"\\", StringComparison.Ordinal).Replace("%", @"\%", StringComparison.Ordinal).Replace("_", @"\_", StringComparison.Ordinal);
+            var pattern = $"%{escaped}%";
+            mine = mine.Where(c => EF.Functions.ILike(c.Title, pattern, @"\"));
+        }
+
+        return mine;
     }
 
     public async Task<ConversationDetail?> GetAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)
@@ -136,6 +160,51 @@ internal sealed class ConversationHistory(
         return await db.Conversations
             .Where(c => c.Id == id && c.UserId == userId)
             .ExecuteUpdateAsync(set => set.SetProperty(c => c.PinnedAt, at), cancellationToken) > 0;
+    }
+
+    public async Task<bool> ArchiveAsync(ClaimsPrincipal user, Guid id, bool archived, CancellationToken cancellationToken)
+    {
+        if (!Enabled || UserId(user) is not { } userId)
+            return false;
+
+        var mine = db.Conversations.Where(c => c.Id == id && c.UserId == userId);
+        // 單一 UPDATE，UpdatedAt 不動；封存同時取消釘選（封存的不在側欄，留著釘選只會在取消封存時讓它突然跳到最上面）。
+        return archived
+            ? await mine.ExecuteUpdateAsync(
+                set => set.SetProperty(c => c.ArchivedAt, time.GetUtcNow()).SetProperty(c => c.PinnedAt, (DateTimeOffset?)null), cancellationToken) > 0
+            : await mine.ExecuteUpdateAsync(set => set.SetProperty(c => c.ArchivedAt, (DateTimeOffset?)null), cancellationToken) > 0;
+    }
+
+    public async Task<Guid?> ForkAsync(ClaimsPrincipal user, Guid id, string title, CancellationToken cancellationToken)
+    {
+        if (!Enabled || UserId(user) is not { } userId || NormalizeTitle(title) is not { Length: > 0 } normalized)
+            return null;
+
+        if (!await db.Conversations.AnyAsync(c => c.Id == id && c.UserId == userId, cancellationToken))
+            return null;
+
+        // 實體整個讀回來再複製：引用是 jsonb 的擁有型別集合。原樣保留 CreatedAt，讀回來的先後與原本相同。
+        var source = await db.ConversationMessages
+            .AsNoTracking()
+            .Where(m => m.ConversationId == id)
+            .OrderBy(m => m.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        var now = time.GetUtcNow();
+        var fork = new Conversation { UserId = userId, Title = normalized, CreatedAt = now, UpdatedAt = now };
+        db.Conversations.Add(fork);
+        db.ConversationMessages.AddRange(source.Select(m => new ConversationMessage
+        {
+            ConversationId = fork.Id,
+            Role = m.Role,
+            Content = m.Content,
+            CreatedAt = m.CreatedAt,
+            AsOf = m.AsOf,
+            Outcome = m.Outcome,
+            Citations = [.. m.Citations.Select(c => new StoredCitation { Code = c.Code, Label = c.Label, Uri = c.Uri })],
+        }));
+        await db.SaveChangesAsync(cancellationToken);
+        return fork.Id;
     }
 
     public async Task<bool> DeleteAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)

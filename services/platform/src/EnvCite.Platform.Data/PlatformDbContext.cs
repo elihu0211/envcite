@@ -158,6 +158,8 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
             conversation.HasIndex(c => new { c.UserId, c.UpdatedAt });
             // 釘選的清單：只有少數列有值，部分索引就夠。
             conversation.HasIndex(c => new { c.UserId, c.PinnedAt }).HasFilter("\"PinnedAt\" IS NOT NULL");
+            // 已封存的清單：同樣只有少數列有值。
+            conversation.HasIndex(c => new { c.UserId, c.ArchivedAt }).HasFilter("\"ArchivedAt\" IS NOT NULL");
             conversation.HasIndex(c => c.UpdatedAt);
             conversation.HasMany(c => c.Messages).WithOne().HasForeignKey(m => m.ConversationId).OnDelete(DeleteBehavior.Cascade);
         });

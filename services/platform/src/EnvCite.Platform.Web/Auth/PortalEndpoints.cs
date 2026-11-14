@@ -94,24 +94,31 @@ public static class PortalEndpoints
     }
 
     /// <summary>
-    /// 對話的釘選、重新命名、刪除：側欄與對話紀錄頁選單裡的表單 POST 到這裡。附 antiforgery、只有登入的入口成員，
+    /// 對話的釘選、重新命名、封存、分叉、刪除：側欄與對話紀錄頁選單裡的表單 POST 到這裡。附 antiforgery、只有登入的入口成員，
     /// 而且只動自己的對話（<see cref="IConversationHistory"/> 依使用者 Id 篩選）；不是自己的、不存在的結果一樣，不洩漏它存不存在。
-    /// 做完回到原來的頁面（取自 Referer，只接受這個租戶入口之下的路徑）。
+    /// 做完回到原來的頁面（取自 Referer，只接受這個租戶入口之下的路徑）；分叉成功則前往新的那一串。
     /// </summary>
     private static void MapConversationEndpoints(IEndpointRouteBuilder app)
     {
         var route = $"{PortalPaths.Prefix}/{{tenant}}/c/{{id:guid}}";
 
         app.MapPost($"{route}/pin", (HttpContext context, IAntiforgery antiforgery, IPortalAccount account, IConversationHistory history, Guid id) =>
-            ManageConversationAsync(context, antiforgery, account, id, deletes: false, (user, form, ct) => history.PinAsync(user, id, form["pinned"] == "true", ct)))
+            ManageConversationAsync(context, antiforgery, account, id, leavesPage: false, (user, form, ct) => history.PinAsync(user, id, form["pinned"] == "true", ct)))
             .RequireAuthorization(PlatformAuth.PortalPolicy);
 
         app.MapPost($"{route}/rename", (HttpContext context, IAntiforgery antiforgery, IPortalAccount account, IConversationHistory history, Guid id) =>
-            ManageConversationAsync(context, antiforgery, account, id, deletes: false, (user, form, ct) => history.RenameAsync(user, id, form["title"].ToString(), ct)))
+            ManageConversationAsync(context, antiforgery, account, id, leavesPage: false, (user, form, ct) => history.RenameAsync(user, id, form["title"].ToString(), ct)))
+            .RequireAuthorization(PlatformAuth.PortalPolicy);
+
+        app.MapPost($"{route}/archive", (HttpContext context, IAntiforgery antiforgery, IPortalAccount account, IConversationHistory history, Guid id) =>
+            ManageConversationAsync(context, antiforgery, account, id, leavesPage: true, (user, form, ct) => history.ArchiveAsync(user, id, form["archived"] == "true", ct)))
+            .RequireAuthorization(PlatformAuth.PortalPolicy);
+
+        app.MapPost($"{route}/fork", ForkConversationAsync)
             .RequireAuthorization(PlatformAuth.PortalPolicy);
 
         app.MapPost($"{route}/delete", (HttpContext context, IAntiforgery antiforgery, IPortalAccount account, IConversationHistory history, Guid id) =>
-            ManageConversationAsync(context, antiforgery, account, id, deletes: true, (user, _, ct) => history.DeleteAsync(user, id, ct)))
+            ManageConversationAsync(context, antiforgery, account, id, leavesPage: true, (user, _, ct) => history.DeleteAsync(user, id, ct)))
             .RequireAuthorization(PlatformAuth.PortalPolicy);
 
         app.MapGet($"{PortalPaths.Prefix}/{{tenant}}/citations/article", async (
@@ -134,32 +141,57 @@ public static class PortalEndpoints
         IAntiforgery antiforgery,
         IPortalAccount account,
         Guid id,
-        bool deletes,
+        bool leavesPage,
         Func<ClaimsPrincipal, IFormCollection, CancellationToken, Task<bool>> action)
     {
-        try
-        {
-            await antiforgery.ValidateRequestAsync(context);
-        }
-        catch (AntiforgeryValidationException)
-        {
+        if (!await IsAntiforgeryValidAsync(context, antiforgery))
             return Results.BadRequest();
-        }
 
         if (account.CurrentTenant is not { } tenant)
             return Results.NotFound();
 
         var form = await context.Request.ReadFormAsync(context.RequestAborted);
         _ = await action(context.User, form, context.RequestAborted);
-        return Results.Redirect(BackTo(context, tenant.Identifier, id, deletes));
+        return Results.Redirect(BackTo(context, tenant.Identifier, id, leavesPage));
     }
 
-    /// <summary>回到送出表單的那一頁；刪掉的正是正在看的那串，就回首頁（不回一個找不到的頁面）。路徑一律經 <see cref="SignInRoutes.SafeReturnUrl"/>。</summary>
-    private static string BackTo(HttpContext context, string tenantIdentifier, Guid id, bool deleted)
+    /// <summary>分叉：成功就前往新的那一串；沒有複製出來（不是自己的、不存在、標題空白）與其他動作一樣只是導回，不洩漏它存不存在。</summary>
+    private static async Task<IResult> ForkConversationAsync(
+        HttpContext context, IAntiforgery antiforgery, IPortalAccount account, IConversationHistory history, Guid id)
+    {
+        if (!await IsAntiforgeryValidAsync(context, antiforgery))
+            return Results.BadRequest();
+
+        if (account.CurrentTenant is not { } tenant)
+            return Results.NotFound();
+
+        var form = await context.Request.ReadFormAsync(context.RequestAborted);
+        var fork = await history.ForkAsync(context.User, id, form["title"].ToString(), context.RequestAborted);
+        return Results.Redirect(fork is { } copy ? PortalPaths.Conversation(tenant.Identifier, copy) : BackTo(context, tenant.Identifier, id, leftPage: false));
+    }
+
+    private static async Task<bool> IsAntiforgeryValidAsync(HttpContext context, IAntiforgery antiforgery)
+    {
+        try
+        {
+            await antiforgery.ValidateRequestAsync(context);
+            return true;
+        }
+        catch (AntiforgeryValidationException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 回到送出表單的那一頁；刪除或封存的正是正在看的那串，就回首頁（不回一個找不到、或已不在列表的頁面）。
+    /// 路徑一律經 <see cref="SignInRoutes.SafeReturnUrl"/>。
+    /// </summary>
+    private static string BackTo(HttpContext context, string tenantIdentifier, Guid id, bool leftPage)
     {
         var routes = SignInRoutes.Portal(tenantIdentifier);
         var back = Uri.TryCreate(context.Request.Headers.Referer.ToString(), UriKind.Absolute, out var referer) ? referer.PathAndQuery : null;
-        return deleted && back?.StartsWith(PortalPaths.Conversation(tenantIdentifier, id), StringComparison.OrdinalIgnoreCase) == true
+        return leftPage && back?.StartsWith(PortalPaths.Conversation(tenantIdentifier, id), StringComparison.OrdinalIgnoreCase) == true
             ? routes.Home
             : routes.SafeReturnUrl(back);
     }

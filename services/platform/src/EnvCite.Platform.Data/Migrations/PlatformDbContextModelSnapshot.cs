@@ -233,6 +233,9 @@ namespace EnvCite.Platform.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -259,6 +262,9 @@ namespace EnvCite.Platform.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("UpdatedAt");
+
+                    b.HasIndex("UserId", "ArchivedAt")
+                        .HasFilter("\"ArchivedAt\" IS NOT NULL");
 
                     b.HasIndex("UserId", "PinnedAt")
                         .HasFilter("\"PinnedAt\" IS NOT NULL");

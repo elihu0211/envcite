@@ -44,6 +44,27 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     private static Task<(HttpStatusCode Status, string Html, string? Location)> DeleteAsync(PortalBrowser who, string tenant, Guid id) =>
         who.SubmitAsync(HistoryPage(tenant), [], Manage(tenant, id, "delete"));
 
+    private static Task<(HttpStatusCode Status, string Html, string? Location)> ArchiveAsync(PortalBrowser who, string tenant, Guid id, bool archived) =>
+        who.SubmitAsync(HistoryPage(tenant), new() { ["archived"] = archived ? "true" : "false" }, Manage(tenant, id, "archive"));
+
+    private static Task<(HttpStatusCode Status, string Html, string? Location)> ForkAsync(PortalBrowser who, string tenant, Guid id, string title) =>
+        who.SubmitAsync(HistoryPage(tenant), new() { ["title"] = title }, Manage(tenant, id, "fork"));
+
+    private static Task<Guid?> RecordTurnAsync(WebApplicationFactory<Program> host, ClaimsPrincipal who, Guid? conversation, ConversationTurn turn) =>
+        host.Services.GetRequiredService<IAskService>().RecordAsync(who, conversation, turn, Ct);
+
+    /// <summary>頁面上有沒有一個帶這個 class 的連結指向這串對話：<c>ep-history-link</c> 是列表的列，<c>ep-recent-link</c> 是側欄的項目。</summary>
+    private static bool HasLink(string html, string cssClass, string path) =>
+        Regex.IsMatch(html, $"<a[^>]*class=\"[^\"]*{cssClass}[^\"]*\"[^>]*href=\"{Regex.Escape(path)}\"|<a[^>]*href=\"{Regex.Escape(path)}\"[^>]*class=\"[^\"]*{cssClass}[^\"]*\"");
+
+    /// <summary>訊息的內容、順序、引用與問的日期：分叉要原樣複製的全部。</summary>
+    private static string Shape(ConversationDetail detail) =>
+        string.Join("|", detail.Messages.Select(m =>
+            $"{m.Role}:{m.Content}:{m.AsOf}:{m.Outcome}:{string.Join(",", (m.Citations ?? []).Select(c => $"{c.Code}={c.Label}={c.Uri}"))}"));
+
+    private static Guid ForkedIdOf(string? location) =>
+        Guid.Parse(Regex.Match(location ?? string.Empty, "/c/([0-9a-fA-F-]{36})").Groups[1].Value);
+
     private static async Task<ConversationDetail?> OpenAsync(WebApplicationFactory<Program> host, ClaimsPrincipal who, Guid id) =>
         await host.Services.GetRequiredService<IAskService>().ConversationAsync(who, id, TestContext.Current.CancellationToken);
 
@@ -308,6 +329,178 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         var detail = (await OpenAsync(host, alice, id))!;
         Assert.Equal((Question, false), (detail.Title, detail.Pinned));
         Assert.NotEqual(HttpStatusCode.OK, crossTenant.Status);
+    }
+
+    // 封存：從側欄與預設列表消失、只在「已封存」找得到；封存時取消釘選；不算新的活動（不改最後更新時間）。取消封存就回來。
+    [Fact]
+    public async Task ArchivingMovesAConversationFromTheListsToTheArchivedViewAndUnarchivingBringsItBack()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-arch");
+        var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        using var b = browser;
+        var t = tenant.Identifier;
+        var older = (await RecordAsync(host, alice, Question))!.Value;
+        var newer = (await RecordAsync(host, alice, "固定污染源"))!.Value;
+        await PinAsync(browser, t, older, pinned: true);
+        var before = (await OpenAsync(host, alice, older))!;
+
+        // 選單是普通表單：封存與分叉各一個，沒有 JavaScript 也能用。
+        var menu = (await browser.GetAsync(HistoryPage(t))).Html;
+        Assert.Contains($"action=\"{Manage(t, older, "archive")}\"", menu, StringComparison.Ordinal);
+        Assert.Contains($"action=\"{Manage(t, older, "fork")}\"", menu, StringComparison.Ordinal);
+
+        Assert.Equal(HttpStatusCode.Redirect, (await ArchiveAsync(browser, t, older, archived: true)).Status);
+
+        var list = (await browser.GetAsync(HistoryPage(t))).Html;
+        Assert.False(HasLink(list, "ep-history-link", ConversationPage(t, older)));
+        Assert.False(HasLink(list, "ep-recent-link", ConversationPage(t, older)));
+        Assert.True(HasLink(list, "ep-history-link", ConversationPage(t, newer)));
+        Assert.Contains("?view=archived", list, StringComparison.Ordinal); // 兩個檢視的分頁連結
+
+        var archived = (await browser.GetAsync($"{HistoryPage(t)}?view=archived")).Html;
+        Assert.True(HasLink(archived, "ep-history-link", ConversationPage(t, older)));
+        Assert.False(HasLink(archived, "ep-history-link", ConversationPage(t, newer)));
+        Assert.False(HasLink(archived, "ep-recent-link", ConversationPage(t, older))); // 側欄也沒有
+        Assert.DoesNotContain("已釘選", archived, StringComparison.Ordinal);
+        Assert.Contains("name=\"archived\" value=\"false\"", archived, StringComparison.Ordinal); // 已封存的列是「取消封存」
+
+        var after = (await OpenAsync(host, alice, older))!; // 網址仍可開啟
+        Assert.False(after.Pinned);
+        Assert.Equal(before.UpdatedAt, after.UpdatedAt);
+
+        Assert.Equal(HttpStatusCode.Redirect, (await ArchiveAsync(browser, t, older, archived: false)).Status);
+        Assert.True(HasLink((await browser.GetAsync(HistoryPage(t))).Html, "ep-history-link", ConversationPage(t, older)));
+        var empty = (await browser.GetAsync($"{HistoryPage(t)}?view=archived")).Html;
+        Assert.False(HasLink(empty, "ep-history-link", ConversationPage(t, older)));
+        Assert.Contains("沒有封存的對話", empty, StringComparison.Ordinal);
+        Assert.False((await OpenAsync(host, alice, older))!.Pinned); // 取消封存不會把釘選帶回來
+
+        // 不認得的檢視當作預設。
+        Assert.True(HasLink((await browser.GetAsync($"{HistoryPage(t)}?view=bogus")).Html, "ep-history-link", ConversationPage(t, newer)));
+    }
+
+    [Fact]
+    public async Task AFollowUpInAnArchivedConversationBringsItBackToTheList()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-arch-follow");
+        var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        using var b = browser;
+        var t = tenant.Identifier;
+        var id = (await RecordAsync(host, alice, Question))!.Value;
+        await ArchiveAsync(browser, t, id, archived: true);
+
+        Assert.Equal(id, await RecordAsync(host, alice, "固定污染源", id));
+
+        Assert.True(HasLink((await browser.GetAsync(HistoryPage(t))).Html, "ep-history-link", ConversationPage(t, id)));
+        Assert.False(HasLink((await browser.GetAsync($"{HistoryPage(t)}?view=archived")).Html, "ep-history-link", ConversationPage(t, id)));
+    }
+
+    [Fact]
+    public async Task SomeoneElsesConversationCannotBeArchivedOrForkedNotEvenByAnOwnerOrAnotherTenant()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-arch-iso");
+        var (other, _) = await factory.CreateTenantWithKeyAsync("ch-arch-iso2");
+        var (aliceBrowser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        var (bossBrowser, _) = await SignedInAsync(host, tenant, CustomerRoles.Owner);
+        var (strangerBrowser, _) = await SignedInAsync(host, other);
+        using var a = aliceBrowser;
+        using var b = bossBrowser;
+        using var s = strangerBrowser;
+        var t = tenant.Identifier;
+        var id = (await RecordAsync(host, alice, Question))!.Value;
+
+        var archive = await ArchiveAsync(bossBrowser, t, id, archived: true);
+        var fork = await ForkAsync(bossBrowser, t, id, "偷來的分叉");
+        var crossArchive = await ArchiveAsync(strangerBrowser, t, id, archived: true);
+        var crossFork = await ForkAsync(strangerBrowser, t, id, "偷來的分叉");
+
+        // 與「不存在」一樣只是導回：沒封存、也沒複製出任何一串。
+        Assert.Equal(HttpStatusCode.Redirect, archive.Status);
+        Assert.Equal(HttpStatusCode.Redirect, fork.Status);
+        Assert.DoesNotContain("/c/", fork.Location ?? string.Empty, StringComparison.Ordinal);
+        Assert.NotEqual(HttpStatusCode.OK, crossArchive.Status);
+        Assert.NotEqual(HttpStatusCode.OK, crossFork.Status);
+        Assert.Equal(1, await CountAsync(tenant.Id));
+        Assert.True(HasLink((await aliceBrowser.GetAsync(HistoryPage(t))).Html, "ep-history-link", ConversationPage(t, id)));
+    }
+
+    // 分叉：整串複製（訊息、引用、問的日期與順序），新的一串各自發展；不帶釘選與封存，不改原本那串。
+    [Fact]
+    public async Task ForkCopiesTheWholeConversationAndTheTwoThenGoTheirOwnWay()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-fork");
+        var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        using var b = browser;
+        var t = tenant.Identifier;
+        var citation = new ConversationCitation("L1", "空氣污染防制法 第 32 條", "https://envcite/tw/law/O0020001/2018-08-01/zho/art_32");
+        var source = (await RecordTurnAsync(host, alice, null, new ConversationTurn(Question, "不得燃燒 [L1]。", ConversationOutcome.Answered, [citation], "2024-01-01")))!.Value;
+        factory.Time.Advance(TimeSpan.FromMinutes(1)); // 測試的時鐘是凍結的：兩輪同一刻，讀回來的先後就不確定
+        await RecordTurnAsync(host, alice, source, new ConversationTurn("那罰款多少", "找不到依據。", ConversationOutcome.Refused, []));
+        await PinAsync(browser, t, source, pinned: true);
+        var original = (await OpenAsync(host, alice, source))!;
+
+        var forked = await ForkAsync(browser, t, source, "  分叉\n 測試 ");
+
+        Assert.Equal(HttpStatusCode.Redirect, forked.Status);
+        var forkId = ForkedIdOf(forked.Location); // 做完前往新的那一串，不是導回
+        Assert.NotEqual(source, forkId);
+        var copy = (await OpenAsync(host, alice, forkId))!;
+        Assert.Equal(("分叉 測試", false), (copy.Title, copy.Pinned)); // 標題同改名的正規化；釘選不帶過來
+        Assert.Equal(4, copy.Messages.Count);
+        Assert.Equal(Shape(original), Shape(copy));
+        Assert.True(copy.UpdatedAt >= original.UpdatedAt); // 新的活動：保存期限從現在起算
+
+        var untouched = (await OpenAsync(host, alice, source))!;
+        Assert.Equal((original.Title, true, original.UpdatedAt), (untouched.Title, untouched.Pinned, untouched.UpdatedAt));
+
+        // 各自發展：在分叉上接著問，原本那串不變。
+        Assert.Equal(forkId, await RecordAsync(host, alice, "只在分叉上問", forkId));
+        Assert.Equal(original.Messages.Count, (await OpenAsync(host, alice, source))!.Messages.Count);
+        Assert.Equal(original.Messages.Count + 2, (await OpenAsync(host, alice, forkId))!.Messages.Count);
+        Assert.Equal(2, await CountAsync(tenant.Id));
+
+        // 分叉出來的是一串可以開啟、接著問的對話。
+        var opened = await browser.GetAsync(ConversationPage(t, forkId));
+        Assert.Equal(HttpStatusCode.OK, opened.Status);
+        Assert.Contains("class=\"ep-composer\"", opened.Html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AForkOfAnArchivedConversationLandsInTheNormalList()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-fork-arch");
+        var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        using var b = browser;
+        var t = tenant.Identifier;
+        var source = (await RecordAsync(host, alice, Question))!.Value;
+        await ArchiveAsync(browser, t, source, archived: true);
+
+        var forkId = ForkedIdOf((await ForkAsync(browser, t, source, "從封存分叉")).Location);
+
+        var list = (await browser.GetAsync(HistoryPage(t))).Html;
+        Assert.True(HasLink(list, "ep-history-link", ConversationPage(t, forkId)));
+        Assert.False(HasLink(list, "ep-history-link", ConversationPage(t, source))); // 原本那串仍在封存
+    }
+
+    [Fact]
+    public async Task AForkWithABlankTitleCopiesNothing()
+    {
+        using var host = Enabled();
+        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-fork-blank");
+        var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
+        using var b = browser;
+        var id = (await RecordAsync(host, alice, Question))!.Value;
+
+        var forked = await ForkAsync(browser, tenant.Identifier, id, "   ");
+
+        Assert.Equal(HttpStatusCode.Redirect, forked.Status);
+        Assert.DoesNotContain("/c/", forked.Location ?? string.Empty, StringComparison.Ordinal);
+        Assert.Equal(1, await CountAsync(tenant.Id));
     }
 
     // 搜尋只比對標題（內容是客戶案情，不建索引）；使用者打的 % 與 _ 是文字，不是萬用字元；不分大小寫。

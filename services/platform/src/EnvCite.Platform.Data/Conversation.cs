@@ -18,6 +18,12 @@ public sealed class Conversation
     /// <summary>釘選的時間；null 是沒釘選。釘選只影響側欄的排序，不影響保存期限（<see cref="UpdatedAt"/> 才是）。</summary>
     public DateTimeOffset? PinnedAt { get; set; }
 
+    /// <summary>
+    /// 封存的時間；null 是沒封存。封存的對話不在側欄與預設列表，只在「已封存」；它只管能不能在列表看見，
+    /// 不影響保存期限（<see cref="UpdatedAt"/> 才是）。封存時一併取消釘選；之後在這串對話接著問，就自動取消封存。
+    /// </summary>
+    public DateTimeOffset? ArchivedAt { get; set; }
+
     public DateTimeOffset CreatedAt { get; init; }
 
     public DateTimeOffset UpdatedAt { get; set; }

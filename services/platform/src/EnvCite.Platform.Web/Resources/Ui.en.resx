@@ -1563,6 +1563,30 @@
   <data name="取消釘選" xml:space="preserve">
     <value>Unpin</value>
   </data>
+  <data name="分叉" xml:space="preserve">
+    <value>Fork</value>
+  </data>
+  <data name="{0}（分叉）" xml:space="preserve">
+    <value>{0} (fork)</value>
+  </data>
+  <data name="封存" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="取消封存" xml:space="preserve">
+    <value>Unarchive</value>
+  </data>
+  <data name="已封存" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="對話檢視" xml:space="preserve">
+    <value>Conversation views</value>
+  </data>
+  <data name="沒有封存的對話" xml:space="preserve">
+    <value>No archived conversations</value>
+  </data>
+  <data name="在對話的「⋯」選單選「封存」，它就會從側欄移到這裡；在封存的對話接著問，它會自動回到側欄。" xml:space="preserve">
+    <value>Choose “Archive” in a conversation’s “⋯” menu to move it out of the sidebar and into this list. Asking a follow-up in an archived conversation brings it back to the sidebar.</value>
+  </data>
   <data name="對話標題" xml:space="preserve">
     <value>Conversation title</value>
   </data>
