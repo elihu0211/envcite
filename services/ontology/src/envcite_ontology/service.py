@@ -107,6 +107,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
 
     @errors.maps_errors
     def GetLaw(self, request: pb.GetLawRequest, context: grpc.ServicerContext) -> pb.GetLawResponse:
+        """依自然鍵取得一部法規；不存在回 `LAW_NOT_FOUND`。"""
         _log_call(context, "GetLaw", identifiers.subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         law = self._store.get_law(key, as_of=request.as_of, timeout=remaining_seconds(context))
@@ -130,6 +131,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def ListArticles(
         self, request: pb.ListArticlesRequest, context: grpc.ServicerContext
     ) -> pb.ListArticlesResponse:
+        """依閱讀順序列出一部法規的條文。"""
         _log_call(context, "ListArticles", identifiers.subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         timeout = remaining_seconds(context)
@@ -157,6 +159,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def ListLaws(
         self, request: pb.ListLawsRequest, context: grpc.ServicerContext
     ) -> pb.ListLawsResponse:
+        """列出 `as_of` 當日有有效版本的法規摘要與授權母法關聯。"""
         _log_call(context, "ListLaws", request.jurisdiction or "all")
         v = errors.Validator()
         v.date("as_of", request.as_of)
@@ -205,6 +208,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def GetArticleByIri(
         self, request: pb.GetArticleByIriRequest, context: grpc.ServicerContext
     ) -> pb.GetArticleByIriResponse:
+        """依條文版本的標準 IRI 取得單一條文全文與中繼資料。"""
         iri = request.iri.strip()
         _log_call(context, "GetArticleByIri", iri or "<empty>")
         v = errors.Validator()
@@ -237,6 +241,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def GetLawGraph(
         self, request: pb.GetLawGraphRequest, context: grpc.ServicerContext
     ) -> pb.GetLawGraphResponse:
+        """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜。"""
         has_id = request.HasField("identifier")
         subject = (
             identifiers.subject(request.identifier)
@@ -291,6 +296,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def ListInvalidations(
         self, request: pb.ListInvalidationsRequest, context: grpc.ServicerContext
     ) -> pb.ListInvalidationsResponse:
+        """列出 `as_of` 當日因違憲而失效的條文單元。"""
         _log_call(context, "ListInvalidations", identifiers.subject(request.identifier))
         key = self._request_key(request.identifier, request.as_of)
         found = self._store.list_invalidations(
@@ -321,6 +327,7 @@ class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
     def SearchArticles(
         self, request: pb.SearchArticlesRequest, context: grpc.ServicerContext
     ) -> pb.SearchArticlesResponse:
+        """在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。"""
         _log_call(context, "SearchArticles", f"query_chars={len(request.query)}")
         v = errors.Validator()
         terms = self._segmenter.to_tsvector_input(request.query)

@@ -58,6 +58,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
     def ListStatements(
         self, request: pb.ListStatementsRequest, context: grpc.ServicerContext
     ) -> pb.ListStatementsResponse:
+        """列出資源在 `as_of` 當日有效、已確認的陳述。"""
         _log_call(context, "ListStatements", identifiers.subject(request.identifier))
         v = errors.Validator()
         key = law_key(self._store, request.identifier, v)
@@ -75,6 +76,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
     def Evaluate(
         self, request: pb.EvaluateRequest, context: grpc.ServicerContext
     ) -> pb.EvaluateResponse:
+        """對案件事實推論；唯讀，有自己的並行名額與期限。"""
         started = time.monotonic()
         outcome = "error"
         try:

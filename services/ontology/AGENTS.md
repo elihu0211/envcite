@@ -38,6 +38,9 @@ uv run --env-file .env envcite-ontology
   - 函式的大小由 ruff 守門（根 `pyproject.toml`：圈複雜度與分支各 14、語句 60）；超過就拆成有名字的小函式，不加 `noqa`、不放寬門檻。
   - `Any` 只留在動態的邊界（JSON 文件、clingo 的答案集原子、唯讀連線的列），並在原處說明；其餘用精確的型別，protobuf 訊息標註實際的 `pb.*` 類別，不用 `Any`。
   - 人寫的 JSON 文件在邊界以 pydantic 模型驗證並解碼成型別化的結構，內部不傳 `Mapping[str, Any]`；新增的文件載入器照 `ruling.py` 的做法。
+  - 模組不超過 500 行（`tests/test_architecture.py` 守門）；已過大的列在它的 `OVERSIZED`，上限只能縮、不能增，拆完就從清單刪掉。一個模組一個職責，過長就按職責拆。
+  - 公開的模組、類別與函式都有 docstring（ruff `D100`–`D103`）；不用 `Any` 標註（`ANN401`），動態邊界例外在根 `pyproject.toml` 的 `per-file-ignores` 列出並說明。
+  - 每個指令入口（`[project.scripts]`）都要解析得到、`--help` 可用（`tests/test_cli_entry_points.py` 守門）。
   - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
   - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。
 - **環境變數以 `src/envcite_ontology/settings.py` 為唯一來源**；入口不直接讀 `os.environ`；加變數時同步 `.env.example`（`tests/test_settings.py` 守門）。

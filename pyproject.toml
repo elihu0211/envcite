@@ -45,7 +45,8 @@ src = ["services/*/src", "services/*", "libs/python/*/src", "libs/python/*"]
 extend-exclude = ["libs/python/envcite-proto/src"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "C901", "PLR0912", "PLR0915"]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "C901", "PLR0912", "PLR0915",
+          "D100", "D101", "D102", "D103", "ANN401"]
 # RUF001／RUF002／RUF003 把全形標點當成易混淆字元；法條與註解都是中文，全形標點是對的。
 ignore = ["RUF001", "RUF002", "RUF003"]
 
@@ -57,10 +58,17 @@ max-branches = 14
 max-statements = 60
 
 [tool.ruff.lint.per-file-ignores]
+# 公開符號要有 docstring（D1）、不用 `Any` 標註（ANN401）：只守 services/ontology 的 src，
+# 其餘（測試、評估腳本、其他函式庫、ci）不套。
+"**/tests/**" = ["D1", "ANN401"]
+"libs/**" = ["D1", "ANN401"]
+"ci/**" = ["D1", "ANN401"]
 # 已知過長、尚未拆開的函式：新的程式碼不得再加入這個清單。
 "libs/python/envcite-jobkit/src/envcite_jobkit/runner.py" = ["C901", "PLR0912", "PLR0915"]
 # 評估腳本是一次性的量測工具，不在服務的執行路徑上。
-"services/ontology/tools/**" = ["C901", "PLR0912", "PLR0915"]
+"services/ontology/tools/**" = ["C901", "PLR0912", "PLR0915", "D1", "ANN401"]
+# 動態邊界：clingo 的答案集原子，各述詞的引數型別由 rules.lp 決定（見 `_py` 的說明）。
+"services/ontology/src/envcite_ontology/reasoning/engine.py" = ["ANN401"]
 
 [tool.mypy]
 strict = true
