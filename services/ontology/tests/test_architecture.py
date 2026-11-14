@@ -21,7 +21,6 @@ OVERSIZED = {
     "claims.py": 800,
     "guidance_sync.py": 750,
     "reasoning/scoring.py": 700,
-    "service.py": 600,
     "ingest/backfill.py": 600,
     "verification/model_gates.py": 550,
     "verification/run.py": 550,

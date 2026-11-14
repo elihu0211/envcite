@@ -152,9 +152,9 @@ def test_without_a_query_vector_only_the_words_count(conn: Conn, tmp_path: Path,
 
 
 def test_a_failing_embedder_does_not_fail_the_search(store: OntologyStore) -> None:
-    from envcite_ontology.service import OntologyServicer
+    from envcite_ontology.service import build_servicer
 
-    servicer = OntologyServicer(
+    servicer = build_servicer(
         store.laws,
         store.graph,
         store.retrieval,
@@ -162,7 +162,7 @@ def test_a_failing_embedder_does_not_fail_the_search(store: OntologyStore) -> No
         Broken(),  # type: ignore[arg-type]
     )
 
-    assert servicer._query_embedding("噪音") is None
+    assert servicer.search._query_embedding("噪音") is None
 
 
 def test_the_client_reads_openai_embeddings_and_checks_the_dimension(

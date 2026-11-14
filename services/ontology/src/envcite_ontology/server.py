@@ -15,7 +15,7 @@ from envcite_ontology.embedding import Embedder
 from envcite_ontology.reasoning_service import ReasoningServicer
 from envcite_ontology.reranking import Reranks
 from envcite_ontology.search_tuning import DEFAULT_RERANK_CANDIDATES, SearchTuning
-from envcite_ontology.service import OntologyServicer
+from envcite_ontology.service import build_servicer
 from envcite_ontology.settings import ServerSettings, load
 from envcite_ontology.store.ontology_store import OntologyStore
 from envcite_ontology.telemetry import register_annotation_health
@@ -69,7 +69,7 @@ def build_server(
     segmenter = Segmenter(store.retrieval.lexicon())
     law_names = store.retrieval.law_names()
     ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
-        OntologyServicer(
+        build_servicer(
             store.laws,
             store.graph,
             store.retrieval,
