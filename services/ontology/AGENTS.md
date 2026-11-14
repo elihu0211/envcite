@@ -34,6 +34,7 @@ uv run --env-file .env envcite-ontology
   - 不寫 `from __future__ import annotations`（註解延後求值）；泛型用 PEP 695（`def f[T]`），別名用 `type X = …`。
   - 提示詞不寫在 Python 裡：模板在 `verification/templates/*.j2`（Jinja2），渲染只經 `verification/prompts.py` 的型別化函式。共同骨架用繼承（`base.j2` → `with_conventions.j2`／`definition.j2` → 各提示），「有才放」的區塊是 `macros.j2` 的巨集；改提示詞只改模板，要在開發集上量測，不憑感覺。
   - 讀資料庫列用 `db.fetch`／`fetch_one`／`scalar`，每個查詢一個私有的具名列型別（`NamedTuple`，欄位次序同 SELECT；可為 NULL 的欄位宣告 `| None`，依 `migrations/` 查證，不猜），不在用處 `cast`。
+  - 查詢結果的欄位次序同紀錄（`store/records.py`）時，直接拿紀錄當列型別，不另寫中間列型別；`Any` 只留在動態 JSON 的邊界（模型輸出、外部文件、JSON Schema、clingo 符號），那裡先收窄再用，不往內傳。
   - `verification/__init__.py` 不匯出任何名稱：從定義它的子模組匯入（匯出會讓匯入任何一個子模組都載入整條驗證管線）。
   - 函式的大小由 ruff 守門（根 `pyproject.toml`：圈複雜度與分支各 14、語句 60）；超過就拆成有名字的小函式，不加 `noqa`、不放寬門檻。
   - `Any` 只留在動態的邊界（JSON 文件、clingo 的答案集原子、唯讀連線的列），並在原處說明；其餘用精確的型別，protobuf 訊息標註實際的 `pb.*` 類別，不用 `Any`。

@@ -13,12 +13,13 @@
 """
 
 import logging
-from collections.abc import Iterable
-from typing import Any
+from collections.abc import Callable, Iterable
+from typing import NamedTuple
 
 from opentelemetry import metrics
 from opentelemetry.metrics import CallbackOptions, Meter, Observation
 
+from envcite_ontology.db import fetch
 from envcite_ontology.store.ports import ReadConnections
 
 log = logging.getLogger(__name__)
@@ -67,21 +68,34 @@ class RerankMetrics:
         )
 
 
+class _StateRow(NamedTuple):
+    state: str
+    statements: int
+
+
+class _GateRow(NamedTuple):
+    method: str
+    verdict: str
+    statements: int
+
+
 def register_annotation_health(connections: ReadConnections, meter: Meter | None = None) -> None:
     """標註管線的資料面：每次收集時讀兩個健康檢視（兩個小聚合，成本可忽略）。"""
     meter = meter or metrics.get_meter(METER_NAME)
 
     def statements(_: CallbackOptions) -> Iterable[Observation]:
-        for state, count in _rows(
-            connections, "SELECT state, statements FROM annotation.statement_health"
+        for row in _rows(
+            connections, "SELECT state, statements FROM annotation.statement_health", _StateRow
         ):
-            yield Observation(count, {"state": state})
+            yield Observation(row.statements, {"state": row.state})
 
     def gates(_: CallbackOptions) -> Iterable[Observation]:
-        for method, verdict, count in _rows(
-            connections, "SELECT method, verdict, statements FROM annotation.gate_health"
+        for row in _rows(
+            connections, "SELECT method, verdict, statements FROM annotation.gate_health", _GateRow
         ):
-            yield Observation(int(count), {"method": str(method), "verdict": str(verdict)})
+            yield Observation(
+                int(row.statements), {"method": str(row.method), "verdict": str(row.verdict)}
+            )
 
     meter.create_observable_gauge(
         "envcite.annotation.statements",
@@ -95,10 +109,10 @@ def register_annotation_health(connections: ReadConnections, meter: Meter | None
     )
 
 
-def _rows(connections: ReadConnections, sql: str) -> list[tuple[Any, ...]]:
+def _rows[Row](connections: ReadConnections, sql: str, row: Callable[..., Row]) -> list[Row]:
     try:
         with connections.read_connection(timeout=5.0) as conn:
-            return [tuple(row) for row in conn.execute(sql)]
+            return fetch(conn, sql, None, row)
     except Exception:  # 指標回呼不能拖垮服務：資料庫暫時查不到就這一輪沒有資料
         log.warning("annotation health metrics unavailable", exc_info=True)
         return []

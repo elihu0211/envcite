@@ -3,13 +3,40 @@
 import re
 from collections import Counter, deque
 from collections.abc import Sequence
-from typing import Any
+from typing import NamedTuple
 
 from envcite_ontology.store.records import (
     ChildGroupCountRecord,
     LawGraphEdgeRecord,
     LawGraphNodeRecord,
 )
+
+
+class NodeRow(NamedTuple):
+    """節點明細的一列：基本資料與條數、失效數、函釋數。"""
+
+    id: int
+    jurisdiction: str
+    id_scheme: str
+    local_id: str
+    iri: str
+    title: str
+    norm_kind: str
+    document_type: str
+    date_document: str
+    article_count: int
+    invalidation_count: int
+    guidance_count: int
+
+
+class EdgeRow(NamedTuple):
+    """授權邊明細的一列：兩端、被引的條文路徑，與是否都有所依據的條文。"""
+
+    law_id: int
+    command_id: int
+    anchors: list[str] | None
+    all_rooted: bool
+
 
 _CITED_PATH_RE = re.compile(r"^art_(\d+)(?:-(\d+))?(?:/para_(\d+))?(?:/pt_(\d+))?$")
 
@@ -250,7 +277,7 @@ def rank_children(
 
 
 def build_node_map(
-    rows: list[tuple[Any, ...]],
+    rows: list[NodeRow],
     children_of: dict[int, list[int]],
     selected: set[int],
     tiers: dict[int, int],
@@ -258,40 +285,40 @@ def build_node_map(
     """節點的紀錄：基本資料，加上子規則總數與沒有顯示的數量。"""
     out: dict[int, LawGraphNodeRecord] = {}
     for row in rows:
-        rid = int(row[0])
+        rid = int(row.id)
         direct = children_of.get(rid, ())
         shown = sum(1 for cid in direct if cid in selected)
         total = len(direct)
         out[rid] = LawGraphNodeRecord(
-            jurisdiction=str(row[1]),
-            id_scheme=str(row[2]),
-            local_id=str(row[3]),
-            iri=str(row[4]),
-            title=str(row[5]),
-            norm_kind=str(row[6]),
-            document_type=str(row[7]),
-            date_document=str(row[8]),
+            jurisdiction=str(row.jurisdiction),
+            id_scheme=str(row.id_scheme),
+            local_id=str(row.local_id),
+            iri=str(row.iri),
+            title=str(row.title),
+            norm_kind=str(row.norm_kind),
+            document_type=str(row.document_type),
+            date_document=str(row.date_document),
             hierarchy_tier=tiers.get(rid, 2),
             total_children=total,
             truncated_children=max(0, total - shown),
-            article_count=int(row[9]),
-            invalidation_count=int(row[10]),
-            guidance_count=int(row[11]),
+            article_count=int(row.article_count),
+            invalidation_count=int(row.invalidation_count),
+            guidance_count=int(row.guidance_count),
         )
     return out
 
 
 def build_edges(
-    rows: list[tuple[Any, ...]], node_map: dict[int, LawGraphNodeRecord]
+    rows: list[EdgeRow], node_map: dict[int, LawGraphNodeRecord]
 ) -> list[LawGraphEdgeRecord]:
     """兩端都在 `node_map` 裡的授權邊；命令對命令是再授權（`sub_delegation`）。"""
     edges: list[LawGraphEdgeRecord] = []
     for row in rows:
-        src = node_map.get(int(row[0]))
-        dst = node_map.get(int(row[1]))
+        src = node_map.get(int(row.law_id))
+        dst = node_map.get(int(row.command_id))
         if src is None or dst is None:
             continue
-        raw_anchors: Sequence[str] = row[2] or ()
+        raw_anchors: Sequence[str] = row.anchors or ()
         edges.append(
             LawGraphEdgeRecord(
                 source_jurisdiction=src.jurisdiction,
@@ -302,7 +329,7 @@ def build_edges(
                 target_local_id=dst.local_id,
                 kind="sub_delegation" if src.norm_kind == "regulation" else "delegation",
                 anchor_articles=tuple(format_cited_path(str(a)) for a in raw_anchors),
-                all_rooted=bool(row[3]),
+                all_rooted=bool(row.all_rooted),
             )
         )
     return edges

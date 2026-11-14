@@ -1,8 +1,11 @@
 """法規與條文的查詢：版本解析、閱讀順序、IRI、條文全文與違憲失效都由 SQL 決定，這裡不重算。"""
 
 import re
+from datetime import date
 from functools import cached_property
+from typing import NamedTuple
 
+from envcite_ontology.db import fetch, fetch_one
 from envcite_ontology.store.params import as_of_param, expiry, time_left
 from envcite_ontology.store.ports import ConnectionSource
 from envcite_ontology.store.records import (
@@ -173,6 +176,48 @@ _LIST_LAWS = """
      ORDER BY r.norm_kind, r.local_id
 """
 
+
+class _ResolvedRow(NamedTuple):
+    resource_id: int
+    iri: str
+    title: str
+    language: str
+    enacted: date | None
+    jurisdiction: str
+    id_scheme: str
+    local_id: str
+
+
+class _ArticleRow(NamedTuple):
+    iri: str
+    number: str
+    sort_key: list[int]
+
+
+class _HeadingRow(NamedTuple):
+    id: int
+    parent_id: int | None
+    kind: str
+    heading_no: str
+    title: str
+    sort_key: list[int]
+
+
+class _InvalidationRow(NamedTuple):
+    ruling_no: str
+    ruling_kind: str
+    decided_on: date
+    source_url: str
+    excerpt: str
+    path: str
+    invalid_from: date
+    partial: bool
+
+
+class _ValueRow(NamedTuple):
+    value: str
+
+
 _VERSION_IRI_RE = re.compile(
     r"^https://envcite/tw/(?:law|order)/([^/]+)/(\d{4}-\d{2}-\d{2})/([^/]+)/(.+)$"
 )
@@ -199,8 +244,9 @@ class LawRepository:
         if m is None:
             return None
         local_id, version_date, language, path = m.groups()
-        with self._connections.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
-            cur.execute(
+        with self._connections.read_connection(timeout=timeout) as conn:
+            return fetch_one(
+                conn,
                 _GET_ARTICLE_BY_IRI,
                 {
                     "local_id": local_id,
@@ -209,23 +255,7 @@ class LawRepository:
                     "path": path,
                     "iri": iri.strip(),
                 },
-            )
-            row = cur.fetchone()
-            if row is None:
-                return None
-            return ArticleDetailRecord(
-                iri=str(row[0]),
-                jurisdiction=str(row[1]),
-                id_scheme=str(row[2]),
-                local_id=str(row[3]),
-                law_title=str(row[4]),
-                number=str(row[5]),
-                content=str(row[6]),
-                language=str(row[7]),
-                date_document=str(row[8]),
-                norm_kind=str(row[9]),
-                document_type=str(row[10]),
-                repealed_on=str(row[11]) if row[11] is not None else None,
+                ArticleDetailRecord,
             )
 
     def list_laws(
@@ -237,8 +267,9 @@ class LawRepository:
         timeout: float | None = None,
     ) -> list[LawSummaryRecord]:
         """列出 `as_of` 當日有效且有全文的法規摘要與授權統計。"""
-        with self._connections.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
-            cur.execute(
+        with self._connections.read_connection(timeout=timeout) as conn:
+            return fetch(
+                conn,
                 _LIST_LAWS,
                 {
                     "language": LANGUAGE,
@@ -246,26 +277,8 @@ class LawRepository:
                     "jurisdiction": jurisdiction,
                     "prefix": category_prefix,
                 },
+                LawSummaryRecord,
             )
-            return [
-                LawSummaryRecord(
-                    jurisdiction=row[0],
-                    id_scheme=row[1],
-                    local_id=row[2],
-                    iri=row[3],
-                    title=row[4],
-                    norm_kind=row[5],
-                    date_document=row[6],
-                    parent_jurisdiction=row[7],
-                    parent_id_scheme=row[8],
-                    parent_local_id=row[9],
-                    document_type=row[10],
-                    child_count=row[11],
-                    parent_count=row[12],
-                    guidance_count=row[13],
-                )
-                for row in cur.fetchall()
-            ]
 
     def list_articles(
         self, key: LawKey, *, as_of: str = "", timeout: float | None = None
@@ -276,18 +289,14 @@ class LawRepository:
         if found is None:
             return None
         resource_id, _ = found
-        with (
-            self._connections.read_connection(timeout=time_left(deadline)) as conn,
-            conn.cursor() as cur,
-        ):
-            cur.execute(
+        with self._connections.read_connection(timeout=time_left(deadline)) as conn:
+            rows = fetch(
+                conn,
                 _LIST_ARTICLES,
                 {"resource": resource_id, "language": LANGUAGE, "on": as_of_param(as_of)},
+                _ArticleRow,
             )
-            return [
-                ArticleRecord(iri=iri, number=number, sort_key=tuple(sort_key))
-                for iri, number, sort_key in cur.fetchall()
-            ]
+        return [ArticleRecord(iri=r.iri, number=r.number, sort_key=tuple(r.sort_key)) for r in rows]
 
     def list_headings(
         self, key: LawKey, *, as_of: str = "", timeout: float | None = None
@@ -298,23 +307,23 @@ class LawRepository:
         if found is None:
             return None
         resource_id, _ = found
-        with (
-            self._connections.read_connection(timeout=time_left(deadline)) as conn,
-            conn.cursor() as cur,
-        ):
-            cur.execute(
+        with self._connections.read_connection(timeout=time_left(deadline)) as conn:
+            rows = fetch(
+                conn,
                 _LIST_HEADINGS,
                 {"resource": resource_id, "language": LANGUAGE, "on": as_of_param(as_of)},
+                _HeadingRow,
             )
-            rows = cur.fetchall()
-        id_to_index = {row[0]: i for i, row in enumerate(rows)}
+        id_to_index = {row.id: i for i, row in enumerate(rows)}
         return [
             StructureHeadingRecord(
-                kind=row[2],
-                heading_no=row[3],
-                title=row[4],
-                sort_key=tuple(row[5]),
-                parent_index=id_to_index.get(row[1], -1) if row[1] is not None else -1,
+                kind=row.kind,
+                heading_no=row.heading_no,
+                title=row.title,
+                sort_key=tuple(row.sort_key),
+                parent_index=id_to_index.get(row.parent_id, -1)
+                if row.parent_id is not None
+                else -1,
             )
             for row in rows
         ]
@@ -336,11 +345,9 @@ class LawRepository:
         if found is None:
             return None
         resource_id, _ = found
-        with (
-            self._connections.read_connection(timeout=time_left(deadline)) as conn,
-            conn.cursor() as cur,
-        ):
-            cur.execute(
+        with self._connections.read_connection(timeout=time_left(deadline)) as conn:
+            rows = fetch(
+                conn,
                 "SELECT i.ruling_no, r.ruling_kind::text, r.decided_on, r.source_url, r.excerpt,"
                 "       i.path, i.invalid_from, x.partial"
                 "  FROM corpus.invalidations_at(%(resource)s, %(language)s, %(on)s::date) AS i"
@@ -356,27 +363,37 @@ class LawRepository:
                     "on": as_of_param(as_of),
                     "article": article_number.strip(),
                 },
+                _InvalidationRow,
             )
-            return [
-                InvalidationRecord(
-                    no, kind, decided.isoformat(), url, excerpt, path, since.isoformat(), partial
-                )
-                for no, kind, decided, url, excerpt, path, since, partial in cur.fetchall()
-            ]
+        return [
+            InvalidationRecord(
+                r.ruling_no,
+                r.ruling_kind,
+                r.decided_on.isoformat(),
+                r.source_url,
+                r.excerpt,
+                r.path,
+                r.invalid_from.isoformat(),
+                r.partial,
+            )
+            for r in rows
+        ]
 
     def law_exists(self, key: LawKey, *, timeout: float | None = None) -> bool:
         """法規在語料裡有沒有，不論哪一天。區分「查無此法」與「該日無版本」。"""
         if not is_valid_law_id(key.local_id):
             return False
-        with self._connections.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
-            cur.execute(
-                "SELECT 1 FROM corpus.legal_resource"
-                " WHERE jurisdiction = %s::corpus.jurisdiction"
-                "   AND id_scheme = %s::corpus.id_scheme"
-                "   AND local_id = %s",
-                (key.jurisdiction, key.id_scheme, key.local_id),
+        with self._connections.read_connection(timeout=timeout) as conn:
+            return (
+                conn.execute(
+                    "SELECT 1 FROM corpus.legal_resource"
+                    " WHERE jurisdiction = %s::corpus.jurisdiction"
+                    "   AND id_scheme = %s::corpus.id_scheme"
+                    "   AND local_id = %s",
+                    (key.jurisdiction, key.id_scheme, key.local_id),
+                ).fetchone()
+                is not None
             )
-            return cur.fetchone() is not None
 
     def resource_id(
         self, key: LawKey, *, as_of: str = "", timeout: float | None = None
@@ -396,9 +413,8 @@ class LawRepository:
         return self._values(_ID_SCHEMES)
 
     def _values(self, query: str) -> frozenset[str]:
-        with self._connections.connection() as conn, conn.cursor() as cur:
-            cur.execute(query)
-            return frozenset(str(value) for (value,) in cur.fetchall())
+        with self._connections.connection() as conn:
+            return frozenset(row.value for row in fetch(conn, query, None, _ValueRow))
 
     def resolve(
         self, key: LawKey, as_of: str, *, timeout: float | None = None
@@ -406,8 +422,9 @@ class LawRepository:
         """`as_of` 有效、有全文版本的法規（內部編號與記錄）；法規不存在或該日無版本為 None。"""
         if not is_valid_law_id(key.local_id):
             return None
-        with self._connections.read_connection(timeout=timeout) as conn, conn.cursor() as cur:
-            cur.execute(
+        with self._connections.read_connection(timeout=timeout) as conn:
+            row = fetch_one(
+                conn,
                 _RESOLVE,
                 {
                     "law": key.local_id,
@@ -416,26 +433,16 @@ class LawRepository:
                     "jurisdiction": key.jurisdiction,
                     "id_scheme": key.id_scheme,
                 },
+                _ResolvedRow,
             )
-            row = cur.fetchone()
         if row is None:
             return None
-        (
-            resource_id,
-            iri,
-            title,
-            language,
-            enacted,
-            jur,
-            scheme,
-            lid,
-        ) = row
-        return resource_id, LawRecord(
-            jurisdiction=jur,
-            id_scheme=scheme,
-            local_id=lid,
-            iri=iri,
-            title=title,
-            language=language,
-            date_document=enacted.isoformat() if enacted is not None else "",
+        return row.resource_id, LawRecord(
+            jurisdiction=row.jurisdiction,
+            id_scheme=row.id_scheme,
+            local_id=row.local_id,
+            iri=row.iri,
+            title=row.title,
+            language=row.language,
+            date_document=row.enacted.isoformat() if row.enacted is not None else "",
         )

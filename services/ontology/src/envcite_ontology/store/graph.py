@@ -1,10 +1,9 @@
 """多層授權知識圖譜：讀出法規之間的授權邊、條文義務與罰則連動，與函釋錨點。"""
 
 from collections import defaultdict
-from typing import Any
+from typing import NamedTuple
 
-import psycopg
-
+from envcite_ontology.db import Conn, fetch
 from envcite_ontology.store import graph_layout as layout
 from envcite_ontology.store.laws import LawRepository
 from envcite_ontology.store.params import as_of_param, expiry, time_left
@@ -198,6 +197,18 @@ _GRAPH_GUIDANCE_LINKS = """
 """
 
 
+class _ResourceRow(NamedTuple):
+    id: int
+    norm_kind: str
+    document_type: str
+    local_id: str
+
+
+class _ActiveEdgeRow(NamedTuple):
+    law_id: int
+    command_id: int
+
+
 class GraphRepository:
     """法規圖譜的唯讀查詢。"""
 
@@ -253,27 +264,25 @@ class GraphRepository:
 
     @staticmethod
     def _load_graph_topology(
-        conn: psycopg.Connection[tuple[Any, ...]], on: str
+        conn: Conn, on: str
     ) -> tuple[dict[int, tuple[str, str, str]], dict[int, list[int]], dict[int, list[int]]]:
         params = {"language": LANGUAGE, "on": on}
-        with conn.cursor() as cur:
-            cur.execute(_GRAPH_RESOURCES, params)
-            res_info: dict[int, tuple[str, str, str]] = {
-                int(rid): (str(nk), str(dt), str(lid)) for rid, nk, dt, lid in cur.fetchall()
-            }
-            cur.execute(_GRAPH_ACTIVE_EDGES, params)
-            parents_of: dict[int, list[int]] = defaultdict(list)
-            children_of: dict[int, list[int]] = defaultdict(list)
-            for law_id, cmd_id in cur.fetchall():
-                src, dst = int(law_id), int(cmd_id)
-                children_of[src].append(dst)
-                parents_of[dst].append(src)
+        res_info: dict[int, tuple[str, str, str]] = {
+            int(r.id): (str(r.norm_kind), str(r.document_type), str(r.local_id))
+            for r in fetch(conn, _GRAPH_RESOURCES, params, _ResourceRow)
+        }
+        parents_of: dict[int, list[int]] = defaultdict(list)
+        children_of: dict[int, list[int]] = defaultdict(list)
+        for edge in fetch(conn, _GRAPH_ACTIVE_EDGES, params, _ActiveEdgeRow):
+            src, dst = int(edge.law_id), int(edge.command_id)
+            children_of[src].append(dst)
+            parents_of[dst].append(src)
         return res_info, parents_of, children_of
 
     @staticmethod
     def _assemble_graph(
         *,
-        conn: psycopg.Connection[tuple[Any, ...]],
+        conn: Conn,
         focus_id: int | None,
         selected: set[int],
         res_info: dict[int, tuple[str, str, str]],
@@ -286,38 +295,18 @@ class GraphRepository:
         edges: list[LawGraphEdgeRecord] = []
         violations: list[ArticleViolationLinkRecord] = []
         guidances: list[GuidanceLinkRecord] = []
-        with conn.cursor() as cur:
-            if ids:
-                cur.execute(_GRAPH_NODE_DETAILS, {"ids": ids, "language": LANGUAGE, "on": on})
-                node_map = layout.build_node_map(cur.fetchall(), children_of, selected, tiers)
-                cur.execute(_GRAPH_EDGE_DETAILS, {"ids": ids, "language": LANGUAGE, "on": on})
-                edges = layout.build_edges(cur.fetchall(), node_map)
-            if focus_id is not None:
-                params = {"resource": focus_id, "language": LANGUAGE, "on": on}
-                cur.execute(_GRAPH_VIOLATION_LINKS, params)
-                violations = [
-                    ArticleViolationLinkRecord(
-                        penalty_article=r[0],
-                        penalty_path=r[1],
-                        kind=r[2],
-                        target_article=r[3],
-                        target_path=r[4],
-                    )
-                    for r in cur.fetchall()
-                ]
-                cur.execute(_GRAPH_GUIDANCE_LINKS, params)
-                guidances = [
-                    GuidanceLinkRecord(
-                        article_number=r[0],
-                        path=r[1],
-                        document_no=r[2],
-                        issuer=r[3],
-                        issued_on=r[4],
-                        subject=r[5],
-                        source_url=r[6],
-                    )
-                    for r in cur.fetchall()
-                ]
+        if ids:
+            detail_params = {"ids": ids, "language": LANGUAGE, "on": on}
+            node_rows = fetch(conn, _GRAPH_NODE_DETAILS, detail_params, layout.NodeRow)
+            node_map = layout.build_node_map(node_rows, children_of, selected, tiers)
+            edge_rows = fetch(conn, _GRAPH_EDGE_DETAILS, detail_params, layout.EdgeRow)
+            edges = layout.build_edges(edge_rows, node_map)
+        if focus_id is not None:
+            link_params = {"resource": focus_id, "language": LANGUAGE, "on": on}
+            violations = fetch(
+                conn, _GRAPH_VIOLATION_LINKS, link_params, ArticleViolationLinkRecord
+            )
+            guidances = fetch(conn, _GRAPH_GUIDANCE_LINKS, link_params, GuidanceLinkRecord)
 
         focus_node = node_map.get(focus_id) if focus_id is not None else None
         child_groups = layout.child_groups(focus_id, children_of, res_info) if focus_id else ()
