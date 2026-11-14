@@ -3689,6 +3689,15 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     overflow-x: auto;
 }
 
+/* 功能區（新對話與各功能入口）：側欄是直欄時固定在上、不捲動；沒有 JavaScript 的手機側欄是一條橫列，它就是列裡的第一段。 */
+.ep-portal.ep-console .ep-side-actions {
+    box-sizing: border-box;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--ep-space-2);
+}
+
 .ep-portal.ep-console .ep-side-modules {
     box-sizing: border-box;
     display: flex;
@@ -4006,15 +4015,25 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         padding-inline-start: max(var(--ep-space-3), env(safe-area-inset-left));
     }
 
+    /* 側欄本體不捲動：功能區固定在上，對話歷史區占剩下的高度、自己捲動。 */
     html[data-js] .ep-portal.ep-console .ep-side-body {
         flex: 1;
         min-block-size: 0;
         flex-direction: column;
         align-items: stretch;
         gap: 0;
-        overflow: hidden auto;
+        overflow: hidden;
+        padding: var(--ep-space-2) var(--ep-space-3) 0 max(var(--ep-space-3), env(safe-area-inset-left));
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-side-actions {
+        flex: 0 1 auto;
+        min-block-size: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        overflow-y: auto;
         overscroll-behavior: contain;
-        padding: var(--ep-space-2) var(--ep-space-3) var(--ep-space-4) max(var(--ep-space-3), env(safe-area-inset-left));
     }
 
     html[data-js] .ep-portal.ep-console .ep-side-new-chat {
@@ -4042,7 +4061,18 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         flex-direction: column;
         align-items: stretch;
         gap: 0;
-        padding-block-end: var(--ep-space-3);
+        padding-block-end: var(--ep-space-2);
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-side-nav + .ep-side-nav {
+        margin-block-start: var(--ep-space-2);
+        padding-block-start: var(--ep-space-2);
+        border-block-start: 1px solid var(--ep-border-subtle);
+    }
+
+    html[data-js] .ep-portal.ep-console .ep-recent {
+        display: flex;
+        flex-direction: column;
     }
 
     html[data-js] .ep-portal.ep-console .ep-history-empty {
@@ -4089,16 +4119,25 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         padding: var(--ep-space-2) var(--ep-space-3);
     }
 
+    /* 側欄本體不捲動：功能區固定在上，對話歷史區占剩下的高度、自己捲動。 */
     .ep-portal.ep-console .ep-side-body {
         flex: 1;
         min-block-size: 0;
         flex-direction: column;
         align-items: stretch;
         gap: 0;
-        overflow: hidden auto;
-        scrollbar-gutter: stable;
+        overflow: hidden;
+        padding: var(--ep-space-2) var(--ep-space-3) 0;
+    }
+
+    .ep-portal.ep-console .ep-side-actions {
+        flex: 0 1 auto;
+        min-block-size: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        overflow-y: auto;
         overscroll-behavior: contain;
-        padding: var(--ep-space-2) var(--ep-space-3) var(--ep-space-4);
     }
 
     .ep-portal.ep-console .ep-side-new-chat {
@@ -4126,7 +4165,18 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         flex-direction: column;
         align-items: stretch;
         gap: 0;
-        padding-block-end: var(--ep-space-3);
+        padding-block-end: var(--ep-space-2);
+    }
+
+    .ep-portal.ep-console .ep-side-nav + .ep-side-nav {
+        margin-block-start: var(--ep-space-2);
+        padding-block-start: var(--ep-space-2);
+        border-block-start: 1px solid var(--ep-border-subtle);
+    }
+
+    .ep-portal.ep-console .ep-recent {
+        display: flex;
+        flex-direction: column;
     }
 
     .ep-portal.ep-console .ep-side-foot {
@@ -4199,6 +4249,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         padding-block-end: 0;
     }
 
+    html[data-side="collapsed"] .ep-portal.ep-console .ep-recent,
     html[data-side="collapsed"] .ep-portal.ep-console .ep-history-empty {
         display: none;
     }
@@ -4225,12 +4276,60 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     min-block-size: calc(100dvh - var(--ep-appbar-height));
 }
 
+/* 對話歷史區：與功能區分開的一塊凹進去的面板（底色比側欄深一階，同頁面的底），區頭固定、清單自己捲動。
+   有對話的 .ep-recent 占側欄剩下的高度（最少留得出標題、篩選與幾列）；空的 .ep-history-empty 只有一句引導，不撐滿。 */
 .ep-portal.ep-console .ep-recent,
 .ep-portal.ep-console .ep-history-empty {
+    box-sizing: border-box;
+    min-block-size: 0;
+    margin-block: var(--ep-space-1) var(--ep-space-3);
+    padding: var(--ep-space-3) 0 0;
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-bg);
+}
+
+.ep-portal.ep-console .ep-recent {
+    flex: 1 1 12rem;
+}
+
+.ep-portal.ep-console .ep-history-empty {
+    flex: none;
+    padding: var(--ep-space-3) var(--ep-space-2);
+}
+
+.ep-portal.ep-console .ep-recent-head {
+    flex: none;
+    padding-inline: var(--ep-space-2);
+}
+
+.ep-portal.ep-console .ep-recent-head .ep-history-head,
+.ep-portal.ep-console .ep-history-empty .ep-history-head,
+.ep-portal.ep-console .ep-history-empty .ep-history-empty-note {
+    margin-inline: 0;
+    padding-inline: var(--ep-space-1);
+}
+
+.ep-portal.ep-console .ep-recent .ep-recent-search {
+    background: var(--ep-surface);
+}
+
+.ep-portal.ep-console .ep-recent-scroll {
     flex: 1;
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    padding: 0 var(--ep-space-1) var(--ep-space-2);
+}
+
+/* 日期分組的小標題在清單裡，頂端不需要再留後台式的大間距。 */
+.ep-portal.ep-console .ep-recent-scroll .ep-side-group {
+    margin: var(--ep-space-3) var(--ep-space-2) var(--ep-space-1);
+}
+
+.ep-portal.ep-console .ep-recent-scroll .ep-side-group:first-child {
     margin-block-start: var(--ep-space-1);
-    padding-block-start: var(--ep-space-3);
-    border-block-start: 1px solid var(--ep-border-subtle);
 }
 
 /* ---- 側欄對話項目的選單（釘選、重新命名、刪除） --------------------------------------------------
@@ -4274,6 +4373,29 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
     .ep-recent-more:hover {
         background: color-mix(in srgb, var(--ep-text) 8%, transparent);
+    }
+
+    /* 側欄裡游標裝置的「⋯」浮在標題尾端，不再占一格寬度：標題多得一個按鈕的寬度。鈕的底色等於該列此刻的底色，蓋住底下被截的字。 */
+    .ep-recent-scroll .ep-recent-item {
+        --ep-row-fill: color-mix(in srgb, var(--ep-text) 6%, var(--ep-bg));
+        position: relative;
+    }
+
+    .ep-recent-scroll .ep-recent-item:has(> .ep-recent-link.active) {
+        --ep-row-fill: color-mix(in srgb, var(--ep-text) 10%, var(--ep-bg));
+    }
+
+    .ep-recent-scroll .ep-recent-item .ep-recent-more {
+        position: absolute;
+        inset-block: 0;
+        inset-inline-end: var(--ep-space-1);
+        margin-block: auto;
+        background: var(--ep-row-fill);
+        box-shadow: 0 0 var(--ep-space-2) var(--ep-space-2) var(--ep-row-fill);
+    }
+
+    .ep-recent-scroll .ep-recent-item .ep-recent-more:hover {
+        background: color-mix(in srgb, var(--ep-text) 8%, var(--ep-row-fill));
     }
 }
 

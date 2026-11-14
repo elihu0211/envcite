@@ -70,11 +70,9 @@ public sealed class ChatPageLifecycleTests
             throw new JSDisconnectedException("no browser");
     }
 
-    private sealed class HistoryOff : IConversationHistoryAvailability
+    private sealed class FixedRetention : IConversationHistorySettings
     {
-        public bool Enabled => false;
-
-        public int RetentionDays => 0;
+        public int RetentionDays => 30;
     }
 
     private sealed class FakeCitationArticleService : ICitationArticleService
@@ -99,7 +97,7 @@ public sealed class ChatPageLifecycleTests
             .AddSingleton<IAskService>(ask)
             .AddSingleton<IStringLocalizer<Ui>>(localizer)
             .AddOutputLayoutEngine()
-            .AddSingleton<IConversationHistoryAvailability>(new HistoryOff())
+            .AddSingleton<IConversationHistorySettings>(new FixedRetention())
             .AddSingleton<ICitationArticleService>(new FakeCitationArticleService())
             .AddSingleton<IJSRuntime>(new NoJs())
             .AddSingleton<BrandText>(new BrandText(Options.Create(new BrandOptions()), localizer))

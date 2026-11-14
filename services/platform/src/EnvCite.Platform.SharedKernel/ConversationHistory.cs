@@ -44,29 +44,27 @@ public sealed record ConversationDetail(
     Guid Id, string Title, DateTimeOffset UpdatedAt, IReadOnlyList<ConversationMessageView> Messages, bool Pinned = false);
 
 /// <summary>
-/// 問答歷史有沒有開啟（<c>Platform:ConversationHistory:Enabled</c>）與保留幾天。singleton，只讀設定；
+/// 問答歷史的保留設定。singleton，只讀設定；
 /// 與 <see cref="IConversationHistory"/> 分開，同 <see cref="IAnswerAvailability"/> 的理由：後者是 scoped（要資料庫與租戶），
-/// 為了一個旗標去解析它，互動式 circuit 會把那個 <c>DbContext</c> 抓住直到斷線。
+/// 為了一個數字去解析它，互動式 circuit 會把那個 <c>DbContext</c> 抓住直到斷線。
 /// </summary>
-public interface IConversationHistoryAvailability
+public interface IConversationHistorySettings
 {
-    bool Enabled { get; }
-
     /// <summary>保留天數；超過的對話（以最後更新計）會被刪除。釘選的也一樣：釘選只管排序，不延長保存。</summary>
     int RetentionDays { get; }
 }
 
 /// <summary>
 /// 客戶入口成員的問答歷史。<b>只有本人看得到</b>：每個方法都以呼叫者的入口使用者 Id 篩選（同租戶的其他成員，
-/// 連 Owner 都不行），租戶則由租戶篩選保證。問題文字是客戶案件的內容，所以預設關閉
-/// （見 <see cref="IConversationHistoryAvailability"/>），開啟後超過保留天數的對話由背景工作刪除。
-/// 關閉時所有方法都不讀不寫。
+/// 連 Owner 都不行），租戶則由租戶篩選保證。問題文字是客戶案件的內容，所以保存有期限
+/// （見 <see cref="IConversationHistorySettings"/>），超過保留天數的對話由背景工作刪除。
+/// 呼叫者不是入口成員（沒有使用者 Id）時所有方法都不讀不寫。
 /// </summary>
 public interface IConversationHistory
 {
     /// <summary>
     /// 記一問一答。<paramref name="conversationId"/> 給了而且是呼叫者自己的對話就接在後面，否則另開一串
-    /// （別人的、不存在的都當作另開，不洩漏它存不存在）。關閉時回 null。
+    /// （別人的、不存在的都當作另開，不洩漏它存不存在）。呼叫者不是入口成員時回 null。
     /// </summary>
     Task<Guid?> AppendTurnAsync(ClaimsPrincipal user, Guid? conversationId, ConversationTurn turn, CancellationToken cancellationToken);
 
@@ -102,7 +100,7 @@ public interface IConversationHistory
     /// <summary>
     /// 把自己的一串對話整串複製成新的一串（分叉）：訊息、引用與問的日期原樣複製，之後兩串各自發展。
     /// 新的一串以 <paramref name="title"/>（同改名的正規化）為標題、不釘選、不封存，<c>UpdatedAt</c> 是現在：
-    /// 這是新的活動，保存期限從現在起算。回傳新對話的 Id；不是自己的、不存在、標題空白、關閉時都是 null。
+    /// 這是新的活動，保存期限從現在起算。回傳新對話的 Id；不是自己的、不存在、標題空白、呼叫者不是入口成員時都是 null。
     /// </summary>
     Task<Guid?> ForkAsync(ClaimsPrincipal user, Guid id, string title, CancellationToken cancellationToken);
 

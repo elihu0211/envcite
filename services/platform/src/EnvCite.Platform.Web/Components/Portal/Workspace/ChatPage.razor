@@ -232,14 +232,7 @@
                         <h2 id="ask-info-title" class="ep-section-title ep-sheet-title">@L["使用說明"]</h2>
                         <ul class="ep-sheet-list">
                             <li>@L["用條文裡會出現的詞，空白分隔。"]</li>
-                            @if (History.Enabled)
-                            {
-                                <li>@L["你的提問會存在"]<a href="@($"{PortalPaths.Home(Tenant)}/history")">@L["對話紀錄"]</a>@L["，只有你看得到，{0} 天後自動刪除，也可以隨時自己刪。", History.RetentionDays]</li>
-                            }
-                            else
-                            {
-                                <li>@L["查詢文字不會被記錄，只記一次搜尋的次數。"]</li>
-                            }
+                            <li>@L["你的提問會存在"]<a href="@($"{PortalPaths.Home(Tenant)}/history")">@L["對話紀錄"]</a>@L["，只有你看得到，{0} 天後自動刪除，也可以隨時自己刪。", Settings.RetentionDays]</li>
                             @if (Session.Capabilities.AiAnswer)
                             {
                                 <li>@L["回答由 AI 產生：你的問題與相關條文會送到模型服務。"]</li>

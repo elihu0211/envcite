@@ -14,7 +14,7 @@ namespace EnvCite.Platform.Web.Components.Portal.Workspace;
 /// </summary>
 public sealed partial class ChatPage(
     ChatSession session,
-    IConversationHistoryAvailability history,
+    IConversationHistorySettings settings,
     ICitationArticleService citationArticles,
     IJSRuntime js)
 {
@@ -41,7 +41,7 @@ public sealed partial class ChatPage(
 
     private ChatSession Session => session;
 
-    private IConversationHistoryAvailability History => history;
+    private IConversationHistorySettings Settings => settings;
 
     private static (CancellationTokenSource, CancellationToken) CreateLifetime()
     {

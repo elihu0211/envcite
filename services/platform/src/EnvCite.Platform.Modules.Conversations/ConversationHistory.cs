@@ -8,15 +8,12 @@ namespace EnvCite.Platform.Modules.Conversations;
 internal sealed class ConversationHistory(
     PlatformDbContext db,
     IMultiTenantContextAccessor<TenantInfo> tenant,
-    IOptions<ConversationHistoryOptions> options,
     TimeProvider time) : IConversationHistory
 {
-    private bool Enabled => options.Value.Enabled;
-
     public async Task<Guid?> AppendTurnAsync(
         ClaimsPrincipal user, Guid? conversationId, ConversationTurn turn, CancellationToken cancellationToken)
     {
-        if (!Enabled || UserId(user) is not { } userId || string.IsNullOrWhiteSpace(turn.Question))
+        if (UserId(user) is not { } userId || string.IsNullOrWhiteSpace(turn.Question))
             return null;
 
         var now = time.GetUtcNow();
@@ -57,7 +54,7 @@ internal sealed class ConversationHistory(
     public async Task<IReadOnlyList<ConversationSummary>> ListAsync(
         ClaimsPrincipal user, int limit, string? search, CancellationToken cancellationToken)
     {
-        if (!Enabled || UserId(user) is not { } userId)
+        if (UserId(user) is not { } userId)
             return [];
 
         var mine = Mine(userId, search).Where(c => c.ArchivedAt == null);
@@ -83,7 +80,7 @@ internal sealed class ConversationHistory(
     public async Task<IReadOnlyList<ConversationSummary>> ListArchivedAsync(
         ClaimsPrincipal user, int limit, string? search, CancellationToken cancellationToken)
     {
-        if (!Enabled || UserId(user) is not { } userId)
+        if (UserId(user) is not { } userId)
             return [];
 
         return await Mine(userId, search)
@@ -112,7 +109,7 @@ internal sealed class ConversationHistory(
 
     public async Task<ConversationDetail?> GetAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)
     {
-        if (!Enabled || UserId(user) is not { } userId)
+        if (UserId(user) is not { } userId)
             return null;
 
         var conversation = await db.Conversations
@@ -142,7 +139,7 @@ internal sealed class ConversationHistory(
 
     public async Task<bool> RenameAsync(ClaimsPrincipal user, Guid id, string title, CancellationToken cancellationToken)
     {
-        if (!Enabled || UserId(user) is not { } userId || NormalizeTitle(title) is not { Length: > 0 } normalized)
+        if (UserId(user) is not { } userId || NormalizeTitle(title) is not { Length: > 0 } normalized)
             return false;
 
         // 不經 SaveChanges 的單一 UPDATE：只改標題，UpdatedAt 不動（改名不是新的活動，不改排序也不延長保存）。
@@ -153,7 +150,7 @@ internal sealed class ConversationHistory(
 
     public async Task<bool> PinAsync(ClaimsPrincipal user, Guid id, bool pinned, CancellationToken cancellationToken)
     {
-        if (!Enabled || UserId(user) is not { } userId)
+        if (UserId(user) is not { } userId)
             return false;
 
         DateTimeOffset? at = pinned ? time.GetUtcNow() : null;
@@ -164,7 +161,7 @@ internal sealed class ConversationHistory(
 
     public async Task<bool> ArchiveAsync(ClaimsPrincipal user, Guid id, bool archived, CancellationToken cancellationToken)
     {
-        if (!Enabled || UserId(user) is not { } userId)
+        if (UserId(user) is not { } userId)
             return false;
 
         var mine = db.Conversations.Where(c => c.Id == id && c.UserId == userId);
@@ -177,7 +174,7 @@ internal sealed class ConversationHistory(
 
     public async Task<Guid?> ForkAsync(ClaimsPrincipal user, Guid id, string title, CancellationToken cancellationToken)
     {
-        if (!Enabled || UserId(user) is not { } userId || NormalizeTitle(title) is not { Length: > 0 } normalized)
+        if (UserId(user) is not { } userId || NormalizeTitle(title) is not { Length: > 0 } normalized)
             return null;
 
         if (!await db.Conversations.AnyAsync(c => c.Id == id && c.UserId == userId, cancellationToken))
@@ -209,7 +206,7 @@ internal sealed class ConversationHistory(
 
     public async Task<bool> DeleteAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)
     {
-        if (!Enabled || UserId(user) is not { } userId)
+        if (UserId(user) is not { } userId)
             return false;
 
         var conversation = await db.Conversations.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId, cancellationToken);

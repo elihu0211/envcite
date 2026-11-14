@@ -28,7 +28,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
 
     // 測試主機預設給每個租戶一個預設方案（讓剛建立的租戶能用）；沒有方案的情形要把它清掉。
     private (WebApplicationFactory<Program> Host, FakeChat Chat) Host(
-        Func<IReadOnlyList<ChatMessage>, string> reply, bool history = false, bool defaultPlan = true,
+        Func<IReadOnlyList<ChatMessage>, string> reply, bool defaultPlan = true,
         UsageDetails? usage = null, ILoggerProvider? logs = null, int? historyTurns = null)
     {
         var chat = new FakeChat(reply, usage);
@@ -37,9 +37,6 @@ public sealed class AskServiceTests(PlatformFactory factory)
             b.UseSetting("Platform:Answer:Enabled", "true")
                 .UseSetting("Platform:Answer:Endpoint", "https://models.example.test/v1")
                 .UseSetting("Platform:Answer:ApiKey", "test-key");
-            if (history)
-                b.UseSetting("Platform:ConversationHistory:Enabled", "true");
-
             if (historyTurns is { } turns)
                 b.UseSetting("Platform:Answer:HistoryTurns", turns.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
@@ -434,7 +431,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
     [Fact]
     public async Task ARecordedTurnBelongsToItsAuthorInTheirTenantOnly()
     {
-        var (host, _) = Host(_ => Reply, history: true);
+        var (host, _) = Host(_ => Reply);
         using var h = host;
         var (tenant, author) = await MemberOfAsync("ask-k");
         var (userId, _) = await AddMemberAsync(factory, tenant.Id, NewEmail(), CustomerRoles.Owner);
@@ -450,19 +447,11 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.Empty(await ListAsync(host, tenant.Id, boss));
     }
 
-    [Fact]
-    public async Task WhenHistoryIsOffNothingIsRecorded()
-    {
-        var (_, member) = await MemberOfAsync("ask-l");
-
-        Assert.Null(await factory.Services.GetRequiredService<IAskService>().RecordAsync(member, null, "問題", "答案", Ct));
-    }
-
-    // 側欄的最近對話：本人的、新的在前、受筆數限制；同租戶別人的、非入口成員的、歷史關閉的都是空的。
+    // 側欄的最近對話：本人的、新的在前、受筆數限制；同租戶別人的、非入口成員的都是空的。
     [Fact]
     public async Task RecentConversationsAreTheMembersOwnNewestFirstAndLimited()
     {
-        var (host, _) = Host(_ => Reply, history: true);
+        var (host, _) = Host(_ => Reply);
         using var h = host;
         var (tenant, author) = await MemberOfAsync("ask-m");
         var (userId, _) = await AddMemberAsync(factory, tenant.Id, NewEmail(), CustomerRoles.Owner);
@@ -481,14 +470,6 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.Empty(await ask.RecentAsync(boss, 10, Ct));
         Assert.Empty(await ask.RecentAsync(new ClaimsPrincipal(new ClaimsIdentity()), 10, Ct));
         Assert.Empty(await ask.RecentAsync(OperatorSession.Principal(), 10, Ct));
-    }
-
-    [Fact]
-    public async Task WhenHistoryIsOffThereAreNoRecentConversations()
-    {
-        var (_, member) = await MemberOfAsync("ask-o");
-
-        Assert.Empty(await factory.Services.GetRequiredService<IAskService>().RecentAsync(member, 10, Ct));
     }
 
     // 搜尋模式：日期原樣交給 ontology，計量一次；日期不合格在送出前就擋下，不計量也不打 ontology。

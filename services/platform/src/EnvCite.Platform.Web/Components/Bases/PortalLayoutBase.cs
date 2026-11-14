@@ -20,8 +20,6 @@ public abstract class PortalLayoutBase : PlatformLayoutBase
 
     [Inject] protected IAskService Ask { get; set; } = default!;
 
-    [Inject] protected IConversationHistoryAvailability HistoryAvailability { get; set; } = default!;
-
     [Inject] protected TimeProvider Time { get; set; } = default!;
 
     [Inject] protected IEnumerable<IPortalNavContributor> NavContributors { get; set; } = default!;
@@ -34,9 +32,9 @@ public abstract class PortalLayoutBase : PlatformLayoutBase
     protected static string? DisplayNameOf(ClaimsPrincipal? user) =>
         user?.FindFirst(ClaimTypes.GivenName)?.Value ?? user?.FindFirst(ClaimTypes.Email)?.Value;
 
-    /// <summary>對話搜尋／歷史頁路徑（只有問答歷史開啟時才有）。</summary>
-    protected string? HistoryHrefOf(string? tenantIdentifier) =>
-        HistoryAvailability.Enabled && !string.IsNullOrEmpty(tenantIdentifier)
+    /// <summary>對話搜尋／歷史頁路徑（有租戶才有）。</summary>
+    protected static string? HistoryHrefOf(string? tenantIdentifier) =>
+        !string.IsNullOrEmpty(tenantIdentifier)
             ? $"{PortalPaths.Home(tenantIdentifier)}/history"
             : null;
 

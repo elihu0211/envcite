@@ -15,74 +15,67 @@
     </Actions>
 </PageHeader>
 
-@if (!HistoryFeature.Enabled)
-{
-    <FormAlert Kind="AlertKind.Info">@L["這個環境沒有開啟對話紀錄。"]</FormAlert>
-}
-else
-{
-    <div class="ep-history-shell">
-        @* 對話與已封存是同一份清單的兩個檢視（?view=archived）：封存的不在側欄與預設列表，只在這裡找得回來。 *@
-        <PageTabs Items="@_views" Active="@(_archived ? ArchivedView : ActiveView)" Query="view" Label="@L["對話檢視"]" />
+<div class="ep-history-shell">
+    @* 對話與已封存是同一份清單的兩個檢視（?view=archived）：封存的不在側欄與預設列表，只在這裡找得回來。 *@
+    <PageTabs Items="@_views" Active="@(_archived ? ArchivedView : ActiveView)" Query="view" Label="@L["對話檢視"]" />
 
-        <div class="ep-history-meta">
-            <span class="ep-hint">@L["共 {0} 筆對話", _items.Count]</span>
-            <span class="ep-hint">@L["超過 {0} 天沒有更新的對話會自動刪除。", HistoryFeature.RetentionDays]</span>
-        </div>
-
-        @* 只比對標題：內容是客戶案情，不建索引。 *@
-        <form method="get" role="search" class="ep-conv-search">
-            @if (_archived)
-            {
-                <input type="hidden" name="view" value="@ArchivedView" />
-            }
-            <label class="ep-visually-hidden" for="history-q">@L["搜尋對話標題"]</label>
-            <div class="ep-conv-search-field">
-                <NavIcon Path="@Icons.Material.Outlined.Search" />
-                <input id="history-q" class="ep-input" type="search" name="q" value="@Query" data-history-filter maxlength="80" autocomplete="off" placeholder="@L["搜尋對話標題"]" />
-            </div>
-            <button type="submit" class="ep-btn ep-btn-quiet">@L["搜尋"]</button>
-        </form>
-
-        @if (_items.Count == 0 && !string.IsNullOrWhiteSpace(Query))
-        {
-            <EmptyState Icon="@Icons.Material.Outlined.SearchOff" Title="@L["沒有符合的對話"]" Description="@L["換個詞試試；只比對標題，不比對內容。"]" />
-        }
-        else if (_items.Count == 0 && _archived)
-        {
-            <EmptyState Icon="@Icons.Material.Outlined.Archive" Title="@L["沒有封存的對話"]" Description="@L["在對話的「⋯」選單選「封存」，它就會從側欄移到這裡；在封存的對話接著問，它會自動回到側欄。"]" />
-        }
-        else if (_items.Count == 0)
-        {
-            <EmptyState Icon="@Icons.Material.Outlined.Forum" Title="@L["還沒有對話"]" Description="@L["在首頁問一個問題，它就會出現在這裡。"]">
-                <a class="ep-btn ep-btn-primary" href="@PortalPaths.Home(Tenant)">@L["法規諮詢"]</a>
-            </EmptyState>
-        }
-        else
-        {
-            <ul class="ep-history" aria-label="@L["對話"]">
-                @foreach (var item in _items)
-                {
-                    <li class="ep-card ep-history-item" data-history-item data-title="@item.Title">
-                        <a class="ep-history-link" href="@PortalPaths.Conversation(Tenant, item.Id)">
-                            <span class="ep-history-title">
-                                @if (item.Pinned)
-                                {
-                                    <NavIcon Path="@Icons.Material.Outlined.PushPin" />
-                                }
-                                <span>@item.Title</span>
-                                @if (item.Pinned)
-                                {
-                                    <StatusBadge Tone="info">@L["已釘選"]</StatusBadge>
-                                }
-                            </span>
-                            <time class="ep-secondary" datetime="@TaipeiTime.Full(item.UpdatedAt)">@TaipeiTime.Format(item.UpdatedAt)</time>
-                        </a>
-                        <ConversationMenu Id="@item.Id" Href="@PortalPaths.Conversation(Tenant, item.Id)" Title="@item.Title" Pinned="@item.Pinned" Archived="@_archived" />
-                    </li>
-                }
-            </ul>
-            <p class="ep-hint ep-history-filter-empty" data-history-empty hidden>@L["沒有符合的對話"]</p>
-        }
+    <div class="ep-history-meta">
+        <span class="ep-hint">@L["共 {0} 筆對話", _items.Count]</span>
+        <span class="ep-hint">@L["超過 {0} 天沒有更新的對話會自動刪除。", Settings.RetentionDays]</span>
     </div>
-}
+
+    @* 只比對標題：內容是客戶案情，不建索引。 *@
+    <form method="get" role="search" class="ep-conv-search">
+        @if (_archived)
+        {
+            <input type="hidden" name="view" value="@ArchivedView" />
+        }
+        <label class="ep-visually-hidden" for="history-q">@L["搜尋對話標題"]</label>
+        <div class="ep-conv-search-field">
+            <NavIcon Path="@Icons.Material.Outlined.Search" />
+            <input id="history-q" class="ep-input" type="search" name="q" value="@Query" data-history-filter maxlength="80" autocomplete="off" placeholder="@L["搜尋對話標題"]" />
+        </div>
+        <button type="submit" class="ep-btn ep-btn-quiet">@L["搜尋"]</button>
+    </form>
+
+    @if (_items.Count == 0 && !string.IsNullOrWhiteSpace(Query))
+    {
+        <EmptyState Icon="@Icons.Material.Outlined.SearchOff" Title="@L["沒有符合的對話"]" Description="@L["換個詞試試；只比對標題，不比對內容。"]" />
+    }
+    else if (_items.Count == 0 && _archived)
+    {
+        <EmptyState Icon="@Icons.Material.Outlined.Archive" Title="@L["沒有封存的對話"]" Description="@L["在對話的「⋯」選單選「封存」，它就會從側欄移到這裡；在封存的對話接著問，它會自動回到側欄。"]" />
+    }
+    else if (_items.Count == 0)
+    {
+        <EmptyState Icon="@Icons.Material.Outlined.Forum" Title="@L["還沒有對話"]" Description="@L["在首頁問一個問題，它就會出現在這裡。"]">
+            <a class="ep-btn ep-btn-primary" href="@PortalPaths.Home(Tenant)">@L["法規諮詢"]</a>
+        </EmptyState>
+    }
+    else
+    {
+        <ul class="ep-history" aria-label="@L["對話"]">
+            @foreach (var item in _items)
+            {
+                <li class="ep-card ep-history-item" data-history-item data-title="@item.Title">
+                    <a class="ep-history-link" href="@PortalPaths.Conversation(Tenant, item.Id)">
+                        <span class="ep-history-title">
+                            @if (item.Pinned)
+                            {
+                                <NavIcon Path="@Icons.Material.Outlined.PushPin" />
+                            }
+                            <span>@item.Title</span>
+                            @if (item.Pinned)
+                            {
+                                <StatusBadge Tone="info">@L["已釘選"]</StatusBadge>
+                            }
+                        </span>
+                        <time class="ep-secondary" datetime="@TaipeiTime.Full(item.UpdatedAt)">@TaipeiTime.Format(item.UpdatedAt)</time>
+                    </a>
+                    <ConversationMenu Id="@item.Id" Href="@PortalPaths.Conversation(Tenant, item.Id)" Title="@item.Title" Pinned="@item.Pinned" Archived="@_archived" />
+                </li>
+            }
+        </ul>
+        <p class="ep-hint ep-history-filter-empty" data-history-empty hidden>@L["沒有符合的對話"]</p>
+    }
+</div>

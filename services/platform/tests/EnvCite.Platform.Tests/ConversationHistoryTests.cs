@@ -25,9 +25,6 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
 
     private static readonly JsonSerializerOptions Unescaped = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
-    private WebApplicationFactory<Program> Enabled() =>
-        factory.WithWebHostBuilder(b => b.UseSetting("Platform:ConversationHistory:Enabled", "true"));
-
     private static string HistoryPage(string tenant) => $"/portal/{tenant}/history";
 
     private static string ConversationPage(string tenant, Guid id) => PortalPaths.Conversation(tenant, id);
@@ -105,27 +102,9 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     }
 
     [Fact]
-    public async Task NothingIsStoredByDefault()
+    public async Task AQuestionAndItsCitationsAreKeptAndAFollowUpJoinsTheSameConversation()
     {
-        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-off");
-        var (browser, member) = await SignedInAsync(factory, tenant);
-        using var b = browser;
-
-        var home = await browser.GetAsync(Home(tenant.Identifier));
-        var recorded = await RecordAsync(factory, member, Question);
-
-        Assert.Contains("查詢文字不會被記錄", home.Html, StringComparison.Ordinal);
-        Assert.DoesNotContain("對話紀錄", home.Html, StringComparison.Ordinal); // 選單裡也沒有
-        Assert.Null(recorded);
-        Assert.Equal(0, await CountAsync(tenant.Id));
-        var page = await browser.GetAsync(HistoryPage(tenant.Identifier));
-        Assert.Contains("沒有開啟對話紀錄", page.Html, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task WhenEnabledAQuestionAndItsCitationsAreKeptAndAFollowUpJoinsTheSameConversation()
-    {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-on");
         var (browser, member) = await SignedInAsync(host, tenant);
         using var b = browser;
@@ -138,8 +117,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         Assert.Equal(1, await CountAsync(tenant.Id));
 
         var home = await browser.GetAsync(Home(tenant.Identifier));
-        Assert.Contains("你的提問會存在", home.Html, StringComparison.Ordinal); // 不再說「不會被記錄」
-        Assert.DoesNotContain("查詢文字不會被記錄", home.Html, StringComparison.Ordinal);
+        Assert.Contains("你的提問會存在", home.Html, StringComparison.Ordinal);
 
         var list = await browser.GetAsync(HistoryPage(tenant.Identifier));
         Assert.Contains(Question, list.Html, StringComparison.Ordinal); // 標題是第一個問題
@@ -159,11 +137,11 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         Assert.Contains("class=\"ep-composer\"", opened.Html, StringComparison.Ordinal);
     }
 
-    // 側欄的「最近的對話」：本人的、新的在前、依日期分組；別人的（連同租戶的 Owner）看不到；沒開啟就整段不畫。
+    // 側欄的「最近的對話」：本人的、新的在前、依日期分組；別人的（連同租戶的 Owner）看不到。
     [Fact]
     public async Task TheSideNavigationListsOnlyMyRecentConversationsNewestFirst()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-recent");
         var (aliceBrowser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         var (bossBrowser, _) = await SignedInAsync(host, tenant, CustomerRoles.Owner);
@@ -188,22 +166,9 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     }
 
     [Fact]
-    public async Task WithoutHistoryTheSideNavigationHasNoRecentConversations()
-    {
-        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-norecent");
-        var (browser, member) = await SignedInAsync(factory, tenant);
-        using var b = browser;
-        await RecordAsync(factory, member, Question);
-
-        var home = await browser.GetAsync(Home(tenant.Identifier));
-
-        Assert.DoesNotContain("ep-recent", home.Html, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public async Task OnlyTheirOwnerCanSeeOrJoinAConversationNotEvenAnOwnerOfTheSameTenant()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-iso");
         var (aliceBrowser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         var (bossBrowser, boss) = await SignedInAsync(host, tenant, CustomerRoles.Owner);
@@ -242,7 +207,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task DeletingRemovesTheConversationAuditsOnlyItsIdAndIsRefusedForSomeoneElses()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-del");
         var (aliceBrowser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         var (bossBrowser, boss) = await SignedInAsync(host, tenant, CustomerRoles.Owner);
@@ -275,7 +240,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task PinnedConversationsFloatToTheirOwnGroupAndRenamingChangesOnlyTheTitle()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-pin");
         var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         using var b = browser;
@@ -310,7 +275,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task SomeoneElsesConversationCannotBePinnedOrRenamedNotEvenByAnOwnerOrAnotherTenant()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-pin-iso");
         var (other, _) = await factory.CreateTenantWithKeyAsync("ch-pin-iso2");
         var (aliceBrowser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
@@ -335,7 +300,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task ArchivingMovesAConversationFromTheListsToTheArchivedViewAndUnarchivingBringsItBack()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-arch");
         var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         using var b = browser;
@@ -383,7 +348,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task AFollowUpInAnArchivedConversationBringsItBackToTheList()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-arch-follow");
         var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         using var b = browser;
@@ -400,7 +365,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task SomeoneElsesConversationCannotBeArchivedOrForkedNotEvenByAnOwnerOrAnotherTenant()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-arch-iso");
         var (other, _) = await factory.CreateTenantWithKeyAsync("ch-arch-iso2");
         var (aliceBrowser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
@@ -431,7 +396,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task ForkCopiesTheWholeConversationAndTheTwoThenGoTheirOwnWay()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-fork");
         var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         using var b = browser;
@@ -472,7 +437,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task AForkOfAnArchivedConversationLandsInTheNormalList()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-fork-arch");
         var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         using var b = browser;
@@ -490,7 +455,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task AForkWithABlankTitleCopiesNothing()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-fork-blank");
         var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         using var b = browser;
@@ -507,7 +472,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task TitleSearchMatchesTitlesOnlyAndWildcardsAreJustText()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-find");
         var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         using var b = browser;
@@ -543,7 +508,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task CitationsAreStoredStructuredAndAStoredConversationShowsThemWithTheDateAskedAbout()
     {
-        using var host = Enabled();
+        var host = factory;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-cite");
         var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         using var b = browser;
@@ -568,7 +533,7 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     [Fact]
     public async Task ConversationsPastTheRetentionPeriodAreDeletedAndRecentOnesStay()
     {
-        using var host = Enabled();
+        var host = factory;
         var (old, _) = await factory.CreateTenantWithKeyAsync("ch-old");
         var (recent, _) = await factory.CreateTenantWithKeyAsync("ch-new");
         var (oldBrowser, oldMember) = await SignedInAsync(host, old);
@@ -584,22 +549,6 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         Assert.True(purged >= 1);
         Assert.Equal(0, await CountAsync(old.Id));
         Assert.Equal(1, await CountAsync(recent.Id));
-    }
-
-    [Fact]
-    public async Task RetentionDoesNothingWhileHistoryIsOff()
-    {
-        var (tenant, _) = await factory.CreateTenantWithKeyAsync("ch-off2");
-        using var host = Enabled();
-        var (browser, member) = await SignedInAsync(host, tenant);
-        using var b = browser;
-        await RecordAsync(host, member, Question);
-        await AgeAsync(tenant.Id, days: 400);
-
-        var purged = await factory.Services.GetRequiredService<ConversationRetention>().PurgeAsync(CancellationToken.None); // 共用主機：關閉
-
-        Assert.Equal(0, purged);
-        Assert.Equal(1, await CountAsync(tenant.Id));
     }
 
     [Fact]

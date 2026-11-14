@@ -40,12 +40,12 @@ internal sealed class OntologyWorkbenchNav(IStringLocalizer<Ui> localizer, ITena
             : [];
 }
 
-internal sealed class HistoryNav(IStringLocalizer<Ui> localizer, IConversationHistoryAvailability history) : PortalNavContributorBase(localizer)
+internal sealed class HistoryNav(IStringLocalizer<Ui> localizer) : PortalNavContributorBase(localizer)
 {
     public override int Order => 20;
 
     public override IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) =>
-        history.Enabled ? [new($"{context.Home}/history", L["對話紀錄"], ServicesGroup, Icon: Icons.Material.Outlined.Forum)] : [];
+        [new($"{context.Home}/history", L["對話紀錄"], ServicesGroup, Icon: Icons.Material.Outlined.Forum)];
 }
 
 internal sealed class MembersNav(IStringLocalizer<Ui> localizer) : PortalNavContributorBase(localizer)
