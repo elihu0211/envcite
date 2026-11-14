@@ -75,13 +75,10 @@
                                     <SourceCards Sources="turn.Answer!.Sources" AsOfLabel="@turn.AsOfLabel" OnSelect="@(s => OpenDrawerAsync(s, turn.AsOfLabel))" />
                                     break;
                                 case TurnState.Answered when turn.StoredAnswer is not null:
-                                    @* 從歷史載入的回答：正文與可點擊法條名稱清單。 *@
+                                    @* 從歷史載入的回答：當時存下來的文字（正文與出處行），並附上可開啟抽屜的法條名稱清單。 *@
                                     @foreach (var line in turn.StoredAnswer.Split('\n'))
                                     {
-                                        @if (!IsCitationLine(line) || turn.MemoryCitations.Count == 0)
-                                        {
-                                            <p class="@(IsCitationLine(line) ? "ep-hint" : "ep-answer-text")">@line</p>
-                                        }
+                                        <p class="@(IsCitationLine(line) ? "ep-hint" : "ep-answer-text")">@line</p>
                                     }
                                     @if (turn.MemoryCitations.Count > 0)
                                     {

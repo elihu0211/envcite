@@ -76,6 +76,13 @@ public sealed class ChatPageLifecycleTests
         public int RetentionDays => 0;
     }
 
+    private sealed class FakeCitationArticleService : ICitationArticleService
+    {
+        public Task<AdminOutcome<PortalArticleDetail>> GetByIriAsync(
+            ClaimsPrincipal user, string? iri, CancellationToken cancellationToken) =>
+            Task.FromResult(AdminOutcome.NotFound<PortalArticleDetail>("NOT_FOUND"));
+    }
+
     private sealed class TestNavigation : NavigationManager
     {
         public TestNavigation() => Initialize("https://localhost/", "https://localhost/portal/acme");
@@ -91,6 +98,7 @@ public sealed class ChatPageLifecycleTests
             .AddSingleton<IAskService>(ask)
             .AddSingleton<IStringLocalizer<Ui>>(localizer)
             .AddSingleton<IConversationHistoryAvailability>(new HistoryOff())
+            .AddSingleton<ICitationArticleService>(new FakeCitationArticleService())
             .AddSingleton<IJSRuntime>(new NoJs())
             .AddSingleton<BrandText>(new BrandText(Options.Create(new BrandOptions()), localizer))
             .AddSingleton<NavigationManager>(new TestNavigation())
