@@ -123,6 +123,33 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.True(modulesPos > 0 && historyPos > modulesPos && footPos > historyPos);
     }
 
+    // 功能區（新對話、各功能入口）與對話歷史區是並列的兩塊，不是同一條清單：歷史區在功能區之外，才能各自配置高度、只有歷史區捲動。
+    // 功能群組之間只有細線，沒有後台式的群組標題（日期分組的小標題才用 ep-side-group，那屬於歷史清單）。
+    [Fact]
+    public async Task TheFunctionRegionAndTheHistoryRegionAreSeparateBlocks()
+    {
+        using var host = factory.WithWebHostBuilder(b => b.UseSetting("Platform:ConversationHistory:Enabled", "true"));
+        var (tenant, email, initial) = await MemberAsync(factory, "sh-zone");
+        using var browser = new PortalBrowser(host);
+        await SignInFullyAsync(browser, tenant.Identifier, email, initial);
+
+        var home = await browser.GetAsync(Home(tenant.Identifier));
+
+        var actionsPos = home.Html.IndexOf("<div class=\"ep-side-actions\">", StringComparison.Ordinal);
+        var modulesPos = home.Html.IndexOf("class=\"ep-side-modules\"", StringComparison.Ordinal);
+        var historyPos = home.Html.IndexOf("<section class=\"ep-history-empty\"", StringComparison.Ordinal);
+        var footPos = home.Html.IndexOf("class=\"ep-side-foot\"", StringComparison.Ordinal);
+        Assert.True(actionsPos > 0 && modulesPos > actionsPos && historyPos > modulesPos && footPos > historyPos);
+
+        // 從功能區的開頭到歷史區的開頭，<div> 開關相抵：功能區在歷史區開始之前已經關上。
+        var beforeHistory = home.Html[actionsPos..historyPos];
+        Assert.Equal(0, Regex.Count(beforeHistory, "<div[\\s>]") - Regex.Count(beforeHistory, "</div>"));
+
+        var side = home.Html[actionsPos..footPos];
+        Assert.DoesNotContain("class=\"ep-side-group\"", side, StringComparison.Ordinal);
+        Assert.Contains("<nav class=\"ep-side-nav\" aria-label=\"服務\"", side, StringComparison.Ordinal);
+    }
+
     private sealed class ExtraNav : IPortalNavContributor
     {
         public int Order => 25;

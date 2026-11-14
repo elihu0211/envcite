@@ -510,6 +510,20 @@ public static partial class DesignTokenTests
         Assert.Matches(@"\.ep-side-link,\s*\.ep-recent-link \{[^}]*white-space: nowrap", css);
     }
 
+    // 入口側欄在直欄時分兩區：功能區固定在上，對話歷史區占剩下的高度、只有它自己捲動；側欄本體不捲動，否則歷史一長就把功能入口捲走。
+    // 兩種直欄（平板起、有 JavaScript 的手機抽屜）各一份。
+    [Fact]
+    public static void ThePortalSidebarScrollsOnlyTheConversationHistoryRegion()
+    {
+        var css = File.ReadAllText(StylesheetPath());
+
+        Assert.Matches(@"\n    \.ep-portal\.ep-console \.ep-side-body \{[^}]*overflow: hidden;", css); // 平板起（縮排四格、沒有 html[data-js] 前綴的那一條）
+        Assert.Matches(@"html\[data-js\] \.ep-portal\.ep-console \.ep-side-body \{[^}]*overflow: hidden;", css);
+        Assert.Matches(@"\.ep-portal\.ep-console \.ep-recent-scroll \{[^}]*overflow-y: auto", css);
+        Assert.Matches(@"\.ep-portal\.ep-console \.ep-recent \{\s*flex: 1 1 \S+;", css); // 歷史區拿剩下的高度
+        Assert.Matches(@"html\[data-side=""collapsed""\] \.ep-portal\.ep-console \.ep-recent,\s*html\[data-side=""collapsed""\] \.ep-portal\.ep-console \.ep-history-empty \{\s*display: none", css); // 窄欄只剩圖示
+    }
+
     // 營運後台頂欄左邊的品牌（雲端主控台那一型）：常規字重、次要文字色、放大的圖形，沒有副標；入口（.ep-portal）不跟。
     [Fact]
     public static void TheOperatorBrandIsALightweightProductNameWithoutASubtitle()
