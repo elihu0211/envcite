@@ -189,19 +189,33 @@ else
                                                 <button type="button" class="ep-preset-chip" data-graph-action="layout-concentric" aria-pressed="false">@L["焦點星系（同心圓）"]</button>
                                                 <button type="button" class="ep-preset-chip" data-graph-action="toggle-edge-labels" aria-pressed="false">@L["顯示授權條號"]</button>
                                             </div>
-                                            <div class="ep-graph-zoom-actions">
-                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-in" aria-label="@L["放大圖譜"]">+</button>
-                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-out" aria-label="@L["縮小圖譜"]">-</button>
-                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fit">@L["適應視窗"]</button>
+                                            <div class="ep-graph-toolbar-end">
+                                                <input type="search" class="ep-input ep-graph-search" data-graph-search="true"
+                                                       placeholder="@L["篩選法規"]" aria-label="@L["篩選法規"]" />
+                                                <div class="ep-graph-zoom-actions">
+                                                    <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-in" aria-label="@L["放大圖譜"]">+</button>
+                                                    <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-out" aria-label="@L["縮小圖譜"]">-</button>
+                                                    <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fit">@L["適應視窗"]</button>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div class="ep-graph-canvas" data-ontology-graph="@BuildGraphJson(graph)"
-                                             role="region" aria-label="@L["法律授權知識圖譜"]"></div>
+                                        <div class="ep-graph-canvas-wrap">
+                                            <div class="ep-graph-swimlanes" data-graph-swimlanes="true" aria-hidden="true"></div>
+                                            <div class="ep-graph-canvas" data-ontology-graph="@BuildGraphJson(graph)"
+                                                 role="region" aria-label="@L["法律授權知識圖譜"]"></div>
+                                        </div>
                                     </div>
 
-                                    <section class="ep-graph-inspector" data-graph-inspector="true" aria-live="polite" aria-label="@L["節點法學檢視"]">
-                                        <p class="ep-page-description">@L["點選圖譜中的任一法規範節點檢視法學位階、授權條文依據與關係細節；雙擊節點可直接以其為中心深入展開。"]</p>
+                                    <section class="ep-graph-inspector" aria-live="polite" aria-label="@L["節點法學檢視"]">
+                                        <div class="ep-inspector-sheet-bar">
+                                            <span class="ep-inspector-sheet-handle" aria-hidden="true"></span>
+                                            <button type="button" class="ep-btn ep-btn-quiet ep-inspector-close"
+                                                    data-inspector-close="true" aria-label="@L["關閉"]">@L["關閉"]</button>
+                                        </div>
+                                        <div class="ep-inspector-body" data-graph-inspector="true">
+                                            <p class="ep-page-description">@L["點選圖譜中的任一法規範節點檢視法學位階、授權條文依據與關係細節；雙擊節點可直接以其為中心深入展開。"]</p>
+                                        </div>
                                     </section>
                                 </div>
 
