@@ -1,6 +1,6 @@
 using System.Buffers;
 
-using EnvCite.Platform.Modules.Ontology;
+using EnvCite.Platform.Modules.Canon;
 
 namespace EnvCite.Platform.Modules.Consult;
 

@@ -16,7 +16,7 @@ namespace EnvCite.Platform.Tests;
 [Collection(PlatformTestGroup.Group2)]
 public sealed class EntitlementTests(PlatformFactory factory)
 {
-    private static readonly Uri LawUri = new($"{FakeOntologyServer.CentralLawsPath}{FakeOntologyServer.KnownLawId}", UriKind.Relative);
+    private static readonly Uri LawUri = new($"{FakeCanonServer.CentralLawsPath}{FakeCanonServer.KnownLawId}", UriKind.Relative);
 
     private WebApplicationFactory<Program> Replica() =>
         factory.WithWebHostBuilder(b => b.UseSetting("Platform:DefaultPlan", string.Empty));

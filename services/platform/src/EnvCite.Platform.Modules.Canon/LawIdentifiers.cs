@@ -1,6 +1,6 @@
-using EnvCite.Ontology.V2;
+using EnvCite.Canon.V1;
 
-namespace EnvCite.Platform.Modules.Ontology;
+namespace EnvCite.Platform.Modules.Canon;
 
 internal static class LawIdentifiers
 {
@@ -9,6 +9,6 @@ internal static class LawIdentifiers
     /// </summary>
     public static LawIdentifierDto ToDto(LawIdentifier? id) =>
         id is null
-            ? throw new InvalidOperationException("The ontology service returned a law without its identifier.")
+            ? throw new InvalidOperationException("Canon returned a law without its identifier.")
             : new(id.Jurisdiction, id.IdScheme, id.LocalId);
 }

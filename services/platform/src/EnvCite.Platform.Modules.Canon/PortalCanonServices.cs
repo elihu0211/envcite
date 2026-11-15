@@ -4,7 +4,7 @@ using EnvCite.Platform.Data;
 
 using Microsoft.Extensions.Caching.Memory;
 
-namespace EnvCite.Platform.Modules.Ontology;
+namespace EnvCite.Platform.Modules.Canon;
 
 internal sealed class LawCorpusService(
     TenantScopes tenants,
@@ -32,7 +32,7 @@ internal sealed class LawCorpusService(
 
         var result = await tenants.InByIdentifierAsync(identifier, async scope =>
         {
-            var gateway = scope.Get<OntologyGateway>();
+            var gateway = scope.Get<CanonGateway>();
             var outcome = await gateway.ListLawsAsync(jurisdiction, asOf, cancellationToken, categoryPrefix);
             if (!outcome.IsOk)
                 return new AdminOutcome<PortalLawTreeResult>(outcome.Status, default, outcome.Message, outcome.Code, outcome.Args);
@@ -61,7 +61,7 @@ internal sealed class LawCorpusService(
 
         var result = await tenants.InByIdentifierAsync(identifier, async scope =>
         {
-            var gateway = scope.Get<OntologyGateway>();
+            var gateway = scope.Get<CanonGateway>();
             return await gateway.GetLawGraphAsync(query, cancellationToken);
         });
         if (result.IsOk && result.Value is { Available: true })
@@ -80,7 +80,7 @@ internal sealed class LawCorpusService(
 
         return await tenants.InByIdentifierAsync(identifier, async scope =>
         {
-            var gateway = scope.Get<OntologyGateway>();
+            var gateway = scope.Get<CanonGateway>();
             var law = await gateway.GetLawAsync(jurisdiction, idScheme, localId, asOf, cancellationToken);
             if (!law.IsOk)
                 return AdminOutcome.NotFound<PortalLawCorpusResult>(law.Code ?? OutcomeCodes.LawNotFound);
@@ -221,7 +221,7 @@ internal sealed class NormativeReasoningService(TenantScopes tenants, ITenantMod
 
         return await tenants.InByIdentifierAsync(identifier, async scope =>
         {
-            var gateway = scope.Get<OntologyGateway>();
+            var gateway = scope.Get<CanonGateway>();
             var facts = new List<FactDto>();
             if (!string.IsNullOrWhiteSpace(input.PollutantCode) && !string.IsNullOrWhiteSpace(input.PollutantValue))
             {
@@ -384,7 +384,7 @@ internal sealed class CitationArticleService(TenantScopes tenants) : ICitationAr
 
         return await tenants.InByIdentifierAsync(identifier, async scope =>
         {
-            var gateway = scope.Get<OntologyGateway>();
+            var gateway = scope.Get<CanonGateway>();
             var outcome = await gateway.GetArticleByIriAsync(iri, cancellationToken);
             if (!outcome.IsOk || outcome.Value is not { } dto)
                 return new AdminOutcome<PortalArticleDetail>(outcome.Status, default, outcome.Message, outcome.Code, outcome.Args);

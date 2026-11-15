@@ -1,6 +1,6 @@
 using System.ClientModel;
 
-using EnvCite.Consult.V2;
+using EnvCite.Consult.V3;
 using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.AI;

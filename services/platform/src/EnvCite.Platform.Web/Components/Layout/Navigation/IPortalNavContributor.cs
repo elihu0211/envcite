@@ -41,7 +41,7 @@ public static class PortalNavigation
     /// <summary>入口自帶的五個來源。</summary>
     internal static IServiceCollection AddPortalNavigation(this IServiceCollection services) => services
         .AddPortalNavContributor<QueryNav>()
-        .AddPortalNavContributor<OntologyWorkbenchNav>()
+        .AddPortalNavContributor<LawWorkbenchNav>()
         .AddPortalNavContributor<MembersNav>()
         .AddPortalNavContributor<DirectoryNav>()
         .AddPortalNavContributor<AccountNav>();

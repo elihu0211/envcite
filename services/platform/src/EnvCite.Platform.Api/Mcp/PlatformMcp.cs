@@ -1,7 +1,7 @@
 using System.Reflection;
 
+using EnvCite.Platform.Modules.Canon.Mcp;
 using EnvCite.Platform.Modules.Consult.Mcp;
-using EnvCite.Platform.Modules.Ontology.Mcp;
 using EnvCite.ServiceDefaults;
 
 using ModelContextProtocol.AspNetCore;
@@ -66,7 +66,7 @@ public static class PlatformMcp
                     + "只涵蓋中央法規；地方自治法規查不到不代表沒有規定。結果是依條文整理的資訊，不是法律意見。";
             })
             .WithHttpTransport(http => http.SessionMode = HttpServerSessionMode.Stateless)
-            .WithOntologyTools()
+            .WithCanonTools()
             .WithConsultTools();
         return services;
     }

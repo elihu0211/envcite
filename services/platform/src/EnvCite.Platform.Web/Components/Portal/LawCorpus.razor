@@ -119,7 +119,7 @@ else
                     <PageTabs Items="WorkbenchTabs" Active="@ResolvedTab" Query="tab" HrefSelector="TabHref" Label="@L["工作台分頁"]" />
 
                     <TabPanel Key="graph" Active="@(ResolvedTab == "graph")">
-                        <SectionCard Id="ontology-graph-title" Title="@GraphSectionTitle">
+                        <SectionCard Id="canon-graph-title" Title="@GraphSectionTitle">
                             @if (_graphResult is { Available: true } graph && graph.Nodes.Count > 0)
                             {
                                 var focusNode = FindFocusNode(graph);
@@ -189,7 +189,7 @@ else
                                         <div class="ep-graph-canvas-wrap">
                                             <div class="ep-graph-swimlanes" data-graph-swimlanes="true"
                                                  data-graph-summary="@($"{L["圖譜節點"]} {graph.Nodes.Count} · {L["授權連線"]} {graph.Edges.Count}")"></div>
-                                            <div class="ep-graph-canvas" data-ontology-graph="@BuildGraphJson(graph)"
+                                            <div class="ep-graph-canvas" data-canon-graph="@BuildGraphJson(graph)"
                                                  role="region" aria-label="@L["法律授權知識圖譜"]"></div>
                                             <div class="ep-graph-floating-controls" role="toolbar" aria-label="@L["圖譜視角控制"]">
                                                 <button type="button" class="ep-preset-chip" data-graph-action="toggle-edge-labels" aria-pressed="false">@L["顯示授權條號"]</button>

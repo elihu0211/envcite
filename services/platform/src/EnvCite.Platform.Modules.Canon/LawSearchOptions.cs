@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 using EnvCite.ServiceDefaults;
 
-namespace EnvCite.Platform.Modules.Ontology;
+namespace EnvCite.Platform.Modules.Canon;
 
 /// <summary>
 /// 條文搜尋的相關性規則（<c>Platform:Search</c> 區段）：一條檢索結果的語意相似度達標，或字面分數達標而且

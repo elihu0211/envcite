@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text.Json;
 
+using EnvCite.Platform.Modules.Canon;
 using EnvCite.Platform.Modules.Metering;
-using EnvCite.Platform.Modules.Ontology;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
@@ -29,7 +29,7 @@ public sealed class SearchTests(PlatformFactory factory)
         Assert.Equal(("空氣污染防制法", "5-1"), (hit.LawTitle, hit.Number));
         Assert.Equal(
             ("噪音管制標準", "2021-01-01", 5),
-            (factory.Ontology.LastSearch!.Query, factory.Ontology.LastSearch.AsOf, factory.Ontology.LastSearch.Limit));
+            (factory.Canon.LastSearch!.Query, factory.Canon.LastSearch.AsOf, factory.Canon.LastSearch.Limit));
     }
 
     [Theory]
@@ -118,7 +118,7 @@ public sealed class SearchTests(PlatformFactory factory)
         var hits = await response.Content.ReadFromJsonAsync<SearchHitDto[]>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(2, Assert.Single(hits!).GuidanceDocuments);
-        Assert.True(factory.Ontology.LastSearch!.IncludeGuidance);
+        Assert.True(factory.Canon.LastSearch!.IncludeGuidance);
     }
 
     [Theory]
@@ -154,7 +154,7 @@ public sealed class SearchTests(PlatformFactory factory)
     }
 
     [Fact]
-    public async Task ABusyOntologyIsUnavailable()
+    public async Task ABusyCanonIsUnavailable()
     {
         var (_, key) = await factory.CreateTenantWithKeyAsync("search-busy");
         using var client = factory.CreateTenantClient(key.Key);
@@ -174,7 +174,7 @@ public sealed class SearchTests(PlatformFactory factory)
         (await client.PostAsJsonAsync(SearchPath, new SearchRequest("噪音", null, null), cancellationToken: TestContext.Current.CancellationToken)).Dispose();
         var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal([new UsageSummary(OntologyEndpoints.SearchOperation, 1, 1)], usage!);
+        Assert.Equal([new UsageSummary(CanonEndpoints.SearchOperation, 1, 1)], usage!);
     }
 
     [Fact]

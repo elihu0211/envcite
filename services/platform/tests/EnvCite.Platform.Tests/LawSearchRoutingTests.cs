@@ -1,4 +1,4 @@
-using EnvCite.Platform.Modules.Ontology;
+using EnvCite.Platform.Modules.Canon;
 using EnvCite.ServiceDefaults;
 
 namespace EnvCite.Platform.Tests;

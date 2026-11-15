@@ -39,7 +39,7 @@ owns: [operator-accounts, mail-invitation, reasoning-rest, mcp-endpoint, corpus-
 
 - **問句明白在問自治法規**：`POST /v2/ground` 的問句含「自治條例」「自治法規」「自治規則」「地方加嚴」之一（詞表真值在 consult 的 `LocalMarker.cs`）且沒有達標的條文時，`refusal.reason` 為 `local_law_uncovered`；呼叫端要告知使用者語料只涵蓋中央法規、請另查該地方政府的法規。有達標的條文時照常回證據，但不可當成地方法規的答案。
 - **其餘情形無法與「查無」區分**：問句沒有上述字樣（例如只點名縣市）時，`POST /v2/search` 無結果、`POST /v2/ground` 的 `no_authority`／`out_of_scope`、`GET /v2/laws/…` 的 404，都不代表地方法規沒有規定；呼叫端不得暗示「地方沒有相關規定」。
-- **識別碼格式不代表語料範圍**：`jurisdiction`、`idScheme` 的合法值含縣市管轄與地方方案（見 [`ontology.proto`](../../proto/envcite/ontology/v2/ontology.proto) 的 `LawIdentifier`），那是契約預留；帶縣市管轄的識別碼與任何不在語料的識別碼一樣查無。
+- **識別碼格式不代表語料範圍**：`jurisdiction`、`idScheme` 的合法值含縣市管轄與地方方案（見 [`canon.proto`](../../proto/envcite/canon/v1/canon.proto) 的 `LawIdentifier`），那是契約預留；帶縣市管轄的識別碼與任何不在語料的識別碼一樣查無。
 - **`out_of_scope` 不是語料範圍外**：指檢索到的條文都未達相關度門檻；拒答語意見 [`proto/README.md`](../../proto/README.md) 的〈呼叫端的語言模型〉。
 
 對外規格 [`openapi/openapi_v2.json`](openapi/openapi_v2.json) 的 `info.description` 帶同一句範圍聲明（來源 `PlatformOpenApi.cs`）。

@@ -488,7 +488,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var ok = await ask.AskAsync(member, "噪音管制標準", "2021-01-01", null, Ct);
 
         Assert.Equal((AskMode.Search, AskStatus.Ok), Pair(ok));
-        Assert.Equal("2021-01-01", factory.Ontology.LastSearch!.AsOf);
+        Assert.Equal("2021-01-01", factory.Canon.LastSearch!.AsOf);
         Assert.Equal(["canon.search"], await UsageAsync(tenant.Id));
         Assert.Empty(chat.Calls);
     }

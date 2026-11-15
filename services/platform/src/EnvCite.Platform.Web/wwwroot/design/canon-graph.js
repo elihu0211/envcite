@@ -1200,7 +1200,7 @@
     }
     let payload;
     try {
-      payload = JSON.parse(container.dataset.ontologyGraph || "{}");
+      payload = JSON.parse(container.dataset.canonGraph || "{}");
     } catch {
       return;
     }
@@ -1399,7 +1399,7 @@
       plugins: [
         {
           type: "minimap",
-          key: "ontology-minimap",
+          key: "canon-minimap",
           size: [148, 92],
           position: "bottom-right",
           containerStyle: {
@@ -1413,17 +1413,17 @@
         },
         {
           type: "tooltip",
-          key: "ontology-tooltip",
+          key: "canon-tooltip",
           enable: (e) => e.targetType === "node",
           getContent: (e, items) => buildTooltipContent(items?.[0], labels),
         },
         {
           type: "fullscreen",
-          key: "ontology-fullscreen",
+          key: "canon-fullscreen",
         },
         {
           type: "contextmenu",
-          key: "ontology-contextmenu",
+          key: "canon-contextmenu",
           enable: (e) => e.targetType === "node",
           getItems: (e) => {
             const nodeId = e?.target?.id;
@@ -1864,7 +1864,7 @@
         else if (action === "zoom-in") activeGraph.zoomBy(1.2).catch(() => {});
         else if (action === "zoom-out") activeGraph.zoomBy(0.84).catch(() => {});
         else if (action === "fullscreen") {
-          const fsPlugin = activeGraph.getPluginInstance?.("ontology-fullscreen");
+          const fsPlugin = activeGraph.getPluginInstance?.("canon-fullscreen");
           if (fsPlugin) {
             if (isFullscreen || document.fullscreenElement) {
               fsPlugin.exit();
@@ -2099,7 +2099,7 @@
   }
 
   function boot() {
-    document.querySelectorAll("[data-ontology-graph]").forEach(initGraph);
+    document.querySelectorAll("[data-canon-graph]").forEach(initGraph);
     initPresets();
     initStructureFilter();
     initDrawerToggles();

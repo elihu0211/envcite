@@ -40,13 +40,13 @@ public sealed partial class ArchitectureTests(PlatformFactory factory)
                     .ToArray());
 
     // 模組是專案：只參考 SharedKernel 與 Data，彼此不直接參考，跨模組契約放 SharedKernel。
-    // 唯一的例外：consult.proto 匯入 ontology.proto，產生的型別在 Ontology 模組裡。
+    // 唯一的例外：consult.proto 匯入 canon.proto，產生的型別在 Canon 模組裡。
     [Fact]
     public void ModulesReferenceOnlyTheSharedKernelAndTheDataLayer()
     {
         var allowedExceptions = new Dictionary<string, string[]>
         {
-            ["EnvCite.Platform.Modules.Consult"] = ["EnvCite.Platform.Modules.Ontology"],
+            ["EnvCite.Platform.Modules.Consult"] = ["EnvCite.Platform.Modules.Canon"],
         };
         var violations = References()
             .Where(p => p.Key.StartsWith("EnvCite.Platform.Modules.", StringComparison.Ordinal))

@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 
-using EnvCite.Consult.V2;
+using EnvCite.Consult.V3;
 
 using Grpc.Core;
 

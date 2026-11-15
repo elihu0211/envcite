@@ -63,7 +63,7 @@ public static partial class LabelResourceTests
 
     [Theory]
     [InlineData("zh-TW", "簽發 API key", "法規本體", "擁有者", "使用中")]
-    [InlineData("en", "API key issued", "Legal ontology", "Owner", "Active")]
+    [InlineData("en", "API key issued", "Legal canon", "Owner", "Active")]
     public static void LabelsFollowTheCurrentUiCulture(string culture, string action, string category, string role, string status)
     {
         using var _ = TestCulture.Use(culture);

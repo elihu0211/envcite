@@ -1,6 +1,6 @@
-using EnvCite.Ontology.V2;
+using EnvCite.Canon.V1;
 
-namespace EnvCite.Platform.Modules.Ontology;
+namespace EnvCite.Platform.Modules.Canon;
 
 /// <summary>
 /// 公開的推論契約與內部 gRPC 契約之間的對映；列舉不認得時視為契約破壞，不猜。只轉譯，不驗證：
@@ -143,7 +143,7 @@ internal static class ReasoningMapper
         return request;
     }
 
-    private static EnvCite.Ontology.V2.Decimal Number(string? value) => new() { Value = value ?? string.Empty };
+    private static EnvCite.Canon.V1.Decimal Number(string? value) => new() { Value = value ?? string.Empty };
 
     public static ReasoningResultDto ToDto(EvaluateResponse r) =>
         new(ToDto(r.AtDecision ?? new Outcome()), [.. r.Earlier.Select(e => new EarlierOutcomeDto(e.FirstDay, ToDto(e.Outcome ?? new Outcome())))]);
@@ -367,5 +367,5 @@ internal static class ReasoningMapper
     };
 
     private static InvalidOperationException Unknown<T>(T value) where T : struct, Enum =>
-        new($"the ontology service returned {typeof(T).Name} {value}, which this platform does not know.");
+        new($"canon returned {typeof(T).Name} {value}, which this platform does not know.");
 }

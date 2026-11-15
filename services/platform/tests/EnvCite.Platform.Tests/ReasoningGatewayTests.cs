@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text.Json;
 
+using EnvCite.Platform.Modules.Canon;
 using EnvCite.Platform.Modules.Metering;
-using EnvCite.Platform.Modules.Ontology;
 
 namespace EnvCite.Platform.Tests;
 
@@ -33,7 +33,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         var result = await response.Content.ReadFromJsonAsync<ReasoningResultDto>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var sent = factory.Ontology.LastEvaluate!;
+        var sent = factory.Canon.LastEvaluate!;
         Assert.Equal(("2020-01-01", "2020-06-01", "2020-01-05"), (sent.ConductOn, sent.DecidedOn, sent.ConductEndedOn));
         Assert.Equal("120", sent.Facts[0].Values[0].Number.Value);
         Assert.True(sent.Facts[1].Values[0].Flag);
@@ -41,7 +41,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal(("cems", ""), (sent.Facts[0].MeasurementMethod, sent.Facts[0].AveragingPeriod)); // 省略 = 未提供
         var permit = Assert.Single(sent.PermitLimits);
         Assert.Equal(("operating_permit", "effluent_cod", "100"), (permit.Permit, permit.Concept, permit.Value.Value));
-        Assert.Equal([EnvCite.Ontology.V2.LiabilityBasis.State, EnvCite.Ontology.V2.LiabilityBasis.Representative], sent.ActorBases);
+        Assert.Equal([EnvCite.Canon.V1.LiabilityBasis.State, EnvCite.Canon.V1.LiabilityBasis.Representative], sent.ActorBases);
         Assert.True(sent.AdministrativePenaltyFacts.HasNegligence);
         Assert.False(sent.AdministrativePenaltyFacts.HasIntent); // 省略 = 未知，不是「否」
         Assert.Equal(15, sent.AdministrativePenaltyFacts.Age);
@@ -106,7 +106,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Empty(earlier.Invalidated);
         Assert.Empty(earlier.DelegationBases);
         Assert.Empty(earlier.General.Reduced);
-        Assert.Contains(factory.Ontology.ReceivedMetadata, m =>
+        Assert.Contains(factory.Canon.ReceivedMetadata, m =>
             m.GetValue("x-tenant-id") == tenant.Identifier);
     }
 
@@ -124,7 +124,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var ap = factory.Ontology.LastEvaluate!.AdministrativePenaltyFacts;
+        var ap = factory.Canon.LastEvaluate!.AdministrativePenaltyFacts;
         Assert.False(ap.HasCriminalOffense);
         Assert.False(ap.HasCourtConfiscated);
         Assert.Equal("", ap.CriminalClearedOn);
@@ -177,7 +177,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode); // 假服務不驗證；檢查只在 canon 一處
-        var sent = factory.Ontology.LastEvaluate!;
+        var sent = factory.Canon.LastEvaluate!;
         Assert.Equal("lots", sent.Facts[0].Values[0].Number.Value);
         Assert.Equal("", sent.PermitLimits[0].Value.Value);
     }
@@ -201,7 +201,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         var (_, key) = await factory.CreateTenantWithKeyAsync("reason-busy");
         using var client = factory.CreateTenantClient(key.Key);
 
-        using var response = await client.PostAsJsonAsync(Path, Request(conductOn: FakeOntologyServer.BusyDate), cancellationToken: TestContext.Current.CancellationToken);
+        using var response = await client.PostAsJsonAsync(Path, Request(conductOn: FakeCanonServer.BusyDate), cancellationToken: TestContext.Current.CancellationToken);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         var usage = await client.GetFromJsonAsync<UsageSummary[]>("/v2/usage", cancellationToken: TestContext.Current.CancellationToken);
 

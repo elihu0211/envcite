@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace EnvCite.Platform.Modules.Ontology;
+namespace EnvCite.Platform.Modules.Canon;
 
 /// <summary>
 /// 案件事實中的一個概念。同一概念可有多個值；兩個不同的值是矛盾，會被回報為問題，不會被擇一。
