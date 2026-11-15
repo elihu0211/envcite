@@ -8,7 +8,7 @@ from typing import Any
 import psycopg
 import pytest
 
-from canon.guidance import GuidanceError, load
+from canon.law.guidance import GuidanceError, load
 from envcite.ontology.v2 import reasoning_pb2, reasoning_pb2_grpc
 from tests.conftest import call_metadata
 from tests.test_annotation import LAW

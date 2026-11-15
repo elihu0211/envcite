@@ -12,7 +12,7 @@ from grpc_health.v1 import health_pb2, health_pb2_grpc
 from grpc_status import rpc_status
 
 from canon import errors, projection
-from canon.ruling import load
+from canon.law.ruling import load
 from canon.server import build_server
 from canon.store.ontology_store import OntologyStore
 from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc

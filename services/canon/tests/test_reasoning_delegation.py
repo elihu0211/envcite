@@ -6,10 +6,9 @@ from typing import Any
 
 from psycopg.types.range import Range
 
-from canon import delegation
-from canon.acquire.moj import Moj
 from canon.annotate import load
-from canon.ingest import importer
+from canon.law import delegation, importer
+from canon.law.moj import Moj
 from canon.reasoning import Result, evaluate
 from tests.reasoning_support import Conn, _scope, _with
 from tests.sample import stored_snapshot

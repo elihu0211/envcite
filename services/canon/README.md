@@ -42,7 +42,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 | `canon-import <來源>` | 一次性 | 快照寫入語料；`--dry-run` 只解析與驗收 |
 | `canon-history <ly\|moenv> [sync\|acquire\|import]` | 排程 | 法規的歷史版本（法律取自立法院、命令取自主管機關）：取得、回推、授權抽取、檢索投影；見〈歷史版本〉 |
 | `canon-guidance sync <來源>` | 排程 | 取得行政規則寫入 `guidance`（`gazette` 公報、`moenv` 環境部函釋）；見〈行政規則的取得〉 |
-| `canon-guidance load <檔>` | 一次性 | 載入一份人寫的行政規則（函釋、裁量基準）JSON；格式見 [`guidance.py`](src/canon/guidance.py) |
+| `canon-guidance load <檔>` | 一次性 | 載入一份人寫的行政規則（函釋、裁量基準）JSON；格式見 [`law/guidance.py`](src/canon/law/guidance.py) |
 | `canon-ruling fetch`、`load <檔>` | 一次性 | 取得或載入違憲失效的裁判；見〈違憲失效〉 |
 | `canon-pipeline` | 排程 | 標註：抽取、驗證、接受 |
 | `canon-annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
@@ -57,12 +57,12 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 ### 歷史版本
 
-全國法規資料庫的 API 只有現行版本，其網站的歷史頁 robots.txt 禁止。每次修正前的完整版本依種類取自制定或主管的機關，**一部法規只有一個來源**（[`history_sources.py`](src/canon/history_sources.py)）：
+全國法規資料庫的 API 只有現行版本，其網站的歷史頁 robots.txt 禁止。每次修正前的完整版本依種類取自制定或主管的機關，**一部法規只有一個來源**（[`law/history_sources.py`](src/canon/law/history_sources.py)）：
 
 | 來源 | 種類 | 系統 | 授權 | 快照 feed、項目鍵 | `text_authority` |
 |------|------|------|------|-------------------|------------------|
-| `ly` | 法律 | 立法院法律系統（[`acquire/ly_law.py`](src/canon/acquire/ly_law.py)） | 條文不得為著作權標的（著作權法第 9 條）；比照立法院網站資料開放宣告，**須標示出處** | `ly_law`、全國法規資料庫的法規代碼 | `legislature` |
-| `moenv` | 命令 | 環境部主管法規查詢系統（[`acquire/moenv_law.py`](src/canon/acquire/moenv_law.py)） | 網站資料開放宣告 CC BY 4.0，**須標示出處** | `moenv_law`、該系統的法規代碼 | `competent_authority` |
+| `ly` | 法律 | 立法院法律系統（[`law/ly_law.py`](src/canon/law/ly_law.py)） | 條文不得為著作權標的（著作權法第 9 條）；比照立法院網站資料開放宣告，**須標示出處** | `ly_law`、全國法規資料庫的法規代碼 | `legislature` |
+| `moenv` | 命令 | 環境部主管法規查詢系統（[`law/moenv_law.py`](src/canon/law/moenv_law.py)） | 網站資料開放宣告 CC BY 4.0，**須標示出處** | `moenv_law`、該系統的法規代碼 | `competent_authority` |
 
 其他主管機關的命令沒有來源，版本只從首次取得全國法規資料庫快照起累積。
 
@@ -71,7 +71,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
   - `moenv`：走分類樹列出命令，抓歷史清單、現行頁與各歷史頁。
 - **匯入**：`canon-history <來源> import`，須先跑過 `canon-sync moj`。
   - 對到語料的法規（`ly` 以鍵、`moenv` 以名稱與種類），來源的現行版本日要與語料最新版本同日。
-  - 由語料最早的官方資料庫版本往舊回推（[`ingest/backfill/`](src/canon/ingest/backfill/)），版本日是公布或發布日；效力上界的規則同增量匯入，相鄰兩版同一單元的區間首尾相接。
+  - 由語料最早的官方資料庫版本往舊回推（[`law/backfill/`](src/canon/law/backfill/)），版本日是公布或發布日；效力上界的規則同增量匯入，相鄰兩版同一單元的區間首尾相接。
   - 沿革的每一次公布都要有同日的全文。缺一版（或條文只在附件、解析不出）就停在那裡：那一版與更早的每一次公布寫成查不到全文的版本（`text_status = unavailable`，標題不詳、沒有條文單元版本；`GetLaw` 在這些日子查無），時間軸照樣接到制定。
   - 改由另一個來源提供的法規，同日的版本列改記新來源、條文依新來源的文字取代；已寫入的版本日不在新目標裡時整部不寫（`history_reshaped`）。
   - 寫入時被資料庫的約束或型別擋下的那一部（規劃之後語料才變動）整部不寫、記 error `history_write_rejected`（原因逐字留在 `detail`），其餘法規照寫；連線、逾時這類暫時性錯誤不在此列，照舊使整個 Job 以 1 結束。
@@ -80,7 +80,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 ### 行政規則的取得
 
-`canon-guidance sync <gazette|moenv> [--since YYYY-MM-DD] [--rescan]`，實作在 [`guidance_sync/`](src/canon/guidance_sync/)。每個工作項（公報的一包、函釋的一頁）是一個 jobkit 工作項：端點錯誤退避重試、斷路器、單項隔離，政策以 `ENVCITE_JOBKIT_<欄位>` 覆寫，預設值以 [`guidance_sync/run.py`](src/canon/guidance_sync/run.py) 的 `POLICY` 為準；每件公文一個交易，可重跑。
+`canon-guidance sync <gazette|moenv> [--since YYYY-MM-DD] [--rescan]`，實作在 [`law/guidance_sync/`](src/canon/law/guidance_sync/)。每個工作項（公報的一包、函釋的一頁）是一個 jobkit 工作項：端點錯誤退避重試、斷路器、單項隔離，政策以 `ENVCITE_JOBKIT_<欄位>` 覆寫，預設值以 [`law/guidance_sync/run.py`](src/canon/law/guidance_sync/run.py) 的 `POLICY` 為準；每件公文一個交易，可重跑。
 
 | 來源 | 取得 | 出處標示 | 錨定 |
 |------|------|----------|------|
@@ -89,7 +89,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 - **略過已處理的**：公報看包名（`source.snapshot.origin_name`），函釋看發文字號是否已有來源項目；未給 `--since` 時公報從上個月一日起、函釋走全部清單。`--rescan` 全部重抓，用來發現網站內容的改變。
 - **公文不可改**：同一件（發文機關，正規化字號）再寫入時內容不同，不改寫，記匯入問題 `content_changed`。字號去除空白與文別（「號函」記為「號」），公報與網站的同一件是同一列，先寫入者為準。
-- **錨定**（[`guidance_anchor.py`](src/canon/guidance_anchor.py)）：
+- **錨定**（[`law/guidance_anchor.py`](src/canon/law/guidance_anchor.py)）：
   - 法名查視圖 `guidance.law_name`（語料任一版本的標題與沿革記載的舊名「（原名稱：甲；新名稱：乙）」，名稱是鍵）；對到兩部以上法規的名稱 `pcode` 為空值，不錨定（`law_ambiguous`）。舊名只在這裡解析，與檢索的法名表不共用。
   - 條號對到條文單元，錨定到該單元之下每個最細單元在**發文日**現行的文字；發文日沒有現行版本的不錨定。
 - **公報的廢止**：主旨「廢止「甲」」或「停止適用「甲」」的一件，停止此前以「訂定」「修正」刊登甲（含經「名稱並修正為」改名前後的名稱）的每一件，自主旨寫明的生效日起，沒寫為發文日（`cause = successor`，`by_document_id` 指向該件）。名稱只在公報的行政規則之間比對；只廢止其中幾點的不算。每次同步對全部已載入的公報行政規則重算，回填晚於廢止也會補上。
@@ -104,12 +104,12 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 大法官解釋與憲法法庭判決宣告條文違憲失效（能力問題 A5），記在 `corpus.constitutional_ruling`（裁判）與 `corpus.ruling_invalidation`（裁判使哪個條文單元自何日失效），不放進 `lifecycle_event`：匯入器重寫法規時會刪光它的事件，而來源是憲法法庭。
 
-- **自動取得**：`canon-ruling fetch`，走憲法法庭網站的解釋與判決清單逐則抓頁（來源只有 HTML，無 API；資料開放宣告允許重製與改作，**須標示出處**，實作在 [`acquire/cons.py`](src/canon/acquire/cons.py)）。
-  - 主文宣告失效的裁判連同原文入庫；失效條文由 [`ruling_extract.py`](src/canon/ruling_extract.py) 的保守規則提出（句中恰有一個「語料裡的法規標題＋條（項）」、失效日寫法明確），寫法含糊的寧可不提。
+- **自動取得**：`canon-ruling fetch`，走憲法法庭網站的解釋與判決清單逐則抓頁（來源只有 HTML，無 API；資料開放宣告允許重製與改作，**須標示出處**，實作在 [`law/cons.py`](src/canon/law/cons.py)）。
+  - 主文宣告失效的裁判連同原文入庫；失效條文由 [`law/ruling_extract.py`](src/canon/law/ruling_extract.py) 的保守規則提出（句中恰有一個「語料裡的法規標題＋條（項）」、失效日寫法明確），寫法含糊的寧可不提。
   - 原文仍在庫，規則放寬（遞增 `EXTRACTOR_VERSION`）或語料新增法規後重跑即補上，不必重抓。
   - 頁面雜湊記在 `corpus.ruling_scan`，記過的頁面不再抓，`--rescan` 全部重抓。
   - 結束碼 0／1（網路等暫時性）／2（頁面不合或裁判內容與已載入的不同）。
-- **人工載入**：`canon-ruling load <file.json>`，格式見 [`ruling.py`](src/canon/ruling.py) 的模組說明。由人讀解釋文填失效日，每則裁判附出處與解釋文原文；裁判不可改，同一字號內容須相同；一次載入一個交易。抽取流程只刪改自己寫的列（`extractor_version` 有值），人載入的列不動。
+- **人工載入**：`canon-ruling load <file.json>`，格式見 [`law/ruling.py`](src/canon/law/ruling.py) 的模組說明。由人讀解釋文填失效日，每則裁判附出處與解釋文原文；裁判不可改，同一字號內容須相同；一次載入一個交易。抽取流程只刪改自己寫的列（`extractor_version` 有值），人載入的列不動。
 - **讀取**：rpc `OntologyService.ListInvalidations`（依法規、日期、可選的條號）；SQL 是 `corpus.invalidations_at(法規 id, 語文, 日期)`。`provisions_at` 的 `status` 不含違憲失效，讀取方各自合併（推論與 `ListStatements` 已合併）。
 - **推論**：失效的版本自失效日起不是依據。
   - `annotation.statement_versions_at` 不回讀它的陳述，`annotation.threshold_source_at` 不解析它的限值；被排除的陳述由 `annotation.invalidated_statements_at(法規 id, 語文, 日期)` 回報，進 `Outcome.invalidated` 與 `ListStatementsResponse.invalidated`，限值失效的要件附 `PROBLEM_KIND_INVALIDATED_DELEGATION`。
@@ -169,7 +169,7 @@ uv run --env-file .env canon-pipeline --models models.toml --check   # 對每個
 
 命令依哪一部法律的哪一條訂定（行政程序法第 150 條第 2 項），是授權鏈的一環。授權是一種主張（`assertion_kind = delegation`，表 `annotation.delegation`），沿用推導活動、封存、驗證與確認狀態。
 
-- **抽取**：`canon-sync` 在匯入之後從語料內每部命令（位階非憲法、法律）的首條抽「本辦法依某法第某條規定訂定之」，純規則，`derivation.method` 為 `rule`，來源是 [`delegation.py`](src/canon/delegation.py)；已有主張的引文（含駁回的）不重寫。公報說明的「依據：」等其他來源不抽。
+- **抽取**：`canon-sync` 在匯入之後從語料內每部命令（位階非憲法、法律）的首條抽「本辦法依某法第某條規定訂定之」，純規則，`derivation.method` 為 `rule`，來源是 [`law/delegation.py`](src/canon/law/delegation.py)；已有主張的引文（含駁回的）不重寫。公報說明的「依據：」等其他來源不抽。
 - **法律端**：法名只對語料內已有的法規標題（任一版本）且對到唯一一部；對不到、同名數部、或法規沒有該條文單元，`law_resource_id`／`law_provision_id` 為空，不猜。款記到所屬的項。
 - **命令端**錨定（法規，條文單元，內容雜湊）：命令首條改了文字，授權跟著該日現行的文字走。授權不固定目標版本，不存版本，依查詢日解析。
 - **讀取**（SQL 函式，唯讀角色可呼叫；`p_language` 同其他逐日解析）：
@@ -185,7 +185,7 @@ uv run --env-file .env canon-pipeline --models models.toml --check   # 對每個
 
 - **只處罰已確認的陳述**：寫入罰則列時所處罰的陳述必須是 `confirmed`（觸發器 `sanction_punishes_confirmed`）；`annotation.settle` 不接受所處罰陳述已非 `confirmed` 的罰則，所處罰陳述被駁回則罰則駁回。
 - **待連結罰則**：載入（`annotate.load`）時連不上的罰則（所處罰的陳述未確認，或原文處罰的是別條）連同以它為前提或為例外者，存成 `annotation.held_penalty`；寫成陳述後記在 `annotation.held_penalty_link`。`canon-pipeline` 在第一次接受之後連結，再接受一次。
-- **依賴圖**：`annotation.violation` 是處罰條文（單元，內容雜湊）所罰的條、項、款，`canon-sync` 在匯入後以確定性的條號解析對全庫寫入（[`violation.py`](src/canon/violation.py)，規則版本 `RULE_VERSION`）；`annotation.current_violation` 只取最新規則版本。`violation_kind` 為 `duty`（所罰義務所在的條文）或 `delegated_rule`（「違反依第 N 條所定辦法」的授權條文，義務在授權命令裡，沿 `annotation.delegated_by` 找命令）；連結與 `duty_gap` 只讀 `duty`。
+- **依賴圖**：`annotation.violation` 是處罰條文（單元，內容雜湊）所罰的條、項、款，`canon-sync` 在匯入後以確定性的條號解析對全庫寫入（[`law/violation.py`](src/canon/law/violation.py)，規則版本 `RULE_VERSION`）；`annotation.current_violation` 只取最新規則版本。`violation_kind` 為 `duty`（所罰義務所在的條文）或 `delegated_rule`（「違反依第 N 條所定辦法」的授權條文，義務在授權命令裡，沿 `annotation.delegated_by` 找命令）；連結與 `duty_gap` 只讀 `duty`。
 - **讀取**：
   - `annotation.penalty_candidates(待連結罰則 id)`：候選的義務與是否已確認——同單元已指明的受罰陳述，或被引條文（含其下的項款、或引款而錨在項的列舉句）裡現行、未駁回的義務與禁止。
   - `annotation.held_penalty_state`：`linked`（已寫成陳述）、`linkable`（有已確認的候選）、`awaiting_duty`（候選都未定）、`no_duty`（被引條文沒有未駁回的義務）、`no_citation`（不知受罰者、也解析不出引用）。

@@ -10,12 +10,12 @@ from google.rpc import error_details_pb2
 from grpc_status import rpc_status
 
 from canon import errors
-from canon.acquire.moj import Moj
-from canon.delegation import extract as extract_delegations
-from canon.guidance import load as load_guidance
-from canon.ingest.importer import run as run_import
-from canon.ruling import load as load_rulings
-from canon.violation import extract as extract_violations
+from canon.law.delegation import extract as extract_delegations
+from canon.law.guidance import load as load_guidance
+from canon.law.importer import run as run_import
+from canon.law.moj import Moj
+from canon.law.ruling import load as load_rulings
+from canon.law.violation import extract as extract_violations
 from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
 
 from .conftest import call_metadata, identifier

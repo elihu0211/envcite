@@ -8,9 +8,9 @@ from typing import Any
 import psycopg
 import pytest
 
-from canon.acquire.moj import Moj
 from canon.annotate import AnnotationError, load
-from canon.ingest import importer
+from canon.law import importer
+from canon.law.moj import Moj
 from canon.reasoning.facts.chains import limit_at
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar

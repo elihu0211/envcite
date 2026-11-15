@@ -3,8 +3,8 @@
 import hashlib
 
 from canon.claims.errors import AnnotationError
-from canon.corpus_ref import UnknownProvision, provision_id
 from canon.db import Conn
+from canon.law.corpus_ref import UnknownProvision, provision_id
 
 
 def provision(conn: Conn, law: object, path: object) -> int:

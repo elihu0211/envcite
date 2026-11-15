@@ -17,12 +17,12 @@ from typing import Any, NamedTuple
 from canon.claims.errors import AnnotationError
 from canon.claims.loader import load
 from canon.db import Conn, fetch
+from canon.law.violation import within
 from canon.verification import prompts
 from canon.verification.gates import unit_of
 from canon.verification.jsonutil import object_from
 from canon.verification.models import Model, ModelError
 from canon.verification.prompts import Candidate
-from canon.violation import within
 
 
 class _CitedRow(NamedTuple):

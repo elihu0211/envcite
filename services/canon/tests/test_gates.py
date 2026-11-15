@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from canon.annotate import load
+from canon.law.violation import citations, delegated_rules, violations
 from canon.verification import gates
 from canon.verification.gates import (
     ExecutableGate,
@@ -19,7 +20,6 @@ from canon.verification.gates import (
 from canon.verification.gates.cn_number import numbers_in, qualified_numbers
 from canon.verification.gates.proviso_gate import ProvisoGate, provisos
 from canon.verification.pipeline import settle
-from canon.violation import citations, delegated_rules, violations
 from tests.reasoning_support import _plain_duty, _scope, _with
 from tests.test_annotation import LAW, _doc, _limit
 from tests.test_incremental import _articles, _first, _law_v1

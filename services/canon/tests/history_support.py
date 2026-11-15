@@ -2,7 +2,7 @@
 
 import pytest
 
-from canon.history_sync.policy import LIMITS
+from canon.law.history_sync.policy import LIMITS
 
 
 def relax_limits(monkeypatch: pytest.MonkeyPatch) -> None:

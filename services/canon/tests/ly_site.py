@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from canon.acquire import ly_law
+from canon.law import ly_law
 
 ACTION = "/lglawc/lglawkm?@@123"
 LAW_NO = "09999"

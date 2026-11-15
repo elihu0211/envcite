@@ -14,10 +14,11 @@ import grpc
 import psycopg.errors
 from opentelemetry.metrics import Meter
 
-from canon import annotation_read, errors, identifiers
+from canon import annotation_read, errors
 from canon.clock import Today
 from canon.endpoints.common import log_call
-from canon.identifiers import law_key
+from canon.law import identifiers
+from canon.law.identifiers import law_key
 from canon.reasoning import Result, evaluate_across
 from canon.reasoning.facts.case_inputs import Measurements, Permits, PerOccasionTimeline
 from canon.reasoning.scoring.models import ScoringInput

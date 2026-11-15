@@ -80,7 +80,7 @@ from retrieval_eval import Embeds
 from scoped_search import resource_ids, scoped_search
 
 from canon import reranking
-from canon.law_names import LawNames
+from canon.law.law_names import LawNames
 from canon.reranking import Reranks
 from canon.search_tuning import DEFAULT_RERANK_CANDIDATES
 from canon.settings import DatabaseSettings, ModelsSettings, load

@@ -9,8 +9,8 @@ from types import ModuleType
 import psycopg
 
 from canon import projection
-from canon.acquire.moj import Moj
-from canon.ingest import importer
+from canon.law import importer
+from canon.law.moj import Moj
 from canon.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot

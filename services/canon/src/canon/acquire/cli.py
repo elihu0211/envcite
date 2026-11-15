@@ -10,7 +10,7 @@ import logging
 import psycopg
 
 from canon.acquire.engine import InvalidSnapshot, Source, acquire
-from canon.acquire.moj import Moj
+from canon.law.moj import Moj
 from canon.settings import SnapshotSettings, load
 
 #: 新來源在此登記。
