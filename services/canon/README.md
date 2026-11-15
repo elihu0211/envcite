@@ -6,7 +6,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 # canon
 
-環境知識本體的集中處：各來源的知識各成一個本體（如法規本體 `law`），在這裡提供語料、檢索與推論。回[倉庫總覽](../../README.md)。
+環境知識的集中處：各來源的知識各成一個來源（如法規 `law`），在這裡提供語料、檢索與推論。回[倉庫總覽](../../README.md)。
 
 - 介面：gRPC `CanonService`（法規與檢索）、`ReasoningService`（標註與推論）；契約 [`canon.proto`](../../proto/envcite/canon/v1/canon.proto)、[`reasoning.proto`](../../proto/envcite/canon/v1/reasoning.proto)；約定與錯誤原因見 [`proto/README.md`](../../proto/README.md)。
 - 呼叫端 [`platform`](../platform/README.md)、[`consult`](../consult/README.md)。資料全域共用，不分租戶；PostgreSQL 為唯一真值。
@@ -269,6 +269,6 @@ JSON 文件都帶 `sha256`：自身去掉該欄後的正規化 JSON（鍵排序�
 
 ### 能力問題登記
 
-本體必須回答的問題與各題的實作現況，只登記在 [`competency.toml`](competency.toml)：每題一列，`status` 是 `answerable`（術語層與機制都在且有測試）、`partial`（只做了一部分）或 `design_only`（只有設計，沒有承載）。「可答」說的是機制存在，不是資料庫裡已有答案。
+canon 必須回答的問題與各題的實作現況，只登記在 [`competency.toml`](competency.toml)：每題一列，`status` 是 `answerable`（術語層與機制都在且有測試）、`partial`（只做了一部分）或 `design_only`（只有設計，沒有承載）。「可答」說的是機制存在，不是資料庫裡已有答案。
 
 每題的證據分四種：資料庫物件（`db`）、rpc（`rpc`）、契約欄位（`field`）與測試函式（`test`）。[`tests/test_competency.py`](tests/test_competency.py) 驗證：登記涵蓋題號集合、每項證據真的存在、標可答的題有機制與測試、標只有設計的題沒有證據。它不執行那些題，只驗證證據；加題或改現況時，登記檔與該測試裡的題號集合同一次更新。

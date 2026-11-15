@@ -46,7 +46,7 @@ public static class OperatorPresentationTests
 public static class UsagePresentationTests
 {
     [Theory]
-    [InlineData("canon.search", "本體條文檢索")]
+    [InlineData("canon.search", "法規條文檢索")]
     [InlineData("canon.get_law", "取得單部法規")]
     [InlineData("consult.ground", "諮詢接地證據集")]
     [InlineData("consult.tokens.input", "模型輸入 Tokens")]
@@ -54,7 +54,7 @@ public static class UsagePresentationTests
         Assert.Equal(expected, UsageLabels.Operation(op));
 
     [Theory]
-    [InlineData("canon.search", "法規本體")]
+    [InlineData("canon.search", "法規知識庫")]
     [InlineData("consult.ground", "諮詢接地")]
     [InlineData("consult.tokens.input", "Token 計量")]
     [InlineData("custom.op", "其他操作")]

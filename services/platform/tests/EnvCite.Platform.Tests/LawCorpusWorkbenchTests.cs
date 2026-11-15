@@ -23,7 +23,7 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
 
         Assert.Equal(HttpStatusCode.OK, page.Status);
         Assert.Contains("法規體系與合規", page.Html, StringComparison.Ordinal);
-        Assert.DoesNotContain("法規本體", page.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("法規知識庫", page.Html, StringComparison.Ordinal);
         Assert.Contains("ep-workbench-shell", page.Html, StringComparison.Ordinal);
         Assert.Contains("value=\"O\" selected", page.Html, StringComparison.Ordinal);
         Assert.Contains("data-canon-graph=", page.Html, StringComparison.Ordinal);

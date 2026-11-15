@@ -1,4 +1,4 @@
-"""本體服務的自訂指標（OpenTelemetry；沒設匯出端點時是無操作，見 `envcite_grpc.telemetry`）。
+"""知識服務的自訂指標（OpenTelemetry；沒設匯出端點時是無操作，見 `envcite_grpc.telemetry`）。
 
 兩類：
 - **推論的服務面**：每次 `Evaluate` 的耗時與結果（ok、invalid、busy、deadline、error）、同時進行數。

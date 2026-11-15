@@ -24,9 +24,9 @@ internal sealed partial class ConsultationGrpcService(GroundingPipeline pipeline
         var requestId = context.RequestHeaders.GetValue("x-request-id") ?? "-";
         LogGround(logger, tenant, requestId);
 
-        string[] unknown = [.. request.Ontologies.Where(o => !Grounding.CodePrefix.ContainsKey(o)).Distinct().Order(StringComparer.Ordinal)];
+        string[] unknown = [.. request.Sources.Where(o => !Grounding.CodePrefix.ContainsKey(o)).Distinct().Order(StringComparer.Ordinal)];
         if (unknown.Length > 0)
-            throw new RpcException(new Status(StatusCode.InvalidArgument, $"unknown ontology: {string.Join(", ", unknown)}"));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, $"unknown source: {string.Join(", ", unknown)}"));
 
         // canon 的 RpcException 不攔：伺服器以它的狀態與 trailer 原樣回給呼叫端。無效的 as_of 仍是 INVALID_ARGUMENT、
         // canon 不可用仍是 UNAVAILABLE（可重試）；吞成 UNKNOWN，呼叫端就無從區分參數錯誤與可重試的不可用。
@@ -50,7 +50,7 @@ internal sealed partial class ConsultationGrpcService(GroundingPipeline pipeline
                             Iri = c.Iri,
                             Label = c.Label,
                             Text = c.Text,
-                            Ontology = c.Ontology,
+                            Source = c.Source,
                             LawIdentifier = c.LawIdentifier,
                         }),
                     },

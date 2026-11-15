@@ -5,10 +5,10 @@
 ## Project
 
 - **Name:** canon（典籍：具權威的條文與典籍全體，對應 PostgreSQL 為唯一真值、結論只是候選的定位）。服務名只出現在部署單元：目錄、Python 套件與映像、叢集內的服務與工作負載、指令前綴 `canon-`、環境變數 `ENVCITE_CANON_*`、可觀測性的服務名。不加專案名 `envcite`（專案名是環境變數與叢集命名空間的前綴，不屬於服務名）。
-- **Naming:** 服務名 canon 也是持久化與錯誤識別碼的前綴：資料庫角色 `canon_reader`／`canon_writer`／`canon_reviewer`（部署端的登入身分 `canon_server`、`canon_jobs` 加入對應群組）、計量鍵 `canon.*`、API key 範圍 `canon:*`、結果碼 `canon.*`、`ErrorInfo.domain` 為 `canon.envcite`。gRPC 套件 `envcite.canon.v1`（`CanonService`、`ReasoningService`）與呼叫端的 `Canon` 設定區段、模組同取服務名；改它們是契約的破壞性變更，走新套件版本。「本體」是知識來源的概念（一種來源一個本體），不是服務名，維持原詞。遷移檔 0027–0067 與 0068 內的舊角色名是已套用的歷史（有檢查碼），不改；0068 之後的授權一律寫新角色名。
-- **Conventions:** 發行名、匯入名與服務名同為 `canon`（`src/` 佈局，`uv_build` 預設以發行名找 `src/canon/`）。套件與模組小寫、短名詞、以職責命名（PEP 8）：不用 `utils`、`helpers` 這類什麼都能放的名字，不與標準庫同名（含子套件；ruff `A005` 嚴格模式守門）；類別 CapWords、函式與變數 snake_case（ruff `N` 守門；領域例外依事件命名，不套 `N818`；gRPC 方法與 protobuf API 的 PascalCase 由 `.proto` 決定）。指令入口是單一指令 `canon <子指令>`（`python -m canon` 等價；子指令登記在 `canon/cli.py`，名稱是與部署庫的契約）。本體子包以本體代號命名，與服務名不同層。
-- **Role:** 本體服務（shared, non-tenant data）：各來源的知識集中在本服務，一種來源一個本體，各有自己的 schema 與引用代號字母（呼叫端看到的規則在倉庫根 `proto/README.md`）。新增來源是新增一個本體，不另立服務；拆成獨立服務只在該本體需要獨立擴縮或發版、資料不能與共享資料同庫、或需要不同的執行環境。由 `services/platform` 與 `services/consult` 呼叫。
-- **Layout:** 頂層是核心：以語料與標註為資料模型的讀取層、端點、標註、驗證、推論與 gRPC 伺服器，加上共用的基礎（資料庫、設定、網路、嵌入）。`law/` 是法規來源的取得、解析與同步（把語料填進去）。依賴只往一個方向：`law/` 用核心，核心不匯入任何本體子包，只有組合根（`cli.py`、`server.py`、`sync.py`、`acquire/cli.py`）接線，本體之間也不互相匯入（`tests/test_architecture.py` 守門）。新增本體是新增與 `law/` 同層的 `canon/<代號>/`，不放進 `ontologies/` 之類的容器；它是否共用核心的資料模型，等它實際進來再決定。資料表歸該本體自己的 schema。
+- **Naming:** 服務名 canon 也是持久化與錯誤識別碼的前綴：資料庫角色 `canon_reader`／`canon_writer`／`canon_reviewer`（部署端的登入身分 `canon_server`、`canon_jobs` 加入對應群組）、計量鍵 `canon.*`、API key 範圍 `canon:*`、結果碼 `canon.*`、`ErrorInfo.domain` 為 `canon.envcite`。gRPC 套件 `envcite.canon.v1`（`CanonService`、`ReasoningService`）與呼叫端的 `Canon` 設定區段、模組同取服務名；改它們是契約的破壞性變更，走新套件版本。「來源」（`law` 等）是服務內的知識分區，一種來源一個子包，代號不是服務名。遷移檔 0027–0067 與 0068 內的舊角色名是已套用的歷史（有檢查碼），不改；0068 之後的授權一律寫新角色名。
+- **Conventions:** 發行名、匯入名與服務名同為 `canon`（`src/` 佈局，`uv_build` 預設以發行名找 `src/canon/`）。套件與模組小寫、短名詞、以職責命名（PEP 8）：不用 `utils`、`helpers` 這類什麼都能放的名字，不與標準庫同名（含子套件；ruff `A005` 嚴格模式守門）；類別 CapWords、函式與變數 snake_case（ruff `N` 守門；領域例外依事件命名，不套 `N818`；gRPC 方法與 protobuf API 的 PascalCase 由 `.proto` 決定）。指令入口是單一指令 `canon <子指令>`（`python -m canon` 等價；子指令登記在 `canon/cli.py`，名稱是與部署庫的契約）。來源子包以來源代號命名，與服務名不同層。
+- **Role:** 知識服務（shared, non-tenant data）：各來源的知識集中在本服務，一種來源一個子包，各有自己的 schema 與引用代號字母（呼叫端看到的規則在倉庫根 `proto/README.md`）。新增來源是新增一個來源子包，不另立服務；拆成獨立服務只在該來源需要獨立擴縮或發版、資料不能與共享資料同庫、或需要不同的執行環境。由 `services/platform` 與 `services/consult` 呼叫。
+- **Layout:** 頂層是核心：以語料與標註為資料模型的讀取層、端點、標註、驗證、推論與 gRPC 伺服器，加上共用的基礎（資料庫、設定、網路、嵌入）。`law/` 是法規來源的取得、解析與同步（把語料填進去）。依賴只往一個方向：`law/` 用核心，核心不匯入任何來源子包，只有組合根（`cli.py`、`server.py`、`sync.py`、`acquire/cli.py`）接線，來源之間也不互相匯入（`tests/test_architecture.py` 守門）。新增來源是新增與 `law/` 同層的 `canon/<代號>/`，不放進 `sources/` 之類的容器；它是否共用核心的資料模型，等它實際進來再決定。資料表歸該來源自己的 schema。
 - **Stack:** Python · uv · gRPC（grpcio，同步伺服器）· PostgreSQL（psycopg 3）· ruff · mypy (strict) · pytest
 - **Data model:** **關聯式實表，PostgreSQL 是唯一真值**，表結構以 `migrations/*.sql` 為準。法規以（管轄，識別碼方案，在地識別碼）為鍵——管轄是封閉的列舉（中央與 22 縣市），方案與管轄的配對由 CHECK 強制（中央方案只配中央、地方方案只配縣市；地方方案是契約預留，目前沒有取得來源），兩者都沒有預設值，寫入者與呼叫端都得明說；新增識別碼方案要在同一個遷移裡說明它屬於哪一級；效力逐條文單元記載、逐單元解析；法規名稱可因修正而變，標題屬公布版本；標註錨定（單元，內容雜湊），不錨定版本列。**時間軸的不變式由綱要強制，不靠匯入後的檢查**：版本不重疊（`WITHOUT OVERLAPS`）、不留縫（文字時間的上界以延遲外鍵參照下一版的版本日）、施行規則決定起點與版本日的關係（CHECK；早於版本日只能是明文的 `retroactive`）；查不到全文的版本仍是一版（`text_status = unavailable`）。新規則先寫成約束，程式與測試跟著約束。
 
@@ -99,7 +99,7 @@ uv run --env-file .env canon serve
   規範性陳述的引文缺了助動詞而單元原文有（從規範句切下的子句）是形狀問題，修不好就丟；
   義務引文裡助動詞前後有字沒被 scope、主體或 duty 要件涵蓋（漏了期限、對象、限定語）只送回修復，不丟。
 - **重抽**：義務沒有定論的單元（`annotation.reextraction_due`）帶審查者指出的問題重抽；輪數上限是 `extraction_attempt.round` 的 CHECK，不是程式裡的常數，該不該重抽由資料推得、不另存佇列，所以中斷後重跑自己收斂。重抽只改變誰被抽到、不放寬閘門：確認仍要所有必要方法通過。量測與已知缺口見 `eval/duty-reextraction-2026-11-06.md`，兩型瑕疵修復的獨立量測見 `eval/duty-fix-effect-2026-11-09.md`。
-- 本體的約定（只有規範性陳述有義務方向、授權不是許可、罰則一個效果一個陳述且引文只取該效果的子句、刑罰不是罰則、按次處罰是另一個帶「屆期仍未改善」要件的陳述）寫在 `verification/templates/conventions.j2` 一處，各提示都由它組成。
+- 領域約定（只有規範性陳述有義務方向、授權不是許可、罰則一個效果一個陳述且引文只取該效果的子句、刑罰不是罰則、按次處罰是另一個帶「屆期仍未改善」要件的陳述）寫在 `verification/templates/conventions.j2` 一處，各提示都由它組成。
 - **管線**可重跑、每個陳述 commit；`--pending` 的待辦由資料推得，所以重跑收斂；同一時間只跑一個（PostgreSQL 諮詢鎖）。保留樣本評估看過的法就用掉了，只報第一次看的計數，不報準確度。
 - **行政規則**（`guidance` schema）：函釋、裁量基準另立一軸，**不進語料的位階、不是推論的前提**（行政程序法第 159 條），只附在推論結果旁（`Outcome.guidance`）。公文不可改，由人或規則載入（`derivation.method` 不得為 `llm`）；「解釋」錨定（單元，內容雜湊），條文文字改了就不再附上。取得（`canon guidance sync`）只經 `guidance.load` 寫入，**改變寫入內容或錨定規則要遞增 `guidance_sync.provenance.RULE_VERSION`**。
 - **推論**（`reasoning/`）：通用推論程式 `rules.lp`（clingo）**不含任何法條**，也不用模型；案件事實由呼叫端給。結論都是**候選**；缺的事實、需判斷的要件、矛盾的事實、未決的衝突與罰則競合分開回報。

@@ -51,7 +51,7 @@
   <data name="Audit.Actor.tenant-user.id" xml:space="preserve"><value>租戶成員 {0}</value></data>
   <data name="Audit.Actor.system" xml:space="preserve"><value>系統</value></data>
   <data name="Audit.Actor.anonymous" xml:space="preserve"><value>匿名</value></data>
-  <data name="Usage.Operation.canon.search" xml:space="preserve"><value>本體條文檢索</value></data>
+  <data name="Usage.Operation.canon.search" xml:space="preserve"><value>法規條文檢索</value></data>
   <data name="Usage.Operation.canon.get_law" xml:space="preserve"><value>取得單部法規</value></data>
   <data name="Usage.Operation.canon.list_articles" xml:space="preserve"><value>條文清單</value></data>
   <data name="Usage.Operation.canon.evaluate" xml:space="preserve"><value>法規論理推論</value></data>
@@ -59,7 +59,7 @@
   <data name="Usage.Operation.consult.answer" xml:space="preserve"><value>模型生成回答</value></data>
   <data name="Usage.Operation.consult.tokens.input" xml:space="preserve"><value>模型輸入 Tokens</value></data>
   <data name="Usage.Operation.consult.tokens.output" xml:space="preserve"><value>模型輸出 Tokens</value></data>
-  <data name="Usage.Category.canon" xml:space="preserve"><value>法規本體</value></data>
+  <data name="Usage.Category.canon" xml:space="preserve"><value>法規知識庫</value></data>
   <data name="Usage.Category.tokens" xml:space="preserve"><value>Token 計量</value></data>
   <data name="Usage.Category.consult" xml:space="preserve"><value>諮詢接地</value></data>
   <data name="Usage.Category.other" xml:space="preserve"><value>其他操作</value></data>

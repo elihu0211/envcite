@@ -25,7 +25,7 @@ public sealed class GroundServiceTests(ConsultFactory factory)
         Assert.Equal(["L1", "L2"], citations.Select(c => c.Code));
         Assert.Equal("空氣污染防制法 第 1 條", citations[0].Label);
         Assert.Equal("第 1 條條文內容。", citations[0].Text);
-        Assert.All(citations, c => Assert.Equal("law", c.Ontology));
+        Assert.All(citations, c => Assert.Equal("law", c.Source));
         Assert.Equal(V3.Confidence.High, response.Evidence.Confidence);
     }
 
@@ -102,20 +102,20 @@ public sealed class GroundServiceTests(ConsultFactory factory)
     }
 
     [Fact]
-    public async Task TheLawOntologyMayBeRequestedExplicitly()
+    public async Task TheLawSourceMayBeRequestedExplicitly()
     {
-        var response = await GroundAsync(new GroundRequest { Question = FakeCanonServer.AnswerableQuery, Ontologies = { "law" } });
+        var response = await GroundAsync(new GroundRequest { Question = FakeCanonServer.AnswerableQuery, Sources = { "law" } });
 
         Assert.Equal(GroundResponse.OutcomeOneofCase.Evidence, response.OutcomeCase);
     }
 
     [Fact]
-    public async Task AnUnknownOntologyIsRejectedBeforeRetrieval()
+    public async Task AnUnknownSourceIsRejectedBeforeRetrieval()
     {
         var before = factory.Canon.Searches.Count;
 
         var error = await Assert.ThrowsAsync<RpcException>(() =>
-            GroundAsync(new GroundRequest { Question = "x", Ontologies = { "law", "case" } }));
+            GroundAsync(new GroundRequest { Question = "x", Sources = { "law", "case" } }));
 
         Assert.Equal(StatusCode.InvalidArgument, error.StatusCode);
         Assert.Contains("case", error.Status.Detail, StringComparison.Ordinal);
