@@ -28,7 +28,7 @@ internal interface IOntologySearch
     Task<IReadOnlyList<Article>> SearchAsync(string query, string asOf, CancellationToken cancellationToken);
 }
 
-/// <summary>envcite-ontology 的連線設定（<c>Ontology</c> 區段；叢集內為 <c>dns:///envcite-ontology:50051</c>）。</summary>
+/// <summary>canon 的連線設定（<c>Ontology</c> 區段；叢集內為 <c>dns:///canon:50051</c>）。</summary>
 internal sealed class OntologyOptions : InternalGrpcClientOptions, ISectionOptions
 {
     public static string SectionName => "Ontology";
@@ -42,7 +42,7 @@ internal sealed class OntologyOptions : InternalGrpcClientOptions, ISectionOptio
 }
 
 /// <summary>
-/// 以 envcite-ontology 的 <c>SearchArticles</c> 實作的 <see cref="IOntologySearch"/>。期限是自己的上限
+/// 以 canon 的 <c>SearchArticles</c> 實作的 <see cref="IOntologySearch"/>。期限是自己的上限
 /// （<see cref="InternalGrpcClientOptions.Timeout"/>）與呼叫端剩下的期限取小者：後者由用戶端工廠的
 /// call context propagation 帶上（見 Program.cs），上游早已逾時，下游就不白做工。
 /// </summary>

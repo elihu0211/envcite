@@ -8,7 +8,7 @@ owns: [service-composition, grpc-metadata, as-of-semantics, grpc-error-reasons, 
 
 gRPC 契約，`buf` 單一模組（根為本目錄）；欄位與方法的語意見 `.proto` 註解。回[倉庫總覽](../README.md)。
 
-套件 `envcite.ontology.v2`（共享，實作在 [`services/ontology`](../services/ontology/README.md#概念)）與 `envcite.consult.v2`（租戶隔離，實作在 [`services/consult`](../services/consult/README.md#概念)）皆為內部介面。外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST，契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
+套件 `envcite.ontology.v2`（共享，實作在 [`services/canon`](../services/canon/README.md#概念)）與 `envcite.consult.v2`（租戶隔離，實作在 [`services/consult`](../services/consult/README.md#概念)）皆為內部介面。外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST，契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
 
 `buf lint`、`buf breaking` 的指令見倉庫根 [`AGENTS.md`](../AGENTS.md) 的 Commands；產生碼與破壞性變更的規則見同檔的 Contract。
 
@@ -41,7 +41,7 @@ flowchart LR
         direction LR
         platform["<b>platform</b><br/>租戶 · 限流 · 計量 · REST"]
         consult["<b>consult</b><br/>接地 · 可答性判定"]
-        ontology["<b>ontology</b><br/>本體 · 檢索 · 推論"]
+        canon["<b>canon</b><br/>本體 · 檢索 · 推論"]
     end
 
     pg1[("platform<br/>PostgreSQL")]
@@ -49,16 +49,16 @@ flowchart LR
 
     client ==>|"REST · API key"| platform
     platform -->|"Ground"| consult
-    platform -->|"法規 · 檢索 · 推論"| ontology
-    consult -->|"SearchArticles"| ontology
+    platform -->|"法規 · 檢索 · 推論"| canon
+    consult -->|"SearchArticles"| canon
     platform --- pg1
-    ontology --- pg2
+    canon --- pg2
     client -.->|"證據集 + 提示詞"| llm
 
     classDef svc fill:#eef2ff,stroke:#6366f1,stroke-width:1.5px,color:#1e1b4b
     classDef store fill:#ecfdf5,stroke:#10b981,color:#064e3b
     classDef ext fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:4 3,color:#334155
-    class platform,consult,ontology svc
+    class platform,consult,canon svc
     class pg1,pg2 store
     class client,llm ext
 ```
@@ -79,7 +79,7 @@ sequenceDiagram
     actor C as 用戶端
     participant P as platform
     participant K as consult
-    participant O as ontology
+    participant O as canon
 
     C->>+P: POST /v2/ground（API key）
     P->>P: 驗證租戶 · 限流 · 計量
@@ -99,10 +99,10 @@ sequenceDiagram
 
 | key | 必填 | 說明 |
 |-----|------|------|
-| `x-tenant-id` | consult 必填 | 配額與稽核；ontology 只用於日誌。consult 缺少 → `INVALID_ARGUMENT` |
+| `x-tenant-id` | consult 必填 | 配額與稽核；canon 只用於日誌。consult 缺少 → `INVALID_ARGUMENT` |
 | `x-request-id` | 否 | 只用於日誌 |
 
-**法規識別**：法規以複合自然鍵 `LawIdentifier`（`jurisdiction`、`id_scheme`、`local_id`）標識，ontology 的請求與回應都用它，不用單一字串的法規代號；三個欄位的取值與語意見 `ontology.proto` 的註解。三個欄位都必填，沒有預設管轄或方案：缺任一個回 `INVALID_ARGUMENT`（欄位原因 `EMPTY`），值不在 `.proto` 註解列的封閉集合內也是 `INVALID_ARGUMENT`（`UNKNOWN_VALUE`）。管轄與方案的配對由資料庫強制（中央方案只配 `TW-CENTRAL`、地方方案只配縣市），不合法的配對不存在於語料，查詢回 `LAW_NOT_FOUND`。地方方案與縣市管轄是契約預留，目前沒有取得來源。`SearchArticles.jurisdiction` 是過濾條件：留空為全部管轄，有值須是合法管轄。
+**法規識別**：法規以複合自然鍵 `LawIdentifier`（`jurisdiction`、`id_scheme`、`local_id`）標識，canon 的請求與回應都用它，不用單一字串的法規代號；三個欄位的取值與語意見 `ontology.proto` 的註解。三個欄位都必填，沒有預設管轄或方案：缺任一個回 `INVALID_ARGUMENT`（欄位原因 `EMPTY`），值不在 `.proto` 註解列的封閉集合內也是 `INVALID_ARGUMENT`（`UNKNOWN_VALUE`）。管轄與方案的配對由資料庫強制（中央方案只配 `TW-CENTRAL`、地方方案只配縣市），不合法的配對不存在於語料，查詢回 `LAW_NOT_FOUND`。地方方案與縣市管轄是契約預留，目前沒有取得來源。`SearchArticles.jurisdiction` 是過濾條件：留空為全部管轄，有值須是合法管轄。
 
 **`as_of`**：ISO 8601 日期，依哪一天施行的條文；空字串為現行。沒有任何版本涵蓋該日時回**查無**，不回現行條文。
 
@@ -120,9 +120,9 @@ sequenceDiagram
 | `DEADLINE_EXCEEDED` | `READ_TIMEOUT` | 讀取期限用完，資料庫查詢被取消 | 視預算 |
 | `UNAVAILABLE`、`DEADLINE_EXCEEDED` | — | 下游不可用或逾時 | 是 |
 
-consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
+consult 呼叫 canon 時，canon 的狀態碼原樣轉出。
 
-**RED 指標**（rate、errors、duration）：每個一元呼叫在兩側各有一個耗時直方圖，次數是 rate、`rpc.response.status_code` 不是 `OK` 的是 errors，分布是 duration；兩側用同一組標籤（`rpc.service`、`rpc.method`、`rpc.response.status_code`），所以能對照。租戶與案件內容不進標籤；匯出的開關依倉庫根 [`AGENTS.md`](../AGENTS.md) 的可觀測性約定。名稱與標籤的真值在程式碼，不在文件：ontology 的伺服器端是 `libs/python/envcite-grpc` 的 `metrics.py`；consult 的伺服器端是 `services/consult` 的 `GrpcServerMetrics.cs`；.NET 的用戶端與兩側共用的約定是 `libs/dotnet` 的 `GrpcClientMetrics.cs`、`RpcMetrics.cs`；對外 HTTP 是 ASP.NET Core 標準的伺服器請求指標，接線在 `libs/dotnet` 的 `Telemetry.cs`。
+**RED 指標**（rate、errors、duration）：每個一元呼叫在兩側各有一個耗時直方圖，次數是 rate、`rpc.response.status_code` 不是 `OK` 的是 errors，分布是 duration；兩側用同一組標籤（`rpc.service`、`rpc.method`、`rpc.response.status_code`），所以能對照。租戶與案件內容不進標籤；匯出的開關依倉庫根 [`AGENTS.md`](../AGENTS.md) 的可觀測性約定。名稱與標籤的真值在程式碼，不在文件：canon 的伺服器端是 `libs/python/envcite-grpc` 的 `metrics.py`；consult 的伺服器端是 `services/consult` 的 `GrpcServerMetrics.cs`；.NET 的用戶端與兩側共用的約定是 `libs/dotnet` 的 `GrpcClientMetrics.cs`、`RpcMetrics.cs`；對外 HTTP 是 ASP.NET Core 標準的伺服器請求指標，接線在 `libs/dotnet` 的 `Telemetry.cs`。
 
 ## 呼叫端的語言模型
 
@@ -132,7 +132,7 @@ consult 呼叫 ontology 時，ontology 的狀態碼原樣轉出。
 
 `SearchArticles` 是混合檢索，順序由字面臂與語意臂融合決定；`lexical_score`、`semantic_similarity` 只在同一次查詢之內可比較；`term_coverage` 是條文含有多少比例的查詢詞，不影響名次，給想排除「只沾到一個詞」的字面命中的呼叫端。請求帶 `include_guidance` 時，函釋的主旨或內文提到查詢詞組的，它所解釋的條文也會納入並以 `guidance_documents` 標出件數；函釋只用來找條文，不是依據。請求帶 `rerank` 時，兩臂（與函釋）取較深的候選交給精排模型重排、再取前 `limit` 條，命中另帶 `rerank_score`（0 至 1 的相關機率）；沒有精排模型、名額滿了或端點逾時失敗時，退回沒有精排的次序、不帶分數，查詢不失敗，所以呼叫端以 `rerank_score` 是否有值判斷這次有沒有精排到。它多一次對外呼叫（秒級），預設不開。查詢含法規全名時，只在被點名的法規裡找（那些法規在該日沒有任何命中才改找全庫），所以命中不保證來自全庫最相關的法規。
 
-`ListInvalidations` 回某日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效），`as_of` 語意同其他 rpc，法規不存在或該日無版本的錯誤同 `GetLaw`。回應逐筆附裁判字號、出處網址與解釋文原文；`partial` 為真時裁判只宣告條文的一部分，範圍以原文為準。**沒有列出不等於沒有失效**：失效條文由規則自解釋文提出，寫法含糊的不提（見 ontology README〈違憲失效〉），顯示這些資料須標示出處（憲法法庭）。
+`ListInvalidations` 回某日因大法官解釋或憲法法庭判決而失效的條文單元（違憲失效），`as_of` 語意同其他 rpc，法規不存在或該日無版本的錯誤同 `GetLaw`。回應逐筆附裁判字號、出處網址與解釋文原文；`partial` 為真時裁判只宣告條文的一部分，範圍以原文為準。**沒有列出不等於沒有失效**：失效條文由規則自解釋文提出，寫法含糊的不提（見 canon README〈違憲失效〉），顯示這些資料須標示出處（憲法法庭）。
 
 `ListLaws` 依 `as_of` 列出有效法規摘要與首要授權母法，支援 `jurisdiction` 與全國法規分類字首 `category_prefix`（單一大寫字母，不符格式回 `INVALID_ARGUMENT`）過濾；每筆 `LawSummary` 附《中央法規標準法》定名種類 `document_type`、直接子法數 `child_count`、已解析上位母法數 `parent_count` 及當日有效函釋數 `guidance_count`。
 

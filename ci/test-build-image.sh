@@ -69,8 +69,8 @@ run() {
   : > "$CALLS"
   rm -f "$CALLS".* "$STDIN_LOG"
   HOSTS_FILE=$hosts REGISTRY_PASSWORD=$pw sh "$here/build-image.sh" "$@" \
-    --service ontology --image registry.example/envcite/ontology:abc123 \
-    --cache registry.example/envcite/cache/ontology \
+    --service canon --image registry.example/envcite/canon:abc123 \
+    --cache registry.example/envcite/cache/canon \
     --cache-scope feature-x --cache-fallback-scope main \
     --registry registry.example --registry-user bot \
     -- --build-context uv-cache=.uv-cache --build-arg UV_VERSION=0.9.1 --build-arg PYTHON_VERSION=3.14 \
@@ -130,7 +130,7 @@ docker
   buildx
   build
   -f
-  services/ontology/Dockerfile
+  services/canon/Dockerfile
 $1
   --build-context
   uv-cache=.uv-cache
@@ -145,13 +145,13 @@ $1
   --build-arg
   MCR=10.9.8.7:5004
   --cache-from
-  type=registry,ref=registry.example/envcite/cache/ontology:feature-x
+  type=registry,ref=registry.example/envcite/cache/canon:feature-x
   --cache-from
-  type=registry,ref=registry.example/envcite/cache/ontology:main
+  type=registry,ref=registry.example/envcite/cache/canon:main
   --cache-to
-  type=registry,ref=registry.example/envcite/cache/ontology:feature-x,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true
+  type=registry,ref=registry.example/envcite/cache/canon:feature-x,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true
   -t
-  registry.example/envcite/ontology:abc123
+  registry.example/envcite/canon:abc123
   .
 EOF
 }

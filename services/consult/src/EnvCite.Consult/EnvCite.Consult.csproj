@@ -16,8 +16,8 @@
 
   <ItemGroup>
     <!--
-      契約的唯一真值在倉庫根的 proto/：本服務實作 consult、呼叫 ontology。兩邊都產生用戶端與伺服器端：
-      測試以 consult 的用戶端打本服務、以 ontology 的伺服器端做假的本體。
+      契約的唯一真值在倉庫根的 proto/：本服務實作 consult、呼叫 canon。兩邊都產生用戶端與伺服器端：
+      測試以 consult 的用戶端打本服務、以 canon 的伺服器端做假的本體。
     -->
     <Protobuf Include="../../../../proto/envcite/consult/v2/consult.proto"
               ProtoRoot="../../../../proto"

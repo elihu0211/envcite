@@ -12,9 +12,9 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "canon",
     "envcite-grpc",
     "envcite-jobkit",
-    "envcite-ontology",
     "envcite-proto",
     "envcite-segmenter",
 ]
@@ -157,6 +157,52 @@ sdist = { url = "https://files.pythonhosted.org/packages/43/65/318323f98dbee45d4
 wheels = [
     { url = "https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d27c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl", hash = "sha256:d6f88de62e1d4e38ecb1077eb9724cd0eff29d2a08ca16a401e9b9e93f117cf9", size = 109924, upload-time = "2026-06-07T16:44:21.566Z" },
 ]
+
+[[package]]
+name = "canon"
+version = "0.1.0"
+source = { editable = "services/canon" }
+dependencies = [
+    { name = "clingo" },
+    { name = "envcite-grpc" },
+    { name = "envcite-jobkit" },
+    { name = "envcite-proto" },
+    { name = "envcite-segmenter" },
+    { name = "grpcio-health-checking" },
+    { name = "grpcio-reflection" },
+    { name = "grpcio-status" },
+    { name = "jinja2" },
+    { name = "lxml" },
+    { name = "psycopg", extra = ["binary"] },
+    { name = "psycopg-pool" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+]
+
+[package.optional-dependencies]
+llm = [
+    { name = "anthropic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anthropic", marker = "extra == 'llm'" },
+    { name = "clingo" },
+    { name = "envcite-grpc", editable = "libs/python/envcite-grpc" },
+    { name = "envcite-jobkit", editable = "libs/python/envcite-jobkit" },
+    { name = "envcite-proto", editable = "libs/python/envcite-proto" },
+    { name = "envcite-segmenter", editable = "libs/python/envcite-segmenter" },
+    { name = "grpcio-health-checking" },
+    { name = "grpcio-reflection" },
+    { name = "grpcio-status" },
+    { name = "jinja2" },
+    { name = "lxml" },
+    { name = "psycopg", extras = ["binary"] },
+    { name = "psycopg-pool" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+]
+provides-extras = ["llm"]
 
 [[package]]
 name = "cbor2"
@@ -672,52 +718,6 @@ requires-dist = [
 name = "envcite-jobkit"
 version = "0.1.0"
 source = { editable = "libs/python/envcite-jobkit" }
-
-[[package]]
-name = "envcite-ontology"
-version = "0.1.0"
-source = { editable = "services/ontology" }
-dependencies = [
-    { name = "clingo" },
-    { name = "envcite-grpc" },
-    { name = "envcite-jobkit" },
-    { name = "envcite-proto" },
-    { name = "envcite-segmenter" },
-    { name = "grpcio-health-checking" },
-    { name = "grpcio-reflection" },
-    { name = "grpcio-status" },
-    { name = "jinja2" },
-    { name = "lxml" },
-    { name = "psycopg", extra = ["binary"] },
-    { name = "psycopg-pool" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-]
-
-[package.optional-dependencies]
-llm = [
-    { name = "anthropic" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "anthropic", marker = "extra == 'llm'" },
-    { name = "clingo" },
-    { name = "envcite-grpc", editable = "libs/python/envcite-grpc" },
-    { name = "envcite-jobkit", editable = "libs/python/envcite-jobkit" },
-    { name = "envcite-proto", editable = "libs/python/envcite-proto" },
-    { name = "envcite-segmenter", editable = "libs/python/envcite-segmenter" },
-    { name = "grpcio-health-checking" },
-    { name = "grpcio-reflection" },
-    { name = "grpcio-status" },
-    { name = "jinja2" },
-    { name = "lxml" },
-    { name = "psycopg", extras = ["binary"] },
-    { name = "psycopg-pool" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-]
-provides-extras = ["llm"]
 
 [[package]]
 name = "envcite-proto"

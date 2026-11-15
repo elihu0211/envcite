@@ -5,7 +5,7 @@ namespace EnvCite.Platform.Tests;
 
 /// <summary>
 /// 搜尋的查詢分類：問句另走較低的語意下界。分類只看查詢字串，分錯的代價是少了增益，不會少找到
-/// （路由對共用規則是超集）。題庫上的量測在 <c>services/ontology/eval/query-routing-2026-11-13.md</c>。
+/// （路由對共用規則是超集）。題庫上的量測在 <c>services/canon/eval/query-routing-2026-11-13.md</c>。
 /// </summary>
 public sealed class LawSearchRoutingTests
 {

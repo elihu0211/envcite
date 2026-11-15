@@ -3,7 +3,7 @@ using EnvCite.ServiceDefaults;
 
 namespace EnvCite.Platform.Modules.Ontology;
 
-/// <summary>envcite-ontology 的連線設定（<c>Ontology</c> 區段；叢集內為 <c>dns:///envcite-ontology:50051</c>）。</summary>
+/// <summary>canon 的連線設定（<c>Ontology</c> 區段；叢集內為 <c>dns:///canon:50051</c>）。</summary>
 public sealed class OntologyOptions : InternalGrpcClientOptions, ISectionOptions
 {
     public static string SectionName => "Ontology";

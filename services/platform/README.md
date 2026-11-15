@@ -6,10 +6,10 @@ owns: [operator-accounts, mail-invitation, reasoning-rest, mcp-endpoint, corpus-
 
 # envcite-platform
 
-多租戶控制平面：租戶、API key、限流、計量，以及對外 REST API（`/v2`）。法規與接地請求經 gRPC 轉給 `services/ontology` 與 `services/consult`。回[倉庫總覽](../../README.md)。
+多租戶控制平面：租戶、API key、限流、計量，以及對外 REST API（`/v2`）。法規與接地請求經 gRPC 轉給 `services/canon` 與 `services/consult`。回[倉庫總覽](../../README.md)。
 
 - 介面：`/v2` 租戶 REST API（API key）；`/ui` 營運者後台；`/portal` 客戶入口（以設定開關）。契約 [`openapi/openapi_v2.json`](openapi/openapi_v2.json)（`dotnet build` 產生、隨程式碼提交）；上游 gRPC 契約與外部呼叫端的接法見 [`proto/README.md`](../../proto/README.md)。
-- 外部用戶端只經本服務進入系統；上游 [`ontology`](../ontology/README.md)、[`consult`](../consult/README.md)（gRPC，啟動時必須設定位址）。
+- 外部用戶端只經本服務進入系統；上游 [`canon`](../canon/README.md)、[`consult`](../consult/README.md)（gRPC，啟動時必須設定位址）。
 - 資料：PostgreSQL，schema `platform`；租戶隔離是執行期機制（租戶解析加查詢過濾）。
 
 ## 概念
@@ -59,7 +59,7 @@ flowchart LR
     plan -->|否| e402(["402"])
     plan --> rate{"限流"}
     rate -->|超過| e429(["429"])
-    rate --> rpc["gRPC 呼叫<br/>ontology · consult"]
+    rate --> rpc["gRPC 呼叫<br/>canon · consult"]
     rpc -->|成功| meter["計量一筆"]
     rpc -->|不可用 · 逾時| e503(["503<br/>不計量"])
     meter --> res(["回應"])
@@ -365,7 +365,7 @@ env 'ENVCITE_Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command=I
 | 寄件者顯示名稱 | `Platform:Mail:FromName` 有設以它為準；沒設（或空白）用系統名稱 |
 | OpenAPI 描述（`/openapi/v2.json`，僅 Development 提供） | 是；提交的 [`openapi/openapi_v2.json`](openapi/openapi_v2.json) 是預設名稱下產生的，建置環境不要設這個鍵 |
 | 標誌 SVG（`src/EnvCite.Platform.Web/wwwroot/brand/*.svg`）與內嵌的品牌圖形 | **否**。圖檔不讀設定，名稱在圖的 `<title>`；改名時另外換圖 |
-| 文件、其他服務（consult、ontology）的文字與提示詞 | 否 |
+| 文件、其他服務（consult、canon）的文字與提示詞 | 否 |
 
 介面一律經 `BrandText.Name` 取名稱，不在元件裡寫死；帶名稱的標題用格式鍵（`L["登入 · {0}", Brand.Name]`），英文資源檔的鍵同樣是 `{0}`。
 

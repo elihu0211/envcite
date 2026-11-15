@@ -75,22 +75,22 @@
       "pinDigests": false
     },
     {
-      "description": "ontology／consult 的 FROM 以 ARG 組 tag，digest 無處可寫，不釘",
+      "description": "canon／consult 的 FROM 以 ARG 組 tag，digest 無處可寫，不釘",
       "matchFileNames": [
-        "services/ontology/Dockerfile",
+        "services/canon/Dockerfile",
         "services/consult/Dockerfile"
       ],
       "pinDigests": false
     },
     {
-      "description": "python 在 .python-version、CI 變數與 ontology 的 Dockerfile 各有一處，同一個 pull request 一起升",
+      "description": "python 在 .python-version、CI 變數與 canon 的 Dockerfile 各有一處，同一個 pull request 一起升",
       "matchDepNames": [
         "python"
       ],
       "groupName": "python"
     },
     {
-      "description": "uv 在 CI 變數、ontology 的 Dockerfile 的映像 tag 與各 pyproject 的 uv_build 範圍各有一處，同一個 pull request 一起升",
+      "description": "uv 在 CI 變數、canon 的 Dockerfile 的映像 tag 與各 pyproject 的 uv_build 範圍各有一處，同一個 pull request 一起升",
       "matchDepNames": [
         "uv",
         "ghcr.io/astral-sh/uv",

@@ -47,7 +47,7 @@ yn() { if [ "$1" = 1 ]; then echo true; else echo false; fi; }
 platform=$(want '^(services/platform/(src|tests|openapi)/|services/platform/(\.editorconfig|Dockerfile|EnvCite\.Platform\.slnx|dotnet-tools\.json)|libs/dotnet/|global\.json|Directory\.|\.editorconfig|proto/|ci/check-no-changes\.sh)')
 consult=$(want '^(services/consult/(src|tests)/|services/consult/(Dockerfile|EnvCite\.Consult\.slnx)|libs/dotnet/|global\.json|Directory\.|\.editorconfig|proto/)')
 dotnet=$(want '^(services/platform/(src|tests|openapi)/|services/platform/(\.editorconfig|Dockerfile|EnvCite\.Platform\.slnx|dotnet-tools\.json)|services/consult/(src|tests)/|services/consult/(Dockerfile|EnvCite\.Consult\.slnx)|libs/dotnet/|global\.json|Directory\.|\.editorconfig|proto/|ci/(restore-dotnet|check-no-changes)\.sh)')
-python=$(want '^(services/ontology/|libs/python/|proto/|pyproject\.toml|uv\.lock|ci/check-regenerated\.sh)')
+python=$(want '^(services/canon/|libs/python/|proto/|pyproject\.toml|uv\.lock|ci/check-regenerated\.sh)')
 segmenter=$(want '^(libs/python/envcite-segmenter/(src|tests|scripts)/|libs/python/envcite-segmenter/pyproject\.toml|pyproject\.toml|uv\.lock)')
 jobkit=$(want '^(libs/python/envcite-jobkit/(src|tests)/|libs/python/envcite-jobkit/pyproject\.toml|pyproject\.toml|uv\.lock)')
 python_proto=$(want '^(libs/python/envcite-proto/(src|scripts)/|libs/python/envcite-proto/pyproject\.toml|proto/|pyproject\.toml|uv\.lock|ci/check-regenerated\.sh)')
@@ -55,7 +55,7 @@ proto=$(want '^(proto/|buf\.yaml|ci/check-proto\.sh)')
 dockerfile=$(want '^services/[^/]+/Dockerfile')
 openapi=$platform
 if [ "$(want '^ci/check-openapi\.sh')" = 1 ]; then openapi=1; fi
-ontology_image=$python
+canon_image=$python
 platform_image=$platform
 consult_image=$consult
 
@@ -84,7 +84,7 @@ fi
   printf 'docs=%s\n' "$(yn "$docs")"
   printf 'renovate=%s\n' "$(yn "$renovate")"
   printf 'ci_scripts=%s\n' "$(yn "$ci_scripts")"
-  printf 'ontology_image=%s\n' "$(yn "$ontology_image")"
+  printf 'canon_image=%s\n' "$(yn "$canon_image")"
   printf 'consult_image=%s\n' "$(yn "$consult_image")"
   printf 'platform_image=%s\n' "$(yn "$platform_image")"
 } > "$out"

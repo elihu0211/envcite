@@ -26,9 +26,9 @@ public sealed class ServiceEnvironmentTests
     [Fact]
     public void AVariableWithThePrefixIsReadByItsConfigurationPath()
     {
-        var configuration = Configured(("ENVCITE_Ontology__Address", "http://ontology:50051"));
+        var configuration = Configured(("ENVCITE_Ontology__Address", "http://canon:50051"));
 
-        Assert.Equal("http://ontology:50051", configuration["Ontology:Address"]);
+        Assert.Equal("http://canon:50051", configuration["Ontology:Address"]);
     }
 
     [Fact]

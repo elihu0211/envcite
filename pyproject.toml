@@ -3,12 +3,12 @@
 # 部署邊界不變：各服務的映像只裝自己的成員（`uv sync --package`）。
 
 [tool.uv.workspace]
-members = ["services/ontology", "libs/python/*"]
+members = ["services/canon", "libs/python/*"]
 
 [tool.uv]
 # 已知與現行程式碼不相容的上界；`uv lock --upgrade`（Renovate 的 lock file maintenance）不看
 # Renovate 的規則，只看這裡。
-# - ruff<0.17：0.17 把 tomllib 歸到標準庫區塊，services/ontology 的
+# - ruff<0.17：0.17 把 tomllib 歸到標準庫區塊，services/canon 的
 #   verification/config.py 出現 I001（import 排序），新舊版對該檔的排序互相矛盾，無法預先修在 main。
 #   升 ruff 的同一個 pull request 以 `ruff check --fix` 一併改，再放寬此上界。
 constraint-dependencies = [
@@ -58,15 +58,15 @@ max-branches = 14
 max-statements = 60
 
 [tool.ruff.lint.per-file-ignores]
-# 公開符號要有 docstring（D1）、不用 `Any` 標註（ANN401）：只守 services/ontology 的 src，
+# 公開符號要有 docstring（D1）、不用 `Any` 標註（ANN401）：只守 services/canon 的 src，
 # 其餘（測試、評估腳本、其他函式庫、ci）不套。
 "**/tests/**" = ["D1", "ANN401"]
 "libs/**" = ["D1", "ANN401"]
 "ci/**" = ["D1", "ANN401"]
 # 評估腳本是一次性的量測工具，不在服務的執行路徑上。
-"services/ontology/tools/**" = ["C901", "PLR0912", "PLR0915", "D1", "ANN401"]
+"services/canon/tools/**" = ["C901", "PLR0912", "PLR0915", "D1", "ANN401"]
 # 動態邊界：clingo 的答案集原子，各述詞的引數型別由 rules.lp 決定（見 `_py` 的說明）。
-"services/ontology/src/envcite_ontology/reasoning/engine.py" = ["ANN401"]
+"services/canon/src/canon/reasoning/engine.py" = ["ANN401"]
 
 [tool.mypy]
 strict = true

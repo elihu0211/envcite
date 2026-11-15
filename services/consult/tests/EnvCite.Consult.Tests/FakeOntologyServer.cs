@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace EnvCite.Consult.Tests;
 
-/// <summary>In-process h2c gRPC server standing in for envcite-ontology; answers by query and records what it was sent.</summary>
+/// <summary>In-process h2c gRPC server standing in for canon; answers by query and records what it was sent.</summary>
 public sealed class FakeOntologyServer : IAsyncDisposable
 {
     /// <summary>兩筆皆過下界的條文（0.9、0.4），第一筆達高信心。</summary>

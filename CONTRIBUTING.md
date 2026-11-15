@@ -65,7 +65,7 @@ flowchart LR
 | 契約 | [platform README「語料範圍」](services/platform/README.md#語料範圍) | 語料範圍與拒答解讀 |
 | 服務 | [platform README](services/platform/README.md#概念) · [AGENTS](services/platform/AGENTS.md) | 端點、設定鍵、營運者帳號；服務指令 |
 | 服務 | [consult README](services/consult/README.md#概念) · [AGENTS](services/consult/AGENTS.md) | 接地契約、代號、可答性規則；服務指令 |
-| 服務 | [ontology README](services/ontology/README.md#概念) · [AGENTS](services/ontology/AGENTS.md) | 法規匯入、檢索與推論端點、環境變數；服務指令 |
+| 服務 | [canon README](services/canon/README.md#概念) · [AGENTS](services/canon/AGENTS.md) | 法規匯入、檢索與推論端點、環境變數；服務指令 |
 | 共用 | [`libs/dotnet/README.md`](libs/dotnet/README.md) | .NET 共用主機設定 |
 | 共用 | [`libs/python/AGENTS.md`](libs/python/AGENTS.md) | Python 套件清單與規則 |
 | 設定 | [`CONFIGURATION.md`](CONFIGURATION.md#概念) | 環境變數命名與機密來源 |
@@ -81,7 +81,7 @@ flowchart LR
 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | CI 流程與工具版本變數；本頁簡稱 `ci.yml` |
 | [`renovate.json`](renovate.json) | 依賴升級的 pull request 規則 |
 | [`.githooks/`](.githooks) | 阻擋在 `main` 上提交與編輯 |
-| [`services/ontology/migrations/`](services/ontology/migrations) | ontology 資料庫綱要 |
+| [`services/canon/migrations/`](services/canon/migrations) | canon 資料庫綱要 |
 
 ## 先決條件
 
@@ -92,14 +92,14 @@ flowchart LR
 | Docker | 測試（Testcontainers）、映像建置、開發用資料庫 | — |
 | PostgreSQL（含 pgvector） | 開發用的 `envcite`、`platform` 兩個資料庫 | `ci.yml` 的 `POSTGRES_MAJOR`，與正式環境同主版本 |
 | .NET SDK | [platform](services/platform/README.md)、[consult](services/consult/README.md)、[`libs/dotnet/`](libs/dotnet/README.md) | [`global.json`](global.json) |
-| [uv](https://docs.astral.sh/uv/) | [ontology](services/ontology/README.md)、[`libs/python/`](libs/python/AGENTS.md) | `ci.yml` 的 `UV_VERSION`；Python 版本見 `.python-version`，由 uv 自動安裝 |
+| [uv](https://docs.astral.sh/uv/) | [canon](services/canon/README.md)、[`libs/python/`](libs/python/AGENTS.md) | `ci.yml` 的 `UV_VERSION`；Python 版本見 `.python-version`，由 uv 自動安裝 |
 | Node.js | 以 `npx` 執行 buf；platform 的端對端測試（`services/platform/tests/e2e/`，第一次 `dotnet test` 自動 `npm ci` 並下載 Chromium；沒有網路設 `ENVCITE_SKIP_E2E=1`，有現成的設 `ENVCITE_CHROMIUM_PATH`） | `ci.yml` 的 `BUF_VERSION`；playwright 版本見 `tests/e2e/package.json` |
 
 ## 開發用資料庫
 
 | 資料庫 | 使用者 | 連線設定 |
 |--------|--------|----------|
-| `envcite` | [ontology](services/ontology/README.md) | `ENVCITE_ONTOLOGY_DSN` |
+| `envcite` | [canon](services/canon/README.md) | `ENVCITE_CANON_DSN` |
 | `platform` | [platform](services/platform/README.md) | `ENVCITE_ConnectionStrings__Platform` |
 
 | 前提 | 說明 |
@@ -108,7 +108,7 @@ flowchart LR
 | 預設值 | 未設定環境變數時，`wt` 別名（`.config/wt.toml`）與 platform 的 `appsettings.Development.json` 提供本機預設連線 |
 | 共用 | 各分支共用這兩個資料庫。同一時間只執行一條分支的服務，否則 migration 互相覆寫 |
 | 測試 | 不使用這兩個資料庫；Testcontainers 每次自行建立臨時資料庫 |
-| migration 檔變更 | 清空 ontology 的資料庫綱要，重新執行 migration 並重新匯入 |
+| migration 檔變更 | 清空 canon 的資料庫綱要，重新執行 migration 並重新匯入 |
 
 以 Docker 建立臨時資料庫。帳號、密碼取 `wt` 別名的預設連線；映像標籤的主版本見[先決條件](#先決條件)：
 
@@ -126,25 +126,25 @@ docker exec envcite-pg createdb -U <帳號> platform
 | 順序 | 完成條件 |
 |------|----------|
 | 1 | worktree 已建立，依賴已安裝 |
-| 2 | ontology、consult、platform 皆已啟動。ontology 須先啟動：它先執行 migration 再監聽連接埠 |
-| 3 | 法規已匯入，ontology 已重啟 |
+| 2 | canon、consult、platform 皆已啟動。canon 須先啟動：它先執行 migration 再監聽連接埠 |
+| 3 | 法規已匯入，canon 已重啟 |
 | 4 | `wt list` 的 URL 是本分支 platform 的位址，下一節以它登入 |
 
 1. `wt switch --create <type>/<簡述>`。`type` 同 Conventional Commits，如 `feat`、`fix`、`docs`、`refactor`、`chore`、`ci`、`test`。
 2. 各開一個終端機：
 
    ```bash
-   wt ontology
+   wt canon
    wt consult
    wt platform
    ```
 
-3. 首次匯入法規（ontology 的資料庫預設為空）。入口與環境變數見 [`services/ontology/README.md`](services/ontology/README.md)。詞典只在啟動時讀取，匯入後須重啟 `wt ontology`：
+3. 首次匯入法規（canon 的資料庫預設為空）。入口與環境變數見 [`services/canon/README.md`](services/canon/README.md)。詞典只在啟動時讀取，匯入後須重啟 `wt canon`：
 
    ```bash
-   cd services/ontology
+   cd services/canon
    cp .env.example .env     # 填入連線與快照目錄
-   uv run --env-file .env envcite-sync moj
+   uv run --env-file .env canon-sync moj
    ```
 
 **看 SQL 日誌**：platform 的主控台預設不印 EF Core 的 SQL，只留請求與命令自己的訊息。除錯查詢時，以環境變數把該類別調回 Information，只影響這一次啟動，不改檔案：
@@ -266,7 +266,7 @@ read -rs ENVCITE_Platform__Mail__Password && export ENVCITE_Platform__Mail__Pass
 
 服務已在上一節啟動。檢查在該服務目錄執行：
 
-| 動作 | [platform](services/platform/AGENTS.md)、[consult](services/consult/AGENTS.md) | [ontology](services/ontology/AGENTS.md) |
+| 動作 | [platform](services/platform/AGENTS.md)、[consult](services/consult/AGENTS.md) | [canon](services/canon/AGENTS.md) |
 |------|------|------|
 | 測試 | `dotnet test` | `uv run python -m pytest` |
 | Lint | `dotnet format --verify-no-changes` | `uv run ruff check .` |
@@ -307,7 +307,7 @@ CI 依變更路徑決定執行哪些 job，路由以 [`ci/detect-changes.sh`](ci
 
 | 變更 | 影響範圍 |
 |------|----------|
-| 服務目錄（[platform](services/platform/README.md)、[consult](services/consult/README.md)、[ontology](services/ontology/README.md)） | 該服務的檢查與映像 |
+| 服務目錄（[platform](services/platform/README.md)、[consult](services/consult/README.md)、[canon](services/canon/README.md)） | 該服務的檢查與映像 |
 | [`libs/dotnet/`](libs/dotnet/README.md)、倉庫根 `global.json`、`Directory.*.props`、`.editorconfig` | 所有 .NET 服務與其映像 |
 | [`libs/python/`](libs/python/AGENTS.md) | 使用該套件的 Python 服務，與套件自身的檢查（`envcite-proto` 含產生碼是否與 `proto/` 一致） |
 | 倉庫根 `pyproject.toml`、`uv.lock` | 所有 Python 服務與其映像 |
@@ -326,9 +326,9 @@ CI 依變更路徑決定執行哪些 job，路由以 [`ci/detect-changes.sh`](ci
 | .NET 套件 | 倉庫根 `Directory.Packages.props` | — |
 | .NET SDK 與映像 | `services/{platform,consult}/Dockerfile`、`ci.yml` 的 `DOTNET_VERSION` | `global.json` 的 `sdk.version` 只是下限，Renovate 不動它。SDK 的 patch 版本決定隱含套件 `Microsoft.AspNetCore.App.Internal.Assets` 的版本：以新 SDK 執行 `dotnet restore --force-evaluate` 並更新 `packages.lock.json`，否則 CI 的 `--locked-mode` 失敗。本機 SDK 與 `DOTNET_VERSION` 同版，restore 才不會改動鎖檔 |
 | .NET 主版本 | 倉庫根 `Directory.Build.props` 的 `TargetFramework`、`global.json` 的 `sdk.version`（下限，主版本要手動改）、上列 SDK 與映像 | 映像 tag 的 Ubuntu 代號隨主版本而異，以 `mcr.microsoft.com/dotnet/aspnet` 與 `sdk` 實際存在的標籤為準；EF Core 家族與 Npgsql 提供者整組一起升（版本約束見 `Directory.Packages.props` 的註解）；`dotnet build` 會重新產生 `openapi_v2.json`，一併提交 |
-| Python | `.python-version`、`ci.yml` 的 `PYTHON_VERSION`、`services/ontology/Dockerfile` 的 `ARG PYTHON_VERSION` | — |
-| uv | `ci.yml` 的 `UV_VERSION`、`services/ontology/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 | — |
-| PostgreSQL | `ci.yml` 的 `POSTGRES_MAJOR`、`services/ontology/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs` | 主版本與正式環境相同。ontology 需要 pgvector，映像用 `pgvector/pgvector:pg<主版本>` |
+| Python | `.python-version`、`ci.yml` 的 `PYTHON_VERSION`、`services/canon/Dockerfile` 的 `ARG PYTHON_VERSION` | — |
+| uv | `ci.yml` 的 `UV_VERSION`、`services/canon/Dockerfile` 的 `ARG UV_VERSION`、各 `pyproject.toml` 的 `uv_build` 範圍 | — |
+| PostgreSQL | `ci.yml` 的 `POSTGRES_MAJOR`、`services/canon/tests/conftest.py`、`services/platform/tests/…/PlatformFactory.cs` | 主版本與正式環境相同。canon 需要 pgvector，映像用 `pgvector/pgvector:pg<主版本>` |
 | buf | `ci.yml` 的 `BUF_VERSION` | — |
 | oasdiff | `ci.yml` 的 `OASDIFF_VERSION` | — |
 | Docker（映像建置） | `ci.yml` 的 `DOCKER_VERSION` | — |

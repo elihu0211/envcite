@@ -1,0 +1,672 @@
+"""效能基準：延遲分佈、逐步加並行的吞吐與錯誤率，分冷熱快取（題庫外部，唯讀）。
+
+    uv run --env-file <env> python tools/load_bench.py run <golden.yaml> \\
+        --split eval/golden-split.json [--subset dev|test] \\
+        (--pg-container <拋棄式容器> | --skip-cold) \\
+        [--canon-address <host:port>] [--consult-address <host:port>] \\
+        [--targets search,ground,evaluate,search-lexical] [--ladder 1,2,4,…] \\
+        --out eval/load-bench-<日期>
+
+預設本程式自己起 canon 與 consult（Release），以 k6（`tools/load.js`）送 gRPC 負載，最後寫
+`<out>.json` 與 `<out>.md`。給 `--canon-address`／`--consult-address` 時改量該位址上已部署的
+服務：不起本地的，也不能量冷（無法重啟它，要加 `--skip-cold`），報告裡只有本地才知道的設定
+（canon 執行緒、同時 RPC 上限、字面臂門檻、模型配置、consult 對 canon 的期限）記為未知。
+對象與每個對象的量法：
+
+- `search`：`OntologyService.SearchArticles`（混合檢索，limit 與 consult 相同）
+- `ground`：consult `Ground`（端到端：consult → canon 混合檢索 → 可答性判定）
+- `evaluate`：`ReasoningService.Evaluate`（推論；固定一件案件事實）
+- `search-lexical`：`SearchArticles` 只開字面臂（伺服器不設模型），不呼叫嵌入端點，隔離資料庫的容量
+
+每個對象依序量 `cold`（重啟資料庫容器與服務後循序一輪）、`hot`（循序暖一輪後再量一輪）與
+`--ladder` 的每個並行度（shared-iterations，每階 `--iterations` 次）。`search-lexical` 不量冷。
+冷只清得掉 PostgreSQL 的 shared_buffers 與服務行程的快取；Docker VM 的作業系統頁快取不清。
+
+前提：需要 k6；`--pg-container` 是本機拋棄式的庫，**會被重啟**；資料庫由 ENVCITE_CANON_DSN、
+嵌入模型由 ENVCITE_CANON_MODELS 給（同伺服器）。環境量不到的項目在報告裡記為未知，不以
+預設值代替。輸出不含題目文字，只有題號與數字；題目只經環境變數交給 k6，不寫檔。混合檢索每次
+請求呼叫嵌入端點一次，總次數記在報告裡。
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import platform
+import shutil
+import socket
+import statistics
+import subprocess
+import sys
+import tempfile
+import time
+from collections import Counter
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager, nullcontext
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import grpc
+import psycopg
+from grpc_health.v1 import health_pb2, health_pb2_grpc
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import golden_set as gs
+from golden_retrieval_eval import _golden, git, snapshots
+
+from canon import server
+from canon.settings import DatabaseSettings, ModelsSettings, ServerSettings, load
+
+HERE = Path(__file__).resolve().parent
+SERVICE_DIR = HERE.parent
+REPO = SERVICE_DIR.parents[1]
+CONSULT_PROJECT = REPO / "services/consult/src/EnvCite.Consult"
+K6_SCRIPT = HERE / "load.js"
+PROTO_ROOT = REPO / "proto"
+
+#: consult 對 canon 的 limit（`OntologySearch.Limit`）；直接量 search 用同一個值才可對照。
+SEARCH_LIMIT = 10
+#: 推論的案件事實：概念不必在語料裡，量的是 Evaluate 的整條路徑（讀陳述、clingo、組回應）。
+EVALUATE_REQUEST = {
+    "conductOn": "2026-10-01",
+    "decidedOn": "2026-10-15",
+    "facts": [
+        {"concept": "discharging", "values": [{"flag": True}]},
+        {"concept": "cod", "values": [{"number": {"value": "150"}}]},
+    ],
+}
+#: 期限比 consult 對 canon 的 5 秒寬：逾時要記成 consult 自己回的狀態，不是 k6 先放棄。
+TIMEOUT = "10s"
+GRPC_STATUS = {
+    0: "OK",
+    1: "CANCELLED",
+    2: "UNKNOWN",
+    3: "INVALID_ARGUMENT",
+    4: "DEADLINE_EXCEEDED",
+    5: "NOT_FOUND",
+    8: "RESOURCE_EXHAUSTED",
+    13: "INTERNAL",
+    14: "UNAVAILABLE",
+}
+
+
+@dataclass(frozen=True)
+class Target:
+    name: str
+    method: str
+    proto: str
+    service: str  # "canon" | "consult"
+    embedding: bool
+    cold: bool = True
+
+
+TARGETS = {
+    t.name: t
+    for t in (
+        Target(
+            "search",
+            "envcite.ontology.v2.OntologyService/SearchArticles",
+            "envcite/ontology/v2/ontology.proto",
+            "canon",
+            embedding=True,
+        ),
+        Target(
+            "ground",
+            "envcite.consult.v2.ConsultationService/Ground",
+            "envcite/consult/v2/consult.proto",
+            "consult",
+            embedding=True,
+        ),
+        Target(
+            "evaluate",
+            "envcite.ontology.v2.ReasoningService/Evaluate",
+            "envcite/ontology/v2/reasoning.proto",
+            "canon",
+            embedding=False,
+        ),
+        Target(
+            "search-lexical",
+            "envcite.ontology.v2.OntologyService/SearchArticles",
+            "envcite/ontology/v2/ontology.proto",
+            "canon",
+            embedding=False,
+            cold=False,
+        ),
+    )
+}
+
+
+def free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
+def wait_serving(address: str, service: str, timeout: float = 180.0) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        with grpc.insecure_channel(address) as channel:
+            try:
+                reply = health_pb2_grpc.HealthStub(channel).Check(
+                    health_pb2.HealthCheckRequest(service=service), timeout=2
+                )
+                if reply.status == health_pb2.HealthCheckResponse.SERVING:
+                    return
+            except grpc.RpcError:
+                pass
+        time.sleep(1)
+    raise SystemExit(f"{address} 在 {timeout:.0f} 秒內沒有就緒")
+
+
+def restart_database(container: str, dsn: str) -> None:
+    subprocess.run(["docker", "restart", container], check=True, capture_output=True)
+    deadline = time.monotonic() + 60
+    while time.monotonic() < deadline:
+        try:
+            with psycopg.connect(dsn, connect_timeout=2):
+                return
+        except psycopg.OperationalError:
+            time.sleep(1)
+    raise SystemExit(f"{container} 重啟後 60 秒內連不上")
+
+
+class Servers:
+    """本程式起的 canon 與 consult；`embedding` 決定 canon 是否帶模型配置。"""
+
+    def __init__(self, logs: Path) -> None:
+        self._logs = logs
+        self._procs: list[subprocess.Popen[bytes]] = []
+        self.canon = ""
+        self.consult = ""
+        self.embedding: bool | None = None
+
+    def start(self, *, embedding: bool, consult: bool) -> None:
+        self.stop()
+        env = dict(os.environ)
+        canon_port = free_port()
+        env["ENVCITE_CANON_GRPC_PORT"] = str(canon_port)
+        if not embedding:
+            env.pop("ENVCITE_CANON_MODELS", None)
+        self.canon = f"127.0.0.1:{canon_port}"
+        self._spawn(["uv", "run", "canon-serve"], env, SERVICE_DIR, "canon")
+        wait_serving(self.canon, server.SERVICE_NAME)
+        self.embedding = embedding
+        if consult:
+            consult_port = free_port()
+            env = dict(os.environ)
+            env["ENVCITE_Ontology__Address"] = f"http://{self.canon}"
+            self.consult = f"127.0.0.1:{consult_port}"
+            self._spawn(
+                [
+                    "dotnet",
+                    "run",
+                    "-c",
+                    "Release",
+                    "--no-build",
+                    "--no-launch-profile",
+                    "--project",
+                    str(CONSULT_PROJECT),
+                    "--",
+                    "--urls",
+                    f"http://{self.consult}",
+                ],
+                env,
+                CONSULT_PROJECT,
+                "consult",
+            )
+            wait_serving(self.consult, "")
+
+    def _spawn(self, cmd: list[str], env: dict[str, str], cwd: Path, name: str) -> None:
+        log = (self._logs / f"{name}.log").open("ab")
+        self._procs.append(subprocess.Popen(cmd, env=env, cwd=cwd, stdout=log, stderr=log))
+
+    def stop(self) -> None:
+        for p in reversed(self._procs):
+            p.terminate()
+            try:
+                p.wait(timeout=20)
+            except subprocess.TimeoutExpired:
+                p.kill()
+        self._procs.clear()
+
+
+@contextmanager
+def servers(logs: Path) -> Iterator[Servers]:
+    s = Servers(logs)
+    try:
+        yield s
+    finally:
+        s.stop()
+
+
+def k6(
+    target: Target,
+    address: str,
+    ids: Sequence[str],
+    data: Sequence[dict[str, Any]],
+    *,
+    vus: int,
+    iterations: int,
+    work: Path,
+) -> list[tuple[str, float, float, str]]:
+    """跑一階，回傳每個請求的（題號、結束時刻、耗時秒、狀態）。"""
+    out = work / "points.json"
+    out.unlink(missing_ok=True)
+    env = {
+        **os.environ,
+        "K6_NO_USAGE_REPORT": "true",
+        "BENCH_DATA": json.dumps(list(data), ensure_ascii=False),
+        "BENCH_IDS": json.dumps(list(ids)),
+        "BENCH_METHOD": target.method,
+        "BENCH_PROTO": target.proto,
+        "BENCH_PROTO_ROOT": str(PROTO_ROOT),
+        "BENCH_TARGET": address,
+        "BENCH_TIMEOUT": TIMEOUT,
+        "BENCH_VUS": str(vus),
+        "BENCH_ITERATIONS": str(iterations),
+    }
+    subprocess.run(
+        ["k6", "run", "--quiet", "--out", f"json={out}", str(K6_SCRIPT)],
+        env=env,
+        check=True,
+        stdout=subprocess.DEVNULL,
+    )
+    points = []
+    with out.open(encoding="utf-8") as f:
+        for line in f:
+            p = json.loads(line)
+            if p.get("type") != "Point" or p.get("metric") != "grpc_req_duration":
+                continue
+            d = p["data"]
+            end = datetime.fromisoformat(d["time"]).timestamp()
+            tags = d.get("tags", {})
+            status = GRPC_STATUS.get(int(tags.get("status", -1)), str(tags.get("status")))
+            points.append((str(tags.get("qid")), end, float(d["value"]) / 1000, status))
+    out.unlink()
+    if len(points) != iterations:
+        raise SystemExit(f"{target.name}：預期 {iterations} 筆，k6 只記到 {len(points)} 筆")
+    return points
+
+
+def percentile(values: Sequence[float], q: float) -> float:
+    s = sorted(values)
+    return s[min(len(s) - 1, round(q * (len(s) - 1)))]
+
+
+def summarize(
+    target: str, phase: str, vus: int, points: Sequence[tuple[str, float, float, str]]
+) -> dict[str, Any]:
+    secs = [p[2] for p in points]
+    ok = [p[2] for p in points if p[3] == "OK"]
+    started = min(p[1] - p[2] for p in points)
+    wall = max(p[1] for p in points) - started
+    statuses = Counter(p[3] for p in points)
+    slowest = sorted(points, key=lambda p: p[2], reverse=True)[:5]
+    return {
+        "target": target,
+        "phase": phase,
+        "vus": vus,
+        "n": len(points),
+        "statuses": dict(statuses),
+        "error_rate": 1 - statuses.get("OK", 0) / len(points),
+        "p50": statistics.median(secs),
+        "p95": percentile(secs, 0.95),
+        "p99": percentile(secs, 0.99),
+        "max": max(secs),
+        "ok_p95": percentile(ok, 0.95) if ok else None,
+        "wall_seconds": wall,
+        "throughput_rps": len(points) / wall if wall > 0 else None,
+        "ok_rps": len(ok) / wall if wall > 0 else None,
+        "slowest": [{"id": p[0], "seconds": round(p[2], 4), "status": p[3]} for p in slowest],
+    }
+
+
+def requests(target: Target, questions: Sequence[tuple[str, str]]) -> tuple[list[str], list[Any]]:
+    if target.name == "evaluate":
+        return ["evaluate"], [EVALUATE_REQUEST]
+    if target.name == "ground":
+        return [q for q, _ in questions], [{"question": t} for _, t in questions]
+    return [q for q, _ in questions], [{"query": t, "limit": SEARCH_LIMIT} for _, t in questions]
+
+
+def probe(*cmd: str) -> str | None:
+    """外部指令的輸出；指令不存在或失敗是未知（None），不以空字串或預設值代替。"""
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
+    except FileNotFoundError, subprocess.CalledProcessError:
+        return None
+    return out or None
+
+
+def docker_vm() -> dict[str, Any] | None:
+    raw = probe("docker", "info", "--format", "{{json .}}")
+    if raw is None:
+        return None
+    info = json.loads(raw)
+    mem = info.get("MemTotal")
+    return {
+        "cpus": info.get("NCPU"),
+        "memory_gib": None if mem is None else round(int(mem) / 2**30, 1),
+        "server_version": info.get("ServerVersion"),
+    }
+
+
+def environment(
+    dsn: str, models: Path | None, *, local_canon: bool, local_consult: bool
+) -> dict[str, Any]:
+    """量測環境。量不到的、或描述的不是被量的服務的，一律記 None（未知）。
+
+    `local_canon`／`local_consult` 為 False（量的是已部署的服務）時，本程式所在機器的服務
+    設定（執行緒、同時 RPC、字面臂門檻、模型配置、consult 的期限）不是被量的那個，所以不記。
+    """
+    with psycopg.connect(dsn) as conn:
+        conn.read_only = True
+
+        def one(sql: str) -> Any:
+            row = conn.execute(sql).fetchone()
+            assert row is not None
+            return row[0]
+
+        corpus = {
+            "legal_resources": one("SELECT count(*) FROM corpus.legal_resource"),
+            "provisions": one("SELECT count(*) FROM corpus.provision"),
+            "passages": one("SELECT count(*) FROM retrieval.passage"),
+            "embedded_passages": one(
+                "SELECT count(*) FROM retrieval.passage WHERE embedding IS NOT NULL"
+            ),
+            "embedding_models": [
+                r[0]
+                for r in conn.execute(
+                    "SELECT DISTINCT model FROM retrieval.passage WHERE model IS NOT NULL"
+                )
+            ],
+            "confirmed_statements": one(
+                "SELECT count(*) FROM annotation.statement s JOIN annotation.assertion a"
+                " ON a.id = s.id WHERE a.confirm_state = 'confirmed'"
+            ),
+            "database_size": one("SELECT pg_size_pretty(pg_database_size(current_database()))"),
+            "snapshots": snapshots(conn),
+        }
+        pg = {
+            "version": one("SHOW server_version"),
+            "shared_buffers": one("SHOW shared_buffers"),
+            "effective_cache_size": one("SHOW effective_cache_size"),
+            "work_mem": one("SHOW work_mem"),
+            "max_connections": one("SHOW max_connections"),
+        }
+
+    memsize = probe("sysctl", "-n", "hw.memsize")
+    k6_version = probe("k6", "version")
+    consult_timeout: str | None = None
+    if local_consult:
+        # 本地的 consult 讀這個檔；缺檔是安裝壞了，不是「5 秒」
+        settings = json.loads((CONSULT_PROJECT / "appsettings.json").read_text(encoding="utf-8"))
+        consult_timeout = settings["Ontology"]["Timeout"]
+    return {
+        "host": {
+            "cpu": probe("sysctl", "-n", "machdep.cpu.brand_string"),
+            "cores": os.cpu_count(),
+            "memory_gib": None if memsize is None else int(memsize) / 2**30,
+            "os": f"{platform.system()} {platform.release()}",
+        },
+        "docker_vm": docker_vm(),
+        "postgres": pg,
+        "corpus": corpus,
+        "servers": {
+            "canon_workers": server.WORKERS if local_canon else None,
+            "canon_max_concurrent_rpcs": server.MAX_CONCURRENT_RPCS if local_canon else None,
+            "lexical_max_df": load(ServerSettings).lexical_max_df if local_canon else None,
+            "models": (models.name if models else None) if local_canon else None,
+            "consult_canon_timeout": consult_timeout,
+            "search_limit": SEARCH_LIMIT,
+        },
+        "tools": {
+            "k6": None if k6_version is None else k6_version.splitlines()[0],
+            "dotnet": probe("dotnet", "--version"),
+            "python": platform.python_version(),
+        },
+    }
+
+
+def preflight(args: argparse.Namespace) -> tuple[list[Target], list[int]]:
+    """跑之前就能判定的錯：對象名、k6、冷快取與外部服務的組合。"""
+    names = args.targets.split(",")
+    unknown = [t for t in names if t not in TARGETS]
+    if unknown:
+        raise SystemExit(f"不認得的對象 {unknown}；可用：{', '.join(TARGETS)}")
+    if shutil.which("k6") is None:
+        raise SystemExit("需要 k6（https://grafana.com/docs/k6/）")
+    if not args.skip_cold and not args.pg_container:
+        raise SystemExit("量冷快取要 --pg-container（會被重啟）；不量冷請加 --skip-cold")
+    if not args.skip_cold and (args.canon_address or args.consult_address):
+        raise SystemExit("量已部署的服務無法重啟它，不能量冷快取：加 --skip-cold")
+    return [TARGETS[t] for t in names], [int(v) for v in args.ladder.split(",")]
+
+
+def run(args: argparse.Namespace) -> None:
+    targets, ladder = preflight(args)
+    items, golden_sha = _golden(args.golden)
+    split_doc = gs.read(args.split)
+    gs.require_golden(split_doc, golden_sha, str(args.split))
+    wanted = gs.subset_ids(split_doc, args.subset)
+    questions = sorted((str(i["id"]), str(i["question"])) for i in items if str(i["id"]) in wanted)
+    db = load(DatabaseSettings)
+    models = load(ModelsSettings).models
+
+    external_canon: str | None = args.canon_address
+    external_consult: str | None = args.consult_address
+    skip_cold: bool = args.skip_cold
+
+    need_local_canon = any(t.service == "canon" for t in targets) and not external_canon
+    need_local_consult = any(t.service == "consult" for t in targets) and not external_consult
+    need_servers = need_local_canon or need_local_consult
+
+    if any(t.embedding for t in targets) and models is None and need_local_canon:
+        raise SystemExit("混合檢索的本地服務需要 ENVCITE_CANON_MODELS")
+
+    if need_local_consult:
+        subprocess.run(
+            ["dotnet", "build", "-c", "Release", "--nologo", "-v", "q", str(CONSULT_PROJECT)],
+            check=True,
+            stdout=subprocess.DEVNULL,
+        )
+    meta = {
+        "run_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "envcite_commit": git("rev-parse", "HEAD"),
+        "dirty": bool(
+            git("status", "--porcelain", "--", str(REPO / "services"), str(REPO / "libs"))
+        ),
+        "golden": {"path": args.golden.name, "sha256": golden_sha},
+        "split": {
+            "path": args.split.name,
+            "sha256": gs.file_sha256(args.split),
+            "subset": args.subset,
+        },
+        "questions": len(questions),
+        "ladder": ladder,
+        "iterations_per_stage": args.iterations or len(questions),
+        "timeout": TIMEOUT,
+        "skip_cold": skip_cold,
+        "external_targets": {
+            "canon": external_canon,
+            "consult": external_consult,
+        },
+        **environment(db.dsn, models, local_canon=need_servers, local_consult=need_local_consult),
+    }
+    results: list[dict[str, Any]] = []
+    embedding_calls = 0
+    logs = Path(tempfile.mkdtemp(prefix="load-bench-"))
+    print(f"服務日誌：{logs}", file=sys.stderr)
+    ctx = servers(logs) if need_servers else nullcontext()
+    with ctx as s:
+        for target in targets:
+            ids, data = requests(target, questions)
+            n = len(questions)
+            consult = target.service == "consult"
+            plan = [("warmup", 1, n), ("hot", 1, n)]
+            plan += [("ladder", vus, args.iterations or n) for vus in ladder]
+
+            if consult:
+                if external_consult:
+                    address = external_consult
+                elif s is not None:
+                    if not s.consult or s.embedding is not target.embedding:
+                        s.start(embedding=target.embedding, consult=True)
+                    address = s.consult
+                else:
+                    raise SystemExit("未提供 consult 服務位址且未啟動本地 consult")
+            else:
+                if external_canon:
+                    address = external_canon
+                elif s is not None:
+                    if not s.canon or s.embedding is not target.embedding:
+                        s.start(embedding=target.embedding, consult=False)
+                    address = s.canon
+                else:
+                    raise SystemExit("未提供 canon 服務位址且未啟動本地 canon")
+
+            if target.cold and not skip_cold:
+                assert (
+                    s is not None and args.pg_container
+                )  # 量冷時一定是本地服務，見 skip_cold 的檢查
+                s.stop()
+                restart_database(args.pg_container, db.dsn)
+                s.start(embedding=target.embedding, consult=consult)
+                address = s.consult if consult else s.canon
+                plan.insert(0, ("cold", 1, n))
+
+            for phase, vus, iterations in plan:
+                points = k6(target, address, ids, data, vus=vus, iterations=iterations, work=logs)
+                if target.embedding:
+                    embedding_calls += iterations
+                if phase == "warmup":
+                    continue
+                r = summarize(target.name, phase, vus, points)
+                results.append(r)
+                print(
+                    f"{target.name:<15}{phase:<6} c={vus:<3} n={r['n']:<4} "
+                    f"p50={r['p50']:.3f} p95={r['p95']:.3f} p99={r['p99']:.3f} "
+                    f"rps={r['throughput_rps']:.1f} err={r['error_rate']:.3f}",
+                    file=sys.stderr,
+                )
+    doc = {"meta": {**meta, "embedding_calls": embedding_calls}, "results": results}
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    Path(f"{args.out}.json").write_text(
+        json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+    )
+    Path(f"{args.out}.md").write_text(render(doc), encoding="utf-8")
+    print(f"{args.out}.json、{args.out}.md；嵌入端點呼叫 {embedding_calls} 次", file=sys.stderr)
+
+
+def known(value: Any, spec: str = "") -> str:
+    """報告裡的值；None 是量不到，寫「未知」，不寫成 0 或預設值。"""
+    return "未知" if value is None else format(value, spec)
+
+
+def render(doc: dict[str, Any]) -> str:
+    m = doc["meta"]
+    c = m["corpus"]
+    h, vm, sv = m["host"], m["docker_vm"] or {}, m["servers"]
+    lines = [
+        f"# 效能基準（{m['run_at'][:10]}）",
+        "",
+        "`tools/load_bench.py` 產生；判讀見同名的 `.notes.md`。本機量測，**不代表部署環境**。",
+        "",
+        "## 條件",
+        "",
+        f"- commit `{m['envcite_commit']}`{'（工作樹有未提交的改動）' if m['dirty'] else ''}；"
+        f"題庫 `{m['golden']['path']}` sha256 `{m['golden']['sha256'][:8]}…`，"
+        f"{m['split']['subset']} 集 {m['questions']} 題",
+        f"- 主機 {known(h['cpu'])}，{known(h['cores'])} 核，{known(h['memory_gib'], '.0f')} GiB；"
+        f"Docker VM {known(vm.get('cpus'))} 核、{known(vm.get('memory_gib'))} GiB",
+        f"- PostgreSQL {m['postgres']['version']}，"
+        f"shared_buffers {m['postgres']['shared_buffers']}，work_mem {m['postgres']['work_mem']}；"
+        f"庫 {c['database_size']}",
+        f"- 語料：法規 {c['legal_resources']:,}、條文單元 {c['provisions']:,}、"
+        f"段落 {c['passages']:,}"
+        f"（已嵌入 {c['embedded_passages']:,}，模型 {', '.join(c['embedding_models']) or '無'}）；"
+        f"已確認的陳述 {c['confirmed_statements']}；快照 "
+        + "、".join(f"{s['feed']} {s['data_date']}" for s in c["snapshots"]),
+        f"- canon 執行緒 {known(sv['canon_workers'])}、同時 RPC 上限 "
+        f"{known(sv['canon_max_concurrent_rpcs'])}；lexical_max_df "
+        f"{known(sv['lexical_max_df'])}；search limit {sv['search_limit']}；"
+        f"consult 對 canon 期限 {known(sv['consult_canon_timeout'])}；"
+        f"請求期限 {m['timeout']}",
+        f"- 每階 {m['iterations_per_stage']} 次請求；{known(m['tools']['k6'])}；"
+        f"嵌入端點呼叫 {m['embedding_calls']:,} 次",
+    ]
+    if m.get("skip_cold"):
+        lines.append("- 注意：已略過冷快取量測。")
+    ext = m.get("external_targets", {})
+    if any(ext.values()):
+        lines.append(
+            f"- 外部服務位址：canon={ext.get('canon') or '本地'}，"
+            f"consult={ext.get('consult') or '本地'}"
+        )
+    lines += [
+        "",
+        "## 結果",
+        "",
+        "秒；`rps` 是該階的請求數除以第一個請求開始到最後一個結束的牆鐘時間。",
+        "",
+        "| 對象 | 階段 | 並行 | n | p50 | p95 | p99 | max | rps | 錯誤率 | 非 OK |",
+        "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|---|",
+    ]
+    for r in doc["results"]:
+        bad = ", ".join(f"{k} {v}" for k, v in sorted(r["statuses"].items()) if k != "OK")
+        lines.append(
+            f"| {r['target']} | {r['phase']} | {r['vus']} | {r['n']} | {r['p50']:.3f} | "
+            f"{r['p95']:.3f} | {r['p99']:.3f} | {r['max']:.3f} | {r['throughput_rps']:.1f} | "
+            f"{r['error_rate']:.1%} | {bad or '—'} |"
+        )
+    lines += ["", "## 循序熱快取最慢的題", ""]
+    for r in doc["results"]:
+        if r["phase"] == "hot" and r["target"] != "evaluate":
+            slow = "、".join(f"{x['id']} {x['seconds']:.2f}" for x in r["slowest"])
+            lines.append(f"- {r['target']}：{slow}")
+    return "\n".join(lines) + "\n"
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+    sub = p.add_subparsers(dest="cmd", required=True)
+    r = sub.add_parser("run")
+    r.add_argument("golden", type=Path)
+    r.add_argument("--split", type=Path, required=True)
+    r.add_argument("--subset", default="dev")
+    r.add_argument(
+        "--pg-container",
+        default=None,
+        help="本機拋棄式資料庫的容器名；量冷時會重啟。不量冷就不給，改給 --skip-cold",
+    )
+    r.add_argument("--skip-cold", action="store_true", help="不量冷快取，不重啟任何容器")
+    r.add_argument(
+        "--canon-address",
+        default=None,
+        help="外部已啟動之 Ontology gRPC 位址（如 127.0.0.1:50051），指定時不啟動本地 canon",
+    )
+    r.add_argument(
+        "--consult-address",
+        default=None,
+        help="外部已啟動之 Consult gRPC 位址（如 127.0.0.1:50052），指定時不啟動本地 consult",
+    )
+    r.add_argument("--targets", default="search,ground,evaluate,search-lexical")
+    r.add_argument("--ladder", default="1,2,4,8,16,24,32")
+    r.add_argument("--iterations", type=int, default=0, help="每階請求數；0 為題數")
+    r.add_argument("--out", type=Path, required=True)
+    r.set_defaults(fn=run)
+    return p
+
+
+def main() -> None:
+    args = build_parser().parse_args()
+    args.fn(args)
+
+
+if __name__ == "__main__":
+    main()

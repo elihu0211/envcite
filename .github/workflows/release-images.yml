@@ -118,7 +118,7 @@ jobs:
             --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
             --build-arg DOTNET_VERSION="$DOTNET_VERSION"
 
-  ontology:
+  canon:
     needs: [versions, deps-python]
     runs-on: ubuntu-latest
     steps:
@@ -135,9 +135,9 @@ jobs:
           UV_VERSION: ${{ needs.versions.outputs.uv }}
         run: |
           sh ci/build-image.sh --push --public-registries \
-            --service ontology \
-            --image "ghcr.io/${GITHUB_REPOSITORY}/ontology:${GITHUB_SHA}" \
-            --cache "ghcr.io/${GITHUB_REPOSITORY}/cache/ontology" \
+            --service canon \
+            --image "ghcr.io/${GITHUB_REPOSITORY}/canon:${GITHUB_SHA}" \
+            --cache "ghcr.io/${GITHUB_REPOSITORY}/cache/canon" \
             --cache-scope main --cache-fallback-scope main \
             --registry ghcr.io --registry-user "$GITHUB_ACTOR" \
             -- --build-context uv-cache=.uv-cache \

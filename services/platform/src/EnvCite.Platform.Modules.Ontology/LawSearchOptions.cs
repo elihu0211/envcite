@@ -21,9 +21,9 @@ namespace EnvCite.Platform.Modules.Ontology;
 /// 放不放行，所以收緊它們擋掉的是雜訊；這兩條路由比原規則嚴，不是超集，不少找到的證據是量測的，不是規則的性質；
 /// 答案只靠語意臂列出的關鍵字題（約 2%）是最會受傷的，口語同義詞的短關鍵字量不到。
 /// 法規名稱維持原規則：名稱與不存在的名稱在語意臂上分不開，放寬與收緊都有代價。
-/// 依據與量測見 <c>services/ontology/eval/query-routing-2026-11-13.md</c>、
-/// <c>services/ontology/eval/keyword-coverage-2026-11-13.md</c> 與
-/// <c>services/ontology/eval/keyword-semantic-2026-11-13.md</c>。
+/// 依據與量測見 <c>services/canon/eval/query-routing-2026-11-13.md</c>、
+/// <c>services/canon/eval/keyword-coverage-2026-11-13.md</c> 與
+/// <c>services/canon/eval/keyword-semantic-2026-11-13.md</c>。
 /// </para>
 /// </summary>
 public sealed class LawSearchOptions : ISectionOptions

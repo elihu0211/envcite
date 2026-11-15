@@ -16,7 +16,7 @@ owns: [service-map]
 |------|------|------|
 | `services/platform/` | 多租戶控制平面：對外 REST、API key 授權、配額與計量 | [README](services/platform/README.md#概念) · [AGENTS](services/platform/AGENTS.md) |
 | `services/consult/` | 接地：封閉證據集與可答性判定，租戶隔離 | [README](services/consult/README.md#概念) · [AGENTS](services/consult/AGENTS.md) |
-| `services/ontology/` | 本體：知識的集中存放、檢索與推論，不分租戶 | [README](services/ontology/README.md#概念) · [AGENTS](services/ontology/AGENTS.md) |
+| `services/canon/` | 本體：知識的集中存放、檢索與推論，不分租戶 | [README](services/canon/README.md#概念) · [AGENTS](services/canon/AGENTS.md) |
 | `proto/` | 服務間 gRPC 契約，唯一真值 | [README](proto/README.md#概念) |
 | `libs/dotnet/` | .NET 服務共用的主機設定：設定繫結、gRPC 用戶端、遙測 | [README](libs/dotnet/README.md) |
 | `libs/python/` | 可獨立測試的 Python 套件，uv workspace 成員 | [AGENTS](libs/python/AGENTS.md) |

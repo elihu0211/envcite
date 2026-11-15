@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace EnvCite.Platform.Tests;
 
-/// <summary>In-process h2c gRPC server standing in for envcite-ontology; records call metadata.</summary>
+/// <summary>In-process h2c gRPC server standing in for canon; records call metadata.</summary>
 public sealed class FakeOntologyServer : IAsyncDisposable
 {
     public const string KnownLawId = "O0020001";

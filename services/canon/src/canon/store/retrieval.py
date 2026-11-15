@@ -1,0 +1,256 @@
+"""混合檢索：字面臂與語意臂的候選、函釋入口、問句點名的法規，與斷詞用的詞典。"""
+
+from collections.abc import Sequence
+from typing import NamedTuple
+
+from canon.db import fetch, fetch_one
+from canon.embedding import to_sql
+from canon.law_names import LawNames
+from canon.store.params import as_of_param, expiry, time_left
+from canon.store.ports import ConnectionSource
+from canon.store.records import (
+    LANGUAGE,
+    SearchHit,
+)
+
+#: segmenter 詞典（法規名稱）；須與建索引同源，否則分詞器識別碼不符、字面檢索全落空（04-01 §5）。
+_LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression WHERE title IS NOT NULL"
+
+#: 標題（含各版本的舊名稱）→ 法規代碼；問句點名法規用（`law_names.LawNames`）。
+_LAW_TITLES = """
+    SELECT e.title, array_agg(DISTINCT r.local_id)
+      FROM corpus.legal_expression AS e
+      JOIN corpus.legal_resource AS r ON r.id = e.resource_id
+     WHERE e.title IS NOT NULL
+     GROUP BY e.title
+"""
+
+_SEARCH = """
+    SELECT corpus.version_iri(s.version_id), r.jurisdiction, r.id_scheme, r.local_id, e.title,
+           corpus.article_number(s.path), corpus.article_text(s.version_id),
+           s.lexical_score, s.semantic_similarity
+      FROM retrieval.search_expanded(
+               retrieval.prune_terms(%(terms)s, %(tokenizer)s, %(max_df)s::double precision),
+               %(tokenizer)s, %(embedding)s::vector, %(model)s,
+               %(on)s::date, %(language)s, %(limit)s, %(pool)s,
+               CASE WHEN cardinality(%(laws)s::text[]) = 0 THEN NULL
+                    ELSE retrieval.law_scope(%(laws)s::text[], %(language)s, %(on)s::date)
+               END
+           ) AS s
+      JOIN corpus.legal_resource AS r ON r.id = s.resource_id
+      JOIN corpus.provision_version AS v ON v.id = s.version_id
+      JOIN corpus.legal_expression AS e ON e.id = v.expression_id
+     WHERE (%(jurisdiction)s::corpus.jurisdiction IS NULL
+            OR r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction)
+     ORDER BY s.rank
+"""
+
+_GUIDANCE = """
+    SELECT corpus.version_iri(g.version_id), r.jurisdiction, r.id_scheme, r.local_id, e.title,
+           corpus.article_number(g.path), corpus.article_text(g.version_id), g.documents
+      FROM retrieval.guidance_articles(
+               %(phrases)s::text[], %(on)s::date, %(language)s, %(limit)s,
+               %(max_df)s::double precision) AS g
+      JOIN corpus.legal_resource AS r ON r.id = g.resource_id
+      JOIN corpus.provision_version AS v ON v.id = g.version_id
+      JOIN corpus.legal_expression AS e ON e.id = v.expression_id
+     WHERE (%(jurisdiction)s::corpus.jurisdiction IS NULL
+            OR r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction)
+     ORDER BY g.documents DESC, g.version_id
+"""
+
+#: 每一臂的候選池（條數）。融合前各取這麼多；取 `limit` 上限的數倍。
+#: 改它要用 `tools/golden_retrieval_eval.py` 在開發集量過。
+SEARCH_POOL = 50
+
+
+class _TitleRow(NamedTuple):
+    title: str
+
+
+class _LawTitleRow(NamedTuple):
+    title: str
+    pcodes: list[str]
+
+
+class _GuidanceRow(NamedTuple):
+    iri: str
+    jurisdiction: str
+    id_scheme: str
+    local_id: str
+    law_title: str
+    number: str
+    content: str
+    documents: int
+
+
+class _PrunedRow(NamedTuple):
+    terms: str
+
+
+class RetrievalRepository:
+    """檢索的唯讀查詢；連線由外面給（見 `ports.ConnectionSource`）。"""
+
+    def __init__(self, connections: ConnectionSource) -> None:
+        self._connections = connections
+
+    def lexicon(self) -> list[str]:
+        """segmenter 的詞典：語料所有版本的法規標題（不重複）。"""
+        with self._connections.connection() as conn:
+            return [row.title for row in fetch(conn, _LEXICON, None, _TitleRow)]
+
+    def law_names(self) -> LawNames:
+        """法規標題（含各版本的舊名稱）對法規代碼的對照，供問句點名法規用。"""
+        with self._connections.connection() as conn:
+            return LawNames(
+                {r.title: r.pcodes for r in fetch(conn, _LAW_TITLES, None, _LawTitleRow)}
+            )
+
+    def guidance_hits(
+        self,
+        phrases: Sequence[str],
+        *,
+        as_of: str = "",
+        limit: int = 10,
+        jurisdiction: str | None = None,
+        max_df: float = 0.0,
+        timeout: float | None = None,
+    ) -> list[tuple[SearchHit, int]]:
+        """函釋（主旨或內文含每個詞組、`as_of` 有效）所解釋的條文，連同提到它的函釋件數；多的在前。
+
+        函釋只用來找條文，不是依據（`retrieval.guidance_articles`）。命中沒有字面分數與語意相似度。
+        命中的函釋占可用函釋的比例超過 `max_df` 時不回任何條：詞組出現在那麼多函釋裡，指不出哪幾條
+        （0 為不限制）。
+        """
+        with self._connections.read_connection(timeout=timeout) as conn:
+            rows = fetch(
+                conn,
+                _GUIDANCE,
+                {
+                    "phrases": list(phrases),
+                    "on": as_of_param(as_of),
+                    "language": LANGUAGE,
+                    "limit": limit,
+                    "jurisdiction": jurisdiction,
+                    "max_df": max_df,
+                },
+                _GuidanceRow,
+            )
+        return [
+            (
+                SearchHit(
+                    iri=r.iri,
+                    jurisdiction=r.jurisdiction,
+                    id_scheme=r.id_scheme,
+                    local_id=r.local_id,
+                    law_title=r.law_title,
+                    number=r.number,
+                    content=r.content,
+                    lexical_score=0.0,
+                    semantic_similarity=None,
+                ),
+                int(r.documents),
+            )
+            for r in rows
+        ]
+
+    def searched_terms(
+        self, terms: str, *, tokenizer: str, max_df: float = 0.0, timeout: float | None = None
+    ) -> list[str]:
+        """字面臂實際查的詞：`search` 以同樣的 `max_df` 略過高頻詞之後留下的詞。"""
+        with self._connections.read_connection(timeout=timeout) as conn:
+            row = fetch_one(
+                conn,
+                "SELECT retrieval.prune_terms("
+                "%(terms)s, %(tokenizer)s, %(max_df)s::double precision)",
+                {"terms": terms, "tokenizer": tokenizer, "max_df": max_df},
+                _PrunedRow,
+            )
+        return str(row.terms if row else "").split()
+
+    def search(
+        self,
+        terms: str,
+        *,
+        tokenizer: str,
+        as_of: str = "",
+        limit: int = 10,
+        embedding: Sequence[float] | None = None,
+        model: str = "",
+        max_df: float = 0.0,
+        laws: Sequence[str] = (),
+        jurisdiction: str | None = None,
+        timeout: float | None = None,
+    ) -> list[SearchHit]:
+        """`as_of`（空為今日）有效的條，字面臂比對已分詞的 `terms`，語意臂比對 `embedding`。
+
+        沒有 `embedding` 時只用字面臂。兩臂以名次倒數融合排序（`retrieval.search_hybrid`），每條之後
+        緊接處罰它（或授權其所在命令的條）的罰則條，分數取帶出它的那一條（`retrieval.search_expanded`）。
+        `max_df`（段落比例）大於 0 時，字面臂先略過出現在超過這個比例的段落的詞
+        （`retrieval.prune_terms`）；0 為不修剪。
+
+        `laws`（法規代碼）非空時兩臂只在這些法規與依其授權訂定的命令裡找
+        （`retrieval.law_scope`）；範圍在 `as_of` 沒有任何可檢索的條時，改在全庫找，不回空。
+
+        `timeout`（秒）是這一次檢索剩下的預算，兩次查詢共用；沒有期限時為 None。
+        """
+        deadline = expiry(timeout)
+        hits = self._search(
+            terms,
+            tokenizer,
+            as_of,
+            limit,
+            embedding,
+            model,
+            max_df,
+            tuple(laws),
+            jurisdiction,
+            timeout=time_left(deadline),
+        )
+        if laws and not hits:
+            hits = self._search(
+                terms,
+                tokenizer,
+                as_of,
+                limit,
+                embedding,
+                model,
+                max_df,
+                (),
+                jurisdiction,
+                timeout=time_left(deadline),
+            )
+        return hits
+
+    def _search(
+        self,
+        terms: str,
+        tokenizer: str,
+        as_of: str,
+        limit: int,
+        embedding: Sequence[float] | None,
+        model: str,
+        max_df: float,
+        laws: tuple[str, ...],
+        jurisdiction: str | None = None,
+        timeout: float | None = None,
+    ) -> list[SearchHit]:
+        with self._connections.read_connection(timeout=timeout) as conn:
+            return fetch(
+                conn,
+                _SEARCH,
+                {
+                    "laws": list(laws),
+                    "terms": terms,
+                    "tokenizer": tokenizer,
+                    "max_df": max_df,
+                    "on": as_of_param(as_of),
+                    "language": LANGUAGE,
+                    "limit": limit,
+                    "embedding": None if embedding is None else to_sql(embedding),
+                    "model": model,
+                    "pool": SEARCH_POOL,
+                    "jurisdiction": jurisdiction,
+                },
+                SearchHit,
+            )
