@@ -581,16 +581,26 @@
       new Set(layoutNodes.map((n) => (Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1))),
     ).sort((a, b) => a - b);
 
-    const tierGapX = 416;
+    const subColGapX = 304;
+    const baseTierGapX = 396;
     const rowGapY = 108;
     const positions = new Map();
     const yLookup = new Map();
     const tierBuckets = new Map();
 
-    tiers.forEach((tier, tierIdx) => {
+    // Precompute column widths per tier so dense tiers wrap into 2-3 sub-columns instead of a 4000px tower.
+    const tierLayouts = tiers.map((tier) => {
       const tierNodes = layoutNodes.filter(
         (n) => (Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1) === tier,
       );
+      const subCols = tierNodes.length > 7 ? Math.min(3, Math.ceil(tierNodes.length / 7)) : 1;
+      return { tier, tierNodes, subCols, width: (subCols - 1) * subColGapX };
+    });
+
+    const totalSpanX = tierLayouts.reduce((sum, tl, i) => sum + tl.width + (i > 0 ? baseTierGapX : 0), 0);
+    let cursorX = -totalSpanX / 2;
+
+    tierLayouts.forEach(({ tier, tierNodes, subCols, width }) => {
       const kindRank = (n) => (n.isClusterStub ? 2 : n.isGroupCapsule ? 1 : 0);
       tierNodes.sort((a, b) => {
         const pA = parentsMap.get(a.id).filter((pid) => yLookup.has(pid));
@@ -605,22 +615,28 @@
         return (a.localId || a.id || "").localeCompare(b.localId || b.id || "");
       });
 
-      const totalHeight = (tierNodes.length - 1) * rowGapY;
+      const rowsPerCol = Math.ceil(tierNodes.length / subCols);
+      const totalHeight = (rowsPerCol - 1) * rowGapY;
       const startY = -totalHeight / 2;
-      const x = (tierIdx - (tiers.length - 1) / 2) * tierGapX;
-      tierBuckets.set(tier, { x, nodes: tierNodes });
+      const tierCenterX = cursorX + width / 2;
+      tierBuckets.set(tier, { x: tierCenterX, subCols, nodes: tierNodes });
 
       tierNodes.forEach((n, idx) => {
-        const y = startY + idx * rowGapY;
+        const colIdx = subCols > 1 ? Math.floor(idx / rowsPerCol) : 0;
+        const rowIdx = subCols > 1 ? idx % rowsPerCol : idx;
+        const x = cursorX + colIdx * subColGapX;
+        const y = startY + rowIdx * rowGapY;
         positions.set(n.id, { x, y });
         yLookup.set(n.id, y);
       });
+
+      cursorX += width + baseTierGapX;
     });
 
-    // Bottom-up barycenter pass: align parent nodes to the vertical midpoint of their children
+    // Bottom-up barycenter pass only for single-column tiers so multi-column grids keep neat alignment.
     for (let i = tiers.length - 2; i >= 0; i--) {
       const bucket = tierBuckets.get(tiers[i]);
-      if (!bucket || bucket.nodes.length === 0) continue;
+      if (!bucket || bucket.nodes.length === 0 || bucket.subCols > 1) continue;
       const desired = bucket.nodes.map((n) => {
         const kids = (childrenMap.get(n.id) || []).filter((cid) => yLookup.has(cid));
         const base = yLookup.get(n.id) || 0;
@@ -1087,7 +1103,38 @@
     clearEl(inspectorEl);
 
     if (!rawNode) {
-      addEl(inspectorEl, "p", "ep-page-description", labels.selectPrompt || "");
+      const head = addEl(inspectorEl, "div", "ep-inspector-head");
+      addEl(head, "h3", "ep-inspector-title", labels.guideTitle || "");
+      addEl(head, "p", "ep-page-description", labels.selectPrompt || "");
+
+      const guideList = addEl(inspectorEl, "ul", "ep-inspector-guide-list");
+      [labels.guideStep1, labels.guideStep2, labels.guideStep3].filter(Boolean).forEach((step) => {
+        addEl(guideList, "li", "ep-inspector-guide-item", step);
+      });
+
+      const outCounts = new Map();
+      (allEdges || []).forEach((e) => {
+        outCounts.set(e.source, (outCounts.get(e.source) || 0) + 1);
+      });
+      const topParents = (allNodes || [])
+        .filter((n) => (n.hierarchyTier ?? 1) <= 1 && ((n.totalChildren || 0) > 0 || (outCounts.get(n.id) || 0) > 0))
+        .slice()
+        .sort((a, b) => (b.totalChildren || outCounts.get(b.id) || 0) - (a.totalChildren || outCounts.get(a.id) || 0))
+        .slice(0, 6);
+
+      if (topParents.length > 0 && callbacks?.focusNodeOnCanvas) {
+        const box = addEl(inspectorEl, "div", "ep-inspector-rel-group");
+        addEl(box, "h4", "ep-inspector-rel-heading", labels.quickJumpHeading || "");
+        const quickList = addEl(box, "div", "ep-inspector-quick-list");
+        topParents.forEach((parent) => {
+          const count = parent.totalChildren || outCounts.get(parent.id) || 0;
+          const btn = addEl(quickList, "button", "ep-inspector-quick-btn", null);
+          btn.type = "button";
+          addEl(btn, "span", "ep-inspector-quick-title", parent.title);
+          addEl(btn, "span", "ep-badge", (labels.childrenCountText || "{n}").replace("{n}", String(count)));
+          btn.addEventListener("click", () => callbacks.focusNodeOnCanvas(parent.id));
+        });
+      }
       return;
     }
 
@@ -1368,14 +1415,20 @@
       theme: useEnvciteTheme ? "envcite" : undefined,
       data: graphData,
       autoResize: true,
-      autoFit: "view",
       padding: 28,
       zoomRange: [0.25, 2.2],
       node: buildNodeConfig(palette),
       edge: buildEdgeConfig(currentLayout, palette),
       behaviors: [
         "drag-canvas",
-        "zoom-canvas",
+        {
+          type: "zoom-canvas",
+          enable: (e) => {
+            const orig = e?.originalEvent;
+            const isFs = Boolean(document.fullscreenElement && host?.contains(document.fullscreenElement));
+            return isFs || Boolean(orig?.ctrlKey || orig?.metaKey);
+          },
+        },
         "drag-element",
         {
           type: "hover-activate",
@@ -1474,16 +1527,27 @@
 
     container._g6Instance = graph;
 
+    container.addEventListener("wheel", (evt) => {
+      const isFs = Boolean(document.fullscreenElement && host?.contains(document.fullscreenElement));
+      if (evt.ctrlKey || evt.metaKey || isFs) {
+        evt.preventDefault();
+      }
+    }, { passive: false });
+
     async function fitViewport({ forceFitAll = false, focusTargetId = null } = {}) {
       try {
         await graph.fitView(undefined, false);
-        const minZoom = currentLayout === "indented" ? 0.72 : 0.56;
-        const targetZoom = currentLayout === "indented" ? 0.80 : 0.68;
+        const minZoom = currentLayout === "indented" ? 0.72 : 0.74;
+        const targetZoom = currentLayout === "indented" ? 0.82 : 0.84;
         if (!forceFitAll && graph.getZoom() < minZoom) {
           await graph.zoomTo(targetZoom, false);
+          const topParent = nodes
+            .filter((n) => (n.hierarchyTier ?? 1) <= 1)
+            .slice()
+            .sort((a, b) => (b.totalChildren || 0) - (a.totalChildren || 0))[0];
           const target = focusTargetId
             || selectedNodeId
-            || (nodes.find((n) => n.focus) || nodes.find((n) => n.hierarchyTier === 1) || nodes[0])?.id;
+            || (nodes.find((n) => n.focus) || topParent || nodes[0])?.id;
           if (target && graph.getNodeData(target)) {
             await graph.focusElement(target, false);
           }
@@ -1597,6 +1661,18 @@
     const inspectorCallbacks = {
       getNodeGroups: (id) => visibleModelCache?.childGroupMap.get(id) || [],
       toggleNodeGroups: (id) => { toggleGroupsForNode(id); },
+      focusNodeOnCanvas: async (nodeId) => {
+        if (!nodeId || !graph.getNodeData(nodeId)) return;
+        selectNodeById(nodeId);
+        if (host) {
+          delete host.dataset.inspectorDismissed;
+          host.dataset.inspectorOpen = "true";
+        }
+        if (graph.getZoom() < 0.78) {
+          await graph.zoomTo(0.86);
+        }
+        await graph.focusElement(nodeId).catch(() => {});
+      },
     };
 
     function collectLineage(rootId) {
@@ -1744,7 +1820,7 @@
       }
       const focusNode = nodes.find((n) => n.focus);
       await fitViewport({
-        forceFitAll: mode !== "indented" && (visibleModelCache?.visibleNodes.length || 0) <= 28 && !focusNode && !focusTargetId,
+        forceFitAll: mode !== "indented" && (visibleModelCache?.visibleNodes.length || 0) <= 12 && !focusNode && !focusTargetId,
         focusTargetId,
       });
       updateToolbarState();
@@ -1764,7 +1840,10 @@
         return;
       }
       selectNodeById(id);
-      if (host) host.dataset.inspectorOpen = "true";
+      if (host) {
+        delete host.dataset.inspectorDismissed;
+        host.dataset.inspectorOpen = "true";
+      }
     });
 
     graph.on("node:dblclick", (evt) => {
@@ -1781,8 +1860,7 @@
       if (host) host.dataset.inspectorOpen = "false";
       clearSelectionStates();
       const focusNode = nodes.find((n) => n.focus) || null;
-      const initial = focusNode || nodes.find((n) => n.hierarchyTier === 1) || nodes[0] || null;
-      renderInspector(inspectorEl, initial, nodes, edges, labels, inspectorCallbacks);
+      renderInspector(inspectorEl, focusNode, nodes, edges, labels, inspectorCallbacks);
     });
 
     if (searchEl) {
@@ -1825,17 +1903,18 @@
 
     graph.render().then(async () => {
       const focusNode = nodes.find((n) => n.focus) || null;
-      const initialNode = focusNode || nodes.find((n) => n.hierarchyTier === 1) || nodes[0] || null;
-      if (initialNode) {
-        renderInspector(inspectorEl, initialNode, nodes, edges, labels, inspectorCallbacks);
-      }
+      const topParent = nodes
+        .filter((n) => (n.hierarchyTier ?? 1) <= 1)
+        .slice()
+        .sort((a, b) => (b.totalChildren || 0) - (a.totalChildren || 0))[0] || null;
+      renderInspector(inspectorEl, focusNode, nodes, edges, labels, inspectorCallbacks);
       clearSelectionStates();
       if (currentLayout === "concentric" || currentLayout === "indented") {
-        await applyLayout(currentLayout, focusNode?.id || null);
+        await applyLayout(currentLayout, (focusNode || topParent)?.id || null);
       } else {
         await fitViewport({
-          forceFitAll: currentLayout !== "indented" && (visibleModelCache?.visibleNodes.length || 0) <= 28 && !focusNode,
-          focusTargetId: (focusNode || initialNode)?.id || null,
+          forceFitAll: currentLayout !== "indented" && (visibleModelCache?.visibleNodes.length || 0) <= 12 && !focusNode,
+          focusTargetId: (focusNode || topParent || nodes[0])?.id || null,
         });
         updateToolbarState();
       }
@@ -1851,8 +1930,15 @@
           applyTierFilter(filterBtn.dataset.graphFilterTier);
           return;
         }
+        const openBtn = evt.target.closest("[data-inspector-open-btn]");
+        if (openBtn) {
+          delete host.dataset.inspectorDismissed;
+          host.dataset.inspectorOpen = "true";
+          return;
+        }
         const closeBtn = evt.target.closest("[data-inspector-close]");
         if (closeBtn) {
+          host.dataset.inspectorDismissed = "true";
           host.dataset.inspectorOpen = "false";
           return;
         }

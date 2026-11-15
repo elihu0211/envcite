@@ -2655,4 +2655,28 @@
   <data name="請上傳有效的 PNG、JPEG 或 WebP 圖片。" xml:space="preserve">
     <value>Please upload a valid PNG, JPEG, or WebP image.</value>
   </data>
+  <data name="視覺化追蹤「母法條文 → 授權法規命令 → 行政函釋」之凱爾森位階與授權明確性；點擊節點可檢視授權依據，雙擊可深入展開。" xml:space="preserve">
+    <value>Visualize Kelsenian hierarchy and statutory delegation chains (Statutes → Regulations → Administrative Guidance). Click a node to inspect authority; double-click to focus.</value>
+  </data>
+  <data name="Ctrl / ⌘ + 滾輪縮放 · 一般滾輪捲動頁面" xml:space="preserve">
+    <value>Ctrl / ⌘ + wheel to zoom · wheel scrolls page</value>
+  </data>
+  <data name="法學檢視" xml:space="preserve">
+    <value>Legal Inspector</value>
+  </data>
+  <data name="本體論授權圖譜導讀" xml:space="preserve">
+    <value>Legal Delegation Guide</value>
+  </data>
+  <data name="① 追查授權明確性：沿著連線確認下位辦法／標準是否具母法具體授權條文。" xml:space="preserve">
+    <value>1. Verify statutory delegation: follow edges to check the parent article authorizing each regulation.</value>
+  </data>
+  <data name="② 檢視法規範位階：由左至右依「憲法 → 法律 → 法規命令 → 再授權」分層呈現。" xml:space="preserve">
+    <value>2. Inspect Kelsenian tiers: arranged left-to-right from Constitution → Statutes → Regulations → Sub-rules.</value>
+  </data>
+  <data name="③ 點擊節點查細節：單擊顯示授權母法與子法清單，雙擊以其為中心展開。" xml:space="preserve">
+    <value>3. Inspect &amp; focus: click any node for parent/child citations; double-click to rebuild around it.</value>
+  </data>
+  <data name="重點母法快速定位" xml:space="preserve">
+    <value>Key Parent Statutes</value>
+  </data>
 </root>
