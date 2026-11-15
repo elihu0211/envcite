@@ -39,13 +39,13 @@ name = "ornith-35b"
 family = "qwen"
 max_tokens = 4096
 
-# 語意檢索臂的嵌入模型（canon-serve、canon-sync 經 ENVCITE_CANON_MODELS 讀這一段）。
+# 語意檢索臂的嵌入模型（canon serve、canon sync 經 ENVCITE_CANON_MODELS 讀這一段）。
 # 沿用上面的端點；沒有這一段時只用字面臂。換維度不是 1024 的模型要配一支遷移。
 [embedding]
 endpoint = "llm"
 name = "bge-m3-embedding"
 
-# 查詢時的精排模型（交叉編碼器；canon-serve 經 ENVCITE_CANON_MODELS 讀這一段）。沿用上面的端點；
+# 查詢時的精排模型（交叉編碼器；canon serve 經 ENVCITE_CANON_MODELS 讀這一段）。沿用上面的端點；
 # 沒有這一段就不精排。請求帶 rerank 才會用到它，家族與嵌入同為 baai，已在 [relevance] 的 system_families。
 [reranker]
 endpoint = "llm"

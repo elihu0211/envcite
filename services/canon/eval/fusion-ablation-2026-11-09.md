@@ -31,7 +31,7 @@
 
 | 項目 | 內容 |
 |---|---|
-| 語料 | 全國法規資料庫 `moj_law`、`moj_order`，資料日 2026-10-30；11,804 部法規、911,544 個條文單元、650,230 筆 passage，**全數**以 `bge-m3-embedding`（baai）嵌入；分詞器 `lexbigram-1+dict-94450239`；由 `canon-migrate` 與 `canon-sync moj` 建在拋棄式本機 PostgreSQL 18（pgvector 0.8.7，`hnsw.ef_search` = 40，`iterative_scan` = off）。同步先跑字面臂，再帶 `ENVCITE_CANON_MODELS` 補嵌入；嵌入耗時約 7.5 小時（含一次 44 分鐘的端點停滯，自動恢復） |
+| 語料 | 全國法規資料庫 `moj_law`、`moj_order`，資料日 2026-10-30；11,804 部法規、911,544 個條文單元、650,230 筆 passage，**全數**以 `bge-m3-embedding`（baai）嵌入；分詞器 `lexbigram-1+dict-94450239`；由 `canon migrate` 與 `canon sync moj` 建在拋棄式本機 PostgreSQL 18（pgvector 0.8.7，`hnsw.ef_search` = 40，`iterative_scan` = off）。同步先跑字面臂，再帶 `ENVCITE_CANON_MODELS` 補嵌入；嵌入耗時約 7.5 小時（含一次 44 分鐘的端點停滯，自動恢復） |
 | 題庫 | `regulations-golden-eval.yaml`，sha256 `6609967f…`，471 題。這份題庫已不在 chepb 倉庫的工作樹，從其 git 歷史（commit `257ea8002e`）還原；切分重現得到與已提交的 `golden-split.json` 相同的 sha256 `2e4dfd13…`（種子 `envcite-golden-1`；開發集 234 題、測試集 237 題） |
 | qrels | 對本語料重建（341 題可答、36 題 unmapped、94 題無答案），期望條文對映與舊版逐題相同；題庫給定的條分數 2，其餘由模型判定；相關門檻 2；`eval/golden-qrels-2026-11-09.json` |
 | 計分的題 | 開發集 170 題、測試集 171 題（可答且對得到語料）；unmapped 的 17／19 題沒有跑檢索；無答案題 47／47 題只用於下界 |
@@ -43,7 +43,7 @@
 | 輪數 | 服務設定的條件：開發集與測試集各 3 輪；`ef_search` = 400 的條件：開發集 3 輪。**服務設定下 3 輪的清單逐位相同**（檢索是確定性的），所以輪間範圍是 0，「三輪」沒有提供獨立重複，判有差靠的是逐題的成對檢定；`ef_search` = 400 時只有 semantic-only 對照有 0.0003 的輪間差（nDCG@10） |
 | 判有差 | 至少 3 輪、各輪方向一致、每輪 Holm 校正後 p < 0.05、平均差大於兩格的輪間範圍。檢定：ranx 成對 Fisher 隨機化（10,000 次置換）。Holm 在同一個比較族（對基準、對 semantic-only、`ef_search` 兩條件之間）、同一輪、同一指標內校正 |
 | 事先登記 | 開發集定案後、測試集任何指標算出之前登記：測試集只報 P50-k60、P100-k60、semantic-only，驗證性比較為 ① P100-k60 − P50-k60、② semantic-only − P50-k60、③ semantic-only − P100-k60（nDCG@10、MRR）。實作時 Holm 是在「對基準」與「對 semantic-only」兩個族內各自校正；改以登記的三個比較合起來校正（由各輪未校正 p 值重算），nDCG@10 的校正後 p 為 ② ≈ 0.002、①與③ ≈ 0.04（0.038），MRR 仍無一過檢定，結論不變 |
-| 環境 | 拋棄式容器 `envcite-eval-pg`（127.0.0.1:55432），沒有碰 staging 或任何共用資料庫；資料只經 `canon-migrate`、`canon-sync moj` 寫入；模型金鑰由服務自己的設定從作業系統鑰匙圈讀取，沒有經過命令列、日誌或本報告 |
+| 環境 | 拋棄式容器 `envcite-eval-pg`（127.0.0.1:55432），沒有碰 staging 或任何共用資料庫；資料只經 `canon migrate`、`canon sync moj` 寫入；模型金鑰由服務自己的設定從作業系統鑰匙圈讀取，沒有經過命令列、日誌或本報告 |
 
 ## 融合消融
 
@@ -144,9 +144,9 @@ docker run -d --name envcite-eval-pg -p 127.0.0.1:55432:5432 -v envcite-eval-pgd
   -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c shared_buffers=2GB
 export ENVCITE_CANON_DSN=postgresql://envcite:envcite@127.0.0.1:55432/envcite
 export ENVCITE_CANON_SNAPSHOT_DIR=<工作目錄>/snapshots ENVCITE_CANON_MODELS=$PWD/models.toml
-uv run canon-migrate
-env -u ENVCITE_CANON_MODELS uv run canon-sync moj     # 字面臂
-uv run canon-sync moj                                     # 補嵌入（約 650,000 段；中斷後重跑續做；失敗的批要再跑一次）
+uv run canon migrate
+env -u ENVCITE_CANON_MODELS uv run canon sync moj     # 字面臂
+uv run canon sync moj                                     # 補嵌入（約 650,000 段；中斷後重跑續做；失敗的批要再跑一次）
 
 uv run python tools/golden_retrieval_eval.py qrels <題庫> --out <工作目錄>/qrels-base.json
 uv run python tools/relevance_judge.py calibrate <題庫> --qrels <工作目錄>/qrels-base.json --split eval/golden-split.json \

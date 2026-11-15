@@ -1,4 +1,4 @@
-"""`canon-guidance sync <來源>`：取得行政規則並寫入 `guidance`，一件一個交易，可重跑。
+"""`canon guidance sync <來源>`：取得行政規則並寫入 `guidance`，一件一個交易，可重跑。
 
 兩個來源（`gazette` 行政院公報、`moenv` 環境部函釋），取得形狀不同、步驟相同：
 

@@ -70,6 +70,6 @@
 
 ## 重現
 
-1. 資料庫同全庫嵌入報告；`canon-migrate` 套用 0046。
+1. 資料庫同全庫嵌入報告；`canon migrate` 套用 0046。
 2. `uv run python tools/golden_retrieval_eval.py <golden.yaml> --out eval/golden-retrieval-lawscope-<date>`（`--no-law-names` 為改前行為）。
-3. 起 `canon-serve` 與 consult（`Ontology__Timeout=00:01:00`）後 `tools/grounding_check_eval.py`。
+3. 起 `canon serve` 與 consult（`Ontology__Timeout=00:01:00`）後 `tools/grounding_check_eval.py`。

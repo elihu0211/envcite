@@ -2,7 +2,7 @@
 `annotation.violation`。
 
 兩種：`duty` 是所罰義務所在的條（項、款）；`delegated_rule` 是「違反依第 N 條所定辦法」的
-授權條文，義務在授權命令裡，沿授權（`annotation.delegation`）找命令。`canon-sync` 在匯入後
+授權條文，義務在授權命令裡，沿授權（`annotation.delegation`）找命令。`canon sync` 在匯入後
 對全庫寫入（冪等）；
 **改解析規則要遞增 `RULE_VERSION`**，`annotation.current_violation` 只看最新版本。
 """

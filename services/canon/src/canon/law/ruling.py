@@ -15,7 +15,7 @@
 
 條文單元必須在語料裡；一個條文單元對同一則裁判只記一次。`partial` 可省略（預設否）。
 
-兩個入口：`canon-ruling load <檔>` 載入上述文件（人讀原文填失效日）；`canon-ruling fetch`
+兩個入口：`canon ruling load <檔>` 載入上述文件（人讀原文填失效日）；`canon ruling fetch`
 自憲法法庭網站取得裁判並由規則提出失效（`ruling_sync`），兩者可並存：抽取流程只刪改自己寫的列。
 """
 

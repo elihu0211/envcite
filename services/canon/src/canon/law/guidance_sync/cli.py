@@ -1,4 +1,4 @@
-"""`canon-guidance` 指令列：`load` 載入人寫的文件，`sync` 自公報或環境部取得。"""
+"""`canon guidance` 指令列：`load` 載入人寫的文件，`sync` 自公報或環境部取得。"""
 
 import argparse
 import json
@@ -21,9 +21,9 @@ log = logging.getLogger(__name__)
 
 
 def main() -> None:
-    """`canon-guidance`：`load` 載入人寫的文件，`sync` 自公報或環境部取得。"""
+    """`canon guidance`：`load` 載入人寫的文件，`sync` 自公報或環境部取得。"""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(prog="canon-guidance")
+    parser = argparse.ArgumentParser(prog="canon guidance")
     commands = parser.add_subparsers(dest="command", required=True)
     load_cmd = commands.add_parser("load", help="載入一份人寫的行政規則文件（JSON）")
     load_cmd.add_argument("file", type=Path)

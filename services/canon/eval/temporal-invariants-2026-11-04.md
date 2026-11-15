@@ -1,6 +1,6 @@
 # 版本時間軸的不變式由綱要強制（2026-11-04）
 
-拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，本機新容器），只跑 job 入口。以 main 的程式與遷移（至 0050）建庫並匯入真實資料（`canon-sync moj`、`canon-history moenv`、`canon-history ly acquire` 到一半），再套用 0051、0052，用新程式重跑 `canon-history`。
+拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，本機新容器），只跑 job 入口。以 main 的程式與遷移（至 0050）建庫並匯入真實資料（`canon sync moj`、`canon history moenv`、`canon history ly acquire` 到一半），再套用 0051、0052，用新程式重跑 `canon history`。
 
 ## 不變式與強制者
 
@@ -21,7 +21,7 @@
 ## 實測
 
 - **遷移套用在真實資料上**：0051、0052 共 48 秒、無違反。現行列 `specified` 97,013 單元中 24,207 個（早於版本日者）轉為 `retroactive`，與 MR !327 量到的 24,207 相符。
-- 重跑 `canon-history moenv import`：443 部全部 unchanged，0 列變動。
+- 重跑 `canon history moenv import`：443 部全部 unchanged，0 列變動。
 - 之後的資料（命令 877＋立法院法律 666 部，ly 取得只跑到約一半）：`available` 版本 16,559、`unavailable` 版本 404（來源 73 部有缺版）；相鄰版本 5,160 對，最新一版 11,803（= 法規數）；`retroactive` 25,960 單元。
 - 缺版後來補上：同一版由 `unavailable` 改為 `available`（`tests/test_backfill.py`）。
 - 全部測試 920 passed；新增的綱要測試對每條規則各有合法與違法的一例。

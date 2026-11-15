@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 RULE_VERSION = "1"
-PRODUCER = "envcite-delegation-rule"
+PRODUCER = "canon-delegation-rule"
 
 _N = f"[{CN_NUMERALS}]+"
 #: 「依」到「訂定」之間的引文；「之規定」「規定」「授權」是收尾詞，不屬引文。

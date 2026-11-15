@@ -31,17 +31,7 @@ envcite-proto = { workspace = true }
 envcite-segmenter = { workspace = true }
 
 [project.scripts]
-canon-serve = "canon.server:main"
-canon-migrate = "canon.migrate:main"
-canon-acquire = "canon.acquire.cli:main"
-canon-import = "canon.law.import_cli:main"
-canon-sync = "canon.sync:main"
-canon-annotate = "canon.annotate:main"
-canon-guidance = "canon.law.guidance_sync.cli:main"
-canon-ruling = "canon.law.ruling_sync:main"
-canon-history = "canon.law.history_sync.cli:main"
-canon-verify = "canon.verification.cli:main"
-canon-pipeline = "canon.verification.run:main"
+canon = "canon.cli:main"
 
 [project.optional-dependencies]
 llm = [

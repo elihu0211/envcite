@@ -1,6 +1,6 @@
 # 法律的歷史版本取自立法院法律系統：查證與實測（2026-11-04）
 
-拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，本機新容器），只跑 job 入口：`canon-migrate` → `canon-sync moj`（只字面臂）→ `canon-history moenv` → `canon-history ly`。沒有連 staging 或共用資料庫。
+拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，本機新容器），只跑 job 入口：`canon migrate` → `canon sync moj`（只字面臂）→ `canon history moenv` → `canon history ly`。沒有連 staging 或共用資料庫。
 
 ## 來源查證（2026-11-04）
 
@@ -22,7 +22,7 @@
 ## 設計
 
 - **一部法規只有一個來源，依種類分**：法律 ← 立法院（`text_authority = legislature`，遷移 0050），命令 ← 主管機關系統（環境部，`competent_authority`）。主管機關系統不再收法律；它以前寫過的法律歷史，由立法院以同日的版本列接手（改記來源、條文依立法院的文字）。
-- `canon-history <ly|moenv> [sync|acquire|import]`：來源（`law/history_sources.py`）只負責列目標、抓一部、對到語料；回推（`ingest/backfill.py`）兩個來源共用。
+- `canon history <ly|moenv> [sync|acquire|import]`：來源（`law/history_sources.py`）只負責列目標、抓一部、對到語料；回推（`ingest/backfill.py`）兩個來源共用。
 - 回推的三個修正（兩個來源都受益）：
   - **未修正以同一來源的相鄰版本判斷**：兩個系統的同一條常差標點或字形（「，」與「；」、「椿」與「樁」、「︰」與「：」）。立法院現行版與全國法規資料庫逐條比，1,361 條（3.6%）有這類差異；以跨系統的文字判斷會把它們當成修正，把立法院的字形寫進歷史版本。
   - **來源落後於語料仍可回推**：立法院尚未收最新一次修正時（14 部），錨點之前的版本照樣回推，記 `source_behind`；來源有語料沒有的較新版本才是 `current_date_mismatch`。
@@ -32,11 +32,11 @@
 
 | 步驟 | 結果 | 耗時 |
 |------|------|------|
-| `canon-sync moj`（錨點） | 法律 1,351、命令 11,803 部 | 約 25 分 |
-| `canon-history moenv`（只收命令） | 列舉 445 部（不再含 25 部法律），抓 1,968 頁；276 部寫入、873 個歷史版本、71,718 個條文單元版本 | 45 分 |
-| `canon-history ly acquire`（首次） | 語料現行法律 1,022 部，抓 7,467 頁，1,019 份快照；隔離 3 部（法名稱帶括註與「查無結果」頁，已修正並補測試） | 2 時 38 分 |
-| `canon-history ly`（再跑） | 1,022 部 0 隔離；**沿用已存的過去版本 4,412 頁、只抓 3,075 頁**（每部的首頁、檢索、法律頁）；匯入 673 部寫入、345 部不變、4 部 error | 2 時 13 分 |
-| `canon-history ly import`（再跑一次） | 1,018 部 unchanged，**0 列新增** | 2 分 52 秒 |
+| `canon sync moj`（錨點） | 法律 1,351、命令 11,803 部 | 約 25 分 |
+| `canon history moenv`（只收命令） | 列舉 445 部（不再含 25 部法律），抓 1,968 頁；276 部寫入、873 個歷史版本、71,718 個條文單元版本 | 45 分 |
+| `canon history ly acquire`（首次） | 語料現行法律 1,022 部，抓 7,467 頁，1,019 份快照；隔離 3 部（法名稱帶括註與「查無結果」頁，已修正並補測試） | 2 時 38 分 |
+| `canon history ly`（再跑） | 1,022 部 0 隔離；**沿用已存的過去版本 4,412 頁、只抓 3,075 頁**（每部的首頁、檢索、法律頁）；匯入 673 部寫入、345 部不變、4 部 error | 2 時 13 分 |
+| `canon history ly import`（再跑一次） | 1,018 部 unchanged，**0 列新增** | 2 分 52 秒 |
 
 立法院寫入：**673 部法律、3,720 個歷史版本、812,925 個條文單元版本**（其中條 253,991）；效力規則 unchanged 616,790、promulgation 129,387、unconfirmed 28,528、specified 27,178、by_order 11,042。最早可查版本：1920 年代 21 部、1930 年代 60、1940 年代 62、1950 年代 27、1960 年代 29、1970 年代 46、1980 年代 54、1990 年代 111、2000 年代 158、2010 年代 86、2020 年代 19。
 
@@ -70,9 +70,9 @@
 ## 重現
 
 ```bash
-uv run canon-migrate
-uv run canon-sync moj
-uv run canon-history moenv
-uv run canon-history ly          # 首次約 2.5 小時（每頁 1 秒），之後每次約 2 小時（每部 3 頁）
-uv run canon-history ly import   # 再跑：不抓網頁，0 列新增
+uv run canon migrate
+uv run canon sync moj
+uv run canon history moenv
+uv run canon history ly          # 首次約 2.5 小時（每頁 1 秒），之後每次約 2 小時（每部 3 頁）
+uv run canon history ly import   # 再跑：不抓網頁，0 列新增
 ```

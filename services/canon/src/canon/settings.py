@@ -33,13 +33,13 @@ class ModelsSettings(BaseSettings):
 
 
 class SnapshotSettings(DatabaseSettings, ModelsSettings):
-    """讀寫快照的入口（canon-sync、canon-acquire、canon-import）。"""
+    """讀寫快照的入口（canon sync、canon acquire、canon import）。"""
 
     snapshot_dir: Path = Field(description="法規快照目錄")
 
 
 class ServerSettings(DatabaseSettings, ModelsSettings):
-    """gRPC 伺服器（canon-serve）。"""
+    """gRPC 伺服器（canon serve）。"""
 
     grpc_port: int = Field(default=50051, ge=1, le=65535, description="gRPC 監聽埠")
     # 預設值取自黃金題庫的量測：在這個比例下召回不降、整句問題的延遲約降一個數量級；越低越快，

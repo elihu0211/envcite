@@ -1,4 +1,4 @@
-"""`canon-sync <來源>`：取得、匯入、授權與處罰依賴圖的抽取、檢索投影依序執行。
+"""`canon sync <來源>`：取得、匯入、授權與處罰依賴圖的抽取、檢索投影依序執行。
 
 各步冪等，每次全跑（映像升級後解析器版本改變，沒有新檔也須重匯）；任一步失敗即停。
 結束碼：0 成功（含無事可做）；1 暫時性失敗，可重試；2 重試無益（資料不合預期、整批比例越線、
@@ -72,9 +72,9 @@ def sync(
 
 
 def main() -> None:
-    """`canon-sync <來源>`：對一個來源跑完整週期（`sync`），以它的結束碼結束。"""
+    """`canon sync <來源>`：對一個來源跑完整週期（`sync`），以它的結束碼結束。"""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(prog="canon-sync")
+    parser = argparse.ArgumentParser(prog="canon sync")
     parser.add_argument("source", choices=sorted(SOURCES))
     args = parser.parse_args()
 

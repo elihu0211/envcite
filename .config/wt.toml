@@ -30,8 +30,8 @@ exec dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- --urls
 canon = """
 cd '{{ worktree_path }}/services/canon' && \
 export ENVCITE_CANON_DSN="${ENVCITE_CANON_DSN:-postgresql://envcite:envcite@localhost:5432/envcite}" && \
-uv run canon-migrate && \
-ENVCITE_CANON_GRPC_PORT='{{ ('envcite/canon/' ~ branch) | hash_port }}' exec uv run canon-serve
+uv run canon migrate && \
+ENVCITE_CANON_GRPC_PORT='{{ ('envcite/canon/' ~ branch) | hash_port }}' exec uv run canon serve
 """
 consult = """
 cd '{{ worktree_path }}/services/consult' && \

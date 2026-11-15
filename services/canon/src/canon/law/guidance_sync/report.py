@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass, field
 
 @dataclass
 class Report:
-    """一次 `canon-guidance sync` 的計數與結果；`line()` 輸出成日誌的一行 JSON。"""
+    """一次 `canon guidance sync` 的計數與結果；`line()` 輸出成日誌的一行 JSON。"""
 
     source: str
     #: 這次要處理的工作項數（公報的一包、函釋的一列）；已處理過而略過的不計。

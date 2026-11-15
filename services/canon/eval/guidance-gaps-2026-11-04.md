@@ -1,7 +1,7 @@
 # 行政規則取得的四個缺口：實測與抽查（2026-11-04）
 
-方法：每項在拋棄式 PostgreSQL（pgvector/pgvector:pg18，自己的容器與埠）經 `canon-guidance sync` 入口實測；
-語料由 `canon-sync moj` 與 `canon-history`（470 部、930 個歷史版本）建成，公報取 2022-01-01 起。
+方法：每項在拋棄式 PostgreSQL（pgvector/pgvector:pg18，自己的容器與埠）經 `canon guidance sync` 入口實測；
+語料由 `canon sync moj` 與 `canon history`（470 部、930 個歷史版本）建成，公報取 2022-01-01 起。
 前＝main（8d153d1）、後＝本分支（合併 origin/main 後）。
 
 ## 總表
