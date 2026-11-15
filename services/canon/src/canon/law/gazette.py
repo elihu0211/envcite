@@ -22,9 +22,9 @@ from datetime import date
 from pathlib import Path
 from typing import Literal
 
+from canon import numerals
 from canon.acquire.engine import InvalidSnapshot, NotAnArchive
 from canon.acquire.markup import visible_text
-from canon.law import numerals
 
 BASE = "https://gazette.nat.gov.tw/egFront/"
 #: 本月每日一包

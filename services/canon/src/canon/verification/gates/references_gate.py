@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 
 from canon.db import Conn
-from canon.law.violation import citations, within
 from canon.verification.gates.base import GateResult, unit_of
+from canon.violation import citations, within
 
 
 @dataclass(frozen=True)

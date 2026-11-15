@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from canon.acquire.markup import visible_text
-from canon.law.numerals import CN_NUMERALS, parse_int
+from canon.numerals import CN_NUMERALS, parse_int
 
 BASE = "https://oaout.moenv.gov.tw/law/"
 QUERY = f"{BASE}ExecutiveQuery.aspx"

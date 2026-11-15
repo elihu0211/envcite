@@ -20,7 +20,7 @@ import re
 from dataclasses import dataclass
 from datetime import date
 
-from canon.law import numerals
+from canon import numerals
 
 #: 抽取規則的版本；改規則要遞增，已掃描的裁判才會重新評估。
 EXTRACTOR_VERSION = 1

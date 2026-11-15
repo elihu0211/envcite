@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass
 from datetime import date
 
-from canon.law.numerals import DATE_WITH_ERA, roc_date
+from canon.numerals import DATE_WITH_ERA, roc_date
 
 _ENTRY_START = re.compile(r"^\s*(?:[0-9]+\.\s*)?(?:中華)?民國")
 _NUMBERING = re.compile(r"^[0-9]+\.\s*")

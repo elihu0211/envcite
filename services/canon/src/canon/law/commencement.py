@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 
 from canon.law.articles import article_path, sort_key
-from canon.law.numerals import DATE_BARE, roc_date
+from canon.numerals import DATE_BARE, roc_date
 
 # 沿革語句與條文都可能寫成「並自」「自」，前面是分句起點；「第 46 條自…」是條別的施行日，不算。
 _CLAUSE = r"(?:^|[；，。：]|本[^；，。：第]{1,8}?)(?:並|且)?自"

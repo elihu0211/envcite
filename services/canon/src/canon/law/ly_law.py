@@ -25,7 +25,7 @@ from datetime import date
 
 from canon.acquire.markup import parse, visible_text
 from canon.law.backfill.models import Article, UnreadablePage, Version
-from canon.law.numerals import CN_NUMERALS, parse_int
+from canon.numerals import CN_NUMERALS, parse_int
 
 BASE = "https://lis.ly.gov.tw"
 HOME = f"{BASE}/lglawc/lglawkm"

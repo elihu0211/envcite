@@ -15,7 +15,7 @@ from canon.law.guidance import load as load_guidance
 from canon.law.importer import run as run_import
 from canon.law.moj import Moj
 from canon.law.ruling import load as load_rulings
-from canon.law.violation import extract as extract_violations
+from canon.violation import extract as extract_violations
 from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
 
 from .conftest import call_metadata, identifier

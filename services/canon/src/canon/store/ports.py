@@ -9,7 +9,7 @@ from contextlib import AbstractContextManager
 from typing import Protocol
 
 from canon.db import Conn
-from canon.law.law_names import LawNames
+from canon.law_names import LawNames
 from canon.store.records import (
     ArticleDetailRecord,
     ArticleRecord,

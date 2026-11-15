@@ -5,7 +5,7 @@ from typing import NamedTuple
 
 from canon.db import fetch, fetch_one
 from canon.embedding import to_sql
-from canon.law.law_names import LawNames
+from canon.law_names import LawNames
 from canon.store.params import as_of_param, expiry, time_left
 from canon.store.ports import ConnectionSource
 from canon.store.records import (
