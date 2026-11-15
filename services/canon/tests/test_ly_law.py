@@ -2,8 +2,8 @@ from datetime import date
 
 import pytest
 
-from canon.acquire import ly_law
-from canon.ingest.backfill.models import UnreadablePage
+from canon.law import ly_law
+from canon.law.backfill.models import UnreadablePage
 from tests import ly_site
 
 V1, V2 = date(2005, 2, 5), date(2011, 11, 23)

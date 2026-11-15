@@ -11,11 +11,10 @@ import psycopg
 import pytest
 from psycopg.types.range import Range
 
-from canon.acquire import ly_law
-from canon.acquire.moj import Moj
-from canon.history_sources import Ly, Moenv, Target
-from canon.history_sync.run import sync
-from canon.ingest import importer
+from canon.law import importer, ly_law
+from canon.law.history_sources import Ly, Moenv, Target
+from canon.law.history_sync.run import sync
+from canon.law.moj import Moj
 from envcite_jobkit import Policy
 from tests import ly_site, moenv_site
 from tests.fake_web import FakeWeb

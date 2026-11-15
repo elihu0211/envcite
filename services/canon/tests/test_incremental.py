@@ -11,9 +11,9 @@ import psycopg
 import pytest
 
 from canon import projection
-from canon.acquire.moj import Moj, content_sha256, pcode
-from canon.ingest import audit, importer
-from canon.ingest.importer import Outcome
+from canon.law import audit, importer
+from canon.law.importer import Outcome
+from canon.law.moj import Moj, content_sha256, pcode
 from canon.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
 from tests.sample import stored_snapshot

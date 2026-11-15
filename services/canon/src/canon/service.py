@@ -12,7 +12,7 @@ from canon.embedding import Embedder
 from canon.endpoints.graph import GraphApi
 from canon.endpoints.laws import LawApi
 from canon.endpoints.search import SearchApi
-from canon.law_names import LawNames
+from canon.law.law_names import LawNames
 from canon.reranking import Reranks
 from canon.search_tuning import SearchTuning
 from canon.store.ports import LawGraphReader, LawReader, Retrieval

@@ -11,7 +11,7 @@ from typing import Any
 
 import psycopg
 
-from canon.acquire.moj import content_sha256, pcode
+from canon.law.moj import content_sha256, pcode
 
 Conn = psycopg.Connection[tuple[object, ...]]
 

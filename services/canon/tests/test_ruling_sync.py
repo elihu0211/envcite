@@ -12,10 +12,10 @@ from typing import TypedDict
 import psycopg
 import pytest
 
-from canon.acquire import cons
-from canon.ruling import RulingError
-from canon.ruling_extract import extract, should_keep
-from canon.ruling_sync import sync
+from canon.law import cons
+from canon.law.ruling import RulingError
+from canon.law.ruling_extract import extract, should_keep
+from canon.law.ruling_sync import sync
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _first, _law_v1, _law_v2, _next
@@ -270,7 +270,7 @@ def test_a_ruling_whose_text_changed_at_the_source_is_rejected(conn: Conn, tmp_p
 
 
 def test_hand_loaded_invalidations_survive_a_resync(conn: Conn, tmp_path: Path) -> None:
-    from canon.ruling import load
+    from canon.law.ruling import load
 
     _first(conn, tmp_path, _law_v1())
     _next(conn, tmp_path, _law_v2())

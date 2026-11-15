@@ -4,9 +4,9 @@ from datetime import date
 
 import pytest
 
-from canon.acquire import moenv_law
-from canon.ingest.backfill.models import UnreadablePage
-from canon.ingest.backfill.texts import fold
+from canon.law import moenv_law
+from canon.law.backfill.models import UnreadablePage
+from canon.law.backfill.texts import fold
 from tests.moenv_site import current_page, history_list, history_page, listing
 
 #: 行寬 64（全形 32 字）的轉錄，取自空氣污染防制法民國 101 年版第 2 條與 107 年版第 8 條的寫法。

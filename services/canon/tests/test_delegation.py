@@ -11,8 +11,8 @@ import psycopg
 import pytest
 from psycopg.types.range import Range
 
-from canon import delegation
-from canon.delegation import Citation, parse
+from canon.law import delegation
+from canon.law.delegation import Citation, parse
 
 Conn = psycopg.Connection[tuple[object, ...]]
 

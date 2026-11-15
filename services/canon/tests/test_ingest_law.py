@@ -1,8 +1,8 @@
 from datetime import date
 from typing import Any
 
-from canon.ingest import law as parsing
-from canon.ingest.audit import Metrics
+from canon.law import parsing
+from canon.law.audit import Metrics
 
 DATA_DATE = date(2026, 9, 18)
 

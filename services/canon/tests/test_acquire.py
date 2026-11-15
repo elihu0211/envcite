@@ -16,8 +16,8 @@ import pytest
 
 from canon.acquire import cli
 from canon.acquire.engine import Feed, InvalidSnapshot, Outcome, acquire
-from canon.acquire.moj import Moj
 from canon.http import HttpStatus
+from canon.law.moj import Moj
 from envcite_jobkit import Policy
 
 Conn = psycopg.Connection[tuple[object, ...]]

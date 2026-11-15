@@ -11,13 +11,11 @@ from typing import Any
 import psycopg
 import pytest
 
-from canon import guidance_anchor
-from canon.acquire import gazette, moenv
-from canon.acquire.moj import Moj
-from canon.guidance_sync.report import Report
-from canon.guidance_sync.run import sync
 from canon.import_problems import Problem
-from canon.ingest import importer
+from canon.law import gazette, guidance_anchor, importer, moenv
+from canon.law.guidance_sync.report import Report
+from canon.law.guidance_sync.run import sync
+from canon.law.moj import Moj
 from envcite_jobkit import EndpointError, ExitCode, Policy
 from tests.sample import WATER, sample_laws, stored_snapshot
 

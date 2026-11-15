@@ -10,11 +10,11 @@ from canon import errors
 from canon.coverage import term_coverage
 from canon.embedding import Embedder, EmbeddingError
 from canon.endpoints.common import SERVICE_LOG, log_call
-from canon.guidance_search import CANDIDATES as GUIDANCE_CANDIDATES
-from canon.guidance_search import EXTRA as GUIDANCE_EXTRA
-from canon.guidance_search import fuse, guidance_phrases
-from canon.identifiers import jurisdiction_filter
-from canon.law_names import LawNames
+from canon.law.guidance_search import CANDIDATES as GUIDANCE_CANDIDATES
+from canon.law.guidance_search import EXTRA as GUIDANCE_EXTRA
+from canon.law.guidance_search import fuse, guidance_phrases
+from canon.law.identifiers import jurisdiction_filter
+from canon.law.law_names import LawNames
 from canon.reranking import RerankError, Reranks, select
 from canon.search_tuning import SearchTuning
 from canon.store.ports import LawReader, Retrieval

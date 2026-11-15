@@ -9,8 +9,8 @@ import pytest
 
 from canon import sync
 from canon.acquire.engine import DownloadFailed, Feed, InvalidSnapshot, acquire
-from canon.acquire.moj import Moj
-from canon.ingest.importer import BatchRejected
+from canon.law.importer import BatchRejected
+from canon.law.moj import Moj
 from canon.projection import EmbeddingStopped
 from envcite_jobkit import ExitCode
 from tests.test_acquire import _publish

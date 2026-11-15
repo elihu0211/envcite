@@ -5,9 +5,9 @@ from typing import Any
 import psycopg
 import pytest
 
-from canon.acquire.moj import Moj
-from canon.ingest import importer
-from canon.ingest.law import PARSER_VERSION
+from canon.law import importer
+from canon.law.moj import Moj
+from canon.law.parsing import PARSER_VERSION
 from tests.sample import stored_snapshot
 
 Conn = psycopg.Connection[tuple[object, ...]]

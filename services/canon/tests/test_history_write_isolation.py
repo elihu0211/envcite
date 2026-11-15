@@ -12,14 +12,13 @@ import psycopg
 import pytest
 from psycopg.types.range import Range
 
-from canon.acquire import moenv_law
-from canon.acquire.moj import Moj
-from canon.history_sources import Moenv
-from canon.history_sync.policy import LIMITS
-from canon.history_sync.run import sync
-from canon.ingest import importer
-from canon.ingest.backfill import writer
-from canon.ingest.backfill.models import Anchor
+from canon.law import importer, moenv_law
+from canon.law.backfill import writer
+from canon.law.backfill.models import Anchor
+from canon.law.history_sources import Moenv
+from canon.law.history_sync.policy import LIMITS
+from canon.law.history_sync.run import sync
+from canon.law.moj import Moj
 from envcite_jobkit import Policy
 from tests.fake_web import FakeWeb
 from tests.history_support import relax_limits

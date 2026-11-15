@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from canon.acquire import moenv_law
+from canon.law import moenv_law
 
 
 def _roc(d: date) -> str:

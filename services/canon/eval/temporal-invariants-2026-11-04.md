@@ -14,9 +14,9 @@
 
 ## 程式的對應改動
 
-- `ingest/law.py`：明文早於版本日的特定施行日記為 `retroactive`（不再是 `specified`）；`PARSER_VERSION` 3。
+- `law/parsing.py`：明文早於版本日的特定施行日記為 `retroactive`（不再是 `specified`）；`PARSER_VERSION` 3。
 - `ingest/backfill.py`：回推停下處與更早的每一次公布寫成 `unavailable` 版本，時間軸接到制定；來源後來補上時，同一版改為 `available`。「停在那裡就不寫」的特例拿掉。
-- `ingest/history.py`：法律的沿革裡「令發布…施行」是施行命令不是修正（MR !331 列為後續）。
+- `law/history.py`：法律的沿革裡「令發布…施行」是施行命令不是修正（MR !331 列為後續）。
 
 ## 實測
 

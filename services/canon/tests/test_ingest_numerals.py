@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from canon.ingest.numerals import first_date, parse_int, parse_yyyymmdd, roc_date
+from canon.law.numerals import first_date, parse_int, parse_yyyymmdd, roc_date
 
 
 @pytest.mark.parametrize(

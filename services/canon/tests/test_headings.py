@@ -4,7 +4,7 @@ from datetime import date
 
 import psycopg
 
-from canon.ingest import articles, headings, law, write
+from canon.law import articles, headings, parsing, write
 from canon.store.ontology_store import OntologyStore
 from canon.store.records import LawKey
 
@@ -55,7 +55,7 @@ def test_law_parse_populates_headings() -> None:
         ],
     }
 
-    parsed = law.parse(payload, pcode="O0010001", data_date=date(2024, 1, 2))
+    parsed = parsing.parse(payload, pcode="O0010001", data_date=date(2024, 1, 2))
 
     assert parsed.ok
     assert len(parsed.headings) == 1
@@ -80,7 +80,7 @@ def test_write_and_list_headings_round_trip(
             {"ArticleType": "A", "ArticleNo": "第 2 條", "ArticleContent": "第二條。"},
         ],
     }
-    parsed = law.parse(payload, pcode="O0099001", data_date=date(2024, 1, 2))
+    parsed = parsing.parse(payload, pcode="O0099001", data_date=date(2024, 1, 2))
     assert parsed.ok
 
     # 經 `conn` fixture 寫入，測試結束時它才會清掉這部法規；自己另開連線會留給之後的測試。

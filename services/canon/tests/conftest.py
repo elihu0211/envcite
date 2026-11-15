@@ -9,8 +9,8 @@ from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from testcontainers.community.postgres import PostgresContainer
 
-from canon.acquire.moj import Moj
-from canon.ingest import importer
+from canon.law import importer
+from canon.law.moj import Moj
 from canon.migrate import apply_all
 from canon.server import build_server
 from canon.store.ontology_store import OntologyStore

@@ -9,8 +9,8 @@ from pathlib import Path
 import psycopg
 
 from canon import projection
-from canon.acquire.moj import Moj
-from canon.ingest import importer
+from canon.law import importer
+from canon.law.moj import Moj
 from canon.store.ontology_store import OntologyStore
 from canon.store.retrieval import SEARCH_POOL
 from envcite_segmenter import Segmenter

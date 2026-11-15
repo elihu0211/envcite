@@ -5,7 +5,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from canon.claims.enums import TRIGGER_KINDS
-from canon.violation import citations
+from canon.law.violation import citations
 
 #: 一個罰則句常把幾個效果接在一起；每個效果的子句有這些字樣。罰則的引文只取自己效果的子句。
 _EFFECT_CLAUSES = {

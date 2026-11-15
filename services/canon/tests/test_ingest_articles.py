@@ -1,6 +1,6 @@
 import pytest
 
-from canon.ingest.articles import (
+from canon.law.articles import (
     Unit,
     article_path,
     is_deleted,

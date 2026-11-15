@@ -8,8 +8,8 @@ import grpc
 import psycopg
 import pytest
 
-from canon.guidance import load
-from canon.guidance_search import EXTRA, fuse, guidance_phrases
+from canon.law.guidance import load
+from canon.law.guidance_search import EXTRA, fuse, guidance_phrases
 from canon.server import build_server
 from canon.store.ontology_store import OntologyStore
 from canon.store.records import SearchHit
