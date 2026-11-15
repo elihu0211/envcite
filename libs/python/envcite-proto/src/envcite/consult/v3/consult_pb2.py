@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from envcite.canon.v1 import canon_pb2 as envcite_dot_canon_dot_v1_dot_canon__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n envcite/consult/v3/consult.proto\x12\x12\x65nvcite.consult.v3\x1a\x1c\x65nvcite/canon/v1/canon.proto\"D\n\rGroundRequest\x12\x10\n\x08question\x18\x01 \x01(\t\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\x12\x12\n\nontologies\x18\x03 \x03(\t\"}\n\x0eGroundResponse\x12\x30\n\x08\x65vidence\x18\x01 \x01(\x0b\x32\x1c.envcite.consult.v3.EvidenceH\x00\x12.\n\x07refused\x18\x02 \x01(\x0b\x32\x1b.envcite.consult.v3.RefusedH\x00\x42\t\n\x07outcome\"o\n\x08\x45vidence\x12/\n\tcitations\x18\x01 \x03(\x0b\x32\x1c.envcite.consult.v3.Citation\x12\x32\n\nconfidence\x18\x02 \x01(\x0e\x32\x1e.envcite.consult.v3.Confidence\"\x8d\x01\n\x08\x43itation\x12\x0c\n\x04\x63ode\x18\x01 \x01(\t\x12\x0b\n\x03iri\x18\x02 \x01(\t\x12\r\n\x05label\x18\x03 \x01(\t\x12\x0c\n\x04text\x18\x04 \x01(\t\x12\x10\n\x08ontology\x18\x05 \x01(\t\x12\x37\n\x0elaw_identifier\x18\x06 \x01(\x0b\x32\x1f.envcite.canon.v1.LawIdentifier\"\xdb\x01\n\x07Refused\x12\x32\n\x06reason\x18\x01 \x01(\x0e\x32\".envcite.consult.v3.Refused.Reason\x12\x0e\n\x06\x64\x65tail\x18\x02 \x01(\t\"\x8b\x01\n\x06Reason\x12\x16\n\x12REASON_UNSPECIFIED\x10\x00\x12\x16\n\x12REASON_NO_EVIDENCE\x10\x01\x12\x17\n\x13REASON_OUT_OF_SCOPE\x10\x02\x12\x18\n\x14REASON_MISSING_INPUT\x10\x03\x12\x1e\n\x1aREASON_LOCAL_LAW_UNCOVERED\x10\x04*Q\n\nConfidence\x12\x1a\n\x16\x43ONFIDENCE_UNSPECIFIED\x10\x00\x12\x12\n\x0e\x43ONFIDENCE_LOW\x10\x01\x12\x13\n\x0f\x43ONFIDENCE_HIGH\x10\x02\x32\x66\n\x13\x43onsultationService\x12O\n\x06Ground\x12!.envcite.consult.v3.GroundRequest\x1a\".envcite.consult.v3.GroundResponseB\x15\xaa\x02\x12\x45nvCite.Consult.V3b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n envcite/consult/v3/consult.proto\x12\x12\x65nvcite.consult.v3\x1a\x1c\x65nvcite/canon/v1/canon.proto\"A\n\rGroundRequest\x12\x10\n\x08question\x18\x01 \x01(\t\x12\r\n\x05\x61s_of\x18\x02 \x01(\t\x12\x0f\n\x07sources\x18\x03 \x03(\t\"}\n\x0eGroundResponse\x12\x30\n\x08\x65vidence\x18\x01 \x01(\x0b\x32\x1c.envcite.consult.v3.EvidenceH\x00\x12.\n\x07refused\x18\x02 \x01(\x0b\x32\x1b.envcite.consult.v3.RefusedH\x00\x42\t\n\x07outcome\"o\n\x08\x45vidence\x12/\n\tcitations\x18\x01 \x03(\x0b\x32\x1c.envcite.consult.v3.Citation\x12\x32\n\nconfidence\x18\x02 \x01(\x0e\x32\x1e.envcite.consult.v3.Confidence\"\x8b\x01\n\x08\x43itation\x12\x0c\n\x04\x63ode\x18\x01 \x01(\t\x12\x0b\n\x03iri\x18\x02 \x01(\t\x12\r\n\x05label\x18\x03 \x01(\t\x12\x0c\n\x04text\x18\x04 \x01(\t\x12\x0e\n\x06source\x18\x05 \x01(\t\x12\x37\n\x0elaw_identifier\x18\x06 \x01(\x0b\x32\x1f.envcite.canon.v1.LawIdentifier\"\xdb\x01\n\x07Refused\x12\x32\n\x06reason\x18\x01 \x01(\x0e\x32\".envcite.consult.v3.Refused.Reason\x12\x0e\n\x06\x64\x65tail\x18\x02 \x01(\t\"\x8b\x01\n\x06Reason\x12\x16\n\x12REASON_UNSPECIFIED\x10\x00\x12\x16\n\x12REASON_NO_EVIDENCE\x10\x01\x12\x17\n\x13REASON_OUT_OF_SCOPE\x10\x02\x12\x18\n\x14REASON_MISSING_INPUT\x10\x03\x12\x1e\n\x1aREASON_LOCAL_LAW_UNCOVERED\x10\x04*Q\n\nConfidence\x12\x1a\n\x16\x43ONFIDENCE_UNSPECIFIED\x10\x00\x12\x12\n\x0e\x43ONFIDENCE_LOW\x10\x01\x12\x13\n\x0f\x43ONFIDENCE_HIGH\x10\x02\x32\x66\n\x13\x43onsultationService\x12O\n\x06Ground\x12!.envcite.consult.v3.GroundRequest\x1a\".envcite.consult.v3.GroundResponseB\x15\xaa\x02\x12\x45nvCite.Consult.V3b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,20 +33,20 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'envcite.consult.v3.consult_
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\252\002\022EnvCite.Consult.V3'
-  _globals['_CONFIDENCE']._serialized_start=762
-  _globals['_CONFIDENCE']._serialized_end=843
+  _globals['_CONFIDENCE']._serialized_start=757
+  _globals['_CONFIDENCE']._serialized_end=838
   _globals['_GROUNDREQUEST']._serialized_start=86
-  _globals['_GROUNDREQUEST']._serialized_end=154
-  _globals['_GROUNDRESPONSE']._serialized_start=156
-  _globals['_GROUNDRESPONSE']._serialized_end=281
-  _globals['_EVIDENCE']._serialized_start=283
-  _globals['_EVIDENCE']._serialized_end=394
-  _globals['_CITATION']._serialized_start=397
-  _globals['_CITATION']._serialized_end=538
-  _globals['_REFUSED']._serialized_start=541
-  _globals['_REFUSED']._serialized_end=760
-  _globals['_REFUSED_REASON']._serialized_start=621
-  _globals['_REFUSED_REASON']._serialized_end=760
-  _globals['_CONSULTATIONSERVICE']._serialized_start=845
-  _globals['_CONSULTATIONSERVICE']._serialized_end=947
+  _globals['_GROUNDREQUEST']._serialized_end=151
+  _globals['_GROUNDRESPONSE']._serialized_start=153
+  _globals['_GROUNDRESPONSE']._serialized_end=278
+  _globals['_EVIDENCE']._serialized_start=280
+  _globals['_EVIDENCE']._serialized_end=391
+  _globals['_CITATION']._serialized_start=394
+  _globals['_CITATION']._serialized_end=533
+  _globals['_REFUSED']._serialized_start=536
+  _globals['_REFUSED']._serialized_end=755
+  _globals['_REFUSED_REASON']._serialized_start=616
+  _globals['_REFUSED_REASON']._serialized_end=755
+  _globals['_CONSULTATIONSERVICE']._serialized_start=840
+  _globals['_CONSULTATIONSERVICE']._serialized_end=942
 # @@protoc_insertion_point(module_scope)

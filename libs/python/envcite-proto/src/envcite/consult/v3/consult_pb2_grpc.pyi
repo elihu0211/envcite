@@ -29,9 +29,9 @@ GRPC_VERSION: str
 class ConsultationServiceStub:
     """接地服務：為呼叫端的語言模型備妥可引用的封閉證據集，或明確拒答。
 
-    本體（ontology）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
-    （法規本體）。每個本體領一個字母作為引用代號的前綴（"law" → "L"），代號因此
-    不會跨本體相撞。
+    來源（source）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
+    （法規）。每個來源領一個字母作為引用代號的前綴（"law" → "L"），代號因此
+    不會跨來源相撞。
 
     本服務不執行語言模型：它只決定什麼可以引用、能不能回答。寫成散文，以及核驗輸出
     只引用集合內的代號，是呼叫端的責任（見 proto/README.md〈呼叫端的語言模型〉）。
@@ -52,9 +52,9 @@ class ConsultationServiceStub:
 class ConsultationServiceAsyncStub(ConsultationServiceStub):
     """接地服務：為呼叫端的語言模型備妥可引用的封閉證據集，或明確拒答。
 
-    本體（ontology）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
-    （法規本體）。每個本體領一個字母作為引用代號的前綴（"law" → "L"），代號因此
-    不會跨本體相撞。
+    來源（source）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
+    （法規）。每個來源領一個字母作為引用代號的前綴（"law" → "L"），代號因此
+    不會跨來源相撞。
 
     本服務不執行語言模型：它只決定什麼可以引用、能不能回答。寫成散文，以及核驗輸出
     只引用集合內的代號，是呼叫端的責任（見 proto/README.md〈呼叫端的語言模型〉）。
@@ -71,9 +71,9 @@ class ConsultationServiceAsyncStub(ConsultationServiceStub):
 class ConsultationServiceServicer(metaclass=_abc_1.ABCMeta):
     """接地服務：為呼叫端的語言模型備妥可引用的封閉證據集，或明確拒答。
 
-    本體（ontology）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
-    （法規本體）。每個本體領一個字母作為引用代號的前綴（"law" → "L"），代號因此
-    不會跨本體相撞。
+    來源（source）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
+    （法規）。每個來源領一個字母作為引用代號的前綴（"law" → "L"），代號因此
+    不會跨來源相撞。
 
     本服務不執行語言模型：它只決定什麼可以引用、能不能回答。寫成散文，以及核驗輸出
     只引用集合內的代號，是呼叫端的責任（見 proto/README.md〈呼叫端的語言模型〉）。

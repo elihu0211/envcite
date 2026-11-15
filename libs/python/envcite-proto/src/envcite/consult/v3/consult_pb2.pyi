@@ -44,7 +44,7 @@ class GroundRequest(_message.Message):
 
     QUESTION_FIELD_NUMBER: _builtins.int
     AS_OF_FIELD_NUMBER: _builtins.int
-    ONTOLOGIES_FIELD_NUMBER: _builtins.int
+    SOURCES_FIELD_NUMBER: _builtins.int
     question: _builtins.str
     """使用者的問題原句。呼叫端不得改寫：檢索是針對人們實際的問法調校的，
     模型改寫後的句子是另一個查詢。
@@ -52,19 +52,19 @@ class GroundRequest(_message.Message):
     as_of: _builtins.str
     """依哪一天施行的條文作答（ISO 8601）。留空為現行。"""
     @_builtins.property
-    def ontologies(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
-        """要接地的本體代號。留空為服務提供的全部；不認得的回 INVALID_ARGUMENT。"""
+    def sources(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
+        """要接地的來源代號。留空為服務提供的全部；不認得的回 INVALID_ARGUMENT。"""
 
     def __init__(
         self,
         *,
         question: _builtins.str = ...,
         as_of: _builtins.str = ...,
-        ontologies: _abc.Iterable[_builtins.str] | None = ...,
+        sources: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "ontologies", b"ontologies", "question", b"question"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of", b"as_of", "question", b"question", "sources", b"sources"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -107,7 +107,7 @@ class Evidence(_message.Message):
     confidence: Global___Confidence.ValueType
     @_builtins.property
     def citations(self) -> _containers.RepeatedCompositeFieldContainer[Global___Citation]:
-        """最多 8 筆，依序編碼為 "L1"、"L2"……（字母屬於來源本體，序號在整份證據內
+        """最多 8 筆，依序編碼為 "L1"、"L2"……（字母屬於來源，序號在整份證據內
         連續）。永不為空。
         """
 
@@ -133,7 +133,7 @@ class Citation(_message.Message):
     IRI_FIELD_NUMBER: _builtins.int
     LABEL_FIELD_NUMBER: _builtins.int
     TEXT_FIELD_NUMBER: _builtins.int
-    ONTOLOGY_FIELD_NUMBER: _builtins.int
+    SOURCE_FIELD_NUMBER: _builtins.int
     LAW_IDENTIFIER_FIELD_NUMBER: _builtins.int
     code: _builtins.str
     """模型以方括號寫出的短代號，例如 "[L1]"。不在證據集內的代號是捏造的引用：
@@ -145,11 +145,11 @@ class Citation(_message.Message):
     """供人閱讀的標示，例如 "空氣污染防制法 第 20 條"。"""
     text: _builtins.str
     """`as_of` 當日有效的條文全文，即證據本身。"""
-    ontology: _builtins.str
-    """所屬本體的代號，例如 "law"。"""
+    source: _builtins.str
+    """所屬來源的代號，例如 "law"。"""
     @_builtins.property
     def law_identifier(self) -> _canon_pb2.LawIdentifier:
-        """條文所屬法規的複合自然鍵識別碼（所屬本體為法規時具備）。"""
+        """條文所屬法規的複合自然鍵識別碼（所屬來源為法規時具備）。"""
 
     def __init__(
         self,
@@ -158,12 +158,12 @@ class Citation(_message.Message):
         iri: _builtins.str = ...,
         label: _builtins.str = ...,
         text: _builtins.str = ...,
-        ontology: _builtins.str = ...,
+        source: _builtins.str = ...,
         law_identifier: _canon_pb2.LawIdentifier | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["law_identifier", b"law_identifier"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["code", b"code", "iri", b"iri", "label", b"label", "law_identifier", b"law_identifier", "ontology", b"ontology", "text", b"text"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["code", b"code", "iri", b"iri", "label", b"label", "law_identifier", b"law_identifier", "source", b"source", "text", b"text"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
