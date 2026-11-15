@@ -6441,9 +6441,9 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 }
 
 .ep-avatar-lg {
-    inline-size: 3.5rem;
-    block-size: 3.5rem;
-    font-size: var(--ep-title-m-size);
+    inline-size: calc(var(--ep-touch-target) + var(--ep-space-6));
+    block-size: calc(var(--ep-touch-target) + var(--ep-space-6));
+    font-size: var(--ep-headline-s-size);
     cursor: pointer;
     position: relative;
     overflow: hidden;

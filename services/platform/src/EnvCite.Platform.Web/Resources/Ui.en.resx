@@ -2622,14 +2622,14 @@
   <data name="變更" xml:space="preserve">
     <value>Change</value>
   </data>
-  <data name="點擊頭像、拖放或貼上圖片，支援 PNG、JPEG、WebP（上限 5 MB）。" xml:space="preserve">
-    <value>Click the photo, drop an image, or paste. PNG, JPEG, or WebP up to 5 MB.</value>
+  <data name="PNG、JPEG、WebP，上限 5 MB。" xml:space="preserve">
+    <value>PNG, JPEG, or WebP up to 5 MB.</value>
   </data>
   <data name="調整頭像" xml:space="preserve">
     <value>Adjust profile photo</value>
   </data>
-  <data name="拖曳調整位置、縮放或旋轉後套用。" xml:space="preserve">
-    <value>Drag to position, zoom, or rotate, then apply.</value>
+  <data name="拖曳與縮放後套用。" xml:space="preserve">
+    <value>Drag and zoom to crop, then apply.</value>
   </data>
   <data name="縮放" xml:space="preserve">
     <value>Zoom</value>
