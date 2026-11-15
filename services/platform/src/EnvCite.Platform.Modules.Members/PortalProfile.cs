@@ -23,7 +23,8 @@ internal sealed class PortalProfile(
                 found.DisplayName,
                 found.Role,
                 found.TwoFactorEnabled,
-                found.ManagedBy == DirectoryRoles.ManagedBy);
+                found.ManagedBy == DirectoryRoles.ManagedBy,
+                found.AvatarData is not null ? found.AvatarVersion : 0);
     }
 
     public async Task<AdminOutcome<string?>> UpdateDisplayNameAsync(
@@ -62,6 +63,77 @@ internal sealed class PortalProfile(
 
         return AdminOutcome.Ok(normalized);
     }
+
+    public async Task<AdminOutcome<int>> UpdateAvatarAsync(
+        ClaimsPrincipal user, Stream imageStream, long contentLength, CancellationToken cancellationToken)
+    {
+        var found = await FindAsync(user);
+        if (found is null || found.Disabled)
+            return AdminOutcome.NotFound<int>(OutcomeCodes.MemberNotFound);
+
+        var processed = await AvatarImageProcessor.NormalizeAsync(imageStream, contentLength, cancellationToken);
+        if (!processed.IsOk)
+            return AdminOutcome.Invalid<int>(processed.Code!);
+
+        found.AvatarData = processed.Value;
+        found.AvatarContentType = AvatarImageProcessor.OutputContentType;
+        found.AvatarVersion++;
+
+        var updated = await users.UpdateAsync(found);
+        if (!updated.Succeeded)
+            return AdminOutcome.Invalid<int>(OutcomeCodes.IdentityRejected);
+
+        await signIn.RefreshSignInAsync(found);
+        await audit.AppendAsync(
+            user,
+            new AuditEntry(
+                AuditActions.PortalAvatarUpdated,
+                tenant.MultiTenantContext!.TenantInfo!.Id,
+                "member",
+                found.Id,
+                new Dictionary<string, object?> { ["version"] = found.AvatarVersion }),
+            cancellationToken);
+
+        return AdminOutcome.Ok(found.AvatarVersion);
+    }
+
+    public async Task<AdminOutcome<int>> RemoveAvatarAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
+    {
+        var found = await FindAsync(user);
+        if (found is null || found.Disabled)
+            return AdminOutcome.NotFound<int>(OutcomeCodes.MemberNotFound);
+
+        if (found.AvatarData is null)
+            return AdminOutcome.Ok(found.AvatarVersion);
+
+        found.AvatarData = null;
+        found.AvatarContentType = null;
+        found.AvatarVersion++;
+
+        var updated = await users.UpdateAsync(found);
+        if (!updated.Succeeded)
+            return AdminOutcome.Invalid<int>(OutcomeCodes.IdentityRejected);
+
+        await signIn.RefreshSignInAsync(found);
+        await audit.AppendAsync(
+            user,
+            new AuditEntry(
+                AuditActions.PortalAvatarRemoved,
+                tenant.MultiTenantContext!.TenantInfo!.Id,
+                "member",
+                found.Id,
+                new Dictionary<string, object?> { ["version"] = found.AvatarVersion }),
+            cancellationToken);
+
+        return AdminOutcome.Ok(found.AvatarVersion);
+    }
+
+    public Task<PortalAvatar?> GetAvatarAsync(string userId, CancellationToken cancellationToken) =>
+        users.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId && !u.Disabled && u.AvatarData != null && u.AvatarContentType != null)
+            .Select(u => new PortalAvatar(u.AvatarData!, u.AvatarContentType!, u.AvatarVersion))
+            .SingleOrDefaultAsync(cancellationToken);
 
     private Task<ApplicationUser?> FindAsync(ClaimsPrincipal user) =>
         user.FindFirst(PlatformClaimTypes.PortalUserId)?.Value is { } id

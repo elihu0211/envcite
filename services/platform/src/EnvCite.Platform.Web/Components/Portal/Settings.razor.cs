@@ -15,6 +15,9 @@ public partial class Settings(IPortalProfile profile, IPortalAccount account, IP
     [SupplyParameterFromQuery(Name = "saved")]
     public string? Saved { get; set; }
 
+    [SupplyParameterFromQuery(Name = "avatar")]
+    public string? AvatarStatus { get; set; }
+
     private PortalProfileInfo? _profile;
     private bool _twoFactor;
     private string? _message;
@@ -25,6 +28,23 @@ public partial class Settings(IPortalProfile profile, IPortalAccount account, IP
     private string? Email => _profile?.Email ?? HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
 
     private string RoleLabel => PortalLabels.Role(_profile?.Role ?? HttpContext.User.FindFirst(ClaimTypes.Role)?.Value);
+
+    private string? AvatarUrl =>
+        _profile is { AvatarVersion: > 0 }
+        && HttpContext.User.FindFirst(PlatformClaimTypes.PortalUserId)?.Value is { } userId
+            ? PortalPaths.Avatar(Tenant, userId, _profile.AvatarVersion)
+            : null;
+
+    private string AvatarInitial
+    {
+        get
+        {
+            var source = _profile?.DisplayName ?? Email;
+            return string.IsNullOrEmpty(source)
+                ? string.Empty
+                : char.ConvertFromUtf32(char.ConvertToUtf32(source, 0)).ToUpperInvariant();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -40,6 +60,22 @@ public partial class Settings(IPortalProfile profile, IPortalAccount account, IP
         if (Saved == "1")
         {
             _message = L["已更新顯示名稱。"];
+        }
+
+        switch (AvatarStatus)
+        {
+            case "saved":
+                _message = L["已更新大頭貼。"];
+                break;
+            case "removed":
+                _message = L["已移除大頭貼。"];
+                break;
+            case "too_large":
+                Error = L["圖片檔案不可超過 5 MB。"];
+                break;
+            case "invalid":
+                Error = L["請上傳有效的 PNG、JPEG 或 WebP 圖片。"];
+                break;
         }
     }
 

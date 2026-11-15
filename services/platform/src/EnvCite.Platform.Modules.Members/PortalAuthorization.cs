@@ -30,6 +30,9 @@ internal sealed class PortalClaimsPrincipalFactory(
         if (!string.IsNullOrWhiteSpace(user.DisplayName))
             identity.AddClaim(new Claim(ClaimTypes.GivenName, user.DisplayName));
 
+        if (user.AvatarData is not null && user.AvatarVersion > 0)
+            identity.AddClaim(new Claim(PlatformClaimTypes.AvatarVersion, user.AvatarVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+
         if (tenant.MultiTenantContext?.TenantInfo?.Identifier is { } identifier)
             identity.AddClaim(new Claim(PlatformClaimTypes.TenantIdentifier, identifier));
 

@@ -2616,4 +2616,40 @@
   <data name="重新命名失敗。" xml:space="preserve">
     <value>Could not rename organization.</value>
   </data>
+  <data name="相片" xml:space="preserve">
+    <value>Photo</value>
+  </data>
+  <data name="新增相片以個人化你的帳號。" xml:space="preserve">
+    <value>Add a photo to personalize your account.</value>
+  </data>
+  <data name="變更" xml:space="preserve">
+    <value>Change</value>
+  </data>
+  <data name="選擇圖片" xml:space="preserve">
+    <value>Choose image</value>
+  </data>
+  <data name="支援 PNG、JPEG、WebP，上限 5 MB；可拖曳與縮放裁切為圓形。" xml:space="preserve">
+    <value>PNG, JPEG, or WebP up to 5 MB; drag and zoom to crop into a circle.</value>
+  </data>
+  <data name="縮放" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="上傳並儲存" xml:space="preserve">
+    <value>Upload and save</value>
+  </data>
+  <data name="移除" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="已更新大頭貼。" xml:space="preserve">
+    <value>Profile photo updated.</value>
+  </data>
+  <data name="已移除大頭貼。" xml:space="preserve">
+    <value>Profile photo removed.</value>
+  </data>
+  <data name="圖片檔案不可超過 5 MB。" xml:space="preserve">
+    <value>Image must be at most 5 MB.</value>
+  </data>
+  <data name="請上傳有效的 PNG、JPEG 或 WebP 圖片。" xml:space="preserve">
+    <value>Please upload a valid PNG, JPEG, or WebP image.</value>
+  </data>
 </root>

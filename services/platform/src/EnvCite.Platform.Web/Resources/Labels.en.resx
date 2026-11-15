@@ -19,6 +19,8 @@
   <data name="Audit.Action.portal.sign_in_failed" xml:space="preserve"><value>Member sign-in failed</value></data>
   <data name="Audit.Action.portal.password_changed" xml:space="preserve"><value>Member changed password</value></data>
   <data name="Audit.Action.portal.profile_updated" xml:space="preserve"><value>Member updated profile</value></data>
+  <data name="Audit.Action.portal.avatar_updated" xml:space="preserve"><value>Member updated avatar</value></data>
+  <data name="Audit.Action.portal.avatar_removed" xml:space="preserve"><value>Member removed avatar</value></data>
   <data name="Audit.Action.portal.signed_out" xml:space="preserve"><value>Member signed out</value></data>
   <data name="Audit.Action.portal.google_linked" xml:space="preserve"><value>Member linked a Google account</value></data>
   <data name="Audit.Action.portal.mfa_enabled" xml:space="preserve"><value>Member enabled two-step verification</value></data>
@@ -108,6 +110,8 @@
   <data name="Outcome.tenant.name_required" xml:space="preserve"><value>Name must not be empty.</value></data>
   <data name="Outcome.tenant.name_too_long" xml:space="preserve"><value>Tenant name is limited to 200 characters.</value></data>
   <data name="Outcome.tenant.rename_forbidden" xml:space="preserve"><value>Only an owner can rename the organization.</value></data>
+  <data name="Outcome.avatar.too_large" xml:space="preserve"><value>Image must be at most 5 MB.</value></data>
+  <data name="Outcome.avatar.invalid_format" xml:space="preserve"><value>Unsupported or invalid image. Please upload a PNG, JPEG, or WebP file.</value></data>
   <data name="Outcome.member.email_taken" xml:space="preserve"><value>This tenant already has a member with this email.</value></data>
   <data name="Outcome.operator.email_taken" xml:space="preserve"><value>An operator with this email already exists.</value></data>
   <data name="Outcome.tenant.identifier_taken" xml:space="preserve"><value>This identifier is already in use.</value></data>

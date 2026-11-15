@@ -44,6 +44,8 @@ public static class OutcomeCodes
     public const string TenantNameRequired = "tenant.name_required";
     public const string TenantNameTooLong = "tenant.name_too_long";
     public const string TenantRenameForbidden = "tenant.rename_forbidden";
+    public const string AvatarTooLarge = "avatar.too_large";
+    public const string AvatarInvalidFormat = "avatar.invalid_format";
     public const string MemberEmailTaken = "member.email_taken";
     public const string OperatorEmailTaken = "operator.email_taken";
     public const string TenantIdentifierTaken = "tenant.identifier_taken";
@@ -120,6 +122,8 @@ public static class OutcomeCodes
         [TenantNameRequired] = "Name must not be empty.",
         [TenantNameTooLong] = "Tenant name is limited to 200 characters.",
         [TenantRenameForbidden] = "Only an owner can rename the organization.",
+        [AvatarTooLarge] = "Image must be at most 5 MB.",
+        [AvatarInvalidFormat] = "Unsupported or invalid image. Please upload a PNG, JPEG, or WebP file.",
         [MemberEmailTaken] = "This tenant already has a member with this email.",
         [OperatorEmailTaken] = "An operator with this email already exists.",
         [TenantIdentifierTaken] = "This identifier is already in use.",

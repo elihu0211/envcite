@@ -107,7 +107,16 @@
                 {
                     <div class="ep-side-foot">
                         <button type="button" class="ep-portal-user" popovertarget="ep-account-menu" aria-label="@L["帳號選單"]">
-                            <span class="ep-avatar" aria-hidden="true">@AvatarText</span>
+                            <span class="ep-avatar" aria-hidden="true">
+                                @if (!string.IsNullOrEmpty(AvatarUrl))
+                                {
+                                    <img class="ep-avatar-img" src="@AvatarUrl" alt="" />
+                                }
+                                else
+                                {
+                                    @AvatarText
+                                }
+                            </span>
                             <span class="ep-portal-user-info">
                                 <span class="ep-portal-user-name">@(UserDisplayName ?? UserEmail)</span>
                                 @if (!string.IsNullOrEmpty(UserSecondaryLine))
@@ -206,7 +215,16 @@
 
             @if (ShowMenu)
             {
-                <button type="button" class="ep-avatar" popovertarget="ep-account-menu" aria-label="@L["帳號選單"]">@AvatarText</button>
+                <button type="button" class="ep-avatar" popovertarget="ep-account-menu" aria-label="@L["帳號選單"]">
+                    @if (!string.IsNullOrEmpty(AvatarUrl))
+                    {
+                        <img class="ep-avatar-img" src="@AvatarUrl" alt="" />
+                    }
+                    else
+                    {
+                        @AvatarText
+                    }
+                </button>
                 <div id="ep-account-menu" class="ep-menu" popover>
                     <p class="ep-menu-who">
                         @if (!string.IsNullOrEmpty(UserDisplayName) && !string.Equals(UserDisplayName, UserEmail, StringComparison.Ordinal))
@@ -307,6 +325,10 @@
     /// <summary>頭像圓鈕上的一個字（名字或 email 的第一個字）。</summary>
     [Parameter]
     public string AvatarText { get; set; } = string.Empty;
+
+    /// <summary>已上傳大頭貼的圖片 URL；有值時優先顯示圖片，無則退回 <see cref="AvatarText"/>。</summary>
+    [Parameter]
+    public string? AvatarUrl { get; set; }
 
     /// <summary>登出表單的 action；沒有就不畫登出（尚未登入、或展示頁）。</summary>
     [Parameter]
