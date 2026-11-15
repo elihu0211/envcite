@@ -16,13 +16,13 @@ from canon.law.importer import run as run_import
 from canon.law.moj import Moj
 from canon.law.ruling import load as load_rulings
 from canon.violation import extract as extract_violations
-from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
+from envcite.canon.v1 import canon_pb2, canon_pb2_grpc
 
 from .conftest import call_metadata, identifier
 from .sample import stored_snapshot
 
 Conn = psycopg.Connection[tuple[object, ...]]
-Stub = ontology_pb2_grpc.OntologyServiceStub
+Stub = canon_pb2_grpc.CanonServiceStub
 
 
 def _moj_law(
@@ -203,7 +203,7 @@ pytestmark = pytest.mark.usefixtures("legal_graph_corpus")
 
 def test_list_laws_reports_document_type_counts_and_category_prefix(stub: Stub) -> None:
     env_resp = stub.ListLaws(
-        ontology_pb2.ListLawsRequest(as_of="2023-01-01", category_prefix="O"),
+        canon_pb2.ListLawsRequest(as_of="2023-01-01", category_prefix="O"),
         metadata=call_metadata(),
     )
     by_id = {item.identifier.local_id: item for item in env_resp.laws}
@@ -221,7 +221,7 @@ def test_list_laws_reports_document_type_counts_and_category_prefix(stub: Stub) 
     assert permit.parent_identifier.local_id in {"O0020001", "G0340107"}
 
     early = stub.ListLaws(
-        ontology_pb2.ListLawsRequest(as_of="2021-06-01", category_prefix="O"),
+        canon_pb2.ListLawsRequest(as_of="2021-06-01", category_prefix="O"),
         metadata=call_metadata(),
     )
     early_air = next(x for x in early.laws if x.identifier.local_id == "O0020001")
@@ -230,7 +230,7 @@ def test_list_laws_reports_document_type_counts_and_category_prefix(stub: Stub) 
 
 def test_get_law_graph_focus_returns_multilayer_hierarchy_links_and_truncation(stub: Stub) -> None:
     resp = stub.GetLawGraph(
-        ontology_pb2.GetLawGraphRequest(
+        canon_pb2.GetLawGraphRequest(
             identifier=identifier("O0020001"),
             as_of="2023-01-01",
             downstream_depth=2,
@@ -258,17 +258,17 @@ def test_get_law_graph_focus_returns_multilayer_hierarchy_links_and_truncation(s
 
     edge_map = {(e.source.local_id, e.target.local_id): e for e in resp.edges}
     sub_edge = edge_map[("O0020002", "O0020099")]
-    assert sub_edge.kind == ontology_pb2.GRAPH_EDGE_KIND_SUB_DELEGATION
+    assert sub_edge.kind == canon_pb2.GRAPH_EDGE_KIND_SUB_DELEGATION
     assert list(sub_edge.anchor_articles) == ["第 5 條"]
     assert sub_edge.all_rooted is True
 
     direct_edge = edge_map[("O0020001", "O0020003")]
-    assert direct_edge.kind == ontology_pb2.GRAPH_EDGE_KIND_DELEGATION
+    assert direct_edge.kind == canon_pb2.GRAPH_EDGE_KIND_DELEGATION
     assert list(direct_edge.anchor_articles) == ["第 20 條第 2 項"]
 
     assert {(v.penalty_article, v.kind, v.target_article) for v in resp.violation_links} == {
-        ("62", ontology_pb2.VIOLATION_REFERENCE_KIND_DUTY, "20"),
-        ("62", ontology_pb2.VIOLATION_REFERENCE_KIND_DELEGATED_RULE, "20"),
+        ("62", canon_pb2.VIOLATION_REFERENCE_KIND_DUTY, "20"),
+        ("62", canon_pb2.VIOLATION_REFERENCE_KIND_DELEGATED_RULE, "20"),
     }
 
     (guidance_item,) = resp.guidance_links
@@ -279,7 +279,7 @@ def test_get_law_graph_focus_returns_multilayer_hierarchy_links_and_truncation(s
 
 def test_get_law_graph_supports_multiparent_upstream_and_document_type_filter(stub: Stub) -> None:
     permit_graph = stub.GetLawGraph(
-        ontology_pb2.GetLawGraphRequest(identifier=identifier("O0020004"), as_of="2023-01-01"),
+        canon_pb2.GetLawGraphRequest(identifier=identifier("O0020004"), as_of="2023-01-01"),
         metadata=call_metadata(),
     )
     permit_nodes = {n.identifier.local_id: n for n in permit_graph.nodes}
@@ -287,7 +287,7 @@ def test_get_law_graph_supports_multiparent_upstream_and_document_type_filter(st
     assert permit_nodes["O0020004"].hierarchy_tier == 2
 
     filtered = stub.GetLawGraph(
-        ontology_pb2.GetLawGraphRequest(
+        canon_pb2.GetLawGraphRequest(
             identifier=identifier("O0020001"),
             as_of="2023-01-01",
             child_document_type="辦法",
@@ -302,7 +302,7 @@ def test_get_law_graph_supports_multiparent_upstream_and_document_type_filter(st
 
 def test_get_law_graph_overview_mode_and_category_prefix(stub: Stub) -> None:
     all_overview = stub.GetLawGraph(
-        ontology_pb2.GetLawGraphRequest(as_of="2023-01-01"),
+        canon_pb2.GetLawGraphRequest(as_of="2023-01-01"),
         metadata=call_metadata(),
     )
     assert not all_overview.HasField("focus_identifier")
@@ -311,7 +311,7 @@ def test_get_law_graph_overview_mode_and_category_prefix(stub: Stub) -> None:
     assert "O0020001" in all_nodes
 
     env_overview = stub.GetLawGraph(
-        ontology_pb2.GetLawGraphRequest(as_of="2023-01-01", category_prefix="O"),
+        canon_pb2.GetLawGraphRequest(as_of="2023-01-01", category_prefix="O"),
         metadata=call_metadata(),
     )
     env_nodes = {n.identifier.local_id for n in env_overview.nodes}
@@ -323,9 +323,7 @@ def test_get_law_graph_overview_mode_and_category_prefix(stub: Stub) -> None:
 def test_get_law_graph_and_list_laws_validate_arguments_and_not_found(stub: Stub) -> None:
     with pytest.raises(grpc.RpcError) as partial_id:
         stub.GetLawGraph(
-            ontology_pb2.GetLawGraphRequest(
-                identifier=ontology_pb2.LawIdentifier(local_id="O0020001")
-            ),
+            canon_pb2.GetLawGraphRequest(identifier=canon_pb2.LawIdentifier(local_id="O0020001")),
             metadata=call_metadata(),
         )
     assert partial_id.value.code() == grpc.StatusCode.INVALID_ARGUMENT
@@ -336,7 +334,7 @@ def test_get_law_graph_and_list_laws_validate_arguments_and_not_found(stub: Stub
 
     with pytest.raises(grpc.RpcError) as bad_prefix:
         stub.ListLaws(
-            ontology_pb2.ListLawsRequest(category_prefix="env"),
+            canon_pb2.ListLawsRequest(category_prefix="env"),
             metadata=call_metadata(),
         )
     assert bad_prefix.value.code() == grpc.StatusCode.INVALID_ARGUMENT
@@ -344,7 +342,7 @@ def test_get_law_graph_and_list_laws_validate_arguments_and_not_found(stub: Stub
 
     with pytest.raises(grpc.RpcError) as bad_depth:
         stub.GetLawGraph(
-            ontology_pb2.GetLawGraphRequest(
+            canon_pb2.GetLawGraphRequest(
                 identifier=identifier("O0020001"),
                 upstream_depth=5,
                 child_limit=99,
@@ -359,7 +357,7 @@ def test_get_law_graph_and_list_laws_validate_arguments_and_not_found(stub: Stub
 
     with pytest.raises(grpc.RpcError) as missing_law:
         stub.GetLawGraph(
-            ontology_pb2.GetLawGraphRequest(identifier=identifier("Z9999999")),
+            canon_pb2.GetLawGraphRequest(identifier=identifier("Z9999999")),
             metadata=call_metadata(),
         )
     assert missing_law.value.code() == grpc.StatusCode.NOT_FOUND
@@ -367,7 +365,7 @@ def test_get_law_graph_and_list_laws_validate_arguments_and_not_found(stub: Stub
 
     with pytest.raises(grpc.RpcError) as uncovered_date:
         stub.GetLawGraph(
-            ontology_pb2.GetLawGraphRequest(identifier=identifier("O0020001"), as_of="1990-01-01"),
+            canon_pb2.GetLawGraphRequest(identifier=identifier("O0020001"), as_of="1990-01-01"),
             metadata=call_metadata(),
         )
     assert uncovered_date.value.code() == grpc.StatusCode.NOT_FOUND

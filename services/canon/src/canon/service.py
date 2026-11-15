@@ -1,4 +1,4 @@
-"""gRPC servicer：`OntologyService` 的 gRPC 邊界。
+"""gRPC servicer：`CanonService` 的 gRPC 邊界。
 
 法規、圖譜、檢索三組端點（`endpoints/`）做實事；這裡只把每個 RPC 轉給它們，並在邊界以
 `errors.maps_errors` 把領域錯誤轉成帶 ErrorInfo 的 gRPC 狀態，端點本身不碰 `context.abort`。
@@ -16,13 +16,13 @@ from canon.law_names import LawNames
 from canon.reranking import Reranks
 from canon.search_tuning import SearchTuning
 from canon.store.ports import LawGraphReader, LawReader, Retrieval
-from envcite.ontology.v2 import ontology_pb2 as pb
-from envcite.ontology.v2 import ontology_pb2_grpc
+from envcite.canon.v1 import canon_pb2 as pb
+from envcite.canon.v1 import canon_pb2_grpc
 from envcite_segmenter import Segmenter
 
 
-class OntologyServicer(ontology_pb2_grpc.OntologyServiceServicer):
-    """`OntologyService` 的 servicer：取法規、列條文與失效條文、混合檢索條文。"""
+class CanonServicer(canon_pb2_grpc.CanonServiceServicer):
+    """`CanonService` 的 servicer：取法規、列條文與失效條文、混合檢索條文。"""
 
     def __init__(self, laws: LawApi, graph: GraphApi, search: SearchApi) -> None:
         self.laws = laws
@@ -88,9 +88,9 @@ def build_servicer(
     reranker: Reranks | None = None,
     tuning: SearchTuning | None = None,
     meter: Meter | None = None,
-) -> OntologyServicer:
+) -> CanonServicer:
     """把儲存庫接成三組端點，再接成 servicer。"""
-    return OntologyServicer(
+    return CanonServicer(
         LawApi(laws),
         GraphApi(laws, graph),
         SearchApi(

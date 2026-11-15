@@ -13,7 +13,7 @@
 （canon 執行緒、同時 RPC 上限、字面臂門檻、模型配置、consult 對 canon 的期限）記為未知。
 對象與每個對象的量法：
 
-- `search`：`OntologyService.SearchArticles`（混合檢索，limit 與 consult 相同）
+- `search`：`CanonService.SearchArticles`（混合檢索，limit 與 consult 相同）
 - `ground`：consult `Ground`（端到端：consult → canon 混合檢索 → 可答性判定）
 - `evaluate`：`ReasoningService.Evaluate`（推論；固定一件案件事實）
 - `search-lexical`：`SearchArticles` 只開字面臂（伺服器不設模型），不呼叫嵌入端點，隔離資料庫的容量
@@ -110,8 +110,8 @@ TARGETS = {
     for t in (
         Target(
             "search",
-            "envcite.ontology.v2.OntologyService/SearchArticles",
-            "envcite/ontology/v2/ontology.proto",
+            "envcite.canon.v1.CanonService/SearchArticles",
+            "envcite/canon/v1/canon.proto",
             "canon",
             embedding=True,
         ),
@@ -124,15 +124,15 @@ TARGETS = {
         ),
         Target(
             "evaluate",
-            "envcite.ontology.v2.ReasoningService/Evaluate",
-            "envcite/ontology/v2/reasoning.proto",
+            "envcite.canon.v1.ReasoningService/Evaluate",
+            "envcite/canon/v1/reasoning.proto",
             "canon",
             embedding=False,
         ),
         Target(
             "search-lexical",
-            "envcite.ontology.v2.OntologyService/SearchArticles",
-            "envcite/ontology/v2/ontology.proto",
+            "envcite.canon.v1.CanonService/SearchArticles",
+            "envcite/canon/v1/canon.proto",
             "canon",
             embedding=False,
             cold=False,

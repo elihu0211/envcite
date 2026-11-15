@@ -11,7 +11,7 @@ import psycopg
 from canon import projection
 from canon.law import importer
 from canon.law.moj import Moj
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from canon.store.retrieval import SEARCH_POOL
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
@@ -59,7 +59,7 @@ def _resource(conn: Conn, pcode: str) -> int:
 def test_without_a_scope_nothing_changes(conn: Conn, tmp_path: Path, dsn: str) -> None:
     embedder = _corpus(conn, tmp_path)
     _previous(conn)
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         for query in ("廢水 檢查", "噪音", "地震 建物", "檢查"):
             terms = segmenter.to_tsvector_input(query)
@@ -92,7 +92,7 @@ def test_without_a_scope_nothing_changes(conn: Conn, tmp_path: Path, dsn: str) -
 def test_both_arms_stay_inside_the_scope(conn: Conn, tmp_path: Path, dsn: str) -> None:
     embedder = _corpus(conn, tmp_path)
     scope = [_resource(conn, "T0000002")]
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         # 「檢查」三部法規都有；「廢水」只在另一部：字面臂在範圍內找不到它
         for query in ("檢查", "廢水"):
@@ -122,7 +122,7 @@ def test_the_search_follows_the_named_laws_and_falls_back_to_everything(
     conn: Conn, tmp_path: Path, dsn: str
 ) -> None:
     _corpus(conn, tmp_path)
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         tokenizer = segmenter.tokenizer_id
         terms = segmenter.to_tsvector_input("檢查")

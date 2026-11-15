@@ -20,7 +20,7 @@ from canon.search_tuning import SearchTuning
 from canon.store.ports import LawReader, Retrieval
 from canon.store.records import SearchHit
 from canon.telemetry import RerankMetrics
-from envcite.ontology.v2 import ontology_pb2 as pb
+from envcite.canon.v1 import canon_pb2 as pb
 from envcite_grpc import remaining_seconds
 from envcite_segmenter import Segmenter
 

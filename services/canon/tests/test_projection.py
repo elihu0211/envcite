@@ -5,7 +5,7 @@ import psycopg
 from canon import projection
 from canon.law import importer
 from canon.law.moj import Moj
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
@@ -24,7 +24,7 @@ def _tokenizers(conn: Conn) -> set[str]:
 
 
 def _found(dsn: str, query: str) -> set[tuple[str, str]]:
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         hits = store.retrieval.search(
             segmenter.to_tsvector_input(query),

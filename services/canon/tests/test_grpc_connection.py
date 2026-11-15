@@ -10,7 +10,7 @@ import pytest
 from grpc_health.v1 import health_pb2
 
 from canon.server import build_server
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from envcite_grpc.connection import (
     CLIENT_KEEPALIVE_MS,
     SERVER_MIN_PING_INTERVAL_MS,
@@ -27,7 +27,7 @@ def test_the_servers_ping_floor_is_below_the_clients_ping_interval() -> None:
 
 
 def test_a_client_survives_the_server_ending_a_connection_that_reached_its_max_age(
-    store: OntologyStore,
+    store: CanonStore,
 ) -> None:
     """GOAWAY 之後客戶端重連，後續呼叫照常成功，不是失敗一次。"""
     short = (("grpc.max_connection_age_ms", 400), ("grpc.max_connection_age_grace_ms", 200))
@@ -79,7 +79,7 @@ def flaky_server() -> Iterator[tuple[str, grpc.GenericRpcHandler]]:
 def _call(target: str, options: list[tuple[str, int | str]]) -> bytes:
     with grpc.insecure_channel(target, options=options) as channel:
         method: grpc.UnaryUnaryMultiCallable[bytes, bytes] = channel.unary_unary(
-            "/envcite.ontology.v2.OntologyService/GetLaw"
+            "/envcite.canon.v1.CanonService/GetLaw"
         )
         reply: bytes = method(b"", timeout=5)
         return reply
@@ -91,7 +91,7 @@ def test_unavailable_is_retried_for_read_only_services(
     target, handler = flaky_server
     handler.code, handler.fail = grpc.StatusCode.UNAVAILABLE, 2
 
-    reply = _call(target, client_options(["envcite.ontology.v2.OntologyService"]))
+    reply = _call(target, client_options(["envcite.canon.v1.CanonService"]))
 
     assert reply == b"ok"
     assert handler.calls == 3
@@ -108,7 +108,7 @@ def test_capacity_and_bad_requests_are_not_retried(
     handler.code, handler.fail = code, 5
 
     with pytest.raises(grpc.RpcError) as error:
-        _call(target, client_options(["envcite.ontology.v2.OntologyService"]))
+        _call(target, client_options(["envcite.canon.v1.CanonService"]))
 
     assert error.value.code() == code
     assert handler.calls == 1
@@ -127,7 +127,7 @@ def test_a_service_not_listed_as_read_only_is_not_retried(
 
 
 def test_retries_are_throttled_so_a_failing_downstream_is_not_amplified() -> None:
-    options = dict(client_options(["envcite.ontology.v2.OntologyService"]))
+    options = dict(client_options(["envcite.canon.v1.CanonService"]))
 
     config = json.loads(str(options["grpc.service_config"]))
 

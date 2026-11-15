@@ -1,4 +1,4 @@
-# Ontology 服務映像，以倉庫根為建置情境：
+# canon 服務映像，以倉庫根為建置情境：
 #
 #   docker build -f services/canon/Dockerfile .
 #

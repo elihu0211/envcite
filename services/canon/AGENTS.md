@@ -5,7 +5,7 @@
 ## Project
 
 - **Name:** canon（典籍：具權威的條文與典籍全體，對應 PostgreSQL 為唯一真值、結論只是候選的定位）。服務名只出現在部署單元：目錄、Python 套件與映像、叢集內的服務與工作負載、指令前綴 `canon-`、環境變數 `ENVCITE_CANON_*`、可觀測性的服務名。不加專案名 `envcite`（專案名是環境變數與叢集命名空間的前綴，不屬於服務名）。
-- **Naming:** 服務名 canon 也是持久化與錯誤識別碼的前綴：資料庫角色 `canon_reader`／`canon_writer`／`canon_reviewer`（部署端的登入身分 `canon_server`、`canon_jobs` 加入對應群組）、計量鍵 `canon.*`、API key 範圍 `canon:*`、結果碼 `canon.*`、`ErrorInfo.domain` 為 `canon.envcite`。契約的領域詞維持 ontology：gRPC 套件 `envcite.ontology.v2` 與 `OntologyService`、`ReasoningService`，以及呼叫端的 `Ontology` 設定區段與模組；改它們是契約的破壞性變更，走新套件版本。遷移檔 0027–0067 與 0068 內的舊角色名是已套用的歷史（有檢查碼），不改；0068 之後的授權一律寫新角色名。
+- **Naming:** 服務名 canon 也是持久化與錯誤識別碼的前綴：資料庫角色 `canon_reader`／`canon_writer`／`canon_reviewer`（部署端的登入身分 `canon_server`、`canon_jobs` 加入對應群組）、計量鍵 `canon.*`、API key 範圍 `canon:*`、結果碼 `canon.*`、`ErrorInfo.domain` 為 `canon.envcite`。gRPC 套件 `envcite.canon.v1`（`CanonService`、`ReasoningService`）與呼叫端的 `Canon` 設定區段、模組同取服務名；改它們是契約的破壞性變更，走新套件版本。「本體」是知識來源的概念（一種來源一個本體），不是服務名，維持原詞。遷移檔 0027–0067 與 0068 內的舊角色名是已套用的歷史（有檢查碼），不改；0068 之後的授權一律寫新角色名。
 - **Conventions:** 發行名、匯入名與服務名同為 `canon`（`src/` 佈局，`uv_build` 預設以發行名找 `src/canon/`）。套件與模組小寫、短名詞、以職責命名（PEP 8）：不用 `utils`、`helpers` 這類什麼都能放的名字，不與標準庫同名（含子套件；ruff `A005` 嚴格模式守門）；類別 CapWords、函式與變數 snake_case（ruff `N` 守門；領域例外依事件命名，不套 `N818`；gRPC 方法與 protobuf API 的 PascalCase 由 `.proto` 決定）。指令入口是單一指令 `canon <子指令>`（`python -m canon` 等價；子指令登記在 `canon/cli.py`，名稱是與部署庫的契約）。本體子包以本體代號命名，與服務名不同層。
 - **Role:** 本體服務（shared, non-tenant data）：各來源的知識集中在本服務，一種來源一個本體，各有自己的 schema 與引用代號字母（呼叫端看到的規則在倉庫根 `proto/README.md`）。新增來源是新增一個本體，不另立服務；拆成獨立服務只在該本體需要獨立擴縮或發版、資料不能與共享資料同庫、或需要不同的執行環境。由 `services/platform` 與 `services/consult` 呼叫。
 - **Layout:** 頂層是核心：以語料與標註為資料模型的讀取層、端點、標註、驗證、推論與 gRPC 伺服器，加上共用的基礎（資料庫、設定、網路、嵌入）。`law/` 是法規來源的取得、解析與同步（把語料填進去）。依賴只往一個方向：`law/` 用核心，核心不匯入任何本體子包，只有組合根（`cli.py`、`server.py`、`sync.py`、`acquire/cli.py`）接線，本體之間也不互相匯入（`tests/test_architecture.py` 守門）。新增本體是新增與 `law/` 同層的 `canon/<代號>/`，不放進 `ontologies/` 之類的容器；它是否共用核心的資料模型，等它實際進來再決定。資料表歸該本體自己的 schema。
@@ -44,8 +44,8 @@ uv run --env-file .env canon serve
   - 模組不超過 500 行（`tests/test_architecture.py` 守門，沒有例外清單）。一個模組一個職責，過長就按職責拆，不調高上限。
   - 公開的模組、類別與函式都有 docstring（ruff `D100`–`D103`）；不用 `Any` 標註（`ANN401`），動態邊界例外在根 `pyproject.toml` 的 `per-file-ignores` 列出並說明。
   - 每個子指令（`canon/cli.py` 的 `SUBCOMMANDS`）都要解析得到、`--help` 可用（`tests/test_cli_entry_points.py` 守門）。
-  - 資料層（`store/`）一個職責一個儲存庫（`laws`、`graph`、`retrieval`），連線池與期限在 `connections`，`OntologyStore` 只負責把它們接起來。消費端用 `store/ports.py` 的 Protocol 標註它用到的那一塊（`LawReader`、`LawGraphReader`、`Retrieval`、`ReadConnections`），不認得具體的儲存庫類別。
-  - gRPC 的端點按功能分組（`endpoints/laws`、`graph`、`search`），各自只拿它要的儲存庫介面；`service.OntologyServicer` 只在 gRPC 邊界轉交並以 `errors.maps_errors` 映射錯誤，`build_servicer` 把它們接起來。
+  - 資料層（`store/`）一個職責一個儲存庫（`laws`、`graph`、`retrieval`），連線池與期限在 `connections`，`CanonStore` 只負責把它們接起來。消費端用 `store/ports.py` 的 Protocol 標註它用到的那一塊（`LawReader`、`LawGraphReader`、`Retrieval`、`ReadConnections`），不認得具體的儲存庫類別。
+  - gRPC 的端點按功能分組（`endpoints/laws`、`graph`、`search`），各自只拿它要的儲存庫介面；`service.CanonServicer` 只在 gRPC 邊界轉交並以 `errors.maps_errors` 映射錯誤，`build_servicer` 把它們接起來。
   - 推論的輸入事實（`reasoning/facts/`）按職責分：陳述端讀資料庫（`statements` 組裝、`chains` 授權鏈、`condition_facts`、`vocabulary_facts`、`relation_facts`，各自持有自己的 SQL 與列型別），案件端只讀請求（`case_inputs`），共用的 ASP 寫法在 `asp`；套件不匯出，從定義它的模組匯入。
   - gRPC 訊息與領域型別的轉換（`reasoning_codec/`）按方向分：`request`（請求 → 推論輸入）、`outcome`（推論結果 → 回應）、`disposition`（處分稽核）、`enums`（列舉對照表）；套件不匯出，從定義它的模組匯入。
   - 標註的寫入（`claims/`）按責任分：`loader` 是入口與交易邊界，`statements`／`sanctions`／`links` 寫陳述、罰則與兩者之間的關係，`definitions`、`vocabulary`、`held`（待連結罰則）、`anchoring`（錨定）各管一塊，`rows` 是共用的寫入原語；套件不匯出，從定義它的模組匯入。
@@ -111,7 +111,7 @@ uv run --env-file .env canon serve
 
 ## Contract
 
-- 契約是倉庫根的 `proto/envcite/ontology/v2/ontology.proto` 與 `reasoning.proto`；錯誤原因清單在 `proto/README.md`。法規的自然鍵三欄必填，缺少就是 `INVALID_ARGUMENT`，不補預設。
+- 契約是倉庫根的 `proto/envcite/canon/v1/canon.proto` 與 `reasoning.proto`；錯誤原因清單在 `proto/README.md`。法規的自然鍵三欄必填，缺少就是 `INVALID_ARGUMENT`，不補預設。
 - 資料不分租戶；`x-tenant-id`／`x-request-id` metadata 只用於日誌與稽核。
 - `ReasoningService` 唯讀。訊息強型別：列舉不用字串、數值用 `Decimal`（十進位文字，不用浮點）、`AdministrativePenaltyFacts` 用 `optional`。日期維持 ISO 8601 字串。
 - 錯誤一律 `errors.ServiceError`，由 `errors.maps_errors` 在 servicer 邊界轉成 `google.rpc.Status`；呼叫端依 `reason` 分流，不解析訊息。新增錯誤是新增常數，不改現有 reason 的意思。

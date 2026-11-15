@@ -21,7 +21,7 @@ from canon.reasoning.facts.case_inputs import Measurement
 from canon.reasoning_codec import enums
 from canon.verification.gates import ExecutableGate
 from canon.verification.model_gates.render import render_annotation
-from envcite.ontology.v2 import reasoning_pb2 as pb
+from envcite.canon.v1 import reasoning_pb2 as pb
 from tests.reasoning_support import Conn, _plain_duty, _scope, _with
 from tests.test_annotation import BEFORE, LAW, _doc, _duty, _limit
 from tests.test_import import _scalar

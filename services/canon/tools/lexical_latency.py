@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from canon.service import MAX_SEARCH_LIMIT
 from canon.settings import DatabaseSettings, ServerSettings, load
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 
 
@@ -44,7 +44,7 @@ def run(args: argparse.Namespace) -> None:
         else ServerSettings.model_fields["lexical_max_df"].default
     )
     db = load(DatabaseSettings)
-    with OntologyStore.from_dsn(db.dsn) as store:
+    with CanonStore.from_dsn(db.dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
 
         def search(terms: str) -> list[dict[str, object]]:

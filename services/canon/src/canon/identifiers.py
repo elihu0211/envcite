@@ -10,7 +10,7 @@ import grpc
 from canon import errors
 from canon.store.ports import LawReader
 from canon.store.records import LawKey
-from envcite.ontology.v2 import ontology_pb2 as pb
+from envcite.canon.v1 import canon_pb2 as pb
 from envcite_grpc import remaining_seconds
 
 

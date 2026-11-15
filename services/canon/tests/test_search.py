@@ -12,8 +12,8 @@ import psycopg
 import pytest
 
 from canon.server import build_server
-from canon.store.ontology_store import OntologyStore
-from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
+from canon.store.canon_store import CanonStore
+from envcite.canon.v1 import canon_pb2, canon_pb2_grpc
 from envcite_segmenter import Segmenter
 
 from .conftest import call_metadata
@@ -21,8 +21,8 @@ from .conftest import call_metadata
 
 @pytest.fixture
 def search_stub(
-    conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore
-) -> Iterator[ontology_pb2_grpc.OntologyServiceStub]:
+    conn: psycopg.Connection[tuple[object, ...]], store: CanonStore
+) -> Iterator[canon_pb2_grpc.CanonServiceStub]:
     law = conn.execute(
         "INSERT INTO corpus.legal_resource"
         " (jurisdiction, id_scheme, local_id, norm_kind, document_type)"
@@ -78,15 +78,15 @@ def search_stub(
     server, port = build_server(store, "127.0.0.1:0")
     server.start()
     with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
-        yield ontology_pb2_grpc.OntologyServiceStub(channel)
+        yield canon_pb2_grpc.CanonServiceStub(channel)
     server.stop(grace=None)
 
 
 def test_search_finds_the_article_by_raw_text(
-    search_stub: ontology_pb2_grpc.OntologyServiceStub,
+    search_stub: canon_pb2_grpc.CanonServiceStub,
 ) -> None:
     response = search_stub.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=call_metadata()
+        canon_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=call_metadata()
     )
 
     top = response.hits[0]
@@ -101,12 +101,12 @@ def test_search_finds_the_article_by_raw_text(
 
 
 def test_the_query_text_is_not_written_to_the_log(
-    search_stub: ontology_pb2_grpc.OntologyServiceStub, caplog: pytest.LogCaptureFixture
+    search_stub: canon_pb2_grpc.CanonServiceStub, caplog: pytest.LogCaptureFixture
 ) -> None:
     # 查詢是客戶的案件內容；日誌只該有它的長度。
     with caplog.at_level("INFO", logger="canon.service"):
         search_stub.SearchArticles(
-            ontology_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=call_metadata()
+            canon_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=call_metadata()
         )
 
     assert "噪音管制標準" not in caplog.text
@@ -114,10 +114,10 @@ def test_the_query_text_is_not_written_to_the_log(
 
 
 def test_search_before_the_law_existed_finds_nothing(
-    search_stub: ontology_pb2_grpc.OntologyServiceStub,
+    search_stub: canon_pb2_grpc.CanonServiceStub,
 ) -> None:
     response = search_stub.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="噪音", as_of="2019-12-31"),
+        canon_pb2.SearchArticlesRequest(query="噪音", as_of="2019-12-31"),
         metadata=call_metadata(),
     )
 
@@ -127,14 +127,14 @@ def test_search_before_the_law_existed_finds_nothing(
 @pytest.mark.parametrize(
     "request_",
     [
-        ontology_pb2.SearchArticlesRequest(query="  "),
-        ontology_pb2.SearchArticlesRequest(query="噪音", limit=51),
-        ontology_pb2.SearchArticlesRequest(query="噪音", as_of="yesterday"),
+        canon_pb2.SearchArticlesRequest(query="  "),
+        canon_pb2.SearchArticlesRequest(query="噪音", limit=51),
+        canon_pb2.SearchArticlesRequest(query="噪音", as_of="yesterday"),
     ],
     ids=["blank-query", "limit-too-large", "as-of-not-a-date"],
 )
 def test_bad_search_is_invalid_argument(
-    stub: ontology_pb2_grpc.OntologyServiceStub, request_: ontology_pb2.SearchArticlesRequest
+    stub: canon_pb2_grpc.CanonServiceStub, request_: canon_pb2.SearchArticlesRequest
 ) -> None:
     with pytest.raises(grpc.RpcError) as error:
         stub.SearchArticles(request_, metadata=call_metadata())
@@ -143,18 +143,18 @@ def test_bad_search_is_invalid_argument(
 
 
 def test_a_different_tokenizer_matches_nothing(
-    search_stub: ontology_pb2_grpc.OntologyServiceStub, store: OntologyStore
+    search_stub: canon_pb2_grpc.CanonServiceStub, store: CanonStore
 ) -> None:
     # Lexemes from another segmenter are not the same lexemes: fewer rows, not wrong ones.
     assert store.retrieval.search("噪音", tokenizer="another-segmenter", as_of="2021-01-01") == []
 
 
 def test_term_coverage_is_the_share_of_query_terms_the_article_holds(
-    search_stub: ontology_pb2_grpc.OntologyServiceStub,
+    search_stub: canon_pb2_grpc.CanonServiceStub,
 ) -> None:
     # 查詢切成 噪音 音管 管制 制標 標準；第 9 條有「噪音」「管制」「制標」「標準」，沒有「音管」。
     response = search_stub.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=call_metadata()
+        canon_pb2.SearchArticlesRequest(query="噪音管制標準"), metadata=call_metadata()
     )
 
     assert response.hits[0].term_coverage == pytest.approx(0.8)

@@ -532,7 +532,7 @@ def test_disposition_audit_d1_d2_d3_and_db_matrix_roundtrip(conn: Conn, tmp_path
 
 def test_reasoning_codec_roundtrips_new_proto_fields(conn: Conn, tmp_path: Path) -> None:
     from canon import errors
-    from envcite.ontology.v2 import reasoning_pb2 as pb
+    from envcite.canon.v1 import reasoning_pb2 as pb
 
     _first(conn, tmp_path, _law_v1())
     prov = conn.execute(

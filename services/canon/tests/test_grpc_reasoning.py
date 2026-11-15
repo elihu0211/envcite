@@ -14,8 +14,8 @@ from canon.annotate import load
 from canon.reasoning.facts.chains import Chain, Link
 from canon.reasoning_codec import outcome as outcome_codec
 from canon.reasoning_service import ReasoningServicer
-from canon.store.ontology_store import OntologyStore
-from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc, reasoning_pb2, reasoning_pb2_grpc
+from canon.store.canon_store import CanonStore
+from envcite.canon.v1 import canon_pb2, canon_pb2_grpc, reasoning_pb2, reasoning_pb2_grpc
 from tests.conftest import call_metadata, identifier
 from tests.reasoning_support import Conn, _plain_duty
 from tests.test_annotation import LAW, _doc, _duty, _limit
@@ -263,11 +263,11 @@ def test_conduct_after_decision_is_a_date_order_violation(reasoning_stub: Stub) 
 
 
 def test_the_existing_service_uses_the_same_error_model(
-    stub: ontology_pb2_grpc.OntologyServiceStub,
+    stub: canon_pb2_grpc.CanonServiceStub,
 ) -> None:
     with pytest.raises(grpc.RpcError) as error:
         stub.GetLaw(
-            ontology_pb2.GetLawRequest(identifier=identifier("O0020001"), as_of="yesterday"),
+            canon_pb2.GetLawRequest(identifier=identifier("O0020001"), as_of="yesterday"),
             metadata=call_metadata(),
         )
 
@@ -303,7 +303,7 @@ class _Context:
         raise _Aborted(status)
 
 
-def test_a_call_that_cannot_get_a_slot_in_its_budget_fails_fast(store: OntologyStore) -> None:
+def test_a_call_that_cannot_get_a_slot_in_its_budget_fails_fast(store: CanonStore) -> None:
     servicer = ReasoningServicer(store.connections, store.laws, evaluate_slots=1)
     assert servicer._slots.acquire()  # 名額被占著
 
@@ -587,7 +587,7 @@ def test_codec_carries_the_identifiers_of_central_and_local_laws() -> None:
 
 
 def test_the_default_day_of_a_listing_is_the_injected_today(
-    conn: Conn, tmp_path: Path, store: OntologyStore
+    conn: Conn, tmp_path: Path, store: CanonStore
 ) -> None:
     _committed(conn, tmp_path)
     request = reasoning_pb2.ListStatementsRequest(identifier=identifier(LAW))

@@ -14,7 +14,7 @@ import psycopg
 import pytest
 
 from canon import projection
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from canon.store.records import SearchHit
 from envcite_segmenter import Segmenter
 from tests.sample import AIR, WATER
@@ -418,7 +418,7 @@ def test_the_top_scores_are_kept_for_the_first_k_hits_and_for_the_ten_consult_re
 
 
 def test_a_real_search_hit_lands_on_the_qrels_doc_id_of_the_article_it_was_mapped_to(
-    corpus: tuple[ModuleType, Any, Any], conn: Conn, store: OntologyStore
+    corpus: tuple[ModuleType, Any, Any], conn: Conn, store: CanonStore
 ) -> None:
     """從資料庫讀對應、真實的混合檢索、命中轉條文代號、對 qrels：中央與地方各一題。"""
     tool, by_title, provisions = corpus

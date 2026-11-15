@@ -9,10 +9,10 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from canon.reasoning_service import ReasoningServicer
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from canon.telemetry import register_annotation_health
-from envcite.ontology.v2 import reasoning_pb2 as pb
-from envcite.ontology.v2 import reasoning_pb2_grpc
+from envcite.canon.v1 import reasoning_pb2 as pb
+from envcite.canon.v1 import reasoning_pb2_grpc
 from envcite_grpc import configure_telemetry
 from tests.test_import import _scalar
 from tests.verification_support import Conn, _water_draft
@@ -39,7 +39,7 @@ def _points(reader: InMemoryMetricReader, name: str) -> list[tuple[dict[str, Any
 
 @pytest.fixture
 def served(
-    store: OntologyStore,
+    store: CanonStore,
 ) -> Iterator[tuple[reasoning_pb2_grpc.ReasoningServiceStub, InMemoryMetricReader]]:
     from concurrent import futures
 
@@ -74,7 +74,7 @@ def test_evaluate_records_its_duration_by_outcome_and_leaves_no_one_in_flight(
 
 
 def test_an_evaluation_that_cannot_get_a_slot_in_time_is_counted_as_busy(
-    store: OntologyStore, monkeypatch: pytest.MonkeyPatch
+    store: CanonStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # 沒有期限時等名額的上限縮短，否則要等 5 秒；用期限會與客戶端的期限賽跑。
     monkeypatch.setattr("canon.reasoning_service.SLOT_WAIT_SECONDS", 0.1)
@@ -104,7 +104,7 @@ def test_an_evaluation_that_cannot_get_a_slot_in_time_is_counted_as_busy(
 
 
 def test_the_annotation_health_views_count_states_and_latest_gate_results(
-    conn: Conn, sample: None, store: OntologyStore
+    conn: Conn, sample: None, store: CanonStore
 ) -> None:
     from canon.verification.pipeline import verify
 
@@ -122,7 +122,7 @@ def test_the_annotation_health_views_count_states_and_latest_gate_results(
 
 
 def test_the_health_gauges_report_what_the_views_hold(
-    conn: Conn, sample: None, store: OntologyStore
+    conn: Conn, sample: None, store: CanonStore
 ) -> None:
     _water_draft(conn, sample)
     reader = InMemoryMetricReader()

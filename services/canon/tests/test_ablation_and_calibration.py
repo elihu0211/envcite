@@ -19,7 +19,7 @@ import pytest
 from canon import projection
 from canon.law import importer
 from canon.law.moj import Moj
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 from tests.test_hybrid import FakeEmbedder
@@ -123,7 +123,7 @@ def test_offline_fusion_returns_the_very_list_the_service_returns(
     projection.rebuild(conn, embedder)  # type: ignore[arg-type]
     conn.commit()
     queries = [f"{a}{b}" for a in THEMES for b in THEMES if a != b][:30]
-    with OntologyStore.from_dsn(dsn) as store, psycopg.connect(dsn) as read:
+    with CanonStore.from_dsn(dsn) as store, psycopg.connect(dsn) as read:
         segmenter = Segmenter(store.retrieval.lexicon())
         for query in queries:
             got = tool.collect(
@@ -152,7 +152,7 @@ def test_the_semantic_arm_runs_without_the_lexical_arm_and_the_lexical_arm_witho
     embedder = FakeEmbedder()
     projection.rebuild(conn, embedder)  # type: ignore[arg-type]
     conn.commit()
-    with OntologyStore.from_dsn(dsn) as store, psycopg.connect(dsn) as read:
+    with CanonStore.from_dsn(dsn) as store, psycopg.connect(dsn) as read:
         segmenter = Segmenter(store.retrieval.lexicon())
         common = {
             "tokenizer": segmenter.tokenizer_id,

@@ -10,7 +10,7 @@ from typing import Literal
 from canon import errors
 from canon.reasoning.facts.case_inputs import Measurement, PerOccasionTimeline
 from canon.reasoning_codec.enums import LIABILITY_BASIS
-from envcite.ontology.v2 import reasoning_pb2 as pb
+from envcite.canon.v1 import reasoning_pb2 as pb
 
 #: 推論程式為行政罰法總則保留的案件事實代碼前綴。
 RESERVED_PREFIX = "ap_"

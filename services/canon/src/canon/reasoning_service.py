@@ -27,8 +27,8 @@ from canon.reasoning_codec import request as request_codec
 from canon.store.ports import LawReader, ReadConnections
 from canon.store.records import LANGUAGE
 from canon.telemetry import ReasoningMetrics
-from envcite.ontology.v2 import reasoning_pb2 as pb
-from envcite.ontology.v2 import reasoning_pb2_grpc
+from envcite.canon.v1 import reasoning_pb2 as pb
+from envcite.canon.v1 import reasoning_pb2_grpc
 from envcite_grpc import remaining_seconds
 
 log = logging.getLogger(__name__)

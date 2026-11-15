@@ -179,10 +179,10 @@ def collect(
 
     import grpc
 
-    from envcite.ontology.v2 import ontology_pb2 as pb
-    from envcite.ontology.v2 import ontology_pb2_grpc as grpc_api
+    from envcite.canon.v1 import canon_pb2 as pb
+    from envcite.canon.v1 import canon_pb2_grpc as grpc_api
 
-    stub = grpc_api.OntologyServiceStub(grpc.insecure_channel(address))
+    stub = grpc_api.CanonServiceStub(grpc.insecure_channel(address))
     pod = socket.gethostname()
     todo = [q for q in queries if q["id"] not in skip]
 

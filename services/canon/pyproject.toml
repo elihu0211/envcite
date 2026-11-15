@@ -1,7 +1,7 @@
 [project]
 name = "canon"
 version = "0.1.0"
-description = "canon: shared ontology service (gRPC)"
+description = "canon: shared knowledge service (gRPC)"
 readme = "README.md"
 authors = [
     { name = "Eli Hu", email = "elihu@go.thu.edu.tw" }

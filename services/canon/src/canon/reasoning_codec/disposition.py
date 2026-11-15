@@ -13,7 +13,7 @@ from canon.reasoning.scoring.audit import (
 )
 from canon.reasoning.scoring.models import ScoringInput, ScoringResult
 from canon.reasoning_codec.request import finite_number
-from envcite.ontology.v2 import reasoning_pb2 as pb
+from envcite.canon.v1 import reasoning_pb2 as pb
 
 
 def scoring_inputs(request: pb.EvaluateRequest, validator: errors.Validator) -> list[ScoringInput]:
