@@ -570,6 +570,94 @@ const scenarios = {
             await assertSmoothFrames("冷載入首頁", false);
         });
     },
+
+    // 法規體系與合規工作列：下拉選單帶統一右側安全距與箭頭、按鈕與欄位依容器斷點對齊且可 RWD 換列。
+    async "laws-toolbar"() {
+        await step("登入後前往法規體系與合規", async () => {
+            await signIn();
+            await page.goto(`${base}/portal/${tenant}/laws`);
+            await until("工作列應載入", async () => (await page.locator(".ep-workbench-bar").count()) === 1);
+        });
+
+        const measure = () => page.evaluate(() => {
+            const box = (el) => {
+                const r = el.getBoundingClientRect();
+                return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), right: Math.round(r.right), bottom: Math.round(r.bottom) };
+            };
+            const bar = document.querySelector(".ep-workbench-bar");
+            const shell = document.querySelector(".ep-workbench-shell");
+            const cat = document.querySelector("#f-law-cat");
+            const q = document.querySelector("#f-law-q");
+            const asOf = document.querySelector("#f-law-as-of");
+            const submit = bar.querySelector("button[type='submit']");
+            const catalog = bar.querySelector("[data-workbench-toggle='catalog']");
+            const chevron = bar.querySelector(".ep-select-chevron");
+            const hints = [...bar.querySelectorAll(".ep-hint")];
+            const catStyle = getComputedStyle(cat);
+            return {
+                shellW: Math.round(shell.getBoundingClientRect().width),
+                barOverflow: bar.scrollWidth > bar.clientWidth + 1,
+                docOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+                cat: box(cat),
+                q: box(q),
+                asOf: box(asOf),
+                submit: box(submit),
+                catalog: box(catalog),
+                chevron: chevron ? box(chevron) : null,
+                catPadRight: parseFloat(catStyle.paddingRight),
+                catAppearance: catStyle.appearance,
+                hintOverflow: hints.some((h) => getComputedStyle(h).textOverflow === "ellipsis"),
+                maxHintBottom: Math.max(...hints.map((h) => Math.round(h.getBoundingClientRect().bottom))),
+            };
+        });
+
+        await step("桌機（1280px）：三欄輸入與兩顆按鈕同列等高對齊，提示不截斷", async () => {
+            await page.setViewportSize({ width: 1280, height: 800 });
+            await page.waitForTimeout(150);
+            const m = await measure();
+            if (m.barOverflow || m.docOverflow) throw new Error(`桌機出現水平溢位：${JSON.stringify(m)}`);
+            if (m.catPadRight < 40 || !m.chevron || m.catAppearance !== "none") {
+                throw new Error(`下拉選單樣式未套用：${JSON.stringify(m)}`);
+            }
+            if (m.hintOverflow) throw new Error("提示文字仍被 ellipsis 截斷");
+            const controls = [m.cat, m.q, m.asOf, m.submit, m.catalog];
+            const ys = controls.map((c) => c.y);
+            const hs = controls.map((c) => c.h);
+            if (Math.max(...ys) - Math.min(...ys) > 2) throw new Error(`桌機同列 Y 未對齊：${JSON.stringify(ys)}`);
+            if (Math.max(...hs) - Math.min(...hs) > 2 || Math.min(...hs) < 44) {
+                throw new Error(`桌機控制項高度不一或小於觸控目標：${JSON.stringify(hs)}`);
+            }
+            if (m.catalog.x <= m.submit.right) throw new Error(`桌機按鈕應並排同列：${JSON.stringify({ submit: m.submit, catalog: m.catalog })}`);
+            if (shots) await page.locator(".ep-workbench-bar").screenshot({ path: `${shots}/laws-desktop.png` });
+        });
+
+        await step("平板／精簡筆電（1024px）：三欄欄位並排，動作按鈕置底右對齊", async () => {
+            await page.setViewportSize({ width: 1024, height: 900 });
+            await page.waitForTimeout(150);
+            const m = await measure();
+            if (m.barOverflow || m.docOverflow) throw new Error(`平板出現水平溢位：${JSON.stringify(m)}`);
+            const fieldYs = [m.cat.y, m.q.y, m.asOf.y];
+            if (Math.max(...fieldYs) - Math.min(...fieldYs) > 2) throw new Error(`平板三欄 Y 未對齊：${JSON.stringify(fieldYs)}`);
+            if (m.submit.y <= m.maxHintBottom) throw new Error(`平板按鈕列應在欄位說明下方：${JSON.stringify({ submit: m.submit, maxHintBottom: m.maxHintBottom })}`);
+            if (Math.abs(m.submit.y - m.catalog.y) > 2) throw new Error(`平板兩顆按鈕未同列：${JSON.stringify({ submit: m.submit, catalog: m.catalog })}`);
+            if (Math.abs(m.catalog.right - m.asOf.right) > 3) throw new Error(`平板按鈕右緣未對齊最右欄：${JSON.stringify({ catalog: m.catalog, asOf: m.asOf })}`);
+            if (shots) await page.locator(".ep-workbench-bar").screenshot({ path: `${shots}/laws-tablet.png` });
+        });
+
+        await step("手機（390px）：單欄垂直堆疊且按鈕等寬滿版", async () => {
+            await page.setViewportSize({ width: 390, height: 844 });
+            await page.waitForTimeout(150);
+            const m = await measure();
+            if (m.barOverflow || m.docOverflow) throw new Error(`手機出現水平溢位：${JSON.stringify(m)}`);
+            if (!(m.cat.y < m.q.y && m.q.y < m.asOf.y && m.asOf.y < m.submit.y)) {
+                throw new Error(`手機應單欄依序堆疊：${JSON.stringify(m)}`);
+            }
+            if (Math.abs(m.submit.w - m.catalog.w) > 2) {
+                throw new Error(`手機按鈕寬度應對稱：${JSON.stringify({ submit: m.submit, catalog: m.catalog })}`);
+            }
+            if (shots) await page.locator(".ep-workbench-bar").screenshot({ path: `${shots}/laws-mobile.png` });
+        });
+    },
 };
 
 let exitCode = 0;

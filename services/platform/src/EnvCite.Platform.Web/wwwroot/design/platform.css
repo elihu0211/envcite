@@ -2579,6 +2579,48 @@ a.ep-brand {
     outline-offset: 1px; /* 外框色與寬度用上面的 :focus-visible；輸入框貼著邊，偏移少 1px */
 }
 
+/* 原生下拉選單：藏起瀏覽器不對稱的小箭頭，保留統一右側觸控安全距與圖示。 */
+.ep-select {
+    position: relative;
+    display: block;
+    inline-size: 100%;
+    min-inline-size: 0;
+}
+
+.ep-select-inline {
+    display: inline-block;
+    inline-size: auto;
+}
+
+.ep-select > select.ep-input {
+    appearance: none;
+    padding-inline-end: var(--ep-touch-target);
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.ep-select-chevron {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-touch-target);
+    color: var(--ep-text-secondary);
+    pointer-events: none;
+    transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+@media (hover: hover) {
+    .ep-select:hover > .ep-select-chevron {
+        color: var(--ep-text);
+    }
+}
+
+.ep-select:has(> select:focus) > .ep-select-chevron {
+    color: var(--ep-focus);
+}
+
 /* 密碼欄：眼睛鈕坐在輸入框裡側、觸控尺寸，圖示是「按下去會變成什麼」（顯示時畫眼睛加斜線）。
    沒有 JavaScript 時鈕不出現、輸入框也不留位置（html[data-js] 由 forms.js 設定）。 */
 .ep-password {
@@ -3225,6 +3267,10 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 .ep-input-inline {
     inline-size: auto;
     min-inline-size: 6rem;
+}
+
+.ep-select-inline > .ep-input-inline {
+    min-inline-size: 7.5rem;
 }
 
 .ep-card-title {
@@ -4567,10 +4613,10 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 .ep-workbench-bar {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
     gap: var(--ep-space-3);
-    padding: var(--ep-space-3) var(--ep-space-4);
+    padding: var(--ep-space-4);
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-card);
     background: var(--ep-surface);
@@ -4582,12 +4628,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     margin-block-end: 0;
 }
 
-.ep-workbench-bar .ep-hint {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 .ep-workbench-bar .ep-input,
 .ep-workbench-bar .ep-select {
     inline-size: 100%;
@@ -4595,17 +4635,73 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 }
 
 .ep-workbench-bar-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    align-items: stretch;
     gap: var(--ep-space-2);
-    align-self: center;
-    padding-block-start: var(--ep-space-3);
+    padding-block-start: var(--ep-space-1);
+    min-inline-size: 0;
 }
 
 .ep-workbench-bar .ep-btn {
     white-space: nowrap;
     flex-shrink: 0;
+    inline-size: 100%;
+}
+
+@container workbench (width >= 38rem) {
+    .ep-workbench-bar {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-rows: auto minmax(var(--ep-touch-target), auto) auto auto;
+        column-gap: var(--ep-space-3);
+        row-gap: var(--ep-space-1);
+    }
+
+    .ep-workbench-bar > .ep-field-row {
+        display: grid;
+        grid-template-rows: subgrid;
+        grid-row: 1 / 4;
+        align-items: start;
+    }
+
+    .ep-workbench-bar > .ep-field-row > :is(.ep-input, .ep-select) {
+        align-self: stretch;
+    }
+
+    .ep-workbench-bar-actions {
+        grid-column: 1 / -1;
+        grid-row: 4;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--ep-space-2);
+        margin-block-start: var(--ep-space-2);
+        padding-block-start: var(--ep-space-3);
+        border-block-start: 1px solid var(--ep-border-subtle);
+    }
+
+    .ep-workbench-bar .ep-btn {
+        inline-size: auto;
+    }
+}
+
+@container workbench (width >= 56rem) {
+    .ep-workbench-bar {
+        grid-template-columns: minmax(12rem, 1.65fr) minmax(9.5rem, 1fr) minmax(10rem, 1fr) auto;
+        grid-template-rows: auto minmax(var(--ep-touch-target), auto) auto;
+    }
+
+    .ep-workbench-bar-actions {
+        grid-column: 4;
+        grid-row: 2;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        align-self: stretch;
+        margin-block-start: 0;
+        padding-block-start: 0;
+        border-block-start: 0;
+    }
 }
 
 .ep-workbench {
