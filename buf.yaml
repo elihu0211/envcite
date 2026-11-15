@@ -9,10 +9,3 @@ breaking:
   # JSON 亦在傳輸之列故取後者。
   use:
     - WIRE_JSON
-  # 一次性：consult.v3 的欄位更名（ontology→source、ontologies→sources）。欄位編號與型別不變，
-  # 二進位線上格式相容，用戶端都在本倉庫；更名合併後的下一個 PR 移除這條。
-  ignore_only:
-    FIELD_SAME_NAME:
-      - proto/envcite/consult/v3/consult.proto
-    FIELD_SAME_JSON_NAME:
-      - proto/envcite/consult/v3/consult.proto
