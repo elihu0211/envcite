@@ -2628,11 +2628,17 @@
   <data name="選擇圖片" xml:space="preserve">
     <value>Choose image</value>
   </data>
-  <data name="支援 PNG、JPEG、WebP，上限 5 MB；可拖曳與縮放裁切為圓形。" xml:space="preserve">
-    <value>PNG, JPEG, or WebP up to 5 MB; drag and zoom to crop into a circle.</value>
+  <data name="支援 PNG、JPEG、WebP，上限 5 MB；可拖曳、縮放與旋轉裁切為圓形。" xml:space="preserve">
+    <value>PNG, JPEG, or WebP up to 5 MB; drag, zoom, and rotate to crop into a circle.</value>
   </data>
   <data name="縮放" xml:space="preserve">
     <value>Zoom</value>
+  </data>
+  <data name="向左旋轉" xml:space="preserve">
+    <value>Rotate left</value>
+  </data>
+  <data name="向右旋轉" xml:space="preserve">
+    <value>Rotate right</value>
   </data>
   <data name="上傳並儲存" xml:space="preserve">
     <value>Upload and save</value>

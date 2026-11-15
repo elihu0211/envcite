@@ -1853,6 +1853,9 @@ a.ep-brand {
 
 /* 帳號選單：頭像圓鈕開一個原生 popover（點外面或按 Esc 就關）。 */
 .ep-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: 1px solid var(--ep-border-subtle);
     color: var(--ep-primary);
     font: inherit;
@@ -6429,6 +6432,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     inline-size: 3.5rem;
     block-size: 3.5rem;
     font-size: var(--ep-title-m-size);
+    cursor: default;
 }
 
 .ep-avatar-summary {
@@ -6445,6 +6449,11 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     margin-block-start: var(--ep-space-2);
 }
 
+.ep-avatar-dropzone[data-dragover="true"] {
+    outline: 2px dashed var(--ep-primary);
+    outline-offset: 2px;
+}
+
 .ep-avatar-cropper {
     display: flex;
     flex-direction: column;
@@ -6457,18 +6466,29 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     display: none;
 }
 
-.ep-avatar-cropper canvas {
-    inline-size: 12rem;
-    block-size: 12rem;
-    border-radius: 9999px;
-    border: 2px solid var(--ep-border-control);
-    cursor: grab;
-    touch-action: none;
-    background: var(--ep-surface);
+.ep-avatar-stage {
+    inline-size: 16rem;
+    block-size: 16rem;
 }
 
-.ep-avatar-cropper canvas:active {
-    cursor: grabbing;
+.ep-avatar-stage cropper-canvas {
+    inline-size: 100%;
+    block-size: 100%;
+    border-radius: var(--ep-radius-card);
+    border: 1px solid var(--ep-border-subtle);
+    overflow: hidden;
+}
+
+.ep-avatar-stage cropper-selection {
+    border-radius: 9999px;
+}
+
+.ep-avatar-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ep-space-2);
 }
 
 .ep-avatar-cropper input[type="range"] {
