@@ -12,7 +12,7 @@ internal sealed class LawSearch(
     IOptions<RelevanceFloorsOptions> floors,
     IUsageRecorder usage) : ILawSearch
 {
-    // 同 ontology 的服務預設：函釋帶出的條文會讓回應多幾條，沒有指定 limit 時也截回這個數量。
+    // 同 canon 的服務預設：函釋帶出的條文會讓回應多幾條，沒有指定 limit 時也截回這個數量。
     private const int DefaultLimit = 10;
 
     public async Task<AdminOutcome<IReadOnlyList<LawHit>>> SearchAsync(

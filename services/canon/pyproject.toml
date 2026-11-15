@@ -1,0 +1,53 @@
+[project]
+name = "canon"
+version = "0.1.0"
+description = "canon: shared ontology service (gRPC)"
+readme = "README.md"
+authors = [
+    { name = "Eli Hu", email = "elihu@go.thu.edu.tw" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "clingo",
+    "envcite-grpc",
+    "envcite-jobkit",
+    "envcite-proto",
+    "envcite-segmenter",
+    "grpcio-health-checking",
+    "grpcio-reflection",
+    "grpcio-status",
+    "jinja2",
+    "lxml",
+    "psycopg-pool",
+    "psycopg[binary]",
+    "pydantic",
+    "pydantic-settings",
+]
+
+[tool.uv.sources]
+envcite-grpc = { workspace = true }
+envcite-jobkit = { workspace = true }
+envcite-proto = { workspace = true }
+envcite-segmenter = { workspace = true }
+
+[project.scripts]
+canon-serve = "canon.server:main"
+canon-migrate = "canon.migrate:main"
+canon-acquire = "canon.acquire.cli:main"
+canon-import = "canon.ingest.cli:main"
+canon-sync = "canon.sync:main"
+canon-annotate = "canon.annotate:main"
+canon-guidance = "canon.guidance_sync.cli:main"
+canon-ruling = "canon.ruling_sync:main"
+canon-history = "canon.history_sync.cli:main"
+canon-verify = "canon.verification.cli:main"
+canon-pipeline = "canon.verification.run:main"
+
+[project.optional-dependencies]
+llm = [
+    "anthropic",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"

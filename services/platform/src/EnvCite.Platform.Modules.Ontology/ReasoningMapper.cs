@@ -4,7 +4,7 @@ namespace EnvCite.Platform.Modules.Ontology;
 
 /// <summary>
 /// 公開的推論契約與內部 gRPC 契約之間的對映；列舉不認得時視為契約破壞，不猜。只轉譯，不驗證：
-/// 事實與日期的檢查由 ontology 一處負責，錯誤以 <c>InvalidArgument</c> 回來。
+/// 事實與日期的檢查由 canon 一處負責，錯誤以 <c>InvalidArgument</c> 回來。
 /// </summary>
 internal static class ReasoningMapper
 {
@@ -17,7 +17,7 @@ internal static class ReasoningMapper
             ConductEndedOn = r.ConductEndedOn ?? string.Empty,
             ResultOn = r.ResultOn ?? string.Empty,
         };
-        // 缺的值轉成空字串：proto 的字串不收 null，缺席由 ontology 回報為欄位錯誤。
+        // 缺的值轉成空字串：proto 的字串不收 null，缺席由 canon 回報為欄位錯誤。
         foreach (var fact in r.Facts ?? [])
         {
             var f = new Fact

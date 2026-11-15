@@ -65,7 +65,7 @@ jobs:
       docs: ${{ steps.d.outputs.docs }}
       renovate: ${{ steps.d.outputs.renovate }}
       ci_scripts: ${{ steps.d.outputs.ci_scripts }}
-      ontology_image: ${{ steps.d.outputs.ontology_image }}
+      canon_image: ${{ steps.d.outputs.canon_image }}
       consult_image: ${{ steps.d.outputs.consult_image }}
       platform_image: ${{ steps.d.outputs.platform_image }}
     steps:
@@ -114,7 +114,7 @@ jobs:
       - run: |
           docker run --rm -v "$PWD:/work" -w /work \
             "hadolint/hadolint:${HADOLINT_VERSION}-alpine" \
-            hadolint services/platform/Dockerfile services/consult/Dockerfile services/ontology/Dockerfile
+            hadolint services/platform/Dockerfile services/consult/Dockerfile services/canon/Dockerfile
 
   proto:
     needs: changes
@@ -255,7 +255,7 @@ jobs:
           uv sync --locked --all-packages
           uv cache prune
 
-  ontology:
+  canon:
     needs: [changes, deps-python]
     if: github.event_name == 'pull_request' && needs.changes.outputs.python == 'true' && needs.deps-python.result == 'success'
     runs-on: ubuntu-latest
@@ -275,14 +275,14 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      ENVCITE_ONTOLOGY_TEST_DSN: postgresql://envcite:envcite@localhost:5432/envcite_test
+      ENVCITE_CANON_TEST_DSN: postgresql://envcite:envcite@localhost:5432/envcite_test
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/uv-setup
         with:
           uv-version: ${{ env.UV_VERSION }}
           python-version: ${{ env.PYTHON_VERSION }}
-      - working-directory: services/ontology
+      - working-directory: services/canon
         run: |
           uv sync --locked --all-packages
           uv run --no-sync ruff check .
@@ -342,9 +342,9 @@ jobs:
           sh "$GITHUB_WORKSPACE/ci/check-regenerated.sh" src ./scripts/generate.sh
           uv run --no-sync mypy src
 
-  ontology-image:
+  canon-image:
     needs: [changes, deps-python]
-    if: needs.changes.outputs.ontology_image == 'true' && needs.deps-python.result == 'success'
+    if: needs.changes.outputs.canon_image == 'true' && needs.deps-python.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -360,9 +360,9 @@ jobs:
           push=
           if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then push=--push; fi
           sh ci/build-image.sh $push --public-registries \
-            --service ontology \
-            --image "ghcr.io/${GITHUB_REPOSITORY}/ontology:${GITHUB_SHA}" \
-            --cache "ghcr.io/${GITHUB_REPOSITORY}/cache/ontology" \
+            --service canon \
+            --image "ghcr.io/${GITHUB_REPOSITORY}/canon:${GITHUB_SHA}" \
+            --cache "ghcr.io/${GITHUB_REPOSITORY}/cache/canon" \
             --cache-scope "$scope" --cache-fallback-scope main \
             --registry ghcr.io --registry-user "$GITHUB_ACTOR" \
             -- --build-context uv-cache=.uv-cache \

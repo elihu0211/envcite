@@ -19,7 +19,7 @@ FENCE = re.compile(r"^\s*(```|~~~)")
 # 產生物與相依套件目錄，連同 worktree、快取等點開頭目錄一併略過。
 SKIP_DIRS = {"node_modules", "bin", "obj", "__pycache__"}
 NOT_NODES = {"AGENTS.md", "DESIGN.md", "SKILL.md"}
-NOT_NODE_DIRS = ("services/ontology/eval/",)
+NOT_NODE_DIRS = ("services/canon/eval/",)
 
 
 def parse_meta_lines(lines):

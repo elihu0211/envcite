@@ -472,7 +472,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.Empty(await ask.RecentAsync(OperatorSession.Principal(), 10, Ct));
     }
 
-    // 搜尋模式：日期原樣交給 ontology，計量一次；日期不合格在送出前就擋下，不計量也不打 ontology。
+    // 搜尋模式：日期原樣交給 canon，計量一次；日期不合格在送出前就擋下，不計量也不打 canon。
     [Fact]
     public async Task ASearchPassesTheDateOnAndIsMeteredOnceAndABadDateIsNotMetered()
     {

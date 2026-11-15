@@ -17,25 +17,25 @@ consult = "cd services/consult && dotnet restore"
 [list]
 url = "http://localhost:{{ ('envcite/platform/' ~ branch) | hash_port }}"
 
-# 本機伺服器：`wt platform`、`wt ontology`、`wt consult`（platform 的 /v2/ground 要後兩者都在）。
+# 本機伺服器：`wt platform`、`wt canon`、`wt consult`（platform 的 /v2/ground 要後兩者都在）。
 [aliases]
 platform = """
 cd '{{ worktree_path }}/services/platform' && \
 ASPNETCORE_ENVIRONMENT=Development \
 ENVCITE_ConnectionStrings__Platform="${ENVCITE_ConnectionStrings__Platform:-Host=localhost;Port=5432;Database=platform;Username=envcite;Password=envcite}" \
-ENVCITE_Ontology__Address='http://localhost:{{ ('envcite/ontology/' ~ branch) | hash_port }}' \
+ENVCITE_Ontology__Address='http://localhost:{{ ('envcite/canon/' ~ branch) | hash_port }}' \
 ENVCITE_Consult__Address='http://localhost:{{ ('envcite/consult/' ~ branch) | hash_port }}' \
 exec dotnet run --project src/EnvCite.Platform.Api --no-launch-profile -- --urls 'http://localhost:{{ ('envcite/platform/' ~ branch) | hash_port }}'
 """
-ontology = """
-cd '{{ worktree_path }}/services/ontology' && \
-export ENVCITE_ONTOLOGY_DSN="${ENVCITE_ONTOLOGY_DSN:-postgresql://envcite:envcite@localhost:5432/envcite}" && \
-uv run envcite-migrate && \
-ENVCITE_ONTOLOGY_GRPC_PORT='{{ ('envcite/ontology/' ~ branch) | hash_port }}' exec uv run envcite-ontology
+canon = """
+cd '{{ worktree_path }}/services/canon' && \
+export ENVCITE_CANON_DSN="${ENVCITE_CANON_DSN:-postgresql://envcite:envcite@localhost:5432/envcite}" && \
+uv run canon-migrate && \
+ENVCITE_CANON_GRPC_PORT='{{ ('envcite/canon/' ~ branch) | hash_port }}' exec uv run canon-serve
 """
 consult = """
 cd '{{ worktree_path }}/services/consult' && \
 ASPNETCORE_ENVIRONMENT=Development \
-ENVCITE_Ontology__Address='http://localhost:{{ ('envcite/ontology/' ~ branch) | hash_port }}' \
+ENVCITE_Ontology__Address='http://localhost:{{ ('envcite/canon/' ~ branch) | hash_port }}' \
 exec dotnet run --project src/EnvCite.Consult --no-launch-profile -- --urls 'http://localhost:{{ ('envcite/consult/' ~ branch) | hash_port }}'
 """

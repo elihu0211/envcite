@@ -60,14 +60,14 @@ dotnet restore                 # 改了倉庫根 Directory.Packages.props 或 cs
 dotnet build                   # 警告視為錯誤，等同 lint 與型別檢查
 dotnet format                  # --verify-no-changes 只檢查
 dotnet test
-ENVCITE_Ontology__Address=http://localhost:<ontology 埠> dotnet run --project src/EnvCite.Consult -- --urls http://localhost:<埠>   # worktree 內用 `wt consult`
+ENVCITE_Ontology__Address=http://localhost:<canon 埠> dotnet run --project src/EnvCite.Consult -- --urls http://localhost:<埠>   # worktree 內用 `wt consult`
 ```
 
 映像以倉庫根為建置情境、離線取套件，指令見 `Dockerfile` 開頭。測試不需要外部服務：本體以行程內的 gRPC fake（`tests/…/FakeOntologyServer.cs`）取代。
 
 ## Conventions
 
-- 埠 `IOntologySearch` 是介面，不是用戶端；實作 `OntologySearch` 以 typed gRPC client 呼叫本體。gRPC 產生碼由 Grpc.Tools 在建置時自倉庫根 `proto/` 產生（consult 與 ontology 都產生兩端：測試以 consult 的用戶端打本服務、以 ontology 的伺服器端做假的本體）。
+- 埠 `IOntologySearch` 是介面，不是用戶端；實作 `OntologySearch` 以 typed gRPC client 呼叫本體。gRPC 產生碼由 Grpc.Tools 在建置時自倉庫根 `proto/` 產生（consult 與 canon 都產生兩端：測試以 consult 的用戶端打本服務、以 canon 的伺服器端做假的本體）。
 - 門檻（`Grounding` 的 `*Floor`）是**模型條件化的常數**，不是領域常數：只在產生它的計分方式之下可比，該方式一改就必須重新量測分數分佈後重訂。
 - 新增管線階段時，同時決定它「在模型之前或之後」——這個問題沒有第三個答案。在模型之前的屬本服務；在模型之後的屬呼叫端，本服務只能在契約與 `proto/README.md` 裡規定它。
 - 本體的狀態碼與 trailer 原樣轉出：`ConsultationGrpcService` 不攔本體的 `RpcException`，伺服器以它的狀態回給呼叫端。不要吞成 `UNKNOWN`：呼叫端靠狀態碼分辨參數錯誤與可重試的不可用，靠 trailer 的 `google.rpc.Status` 取 `reason`。

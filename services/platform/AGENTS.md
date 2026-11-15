@@ -4,7 +4,7 @@
 
 ## Project
 
-- **Role:** 多租戶控制平面：租戶、API key、限流、計量、對外 REST API；經 gRPC 呼叫 `services/ontology`（共享、不分租戶）與 `services/consult`（接地、租戶隔離）。
+- **Role:** 多租戶控制平面：租戶、API key、限流、計量、對外 REST API；經 gRPC 呼叫 `services/canon`（共享、不分租戶）與 `services/consult`（接地、租戶隔離）。
 - **Auth surfaces:** 租戶 API key（`/v2`）；營運者帳號加強制 TOTP（營運者後台 `/ui`）；客戶入口帳號（`/portal`，以設定開關）；目錄同步 token（`/scim/v2`，以設定開關）。
 
 ## Architecture
@@ -75,7 +75,7 @@ docker build -f Dockerfile ../..   # 映像（建置內容為倉庫根）
 ## Observability
 
 - OpenTelemetry 追蹤、指標與日誌，依根 `AGENTS.md` 的約定。已認證的租戶只標在請求追蹤的 `tenant.id`，不進指標（基數無界）。
-- **RED 指標**：HTTP 用 ASP.NET Core 標準的伺服器請求指標（探針以 `DisableHttpMetrics()` 排除，否則稀釋 rate 與延遲）；對 ontology／consult 的 gRPC 用戶端由 `libs/dotnet` 的 `GrpcClientMetrics` 量，隨 `AddPlatformGrpcClient` 掛上，新增上游不必另接。HttpClient 的指標看不出 gRPC 失敗（失敗仍是 HTTP 200），所以不能只靠它。標籤與伺服器端對齊（見 `proto/README.md`）。
+- **RED 指標**：HTTP 用 ASP.NET Core 標準的伺服器請求指標（探針以 `DisableHttpMetrics()` 排除，否則稀釋 rate 與延遲）；對 canon／consult 的 gRPC 用戶端由 `libs/dotnet` 的 `GrpcClientMetrics` 量，隨 `AddPlatformGrpcClient` 掛上，新增上游不必另接。HttpClient 的指標看不出 gRPC 失敗（失敗仍是 HTTP 200），所以不能只靠它。標籤與伺服器端對齊（見 `proto/README.md`）。
 - 探針：`/health/live` 不檢查任何東西（依賴故障不該重啟 pod）；`/health/ready` 檢查資料庫（`TenancyDbContext`，它早於租戶解析存在），故障回 503。探針請求不追蹤。
 - **模型呼叫的遙測**：`IChatClient` 一律經 `AnswerTelemetry.Wrap` 接上 OpenTelemetry（追蹤與指標共用固定的 `AnswerTelemetry.SourceName`，`Observability` 登記它）。`EnableSensitiveData` **明確關閉**：框架的預設會讀 `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT`，環境變數一開提示詞就進了追蹤；問題文字是客戶案情，只留模型、token 數、延遲與結束原因。`AnswerTelemetryTests` 守住（含環境變數打開時）。換掉模型用戶端的註冊時要沿用這個包裝。
 - **入口作答的結果計數**：`envcite.platform.answer.outcomes`（`AnswerMetrics`，與模型遙測共用 `AnswerTelemetry.SourceName` 這個 `Meter`）在每次作答得出結果時加一，回答與拒答都計，所以能算比率；標籤只有 `outcome`（`answered`、`insufficient_evidence`、`unverified_citation`、`empty_answer`，以及 consult 拒答的 `no_authority`、`out_of_scope`、`local_law_uncovered`、`missing_input`）與 `bare_topic`（原句是否被判為主題詞），值域固定；租戶、問句與命中的詞不進指標。沒有結果的呼叫（模型或 consult 暫時不可用、輸入錯誤）不計。它與 `consult` 的 `envcite.consult.ground.outcomes` 不同層：差額是模型這一步與引用核驗的損耗。`AskServiceTests` 守住標籤與值。

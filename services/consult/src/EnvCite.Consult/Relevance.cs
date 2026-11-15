@@ -10,7 +10,7 @@ namespace EnvCite.Consult;
 /// 寫在 <c>appsettings.json</c>。低於下界的檢索資料視為與問題無關。下界都是受模型制約的值，
 /// 不是領域常數：只在產生它的評分方式（嵌入模型、分詞器、檢索範圍）下才可比較，評分方式一旦改變就必須重新量測後重訂。
 /// 字面分數是未正規化的 <c>ts_rank_cd</c>，隨語料大小與檢索範圍而變。值由離線風險—覆蓋掃描選出
-/// （<c>services/ontology/tools/floor_risk_coverage.py</c>）：可答問句至少 97% 通過，在其下讓最少的無答案問句通過。
+/// （<c>services/canon/tools/floor_risk_coverage.py</c>）：可答問句至少 97% 通過，在其下讓最少的無答案問句通過。
 /// </summary>
 internal sealed class RelevanceOptions : ISectionOptions
 {

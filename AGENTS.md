@@ -31,7 +31,7 @@ DISABLE_TELEMETRY=1 npx @bufbuild/buf@<BUF_VERSION> breaking --against '.git#bra
 
 ### 平行 worktree
 
-每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree，環境由 `.config/wt.toml` 建立；本機伺服器用 `wt platform`、`wt ontology`、`wt consult` 起，port 由分支推導。資料庫（各分支共用）、連線設定與本機種子帳號見 `CONTRIBUTING.md`。
+每條分支一棵 [Worktrunk](https://worktrunk.dev) worktree，環境由 `.config/wt.toml` 建立；本機伺服器用 `wt platform`、`wt canon`、`wt consult` 起，port 由分支推導。資料庫（各分支共用）、連線設定與本機種子帳號見 `CONTRIBUTING.md`。
 
 ## 目錄配置與擴充判準
 

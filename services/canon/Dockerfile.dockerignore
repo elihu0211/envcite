@@ -1,0 +1,14 @@
+# 建置情境是倉庫根：只送映像需要的。
+*
+!pyproject.toml
+!uv.lock
+!libs/python/envcite-grpc
+!libs/python/envcite-jobkit
+!libs/python/envcite-proto
+!libs/python/envcite-segmenter
+!services/canon/pyproject.toml
+!services/canon/README.md
+!services/canon/src
+!services/canon/migrations
+**/__pycache__
+**/.venv
