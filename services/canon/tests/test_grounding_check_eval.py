@@ -34,7 +34,7 @@ task_of = _tool.task_of
 PLATFORM = Path(__file__).resolve().parents[3] / "services/platform/src"
 ANSWERER = PLATFORM / "EnvCite.Platform.Modules.Consult/GroundedAnswerer.cs"
 BARE_TOPIC = PLATFORM / "EnvCite.Platform.Modules.Consult/BareTopic.cs"
-SEARCH_OPTIONS = PLATFORM / "EnvCite.Platform.Modules.Ontology/LawSearchOptions.cs"
+SEARCH_OPTIONS = PLATFORM / "EnvCite.Platform.Modules.Canon/LawSearchOptions.cs"
 
 
 @pytest.mark.parametrize(

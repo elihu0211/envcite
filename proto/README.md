@@ -8,7 +8,7 @@ owns: [service-composition, grpc-metadata, as-of-semantics, grpc-error-reasons, 
 
 gRPC 契約，`buf` 單一模組（根為本目錄）；欄位與方法的語意見 `.proto` 註解。回[倉庫總覽](../README.md)。
 
-套件 `envcite.canon.v1`（共享，實作在 [`services/canon`](../services/canon/README.md#概念)）與 `envcite.consult.v2`（租戶隔離，實作在 [`services/consult`](../services/consult/README.md#概念)）皆為內部介面。外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST，契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
+套件 `envcite.canon.v1`（共享，實作在 [`services/canon`](../services/canon/README.md#概念)）與 `envcite.consult.v3`（租戶隔離，實作在 [`services/consult`](../services/consult/README.md#概念)）皆為內部介面。外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST，契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
 
 `buf lint`、`buf breaking` 的指令見倉庫根 [`AGENTS.md`](../AGENTS.md) 的 Commands；產生碼與破壞性變更的規則見同檔的 Contract。
 
