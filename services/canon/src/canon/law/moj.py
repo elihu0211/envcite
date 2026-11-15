@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from canon.acquire.engine import Contents, Feed, InvalidSnapshot, NotAnArchive
-from canon.http import tls_context
+from canon.net import tls_context
 
 _BASE = "https://law.moj.gov.tw/api/ch"
 _PCODE = re.compile(r"[?&]pcode=([A-Z][0-9]{7})(?:&|$)")

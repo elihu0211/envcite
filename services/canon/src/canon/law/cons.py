@@ -18,7 +18,7 @@ from lxml.html import HtmlElement, tostring
 
 from canon.acquire.markup import parse as parse_html
 from canon.acquire.markup import visible_text
-from canon.http import tls_context
+from canon.net import tls_context
 
 BASE = "https://cons.judicial.gov.tw"
 

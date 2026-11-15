@@ -11,7 +11,7 @@ import urllib.parse
 from http.client import HTTPException, HTTPResponse
 from pathlib import Path
 
-from canon.http import HttpStatus, tls_context, urlopen
+from canon.net import HttpStatus, tls_context, urlopen
 from envcite_jobkit import EndpointError, ItemError, raise_for_status
 
 USER_AGENT = "canon (+https://github.com/elihu0211/envcite)"

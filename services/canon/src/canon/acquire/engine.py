@@ -21,7 +21,7 @@ from typing import Protocol
 
 from psycopg import Connection
 
-from canon.http import HttpStatus, endpoint, urlopen
+from canon.net import HttpStatus, endpoint, urlopen
 from envcite_jobkit import Policy, backoff_delay
 
 log = logging.getLogger(__name__)

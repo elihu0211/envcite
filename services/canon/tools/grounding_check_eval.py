@@ -61,7 +61,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import golden_set as gs
 from golden_retrieval_eval import NEGATIVE, git, require_snapshots, snapshots
 
-from canon.http import json_headers
+from canon.net import json_headers
 from canon.settings import DatabaseSettings, load
 from canon.verification.config import ConfigError, resolve_secret, secret_name
 from envcite.consult.v2 import consult_pb2, consult_pb2_grpc

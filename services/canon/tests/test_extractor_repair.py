@@ -26,7 +26,7 @@ from tests.verification_support import (
     EXTRACTED,
     Conn,
     FakeModel,
-    Sequence_,
+    ScriptedModel,
     _duty_and_cited_penalty,
     _water_with,
 )
@@ -78,7 +78,7 @@ def test_an_incomplete_answer_is_sent_back_with_the_problem_and_the_fix_is_used(
     conn: Conn, tmp_path: Path
 ) -> None:
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
-    model = Sequence_(_without_duty(), _duty_without_scope())
+    model = ScriptedModel(_without_duty(), _duty_without_scope())
 
     out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
 
@@ -95,7 +95,7 @@ def test_an_incomplete_answer_is_sent_back_with_the_problem_and_the_fix_is_used(
 
 def test_repair_stops_after_the_allowed_rounds(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
-    model = Sequence_(_without_duty())
+    model = ScriptedModel(_without_duty())
 
     out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
 
@@ -157,7 +157,7 @@ def test_a_prohibition_without_a_duty_is_not_written_even_though_it_could_pass_t
 
     out = extract_unit(
         conn,
-        Sequence_(doc),
+        ScriptedModel(doc),
         LAW,
         "art_1",
         agent="fake-model",
@@ -225,7 +225,7 @@ def test_statements_that_are_not_a_list_of_objects_count_as_none(
 
 def test_counts_record_the_calls_and_repairs_of_a_unit(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
-    model = Sequence_(_without_duty(), _duty_without_scope())
+    model = ScriptedModel(_without_duty(), _duty_without_scope())
 
     out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
 
@@ -235,7 +235,7 @@ def test_counts_record_the_calls_and_repairs_of_a_unit(conn: Conn, tmp_path: Pat
 
 def test_counts_stop_at_the_repair_cap(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
-    model = Sequence_(_without_duty())
+    model = ScriptedModel(_without_duty())
 
     out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
 

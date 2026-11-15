@@ -21,7 +21,7 @@ from canon.embedding import (
     EndpointUnavailable,
     PayloadTooLarge,
 )
-from canon.http import USER_AGENT
+from canon.net import USER_AGENT
 from canon.store.ontology_store import OntologyStore
 from envcite_jobkit import EndpointError, ExitCode, FatalError, ItemError, Policy
 from envcite_segmenter import Segmenter

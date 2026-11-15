@@ -13,7 +13,7 @@ from tests.verification_support import (
     EXTRACTED,
     Conn,
     FakeModel,
-    Sequence_,
+    ScriptedModel,
 )
 
 
@@ -103,7 +103,7 @@ def test_a_condition_without_a_concept_is_repaired_when_the_model_names_it(
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("排放廢水者應符合標準", "乙一")))
     broken = json.loads(json.dumps(EXTRACTED))
     broken["statements"][0]["conditions"][0]["concept"] = None
-    model = Sequence_(broken, EXTRACTED)
+    model = ScriptedModel(broken, EXTRACTED)
 
     out = extract_unit(conn, model, LAW, "art_1", agent="fake-model", agent_version="1")
 
