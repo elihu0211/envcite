@@ -209,9 +209,9 @@ const scenarios = {
             await until("側欄應只剩原本那串", async () => (await page.locator(".ep-recent-link").count()) === 1);
         });
 
-        await step("搜尋：側欄沒有篩選框；點「搜尋對話」到紀錄頁，/ 鍵聚焦標題搜尋框", async () => {
+        await step("搜尋：側欄沒有篩選框；點「全部」旁的圖示到紀錄頁，/ 鍵聚焦標題搜尋框", async () => {
             if ((await page.locator("input[data-recent-filter]").count()) !== 0) throw new Error("側欄不該有篩選框");
-            await page.locator(".ep-side-search").click();
+            await page.locator(".ep-history-filter").click();
             await until("應到對話紀錄頁", async () => page.url().endsWith("/history"));
             await page.locator("body").click({ position: { x: 5, y: 300 } });
             await page.keyboard.press("/");
