@@ -498,6 +498,78 @@ const scenarios = {
             await until("應回到自己的工作區", async () => (await page.locator("#query").count()) === 1);
         });
     },
+
+    // 首次進入工作區與冷載入既定對話：SSR 預先渲染到 SignalR 接手之間，不閃出「載入中…」，
+    // 主內容區塊不消失重來，ep-rise 進場也不在 bl-root 抽換時歸零重跑。
+    async "first-load"() {
+        await page.addInitScript(() => {
+            window.__firstLoadFrames = [];
+            const record = () => {
+                const hero = document.querySelector(".ep-ask-hero");
+                const turn = document.querySelector(".ep-turn");
+                const status = document.querySelector(".ep-ask .ep-status");
+                const main = document.querySelector(".ep-ask");
+                window.__firstLoadFrames.push({
+                    hasHero: Boolean(hero),
+                    heroY: hero ? Math.round(hero.getBoundingClientRect().y) : null,
+                    hasTurn: Boolean(turn),
+                    turnY: turn ? Math.round(turn.getBoundingClientRect().y) : null,
+                    status: status ? status.textContent : null,
+                    askOpacity: main ? parseFloat(getComputedStyle(main).opacity) : null,
+                });
+                requestAnimationFrame(record);
+            };
+            requestAnimationFrame(record);
+        });
+
+        const assertSmoothFrames = async (label, expectTurn) => {
+            await page.waitForTimeout(500);
+            const frames = await page.evaluate(() => window.__firstLoadFrames);
+            if (frames.length < 5) throw new Error(`${label}：擷取的影格太少（${frames.length}）`);
+            const loading = frames.find((f) => f.status !== null);
+            if (loading) throw new Error(`${label}：出現「${loading.status}」閃爍`);
+            const key = expectTurn ? "hasTurn" : "hasHero";
+            const yKey = expectTurn ? "turnY" : "heroY";
+            const firstSeen = frames.findIndex((f) => f[key]);
+            if (firstSeen === -1) throw new Error(`${label}：找不到預期內容（${key}）`);
+            let maxY = frames[firstSeen][yKey];
+            let minY = frames[firstSeen][yKey];
+            for (let i = firstSeen; i < frames.length; i++) {
+                const frame = frames[i];
+                if (!frame[key]) throw new Error(`${label}：第 ${i} 格內容消失又重繪`);
+                const y = frame[yKey];
+                if (y > minY) throw new Error(`${label}：第 ${i} 格垂直位置倒退（${minY} → ${y}），進場動畫重跑`);
+                minY = Math.min(minY, y);
+                maxY = Math.max(maxY, y);
+            }
+            if (maxY < minY) throw new Error(`${label}：座標異常`);
+        };
+
+        await step("登入後首次進入工作區：不閃載入中、不掉內容、動畫不重跑", async () => {
+            await signIn();
+            await assertSmoothFrames("登入後首次進入", false);
+        });
+
+        let conversationUrl;
+        await step("提出一題建立既有對話", async () => {
+            await submit(question);
+            await answered(1);
+            await until("網址應換成對話 Id", async () => /\/c\/[0-9a-f-]+$/i.test(page.url()));
+            conversationUrl = page.url();
+        });
+
+        await step("冷載入既有對話（/c/{id}）：SSR 到互動接手不閃載入中與空白", async () => {
+            await page.goto(conversationUrl);
+            await circuitConnected();
+            await assertSmoothFrames("冷載入既有對話", true);
+        });
+
+        await step("有歷史紀錄時冷載入首頁：不閃載入中、動畫不重跑", async () => {
+            await page.goto(`${base}/portal/${tenant}`);
+            await circuitConnected();
+            await assertSmoothFrames("冷載入首頁", false);
+        });
+    },
 };
 
 let exitCode = 0;

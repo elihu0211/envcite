@@ -86,6 +86,8 @@ public sealed partial class ChatSession(
 
     public AskCapabilities Capabilities { get; private set; } = new(HasPlan: false, AiAnswer: false);
 
+    internal ConversationDetail? LoadedDetail { get; private set; }
+
     /// <summary>狀態變了，頁面該重畫。</summary>
     public event Action? Changed;
 
@@ -96,6 +98,14 @@ public sealed partial class ChatSession(
         Changed?.Invoke();
     }
 
+    /// <summary>從 SSR 預先渲染還原能力與對話明細，讓互動電路首次繪製與預先渲染一致，不先閃出「載入中…」。</summary>
+    public void RestorePrerender(AskCapabilities capabilities, ConversationDetail? detail)
+    {
+        Capabilities = capabilities;
+        Ready = true;
+        ApplyDetail(detail);
+    }
+
     /// <summary>開啟自己的一串對話，回傳有沒有找到（不是自己的、已刪除、已過期、沒開啟：都是沒有）。找不到時是空白的新對話。</summary>
     public async Task<bool> OpenAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)
     {
@@ -103,6 +113,17 @@ public sealed partial class ChatSession(
         StartNew();
         if (detail is null)
             return false;
+
+        ApplyDetail(detail);
+        Changed?.Invoke();
+        return true;
+    }
+
+    private void ApplyDetail(ConversationDetail? detail)
+    {
+        LoadedDetail = detail;
+        if (detail is null)
+            return;
 
         ConversationId = detail.Id;
         ChatTurn? current = null;
@@ -130,9 +151,6 @@ public sealed partial class ChatSession(
                 }
             }
         }
-
-        Changed?.Invoke();
-        return true;
     }
 
     /// <summary>空白的新對話（保留這位成員能用什麼）。</summary>
@@ -140,6 +158,7 @@ public sealed partial class ChatSession(
     {
         _turns.Clear();
         ConversationId = null;
+        LoadedDetail = null;
         Busy = false;
         Changed?.Invoke();
     }

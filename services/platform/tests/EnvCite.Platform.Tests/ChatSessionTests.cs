@@ -405,4 +405,35 @@ public sealed class ChatSessionTests
 
         Assert.True(changes >= 2); // 送出時（等結果）與結束時
     }
+
+    [Fact]
+    public void RestoringPrerenderMakesTheSessionImmediatelyReadyWithCarriedDetail()
+    {
+        var id = Guid.NewGuid();
+        var at = DateTimeOffset.UtcNow;
+        var detail = new ConversationDetail(id, "預先渲染標題", at,
+        [
+            new ConversationMessageView("user", "既有問題", at, AsOf: "2024-01-01"),
+            new ConversationMessageView("assistant", "既有回答 [L1]。", at,
+                [new ConversationCitation("L1", "水污染防制法 第 7 條", "https://example.test/law/7")],
+                Outcome: ConversationOutcome.Answered),
+        ]);
+        var (session, _, _) = Create();
+
+        session.RestorePrerender(new AskCapabilities(HasPlan: true, AiAnswer: true), detail);
+
+        Assert.True(session.Ready);
+        Assert.True(session.Capabilities.HasPlan);
+        Assert.True(session.Capabilities.AiAnswer);
+        Assert.Equal(id, session.ConversationId);
+        Assert.Equal(detail, session.LoadedDetail);
+        var turn = Assert.Single(session.Turns);
+        Assert.Equal(("既有問題", "2024-01-01 有效", TurnState.Answered), (turn.Question, turn.AsOfLabel, turn.State));
+
+        session.StartNew();
+
+        Assert.Null(session.ConversationId);
+        Assert.Null(session.LoadedDetail);
+        Assert.Empty(session.Turns);
+    }
 }

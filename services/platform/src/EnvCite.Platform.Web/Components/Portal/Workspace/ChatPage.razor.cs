@@ -55,6 +55,18 @@ public sealed partial class ChatPage(
     /// <summary>從法規工作台帶入的初始提問文字（僅預填於輸入框並聚焦，不自動送出）。</summary>
     [SupplyParameterFromQuery(Name = "q")] public string? InitialQuery { get; set; }
 
+    /// <summary>預先渲染查到的能力與對話明細，交給互動渲染首次繪製（重新連線不還原：狀態可能已改變）。</summary>
+    public sealed record Prerender(
+        bool HasPlan,
+        bool AiAnswer,
+        string[]? Modules,
+        Guid RouteId,
+        bool NotFound,
+        ConversationDetail? Conversation);
+
+    [PersistentState(RestoreBehavior = RestoreBehavior.SkipLastSnapshot)]
+    public Prerender? Prerendered { get; set; }
+
     protected override async Task OnParametersSetAsync()
     {
         var user = await UserAsync();
@@ -66,6 +78,26 @@ public sealed partial class ChatPage(
             Session.Changed += OnChanged;
             _subscribed = true;
             _name = user.FindFirst(ClaimTypes.GivenName)?.Value ?? user.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (Prerendered is { } carried)
+            {
+                Prerendered = null;
+                Session.RestorePrerender(
+                    new AskCapabilities(carried.HasPlan, carried.AiAnswer)
+                    {
+                        Modules = carried.Modules?.ToHashSet(StringComparer.Ordinal),
+                    },
+                    carried.RouteId == Id ? carried.Conversation : null);
+                if (carried.RouteId == Id)
+                {
+                    _notFound = carried.NotFound;
+                    if (Id == Guid.Empty)
+                        ApplyInitialQuery();
+
+                    return;
+                }
+            }
+
             await Session.InitializeAsync(user, _lifetime.Token);
         }
 
@@ -79,19 +111,35 @@ public sealed partial class ChatPage(
             if (Session.ConversationId is not null)
                 Session.StartNew();
 
-            if (!string.IsNullOrWhiteSpace(InitialQuery)
-                && !string.Equals(_appliedInitialQuery, InitialQuery, StringComparison.Ordinal))
-            {
-                var trimmed = InitialQuery.Trim();
-                _appliedInitialQuery = InitialQuery;
-                _query = trimmed.Length > 500 ? trimmed[..500] : trimmed;
-                _focusOnReady = true;
-                _refocus = _interactive;
-            }
+            ApplyInitialQuery();
         }
         else if (Id != Session.ConversationId)
         {
             _notFound = !await Session.OpenAsync(user, Id, _lifetime.Token);
+        }
+
+        if (!RendererInfo.IsInteractive)
+        {
+            Prerendered = new Prerender(
+                Session.Capabilities.HasPlan,
+                Session.Capabilities.AiAnswer,
+                Session.Capabilities.Modules?.ToArray(),
+                Id,
+                _notFound,
+                Id != Guid.Empty && !_notFound ? Session.LoadedDetail : null);
+        }
+    }
+
+    private void ApplyInitialQuery()
+    {
+        if (!string.IsNullOrWhiteSpace(InitialQuery)
+            && !string.Equals(_appliedInitialQuery, InitialQuery, StringComparison.Ordinal))
+        {
+            var trimmed = InitialQuery.Trim();
+            _appliedInitialQuery = InitialQuery;
+            _query = trimmed.Length > 500 ? trimmed[..500] : trimmed;
+            _focusOnReady = true;
+            _refocus = _interactive;
         }
     }
 
