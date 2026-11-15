@@ -143,4 +143,12 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
 
         Assert.Single(chat.Calls); // 只送出一題建立 /c/{id}，用來驗證冷載入既有對話
     }
+
+    [Fact]
+    public async Task TheLawWorkbenchToolbarAlignsControlsAndRespondsCleanlyAcrossViewports()
+    {
+        var chat = await RunAsync("laws-toolbar", consent: true);
+
+        Assert.Empty(chat.Calls);
+    }
 }
