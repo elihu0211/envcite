@@ -209,9 +209,9 @@ const scenarios = {
             await until("側欄應只剩原本那串", async () => (await page.locator(".ep-recent-link").count()) === 1);
         });
 
-        await step("搜尋：側欄沒有篩選框；點「搜尋對話」到紀錄頁，/ 鍵聚焦標題搜尋框", async () => {
+        await step("搜尋：側欄沒有篩選框；點「全部」旁的圖示到紀錄頁，/ 鍵聚焦標題搜尋框", async () => {
             if ((await page.locator("input[data-recent-filter]").count()) !== 0) throw new Error("側欄不該有篩選框");
-            await page.locator(".ep-side-search").click();
+            await page.locator(".ep-history-filter").click();
             await until("應到對話紀錄頁", async () => page.url().endsWith("/history"));
             await page.locator("body").click({ position: { x: 5, y: 300 } });
             await page.keyboard.press("/");
@@ -351,7 +351,7 @@ const scenarios = {
         };
         // 換到 path 後等頁面穩定（動畫收尾、串流結束），再比對外殼，並檢查沒有缺屬性的畫面與外殼元素的版面位移。
         const visit = async (name, path, expected) => {
-            await page.click(`a.ep-side-link[href='${path}']`);
+            await page.click(`a[href='${path}']:is(.ep-side-link, .ep-history-filter)`);
             await until(`應換到 ${path}`, async () => new URL(page.url()).pathname === path);
             await page.waitForTimeout(600);
             sameShell(expected, await geometry(), name);
@@ -429,11 +429,11 @@ const scenarios = {
         });
         await step("Shift+Enter 換行、輸入框跟著長高、不送出、送出鈕啟用", async () => {
             const before = (await area.boundingBox()).height;
-            await page.keyboard.type("噪音");
-            await page.keyboard.press("Shift+Enter");
-            await page.keyboard.type("管制");
-            await page.keyboard.press("Shift+Enter");
-            await page.keyboard.type("標準");
+            for (const line of ["噪音", "管制", "標準", "法條"]) {
+                await page.keyboard.type(line);
+                await page.keyboard.press("Shift+Enter");
+            }
+            await page.keyboard.type("整理");
             await until("輸入框應含換行", async () => (await area.inputValue()).includes("\n"));
             const after = (await area.boundingBox()).height;
             if (after <= before) throw new Error(`輸入框沒有長高：${before} → ${after}`);

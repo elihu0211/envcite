@@ -4251,12 +4251,17 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     block-size: var(--ep-space-4);
 }
 
+.ep-history-filter.active {
+    background: color-mix(in srgb, var(--ep-text) 10%, transparent);
+    color: var(--ep-text);
+}
+
 @media (hover: hover) {
     .ep-history-summary:hover {
         color: var(--ep-text);
     }
 
-    .ep-history-filter:hover {
+    .ep-history-filter:hover:not(.active) {
         background: color-mix(in srgb, var(--ep-text) 6%, transparent);
         color: var(--ep-text);
     }

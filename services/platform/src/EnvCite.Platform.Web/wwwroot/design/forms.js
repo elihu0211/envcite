@@ -214,7 +214,7 @@
         }
     };
 
-    // ⌘K 與 /：已在對話紀錄頁就聚焦標題搜尋框，否則走側欄的「搜尋對話」連結（側欄沒有篩選框，搜尋在紀錄頁）。
+    // ⌘K 與 /：已在對話紀錄頁就聚焦標題搜尋框，否則走側欄「全部」旁的篩選圖示（側欄沒有篩選框，搜尋在紀錄頁）。
     const focusConversationSearch = () => {
         const historyInput = document.querySelector("input[data-history-filter]");
         if (historyInput) {
@@ -223,7 +223,7 @@
             return;
         }
 
-        document.querySelector(".ep-side-search")?.click();
+        document.querySelector(".ep-history-filter")?.click();
     };
 
     document.addEventListener("click", (event) => {
