@@ -3370,6 +3370,11 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     animation-delay: calc(var(--ep-motion-fast) * 1.2);
 }
 
+/* 互動式頁面在 Blazor 接手替換 SSR 根節點時，由 forms.js 標記已落定或接續進場時間，不再重頭播放 ep-rise。 */
+:where(.ep-console-main, .ep-shell-main, .ep-auth-body) > [data-ep-settled] {
+    animation: none;
+}
+
 /* 骨架屏：灰塊是目前文字色的一小撮疊在表面上，緩緩一明一暗（沒有漸層與位移，減少動態時停在靜止）。 */
 .ep-skeleton {
     display: flex;

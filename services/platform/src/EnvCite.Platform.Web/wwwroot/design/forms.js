@@ -269,6 +269,59 @@
     // 強化導覽換完頁（Blazor 的 enhancedload，串流渲染時每次更新都會觸發）：伺服器渲染的側欄不帶 title 與 aria-expanded，重設一次。
     globalThis.Blazor?.addEventListener("enhancedload", syncSide);
 
+    // 互動式頁面由 SSR 預先渲染時，區塊已經開始 ep-rise 進場；blazor.web.js 連線接手換掉 bl-root 時，
+    // 用負的 animation-delay 接續原本的進場進度（已經跑完的直接定格），避免「先出現、突然歸零再淡入」的閃爍。
+    let riseOrigin = performance.now();
+    let blRootObserver;
+    const parseDurationMs = (value) => {
+        if (!value) {
+            return 0;
+        }
+        const trimmed = value.trim();
+        return trimmed.endsWith("ms") ? parseFloat(trimmed) : parseFloat(trimmed) * 1000;
+    };
+    const settleHydratedBlocks = () => {
+        const elapsed = Math.max(0, performance.now() - riseOrigin);
+        document.querySelectorAll(".ep-console-main > *, .ep-shell-main > *, .ep-auth-body > *").forEach((element) => {
+            const style = getComputedStyle(element);
+            if (!style.animationName.split(",").some((name) => name.trim() === "ep-rise")) {
+                return;
+            }
+            const delayMs = parseDurationMs(style.animationDelay);
+            const durationMs = parseDurationMs(style.animationDuration);
+            const nextDelay = delayMs - elapsed;
+            if (durationMs > 0 && -nextDelay < durationMs) {
+                element.style.animationDelay = `${Math.round(nextDelay)}ms`;
+            } else {
+                element.setAttribute("data-ep-settled", "");
+            }
+        });
+    };
+    const watchBlRoot = () => {
+        if (blRootObserver || !document.body) {
+            return;
+        }
+        blRootObserver = new MutationObserver((records) => {
+            const swapped = records.some((record) =>
+                [...record.removedNodes].some((node) => node.nodeType === 8 && node.nodeValue === "/bl-root"));
+            if (!swapped) {
+                return;
+            }
+            blRootObserver.disconnect();
+            blRootObserver = undefined;
+            settleHydratedBlocks();
+        });
+        blRootObserver.observe(document.body, { childList: true });
+    };
+    watchBlRoot();
+    document.addEventListener("DOMContentLoaded", watchBlRoot);
+    globalThis.Blazor?.addEventListener("enhancedload", () => {
+        riseOrigin = performance.now();
+        blRootObserver?.disconnect();
+        blRootObserver = undefined;
+        watchBlRoot();
+    });
+
     // ---- 對話標題即時篩選（紀錄頁 data-history-filter） --------------------------------------------------
     // 依標題即時過濾，按 Esc 清空並還原全部；沒有腳本時仍可在 /history 送出表單搜尋。
     const filterTitleItems = (items, query, titleOf) => {

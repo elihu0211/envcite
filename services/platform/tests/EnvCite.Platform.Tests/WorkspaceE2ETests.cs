@@ -135,4 +135,12 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
 
         Assert.Empty(chat.Calls);
     }
+
+    [Fact]
+    public async Task TheFirstLoadDoesNotFlashLoadingOrRestartItsEntryMotion()
+    {
+        var chat = await RunAsync("first-load", consent: true);
+
+        Assert.Single(chat.Calls); // 只送出一題建立 /c/{id}，用來驗證冷載入既有對話
+    }
 }
