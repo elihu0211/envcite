@@ -2559,4 +2559,61 @@
   <data name="收合子法分組" xml:space="preserve">
     <value>Collapse Sub-Groups</value>
   </data>
+  <data name="管理你的個人資料、安全性與介面偏好。" xml:space="preserve">
+    <value>Manage your personal info, security, and interface preferences.</value>
+  </data>
+  <data name="個人資料" xml:space="preserve">
+    <value>Basic info</value>
+  </data>
+  <data name="尚未設定" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="由組織目錄同步管理，無法在此修改。" xml:space="preserve">
+    <value>Managed by directory sync and cannot be changed here.</value>
+  </data>
+  <data name="編輯" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="留空後儲存可清除顯示名稱。" xml:space="preserve">
+    <value>Save with a blank value to clear your display name.</value>
+  </data>
+  <data name="用於登入與接收通知。" xml:space="preserve">
+    <value>Used for sign-in and notifications.</value>
+  </data>
+  <data name="所屬組織" xml:space="preserve">
+    <value>Organization</value>
+  </data>
+  <data name="外觀與語言" xml:space="preserve">
+    <value>Appearance &amp; language</value>
+  </data>
+  <data name="介面語言" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="安全性" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="定期更新密碼以保護帳號安全。" xml:space="preserve">
+    <value>Update your password regularly to keep your account secure.</value>
+  </data>
+  <data name="立即設定" xml:space="preserve">
+    <value>Set up</value>
+  </data>
+  <data name="已更新顯示名稱。" xml:space="preserve">
+    <value>Display name updated.</value>
+  </data>
+  <data name="已更新組織名稱。" xml:space="preserve">
+    <value>Organization name updated.</value>
+  </data>
+  <data name="組織名稱" xml:space="preserve">
+    <value>Organization name</value>
+  </data>
+  <data name="只會更新顯示名稱，網址識別碼維持不變。" xml:space="preserve">
+    <value>Only the display name changes; the URL identifier stays the same.</value>
+  </data>
+  <data name="儲存失敗。" xml:space="preserve">
+    <value>Could not save changes.</value>
+  </data>
+  <data name="重新命名失敗。" xml:space="preserve">
+    <value>Could not rename organization.</value>
+  </data>
 </root>

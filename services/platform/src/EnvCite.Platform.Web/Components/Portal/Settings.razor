@@ -4,17 +4,101 @@
 @attribute [Authorize(Policy = PlatformAuth.PortalPolicy)]
 @inherits PortalPageBase
 
-@* 客戶入口的個人設定：目前只有外觀，與營運者後台的個人設定（Account/Settings）共用同一個 AppearanceSetting，
-   只有換外觀的端點不同。偏好是這個瀏覽器的 cookie，不分租戶。 *@
+@* 客戶入口的個人設定：Google SaaS 風格的分組列表（個人資料、外觀與語言、安全性）。
+   標題與卡片收在置中的窄欄（.ep-narrow），外觀偏好只記在這個瀏覽器。 *@
 <DocumentTitle Text="@L["個人設定"]" />
 
-@* 單一任務的頁面：標題與卡片一起收在置中的窄欄。 *@
 <div class="ep-narrow">
-    <PageHeader Title="@L["個人設定"]" />
+    <PageHeader Title="@L["個人設定"]" Description="@L["管理你的個人資料、安全性與介面偏好。"]" />
+
+    <FormAlert Message="@Error" />
+    <FormAlert Kind="AlertKind.Success" Message="@_message" />
 
     <div class="ep-stack">
-        <SectionCard>
+        <SectionCard Id="profile-title" Title="@L["個人資料"]">
+            <div class="ep-pref-list">
+                <div class="ep-pref-row">
+                    <span class="ep-pref-label">@L["顯示名稱"]</span>
+                    <div class="ep-pref-value">
+                        <span class="ep-pref-primary">@(_profile?.DisplayName ?? L["尚未設定"])</span>
+                        @if (_profile?.Managed == true)
+                        {
+                            <span class="ep-hint">@L["由組織目錄同步管理，無法在此修改。"]</span>
+                        }
+                        else
+                        {
+                            <details class="ep-inline-edit" open="@(!string.IsNullOrEmpty(Error))">
+                                <summary class="ep-btn ep-btn-quiet">@L["編輯"]</summary>
+                                <div class="ep-inline-edit-body">
+                                    <PostForm Model="ProfileInput" FormName="portal-profile-name" OnValidSubmit="SaveNameAsync">
+                                        <FormField For="ep-display-name" Label="@L["顯示名稱"]" Hint="@L["留空後儲存可清除顯示名稱。"]">
+                                            <InputText id="ep-display-name" class="ep-input" maxlength="200" @bind-Value="ProfileInput.DisplayName" />
+                                        </FormField>
+                                        <SubmitButton>@L["儲存"]</SubmitButton>
+                                    </PostForm>
+                                </div>
+                            </details>
+                        }
+                    </div>
+                </div>
+
+                <div class="ep-pref-row">
+                    <span class="ep-pref-label">@L["電子郵件"]</span>
+                    <div class="ep-pref-value">
+                        <span class="ep-pref-primary">@Email</span>
+                        <span class="ep-hint">@L["用於登入與接收通知。"]</span>
+                    </div>
+                </div>
+
+                <div class="ep-pref-row">
+                    <span class="ep-pref-label">@L["所屬組織"]</span>
+                    <div class="ep-pref-value">
+                        <span class="ep-pref-primary">@TenantDisplayName</span>
+                        <span class="ep-hint">@RoleLabel</span>
+                    </div>
+                    <div class="ep-pref-action">
+                        <a class="ep-btn ep-btn-quiet" href="@($"{PortalPaths.Home(Tenant)}/account")">@L["帳號與組織"]</a>
+                    </div>
+                </div>
+            </div>
+        </SectionCard>
+
+        <SectionCard Id="preferences-title" Title="@L["外觀與語言"]">
             <AppearanceSetting Action="@($"{PortalPaths.Home(Tenant)}/appearance")" />
+            <div class="ep-pref-list">
+                <div class="ep-pref-row">
+                    <span class="ep-pref-label">@L["介面語言"]</span>
+                    <div class="ep-pref-value">
+                        <LanguageSwitch Action="@($"{PortalPaths.Home(Tenant)}/language")" />
+                    </div>
+                </div>
+            </div>
+        </SectionCard>
+
+        <SectionCard Id="security-title" Title="@L["安全性"]">
+            <div class="ep-pref-list">
+                <div class="ep-pref-row">
+                    <span class="ep-pref-label">@L["密碼"]</span>
+                    <div class="ep-pref-value">
+                        <span class="ep-hint">@L["定期更新密碼以保護帳號安全。"]</span>
+                    </div>
+                    <div class="ep-pref-action">
+                        <a class="ep-btn ep-btn-quiet" href="@PortalPaths.Password(Tenant)">@L["改密碼"]</a>
+                    </div>
+                </div>
+
+                <div class="ep-pref-row">
+                    <span class="ep-pref-label">@L["兩步驟驗證"]</span>
+                    <div class="ep-pref-value">
+                        <span>
+                            <StatusBadge Tone="@(_twoFactor ? "success" : "warning")">@(_twoFactor ? L["已啟用"] : L["尚未啟用"])</StatusBadge>
+                        </span>
+                    </div>
+                    <div class="ep-pref-action">
+                        <a class="ep-btn ep-btn-quiet" href="@($"{PortalPaths.Home(Tenant)}/security")">@(_twoFactor ? L["管理"] : L["立即設定"])</a>
+                    </div>
+                </div>
+            </div>
         </SectionCard>
     </div>
 </div>

@@ -6,6 +6,7 @@ namespace EnvCite.Platform.SharedKernel;
 public static class AuditActions
 {
     public const string TenantCreated = "tenant.created";
+    public const string TenantRenamed = "tenant.renamed";
     public const string ApiKeyIssued = "api_key.issued";
     public const string ApiKeyRevoked = "api_key.revoked";
     public const string TenantPlanAssigned = "tenant.plan_assigned";
@@ -18,6 +19,7 @@ public static class AuditActions
     public const string PortalSignedIn = "portal.signed_in";
     public const string PortalSignInFailed = "portal.sign_in_failed";
     public const string PortalPasswordChanged = "portal.password_changed";
+    public const string PortalProfileUpdated = "portal.profile_updated";
     public const string PortalSignedOut = "portal.signed_out";
     public const string PortalGoogleLinked = "portal.google_linked";
     public const string PortalMfaEnabled = "portal.mfa_enabled";
@@ -69,8 +71,8 @@ public static class AuditActions
     /// <summary>目前會寫入的所有事件，供篩選選單使用。</summary>
     public static IReadOnlyList<string> All { get; } =
     [
-        TenantCreated, TenantPlanAssigned, TenantPlanRemoved, ApiKeyIssued, ApiKeyRevoked, OperatorSignedIn, OperatorSignInDenied, OperatorSignedOut,
-        MemberCreated, MemberPasswordReset, PortalSignedIn, PortalSignInFailed, PortalPasswordChanged, PortalSignedOut, PortalGoogleLinked,
+        TenantCreated, TenantRenamed, TenantPlanAssigned, TenantPlanRemoved, ApiKeyIssued, ApiKeyRevoked, OperatorSignedIn, OperatorSignInDenied, OperatorSignedOut,
+        MemberCreated, MemberPasswordReset, PortalSignedIn, PortalSignInFailed, PortalPasswordChanged, PortalProfileUpdated, PortalSignedOut, PortalGoogleLinked,
         PortalMfaEnabled, PortalRecoveryCodeUsed, MemberMfaReset,
         PortalMfaDisabled, PortalRecoveryCodesRegenerated, MemberDisabled, MemberEnabled, MemberRoleChanged,
         ConversationDeleted, TenantAiAnswerEnabled, TenantAiAnswerDisabled,

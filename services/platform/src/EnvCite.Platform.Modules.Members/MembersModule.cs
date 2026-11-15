@@ -115,6 +115,8 @@ public static class MembersModule
         services.AddScoped<IPortalTwoFactor, PortalTwoFactor>();
         services.AddScoped<MemberCore>();
         services.AddScoped<IMemberSelfService, MemberSelfService>();
+        services.AddScoped<IPortalProfile, PortalProfile>();
+        services.AddScoped<ITenantSelfService, TenantSelfService>();
         services.AddSingleton<IMemberAdmin, MemberAdmin>();
         services.AddScoped<DirectoryGroupRoles>();
         services.AddScoped<DirectoryManagement>();

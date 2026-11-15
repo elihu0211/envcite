@@ -42,6 +42,8 @@ public static class OutcomeCodes
     public const string CredentialsIncorrect = "credentials.incorrect";
     public const string TenantIdentifierInvalid = "tenant.identifier_invalid";
     public const string TenantNameRequired = "tenant.name_required";
+    public const string TenantNameTooLong = "tenant.name_too_long";
+    public const string TenantRenameForbidden = "tenant.rename_forbidden";
     public const string MemberEmailTaken = "member.email_taken";
     public const string OperatorEmailTaken = "operator.email_taken";
     public const string TenantIdentifierTaken = "tenant.identifier_taken";
@@ -116,6 +118,8 @@ public static class OutcomeCodes
         [CredentialsIncorrect] = "The password or verification code is incorrect.",
         [TenantIdentifierInvalid] = "Identifier must be 3–63 characters: lowercase letters, digits and hyphens, starting and ending with a letter or digit.",
         [TenantNameRequired] = "Name must not be empty.",
+        [TenantNameTooLong] = "Tenant name is limited to 200 characters.",
+        [TenantRenameForbidden] = "Only an owner can rename the organization.",
         [MemberEmailTaken] = "This tenant already has a member with this email.",
         [OperatorEmailTaken] = "An operator with this email already exists.",
         [TenantIdentifierTaken] = "This identifier is already in use.",
