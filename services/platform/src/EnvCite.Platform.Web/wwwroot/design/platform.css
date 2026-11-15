@@ -3816,9 +3816,14 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     }
 }
 
-.ep-portal.ep-console .ep-side-link,
-.ep-portal.ep-console .ep-recent-link {
+.ep-portal.ep-console .ep-side-link {
     border-radius: var(--ep-radius-control);
+    font-size: var(--ep-label-m-size);
+    font-weight: var(--ep-body-l-weight);
+}
+
+.ep-portal.ep-console .ep-recent-link {
+    border-radius: var(--ep-radius-pill);
     font-size: var(--ep-label-m-size);
     font-weight: var(--ep-body-l-weight);
 }
@@ -4147,11 +4152,12 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     min-block-size: calc(100dvh - var(--ep-appbar-height));
 }
 
-/* 最近的對話（Claude 式）：和功能入口同一欄、同一個底，沒有框、沒有分隔線、沒有篩選框、沒有日期分組——
-   一個安靜的小標題，下面是一張平面的清單，列與功能入口同寬、同縮排。只有清單自己捲動。
-   有對話的 .ep-recent 占側欄剩下的高度（最少留得出標題與幾列）；空的 .ep-history-empty 只有一句引導，不撐滿。 */
+/* 最近的對話（Gemini 風格「全部 >」可摺疊清單）：和功能入口同一欄、同一個底，沒有框、沒有分隔線、沒有日期分組——
+   可收合的小標題搭配右側篩選鈕，下面是一張平面的膠囊列清單。只有清單自己捲動。
+   有對話的 .ep-recent 展開時占側欄剩下的高度，收合時只占標題一列；空的 .ep-history-empty 只留引導，不撐滿。 */
 .ep-portal.ep-console .ep-recent,
 .ep-portal.ep-console .ep-history-empty {
+    position: relative;
     box-sizing: border-box;
     min-block-size: 0;
     margin-block: var(--ep-space-4) var(--ep-space-2);
@@ -4161,8 +4167,99 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     flex: 1 1 12rem;
 }
 
+.ep-portal.ep-console .ep-recent:has(.ep-history-details:not([open])) {
+    flex: 0 0 auto;
+}
+
 .ep-portal.ep-console .ep-history-empty {
     flex: none;
+}
+
+.ep-history-details {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-block-size: 0;
+    interpolate-size: allow-keywords;
+}
+
+.ep-history-details::details-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-block-size: 0;
+    block-size: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+        block-size var(--ep-motion-normal) var(--ep-motion-ease-settle),
+        opacity var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        content-visibility var(--ep-motion-normal) allow-discrete;
+}
+
+.ep-history-details[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+}
+
+.ep-history-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-1);
+    min-block-size: var(--ep-control-height);
+    padding-block: 0;
+    padding-inline: var(--ep-space-3) var(--ep-touch-target);
+    border-radius: var(--ep-radius-pill);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    transition: color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-history-summary::-webkit-details-marker {
+    display: none;
+}
+
+.ep-history-summary .ep-icon {
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+    transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-history-details[open] > .ep-history-summary .ep-icon {
+    transform: rotate(90deg);
+}
+
+.ep-history-filter {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: var(--ep-space-1);
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-control-height);
+    block-size: var(--ep-control-height);
+    border-radius: var(--ep-radius-pill);
+    color: var(--ep-text-secondary);
+    text-decoration: none;
+    transition:
+        background var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-history-filter .ep-icon {
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+}
+
+@media (hover: hover) {
+    .ep-history-summary:hover {
+        color: var(--ep-text);
+    }
+
+    .ep-history-filter:hover {
+        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        color: var(--ep-text);
+    }
 }
 
 .ep-portal.ep-console .ep-recent-scroll {
@@ -4232,6 +4329,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         inset-block: 0;
         inset-inline-end: var(--ep-space-1);
         margin-block: auto;
+        border-radius: var(--ep-radius-pill);
         background: var(--ep-row-fill);
     }
 
@@ -4271,6 +4369,10 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     inset-inline: var(--ep-space-3) auto;
     inline-size: min(18rem, calc(100vw - var(--ep-space-6)));
     min-inline-size: 0;
+    border-radius: var(--ep-radius-sheet);
+    background: color-mix(in srgb, var(--ep-surface-raised) 92%, transparent);
+    border: 1px solid var(--ep-border-subtle);
+    box-shadow: var(--ep-elevation-3);
 }
 
 .ep-conv-menu .ep-menu-item {
