@@ -830,24 +830,17 @@
     const initAvatarCropper = () => {
         const form = document.querySelector("[data-avatar-form]");
         const input = form?.querySelector("[data-avatar-input]");
-        const trigger = document.querySelector("[data-avatar-trigger]");
-        const details = form?.closest("details");
-        const dropzone = form?.querySelector("[data-avatar-dropzone]");
-        const cropperBox = form?.querySelector("[data-avatar-cropper]");
+        const trigger = form?.querySelector("[data-avatar-trigger]");
+        const dropzone = document.querySelector("[data-avatar-dropzone]");
+        const dialog = form?.querySelector("[data-avatar-dialog]");
         const stage = form?.querySelector("[data-avatar-stage]");
         const zoomInput = form?.querySelector("[data-avatar-zoom]");
         const rotateButtons = form?.querySelectorAll("[data-avatar-rotate]");
         const resetButton = form?.querySelector("[data-avatar-reset]");
-        if (!form || !input || !cropperBox || !stage || !zoomInput) {
+        const cancelButton = form?.querySelector("[data-avatar-cancel]");
+        if (!form || !input || !dialog || !stage || !zoomInput) {
             return;
         }
-
-        trigger?.addEventListener("click", () => {
-            if (details) {
-                details.open = true;
-            }
-            input.click();
-        });
 
         let cropperInstance = null;
         let currentUrl = null;
@@ -863,7 +856,13 @@
                 currentUrl = null;
             }
             stage.innerHTML = "";
-            cropperBox.hidden = true;
+        };
+
+        const closeDialog = () => {
+            if (dialog.open) {
+                dialog.close();
+            }
+            destroyCropper();
         };
 
         const loadFile = async (file) => {
@@ -885,7 +884,9 @@
                     img.onerror = reject;
                 });
 
-                cropperBox.hidden = false;
+                if (!dialog.open) {
+                    dialog.showModal();
+                }
                 lastZoom = 1;
                 zoomInput.value = "1";
 
@@ -913,12 +914,24 @@
                     ].join("")
                 });
             } catch {
-                destroyCropper();
+                closeDialog();
             }
         };
 
+        trigger?.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                input.click();
+            }
+        });
+
         input.addEventListener("change", () => {
-            loadFile(input.files?.[0] || null);
+            const file = input.files?.[0] || null;
+            // 清空 value，讓取消後再選同一檔案仍會觸發 change
+            input.value = "";
+            if (file) {
+                loadFile(file);
+            }
         });
 
         if (dropzone) {
@@ -926,22 +939,43 @@
                 event.preventDefault();
                 dropzone.dataset.dragover = "true";
             });
-            dropzone.addEventListener("dragleave", () => {
-                delete dropzone.dataset.dragover;
+            dropzone.addEventListener("dragleave", (event) => {
+                if (!dropzone.contains(event.relatedTarget)) {
+                    delete dropzone.dataset.dragover;
+                }
             });
             dropzone.addEventListener("drop", (event) => {
                 event.preventDefault();
                 delete dropzone.dataset.dragover;
                 const file = event.dataTransfer?.files?.[0];
-                if (!file) {
-                    return;
+                if (file) {
+                    loadFile(file);
                 }
-                const dt = new DataTransfer();
-                dt.items.add(file);
-                input.files = dt.files;
-                loadFile(file);
             });
         }
+
+        document.addEventListener("paste", (event) => {
+            if (dialog.open) {
+                return;
+            }
+            const target = event.target;
+            if (target instanceof HTMLElement && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+                return;
+            }
+            const file = Array.from(event.clipboardData?.files || []).find((f) => f.type.startsWith("image/"));
+            if (file) {
+                event.preventDefault();
+                loadFile(file);
+            }
+        });
+
+        cancelButton?.addEventListener("click", closeDialog);
+        dialog.addEventListener("close", destroyCropper);
+        dialog.addEventListener("click", (event) => {
+            if (event.target === dialog) {
+                closeDialog();
+            }
+        });
 
         zoomInput.addEventListener("input", () => {
             const image = cropperInstance?.getCropperImage();

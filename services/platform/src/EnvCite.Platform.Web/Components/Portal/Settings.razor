@@ -19,50 +19,56 @@
             <div class="ep-pref-list">
                 <div class="ep-pref-row">
                     <span class="ep-pref-label">@L["相片"]</span>
-                    <div class="ep-pref-value">
-                        <div class="ep-avatar-summary">
-                            <button type="button" class="ep-avatar ep-avatar-lg ep-avatar-trigger" data-avatar-trigger aria-label="@L["變更"]" title="@L["變更"]">
-                                @if (!string.IsNullOrEmpty(AvatarUrl))
-                                {
-                                    <img class="ep-avatar-img" src="@AvatarUrl" alt="" />
-                                }
-                                else
-                                {
-                                    @AvatarInitial
-                                }
-                            </button>
-                            <span class="ep-hint">@L["新增相片以個人化你的帳號。"]</span>
-                        </div>
-                        <div class="ep-avatar-actions">
-                            <details class="ep-inline-edit" open="@(AvatarStatus is "too_large" or "invalid")">
-                                <summary class="ep-btn ep-btn-quiet">@L["變更"]</summary>
-                                <div class="ep-inline-edit-body">
-                                    <form method="post" action="@($"{PortalPaths.Home(Tenant)}/settings/avatar")" enctype="multipart/form-data" class="ep-form" data-avatar-form>
-                                        <AntiforgeryToken />
-                                        <FormField For="ep-avatar-file" Label="@L["選擇圖片"]" Hint="@L["支援 PNG、JPEG、WebP，上限 5 MB；可拖曳、縮放與旋轉裁切為圓形。"]">
-                                            <input id="ep-avatar-file" name="avatar" type="file" accept="image/png,image/jpeg,image/webp" class="ep-input ep-avatar-dropzone" data-avatar-input data-avatar-dropzone />
-                                        </FormField>
-                                        <div class="ep-avatar-cropper" data-avatar-cropper hidden>
-                                            <div class="ep-avatar-stage" data-avatar-stage></div>
-                                            <input type="range" min="0.5" max="3" step="0.05" value="1" data-avatar-zoom aria-label="@L["縮放"]" />
-                                            <div class="ep-avatar-tools">
-                                                <button type="button" class="ep-btn ep-btn-quiet" data-avatar-rotate="-90deg">@L["向左旋轉"]</button>
-                                                <button type="button" class="ep-btn ep-btn-quiet" data-avatar-rotate="90deg">@L["向右旋轉"]</button>
-                                                <button type="button" class="ep-btn ep-btn-quiet" data-avatar-reset>@L["重設"]</button>
-                                            </div>
-                                        </div>
-                                        <SubmitButton>@L["上傳並儲存"]</SubmitButton>
-                                    </form>
+                    <div class="ep-pref-value ep-avatar-field" data-avatar-dropzone>
+                        <form method="post" action="@($"{PortalPaths.Home(Tenant)}/settings/avatar")" enctype="multipart/form-data" class="ep-avatar-form" data-avatar-form>
+                            <AntiforgeryToken />
+                            <input id="ep-avatar-file" name="avatar" type="file" accept="image/png,image/jpeg,image/webp" class="ep-sr-only" data-avatar-input />
+                            <div class="ep-avatar-summary">
+                                <label for="ep-avatar-file" class="ep-avatar ep-avatar-lg ep-avatar-trigger" tabindex="0" role="button" aria-label="@L["變更"]" title="@L["變更"]" data-avatar-trigger>
+                                    @if (!string.IsNullOrEmpty(AvatarUrl))
+                                    {
+                                        <img class="ep-avatar-img" src="@AvatarUrl" alt="" />
+                                    }
+                                    else
+                                    {
+                                        @AvatarInitial
+                                    }
+                                    <span class="ep-avatar-overlay" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" /><circle cx="12" cy="13" r="3" /></svg>
+                                    </span>
+                                </label>
+                                <div class="ep-avatar-meta">
+                                    <div class="ep-avatar-actions">
+                                        <label for="ep-avatar-file" class="ep-btn ep-btn-quiet">@L["變更"]</label>
+                                        @if (!string.IsNullOrEmpty(AvatarUrl))
+                                        {
+                                            <button type="submit" formaction="@($"{PortalPaths.Home(Tenant)}/settings/avatar/remove")" class="ep-btn ep-btn-quiet">@L["移除"]</button>
+                                        }
+                                    </div>
+                                    <span class="ep-hint">@L["點擊頭像、拖放或貼上圖片，支援 PNG、JPEG、WebP（上限 5 MB）。"]</span>
                                 </div>
-                            </details>
-                            @if (!string.IsNullOrEmpty(AvatarUrl))
-                            {
-                                <form method="post" action="@($"{PortalPaths.Home(Tenant)}/settings/avatar/remove")">
-                                    <AntiforgeryToken />
-                                    <button type="submit" class="ep-btn ep-btn-quiet">@L["移除"]</button>
-                                </form>
-                            }
-                        </div>
+                            </div>
+
+                            <dialog class="ep-dialog ep-avatar-dialog" data-avatar-dialog aria-labelledby="ep-avatar-dialog-title">
+                                <div class="ep-dialog-head">
+                                    <h2 id="ep-avatar-dialog-title" class="ep-dialog-title">@L["調整頭像"]</h2>
+                                    <p class="ep-hint">@L["拖曳調整位置、縮放或旋轉後套用。"]</p>
+                                </div>
+                                <div class="ep-avatar-cropper" data-avatar-cropper>
+                                    <div class="ep-avatar-stage" data-avatar-stage></div>
+                                    <input type="range" min="0.5" max="3" step="0.05" value="1" data-avatar-zoom aria-label="@L["縮放"]" />
+                                    <div class="ep-avatar-tools">
+                                        <button type="button" class="ep-btn ep-btn-quiet" data-avatar-rotate="-90deg">@L["向左旋轉"]</button>
+                                        <button type="button" class="ep-btn ep-btn-quiet" data-avatar-rotate="90deg">@L["向右旋轉"]</button>
+                                        <button type="button" class="ep-btn ep-btn-quiet" data-avatar-reset>@L["重設"]</button>
+                                    </div>
+                                </div>
+                                <div class="ep-dialog-actions">
+                                    <button type="button" class="ep-btn ep-btn-quiet" data-avatar-cancel>@L["取消"]</button>
+                                    <SubmitButton>@L["套用"]</SubmitButton>
+                                </div>
+                            </dialog>
+                        </form>
                     </div>
                 </div>
 
