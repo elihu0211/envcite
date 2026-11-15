@@ -188,7 +188,7 @@ def test_an_amended_text_drops_the_interpretation_of_the_old_one(
 
 def test_a_writer_adds_rules_but_cannot_rewrite_them(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1())
-    conn.execute("SET ROLE envcite_ontology_writer")
+    conn.execute("SET ROLE canon_writer")
     try:
         load(conn, _doc(_letter("甲字第1號", "2019-03-01")))
         with pytest.raises(psycopg.errors.InsufficientPrivilege):

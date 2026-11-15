@@ -21,7 +21,7 @@ from grpc_status import rpc_status
 from psycopg_pool import PoolTimeout
 
 #: ErrorInfo 的 domain：本服務自己的錯誤命名空間。
-DOMAIN = "ontology.envcite"
+DOMAIN = "canon.envcite"
 
 #: ErrorInfo.reason。
 LAW_NOT_FOUND = "LAW_NOT_FOUND"

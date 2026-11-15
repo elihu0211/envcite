@@ -16,9 +16,9 @@ from tests.test_import import _scalar
 from tests.test_incremental import _first, _law_v1
 from tests.verification_support import DETERMINISTIC, Conn, _two_statements, _water_draft
 
-READER = "envcite_ontology_reader"
-WRITER = "envcite_ontology_writer"
-REVIEWER = "envcite_ontology_reviewer"
+READER = "canon_reader"
+WRITER = "canon_writer"
+REVIEWER = "canon_reviewer"
 
 
 @contextmanager

@@ -102,7 +102,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.Equal((AskMode.Search, AskStatus.Ok), (result.Mode, result.Status));
         Assert.NotEmpty(result.Hits!);
         Assert.Empty(chat.Calls);
-        Assert.Equal(["ontology.search"], await UsageAsync(tenant.Id));
+        Assert.Equal(["canon.search"], await UsageAsync(tenant.Id));
     }
 
     [Fact]
@@ -489,7 +489,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
 
         Assert.Equal((AskMode.Search, AskStatus.Ok), Pair(ok));
         Assert.Equal("2021-01-01", factory.Ontology.LastSearch!.AsOf);
-        Assert.Equal(["ontology.search"], await UsageAsync(tenant.Id));
+        Assert.Equal(["canon.search"], await UsageAsync(tenant.Id));
         Assert.Empty(chat.Calls);
     }
 

@@ -51,15 +51,15 @@
   <data name="Audit.Actor.tenant-user.id" xml:space="preserve"><value>租戶成員 {0}</value></data>
   <data name="Audit.Actor.system" xml:space="preserve"><value>系統</value></data>
   <data name="Audit.Actor.anonymous" xml:space="preserve"><value>匿名</value></data>
-  <data name="Usage.Operation.ontology.search" xml:space="preserve"><value>本體條文檢索</value></data>
-  <data name="Usage.Operation.ontology.get_law" xml:space="preserve"><value>取得單部法規</value></data>
-  <data name="Usage.Operation.ontology.list_articles" xml:space="preserve"><value>條文清單</value></data>
-  <data name="Usage.Operation.ontology.evaluate" xml:space="preserve"><value>法規論理推論</value></data>
+  <data name="Usage.Operation.canon.search" xml:space="preserve"><value>本體條文檢索</value></data>
+  <data name="Usage.Operation.canon.get_law" xml:space="preserve"><value>取得單部法規</value></data>
+  <data name="Usage.Operation.canon.list_articles" xml:space="preserve"><value>條文清單</value></data>
+  <data name="Usage.Operation.canon.evaluate" xml:space="preserve"><value>法規論理推論</value></data>
   <data name="Usage.Operation.consult.ground" xml:space="preserve"><value>諮詢接地證據集</value></data>
   <data name="Usage.Operation.consult.answer" xml:space="preserve"><value>模型生成回答</value></data>
   <data name="Usage.Operation.consult.tokens.input" xml:space="preserve"><value>模型輸入 Tokens</value></data>
   <data name="Usage.Operation.consult.tokens.output" xml:space="preserve"><value>模型輸出 Tokens</value></data>
-  <data name="Usage.Category.ontology" xml:space="preserve"><value>法規本體</value></data>
+  <data name="Usage.Category.canon" xml:space="preserve"><value>法規本體</value></data>
   <data name="Usage.Category.tokens" xml:space="preserve"><value>Token 計量</value></data>
   <data name="Usage.Category.consult" xml:space="preserve"><value>諮詢接地</value></data>
   <data name="Usage.Category.other" xml:space="preserve"><value>其他操作</value></data>
@@ -124,7 +124,7 @@
   <data name="Outcome.answer.not_configured" xml:space="preserve"><value>回答服務尚未設定。</value></data>
   <data name="Outcome.consult.unavailable" xml:space="preserve"><value>搜尋服務暫時無法使用，請稍後再試。</value></data>
   <data name="Outcome.model.unavailable" xml:space="preserve"><value>回答服務暫時無法使用，請稍後再試。</value></data>
-  <data name="Outcome.ontology.unavailable" xml:space="preserve"><value>搜尋服務暫時無法使用，請稍後再試。</value></data>
+  <data name="Outcome.canon.unavailable" xml:space="preserve"><value>搜尋服務暫時無法使用，請稍後再試。</value></data>
   <data name="Outcome.law.not_found" xml:space="preserve"><value>找不到這部法規（或指定的日期沒有有效的版本）。</value></data>
   <data name="Outcome.reasoning.busy" xml:space="preserve"><value>推論的容量暫時用完，請稍後再試。</value></data>
   <data name="Outcome.internal.error" xml:space="preserve"><value>發生未預期的錯誤。</value></data>

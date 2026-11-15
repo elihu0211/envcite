@@ -107,10 +107,10 @@ flowchart LR
 
 | 工具 | 對應 REST | 計量 |
 |------|-----------|------|
-| `search_articles`（`query`、`pointInTime`、`limit`） | `POST /v2/search` | `ontology.search` |
+| `search_articles`（`query`、`pointInTime`、`limit`） | `POST /v2/search` | `canon.search` |
 | `ground_question`（`question`、`pointInTime`） | `POST /v2/ground` | `consult.ground`（拒答也計一次） |
-| `get_law`（`jurisdiction`、`idScheme`、`localId`、`pointInTime`） | `GET /v2/laws/{…}` | `ontology.get_law` |
-| `list_articles`（同上） | `GET /v2/laws/{…}/articles` | `ontology.list_articles` |
+| `get_law`（`jurisdiction`、`idScheme`、`localId`、`pointInTime`） | `GET /v2/laws/{…}` | `canon.get_law` |
+| `list_articles`（同上） | `GET /v2/laws/{…}/articles` | `canon.list_articles` |
 | `evaluate_reasoning`（`request`：同 `POST /v2/reasoning/evaluate` 的本文） | `POST /v2/reasoning/evaluate` | `reasoning.evaluate` |
 
 - **資源**：`envcite://laws/{jurisdiction}/{idScheme}/{localId}`，一部法規現行的標題、基本資料與各條清單（JSON）；讀一次等於 `get_law` 加 `list_articles`，各計量一次。**提示**：`grounded_answer`（`question`、`pointInTime`），把「先 `ground_question`、只根據法源作答、以代號標明出處、證據不足就明說」交給用戶端的模型。

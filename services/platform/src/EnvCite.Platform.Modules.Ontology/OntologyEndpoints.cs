@@ -59,10 +59,10 @@ public sealed record ArticleDetailDto(
 
 public static class OntologyEndpoints
 {
-    public const string GetLawOperation = "ontology.get_law";
-    public const string ListArticlesOperation = "ontology.list_articles";
-    public const string GetArticleByIriOperation = "ontology.get_article_by_iri";
-    public const string SearchOperation = "ontology.search";
+    public const string GetLawOperation = "canon.get_law";
+    public const string ListArticlesOperation = "canon.list_articles";
+    public const string GetArticleByIriOperation = "canon.get_article_by_iri";
+    public const string SearchOperation = "canon.search";
 
     /// <summary>包在內部 gRPC 服務外的對外 REST facade；成功的呼叫會被計量。</summary>
     public static RouteGroupBuilder MapOntologyEndpoints(this RouteGroupBuilder v1)
@@ -76,7 +76,7 @@ public static class OntologyEndpoints
             .WithSummary("取得法規")
             .WithDescription("法規以複合自然鍵 `jurisdiction`／`idScheme`／`localId` 指定，三段都必填（中央法規如 `TW-CENTRAL/moj_pcode/O0020001`）；"
                 + "值不是合法的管轄或方案回 400，標題取自 `asOf` 當日有效的版本，省略 `asOf`（`YYYY-MM-DD`）表示現行。"
-                + "該日沒有有效的版本回 404，不會退回現行版本。成功計量為一次 `ontology.get_law`。")
+                + "該日沒有有效的版本回 404，不會退回現行版本。成功計量為一次 `canon.get_law`。")
             .Produces<LawDto>()
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
@@ -90,7 +90,7 @@ public static class OntologyEndpoints
             .WithTags("法規")
             .WithSummary("列出法規某日有效的各條")
             .WithDescription("法規的指定方式同「取得法規」。依條次排序；`number` 照來源寫法（如 `5-1`）。省略 `asOf`（`YYYY-MM-DD`）表示現行；該日沒有有效的版本回 404，不會退回現行版本。"
-                + "成功計量為一次 `ontology.list_articles`。")
+                + "成功計量為一次 `canon.list_articles`。")
             .Produces<IEnumerable<ArticleDto>>()
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status404NotFound)
@@ -126,7 +126,7 @@ public static class OntologyEndpoints
             .WithDescription(
                 "以字面檢索查詢某日有效的條文，相關度高的在前；只回達到相關性下界的條文，查不到相關條文時回空陣列，不用不相干的條文湊數。函釋的主旨或內文提到查詢詞時，它所解釋的條文也會列出（`guidanceDocuments` 為提到的函釋件數），函釋只用來找到條文，不是依據。`query` 必填，為原始文字（服務端自行分詞）；"
                 + "`asOf` 為 ISO 8601 日期（`YYYY-MM-DD`），省略表示現行；`limit` 為 1–50，省略為 10。"
-                + "用 POST 是為了讓查詢文字不出現在網址裡；查詢文字不寫入日誌。成功計量為一次 `ontology.search`（0 筆命中也計一次）。")
+                + "用 POST 是為了讓查詢文字不出現在網址裡；查詢文字不寫入日誌。成功計量為一次 `canon.search`（0 筆命中也計一次）。")
             .Produces<IEnumerable<SearchHitDto>>()
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);

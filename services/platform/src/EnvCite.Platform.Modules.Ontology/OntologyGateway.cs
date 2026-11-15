@@ -91,7 +91,7 @@ internal sealed class OntologyGateway(
         if (string.IsNullOrEmpty(trimmed))
             return AdminOutcome.Invalid<ArticleDetailDto>(OutcomeCodes.UpstreamInvalidRequest, "iri is required");
 
-        var cacheKey = $"ontology:article-iri:{trimmed}";
+        var cacheKey = $"canon:article-iri:{trimmed}";
         if (cache.TryGetValue(cacheKey, out ArticleDetailDto? cached) && cached is not null)
             return AdminOutcome.Ok(cached);
 
@@ -244,7 +244,7 @@ internal sealed class OntologyGateway(
         });
 
     // 內部服務容量用盡：法規查詢視為暫時不可用；推論有自己的代碼（呼叫端稍後重試）。
-    private const string OntologyBusy = OutcomeCodes.OntologyUnavailable;
+    private const string OntologyBusy = OutcomeCodes.CanonUnavailable;
 
     private static LawIdentifier IdentifierOf(string? jurisdiction, string? idScheme, string? localId) =>
         new() { Jurisdiction = jurisdiction ?? string.Empty, IdScheme = idScheme ?? string.Empty, LocalId = localId ?? string.Empty };
@@ -270,7 +270,7 @@ internal sealed class OntologyGateway(
         }
         catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable or StatusCode.DeadlineExceeded)
         {
-            return AdminOutcome.Unavailable<T>(OutcomeCodes.OntologyUnavailable);
+            return AdminOutcome.Unavailable<T>(OutcomeCodes.CanonUnavailable);
         }
     }
 }

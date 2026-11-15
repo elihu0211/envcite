@@ -136,7 +136,7 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
     public async Task<CreatedApiKey> IssueKeyAsync(string tenantId, DateTimeOffset? expiresAt = null)
     {
         var issued = await Services.GetRequiredService<IApiKeyAdmin>()
-            .IssueAsync(OperatorSession.Principal(), tenantId, "test", ["ontology:read"], expiresAt, CancellationToken.None);
+            .IssueAsync(OperatorSession.Principal(), tenantId, "test", ["canon:read"], expiresAt, CancellationToken.None);
         Assert.True(issued.IsOk, issued.Message);
         var info = issued.Value!.ApiKey;
         return new CreatedApiKey(

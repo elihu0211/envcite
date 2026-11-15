@@ -5,7 +5,7 @@
 ## Project
 
 - **Name:** canon。服務名只出現在部署單元：目錄、Python 套件與映像、叢集內的服務與工作負載、指令前綴 `canon-`、環境變數 `ENVCITE_CANON_*`、可觀測性的服務名。不加專案名 `envcite`（專案名是環境變數與叢集命名空間的前綴，不屬於服務名）。
-- **Naming:** 契約與持久化的識別碼用領域詞 ontology，**不隨服務名變動**：gRPC 套件 `envcite.ontology.v2` 與其服務、呼叫端的 `Ontology` 設定區段與模組、計量作業名 `ontology.*`、API key 範圍 `ontology:read`、錯誤的 `ErrorInfo.domain`、資料庫角色 `envcite_ontology_*`。改這些是契約或資料庫的破壞性變更，走各自的版本與遷移規則，不跟著服務更名。
+- **Naming:** 服務名 canon 也是持久化與錯誤識別碼的前綴：資料庫角色 `canon_reader`／`canon_writer`／`canon_reviewer`（部署端的登入身分 `canon_server`、`canon_jobs` 加入對應群組）、計量鍵 `canon.*`、API key 範圍 `canon:*`、結果碼 `canon.*`、`ErrorInfo.domain` 為 `canon.envcite`。契約的領域詞維持 ontology：gRPC 套件 `envcite.ontology.v2` 與 `OntologyService`、`ReasoningService`，以及呼叫端的 `Ontology` 設定區段與模組；改它們是契約的破壞性變更，走新套件版本。遷移檔 0027–0067 與 0068 內的舊角色名是已套用的歷史（有檢查碼），不改；0068 之後的授權一律寫新角色名。
 - **Role:** 本體服務（shared, non-tenant data）：各來源的知識集中在本服務，一種來源一個本體，各有自己的 schema 與引用代號字母（呼叫端看到的規則在倉庫根 `proto/README.md`）。新增來源是新增一個本體，不另立服務；拆成獨立服務只在該本體需要獨立擴縮或發版、資料不能與共享資料同庫、或需要不同的執行環境。由 `services/platform` 與 `services/consult` 呼叫。
 - **Layout:** 取得引擎、投影、驗證管線、gRPC 伺服器，以及本體的來源、解析、規則，都在套件頂層。資料表歸該本體自己的 schema。
 - **Stack:** Python · uv · gRPC（grpcio，同步伺服器）· PostgreSQL（psycopg 3）· ruff · mypy (strict) · pytest

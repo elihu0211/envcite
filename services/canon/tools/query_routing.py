@@ -572,7 +572,7 @@ def fetch_live(host: str, key: str, query: str) -> list[dict[str, Any]]:
 HTTP_HINTS = {
     401: "key 不被接受：貼錯、已撤銷或已過期；到該租戶的 API keys 區確認前綴，必要時重發",
     402: "租戶沒有方案；先在營運者後台指派方案，再簽發 key",
-    403: "key 沒有 ontology:read 範圍",
+    403: "key 沒有 canon:read 範圍",
     429: "超過用量或速率限制；稍後再試或降低 --sample",
 }
 

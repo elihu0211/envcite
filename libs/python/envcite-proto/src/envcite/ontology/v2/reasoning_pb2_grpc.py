@@ -29,7 +29,7 @@ class ReasoningServiceStub:
     """規範標註的唯讀存取，以及由標註推出的候選結論。
 
     傳輸規則同 OntologyService（見 proto/README.md）。錯誤帶 google.rpc.ErrorInfo
-    （reason 為 UPPER_SNAKE_CASE，domain 為 "ontology.envcite"）；INVALID_ARGUMENT
+    （reason 為 UPPER_SNAKE_CASE，domain 為 "canon.envcite"）；INVALID_ARGUMENT
     另帶 google.rpc.BadRequest。
 
     這裡的每個結論都只是「候選」。未通過驗證閘門確認的陳述不產生任何結論，沒有
@@ -59,7 +59,7 @@ class ReasoningServiceServicer:
     """規範標註的唯讀存取，以及由標註推出的候選結論。
 
     傳輸規則同 OntologyService（見 proto/README.md）。錯誤帶 google.rpc.ErrorInfo
-    （reason 為 UPPER_SNAKE_CASE，domain 為 "ontology.envcite"）；INVALID_ARGUMENT
+    （reason 為 UPPER_SNAKE_CASE，domain 為 "canon.envcite"）；INVALID_ARGUMENT
     另帶 google.rpc.BadRequest。
 
     這裡的每個結論都只是「候選」。未通過驗證閘門確認的陳述不產生任何結論，沒有
@@ -109,7 +109,7 @@ class ReasoningService:
     """規範標註的唯讀存取，以及由標註推出的候選結論。
 
     傳輸規則同 OntologyService（見 proto/README.md）。錯誤帶 google.rpc.ErrorInfo
-    （reason 為 UPPER_SNAKE_CASE，domain 為 "ontology.envcite"）；INVALID_ARGUMENT
+    （reason 為 UPPER_SNAKE_CASE，domain 為 "canon.envcite"）；INVALID_ARGUMENT
     另帶 google.rpc.BadRequest。
 
     這裡的每個結論都只是「候選」。未通過驗證閘門確認的陳述不產生任何結論，沒有

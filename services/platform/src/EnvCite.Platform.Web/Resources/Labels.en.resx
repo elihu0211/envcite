@@ -51,15 +51,15 @@
   <data name="Audit.Actor.tenant-user.id" xml:space="preserve"><value>Tenant member {0}</value></data>
   <data name="Audit.Actor.system" xml:space="preserve"><value>System</value></data>
   <data name="Audit.Actor.anonymous" xml:space="preserve"><value>Anonymous</value></data>
-  <data name="Usage.Operation.ontology.search" xml:space="preserve"><value>Article search</value></data>
-  <data name="Usage.Operation.ontology.get_law" xml:space="preserve"><value>Get a law</value></data>
-  <data name="Usage.Operation.ontology.list_articles" xml:space="preserve"><value>List articles</value></data>
-  <data name="Usage.Operation.ontology.evaluate" xml:space="preserve"><value>Legal reasoning</value></data>
+  <data name="Usage.Operation.canon.search" xml:space="preserve"><value>Article search</value></data>
+  <data name="Usage.Operation.canon.get_law" xml:space="preserve"><value>Get a law</value></data>
+  <data name="Usage.Operation.canon.list_articles" xml:space="preserve"><value>List articles</value></data>
+  <data name="Usage.Operation.canon.evaluate" xml:space="preserve"><value>Legal reasoning</value></data>
   <data name="Usage.Operation.consult.ground" xml:space="preserve"><value>Grounded evidence set</value></data>
   <data name="Usage.Operation.consult.answer" xml:space="preserve"><value>Model-generated answer</value></data>
   <data name="Usage.Operation.consult.tokens.input" xml:space="preserve"><value>Model input tokens</value></data>
   <data name="Usage.Operation.consult.tokens.output" xml:space="preserve"><value>Model output tokens</value></data>
-  <data name="Usage.Category.ontology" xml:space="preserve"><value>Legal ontology</value></data>
+  <data name="Usage.Category.canon" xml:space="preserve"><value>Legal ontology</value></data>
   <data name="Usage.Category.tokens" xml:space="preserve"><value>Token metering</value></data>
   <data name="Usage.Category.consult" xml:space="preserve"><value>Grounding</value></data>
   <data name="Usage.Category.other" xml:space="preserve"><value>Other operations</value></data>
@@ -124,7 +124,7 @@
   <data name="Outcome.answer.not_configured" xml:space="preserve"><value>Answer service is not configured.</value></data>
   <data name="Outcome.consult.unavailable" xml:space="preserve"><value>Consult service unavailable.</value></data>
   <data name="Outcome.model.unavailable" xml:space="preserve"><value>Model unavailable.</value></data>
-  <data name="Outcome.ontology.unavailable" xml:space="preserve"><value>Ontology service unavailable.</value></data>
+  <data name="Outcome.canon.unavailable" xml:space="preserve"><value>Canon service unavailable.</value></data>
   <data name="Outcome.law.not_found" xml:space="preserve"><value>Law not found.</value></data>
   <data name="Outcome.reasoning.busy" xml:space="preserve"><value>Reasoning capacity is in use; retry shortly.</value></data>
   <data name="Outcome.internal.error" xml:space="preserve"><value>An unexpected error occurred.</value></data>

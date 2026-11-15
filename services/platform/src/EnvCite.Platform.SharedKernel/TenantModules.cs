@@ -38,11 +38,11 @@ public static class ModuleCatalog
 {
     public static IReadOnlyList<ModuleDescriptor> All { get; } =
     [
-        new(ModuleKeys.LawSearch, "ontology", []),
-        new(ModuleKeys.LawCorpus, "ontology", []),
-        new(ModuleKeys.EvidenceGrounding, "ontology", []),
-        new(ModuleKeys.GroundedAnswer, "ontology", [ModuleKeys.EvidenceGrounding], RequiresGlobalAvailability: true, OptInByDefault: true),
-        new(ModuleKeys.NormativeReasoning, "ontology", []),
+        new(ModuleKeys.LawSearch, "canon", []),
+        new(ModuleKeys.LawCorpus, "canon", []),
+        new(ModuleKeys.EvidenceGrounding, "canon", []),
+        new(ModuleKeys.GroundedAnswer, "canon", [ModuleKeys.EvidenceGrounding], RequiresGlobalAvailability: true, OptInByDefault: true),
+        new(ModuleKeys.NormativeReasoning, "canon", []),
     ];
 
     private static readonly FrozenDictionary<string, ModuleDescriptor> ByKey =

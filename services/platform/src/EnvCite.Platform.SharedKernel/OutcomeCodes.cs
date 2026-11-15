@@ -58,7 +58,7 @@ public static class OutcomeCodes
     public const string AnswerNotConfigured = "answer.not_configured";
     public const string ConsultUnavailable = "consult.unavailable";
     public const string ModelUnavailable = "model.unavailable";
-    public const string OntologyUnavailable = "ontology.unavailable";
+    public const string CanonUnavailable = "canon.unavailable";
     public const string LawNotFound = "law.not_found";
     public const string ReasoningBusy = "reasoning.busy";
     public const string InternalError = "internal.error";
@@ -136,7 +136,7 @@ public static class OutcomeCodes
         [AnswerNotConfigured] = "Answer service is not configured.",
         [ConsultUnavailable] = "Consult service unavailable.",
         [ModelUnavailable] = "Model unavailable.",
-        [OntologyUnavailable] = "Ontology service unavailable.",
+        [CanonUnavailable] = "Canon service unavailable.",
         [LawNotFound] = "Law not found.",
         [ReasoningBusy] = "Reasoning capacity is in use; retry shortly.",
         [InternalError] = "An unexpected error occurred.",
