@@ -45,10 +45,15 @@ src = ["services/*/src", "services/*", "libs/python/*/src", "libs/python/*"]
 extend-exclude = ["libs/python/envcite-proto/src"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "C901", "PLR0912", "PLR0915",
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "A", "C901", "PLR0912", "PLR0915",
           "D100", "D101", "D102", "D103", "ANN401"]
 # RUF001／RUF002／RUF003 把全形標點當成易混淆字元；法條與註解都是中文，全形標點是對的。
-ignore = ["RUF001", "RUF002", "RUF003"]
+ignore = ["RUF001", "RUF002", "RUF003", "N818"]
+# N818：領域例外依事件命名（`InvalidSnapshot`、`HttpStatus`），不是每個都是錯誤。
+
+# 模組名不得與標準庫同名（含子套件，如 `canon/http.py` 會遮蔽 `http`）。
+[tool.ruff.lint.flake8-builtins]
+strict-checking = true
 
 [tool.ruff.lint.mccabe]
 max-complexity = 14
@@ -67,6 +72,10 @@ max-statements = 60
 "services/canon/tools/**" = ["C901", "PLR0912", "PLR0915", "D1", "ANN401"]
 # 動態邊界：clingo 的答案集原子，各述詞的引數型別由 rules.lp 決定（見 `_py` 的說明）。
 "services/canon/src/canon/reasoning/engine.py" = ["ANN401"]
+# gRPC 的 servicer 方法名與 protobuf 的 API 是 PascalCase，由 .proto 決定。
+"services/canon/src/canon/service.py" = ["N802"]
+"services/canon/src/canon/reasoning_service.py" = ["N802"]
+"services/canon/tests/test_keyword_golden.py" = ["N802"]
 
 [tool.mypy]
 strict = true

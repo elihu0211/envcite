@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 
-from canon.http import USER_AGENT
+from canon.net import USER_AGENT
 from canon.reranking import (
     MAX_BATCH,
     MAX_DOCUMENT_CHARS,

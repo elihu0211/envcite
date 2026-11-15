@@ -4,8 +4,9 @@
 
 ## Project
 
-- **Name:** canon。服務名只出現在部署單元：目錄、Python 套件與映像、叢集內的服務與工作負載、指令前綴 `canon-`、環境變數 `ENVCITE_CANON_*`、可觀測性的服務名。不加專案名 `envcite`（專案名是環境變數與叢集命名空間的前綴，不屬於服務名）。
+- **Name:** canon（典籍：具權威的條文與典籍全體，對應 PostgreSQL 為唯一真值、結論只是候選的定位）。服務名只出現在部署單元：目錄、Python 套件與映像、叢集內的服務與工作負載、指令前綴 `canon-`、環境變數 `ENVCITE_CANON_*`、可觀測性的服務名。不加專案名 `envcite`（專案名是環境變數與叢集命名空間的前綴，不屬於服務名）。
 - **Naming:** 服務名 canon 也是持久化與錯誤識別碼的前綴：資料庫角色 `canon_reader`／`canon_writer`／`canon_reviewer`（部署端的登入身分 `canon_server`、`canon_jobs` 加入對應群組）、計量鍵 `canon.*`、API key 範圍 `canon:*`、結果碼 `canon.*`、`ErrorInfo.domain` 為 `canon.envcite`。契約的領域詞維持 ontology：gRPC 套件 `envcite.ontology.v2` 與 `OntologyService`、`ReasoningService`，以及呼叫端的 `Ontology` 設定區段與模組；改它們是契約的破壞性變更，走新套件版本。遷移檔 0027–0067 與 0068 內的舊角色名是已套用的歷史（有檢查碼），不改；0068 之後的授權一律寫新角色名。
+- **Conventions:** 發行名、匯入名與服務名同為 `canon`（`src/` 佈局，`uv_build` 預設以發行名找 `src/canon/`）。套件與模組小寫、短名詞、以職責命名（PEP 8）：不用 `utils`、`helpers` 這類什麼都能放的名字，不與標準庫同名（含子套件；ruff `A005` 嚴格模式守門）；類別 CapWords、函式與變數 snake_case（ruff `N` 守門；領域例外依事件命名，不套 `N818`；gRPC 方法與 protobuf API 的 PascalCase 由 `.proto` 決定）。指令入口是 `canon-<動詞>`（`[project.scripts]`）。本體子包以本體代號命名，與服務名不同層。
 - **Role:** 本體服務（shared, non-tenant data）：各來源的知識集中在本服務，一種來源一個本體，各有自己的 schema 與引用代號字母（呼叫端看到的規則在倉庫根 `proto/README.md`）。新增來源是新增一個本體，不另立服務；拆成獨立服務只在該本體需要獨立擴縮或發版、資料不能與共享資料同庫、或需要不同的執行環境。由 `services/platform` 與 `services/consult` 呼叫。
 - **Layout:** 引擎（取得框架、投影、檢索、標註、驗證、推論、gRPC 伺服器）在套件頂層；法規本體的來源、解析與法規專屬的功能在 `law/`（扁平的模組，沒有中介層）。新增本體是新增與 `law/` 同層的 `canon/<代號>/` 子包，不放進 `ontologies/` 之類的容器。組合根（`server.py`、`sync.py`、`acquire/cli.py` 與各指令入口）負責接線。資料表歸該本體自己的 schema。
 - **Stack:** Python · uv · gRPC（grpcio，同步伺服器）· PostgreSQL（psycopg 3）· ruff · mypy (strict) · pytest

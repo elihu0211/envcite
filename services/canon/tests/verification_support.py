@@ -158,7 +158,7 @@ def _duty_and_cited_penalty() -> dict[str, Any]:
     return doc
 
 
-class Sequence_:
+class ScriptedModel:
     """A model that gives its answers in turn (the last one repeats)."""
 
     name = "fake:sequence"

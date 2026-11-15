@@ -28,7 +28,7 @@ def record_attempt(
     agent: str,
     version: str,
     out: Extracted | ExtractedDefinitions,
-    round: int = 0,
+    round_no: int = 0,
 ) -> None:
     """記一筆抽取紀錄（沒有答案可記的結果不記），一個交易；已有同一筆則不動。"""
     if any(reason.startswith(_NO_ANSWER) for reason in out.dropped):
@@ -43,7 +43,7 @@ def record_attempt(
         "   JOIN corpus.provision_version AS v ON v.provision_id = p.id AND v.superseded_at IS NULL"
         "  WHERE r.local_id = %s AND p.path = %s"
         " ON CONFLICT DO NOTHING",
-        (agent, version, _count(out), len(out.dropped), round, law, path),
+        (agent, version, _count(out), len(out.dropped), round_no, law, path),
     )
     conn.commit()
 

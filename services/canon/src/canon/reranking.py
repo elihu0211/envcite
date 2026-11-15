@@ -15,7 +15,7 @@ from collections.abc import Callable, Sequence
 from time import monotonic
 from typing import Protocol
 
-from canon.http import HttpStatus, TransportError, post_json
+from canon.net import HttpStatus, TransportError, post_json
 
 log = logging.getLogger(__name__)
 

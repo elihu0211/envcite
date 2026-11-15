@@ -10,7 +10,7 @@
 import logging
 from collections.abc import Mapping, Sequence
 
-from canon.http import HttpStatus, TransportError, post_json
+from canon.net import HttpStatus, TransportError, post_json
 from envcite_jobkit import Disposition, EndpointError, FatalError, ItemError, classify_http_status
 
 log = logging.getLogger(__name__)

@@ -12,7 +12,7 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
 
-from canon.http import HttpStatus, TransportError, endpoint, post_json
+from canon.net import HttpStatus, TransportError, endpoint, post_json
 
 
 class ModelError(RuntimeError):
