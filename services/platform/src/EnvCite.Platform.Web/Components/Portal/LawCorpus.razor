@@ -411,109 +411,176 @@ else
 
     private RenderFragment RenderReasoningWorkspace() =>
         @<SectionCard Id="reasoning-panel-title" Title="@L["合規推論試算"]">
-            <p class="ep-page-description">@L["選擇常見情境或輸入事實，由確定性推論引擎評估候選風險與缺漏要件。"]</p>
-            <div class="ep-preset-row">
-                <button type="button" class="ep-preset-chip" data-reasoning-preset="daily" aria-pressed="false">@L["日常合規自評"]</button>
-                <button type="button" class="ep-preset-chip" data-reasoning-preset="incident" aria-pressed="false">@L["設備異常通報"]</button>
-                <button type="button" class="ep-preset-chip" data-reasoning-preset="benefit" aria-pressed="false">@L["超標與不法利得"]</button>
-            </div>
-            <FormAlert Message="@Error" />
-            <PostForm Model="Input" FormName="portal-reasoning" OnValidSubmit="EvaluateAsync">
-                <div class="ep-reasoning-grid">
-                    <FormField For="r-conduct-on" Label="@L["行為日"]" Hint="@L["YYYY-MM-DD（必填）"]">
-                        <input id="r-conduct-on" name="Input.ConductOn" type="date" class="ep-input" value="@Input.ConductOn" required />
-                    </FormField>
-                    <FormField For="r-decided-on" Label="@L["裁處日"]" Hint="@L["YYYY-MM-DD（必填，不得早於行為日）"]">
-                        <input id="r-decided-on" name="Input.DecidedOn" type="date" class="ep-input" value="@Input.DecidedOn" required />
-                    </FormField>
-                    <FormField For="r-benefit" Label="@L["違法所得利益"]" Hint="@L["元，十進位數字（選填，第 18 條第 2 項）"]">
-                        <input id="r-benefit" name="Input.GainedBenefit" class="ep-input" value="@Input.GainedBenefit" />
-                    </FormField>
-                </div>
-                <details class="ep-tree-manual">
-                    <summary class="ep-tree-manual-toggle">@L["進階：裁處與時效參數"]</summary>
-                    <div class="ep-reasoning-grid">
-                        <FormField For="r-conduct-ended" Label="@L["行為終了日"]" Hint="@L["YYYY-MM-DD（選填，起算裁處權時效）"]">
-                            <input id="r-conduct-ended" name="Input.ConductEndedOn" type="date" class="ep-input" value="@Input.ConductEndedOn" />
-                        </FormField>
-                        <SelectField For="r-criminal" Label="@L["同時觸犯刑事法律（第 26 條第 1 項）"]"
-                                     Options="TriStateOptions" @bind-Value="Input.CriminalOffense" />
-                        <SelectField For="r-confiscated" Label="@L["法院已宣告沒收（第 26 條第 1 項但書）"]"
-                                     Options="TriStateOptions" @bind-Value="Input.CourtConfiscated" />
-                        <FormField For="r-payment" Label="@L["刑事命支付金額"]" Hint="@L["元，十進位數字（選填）"]">
-                            <input id="r-payment" name="Input.CriminalPayment" class="ep-input" value="@Input.CriminalPayment" />
-                        </FormField>
-                        <FormField For="r-pollutant-code" Label="@L["污染物／計量項目"]" Hint="@L["如 cod、bod、sox"]">
-                            <input id="r-pollutant-code" name="Input.PollutantCode" class="ep-input" value="@Input.PollutantCode" />
-                        </FormField>
-                        <FormField For="r-pollutant-value" Label="@L["實測值"]" Hint="@L["十進位數值（選填）"]">
-                            <input id="r-pollutant-value" name="Input.PollutantValue" class="ep-input ep-tabular" value="@Input.PollutantValue" />
-                        </FormField>
-                        <FormField For="r-pollutant-unit" Label="@L["計量單位"]" Hint="@L["如 mg/L、ppm、mg/Nm3"]">
-                            <input id="r-pollutant-unit" name="Input.PollutantUnit" class="ep-input" value="@Input.PollutantUnit" />
-                        </FormField>
-                        <FormField For="r-scoring-matrix" Label="@L["裁罰矩陣代碼"]" Hint="@L["如 water_effluent、air_stationary、construction_demerit"]">
-                            <input id="r-scoring-matrix" name="Input.ScoringMatrixCode" class="ep-input" value="@Input.ScoringMatrixCode" />
-                        </FormField>
-                    </div>
-                </details>
-                <SubmitButton>@L["執行推論評估"]</SubmitButton>
-            </PostForm>
+            <p class="ep-page-description">@L["依台灣行政罰法三階論（構成要件、違法性、有責性）與凱爾森法規範位階，針對行為日與裁處日之有效規範進行確定性合規推論。"]</p>
 
-            @if (_reasoningOutcome is { } result)
-            {
-                <div class="ep-reasoning-result">
-                    <StatGrid Items="SummaryStats(result)" />
-                    <div class="ep-tier-strip" role="region" aria-label="@L["行政罰法三階審查"]">
-                        <div class="ep-tier-node is-active">
-                            <span class="ep-tier-kicker">@L["第一階 · 構成要件該當性"]</span>
-                            <strong class="ep-tier-value ep-tabular">@result.Verdicts.Count @L["項候選"]</strong>
-                        </div>
-                        <div class="ep-tier-node @(result.ThreeTierDefenses?.Any(d => d.Tier == "Tier2_Illegality") == true ? "is-cleared" : "is-active")">
-                            <span class="ep-tier-kicker">@L["第二階 · 違法性（§§11–13）"]</span>
-                            <strong class="ep-tier-value ep-tabular">@((result.ThreeTierDefenses ?? []).Count(d => d.Tier == "Tier2_Illegality")) @L["項阻卻違法"]</strong>
-                        </div>
-                        <div class="ep-tier-node @(result.ThreeTierDefenses?.Any(d => d.Tier == "Tier3_Culpability") == true ? "is-cleared" : "is-active")">
-                            <span class="ep-tier-kicker">@L["第三階 · 有責性（§§7–9）"]</span>
-                            <strong class="ep-tier-value ep-tabular">@((result.ThreeTierDefenses ?? []).Count(d => d.Tier == "Tier3_Culpability")) @L["項阻卻責任"]</strong>
-                        </div>
+            <div class="ep-reasoning-split">
+                <div class="ep-reasoning-input-pane">
+                    <div class="ep-preset-row" aria-label="@L["常見情境範本"]">
+                        <span class="ep-hint">@L["情境範本："]</span>
+                        <button type="button" class="ep-preset-chip" data-reasoning-preset="daily" aria-pressed="false">@L["日常合規自評"]</button>
+                        <button type="button" class="ep-preset-chip" data-reasoning-preset="incident" aria-pressed="false">@L["設備異常通報"]</button>
+                        <button type="button" class="ep-preset-chip" data-reasoning-preset="benefit" aria-pressed="false">@L["超標與不法利得"]</button>
                     </div>
-                    @if (result.ScoringResults is { Count: > 0 })
+                    <FormAlert Message="@Error" />
+                    <PostForm Model="Input" FormName="portal-reasoning" OnValidSubmit="EvaluateAsync">
+                        <fieldset class="ep-ontology-fieldset">
+                            <legend class="ep-ontology-legend">@L["① 時空與時效基準（行政罰法第 5、27 條）"]</legend>
+                            <div class="ep-reasoning-grid">
+                                <FormField For="r-conduct-on" Label="@L["行為日"]" Hint="@L["決定行為時法規範（必填）"]">
+                                    <input id="r-conduct-on" name="Input.ConductOn" type="date" class="ep-input" value="@Input.ConductOn" required />
+                                </FormField>
+                                <FormField For="r-decided-on" Label="@L["裁處日"]" Hint="@L["決定裁處時法規範，不得早於行為日（必填）"]">
+                                    <input id="r-decided-on" name="Input.DecidedOn" type="date" class="ep-input" value="@Input.DecidedOn" required />
+                                </FormField>
+                                <FormField For="r-conduct-ended" Label="@L["行為終了日"]" Hint="@L["起算 3 年裁處權時效（選填）"]">
+                                    <input id="r-conduct-ended" name="Input.ConductEndedOn" type="date" class="ep-input" value="@Input.ConductEndedOn" />
+                                </FormField>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="ep-ontology-fieldset">
+                            <legend class="ep-ontology-legend">@L["② 構成要件事實與不法利得（行政罰法第 18 條）"]</legend>
+                            <div class="ep-reasoning-grid ep-reasoning-grid-3">
+                                <FormField For="r-pollutant-code" Label="@L["污染物／計量項目"]" Hint="@L["如 cod、bod、sox"]">
+                                    <input id="r-pollutant-code" name="Input.PollutantCode" class="ep-input" value="@Input.PollutantCode" />
+                                </FormField>
+                                <FormField For="r-pollutant-value" Label="@L["實測值"]" Hint="@L["十進位數值（選填）"]">
+                                    <input id="r-pollutant-value" name="Input.PollutantValue" class="ep-input ep-tabular" value="@Input.PollutantValue" />
+                                </FormField>
+                                <FormField For="r-pollutant-unit" Label="@L["計量單位"]" Hint="@L["如 mg/L、ppm、mg/Nm3"]">
+                                    <input id="r-pollutant-unit" name="Input.PollutantUnit" class="ep-input" value="@Input.PollutantUnit" />
+                                </FormField>
+                            </div>
+                            <div class="ep-reasoning-grid">
+                                <FormField For="r-benefit" Label="@L["違法所得利益"]" Hint="@L["元，依第 18 條第 2 項酌量加重（選填）"]">
+                                    <input id="r-benefit" name="Input.GainedBenefit" class="ep-input ep-tabular" value="@Input.GainedBenefit" />
+                                </FormField>
+                                <FormField For="r-scoring-matrix" Label="@L["裁罰矩陣代碼"]" Hint="@L["如 water_effluent、air_stationary、construction_demerit"]">
+                                    <input id="r-scoring-matrix" name="Input.ScoringMatrixCode" class="ep-input" value="@Input.ScoringMatrixCode" />
+                                </FormField>
+                            </div>
+                        </fieldset>
+
+                        <details class="ep-tree-manual">
+                            <summary class="ep-tree-manual-toggle">@L["③ 進階：刑罰優先與競合參數（行政罰法第 26 條）"]</summary>
+                            <div class="ep-reasoning-grid">
+                                <SelectField For="r-criminal" Label="@L["同時觸犯刑事法律（第 26 條第 1 項）"]"
+                                             Options="TriStateOptions" @bind-Value="Input.CriminalOffense" />
+                                <SelectField For="r-confiscated" Label="@L["法院已宣告沒收（第 26 條第 1 項但書）"]"
+                                             Options="TriStateOptions" @bind-Value="Input.CourtConfiscated" />
+                                <FormField For="r-payment" Label="@L["刑事命支付金額"]" Hint="@L["元，十進位數字（選填）"]">
+                                    <input id="r-payment" name="Input.CriminalPayment" class="ep-input ep-tabular" value="@Input.CriminalPayment" />
+                                </FormField>
+                            </div>
+                        </details>
+
+                        <div class="ep-reasoning-submit-row">
+                            <SubmitButton>@L["執行推論評估"]</SubmitButton>
+                        </div>
+                    </PostForm>
+                </div>
+
+                <div class="ep-reasoning-output-pane" aria-live="polite">
+                    @if (_reasoningOutcome is { } result)
                     {
-                        <div class="ep-scoring-grid">
-                            @foreach (var sc in result.ScoringResults)
+                        <div class="ep-reasoning-result">
+                            <StatGrid Items="SummaryStats(result)" />
+                            <div class="ep-tier-strip" role="region" aria-label="@L["行政罰法三階審查"]">
+                                <div class="ep-tier-node is-active">
+                                    <span class="ep-tier-kicker">@L["第一階 · 構成要件該當性"]</span>
+                                    <strong class="ep-tier-value ep-tabular">@result.Verdicts.Count @L["項候選"]</strong>
+                                </div>
+                                <div class="ep-tier-node @(result.ThreeTierDefenses?.Any(d => d.Tier == "Tier2_Illegality") == true ? "is-cleared" : "is-active")">
+                                    <span class="ep-tier-kicker">@L["第二階 · 違法性（§§11–13）"]</span>
+                                    <strong class="ep-tier-value ep-tabular">@((result.ThreeTierDefenses ?? []).Count(d => d.Tier == "Tier2_Illegality")) @L["項阻卻違法"]</strong>
+                                </div>
+                                <div class="ep-tier-node @(result.ThreeTierDefenses?.Any(d => d.Tier == "Tier3_Culpability") == true ? "is-cleared" : "is-active")">
+                                    <span class="ep-tier-kicker">@L["第三階 · 有責性（§§7–9）"]</span>
+                                    <strong class="ep-tier-value ep-tabular">@((result.ThreeTierDefenses ?? []).Count(d => d.Tier == "Tier3_Culpability")) @L["項阻卻責任"]</strong>
+                                </div>
+                            </div>
+
+                            @if (result.OneActMin is not null || result.OneActMax is not null)
                             {
-                                <article class="ep-scoring-card">
-                                    <header class="ep-scoring-header">
-                                        <strong>@sc.LawTitle</strong>
-                                        <code class="ep-mono">@sc.FormulaKind</code>
-                                    </header>
-                                    <p class="ep-hint">@sc.EquationSummary</p>
-                                    <div class="ep-scoring-metrics ep-tabular">
-                                        @if (sc.ClampedMin is not null || sc.ClampedMax is not null)
+                                <div class="ep-oneact-banner">
+                                    <span class="ep-tier-kicker">@L["一行為不二罰／從一重處斷（行政罰法第 24 條）"]</span>
+                                    <strong class="ep-tabular">NT$ @(result.OneActMin?.ToString("N0") ?? "?") ～ NT$ @(result.OneActMax?.ToString("N0") ?? "?")</strong>
+                                </div>
+                            }
+
+                            @if (result.ScoringResults is { Count: > 0 })
+                            {
+                                <div class="ep-scoring-grid">
+                                    @foreach (var sc in result.ScoringResults)
+                                    {
+                                        <article class="ep-scoring-card">
+                                            <header class="ep-scoring-header">
+                                                <strong>@sc.LawTitle</strong>
+                                                <code class="ep-mono">@sc.FormulaKind</code>
+                                            </header>
+                                            <p class="ep-hint">@sc.EquationSummary</p>
+                                            <div class="ep-scoring-metrics ep-tabular">
+                                                @if (sc.ClampedMin is not null || sc.ClampedMax is not null)
+                                                {
+                                                    <span>@L["裁罰區間"]：NT$ @(sc.ClampedMin?.ToString("N0") ?? "?") ～ NT$ @(sc.ClampedMax?.ToString("N0") ?? "?")</span>
+                                                }
+                                                <span>@L["環境講習"]：@sc.LectureHoursMin ～ @sc.LectureHoursMax @L["小時"]</span>
+                                                @if (sc.DemeritTotal is not null)
+                                                {
+                                                    <span>@L["缺失記點"]：@sc.DemeritTotal @L["點"]（@(sc.DemeritTriggered == true ? L["已達 10 點門檻"] : L["未達 10 點"])）</span>
+                                                }
+                                            </div>
+                                        </article>
+                                    }
+                                </div>
+                            }
+
+                            @if (result.MissingConcepts is { Count: > 0 })
+                            {
+                                <div class="ep-ontology-guide-card">
+                                    <h3 class="ep-subpanel-title">@L["待補充要件事實（{0}）", result.MissingConcepts.Count]</h3>
+                                    <div class="ep-chip-row">
+                                        @foreach (var concept in result.MissingConcepts)
                                         {
-                                            <span>@L["裁罰區間"]：NT$ @(sc.ClampedMin?.ToString("N0") ?? "?") ～ NT$ @(sc.ClampedMax?.ToString("N0") ?? "?")</span>
-                                        }
-                                        <span>@L["環境講習"]：@sc.LectureHoursMin ～ @sc.LectureHoursMax @L["小時"]</span>
-                                        @if (sc.DemeritTotal is not null)
-                                        {
-                                            <span>@L["缺失記點"]：@sc.DemeritTotal @L["點"]（@(sc.DemeritTriggered == true ? L["已達 10 點門檻"] : L["未達 10 點"])）</span>
+                                            <code class="ep-mono ep-article-chip">@concept</code>
                                         }
                                     </div>
-                                </article>
+                                </div>
+                            }
+
+                            @if (result.Verdicts.Count == 0)
+                            {
+                                <FormAlert Kind="AlertKind.Info" Message="@L["沒有已確認的規範陳述產生裁處結論；這不代表合規。"]" />
+                            }
+                            else
+                            {
+                                <DataTable Items="result.Verdicts" Columns="VerdictColumns" Label="@L["候選結論"]" Plain="true" />
                             }
                         </div>
                     }
-                    @if (result.Verdicts.Count == 0)
-                    {
-                        <p class="ep-page-description">@L["沒有已確認的規範陳述產生裁處結論；這不代表合規。"]</p>
-                    }
                     else
                     {
-                        <DataTable Items="result.Verdicts" Columns="VerdictColumns" Label="@L["候選結論"]" Plain="true" />
+                        <div class="ep-ontology-guide" role="region" aria-label="@L["台灣法學推論邏輯說明"]">
+                            <h3 class="ep-subpanel-title">@L["本體論合規審查流程"]</h3>
+                            <p class="ep-hint">@L["請於左側選擇情境範本或輸入行為日、裁處日與事實參數，點選「執行推論評估」後，此處將輸出三階審查結論與裁罰區間。"]</p>
+                            <ol class="ep-ontology-steps">
+                                <li class="ep-ontology-step">
+                                    <strong class="ep-ontology-step-title">@L["1. 規範位階與時效鎖定（Stufenbau）"]</strong>
+                                    <span class="ep-hint">@L["依行為日／裁處日比對有效法規版本，排除憲法法庭宣告違憲失效條文，並依行政罰法第 5 條檢視從新從輕比較組。"]</span>
+                                </li>
+                                <li class="ep-ontology-step">
+                                    <strong class="ep-ontology-step-title">@L["2. 行政罰法三階審查（§§7–13）"]</strong>
+                                    <span class="ep-hint">@L["依序檢驗「構成要件該當性 → 違法性（阻卻違法事由）→ 有責性（故意過失與責任能力）」，明確區分候選裁處與缺漏要件。"]</span>
+                                </li>
+                                <li class="ep-ontology-step">
+                                    <strong class="ep-ontology-step-title">@L["3. 競合、不法利得與裁罰矩陣（§§18, 24, 26）"]</strong>
+                                    <span class="ep-hint">@L["整合一行為不二罰（從一重處斷）、刑罰優先原則及環境法規裁罰矩陣，試算建議罰鍰區間與環境講習時數。"]</span>
+                                </li>
+                            </ol>
+                        </div>
                     }
                 </div>
-            }
+            </div>
         </SectionCard>;
 
     private RenderFragment RenderTreeNode(PortalLawTreeNode node) => __builder =>

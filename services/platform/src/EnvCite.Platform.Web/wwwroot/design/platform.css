@@ -5446,6 +5446,52 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     opacity: 0.45;
 }
 
+.ep-workbench-shell .ep-form {
+    max-inline-size: none;
+}
+
+.ep-reasoning-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ep-space-6);
+    align-items: start;
+    margin-block-start: var(--ep-space-4);
+}
+
+@media (width >= 80rem) {
+    .ep-reasoning-split {
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    }
+}
+
+.ep-reasoning-input-pane,
+.ep-reasoning-output-pane {
+    min-inline-size: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-4);
+}
+
+.ep-ontology-fieldset {
+    margin: 0;
+    padding: var(--ep-space-4);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-3);
+    min-inline-size: 0;
+}
+
+.ep-ontology-legend {
+    padding-inline: var(--ep-space-2);
+    font-size: var(--ep-label-l-size);
+    line-height: var(--ep-label-l-leading);
+    font-weight: var(--ep-label-l-weight);
+    color: var(--ep-text);
+}
+
 .ep-reasoning-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -5456,13 +5502,71 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     .ep-reasoning-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .ep-reasoning-grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.ep-reasoning-submit-row {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
 }
 
 .ep-reasoning-result {
-    margin-block-start: var(--ep-space-6);
     display: flex;
     flex-direction: column;
     gap: var(--ep-space-4);
+}
+
+.ep-ontology-guide,
+.ep-ontology-guide-card {
+    padding: var(--ep-space-4);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface-muted);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-3);
+}
+
+.ep-ontology-steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-3);
+}
+
+.ep-ontology-step {
+    padding: var(--ep-space-3);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+}
+
+.ep-ontology-step-title {
+    font-size: var(--ep-label-l-size);
+    line-height: var(--ep-label-l-leading);
+    font-weight: var(--ep-label-l-weight);
+    color: var(--ep-text);
+}
+
+.ep-oneact-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ep-space-2);
+    padding: var(--ep-space-3) var(--ep-space-4);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: color-mix(in srgb, var(--ep-primary) 12%, var(--ep-surface));
 }
 
 .ep-preset-chip {
