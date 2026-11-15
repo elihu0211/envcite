@@ -2,7 +2,7 @@
 #
 #   docker build -f services/canon/Dockerfile .
 #
-# 一個映像、兩個進入點：伺服器（預設）與遷移 Job 用的 `canon-migrate`。/app 的目錄結構照倉庫，
+# 一個映像、兩個進入點：伺服器（預設）與遷移 Job 用的 `canon migrate`。/app 的目錄結構照倉庫，
 # 因為 migrator 以自己的原始檔位置找 migrations/。
 #
 # Python workspace（根的 pyproject.toml 與 uv.lock）由所有服務共用，但只複製本服務的成員。
@@ -58,4 +58,4 @@ WORKDIR /app/services/canon
 # 與部署庫的 runAsUser／runAsGroup 一致。
 USER 1000:1000
 EXPOSE 50051
-CMD ["canon-serve"]
+CMD ["canon", "serve"]

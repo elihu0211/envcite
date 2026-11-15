@@ -11,7 +11,7 @@ class BatchRejected(Exception):
 
 @dataclass
 class Report:
-    """一次 `canon-history` 的計數；`line()` 輸出成日誌的一行 JSON。"""
+    """一次 `canon history` 的計數；`line()` 輸出成日誌的一行 JSON。"""
 
     listed: int = 0
     fetched_pages: int = 0

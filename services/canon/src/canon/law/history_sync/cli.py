@@ -1,4 +1,4 @@
-"""`canon-history` 指令列。"""
+"""`canon history` 指令列。"""
 
 import argparse
 import logging
@@ -17,12 +17,12 @@ from envcite_jobkit import (
 
 
 def main() -> None:
-    """`canon-history <來源> [步驟]`：取得法規的歷史版本並補進語料。
+    """`canon history <來源> [步驟]`：取得法規的歷史版本並補進語料。
 
     步驟 `acquire` 只取得各版存成快照，`import` 只回推並寫入語料，預設的 `sync` 兩者都跑。
     """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(prog="canon-history")
+    parser = argparse.ArgumentParser(prog="canon history")
     parser.add_argument("source", choices=sorted(SOURCES))
     parser.add_argument("step", nargs="?", default="sync", choices=("sync", "acquire", "import"))
     parser.add_argument("--rescan", action="store_true", help="過去的版本全部重抓")

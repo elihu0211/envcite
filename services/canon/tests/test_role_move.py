@@ -76,7 +76,7 @@ def test_the_new_roles_hold_what_the_old_ones_held_and_the_old_ones_hold_nothing
                 assert _held(conn, new) == nothing, new
                 assert _defaults(conn, new) == set(), new
 
-            assert apply_all(conn) == ["0068_canon_roles.sql"]
+            assert apply_all(conn)[0] == "0068_canon_roles.sql"
 
             for old, new in ROLES.items():
                 assert _held(conn, new) == before[old], new

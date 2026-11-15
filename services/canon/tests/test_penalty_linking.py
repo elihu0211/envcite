@@ -61,7 +61,7 @@ def _duty_doc(count: int = 1) -> dict[str, Any]:
 
 
 def _corpus(conn: Conn, tmp_path: Path, *texts: str) -> None:
-    """匯入法規並寫處罰依賴圖（`canon-sync` 在匯入後做的）。"""
+    """匯入法規並寫處罰依賴圖（`canon sync` 在匯入後做的）。"""
     _first(conn, tmp_path, _law_v1(LawArticles=_articles(*texts)))
     violation.extract(conn)
     conn.commit()

@@ -1,6 +1,6 @@
 # 歷史版本的取得與回推匯入：實測（2026-11-03）
 
-拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，本機新容器），只跑 job 入口：`canon-migrate` → `canon-sync moj`（只字面臂，不嵌入）→ `canon-history`。沒有連 staging 或共用資料庫。
+拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，本機新容器），只跑 job 入口：`canon migrate` → `canon sync moj`（只字面臂，不嵌入）→ `canon history`。沒有連 staging 或共用資料庫。
 
 ## 來源查證（2026-11-03）
 
@@ -22,11 +22,11 @@
 
 | 步驟 | 結果 | 耗時 |
 |------|------|------|
-| `canon-sync moj`（錨點） | 法律 1,351、命令 11,803 部寫入，1 部 rejected；字面向量 650,197 列 | 434 秒 |
-| `canon-history acquire`（首次） | 列舉 470 部，抓 2,090 頁，383 部成快照；**87 部隔離**：從未修正的法規，歷史清單是空頁，被當成讀不了（已修正並補測試） | 2,209 秒 |
-| `canon-history`（修正後全跑） | 470 部全數取得，**0 隔離**；抓 940 頁、沿用已存的歷史頁 1,150 頁；快照 47 MB；匯入、授權抽取（新增 423 筆）、字面投影 | 1,226 秒 |
-| `canon-history import`（再跑一次） | 467 部 unchanged，**0 列新增、0 列取代** | 7 秒 |
-| `canon-history import`（改 `<strong>` 標記後） | 2 部更新，餘不變 | 13 秒 |
+| `canon sync moj`（錨點） | 法律 1,351、命令 11,803 部寫入，1 部 rejected；字面向量 650,197 列 | 434 秒 |
+| `canon history acquire`（首次） | 列舉 470 部，抓 2,090 頁，383 部成快照；**87 部隔離**：從未修正的法規，歷史清單是空頁，被當成讀不了（已修正並補測試） | 2,209 秒 |
+| `canon history`（修正後全跑） | 470 部全數取得，**0 隔離**；抓 940 頁、沿用已存的歷史頁 1,150 頁；快照 47 MB；匯入、授權抽取（新增 423 筆）、字面投影 | 1,226 秒 |
+| `canon history import`（再跑一次） | 467 部 unchanged，**0 列新增、0 列取代** | 7 秒 |
+| `canon history import`（改 `<strong>` 標記後） | 2 部更新，餘不變 | 13 秒 |
 
 最終寫入：**292 部法規、949 個歷史版本、82,166 個條文單元版本**（其中條 20,870）；效力規則 unchanged 39,658、promulgation 33,868、specified 3,992、unconfirmed 3,607、by_order 1,041。最早可查日：1970 年代 4 部、1980 年代 13、1990 年代 98、2000 年代 98、2010 年代 68、2020 年代 11。
 
@@ -71,10 +71,10 @@
 ## 重現
 
 ```bash
-uv run canon-migrate
-uv run canon-sync moj
-uv run canon-history            # 取得、回推匯入、授權抽取、檢索投影
-uv run canon-history import     # 再跑：不抓網頁，0 列新增
+uv run canon migrate
+uv run canon sync moj
+uv run canon history            # 取得、回推匯入、授權抽取、檢索投影
+uv run canon history import     # 再跑：不抓網頁，0 列新增
 ```
 
 本次 rebase 到最新 main 之後只搬了 HTTP 客戶端（`acquire/web.py`，與函釋共用）並把遷移改號為 0049，回推與寫入的程式不變，未重跑實測。

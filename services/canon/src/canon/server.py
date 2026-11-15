@@ -111,7 +111,7 @@ def build_server(
 
 
 def main() -> None:
-    """`canon-serve`：啟動 gRPC 伺服器（法規查詢、檢索與推論），阻塞到被停止。
+    """`canon serve`：啟動 gRPC 伺服器（法規查詢、檢索與推論），阻塞到被停止。
 
     收到 SIGTERM 時先排空進行中的呼叫再結束。
     """

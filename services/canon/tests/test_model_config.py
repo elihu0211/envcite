@@ -194,7 +194,7 @@ def test_text_that_is_not_toml_is_refused() -> None:
 
 def test_the_command_line_names_what_is_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ENVCITE_CANON_DSN", "postgresql://unused")
-    monkeypatch.setattr("sys.argv", ["canon-pipeline", "--law", "X"])
+    monkeypatch.setattr("sys.argv", ["canon pipeline", "--law", "X"])
 
     with pytest.raises(SystemExit) as raised:
         main()
@@ -207,7 +207,7 @@ def test_a_bad_file_stops_the_command_line_with_its_path(
     bad = tmp_path / "models.toml"
     bad.write_text("[roles]\n", encoding="utf-8")
     monkeypatch.setenv("ENVCITE_CANON_DSN", "postgresql://unused")
-    monkeypatch.setattr("sys.argv", ["canon-pipeline", "--law", "X", "--models", str(bad)])
+    monkeypatch.setattr("sys.argv", ["canon pipeline", "--law", "X", "--models", str(bad)])
 
     with pytest.raises(SystemExit, match=r"models\.toml"):
         main()
@@ -225,7 +225,7 @@ def test_check_asks_every_model_and_needs_no_database(
     )
     monkeypatch.delenv("ENVCITE_CANON_DSN", raising=False)
     monkeypatch.setenv(KEY, "k")
-    monkeypatch.setattr("sys.argv", ["canon-pipeline", "--models", str(models), "--check"])
+    monkeypatch.setattr("sys.argv", ["canon pipeline", "--models", str(models), "--check"])
     try:
         with pytest.raises(SameModel):
             main()

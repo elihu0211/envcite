@@ -1,4 +1,4 @@
-"""`canon-annotate`：讀一份人寫的標註 JSON，交給 `claims.load`。
+"""`canon annotate`：讀一份人寫的標註 JSON，交給 `claims.load`。
 
 寫入、錨定與文件格式在 `claims`。這裡只做入口，並把載入器的公開名稱留在原處，
 既有的 `from canon.annotate import load` 不用改。
@@ -32,12 +32,12 @@ EXIT_INVALID = 2
 
 
 def main() -> None:
-    """`canon-annotate <file>`：讀一份標註 JSON，交給 `claims.load` 寫入資料庫。
+    """`canon annotate <file>`：讀一份標註 JSON，交給 `claims.load` 寫入資料庫。
 
     文件不合（`AnnotationError`）或不是 JSON 時記錄原因，以結束碼 2 退出，不寫入。
     """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(prog="canon-annotate")
+    parser = argparse.ArgumentParser(prog="canon annotate")
     parser.add_argument("file", type=Path, help="標註文件（JSON）")
     args = parser.parse_args()
 

@@ -15,7 +15,7 @@ MAX_LINES = 500
 #: 本體子包（`canon/<代號>/`）。目前只有法規；新增本體時加進來。
 ONTOLOGIES = {"law"}
 #: 組合根：把本體接進核心的地方，可以匯入本體子包。
-COMPOSITION_ROOTS = {"server.py", "sync.py", "acquire/cli.py"}
+COMPOSITION_ROOTS = {"cli.py", "server.py", "sync.py", "acquire/cli.py"}
 
 
 def _lines(path: Path) -> int:

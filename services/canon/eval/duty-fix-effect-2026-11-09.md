@@ -175,11 +175,11 @@ docker run -d --name envcite-dutyfix-pg -p 127.0.0.1:55871:5432 -e POSTGRES_PASS
   -v envcite-dutyfix-pg:/var/lib/postgresql pgvector/pgvector:pg18 -c max_connections=400
 # 快照：自本機叢集的快照 PVC 唯讀複製出來（docker cp），ENVCITE_CANON_SNAPSHOT_DIR 指向它
 # 修復前的程式：git worktree add --detach <路徑> b03e183^；修復後：main
-# 範本庫（修復前程式匯入一次）：createdb tmpl_pre；canon-migrate；canon-sync moj（不設 ENVCITE_CANON_MODELS）
-# 修復後的範本庫：createdb -T tmpl_pre tmpl_post；用 main 的 canon-migrate（套 0059、0060）
+# 範本庫（修復前程式匯入一次）：createdb tmpl_pre；canon migrate；canon sync moj（不設 ENVCITE_CANON_MODELS）
+# 修復後的範本庫：createdb -T tmpl_pre tmpl_post；用 main 的 canon migrate（套 0059、0060）
 # 每輪一個庫：createdb -T tmpl_pre pre_1 …、createdb -T tmpl_post post_1 …
 export ENVCITE_CANON_DSN=postgresql://…/post_1
-uv run canon-pipeline --law O0040001 --law O0040010 --models models.toml \
+uv run canon pipeline --law O0040001 --law O0040010 --models models.toml \
   --agent-version post-1 --reextract 3        # 修復前在 b03e183^ 的工作樹，--agent-version pre-1
 
 # 判定與彙整（金鑰從作業系統鑰匙圈取，不印出）

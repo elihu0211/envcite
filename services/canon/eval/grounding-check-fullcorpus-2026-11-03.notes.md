@@ -70,8 +70,8 @@
 
 ## 重現
 
-1. 拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，新容器新埠）、`canon-migrate`；`canon-sync moj`（`ENVCITE_CANON_MODELS` 未設）建字面投影。
-2. 同一個 `canon-sync moj` 帶 `ENVCITE_CANON_MODELS=models.toml`、`THU_API_KEY`：嵌入全庫（可中斷續跑）。
+1. 拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，新容器新埠）、`canon migrate`；`canon sync moj`（`ENVCITE_CANON_MODELS` 未設）建字面投影。
+2. 同一個 `canon sync moj` 帶 `ENVCITE_CANON_MODELS=models.toml`、`THU_API_KEY`：嵌入全庫（可中斷續跑）。
 3. `tools/golden_retrieval_eval.py <golden.yaml> --out eval/golden-retrieval-fullcorpus-<date>`。
-4. 起 `canon-serve`（同 `ENVCITE_CANON_MODELS`）與 consult（`Ontology__Timeout=00:01:00`），跑 `tools/grounding_check_eval.py`。
+4. 起 `canon serve`（同 `ENVCITE_CANON_MODELS`）與 consult（`Ontology__Timeout=00:01:00`），跑 `tools/grounding_check_eval.py`。
 5. `tools/answerability_floor.py`、`tools/floor_risk_coverage.py`，`--lexical`、`--semantic` 都給全庫召回報告。

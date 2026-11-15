@@ -142,7 +142,7 @@ def test_invalid_data_exits_with_the_code_the_cronjob_does_not_retry(
     monkeypatch.setitem(cli.SOURCES, "moj", source)
     monkeypatch.setenv("ENVCITE_CANON_DSN", dsn)
     monkeypatch.setenv("ENVCITE_CANON_SNAPSHOT_DIR", str(tmp_path / "snapshots"))
-    monkeypatch.setattr("sys.argv", ["canon-acquire", "moj"])
+    monkeypatch.setattr("sys.argv", ["canon acquire", "moj"])
 
     with pytest.raises(SystemExit) as exit_:
         cli.main()

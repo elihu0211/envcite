@@ -10,7 +10,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 - 介面：gRPC `OntologyService`（法規與檢索）、`ReasoningService`（標註與推論）；契約 [`ontology.proto`](../../proto/envcite/ontology/v2/ontology.proto)、[`reasoning.proto`](../../proto/envcite/ontology/v2/reasoning.proto)；約定與錯誤原因見 [`proto/README.md`](../../proto/README.md)。
 - 呼叫端 [`platform`](../platform/README.md)、[`consult`](../consult/README.md)。資料全域共用，不分租戶；PostgreSQL 為唯一真值。
-- 語料與檢索由 `canon-sync` 依序取得、匯入、投影；標註由 `canon-pipeline` 以語言模型抽取並經閘門驗證；推論（clingo）不用模型，只取已確認的標註，結論都是候選。
+- 語料與檢索由 `canon sync` 依序取得、匯入、投影；標註由 `canon pipeline` 以語言模型抽取並經閘門驗證；推論（clingo）不用模型，只取已確認的標註，結論都是候選。
 - 共用套件：[`envcite-segmenter`](../../libs/python/envcite-segmenter/README.md)、[`envcite-grpc`](../../libs/python/envcite-grpc/README.md)、[`envcite-proto`](../../libs/python/envcite-proto/README.md)。
 
 ## 概念
@@ -31,27 +31,27 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 ## 入口
 
-所有入口都在同一個映像裡：預設 command 是伺服器，其餘以 command 覆寫。入口名稱是與部署庫的契約，定義在 `pyproject.toml` 的 `[project.scripts]`。
+所有入口都在同一個映像裡：預設 command 是伺服器，其餘以 command 覆寫。入口是單一指令 `canon <子指令>`（`python -m canon` 等價），子指令名稱是與部署庫的契約，登記在 [`cli.py`](src/canon/cli.py) 的 `SUBCOMMANDS`。
 
 | 入口 | 型態 | 做什麼 |
 |------|------|--------|
-| `canon-serve` | 長駐 | gRPC 伺服器 |
-| `canon-migrate` | 一次性 | 套用 `migrations/*.sql` |
-| `canon-sync <來源>` | 排程 | 取得、匯入、授權抽取、檢索投影，四步冪等 |
-| `canon-acquire <來源>` | 一次性 | 只取得快照 |
-| `canon-import <來源>` | 一次性 | 快照寫入語料；`--dry-run` 只解析與驗收 |
-| `canon-history <ly\|moenv> [sync\|acquire\|import]` | 排程 | 法規的歷史版本（法律取自立法院、命令取自主管機關）：取得、回推、授權抽取、檢索投影；見〈歷史版本〉 |
-| `canon-guidance sync <來源>` | 排程 | 取得行政規則寫入 `guidance`（`gazette` 公報、`moenv` 環境部函釋）；見〈行政規則的取得〉 |
-| `canon-guidance load <檔>` | 一次性 | 載入一份人寫的行政規則（函釋、裁量基準）JSON；格式見 [`law/guidance.py`](src/canon/law/guidance.py) |
-| `canon-ruling fetch`、`load <檔>` | 一次性 | 取得或載入違憲失效的裁判；見〈違憲失效〉 |
-| `canon-pipeline` | 排程 | 標註：抽取、驗證、接受 |
-| `canon-annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
-| `canon-verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |
+| `canon serve` | 長駐 | gRPC 伺服器 |
+| `canon migrate` | 一次性 | 套用 `migrations/*.sql` |
+| `canon sync <來源>` | 排程 | 取得、匯入、授權抽取、檢索投影，四步冪等 |
+| `canon acquire <來源>` | 一次性 | 只取得快照 |
+| `canon import <來源>` | 一次性 | 快照寫入語料；`--dry-run` 只解析與驗收 |
+| `canon history <ly\|moenv> [sync\|acquire\|import]` | 排程 | 法規的歷史版本（法律取自立法院、命令取自主管機關）：取得、回推、授權抽取、檢索投影；見〈歷史版本〉 |
+| `canon guidance sync <來源>` | 排程 | 取得行政規則寫入 `guidance`（`gazette` 公報、`moenv` 環境部函釋）；見〈行政規則的取得〉 |
+| `canon guidance load <檔>` | 一次性 | 載入一份人寫的行政規則（函釋、裁量基準）JSON；格式見 [`law/guidance.py`](src/canon/law/guidance.py) |
+| `canon ruling fetch`、`load <檔>` | 一次性 | 取得或載入違憲失效的裁判；見〈違憲失效〉 |
+| `canon pipeline` | 排程 | 標註：抽取、驗證、接受 |
+| `canon annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
+| `canon verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |
 
 - **來源**：`<來源>` 登記在 [`acquire/cli.py`](src/canon/acquire/cli.py) 的 `SOURCES`；`moj` 是全國法規資料庫。開發用工具在 [`tools/`](tools)，不進映像，用法見各檔開頭。
 - **環境變數**：以 [`settings.py`](src/canon/settings.py) 為準，範本是 `.env.example`。
-- **結束碼**（`canon-sync`、`acquire`、`import`）：`0` 成功或無事可做，`1` 暫時性失敗（可重試），`2` 重試無益（資料不合預期，或嵌入端點拒絕認證、維度不符）。
-- **`canon-sync` 的重試政策**：下載與嵌入對外部端點的重試次數、退避與斷路器，以 `ENVCITE_JOBKIT_<欄位>` 環境變數覆寫，欄位見 [`envcite-jobkit`](../../libs/python/envcite-jobkit/README.md#政策欄位)，預設值以 [`sync.py`](src/canon/sync.py) 的 `POLICY` 為準。端點錯誤（連線、逾時、408、429、5xx）退避重試；嵌入的斷路器開啟時原地等到半開，重試用盡或內容被拒的批次跳過，留待下次同步補做，不使整次失敗。
+- **結束碼**（`canon sync`、`acquire`、`import`）：`0` 成功或無事可做，`1` 暫時性失敗（可重試），`2` 重試無益（資料不合預期，或嵌入端點拒絕認證、維度不符）。
+- **`canon sync` 的重試政策**：下載與嵌入對外部端點的重試次數、退避與斷路器，以 `ENVCITE_JOBKIT_<欄位>` 環境變數覆寫，欄位見 [`envcite-jobkit`](../../libs/python/envcite-jobkit/README.md#政策欄位)，預設值以 [`sync.py`](src/canon/sync.py) 的 `POLICY` 為準。端點錯誤（連線、逾時、408、429、5xx）退避重試；嵌入的斷路器開啟時原地等到半開，重試用盡或內容被拒的批次跳過，留待下次同步補做，不使整次失敗。
 
 ## 語料
 
@@ -66,10 +66,10 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 其他主管機關的命令沒有來源，版本只從首次取得全國法規資料庫快照起累積。
 
-- **取得**：`canon-history <來源> acquire`。一部法規打包成一份快照，過去的版本不重抓，`--rescan` 全部重抓。
+- **取得**：`canon history <來源> acquire`。一部法規打包成一份快照，過去的版本不重抓，`--rescan` 全部重抓。
   - `ly`：以語料裡現行法律的現名檢索（只比法名稱，取同名的現行法），抓法律頁的立法沿革與各版條文頁。
   - `moenv`：走分類樹列出命令，抓歷史清單、現行頁與各歷史頁。
-- **匯入**：`canon-history <來源> import`，須先跑過 `canon-sync moj`。
+- **匯入**：`canon history <來源> import`，須先跑過 `canon sync moj`。
   - 對到語料的法規（`ly` 以鍵、`moenv` 以名稱與種類），來源的現行版本日要與語料最新版本同日。
   - 由語料最早的官方資料庫版本往舊回推（[`law/backfill/`](src/canon/law/backfill/)），版本日是公布或發布日；效力上界的規則同增量匯入，相鄰兩版同一單元的區間首尾相接。
   - 沿革的每一次公布都要有同日的全文。缺一版（或條文只在附件、解析不出）就停在那裡：那一版與更早的每一次公布寫成查不到全文的版本（`text_status = unavailable`，標題不詳、沒有條文單元版本；`GetLaw` 在這些日子查無），時間軸照樣接到制定。
@@ -80,7 +80,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 ### 行政規則的取得
 
-`canon-guidance sync <gazette|moenv> [--since YYYY-MM-DD] [--rescan]`，實作在 [`law/guidance_sync/`](src/canon/law/guidance_sync/)。每個工作項（公報的一包、函釋的一頁）是一個 jobkit 工作項：端點錯誤退避重試、斷路器、單項隔離，政策以 `ENVCITE_JOBKIT_<欄位>` 覆寫，預設值以 [`law/guidance_sync/run.py`](src/canon/law/guidance_sync/run.py) 的 `POLICY` 為準；每件公文一個交易，可重跑。
+`canon guidance sync <gazette|moenv> [--since YYYY-MM-DD] [--rescan]`，實作在 [`law/guidance_sync/`](src/canon/law/guidance_sync/)。每個工作項（公報的一包、函釋的一頁）是一個 jobkit 工作項：端點錯誤退避重試、斷路器、單項隔離，政策以 `ENVCITE_JOBKIT_<欄位>` 覆寫，預設值以 [`law/guidance_sync/run.py`](src/canon/law/guidance_sync/run.py) 的 `POLICY` 為準；每件公文一個交易，可重跑。
 
 | 來源 | 取得 | 出處標示 | 錨定 |
 |------|------|----------|------|
@@ -104,12 +104,12 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 大法官解釋與憲法法庭判決宣告條文違憲失效（能力問題 A5），記在 `corpus.constitutional_ruling`（裁判）與 `corpus.ruling_invalidation`（裁判使哪個條文單元自何日失效），不放進 `lifecycle_event`：匯入器重寫法規時會刪光它的事件，而來源是憲法法庭。
 
-- **自動取得**：`canon-ruling fetch`，走憲法法庭網站的解釋與判決清單逐則抓頁（來源只有 HTML，無 API；資料開放宣告允許重製與改作，**須標示出處**，實作在 [`law/cons.py`](src/canon/law/cons.py)）。
+- **自動取得**：`canon ruling fetch`，走憲法法庭網站的解釋與判決清單逐則抓頁（來源只有 HTML，無 API；資料開放宣告允許重製與改作，**須標示出處**，實作在 [`law/cons.py`](src/canon/law/cons.py)）。
   - 主文宣告失效的裁判連同原文入庫；失效條文由 [`law/ruling_extract.py`](src/canon/law/ruling_extract.py) 的保守規則提出（句中恰有一個「語料裡的法規標題＋條（項）」、失效日寫法明確），寫法含糊的寧可不提。
   - 原文仍在庫，規則放寬（遞增 `EXTRACTOR_VERSION`）或語料新增法規後重跑即補上，不必重抓。
   - 頁面雜湊記在 `corpus.ruling_scan`，記過的頁面不再抓，`--rescan` 全部重抓。
   - 結束碼 0／1（網路等暫時性）／2（頁面不合或裁判內容與已載入的不同）。
-- **人工載入**：`canon-ruling load <file.json>`，格式見 [`law/ruling.py`](src/canon/law/ruling.py) 的模組說明。由人讀解釋文填失效日，每則裁判附出處與解釋文原文；裁判不可改，同一字號內容須相同；一次載入一個交易。抽取流程只刪改自己寫的列（`extractor_version` 有值），人載入的列不動。
+- **人工載入**：`canon ruling load <file.json>`，格式見 [`law/ruling.py`](src/canon/law/ruling.py) 的模組說明。由人讀解釋文填失效日，每則裁判附出處與解釋文原文；裁判不可改，同一字號內容須相同；一次載入一個交易。抽取流程只刪改自己寫的列（`extractor_version` 有值），人載入的列不動。
 - **讀取**：rpc `OntologyService.ListInvalidations`（依法規、日期、可選的條號）；SQL 是 `corpus.invalidations_at(法規 id, 語文, 日期)`。`provisions_at` 的 `status` 不含違憲失效，讀取方各自合併（推論與 `ListStatements` 已合併）。
 - **推論**：失效的版本自失效日起不是依據。
   - `annotation.statement_versions_at` 不回讀它的陳述，`annotation.threshold_source_at` 不解析它的限值；被排除的陳述由 `annotation.invalidated_statements_at(法規 id, 語文, 日期)` 回報，進 `Outcome.invalidated` 與 `ListStatementsResponse.invalidated`，限值失效的要件附 `PROBLEM_KIND_INVALIDATED_DELEGATION`。
@@ -122,9 +122,9 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 ### 標註管線
 
 ```bash
-uv run --env-file .env canon-pipeline --law <pcode> --models models.toml          # 指定法規
-uv run --env-file .env canon-pipeline --pending --limit <N> --models models.toml   # 自找待辦，最多 N 部
-uv run --env-file .env canon-pipeline --law <pcode> --models models.toml --reextract 3   # 義務沒有定論的單元最多再抽 3 輪
+uv run --env-file .env canon pipeline --law <pcode> --models models.toml          # 指定法規
+uv run --env-file .env canon pipeline --pending --limit <N> --models models.toml   # 自找待辦，最多 N 部
+uv run --env-file .env canon pipeline --law <pcode> --models models.toml --reextract 3   # 義務沒有定論的單元最多再抽 3 輪
 ```
 
 `--limit` 是每次的模型費用上限。驗證與推論的規範見 [`AGENTS.md`](AGENTS.md)；推論結果的呼叫端用法見 [`proto/README.md`](../../proto/README.md) 的〈標註與推論〉。
@@ -158,7 +158,7 @@ uv run --env-file .env canon-pipeline --law <pcode> --models models.toml --reext
 端點、角色、嵌入模型與相關性判定者只寫在 [`models.toml`](models.toml)。標註管線由 `--models` 指定，伺服器與同步由 `ENVCITE_CANON_MODELS` 指向它。金鑰不寫進這個檔：金鑰名由端點名推導（`[endpoint.llm]` 的金鑰是 `ENVCITE_LLM_API_KEY`），依序從同名環境變數、作業系統鑰匙圈解析，規則見 [`CONFIGURATION.md`](../../CONFIGURATION.md)。
 
 ```bash
-uv run --env-file .env canon-pipeline --models models.toml --check   # 對每個模型送探測問題，不連資料庫
+uv run --env-file .env canon pipeline --models models.toml --check   # 對每個模型送探測問題，不連資料庫
 ```
 
 - `[embedding]`：只需要它指名的端點備妥金鑰，伺服器不因標註管線的端點缺金鑰而起不來。
@@ -169,7 +169,7 @@ uv run --env-file .env canon-pipeline --models models.toml --check   # 對每個
 
 命令依哪一部法律的哪一條訂定（行政程序法第 150 條第 2 項），是授權鏈的一環。授權是一種主張（`assertion_kind = delegation`，表 `annotation.delegation`），沿用推導活動、封存、驗證與確認狀態。
 
-- **抽取**：`canon-sync` 在匯入之後從語料內每部命令（位階非憲法、法律）的首條抽「本辦法依某法第某條規定訂定之」，純規則，`derivation.method` 為 `rule`，來源是 [`law/delegation.py`](src/canon/law/delegation.py)；已有主張的引文（含駁回的）不重寫。公報說明的「依據：」等其他來源不抽。
+- **抽取**：`canon sync` 在匯入之後從語料內每部命令（位階非憲法、法律）的首條抽「本辦法依某法第某條規定訂定之」，純規則，`derivation.method` 為 `rule`，來源是 [`law/delegation.py`](src/canon/law/delegation.py)；已有主張的引文（含駁回的）不重寫。公報說明的「依據：」等其他來源不抽。
 - **法律端**：法名只對語料內已有的法規標題（任一版本）且對到唯一一部；對不到、同名數部、或法規沒有該條文單元，`law_resource_id`／`law_provision_id` 為空，不猜。款記到所屬的項。
 - **命令端**錨定（法規，條文單元，內容雜湊）：命令首條改了文字，授權跟著該日現行的文字走。授權不固定目標版本，不存版本，依查詢日解析。
 - **讀取**（SQL 函式，唯讀角色可呼叫；`p_language` 同其他逐日解析）：
@@ -184,8 +184,8 @@ uv run --env-file .env canon-pipeline --models models.toml --check   # 對每個
 罰則陳述以 `annotation.sanction.punished_statement_id`（單一、非空的外鍵）處罰一個義務或禁止陳述；一則條文處罰數個義務時，每個義務一列罰則陳述。表與規則在遷移檔 `0055_penalty_link.sql`，寫入在 [`verification/link.py`](src/canon/verification/link.py)。
 
 - **只處罰已確認的陳述**：寫入罰則列時所處罰的陳述必須是 `confirmed`（觸發器 `sanction_punishes_confirmed`）；`annotation.settle` 不接受所處罰陳述已非 `confirmed` 的罰則，所處罰陳述被駁回則罰則駁回。
-- **待連結罰則**：載入（`annotate.load`）時連不上的罰則（所處罰的陳述未確認，或原文處罰的是別條）連同以它為前提或為例外者，存成 `annotation.held_penalty`；寫成陳述後記在 `annotation.held_penalty_link`。`canon-pipeline` 在第一次接受之後連結，再接受一次。
-- **依賴圖**：`annotation.violation` 是處罰條文（單元，內容雜湊）所罰的條、項、款，`canon-sync` 在匯入後以確定性的條號解析對全庫寫入（[`violation.py`](src/canon/violation.py)，規則版本 `RULE_VERSION`）；`annotation.current_violation` 只取最新規則版本。`violation_kind` 為 `duty`（所罰義務所在的條文）或 `delegated_rule`（「違反依第 N 條所定辦法」的授權條文，義務在授權命令裡，沿 `annotation.delegated_by` 找命令）；連結與 `duty_gap` 只讀 `duty`。
+- **待連結罰則**：載入（`annotate.load`）時連不上的罰則（所處罰的陳述未確認，或原文處罰的是別條）連同以它為前提或為例外者，存成 `annotation.held_penalty`；寫成陳述後記在 `annotation.held_penalty_link`。`canon pipeline` 在第一次接受之後連結，再接受一次。
+- **依賴圖**：`annotation.violation` 是處罰條文（單元，內容雜湊）所罰的條、項、款，`canon sync` 在匯入後以確定性的條號解析對全庫寫入（[`violation.py`](src/canon/violation.py)，規則版本 `RULE_VERSION`）；`annotation.current_violation` 只取最新規則版本。`violation_kind` 為 `duty`（所罰義務所在的條文）或 `delegated_rule`（「違反依第 N 條所定辦法」的授權條文，義務在授權命令裡，沿 `annotation.delegated_by` 找命令）；連結與 `duty_gap` 只讀 `duty`。
 - **讀取**：
   - `annotation.penalty_candidates(待連結罰則 id)`：候選的義務與是否已確認——同單元已指明的受罰陳述，或被引條文（含其下的項款、或引款而錨在項的列舉句）裡現行、未駁回的義務與禁止。
   - `annotation.held_penalty_state`：`linked`（已寫成陳述）、`linkable`（有已確認的候選）、`awaiting_duty`（候選都未定）、`no_duty`（被引條文沒有未駁回的義務）、`no_citation`（不知受罰者、也解析不出引用）。
@@ -237,7 +237,7 @@ uv run --env-file .env canon-pipeline --models models.toml --check   # 對每個
 | 查證 | `uv run --env-file .env python tools/native_golden.py verify eval/native-golden-<日期>.json` | 重建比對、證據句核對、獨立的罰則完整性掃描、固定種子抽樣；不符即結束碼 1 |
 | 衍生 | `uv run python tools/native_golden.py derive eval/native-golden-<日期>.json` | 同目錄的 `.qrels.json` 與 `.split.json`，格式同上，之後用「量測」「比較」 |
 
-- 建題只讀語料：要有已匯入的資料庫（`canon-sync moj`），不需要嵌入；同一份快照與 `--as-of` 建出的題庫逐位元相同（`verify` 重建比對）。
+- 建題只讀語料：要有已匯入的資料庫（`canon sync moj`），不需要嵌入；同一份快照與 `--as-of` 建出的題庫逐位元相同（`verify` 重建比對）。
 - 切分依題的分組鍵（詞、條文）的雜湊，同一個詞或條文的題一定在同一邊；題庫增減不改變既有題的歸屬。
 - 規則與題句的限制：條文引用只收本法自己的、文法能完整讀懂的句子（寧缺勿濫，所以不是完整清單，`verify` 另用寬鬆的規則掃描找遺漏）；題句是模板，比真實問句整齊；沒有 paraphrase 桶（改寫需要模型，沒有獨立於被測系統的來源前不做）。改任何產生規則的輸出要遞增 `native_golden.GENERATOR_VERSION` 並重建題庫。
 

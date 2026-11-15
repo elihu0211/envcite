@@ -28,12 +28,12 @@
 ## 重現指令
 
 ```bash
-# 每個條件、每一輪一個庫，由範本庫複製（範本庫：canon-migrate 到 0056，再 canon-sync moj，不設 ENVCITE_CANON_MODELS）
+# 每個條件、每一輪一個庫，由範本庫複製（範本庫：canon migrate 到 0056，再 canon sync moj，不設 ENVCITE_CANON_MODELS）
 #   CREATE DATABASE c2_1 TEMPLATE tmpl;
 # 標註（長時間的背景 run 用 caffeinate 包起來；三個庫可平行）
 export ENVCITE_CANON_DSN=postgresql://…/c2_1
-uv run canon-migrate
-caffeinate -i uv run canon-pipeline --law O0040001 --law O0040010 \
+uv run canon migrate
+caffeinate -i uv run canon pipeline --law O0040001 --law O0040010 \
   --models models.toml --agent-version c2-1 --reextract 3
 # 基線：同一個指令不加 --reextract（預設 0），--agent-version base-1
 

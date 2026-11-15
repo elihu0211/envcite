@@ -45,6 +45,6 @@
 
 ## 重現
 
-1. 起拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，新容器、新埠），`canon-migrate`；以 `ENVCITE_CANON_MODELS` 未設定的環境 `canon-sync moj`（只做字面投影）。
+1. 起拋棄式 PostgreSQL（`pgvector/pgvector:pg18`，新容器、新埠），`canon migrate`；以 `ENVCITE_CANON_MODELS` 未設定的環境 `canon sync moj`（只做字面投影）。
 2. `tools/embed_scope.py eval/golden-scope-2026-10-24.json`（需 `ENVCITE_CANON_MODELS` 與 `ENVCITE_LLM_API_KEY`）。
-3. 起 `canon-serve` 與 consult（`ENVCITE_Ontology__Timeout=00:01:00`），再跑 `tools/grounding_check_eval.py`。
+3. 起 `canon serve` 與 consult（`ENVCITE_Ontology__Timeout=00:01:00`），再跑 `tools/grounding_check_eval.py`。

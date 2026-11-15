@@ -144,7 +144,7 @@ docker exec envcite-pg createdb -U <帳號> platform
    ```bash
    cd services/canon
    cp .env.example .env     # 填入連線與快照目錄
-   uv run --env-file .env canon-sync moj
+   uv run --env-file .env canon sync moj
    ```
 
 **看 SQL 日誌**：platform 的主控台預設不印 EF Core 的 SQL，只留請求與命令自己的訊息。除錯查詢時，以環境變數把該類別調回 Information，只影響這一次啟動，不改檔案：

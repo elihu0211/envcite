@@ -16,7 +16,7 @@ INVALID_FROM = date(2019, 7, 1)
 
 
 def _invalidate(conn: Conn, path: str, *, partial: bool = False, no: str = "釋字第 999 號") -> None:
-    """一則裁判宣告 `path` 自 INVALID_FROM 失效（fixture 直接寫表；正式資料經 canon-ruling）。"""
+    """一則裁判宣告 `path` 自 INVALID_FROM 失效（fixture 直接寫表；正式資料經 canon ruling）。"""
     ruling = int(
         _scalar(
             conn,

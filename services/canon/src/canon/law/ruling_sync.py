@@ -6,7 +6,7 @@
 2. **抽取**：對庫裡**每一則**裁判的原文重跑 `ruling_extract`，把能確定的條文與失效日寫成
    `ruling_invalidation`。這一步只讀資料庫，所以語料新增法規（原本對不到標題的裁判）或規則改版後
    重跑就會補上，不必重抓網頁。抽取流程只刪改自己寫的列（`extractor_version` 有值）；人載入的
-   列（`canon-ruling load`）不動。
+   列（`canon ruling load`）不動。
 
 來源與授權見 `law/cons.py`；顯示這些資料時須標示出處（憲法法庭）。
 """
@@ -44,7 +44,7 @@ EXIT_INVALID = 2
 
 @dataclass(frozen=True)
 class SyncResult:
-    """一次 `canon-ruling fetch` 的計數。"""
+    """一次 `canon ruling fetch` 的計數。"""
 
     #: 這次抓了幾頁
     fetched: int
@@ -210,9 +210,9 @@ def _titles(conn: Conn) -> dict[str, str | None]:
 
 
 def main() -> None:
-    """`canon-ruling`：`load` 載入人寫的文件，`fetch` 自憲法法庭網站取得。"""
+    """`canon ruling`：`load` 載入人寫的文件，`fetch` 自憲法法庭網站取得。"""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(prog="canon-ruling")
+    parser = argparse.ArgumentParser(prog="canon ruling")
     commands = parser.add_subparsers(dest="command", required=True)
     load_cmd = commands.add_parser("load", help="載入違憲失效裁判文件（JSON）")
     load_cmd.add_argument("file", type=Path)

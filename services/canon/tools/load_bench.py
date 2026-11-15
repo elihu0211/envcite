@@ -193,7 +193,7 @@ class Servers:
         if not embedding:
             env.pop("ENVCITE_CANON_MODELS", None)
         self.canon = f"127.0.0.1:{canon_port}"
-        self._spawn(["uv", "run", "canon-serve"], env, SERVICE_DIR, "canon")
+        self._spawn(["uv", "run", "canon", "serve"], env, SERVICE_DIR, "canon")
         wait_serving(self.canon, server.SERVICE_NAME)
         self.embedding = embedding
         if consult:
