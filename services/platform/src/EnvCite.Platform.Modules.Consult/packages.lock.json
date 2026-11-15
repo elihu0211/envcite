@@ -256,7 +256,7 @@
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )"
         }
       },
-      "envcite.platform.modules.ontology": {
+      "envcite.platform.modules.canon": {
         "type": "Project",
         "dependencies": {
           "EnvCite.Platform.Data": "[1.0.0, )",

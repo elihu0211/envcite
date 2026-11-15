@@ -1,7 +1,7 @@
 using System.Net;
 using System.Security.Claims;
 
-using EnvCite.Platform.Modules.Ontology;
+using EnvCite.Platform.Modules.Canon;
 
 namespace EnvCite.Platform.Tests;
 
@@ -101,7 +101,7 @@ public sealed class TenantModulesTests(PlatformFactory factory)
     }
 
     [Fact]
-    public async Task PortalOntologyServicesEnforceTenantModules()
+    public async Task PortalCanonServicesEnforceTenantModules()
     {
         var ct = TestContext.Current.CancellationToken;
         var (tenant, _) = await factory.CreateTenantWithKeyAsync("modules-portal-svc");
@@ -163,14 +163,14 @@ public sealed class TenantModulesTests(PlatformFactory factory)
 
         try
         {
-            factory.Ontology.ReturnUnimplementedGraph = true;
+            factory.Canon.ReturnUnimplementedGraph = true;
             var fallback = await corpus.GraphAsync(portalUser, new PortalLawGraphQuery(null), ct);
             Assert.True(fallback.IsOk);
             Assert.False(fallback.Value!.Available);
         }
         finally
         {
-            factory.Ontology.ReturnUnimplementedGraph = false;
+            factory.Canon.ReturnUnimplementedGraph = false;
         }
 
         Assert.True((await moduleAdmin.SetAsync(Operator, tenant.Id, ModuleKeys.NormativeReasoning, false, ct)).IsOk);

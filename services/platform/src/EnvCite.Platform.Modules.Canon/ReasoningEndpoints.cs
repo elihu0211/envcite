@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
-namespace EnvCite.Platform.Modules.Ontology;
+namespace EnvCite.Platform.Modules.Canon;
 
 public static class ReasoningEndpoints
 {
@@ -12,7 +12,7 @@ public static class ReasoningEndpoints
     public static RouteGroupBuilder MapReasoningEndpoints(this RouteGroupBuilder v1)
     {
         // POST：案件事實是客戶案件的內容，不放在網址裡。
-        v1.MapPost("/reasoning/evaluate", async (EvaluateReasoningRequest request, OntologyGateway gateway, CancellationToken ct) =>
+        v1.MapPost("/reasoning/evaluate", async (EvaluateReasoningRequest request, CanonGateway gateway, CancellationToken ct) =>
         {
             var outcome = await gateway.EvaluateAsync(request, ct);
 
@@ -20,7 +20,7 @@ public static class ReasoningEndpoints
             return outcome is { Status: AdminStatus.Unavailable, Code: OutcomeCodes.ReasoningBusy }
                 ? Results.Problem(outcome.Message, statusCode: StatusCodes.Status503ServiceUnavailable,
                     extensions: new Dictionary<string, object?> { ["code"] = outcome.Code, ["retryable"] = true })
-                : OntologyEndpoints.Present(outcome);
+                : CanonEndpoints.Present(outcome);
         })
             .RequireModule(ModuleKeys.NormativeReasoning)
             .WithName("EvaluateReasoning")

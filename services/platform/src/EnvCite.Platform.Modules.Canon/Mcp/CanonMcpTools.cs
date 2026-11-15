@@ -4,7 +4,7 @@ using System.Text.Json;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
 
-namespace EnvCite.Platform.Modules.Ontology.Mcp;
+namespace EnvCite.Platform.Modules.Canon.Mcp;
 
 /// <param name="Articles">相關度高的在前；查不到相關條文時是空陣列，不用不相干的條文湊數。</param>
 public sealed record SearchArticlesResult(IReadOnlyList<SearchHitDto> Articles);
@@ -13,12 +13,12 @@ public sealed record SearchArticlesResult(IReadOnlyList<SearchHitDto> Articles);
 public sealed record ListArticlesResult(IReadOnlyList<ArticleDto> Articles);
 
 /// <summary>
-/// 對外 REST 的資料端點，以 MCP 工具提供給 AI 代理。工具與 REST 共用同一份實作（<see cref="ILawSearch"/>、<see cref="OntologyGateway"/>），
+/// 對外 REST 的資料端點，以 MCP 工具提供給 AI 代理。工具與 REST 共用同一份實作（<see cref="ILawSearch"/>、<see cref="CanonGateway"/>），
 /// 所以輸入檢查、錯誤、計量（成功才記）與「查詢文字不進任何日誌」只有一個；身分、方案與限流由 <c>/v2</c> 群組在進來之前就擋下。
 /// 全部唯讀、確定性。預期的失敗（輸入錯誤、找不到、暫時不可用）以 <see cref="McpException"/> 回成工具錯誤，訊息是英文的穩定說明，不含內部細節。
 /// </summary>
 [McpServerToolType]
-internal sealed class OntologyMcpTools(ILawSearch search, OntologyGateway gateway)
+internal sealed class CanonMcpTools(ILawSearch search, CanonGateway gateway)
 {
     private const string PointInTime = "ISO 8601 日期（YYYY-MM-DD）：依哪一天施行的條文；省略表示現行。";
 
@@ -77,7 +77,7 @@ internal sealed class OntologyMcpTools(ILawSearch search, OntologyGateway gatewa
 /// 讀一次等於 get_law 加 list_articles，各計量一次。
 /// </summary>
 [McpServerResourceType]
-internal sealed class OntologyMcpResources(OntologyGateway gateway)
+internal sealed class CanonMcpResources(CanonGateway gateway)
 {
     [McpServerResource(UriTemplate = "envcite://laws/{jurisdiction}/{idScheme}/{localId}", Name = "law", Title = "法規與現行各條", MimeType = "application/json")]
     [Description("一部法規現行的標題、基本資料與各條清單（條文網址與條號）。法規以管轄／識別碼方案／在地識別碼指定，如 envcite://laws/TW-CENTRAL/moj_pcode/O0020001。")]
@@ -96,8 +96,8 @@ internal sealed class OntologyMcpResources(OntologyGateway gateway)
 }
 
 /// <summary>把法規資料的工具與資源加進 MCP 伺服器（由主機組合）。</summary>
-public static class OntologyMcp
+public static class CanonMcp
 {
-    public static IMcpServerBuilder WithOntologyTools(this IMcpServerBuilder builder) =>
-        builder.WithTools<OntologyMcpTools>().WithResources<OntologyMcpResources>();
+    public static IMcpServerBuilder WithCanonTools(this IMcpServerBuilder builder) =>
+        builder.WithTools<CanonMcpTools>().WithResources<CanonMcpResources>();
 }

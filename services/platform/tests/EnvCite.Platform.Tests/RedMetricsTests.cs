@@ -71,7 +71,7 @@ public sealed class RedMetricsTests(PlatformFactory factory)
             .ToList();
         var statuses = ground.Select(p => (string)p.Tags["rpc.response.status_code"]!).ToHashSet(StringComparer.Ordinal);
         Assert.Superset(new HashSet<string>(["INVALID_ARGUMENT", "OK", "UNAVAILABLE"], StringComparer.Ordinal), statuses);
-        Assert.All(ground, p => Assert.Equal("envcite.consult.v2.ConsultationService", p.Tags["rpc.service"]));
+        Assert.All(ground, p => Assert.Equal("envcite.consult.v3.ConsultationService", p.Tags["rpc.service"]));
 
         // 租戶只在追蹤上：基數不受控，不進任何指標的標籤。
         Assert.DoesNotContain(capture.Points, p => p.Tags.Keys.Any(k => k.Contains("tenant", StringComparison.OrdinalIgnoreCase))

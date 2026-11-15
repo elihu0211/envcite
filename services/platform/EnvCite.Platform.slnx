@@ -11,7 +11,7 @@
     <Project Path="src/EnvCite.Platform.Modules.Consult/EnvCite.Platform.Modules.Consult.csproj" />
     <Project Path="src/EnvCite.Platform.Modules.Members/EnvCite.Platform.Modules.Members.csproj" />
     <Project Path="src/EnvCite.Platform.Modules.Metering/EnvCite.Platform.Modules.Metering.csproj" />
-    <Project Path="src/EnvCite.Platform.Modules.Ontology/EnvCite.Platform.Modules.Ontology.csproj" />
+    <Project Path="src/EnvCite.Platform.Modules.Canon/EnvCite.Platform.Modules.Canon.csproj" />
     <Project Path="src/EnvCite.Platform.Modules.Tenancy/EnvCite.Platform.Modules.Tenancy.csproj" />
     <Project Path="src/EnvCite.Platform.SharedKernel/EnvCite.Platform.SharedKernel.csproj" />
     <Project Path="src/EnvCite.Platform.Web/EnvCite.Platform.Web.csproj" />

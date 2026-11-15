@@ -26,7 +26,7 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.DoesNotContain("法規本體", page.Html, StringComparison.Ordinal);
         Assert.Contains("ep-workbench-shell", page.Html, StringComparison.Ordinal);
         Assert.Contains("value=\"O\" selected", page.Html, StringComparison.Ordinal);
-        Assert.Contains("data-ontology-graph=", page.Html, StringComparison.Ordinal);
+        Assert.Contains("data-canon-graph=", page.Html, StringComparison.Ordinal);
         Assert.Contains("data-graph-inspector=", page.Html, StringComparison.Ordinal);
         Assert.Contains("data-graph-action=\"layout-stufenbau\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("data-graph-action=\"layout-concentric\"", page.Html, StringComparison.Ordinal);
@@ -34,7 +34,7 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("id=\"ep-tab-structure\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("id=\"ep-tab-reasoning\"", page.Html, StringComparison.Ordinal);
 
-        var script = await browser.GetAsync("/_content/EnvCite.Platform.Web/design/ontology-graph.js");
+        var script = await browser.GetAsync("/_content/EnvCite.Platform.Web/design/canon-graph.js");
         Assert.Equal(HttpStatusCode.OK, script.Status);
         Assert.Contains("computeStufenbauPositions", script.Html, StringComparison.Ordinal);
         Assert.Contains("renderInspector", script.Html, StringComparison.Ordinal);
@@ -61,7 +61,7 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         var (tenant, browser) = await SignedInOwnerAsync("wb-focus");
         using var _ = browser;
 
-        var focusPath = $"{Home(tenant)}/laws?jurisdiction=TW-CENTRAL&idScheme=moj_pcode&localId={FakeOntologyServer.KnownLawId}";
+        var focusPath = $"{Home(tenant)}/laws?jurisdiction=TW-CENTRAL&idScheme=moj_pcode&localId={FakeCanonServer.KnownLawId}";
         var graphPage = await browser.GetAsync(focusPath);
 
         Assert.Equal(HttpStatusCode.OK, graphPage.Status);
@@ -69,13 +69,13 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("\"focus\":true", graphPage.Html, StringComparison.Ordinal);
         Assert.Contains("\"hierarchyTier\":", graphPage.Html, StringComparison.Ordinal);
         Assert.Contains("tab=structure", graphPage.Html, StringComparison.Ordinal);
-        Assert.Contains($"localId={FakeOntologyServer.KnownLawId}", graphPage.Html, StringComparison.Ordinal);
+        Assert.Contains($"localId={FakeCanonServer.KnownLawId}", graphPage.Html, StringComparison.Ordinal);
 
         var structurePage = await browser.GetAsync($"{focusPath}&tab=structure");
 
         Assert.Equal(HttpStatusCode.OK, structurePage.Status);
         Assert.Contains("id=\"law-detail-title\"", structurePage.Html, StringComparison.Ordinal);
-        Assert.Contains($"TW-CENTRAL/moj_pcode/{FakeOntologyServer.KnownLawId}", structurePage.Html, StringComparison.Ordinal);
+        Assert.Contains($"TW-CENTRAL/moj_pcode/{FakeCanonServer.KnownLawId}", structurePage.Html, StringComparison.Ordinal);
         Assert.Contains("tab=graph", structurePage.Html, StringComparison.Ordinal);
     }
 
@@ -115,7 +115,7 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         await browser.SubmitAsync(Login(tenant.Identifier), new() { ["culture"] = "en", ["returnUrl"] = Login(tenant.Identifier) }, $"{home}/language");
         await SignInFullyAsync(browser, tenant.Identifier, email, initial);
 
-        var focus = $"{home}/laws?jurisdiction=TW-CENTRAL&idScheme=moj_pcode&localId={FakeOntologyServer.KnownLawId}";
+        var focus = $"{home}/laws?jurisdiction=TW-CENTRAL&idScheme=moj_pcode&localId={FakeCanonServer.KnownLawId}";
         var page = await browser.GetAsync(focus);
 
         Assert.Equal(HttpStatusCode.OK, page.Status);

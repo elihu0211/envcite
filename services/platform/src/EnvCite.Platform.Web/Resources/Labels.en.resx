@@ -59,7 +59,7 @@
   <data name="Usage.Operation.consult.answer" xml:space="preserve"><value>Model-generated answer</value></data>
   <data name="Usage.Operation.consult.tokens.input" xml:space="preserve"><value>Model input tokens</value></data>
   <data name="Usage.Operation.consult.tokens.output" xml:space="preserve"><value>Model output tokens</value></data>
-  <data name="Usage.Category.canon" xml:space="preserve"><value>Legal ontology</value></data>
+  <data name="Usage.Category.canon" xml:space="preserve"><value>Legal canon</value></data>
   <data name="Usage.Category.tokens" xml:space="preserve"><value>Token metering</value></data>
   <data name="Usage.Category.consult" xml:space="preserve"><value>Grounding</value></data>
   <data name="Usage.Category.other" xml:space="preserve"><value>Other operations</value></data>

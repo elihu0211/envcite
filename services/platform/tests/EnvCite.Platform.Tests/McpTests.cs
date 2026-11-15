@@ -2,9 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
+using EnvCite.Platform.Modules.Canon;
 using EnvCite.Platform.Modules.Consult;
 using EnvCite.Platform.Modules.Metering;
-using EnvCite.Platform.Modules.Ontology;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
@@ -80,8 +80,8 @@ public sealed class McpTests(PlatformFactory factory)
         Assert.NotEqual(true, result.IsError);
         var article = Assert.Single(Structured(result).GetProperty("articles").EnumerateArray());
         Assert.False(string.IsNullOrEmpty(article.GetProperty("uri").GetString()));
-        Assert.Equal("2021-01-01", factory.Ontology.LastSearch!.AsOf);
-        Assert.Equal([new UsageSummary(OntologyEndpoints.SearchOperation, 1, 1)], await UsageAsync(http));
+        Assert.Equal("2021-01-01", factory.Canon.LastSearch!.AsOf);
+        Assert.Equal([new UsageSummary(CanonEndpoints.SearchOperation, 1, 1)], await UsageAsync(http));
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public sealed class McpTests(PlatformFactory factory)
 
         var badDate = await mcp.CallToolAsync("search_articles", Arguments(("query", "噪音"), ("pointInTime", "yesterday")), cancellationToken: Ct);
         var unavailable = await mcp.CallToolAsync("ground_question", Arguments(("question", FakeConsultServer.UnavailableQuestion)), cancellationToken: Ct);
-        var notInForce = await mcp.CallToolAsync("get_law", Arguments(("jurisdiction", "TW-CENTRAL"), ("idScheme", "moj_pcode"), ("localId", FakeOntologyServer.KnownLawId), ("pointInTime", FakeOntologyServer.NotInForceDate)), cancellationToken: Ct);
+        var notInForce = await mcp.CallToolAsync("get_law", Arguments(("jurisdiction", "TW-CENTRAL"), ("idScheme", "moj_pcode"), ("localId", FakeCanonServer.KnownLawId), ("pointInTime", FakeCanonServer.NotInForceDate)), cancellationToken: Ct);
 
         Assert.All(new[] { badDate, unavailable, notInForce }, r => Assert.True(r.IsError));
         Assert.Contains("ISO 8601", TextOf(badDate), StringComparison.Ordinal);
@@ -128,11 +128,11 @@ public sealed class McpTests(PlatformFactory factory)
         using var http = host.CreateClient();
         http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
         await using var mcp = await ConnectAsync(http);
-        var law = Arguments(("jurisdiction", "TW-CENTRAL"), ("idScheme", "moj_pcode"), ("localId", FakeOntologyServer.KnownLawId));
+        var law = Arguments(("jurisdiction", "TW-CENTRAL"), ("idScheme", "moj_pcode"), ("localId", FakeCanonServer.KnownLawId));
 
         var title = await mcp.CallToolAsync("get_law", law, cancellationToken: Ct);
         var articles = await mcp.CallToolAsync("list_articles", law, cancellationToken: Ct);
-        var resource = await mcp.ReadResourceAsync(new Uri($"envcite://laws/TW-CENTRAL/moj_pcode/{FakeOntologyServer.KnownLawId}"), cancellationToken: Ct);
+        var resource = await mcp.ReadResourceAsync(new Uri($"envcite://laws/TW-CENTRAL/moj_pcode/{FakeCanonServer.KnownLawId}"), cancellationToken: Ct);
         var evaluated = await mcp.CallToolAsync("evaluate_reasoning", Arguments(("request", new { conductOn = "2020-01-01", decidedOn = "2020-06-01", facts = Array.Empty<object>() })), cancellationToken: Ct);
 
         Assert.Equal("空氣污染防制法", Structured(title).GetProperty("title").GetString());
@@ -143,7 +143,7 @@ public sealed class McpTests(PlatformFactory factory)
         var usage = (await UsageAsync(http)).ToDictionary(u => u.Operation, u => u.Calls);
         Assert.Equal(
             (2, 2, 1),
-            (usage[OntologyEndpoints.GetLawOperation], usage[OntologyEndpoints.ListArticlesOperation], usage[ReasoningEndpoints.EvaluateOperation]));
+            (usage[CanonEndpoints.GetLawOperation], usage[CanonEndpoints.ListArticlesOperation], usage[ReasoningEndpoints.EvaluateOperation]));
     }
 
     [Fact]

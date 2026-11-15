@@ -4,12 +4,12 @@ using EnvCite.Platform.Api;
 using EnvCite.Platform.Api.Mcp;
 using EnvCite.Platform.Modules.ApiAccess;
 using EnvCite.Platform.Modules.Audit;
+using EnvCite.Platform.Modules.Canon;
 using EnvCite.Platform.Modules.Consult;
 using EnvCite.Platform.Modules.Conversations;
 using EnvCite.Platform.Modules.Members;
 using EnvCite.Platform.Modules.Members.DirectorySync;
 using EnvCite.Platform.Modules.Metering;
-using EnvCite.Platform.Modules.Ontology;
 using EnvCite.Platform.Modules.Tenancy;
 using EnvCite.Platform.Web;
 using EnvCite.ServiceDefaults;
@@ -59,7 +59,7 @@ builder.Services.AddMembersModule();
 builder.Services.AddConversationsModule();
 builder.Services.AddSingleton<ITenantDirectory, TenantDirectory>();
 builder.Services.AddMeteringModule();
-builder.Services.AddOntologyModule();
+builder.Services.AddCanonModule();
 builder.Services.AddConsultModule();
 builder.Services.AddPlatformWeb();
 builder.Services.AddPlatformMcp();
@@ -130,7 +130,7 @@ v2.MapTenancyEndpoints()
 // 資料端點：完全付費制，租戶要有方案，否則 402。
 var paid = v2.MapGroup(string.Empty)
     .RequireAuthorization(PlatformAuth.PaidPolicy);
-paid.MapOntologyEndpoints()
+paid.MapCanonEndpoints()
     .MapReasoningEndpoints()
     .MapConsultEndpoints();
 

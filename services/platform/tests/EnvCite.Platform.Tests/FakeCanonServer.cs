@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 
-using EnvCite.Ontology.V2;
+using EnvCite.Canon.V1;
 
 using Grpc.Core;
 
@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 namespace EnvCite.Platform.Tests;
 
 /// <summary>In-process h2c gRPC server standing in for canon; records call metadata.</summary>
-public sealed class FakeOntologyServer : IAsyncDisposable
+public sealed class FakeCanonServer : IAsyncDisposable
 {
     public const string KnownLawId = "O0020001";
 
@@ -75,7 +75,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
             await _app.DisposeAsync();
     }
 
-    private sealed class Service(FakeOntologyServer server) : OntologyService.OntologyServiceBase
+    private sealed class Service(FakeCanonServer server) : CanonService.CanonServiceBase
     {
         public override Task<GetLawResponse> GetLaw(GetLawRequest request, ServerCallContext context)
         {
@@ -355,7 +355,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
     /// <summary>`conduct_on` 為此值時假服務回 RESOURCE_EXHAUSTED（推論容量用盡）。</summary>
     public const string BusyDate = "2000-01-02";
 
-    private sealed class Reasoning(FakeOntologyServer server) : ReasoningService.ReasoningServiceBase
+    private sealed class Reasoning(FakeCanonServer server) : ReasoningService.ReasoningServiceBase
     {
         public override Task<EvaluateResponse> Evaluate(EvaluateRequest request, ServerCallContext context)
         {
@@ -403,8 +403,8 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                     new TraceEntry
                     {
                         ConditionId = 31, StatementId = 7, Concept = "effluent_cod", Role = ConditionRole.Duty,
-                        Fact = new EnvCite.Ontology.V2.Decimal { Value = "120" },
-                        Threshold = new EnvCite.Ontology.V2.Decimal { Value = "100" },
+                        Fact = new EnvCite.Canon.V1.Decimal { Value = "120" },
+                        Threshold = new EnvCite.Canon.V1.Decimal { Value = "100" },
                     },
                 },
                 LimitSources = { { 31, 52 } },
@@ -427,8 +427,8 @@ public sealed class FakeOntologyServer : IAsyncDisposable
                         },
                         new ReducedFine { PenaltyStatementId = 14, Mitigation = Mitigation.ExcessiveDefense, Share = ReductionShare.Third },
                     },
-                    RaisedCaps = { new RaisedCap { PenaltyStatementId = 8, MaxAmount = new EnvCite.Ontology.V2.Decimal { Value = "2500000" } } },
-                    CriminalDeductions = { new CriminalDeduction { PenaltyStatementId = 8, Amount = new EnvCite.Ontology.V2.Decimal { Value = "41760" } } },
+                    RaisedCaps = { new RaisedCap { PenaltyStatementId = 8, MaxAmount = new EnvCite.Canon.V1.Decimal { Value = "2500000" } } },
+                    CriminalDeductions = { new CriminalDeduction { PenaltyStatementId = 8, Amount = new EnvCite.Canon.V1.Decimal { Value = "41760" } } },
                 },
                 Invalidated =
                 {

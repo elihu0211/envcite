@@ -30,7 +30,7 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
 
     public FakeTimeProvider Time { get; } = new(DateTimeOffset.UtcNow);
 
-    public FakeOntologyServer Ontology { get; } = new();
+    public FakeCanonServer Canon { get; } = new();
 
     public FakeConsultServer Consult { get; } = new();
 
@@ -39,13 +39,13 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
 
     public async ValueTask InitializeAsync()
     {
-        await Task.WhenAll(_postgres.StartAsync(), Ontology.StartAsync(), Consult.StartAsync());
+        await Task.WhenAll(_postgres.StartAsync(), Canon.StartAsync(), Consult.StartAsync());
     }
 
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
-        await Ontology.DisposeAsync();
+        await Canon.DisposeAsync();
         await Consult.DisposeAsync();
         await _postgres.DisposeAsync();
     }
@@ -67,7 +67,7 @@ public sealed class PlatformFactory : WebApplicationFactory<Program>, IAsyncLife
         // 多數入口測試的成員是 Owner，而且不是在測兩步驟驗證：共用主機不強制（正式預設是強制）。
         // 強制本身由 PortalMfaRequiredTests 以自己的主機（設成 true）測。
         builder.UseSetting("Platform:Portal:RequireMfaForAdmins", "false");
-        builder.UseSetting("Ontology:Address", Ontology.Address.ToString());
+        builder.UseSetting("Canon:Address", Canon.Address.ToString());
         builder.UseSetting("Consult:Address", Consult.Address.ToString());
         builder.UseSetting("Platform:Plans:standard:PermitLimit", RateLimitPermits.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting("Platform:Plans:pro:PermitLimit", (RateLimitPermits * 2).ToString(System.Globalization.CultureInfo.InvariantCulture));

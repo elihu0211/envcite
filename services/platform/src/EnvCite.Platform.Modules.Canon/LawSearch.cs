@@ -1,13 +1,13 @@
-using EnvCite.Ontology.V2;
+using EnvCite.Canon.V1;
 using EnvCite.ServiceDefaults;
 
 using Grpc.Core;
 
-namespace EnvCite.Platform.Modules.Ontology;
+namespace EnvCite.Platform.Modules.Canon;
 
 internal sealed class LawSearch(
-    OntologyService.OntologyServiceClient client,
-    IOptions<OntologyOptions> options,
+    CanonService.CanonServiceClient client,
+    IOptions<CanonOptions> options,
     IOptions<LawSearchOptions> relevance,
     IOptions<RelevanceFloorsOptions> floors,
     IUsageRecorder usage) : ILawSearch
@@ -24,7 +24,7 @@ internal sealed class LawSearch(
             var response = await client.SearchArticlesAsync(
                 new SearchArticlesRequest { Query = query ?? string.Empty, AsOf = asOf ?? string.Empty, Limit = limit ?? 0, IncludeGuidance = true },
                 deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
-            await usage.RecordAsync(OntologyEndpoints.SearchOperation, 1, cancellationToken);
+            await usage.RecordAsync(CanonEndpoints.SearchOperation, 1, cancellationToken);
             return AdminOutcome.Ok<IReadOnlyList<LawHit>>(
                 [.. response.Hits.Where(h => relevance.Value.Passes(floors.Value, query ?? string.Empty, h.LexicalScore, h.SemanticSimilarity, h.TermCoverage, h.GuidanceDocuments)).Select(h => new LawHit(
                     h.Iri,

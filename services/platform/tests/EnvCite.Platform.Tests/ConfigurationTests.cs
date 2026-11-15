@@ -20,7 +20,7 @@ public sealed class ConfigurationTests(PlatformFactory factory)
     }
 
     [Theory]
-    [InlineData("Ontology:Address", "not-a-uri", "Ontology:Address must be an absolute URI")]
+    [InlineData("Canon:Address", "not-a-uri", "Canon:Address must be an absolute URI")]
     [InlineData("Consult:Address", "", "Consult:Address must be an absolute URI")]
     [InlineData("Consult:Timeout", "00:00:00", "Consult:Timeout must be positive")]
     [InlineData("Platform:TenantPlans:acme", "gold", "Platform:TenantPlans:acme names unknown plan 'gold'")]

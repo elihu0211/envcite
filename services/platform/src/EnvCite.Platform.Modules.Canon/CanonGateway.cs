@@ -1,30 +1,30 @@
-using EnvCite.Ontology.V2;
+using EnvCite.Canon.V1;
 
 using Grpc.Core;
 
 using Microsoft.Extensions.Caching.Memory;
 
-namespace EnvCite.Platform.Modules.Ontology;
+namespace EnvCite.Platform.Modules.Canon;
 
 /// <summary>
 /// 取得法規、列出條文、對案件事實推論：對外 REST 與 MCP 工具共用這一份，所以輸入檢查、錯誤與計量（成功才記）只有一個實作。
 /// 內部服務的錯誤在這裡轉成結果代碼，呼叫端只決定怎麼呈現（HTTP 狀態或工具結果）。以 scoped 註冊（計量需要目前請求的租戶）。
 /// </summary>
-internal sealed class OntologyGateway(
-    OntologyService.OntologyServiceClient ontology,
+internal sealed class CanonGateway(
+    CanonService.CanonServiceClient canon,
     ReasoningService.ReasoningServiceClient reasoning,
-    IOptions<OntologyOptions> options,
+    IOptions<CanonOptions> options,
     IUsageRecorder usage,
     IMemoryCache cache)
 {
     private static readonly TimeSpan ArticleIriCacheTtl = TimeSpan.FromMinutes(5);
     public async Task<AdminOutcome<(IReadOnlyList<LawSummaryDto> Laws, bool Available)>> ListLawsAsync(
         string? jurisdiction, string? asOf, CancellationToken cancellationToken, string? categoryPrefix = null) =>
-        await CallAsync(OntologyBusy, async () =>
+        await CallAsync(CanonBusy, async () =>
         {
             try
             {
-                var response = await ontology.ListLawsAsync(
+                var response = await canon.ListLawsAsync(
                     new ListLawsRequest
                     {
                         Jurisdiction = jurisdiction ?? string.Empty,
@@ -56,7 +56,7 @@ internal sealed class OntologyGateway(
 
     public async Task<AdminOutcome<PortalLawGraphResult>> GetLawGraphAsync(
         PortalLawGraphQuery query, CancellationToken cancellationToken) =>
-        await CallAsync(OntologyBusy, async () =>
+        await CallAsync(CanonBusy, async () =>
         {
             try
             {
@@ -72,7 +72,7 @@ internal sealed class OntologyGateway(
                 if (query.Focus is { } focus)
                     request.Identifier = IdentifierOf(focus.Jurisdiction, focus.IdScheme, focus.LocalId);
 
-                var response = await ontology.GetLawGraphAsync(
+                var response = await canon.GetLawGraphAsync(
                     request,
                     deadline: DateTime.UtcNow.Add(options.Value.Timeout),
                     cancellationToken: cancellationToken);
@@ -95,9 +95,9 @@ internal sealed class OntologyGateway(
         if (cache.TryGetValue(cacheKey, out ArticleDetailDto? cached) && cached is not null)
             return AdminOutcome.Ok(cached);
 
-        var outcome = await CallAsync(OntologyBusy, async () =>
+        var outcome = await CallAsync(CanonBusy, async () =>
         {
-            var response = await ontology.GetArticleByIriAsync(
+            var response = await canon.GetArticleByIriAsync(
                 new GetArticleByIriRequest { Iri = trimmed },
                 deadline: DateTime.UtcNow.Add(options.Value.Timeout),
                 cancellationToken: cancellationToken);
@@ -121,12 +121,12 @@ internal sealed class OntologyGateway(
 
     public async Task<AdminOutcome<LawDto>> GetLawAsync(
         string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken) =>
-        await CallAsync(OntologyBusy, async () =>
+        await CallAsync(CanonBusy, async () =>
         {
-            var response = await ontology.GetLawAsync(
+            var response = await canon.GetLawAsync(
                 new GetLawRequest { Identifier = IdentifierOf(jurisdiction, idScheme, localId), AsOf = asOf ?? string.Empty },
                 deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
-            await usage.RecordAsync(OntologyEndpoints.GetLawOperation, 1, cancellationToken);
+            await usage.RecordAsync(CanonEndpoints.GetLawOperation, 1, cancellationToken);
             var law = response.Law;
             return new LawDto(
                 LawIdentifiers.ToDto(law.Identifier),
@@ -138,23 +138,23 @@ internal sealed class OntologyGateway(
 
     public async Task<AdminOutcome<IReadOnlyList<ArticleDto>>> ListArticlesAsync(
         string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken) =>
-        await CallAsync<IReadOnlyList<ArticleDto>>(OntologyBusy, async () =>
+        await CallAsync<IReadOnlyList<ArticleDto>>(CanonBusy, async () =>
         {
-            var response = await ontology.ListArticlesAsync(
+            var response = await canon.ListArticlesAsync(
                 new ListArticlesRequest { Identifier = IdentifierOf(jurisdiction, idScheme, localId), AsOf = asOf ?? string.Empty },
                 deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
-            await usage.RecordAsync(OntologyEndpoints.ListArticlesOperation, 1, cancellationToken);
+            await usage.RecordAsync(CanonEndpoints.ListArticlesOperation, 1, cancellationToken);
             return [.. response.Articles.Select(a => new ArticleDto(a.Iri, a.Number))];
         });
 
     public async Task<AdminOutcome<LawStructureDto>> ListLawStructureAsync(
         string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken) =>
-        await CallAsync(OntologyBusy, async () =>
+        await CallAsync(CanonBusy, async () =>
         {
-            var response = await ontology.ListArticlesAsync(
+            var response = await canon.ListArticlesAsync(
                 new ListArticlesRequest { Identifier = IdentifierOf(jurisdiction, idScheme, localId), AsOf = asOf ?? string.Empty },
                 deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
-            await usage.RecordAsync(OntologyEndpoints.ListArticlesOperation, 1, cancellationToken);
+            await usage.RecordAsync(CanonEndpoints.ListArticlesOperation, 1, cancellationToken);
             return new LawStructureDto(
                 [.. response.Articles.Select(a => new ArticleWithSortDto(a.Iri, a.Number, [.. a.SortKey]))],
                 [.. response.Headings.Select(h => new StructureHeadingDto(
@@ -244,7 +244,7 @@ internal sealed class OntologyGateway(
         });
 
     // 內部服務容量用盡：法規查詢視為暫時不可用；推論有自己的代碼（呼叫端稍後重試）。
-    private const string OntologyBusy = OutcomeCodes.CanonUnavailable;
+    private const string CanonBusy = OutcomeCodes.CanonUnavailable;
 
     private static LawIdentifier IdentifierOf(string? jurisdiction, string? idScheme, string? localId) =>
         new() { Jurisdiction = jurisdiction ?? string.Empty, IdScheme = idScheme ?? string.Empty, LocalId = localId ?? string.Empty };

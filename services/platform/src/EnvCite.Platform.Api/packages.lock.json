@@ -348,10 +348,20 @@
           "EnvCite.Platform.SharedKernel": "[1.0.0, )"
         }
       },
+      "envcite.platform.modules.canon": {
+        "type": "Project",
+        "dependencies": {
+          "EnvCite.Platform.Data": "[1.0.0, )",
+          "EnvCite.Platform.SharedKernel": "[1.0.0, )",
+          "Google.Protobuf": "[3.36.2, )",
+          "Grpc.Net.ClientFactory": "[2.84.0, )",
+          "ModelContextProtocol": "[2.3.0, )"
+        }
+      },
       "envcite.platform.modules.consult": {
         "type": "Project",
         "dependencies": {
-          "EnvCite.Platform.Modules.Ontology": "[1.0.0, )",
+          "EnvCite.Platform.Modules.Canon": "[1.0.0, )",
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
           "Google.Protobuf": "[3.36.2, )",
           "Grpc.Net.ClientFactory": "[2.84.0, )",
@@ -390,16 +400,6 @@
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
           "Finbuckle.MultiTenant.EntityFrameworkCore": "[10.1.4, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )"
-        }
-      },
-      "envcite.platform.modules.ontology": {
-        "type": "Project",
-        "dependencies": {
-          "EnvCite.Platform.Data": "[1.0.0, )",
-          "EnvCite.Platform.SharedKernel": "[1.0.0, )",
-          "Google.Protobuf": "[3.36.2, )",
-          "Grpc.Net.ClientFactory": "[2.84.0, )",
-          "ModelContextProtocol": "[2.3.0, )"
         }
       },
       "envcite.platform.modules.tenancy": {

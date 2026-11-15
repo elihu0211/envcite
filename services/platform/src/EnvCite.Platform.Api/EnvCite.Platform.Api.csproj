@@ -33,7 +33,7 @@
     <ProjectReference Include="..\EnvCite.Platform.Modules.Tenancy\EnvCite.Platform.Modules.Tenancy.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.Modules.ApiAccess\EnvCite.Platform.Modules.ApiAccess.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.Modules.Audit\EnvCite.Platform.Modules.Audit.csproj" />
-    <ProjectReference Include="..\EnvCite.Platform.Modules.Ontology\EnvCite.Platform.Modules.Ontology.csproj" />
+    <ProjectReference Include="..\EnvCite.Platform.Modules.Canon\EnvCite.Platform.Modules.Canon.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.Modules.Metering\EnvCite.Platform.Modules.Metering.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.Modules.Consult\EnvCite.Platform.Modules.Consult.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.Modules.Conversations\EnvCite.Platform.Modules.Conversations.csproj" />

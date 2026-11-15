@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
-namespace EnvCite.Platform.Modules.Ontology;
+namespace EnvCite.Platform.Modules.Canon;
 
 /// <param name="Identifier">法規的複合自然鍵（管轄，識別碼方案，在地識別碼）。</param>
 /// <param name="Uri">由法規組成，可反查到該法規。</param>
@@ -57,7 +57,7 @@ public sealed record ArticleDetailDto(
     string DocumentType = "",
     string? RepealedOn = null);
 
-public static class OntologyEndpoints
+public static class CanonEndpoints
 {
     public const string GetLawOperation = "canon.get_law";
     public const string ListArticlesOperation = "canon.list_articles";
@@ -65,10 +65,10 @@ public static class OntologyEndpoints
     public const string SearchOperation = "canon.search";
 
     /// <summary>包在內部 gRPC 服務外的對外 REST facade；成功的呼叫會被計量。</summary>
-    public static RouteGroupBuilder MapOntologyEndpoints(this RouteGroupBuilder v1)
+    public static RouteGroupBuilder MapCanonEndpoints(this RouteGroupBuilder v1)
     {
         v1.MapGet("/laws/{jurisdiction}/{idScheme}/{localId}", async (string jurisdiction, string idScheme, string localId, string? asOf,
-            OntologyGateway gateway, CancellationToken ct) =>
+            CanonGateway gateway, CancellationToken ct) =>
             Present(await gateway.GetLawAsync(jurisdiction, idScheme, localId, asOf, ct)))
             .RequireModule(ModuleKeys.LawCorpus)
             .WithName("GetLaw")
@@ -83,7 +83,7 @@ public static class OntologyEndpoints
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         v1.MapGet("/laws/{jurisdiction}/{idScheme}/{localId}/articles", async (string jurisdiction, string idScheme, string localId, string? asOf,
-            OntologyGateway gateway, CancellationToken ct) =>
+            CanonGateway gateway, CancellationToken ct) =>
             Present(await gateway.ListArticlesAsync(jurisdiction, idScheme, localId, asOf, ct)))
             .RequireModule(ModuleKeys.LawCorpus)
             .WithName("ListArticles")
@@ -96,7 +96,7 @@ public static class OntologyEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
-        v1.MapGet("/articles/by-iri", async (string iri, OntologyGateway gateway, CancellationToken ct) =>
+        v1.MapGet("/articles/by-iri", async (string iri, CanonGateway gateway, CancellationToken ct) =>
             Present(await gateway.GetArticleByIriAsync(iri, ct)))
             .WithName("GetArticleByIri")
             .WithTags("法規")
@@ -116,7 +116,7 @@ public static class OntologyEndpoints
                     AdminStatus.Ok => Results.Ok(result.Value!.Select(h =>
                         new SearchHitDto(h.Uri, h.Identifier, h.LawTitle, h.Number, h.Content, h.Score, h.GuidanceDocuments))),
                     AdminStatus.Invalid => result.ValidationProblem(),
-                    _ => result.Problem(StatusCodes.Status503ServiceUnavailable, "Ontology service unavailable."),
+                    _ => result.Problem(StatusCodes.Status503ServiceUnavailable, "Canon service unavailable."),
                 };
             })
             .RequireModule(ModuleKeys.LawSearch)
@@ -140,6 +140,6 @@ public static class OntologyEndpoints
         AdminStatus.Ok => Results.Ok(outcome.Value),
         AdminStatus.NotFound => Results.NotFound(),
         AdminStatus.Invalid => outcome.ValidationProblem(),
-        _ => outcome.Problem(StatusCodes.Status503ServiceUnavailable, "Ontology service unavailable."),
+        _ => outcome.Problem(StatusCodes.Status503ServiceUnavailable, "Canon service unavailable."),
     };
 }

@@ -1,5 +1,5 @@
+using EnvCite.Platform.Modules.Canon;
 using EnvCite.Platform.Modules.Consult;
-using EnvCite.Platform.Modules.Ontology;
 
 namespace EnvCite.Platform.Tests;
 

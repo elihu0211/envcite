@@ -3,7 +3,7 @@ using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
-using EnvCite.Consult.V2;
+using EnvCite.Consult.V3;
 
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;

@@ -29,7 +29,7 @@ internal sealed class QueryNav(IStringLocalizer<Ui> localizer) : PortalNavContri
         [new(context.Home, L["法規諮詢"], ServicesGroup, Exact: true, Icon: Icons.Material.Outlined.QuestionAnswer)];
 }
 
-internal sealed class OntologyWorkbenchNav(IStringLocalizer<Ui> localizer, ITenantModules modules) : PortalNavContributorBase(localizer)
+internal sealed class LawWorkbenchNav(IStringLocalizer<Ui> localizer, ITenantModules modules) : PortalNavContributorBase(localizer)
 {
     public override int Order => 15;
 
