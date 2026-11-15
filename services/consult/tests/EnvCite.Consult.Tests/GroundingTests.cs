@@ -5,7 +5,7 @@ namespace EnvCite.Consult.Tests;
 /// <summary>管線的形狀：哪個階段決定什麼。檢索由測試控制，因為管線的工作正是決定拿檢索結果做什麼。</summary>
 public sealed class GroundingTests
 {
-    private sealed class FakeOntology(params Article[] articles) : IOntologySearch
+    private sealed class FakeCanon(params Article[] articles) : ICanonSearch
     {
         public List<(string Query, string AsOf)> Searches { get; } = [];
 
@@ -19,7 +19,7 @@ public sealed class GroundingTests
     /// <summary>測試自己的下界：管線的形狀不取決於部署的值。</summary>
     private static readonly RelevanceOptions Relevance = new() { LexicalFloor = 4, SemanticFloor = 0.61, HighConfidenceSemantic = 0.75 };
 
-    private static GroundingPipeline Pipeline(IOntologySearch ontology) => new(ontology, Options.Create(Relevance));
+    private static GroundingPipeline Pipeline(ICanonSearch canon) => new(canon, Options.Create(Relevance));
 
     private static Article Law(int n, double score, double? semantic = null) =>
         new($"https://envcite/tw/law/O0020001/2018-08-01/zho/art_{n}", $"空氣污染防制法 第 {n} 條", $"第 {n} 條條文內容。", score, semantic);
@@ -132,42 +132,42 @@ public sealed class GroundingTests
     [Fact]
     public async Task ABlankQuestionIsRefusedBeforeRetrieval()
     {
-        var ontology = new FakeOntology(Law(1, 9));
+        var canon = new FakeCanon(Law(1, 9));
 
-        var outcome = await Pipeline(ontology).RunAsync("　 ", "", TestContext.Current.CancellationToken);
+        var outcome = await Pipeline(canon).RunAsync("　 ", "", TestContext.Current.CancellationToken);
 
         Assert.Equal(RefusalReason.MissingInput, Assert.IsType<Refusal>(outcome).Reason);
-        Assert.Empty(ontology.Searches);
+        Assert.Empty(canon.Searches);
     }
 
     [Fact]
     public async Task AnOrdinanceQuestionWithNothingRelevantIsRefusedAsLocalLawAfterRetrieval()
     {
-        var ontology = new FakeOntology();
+        var canon = new FakeCanon();
 
-        var outcome = await Pipeline(ontology).RunAsync("臺北市有哪些空氣污染自治條例", "", TestContext.Current.CancellationToken);
+        var outcome = await Pipeline(canon).RunAsync("臺北市有哪些空氣污染自治條例", "", TestContext.Current.CancellationToken);
 
         Assert.Equal(RefusalReason.LocalLawUncovered, Assert.IsType<Refusal>(outcome).Reason);
-        Assert.Single(ontology.Searches);
+        Assert.Single(canon.Searches);
     }
 
     [Fact]
     public async Task EvidenceIsGradedByItsOwnRetrieval()
     {
-        var ontology = new FakeOntology(Law(1, 4.5), Law(2, 0.1));
+        var canon = new FakeCanon(Law(1, 4.5), Law(2, 0.1));
 
-        var outcome = await Pipeline(ontology).RunAsync("問句", "2020-01-01", TestContext.Current.CancellationToken);
+        var outcome = await Pipeline(canon).RunAsync("問句", "2020-01-01", TestContext.Current.CancellationToken);
 
         var evidence = Assert.IsType<Evidence>(outcome);
         Assert.Equal(["L1"], evidence.Citations.Select(c => c.Code));
         Assert.Equal(Confidence.Low, evidence.Confidence);
-        Assert.Equal([("問句", "2020-01-01")], ontology.Searches);
+        Assert.Equal([("問句", "2020-01-01")], canon.Searches);
     }
 
     [Fact]
     public async Task NothingRetrievedIsRefused()
     {
-        var outcome = await Pipeline(new FakeOntology()).RunAsync("問句", "", TestContext.Current.CancellationToken);
+        var outcome = await Pipeline(new FakeCanon()).RunAsync("問句", "", TestContext.Current.CancellationToken);
 
         Assert.Equal(RefusalReason.NoEvidence, Assert.IsType<Refusal>(outcome).Reason);
     }
@@ -202,6 +202,6 @@ public sealed class GroundingTests
     [InlineData("5-1", "第 5 條之 1")]
     public void ArticleNumbersBecomeLabels(string number, string label)
     {
-        Assert.Equal(label, OntologySearch.ArticleLabel(number));
+        Assert.Equal(label, CanonSearch.ArticleLabel(number));
     }
 }

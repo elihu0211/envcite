@@ -92,7 +92,7 @@ from canon.verification import config
 from envcite_segmenter import Segmenter
 
 KS = (1, 5, 10, 20, 50)
-#: consult 向檢索要的條數（`OntologySearch.Limit`）；可答性下界只看這麼多條。
+#: consult 向檢索要的條數（`CanonSearch.Limit`）；可答性下界只看這麼多條。
 CONSULT_LIMIT = 10
 METRICS = (*(f"hit_rate@{k}" for k in KS), "mrr", "ndcg@10")
 BUCKETS = ("exact_id", "paraphrase", "multi_hop")

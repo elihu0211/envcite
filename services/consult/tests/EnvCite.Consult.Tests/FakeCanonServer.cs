@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 
-using EnvCite.Ontology.V2;
+using EnvCite.Canon.V1;
 
 using Grpc.Core;
 
@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EnvCite.Consult.Tests;
 
 /// <summary>In-process h2c gRPC server standing in for canon; answers by query and records what it was sent.</summary>
-public sealed class FakeOntologyServer : IAsyncDisposable
+public sealed class FakeCanonServer : IAsyncDisposable
 {
     /// <summary>兩筆皆過下界的條文（0.9、0.4），第一筆達高信心。</summary>
     public const string AnswerableQuery = "露天燃燒如何處罰";
@@ -74,7 +74,7 @@ public sealed class FakeOntologyServer : IAsyncDisposable
         LexicalScore = lexicalScore,
     };
 
-    private sealed class Service(FakeOntologyServer server) : OntologyService.OntologyServiceBase
+    private sealed class Service(FakeCanonServer server) : CanonService.CanonServiceBase
     {
         public override Task<SearchArticlesResponse> SearchArticles(SearchArticlesRequest request, ServerCallContext context)
         {

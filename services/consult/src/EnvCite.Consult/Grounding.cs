@@ -1,6 +1,6 @@
 using System.Collections.Frozen;
 
-using EnvCite.Ontology.V2;
+using EnvCite.Canon.V1;
 
 using Microsoft.Extensions.Options;
 
@@ -41,7 +41,7 @@ internal sealed record Refusal(RefusalReason Reason, string Detail) : GroundingO
 /// 接地管線的各階段、其順序，以及由誰決定什麼。本服務不執行語言模型；完整的問答有五個階段，本服務擁有前三個，
 /// 後兩個在呼叫端，由呼叫端自己的模型執行：
 /// <list type="number">
-/// <item><b>retrieve</b>：由本體決定存在什麼</item>
+/// <item><b>retrieve</b>：由 canon 決定存在什麼</item>
 /// <item><b>ground</b>：由程式碼指派封閉的引用集合</item>
 /// <item><b>assess</b>：由規則決定這個問題到底能不能回答</item>
 /// <item><b>generate</b>（呼叫端）：呼叫端的模型撰寫文字，只能以代碼引用</item>
@@ -97,15 +97,15 @@ internal static class Grounding
 }
 
 /// <summary>為一個問題備妥證據，或拒答。只檢索一次：信心度與 grounding 出自同一次結果。</summary>
-internal sealed class GroundingPipeline(IOntologySearch ontology, IOptions<RelevanceOptions> relevance)
+internal sealed class GroundingPipeline(ICanonSearch canon, IOptions<RelevanceOptions> relevance)
 {
     public async Task<GroundingOutcome> RunAsync(string question, string asOf, CancellationToken cancellationToken)
     {
-        // 空白問句在檢索之前就拒答：本體對空查詢回 INVALID_ARGUMENT，而這是使用者少給了輸入，不是呼叫端的錯誤。
+        // 空白問句在檢索之前就拒答：canon 對空查詢回 INVALID_ARGUMENT，而這是使用者少給了輸入，不是呼叫端的錯誤。
         if (string.IsNullOrWhiteSpace(question))
             return new Refusal(RefusalReason.MissingInput, "問句為空");
 
-        var articles = await ontology.SearchAsync(question, asOf, cancellationToken);
+        var articles = await canon.SearchAsync(question, asOf, cancellationToken);
         var grounding = Grounding.Ground(articles, relevance.Value);
         return Grounding.Assess(grounding, articles, LocalMarkers.Classify(question))
             ?? (GroundingOutcome)new Evidence(grounding, Grounding.ConfidenceOf(grounding, articles, relevance.Value));

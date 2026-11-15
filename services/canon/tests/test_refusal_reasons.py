@@ -3,7 +3,7 @@
 契約新增拒答原因而評估工具沒跟上時，這裡失敗；不是等到跑評估才在中途停下。
 """
 
-from envcite.consult.v2 import consult_pb2
+from envcite.consult.v3 import consult_pb2
 from tools.answer_quality import (
     FINALS,
     KNOWN_FINALS,
