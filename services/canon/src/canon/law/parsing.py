@@ -11,7 +11,7 @@ from typing import Any, NamedTuple
 
 from canon.import_problems import Problem
 from canon.law import articles, commencement, headings, history
-from canon.law.numerals import parse_yyyymmdd
+from canon.numerals import parse_yyyymmdd
 
 #: 解析邏輯的版本。改變輸出的修改必須遞增，快照才會以新版重匯。
 PARSER_VERSION = 4

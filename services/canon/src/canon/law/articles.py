@@ -9,7 +9,7 @@
 import re
 from dataclasses import dataclass, field
 
-from canon.law.numerals import CN_NUMERALS, parse_int
+from canon.numerals import CN_NUMERALS, parse_int
 
 _ARTICLE_NO = re.compile(r"^第\s*([0-9]+(?:\s*-\s*[0-9]+)*)\s*條$")
 _BARE_NO = re.compile(r"^([0-9]+(?:-[0-9]+)*)$")

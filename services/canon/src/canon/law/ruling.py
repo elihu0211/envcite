@@ -29,8 +29,8 @@ import psycopg
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from canon.claims.errors import AnnotationError
+from canon.corpus_ref import UnknownProvision, provision_id
 from canon.db import Conn, fetch_one, scalar
-from canon.law.corpus_ref import UnknownProvision, provision_id
 
 log = logging.getLogger(__name__)
 

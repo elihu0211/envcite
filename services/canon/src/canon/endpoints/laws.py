@@ -2,10 +2,9 @@
 
 import grpc
 
-from canon import errors
+from canon import errors, identifiers
 from canon.endpoints.common import SERVICE_LOG, category_prefix_filter, log_call
-from canon.law import identifiers
-from canon.law.identifiers import jurisdiction_filter, law_key
+from canon.identifiers import jurisdiction_filter, law_key
 from canon.store.ports import LawReader
 from canon.store.records import LawKey
 from envcite.ontology.v2 import ontology_pb2 as pb

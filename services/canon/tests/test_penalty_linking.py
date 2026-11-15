@@ -11,8 +11,8 @@ from typing import Any, cast
 import psycopg
 import pytest
 
+from canon import violation
 from canon.annotate import load
-from canon.law import violation
 from canon.verification.extract import extract_unit
 from canon.verification.gates import GateResult, ReferencesGate
 from canon.verification.link import link_penalties, penalized

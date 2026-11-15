@@ -20,9 +20,10 @@ import unicodedata
 from dataclasses import dataclass
 from datetime import date
 
+from canon import numerals
 from canon.db import Conn
 from canon.import_problems import Problem
-from canon.law import moenv, numerals
+from canon.law import moenv
 
 #: 內文中寫出依據的字樣，緊接在法名之前（引號與空白已去掉）：解釋的對象，或訂定的依據
 _INTERPRETS = re.compile(r"核釋$")

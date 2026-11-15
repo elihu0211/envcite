@@ -185,7 +185,7 @@ uv run --env-file .env canon-pipeline --models models.toml --check   # 對每個
 
 - **只處罰已確認的陳述**：寫入罰則列時所處罰的陳述必須是 `confirmed`（觸發器 `sanction_punishes_confirmed`）；`annotation.settle` 不接受所處罰陳述已非 `confirmed` 的罰則，所處罰陳述被駁回則罰則駁回。
 - **待連結罰則**：載入（`annotate.load`）時連不上的罰則（所處罰的陳述未確認，或原文處罰的是別條）連同以它為前提或為例外者，存成 `annotation.held_penalty`；寫成陳述後記在 `annotation.held_penalty_link`。`canon-pipeline` 在第一次接受之後連結，再接受一次。
-- **依賴圖**：`annotation.violation` 是處罰條文（單元，內容雜湊）所罰的條、項、款，`canon-sync` 在匯入後以確定性的條號解析對全庫寫入（[`law/violation.py`](src/canon/law/violation.py)，規則版本 `RULE_VERSION`）；`annotation.current_violation` 只取最新規則版本。`violation_kind` 為 `duty`（所罰義務所在的條文）或 `delegated_rule`（「違反依第 N 條所定辦法」的授權條文，義務在授權命令裡，沿 `annotation.delegated_by` 找命令）；連結與 `duty_gap` 只讀 `duty`。
+- **依賴圖**：`annotation.violation` 是處罰條文（單元，內容雜湊）所罰的條、項、款，`canon-sync` 在匯入後以確定性的條號解析對全庫寫入（[`violation.py`](src/canon/violation.py)，規則版本 `RULE_VERSION`）；`annotation.current_violation` 只取最新規則版本。`violation_kind` 為 `duty`（所罰義務所在的條文）或 `delegated_rule`（「違反依第 N 條所定辦法」的授權條文，義務在授權命令裡，沿 `annotation.delegated_by` 找命令）；連結與 `duty_gap` 只讀 `duty`。
 - **讀取**：
   - `annotation.penalty_candidates(待連結罰則 id)`：候選的義務與是否已確認——同單元已指明的受罰陳述，或被引條文（含其下的項款、或引款而錨在項的列舉句）裡現行、未駁回的義務與禁止。
   - `annotation.held_penalty_state`：`linked`（已寫成陳述）、`linkable`（有已確認的候選）、`awaiting_duty`（候選都未定）、`no_duty`（被引條文沒有未駁回的義務）、`no_citation`（不知受罰者、也解析不出引用）。

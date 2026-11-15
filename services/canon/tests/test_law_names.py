@@ -1,4 +1,4 @@
-from canon.law.law_names import LawNames
+from canon.law_names import LawNames
 
 NAMES = LawNames(
     {

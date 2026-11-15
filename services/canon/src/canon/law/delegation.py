@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import NamedTuple
 
 from canon.db import Conn, fetch, scalar
-from canon.law.numerals import CN_NUMERALS, parse_int
+from canon.numerals import CN_NUMERALS, parse_int
 
 log = logging.getLogger(__name__)
 

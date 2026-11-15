@@ -28,7 +28,7 @@ from datetime import date
 
 from canon.acquire.markup import visible_text
 from canon.law.backfill.models import Article, UnreadablePage, Version
-from canon.law.numerals import CN_NUMERALS
+from canon.numerals import CN_NUMERALS
 
 BASE = "https://oaout.moenv.gov.tw/law/"
 CATEGORIES = f"{BASE}LawCategoryMain.aspx?type=M"

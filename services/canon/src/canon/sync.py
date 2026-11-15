@@ -15,12 +15,12 @@ from pathlib import Path
 
 import psycopg
 
-from canon import projection
+from canon import projection, violation
 from canon.acquire.cli import EXIT_INVALID, SOURCES
 from canon.acquire.engine import InvalidSnapshot, Source, acquire
 from canon.db import Conn
 from canon.embedding import Embedder
-from canon.law import delegation, importer, violation
+from canon.law import delegation, importer
 from canon.law.importer import BatchRejected
 from canon.projection import EmbeddingStopped
 from canon.settings import SnapshotSettings, load

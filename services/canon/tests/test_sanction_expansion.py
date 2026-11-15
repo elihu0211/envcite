@@ -4,8 +4,8 @@ from pathlib import Path
 
 import psycopg
 
-from canon import projection
-from canon.law import delegation, importer, violation
+from canon import projection, violation
+from canon.law import delegation, importer
 from canon.law.moj import Moj
 from canon.store.ontology_store import OntologyStore
 from envcite_segmenter import Segmenter
