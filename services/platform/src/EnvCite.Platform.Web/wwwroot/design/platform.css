@@ -1853,6 +1853,9 @@ a.ep-brand {
 
 /* 帳號選單：頭像圓鈕開一個原生 popover（點外面或按 Esc 就關）。 */
 .ep-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: 1px solid var(--ep-border-subtle);
     color: var(--ep-primary);
     font: inherit;
@@ -6425,10 +6428,49 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     display: block;
 }
 
+.ep-sr-only {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
 .ep-avatar-lg {
     inline-size: 3.5rem;
     block-size: 3.5rem;
     font-size: var(--ep-title-m-size);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.ep-avatar-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: inherit;
+    background: color-mix(in srgb, var(--ep-text) 55%, transparent);
+    color: var(--ep-surface);
+    opacity: 0;
+    transition: opacity var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-avatar-trigger:hover,
+.ep-avatar-trigger:focus-visible {
+    border-color: var(--ep-primary);
+}
+
+.ep-avatar-trigger:hover .ep-avatar-overlay,
+.ep-avatar-trigger:focus-visible .ep-avatar-overlay,
+.ep-avatar-field[data-dragover="true"] .ep-avatar-overlay {
+    opacity: 1;
 }
 
 .ep-avatar-summary {
@@ -6437,12 +6479,63 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     gap: var(--ep-space-3);
 }
 
+.ep-avatar-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+    min-inline-size: 0;
+}
+
 .ep-avatar-actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--ep-space-2);
-    margin-block-start: var(--ep-space-2);
+}
+
+.ep-avatar-field {
+    border-radius: var(--ep-radius-card);
+    transition: outline-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+}
+
+.ep-avatar-field[data-dragover="true"] {
+    outline: 2px dashed var(--ep-primary);
+    outline-offset: var(--ep-space-2);
+}
+
+.ep-dialog {
+    margin: auto;
+    padding: var(--ep-space-5);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface);
+    color: var(--ep-text);
+    inline-size: min(26rem, calc(100vw - 2rem));
+    box-shadow: 0 20px 50px color-mix(in srgb, var(--ep-text) 25%, transparent);
+}
+
+.ep-dialog::backdrop {
+    background: color-mix(in srgb, var(--ep-text) 45%, transparent);
+}
+
+.ep-dialog-head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
+    margin-block-end: var(--ep-space-3);
+}
+
+.ep-dialog-title {
+    margin: 0;
+    font-size: var(--ep-title-m-size);
+    font-weight: var(--ep-title-m-weight);
+}
+
+.ep-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--ep-space-2);
+    margin-block-start: var(--ep-space-4);
 }
 
 .ep-avatar-cropper {
@@ -6457,18 +6550,29 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     display: none;
 }
 
-.ep-avatar-cropper canvas {
-    inline-size: 12rem;
-    block-size: 12rem;
-    border-radius: 9999px;
-    border: 2px solid var(--ep-border-control);
-    cursor: grab;
-    touch-action: none;
-    background: var(--ep-surface);
+.ep-avatar-stage {
+    inline-size: 16rem;
+    block-size: 16rem;
 }
 
-.ep-avatar-cropper canvas:active {
-    cursor: grabbing;
+.ep-avatar-stage cropper-canvas {
+    inline-size: 100%;
+    block-size: 100%;
+    border-radius: var(--ep-radius-card);
+    border: 1px solid var(--ep-border-subtle);
+    overflow: hidden;
+}
+
+.ep-avatar-stage cropper-selection {
+    border-radius: 9999px;
+}
+
+.ep-avatar-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ep-space-2);
 }
 
 .ep-avatar-cropper input[type="range"] {

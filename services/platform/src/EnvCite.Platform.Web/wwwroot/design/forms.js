@@ -800,135 +800,244 @@
         }
     }, { passive: false });
 
-    // ---- 大頭貼圓形拖曳／縮放裁切（漸進增強；無 JS 時原生 multipart POST 仍由伺服器置中裁切） ----
+    // ---- 大頭貼裁切（Cropper.js v2 Web Components 漸進增強；無 JS 時原生 multipart POST 仍由伺服器置中裁切） ----
+    const cropperSrc = document.currentScript?.dataset?.cropperSrc || "/_content/EnvCite.Platform.Web/design/cropper.min.js";
+    let cropperLoader = null;
+    const ensureCropper = () => {
+        if (window.Cropper?.default) {
+            return Promise.resolve(window.Cropper.default);
+        }
+        if (cropperLoader) {
+            return cropperLoader;
+        }
+        cropperLoader = new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = cropperSrc;
+            script.async = true;
+            script.onload = () => {
+                if (window.Cropper?.default) {
+                    resolve(window.Cropper.default);
+                } else {
+                    reject(new Error("Cropper.js failed to register"));
+                }
+            };
+            script.onerror = () => reject(new Error("Failed to load Cropper.js"));
+            document.head.appendChild(script);
+        });
+        return cropperLoader;
+    };
+
     const initAvatarCropper = () => {
         const form = document.querySelector("[data-avatar-form]");
         const input = form?.querySelector("[data-avatar-input]");
-        const cropper = form?.querySelector("[data-avatar-cropper]");
-        const canvas = form?.querySelector("[data-avatar-canvas]");
+        const trigger = form?.querySelector("[data-avatar-trigger]");
+        const dropzone = document.querySelector("[data-avatar-dropzone]");
+        const dialog = form?.querySelector("[data-avatar-dialog]");
+        const stage = form?.querySelector("[data-avatar-stage]");
         const zoomInput = form?.querySelector("[data-avatar-zoom]");
-        if (!form || !input || !cropper || !canvas || !zoomInput) {
+        const rotateButtons = form?.querySelectorAll("[data-avatar-rotate]");
+        const resetButton = form?.querySelector("[data-avatar-reset]");
+        const cancelButton = form?.querySelector("[data-avatar-cancel]");
+        if (!form || !input || !dialog || !stage || !zoomInput) {
             return;
         }
 
-        const ctx = canvas.getContext("2d");
-        const size = canvas.width;
-        let loadedImage = null;
-        let scale = 1;
-        let offsetX = 0;
-        let offsetY = 0;
-        let dragging = null;
+        let cropperInstance = null;
+        let currentUrl = null;
+        let lastZoom = 1;
 
-        const clampOffsets = () => {
-            if (!loadedImage) {
+        const destroyCropper = () => {
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+            }
+            if (currentUrl) {
+                URL.revokeObjectURL(currentUrl);
+                currentUrl = null;
+            }
+            stage.innerHTML = "";
+        };
+
+        const closeDialog = () => {
+            if (dialog.open) {
+                dialog.close();
+            }
+            destroyCropper();
+        };
+
+        const loadFile = async (file) => {
+            destroyCropper();
+            if (!file) {
                 return;
             }
 
-            const base = Math.max(size / loadedImage.naturalWidth, size / loadedImage.naturalHeight);
-            const drawW = loadedImage.naturalWidth * base * scale;
-            const drawH = loadedImage.naturalHeight * base * scale;
-            const maxX = Math.max(0, (drawW - size) / 2);
-            const maxY = Math.max(0, (drawH - size) / 2);
-            offsetX = Math.max(-maxX, Math.min(maxX, offsetX));
-            offsetY = Math.max(-maxY, Math.min(maxY, offsetY));
-        };
+            try {
+                const CropperClass = await ensureCropper();
+                currentUrl = URL.createObjectURL(file);
+                const img = document.createElement("img");
+                img.alt = "";
+                img.src = currentUrl;
+                stage.appendChild(img);
 
-        const render = () => {
-            if (!loadedImage || !ctx) {
-                return;
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                });
+
+                if (!dialog.open) {
+                    dialog.showModal();
+                }
+                lastZoom = 1;
+                zoomInput.value = "1";
+
+                cropperInstance = new CropperClass(img, {
+                    container: stage,
+                    template: [
+                        '<cropper-canvas background>',
+                        '  <cropper-image rotatable scalable translatable initial-center-size="cover"></cropper-image>',
+                        '  <cropper-shade hidden></cropper-shade>',
+                        '  <cropper-handle action="move" plain></cropper-handle>',
+                        '  <cropper-selection aspect-ratio="1" initial-coverage="0.85" movable resizable outlined>',
+                        '    <cropper-grid role="grid" covered></cropper-grid>',
+                        '    <cropper-crosshair centered></cropper-crosshair>',
+                        '    <cropper-handle action="move" theme-color="rgba(255, 255, 255, 0.2)"></cropper-handle>',
+                        '    <cropper-handle action="n-resize"></cropper-handle>',
+                        '    <cropper-handle action="e-resize"></cropper-handle>',
+                        '    <cropper-handle action="s-resize"></cropper-handle>',
+                        '    <cropper-handle action="w-resize"></cropper-handle>',
+                        '    <cropper-handle action="ne-resize"></cropper-handle>',
+                        '    <cropper-handle action="nw-resize"></cropper-handle>',
+                        '    <cropper-handle action="se-resize"></cropper-handle>',
+                        '    <cropper-handle action="sw-resize"></cropper-handle>',
+                        '  </cropper-selection>',
+                        '</cropper-canvas>'
+                    ].join("")
+                });
+            } catch {
+                closeDialog();
             }
-
-            clampOffsets();
-            ctx.clearRect(0, 0, size, size);
-            const base = Math.max(size / loadedImage.naturalWidth, size / loadedImage.naturalHeight);
-            const drawW = loadedImage.naturalWidth * base * scale;
-            const drawH = loadedImage.naturalHeight * base * scale;
-            const x = (size - drawW) / 2 + offsetX;
-            const y = (size - drawH) / 2 + offsetY;
-            ctx.drawImage(loadedImage, x, y, drawW, drawH);
         };
+
+        trigger?.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                input.click();
+            }
+        });
 
         input.addEventListener("change", () => {
-            const file = input.files?.[0];
-            if (!file) {
-                loadedImage = null;
-                cropper.hidden = true;
+            const file = input.files?.[0] || null;
+            // 清空 value，讓取消後再選同一檔案仍會觸發 change
+            input.value = "";
+            if (file) {
+                loadFile(file);
+            }
+        });
+
+        if (dropzone) {
+            dropzone.addEventListener("dragover", (event) => {
+                event.preventDefault();
+                dropzone.dataset.dragover = "true";
+            });
+            dropzone.addEventListener("dragleave", (event) => {
+                if (!dropzone.contains(event.relatedTarget)) {
+                    delete dropzone.dataset.dragover;
+                }
+            });
+            dropzone.addEventListener("drop", (event) => {
+                event.preventDefault();
+                delete dropzone.dataset.dragover;
+                const file = event.dataTransfer?.files?.[0];
+                if (file) {
+                    loadFile(file);
+                }
+            });
+        }
+
+        document.addEventListener("paste", (event) => {
+            if (dialog.open) {
                 return;
             }
+            const target = event.target;
+            if (target instanceof HTMLElement && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+                return;
+            }
+            const file = Array.from(event.clipboardData?.files || []).find((f) => f.type.startsWith("image/"));
+            if (file) {
+                event.preventDefault();
+                loadFile(file);
+            }
+        });
 
-            const url = URL.createObjectURL(file);
-            const img = new Image();
-            img.onload = () => {
-                URL.revokeObjectURL(url);
-                loadedImage = img;
-                scale = 1;
-                offsetX = 0;
-                offsetY = 0;
-                zoomInput.value = "1";
-                cropper.hidden = false;
-                render();
-            };
-            img.onerror = () => {
-                URL.revokeObjectURL(url);
-                loadedImage = null;
-                cropper.hidden = true;
-            };
-            img.src = url;
+        cancelButton?.addEventListener("click", closeDialog);
+        dialog.addEventListener("close", destroyCropper);
+        dialog.addEventListener("click", (event) => {
+            if (event.target === dialog) {
+                closeDialog();
+            }
         });
 
         zoomInput.addEventListener("input", () => {
-            scale = Number(zoomInput.value) || 1;
-            render();
-        });
-
-        canvas.addEventListener("pointerdown", (event) => {
-            if (!loadedImage) {
+            const image = cropperInstance?.getCropperImage();
+            if (!image) {
                 return;
             }
-
-            canvas.setPointerCapture(event.pointerId);
-            dragging = { id: event.pointerId, startX: event.clientX, startY: event.clientY, origX: offsetX, origY: offsetY };
+            const next = Number(zoomInput.value) || 1;
+            const delta = next - lastZoom;
+            if (delta !== 0) {
+                image.$zoom(delta);
+                lastZoom = next;
+            }
         });
 
-        canvas.addEventListener("pointermove", (event) => {
-            if (!dragging || event.pointerId !== dragging.id) {
+        rotateButtons?.forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const image = cropperInstance?.getCropperImage();
+                if (!image) {
+                    return;
+                }
+                image.$rotate(btn.dataset.avatarRotate || "90deg");
+            });
+        });
+
+        resetButton?.addEventListener("click", () => {
+            const image = cropperInstance?.getCropperImage();
+            const selection = cropperInstance?.getCropperSelection();
+            if (!image || !selection) {
                 return;
             }
-
-            const rect = canvas.getBoundingClientRect();
-            const ratio = rect.width > 0 ? size / rect.width : 1;
-            offsetX = dragging.origX + (event.clientX - dragging.startX) * ratio;
-            offsetY = dragging.origY + (event.clientY - dragging.startY) * ratio;
-            render();
+            image.$resetTransform();
+            image.$center("cover");
+            selection.$reset();
+            lastZoom = 1;
+            zoomInput.value = "1";
         });
-
-        const endDrag = (event) => {
-            if (dragging && event.pointerId === dragging.id) {
-                dragging = null;
-            }
-        };
-        canvas.addEventListener("pointerup", endDrag);
-        canvas.addEventListener("pointercancel", endDrag);
 
         form.addEventListener("submit", async (event) => {
-            if (!loadedImage) {
+            const selection = cropperInstance?.getCropperSelection();
+            if (!selection) {
                 return;
             }
 
             event.preventDefault();
-            const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
-            if (!blob) {
-                form.submit();
-                return;
-            }
+            try {
+                const canvas = await selection.$toCanvas({ width: 256, height: 256 });
+                const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
+                if (!blob) {
+                    form.submit();
+                    return;
+                }
 
-            const data = new FormData(form);
-            data.set("avatar", blob, "avatar.webp");
-            const response = await fetch(form.action, { method: "POST", body: data });
-            if (response.redirected) {
-                window.location.assign(response.url);
-            } else {
-                window.location.reload();
+                const data = new FormData(form);
+                data.set("avatar", blob, "avatar.webp");
+                const response = await fetch(form.action, { method: "POST", body: data });
+                if (response.redirected) {
+                    window.location.assign(response.url);
+                } else {
+                    window.location.reload();
+                }
+            } catch {
+                form.submit();
             }
         });
     };
