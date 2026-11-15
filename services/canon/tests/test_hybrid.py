@@ -22,7 +22,7 @@ from canon.embedding import (
     PayloadTooLarge,
 )
 from canon.net import USER_AGENT
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from envcite_jobkit import EndpointError, ExitCode, FatalError, ItemError, Policy
 from envcite_segmenter import Segmenter
 from tests.test_import import _scalar
@@ -67,7 +67,7 @@ def _corpus(conn: Conn, tmp_path: Path) -> None:
 
 
 def _search(dsn: str, query: str, embedder: FakeEmbedder | None) -> list[tuple[str, float, Any]]:
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         hits = store.retrieval.search(
             segmenter.to_tsvector_input(query),
@@ -151,7 +151,7 @@ def test_without_a_query_vector_only_the_words_count(conn: Conn, tmp_path: Path,
     assert [(n, s is None) for n, _, s in hits] == [("2", True)]
 
 
-def test_a_failing_embedder_does_not_fail_the_search(store: OntologyStore) -> None:
+def test_a_failing_embedder_does_not_fail_the_search(store: CanonStore) -> None:
     from canon.service import build_servicer
 
     servicer = build_servicer(

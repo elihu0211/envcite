@@ -2,7 +2,7 @@
 
 資料庫與推論程式的字串若出現表中沒有的值，是 `KeyError`（內部錯誤），不悄悄落到 UNSPECIFIED。"""
 
-from envcite.ontology.v2 import reasoning_pb2 as pb
+from envcite.canon.v1 import reasoning_pb2 as pb
 
 STATEMENT_KIND = {
     "prescriptive": pb.STATEMENT_KIND_PRESCRIPTIVE,

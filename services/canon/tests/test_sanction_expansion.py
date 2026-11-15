@@ -7,7 +7,7 @@ import psycopg
 from canon import projection, violation
 from canon.law import delegation, importer
 from canon.law.moj import Moj
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 
@@ -61,7 +61,7 @@ def _corpus(conn: Conn, tmp_path: Path) -> None:
     conn.commit()
 
 
-def _ids(store: OntologyStore, segmenter: Segmenter, query: str) -> list[str]:
+def _ids(store: CanonStore, segmenter: Segmenter, query: str) -> list[str]:
     terms = segmenter.to_tsvector_input(query)
     hits = store.retrieval.search(terms, tokenizer=segmenter.tokenizer_id, as_of=ON, limit=10)
     return [f"{h.local_id}-{h.number}" for h in hits]
@@ -71,7 +71,7 @@ def test_a_duty_hit_brings_its_sanction_right_after_it(
     conn: Conn, tmp_path: Path, dsn: str
 ) -> None:
     _corpus(conn, tmp_path)
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         assert _ids(store, segmenter, "排放口暢通") == ["T0000001-3", "T0000001-9"]
 
@@ -80,7 +80,7 @@ def test_a_command_hit_brings_the_sanction_for_its_authorizing_article(
     conn: Conn, tmp_path: Path, dsn: str
 ) -> None:
     _corpus(conn, tmp_path)
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         assert _ids(store, segmenter, "水質水量資料") == ["T0000002-2", "T0000001-8"]
 
@@ -89,7 +89,7 @@ def test_the_brought_sanction_carries_the_score_of_what_brought_it(
     conn: Conn, tmp_path: Path, dsn: str
 ) -> None:
     _corpus(conn, tmp_path)
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         terms = segmenter.to_tsvector_input("排放口暢通")
         duty, sanction = store.retrieval.search(

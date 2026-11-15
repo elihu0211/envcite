@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import golden_set as gs
 
 from canon.settings import DatabaseSettings, ModelsSettings, load
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from canon.verification import config
 from envcite_segmenter import Segmenter
 
@@ -151,7 +151,7 @@ class Outcome:
 
 
 def search_all(
-    store: OntologyStore,
+    store: CanonStore,
     segmenter: Segmenter,
     items: Sequence[dict[str, Any]],
     embedder: Embeds | None,
@@ -277,7 +277,7 @@ def main() -> None:
         json.loads(line) for line in args.dataset.read_text(encoding="utf-8").splitlines() if line
     ]
     embedder = config.embedder_from_settings(load(ModelsSettings), timeout=30.0)
-    with OntologyStore.from_dsn(db.dsn) as store:
+    with CanonStore.from_dsn(db.dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         lexical = search_all(store, segmenter, items, None, k=args.k, on=on.isoformat())
         hybrid = (

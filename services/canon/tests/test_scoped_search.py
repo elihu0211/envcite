@@ -11,7 +11,7 @@ import psycopg
 from canon import projection
 from canon.law import importer
 from canon.law.moj import Moj
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 from tests.test_hybrid import FakeEmbedder
@@ -62,7 +62,7 @@ def test_without_a_scope_it_returns_exactly_what_the_store_returns(
     projection.rebuild(conn, embedder)  # type: ignore[arg-type]
     queries = [f"{a}{b}" for a in THEMES for b in THEMES if a != b][:40]
     assert len(queries) >= 30
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         for query in queries:
             terms = segmenter.to_tsvector_input(query)
@@ -88,7 +88,7 @@ def test_without_a_scope_it_returns_exactly_what_the_store_returns(
 
 
 def test_a_scope_limits_the_pool_before_candidates_are_taken(
-    conn: Conn, tmp_path: Path, store: OntologyStore
+    conn: Conn, tmp_path: Path, store: CanonStore
 ) -> None:
     lexicon = store.retrieval.lexicon()
     tool = _tool()

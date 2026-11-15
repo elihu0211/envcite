@@ -20,13 +20,13 @@ from canon.reranking import RerankError
 from canon.search_tuning import SearchTuning
 from canon.server import build_server
 from canon.service import build_servicer
-from canon.store.ontology_store import OntologyStore
-from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
+from canon.store.canon_store import CanonStore
+from envcite.canon.v1 import canon_pb2, canon_pb2_grpc
 from envcite_segmenter import Segmenter
 
 from .conftest import call_metadata
 
-Stub = ontology_pb2_grpc.OntologyServiceStub
+Stub = canon_pb2_grpc.CanonServiceStub
 Serve = Callable[..., AbstractContextManager[Stub]]
 
 #: 四條字面分數相同的條文（同一個詞、同樣的長度）：精排前的次序只剩版本編號，即 11、12、13、14。
@@ -57,7 +57,7 @@ class FakeReranker:
 
 
 @pytest.fixture
-def serve(conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore) -> Iterator[Serve]:
+def serve(conn: psycopg.Connection[tuple[object, ...]], store: CanonStore) -> Iterator[Serve]:
     law = conn.execute(
         "INSERT INTO corpus.legal_resource"
         " (jurisdiction, id_scheme, local_id, norm_kind, document_type)"
@@ -117,20 +117,20 @@ def serve(conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore) ->
         server.start()
         try:
             with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
-                yield ontology_pb2_grpc.OntologyServiceStub(channel)
+                yield canon_pb2_grpc.CanonServiceStub(channel)
         finally:
             server.stop(grace=None)
 
     yield serving
 
 
-def _numbers(response: ontology_pb2.SearchArticlesResponse) -> list[str]:
+def _numbers(response: canon_pb2.SearchArticlesResponse) -> list[str]:
     return [h.number for h in response.hits]
 
 
-def _search(stub: Stub, **fields: object) -> ontology_pb2.SearchArticlesResponse:
+def _search(stub: Stub, **fields: object) -> canon_pb2.SearchArticlesResponse:
     return stub.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="噪音", **fields),  # type: ignore[arg-type]
+        canon_pb2.SearchArticlesRequest(query="噪音", **fields),  # type: ignore[arg-type]
         metadata=call_metadata(),
         timeout=10,
     )
@@ -202,7 +202,7 @@ def test_asking_to_rerank_without_a_reranker_is_the_same_as_not_asking(
     assert asked == plain
 
 
-def test_full_rerank_slots_fall_back_instead_of_waiting(store: OntologyStore, serve: Serve) -> None:
+def test_full_rerank_slots_fall_back_instead_of_waiting(store: CanonStore, serve: Serve) -> None:
     class Context:
         def invocation_metadata(self) -> tuple[()]:
             return ()
@@ -222,7 +222,7 @@ def test_full_rerank_slots_fall_back_instead_of_waiting(store: OntologyStore, se
     )
 
     response = servicer.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="噪音", rerank=True, limit=2),
+        canon_pb2.SearchArticlesRequest(query="噪音", rerank=True, limit=2),
         Context(),  # type: ignore[arg-type]
     )
 
@@ -289,7 +289,7 @@ def test_nothing_is_counted_when_rerank_was_not_asked_for_or_there_is_nothing_to
     with serve(FakeReranker(), meter=meter) as stub:
         _search(stub)  # 沒要精排
         stub.SearchArticles(  # 要精排，但沒有任何候選
-            ontology_pb2.SearchArticlesRequest(query="量子電腦", rerank=True),
+            canon_pb2.SearchArticlesRequest(query="量子電腦", rerank=True),
             metadata=call_metadata(),
             timeout=10,
         )
@@ -298,7 +298,7 @@ def test_nothing_is_counted_when_rerank_was_not_asked_for_or_there_is_nothing_to
 
 
 def test_full_slots_are_counted_as_busy_without_an_endpoint_time(
-    store: OntologyStore, serve: Serve
+    store: CanonStore, serve: Serve
 ) -> None:
     class Context:
         def invocation_metadata(self) -> tuple[()]:
@@ -320,7 +320,7 @@ def test_full_slots_are_counted_as_busy_without_an_endpoint_time(
     )
 
     servicer.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="噪音", rerank=True, limit=2),
+        canon_pb2.SearchArticlesRequest(query="噪音", rerank=True, limit=2),
         Context(),  # type: ignore[arg-type]
     )
 

@@ -5,7 +5,7 @@ from datetime import date
 import psycopg
 
 from canon.law import articles, headings, parsing, write
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from canon.store.records import LawKey
 
 
@@ -65,7 +65,7 @@ def test_law_parse_populates_headings() -> None:
 
 
 def test_write_and_list_headings_round_trip(
-    conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore
+    conn: psycopg.Connection[tuple[object, ...]], store: CanonStore
 ) -> None:
     payload = {
         "LawLevel": "法律",

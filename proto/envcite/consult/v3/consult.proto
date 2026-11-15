@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package envcite.consult.v3;
+
+option csharp_namespace = "EnvCite.Consult.V3";
+
+import "envcite/canon/v1/canon.proto";
+
+// 接地服務：為呼叫端的語言模型備妥可引用的封閉證據集，或明確拒答。
+//
+// 本體（ontology）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
+// （法規本體）。每個本體領一個字母作為引用代號的前綴（"law" → "L"），代號因此
+// 不會跨本體相撞。
+//
+// 本服務不執行語言模型：它只決定什麼可以引用、能不能回答。寫成散文，以及核驗輸出
+// 只引用集合內的代號，是呼叫端的責任（見 proto/README.md〈呼叫端的語言模型〉）。
+//
+// 內部服務，認證由叢集的服務網格負責。
+// 租戶隔離：必帶 metadata `x-tenant-id`（決定配額與稽核歸屬）；
+// `x-request-id` 選填，只用於日誌。
+service ConsultationService {
+  // 檢索、接地並評估一個問題。唯讀，可安全重試。
+  rpc Ground(GroundRequest) returns (GroundResponse);
+}
+
+message GroundRequest {
+  // 使用者的問題原句。呼叫端不得改寫：檢索是針對人們實際的問法調校的，
+  // 模型改寫後的句子是另一個查詢。
+  string question = 1;
+
+  // 依哪一天施行的條文作答（ISO 8601）。留空為現行。
+  string as_of = 2;
+
+  // 要接地的本體代號。留空為服務提供的全部；不認得的回 INVALID_ARGUMENT。
+  repeated string ontologies = 3;
+}
+
+message GroundResponse {
+  // 恰設定其一。拒答是結果，不是錯誤。
+  oneof outcome {
+    Evidence evidence = 1;
+    Refused refused = 2;
+  }
+}
+
+// 作答時可引用的封閉集合，依相關程度由高到低。
+message Evidence {
+  // 最多 8 筆，依序編碼為 "L1"、"L2"……（字母屬於來源本體，序號在整份證據內
+  // 連續）。永不為空。
+  repeated Citation citations = 1;
+
+  Confidence confidence = 2;
+}
+
+message Citation {
+  // 模型以方括號寫出的短代號，例如 "[L1]"。不在證據集內的代號是捏造的引用：
+  // 剝除它，或退回整個答案。
+  string code = 1;
+
+  // 被引用的條文版本之 IRI。
+  string iri = 2;
+
+  // 供人閱讀的標示，例如 "空氣污染防制法 第 20 條"。
+  string label = 3;
+
+  // `as_of` 當日有效的條文全文，即證據本身。
+  string text = 4;
+
+  // 所屬本體的代號，例如 "law"。
+  string ontology = 5;
+
+  // 條文所屬法規的複合自然鍵識別碼（所屬本體為法規時具備）。
+  envcite.canon.v1.LawIdentifier law_identifier = 6;
+}
+
+// 服務為何不接地。由呼叫端呈現給使用者；不重試，也不計為失敗。
+message Refused {
+  enum Reason {
+    REASON_UNSPECIFIED = 0;
+
+    // 語料裡沒有相符的條文。
+    REASON_NO_EVIDENCE = 1;
+
+    // 有檢索到條文，但沒有一筆達到相關度門檻：問的是別的事。
+    REASON_OUT_OF_SCOPE = 2;
+
+    // 缺少使用者未提供的必要輸入（例如問題是空白）。
+    REASON_MISSING_INPUT = 3;
+
+    // 問句明白在問地方自治法規（出現「自治條例」「自治法規」「自治規則」「地方加嚴」之一），而且沒有任何條文達到
+    // 相關度門檻。語料只涵蓋中央法規，地方自治法規不在範圍內：這不是語料的缺漏，也不是問了別的事，
+    // 不可呈現為「沒有相關規定」。有達標的條文時照常回證據，不用這個原因（中央條文可能正是答案）。
+    REASON_LOCAL_LAW_UNCOVERED = 4;
+  }
+
+  Reason reason = 1;
+
+  // 供人閱讀的補充說明。
+  string detail = 2;
+}
+
+// 最佳一筆引用的強度。LOW 仍帶有證據：可以作答，但應說明依據是間接的。
+enum Confidence {
+  CONFIDENCE_UNSPECIFIED = 0;
+  CONFIDENCE_LOW = 1;
+  CONFIDENCE_HIGH = 2;
+}

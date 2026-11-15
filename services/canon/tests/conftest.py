@@ -13,8 +13,8 @@ from canon.law import importer
 from canon.law.moj import Moj
 from canon.migrate import apply_all
 from canon.server import build_server
-from canon.store.ontology_store import OntologyStore
-from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc, reasoning_pb2_grpc
+from canon.store.canon_store import CanonStore
+from envcite.canon.v1 import canon_pb2, canon_pb2_grpc, reasoning_pb2_grpc
 from tests.sample import sample_laws, stored_snapshot
 
 
@@ -121,13 +121,13 @@ def sample(conn: psycopg.Connection[tuple[object, ...]], tmp_path: Path) -> None
 
 
 @pytest.fixture(scope="session")
-def store(dsn: str) -> Iterator[OntologyStore]:
-    with OntologyStore.from_dsn(dsn) as s:
+def store(dsn: str) -> Iterator[CanonStore]:
+    with CanonStore.from_dsn(dsn) as s:
         yield s
 
 
 @pytest.fixture(scope="session")
-def server_address(store: OntologyStore) -> Iterator[str]:
+def server_address(store: CanonStore) -> Iterator[str]:
     server, port = build_server(store, "127.0.0.1:0")
     server.start()
     yield f"127.0.0.1:{port}"
@@ -141,8 +141,8 @@ def channel(server_address: str) -> Iterator[grpc.Channel]:
 
 
 @pytest.fixture
-def stub(channel: grpc.Channel) -> ontology_pb2_grpc.OntologyServiceStub:
-    return ontology_pb2_grpc.OntologyServiceStub(channel)
+def stub(channel: grpc.Channel) -> canon_pb2_grpc.CanonServiceStub:
+    return canon_pb2_grpc.CanonServiceStub(channel)
 
 
 @pytest.fixture
@@ -152,9 +152,9 @@ def reasoning_stub(channel: grpc.Channel) -> reasoning_pb2_grpc.ReasoningService
 
 def identifier(
     local_id: str, jurisdiction: str = "TW-CENTRAL", id_scheme: str = "moj_pcode"
-) -> ontology_pb2.LawIdentifier:
+) -> canon_pb2.LawIdentifier:
     """法規的複合自然鍵；預設是中央法規（全國法規資料庫 pcode）。"""
-    return ontology_pb2.LawIdentifier(
+    return canon_pb2.LawIdentifier(
         jurisdiction=jurisdiction, id_scheme=id_scheme, local_id=local_id
     )
 

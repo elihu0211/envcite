@@ -15,14 +15,14 @@
 id = "A1"
 status = "answerable"
 db = ["corpus.provisions_at", "corpus.provision_version"]
-rpc = ["OntologyService.GetLaw"]
+rpc = ["CanonService.GetLaw"]
 test = ["tests/test_store.py::test_get_law_reads_title_from_expression"]
 
 [[question]]
 id = "A2"
 status = "answerable"
 db = ["corpus.provisions_at"]
-rpc = ["OntologyService.ListArticles"]
+rpc = ["CanonService.ListArticles"]
 test = [
   "tests/test_store.py::test_a_date_before_the_held_versions_is_a_corpus_gap",
   "tests/test_backfill.py::test_each_date_reads_the_text_then_in_force",
@@ -44,7 +44,7 @@ test = ["tests/test_incremental.py::test_an_amendment_adds_a_version_and_closes_
 id = "A5"
 status = "answerable"
 db = ["corpus.lifecycle_event", "corpus.constitutional_ruling", "corpus.ruling_invalidation", "corpus.ruling_scan", "corpus.invalidations_at", "annotation.invalidated_statements_at"]
-rpc = ["OntologyService.ListInvalidations"]
+rpc = ["CanonService.ListInvalidations"]
 field = ["Invalidation.partial", "Invalidation.excerpt", "Outcome.invalidated", "ListStatementsResponse.invalidated"]
 test = [
   "tests/test_reasoning_invalidation.py::test_an_invalidated_duty_is_no_basis_from_the_day_it_lapses",
@@ -173,7 +173,7 @@ test = ["tests/test_annotation.py::test_a_statement_drops_out_when_its_text_is_c
 id = "F1"
 status = "partial"
 db = ["retrieval.search_hybrid"]
-rpc = ["OntologyService.SearchArticles"]
+rpc = ["CanonService.SearchArticles"]
 test = ["tests/test_hybrid.py::test_both_arms_agreeing_ranks_first"]
 
 [[question]]

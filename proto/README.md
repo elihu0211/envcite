@@ -8,7 +8,7 @@ owns: [service-composition, grpc-metadata, as-of-semantics, grpc-error-reasons, 
 
 gRPC 契約，`buf` 單一模組（根為本目錄）；欄位與方法的語意見 `.proto` 註解。回[倉庫總覽](../README.md)。
 
-套件 `envcite.ontology.v2`（共享，實作在 [`services/canon`](../services/canon/README.md#概念)）與 `envcite.consult.v2`（租戶隔離，實作在 [`services/consult`](../services/consult/README.md#概念)）皆為內部介面。外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST，契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
+套件 `envcite.canon.v1`（共享，實作在 [`services/canon`](../services/canon/README.md#概念)）與 `envcite.consult.v2`（租戶隔離，實作在 [`services/consult`](../services/consult/README.md#概念)）皆為內部介面。外部用戶端只經 [`platform`](../services/platform/README.md) 的 REST，契約是 [`services/platform/openapi/openapi_v2.json`](../services/platform/openapi/openapi_v2.json)。Python 產生碼見 [`libs/python/envcite-proto`](../libs/python/envcite-proto/README.md)。
 
 `buf lint`、`buf breaking` 的指令見倉庫根 [`AGENTS.md`](../AGENTS.md) 的 Commands；產生碼與破壞性變更的規則見同檔的 Contract。
 
@@ -102,7 +102,7 @@ sequenceDiagram
 | `x-tenant-id` | consult 必填 | 配額與稽核；canon 只用於日誌。consult 缺少 → `INVALID_ARGUMENT` |
 | `x-request-id` | 否 | 只用於日誌 |
 
-**法規識別**：法規以複合自然鍵 `LawIdentifier`（`jurisdiction`、`id_scheme`、`local_id`）標識，canon 的請求與回應都用它，不用單一字串的法規代號；三個欄位的取值與語意見 `ontology.proto` 的註解。三個欄位都必填，沒有預設管轄或方案：缺任一個回 `INVALID_ARGUMENT`（欄位原因 `EMPTY`），值不在 `.proto` 註解列的封閉集合內也是 `INVALID_ARGUMENT`（`UNKNOWN_VALUE`）。管轄與方案的配對由資料庫強制（中央方案只配 `TW-CENTRAL`、地方方案只配縣市），不合法的配對不存在於語料，查詢回 `LAW_NOT_FOUND`。地方方案與縣市管轄是契約預留，目前沒有取得來源。`SearchArticles.jurisdiction` 是過濾條件：留空為全部管轄，有值須是合法管轄。
+**法規識別**：法規以複合自然鍵 `LawIdentifier`（`jurisdiction`、`id_scheme`、`local_id`）標識，canon 的請求與回應都用它，不用單一字串的法規代號；三個欄位的取值與語意見 `canon.proto` 的註解。三個欄位都必填，沒有預設管轄或方案：缺任一個回 `INVALID_ARGUMENT`（欄位原因 `EMPTY`），值不在 `.proto` 註解列的封閉集合內也是 `INVALID_ARGUMENT`（`UNKNOWN_VALUE`）。管轄與方案的配對由資料庫強制（中央方案只配 `TW-CENTRAL`、地方方案只配縣市），不合法的配對不存在於語料，查詢回 `LAW_NOT_FOUND`。地方方案與縣市管轄是契約預留，目前沒有取得來源。`SearchArticles.jurisdiction` 是過濾條件：留空為全部管轄，有值須是合法管轄。
 
 **`as_of`**：ISO 8601 日期，依哪一天施行的條文；空字串為現行。沒有任何版本涵蓋該日時回**查無**，不回現行條文。
 
@@ -147,7 +147,7 @@ consult 呼叫 canon 時，canon 的狀態碼原樣轉出。
 
 ## 標註與推論
 
-`ReasoningService`（`envcite.ontology.v2`）唯讀地提供規範標註與由它推出的**候選**結論。它不判決：沒有通過驗證閘門的陳述不產生任何結論，沒有確認的標註時 `verdicts` 為空。
+`ReasoningService`（`envcite.canon.v1`）唯讀地提供規範標註與由它推出的**候選**結論。它不判決：沒有通過驗證閘門的陳述不產生任何結論，沒有確認的標註時 `verdicts` 為空。
 
 - **`ListStatements(identifier, as_of)`**：某日有效、已確認的陳述。`Statement` 的要件是析取範式（`Requirement.any_of` 是「或」，`Disjunct.all_of` 是「且」）；委由授權命令的門檻值以 `Delegation` 表示，不在這裡解析。
 - **`Evaluate`**：給 `conduct_on`（行為日）、`decided_on`（裁處日）與案件事實。回傳 `at_decision`（裁處時之法律，行政罰法第 5 條的預設）與 `earlier`。

@@ -1,4 +1,4 @@
-"""OntologyService：複合自然鍵三欄必填、封閉集合的值才受理，不退回任何預設管轄或方案。"""
+"""CanonService：複合自然鍵三欄必填、封閉集合的值才受理，不退回任何預設管轄或方案。"""
 
 import os
 import signal
@@ -14,15 +14,15 @@ from grpc_status import rpc_status
 from canon import errors, projection
 from canon.law.ruling import load
 from canon.server import build_server
-from canon.store.ontology_store import OntologyStore
-from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
+from canon.store.canon_store import CanonStore
+from envcite.canon.v1 import canon_pb2, canon_pb2_grpc
 from envcite_grpc import stop_on_sigterm
 
 from .conftest import call_metadata, identifier
 
 pytestmark = pytest.mark.usefixtures("sample")
 
-Stub = ontology_pb2_grpc.OntologyServiceStub
+Stub = canon_pb2_grpc.CanonServiceStub
 
 
 def _failure(error: grpc.RpcError) -> tuple[str, list[tuple[str, str]]]:
@@ -46,7 +46,7 @@ def test_get_law_returns_the_natural_key_and_nothing_else_the_corpus_does_not_ho
     stub: Stub,
 ) -> None:
     law = stub.GetLaw(
-        ontology_pb2.GetLawRequest(identifier=identifier("O0020001")), metadata=call_metadata()
+        canon_pb2.GetLawRequest(identifier=identifier("O0020001")), metadata=call_metadata()
     ).law
 
     assert (law.identifier.jurisdiction, law.identifier.id_scheme, law.identifier.local_id) == (
@@ -67,12 +67,12 @@ def test_get_law_returns_the_natural_key_and_nothing_else_the_corpus_does_not_ho
 @pytest.mark.parametrize(
     "call",
     [
-        lambda s, i: s.GetLaw(ontology_pb2.GetLawRequest(identifier=i), metadata=call_metadata()),
+        lambda s, i: s.GetLaw(canon_pb2.GetLawRequest(identifier=i), metadata=call_metadata()),
         lambda s, i: s.ListArticles(
-            ontology_pb2.ListArticlesRequest(identifier=i), metadata=call_metadata()
+            canon_pb2.ListArticlesRequest(identifier=i), metadata=call_metadata()
         ),
         lambda s, i: s.ListInvalidations(
-            ontology_pb2.ListInvalidationsRequest(identifier=i), metadata=call_metadata()
+            canon_pb2.ListInvalidationsRequest(identifier=i), metadata=call_metadata()
         ),
     ],
     ids=["GetLaw", "ListArticles", "ListInvalidations"],
@@ -80,7 +80,7 @@ def test_get_law_returns_the_natural_key_and_nothing_else_the_corpus_does_not_ho
 class TestIdentifierIsRequired:
     def test_every_field_must_be_given(self, stub: Stub, call: Callable[..., object]) -> None:
         with pytest.raises(grpc.RpcError) as err:
-            call(stub, ontology_pb2.LawIdentifier(local_id="O0020001"))
+            call(stub, canon_pb2.LawIdentifier(local_id="O0020001"))
 
         assert err.value.code() == grpc.StatusCode.INVALID_ARGUMENT
         reason, violations = _failure(err.value)
@@ -116,23 +116,21 @@ class TestIdentifierIsRequired:
 
 
 @pytest.fixture
-def search_stub(
-    conn: psycopg.Connection[tuple[object, ...]], store: OntologyStore
-) -> Iterator[Stub]:
+def search_stub(conn: psycopg.Connection[tuple[object, ...]], store: CanonStore) -> Iterator[Stub]:
     """詞典啟動時讀一次，所以伺服器要在匯入與建索引之後才起。"""
     assert projection.rebuild(conn) > 0
     conn.commit()
     server, port = build_server(store, "127.0.0.1:0")
     server.start()
     with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
-        yield ontology_pb2_grpc.OntologyServiceStub(channel)
+        yield canon_pb2_grpc.CanonServiceStub(channel)
     server.stop(grace=None)
 
 
 def test_search_with_an_unknown_jurisdiction_filter_is_invalid(stub: Stub) -> None:
     with pytest.raises(grpc.RpcError) as err:
         stub.SearchArticles(
-            ontology_pb2.SearchArticlesRequest(query="空氣污染", jurisdiction="TW-XXX"),
+            canon_pb2.SearchArticlesRequest(query="空氣污染", jurisdiction="TW-XXX"),
             metadata=call_metadata(),
         )
 
@@ -145,14 +143,14 @@ def test_search_without_a_jurisdiction_filter_looks_everywhere_and_a_filter_narr
     search_stub: Stub,
 ) -> None:
     everywhere = search_stub.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="空氣污染"), metadata=call_metadata()
+        canon_pb2.SearchArticlesRequest(query="空氣污染"), metadata=call_metadata()
     )
     central = search_stub.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="空氣污染", jurisdiction="TW-CENTRAL"),
+        canon_pb2.SearchArticlesRequest(query="空氣污染", jurisdiction="TW-CENTRAL"),
         metadata=call_metadata(),
     )
     taipei = search_stub.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query="空氣污染", jurisdiction="TW-TPE"),
+        canon_pb2.SearchArticlesRequest(query="空氣污染", jurisdiction="TW-TPE"),
         metadata=call_metadata(),
     )
 
@@ -163,7 +161,7 @@ def test_search_without_a_jurisdiction_filter_looks_everywhere_and_a_filter_narr
 
 def test_list_articles(stub: Stub) -> None:
     response = stub.ListArticles(
-        ontology_pb2.ListArticlesRequest(identifier=identifier("O0020001")),
+        canon_pb2.ListArticlesRequest(identifier=identifier("O0020001")),
         metadata=call_metadata(),
     )
 
@@ -173,7 +171,7 @@ def test_list_articles(stub: Stub) -> None:
 def test_unknown_law_is_not_found(stub: Stub) -> None:
     with pytest.raises(grpc.RpcError) as error:
         stub.GetLaw(
-            ontology_pb2.GetLawRequest(identifier=identifier("Z9999999")),
+            canon_pb2.GetLawRequest(identifier=identifier("Z9999999")),
             metadata=call_metadata(),
         )
 
@@ -211,9 +209,9 @@ def test_list_invalidations_answers_by_the_date_asked(
 ) -> None:
     _ruling_on_air_article_1(conn)
 
-    def ask(as_of: str, article: str = "") -> ontology_pb2.ListInvalidationsResponse:
+    def ask(as_of: str, article: str = "") -> canon_pb2.ListInvalidationsResponse:
         return stub.ListInvalidations(
-            ontology_pb2.ListInvalidationsRequest(
+            canon_pb2.ListInvalidationsRequest(
                 identifier=identifier("O0020001"), as_of=as_of, article_number=article
             ),
             metadata=call_metadata(),
@@ -227,7 +225,7 @@ def test_list_invalidations_answers_by_the_date_asked(
         "2020-01-01",
         True,
     )
-    assert found.ruling_kind == ontology_pb2.RULING_KIND_INTERPRETATION
+    assert found.ruling_kind == canon_pb2.RULING_KIND_INTERPRETATION
     assert found.source_url.startswith("https://cons.judicial.gov.tw/")
     assert "失其效力" in found.excerpt
     assert len(ask("2020-01-01", article="1").invalidations) == 1
@@ -238,20 +236,20 @@ def test_list_invalidations_without_a_ruling_is_empty_and_unknown_law_is_not_fou
     stub: Stub,
 ) -> None:
     empty = stub.ListInvalidations(
-        ontology_pb2.ListInvalidationsRequest(identifier=identifier("O0020001")),
+        canon_pb2.ListInvalidationsRequest(identifier=identifier("O0020001")),
         metadata=call_metadata(),
     )
     assert list(empty.invalidations) == []
     with pytest.raises(grpc.RpcError) as error:
         stub.ListInvalidations(
-            ontology_pb2.ListInvalidationsRequest(identifier=identifier("Z9999999")),
+            canon_pb2.ListInvalidationsRequest(identifier=identifier("Z9999999")),
             metadata=call_metadata(),
         )
     assert error.value.code() == grpc.StatusCode.NOT_FOUND
 
 
 @pytest.mark.parametrize(
-    "service", ["envcite.ontology.v2.OntologyService", "envcite.ontology.v2.ReasoningService"]
+    "service", ["envcite.canon.v1.CanonService", "envcite.canon.v1.ReasoningService"]
 )
 def test_health_check_reports_serving(channel: grpc.Channel, service: str) -> None:
     health_stub = health_pb2_grpc.HealthStub(channel)
@@ -263,7 +261,7 @@ def test_health_check_reports_serving(channel: grpc.Channel, service: str) -> No
     assert response.status == health_pb2.HealthCheckResponse.SERVING
 
 
-def test_sigterm_stops_the_server(store: OntologyStore) -> None:
+def test_sigterm_stops_the_server(store: CanonStore) -> None:
     server, _ = build_server(store, "127.0.0.1:0")
     previous = signal.getsignal(signal.SIGTERM)
     try:

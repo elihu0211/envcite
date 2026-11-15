@@ -7,7 +7,7 @@ import psycopg
 from canon import projection
 from canon.law import delegation, importer
 from canon.law.moj import Moj
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 
@@ -62,7 +62,7 @@ def test_naming_the_statute_searches_its_commands_down_the_chain(
     conn: Conn, tmp_path: Path, dsn: str
 ) -> None:
     _corpus(conn, tmp_path)
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         terms = segmenter.to_tsvector_input("申報")
         hits = store.retrieval.search(
@@ -75,7 +75,7 @@ def test_naming_a_command_does_not_climb_to_its_statute(
     conn: Conn, tmp_path: Path, dsn: str
 ) -> None:
     _corpus(conn, tmp_path)
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         terms = segmenter.to_tsvector_input("申報")
         hits = store.retrieval.search(

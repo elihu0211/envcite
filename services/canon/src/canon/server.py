@@ -10,20 +10,25 @@ from grpc_reflection.v1alpha import reflection
 from opentelemetry.metrics import Meter
 
 from canon.embedding import Embedder
+from canon.legacy_services import (
+    LEGACY_REASONING_SERVICE_NAME,
+    LEGACY_SERVICE_NAME,
+    add_under_name,
+)
 from canon.reasoning_service import ReasoningServicer
 from canon.reranking import Reranks
 from canon.search_tuning import DEFAULT_RERANK_CANDIDATES, SearchTuning
 from canon.service import build_servicer
 from canon.settings import ServerSettings, load
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from canon.telemetry import register_annotation_health
 from canon.verification import config
-from envcite.ontology.v2 import ontology_pb2_grpc, reasoning_pb2_grpc
+from envcite.canon.v1 import canon_pb2, canon_pb2_grpc, reasoning_pb2, reasoning_pb2_grpc
 from envcite_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
 from envcite_segmenter import Segmenter
 
-SERVICE_NAME = "envcite.ontology.v2.OntologyService"
-REASONING_SERVICE_NAME = "envcite.ontology.v2.ReasoningService"
+SERVICE_NAME = "envcite.canon.v1.CanonService"
+REASONING_SERVICE_NAME = "envcite.canon.v1.ReasoningService"
 
 WORKERS = 10
 #: 同時進行的 RPC 上限。固定大小的執行緒池之外，超過的請求排隊；上限讓排隊有界，超過就
@@ -40,7 +45,7 @@ RERANK_TIMEOUT = 3.0
 
 
 def build_server(
-    store: OntologyStore,
+    store: CanonStore,
     address: str = "[::]:0",
     options: Sequence[tuple[str, int]] = SERVER_OPTIONS,
     interceptors: Sequence[grpc.ServerInterceptor] = (),
@@ -68,28 +73,35 @@ def build_server(
     # lexicon 啟動時只讀一次：新匯入的用語須重啟才進入查詢。
     segmenter = Segmenter(store.retrieval.lexicon())
     law_names = store.retrieval.law_names()
-    ontology_pb2_grpc.add_OntologyServiceServicer_to_server(
-        build_servicer(
-            store.laws,
-            store.graph,
-            store.retrieval,
-            segmenter,
-            law_names,
-            embedder=embedder,
-            reranker=reranker,
-            tuning=SearchTuning(
-                lexical_max_df=lexical_max_df,
-                guidance_max_df=guidance_max_df,
-                rerank_candidates=rerank_candidates,
-                embed_slots=QUERY_EMBED_SLOTS,
-                rerank_slots=RERANK_SLOTS,
-            ),
-            meter=meter,
+    servicer = build_servicer(
+        store.laws,
+        store.graph,
+        store.retrieval,
+        segmenter,
+        law_names,
+        embedder=embedder,
+        reranker=reranker,
+        tuning=SearchTuning(
+            lexical_max_df=lexical_max_df,
+            guidance_max_df=guidance_max_df,
+            rerank_candidates=rerank_candidates,
+            embed_slots=QUERY_EMBED_SLOTS,
+            rerank_slots=RERANK_SLOTS,
         ),
-        server,
+        meter=meter,
     )
-    reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(
-        ReasoningServicer(store.connections, store.laws), server
+    reasoning_servicer = ReasoningServicer(store.connections, store.laws)
+    canon_pb2_grpc.add_CanonServiceServicer_to_server(servicer, server)
+    reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(reasoning_servicer, server)
+    # 過渡：尚未升級的呼叫端還在用舊的套件名（見 legacy_services）。
+    add_under_name(
+        server, LEGACY_SERVICE_NAME, canon_pb2.DESCRIPTOR.services_by_name["CanonService"], servicer
+    )
+    add_under_name(
+        server,
+        LEGACY_REASONING_SERVICE_NAME,
+        reasoning_pb2.DESCRIPTOR.services_by_name["ReasoningService"],
+        reasoning_servicer,
     )
     reflection.enable_server_reflection(
         (
@@ -103,7 +115,13 @@ def build_server(
 
     health_servicer = health_servicer or health.HealthServicer()
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
-    for name in ("", SERVICE_NAME, REASONING_SERVICE_NAME):
+    for name in (
+        "",
+        SERVICE_NAME,
+        REASONING_SERVICE_NAME,
+        LEGACY_SERVICE_NAME,
+        LEGACY_REASONING_SERVICE_NAME,
+    ):
         health_servicer.set(name, health_pb2.HealthCheckResponse.SERVING)
 
     port = server.add_insecure_port(address)
@@ -117,7 +135,7 @@ def main() -> None:
     """
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = load(ServerSettings)
-    store = OntologyStore.from_dsn(settings.dsn)
+    store = CanonStore.from_dsn(settings.dsn)
 
     # 沒設 OTEL_EXPORTER_OTLP_ENDPOINT 時什麼都不做（見 envcite_grpc.telemetry）。
     interceptors = configure_telemetry("canon")

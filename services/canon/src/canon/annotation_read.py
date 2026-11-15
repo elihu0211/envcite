@@ -16,8 +16,8 @@ from canon.reasoning.facts.statements import Invalidated
 from canon.reasoning_codec import enums
 from canon.reasoning_codec import outcome as outcome_codec
 from canon.store.records import LANGUAGE
-from envcite.ontology.v2 import ontology_pb2 as ont_pb
-from envcite.ontology.v2 import reasoning_pb2 as pb
+from envcite.canon.v1 import canon_pb2 as ont_pb
+from envcite.canon.v1 import reasoning_pb2 as pb
 
 _STATEMENTS = """
     SELECT s.id, s.statement_kind::text, s.norm_modality::text, corpus.version_iri(r.version_id)

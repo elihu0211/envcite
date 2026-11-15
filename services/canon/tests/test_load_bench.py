@@ -193,17 +193,17 @@ def test_preflight_refuses_what_cannot_be_measured(monkeypatch: pytest.MonkeyPat
 
 def test_targets_are_v2_methods_that_exist_and_accept_the_requests_sent() -> None:
     """方法名、proto 檔與請求本體都對真實的 v2 契約驗證（k6 在跑的時候才發現就太晚）。"""
-    from envcite.ontology.v2 import ontology_pb2, reasoning_pb2
+    from envcite.canon.v1 import canon_pb2, reasoning_pb2
 
     files = {
-        "OntologyService": ontology_pb2.DESCRIPTOR,
+        "CanonService": canon_pb2.DESCRIPTOR,
         "ReasoningService": reasoning_pb2.DESCRIPTOR,
     }
     questions = [("q1", "第一條是什麼？")]
     for name in ("search", "search-lexical", "evaluate"):
         target = TARGETS[name]
         full_service, rpc = target.method.split("/")
-        assert full_service.startswith("envcite.ontology.v2.")
+        assert full_service.startswith("envcite.canon.v1.")
         service = files[full_service.rsplit(".", 1)[1]].services_by_name[
             full_service.rsplit(".", 1)[1]
         ]

@@ -220,7 +220,7 @@ def renamed_items(
     conn: psycopg.Connection[Any], as_of: str
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """舊名題與被丟棄的（舊名出現在現行條文裡）：標準答案是改名後的法規。"""
-    from canon.store.ontology_store import OntologyStore
+    from canon.store.canon_store import CanonStore
     from envcite_segmenter import Segmenter
 
     rows = conn.execute(
@@ -258,7 +258,7 @@ def renamed_items(
         for name, pcode, title in rows
         if hashlib.sha256(f"renamed:{name}".encode()).digest()[1] % RENAMED_ONE_IN == 0
     ]
-    store = OntologyStore.from_dsn(load(ServerSettings).dsn)
+    store = CanonStore.from_dsn(load(ServerSettings).dsn)
     try:
         segmenter = Segmenter(store.retrieval.lexicon())
     finally:
@@ -648,10 +648,10 @@ def rule_variants(args: argparse.Namespace) -> dict[str, Callable[[Any], bool]]:
 def measure(doc: Mapping[str, Any], address: str, args: argparse.Namespace) -> dict[str, Any]:
     import grpc
 
-    from envcite.ontology.v2 import ontology_pb2 as pb
-    from envcite.ontology.v2 import ontology_pb2_grpc as grpc_api
+    from envcite.canon.v1 import canon_pb2 as pb
+    from envcite.canon.v1 import canon_pb2_grpc as grpc_api
 
-    stub = grpc_api.OntologyServiceStub(grpc.insecure_channel(address))
+    stub = grpc_api.CanonServiceStub(grpc.insecure_channel(address))
 
     def ask(key: tuple[str, bool]) -> Any:
         query, guidance = key

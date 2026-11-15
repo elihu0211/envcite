@@ -84,7 +84,7 @@ from canon.law_names import LawNames
 from canon.reranking import Reranks
 from canon.search_tuning import DEFAULT_RERANK_CANDIDATES
 from canon.settings import DatabaseSettings, ModelsSettings, load
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from canon.store.ports import Retrieval
 from canon.store.records import SearchHit
 from canon.store.retrieval import SEARCH_POOL
@@ -802,7 +802,7 @@ def cmd_measure(args: argparse.Namespace) -> None:
         scope_embedded = scope_completion(conn, embedder, scope) if scope and embedder else None
     equivalence = None
     with (
-        OntologyStore.from_dsn(db.dsn) as store,
+        CanonStore.from_dsn(db.dsn) as store,
         psycopg.connect(db.dsn) as rconn,
     ):
         rconn.read_only = True

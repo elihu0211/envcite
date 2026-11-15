@@ -32,7 +32,7 @@ import golden_set as gs
 
 from canon.coverage import term_coverage
 from canon.settings import ModelsSettings, ServerSettings, load
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from canon.verification import config
 from envcite_segmenter import Segmenter
 
@@ -71,7 +71,7 @@ def main() -> None:
         counts[theta][key] = counts[theta].get(key, 0) + 1
 
     answerable = negative = 0
-    with OntologyStore.from_dsn(settings.dsn) as store:
+    with CanonStore.from_dsn(settings.dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         law_names = store.retrieval.law_names()
         for r in rows:

@@ -6,7 +6,7 @@ import psycopg
 import pytest
 
 from canon import projection
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
@@ -116,7 +116,7 @@ def test_search_finds_the_same_article_with_and_without_pruning(
 ) -> None:
     _corpus(conn, tmp_path)
 
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         terms = segmenter.to_tsvector_input("common beta")
         plain = store.retrieval.search(terms, tokenizer=segmenter.tokenizer_id, as_of=ON, limit=5)
@@ -134,7 +134,7 @@ def test_search_with_only_common_terms_still_returns_hits(
 ) -> None:
     _corpus(conn, tmp_path)
 
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         hits = store.retrieval.search(
             segmenter.to_tsvector_input("common"),

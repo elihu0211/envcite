@@ -14,7 +14,7 @@ from canon import projection
 from canon.law import audit, importer
 from canon.law.importer import Outcome
 from canon.law.moj import Moj, content_sha256, pcode
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
@@ -273,7 +273,7 @@ def test_a_correction_below_the_article_reaches_the_search_index(
     assert changed.actions == {"corrected": 1}
     projection.rebuild(conn)
 
-    with OntologyStore.from_dsn(dsn) as store:
+    with CanonStore.from_dsn(dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
 
         def found(query: str) -> bool:

@@ -8,7 +8,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 環境知識本體的集中處：各來源的知識各成一個本體（如法規本體 `law`），在這裡提供語料、檢索與推論。回[倉庫總覽](../../README.md)。
 
-- 介面：gRPC `OntologyService`（法規與檢索）、`ReasoningService`（標註與推論）；契約 [`ontology.proto`](../../proto/envcite/ontology/v2/ontology.proto)、[`reasoning.proto`](../../proto/envcite/ontology/v2/reasoning.proto)；約定與錯誤原因見 [`proto/README.md`](../../proto/README.md)。
+- 介面：gRPC `CanonService`（法規與檢索）、`ReasoningService`（標註與推論）；契約 [`canon.proto`](../../proto/envcite/canon/v1/canon.proto)、[`reasoning.proto`](../../proto/envcite/canon/v1/reasoning.proto)；約定與錯誤原因見 [`proto/README.md`](../../proto/README.md)。
 - 呼叫端 [`platform`](../platform/README.md)、[`consult`](../consult/README.md)。資料全域共用，不分租戶；PostgreSQL 為唯一真值。
 - 語料與檢索由 `canon sync` 依序取得、匯入、投影；標註由 `canon pipeline` 以語言模型抽取並經閘門驗證；推論（clingo）不用模型，只取已確認的標註，結論都是候選。
 - 共用套件：[`envcite-segmenter`](../../libs/python/envcite-segmenter/README.md)、[`envcite-grpc`](../../libs/python/envcite-grpc/README.md)、[`envcite-proto`](../../libs/python/envcite-proto/README.md)。
@@ -110,7 +110,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
   - 頁面雜湊記在 `corpus.ruling_scan`，記過的頁面不再抓，`--rescan` 全部重抓。
   - 結束碼 0／1（網路等暫時性）／2（頁面不合或裁判內容與已載入的不同）。
 - **人工載入**：`canon ruling load <file.json>`，格式見 [`law/ruling.py`](src/canon/law/ruling.py) 的模組說明。由人讀解釋文填失效日，每則裁判附出處與解釋文原文；裁判不可改，同一字號內容須相同；一次載入一個交易。抽取流程只刪改自己寫的列（`extractor_version` 有值），人載入的列不動。
-- **讀取**：rpc `OntologyService.ListInvalidations`（依法規、日期、可選的條號）；SQL 是 `corpus.invalidations_at(法規 id, 語文, 日期)`。`provisions_at` 的 `status` 不含違憲失效，讀取方各自合併（推論與 `ListStatements` 已合併）。
+- **讀取**：rpc `CanonService.ListInvalidations`（依法規、日期、可選的條號）；SQL 是 `corpus.invalidations_at(法規 id, 語文, 日期)`。`provisions_at` 的 `status` 不含違憲失效，讀取方各自合併（推論與 `ListStatements` 已合併）。
 - **推論**：失效的版本自失效日起不是依據。
   - `annotation.statement_versions_at` 不回讀它的陳述，`annotation.threshold_source_at` 不解析它的限值；被排除的陳述由 `annotation.invalidated_statements_at(法規 id, 語文, 日期)` 回報，進 `Outcome.invalidated` 與 `ListStatementsResponse.invalidated`，限值失效的要件附 `PROBLEM_KIND_INVALIDATED_DELEGATION`。
   - `partial` 標示裁判只宣告條文的一部分（失效仍記在整個條文單元，範圍看 `excerpt`），推論同樣整個排除。失效日是 `evaluate_across` 的變更日。

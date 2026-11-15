@@ -47,7 +47,7 @@ import golden_set as gs
 
 from canon.embedding import to_sql
 from canon.settings import DatabaseSettings, ModelsSettings, load
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from canon.store.records import LANGUAGE
 from canon.store.retrieval import SEARCH_POOL
 from canon.verification import config
@@ -266,7 +266,7 @@ def cmd_arms(args: argparse.Namespace) -> None:
     }
     relations: dict[str, list[str]] = {"identical": [], "reordered": [], "different": []}
     probe: dict[str, Any] = {}
-    with OntologyStore.from_dsn(db.dsn) as store, psycopg.connect(db.dsn) as conn:
+    with CanonStore.from_dsn(db.dsn) as store, psycopg.connect(db.dsn) as conn:
         conn.read_only = True
         if args.ef_search is not None:
             conn.execute("SELECT '[1]'::vector")

@@ -25,8 +25,8 @@ from canon.reasoning_codec.enums import (
     TRIGGER_KIND,
     VERDICT,
 )
-from envcite.ontology.v2 import ontology_pb2 as ont_pb
-from envcite.ontology.v2 import reasoning_pb2 as pb
+from envcite.canon.v1 import canon_pb2 as ont_pb
+from envcite.canon.v1 import reasoning_pb2 as pb
 
 
 @dataclass(frozen=True)

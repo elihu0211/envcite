@@ -11,9 +11,9 @@ import pytest
 from canon.guidance_search import EXTRA, fuse, guidance_phrases
 from canon.law.guidance import load
 from canon.server import build_server
-from canon.store.ontology_store import OntologyStore
+from canon.store.canon_store import CanonStore
 from canon.store.records import SearchHit
-from envcite.ontology.v2 import ontology_pb2, ontology_pb2_grpc
+from envcite.canon.v1 import canon_pb2, canon_pb2_grpc
 from tests.conftest import call_metadata
 from tests.test_annotation import LAW
 from tests.test_guidance import _doc, _letter
@@ -121,29 +121,29 @@ def test_the_ratio_counts_only_letters_in_effect(conn: Conn, tmp_path: Path) -> 
 
 @pytest.fixture
 def search_stub(
-    conn: Conn, store: OntologyStore, tmp_path: Path
-) -> Iterator[ontology_pb2_grpc.OntologyServiceStub]:
+    conn: Conn, store: CanonStore, tmp_path: Path
+) -> Iterator[canon_pb2_grpc.CanonServiceStub]:
     _first(conn, tmp_path, _law_v1())
     load(conn, _doc(_burning("甲字第1號", "2019-03-01")))
     conn.commit()
     server, port = build_server(store, "127.0.0.1:0")
     server.start()
     with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
-        yield ontology_pb2_grpc.OntologyServiceStub(channel)
+        yield canon_pb2_grpc.CanonServiceStub(channel)
     server.stop(grace=None)
 
 
 def _search(
-    stub: ontology_pb2_grpc.OntologyServiceStub, query: str, *, guidance: bool
-) -> ontology_pb2.SearchArticlesResponse:
+    stub: canon_pb2_grpc.CanonServiceStub, query: str, *, guidance: bool
+) -> canon_pb2.SearchArticlesResponse:
     return stub.SearchArticles(
-        ontology_pb2.SearchArticlesRequest(query=query, as_of=ON, include_guidance=guidance),
+        canon_pb2.SearchArticlesRequest(query=query, as_of=ON, include_guidance=guidance),
         metadata=call_metadata(),
     )
 
 
 def test_the_service_returns_guidance_articles_only_when_asked(
-    search_stub: ontology_pb2_grpc.OntologyServiceStub,
+    search_stub: canon_pb2_grpc.CanonServiceStub,
 ) -> None:
     assert list(_search(search_stub, PHRASE, guidance=False).hits) == []
 
@@ -154,7 +154,7 @@ def test_the_service_returns_guidance_articles_only_when_asked(
 
 
 def test_a_query_no_letter_names_brings_out_nothing(
-    search_stub: ontology_pb2_grpc.OntologyServiceStub,
+    search_stub: canon_pb2_grpc.CanonServiceStub,
 ) -> None:
     assert list(_search(search_stub, "完全沒人提過的詞", guidance=True).hits) == []
 

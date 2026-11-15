@@ -15,7 +15,7 @@ from canon.store.retrieval import RetrievalRepository
 
 
 @dataclass(frozen=True, slots=True)
-class OntologyStore:
+class CanonStore:
     """連線池與它上面的儲存庫。"""
 
     connections: Connections
