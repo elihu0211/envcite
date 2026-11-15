@@ -8,9 +8,9 @@ import "envcite/canon/v1/canon.proto";
 
 // 接地服務：為呼叫端的語言模型備妥可引用的封閉證據集，或明確拒答。
 //
-// 本體（ontology）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
-// （法規本體）。每個本體領一個字母作為引用代號的前綴（"law" → "L"），代號因此
-// 不會跨本體相撞。
+// 來源（source）是一種有自己 schema 的知識來源，以小寫代號識別，例如 "law"
+// （法規）。每個來源領一個字母作為引用代號的前綴（"law" → "L"），代號因此
+// 不會跨來源相撞。
 //
 // 本服務不執行語言模型：它只決定什麼可以引用、能不能回答。寫成散文，以及核驗輸出
 // 只引用集合內的代號，是呼叫端的責任（見 proto/README.md〈呼叫端的語言模型〉）。
@@ -31,8 +31,8 @@ message GroundRequest {
   // 依哪一天施行的條文作答（ISO 8601）。留空為現行。
   string as_of = 2;
 
-  // 要接地的本體代號。留空為服務提供的全部；不認得的回 INVALID_ARGUMENT。
-  repeated string ontologies = 3;
+  // 要接地的來源代號。留空為服務提供的全部；不認得的回 INVALID_ARGUMENT。
+  repeated string sources = 3;
 }
 
 message GroundResponse {
@@ -45,7 +45,7 @@ message GroundResponse {
 
 // 作答時可引用的封閉集合，依相關程度由高到低。
 message Evidence {
-  // 最多 8 筆，依序編碼為 "L1"、"L2"……（字母屬於來源本體，序號在整份證據內
+  // 最多 8 筆，依序編碼為 "L1"、"L2"……（字母屬於來源，序號在整份證據內
   // 連續）。永不為空。
   repeated Citation citations = 1;
 
@@ -66,10 +66,10 @@ message Citation {
   // `as_of` 當日有效的條文全文，即證據本身。
   string text = 4;
 
-  // 所屬本體的代號，例如 "law"。
-  string ontology = 5;
+  // 所屬來源的代號，例如 "law"。
+  string source = 5;
 
-  // 條文所屬法規的複合自然鍵識別碼（所屬本體為法規時具備）。
+  // 條文所屬法規的複合自然鍵識別碼（所屬來源為法規時具備）。
   envcite.canon.v1.LawIdentifier law_identifier = 6;
 }
 

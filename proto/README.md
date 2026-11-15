@@ -41,7 +41,7 @@ flowchart LR
         direction LR
         platform["<b>platform</b><br/>租戶 · 限流 · 計量 · REST"]
         consult["<b>consult</b><br/>接地 · 可答性判定"]
-        canon["<b>canon</b><br/>本體 · 檢索 · 推論"]
+        canon["<b>canon</b><br/>檢索 · 推論"]
     end
 
     pg1[("platform<br/>PostgreSQL")]
@@ -140,8 +140,8 @@ consult 呼叫 canon 時，canon 的狀態碼原樣轉出。
 
 - `question` 傳使用者原句，不要先改寫；`SearchArticles` 的 `query` 同樣傳原文，斷詞由服務做。
 - 回應的 `outcome` 恰有一個：`evidence`（有筆數上限的引用，依相關程度排序）或 `refused`（拒答）。拒答是結果，不是錯誤：呈現給使用者，不重試、不呼叫模型；拒答不代表地方法規沒有規定（語料只涵蓋中央法規；問句明白在問自治法規時的拒答原因是 `REASON_LOCAL_LAW_UNCOVERED`，見 [`platform` 的「語料範圍」](../services/platform/README.md#語料範圍)）。
-- 交給模型時，證據以代號（`L1`…）開頭，限定模型只能以 `[L1]` 引用。代號的字母是來源本體的（法規本體 `law` 為 `L`），每筆 `Citation.ontology` 標明出處；每個本體各領一個字母，序號在整份證據內連續。
-- `GroundRequest.ontologies` 指定要查哪些本體，留空為全部；不認得的代號回 `INVALID_ARGUMENT`。
+- 交給模型時，證據以代號（`L1`…）開頭，限定模型只能以 `[L1]` 引用。代號的字母是來源的（法規 `law` 為 `L`），每筆 `Citation.source` 標明出處；每個來源各領一個字母，序號在整份證據內連續。
+- `GroundRequest.sources` 指定要查哪些來源，留空為全部；不認得的代號回 `INVALID_ARGUMENT`。
 - 模型輸出要核驗：代號集合是封閉的，比對字串即可，剝除不在集合內的代號；剝除後沒有任何引用，視同拒答。
 - 以 `Citation.iri`（條文版本的 IRI）呈現出處；代號只在單次回應內有意義，不要儲存。
 

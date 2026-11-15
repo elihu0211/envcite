@@ -135,11 +135,11 @@ public sealed class OperatorActionsTests(PlatformFactory factory)
         var html = await client.PageAsync($"/ui/tenants/{tenant.Id}");
 
         Assert.Contains("用量與計量", html, StringComparison.Ordinal);
-        Assert.Contains("本體條文檢索", html, StringComparison.Ordinal);
+        Assert.Contains("法規條文檢索", html, StringComparison.Ordinal);
         Assert.Contains("諮詢接地證據集", html, StringComparison.Ordinal);
         Assert.Contains("canon.search", html, StringComparison.Ordinal);
         Assert.Contains("consult.ground", html, StringComparison.Ordinal);
-        Assert.Contains("法規本體", html, StringComparison.Ordinal);
+        Assert.Contains("法規知識庫", html, StringComparison.Ordinal);
         Assert.Contains("諮詢接地", html, StringComparison.Ordinal);
     }
 

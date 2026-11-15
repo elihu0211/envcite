@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
 
-/// <summary>租戶要有方案，才能呼叫資料端點（本體、接地）。</summary>
+/// <summary>租戶要有方案，才能呼叫資料端點（canon、接地）。</summary>
 public sealed class PlanRequirement : IAuthorizationRequirement;
 
 public sealed class PlanHandler(PlanCatalog plans) : AuthorizationHandler<PlanRequirement>

@@ -31,7 +31,7 @@ public sealed class GroundingTests
 
         Assert.Equal(["L1", "L2"], grounding.Select(c => c.Code));
         Assert.Equal(["空氣污染防制法 第 10 條", "空氣污染防制法 第 2 條"], grounding.Select(c => c.Label));
-        Assert.All(grounding, c => Assert.Equal("law", c.Ontology));
+        Assert.All(grounding, c => Assert.Equal("law", c.Source));
     }
 
     [Fact]

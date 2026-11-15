@@ -25,7 +25,7 @@ internal sealed record Citation(
     string Iri,
     string Label,
     string Text,
-    string Ontology,
+    string Source,
     LawIdentifier? LawIdentifier = null);
 
 /// <summary>一次管線執行的結果：<see cref="Evidence"/> 或 <see cref="Refusal"/>，恰有其一。</summary>
@@ -57,7 +57,7 @@ internal static class Grounding
 
     public const string Law = "law";
 
-    /// <summary>本體代號 → 引用代號的字母前綴。一個本體一個字母，新增本體時在此登記，跨本體的代號才不會相撞。</summary>
+    /// <summary>來源代號 → 引用代號的字母前綴。一個來源一個字母，新增來源時在此登記，跨來源的代號才不會相撞。</summary>
     public static FrozenDictionary<string, string> CodePrefix { get; } =
         new Dictionary<string, string> { [Law] = "L" }.ToFrozenDictionary(StringComparer.Ordinal);
 

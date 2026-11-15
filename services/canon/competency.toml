@@ -1,4 +1,4 @@
-# 能力問題登記：本體必須回答的問題與各題今天的實作現況。這個檔與 tests/test_competency.py 是現況的單一真值。
+# 能力問題登記：canon 必須回答的問題與各題今天的實作現況。這個檔與 tests/test_competency.py 是現況的單一真值。
 #
 # status
 #   answerable  術語層（資料庫物件或 rpc）與機制都在，且有測試；不表示資料庫裡已有答案。

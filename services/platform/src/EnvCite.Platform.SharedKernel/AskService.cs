@@ -21,7 +21,7 @@ public enum AskStatus
     /// <summary>輸入錯誤：問題是空的、日期不是有效的日期。</summary>
     Invalid,
 
-    /// <summary>consult、模型或本體暫時不可用。</summary>
+    /// <summary>consult、模型或 canon 暫時不可用。</summary>
     Unavailable,
 }
 

@@ -1,4 +1,4 @@
-"""The ontology's conventions live in one place and every prompt that needs them is built from it.
+"""The domain conventions live in one place and every prompt that needs them is built from it.
 
 Two real runs each found a convention told to one end only: the roundtrip reader was never told
 that an authority clause carries no direction, and the judges were never told how a recurring
@@ -39,7 +39,7 @@ def test_every_prompt_carries_the_shared_conventions(build: Callable[[], str]) -
 def test_prompts_that_do_not_judge_an_annotation_leave_the_conventions_out(
     build: Callable[[], str],
 ) -> None:
-    assert "本體的約定" not in build()
+    assert "領域約定" not in build()
 
 
 def test_the_conventions_state_the_two_rules_the_runs_found_missing() -> None:

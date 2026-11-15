@@ -1,6 +1,6 @@
 """提示詞：模板在 `templates/*.j2`（Jinja2），渲染只經這個模組，呼叫端傳具名、有型別的引數。
 
-模板以繼承組出共同的骨架（`base.j2`：任務、本體的約定、規則、材料）：要放約定的提示繼承
+模板以繼承組出共同的骨架（`base.j2`：任務、領域約定、規則、材料）：要放約定的提示繼承
 `with_conventions.j2`，用語定義的兩個提示繼承 `definition.j2`，「有才放」的區塊是 `macros.j2`
 的巨集。渲染結果是送給模型的純文字，所以不跳脫 HTML；`StrictUndefined` 讓漏傳的變數成為錯誤，
 而不是悄悄送出缺一段的提示。
@@ -37,7 +37,7 @@ def _render(name: str, **variables: object) -> str:
 
 
 def conventions() -> str:
-    """本體的約定全文：抽取、往返重抽與評審團的提示共用的片段。"""
+    """領域約定全文：抽取、往返重抽與評審團的提示共用的片段。"""
     return _render("conventions.j2")
 
 
