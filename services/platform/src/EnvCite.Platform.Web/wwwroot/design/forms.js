@@ -830,6 +830,8 @@
     const initAvatarCropper = () => {
         const form = document.querySelector("[data-avatar-form]");
         const input = form?.querySelector("[data-avatar-input]");
+        const trigger = document.querySelector("[data-avatar-trigger]");
+        const details = form?.closest("details");
         const dropzone = form?.querySelector("[data-avatar-dropzone]");
         const cropperBox = form?.querySelector("[data-avatar-cropper]");
         const stage = form?.querySelector("[data-avatar-stage]");
@@ -839,6 +841,13 @@
         if (!form || !input || !cropperBox || !stage || !zoomInput) {
             return;
         }
+
+        trigger?.addEventListener("click", () => {
+            if (details) {
+                details.open = true;
+            }
+            input.click();
+        });
 
         let cropperInstance = null;
         let currentUrl = null;

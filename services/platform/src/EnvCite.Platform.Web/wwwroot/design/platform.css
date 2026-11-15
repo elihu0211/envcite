@@ -6432,7 +6432,11 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     inline-size: 3.5rem;
     block-size: 3.5rem;
     font-size: var(--ep-title-m-size);
-    cursor: default;
+    cursor: pointer;
+}
+
+.ep-avatar-trigger:hover {
+    border-color: var(--ep-primary);
 }
 
 .ep-avatar-summary {

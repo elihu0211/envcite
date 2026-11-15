@@ -21,7 +21,7 @@
                     <span class="ep-pref-label">@L["相片"]</span>
                     <div class="ep-pref-value">
                         <div class="ep-avatar-summary">
-                            <span class="ep-avatar ep-avatar-lg" aria-hidden="true">
+                            <button type="button" class="ep-avatar ep-avatar-lg ep-avatar-trigger" data-avatar-trigger aria-label="@L["變更"]" title="@L["變更"]">
                                 @if (!string.IsNullOrEmpty(AvatarUrl))
                                 {
                                     <img class="ep-avatar-img" src="@AvatarUrl" alt="" />
@@ -30,7 +30,7 @@
                                 {
                                     @AvatarInitial
                                 }
-                            </span>
+                            </button>
                             <span class="ep-hint">@L["新增相片以個人化你的帳號。"]</span>
                         </div>
                         <div class="ep-avatar-actions">
