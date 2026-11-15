@@ -429,11 +429,11 @@ const scenarios = {
         });
         await step("Shift+Enter 換行、輸入框跟著長高、不送出、送出鈕啟用", async () => {
             const before = (await area.boundingBox()).height;
-            await page.keyboard.type("噪音");
-            await page.keyboard.press("Shift+Enter");
-            await page.keyboard.type("管制");
-            await page.keyboard.press("Shift+Enter");
-            await page.keyboard.type("標準");
+            for (const line of ["噪音", "管制", "標準", "法條"]) {
+                await page.keyboard.type(line);
+                await page.keyboard.press("Shift+Enter");
+            }
+            await page.keyboard.type("整理");
             await until("輸入框應含換行", async () => (await area.inputValue()).includes("\n"));
             const after = (await area.boundingBox()).height;
             if (after <= before) throw new Error(`輸入框沒有長高：${before} → ${after}`);
