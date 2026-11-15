@@ -174,6 +174,7 @@ else
 
                                 <div class="ep-graph-host" data-graph-host="true" data-inspector-open="false">
                                     <div class="ep-graph-stage">
+                                        <p class="ep-page-description">@L["視覺化追蹤「母法條文 → 授權法規命令 → 行政函釋」之凱爾森位階與授權明確性；點擊節點可檢視授權依據，雙擊可深入展開。"]</p>
                                         <div class="ep-graph-toolbar">
                                             <div class="ep-chip-row">
                                                 <button type="button" class="ep-preset-chip" data-graph-action="layout-stufenbau" aria-pressed="true">@L["位階分層（Stufenbau）"]</button>
@@ -183,6 +184,7 @@ else
                                             <div class="ep-graph-toolbar-end">
                                                 <input type="search" class="ep-input ep-graph-search" data-graph-search="true"
                                                        placeholder="@L["篩選法規"]" aria-label="@L["篩選法規"]" />
+                                                <button type="button" class="ep-btn ep-btn-quiet ep-inspector-reopen" data-inspector-open-btn="true">@L["法學檢視"]</button>
                                             </div>
                                         </div>
 
@@ -197,6 +199,7 @@ else
                                                 <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-out" aria-label="@L["縮小圖譜"]">-</button>
                                                 <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fit">@L["適應視窗"]</button>
                                                 <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fullscreen">@L["全螢幕"]</button>
+                                                <span class="ep-graph-wheel-hint">@L["Ctrl / ⌘ + 滾輪縮放 · 一般滾輪捲動頁面"]</span>
                                             </div>
                                         </div>
                                     </div>
@@ -208,7 +211,10 @@ else
                                                     data-inspector-close="true" aria-label="@L["關閉"]">@L["關閉"]</button>
                                         </div>
                                         <div class="ep-inspector-body" data-graph-inspector="true">
-                                            <p class="ep-page-description">@L["點選圖譜中的任一法規範節點檢視法學位階、授權條文依據與關係細節；雙擊節點可直接以其為中心深入展開。"]</p>
+                                            <div class="ep-inspector-head">
+                                                <h3 class="ep-inspector-title">@L["本體論授權圖譜導讀"]</h3>
+                                                <p class="ep-page-description">@L["點選圖譜中的任一法規範節點檢視法學位階、授權條文依據與關係細節；雙擊節點可直接以其為中心深入展開。"]</p>
+                                            </div>
                                         </div>
                                     </section>
                                 </div>

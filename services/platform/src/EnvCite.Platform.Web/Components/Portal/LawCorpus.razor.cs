@@ -374,6 +374,11 @@ public sealed partial class LawCorpus(
             toggleGroupAction = L["展開／收合授權子法"].Value,
             expandAllGroupsAction = L["展開全部子法分組 (+{n})"].Value,
             collapseAllGroupsAction = L["收合子法分組"].Value,
+            guideTitle = L["本體論授權圖譜導讀"].Value,
+            guideStep1 = L["① 追查授權明確性：沿著連線確認下位辦法／標準是否具母法具體授權條文。"].Value,
+            guideStep2 = L["② 檢視法規範位階：由左至右依「憲法 → 法律 → 法規命令 → 再授權」分層呈現。"].Value,
+            guideStep3 = L["③ 點擊節點查細節：單擊顯示授權母法與子法清單，雙擊以其為中心展開。"].Value,
+            quickJumpHeading = L["重點母法快速定位"].Value,
         };
 
         return JsonSerializer.Serialize(new { nodes, edges, labels });
