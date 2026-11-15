@@ -199,3 +199,22 @@ public interface IMemberSelfService
     /// <summary>為忘記密碼的成員設一組新的一次性密碼；對方所有 session 失效，下次登入必須改。</summary>
     Task<AdminOutcome<IssuedPassword>> ResetPasswordAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
 }
+
+/// <summary>目前登入成員的個人資料摘要（從資料庫讀取，非 cookie claim）。</summary>
+public sealed record PortalProfileInfo(string Email, string? DisplayName, string Role, bool TwoFactorEnabled, bool Managed);
+
+/// <summary>客戶入口成員的個人資料管理（目前請求的租戶內）。</summary>
+public interface IPortalProfile
+{
+    Task<PortalProfileInfo?> GetAsync(ClaimsPrincipal user, CancellationToken cancellationToken);
+
+    /// <summary>更新自己的顯示名稱（空白代表清除）。由目錄同步管理的成員不得自改。</summary>
+    Task<AdminOutcome<string?>> UpdateDisplayNameAsync(ClaimsPrincipal user, string? displayName, CancellationToken cancellationToken);
+}
+
+/// <summary>租戶擁有者的組織設定（目前請求的租戶內）。</summary>
+public interface ITenantSelfService
+{
+    /// <summary>修改目前租戶的顯示名稱（識別碼不變）；只限資料庫中角色為擁有者的成員。</summary>
+    Task<AdminOutcome<PortalTenant>> RenameAsync(ClaimsPrincipal actor, string name, CancellationToken cancellationToken);
+}

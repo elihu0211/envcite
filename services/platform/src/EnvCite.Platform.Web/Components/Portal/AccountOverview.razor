@@ -8,10 +8,30 @@
 
 <PageHeader Title="@L["帳號與組織"]" Description="@L["組織方案、個人身分與已啟用模組。"]" />
 
+<FormAlert Message="@Error" />
+<FormAlert Kind="AlertKind.Success" Message="@_message" />
+
 <div class="ep-stack">
     <SectionCard Id="org-title" Title="@L["你的組織與帳號"]">
         <dl class="ep-detail">
-            <dt>@L["組織"]</dt><dd>@(_tenant?.Name ?? Tenant)（<code class="ep-mono">@Tenant</code>）</dd>
+            <dt>@L["組織"]</dt>
+            <dd>
+                <span>@(_tenant?.Name ?? Tenant)（<code class="ep-mono">@Tenant</code>）</span>
+                @if (IsOwner)
+                {
+                    <details class="ep-inline-edit" open="@(!string.IsNullOrEmpty(Error))">
+                        <summary class="ep-btn ep-btn-quiet">@L["重新命名"]</summary>
+                        <div class="ep-inline-edit-body">
+                            <PostForm Model="RenameInput" FormName="portal-tenant-rename" OnValidSubmit="RenameTenantAsync">
+                                <FormField For="ep-tenant-name" Label="@L["組織名稱"]" Hint="@L["只會更新顯示名稱，網址識別碼維持不變。"]">
+                                    <InputText id="ep-tenant-name" class="ep-input" maxlength="200" @bind-Value="RenameInput.Name" />
+                                </FormField>
+                                <SubmitButton>@L["儲存"]</SubmitButton>
+                            </PostForm>
+                        </div>
+                    </details>
+                }
+            </dd>
             <dt>@L["方案"]</dt>
             <dd>
                 @if (_tenant?.Plan is { } plan)

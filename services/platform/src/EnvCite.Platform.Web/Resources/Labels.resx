@@ -5,6 +5,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="Audit.Action.tenant.created" xml:space="preserve"><value>建立租戶</value></data>
+  <data name="Audit.Action.tenant.renamed" xml:space="preserve"><value>重新命名租戶</value></data>
   <data name="Audit.Action.tenant.plan_assigned" xml:space="preserve"><value>指派方案</value></data>
   <data name="Audit.Action.tenant.plan_removed" xml:space="preserve"><value>移除方案</value></data>
   <data name="Audit.Action.api_key.issued" xml:space="preserve"><value>簽發 API key</value></data>
@@ -17,6 +18,7 @@
   <data name="Audit.Action.portal.signed_in" xml:space="preserve"><value>成員登入</value></data>
   <data name="Audit.Action.portal.sign_in_failed" xml:space="preserve"><value>成員登入失敗</value></data>
   <data name="Audit.Action.portal.password_changed" xml:space="preserve"><value>成員改密碼</value></data>
+  <data name="Audit.Action.portal.profile_updated" xml:space="preserve"><value>成員更新個人資料</value></data>
   <data name="Audit.Action.portal.signed_out" xml:space="preserve"><value>成員登出</value></data>
   <data name="Audit.Action.portal.google_linked" xml:space="preserve"><value>成員連結 Google 帳號</value></data>
   <data name="Audit.Action.portal.mfa_enabled" xml:space="preserve"><value>成員啟用兩步驟驗證</value></data>
@@ -104,6 +106,8 @@
   <data name="Outcome.credentials.incorrect" xml:space="preserve"><value>密碼或驗證碼不正確。</value></data>
   <data name="Outcome.tenant.identifier_invalid" xml:space="preserve"><value>識別碼 3–63 字元：小寫英文、數字、連字號，且須以英數字開頭與結尾。</value></data>
   <data name="Outcome.tenant.name_required" xml:space="preserve"><value>名稱不可空白。</value></data>
+  <data name="Outcome.tenant.name_too_long" xml:space="preserve"><value>組織名稱最多 200 個字元。</value></data>
+  <data name="Outcome.tenant.rename_forbidden" xml:space="preserve"><value>只有擁有者可以重新命名組織。</value></data>
   <data name="Outcome.member.email_taken" xml:space="preserve"><value>這個租戶已經有這個 email 的成員。</value></data>
   <data name="Outcome.operator.email_taken" xml:space="preserve"><value>已經有這個 email 的營運者。</value></data>
   <data name="Outcome.tenant.identifier_taken" xml:space="preserve"><value>這個識別碼已被使用。</value></data>
