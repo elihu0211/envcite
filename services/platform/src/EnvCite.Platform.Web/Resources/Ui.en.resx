@@ -1758,9 +1758,6 @@
   <data name="行為終了日" xml:space="preserve">
     <value>Conduct end date</value>
   </data>
-  <data name="YYYY-MM-DD（選填，起算裁處權時效）" xml:space="preserve">
-    <value>YYYY-MM-DD (optional, for limitation period)</value>
-  </data>
   <data name="同時觸犯刑事法律（第 26 條第 1 項）" xml:space="preserve">
     <value>Concurrent criminal offense (Art. 26(1))</value>
   </data>
@@ -1775,9 +1772,6 @@
   </data>
   <data name="違法所得利益" xml:space="preserve">
     <value>Gained benefit</value>
-  </data>
-  <data name="元，十進位數字（選填，第 18 條第 2 項）" xml:space="preserve">
-    <value>TWD, decimal (optional, Art. 18(2))</value>
   </data>
   <data name="執行推論評估" xml:space="preserve">
     <value>Run evaluation</value>
@@ -1929,9 +1923,6 @@
   <data name="合規推論試算" xml:space="preserve">
     <value>Compliance Reasoning</value>
   </data>
-  <data name="選擇常見情境或輸入事實，由確定性推論引擎評估候選風險與缺漏要件。" xml:space="preserve">
-    <value>Select a common scenario or enter facts to evaluate candidate risks and missing elements.</value>
-  </data>
   <data name="日常合規自評" xml:space="preserve">
     <value>Daily Self-Check</value>
   </data>
@@ -1940,9 +1931,6 @@
   </data>
   <data name="超標與不法利得" xml:space="preserve">
     <value>Exceedance &amp; Benefit</value>
-  </data>
-  <data name="進階：裁處與時效參數" xml:space="preserve">
-    <value>Advanced: Penalty &amp; Limitation Parameters</value>
   </data>
   <data name="A · 憲政體制" xml:space="preserve">
     <value>A · Constitutional</value>
@@ -2678,5 +2666,68 @@
   </data>
   <data name="重點母法快速定位" xml:space="preserve">
     <value>Key Parent Statutes</value>
+  </data>
+  <data name="依台灣行政罰法三階論（構成要件、違法性、有責性）與凱爾森法規範位階，針對行為日與裁處日之有效規範進行確定性合規推論。" xml:space="preserve">
+    <value>Deterministic compliance reasoning based on Taiwan's three-tier administrative penalty doctrine (statutory elements, illegality, culpability) and Kelsenian normative hierarchy across conduct and decision dates.</value>
+  </data>
+  <data name="常見情境範本" xml:space="preserve">
+    <value>Common scenario presets</value>
+  </data>
+  <data name="情境範本：" xml:space="preserve">
+    <value>Presets:</value>
+  </data>
+  <data name="① 時空與時效基準（行政罰法第 5、27 條）" xml:space="preserve">
+    <value>1. Temporal &amp; Limitation Baseline (Arts. 5 &amp; 27)</value>
+  </data>
+  <data name="決定行為時法規範（必填）" xml:space="preserve">
+    <value>Determines applicable law at conduct date (required)</value>
+  </data>
+  <data name="決定裁處時法規範，不得早於行為日（必填）" xml:space="preserve">
+    <value>Determines applicable law at decision date; must not precede conduct date (required)</value>
+  </data>
+  <data name="起算 3 年裁處權時效（選填）" xml:space="preserve">
+    <value>Starts 3-year administrative limitation period (optional)</value>
+  </data>
+  <data name="② 構成要件事實與不法利得（行政罰法第 18 條）" xml:space="preserve">
+    <value>2. Statutory Elements &amp; Gained Benefit (Art. 18)</value>
+  </data>
+  <data name="元，依第 18 條第 2 項酌量加重（選填）" xml:space="preserve">
+    <value>TWD, discretionary enhancement under Art. 18(2) (optional)</value>
+  </data>
+  <data name="③ 進階：刑罰優先與競合參數（行政罰法第 26 條）" xml:space="preserve">
+    <value>3. Advanced: Criminal Priority &amp; Concurrence (Art. 26)</value>
+  </data>
+  <data name="本體論合規審查流程" xml:space="preserve">
+    <value>Ontological Compliance Review Workflow</value>
+  </data>
+  <data name="台灣法學推論邏輯說明" xml:space="preserve">
+    <value>Taiwan Legal Reasoning Logic Guide</value>
+  </data>
+  <data name="請於左側選擇情境範本或輸入行為日、裁處日與事實參數，點選「執行推論評估」後，此處將輸出三階審查結論與裁罰區間。" xml:space="preserve">
+    <value>Select a preset or enter conduct date, decision date, and facts on the left, then click Run evaluation to view the three-tier review and penalty range here.</value>
+  </data>
+  <data name="1. 規範位階與時效鎖定（Stufenbau）" xml:space="preserve">
+    <value>1. Normative Hierarchy &amp; Temporal Lock (Stufenbau)</value>
+  </data>
+  <data name="依行為日／裁處日比對有效法規版本，排除憲法法庭宣告違憲失效條文，並依行政罰法第 5 條檢視從新從輕比較組。" xml:space="preserve">
+    <value>Resolves effective law versions on conduct and decision dates, excludes provisions invalidated by the Constitutional Court, and compares Art. 5 lex mitior pairs.</value>
+  </data>
+  <data name="2. 行政罰法三階審查（§§7–13）" xml:space="preserve">
+    <value>2. Administrative Penalty 3-Tier Review (§§7–13)</value>
+  </data>
+  <data name="依序檢驗「構成要件該當性 → 違法性（阻卻違法事由）→ 有責性（故意過失與責任能力）」，明確區分候選裁處與缺漏要件。" xml:space="preserve">
+    <value>Evaluates statutory elements → illegality (defenses §§11–13) → culpability (intent, negligence &amp; capacity §§7–9), distinguishing candidate sanctions from missing elements.</value>
+  </data>
+  <data name="3. 競合、不法利得與裁罰矩陣（§§18, 24, 26）" xml:space="preserve">
+    <value>3. Concurrence, Gained Benefit &amp; Penalty Matrix (§§18, 24, 26)</value>
+  </data>
+  <data name="整合一行為不二罰（從一重處斷）、刑罰優先原則及環境法規裁罰矩陣，試算建議罰鍰區間與環境講習時數。" xml:space="preserve">
+    <value>Applies single-act concurrence (heaviest penalty rule), criminal priority, and environmental penalty matrices to estimate fine ranges and environmental education hours.</value>
+  </data>
+  <data name="一行為不二罰／從一重處斷（行政罰法第 24 條）" xml:space="preserve">
+    <value>Single-Act Non Bis in Idem / Heaviest Penalty Absorbs Lesser (Art. 24)</value>
+  </data>
+  <data name="待補充要件事實（{0}）" xml:space="preserve">
+    <value>Missing Element Facts ({0})</value>
   </data>
 </root>
