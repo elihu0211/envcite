@@ -1,4 +1,4 @@
-using EnvCite.Ontology.V2;
+using EnvCite.Canon.V1;
 using EnvCite.ServiceDefaults;
 
 using Microsoft.Extensions.Options;
@@ -20,38 +20,38 @@ internal sealed record Article(
 
 /// <summary>
 /// 管線所依賴的 port：法規的讀取途徑，本服務中法律事實的唯一來源。它是介面而非 client——管線的形狀
-/// （哪個階段可以決定什麼）正是本服務存在所要固定下來的東西，必須在執行中的本體服務存在之前就能測試；
+/// （哪個階段可以決定什麼）正是本服務存在所要固定下來的東西，必須在執行中的 canon 服務存在之前就能測試；
 /// 測試中的 fake 是另一種實作，並不次一等。
 /// </summary>
-internal interface IOntologySearch
+internal interface ICanonSearch
 {
     Task<IReadOnlyList<Article>> SearchAsync(string query, string asOf, CancellationToken cancellationToken);
 }
 
-/// <summary>canon 的連線設定（<c>Ontology</c> 區段；叢集內為 <c>dns:///canon:50051</c>）。</summary>
-internal sealed class OntologyOptions : InternalGrpcClientOptions, ISectionOptions
+/// <summary>canon 的連線設定（<c>Canon</c> 區段；叢集內為 <c>dns:///canon:50051</c>）。</summary>
+internal sealed class CanonOptions : InternalGrpcClientOptions, ISectionOptions
 {
-    public static string SectionName => "Ontology";
+    public static string SectionName => "Canon";
 
     /// <summary>
-    /// 檢索要不要請本體精排（<c>SearchArticles</c> 的 <c>rerank</c>）。預設關：精排多一次對外呼叫（秒級），
-    /// 本體沒有宣告精排模型、名額滿或端點逾時時退回精排前的次序，查詢不失敗。開了之後 <see cref="InternalGrpcClientOptions.Timeout"/>
+    /// 檢索要不要請 canon 精排（<c>SearchArticles</c> 的 <c>rerank</c>）。預設關：精排多一次對外呼叫（秒級），
+    /// canon 沒有宣告精排模型、名額滿或端點逾時時退回精排前的次序，查詢不失敗。開了之後 <see cref="InternalGrpcClientOptions.Timeout"/>
     /// 要容得下檢索加精排。精排只改次序，不改 <see cref="Article.LexicalScore"/> 與語意相似度，相關性下界照舊。
     /// </summary>
     public bool Rerank { get; init; }
 }
 
 /// <summary>
-/// 以 canon 的 <c>SearchArticles</c> 實作的 <see cref="IOntologySearch"/>。期限是自己的上限
+/// 以 canon 的 <c>SearchArticles</c> 實作的 <see cref="ICanonSearch"/>。期限是自己的上限
 /// （<see cref="InternalGrpcClientOptions.Timeout"/>）與呼叫端剩下的期限取小者：後者由用戶端工廠的
 /// call context propagation 帶上（見 Program.cs），上游早已逾時，下游就不白做工。
 /// </summary>
-internal sealed class OntologySearch(OntologyService.OntologyServiceClient client, IOptions<OntologyOptions> options) : IOntologySearch
+internal sealed class CanonSearch(CanonService.CanonServiceClient client, IOptions<CanonOptions> options) : ICanonSearch
 {
     public const int Limit = 10;
 
     /// <summary>
-    /// 對本體的 <c>SearchArticles</c> 要什麼，只在這裡決定：檢索選項都加在這一個建構點，
+    /// 對 canon 的 <c>SearchArticles</c> 要什麼，只在這裡決定：檢索選項都加在這一個建構點，
     /// 不在呼叫的地方零散加旗標，所以一次請求帶了哪些選項，看這個方法就知道，測試也只需要守它。
     /// 由設定決定的選項（<paramref name="rerank"/>）以參數傳進來，不在這裡讀設定。
     /// </summary>

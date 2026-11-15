@@ -1,6 +1,6 @@
 using System.Diagnostics.Metrics;
 
-using EnvCite.Consult.V2;
+using EnvCite.Consult.V3;
 
 using Grpc.Core;
 using Grpc.Health.V1;
@@ -28,6 +28,7 @@ public sealed class HostingTests(ConsultFactory factory)
 
     [Theory]
     [InlineData("")]
+    [InlineData("envcite.consult.v3.ConsultationService")]
     [InlineData("envcite.consult.v2.ConsultationService")]
     public async Task LivenessAndReadinessAreServing(string service)
     {
@@ -67,7 +68,7 @@ public sealed class HostingTests(ConsultFactory factory)
             factory.Services.GetRequiredService<IMeterFactory>(), GrpcServerMetrics.MeterName, GrpcServerMetrics.DurationMetric);
         var client = factory.CreateClient();
         var health = new Health.HealthClient(ConsultFactory.ChannelFor(factory));
-        var request = new GroundRequest { Question = FakeOntologyServer.AnswerableQuery };
+        var request = new GroundRequest { Question = FakeCanonServer.AnswerableQuery };
 
         await client.GroundAsync(request, ConsultFactory.CallMetadata, cancellationToken: Ct);
         await client.GroundAsync(request, ConsultFactory.CallMetadata, cancellationToken: Ct);
@@ -79,7 +80,7 @@ public sealed class HostingTests(ConsultFactory factory)
         Assert.All(points, p =>
         {
             Assert.Equal("grpc", p.Tags["rpc.system.name"]);
-            Assert.Equal("envcite.consult.v2.ConsultationService", p.Tags["rpc.service"]);
+            Assert.Equal("envcite.consult.v3.ConsultationService", p.Tags["rpc.service"]);
             Assert.Equal("Ground", p.Tags["rpc.method"]);
             // 標籤全是有限集合：租戶與問句不在其中。
             Assert.Equal(4, p.Tags.Count);
@@ -95,10 +96,10 @@ public sealed class HostingTests(ConsultFactory factory)
 
         foreach (var question in new[]
         {
-            FakeOntologyServer.AnswerableQuery,
-            FakeOntologyServer.DualTrackQuery,
-            FakeOntologyServer.IrrelevantQuery,
-            FakeOntologyServer.EmptyQuery,
+            FakeCanonServer.AnswerableQuery,
+            FakeCanonServer.DualTrackQuery,
+            FakeCanonServer.IrrelevantQuery,
+            FakeCanonServer.EmptyQuery,
             "臺北市有哪些空氣污染自治條例",
             "  ",
         })
@@ -106,11 +107,11 @@ public sealed class HostingTests(ConsultFactory factory)
             await client.GroundAsync(new GroundRequest { Question = question }, ConsultFactory.CallMetadata, cancellationToken: Ct);
         }
 
-        // 沒有結果的呼叫：沒帶租戶、本體不可用；它們看 RED 指標，不進這個計數。
+        // 沒有結果的呼叫：沒帶租戶、canon 不可用；它們看 RED 指標，不進這個計數。
         await Assert.ThrowsAsync<RpcException>(async () => await client.GroundAsync(
-            new GroundRequest { Question = FakeOntologyServer.AnswerableQuery }, cancellationToken: Ct));
+            new GroundRequest { Question = FakeCanonServer.AnswerableQuery }, cancellationToken: Ct));
         await Assert.ThrowsAsync<RpcException>(async () => await client.GroundAsync(
-            new GroundRequest { Question = FakeOntologyServer.UnavailableQuery }, ConsultFactory.CallMetadata, cancellationToken: Ct));
+            new GroundRequest { Question = FakeCanonServer.UnavailableQuery }, ConsultFactory.CallMetadata, cancellationToken: Ct));
 
         var points = collector.GetMeasurementSnapshot();
         Assert.Equal(

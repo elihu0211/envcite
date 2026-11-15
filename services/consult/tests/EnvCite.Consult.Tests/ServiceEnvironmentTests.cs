@@ -26,17 +26,17 @@ public sealed class ServiceEnvironmentTests
     [Fact]
     public void AVariableWithThePrefixIsReadByItsConfigurationPath()
     {
-        var configuration = Configured(("ENVCITE_Ontology__Address", "http://canon:50051"));
+        var configuration = Configured(("ENVCITE_Canon__Address", "http://canon:50051"));
 
-        Assert.Equal("http://canon:50051", configuration["Ontology:Address"]);
+        Assert.Equal("http://canon:50051", configuration["Canon:Address"]);
     }
 
     [Fact]
     public void AnUnprefixedVariableIsNotReadAsConfiguration()
     {
-        var configuration = Configured(("Ontology__Address", "http://ignored"));
+        var configuration = Configured(("Canon__Address", "http://ignored"));
 
-        Assert.Null(configuration["Ontology:Address"]);
+        Assert.Null(configuration["Canon:Address"]);
     }
 
     [Fact]

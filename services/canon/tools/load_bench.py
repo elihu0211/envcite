@@ -69,7 +69,7 @@ CONSULT_PROJECT = REPO / "services/consult/src/EnvCite.Consult"
 K6_SCRIPT = HERE / "load.js"
 PROTO_ROOT = REPO / "proto"
 
-#: consult 對 canon 的 limit（`OntologySearch.Limit`）；直接量 search 用同一個值才可對照。
+#: consult 對 canon 的 limit（`CanonSearch.Limit`）；直接量 search 用同一個值才可對照。
 SEARCH_LIMIT = 10
 #: 推論的案件事實：概念不必在語料裡，量的是 Evaluate 的整條路徑（讀陳述、clingo、組回應）。
 EVALUATE_REQUEST = {
@@ -117,8 +117,8 @@ TARGETS = {
         ),
         Target(
             "ground",
-            "envcite.consult.v2.ConsultationService/Ground",
-            "envcite/consult/v2/consult.proto",
+            "envcite.consult.v3.ConsultationService/Ground",
+            "envcite/consult/v3/consult.proto",
             "consult",
             embedding=True,
         ),
@@ -199,7 +199,7 @@ class Servers:
         if consult:
             consult_port = free_port()
             env = dict(os.environ)
-            env["ENVCITE_Ontology__Address"] = f"http://{self.canon}"
+            env["ENVCITE_Canon__Address"] = f"http://{self.canon}"
             self.consult = f"127.0.0.1:{consult_port}"
             self._spawn(
                 [
@@ -406,7 +406,7 @@ def environment(
     if local_consult:
         # 本地的 consult 讀這個檔；缺檔是安裝壞了，不是「5 秒」
         settings = json.loads((CONSULT_PROJECT / "appsettings.json").read_text(encoding="utf-8"))
-        consult_timeout = settings["Ontology"]["Timeout"]
+        consult_timeout = settings["Canon"]["Timeout"]
     return {
         "host": {
             "cpu": probe("sysctl", "-n", "machdep.cpu.brand_string"),
@@ -648,7 +648,7 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument(
         "--canon-address",
         default=None,
-        help="外部已啟動之 Ontology gRPC 位址（如 127.0.0.1:50051），指定時不啟動本地 canon",
+        help="外部已啟動之 canon gRPC 位址（如 127.0.0.1:50051），指定時不啟動本地 canon",
     )
     r.add_argument(
         "--consult-address",

@@ -6,9 +6,9 @@ owns: [consult-surfaces, local-demand-metric]
 
 # EnvCite.Consult
 
-接地服務：以本體服務供給的內容，為呼叫端的語言模型備妥可引用的封閉證據集（代號如 `L1`、`L2`，附條文），或拒答。回[倉庫總覽](../../README.md)。
+接地服務：以 canon 服務供給的內容，為呼叫端的語言模型備妥可引用的封閉證據集（代號如 `L1`、`L2`，附條文），或拒答。回[倉庫總覽](../../README.md)。
 
-- 介面：gRPC `ConsultationService.Ground`，契約 [`consult.proto`](../../proto/envcite/consult/v2/consult.proto)；呼叫端怎麼用證據集、怎麼核驗模型的輸出，見 [`proto/README.md`](../../proto/README.md)。
+- 介面：gRPC `ConsultationService.Ground`，契約 [`consult.proto`](../../proto/envcite/consult/v3/consult.proto)；呼叫端怎麼用證據集、怎麼核驗模型的輸出，見 [`proto/README.md`](../../proto/README.md)。
 - 呼叫端 [`platform`](../platform/README.md)（對外為 `POST /v2/ground`）；上游 [`canon`](../canon/README.md)。
 - 租戶隔離，`x-tenant-id` 必填；本服務自己不存資料。
 - 證據集的來源語料只涵蓋中央法規，地方自治法規不在範圍內；範圍與拒答的解讀見 [`platform` 的「語料範圍」](../platform/README.md#語料範圍)。
@@ -18,7 +18,7 @@ owns: [consult-surfaces, local-demand-metric]
 | 組 | 節 | 內容 |
 |----|----|------|
 | 服務 | [入口](#入口) | gRPC 伺服器 |
-| 服務 | [設定](#設定) | 本體位址、呼叫期限、相關性下界 |
+| 服務 | [設定](#設定) | canon 位址、呼叫期限、相關性下界 |
 | 服務 | [健康檢查](#健康檢查) | 收到 SIGTERM 後回 `NOT_SERVING` |
 | 指標 | [地方自治法規的需求計數](#地方自治法規的需求計數) | 以真實提問累積地方法規的需求 |
 
@@ -32,21 +32,21 @@ owns: [consult-surfaces, local-demand-metric]
 
 ### 設定
 
-設定鍵以 `src/EnvCite.Consult/appsettings.json` 為準，環境變數以 `__` 分隔區段（如 `ENVCITE_Ontology__Address`）。
+設定鍵以 `src/EnvCite.Consult/appsettings.json` 為準，環境變數以 `__` 分隔區段（如 `ENVCITE_Canon__Address`）。
 
 | 鍵 | 說明 |
 |----|------|
-| `Ontology:Address` | 本體的 gRPC 位址；叢集內為 `dns:///<headless service>:<port>`，本機為 `http://localhost:<port>`。格式錯誤時啟動即失敗 |
-| `Ontology:Timeout` | 呼叫本體的上限；實際期限是它與呼叫端剩下的期限取小者 |
-| `Ontology:Rerank` | 檢索要不要請本體精排（`SearchArticles` 的 `rerank`），預設 `false`。精排多一次對外呼叫（秒級），開了之後 `Ontology:Timeout` 要容得下檢索加精排；本體沒有宣告精排模型、名額滿或端點逾時時退回精排前的次序，查詢不失敗。精排只改次序，不改字面分數與語意相似度，相關性下界照舊 |
-| `Relevance:LexicalFloor`、`Relevance:SemanticFloor` | 相關性下界：一條檢索結果字面分數或語意相似度任一達標，或有函釋提到查詢詞並解釋它（檢索帶 `include_guidance`，見 [`canon` 的 `SearchArticles`](../../proto/envcite/ontology/v2/ontology.proto)），才進證據集；函釋指向的條文不算高信心；字面高信心線固定為下界的 1.5 倍。值**不在本服務的設定檔**：它與 platform 的搜尋端是同一組，只寫在 [`relevance-floors.json`](../../libs/dotnet/EnvCite.ServiceDefaults/relevance-floors.json) 一處，作為優先序最低的設定來源載入；設定檔、環境變數與命令列可覆寫，覆寫值超出範圍時啟動即失敗。只想讓本服務不同於 platform 時才覆寫，並知道兩邊就此不一致 |
+| `Canon:Address` | canon 的 gRPC 位址；叢集內為 `dns:///<headless service>:<port>`，本機為 `http://localhost:<port>`。格式錯誤時啟動即失敗 |
+| `Canon:Timeout` | 呼叫 canon 的上限；實際期限是它與呼叫端剩下的期限取小者 |
+| `Canon:Rerank` | 檢索要不要請 canon 精排（`SearchArticles` 的 `rerank`），預設 `false`。精排多一次對外呼叫（秒級），開了之後 `Canon:Timeout` 要容得下檢索加精排；canon 沒有宣告精排模型、名額滿或端點逾時時退回精排前的次序，查詢不失敗。精排只改次序，不改字面分數與語意相似度，相關性下界照舊 |
+| `Relevance:LexicalFloor`、`Relevance:SemanticFloor` | 相關性下界：一條檢索結果字面分數或語意相似度任一達標，或有函釋提到查詢詞並解釋它（檢索帶 `include_guidance`，見 [`canon` 的 `SearchArticles`](../../proto/envcite/canon/v1/canon.proto)），才進證據集；函釋指向的條文不算高信心；字面高信心線固定為下界的 1.5 倍。值**不在本服務的設定檔**：它與 platform 的搜尋端是同一組，只寫在 [`relevance-floors.json`](../../libs/dotnet/EnvCite.ServiceDefaults/relevance-floors.json) 一處，作為優先序最低的設定來源載入；設定檔、環境變數與命令列可覆寫，覆寫值超出範圍時啟動即失敗。只想讓本服務不同於 platform 時才覆寫，並知道兩邊就此不一致 |
 | `Relevance:HighConfidenceSemantic` | 語意臂的高信心線；須高於語意下界、不超過 1 |
 | `ASPNETCORE_HTTP_PORTS` | 監聽的埠；映像內固定為 `50052` |
 | `OTEL_*` | 遙測，約定見 [`libs/dotnet`](../../libs/dotnet/README.md) |
 
 ### 健康檢查
 
-gRPC 健康檢查協定（`grpc.health.v1.Health`）：空字串與 `envcite.consult.v2.ConsultationService` 平時都是 `SERVING`。收到 SIGTERM 後兩者都回 `NOT_SERVING`，排空數秒後才停止接受連線。不查本體的狀態。
+gRPC 健康檢查協定（`grpc.health.v1.Health`）：空字串與 `envcite.consult.v3.ConsultationService` 平時都是 `SERVING`。收到 SIGTERM 後兩者都回 `NOT_SERVING`，排空數秒後才停止接受連線。不查 canon 的狀態。
 
 ## 指標
 
@@ -54,7 +54,7 @@ gRPC 健康檢查協定（`grpc.health.v1.Health`）：空字串與 `envcite.con
 
 語料不含地方自治法規（[語料範圍](../platform/README.md#語料範圍)）；是否擴充取決於真實的提問，由本計數在上線後累積。
 
-`envcite.consult.ground.outcomes` 是計數器：每次 `Ground` 得出結果就加一，證據與拒答都計，所以能算比率。沒有結果的呼叫（缺租戶、參數錯誤、本體不可用）不計，它們看 RED 指標（見 [`proto/README.md`](../../proto/README.md)）。
+`envcite.consult.ground.outcomes` 是計數器：每次 `Ground` 得出結果就加一，證據與拒答都計，所以能算比率。沒有結果的呼叫（缺租戶、參數錯誤、canon 不可用）不計，它們看 RED 指標（見 [`proto/README.md`](../../proto/README.md)）。
 
 | 標籤 | 值 | 意義 |
 |------|----|------|

@@ -1,4 +1,4 @@
-using EnvCite.Consult.V2;
+using EnvCite.Consult.V3;
 
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -8,23 +8,23 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace EnvCite.Consult.Tests;
 
-/// <summary>Boots consult in memory against an in-process fake ontology.</summary>
+/// <summary>Boots consult in memory against an in-process fake canon.</summary>
 public sealed class ConsultFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public static readonly Metadata CallMetadata = new() { { "x-tenant-id", "acme" }, { "x-request-id", "req-1" } };
 
-    public FakeOntologyServer Ontology { get; } = new();
+    public FakeCanonServer Canon { get; } = new();
 
-    public ValueTask InitializeAsync() => new(Ontology.StartAsync());
+    public ValueTask InitializeAsync() => new(Canon.StartAsync());
 
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
-        await Ontology.DisposeAsync();
+        await Canon.DisposeAsync();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder) =>
-        builder.UseSetting("Ontology:Address", Ontology.Address.ToString());
+        builder.UseSetting("Canon:Address", Canon.Address.ToString());
 
     /// <summary>gRPC channel over the in-memory test server.</summary>
     public static GrpcChannel ChannelFor(WebApplicationFactory<Program> host) =>

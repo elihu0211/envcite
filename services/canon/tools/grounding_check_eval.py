@@ -64,7 +64,7 @@ from golden_retrieval_eval import NEGATIVE, git, require_snapshots, snapshots
 from canon.net import json_headers
 from canon.settings import DatabaseSettings, load
 from canon.verification.config import ConfigError, resolve_secret, secret_name
-from envcite.consult.v2 import consult_pb2, consult_pb2_grpc
+from envcite.consult.v3 import consult_pb2, consult_pb2_grpc
 from tools.answer_quality import FINALS, FLOOR_REFUSALS, REFUSAL_FINAL
 
 # 與 platform 的 GroundedAnswerer 逐字相同（改了那邊要同步這裡）。
