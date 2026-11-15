@@ -176,7 +176,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
 
         using var response = await client.PostAsJsonAsync(Path, request, cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode); // 假服務不驗證；檢查只在 ontology 一處
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode); // 假服務不驗證；檢查只在 canon 一處
         var sent = factory.Ontology.LastEvaluate!;
         Assert.Equal("lots", sent.Facts[0].Values[0].Number.Value);
         Assert.Equal("", sent.PermitLimits[0].Value.Value);

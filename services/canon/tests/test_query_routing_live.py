@@ -111,5 +111,5 @@ def test_a_well_formed_key_passes_and_anything_else_is_explained_without_echoing
 def test_an_http_error_is_one_sentence_that_names_the_cause_and_never_the_key() -> None:
     assert "已撤銷或已過期" in tool.explain_http_error(401)
     assert "方案" in tool.explain_http_error(402)
-    assert "ontology:read" in tool.explain_http_error(403)
+    assert "canon:read" in tool.explain_http_error(403)
     assert tool.explain_http_error(500).startswith("線上回 HTTP 500")

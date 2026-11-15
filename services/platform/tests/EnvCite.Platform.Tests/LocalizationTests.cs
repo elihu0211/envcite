@@ -69,7 +69,7 @@ public static partial class LabelResourceTests
         using var _ = TestCulture.Use(culture);
 
         Assert.Equal(action, AuditLabels.Action(AuditActions.ApiKeyIssued));
-        Assert.Equal(category, UsageLabels.Category("ontology.search"));
+        Assert.Equal(category, UsageLabels.Category("canon.search"));
         Assert.Equal(role, PortalLabels.Role(CustomerRoles.Owner));
         Assert.Equal(status, OperatorLabels.Status(new OperatorInfo("1", "a@example.com", null, false, false, true, false)));
     }
@@ -82,7 +82,7 @@ public static partial class LabelResourceTests
         Assert.Equal("Tenant API key …0a1b2c3d", AuditLabels.Actor(AuditActors.TenantKey, "0192-0a1b2c3d"));
         Assert.Equal("Tenant member", AuditLabels.Actor(AuditActors.TenantUser, null));
         Assert.Equal("System", AuditLabels.Actor(AuditActors.System, null));
-        Assert.Equal("calls", UsageLabels.UnitName("ontology.search"));
+        Assert.Equal("calls", UsageLabels.UnitName("canon.search"));
         Assert.Equal("tokens", UsageLabels.UnitName("consult.tokens.input"));
     }
 

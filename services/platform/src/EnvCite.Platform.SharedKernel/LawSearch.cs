@@ -16,7 +16,7 @@ public sealed record LawHit(
 
 /// <summary>
 /// 條文搜尋：某一天有效的條文，字面檢索。對外的 <c>POST /v2/search</c> 與客戶入口的搜尋頁共用這一份，
-/// 所以驗證、錯誤、計量（<c>ontology.search</c>，成功才記）與「查詢文字不進任何日誌」只有一個實作。
+/// 所以驗證、錯誤、計量（<c>canon.search</c>，成功才記）與「查詢文字不進任何日誌」只有一個實作。
 /// 以 scoped 註冊（計量需要目前請求的租戶）。呼叫端負責確認租戶有方案（完全付費制）。
 /// </summary>
 public interface ILawSearch

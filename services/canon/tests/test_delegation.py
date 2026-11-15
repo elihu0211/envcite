@@ -397,9 +397,9 @@ def test_a_sealed_delegation_cannot_change(conn: Conn, corpus: Corpus) -> None:
 
 def test_the_sync_role_extracts_and_the_server_role_reads(conn: Conn, corpus: Corpus) -> None:
     conn.commit()
-    conn.execute("SET ROLE envcite_ontology_writer")
+    conn.execute("SET ROLE canon_writer")
     assert delegation.extract(conn).written == 2
-    conn.execute("SET ROLE envcite_ontology_reader")
+    conn.execute("SET ROLE canon_reader")
 
     assert [r[1] for r in corpus.rows(date(2003, 1, 1))] == ["art_7/para_2"]
     with pytest.raises(psycopg.errors.InsufficientPrivilege):

@@ -43,7 +43,7 @@ internal sealed class LawSearch(
             or StatusCode.DeadlineExceeded
             or StatusCode.ResourceExhausted)
         {
-            return AdminOutcome.Unavailable<IReadOnlyList<LawHit>>(OutcomeCodes.OntologyUnavailable);
+            return AdminOutcome.Unavailable<IReadOnlyList<LawHit>>(OutcomeCodes.CanonUnavailable);
         }
     }
 }

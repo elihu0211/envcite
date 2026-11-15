@@ -87,7 +87,7 @@ internal sealed class LawCorpusService(
 
             var structure = await gateway.ListLawStructureAsync(jurisdiction, idScheme, localId, asOf, cancellationToken);
             if (!structure.IsOk)
-                return AdminOutcome.Unavailable<PortalLawCorpusResult>(structure.Code ?? OutcomeCodes.OntologyUnavailable);
+                return AdminOutcome.Unavailable<PortalLawCorpusResult>(structure.Code ?? OutcomeCodes.CanonUnavailable);
 
             var dto = law.Value!;
             var data = structure.Value!;

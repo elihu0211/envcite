@@ -46,15 +46,15 @@ public static class OperatorPresentationTests
 public static class UsagePresentationTests
 {
     [Theory]
-    [InlineData("ontology.search", "本體條文檢索")]
-    [InlineData("ontology.get_law", "取得單部法規")]
+    [InlineData("canon.search", "本體條文檢索")]
+    [InlineData("canon.get_law", "取得單部法規")]
     [InlineData("consult.ground", "諮詢接地證據集")]
     [InlineData("consult.tokens.input", "模型輸入 Tokens")]
     public static void KnownOperationsHaveReadableLabels(string op, string expected) =>
         Assert.Equal(expected, UsageLabels.Operation(op));
 
     [Theory]
-    [InlineData("ontology.search", "法規本體")]
+    [InlineData("canon.search", "法規本體")]
     [InlineData("consult.ground", "諮詢接地")]
     [InlineData("consult.tokens.input", "Token 計量")]
     [InlineData("custom.op", "其他操作")]
@@ -63,7 +63,7 @@ public static class UsagePresentationTests
 
     [Theory]
     [InlineData("consult.tokens.input", "tokens")]
-    [InlineData("ontology.search", "次")]
+    [InlineData("canon.search", "次")]
     public static void UnitNamesAreCorrect(string op, string expected) =>
         Assert.Equal(expected, UsageLabels.UnitName(op));
 }

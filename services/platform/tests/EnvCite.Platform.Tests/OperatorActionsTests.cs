@@ -126,7 +126,7 @@ public sealed class OperatorActionsTests(PlatformFactory factory)
             var store = scope.ServiceProvider.GetRequiredService<Finbuckle.MultiTenant.Abstractions.IMultiTenantStore<Finbuckle.MultiTenant.Abstractions.TenantInfo>>();
             var tenantInfo = await store.GetAsync(tenant.Id);
             await using var db = Finbuckle.MultiTenant.EntityFrameworkCore.MultiTenantDbContext.Create<EnvCite.Platform.Data.PlatformDbContext, Finbuckle.MultiTenant.Abstractions.TenantInfo>(tenantInfo!, scope.ServiceProvider);
-            db.UsageRecords.Add(new EnvCite.Platform.Data.UsageRecord { Operation = "ontology.search", Units = 1, OccurredAt = DateTimeOffset.UtcNow });
+            db.UsageRecords.Add(new EnvCite.Platform.Data.UsageRecord { Operation = "canon.search", Units = 1, OccurredAt = DateTimeOffset.UtcNow });
             db.UsageRecords.Add(new EnvCite.Platform.Data.UsageRecord { Operation = "consult.ground", Units = 5, OccurredAt = DateTimeOffset.UtcNow });
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
@@ -137,7 +137,7 @@ public sealed class OperatorActionsTests(PlatformFactory factory)
         Assert.Contains("用量與計量", html, StringComparison.Ordinal);
         Assert.Contains("本體條文檢索", html, StringComparison.Ordinal);
         Assert.Contains("諮詢接地證據集", html, StringComparison.Ordinal);
-        Assert.Contains("ontology.search", html, StringComparison.Ordinal);
+        Assert.Contains("canon.search", html, StringComparison.Ordinal);
         Assert.Contains("consult.ground", html, StringComparison.Ordinal);
         Assert.Contains("法規本體", html, StringComparison.Ordinal);
         Assert.Contains("諮詢接地", html, StringComparison.Ordinal);
