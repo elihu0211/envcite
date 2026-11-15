@@ -351,7 +351,7 @@ const scenarios = {
         };
         // 換到 path 後等頁面穩定（動畫收尾、串流結束），再比對外殼，並檢查沒有缺屬性的畫面與外殼元素的版面位移。
         const visit = async (name, path, expected) => {
-            await page.click(`a.ep-side-link[href='${path}']`);
+            await page.click(`a[href='${path}']:is(.ep-side-link, .ep-history-filter)`);
             await until(`應換到 ${path}`, async () => new URL(page.url()).pathname === path);
             await page.waitForTimeout(600);
             sameShell(expected, await geometry(), name);
