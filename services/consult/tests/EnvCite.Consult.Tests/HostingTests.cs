@@ -29,7 +29,6 @@ public sealed class HostingTests(ConsultFactory factory)
     [Theory]
     [InlineData("")]
     [InlineData("envcite.consult.v3.ConsultationService")]
-    [InlineData("envcite.consult.v2.ConsultationService")]
     public async Task LivenessAndReadinessAreServing(string service)
     {
         var health = new Health.HealthClient(ConsultFactory.ChannelFor(factory));

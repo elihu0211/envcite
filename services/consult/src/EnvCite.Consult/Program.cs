@@ -21,8 +21,7 @@ builder.AddServiceTelemetry().WithMetrics(metrics => metrics
 builder.Services.AddSingleton<GrpcServerMetrics>();
 builder.Services.AddSingleton<GroundingMetrics>();
 builder.Services.AddGrpc()
-    .AddServiceOptions<ConsultationGrpcService>(o => o.Interceptors.Add<GrpcServerMetrics>())
-    .AddServiceOptions<LegacyConsultationGrpcService>(o => o.Interceptors.Add<GrpcServerMetrics>());
+    .AddServiceOptions<ConsultationGrpcService>(o => o.Interceptors.Add<GrpcServerMetrics>());
 
 // 呼叫端的期限與取消隨 call context 帶到 canon，與自己的上限取小者（見 CanonSearch）。
 builder.Services.AddInternalGrpcClient<CanonService.CanonServiceClient, CanonOptions>()
@@ -34,17 +33,12 @@ builder.Services.AddScoped<GroundingPipeline>();
 // 空字串（liveness）與服務名稱（readiness）都回報排空狀態；本服務不查依賴，canon 掛了重啟這裡沒有用。
 builder.Services.AddSingleton<Draining>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<Draining>());
-builder.Services.AddGrpcHealthChecks(o =>
-    {
-        o.Services.Map(ConsultationGrpcService.ServiceName, _ => true);
-        o.Services.Map(LegacyConsultationGrpcService.ServiceName, _ => true);
-    })
+builder.Services.AddGrpcHealthChecks(o => o.Services.Map(ConsultationGrpcService.ServiceName, _ => true))
     .AddCheck<Draining>("draining");
 
 var app = builder.Build();
 
 app.MapGrpcService<ConsultationGrpcService>();
-app.MapGrpcService<LegacyConsultationGrpcService>();
 // 探針每幾秒打一次：不進請求指標（追蹤也排除，見 ServiceDefaults 的 Telemetry）。
 app.MapGrpcHealthChecksService().DisableHttpMetrics();
 

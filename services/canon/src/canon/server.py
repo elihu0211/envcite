@@ -10,11 +10,6 @@ from grpc_reflection.v1alpha import reflection
 from opentelemetry.metrics import Meter
 
 from canon.embedding import Embedder
-from canon.legacy_services import (
-    LEGACY_REASONING_SERVICE_NAME,
-    LEGACY_SERVICE_NAME,
-    add_under_name,
-)
 from canon.reasoning_service import ReasoningServicer
 from canon.reranking import Reranks
 from canon.search_tuning import DEFAULT_RERANK_CANDIDATES, SearchTuning
@@ -23,7 +18,7 @@ from canon.settings import ServerSettings, load
 from canon.store.canon_store import CanonStore
 from canon.telemetry import register_annotation_health
 from canon.verification import config
-from envcite.canon.v1 import canon_pb2, canon_pb2_grpc, reasoning_pb2, reasoning_pb2_grpc
+from envcite.canon.v1 import canon_pb2_grpc, reasoning_pb2_grpc
 from envcite_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
 from envcite_segmenter import Segmenter
 
@@ -93,16 +88,6 @@ def build_server(
     reasoning_servicer = ReasoningServicer(store.connections, store.laws)
     canon_pb2_grpc.add_CanonServiceServicer_to_server(servicer, server)
     reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(reasoning_servicer, server)
-    # 過渡：尚未升級的呼叫端還在用舊的套件名（見 legacy_services）。
-    add_under_name(
-        server, LEGACY_SERVICE_NAME, canon_pb2.DESCRIPTOR.services_by_name["CanonService"], servicer
-    )
-    add_under_name(
-        server,
-        LEGACY_REASONING_SERVICE_NAME,
-        reasoning_pb2.DESCRIPTOR.services_by_name["ReasoningService"],
-        reasoning_servicer,
-    )
     reflection.enable_server_reflection(
         (
             SERVICE_NAME,
@@ -115,13 +100,7 @@ def build_server(
 
     health_servicer = health_servicer or health.HealthServicer()
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
-    for name in (
-        "",
-        SERVICE_NAME,
-        REASONING_SERVICE_NAME,
-        LEGACY_SERVICE_NAME,
-        LEGACY_REASONING_SERVICE_NAME,
-    ):
+    for name in ("", SERVICE_NAME, REASONING_SERVICE_NAME):
         health_servicer.set(name, health_pb2.HealthCheckResponse.SERVING)
 
     port = server.add_insecure_port(address)
