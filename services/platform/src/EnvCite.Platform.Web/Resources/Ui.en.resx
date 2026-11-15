@@ -2619,14 +2619,8 @@
   <data name="相片" xml:space="preserve">
     <value>Photo</value>
   </data>
-  <data name="新增相片以個人化你的帳號。" xml:space="preserve">
-    <value>Add a photo to personalize your account.</value>
-  </data>
   <data name="變更" xml:space="preserve">
     <value>Change</value>
-  </data>
-  <data name="選擇圖片" xml:space="preserve">
-    <value>Choose image</value>
   </data>
   <data name="點擊頭像、拖放或貼上圖片，支援 PNG、JPEG、WebP（上限 5 MB）。" xml:space="preserve">
     <value>Click the photo, drop an image, or paste. PNG, JPEG, or WebP up to 5 MB.</value>
@@ -2637,9 +2631,6 @@
   <data name="拖曳調整位置、縮放或旋轉後套用。" xml:space="preserve">
     <value>Drag to position, zoom, or rotate, then apply.</value>
   </data>
-  <data name="支援 PNG、JPEG、WebP，上限 5 MB；可拖曳、縮放與旋轉裁切為圓形。" xml:space="preserve">
-    <value>PNG, JPEG, or WebP up to 5 MB; drag, zoom, and rotate to crop into a circle.</value>
-  </data>
   <data name="縮放" xml:space="preserve">
     <value>Zoom</value>
   </data>
@@ -2648,9 +2639,6 @@
   </data>
   <data name="向右旋轉" xml:space="preserve">
     <value>Rotate right</value>
-  </data>
-  <data name="上傳並儲存" xml:space="preserve">
-    <value>Upload and save</value>
   </data>
   <data name="移除" xml:space="preserve">
     <value>Remove</value>
