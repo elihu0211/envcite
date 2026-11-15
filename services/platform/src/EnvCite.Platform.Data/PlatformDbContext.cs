@@ -54,6 +54,7 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
         builder.Entity<ApplicationUser>(user =>
         {
             user.Property(u => u.DisplayName).HasMaxLength(200);
+            user.Property(u => u.AvatarContentType).HasMaxLength(64);
             user.Property(u => u.Role).HasMaxLength(32).IsRequired();
             user.Property(u => u.ExternalId).HasMaxLength(200);
             user.Property(u => u.ManagedBy).HasMaxLength(32);

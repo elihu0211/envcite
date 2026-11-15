@@ -90,6 +90,8 @@ public static class PortalEndpoints
                 ? Task.FromResult(Results.NotFound())
                 : AppearanceModule.SetAsync(context, antiforgery, preference, SignInRoutes.Portal(tenant.Identifier).SafeReturnUrl)).AllowAnonymous();
 
+        MapAvatarEndpoints(app);
+
         return app;
     }
 
@@ -194,5 +196,71 @@ public static class PortalEndpoints
         return leftPage && back?.StartsWith(PortalPaths.Conversation(tenantIdentifier, id), StringComparison.OrdinalIgnoreCase) == true
             ? routes.Home
             : routes.SafeReturnUrl(back);
+    }
+
+    private static void MapAvatarEndpoints(IEndpointRouteBuilder app)
+    {
+        app.MapGet($"{PortalPaths.Prefix}/{{tenant}}/avatar/{{userId}}", async (
+            HttpContext context, string userId, IPortalAccount account, IPortalProfile profile) =>
+        {
+            if (account.CurrentTenant is null)
+                return Results.NotFound();
+
+            var avatar = await profile.GetAvatarAsync(userId, context.RequestAborted);
+            if (avatar is null)
+                return Results.NotFound();
+
+            var etag = $"\"{avatar.Version}\"";
+            if (context.Request.Headers.IfNoneMatch.Contains(etag, StringComparer.Ordinal))
+                return Results.StatusCode(StatusCodes.Status304NotModified);
+
+            context.Response.Headers.ETag = etag;
+            var requestedVersion = context.Request.Query["v"].ToString();
+            context.Response.Headers.CacheControl = requestedVersion == avatar.Version.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                ? "private, max-age=31536000, immutable"
+                : "private, no-cache";
+
+            return Results.File(avatar.Data, avatar.ContentType);
+        }).RequireAuthorization(PlatformAuth.PortalPolicy);
+
+        app.MapPost($"{PortalPaths.Prefix}/{{tenant}}/settings/avatar", async (
+            HttpContext context, IAntiforgery antiforgery, IPortalAccount account, IPortalProfile profile) =>
+        {
+            if (account.CurrentTenant is not { } tenant)
+                return Results.NotFound();
+
+            if (!await IsAntiforgeryValidAsync(context, antiforgery))
+                return Results.BadRequest();
+
+            var settings = $"{PortalPaths.Home(tenant.Identifier)}/settings";
+            if (!context.Request.HasFormContentType)
+                return Results.Redirect($"{settings}?avatar=invalid");
+
+            var form = await context.Request.ReadFormAsync(context.RequestAborted);
+            var file = form.Files.GetFile("avatar");
+            if (file is null || file.Length == 0)
+                return Results.Redirect($"{settings}?avatar=invalid");
+
+            await using var stream = file.OpenReadStream();
+            var outcome = await profile.UpdateAvatarAsync(context.User, stream, file.Length, context.RequestAborted);
+            var status = outcome.IsOk ? "saved"
+                : outcome.Code == OutcomeCodes.AvatarTooLarge ? "too_large"
+                : "invalid";
+
+            return Results.Redirect($"{settings}?avatar={status}");
+        }).RequireAuthorization(PlatformAuth.PortalPolicy);
+
+        app.MapPost($"{PortalPaths.Prefix}/{{tenant}}/settings/avatar/remove", async (
+            HttpContext context, IAntiforgery antiforgery, IPortalAccount account, IPortalProfile profile) =>
+        {
+            if (account.CurrentTenant is not { } tenant)
+                return Results.NotFound();
+
+            if (!await IsAntiforgeryValidAsync(context, antiforgery))
+                return Results.BadRequest();
+
+            await profile.RemoveAvatarAsync(context.User, context.RequestAborted);
+            return Results.Redirect($"{PortalPaths.Home(tenant.Identifier)}/settings?avatar=removed");
+        }).RequireAuthorization(PlatformAuth.PortalPolicy);
     }
 }

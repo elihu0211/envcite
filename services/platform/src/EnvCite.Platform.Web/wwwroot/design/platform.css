@@ -6417,6 +6417,64 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     background: var(--ep-surface-muted);
 }
 
+.ep-avatar-img {
+    inline-size: 100%;
+    block-size: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+    display: block;
+}
+
+.ep-avatar-lg {
+    inline-size: 3.5rem;
+    block-size: 3.5rem;
+    font-size: var(--ep-title-m-size);
+}
+
+.ep-avatar-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--ep-space-3);
+}
+
+.ep-avatar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+    margin-block-start: var(--ep-space-2);
+}
+
+.ep-avatar-cropper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ep-space-2);
+    padding-block: var(--ep-space-2);
+}
+
+.ep-avatar-cropper[hidden] {
+    display: none;
+}
+
+.ep-avatar-cropper canvas {
+    inline-size: 12rem;
+    block-size: 12rem;
+    border-radius: 9999px;
+    border: 2px solid var(--ep-border-control);
+    cursor: grab;
+    touch-action: none;
+    background: var(--ep-surface);
+}
+
+.ep-avatar-cropper canvas:active {
+    cursor: grabbing;
+}
+
+.ep-avatar-cropper input[type="range"] {
+    inline-size: 12rem;
+}
+
 
 
 

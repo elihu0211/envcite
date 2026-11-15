@@ -55,6 +55,27 @@ internal sealed partial class PortalBrowser : IDisposable
         return response.StatusCode;
     }
 
+    public async Task<(HttpStatusCode Status, string? Location)> SubmitFileAsync(
+        string formPath, string postPath, string fieldName, string fileName, string contentType, byte[] bytes)
+    {
+        var page = await GetAsync(formPath);
+        using var content = new MultipartFormDataContent();
+        foreach (var (key, value) in HiddenFields(page.Html))
+        {
+            content.Add(new StringContent(value), key);
+        }
+
+        var fileContent = new ByteArrayContent(bytes);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        content.Add(fileContent, fieldName, fileName);
+
+        using var response = await _client.PostAsync(new Uri(postPath, UriKind.Relative), content);
+        return (response.StatusCode, Location(response));
+    }
+
+    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request) =>
+        await _client.SendAsync(request);
+
     public void Dispose() => _client.Dispose();
 
     /// <summary>轉址目標一律化成「路徑加查詢」：Blazor 的轉址是絕對網址，端點的轉址是相對路徑，測試只在意去哪一頁。</summary>

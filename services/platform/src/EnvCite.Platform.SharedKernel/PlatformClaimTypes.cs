@@ -26,4 +26,7 @@ public static class PlatformClaimTypes
 
     /// <summary>每個授予的 scope 各一個 claim。</summary>
     public const string Scope = "scope";
+
+    /// <summary>入口成員的大頭貼版本號（大於 0 且有圖時存在），用於組成快取破壞的頭像 URL。</summary>
+    public const string AvatarVersion = "avatar_version";
 }

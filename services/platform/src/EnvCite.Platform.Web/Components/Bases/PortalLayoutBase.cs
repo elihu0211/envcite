@@ -42,6 +42,19 @@ public abstract class PortalLayoutBase : PlatformLayoutBase
         return string.IsNullOrEmpty(name) ? string.Empty : char.ConvertFromUtf32(char.ConvertToUtf32(name, 0)).ToUpperInvariant();
     }
 
+    /// <summary>已上傳大頭貼時的快取 URL；尚未設定則 null（退回首字母）。</summary>
+    protected static string? AvatarUrlOf(ClaimsPrincipal? user, string? tenantIdentifier)
+    {
+        if (string.IsNullOrEmpty(tenantIdentifier) || user?.Identity?.IsAuthenticated != true)
+            return null;
+
+        var userId = user.FindFirst(PlatformClaimTypes.PortalUserId)?.Value;
+        var versionText = user.FindFirst(PlatformClaimTypes.AvatarVersion)?.Value;
+        return !string.IsNullOrEmpty(userId) && int.TryParse(versionText, out var version) && version > 0
+            ? PortalPaths.Avatar(tenantIdentifier, userId, version)
+            : null;
+    }
+
     /// <summary>已登入、而且沒有待辦的強制步驟（改初始密碼、註冊驗證器）才有選單：那兩步只開一頁，其他連結點了也會被導回去。</summary>
     protected static bool CanUseMenu(ClaimsPrincipal? user) =>
         user?.Identity?.IsAuthenticated == true

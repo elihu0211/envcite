@@ -10,6 +10,15 @@ public sealed class ApplicationUser : IdentityUser
 {
     public string? DisplayName { get; set; }
 
+    /// <summary>正規化後的大頭貼影像位元組（256×256 WebP）；未設定則 null（前端降級為首字母）。</summary>
+    public byte[]? AvatarData { get; set; }
+
+    /// <summary>大頭貼 MIME 型別（例如 <c>image/webp</c>）；未設定則 null。</summary>
+    public string? AvatarContentType { get; set; }
+
+    /// <summary>大頭貼版本號：每次上傳或移除遞增，作為圖片 URL 的快取破壞參數與 ETag。</summary>
+    public int AvatarVersion { get; set; }
+
     /// <summary>角色名稱，見 <c>CustomerRoles</c>；進登入 cookie 的 role claim，授權只讀 claim。</summary>
     public string Role { get; set; } = string.Empty;
 

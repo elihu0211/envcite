@@ -799,4 +799,139 @@
             event.preventDefault();
         }
     }, { passive: false });
+
+    // ---- 大頭貼圓形拖曳／縮放裁切（漸進增強；無 JS 時原生 multipart POST 仍由伺服器置中裁切） ----
+    const initAvatarCropper = () => {
+        const form = document.querySelector("[data-avatar-form]");
+        const input = form?.querySelector("[data-avatar-input]");
+        const cropper = form?.querySelector("[data-avatar-cropper]");
+        const canvas = form?.querySelector("[data-avatar-canvas]");
+        const zoomInput = form?.querySelector("[data-avatar-zoom]");
+        if (!form || !input || !cropper || !canvas || !zoomInput) {
+            return;
+        }
+
+        const ctx = canvas.getContext("2d");
+        const size = canvas.width;
+        let loadedImage = null;
+        let scale = 1;
+        let offsetX = 0;
+        let offsetY = 0;
+        let dragging = null;
+
+        const clampOffsets = () => {
+            if (!loadedImage) {
+                return;
+            }
+
+            const base = Math.max(size / loadedImage.naturalWidth, size / loadedImage.naturalHeight);
+            const drawW = loadedImage.naturalWidth * base * scale;
+            const drawH = loadedImage.naturalHeight * base * scale;
+            const maxX = Math.max(0, (drawW - size) / 2);
+            const maxY = Math.max(0, (drawH - size) / 2);
+            offsetX = Math.max(-maxX, Math.min(maxX, offsetX));
+            offsetY = Math.max(-maxY, Math.min(maxY, offsetY));
+        };
+
+        const render = () => {
+            if (!loadedImage || !ctx) {
+                return;
+            }
+
+            clampOffsets();
+            ctx.clearRect(0, 0, size, size);
+            const base = Math.max(size / loadedImage.naturalWidth, size / loadedImage.naturalHeight);
+            const drawW = loadedImage.naturalWidth * base * scale;
+            const drawH = loadedImage.naturalHeight * base * scale;
+            const x = (size - drawW) / 2 + offsetX;
+            const y = (size - drawH) / 2 + offsetY;
+            ctx.drawImage(loadedImage, x, y, drawW, drawH);
+        };
+
+        input.addEventListener("change", () => {
+            const file = input.files?.[0];
+            if (!file) {
+                loadedImage = null;
+                cropper.hidden = true;
+                return;
+            }
+
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                loadedImage = img;
+                scale = 1;
+                offsetX = 0;
+                offsetY = 0;
+                zoomInput.value = "1";
+                cropper.hidden = false;
+                render();
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                loadedImage = null;
+                cropper.hidden = true;
+            };
+            img.src = url;
+        });
+
+        zoomInput.addEventListener("input", () => {
+            scale = Number(zoomInput.value) || 1;
+            render();
+        });
+
+        canvas.addEventListener("pointerdown", (event) => {
+            if (!loadedImage) {
+                return;
+            }
+
+            canvas.setPointerCapture(event.pointerId);
+            dragging = { id: event.pointerId, startX: event.clientX, startY: event.clientY, origX: offsetX, origY: offsetY };
+        });
+
+        canvas.addEventListener("pointermove", (event) => {
+            if (!dragging || event.pointerId !== dragging.id) {
+                return;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            const ratio = rect.width > 0 ? size / rect.width : 1;
+            offsetX = dragging.origX + (event.clientX - dragging.startX) * ratio;
+            offsetY = dragging.origY + (event.clientY - dragging.startY) * ratio;
+            render();
+        });
+
+        const endDrag = (event) => {
+            if (dragging && event.pointerId === dragging.id) {
+                dragging = null;
+            }
+        };
+        canvas.addEventListener("pointerup", endDrag);
+        canvas.addEventListener("pointercancel", endDrag);
+
+        form.addEventListener("submit", async (event) => {
+            if (!loadedImage) {
+                return;
+            }
+
+            event.preventDefault();
+            const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
+            if (!blob) {
+                form.submit();
+                return;
+            }
+
+            const data = new FormData(form);
+            data.set("avatar", blob, "avatar.webp");
+            const response = await fetch(form.action, { method: "POST", body: data });
+            if (response.redirected) {
+                window.location.assign(response.url);
+            } else {
+                window.location.reload();
+            }
+        });
+    };
+
+    initAvatarCropper();
 })();

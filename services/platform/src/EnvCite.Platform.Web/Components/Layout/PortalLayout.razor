@@ -9,6 +9,7 @@
              UserEmail="@Email"
              RoleLabel="@(PortalLabels.Role(_user?.FindFirst(ClaimTypes.Role)?.Value))"
              AvatarText="@AvatarOf(_user)"
+             AvatarUrl="@AvatarUrlOf(_user, Account.CurrentTenant?.Identifier)"
              LogoutAction="@(Authenticated && Account.CurrentTenant is { } current ? $"{PortalPaths.Home(current.Identifier)}/logout" : null)"
              ShowMenu="@ShowMenu"
              MenuItems="@MenuItems"

@@ -11,6 +11,7 @@
              UserEmail="@_user?.FindFirst(ClaimTypes.Email)?.Value"
              RoleLabel="@(PortalLabels.Role(_user?.FindFirst(ClaimTypes.Role)?.Value))"
              AvatarText="@AvatarOf(_user)"
+             AvatarUrl="@AvatarUrlOf(_user, _tenantIdentifier)"
              LogoutAction="@(_home is null ? null : $"{_home}/logout")"
              ShowMenu="@_showMenu"
              MenuItems="@_menuItems"
