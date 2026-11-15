@@ -5472,7 +5472,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     gap: var(--ep-space-4);
 }
 
-.ep-ontology-fieldset {
+.ep-reasoning-fieldset {
     margin: 0;
     padding: var(--ep-space-4);
     border: 1px solid var(--ep-border-subtle);
@@ -5484,7 +5484,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     min-inline-size: 0;
 }
 
-.ep-ontology-legend {
+.ep-reasoning-legend {
     padding-inline: var(--ep-space-2);
     font-size: var(--ep-label-l-size);
     line-height: var(--ep-label-l-leading);
@@ -5520,8 +5520,8 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     gap: var(--ep-space-4);
 }
 
-.ep-ontology-guide,
-.ep-ontology-guide-card {
+.ep-reasoning-guide,
+.ep-reasoning-guide-card {
     padding: var(--ep-space-4);
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-card);
@@ -5531,7 +5531,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     gap: var(--ep-space-3);
 }
 
-.ep-ontology-steps {
+.ep-reasoning-steps {
     margin: 0;
     padding: 0;
     list-style: none;
@@ -5540,7 +5540,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     gap: var(--ep-space-3);
 }
 
-.ep-ontology-step {
+.ep-reasoning-step {
     padding: var(--ep-space-3);
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-control);
@@ -5550,7 +5550,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     gap: var(--ep-space-1);
 }
 
-.ep-ontology-step-title {
+.ep-reasoning-step-title {
     font-size: var(--ep-label-l-size);
     line-height: var(--ep-label-l-leading);
     font-weight: var(--ep-label-l-weight);

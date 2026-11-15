@@ -423,8 +423,8 @@ else
                     </div>
                     <FormAlert Message="@Error" />
                     <PostForm Model="Input" FormName="portal-reasoning" OnValidSubmit="EvaluateAsync">
-                        <fieldset class="ep-ontology-fieldset">
-                            <legend class="ep-ontology-legend">@L["① 時空與時效基準（行政罰法第 5、27 條）"]</legend>
+                        <fieldset class="ep-reasoning-fieldset">
+                            <legend class="ep-reasoning-legend">@L["① 時空與時效基準（行政罰法第 5、27 條）"]</legend>
                             <div class="ep-reasoning-grid">
                                 <FormField For="r-conduct-on" Label="@L["行為日"]" Hint="@L["決定行為時法規範（必填）"]">
                                     <input id="r-conduct-on" name="Input.ConductOn" type="date" class="ep-input" value="@Input.ConductOn" required />
@@ -438,8 +438,8 @@ else
                             </div>
                         </fieldset>
 
-                        <fieldset class="ep-ontology-fieldset">
-                            <legend class="ep-ontology-legend">@L["② 構成要件事實與不法利得（行政罰法第 18 條）"]</legend>
+                        <fieldset class="ep-reasoning-fieldset">
+                            <legend class="ep-reasoning-legend">@L["② 構成要件事實與不法利得（行政罰法第 18 條）"]</legend>
                             <div class="ep-reasoning-grid ep-reasoning-grid-3">
                                 <FormField For="r-pollutant-code" Label="@L["污染物／計量項目"]" Hint="@L["如 cod、bod、sox"]">
                                     <input id="r-pollutant-code" name="Input.PollutantCode" class="ep-input" value="@Input.PollutantCode" />
@@ -537,7 +537,7 @@ else
 
                             @if (result.MissingConcepts is { Count: > 0 })
                             {
-                                <div class="ep-ontology-guide-card">
+                                <div class="ep-reasoning-guide-card">
                                     <h3 class="ep-subpanel-title">@L["待補充要件事實（{0}）", result.MissingConcepts.Count]</h3>
                                     <div class="ep-chip-row">
                                         @foreach (var concept in result.MissingConcepts)
@@ -560,20 +560,20 @@ else
                     }
                     else
                     {
-                        <div class="ep-ontology-guide" role="region" aria-label="@L["台灣法學推論邏輯說明"]">
-                            <h3 class="ep-subpanel-title">@L["本體論合規審查流程"]</h3>
+                        <div class="ep-reasoning-guide" role="region" aria-label="@L["台灣法學推論邏輯說明"]">
+                            <h3 class="ep-subpanel-title">@L["合規審查流程"]</h3>
                             <p class="ep-hint">@L["請於左側選擇情境範本或輸入行為日、裁處日與事實參數，點選「執行推論評估」後，此處將輸出三階審查結論與裁罰區間。"]</p>
-                            <ol class="ep-ontology-steps">
-                                <li class="ep-ontology-step">
-                                    <strong class="ep-ontology-step-title">@L["1. 規範位階與時效鎖定（Stufenbau）"]</strong>
+                            <ol class="ep-reasoning-steps">
+                                <li class="ep-reasoning-step">
+                                    <strong class="ep-reasoning-step-title">@L["1. 規範位階與時效鎖定（Stufenbau）"]</strong>
                                     <span class="ep-hint">@L["依行為日／裁處日比對有效法規版本，排除憲法法庭宣告違憲失效條文，並依行政罰法第 5 條檢視從新從輕比較組。"]</span>
                                 </li>
-                                <li class="ep-ontology-step">
-                                    <strong class="ep-ontology-step-title">@L["2. 行政罰法三階審查（§§7–13）"]</strong>
+                                <li class="ep-reasoning-step">
+                                    <strong class="ep-reasoning-step-title">@L["2. 行政罰法三階審查（§§7–13）"]</strong>
                                     <span class="ep-hint">@L["依序檢驗「構成要件該當性 → 違法性（阻卻違法事由）→ 有責性（故意過失與責任能力）」，明確區分候選裁處與缺漏要件。"]</span>
                                 </li>
-                                <li class="ep-ontology-step">
-                                    <strong class="ep-ontology-step-title">@L["3. 競合、不法利得與裁罰矩陣（§§18, 24, 26）"]</strong>
+                                <li class="ep-reasoning-step">
+                                    <strong class="ep-reasoning-step-title">@L["3. 競合、不法利得與裁罰矩陣（§§18, 24, 26）"]</strong>
                                     <span class="ep-hint">@L["整合一行為不二罰（從一重處斷）、刑罰優先原則及環境法規裁罰矩陣，試算建議罰鍰區間與環境講習時數。"]</span>
                                 </li>
                             </ol>
