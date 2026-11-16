@@ -161,11 +161,11 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 
 ## 有依據的回答與對話紀錄
 
-### 工作流節點（`GroundedAnswerer`，Microsoft Agent Framework 圖式 workflow）
+### 回答管線（`GroundedAnswerer`）
 
-固定四節點線性流程：`rewrite`（有前文時改寫追問為獨立問句）→ `ground`（向 `consult` 取封閉證據集）→ `write`（單次 `IChatClient`，溫度 0）→ `verify`（強制檢查至少一個有效引用代號，否則丟棄作廢）。
+固定四步線性流程：以直接循序 `await` 執行 `rewrite`（有前文時改寫追問為獨立問句）→ `ground`（向 `consult` 取封閉證據集）→ `write`（單次 `IChatClient`，溫度 0）→ `verify`（強制檢查至少一個有效引用代號，否則丟棄作廢）。
 
-- **節點規矩**：預期失敗轉結果代碼、取消與未預期錯誤照常拋出；已有結論之 `AnswerTurn.Done` 透傳後續節點；每次請求現建節點；不串流輸出（須整段核驗後呈現），進度經 `IProgress<AnswerProgress>` 回報（不含問題與證據）。僅採用框架穩定 API。
+- **步驟規矩**：預期失敗轉結果代碼、取消與未預期錯誤照常拋出；`ground` 若已有結論（`AnswerTurn.Done`）即跳過 `write` 與 `verify`；不串流輸出（須整段核驗後呈現），進度經 `IProgress<AnswerProgress>` 回報（不含問題與證據）。
 - **主題詞偵測（`BareTopic`）**：與搜尋端共用 `LawSearchOptions.Shape` 判準（非問句、無句末標點、無疑問詞），命中時取證據仍用原詞，送模型改用寬鬆任務句避免誤拒答。
 - **拒答原因區分**：`consult` 無命中回 `no_authority`；`consult` 有法源但模型回證據不足為 `insufficient_evidence`（仍帶 `Sources` 供介面列出）；核驗作廢不帶法源。
 
