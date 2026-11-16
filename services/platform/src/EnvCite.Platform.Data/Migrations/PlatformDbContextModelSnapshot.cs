@@ -297,7 +297,6 @@ namespace EnvCite.Platform.Data.Migrations
                         .HasColumnType("character varying(10)");
 
                     b.Property<string>("Content")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("ConversationId")
@@ -305,6 +304,9 @@ namespace EnvCite.Platform.Data.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Document")
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Outcome")
                         .HasMaxLength(16)
@@ -314,6 +316,9 @@ namespace EnvCite.Platform.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
+
+                    b.Property<short?>("SchemaVersion")
+                        .HasColumnType("smallint");
 
                     b.Property<string>("TenantId")
                         .IsRequired()

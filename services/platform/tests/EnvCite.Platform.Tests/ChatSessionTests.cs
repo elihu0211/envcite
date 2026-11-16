@@ -45,13 +45,15 @@ public sealed class ChatSessionTests
 
         var turn = Assert.Single(session.Turns);
         Assert.Equal(("露天燃燒如何處罰", "現行", TurnState.Answered), (turn.Question, turn.AsOfLabel, turn.State));
-        Assert.Equal("答 [L1]", turn.Answer!.Text);
+        Assert.Equal(FakeAsk.SampleDocument, turn.Answer!.Document);
+        Assert.Equal(FakeAsk.SampleDocument, turn.Document);
         Assert.Equal([("露天燃燒如何處罰", (string?)null)], ask.Asked);
         var recorded = Assert.Single(ask.Recorded);
         Assert.Null(recorded.Conversation);
         Assert.Equal("露天燃燒如何處罰", recorded.Question);
-        // 正文與引用分開存：引用是結構化的（代號、法規名、網址），不存條文全文。
-        Assert.Equal("答 [L1]", recorded.Answer);
+        // 強型別文件與引用分開存：引用是結構化的（代號、法規名、網址），不存條文全文。
+        Assert.Equal(FakeAsk.SampleDocument, recorded.Document);
+        Assert.Null(recorded.Text);
         Assert.Equal(ConversationOutcome.Answered, recorded.Turn.Outcome);
         Assert.Equal(new ConversationCitation("L1", "空氣污染防制法 第 32 條", "https://example.test/law/32"), Assert.Single(recorded.Turn.Citations));
         Assert.Equal(ask.RecordedAs, session.ConversationId);
@@ -79,6 +81,7 @@ public sealed class ChatSessionTests
     [InlineData("local_law_uncovered", "這個問題問的是地方自治法規，而這裡只涵蓋中央法規，所以沒有回答。請向該地方政府查詢。")]
     [InlineData("missing_input", "問題不夠具體，請補充後再問。")]
     [InlineData("unverified_citation", "系統產生的回答無法對應到法條出處，已捨棄，沒有顯示。請換個說法再問一次。")]
+    [InlineData("invalid_structure", "系統產生的回答格式不符合規格，已捨棄，沒有顯示。請換個說法再問一次。")]
     [InlineData("empty_answer", "這次沒有產生可以對應到法條出處的回答。請換個說法再問一次。")]
     public async Task ARefusalExplainsWhyThereIsNoAnswerAndIsWhatGetsRecorded(string reason, string label)
     {
@@ -93,7 +96,8 @@ public sealed class ChatSessionTests
         Assert.Equal(TurnState.Refused, turn.State);
         Assert.Equal(label, session.RefusalLabel(reason));
         var recorded = Assert.Single(ask.Recorded);
-        Assert.Equal($"（拒答）{label}", recorded.Answer);
+        Assert.Equal($"（拒答）{label}", recorded.Text);
+        Assert.Null(recorded.Document);
         Assert.Equal(ConversationOutcome.Refused, recorded.Turn.Outcome);
         Assert.Empty(recorded.Turn.Citations);
     }
@@ -132,7 +136,7 @@ public sealed class ChatSessionTests
         Assert.Equal((TurnState.Listed, 2), (turn.State, turn.Hits!.Count));
         Assert.Equal(
             "《噪音管制法》第 9 條（現行） https://example.test/9\n《空氣污染防制法》第 5-1 條（現行） https://example.test/5-1",
-            Assert.Single(ask.Recorded).Answer); // 只有出處，沒有條文全文
+            Assert.Single(ask.Recorded).Text); // 只有出處，沒有條文全文
     }
 
     [Fact]
@@ -143,7 +147,7 @@ public sealed class ChatSessionTests
         await session.AskAsync(User, "查無此詞", null, Ct);
 
         Assert.Equal(TurnState.Listed, session.Turns[0].State);
-        Assert.Equal("沒有符合的條文。", Assert.Single(ask.Recorded).Answer);
+        Assert.Equal("沒有符合的條文。", Assert.Single(ask.Recorded).Text);
     }
 
     // 輸入錯誤與服務不可用：回合留著、說明原因、不記進歷史；兩種模式說的話不同（問題 vs 關鍵字）。
@@ -289,14 +293,15 @@ public sealed class ChatSessionTests
     {
         var id = Guid.NewGuid();
         var at = DateTimeOffset.UtcNow;
+        var doc = new AnswerDocument([new ProseBlock(null, "答", ["L1"])]);
         var (session, _, _) = await ReadyAsync(new FakeAsk
         {
             Detail = new ConversationDetail(id, "第一題", at,
             [
-                new ConversationMessageView("user", "第一題", at),
-                new ConversationMessageView("assistant", "答\n[L1] 出處 https://x", at),
-                new ConversationMessageView("user", "第二題", at),
-                new ConversationMessageView("assistant", "（拒答）原因", at),
+                new ConversationMessageView("user", at, Content: "第一題"),
+                new ConversationMessageView("assistant", at, Document: doc, Citations: [new ConversationCitation("L1", "出處", "https://x")], Outcome: ConversationOutcome.Answered),
+                new ConversationMessageView("user", at, Content: "第二題"),
+                new ConversationMessageView("assistant", at, Content: "（拒答）原因", Outcome: ConversationOutcome.Refused),
             ]),
         });
         await session.AskAsync(User, "舊的，要被換掉", null, Ct);
@@ -306,41 +311,41 @@ public sealed class ChatSessionTests
         Assert.True(found);
         Assert.Equal(id, session.ConversationId);
         Assert.Equal(["第一題", "第二題"], session.Turns.Select(t => t.Question));
-        Assert.Equal(["答\n[L1] 出處 https://x", "（拒答）原因"], session.Turns.Select(t => t.StoredAnswer));
-        Assert.All(session.Turns, t => Assert.Equal(TurnState.Answered, t.State));
-        Assert.All(session.Turns, t => Assert.Null(t.AsOfLabel));
+        Assert.Equal([TurnState.Answered, TurnState.Refused], session.Turns.Select(t => t.State));
+        Assert.Equal(doc, session.Turns[0].Document);
+        Assert.Equal("（拒答）原因", session.Turns[1].StoredText);
+        Assert.All(session.Turns, t => Assert.Equal("現行", t.AsOfLabel));
     }
 
-    // 側欄點進去接續：問題的日期、引用與「可以當前文」的回答都從存下來的結構重建，下一題帶著它們問。
+    // 側欄點進去接續：問題的日期、引用與「可以當前文」的回答都從存下來的強型別結構重建，下一題帶著它們問。
     [Fact]
     public async Task OpeningAStoredConversationRestoresItsDatesAndCitationsAndItsMemoryForTheNextQuestion()
     {
         var id = Guid.NewGuid();
         var at = DateTimeOffset.UtcNow;
+        var doc = new AnswerDocument([new ProseBlock(null, "不得露天燃燒。", ["L1"])]);
         var citation = new ConversationCitation("L1", "空氣污染防制法 第 32 條", "https://example.test/law/32");
         var (session, ask, _) = await ReadyAsync(new FakeAsk
         {
             Detail = new ConversationDetail(id, "露天燃燒如何處罰", at,
             [
-                new ConversationMessageView("user", "露天燃燒如何處罰", at, AsOf: "2021-01-01"),
-                new ConversationMessageView("assistant", "不得露天燃燒 [L1]。", at, [citation], Outcome: ConversationOutcome.Answered),
-                new ConversationMessageView("user", "怎麼辦", at),
-                new ConversationMessageView("assistant", "（拒答）原因", at, Outcome: ConversationOutcome.Refused),
+                new ConversationMessageView("user", at, Content: "露天燃燒如何處罰", AsOf: "2021-01-01"),
+                new ConversationMessageView("assistant", at, Document: doc, Citations: [citation], Outcome: ConversationOutcome.Answered),
+                new ConversationMessageView("user", at, Content: "怎麼辦"),
+                new ConversationMessageView("assistant", at, Content: "（拒答）原因", Outcome: ConversationOutcome.Refused),
             ]),
         });
 
         Assert.True(await session.OpenAsync(User, id, Ct));
 
         Assert.Equal(["2021-01-01 有效", "現行"], session.Turns.Select(t => t.AsOfLabel));
-        Assert.Equal(
-            "不得露天燃燒 [L1]。\n[L1] 空氣污染防制法 第 32 條（2021-01-01 有效） https://example.test/law/32",
-            session.Turns[0].StoredAnswer);
+        Assert.Equal(doc, session.Turns[0].Document);
 
         await session.AskAsync(User, "那罰款多少", null, Ct);
 
         // 回答的代號換成法規名；拒答的只留問題（說明文字不是答案）。
         Assert.Equal(
-            [("user", "露天燃燒如何處罰"), ("assistant", "不得露天燃燒 （空氣污染防制法 第 32 條）。"), ("user", "怎麼辦")],
+            [("user", "露天燃燒如何處罰"), ("assistant", "不得露天燃燒。 （空氣污染防制法 第 32 條）"), ("user", "怎麼辦")],
             Assert.Single(ask.Histories).Select(m => (m.Role.Value, m.Text)));
         Assert.Equal(id, ask.Recorded[0].Conversation); // 接在同一串後面
     }
@@ -355,7 +360,7 @@ public sealed class ChatSessionTests
         await session.AskAsync(User, "第二題", null, Ct);
         ask.Result = new AskResult(AskMode.Answer, AskStatus.Unavailable);
         await session.AskAsync(User, "壞掉的一題", null, Ct);
-        ask.Result = new AskResult(AskMode.Answer, AskStatus.Ok, Answer: new GroundedAnswer("再答 [L1]", [FakeAsk.Source]));
+        ask.Result = new AskResult(AskMode.Answer, AskStatus.Ok, Answer: new GroundedAnswer(new AnswerDocument([new ProseBlock(null, "再答", ["L1"])]), [FakeAsk.Source]));
         await session.AskAsync(User, "第四題", null, Ct);
 
         Assert.Empty(ask.Histories[0]);
@@ -413,9 +418,10 @@ public sealed class ChatSessionTests
         var at = DateTimeOffset.UtcNow;
         var detail = new ConversationDetail(id, "預先渲染標題", at,
         [
-            new ConversationMessageView("user", "既有問題", at, AsOf: "2024-01-01"),
-            new ConversationMessageView("assistant", "既有回答 [L1]。", at,
-                [new ConversationCitation("L1", "水污染防制法 第 7 條", "https://example.test/law/7")],
+            new ConversationMessageView("user", at, Content: "既有問題", AsOf: "2024-01-01"),
+            new ConversationMessageView("assistant", at,
+                Document: new AnswerDocument([new ProseBlock(null, "既有回答。", ["L1"])]),
+                Citations: [new ConversationCitation("L1", "水污染防制法 第 7 條", "https://example.test/law/7")],
                 Outcome: ConversationOutcome.Answered),
         ]);
         var (session, _, _) = Create();
@@ -435,5 +441,26 @@ public sealed class ChatSessionTests
         Assert.Null(session.ConversationId);
         Assert.Null(session.LoadedDetail);
         Assert.Empty(session.Turns);
+    }
+
+    [Fact]
+    public async Task AStoredAnsweredTurnWithoutADocumentBecomesFailedInsteadOfPendingForever()
+    {
+        var id = Guid.NewGuid();
+        var at = DateTimeOffset.UtcNow;
+        var (session, _, _) = await ReadyAsync(new FakeAsk
+        {
+            Detail = new ConversationDetail(id, "損毀的紀錄", at,
+            [
+                new ConversationMessageView("user", at, Content: "既有問題"),
+                new ConversationMessageView("assistant", at, Document: null, Outcome: ConversationOutcome.Answered),
+            ]),
+        });
+
+        Assert.True(await session.OpenAsync(User, id, Ct));
+
+        var turn = Assert.Single(session.Turns);
+        Assert.Equal(TurnState.Failed, turn.State);
+        Assert.Equal("無法載入這則回答的內容。", turn.Error);
     }
 }

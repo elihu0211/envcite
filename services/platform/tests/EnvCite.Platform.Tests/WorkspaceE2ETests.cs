@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using EnvCite.Platform.Modules.Tenancy;
 
 using Microsoft.AspNetCore.Hosting.Server;
@@ -24,10 +26,13 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
         Assert.SkipWhen(E2EToolchain.Skipped, "ENVCITE_SKIP_E2E=1");
         await E2EToolchain.EnsureAsync(Ct);
 
-        // 有前文的提問會先請模型改寫成獨立的問句：改寫那一次回原問題（它已經完整），作答那一次回有引用的答案。
+        // 有前文的提問會先請模型改寫成獨立的問句：改寫那一次回原問題（它已經完整），作答那一次回強型別結構化答案。
+        var structuredAnswer = JsonSerializer.Serialize(
+            new ModelAnswerOutput(false, [new ProseBlock(null, "在指定清除地區內不得燃燒。", ["L1"])]),
+            AnswerJson.Options);
         var chat = new FakeChat(messages => messages[0].Text.Contains("查詢改寫器", StringComparison.Ordinal)
             ? FakeConsultServer.AnswerableQuestion
-            : "在指定清除地區內不得燃燒 [L1]。");
+            : structuredAnswer);
         using var host = factory.WithWebHostBuilder(b =>
         {
             b.UseSetting("Platform:Answer:Enabled", consent ? "true" : "false")

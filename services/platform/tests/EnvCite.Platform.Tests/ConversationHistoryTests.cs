@@ -54,10 +54,10 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
     private static bool HasLink(string html, string cssClass, string path) =>
         Regex.IsMatch(html, $"<a[^>]*class=\"[^\"]*{cssClass}[^\"]*\"[^>]*href=\"{Regex.Escape(path)}\"|<a[^>]*href=\"{Regex.Escape(path)}\"[^>]*class=\"[^\"]*{cssClass}[^\"]*\"");
 
-    /// <summary>訊息的內容、順序、引用與問的日期：分叉要原樣複製的全部。</summary>
+    /// <summary>訊息的內容、強型別文件、順序、引用與問的日期：分叉要原樣複製的全部。</summary>
     private static string Shape(ConversationDetail detail) =>
         string.Join("|", detail.Messages.Select(m =>
-            $"{m.Role}:{m.Content}:{m.AsOf}:{m.Outcome}:{string.Join(",", (m.Citations ?? []).Select(c => $"{c.Code}={c.Label}={c.Uri}"))}"));
+            $"{m.Role}:{m.Content}:{(m.Document is null ? string.Empty : JsonSerializer.Serialize(m.Document, AnswerJson.Options))}:{m.AsOf}:{m.Outcome}:{string.Join(",", (m.Citations ?? []).Select(c => $"{c.Code}={c.Label}={c.Uri}"))}"));
 
     private static Guid ForkedIdOf(string? location) =>
         Guid.Parse(Regex.Match(location ?? string.Empty, "/c/([0-9a-fA-F-]{36})").Groups[1].Value);
@@ -403,9 +403,10 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         using var b = browser;
         var t = tenant.Identifier;
         var citation = new ConversationCitation("L1", "空氣污染防制法 第 32 條", "https://envcite/tw/law/O0020001/2018-08-01/zho/art_32");
-        var source = (await RecordTurnAsync(host, alice, null, new ConversationTurn(Question, "不得燃燒 [L1]。", ConversationOutcome.Answered, [citation], "2024-01-01")))!.Value;
+        var doc = new AnswerDocument([new ProseBlock(null, "不得燃燒。", ["L1"])]);
+        var source = (await RecordTurnAsync(host, alice, null, new ConversationTurn(Question, ConversationOutcome.Answered, [citation], Document: doc, AsOf: "2024-01-01")))!.Value;
         factory.Time.Advance(TimeSpan.FromMinutes(1)); // 測試的時鐘是凍結的：兩輪同一刻，讀回來的先後就不確定
-        await RecordTurnAsync(host, alice, source, new ConversationTurn("那罰款多少", "找不到依據。", ConversationOutcome.Refused, []));
+        await RecordTurnAsync(host, alice, source, new ConversationTurn("那罰款多少", ConversationOutcome.Refused, [], Text: "找不到依據。"));
         await PinAsync(browser, t, source, pinned: true);
         var original = (await OpenAsync(host, alice, source))!;
 
@@ -514,21 +515,26 @@ public sealed class ConversationHistoryTests(PlatformFactory factory)
         var (browser, alice) = await SignedInAsync(host, tenant, CustomerRoles.Developer);
         using var b = browser;
         var citation = new ConversationCitation("L1", "空氣污染防制法 第 5-1 條", "https://example.test/law/5-1");
+        var doc = new AnswerDocument([new ProseBlock(null, "不得露天燃燒。", ["L1"])]);
 
         var id = (await host.Services.GetRequiredService<IAskService>().RecordAsync(
-            alice, null, new ConversationTurn(Question, "不得露天燃燒 [L1]。", ConversationOutcome.Answered, [citation], "2021-01-01"), Ct))!.Value;
+            alice, null, new ConversationTurn(Question, ConversationOutcome.Answered, [citation], Document: doc, AsOf: "2021-01-01"), Ct))!.Value;
 
         var detail = (await OpenAsync(host, alice, id))!;
         Assert.Equal("2021-01-01", detail.Messages[0].AsOf);
-        Assert.Equal(("不得露天燃燒 [L1]。", ConversationOutcome.Answered), (detail.Messages[1].Content, detail.Messages[1].Outcome));
+        Assert.Null(detail.Messages[1].Content);
+        Assert.Equal(ConversationOutcome.Answered, detail.Messages[1].Outcome);
+        var storedProse = Assert.IsType<ProseBlock>(Assert.Single(detail.Messages[1].Document!.Blocks));
+        Assert.Equal("不得露天燃燒。", storedProse.Text);
+        Assert.Equal(["L1"], storedProse.CitationCodes);
         Assert.Equal(citation, Assert.Single(detail.Messages[1].Citations!));
 
         var opened = await browser.GetAsync(ConversationPage(tenant.Identifier, id));
-        // 正文裡的 [L1] 已由排版引擎轉成可點擊徽章（<button class="ep-cite-inline">[L1]</button>），純文字還原應一致。
         var plainText = System.Text.RegularExpressions.Regex.Replace(opened.Html, "<[^>]+>", string.Empty);
-        Assert.Contains("不得露天燃燒 [L1]。", plainText, StringComparison.Ordinal);
+        Assert.Contains("不得露天燃燒。", plainText, StringComparison.Ordinal);
+        Assert.Contains("2021-01-01 有效", plainText, StringComparison.Ordinal);
+        Assert.Contains("空氣污染防制法 第 5-1 條", plainText, StringComparison.Ordinal);
         Assert.Contains("ep-cite-inline", opened.Html, StringComparison.Ordinal);
-        Assert.Contains("[L1] 空氣污染防制法 第 5-1 條（2021-01-01 有效） https://example.test/law/5-1", opened.Html, StringComparison.Ordinal);
     }
 
     [Fact]
