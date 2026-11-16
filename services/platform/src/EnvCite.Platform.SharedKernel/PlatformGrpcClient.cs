@@ -4,6 +4,8 @@ using EnvCite.ServiceDefaults;
 
 using Finbuckle.MultiTenant.Abstractions;
 
+using Grpc.Core;
+
 namespace EnvCite.Platform.SharedKernel;
 
 public static class PlatformGrpcClient
@@ -30,5 +32,34 @@ public static class PlatformGrpcClient
                 return Task.CompletedTask;
             });
         return services;
+    }
+
+    /// <summary>統一將上游 gRPC 的 <see cref="RpcException"/> 對映為 <see cref="AdminOutcome{T}"/>。</summary>
+    public static Task<AdminOutcome<T>> CallAsync<T>(string unavailableCode, Func<Task<T>> call) =>
+        CallAsync(unavailableCode, unavailableCode, call);
+
+    /// <summary>統一將上游 gRPC 的 <see cref="RpcException"/> 對映為 <see cref="AdminOutcome{T}"/>（可區分容量用盡代碼）。</summary>
+    public static async Task<AdminOutcome<T>> CallAsync<T>(string unavailableCode, string exhaustedCode, Func<Task<T>> call)
+    {
+        try
+        {
+            return AdminOutcome.Ok(await call());
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.NotFound)
+        {
+            return AdminOutcome.NotFound<T>(OutcomeCodes.LawNotFound);
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
+        {
+            return AdminOutcome.Invalid<T>(OutcomeCodes.UpstreamInvalidRequest, ex.Status.Detail);
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.ResourceExhausted)
+        {
+            return AdminOutcome.Unavailable<T>(exhaustedCode);
+        }
+        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable or StatusCode.DeadlineExceeded)
+        {
+            return AdminOutcome.Unavailable<T>(unavailableCode);
+        }
     }
 }

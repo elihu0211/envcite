@@ -1,7 +1,5 @@
 using EnvCite.Consult.V3;
 
-using Grpc.Core;
-
 namespace EnvCite.Platform.Modules.Consult;
 
 /// <summary>
@@ -11,23 +9,9 @@ namespace EnvCite.Platform.Modules.Consult;
 /// </summary>
 internal sealed class ConsultGateway(ConsultationService.ConsultationServiceClient consult)
 {
-    public async Task<AdminOutcome<GroundResponse>> GroundAsync(string? question, string? asOf, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return AdminOutcome.Ok(await consult.GroundAsync(
+    public Task<AdminOutcome<GroundResponse>> GroundAsync(string? question, string? asOf, CancellationToken cancellationToken) =>
+        PlatformGrpcClient.CallAsync(OutcomeCodes.ConsultUnavailable, () =>
+            consult.GroundAsync(
                 new GroundRequest { Question = question ?? string.Empty, AsOf = asOf ?? string.Empty },
-                cancellationToken: cancellationToken));
-        }
-        catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
-        {
-            return AdminOutcome.Invalid<GroundResponse>(OutcomeCodes.UpstreamInvalidRequest, ex.Status.Detail);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable
-            or StatusCode.DeadlineExceeded
-            or StatusCode.ResourceExhausted)
-        {
-            return AdminOutcome.Unavailable<GroundResponse>(OutcomeCodes.ConsultUnavailable);
-        }
-    }
+                cancellationToken: cancellationToken).ResponseAsync);
 }

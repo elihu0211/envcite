@@ -247,30 +247,8 @@ internal sealed class CanonGateway(
     private static LawIdentifier IdentifierOf(string? jurisdiction, string? idScheme, string? localId) =>
         new() { Jurisdiction = jurisdiction ?? string.Empty, IdScheme = idScheme ?? string.Empty, LocalId = localId ?? string.Empty };
 
-    private static async Task<AdminOutcome<T>> CallAsync<T>(string exhaustedCode, Func<Task<T>> call)
-    {
-        try
-        {
-            return AdminOutcome.Ok(await call());
-        }
-        catch (RpcException ex) when (ex.StatusCode == StatusCode.NotFound)
-        {
-            return AdminOutcome.NotFound<T>(OutcomeCodes.LawNotFound);
-        }
-        catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
-        {
-            return AdminOutcome.Invalid<T>(OutcomeCodes.UpstreamInvalidRequest, ex.Status.Detail);
-        }
-        catch (RpcException ex) when (ex.StatusCode == StatusCode.ResourceExhausted)
-        {
-            // 容量用盡：立即失敗而不是排隊，呼叫端稍後重試（唯讀、確定性，重試安全）。
-            return AdminOutcome.Unavailable<T>(exhaustedCode);
-        }
-        catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable or StatusCode.DeadlineExceeded)
-        {
-            return AdminOutcome.Unavailable<T>(OutcomeCodes.CanonUnavailable);
-        }
-    }
+    private static Task<AdminOutcome<T>> CallAsync<T>(string exhaustedCode, Func<Task<T>> call) =>
+        PlatformGrpcClient.CallAsync(OutcomeCodes.CanonUnavailable, exhaustedCode, call);
 }
 
 internal sealed record LawSummaryDto(
