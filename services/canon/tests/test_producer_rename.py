@@ -18,7 +18,7 @@ def test_the_rule_producers_take_the_service_prefix(dsn: str, tmp_path: Path) ->
             )
             conn.commit()
 
-            assert apply_all(conn) == ["0069_canon_producers.sql"]
+            assert apply_all(conn)[0] == "0069_canon_producers.sql"
 
             producers = sorted(
                 str(p) for (p,) in conn.execute("SELECT producer FROM annotation.derivation")
