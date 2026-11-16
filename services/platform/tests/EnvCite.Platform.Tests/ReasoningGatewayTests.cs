@@ -101,6 +101,11 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal([7L], guidance.StatementIds);
         Assert.Equal("行政院公報第26卷", guidance.PublishedIn);
         Assert.Null(guidance.SourceUrl); // 空字串 = 沒有，不是空網址
+        var decision = Assert.Single(outcome.CourtDecisions!);
+        Assert.Equal(("TPAA,110,上,1,20210101,1", "2021-01-01", CourtInstanceDto.Supreme, CourtDecisionKindDto.Ordinary),
+            (decision.Jid, decision.DecidedOn, decision.Instance, decision.Kind));
+        Assert.Equal([7L], decision.StatementIds);
+        Assert.Null(decision.SourceUrl);
         Assert.Equal("2020-01-01", result.Earlier[0].FirstDay);
         var earlier = result.Earlier[0].Outcome; // 空的結果：清單是空的，不是 null
         Assert.Empty(earlier.Invalidated);

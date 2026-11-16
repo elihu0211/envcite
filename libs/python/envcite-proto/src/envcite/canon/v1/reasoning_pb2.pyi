@@ -372,6 +372,52 @@ GUIDANCE_KIND_OPERATIONAL: GuidanceKind.ValueType  # 3
 """組織性、作業性規定（同項第 1 款）。"""
 Global___GuidanceKind: _TypeAlias = GuidanceKind  # noqa: Y015
 
+class _CourtInstance:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _CourtInstanceEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_CourtInstance.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    COURT_INSTANCE_UNSPECIFIED: _CourtInstance.ValueType  # 0
+    COURT_INSTANCE_SUPREME: _CourtInstance.ValueType  # 1
+    """最高行政法院。"""
+    COURT_INSTANCE_HIGH: _CourtInstance.ValueType  # 2
+    """高等行政法院。"""
+    COURT_INSTANCE_DISTRICT: _CourtInstance.ValueType  # 3
+    """地方行政法院。"""
+
+class CourtInstance(_CourtInstance, metaclass=_CourtInstanceEnumTypeWrapper): ...
+
+COURT_INSTANCE_UNSPECIFIED: CourtInstance.ValueType  # 0
+COURT_INSTANCE_SUPREME: CourtInstance.ValueType  # 1
+"""最高行政法院。"""
+COURT_INSTANCE_HIGH: CourtInstance.ValueType  # 2
+"""高等行政法院。"""
+COURT_INSTANCE_DISTRICT: CourtInstance.ValueType  # 3
+"""地方行政法院。"""
+Global___CourtInstance: _TypeAlias = CourtInstance  # noqa: Y015
+
+class _CourtDecisionKind:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _CourtDecisionKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_CourtDecisionKind.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    COURT_DECISION_KIND_UNSPECIFIED: _CourtDecisionKind.ValueType  # 0
+    COURT_DECISION_KIND_ORDINARY: _CourtDecisionKind.ValueType  # 1
+    """一般判決與裁定。"""
+    COURT_DECISION_KIND_GRAND_CHAMBER: _CourtDecisionKind.ValueType  # 2
+    """最高行政法院大法庭裁定。只拘束提案庭於該案，這裡仍只是解釋依據。"""
+
+class CourtDecisionKind(_CourtDecisionKind, metaclass=_CourtDecisionKindEnumTypeWrapper): ...
+
+COURT_DECISION_KIND_UNSPECIFIED: CourtDecisionKind.ValueType  # 0
+COURT_DECISION_KIND_ORDINARY: CourtDecisionKind.ValueType  # 1
+"""一般判決與裁定。"""
+COURT_DECISION_KIND_GRAND_CHAMBER: CourtDecisionKind.ValueType  # 2
+"""最高行政法院大法庭裁定。只拘束提案庭於該案，這裡仍只是解釋依據。"""
+Global___CourtDecisionKind: _TypeAlias = CourtDecisionKind  # noqa: Y015
+
 class _ProblemKind:
     ValueType = _typing.NewType("ValueType", _builtins.int)
     V: _TypeAlias = ValueType  # noqa: Y015
@@ -1510,6 +1556,7 @@ class Outcome(_message.Message):
     MUTATIS_APPLIED_FIELD_NUMBER: _builtins.int
     SCORING_RESULTS_FIELD_NUMBER: _builtins.int
     DISPOSITION_AUDIT_FIELD_NUMBER: _builtins.int
+    COURT_DECISIONS_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def verdicts(self) -> _containers.RepeatedCompositeFieldContainer[Global___StatementVerdict]: ...
     @_builtins.property
@@ -1628,6 +1675,13 @@ class Outcome(_message.Message):
     def disposition_audit(self) -> Global___DispositionAuditResult:
         """裁罰處分書要件與引用完備性檢核結果（CQ D1–D3）。"""
 
+    @_builtins.property
+    def court_decisions(self) -> _containers.RepeatedCompositeFieldContainer[Global___CourtDecision]:
+        """行政法院對本結果所依條文的裁判。個別案件的拘束（行政訴訟法第 216 條），不是通案規則，
+        所以不參與推論，只附在結果旁。以裁處日不早於裁判日、且錨點正是陳述所讀的那段文字來篩；
+        全文不在此。
+        """
+
     def __init__(
         self,
         *,
@@ -1658,10 +1712,11 @@ class Outcome(_message.Message):
         mutatis_applied: _abc.Iterable[Global___StatementPair] | None = ...,
         scoring_results: _abc.Iterable[Global___ScoringResult] | None = ...,
         disposition_audit: Global___DispositionAuditResult | None = ...,
+        court_decisions: _abc.Iterable[Global___CourtDecision] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["_disposition_audit", b"_disposition_audit", "_one_act", b"_one_act", "disposition_audit", b"disposition_audit", "general", b"general", "one_act", b"one_act"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["_disposition_audit", b"_disposition_audit", "_one_act", b"_one_act", "assessment_used", b"assessment_used", "defeated", b"defeated", "definitions_used", b"definitions_used", "delegation_bases", b"delegation_bases", "disposition_audit", b"disposition_audit", "general", b"general", "guidance", b"guidance", "invalidated", b"invalidated", "limit_sources", b"limit_sources", "missing", b"missing", "missing_permit_limits", b"missing_permit_limits", "mutatis_applied", b"mutatis_applied", "needs_assessment", b"needs_assessment", "one_act", b"one_act", "one_act_groups", b"one_act_groups", "penalties", b"penalties", "penalty_defeated", b"penalty_defeated", "problems", b"problems", "same_kind_non_fine_overlaps", b"same_kind_non_fine_overlaps", "scoring_results", b"scoring_results", "sources", b"sources", "subject_mismatch", b"subject_mismatch", "trace", b"trace", "uncovered_law_identifiers", b"uncovered_law_identifiers", "unresolved_conflicts", b"unresolved_conflicts", "unresolved_penalty_overlaps", b"unresolved_penalty_overlaps", "verdicts", b"verdicts"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_disposition_audit", b"_disposition_audit", "_one_act", b"_one_act", "assessment_used", b"assessment_used", "court_decisions", b"court_decisions", "defeated", b"defeated", "definitions_used", b"definitions_used", "delegation_bases", b"delegation_bases", "disposition_audit", b"disposition_audit", "general", b"general", "guidance", b"guidance", "invalidated", b"invalidated", "limit_sources", b"limit_sources", "missing", b"missing", "missing_permit_limits", b"missing_permit_limits", "mutatis_applied", b"mutatis_applied", "needs_assessment", b"needs_assessment", "one_act", b"one_act", "one_act_groups", b"one_act_groups", "penalties", b"penalties", "penalty_defeated", b"penalty_defeated", "problems", b"problems", "same_kind_non_fine_overlaps", b"same_kind_non_fine_overlaps", "scoring_results", b"scoring_results", "sources", b"sources", "subject_mismatch", b"subject_mismatch", "trace", b"trace", "uncovered_law_identifiers", b"uncovered_law_identifiers", "unresolved_conflicts", b"unresolved_conflicts", "unresolved_penalty_overlaps", b"unresolved_penalty_overlaps", "verdicts", b"verdicts"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     _WhichOneofReturnType__disposition_audit: _TypeAlias = _typing.Literal["disposition_audit"]  # noqa: Y015
     _WhichOneofArgType__disposition_audit: _TypeAlias = _typing.Literal["_disposition_audit", b"_disposition_audit"]  # noqa: Y015
@@ -1827,6 +1882,50 @@ class Guidance(_message.Message):
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___Guidance: _TypeAlias = Guidance  # noqa: Y015
+
+@_typing.final
+class CourtDecision(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    JID_FIELD_NUMBER: _builtins.int
+    DECIDED_ON_FIELD_NUMBER: _builtins.int
+    INSTANCE_FIELD_NUMBER: _builtins.int
+    KIND_FIELD_NUMBER: _builtins.int
+    TITLE_FIELD_NUMBER: _builtins.int
+    STATEMENT_IDS_FIELD_NUMBER: _builtins.int
+    SOURCE_URL_FIELD_NUMBER: _builtins.int
+    jid: _builtins.str
+    """司法院 jid。"""
+    decided_on: _builtins.str
+    """裁判日（ISO 8601）。"""
+    instance: Global___CourtInstance.ValueType
+    kind: Global___CourtDecisionKind.ValueType
+    title: _builtins.str
+    """案由。"""
+    source_url: _builtins.str
+    """原文的網址，可能為空。"""
+    @_builtins.property
+    def statement_ids(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]:
+        """本則所解釋、出現在本結果裡的陳述。"""
+
+    def __init__(
+        self,
+        *,
+        jid: _builtins.str = ...,
+        decided_on: _builtins.str = ...,
+        instance: Global___CourtInstance.ValueType = ...,
+        kind: Global___CourtDecisionKind.ValueType = ...,
+        title: _builtins.str = ...,
+        statement_ids: _abc.Iterable[_builtins.int] | None = ...,
+        source_url: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["decided_on", b"decided_on", "instance", b"instance", "jid", b"jid", "kind", b"kind", "source_url", b"source_url", "statement_ids", b"statement_ids", "title", b"title"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___CourtDecision: _TypeAlias = CourtDecision  # noqa: Y015
 
 @_typing.final
 class PermitGap(_message.Message):

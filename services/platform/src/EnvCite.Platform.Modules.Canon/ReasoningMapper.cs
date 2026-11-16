@@ -214,7 +214,10 @@ internal static class ReasoningMapper
                 auditRes.D2EvidenceGrounded,
                 auditRes.D3DefenseAndBoundsValid,
                 [.. auditRes.Findings])
-            : null);
+            : null,
+        [.. o.CourtDecisions.Select(d => new CourtDecisionDto(
+            d.Jid, d.DecidedOn, Map(d.Instance), Map(d.Kind), d.Title, [.. d.StatementIds],
+            NullIfEmpty(d.SourceUrl)))]);
 
     private static ScoringResultDto MapScoring(ScoringResult sr) => new(
         sr.MatrixCode, sr.LawTitle, sr.NormKind, sr.FormulaKind, sr.EquationSummary,
@@ -316,6 +319,21 @@ internal static class ReasoningMapper
         GuidanceKind.Interpretation => GuidanceKindDto.Interpretation,
         GuidanceKind.DiscretionStandard => GuidanceKindDto.DiscretionStandard,
         GuidanceKind.Operational => GuidanceKindDto.Operational,
+        _ => throw Unknown(k),
+    };
+
+    private static CourtInstanceDto Map(CourtInstance i) => i switch
+    {
+        CourtInstance.Supreme => CourtInstanceDto.Supreme,
+        CourtInstance.High => CourtInstanceDto.High,
+        CourtInstance.District => CourtInstanceDto.District,
+        _ => throw Unknown(i),
+    };
+
+    private static CourtDecisionKindDto Map(CourtDecisionKind k) => k switch
+    {
+        CourtDecisionKind.Ordinary => CourtDecisionKindDto.Ordinary,
+        CourtDecisionKind.GrandChamber => CourtDecisionKindDto.GrandChamber,
         _ => throw Unknown(k),
     };
 

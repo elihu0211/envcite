@@ -69,6 +69,17 @@ GUIDANCE_KIND = {
     "operational": pb.GUIDANCE_KIND_OPERATIONAL,
 }
 
+COURT_INSTANCE = {
+    "supreme": pb.COURT_INSTANCE_SUPREME,
+    "high": pb.COURT_INSTANCE_HIGH,
+    "district": pb.COURT_INSTANCE_DISTRICT,
+}
+
+COURT_DECISION_KIND = {
+    "ordinary": pb.COURT_DECISION_KIND_ORDINARY,
+    "grand_chamber": pb.COURT_DECISION_KIND_GRAND_CHAMBER,
+}
+
 OVERRIDE_BASIS = {
     "hierarchy": pb.OVERRIDE_BASIS_HIERARCHY,
     "lex_specialis": pb.OVERRIDE_BASIS_LEX_SPECIALIS,

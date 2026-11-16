@@ -13,6 +13,8 @@ from canon.reasoning.scoring.audit import DispositionAuditResult
 from canon.reasoning.scoring.models import ScoringResult
 from canon.reasoning_codec.enums import (
     CONDITION_ROLE,
+    COURT_DECISION_KIND,
+    COURT_INSTANCE,
     DELEGATION_GAP,
     EXCUSE,
     GUIDANCE_KIND,
@@ -39,6 +41,19 @@ class GuidanceRef:
     kind: str
     subject: str
     published_in: str
+    source_url: str
+    statement_ids: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class DecisionRef:
+    """附在結果旁的一則行政法院裁判（`annotation_read.decisions_for`）。"""
+
+    jid: str
+    decided_on: date
+    instance: str
+    kind: str
+    title: str
     source_url: str
     statement_ids: tuple[int, ...]
 
@@ -170,6 +185,7 @@ def outcome(
     uncovered: Iterable[tuple[str, str, str]] = (),
     definitions: Mapping[int, tuple[str, str, list[str]]] | None = None,
     guidance: Iterable[GuidanceRef] = (),
+    decisions: Iterable[DecisionRef] = (),
     audit_result: DispositionAuditResult | None = None,
 ) -> pb.Outcome:
     """一組推論結果轉成 `Outcome` 訊息。
@@ -286,6 +302,18 @@ def outcome(
                 source_url=g.source_url,
             )
             for g in guidance
+        ],
+        court_decisions=[
+            pb.CourtDecision(
+                jid=d.jid,
+                decided_on=d.decided_on.isoformat(),
+                instance=COURT_INSTANCE[d.instance],
+                kind=COURT_DECISION_KIND[d.kind],
+                title=d.title,
+                statement_ids=list(d.statement_ids),
+                source_url=d.source_url,
+            )
+            for d in decisions
         ],
         one_act_groups=[
             pb.ActGroupFine(act_id=act_id, min_amount=lo, max_amount=hi)

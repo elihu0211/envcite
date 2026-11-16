@@ -108,6 +108,14 @@ _GUIDANCE = """
      GROUP BY d.id
      ORDER BY d.issued_on, d.id
 """
+_DECISIONS = """
+    SELECT d.jid, d.decided_on, d.instance::text, d.kind::text, d.title,
+           coalesce(d.source_url, ''), array_agg(g.statement_id)
+      FROM judgment.for_statements(%(ids)s, %(decided)s) AS g
+      JOIN judgment.decision AS d ON d.id = g.decision_id
+     GROUP BY d.id
+     ORDER BY d.decided_on, d.id
+"""
 
 
 class _StatementRow(NamedTuple):
@@ -201,6 +209,16 @@ class _GuidanceRow(NamedTuple):
     rule_kind: str
     subject: str
     published_in: str
+    source_url: str
+    statement_ids: list[int]
+
+
+class _DecisionRow(NamedTuple):
+    jid: str
+    decided_on: date
+    instance: str
+    kind: str
+    title: str
     source_url: str
     statement_ids: list[int]
 
@@ -352,6 +370,27 @@ def guidance_for(
             tuple(sorted(r.statement_ids)),
         )
         for r in fetch(conn, _GUIDANCE, params, _GuidanceRow)
+    ]
+
+
+def decisions_for(
+    conn: Conn, statement_ids: Collection[int], decided: date
+) -> list[outcome_codec.DecisionRef]:
+    """裁處日 `decided` 可附在這些陳述旁的行政法院裁判（`judgment.for_statements`）。"""
+    if not statement_ids:
+        return []
+    params = {"ids": sorted(statement_ids), "decided": decided}
+    return [
+        outcome_codec.DecisionRef(
+            r.jid,
+            r.decided_on,
+            r.instance,
+            r.kind,
+            r.title,
+            r.source_url,
+            tuple(sorted(r.statement_ids)),
+        )
+        for r in fetch(conn, _DECISIONS, params, _DecisionRow)
     ]
 
 

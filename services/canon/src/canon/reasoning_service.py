@@ -197,15 +197,17 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                     used = annotation_read.definition_sources(
                         conn, {d for _, d in result.definitions_used}, on
                     )
-                    # 行政規則以處分日判斷是否已發布、尚未停止（釋字第 287 號），各組陳述皆同
+                    # 行政規則以處分日判斷是否已發布、尚未停止（釋字第 287 號），各組陳述皆同。
+                    # 行政法院裁判以裁處日不早於裁判日附上，同樣不進前提。
                     guidance = annotation_read.guidance_for(conn, ids, decided_on)
+                    decisions = annotation_read.decisions_for(conn, ids, decided_on)
                     audit_res = (
                         disposition_codec.disposition_audit(request, result.scoring_results)
                         if include_audit
                         else None
                     )
                     return outcome_codec.outcome(
-                        result, where, uncovered, used, guidance, audit_res
+                        result, where, uncovered, used, guidance, decisions, audit_res
                     )
 
                 return pb.EvaluateResponse(
