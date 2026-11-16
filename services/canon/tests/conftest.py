@@ -100,6 +100,7 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
         )  # 公文不隨法規連鎖刪除；下架的停止適用參照來源項目
         c.execute("DELETE FROM judgment.decision")  # 同上：裁判不隨法規連鎖刪除
         c.execute("DELETE FROM judgment.takedown")
+        c.execute("DELETE FROM judgment.fetch")
         for table in ("source.import_problem", "source.item", "source.snapshot"):
             c.execute(f"DELETE FROM {table}")  # 有外鍵參照（停止適用→項目），不能 TRUNCATE
         # 索引是內容定址的衍生物：不隨法規連鎖刪除，測試之間要自己清。
