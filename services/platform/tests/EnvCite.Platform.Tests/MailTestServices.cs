@@ -1,3 +1,5 @@
+using EnvCite.Platform.Modules.Mail;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 

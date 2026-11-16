@@ -4,6 +4,8 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
+using EnvCite.Platform.Modules.Mail;
+
 using static EnvCite.Platform.Tests.MailTestServices;
 
 namespace EnvCite.Platform.Tests;
