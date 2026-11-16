@@ -1,20 +1,44 @@
 # AGENTS.md
 
-倉庫層規範見根 `AGENTS.md`；本檔只管 `services/canon/`。
+倉庫層規範見根 [`AGENTS.md`](../../AGENTS.md)；本檔只管 `services/canon/`。
 
 ## Project
 
-- **Name:** canon（典籍：具權威的條文與典籍全體，對應 PostgreSQL 為唯一真值、結論只是候選的定位）。服務名只出現在部署單元：目錄、Python 套件與映像、叢集內的服務與工作負載、指令前綴 `canon-`、環境變數 `ENVCITE_CANON_*`、可觀測性的服務名。不加專案名 `envcite`（專案名是環境變數與叢集命名空間的前綴，不屬於服務名）。
-- **Naming:** 服務名 canon 也是持久化與錯誤識別碼的前綴：資料庫角色 `canon_reader`／`canon_writer`／`canon_reviewer`（部署端的登入身分 `canon_server`、`canon_jobs` 加入對應群組）、計量鍵 `canon.*`、API key 範圍 `canon:*`、結果碼 `canon.*`、`ErrorInfo.domain` 為 `canon.envcite`。gRPC 套件 `envcite.canon.v1`（`CanonService`、`ReasoningService`）與呼叫端的 `Canon` 設定區段、模組同取服務名；改它們是契約的破壞性變更，走新套件版本。「來源」（`law` 等）是服務內的知識分區，一種來源一個子包，代號不是服務名。遷移檔 0027–0067 與 0068 內的舊角色名是已套用的歷史（有檢查碼），不改；0068 之後的授權一律寫新角色名。
-- **Conventions:** 發行名、匯入名與服務名同為 `canon`（`src/` 佈局，`uv_build` 預設以發行名找 `src/canon/`）。套件與模組小寫、短名詞、以職責命名（PEP 8）：不用 `utils`、`helpers` 這類什麼都能放的名字，不與標準庫同名（含子套件；ruff `A005` 嚴格模式守門）；類別 CapWords、函式與變數 snake_case（ruff `N` 守門；領域例外依事件命名，不套 `N818`；gRPC 方法與 protobuf API 的 PascalCase 由 `.proto` 決定）。指令入口是單一指令 `canon <子指令>`（`python -m canon` 等價；子指令登記在 `canon/cli.py`，名稱是與部署庫的契約）。來源子包以來源代號命名，與服務名不同層。
-- **Role:** 知識服務（shared, non-tenant data）：各來源的知識集中在本服務，一種來源一個子包，各有自己的 schema 與引用代號字母（呼叫端看到的規則在倉庫根 `proto/README.md`）。新增來源是新增一個來源子包，不另立服務；拆成獨立服務只在該來源需要獨立擴縮或發版、資料不能與共享資料同庫、或需要不同的執行環境。由 `services/platform` 與 `services/consult` 呼叫。
-- **Layout:** 頂層是核心：以語料與標註為資料模型的讀取層、端點、標註、驗證、推論與 gRPC 伺服器，加上共用的基礎（資料庫、設定、網路、嵌入）。`law/` 是法規來源的取得、解析與同步（把語料填進去）。依賴只往一個方向：`law/` 用核心，核心不匯入任何來源子包，只有組合根（`cli.py`、`server.py`、`sync.py`、`acquire/cli.py`）接線，來源之間也不互相匯入（`tests/test_architecture.py` 守門）。新增來源是新增與 `law/` 同層的 `canon/<代號>/`，不放進 `sources/` 之類的容器；它是否共用核心的資料模型，等它實際進來再決定。資料表歸該來源自己的 schema。
-- **Stack:** Python · uv · gRPC（grpcio，同步伺服器）· PostgreSQL（psycopg 3）· ruff · mypy (strict) · pytest
-- **Data model:** **關聯式實表，PostgreSQL 是唯一真值**，表結構以 `migrations/*.sql` 為準。法規以（管轄，識別碼方案，在地識別碼）為鍵——管轄是封閉的列舉（中央與 22 縣市），方案與管轄的配對由 CHECK 強制（中央方案只配中央、地方方案只配縣市；地方方案是契約預留，目前沒有取得來源），兩者都沒有預設值，寫入者與呼叫端都得明說；新增識別碼方案要在同一個遷移裡說明它屬於哪一級；效力逐條文單元記載、逐單元解析；法規名稱可因修正而變，標題屬公布版本；標註錨定（單元，內容雜湊），不錨定版本列。**時間軸的不變式由綱要強制，不靠匯入後的檢查**：版本不重疊（`WITHOUT OVERLAPS`）、不留縫（文字時間的上界以延遲外鍵參照下一版的版本日）、施行規則決定起點與版本日的關係（CHECK；早於版本日只能是明文的 `retroactive`）；查不到全文的版本仍是一版（`text_status = unavailable`）。新規則先寫成約束，程式與測試跟著約束。
+### 服務定位與命名
+
+- **Name:** `canon`（典籍：具權威的條文與典籍全體，對應 PostgreSQL 為唯一真值、結論只是候選的定位）。
+- **服務名出現處**：目錄、Python 套件與映像、叢集服務與工作負載、指令前綴 `canon-`、環境變數 `ENVCITE_CANON_*`、可觀測性服務名（不加專案名 `envcite`）。
+- **Naming**：持久化與錯誤識別碼前綴同為 `canon`：
+  - 資料庫角色：`canon_reader`／`canon_writer`／`canon_reviewer`（遷移檔 `0027`–`0067` 與 `0068` 內的舊角色名因檢查碼不改；`0068` 之後一律用新角色名）
+  - 計量鍵 `canon.*`、API key 範圍 `canon:*`、結果碼 `canon.*`、`ErrorInfo.domain` 為 `canon.envcite`
+  - gRPC 套件 `envcite.canon.v1`（`CanonService`、`ReasoningService`）：改動為破壞性變更，須開新套件版本
+- **Role**：知識服務（shared, non-tenant data），由 `services/platform` 與 `services/consult` 呼叫。一種知識來源對應一個來源子包，各自擁有 schema 與引用代號字母（呼叫端規則見 [`proto/README.md`](../../proto/README.md)）；不因新增來源另立服務，除非需要獨立擴縮、發版、資料隔離或執行環境。
+
+### 架構分層與依賴方向
+
+依賴只往單一方向：**來源子包使用核心，核心不匯入任何來源子包**，來源之間不互相匯入，僅組合根負責接線（由 [`tests/test_architecture.py`](tests/test_architecture.py) 守門）。
+
+| 層級 | 路徑 | 職責 |
+|------|------|------|
+| 組合根 | `cli.py`、`server.py`、`sync.py`、`acquire/cli.py` | 解析設定、建立連線、將來源與實作注入核心 |
+| 核心：介面與轉換 | `service.py`、`endpoints/`、`reasoning_service.py`、`reasoning_codec/`、`errors.py` | gRPC Servicer 邊界、錯誤映射與型別轉換 |
+| 核心：資料存取 | `store/`（`ports.py`、`canon_store.py`、`laws`、`graph`、`retrieval`、`connections`） | 以 Protocol 隔離儲存庫，PostgreSQL 讀取與連線池 |
+| 核心：檢索與共用 | `acquire/`、`projection.py`、`embedding.py`、`reranking.py`、`guidance_search.py`、`law_names.py`、`coverage.py`、`clock.py`、`import_problems.py` | 通用抓取引擎、混合檢索、精排、時鐘與問題記錄 |
+| 核心：標註與推論 | `verification/`、`claims/`、`annotate.py`、`reasoning/` | 抽取／驗證管線、標註交易寫入、clingo ASP 推論與裁罰 |
+| 來源子包 | `law/`（新增來源放同層 `canon/<代號>/`，不建 `sources/` 容器） | 法規與行政規則的取得、解析、歷史回推與同步 |
+
+### 技術棧與資料真值
+
+- **Stack**：Python（≥3.14）· uv · gRPC（`grpcio` 同步伺服器）· PostgreSQL（`psycopg` 3）· ruff · mypy (strict) · pytest
+- **唯一真值**：PostgreSQL 關聯式實表，表結構以 `migrations/*.sql` 為準（不修改已套用的遷移檔，由 `schema_migration` 雜湊強制）。
+- **法規主鍵與時間軸不變式（由綱要約束強制）**：
+  - 自然鍵為 `(jurisdiction, id_scheme, local_id)`，三欄皆無預設值，方案與管轄配對由 CHECK 強制（地方方案目前僅為契約預留）。
+  - 效力逐條文單元記載與解析；名稱可隨修正而變，標題屬公布版本；標註錨定 `(單元, 內容雜湊)`，不錨定版本列。
+  - 版本時間軸不重疊（`WITHOUT OVERLAPS`）、不留縫（上界以延遲外鍵參照下一版版本日）、施行規則由 CHECK 強制（早於版本日僅限明文 `retroactive`）；缺全文版本仍佔一版（`text_status = unavailable`）。
 
 ## Commands
 
-Python 一律經 `uv`。從**本目錄**執行。
+Python 一律經 `uv`，從**本目錄**執行：
 
 ```bash
 uv sync --all-packages       # 整個 workspace（.venv 與 uv.lock 在倉庫根）；標註管線用 Anthropic 模型時加 --extra llm
@@ -25,104 +49,122 @@ uv run python -m mypy src tests
 ../../libs/python/envcite-proto/scripts/generate.sh   # 改了 proto 之後重新產生 gRPC 程式碼
 docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 
-# 本機跑：入口清單見 README；環境裡已有的同名變數優先於 .env
+# 本機執行（環境裡已有的同名變數優先於 .env）
 cp .env.example .env
 uv run --env-file .env canon migrate
 uv run --env-file .env canon sync moj
 uv run --env-file .env canon serve
 ```
 
-- **程式風格**（Python ≥3.14，ruff 的 `target-version` 在倉庫根 `pyproject.toml`，UP 規則據此要求新語法）：
-  - 不寫 `from __future__ import annotations`（註解延後求值）；泛型用 PEP 695（`def f[T]`），別名用 `type X = …`。
-  - 提示詞不寫在 Python 裡：模板在 `verification/templates/*.j2`（Jinja2），渲染只經 `verification/prompts.py` 的型別化函式。共同骨架用繼承（`base.j2` → `with_conventions.j2`／`definition.j2` → 各提示），「有才放」的區塊是 `macros.j2` 的巨集；改提示詞只改模板，要在開發集上量測，不憑感覺。
-  - 讀資料庫列用 `db.fetch`／`fetch_one`／`scalar`，每個查詢一個私有的具名列型別（`NamedTuple`，欄位次序同 SELECT；可為 NULL 的欄位宣告 `| None`，依 `migrations/` 查證，不猜），不在用處 `cast`。
-  - 查詢結果的欄位次序同紀錄（`store/records.py`）時，直接拿紀錄當列型別，不另寫中間列型別；`Any` 只留在動態 JSON 的邊界（模型輸出、外部文件、JSON Schema、clingo 符號），那裡先收窄再用，不往內傳。
-  - `verification/__init__.py` 不匯出任何名稱：從定義它的子模組匯入（匯出會讓匯入任何一個子模組都載入整條驗證管線）。
-  - 函式的大小由 ruff 守門（根 `pyproject.toml`：圈複雜度與分支各 14、語句 60）；超過就拆成有名字的小函式，不加 `noqa`、不放寬門檻。
-  - `Any` 只留在動態的邊界（JSON 文件、clingo 的答案集原子、唯讀連線的列），並在原處說明；其餘用精確的型別，protobuf 訊息標註實際的 `pb.*` 類別，不用 `Any`。
-  - 人寫的 JSON 文件在邊界以 pydantic 模型驗證並解碼成型別化的結構，內部不傳 `Mapping[str, Any]`；新增的文件載入器照 `law/ruling.py` 的做法。
-  - 模組不超過 500 行（`tests/test_architecture.py` 守門，沒有例外清單）。一個模組一個職責，過長就按職責拆，不調高上限。
-  - 公開的模組、類別與函式都有 docstring（ruff `D100`–`D103`）；不用 `Any` 標註（`ANN401`），動態邊界例外在根 `pyproject.toml` 的 `per-file-ignores` 列出並說明。
-  - 每個子指令（`canon/cli.py` 的 `SUBCOMMANDS`）都要解析得到、`--help` 可用（`tests/test_cli_entry_points.py` 守門）。
-  - 資料層（`store/`）一個職責一個儲存庫（`laws`、`graph`、`retrieval`），連線池與期限在 `connections`，`CanonStore` 只負責把它們接起來。消費端用 `store/ports.py` 的 Protocol 標註它用到的那一塊（`LawReader`、`LawGraphReader`、`Retrieval`、`ReadConnections`），不認得具體的儲存庫類別。
-  - gRPC 的端點按功能分組（`endpoints/laws`、`graph`、`search`），各自只拿它要的儲存庫介面；`service.CanonServicer` 只在 gRPC 邊界轉交並以 `errors.maps_errors` 映射錯誤，`build_servicer` 把它們接起來。
-  - 推論的輸入事實（`reasoning/facts/`）按職責分：陳述端讀資料庫（`statements` 組裝、`chains` 授權鏈、`condition_facts`、`vocabulary_facts`、`relation_facts`，各自持有自己的 SQL 與列型別），案件端只讀請求（`case_inputs`），共用的 ASP 寫法在 `asp`；套件不匯出，從定義它的模組匯入。
-  - gRPC 訊息與領域型別的轉換（`reasoning_codec/`）按方向分：`request`（請求 → 推論輸入）、`outcome`（推論結果 → 回應）、`disposition`（處分稽核）、`enums`（列舉對照表）；套件不匯出，從定義它的模組匯入。
-  - 標註的寫入（`claims/`）按責任分：`loader` 是入口與交易邊界，`statements`／`sanctions`／`links` 寫陳述、罰則與兩者之間的關係，`definitions`、`vocabulary`、`held`（待連結罰則）、`anchoring`（錨定）各管一塊，`rows` 是共用的寫入原語；套件不匯出，從定義它的模組匯入。
-  - 行政規則的取得（`law/guidance_sync/`）按階段分：`run.sync` 串接列舉（`listing`）、逐項（`job`）、覆蓋率與停止適用（`settle` 函釋下架、`repeals` 公報廢止），`cli` 是指令列；套件不匯出，從定義它的模組匯入。
-  - 裁罰計算（`reasoning/scoring/`）按層分：`models`（規格與結果型別，不含計算）、`formulas`（三種公式）、`adjustments`（一般調整與講習時數）、`evaluate`、`matrices`（載入）、`audit`（處分書檢核）；套件不匯出，從定義它的模組匯入。
-  - 歷史版本回推（`law/backfill/`）按步驟分：`models`（來源版本、錨點、計畫型別）、`anchors`（載入錨點）、`planner`（`plan` 純函式）連同 `texts`、`intervals`，`writer`（寫入，一部一個交易）；套件不匯出，從定義它的模組匯入。
-  - 邏輯不直接讀系統時鐘（`date.today()`、`datetime.now()`；`tests/test_architecture.py` 守門）：今天的日期收注入的 `clock.Today`（預設 `date.today`），測試傳固定值；指令列的 `main` 是組合根，才可以呼叫 `psycopg.connect` 與 `settings.load`。
-  - 歷史版本的取得（`law/history_sync/`）按步驟分：`run.sync` 串接 `acquire` 與 `importing`，`policy` 放重試政策與整批驗收上限，`report`、`cli`；測試要放寬上限用 `tests/history_support.relax_limits`；套件不匯出，從定義它的模組匯入。
-  - 抽取（`verification/extract.py`）只串接：取單元文字、呼叫模型、修復迴圈、載入；模型輸出的確定性檢查按類別放 `verification/checks/`（`locate` 定位、`fragments` 完整性、`sanctions` 罰則、`shape` 整形與結構、`coverage` 涵蓋），輸出格式在 `statements_format`；新增一種檢查放進對應的模組，不放回 `extract.py`。檢查要接進修復迴圈才算數：改了檢查或提示，先在開發集上量測。
-  - 模型閘門（`verification/model_gates/`）一個閘門一個模組（`roundtrip`、`independent`、`panel`），共用的描述在 `render`、抽取者與驗證資格在 `common`；整條流程（`verification/run.py`）只串接與指令列，選什麼處理（`selection`）、方法組合（`methods`）、抽取紀錄與重抽（`attempts`）、抽取者與驗證者不同（`distinct`）各自一個模組；套件不匯出，從定義它的模組匯入。
-  - 依賴注入：接線只在組合根（`server.py` 與各 CLI 的 `main`）；servicer 與推論從建構子拿依賴（儲存庫、嵌入、精排、斷詞，與調校旋鈕 `SearchTuning`），不自己建連線、不讀設定。「今日」由 SQL 的 `as_of` 決定，不在 Python 取時鐘。
-  - 資料庫連線的型別只有 `db.Conn`；匯入問題（`source.import_problem`）的型別與寫入只有 `import_problems`，各來源的匯入都經它。
-  - 註解：模組、類別與公開函式寫 docstring，首句一句話說「是什麼」，其餘只寫前提、不變式與「為什麼」，不複述程式做了什麼；欄位與常數的說明用前置的 `#:`。
-- **環境變數以 `src/canon/settings.py` 為唯一來源**；入口不直接讀 `os.environ`；加變數時同步 `.env.example`（`tests/test_settings.py` 守門）。
-- 測試用**真實的 PostgreSQL**：設 `ENVCITE_CANON_TEST_DSN`，或留空讓 testcontainers 起一個（需要 Docker daemon）。不用替身，因為本服務一半的讀取邏輯在 SQL 裡。
-- **綱要由 `migrations/*.sql` 依檔名順序套用。已套用的檔案不可修改**——要改就新增一個檔，由 `schema_migration` 的雜湊比對強制。
-- **資料庫角色**（定義在 `migrations/` 的角色遷移）：`reader`（伺服器）、`writer`（取得、匯入、投影、標註管線）、`reviewer`（writer 加手動審核與載入已審核的主張）。標註層對寫入者**只能新增**：主張寫入後內容不改不刪，驗證紀錄只經 `record_verification`、接受只經 `settle`、手動審核只經 `set_confirm_state`（都是 `SECURITY DEFINER`）。角色由部署庫建立，遷移只授權；權限測試用 `SET ROLE`。
+### 程式風格與守門規則
+
+- **命名與佈局**：發行名、匯入名與服務名同為 `canon`（`src/` 佈局）。子指令登記在 [`src/canon/cli.py`](src/canon/cli.py) 的 `SUBCOMMANDS`，每個子指令須可解析且 `--help` 可用（`tests/test_cli_entry_points.py` 守門）。禁用 `utils`、`helpers` 等泛稱，不與標準庫同名（ruff `A005`）；領域例外依事件命名（不套 `N818`）。
+- **Python 語法與型別**：
+  - 不寫 `from __future__ import annotations`；泛型用 PEP 695（`def f[T]`），別名用 `type X = …`。
+  - 函式大小上限由 ruff 守門（圈複雜度與分支 ≤ 14、語句 ≤ 60），不加 `noqa` 放寬；單一模組不超過 500 行（`tests/test_architecture.py` 守門）。
+  - 公開模組、類別與函式須有 docstring（`D100`–`D103`）：首句說明「是什麼」，其餘只寫前提、不變式與「為什麼」；欄位與常數用前置 `#:`。
+  - 禁用 `Any`（`ANN401`），動態邊界（JSON 文件、clingo 答案集原子、唯讀連線列）例外須在根 `pyproject.toml` 列出並說明；人寫 JSON 在邊界以 pydantic 解碼成型別化結構（參照 `law/ruling.py`）。
+- **資料庫讀取與組態**：
+  - 查詢用 `db.fetch`／`fetch_one`／`scalar` 搭配私有 `NamedTuple`（欄位次序同 `SELECT`，可空欄標 `| None`），不於用處 `cast`；欄位次序同 `store/records.py` 時直接共用紀錄型別。連線型別只用 `db.Conn`。
+  - 匯入問題（`source.import_problem`）的型別與寫入只經 `import_problems`。
+  - 邏輯不直接讀系統時鐘（`date.today()`、`datetime.now()`），須收注入的 `clock.Today`；`today` 查詢語意由 SQL `as_of` 決定。
+  - 環境變數以 [`src/canon/settings.py`](src/canon/settings.py) 為唯一來源，新增時同步 `.env.example`（`tests/test_settings.py` 守門）；指令列 `main` 是唯一可呼叫 `psycopg.connect` 與 `settings.load` 的組合根。
+
+### 模組職責分層
+
+套件 `__init__.py`（如 `verification/`、`reasoning/facts/`、`reasoning_codec/`、`claims/`、`law/guidance_sync/`、`reasoning/scoring/`、`law/backfill/`、`law/history_sync/`、`verification/model_gates/`）不匯出名稱，一律從定義該符號的子模組匯入。
+
+| 子套件 | 職責拆分 |
+|------|------|
+| `store/` | `laws`、`graph`、`retrieval` 各管一類儲存庫，`connections` 管連線池與期限，`CanonStore` 接線；消費端只認 `store/ports.py` 的 Protocol |
+| `endpoints/` | 按功能分 `laws`、`graph`、`search`，只依賴所需 Protocol；`service.CanonServicer` 僅於邊界轉交並以 `errors.maps_errors` 映射錯誤 |
+| `reasoning_codec/` | 按轉換方向分 `request`、`outcome`、`disposition`、`enums` |
+| `reasoning/facts/` | 陳述端讀 DB（`statements`、`chains`、`condition_facts`、`vocabulary_facts`、`relation_facts`，各自持有 SQL 與列型別），案件端讀請求（`case_inputs`），共用 ASP 寫法在 `asp` |
+| `reasoning/scoring/` | `models`（規格與結果型別）、`formulas`（三種公式）、`adjustments`、`evaluate`、`matrices`、`audit` |
+| `claims/` | `loader`（入口與交易邊界）、`statements`、`sanctions`、`links`、`definitions`、`vocabulary`、`held`、`anchoring`、`rows`（共用寫入原語） |
+| `verification/` | `extract.py` 只串接流程；確定性檢查按類分置 `checks/`（`locate`、`fragments`、`sanctions`、`shape`、`coverage`）；模型閘門在 `model_gates/`（`roundtrip`、`independent`、`panel`、`render`、`common`）；主流程 `run.py` 拆出 `selection`、`methods`、`attempts`、`distinct`；提示詞在 `templates/*.j2` 經 `prompts.py` 渲染 |
+| `law/backfill/` | `models`、`anchors`、`planner`（`plan` 純函式與 `texts`、`intervals`）、`writer`（一部一交易） |
+| `law/history_sync/` | `run.sync` 串接 `acquire` 與 `importing`、`policy`（重試與整批驗收上限）、`report`、`cli` |
+| `law/guidance_sync/` | `run.sync` 串接 `listing`、`job`、`settle`（函釋下架）、`repeals`（公報廢止）、`cli` |
+
+### 資料庫角色與測試
+
+- **資料庫角色**：`reader`（伺服器）、`writer`（取得、匯入、投影、標註管線）、`reviewer`（`writer` 加手動審核與載入已審核主張）。標註層對寫入者為 append-only：內容寫入後不改不刪，驗證紀錄經 `record_verification`、接受經 `settle`、手動審核經 `set_confirm_state`（皆 `SECURITY DEFINER`）。
+- **測試環境**：須使用真實 PostgreSQL（設 `ENVCITE_CANON_TEST_DSN` 或留空由 testcontainers 啟動，不使用替身）；權限測試用 `SET ROLE`。放寬歷史回推測試上限用 `tests/history_support.relax_limits`。
 
 ## 語料管線
 
-- **取得**：引擎負責下載、SHA-256、冪等與存檔；來源只實作 `Source`，在 `acquire/cli.py` 的 `SOURCES` 登記。
-- **匯入**：`parsing.parse` 是純函式；整批比例過 `audit.LIMITS` 才寫入，否則結束碼 2。**改變解析輸出的修改必須遞增 `parsing.PARSER_VERSION`**，已匯入的法規才會以新版重寫。已匯入法規的內容改變是增量（`law/write.py` 的 `apply`）：更正以新增列取代舊列（`superseded_at`），查詢只看現行列。
-- **歷史版本**（`canon history <來源>`）：一部法規只有一個來源，依種類分（法律取自立法院、命令取自主管機關），`law/history_sources.py` 一處決定。只補首次取得官方資料庫快照之前的版本，由最早的官方版本往舊逐版回推，接不上的那一版與更早的都寫成查不到全文的版本，不跳過缺口、不以他版文字頂替；與較新版本正規化後相同的條沿用較新版本的文字。匯入每次對所有快照重算、只寫差異，回推規則改了不必遞增版本；已寫入的歷史版本日不在新目標裡時整部不寫（`history_reshaped`），待人查看。
-- **檢索投影**（混合檢索）：字面臂與語意臂同列、以段落文字的雜湊為鍵，更正後無從陳舊；取不到查詢向量時只用字面臂，查詢不失敗；每條命中另回「查詢詞覆蓋率」（見「查詢詞覆蓋率」）。伺服器的詞典啟動時讀一次，**重建之後要重啟服務**。嵌入模型宣告在模型配置檔的 `[embedding]`，沒有這一段就只有字面臂。
-- **字面臂略過高頻詞**：整句問題的 OR 查詢會被「之」「應」這類幾乎每段都有的詞撐成巨大的候選集，延遲與候選數成正比；`retrieval.prune_terms` 在查詢前略過段落比例超過 `ENVCITE_CANON_LEXICAL_MAX_DF` 的詞，全是高頻詞時留最稀有的一個，不空查詢；覆蓋率只算留下來的詞（`RetrievalRepository.searched_terms`）。詞頻表（`retrieval.term_stat`）隨檢索投影整批重算；沒有現行分詞器的統計時不修剪，查詢較慢但不出錯。改門檻預設要用 `tools/golden_retrieval_eval.py` 在開發集量測、以 `compare` 檢定，不憑感覺。
-- **查詢詞覆蓋率**：字面臂是各詞的 OR，只含一個詞的條文與含全部詞的字面分數差不多，語料裡沒有任何一條含完整詞組時，這些片段命中反而排最前面並通過下界。`SearchArticles` 因此對每條命中另回 `term_coverage`（`coverage.term_coverage`：字面臂實際查的詞有多少比例出現在條文全文），**不改 `lexical_score` 與名次**。不要把覆蓋率乘進字面分數：字面分數的尺度是 consult 相關性下界的校準對象，乘進去整個尺度下移，原下界下可答題的通過率大幅下降，而可答與無答案的取捨沒有改善（開發集量測，見 `eval/lexical-coverage-2026-11-13.md`）。覆蓋率只給要「排除只沾到一個詞的命中」的呼叫端（platform 的搜尋頁與 `/v2/search`）。
-- **函釋帶出條文**：使用者查的詞常是函釋的用語（函釋寫「露天燃燒」、條文寫「燃燒」），兩臂都找不到，解釋它的函釋卻已指明是哪一條。請求帶 `include_guidance` 時，`SearchArticles` 另以 `retrieval.guidance_articles`（`guidance_search.py`）找主旨或內文含查詢每個詞組（以空白分，最多 5 個）、在查詢日有效的函釋所解釋的條文，與兩臂的結果以名次倒數融合，最多比 `limit` 多回 5 條，並回 `guidance_documents`。**函釋只用來找條文，不是推論的前提**：回傳的是現行條文，條文與函釋的錨定判斷同 `guidance.for_statements`（錨定的內容雜湊在查詢日仍現行、發文日不晚於查詢日、尚未停止適用）。**常見詞不當入口**：命中的函釋占可用函釋（查詢日已發文、尚未停止適用、至少有一個錨定）的比例超過 `ENVCITE_CANON_GUIDANCE_MAX_DF` 時，這個查詢整個不用函釋入口，不挑其中幾件——詞組出現在那麼多函釋裡，就指不出哪幾條。staging 上有鑑別力的詞組（露天燃燒、噪音、繞流排放）約 1%，常見詞（固定污染源、水污染防治、廢棄物清理）在 7% 以上，預設取其間；樣本小、沒有以函釋用語查詢的題可量，改預設值要先有題。預設不納入，不影響其他呼叫端；詞組是子字串比對、沒有索引，每次約 150 ms（staging 3.5 萬件函釋），所以只給要它的呼叫端（platform 的搜尋頁與 `/v2/search`，以及 consult：`guidance_documents` 大於 0 的條文不必字面或語意達標就進證據集，但不算高信心），函釋量大到不夠快時要先建分詞索引。
-- **問句點名法規則縮小範圍**：問句含法規全名（`law_names.LawNames`，標題取自資料庫所有版本，三字以上、由長到短不重疊）時，`search_hybrid` 的兩臂只在那些法規裡找（`p_resources`；語意臂在範圍內改精確掃描，HNSW 先取近鄰再過濾會落空）；範圍是被點名的法規加上沿授權（`annotation.delegated_by`，命令授權的命令也算）訂定的命令，由 `retrieval.law_scope` 在資料庫內算；`search_hybrid` 內嵌後會把傳入的運算式代入每個使用處，所以範圍先在 MATERIALIZED 的 `scope` CTE 算一次，改這個函式不可拿掉。點名的法規沒有任何命中才改找全庫。命中義務條（或授權命令的條文）時，`retrieval.search_expanded` 緊接著帶出處罰它的罰則條（取自 `annotation.current_violation`，分數取自帶出它的那一條）。名稱表和詞典一樣啟動時讀一次，匯入新法規後要重啟。門檻與比對規則的改動要用 `tools/golden_retrieval_eval.py` 在開發集量測（`--no-law-names` 為不縮小的對照）、以 `compare` 檢定。
-- **精排**（`reranking.py`、`service.py` 的 `_rerank`）：請求帶 `rerank` 且 `models.toml` 有 `[reranker]` 時，兩臂（與函釋）取 `ENVCITE_CANON_RERANK_CANDIDATES` 條候選，交給端點的 `/rerank` 逐條打分，依分數取前 `limit` 條（同分依精排前的名次），並回 `rerank_score`。**精排是加強，不是查詢成功的條件**：名額滿（`RERANK_SLOTS`，不等待）、逾時（`RERANK_TIMEOUT` 與呼叫端剩下的期限取小者）、端點錯誤、回應缺漏或重複都退回精排前的次序（一樣只取前 `limit` 條）並不設分數，不重試、不回錯誤；半套的分數整份不收。函釋帶出而被擠出前 `limit` 條的條文照 `fuse` 的契約補回（最多 `EXTRA` 條），因為精排只看（查詢，條文）一對，看不到函釋這個依據。**指標**（`telemetry.RerankMetrics`）：`canon.rerank.outcomes`（帶 `rerank` 且有候選的請求各算一次，`outcome` 為 `reranked`、`busy`、`error`、`unconfigured`；後三者都是降級）與 `canon.rerank.duration`（對端點打分的耗時，含分批；`ok`、`error`）。成功的精排不寫日誌，降級的比率與端點的耗時分布只看這兩個指標；標籤只用這幾個值。端點行為以實測為準：`top_n`、`return_documents` 被忽略、回應依分數排序並回傳文件原文、空清單回 500，所以用戶端依 `index` 還原次序、不送空清單；**一次最多 32 條，33 條起 HTTP 500（還可能掛住）**，所以用戶端每 30 條（`MAX_BATCH`）一批、各批共用同一份時間預算，任一批失敗整份失敗。**分數是 sigmoid 後的機率，可跨查詢比較，但門檻是模型條件化的值**：consult 與 platform 的相關性下界仍是字面與語意分數，不讀 `rerank_score`；要拿它當可答性門檻，先用 `tools/golden_retrieval_eval.py measure --rerank` 在開發集量測 negative 桶的分布，再以 `compare` 檢定，不憑感覺。`ENVCITE_CANON_RERANK_CANDIDATES` 的預設值 30 在原生題庫開發集（字面臂）上量過：10、20、30 每一步都顯著更好，更深（要分批、延遲加倍）沒量；混合臂加精排要補嵌入才量得到。效益、延遲分布與可答性門檻的分析見 `eval/rerank-effect-dev-2026-11-13.md`。
-- **原生題庫**（`tools/native_golden.py`、`eval/native-golden-*.json`）：題目與答案只由語料的條文結構程式化產生（定義條、罰則的「違反第 N 條」、命令第一條的訂定依據、「準用第 M 條」、無答案詞），**不用模型出題、不取答案於被測的檢索系統**，條文以語料的法規代碼加條號為鍵，不依外部題庫。每題帶產生規則與原文證據，`verify` 逐題重核並用不同的規則另掃遺漏；改產生規則的輸出要遞增 `GENERATOR_VERSION`、重建與重新 `derive`，舊題庫的 qrels 與切分以雜湊作廢。**不要為了讓 `verify` 乾淨而放寬或收緊文法**：不符是題庫與語料不一致的訊號，先看是哪一邊錯。題量被每類的上限（`CAP`）截斷，候選池比它大。
-- **授權抽取**：`canon sync` 在匯入後跑 `delegation.extract`（規則、冪等）；**改解析規則要遞增 `delegation.RULE_VERSION`**。授權是 `annotation.assertion` 的子型別，語意與讀取見 README「規範關係：授權」。
-- 分詞器的約束屬 `envcite-segmenter`（見其 README）。
-- 結束碼的意義見 README；`2` 的情形是資料形狀不合、快照不存在、整批比例越線、嵌入端點設定錯誤（401／403、維度不符）。
+### 1. 取得與匯入
+
+- **取得引擎（`acquire/`）**：負責下載、SHA-256、冪等與存檔；來源只實作 `Source` 並於 `acquire/cli.py` 的 `SOURCES` 登記。
+- **增量匯入**：`parsing.parse` 為純函式，整批通過 `audit.LIMITS` 才寫入（否則結束碼 `2`）。更正以新增列取代舊列（`superseded_at`），查詢只看現行列。**改變解析輸出須遞增 `parsing.PARSER_VERSION`**。
+- **授權與違憲引用**：`canon sync` 匯入後執行 `delegation.extract`（**改規則須遞增 `delegation.RULE_VERSION`**）與 `violation` 依賴圖寫入。
+- **結束碼**：`0` 成功；`1` 暫時性錯誤；`2` 資料形狀不合、快照不存在、整批比例越線或嵌入端點設定錯誤（401／403、維度不符）。
+
+### 2. 歷史版本與行政規則
+
+- **歷史版本（`canon history`）**：一部法規單一來源（`law/history_sources.py` 決定：法律自 `ly`、環境部命令自 `moenv`）。由最早官方資料庫快照往舊逐版回推，缺全文處寫為 `text_status = unavailable`（不跳過、不以他版頂替）；與較新版正規化後相同的條沿用較新版文字。每次重算只寫差異；已寫入版本日不在新目標內時整部不寫（`history_reshaped`）。
+- **行政規則（`guidance` schema）**：函釋與裁量基準另立一軸，**不進語料位階、不是推論前提**（行政程序法第 159 條），僅附於推論結果旁（`Outcome.guidance`）。公文不可改，只由人或規則載入（`derivation.method` 不得為 `llm`）；解釋錨定 `(單元, 內容雜湊)`。**改變寫入內容或錨定規則須遞增 `guidance_sync.provenance.RULE_VERSION`**。
+
+### 3. 混合檢索、函釋入口與精排
+
+檢索詞典、法規名稱表（`law_names.LawNames`）與分詞器（受 `envcite-segmenter` 約束）於伺服器啟動時讀一次，**語料或詞典重建後須重啟服務**。調校任何檢索／門檻參數前，須以 `tools/golden_retrieval_eval.py` 在開發集量測並以 `compare` 檢定，不憑感覺調整。
+
+- **混合雙臂與查詢詞覆蓋率**：字面臂與語意臂同列（無嵌入設定時只用字面臂），以段落雜湊為鍵。
+  - `retrieval.prune_terms` 於查詢前略過段落比例超過 `ENVCITE_CANON_LEXICAL_MAX_DF` 的高頻詞（全為高頻詞時保留最稀有的一個）；`retrieval.term_stat` 隨投影整批重算。
+  - `SearchArticles` 另回 `term_coverage`（`coverage.term_coverage`），**不得將覆蓋率乘進 `lexical_score`**，以免破壞上游相關性下界尺度。
+- **問句點名法規縮小範圍**：問句含三字以上不重疊法規全名時，`search_hybrid` 先以 `MATERIALIZED` 的 `scope` CTE（`retrieval.law_scope` 沿授權鏈展開）限縮範圍（語意臂改精確掃描）；無命中時才退回全庫。命中義務條時，`retrieval.search_expanded` 依 `annotation.current_violation` 帶出處罰條。
+- **函釋帶出條文（`include_guidance`）**：`retrieval.guidance_articles` 比對查詢詞組（最多 5 個）並以倒數名次融合（最多多回 5 條）與回傳 `guidance_documents`；若命中函釋占可用函釋比例超過 `ENVCITE_CANON_GUIDANCE_MAX_DF` 則整個查詢停用此入口。函釋只用來找現行條文，不作推論前提。
+- **精排（`reranking.py`、`service._rerank`）**：帶 `rerank` 且已設定 `[reranker]` 時，取 `ENVCITE_CANON_RERANK_CANDIDATES` 條候選送 `/rerank` 重排（依 `index` 還原次序、不送空清單、每批上限 `MAX_BATCH = 30` 共用時間預算）。
+  - **降級契約**：精排為加強而非成功條件。`RERANK_SLOTS` 滿、逾時、端點錯誤或回應缺漏重複時，整份退回精排前次序且不設 `rerank_score`，不重試、不回錯誤；函釋帶出被擠出的條文仍依 `fuse` 契約補回。
+  - **指標**：僅記錄 `canon.rerank.outcomes`（`reranked`、`busy`、`error`、`unconfigured`）與 `canon.rerank.duration`（`ok`、`error`），成功時不寫日誌。
+- **原生題庫（`tools/native_golden.py`）**：題目與答案純由條文結構程式化產生，不依賴模型或受測系統。改產生規則須遞增 `GENERATOR_VERSION` 並重建與 `derive`；不可為讓 `verify` 通過而放寬或收緊文法。
 
 ## 標註、驗證與推論
 
-- **沒有人審核標註**：陳述以 `extracted` 進入，經驗證閘門後依政策升為 `confirmed`，**只有已確認（或規則推導）的陳述參與推論**。
-- **詞彙沒有上下位**（不借用 SKOS，載入帶 `broader` 的概念整份拒絕）：「甲屬於乙」的法律依據是立法定義或授權命令，不是詞彙的階層。立法定義用 `annotation.term_definition`，與陳述同為 `annotation.assertion` 的子型別；定義只在要件所屬的法規內使用，不支援準用。定義的確認要兩個互相獨立的方法都通過，任一失敗就駁回，沒有重讀者就不確認任何定義。外部對映（`vocab.concept_match`）是唯一的例外，只記「等同」：對到同一個外部識別碼的兩個概念，推論視為同一個。
-- **載入規則**：每個陳述附它所讀的條文原文，載入時要求該單元現行的某個版本列確有這個雜湊，否則整份拒絕（結束碼 2）；狀態預設 `extracted`，載入不接受任何陳述；不確定法律概念或裁量的要件標 `judgement: true`（限值不得標）；門檻值的來源（字面值、授權條文、受控值、個別處分）恰有其一；責任基礎只屬主體槽位，認定方式只屬限值；一個罰則陳述一個效果，罰則陳述的種類必須是 `sanction`、所處罰的必須是已確認的 `prescriptive`（連不上的存成待連結罰則，見 README「規範關係：罰則的連結」），「命令屆期未履行」的前提必須是 `order`；一次載入是一個交易；每個主張寫完內容即封存（`annotation.seal`），封存後內容不可再補，修正是以 `set_confirm_state` 駁回再載入。
-- **驗證**（`verification/`）：一個確定性閘門一個模組（`gates/`），模型閘門在 `model_gates/`；每次結果寫一列 `annotation.verification`。`annotation.settle` 在必要方法最近一次都 pass 或 not_applicable、至少一個 pass、且沒有 fail 時升為 `confirmed`，有 fail 則 `rejected`。**審核狀態不論由哪條路徑改變都記一列 `policy`**。
-  - **抽取者不得驗證自己的主張**（觸發器強制）；驗證者**預設也不得與抽取者同一家族**，合格者不足則 `inconclusive`。
-  - **確定性閘門不證明語意忠於原文**。`canon verify` 用預設政策不接受任何陳述；只用確定性閘門接受要明說 `--require`。
-  - 閘門失敗、逾時或模型無答案是 `inconclusive`，不是駁回、也不中斷。
-- **模型配置**（檔案與用法見 README「模型配置」）：**家族由人明宣告**。**金鑰不入設定檔、不貼進對話**，設定檔不寫金鑰也不寫金鑰名：名稱由端點名推導（`ENVCITE_<端點名大寫>_API_KEY`），值依序從同名環境變數、作業系統鑰匙圈取（`verification/config.py` 的 `secret_name`、`resolve_secret`）；缺值的錯誤只列名稱。
-  - **託管服務的模型名稱不保證是它所指的模型**：管線預設先對所有模型問固定的開放式問題，答案逐字相同就拒絕開跑（`SameModel`）；`--no-distinct-check` 略過。
-  - 單元測試全用有名字與家族的替身，**沒有呼叫過任何模型**。
-  - **黃金測試集的相關性判定者**（`[relevance]`，`tools/relevance_judge.py`）只排除受測路徑（檢索與作答）的家族 `system_families`；標註管線的角色是離線的，不算受測系統。判定者至少兩個、彼此不同家族；判定前以 `SameModel` 探測別名，閘道回覆的模型名不符即視為失敗。提示只在開發集上調，`pool` 要求同一提示雜湊的開發集校準檔。
-- **義務的主體與上位條件由程式負責，不靠抽取者或審查者**：主體值要是原文寫出的行為人，否則記成「未明示」（`subject.normalize`；被規範的物與行為、憑空補的「任何人」都不是義務人）；引文之前同一句或上位導言的條件子句，陳述沒涵蓋就由 `carry.carry` 補成 `carried` 的 scope。兩者的形狀由資料庫強制（`statement_slot.unstated`、`statement_condition.carried` 的 CHECK 與觸發器）；旗標只由程式標，模型寫的 `carried`、非主體槽位的 `unstated` 在 `tidy` 去掉。
-- 抽取者輸出的形狀不可信：形狀問題請模型修有限輪，修不好只丟那個陳述，不連累同單元其餘的陳述。
-  義務的 duty 或 scope 借用本法已定義的泛稱（約定 G）也送回修復輪，但修不好不丟，交給驗證閘門。
-  規範性陳述的引文缺了助動詞而單元原文有（從規範句切下的子句）是形狀問題，修不好就丟；
-  義務引文裡助動詞前後有字沒被 scope、主體或 duty 要件涵蓋（漏了期限、對象、限定語）只送回修復，不丟。
-- **重抽**：義務沒有定論的單元（`annotation.reextraction_due`）帶審查者指出的問題重抽；輪數上限是 `extraction_attempt.round` 的 CHECK，不是程式裡的常數，該不該重抽由資料推得、不另存佇列，所以中斷後重跑自己收斂。重抽只改變誰被抽到、不放寬閘門：確認仍要所有必要方法通過。量測與已知缺口見 `eval/duty-reextraction-2026-11-06.md`，兩型瑕疵修復的獨立量測見 `eval/duty-fix-effect-2026-11-09.md`。
-- 領域約定（只有規範性陳述有義務方向、授權不是許可、罰則一個效果一個陳述且引文只取該效果的子句、刑罰不是罰則、按次處罰是另一個帶「屆期仍未改善」要件的陳述）寫在 `verification/templates/conventions.j2` 一處，各提示都由它組成。
-- **管線**可重跑、每個陳述 commit；`--pending` 的待辦由資料推得，所以重跑收斂；同一時間只跑一個（PostgreSQL 諮詢鎖）。保留樣本評估看過的法就用掉了，只報第一次看的計數，不報準確度。
-- **行政規則**（`guidance` schema）：函釋、裁量基準另立一軸，**不進語料的位階、不是推論的前提**（行政程序法第 159 條），只附在推論結果旁（`Outcome.guidance`）。公文不可改，由人或規則載入（`derivation.method` 不得為 `llm`）；「解釋」錨定（單元，內容雜湊），條文文字改了就不再附上。取得（`canon guidance sync`）只經 `guidance.load` 寫入，**改變寫入內容或錨定規則要遞增 `guidance_sync.provenance.RULE_VERSION`**。
-- **推論**（`reasoning/`）：通用推論程式 `rules.lp`（clingo）**不含任何法條**，也不用模型；案件事實由呼叫端給。結論都是**候選**；缺的事實、需判斷的要件、矛盾的事實、未決的衝突與罰則競合分開回報。
-  - `order`（預防性處分）與 `disgorgement`（不法利得的追繳）不是行政罰，行政罰法總則的排除、減輕、時效與一行為都不適用；罰則的 `discretionary` 與要件的 `judgement` 是兩個層次。以另一效果為前提的罰則（`sanction_trigger`），前提列出才列出，前提附條件則它也附條件。
-  - 呼叫端看得到的語意（未給的許可量值是未知、認定方式不符不逕判、`evaluate_across` 不選「最有利」、`uncovered_laws`）以倉庫根 `proto/README.md`〈標註與推論〉為準，改推論時一起看。
-  - 違憲失效的版本不是依據：陳述與限值的解析在 SQL 排除它，被排除的另列（`invalidated`），不悄悄消失。命令的授權鏈斷了是「授權依據待查」，罰則附條件，不是不成立。
-  - 行政罰法第 18、26 條只給候選與額度，不選罰鍰額；刑事優先只擋罰鍰（與法院已宣告沒收時的沒入），是否觸犯刑事法律沒給就不套用。金額不進 clingo（32 位元整數放不下千分位的金額），比較與加總在 `facts.amounts`。
-  - **改 `rules.lp` 要跑 `tests/test_reasoning*.py`**（真實 schema、不用替身）。
+### 1. 抽取與形狀修復
+
+- **無人工審核**：陳述以 `extracted` 進入，經閘門後依政策升為 `confirmed`，**只有已確認（或規則推導）的陳述參與推論**。
+- **形狀與語意邊界**：
+  - 抽取者輸出不可信，形狀問題（如規範句引文缺助動詞、引文停在並列行為前）送修復迴圈，修不好只丟該陳述，不連累同單元其餘陳述；義務引文漏涵蓋期限／對象／限定語或借用本法泛稱（約定 G）送修復但不丟棄。新增檢查須放進 `verification/checks/` 並接進修復迴圈。
+  - **主體與上位條件由程式決定**（`verification/subject.py`、`carry.py`）：主體非原文行為人時記為 `statement_slot.unstated`；上位條件子句未涵蓋則補為 `statement_condition.carried`（概念代碼 `ctx_` 加原文雜湊）。兩者形狀由 DB CHECK 與觸發器強制，模型擅自標記的旗標於 `tidy` 清除。
+  - **提示詞**：統一由 `verification/templates/*.j2` 透過 `prompts.py` 渲染，領域約定集中於 `conventions.j2`。
+- **重抽**：待重抽單元由視圖 `annotation.reextraction_due` 依資料推得，輪數上限由 `extraction_attempt.round` 的 CHECK 強制，中斷重跑可自動收斂。
+- **管線執行**：每個陳述獨立 commit，以 PostgreSQL 諮詢鎖保證同時只跑一個。保留樣本評估只計第一次看到的法規，不報準確度。
+
+### 2. 驗證與接受
+
+- **驗證紀錄與接受**：每個確定性閘門置於 `verification/gates/`，模型閘門置於 `model_gates/`，結果寫入 `annotation.verification`。`annotation.settle` 於必要方法皆通過（至少一項 `pass` 且無 `fail`）時升為 `confirmed`，有 `fail` 則 `rejected`，狀態變更一律記一列 `policy`。
+- **獨立性**：抽取者不得驗證自己主張（觸發器強制）；模型閘門預設不得與抽取者同家族，合格者不足或逾時／無答案記為 `inconclusive`，不中斷管線。確定性閘門不證明語意忠實，預設不單獨接受陳述（`canon verify --require` 例外）。
+- **模型配置與別名探測**：家族須於 `models.toml` 明宣告；金鑰名由端點名推導（`ENVCITE_<端點名大寫>_API_KEY`），依序自環境變數與系統鑰匙圈解析，禁止寫入設定檔或對話。管線與黃金測試集判定者啟動前以 `SameModel` 探測別名，答案逐字相同或回覆模型名不符即拒絕執行（`--no-distinct-check` 僅供除錯）。單元測試一律使用有名字與家族的替身，不呼叫真實模型。
+
+### 3. 詞彙、授權與行政規則
+
+- **詞彙與定義**：**不借用 SKOS 上下位**（含 `broader` 整份拒絕），「甲屬於乙」只經立法定義（`annotation.term_definition`）或授權命令成立，定義僅限同法內使用（不支援準用），且須兩個獨立方法皆通過才確認。`vocab.concept_match` 僅記等同對映。
+- **載入規則（`annotate.load`）**：條文原文雜湊須存在於現行版本列（否則結束碼 `2`）；不確定概念標 `judgement: true`（限值不得標）；門檻來源四選一；責任基礎只屬主體、認定方式只屬限值；一個罰則陳述一個效果，所罰須為已確認 `prescriptive`（連不上存為 `held_penalty`）；「命令屆期未履行」前提須為 `order`。主張寫入即封存（`annotation.seal`），不可修改。
+
+### 4. 推論
+
+- **引擎（`reasoning/`）**：通用 `rules.lp`（clingo）**不含任何法條**、不用模型；案件事實由呼叫端提供，結論皆為**候選**，缺漏事實、需判斷要件、矛盾事實、未決衝突與罰則競合分開回報。**修改 `rules.lp` 必須執行 `tests/test_reasoning*.py`**。
+- **法理與數值邊界**：
+  - `order`（預防性處分）與 `disgorgement`（不法利得追繳）非行政罰，不適用行政罰法總則。
+  - `sanction_trigger`（以另一效果為前提）隨前提成立或附條件；違憲失效版本於 SQL 排除並另列 `invalidated`；授權鏈斷裂標為授權依據待查並附條件。
+  - 行政罰法第 18、26 條只給候選與額度；刑事優先只擋罰鍰與已宣告沒收之沒入，未給定則不套用。
+  - 金額不進 clingo（受限 32 位元整數），比較與加總於 `facts.amounts` 處理。
+- **對外語意**：未給許可量值為未知、認定方式不符不逕判、`evaluate_across` 不選最有利、`uncovered_laws` 等契約語意以 [`proto/README.md`](../../proto/README.md)〈標註與推論〉為準。
 
 ## Contract
 
-- 契約是倉庫根的 `proto/envcite/canon/v1/canon.proto` 與 `reasoning.proto`；錯誤原因清單在 `proto/README.md`。法規的自然鍵三欄必填，缺少就是 `INVALID_ARGUMENT`，不補預設。
-- 資料不分租戶；`x-tenant-id`／`x-request-id` metadata 只用於日誌與稽核。
-- `ReasoningService` 唯讀。訊息強型別：列舉不用字串、數值用 `Decimal`（十進位文字，不用浮點）、`AdministrativePenaltyFacts` 用 `optional`。日期維持 ISO 8601 字串。
-- 錯誤一律 `errors.ServiceError`，由 `errors.maps_errors` 在 servicer 邊界轉成 `google.rpc.Status`；呼叫端依 `reason` 分流，不解析訊息。新增錯誤是新增常數，不改現有 reason 的意思。
-- 同步伺服器的執行緒池是固定的。請求路徑上的讀取與 `Evaluate` 把剩餘期限同時當成連線池等待上限與 `statement_timeout`；等不到連線回 `BUSY`，讀取查詢被取消回 `READ_TIMEOUT`（`Evaluate` 仍是 `EVALUATION_TIMEOUT`）。`Evaluate` 另有自己的並行名額。查詢嵌入的名額是 `server.py` 的 `QUERY_EMBED_SLOTS`，與 `WORKERS` 並列，滿了就略過語意臂。gRPC 在呼叫沒有期限時 `time_remaining()` 回極大的數，不是 `None`，一律經 `envcite_grpc.remaining_seconds` 轉換。
-- 連線選項成套放在 `envcite-grpc` 的 `connection.py`，改 keepalive／ping 前先看該套件的 README。
+- **介面契約**：[`canon.proto`](../../proto/envcite/canon/v1/canon.proto) 與 [`reasoning.proto`](../../proto/envcite/canon/v1/reasoning.proto)，錯誤原因清單見 [`proto/README.md`](../../proto/README.md)。法規自然鍵三欄必填，缺一即回 `INVALID_ARGUMENT`。
+- **唯讀與強型別**：`ReasoningService` 唯讀；列舉不用字串、數值用 `Decimal`（十進位文字）、`AdministrativePenaltyFacts` 用 `optional`、日期用 ISO 8601 字串。`x-tenant-id`／`x-request-id` 只用於日誌與稽核。
+- **錯誤處理**：統一丟出 `errors.ServiceError`，於 servicer 邊界由 `errors.maps_errors` 轉為 `google.rpc.Status`；呼叫端依 `reason` 分流，新增錯誤只增常數不改既有語意。
+- **執行緒池與期限控制**：固定執行緒池搭配併發名額（`QUERY_EMBED_SLOTS`、`RERANK_SLOTS`、`Evaluate` 獨立名額）。請求剩餘期限同時作為連線池等待上限與 `statement_timeout`：等不到連線回 `BUSY`，查詢取消回 `READ_TIMEOUT`（`Evaluate` 回 `EVALUATION_TIMEOUT`）。gRPC 無期限時須經 `envcite_grpc.remaining_seconds` 轉換。連線 keepalive／ping 選項見 `envcite-grpc` 的 `connection.py`。
 
 ## Safety
 
-- 全國法規資料庫的資料必須標示出處（政府資料開放授權條款－第 1 版）；環境部主管法規查詢系統的歷史版本亦同（環境部網站資料開放宣告，CC BY 4.0）；立法院法律系統的歷史版本亦同（條文不得為著作權標的，比照立法院網站資料開放宣告註明出處；該站只接受舊式 TLS 重新協商，取得時循序、禮貌間隔）。測試資料（`tests/sample.py`）節錄自它。
-- 公報（政府資料開放授權條款－第 1 版）與環境部函釋（環境部網站資料開放宣告，CC BY 4.0）同樣須標示出處；快照的 `license_notice` 記著。函釋網站沒有使用條款與 robots.txt，取得維持循序與禮貌間隔，不並行。
+- **資料出處標示**：全國法規資料庫、行政院公報（政府資料開放授權條款－第 1 版）、環境部主管法規查詢系統與函釋（CC BY 4.0）、立法院法律系統（須標示出處；該站僅支援舊式 TLS 重新協商）之來源皆須保留出處標示（快照 `license_notice`）。
+- **禮貌取得**：立法院與環境部函釋網站無 API／robots.txt 限制或僅提供 HTML，取得維持**循序與禮貌間隔，不並行**。
 
 ## Done when
 
-- ruff、mypy、pytest 通過。
+- `ruff check .`、`mypy src tests`、`pytest` 通過。

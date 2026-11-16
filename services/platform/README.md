@@ -164,13 +164,14 @@ flowchart LR
 | 分叉 | `POST /portal/{租戶}/c/{id}/fork` | 表單欄位 `title`（同重新命名的正規化，空白不複製）；整串複製成新的一串並前往它 |
 | 刪除 | `POST /portal/{租戶}/c/{id}/delete` | 連同訊息一起刪，稽核只記 Id；介面先確認 |
 
-- **端點**：需要入口登入與 antiforgery；做完導回送出表單的那一頁（Referer，只准留在該租戶入口之下），刪除或封存的正是正在看的那串就回首頁；分叉成功則前往新的那一串。不是自己的、不存在的結果相同（只是導回），不洩漏它存不存在。選單在側欄與列表頁共用，是原生 popover 加普通表單，沒有 JavaScript 也能用。
-- **排序**：釘選的在側欄最上面（釘得晚的在前，筆數有上限），其餘依最後更新、新的在前；側欄是平面的清單，不分組。釘選、重新命名與封存都不算新的活動：不改最後更新時間，所以不改排序、也不延長保存；超過保留天數的對話連同釘選、封存的一起刪除（`Platform:ConversationHistory:RetentionDays`）。
-- **封存**：封存時一併取消釘選，取消封存不會把釘選帶回來；封存的對話網址仍可開啟，在裡面接著問是新的活動，會自動取消封存。
-- **分叉**：整串複製（訊息、引用、問的是哪一天的條文與順序），之後兩串各自發展；新的一串不帶釘選與封存，最後更新時間是現在，保存期限從現在起算。複製的是自己的對話，不經過任何人，所以不另記稽核。
-- **存什麼**：問題（連同問的是哪一天的條文）、回答正文，以及引用（代號、法規名、條文網址）與結果種類（回答、拒答、只列條文）；不存條文本文，全文隨時可由網址再查。
-- **前文**：接續時，前面有結果的回合以對話的形式（使用者的問題、助理的回答）帶進模型。回答裡的代號換成法規名——代號只在那一輪的證據集裡有意義；拒答的回合只留問題。前文**不是證據**：回答仍只能引用這一輪證據集的代號，核驗不變（見 [`AGENTS.md`](AGENTS.md)「有依據的回答與對話紀錄」）。有前文的提問會先把問題改寫成不看前文也看得懂的一句，用它取證據；改寫失敗就用原句。帶幾輪、每則多長由 `Platform:Answer:HistoryTurns` 與 `Platform:Answer:HistoryChars` 決定，鍵的範圍與預設值以 `AnswerOptions` 為準。
-- **計量**：一次提問仍是一次作答；改寫用掉的 token 與作答一起記在同樣兩個 token 操作上，不另算次數。
+- **端點與隱私**：須入口登入與 antiforgery；完成後導回送出頁（Referer 限該租戶入口內），刪除或封存當前對話回首頁，分叉成功前往新對話。非本人或不存在一率導回，不洩漏存在與否。側欄與列表共用原生 popover 表單，無 JavaScript 亦可操作。
+- **排序與生命週期**：
+  - 側欄採平面清單不分組：釘選項目置頂（後釘在前，有筆數上限），其餘依 `UpdatedAt` 降序。
+  - 釘選、重命名與封存不更新 `UpdatedAt`；封存會清除釘選（取消封存不還原），於封存對話續問會自動取消封存。超過 `Platform:ConversationHistory:RetentionDays` 一併刪除。
+  - 分叉完整複製訊息、引用、查詢日與順序，新對話不釘選、不封存並重設 `UpdatedAt`；不另記稽核。
+- **儲存與前文**：
+  - 只存問題（含查詢日）、回答正文、結果種類與引用（代號、法規名、條文 URI），不存條文本文。
+  - 接續時將前文（回答內代號已替換為法規名；拒答僅留問題）作為對話上下文，先改寫追問（失敗退回原句）再取證據；**前文不是證據**，核驗仍只認本輪代號。輪數與長度由 `Platform:Answer:HistoryTurns`／`HistoryChars` 控制（真值在 `AnswerOptions`），改寫與作答合併計量。
 
 ## 帳號與存取
 
@@ -260,13 +261,14 @@ sequenceDiagram
 
 ### Google 登入（`Platform:Portal:Google`）
 
-客戶入口的另一種登入方式：成員用自己的 Google 帳號（Gmail 或 Google Workspace）登入，不必另記密碼。可選功能，**預設關閉**；關閉時登入頁沒有按鈕、相關路徑一律 404。環境變數寫成 `ENVCITE_Platform__Portal__Google__<鍵>`；`ClientSecret` 只經環境變數。啟用卻缺 `ClientId` 或 `ClientSecret`，啟動就停下並指名鍵。
+可選功能，**預設關閉**（關閉時無按鈕、路徑回 404）。環境變數為 `ENVCITE_Platform__Portal__Google__<鍵>`（`ClientSecret` 只經環境變數），啟用時缺 `ClientId` 或 `ClientSecret` 啟動即停下。
 
-- **全站一個 Google 用戶端**，不是每租戶一組。Google Cloud 端：OAuth 用戶端類型「網頁應用程式」；已授權的重新導向 URI 是**對外來源加 `/signin-google`**（每個環境各登記一個，Google 要求完全相同）；同意畫面發布為正式，範圍只要 `openid`、`email`、`profile`（基本範圍不必經 Google 審查）。
-- **流程**：登入頁的按鈕 POST 到 `/portal/{租戶}/login/google`（antiforgery），導去 Google（授權碼加 PKCE，每次請使用者選帳號）；Google 回到全站固定的 `/signin-google`，再導到 `/portal/{租戶}/login/google/callback` 完成登入。租戶隨受保護的 state 與暫存 cookie 帶著，回呼時與路徑上的租戶不符就拒絕。登入後去 `returnUrl`（只准留在該租戶入口之下），沒有則首頁。
-- **只登入既有成員，不建立帳號**。首次以 Google 已驗證的 email 對到這個租戶裡已存在、**已啟用**（設過自己的密碼、沒有待改的初始密碼）的成員，並連結該 Google 帳號的 `sub`；之後以 `sub` 為準，email 變了也是同一位成員。還在邀請中的人先用信裡的連結啟用。停用的成員登不進。同一個 Google 帳號可以是不同租戶的成員（各連結一次）。
-- **失敗只有一句話**（登入頁帶 `google=failed`）：email 未驗證、找不到成員、尚未啟用、已停用、取消授權、流程不屬於這個租戶，結果相同；稽核（`portal.sign_in_failed`，`via=google`）只留原因與成員 Id，不留 Google 給的 email。
-- **兩步驟驗證與鎖定照舊**：Google 不告知對方有沒有做過 2FA，所以成員啟用了兩步驟驗證仍要走第二步；被要求註冊的角色照常被導去註冊。成功與連結各留稽核（`portal.signed_in` 帶 `via=google`、`portal.google_linked`）。登出只結束本站的 session，不登出 Google。
+1. **Google Cloud 用戶端設定**：全站共用單一網頁應用程式用戶端，重新導向 URI 設為各環境的 `https://<主機>/signin-google`，同意畫面發布為正式（範圍 `openid`、`email`、`profile`）。
+2. **登入流程**：按鈕 POST `/portal/{租戶}/login/google`（antiforgery）→ 導向 Google（授權碼 + PKCE）→ 回呼全站 `/signin-google` → 導回 `/portal/{租戶}/login/google/callback` 比對受保護 state 內的租戶與路徑租戶 → 成功導向 `returnUrl`（限該租戶入口內）或首頁。
+3. **帳號配對與安全邊界**：
+   - **只登入既有已啟用成員，不建立帳號**：首次以已驗證 email 配對並綁定 `sub`（之後以 `sub` 為準）；邀請中或已停用成員無法登入。同一 Google 帳號可分別連結多個租戶。
+   - **統一失敗訊息（`google=failed`）**：email 未驗證、無成員、未啟用、停用、取消授權或跨租戶皆同結果；稽核 `portal.sign_in_failed`（`via=google`）只記原因與成員 Id。
+   - **本地 2FA 與鎖定照舊**：不信任 Google MFA；成功與首次連結各記稽核（`portal.signed_in`、`portal.google_linked`），登出不登出 Google。
 
 ### 目錄同步（`Platform:Directory`）
 
@@ -401,14 +403,10 @@ env 'ENVCITE_Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command=I
 | `SslOnConnect` | 連上就是 SSL／TLS（通常是 465 埠） |
 | `Auto` | 交給 MailKit 依埠號決定（465 為 `SslOnConnect`，其餘為 `StartTlsWhenAvailable`）；不保證加密 |
 
-- **明文風險**：`None` 從不加密；`StartTlsWhenAvailable` 在中繼沒有公告 STARTTLS 時（包括公告被中間人拿掉）照樣明文送出，連帳密也是；`Auto` 在 465 以外的埠與它相同。RFC 8314 建議連上就加密，能選就選 `StartTls` 或 `SslOnConnect`。
-- **預設是 `None`**：對應不加密、以來源位址信任的內網中繼（25 埠）。設了帳密卻用 `None` 或 `StartTlsWhenAvailable`，啟動記一則警告，`mail test` 也印警告。
-- **帳密驗證**：兩者都設才驗證，由 MailKit 的 `AuthenticateAsync` 依中繼公告的機制協商（本服務不自己寫 SASL 或 STARTTLS）；沒設就**不送 AUTH**，即使中繼公告了它。`None` 加帳密能用（SASL PLAIN），代價是明文。
-- **憑證一律驗證**：沒有略過驗證的設定。中繼的憑證由內部 CA 簽發時，把該 CA 放進**容器信任的憑證存放區**（.NET 在 Linux 讀系統憑證目錄，也認 `SSL_CERT_FILE`、`SSL_CERT_DIR`），不在程式裡放行。
-- **寄件者必須等於認證的帳號**：Exchange 等中繼對不同的寄件者回 `550 5.7.60 Client does not have permissions to send as this sender`。`From` 與（email 形式的）`Username` 不同時，啟動記警告但不停下，因為有些中繼允許 Send As。
-- **帳號系統**：Exchange 與 Google Workspace 是不同的帳號系統，用中繼所屬系統的帳號，否則回 `535`。
-- **密碼錯誤的代價**：MailKit 對中繼公告的每種機制各試一次，一次寄信可能記下多次失敗登入；帳號若有連續失敗鎖定，改密碼後要同步更新 Secret 並重啟。
-- **密碼的來源與保護**：k8s 以 `secretKeyRef` 注入環境變數 `ENVCITE_Platform__Mail__Password`（對應設定鍵 `Platform:Mail:Password`），改密碼就是更新 Secret 並重啟 pod。`Password` 不進日誌、稽核、例外訊息、`mail test` 輸出、選項的 `ToString()` 與序列化，也不在任何診斷端點；`Username` 同樣不進日誌與輸出。`mail test` 只印「使用帳密驗證：是／否」，不印帳號。
+- **安全策略與明文風險**：預設 `None` 適用來源受信任之內網中繼（25 埠）；`None` 與 `StartTlsWhenAvailable`（被降級時）皆有明文風險，建議選用 `StartTls` 或 `SslOnConnect`（RFC 8314）。設了帳密卻用 `None`／`StartTlsWhenAvailable` 時，啟動與 `mail test` 皆記警告。
+- **帳密協商與憑證**：兩者皆設才由 MailKit 協商 `AuthenticateAsync`（未設不送 AUTH）；憑證一律驗證（內部 CA 須放進容器信任存放區或設 `SSL_CERT_FILE`／`SSL_CERT_DIR`）。
+- **寄件者與帳號系統**：`From` 與（email 形式）`Username` 不同時只記警告；Exchange 與 Google Workspace 為不同帳號系統，誤用回 `535`。密碼錯誤時 MailKit 會逐一嘗試中繼機制，可能觸發帳號鎖定。
+- **機密保護**：`Password` 經 k8s Secret 注入 `ENVCITE_Platform__Mail__Password`；`Username` 與 `Password` 嚴禁進入日誌、稽核、例外訊息、`mail test` 輸出與序列化（`mail test` 僅顯示「使用帳密驗證：是／否」）。
 
 #### 寄出結果
 
@@ -420,12 +418,9 @@ env 'ENVCITE_Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command=I
 
 邀請信、驗證信與 `mail test` 是同一個版型，寄成 `multipart/alternative`：純文字在前、HTML 在後（客戶端顯示它看得懂的最後一個）。兩版事實一致：同一條連結、同樣的期限與提示、同樣的租戶識別碼；`mail test` 沒有連結也沒有密碼。一律帶 `Auto-Submitted: auto-generated`。
 
-- **分層**：呼叫端組資料（收件者、連結、有效期限、租戶、「邀請或驗證」）→ `IMailComposer` 組成信，不寄信、不連網路，預覽與測試用同一個服務 → `IMailSender` 只管傳輸。全部經 `AddPlatformMail()` 註冊。
-- **文案**：在資源檔（`SharedKernel/MailTexts.resx` 繁體中文、`MailTexts.en.resx` 英文，鍵是領域鍵、帶參數用 `{0}`）。語言由 `Platform:Mail:Template:Culture` 決定（`zh-TW` 或 `en`），不隨操作者的介面語言——收信的人還沒登入過。主旨是 `{系統名稱}：邀請您啟用帳號`、`{系統名稱}：請驗證您的信箱`、`{系統名稱}：寄信測試`（英文有對照），系統名稱見[系統名稱](#系統名稱platformbrand)。
-- **HTML 與版面**：Razor 元件（`SharedKernel/MailViews/`）經 `HtmlRenderer` 渲染，插入的值由 Razor 自動 HTML 編碼；純文字版由同一組資料另外產生。版面是單欄、有最大寬度的表格加內嵌樣式（傳統 Outlook 以 Word 引擎渲染，按鈕改用 VML 圓角矩形）；淺色與深色兩組配色，深色只在支援 `prefers-color-scheme` 的客戶端套用。
-- **版型選項**（`Platform:Mail:Template`，`MailTemplateOptions`）：語言、寬度、內距、字型與淺色／深色兩組色票；鍵、預設值與合法範圍以 `MailTemplateOptions`、`MailPalette` 與驗證器為準。顏色只收 `#rrggbb`，每組色票的文字對比度至少 4.5:1；不合法就在啟動停下並指名鍵。
-- **安全限制**：信裡唯一的外部網址是啟用連結，沒有遠端圖片、追蹤像素、點擊追蹤轉址、腳本或外部樣式——連結等同一次登入的鑰匙，不能經第三方，也不能被預先載入。
-- **預覽**：`mail preview <輸出目錄>` 用同一個 `IMailComposer` 與選項寫出五種信（邀請與驗證各有「營運者」與「有租戶」兩種、加測試信）的 `.html` 與 `.txt`；連結是保留網域 `platform.example` 上的占位值，權杖是假值。瀏覽器預覽不等於真實客戶端，傳統 Outlook 與各家深色模式要以實際寄出的信檢查（見 [`CONTRIBUTING.md`「本機收信與寄信測試」](../../CONTRIBUTING.md#本機收信與寄信測試)）。
+1. **三層組信流程（`AddPlatformMail()` 註冊）**：呼叫端組資料 → `IMailComposer` 依 `Platform:Mail:Template:Culture`（`zh-TW`／`en`）自 `SharedKernel/MailTexts*.resx` 組信 → `IMailSender` 寄出 `multipart/alternative`。
+2. **HTML 與安全限制**：Razor 元件（`SharedKernel/MailViews/`）經 `HtmlRenderer` 渲染（單欄表格 + 內嵌樣式 + VML 按鈕後備，支援 `prefers-color-scheme`），版型選項由 `MailTemplateOptionsValidator` 驗證色票對比度 ≥ 4.5:1。**信內唯一外部網址為啟用連結**，禁止遠端圖片、追蹤像素與外部資源。
+3. **本機預覽**：`mail preview <輸出目錄>` 使用真實 `IMailComposer` 輸出五種信的 `.html`／`.txt`（占位網址 `platform.example`）；實際相容性須於真實客戶端驗證（見 [`CONTRIBUTING.md`「本機收信與寄信測試」](../../CONTRIBUTING.md#本機收信與寄信測試)）。
 
 #### 測試與排查
 
