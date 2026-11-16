@@ -4,7 +4,7 @@ from pathlib import Path
 
 import psycopg
 
-from canon.migrate import apply_all
+from canon.migrate import MIGRATIONS_DIR, apply_all
 from tests.test_migrate import _at, _drop
 
 Conn = psycopg.Connection[tuple[object, ...]]
@@ -76,7 +76,11 @@ def test_the_new_roles_hold_what_the_old_ones_held_and_the_old_ones_hold_nothing
                 assert _held(conn, new) == nothing, new
                 assert _defaults(conn, new) == set(), new
 
-            assert apply_all(conn)[0] == "0068_canon_roles.sql"
+            # 只套用 0068：之後的 migration 會直接授權給新角色，不在這個搬移的比較範圍
+            baseline = tmp_path / name
+            move = MIGRATIONS_DIR / "0068_canon_roles.sql"
+            (baseline / move.name).write_text(move.read_text(encoding="utf-8"), encoding="utf-8")
+            assert apply_all(conn, baseline) == [move.name]
 
             for old, new in ROLES.items():
                 assert _held(conn, new) == before[old], new
