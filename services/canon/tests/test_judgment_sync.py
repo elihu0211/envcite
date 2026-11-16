@@ -212,7 +212,9 @@ def test_credentials_must_be_unreadable_by_others_and_errors_omit_the_secret(
     path.chmod(stat.S_IRUSR | stat.S_IWUSR)
 
     assert read_credentials(path).user == "member"
-    path.chmod(stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP)
-    with pytest.raises(CredentialsError, match="權限過寬") as raised:
+    path.chmod(stat.S_IRUSR | stat.S_IRGRP)
+    assert read_credentials(path).user == "member"
+    path.chmod(stat.S_IRUSR | stat.S_IWUSR | stat.S_IROTH)
+    with pytest.raises(CredentialsError, match="其他人可讀") as raised:
         read_credentials(path)
     assert "s3cret" not in str(raised.value)

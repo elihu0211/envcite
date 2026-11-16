@@ -1,8 +1,8 @@
 """司法院裁判書 API 的帳密。只從密鑰檔讀，不從環境變數讀。
 
 叢集把封印過的密鑰掛在 `/var/run/canon/judicial.json`。該路徑沒有檔時，改讀服務目錄的
-`judicial.local.json`（版控忽略）。兩處都是同一份 JSON：`user`、`password`。檔案權限不得
-讓同群或其他人讀取。例外訊息不含帳號與密碼。
+`judicial.local.json`（版控忽略）。兩處都是同一份 JSON：`user`、`password`。其他人不可讀
+（本機 `0600`、叢集掛載 `0440` 都可以）；例外訊息不含帳號與密碼。
 """
 
 import json
@@ -17,7 +17,7 @@ LOCAL_CREDENTIALS = Path(__file__).resolve().parents[3] / "judicial.local.json"
 
 
 class CredentialsError(Exception):
-    """密鑰檔不存在、權限過寬或內容不符。訊息不含帳號與密碼。"""
+    """密鑰檔不存在、其他人可讀或內容不符。訊息不含帳號與密碼。"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,13 +36,13 @@ def credentials_path() -> Path:
 
 
 def read_credentials(path: Path) -> Credentials:
-    """讀一份密鑰檔。權限讓群組或其他人可讀、或欄位空著，都拒絕。"""
+    """讀一份密鑰檔。其他人可讀、所有者不可讀，或欄位空著，都拒絕。"""
     try:
-        mode = path.stat().st_mode
+        mode = stat.S_IMODE(path.stat().st_mode)
     except OSError as e:
         raise CredentialsError("密鑰檔讀不到") from e
-    if stat.S_IMODE(mode) & 0o077:
-        raise CredentialsError("密鑰檔權限過寬")
+    if mode & 0o007 or not mode & stat.S_IRUSR:
+        raise CredentialsError("密鑰檔其他人可讀或所有者不可讀")
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as e:
