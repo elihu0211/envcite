@@ -45,33 +45,33 @@ internal static class ReasoningMapper
         if (r.AdministrativePenalty is { } a)
         {
             var p = new AdministrativePenaltyFacts();
-            if (a.Intent is { } intent) { p.Intent = intent; }
-            if (a.Negligence is { } negligence) { p.Negligence = negligence; }
-            if (a.AgentFault is { } agentFault) { p.AgentFault = agentFault; }
-            if (a.Age is { } age) { p.Age = age; }
-            if (a.Incapable is { } incapable) { p.Incapable = incapable; }
-            if (a.SelfInduced is { } selfInduced) { p.SelfInduced = selfInduced; }
-            if (a.PursuantToLaw is { } pursuantToLaw) { p.PursuantToLaw = pursuantToLaw; }
-            if (a.SuperiorOrder is { } superiorOrder) { p.SuperiorOrder = superiorOrder; }
-            if (a.KnewIllegal is { } knewIllegal) { p.KnewIllegal = knewIllegal; }
-            if (a.StatedOpinion is { } statedOpinion) { p.StatedOpinion = statedOpinion; }
-            if (a.SelfDefense is { } selfDefense) { p.SelfDefense = selfDefense; }
-            if (a.DefenseExcessive is { } defenseExcessive) { p.DefenseExcessive = defenseExcessive; }
-            if (a.Necessity is { } necessity) { p.Necessity = necessity; }
-            if (a.NecessityExcessive is { } necessityExcessive) { p.NecessityExcessive = necessityExcessive; }
-            if (a.CapacityReduced is { } capacityReduced) { p.CapacityReduced = capacityReduced; }
-            if (a.IgnoranceOfLaw is { } ignorance) { p.IgnoranceOfLaw = ignorance; }
-            if (a.CriminalOffense is { } criminalOffense) { p.CriminalOffense = criminalOffense; }
-            if (a.CourtConfiscated is { } courtConfiscated) { p.CourtConfiscated = courtConfiscated; }
+            Present(a.Intent, v => p.Intent = v);
+            Present(a.Negligence, v => p.Negligence = v);
+            Present(a.AgentFault, v => p.AgentFault = v);
+            Present(a.Age, v => p.Age = v);
+            Present(a.Incapable, v => p.Incapable = v);
+            Present(a.SelfInduced, v => p.SelfInduced = v);
+            Present(a.PursuantToLaw, v => p.PursuantToLaw = v);
+            Present(a.SuperiorOrder, v => p.SuperiorOrder = v);
+            Present(a.KnewIllegal, v => p.KnewIllegal = v);
+            Present(a.StatedOpinion, v => p.StatedOpinion = v);
+            Present(a.SelfDefense, v => p.SelfDefense = v);
+            Present(a.DefenseExcessive, v => p.DefenseExcessive = v);
+            Present(a.Necessity, v => p.Necessity = v);
+            Present(a.NecessityExcessive, v => p.NecessityExcessive = v);
+            Present(a.CapacityReduced, v => p.CapacityReduced = v);
+            Present(a.IgnoranceOfLaw, v => p.IgnoranceOfLaw = v);
+            Present(a.CriminalOffense, v => p.CriminalOffense = v);
+            Present(a.CourtConfiscated, v => p.CourtConfiscated = v);
             p.CriminalClearedOn = a.CriminalClearedOn ?? string.Empty;
             if (a.CriminalPayment is { } payment) { p.CriminalPayment = Number(payment); }
             if (a.CommunityServiceHours is { } hours) { p.CommunityServiceHours = Number(hours); }
             if (a.MinimumHourlyWage is { } wage) { p.MinimumHourlyWage = Number(wage); }
             if (a.GainedBenefit is { } benefit) { p.GainedBenefit = Number(benefit); }
-            if (a.FactMistake is { } factMistake) { p.FactMistake = factMistake; }
-            if (a.IgnoranceUnavoidable is { } ignUnavoidable) { p.IgnoranceUnavoidable = ignUnavoidable; }
-            if (a.Unexpectable is { } unexpectable) { p.Unexpectable = unexpectable; }
-            if (a.PettyMinor is { } pettyMinor) { p.PettyMinor = pettyMinor; }
+            Present(a.FactMistake, v => p.FactMistake = v);
+            Present(a.IgnoranceUnavoidable, v => p.IgnoranceUnavoidable = v);
+            Present(a.Unexpectable, v => p.Unexpectable = v);
+            Present(a.PettyMinor, v => p.PettyMinor = v);
             request.AdministrativePenaltyFacts = p;
         }
 
@@ -107,7 +107,7 @@ internal static class ReasoningMapper
                 PassiveBenefit = Number(si.PassiveBenefit ?? "0"),
                 CriminalDeduction = Number(si.CriminalDeduction ?? "0"),
             };
-            if (si.MitigationDenominator is { } md) { item.MitigationDenominator = md; }
+            Present(si.MitigationDenominator, v => item.MitigationDenominator = v);
             foreach (var fv in si.Factors ?? [])
             {
                 item.Factors.Add(new ScoringFactorValue { FactorCode = fv.FactorCode ?? string.Empty, Value = Number(fv.Value) });
@@ -122,7 +122,7 @@ internal static class ReasoningMapper
                 TwoTierDefensesAddressed = da.TwoTierDefensesAddressed,
                 ScoringMatrixCode = da.ScoringMatrixCode ?? string.Empty,
             };
-            if (da.StatedFine is { } sf) { audit.StatedFine = sf; }
+            Present(da.StatedFine, v => audit.StatedFine = v);
             audit.Citations.AddRange(da.Citations.Select(c => new DispositionCitation
             {
                 CitationText = c.CitationText ?? string.Empty,
@@ -141,6 +141,13 @@ internal static class ReasoningMapper
         }
 
         return request;
+    }
+
+
+    private static void Present<T>(T? value, Action<T> assign) where T : struct
+    {
+        if (value is { } present)
+            assign(present);
     }
 
     private static EnvCite.Canon.V1.Decimal Number(string? value) => new() { Value = value ?? string.Empty };
