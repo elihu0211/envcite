@@ -9,6 +9,7 @@ using EnvCite.Platform.Web.Resources;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -46,6 +47,18 @@ public sealed class StructuredAnswerViewTests
     private sealed class TestNavigation : NavigationManager
     {
         public TestNavigation() => Initialize("https://localhost/", "https://localhost/portal/acme");
+    }
+
+    [Fact]
+    public void AnswerJsonOptionsProvideReadOnlyTypeInfoResolverForStructuredOutput()
+    {
+        Assert.NotNull(AnswerJson.Options.TypeInfoResolver);
+        Assert.True(AnswerJson.Options.IsReadOnly);
+
+        var format = Assert.IsType<ChatResponseFormatJson>(
+            ChatResponseFormat.ForJsonSchema<ModelAnswerOutput>(AnswerJson.Options));
+        Assert.True(format.Schema.HasValue);
+        Assert.Contains("\"anyOf\"", format.Schema.Value.GetRawText(), StringComparison.Ordinal);
     }
 
     [Fact]

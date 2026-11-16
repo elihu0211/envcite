@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace EnvCite.Platform.SharedKernel;
 
@@ -20,8 +21,10 @@ public static class AnswerJson
         {
             AllowOutOfOrderMetadataProperties = true,
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
         };
         options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false));
+        options.MakeReadOnly();
         return options;
     }
 }
