@@ -87,7 +87,7 @@ def test_a_law_name_is_never_a_question_even_with_a_question_mark() -> None:
 def test_only_a_bare_topic_is_restated_as_a_task() -> None:
     task = task_of("露天燃燒")
     assert "使用者只輸入了主題詞「露天燃燒」，沒有提出具體問題" in task
-    assert "不要因為缺了某一項就整個回「證據不足」" in task
+    assert "不要因為缺了某一項就判定證據不足" in task
     assert "行為、義務與罰則" not in task
     assert task_of("露天燃燒如何處罰") == "露天燃燒如何處罰"
 
@@ -96,7 +96,8 @@ def test_only_a_bare_topic_is_restated_as_a_task() -> None:
 
 
 def test_the_system_prompt_is_the_one_the_answerer_sends() -> None:
-    source = ANSWERER.read_text(encoding="utf-8")
+    # 原始碼裡的 \" 是字串跳脫，執行時就是引號；先還原再比，結構化提示裡的 ["L1"] 才對得上。
+    source = ANSWERER.read_text(encoding="utf-8").replace('\\"', '"')
     for line in SYSTEM_PROMPT.split("\n"):
         assert line in source, f"GroundedAnswerer 的系統提示沒有這一行：{line}"
 
