@@ -389,16 +389,28 @@
     // Enter 送出、Shift+Enter 換行；輸入法組字中（選字用的 Enter）絕不送出。觸控裝置的 Enter 是換行（和主流聊天介面一致，
     // 送出用按鈕），Ctrl／⌘+Enter 在哪裡都送出。空白不送。不看送出鈕的停用狀態：它跟著伺服器重畫，剛貼上文字就按 Enter
     // 時還沒更新；輸入與送出的事件在同一條連線上依序處理，送出時伺服器已經有最新的文字。
+    // Shift+Enter 的換行在這裡插入：留給瀏覽器預設動作時，換行只存在 DOM，較早的重繪會用上一個輸入事件的文字把它蓋掉。
     const hoverDevice = matchMedia("(hover: hover) and (pointer: fine)");
 
     document.addEventListener("keydown", (event) => {
         const area = event.target;
-        if (!area.matches?.("textarea[data-composer]") || event.key !== "Enter" || event.shiftKey || event.altKey) {
+        if (!area.matches?.("textarea[data-composer]") || event.key !== "Enter" || event.altKey) {
             return;
         }
 
         // keyCode 229 是 Safari 在組字結束的那一下送出的 Enter：isComposing 已經是 false，只能靠它認出來。
         if (event.isComposing || event.keyCode === 229) {
+            return;
+        }
+
+        // 換行不留給瀏覽器的預設動作。預設動作插進 DOM 的換行，會被隨後抵達的重繪用較早的文字蓋掉，
+        // 下一個輸入事件再把蓋掉的結果送回伺服器，換行就不會留下來。
+        if (event.shiftKey) {
+            event.preventDefault();
+            const start = area.selectionStart ?? area.value.length;
+            const end = area.selectionEnd ?? start;
+            area.setRangeText("\n", start, end, "end");
+            area.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertLineBreak" }));
             return;
         }
 

@@ -1,6 +1,11 @@
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime Js
 @* 問答輸入框模板：問答工作區（ChatPage）與設計展示（DesignGallery）共用這份標記。
    多行自動長高、桌機 Enter 送出／Shift+Enter 換行、組字中不送出（forms.js 的 data-composer），
-   字數接近上限時顯示即時字數，送出鈕依輸入內容啟用並在等待回答時顯示進行中回饋。 *@
+   字數接近上限時顯示即時字數，送出鈕依輸入內容啟用並在等待回答時顯示進行中回饋。
+   互動輸入框不綁 value：重繪若把較早的文字寫回 DOM，會蓋掉還沒送達的換行。內容以 DOM 為準，
+   只有程式改內容（送出後清空、帶入句子）才寫回去。 *@
 @if (Interactive)
 {
     <form class="ep-composer-form" @onsubmit="HandleSubmitAsync">
@@ -16,6 +21,8 @@ else
 
 @code {
     private ElementReference _input;
+    private IJSObjectReference? _module;
+    private string? _typed;
 
     /// <summary>輸入框目前的文字。</summary>
     [Parameter] public string Value { get; set; } = string.Empty;
@@ -67,11 +74,66 @@ else
 
     private bool SendDisabled => Interactive && (Disabled || Busy || string.IsNullOrWhiteSpace(Value));
 
+    // 靜態展示沒有輸入事件，內容只來自參數。互動時不輸出 value。
+    private IReadOnlyDictionary<string, object>? DisplayedValue =>
+        Interactive ? null : new Dictionary<string, object> { ["value"] = Value };
+
     private Task HandleInputAsync(ChangeEventArgs args)
     {
         var next = args.Value?.ToString() ?? string.Empty;
+        _typed = next;
         Value = next;
         return ValueChanged.InvokeAsync(next);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!Interactive || Value == _typed)
+        {
+            return;
+        }
+
+        // 第一次畫出來就是空的：DOM 已經是空的，不必為了寫入空字串去載入腳本。
+        if (firstRender && Value.Length == 0)
+        {
+            _typed = Value;
+            return;
+        }
+
+        var writing = Value;
+        try
+        {
+            _module ??= await Js.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/EnvCite.Platform.Web/Components/Shared/AskComposer.razor.js");
+            if (Value != writing)
+            {
+                return;
+            }
+
+            _typed = writing;
+            await _module.InvokeVoidAsync("setValue", _input, writing);
+        }
+        catch (JSDisconnectedException)
+        {
+            // 連線已斷：沒有輸入框可以寫了。
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // 連線已斷：模組跟著頁面走，不必再放。
+        }
     }
 
     private Task HandleSubmitAsync() =>
@@ -98,7 +160,7 @@ else
                       placeholder="@ResolvedPlaceholder"
                       aria-label="@(!Interactive ? ResolvedInputLabel : null)"
                       @ref="_input"
-                      value="@Value"
+                      @attributes="DisplayedValue"
                       @oninput="HandleInputAsync"
                       disabled="@(Interactive && Disabled)"></textarea>
             <div class="ep-composer-footer">
