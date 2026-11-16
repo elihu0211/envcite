@@ -1,4 +1,4 @@
-"""嵌入模型：OpenAI 相容的 `/embeddings` 端點，只用標準函式庫（同 `verification.models`）。
+"""嵌入模型：OpenAI 相容的 `/embeddings` 端點，經 `canon.net`（`httpx`）呼叫。
 
 語意臂在兩處用它：投影時為段落補嵌入（批次，重試與斷路由 `envcite_jobkit` 的政策處置），
 查詢時為問題取向量（逾時短、不重試，取不到就只用字面臂）。這裡每次只送一個請求，

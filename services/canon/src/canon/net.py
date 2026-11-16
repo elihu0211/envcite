@@ -5,7 +5,6 @@
 """
 
 import http.client
-import json
 import ssl
 import urllib.error
 import urllib.request
@@ -13,9 +12,11 @@ from collections.abc import Mapping
 from importlib.metadata import PackageNotFoundError, version
 from typing import cast
 
+import httpx
+
 from envcite_jobkit import Disposition, classify_http_status
 
-# urllib 預設的 `Python-urllib/x.y` 會被端點前面的 WAF（如 Cloudflare 的 error 1010）擋下，
+# urllib／httpx 預設的 User-Agent 會被端點前面的 WAF（如 Cloudflare 的 error 1010）擋下，
 # 所以明確自報身分；不偽裝成瀏覽器或其他工具。
 try:
     USER_AGENT = f"canon/{version('canon')}"
@@ -52,7 +53,7 @@ def urlopen(
     context: ssl.SSLContext | None = None,
     method: str | None = None,
 ) -> http.client.HTTPResponse:
-    """成功回傳回應（可讀、可當環境管理器）。4xx／5xx 丟 `HttpStatus`。連線問題原樣拋出。"""
+    """開啟快照或 `file://` 來源（`acquire.engine` 用）。4xx／5xx 丟 `HttpStatus`。"""
     request = urllib.request.Request(url, data=data, headers=dict(headers or {}), method=method)
     try:
         if context is None:
@@ -84,24 +85,15 @@ def json_headers(api_key: str | None) -> dict[str, str]:
 
 
 def post_json(url: str, payload: object, *, api_key: str | None, timeout: float) -> object:
-    """POST 一份 JSON，回傳解析後的回應；回應是不是物件由呼叫端判斷。
+    """以 `httpx` POST 一份 JSON，回傳解析後的回應；回應是不是物件由呼叫端判斷。
 
     4xx／5xx 丟 `HttpStatus`，其餘通訊失敗丟 `TransportError`，重試與例外的分類留給呼叫端。
     """
     try:
-        with urlopen(
-            url,
-            data=json.dumps(payload).encode(),
-            headers=json_headers(api_key),
-            timeout=timeout,
-            method="POST",
-        ) as response:
-            return json.loads(response.read())
-    except (
-        urllib.error.URLError,
-        TimeoutError,
-        ConnectionError,
-        http.client.HTTPException,
-        json.JSONDecodeError,
-    ) as e:
+        response = httpx.post(url, json=payload, headers=json_headers(api_key), timeout=timeout)
+        response.raise_for_status()
+        return response.json()
+    except httpx.HTTPStatusError as e:
+        raise HttpStatus(e.response.status_code, e.response.content, e.response.headers) from e
+    except (httpx.HTTPError, ValueError) as e:
         raise TransportError(f"{type(e).__name__}: {e}") from e

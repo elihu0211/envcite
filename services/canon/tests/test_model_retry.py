@@ -152,7 +152,7 @@ def test_a_reply_that_is_not_json_is_retried(served: Any, waits: list[float]) ->
 
 
 def test_a_refused_connection_is_retried_then_reported(waits: list[float]) -> None:
-    with pytest.raises(ModelError, match="URLError"):
+    with pytest.raises(ModelError, match="APIConnectionError"):
         model("http://127.0.0.1:9/v1", waits, max_retries=2).complete("問")
 
     assert len(waits) == 2

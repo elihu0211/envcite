@@ -1,4 +1,4 @@
-"""精排模型：Cohere／LiteLLM 相容的 `/rerank` 端點，只用標準函式庫（同 `embedding`）。
+"""精排模型：Cohere／LiteLLM 相容的 `/rerank` 端點，經 `canon.net`（`httpx`）呼叫。
 
 檢索先由兩臂（與函釋）取較深的候選，再由交叉編碼器逐一對（查詢，條文）打分、重排；它補的是兩臂
 的排序品質與召回深度，補不到兩臂都沒取到的條文。端點與模型宣告在 `models.toml` 的 `[reranker]`
