@@ -1,14 +1,12 @@
 """Hybrid retrieval: one content-addressed row per passage carries both arms; the semantic arm
 recalls what the words miss, and searching never fails because the embedder does."""
 
-import json
 import math
-import urllib.error
-import urllib.request
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+import httpx
 import psycopg
 import pytest
 
@@ -165,41 +163,33 @@ def test_a_failing_embedder_does_not_fail_the_search(store: CanonStore) -> None:
     assert servicer.search._query_embedding("噪音") is None
 
 
+def _ok_response(url: str, body: dict[str, Any]) -> httpx.Response:
+    return httpx.Response(200, json=body, request=httpx.Request("POST", url))
+
+
 def test_the_client_reads_openai_embeddings_and_checks_the_dimension(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     sent: dict[str, Any] = {}
 
-    class Reply:
-        def __init__(self, body: dict[str, Any]) -> None:
-            self.body = json.dumps(body).encode()
-
-        def __enter__(self) -> Reply:
-            return self
-
-        def __exit__(self, *args: object) -> None:
-            return None
-
-        def read(self) -> bytes:
-            return self.body
-
-    def ok(request: Any, timeout: float) -> Reply:
+    def ok(url: str, *, json: Any, headers: Mapping[str, str], timeout: float) -> httpx.Response:
         sent.update(
-            url=request.full_url,
-            auth=request.get_header("Authorization"),
-            user_agent=request.get_header("User-agent"),
+            url=url,
+            auth=headers.get("Authorization"),
+            user_agent=headers.get("User-Agent"),
+            body=json,
         )
-        sent["body"] = json.loads(request.data)
-        return Reply(
+        return _ok_response(
+            url,
             {
                 "data": [
                     {"index": 1, "embedding": [0.0] * DIMENSION},
                     {"index": 0, "embedding": [1.0] * DIMENSION},
                 ]
-            }
+            },
         )
 
-    monkeypatch.setattr(urllib.request, "urlopen", ok)
+    monkeypatch.setattr(httpx, "post", ok)
     client = Embedder("bge-m3-embedding", base_url="https://e.example/v1/", api_key="k")
 
     first, second = client.embed(["甲", "乙"])
@@ -209,32 +199,23 @@ def test_the_client_reads_openai_embeddings_and_checks_the_dimension(
     assert sent["user_agent"] == USER_AGENT  # 預設的 Python-urllib 會被端點前的 WAF 擋下
     assert sent["body"] == {"model": "bge-m3-embedding", "input": ["甲", "乙"]}
     monkeypatch.setattr(
-        urllib.request,
-        "urlopen",
-        lambda r, timeout: Reply({"data": [{"index": 0, "embedding": [0.0] * 3}]}),
+        httpx,
+        "post",
+        lambda url, **kw: _ok_response(url, {"data": [{"index": 0, "embedding": [0.0] * 3}]}),
     )
     with pytest.raises(EmbeddingError, match="1024"):
         client.embed(["甲"])
 
 
-class _Reply:
-    def __init__(self, count: int) -> None:
-        self.body = json.dumps(
-            {"data": [{"index": i, "embedding": [float(i)] * DIMENSION} for i in range(count)]}
-        ).encode()
-
-    def __enter__(self) -> _Reply:
-        return self
-
-    def __exit__(self, *args: object) -> None:
-        return None
-
-    def read(self) -> bytes:
-        return self.body
+def _vectors_response(url: str, count: int) -> httpx.Response:
+    return _ok_response(
+        url,
+        {"data": [{"index": i, "embedding": [float(i)] * DIMENSION} for i in range(count)]},
+    )
 
 
-def _http_error(code: int) -> urllib.error.HTTPError:
-    return urllib.error.HTTPError("https://e.example/v1/embeddings", code, "x", None, None)  # type: ignore[arg-type]
+def _http_error(url: str, code: int) -> httpx.Response:
+    return httpx.Response(code, text="x", request=httpx.Request("POST", url))
 
 
 def test_a_413_batch_is_split_until_the_endpoint_accepts_it(
@@ -242,14 +223,14 @@ def test_a_413_batch_is_split_until_the_endpoint_accepts_it(
 ) -> None:
     sizes: list[int] = []
 
-    def reply(request: Any, timeout: float) -> _Reply:
-        inputs = json.loads(request.data)["input"]
+    def reply(url: str, *, json: dict[str, Any], **kw: object) -> httpx.Response:
+        inputs = json["input"]
         sizes.append(len(inputs))
         if len(inputs) > 2:
-            raise _http_error(413)
-        return _Reply(len(inputs))
+            return _http_error(url, 413)
+        return _vectors_response(url, len(inputs))
 
-    monkeypatch.setattr(urllib.request, "urlopen", reply)
+    monkeypatch.setattr(httpx, "post", reply)
     client = Embedder("m", base_url="https://e.example/v1")
 
     vectors = client.embed(list("abcde"))
@@ -263,14 +244,14 @@ def test_a_single_text_over_the_model_limit_is_truncated_with_a_warning(
 ) -> None:
     lengths: list[int] = []
 
-    def reply(request: Any, timeout: float) -> _Reply:
-        (text,) = json.loads(request.data)["input"]
+    def reply(url: str, *, json: dict[str, Any], **kw: object) -> httpx.Response:
+        (text,) = json["input"]
         lengths.append(len(text))
         if len(text) > 1000:
-            raise _http_error(413)
-        return _Reply(1)
+            return _http_error(url, 413)
+        return _vectors_response(url, 1)
 
-    monkeypatch.setattr(urllib.request, "urlopen", reply)
+    monkeypatch.setattr(httpx, "post", reply)
     client = Embedder("m", base_url="https://e.example/v1")
 
     with caplog.at_level("WARNING"):
@@ -296,11 +277,11 @@ def test_each_failure_is_one_request_and_names_its_disposition(
 ) -> None:
     calls: list[int] = []
 
-    def reply(request: Any, timeout: float) -> _Reply:
-        calls.append(len(json.loads(request.data)["input"]))
-        raise _http_error(status)
+    def reply(url: str, *, json: dict[str, Any], **kw: object) -> httpx.Response:
+        calls.append(len(json["input"]))
+        return _http_error(url, status)
 
-    monkeypatch.setattr(urllib.request, "urlopen", reply)
+    monkeypatch.setattr(httpx, "post", reply)
     client = Embedder("m", base_url="https://e.example/v1")
 
     with pytest.raises(EmbeddingError, match=f"HTTP {status}") as raised:

@@ -6,13 +6,17 @@
 """
 
 import importlib
+import json
 import os
 import random
 import time
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
 
-from canon.net import HttpStatus, TransportError, endpoint, post_json
+import openai
+
+from canon.net import USER_AGENT
+from envcite_jobkit import Disposition, classify_http_status
 
 
 class ModelError(RuntimeError):
@@ -127,7 +131,7 @@ class AnthropicModel:
 
 
 class ChatCompletionsModel:
-    """OpenAI 相容的 Chat Completions 端點，只用標準函式庫。
+    """OpenAI 相容的 Chat Completions 端點（以官方 `openai` SDK 實作）。
 
     `model_id` 是送給端點的模型識別，原樣送出；`family` 由人宣告（獨立性規則所依），
     `base_url` 必填、無預設：不把法規文字悄悄送到未指定的第三方；`api_key` 自架可無。
@@ -163,6 +167,14 @@ class ChatCompletionsModel:
         self.max_retries = max_retries
         self.backoff = backoff
         self._sleep = sleep
+        self._client = openai.OpenAI(
+            base_url=base_url.rstrip("/"),
+            api_key=api_key,
+            _enforce_credentials=False,
+            timeout=timeout,
+            max_retries=0,
+            default_headers={"User-Agent": USER_AGENT},
+        )
 
     def __repr__(self) -> str:
         return f"ChatCompletionsModel({self.name!r})"  # 不印金鑰
@@ -177,46 +189,57 @@ class ChatCompletionsModel:
 
         溫度固定為 0（`assert_distinct` 的別名檢查依賴它）；回應的用量累計進 `tokens`。
         """
-        request_body: dict[str, Any] = {
-            "model": self.model_id,
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": self.max_tokens,
-            "temperature": 0,
-        }
-        if response_format is not None:
-            request_body["response_format"] = dict(response_format)
-        payload = self._post(request_body)
-        usage = payload.get("usage")
-        if isinstance(usage, dict):
-            self.tokens["prompt"] += int(usage.get("prompt_tokens") or 0)
-            self.tokens["completion"] += int(usage.get("completion_tokens") or 0)
-        content = ((payload.get("choices") or [{}])[0].get("message") or {}).get("content")
+        completion = self._create(response_format=response_format, prompt=prompt)
+        if completion.usage is not None:
+            self.tokens["prompt"] += int(completion.usage.prompt_tokens or 0)
+            self.tokens["completion"] += int(completion.usage.completion_tokens or 0)
+        choices = completion.choices or []
+        content = choices[0].message.content if choices and choices[0].message else None
         if not isinstance(content, str) or not content:
             raise ModelError(
                 f"{self.name}: empty content (a reasoning model may have used all max_tokens)"
             )
         return content
 
-    def _post(self, body: Mapping[str, Any]) -> dict[str, Any]:
+    def _create(
+        self, *, prompt: str, response_format: Mapping[str, Any] | None
+    ) -> openai.types.chat.ChatCompletion:
         """送出請求。端點問題（408／429／5xx 與連線失敗）退避重試，其餘狀態直接報。"""
-        url = f"{self._base_url.rstrip('/')}/chat/completions"
+        extra_headers = {"Authorization": openai.Omit()} if not self._api_key else None
+        kwargs: dict[str, Any] = {
+            "model": self.model_id,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": self.max_tokens,
+            "temperature": 0,
+        }
+        if response_format is not None:
+            kwargs["response_format"] = dict(response_format)
+        if extra_headers is not None:
+            kwargs["extra_headers"] = extra_headers
         for attempt in range(self.max_retries + 1):
             try:
-                payload = post_json(url, body, api_key=self._api_key, timeout=self.timeout)
-            except HttpStatus as e:
-                detail = f"{self.name}: HTTP {e.status}: {e.body[:200]!r}"
-                retry_after = e.headers.get("Retry-After") if e.headers is not None else None
-                if not endpoint(e) or attempt == self.max_retries:
+                completion = self._client.chat.completions.create(**kwargs)
+                if not isinstance(completion, openai.types.chat.ChatCompletion):
+                    raise ValueError("the reply is not a JSON object")
+                return completion
+            except openai.APIStatusError as e:
+                detail = f"{self.name}: HTTP {e.status_code}: {e.response.content[:200]!r}"
+                retry_after = e.response.headers.get("Retry-After")
+                if (
+                    classify_http_status(e.status_code) is not Disposition.ENDPOINT
+                    or attempt == self.max_retries
+                ):
                     raise ModelError(detail) from e
                 wait = self._wait(attempt, retry_after)
-            except TransportError as e:
+            except (
+                openai.APIConnectionError,
+                openai.APITimeoutError,
+                json.JSONDecodeError,
+                ValueError,
+            ) as e:
                 if attempt == self.max_retries:
-                    raise ModelError(f"{self.name}: {e}") from e
+                    raise ModelError(f"{self.name}: {type(e).__name__}: {e}") from e
                 wait = self._wait(attempt, None)
-            else:
-                if not isinstance(payload, dict):
-                    raise ModelError(f"{self.name}: the reply is not a JSON object")
-                return payload
             self._sleep(wait)
         raise AssertionError("unreachable")  # pragma: no cover
 
