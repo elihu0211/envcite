@@ -26,7 +26,7 @@ public sealed class FakeConsultServer : IAsyncDisposable
 
     public Uri Address { get; private set; } = null!;
 
-    public ConcurrentQueue<(GroundRequest Request, Metadata Headers)> Received { get; } = new();
+    public ConcurrentQueue<(GroundRequest Request, Metadata Headers, DateTime Deadline)> Received { get; } = new();
 
     public async Task StartAsync()
     {
@@ -50,7 +50,7 @@ public sealed class FakeConsultServer : IAsyncDisposable
     {
         public override Task<GroundResponse> Ground(GroundRequest request, ServerCallContext context)
         {
-            server.Received.Enqueue((request, context.RequestHeaders));
+            server.Received.Enqueue((request, context.RequestHeaders, context.Deadline));
             // 與真的 consult 同一條規則：沒有 x-tenant-id 就不處理，上游不會替呼叫端補租戶。
             if (string.IsNullOrEmpty(context.RequestHeaders.GetValue("x-tenant-id")))
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "x-tenant-id is required"));

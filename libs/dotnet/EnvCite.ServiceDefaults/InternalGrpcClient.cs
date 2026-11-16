@@ -56,7 +56,16 @@ public static class InternalGrpcClient
             _ => new DnsResolverFactory(refreshInterval: TimeSpan.FromSeconds(30))));
 
         return services.AddGrpcClient<TClient>((provider, o) =>
-                o.Address = new Uri(provider.GetRequiredService<IOptions<TOptions>>().Value.Address))
+            {
+                var options = provider.GetRequiredService<IOptions<TOptions>>().Value;
+                o.Address = new Uri(options.Address);
+                // 沒有明確 deadline 的呼叫一律用設定的逾時（client factory 每次呼叫都套用）；要更長的呼叫（推論）自己帶 deadline。
+                o.CallOptionsActions.Add(context =>
+                {
+                    if (context.CallOptions.Deadline is null)
+                        context.CallOptions = context.CallOptions.WithDeadline(DateTime.UtcNow + options.Timeout);
+                });
+            })
             .AddInterceptor<GrpcClientMetrics>()
             // 長壽命的 HTTP/2 連線：keepalive 偵測 NAT 或負載平衡器的靜默斷線（間隔須大於伺服器容許的
             // 最短 ping 間隔，見 envcite_grpc.connection）；閒置不回收，連線的壽命由伺服器的 GOAWAY 決定。

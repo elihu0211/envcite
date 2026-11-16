@@ -31,7 +31,7 @@ internal sealed class CanonGateway(
                         AsOf = asOf ?? string.Empty,
                         CategoryPrefix = categoryPrefix ?? string.Empty,
                     },
-                    deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
+                    cancellationToken: cancellationToken);
                 IReadOnlyList<LawSummaryDto> items =
                 [
                     .. response.Laws.Select(l => new LawSummaryDto(
@@ -74,7 +74,6 @@ internal sealed class CanonGateway(
 
                 var response = await canon.GetLawGraphAsync(
                     request,
-                    deadline: DateTime.UtcNow.Add(options.Value.Timeout),
                     cancellationToken: cancellationToken);
                 return MapGraph(response);
             }
@@ -99,7 +98,6 @@ internal sealed class CanonGateway(
         {
             var response = await canon.GetArticleByIriAsync(
                 new GetArticleByIriRequest { Iri = trimmed },
-                deadline: DateTime.UtcNow.Add(options.Value.Timeout),
                 cancellationToken: cancellationToken);
             var a = response.Article;
             return new ArticleDetailDto(
@@ -125,7 +123,7 @@ internal sealed class CanonGateway(
         {
             var response = await canon.GetLawAsync(
                 new GetLawRequest { Identifier = IdentifierOf(jurisdiction, idScheme, localId), AsOf = asOf ?? string.Empty },
-                deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken);
             await usage.RecordAsync(CanonEndpoints.GetLawOperation, 1, cancellationToken);
             var law = response.Law;
             return new LawDto(
@@ -142,7 +140,7 @@ internal sealed class CanonGateway(
         {
             var response = await canon.ListArticlesAsync(
                 new ListArticlesRequest { Identifier = IdentifierOf(jurisdiction, idScheme, localId), AsOf = asOf ?? string.Empty },
-                deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken);
             await usage.RecordAsync(CanonEndpoints.ListArticlesOperation, 1, cancellationToken);
             return [.. response.Articles.Select(a => new ArticleDto(a.Iri, a.Number))];
         });
@@ -153,7 +151,7 @@ internal sealed class CanonGateway(
         {
             var response = await canon.ListArticlesAsync(
                 new ListArticlesRequest { Identifier = IdentifierOf(jurisdiction, idScheme, localId), AsOf = asOf ?? string.Empty },
-                deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken);
             await usage.RecordAsync(CanonEndpoints.ListArticlesOperation, 1, cancellationToken);
             return new LawStructureDto(
                 [.. response.Articles.Select(a => new ArticleWithSortDto(a.Iri, a.Number, [.. a.SortKey]))],
