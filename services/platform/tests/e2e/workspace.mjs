@@ -50,8 +50,9 @@ const until = async (what, probe) => {
 };
 
 const turns = () => page.locator(".ep-turn");
-// 還在等結果的回合：等待中的提示文字；列出條文時的「找到 N 條」也是 ep-status，不能用樣式判斷。
-const pending = () => page.locator(".ep-turn", { hasText: "正在查找法源" });
+// 還在等結果的回合：看元件在等待狀態專屬的容器，不看提示文字——等待時的文字隨階段變（理解追問、找到 N 條、核對出處），
+// 只比對其中一種會在其他階段誤判成已回答；列出條文時的「找到 N 條」也是 ep-status，所以也不能用 ep-status 判斷。
+const pending = () => page.locator(".ep-turn .ep-turn-pending");
 
 /** 預先渲染的頁面在 circuit 連上之前，輸入框是停用的；可用了，就是 circuit 已經接手。 */
 const circuitConnected = () =>
