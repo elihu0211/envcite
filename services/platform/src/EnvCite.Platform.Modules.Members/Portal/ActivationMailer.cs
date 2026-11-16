@@ -1,4 +1,4 @@
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Portal;
 
 /// <summary>寄邀請信與信箱驗證信：呼叫端只給收件者與連結的資料，不碰文案、版面與傳輸。</summary>
 internal interface IActivationMailer

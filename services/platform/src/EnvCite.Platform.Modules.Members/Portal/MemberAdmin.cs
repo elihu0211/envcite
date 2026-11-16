@@ -2,7 +2,7 @@ using System.Security.Claims;
 
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Portal;
 
 /// <summary>
 /// 營運者管理租戶的成員。營運者的請求沒有 ambient tenant，所以每個操作經 <see cref="TenantScopes"/> 開一個綁好目標租戶的 scope，

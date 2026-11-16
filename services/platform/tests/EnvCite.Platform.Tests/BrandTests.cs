@@ -2,7 +2,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 
 using EnvCite.Platform.Api;
-using EnvCite.Platform.Modules.Members;
+using EnvCite.Platform.Modules.Members.Portal;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;

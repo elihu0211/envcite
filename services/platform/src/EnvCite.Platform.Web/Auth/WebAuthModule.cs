@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 
 namespace EnvCite.Platform.Web.Auth;
 
@@ -23,15 +22,9 @@ internal static class WebAuthModule
         services.AddSingleton<IAuthorizationHandler, OperatorHandler>();
 
         services.AddAuthentication()
-            .AddCookie(PlatformAuth.UiCookieScheme, cookie =>
+            .AddPlatformCookie(PlatformAuth.UiCookieScheme, "EnvCite.Ui", TimeSpan.FromHours(8), sliding: true, cookie =>
             {
-                cookie.Cookie.Name = "EnvCite.Ui";
-                cookie.Cookie.HttpOnly = true;
-                cookie.Cookie.SameSite = SameSiteMode.Lax;
-                cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 cookie.LoginPath = UiEndpoints.LoginPath;
-                cookie.ExpireTimeSpan = TimeSpan.FromHours(8);
-                cookie.SlidingExpiration = true;
                 // 滑動續期之外的絕對上限：起點登入時寫入，每個請求檢查（OperatorSessionLimit）。
                 cookie.Events.OnSigningIn = OperatorSessionLimit.StampAsync;
                 cookie.Events.OnValidatePrincipal = OperatorSessionLimit.EnforceAsync;

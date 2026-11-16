@@ -1,9 +1,10 @@
 using EnvCite.Platform.Modules.Members.DirectorySync;
+using EnvCite.Platform.Modules.Members.Operators;
+using EnvCite.Platform.Modules.Members.Portal;
 using EnvCite.ServiceDefaults;
 
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -32,15 +33,26 @@ public static class MembersModule
     public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
     /// <summary>
-    /// 客戶入口的成員：ASP.NET Core Identity 的使用者與密碼雜湊（PBKDF2），存在 <c>PlatformDbContext</c>，
-    /// 隨 Finbuckle 屬於單一租戶。登入 cookie 是自己的 scheme，帶 tenant、使用者 Id、角色 claim；
-    /// 授權只讀 claim。外部登入只有 Google（只對應到已存在的成員，不建立帳號）；邀請與驗證信走 <c>Platform:Mail</c>（見 07-01）。
+    /// 成員模組的三塊：客戶入口的成員、目錄同步（SCIM）、後台的營運者。三塊共用同一套 Identity 規則
+    /// （<see cref="ConfigureIdentity"/>），但各有自己的 user store 與 cookie scheme，所以分開註冊。
     /// </summary>
     public static IServiceCollection AddMembersModule(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.AddPortalMembers();
+        services.AddDirectorySync();
+        services.AddOperatorAccounts();
+        return services;
+    }
+
+    /// <summary>
+    /// 客戶入口的成員：ASP.NET Core Identity 的使用者與密碼雜湊（PBKDF2），存在 <c>PlatformDbContext</c>，
+    /// 隨 Finbuckle 屬於單一租戶。登入 cookie 是自己的 scheme，帶 tenant、使用者 Id、角色 claim；
+    /// 授權只讀 claim。外部登入只有 Google（只對應到已存在的成員，不建立帳號）；邀請與驗證信走 <c>Platform:Mail</c>（見 07-01）。
+    /// </summary>
+    private static void AddPortalMembers(this IServiceCollection services)
+    {
         services.AddSectionOptions<MembersOptions>();
-        services.AddSectionOptions<DirectoryOptions, DirectoryOptionsValidator>();
         services.AddSectionOptions<PortalGoogleOptions, PortalGoogleOptionsValidator>();
         services.AddSingleton<IGoogleSignInAvailability, GoogleSignInAvailability>();
         services.AddSingleton<IConfigureOptions<GoogleOptions>, ConfigurePortalGoogle>();
@@ -58,36 +70,14 @@ public static class MembersModule
             .AddTokenProvider<DataProtectorTokenProvider<ApplicationUser>>(TokenOptions.DefaultProvider)
             .AddClaimsPrincipalFactory<PortalClaimsPrincipalFactory>();
 
+        // 前兩個是暫存憑證（不是登入 cookie，入口的授權不認這兩個 scheme）：
+        // Identity 原生的「密碼已通過、等第二步」，五分鐘；Google 回來、租戶路徑下的第二段登入完成之前的暫存身分，十分鐘。
         services.AddAuthentication()
-            .AddCookie(IdentityConstants.TwoFactorUserIdScheme, cookie =>
-            {
-                // Identity 原生的「密碼已通過、等第二步」cookie：五分鐘、不滑動，不是登入 cookie（入口的授權不認這個 scheme）。
-                cookie.Cookie.Name = "EnvCite.PortalMfa";
-                cookie.Cookie.HttpOnly = true;
-                cookie.Cookie.SameSite = SameSiteMode.Lax;
-                cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                cookie.ExpireTimeSpan = TimeSpan.FromMinutes(5);
-                cookie.SlidingExpiration = false;
-            })
-            .AddCookie(IdentityConstants.ExternalScheme, cookie =>
-            {
-                // Google 回來、租戶路徑下的第二段登入完成之前的暫存身分：十分鐘、不滑動，不是登入 cookie（入口的授權不認這個 scheme）。
-                cookie.Cookie.Name = "EnvCite.PortalExternal";
-                cookie.Cookie.HttpOnly = true;
-                cookie.Cookie.SameSite = SameSiteMode.Lax;
-                cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                cookie.ExpireTimeSpan = TimeSpan.FromMinutes(10);
-                cookie.SlidingExpiration = false;
-            })
+            .AddPlatformCookie(IdentityConstants.TwoFactorUserIdScheme, "EnvCite.PortalMfa", TimeSpan.FromMinutes(5), sliding: false)
+            .AddPlatformCookie(IdentityConstants.ExternalScheme, "EnvCite.PortalExternal", TimeSpan.FromMinutes(10), sliding: false)
             .AddGoogle(PlatformAuth.PortalGoogleScheme, ConfigurePortalGoogle.ConfigureHandler)
-            .AddCookie(PlatformAuth.PortalCookieScheme, cookie =>
+            .AddPlatformCookie(PlatformAuth.PortalCookieScheme, "EnvCite.Portal", TimeSpan.FromHours(8), sliding: true, cookie =>
             {
-                cookie.Cookie.Name = "EnvCite.Portal";
-                cookie.Cookie.HttpOnly = true;
-                cookie.Cookie.SameSite = SameSiteMode.Lax;
-                cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                cookie.ExpireTimeSpan = TimeSpan.FromHours(8);
-                cookie.SlidingExpiration = true;
                 cookie.Events.OnValidatePrincipal = PortalSessionValidator.ValidateAsync;
                 cookie.Events.OnRedirectToLogin = PortalRedirects.ToLogin;
                 cookie.Events.OnRedirectToAccessDenied = PortalRedirects.ToAccessDenied;
@@ -118,16 +108,24 @@ public static class MembersModule
         services.AddScoped<IPortalProfile, PortalProfile>();
         services.AddScoped<ITenantSelfService, TenantSelfService>();
         services.AddSingleton<IMemberAdmin, MemberAdmin>();
+    }
+
+    /// <summary>
+    /// 目錄同步：入口（SCIM）的 token 是自己的 scheme，與 API key 互不通用；路徑只在部署者開啟時才掛（<see cref="ScimEndpoints"/>）。
+    /// 它與客戶入口共用 <see cref="MemberCore"/>（邀請信的寄送），所以兩塊在同一個專案內。
+    /// </summary>
+    private static void AddDirectorySync(this IServiceCollection services)
+    {
+        services.AddSectionOptions<DirectoryOptions, DirectoryOptionsValidator>();
         services.AddScoped<DirectoryGroupRoles>();
         services.AddScoped<DirectoryManagement>();
         services.AddScoped<IDirectoryProvisioning, DirectoryProvisioning>();
         services.AddScoped<IDirectorySelfService, DirectorySelfService>();
         services.AddSingleton<IDirectoryAdmin, DirectoryAdmin>();
         services.AddSingleton<IDirectoryAvailability, DirectoryAvailability>();
-
-        // 目錄同步的入口（SCIM）：token 是自己的 scheme，與 API key 互不通用；路徑只在部署者開啟時才掛（ScimEndpoints）。
         services.AddSingleton<DirectoryMetrics>();
         services.AddSingleton<DirectoryRateLimiter>();
+
         services.AddAuthentication()
             .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, DirectoryTokenAuthenticationHandler>(
                 PlatformAuth.DirectoryTokenScheme, _ => { });
@@ -135,10 +133,6 @@ public static class MembersModule
             .AddPolicy(PlatformAuth.DirectoryPolicy, policy => policy
                 .AddAuthenticationSchemes(PlatformAuth.DirectoryTokenScheme)
                 .RequireClaim(PlatformClaimTypes.DirectoryTokenId));
-
-        services.AddOperatorAccounts();
-
-        return services;
     }
 
     /// <summary>
@@ -180,17 +174,9 @@ public static class MembersModule
             UserOnlyStore<OperatorUser, PlatformDbContext, Guid, IdentityUserClaim<Guid>, IdentityUserLogin<Guid>, IdentityUserToken<Guid>>>();
         services.AddScoped<IUserClaimsPrincipalFactory<OperatorUser>, OperatorClaimsPrincipalFactory>();
 
+        // 「密碼已通過、等第二步」：五分鐘、不滑動，不是登入 cookie（後台的授權不認這個 scheme）。
         services.AddAuthentication()
-            .AddCookie(OperatorMfaPendingCookie.Scheme, cookie =>
-            {
-                // 「密碼已通過、等第二步」：五分鐘、不滑動，不是登入 cookie（後台的授權不認這個 scheme）。
-                cookie.Cookie.Name = "EnvCite.UiMfa";
-                cookie.Cookie.HttpOnly = true;
-                cookie.Cookie.SameSite = SameSiteMode.Lax;
-                cookie.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                cookie.ExpireTimeSpan = OperatorMfaPendingCookie.Lifetime;
-                cookie.SlidingExpiration = false;
-            });
+            .AddPlatformCookie(OperatorMfaPendingCookie.Scheme, "EnvCite.UiMfa", OperatorMfaPendingCookie.Lifetime, sliding: false);
 
         services.AddScoped<OperatorMfaPendingCookie>();
         services.AddScoped<OperatorAccount>();

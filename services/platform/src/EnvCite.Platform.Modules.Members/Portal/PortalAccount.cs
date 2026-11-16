@@ -5,7 +5,7 @@ using Finbuckle.MultiTenant.Abstractions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Portal;
 
 /// <summary>
 /// 客戶入口的帳密登入，與登入後改密碼。每個動作都在目前請求的租戶內，並留稽核。

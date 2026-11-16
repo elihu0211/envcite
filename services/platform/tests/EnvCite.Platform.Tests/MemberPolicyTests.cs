@@ -1,4 +1,4 @@
-using EnvCite.Platform.Modules.Members;
+using EnvCite.Platform.Modules.Members.Portal;
 
 namespace EnvCite.Platform.Tests;
 

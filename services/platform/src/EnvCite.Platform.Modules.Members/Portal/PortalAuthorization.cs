@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Portal;
 
 /// <summary>
 /// 登入 cookie 裡放什麼：使用者 Id、角色、租戶，以及「還必須先改密碼」。授權之後只讀這些 claim，

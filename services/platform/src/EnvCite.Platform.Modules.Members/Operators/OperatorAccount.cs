@@ -1,10 +1,12 @@
 using System.Security.Claims;
 
+using EnvCite.Platform.Modules.Members.Portal;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Operators;
 
 /// <summary>
 /// 後台的帳密登入、登出與改密碼。結構與 <see cref="PortalAccount"/> 相同，差別在：沒有租戶；每位營運者都必須使用

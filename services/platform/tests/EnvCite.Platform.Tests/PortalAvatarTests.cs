@@ -2,7 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 
-using EnvCite.Platform.Modules.Members;
+using EnvCite.Platform.Modules.Members.Portal;
 
 using SkiaSharp;
 

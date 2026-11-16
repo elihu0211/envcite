@@ -4,7 +4,7 @@ using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Portal;
 
 /// <inheritdoc cref="IPortalProfile"/>
 internal sealed class PortalProfile(

@@ -1,5 +1,7 @@
 using System.Globalization;
 
+using EnvCite.Platform.Web.Auth;
+
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -45,8 +47,8 @@ public static class Localization
             branch => branch.UseRequestLocalization());
 
     private static bool IsUiPath(PathString path) =>
-        path.StartsWithSegments("/ui") || path.StartsWithSegments(PortalPaths.Prefix)
-        || path.StartsWithSegments("/_blazor") || path.StartsWithSegments(WebModule.DesignGalleryPath)
+        path.StartsWithSegments(UiEndpoints.HomePath) || path.StartsWithSegments(PortalPaths.Prefix)
+        || path.StartsWithSegments(WebModule.BlazorPath) || path.StartsWithSegments(WebModule.DesignGalleryPath)
         || path.StartsWithSegments(WebModule.NotFoundPath);
 
     /// <summary>
