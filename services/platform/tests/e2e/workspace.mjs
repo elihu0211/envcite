@@ -435,8 +435,11 @@ const scenarios = {
             }
             await page.keyboard.type("整理");
             await until("輸入框應含換行", async () => (await area.inputValue()).includes("\n"));
-            const after = (await area.boundingBox()).height;
-            if (after <= before) throw new Error(`輸入框沒有長高：${before} → ${after}`);
+            // 長高是輸入事件之後才發生的（forms.js），文字出現的當下還沒量得到：輪詢，不是量一次。
+            await until(`輸入框應跟著長高（原本 ${before}）`, async () => {
+                const height = (await area.boundingBox()).height;
+                return height > before || height;
+            });
             await until("有字之後送出鈕應啟用", async () => await send.isEnabled());
             await page.waitForTimeout(300);
             if ((await turns().count()) !== 0) throw new Error("Shift+Enter 不該送出");
