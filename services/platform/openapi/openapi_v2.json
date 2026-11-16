@@ -995,6 +995,65 @@
           "Limit"
         ]
       },
+      "CourtDecisionDto": {
+        "required": [
+          "jid",
+          "decidedOn",
+          "instance",
+          "kind",
+          "title",
+          "statementIds",
+          "sourceUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "jid": {
+            "type": "string"
+          },
+          "decidedOn": {
+            "type": "string"
+          },
+          "instance": {
+            "$ref": "#/components/schemas/CourtInstanceDto"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CourtDecisionKindDto"
+          },
+          "title": {
+            "type": "string"
+          },
+          "statementIds": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
+          },
+          "sourceUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CourtDecisionKindDto": {
+        "enum": [
+          "Ordinary",
+          "GrandChamber"
+        ]
+      },
+      "CourtInstanceDto": {
+        "enum": [
+          "Supreme",
+          "High",
+          "District"
+        ]
+      },
       "CriminalDeductionDto": {
         "required": [
           "penaltyStatementId",
@@ -2175,6 +2234,15 @@
                 "$ref": "#/components/schemas/DispositionAuditResultDto"
               }
             ]
+          },
+          "courtDecisions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CourtDecisionDto"
+            }
           }
         }
       },

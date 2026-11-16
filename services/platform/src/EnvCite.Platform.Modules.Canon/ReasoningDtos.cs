@@ -168,6 +168,38 @@ public enum ProblemKindDto
     InvalidatedDelegation,
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter<CourtInstanceDto>))]
+public enum CourtInstanceDto
+{
+    /// <summary>最高行政法院。</summary>
+    Supreme,
+    /// <summary>高等行政法院。</summary>
+    High,
+    /// <summary>地方行政法院。</summary>
+    District,
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter<CourtDecisionKindDto>))]
+public enum CourtDecisionKindDto
+{
+    /// <summary>一般判決與裁定。</summary>
+    Ordinary,
+    /// <summary>最高行政法院大法庭裁定。只拘束提案庭於該案，仍只是解釋依據。</summary>
+    GrandChamber,
+}
+
+/// <summary>
+/// 行政法院對結論所依條文的一則裁判。個別案件的拘束（行政訴訟法第 216 條），不參與推論，只附在結果旁。
+/// </summary>
+/// <param name="Jid">司法院 jid。</param>
+/// <param name="DecidedOn">裁判日（<c>YYYY-MM-DD</c>）。</param>
+/// <param name="Title">案由。</param>
+/// <param name="StatementIds">本則所解釋、出現在結果裡的陳述。</param>
+/// <param name="SourceUrl">原文的網址；沒有時為 null。</param>
+public sealed record CourtDecisionDto(
+    string Jid, string DecidedOn, CourtInstanceDto Instance, CourtDecisionKindDto Kind, string Title,
+    IReadOnlyList<long> StatementIds, string? SourceUrl);
+
 [JsonConverter(typeof(JsonStringEnumConverter<GuidanceKindDto>))]
 public enum GuidanceKindDto
 {
@@ -410,6 +442,7 @@ public sealed record GuidanceDto(
 /// 不代表當時沒有這些規定。</param>
 /// <param name="DefinitionsUsed">概念值要件所依的用語定義；沒有定義涵蓋而判為不屬於的，沒有定義可指，不在此。</param>
 /// <param name="Guidance">附在結果旁的行政規則；不是推論的前提。</param>
+/// <param name="CourtDecisions">附在結果旁的行政法院裁判；不是推論的前提。沒有時為 null。</param>
 /// <param name="MissingPermitLimits">結論所需、但請求沒有提供的許可量值。</param>
 /// <param name="SubjectMismatch">其餘要件成立或未知、但主體的責任基礎與請求的行為人所屬都不符，因而不列出的罰則陳述。</param>
 /// <param name="Invalidated">所依法規中該日已違憲失效、因而不參與推論的陳述；<c>verdicts</c> 少了某則陳述時先看這裡。</param>
@@ -429,7 +462,8 @@ public sealed record OutcomeDto(
     IReadOnlyList<SameKindNonFineOverlapDto>? SameKindNonFineOverlaps = null,
     IReadOnlyList<StatementPairDto>? MutatisApplied = null,
     IReadOnlyList<ScoringResultDto>? ScoringResults = null,
-    DispositionAuditResultDto? DispositionAudit = null);
+    DispositionAuditResultDto? DispositionAudit = null,
+    IReadOnlyList<CourtDecisionDto>? CourtDecisions = null);
 
 /// <param name="FirstDay">這一組陳述開始適用的第一天（<c>YYYY-MM-DD</c>）。</param>
 public sealed record EarlierOutcomeDto(string FirstDay, OutcomeDto Outcome);

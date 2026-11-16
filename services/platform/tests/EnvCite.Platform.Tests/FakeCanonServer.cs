@@ -487,6 +487,18 @@ public sealed class FakeCanonServer : IAsyncDisposable
                         PublishedIn = "行政院公報第26卷",
                     },
                 },
+                CourtDecisions =
+                {
+                    new CourtDecision
+                    {
+                        Jid = "TPAA,110,上,1,20210101,1",
+                        DecidedOn = "2021-01-01",
+                        Instance = CourtInstance.Supreme,
+                        Kind = CourtDecisionKind.Ordinary,
+                        Title = "廢棄物清理法",
+                        StatementIds = { 7 },
+                    },
+                },
             };
             return Task.FromResult(new EvaluateResponse
             {

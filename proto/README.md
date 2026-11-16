@@ -168,7 +168,7 @@ sequenceDiagram
 2. **語料與失效邊界**：
    - `Outcome.uncovered_law_identifiers` 列出該日已制定但語料無版本之法規，**不可將 `earlier` 的空 `verdicts` 解讀為行為時合規**。
    - 違憲失效版本不參與推論，列於 `Outcome.invalidated`（限值條文失效附 `PROBLEM_KIND_INVALIDATED_DELEGATION`）。
-   - `Outcome.guidance`（行政規則）僅附在結果旁供參考，非推論前提。
+   - `Outcome.guidance`（行政規則）與 `Outcome.court_decisions`（行政法院裁判）僅附在結果旁供參考，非推論前提。裁判以裁處日不早於裁判日、且錨點為陳述所讀文字來附上；個別案件的拘束不改結論。
 3. **管制量值與認定方式**：委由個別處分（`Condition.delegate_permit`）之量值放 `permit_limits`（缺漏列於 `Outcome.missing_permit_limits`）；限值有標 `measurement_method`／`averaging_period` 時須與事實一致（否則 `PROBLEM_KIND_MEASUREMENT_MISMATCH`），未標者照常比對並附 `PROBLEM_KIND_MEASUREMENT_UNLABELED`。
 4. **責任基礎、前置罰則與授權鏈**：
    - `Slot.liability_basis` 與 `actor_bases` 有交集則主體成立，無交集列於 `Outcome.subject_mismatch`，未提供則附條件並於 `Outcome.missing` 報缺 `liability_basis`；任一未標則不受限。

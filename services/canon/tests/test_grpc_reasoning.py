@@ -11,6 +11,7 @@ from grpc_status import rpc_status
 
 from canon import errors
 from canon.annotate import load
+from canon.law.judgment import load as load_decision
 from canon.reasoning.facts.chains import Chain, Link
 from canon.reasoning_codec import outcome as outcome_codec
 from canon.reasoning_service import ReasoningServicer
@@ -136,6 +137,45 @@ def test_a_violation_is_a_candidate_with_its_source(
     (cod,) = [t for t in response.at_decision.trace if t.concept == "cod"]
     assert (cod.fact.value, cod.threshold.value) == ("150", "100")
     assert cod.role == reasoning_pb2.CONDITION_ROLE_DUTY
+
+
+def test_a_court_decision_is_attached_beside_the_verdict_and_does_not_change_it(
+    conn: Conn, tmp_path: Path, reasoning_stub: Stub
+) -> None:
+    duty_id, _ = _committed(conn, tmp_path)
+    load_decision(
+        conn,
+        {
+            "derivation": {"method": "rule", "agent": "test", "agent_version": "1"},
+            "decisions": [
+                {
+                    "jid": "TPAA,108,上,1,20190601,1",
+                    "decided_on": "2019-06-01",
+                    "instance": "supreme",
+                    "title": "噪音管制法",
+                    "body": "理由：依第一條。",
+                    "cites": [{"law": LAW, "path": "art_1", "text": "甲一", "basis": "decided_on"}],
+                },
+                {
+                    "jid": "TPAA,109,上,2,20200101,1",
+                    "decided_on": "2020-01-01",
+                    "instance": "supreme",
+                    "title": "裁判日晚於裁處日",
+                    "body": "理由：依第一條。",
+                    "cites": [{"law": LAW, "path": "art_1", "text": "甲一", "basis": "decided_on"}],
+                },
+            ],
+        },
+    )
+
+    response = reasoning_stub.Evaluate(_case(), metadata=call_metadata())
+
+    assert response.at_decision.verdicts[0].verdict == reasoning_pb2.VERDICT_VIOLATION
+    (decision,) = response.at_decision.court_decisions
+    assert decision.jid == "TPAA,108,上,1,20190601,1"
+    assert decision.instance == reasoning_pb2.COURT_INSTANCE_SUPREME
+    assert decision.kind == reasoning_pb2.COURT_DECISION_KIND_ORDINARY
+    assert list(decision.statement_ids) == [duty_id]
 
 
 def test_a_law_changed_after_the_conduct_is_reported_for_both_times(

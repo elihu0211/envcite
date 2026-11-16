@@ -600,6 +600,11 @@ message Outcome {
 
   // 裁罰處分書要件與引用完備性檢核結果（CQ D1–D3）。
   optional DispositionAuditResult disposition_audit = 27;
+
+  // 行政法院對本結果所依條文的裁判。個別案件的拘束（行政訴訟法第 216 條），不是通案規則，
+  // 所以不參與推論，只附在結果旁。以裁處日不早於裁判日、且錨點正是陳述所讀的那段文字來篩；
+  // 全文不在此。
+  repeated CourtDecision court_decisions = 28;
 }
 
 message InvalidatedStatement {
@@ -694,6 +699,44 @@ message Guidance {
 
   // 原文的網址，可能為空。
   string source_url = 8;
+}
+
+enum CourtInstance {
+  COURT_INSTANCE_UNSPECIFIED = 0;
+  // 最高行政法院。
+  COURT_INSTANCE_SUPREME = 1;
+  // 高等行政法院。
+  COURT_INSTANCE_HIGH = 2;
+  // 地方行政法院。
+  COURT_INSTANCE_DISTRICT = 3;
+}
+
+enum CourtDecisionKind {
+  COURT_DECISION_KIND_UNSPECIFIED = 0;
+  // 一般判決與裁定。
+  COURT_DECISION_KIND_ORDINARY = 1;
+  // 最高行政法院大法庭裁定。只拘束提案庭於該案，這裡仍只是解釋依據。
+  COURT_DECISION_KIND_GRAND_CHAMBER = 2;
+}
+
+message CourtDecision {
+  // 司法院 jid。
+  string jid = 1;
+
+  // 裁判日（ISO 8601）。
+  string decided_on = 2;
+
+  CourtInstance instance = 3;
+  CourtDecisionKind kind = 4;
+
+  // 案由。
+  string title = 5;
+
+  // 本則所解釋、出現在本結果裡的陳述。
+  repeated int64 statement_ids = 6;
+
+  // 原文的網址，可能為空。
+  string source_url = 7;
 }
 
 message PermitGap {
