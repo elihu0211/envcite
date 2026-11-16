@@ -2514,6 +2514,27 @@
   <data name="流程與結構圖表" xml:space="preserve">
     <value>Diagram</value>
   </data>
+  <data name="結論摘要" xml:space="preserve">
+    <value>Summary</value>
+  </data>
+  <data name="核心義務" xml:space="preserve">
+    <value>Requirement</value>
+  </data>
+  <data name="合規提醒" xml:space="preserve">
+    <value>Caution</value>
+  </data>
+  <data name="依據" xml:space="preserve">
+    <value>Basis</value>
+  </data>
+  <data name="流程步驟" xml:space="preserve">
+    <value>Workflow steps</value>
+  </data>
+  <data name="系統產生的回答格式不符合規格，已捨棄，沒有顯示。請換個說法再問一次。" xml:space="preserve">
+    <value>The generated answer did not match the required format and was discarded. Please rephrase and try again.</value>
+  </data>
+  <data name="無法載入這則回答的內容。" xml:space="preserve">
+    <value>Unable to load the content of this answer.</value>
+  </data>
   <data name="Enter 送出 · Shift+Enter 換行" xml:space="preserve">
     <value>Enter to send · Shift+Enter for new line</value>
   </data>

@@ -1,24 +1,20 @@
-using EnvCite.Platform.Web.Presentation.Output;
-
 using Microsoft.AspNetCore.Components;
 
 namespace EnvCite.Platform.Web.Components.Shared;
 
-public sealed partial class FormattedAnswerView(IOutputLayoutEngine layoutEngine)
+public sealed partial class FormattedAnswerView
 {
     private IReadOnlyList<AnswerSource>? _cachedSources;
     private Dictionary<string, AnswerSource>? _lookup;
 
     [Parameter]
-    public string? Content { get; set; }
+    public AnswerDocument? Document { get; set; }
 
     [Parameter]
     public IReadOnlyList<AnswerSource> Sources { get; set; } = [];
 
     [Parameter]
     public EventCallback<AnswerSource> OnCitationSelect { get; set; }
-
-    private IOutputLayoutEngine LayoutEngine => layoutEngine;
 
     private IReadOnlyDictionary<string, AnswerSource> SourceLookup =>
         _cachedSources == Sources && _lookup is not null
@@ -38,25 +34,17 @@ public sealed partial class FormattedAnswerView(IOutputLayoutEngine layoutEngine
         return map;
     }
 
-    private RenderFragment RenderHeading(OutputHeadingBlock heading) => builder =>
+    private static string CalloutToneClass(CalloutTone tone) => tone switch
     {
-        // 聊天泡泡內不搶頁面 <h1> 主標題，標題層級對應為 h2–h4。
-        var tag = Math.Clamp(heading.Level + 1, 2, 4) switch
-        {
-            2 => "h2",
-            3 => "h3",
-            _ => "h4",
-        };
-        builder.OpenElement(0, tag);
-        builder.AddAttribute(1, "class", "ep-md-heading");
-        builder.AddContent(2, RenderInlines(heading.Inlines));
-        builder.CloseElement();
+        CalloutTone.Requirement => "ep-ans-callout-requirement",
+        CalloutTone.Caution => "ep-ans-callout-caution",
+        _ => "ep-ans-callout-summary",
     };
 
-    private static string? AlignmentClass(OutputCellAlignment alignment) => alignment switch
+    private string CalloutToneLabel(CalloutTone tone) => tone switch
     {
-        OutputCellAlignment.Center => "ep-align-center",
-        OutputCellAlignment.Right => "ep-align-right",
-        _ => null,
+        CalloutTone.Requirement => L["核心義務"],
+        CalloutTone.Caution => L["合規提醒"],
+        _ => L["結論摘要"],
     };
 }

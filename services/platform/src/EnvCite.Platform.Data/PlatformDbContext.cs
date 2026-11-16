@@ -1,8 +1,12 @@
+using System.Text.Json;
+
 using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.EntityFrameworkCore.Extensions;
 using Finbuckle.MultiTenant.Identity.EntityFrameworkCore;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace EnvCite.Platform.Data;
 
@@ -167,10 +171,21 @@ public sealed class PlatformDbContext : MultiTenantIdentityDbContext<Application
 
         builder.Entity<ConversationMessage>(message =>
         {
+            var documentConverter = new ValueConverter<AnswerDocument?, string?>(
+                v => v == null ? null : JsonSerializer.Serialize(v, AnswerJson.Options),
+                v => string.IsNullOrEmpty(v) ? null : JsonSerializer.Deserialize<AnswerDocument>(v, AnswerJson.Options));
+            var documentComparer = new ValueComparer<AnswerDocument?>(
+                (a, b) => JsonSerializer.Serialize(a, AnswerJson.Options) == JsonSerializer.Serialize(b, AnswerJson.Options),
+                v => v == null ? 0 : JsonSerializer.Serialize(v, AnswerJson.Options).GetHashCode(StringComparison.Ordinal),
+                v => v == null ? null : JsonSerializer.Deserialize<AnswerDocument>(JsonSerializer.Serialize(v, AnswerJson.Options), AnswerJson.Options));
+
             message.IsMultiTenant();
             message.Property(m => m.Role).HasMaxLength(16);
             message.Property(m => m.AsOf).HasMaxLength(10);
             message.Property(m => m.Outcome).HasMaxLength(16);
+            message.Property(m => m.Document)
+                .HasColumnType("jsonb")
+                .HasConversion(documentConverter, documentComparer);
             message.OwnsMany(m => m.Citations, citations => citations.ToJson());
             message.HasIndex(m => new { m.ConversationId, m.CreatedAt });
         });

@@ -9,8 +9,16 @@ internal static class AskServiceExtensions
         this IAskService ask, ClaimsPrincipal user, string? question, string? asOf, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken) =>
         ask.AskAsync(user, question, asOf, [], progress, cancellationToken);
 
-    /// <summary>記一問一答（有出處的回答，引用寫在文字裡）：多數測試只關心「有一串對話存在」，不關心引用的結構。</summary>
+    /// <summary>記一問一答（強型別單一段落）：多數測試只關心「有一串對話存在」，不關心詳細積木。</summary>
     public static Task<Guid?> RecordAsync(
         this IAskService ask, ClaimsPrincipal user, Guid? conversationId, string question, string answer, CancellationToken cancellationToken) =>
-        ask.RecordAsync(user, conversationId, new ConversationTurn(question, answer, ConversationOutcome.Answered, []), cancellationToken);
+        ask.RecordAsync(
+            user,
+            conversationId,
+            new ConversationTurn(
+                question,
+                ConversationOutcome.Answered,
+                [],
+                Document: new AnswerDocument([new ProseBlock(null, answer, [])])),
+            cancellationToken);
 }
