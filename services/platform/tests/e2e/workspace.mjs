@@ -435,7 +435,15 @@ const scenarios = {
                 await page.keyboard.press("Shift+Enter");
             }
             await page.keyboard.type("整理");
-            await until("輸入框應含換行", async () => (await area.inputValue()).includes("\n"));
+            let seen = "";
+            try {
+                await until("輸入框應含換行", async () => {
+                    seen = await area.inputValue();
+                    return seen.includes("\n");
+                });
+            } catch (error) {
+                throw new Error(`${error.message} value=${JSON.stringify(seen)}`, { cause: error });
+            }
             // 長高是輸入事件之後才發生的（forms.js），文字出現的當下還沒量得到：輪詢，不是量一次。
             await until(`輸入框應跟著長高（原本 ${before}）`, async () => {
                 const height = (await area.boundingBox()).height;

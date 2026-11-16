@@ -1,6 +1,8 @@
 @* 問答輸入框模板：問答工作區（ChatPage）與設計展示（DesignGallery）共用這份標記。
    多行自動長高、桌機 Enter 送出／Shift+Enter 換行、組字中不送出（forms.js 的 data-composer），
-   字數接近上限時顯示即時字數，送出鈕依輸入內容啟用並在等待回答時顯示進行中回饋。 *@
+   字數接近上限時顯示即時字數，送出鈕依輸入內容啟用並在等待回答時顯示進行中回饋。
+   value 要留在預先渲染的標記裡：從 ?q= 進來的句子必須出現在第一個畫面。
+   較早的重繪若把這份文字的前段寫回 DOM，由 forms.js 擋下。 *@
 @if (Interactive)
 {
     <form class="ep-composer-form" @onsubmit="HandleSubmitAsync">
