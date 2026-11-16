@@ -119,6 +119,7 @@ public sealed partial class LawCorpus(
         new(L["授權連線"], g.Edges.Count.ToString(CultureInfo.CurrentCulture), g.Edges.Any(e => e.Kind == "sub_delegation") ? L["含再授權鏈"].Value : null),
         new(L["罰則條文連動"], g.ViolationLinks.Count.ToString(CultureInfo.CurrentCulture)),
         new(L["有效行政函釋"], (focus?.GuidanceCount ?? g.GuidanceLinks.Count).ToString(CultureInfo.CurrentCulture), L["行政程序法第 159 條"]),
+        new(L["行政法院裁判"], g.CourtDecisions.Count.ToString(CultureInfo.CurrentCulture), L["行政訴訟法第 216 條"]),
     ];
 
     private IReadOnlyList<StatItem> StructureStats(PortalLawCorpusResult law, PortalLawGraphNode? focus) =>
@@ -127,6 +128,7 @@ public sealed partial class LawCorpus(
         new(L["結構章節"], law.Structure.Count.ToString(CultureInfo.CurrentCulture)),
         new(L["直接授權子法"], (focus?.TotalChildren ?? 0).ToString(CultureInfo.CurrentCulture)),
         new(L["有效行政函釋"], (focus?.GuidanceCount ?? 0).ToString(CultureInfo.CurrentCulture)),
+        new(L["行政法院裁判"], (_graphResult?.CourtDecisions.Count ?? 0).ToString(CultureInfo.CurrentCulture), L["行政訴訟法第 216 條"]),
     ];
 
     private IReadOnlyList<StatItem> SummaryStats(PortalReasoningOutcome r) =>
@@ -376,6 +378,20 @@ public sealed partial class LawCorpus(
         "local_regulation" => L["自治規則"],
         "administrative_rule" => L["行政規則"],
         _ => L["命令"],
+    };
+
+    private string CourtInstanceLabel(string instance) => instance switch
+    {
+        "supreme" => L["最高行政法院"],
+        "high" => L["高等行政法院"],
+        "district" => L["地方行政法院"],
+        _ => instance,
+    };
+
+    private string CourtKindLabel(string kind) => kind switch
+    {
+        "grand_chamber" => L["大法庭"],
+        _ => L["通常"],
     };
 
     private string ViolationKindLabel(string kind) => kind switch

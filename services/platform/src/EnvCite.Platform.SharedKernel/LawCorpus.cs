@@ -65,6 +65,16 @@ public sealed record PortalGuidanceLink(
     string Subject,
     string SourceUrl);
 
+public sealed record PortalCourtDecisionLink(
+    string ArticleNumber,
+    string Path,
+    string Jid,
+    string DecidedOn,
+    string Instance,
+    string Kind,
+    string Title,
+    string SourceUrl);
+
 public sealed record PortalChildGroupCount(string DocumentType, int Count);
 
 public sealed record PortalLawGraphQuery(
@@ -83,6 +93,7 @@ public sealed record PortalLawGraphResult(
     IReadOnlyList<PortalLawGraphEdge> Edges,
     IReadOnlyList<PortalArticleViolationLink> ViolationLinks,
     IReadOnlyList<PortalGuidanceLink> GuidanceLinks,
+    IReadOnlyList<PortalCourtDecisionLink> CourtDecisions,
     IReadOnlyList<PortalChildGroupCount> ChildGroups);
 
 public sealed record PortalLawCorpusResult(

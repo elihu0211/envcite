@@ -26,7 +26,7 @@ service CanonService {
   // 列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。
   rpc ListLaws(ListLawsRequest) returns (ListLawsResponse);
 
-  // 取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。
+  // 取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動、函釋錨點與行政法院裁判。
   rpc GetLawGraph(GetLawGraphRequest) returns (GetLawGraphResponse);
 
   // 依條文版本標準 IRI（索引）取得單一條文全文與中繼資料；IRI 格式錯誤回 INVALID_ARGUMENT，查無回 NOT_FOUND。
@@ -305,6 +305,9 @@ message GetLawGraphResponse {
   repeated GuidanceLink guidance_links = 5;
   // 焦點法規所有有效直接子法規依 `document_type` 統計之分組數量，供漸進展開與聚合膠囊使用。
   repeated ChildGroupCount child_groups = 6;
+  // 解釋焦點法規條文、裁判日不晚於 `as_of` 的行政法院裁判。個別案件的拘束（行政訴訟法第 216 條），
+  // 不是法規效力，也不進圖譜節點。最多 30 筆，較新者在前。總覽模式為空。
+  repeated CourtDecisionLink court_decisions = 7;
 }
 
 message LawGraphNode {
@@ -372,6 +375,20 @@ message GuidanceLink {
 message ChildGroupCount {
   string document_type = 1;
   int32 count = 2;
+}
+
+// 附在焦點法規旁的一筆行政法院裁判。不含全文。
+message CourtDecisionLink {
+  string article_number = 1;
+  string path = 2;
+  string jid = 3;
+  string decided_on = 4;
+  // supreme、high、district。
+  string instance = 5;
+  // ordinary、grand_chamber。
+  string kind = 6;
+  string title = 7;
+  string source_url = 8;
 }
 
 message GetArticleByIriRequest {

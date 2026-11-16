@@ -81,7 +81,7 @@ public sealed class LawTreeTests
         new(key, "iri", "title", "statute", "law", null, 1, 0, 0, 0, 0, 0);
 
     private static PortalLawGraphResult Graph(PortalLawKey? focus, params PortalLawKey[] nodes) =>
-        new(true, focus, [.. nodes.Select(GraphNode)], [], [], [], []);
+        new(true, focus, [.. nodes.Select(GraphNode)], [], [], [], [], []);
 
     [Fact]
     public void FindFocusReturnsTheGraphNodeOfTheFocus()

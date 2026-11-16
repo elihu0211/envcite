@@ -133,6 +133,20 @@ class GuidanceLinkRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class CourtDecisionLinkRecord:
+    """解釋法規條文、裁判日不晚於基準日的行政法院裁判（行政訴訟法第 216 條）。"""
+
+    article_number: str
+    path: str
+    jid: str
+    decided_on: str
+    instance: str
+    kind: str
+    title: str
+    source_url: str
+
+
+@dataclass(frozen=True, slots=True)
 class ChildGroupCountRecord:
     """直接下位授權法規依《中央法規標準法》定名種類統計之數量。"""
 
@@ -151,6 +165,7 @@ class LawGraphRecord:
     edges: tuple[LawGraphEdgeRecord, ...]
     violation_links: tuple[ArticleViolationLinkRecord, ...]
     guidance_links: tuple[GuidanceLinkRecord, ...]
+    court_decisions: tuple[CourtDecisionLinkRecord, ...]
     child_groups: tuple[ChildGroupCountRecord, ...]
 
 

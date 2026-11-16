@@ -159,6 +159,7 @@ public sealed class TenantModulesTests(PlatformFactory factory)
         Assert.Contains(graph.Value.Edges, e => e.Kind == "sub_delegation" && e.AnchorArticles.Contains("第 5 條"));
         Assert.Single(graph.Value.ViolationLinks);
         Assert.Single(graph.Value.GuidanceLinks);
+        Assert.Equal("TPAA,110,上,1,20210601,1", Assert.Single(graph.Value.CourtDecisions).Jid);
         Assert.Equal(2, graph.Value.ChildGroups.Count);
 
         try

@@ -731,6 +731,7 @@ class GetLawGraphResponse(_message.Message):
     VIOLATION_LINKS_FIELD_NUMBER: _builtins.int
     GUIDANCE_LINKS_FIELD_NUMBER: _builtins.int
     CHILD_GROUPS_FIELD_NUMBER: _builtins.int
+    COURT_DECISIONS_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def focus_identifier(self) -> Global___LawIdentifier:
         """焦點法規識別碼；總覽模式為未設定。"""
@@ -751,6 +752,12 @@ class GetLawGraphResponse(_message.Message):
     def child_groups(self) -> _containers.RepeatedCompositeFieldContainer[Global___ChildGroupCount]:
         """焦點法規所有有效直接子法規依 `document_type` 統計之分組數量，供漸進展開與聚合膠囊使用。"""
 
+    @_builtins.property
+    def court_decisions(self) -> _containers.RepeatedCompositeFieldContainer[Global___CourtDecisionLink]:
+        """解釋焦點法規條文、裁判日不晚於 `as_of` 的行政法院裁判。個別案件的拘束（行政訴訟法第 216 條），
+        不是法規效力，也不進圖譜節點。最多 30 筆，較新者在前。總覽模式為空。
+        """
+
     def __init__(
         self,
         *,
@@ -760,10 +767,11 @@ class GetLawGraphResponse(_message.Message):
         violation_links: _abc.Iterable[Global___ArticleViolationLink] | None = ...,
         guidance_links: _abc.Iterable[Global___GuidanceLink] | None = ...,
         child_groups: _abc.Iterable[Global___ChildGroupCount] | None = ...,
+        court_decisions: _abc.Iterable[Global___CourtDecisionLink] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["focus_identifier", b"focus_identifier"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["child_groups", b"child_groups", "edges", b"edges", "focus_identifier", b"focus_identifier", "guidance_links", b"guidance_links", "nodes", b"nodes", "violation_links", b"violation_links"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["child_groups", b"child_groups", "court_decisions", b"court_decisions", "edges", b"edges", "focus_identifier", b"focus_identifier", "guidance_links", b"guidance_links", "nodes", b"nodes", "violation_links", b"violation_links"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -951,6 +959,50 @@ class ChildGroupCount(_message.Message):
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___ChildGroupCount: _TypeAlias = ChildGroupCount  # noqa: Y015
+
+@_typing.final
+class CourtDecisionLink(_message.Message):
+    """附在焦點法規旁的一筆行政法院裁判。不含全文。"""
+
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ARTICLE_NUMBER_FIELD_NUMBER: _builtins.int
+    PATH_FIELD_NUMBER: _builtins.int
+    JID_FIELD_NUMBER: _builtins.int
+    DECIDED_ON_FIELD_NUMBER: _builtins.int
+    INSTANCE_FIELD_NUMBER: _builtins.int
+    KIND_FIELD_NUMBER: _builtins.int
+    TITLE_FIELD_NUMBER: _builtins.int
+    SOURCE_URL_FIELD_NUMBER: _builtins.int
+    article_number: _builtins.str
+    path: _builtins.str
+    jid: _builtins.str
+    decided_on: _builtins.str
+    instance: _builtins.str
+    """supreme、high、district。"""
+    kind: _builtins.str
+    """ordinary、grand_chamber。"""
+    title: _builtins.str
+    source_url: _builtins.str
+    def __init__(
+        self,
+        *,
+        article_number: _builtins.str = ...,
+        path: _builtins.str = ...,
+        jid: _builtins.str = ...,
+        decided_on: _builtins.str = ...,
+        instance: _builtins.str = ...,
+        kind: _builtins.str = ...,
+        title: _builtins.str = ...,
+        source_url: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["article_number", b"article_number", "decided_on", b"decided_on", "instance", b"instance", "jid", b"jid", "kind", b"kind", "path", b"path", "source_url", b"source_url", "title", b"title"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___CourtDecisionLink: _TypeAlias = CourtDecisionLink  # noqa: Y015
 
 @_typing.final
 class GetArticleByIriRequest(_message.Message):

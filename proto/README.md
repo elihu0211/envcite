@@ -142,7 +142,7 @@ sequenceDiagram
 | `SearchArticles` | 混合檢索（字面臂 + 語意臂；`lexical_score` 與 `semantic_similarity` 僅限單次查詢內比較）。`term_coverage` 供呼叫端過濾低覆蓋命中，不改名次。`include_guidance` 可經有效函釋帶出條文（`guidance_documents` 標出件數）；`rerank` 啟用精排並回 `rerank_score`（無模型、滿載或逾時皆無聲退回原次序且不設分數）。問句含法規全名時先限縮至該法規，無命中才改查全庫 |
 | `ListInvalidations` | 回傳 `as_of` 當日因大法官解釋或憲法法庭判決失效之條文單元（`partial` 為真時僅部分失效，範圍見原文）。**未列出不代表未失效**（寫法含糊者保守不自動提出）；顯示須標示憲法法庭出處 |
 | `ListLaws` | 依 `as_of`、`jurisdiction` 與 `category_prefix`（單一大寫字母）列出有效法規摘要（含 `document_type`、`child_count`、`parent_count`、`guidance_count`） |
-| `GetLawGraph` | 依焦點法規展開多母法 DAG（`upstream_depth`／`downstream_depth` 上限 4，`child_limit` 上限 60）、義務罰則連動（`violation_links`）、有效函釋（`guidance_links`）與子法分組計數（`child_groups`）；未指定焦點則回傳核心母法總覽子圖。`invalidation_count` 顯示須標示憲法法庭出處 |
+| `GetLawGraph` | 依焦點法規展開多母法 DAG（`upstream_depth`／`downstream_depth` 上限 4，`child_limit` 上限 60）、義務罰則連動（`violation_links`）、有效函釋（`guidance_links`）、行政法院裁判（`court_decisions`，最多 30 筆，裁判日不晚於 `as_of`，個別案件的拘束）與子法分組計數（`child_groups`）；未指定焦點則回傳核心母法總覽子圖，`court_decisions` 為空。`invalidation_count` 顯示須標示憲法法庭出處 |
 
 ### 證據引用與輸出核驗步驟
 
