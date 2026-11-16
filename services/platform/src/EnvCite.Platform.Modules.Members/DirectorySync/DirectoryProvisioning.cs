@@ -26,7 +26,7 @@ internal sealed partial class DirectoryProvisioning(
 {
     private static readonly TimeSpan SeenThrottle = TimeSpan.FromMinutes(1);
 
-    public async Task<AdminOutcome<DirectoryPage>> ListAsync(
+    public async Task<Outcome<DirectoryPage>> ListAsync(
         ClaimsPrincipal actor, int skip, int take, string? externalId, string? email, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryPage>(cancellationToken) is { } closed)
@@ -46,10 +46,10 @@ internal sealed partial class DirectoryProvisioning(
         var total = await query.CountAsync(cancellationToken);
         var found = await query.OrderBy(u => u.Email).ThenBy(u => u.Id).Skip(Math.Max(skip, 0)).Take(page).ToListAsync(cancellationToken);
         await SeenAsync(cancellationToken);
-        return AdminOutcome.Ok(new DirectoryPage([.. found.Select(Map)], total));
+        return Outcomes.Ok(new DirectoryPage([.. found.Select(Map)], total));
     }
 
-    public async Task<AdminOutcome<DirectoryMember>> FindAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken)
+    public async Task<Outcome<DirectoryMember>> FindAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryMember>(cancellationToken) is { } closed)
             return closed;
@@ -58,11 +58,11 @@ internal sealed partial class DirectoryProvisioning(
 
         // 租戶的查詢濾鏡讓別的租戶的人在這裡找不到。
         return await users.FindByIdAsync(userId) is { } user
-            ? AdminOutcome.Ok(Map(user))
-            : AdminOutcome.NotFound<DirectoryMember>(OutcomeCodes.MemberNotFound);
+            ? Outcomes.Ok(Map(user))
+            : Outcomes.NotFound<DirectoryMember>(OutcomeCodes.MemberNotFound);
     }
 
-    public async Task<AdminOutcome<DirectoryMember>> ProvisionAsync(
+    public async Task<Outcome<DirectoryMember>> ProvisionAsync(
         ClaimsPrincipal actor, DirectoryProvision member, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryMember>(cancellationToken) is { } closed)
@@ -73,24 +73,24 @@ internal sealed partial class DirectoryProvisioning(
         var email = (member.Email ?? string.Empty).Trim();
         var externalId = NormalizeExternalId(member.ExternalId);
         if (NewAccountInput.Problem(email, member.DisplayName, role) is { } problem)
-            return await RejectAsync<DirectoryMember>(actor, null, problem, AdminStatus.Invalid, audit: false, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, null, problem, OutcomeStatus.Invalid, audit: false, cancellationToken);
 
         if (externalId is { Length: 0 } or { Length: > 200 })
-            return await RejectAsync<DirectoryMember>(actor, null, OutcomeCodes.DirectoryExternalIdInvalid, AdminStatus.Invalid, audit: false, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, null, OutcomeCodes.DirectoryExternalIdInvalid, OutcomeStatus.Invalid, audit: false, cancellationToken);
 
         if (!DirectoryRoles.Assignable.Contains(role))
-            return await RejectAsync<DirectoryMember>(actor, email, OutcomeCodes.DirectoryRoleNotMappable, AdminStatus.Forbidden, audit: true, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, email, OutcomeCodes.DirectoryRoleNotMappable, OutcomeStatus.Forbidden, audit: true, cancellationToken);
 
         // 重複建立是衝突，不是第二筆：身分來源重送、逾時後重試都會走到這裡。
         if (externalId is not null && await users.Users.AnyAsync(u => u.ExternalId == externalId, cancellationToken))
-            return await RejectAsync<DirectoryMember>(actor, email, OutcomeCodes.DirectoryExternalIdTaken, AdminStatus.Conflict, audit: true, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, email, OutcomeCodes.DirectoryExternalIdTaken, OutcomeStatus.Conflict, audit: true, cancellationToken);
 
         if (await users.FindByEmailAsync(email) is { } existing)
             return await AdoptAsync(actor, connection, existing, externalId, member, cancellationToken);
 
         // 新成員走邀請信，沒有寄信能力就建不起來；不建一個沒人登得進去的帳號。
         if (member.Active && !mail.Enabled)
-            return await RejectAsync<DirectoryMember>(actor, email, OutcomeCodes.MailNotEnabled, AdminStatus.Conflict, audit: true, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, email, OutcomeCodes.MailNotEnabled, OutcomeStatus.Conflict, audit: true, cancellationToken);
 
         return await InTransactionAsync(async () =>
         {
@@ -122,47 +122,47 @@ internal sealed partial class DirectoryProvisioning(
             });
             await RecordAsync(created: 1, cancellationToken: cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
-            return AdminOutcome.Ok(Map(user));
+            return Outcomes.Ok(Map(user));
         }, cancellationToken);
     }
 
-    public async Task<AdminOutcome<DirectoryMember>> UpdateAsync(
+    public async Task<Outcome<DirectoryMember>> UpdateAsync(
         ClaimsPrincipal actor, string userId, DirectoryPatch patch, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryMember>(cancellationToken) is { } closed)
             return closed;
 
         if (await users.FindByIdAsync(userId) is not { } user)
-            return AdminOutcome.NotFound<DirectoryMember>(OutcomeCodes.MemberNotFound);
+            return Outcomes.NotFound<DirectoryMember>(OutcomeCodes.MemberNotFound);
 
         return await ApplyAsync(actor, user, patch, deleting: false, cancellationToken);
     }
 
-    public async Task<AdminOutcome<DirectoryMember>> DeactivateAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken)
+    public async Task<Outcome<DirectoryMember>> DeactivateAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken)
     {
         if (await GateAsync<DirectoryMember>(cancellationToken) is { } closed)
             return closed;
 
         if (await users.FindByIdAsync(userId) is not { } user)
-            return AdminOutcome.NotFound<DirectoryMember>(OutcomeCodes.MemberNotFound);
+            return Outcomes.NotFound<DirectoryMember>(OutcomeCodes.MemberNotFound);
 
         return await ApplyAsync(actor, user, new DirectoryPatch(Active: false), deleting: true, cancellationToken);
     }
 
-    private async Task<AdminOutcome<DirectoryMember>> AdoptAsync(
+    private async Task<Outcome<DirectoryMember>> AdoptAsync(
         ClaimsPrincipal actor, DirectoryConnection connection, ApplicationUser existing, string? externalId, DirectoryProvision member,
         CancellationToken cancellationToken)
     {
         // 已經是同步建立的：同 email 再建一次是重複。
         if (existing.ManagedBy == DirectoryRoles.ManagedBy)
-            return await RejectAsync<DirectoryMember>(actor, existing.Email, OutcomeCodes.MemberEmailTaken, AdminStatus.Conflict, audit: true, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, existing.Email, OutcomeCodes.MemberEmailTaken, OutcomeStatus.Conflict, audit: true, cancellationToken);
 
         if (!connection.AdoptExistingMembers)
-            return await RejectAsync<DirectoryMember>(actor, existing.Email, OutcomeCodes.DirectoryAdoptRequired, AdminStatus.Conflict, audit: true, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, existing.Email, OutcomeCodes.DirectoryAdoptRequired, OutcomeStatus.Conflict, audit: true, cancellationToken);
 
         // 擁有者只由人指派，也就不交給身分來源管：接管等於讓下一輪同步能停用他。
         if (existing.Role == CustomerRoles.Owner)
-            return await RejectAsync<DirectoryMember>(actor, existing.Email, OutcomeCodes.DirectoryRoleNotMappable, AdminStatus.Forbidden, audit: true, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, existing.Email, OutcomeCodes.DirectoryRoleNotMappable, OutcomeStatus.Forbidden, audit: true, cancellationToken);
 
         return await InTransactionAsync(async () =>
         {
@@ -181,46 +181,46 @@ internal sealed partial class DirectoryProvisioning(
             });
             await RecordAsync(updated: 1, cancellationToken: cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
-            return AdminOutcome.Ok(Map(existing));
+            return Outcomes.Ok(Map(existing));
         }, cancellationToken);
     }
 
-    private async Task<AdminOutcome<DirectoryMember>> ApplyAsync(
+    private async Task<Outcome<DirectoryMember>> ApplyAsync(
         ClaimsPrincipal actor, ApplicationUser user, DirectoryPatch patch, bool deleting, CancellationToken cancellationToken)
     {
         // 不是同步管理的人，同步不能動：要先經 POST 接管（租戶允許時）。
         if (user.ManagedBy != DirectoryRoles.ManagedBy)
-            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryAdoptRequired, AdminStatus.Conflict, audit: true, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryAdoptRequired, OutcomeStatus.Conflict, audit: true, cancellationToken);
 
         if (patch.Email is { } email && !string.Equals(email.Trim(), user.Email, StringComparison.OrdinalIgnoreCase))
-            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryEmailImmutable, AdminStatus.Conflict, audit: true, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryEmailImmutable, OutcomeStatus.Conflict, audit: true, cancellationToken);
 
         var externalId = NormalizeExternalId(patch.ExternalId);
         if (externalId is { Length: 0 } or { Length: > 200 })
-            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryExternalIdInvalid, AdminStatus.Invalid, audit: false, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryExternalIdInvalid, OutcomeStatus.Invalid, audit: false, cancellationToken);
 
         if (patch.DisplayName is { Length: > 200 })
-            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DisplayNameTooLong, AdminStatus.Invalid, audit: false, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DisplayNameTooLong, OutcomeStatus.Invalid, audit: false, cancellationToken);
 
         if (patch.Role is { } role)
         {
             if (!CustomerRoles.All.Contains(role))
-                return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.RoleInvalid, AdminStatus.Invalid, audit: false, cancellationToken);
+                return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.RoleInvalid, OutcomeStatus.Invalid, audit: false, cancellationToken);
 
             if (!DirectoryRoles.Assignable.Contains(role))
-                return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryRoleNotMappable, AdminStatus.Forbidden, audit: true, cancellationToken);
+                return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryRoleNotMappable, OutcomeStatus.Forbidden, audit: true, cancellationToken);
         }
 
         if (externalId is not null && externalId != user.ExternalId
             && await users.Users.AnyAsync(u => u.ExternalId == externalId && u.Id != user.Id, cancellationToken))
         {
-            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryExternalIdTaken, AdminStatus.Conflict, audit: true, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryExternalIdTaken, OutcomeStatus.Conflict, audit: true, cancellationToken);
         }
 
         var leavesOwner = user.Role == CustomerRoles.Owner && (patch.Role is { } r && r != CustomerRoles.Owner);
         var disables = patch.Active == false && !user.Disabled;
         if ((leavesOwner || (disables && user.Role == CustomerRoles.Owner)) && !await AnotherActiveOwnerAsync(user, cancellationToken))
-            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryLastOwner, AdminStatus.Conflict, audit: true, cancellationToken);
+            return await RejectAsync<DirectoryMember>(actor, user.Email, OutcomeCodes.DirectoryLastOwner, OutcomeStatus.Conflict, audit: true, cancellationToken);
 
         var enables = patch.Active == true && user.Disabled;
         var displayName = patch.DisplayName is null ? user.DisplayName : Clean(patch.DisplayName);
@@ -238,7 +238,7 @@ internal sealed partial class DirectoryProvisioning(
         {
             // 沒有變化的重送：什麼都不寫，連同步時間也不動。
             await SeenAsync(cancellationToken);
-            return AdminOutcome.Ok(Map(user));
+            return Outcomes.Ok(Map(user));
         }
 
         return await InTransactionAsync(async () =>
@@ -295,7 +295,7 @@ internal sealed partial class DirectoryProvisioning(
             }
 
             await db.SaveChangesAsync(cancellationToken);
-            return AdminOutcome.Ok(Map(user));
+            return Outcomes.Ok(Map(user));
         }, cancellationToken);
     }
 
@@ -307,13 +307,13 @@ internal sealed partial class DirectoryProvisioning(
     /// 功能面沒開、或這個租戶沒開連線：路徑看起來就不存在（NotFound），不透露租戶有沒有這個功能。
     /// 開著就回 null，呼叫端繼續。
     /// </summary>
-    private async Task<AdminOutcome<T>?> GateAsync<T>(CancellationToken cancellationToken)
+    private async Task<Outcome<T>?> GateAsync<T>(CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-            return AdminOutcome.NotFound<T>(OutcomeCodes.DirectoryNotEnabled);
+            return Outcomes.NotFound<T>(OutcomeCodes.DirectoryNotEnabled);
 
         var connection = await db.DirectoryConnections.AsNoTracking().SingleOrDefaultAsync(cancellationToken);
-        return connection is { Enabled: true } ? null : AdminOutcome.NotFound<T>(OutcomeCodes.DirectoryNotEnabled);
+        return connection is { Enabled: true } ? null : Outcomes.NotFound<T>(OutcomeCodes.DirectoryNotEnabled);
     }
 
     private Task<DirectoryConnection> ConnectionAsync(CancellationToken cancellationToken) =>
@@ -323,8 +323,8 @@ internal sealed partial class DirectoryProvisioning(
     /// 被政策拒絕：記一筆稽核（<paramref name="audit"/> 時）並累計；輸入不合法這類單純的錯誤只累計，不記稽核。
     /// 拒絕本身不改任何成員，所以這個交易只有稽核與狀態。
     /// </summary>
-    private async Task<AdminOutcome<T>> RejectAsync<T>(
-        ClaimsPrincipal actor, string? email, string code, AdminStatus status, bool audit, CancellationToken cancellationToken,
+    private async Task<Outcome<T>> RejectAsync<T>(
+        ClaimsPrincipal actor, string? email, string code, OutcomeStatus status, bool audit, CancellationToken cancellationToken,
         string subject = "email")
     {
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
@@ -341,13 +341,13 @@ internal sealed partial class DirectoryProvisioning(
         await transaction.CommitAsync(cancellationToken);
         return status switch
         {
-            AdminStatus.Forbidden => AdminOutcome.Forbidden<T>(code),
-            AdminStatus.Conflict => AdminOutcome.Conflict<T>(code),
-            _ => AdminOutcome.Invalid<T>(code),
+            OutcomeStatus.Forbidden => Outcomes.Forbidden<T>(code),
+            OutcomeStatus.Conflict => Outcomes.Conflict<T>(code),
+            _ => Outcomes.Invalid<T>(code),
         };
     }
 
-    private async Task<AdminOutcome<T>> InTransactionAsync<T>(Func<Task<AdminOutcome<T>>> body, CancellationToken cancellationToken)
+    private async Task<Outcome<T>> InTransactionAsync<T>(Func<Task<Outcome<T>>> body, CancellationToken cancellationToken)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var outcome = await body();

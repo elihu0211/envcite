@@ -5,7 +5,7 @@ namespace EnvCite.Platform.Modules.Metering;
 /// </summary>
 internal sealed class UsageAdmin(TenantScopes tenants) : IUsageAdmin
 {
-    public Task<AdminOutcome<IReadOnlyList<TenantUsageSummary>>> GetTenantUsageAsync(
+    public Task<Outcome<IReadOnlyList<TenantUsageSummary>>> GetTenantUsageAsync(
         string tenantId, DateTimeOffset? since, CancellationToken cancellationToken) =>
         tenants.InAsync<IReadOnlyList<TenantUsageSummary>>(tenantId, async scope =>
         {
@@ -31,6 +31,6 @@ internal sealed class UsageAdmin(TenantScopes tenants) : IUsageAdmin
                 .Select(r => new TenantUsageSummary(r.Operation, r.Calls, r.Units, r.First, r.Last))
                 .ToList();
 
-            return AdminOutcome.Ok<IReadOnlyList<TenantUsageSummary>>(list);
+            return Outcomes.Ok<IReadOnlyList<TenantUsageSummary>>(list);
         });
 }

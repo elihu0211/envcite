@@ -11,12 +11,12 @@ namespace EnvCite.Platform.Modules.Members.DirectorySync;
 /// </summary>
 internal sealed class DirectoryAdmin(TenantScopes tenants) : IDirectoryAdmin
 {
-    public Task<AdminOutcome<DirectoryStatus>> GetStatusAsync(string tenantId, CancellationToken cancellationToken) =>
+    public Task<Outcome<DirectoryStatus>> GetStatusAsync(string tenantId, CancellationToken cancellationToken) =>
         tenants.InAsync<DirectoryStatus>(tenantId, scope => scope.Get<DirectoryManagement>().StatusAsync(cancellationToken));
 
-    public Task<AdminOutcome<DirectoryStatus>> DisableAsync(ClaimsPrincipal actor, string tenantId, CancellationToken cancellationToken) =>
+    public Task<Outcome<DirectoryStatus>> DisableAsync(ClaimsPrincipal actor, string tenantId, CancellationToken cancellationToken) =>
         tenants.InAsync<DirectoryStatus>(tenantId, scope => scope.Get<DirectoryManagement>().DisableAsync(actor, cancellationToken));
 
-    public Task<AdminOutcome<MemberInfo>> ReleaseManagedAsync(ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken) =>
+    public Task<Outcome<MemberInfo>> ReleaseManagedAsync(ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken) =>
         tenants.InAsync<MemberInfo>(tenantId, scope => scope.Get<DirectoryManagement>().ReleaseManagedAsync(actor, userId, cancellationToken));
 }

@@ -79,9 +79,9 @@ public interface ITenantModules
 /// <summary>營運者針對個別租戶動態開關功能模組（每次變更與稽核同交易）。</summary>
 public interface IModuleAdmin
 {
-    Task<AdminOutcome<IReadOnlyList<TenantModuleStatus>>> ListAsync(string tenantId, CancellationToken cancellationToken);
+    Task<Outcome<IReadOnlyList<TenantModuleStatus>>> ListAsync(string tenantId, CancellationToken cancellationToken);
 
     /// <param name="enabled"><c>true</c> 覆寫開啟、<c>false</c> 覆寫關閉、<c>null</c> 重設為方案預設。</param>
-    Task<AdminOutcome<TenantModuleStatus>> SetAsync(
+    Task<Outcome<TenantModuleStatus>> SetAsync(
         ClaimsPrincipal actor, string tenantId, string moduleKey, bool? enabled, CancellationToken cancellationToken);
 }

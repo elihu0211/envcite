@@ -76,9 +76,9 @@ public sealed class ChatPageLifecycleTests
 
     private sealed class FakeCitationArticleService : ICitationArticleService
     {
-        public Task<AdminOutcome<PortalArticleDetail>> GetByIriAsync(
+        public Task<Outcome<PortalArticleDetail>> GetByIriAsync(
             ClaimsPrincipal user, string? iri, CancellationToken cancellationToken) =>
-            Task.FromResult(AdminOutcome.NotFound<PortalArticleDetail>("NOT_FOUND"));
+            Task.FromResult(Outcomes.NotFound<PortalArticleDetail>("NOT_FOUND"));
     }
 
     private sealed class TestNavigation : NavigationManager

@@ -189,7 +189,7 @@ internal sealed class PortalSessions(TenantScopes tenants) : IPortalSessions
 
         var outcome = await tenants.InByIdentifierAsync<bool>(
             tenantIdentifier,
-            async scope => AdminOutcome.Ok(await PortalSessionValidator.IsValidAsync(scope.Get<SignInManager<ApplicationUser>>(), user)));
+            async scope => Outcomes.Ok(await PortalSessionValidator.IsValidAsync(scope.Get<SignInManager<ApplicationUser>>(), user)));
 
         return outcome.IsOk && outcome.Value;
     }

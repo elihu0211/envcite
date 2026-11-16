@@ -42,7 +42,7 @@ public sealed class OperatorAdminTests(PlatformFactory factory)
 
         var created = await Admin.CreateAsync(OperatorSession.Principal(), email ?? string.Empty, null, CancellationToken.None);
 
-        Assert.Equal(AdminStatus.Invalid, created.Status);
+        Assert.Equal(OutcomeStatus.Invalid, created.Status);
         Assert.Equal(before, (await Admin.ListAsync(CancellationToken.None)).Value!.Count);
     }
 
@@ -55,13 +55,13 @@ public sealed class OperatorAdminTests(PlatformFactory factory)
 
         var duplicate = await Admin.CreateAsync(actor, email.ToUpperInvariant(), null, CancellationToken.None);
 
-        Assert.Equal(AdminStatus.Conflict, duplicate.Status);
+        Assert.Equal(OutcomeStatus.Conflict, duplicate.Status);
         foreach (var id in new[] { Guid.NewGuid().ToString(), "not-a-guid" })
         {
-            Assert.Equal(AdminStatus.NotFound, (await Admin.ResetPasswordAsync(actor, id, CancellationToken.None)).Status);
-            Assert.Equal(AdminStatus.NotFound, (await Admin.ResetTwoFactorAsync(actor, id, CancellationToken.None)).Status);
-            Assert.Equal(AdminStatus.NotFound, (await Admin.SetDisabledAsync(actor, id, true, CancellationToken.None)).Status);
-            Assert.Equal(AdminStatus.NotFound, (await Admin.SetDisabledAsync(actor, id, false, CancellationToken.None)).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await Admin.ResetPasswordAsync(actor, id, CancellationToken.None)).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await Admin.ResetTwoFactorAsync(actor, id, CancellationToken.None)).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await Admin.SetDisabledAsync(actor, id, true, CancellationToken.None)).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await Admin.SetDisabledAsync(actor, id, false, CancellationToken.None)).Status);
         }
     }
 

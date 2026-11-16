@@ -257,7 +257,7 @@ public sealed partial class PortalMfaTests(PlatformFactory factory)
         var reset = await host.Services.GetRequiredService<IMemberAdmin>()
             .ResetTwoFactorAsync(OperatorSession.Principal(), other.Id, member.UserId, CancellationToken.None);
 
-        Assert.Equal(AdminStatus.NotFound, reset.Status);
+        Assert.Equal(OutcomeStatus.NotFound, reset.Status);
     }
 
     // 金鑰、復原碼、碼本身都是密鑰：稽核（只能附加、刪不掉）與日誌裡一個都不能有。

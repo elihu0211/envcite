@@ -10,22 +10,22 @@ namespace EnvCite.Platform.Tests;
 [Collection(PlatformTestGroup.Group3)]
 public sealed class DirectoryGroupTests(PlatformFactory factory) : DirectoryTestBase(factory)
 {
-    private Task<AdminOutcome<DirectoryMember>> NewMemberAsync(Org org) =>
+    private Task<Outcome<DirectoryMember>> NewMemberAsync(Org org) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ProvisionAsync(org.Idp, Person(), Ct));
 
     private async Task<string> MemberIdAsync(Org org) => (await NewMemberAsync(org)).Value!.Id;
 
-    private Task<AdminOutcome<DirectoryGroupDetail>> CreateAsync(Org org, string name, params string[] members) =>
+    private Task<Outcome<DirectoryGroupDetail>> CreateAsync(Org org, string name, params string[] members) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>()
             .CreateGroupAsync(org.Idp, new DirectoryGroupInput(name, $"g-{Guid.NewGuid():N}", members), Ct));
 
-    private Task<AdminOutcome<DirectoryGroupDetail>> UpdateAsync(Org org, Guid id, DirectoryGroupPatch patch) =>
+    private Task<Outcome<DirectoryGroupDetail>> UpdateAsync(Org org, Guid id, DirectoryGroupPatch patch) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().UpdateGroupAsync(org.Idp, id, patch, Ct));
 
-    private Task<AdminOutcome<DirectoryGroupInfo>> MapAsync(Org org, Guid id, string? role) =>
+    private Task<Outcome<DirectoryGroupInfo>> MapAsync(Org org, Guid id, string? role) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().SetGroupRoleAsync(org.Owner, id, role, Ct));
 
-    private Task<AdminOutcome<DirectoryStatus>> StatusAsync(Org org) =>
+    private Task<Outcome<DirectoryStatus>> StatusAsync(Org org) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().GetStatusAsync(org.Owner, Ct));
 
     private async Task<string> RoleAsync(Org org, string userId) => (await UserAsync(org, userId)).Role;
@@ -68,7 +68,7 @@ public sealed class DirectoryGroupTests(PlatformFactory factory) : DirectoryTest
 
             Assert.All(new[] { manual, unknown, crossTenant }, outcome =>
             {
-                Assert.Equal(AdminStatus.Invalid, outcome.Status);
+                Assert.Equal(OutcomeStatus.Invalid, outcome.Status);
                 Assert.Equal(OutcomeCodes.DirectoryGroupMemberInvalid, outcome.Code);
             });
             Assert.Empty((await StatusAsync(org)).Value!.Groups); // 整個請求被拒，沒有半個群組

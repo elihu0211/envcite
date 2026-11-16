@@ -11,61 +11,61 @@ namespace EnvCite.Platform.Modules.Members.Portal;
 /// </summary>
 internal sealed class MemberAdmin(TenantScopes tenants) : IMemberAdmin
 {
-    public Task<AdminOutcome<IReadOnlyList<MemberInfo>>> ListAsync(string tenantId, CancellationToken cancellationToken) =>
+    public Task<Outcome<IReadOnlyList<MemberInfo>>> ListAsync(string tenantId, CancellationToken cancellationToken) =>
         tenants.InAsync<IReadOnlyList<MemberInfo>>(tenantId, async scope =>
         {
             var core = scope.Get<MemberCore>();
             var list = await scope.Get<UserManager<ApplicationUser>>().Users.AsNoTracking().OrderBy(u => u.Email).ToListAsync(cancellationToken);
-            return AdminOutcome.Ok<IReadOnlyList<MemberInfo>>([.. list.Select(core.Info)]);
+            return Outcomes.Ok<IReadOnlyList<MemberInfo>>([.. list.Select(core.Info)]);
         });
 
-    public Task<AdminOutcome<IssuedPassword>> CreateAsync(
+    public Task<Outcome<IssuedPassword>> CreateAsync(
         ClaimsPrincipal actor, string tenantId, string email, string? displayName, string role, CancellationToken cancellationToken) =>
         tenants.InAsync<IssuedPassword>(tenantId, scope =>
             scope.Get<MemberCore>().CreateAsync(actor, scope.Tenant, email, displayName, role, cancellationToken));
 
-    public Task<AdminOutcome<MemberInvitation>> InviteAsync(
+    public Task<Outcome<MemberInvitation>> InviteAsync(
         ClaimsPrincipal actor, string tenantId, string email, string? displayName, string role, CancellationToken cancellationToken) =>
         tenants.InAsync<MemberInvitation>(tenantId, scope =>
             scope.Get<MemberCore>().InviteAsync(actor, scope.Tenant, email, displayName, role, cancellationToken));
 
-    public Task<AdminOutcome<MemberInvitation>> ResendInvitationAsync(
+    public Task<Outcome<MemberInvitation>> ResendInvitationAsync(
         ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken) =>
         tenants.InAsync<MemberInvitation>(tenantId, async scope =>
         {
             // 租戶的查詢濾鏡讓別的租戶的人在這裡找不到。
             var user = await scope.Get<UserManager<ApplicationUser>>().FindByIdAsync(userId);
             return user is null
-                ? AdminOutcome.NotFound<MemberInvitation>(OutcomeCodes.MemberNotFound)
+                ? Outcomes.NotFound<MemberInvitation>(OutcomeCodes.MemberNotFound)
                 : await scope.Get<MemberCore>().ResendInvitationAsync(actor, scope.Tenant, user, cancellationToken);
         });
 
-    public Task<AdminOutcome<IssuedPassword>> ResetPasswordAsync(
+    public Task<Outcome<IssuedPassword>> ResetPasswordAsync(
         ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken) =>
         tenants.InAsync<IssuedPassword>(tenantId, async scope =>
         {
             // 租戶的查詢濾鏡讓別的租戶的人在這裡找不到：不能用 A 租戶的 id 重設 B 租戶的人。
             var user = await scope.Get<UserManager<ApplicationUser>>().FindByIdAsync(userId);
             return user is null
-                ? AdminOutcome.NotFound<IssuedPassword>(OutcomeCodes.MemberNotFound)
+                ? Outcomes.NotFound<IssuedPassword>(OutcomeCodes.MemberNotFound)
                 : await scope.Get<MemberCore>().ResetPasswordAsync(actor, scope.Tenant, user, cancellationToken);
         });
 
-    public Task<AdminOutcome<MemberInfo>> SetDisabledAsync(
+    public Task<Outcome<MemberInfo>> SetDisabledAsync(
         ClaimsPrincipal actor, string tenantId, string userId, bool disabled, CancellationToken cancellationToken) =>
         tenants.InAsync<MemberInfo>(tenantId, async scope =>
         {
             var user = await scope.Get<UserManager<ApplicationUser>>().FindByIdAsync(userId);
             if (user is null)
-                return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound);
+                return Outcomes.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound);
 
             // 受目錄同步管理的人，停用與啟用由身分來源決定；要由人處理先解除管理。
             return user.ManagedBy == DirectoryRoles.ManagedBy
-                ? AdminOutcome.Conflict<MemberInfo>(OutcomeCodes.DirectoryMemberManaged)
-                : AdminOutcome.Ok(await scope.Get<MemberCore>().SetDisabledAsync(actor, scope.Tenant, user, disabled, cancellationToken));
+                ? Outcomes.Conflict<MemberInfo>(OutcomeCodes.DirectoryMemberManaged)
+                : Outcomes.Ok(await scope.Get<MemberCore>().SetDisabledAsync(actor, scope.Tenant, user, disabled, cancellationToken));
         });
 
-    public Task<AdminOutcome<MemberInfo>> ResetTwoFactorAsync(
+    public Task<Outcome<MemberInfo>> ResetTwoFactorAsync(
         ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken) =>
         tenants.InAsync<MemberInfo>(tenantId, async scope =>
         {
@@ -73,7 +73,7 @@ internal sealed class MemberAdmin(TenantScopes tenants) : IMemberAdmin
             var users = scope.Get<UserManager<ApplicationUser>>();
             var user = await users.FindByIdAsync(userId);
             if (user is null)
-                return AdminOutcome.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound);
+                return Outcomes.NotFound<MemberInfo>(OutcomeCodes.MemberNotFound);
 
             await users.SetTwoFactorEnabledAsync(user, false);
             await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey);
@@ -91,6 +91,6 @@ internal sealed class MemberAdmin(TenantScopes tenants) : IMemberAdmin
                 new AuditEntry(AuditActions.MemberMfaReset, scope.Tenant.Id, "member", user.Id, new Dictionary<string, object?> { ["email"] = user.Email }),
                 cancellationToken);
 
-            return AdminOutcome.Ok(scope.Get<MemberCore>().Info(user));
+            return Outcomes.Ok(scope.Get<MemberCore>().Info(user));
         });
 }

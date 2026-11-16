@@ -32,38 +32,38 @@ public interface IOperatorTwoFactor : ITwoFactor;
 /// </summary>
 public interface IOperatorAdmin
 {
-    Task<AdminOutcome<IReadOnlyList<OperatorInfo>>> ListAsync(CancellationToken cancellationToken);
+    Task<Outcome<IReadOnlyList<OperatorInfo>>> ListAsync(CancellationToken cancellationToken);
 
-    Task<AdminOutcome<IssuedOperatorPassword>> CreateAsync(
+    Task<Outcome<IssuedOperatorPassword>> CreateAsync(
         ClaimsPrincipal actor, string email, string? displayName, CancellationToken cancellationToken);
 
     /// <summary>
     /// 邀請：建立沒有密碼的帳號，寄單次、限時的連結讓對方自己設定密碼並驗證信箱。沒啟用寄信時回 <see cref="OutcomeCodes.MailNotEnabled"/>，
     /// 改用 <see cref="CreateAsync"/>（暫時密碼）。寄信失敗不讓建立失敗，結果在 <see cref="OperatorInvitation.Mail"/>，可再 <see cref="ResendInvitationAsync"/>。
     /// </summary>
-    Task<AdminOutcome<OperatorInvitation>> InviteAsync(
+    Task<Outcome<OperatorInvitation>> InviteAsync(
         ClaimsPrincipal actor, string email, string? displayName, CancellationToken cancellationToken);
 
     /// <summary>
     /// 重寄：還沒設密碼的帳號重發邀請連結（先前的連結失效）；已有密碼但信箱沒驗證的帳號寄驗證連結；
     /// 已啟用且已驗證則 <see cref="OutcomeCodes.AccountAlreadyActive"/>。
     /// </summary>
-    Task<AdminOutcome<OperatorInvitation>> ResendInvitationAsync(
+    Task<Outcome<OperatorInvitation>> ResendInvitationAsync(
         ClaimsPrincipal actor, string operatorId, CancellationToken cancellationToken);
 
     /// <summary>設一組新的一次性密碼、解除鎖定、讓既有 session 失效，並要求下次登入改密碼。</summary>
-    Task<AdminOutcome<IssuedOperatorPassword>> ResetPasswordAsync(
+    Task<Outcome<IssuedOperatorPassword>> ResetPasswordAsync(
         ClaimsPrincipal actor, string operatorId, CancellationToken cancellationToken);
 
     /// <summary>
     /// 營運者弄丟了驗證器也沒有復原碼：關掉他的兩步驟驗證、丟掉金鑰與復原碼、解除鎖定、讓既有 session 失效。
     /// 他下次用密碼登入後必須重新註冊。這是繞過第二步的唯一人工途徑，要先確認對方是本人。
     /// </summary>
-    Task<AdminOutcome<OperatorInfo>> ResetTwoFactorAsync(
+    Task<Outcome<OperatorInfo>> ResetTwoFactorAsync(
         ClaimsPrincipal actor, string operatorId, CancellationToken cancellationToken);
 
     /// <summary>停用或重新啟用（冪等）。停用讓既有 session 在下一個請求就失效；帳號與稽核紀錄都保留。</summary>
-    Task<AdminOutcome<OperatorInfo>> SetDisabledAsync(
+    Task<Outcome<OperatorInfo>> SetDisabledAsync(
         ClaimsPrincipal actor, string operatorId, bool disabled, CancellationToken cancellationToken);
 }
 

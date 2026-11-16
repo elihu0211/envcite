@@ -17,7 +17,7 @@ public static class ReasoningEndpoints
             var outcome = await gateway.EvaluateAsync(request, ct);
 
             // 推論容量用盡：帶 retryable，呼叫端稍後重試。
-            return outcome is { Status: AdminStatus.Unavailable, Code: OutcomeCodes.ReasoningBusy }
+            return outcome is { Status: OutcomeStatus.Unavailable, Code: OutcomeCodes.ReasoningBusy }
                 ? Results.Problem(outcome.Message, statusCode: StatusCodes.Status503ServiceUnavailable,
                     extensions: new Dictionary<string, object?> { ["code"] = outcome.Code, ["retryable"] = true })
                 : CanonEndpoints.Present(outcome);

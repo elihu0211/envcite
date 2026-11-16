@@ -21,7 +21,7 @@ internal sealed record AnswerTurn(string Question, string? AsOf)
     public ModelAnswerOutput? ModelOutput { get; init; }
 
     /// <summary>已有結論（拒答或失敗）時設定；後面的節點見到就原樣放行，不再做事。</summary>
-    public AdminOutcome<GroundedAnswer>? Done { get; init; }
+    public Outcome<GroundedAnswer>? Done { get; init; }
 
     // 記錄型別預設的 ToString 會印出所有屬性，包括問題文字；這裡明確擋掉。
     public override string ToString() => nameof(AnswerTurn);

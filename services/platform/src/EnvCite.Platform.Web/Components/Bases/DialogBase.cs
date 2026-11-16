@@ -14,7 +14,7 @@ namespace EnvCite.Platform.Web.Components.Bases;
 /// <summary>一個對話框送出的結果：成功帶著要交給呼叫端的值，失敗帶著要在對話框裡說明的句子。</summary>
 public sealed record DialogOutcome(object? Value, string? Failure)
 {
-    public static DialogOutcome From<T>(AdminOutcome<T> outcome, string fallback) =>
+    public static DialogOutcome From<T>(Outcome<T> outcome, string fallback) =>
         outcome.IsOk ? new(outcome.Value, null) : new(null, outcome.Localized() ?? fallback);
 }
 

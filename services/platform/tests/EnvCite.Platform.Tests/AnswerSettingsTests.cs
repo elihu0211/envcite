@@ -31,8 +31,8 @@ public sealed class AnswerSettingsTests(PlatformFactory factory)
         var plans = factory.Services.GetRequiredService<IPlanAdmin>();
         var actor = OperatorSession.Principal();
 
-        Assert.Equal(AdminStatus.Invalid, (await plans.SetAiAnswerAsync(actor, tenant.Id, true, CancellationToken.None)).Status); // 同意跟著方案走
-        Assert.Equal(AdminStatus.NotFound, (await plans.SetAiAnswerAsync(actor, "no-such", true, CancellationToken.None)).Status);
+        Assert.Equal(OutcomeStatus.Invalid, (await plans.SetAiAnswerAsync(actor, tenant.Id, true, CancellationToken.None)).Status); // 同意跟著方案走
+        Assert.Equal(OutcomeStatus.NotFound, (await plans.SetAiAnswerAsync(actor, "no-such", true, CancellationToken.None)).Status);
 
         Assert.True((await plans.SetAsync(actor, tenant.Id, "standard", CancellationToken.None)).IsOk);
         Assert.True((await plans.SetAiAnswerAsync(actor, tenant.Id, true, CancellationToken.None)).IsOk);

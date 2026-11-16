@@ -71,37 +71,37 @@ public sealed record DirectoryGroupInfo(Guid Id, string DisplayName, string? Ext
 public interface IDirectoryProvisioning
 {
     /// <summary>列出成員（含手動建立的，讓身分來源能先比對再決定建立或接管）。<paramref name="externalId"/>、<paramref name="email"/> 是精確比對。</summary>
-    Task<AdminOutcome<DirectoryPage>> ListAsync(
+    Task<Outcome<DirectoryPage>> ListAsync(
         ClaimsPrincipal actor, int skip, int take, string? externalId, string? email, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<DirectoryMember>> FindAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryMember>> FindAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
 
     /// <summary>建立（新成員走邀請信，需要寄信啟用）；同 email 的手動成員在租戶允許時接管；重複回 Conflict。</summary>
-    Task<AdminOutcome<DirectoryMember>> ProvisionAsync(ClaimsPrincipal actor, DirectoryProvision member, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryMember>> ProvisionAsync(ClaimsPrincipal actor, DirectoryProvision member, CancellationToken cancellationToken);
 
     /// <summary>更新受管成員；沒有變化就不寫任何東西。不是受管的成員回 <see cref="OutcomeCodes.DirectoryAdoptRequired"/>。</summary>
-    Task<AdminOutcome<DirectoryMember>> UpdateAsync(ClaimsPrincipal actor, string userId, DirectoryPatch patch, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryMember>> UpdateAsync(ClaimsPrincipal actor, string userId, DirectoryPatch patch, CancellationToken cancellationToken);
 
     /// <summary>停用（刪除也是停用：帳號與稽核保留）。已停用則照舊成功。</summary>
-    Task<AdminOutcome<DirectoryMember>> DeactivateAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryMember>> DeactivateAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
 
     /// <summary>列出群組；<paramref name="externalId"/>、<paramref name="displayName"/> 是精確比對（名稱不分大小寫）。</summary>
-    Task<AdminOutcome<DirectoryGroupPage>> ListGroupsAsync(
+    Task<Outcome<DirectoryGroupPage>> ListGroupsAsync(
         ClaimsPrincipal actor, int skip, int take, string? externalId, string? displayName, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<DirectoryGroupDetail>> FindGroupAsync(ClaimsPrincipal actor, Guid groupId, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryGroupDetail>> FindGroupAsync(ClaimsPrincipal actor, Guid groupId, CancellationToken cancellationToken);
 
     /// <summary>
     /// 建立群組。成員必須是這個租戶裡<b>由目錄同步管理</b>的成員，否則整個請求被拒（<see cref="OutcomeCodes.DirectoryGroupMemberInvalid"/>）。
     /// 群組一開始沒有對映角色（由客戶的擁有者設定），所以建立本身不會改任何人的角色。
     /// </summary>
-    Task<AdminOutcome<DirectoryGroupDetail>> CreateGroupAsync(ClaimsPrincipal actor, DirectoryGroupInput group, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryGroupDetail>> CreateGroupAsync(ClaimsPrincipal actor, DirectoryGroupInput group, CancellationToken cancellationToken);
 
     /// <summary>更新群組；成員變動後，受影響成員的角色依群組對映重算（見 README「目錄同步」）。沒有變化就不寫任何東西。</summary>
-    Task<AdminOutcome<DirectoryGroupDetail>> UpdateGroupAsync(ClaimsPrincipal actor, Guid groupId, DirectoryGroupPatch patch, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryGroupDetail>> UpdateGroupAsync(ClaimsPrincipal actor, Guid groupId, DirectoryGroupPatch patch, CancellationToken cancellationToken);
 
     /// <summary>刪除群組（群組本身可以刪，成員不受影響，只是少了這個群組給的角色）。</summary>
-    Task<AdminOutcome<bool>> DeleteGroupAsync(ClaimsPrincipal actor, Guid groupId, CancellationToken cancellationToken);
+    Task<Outcome<bool>> DeleteGroupAsync(ClaimsPrincipal actor, Guid groupId, CancellationToken cancellationToken);
 }
 
 public sealed record DirectoryTokenInfo(
@@ -126,13 +126,13 @@ public sealed record DirectoryStatus(
 /// </summary>
 public interface IDirectoryAdmin
 {
-    Task<AdminOutcome<DirectoryStatus>> GetStatusAsync(string tenantId, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryStatus>> GetStatusAsync(string tenantId, CancellationToken cancellationToken);
 
     /// <summary>緊急關閉這個租戶的目錄同步（冪等）。既有成員與 token 不動，推送立刻被拒。</summary>
-    Task<AdminOutcome<DirectoryStatus>> DisableAsync(ClaimsPrincipal actor, string tenantId, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryStatus>> DisableAsync(ClaimsPrincipal actor, string tenantId, CancellationToken cancellationToken);
 
     /// <summary>解除一位成員的管理：之後角色與停用回到人手上，身分來源要重新接管才會再動它。</summary>
-    Task<AdminOutcome<MemberInfo>> ReleaseManagedAsync(ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken);
+    Task<Outcome<MemberInfo>> ReleaseManagedAsync(ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -141,22 +141,22 @@ public interface IDirectoryAdmin
 /// </summary>
 public interface IDirectorySelfService
 {
-    Task<AdminOutcome<DirectoryStatus>> GetStatusAsync(ClaimsPrincipal actor, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryStatus>> GetStatusAsync(ClaimsPrincipal actor, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<DirectoryStatus>> ConfigureAsync(ClaimsPrincipal actor, DirectorySettings settings, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryStatus>> ConfigureAsync(ClaimsPrincipal actor, DirectorySettings settings, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<IssuedDirectoryToken>> IssueTokenAsync(
+    Task<Outcome<IssuedDirectoryToken>> IssueTokenAsync(
         ClaimsPrincipal actor, string name, DateTimeOffset? expiresAt, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<DirectoryTokenInfo>> RevokeTokenAsync(ClaimsPrincipal actor, Guid tokenId, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryTokenInfo>> RevokeTokenAsync(ClaimsPrincipal actor, Guid tokenId, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<MemberInfo>> ReleaseManagedAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
+    Task<Outcome<MemberInfo>> ReleaseManagedAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// 設定一個群組對映的角色（<c>null</c> = 不對映）。只能是 <see cref="DirectoryRoles.Assignable"/>；群組的成員立刻依新的對映重算角色，
     /// 並留稽核。群組由身分來源推送，對映只有客戶的擁有者能決定。
     /// </summary>
-    Task<AdminOutcome<DirectoryGroupInfo>> SetGroupRoleAsync(ClaimsPrincipal actor, Guid groupId, string? role, CancellationToken cancellationToken);
+    Task<Outcome<DirectoryGroupInfo>> SetGroupRoleAsync(ClaimsPrincipal actor, Guid groupId, string? role, CancellationToken cancellationToken);
 }
 
 /// <summary>

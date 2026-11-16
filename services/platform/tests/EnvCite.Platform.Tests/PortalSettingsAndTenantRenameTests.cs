@@ -89,7 +89,7 @@ public sealed class PortalSettingsAndTenantRenameTests(PlatformFactory factory)
             user.ManagedBy = DirectoryRoles.ManagedBy;
             userId = user.Id;
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
-            return AdminOutcome.Ok(true);
+            return Outcomes.Ok(true);
         });
 
         using var browser = new PortalBrowser(factory);
@@ -103,7 +103,7 @@ public sealed class PortalSettingsAndTenantRenameTests(PlatformFactory factory)
         var principal = await PortalTestSupport.MemberPrincipalAsync(factory, tenant.Id, userId);
         var outcome = await scopes.InAsync(tenant.Id, scope =>
             scope.Get<IPortalProfile>().UpdateDisplayNameAsync(principal, "Hacked", TestContext.Current.CancellationToken));
-        Assert.Equal(AdminStatus.Conflict, outcome.Status);
+        Assert.Equal(OutcomeStatus.Conflict, outcome.Status);
         Assert.Equal(OutcomeCodes.DirectoryMemberManaged, outcome.Code);
     }
 
@@ -152,7 +152,7 @@ public sealed class PortalSettingsAndTenantRenameTests(PlatformFactory factory)
         var adminPrincipal = await PortalTestSupport.MemberPrincipalAsync(factory, tenant.Id, adminId);
         var forbidden = await scopes.InAsync(tenant.Id, scope =>
             scope.Get<ITenantSelfService>().RenameAsync(adminPrincipal, "Should Fail", TestContext.Current.CancellationToken));
-        Assert.Equal(AdminStatus.Forbidden, forbidden.Status);
+        Assert.Equal(OutcomeStatus.Forbidden, forbidden.Status);
         Assert.Equal(OutcomeCodes.TenantRenameForbidden, forbidden.Code);
 
         var audit = factory.Services.GetRequiredService<IAuditQuery>();

@@ -68,7 +68,7 @@ internal sealed class CanonMcpTools(ILawSearch search, CanonGateway gateway)
         Succeeded(await gateway.EvaluateAsync(request, cancellationToken));
 
     /// <summary>預期的失敗轉成工具錯誤（訊息是英文的穩定說明）；McpException 以外的例外會被框架換成通用訊息，不洩漏內部細節。</summary>
-    private static T Succeeded<T>(AdminOutcome<T> outcome) =>
+    private static T Succeeded<T>(Outcome<T> outcome) =>
         outcome.IsOk ? outcome.Value! : throw new McpException(outcome.Message ?? "Request failed.");
 }
 

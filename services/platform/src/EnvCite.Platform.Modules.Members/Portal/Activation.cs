@@ -61,25 +61,25 @@ internal static class Activation
     /// 使用連結。邀請連結：先驗權杖（不改任何東西）→ 設密碼（Identity 驗證規則，不過則連結仍有效）→ 標記信箱已驗證。
     /// 設密碼會換安全戳記，連結就此失效；並發的第二次提交會因為「已經有密碼」而失敗。驗證連結：<c>ConfirmEmailAsync</c>（同樣換戳記）。
     /// </summary>
-    public static async Task<(AdminOutcome<ActivationState> Outcome, TUser? User)> CompleteAsync<TUser, TKey>(
+    public static async Task<(Outcome<ActivationState> Outcome, TUser? User)> CompleteAsync<TUser, TKey>(
         UserManager<TUser> users, TUser? user, string? code, string? newPassword)
         where TUser : IdentityUser<TKey>
         where TKey : IEquatable<TKey>
     {
         var state = await InspectAsync<TUser, TKey>(users, user, code);
         if (state == ActivationState.Invalid || user is null)
-            return (AdminOutcome.Invalid<ActivationState>(OutcomeCodes.ActivationLinkInvalid), null);
+            return (Outcomes.Invalid<ActivationState>(OutcomeCodes.ActivationLinkInvalid), null);
 
         if (state == ActivationState.ConfirmEmail)
         {
             var confirmed = await users.ConfirmEmailAsync(user, Decode(code)!);
             return confirmed.Succeeded
-                ? (AdminOutcome.Ok(state), user)
-                : (AdminOutcome.Invalid<ActivationState>(OutcomeCodes.ActivationLinkInvalid), null);
+                ? (Outcomes.Ok(state), user)
+                : (Outcomes.Invalid<ActivationState>(OutcomeCodes.ActivationLinkInvalid), null);
         }
 
         if (string.IsNullOrEmpty(newPassword))
-            return (AdminOutcome.Invalid<ActivationState>(OutcomeCodes.PasswordTooShort, PasswordPolicy.MinimumLength), null);
+            return (Outcomes.Invalid<ActivationState>(OutcomeCodes.PasswordTooShort, PasswordPolicy.MinimumLength), null);
 
         var added = await users.AddPasswordAsync(user, newPassword);
         if (!added.Succeeded)
@@ -88,7 +88,7 @@ internal static class Activation
         user.EmailConfirmed = true;
         var saved = await users.UpdateAsync(user);
         return saved.Succeeded
-            ? (AdminOutcome.Ok(state), user)
+            ? (Outcomes.Ok(state), user)
             : (IdentityOutcomes.Rejected<ActivationState>(saved.Errors.First()), null);
     }
 

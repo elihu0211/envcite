@@ -119,7 +119,7 @@ public partial class Members(IMemberSelfService team, IMailSender mail, IDirecto
         (_issued, _issuedTitle, _issuedPassword) = (issued, title, issued.Password);
     }
 
-    private void Report<T>(AdminOutcome<T> outcome, string success)
+    private void Report<T>(Outcome<T> outcome, string success)
     {
         if (outcome.IsOk)
             _message = success;
@@ -127,9 +127,9 @@ public partial class Members(IMemberSelfService team, IMailSender mail, IDirecto
             Error = Describe(outcome);
     }
 
-    private string Describe<T>(AdminOutcome<T> outcome) => outcome.Status switch
+    private string Describe<T>(Outcome<T> outcome) => outcome.Status switch
     {
-        AdminStatus.NotFound => L["找不到這位成員。"],
+        OutcomeStatus.NotFound => L["找不到這位成員。"],
         _ => outcome.Localized() ?? L["操作失敗。"],
     };
 

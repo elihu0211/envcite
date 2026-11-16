@@ -53,7 +53,7 @@ public sealed class OperatorActionsTests(PlatformFactory factory)
 
         var created = await provisioner.CreateAsync(OperatorSession.Principal(), identifier, name, CancellationToken.None);
 
-        Assert.Equal(AdminStatus.Invalid, created.Status);
+        Assert.Equal(OutcomeStatus.Invalid, created.Status);
         Assert.False(string.IsNullOrWhiteSpace(created.Message));
     }
 
@@ -67,7 +67,7 @@ public sealed class OperatorActionsTests(PlatformFactory factory)
 
         var again = await provisioner.CreateAsync(OperatorSession.Principal(), identifier, "Second", CancellationToken.None);
 
-        Assert.Equal(AdminStatus.Conflict, again.Status);
+        Assert.Equal(OutcomeStatus.Conflict, again.Status);
         var tenants = await factory.Services.GetRequiredService<ITenantDirectory>().ListAsync(CancellationToken.None);
         Assert.Single(tenants, t => t.Identifier == identifier);
     }

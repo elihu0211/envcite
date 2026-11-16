@@ -4,8 +4,8 @@ using System.Globalization;
 namespace EnvCite.Platform.SharedKernel;
 
 /// <summary>
-/// 營運操作失敗的穩定代碼（<see cref="AdminOutcome{T}.Code"/>）。代碼是契約：呼叫端（API 的使用者、介面）依代碼判斷，
-/// 不依賴文字。<see cref="AdminOutcome{T}.Message"/> 永遠是這裡的英文，只供 API 的 <c>detail</c> 與日誌；
+/// 營運操作失敗的穩定代碼（<see cref="Outcome{T}.Code"/>）。代碼是契約：呼叫端（API 的使用者、介面）依代碼判斷，
+/// 不依賴文字。<see cref="Outcome{T}.Message"/> 永遠是這裡的英文，只供 API 的 <c>detail</c> 與日誌；
 /// 介面依代碼取使用者的語言（<c>Labels</c> 資源檔的 <c>Outcome.{代碼}</c>）。
 /// 新增代碼要同時加英文（這裡）與中英文資源檔；測試守住三者一致。
 /// </summary>
@@ -86,7 +86,7 @@ public static class OutcomeCodes
     public const string ModuleUnavailableInEnvironment = "module.unavailable_in_environment";
     public const string PlanRequiredForModule = "plan.required_for_module";
 
-    /// <summary>所有代碼的英文說明；{0}、{1} 是 <see cref="AdminOutcome{T}.Args"/>。</summary>
+    /// <summary>所有代碼的英文說明；{0}、{1} 是 <see cref="Outcome{T}.Args"/>。</summary>
     public static IReadOnlyDictionary<string, string> English { get; } = new Dictionary<string, string>
     {
         [TenantNotFound] = "Tenant not found.",

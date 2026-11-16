@@ -20,7 +20,7 @@ internal sealed class AskService(
             return None;
 
         var outcome = await tenants.InByIdentifierAsync<AskCapabilities>(
-            identifier, async scope => AdminOutcome.Ok(await CapabilitiesOfAsync(scope, cancellationToken)));
+            identifier, async scope => Outcomes.Ok(await CapabilitiesOfAsync(scope, cancellationToken)));
 
         return outcome.IsOk ? outcome.Value! : None;
     }
@@ -37,19 +37,19 @@ internal sealed class AskService(
             // 完全付費制：沒有方案不能用資料功能。頁面不顯示表單之外這裡再擋一次，因為表單可以被直接送出。
             var capabilities = await CapabilitiesOfAsync(scope, cancellationToken);
             if (!capabilities.HasPlan)
-                return AdminOutcome.Ok(noPlan);
+                return Outcomes.Ok(noPlan);
 
             if (capabilities.AiAnswer)
             {
                 var answered = await scope.Get<IGroundedAnswerer>().AnswerAsync(question, asOf, history, progress, cancellationToken);
-                return AdminOutcome.Ok(new AskResult(AskMode.Answer, StatusOf(answered.Status), answered.IsOk ? answered.Value : null));
+                return Outcomes.Ok(new AskResult(AskMode.Answer, StatusOf(answered.Status), answered.IsOk ? answered.Value : null));
             }
 
             if (!capabilities.HasModule(ModuleKeys.LawSearch))
-                return AdminOutcome.Ok(noPlan);
+                return Outcomes.Ok(noPlan);
 
             var searched = await scope.Get<ILawSearch>().SearchAsync(question, asOf, limit: null, cancellationToken);
-            return AdminOutcome.Ok(new AskResult(AskMode.Search, StatusOf(searched.Status), Hits: searched.IsOk ? searched.Value : null));
+            return Outcomes.Ok(new AskResult(AskMode.Search, StatusOf(searched.Status), Hits: searched.IsOk ? searched.Value : null));
         });
 
         return outcome.IsOk ? outcome.Value! : noPlan;
@@ -62,7 +62,7 @@ internal sealed class AskService(
 
         var outcome = await tenants.InByIdentifierAsync<IReadOnlyList<ConversationSummary>>(
             identifier,
-            async scope => AdminOutcome.Ok(await scope.Get<IConversationHistory>().ListAsync(user, limit, search: null, cancellationToken)));
+            async scope => Outcomes.Ok(await scope.Get<IConversationHistory>().ListAsync(user, limit, search: null, cancellationToken)));
 
         return outcome.IsOk ? outcome.Value! : [];
     }
@@ -74,7 +74,7 @@ internal sealed class AskService(
 
         var outcome = await tenants.InByIdentifierAsync<ConversationDetail?>(
             identifier,
-            async scope => AdminOutcome.Ok(await scope.Get<IConversationHistory>().GetAsync(user, id, cancellationToken)));
+            async scope => Outcomes.Ok(await scope.Get<IConversationHistory>().GetAsync(user, id, cancellationToken)));
 
         return outcome.IsOk ? outcome.Value : null;
     }
@@ -86,7 +86,7 @@ internal sealed class AskService(
 
         var outcome = await tenants.InByIdentifierAsync<Guid?>(
             identifier,
-            async scope => AdminOutcome.Ok(await scope.Get<IConversationHistory>().AppendTurnAsync(user, conversationId, turn, cancellationToken)));
+            async scope => Outcomes.Ok(await scope.Get<IConversationHistory>().AppendTurnAsync(user, conversationId, turn, cancellationToken)));
 
         return outcome.IsOk ? outcome.Value : null;
     }
@@ -102,10 +102,10 @@ internal sealed class AskService(
         return new AskCapabilities(HasPlan: true, AiAnswer: aiAnswer) { Modules = enabled };
     }
 
-    private static AskStatus StatusOf(AdminStatus status) => status switch
+    private static AskStatus StatusOf(OutcomeStatus status) => status switch
     {
-        AdminStatus.Ok => AskStatus.Ok,
-        AdminStatus.Invalid => AskStatus.Invalid,
+        OutcomeStatus.Ok => AskStatus.Ok,
+        OutcomeStatus.Invalid => AskStatus.Invalid,
         _ => AskStatus.Unavailable,
     };
 

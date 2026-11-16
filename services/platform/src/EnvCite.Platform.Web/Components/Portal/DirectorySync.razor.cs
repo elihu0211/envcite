@@ -108,7 +108,7 @@ public partial class DirectorySync(IDirectorySelfService directory, IDirectoryAv
         await LoadAsync();
     }
 
-    private void Report<T>(AdminOutcome<T> outcome, string success)
+    private void Report<T>(Outcome<T> outcome, string success)
     {
         if (outcome.IsOk)
             _message = success;
@@ -116,7 +116,7 @@ public partial class DirectorySync(IDirectorySelfService directory, IDirectoryAv
             Error = Describe(outcome);
     }
 
-    private string Describe<T>(AdminOutcome<T> outcome) => outcome.Localized() ?? L["操作失敗。"];
+    private string Describe<T>(Outcome<T> outcome) => outcome.Localized() ?? L["操作失敗。"];
 
     public sealed class SettingsForm
     {

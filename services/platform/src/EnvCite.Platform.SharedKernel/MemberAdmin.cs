@@ -22,36 +22,36 @@ public sealed record IssuedPassword(MemberInfo Member, string Password);
 /// </summary>
 public interface IMemberAdmin
 {
-    Task<AdminOutcome<IReadOnlyList<MemberInfo>>> ListAsync(string tenantId, CancellationToken cancellationToken);
+    Task<Outcome<IReadOnlyList<MemberInfo>>> ListAsync(string tenantId, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<IssuedPassword>> CreateAsync(
+    Task<Outcome<IssuedPassword>> CreateAsync(
         ClaimsPrincipal actor, string tenantId, string email, string? displayName, string role,
         CancellationToken cancellationToken);
 
     /// <summary>邀請：建立沒有密碼的成員，寄連結讓對方自己設定密碼並驗證信箱。沒啟用寄信時回 <see cref="OutcomeCodes.MailNotEnabled"/>，改用 <see cref="CreateAsync"/>。</summary>
-    Task<AdminOutcome<MemberInvitation>> InviteAsync(
+    Task<Outcome<MemberInvitation>> InviteAsync(
         ClaimsPrincipal actor, string tenantId, string email, string? displayName, string role,
         CancellationToken cancellationToken);
 
     /// <summary>重寄：還沒設密碼的重發邀請連結（先前的連結失效）；已有密碼但信箱沒驗證的寄驗證連結；已啟用且已驗證則 <see cref="OutcomeCodes.AccountAlreadyActive"/>。</summary>
-    Task<AdminOutcome<MemberInvitation>> ResendInvitationAsync(
+    Task<Outcome<MemberInvitation>> ResendInvitationAsync(
         ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken);
 
     /// <summary>設一組新的一次性密碼、解除鎖定、讓既有 session 失效，並要求下次登入改密碼。</summary>
-    Task<AdminOutcome<IssuedPassword>> ResetPasswordAsync(
+    Task<Outcome<IssuedPassword>> ResetPasswordAsync(
         ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// 停用或重新啟用。客戶自己的管理員做得到時不需要營運者；但最後一位擁有者離開、或兩位擁有者同時互相停用，
     /// 客戶就沒有人能做了，這時由營運者做。停用會讓對方所有 session 立刻失效。
     /// </summary>
-    Task<AdminOutcome<MemberInfo>> SetDisabledAsync(
+    Task<Outcome<MemberInfo>> SetDisabledAsync(
         ClaimsPrincipal actor, string tenantId, string userId, bool disabled, CancellationToken cancellationToken);
 
     /// <summary>
     /// 成員弄丟了驗證器也沒有復原碼：關掉他的兩步驟驗證、丟掉金鑰與復原碼、讓既有 session 失效。
     /// 他下次用密碼登入後可以重新註冊。這是繞過第二步的唯一人工途徑，所以必須留稽核，並且要先確認對方是本人。
     /// </summary>
-    Task<AdminOutcome<MemberInfo>> ResetTwoFactorAsync(
+    Task<Outcome<MemberInfo>> ResetTwoFactorAsync(
         ClaimsPrincipal actor, string tenantId, string userId, CancellationToken cancellationToken);
 }

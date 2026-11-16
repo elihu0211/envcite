@@ -8,22 +8,22 @@ namespace EnvCite.Platform.Modules.ApiAccess;
 /// </summary>
 internal sealed class ApiKeyAdmin(TenantScopes tenants, TimeProvider time) : IApiKeyAdmin
 {
-    public Task<AdminOutcome<IReadOnlyList<ApiKeyInfo>>> ListAsync(string tenantId, CancellationToken cancellationToken) =>
+    public Task<Outcome<IReadOnlyList<ApiKeyInfo>>> ListAsync(string tenantId, CancellationToken cancellationToken) =>
         tenants.InAsync<IReadOnlyList<ApiKeyInfo>>(tenantId, async scope =>
         {
             await using var db = scope.CreateDb();
             var keys = await db.ApiKeys.AsNoTracking().OrderBy(k => k.CreatedAt).ToListAsync(cancellationToken);
-            return AdminOutcome.Ok<IReadOnlyList<ApiKeyInfo>>(keys.Select(Info).ToList());
+            return Outcomes.Ok<IReadOnlyList<ApiKeyInfo>>(keys.Select(Info).ToList());
         });
 
-    public Task<AdminOutcome<IssuedApiKey>> IssueAsync(
+    public Task<Outcome<IssuedApiKey>> IssueAsync(
         ClaimsPrincipal actor, string tenantId, string name, string[]? scopesRequested, DateTimeOffset? expiresAt,
         CancellationToken cancellationToken) =>
         tenants.InAsync<IssuedApiKey>(tenantId, async scope =>
         {
             var now = time.GetUtcNow();
             if (string.IsNullOrWhiteSpace(name) || name.Length > 100 || expiresAt <= now)
-                return AdminOutcome.Invalid<IssuedApiKey>(OutcomeCodes.ApiKeyInvalid);
+                return Outcomes.Invalid<IssuedApiKey>(OutcomeCodes.ApiKeyInvalid);
 
             var (fullKey, prefix, hash) = ApiKeyFormat.Generate();
             var apiKey = new ApiKey
@@ -50,10 +50,10 @@ internal sealed class ApiKeyAdmin(TenantScopes tenants, TimeProvider time) : IAp
                 }), time);
             await db.SaveChangesAsync(cancellationToken);
 
-            return AdminOutcome.Ok(new IssuedApiKey(fullKey, Info(apiKey)));
+            return Outcomes.Ok(new IssuedApiKey(fullKey, Info(apiKey)));
         });
 
-    public Task<AdminOutcome<ApiKeyInfo>> RevokeAsync(
+    public Task<Outcome<ApiKeyInfo>> RevokeAsync(
         ClaimsPrincipal actor, string tenantId, Guid keyId, CancellationToken cancellationToken) =>
         tenants.InAsync<ApiKeyInfo>(tenantId, async scope =>
         {
@@ -61,7 +61,7 @@ internal sealed class ApiKeyAdmin(TenantScopes tenants, TimeProvider time) : IAp
             await using var db = scope.CreateDb();
             var key = await db.ApiKeys.SingleOrDefaultAsync(k => k.Id == keyId, cancellationToken);
             if (key is null)
-                return AdminOutcome.NotFound<ApiKeyInfo>(OutcomeCodes.ApiKeyNotFound);
+                return Outcomes.NotFound<ApiKeyInfo>(OutcomeCodes.ApiKeyNotFound);
 
             if (key.RevokedAt is null)
             {
@@ -72,7 +72,7 @@ internal sealed class ApiKeyAdmin(TenantScopes tenants, TimeProvider time) : IAp
                 await db.SaveChangesAsync(cancellationToken);
             }
 
-            return AdminOutcome.Ok(Info(key));
+            return Outcomes.Ok(Info(key));
         });
 
     private static ApiKeyInfo Info(ApiKey k) => new(k.Id, k.Name, k.Prefix, k.Scopes, k.CreatedAt, k.ExpiresAt, k.RevokedAt);

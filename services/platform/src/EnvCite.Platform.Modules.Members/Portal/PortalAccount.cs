@@ -161,7 +161,7 @@ internal sealed class PortalAccount(
     public async Task<ActivationState> InspectActivationAsync(string? userId, string? code, CancellationToken cancellationToken) =>
         await Activation.InspectAsync<ApplicationUser, string>(users, await FindAsync(userId), code);
 
-    public async Task<AdminOutcome<ActivationState>> ActivateAsync(
+    public async Task<Outcome<ActivationState>> ActivateAsync(
         string? userId, string? code, string? newPassword, CancellationToken cancellationToken)
     {
         var info = tenant.MultiTenantContext?.TenantInfo ?? throw new InvalidOperationException("No tenant resolved for the portal request.");
@@ -192,17 +192,17 @@ internal sealed class PortalAccount(
             await audit.AppendAsync(user, new AuditEntry(AuditActions.PortalSignedOut, info.Id, "member", id), cancellationToken);
     }
 
-    public async Task<AdminOutcome<bool>> ChangePasswordAsync(
+    public async Task<Outcome<bool>> ChangePasswordAsync(
         ClaimsPrincipal principal, string currentPassword, string newPassword, CancellationToken cancellationToken)
     {
         var info = tenant.MultiTenantContext?.TenantInfo ?? throw new InvalidOperationException("No tenant resolved for the portal request.");
         var id = principal.FindFirst(PlatformClaimTypes.PortalUserId)?.Value;
         var user = id is null ? null : await users.FindByIdAsync(id);
         if (user is null)
-            return AdminOutcome.NotFound<bool>(OutcomeCodes.AccountNotFound);
+            return Outcomes.NotFound<bool>(OutcomeCodes.AccountNotFound);
 
         if (string.Equals(currentPassword, newPassword, StringComparison.Ordinal))
-            return AdminOutcome.Invalid<bool>(OutcomeCodes.PasswordSameAsCurrent);
+            return Outcomes.Invalid<bool>(OutcomeCodes.PasswordSameAsCurrent);
 
         var changed = await users.ChangePasswordAsync(user, currentPassword ?? string.Empty, newPassword ?? string.Empty);
         if (!changed.Succeeded)
@@ -214,7 +214,7 @@ internal sealed class PortalAccount(
         // 換一張新的 cookie（安全戳記已隨改密碼更新，其他裝置的 session 會失效；這一張要接著用）。
         await signIn.RefreshSignInAsync(user);
         await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalPasswordChanged, info.Id, "member", user.Id), cancellationToken);
-        return AdminOutcome.Ok(true);
+        return Outcomes.Ok(true);
     }
 
     private static ClaimsPrincipal ActorOf(ApplicationUser user) =>

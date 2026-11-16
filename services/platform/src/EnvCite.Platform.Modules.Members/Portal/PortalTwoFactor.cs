@@ -24,23 +24,23 @@ internal sealed class PortalTwoFactor(
     public bool IsRequired(ClaimsPrincipal principal) =>
         principal.FindFirst(ClaimTypes.Role)?.Value is { } role && RequiresTwoFactor(role, options.Value);
 
-    public async Task<AdminOutcome<bool>> DisableAsync(ClaimsPrincipal principal, string password, string code, CancellationToken cancellationToken)
+    public async Task<Outcome<bool>> DisableAsync(ClaimsPrincipal principal, string password, string code, CancellationToken cancellationToken)
     {
         var info = Tenant();
         if (await UserOfAsync(principal) is not { } user)
-            return AdminOutcome.NotFound<bool>(OutcomeCodes.AccountNotFound);
+            return Outcomes.NotFound<bool>(OutcomeCodes.AccountNotFound);
 
         if (!user.TwoFactorEnabled)
-            return AdminOutcome.Invalid<bool>(OutcomeCodes.TwoFactorNotEnabled);
+            return Outcomes.Invalid<bool>(OutcomeCodes.TwoFactorNotEnabled);
 
         // 角色要求的就不能關：能關，等於這個要求只是個建議。要關得由營運者改角色或設定。
         if (RequiresTwoFactor(user.Role, options.Value))
-            return AdminOutcome.Invalid<bool>(OutcomeCodes.TwoFactorRequiredForRole);
+            return Outcomes.Invalid<bool>(OutcomeCodes.TwoFactorRequiredForRole);
 
         // 密碼與驗證碼都要對：只知道其中一個（看到密碼、或借到沒鎖的手機）的人，不能把保護關掉。
         // 兩者的失敗都計入鎖定，所以這裡不能成為猜測的後門。
         if (!await ConfirmAsync(user, code, password))
-            return AdminOutcome.Invalid<bool>(OutcomeCodes.CredentialsIncorrect);
+            return Outcomes.Invalid<bool>(OutcomeCodes.CredentialsIncorrect);
 
         await Users.SetTwoFactorEnabledAsync(user, false);
         await Users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey);
@@ -48,7 +48,7 @@ internal sealed class PortalTwoFactor(
         await Users.UpdateSecurityStampAsync(user);
         await signIn.RefreshSignInAsync(user);
         await Audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.PortalMfaDisabled, info.Id, "member", user.Id), cancellationToken);
-        return AdminOutcome.Ok(true);
+        return Outcomes.Ok(true);
     }
 
     /// <summary>Identity 原生的驗證器 provider（RFC 6238，內建時間容許範圍）。</summary>

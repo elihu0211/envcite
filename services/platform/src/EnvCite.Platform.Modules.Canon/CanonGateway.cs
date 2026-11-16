@@ -18,7 +18,7 @@ internal sealed class CanonGateway(
     IMemoryCache cache)
 {
     private static readonly TimeSpan ArticleIriCacheTtl = TimeSpan.FromMinutes(5);
-    public async Task<AdminOutcome<(IReadOnlyList<LawSummaryDto> Laws, bool Available)>> ListLawsAsync(
+    public async Task<Outcome<(IReadOnlyList<LawSummaryDto> Laws, bool Available)>> ListLawsAsync(
         string? jurisdiction, string? asOf, CancellationToken cancellationToken, string? categoryPrefix = null) =>
         await CallAsync(CanonBusy, async () =>
         {
@@ -54,7 +54,7 @@ internal sealed class CanonGateway(
             }
         });
 
-    public async Task<AdminOutcome<PortalLawGraphResult>> GetLawGraphAsync(
+    public async Task<Outcome<PortalLawGraphResult>> GetLawGraphAsync(
         PortalLawGraphQuery query, CancellationToken cancellationToken) =>
         await CallAsync(CanonBusy, async () =>
         {
@@ -83,16 +83,16 @@ internal sealed class CanonGateway(
             }
         });
 
-    public async Task<AdminOutcome<ArticleDetailDto>> GetArticleByIriAsync(
+    public async Task<Outcome<ArticleDetailDto>> GetArticleByIriAsync(
         string? iri, CancellationToken cancellationToken)
     {
         var trimmed = iri?.Trim() ?? string.Empty;
         if (string.IsNullOrEmpty(trimmed))
-            return AdminOutcome.Invalid<ArticleDetailDto>(OutcomeCodes.UpstreamInvalidRequest, "iri is required");
+            return Outcomes.Invalid<ArticleDetailDto>(OutcomeCodes.UpstreamInvalidRequest, "iri is required");
 
         var cacheKey = $"canon:article-iri:{trimmed}";
         if (cache.TryGetValue(cacheKey, out ArticleDetailDto? cached) && cached is not null)
-            return AdminOutcome.Ok(cached);
+            return Outcomes.Ok(cached);
 
         var outcome = await CallAsync(CanonBusy, async () =>
         {
@@ -117,7 +117,7 @@ internal sealed class CanonGateway(
         return outcome;
     }
 
-    public async Task<AdminOutcome<LawDto>> GetLawAsync(
+    public async Task<Outcome<LawDto>> GetLawAsync(
         string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken) =>
         await CallAsync(CanonBusy, async () =>
         {
@@ -134,7 +134,7 @@ internal sealed class CanonGateway(
                 string.IsNullOrEmpty(law.DateDocument) ? null : law.DateDocument);
         });
 
-    public async Task<AdminOutcome<IReadOnlyList<ArticleDto>>> ListArticlesAsync(
+    public async Task<Outcome<IReadOnlyList<ArticleDto>>> ListArticlesAsync(
         string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken) =>
         await CallAsync<IReadOnlyList<ArticleDto>>(CanonBusy, async () =>
         {
@@ -145,7 +145,7 @@ internal sealed class CanonGateway(
             return [.. response.Articles.Select(a => new ArticleDto(a.Iri, a.Number))];
         });
 
-    public async Task<AdminOutcome<LawStructureDto>> ListLawStructureAsync(
+    public async Task<Outcome<LawStructureDto>> ListLawStructureAsync(
         string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken) =>
         await CallAsync(CanonBusy, async () =>
         {
@@ -231,7 +231,7 @@ internal sealed class CanonGateway(
         _ => "chapter",
     };
 
-    public async Task<AdminOutcome<ReasoningResultDto>> EvaluateAsync(EvaluateReasoningRequest request, CancellationToken cancellationToken) =>
+    public async Task<Outcome<ReasoningResultDto>> EvaluateAsync(EvaluateReasoningRequest request, CancellationToken cancellationToken) =>
         await CallAsync(OutcomeCodes.ReasoningBusy, async () =>
         {
             var response = await reasoning.EvaluateAsync(
@@ -247,7 +247,7 @@ internal sealed class CanonGateway(
     private static LawIdentifier IdentifierOf(string? jurisdiction, string? idScheme, string? localId) =>
         new() { Jurisdiction = jurisdiction ?? string.Empty, IdScheme = idScheme ?? string.Empty, LocalId = localId ?? string.Empty };
 
-    private static Task<AdminOutcome<T>> CallAsync<T>(string exhaustedCode, Func<Task<T>> call) =>
+    private static Task<Outcome<T>> CallAsync<T>(string exhaustedCode, Func<Task<T>> call) =>
         PlatformGrpcClient.CallAsync(OutcomeCodes.CanonUnavailable, exhaustedCode, call);
 }
 

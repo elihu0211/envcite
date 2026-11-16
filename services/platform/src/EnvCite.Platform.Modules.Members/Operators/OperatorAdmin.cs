@@ -14,19 +14,19 @@ namespace EnvCite.Platform.Modules.Members.Operators;
 internal sealed class OperatorAdmin(
     IServiceScopeFactory scopes, IMailSender mail, IActivationMailer activation, IOptions<MailOptions> mailOptions, TimeProvider time) : IOperatorAdmin
 {
-    public async Task<AdminOutcome<IReadOnlyList<OperatorInfo>>> ListAsync(CancellationToken cancellationToken)
+    public async Task<Outcome<IReadOnlyList<OperatorInfo>>> ListAsync(CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         var list = await users.Users.AsNoTracking().OrderBy(u => u.Email).ToListAsync(cancellationToken);
-        return AdminOutcome.Ok<IReadOnlyList<OperatorInfo>>([.. list.Select(Info)]);
+        return Outcomes.Ok<IReadOnlyList<OperatorInfo>>([.. list.Select(Info)]);
     }
 
-    public async Task<AdminOutcome<IssuedOperatorPassword>> CreateAsync(
+    public async Task<Outcome<IssuedOperatorPassword>> CreateAsync(
         ClaimsPrincipal actor, string email, string? displayName, CancellationToken cancellationToken)
     {
         if (NewAccountInput.Problem(email, displayName) is { } problem)
-            return AdminOutcome.Invalid<IssuedOperatorPassword>(problem);
+            return Outcomes.Invalid<IssuedOperatorPassword>(problem);
 
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
@@ -49,17 +49,17 @@ internal sealed class OperatorAdmin(
             new AuditEntry(AuditActions.OperatorCreated, TargetType: "operator", TargetId: user.Id.ToString(), Detail: new Dictionary<string, object?> { ["email"] = user.Email }),
             cancellationToken);
 
-        return AdminOutcome.Ok(new IssuedOperatorPassword(Info(user), password));
+        return Outcomes.Ok(new IssuedOperatorPassword(Info(user), password));
     }
 
-    public async Task<AdminOutcome<OperatorInvitation>> InviteAsync(
+    public async Task<Outcome<OperatorInvitation>> InviteAsync(
         ClaimsPrincipal actor, string email, string? displayName, CancellationToken cancellationToken)
     {
         if (!mail.Enabled)
-            return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.MailNotEnabled);
+            return Outcomes.Conflict<OperatorInvitation>(OutcomeCodes.MailNotEnabled);
 
         if (NewAccountInput.Problem(email, displayName) is { } problem)
-            return AdminOutcome.Invalid<OperatorInvitation>(problem);
+            return Outcomes.Invalid<OperatorInvitation>(problem);
 
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
@@ -84,26 +84,26 @@ internal sealed class OperatorAdmin(
                 ["mail"] = delivery.AuditStatus(),
             }),
             cancellationToken);
-        return AdminOutcome.Ok(new OperatorInvitation(Info(user), delivery));
+        return Outcomes.Ok(new OperatorInvitation(Info(user), delivery));
     }
 
-    public async Task<AdminOutcome<OperatorInvitation>> ResendInvitationAsync(
+    public async Task<Outcome<OperatorInvitation>> ResendInvitationAsync(
         ClaimsPrincipal actor, string operatorId, CancellationToken cancellationToken)
     {
         if (!mail.Enabled)
-            return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.MailNotEnabled);
+            return Outcomes.Conflict<OperatorInvitation>(OutcomeCodes.MailNotEnabled);
 
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
-            return AdminOutcome.NotFound<OperatorInvitation>(OutcomeCodes.OperatorNotFound);
+            return Outcomes.NotFound<OperatorInvitation>(OutcomeCodes.OperatorNotFound);
 
         if (user.Disabled)
-            return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.AccountDisabled);
+            return Outcomes.Conflict<OperatorInvitation>(OutcomeCodes.AccountDisabled);
 
         var invitation = !await users.HasPasswordAsync(user);
         if (!invitation && user.EmailConfirmed)
-            return AdminOutcome.Conflict<OperatorInvitation>(OutcomeCodes.AccountAlreadyActive);
+            return Outcomes.Conflict<OperatorInvitation>(OutcomeCodes.AccountAlreadyActive);
 
         var delivery = await SendActivationAsync(users, user, invitation, cancellationToken);
         await Audit(scope).AppendAsync(
@@ -115,7 +115,7 @@ internal sealed class OperatorAdmin(
                 ["mail"] = delivery.AuditStatus(),
             }),
             cancellationToken);
-        return AdminOutcome.Ok(new OperatorInvitation(Info(user), delivery));
+        return Outcomes.Ok(new OperatorInvitation(Info(user), delivery));
     }
 
     private async Task<MailDelivery> SendActivationAsync(
@@ -127,13 +127,13 @@ internal sealed class OperatorAdmin(
         return await activation.SendAsync(user.Email!, link, settings.LinkLifetime, tenantIdentifier: null, invitation, cancellationToken);
     }
 
-    public async Task<AdminOutcome<IssuedOperatorPassword>> ResetPasswordAsync(
+    public async Task<Outcome<IssuedOperatorPassword>> ResetPasswordAsync(
         ClaimsPrincipal actor, string operatorId, CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
-            return AdminOutcome.NotFound<IssuedOperatorPassword>(OutcomeCodes.OperatorNotFound);
+            return Outcomes.NotFound<IssuedOperatorPassword>(OutcomeCodes.OperatorNotFound);
 
         var password = OneTimePassword.New();
         user.PasswordHash = users.PasswordHasher.HashPassword(user, password);
@@ -151,16 +151,16 @@ internal sealed class OperatorAdmin(
             new AuditEntry(AuditActions.OperatorPasswordReset, TargetType: "operator", TargetId: user.Id.ToString(), Detail: new Dictionary<string, object?> { ["email"] = user.Email }),
             cancellationToken);
 
-        return AdminOutcome.Ok(new IssuedOperatorPassword(Info(user), password));
+        return Outcomes.Ok(new IssuedOperatorPassword(Info(user), password));
     }
 
-    public async Task<AdminOutcome<OperatorInfo>> ResetTwoFactorAsync(
+    public async Task<Outcome<OperatorInfo>> ResetTwoFactorAsync(
         ClaimsPrincipal actor, string operatorId, CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
-            return AdminOutcome.NotFound<OperatorInfo>(OutcomeCodes.OperatorNotFound);
+            return Outcomes.NotFound<OperatorInfo>(OutcomeCodes.OperatorNotFound);
 
         await users.SetTwoFactorEnabledAsync(user, false);
         await users.RemoveAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey);
@@ -177,20 +177,20 @@ internal sealed class OperatorAdmin(
             new AuditEntry(AuditActions.OperatorMfaReset, TargetType: "operator", TargetId: user.Id.ToString(), Detail: new Dictionary<string, object?> { ["email"] = user.Email }),
             cancellationToken);
 
-        return AdminOutcome.Ok(Info(user));
+        return Outcomes.Ok(Info(user));
     }
 
-    public async Task<AdminOutcome<OperatorInfo>> SetDisabledAsync(
+    public async Task<Outcome<OperatorInfo>> SetDisabledAsync(
         ClaimsPrincipal actor, string operatorId, bool disabled, CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<OperatorUser>>();
         if (await users.FindOperatorAsync(operatorId) is not { } user)
-            return AdminOutcome.NotFound<OperatorInfo>(OutcomeCodes.OperatorNotFound);
+            return Outcomes.NotFound<OperatorInfo>(OutcomeCodes.OperatorNotFound);
 
         if (user.Disabled == disabled)
         {
-            return AdminOutcome.Ok(Info(user)); // 已經是那個狀態：不重複記錄
+            return Outcomes.Ok(Info(user)); // 已經是那個狀態：不重複記錄
         }
 
         user.Disabled = disabled;
@@ -204,7 +204,7 @@ internal sealed class OperatorAdmin(
                 Detail: new Dictionary<string, object?> { ["email"] = user.Email }),
             cancellationToken);
 
-        return AdminOutcome.Ok(Info(user));
+        return Outcomes.Ok(Info(user));
     }
 
     private static IAuditLog Audit(AsyncServiceScope scope) => scope.ServiceProvider.GetRequiredService<IAuditLog>();

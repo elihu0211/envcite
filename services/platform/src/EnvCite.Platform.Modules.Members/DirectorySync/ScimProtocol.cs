@@ -56,7 +56,7 @@ internal static class ScimResponses
         new ScimResult(status, new ScimError([Scim.ErrorSchema], status.ToString(System.Globalization.CultureInfo.InvariantCulture), scimType, detail, code));
 
     /// <summary>失敗的結果代碼對映成 HTTP 狀態與 SCIM 的 <c>scimType</c>；<c>detail</c> 永遠是英文（來自 <see cref="OutcomeCodes"/>），另帶 <c>code</c>。</summary>
-    public static IResult Error<T>(AdminOutcome<T> outcome)
+    public static IResult Error<T>(Outcome<T> outcome)
     {
         var (status, scimType) = outcome.Code switch
         {
@@ -68,10 +68,10 @@ internal static class ScimResponses
             OutcomeCodes.DirectoryRoleNotMappable => (StatusCodes.Status403Forbidden, null),
             _ => outcome.Status switch
             {
-                AdminStatus.NotFound => (StatusCodes.Status404NotFound, null),
-                AdminStatus.Conflict => (StatusCodes.Status409Conflict, null),
-                AdminStatus.Forbidden => (StatusCodes.Status403Forbidden, null),
-                AdminStatus.Unavailable => (StatusCodes.Status503ServiceUnavailable, null),
+                OutcomeStatus.NotFound => (StatusCodes.Status404NotFound, null),
+                OutcomeStatus.Conflict => (StatusCodes.Status409Conflict, null),
+                OutcomeStatus.Forbidden => (StatusCodes.Status403Forbidden, null),
+                OutcomeStatus.Unavailable => (StatusCodes.Status503ServiceUnavailable, null),
                 _ => (StatusCodes.Status400BadRequest, (string?)"invalidValue"),
             },
         };
@@ -79,13 +79,13 @@ internal static class ScimResponses
     }
 
     /// <summary>結果的分類，指標的 <c>outcome</c> 標籤（有限集合）。</summary>
-    public static string Category<T>(AdminOutcome<T> outcome) => outcome.Status switch
+    public static string Category<T>(Outcome<T> outcome) => outcome.Status switch
     {
-        AdminStatus.Ok => "ok",
-        AdminStatus.NotFound => "not_found",
-        AdminStatus.Conflict => "conflict",
-        AdminStatus.Forbidden => "forbidden",
-        AdminStatus.Unavailable => "unavailable",
+        OutcomeStatus.Ok => "ok",
+        OutcomeStatus.NotFound => "not_found",
+        OutcomeStatus.Conflict => "conflict",
+        OutcomeStatus.Forbidden => "forbidden",
+        OutcomeStatus.Unavailable => "unavailable",
         _ => "invalid",
     };
 }

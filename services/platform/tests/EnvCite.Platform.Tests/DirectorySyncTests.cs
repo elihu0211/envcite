@@ -15,19 +15,19 @@ namespace EnvCite.Platform.Tests;
 [Collection(PlatformTestGroup.Group1)]
 public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestBase(factory)
 {
-    private Task<AdminOutcome<DirectoryMember>> ProvisionAsync(Org org, DirectoryProvision member) =>
+    private Task<Outcome<DirectoryMember>> ProvisionAsync(Org org, DirectoryProvision member) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ProvisionAsync(org.Idp, member, Ct));
 
-    private Task<AdminOutcome<DirectoryMember>> UpdateAsync(Org org, string id, DirectoryPatch patch) =>
+    private Task<Outcome<DirectoryMember>> UpdateAsync(Org org, string id, DirectoryPatch patch) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().UpdateAsync(org.Idp, id, patch, Ct));
 
-    private Task<AdminOutcome<DirectoryMember>> DeactivateAsync(Org org, string id) =>
+    private Task<Outcome<DirectoryMember>> DeactivateAsync(Org org, string id) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().DeactivateAsync(org.Idp, id, Ct));
 
-    private Task<AdminOutcome<DirectoryMember>> FindAsync(Org org, string id) =>
+    private Task<Outcome<DirectoryMember>> FindAsync(Org org, string id) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().FindAsync(org.Idp, id, Ct));
 
-    private Task<AdminOutcome<DirectoryStatus>> StatusAsync(Org org) =>
+    private Task<Outcome<DirectoryStatus>> StatusAsync(Org org) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().GetStatusAsync(org.Owner, Ct));
 
     [Fact]
@@ -73,9 +73,9 @@ public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestB
             var sameExternalId = await ProvisionAsync(org, person with { Email = NewEmail() });
             var sameEmail = await ProvisionAsync(org, person with { ExternalId = "another" });
 
-            Assert.Equal(AdminStatus.Conflict, sameExternalId.Status);
+            Assert.Equal(OutcomeStatus.Conflict, sameExternalId.Status);
             Assert.Equal(OutcomeCodes.DirectoryExternalIdTaken, sameExternalId.Code);
-            Assert.Equal(AdminStatus.Conflict, sameEmail.Status);
+            Assert.Equal(OutcomeStatus.Conflict, sameEmail.Status);
             Assert.Equal(OutcomeCodes.MemberEmailTaken, sameEmail.Code);
             var page = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ListAsync(org.Idp, 0, 50, null, null, Ct));
             Assert.Equal(2, page.Value!.Total); // 擁有者加上這一位
@@ -114,9 +114,9 @@ public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestB
             Assert.True(off.IsOk);
 
             Assert.Equal(OutcomeCodes.DirectoryNotEnabled, (await ProvisionAsync(org, Person())).Code);
-            Assert.Equal(AdminStatus.NotFound, (await UpdateAsync(org, member.Id, new DirectoryPatch(DisplayName: "x"))).Status);
-            Assert.Equal(AdminStatus.NotFound, (await DeactivateAsync(org, member.Id)).Status);
-            Assert.Equal(AdminStatus.NotFound, (await FindAsync(org, member.Id)).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await UpdateAsync(org, member.Id, new DirectoryPatch(DisplayName: "x"))).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await DeactivateAsync(org, member.Id)).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await FindAsync(org, member.Id)).Status);
 
             // 既有成員原封不動。
             Assert.False((await UserAsync(org, member.Id)).Disabled);
@@ -133,7 +133,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestB
         var status = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().GetStatusAsync(org.Owner, Ct), off);
         var issued = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().IssueTokenAsync(org.Owner, "x", null, Ct), off);
 
-        Assert.Equal(AdminStatus.NotFound, provisioned.Status);
+        Assert.Equal(OutcomeStatus.NotFound, provisioned.Status);
         Assert.Equal(OutcomeCodes.DirectoryNotEnabled, status.Code);
         Assert.Equal(OutcomeCodes.DirectoryNotEnabled, issued.Code);
     }
@@ -263,7 +263,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestB
 
             Assert.True(admin.IsOk, admin.Message);
             Assert.Equal(OutcomeCodes.DirectoryRoleNotMappable, owner.Code);
-            Assert.Equal(AdminStatus.Forbidden, owner.Status);
+            Assert.Equal(OutcomeStatus.Forbidden, owner.Status);
             Assert.Equal(OutcomeCodes.DirectoryRoleNotMappable, promote.Code);
             Assert.Equal(OutcomeCodes.RoleInvalid, bogus.Code);
             Assert.Equal(OutcomeCodes.DirectoryRoleNotMappable, defaultOwner.Code);
@@ -348,15 +348,15 @@ public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestB
             Assert.NotEqual(inA.Id, inB.Value!.Id);
 
             // 用 B 的 token 與 B 的租戶去碰 A 的成員：找不到。
-            Assert.Equal(AdminStatus.NotFound, (await FindAsync(b, inA.Id)).Status);
-            Assert.Equal(AdminStatus.NotFound, (await UpdateAsync(b, inA.Id, new DirectoryPatch(DisplayName: "x"))).Status);
-            Assert.Equal(AdminStatus.NotFound, (await DeactivateAsync(b, inA.Id)).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await FindAsync(b, inA.Id)).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await UpdateAsync(b, inA.Id, new DirectoryPatch(DisplayName: "x"))).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await DeactivateAsync(b, inA.Id)).Status);
             Assert.True((await UserAsync(a, inA.Id)).Disabled == false);
 
             var listB = await InTenantAsync(b.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ListAsync(b.Idp, 0, 50, null, null, Ct));
             Assert.DoesNotContain(listB.Value!.Items, m => m.Id == inA.Id);
-            Assert.Equal(AdminStatus.NotFound, (await InTenantAsync(b.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().RevokeTokenAsync(b.Owner, a.TokenId, Ct))).Status);
-            Assert.Equal(AdminStatus.NotFound, (await InTenantAsync(b.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().ReleaseManagedAsync(b.Owner, inA.Id, Ct))).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await InTenantAsync(b.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().RevokeTokenAsync(b.Owner, a.TokenId, Ct))).Status);
+            Assert.Equal(OutcomeStatus.NotFound, (await InTenantAsync(b.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().ReleaseManagedAsync(b.Owner, inA.Id, Ct))).Status);
 
             // 狀態與計數也是各租戶自己的。
             Assert.Equal(1, (await StatusAsync(a)).Value!.Created);
@@ -378,7 +378,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestB
         var asForged = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().GetStatusAsync(forged, Ct));
         var anonymous = await InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().GetStatusAsync(new ClaimsPrincipal(new ClaimsIdentity()), Ct));
 
-        Assert.Equal(AdminStatus.Forbidden, asAdmin.Status);
+        Assert.Equal(OutcomeStatus.Forbidden, asAdmin.Status);
         Assert.Equal(OutcomeCodes.DirectoryOwnerOnly, asAdmin.Code);
         Assert.Equal(OutcomeCodes.DirectoryOwnerOnly, asForged.Code);
         Assert.Equal(OutcomeCodes.DirectoryOwnerOnly, anonymous.Code);
@@ -502,7 +502,7 @@ public sealed class DirectorySyncTests(PlatformFactory factory) : DirectoryTestB
             Assert.NotNull(status.Value.LastRequestAt);
             Assert.False(off.Value!.Settings.Enabled);
             Assert.False(offAgain.Value!.Settings.Enabled);
-            Assert.Equal(AdminStatus.NotFound, missing.Status);
+            Assert.Equal(OutcomeStatus.NotFound, missing.Status);
             Assert.Equal(OutcomeCodes.DirectoryNotEnabled, (await ProvisionAsync(org, Person())).Code); // 推送立刻被拒
             Assert.Single(await AuditAsync(org, AuditActions.DirectoryDisabled));
         });

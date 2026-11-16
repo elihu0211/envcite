@@ -164,7 +164,7 @@ public sealed partial class PortalMfaRequiredTests(PlatformFactory factory)
             "portal"));
         var refused = await scope.ServiceProvider.GetRequiredService<IPortalTwoFactor>()
             .DisableAsync(principal, member.Password, CodeAt(member.Key, clock.GetUtcNow()), CancellationToken.None);
-        Assert.Equal(AdminStatus.Invalid, refused.Status);
+        Assert.Equal(OutcomeStatus.Invalid, refused.Status);
         Assert.True((await host.Services.GetRequiredService<IMemberAdmin>().ListAsync(member.Tenant.Id, CancellationToken.None)).Value!.Single().TwoFactorEnabled);
     }
 

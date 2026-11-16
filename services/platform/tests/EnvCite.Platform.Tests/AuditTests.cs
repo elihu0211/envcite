@@ -66,7 +66,7 @@ public sealed class AuditTests(PlatformFactory factory)
         var bad = await factory.Services.GetRequiredService<IApiKeyAdmin>()
             .IssueAsync(OperatorSession.Principal(), tenant.Id, string.Empty, null, null, CancellationToken.None);
 
-        Assert.Equal(AdminStatus.Invalid, bad.Status);
+        Assert.Equal(OutcomeStatus.Invalid, bad.Status);
         Assert.Single(await ItemsAsync(tenant.Id, AuditActions.ApiKeyIssued)); // 只有建立租戶時簽的那一把
     }
 

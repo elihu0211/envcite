@@ -94,9 +94,9 @@ public sealed class EntitlementTests(PlatformFactory factory)
         var unknownPlan = await Plans(host).SetAsync(actor, tenant.Id, "gold", CancellationToken.None);
         var noTenant = await Plans(host).SetAsync(actor, "no-such-tenant", "standard", CancellationToken.None);
 
-        Assert.Equal(AdminStatus.Invalid, unknownPlan.Status);
+        Assert.Equal(OutcomeStatus.Invalid, unknownPlan.Status);
         Assert.Equal(OutcomeCodes.PlanUnknown, unknownPlan.Code);
-        Assert.Equal(AdminStatus.NotFound, noTenant.Status);
+        Assert.Equal(OutcomeStatus.NotFound, noTenant.Status);
         Assert.Empty(await EventsAsync(host, tenant.Id, AuditActions.TenantPlanAssigned));
     }
 
@@ -217,7 +217,7 @@ public sealed class EntitlementTests(PlatformFactory factory)
         var response = await Keys(host).RevokeAsync(OperatorSession.Principal(), a.Id, keyOfB.ApiKey.Id, CancellationToken.None);
         using var stillWorks = await Tenant(host, keyOfB.Key).GetAsync(new Uri("/v2/me", UriKind.Relative), TestContext.Current.CancellationToken);
 
-        Assert.Equal(AdminStatus.NotFound, response.Status);
+        Assert.Equal(OutcomeStatus.NotFound, response.Status);
         Assert.Equal(HttpStatusCode.OK, stillWorks.StatusCode);
         Assert.Empty(await EventsAsync(host, b.Id, AuditActions.ApiKeyRevoked));
     }
@@ -229,6 +229,6 @@ public sealed class EntitlementTests(PlatformFactory factory)
 
         var response = await Keys(host).ListAsync("no-such-tenant", CancellationToken.None);
 
-        Assert.Equal(AdminStatus.NotFound, response.Status);
+        Assert.Equal(OutcomeStatus.NotFound, response.Status);
     }
 }
