@@ -1,4 +1,4 @@
-namespace EnvCite.Platform.SharedKernel;
+namespace EnvCite.Platform.Modules.Mail;
 
 // 三個驗證器都只在 Platform:Mail:Enabled 為 true 時檢查（未啟用時其餘鍵被忽略，部署庫可以先放著不完整的值）。
 // 錯誤只指名鍵，不帶值：帳號與密碼都不進訊息。

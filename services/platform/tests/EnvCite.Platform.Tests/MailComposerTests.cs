@@ -9,7 +9,7 @@ using static EnvCite.Platform.Tests.MailTestServices;
 namespace EnvCite.Platform.Tests;
 
 /// <summary>
-/// 信件的組成（邀請、驗證、<c>mail test</c>）：用 <see cref="MailServiceCollectionExtensions.AddPlatformMail"/> 註冊的真實 <see cref="IMailComposer"/> 測，
+/// 信件的組成（邀請、驗證、<c>mail test</c>）：用 <see cref="MailModule.AddMailModule"/> 註冊的真實 <see cref="IMailComposer"/> 測，
 /// 不 new 任何東西手動接線。純文字與 HTML 兩版語意相同；信裡唯一的外部網址是啟用連結；插入的值由 Razor 編碼；
 /// 版面是表格加內嵌樣式（傳統 Outlook 也要能讀）；版型可由設定覆寫並在啟動驗證。不連網路也不連資料庫。
 /// </summary>
@@ -430,7 +430,7 @@ public sealed partial class MailComposerTests
     private static partial Regex Placeholder();
 
     private static Dictionary<string, string> LoadTexts(string file, [CallerFilePath] string here = "") =>
-        XDocument.Load(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.SharedKernel", file)))
+        XDocument.Load(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(here)!, "..", "..", "src", "EnvCite.Platform.Modules.Mail", file)))
             .Root!.Elements("data")
             .ToDictionary(e => (string)e.Attribute("name")!, e => (string)e.Element("value")!, StringComparer.Ordinal);
 

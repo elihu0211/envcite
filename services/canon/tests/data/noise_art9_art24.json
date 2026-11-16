@@ -1,0 +1,422 @@
+{
+ "derivation": {
+  "method": "llm",
+  "agent": "claude-sonnet-5-5",
+  "agent_version": "noise-art9-art24-draft-1"
+ },
+ "review": "extracted",
+ "scheme": {
+  "code": "env",
+  "title": "環境法概念（草稿）"
+ },
+ "concepts": [
+  {
+   "code": "in_noise_control_zone",
+   "label": "場所、工程或設施位於噪音管制區內"
+  },
+  {
+   "code": "noise_within_standard",
+   "label": "所發出之聲音未超出噪音管制標準"
+  },
+  {
+   "code": "still_over_after_improvement_deadline",
+   "label": "經限期改善仍未符合噪音管制標準"
+  },
+  {
+   "code": "site_is_factory",
+   "label": "場所是工廠（場）"
+  },
+  {
+   "code": "site_is_entertainment_or_business",
+   "label": "場所是娛樂或營業場所"
+  },
+  {
+   "code": "site_is_construction",
+   "label": "是營建工程"
+  },
+  {
+   "code": "site_is_amplifier",
+   "label": "是擴音設施"
+  },
+  {
+   "code": "site_is_announced_other",
+   "label": "是其他經公告之場所、工程及設施"
+  },
+  {
+   "code": "holds_permit",
+   "label": "設施已依第十條第一項取得許可證"
+  },
+  {
+   "code": "revocation_necessary",
+   "label": "必要時（廢止許可證）"
+  },
+  {
+   "code": "operator_is_legal_person",
+   "label": "場所、工程或設施屬法人或非法人"
+  }
+ ],
+ "statements": [
+  {
+   "id": "n9_1",
+   "law": "O0030001",
+   "path": "art_9/para_1",
+   "text": "噪音管制區內之下列場所、工程及設施，所發出之聲音不得超出噪音管制標準：",
+   "kind": "prescriptive",
+   "deontic": "obligation",
+   "slots": {
+    "subject": {
+     "literal": "噪音管制區內之場所、工程及設施"
+    },
+    "action": {
+     "literal": "發出聲音"
+    },
+    "object": {
+     "literal": "噪音管制標準"
+    }
+   },
+   "conditions": [
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "in_noise_control_zone",
+     "comparator": "eq",
+     "threshold": 1
+    },
+    {
+     "role": "duty",
+     "clause": 1,
+     "concept": "noise_within_standard",
+     "comparator": "eq",
+     "threshold": 1
+    }
+   ]
+  },
+  {
+   "id": "n24_factory_fine",
+   "law": "O0030001",
+   "path": "art_24/para_1/pt_1",
+   "text": "一、工廠（場）：處新臺幣六千元以上六萬元以下罰鍰。",
+   "kind": "sanction",
+   "slots": {
+    "subject": {
+     "literal": "工廠（場）"
+    }
+   },
+   "conditions": [
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "site_is_factory",
+     "comparator": "eq",
+     "threshold": 1
+    },
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "still_over_after_improvement_deadline",
+     "comparator": "eq",
+     "threshold": 1
+    }
+   ],
+   "sanction": {
+    "punishes": "n9_1",
+    "effect": "fine",
+    "amount_text": "處新臺幣六千元以上六萬元以下罰鍰",
+    "min": 6000,
+    "max": 60000
+   }
+  },
+  {
+   "id": "n24_entertainment_business_fine",
+   "law": "O0030001",
+   "path": "art_24/para_1/pt_2",
+   "text": "二、娛樂或營業場所：處新臺幣三千元以上三萬元以下罰鍰。",
+   "kind": "sanction",
+   "slots": {
+    "subject": {
+     "literal": "娛樂或營業場所"
+    }
+   },
+   "conditions": [
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "site_is_entertainment_or_business",
+     "comparator": "eq",
+     "threshold": 1
+    },
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "still_over_after_improvement_deadline",
+     "comparator": "eq",
+     "threshold": 1
+    }
+   ],
+   "sanction": {
+    "punishes": "n9_1",
+    "effect": "fine",
+    "amount_text": "處新臺幣三千元以上三萬元以下罰鍰",
+    "min": 3000,
+    "max": 30000
+   }
+  },
+  {
+   "id": "n24_construction_fine",
+   "law": "O0030001",
+   "path": "art_24/para_1/pt_3",
+   "text": "三、營建工程：處新臺幣一萬八千元以上十八萬元以下罰鍰。",
+   "kind": "sanction",
+   "slots": {
+    "subject": {
+     "literal": "營建工程"
+    }
+   },
+   "conditions": [
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "site_is_construction",
+     "comparator": "eq",
+     "threshold": 1
+    },
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "still_over_after_improvement_deadline",
+     "comparator": "eq",
+     "threshold": 1
+    }
+   ],
+   "sanction": {
+    "punishes": "n9_1",
+    "effect": "fine",
+    "amount_text": "處新臺幣一萬八千元以上十八萬元以下罰鍰",
+    "min": 18000,
+    "max": 180000
+   }
+  },
+  {
+   "id": "n24_amplifier_fine",
+   "law": "O0030001",
+   "path": "art_24/para_1/pt_4",
+   "text": "四、擴音設施：處新臺幣三千元以上三萬元以下罰鍰。",
+   "kind": "sanction",
+   "slots": {
+    "subject": {
+     "literal": "擴音設施"
+    }
+   },
+   "conditions": [
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "site_is_amplifier",
+     "comparator": "eq",
+     "threshold": 1
+    },
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "still_over_after_improvement_deadline",
+     "comparator": "eq",
+     "threshold": 1
+    }
+   ],
+   "sanction": {
+    "punishes": "n9_1",
+    "effect": "fine",
+    "amount_text": "處新臺幣三千元以上三萬元以下罰鍰",
+    "min": 3000,
+    "max": 30000
+   }
+  },
+  {
+   "id": "n24_announced_other_fine",
+   "law": "O0030001",
+   "path": "art_24/para_1/pt_5",
+   "text": "五、其他經公告之場所、工程及設施：處新臺幣三千元以上三萬元以下罰鍰。",
+   "kind": "sanction",
+   "slots": {
+    "subject": {
+     "literal": "其他經公告之場所、工程及設施"
+    }
+   },
+   "conditions": [
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "site_is_announced_other",
+     "comparator": "eq",
+     "threshold": 1
+    },
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "still_over_after_improvement_deadline",
+     "comparator": "eq",
+     "threshold": 1
+    }
+   ],
+   "sanction": {
+    "punishes": "n9_1",
+    "effect": "fine",
+    "amount_text": "處新臺幣三千元以上三萬元以下罰鍰",
+    "min": 3000,
+    "max": 30000
+   }
+  },
+  {
+   "id": "n24_repeat",
+   "law": "O0030001",
+   "path": "art_24/para_1",
+   "text": "違反第九條第一項規定，經限期改善仍未符合噪音管制標準者，得依下列規定按次或按日連續處罰，或令其停工、停業或停止使用，至符合噪音管制標準時為止；其為第十條第一項取得許可證之設施，必要時並得廢止其許可證：",
+   "kind": "sanction",
+   "span": [
+    28,
+    43
+   ],
+   "slots": {
+    "subject": {
+     "literal": "違反第九條第一項規定者"
+    }
+   },
+   "conditions": [
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "still_over_after_improvement_deadline",
+     "comparator": "eq",
+     "threshold": 1
+    }
+   ],
+   "sanction": {
+    "punishes": "n9_1",
+    "effect": "fine",
+    "amount_text": "按次或按日連續處罰",
+    "repeating": true,
+    "discretionary": true
+   }
+  },
+  {
+   "id": "n24_suspend",
+   "law": "O0030001",
+   "path": "art_24/para_1",
+   "text": "違反第九條第一項規定，經限期改善仍未符合噪音管制標準者，得依下列規定按次或按日連續處罰，或令其停工、停業或停止使用，至符合噪音管制標準時為止；其為第十條第一項取得許可證之設施，必要時並得廢止其許可證：",
+   "kind": "sanction",
+   "span": [
+    45,
+    70
+   ],
+   "slots": {
+    "subject": {
+     "literal": "違反第九條第一項規定者"
+    }
+   },
+   "conditions": [
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "still_over_after_improvement_deadline",
+     "comparator": "eq",
+     "threshold": 1
+    }
+   ],
+   "sanction": {
+    "punishes": "n9_1",
+    "effect": "restriction",
+    "discretionary": true
+   }
+  },
+  {
+   "id": "n24_revoke",
+   "law": "O0030001",
+   "path": "art_24/para_1",
+   "text": "違反第九條第一項規定，經限期改善仍未符合噪音管制標準者，得依下列規定按次或按日連續處罰，或令其停工、停業或停止使用，至符合噪音管制標準時為止；其為第十條第一項取得許可證之設施，必要時並得廢止其許可證：",
+   "kind": "sanction",
+   "span": [
+    71,
+    99
+   ],
+   "slots": {
+    "subject": {
+     "literal": "取得許可證之設施"
+    }
+   },
+   "conditions": [
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "still_over_after_improvement_deadline",
+     "comparator": "eq",
+     "threshold": 1
+    },
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "holds_permit",
+     "comparator": "eq",
+     "threshold": 1
+    },
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "revocation_necessary",
+     "comparator": "eq",
+     "threshold": 1,
+     "judgement": true
+    }
+   ],
+   "sanction": {
+    "punishes": "n9_1",
+    "effect": "deprivation",
+    "discretionary": true
+   }
+  },
+  {
+   "id": "n24_representative",
+   "law": "O0030001",
+   "path": "art_24/para_3",
+   "text": "法人或非法人之場所、工程或設施有第一項各款情事之一者，除處罰其實際從事行為之自然人外，並對該法人或非法人之負責人處以各該款之罰鍰。",
+   "kind": "sanction",
+   "slots": {
+    "subject": {
+     "literal": "法人或非法人之負責人",
+     "liability": "representative"
+    }
+   },
+   "conditions": [
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "still_over_after_improvement_deadline",
+     "comparator": "eq",
+     "threshold": 1
+    },
+    {
+     "role": "scope",
+     "clause": 1,
+     "concept": "operator_is_legal_person",
+     "comparator": "eq",
+     "threshold": 1
+    }
+   ],
+   "sanction": {
+    "punishes": "n9_1",
+    "effect": "fine",
+    "amount_text": "各該款之罰鍰"
+   }
+  }
+ ],
+ "notes": {
+  "not_modelled": [
+   "第 24 條第 2 項各類別的改善期限上限（綱要沒有命令期限的欄位）",
+   "「經限期改善」所依的改善命令（其法源不在節錄內），以要件 still_over_after_improvement_deadline 代表",
+   "第 10 條許可證的取得要件",
+   "第 24 條第 3 項負責人罰鍰的額度只存原文：額度隨該法人場所所屬的款別而定"
+  ],
+  "questions_for_reviewer": [
+   "第 24 條第 1 項前段的按次或按日連續處罰：按日連續處罰沒有對應的欄位，與按次處罰同記為 repeating。"
+  ]
+ }
+}

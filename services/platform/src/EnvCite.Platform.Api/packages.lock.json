@@ -322,6 +322,13 @@
           "Finbuckle.MultiTenant.EntityFrameworkCore": "[10.1.4, )"
         }
       },
+      "envcite.platform.modules.mail": {
+        "type": "Project",
+        "dependencies": {
+          "EnvCite.Platform.SharedKernel": "[1.0.0, )",
+          "MailKit": "[5.0.0, )"
+        }
+      },
       "envcite.platform.modules.members": {
         "type": "Project",
         "dependencies": {
@@ -360,7 +367,6 @@
         "dependencies": {
           "EnvCite.ServiceDefaults": "[1.0.0, )",
           "Finbuckle.MultiTenant.Abstractions": "[10.1.4, )",
-          "MailKit": "[5.0.0, )",
           "Microsoft.Extensions.AI.Abstractions": "[11.0.0, )"
         }
       },
@@ -368,7 +374,6 @@
         "type": "Project",
         "dependencies": {
           "EnvCite.Platform.SharedKernel": "[1.0.0, )",
-          "Markdig": "[1.6.0, )",
           "MudBlazor": "[9.11.0, )",
           "Net.Codecrete.QrCodeGenerator": "[3.2.1, )"
         }
@@ -433,12 +438,6 @@
         "dependencies": {
           "MimeKit.Core": "5.0.0"
         }
-      },
-      "Markdig": {
-        "type": "CentralTransitive",
-        "requested": "[1.6.0, )",
-        "resolved": "1.6.0",
-        "contentHash": "rJEpDfPM8wrfXUgkNejjg2bJN9bciy44uVyRwKUI+92CnSmbaLeJTLPYcCdvgM4RFsKrhs8d2H2hO78yZpMl3g=="
       },
       "Microsoft.AspNetCore.Authentication.Google": {
         "type": "CentralTransitive",

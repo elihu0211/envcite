@@ -136,7 +136,8 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 ### 邀請與信箱驗證
 
 1. **權杖與流程**：登入不要求信箱已驗證（未驗證信箱不得作復原管道）。權杖使用 Identity 原生電子郵件確認權杖（不自製不儲存）；`GET` 僅檢視、`POST` 才消耗並以 `AddPasswordAsync` 旋轉 security stamp，啟用不簽發 session；重寄時無密碼者先換 stamp。連結與權杖不進日誌或輸出。
-2. **設定與傳輸分層（`AddPlatformMail()`）**：
+2. **設定與傳輸分層（`AddMailModule()`）**：
+   - 契約與實作分界：`SharedKernel` 只放呼叫端用到的 `IMailSender`、`IMailComposer`、`MailOptions` 與其資料型別（核心不依賴 MailKit 與 Razor）；傳輸、版型、文案與傳輸／寄件者選項在 `Modules.Mail`，只由 `Api` 註冊，其他模組不註冊也不參考它。
    - 選項拆為 `MailOptions`、`MailTransportOptions`、`MailIdentityOptions` 與 `MailTemplateOptions`（僅啟用時驗證）。
    - `SmtpMailSender` 每次自 `ISmtpClientFactory` 取新用戶端；`Username`／`Password`（僅傳輸層讀取，不進任何日誌／輸出）皆未設時不送 AUTH；協商交給 MailKit，不自設 `ServerCertificateValidationCallback`。
    - `mail test` 依 `MailTestReport` 錯誤碼對照表輸出（不含帳密或例外原文）。
@@ -163,22 +164,23 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 
 ### 回答管線（`GroundedAnswerer`）
 
-固定四步線性流程：以直接循序 `await` 執行 `rewrite`（有前文時改寫追問為獨立問句）→ `ground`（向 `consult` 取封閉證據集）→ `write`（單次 `IChatClient`，溫度 0）→ `verify`（強制檢查至少一個有效引用代號，否則丟棄作廢）。
+固定四步線性流程：以直接循序 `await` 執行 `rewrite`（有前文時改寫追問為獨立問句）→ `ground`（向 `consult` 取封閉證據集）→ `write`（單次 `IChatClient.GetResponseAsync<ModelAnswerOutput>`，啟用 JSON Schema 與溫度 0）→ `verify`（強制檢查所有領域積木結構與每個有效引用代號，否則丟棄作廢）。
 
-- **步驟規矩**：預期失敗轉結果代碼、取消與未預期錯誤照常拋出；`ground` 若已有結論（`AnswerTurn.Done`）即跳過 `write` 與 `verify`；不串流輸出（須整段核驗後呈現），進度經 `IProgress<AnswerProgress>` 回報（不含問題與證據）。
+- **步驟規矩**：預期失敗轉結果代碼、取消與未預期錯誤照常拋出；`ground` 若已有結論（`AnswerTurn.Done`）即跳過 `write` 與 `verify`；不串流輸出（須整份結構與引用核驗後呈現），進度經 `IProgress<AnswerProgress>` 回報（不含問題與證據）。
+- **強型別積木與呈現**：模型輸出多型領域積木並將代號置於結構化引用欄位，由 `FormattedAnswerView` 依型別映射渲染，`AnswerDocumentFormatter` 確定性轉出記憶文字、複製純文字與安全圖表 DSL。
 - **主題詞偵測（`BareTopic`）**：與搜尋端共用 `LawSearchOptions.Shape` 判準（非問句、無句末標點、無疑問詞），命中時取證據仍用原詞，送模型改用寬鬆任務句避免誤拒答。
-- **拒答原因區分**：`consult` 無命中回 `no_authority`；`consult` 有法源但模型回證據不足為 `insufficient_evidence`（仍帶 `Sources` 供介面列出）；核驗作廢不帶法源。
+- **拒答原因區分**：`consult` 無命中回 `no_authority`；`consult` 有法源但模型回證據不足為 `insufficient_evidence`（仍帶 `Sources` 供介面列出）；結構不合或引用核驗作廢不帶法源。
 
 ### 對話記憶與追問改寫
 
-- **無狀態記憶**：前文以 `IReadOnlyList<ChatMessage>` 傳入（源自 `ChatSession` 記憶體或歷史還原，不用 `AgentSession`／`ChatHistoryProvider`）。
-- **安全與截斷**：前文非證據；送入前剝除上一輪 `[L1]` 代號（`PriorOfAsync`）；長度交由 `MessageCountingChatReducer`（`MEAI001` 僅於 `ConsultModule` 註冊處放行）與 `HistoryChars` 截斷（不用 `SummarizingChatReducer`）。
+- **無狀態記憶**：前文以 `IReadOnlyList<ChatMessage>` 傳入（源自 `ChatSession` 記憶體或歷史還原，由 `AnswerDocumentFormatter.ToMemoryText` 轉成帶法規名稱的文字，不用 `AgentSession`／`ChatHistoryProvider`）。
+- **安全與截斷**：前文非證據；送入前剝除殘留 `[L1]` 代號（`PriorOfAsync`）；長度交由 `MessageCountingChatReducer`（`MEAI001` 僅於 `ConsultModule` 註冊處放行）與 `HistoryChars` 截斷（不用 `SummarizingChatReducer`）。
 - **追問改寫原則**：`rewrite` 僅供取證據（作答仍用原句），且**不將前輪回答的條號、金額、日期帶入問句**；無前文直接放行，改寫失敗退回原句。
 
 ### 對話紀錄與工作區
 
 - **開關與授權**：須同時開啟 `Platform:Answer:Enabled` 與 `TenantEntitlement.AiAnswerEnabled`（跟隨 DB 方案列）；頁面一律透過 `IAskService`（singleton）經 `TenantScopes.InByIdentifierAsync` 執行（非入口成員一律 fail closed）。
-- **隱私與生命週期**：對話紀錄只存問題、日期、回答正文、結果種類與引用（不存條文本文），**僅作者本人可見**（非本人回開新對話或 null）。釘選／重命名／封存不動 `UpdatedAt`；封存清掉釘選，於封存對話續問自動取消封存；`ForkAsync` 複製訊息時保留先後順序（微秒級 `CreatedAt`）；標題搜尋（`ILike`）須跳脫 `%` 與 `_`。
+- **隱私與生命週期**：對話紀錄只存問題、日期、強型別 `Document`（`jsonb` 與 `SchemaVersion`）或拒答／條文摘要 `Content`、結果種類與引用（不存條文本文），**僅作者本人可見**（非本人回開新對話或 null）。釘選／重命名／封存不動 `UpdatedAt`；封存清掉釘選，於封存對話續問自動取消封存；`ForkAsync` 複製訊息時保留先後順序（微秒級 `CreatedAt`）；標題搜尋（`ILike`）須跳脫 `%` 與 `_`。
 - **側欄與工作區（`Components/Portal/Workspace/`）**：
   - 保留天數讀 singleton `IConversationHistorySettings`。
   - 側欄（`PortalShell`）採上下兩段平面清單（功能區 `ep-side-actions` + 最近對話 `ep-recent-scroll`），項目「⋯」選單（`Shared/ConversationMenu`）以原生 popover + POST 表單送至 `PortalEndpoints`。

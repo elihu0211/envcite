@@ -2,7 +2,6 @@ using System.Security.Claims;
 
 using EnvCite.Platform.Web.Components;
 using EnvCite.Platform.Web.Components.Portal.Workspace;
-using EnvCite.Platform.Web.Presentation.Output;
 using EnvCite.Platform.Web.Resources;
 
 using Microsoft.AspNetCore.Components;
@@ -96,7 +95,6 @@ public sealed class ChatPageLifecycleTests
         var services = new ServiceCollection()
             .AddSingleton<IAskService>(ask)
             .AddSingleton<IStringLocalizer<Ui>>(localizer)
-            .AddOutputLayoutEngine()
             .AddSingleton<IConversationHistorySettings>(new FixedRetention())
             .AddSingleton<ICitationArticleService>(new FakeCitationArticleService())
             .AddSingleton<IJSRuntime>(new NoJs())

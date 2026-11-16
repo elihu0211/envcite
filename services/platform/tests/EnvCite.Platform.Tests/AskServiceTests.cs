@@ -1,5 +1,6 @@
 using System.Diagnostics.Metrics;
 using System.Security.Claims;
+using System.Text.Json;
 
 using EnvCite.Platform.Modules.Consult;
 using EnvCite.Platform.Modules.Tenancy;
@@ -22,7 +23,15 @@ namespace EnvCite.Platform.Tests;
 [Collection(PlatformTestGroup.Group1)]
 public sealed class AskServiceTests(PlatformFactory factory)
 {
-    private const string Reply = "在指定清除地區內不得燃燒 [L1]。";
+    private static readonly string Reply = JsonReply(new ModelAnswerOutput(
+        InsufficientEvidence: false,
+        [new ProseBlock(null, "在指定清除地區內不得燃燒。", ["L1"])]));
+
+    private static string JsonReply(ModelAnswerOutput output) =>
+        JsonSerializer.Serialize(output, AnswerJson.Options);
+
+    private static string InsufficientReply =>
+        JsonReply(new ModelAnswerOutput(InsufficientEvidence: true, []));
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -118,7 +127,9 @@ public sealed class AskServiceTests(PlatformFactory factory)
 
         Assert.Equal(new AskCapabilities(HasPlan: true, AiAnswer: true), capabilities);
         Assert.Equal((AskMode.Answer, AskStatus.Ok), (result.Mode, result.Status));
-        Assert.Equal(Reply, result.Answer!.Text);
+        var prose = Assert.IsType<ProseBlock>(Assert.Single(result.Answer!.Document!.Blocks));
+        Assert.Equal("在指定清除地區內不得燃燒。", prose.Text);
+        Assert.Equal(["L1"], prose.CitationCodes);
         Assert.Equal("L1", Assert.Single(result.Answer.Sources).Code);
         Assert.Single(chat.Calls);
         Assert.Equal(["consult.answer", "consult.ground"], await UsageAsync(tenant.Id));
@@ -172,7 +183,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.Empty(chat.Calls);
     }
 
-    // 提示詞與選項：只根據證據、證據當資料不當指令、溫度 0。
+    // 提示詞與選項：只根據證據、證據當資料不當指令、啟用 JSON Schema、溫度 0。
     [Fact]
     public async Task TheModelIsAskedToUseOnlyTheEvidenceAtTemperatureZero()
     {
@@ -188,15 +199,28 @@ public sealed class AskServiceTests(PlatformFactory factory)
             && m.Text.Contains("[L1] 空氣污染防制法 第 32 條：在指定清除地區內，不得從事燃燒行為。", StringComparison.Ordinal)
             && m.Text.Contains(FakeConsultServer.AnswerableQuestion, StringComparison.Ordinal));
         Assert.Equal(0f, chat.LastOptions!.Temperature);
+        Assert.IsType<ChatResponseFormatJson>(chat.LastOptions.ResponseFormat);
     }
 
-    // 不信任模型守規矩：引用不存在的代號、沒有引用、空回答都整個作廢，使用者看到的是拒答，不是一段沒有出處的話。
+    // 不信任模型守規矩：引用不存在的代號、沒有引用、結構無效、非 JSON、空回答都整個作廢，使用者看到的是拒答。
+    public static TheoryData<string, string> InvalidModelOutputs() => new()
+    {
+        { JsonReply(new ModelAnswerOutput(false, [new ProseBlock(null, "不得燃燒。", ["L9"])])), "unverified_citation" },
+        { JsonReply(new ModelAnswerOutput(false, [new ProseBlock(null, "不得燃燒。", ["L1", "L2"])])), "unverified_citation" },
+        { JsonReply(new ModelAnswerOutput(false, [new ProseBlock(null, "不得燃燒。", [])])), "unverified_citation" },
+        { JsonReply(new ModelAnswerOutput(false, [new ComparisonTableBlock(null, ["項目", "規定"], [new ComparisonRow(["僅一欄"], ["L1"])])])), "invalid_structure" },
+        { JsonReply(new ModelAnswerOutput(false, [new ComparisonTableBlock(null, ["項目", "規定"], [new ComparisonRow(["行為", "禁止"], [])])])), "unverified_citation" },
+        { JsonReply(new ModelAnswerOutput(false, [new ChecklistBlock(null, false, [new ChecklistItem("要點", null, null, [])])])), "unverified_citation" },
+        { """{"insufficientEvidence":false,"blocks":[{"kind":"callout","tone":99,"title":"t","body":"b","citationCodes":["L1"]}]}""", "empty_answer" },
+        { JsonReply(new ModelAnswerOutput(false, [new WorkflowBlock(null, WorkflowDirection.TopDown, [new WorkflowNode("n1", "起點", WorkflowNodeKind.Start, ["L1"]), new WorkflowNode("n2", "終點", WorkflowNodeKind.End, ["L1"])], [new WorkflowEdge("n1", "missing")])])), "invalid_structure" },
+        { JsonReply(new ModelAnswerOutput(false, [])), "empty_answer" },
+        { "not-json", "empty_answer" },
+        { "", "empty_answer" },
+        { InsufficientReply, "insufficient_evidence" },
+    };
+
     [Theory]
-    [InlineData("在指定清除地區內不得燃燒 [L9]。", "unverified_citation")] // 不存在的代號
-    [InlineData("在指定清除地區內不得燃燒 [L1] 也不得露天焚燒 [L2]。", "unverified_citation")] // 有一個代號不存在
-    [InlineData("在指定清除地區內不得燃燒。", "unverified_citation")] // 完全沒有引用
-    [InlineData("", "empty_answer")]
-    [InlineData("證據不足", "insufficient_evidence")] // 模型自己說不夠：是拒答，有原因（找到了法源，與「一條都沒找到」不同）
+    [MemberData(nameof(InvalidModelOutputs))]
     public async Task AnAnswerThatDoesNotMapToTheEvidenceIsDiscardedAndBecomesARefusal(string modelSaid, string reason)
     {
         var (host, chat) = Host(_ => modelSaid);
@@ -207,7 +231,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
 
         Assert.Equal(AskStatus.Ok, result.Status);
         Assert.True(result.Answer!.Refused);
-        Assert.Null(result.Answer.Text); // 模型說的話不會送出去
+        Assert.Null(result.Answer.Document); // 模型說的話不會送出去
         Assert.Equal(reason, result.Answer.RefusalReason);
         Assert.Single(chat.Calls);
     }
@@ -217,7 +241,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
     [Fact]
     public async Task WhenTheModelSaysTheEvidenceIsInsufficientTheFoundArticlesAreKept()
     {
-        var (host, chat) = Host(_ => "證據不足");
+        var (host, chat) = Host(_ => InsufficientReply);
         using var h = host;
         var (tenant, member) = await MemberOfAsync("ask-i");
 
@@ -231,9 +255,9 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.Equal(["consult.answer", "consult.ground"], await UsageAsync(tenant.Id)); // 模型與 consult 都真的用了，照常計量
     }
 
-    // 其餘作廢的原因（引用對不上、空回答）不帶法源：那是模型的輸出有問題，不是「證據不夠」。
+    // 其餘作廢的原因（引用對不上、結構錯誤、空回答）不帶法源：那是模型的輸出有問題，不是「證據不夠」。
     [Theory]
-    [InlineData("不得燃燒 [L9]。")]
+    [InlineData("not-json")]
     [InlineData("")]
     public async Task OtherDiscardedAnswersCarryNoSources(string modelSaid)
     {
@@ -259,13 +283,14 @@ public sealed class AskServiceTests(PlatformFactory factory)
         var result = await host.Services.GetRequiredService<IAskService>().AskAsync(member, FakeConsultServer.BareTopicQuestion, null, null, Ct);
 
         Assert.False(result.Answer!.Refused);
-        Assert.Equal(Reply, result.Answer.Text);
+        var prose = Assert.IsType<ProseBlock>(Assert.Single(result.Answer.Document!.Blocks));
+        Assert.Equal("在指定清除地區內不得燃燒。", prose.Text);
         var call = Assert.Single(chat.Calls);
         Assert.Contains(call, m => m.Role == ChatRole.User
             && m.Text.Contains("[L1] 空氣污染防制法 第 32 條", StringComparison.Ordinal)
             && m.Text.Contains("使用者只輸入了主題詞「露天燃燒」，沒有提出具體問題", StringComparison.Ordinal)
             // 缺哪一項就不寫哪一項：任務句不列一串必答項目，也明說不要因為缺一項就整個不答。
-            && m.Text.Contains("不要因為缺了某一項就整個回「證據不足」", StringComparison.Ordinal)
+            && m.Text.Contains("不要因為缺了某一項就判定證據不足", StringComparison.Ordinal)
             && !m.Text.Contains("行為、義務與罰則", StringComparison.Ordinal));
         Assert.Contains(factory.Consult.Received, r => r.Request.Question == FakeConsultServer.BareTopicQuestion);
     }
@@ -310,7 +335,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
         listener.Start();
 
         // 主題詞的任務句送進去時，模型說證據不足；其他問題照常引用。
-        var (host, _) = Host(messages => messages[^1].Text.Contains("沒有提出具體問題", StringComparison.Ordinal) ? "證據不足" : Reply);
+        var (host, _) = Host(messages => messages[^1].Text.Contains("沒有提出具體問題", StringComparison.Ordinal) ? InsufficientReply : Reply);
         using var h = host;
         var (_, member) = await MemberOfAsync("ask-m");
         var ask = host.Services.GetRequiredService<IAskService>();
@@ -659,22 +684,26 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.DoesNotContain(logs.Messages, m => m.Contains("某客戶案情", StringComparison.Ordinal));
     }
 
-    // 系統提示引導模型視內容輸出 Markdown 表格與 Mermaid 流程圖，且含正確 [L1] 引用的結構化回答通過核驗。
+    // 系統提示引導模型以強型別 JSON Schema 輸出五大領域積木，所有結構與法源代號均通過後端核驗。
     [Fact]
-    public async Task StructuredMarkdownTableAndMermaidOutputsPassCitationVerification()
+    public async Task StructuredDomainBlocksPassCitationAndSchemaVerification()
     {
-        const string structuredReply = """
-            ### 管制結論 [L1]
-
-            | 項目 | 規定 | 出處 |
-            | :--- | :--- | :--- |
-            | 管制行為 | 不得從事燃燒行為 | [L1] |
-
-            ```mermaid
-            flowchart TD
-              A[露天燃燒檢舉] --> B[查核是否位於清除地區]
-            ```
-            """;
+        var structuredReply = JsonReply(new ModelAnswerOutput(
+            InsufficientEvidence: false,
+            [
+                new CalloutBlock(CalloutTone.Summary, "管制結論", "在指定清除地區內不得從事燃燒行為。", ["L1"]),
+                new ProseBlock("適用說明", "本條適用於指定清除地區。", ["L1"]),
+                new ChecklistBlock("合規檢核", false, [new ChecklistItem("禁止燃燒", "不得任意露天燃燒", true, ["L1"])]),
+                new ComparisonTableBlock("管制對照", ["項目", "規定"], [new ComparisonRow(["管制行為", "不得從事燃燒行為"], ["L1"])]),
+                new WorkflowBlock(
+                    "稽查流程",
+                    WorkflowDirection.TopDown,
+                    [
+                        new WorkflowNode("n1", "發現露天燃燒", WorkflowNodeKind.Start, ["L1"]),
+                        new WorkflowNode("n2", "確認位於清除地區", WorkflowNodeKind.End, ["L1"]),
+                    ],
+                    [new WorkflowEdge("n1", "n2", "查核")]),
+            ]));
 
         var (host, chat) = Host(_ => structuredReply);
         using var h = host;
@@ -685,12 +714,12 @@ public sealed class AskServiceTests(PlatformFactory factory)
 
         Assert.Equal(AskStatus.Ok, result.Status);
         Assert.False(result.Answer!.Refused);
-        Assert.Equal(structuredReply.Trim(), result.Answer.Text);
+        Assert.Equal(5, result.Answer.Document!.Blocks.Count);
         Assert.Single(result.Answer.Sources, s => s.Code == "L1");
 
         var systemPrompt = chat.Calls.Single().First(m => m.Role == ChatRole.System).Text;
-        Assert.Contains("Markdown 表格", systemPrompt, StringComparison.Ordinal);
-        Assert.Contains("```mermaid", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("JSON Schema", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("citationCodes", systemPrompt, StringComparison.Ordinal);
     }
 
     private static (AskMode, AskStatus) Pair(AskResult result) => (result.Mode, result.Status);

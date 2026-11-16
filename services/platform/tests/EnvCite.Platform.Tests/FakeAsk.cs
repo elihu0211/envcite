@@ -11,7 +11,9 @@ internal sealed class FakeAsk : IAskService
 
     public static AnswerSource Source { get; } = new("L1", "https://example.test/law/32", "空氣污染防制法 第 32 條", "在指定清除地區內，不得從事燃燒行為。");
 
-    public AskResult Result { get; set; } = new(AskMode.Answer, AskStatus.Ok, Answer: new GroundedAnswer("答 [L1]", [Source]));
+    public static AnswerDocument SampleDocument { get; } = new([new ProseBlock(null, "答", ["L1"])]);
+
+    public AskResult Result { get; set; } = new(AskMode.Answer, AskStatus.Ok, Answer: new GroundedAnswer(SampleDocument, [Source]));
 
     public Exception? Throws { get; set; }
 
@@ -69,11 +71,13 @@ internal sealed class FakeAsk : IAskService
         return Task.FromResult(RecordedAs);
     }
 
-    /// <summary>記進歷史的一回合；<see cref="Question"/> 與 <see cref="Answer"/> 是常看的兩欄。</summary>
+    /// <summary>記進歷史的一回合。</summary>
     public sealed record RecordedTurn(Guid? Conversation, ConversationTurn Turn)
     {
         public string Question => Turn.Question;
 
-        public string Answer => Turn.Answer;
+        public AnswerDocument? Document => Turn.Document;
+
+        public string? Text => Turn.Text;
     }
 }

@@ -17,8 +17,8 @@ internal sealed record AnswerTurn(string Question, string? AsOf)
     /// <summary>consult 給的封閉證據集；代號由程式指派。</summary>
     public IReadOnlyList<AnswerSource> Sources { get; init; } = [];
 
-    /// <summary>模型寫的散文，尚未核驗。</summary>
-    public string? ModelText { get; init; }
+    /// <summary>模型產生的強型別回答結構，尚未核驗。</summary>
+    public ModelAnswerOutput? ModelOutput { get; init; }
 
     /// <summary>已有結論（拒答或失敗）時設定；後面的節點見到就原樣放行，不再做事。</summary>
     public AdminOutcome<GroundedAnswer>? Done { get; init; }

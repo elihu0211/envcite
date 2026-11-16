@@ -43,19 +43,26 @@ public sealed class ConversationMessage
 
     public required string Role { get; init; }
 
-    public required string Content { get; init; }
+    /// <summary>使用者問題或拒答／只列條文的純文字；已回答的結構化內容存於 <see cref="Document"/>。</summary>
+    public string? Content { get; init; }
+
+    /// <summary>強型別回答文件（PostgreSQL jsonb）；只有 <c>answered</c> 的助理訊息有。</summary>
+    public AnswerDocument? Document { get; init; }
+
+    /// <summary><see cref="Document"/> 的綱要版本；沒有文件時為 null。</summary>
+    public short? SchemaVersion { get; init; }
 
     public DateTimeOffset CreatedAt { get; init; }
 
     /// <summary>只有問題有：問的哪一天的條文（ISO 日期）；null 是現行。</summary>
     public string? AsOf { get; init; }
 
-    /// <summary>只有回答有：<c>answered</c>、<c>refused</c>、<c>listed</c>；舊資料是 null。接續對話時拒答不當作前文。</summary>
+    /// <summary>只有回答有：<c>answered</c>、<c>refused</c>、<c>listed</c>。接續對話時拒答不當作前文。</summary>
     public string? Outcome { get; init; }
 
     /// <summary>
     /// 只有回答有：引用的法源（代號、法規名、網址）。不存條文本文：全文隨時可以由網址再查。
-    /// 以 jsonb 存在同一列；<see cref="Content"/> 裡的 <c>[L1]</c> 靠它換回法規名。
+    /// 以 jsonb 存在同一列；<see cref="Document"/> 內的代號靠它換回法規名。
     /// </summary>
     public List<StoredCitation> Citations { get; init; } = [];
 }

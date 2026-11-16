@@ -6522,48 +6522,110 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     }
 }
 
-/* ── AI 回答排版引擎（Markdown、行內法源徽章、Mermaid 流程圖與管線表格）─────────────────── */
+/* ── AI 強型別回答元件（領域積木、行內法源徽章、Mermaid 流程圖與對照表格）─────────────────── */
 
-.ep-md-body {
+.ep-ans-body {
     display: grid;
     gap: var(--ep-space-3);
     min-inline-size: 0;
     overflow-wrap: anywhere;
 }
 
-.ep-md-body > :first-child {
+.ep-ans-body > :first-child {
     margin-block-start: 0;
 }
 
-.ep-md-body > :last-child {
+.ep-ans-body > :last-child {
     margin-block-end: 0;
 }
 
-.ep-md-heading {
-    margin: var(--ep-space-2) 0 0;
+.ep-ans-heading {
+    margin: var(--ep-space-2) 0 var(--ep-space-1);
     color: var(--ep-text);
     font-size: var(--ep-title-s-size);
     font-weight: var(--ep-title-s-weight);
     line-height: 1.45;
 }
 
-.ep-md-p {
+.ep-ans-p {
     margin: 0;
     line-height: 1.65;
 }
 
-.ep-md-list {
+.ep-ans-callout {
+    display: grid;
+    gap: var(--ep-space-2);
+    padding: var(--ep-space-3) var(--ep-space-4);
+    border: 1px solid var(--ep-border-subtle);
+    border-inline-start: 3px solid var(--ep-primary);
+    border-radius: var(--ep-radius-control);
+    background: color-mix(in srgb, var(--ep-primary) 5%, var(--ep-surface));
+}
+
+.ep-ans-callout-requirement {
+    border-inline-start-color: var(--ep-info);
+    background: color-mix(in srgb, var(--ep-info) 6%, var(--ep-surface));
+}
+
+.ep-ans-callout-caution {
+    border-inline-start-color: var(--ep-warning);
+    background: color-mix(in srgb, var(--ep-warning) 7%, var(--ep-surface));
+}
+
+.ep-ans-callout-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ep-space-2);
+}
+
+.ep-ans-callout-head .ep-ans-heading {
+    margin: 0;
+}
+
+.ep-ans-callout-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1em 0.55em;
+    border-radius: var(--ep-radius-pill);
+    background: color-mix(in srgb, var(--ep-primary) 12%, var(--ep-surface));
+    color: var(--ep-primary);
+    font-size: var(--ep-label-s-size);
+    font-weight: var(--ep-label-m-weight);
+    line-height: 1.4;
+}
+
+.ep-ans-callout-requirement .ep-ans-callout-badge {
+    background: color-mix(in srgb, var(--ep-info) 14%, var(--ep-surface));
+    color: var(--ep-info);
+}
+
+.ep-ans-callout-caution .ep-ans-callout-badge {
+    background: color-mix(in srgb, var(--ep-warning) 14%, var(--ep-surface));
+    color: var(--ep-warning);
+}
+
+.ep-ans-checklist-wrap,
+.ep-ans-table-section,
+.ep-ans-workflow-section,
+.ep-ans-prose {
+    display: grid;
+    gap: var(--ep-space-2);
+    min-inline-size: 0;
+}
+
+.ep-ans-list {
     margin: 0;
     padding-inline-start: var(--ep-space-6);
     display: grid;
     gap: var(--ep-space-2);
 }
 
-.ep-md-list li {
+.ep-ans-list li {
     line-height: 1.6;
 }
 
-.ep-md-list li.ep-md-task {
+.ep-ans-list li.ep-ans-task {
     list-style: none;
     margin-inline-start: calc(-1 * var(--ep-space-4));
     display: flex;
@@ -6571,71 +6633,20 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     gap: var(--ep-space-2);
 }
 
-.ep-md-task-marker {
+.ep-ans-task-marker {
     flex: none;
     color: var(--ep-primary);
     font-size: var(--ep-label-l-size);
     line-height: 1;
 }
 
-.ep-md-quote {
-    margin: 0;
-    padding: var(--ep-space-2) var(--ep-space-3);
-    border-inline-start: 3px solid var(--ep-primary);
-    background: color-mix(in srgb, var(--ep-surface-muted) 65%, transparent);
-    border-radius: 0 var(--ep-radius-control) var(--ep-radius-control) 0;
-    color: var(--ep-text-secondary);
-    display: grid;
-    gap: var(--ep-space-2);
-}
-
-.ep-md-hr {
-    border: 0;
-    border-block-start: 1px solid var(--ep-border-subtle);
-    margin: var(--ep-space-1) 0;
-}
-
-.ep-md-inline-code {
-    font-family: var(--ep-font-mono);
-    font-size: var(--ep-label-m-size);
-    padding: 0.1em 0.35em;
-    border-radius: var(--ep-radius-control);
-    background: var(--ep-surface-muted);
+.ep-ans-item-label {
+    font-weight: var(--ep-title-s-weight);
     color: var(--ep-text);
 }
 
-.ep-md-code-wrap {
-    border: 1px solid var(--ep-border-subtle);
-    border-radius: var(--ep-radius-control);
-    background: var(--ep-surface-muted);
-    overflow-x: auto;
-}
-
-.ep-md-code-lang {
-    display: block;
-    padding: var(--ep-space-1) var(--ep-space-3);
-    border-block-end: 1px solid var(--ep-border-subtle);
-    font-family: var(--ep-font-mono);
-    font-size: var(--ep-label-s-size);
+.ep-ans-item-detail {
     color: var(--ep-text-secondary);
-    text-transform: uppercase;
-}
-
-.ep-md-code,
-.ep-mermaid-fallback {
-    margin: 0;
-    padding: var(--ep-space-3);
-    font-family: var(--ep-font-mono);
-    font-size: var(--ep-label-m-size);
-    line-height: 1.55;
-    color: var(--ep-text);
-    overflow-x: auto;
-}
-
-.ep-md-link {
-    color: var(--ep-link);
-    text-decoration: underline;
-    text-underline-offset: 2px;
 }
 
 .ep-cite-inline {
@@ -6670,24 +6681,19 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     }
 }
 
-.ep-md-table th,
-.ep-md-table td {
+.ep-ans-table th,
+.ep-ans-table td {
     text-align: start;
 }
 
-.ep-md-table tbody th[scope="row"] {
+.ep-ans-table tbody th[scope="row"] {
     white-space: normal;
     min-inline-size: 6rem;
     max-inline-size: 16rem;
 }
 
-.ep-md-table :is(th, td).ep-align-center {
-    text-align: center;
-}
-
-.ep-md-table :is(th, td).ep-align-right {
-    text-align: end;
-    font-variant-numeric: tabular-nums;
+.ep-ans-table-citations {
+    white-space: nowrap;
 }
 
 .ep-mermaid-card {
@@ -6696,6 +6702,18 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-card);
     background: var(--ep-surface);
+    display: grid;
+    gap: var(--ep-space-3);
+    overflow-x: auto;
+}
+
+.ep-mermaid-fallback {
+    margin: 0;
+    padding: var(--ep-space-3);
+    font-family: var(--ep-font-mono);
+    font-size: var(--ep-label-m-size);
+    line-height: 1.55;
+    color: var(--ep-text);
     overflow-x: auto;
 }
 
@@ -6713,6 +6731,21 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     max-inline-size: 100%;
     block-size: auto;
     font-family: var(--ep-font);
+}
+
+.ep-ans-workflow-steps {
+    margin: 0;
+    padding-block-start: var(--ep-space-2);
+    padding-inline-start: var(--ep-space-5);
+    border-block-start: 1px solid var(--ep-border-subtle);
+    display: grid;
+    gap: var(--ep-space-1);
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-m-size);
+}
+
+.ep-ans-step-label {
+    color: var(--ep-text);
 }
 
 /* Google SaaS 風格的分組設定列：左標籤、中現值與說明、右動作，列與列之間一條髮絲線。 */

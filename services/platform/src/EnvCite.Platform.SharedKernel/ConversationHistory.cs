@@ -17,7 +17,7 @@ public static class ConversationOutcome
     /// <summary>有出處的回答。</summary>
     public const string Answered = "answered";
 
-    /// <summary>拒答：<see cref="ConversationTurn.Answer"/> 是給使用者看的說明，不是答案，接續對話時不當作前文。</summary>
+    /// <summary>拒答：<see cref="ConversationTurn.Text"/> 是給使用者看的說明，不是答案，接續對話時不當作前文。</summary>
     public const string Refused = "refused";
 
     /// <summary>只列條文（沒有 AI 回答）。</summary>
@@ -26,16 +26,24 @@ public static class ConversationOutcome
 
 /// <summary>要記進歷史的一問一答。<paramref name="AsOf"/> 是問的哪一天的條文（ISO 日期；null 是現行）。</summary>
 public sealed record ConversationTurn(
-    string Question, string Answer, string Outcome, IReadOnlyList<ConversationCitation> Citations, string? AsOf = null);
+    string Question,
+    string Outcome,
+    IReadOnlyList<ConversationCitation> Citations,
+    AnswerDocument? Document = null,
+    string? Text = null,
+    string? AsOf = null);
 
 /// <param name="Role"><c>user</c> 或 <c>assistant</c>。</param>
-/// <param name="Citations">只有回答的訊息有；舊資料（引用行寫在文字裡）是空的。</param>
+/// <param name="Content">使用者的提問，或拒答／只列條文時的純文字；已回答的結構化訊息在 <see cref="Document"/>。</param>
+/// <param name="Document">只有 <see cref="ConversationOutcome.Answered"/> 的助理訊息有。</param>
+/// <param name="Citations">只有回答的訊息有。</param>
 /// <param name="AsOf">只有問題有：問的哪一天的條文；null 是現行。</param>
-/// <param name="Outcome"><see cref="ConversationOutcome"/>；只有回答的訊息有，舊資料是 null。</param>
+/// <param name="Outcome"><see cref="ConversationOutcome"/>；只有回答的訊息有。</param>
 public sealed record ConversationMessageView(
     string Role,
-    string Content,
     DateTimeOffset CreatedAt,
+    string? Content = null,
+    AnswerDocument? Document = null,
     IReadOnlyList<ConversationCitation>? Citations = null,
     string? AsOf = null,
     string? Outcome = null);

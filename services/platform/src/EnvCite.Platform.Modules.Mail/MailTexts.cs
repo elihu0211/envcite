@@ -2,7 +2,7 @@ using System.Resources;
 
 [assembly: NeutralResourcesLanguage("zh-TW")]
 
-namespace EnvCite.Platform.SharedKernel;
+namespace EnvCite.Platform.Modules.Mail;
 
 /// <summary>
 /// 信件文案的資源檔（<c>MailTexts.resx</c> 是預設的繁體中文，<c>MailTexts.en.resx</c> 是英文）。這個類別只是資源的名稱標記，

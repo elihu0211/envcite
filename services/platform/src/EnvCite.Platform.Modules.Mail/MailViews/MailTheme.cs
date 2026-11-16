@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace EnvCite.Platform.SharedKernel.MailViews;
+namespace EnvCite.Platform.Modules.Mail.MailViews;
 
 /// <summary>
 /// 版型的長相：由 <see cref="MailTemplateOptions"/>（已驗證）算出每個元素的內嵌樣式與樣式表。
