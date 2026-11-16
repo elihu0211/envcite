@@ -2,6 +2,12 @@
   "version": 2,
   "dependencies": {
     "net11.0": {
+      "Finbuckle.MultiTenant.Abstractions": {
+        "type": "Direct",
+        "requested": "[10.1.4, )",
+        "resolved": "10.1.4",
+        "contentHash": "mivEmaNaG7IW7eDXV69KSDvqUjnE2SBRUQpnQXfpUqubZbC5qCEoPp8O1koIyXt9Szwo7e0LOHzw1DpsOGa3jA=="
+      },
       "MailKit": {
         "type": "Direct",
         "requested": "[5.0.0, )",

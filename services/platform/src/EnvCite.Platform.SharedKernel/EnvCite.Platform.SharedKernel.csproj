@@ -5,6 +5,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- 內部 gRPC 呼叫從 Finbuckle 的租戶 context 取租戶（PlatformGrpcClient），不另包一層。 -->
+    <PackageReference Include="Finbuckle.MultiTenant.Abstractions" />
     <PackageReference Include="MailKit" />
     <!-- 對話記憶用 .NET 的通用訊息型別（ChatMessage）在層與層之間傳遞，不另訂一套。 -->
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />

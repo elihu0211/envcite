@@ -51,6 +51,10 @@ public sealed class FakeConsultServer : IAsyncDisposable
         public override Task<GroundResponse> Ground(GroundRequest request, ServerCallContext context)
         {
             server.Received.Enqueue((request, context.RequestHeaders));
+            // 與真的 consult 同一條規則：沒有 x-tenant-id 就不處理，上游不會替呼叫端補租戶。
+            if (string.IsNullOrEmpty(context.RequestHeaders.GetValue("x-tenant-id")))
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "x-tenant-id is required"));
+
             if (request.AsOf is { Length: > 0 } && !DateOnly.TryParseExact(request.AsOf, "yyyy-MM-dd", out _))
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "as_of must be an ISO 8601 date"));
 

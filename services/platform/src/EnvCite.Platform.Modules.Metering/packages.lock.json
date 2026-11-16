@@ -31,11 +31,6 @@
           "Finbuckle.MultiTenant.Abstractions": "10.1.4"
         }
       },
-      "Finbuckle.MultiTenant.Abstractions": {
-        "type": "Transitive",
-        "resolved": "10.1.4",
-        "contentHash": "mivEmaNaG7IW7eDXV69KSDvqUjnE2SBRUQpnQXfpUqubZbC5qCEoPp8O1koIyXt9Szwo7e0LOHzw1DpsOGa3jA=="
-      },
       "Grpc.Core.Api": {
         "type": "Transitive",
         "resolved": "2.84.0",
@@ -129,6 +124,7 @@
         "type": "Project",
         "dependencies": {
           "EnvCite.ServiceDefaults": "[1.0.0, )",
+          "Finbuckle.MultiTenant.Abstractions": "[10.1.4, )",
           "MailKit": "[5.0.0, )",
           "Microsoft.Extensions.AI.Abstractions": "[11.0.0, )"
         }
@@ -143,6 +139,12 @@
           "OpenTelemetry.Instrumentation.Http": "[1.21.0, )",
           "OpenTelemetry.Instrumentation.Runtime": "[1.21.0, )"
         }
+      },
+      "Finbuckle.MultiTenant.Abstractions": {
+        "type": "CentralTransitive",
+        "requested": "[10.1.4, )",
+        "resolved": "10.1.4",
+        "contentHash": "mivEmaNaG7IW7eDXV69KSDvqUjnE2SBRUQpnQXfpUqubZbC5qCEoPp8O1koIyXt9Szwo7e0LOHzw1DpsOGa3jA=="
       },
       "Finbuckle.MultiTenant.Identity.EntityFrameworkCore": {
         "type": "CentralTransitive",
