@@ -13,6 +13,7 @@ from canon import errors
 from canon.law.delegation import extract as extract_delegations
 from canon.law.guidance import load as load_guidance
 from canon.law.importer import run as run_import
+from canon.law.judgment import load as load_judgments
 from canon.law.moj import Moj
 from canon.law.ruling import load as load_rulings
 from canon.violation import extract as extract_violations
@@ -196,6 +197,46 @@ def legal_graph_corpus(conn: Conn, tmp_path: Path) -> None:
         },
     )
     conn.commit()
+    load_judgments(
+        conn,
+        {
+            "derivation": {"method": "rule", "agent": "test", "agent_version": "1"},
+            "decisions": [
+                {
+                    "jid": "TPAA,110,上,1,20210601,1",
+                    "decided_on": "2021-06-01",
+                    "instance": "supreme",
+                    "kind": "ordinary",
+                    "title": "排放標準適用",
+                    "body": "適用空氣污染防制法第二十條第一項。",
+                    "source_url": "https://judgment.judicial.gov.tw/FJUD/default.aspx",
+                    "cites": [
+                        {
+                            "law": "O0020001",
+                            "path": "art_20/para_1",
+                            "text": "公私場所固定污染源排放空氣污染物，應符合排放標準。",
+                            "basis": "stated",
+                        }
+                    ],
+                },
+                {
+                    "jid": "TPAA,113,上,2,20240101,1",
+                    "decided_on": "2024-01-01",
+                    "instance": "supreme",
+                    "title": "查詢日之後的裁判",
+                    "body": "這筆裁判日晚於圖譜的查詢日。",
+                    "cites": [
+                        {
+                            "law": "O0020001",
+                            "path": "art_20/para_1",
+                            "text": "公私場所固定污染源排放空氣污染物，應符合排放標準。",
+                            "basis": "stated",
+                        }
+                    ],
+                },
+            ],
+        },
+    )
 
 
 pytestmark = pytest.mark.usefixtures("legal_graph_corpus")
@@ -276,6 +317,13 @@ def test_get_law_graph_focus_returns_multilayer_hierarchy_links_and_truncation(s
     assert guidance_item.article_number == "20"
     assert "說明：" not in guidance_item.subject
 
+    (decision,) = resp.court_decisions
+    assert decision.jid == "TPAA,110,上,1,20210601,1"
+    assert decision.article_number == "20"
+    assert decision.decided_on == "2021-06-01"
+    assert decision.instance == "supreme"
+    assert decision.title == "排放標準適用"
+
 
 def test_get_law_graph_supports_multiparent_upstream_and_document_type_filter(stub: Stub) -> None:
     permit_graph = stub.GetLawGraph(
@@ -306,6 +354,7 @@ def test_get_law_graph_overview_mode_and_category_prefix(stub: Stub) -> None:
         metadata=call_metadata(),
     )
     assert not all_overview.HasField("focus_identifier")
+    assert not all_overview.court_decisions
     all_nodes = {n.identifier.local_id: n for n in all_overview.nodes}
     assert all_nodes["A0000001"].hierarchy_tier == 0
     assert "O0020001" in all_nodes

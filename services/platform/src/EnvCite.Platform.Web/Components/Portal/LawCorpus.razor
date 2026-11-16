@@ -235,6 +235,15 @@ else
                                         <DataTable Items="graph.GuidanceLinks" Columns="GuidanceColumns" Label="@L["現行有效行政函釋"]" Plain="true" />
                                     </div>
                                 }
+
+                                @if (graph.CourtDecisions.Count > 0)
+                                {
+                                    <div class="ep-graph-subpanel">
+                                        <h3 class="ep-subpanel-title">@L["行政法院裁判 ({0})", graph.CourtDecisions.Count]</h3>
+                                        <FormAlert Kind="AlertKind.Info" Message="@L["行政法院裁判是個別案件的解釋依據（行政訴訟法第 216 條），不改變條文效力，也不進入結論。"]" />
+                                        <DataTable Items="graph.CourtDecisions" Columns="CourtColumns" Label="@L["行政法院裁判"]" Plain="true" />
+                                    </div>
+                                }
                             }
                             else if (_graphResult is { Available: false })
                             {
@@ -378,6 +387,31 @@ else
             Cell = v => @<text><StatusBadge Tone="@(v.Kind == "duty" ? "warning" : "info")">@ViolationKindLabel(v.Kind)</StatusBadge></text>,
         },
         new() { Title = L["被連動義務／規範條文"], Cell = v => @<text><code class="ep-mono">@v.TargetArticle</code> <span class="ep-hint">@v.TargetPath</span></text> },
+    ];
+
+    private IReadOnlyList<ColumnDef<PortalCourtDecisionLink>> CourtColumns =>
+    [
+        new() { Title = L["關聯條號"], Class = "ep-keep", Labeled = false, Cell = d => @<text><code class="ep-mono">@d.ArticleNumber</code></text> },
+        new() { Title = L["裁判字號"], Cell = d => @<text><code class="ep-mono">@d.Jid</code></text> },
+        new() { Title = L["法院與日期"], Cell = d => @<text>@CourtInstanceLabel(d.Instance) · @d.DecidedOn</text> },
+        new()
+        {
+            Title = L["案由"],
+            Cell = d => @<text>
+                @if (!string.IsNullOrEmpty(d.SourceUrl))
+                {
+                    <a class="ep-link" href="@d.SourceUrl" target="_blank" rel="noopener noreferrer">@d.Title</a>
+                }
+                else
+                {
+                    @d.Title
+                }
+                @if (d.Kind == "grand_chamber")
+                {
+                    <StatusBadge Tone="info">@CourtKindLabel(d.Kind)</StatusBadge>
+                }
+            </text>,
+        },
     ];
 
     private IReadOnlyList<ColumnDef<PortalGuidanceLink>> GuidanceColumns =>

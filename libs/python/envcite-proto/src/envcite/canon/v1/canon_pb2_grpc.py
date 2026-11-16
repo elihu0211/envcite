@@ -120,7 +120,7 @@ class CanonServiceServicer:
         raise NotImplementedError('Method not implemented!')
 
     def GetLawGraph(self, request, context):
-        """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。
+        """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動、函釋錨點與行政法院裁判。
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

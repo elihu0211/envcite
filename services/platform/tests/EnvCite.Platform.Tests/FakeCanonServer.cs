@@ -317,6 +317,20 @@ public sealed class FakeCanonServer : IAsyncDisposable
                         SourceUrl = "https://oaout.moenv.gov.tw/Law/100",
                     },
                 },
+                CourtDecisions =
+                {
+                    new CourtDecisionLink
+                    {
+                        ArticleNumber = "20",
+                        Path = "art_20/para_1",
+                        Jid = "TPAA,110,上,1,20210601,1",
+                        DecidedOn = "2021-06-01",
+                        Instance = "supreme",
+                        Kind = "ordinary",
+                        Title = "排放標準適用",
+                        SourceUrl = "https://judgment.judicial.gov.tw/FJUD/default.aspx",
+                    },
+                },
                 ChildGroups =
                 {
                     new ChildGroupCount { DocumentType = "細則", Count = 1 },

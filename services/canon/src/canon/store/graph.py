@@ -1,4 +1,4 @@
-"""多層授權知識圖譜：讀出法規之間的授權邊、條文義務與罰則連動，與函釋錨點。"""
+"""多層授權知識圖譜：讀出法規之間的授權邊、條文義務與罰則連動、函釋錨點與行政法院裁判。"""
 
 from collections import defaultdict
 from typing import NamedTuple
@@ -11,6 +11,7 @@ from canon.store.ports import ReadConnections
 from canon.store.records import (
     LANGUAGE,
     ArticleViolationLinkRecord,
+    CourtDecisionLinkRecord,
     GuidanceLinkRecord,
     LawGraphEdgeRecord,
     LawGraphNodeRecord,
@@ -196,6 +197,39 @@ _GRAPH_GUIDANCE_LINKS = """
      LIMIT 30
 """
 
+# 函釋同一上限：頁面只放較新的 30 筆。錨點可以是舊版本文字，不要求查詢日仍現行。
+_GRAPH_COURT_DECISIONS = """
+    SELECT article_number, path, jid, decided_on, instance, kind, title, source_url
+      FROM (
+          SELECT DISTINCT ON (d.id, coalesce(corpus.article_number(p.path), p.path))
+                 coalesce(corpus.article_number(p.path), p.path) AS article_number,
+                 p.path,
+                 d.jid,
+                 d.decided_on::text AS decided_on,
+                 d.instance::text AS instance,
+                 d.kind::text AS kind,
+                 d.title,
+                 coalesce(d.source_url, '') AS source_url,
+                 d.decided_on AS decided_on_date,
+                 p.sort_key AS sort_key
+            FROM judgment.anchor AS a
+            JOIN judgment.decision AS d ON d.id = a.decision_id
+            JOIN corpus.provision AS p ON p.id = a.provision_id
+           WHERE p.resource_id = %(resource)s
+             AND d.decided_on <= %(on)s::date
+             AND EXISTS (
+                 SELECT 1
+                   FROM corpus.provision_version AS pv
+                  WHERE pv.provision_id = a.provision_id
+                    AND pv.content_sha256 = a.content_sha256
+                    AND pv.language = %(language)s
+             )
+           ORDER BY d.id, coalesce(corpus.article_number(p.path), p.path), p.sort_key
+      ) AS picked
+     ORDER BY decided_on_date DESC, sort_key, jid
+     LIMIT 30
+"""
+
 
 class _ResourceRow(NamedTuple):
     id: int
@@ -295,6 +329,7 @@ class GraphRepository:
         edges: list[LawGraphEdgeRecord] = []
         violations: list[ArticleViolationLinkRecord] = []
         guidances: list[GuidanceLinkRecord] = []
+        decisions: list[CourtDecisionLinkRecord] = []
         if ids:
             detail_params = {"ids": ids, "language": LANGUAGE, "on": on}
             node_rows = fetch(conn, _GRAPH_NODE_DETAILS, detail_params, layout.NodeRow)
@@ -307,6 +342,7 @@ class GraphRepository:
                 conn, _GRAPH_VIOLATION_LINKS, link_params, ArticleViolationLinkRecord
             )
             guidances = fetch(conn, _GRAPH_GUIDANCE_LINKS, link_params, GuidanceLinkRecord)
+            decisions = fetch(conn, _GRAPH_COURT_DECISIONS, link_params, CourtDecisionLinkRecord)
 
         focus_node = node_map.get(focus_id) if focus_id is not None else None
         child_groups = layout.child_groups(focus_id, children_of, res_info) if focus_id else ()
@@ -323,5 +359,6 @@ class GraphRepository:
             edges=tuple(edges),
             violation_links=tuple(violations),
             guidance_links=tuple(guidances),
+            court_decisions=tuple(decisions),
             child_groups=child_groups,
         )

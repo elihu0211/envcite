@@ -52,7 +52,7 @@ class CanonServiceStub:
     ListLaws: _grpc.UnaryUnaryMultiCallable[_canon_pb2.ListLawsRequest, _canon_pb2.ListLawsResponse]
     """列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。"""
     GetLawGraph: _grpc.UnaryUnaryMultiCallable[_canon_pb2.GetLawGraphRequest, _canon_pb2.GetLawGraphResponse]
-    """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。"""
+    """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動、函釋錨點與行政法院裁判。"""
     GetArticleByIri: _grpc.UnaryUnaryMultiCallable[_canon_pb2.GetArticleByIriRequest, _canon_pb2.GetArticleByIriResponse]
     """依條文版本標準 IRI（索引）取得單一條文全文與中繼資料；IRI 格式錯誤回 INVALID_ARGUMENT，查無回 NOT_FOUND。"""
 
@@ -80,7 +80,7 @@ class CanonServiceAsyncStub(CanonServiceStub):
     ListLaws: _aio.UnaryUnaryMultiCallable[_canon_pb2.ListLawsRequest, _canon_pb2.ListLawsResponse]  # type: ignore[assignment]
     """列出語料庫中在 `as_of` 當日有有效版本的法規摘要與授權母法關聯，供瀏覽法規階層樹。"""
     GetLawGraph: _aio.UnaryUnaryMultiCallable[_canon_pb2.GetLawGraphRequest, _canon_pb2.GetLawGraphResponse]  # type: ignore[assignment]
-    """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。"""
+    """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動、函釋錨點與行政法院裁判。"""
     GetArticleByIri: _aio.UnaryUnaryMultiCallable[_canon_pb2.GetArticleByIriRequest, _canon_pb2.GetArticleByIriResponse]  # type: ignore[assignment]
     """依條文版本標準 IRI（索引）取得單一條文全文與中繼資料；IRI 格式錯誤回 INVALID_ARGUMENT，查無回 NOT_FOUND。"""
 
@@ -141,7 +141,7 @@ class CanonServiceServicer(metaclass=_abc_1.ABCMeta):
         request: _canon_pb2.GetLawGraphRequest,
         context: _ServicerContext,
     ) -> _typing.Union[_canon_pb2.GetLawGraphResponse, _abc.Awaitable[_canon_pb2.GetLawGraphResponse]]:
-        """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動與函釋錨點。"""
+        """取得以特定法規為焦點（或依分類總覽）的多層授權知識圖譜、條文義務罰則連動、函釋錨點與行政法院裁判。"""
 
     @_abc_1.abstractmethod
     def GetArticleByIri(

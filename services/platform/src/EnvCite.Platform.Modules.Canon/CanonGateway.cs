@@ -79,7 +79,7 @@ internal sealed class CanonGateway(
             }
             catch (RpcException ex) when (ex.StatusCode == StatusCode.Unimplemented)
             {
-                return new PortalLawGraphResult(false, query.Focus, [], [], [], [], []);
+                return new PortalLawGraphResult(false, query.Focus, [], [], [], [], [], []);
             }
         });
 
@@ -213,12 +213,24 @@ internal sealed class CanonGateway(
                 g.Subject,
                 g.SourceUrl))
         ];
+        IReadOnlyList<PortalCourtDecisionLink> decisions =
+        [
+            .. response.CourtDecisions.Select(d => new PortalCourtDecisionLink(
+                d.ArticleNumber,
+                d.Path,
+                d.Jid,
+                d.DecidedOn,
+                d.Instance,
+                d.Kind,
+                d.Title,
+                d.SourceUrl))
+        ];
         IReadOnlyList<PortalChildGroupCount> childGroups =
         [
             .. response.ChildGroups.Select(c => new PortalChildGroupCount(c.DocumentType, c.Count))
         ];
         var focus = response.FocusIdentifier is null ? null : ToPortalKey(response.FocusIdentifier);
-        return new PortalLawGraphResult(true, focus, nodes, edges, violations, guidances, childGroups);
+        return new PortalLawGraphResult(true, focus, nodes, edges, violations, guidances, decisions, childGroups);
     }
 
     private static string HeadingKindName(HeadingKind kind) => kind switch

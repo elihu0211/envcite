@@ -2166,6 +2166,42 @@
   <data name="行政規則僅供參考（行政程序法第 159 條），不拘束法院審判；法規命令須經法律明確授權。" xml:space="preserve">
     <value>Administrative rules are interpretive guidance only (Administrative Procedure Act Art. 159) and do not bind courts; delegated regulations require explicit statutory authorization.</value>
   </data>
+  <data name="行政法院裁判" xml:space="preserve">
+    <value>Administrative court decisions</value>
+  </data>
+  <data name="行政法院裁判 ({0})" xml:space="preserve">
+    <value>Administrative court decisions ({0})</value>
+  </data>
+  <data name="行政法院裁判是個別案件的解釋依據（行政訴訟法第 216 條），不改變條文效力，也不進入結論。" xml:space="preserve">
+    <value>Administrative court decisions are interpretive basis for the individual case (Administrative Litigation Act Art. 216). They do not change a provision's force and do not enter the conclusion.</value>
+  </data>
+  <data name="行政訴訟法第 216 條" xml:space="preserve">
+    <value>Administrative Litigation Act Art. 216</value>
+  </data>
+  <data name="最高行政法院" xml:space="preserve">
+    <value>Supreme Administrative Court</value>
+  </data>
+  <data name="高等行政法院" xml:space="preserve">
+    <value>High Administrative Court</value>
+  </data>
+  <data name="地方行政法院" xml:space="preserve">
+    <value>District Administrative Court</value>
+  </data>
+  <data name="大法庭" xml:space="preserve">
+    <value>Grand Chamber</value>
+  </data>
+  <data name="通常" xml:space="preserve">
+    <value>Ordinary</value>
+  </data>
+  <data name="裁判字號" xml:space="preserve">
+    <value>Docket number</value>
+  </data>
+  <data name="法院與日期" xml:space="preserve">
+    <value>Court and date</value>
+  </data>
+  <data name="案由" xml:space="preserve">
+    <value>Cause of action</value>
+  </data>
   <data name="被連動義務／規範條文" xml:space="preserve">
     <value>Linked Duty / Delegated Provision</value>
   </data>

@@ -170,6 +170,19 @@ def _to_graph_response(graph: LawGraphRecord) -> pb.GetLawGraphResponse:
             )
             for g in graph.guidance_links
         ],
+        court_decisions=[
+            pb.CourtDecisionLink(
+                article_number=d.article_number,
+                path=d.path,
+                jid=d.jid,
+                decided_on=d.decided_on,
+                instance=d.instance,
+                kind=d.kind,
+                title=d.title,
+                source_url=d.source_url,
+            )
+            for d in graph.court_decisions
+        ],
         child_groups=[
             pb.ChildGroupCount(document_type=cg.document_type, count=cg.count)
             for cg in graph.child_groups
