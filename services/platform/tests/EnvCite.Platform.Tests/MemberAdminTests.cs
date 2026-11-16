@@ -51,7 +51,7 @@ public sealed class MemberAdminTests(PlatformFactory factory)
 
         var created = await Admin.CreateAsync(OperatorSession.Principal(), tenant.Id, email, null, role, CancellationToken.None);
 
-        Assert.Equal(AdminStatus.Invalid, created.Status);
+        Assert.Equal(OutcomeStatus.Invalid, created.Status);
         Assert.Empty((await Admin.ListAsync(tenant.Id, CancellationToken.None)).Value!);
     }
 
@@ -66,7 +66,7 @@ public sealed class MemberAdminTests(PlatformFactory factory)
         var again = await Admin.CreateAsync(OperatorSession.Principal(), a.Id, email.ToUpperInvariant(), null, CustomerRoles.Owner, CancellationToken.None);
         var otherTenant = await Admin.CreateAsync(OperatorSession.Principal(), b.Id, email, null, CustomerRoles.Owner, CancellationToken.None);
 
-        Assert.Equal(AdminStatus.Conflict, again.Status); // email 不分大小寫
+        Assert.Equal(OutcomeStatus.Conflict, again.Status); // email 不分大小寫
         Assert.True(otherTenant.IsOk);
     }
 
@@ -79,7 +79,7 @@ public sealed class MemberAdminTests(PlatformFactory factory)
 
         Assert.Single((await Admin.ListAsync(a.Id, CancellationToken.None)).Value!);
         Assert.Empty((await Admin.ListAsync(b.Id, CancellationToken.None)).Value!);
-        Assert.Equal(AdminStatus.NotFound, (await Admin.ListAsync("no-such-tenant", CancellationToken.None)).Status);
+        Assert.Equal(OutcomeStatus.NotFound, (await Admin.ListAsync("no-such-tenant", CancellationToken.None)).Status);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public sealed class MemberAdminTests(PlatformFactory factory)
 
         var reset = await Admin.ResetPasswordAsync(OperatorSession.Principal(), b.Id, memberOfA, CancellationToken.None);
 
-        Assert.Equal(AdminStatus.NotFound, reset.Status);
+        Assert.Equal(OutcomeStatus.NotFound, reset.Status);
     }
 
     [Fact]

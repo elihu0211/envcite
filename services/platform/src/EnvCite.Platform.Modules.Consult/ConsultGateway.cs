@@ -9,7 +9,7 @@ namespace EnvCite.Platform.Modules.Consult;
 /// </summary>
 internal sealed class ConsultGateway(ConsultationService.ConsultationServiceClient consult)
 {
-    public Task<AdminOutcome<GroundResponse>> GroundAsync(string? question, string? asOf, CancellationToken cancellationToken) =>
+    public Task<Outcome<GroundResponse>> GroundAsync(string? question, string? asOf, CancellationToken cancellationToken) =>
         PlatformGrpcClient.CallAsync(OutcomeCodes.ConsultUnavailable, () =>
             consult.GroundAsync(
                 new GroundRequest { Question = question ?? string.Empty, AsOf = asOf ?? string.Empty },

@@ -58,7 +58,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 
 - **OpenAPI 契約**：`openapi/openapi_v2.json` 於 `dotnet build` 自動產生並隨變更提交。新 `/v2` 端點須標註 `.WithName`／`.WithTags`／`.WithSummary`／`.WithDescription` 與所有狀態的 `.Produces…`。不相容變更進 `/v3`；若直接破壞 `/v2`，PR 須加 `api-breaking` 標籤並於說明寫明理由。
 - **對外用語獨立於內部 gRPC**：端點負責將法律詞彙（如 `pointInTime`）對映至 gRPC 欄位（如 `as_of`）。`.proto` 一律自倉庫根 `proto/` 編譯，不得複製。
-- **穩定失敗代碼（`AdminOutcome.Code`）**：常數定義於 `SharedKernel/OutcomeCodes.cs`。`Message` 與 API `detail` 固定英文（`OutcomeCodes.English`）；介面依 `Labels` 資源檔 `Outcome.{代碼}` 本地化（`OutcomeText.Localized()`）。新增代碼須同步更新英文、中文與英文資源檔（測試守門）；Identity 錯誤須經 `IdentityOutcomes` 轉換。
+- **穩定失敗代碼（`Outcome.Code`）**：常數定義於 `SharedKernel/OutcomeCodes.cs`。`Message` 與 API `detail` 固定英文（`OutcomeCodes.English`）；介面依 `Labels` 資源檔 `Outcome.{代碼}` 本地化（`OutcomeText.Localized()`）。新增代碼須同步更新英文、中文與英文資源檔（測試守門）；Identity 錯誤須經 `IdentityOutcomes` 轉換。
 
 ### 內部 gRPC 與錯誤對映
 

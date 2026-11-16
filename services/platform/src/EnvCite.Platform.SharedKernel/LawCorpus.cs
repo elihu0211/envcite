@@ -96,15 +96,15 @@ public sealed record PortalLawCorpusResult(
 /// <summary>客戶入口「法規沿革與條文瀏覽」應用服務（經 <c>TenantScopes</c> 綁定租戶並檢查模組權限）。</summary>
 public interface ILawCorpusService
 {
-    Task<AdminOutcome<PortalLawTreeResult>> TreeAsync(
+    Task<Outcome<PortalLawTreeResult>> TreeAsync(
         ClaimsPrincipal user, string? jurisdiction, string? asOf, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<PortalLawTreeResult>> TreeByCategoryAsync(
+    Task<Outcome<PortalLawTreeResult>> TreeByCategoryAsync(
         ClaimsPrincipal user, string? jurisdiction, string? categoryPrefix, string? asOf, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<PortalLawGraphResult>> GraphAsync(
+    Task<Outcome<PortalLawGraphResult>> GraphAsync(
         ClaimsPrincipal user, PortalLawGraphQuery query, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<PortalLawCorpusResult>> BrowseAsync(
+    Task<Outcome<PortalLawCorpusResult>> BrowseAsync(
         ClaimsPrincipal user, string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken);
 }

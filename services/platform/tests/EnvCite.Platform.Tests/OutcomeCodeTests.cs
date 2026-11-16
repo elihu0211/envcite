@@ -63,7 +63,7 @@ public static partial class OutcomeCodeCatalogTests
     public static void TheUiSpeaksTheUsersLanguageFromTheCode(string culture, string expected)
     {
         using var _ = TestCulture.Use(culture);
-        var outcome = AdminOutcome.Conflict<CreatedTenant>(OutcomeCodes.TenantIdentifierTaken);
+        var outcome = Outcomes.Conflict<CreatedTenant>(OutcomeCodes.TenantIdentifierTaken);
 
         Assert.Equal(expected, outcome.Localized());
     }
@@ -74,7 +74,7 @@ public static partial class OutcomeCodeCatalogTests
     public static void ParametersAreFilledInEachLanguage(string culture, string expected)
     {
         using var _ = TestCulture.Use(culture);
-        var outcome = AdminOutcome.Invalid<bool>(OutcomeCodes.PasswordTooShort, 12);
+        var outcome = Outcomes.Invalid<bool>(OutcomeCodes.PasswordTooShort, 12);
 
         Assert.Equal(expected, outcome.Localized());
     }
@@ -82,7 +82,7 @@ public static partial class OutcomeCodeCatalogTests
     // 沒有代碼的結果（例如來自上游的說明）：退回英文的 Message，不是空白。
     [Fact]
     public static void WithoutACodeTheEnglishMessageIsShown() =>
-        Assert.Equal("boom", new AdminOutcome<bool>(AdminStatus.Invalid, false, "boom").Localized());
+        Assert.Equal("boom", new Outcome<bool>(OutcomeStatus.Invalid, false, "boom").Localized());
 
     [GeneratedRegex(@"[一-鿿]", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Cjk();
@@ -94,7 +94,7 @@ public sealed class OutcomeCodeBehaviourTests(PlatformFactory factory)
 {
     private T Service<T>() where T : notnull => factory.Services.GetRequiredService<T>();
 
-    private static void AssertFailure<T>(AdminOutcome<T> outcome, AdminStatus status, string code)
+    private static void AssertFailure<T>(Outcome<T> outcome, OutcomeStatus status, string code)
     {
         Assert.Equal(status, outcome.Status);
         Assert.Equal(code, outcome.Code);
@@ -108,11 +108,11 @@ public sealed class OutcomeCodeBehaviourTests(PlatformFactory factory)
         var actor = OperatorSession.Principal();
         var provisioner = Service<ITenantProvisioner>();
 
-        AssertFailure(await provisioner.CreateAsync(actor, "Bad Id!", "Name", CancellationToken.None), AdminStatus.Invalid, OutcomeCodes.TenantIdentifierInvalid);
-        AssertFailure(await provisioner.CreateAsync(actor, "okid-" + Guid.NewGuid().ToString("N")[..8], " ", CancellationToken.None), AdminStatus.Invalid, OutcomeCodes.TenantNameRequired);
+        AssertFailure(await provisioner.CreateAsync(actor, "Bad Id!", "Name", CancellationToken.None), OutcomeStatus.Invalid, OutcomeCodes.TenantIdentifierInvalid);
+        AssertFailure(await provisioner.CreateAsync(actor, "okid-" + Guid.NewGuid().ToString("N")[..8], " ", CancellationToken.None), OutcomeStatus.Invalid, OutcomeCodes.TenantNameRequired);
         var identifier = "dup-" + Guid.NewGuid().ToString("N")[..8];
         Assert.True((await provisioner.CreateAsync(actor, identifier, "First", CancellationToken.None)).IsOk);
-        AssertFailure(await provisioner.CreateAsync(actor, identifier, "Second", CancellationToken.None), AdminStatus.Conflict, OutcomeCodes.TenantIdentifierTaken);
+        AssertFailure(await provisioner.CreateAsync(actor, identifier, "Second", CancellationToken.None), OutcomeStatus.Conflict, OutcomeCodes.TenantIdentifierTaken);
     }
 
     [Fact]
@@ -123,9 +123,9 @@ public sealed class OutcomeCodeBehaviourTests(PlatformFactory factory)
 
         var unknown = await plans.SetAsync(OperatorSession.Principal(), tenant.Id, "no-such-plan", CancellationToken.None);
 
-        AssertFailure(unknown, AdminStatus.Invalid, OutcomeCodes.PlanUnknown);
+        AssertFailure(unknown, OutcomeStatus.Invalid, OutcomeCodes.PlanUnknown);
         Assert.Equal("no-such-plan", unknown.Args![0]);
-        AssertFailure(await plans.SetAsync(OperatorSession.Principal(), "no-such-tenant-id", "standard", CancellationToken.None), AdminStatus.NotFound, OutcomeCodes.TenantNotFound);
+        AssertFailure(await plans.SetAsync(OperatorSession.Principal(), "no-such-tenant-id", "standard", CancellationToken.None), OutcomeStatus.NotFound, OutcomeCodes.TenantNotFound);
     }
 
     [Fact]
@@ -136,14 +136,14 @@ public sealed class OutcomeCodeBehaviourTests(PlatformFactory factory)
         var operators = Service<IOperatorAdmin>();
         var actor = OperatorSession.Principal();
 
-        AssertFailure(await members.CreateAsync(actor, tenant.Id, "not-an-email", null, CustomerRoles.Viewer, CancellationToken.None), AdminStatus.Invalid, OutcomeCodes.EmailInvalid);
-        AssertFailure(await members.CreateAsync(actor, tenant.Id, NewEmail(), null, "NotARole", CancellationToken.None), AdminStatus.Invalid, OutcomeCodes.RoleInvalid);
+        AssertFailure(await members.CreateAsync(actor, tenant.Id, "not-an-email", null, CustomerRoles.Viewer, CancellationToken.None), OutcomeStatus.Invalid, OutcomeCodes.EmailInvalid);
+        AssertFailure(await members.CreateAsync(actor, tenant.Id, NewEmail(), null, "NotARole", CancellationToken.None), OutcomeStatus.Invalid, OutcomeCodes.RoleInvalid);
         var email = NewEmail();
         Assert.True((await members.CreateAsync(actor, tenant.Id, email, null, CustomerRoles.Viewer, CancellationToken.None)).IsOk);
-        AssertFailure(await members.CreateAsync(actor, tenant.Id, email, null, CustomerRoles.Viewer, CancellationToken.None), AdminStatus.Conflict, OutcomeCodes.MemberEmailTaken);
-        AssertFailure(await members.ResetPasswordAsync(actor, tenant.Id, Guid.NewGuid().ToString(), CancellationToken.None), AdminStatus.NotFound, OutcomeCodes.MemberNotFound);
-        AssertFailure(await operators.CreateAsync(actor, "bad", null, CancellationToken.None), AdminStatus.Invalid, OutcomeCodes.EmailInvalid);
+        AssertFailure(await members.CreateAsync(actor, tenant.Id, email, null, CustomerRoles.Viewer, CancellationToken.None), OutcomeStatus.Conflict, OutcomeCodes.MemberEmailTaken);
+        AssertFailure(await members.ResetPasswordAsync(actor, tenant.Id, Guid.NewGuid().ToString(), CancellationToken.None), OutcomeStatus.NotFound, OutcomeCodes.MemberNotFound);
+        AssertFailure(await operators.CreateAsync(actor, "bad", null, CancellationToken.None), OutcomeStatus.Invalid, OutcomeCodes.EmailInvalid);
         _ = await factory.EnsureOperatorAsync();
-        AssertFailure(await operators.CreateAsync(actor, PlatformFactory.OperatorEmail, null, CancellationToken.None), AdminStatus.Conflict, OutcomeCodes.OperatorEmailTaken);
+        AssertFailure(await operators.CreateAsync(actor, PlatformFactory.OperatorEmail, null, CancellationToken.None), OutcomeStatus.Conflict, OutcomeCodes.OperatorEmailTaken);
     }
 }

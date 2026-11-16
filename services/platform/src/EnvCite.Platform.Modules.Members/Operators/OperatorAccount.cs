@@ -84,7 +84,7 @@ internal sealed class OperatorAccount(
     public async Task<ActivationState> InspectActivationAsync(string? userId, string? code, CancellationToken cancellationToken) =>
         await Activation.InspectAsync<OperatorUser, Guid>(users, await users.FindOperatorAsync(userId), code);
 
-    public async Task<AdminOutcome<ActivationState>> ActivateAsync(
+    public async Task<Outcome<ActivationState>> ActivateAsync(
         string? userId, string? code, string? newPassword, CancellationToken cancellationToken)
     {
         var (outcome, user) = await Activation.CompleteAsync<OperatorUser, Guid>(users, await users.FindOperatorAsync(userId), code, newPassword);
@@ -102,15 +102,15 @@ internal sealed class OperatorAccount(
         return outcome;
     }
 
-    public async Task<AdminOutcome<bool>> ChangePasswordAsync(
+    public async Task<Outcome<bool>> ChangePasswordAsync(
         ClaimsPrincipal principal, string currentPassword, string newPassword, CancellationToken cancellationToken)
     {
         var user = await users.FindOperatorAsync(principal.FindFirst(PlatformClaimTypes.OperatorId)?.Value);
         if (user is null)
-            return AdminOutcome.NotFound<bool>(OutcomeCodes.AccountNotFound);
+            return Outcomes.NotFound<bool>(OutcomeCodes.AccountNotFound);
 
         if (string.Equals(currentPassword, newPassword, StringComparison.Ordinal))
-            return AdminOutcome.Invalid<bool>(OutcomeCodes.PasswordSameAsCurrent);
+            return Outcomes.Invalid<bool>(OutcomeCodes.PasswordSameAsCurrent);
 
         var changed = await users.ChangePasswordAsync(user, currentPassword ?? string.Empty, newPassword ?? string.Empty);
         if (!changed.Succeeded)
@@ -122,7 +122,7 @@ internal sealed class OperatorAccount(
         // 安全戳記已隨改密碼更新，其他裝置的 session 失效；這一張換新的接著用。
         await audit.AppendAsync(ActorOf(user), new AuditEntry(AuditActions.OperatorPasswordChanged, TargetType: "operator", TargetId: user.Id.ToString()), cancellationToken);
         await IssueSessionAsync(user);
-        return AdminOutcome.Ok(true);
+        return Outcomes.Ok(true);
     }
 
     /// <summary>簽發後台的登入 cookie。呼叫端要先寫稽核：寫不進去就不該有 session。</summary>

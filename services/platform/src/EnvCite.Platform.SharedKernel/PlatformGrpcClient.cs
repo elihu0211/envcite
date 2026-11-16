@@ -34,32 +34,32 @@ public static class PlatformGrpcClient
         return services;
     }
 
-    /// <summary>統一將上游 gRPC 的 <see cref="RpcException"/> 對映為 <see cref="AdminOutcome{T}"/>。</summary>
-    public static Task<AdminOutcome<T>> CallAsync<T>(string unavailableCode, Func<Task<T>> call) =>
+    /// <summary>統一將上游 gRPC 的 <see cref="RpcException"/> 對映為 <see cref="Outcome{T}"/>。</summary>
+    public static Task<Outcome<T>> CallAsync<T>(string unavailableCode, Func<Task<T>> call) =>
         CallAsync(unavailableCode, unavailableCode, call);
 
-    /// <summary>統一將上游 gRPC 的 <see cref="RpcException"/> 對映為 <see cref="AdminOutcome{T}"/>（可區分容量用盡代碼）。</summary>
-    public static async Task<AdminOutcome<T>> CallAsync<T>(string unavailableCode, string exhaustedCode, Func<Task<T>> call)
+    /// <summary>統一將上游 gRPC 的 <see cref="RpcException"/> 對映為 <see cref="Outcome{T}"/>（可區分容量用盡代碼）。</summary>
+    public static async Task<Outcome<T>> CallAsync<T>(string unavailableCode, string exhaustedCode, Func<Task<T>> call)
     {
         try
         {
-            return AdminOutcome.Ok(await call());
+            return Outcomes.Ok(await call());
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.NotFound)
         {
-            return AdminOutcome.NotFound<T>(OutcomeCodes.LawNotFound);
+            return Outcomes.NotFound<T>(OutcomeCodes.LawNotFound);
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
         {
-            return AdminOutcome.Invalid<T>(OutcomeCodes.UpstreamInvalidRequest, ex.Status.Detail);
+            return Outcomes.Invalid<T>(OutcomeCodes.UpstreamInvalidRequest, ex.Status.Detail);
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.ResourceExhausted)
         {
-            return AdminOutcome.Unavailable<T>(exhaustedCode);
+            return Outcomes.Unavailable<T>(exhaustedCode);
         }
         catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable or StatusCode.DeadlineExceeded)
         {
-            return AdminOutcome.Unavailable<T>(unavailableCode);
+            return Outcomes.Unavailable<T>(unavailableCode);
         }
     }
 }

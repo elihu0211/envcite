@@ -302,7 +302,7 @@ public sealed partial class InvitationTests(PlatformFactory factory)
             // 原本的密碼不受影響；重寄一次則回「已經驗證」。
             Assert.Equal(PasswordPage(tenant.Identifier), (await browser.SubmitAsync(Login(tenant.Identifier), Credentials(email, initial))).Location);
             var again = await Members.ResendInvitationAsync(OperatorSession.Principal(), tenant.Id, id, CancellationToken.None);
-            Assert.Equal((AdminStatus.Conflict, OutcomeCodes.AccountAlreadyActive), (again.Status, again.Code));
+            Assert.Equal((OutcomeStatus.Conflict, OutcomeCodes.AccountAlreadyActive), (again.Status, again.Code));
         });
     }
 
@@ -337,7 +337,7 @@ public sealed partial class InvitationTests(PlatformFactory factory)
 
         var invited = await Members.InviteAsync(OperatorSession.Principal(), tenant.Id, NewEmail(), null, CustomerRoles.Viewer, CancellationToken.None);
 
-        Assert.Equal((AdminStatus.Conflict, OutcomeCodes.MailNotEnabled), (invited.Status, invited.Code));
+        Assert.Equal((OutcomeStatus.Conflict, OutcomeCodes.MailNotEnabled), (invited.Status, invited.Code));
         Assert.Empty((await Members.ListAsync(tenant.Id, CancellationToken.None)).Value!);
         var operatorInvite = await Operators.InviteAsync(OperatorSession.Principal(), NewOperatorEmail(), null, CancellationToken.None);
         Assert.Equal(OutcomeCodes.MailNotEnabled, operatorInvite.Code);

@@ -92,7 +92,7 @@ public static class DevelopmentSeed
         """;
 
     // 種子失敗要讓啟動失敗：開發者看到的是明確的錯誤，而不是一個少了資料的環境。
-    private static T Required<T>(AdminOutcome<T> outcome, string what) =>
+    private static T Required<T>(Outcome<T> outcome, string what) =>
         outcome.IsOk
             ? outcome.Value!
             : throw new InvalidOperationException($"Development seed could not {what}: {outcome.Status} {outcome.Message}");

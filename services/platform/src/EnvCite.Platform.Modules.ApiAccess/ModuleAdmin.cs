@@ -14,12 +14,12 @@ internal sealed class ModuleAdmin(
     TenantModuleCatalog modules,
     TimeProvider time) : IModuleAdmin
 {
-    public async Task<AdminOutcome<IReadOnlyList<TenantModuleStatus>>> ListAsync(string tenantId, CancellationToken cancellationToken)
+    public async Task<Outcome<IReadOnlyList<TenantModuleStatus>>> ListAsync(string tenantId, CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
         var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
         if (await store.GetAsync(tenantId) is not { Identifier: { } identifier })
-            return AdminOutcome.NotFound<IReadOnlyList<TenantModuleStatus>>(OutcomeCodes.TenantNotFound);
+            return Outcomes.NotFound<IReadOnlyList<TenantModuleStatus>>(OutcomeCodes.TenantNotFound);
 
         var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
         var overrides = await db.Set<TenantModuleOverride>()
@@ -27,24 +27,24 @@ internal sealed class ModuleAdmin(
             .Where(o => o.TenantId == tenantId)
             .ToDictionaryAsync(o => o.ModuleKey, o => o.Enabled, StringComparer.Ordinal, cancellationToken);
 
-        return AdminOutcome.Ok<IReadOnlyList<TenantModuleStatus>>(BuildStatuses(identifier, overrides));
+        return Outcomes.Ok<IReadOnlyList<TenantModuleStatus>>(BuildStatuses(identifier, overrides));
     }
 
-    public async Task<AdminOutcome<TenantModuleStatus>> SetAsync(
+    public async Task<Outcome<TenantModuleStatus>> SetAsync(
         ClaimsPrincipal actor, string tenantId, string moduleKey, bool? enabled, CancellationToken cancellationToken)
     {
         if (ModuleCatalog.Find(moduleKey) is not { } descriptor)
-            return AdminOutcome.Invalid<TenantModuleStatus>(OutcomeCodes.ModuleUnknown, moduleKey);
+            return Outcomes.Invalid<TenantModuleStatus>(OutcomeCodes.ModuleUnknown, moduleKey);
 
         await using var scope = scopes.CreateAsyncScope();
         var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
         if (await store.GetAsync(tenantId) is not { Identifier: { } identifier } tenant)
-            return AdminOutcome.NotFound<TenantModuleStatus>(OutcomeCodes.TenantNotFound);
+            return Outcomes.NotFound<TenantModuleStatus>(OutcomeCodes.TenantNotFound);
 
         var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
         var entitlement = await db.Set<TenantEntitlement>().SingleOrDefaultAsync(e => e.TenantId == tenant.Id, cancellationToken);
         if (entitlement is null)
-            return AdminOutcome.Invalid<TenantModuleStatus>(OutcomeCodes.PlanRequiredForModule);
+            return Outcomes.Invalid<TenantModuleStatus>(OutcomeCodes.PlanRequiredForModule);
 
         var overrides = await db.Set<TenantModuleOverride>()
             .Where(o => o.TenantId == tenant.Id)
@@ -56,7 +56,7 @@ internal sealed class ModuleAdmin(
             var effectiveBefore = modules.EnabledModules(identifier);
             var unmet = descriptor.Dependencies.FirstOrDefault(dep => !effectiveBefore.Contains(dep));
             if (unmet is not null)
-                return AdminOutcome.Invalid<TenantModuleStatus>(OutcomeCodes.ModuleDependencyMissing, moduleKey, unmet);
+                return Outcomes.Invalid<TenantModuleStatus>(OutcomeCodes.ModuleDependencyMissing, moduleKey, unmet);
         }
 
         var hadOverride = overrides.TryGetValue(moduleKey, out var existing);
@@ -130,7 +130,7 @@ internal sealed class ModuleAdmin(
         }
 
         var statuses = BuildStatuses(identifier, overrides.ToDictionary(kv => kv.Key, kv => kv.Value.Enabled, StringComparer.Ordinal));
-        return AdminOutcome.Ok(statuses.Single(s => s.Key == moduleKey));
+        return Outcomes.Ok(statuses.Single(s => s.Key == moduleKey));
     }
 
     private List<TenantModuleStatus> BuildStatuses(string identifier, Dictionary<string, bool> overrides)

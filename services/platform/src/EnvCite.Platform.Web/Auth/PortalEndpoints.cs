@@ -129,10 +129,10 @@ public static class PortalEndpoints
             var outcome = await citations.GetByIriAsync(context.User, iri, ct);
             return outcome.Status switch
             {
-                AdminStatus.Ok => Results.Ok(outcome.Value),
-                AdminStatus.Invalid => Results.ValidationProblem(new Dictionary<string, string[]> { ["iri"] = [outcome.Message ?? "Invalid IRI"] }),
-                AdminStatus.NotFound => Results.NotFound(),
-                AdminStatus.Forbidden => Results.Forbid(),
+                OutcomeStatus.Ok => Results.Ok(outcome.Value),
+                OutcomeStatus.Invalid => Results.ValidationProblem(new Dictionary<string, string[]> { ["iri"] = [outcome.Message ?? "Invalid IRI"] }),
+                OutcomeStatus.NotFound => Results.NotFound(),
+                OutcomeStatus.Forbidden => Results.Forbid(),
                 _ => Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, detail: outcome.Message),
             };
         }).RequireAuthorization(PlatformAuth.PortalPolicy);

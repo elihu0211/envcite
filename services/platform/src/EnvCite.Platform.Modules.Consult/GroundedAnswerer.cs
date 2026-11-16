@@ -64,14 +64,14 @@ internal sealed partial class GroundedAnswerer(
     [GeneratedRegex(@"\[(L\d+)\]")]
     private static partial Regex CodePattern();
 
-    public async Task<AdminOutcome<GroundedAnswer>> AnswerAsync(
+    public async Task<Outcome<GroundedAnswer>> AnswerAsync(
         string? question, string? asOf, IReadOnlyList<ChatMessage> history, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
-            return AdminOutcome.Unavailable<GroundedAnswer>(OutcomeCodes.AnswerNotConfigured);
+            return Outcomes.Unavailable<GroundedAnswer>(OutcomeCodes.AnswerNotConfigured);
 
         if (string.IsNullOrWhiteSpace(question))
-            return AdminOutcome.Invalid<GroundedAnswer>(OutcomeCodes.QuestionRequired);
+            return Outcomes.Invalid<GroundedAnswer>(OutcomeCodes.QuestionRequired);
 
         var turn = new AnswerTurn(question.Trim(), asOf) { History = await PriorOfAsync(history, cancellationToken) };
         if (turn.History.Count > 0)
@@ -92,7 +92,7 @@ internal sealed partial class GroundedAnswerer(
         if (turn.Done is null)
         {
             progress?.Report(new AnswerProgress(AnswerStage.Verifying, turn.Sources.Count));
-            turn = turn with { Done = AdminOutcome.Ok(Verify(turn.ModelOutput, turn.Sources)) };
+            turn = turn with { Done = Outcomes.Ok(Verify(turn.ModelOutput, turn.Sources)) };
         }
 
         var outcome = turn.Done ?? throw new InvalidOperationException("The answer pipeline finished without a conclusion.");
@@ -108,7 +108,7 @@ internal sealed partial class GroundedAnswerer(
         // 追問用改寫後的獨立問句取證據；模型沒改寫（第一次提問、改寫失敗）就用使用者的原句。
         var outcome = await consult.GroundAsync(turn.Standalone ?? turn.Question, turn.AsOf, cancellationToken);
         if (!outcome.IsOk)
-            return turn with { Done = new AdminOutcome<GroundedAnswer>(outcome.Status, null, outcome.Message, outcome.Code, outcome.Args) };
+            return turn with { Done = new Outcome<GroundedAnswer>(outcome.Status, null, outcome.Message, outcome.Code, outcome.Args) };
 
         var grounded = outcome.Value!;
         await usage.RecordAsync(ConsultEndpoints.GroundOperation, 1, cancellationToken);
@@ -117,7 +117,7 @@ internal sealed partial class GroundedAnswerer(
         {
             // consult 的拒答（沒有法源、超出範圍、缺輸入）直接成為回答，不呼叫模型。
             var refused = grounded.Refused;
-            return turn with { Done = AdminOutcome.Ok(new GroundedAnswer(null, [], ReasonOf(refused.Reason), refused.Detail)) };
+            return turn with { Done = Outcomes.Ok(new GroundedAnswer(null, [], ReasonOf(refused.Reason), refused.Detail)) };
         }
 
         return turn with { Sources = [.. grounded.Evidence.Citations.Select(c => new AnswerSource(c.Code, c.Iri, c.Label, c.Text))] };
@@ -138,7 +138,7 @@ internal sealed partial class GroundedAnswerer(
         catch (Exception ex) when (ex is ClientResultException or HttpRequestException or OperationCanceledException && !cancellationToken.IsCancellationRequested)
         {
             ModelFailed(logger, ex.GetType().Name, (ex as ClientResultException)?.Status);
-            return turn with { Done = AdminOutcome.Unavailable<GroundedAnswer>(OutcomeCodes.ModelUnavailable) };
+            return turn with { Done = Outcomes.Unavailable<GroundedAnswer>(OutcomeCodes.ModelUnavailable) };
         }
 
         await usage.RecordAsync(AnswerOperation, 1, cancellationToken);

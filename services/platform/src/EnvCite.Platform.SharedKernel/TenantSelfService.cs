@@ -6,5 +6,5 @@ namespace EnvCite.Platform.SharedKernel;
 public interface ITenantSelfService
 {
     /// <summary>修改目前租戶的顯示名稱（識別碼不變）；只限資料庫中角色為擁有者的成員。</summary>
-    Task<AdminOutcome<PortalTenant>> RenameAsync(ClaimsPrincipal actor, string name, CancellationToken cancellationToken);
+    Task<Outcome<PortalTenant>> RenameAsync(ClaimsPrincipal actor, string name, CancellationToken cancellationToken);
 }

@@ -76,7 +76,7 @@ public sealed class PortalSessionsTests(PlatformFactory factory)
             var users = scope.Get<UserManager<ApplicationUser>>();
             var user = (await users.FindByIdAsync(userId))!;
             user.Disabled = true;
-            return AdminOutcome.Ok((await users.UpdateAsync(user)).Succeeded);
+            return Outcomes.Ok((await users.UpdateAsync(user)).Succeeded);
         });
         Assert.True(flagged.Value);
 

@@ -14,7 +14,7 @@ public interface IPortalTwoFactor : ITwoFactor
 
     /// <summary>
     /// 自己關閉：要目前的密碼<b>與</b>驗證器的碼（只知道其中一個的人，例如借到手機或看到密碼，不能關掉）。
-    /// 被要求的角色回 <see cref="AdminStatus.Invalid"/>。成功會丟掉金鑰與復原碼。
+    /// 被要求的角色回 <see cref="OutcomeStatus.Invalid"/>。成功會丟掉金鑰與復原碼。
     /// </summary>
-    Task<AdminOutcome<bool>> DisableAsync(ClaimsPrincipal user, string password, string code, CancellationToken cancellationToken);
+    Task<Outcome<bool>> DisableAsync(ClaimsPrincipal user, string password, string code, CancellationToken cancellationToken);
 }

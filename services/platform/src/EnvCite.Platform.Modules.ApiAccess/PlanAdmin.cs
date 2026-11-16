@@ -15,17 +15,17 @@ internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog
         .Select(p => new PlanInfo(p.Key, p.Value.PermitLimit, p.Value.Window))
         .ToList();
 
-    public async Task<AdminOutcome<PlanChange>> SetAsync(
+    public async Task<Outcome<PlanChange>> SetAsync(
         ClaimsPrincipal actor, string tenantId, string? plan, CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
         var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
         if (await store.GetAsync(tenantId) is not { Identifier: { } identifier } tenant)
-            return AdminOutcome.NotFound<PlanChange>(OutcomeCodes.TenantNotFound);
+            return Outcomes.NotFound<PlanChange>(OutcomeCodes.TenantNotFound);
 
         if (plan is not null && !catalog.Plans.ContainsKey(plan))
         {
-            return AdminOutcome.Invalid<PlanChange>(
+            return Outcomes.Invalid<PlanChange>(
                 OutcomeCodes.PlanUnknown, plan, string.Join(", ", catalog.Plans.Keys.Order(StringComparer.Ordinal)));
         }
 
@@ -68,21 +68,21 @@ internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog
             catalog.Set(identifier, plan);
         }
 
-        return AdminOutcome.Ok(new PlanChange(tenant.Id!, previous, catalog.NameFor(identifier)));
+        return Outcomes.Ok(new PlanChange(tenant.Id!, previous, catalog.NameFor(identifier)));
     }
 
-    public async Task<AdminOutcome<bool>> SetAiAnswerAsync(
+    public async Task<Outcome<bool>> SetAiAnswerAsync(
         ClaimsPrincipal actor, string tenantId, bool enabled, CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
         var store = scope.ServiceProvider.GetRequiredService<IMultiTenantStore<TenantInfo>>();
         if (await store.GetAsync(tenantId) is not { Identifier: { } identifier } tenant)
-            return AdminOutcome.NotFound<bool>(OutcomeCodes.TenantNotFound);
+            return Outcomes.NotFound<bool>(OutcomeCodes.TenantNotFound);
 
         var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
         var existing = await db.Set<TenantEntitlement>().SingleOrDefaultAsync(e => e.TenantId == tenant.Id, cancellationToken);
         if (existing is null)
-            return AdminOutcome.Invalid<bool>(OutcomeCodes.PlanRequiredForConsent);
+            return Outcomes.Invalid<bool>(OutcomeCodes.PlanRequiredForConsent);
 
         if (existing.AiAnswerEnabled != enabled)
         {
@@ -118,7 +118,7 @@ internal sealed class PlanAdmin(IServiceScopeFactory scopes, PlanCatalog catalog
             modules.SetOverride(identifier, ModuleKeys.GroundedAnswer, enabled);
         }
 
-        return AdminOutcome.Ok(enabled);
+        return Outcomes.Ok(enabled);
     }
 
     private static AuditEntry Audit(string action, TenantInfo tenant, string? previous, string? current) =>

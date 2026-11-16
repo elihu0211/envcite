@@ -12,7 +12,7 @@ internal sealed class LawSearch(
     // 同 canon 的服務預設：函釋帶出的條文會讓回應多幾條，沒有指定 limit 時也截回這個數量。
     private const int DefaultLimit = 10;
 
-    public Task<AdminOutcome<IReadOnlyList<LawHit>>> SearchAsync(
+    public Task<Outcome<IReadOnlyList<LawHit>>> SearchAsync(
         string? query, string? asOf, int? limit, CancellationToken cancellationToken) =>
         PlatformGrpcClient.CallAsync<IReadOnlyList<LawHit>>(OutcomeCodes.CanonUnavailable, async () =>
         {

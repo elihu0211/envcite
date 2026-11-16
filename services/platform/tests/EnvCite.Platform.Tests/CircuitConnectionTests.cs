@@ -162,7 +162,7 @@ public sealed class CircuitConnectionTests(PlatformFactory factory)
             var users = scope.Get<UserManager<ApplicationUser>>();
             var user = (await users.FindByIdAsync(userId))!;
             user.Disabled = true; // 直接設旗標、不動戳記
-            return AdminOutcome.Ok((await users.UpdateAsync(user)).Succeeded);
+            return Outcomes.Ok((await users.UpdateAsync(user)).Succeeded);
         });
         Assert.True(flagged.Value);
 

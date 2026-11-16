@@ -226,7 +226,7 @@ public sealed partial class LawCorpus(
         }
     }
 
-    private void ApplyTreeOutcome(AdminOutcome<PortalLawTreeResult> treeOutcome)
+    private void ApplyTreeOutcome(Outcome<PortalLawTreeResult> treeOutcome)
     {
         if (treeOutcome.IsOk && treeOutcome.Value is { } tree)
         {

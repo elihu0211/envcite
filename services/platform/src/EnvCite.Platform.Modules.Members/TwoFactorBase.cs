@@ -42,13 +42,13 @@ internal abstract class TwoFactorBase<TUser, TKey>(UserManager<TUser> users, IAu
     public async Task<bool> IsEnabledAsync(ClaimsPrincipal principal, CancellationToken cancellationToken) =>
         await UserOfAsync(principal) is { TwoFactorEnabled: true };
 
-    public async Task<AdminOutcome<TwoFactorSetup>> BeginSetupAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
+    public async Task<Outcome<TwoFactorSetup>> BeginSetupAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
     {
         if (await UserOfAsync(principal) is not { } user)
-            return AdminOutcome.NotFound<TwoFactorSetup>(OutcomeCodes.AccountNotFound);
+            return Outcomes.NotFound<TwoFactorSetup>(OutcomeCodes.AccountNotFound);
 
         if (user.TwoFactorEnabled)
-            return AdminOutcome.Invalid<TwoFactorSetup>(OutcomeCodes.TwoFactorAlreadyEnabled);
+            return Outcomes.Invalid<TwoFactorSetup>(OutcomeCodes.TwoFactorAlreadyEnabled);
 
         // 沒有金鑰才產生；有就沿用，重新整理頁面不會讓已經掃進手機的 QR 失效。
         var key = await Users.GetAuthenticatorKeyAsync(user);
@@ -58,19 +58,19 @@ internal abstract class TwoFactorBase<TUser, TKey>(UserManager<TUser> users, IAu
             await Users.SetAuthenticationTokenAsync(user, TwoFactorTokens.Provider, TwoFactorTokens.AuthenticatorKey, key);
         }
 
-        return AdminOutcome.Ok(TotpSetup.Create(user.Email, key!));
+        return Outcomes.Ok(TotpSetup.Create(user.Email, key!));
     }
 
-    public async Task<AdminOutcome<IReadOnlyList<string>>> EnableAsync(ClaimsPrincipal principal, string code, CancellationToken cancellationToken)
+    public async Task<Outcome<IReadOnlyList<string>>> EnableAsync(ClaimsPrincipal principal, string code, CancellationToken cancellationToken)
     {
         if (await UserOfAsync(principal) is not { } user)
-            return AdminOutcome.NotFound<IReadOnlyList<string>>(OutcomeCodes.AccountNotFound);
+            return Outcomes.NotFound<IReadOnlyList<string>>(OutcomeCodes.AccountNotFound);
 
         if (user.TwoFactorEnabled)
-            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorAlreadyEnabled);
+            return Outcomes.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorAlreadyEnabled);
 
         if (!await VerifyCodeAsync(user, code))
-            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrectHint);
+            return Outcomes.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrectHint);
 
         await Users.SetTwoFactorEnabledAsync(user, true);
         var codes = await NewRecoveryCodesAsync(user);
@@ -78,21 +78,21 @@ internal abstract class TwoFactorBase<TUser, TKey>(UserManager<TUser> users, IAu
         // 啟用會換安全戳記（其他裝置的 session 失效）；這一個要接著用。
         await Users.UpdateSecurityStampAsync(user);
         await OnEnabledAsync(user, cancellationToken);
-        return AdminOutcome.Ok(codes);
+        return Outcomes.Ok(codes);
     }
 
-    public async Task<AdminOutcome<IReadOnlyList<string>>> RegenerateRecoveryCodesAsync(
+    public async Task<Outcome<IReadOnlyList<string>>> RegenerateRecoveryCodesAsync(
         ClaimsPrincipal principal, string code, CancellationToken cancellationToken)
     {
         if (await UserOfAsync(principal) is not { TwoFactorEnabled: true } user)
-            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorNotEnabled);
+            return Outcomes.Invalid<IReadOnlyList<string>>(OutcomeCodes.TwoFactorNotEnabled);
 
         if (!await ConfirmAsync(user, code))
-            return AdminOutcome.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrect);
+            return Outcomes.Invalid<IReadOnlyList<string>>(OutcomeCodes.VerificationCodeIncorrect);
 
         var codes = await NewRecoveryCodesAsync(user);
         await OnRecoveryCodesRegeneratedAsync(user, cancellationToken);
-        return AdminOutcome.Ok(codes);
+        return Outcomes.Ok(codes);
     }
 
     /// <summary>

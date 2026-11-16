@@ -75,6 +75,6 @@ public sealed record PortalReasoningOutcome(
 /// <summary>客戶入口「規範推論評估」應用服務（經 <c>TenantScopes</c> 綁定租戶並檢查模組權限）。</summary>
 public interface INormativeReasoningService
 {
-    Task<AdminOutcome<PortalReasoningOutcome>> EvaluateAsync(
+    Task<Outcome<PortalReasoningOutcome>> EvaluateAsync(
         ClaimsPrincipal user, PortalReasoningInput input, CancellationToken cancellationToken);
 }

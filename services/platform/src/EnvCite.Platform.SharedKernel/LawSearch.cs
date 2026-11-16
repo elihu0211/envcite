@@ -25,8 +25,8 @@ public interface ILawSearch
     /// <param name="asOf">ISO 8601 日期（<c>YYYY-MM-DD</c>）；省略 = 現行。</param>
     /// <param name="limit">1–50；省略 = 服務預設（10）。</param>
     /// <returns>
-    /// <see cref="AdminStatus.Invalid"/>：輸入錯誤（<c>Message</c> 說明原因）；
-    /// <see cref="AdminStatus.Unavailable"/>：內部服務暫時不可用。
+    /// <see cref="OutcomeStatus.Invalid"/>：輸入錯誤（<c>Message</c> 說明原因）；
+    /// <see cref="OutcomeStatus.Unavailable"/>：內部服務暫時不可用。
     /// </returns>
-    Task<AdminOutcome<IReadOnlyList<LawHit>>> SearchAsync(string? query, string? asOf, int? limit, CancellationToken cancellationToken);
+    Task<Outcome<IReadOnlyList<LawHit>>> SearchAsync(string? query, string? asOf, int? limit, CancellationToken cancellationToken);
 }

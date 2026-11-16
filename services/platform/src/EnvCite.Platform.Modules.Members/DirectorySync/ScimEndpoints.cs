@@ -364,7 +364,7 @@ public static class ScimEndpoints
         if (ScimInput.ParseUser(body) is not { } user)
         {
             metrics.Record(operation, "invalid");
-            return (null, ScimResponses.Error(AdminOutcome.Invalid<bool>(OutcomeCodes.EmailInvalid)));
+            return (null, ScimResponses.Error(Outcomes.Invalid<bool>(OutcomeCodes.EmailInvalid)));
         }
 
         return (user, null);
@@ -383,7 +383,7 @@ public static class ScimEndpoints
         if (ScimInput.ParseGroup(body) is not { DisplayName: { Length: > 0 } } group)
         {
             metrics.Record(operation, "invalid");
-            return (null, ScimResponses.Error(AdminOutcome.Invalid<bool>(OutcomeCodes.DirectoryGroupInvalid)));
+            return (null, ScimResponses.Error(Outcomes.Invalid<bool>(OutcomeCodes.DirectoryGroupInvalid)));
         }
 
         return (group, null);
@@ -391,12 +391,12 @@ public static class ScimEndpoints
 
     /// <summary>路徑上的群組 Id 不是 Guid 就是找不到（來自呼叫端，不能讓亂打的值變成 500）。</summary>
     private static async Task<IResult> RunGroupAsync<T>(
-        DirectoryMetrics metrics, string operation, string id, Func<Guid, Task<AdminOutcome<T>>> action, Func<T, IResult> ok)
+        DirectoryMetrics metrics, string operation, string id, Func<Guid, Task<Outcome<T>>> action, Func<T, IResult> ok)
     {
         if (!Guid.TryParse(id, out var groupId))
         {
             metrics.Record(operation, "not_found");
-            return ScimResponses.Error(AdminOutcome.NotFound<T>(OutcomeCodes.DirectoryGroupNotFound));
+            return ScimResponses.Error(Outcomes.NotFound<T>(OutcomeCodes.DirectoryGroupNotFound));
         }
 
         return await RunAsync(metrics, operation, () => action(groupId), ok);
@@ -419,7 +419,7 @@ public static class ScimEndpoints
     }
 
     private static async Task<IResult> RunAsync<T>(
-        DirectoryMetrics metrics, string operation, Func<Task<AdminOutcome<T>>> action, Func<T, IResult> ok)
+        DirectoryMetrics metrics, string operation, Func<Task<Outcome<T>>> action, Func<T, IResult> ok)
     {
         var outcome = await action();
         metrics.Record(operation, ScimResponses.Category(outcome));

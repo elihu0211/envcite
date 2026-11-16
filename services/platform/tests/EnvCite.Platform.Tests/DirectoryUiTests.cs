@@ -41,10 +41,10 @@ public sealed partial class DirectoryUiTests(PlatformFactory factory) : Director
         return browser;
     }
 
-    private Task<AdminOutcome<DirectoryMember>> ProvisionAsync(Org org, DirectoryProvision member) =>
+    private Task<Outcome<DirectoryMember>> ProvisionAsync(Org org, DirectoryProvision member) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectoryProvisioning>().ProvisionAsync(org.Idp, member, Ct));
 
-    private Task<AdminOutcome<DirectoryStatus>> StatusAsync(Org org) =>
+    private Task<Outcome<DirectoryStatus>> StatusAsync(Org org) =>
         InTenantAsync(org.Tenant, sp => sp.GetRequiredService<IDirectorySelfService>().GetStatusAsync(org.Owner, Ct));
 
     private async Task<HttpStatusCode> ScimStatusAsync(string token)

@@ -727,7 +727,7 @@ public sealed class AskServiceTests(PlatformFactory factory)
     private static async Task<List<Guid>> ListAsync(WebApplicationFactory<Program> host, string tenantId, ClaimsPrincipal user)
     {
         var listed = await host.Services.GetRequiredService<TenantScopes>().InAsync<List<Guid>>(tenantId, async scope =>
-            AdminOutcome.Ok((await scope.Get<IConversationHistory>().ListAsync(user, 10, search: null, Ct)).Select(c => c.Id).ToList()));
+            Outcomes.Ok((await scope.Get<IConversationHistory>().ListAsync(user, 10, search: null, Ct)).Select(c => c.Id).ToList()));
         return listed.Value!;
     }
 }

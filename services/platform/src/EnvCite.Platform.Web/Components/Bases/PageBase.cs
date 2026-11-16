@@ -41,7 +41,7 @@ public abstract class PageBase : NavigableComponentBase
         }
     }
 
-    protected static string Describe<T>(AdminOutcome<T> outcome, string fallback) => outcome.Localized() ?? fallback;
+    protected static string Describe<T>(Outcome<T> outcome, string fallback) => outcome.Localized() ?? fallback;
 }
 
 /// <summary>

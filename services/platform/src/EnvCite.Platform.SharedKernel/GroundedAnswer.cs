@@ -53,7 +53,7 @@ public interface IAnswerAvailability
 public interface IGroundedAnswerer
 {
     /// <returns>
-    /// <see cref="AdminStatus.Invalid"/>：輸入錯誤；<see cref="AdminStatus.Unavailable"/>：consult 或模型暫時不可用
+    /// <see cref="OutcomeStatus.Invalid"/>：輸入錯誤；<see cref="OutcomeStatus.Unavailable"/>：consult 或模型暫時不可用
     /// （模型的錯誤內容不回傳，因為它可能夾帶問題文字）。拒答是成功的結果，不是錯誤。
     /// </returns>
     /// <param name="history">
@@ -62,6 +62,6 @@ public interface IGroundedAnswerer
     /// 前文裡的代號會被剝掉。實際帶進模型的長度由 <see cref="IChatReducer"/> 與設定決定，呼叫端不必先裁。
     /// </param>
     /// <param name="progress">每進到下一步就回報一次（可為 null）；已有結論的回合（拒答、失敗）不會回報後面的步驟。回報不帶問題或證據的內容，只有步驟與條數。</param>
-    Task<AdminOutcome<GroundedAnswer>> AnswerAsync(
+    Task<Outcome<GroundedAnswer>> AnswerAsync(
         string? question, string? asOf, IReadOnlyList<ChatMessage> history, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken);
 }

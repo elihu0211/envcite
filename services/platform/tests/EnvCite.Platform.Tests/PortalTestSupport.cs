@@ -46,7 +46,7 @@ internal static class PortalTestSupport
         var issued = await factory.Services.GetRequiredService<TenantScopes>().InAsync<ClaimsPrincipal>(tenantId, async scope =>
         {
             var user = await scope.Get<UserManager<ApplicationUser>>().FindByIdAsync(userId);
-            return AdminOutcome.Ok(await scope.Get<IUserClaimsPrincipalFactory<ApplicationUser>>().CreateAsync(user!));
+            return Outcomes.Ok(await scope.Get<IUserClaimsPrincipalFactory<ApplicationUser>>().CreateAsync(user!));
         });
         Assert.True(issued.IsOk, issued.Message);
         return issued.Value!;

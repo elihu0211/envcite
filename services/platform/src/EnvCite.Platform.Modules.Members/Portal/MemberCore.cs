@@ -14,11 +14,11 @@ namespace EnvCite.Platform.Modules.Members.Portal;
 internal sealed class MemberCore(
     UserManager<ApplicationUser> users, IAuditLog audit, IMailSender mail, IActivationMailer activation, IOptions<MailOptions> mailOptions, TimeProvider time)
 {
-    public async Task<AdminOutcome<IssuedPassword>> CreateAsync(
+    public async Task<Outcome<IssuedPassword>> CreateAsync(
         ClaimsPrincipal actor, TenantInfo tenant, string email, string? displayName, string role, CancellationToken cancellationToken)
     {
         if (NewAccountInput.Problem(email, displayName, role) is { } problem)
-            return AdminOutcome.Invalid<IssuedPassword>(problem);
+            return Outcomes.Invalid<IssuedPassword>(problem);
 
         var user = new ApplicationUser
         {
@@ -44,21 +44,21 @@ internal sealed class MemberCore(
             }),
             cancellationToken);
 
-        return AdminOutcome.Ok(new IssuedPassword(Info(user), password));
+        return Outcomes.Ok(new IssuedPassword(Info(user), password));
     }
 
     /// <summary>
     /// 邀請：建立沒有密碼的成員，寄單次、限時的連結。寄信失敗不讓建立失敗（成員已在，可以重寄或改用暫時密碼）。
     /// 稽核只有信箱（登入名稱）、角色與寄信結果，沒有連結。
     /// </summary>
-    public async Task<AdminOutcome<MemberInvitation>> InviteAsync(
+    public async Task<Outcome<MemberInvitation>> InviteAsync(
         ClaimsPrincipal actor, TenantInfo tenant, string email, string? displayName, string role, CancellationToken cancellationToken)
     {
         if (!mail.Enabled)
-            return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.MailNotEnabled);
+            return Outcomes.Conflict<MemberInvitation>(OutcomeCodes.MailNotEnabled);
 
         if (NewAccountInput.Problem(email, displayName, role) is { } problem)
-            return AdminOutcome.Invalid<MemberInvitation>(problem);
+            return Outcomes.Invalid<MemberInvitation>(problem);
 
         var user = new ApplicationUser
         {
@@ -83,22 +83,22 @@ internal sealed class MemberCore(
                 ["mail"] = delivery.AuditStatus(),
             }),
             cancellationToken);
-        return AdminOutcome.Ok(new MemberInvitation(Info(user), delivery));
+        return Outcomes.Ok(new MemberInvitation(Info(user), delivery));
     }
 
     /// <summary>重寄：沒有密碼的重發邀請（舊連結失效）；有密碼但信箱沒驗證的寄驗證連結；都完成了則 Conflict。</summary>
-    public async Task<AdminOutcome<MemberInvitation>> ResendInvitationAsync(
+    public async Task<Outcome<MemberInvitation>> ResendInvitationAsync(
         ClaimsPrincipal actor, TenantInfo tenant, ApplicationUser user, CancellationToken cancellationToken)
     {
         if (!mail.Enabled)
-            return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.MailNotEnabled);
+            return Outcomes.Conflict<MemberInvitation>(OutcomeCodes.MailNotEnabled);
 
         if (user.Disabled)
-            return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.AccountDisabled);
+            return Outcomes.Conflict<MemberInvitation>(OutcomeCodes.AccountDisabled);
 
         var invitation = !await users.HasPasswordAsync(user);
         if (!invitation && user.EmailConfirmed)
-            return AdminOutcome.Conflict<MemberInvitation>(OutcomeCodes.AccountAlreadyActive);
+            return Outcomes.Conflict<MemberInvitation>(OutcomeCodes.AccountAlreadyActive);
 
         var delivery = await SendActivationAsync(user, tenant, invitation, cancellationToken);
         await audit.AppendAsync(
@@ -110,7 +110,7 @@ internal sealed class MemberCore(
                 ["mail"] = delivery.AuditStatus(),
             }),
             cancellationToken);
-        return AdminOutcome.Ok(new MemberInvitation(Info(user), delivery));
+        return Outcomes.Ok(new MemberInvitation(Info(user), delivery));
     }
 
     /// <summary>目錄同步建立（或重新啟用）一位沒有密碼的成員後寄邀請連結；先前的連結失效。結果不使呼叫端失敗，由呼叫端記稽核。</summary>
@@ -125,7 +125,7 @@ internal sealed class MemberCore(
         return await activation.SendAsync(user.Email!, link, settings.LinkLifetime, tenant.Identifier, invitation, cancellationToken);
     }
 
-    public async Task<AdminOutcome<IssuedPassword>> ResetPasswordAsync(
+    public async Task<Outcome<IssuedPassword>> ResetPasswordAsync(
         ClaimsPrincipal actor, TenantInfo tenant, ApplicationUser user, CancellationToken cancellationToken)
     {
         var password = OneTimePassword.New();
@@ -145,7 +145,7 @@ internal sealed class MemberCore(
             new AuditEntry(AuditActions.MemberPasswordReset, tenant.Id, "member", user.Id, new Dictionary<string, object?> { ["email"] = user.Email }),
             cancellationToken);
 
-        return AdminOutcome.Ok(new IssuedPassword(Info(user), password));
+        return Outcomes.Ok(new IssuedPassword(Info(user), password));
     }
 
     /// <summary>停用或重新啟用（冪等）。換安全戳記讓所有 session 立刻失效，留稽核。</summary>

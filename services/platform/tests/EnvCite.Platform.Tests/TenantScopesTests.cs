@@ -11,7 +11,7 @@ public sealed class TenantScopesTests(PlatformFactory factory)
 {
     private TenantScopes Scopes => factory.Services.GetRequiredService<TenantScopes>();
 
-    private static AdminOutcome<T> Ok<T>(T value) => AdminOutcome.Ok(value);
+    private static Outcome<T> Ok<T>(T value) => Outcomes.Ok(value);
 
     [Fact]
     public async Task AnUnknownTenantIsNotFoundAndTheOperationNeverRuns()
@@ -24,7 +24,7 @@ public sealed class TenantScopesTests(PlatformFactory factory)
             return Task.FromResult(Ok(1));
         });
 
-        Assert.Equal(AdminStatus.NotFound, outcome.Status);
+        Assert.Equal(OutcomeStatus.NotFound, outcome.Status);
         Assert.Equal(OutcomeCodes.TenantNotFound, outcome.Code);
         Assert.False(ran);
     }

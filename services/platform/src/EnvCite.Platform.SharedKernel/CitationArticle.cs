@@ -17,6 +17,6 @@ public sealed record PortalArticleDetail(
 /// <summary>依條文索引（標準 IRI）查詢單一條文全文，供問答引用抽屜按需載入。</summary>
 public interface ICitationArticleService
 {
-    Task<AdminOutcome<PortalArticleDetail>> GetByIriAsync(
+    Task<Outcome<PortalArticleDetail>> GetByIriAsync(
         ClaimsPrincipal user, string? iri, CancellationToken cancellationToken);
 }

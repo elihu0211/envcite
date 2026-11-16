@@ -204,7 +204,7 @@ public static class OperatorCli
         return 1;
     }
 
-    private static async Task<int> FailAsync(TextWriter error, string action, AdminStatus status, string? message)
+    private static async Task<int> FailAsync(TextWriter error, string action, OutcomeStatus status, string? message)
     {
         await error.WriteLineAsync($"{action}失敗：{status} {message}");
         return 1;

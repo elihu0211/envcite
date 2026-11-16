@@ -27,27 +27,27 @@ internal sealed class PortalProfile(
                 found.AvatarData is not null ? found.AvatarVersion : 0);
     }
 
-    public async Task<AdminOutcome<string?>> UpdateDisplayNameAsync(
+    public async Task<Outcome<string?>> UpdateDisplayNameAsync(
         ClaimsPrincipal user, string? displayName, CancellationToken cancellationToken)
     {
         var found = await FindAsync(user);
         if (found is null || found.Disabled)
-            return AdminOutcome.NotFound<string?>(OutcomeCodes.MemberNotFound);
+            return Outcomes.NotFound<string?>(OutcomeCodes.MemberNotFound);
 
         if (found.ManagedBy == DirectoryRoles.ManagedBy)
-            return AdminOutcome.Conflict<string?>(OutcomeCodes.DirectoryMemberManaged);
+            return Outcomes.Conflict<string?>(OutcomeCodes.DirectoryMemberManaged);
 
         var normalized = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim();
         if (normalized is { Length: > 200 })
-            return AdminOutcome.Invalid<string?>(OutcomeCodes.DisplayNameTooLong);
+            return Outcomes.Invalid<string?>(OutcomeCodes.DisplayNameTooLong);
 
         if (string.Equals(found.DisplayName, normalized, StringComparison.Ordinal))
-            return AdminOutcome.Ok(found.DisplayName);
+            return Outcomes.Ok(found.DisplayName);
 
         found.DisplayName = normalized;
         var updated = await users.UpdateAsync(found);
         if (!updated.Succeeded)
-            return AdminOutcome.Invalid<string?>(OutcomeCodes.IdentityRejected);
+            return Outcomes.Invalid<string?>(OutcomeCodes.IdentityRejected);
 
         // 顯示名稱同時寫在登入 cookie 的 GivenName claim：更新後立刻重簽 cookie，頂欄與選單下一頁就同步。
         await signIn.RefreshSignInAsync(found);
@@ -61,19 +61,19 @@ internal sealed class PortalProfile(
                 new Dictionary<string, object?> { ["displayName"] = normalized }),
             cancellationToken);
 
-        return AdminOutcome.Ok(normalized);
+        return Outcomes.Ok(normalized);
     }
 
-    public async Task<AdminOutcome<int>> UpdateAvatarAsync(
+    public async Task<Outcome<int>> UpdateAvatarAsync(
         ClaimsPrincipal user, Stream imageStream, long contentLength, CancellationToken cancellationToken)
     {
         var found = await FindAsync(user);
         if (found is null || found.Disabled)
-            return AdminOutcome.NotFound<int>(OutcomeCodes.MemberNotFound);
+            return Outcomes.NotFound<int>(OutcomeCodes.MemberNotFound);
 
         var processed = await AvatarImageProcessor.NormalizeAsync(imageStream, contentLength, cancellationToken);
         if (!processed.IsOk)
-            return AdminOutcome.Invalid<int>(processed.Code!);
+            return Outcomes.Invalid<int>(processed.Code!);
 
         found.AvatarData = processed.Value;
         found.AvatarContentType = AvatarImageProcessor.OutputContentType;
@@ -81,7 +81,7 @@ internal sealed class PortalProfile(
 
         var updated = await users.UpdateAsync(found);
         if (!updated.Succeeded)
-            return AdminOutcome.Invalid<int>(OutcomeCodes.IdentityRejected);
+            return Outcomes.Invalid<int>(OutcomeCodes.IdentityRejected);
 
         await signIn.RefreshSignInAsync(found);
         await audit.AppendAsync(
@@ -94,17 +94,17 @@ internal sealed class PortalProfile(
                 new Dictionary<string, object?> { ["version"] = found.AvatarVersion }),
             cancellationToken);
 
-        return AdminOutcome.Ok(found.AvatarVersion);
+        return Outcomes.Ok(found.AvatarVersion);
     }
 
-    public async Task<AdminOutcome<int>> RemoveAvatarAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
+    public async Task<Outcome<int>> RemoveAvatarAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
     {
         var found = await FindAsync(user);
         if (found is null || found.Disabled)
-            return AdminOutcome.NotFound<int>(OutcomeCodes.MemberNotFound);
+            return Outcomes.NotFound<int>(OutcomeCodes.MemberNotFound);
 
         if (found.AvatarData is null)
-            return AdminOutcome.Ok(found.AvatarVersion);
+            return Outcomes.Ok(found.AvatarVersion);
 
         found.AvatarData = null;
         found.AvatarContentType = null;
@@ -112,7 +112,7 @@ internal sealed class PortalProfile(
 
         var updated = await users.UpdateAsync(found);
         if (!updated.Succeeded)
-            return AdminOutcome.Invalid<int>(OutcomeCodes.IdentityRejected);
+            return Outcomes.Invalid<int>(OutcomeCodes.IdentityRejected);
 
         await signIn.RefreshSignInAsync(found);
         await audit.AppendAsync(
@@ -125,7 +125,7 @@ internal sealed class PortalProfile(
                 new Dictionary<string, object?> { ["version"] = found.AvatarVersion }),
             cancellationToken);
 
-        return AdminOutcome.Ok(found.AvatarVersion);
+        return Outcomes.Ok(found.AvatarVersion);
     }
 
     public Task<PortalAvatar?> GetAvatarAsync(string userId, CancellationToken cancellationToken) =>

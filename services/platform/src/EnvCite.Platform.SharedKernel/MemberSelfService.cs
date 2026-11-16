@@ -18,25 +18,25 @@ public interface IMemberSelfService
     /// <summary>這位操作者可以指派的角色（擁有者：全部；管理員：開發者、帳務、唯讀；其他：空）。</summary>
     IReadOnlyList<string> GrantableRoles(ClaimsPrincipal actor);
 
-    /// <returns>不是擁有者或管理員 → <see cref="AdminStatus.Forbidden"/>。</returns>
-    Task<AdminOutcome<IReadOnlyList<TeamMember>>> ListAsync(ClaimsPrincipal actor, CancellationToken cancellationToken);
+    /// <returns>不是擁有者或管理員 → <see cref="OutcomeStatus.Forbidden"/>。</returns>
+    Task<Outcome<IReadOnlyList<TeamMember>>> ListAsync(ClaimsPrincipal actor, CancellationToken cancellationToken);
 
     /// <summary>新增成員，回傳一次性的初始密碼（操作者親手交給對方；對方第一次登入必須改）。</summary>
-    Task<AdminOutcome<IssuedPassword>> CreateAsync(
+    Task<Outcome<IssuedPassword>> CreateAsync(
         ClaimsPrincipal actor, string email, string? displayName, string role, CancellationToken cancellationToken);
 
     /// <summary>邀請：建立沒有密碼的成員，寄連結讓對方自己設定密碼並驗證信箱（權限規則同 <see cref="CreateAsync"/>）。沒啟用寄信時回 <see cref="OutcomeCodes.MailNotEnabled"/>。</summary>
-    Task<AdminOutcome<MemberInvitation>> InviteAsync(
+    Task<Outcome<MemberInvitation>> InviteAsync(
         ClaimsPrincipal actor, string email, string? displayName, string role, CancellationToken cancellationToken);
 
     /// <summary>重寄邀請或驗證連結（規則同 <see cref="IMemberAdmin.ResendInvitationAsync"/>；要能管理對方，且不能對自己）。</summary>
-    Task<AdminOutcome<MemberInvitation>> ResendInvitationAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
+    Task<Outcome<MemberInvitation>> ResendInvitationAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
 
     /// <summary>停用或重新啟用。停用會讓對方所有 session 立刻失效。</summary>
-    Task<AdminOutcome<MemberInfo>> SetDisabledAsync(ClaimsPrincipal actor, string userId, bool disabled, CancellationToken cancellationToken);
+    Task<Outcome<MemberInfo>> SetDisabledAsync(ClaimsPrincipal actor, string userId, bool disabled, CancellationToken cancellationToken);
 
-    Task<AdminOutcome<MemberInfo>> ChangeRoleAsync(ClaimsPrincipal actor, string userId, string role, CancellationToken cancellationToken);
+    Task<Outcome<MemberInfo>> ChangeRoleAsync(ClaimsPrincipal actor, string userId, string role, CancellationToken cancellationToken);
 
     /// <summary>為忘記密碼的成員設一組新的一次性密碼；對方所有 session 失效，下次登入必須改。</summary>
-    Task<AdminOutcome<IssuedPassword>> ResetPasswordAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
+    Task<Outcome<IssuedPassword>> ResetPasswordAsync(ClaimsPrincipal actor, string userId, CancellationToken cancellationToken);
 }

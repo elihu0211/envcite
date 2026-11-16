@@ -98,7 +98,7 @@ public static partial class ConsultEndpoints
         var grounded = await gateway.GroundAsync(body.Question, body.PointInTime, ct);
         if (!grounded.IsOk)
         {
-            return grounded.Status == AdminStatus.Invalid
+            return grounded.Status == OutcomeStatus.Invalid
                 ? grounded.Problem(StatusCodes.Status400BadRequest)
                 : grounded.Problem(StatusCodes.Status503ServiceUnavailable);
         }

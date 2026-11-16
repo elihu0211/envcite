@@ -45,10 +45,10 @@ public interface IAccountLifecycle
     /// 不簽發 session：使用者接著登入。失敗一律是 <see cref="OutcomeCodes.ActivationLinkInvalid"/>，
     /// 或密碼不符規則（連結此時仍有效，可以重打）。
     /// </summary>
-    Task<AdminOutcome<ActivationState>> ActivateAsync(string? userId, string? code, string? newPassword, CancellationToken cancellationToken);
+    Task<Outcome<ActivationState>> ActivateAsync(string? userId, string? code, string? newPassword, CancellationToken cancellationToken);
 
     /// <summary>驗證目前密碼後改密碼；成功會換新 cookie（其他裝置的 session 失效），並清除「必須改密碼」。</summary>
-    Task<AdminOutcome<bool>> ChangePasswordAsync(
+    Task<Outcome<bool>> ChangePasswordAsync(
         ClaimsPrincipal user, string currentPassword, string newPassword, CancellationToken cancellationToken);
 }
 
@@ -64,15 +64,15 @@ public interface ITwoFactor
 
     /// <summary>
     /// 取得（沒有就產生）還沒啟用的金鑰與 QR 的內容。重複呼叫回傳同一把，所以重新整理頁面不會讓已掃的 QR 失效。
-    /// 已啟用則 <see cref="AdminStatus.Invalid"/>。
+    /// 已啟用則 <see cref="OutcomeStatus.Invalid"/>。
     /// </summary>
-    Task<AdminOutcome<TwoFactorSetup>> BeginSetupAsync(ClaimsPrincipal user, CancellationToken cancellationToken);
+    Task<Outcome<TwoFactorSetup>> BeginSetupAsync(ClaimsPrincipal user, CancellationToken cancellationToken);
 
     /// <summary>用驗證器上的碼確認註冊；成功才啟用，回傳十組復原碼（只此一次，之後只存在資料庫）。</summary>
-    Task<AdminOutcome<IReadOnlyList<string>>> EnableAsync(ClaimsPrincipal user, string code, CancellationToken cancellationToken);
+    Task<Outcome<IReadOnlyList<string>>> EnableAsync(ClaimsPrincipal user, string code, CancellationToken cancellationToken);
 
     /// <summary>用驗證器的碼確認後，產生一組新的十個復原碼（舊的全部作廢），只此一次顯示。</summary>
-    Task<AdminOutcome<IReadOnlyList<string>>> RegenerateRecoveryCodesAsync(ClaimsPrincipal user, string code, CancellationToken cancellationToken);
+    Task<Outcome<IReadOnlyList<string>>> RegenerateRecoveryCodesAsync(ClaimsPrincipal user, string code, CancellationToken cancellationToken);
 
     /// <summary>目前這個請求是否帶著五分鐘內有效的「密碼已通過、等第二步」憑證（入口：且是這個租戶的）。</summary>
     Task<bool> HasPendingSignInAsync();

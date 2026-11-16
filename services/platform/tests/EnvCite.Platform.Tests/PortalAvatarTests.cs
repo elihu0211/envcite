@@ -113,7 +113,7 @@ public sealed partial class PortalAvatarTests(PlatformFactory factory)
         // 超過 5 MB 的串流在處理器被拒。
         using var oversized = new MemoryStream(new byte[AvatarImageProcessor.MaxBytes + 1]);
         var outcome = await AvatarImageProcessor.NormalizeAsync(oversized, oversized.Length, TestContext.Current.CancellationToken);
-        Assert.Equal(AdminStatus.Invalid, outcome.Status);
+        Assert.Equal(OutcomeStatus.Invalid, outcome.Status);
         Assert.Equal(OutcomeCodes.AvatarTooLarge, outcome.Code);
     }
 }
