@@ -59,6 +59,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
+import openai
 import psycopg
 import yaml
 
@@ -276,17 +277,20 @@ class Judge(ChatCompletionsModel):
         self._lock = threading.Lock()
         self.usage = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "failures": 0}
 
-    def _post(self, body: Mapping[str, Any]) -> dict[str, Any]:
-        payload = super()._post(body)
-        served = payload.get("model")
-        usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
+    def _create(
+        self, *, prompt: str, response_format: Mapping[str, Any] | None
+    ) -> openai.types.chat.ChatCompletion:
+        completion = super()._create(prompt=prompt, response_format=response_format)
+        served = getattr(completion, "model", None)
+        usage = completion.usage
         with self._lock:
             self.usage["calls"] += 1
-            self.usage["prompt_tokens"] += int(usage.get("prompt_tokens") or 0)
-            self.usage["completion_tokens"] += int(usage.get("completion_tokens") or 0)
+            if usage is not None:
+                self.usage["prompt_tokens"] += int(usage.prompt_tokens or 0)
+                self.usage["completion_tokens"] += int(usage.completion_tokens or 0)
         if served is not None and served != self.model_id:
             raise ModelError(f"{self.name}: the endpoint answered as {served!r}")
-        return payload
+        return completion
 
     def failed(self) -> None:
         with self._lock:
