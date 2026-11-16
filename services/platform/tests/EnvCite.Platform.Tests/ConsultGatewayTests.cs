@@ -1,8 +1,11 @@
 using System.Net;
 using System.Text.Json;
 
+using EnvCite.Consult.V3;
 using EnvCite.Platform.Modules.Consult;
 using EnvCite.Platform.Modules.Metering;
+
+using Grpc.Core;
 
 namespace EnvCite.Platform.Tests;
 
@@ -60,6 +63,23 @@ public sealed class ConsultGatewayTests(PlatformFactory factory)
         using var response = await client.PostAsJsonAsync(GroundPath, new GroundRequestDto(question, pointInTime), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(expected, response.StatusCode);
+    }
+
+    // 沒有明確 deadline 的呼叫由 client factory 補上設定的逾時，呼叫點不必各自計算。
+    [Fact]
+    public async Task ACallWithoutAnExplicitDeadlineGetsTheConfiguredTimeout()
+    {
+        const string probe = "deadline-probe";
+        var timeout = factory.Services.GetRequiredService<IOptions<ConsultOptions>>().Value.Timeout;
+        var consult = factory.Services.GetRequiredService<ConsultationService.ConsultationServiceClient>();
+        var before = DateTime.UtcNow;
+
+        // 沒帶租戶，fake 會拒絕；deadline 在拒絕之前已記下。
+        await Assert.ThrowsAsync<RpcException>(async () =>
+            await consult.GroundAsync(new GroundRequest { Question = probe }, cancellationToken: TestContext.Current.CancellationToken));
+
+        var received = Assert.Single(factory.Consult.Received, r => r.Request.Question == probe);
+        Assert.InRange(received.Deadline, before, DateTime.UtcNow + timeout);
     }
 
     [Fact]

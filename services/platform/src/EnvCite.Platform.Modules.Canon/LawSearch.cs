@@ -7,7 +7,6 @@ namespace EnvCite.Platform.Modules.Canon;
 
 internal sealed class LawSearch(
     CanonService.CanonServiceClient client,
-    IOptions<CanonOptions> options,
     IOptions<LawSearchOptions> relevance,
     IOptions<RelevanceFloorsOptions> floors,
     IUsageRecorder usage) : ILawSearch
@@ -23,7 +22,7 @@ internal sealed class LawSearch(
             // 查詢全文是客戶案件的內容：不寫日誌、不放進計量；計量只記次數。
             var response = await client.SearchArticlesAsync(
                 new SearchArticlesRequest { Query = query ?? string.Empty, AsOf = asOf ?? string.Empty, Limit = limit ?? 0, IncludeGuidance = true },
-                deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken);
             await usage.RecordAsync(CanonEndpoints.SearchOperation, 1, cancellationToken);
             return AdminOutcome.Ok<IReadOnlyList<LawHit>>(
                 [.. response.Hits.Where(h => relevance.Value.Passes(floors.Value, query ?? string.Empty, h.LexicalScore, h.SemanticSimilarity, h.TermCoverage, h.GuidanceDocuments)).Select(h => new LawHit(

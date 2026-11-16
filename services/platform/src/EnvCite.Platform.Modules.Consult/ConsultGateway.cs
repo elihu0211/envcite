@@ -9,7 +9,7 @@ namespace EnvCite.Platform.Modules.Consult;
 /// <b>不計量</b>：計量與重送的語意各呼叫端不同（REST 的 <c>Idempotency-Key</c> 要與回應同一個交易記），由呼叫端記 <see cref="ConsultEndpoints.GroundOperation"/>。
 /// 問題文字是客戶案件的內容，不進日誌。
 /// </summary>
-internal sealed class ConsultGateway(ConsultationService.ConsultationServiceClient consult, IOptions<ConsultOptions> options)
+internal sealed class ConsultGateway(ConsultationService.ConsultationServiceClient consult)
 {
     public async Task<AdminOutcome<GroundResponse>> GroundAsync(string? question, string? asOf, CancellationToken cancellationToken)
     {
@@ -17,7 +17,7 @@ internal sealed class ConsultGateway(ConsultationService.ConsultationServiceClie
         {
             return AdminOutcome.Ok(await consult.GroundAsync(
                 new GroundRequest { Question = question ?? string.Empty, AsOf = asOf ?? string.Empty },
-                deadline: DateTime.UtcNow.Add(options.Value.Timeout), cancellationToken: cancellationToken));
+                cancellationToken: cancellationToken));
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.InvalidArgument)
         {
