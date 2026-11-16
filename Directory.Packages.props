@@ -3,6 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Finbuckle.MultiTenant.Abstractions" Version="10.1.4" />
     <PackageVersion Include="Finbuckle.MultiTenant.AspNetCore" Version="10.1.4" />
     <PackageVersion Include="Finbuckle.MultiTenant.EntityFrameworkCore" Version="10.1.4" />
     <PackageVersion Include="Finbuckle.MultiTenant.Identity.EntityFrameworkCore" Version="10.1.4" />

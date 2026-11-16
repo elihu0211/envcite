@@ -141,6 +141,23 @@ public sealed class AskServiceTests(PlatformFactory factory)
         Assert.Empty(chat.Calls);
     }
 
+    // 互動式 circuit 沒有 HttpContext：租戶要靠 TenantScopes 設的租戶 context 帶到 consult（它沒有 x-tenant-id 就拒絕）。
+    [Fact]
+    public async Task TheTenantTravelsToConsultWithoutAnHttpRequest()
+    {
+        var (host, _) = Host(_ => Reply);
+        using var h = host;
+        var (tenant, member) = await MemberOfAsync("ask-header");
+        var ask = host.Services.GetRequiredService<IAskService>();
+
+        var result = await ask.AskAsync(member, FakeConsultServer.AnswerableQuestion, null, null, Ct);
+
+        Assert.Equal(AskStatus.Ok, result.Status);
+        Assert.Contains(factory.Consult.Received, r =>
+            r.Headers.GetValue("x-tenant-id") == tenant.Identifier
+            && !string.IsNullOrEmpty(r.Headers.GetValue("x-request-id")));
+    }
+
     // 問句明白在問地方自治法規：拒答的原因是「語料只涵蓋中央法規」，不是「超出範圍」，也不呼叫模型。
     [Fact]
     public async Task ALocalLawQuestionIsRefusedAsOutsideTheCorpusAndTheModelIsNeverCalled()
