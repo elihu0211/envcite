@@ -389,7 +389,28 @@
     // Enter 送出、Shift+Enter 換行；輸入法組字中（選字用的 Enter）絕不送出。觸控裝置的 Enter 是換行（和主流聊天介面一致，
     // 送出用按鈕），Ctrl／⌘+Enter 在哪裡都送出。空白不送。不看送出鈕的停用狀態：它跟著伺服器重畫，剛貼上文字就按 Enter
     // 時還沒更新；輸入與送出的事件在同一條連線上依序處理，送出時伺服器已經有最新的文字。
-    // Shift+Enter 的換行在這裡插入：留給瀏覽器預設動作時，換行只存在 DOM，較早的重繪會用上一個輸入事件的文字把它蓋掉。
+    // Shift+Enter 的換行在這裡插入。重繪若把「目前文字的前段」寫回 value，代表那次重繪還停在換行之前，蓋掉會讓下一個輸入事件把換行弄丟。
+    // 清空（送出後）與整段換成另一句（帶入追問）不是前段，照寫。
+    const valueProperty = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
+    Object.defineProperty(HTMLTextAreaElement.prototype, "value", {
+        configurable: true,
+        enumerable: valueProperty.enumerable,
+        get() {
+            return valueProperty.get.call(this);
+        },
+        set(next) {
+            const incoming = next == null ? "" : String(next);
+            if (this.matches?.("textarea[data-composer]")) {
+                const current = valueProperty.get.call(this);
+                if (incoming !== "" && incoming !== current && current.startsWith(incoming)) {
+                    return;
+                }
+            }
+
+            valueProperty.set.call(this, next);
+        },
+    });
+
     const hoverDevice = matchMedia("(hover: hover) and (pointer: fine)");
 
     document.addEventListener("keydown", (event) => {
