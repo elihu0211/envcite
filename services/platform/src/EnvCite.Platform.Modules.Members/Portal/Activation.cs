@@ -3,7 +3,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Portal;
 
 /// <summary>
 /// 邀請與驗證連結的權杖，全用 Identity 內建的電子郵件確認權杖（<c>GenerateEmailConfirmationTokenAsync</c>，

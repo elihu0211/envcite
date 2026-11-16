@@ -1,8 +1,10 @@
 using System.Security.Claims;
 
+using EnvCite.Platform.Modules.Members.Portal;
+
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Operators;
 
 /// <summary>
 /// 管理營運者帳號（後台、命令列與本機開發的種子資料共用）。結構與 <see cref="MemberAdmin"/> 相同：

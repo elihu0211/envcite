@@ -2,7 +2,7 @@ using System.Security.Claims;
 
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Operators;
 
 /// <summary>
 /// 後台的兩步驟驗證（TOTP，RFC 6238）；共有的規則與骨架在 <see cref="TwoFactorBase{TUser,TKey}"/>。

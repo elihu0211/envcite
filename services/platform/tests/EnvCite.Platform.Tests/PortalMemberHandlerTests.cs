@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-using EnvCite.Platform.Modules.Members;
+using EnvCite.Platform.Modules.Members.Portal;
 
 using Finbuckle.MultiTenant.Abstractions;
 

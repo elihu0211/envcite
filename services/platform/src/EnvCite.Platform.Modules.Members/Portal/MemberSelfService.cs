@@ -4,7 +4,7 @@ using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Portal;
 
 /// <summary>
 /// 階層規則。純函式，所以每一格都有單元測試。擁有者管全部；管理員只管開發者、帳務、唯讀。

@@ -1,5 +1,8 @@
 using System.Security.Claims;
 
+using EnvCite.Platform.Modules.Members.Operators;
+using EnvCite.Platform.Modules.Members.Portal;
+
 using Microsoft.AspNetCore.Identity;
 
 namespace EnvCite.Platform.Modules.Members;

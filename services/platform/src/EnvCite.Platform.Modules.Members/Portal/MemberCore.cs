@@ -4,7 +4,7 @@ using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Portal;
 
 /// <summary>
 /// 建立成員與重設密碼的核心。營運者（<see cref="MemberAdmin"/>，替目標租戶開 scope）與客戶自己的管理員

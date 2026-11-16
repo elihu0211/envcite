@@ -1,5 +1,7 @@
 using System.Security.Claims;
 
+using EnvCite.Platform.Modules.Members.Portal;
+
 using Finbuckle.MultiTenant.Abstractions;
 
 using Microsoft.AspNetCore.Identity;

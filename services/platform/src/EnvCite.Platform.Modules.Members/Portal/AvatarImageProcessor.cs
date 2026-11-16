@@ -1,6 +1,6 @@
 using SkiaSharp;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Portal;
 
 /// <summary>
 /// 大頭貼影像正規化（以 <see cref="SkiaSharp"/> 實作）：只接受 PNG／JPEG／WebP、阻擋解壓炸彈、

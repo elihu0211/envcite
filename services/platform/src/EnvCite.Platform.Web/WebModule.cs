@@ -6,12 +6,10 @@ using EnvCite.Platform.Web.Design;
 using EnvCite.Platform.Web.Presentation;
 using EnvCite.Platform.Web.Presentation.Output;
 
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using MudBlazor;
@@ -24,6 +22,7 @@ public static class WebModule
     /// <summary>營運者後台（Blazor Web App，全站 Interactive Server）。登入的設定見 <see cref="WebAuthModule"/>。</summary>
     public static IServiceCollection AddPlatformWeb(this IServiceCollection services)
     {
+        services.AddSingleton<PlatformSurfaces>();
         services.AddPlatformBrand();
         services.AddSingleton<BrandText>();
         services.AddPlatformAppearance();
@@ -53,18 +52,17 @@ public static class WebModule
     /// </summary>
     public static IApplicationBuilder UsePlatformNotFoundPage(this IApplicationBuilder app)
     {
-        var (operatorUi, portal) = Surfaces(app.ApplicationServices);
-        var development = app.ApplicationServices.GetRequiredService<IHostEnvironment>().IsDevelopment();
-        if (!operatorUi && !portal)
+        var surfaces = app.ApplicationServices.GetRequiredService<PlatformSurfaces>();
+        if (!surfaces.Any)
             return app;
 
         return app.UseWhen(
             context =>
             {
                 var path = context.Request.Path;
-                return (operatorUi && path.StartsWithSegments("/ui"))
-                    || (portal && path.StartsWithSegments(PortalPaths.Prefix))
-                    || (development && path.StartsWithSegments(DesignGalleryPath));
+                return (surfaces.OperatorUi && path.StartsWithSegments(UiEndpoints.HomePath))
+                    || (surfaces.Portal && path.StartsWithSegments(PortalPaths.Prefix))
+                    || (surfaces.DesignGallery && path.StartsWithSegments(DesignGalleryPath));
             },
             branch =>
             {
@@ -87,39 +85,8 @@ public static class WebModule
     /// 要自己用營運者 cookie 驗證，否則 circuit 裡的使用者會是匿名。客戶入口的 cookie 不在這裡驗證（它要在租戶解析之後）：
     /// 見 <see cref="UsePlatformPortalAuthentication"/>。
     /// </summary>
-    public static IApplicationBuilder UsePlatformWebAuthentication(this IApplicationBuilder app)
-    {
-        var (operatorUi, portal) = Surfaces(app.ApplicationServices);
-        var development = app.ApplicationServices.GetRequiredService<IHostEnvironment>().IsDevelopment();
-        return app.Use(async (context, next) =>
-        {
-            var path = context.Request.Path;
-            var isUi = path.StartsWithSegments("/ui");
-
-            // /design 是元件展示頁：只在 Development，其他環境不存在。
-            if ((isUi && !operatorUi) || (path.StartsWithSegments(PortalPaths.Prefix) && !portal)
-                || (path.StartsWithSegments(DesignGalleryPath) && !development))
-            {
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
-                return;
-            }
-
-            if (isUi)
-            {
-                // 後台的登入頁與註冊頁含驗證器金鑰與復原碼：瀏覽器與中間的快取都不能留（客戶入口同理）。
-                context.Response.Headers.CacheControl = "no-store";
-            }
-
-            if (isUi || path.StartsWithSegments("/_blazor"))
-            {
-                var result = await context.AuthenticateAsync(PlatformAuth.UiCookieScheme);
-                if (result.Principal is not null)
-                    context.User = result.Principal;
-            }
-
-            await next(context);
-        });
-    }
+    public static IApplicationBuilder UsePlatformWebAuthentication(this IApplicationBuilder app) =>
+        app.UseMiddleware<SurfaceGateMiddleware>();
 
     /// <summary>
     /// 客戶入口的 cookie 驗證，<b>必須接在 <c>UseMultiTenant()</c> 之後</b>。驗證 cookie 會檢查安全戳記，
@@ -131,30 +98,8 @@ public static class WebModule
     /// 並與營運者的 cookie 併在同一個 principal 的兩個 identity 裡，由 circuit 啟動時依第一個網址挑一個
     /// （<see cref="CircuitIdentities"/>、<c>PlatformAuthenticationStateProvider</c>）。
     /// </summary>
-    public static IApplicationBuilder UsePlatformPortalAuthentication(this IApplicationBuilder app)
-    {
-        var (_, portal) = Surfaces(app.ApplicationServices);
-        return app.Use(async (context, next) =>
-        {
-            var path = context.Request.Path;
-            if (path.StartsWithSegments(PortalPaths.Prefix))
-            {
-                // 入口的頁面含個人資料、驗證器金鑰與復原碼：瀏覽器與中間的快取都不能留。
-                context.Response.Headers.CacheControl = "no-store";
-                var result = await context.AuthenticateAsync(PlatformAuth.PortalCookieScheme);
-                if (result.Principal is not null)
-                    context.User = result.Principal;
-            }
-            else if (portal && path.StartsWithSegments("/_blazor"))
-            {
-                var result = await context.AuthenticateAsync(PlatformAuth.PortalCookieScheme);
-                if (result.Principal is not null)
-                    context.User = CircuitIdentities.Combine(context.User, result.Principal);
-            }
-
-            await next(context);
-        });
-    }
+    public static IApplicationBuilder UsePlatformPortalAuthentication(this IApplicationBuilder app) =>
+        app.UseMiddleware<PortalAuthenticationMiddleware>();
 
     /// <summary>
     /// 把後台掛在 <c>/ui</c>、客戶入口掛在 <c>/portal</c>（頁面路由寫在各頁的 <c>@page</c>）。與 <c>/v2</c>
@@ -164,16 +109,16 @@ public static class WebModule
     {
         // 兩個面都是可選功能，API 照常：要明確開（Platform:Ui:Enabled、Platform:Portal:Enabled），沒開就不掛（回 404）。
         // Development 一律開著，本機能看到畫面。
-        var (operatorUi, portal) = Surfaces(app.Services);
+        var surfaces = app.Services.GetRequiredService<PlatformSurfaces>();
         var log = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("EnvCite.Platform.Web");
-        if (!operatorUi)
+        if (!surfaces.OperatorUi)
             WebLog.UiDisabled(log);
 
-        if (!operatorUi && !portal)
+        if (!surfaces.Any)
             return app;
 
-        if (operatorUi)
-            app.MapGet("/", () => Results.Redirect("/ui"));
+        if (surfaces.OperatorUi)
+            app.MapGet("/", () => Results.Redirect(UiEndpoints.HomePath));
 
         app.MapStaticAssets();
         app.MapUiAuthEndpoints();
@@ -188,11 +133,6 @@ public static class WebModule
     /// <summary>「找不到頁面」（<c>NotFound.razor</c> 的 <c>@page</c>）：Router 的 NotFoundPage，也是找不到網址時重新執行的目標。</summary>
     public const string NotFoundPath = "/not-found";
 
-    private static (bool OperatorUi, bool Portal) Surfaces(IServiceProvider services)
-    {
-        var development = services.GetRequiredService<IHostEnvironment>().IsDevelopment();
-        return (
-            services.GetRequiredService<IOptions<UiOptions>>().Value.Enabled || development,
-            services.GetRequiredService<IOptions<PortalOptions>>().Value.Enabled || development);
-    }
+    /// <summary>Blazor 的 SignalR 連線（互動式 circuit），不經任何 policy，所以要自己驗證身分。</summary>
+    public const string BlazorPath = "/_blazor";
 }

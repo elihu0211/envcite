@@ -1,5 +1,7 @@
 using System.Security.Claims;
 
+using EnvCite.Platform.Modules.Members.Portal;
+
 namespace EnvCite.Platform.Modules.Members.DirectorySync;
 
 /// <summary>

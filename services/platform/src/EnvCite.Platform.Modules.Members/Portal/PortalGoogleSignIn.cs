@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Portal;
 
 /// <summary>
 /// <c>Platform:Portal:Google</c> 區段：客戶入口的 Google 登入。預設關閉；關閉時登入頁沒有按鈕、端點回 404。

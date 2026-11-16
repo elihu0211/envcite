@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 
-namespace EnvCite.Platform.Modules.Members;
+namespace EnvCite.Platform.Modules.Members.Operators;
 
 /// <summary>
 /// 後台 session 的 cookie 裡放什麼：營運者 Id、email、顯示名稱、Identity 的安全戳記，以及「還必須先改密碼／先註冊驗證器」。
