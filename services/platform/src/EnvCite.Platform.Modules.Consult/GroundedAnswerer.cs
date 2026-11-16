@@ -1,11 +1,9 @@
 using System.ClientModel;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
 using EnvCite.Consult.V3;
 
-using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
@@ -14,8 +12,7 @@ namespace EnvCite.Platform.Modules.Consult;
 /// <summary>
 /// 先向 consult 取得封閉證據集，沒有就拒答（不呼叫模型）；有就讓模型只根據證據作答，再檢查引用。
 /// 問題文字與模型的回應內容不進任何日誌：日誌只記狀態碼與例外型別（模型端點的錯誤內文可能回顯提示詞）。
-/// 流程是 Microsoft Agent Framework 的圖式 workflow（rewrite → ground → write → verify），四個節點各管一件事（追問才有 rewrite）；
-/// 節點內預期的失敗一律轉成結果代碼，不丟例外（框架會把節點的例外包成事件，語意就變了）。
+/// 固定四步線性流程（rewrite → ground → write → verify），預期的失敗轉成結果代碼，取消與未預期錯誤原樣拋出。
 /// </summary>
 internal sealed partial class GroundedAnswerer(
     ConsultGateway consult,
@@ -75,59 +72,37 @@ internal sealed partial class GroundedAnswerer(
         if (string.IsNullOrWhiteSpace(question))
             return AdminOutcome.Invalid<GroundedAnswer>(OutcomeCodes.QuestionRequired);
 
-        // 節點每次呼叫現建：它們捕捉的是這一次請求的租戶與 scoped 服務（計量要目前租戶的 DbContext）。
-        Func<AnswerTurn, IWorkflowContext, CancellationToken, ValueTask<AnswerTurn>> rewriteStage = (turn, context, token) =>
+        var turn = new AnswerTurn(question.Trim(), asOf) { History = await PriorOfAsync(history, cancellationToken) };
+        if (turn.History.Count > 0)
         {
-            if (turn.History.Count > 0)
-                progress?.Report(new AnswerProgress(AnswerStage.Rewriting));
+            progress?.Report(new AnswerProgress(AnswerStage.Rewriting));
+            turn = await RewriteAsync(turn, cancellationToken);
+        }
 
-            return RewriteAsync(turn, context, token);
-        };
-        Func<AnswerTurn, IWorkflowContext, CancellationToken, ValueTask<AnswerTurn>> groundStage = (turn, context, token) =>
+        progress?.Report(new AnswerProgress(AnswerStage.Grounding));
+        turn = await GroundAsync(turn, cancellationToken);
+
+        if (turn.Done is null)
         {
-            progress?.Report(new AnswerProgress(AnswerStage.Grounding));
-            return GroundAsync(turn, context, token);
-        };
-        Func<AnswerTurn, IWorkflowContext, CancellationToken, ValueTask<AnswerTurn>> writeStage = (turn, context, token) =>
+            progress?.Report(new AnswerProgress(AnswerStage.Writing, turn.Sources.Count));
+            turn = await WriteAsync(turn, cancellationToken);
+        }
+
+        if (turn.Done is null)
         {
-            if (turn.Done is null)
-                progress?.Report(new AnswerProgress(AnswerStage.Writing, turn.Sources.Count));
+            progress?.Report(new AnswerProgress(AnswerStage.Verifying, turn.Sources.Count));
+            turn = turn with { Done = AdminOutcome.Ok(Verify(turn.ModelText, turn.Sources)) };
+        }
 
-            return WriteAsync(turn, context, token);
-        };
-        Func<AnswerTurn, IWorkflowContext, CancellationToken, ValueTask<AnswerTurn>> verifyStage = (turn, context, token) =>
-        {
-            if (turn.Done is null)
-                progress?.Report(new AnswerProgress(AnswerStage.Verifying, turn.Sources.Count));
-
-            return VerifyAsync(turn, context, token);
-        };
-        var rewrite = rewriteStage.BindAsExecutor("rewrite");
-        var ground = groundStage.BindAsExecutor("ground");
-        var write = writeStage.BindAsExecutor("write");
-        var verify = verifyStage.BindAsExecutor("verify");
-
-        // 四個節點串成一條線，已有結論（拒答、失敗）的回合原樣穿過後面的節點；只有最後一個節點是輸出來源。
-        // 沒有前文時 rewrite 原樣放行，不呼叫模型。
-        var workflow = new WorkflowBuilder(rewrite)
-            .AddEdge(rewrite, ground)
-            .AddEdge(ground, write)
-            .AddEdge(write, verify)
-            .WithOutputFrom(verify)
-            .WithName("grounded-answer")
-            .Build();
-
-        var start = new AnswerTurn(question.Trim(), asOf) { History = await PriorOfAsync(history, cancellationToken) };
-        await using var run = await InProcessExecution.RunAsync(workflow, start, cancellationToken: cancellationToken);
-        var outcome = OutcomeOf(run);
+        var outcome = turn.Done ?? throw new InvalidOperationException("The answer pipeline finished without a conclusion.");
         if (outcome.IsOk && outcome.Value is { } answer)
-            metrics.Record(answer, BareTopic.Is(start.Question));
+            metrics.Record(answer, BareTopic.Is(turn.Question));
 
         return outcome;
     }
 
     /// <summary>取得封閉證據集；沒有證據就以 consult 的拒答為結論（不呼叫模型）。</summary>
-    private async ValueTask<AnswerTurn> GroundAsync(AnswerTurn turn, IWorkflowContext context, CancellationToken cancellationToken)
+    private async Task<AnswerTurn> GroundAsync(AnswerTurn turn, CancellationToken cancellationToken)
     {
         // 追問用改寫後的獨立問句取證據；模型沒改寫（第一次提問、改寫失敗）就用使用者的原句。
         var outcome = await consult.GroundAsync(turn.Standalone ?? turn.Question, turn.AsOf, cancellationToken);
@@ -148,7 +123,7 @@ internal sealed partial class GroundedAnswerer(
     }
 
     /// <summary>讓模型只根據證據寫成散文，並記模型的用量。</summary>
-    private async ValueTask<AnswerTurn> WriteAsync(AnswerTurn turn, IWorkflowContext context, CancellationToken cancellationToken)
+    private async Task<AnswerTurn> WriteAsync(AnswerTurn turn, CancellationToken cancellationToken)
     {
         if (turn.Done is not null)
             return turn;
@@ -184,7 +159,7 @@ internal sealed partial class GroundedAnswerer(
     /// 追問先改寫成獨立的問句（檢索是字面比對，「那罰款多少」找不到任何條文）。沒有前文就原樣放行；
     /// 改寫失敗不讓整個回合失敗：用原句繼續，模型真的不可用時下一步會回報。
     /// </summary>
-    private async ValueTask<AnswerTurn> RewriteAsync(AnswerTurn turn, IWorkflowContext context, CancellationToken cancellationToken)
+    private async Task<AnswerTurn> RewriteAsync(AnswerTurn turn, CancellationToken cancellationToken)
     {
         if (turn.History.Count == 0)
             return turn;
@@ -254,35 +229,6 @@ internal sealed partial class GroundedAnswerer(
 
         var end = char.IsHighSurrogate(text[limit - 1]) ? limit - 1 : limit;
         return text[..end];
-    }
-
-    /// <summary>核驗引用：不信任模型守規矩，核驗不過的回答改為拒答。</summary>
-    private static ValueTask<AnswerTurn> VerifyAsync(AnswerTurn turn, IWorkflowContext context, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(turn.Done is not null
-            ? turn
-            : turn with { Done = AdminOutcome.Ok(Verify(turn.ModelText, turn.Sources)) });
-
-    /// <summary>
-    /// 從這一次執行的事件取結論。節點的例外（取消、未預期的錯誤）原樣丟回給呼叫端，與沒有 workflow 時的行為一致。
-    /// </summary>
-    private static AdminOutcome<GroundedAnswer> OutcomeOf(Run run)
-    {
-        foreach (var @event in run.OutgoingEvents)
-        {
-            switch (@event)
-            {
-                case ExecutorFailedEvent { Data: Exception failure }:
-                    ExceptionDispatchInfo.Capture(failure).Throw();
-                    break;
-                case WorkflowErrorEvent { Exception: { } failure }:
-                    ExceptionDispatchInfo.Capture(failure).Throw();
-                    break;
-                case WorkflowOutputEvent output when output.As<AnswerTurn>() is { Done: { } done }:
-                    return done;
-            }
-        }
-
-        throw new InvalidOperationException("The answer workflow finished without a conclusion.");
     }
 
     private async Task<(string? Text, UsageDetails? Usage)> GenerateAsync(
