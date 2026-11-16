@@ -20,65 +20,32 @@ internal sealed class LawCorpusService(
     public async Task<AdminOutcome<PortalLawTreeResult>> TreeByCategoryAsync(
         ClaimsPrincipal user, string? jurisdiction, string? categoryPrefix, string? asOf, CancellationToken cancellationToken)
     {
-        if (PortalTenant(user) is not { } identifier)
-            return AdminOutcome.Forbidden<PortalLawTreeResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
-
-        if (!modules.IsEnabled(identifier, ModuleKeys.LawCorpus))
-            return AdminOutcome.Forbidden<PortalLawTreeResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
-
         var cacheKey = $"corpus:tree:{jurisdiction}:{categoryPrefix}:{asOf}";
-        if (cache.TryGetValue(cacheKey, out AdminOutcome<PortalLawTreeResult>? cached) && cached is not null)
-            return cached;
-
-        var result = await tenants.InByIdentifierAsync(identifier, async scope =>
+        return await RunForTenantAsync(user, async scope =>
         {
             var gateway = scope.Get<CanonGateway>();
             var outcome = await gateway.ListLawsAsync(jurisdiction, asOf, cancellationToken, categoryPrefix);
             if (!outcome.IsOk)
-                return new AdminOutcome<PortalLawTreeResult>(outcome.Status, default, outcome.Message, outcome.Code, outcome.Args);
+                return outcome.ForwardError<PortalLawTreeResult>();
 
             var (laws, available) = outcome.Value;
             return AdminOutcome.Ok(new PortalLawTreeResult(BuildTree(laws), available));
-        });
-        if (result.IsOk && result.Value is { CatalogAvailable: true })
-            cache.Set(cacheKey, result, ReadCacheTtl);
-        return result;
+        }, cacheKey, r => r.CatalogAvailable);
     }
 
     public async Task<AdminOutcome<PortalLawGraphResult>> GraphAsync(
         ClaimsPrincipal user, PortalLawGraphQuery query, CancellationToken cancellationToken)
     {
-        if (PortalTenant(user) is not { } identifier)
-            return AdminOutcome.Forbidden<PortalLawGraphResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
-
-        if (!modules.IsEnabled(identifier, ModuleKeys.LawCorpus))
-            return AdminOutcome.Forbidden<PortalLawGraphResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
-
         var focus = query.Focus;
         var cacheKey = $"corpus:graph:{focus?.Jurisdiction}:{focus?.IdScheme}:{focus?.LocalId}:{query.AsOf}:{query.CategoryPrefix}:{query.UpstreamDepth}:{query.DownstreamDepth}:{query.ChildLimit}:{query.ChildDocumentType}";
-        if (cache.TryGetValue(cacheKey, out AdminOutcome<PortalLawGraphResult>? cached) && cached is not null)
-            return cached;
-
-        var result = await tenants.InByIdentifierAsync(identifier, async scope =>
-        {
-            var gateway = scope.Get<CanonGateway>();
-            return await gateway.GetLawGraphAsync(query, cancellationToken);
-        });
-        if (result.IsOk && result.Value is { Available: true })
-            cache.Set(cacheKey, result, ReadCacheTtl);
-        return result;
+        return await RunForTenantAsync(user, scope =>
+            scope.Get<CanonGateway>().GetLawGraphAsync(query, cancellationToken),
+            cacheKey, r => r.Available);
     }
 
-    public async Task<AdminOutcome<PortalLawCorpusResult>> BrowseAsync(
-        ClaimsPrincipal user, string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken)
-    {
-        if (PortalTenant(user) is not { } identifier)
-            return AdminOutcome.Forbidden<PortalLawCorpusResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
-
-        if (!modules.IsEnabled(identifier, ModuleKeys.LawCorpus))
-            return AdminOutcome.Forbidden<PortalLawCorpusResult>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
-
-        return await tenants.InByIdentifierAsync(identifier, async scope =>
+    public Task<AdminOutcome<PortalLawCorpusResult>> BrowseAsync(
+        ClaimsPrincipal user, string? jurisdiction, string? idScheme, string? localId, string? asOf, CancellationToken cancellationToken) =>
+        RunForTenantAsync(user, async scope =>
         {
             var gateway = scope.Get<CanonGateway>();
             var law = await gateway.GetLawAsync(jurisdiction, idScheme, localId, asOf, cancellationToken);
@@ -99,6 +66,23 @@ internal sealed class LawCorpusService(
                 [.. data.Articles.Select(a => new PortalLawArticle(a.Uri, a.Number))],
                 BuildStructure(data.Headings, data.Articles)));
         });
+
+    private async Task<AdminOutcome<T>> RunForTenantAsync<T>(
+        ClaimsPrincipal user,
+        Func<TenantScope, Task<AdminOutcome<T>>> action,
+        string? cacheKey = null,
+        Func<T, bool>? shouldCache = null)
+    {
+        if (PortalTenant(user) is not { } identifier || !modules.IsEnabled(identifier, ModuleKeys.LawCorpus))
+            return AdminOutcome.Forbidden<T>(OutcomeCodes.ModuleDisabled, ModuleKeys.LawCorpus);
+
+        if (cacheKey is not null && cache.TryGetValue(cacheKey, out AdminOutcome<T>? cached) && cached is not null)
+            return cached;
+
+        var result = await tenants.InByIdentifierAsync(identifier, action);
+        if (cacheKey is not null && shouldCache is not null && result.IsOk && result.Value is { } value && shouldCache(value))
+            cache.Set(cacheKey, result, ReadCacheTtl);
+        return result;
     }
 
     private static IReadOnlyList<PortalStructureNode> BuildStructure(
@@ -284,7 +268,7 @@ internal sealed class NormativeReasoningService(TenantScopes tenants, ITenantMod
 
             var outcome = await gateway.EvaluateAsync(request, cancellationToken);
             if (!outcome.IsOk)
-                return new AdminOutcome<PortalReasoningOutcome>(outcome.Status, default, outcome.Message, outcome.Code, outcome.Args);
+                return outcome.ForwardError<PortalReasoningOutcome>();
 
             var dto = outcome.Value!;
             var atDecision = dto.AtDecision;
@@ -387,7 +371,7 @@ internal sealed class CitationArticleService(TenantScopes tenants) : ICitationAr
             var gateway = scope.Get<CanonGateway>();
             var outcome = await gateway.GetArticleByIriAsync(iri, cancellationToken);
             if (!outcome.IsOk || outcome.Value is not { } dto)
-                return new AdminOutcome<PortalArticleDetail>(outcome.Status, default, outcome.Message, outcome.Code, outcome.Args);
+                return outcome.ForwardError<PortalArticleDetail>();
 
             return AdminOutcome.Ok(new PortalArticleDetail(
                 dto.Uri,

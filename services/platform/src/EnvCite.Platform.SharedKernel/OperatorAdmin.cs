@@ -28,6 +28,9 @@ public sealed record AdminOutcome<T>(
     AdminStatus Status, T? Value = default, string? Message = null, string? Code = null, IReadOnlyList<string>? Args = null)
 {
     public bool IsOk => Status == AdminStatus.Ok;
+
+    /// <summary>將失敗狀態原樣轉為另一種結果型別，不重複展開欄位。</summary>
+    public AdminOutcome<TOut> ForwardError<TOut>() => new(Status, default, Message, Code, Args);
 }
 
 /// <summary><see cref="AdminOutcome{T}"/> 的工廠（泛型型別上不放靜態成員）。失敗一律帶代碼，文字由代碼決定。</summary>
