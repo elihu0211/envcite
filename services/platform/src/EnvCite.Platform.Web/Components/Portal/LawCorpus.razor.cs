@@ -43,62 +43,22 @@ public sealed partial class LawCorpus(
 
     private bool HasCorpus => modules.IsEnabled(Tenant, ModuleKeys.LawCorpus);
     private bool HasReasoning => modules.IsEnabled(Tenant, ModuleKeys.NormativeReasoning);
-    private bool HasSelectedLaw =>
-        !string.IsNullOrWhiteSpace(Jurisdiction)
-        && !string.IsNullOrWhiteSpace(IdScheme)
-        && !string.IsNullOrWhiteSpace(LocalId);
+    private LawCorpusRoute Route => new(
+        Tenant, Jurisdiction, IdScheme, LocalId, AsOf, Query, Category, UpDepth, DownDepth, ChildLimit, DocType, ActiveTabQuery);
 
-    private int ResolvedUpDepth => Math.Clamp(UpDepth ?? 2, 1, 4);
-    private int ResolvedDownDepth => Math.Clamp(DownDepth ?? 2, 1, 4);
-    private int ResolvedChildLimit => Math.Clamp(ChildLimit ?? 20, 1, 60);
+    private bool HasSelectedLaw => Route.HasSelectedLaw;
 
-    private string SelectedCategoryValue
-    {
-        get
-        {
-            if (string.Equals(Category, "ALL", StringComparison.OrdinalIgnoreCase))
-            {
-                return "ALL";
-            }
+    private int ResolvedUpDepth => Route.ResolvedUpDepth;
 
-            if (!string.IsNullOrWhiteSpace(Category) && Category.Trim().Length == 1 && char.IsAsciiLetterUpper(Category.Trim()[0]))
-            {
-                return Category.Trim();
-            }
+    private int ResolvedDownDepth => Route.ResolvedDownDepth;
 
-            if (!string.IsNullOrWhiteSpace(Query) || HasSelectedLaw)
-            {
-                return "ALL";
-            }
+    private int ResolvedChildLimit => Route.ResolvedChildLimit;
 
-            return "O";
-        }
-    }
+    private string SelectedCategoryValue => Route.SelectedCategory;
 
-    private string? EffectiveCategoryPrefix => SelectedCategoryValue == "ALL" ? null : SelectedCategoryValue;
+    private string? EffectiveCategoryPrefix => Route.CategoryPrefix;
 
-    private string ResolvedTab
-    {
-        get
-        {
-            if (_reasoningOutcome is not null || !string.IsNullOrEmpty(Error))
-            {
-                return HasReasoning ? "reasoning" : "graph";
-            }
-
-            if (string.Equals(ActiveTabQuery, "structure", StringComparison.OrdinalIgnoreCase))
-            {
-                return "structure";
-            }
-
-            if (string.Equals(ActiveTabQuery, "reasoning", StringComparison.OrdinalIgnoreCase) && HasReasoning)
-            {
-                return "reasoning";
-            }
-
-            return "graph";
-        }
-    }
+    private string ResolvedTab => Route.ResolveTab(HasReasoning, _reasoningOutcome is not null || !string.IsNullOrEmpty(Error));
 
     private string CatalogTitle => L["法律樹結構 ({0})", _filteredRoots.Count];
 
@@ -238,7 +198,7 @@ public sealed partial class LawCorpus(
                 _lookupError = outcome.Localized() ?? L["查詢法規失敗。"];
             }
 
-            CollectActiveBranch(NodeKey(Jurisdiction!, IdScheme!, LocalId!));
+            _activeBranchKeys.UnionWith(LawTree.ActiveBranch(_filteredRoots, LawTree.Key(Jurisdiction!, IdScheme!, LocalId!)));
         }
         else
         {
@@ -272,7 +232,7 @@ public sealed partial class LawCorpus(
         {
             _treeLoaded = tree.CatalogAvailable;
             _treeRoots = tree.Roots;
-            _filteredRoots = FilterNodes(_treeRoots, Query);
+            _filteredRoots = LawTree.Filter(_treeRoots, Query);
             _visibleRoots = _filteredRoots.Count > MaxVisibleTreeRoots
                 ? [.. _filteredRoots.Take(MaxVisibleTreeRoots)]
                 : _filteredRoots;
@@ -384,40 +344,7 @@ public sealed partial class LawCorpus(
         return JsonSerializer.Serialize(new { nodes, edges, labels });
     }
 
-    private static IReadOnlyList<PortalLawTreeNode> FilterNodes(IReadOnlyList<PortalLawTreeNode> nodes, string? q)
-    {
-        if (string.IsNullOrWhiteSpace(q))
-        {
-            return nodes;
-        }
-
-        var term = q.Trim();
-        var matched = new List<PortalLawTreeNode>();
-        foreach (var n in nodes)
-        {
-            var filteredChildren = FilterNodes(n.Children, term);
-            var selfMatches = n.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
-                || n.LocalId.Contains(term, StringComparison.OrdinalIgnoreCase);
-            if (selfMatches || filteredChildren.Count > 0)
-            {
-                matched.Add(n with { Children = selfMatches && filteredChildren.Count == 0 ? n.Children : filteredChildren });
-            }
-        }
-
-        return matched;
-    }
-
-    private string BuildNodeHref(PortalLawTreeNode node) =>
-        BuildUrl(
-            node.Jurisdiction,
-            node.IdScheme,
-            node.LocalId,
-            tab: ResolvedTab == "reasoning" ? "graph" : ResolvedTab,
-            cat: SelectedCategoryValue,
-            upDepth: ResolvedUpDepth,
-            downDepth: ResolvedDownDepth,
-            childLimit: 20,
-            docType: string.Empty);
+    private string BuildNodeHref(PortalLawTreeNode node) => Route.NodeHref(node, ResolvedTab);
 
     private string BuildFocusUrl(
         PortalLawKey key,
@@ -426,141 +353,20 @@ public sealed partial class LawCorpus(
         int? downDepth = null,
         int? childLimit = null,
         string? docType = null) =>
-        BuildUrl(
-            key.Jurisdiction,
-            key.IdScheme,
-            key.LocalId,
-            tab: tab ?? "graph",
-            cat: SelectedCategoryValue,
-            upDepth: upDepth ?? ResolvedUpDepth,
-            downDepth: downDepth ?? ResolvedDownDepth,
-            childLimit: childLimit ?? ResolvedChildLimit,
-            docType: docType ?? DocType);
+        Route.FocusHref(key, tab, upDepth, downDepth, childLimit, docType);
 
-    private string CategoryHref(string code) =>
-        BuildUrl(
-            jurisdiction: null,
-            idScheme: null,
-            localId: null,
-            tab: ResolvedTab == "structure" ? "graph" : ResolvedTab,
-            cat: code,
-            upDepth: ResolvedUpDepth,
-            downDepth: ResolvedDownDepth,
-            childLimit: ResolvedChildLimit,
-            docType: string.Empty);
+    private string CategoryHref(string code) => Route.CategoryHref(code, ResolvedTab);
 
-    private string TabHref(TabItem item) =>
-        BuildUrl(
-            HasSelectedLaw ? Jurisdiction : null,
-            HasSelectedLaw ? IdScheme : null,
-            HasSelectedLaw ? LocalId : null,
-            tab: item.Key,
-            cat: SelectedCategoryValue,
-            upDepth: ResolvedUpDepth,
-            downDepth: ResolvedDownDepth,
-            childLimit: ResolvedChildLimit,
-            docType: DocType);
+    private string TabHref(TabItem item) => Route.TabHref(item.Key);
 
-    private string BuildUrl(
-        string? jurisdiction,
-        string? idScheme,
-        string? localId,
-        string tab,
-        string cat,
-        int upDepth,
-        int downDepth,
-        int childLimit,
-        string? docType)
-    {
-        var qs = new List<string>
-        {
-            $"cat={Uri.EscapeDataString(cat)}",
-            $"tab={Uri.EscapeDataString(tab)}",
-        };
-        if (!string.IsNullOrWhiteSpace(jurisdiction) && !string.IsNullOrWhiteSpace(idScheme) && !string.IsNullOrWhiteSpace(localId))
-        {
-            qs.Add($"jurisdiction={Uri.EscapeDataString(jurisdiction)}");
-            qs.Add($"idScheme={Uri.EscapeDataString(idScheme)}");
-            qs.Add($"localId={Uri.EscapeDataString(localId)}");
-        }
+    private string AskLawHref(string lawTitle) => Route.AskHref(L["請說明「{0}」的主要規範重點。", lawTitle].Value);
 
-        if (!string.IsNullOrWhiteSpace(Query))
-        {
-            qs.Add($"q={Uri.EscapeDataString(Query)}");
-        }
+    private static PortalLawGraphNode? FindFocusNode(PortalLawGraphResult graph) => LawTree.FindFocus(graph);
 
-        if (!string.IsNullOrWhiteSpace(AsOf))
-        {
-            qs.Add($"asOf={Uri.EscapeDataString(AsOf)}");
-        }
-
-        if (upDepth != 2)
-        {
-            qs.Add($"upDepth={upDepth}");
-        }
-
-        if (downDepth != 2)
-        {
-            qs.Add($"downDepth={downDepth}");
-        }
-
-        if (childLimit != 20)
-        {
-            qs.Add($"childLimit={childLimit}");
-        }
-
-        if (!string.IsNullOrWhiteSpace(docType))
-        {
-            qs.Add($"docType={Uri.EscapeDataString(docType)}");
-        }
-
-        return $"{PortalPaths.Home(Tenant)}/laws?{string.Join("&", qs)}";
-    }
-
-    private string AskLawHref(string lawTitle) =>
-        $"{PortalPaths.Home(Tenant)}?q={Uri.EscapeDataString(L["請說明「{0}」的主要規範重點。", lawTitle].Value)}";
-
-    private static PortalLawGraphNode? FindFocusNode(PortalLawGraphResult graph) =>
-        graph.Focus is null
-            ? null
-            : graph.Nodes.FirstOrDefault(n =>
-                string.Equals(n.Key.Jurisdiction, graph.Focus.Jurisdiction, StringComparison.Ordinal)
-                && string.Equals(n.Key.IdScheme, graph.Focus.IdScheme, StringComparison.Ordinal)
-                && string.Equals(n.Key.LocalId, graph.Focus.LocalId, StringComparison.Ordinal));
-
-    private static string NodeKey(string j, string s, string l) => $"{j}|{s}|{l}";
+    private static string NodeKey(string j, string s, string l) => LawTree.Key(j, s, l);
 
     private bool IsBranchOpen(string key) =>
         !string.IsNullOrWhiteSpace(Query) || _activeBranchKeys.Contains(key);
-
-    private void CollectActiveBranch(string targetKey)
-    {
-        bool Walk(PortalLawTreeNode node)
-        {
-            var self = NodeKey(node.Jurisdiction, node.IdScheme, node.LocalId) == targetKey;
-            var childHit = false;
-            foreach (var c in node.Children)
-            {
-                if (Walk(c))
-                {
-                    childHit = true;
-                }
-            }
-
-            if (self || childHit)
-            {
-                _activeBranchKeys.Add(NodeKey(node.Jurisdiction, node.IdScheme, node.LocalId));
-                return true;
-            }
-
-            return false;
-        }
-
-        foreach (var root in _filteredRoots)
-        {
-            Walk(root);
-        }
-    }
 
     private string NormKindLabel(string normKind) => normKind switch
     {
