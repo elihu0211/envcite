@@ -1,3 +1,5 @@
+using EnvCite.Platform.Modules.Mail;
+
 using static EnvCite.Platform.Tests.MailTestServices;
 
 namespace EnvCite.Platform.Tests;

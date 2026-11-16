@@ -1,10 +1,12 @@
 using System.Text;
 
+using EnvCite.Platform.Modules.Mail;
+
 namespace EnvCite.Platform.Api;
 
 /// <summary>
 /// <c>mail preview &lt;輸出目錄&gt;</c>：把信件版型寫成檔案，用瀏覽器或信件客戶端的預覽查看，<b>不寄信、不連資料庫</b>。
-/// 因為不需要它們，在建立主機（遷移與種子資料）之前就處理完：用 <see cref="MailServiceCollectionExtensions.AddPlatformMail"/> 註冊的真實 <see cref="IMailComposer"/> 組信（不解析 <see cref="IMailSender"/>），
+/// 因為不需要它們，在建立主機（遷移與種子資料）之前就處理完：用 <see cref="MailModule.AddMailModule"/> 註冊的真實 <see cref="IMailComposer"/> 組信（不解析 <see cref="IMailSender"/>），
 /// 系統名稱、連結期限與版型選項照目前的設定，所以本機改了名稱、語言或色票就能看到效果。連結是占位值（網址的來源不是任何真實主機，權杖是不能用的假值），沒有任何真實的登入鑰匙。
 /// </summary>
 public static class MailPreview
@@ -34,7 +36,7 @@ public static class MailPreview
         var services = new ServiceCollection();
         services.AddSingleton(configuration);
         services.AddLogging();
-        services.AddPlatformMail();
+        services.AddMailModule();
         using var provider = services.BuildServiceProvider();
 
         (string Name, ComposedMail Mail)[] samples;

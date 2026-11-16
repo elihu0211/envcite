@@ -9,6 +9,7 @@
     <Project Path="src/EnvCite.Platform.Modules.Audit/EnvCite.Platform.Modules.Audit.csproj" />
     <Project Path="src/EnvCite.Platform.Modules.Conversations/EnvCite.Platform.Modules.Conversations.csproj" />
     <Project Path="src/EnvCite.Platform.Modules.Consult/EnvCite.Platform.Modules.Consult.csproj" />
+    <Project Path="src/EnvCite.Platform.Modules.Mail/EnvCite.Platform.Modules.Mail.csproj" />
     <Project Path="src/EnvCite.Platform.Modules.Members/EnvCite.Platform.Modules.Members.csproj" />
     <Project Path="src/EnvCite.Platform.Modules.Metering/EnvCite.Platform.Modules.Metering.csproj" />
     <Project Path="src/EnvCite.Platform.Modules.Canon/EnvCite.Platform.Modules.Canon.csproj" />

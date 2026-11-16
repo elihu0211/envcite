@@ -6,7 +6,7 @@ namespace EnvCite.Platform.SharedKernel;
 
 /// <summary>
 /// <c>Platform:Brand</c> 區段：系統名稱的唯一來源。介面標頭與頁面標題、信件主旨與內文、命令列的測試信、
-/// OpenAPI 描述與寄件者顯示名稱（<see cref="MailIdentityOptions.FromName"/> 沒設時）都讀這裡，改名只改這一個鍵。
+/// OpenAPI 描述與寄件者顯示名稱（<c>MailIdentityOptions.FromName</c> 沒設時）都讀這裡，改名只改這一個鍵。
 /// 圖檔標誌（<c>wwwroot/brand/*.svg</c>）與文件不讀設定，改名時另外換。
 /// </summary>
 public sealed class BrandOptions : ISectionOptions

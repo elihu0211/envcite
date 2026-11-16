@@ -2,7 +2,7 @@ using System.Globalization;
 
 using Microsoft.Extensions.Localization;
 
-namespace EnvCite.Platform.SharedKernel;
+namespace EnvCite.Platform.Modules.Mail;
 
 /// <summary>
 /// <c>mail test</c> 給操作者看的文字：實際使用的傳輸設定與失敗時的常見原因。文案在 <see cref="MailTexts"/> 資源檔（鍵以 <c>MailTest.</c> 開頭），

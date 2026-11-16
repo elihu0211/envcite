@@ -4,6 +4,7 @@ using EnvCite.Platform.Modules.Audit;
 using EnvCite.Platform.Modules.Canon;
 using EnvCite.Platform.Modules.Consult;
 using EnvCite.Platform.Modules.Conversations;
+using EnvCite.Platform.Modules.Mail;
 using EnvCite.Platform.Modules.Members;
 using EnvCite.Platform.Modules.Metering;
 using EnvCite.Platform.Modules.Tenancy;
@@ -40,7 +41,7 @@ internal static class PlatformServices
         services.AddAuditModule();
 
         // 寄信（傳輸、版型、文案、系統名稱）集中在這一處註冊，成員模組與命令列共用。
-        services.AddPlatformMail();
+        services.AddMailModule();
         services.AddMembersModule();
         services.AddConversationsModule();
         services.AddSingleton<ITenantDirectory, TenantDirectory>();

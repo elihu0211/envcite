@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 
+using EnvCite.Platform.Modules.Mail;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -15,13 +17,13 @@ namespace EnvCite.Platform.Tests;
 /// </summary>
 public sealed class SmtpMailSenderTests
 {
-    // 與正式環境同一個註冊（AddPlatformMail），只換掉設定的來源與日誌；要換傳輸的測試用 configure 在其後覆寫。
+    // 與正式環境同一個註冊（AddMailModule），只換掉設定的來源與日誌；要換傳輸的測試用 configure 在其後覆寫。
     private static ServiceProvider Sender(Dictionary<string, string?> settings, CapturingLoggerProvider? logs = null, Action<IServiceCollection>? configure = null)
     {
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddInMemoryCollection(settings).Build());
         services.AddLogging(b => b.AddProvider(logs ?? new CapturingLoggerProvider()));
-        services.AddPlatformMail();
+        services.AddMailModule();
         configure?.Invoke(services);
         return services.BuildServiceProvider();
     }
@@ -585,7 +587,7 @@ public sealed class SmtpMailSenderTests
         }
     }
 
-    // 所有選項類別、驗證器與實作都經 AddPlatformMail 註冊：實作類別是 internal，對外只有介面與選項。
+    // 所有選項類別、驗證器與實作都經 AddMailModule 註冊：實作類別是 internal，對外只有介面與選項。
     [Fact]
     public void TheMailServicesAreRegisteredInOnePlaceAndTheImplementationsAreNotPublic()
     {

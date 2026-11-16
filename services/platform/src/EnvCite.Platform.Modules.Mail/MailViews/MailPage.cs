@@ -1,4 +1,4 @@
-namespace EnvCite.Platform.SharedKernel.MailViews;
+namespace EnvCite.Platform.Modules.Mail.MailViews;
 
 /// <summary>
 /// 一封信要畫的內容，文案都已依信件語言解出（元件只管排版，不查資源檔也不編碼：編碼由 Razor 負責）。
