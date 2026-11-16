@@ -44,6 +44,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 | `canon guidance sync <來源>` | 排程 | 取得行政規則寫入 `guidance`（`gazette` 公報、`moenv` 環境部函釋） |
 | `canon guidance load <檔>` | 一次性 | 載入人寫的行政規則 JSON；格式見 [`law/guidance.py`](src/canon/law/guidance.py) |
 | `canon ruling fetch`、`load <檔>` | 一次性 | 取得或載入違憲失效裁判 |
+| `canon judgment sync` | 排程 | 取行政法院裁判異動。帳密在密鑰檔，不在環境變數（[`law/judicial_credentials.py`](src/canon/law/judicial_credentials.py)） |
 | `canon pipeline` | 排程 | 標註：抽取、驗證、接受 |
 | `canon annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
 | `canon verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |

@@ -1,0 +1,324 @@
+"""每晚取司法院裁判書異動：先消化佇列，再要新清單，只收行政類全文。
+
+服務時段是臺灣時間 0 時至 6 時。窗外出門不呼叫。JList 的非行政類 jid 不入佇列。
+未知的行政法院代碼記 `unmapped`，不重試。`查無資料` 才撤下。全文是檔案則只記 `file_only`。
+同一 jid 再出現改回 `pending`，因為內容可能已改。
+
+審級代碼取自司法陽光網公開的法院表：TPA 最高、TPB 臺北高等、TCB 臺中高等、KSB 高雄高等。
+112 年以後的地方行政法院不在該表，對不上就不猜。
+"""
+
+import argparse
+import logging
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from datetime import date, datetime, time
+from zoneinfo import ZoneInfo
+
+import psycopg
+
+from canon.clock import taipei_now
+from canon.db import Conn
+from canon.law import judgment, judgment_anchor
+from canon.law.judicial_api import AuthRejected, Client, EndpointError, removed
+from canon.law.judicial_credentials import CredentialsError, credentials_path, read_credentials
+from canon.settings import DatabaseSettings
+from canon.settings import load as load_settings
+
+log = logging.getLogger(__name__)
+
+PAUSE_SECONDS = 1.0
+_TAIPEI = ZoneInfo("Asia/Taipei")
+_WINDOW_END = time(6, 0)
+_AGENT = "canon-judicial-sync"
+
+#: 法院代碼（jid 第一欄去掉末位類別碼）→ 審級。
+COURTS: Mapping[str, str] = {"TPA": "supreme", "TPB": "high", "TCB": "high", "KSB": "high"}
+
+EXIT_TRANSIENT = 1
+EXIT_INVALID = 2
+
+type Clock = Callable[[], datetime]
+type Sleep = Callable[[float], None]
+
+
+@dataclass(frozen=True, slots=True)
+class SyncResult:
+    """一次 `canon judgment sync` 的計數。`exit_code` 0 含窗外與窗內沒跑完。"""
+
+    skipped: bool = False
+    listed: int = 0
+    stored: int = 0
+    taken_down: int = 0
+    file_only: int = 0
+    pending: int = 0
+    exit_code: int = 0
+
+
+def in_window(moment: datetime) -> bool:
+    """臺灣時間 0 時起、6 時前。"""
+    local = moment.astimezone(_TAIPEI)
+    return local.time() < _WINDOW_END
+
+
+def sync(
+    conn: Conn,
+    client: Client,
+    *,
+    now: Clock,
+    sleep: Sleep = lambda _seconds: None,
+    pause: float = PAUSE_SECONDS,
+) -> SyncResult:
+    """取完佇列裡的待取 jid，窗還開著才要新清單。整次不把密鑰寫進結果。"""
+    if not in_window(now()):
+        log.info("裁判書同步：不在服務時段")
+        return SyncResult(skipped=True)
+    stored = taken = files = listed = 0
+    try:
+        stored, taken, files = _drain(conn, client, now, sleep, pause, stored, taken, files)
+        if not in_window(now()):
+            return _result(conn, stored, taken, files)
+        days = _changes(client.changes())
+        listed = _enqueue(conn, days)
+        stored, taken, files = _drain(conn, client, now, sleep, pause, stored, taken, files)
+    except EndpointError as e:
+        log.error("裁判書同步中斷：%s", e)
+        conn.rollback()
+        return _result(conn, stored, taken, files, EXIT_TRANSIENT)
+    except AuthRejected as e:
+        log.error("裁判書同步拒絕：%s", e)
+        conn.rollback()
+        return _result(conn, stored, taken, files, EXIT_INVALID)
+    return _result(conn, stored, taken, files, listed=listed)
+
+
+def _drain(
+    conn: Conn,
+    client: Client,
+    now: Clock,
+    sleep: Sleep,
+    pause: float,
+    stored: int,
+    taken: int,
+    files: int,
+) -> tuple[int, int, int]:
+    pending = [
+        str(jid)
+        for (jid,) in conn.execute(
+            "SELECT jid FROM judgment.fetch WHERE status = 'pending' ORDER BY listed_on, jid"
+        )
+    ]
+    for index, jid in enumerate(pending):
+        if not in_window(now()):
+            break
+        if index:
+            sleep(pause)
+        outcome = _one(conn, client, jid, now)
+        stored += outcome == "stored"
+        taken += outcome == "taken_down"
+        files += outcome == "file_only"
+    return stored, taken, files
+
+
+def _one(conn: Conn, client: Client, jid: str, now: Clock) -> str:
+    """處理一筆。回傳新狀態；留下 pending 的不計入完成數。"""
+    if _court(jid) is None:
+        _mark(conn, jid, "unmapped", "unknown_court")
+        return "unmapped"
+    try:
+        payload = client.document(jid)
+    except EndpointError:
+        _mark(conn, jid, "pending", "transient")
+        return "pending"
+    if removed(payload):
+        judgment.take_down(conn, [jid], now().astimezone(_TAIPEI).date())
+        _mark(conn, jid, "taken_down", None)
+        return "taken_down"
+    built = _decision(jid, payload)
+    if isinstance(built, str):
+        status = (
+            "unmapped"
+            if built == "unknown_court"
+            else "file_only"
+            if built == "file"
+            else "pending"
+        )
+        _mark(conn, jid, status, None if status == "file_only" else built)
+        return status
+    decided_on, document = built
+    body = document["body"]
+    assert isinstance(body, str)
+    found = judgment_anchor.extract(conn, body, decided_on)
+    document["cites"] = list(found.cites)
+    try:
+        judgment.load(
+            conn,
+            {
+                "derivation": {"method": "rule", "agent": _AGENT, "agent_version": "1"},
+                "decisions": [document],
+            },
+        )
+    except judgment.JudgmentError:
+        log.info("裁判 %s 未入庫", jid)
+        _mark(conn, jid, "pending", "rejected")
+        return "pending"
+    _mark(conn, jid, "stored", None)
+    return "stored"
+
+
+def _decision(jid: str, payload: object) -> tuple[date, dict[str, object]] | str:
+    """JDoc → 載入用的裁判；對不上時回問題代碼或 `file`。"""
+    if not isinstance(payload, dict):
+        return "malformed"
+    court = _court(jid)
+    if court is None:
+        return "unknown_court"
+    full = payload.get("JFULLX")
+    if not isinstance(full, dict):
+        return "malformed"
+    kind = full.get("JFULLTYPE")
+    if kind == "file":
+        return "file"
+    text = full.get("JFULLCONTENT")
+    if kind != "text" or not isinstance(text, str) or not text.strip():
+        return "empty_body"
+    decided = _decided(jid, payload.get("JDATE"))
+    if decided is None:
+        return "date_mismatch"
+    title = payload.get("JTITLE")
+    if not isinstance(title, str) or not title.strip():
+        return "malformed"
+    case_word = jid.split(",")[2]
+    return decided, {
+        "jid": jid,
+        "decided_on": decided.isoformat(),
+        "instance": court,
+        "kind": "grand_chamber" if court == "supreme" and case_word == "大" else "ordinary",
+        "title": title.strip(),
+        "body": text,
+    }
+
+
+def _court(jid: str) -> str | None:
+    court_code = jid.split(",")[0]
+    if len(court_code) < 2 or not court_code.endswith("A"):
+        return None
+    return COURTS.get(court_code[:-1])
+
+
+def _decided(jid: str, given: object) -> date | None:
+    """jid 第 5 欄是裁判日。JDATE 有值時必須是同一天。"""
+    parts = jid.split(",")
+    if len(parts) < 5:
+        return None
+    parsed = _yyyymmdd(parts[4])
+    if parsed is None:
+        return None
+    if given in (None, ""):
+        return parsed
+    if not isinstance(given, str):
+        return None
+    return parsed if _yyyymmdd(given) == parsed else None
+
+
+def _yyyymmdd(value: str) -> date | None:
+    digits = value.replace("-", "").replace("/", "")
+    if len(digits) != 8 or not digits.isdigit():
+        return None
+    try:
+        return date(int(digits[:4]), int(digits[4:6]), int(digits[6:]))
+    except ValueError:
+        return None
+
+
+def _changes(payload: object) -> list[tuple[date, list[str]]]:
+    if not isinstance(payload, list):
+        raise EndpointError("JList")
+    days: list[tuple[date, list[str]]] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            raise EndpointError("JList")
+        listed, jids = item.get("date"), item.get("list")
+        if not isinstance(listed, str) or not isinstance(jids, list):
+            raise EndpointError("JList")
+        try:
+            on = date.fromisoformat(listed)
+        except ValueError:
+            raise EndpointError("JList") from None
+        if not all(isinstance(jid, str) and jid.strip() for jid in jids):
+            raise EndpointError("JList")
+        days.append((on, [jid.strip() for jid in jids]))
+    return days
+
+
+def _enqueue(conn: Conn, days: list[tuple[date, list[str]]]) -> int:
+    """行政類 jid 入佇列（再出現的改回待取）。回傳入列的筆數，含已在佇列者。"""
+    count = 0
+    for listed_on, jids in days:
+        for jid in jids:
+            if _court(jid) is None and not _administrative_but_unmapped(jid):
+                continue
+            count += 1
+            conn.execute(
+                "INSERT INTO judgment.fetch (jid, listed_on, status) VALUES (%s, %s, 'pending')"
+                " ON CONFLICT (jid) DO UPDATE SET listed_on = EXCLUDED.listed_on,"
+                " status = 'pending', last_error = NULL, updated_on = CURRENT_DATE",
+                (jid, listed_on),
+            )
+    conn.commit()
+    return count
+
+
+def _administrative_but_unmapped(jid: str) -> bool:
+    """第一欄末位是 A、但法院代碼不在表上：仍入列，取的時候再標 unmapped。"""
+    code = jid.split(",")[0]
+    return len(code) > 1 and code.endswith("A") and code[:-1].isalpha() and _court(jid) is None
+
+
+def _mark(conn: Conn, jid: str, status: str, error: str | None) -> None:
+    conn.execute(
+        "UPDATE judgment.fetch SET status = %s, last_error = %s, updated_on = CURRENT_DATE"
+        " WHERE jid = %s",
+        (status, error, jid),
+    )
+    conn.commit()
+
+
+def _result(
+    conn: Conn,
+    stored: int,
+    taken: int,
+    files: int,
+    exit_code: int = 0,
+    *,
+    listed: int = 0,
+) -> SyncResult:
+    pending = conn.execute(
+        "SELECT count(*) FROM judgment.fetch WHERE status = 'pending'"
+    ).fetchone()
+    left = pending[0] if pending is not None and isinstance(pending[0], int) else 0
+    result = SyncResult(False, listed, stored, taken, files, left, exit_code)
+    log.info("裁判書同步：%s", result)
+    return result
+
+
+def main() -> None:
+    """`canon judgment sync`：讀密鑰檔，在服務時段取異動。"""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    parser = argparse.ArgumentParser(prog="canon judgment")
+    commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser("sync", help="取裁判書異動清單與全文（每日 0 時至 6 時）")
+    parser.parse_args()
+    try:
+        creds = read_credentials(credentials_path())
+    except CredentialsError as e:
+        log.error("裁判書密鑰：%s", e)
+        raise SystemExit(EXIT_INVALID) from e
+    settings = load_settings(DatabaseSettings)
+    client = Client(creds.user, creds.password)
+    try:
+        with psycopg.connect(settings.dsn) as conn:
+            raise SystemExit(sync(conn, client, now=taipei_now).exit_code)
+    except psycopg.Error as e:
+        log.error("裁判書同步中斷：資料庫")
+        raise SystemExit(EXIT_TRANSIENT) from e
