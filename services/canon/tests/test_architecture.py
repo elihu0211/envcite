@@ -56,7 +56,9 @@ def test_logic_takes_today_instead_of_reading_the_clock() -> None:
     reads = {
         rel: lines
         for path in _modules()
-        if (lines := _clock_reads(path)) and (rel := path.relative_to(SRC).as_posix())
+        if path.name != "clock.py"
+        and (lines := _clock_reads(path))
+        and (rel := path.relative_to(SRC).as_posix())
     }
 
     assert not reads, f"直接讀系統時鐘：{reads}。改收注入的 `clock.Today`（預設 `date.today`）。"

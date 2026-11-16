@@ -74,7 +74,7 @@ def test_an_unknown_subcommand_exits_with_the_usage_code(
     assert "deploy" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("name", ["ruling", "guidance"])
+@pytest.mark.parametrize("name", ["ruling", "guidance", "judgment"])
 def test_a_subcommand_is_required(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(SystemExit) as raised:
         _run(monkeypatch, name)

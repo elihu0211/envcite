@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, competency-registry, golden-test-collection]
+owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, competency-registry, golden-test-collection, judicial-credentials]
 -->
 
 # canon
@@ -20,6 +20,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 | 入口 | [入口](#入口) | 同一映像裡的伺服器、同步、歷史、標註、行政規則、違憲失效 |
 | 語料 | [歷史版本](#歷史版本) | 法律自立法院，命令自環境部 |
 | 語料 | [行政規則的取得](#行政規則的取得) | 公報與環境部函釋 |
+| 語料 | [裁判書帳密](#裁判書帳密) | 司法院帳號的檔案、路徑與權限 |
 | 語料 | [違憲失效](#違憲失效) | 憲法法庭宣告失效的條文 |
 | 標註與規範 | [標註管線](#標註管線) | 抽取、驗證、接受；重抽；主體與上位條件 |
 | 標註與規範 | [模型配置](#模型配置modelstoml) | 端點與金鑰名。金鑰怎麼找見 [`CONFIGURATION.md`](../../CONFIGURATION.md) |
@@ -44,6 +45,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 | `canon guidance sync <來源>` | 排程 | 取得行政規則寫入 `guidance`（`gazette` 公報、`moenv` 環境部函釋） |
 | `canon guidance load <檔>` | 一次性 | 載入人寫的行政規則 JSON；格式見 [`law/guidance.py`](src/canon/law/guidance.py) |
 | `canon ruling fetch`、`load <檔>` | 一次性 | 取得或載入違憲失效裁判 |
+| `canon judgment sync` | 排程 | 取行政法院裁判異動。帳密見[裁判書帳密](#裁判書帳密) |
 | `canon pipeline` | 排程 | 標註：抽取、驗證、接受 |
 | `canon annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
 | `canon verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |
@@ -72,6 +74,23 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
    - 更換來源時以新來源文字取代同日版本列；已寫入版本日不在新目標內則整部不寫（`history_reshaped`）；寫入遭 DB 約束擋下記 `history_write_rejected` 並略過該部。
 3. **讀取**：不另立介面，由 `corpus.provisions_at` 與依日檢索沿同一條時間軸逐條解析。
 4. **結束碼**：`0` 成功；`1` 暫時性錯誤（含隔離超過 1%）；`2` 資料不合預期、比例越線或寫入被拒超限；`75` 斷路器開啟。問題記於 `source.import_problem`。
+
+### 裁判書帳密
+
+`canon judgment sync` 的司法院帳號不走環境變數，也不進 [`settings.py`](src/canon/settings.py)。本機與叢集是同一份 JSON、同一條權限規則，只是檔案放的位置不同。實作在 [`law/judicial_credentials.py`](src/canon/law/judicial_credentials.py)。
+
+| 順序 | 路徑 | 誰放 |
+|------|------|------|
+| 1 | `/var/run/canon/judicial.json` | 叢集把密鑰卷掛在這裡。有這個檔就用它 |
+| 2 | 服務目錄 `judicial.local.json` | 本機。版控忽略。範本是 [`judicial.local.json.example`](judicial.local.json.example) |
+
+```json
+{"user": "<平臺帳號>", "password": "<密碼>"}
+```
+
+帳號去掉前後空白，密碼原樣。檔案讀不到、不是這個物件、或帳號／密碼是空的，指令結束碼 `2`。訊息只說缺什麼，不含值。
+
+其他人不可讀：權限位元的 other 必須是 0，且所有者可讀。本機 `chmod 600` 與叢集掛載 `0440` 都符合；`644` 拒絕。叢集掛載用 `defaultMode: 0440`，`fsGroup` 等於行程的群組，卷裡的鍵名是 `judicial.json`，掛到上表的系統路徑。資料庫連線仍是 `ENVCITE_CANON_DSN`。
 
 ### 行政規則的取得
 

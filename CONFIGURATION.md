@@ -13,7 +13,7 @@ owns: [config-naming, secret-sources]
 | 層 | 節 | 這裡有 |
 |----|----|--------|
 | 名字 | [命名](#命名) | `ENVCITE_` 與不走此前綴的標準名 |
-| 值 | [機密的來源](#機密的來源) | 環境變數，然後作業系統鑰匙圈 |
+| 值 | [機密的來源](#機密的來源) | 環境變數，然後作業系統鑰匙圈；裁判書帳號是檔案 |
 
 ## 命名
 
@@ -70,6 +70,8 @@ flowchart TB
 |------|------|--------|
 | 1 | 同名環境變數 | 容器、CI、Linux 伺服器。容器沒有鑰匙圈，缺了就直接失敗 |
 | 2 | 作業系統鑰匙圈 | 開發者機器。macOS：`security find-generic-password -s <名稱> -w`。Linux：`secret-tool lookup service <名稱>`（libsecret）。Windows 與沒有鑰匙圈的環境只有第 1 項 |
+
+司法院裁判書的帳號不在上表。它是一份 JSON 檔，本機與叢集同一份、同一條權限規則，見 [canon README「裁判書帳密」](services/canon/README.md#裁判書帳密)。
 
 同一個 `models.toml` 因此各環境寫法相同。金鑰經子行程的標準輸出回到本行程，不進命令列、不進日誌。
 

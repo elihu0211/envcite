@@ -126,7 +126,7 @@ class Resolver:
             enacts = _ENACTS.search(sentence) is not None
             last = -1  # 上一處取用的引文結束的位置
             for m in _ARTICLE.finditer(sentence):
-                name = self._name_before(sentence, m.start())
+                name = self.name_before(sentence, m.start())
                 if name is None:
                     continue
                 at = m.start() - len(name)
@@ -141,8 +141,8 @@ class Resolver:
                     found.setdefault(name + path, moenv.Citation(name, article))
         return list(found.items())
 
-    def _name_before(self, text: str, end: int) -> str | None:
-        """緊接在 `end` 之前、最長的一個已知名稱。"""
+    def name_before(self, text: str, end: int) -> str | None:
+        """緊接在 `end` 之前、最長的一個已知名稱；解析不到為 None。"""
         for length in range(min(self._longest, end), 2, -1):
             name = text[end - length : end]
             if self.resolve(name).problem != "law_unresolved":
