@@ -1,3 +1,5 @@
+using EnvCite.ServiceDefaults;
+
 namespace EnvCite.Platform.Modules.Mail;
 
 // 寄信的設定分三個選項類別（功能層 MailOptions 在 SharedKernel）：傳輸層 MailTransportOptions、寄件者 MailIdentityOptions，

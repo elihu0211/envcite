@@ -1,5 +1,9 @@
 using System.Text.Json.Serialization;
 
+using EnvCite.ServiceDefaults;
+
+using MailKit.Security;
+
 namespace EnvCite.Platform.Modules.Mail;
 
 /// <summary>
