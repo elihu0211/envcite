@@ -875,6 +875,7 @@
           "EnvCite.Platform.Modules.Canon": "[1.0.0, )",
           "EnvCite.Platform.Modules.Consult": "[1.0.0, )",
           "EnvCite.Platform.Modules.Conversations": "[1.0.0, )",
+          "EnvCite.Platform.Modules.Mail": "[1.0.0, )",
           "EnvCite.Platform.Modules.Members": "[1.0.0, )",
           "EnvCite.Platform.Modules.Metering": "[1.0.0, )",
           "EnvCite.Platform.Modules.Tenancy": "[1.0.0, )",
@@ -942,6 +943,13 @@
           "Finbuckle.MultiTenant.EntityFrameworkCore": "[10.1.4, )"
         }
       },
+      "envcite.platform.modules.mail": {
+        "type": "Project",
+        "dependencies": {
+          "EnvCite.Platform.SharedKernel": "[1.0.0, )",
+          "MailKit": "[5.0.0, )"
+        }
+      },
       "envcite.platform.modules.members": {
         "type": "Project",
         "dependencies": {
@@ -980,7 +988,6 @@
         "dependencies": {
           "EnvCite.ServiceDefaults": "[1.0.0, )",
           "Finbuckle.MultiTenant.Abstractions": "[10.1.4, )",
-          "MailKit": "[5.0.0, )",
           "Microsoft.Extensions.AI.Abstractions": "[11.0.0, )"
         }
       },

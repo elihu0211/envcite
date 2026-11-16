@@ -1,10 +1,3 @@
-using EnvCite.ServiceDefaults;
-
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-
 namespace EnvCite.Platform.SharedKernel;
 
 /// <summary>寄信的結果。寄不出去不讓動作失敗：呼叫端據此提示操作者重寄，或改用暫時密碼。</summary>
@@ -32,31 +25,28 @@ public interface IMailSender
     Task<MailDelivery> SendAsync(string recipient, string subject, MailContent content, CancellationToken cancellationToken);
 }
 
-public static class MailServiceCollectionExtensions
+/// <summary>一封信的內容：純文字版與 HTML 版，語意相同（同一條連結、同樣的期限與提示），以 multipart/alternative 寄出。</summary>
+public sealed record MailContent(string Text, string Html);
+
+/// <summary>寫好、可以寄的信：主旨加內容。收件者由呼叫端決定，傳輸層（<see cref="IMailSender"/>）只管寄。</summary>
+public sealed record ComposedMail(string Subject, MailContent Content);
+
+/// <summary>邀請（<see cref="Invitation"/>）或信箱驗證信要的資料：呼叫端只組這個，不碰文案與版面。</summary>
+/// <param name="Link">單次、限時的啟用連結；信裡唯一的外部網址。</param>
+/// <param name="Lifetime">連結的有效期限（一段時間，不是時間點）。</param>
+/// <param name="TenantIdentifier">租戶識別碼；營運者沒有租戶，為 null。</param>
+/// <param name="Invitation">邀請（帳號還沒有密碼）為 true，驗證信箱為 false。</param>
+public sealed record ActivationMailModel(Uri Link, TimeSpan Lifetime, string? TenantIdentifier, bool Invitation);
+
+/// <summary>
+/// 把資料組成信：文案（<c>MailTexts</c> 資源檔，語言由 <c>Platform:Mail:Template:Culture</c> 決定）、系統名稱（<see cref="BrandOptions"/>）
+/// 與版型（<c>Platform:Mail:Template</c>）合成主旨、純文字與 HTML。<b>不寄信、不連網路</b>，所以預覽命令與測試用的是同一個服務。
+/// </summary>
+public interface IMailComposer
 {
-    /// <summary>
-    /// 寄信所需的一切，集中在這一處註冊（Program.cs 不接任何寄信的線）：<c>Platform:Mail</c> 的三個選項類別
-    /// （<see cref="MailOptions"/> 功能、<see cref="MailTransportOptions"/> 傳輸、<see cref="MailIdentityOptions"/> 寄件者，各自驗證）、
-    /// <c>Platform:Mail:Template</c>（版型）、<c>Platform:Brand</c>（系統名稱）、文案的本地化、<see cref="IMailComposer"/>（組信）、
-    /// <see cref="ISmtpClientFactory"/>（每封信一個新的 SMTP 用戶端）與 <see cref="IMailSender"/>（只管傳輸）。
-    /// 需要 <c>AddLogging()</c>（主機本來就有）。測試可在其後換掉 <see cref="IMailSender"/> 或 <see cref="ISmtpClientFactory"/>。
-    /// </summary>
-    public static IServiceCollection AddPlatformMail(this IServiceCollection services)
-    {
-        services.AddPlatformBrand();
-        services.AddLocalization();
-        services.AddSectionOptions<MailOptions, MailOptionsValidator>();
-        services.AddSectionOptions<MailTransportOptions, MailTransportOptionsValidator>();
-        services.AddSectionOptions<MailIdentityOptions, MailIdentityOptionsValidator>()
-            .PostConfigure<IOptions<MailTransportOptions>>(MailIdentityOptions.DefaultFromUsername);
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, MailSettingsAdvisor>());
-        services.AddSectionOptions<MailTemplateOptions, MailTemplateOptionsValidator>();
-        services.TryAddSingleton<MailRenderServices>();
-        services.TryAddSingleton(provider => new HtmlRenderer(provider.GetRequiredService<MailRenderServices>(), provider.GetRequiredService<ILoggerFactory>()));
-        services.TryAddSingleton<IMailComposer, MailComposer>();
-        services.TryAddSingleton<IMailTestReport, MailTestReport>();
-        services.TryAddSingleton<ISmtpClientFactory, SmtpClientFactory>();
-        services.TryAddSingleton<IMailSender, SmtpMailSender>();
-        return services;
-    }
+    /// <summary>邀請信或信箱驗證信。信裡只有連結：不放密碼，也不放使用者的其他資料。</summary>
+    Task<ComposedMail> ComposeActivationAsync(ActivationMailModel model, CancellationToken cancellationToken);
+
+    /// <summary><c>mail test</c> 的測試信：沒有連結、沒有密碼，只確認寄信設定與中繼可用。</summary>
+    Task<ComposedMail> ComposeTestAsync(CancellationToken cancellationToken);
 }

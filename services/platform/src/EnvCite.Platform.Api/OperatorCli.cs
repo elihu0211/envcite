@@ -1,5 +1,6 @@
 using System.Security.Claims;
 
+using EnvCite.Platform.Modules.Mail;
 using EnvCite.Platform.Web.Auth;
 
 namespace EnvCite.Platform.Api;

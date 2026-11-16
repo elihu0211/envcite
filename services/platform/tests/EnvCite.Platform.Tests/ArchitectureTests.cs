@@ -79,7 +79,7 @@ public sealed partial class ArchitectureTests(PlatformFactory factory)
         [
             "EnvCite.Platform.Api/",
             "EnvCite.Platform.Web/WebModule.cs",
-            "EnvCite.Platform.SharedKernel/MailComposer.cs",
+            "EnvCite.Platform.Modules.Mail/MailComposer.cs",
         ];
 
         var violations = Directory.EnumerateDirectories(Src)

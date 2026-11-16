@@ -136,7 +136,8 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 ### 邀請與信箱驗證
 
 1. **權杖與流程**：登入不要求信箱已驗證（未驗證信箱不得作復原管道）。權杖使用 Identity 原生電子郵件確認權杖（不自製不儲存）；`GET` 僅檢視、`POST` 才消耗並以 `AddPasswordAsync` 旋轉 security stamp，啟用不簽發 session；重寄時無密碼者先換 stamp。連結與權杖不進日誌或輸出。
-2. **設定與傳輸分層（`AddPlatformMail()`）**：
+2. **設定與傳輸分層（`AddMailModule()`）**：
+   - 契約與實作分界：`SharedKernel` 只放呼叫端用到的 `IMailSender`、`IMailComposer`、`MailOptions` 與其資料型別（核心不依賴 MailKit 與 Razor）；傳輸、版型、文案與傳輸／寄件者選項在 `Modules.Mail`，只由 `Api` 註冊，其他模組不註冊也不參考它。
    - 選項拆為 `MailOptions`、`MailTransportOptions`、`MailIdentityOptions` 與 `MailTemplateOptions`（僅啟用時驗證）。
    - `SmtpMailSender` 每次自 `ISmtpClientFactory` 取新用戶端；`Username`／`Password`（僅傳輸層讀取，不進任何日誌／輸出）皆未設時不送 AUTH；協商交給 MailKit，不自設 `ServerCertificateValidationCallback`。
    - `mail test` 依 `MailTestReport` 錯誤碼對照表輸出（不含帳密或例外原文）。

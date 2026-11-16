@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 using MimeKit;
 
-namespace EnvCite.Platform.SharedKernel;
+namespace EnvCite.Platform.Modules.Mail;
 
 /// <summary>
 /// 建立 SMTP 用戶端的工廠。MailKit 的 <see cref="SmtpClient"/> 不是執行緒安全，所以<b>每封信向工廠要一個新的</b>，用完由呼叫端釋放；

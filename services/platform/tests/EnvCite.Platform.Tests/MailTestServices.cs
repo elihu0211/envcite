@@ -1,10 +1,12 @@
+using EnvCite.Platform.Modules.Mail;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace EnvCite.Platform.Tests;
 
 /// <summary>
-/// 信件測試的容器：與正式環境同一個註冊（<see cref="MailServiceCollectionExtensions.AddPlatformMail"/>），只換掉設定的來源。
+/// 信件測試的容器：與正式環境同一個註冊（<see cref="MailModule.AddMailModule"/>），只換掉設定的來源。
 /// 組信是純運算，不需要伺服器、資料庫或網路；要驗證選項或換掉傳輸的測試，用 <c>configure</c> 在其後覆寫。
 /// </summary>
 internal static class MailTestServices
@@ -14,7 +16,7 @@ internal static class MailTestServices
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddInMemoryCollection(settings ?? []).Build());
         services.AddLogging(builder => builder.AddProvider(new CapturingLoggerProvider()));
-        services.AddPlatformMail();
+        services.AddMailModule();
         configure?.Invoke(services);
         return services.BuildServiceProvider();
     }

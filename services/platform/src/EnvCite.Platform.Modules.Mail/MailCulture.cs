@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace EnvCite.Platform.SharedKernel;
+namespace EnvCite.Platform.Modules.Mail;
 
 /// <summary>
 /// 在信件的語言（<see cref="MailTemplateOptions.Culture"/>）下取文案。只包住同步的取字串，不跨 await，所以暫時換掉目前執行緒的文化不會影響別的工作。

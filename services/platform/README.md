@@ -418,8 +418,8 @@ env 'ENVCITE_Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command=I
 
 邀請信、驗證信與 `mail test` 是同一個版型，寄成 `multipart/alternative`：純文字在前、HTML 在後（客戶端顯示它看得懂的最後一個）。兩版事實一致：同一條連結、同樣的期限與提示、同樣的租戶識別碼；`mail test` 沒有連結也沒有密碼。一律帶 `Auto-Submitted: auto-generated`。
 
-1. **三層組信流程（`AddPlatformMail()` 註冊）**：呼叫端組資料 → `IMailComposer` 依 `Platform:Mail:Template:Culture`（`zh-TW`／`en`）自 `SharedKernel/MailTexts*.resx` 組信 → `IMailSender` 寄出 `multipart/alternative`。
-2. **HTML 與安全限制**：Razor 元件（`SharedKernel/MailViews/`）經 `HtmlRenderer` 渲染（單欄表格 + 內嵌樣式 + VML 按鈕後備，支援 `prefers-color-scheme`），版型選項由 `MailTemplateOptionsValidator` 驗證色票對比度 ≥ 4.5:1。**信內唯一外部網址為啟用連結**，禁止遠端圖片、追蹤像素與外部資源。
+1. **三層組信流程（`AddMailModule()` 註冊）**：呼叫端組資料 → `IMailComposer` 依 `Platform:Mail:Template:Culture`（`zh-TW`／`en`）自 `Modules.Mail/MailTexts*.resx` 組信 → `IMailSender` 寄出 `multipart/alternative`。
+2. **HTML 與安全限制**：Razor 元件（`Modules.Mail/MailViews/`）經 `HtmlRenderer` 渲染（單欄表格 + 內嵌樣式 + VML 按鈕後備，支援 `prefers-color-scheme`），版型選項由 `MailTemplateOptionsValidator` 驗證色票對比度 ≥ 4.5:1。**信內唯一外部網址為啟用連結**，禁止遠端圖片、追蹤像素與外部資源。
 3. **本機預覽**：`mail preview <輸出目錄>` 使用真實 `IMailComposer` 輸出五種信的 `.html`／`.txt`（占位網址 `platform.example`）；實際相容性須於真實客戶端驗證（見 [`CONTRIBUTING.md`「本機收信與寄信測試」](../../CONTRIBUTING.md#本機收信與寄信測試)）。
 
 #### 測試與排查

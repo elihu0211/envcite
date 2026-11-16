@@ -56,7 +56,6 @@ public static class MembersModule
         services.AddSectionOptions<PortalGoogleOptions, PortalGoogleOptionsValidator>();
         services.AddSingleton<IGoogleSignInAvailability, GoogleSignInAvailability>();
         services.AddSingleton<IConfigureOptions<GoogleOptions>, ConfigurePortalGoogle>();
-        services.AddPlatformMail();
         services.TryAddSingleton<IActivationMailer, ActivationMailer>();
         // 邀請與驗證連結的有效期限，也是 Identity 資料保護權杖（電子郵件確認）的期限；兩個 user store 共用。
         services.AddOptions<DataProtectionTokenProviderOptions>()

@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 using EnvCite.ServiceDefaults;
 
-namespace EnvCite.Platform.SharedKernel;
+namespace EnvCite.Platform.Modules.Mail;
 
 /// <summary>
 /// <c>Platform:Mail:Template</c> 區段：信件版型的可調值（語言、寬度、內距、字型、色票），全部有預設值，部署者可逐鍵覆寫。

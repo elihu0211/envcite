@@ -37,6 +37,7 @@
     <ProjectReference Include="..\EnvCite.Platform.Modules.Metering\EnvCite.Platform.Modules.Metering.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.Modules.Consult\EnvCite.Platform.Modules.Consult.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.Modules.Conversations\EnvCite.Platform.Modules.Conversations.csproj" />
+    <ProjectReference Include="..\EnvCite.Platform.Modules.Mail\EnvCite.Platform.Modules.Mail.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.Modules.Members\EnvCite.Platform.Modules.Members.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.Data\EnvCite.Platform.Data.csproj" />
     <ProjectReference Include="..\EnvCite.Platform.Web\EnvCite.Platform.Web.csproj" />

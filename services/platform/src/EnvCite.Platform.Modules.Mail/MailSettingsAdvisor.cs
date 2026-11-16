@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace EnvCite.Platform.SharedKernel;
+namespace EnvCite.Platform.Modules.Mail;
 
 /// <summary>
 /// 啟動時對寄信設定做<b>不該停下</b>、但該讓人看見的提醒（停下的錯誤由三個驗證器處理）：
