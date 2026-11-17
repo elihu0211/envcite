@@ -25,17 +25,13 @@ class Extracted:
 
 
 @dataclass(frozen=True, slots=True)
-class Extractor:
-    """一種確定性規則：識別、版本與冪等的 `extract`。
-
-    `extract` 不 commit，由呼叫端決定；重跑只寫新的，已有的（含人駁回的）不復活。
-    """
+class Rule:
+    """一種確定性規則的識別：名稱與版本；載入文件的規則（沒有 `extract`）只需要這個。"""
 
     #: 推導來源的識別；寫進 `annotation.derivation.producer` 的值，已寫入的列不可改名。
     name: str
     #: 改了解析規則就遞增。資料庫存成文字的欄位（`derivation.producer_version`）以 `str()` 寫入。
     version: int
-    extract: Callable[[Conn], Extracted]
 
     def __post_init__(self) -> None:
         """版本從 1 起算。"""
@@ -46,6 +42,16 @@ class Extractor:
     def derivation(self) -> dict[str, str]:
         """載入器（`guidance.load` 等）收的 `derivation` 文件：規則推導，不是人或模型。"""
         return {"method": "rule", "agent": self.name, "agent_version": str(self.version)}
+
+
+@dataclass(frozen=True, slots=True)
+class Extractor(Rule):
+    """帶冪等 `extract` 的規則。
+
+    `extract` 不 commit，由呼叫端決定；重跑只寫新的，已有的（含人駁回的）不復活。
+    """
+
+    extract: Callable[[Conn], Extracted]
 
 
 def run(conn: Conn, *extractors: Extractor) -> dict[str, Extracted]:

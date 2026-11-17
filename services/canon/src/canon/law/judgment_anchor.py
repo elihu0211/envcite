@@ -26,7 +26,7 @@ from canon.law import moenv
 from canon.law.guidance_anchor import Resolver
 
 #: 抽取或版本規則的版本；改變輸出時遞增。
-RULE_VERSION = "1"
+RULE_VERSION = 1
 
 _QUOTES = str.maketrans("", "", "「」『』")
 _SENTENCE = re.compile(r"[^。;]+")

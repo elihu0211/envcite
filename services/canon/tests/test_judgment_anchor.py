@@ -35,7 +35,7 @@ def test_an_applied_article_anchors_on_the_text_in_force_on_the_decision_date(
 
     assert found.problems == ()
     assert found.cites == (_cite("art_2", "乙二", "decided_on"),)
-    assert RULE_VERSION == "1"
+    assert RULE_VERSION == 1
 
 
 def test_a_named_prior_version_anchors_on_the_predecessor(conn: Conn, tmp_path: Path) -> None:
