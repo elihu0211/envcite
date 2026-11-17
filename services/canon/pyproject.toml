@@ -20,11 +20,13 @@ dependencies = [
     "jinja2",
     "lxml",
     "openai",
+    "pillow",
     "psycopg-pool",
     "psycopg[binary]",
     "pydantic",
     "pydantic-settings",
     "pypdf",
+    "pypdfium2",
 ]
 
 [project.urls]

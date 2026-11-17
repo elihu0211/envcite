@@ -23,12 +23,13 @@ from pathlib import Path
 from typing import Any
 
 from canon.embedding import Embedder
+from canon.ocr import Ocr
 from canon.reranking import Reranker
 from canon.settings import ModelsSettings
 from canon.verification.models import AnthropicModel, ChatCompletionsModel, Model
 
 ROLES = ("extractor", "roundtrip", "independent_test", "panel")
-TOP_LEVEL = ("endpoint", "model", "roles", "embedding", "reranker", "relevance")
+TOP_LEVEL = ("endpoint", "model", "roles", "embedding", "reranker", "ocr", "relevance")
 
 
 class ConfigError(ValueError):
@@ -312,6 +313,37 @@ def parse_reranker(
         return None
     name, base, key = declared
     return Reranker(name, base_url=base, api_key=key, timeout=timeout)
+
+
+def parse_ocr(
+    text: str,
+    env: Mapping[str, str] | None = None,
+    *,
+    timeout: float,
+    keychain: Callable[[str], str | None] = keychain_lookup,
+) -> Ocr | None:
+    """`[ocr]` 宣告的視覺語言模型；沒有這一段為 None（不做 OCR）。只解析它指到的端點。"""
+    declared = _declared(text, "ocr", env, keychain)
+    if declared is None:
+        return None
+    name, base, key = declared
+    return Ocr(name, base_url=base, api_key=key, timeout=timeout)
+
+
+def load_ocr(
+    path: Path,
+    env: Mapping[str, str] | None = None,
+    *,
+    timeout: float,
+    keychain: Callable[[str], str | None] = keychain_lookup,
+) -> Ocr | None:
+    """讀取模型配置檔的 `[ocr]`，規則同 `parse_ocr`；沒有這一段為 None。"""
+    return parse_ocr(path.read_text(encoding="utf-8"), env, timeout=timeout, keychain=keychain)
+
+
+def ocr_from_settings(settings: ModelsSettings, *, timeout: float) -> Ocr | None:
+    """`[ocr]` 的 OCR 模型；沒有設定檔或沒有這一段為 None，掃描檔只記 `file_only`。"""
+    return load_ocr(settings.models, timeout=timeout) if settings.models else None
 
 
 def load_embedder(

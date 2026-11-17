@@ -95,6 +95,11 @@ ignore_missing_imports = true
 module = "google.rpc.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+# pypdfium2（裁判書 PDF 轉圖片給 OCR）不帶型別資訊，也沒有 types- 套件。
+module = "pypdfium2"
+ignore_missing_imports = true
+
 [tool.coverage.run]
 # 在成員目錄執行，CI 以 COVERAGE_RCFILE 指向本檔。
 source = ["src"]
