@@ -1602,9 +1602,6 @@
   <data name="法源依據（{0}）" xml:space="preserve">
     <value>Cited sources ({0})</value>
   </data>
-  <data name="切換引用法條" xml:space="preserve">
-    <value>Switch cited article</value>
-  </data>
   <data name="共 {0} 筆對話" xml:space="preserve">
     <value>{0} conversations</value>
   </data>
@@ -2477,18 +2474,6 @@
   </data>
   <data name="目前沒有可顯示的條文內容。" xml:space="preserve">
     <value>No provision content available.</value>
-  </data>
-  <data name="引用法源切換" xml:space="preserve">
-    <value>Cited sources</value>
-  </data>
-  <data name="第 {0} / {1} 筆" xml:space="preserve">
-    <value>{0} of {1}</value>
-  </data>
-  <data name="上一筆引用法源" xml:space="preserve">
-    <value>Previous cited source</value>
-  </data>
-  <data name="下一筆引用法源" xml:space="preserve">
-    <value>Next cited source</value>
   </data>
   <data name="條文唯一索引碼（IRI）" xml:space="preserve">
     <value>Canonical Provision IRI</value>

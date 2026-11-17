@@ -219,15 +219,10 @@ public sealed partial class ChatPage(
     private string? _drawerContent;
     private PortalArticleDetail? _drawerArticle;
     private string? _drawerError;
-    private IReadOnlyList<AnswerSource> _drawerSources = [];
 
-    private Task SelectDrawerSourceAsync(AnswerSource source) =>
-        OpenDrawerAsync(source, _drawerAsOfLabel, _drawerSources);
-
-    private async Task OpenDrawerAsync(AnswerSource source, string? asOfLabel, IReadOnlyList<AnswerSource>? sources = null)
+    private async Task OpenDrawerAsync(AnswerSource source, string? asOfLabel)
     {
         _drawerOpen = true;
-        _drawerSources = sources is { Count: > 0 } ? sources : [source];
         _drawerCode = source.Code;
         _drawerTitle = source.Citation;
         _drawerUri = source.Uri;
@@ -291,7 +286,7 @@ public sealed partial class ChatPage(
         _refocus = true;
     }
 
-    private Task OpenSourceAsync(SourceRequest request) => OpenDrawerAsync(request.Source, request.AsOfLabel, request.Sources);
+    private Task OpenSourceAsync(SourceRequest request) => OpenDrawerAsync(request.Source, request.AsOfLabel);
 
     /// <summary>拒答對使用者說的話：即時回答依原因組，從歷史還原的是當時存下來的文字。</summary>
     private string? RefusalTextOf(ChatTurn turn) =>
