@@ -64,6 +64,7 @@ uv run --env-file .env canon serve
   - 函式大小上限由 ruff 守門（圈複雜度與分支 ≤ 14、語句 ≤ 60），不加 `noqa` 放寬；單一模組不超過 500 行（`tests/test_architecture.py` 守門）。
   - 公開模組、類別與函式須有 docstring（`D100`–`D103`）：首句說明「是什麼」，其餘只寫前提、不變式與「為什麼」；欄位與常數用前置 `#:`。
   - 禁用 `Any`（`ANN401`），動態邊界（JSON 文件、clingo 答案集原子、唯讀連線列）例外須在根 `pyproject.toml` 列出並說明；人寫 JSON 在邊界以 pydantic 解碼成型別化結構（參照 `law/ruling.py`）。
+- **日誌**：只由 `cli.main` 設定一次（`server.py` 因要記錄器名稱另設），子指令不呼叫 `logging.basicConfig`（`tests/test_architecture.py` 守門）。
 - **資料庫讀取與組態**：
   - 查詢用 `db.fetch`／`fetch_one`／`scalar` 搭配私有 `NamedTuple`（欄位次序同 `SELECT`，可空欄標 `| None`），不於用處 `cast`；欄位次序同 `store/records.py` 時直接共用紀錄型別。連線型別只用 `db.Conn`。
   - 匯入問題（`source.import_problem`）的型別與寫入只經 `import_problems`。
@@ -98,8 +99,8 @@ uv run --env-file .env canon serve
 
 - **取得引擎（`acquire/`）**：負責下載、SHA-256、冪等與存檔；來源只實作 `Source` 並於 `acquire/cli.py` 的 `SOURCES` 登記。
 - **增量匯入**：`parsing.parse` 為純函式，整批通過 `audit.LIMITS` 才寫入（否則結束碼 `2`）。更正以新增列取代舊列（`superseded_at`），查詢只看現行列。**改變解析輸出須遞增 `parsing.PARSER_VERSION`**。
-- **授權與違憲引用**：`canon sync` 匯入後執行 `delegation.extract`（**改規則須遞增 `delegation.RULE_VERSION`**）與 `violation` 依賴圖寫入。
-- **結束碼**：`0` 成功；`1` 暫時性錯誤；`2` 資料形狀不合、快照不存在、整批比例越線或嵌入端點設定錯誤（401／403、維度不符）。
+- **確定性規則（授權、違憲引用等）**：寫成 `rules.Extractor`（`name`、整數 `version`、冪等的 `extract`），在 `sync.EXTRACTORS` 登記，由 `canon sync` 匯入後經 `rules.run` 依序執行；**改解析規則須遞增該規則的 `version`**（`delegation.RULE_VERSION`、`violation.RULE_VERSION`）。載入文件的規則沒有 `extract`，用 `rules.Rule`，`derivation` 文件取 `Rule.derivation`，不手寫字典。資料庫存成文字的版本欄位以 `str()` 寫入，不為統一型別而改欄位。
+- **結束碼**：`0` 成功；`1` 暫時性錯誤；`2` 資料形狀不合、快照不存在、整批比例越線或嵌入端點設定錯誤（401／403、維度不符）。數值只取自 `envcite_jobkit.ExitCode`，入口不自訂數字（`tests/test_architecture.py` 守門）；例外自帶碼（`exit_codes.Retryable`、`Unretryable`），失敗收尾用 `exit_codes.fail`（回滾、記一行、回傳碼）。
 
 ### 2. 歷史版本與行政規則
 

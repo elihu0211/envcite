@@ -107,6 +107,41 @@ def test_logging_is_configured_where_the_process_starts_and_nowhere_else() -> No
     assert not scattered, f"在入口以外設定日誌：{scattered}。日誌由 `cli.main` 統一設定。"
 
 
+def _hand_written_exit_codes(path: Path) -> list[int]:
+    """自訂的結束碼：`EXIT_*` 常數，或 `raise SystemExit(<整數>)`。"""
+    nodes = list(ast.walk(ast.parse(path.read_text(encoding="utf-8"))))
+    constants = [
+        node.lineno
+        for node in nodes
+        if isinstance(node, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id.startswith("EXIT_") for t in node.targets)
+    ]
+    literals = [
+        node.lineno
+        for node in nodes
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "SystemExit"
+        and node.args
+        and isinstance(node.args[0], ast.Constant)
+        and isinstance(node.args[0].value, int)
+    ]
+    return [*constants, *literals]
+
+
+def test_exit_codes_come_from_exit_code_and_not_from_local_numbers() -> None:
+    """數值是與部署庫的契約：入口用 `envcite_jobkit.ExitCode` 或 `exit_codes.exit_code(error)`。"""
+    hand_written = {
+        rel: lines
+        for path in _modules()
+        if (lines := _hand_written_exit_codes(path)) and (rel := path.relative_to(SRC).as_posix())
+    }
+
+    assert not hand_written, (
+        f"自訂的結束碼：{hand_written}。改用 `ExitCode`，失敗用 `exit_codes.fail`／`exit_code`。"
+    )
+
+
 def _imported_sources(path: Path) -> set[str]:
     """這個檔案匯入的來源子包代號。"""
     found: set[str] = set()
