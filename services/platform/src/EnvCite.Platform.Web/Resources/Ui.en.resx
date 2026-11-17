@@ -981,6 +981,9 @@
   <data name="還沒有使用紀錄" xml:space="preserve">
     <value>No usage yet</value>
   </data>
+  <data name="暫無對話" xml:space="preserve">
+    <value>No conversations</value>
+  </data>
   <data name="還沒有對話" xml:space="preserve">
     <value>No conversations yet</value>
   </data>

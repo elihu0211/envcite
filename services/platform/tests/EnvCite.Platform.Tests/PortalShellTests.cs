@@ -133,6 +133,9 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var historyPos = home.Html.IndexOf("class=\"ep-history-empty\"", StringComparison.Ordinal);
         var footPos = home.Html.IndexOf("class=\"ep-side-foot\"", StringComparison.Ordinal);
         Assert.True(modulesPos > 0 && historyPos > modulesPos && footPos > historyPos);
+
+        // 空的歷史區只留一句短提示，不教人怎麼開始（「新對話」就在上面）。
+        Assert.Contains("<p class=\"ep-history-empty-note\">暫無對話</p>", home.Html, StringComparison.Ordinal);
     }
 
     // 功能區（新對話、各功能入口）與對話歷史區是並列的兩塊，不是同一條清單：歷史區在功能區之外，才能各自配置高度、只有歷史區捲動。
