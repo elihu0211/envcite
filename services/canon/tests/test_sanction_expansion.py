@@ -46,7 +46,11 @@ def _corpus(conn: Conn, tmp_path: Path) -> None:
                     "8",
                     "違反依第二條第二項所定辦法者，處新臺幣六千元以上罰鍰。",
                 ),
-                ("9", "違反第三條規定者，處新臺幣一萬元以上罰鍰。"),
+                (
+                    "9",
+                    "違反第三條規定者，處新臺幣一萬元以上罰鍰。\r\n依前項處罰者，得令其停止作為。",
+                ),
+                ("10", "不遵行主管機關依第九條第二項所為停止作為之命令者，處一年以下有期徒刑。"),
             ],
         ),
         command,
@@ -65,13 +69,14 @@ def _ids(store: CanonStore, segmenter: Segmenter, query: str) -> list[str]:
     return [f"{h.local_id}-{h.number}" for h in hits]
 
 
-def test_a_duty_hit_brings_its_sanction_right_after_it(
+def test_a_duty_hit_brings_its_sanction_and_the_sanction_of_that_right_after_it(
     conn: Conn, tmp_path: Path, dsn: str
 ) -> None:
+    """義務（3）→ 罰鍰（9）→ 不遵行停止作為命令的刑責（10）：處罰鏈依層數緊跟在來源之後。"""
     _corpus(conn, tmp_path)
     with CanonStore.from_dsn(dsn) as store:
         segmenter = serving(store.retrieval).segmenter
-        assert _ids(store, segmenter, "排放口暢通") == ["T0000001-3", "T0000001-9"]
+        assert _ids(store, segmenter, "排放口暢通") == ["T0000001-3", "T0000001-9", "T0000001-10"]
 
 
 def test_a_command_hit_brings_the_sanction_for_its_authorizing_article(
@@ -90,7 +95,8 @@ def test_the_brought_sanction_carries_the_score_of_what_brought_it(
     with CanonStore.from_dsn(dsn) as store:
         segmenter = serving(store.retrieval).segmenter
         terms = segmenter.to_tsvector_input("排放口暢通")
-        duty, sanction = store.retrieval.search(
+        duty, *sanctions = store.retrieval.search(
             terms, tokenizer=segmenter.tokenizer_id, as_of=ON, limit=10
         )
-        assert sanction.lexical_score == duty.lexical_score > 0
+        assert len(sanctions) == 2
+        assert all(s.lexical_score == duty.lexical_score > 0 for s in sanctions)

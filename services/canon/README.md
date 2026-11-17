@@ -192,7 +192,7 @@ uv run --env-file .env canon pipeline --models models.toml --check   # 探測模
 1. **連結約束**：寫入罰則時受罰陳述必須為 `confirmed`（觸發器強制）；受罰陳述被駁回時罰則一併駁回。
 2. **待連結罰則**：`annotate.load` 時暫連不上的罰則連同相依條件存為 `annotation.held_penalty`；`canon pipeline` 於第一次接受後嘗試連結（記於 `held_penalty_link`）並再接受一次。
 3. **依賴圖與讀取**：
-   - `canon sync` 匯入後由 [`violation.py`](src/canon/violation.py) 寫入 `annotation.violation`（現行視圖 `annotation.current_violation`），區分 `duty`（直接處罰條）與 `delegated_rule`（授權命令條）。
+   - `canon sync` 匯入後由 [`violation.py`](src/canon/violation.py) 寫入 `annotation.violation`（現行視圖 `annotation.current_violation`），區分 `duty`（直接處罰條）與 `delegated_rule`（授權命令條）；`retrieval.sanction_chain` 沿它往下走到處罰的處罰（最多 3 層），混合檢索與函釋入口命中義務條時都用它展開。
    - 讀取介面：`annotation.penalty_candidates`（候選義務）、`annotation.held_penalty_state`（`linked`／`linkable`／`awaiting_duty`／`no_duty`／`no_citation`）、`annotation.duty_gap`（被引為違反但缺未駁回義務之條文）。
 4. **依查詢日解析所罰的義務**：推論與 `ListStatements` 經 `annotation.sanctions_at`（[`migrations/0005_sanctions_at.sql`](migrations/0005_sanctions_at.sql)）讀罰則，罰則條文所指的是義務條文在該日的規定（中央法規標準法 §17）。連結寫入後不改；受罰陳述該日不在有效陳述之內、其條文單元的文字已不同，且舊陳述是其文字裡唯一的義務、該日單元也恰有一個義務時，所罰改指該日的義務；其餘情形為原連結。修正前的日子仍是原連結，`Evaluate` 的行為時與裁處時各連到當時的義務。
 

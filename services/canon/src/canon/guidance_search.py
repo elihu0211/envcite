@@ -3,6 +3,9 @@
 條文寫「燃燒」、函釋寫「露天燃燒」：查詢的用語常是函釋的，不是條文的。函釋不是推論的前提
 （行政程序法第 159 條），這裡只拿它找條文：被函釋帶出的條文與兩臂的結果以名次倒數融合（k = 60，
 同 `retrieval.search_hybrid`），帶出的條文本身仍是現行條文，來源與其他命中相同。
+
+函釋帶出的若是義務條，處罰它的條（連同處罰的處罰，`retrieval.sanction_chain`）緊跟在它之後一併帶出，
+與混合檢索命中義務條時同一份展開；這些展開出來的條沒有函釋提到它，件數為 0。
 """
 
 from collections.abc import Sequence
@@ -14,8 +17,8 @@ MAX_PHRASES = 5
 MIN_PHRASE_CHARS = 2
 MAX_PHRASE_CHARS = 30
 
-#: 向資料庫要多少條函釋帶出的候選，與融合後最多比 `limit` 多回幾條。
-CANDIDATES = 10
+#: 向資料庫要多少條函釋帶出的候選（含展開出來的處罰條），與融合後最多比 `limit` 多回幾條。
+CANDIDATES = 15
 EXTRA = 5
 
 RRF_K = 60
