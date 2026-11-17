@@ -41,7 +41,8 @@ _RESOLVE = """
 _GET_ARTICLE_BY_IRI = """
     SELECT corpus.version_iri(v.id), r.jurisdiction::text, r.id_scheme::text, r.local_id,
            e.title, coalesce(corpus.article_number(p.path), p.path),
-           coalesce(v.content, ''), e.language, e.version_date::text, r.norm_kind::text,
+           coalesce(corpus.article_text(v.id), ''), e.language, e.version_date::text,
+           r.norm_kind::text,
            r.document_type, r.repealed_on::text
       FROM corpus.legal_resource AS r
       JOIN corpus.legal_expression AS e
