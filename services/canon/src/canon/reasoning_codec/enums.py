@@ -154,4 +154,5 @@ PROBLEM_KIND = {
     "measurement_mismatch": pb.PROBLEM_KIND_MEASUREMENT_MISMATCH,
     "measurement_unlabeled": pb.PROBLEM_KIND_MEASUREMENT_UNLABELED,
     "invalidated_delegation": pb.PROBLEM_KIND_INVALIDATED_DELEGATION,
+    "unrooted_delegation": pb.PROBLEM_KIND_UNROOTED_DELEGATION,
 }

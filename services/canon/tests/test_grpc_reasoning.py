@@ -23,6 +23,8 @@ from tests.grpc_support import Aborted, FakeContext
 from tests.reasoning_support import _plain_duty
 from tests.test_annotation import LAW, _doc, _duty, _limit
 from tests.test_incremental import _articles, _first, _law_v1
+from tests.test_reasoning_delegation import _corpus as delegation_corpus
+from tests.test_reasoning_delegation import _limit_statements as limit_statements
 from tests.test_reasoning_transition import _amended
 
 Stub = reasoning_pb2_grpc.ReasoningServiceStub
@@ -488,6 +490,30 @@ def test_an_invalidated_limit_comes_back_with_its_ruling(
     assert [(i.statement_id, i.ruling_no, i.invalid_from) for i in outcome.invalidated] == [
         (limit_id, "憲判字第 99 號", "2019-03-01")
     ]
+
+
+def test_a_limit_from_an_unrooted_command_points_to_its_chain(
+    conn: Conn, tmp_path: Path, reasoning_stub: Stub
+) -> None:
+    """問題指向要件；要件經 limit_sources 對到限值陳述，它的授權鏈在 delegation_bases。"""
+    delegation_corpus(conn, tmp_path, "為辦理本事項，特訂定本辦法。")
+    ids = limit_statements(conn)
+    conn.commit()
+
+    outcome = reasoning_stub.Evaluate(_case(), metadata=call_metadata()).at_decision
+
+    assert [(v.statement_id, v.verdict) for v in outcome.verdicts] == [
+        (ids["duty"], reasoning_pb2.VERDICT_VIOLATION)
+    ]
+    (condition,) = [
+        p.condition_id
+        for p in outcome.problems
+        if p.kind == reasoning_pb2.PROBLEM_KIND_UNROOTED_DELEGATION
+    ]
+    assert dict(outcome.limit_sources) == {condition: ids["limit"]}
+    (basis,) = [b for b in outcome.delegation_bases if b.statement_id == ids["limit"]]
+    assert not basis.rooted
+    assert [link.gap for link in basis.links] == [reasoning_pb2.DELEGATION_GAP_NO_CITATION]
 
 
 def test_a_missing_local_id_is_reported(reasoning_stub: Stub) -> None:
