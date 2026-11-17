@@ -26,6 +26,32 @@ public sealed class ObservabilityTests(PlatformFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    // 部署後驗證靠它確認執行中的版本：沒登入就讀得到、不能被快取留住，欄位固定叫 revision（測試環境沒有建置參數，值為 null）。
+    [Fact]
+    public async Task TheVersionEndpointIsPublicAndNeverCached()
+    {
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync(new Uri("/health/version", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        using var body = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.True(body.RootElement.TryGetProperty("revision", out _));
+    }
+
+    [Theory]
+    [InlineData("1.0.0+0123abcd", "0123abcd")]
+    [InlineData("1.0.0-rc.1+0123abcd", "0123abcd")]
+    [InlineData("1.0.0", null)]
+    [InlineData("1.0.0+", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void TheRevisionIsWhatFollowsThePlusInTheInformationalVersion(string? informationalVersion, string? expected)
+    {
+        Assert.Equal(expected, EnvCite.Platform.Api.BuildRevision.Parse(informationalVersion));
+    }
+
     [Fact]
     public void TheServiceNameDefaultsFromAppsettings()
     {

@@ -41,8 +41,12 @@ RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
 COPY proto /repo/proto
 COPY libs/dotnet /repo/libs/dotnet
 COPY services/platform/src ./src
+# 映像建自哪個 commit：由呼叫端帶入（CI 傳 commit SHA），進程式的資訊版本，GET /health/version 回它。
+# 部署後驗證靠它確認執行中的版本就是清單裡的 tag；不帶（本機建置）就沒有。放在這裡才不讓前面的層因它失效。
+ARG SOURCE_REVISION=
 RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \
-    dotnet publish src/EnvCite.Platform.Api/EnvCite.Platform.Api.csproj -c Release -a "$TARGETARCH" --no-restore -o /app
+    dotnet publish src/EnvCite.Platform.Api/EnvCite.Platform.Api.csproj -c Release -a "$TARGETARCH" --no-restore \
+      -p:SourceRevisionId="$SOURCE_REVISION" -o /app
 # bundle 吃 runtime identifier，不是 Docker 的架構名。產生 bundle 會 restore 自己的專案，需要
 # runtime pack 與 ILLink tasks，prime 腳本以同樣兩個指令取得。
 RUN --network=none --mount=type=bind,from=nuget,target=/nuget,rw \

@@ -51,6 +51,7 @@ internal static class Observability
     /// k8s 探針：<c>/health/live</c> 只回答「程序活著」，不查依賴（依賴掛了重啟程序沒有用，
     /// 還會連鎖重啟）；<c>/health/ready</c> 查資料庫，失敗回 503，k8s 把這個 pod 移出 Service。
     /// <c>/health</c> 維持原樣（等同 liveness），既有的探針設定不必改。
+    /// <c>/health/version</c> 回這個程序建自哪個 commit（<see cref="BuildRevision"/>），給部署後驗證用，不是探針。
     /// </summary>
     public static WebApplication MapPlatformHealth(this WebApplication app)
     {
@@ -58,6 +59,12 @@ internal static class Observability
         app.MapGet("/health", () => Results.Ok(new { status = "ok" })).WithName("Health").DisableHttpMetrics();
         app.MapHealthChecks("/health/live", new() { Predicate = _ => false }).DisableHttpMetrics();
         app.MapHealthChecks("/health/ready", new() { Predicate = check => check.Tags.Contains(ReadyTag) }).DisableHttpMetrics();
+        // 不能被中間的快取留住：驗證要看的是現在這個 pod，不是上一個。
+        app.MapGet("/health/version", (HttpContext context) =>
+        {
+            context.Response.Headers.CacheControl = "no-store";
+            return Results.Ok(new { revision = BuildRevision.Current });
+        }).WithName("Version").DisableHttpMetrics();
         return app;
     }
 }

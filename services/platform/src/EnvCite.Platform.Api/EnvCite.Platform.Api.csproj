@@ -44,6 +44,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="EnvCite.Platform.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="EnvCite.Platform.Data" />
     <Using Include="Microsoft.EntityFrameworkCore" />
   </ItemGroup>
