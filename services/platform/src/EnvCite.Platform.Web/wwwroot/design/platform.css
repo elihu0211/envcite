@@ -3645,38 +3645,43 @@ html[data-reveal]::view-transition-new(root) {
     transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
-/* 連線中斷的提示（ReconnectModal）：與其他對話框同一個面，從下方落定進場。框架只切換對話框上的 class，
-   哪一段文字與按鈕出現由這裡決定；先延遲一拍再出現，一閃即恢復的短暫斷線不打擾人。 */
+/* 連線中斷的提示（ReconnectModal）：右下角不擋畫面的浮起面（snackbar 那一型）。連線斷掉時畫面本來就不回應，
+   再罩一層遮罩只會讓人覺得被卡住；它只是告知，並且會自己恢復。手機貼底、左右留邊，寬螢幕靠右。
+   框架只切換這個元素上的 class，哪一段文字與按鈕出現由這裡決定；JS 先等一拍才打開，一閃即恢復的短暫斷線不打擾人。 */
 #components-reconnect-modal {
-    margin: auto;
-    inline-size: var(--ep-measure-narrow);
-    max-inline-size: calc(100% - var(--ep-space-8));
-    padding: var(--ep-space-8) var(--ep-space-6) var(--ep-space-6);
+    position: fixed;
+    inset: auto max(var(--ep-space-4), env(safe-area-inset-right)) max(var(--ep-space-4), env(safe-area-inset-bottom)) max(var(--ep-space-4), env(safe-area-inset-left));
+    z-index: 2000;
+    margin: 0;
+    inline-size: auto;
+    padding: var(--ep-space-4);
     border: 1px solid var(--ep-border-subtle);
-    border-radius: var(--ep-radius-sheet);
+    border-radius: var(--ep-radius-card);
     background: var(--ep-surface-raised);
     color: var(--ep-text);
     box-shadow: var(--ep-elevation-3);
     font: inherit;
-    text-align: center;
 }
 
 #components-reconnect-modal[open] {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--ep-space-4);
-    animation: ep-rise var(--ep-motion-reveal) var(--ep-motion-ease-settle) var(--ep-motion-slow) both;
+    gap: var(--ep-space-3) var(--ep-space-4);
+    animation: ep-rise var(--ep-motion-reveal) var(--ep-motion-ease-settle) both;
 }
 
-#components-reconnect-modal::backdrop {
-    background: var(--ep-scrim);
+@media (width >= 48rem) {
+    #components-reconnect-modal {
+        inset-inline-start: auto;
+        inline-size: var(--ep-measure-narrow);
+    }
 }
 
 .ep-reconnect-body {
     display: grid;
-    gap: var(--ep-space-4);
-    inline-size: 100%;
+    gap: var(--ep-space-3);
+    flex: 1 1 12rem;
 }
 
 .ep-reconnect-body p {

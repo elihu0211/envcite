@@ -4,9 +4,8 @@
 // - 重試用完（failed）與暫停（paused）都自動再試，退避到上限後仍持續，直到接回或重新載入；
 // - 回到分頁、網路恢復時立刻再試，不等下一輪計時；
 // - circuit 已不在（rejected）直接重新載入。
-// 按鈕只是「現在就試」的捷徑。與 .NET 範本相同的狀態處理之外，也不讓 Esc 關掉提示：連線斷掉時畫面已不能操作，
-// 關掉提示只會留下一個看似正常、實際沒有反應的頁面。瀏覽器在使用者沒有互動過時不理會 cancel 的 preventDefault，
-// 所以還要在被關掉、而連線仍未恢復時重新打開。
+// 按鈕只是「現在就試」的捷徑。提示用非模態的 show()：右下角的浮起面，不罩遮罩、不鎖焦點，使用者仍能讀畫面上的內容、
+// 複製文字；連線斷掉時畫面本來就不回應，遮罩只會讓人覺得被卡住。非模態的對話框 Esc 不會關掉它，所以不需要擋 cancel。
 const showDelay = 1500;
 const retryBaseDelay = 2000;
 const retryMaxDelay = 30000;
@@ -20,12 +19,6 @@ let retryAttempts = 0;
 let pendingAction = null;
 
 reconnectModal.addEventListener("components-reconnect-state-changed", handleReconnectStateChanged);
-reconnectModal.addEventListener("cancel", event => event.preventDefault());
-reconnectModal.addEventListener("close", () => {
-    if (!connected) {
-        reconnectModal.showModal();
-    }
-});
 
 document.getElementById("components-reconnect-button").addEventListener("click", recover);
 document.getElementById("components-resume-button").addEventListener("click", resume);
@@ -63,7 +56,7 @@ function showAfterDelay() {
     clearTimeout(showTimer);
     showTimer = setTimeout(() => {
         if (!connected && !reconnectModal.open) {
-            reconnectModal.showModal();
+            reconnectModal.show();
         }
     }, showDelay);
 }
