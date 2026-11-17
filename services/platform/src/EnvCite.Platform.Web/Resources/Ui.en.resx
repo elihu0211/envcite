@@ -249,9 +249,6 @@
   <data name="在手機安裝驗證器 App（例如 Google Authenticator、Microsoft Authenticator、1Password 或 Authy）。" xml:space="preserve">
     <value>Install an authenticator app on your phone (for example Google Authenticator, Microsoft Authenticator, 1Password or Authy).</value>
   </data>
-  <data name="在首頁問一個問題，它就會出現在這裡。" xml:space="preserve">
-    <value>Ask a question on the home page and it will appear here.</value>
-  </data>
   <data name="套用" xml:space="preserve">
     <value>Apply</value>
   </data>
@@ -983,9 +980,6 @@
   </data>
   <data name="暫無對話" xml:space="preserve">
     <value>No conversations</value>
-  </data>
-  <data name="還沒有對話" xml:space="preserve">
-    <value>No conversations yet</value>
   </data>
   <data name="還沒有成員" xml:space="preserve">
     <value>No members yet</value>
