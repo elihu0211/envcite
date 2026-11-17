@@ -19,6 +19,7 @@ from canon.law.guidance_sync.run import sync
 from canon.law.moj import Moj
 from envcite_jobkit import EndpointError, ExitCode, Policy
 from tests.sample import WATER, sample_laws, stored_snapshot
+from tests.test_corpus import _expression, _law
 
 POLICY = Policy(name="test", max_attempts=1, backoff_base_seconds=0.0)
 TODAY = date(2026, 11, 14)
@@ -375,20 +376,18 @@ def _renamed(old: str, law: int) -> list[dict[str, Any]]:
     return laws
 
 
-def test_a_nameless_row_does_not_break_the_name_table(
-    conn: Conn, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """文字缺漏的版本沒有標題：`guidance.law_name` 為它出一列空名稱（現場有一列），解析器略過。"""
-    rows = [
-        guidance_anchor._NameRow(None, None, False),
-        guidance_anchor._NameRow("水污染防治法", WATER, False),
-    ]
-    monkeypatch.setattr(guidance_anchor, "fetch", lambda *_args: rows)
+def test_a_version_without_a_title_adds_no_nameless_row_to_the_name_table(conn: Conn) -> None:
+    """文字缺漏的歷史版本沒有標題（現場 302 個）：名稱表不為它出一列，名稱是鍵，不能是空的。"""
+    law, _ = _law(conn, "Z0000001", (date(2000, 1, 1), "available"))
+    _expression(conn, law, date(1990, 1, 1), date(2000, 1, 1), title=None, status="unavailable")
+    conn.commit()
 
-    resolver = guidance_anchor.Resolver(conn)
-
-    assert resolver.resolve("水污染防治法") == guidance_anchor.Resolved(WATER, None)
-    assert resolver.resolve("不存在法") == guidance_anchor.Resolved(None, "law_unresolved")
+    assert conn.execute("SELECT count(*) FROM guidance.law_name WHERE name IS NULL").fetchone() == (
+        0,
+    )
+    assert guidance_anchor.Resolver(conn).resolve("甲法") == guidance_anchor.Resolved(
+        "Z0000001", None
+    )
 
 
 def test_an_old_name_from_the_history_resolves_to_the_law(conn: Conn, tmp_path: Path) -> None:
