@@ -1,5 +1,11 @@
 """以網址（與表單的檢索詞）對到頁面的替身，取代 `acquire.web.Http`；沒有的頁是 404。"""
 
+from collections.abc import Sequence
+from pathlib import Path
+
+import httpx
+
+from canon.acquire.web import Http
 from envcite_jobkit import ItemError
 
 
@@ -21,3 +27,31 @@ class FakeWeb:
         if key not in self.forms:
             raise ItemError(f"404 POST {url}")
         return self.forms[key]
+
+
+class Served:
+    """以網址對到檔案的傳輸替身：換掉 `Http` 的網路，下載走完整的 httpx 路徑。
+
+    `failures` 依序決定前幾次請求回的狀態碼，之後照常回檔案；沒有的網址是 404。檔案在請求時
+    才讀，測試可以先建物件、後寫檔。
+    """
+
+    def __init__(self, files: dict[str, Path], failures: Sequence[int] = ()) -> None:
+        self.files = files
+        self.failures = list(failures)
+        #: 每次請求的網址，依次序。
+        self.requested: list[str] = []
+
+    def http(self) -> Http:
+        """換上這個傳輸、不設禮貌間隔的客戶端。"""
+        return Http(0.0, transport=httpx.MockTransport(self._respond))
+
+    def _respond(self, request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        self.requested.append(url)
+        if self.failures:
+            return httpx.Response(self.failures.pop(0))
+        path = self.files.get(url)
+        if path is None:
+            return httpx.Response(404)
+        return httpx.Response(200, content=path.read_bytes())

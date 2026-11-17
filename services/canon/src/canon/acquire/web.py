@@ -6,26 +6,63 @@
 """
 
 import hashlib
+import logging
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import httpx
 
 from canon.net import USER_AGENT, tls_context
-from envcite_jobkit import EndpointError, ItemError, raise_for_status
+from envcite_jobkit import EndpointError, ItemError, Policy, backoff_delay, raise_for_status
+
+log = logging.getLogger(__name__)
+
+
+class EmptyResponse(ItemError):
+    """回應成功卻沒有內容。呼叫端決定這算來源的錯還是資料的錯。"""
+
+
+def retrying[T](
+    fn: Callable[[], T], policy: Policy, sleep: Callable[[float], None] = time.sleep
+) -> T:
+    """端點問題依 `policy` 退避重試，用盡則拋出；其餘失敗（含 4xx）直接拋出。"""
+    for attempt in range(1, policy.max_attempts + 1):
+        try:
+            return fn()
+        except EndpointError as e:
+            if attempt == policy.max_attempts:
+                raise
+            delay = backoff_delay(
+                attempt, base=policy.backoff_base_seconds, cap=policy.backoff_max_seconds
+            )
+            log.warning("%s，%.0f 秒後重試（第 %d 次）", e, delay, attempt)
+            sleep(delay)
+    raise AssertionError("unreachable")  # pragma: no cover
 
 
 class Http:
     """循序、帶禮貌間隔與身分的 HTTP。失敗依 jobkit 分類：端點問題可重試，其餘隔離或致命。"""
 
-    def __init__(self, pause: float, *, legacy_tls: bool = False) -> None:
-        """`legacy_tls`：站台不支援安全重新協商（RFC 5746）時才開；憑證照常驗證。"""
+    def __init__(
+        self,
+        pause: float,
+        *,
+        legacy_tls: bool = False,
+        timeout: float = 60.0,
+        transport: httpx.BaseTransport | None = None,
+    ) -> None:
+        """`legacy_tls`：站台不支援安全重新協商（RFC 5746）時才開；憑證照常驗證。
+
+        `timeout` 是每一次連線與讀取的上限，不是整個下載的上限；`transport` 供測試換掉網路。
+        """
         self._pause = pause
         self._last = 0.0
         self._client = httpx.Client(
             headers={"User-Agent": USER_AGENT},
             verify=tls_context(legacy=legacy_tls),
-            timeout=60.0,
+            timeout=timeout,
+            transport=transport,
             follow_redirects=True,
         )
 
@@ -42,7 +79,7 @@ class Http:
         return self._request("POST", url, data=fields).content.decode("utf-8-sig")
 
     def file(self, url: str, dest: Path) -> tuple[bytes, int]:
-        """GET 並串流存到 `dest`；回傳（SHA-256，位元組數）。回應是空的拋 `ItemError`。"""
+        """GET 並串流存到 `dest`；回傳（SHA-256，位元組數）。回應是空的拋 `EmptyResponse`。"""
         self._throttle()
         h = hashlib.sha256()
         size = 0
@@ -58,7 +95,7 @@ class Http:
         except httpx.HTTPError as e:
             raise EndpointError(f"{url}: {e}") from e
         if size == 0:
-            raise ItemError(f"{url}: empty response")
+            raise EmptyResponse(f"{url}: empty response")
         return h.digest(), size
 
     def _throttle(self) -> None:

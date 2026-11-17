@@ -1,17 +1,12 @@
 """The acquisition engine, driven through the real MOJ reader.
 
-Files are served over `file://`, so the engine downloads, hashes and stores them
-exactly as it would from the API, without the network.
+Files are served by a stand-in transport, so the engine downloads, hashes and stores them
+through the real HTTP client exactly as it would from the API, without the network.
 """
 
-import http.client
 import json
-import ssl
-import urllib.error
-import urllib.request
 import zipfile
 from datetime import date
-from email.message import Message
 from pathlib import Path
 
 import pytest
@@ -20,15 +15,17 @@ from canon.acquire import cli
 from canon.acquire.engine import Feed, InvalidSnapshot, Outcome, acquire
 from canon.db import Conn
 from canon.law.moj import Moj
-from canon.net import HttpStatus
-from envcite_jobkit import ExitCode, Policy
+from envcite_jobkit import ExitCode, ItemError, Policy
+from tests.fake_web import Served
+
+FEED_URL = "https://law.test/moj_law.zip"
 
 
 class LocalMoj(Moj):
-    """The MOJ source, reading its law feed from a local file."""
+    """The MOJ source, reading its law feed from a stand-in address."""
 
-    def __init__(self, path: Path) -> None:
-        self.feeds = (Feed("moj_law", path.as_uri()),)
+    def __init__(self) -> None:
+        self.feeds = (Feed("moj_law", FEED_URL),)
 
 
 def _law(pcode: str, name: str = "甲法") -> dict[str, object]:
@@ -52,8 +49,9 @@ def _publish(path: Path, update: str, laws: list[dict[str, object]]) -> Path:
 
 
 def _run(tmp_path: Path, conn: Conn, update: str, laws: list[dict[str, object]]) -> Outcome:
-    source = LocalMoj(_publish(tmp_path / "feed.zip", update, laws))
-    (outcome,) = acquire(source, tmp_path / "snapshots", conn)
+    feed = _publish(tmp_path / "feed.zip", update, laws)
+    http = Served({FEED_URL: feed}).http()
+    (outcome,) = acquire(LocalMoj(), tmp_path / "snapshots", conn, http=http)
     return outcome
 
 
@@ -139,8 +137,10 @@ def test_invalid_data_exits_with_the_code_the_cronjob_does_not_retry(
     tmp_path: Path, dsn: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The deploy repo's podFailurePolicy fails the Job outright on exit code 2."""
-    source = LocalMoj(_publish(tmp_path / "feed.zip", "not a date", [_law("T0000001")]))
-    monkeypatch.setitem(cli.SOURCES, "moj", source)
+    feed = _publish(tmp_path / "feed.zip", "not a date", [_law("T0000001")])
+    http = Served({FEED_URL: feed}).http()
+    monkeypatch.setitem(cli.SOURCES, "moj", LocalMoj())
+    monkeypatch.setattr(cli, "acquire", lambda *args: acquire(*args, http=http))
     monkeypatch.setenv("ENVCITE_CANON_DSN", dsn)
     monkeypatch.setenv("ENVCITE_CANON_SNAPSHOT_DIR", str(tmp_path / "snapshots"))
     monkeypatch.setattr("sys.argv", ["canon acquire", "moj"])
@@ -155,47 +155,35 @@ def test_invalid_data_exits_with_the_code_the_cronjob_does_not_retry(
 NO_WAIT = Policy(max_attempts=3, backoff_base_seconds=0.0)
 
 
-def _failing_first(monkeypatch: pytest.MonkeyPatch, status: int, times: int) -> list[str]:
-    """前 `times` 次下載回 `status`，之後照常讀檔；回傳每次嘗試的網址。"""
-    real = urllib.request.urlopen
-    tried: list[str] = []
-
-    def urlopen(
-        request: urllib.request.Request, *, timeout: float, context: ssl.SSLContext | None = None
-    ) -> http.client.HTTPResponse:
-        tried.append(request.full_url)
-        if len(tried) <= times:
-            raise urllib.error.HTTPError(request.full_url, status, "x", Message(), None)
-        response: http.client.HTTPResponse = real(request, timeout=timeout, context=context)
-        return response
-
-    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
-    return tried
+def _served_after(tmp_path: Path, failures: list[int]) -> Served:
+    feed = _publish(tmp_path / "feed.zip", "2026/9/18 上午 12:00:00", [_law("A0000001")])
+    return Served({FEED_URL: feed}, failures)
 
 
-def test_a_server_error_on_download_is_retried(
-    tmp_path: Path, conn: Conn, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    tried = _failing_first(monkeypatch, 500, times=2)
-    source = LocalMoj(
-        _publish(tmp_path / "feed.zip", "2026/9/18 上午 12:00:00", [_law("A0000001")])
-    )
+def test_a_server_error_on_download_is_retried(tmp_path: Path, conn: Conn) -> None:
+    served = _served_after(tmp_path, [500, 500])
 
-    (outcome,) = acquire(source, tmp_path / "snapshots", conn, NO_WAIT)
+    (outcome,) = acquire(LocalMoj(), tmp_path / "snapshots", conn, NO_WAIT, http=served.http())
 
     assert outcome.snapshot_id is not None
-    assert len(tried) == 3
+    assert len(served.requested) == 3
 
 
-def test_a_client_error_on_download_is_not_retried(
-    tmp_path: Path, conn: Conn, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    tried = _failing_first(monkeypatch, 404, times=1)
-    source = LocalMoj(
-        _publish(tmp_path / "feed.zip", "2026/9/18 上午 12:00:00", [_law("A0000001")])
-    )
+def test_a_client_error_on_download_is_not_retried(tmp_path: Path, conn: Conn) -> None:
+    served = _served_after(tmp_path, [404])
 
-    with pytest.raises(HttpStatus):
-        acquire(source, tmp_path / "snapshots", conn, NO_WAIT)
+    with pytest.raises(ItemError):
+        acquire(LocalMoj(), tmp_path / "snapshots", conn, NO_WAIT, http=served.http())
 
-    assert len(tried) == 1
+    assert len(served.requested) == 1
+
+
+def test_an_empty_download_is_invalid_and_not_retried(tmp_path: Path, conn: Conn) -> None:
+    empty = tmp_path / "empty.zip"
+    empty.write_bytes(b"")
+    served = Served({FEED_URL: empty})
+
+    with pytest.raises(InvalidSnapshot):
+        acquire(LocalMoj(), tmp_path / "snapshots", conn, NO_WAIT, http=served.http())
+
+    assert len(served.requested) == 1

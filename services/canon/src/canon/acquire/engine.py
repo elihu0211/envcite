@@ -6,27 +6,24 @@
 `envcite_jobkit` 政策的次數與退避重試。
 """
 
-import hashlib
 import logging
 import os
-import ssl
 import time
-import urllib.error
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date
-from http.client import HTTPException
 from pathlib import Path
 from typing import Protocol
 
+from canon.acquire.web import EmptyResponse, Http, retrying
 from canon.db import Conn, scalar
 from canon.exit_codes import Unretryable
-from canon.net import HttpStatus, endpoint, urlopen
-from envcite_jobkit import Policy, backoff_delay
+from envcite_jobkit import Policy
 
 log = logging.getLogger(__name__)
 
-_CHUNK = 1 << 20
+#: 全量檔很大；每次連線與讀取的上限（秒），不是整個下載的上限。
+DOWNLOAD_TIMEOUT = 300.0
 
 
 class InvalidSnapshot(Unretryable, ValueError):
@@ -70,10 +67,6 @@ class Source(Protocol):
     attribution: str
     feeds: Sequence[Feed]
 
-    def tls(self) -> ssl.SSLContext:
-        """下載這個來源用的 TLS 設定；各站對憑證的要求不同。"""
-        ...
-
     def read(self, path: Path) -> Contents:
         """解析已下載的檔案；內容不合預期時拋出 `InvalidSnapshot`。"""
         ...
@@ -93,13 +86,21 @@ def acquire(
     root: Path,
     conn: Conn,
     policy: Policy | None = None,
+    *,
+    http: Http | None = None,
 ) -> list[Outcome]:
     """逐一取得來源的每個全量檔並存成快照；回傳各檔的結果，依 `source.feeds` 的次序。
 
-    一個 feed 一個交易：後面的 feed 失敗時，前面已存的快照保留。
+    一個 feed 一個交易：後面的 feed 失敗時，前面已存的快照保留。`http` 由呼叫端擁有（測試
+    換掉網路）；沒給就自建並於結束時關閉。
     """
     policy = policy or Policy()
-    return [_acquire_feed(source, feed, root, conn, policy) for feed in source.feeds]
+    client = http or Http(0.0, timeout=DOWNLOAD_TIMEOUT)
+    try:
+        return [_acquire_feed(source, feed, root, conn, policy, client) for feed in source.feeds]
+    finally:
+        if http is None:
+            client.close()
 
 
 def _acquire_feed(
@@ -108,11 +109,12 @@ def _acquire_feed(
     root: Path,
     conn: Conn,
     policy: Policy,
+    http: Http,
 ) -> Outcome:
     partial = root / ".partial" / feed.name
     partial.parent.mkdir(parents=True, exist_ok=True)
     try:
-        digest, size = download(feed.url, partial, source.tls(), policy)
+        digest, size = _download(http, feed.url, partial, policy)
         if _known(conn, feed.name, digest):
             log.info("%s: unchanged (%s)", feed.name, digest.hex()[:12])
             return Outcome(feed.name, None)
@@ -146,38 +148,14 @@ def _acquire_feed(
     return Outcome(feed.name, snapshot_id)
 
 
-def download(url: str, dest: Path, context: ssl.SSLContext, policy: Policy) -> tuple[bytes, int]:
+def _download(
+    http: Http, url: str, dest: Path, policy: Policy, sleep: Callable[[float], None] = time.sleep
+) -> tuple[bytes, int]:
     """端點問題重試到 `policy.max_attempts` 次；其餘失敗（含 4xx）直接拋出。"""
-    for attempt in range(1, policy.max_attempts + 1):
-        try:
-            return _fetch(url, dest, context)
-        except HttpStatus as e:
-            if not endpoint(e):
-                raise
-            error: Exception = e
-        except (urllib.error.URLError, TimeoutError, ConnectionError, HTTPException) as e:
-            error = e
-        if attempt == policy.max_attempts:
-            raise error
-        delay = backoff_delay(
-            attempt, base=policy.backoff_base_seconds, cap=policy.backoff_max_seconds
-        )
-        log.warning("%s: %s，%.0f 秒後重試（第 %d 次）", url, error, delay, attempt)
-        time.sleep(delay)
-    raise AssertionError("unreachable")  # pragma: no cover
-
-
-def _fetch(url: str, dest: Path, context: ssl.SSLContext) -> tuple[bytes, int]:
-    h = hashlib.sha256()
-    size = 0
-    with urlopen(url, timeout=300, context=context) as r, dest.open("wb") as f:
-        while chunk := r.read(_CHUNK):
-            h.update(chunk)
-            f.write(chunk)
-            size += len(chunk)
-    if size == 0:
-        raise InvalidSnapshot(f"{url}: empty response")
-    return h.digest(), size
+    try:
+        return retrying(lambda: http.file(url, dest), policy, sleep)
+    except EmptyResponse as e:
+        raise InvalidSnapshot(str(e)) from e
 
 
 def _known(conn: Conn, feed: str, digest: bytes) -> bool:
