@@ -28,6 +28,12 @@ public sealed partial class PortalLayout(IPortalAccount account)
             ? CollectNavItems(tenant.Identifier, _user)
             : [];
 
+    /// <summary>帳號選單裡的系統設定項目：依登入者角色由各來源決定出不出現。</summary>
+    private IReadOnlyList<PortalShell.NavItem> SettingsItems =>
+        account.CurrentTenant is { } tenant && _user is not null
+            ? CollectSettingsItems(tenant.Identifier, _user)
+            : [];
+
     private IReadOnlyList<PortalShell.MenuItem> MenuItems =>
         account.CurrentTenant is { } tenant ? MenuItemsOf(tenant.Identifier) : [];
 

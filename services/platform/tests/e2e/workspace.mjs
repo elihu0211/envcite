@@ -361,9 +361,18 @@ const scenarios = {
             if (JSON.stringify(actual.foot) !== JSON.stringify(expected.foot)) throw new Error(`${where}：左下角帳號列 ${JSON.stringify(expected.foot)} → ${JSON.stringify(actual.foot)}`);
         };
         // 換到 path 後等頁面穩定（動畫收尾、串流結束），再比對外殼，並檢查沒有缺屬性的畫面與外殼元素的版面位移。
+        // 業務模塊與對話紀錄在側欄；成員、帳號這類系統設定收在帳號選單（popover），要先打開才點得到。
         const visit = async (name, path, expected) => {
-            await page.click(`a[href='${path}']:is(.ep-side-link, .ep-history-filter)`);
+            const sideLink = page.locator(`a[href='${path}']:is(.ep-side-link, .ep-history-filter)`);
+            if ((await sideLink.count()) > 0) {
+                await sideLink.click();
+            } else {
+                const menu = page.locator("#ep-account-menu");
+                if (!(await menu.evaluate((el) => el.matches(":popover-open")))) await page.click(".ep-portal-user");
+                await menu.locator(`a.ep-menu-item[href='${path}']`).click();
+            }
             await until(`應換到 ${path}`, async () => new URL(page.url()).pathname === path);
+            await page.evaluate(() => document.getElementById("ep-account-menu")?.hidePopover?.());
             await page.waitForTimeout(600);
             sameShell(expected, await geometry(), name);
             const { shifts, missing } = await page.evaluate(() => ({ shifts: window.__shifts, missing: window.__missing }));

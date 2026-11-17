@@ -2,7 +2,8 @@
    左側為全高導覽欄，Claude 式的純列（頂部為品牌與收合控制；功能區固定在上：新對話與各功能入口，沒有框、沒有分隔線；
    其下是最近的對話：一張平面的清單，占剩下的高度、只有它自己捲動，沒有篩選框也沒有日期分組；左下角為帳號選單並向上彈出）；
    右側為主工作區舞台（精簡上下文頂欄與置中問答／內容區）。還沒登入或還有強制步驟時，只有頂欄。
-   側欄每項是圖示加文字：桌機可收成窄欄、手機為全高滑出抽屜（forms.js 切換）。
+   側欄每項是圖示加文字：桌機可收成窄欄、手機為全高滑出抽屜（forms.js 切換）；側欄只放業務模塊。
+   租戶的系統設定（成員、目錄同步、帳號與組織）依角色收在帳號選單，排在個人項目之後、以細線隔開。
    帳號與對話選單均使用瀏覽器原生的 popover（點外面或按 Esc 就關、疊在最上層、不需要 JavaScript）。
    PortalLayout／WorkspaceLayout 依登入狀態填入；元件展示頁用假資料填入。 *@
 @inherits NavigableComponentBase
@@ -130,36 +131,7 @@
                             </span>
                             <span class="ep-portal-user-icon" aria-hidden="true"><NavIcon Path="@Icons.Material.Outlined.Settings" /></span>
                         </button>
-                        <div id="ep-account-menu" class="ep-menu" popover>
-                            <p class="ep-menu-who">
-                                @if (!string.IsNullOrEmpty(UserDisplayName) && !string.Equals(UserDisplayName, UserEmail, StringComparison.Ordinal))
-                                {
-                                    <strong>@UserDisplayName</strong>
-                                }
-                                <span>@UserEmail</span>
-                                @if (!string.IsNullOrEmpty(RoleLabel))
-                                {
-                                    <span class="ep-secondary">@RoleLabel</span>
-                                }
-                            </p>
-                            <nav aria-label="@L["帳號選單"]">
-                                @foreach (var item in MenuItems)
-                                {
-                                    <a class="ep-menu-item" href="@item.Href">@item.Label</a>
-                                }
-                            </nav>
-                            @if (!string.IsNullOrEmpty(LanguageAction))
-                            {
-                                <LanguageSwitch Action="@LanguageAction" />
-                            }
-                            @if (!string.IsNullOrEmpty(LogoutAction))
-                            {
-                                <form method="post" action="@LogoutAction">
-                                    <AntiforgeryToken />
-                                    <button type="submit" class="ep-menu-item">@L["登出"]</button>
-                                </form>
-                            }
-                        </div>
+                        @AccountMenuPanel
                     </div>
                 }
             </aside>
@@ -229,36 +201,7 @@
                         @AvatarText
                     }
                 </button>
-                <div id="ep-account-menu" class="ep-menu" popover>
-                    <p class="ep-menu-who">
-                        @if (!string.IsNullOrEmpty(UserDisplayName) && !string.Equals(UserDisplayName, UserEmail, StringComparison.Ordinal))
-                        {
-                            <strong>@UserDisplayName</strong>
-                        }
-                        <span>@UserEmail</span>
-                        @if (!string.IsNullOrEmpty(RoleLabel))
-                        {
-                            <span class="ep-secondary">@RoleLabel</span>
-                        }
-                    </p>
-                    <nav aria-label="@L["帳號選單"]">
-                        @foreach (var item in MenuItems)
-                        {
-                            <a class="ep-menu-item" href="@item.Href">@item.Label</a>
-                        }
-                    </nav>
-                    @if (!string.IsNullOrEmpty(LanguageAction))
-                    {
-                        <LanguageSwitch Action="@LanguageAction" />
-                    }
-                    @if (!string.IsNullOrEmpty(LogoutAction))
-                    {
-                        <form method="post" action="@LogoutAction">
-                            <AntiforgeryToken />
-                            <button type="submit" class="ep-menu-item">@L["登出"]</button>
-                        </form>
-                    }
-                </div>
+                @AccountMenuPanel
             }
             else
             {
@@ -284,6 +227,48 @@
 </div>
 
 @code {
+    /// <summary>帳號選單：兩種版面（側欄左下角、頂欄頭像）共用同一份，彈出的是同一個 popover。</summary>
+    private RenderFragment AccountMenuPanel => @<div id="ep-account-menu" class="ep-menu" popover>
+        <p class="ep-menu-who">
+            @if (!string.IsNullOrEmpty(UserDisplayName) && !string.Equals(UserDisplayName, UserEmail, StringComparison.Ordinal))
+            {
+                <strong>@UserDisplayName</strong>
+            }
+            <span>@UserEmail</span>
+            @if (!string.IsNullOrEmpty(RoleLabel))
+            {
+                <span class="ep-secondary">@RoleLabel</span>
+            }
+        </p>
+        <nav aria-label="@L["帳號選單"]">
+            @foreach (var item in MenuItems)
+            {
+                <a class="ep-menu-item" href="@item.Href" aria-current="@CurrentOf(item.Href)">@item.Label</a>
+            }
+        </nav>
+        @* 系統設定：項目由各來源依角色決定，沒有任何項目就不畫。 *@
+        @foreach (var group in SettingsItems.GroupBy(i => i.Group))
+        {
+            <nav class="ep-menu-settings" aria-label="@group.Key">
+                @foreach (var item in group)
+                {
+                    <a class="ep-menu-item" href="@item.Href" aria-current="@CurrentOf(item.Href)">@item.Label</a>
+                }
+            </nav>
+        }
+        @if (!string.IsNullOrEmpty(LanguageAction))
+        {
+            <LanguageSwitch Action="@LanguageAction" />
+        }
+        @if (!string.IsNullOrEmpty(LogoutAction))
+        {
+            <form method="post" action="@LogoutAction">
+                <AntiforgeryToken />
+                <button type="submit" class="ep-menu-item">@L["登出"]</button>
+            </form>
+        }
+    </div>;
+
     public sealed record MenuItem(string Href, string Label);
 
     /// <param name="Id">選單的元素 Id 與錨點名稱用它區分項目。</param>
@@ -349,10 +334,29 @@
     [Parameter]
     public IReadOnlyList<MenuItem> MenuItems { get; set; } = [];
 
+    /// <summary>側欄的業務模塊。</summary>
     [Parameter]
     public IReadOnlyList<NavItem> NavItems { get; set; } = [];
 
+    /// <summary>帳號選單裡的系統設定項目（成員、目錄同步、帳號與組織）；依登入者角色已經過濾，空就不畫。</summary>
+    [Parameter]
+    public IReadOnlyList<NavItem> SettingsItems { get; set; } = [];
+
     private bool HasSideNav => ShowMenu && NavItems.Count > 0;
+
+    /// <summary>選單項目指向目前頁（或它底下的頁）時標 <c>aria-current</c>，其餘不輸出屬性。</summary>
+    private string? CurrentOf(string href)
+    {
+        if (!Uri.TryCreate(Navigation.Uri, UriKind.Absolute, out var current))
+            return null;
+
+        var path = NormalizePath(current.AbsolutePath);
+        var target = NormalizePath(href);
+        return string.Equals(path, target, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith(target + "/", StringComparison.OrdinalIgnoreCase)
+            ? "page"
+            : null;
+    }
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
@@ -376,7 +380,7 @@
                 return item.Label;
         }
 
-        var prefixMatch = NavItems
+        var prefixMatch = NavItems.Concat(SettingsItems)
             .Where(i => !i.Exact && path.StartsWith(NormalizePath(i.Href), StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(i => i.Href.Length)
             .FirstOrDefault();

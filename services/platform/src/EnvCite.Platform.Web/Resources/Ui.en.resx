@@ -375,6 +375,9 @@
   <data name="帳號選單" xml:space="preserve">
     <value>Account menu</value>
   </data>
+  <data name="系統設定" xml:space="preserve">
+    <value>System settings</value>
+  </data>
   <data name="平台" xml:space="preserve">
     <value>Platform</value>
   </data>
