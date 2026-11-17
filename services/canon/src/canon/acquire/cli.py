@@ -20,7 +20,6 @@ SOURCES: dict[str, Source] = {s.name: s for s in (Moj(),)}
 
 def main() -> None:
     """`canon acquire <來源>`：取得該來源的全量檔並存成快照；資料不合預期以結束碼 2 結束。"""
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="canon acquire")
     parser.add_argument("source", choices=sorted(SOURCES))
     args = parser.parse_args()

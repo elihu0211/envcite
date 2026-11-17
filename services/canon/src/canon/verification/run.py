@@ -190,7 +190,6 @@ def main() -> None:
     `--check` 只確認設定檔與每個模型都通、沒有別名，不連資料庫。另一個流程持有鎖時不處理，
     直接結束；引數或設定檔不合以 `SystemExit` 結束。
     """
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="canon pipeline")
     parser.add_argument("--law", action="append", default=[], help="法規的 pcode，可重複")
     parser.add_argument(

@@ -1,7 +1,6 @@
 """`canon history` 指令列。"""
 
 import argparse
-import logging
 
 import psycopg
 
@@ -21,7 +20,6 @@ def main() -> None:
 
     步驟 `acquire` 只取得各版存成快照，`import` 只回推並寫入語料，預設的 `sync` 兩者都跑。
     """
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="canon history")
     parser.add_argument("source", choices=sorted(SOURCES))
     parser.add_argument("step", nargs="?", default="sync", choices=("sync", "acquire", "import"))

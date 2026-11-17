@@ -235,7 +235,6 @@ def _titles(conn: Conn) -> dict[str, str | None]:
 
 def main() -> None:
     """`canon ruling`：`load` 載入人寫的文件，`fetch` 自憲法法庭網站取得。"""
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="canon ruling")
     commands = parser.add_subparsers(dest="command", required=True)
     load_cmd = commands.add_parser("load", help="載入違憲失效裁判文件（JSON）")

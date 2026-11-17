@@ -2,8 +2,10 @@
 
 import importlib
 import json
+import logging
 import sys
 import tomllib
+import types
 from collections.abc import Callable
 from pathlib import Path
 
@@ -60,6 +62,25 @@ def test_without_a_subcommand_it_lists_them_and_exits_with_the_usage_code(
     assert raised.value.code == EXIT_INVALID
     listed = capsys.readouterr().err
     assert all(name in listed for name in SUBCOMMANDS)
+
+
+def test_the_dispatcher_configures_logging_once_before_the_subcommand_runs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """日誌格式是與日誌管線的契約：只在處理程序的入口設定一次，子指令不再各設各的。"""
+    events: list[object] = []
+    monkeypatch.setattr(logging, "basicConfig", lambda **kwargs: events.append(kwargs))
+    monkeypatch.setitem(
+        sys.modules, "canon_fake_command", types.SimpleNamespace(main=lambda: events.append("ran"))
+    )
+    monkeypatch.setitem(SUBCOMMANDS, "fake", ("canon_fake_command", "測試用"))
+
+    _run(monkeypatch, "fake")
+
+    assert events == [
+        {"level": logging.INFO, "format": "%(asctime)s %(levelname)s %(message)s"},
+        "ran",
+    ]
 
 
 def test_an_unknown_subcommand_exits_with_the_usage_code(

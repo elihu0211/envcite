@@ -20,7 +20,6 @@ def main() -> None:
 
     沒有子指令。寫入驗證紀錄與確認狀態，結果以日誌回報。
     """
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="canon verify")
     parser.add_argument("--require", default=DEFAULT_REQUIRED, help="必要的驗證方法，逗號分隔")
     args = parser.parse_args()
