@@ -2727,6 +2727,27 @@
   <data name="點節點看授權條文依據；雙擊以它為中心重建圖譜。" xml:space="preserve">
     <value>Click a node to see the authorizing articles; double-click to rebuild the graph around it.</value>
   </data>
+  <data name="從這裡開始：" xml:space="preserve">
+    <value>Start here:</value>
+  </data>
+  <data name="找一部法規，看它授權什麼" xml:space="preserve">
+    <value>Find a law and see what it delegates</value>
+  </data>
+  <data name="看哪些命令被宣告違憲失效" xml:space="preserve">
+    <value>See which regulations were declared unconstitutional</value>
+  </data>
+  <data name="全部展開" xml:space="preserve">
+    <value>Expand all</value>
+  </data>
+  <data name="收回法律層" xml:space="preserve">
+    <value>Back to statutes only</value>
+  </data>
+  <data name="找一部法規" xml:space="preserve">
+    <value>Find a law</value>
+  </data>
+  <data name="輸入名稱；按 Enter 展開它授權的命令" xml:space="preserve">
+    <value>Type a name; press Enter to open what it delegates to</value>
+  </data>
   <data name="怎麼讀" xml:space="preserve">
     <value>How to read</value>
   </data>

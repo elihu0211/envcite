@@ -199,12 +199,22 @@ else
                                                     <path d="M4 4L12 12M12 4L4 12" stroke-linecap="round" />
                                                 </svg>
                                             </button>
+                                            @* 起手問題：不知道從哪裡看起時的三個入口。只在圖分層時由腳本打開（節點少、有焦點時沒有東西可逐層展開）。 *@
+                                            <div class="ep-graph-starters" data-graph-starters="true" hidden>
+                                                <span class="ep-graph-starters-label">@L["從這裡開始："]</span>
+                                                <div class="ep-chip-row">
+                                                    <button type="button" class="ep-preset-chip" data-graph-starter="search">@L["找一部法規，看它授權什麼"]</button>
+                                                    <button type="button" class="ep-preset-chip" data-graph-starter="invalid" aria-pressed="false" hidden>@L["看哪些命令被宣告違憲失效"]</button>
+                                                    <button type="button" class="ep-preset-chip" data-graph-starter="expand-all" aria-pressed="false"
+                                                            data-label-collapsed="@L["全部展開"]" data-label-expanded="@L["收回法律層"]">@L["全部展開"]</button>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         @* 首屏只留搜尋與三個入口；排版、授權條號、全螢幕收進「檢視選項」。 *@
                                         <div class="ep-graph-toolbar">
                                             <input type="search" class="ep-input ep-graph-search" data-graph-search="true"
-                                                   placeholder="@L["篩選法規"]" aria-label="@L["篩選法規"]" />
+                                                   placeholder="@L["找一部法規"]" aria-label="@L["找一部法規"]" title="@L["輸入名稱；按 Enter 展開它授權的命令"]" />
                                             <div class="ep-graph-toolbar-end">
                                                 <button type="button" class="ep-btn ep-btn-quiet" data-graph-guide-toggle="true"
                                                         aria-controls="ep-graph-guide" aria-expanded="true">@L["怎麼讀"]</button>

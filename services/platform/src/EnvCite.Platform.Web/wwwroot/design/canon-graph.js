@@ -541,6 +541,7 @@
     const disclosureEdges = [];
     const collapsedIds = new Set(); // 下位法規還收著的節點：旁邊有展開膠囊，不再另畫「+N 部」連結
     const revealParent = new Map(); // 節點 → 第一個授權它的上位法；搜尋時沿著它找出要展開哪幾顆膠囊
+    const allDisclosureIds = []; // 圖上所有可能的「授權 N 部子法規」膠囊（含還沒露出的）；「全部展開」用
     if (useDisclosure) {
       const childrenOf = (id) => {
         const seen = new Set();
@@ -573,6 +574,10 @@
           roots.push(n.id);
           walkFrom(n.id);
         }
+      });
+      nodes.forEach((n) => {
+        const tier = Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1;
+        if (tier < 3 && childrenOf(n.id).length > 0) allDisclosureIds.push(`${DISCLOSURE_PREFIX}${n.id}`);
       });
 
       const reachable = new Set(roots);
@@ -655,7 +660,16 @@
       return path;
     };
 
-    return { visibleNodes, visibleEdges, groupMembership, childGroupMap, collapsedIds, revealPath };
+    return {
+      visibleNodes,
+      visibleEdges,
+      groupMembership,
+      childGroupMap,
+      collapsedIds,
+      revealPath,
+      disclosing: useDisclosure,
+      allDisclosureIds,
+    };
   }
 
   function computeStufenbauPositions(nodes, edges, containerWidth, labels, collapsedIds = new Set()) {
@@ -1762,9 +1776,34 @@
       host.querySelectorAll('[data-graph-filter-tier="invalid"]').forEach((btn) => {
         btn.setAttribute("aria-pressed", invalidSpotlight ? "true" : "false");
       });
+      syncStarterButtons();
     }
 
-    function applyInvalidSpotlight() {
+    // 違憲失效的節點可能還收在膠囊後面：先把通往它們的膠囊與分組展開，不然打亮的只是眼前看得到的那幾個，
+    // 其餘全被淡化，使用者會以為「沒有違憲失效」。
+    async function revealInvalidNodes() {
+      const model = visibleModelCache;
+      if (!model) return;
+      let firstRevealed = null;
+      let added = 0;
+      nodes.forEach((n) => {
+        if (!(n.invalidationCount > 0) || nodeDatumOf(n.id)) return;
+        [...model.revealPath(n.id), model.groupMembership.get(n.id)].filter(Boolean).forEach((id) => {
+          if (expandedGroups.has(id)) return;
+          expandedGroups.add(id);
+          added += 1;
+        });
+        if (!firstRevealed) firstRevealed = n.id;
+      });
+      if (added === 0) return;
+      await whileRelayouting(async () => {
+        graph.setData(computeCurrentGraphData());
+        await graph.render();
+        await applyLayout(currentLayout, firstRevealed);
+      });
+    }
+
+    async function applyInvalidSpotlight({ reveal = true } = {}) {
       invalidSpotlight = !invalidSpotlight;
       syncFilterButtons();
       if (!invalidSpotlight) {
@@ -1775,6 +1814,8 @@
         }
         return;
       }
+
+      if (reveal) await revealInvalidNodes();
 
       const matchedIds = new Set();
       graph.getNodeData().forEach((n) => {
@@ -1820,8 +1861,9 @@
           renderInspector(inspectorEl, nodes.find((n) => n.focus) || null, nodes, edges, labels, inspectorCallbacks);
         }
         if (invalidSpotlight) {
+          // 層級是使用者剛剛自己挑的，這時不替他展開膠囊，只在畫得出來的節點上重新打亮。
           invalidSpotlight = false;
-          applyInvalidSpotlight();
+          await applyInvalidSpotlight({ reveal: false });
         }
       } catch {
         // 圖已卸載
@@ -1957,6 +1999,61 @@
         edgeToggle.setAttribute("aria-pressed", showEdgeLabels ? "true" : "false");
       }
       renderSwimlanes();
+      syncStarterButtons();
+    }
+
+    // 起手問題：給不知道從哪裡看起的人三個入口。圖沒有分層（節點少、有焦點、使用者自己關了層級）時
+    // 沒有東西可以逐層展開，整排收起來。
+    const startersEl = host ? host.querySelector("[data-graph-starters]") : null;
+
+    function allDisclosureExpanded() {
+      const ids = visibleModelCache?.allDisclosureIds || [];
+      return ids.length > 0 && ids.every((id) => expandedGroups.has(id));
+    }
+
+    function syncStarterButtons() {
+      if (!startersEl) return;
+      startersEl.hidden = !visibleModelCache?.disclosing;
+      const invalidBtn = startersEl.querySelector('[data-graph-starter="invalid"]');
+      if (invalidBtn) {
+        invalidBtn.hidden = !nodes.some((n) => n.invalidationCount > 0);
+        invalidBtn.setAttribute("aria-pressed", invalidSpotlight ? "true" : "false");
+      }
+      const allBtn = startersEl.querySelector('[data-graph-starter="expand-all"]');
+      if (allBtn) {
+        const expanded = allDisclosureExpanded();
+        allBtn.setAttribute("aria-pressed", expanded ? "true" : "false");
+        allBtn.textContent = expanded ? allBtn.dataset.labelExpanded : allBtn.dataset.labelCollapsed;
+      }
+    }
+
+    async function toggleAllDisclosure() {
+      const ids = visibleModelCache?.allDisclosureIds || [];
+      if (ids.length === 0) return;
+      const expand = !allDisclosureExpanded();
+      await whileRelayouting(async () => {
+        ids.forEach((id) => (expand ? expandedGroups.add(id) : expandedGroups.delete(id)));
+        graph.setData(computeCurrentGraphData());
+        await graph.render();
+        await applyLayout(currentLayout);
+        if (selectedNodeId && !nodeDatumOf(selectedNodeId)) {
+          // 選的節點被收回去了：不留一個圖上已經沒有的選取。
+          selectedNodeId = null;
+          clearSelectionStates();
+          renderInspector(inspectorEl, nodes.find((n) => n.focus) || null, nodes, edges, labels, inspectorCallbacks);
+        }
+      });
+    }
+
+    async function runStarter(kind) {
+      if (kind === "search") {
+        searchEl?.focus();
+        searchEl?.select();
+      } else if (kind === "invalid") {
+        await applyInvalidSpotlight();
+      } else if (kind === "expand-all") {
+        await toggleAllDisclosure();
+      }
     }
 
     function clearSelectionStates() {
@@ -2217,46 +2314,60 @@
     });
 
     if (searchEl) {
+      // 邊打邊找：停下來就選取第一個符合的法規，被收起的會沿途展開。
+      // 按 Enter 再多一步：把它授權的下一層也展開（「找一部法規，看它授權了哪些命令」）。
+      async function findLaw({ expandOwn }) {
+        const term = (searchEl.value || "").trim().toLowerCase();
+        if (!term) {
+          selectedNodeId = null;
+          clearSelectionStates();
+          return;
+        }
+        const match = nodes.find((n) =>
+          (n.title || "").toLowerCase().includes(term)
+          || (n.localId || "").toLowerCase().includes(term),
+        );
+        if (!match) return;
+
+        const model = visibleModelCache;
+        const toExpand = [];
+        if (!nodeDatumOf(match.id)) {
+          // 被收起的節點：先展開授權它的每一層上位法，再展開它所屬的子法種類分組。
+          toExpand.push(...(model?.revealPath(match.id) || []), model?.groupMembership.get(match.id));
+        }
+        const ownCapsule = `${DISCLOSURE_PREFIX}${match.id}`;
+        if (expandOwn && model?.childGroupMap.get(match.id)?.some((g) => g.groupId === ownCapsule)) {
+          toExpand.push(ownCapsule);
+        }
+        const needed = toExpand.filter((id) => id && !expandedGroups.has(id));
+        if (needed.length > 0) {
+          await whileRelayouting(async () => {
+            needed.forEach((id) => expandedGroups.add(id));
+            graph.setData(computeCurrentGraphData());
+            await graph.render();
+            await applyLayout(currentLayout, match.id);
+          });
+        }
+
+        if (nodeDatumOf(match.id)) {
+          selectNodeById(match.id);
+          if (graph.getZoom() < 0.72) {
+            await graph.zoomTo(0.82);
+          }
+          await graph.focusElement(match.id).catch(() => {});
+        }
+      }
+
       let searchTimer = 0;
       searchEl.addEventListener("input", () => {
         window.clearTimeout(searchTimer);
-        searchTimer = window.setTimeout(async () => {
-          const term = (searchEl.value || "").trim().toLowerCase();
-          if (!term) {
-            selectedNodeId = null;
-            clearSelectionStates();
-            return;
-          }
-          const match = nodes.find((n) =>
-            (n.title || "").toLowerCase().includes(term)
-            || (n.localId || "").toLowerCase().includes(term),
-          );
-          if (!match) return;
-
-          if (!nodeDatumOf(match.id)) {
-            // 被收起的節點：先展開授權它的每一層上位法，再展開它所屬的子法種類分組。
-            const toExpand = [
-              ...(visibleModelCache?.revealPath(match.id) || []),
-              visibleModelCache?.groupMembership.get(match.id),
-            ].filter(Boolean);
-            if (toExpand.length > 0) {
-              await whileRelayouting(async () => {
-                toExpand.forEach((id) => expandedGroups.add(id));
-                graph.setData(computeCurrentGraphData());
-                await graph.render();
-                await applyLayout(currentLayout, match.id);
-              });
-            }
-          }
-
-          if (nodeDatumOf(match.id)) {
-            selectNodeById(match.id);
-            if (graph.getZoom() < 0.72) {
-              await graph.zoomTo(0.82);
-            }
-            await graph.focusElement(match.id).catch(() => {});
-          }
-        }, 140);
+        searchTimer = window.setTimeout(() => findLaw({ expandOwn: false }), 140);
+      });
+      searchEl.addEventListener("keydown", (evt) => {
+        if (evt.key !== "Enter") return;
+        evt.preventDefault();
+        window.clearTimeout(searchTimer);
+        findLaw({ expandOwn: true });
       });
     }
 
@@ -2292,6 +2403,11 @@
         }
         if (evt.target.closest("[data-graph-guide-toggle]")) {
           setGuideOpen(Boolean(guideEl?.hidden), { remember: true });
+          return;
+        }
+        const starter = evt.target.closest("[data-graph-starter]");
+        if (starter) {
+          runStarter(starter.dataset.graphStarter);
           return;
         }
         const filterBtn = evt.target.closest("[data-graph-filter-tier]");
