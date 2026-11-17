@@ -9,7 +9,6 @@
 """
 
 import re
-import ssl
 from dataclasses import dataclass
 from datetime import date
 from typing import Literal
@@ -18,7 +17,6 @@ from lxml.html import HtmlElement, tostring
 
 from canon.acquire.markup import parse as parse_html
 from canon.acquire.markup import visible_text
-from canon.net import tls_context
 
 BASE = "https://cons.judicial.gov.tw"
 
@@ -49,11 +47,6 @@ class RulingPage:
     source_url: str
     #: 解釋文（判決主文）全文，段落以換行相接。
     main_text: str
-
-
-def tls() -> ssl.SSLContext:
-    """連憲法法庭網站的 TLS 設定（見 `http.tls_context`）。"""
-    return tls_context()
 
 
 def roc_date(text: str) -> date:

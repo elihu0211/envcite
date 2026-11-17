@@ -17,6 +17,7 @@ import psycopg
 from canon import projection, rules, violation
 from canon.acquire.cli import SOURCES
 from canon.acquire.engine import Source, acquire
+from canon.acquire.web import Http
 from canon.db import Conn
 from canon.embedding import Embeds
 from canon.exit_codes import fail
@@ -43,10 +44,12 @@ def sync(
     root: Path,
     embedder: Embeds | None = None,
     policy: Policy = POLICY,
+    *,
+    http: Http | None = None,
 ) -> int:
     """跑一個週期；失敗時 rollback 並回傳結束碼。"""
     try:
-        acquire(source, root, conn, policy)
+        acquire(source, root, conn, policy, http=http)
         importer.run(conn, root, source)
         rules.run(conn, *EXTRACTORS)
         conn.commit()

@@ -4,13 +4,9 @@
 重新協商。狀態碼依 `envcite_jobkit` 分類：連線、逾時、408／429／5xx 是端點問題。
 """
 
-import http.client
 import ssl
-import urllib.error
-import urllib.request
 from collections.abc import Mapping
 from importlib.metadata import PackageNotFoundError, metadata
-from typing import cast
 
 import httpx
 
@@ -54,29 +50,6 @@ def tls_context(*, legacy: bool = False) -> ssl.SSLContext:
     if legacy:
         context.options |= ssl.OP_LEGACY_SERVER_CONNECT
     return context
-
-
-def urlopen(
-    url: str,
-    *,
-    data: bytes | None = None,
-    headers: Mapping[str, str] | None = None,
-    timeout: float,
-    context: ssl.SSLContext | None = None,
-    method: str | None = None,
-) -> http.client.HTTPResponse:
-    """開啟快照或 `file://` 來源（`acquire.engine` 用）。4xx／5xx 丟 `HttpStatus`。"""
-    request = urllib.request.Request(url, data=data, headers=dict(headers or {}), method=method)
-    try:
-        if context is None:
-            return cast(http.client.HTTPResponse, urllib.request.urlopen(request, timeout=timeout))
-        return cast(
-            http.client.HTTPResponse,
-            urllib.request.urlopen(request, context=context, timeout=timeout),
-        )
-    except urllib.error.HTTPError as e:
-        raw = e.read() if e.fp is not None else b""
-        raise HttpStatus(e.code, raw, cast(Mapping[str, str], e.headers)) from e
 
 
 def endpoint(status: HttpStatus) -> bool:

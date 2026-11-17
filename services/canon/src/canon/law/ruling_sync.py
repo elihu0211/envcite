@@ -15,7 +15,6 @@ import argparse
 import hashlib
 import json
 import logging
-import tempfile
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -25,7 +24,7 @@ from typing import NamedTuple
 
 import psycopg
 
-from canon.acquire.engine import download as download_file
+from canon.acquire.web import Http, retrying
 from canon.db import Conn, fetch, fetch_one, scalar
 from canon.law import cons, ruling
 from canon.law.ruling_extract import EXTRACTOR_VERSION, extract, should_keep
@@ -58,11 +57,12 @@ class SyncResult:
 
 
 def download(url: str, policy: Policy | None = None) -> str:
-    """下載一頁（端點問題依 jobkit 政策重試）。`file://` 也可，供測試。"""
-    with tempfile.TemporaryDirectory() as tmp:
-        dest = Path(tmp) / "page"
-        download_file(url, dest, cons.tls(), policy or Policy())
-        return dest.read_text(encoding="utf-8-sig")
+    """下載一頁（端點問題依 jobkit 政策重試）；頁與頁之間的間隔由 `sync` 負責。"""
+    http = Http(0.0)
+    try:
+        return retrying(lambda: http.text(url), policy or Policy())
+    finally:
+        http.close()
 
 
 def sync(

@@ -6,10 +6,11 @@ from dataclasses import dataclass
 from datetime import date
 from typing import NamedTuple
 
+from canon.acquire.web import retrying
 from canon.db import Conn, fetch
 from canon.law import gazette, moenv
 from canon.law.guidance_sync.client import Client
-from envcite_jobkit import EndpointError, Policy, backoff_delay
+from envcite_jobkit import Policy
 
 log = logging.getLogger(__name__)
 
@@ -17,22 +18,6 @@ log = logging.getLogger(__name__)
 MAX_PAGES = 200
 #: 連續幾頁沒有資料就判定葉分類走完（網站的總筆數不可信）
 EMPTY_PAGES = 3
-
-
-def retrying[T](fn: Callable[[], T], policy: Policy, sleep: Callable[[float], None]) -> T:
-    """清單頁不是工作項：端點問題就地退避重試，用盡則拋出，整次失敗（結束碼 1）。"""
-    for attempt in range(1, policy.max_attempts + 1):
-        try:
-            return fn()
-        except EndpointError as e:
-            if attempt == policy.max_attempts:
-                raise
-            delay = backoff_delay(
-                attempt, base=policy.backoff_base_seconds, cap=policy.backoff_max_seconds
-            )
-            log.warning("%s，%.0f 秒後重試（第 %d 次）", e, delay, attempt)
-            sleep(delay)
-    raise AssertionError("unreachable")  # pragma: no cover
 
 
 def gazette_packs(

@@ -8,7 +8,6 @@ robots.txt 為 `Disallow: /`，API 是唯一管道。
 import hashlib
 import json
 import re
-import ssl
 import zipfile
 from collections.abc import Sequence
 from datetime import date
@@ -16,7 +15,6 @@ from pathlib import Path
 from typing import Any
 
 from canon.acquire.engine import Contents, Feed, InvalidSnapshot, NotAnArchive
-from canon.net import tls_context
 
 _BASE = "https://law.moj.gov.tw/api/ch"
 _PCODE = re.compile(r"[?&]pcode=([A-Z][0-9]{7})(?:&|$)")
@@ -32,10 +30,6 @@ class Moj:
         Feed("moj_law", f"{_BASE}/law/json"),
         Feed("moj_order", f"{_BASE}/order/json"),
     )
-
-    def tls(self) -> ssl.SSLContext:
-        """連全國法規資料庫的 TLS 設定。"""
-        return tls_context()
 
     def read(self, path: Path) -> Contents:
         """回傳 `UpdateDate` 與每部法規的（pcode，內容雜湊）。"""

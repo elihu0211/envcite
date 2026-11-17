@@ -1,7 +1,7 @@
 """違憲失效的自動取得（A5）：頁面解析、失效條款抽取、可重跑的取得流程。
 
-頁面用固定樣本，網站以 `file://` 代替，不依賴網路。樣本 `tests/data/cons_*.html` 節錄自憲法法庭網站
-（cons.judicial.gov.tw；資料開放宣告：須標示出處）。
+頁面用固定樣本，網站以注入的 `fetch` 代替，不依賴網路。樣本 `tests/data/cons_*.html` 節錄自
+憲法法庭網站（cons.judicial.gov.tw；資料開放宣告：須標示出處）。
 """
 
 from collections.abc import Callable
