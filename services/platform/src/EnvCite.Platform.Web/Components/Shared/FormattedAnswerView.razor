@@ -1,181 +1,30 @@
+@using EnvCite.Platform.Web.Components.Shared.Answer
+@* 強型別回答文件的呈現：依積木型別映射到各自的元件（Answer/）；引用代號的查找與點擊經 CitationContext 級聯下去。 *@
 @if (Document is { Blocks.Count: > 0 })
 {
-    <div class="ep-ans-body">
-        @foreach (var block in Document.Blocks)
-        {
-            @switch (block)
+    <CascadingValue Value="_citations">
+        <div class="ep-ans-body">
+            @foreach (var block in Document.Blocks)
             {
-                case CalloutBlock callout:
-                    <section class="ep-ans-callout @CalloutToneClass(callout.Tone)">
-                        <div class="ep-ans-callout-head">
-                            <span class="ep-ans-callout-icon" aria-hidden="true"><NavIcon Path="@CalloutToneIcon(callout.Tone)" /></span>
-                            <span class="ep-ans-callout-badge">@CalloutToneLabel(callout.Tone)</span>
-                        </div>
-                        <h2 class="ep-ans-heading">@callout.Title</h2>
-                        <p class="ep-ans-p">@callout.Body</p>
-                        @if (callout.CitationCodes.Count > 0)
-                        {
-                            <div class="ep-ans-sources">
-                                <span class="ep-ans-sources-label">@L["依據"]</span>
-                                @RenderCitations(callout.CitationCodes)
-                            </div>
-                        }
-                    </section>
-                    break;
-
-                case ProseBlock prose:
-                    <div class="ep-ans-prose">
-                        @if (!string.IsNullOrWhiteSpace(prose.Heading))
-                        {
-                            <h2 class="ep-ans-heading">@prose.Heading</h2>
-                        }
-                        <p class="ep-ans-p">
-                            @prose.Text
-                            @RenderCitations(prose.CitationCodes)
-                        </p>
-                    </div>
-                    break;
-
-                case ChecklistBlock checklist:
-                    <div class="ep-ans-checklist-wrap">
-                        @if (!string.IsNullOrWhiteSpace(checklist.Title))
-                        {
-                            <h2 class="ep-ans-heading">@checklist.Title</h2>
-                        }
-                        @if (checklist.Ordered)
-                        {
-                            <ol class="ep-ans-list">
-                                @foreach (var item in checklist.Items)
-                                {
-                                    @RenderChecklistItem(item)
-                                }
-                            </ol>
-                        }
-                        else
-                        {
-                            <ul class="ep-ans-list">
-                                @foreach (var item in checklist.Items)
-                                {
-                                    @RenderChecklistItem(item)
-                                }
-                            </ul>
-                        }
-                    </div>
-                    break;
-
-                case ComparisonTableBlock table:
-                    <div class="ep-ans-table-section">
-                        @if (!string.IsNullOrWhiteSpace(table.Title))
-                        {
-                            <h2 class="ep-ans-heading">@table.Title</h2>
-                        }
-                        <div class="ep-legal-table-wrap" role="region" aria-label="@L["資料表格"]" tabindex="0">
-                            <table class="ep-legal-table ep-ans-table">
-                                <thead>
-                                    <tr>
-                                        @foreach (var col in table.Columns)
-                                        {
-                                            <th scope="col">@col</th>
-                                        }
-                                        <th scope="col">@L["依據"]</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var row in table.Rows)
-                                    {
-                                        <tr>
-                                            @for (var c = 0; c < row.Cells.Count; c++)
-                                            {
-                                                if (c == 0 && row.Cells.Count > 1)
-                                                {
-                                                    <th scope="row">@row.Cells[c]</th>
-                                                }
-                                                else
-                                                {
-                                                    <td data-label="@(c < table.Columns.Count ? table.Columns[c] : null)">@row.Cells[c]</td>
-                                                }
-                                            }
-                                            <td class="ep-ans-table-citations" data-label="@L["依據"]">@RenderCitations(row.CitationCodes)</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    break;
-
-                case WorkflowBlock workflow:
-                    var mermaidSource = AnswerDocumentFormatter.ToMermaidSource(workflow);
-                    <div class="ep-ans-workflow-section">
-                        @if (!string.IsNullOrWhiteSpace(workflow.Title))
-                        {
-                            <h2 class="ep-ans-heading">@workflow.Title</h2>
-                        }
-                        <figure class="ep-mermaid-card" aria-label="@L["流程與結構圖表"]">
-                            <div class="ep-mermaid"
-                                 data-mermaid-source="@mermaidSource"
-                                 data-diagram-state="pending">
-                                <div class="ep-mermaid-canvas" role="img" aria-label="@L["流程與結構圖表"]" hidden></div>
-                                <pre class="ep-mermaid-fallback"><code>@mermaidSource</code></pre>
-                            </div>
-                            <ol class="ep-ans-workflow-steps" aria-label="@L["流程步驟"]">
-                                @foreach (var node in workflow.Nodes)
-                                {
-                                    <li>
-                                        <span class="ep-ans-step-label">@node.Label</span>
-                                        @RenderCitations(node.CitationCodes)
-                                    </li>
-                                }
-                            </ol>
-                        </figure>
-                    </div>
-                    break;
-            }
-        }
-    </div>
-}
-
-@code {
-    private RenderFragment RenderChecklistItem(ChecklistItem item) => @<text>
-        <li class="@(item.Checked is not null ? "ep-ans-task" : null)">
-            @if (item.Checked is bool checkedState)
-            {
-                <span class="ep-ans-task-marker"
-                      data-state="@(checkedState ? "done" : "todo")"
-                      role="img"
-                      aria-label="@(checkedState ? L["已完成"] : L["未完成"])"></span>
-            }
-            <span class="ep-ans-item-text">
-                <strong class="ep-ans-item-label">@item.Label</strong>
-                @if (!string.IsNullOrWhiteSpace(item.Detail))
+                @switch (block)
                 {
-                    <span class="ep-ans-item-detail">：@item.Detail</span>
+                    case CalloutBlock callout:
+                        <CalloutView Block="callout" />
+                        break;
+                    case ProseBlock prose:
+                        <ProseView Block="prose" />
+                        break;
+                    case ChecklistBlock checklist:
+                        <ChecklistView Block="checklist" />
+                        break;
+                    case ComparisonTableBlock table:
+                        <ComparisonTableView Block="table" />
+                        break;
+                    case WorkflowBlock workflow:
+                        <WorkflowView Block="workflow" />
+                        break;
                 }
-                @RenderCitations(item.CitationCodes)
-            </span>
-        </li>
-    </text>;
-
-    private RenderFragment RenderCitations(IReadOnlyList<string> codes) => @<text>
-        @if (codes.Count > 0)
-        {
-            <span class="ep-cite-group">
-                @foreach (var citeCode in codes)
-                {
-                    @if (OnCitationSelect.HasDelegate && SourceLookup.TryGetValue(citeCode, out var matched))
-                    {
-                        <button type="button"
-                                class="ep-cite-inline"
-                                title="@matched.Citation"
-                                aria-label="@L["檢視 {0} 條文內容", $"{citeCode} {matched.Citation}"]"
-                                @onclick="() => OnCitationSelect.InvokeAsync(matched)">@citeCode</button>
-                    }
-                    else
-                    {
-                        <span class="ep-cite-inline ep-cite-static">@citeCode</span>
-                    }
-                }
-            </span>
-        }
-    </text>;
+            }
+        </div>
+    </CascadingValue>
 }

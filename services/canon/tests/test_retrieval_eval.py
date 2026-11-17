@@ -85,7 +85,7 @@ def test_the_report_measures_both_arms(conn: Conn, tmp_path: Path, dsn: str) -> 
     tool = _tool()
     _first(conn, tmp_path, _law_v1(LawArticles=_articles(NOISE, WATER)))
     embedder = FakeEmbedder()
-    projection.rebuild(conn, embedder)  # type: ignore[arg-type]
+    projection.rebuild(conn, embedder)
     items = [
         {
             "id": "a1",

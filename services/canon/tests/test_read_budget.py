@@ -1,5 +1,7 @@
 """請求路徑的讀取預算：期限取消查詢、池子耗盡回 BUSY、嵌入名額滿了仍走字面臂。"""
 
+from collections.abc import Sequence
+
 import grpc
 import psycopg
 import pytest
@@ -42,7 +44,7 @@ class _CountingEmbedder:
     def __init__(self) -> None:
         self.calls = 0
 
-    def embed(self, texts: list[str]) -> list[list[float]]:
+    def embed(self, texts: Sequence[str]) -> list[list[float]]:
         self.calls += 1
         raise EmbeddingError("down")
 
@@ -117,7 +119,7 @@ def test_a_full_embed_slot_still_returns_lexical_hits(
         store.retrieval,
         Segmenter(store.retrieval.lexicon()),
         store.retrieval.law_names(),
-        embedder=embedder,  # type: ignore[arg-type]
+        embedder=embedder,
         tuning=SearchTuning(embed_slots=1),
     )
     assert servicer.search._embed_slots is not None
@@ -140,7 +142,7 @@ def test_an_embed_slot_is_released_for_the_next_query(store: CanonStore) -> None
         store.retrieval,
         Segmenter([]),
         store.retrieval.law_names(),
-        embedder=embedder,  # type: ignore[arg-type]
+        embedder=embedder,
         tuning=SearchTuning(embed_slots=1),
     )
     request = canon_pb2.SearchArticlesRequest(query="噪音")

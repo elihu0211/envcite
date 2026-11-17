@@ -111,7 +111,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 |------|------------|------|
 | 基底（`Components/Bases/`） | `PlatformComponentBase`、`NavigableComponentBase`、`PlatformLayoutBase`、`PortalLayoutBase` | 集中 `L`、`Brand`、`Navigation` 與入口雙版面導覽 |
 | 頁面／對話框基底 | `PageBase`、`StaticPageBase<TService>`、`FormPageBase<TForm>`、`PortalPageBase<TService>`、`AdminPageBase`、`FormDialogBase`、`SecretDialogBase` | 狀態管理、`LoadingAsync`、`ConfirmAsync`、只顯一次機密鎖定 |
-| 版面模板（`Components/Shared/`） | `DocumentTitle`、`PageHeading`、`FormAlert`、`PostForm`、`FormField`、`SubmitButton`、`DialogError`、`DialogSubmitActions`、`SectionCard`、`StatGrid`、`DataTable<TItem>`、`LoadedView`、`SelectField`、`OptionSelect`、`CheckboxField`、`SecretReveal`、`SourceCards`、`PageTabs`／`TabPanel`、`AskComposer` | 封裝 CSS 類別與無障礙標記，頁面禁止手寫原始 `ep-*` 類別或呼叫 `ShowMessageBoxAsync` |
+| 版面模板（`Components/Shared/`） | `DocumentTitle`、`PageHeading`、`FormAlert`、`PostForm`、`FormField`、`SubmitButton`、`DialogError`、`DialogSubmitActions`、`SectionCard`、`StatGrid`、`DataTable<TItem>`、`LoadedView`、`SelectField`、`OptionSelect`、`CheckboxField`、`SecretReveal`、`SourceCards`、`TaskMarker`、`PageTabs`／`TabPanel`、`AskComposer` | 封裝 CSS 類別與無障礙標記，頁面禁止手寫原始 `ep-*` 類別或呼叫 `ShowMessageBoxAsync` |
 | 共用認證流程（`Components/Shared/`） | `LoginFlow`、`TwoFactorSignInFlow`、`TwoFactorSetupFlow`、`ChangePasswordFlow`、`ActivationFlow` | 僅依賴 `IAccountLifecycle`、`ITwoFactor` 與 `SignInRoutes`（含 `SafeReturnUrl`）；表單模型共用 `Bases/Forms.cs` |
 | 密碼欄位 | `Shared/NewPasswordField`、`Shared/PasswordField` | 自動綁定 `PasswordPolicy` 與漸進增強（`forms.js`）；禁止頁面手寫 `type="password"`（`PasswordFieldTests` 守門） |
 
@@ -167,7 +167,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 固定四步線性流程：以直接循序 `await` 執行 `rewrite`（有前文時改寫追問為獨立問句）→ `ground`（向 `consult` 取封閉證據集）→ `write`（單次 `IChatClient.GetResponseAsync<ModelAnswerOutput>`，啟用 JSON Schema 與溫度 0）→ `verify`（強制檢查所有領域積木結構與每個有效引用代號，否則丟棄作廢）。
 
 - **步驟規矩**：預期失敗轉結果代碼、取消與未預期錯誤照常拋出；`ground` 若已有結論（`AnswerTurn.Done`）即跳過 `write` 與 `verify`；不串流輸出（須整份結構與引用核驗後呈現），進度經 `IProgress<AnswerProgress>` 回報（不含問題與證據）。
-- **強型別積木與呈現**：模型輸出多型領域積木並將代號置於結構化引用欄位，由 `FormattedAnswerView` 依型別映射渲染，`AnswerDocumentFormatter` 確定性轉出記憶文字、複製純文字與安全圖表 DSL。
+- **強型別積木與呈現**：模型輸出多型領域積木並將代號置於結構化引用欄位，由 `FormattedAnswerView` 依型別映射到 `Shared/Answer/` 的各積木元件渲染（引用代號經 `CitationContext` 級聯，積木不認上層元件），對話裡的一個回合由 `Workspace/TurnView` 呈現（只收資料與回呼），`AnswerDocumentFormatter` 確定性轉出記憶文字、複製純文字與安全圖表 DSL。
 - **主題詞偵測（`BareTopic`）**：與搜尋端共用 `LawSearchOptions.Shape` 判準（非問句、無句末標點、無疑問詞），命中時取證據仍用原詞，送模型改用寬鬆任務句避免誤拒答。
 - **拒答原因區分**：`consult` 無命中回 `no_authority`；`consult` 有法源但模型回證據不足為 `insufficient_evidence`（仍帶 `Sources` 供介面列出）；結構不合或引用核驗作廢不帶法源。
 

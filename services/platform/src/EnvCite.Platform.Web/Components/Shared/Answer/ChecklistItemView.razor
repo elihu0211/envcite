@@ -1,0 +1,20 @@
+@* 清單的一項：有 Checked 的是待辦項目，前面帶唯讀的完成狀態。 *@
+<li class="@(Item.Checked is not null ? "ep-ans-task" : null)">
+    @if (Item.Checked is bool done)
+    {
+        <TaskMarker Checked="done" />
+    }
+    <span class="ep-ans-item-text">
+        <strong class="ep-ans-item-label">@Item.Label</strong>
+        @if (!string.IsNullOrWhiteSpace(Item.Detail))
+        {
+            <span class="ep-ans-item-detail">：@Item.Detail</span>
+        }
+        <CitationChips Codes="Item.CitationCodes" />
+    </span>
+</li>
+
+@code {
+    [Parameter, EditorRequired]
+    public ChecklistItem Item { get; set; } = null!;
+}

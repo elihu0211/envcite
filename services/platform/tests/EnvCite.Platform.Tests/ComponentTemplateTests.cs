@@ -14,7 +14,7 @@ public static partial class ComponentTemplateTests
     {
         "FormAlert", "PostForm", "FormField", "SubmitButton", "PageHeading", "DocumentTitle",
         "PageHeader", "StatusPage", "DialogError", "DialogSubmitActions",
-        "SectionCard", "StatGrid", "StatTile", "DataTable", "SelectField", "OptionSelect", "LoadedView", "CheckboxField", "SecretReveal", "PageTabs", "TabPanel", "AskComposer",
+        "SectionCard", "StatGrid", "StatTile", "DataTable", "SelectField", "OptionSelect", "LoadedView", "CheckboxField", "SecretReveal", "PageTabs", "TabPanel", "AskComposer", "TaskMarker",
     };
 
     // 標記只在模板裡寫：頁面與對話框用 <FormAlert>、<PostForm>、<FormField>、<SubmitButton>、<PageHeading>、<DocumentTitle>、<DialogError>。
@@ -98,8 +98,10 @@ public static partial class ComponentTemplateTests
         var portal = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Portal"), "*.razor");
         Assert.All(portal, page => Assert.Matches(@"@inherits (PortalPageBase(?:<\w+>)?|PortalFormPageBase<\w+>)(?!\w)", File.ReadAllText(page)));
 
-        // 入口的互動式頁面（工作區，沒有 HttpContext）繼承互動式的基底。
-        var workspace = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Portal", "Workspace"), "*.razor");
+        // 入口的互動式頁面（工作區，沒有 HttpContext）繼承互動式的基底；頁面以 @page 辨認，工作區裡的一般元件（如一個回合的呈現）不在此列。
+        var workspace = Directory.EnumerateFiles(Path.Combine(ComponentsPath(), "Portal", "Workspace"), "*.razor")
+            .Where(file => File.ReadAllText(file).Contains("@page ", StringComparison.Ordinal))
+            .ToList();
         Assert.NotEmpty(workspace);
         Assert.All(workspace, page => Assert.Matches(@"@inherits WorkspacePageBase\b", File.ReadAllText(page)));
 

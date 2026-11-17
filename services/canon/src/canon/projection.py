@@ -22,7 +22,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import NamedTuple
 
 from canon.db import Conn, fetch, scalar
-from canon.embedding import Embedder, to_sql
+from canon.embedding import Embeds, to_sql
 from canon.exit_codes import JobStopped
 from envcite_jobkit import ExitCode, NullMetrics, Policy, RunStats, run
 from envcite_segmenter import Segmenter
@@ -83,7 +83,7 @@ class EmbeddingStopped(JobStopped, RuntimeError):
         self.code = code
 
 
-def rebuild(conn: Conn, embedder: Embedder | None = None, policy: Policy | None = None) -> int:
+def rebuild(conn: Conn, embedder: Embeds | None = None, policy: Policy | None = None) -> int:
     """清掉無人引用的列、補齊字面向量，有嵌入模型時再補嵌入；回傳新建或重算的字面列數。
 
     嵌入的重試、退避與斷路依 `policy`（`envcite_jobkit`）。重試用盡的批次跳過，留待下次。
@@ -156,7 +156,7 @@ def _lexical(conn: Conn, segmenter: Segmenter) -> int:
         after = rows[-1].digest
 
 
-def _embed(conn: Conn, embedder: Embedder, *, policy: Policy | None = None) -> int:
+def _embed(conn: Conn, embedder: Embeds, *, policy: Policy | None = None) -> int:
     """每頁 commit：全量第一次要很久，中斷後重跑只補沒做完的。
 
     一頁（`_EMBED_WORKERS` 批）是 jobkit 的一個工作項，批次並行送出以壓低全量的牆鐘時間，

@@ -19,7 +19,7 @@ from canon import projection, rules, violation
 from canon.acquire.cli import SOURCES
 from canon.acquire.engine import Source, acquire
 from canon.db import Conn
-from canon.embedding import Embedder
+from canon.embedding import Embeds
 from canon.exit_codes import fail
 from canon.law import delegation, importer
 from canon.settings import SnapshotSettings, load
@@ -42,7 +42,7 @@ def sync(
     conn: Conn,
     source: Source,
     root: Path,
-    embedder: Embedder | None = None,
+    embedder: Embeds | None = None,
     policy: Policy = POLICY,
 ) -> int:
     """跑一個週期；失敗時 rollback 並回傳結束碼。"""

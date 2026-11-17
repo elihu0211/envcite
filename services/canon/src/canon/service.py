@@ -8,7 +8,7 @@ import grpc
 from opentelemetry.metrics import Meter
 
 from canon import errors
-from canon.embedding import Embedder
+from canon.embedding import Embeds
 from canon.endpoints.graph import GraphApi
 from canon.endpoints.laws import LawApi
 from canon.endpoints.search import SearchApi
@@ -84,7 +84,7 @@ def build_servicer(
     segmenter: Segmenter,
     law_names: LawNames,
     *,
-    embedder: Embedder | None = None,
+    embedder: Embeds | None = None,
     reranker: Reranks | None = None,
     tuning: SearchTuning | None = None,
     meter: Meter | None = None,

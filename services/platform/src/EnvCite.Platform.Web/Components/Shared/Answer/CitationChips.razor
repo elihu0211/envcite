@@ -1,0 +1,29 @@
+@* 一組行內法源標籤：能對應到法源的是可點的按鈕，對不到的只是靜態標籤。點擊的行為由上層經 CitationContext 決定。 *@
+@if (Codes.Count > 0)
+{
+    <span class="ep-cite-group">
+        @foreach (var citeCode in Codes)
+        {
+            @if (Citations is not null && Citations.TryResolve(citeCode, out var matched))
+            {
+                <button type="button"
+                        class="ep-cite-inline"
+                        title="@matched.Citation"
+                        aria-label="@L["檢視 {0} 條文內容", $"{citeCode} {matched.Citation}"]"
+                        @onclick="() => Citations.SelectAsync(matched)">@citeCode</button>
+            }
+            else
+            {
+                <span class="ep-cite-inline ep-cite-static">@citeCode</span>
+            }
+        }
+    </span>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<string> Codes { get; set; } = [];
+
+    [CascadingParameter]
+    private CitationContext? Citations { get; set; }
+}

@@ -1,0 +1,13 @@
+@* 唯讀的完成狀態：用瀏覽器原生的 checkbox 顯示「已完成／未完成」，不是表單欄位（要輸入的勾選欄位用 CheckboxField）。
+   不用 disabled：停用的勾選框會被瀏覽器畫成灰色，狀態看不清楚；改以 aria-readonly 宣告唯讀、移出 Tab 順序，並由樣式擋掉指標。 *@
+<input type="checkbox"
+       class="ep-ans-task-marker"
+       checked="@Checked"
+       tabindex="-1"
+       aria-readonly="true"
+       aria-label="@(Checked ? L["已完成"] : L["未完成"])" />
+
+@code {
+    [Parameter]
+    public bool Checked { get; set; }
+}

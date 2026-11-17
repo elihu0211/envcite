@@ -67,9 +67,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import golden_set as gs
-from retrieval_eval import Embeds
 
 from canon import reranking
+from canon.embedding import Embeds
 from canon.law_names import LawNames
 from canon.reranking import Reranks
 from canon.search_tuning import DEFAULT_RERANK_CANDIDATES
