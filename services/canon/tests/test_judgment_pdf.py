@@ -5,7 +5,14 @@ from pathlib import Path
 import pytest
 from pypdf import PdfWriter
 
-from canon.law.judgment_pdf import MIN_CHARS, PdfRejected, text_of, trusted
+from canon.law.judgment_pdf import (
+    MIN_CHARS,
+    OCR_MAX_PAGES,
+    PdfRejected,
+    ocr_text,
+    text_of,
+    trusted,
+)
 
 
 def _pdf_with_text(text: str) -> bytes:
@@ -77,3 +84,48 @@ def test_a_file_that_is_not_a_pdf_is_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(PdfRejected):
         text_of(path)
+
+
+class _Ocr:
+    model = "vl"
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+        self.images: list[bytes] = []
+
+    def read(self, image: bytes, *, timeout: float | None = None) -> str:
+        self.images.append(image)
+        return self.text
+
+
+def _blank_pdf(path: Path, pages: int) -> Path:
+    writer = PdfWriter()
+    for _ in range(pages):
+        writer.add_blank_page(612, 792)
+    with path.open("wb") as f:
+        writer.write(f)
+    return path
+
+
+def test_a_scanned_pdf_is_read_page_by_page_by_the_ocr(tmp_path: Path) -> None:
+    ocr = _Ocr("本件適用噪音管制法第二條，應處罰鍰。" * 8)
+    path = _blank_pdf(tmp_path / "scan.pdf", 2)
+
+    text = ocr_text(path, ocr)
+
+    assert text is not None and text.count("本件適用噪音管制法第二條") == 16
+    assert len(ocr.images) == 2 and all(img.startswith(b"\xff\xd8") for img in ocr.images)
+
+
+def test_ocr_that_finds_no_words_is_still_no_body(tmp_path: Path) -> None:
+    assert ocr_text(_blank_pdf(tmp_path / "scan.pdf", 1), _Ocr("")) is None
+
+
+def test_too_many_pages_are_not_sent_to_the_ocr(tmp_path: Path) -> None:
+    ocr = _Ocr("x")
+    path = _blank_pdf(tmp_path / "long.pdf", OCR_MAX_PAGES + 1)
+
+    with pytest.raises(PdfRejected, match="too_many_pages"):
+        ocr_text(path, ocr)
+
+    assert ocr.images == []

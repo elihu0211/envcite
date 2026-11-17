@@ -28,13 +28,16 @@ from canon.law.judgment_pdf import FileText, PdfRejected, fetcher
 from canon.law.judicial_api import Client, EndpointError, removed
 from canon.law.judicial_credentials import CredentialsError, credentials_path, read_credentials
 from canon.rules import Rule
-from canon.settings import DatabaseSettings
+from canon.settings import DatabaseSettings, ModelsSettings
 from canon.settings import load as load_settings
+from canon.verification.config import ocr_from_settings
 from envcite_jobkit import ExitCode
 
 log = logging.getLogger(__name__)
 
 PAUSE_SECONDS = 1.0
+#: 一頁 OCR 的逾時；視覺語言模型讀一頁約數秒到十數秒。
+OCR_TIMEOUT_SECONDS = 180.0
 _TAIPEI = ZoneInfo("Asia/Taipei")
 _WINDOW_END = time(6, 0)
 #: 載入的裁判標的推導來源；版本跟著引用抽取規則走，改規則時標示隨之改變。
@@ -367,9 +370,10 @@ def main() -> None:
     settings = load_settings(DatabaseSettings)
     client = Client(creds.user, creds.password)
     http = Http(PAUSE_SECONDS)
+    ocr = ocr_from_settings(load_settings(ModelsSettings), timeout=OCR_TIMEOUT_SECONDS)
     try:
         with psycopg.connect(settings.dsn) as conn:
-            result = sync(conn, client, now=taipei_now, files=fetcher(http))
+            result = sync(conn, client, now=taipei_now, files=fetcher(http, ocr))
             raise SystemExit(result.exit_code)
     except psycopg.Error as e:
         log.error("裁判書同步中斷：資料庫")

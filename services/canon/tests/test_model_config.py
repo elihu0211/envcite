@@ -16,6 +16,7 @@ from canon.verification.config import (
     load_reranker,
     parse,
     parse_embedder,
+    parse_ocr,
     parse_reranker,
     resolve_secret,
     secret_name,
@@ -313,6 +314,19 @@ def test_the_reranker_needs_only_its_own_endpoint_and_known_keys() -> None:
         )
     with pytest.raises(ConfigError, match="name is required"):
         parse_reranker(MINIMAL + '\n[reranker]\nendpoint = "e"\n', ENV, timeout=3.0)
+
+
+def test_the_ocr_section_is_optional_and_strict() -> None:
+    assert parse_ocr(MINIMAL, ENV, timeout=60.0) is None
+    text = MINIMAL + '\n[ocr]\nendpoint = "e"\nname = "vl"\n'
+
+    ocr = parse_ocr(text, ENV, timeout=60.0, keychain=no_keychain)
+
+    assert ocr is not None and ocr.model == "vl"
+    with pytest.raises(ConfigError, match="endpoint 'nope'"):
+        parse_ocr(MINIMAL + '\n[ocr]\nendpoint = "nope"\nname = "vl"\n', ENV, timeout=60.0)
+    with pytest.raises(ConfigError, match="unknown keys"):
+        parse_ocr(MINIMAL + '\n[ocr]\nendpoint = "e"\nname = "vl"\ndpi = 300\n', ENV, timeout=60.0)
 
 
 def test_a_model_can_declare_constrained_extraction() -> None:

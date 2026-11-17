@@ -1,26 +1,34 @@
 """裁判書全文是 PDF 時：下載、抽文字層，與 HTML 全文走同一條入庫路徑。
 
 只信司法院的網址（https 且主機在 `judicial.gov.tw`）：網址來自 API 回應，不當成任意下載來源。
-只抽文字層，不做 OCR；掃描檔沒有文字層，回 `None`，由呼叫端記 `file_only`。
+先抽文字層；沒有文字層（掃描檔）且設定了 OCR 模型時，逐頁轉成圖片交給 OCR，頁數有上限。沒有 OCR 或
+OCR 後仍沒有字，回 `None`，由呼叫端記 `file_only`。
 下載走 `acquire/web.py` 的 `Http`（循序、禮貌間隔、自報身分），大小與頁數有上限。
 """
 
+import io
 import re
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
+import pypdfium2 as pdfium
 from pypdf import PdfReader
 from pypdf.errors import PyPdfError
 
 from canon.acquire.web import Http
 from canon.law.judicial_api import EndpointError
+from canon.ocr import OcrError, Reads
 from envcite_jobkit import EndpointError as TransportFailure
 from envcite_jobkit import ItemError
 
 #: 超過就不抽（一般裁判書遠小於此）。
 MAX_BYTES = 20 << 20
 MAX_PAGES = 400
+#: OCR 逐頁呼叫模型，頁數上限比文字層小得多；超過的不做。
+OCR_MAX_PAGES = 60
+#: 轉圖片的縮放（72 dpi 的倍數）；2 倍約 144 dpi，足夠辨識一般字級。
+OCR_SCALE = 2.0
 #: 抽出的字少於此視為沒有文字層（掃描檔）。
 MIN_CHARS = 200
 _HOST_SUFFIX = "judicial.gov.tw"
@@ -51,13 +59,38 @@ def text_of(path: Path) -> str | None:
         pages = [page.extract_text() or "" for page in reader.pages]
     except PyPdfError, ValueError, OSError, KeyError, TypeError:
         raise PdfRejected("unreadable") from None
-    text = re.sub(r"[ \t　]+", " ", "\n".join(pages))
+    return _enough(pages)
+
+
+def _enough(pages: list[str]) -> str | None:
+    """各頁文字併成全文、空白正規化；字數不足回 `None`。"""
+    text = re.sub(r"[ \t\u3000]+", " ", "\n".join(pages))
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
     return text if len(text) >= MIN_CHARS else None
 
 
-def fetcher(http: Http) -> FileText:
-    """以 `Http` 下載再抽字的 `FileText`。連線與伺服器錯誤轉成 `EndpointError`，留待下一夜重試。"""
+def ocr_text(path: Path, ocr: Reads) -> str | None:
+    """沒有文字層的 PDF：逐頁轉成 JPEG 交 OCR。頁數超限丟 `PdfRejected`，OCR 失敗丟 `OcrError`。"""
+    try:
+        pdf = pdfium.PdfDocument(path)
+    except pdfium.PdfiumError:
+        raise PdfRejected("unreadable") from None
+    try:
+        if len(pdf) > OCR_MAX_PAGES:
+            raise PdfRejected("too_many_pages")
+        pages = []
+        for index in range(len(pdf)):
+            image = pdf[index].render(scale=OCR_SCALE).to_pil().convert("RGB")
+            buffer = io.BytesIO()
+            image.save(buffer, "JPEG", quality=85)
+            pages.append(ocr.read(buffer.getvalue()))
+    finally:
+        pdf.close()
+    return _enough(pages)
+
+
+def fetcher(http: Http, ocr: Reads | None = None) -> FileText:
+    """以 `Http` 下載再抽字的 `FileText`。連線、伺服器與 OCR 的錯誤轉成 `EndpointError`。"""
 
     def fetch(url: str) -> str | None:
         if not trusted(url):
@@ -72,6 +105,12 @@ def fetcher(http: Http) -> FileText:
                 raise PdfRejected("download_failed") from None
             if size > MAX_BYTES:
                 raise PdfRejected("too_large")
-            return text_of(dest)
+            found = text_of(dest)
+            if found is not None or ocr is None:
+                return found
+            try:
+                return ocr_text(dest, ocr)
+            except OcrError:
+                raise EndpointError("ocr") from None
 
     return fetch
