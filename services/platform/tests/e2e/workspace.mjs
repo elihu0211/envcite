@@ -602,6 +602,42 @@ const scenarios = {
         });
     },
 
+    // 授權知識圖譜進頁面時，第一個看得到的畫面就是最後的視角：圖一建好是縮放 1 的實際大小，若直接露出來，
+    // 使用者會先看到放大的卡片、隨後才縮到適合視窗。每個 frame 記下畫布的可見度與縮放，可見之後縮放不得再變。
+    async "law-graph-viewport"() {
+        await step("登入後前往法規體系與合規：圖譜可見之後縮放不再變", async () => {
+            await signIn();
+            await page.addInitScript(() => {
+                window.__graphFrames = [];
+                const tick = () => {
+                    const canvas = document.querySelector(".ep-graph-canvas");
+                    const graph = canvas?._g6Instance;
+                    if (canvas && graph) {
+                        window.__graphFrames.push({
+                            opacity: Number(getComputedStyle(canvas).opacity),
+                            zoom: Number(graph.getZoom().toFixed(3)),
+                            state: canvas.dataset.graphState ?? "",
+                        });
+                    }
+                    requestAnimationFrame(tick);
+                };
+                requestAnimationFrame(tick);
+            });
+            await page.goto(`${base}/portal/${tenant}/laws`);
+            await until("圖譜應建好", async () => (await page.evaluate(() => window.__graphFrames.length)) > 0);
+            await page.waitForTimeout(2000); // 建圖、定視角、淡入都要時間；等它們都做完再比對
+
+            const frames = await page.evaluate(() => window.__graphFrames);
+            const visible = frames.filter((frame) => frame.opacity > 0);
+            if (visible.length === 0) throw new Error(`圖譜一直沒有顯示：${JSON.stringify(frames.slice(-3))}`);
+            const changed = visible.filter((frame) => Math.abs(frame.zoom - visible[0].zoom) > 0.001);
+            if (changed.length > 0) {
+                throw new Error(`圖譜顯示之後縮放又變了（${visible[0].zoom} → ${changed[0].zoom}），使用者會看到先放大再縮小：${JSON.stringify(visible.slice(0, 4))}`);
+            }
+            if (!frames.some((frame) => frame.state === "ready" && frame.opacity > 0)) throw new Error("圖譜沒有走到 ready 並顯示");
+        });
+    },
+
     // 法規體系與合規工作列：下拉選單帶統一右側安全距與箭頭、按鈕與欄位依容器斷點對齊且可 RWD 換列。
     async "laws-toolbar"() {
         await step("登入後前往法規體系與合規", async () => {

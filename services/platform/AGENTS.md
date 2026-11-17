@@ -207,6 +207,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
   - 租戶頁存取網址取自請求來源（`PortalPaths`、`ApiPaths`）。
   - 營運者頁面每次呼叫開獨立 scope 讀 `SharedKernel` 契約。
   - 新發出的 key／一次性密碼僅於不可隨意關閉的對話框顯示一次；時間顯示臺北時間（UTC+8），長 id 縮短留尾端（UUIDv7）。
+  - 授權知識圖譜（`canon-graph.js`）建圖時為 `data-graph-state="loading"`（透明），第一個視角定好才轉 `ready` 淡入，使用者不會看到縮放 1 的中間態；畫布沒有寬度時不建圖；使用者動過視角後，容器變寬窄只 `resize`、不再重新適應（`law-graph-viewport` E2E 守門）。
   - `Api.csproj` 須設 `RequiresAspNetWebAssets` 以提供 `_framework/blazor.web.js`（`DesignPageTests` 守門）。
 
 ## Conventions

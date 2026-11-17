@@ -5268,6 +5268,25 @@ html[data-reveal]::view-transition-new(root) {
     block-size: 62dvh;
     max-block-size: 48rem;
     background: var(--ep-bg);
+    transition: opacity var(--ep-motion-fast) var(--ep-motion-ease-enter);
+}
+
+/* 第一個視角定好之前不顯示（canon-graph.js 設 data-graph-state）：圖一建好是縮放 1 的實際大小，
+   隨後才縮到適合視窗；藏到定好視角再淡入，使用者看不到那一段「先放大、再縮小」。沒有 JavaScript 時沒有這個屬性，照常顯示。 */
+.ep-graph-canvas[data-graph-state="loading"] {
+    opacity: 0;
+    transition: none; /* 進入 loading 要立刻消失；淡出會讓縮放 1 的畫面又被看到一小段 */
+}
+
+/* 藏著的這段（建圖與排版要一點時間）給一條脈動的細線，說明正在載入，而不是一塊空白。 */
+.ep-graph-canvas-wrap:has(> .ep-graph-canvas[data-graph-state="loading"])::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+    block-size: var(--ep-space-1);
+    background: var(--ep-primary);
+    animation: ep-pulse var(--ep-motion-pulse) ease-in-out infinite;
 }
 
 @container workbench (width >= 68rem) {

@@ -46,6 +46,10 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("labelFillOpacity: 0.94", script.Html, StringComparison.Ordinal);
         Assert.Contains("mixRgb", script.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("color-mix(", script.Html, StringComparison.Ordinal);
+        // 第一個視角定好之前圖譜不顯示（先放大再縮小的跳動）：建圖進 loading、定好才 ready；使用者動過視角就不再替他重新適應。
+        Assert.Contains("container.dataset.graphState = \"loading\"", script.Html, StringComparison.Ordinal);
+        Assert.Contains("container.dataset.graphState = \"ready\"", script.Html, StringComparison.Ordinal);
+        Assert.Contains("viewportTouched", script.Html, StringComparison.Ordinal);
 
         var stylesheet = await browser.GetAsync("/_content/EnvCite.Platform.Web/design/platform.css");
         Assert.Equal(HttpStatusCode.OK, stylesheet.Status);
@@ -53,6 +57,7 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains(".ep-graph-canvas .tooltip", stylesheet.Html, StringComparison.Ordinal);
         Assert.Contains("background-color: var(--ep-surface-raised) !important;", stylesheet.Html, StringComparison.Ordinal);
         Assert.Contains("--ep-success", stylesheet.Html, StringComparison.Ordinal);
+        Assert.Matches(@"\.ep-graph-canvas\[data-graph-state=""loading""\]\s*\{[^}]*opacity:\s*0", stylesheet.Html);
     }
 
     [Fact]
