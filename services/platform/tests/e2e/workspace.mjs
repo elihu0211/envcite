@@ -622,6 +622,53 @@ const scenarios = {
                 throw new Error(`晚到的區塊的進場動畫從頭重播了（opacity ${JSON.stringify(opacities)}）`);
             }
         });
+
+        // 進場動畫從首次繪製就開始，forms.js 常常晚一點才執行（前面還有要下載與執行的腳本）。接續的起點若取腳本執行的時刻，
+        // 接手時動畫會被往回倒一段。把 forms.js 壓晚 250ms，在進場中途模擬接手，區塊的可見度不得倒退。
+        await step("接手發生在進場中途：接續不往回倒", async () => {
+            const context = page.context();
+            const late = await context.newPage();
+            await late.route(/design\/forms[^/]*\.js(\?.*)?$/, async (route) => {
+                await new Promise((resolve) => setTimeout(resolve, 250));
+                await route.continue();
+            });
+            await late.addInitScript(() => {
+                window.__rise = [];
+                const tick = () => {
+                    const blocks = [...document.querySelectorAll(".ep-auth-body > *")];
+                    // 模擬的兩批之間有一格沒有區塊（那是接手時內容區空一格的問題，不在這裡量）：沒有區塊的格不算。
+                    if (blocks.length > 0) {
+                        window.__rise.push(blocks.reduce((sum, block) => sum + Number(getComputedStyle(block).opacity), 0));
+                    }
+                    requestAnimationFrame(tick);
+                };
+                requestAnimationFrame(tick);
+            });
+            try {
+                const loaded = late.waitForResponse(/design\/forms[^/]*\.js/);
+                await late.goto(`${base}/ui/login`, { waitUntil: "commit" });
+                await loaded;
+                await late.waitForTimeout(40);
+                await late.evaluate(async () => {
+                    const body = document.querySelector(".ep-auth-body");
+                    const blocks = [...body.children];
+                    const marker = document.body.appendChild(document.createComment("/bl-root"));
+                    await Promise.resolve();
+                    marker.remove();
+                    blocks.forEach((block) => block.remove());
+                    await new Promise((resolve) => setTimeout(resolve, 5));
+                    blocks.forEach((block) => body.appendChild(block.cloneNode(true)));
+                });
+                await late.waitForTimeout(700);
+                const samples = await late.evaluate(() => window.__rise);
+                const drop = samples.findIndex((value, i) => i > 0 && samples[i - 1] > 0.05 && value < samples[i - 1] - 0.05);
+                if (drop !== -1) {
+                    throw new Error(`接手時進場動畫倒退了（第 ${drop} 格 ${samples[drop - 1].toFixed(2)} → ${samples[drop].toFixed(2)}）`);
+                }
+            } finally {
+                await late.close();
+            }
+        });
     },
 
     // 授權知識圖譜進頁面時，第一個看得到的畫面就是最後的視角：圖一建好是縮放 1 的實際大小，若直接露出來，
