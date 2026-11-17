@@ -152,6 +152,7 @@ uv run --env-file .env canon serve
 - **法理與數值邊界**：
   - `order`（預防性處分）與 `disgorgement`（不法利得追繳）非行政罰，不適用行政罰法總則。
   - `sanction_trigger`（以另一效果為前提）隨前提成立或附條件；違憲失效版本於 SQL 排除並另列 `invalidated`；授權鏈斷裂標為授權依據待查並附條件。
+  - 罰則所罰的義務依查詢日解析（中央法規標準法第 17 條）：讀罰則一律經 `annotation.sanctions_at`，不以 `punished_statement_id` 直接比對當日陳述，連結不改寫；單元在新舊任一邊有數個義務時不由推論代挑。
   - 行政罰法第 18、26 條只給候選與額度；刑事優先只擋罰鍰與已宣告沒收之沒入，未給定則不套用。
   - 金額不進 clingo（受限 32 位元整數），比較與加總於 `facts.amounts` 處理。
 - **對外語意**：未給許可量值為未知、認定方式不符不逕判、`evaluate_across` 不選最有利、`uncovered_laws` 等契約語意以 [`proto/README.md`](../../proto/README.md)〈標註與推論〉為準。

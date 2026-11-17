@@ -108,7 +108,7 @@ def statement_facts(
     out += vocabulary_facts(conn, params, ids_param)
     out += slot_facts(conn, ids_param)
     out += relation_facts(conn, ids_param)
-    sanctions = fetch_sanctions(conn, ids_param)
+    sanctions = fetch_sanctions(conn, params, ids_param)
     out += sanction_lines(sanctions)
     out += trigger_facts(conn, ids_param)
     caps = {
