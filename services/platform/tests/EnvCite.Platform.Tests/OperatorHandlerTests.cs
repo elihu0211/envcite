@@ -21,6 +21,8 @@ public sealed class OperatorHandlerTests
             Asked = user;
             return Task.FromResult(session);
         }
+
+        public Task PrefetchAsync(ClaimsPrincipal user, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private static readonly ClaimsPrincipal Someone = new(new ClaimsIdentity([new Claim(PlatformClaimTypes.OperatorId, "op-1")], "test"));

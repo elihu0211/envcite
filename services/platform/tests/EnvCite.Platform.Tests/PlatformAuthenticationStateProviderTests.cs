@@ -24,6 +24,8 @@ public sealed class PlatformAuthenticationStateProviderTests
             Asked++;
             return Task.FromResult<OperatorSessionState?>(known ? new OperatorSessionState(false, true) : null);
         }
+
+        public Task PrefetchAsync(ClaimsPrincipal user, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class FakePortal(bool valid) : IPortalSessions

@@ -1,7 +1,10 @@
 using System.Net;
 
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Time.Testing;
 
 namespace EnvCite.Platform.Tests;
 
@@ -130,5 +133,74 @@ public sealed class OperatorSessionChecksTests(PlatformFactory factory)
             [new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email!)], "legacy")));
 
         Assert.Equal(HttpStatusCode.Redirect, await StatusAsync(client, "/ui"));
+    }
+
+    // 預取：circuit 開啟、第一次渲染之前先查一次，第一次授權沿用；只用一次，之後每次授權照舊重查資料庫。
+    // 沿用的是「預取那一刻」的狀態，所以預取之後才停用的帳號，第一次仍過、第二次就擋下。
+    [Fact]
+    public async Task APrefetchedCheckIsUsedOnceAndTheNextOneAsksTheDatabaseAgain()
+    {
+        var user = await factory.EnsureOperatorAsync(OperatorTestSupport.NewOperatorEmail());
+        var session = factory.SessionOf(user);
+        var sessions = factory.Services.GetRequiredService<IOperatorSessions>();
+
+        await sessions.PrefetchAsync(session, TestContext.Current.CancellationToken);
+        await EditAsync(user.Id.ToString(), u => u.Disabled = true);
+
+        Assert.NotNull(await sessions.FindAsync(session, TestContext.Current.CancellationToken));
+        Assert.Null(await sessions.FindAsync(session, TestContext.Current.CancellationToken));
+    }
+
+    // 預取以 principal 物件為鍵：同一位營運者的另一個 principal（別的請求、別的 circuit）拿不到這一份。
+    [Fact]
+    public async Task APrefetchIsOnlyForThePrincipalItWasMadeFor()
+    {
+        var user = await factory.EnsureOperatorAsync(OperatorTestSupport.NewOperatorEmail());
+        var prefetched = factory.SessionOf(user);
+        var another = factory.SessionOf(user);
+        var sessions = factory.Services.GetRequiredService<IOperatorSessions>();
+
+        await sessions.PrefetchAsync(prefetched, TestContext.Current.CancellationToken);
+        await EditAsync(user.Id.ToString(), u => u.Disabled = true);
+
+        Assert.Null(await sessions.FindAsync(another, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task APrefetchOlderThanItsLifeIsNotUsed()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        using var host = factory.WithWebHostBuilder(b => b.ConfigureServices(s =>
+            s.Replace(ServiceDescriptor.Singleton<TimeProvider>(clock))));
+        var sessions = host.Services.GetRequiredService<IOperatorSessions>();
+        var user = await factory.EnsureOperatorAsync(OperatorTestSupport.NewOperatorEmail());
+        var session = factory.SessionOf(user);
+
+        await sessions.PrefetchAsync(session, TestContext.Current.CancellationToken);
+        await EditAsync(user.Id.ToString(), u => u.Disabled = true);
+        clock.Advance(TimeSpan.FromSeconds(6));
+
+        Assert.Null(await sessions.FindAsync(session, TestContext.Current.CancellationToken));
+    }
+
+    // 沒有營運者 Id 的身分（匿名、入口成員）沒有東西可預取：略過，不查也不留紀錄。
+    [Fact]
+    public async Task AnIdentityWithoutAnOperatorIdIsNotPrefetched()
+    {
+        var sessions = factory.Services.GetRequiredService<IOperatorSessions>();
+        var anonymous = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity());
+
+        await sessions.PrefetchAsync(anonymous, TestContext.Current.CancellationToken);
+
+        Assert.Null(await sessions.FindAsync(anonymous, TestContext.Current.CancellationToken));
+    }
+
+    // 預取要掛在每一條 circuit 上，而且在第一次渲染之前（OnCircuitOpened）；少了這個註冊，頁面又會在接手時空一格。
+    [Fact]
+    public async Task EveryCircuitRunsThePrefetchWhenItOpens()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+
+        Assert.Contains(scope.ServiceProvider.GetServices<CircuitHandler>(), handler => handler is Web.Auth.OperatorSessionPrefetch);
     }
 }
