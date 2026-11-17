@@ -48,7 +48,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var home = await browser.GetAsync(Home(tenant.Identifier));
 
         var prefix = Home(tenant.Identifier);
-        // 側欄導覽只有業務模塊（首頁是頂端的「新對話」，不在導覽裡）：不論角色，成員、目錄同步、帳號與組織都不在側欄。
+        // 側欄導覽只有業務模塊（首頁是頂端的「新增對話」，不在導覽裡）：不論角色，成員、目錄同步、帳號與組織都不在側欄。
         Assert.Equal([$"{prefix}/laws"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history"));
 
         // 個人項目（外觀、兩步驟驗證、改密碼）在前；其後是系統設定，依角色出現：
@@ -134,10 +134,10 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var footPos = home.Html.IndexOf("class=\"ep-side-foot\"", StringComparison.Ordinal);
         Assert.True(modulesPos > 0 && historyPos > modulesPos && footPos > historyPos);
 
-        // 空的歷史區只留一句短提示，不教人怎麼開始（「新對話」就在上面）。
+        // 空的歷史區只留一句短提示，不教人怎麼開始（「新增對話」就在上面）。
         Assert.Contains("<p class=\"ep-history-empty-note\">暫無對話</p>", home.Html, StringComparison.Ordinal);
 
-        // 對話紀錄頁的空狀態同一句：標題「暫無對話」，不再附說明與第二個入口（頁首已有「新對話」）。
+        // 對話紀錄頁的空狀態同一句：標題「暫無對話」，不再附說明與第二個入口（頁首已有「新增對話」）。
         var history = await browser.GetAsync($"{Home(tenant.Identifier)}/history");
         var emptyState = Regex.Match(history.Html, "<div class=\"ep-empty\">.*?</div>", RegexOptions.Singleline).Value;
         Assert.Contains("<h2 class=\"ep-empty-title\">暫無對話</h2>", emptyState, StringComparison.Ordinal);
@@ -177,8 +177,8 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Contains("<nav class=\"ep-side-nav\" aria-label=\"服務\"", side, StringComparison.Ordinal);
     }
 
-    // 首頁就是法規諮詢的新對話：側欄只有「新對話」這一個入口指向它，導覽裡不再列第二個「法規諮詢」；
-    // 功能名稱改成對話清單的標題（「新對話」開的就是這一區的對話），頂欄在首頁也寫同一個詞。
+    // 首頁就是法規諮詢的新對話：側欄只有「新增對話」這一個入口指向它，導覽裡不再列第二個「法規諮詢」；
+    // 功能名稱改成對話清單的標題（「新增對話」開的就是這一區的對話），頂欄在首頁也寫同一個詞。
     [Fact]
     public async Task TheHomeIsTheNewChatActionAndTheHistoryIsTitledByTheFeatureItBelongsTo()
     {

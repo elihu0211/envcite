@@ -104,7 +104,7 @@ public sealed class PortalNavigationTests
         Assert.Equal([$"{Home}/members", $"{Home}/account"], items.Select(i => i.Href));
     }
 
-    // 首頁是法規諮詢的新對話，外殼把它畫成頂端的「新對話」主要動作：導覽（側欄與帳號選單）不再列一個指向首頁的項目。
+    // 首頁是法規諮詢的新對話，外殼把它畫成頂端的「新增對話」主要動作：導覽（側欄與帳號選單）不再列一個指向首頁的項目。
     // 目前頁以路徑前綴比對，每一頁都在首頁底下，列了它就會一直亮著。
     [Theory]
     [InlineData(CustomerRoles.Owner)]

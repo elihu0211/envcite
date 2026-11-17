@@ -3808,7 +3808,7 @@ html[data-reveal]::view-transition-new(root) {
     display: none;
 }
 
-/* 「新對話」是側欄唯一的主要動作（Grok 式）：外框膠囊加實心主色的加號圓，和下面的導覽列分得開；
+/* 「新增對話」是側欄唯一的主要動作（Grok 式）：外框膠囊加實心主色的加號圓，和下面的導覽列分得開；
    導覽列的目前項是淡藍底，所以這顆不用填色，只靠外框與加號圓成為視覺重心。 */
 .ep-side-new-chat-mark {
     flex: none;
